@@ -630,7 +630,7 @@ func (httpServer *HttpServer) buildRawDefragmentAccountTransaction(params interf
 			hasPrivacyCoin,
 			*httpServer.config.Database,
 			nil, // use for prv coin -> nil is valid
-			meta))
+			meta, nil))
 	// END create tx
 
 	if err != nil {
