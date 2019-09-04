@@ -1400,6 +1400,7 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(transa
 
 func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blkBody *ShardBody) error {
 	txRequestTable := map[string]metadata.Transaction{}
+	txReturnTable := map[string]bool{}
 	for _, tx := range blkBody.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
 			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
@@ -1411,7 +1412,8 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 	db := blockchain.config.DataBase
 	numberOfTxResponse := 0
 	for _, tx := range blkBody.Transactions {
-		if tx.GetMetadataType() == metadata.WithDrawRewardResponseMeta {
+		switch tx.GetMetadataType() {
+		case metadata.WithDrawRewardResponseMeta:
 			_, requesterRes, amountRes, coinID := tx.GetTransferData()
 			//fmt.Printf("[ndh] -  %+v\n", tx)
 			//TODO: check why using encode version with block version value
@@ -1439,8 +1441,15 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 				return errors.New("This response dont match with any request")
 			}
 			txRequestTable[requester] = nil
-
 			numberOfTxResponse++
+			continue
+		case metadata.ReturnStakingMeta:
+			returnMeta := tx.GetMetadata().(*metadata.ReturnStakingMetadata)
+			if _, ok := txReturnTable[returnMeta.StakerAddress.String()]; !ok {
+				txReturnTable[returnMeta.StakerAddress.String()] = true
+			} else {
+				return errors.New("Double spent transaction return staking for a candidate.")
+			}
 		}
 	}
 	if numberOfTxRequest != numberOfTxResponse {
