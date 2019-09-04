@@ -172,6 +172,10 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	}
 	Logger.log.Infof("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	if err := blockchain.processStoreBeaconBlock(beaconBlock, snapshotBeaconCommittee, snapshotAllShardCommittee, snapshotRewardReceiver); err != nil {
+		revertErr := blockchain.revertBeaconState()
+		if revertErr != nil {
+			return errors.WithStack(revertErr)
+		}
 		return err
 	}
 	go blockchain.removeOldDataAfterProcessingBeaconBlock()
@@ -245,8 +249,8 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *Beacon
 	for _, strs := range beaconBlock.Body.Instructions {
 		tempInstructionArr = append(tempInstructionArr, strs...)
 	}
-	if !verifyHashFromStringArray(tempInstructionArr, beaconBlock.Header.InstructionHash) {
-		return NewBlockChainError(InstructionHashError, fmt.Errorf("Expect instruction hash to be %+v", beaconBlock.Header.InstructionHash))
+	if hash, ok := verifyHashFromStringArray(tempInstructionArr, beaconBlock.Header.InstructionHash); !ok {
+		return NewBlockChainError(InstructionHashError, fmt.Errorf("Expect instruction hash to be %+v but get %+v", beaconBlock.Header.InstructionHash, hash))
 	}
 	// Shard state must in right format
 	// state[i].Height must less than state[i+1].Height and state[i+1].Height - state[i].Height = 1
@@ -482,27 +486,23 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 	defer beaconBestState.lock.RUnlock()
 	var (
 		strs []string
-		ok   bool
 	)
 	strs = append(strs, incognitokey.CommitteeKeyListToString(beaconBestState.BeaconCommittee)...)
 	strs = append(strs, incognitokey.CommitteeKeyListToString(beaconBestState.BeaconPendingValidator)...)
-	ok = verifyHashFromStringArray(strs, beaconBlock.Header.BeaconCommitteeAndValidatorRoot)
-	if !ok {
-		return NewBlockChainError(BeaconCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect Beacon Committee and Validator Root to be %+v", beaconBlock.Header.BeaconCommitteeAndValidatorRoot))
+	if hash, ok := verifyHashFromStringArray(strs, beaconBlock.Header.BeaconCommitteeAndValidatorRoot); !ok {
+		return NewBlockChainError(BeaconCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect Beacon Committee and Validator Root to be %+v but get %+v", beaconBlock.Header.BeaconCommitteeAndValidatorRoot, hash))
 	}
 	strs = []string{}
 	strs = append(strs, incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForCurrentRandom)...)
 	strs = append(strs, incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForNextRandom)...)
-	ok = verifyHashFromStringArray(strs, beaconBlock.Header.BeaconCandidateRoot)
-	if !ok {
-		return NewBlockChainError(BeaconCandidateRootError, fmt.Errorf("Expect Beacon Committee and Validator Root to be %+v", beaconBlock.Header.BeaconCandidateRoot))
+	if hash, ok := verifyHashFromStringArray(strs, beaconBlock.Header.BeaconCandidateRoot); !ok {
+		return NewBlockChainError(BeaconCandidateRootError, fmt.Errorf("Expect Beacon Committee and Validator Root to be %+v but get %+v", beaconBlock.Header.BeaconCandidateRoot, hash))
 	}
 	strs = []string{}
 	strs = append(strs, incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForCurrentRandom)...)
 	strs = append(strs, incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForNextRandom)...)
-	ok = verifyHashFromStringArray(strs, beaconBlock.Header.ShardCandidateRoot)
-	if !ok {
-		return NewBlockChainError(ShardCandidateRootError, fmt.Errorf("Expect Beacon Committee and Validator Root to be %+v", beaconBlock.Header.ShardCandidateRoot))
+	if hash, ok := verifyHashFromStringArray(strs, beaconBlock.Header.ShardCandidateRoot); !ok {
+		return NewBlockChainError(ShardCandidateRootError, fmt.Errorf("Expect Beacon Committee and Validator Root to be %+v but get %+v", beaconBlock.Header.ShardCandidateRoot, hash))
 	}
 
 	shardPendingValidator := make(map[byte][]string)
@@ -514,7 +514,7 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 	for shardID, keyList := range beaconBestState.ShardCommittee {
 		shardCommittee[shardID] = incognitokey.CommitteeKeyListToString(keyList)
 	}
-	ok = verifyHashFromMapByteString(shardPendingValidator, shardCommittee, beaconBlock.Header.ShardCommitteeAndValidatorRoot)
+	ok := verifyHashFromMapByteString(shardPendingValidator, shardCommittee, beaconBlock.Header.ShardCommitteeAndValidatorRoot)
 	if !ok {
 		return NewBlockChainError(ShardCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect Beacon Committee and Validator Root to be %+v", beaconBlock.Header.ShardCommitteeAndValidatorRoot))
 	}
