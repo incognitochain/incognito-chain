@@ -295,16 +295,21 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(privatekey *priv
 // buildResponseTxsFromBeaconInstructions builds response txs from beacon instructions
 func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(beaconBlocks []*BeaconBlock, producerPrivateKey *privacy.PrivateKey, shardID byte) ([]metadata.Transaction, error) {
 	responsedTxs := []metadata.Transaction{}
-	allCommitteeValidatorCandidateFlattenList, err := blockGenerator.chain.GetAllCommitteeValidatorCandidateFlattenListFromDatabase()
-	if err != nil {
-		return []metadata.Transaction{}, NewBlockChainError(FetchAllCommitteeValidatorCandidateError, err)
-	}
 	for _, beaconBlock := range beaconBlocks {
+		autoStaking := make(map[string]bool)
+		autoStakingBytes, err := blockGenerator.chain.config.DataBase.FetchAutoStakingByHeight(beaconBlock.Header.Height)
+		if err != nil {
+			return []metadata.Transaction{}, NewBlockChainError(FetchAutoStakingByHeightError, err)
+		}
+		err = json.Unmarshal(autoStakingBytes, &autoStaking)
+		if err != nil {
+			return []metadata.Transaction{}, NewBlockChainError(FetchAutoStakingByHeightError, err)
+		}
 		for _, l := range beaconBlock.Body.Instructions {
 			if l[0] == SwapAction {
 				for _, outPublicKeys := range strings.Split(l[2], ",") {
 					// If out public key has auto staking then ignore this public key
-					if common.IndexOfStr(outPublicKeys, allCommitteeValidatorCandidateFlattenList) > -1 {
+					if _, ok := autoStaking[outPublicKeys]; ok {
 						continue
 					}
 					tx, err := blockGenerator.buildReturnStakingAmountTx(outPublicKeys, producerPrivateKey)

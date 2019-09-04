@@ -524,7 +524,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 		// avoid dead lock
 		// if producer new block then lock beststate
 		if isProducer {
-			allCommitteeValidatorCandidate = blockchain.BestState.Beacon.GetAllCommitteeValidatorCandidateFlattenList()
+			allCommitteeValidatorCandidate = blockchain.BestState.Beacon.getAllCommitteeValidatorCandidateFlattenList()
 		} else {
 			// if process block then do not lock beststate
 			allCommitteeValidatorCandidate = blockchain.BestState.Beacon.getAllCommitteeValidatorCandidateFlattenList()
