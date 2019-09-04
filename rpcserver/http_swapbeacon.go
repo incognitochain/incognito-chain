@@ -30,6 +30,20 @@ type ConsensusEngine interface {
 	ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error)
 }
 
+// handleGetLatestBeaconSwapProof returns the latest proof of a change in bridge's committee
+func (httpServer *HttpServer) handleGetLatestBeaconSwapProof(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	latestBlock := httpServer.config.BlockChain.BestState.Beacon.BeaconHeight
+	for i := latestBlock; i >= 1; i-- {
+		params := []interface{}{float64(i)}
+		proof, err := httpServer.handleGetBeaconSwapProof(params, closeChan)
+		if err != nil {
+			continue
+		}
+		return proof, nil
+	}
+	return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.Errorf("no swap proof found before block %d", latestBlock))
+}
+
 // handleGetBeaconSwapProof returns a proof of a new beacon committee (for a given bridge block height)
 func (httpServer *HttpServer) handleGetBeaconSwapProof(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Infof("handleGetBeaconSwapProof params: %+v", params)
