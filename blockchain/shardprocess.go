@@ -3,7 +3,6 @@ package blockchain
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 	"sort"
@@ -11,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/pubsub"
@@ -171,6 +171,10 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	//========Store new  Shard block and new shard bestState
 	err = blockchain.processStoreShardBlockAndUpdateDatabase(shardBlock)
 	if err != nil {
+		revertErr := blockchain.revertShardState(shardID)
+		if revertErr != nil {
+			return errors.WithStack(revertErr)
+		}
 		return err
 	}
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewShardblockTopic, shardBlock))
