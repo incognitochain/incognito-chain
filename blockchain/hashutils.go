@@ -147,7 +147,7 @@ func generateLastCrossShardStateHash(lastCrossShardState map[byte]map[byte]uint6
 	}
 	return common.HashH([]byte(res))
 }
-func VerifyHashFromHashArray(hashes []common.Hash, hash common.Hash) bool {
+func VerifyHashFromHashArray(hashes []common.Hash, hash common.Hash) (common.Hash, bool) {
 	strs := []string{}
 	for _, value := range hashes {
 		str := value.String()
@@ -156,12 +156,12 @@ func VerifyHashFromHashArray(hashes []common.Hash, hash common.Hash) bool {
 	return verifyHashFromStringArray(strs, hash)
 }
 
-func verifyHashFromStringArray(strs []string, hash common.Hash) bool {
+func verifyHashFromStringArray(strs []string, hash common.Hash) (common.Hash, bool) {
 	res, err := generateHashFromStringArray(strs)
 	if err != nil {
-		return false
+		return common.Hash{}, false
 	}
-	return bytes.Equal(res.GetBytes(), hash.GetBytes())
+	return res, bytes.Equal(res.GetBytes(), hash.GetBytes())
 }
 
 func verifyHashFromMapByteString(maps1 map[byte][]string, maps2 map[byte][]string, hash common.Hash) bool {

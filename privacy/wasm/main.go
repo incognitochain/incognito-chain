@@ -3,7 +3,7 @@
 package main
 
 // Uncomment before build
-import (
+/*import (
 	"strconv"
 	"syscall/js"
 
@@ -46,4 +46,4 @@ func main() {
 	js.Global().Set("oneOutOfManyProve", js.FuncOf(oneOutOfManyProve))
 	js.Global().Set("generateBLSKeyPairFromSeed", js.FuncOf(generateBLSKeyPairFromSeed))
 	<-c
-}
+}*/
