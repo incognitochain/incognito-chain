@@ -277,9 +277,8 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 		for _, value := range shardBlock.Body.Instructions {
 			totalInstructions = append(totalInstructions, value...)
 		}
-		isOk := verifyHashFromStringArray(totalInstructions, shardBlock.Header.InstructionsRoot)
-		if !isOk {
-			return NewBlockChainError(InstructionsHashError, fmt.Errorf("Expect instruction hash to be %+v", shardBlock.Header.InstructionsRoot))
+		if hash, ok := verifyHashFromStringArray(totalInstructions, shardBlock.Header.InstructionsRoot); !ok {
+			return NewBlockChainError(InstructionsHashError, fmt.Errorf("Expect instruction hash to be %+v but get %+v", shardBlock.Header.InstructionsRoot, hash))
 		}
 	}
 	totalTxsFee := make(map[common.Hash]uint64)
@@ -421,9 +420,8 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock
 	for _, value := range instructions {
 		totalInstructions = append(totalInstructions, value...)
 	}
-	isOk := verifyHashFromStringArray(totalInstructions, shardBlock.Header.InstructionsRoot)
-	if !isOk {
-		return NewBlockChainError(InstructionsHashError, fmt.Errorf("Expect instruction hash to be %+v", shardBlock.Header.InstructionsRoot))
+	if hash, ok := verifyHashFromStringArray(totalInstructions, shardBlock.Header.InstructionsRoot); !ok {
+		return NewBlockChainError(InstructionsHashError, fmt.Errorf("Expect instruction hash to be %+v but %+v", shardBlock.Header.InstructionsRoot, hash))
 	}
 	// Verify Cross Shard Output Coin and Custom Token Transaction
 	crossTxTokenData := make(map[byte][]CrossTxTokenData)
@@ -694,17 +692,12 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(shardBlock *S
 	- pending validator root
 */
 func (shardBestState *ShardBestState) verifyPostProcessingShardBlock(shardBlock *ShardBlock, shardID byte) error {
-	var (
-		isOk bool
-	)
 	Logger.log.Debugf("SHARD %+v | Begin VerifyPostProcessing Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash())
-	isOk = verifyHashFromStringArray(incognitokey.CommitteeKeyListToString(shardBestState.ShardCommittee), shardBlock.Header.CommitteeRoot)
-	if !isOk {
-		return NewBlockChainError(ShardCommitteeRootHashError, fmt.Errorf("Expect shard committee root hash to be %+v", shardBlock.Header.CommitteeRoot))
+	if hash, ok := verifyHashFromStringArray(incognitokey.CommitteeKeyListToString(shardBestState.ShardCommittee), shardBlock.Header.CommitteeRoot); !ok {
+		return NewBlockChainError(ShardCommitteeRootHashError, fmt.Errorf("Expect shard committee root hash to be %+v but get %+v", shardBlock.Header.CommitteeRoot, hash))
 	}
-	isOk = verifyHashFromStringArray(incognitokey.CommitteeKeyListToString(shardBestState.ShardPendingValidator), shardBlock.Header.PendingValidatorRoot)
-	if !isOk {
-		return NewBlockChainError(ShardPendingValidatorRootHashError, fmt.Errorf("Expect shard pending validator root hash to be %+v", shardBlock.Header.PendingValidatorRoot))
+	if hash, ok := verifyHashFromStringArray(incognitokey.CommitteeKeyListToString(shardBestState.ShardPendingValidator), shardBlock.Header.PendingValidatorRoot); !ok {
+		return NewBlockChainError(ShardPendingValidatorRootHashError, fmt.Errorf("Expect shard pending validator root hash to be %+v but get %+v", shardBlock.Header.PendingValidatorRoot, hash))
 	}
 	tempHash, isOk := verifyHashFromMapStringString(shardBestState.StakingTx, shardBlock.Header.StakingTxRoot)
 	if !isOk {

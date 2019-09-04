@@ -120,8 +120,9 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLi
 	//============Build Header Hash=============
 	// calculate hash
 	// BeaconValidator root: beacon committee + beacon pending committee
-	validatorArr := append(beaconBestState.BeaconCommittee, beaconBestState.BeaconPendingValidator...)
-	tempBeaconCommitteeAndValidatorRoot, err := generateHashFromStringArray(incognitokey.CommitteeKeyListToString(validatorArr))
+	validatorArr := append([]string{}, incognitokey.CommitteeKeyListToString(beaconBestState.BeaconCommittee)...)
+	validatorArr = append(validatorArr, incognitokey.CommitteeKeyListToString(beaconBestState.BeaconPendingValidator)...)
+	tempBeaconCommitteeAndValidatorRoot, err := generateHashFromStringArray(validatorArr)
 	if err != nil {
 		return nil, NewBlockChainError(GenerateBeaconCommitteeAndValidatorRootError, err)
 	}
