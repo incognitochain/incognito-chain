@@ -28,6 +28,10 @@ func (beaconBlock BeaconBlock) Hash() *common.Hash {
 	return &hash
 }
 
+func (beaconBlock BeaconBlock) GetCurrentEpoch() uint64 {
+	return beaconBlock.Header.Epoch
+}
+
 func (beaconBlock BeaconBlock) GetHeight() uint64 {
 	return beaconBlock.Header.Height
 }
