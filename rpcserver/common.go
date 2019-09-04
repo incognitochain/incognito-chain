@@ -144,6 +144,13 @@ func (rpcServer HttpServer) buildRawTransaction(params interface{}, meta metadat
 	hasPrivacyCoin := int(arrayParams[3].(float64)) > 0
 	/********* END Fetch all component to *******/
 
+	// param#5: info (option)
+	info := []byte{}
+	if len(arrayParams) > 4 {
+		infoStr := arrayParams[4].(string)
+		info = []byte(infoStr)
+	}
+
 	/******* START choose output native coins(PRV), which is used to create tx *****/
 	inputCoins, realFee, err1 := rpcServer.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0, senderKeySet, shardIDSender, hasPrivacyCoin, meta, nil, nil)
 	if err1 != nil {
@@ -165,7 +172,9 @@ func (rpcServer HttpServer) buildRawTransaction(params interface{}, meta metadat
 			hasPrivacyCoin,
 			*rpcServer.config.Database,
 			nil, // use for prv coin -> nil is valid
-			meta))
+			meta,
+			info,
+		))
 	// END create tx
 
 	if err != nil {
@@ -431,6 +440,13 @@ func (rpcServer HttpServer) buildRawPrivacyCustomTokenTransaction(
 		hasPrivacyToken = int(arrayParams[5].(float64)) > 0
 	}
 
+	// param#7: info (option)
+	info := []byte{}
+	if len(arrayParams) >= 7 {
+		infoStr := arrayParams[6].(string)
+		info = []byte(infoStr)
+	}
+
 	/****** END FEtch data from params *********/
 
 	/******* START choose output native coins(PRV), which is used to create tx *****/
@@ -459,7 +475,7 @@ func (rpcServer HttpServer) buildRawPrivacyCustomTokenTransaction(
 			metaData,
 			hasPrivacyCoin,
 			hasPrivacyToken,
-			shardIDSender))
+			shardIDSender, info))
 
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
