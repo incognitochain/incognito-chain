@@ -66,6 +66,7 @@ func (e *BLSBFT) Stop() error {
 			close(e.StopCh)
 		}
 		e.isStarted = false
+		e.isOngoing = false
 	}
 	return consensus.NewConsensusError(consensus.ConsensusAlreadyStoppedError, errors.New(e.ChainKey))
 }
