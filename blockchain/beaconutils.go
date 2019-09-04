@@ -254,3 +254,13 @@ func snapshotCommittee(beaconCommittee []incognitokey.CommitteePublicKey, allSha
 	}
 	return snapshotBeaconCommittee, snapshotAllShardCommittee, nil
 }
+func snapshotRewardReceiver(rewardReceiver map[string]string) (map[string]string, error) {
+	snapshotRewardReceiver := make(map[string]string)
+	for k, v := range rewardReceiver {
+		snapshotRewardReceiver[k] = v
+	}
+	if !reflect.DeepEqual(snapshotRewardReceiver, rewardReceiver) {
+		return snapshotRewardReceiver, fmt.Errorf("Failed to Clone Reward Receivers, expect %+v but get %+v", rewardReceiver, snapshotRewardReceiver)
+	}
+	return snapshotRewardReceiver, nil
+}

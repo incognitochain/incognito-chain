@@ -653,5 +653,10 @@ func (p *PeerConn) close() {
 // ForceClose - set flag and close channel
 func (p *PeerConn) ForceClose() {
 	p.setIsForceClose(true)
-	close(p.cClose)
+	select {
+	case <-p.cClose:
+		return
+	default:
+		close(p.cClose)
+	}
 }

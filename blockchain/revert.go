@@ -159,7 +159,7 @@ func (blockchain *BlockChain) backupDatabaseFromBeaconInstruction(
 	db := blockchain.config.DataBase
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
-			if l[0] == StakeAction || l[0] == RandomAction {
+			if l[0] == StakeAction || l[0] == RandomAction || l[0] == SwapAction || l[0] == AssignAction || l[0] == StopAutoStake {
 				continue
 			}
 			if len(l) <= 2 {
@@ -223,13 +223,20 @@ func (blockchain *BlockChain) backupDatabaseFromBeaconInstruction(
 					if err != nil {
 						return err
 					}
-					json.Unmarshal(rewardReceiverBytes, &rewardReceivers)
+					err = json.Unmarshal(rewardReceiverBytes, &rewardReceivers)
+					if err != nil {
+						return err
+					}
 					committeeBytes, err := blockchain.config.DataBase.FetchShardCommitteeByHeight(epoch * blockchain.config.ChainParams.Epoch)
 					if err != nil {
 						return err
 					}
-					json.Unmarshal(committeeBytes, &committee)
+					err = json.Unmarshal(committeeBytes, &committee)
+					if err != nil {
+						return err
+					}
 				}
+				//TODO: check later
 				err = blockchain.getRewardAmountForUserOfShard(shardID, shardRewardInfo, committee[byte(shardToProcess)], &rewardReceivers, true)
 				if err != nil {
 					return err
