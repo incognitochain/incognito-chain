@@ -93,13 +93,13 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 
 	for _, token := range cusPrivTok {
 		if rewardAmounts[token.TxPrivacyTokenData.PropertyID] > 0 {
-			rewardAmountResult[token.TxPrivacyTokenData.PropertySymbol] = rewardAmounts[token.TxPrivacyTokenData.PropertyID]
+			rewardAmountResult[token.TxPrivacyTokenData.PropertyID.String()] = rewardAmounts[token.TxPrivacyTokenData.PropertyID]
 		}
 	}
 
 	for _, token := range crossPrivToken {
 		if rewardAmounts[token.TokenID] > 0 {
-			rewardAmountResult[token.PropertySymbol] = rewardAmounts[token.TokenID]
+			rewardAmountResult[token.TokenID.String()] = rewardAmounts[token.TokenID]
 		}
 	}
 
