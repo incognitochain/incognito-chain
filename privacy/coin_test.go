@@ -2,6 +2,7 @@ package privacy
 
 import (
 	"errors"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
@@ -28,29 +29,109 @@ func TestMain(m *testing.M) {
 func TestCoinCommitAll(t *testing.T) {
 	// init coin with fully fields
 	// init public key
-	coin := new(Coin).Init()
-	seedKey := []byte{1, 2, 3}
-	privateKey := GeneratePrivateKey(seedKey)
-	publicKey := GeneratePublicKey(privateKey)
+	//coin := new(Coin).Init()
+	//seedKey := []byte{1, 2, 3}
+	//privateKey := GeneratePrivateKey(seedKey)
+	//publicKey := GeneratePublicKey(privateKey)
+	//
+	//// init other fields for coin
+	//coin.publicKey.Decompress(publicKey)
+	//coin.snDerivator = RandScalar()
+	//coin.randomness = RandScalar()
+	//coin.value = uint64(100)
+	//coin.serialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.snDerivator)
+	//coin.CommitAll()
+	//coin.info = []byte("Incognito chain")
+	//
+	//expectedCm := coin.publicKey
+	//expectedCm = expectedCm.Add(PedCom.G[PedersenValueIndex].ScalarMult(big.NewInt(int64(coin.value))))
+	//expectedCm = expectedCm.Add(PedCom.G[PedersenSndIndex].ScalarMult(coin.snDerivator))
+	//expectedCm = expectedCm.Add(PedCom.G[PedersenShardIDIndex].ScalarMult(big.NewInt(int64(common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())))))
+	//expectedCm = expectedCm.Add(PedCom.G[PedersenRandomnessIndex].ScalarMult(coin.randomness))
+	//
+	//assert.Equal(t, expectedCm, coin.coinCommitment)
 
-	// init other fields for coin
-	coin.publicKey.Decompress(publicKey)
-	coin.snDerivator = RandScalar()
-	coin.randomness = RandScalar()
-	coin.value = uint64(100)
-	coin.serialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.snDerivator)
-	coin.CommitAll()
-	coin.info = []byte("Incognito chain")
+	for i:= 0; i<10000; i++{
+		coin := new(Coin).Init()
+		seedKey := RandBytes(3)
+		privateKey := GeneratePrivateKey(seedKey)
+		publicKey := GeneratePublicKey(privateKey)
 
-	expectedCm := coin.publicKey
-	expectedCm = expectedCm.Add(PedCom.G[PedersenValueIndex].ScalarMult(big.NewInt(int64(coin.value))))
-	expectedCm = expectedCm.Add(PedCom.G[PedersenSndIndex].ScalarMult(coin.snDerivator))
-	expectedCm = expectedCm.Add(PedCom.G[PedersenShardIDIndex].ScalarMult(big.NewInt(int64(common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())))))
-	expectedCm = expectedCm.Add(PedCom.G[PedersenRandomnessIndex].ScalarMult(coin.randomness))
+		// init other fields for coin
+		coin.publicKey.Decompress(publicKey)
+		coin.snDerivator = RandScalar()
+		coin.randomness = RandScalar()
+		coin.value = new(big.Int).SetBytes(RandBytes(2)).Uint64()
+		coin.serialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.snDerivator)
+		coin.CommitAll()
+		coin.info = []byte("Incognito chain")
 
-	assert.Equal(t, expectedCm, coin.coinCommitment)
+		//expectedCm := coin.publicKey
+		//expectedCm = expectedCm.Add(PedCom.G[PedersenValueIndex].ScalarMult(big.NewInt(int64(coin.value))))
+		//expectedCm = expectedCm.Add(PedCom.G[PedersenSndIndex].ScalarMult(coin.snDerivator))
+		//expectedCm = expectedCm.Add(PedCom.G[PedersenShardIDIndex].ScalarMult(big.NewInt(int64(common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())))))
+		//expectedCm = expectedCm.Add(PedCom.G[PedersenRandomnessIndex].ScalarMult(coin.randomness))
+
+
+		cmTmp := coin.GetPublicKey()
+		cmTmp = cmTmp.Add(PedCom.G[PedersenValueIndex].ScalarMult(big.NewInt(int64(coin.GetValue()))))
+		cmTmp = cmTmp.Add(PedCom.G[PedersenSndIndex].ScalarMult(coin.GetSNDerivator()))
+		shardID := common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())
+		cmTmp = cmTmp.Add(PedCom.G[PedersenShardIDIndex].ScalarMult(new(big.Int).SetBytes([]byte{shardID})))
+		cmTmp = cmTmp.Add(PedCom.G[PedersenRandomnessIndex].ScalarMult(coin.GetRandomness()))
+
+		res := cmTmp.IsEqual(coin.GetCoinCommitment())
+
+		assert.Equal(t, true, res)
+	}
 }
 
+func TestCoin2(t *testing.T){
+	outCoin2 := new(OutputCoin)
+	//data := []byte{0, 174, 33, 3, 60, 123, 206, 207, 7, 52, 248, 65, 70, 49, 30, 41, 32, 61, 234, 142, 11, 181, 170, 120, 127, 187, 113, 61, 104, 145, 81, 29, 206, 12, 226, 235, 33, 3, 250, 55, 13, 132, 208, 95, 63, 41, 182, 236, 75, 192, 191, 226, 65, 213, 63, 6, 21, 170, 176, 185, 244, 136, 30, 254, 135, 114, 220, 47, 246, 101, 32, 86, 91, 14, 170, 4, 145, 115, 68, 13, 234, 139, 17, 15, 64, 246, 149, 147, 185, 30, 118, 209, 93, 62, 153, 59, 6, 19, 151, 11, 5, 73, 0, 33, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 178, 231, 244, 64, 100, 215, 171, 192, 244, 124, 143, 18, 65, 36, 229, 173, 200, 165, 92, 178, 69, 146, 49, 132, 18, 137, 133, 105, 66, 168, 81, 181, 4, 59, 154, 202, 0, 0}
+	data := []byte{0, 174, 33, 3, 60, 123, 206, 207, 7, 52, 248, 65, 70, 49, 30, 41, 32, 61, 234, 142, 11, 181, 170, 120, 127, 187, 113, 61, 104, 145, 81, 29, 206, 12, 226, 235, 33, 2, 48, 33, 142, 179, 236, 145, 252, 24, 55, 35, 136, 238, 241, 247, 74, 248, 61, 253, 181, 66, 8, 254, 27, 187, 155, 2, 230, 105, 22, 154, 72, 18, 32, 20, 11, 159, 16, 19, 37, 100, 86, 13, 227, 8, 236, 93, 32, 177, 171, 99, 4, 241, 120, 20, 14, 29, 197, 132, 209, 245, 95, 107, 225, 100, 0, 33, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 228, 12, 207, 86, 14, 216, 27, 216, 112, 222, 80, 217, 188, 231, 9, 224, 226, 195, 209, 105, 83, 63, 63, 239, 66, 237, 238, 17, 195, 181, 59, 219, 4, 59, 154, 202, 0, 0}
+	outCoin2.SetBytes(data)
+	fmt.Printf("outCoin bytes: %v\n", outCoin2.Bytes())
+	fmt.Printf("Value: %v\n", outCoin2.CoinDetails.GetValue())
+	fmt.Printf("SND: %v\n", outCoin2.CoinDetails.GetSNDerivator().Bytes())
+	fmt.Printf("Randomness: %v\n", outCoin2.CoinDetails.GetRandomness().Bytes())
+	fmt.Printf("PublicKey: %v\n", outCoin2.CoinDetails.GetPublicKey().Compress())
+	fmt.Printf("PublicKey last byte: %v\n", outCoin2.CoinDetails.GetPubKeyLastByte())
+	// right
+
+
+	// please check coin commitment all
+	cmTmp := outCoin2.CoinDetails.GetPublicKey()
+	fmt.Printf("cmTmp 1: %v\n", cmTmp.Compress())
+	cmTmp = cmTmp.Add(PedCom.G[PedersenValueIndex].ScalarMult(big.NewInt(int64(outCoin2.CoinDetails.GetValue()))))
+	fmt.Printf("cmTmp 2: %v\n", cmTmp.Compress())
+	cmTmp = cmTmp.Add(PedCom.G[PedersenSndIndex].ScalarMult(outCoin2.CoinDetails.GetSNDerivator()))
+	fmt.Printf("cmTmp 3: %v\n", cmTmp.Compress())
+	shardID := common.GetShardIDFromLastByte(outCoin2.CoinDetails.GetPubKeyLastByte())
+	cmTmp = cmTmp.Add(PedCom.G[PedersenShardIDIndex].ScalarMult(new(big.Int).SetBytes([]byte{shardID})))
+	fmt.Printf("cmTmp 4: %v\n", cmTmp.Compress())
+	cmTmp = cmTmp.Add(PedCom.G[PedersenRandomnessIndex].ScalarMult(outCoin2.CoinDetails.GetRandomness()))
+	fmt.Printf("cmTmp 5: %v\n", cmTmp.Compress())
+	if !cmTmp.IsEqual(outCoin2.CoinDetails.GetCoinCommitment()) {
+		Logger.Log.Errorf("Output coins %v commitment wrong!\n")
+	}
+
+	fmt.Printf("cmTmp: %v\n", cmTmp.Compress())
+
+	//right commitment JS : 3, 112, 194, 190, 145, 26, 138, 190, 212, 123, 173, 209, 233, 112, 105, 51, 103, 139, 130, 171, 174, 230, 154, 192, 19, 219, 147, 224, 234, 47, 202, 68, 5
+
+
+}
+
+func TestBigInt(t *testing.T) {
+	snd1 := new (big.Int).SetBytes([]byte{20, 11, 159, 16, 19, 37, 100, 86, 13, 227, 8, 236, 93, 32, 177, 171, 99, 4, 241, 120, 20, 14, 29, 197, 132, 209, 245, 95, 107, 225, 100})
+	cm1 := PedCom.G[PedersenSndIndex].ScalarMult(snd1)
+	fmt.Printf("cm1: %v\n", cm1.Compress())
+
+	snd2 := new (big.Int).SetBytes([]byte{0, 20, 11, 159, 16, 19, 37, 100, 86, 13, 227, 8, 236, 93, 32, 177, 171, 99, 4, 241, 120, 20, 14, 29, 197, 132, 209, 245, 95, 107, 225, 100})
+	cm2 := PedCom.G[PedersenSndIndex].ScalarMult(snd2)
+	fmt.Printf("cm1: %v\n", cm2.Compress())
+}
 /*
 	Unit test for MarshalJSON/UnmarshalJSON Coin
 */
