@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -83,7 +82,7 @@ func TestInitTx(t *testing.T) {
 		NewTxPrivacyInitParams(
 			&senderKey.KeySet.PrivateKey,
 			[]*privacy.PaymentInfo{{PaymentAddress: receiverPaymentAddress.KeySet.PaymentAddress, Amount: uint64(transferAmount)}},
-			coinBaseOutput, uint64(fee), hasPrivacy, db, nil, nil,
+			coinBaseOutput, uint64(fee), hasPrivacy, db, nil, nil, []byte{},
 		),
 	)
 	if err != nil {
@@ -130,7 +129,7 @@ func TestInitTx(t *testing.T) {
 	assert.Equal(t, true, isValid)
 	assert.Equal(t, nil, err)
 
-	isValidTxVersion := tx1.CheckTxVersion(mempool.MaxVersion)
+	isValidTxVersion := tx1.CheckTxVersion(1)
 	assert.Equal(t, true, isValidTxVersion)
 
 	isValidTxFee := tx1.CheckTransactionFee(0)
@@ -206,7 +205,7 @@ func TestInitTx(t *testing.T) {
 		NewTxPrivacyInitParams(
 			&senderKey.KeySet.PrivateKey,
 			[]*privacy.PaymentInfo{{PaymentAddress: senderPaymentAddress, Amount: uint64(transferAmount)}},
-			coinBaseOutput, 1, true, db, nil, nil))
+			coinBaseOutput, 1, true, db, nil, nil, []byte{}))
 	if err != nil {
 		t.Error(err)
 	}
