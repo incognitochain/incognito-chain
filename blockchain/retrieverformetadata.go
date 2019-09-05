@@ -88,17 +88,41 @@ func (blockchain *BlockChain) GetAllCommitteeValidatorCandidate() (map[byte][]st
 		}
 	}
 	for shardID, committee := range beaconBestState.GetShardCommittee() {
-		SC[shardID] = incognitokey.CommitteeKeyListToString(committee)
+		SC[shardID], err = incognitokey.CommitteeKeyListToString(committee)
+		if err != nil {
+			return SC, SPV, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, err
+		}
 	}
 	for shardID, committee := range beaconBestState.GetShardPendingValidator() {
-		SPV[shardID] = incognitokey.CommitteeKeyListToString(committee)
+		SPV[shardID], err = incognitokey.CommitteeKeyListToString(committee)
+		if err != nil {
+			return SC, SPV, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, err
+		}
 	}
-	BC := incognitokey.CommitteeKeyListToString(beaconBestState.BeaconCommittee)
-	BPV := incognitokey.CommitteeKeyListToString(beaconBestState.BeaconPendingValidator)
-	CBWFCR := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForCurrentRandom)
-	CBWFNR := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForNextRandom)
-	CSWFCR := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForCurrentRandom)
-	CSWFNR := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForNextRandom)
+	BC, err := incognitokey.CommitteeKeyListToString(beaconBestState.BeaconCommittee)
+	if err != nil {
+		return SC, SPV, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, err
+	}
+	BPV, err := incognitokey.CommitteeKeyListToString(beaconBestState.BeaconPendingValidator)
+	if err != nil {
+		return SC, SPV, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, err
+	}
+	CBWFCR, err := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForCurrentRandom)
+	if err != nil {
+		return SC, SPV, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, err
+	}
+	CBWFNR, err := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForNextRandom)
+	if err != nil {
+		return SC, SPV, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, err
+	}
+	CSWFCR, err := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForCurrentRandom)
+	if err != nil {
+		return SC, SPV, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, err
+	}
+	CSWFNR, err := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForNextRandom)
+	if err != nil {
+		return SC, SPV, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, err
+	}
 	return SC, SPV, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR, nil
 }
 
@@ -114,17 +138,55 @@ func (blockchain *BlockChain) GetAllCommitteeValidatorCandidateFlattenListFromDa
 	}
 	res := []string{}
 	for _, committee := range beaconBestState.GetShardCommittee() {
-		res = append(res, incognitokey.CommitteeKeyListToString(committee)...)
+		committeeStr, err := incognitokey.CommitteeKeyListToString(committee)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, committeeStr...)
 	}
 	for _, pendingValidator := range beaconBestState.GetShardPendingValidator() {
-		res = append(res, incognitokey.CommitteeKeyListToString(pendingValidator)...)
+		pendingValidatorStr, err := incognitokey.CommitteeKeyListToString(pendingValidator)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, pendingValidatorStr...)
 	}
-	res = append(res, incognitokey.CommitteeKeyListToString(beaconBestState.BeaconCommittee)...)
-	res = append(res, incognitokey.CommitteeKeyListToString(beaconBestState.BeaconPendingValidator)...)
-	res = append(res, incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForCurrentRandom)...)
-	res = append(res, incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForNextRandom)...)
-	res = append(res, incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForCurrentRandom)...)
-	res = append(res, incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForNextRandom)...)
+
+	beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.BeaconCommittee)
+	if err != nil {
+		return nil, err
+	}
+	res = append(res, beaconCommitteeStr...)
+
+	beaconPendingValidatorStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.BeaconPendingValidator)
+	if err != nil {
+		return nil, err
+	}
+	res = append(res, beaconPendingValidatorStr...)
+
+	candidateBeaconWaitingForCurrentRandomStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForCurrentRandom)
+	if err != nil {
+		return nil, err
+	}
+	res = append(res, candidateBeaconWaitingForCurrentRandomStr...)
+
+	candidateBeaconWaitingForNextRandomStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForNextRandom)
+	if err != nil {
+		return nil, err
+	}
+	res = append(res, candidateBeaconWaitingForNextRandomStr...)
+
+	candidateShardWaitingForCurrentRandomStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForCurrentRandom)
+	if err != nil {
+		return nil, err
+	}
+	res = append(res, candidateShardWaitingForCurrentRandomStr...)
+
+	candidateShardWaitingForNextRandomStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForNextRandom)
+	if err != nil {
+		return nil, err
+	}
+	res = append(res, candidateShardWaitingForNextRandomStr...)
 	return res, nil
 }
 

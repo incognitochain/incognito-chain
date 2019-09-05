@@ -28,53 +28,57 @@ var _ = func() (_ struct{}) {
 //TestPKOneOfMany test protocol for one of many Commitment is Commitment to zero
 func TestPKOneOfMany(t *testing.T) {
 	// prepare witness for Out out of many protocol
-	witness := new(OneOutOfManyWitness)
 
-	indexIsZero := 2
+	for i := 0; i < 10; i++ {
+		witness := new(OneOutOfManyWitness)
 
-	// list of commitments
-	commitments := make([]*privacy.EllipticPoint, privacy.CommitmentRingSize)
-	snDerivators := make([]*big.Int, privacy.CommitmentRingSize)
-	randoms := make([]*big.Int, privacy.CommitmentRingSize)
+		indexIsZero := int(common.RandInt() % privacy.CommitmentRingSize)
 
-	for i := 0; i < privacy.CommitmentRingSize; i++ {
-		snDerivators[i] = privacy.RandScalar()
-		randoms[i] = privacy.RandScalar()
-		commitments[i] = privacy.PedCom.CommitAtIndex(snDerivators[i], randoms[i], privacy.PedersenSndIndex)
+		// list of commitments
+		commitments := make([]*privacy.EllipticPoint, privacy.CommitmentRingSize)
+		snDerivators := make([]*big.Int, privacy.CommitmentRingSize)
+		randoms := make([]*big.Int, privacy.CommitmentRingSize)
+
+		for i := 0; i < privacy.CommitmentRingSize; i++ {
+			snDerivators[i] = privacy.RandScalar()
+			randoms[i] = privacy.RandScalar()
+			commitments[i] = privacy.PedCom.CommitAtIndex(snDerivators[i], randoms[i], privacy.PedersenSndIndex)
+		}
+
+		// create Commitment to zero at indexIsZero
+		snDerivators[indexIsZero] = big.NewInt(0)
+		commitments[indexIsZero] = privacy.PedCom.CommitAtIndex(snDerivators[indexIsZero], randoms[indexIsZero], privacy.PedersenSndIndex)
+
+		witness.Set(commitments, randoms[indexIsZero], uint64(indexIsZero))
+		start := time.Now()
+		proof, err := witness.Prove()
+		assert.Equal(t, nil, err)
+		end := time.Since(start)
+		//fmt.Printf("One out of many proving time: %v\n", end)
+
+		// validate sanity for proof
+		isValidSanity := proof.ValidateSanity()
+		assert.Equal(t, true, isValidSanity)
+
+		//Convert proof to bytes array
+		proofBytes := proof.Bytes()
+		assert.Equal(t, utils.OneOfManyProofSize, len(proofBytes))
+
+		// revert bytes array to proof
+		proof2 := new(OneOutOfManyProof).Init()
+		err = proof2.SetBytes(proofBytes)
+		assert.Equal(t, nil, err)
+		proof2.Statement.Commitments = commitments
+		assert.Equal(t, proof, proof2)
+
+		// verify the proof
+		start = time.Now()
+		res, err := proof2.Verify()
+		end = time.Since(start)
+		fmt.Printf("One out of many verification time: %v\n", end)
+		assert.Equal(t, true, res)
+		assert.Equal(t, nil, err)
 	}
-
-	// create Commitment to zero at indexIsZero
-	snDerivators[indexIsZero] = big.NewInt(0)
-	commitments[indexIsZero] = privacy.PedCom.CommitAtIndex(snDerivators[indexIsZero], randoms[indexIsZero], privacy.PedersenSndIndex)
-
-	witness.Set(commitments, randoms[indexIsZero], uint64(indexIsZero))
-	start := time.Now()
-	proof, err := witness.Prove()
-	assert.Equal(t, nil, err)
-	end := time.Since(start)
-	//fmt.Printf("One out of many proving time: %v\n", end)
-
-	// validate sanity for proof
-	isValidSanity := proof.ValidateSanity()
-	assert.Equal(t, true, isValidSanity)
-
-	//Convert proof to bytes array
-	proofBytes := proof.Bytes()
-	assert.Equal(t, utils.OneOfManyProofSize, len(proofBytes))
-
-	// revert bytes array to proof
-	proof2 := new(OneOutOfManyProof).Init()
-	proof2.SetBytes(proofBytes)
-	proof2.Statement.Commitments = commitments
-	assert.Equal(t, proof, proof2)
-
-	// verify the proof
-	start = time.Now()
-	res, err := proof.Verify()
-	end = time.Since(start)
-	fmt.Printf("One out of many verification time: %v\n", end)
-	assert.Equal(t, true, res)
-	assert.Equal(t, nil, err)
 }
 
 func TestGetCoefficient(t *testing.T) {
