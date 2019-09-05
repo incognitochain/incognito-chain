@@ -80,17 +80,17 @@ const (
 	TestnetEpoch       = 10
 	TestnetRandomTime  = 5
 
-	TestNetShardCommitteeSize     = 5
+	TestNetShardCommitteeSize     = 32
 	TestNetMinShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize    = 4
 	TestNetMinBeaconCommitteeSize = 4
-	TestNetActiveShards           = 2
+	TestNetActiveShards           = 8
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
-	TestNetMinBeaconBlkInterval = 4 * time.Second //second
-	TestNetMaxBeaconBlkCreation = 2 * time.Second //second
-	TestNetMinShardBlkInterval  = 4 * time.Second //second
-	TestNetMaxShardBlkCreation  = 2 * time.Second //second
+	TestNetMinBeaconBlkInterval = 10 * time.Second //second
+	TestNetMaxBeaconBlkCreation = 8 * time.Second  //second
+	TestNetMinShardBlkInterval  = 10 * time.Second //second
+	TestNetMaxShardBlkCreation  = 4 * time.Second  //second
 
 	//board and proposal parameters
 	TestnetBasicReward                = 400000000 //40 mili PRV
