@@ -8,10 +8,11 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/bridgesig"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 type CommitteePublicKey struct {
-	IncPubKey    []byte
+	IncPubKey    privacy.PublicKey
 	MiningPubKey map[string][]byte
 }
 
