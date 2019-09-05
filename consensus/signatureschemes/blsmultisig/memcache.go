@@ -10,7 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 )
 
-type MemoryCache struct {
+type memoryCache struct {
 	db      map[string]bn256.G2
 	expired map[string]time.Time
 	lock    sync.RWMutex
@@ -18,8 +18,8 @@ type MemoryCache struct {
 
 // New returns a wrapped map with all the required database interface methods
 // implemented.
-func New() *MemoryCache {
-	return &MemoryCache{
+func New() *memoryCache {
+	return &memoryCache{
 		db:      make(map[string]bn256.G2),
 		expired: make(map[string]time.Time),
 	}
@@ -27,7 +27,7 @@ func New() *MemoryCache {
 
 // Close deallocates the internal map and ensures any consecutive data access op
 // failes with an error.
-func (db *MemoryCache) Close() error {
+func (db *memoryCache) close() error {
 	db.lock.Lock()
 	defer db.lock.Unlock()
 
@@ -36,7 +36,7 @@ func (db *MemoryCache) Close() error {
 }
 
 // Get retrieves the given key if it's present in the key-value store.
-func (db *MemoryCache) Get(key []byte) (bn256.G2, error) {
+func (db *memoryCache) get(key []byte) (bn256.G2, error) {
 	db.lock.RLock()
 	//defer db.lock.RUnlock()
 
@@ -51,36 +51,36 @@ func (db *MemoryCache) Get(key []byte) (bn256.G2, error) {
 			if expired.Before(time.Now()) {
 				// is expired
 				db.lock.RUnlock()
-				db.Delete(key)
-				return bn256.G2{}, errors.New(fmt.Sprintf("Key %s expired", keyStr))
+				db.delete(key)
+				return bn256.G2{}, NewBLSSignatureError(MemCacheErr, fmt.Errorf("Key %s expired", keyStr))
 			}
 		}
 		db.lock.RUnlock()
 		return entry, nil
 	}
 	db.lock.RUnlock()
-	return bn256.G2{}, errors.New(fmt.Sprintf("Key %s not found", keyStr))
+	return bn256.G2{}, NewBLSSignatureError(MemCacheErr, fmt.Errorf("Key %s not found", keyStr))
 }
 
 // Delete removes the key from the key-value store.
-func (db *MemoryCache) Delete(key []byte) error {
+func (db *memoryCache) delete(key []byte) error {
 	db.lock.Lock()
 	defer db.lock.Unlock()
 
 	if db.db == nil {
-		return errors.New("DB close")
+		return NewBLSSignatureError(MemCacheErr, errors.New("DB close"))
 	}
 	keyStr := base58.Base58Check{}.Encode(key, 0x0)
 	delete(db.db, keyStr)
 	return nil
 }
 
-func (db *MemoryCache) Put(key []byte, value bn256.G2) error {
+func (db *memoryCache) put(key []byte, value bn256.G2) error {
 	db.lock.Lock()
 	defer db.lock.Unlock()
 
 	if db.db == nil {
-		return errors.New("DB close")
+		return NewBLSSignatureError(MemCacheErr, errors.New("DB close"))
 	}
 	keyStr := base58.Base58Check{}.Encode(key, 0x0)
 	db.db[keyStr] = value

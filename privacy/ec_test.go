@@ -20,7 +20,7 @@ var _ = func() (_ struct{}) {
 func TestECMarshalJSON(t *testing.T) {
 	// random a elliptic point
 	point := new(EllipticPoint)
-	point.randomize()
+	point.Randomize()
 
 	// marshalJSON point
 	bytesJSON, err := point.MarshalJSON()
@@ -41,7 +41,7 @@ func TestECComputeYCoord(t *testing.T) {
 	points := make([]*EllipticPoint, 4)
 	for i := 0; i < len(points); i++ {
 		points[i] = new(EllipticPoint)
-		points[i].randomize()
+		points[i].Randomize()
 	}
 
 	data := []struct {
@@ -75,7 +75,7 @@ func TestECInverse(t *testing.T) {
 	points := make([]*EllipticPoint, 10)
 	for i := 0; i < len(points); i++ {
 		points[i] = new(EllipticPoint)
-		points[i].randomize()
+		points[i].Randomize()
 	}
 
 	for _, item := range points {
@@ -94,7 +94,7 @@ func TestECInverseWithInvalidPoint(t *testing.T) {
 	points := make([]*EllipticPoint, 10)
 	for i := 0; i < len(points); i++ {
 		points[i] = new(EllipticPoint)
-		points[i].randomize()
+		points[i].Randomize()
 	}
 
 	for _, item := range points {
@@ -113,7 +113,7 @@ func TestECInverseWithInvalidPoint(t *testing.T) {
 func TestECRandomize(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		point := new(EllipticPoint)
-		point.randomize()
+		point.Randomize()
 
 		assert.Equal(t, true, point.IsSafe())
 	}
@@ -137,7 +137,7 @@ func TestECCompressDecompress(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		// random elliptic point
 		point := new(EllipticPoint)
-		point.randomize()
+		point.Randomize()
 
 		// compress the point
 		pointBytes := point.Compress()
@@ -154,7 +154,7 @@ func TestECCompressDecompress(t *testing.T) {
 func TestECCompressWithInvalidPoint(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		point := new(EllipticPoint)
-		point.randomize()
+		point.Randomize()
 
 		// edit point
 		point.x.Add(point.x, big.NewInt(1))

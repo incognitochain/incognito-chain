@@ -19,18 +19,6 @@ func G1P2I(point *bn256.G1) *big.Int {
 	return res
 }
 
-// G2P2I is Point to Big Int, in BLS-BFT, it called H1
-func G2P2I(point *bn256.G2) *big.Int {
-	pnByte := CmprG2(point)
-	res := big.NewInt(0)
-	res.SetBytes(Hash4Bls(pnByte))
-	for res.Cmp(bn256.Order) != -1 {
-		pnByte = Hash4Bls(pnByte)
-		res.SetBytes(pnByte)
-	}
-	return res
-}
-
 // B2I convert byte array to big int which belong to Fp
 func B2I(bytes []byte) *big.Int {
 	res := big.NewInt(0)
