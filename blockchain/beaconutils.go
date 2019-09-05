@@ -173,8 +173,8 @@ func ShuffleCandidate(candidates []incognitokey.CommitteePublicKey, rand int64) 
 		m[string(hash[:32])] = candidate
 	}
 	sort.Strings(hashes)
-	for _, candidate := range m {
-		sortedCandidate = append(sortedCandidate, candidate)
+	for _, hash := range hashes {
+		sortedCandidate = append(sortedCandidate, m[hash])
 	}
 	fmt.Println("Beacon Process/Shuffle Candidate: Candidate After Sort ", sortedCandidate)
 	return sortedCandidate, nil

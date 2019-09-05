@@ -154,55 +154,51 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 			return
 		}
 		if blockchain.BestState.Beacon.BeaconHeight <= newBlk.Header.Height {
-			err := blockchain.config.ConsensusEngine.ValidateProducerSig(newBlk, newBlk.Header.ConsensusType)
-			if err != nil {
-				Logger.log.Error(err)
-				return
-			} else {
-				publicKey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
-				if publicKey != "" {
-					// Revert beststate
 
-					userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(publicKey, 0)
-					if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
-						currentBeaconBestState := blockchain.BestState.Beacon
-						if currentBeaconBestState.BeaconHeight == newBlk.Header.Height && currentBeaconBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentBeaconBestState.BestBlock.Header.Round < newBlk.Header.Round {
-							fmt.Println("FORK BEACON", newBlk.Header.Height)
-							if err := blockchain.ValidateBlockWithPrevBeaconBestState(newBlk); err != nil {
-								Logger.log.Error(err)
-								return
-							}
-							if err := blockchain.RevertBeaconState(); err != nil {
-								Logger.log.Error(err)
-								return
-							}
-							fmt.Println("REVERTED BEACON", newBlk.Header.Height)
-							err = blockchain.InsertBeaconBlock(newBlk, false)
-							if err != nil {
-								Logger.log.Error(err)
-							}
+			publicKey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
+			if publicKey != "" {
+				// Revert beststate
+
+				userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(publicKey, 0)
+				if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+					currentBeaconBestState := blockchain.BestState.Beacon
+					if currentBeaconBestState.BeaconHeight == newBlk.Header.Height && currentBeaconBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentBeaconBestState.BestBlock.Header.Round < newBlk.Header.Round {
+						fmt.Println("FORK BEACON", newBlk.Header.Height)
+						if err := blockchain.ValidateBlockWithPrevBeaconBestState(newBlk); err != nil {
+							Logger.log.Error(err)
 							return
 						}
+						if err := blockchain.RevertBeaconState(); err != nil {
+							Logger.log.Error(err)
+							return
+						}
+						fmt.Println("REVERTED BEACON", newBlk.Header.Height)
+						err := blockchain.InsertBeaconBlock(newBlk, false)
+						if err != nil {
+							Logger.log.Error(err)
+						}
+						return
+					}
 
-						if blockchain.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 {
-							if !blockchain.config.ConsensusEngine.IsOngoing(common.BEACON_CHAINKEY) {
-								fmt.Println("Beacon block insert", newBlk.Header.Height)
-								err = blockchain.InsertBeaconBlock(newBlk, false)
-								if err != nil {
-									Logger.log.Error(err)
-									return
-								}
+					if blockchain.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 {
+						if !blockchain.config.ConsensusEngine.IsOngoing(common.BEACON_CHAINKEY) {
+							fmt.Println("Beacon block insert", newBlk.Header.Height)
+							err := blockchain.InsertBeaconBlock(newBlk, false)
+							if err != nil {
+								Logger.log.Error(err)
+								return
 							}
 						}
 					}
 				}
-				fmt.Println("Beacon block prepare add to pool", newBlk.Header.Height)
-				err := blockchain.config.BeaconPool.AddBeaconBlock(newBlk)
-				if err != nil {
-					fmt.Println("Beacon block add pool err", err)
-				}
+			}
+			fmt.Println("Beacon block prepare add to pool", newBlk.Header.Height)
+			err := blockchain.config.BeaconPool.AddBeaconBlock(newBlk)
+			if err != nil {
+				fmt.Println("Beacon block add pool err", err)
 			}
 		}
+
 	}
 }
 

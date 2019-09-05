@@ -1153,14 +1153,20 @@ func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 	if isRelayNodeForConsensus {
 		senderPublicKey, _ := p.GetRemotePeer().GetPublicKey()
 		bestState := blockchain.GetBeaconBestState()
-		beaconCommitteeList := incognitokey.CommitteeKeyListToString(bestState.BeaconCommittee)
+		beaconCommitteeList, err := incognitokey.CommitteeKeyListToString(bestState.BeaconCommittee)
+		if err != nil {
+			panic(err)
+		}
 		isInBeaconCommittee := common.IndexOfStr(senderPublicKey, beaconCommitteeList) != -1
 		if isInBeaconCommittee {
 			serverObj.PushMessageToBeacon(msg, map[libp2p.ID]bool{p.GetRemotePeerID(): true})
 		}
 		shardCommitteeList := make(map[byte][]string)
 		for shardID, committee := range bestState.GetShardCommittee() {
-			shardCommitteeList[shardID] = incognitokey.CommitteeKeyListToString(committee)
+			shardCommitteeList[shardID], err = incognitokey.CommitteeKeyListToString(committee)
+			if err != nil {
+				panic(err)
+			}
 		}
 		for shardID, committees := range shardCommitteeList {
 			isInShardCommitee := common.IndexOfStr(senderPublicKey, committees) != -1
@@ -1780,23 +1786,44 @@ func (serverObj *Server) DropAllConnections() {
 }
 
 func (serverObj *Server) PushBlockToAll(block common.BlockInterface, isBeacon bool) error {
-	var msg wire.Message
-	var err error
 	if isBeacon {
-		msg, err = wire.MakeEmptyMessage(wire.CmdBlockBeacon)
+		msg, err := wire.MakeEmptyMessage(wire.CmdBlockBeacon)
 		if err != nil {
 			Logger.log.Error(err)
 			return err
 		}
 		msg.(*wire.MessageBlockBeacon).Block = block.(*blockchain.BeaconBlock)
+		serverObj.PushMessageToAll(msg)
+		return nil
 	} else {
-		msg, err = wire.MakeEmptyMessage(wire.CmdBlockShard)
+		shardBlock := block.(*blockchain.ShardBlock)
+		msgShard, err := wire.MakeEmptyMessage(wire.CmdBlockShard)
 		if err != nil {
 			Logger.log.Error(err)
 			return err
 		}
-		msg.(*wire.MessageBlockShard).Block = block.(*blockchain.ShardBlock)
+		msgShard.(*wire.MessageBlockShard).Block = shardBlock
+		serverObj.PushMessageToShard(msgShard, shardBlock.Header.ShardID, map[libp2p.ID]bool{})
+
+		shardToBeaconBlk := shardBlock.CreateShardToBeaconBlock(serverObj.blockChain)
+		msgShardToBeacon, err := wire.MakeEmptyMessage(wire.CmdBlkShardToBeacon)
+		if err != nil {
+			Logger.log.Error(err)
+			return err
+		}
+		msgShardToBeacon.(*wire.MessageShardToBeacon).Block = shardToBeaconBlk
+		serverObj.PushMessageToBeacon(msgShardToBeacon, map[libp2p.ID]bool{})
+
+		crossShardBlks := shardBlock.CreateAllCrossShardBlock(serverObj.blockChain.BestState.Beacon.ActiveShards)
+		for shardID, crossShardBlk := range crossShardBlks {
+			msgCrossShardShard, err := wire.MakeEmptyMessage(wire.CmdCrossShard)
+			if err != nil {
+				Logger.log.Error(err)
+				return err
+			}
+			msgCrossShardShard.(*wire.MessageCrossShard).Block = crossShardBlk
+			serverObj.PushMessageToShard(msgCrossShardShard, shardID, map[libp2p.ID]bool{})
+		}
 	}
-	serverObj.PushMessageToAll(msg)
 	return nil
 }
