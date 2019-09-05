@@ -52,14 +52,14 @@ func (db *memoryCache) get(key []byte) (bn256.G2, error) {
 				// is expired
 				db.lock.RUnlock()
 				db.delete(key)
-				return bn256.G2{}, NewBLSSignatureError(MemCacheErr, errors.New(fmt.Sprintf("Key %s expired", keyStr)))
+				return bn256.G2{}, NewBLSSignatureError(MemCacheErr, fmt.Errorf("Key %s expired", keyStr))
 			}
 		}
 		db.lock.RUnlock()
 		return entry, nil
 	}
 	db.lock.RUnlock()
-	return bn256.G2{}, NewBLSSignatureError(MemCacheErr, errors.New(fmt.Sprintf("Key %s not found", keyStr)))
+	return bn256.G2{}, NewBLSSignatureError(MemCacheErr, fmt.Errorf("Key %s not found", keyStr))
 }
 
 // Delete removes the key from the key-value store.
