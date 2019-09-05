@@ -114,13 +114,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 		return err
 	}
 
-	// Store shard committee in ShardBestState
-	// This might be different from the committee observed from BeaconBestState when a swap instruction is being process on beacon
-	// Note: we must store before updating ShardBestState because this block is still signed by the old committee
 	// TODO: snapshot and store after all validation
-	if err := blockchain.config.DataBase.StoreCommitteeFromShardBestState(shardID, shardBlock.Header.Height, blockchain.BestState.Shard[shardID].ShardCommittee); err != nil {
-		return NewBlockChainError(DatabaseError, err)
-	}
 
 	Logger.log.Infof("SHARD %+v | Update ShardBestState, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	// updateShardBestState best state with new block

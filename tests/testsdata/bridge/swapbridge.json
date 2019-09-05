@@ -1,0 +1,39 @@
+[
+    {
+        "input": {
+            "command": "createandsendstakingtransaction",
+            "context": false,
+            "params": [
+                "112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe",
+                {
+                    "1NHp2EKw7ALdXUzBfoRJvKrBBM9nkejyDcHVPvUjDcWRyG22dHHyiBKQGL1c": 1750000000000
+                },
+                2,
+                0,
+                63,
+                "1Uv4APZadR2kbpm4Uazwng2hwfqb2AtuV6Y6QVcypzQurzwE9YvUzTA8TWVndLJxtuAytWPey57YiU97abmSJ7nnPxnDdsjGcXUAiiE6t",
+                "12WQy3WYgtdp1G52hcdpv9zhW2wRg9DnzcM5pZM1cFhNo3VA6pB",
+                "1Uv4APZadR2kbpm4Uazwng2hwfqb2AtuV6Y6QVcypzQurzwE9YvUzTA8TWVndLJxtuAytWPey57YiU97abmSJ7nnPxnDdsjGcXUAiiE6t",
+                true
+            ]
+        },
+        "node": "shard0-0",
+        "output": {
+            "error": null,
+            "response": {}
+        }
+    },
+    {
+        "input": {
+            "command": "getlatestbridgeswapproof",
+            "context": true,
+            "params": [],
+            "type": "http",
+            "wait": 120
+        },
+        "node": "shard1-0",
+        "output": {
+            "error": null
+        }
+    }
+]

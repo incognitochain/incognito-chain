@@ -37,7 +37,12 @@ fi
 if [ "$1" == "s24" ]; then
 go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:12wP2tDBK8dYq8UcKzwxZtS19JhyjUQZS1eE5uFbtckeSQbZBfg" --nodemode "auto" --datadir "data/s24" --listen "0.0.0.0:8357" --externaladdress "0.0.0.0:8357" --rpclisten "0.0.0.0:9357" --norpc
 fi
-
+if [ "$1" == "st1" ]; then
+go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:12WQy3WYgtdp1G52hcdpv9zhW2wRg9DnzcM5pZM1cFhNo3VA6pB" --nodemode "auto" --datadir "data/st1" --listen "0.0.0.0:8364" --externaladdress "0.0.0.0:8364" --rpclisten "0.0.0.0:9364" --norpc
+fi
+if [ "$1" == "st2" ]; then
+go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:1UCU4M3U6XXJTgjcpT7e5fY9swXnM74sWSoP6Qyx9CD4GKSKGG" --nodemode "auto" --datadir "data/st2" --listen "0.0.0.0:8365" --externaladdress "0.0.0.0:8365" --rpclisten "0.0.0.0:9365" --norpc
+fi
 if [ "$1" == "b1" ]; then
 go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:1Gmyq2e1nYqkAjkyFcjwmgPHSPTBBuh7PUEQsgEbwdiD1J2Rwp" --nodemode "auto" --datadir "data/b1" --listen "0.0.0.0:8434" --externaladdress "0.0.0.0:8434" --norpcauth --rpclisten "0.0.0.0:9434"
 fi
