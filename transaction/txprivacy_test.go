@@ -130,7 +130,7 @@ func TestInitTx(t *testing.T) {
 	assert.Equal(t, true, isValid)
 	assert.Equal(t, nil, err)
 
-	isValidTxVersion := tx1.CheckTxVersion(mempool.MaxVersion)
+	isValidTxVersion := tx1.CheckTxVersion(1)
 	assert.Equal(t, true, isValidTxVersion)
 
 	isValidTxFee := tx1.CheckTransactionFee(0)
