@@ -46,9 +46,19 @@ func NewGetShardBestState(data *blockchain.ShardBestState) *GetShardBestState {
 	}
 
 	result.ShardCommittee = make([]string, len(data.ShardCommittee))
-	copy(result.ShardCommittee, incognitokey.CommitteeKeyListToString(data.ShardCommittee))
+
+	shardCommitteeStr, err := incognitokey.CommitteeKeyListToString(data.ShardCommittee)
+	if err != nil {
+		panic(err)
+	}
+	copy(result.ShardCommittee, shardCommitteeStr)
 	result.ShardPendingValidator = make([]string, len(data.ShardPendingValidator))
-	copy(result.ShardPendingValidator, incognitokey.CommitteeKeyListToString(data.ShardPendingValidator))
+
+	shardPendingValidatorStr, err := incognitokey.CommitteeKeyListToString(data.ShardPendingValidator)
+	if err != nil {
+		panic(err)
+	}
+	copy(result.ShardPendingValidator, shardPendingValidatorStr)
 
 	result.BestCrossShard = make(map[byte]uint64)
 	for k, v := range data.BestCrossShard {
