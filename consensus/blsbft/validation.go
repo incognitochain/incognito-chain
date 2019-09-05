@@ -8,6 +8,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/consensus"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -35,7 +36,7 @@ func DecodeValidationData(data string) (*ValidationData, error) {
 	var valData ValidationData
 	err := json.Unmarshal([]byte(data), &valData)
 	if err != nil {
-		return nil, err
+		return nil, consensus.NewConsensusError(consensus.DecodeValidationDataError, err)
 	}
 	return &valData, nil
 }
@@ -43,7 +44,7 @@ func DecodeValidationData(data string) (*ValidationData, error) {
 func EncodeValidationData(validationData ValidationData) (string, error) {
 	result, err := json.Marshal(validationData)
 	if err != nil {
-		return "", err
+		return "", consensus.NewConsensusError(consensus.EncodeValidationDataError, err)
 	}
 	return string(result), nil
 }
@@ -60,15 +61,15 @@ func (e BLSBFT) validatePreSignBlock(block common.BlockInterface) error {
 	e.logger.Info("verifying block...")
 	e.logger.Info("ValidateProducerPosition...")
 	if err := e.ValidateProducerPosition(block, e.RoundData.LastProposerIndex, e.RoundData.CommitteeBLS.StringList); err != nil {
-		return err
+		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
 	e.logger.Info("ValidateProducerSig...")
 	if err := e.ValidateProducerSig(block); err != nil {
-		return err
+		return consensus.NewConsensusError(consensus.ProducerSignatureError, err)
 	}
 	e.logger.Info("ValidatePreSignBlock...")
 	if err := e.Chain.ValidatePreSignBlock(block); err != nil {
-		return err
+		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
 	e.logger.Info("done verify block...")
 	return nil
@@ -87,16 +88,16 @@ func (e BLSBFT) ValidateProducerPosition(block common.BlockInterface, lastPropos
 func (e BLSBFT) ValidateProducerSig(block common.BlockInterface) error {
 	valData, err := DecodeValidationData(block.GetValidationField())
 	if err != nil {
-		return err
+		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
 
 	producerBase58 := block.GetProducer()
 	producerBytes, _, err := base58.Base58Check{}.Decode(producerBase58)
 	if err != nil {
-		return err
+		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
 	if err := validateSingleBLSSig(block.Hash(), valData.ProducerBLSSig, 0, []blsmultisig.PublicKey{producerBytes}); err != nil {
-		return err
+		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
 	return nil
 }
@@ -104,7 +105,7 @@ func (e BLSBFT) ValidateProducerSig(block common.BlockInterface) error {
 func (e BLSBFT) ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
 	valData, err := DecodeValidationData(block.GetValidationField())
 	if err != nil {
-		return err
+		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
 	committeeBLSKeys := []blsmultisig.PublicKey{}
 	for _, member := range committee {
@@ -112,7 +113,7 @@ func (e BLSBFT) ValidateCommitteeSig(block common.BlockInterface, committee []in
 	}
 	if err := validateBLSSig(block.Hash(), valData.AggSig, valData.ValidatiorsIdx, committeeBLSKeys); err != nil {
 		fmt.Println(block.Hash(), block.GetValidationField())
-		return err
+		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
 	return nil
 }
@@ -120,17 +121,17 @@ func (e BLSBFT) ValidateCommitteeSig(block common.BlockInterface, committee []in
 func (e BLSBFT) ValidateData(data []byte, sig string, publicKey string) error {
 	sigByte, _, err := base58.Base58Check{}.Decode(sig)
 	if err != nil {
-		return err
+		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
 	publicKeyByte, _, err := base58.Base58Check{}.Decode(publicKey)
 	if err != nil {
-		return err
+		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
 	valid, err := blsmultisig.Verify(sigByte, data, []int{0}, []blsmultisig.PublicKey{publicKeyByte})
 	if valid {
 		return nil
 	}
-	return err
+	return consensus.NewConsensusError(consensus.UnExpectedError, err)
 }
 
 func validateSingleBLSSig(
@@ -141,10 +142,10 @@ func validateSingleBLSSig(
 ) error {
 	result, err := blsmultisig.Verify(blsSig, dataHash.GetBytes(), []int{selfIdx}, committee)
 	if err != nil {
-		return err
+		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
 	if !result {
-		return errors.New("invalid BLS Signature")
+		return consensus.NewConsensusError(consensus.UnExpectedError, errors.New("invalid BLS Signature"))
 	}
 	return nil
 }
@@ -156,10 +157,10 @@ func validateSingleBriSig(
 ) error {
 	result, err := bridgesig.Verify(candidate, dataHash.GetBytes(), briSig)
 	if err != nil {
-		return err
+		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
 	if !result {
-		return errors.New("invali BRI Signature")
+		return consensus.NewConsensusError(consensus.UnExpectedError, errors.New("invali BRI Signature"))
 	}
 	return nil
 }
@@ -172,10 +173,10 @@ func validateBLSSig(
 ) error {
 	result, err := blsmultisig.Verify(aggSig, dataHash.GetBytes(), validatorIdx, committee)
 	if err != nil {
-		return err
+		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
 	if !result {
-		return errors.New("Invalid Signature!")
+		return consensus.NewConsensusError(consensus.UnExpectedError, errors.New("Invalid Signature!"))
 	}
 	return nil
 }
