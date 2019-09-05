@@ -11,18 +11,20 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 
+	"net/http"
+	_ "net/http/pprof"
+
 	"github.com/incognitochain/incognito-chain/database"
 	_ "github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/databasemp"
 	_ "github.com/incognitochain/incognito-chain/databasemp/lvdb"
 	"github.com/incognitochain/incognito-chain/limits"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"net/http"
-	_ "net/http/pprof"
 
 	_ "github.com/incognitochain/incognito-chain/consensus/blsbft"
 )
 
+//go:generate mockery -dir=database/ -name=DatabaseInterface
 var (
 	cfg *config
 )

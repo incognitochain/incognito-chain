@@ -475,10 +475,13 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 			// Generate instruction storing merkle root of validators pubkey and send to beacon
 			bridgeID := byte(common.BridgeShardID)
 			if shardID == bridgeID {
-				startHeight := blockchain.BestState.Shard[shardID].ShardHeight + 2
-				bridgeSwapConfirmInst = buildBridgeSwapConfirmInstruction(shardCommittee, startHeight)
-				prevBlock := blockchain.BestState.Shard[shardID].BestBlock
-				BLogger.log.Infof("Add Bridge swap inst in ShardID %+v block %d", shardID, prevBlock.Header.Height+1)
+				blockHeight := blockchain.BestState.Shard[shardID].ShardHeight + 1
+				bridgeSwapConfirmInst, err = buildBridgeSwapConfirmInstruction(shardCommittee, blockHeight)
+				if err != nil {
+					BLogger.log.Error(err)
+					return instructions, shardPendingValidator, shardCommittee, err
+				}
+				BLogger.log.Infof("Add Bridge swap inst in ShardID %+v block %d", shardID, blockHeight)
 			}
 		}
 	}
@@ -489,16 +492,10 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 		instructions = append(instructions, bridgeSwapConfirmInst)
 		Logger.log.Infof("Build bridge swap confirm inst: %s \n", bridgeSwapConfirmInst)
 	}
-	// Pick instruction with merkle root of beacon committee's pubkeys and save to bridge block
-	// Also, pick BurningConfirm inst and save to bridge block
+	// Pick BurningConfirm inst and save to bridge block
 	bridgeID := byte(common.BridgeShardID)
 	if shardID == bridgeID {
 		prevBlock := blockchain.BestState.Shard[shardID].BestBlock
-		commPubkeyInst := pickBeaconSwapConfirmInst(beaconBlocks)
-		if len(commPubkeyInst) > 0 {
-			instructions = append(instructions, commPubkeyInst...)
-			BLogger.log.Infof("Found beacon swap confirm inst and add to bridge block %d: %s", prevBlock.Header.Height+1, commPubkeyInst)
-		}
 		height := blockchain.BestState.Shard[shardID].ShardHeight + 1
 		confirmInsts := pickBurningConfirmInstruction(beaconBlocks, height)
 		if len(confirmInsts) > 0 {
