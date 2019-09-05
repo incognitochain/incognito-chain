@@ -60,7 +60,7 @@ func (keySet *KeySet) InitFromPrivateKey(privateKey *privacy.PrivateKey) error {
 // returns the signature of that data using Schnorr Signature Scheme with signing key is private key in ketSet
 func (keySet KeySet) Sign(data []byte) ([]byte, error) {
 	if len(data) == 0 {
-		return []byte{}, NewCashecError(InvalidDataSignErr, errors.New("Data is empty to sign"))
+		return []byte{}, NewCashecError(InvalidDataSignErr, errors.New("data is empty to sign"))
 	}
 
 	hash := common.HashB(data)
@@ -91,7 +91,7 @@ func (keySet KeySet) Verify(data, signature []byte) (bool, error) {
 
 	signatureSetBytes := new(privacy.SchnSignature)
 	err = signatureSetBytes.SetBytes(signature)
-	if err != nil{
+	if err != nil {
 		return false, err
 	}
 
