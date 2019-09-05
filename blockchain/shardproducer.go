@@ -61,11 +61,18 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 		newShardBlock           = NewShardBlock()
 		instructions            = [][]string{}
 		//stakingTx               = make(map[string]string)
-		shardPendingValidator   = incognitokey.CommitteeKeyListToString(blockGenerator.chain.BestState.Shard[shardID].ShardPendingValidator)
-		currentCommitteePubKeys = incognitokey.CommitteeKeyListToString(blockGenerator.chain.BestState.Shard[shardID].ShardCommittee)
-		tempPrivateKey          = blockGenerator.createTempKeyset()
-		shardBestState          = NewShardBestState()
+		tempPrivateKey = blockGenerator.createTempKeyset()
+		shardBestState = NewShardBestState()
 	)
+
+	shardPendingValidator, err := incognitokey.CommitteeKeyListToString(blockGenerator.chain.BestState.Shard[shardID].ShardPendingValidator)
+	if err != nil {
+		return nil, err
+	}
+	currentCommitteePubKeys, err := incognitokey.CommitteeKeyListToString(blockGenerator.chain.BestState.Shard[shardID].ShardCommittee)
+	if err != nil {
+		return nil, err
+	}
 	Logger.log.Criticalf("⛏ Creating Shard Block %+v", blockGenerator.chain.BestState.Shard[shardID].ShardHeight+1)
 	//========Verify newShardBlock with previous best state
 	// Get Beststate of previous newShardBlock == previous best state
@@ -196,12 +203,18 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	if err != nil {
 		return nil, NewBlockChainError(InstructionsHashError, err)
 	}
-	tempShardCommitteePubKeys := incognitokey.CommitteeKeyListToString(shardBestState.ShardCommittee)
+	tempShardCommitteePubKeys, err := incognitokey.CommitteeKeyListToString(shardBestState.ShardCommittee)
+	if err != nil {
+		return nil, NewBlockChainError(UnExpectedError, err)
+	}
 	committeeRoot, err := generateHashFromStringArray(tempShardCommitteePubKeys)
 	if err != nil {
 		return nil, NewBlockChainError(CommitteeHashError, err)
 	}
-	tempShardPendintValidator := incognitokey.CommitteeKeyListToString(shardBestState.ShardPendingValidator)
+	tempShardPendintValidator, err := incognitokey.CommitteeKeyListToString(shardBestState.ShardPendingValidator)
+	if err != nil {
+		return nil, NewBlockChainError(UnExpectedError, err)
+	}
 	pendingValidatorRoot, err := generateHashFromStringArray(tempShardPendintValidator)
 	if err != nil {
 		return nil, NewBlockChainError(PendingValidatorRootError, err)
@@ -365,7 +378,10 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 	+ ["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." flag]
 */
 func (blockchain *BlockChain) processInstructionFromBeacon(beaconBlocks []*BeaconBlock, shardID byte) ([]string, map[string]string) {
-	shardPendingValidator := incognitokey.CommitteeKeyListToString(blockchain.BestState.Shard[shardID].ShardPendingValidator)
+	shardPendingValidator, err := incognitokey.CommitteeKeyListToString(blockchain.BestState.Shard[shardID].ShardPendingValidator)
+	if err != nil {
+		panic(err)
+	}
 	assignInstructions := [][]string{}
 	stakingTx := make(map[string]string)
 	for _, beaconBlock := range beaconBlocks {

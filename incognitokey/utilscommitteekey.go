@@ -11,21 +11,26 @@ func ExtractPublickeysFromCommitteeKeyList(keyList []CommitteePublicKey, keyType
 	return result, nil
 }
 
-func CommitteeKeyListToString(keyList []CommitteePublicKey) []string {
+func CommitteeKeyListToString(keyList []CommitteePublicKey) ([]string, error) {
 	result := []string{}
 	for _, key := range keyList {
-		keyStr, _ := key.ToBase58()
+		keyStr, err := key.ToBase58()
+		if err != nil {
+			return nil, err
+		}
 		result = append(result, keyStr)
 	}
-	return result
+	return result, nil
 }
 
-func CommitteeBase58KeyListToStruct(strKeyList []string) []CommitteePublicKey {
+func CommitteeBase58KeyListToStruct(strKeyList []string) ([]CommitteePublicKey, error) {
 	result := []CommitteePublicKey{}
 	for _, key := range strKeyList {
 		var keyStruct CommitteePublicKey
-		keyStruct.FromBase58(key)
+		if err := keyStruct.FromBase58(key); err != nil {
+			return nil, err
+		}
 		result = append(result, keyStruct)
 	}
-	return result
+	return result, nil
 }
