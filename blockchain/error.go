@@ -128,7 +128,6 @@ const (
 	StoreBeaconBestStateError
 	StoreBeaconBlockError
 	StoreBeaconBlockIndexError
-	StoreCommitteeFromShardBestStateError
 	GetStakingTransactionError
 	DecodeHashError
 	GetTransactionFromDatabaseError
@@ -273,7 +272,6 @@ var ErrCodeMessage = map[int]struct {
 	UpdateDatabaseWithBlockRewardInfoError:            {-1106, "Update Database With Block Reward Info Error"},
 	CreateCrossShardBlockError:                        {-1107, "Create Cross Shard Block Error"},
 	VerifyCrossShardBlockShardTxRootError:             {-1108, "Verify Cross Shard Block ShardTxRoot Error"},
-	StoreCommitteeFromShardBestStateError:             {-1109, "Store Committee From ShardBestState Error"},
 	GetStakingTransactionError:                        {-1110, "Get Staking Transaction Error"},
 	DecodeHashError:                                   {-1111, "Decode Hash Error"},
 	GetTransactionFromDatabaseError:                   {-1112, "Get Transaction From Database Error"},
