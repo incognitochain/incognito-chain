@@ -101,7 +101,7 @@ func (pubKey *CommitteePublicKey) ToBase58() (string, error) {
 func (pubKey *CommitteePublicKey) FromBase58(keyString string) error {
 	keyBytes, ver, err := base58.Base58Check{}.Decode(keyString)
 	if (ver != common.ZeroByte) || (err != nil) {
-		return errors.New("Wrong input")
+		return errors.New("wrong input")
 	}
 	return json.Unmarshal(keyBytes, pubKey)
 }
