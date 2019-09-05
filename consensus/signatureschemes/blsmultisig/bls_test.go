@@ -92,7 +92,7 @@ func fullBLSSignFlow(wantErr, rewriteKey bool, committeeSign []int) (float64, fl
 	data := []byte{0, 1, 2, 3, 4}
 	start := time.Now()
 	sigs, err := sign(data, committeeSign)
-	t1 := time.Now().Sub(start)
+	t1 := time.Since(start)
 	if err != nil {
 		return 0, 0, 0, true, err
 	}
@@ -103,7 +103,7 @@ func fullBLSSignFlow(wantErr, rewriteKey bool, committeeSign []int) (float64, fl
 	cSig2, err := combine(sigs)
 	// fmt.Println("sigs:", sigs)
 	// fmt.Println("CSig:", cSig, cSig2)
-	t2 := time.Now().Sub(start)
+	t2 := time.Since(start)
 	if err != nil {
 		return 0, 0, 0, true, err
 	}
@@ -112,7 +112,7 @@ func fullBLSSignFlow(wantErr, rewriteKey bool, committeeSign []int) (float64, fl
 	result, err := verify(data, cSig, committeeSign)
 	result2, err := verify(data, cSig2, committeeSign)
 	fmt.Println(result, result2)
-	t3 := time.Now().Sub(start)
+	t3 := time.Since(start)
 	if err != nil {
 		return 0, 0, 0, true, err
 	}
@@ -136,7 +136,7 @@ func Test_Verify(t *testing.T) {
 	data := []byte{0, 1, 2, 3, 4}
 	//start := time.Now()
 	sigs, err := sign(data, committeeSign)
-	//t2 := time.Now().Sub(start)
+	//t2 := time.Since(start)
 	//fmt.Println(t2.Seconds())
 	if err != nil {
 		t.Error(err)
@@ -145,13 +145,13 @@ func Test_Verify(t *testing.T) {
 	cSig, err := combine(sigs)
 	start := time.Now()
 	res, _ := verify(data, cSig, committeeSign)
-	t3 := time.Now().Sub(start)
+	t3 := time.Since(start)
 	fmt.Println(res, t3.Seconds()*1000)
 	assert.Equal(t, true, res)
 
 	start = time.Now()
 	res, _ = verify(data, cSig, committeeSign)
-	t3 = time.Now().Sub(start)
+	t3 = time.Since(start)
 	fmt.Println(res, t3.Seconds()*1000)
 	assert.Equal(t, true, res)
 }
