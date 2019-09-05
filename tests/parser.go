@@ -187,6 +187,8 @@ func readNodeConfig(env string) (map[string]*Client, error) {
 	switch env {
 	case "testnet":
 		fileName = "./testsconfig/testnet-config.json"
+	case "burn":
+		fileName = "./testsconfig/burn-config.json"
 	default:
 		fileName = "./testsconfig/sample-config.json"
 	}

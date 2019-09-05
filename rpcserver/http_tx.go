@@ -1316,13 +1316,13 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 	//Get RewardReceiver Payment Address
 	rewardReceiverPaymentAddress, ok := paramsArray[7].(string)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Producer Payment Address for Staking Transaction %+v", paramsArray[5]))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Producer Payment Address for Staking Transaction %+v", paramsArray[7]))
 	}
 
 	//Get auto staking flag
 	autoReStaking, ok := paramsArray[8].(bool)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid auto restaking flag %+v", paramsArray[7]))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid auto restaking flag %+v", paramsArray[8]))
 	}
 	paymentAddress, _ := senderKey.Serialize(wallet.PaymentAddressType)
 
