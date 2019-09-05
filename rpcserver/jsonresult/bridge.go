@@ -9,21 +9,13 @@ type GetInstructionProof struct {
 	BeaconInstPathIsLeft []bool   // Indicate if it is the left or right node
 	BeaconInstRoot       string   // Hex encoded root of the inst merkle tree
 	BeaconBlkData        string   // Hex encoded hash of the block meta
-	BeaconBlkHash        string   // Hex encoded block hash
-	BeaconSignerSig      string   // Hex encoded signature (R' and S)
-	BeaconPubkeys        []string // To decompress and send to contract
-	BeaconRIdxs          []int    // Idxs of R's aggregators
+	BeaconSigs           []string // Hex encoded signature (r, s, v)
 	BeaconSigIdxs        []int    // Idxs of signer
-	BeaconR              string   // Random number (33 bytes)
 
 	BridgeInstPath       []string
 	BridgeInstPathIsLeft []bool
 	BridgeInstRoot       string
 	BridgeBlkData        string
-	BridgeBlkHash        string
-	BridgeSignerSig      string
-	BridgePubkeys        []string
-	BridgeRIdxs          []int
+	BridgeSigs           []string
 	BridgeSigIdxs        []int
-	BridgeR              string
 }
