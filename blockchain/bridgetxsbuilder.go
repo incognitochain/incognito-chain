@@ -150,7 +150,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(
 	fmt.Println("INFO: eth logMap json - ", string(logMapBytes))
 
 	// the token might be ETH/ERC20
-	ethereumAddr, ok := logMap["_token"].(rCommon.Address)
+	ethereumAddr, ok := logMap["token"].(rCommon.Address)
 	if !ok {
 		fmt.Println("WARNING: could not parse eth token id from log map.")
 		return append(instructions, rejectedInst), nil
@@ -176,12 +176,12 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(
 		return append(instructions, rejectedInst), nil
 	}
 
-	addressStr, ok := logMap["_incognito_address"].(string)
+	addressStr, ok := logMap["incognitoAddress"].(string)
 	if !ok {
 		fmt.Println("WARNING: could not parse incognito address from eth log map.")
 		return append(instructions, rejectedInst), nil
 	}
-	amt, ok := logMap["_amount"].(*big.Int)
+	amt, ok := logMap["amount"].(*big.Int)
 	if !ok {
 		fmt.Println("WARNING: could not parse amount from eth log map.")
 		return append(instructions, rejectedInst), nil
