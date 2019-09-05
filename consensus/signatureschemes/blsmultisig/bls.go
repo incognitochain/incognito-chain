@@ -46,7 +46,6 @@ func Verify(sig, data []byte, signersIdx []int, committee []PublicKey) (bool, er
 		return false, NewBLSSignatureError(DecompressFromByteErr, err)
 	}
 	lPair := bn256.Pair(sigPn, gG2Pn)
-	// apk := CalcAPK(signersIdx)
 	apk := APKGen(committee, signersIdx)
 	dataPn := B2G1P(data)
 	rPair := bn256.Pair(dataPn, apk)
