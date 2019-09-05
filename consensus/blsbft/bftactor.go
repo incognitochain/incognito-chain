@@ -106,12 +106,12 @@ func (e *BLSBFT) Start() error {
 						continue
 					}
 					if e.RoundData.Round == block.GetRound() {
-						if e.RoundData.Block != nil {
+						if e.RoundData.Block == nil {
 							e.Blocks[blockRoundKey] = block
 							continue
 						}
 					} else {
-						if e.RoundData.Round > block.GetRound() {
+						if block.GetRound() > e.RoundData.Round {
 							e.Blocks[blockRoundKey] = block
 						}
 					}
