@@ -35,24 +35,25 @@ func (e *BLSBFT) getCurrentRound() int {
 	if round < 0 {
 		return 1
 	}
-	
-	return round+1
+
+	return round + 1
 }
 
 func (e *BLSBFT) isInTimeFrame() bool {
 	if e.Chain.CurrentHeight()+1 != e.RoundData.NextHeight {
 		return false
 	}
-	
+
 	if e.getCurrentRound() != e.RoundData.Round {
 		return false
 	}
-	
+
 	return true
 }
 
 func (e *BLSBFT) isHasMajorityVotes() bool {
-	earlyVote, ok := e.EarlyVotes[getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)]
+	roundKey := getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)
+	earlyVote, ok := e.EarlyVotes[roundKey]
 	if ok {
 		for validator, vote := range earlyVote {
 			validatorIdx := common.IndexOfStr(validator, e.RoundData.CommitteeBLS.StringList)
@@ -62,7 +63,7 @@ func (e *BLSBFT) isHasMajorityVotes() bool {
 			}
 			e.RoundData.Votes[validator] = vote
 		}
-		delete(e.EarlyVotes, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
+		delete(e.EarlyVotes, roundKey)
 	}
 	size := len(e.RoundData.Committee)
 	if len(e.RoundData.Votes) > 2*size/3 {
@@ -102,6 +103,10 @@ func (e *BLSBFT) UpdateCommitteeBLSList() {
 }
 
 func (e *BLSBFT) InitRoundData() {
+	roundKey := getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)
+	if _, ok := e.Blocks[roundKey]; ok {
+		delete(e.Blocks, roundKey)
+	}
 	e.RoundData.NextHeight = e.Chain.CurrentHeight() + 1
 	e.RoundData.Round = e.getCurrentRound()
 	e.RoundData.Votes = make(map[string]vote)
