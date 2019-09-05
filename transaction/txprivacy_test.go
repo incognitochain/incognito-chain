@@ -3,14 +3,15 @@ package transaction
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
+	"testing"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/stretchr/testify/assert"
-	"math/big"
-	"testing"
-	"time"
 )
 
 func TestUnmarshalJSON(t *testing.T) {
