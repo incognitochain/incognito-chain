@@ -581,16 +581,54 @@ func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidateFlatten
 func (beaconBestState *BeaconBestState) getAllCommitteeValidatorCandidateFlattenList() []string {
 	res := []string{}
 	for _, committee := range beaconBestState.ShardCommittee {
-		res = append(res, incognitokey.CommitteeKeyListToString(committee)...)
+		committeeStr, err := incognitokey.CommitteeKeyListToString(committee)
+		if err != nil {
+			panic(err)
+		}
+		res = append(res, committeeStr...)
 	}
 	for _, pendingValidator := range beaconBestState.ShardPendingValidator {
-		res = append(res, incognitokey.CommitteeKeyListToString(pendingValidator)...)
+		pendingValidatorStr, err := incognitokey.CommitteeKeyListToString(pendingValidator)
+		if err != nil {
+			panic(err)
+		}
+		res = append(res, pendingValidatorStr...)
 	}
-	res = append(res, incognitokey.CommitteeKeyListToString(beaconBestState.BeaconCommittee)...)
-	res = append(res, incognitokey.CommitteeKeyListToString(beaconBestState.BeaconPendingValidator)...)
-	res = append(res, incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForCurrentRandom)...)
-	res = append(res, incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForNextRandom)...)
-	res = append(res, incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForCurrentRandom)...)
-	res = append(res, incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForNextRandom)...)
+
+	beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.BeaconCommittee)
+	if err != nil {
+		panic(err)
+	}
+	res = append(res, beaconCommitteeStr...)
+
+	beaconPendingValidatorStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.BeaconPendingValidator)
+	if err != nil {
+		panic(err)
+	}
+	res = append(res, beaconPendingValidatorStr...)
+
+	candidateBeaconWaitingForCurrentRandomStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForCurrentRandom)
+	if err != nil {
+		panic(err)
+	}
+	res = append(res, candidateBeaconWaitingForCurrentRandomStr...)
+
+	candidateBeaconWaitingForNextRandomStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForNextRandom)
+	if err != nil {
+		panic(err)
+	}
+	res = append(res, candidateBeaconWaitingForNextRandomStr...)
+
+	candidateShardWaitingForCurrentRandomStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForCurrentRandom)
+	if err != nil {
+		panic(err)
+	}
+	res = append(res, candidateShardWaitingForCurrentRandomStr...)
+
+	candidateShardWaitingForNextRandomStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForNextRandom)
+	if err != nil {
+		panic(err)
+	}
+	res = append(res, candidateShardWaitingForNextRandomStr...)
 	return res
 }
