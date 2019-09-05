@@ -16,6 +16,8 @@ const (
 	LoadKeyError
 	ConsensusAlreadyStartedError
 	ConsensusAlreadyStoppedError
+	DecodeValidationDataError
+	EncodeValidationDataError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -31,6 +33,8 @@ var ErrCodeMessage = map[int]struct {
 	LoadKeyError:                 {-1006, "Load key error"},
 	ConsensusAlreadyStartedError: {-1007, "consensus already started error"},
 	ConsensusAlreadyStoppedError: {-1008, "consensus already stopped error"},
+	DecodeValidationDataError:    {-1009, "Decode Validation Data error"},
+	EncodeValidationDataError:    {-1010, "Encode Validation Data Error"},
 }
 
 type ConsensusError struct {

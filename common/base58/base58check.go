@@ -67,3 +67,13 @@ func (self Base58Check) Decode(input string) (result []byte, version byte, err e
 	result = append(result, payload...)
 	return
 }
+
+var b58Check = Base58Check{}
+
+func DecodeCheck(input string) (result []byte, version byte, err error) {
+	return b58Check.Decode(input)
+}
+
+func EncodeCheck(input []byte) string {
+	return b58Check.Encode(input, 0x00)
+}
