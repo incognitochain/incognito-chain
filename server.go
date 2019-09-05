@@ -1153,14 +1153,20 @@ func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 	if isRelayNodeForConsensus {
 		senderPublicKey, _ := p.GetRemotePeer().GetPublicKey()
 		bestState := blockchain.GetBeaconBestState()
-		beaconCommitteeList := incognitokey.CommitteeKeyListToString(bestState.BeaconCommittee)
+		beaconCommitteeList, err := incognitokey.CommitteeKeyListToString(bestState.BeaconCommittee)
+		if err != nil {
+			panic(err)
+		}
 		isInBeaconCommittee := common.IndexOfStr(senderPublicKey, beaconCommitteeList) != -1
 		if isInBeaconCommittee {
 			serverObj.PushMessageToBeacon(msg, map[libp2p.ID]bool{p.GetRemotePeerID(): true})
 		}
 		shardCommitteeList := make(map[byte][]string)
 		for shardID, committee := range bestState.GetShardCommittee() {
-			shardCommitteeList[shardID] = incognitokey.CommitteeKeyListToString(committee)
+			shardCommitteeList[shardID], err = incognitokey.CommitteeKeyListToString(committee)
+			if err != nil {
+				panic(err)
+			}
 		}
 		for shardID, committees := range shardCommitteeList {
 			isInShardCommitee := common.IndexOfStr(senderPublicKey, committees) != -1
