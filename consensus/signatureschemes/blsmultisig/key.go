@@ -6,7 +6,6 @@ import (
 
 	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/google"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
 )
 
 // KeyGen take an input seed and return BLS Key
@@ -35,7 +34,7 @@ func PKGen(sk *big.Int) *bn256.G2 {
 	return pk
 }
 
-var memCache *MemoryCache
+var memCache *memoryCache
 
 // AKGen take a seed and return BLS secret key
 func AKGen(idxPKByte []byte, combinedPKBytes []byte) (*bn256.G2, *big.Int) {
@@ -52,20 +51,26 @@ func AKGen(idxPKByte []byte, combinedPKBytes []byte) (*bn256.G2, *big.Int) {
 	if memCache == nil {
 		memCache = New()
 	}
-	cachedData, err := memCache.Get(akByte)
+	cachedResult, err := memCache.get(akByte)
 	if err == nil {
-		res := &cachedData
-		return res, akBInt
+		return &cachedResult, akBInt
 	} else {
-		// cal pkPn
-		pkPn, _ := DecmprG2(idxPKByte)
+		var pkPn *bn256.G2
+		cachedPkPn, err := memCache.get(idxPKByte)
+		if err == nil {
+			pkPn = &cachedPkPn
+		} else {
+			// cal pkPn
+			pkPn, _ = DecmprG2(idxPKByte)
+			memCache.put(idxPKByte, *pkPn)
+		}
 
-		res := new(bn256.G2)
-		res.ScalarMult(pkPn, akBInt)
+		result := new(bn256.G2)
+		result.ScalarMult(pkPn, akBInt)
 
 		// cal result
-		memCache.Put(akByte, *res)
-		return res, akBInt
+		memCache.put(akByte, *result)
+		return result, akBInt
 	}
 }
 
@@ -141,38 +146,4 @@ func SKBytes(sk *big.Int) SecretKey {
 // PKBytes take input publickey point and return publickey bytes
 func PKBytes(pk *bn256.G2) PublicKey {
 	return CmprG2(pk)
-}
-
-// ChkPKSt Check input string is BLS PublicKey string-type
-func ChkPKSt(pkSt string) bool {
-	pkBytes, ver, err := base58.Base58Check{}.Decode(pkSt)
-	if err != nil {
-		return false
-	}
-	pkPn := new(bn256.G2)
-	if _, err := pkPn.Unmarshal(pkBytes); err != nil {
-		return false
-	}
-	if ver != common.ZeroByte {
-		return false
-	}
-	return true
-}
-
-func IncSK2BLSPKBytes(sk []byte) []byte {
-	_, pk := KeyGen(sk)
-	return CmprG2(pk)
-}
-
-func ListPKBytes2ListPKPoints(listPKBytes []PublicKey) ([]*bn256.G2, error) {
-	listPKs := make([]*bn256.G2, len(listPKBytes))
-	var err error
-	for i, pk := range listPKBytes {
-		// fmt.Println(pk, len(pk))
-		listPKs[i], err = DecmprG2(pk)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return listPKs, nil
 }

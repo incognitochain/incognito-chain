@@ -271,7 +271,8 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(
 			issuingRes,
 			false,
 			false,
-			shardID))
+			shardID,
+			nil))
 
 	if initErr != nil {
 		fmt.Println("WARNING: an error occured while initializing response tx: ", initErr)
@@ -345,7 +346,7 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(
 			issuingETHRes,
 			false,
 			false,
-			shardID))
+			shardID, nil))
 
 	if initErr != nil {
 		fmt.Println("WARNING: an error occured while initializing response tx: ", initErr)

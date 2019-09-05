@@ -68,6 +68,16 @@ func (blockchain *BlockChain) RevertShardState(shardID byte) error {
 
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
+	return blockchain.revertShardState(shardID)
+}
+
+func (blockchain *BlockChain) revertShardState(shardID byte) error {
+	//Steps:
+	// 1. Restore current beststate to previous beststate
+	// 2. Set pool shardstate
+	// 3. Delete newly inserted block
+	// 4. Remove incoming crossShardBlks
+	// 5. Delete txs and its related stuff (ex: txview) belong to block
 	currentBestState := blockchain.BestState.Shard[shardID]
 	currentBestStateBlk := currentBestState.BestBlock
 
@@ -669,13 +679,17 @@ func (blockchain *BlockChain) ValidateBlockWithPrevBeaconBestState(block *Beacon
 
 //This only happen if user is a beacon committee member.
 func (blockchain *BlockChain) RevertBeaconState() error {
+	blockchain.chainLock.Lock()
+	defer blockchain.chainLock.Unlock()
+	return blockchain.revertBeaconState()
+}
+
+func (blockchain *BlockChain) revertBeaconState() error {
 	//Steps:
 	// 1. Restore current beststate to previous beststate
 	// 2. Set beacon/shardtobeacon pool state
 	// 3. Delete newly inserted block
 	// 4. Delete data store by block
-	blockchain.chainLock.Lock()
-	defer blockchain.chainLock.Unlock()
 	currentBestState := blockchain.BestState.Beacon
 	currentBestStateBlk := currentBestState.BestBlock
 

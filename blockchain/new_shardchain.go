@@ -85,6 +85,10 @@ func (chain *ShardChain) CreateNewBlock(round int) (common.BlockInterface, error
 	beaconHeight := chain.Blockchain.Synker.States.ClosestState.ClosestBeaconState
 	if chain.Blockchain.BestState.Beacon.BeaconHeight < beaconHeight {
 		beaconHeight = chain.Blockchain.BestState.Beacon.BeaconHeight
+	} else {
+		if beaconHeight < GetBestStateShard(byte(chain.GetShardID())).BeaconHeight {
+			beaconHeight = GetBestStateShard(byte(chain.GetShardID())).BeaconHeight
+		}
 	}
 	newBlock, err := chain.BlockGen.NewBlockShard(byte(chain.GetShardID()), round, chain.Blockchain.Synker.GetClosestCrossShardPoolState(), beaconHeight, start)
 	if err != nil {

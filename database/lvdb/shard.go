@@ -204,43 +204,47 @@ func (db *db) GetBlockByIndex(idx uint64, shardID byte) (common.Hash, error) {
 	return *hash, nil
 }
 
-//StoreIncomingCrossShard which store crossShardHash from which shard has been include in which block height
-func (db *db) StoreIncomingCrossShard(shardID byte, crossShardID byte, blkHeight uint64, crossBlkHash common.Hash) error {
+func (db *db) StoreCommitteeFromShardBestState(shardID byte, shardHeight uint64, v interface{}) error {
+	key := append(shardPrefix, shardID)
 	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, blkHeight)
-	prefix := append([]byte{shardID}, append([]byte{crossShardID}, crossBlkHash[:]...)...)
-	// csh-ShardID-CrossShardID-CrossShardBlockHash : ShardBlockHeight
-	key := append(crossShardKeyPrefix, prefix...)
-	if ok, _ := db.HasValue(key); ok {
-		return database.NewDatabaseError(database.BlockExisted, errors.Errorf("block %d already exists", blkHeight))
+	binary.LittleEndian.PutUint64(buf, shardHeight)
+	key = append(key, buf[:]...)
+
+	val, err := json.Marshal(v)
+	if err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
 	}
-	if err := db.Put(key, buf); err != nil {
+
+	if err := db.Put(key, val); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
 	return nil
 }
 
-func (db *db) HasIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHash common.Hash) error {
-	prefix := append([]byte{shardID}, append([]byte{crossShardID}, crossBlkHash[:]...)...)
-	// csh-ShardID-CrossShardID-CrossShardBlockHash : ShardBlockHeight
-	key := append(crossShardKeyPrefix, prefix...)
-	if ok, _ := db.HasValue(key); ok {
-		return nil
-	}
-	return database.NewDatabaseError(database.BlockExisted, errors.Errorf("Cross Shard Block doesn't exist"))
-}
+func (db *db) FetchCommitteeFromShardBestState(shardID byte, shardHeight uint64) ([]byte, error) {
+	key := append(shardPrefix, shardID)
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, shardHeight)
+	key = append(key, buf[:]...)
 
-func (db *db) GetIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHash common.Hash) (uint64, error) {
-	prefix := append([]byte{shardID}, append([]byte{crossShardID}, crossBlkHash[:]...)...)
-	// csh-ShardID-CrossShardID-CrossShardBlockHash : ShardBlockHeight
-	key := append(crossShardKeyPrefix, prefix...)
 	b, err := db.Get(key)
 	if err != nil {
-		return 0, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.get"))
 	}
-	var idx uint64
-	if err := binary.Read(bytes.NewReader(b[:]), binary.LittleEndian, &idx); err != nil {
-		return 0, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "binary.Read"))
+	return b, nil
+}
+
+func (db *db) HasShardCommitteeByHeight(height uint64) (bool, error) {
+	key := append(beaconPrefix, shardIDPrefix...)
+	key = append(key, committeePrefix...)
+	key = append(key, heightPrefix...)
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, height)
+	key = append(key, buf[:]...)
+
+	exist, err := db.HasValue(key)
+	if err != nil {
+		return false, database.NewDatabaseError(database.HasShardCommitteeByHeightError, err)
 	}
-	return idx, nil
+	return exist, nil
 }

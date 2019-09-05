@@ -237,9 +237,11 @@ func (synker *Synker) stopSyncUnnecessaryShard() {
 func (synker *Synker) stopSyncShard(shardID byte) error {
 	if synker.blockchain.config.NodeMode == common.NODEMODE_AUTO || synker.blockchain.config.NodeMode == common.NODEMODE_SHARD {
 		userMiningKey, _ := synker.blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
-		userRole, userShardID := synker.blockchain.BestState.Beacon.GetPubkeyRole(userMiningKey, 0)
-		if userRole == common.SHARD_ROLE && shardID == userShardID {
-			return errors.New("Shard " + fmt.Sprintf("%d", shardID) + " synchronzation can't be stopped")
+		if userMiningKey != "" {
+			userRole, userShardID := synker.blockchain.BestState.Beacon.GetPubkeyRole(userMiningKey, 0)
+			if userRole == common.SHARD_ROLE && shardID == userShardID {
+				return errors.New("Shard " + fmt.Sprintf("%d", shardID) + " synchronzation can't be stopped")
+			}
 		}
 	}
 	if _, ok := synker.Status.Shards[shardID]; ok {
@@ -277,9 +279,9 @@ func (synker *Synker) UpdateState() {
 	if userMiningKey != "" {
 		userRole, userShardID = beaconStateClone.GetPubkeyRole(userMiningKey, beaconStateClone.BestBlock.Header.Round)
 		synker.syncShard(userShardID)
-		synker.stopSyncUnnecessaryShard()
 		userShardRole = synker.blockchain.BestState.Shard[userShardID].GetPubkeyRole(userMiningKey, synker.blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
 	}
+	synker.stopSyncUnnecessaryShard()
 
 	synker.States.ClosestState.ClosestBeaconState = beaconStateClone.BeaconHeight
 	for shardID, beststate := range synker.blockchain.BestState.Shard {
@@ -851,10 +853,11 @@ var currentInsert = struct {
 }
 
 func (synker *Synker) InsertBlockFromPool() {
-
-	if !synker.blockchain.config.ConsensusEngine.IsOngoing(common.BEACON_CHAINKEY) {
-		synker.InsertBeaconBlockFromPool()
-	}
+	go func() {
+		if !synker.blockchain.config.ConsensusEngine.IsOngoing(common.BEACON_CHAINKEY) {
+			synker.InsertBeaconBlockFromPool()
+		}
+	}()
 
 	synker.Status.Lock()
 	for shardID := range synker.Status.Shards {
@@ -873,29 +876,60 @@ func (synker *Synker) InsertBlockFromPool() {
 func (synker *Synker) InsertBeaconBlockFromPool() {
 	currentInsert.Beacon.Lock()
 	defer currentInsert.Beacon.Unlock()
-	blks := synker.blockchain.config.BeaconPool.GetValidBlock()
-	for _, newBlk := range blks {
-		err := synker.blockchain.Chains[common.BEACON_CHAINKEY].ValidateAndInsertBlock(newBlk)
-		if err != nil {
-			Logger.log.Error(err)
+	blocks := synker.blockchain.config.BeaconPool.GetValidBlock()
+	chain := synker.blockchain.Chains[common.BEACON_CHAINKEY]
+
+	curEpoch := GetBeaconBestState().Epoch
+	sameCommitteeBlock := blocks
+	for i, v := range blocks {
+		if v.GetCurrentEpoch() == curEpoch+1 {
+			sameCommitteeBlock = blocks[:i+1]
 			break
 		}
+	}
+
+	for i := len(sameCommitteeBlock) - 1; i >= 0; i-- {
+		if err := chain.ValidateBlockSignatures(sameCommitteeBlock[i], beaconBestState.BeaconCommittee); err != nil {
+			sameCommitteeBlock = sameCommitteeBlock[:i]
+			//TODO: remove invalid block
+		} else {
+			break
+		}
+	}
+
+	for _, v := range sameCommitteeBlock {
+		chain.InsertBlk(v)
 	}
 }
 
 func (synker *Synker) InsertShardBlockFromPool(shardID byte) {
-	// fmt.Println("\n\n\n\n", "InsertShardBlockFromPool", "\n\n\n\n")
 	currentInsert.Shards[shardID].Lock()
-	blks := synker.blockchain.config.ShardPool[shardID].GetValidBlock()
-	for _, newBlk := range blks {
-		err := synker.blockchain.Chains[common.GetShardChainKey(shardID)].ValidateAndInsertBlock(newBlk)
-		if err != nil {
-			//@Notice: remove or keep invalid block
-			Logger.log.Error(err)
+	defer currentInsert.Shards[shardID].Unlock()
+
+	blocks := synker.blockchain.config.ShardPool[shardID].GetValidBlock()
+	chain := synker.blockchain.Chains[common.GetShardChainKey(shardID)]
+	curEpoch := GetBestStateShard(shardID).Epoch
+	sameCommitteeBlock := blocks
+	for i, v := range blocks {
+		if v.GetCurrentEpoch() == curEpoch+1 {
+			sameCommitteeBlock = blocks[:i+1]
 			break
 		}
 	}
-	currentInsert.Shards[shardID].Unlock()
+
+	for i := len(sameCommitteeBlock) - 1; i >= 0; i-- {
+		if err := chain.ValidateBlockSignatures(sameCommitteeBlock[i], chain.GetCommittee()); err != nil {
+			sameCommitteeBlock = sameCommitteeBlock[:i]
+			//TODO: remove invalid block
+		} else {
+			break
+		}
+	}
+
+	for _, v := range sameCommitteeBlock {
+		chain.InsertBlk(v)
+	}
+
 }
 
 func (synker *Synker) GetClosestShardToBeaconPoolState() map[byte]uint64 {

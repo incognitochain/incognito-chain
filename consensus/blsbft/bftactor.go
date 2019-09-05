@@ -66,6 +66,7 @@ func (e *BLSBFT) Stop() error {
 			close(e.StopCh)
 		}
 		e.isStarted = false
+		e.isOngoing = false
 	}
 	return consensus.NewConsensusError(consensus.ConsensusAlreadyStoppedError, errors.New(e.ChainKey))
 }
@@ -104,11 +105,17 @@ func (e *BLSBFT) Start() error {
 						e.logger.Error("wrong round")
 						continue
 					}
-					if e.RoundData.Round == block.GetRound() && e.RoundData.Block != nil {
-						e.Blocks[blockRoundKey] = block
-						continue
+					if e.RoundData.Round == block.GetRound() {
+						if e.RoundData.Block == nil {
+							e.Blocks[blockRoundKey] = block
+							continue
+						}
+					} else {
+						if block.GetRound() > e.RoundData.Round {
+							e.Blocks[blockRoundKey] = block
+						}
 					}
-					e.Blocks[blockRoundKey] = block
+
 				}
 			case voteMsg := <-e.VoteMessageCh:
 				e.logger.Info("receive vote", voteMsg.RoundKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
@@ -162,6 +169,7 @@ func (e *BLSBFT) Start() error {
 					roundKey := getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)
 					if e.Blocks[roundKey] != nil {
 						if err := e.validatePreSignBlock(e.Blocks[roundKey]); err != nil {
+							delete(e.Blocks, roundKey)
 							e.logger.Error(err)
 							time.Sleep(1 * time.Second)
 							continue
