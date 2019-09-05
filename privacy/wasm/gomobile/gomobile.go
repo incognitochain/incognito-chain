@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/oneoutofmany"
 	"math/big"
 	"time"
@@ -102,9 +101,10 @@ func OneOutOfManyProve(args string) (string, error) {
 	commitmentPoints := make([]*privacy.EllipticPoint, len(commitmentStrs))
 
 	for i := 0; i < len(commitmentStrs); i++ {
-		//fmt.Printf("commitments[i]: %v\n", commitmentStrs[i])
+		//fmt.Printf("commitments %v: %v\n", i,  commitmentStrs[i])
 		tmp, _ := new(big.Int).SetString(commitmentStrs[i], 16)
 		tmpByte := tmp.Bytes()
+		//fmt.Printf("tmpByte %v: %v\n", i, tmpByte)
 
 		commitmentPoints[i] = new(privacy.EllipticPoint)
 		err = commitmentPoints[i].Decompress(tmpByte)
@@ -128,7 +128,6 @@ func OneOutOfManyProve(args string) (string, error) {
 	wit := new(oneoutofmany.OneOutOfManyWitness)
 	wit.Set(commitmentPoints, randBN, indexIsZeroUint64)
 	println("Wit: ", wit)
-
 	// proving
 	start := time.Now()
 	proof, err := wit.Prove()
@@ -137,7 +136,7 @@ func OneOutOfManyProve(args string) (string, error) {
 		println("Err: %v\n", err)
 	}
 	end := time.Since(start)
-	fmt.Printf("One out of many proving time: %v\n", end)
+	println("One out of many proving time: %v\n", end)
 
 	// convert proof to bytes array
 	proofBytes := proof.Bytes()
