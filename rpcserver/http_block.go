@@ -248,9 +248,9 @@ func (httpServer *HttpServer) handleGetBlockHash(params interface{}, closeChan <
 	isGetBeacon := shardID == -1
 
 	if isGetBeacon {
-		beaconBlock, err = httpServer.config.BlockChain.GetBeaconBlockByHeight(height)
+		beaconBlock, err = httpServer.blockService.GetBeaconBlockByHeight(height)
 	} else {
-		shardBlock, err = httpServer.config.BlockChain.GetShardBlockByHeight(height, byte(shardID))
+		shardBlock, err = httpServer.blockService.GetShardBlockByHeight(height, byte(shardID))
 	}
 
 	if err != nil {
