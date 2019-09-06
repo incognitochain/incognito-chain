@@ -232,10 +232,10 @@ func (blockchain *BlockChain) initChainState() error {
 	beaconChain := BeaconChain{
 		BestState:  GetBeaconBestState(),
 		BlockGen:   blockchain.config.BlockGen,
-		ChainName:  common.BEACON_CHAINKEY,
+		ChainName:  common.BeaconChainKey,
 		Blockchain: blockchain,
 	}
-	blockchain.Chains[common.BEACON_CHAINKEY] = &beaconChain
+	blockchain.Chains[common.BeaconChainKey] = &beaconChain
 
 	for shard := 1; shard <= blockchain.BestState.Beacon.ActiveShards; shard++ {
 		shardID := byte(shard - 1)
