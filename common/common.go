@@ -217,7 +217,7 @@ func SliceExists(slice interface{}, item interface{}) (bool, error) {
 // GetShardIDFromLastByte receives a last byte of public key and
 // returns a corresponding shardID
 func GetShardIDFromLastByte(b byte) byte {
-	return byte(int(b) % MAX_SHARD_NUMBER)
+	return byte(int(b) % MaxShardNumber)
 }
 
 // IndexOfStr receives a list of strings and a item string

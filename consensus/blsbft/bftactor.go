@@ -129,7 +129,7 @@ func (e *BLSBFT) Start() error {
 								continue
 							}
 							if len(voteMsg.Vote.BRI) != 0 {
-								if err := validateSingleBriSig(e.RoundData.Block.Hash(), voteMsg.Vote.BRI, e.RoundData.Committee[validatorIdx].MiningPubKey[common.BRI_CONSENSUS]); err != nil {
+								if err := validateSingleBriSig(e.RoundData.Block.Hash(), voteMsg.Vote.BRI, e.RoundData.Committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
 									e.logger.Error(err)
 									continue
 								}
@@ -329,5 +329,5 @@ func (e BLSBFT) NewInstance(chain blockchain.ChainInterface, chainKey string, no
 }
 
 func init() {
-	consensus.RegisterConsensus(common.BLS_CONSENSUS, &BLSBFT{})
+	consensus.RegisterConsensus(common.BlsConsensus, &BLSBFT{})
 }

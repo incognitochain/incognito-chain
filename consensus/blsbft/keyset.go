@@ -26,8 +26,8 @@ type MiningKey struct {
 func (miningKey *MiningKey) GetPublicKey() incognitokey.CommitteePublicKey {
 	key := incognitokey.CommitteePublicKey{}
 	key.MiningPubKey = make(map[string][]byte)
-	key.MiningPubKey[common.BLS_CONSENSUS] = miningKey.PubKey[BLS]
-	key.MiningPubKey[common.BRI_CONSENSUS] = miningKey.PubKey[BRI]
+	key.MiningPubKey[common.BlsConsensus] = miningKey.PubKey[BLS]
+	key.MiningPubKey[common.BridgeConsensus] = miningKey.PubKey[BRI]
 	return key
 }
 
