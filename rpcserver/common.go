@@ -369,6 +369,10 @@ func (rpcServer HttpServer) buildPrivacyCustomTokenParam(tokenParamsRaw map[stri
 			if err != nil {
 				return nil, nil, nil, rpcservice.NewRPCError(rpcservice.GetOutputCoinError, err)
 			}
+			candidateOutputTokens, err = rpcServer.filterMemPoolOutCoinsToSpent(candidateOutputTokens)
+			if err != nil {
+				return nil, nil, nil, rpcservice.NewRPCError(rpcservice.GetOutputCoinError, err)
+			}
 			intputToken := transaction.ConvertOutputCoinToInputCoin(candidateOutputTokens)
 			tokenParams.TokenInput = intputToken
 		}
