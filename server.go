@@ -197,7 +197,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.miningKeys = cfg.MiningKeys
 	serverObj.privateKey = cfg.PrivateKey
 	if serverObj.miningKeys == "" && serverObj.privateKey == "" {
-		if cfg.NodeMode == common.NODEMODE_AUTO || cfg.NodeMode == common.NODEMODE_BEACON || cfg.NodeMode == common.NODEMODE_SHARD {
+		if cfg.NodeMode == common.NodeModeAuto || cfg.NodeMode == common.NodeModeBeacon || cfg.NodeMode == common.NodeModeShard {
 			panic("miningkeys can't be empty in this node mode")
 		}
 	}
@@ -213,7 +213,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 	relayShards := []byte{}
 	if cfg.RelayShards == "all" {
-		for index := 0; index < common.MAX_SHARD_NUMBER; index++ {
+		for index := 0; index < common.MaxShardNumber; index++ {
 			relayShards = append(relayShards, byte(index))
 		}
 	} else {
@@ -649,7 +649,7 @@ func (serverObj Server) Start() {
 		go serverObj.Stop()
 		return
 	}
-	if cfg.NodeMode != common.NODEMODE_RELAY {
+	if cfg.NodeMode != common.NodeModeRelay {
 		serverObj.memPool.IsBlockGenStarted = true
 		serverObj.blockChain.SetIsBlockGenStarted(true)
 		for _, shardPool := range serverObj.shardPool {
@@ -1675,14 +1675,14 @@ func (serverObj *Server) BoardcastNodeState() error {
 	// signDataInBase58CheckEncode := common.EmptyString
 	if publicKeyInBase58CheckEncode != "" {
 		_, shardID := serverObj.consensusEngine.GetUserRole()
-		if (cfg.NodeMode == common.NODEMODE_AUTO || cfg.NodeMode == common.NODEMODE_SHARD) && shardID >= 0 {
+		if (cfg.NodeMode == common.NodeModeAuto || cfg.NodeMode == common.NodeModeShard) && shardID >= 0 {
 			msg.(*wire.MessagePeerState).CrossShardPool[byte(shardID)] = serverObj.crossShardPool[byte(shardID)].GetValidBlockHeight()
 		}
 	}
 	userKey, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
 	if userKey != "" {
 		userRole, shardID := serverObj.blockChain.BestState.Beacon.GetPubkeyRole(userKey, serverObj.blockChain.BestState.Beacon.BestBlock.Header.Round)
-		if (cfg.NodeMode == common.NODEMODE_AUTO || cfg.NodeMode == common.NODEMODE_SHARD) && userRole == common.NODEMODE_SHARD {
+		if (cfg.NodeMode == common.NodeModeAuto || cfg.NodeMode == common.NodeModeShard) && userRole == common.NodeModeShard {
 			userRole = serverObj.blockChain.BestState.Shard[shardID].GetPubkeyRole(userKey, serverObj.blockChain.BestState.Shard[shardID].BestBlock.Header.Round)
 			if userRole == "shard-proposer" || userRole == "shard-validator" {
 				msg.(*wire.MessagePeerState).CrossShardPool[shardID] = serverObj.crossShardPool[shardID].GetValidBlockHeight()
@@ -1712,22 +1712,22 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 		mining    = "mining"
 		pending   = "pending"
 	)
-	if chain >= common.MAX_SHARD_NUMBER || chain < -1 {
+	if chain >= common.MaxShardNumber || chain < -1 {
 		return notmining
 	}
 	if cfg.MiningKeys != "" || cfg.PrivateKey != "" {
 		//Beacon: chain = -1
 		role, shardID := serverObj.consensusEngine.GetUserRole()
 		if chain == -1 && shardID == -1 {
-			if cfg.NodeMode != common.NODEMODE_AUTO && cfg.NodeMode != common.NODEMODE_BEACON {
+			if cfg.NodeMode != common.NodeModeAuto && cfg.NodeMode != common.NodeModeBeacon {
 				return notmining
 			}
 			if serverObj.blockChain.Synker.IsLatest(false, 0) {
 				if serverObj.isEnableMining {
-					if role == common.VALIDATOR_ROLE || role == common.PROPOSER_ROLE {
+					if role == common.ValidatorRole || role == common.ProposerRole {
 						return mining
 					}
-					if role == common.PENDING_ROLE {
+					if role == common.PendingRole {
 						return pending
 					}
 				}
@@ -1738,7 +1738,7 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 			if shardID == -2 {
 				return notmining
 			}
-			if cfg.NodeMode != common.NODEMODE_AUTO && cfg.NodeMode != common.NODEMODE_SHARD {
+			if cfg.NodeMode != common.NodeModeAuto && cfg.NodeMode != common.NodeModeShard {
 				return notmining
 			}
 			currentSynsShards := serverObj.blockChain.Synker.GetCurrentSyncShards()
@@ -1747,10 +1747,10 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 			}
 			if serverObj.blockChain.Synker.IsLatest(true, byte(chain)) {
 				if serverObj.isEnableMining && shardID == chain {
-					if role == common.VALIDATOR_ROLE || role == common.PROPOSER_ROLE {
+					if role == common.ValidatorRole || role == common.ProposerRole {
 						return mining
 					}
-					if role == common.PENDING_ROLE {
+					if role == common.PendingRole {
 						return pending
 					}
 				}

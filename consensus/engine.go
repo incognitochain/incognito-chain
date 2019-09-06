@@ -46,7 +46,7 @@ func (engine *Engine) CommitteeChange(chainName string) {
 //watchConsensusState will watch MiningKey Role as well as chain consensus type
 func (engine *Engine) watchConsensusCommittee() {
 	Logger.log.Info("start watching consensus committee...")
-	allcommittee := engine.config.Blockchain.Chains[common.BEACON_CHAINKEY].(BeaconInterface).GetAllCommittees()
+	allcommittee := engine.config.Blockchain.Chains[common.BeaconChainKey].(BeaconInterface).GetAllCommittees()
 
 	for consensusType, publickey := range engine.userMiningPublicKeys {
 		if engine.CurrentMiningChain != "" {
@@ -63,10 +63,10 @@ func (engine *Engine) watchConsensusCommittee() {
 	}
 	for consensusType, publickey := range engine.userMiningPublicKeys {
 		if engine.CurrentMiningChain == "" {
-			role, shardID := engine.config.Blockchain.Chains[common.BEACON_CHAINKEY].GetPubkeyRole(publickey.GetMiningKeyBase58(consensusType), 0)
+			role, shardID := engine.config.Blockchain.Chains[common.BeaconChainKey].GetPubkeyRole(publickey.GetMiningKeyBase58(consensusType), 0)
 			test, _ := json.Marshal(publickey)
 			Logger.log.Critical(string(test))
-			if role == common.SHARD_ROLE {
+			if role == common.ShardRole {
 				engine.CurrentMiningChain = common.GetShardChainKey(shardID)
 				break
 			}
@@ -90,16 +90,16 @@ func (engine *Engine) watchConsensusCommittee() {
 			if !ok {
 				continue
 			}
-			role, shardID := engine.config.Blockchain.Chains[common.BEACON_CHAINKEY].GetPubkeyRole(userPublicKey.GetMiningKeyBase58(consensusType), 0)
+			role, shardID := engine.config.Blockchain.Chains[common.BeaconChainKey].GetPubkeyRole(userPublicKey.GetMiningKeyBase58(consensusType), 0)
 			if role != common.EmptyString {
-				if role == common.SHARD_ROLE {
+				if role == common.ShardRole {
 					if engine.CurrentMiningChain == common.EmptyString {
 						engine.CurrentMiningChain = common.GetShardChainKey(shardID)
 						engine.config.Node.DropAllConnections()
 					}
 				} else {
 					if engine.CurrentMiningChain == common.EmptyString {
-						engine.CurrentMiningChain = common.BEACON_CHAINKEY
+						engine.CurrentMiningChain = common.BeaconChainKey
 						engine.config.Node.DropAllConnections()
 					}
 				}
@@ -141,25 +141,25 @@ func (engine *Engine) Start() error {
 					}
 				}
 				userLayer := ""
-				if engine.CurrentMiningChain == common.BEACON_CHAINKEY {
-					userLayer = common.BEACON_ROLE
+				if engine.CurrentMiningChain == common.BeaconChainKey {
+					userLayer = common.BeaconRole
 					go engine.NotifyBeaconRole(true)
 					go engine.NotifyShardRole(-1)
 				}
-				if engine.CurrentMiningChain != common.BEACON_CHAINKEY && engine.CurrentMiningChain != "" {
-					userLayer = common.SHARD_ROLE
+				if engine.CurrentMiningChain != common.BeaconChainKey && engine.CurrentMiningChain != "" {
+					userLayer = common.ShardRole
 					go engine.NotifyBeaconRole(false)
 					go engine.NotifyShardRole(int(getShardFromChainName(engine.CurrentMiningChain)))
 				}
 				publicKey, _ := engine.GetCurrentMiningPublicKey()
 
-				allcommittee := engine.config.Blockchain.Chains[common.BEACON_CHAINKEY].(BeaconInterface).GetAllCommittees()
+				allcommittee := engine.config.Blockchain.Chains[common.BeaconChainKey].(BeaconInterface).GetAllCommittees()
 				beaconCommittee := []string{}
 				shardCommittee := map[byte][]string{}
 				shardCommittee = make(map[byte][]string)
 				for keyType, committees := range allcommittee {
 					for chain, committee := range committees {
-						if chain == common.BEACON_CHAINKEY {
+						if chain == common.BeaconChainKey {
 							keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(committee, keyType)
 							beaconCommittee = append(beaconCommittee, keyList...)
 						} else {
@@ -168,7 +168,7 @@ func (engine *Engine) Start() error {
 						}
 					}
 				}
-				if userLayer == common.SHARD_ROLE {
+				if userLayer == common.ShardRole {
 					shardID := getShardFromChainName(engine.CurrentMiningChain)
 					engine.config.Node.UpdateConsensusState(userLayer, publicKey, &shardID, beaconCommittee, shardCommittee)
 				} else {
@@ -221,7 +221,7 @@ func (engine *Engine) GetUserRole() (string, int) {
 	if engine.CurrentMiningChain != "" {
 		publicKey, _ := engine.GetCurrentMiningPublicKey()
 		userRole, _ := engine.config.Blockchain.Chains[engine.CurrentMiningChain].GetPubkeyRole(publicKey, 0)
-		if engine.CurrentMiningChain == common.BEACON_CHAINKEY {
+		if engine.CurrentMiningChain == common.BeaconChainKey {
 			return userRole, -1
 		}
 		return userRole, engine.config.Blockchain.Chains[engine.CurrentMiningChain].GetShardID()
