@@ -212,16 +212,16 @@ func (shardBestState *ShardBestState) GetPubkeyRole(pubkey string, round int) st
 	if found > -1 {
 		tmpID := (shardBestState.ShardProposerIdx + round) % len(keyList)
 		if found == tmpID {
-			return common.PROPOSER_ROLE
+			return common.ProposerRole
 		} else {
-			return common.VALIDATOR_ROLE
+			return common.ValidatorRole
 		}
 	}
 
 	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(shardBestState.ShardPendingValidator, shardBestState.ConsensusAlgorithm)
 	found = common.IndexOfStr(pubkey, keyList)
 	if found > -1 {
-		return common.PENDING_ROLE
+		return common.PendingRole
 	}
 	return common.EmptyString
 }

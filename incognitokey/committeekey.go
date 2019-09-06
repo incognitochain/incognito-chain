@@ -18,8 +18,8 @@ type CommitteePublicKey struct {
 
 func (pubKey *CommitteePublicKey) CheckSanityData() bool {
 	if (len(pubKey.IncPubKey) != common.PublicKeySize) ||
-		(len(pubKey.MiningPubKey[common.BLS_CONSENSUS]) != common.BLSPublicKeySize) ||
-		(len(pubKey.MiningPubKey[common.BRI_CONSENSUS]) != common.BriPublicKeySize) {
+		(len(pubKey.MiningPubKey[common.BlsConsensus]) != common.BLSPublicKeySize) ||
+		(len(pubKey.MiningPubKey[common.BridgeConsensus]) != common.BriPublicKeySize) {
 		return false
 	}
 	return true
@@ -43,10 +43,10 @@ func NewCommitteeKeyFromSeed(seed, incPubKey []byte) (CommitteePublicKey, error)
 	CommitteePublicKey.MiningPubKey = map[string][]byte{}
 	_, blsPubKey := blsmultisig.KeyGen(seed)
 	blsPubKeyBytes := blsmultisig.PKBytes(blsPubKey)
-	CommitteePublicKey.MiningPubKey[common.BLS_CONSENSUS] = blsPubKeyBytes
+	CommitteePublicKey.MiningPubKey[common.BlsConsensus] = blsPubKeyBytes
 	_, briPubKey := bridgesig.KeyGen(seed)
 	briPubKeyBytes := bridgesig.PKBytes(&briPubKey)
-	CommitteePublicKey.MiningPubKey[common.BRI_CONSENSUS] = briPubKeyBytes
+	CommitteePublicKey.MiningPubKey[common.BridgeConsensus] = briPubKeyBytes
 	return *CommitteePublicKey, nil
 }
 

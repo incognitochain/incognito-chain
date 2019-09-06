@@ -13,7 +13,7 @@ const (
 	newround      = "NEWROUND"
 	bls           = "bls"
 	bri           = "dsa"
-	consensusName = common.BLS_CONSENSUS
+	consensusName = common.BlsConsensus
 )
 
 //
