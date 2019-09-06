@@ -75,7 +75,7 @@ func (e *BLSBFT) ProcessBFTMsg(msg *wire.MessageBFT) {
 		}
 		e.VoteMessageCh <- msgVote
 	default:
-		fmt.Println("???")
+		e.logger.Critical("???")
 		return
 	}
 }
