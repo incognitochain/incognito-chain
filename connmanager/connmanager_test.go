@@ -63,13 +63,13 @@ func TestConnManager_GetPeerConnOfPublicKey(t *testing.T) {
 
 	peerConn1 := peer.PeerConn{}
 	p1 := &peer.Peer{}
-	p1.SetPublicKey("abc1", common.BLS_CONSENSUS)
+	p1.SetPublicKey("abc1", common.BlsConsensus)
 	peerConn1.SetRemotePeer(p1)
 	peerConn1.SetRemotePeerID("a")
 
 	peerConn2 := peer.PeerConn{}
 	p2 := &peer.Peer{}
-	p2.SetPublicKey("abc2", common.BLS_CONSENSUS)
+	p2.SetPublicKey("abc2", common.BlsConsensus)
 	peerConn2.SetRemotePeer(p2)
 	peerConn2.SetRemotePeerID("b")
 
@@ -100,13 +100,13 @@ func TestConnManager_GetPeerConnOfBeacon(t *testing.T) {
 
 	peerConn1 := peer.PeerConn{}
 	p1 := &peer.Peer{}
-	p1.SetPublicKey("abc1", common.BLS_CONSENSUS)
+	p1.SetPublicKey("abc1", common.BlsConsensus)
 	peerConn1.SetRemotePeer(p1)
 	peerConn1.SetRemotePeerID("a")
 
 	peerConn2 := peer.PeerConn{}
 	p2 := &peer.Peer{}
-	p2.SetPublicKey("abc2", common.BLS_CONSENSUS)
+	p2.SetPublicKey("abc2", common.BlsConsensus)
 	peerConn2.SetRemotePeer(p2)
 	peerConn2.SetRemotePeerID("b")
 
@@ -146,13 +146,13 @@ func TestConnManager_GetPeerConnOfShard(t *testing.T) {
 	mapPeerConnection := make(map[string]*peer.PeerConn)
 	peerConn1 := peer.PeerConn{}
 	p1 := &peer.Peer{}
-	p1.SetPublicKey("abc1", common.BLS_CONSENSUS)
+	p1.SetPublicKey("abc1", common.BlsConsensus)
 	peerConn1.SetRemotePeer(p1)
 	peerConn1.SetRemotePeerID("a")
 
 	peerConn2 := peer.PeerConn{}
 	p2 := &peer.Peer{}
-	p2.SetPublicKey("abc2", common.BLS_CONSENSUS)
+	p2.SetPublicKey("abc2", common.BlsConsensus)
 	peerConn2.SetRemotePeer(p2)
 	peerConn2.SetRemotePeerID("b")
 
@@ -166,10 +166,10 @@ func TestConnManager_GetPeerConnOfShard(t *testing.T) {
 	result := make([]*peer.PeerConn, 0)
 	blockchain.NewBeaconBestStateWithConfig(&blockchain.Params{})
 	bestState := blockchain.GetBeaconBestState()
-	bestState.ShardCommittee[0] = []incognitokey.CommitteePublicKey{{MiningPubKey: map[string][]byte{common.BLS_CONSENSUS: []byte("abc1")}}}
+	bestState.ShardCommittee[0] = []incognitokey.CommitteePublicKey{{MiningPubKey: map[string][]byte{common.BlsConsensus: []byte("abc1")}}}
 	result = connManager.GetPeerConnOfShard(0)
 	assert.Equal(t, 1, len(result))
-	bestState.ShardCommittee[2] = []incognitokey.CommitteePublicKey{{MiningPubKey: map[string][]byte{common.BLS_CONSENSUS: []byte("abc2")}}}
+	bestState.ShardCommittee[2] = []incognitokey.CommitteePublicKey{{MiningPubKey: map[string][]byte{common.BlsConsensus: []byte("abc2")}}}
 	result = connManager.GetPeerConnOfShard(2)
 	assert.Equal(t, 1, len(result))
 }

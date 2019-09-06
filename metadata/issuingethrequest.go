@@ -223,7 +223,7 @@ func (iReq *IssuingETHRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 }
 
 func ParseETHLogData(data []byte) (map[string]interface{}, error) {
-	abiIns, err := abi.JSON(strings.NewReader(common.ABIJSON))
+	abiIns, err := abi.JSON(strings.NewReader(common.AbiJson))
 	if err != nil {
 		return nil, err
 	}

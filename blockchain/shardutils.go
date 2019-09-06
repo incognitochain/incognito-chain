@@ -53,7 +53,7 @@ func FetchBeaconBlockFromHeight(db database.DatabaseInterface, from uint64, to u
 
 func CreateCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) []byte {
 	crossIDs := []byte{}
-	byteMap := make([]byte, common.MAX_SHARD_NUMBER)
+	byteMap := make([]byte, common.MaxShardNumber)
 	for _, tx := range txList {
 		if tx.GetProof() != nil {
 			for _, outCoin := range tx.GetProof().GetOutputCoins() {
@@ -105,7 +105,7 @@ func CreateCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) 
 	#4: error
 */
 func CreateSwapAction(pendingValidator []string, commitees []string, committeeSize int, shardID byte) ([]string, []string, []string, error) {
-	newPendingValidator, newShardCommittees, shardSwapedCommittees, shardNewCommittees, err := SwapValidator(pendingValidator, commitees, committeeSize, common.OFFSET)
+	newPendingValidator, newShardCommittees, shardSwapedCommittees, shardNewCommittees, err := SwapValidator(pendingValidator, commitees, committeeSize, common.Offset)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -243,12 +243,12 @@ func CreateShardTxRoot2(txList []metadata.Transaction) ([]common.Hash, []common.
 			1	2			3	4
 	*/
 	merkleTree := Merkle{}
-	merkleData := merkleTree.BuildMerkleTreeOfHashes2(crossShardDataHash, common.MAX_SHARD_NUMBER)
+	merkleData := merkleTree.BuildMerkleTreeOfHashes2(crossShardDataHash, common.MaxShardNumber)
 	return crossShardDataHash, merkleData
 }
 func GetMerklePathCrossShard2(txList []metadata.Transaction, shardID byte) (merklePathShard []common.Hash, merkleShardRoot common.Hash) {
 	_, merkleTree := CreateShardTxRoot2(txList)
-	merklePathShard, merkleShardRoot = Merkle{}.GetMerklePathForCrossShard(common.MAX_SHARD_NUMBER, merkleTree, shardID)
+	merklePathShard, merkleShardRoot = Merkle{}.GetMerklePathForCrossShard(common.MaxShardNumber, merkleTree, shardID)
 	return merklePathShard, merkleShardRoot
 }
 
@@ -306,9 +306,9 @@ func VerifyCrossShardBlockUTXO(block *CrossShardBlock, merklePathShard []common.
 */
 func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 	// group transaction by shardID
-	outCoinEachShard := make([][]privacy.OutputCoin, common.MAX_SHARD_NUMBER)
-	txTokenDataEachShard := make([]map[common.Hash]*transaction.TxNormalTokenData, common.MAX_SHARD_NUMBER)
-	txTokenPrivacyDataMap := make([]map[common.Hash]*ContentCrossShardTokenPrivacyData, common.MAX_SHARD_NUMBER)
+	outCoinEachShard := make([][]privacy.OutputCoin, common.MaxShardNumber)
+	txTokenDataEachShard := make([]map[common.Hash]*transaction.TxNormalTokenData, common.MaxShardNumber)
+	txTokenPrivacyDataMap := make([]map[common.Hash]*ContentCrossShardTokenPrivacyData, common.MaxShardNumber)
 	for _, tx := range txList {
 		switch tx.GetType() {
 		//==================For PRV Transfer Only
@@ -382,11 +382,11 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 		}
 	}
 	//calcualte hash for each shard
-	outputCoinHash := make([]common.Hash, common.MAX_SHARD_NUMBER)
-	txTokenOutHash := make([]common.Hash, common.MAX_SHARD_NUMBER)
-	txTokenPrivacyOutHash := make([]common.Hash, common.MAX_SHARD_NUMBER)
-	combinedHash := make([]common.Hash, common.MAX_SHARD_NUMBER)
-	for i := 0; i < common.MAX_SHARD_NUMBER; i++ {
+	outputCoinHash := make([]common.Hash, common.MaxShardNumber)
+	txTokenOutHash := make([]common.Hash, common.MaxShardNumber)
+	txTokenPrivacyOutHash := make([]common.Hash, common.MaxShardNumber)
+	combinedHash := make([]common.Hash, common.MaxShardNumber)
+	for i := 0; i < common.MaxShardNumber; i++ {
 		outputCoinHash[i] = calHashOutCoinCrossShard(outCoinEachShard[i])
 		txTokenOutHash[i] = calHashTxTokenDataHashFromMap(txTokenDataEachShard[i])
 		txTokenPrivacyOutHash[i] = calHashTxTokenPrivacyDataHashFromMap(txTokenPrivacyDataMap[i])

@@ -189,7 +189,7 @@ func (httpServer *HttpServer) handleGetBlockCount(params interface{}, closeChan 
 	shardID := byte(paramNumber)
 	isGetBeacon := paramNumber == -1
 	if isGetBeacon {
-		beacon, err := httpServer.config.BlockChain.BestState.GetClonedBeaconBestState()
+		beacon, err := httpServer.blockService.GetBeaconBestState()
 		if err != nil {
 			return nil, rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)
 		}
@@ -199,7 +199,7 @@ func (httpServer *HttpServer) handleGetBlockCount(params interface{}, closeChan 
 			return result, nil
 		}
 	}
-	shardById, err := httpServer.config.BlockChain.BestState.GetClonedAShardBestState(shardID)
+	shardById, err := httpServer.blockService.GetShardBestStateByShardID(shardID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetClonedShardBestStateError, err)
 	}
@@ -248,9 +248,9 @@ func (httpServer *HttpServer) handleGetBlockHash(params interface{}, closeChan <
 	isGetBeacon := shardID == -1
 
 	if isGetBeacon {
-		beaconBlock, err = httpServer.config.BlockChain.GetBeaconBlockByHeight(height)
+		beaconBlock, err = httpServer.blockService.GetBeaconBlockByHeight(height)
 	} else {
-		shardBlock, err = httpServer.config.BlockChain.GetShardBlockByHeight(height, byte(shardID))
+		shardBlock, err = httpServer.blockService.GetShardBlockByHeight(height, byte(shardID))
 	}
 
 	if err != nil {
