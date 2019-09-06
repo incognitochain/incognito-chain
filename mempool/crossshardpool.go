@@ -353,10 +353,7 @@ func (crossShardPool *CrossShardPool) GetLatestValidBlockHeight() map[byte]uint6
 	crossShardPool.mtx.RLock()
 	defer crossShardPool.mtx.RUnlock()
 	finalBlockHeight := make(map[byte]uint64)
-	if len(crossShardPool.pendingPool[0]) > 0 {
-		expectedHeight := crossShardPool.updatePool()
-		fmt.Println(expectedHeight)
-	}
+
 	for shardID, blkItems := range crossShardPool.validPool {
 		if len(blkItems) > 0 {
 			finalBlockHeight[shardID] = blkItems[len(blkItems)-1].Header.Height
