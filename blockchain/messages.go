@@ -31,9 +31,9 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 		Peer:   peerID,
 	}
 	nodeMode := blockchain.config.NodeMode
-	if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+	if userRole == common.ProposerRole || userRole == common.ValidatorRole {
 		pState.ShardToBeaconPool = shardToBeaconPool
-		for shardID := byte(0); shardID < byte(common.MAX_SHARD_NUMBER); shardID++ {
+		for shardID := byte(0); shardID < byte(common.MaxShardNumber); shardID++ {
 			if shardState, ok := (*shard)[shardID]; ok {
 				if shardState.Height > GetBeaconBestState().GetBestHeightOfShard(shardID) {
 					pState.Shard[shardID] = &shardState
@@ -41,9 +41,9 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 			}
 		}
 	}
-	if userRole == common.SHARD_ROLE && (nodeMode == common.NODEMODE_AUTO || nodeMode == common.NODEMODE_BEACON) {
+	if userRole == common.ShardRole && (nodeMode == common.NodeModeAuto || nodeMode == common.NodeModeBeacon) {
 		userShardRole = blockchain.BestState.Shard[userShardID].GetPubkeyRole(miningKey, blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
-		if userShardRole == common.PROPOSER_ROLE || userShardRole == common.VALIDATOR_ROLE {
+		if userShardRole == common.ProposerRole || userShardRole == common.ValidatorRole {
 			if shardState, ok := (*shard)[userShardID]; ok && shardState.Height >= blockchain.BestState.Shard[userShardID].ShardHeight {
 				pState.Shard[userShardID] = &shardState
 				if pool, ok := (*crossShardPool)[userShardID]; ok {
@@ -93,7 +93,7 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 
 				userRole := currentShardBestState.GetPubkeyRole(userPubKey, 0)
 				fmt.Println("Shard block received 1", userRole)
-				if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+				if userRole == common.ProposerRole || userRole == common.ValidatorRole {
 					// Revert beststate
 					// @NOTICE: Choose block with highest round, because we assume that most of node state is at the highest round
 					if currentShardBestState.ShardHeight == newBlk.Header.Height && currentShardBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentShardBestState.BestBlock.Header.Round < newBlk.Header.Round {
@@ -160,7 +160,7 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 				// Revert beststate
 
 				userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(publicKey, 0)
-				if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+				if userRole == common.ProposerRole || userRole == common.ValidatorRole {
 					currentBeaconBestState := blockchain.BestState.Beacon
 					if currentBeaconBestState.BeaconHeight == newBlk.Header.Height && currentBeaconBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentBeaconBestState.BestBlock.Header.Round < newBlk.Header.Round {
 						fmt.Println("FORK BEACON", newBlk.Header.Height)
@@ -206,10 +206,10 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block *ShardToBeaconB
 	if blockchain.IsTest {
 		return
 	}
-	if blockchain.config.NodeMode == common.NODEMODE_BEACON || blockchain.config.NodeMode == common.NODEMODE_AUTO {
+	if blockchain.config.NodeMode == common.NodeModeBeacon || blockchain.config.NodeMode == common.NodeModeAuto {
 		publicKey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
 		beaconRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(publicKey, 0)
-		if beaconRole != common.PROPOSER_ROLE && beaconRole != common.VALIDATOR_ROLE {
+		if beaconRole != common.ProposerRole && beaconRole != common.ValidatorRole {
 			return
 		}
 	} else {
@@ -246,10 +246,10 @@ func (blockchain *BlockChain) OnCrossShardBlockReceived(block *CrossShardBlock) 
 	if blockchain.IsTest {
 		return
 	}
-	if blockchain.config.NodeMode == common.NODEMODE_SHARD || blockchain.config.NodeMode == common.NODEMODE_AUTO {
+	if blockchain.config.NodeMode == common.NodeModeShard || blockchain.config.NodeMode == common.NodeModeAuto {
 		publickey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
 		shardRole := blockchain.BestState.Shard[block.ToShardID].GetPubkeyRole(publickey, 0)
-		if shardRole != common.PROPOSER_ROLE && shardRole != common.VALIDATOR_ROLE {
+		if shardRole != common.ProposerRole && shardRole != common.ValidatorRole {
 			return
 		}
 	} else {

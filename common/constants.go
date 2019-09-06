@@ -75,23 +75,23 @@ const (
 
 // CONSENSUS
 const (
-	OFFSET = 1
+	Offset = 1
 
-	NODEMODE_RELAY  = "relay"
-	NODEMODE_SHARD  = "shard"
-	NODEMODE_AUTO   = "auto"
-	NODEMODE_BEACON = "beacon"
+	NodeModeRelay  = "relay"
+	NodeModeShard  = "shard"
+	NodeModeAuto   = "auto"
+	NodeModeBeacon = "beacon"
 
-	BEACON_ROLE    = "beacon"
-	SHARD_ROLE     = "shard"
-	PROPOSER_ROLE  = "proposer"
-	VALIDATOR_ROLE = "validator"
-	PENDING_ROLE   = "pending"
+	BeaconRole    = "beacon"
+	ShardRole     = "shard"
+	ProposerRole  = "proposer"
+	ValidatorRole = "validator"
+	PendingRole   = "pending"
 
-	MAX_SHARD_NUMBER = 8
+	MaxShardNumber = 8
 
-	BLS_CONSENSUS = "bls"
-	BRI_CONSENSUS = "dsa"
+	BlsConsensus    = "bls"
+	BridgeConsensus = "dsa"
 )
 
 // Ethereum Decentralized bridge

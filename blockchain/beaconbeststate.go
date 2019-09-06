@@ -473,7 +473,7 @@ func (beaconBestState *BeaconBestState) GetPubkeyRole(pubkey string, round int) 
 		keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(pubkeyArr, beaconBestState.ShardConsensusAlgorithm[shardID])
 		found := common.IndexOfStr(pubkey, keyList)
 		if found > -1 {
-			return common.SHARD_ROLE, shardID
+			return common.ShardRole, shardID
 		}
 	}
 
@@ -481,7 +481,7 @@ func (beaconBestState *BeaconBestState) GetPubkeyRole(pubkey string, round int) 
 		keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(pubkeyArr, beaconBestState.ShardConsensusAlgorithm[shardID])
 		found := common.IndexOfStr(pubkey, keyList)
 		if found > -1 {
-			return common.SHARD_ROLE, shardID
+			return common.ShardRole, shardID
 		}
 	}
 
@@ -490,15 +490,15 @@ func (beaconBestState *BeaconBestState) GetPubkeyRole(pubkey string, round int) 
 	if found > -1 {
 		tmpID := (beaconBestState.BeaconProposerIndex + round) % len(beaconBestState.BeaconCommittee)
 		if found == tmpID {
-			return common.PROPOSER_ROLE, 0
+			return common.ProposerRole, 0
 		}
-		return common.VALIDATOR_ROLE, 0
+		return common.ValidatorRole, 0
 	}
 
 	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.BeaconPendingValidator, beaconBestState.ConsensusAlgorithm)
 	found = common.IndexOfStr(pubkey, keyList)
 	if found > -1 {
-		return common.PENDING_ROLE, 0
+		return common.PendingRole, 0
 	}
 
 	return common.EmptyString, 0

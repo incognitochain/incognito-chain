@@ -398,7 +398,7 @@ func (httpServer *HttpServer) handleGetActiveShards(params interface{}, closeCha
 
 func (httpServer *HttpServer) handleGetMaxShardsNumber(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleGetMaxShardsNumber params: %+v", params)
-	result := common.MAX_SHARD_NUMBER
+	result := common.MaxShardNumber
 	Logger.log.Debugf("handleGetMaxShardsNumber result: %+v", result)
 	return result, nil
 }
