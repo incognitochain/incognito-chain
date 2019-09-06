@@ -25,6 +25,7 @@ func TestUtilsRandBytes(t *testing.T) {
 
 	for _, item := range data {
 		res := RandBytes(item)
+		fmt.Printf("Res: %v\n", res)
 		assert.Equal(t, item, len(res))
 	}
 }
