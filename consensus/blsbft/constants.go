@@ -7,17 +7,17 @@ import (
 )
 
 const (
-	PROPOSE       = "PROPOSE"
-	LISTEN        = "LISTEN"
-	VOTE          = "VOTE"
-	NEWROUND      = "NEWROUND"
-	BLS           = "bls"
-	BRI           = "dsa"
-	CONSENSUSNAME = common.BLS_CONSENSUS
+	proposePhase  = "PROPOSE"
+	listenPhase   = "LISTEN"
+	votePhase     = "VOTE"
+	newround      = "NEWROUND"
+	bls           = "bls"
+	bri           = "dsa"
+	consensusName = common.BLS_CONSENSUS
 )
 
 //
 const (
-	TIMEOUT             = 20 * time.Second // must be at least twice the time of block creation
-	MaxNetworkDelayTime = 150 * time.Millisecond // in ms
+	timeout             = 20 * time.Second       // must be at least twice the time of block creation
+	maxNetworkDelayTime = 150 * time.Millisecond // in ms
 )
