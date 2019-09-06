@@ -290,3 +290,11 @@ func (blockService *BlockService) GetBlocks(shardIDParam int, numBlock int) (int
 		return result, nil
 	}
 }
+
+func (blockService *BlockService) GetBeaconBlockByHeight(height uint64) (*blockchain.BeaconBlock, error) {
+	return blockService.BlockChain.GetBeaconBlockByHeight(height)
+}
+
+func (blockService *BlockService) GetShardBlockByHeight(height uint64, shardID byte) (*blockchain.ShardBlock, error) {
+	return blockService.BlockChain.GetShardBlockByHeight(height, shardID)
+}
