@@ -27,8 +27,7 @@ var _ = func() (_ struct{}) {
 //TestPKOneOfMany test protocol for one of many Commitment is Commitment to zero
 func TestPKOneOfMany(t *testing.T) {
 	// prepare witness for Out out of many protocol
-
-	for i:=0; i<10; i++{
+	for i := 0; i < 10; i++ {
 		witness := new(OneOutOfManyWitness)
 
 		indexIsZero := int(common.RandInt() % privacy.CommitmentRingSize)
@@ -45,7 +44,7 @@ func TestPKOneOfMany(t *testing.T) {
 		}
 
 		// create Commitment to zero at indexIsZero
-		snDerivators[indexIsZero] = big.NewInt(1)
+		snDerivators[indexIsZero] = big.NewInt(0)
 		commitments[indexIsZero] = privacy.PedCom.CommitAtIndex(snDerivators[indexIsZero], randoms[indexIsZero], privacy.PedersenSndIndex)
 
 		witness.Set(commitments, randoms[indexIsZero], uint64(indexIsZero))
@@ -77,7 +76,6 @@ func TestPKOneOfMany(t *testing.T) {
 		assert.Equal(t, true, res)
 		assert.Equal(t, nil, err)
 	}
-
 }
 
 func TestGetCoefficient(t *testing.T) {

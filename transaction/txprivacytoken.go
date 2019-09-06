@@ -165,6 +165,7 @@ type TxPrivacyTokenInitParams struct {
 	hasPrivacyCoin  bool
 	hasPrivacyToken bool
 	shardID         byte
+	info            []byte
 }
 
 func NewTxPrivacyTokenInitParams(senderKey *privacy.PrivateKey,
@@ -176,7 +177,8 @@ func NewTxPrivacyTokenInitParams(senderKey *privacy.PrivateKey,
 	metaData metadata.Metadata,
 	hasPrivacyCoin bool,
 	hasPrivacyToken bool,
-	shardID byte) *TxPrivacyTokenInitParams {
+	shardID byte,
+	info []byte) *TxPrivacyTokenInitParams {
 	params := &TxPrivacyTokenInitParams{
 		shardID:         shardID,
 		paymentInfo:     paymentInfo,
@@ -188,6 +190,7 @@ func NewTxPrivacyTokenInitParams(senderKey *privacy.PrivateKey,
 		inputCoin:       inputCoin,
 		senderKey:       senderKey,
 		tokenParams:     tokenParams,
+		info:            info,
 	}
 	return params
 }
@@ -205,7 +208,8 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 		params.hasPrivacyCoin,
 		params.db,
 		nil,
-		params.metaData))
+		params.metaData,
+		params.info))
 	if err != nil {
 		return NewTransactionErr(PrivacyTokenInitPRVError, err)
 	}
@@ -322,7 +326,8 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 				params.hasPrivacyToken,
 				params.db,
 				propertyID,
-				nil))
+				nil,
+				params.info))
 			if err != nil {
 				return NewTransactionErr(PrivacyTokenInitTokenDataError, err)
 			}
