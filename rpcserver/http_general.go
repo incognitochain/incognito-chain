@@ -1,13 +1,10 @@
 package rpcserver
 
 import (
-	"log"
-	"strconv"
-
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"log"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -26,7 +23,6 @@ func (httpServer *HttpServer) handleGetInOutMessageCount(params interface{}, clo
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
-	// Logger.log.Debugf("handleGetInOutPeerMessages result: %+v", result)
 	return result, nil
 }
 
@@ -41,7 +37,6 @@ func (httpServer *HttpServer) handleGetInOutMessages(params interface{}, closeCh
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
-	//Logger.log.Debugf("handleGetInOutPeerMessages result: %+v", result)
 	return result, nil
 }
 
@@ -86,9 +81,6 @@ func (httpServer *HttpServer) handleGetNetWorkInfo(params interface{}, closeChan
 //
 func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleListUnspentOutputCoins params: %+v", params)
-	result := jsonresult.ListOutputCoins{
-		Outputs: make(map[string][]jsonresult.OutCoin),
-	}
 
 	// get component
 	paramsArray := common.InterfaceSlice(params)
@@ -103,52 +95,11 @@ func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, c
 	_ = min
 	_ = max
 	listKeyParams := common.InterfaceSlice(paramsArray[2])
-	for _, keyParam := range listKeyParams {
-		keys := keyParam.(map[string]interface{})
-
-		// get keyset only contain pri-key by deserializing
-		priKeyStr := keys["PrivateKey"].(string)
-		keyWallet, err := wallet.Base58CheckDeserialize(priKeyStr)
-		if err != nil {
-			log.Println("Check Deserialize err", err)
-			continue
-		}
-		if keyWallet.KeySet.PrivateKey == nil {
-			log.Println("Private key empty")
-			continue
-		}
-
-		err = keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-		}
-		shardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1])
-		tokenID := &common.Hash{}
-		err = tokenID.SetBytes(common.PRVCoinID[:])
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.TokenIsInvalidError, err)
-		}
-		outCoins, err := httpServer.config.BlockChain.GetListOutputCoinsByKeyset(&keyWallet.KeySet, shardID, tokenID)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-		}
-		item := make([]jsonresult.OutCoin, 0)
-		for _, outCoin := range outCoins {
-			if outCoin.CoinDetails.GetValue() == 0 {
-				continue
-			}
-			item = append(item, jsonresult.OutCoin{
-				SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.GetSerialNumber().Compress(), common.ZeroByte),
-				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.GetPublicKey().Compress(), common.ZeroByte),
-				Value:          strconv.FormatUint(outCoin.CoinDetails.GetValue(), 10),
-				Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.GetInfo()[:], common.ZeroByte),
-				CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.GetCoinCommitment().Compress(), common.ZeroByte),
-				Randomness:     base58.Base58Check{}.Encode(outCoin.CoinDetails.GetRandomness().Bytes(), common.ZeroByte),
-				SNDerivator:    base58.Base58Check{}.Encode(outCoin.CoinDetails.GetSNDerivator().Bytes(), common.ZeroByte),
-			})
-		}
-		result.Outputs[priKeyStr] = item
+	result, err := httpServer.outputCoinService.ListListUnspentOutputCoinsByKey(listKeyParams)
+	if err != nil {
+		return nil, err
 	}
+
 	Logger.log.Debugf("handleListUnspentOutputCoins result: %+v", result)
 	return result, nil
 }
