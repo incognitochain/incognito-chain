@@ -356,7 +356,6 @@ func (crossShardPool *CrossShardPool) GetLatestValidBlockHeight() map[byte]uint6
 	if len(crossShardPool.pendingPool[0]) > 0 {
 		expectedHeight := crossShardPool.updatePool()
 		fmt.Println(expectedHeight)
-		panic("65tyujt")
 	}
 	for shardID, blkItems := range crossShardPool.validPool {
 		if len(blkItems) > 0 {
