@@ -80,6 +80,7 @@ type RpcServerConfig struct {
 	ConsensusEngine interface {
 		GetUserRole() (string, int)
 		GetCurrentMiningPublicKey() (publickey string, keyType string)
+		GetAllMiningPublicKeys() []string
 		ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error)
 	}
 	TxMemPool         *mempool.TxPool
