@@ -26,10 +26,10 @@ if [ -z $WS_PORT ]; then WS_PORT=19334; fi
 
 
 
-if [ -z $PRIVATEKEY ]; then
+if [ -n $PRIVATEKEY ]; then
     echo ./incognito -n $NAME --discoverpeers --discoverpeersaddress $BOOTNODE_IP --privatekey $PRIVATEKEY --nodemode "auto" --datadir "/data" --listen "0.0.0.0:$NODE_PORT" --externaladdress "$PUBLIC_IP:$NODE_PORT" --norpcauth --enablewallet --wallet "incognito" --walletpassphrase "12345678" --walletautoinit --rpclisten "0.0.0.0:$RPC_PORT" --rpcwslisten "0.0.0.0:$WS_PORT" > cmd.sh
     ./incognito -n $NAME --discoverpeers --discoverpeersaddress $BOOTNODE_IP --privatekey $PRIVATEKEY --nodemode "auto" --datadir "/data" --listen "0.0.0.0:$NODE_PORT" --externaladdress "$PUBLIC_IP:$NODE_PORT" --norpcauth --enablewallet --wallet "incognito" --walletpassphrase "12345678" --walletautoinit --rpclisten "0.0.0.0:$RPC_PORT" --rpcwslisten "0.0.0.0:$WS_PORT" > /data/log.txt 2>/data/error_log.txt
-elif [ -z $MININGKEY ]; then
+elif [ -n $MININGKEY ]; then
     echo ./incognito -n $NAME --discoverpeers --discoverpeersaddress $BOOTNODE_IP --miningkeys $MININGKEY --nodemode "auto" --datadir "/data" --listen "0.0.0.0:$NODE_PORT" --externaladdress "$PUBLIC_IP:$NODE_PORT" --norpcauth --enablewallet --wallet "incognito" --walletpassphrase "12345678" --walletautoinit --rpclisten "0.0.0.0:$RPC_PORT" --rpcwslisten "0.0.0.0:$WS_PORT" > cmd.sh
     ./incognito -n $NAME --discoverpeers --discoverpeersaddress $BOOTNODE_IP --miningkeys $MININGKEY --nodemode "auto" --datadir "/data" --listen "0.0.0.0:$NODE_PORT" --externaladdress "$PUBLIC_IP:$NODE_PORT" --norpcauth --enablewallet --wallet "incognito" --walletpassphrase "12345678" --walletautoinit --rpclisten "0.0.0.0:$RPC_PORT" --rpcwslisten "0.0.0.0:$WS_PORT" > /data/log.txt 2>/data/error_log.txt
 fi
