@@ -20,18 +20,18 @@ func TestRpcServer_AddOrUpdatePeer(t *testing.T) {
 		t.Error(err)
 	}
 	blsBft.LoadUserKey(privateSeed)
-	blsPublicKeyBytes := blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BLS_CONSENSUS]
+	blsPublicKeyBytes := blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BlsConsensus]
 
 	args := &PingArgs{
 		RawAddress: "localhost:9333",
 		PublicKey:  base58.Base58Check{}.Encode(blsPublicKeyBytes, common.ZeroByte),
 	}
-	signDataInByte, err := blsBft.UserKeySet.BLSSignData([]byte(args.RawAddress), 0, []blsmultisig.PublicKey{blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BLS_CONSENSUS]})
+	signDataInByte, err := blsBft.UserKeySet.BLSSignData([]byte(args.RawAddress), 0, []blsmultisig.PublicKey{blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BlsConsensus]})
 	if err != nil {
 		t.Error(err)
 	}
 	args.SignData = base58.Base58Check{}.Encode(signDataInByte, common.ZeroByte)
-	rpcServer.AddOrUpdatePeer(args.RawAddress, common.BLS_CONSENSUS, args.PublicKey, args.SignData)
+	rpcServer.AddOrUpdatePeer(args.RawAddress, common.BlsConsensus, args.PublicKey, args.SignData)
 	if len(rpcServer.peers) == 0 {
 		t.Error("AddOrUpdatePeer fail")
 	}
@@ -49,19 +49,19 @@ func TestRpcServer_RemovePeerByPbk(t *testing.T) {
 		t.Error(err)
 	}
 	blsBft.LoadUserKey(privateSeed)
-	blsPublicKeyBytes := blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BLS_CONSENSUS]
+	blsPublicKeyBytes := blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BlsConsensus]
 
 	args := &PingArgs{
 		RawAddress: "localhost:9333",
 		PublicKey:  base58.Base58Check{}.Encode(blsPublicKeyBytes, common.ZeroByte),
 	}
-	signDataInByte, err := blsBft.UserKeySet.BLSSignData([]byte(args.RawAddress), 0, []blsmultisig.PublicKey{blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BLS_CONSENSUS]})
+	signDataInByte, err := blsBft.UserKeySet.BLSSignData([]byte(args.RawAddress), 0, []blsmultisig.PublicKey{blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BlsConsensus]})
 	if err != nil {
 		t.Error(err)
 	}
 	args.SignData = base58.Base58Check{}.Encode(signDataInByte, common.ZeroByte)
 
-	rpcServer.AddOrUpdatePeer(args.RawAddress, common.BLS_CONSENSUS, args.PublicKey, args.SignData)
+	rpcServer.AddOrUpdatePeer(args.RawAddress, common.BlsConsensus, args.PublicKey, args.SignData)
 	if len(rpcServer.peers) == 0 {
 		t.Error("AddOrUpdatePeer fail")
 	}
@@ -84,18 +84,18 @@ func TestRpcServer_PeerHeartBeat(t *testing.T) {
 		t.Error(err)
 	}
 	blsBft.LoadUserKey(privateSeed)
-	blsPublicKeyBytes := blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BLS_CONSENSUS]
+	blsPublicKeyBytes := blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BlsConsensus]
 
 	args := &PingArgs{
 		RawAddress: "localhost:9333",
 		PublicKey:  base58.Base58Check{}.Encode(blsPublicKeyBytes, common.ZeroByte),
 	}
-	signDataInByte, err := blsBft.UserKeySet.BLSSignData([]byte(args.RawAddress), 0, []blsmultisig.PublicKey{blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BLS_CONSENSUS]})
+	signDataInByte, err := blsBft.UserKeySet.BLSSignData([]byte(args.RawAddress), 0, []blsmultisig.PublicKey{blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BlsConsensus]})
 	if err != nil {
 		t.Error(err)
 	}
 	args.SignData = base58.Base58Check{}.Encode(signDataInByte, common.ZeroByte)
-	rpcServer.AddOrUpdatePeer(args.RawAddress, common.BLS_CONSENSUS, args.PublicKey, args.SignData)
+	rpcServer.AddOrUpdatePeer(args.RawAddress, common.BlsConsensus, args.PublicKey, args.SignData)
 	if len(rpcServer.peers) == 0 {
 		t.Error("AddOrUpdatePeer fail")
 	}
