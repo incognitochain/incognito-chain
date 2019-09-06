@@ -1,8 +1,9 @@
 package rpcserver
 
 import (
-	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"log"
+
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -356,17 +357,9 @@ func (httpServer *HttpServer) handleHashToIdenticon(params interface{}, closeCha
 
 // handleGetPublicKeyMining - return publickey mining which be used to verify block
 func (httpServer *HttpServer) handleGetPublicKeyMining(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	publicKey, keyType := httpServer.config.ConsensusEngine.GetCurrentMiningPublicKey()
-	if publicKey != "" {
-		key := struct {
-			PublicKey string
-			KeyType   string
-		}{
-			PublicKey: publicKey,
-			KeyType:   keyType,
-		}
-		return key, nil
-	} else {
+	keys := httpServer.config.ConsensusEngine.GetAllMiningPublicKeys()
+	if len(keys) == 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("Can not find key"))
 	}
+	return keys, nil
 }
