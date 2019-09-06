@@ -2,8 +2,8 @@
 
 run()
 {
-  private_key=""
-  mining_key=""
+  private_key=xxx
+  mining_key=yyy
   latest_tag=$1
   current_tag=$2
   data_dir="data"
