@@ -72,38 +72,6 @@ func (httpServer *HttpServer) handleGetNetWorkInfo(params interface{}, closeChan
 	return result, nil
 }
 
-//handleListUnspentOutputCoins - use private key to get all tx which contains output coin of account
-// by private key, it return full tx outputcoin with amount and receiver address in txs
-//component:
-//Parameter #1—the minimum number of confirmations an output must have
-//Parameter #2—the maximum number of confirmations an output may have
-//Parameter #3—the list priv-key which be used to view utxo
-//
-func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleListUnspentOutputCoins params: %+v", params)
-
-	// get component
-	paramsArray := common.InterfaceSlice(params)
-	var min int
-	var max int
-	if len(paramsArray) > 0 && paramsArray[0] != nil {
-		min = int(paramsArray[0].(float64))
-	}
-	if len(paramsArray) > 1 && paramsArray[1] != nil {
-		max = int(paramsArray[1].(float64))
-	}
-	_ = min
-	_ = max
-	listKeyParams := common.InterfaceSlice(paramsArray[2])
-	result, err := httpServer.outputCoinService.ListListUnspentOutputCoinsByKey(listKeyParams)
-	if err != nil {
-		return nil, err
-	}
-
-	Logger.log.Debugf("handleListUnspentOutputCoins result: %+v", result)
-	return result, nil
-}
-
 func (httpServer *HttpServer) handleCheckHashValue(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleCheckHashValue params: %+v", params)
 	var (

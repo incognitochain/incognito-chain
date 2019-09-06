@@ -1,6 +1,7 @@
 package rpcservice
 
 import (
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"log"
 	"strconv"
 
@@ -15,7 +16,7 @@ type OutputCoinService struct {
 	BlockChain *blockchain.BlockChain
 }
 
-func (outputCounService OutputCoinService) ListListUnspentOutputCoinsByKey(listKeyParams []interface{}) (*jsonresult.ListOutputCoins, *RPCError) {
+func (outputCounService OutputCoinService) ListUnspentOutputCoinsByKey(listKeyParams []interface{}) (*jsonresult.ListOutputCoins, *RPCError) {
 	result := &jsonresult.ListOutputCoins{
 		Outputs: make(map[string][]jsonresult.OutCoin),
 	}
@@ -64,6 +65,54 @@ func (outputCounService OutputCoinService) ListListUnspentOutputCoinsByKey(listK
 			})
 		}
 		result.Outputs[priKeyStr] = item
+	}
+	return result, nil
+}
+
+func (outputCounService OutputCoinService) ListOutputCoinsByKey(listKeyParams []interface{}, tokenID common.Hash) (*jsonresult.ListOutputCoins, *RPCError) {
+	result := &jsonresult.ListOutputCoins{
+		Outputs: make(map[string][]jsonresult.OutCoin),
+	}
+	for _, keyParam := range listKeyParams {
+		keys := keyParam.(map[string]interface{})
+
+		// get keyset only contain readonly-key by deserializing
+		readonlyKeyStr := keys["ReadonlyKey"].(string)
+		readonlyKey, err := wallet.Base58CheckDeserialize(readonlyKeyStr)
+		if err != nil {
+			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
+
+		// get keyset only contain pub-key by deserializing
+		pubKeyStr := keys["PaymentAddress"].(string)
+		pubKey, err := wallet.Base58CheckDeserialize(pubKeyStr)
+		if err != nil {
+			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
+
+		// create a key set
+		keySet := incognitokey.KeySet{
+			ReadonlyKey:    readonlyKey.KeySet.ReadonlyKey,
+			PaymentAddress: pubKey.KeySet.PaymentAddress,
+		}
+		lastByte := keySet.PaymentAddress.Pk[len(keySet.PaymentAddress.Pk)-1]
+		shardIDSender := common.GetShardIDFromLastByte(lastByte)
+		outputCoins, err := outputCounService.BlockChain.GetListOutputCoinsByKeyset(&keySet, shardIDSender, &tokenID)
+		if err != nil {
+			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
+		item := make([]jsonresult.OutCoin, 0)
+
+		for _, outCoin := range outputCoins {
+			if outCoin.CoinDetails.GetValue() == 0 {
+				continue
+			}
+			item = append(item, jsonresult.NewOutCoin(outCoin))
+		}
+		result.Outputs[readonlyKeyStr] = item
 	}
 	return result, nil
 }
