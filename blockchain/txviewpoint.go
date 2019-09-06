@@ -434,13 +434,17 @@ func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.Dat
 			if crossTransaction.TokenPrivacyData != nil && len(crossTransaction.TokenPrivacyData) > 0 {
 				for index, tokenPrivacyData := range crossTransaction.TokenPrivacyData {
 					subView := NewTxViewPoint(block.Header.ShardID)
-					subView.tokenID = &tokenPrivacyData.PropertyID
-					subView.privacyCustomTokenMetadata.TokenID = tokenPrivacyData.PropertyID
+					temp, err := common.Hash{}.NewHash(tokenPrivacyData.PropertyID.GetBytes())
+					if err != nil {
+						return err
+					}
+					subView.tokenID = temp
+					subView.privacyCustomTokenMetadata.TokenID = *temp
 					subView.privacyCustomTokenMetadata.PropertyName = tokenPrivacyData.PropertyName
 					subView.privacyCustomTokenMetadata.PropertySymbol = tokenPrivacyData.PropertySymbol
 					subView.privacyCustomTokenMetadata.Amount = tokenPrivacyData.Amount
 					subView.privacyCustomTokenMetadata.Mintable = tokenPrivacyData.Mintable
-					commitmentsP, outCoinsP, snDsP, err := view.processFetchCrossOutputViewPoint(block.Header.ShardID, db, tokenPrivacyData.OutputCoin, subView.tokenID)
+					commitmentsP, outCoinsP, snDsP, err := subView.processFetchCrossOutputViewPoint(block.Header.ShardID, db, tokenPrivacyData.OutputCoin, subView.tokenID)
 					if err != nil {
 						return NewBlockChainError(UnExpectedError, err)
 					}

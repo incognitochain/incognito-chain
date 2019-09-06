@@ -3,7 +3,6 @@ package transaction
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/constant-money/constant-chain/mempool"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -132,7 +131,7 @@ func TestInitTx(t *testing.T) {
 	assert.Equal(t, true, isValid)
 	assert.Equal(t, nil, err)
 
-	isValidTxVersion := tx1.CheckTxVersion(mempool.MaxVersion)
+	isValidTxVersion := tx1.CheckTxVersion(1)
 	assert.Equal(t, true, isValidTxVersion)
 
 	isValidTxFee := tx1.CheckTransactionFee(0)
