@@ -27,7 +27,7 @@ func (miningKey *MiningKey) GetPublicKey() incognitokey.CommitteePublicKey {
 	key := incognitokey.CommitteePublicKey{}
 	key.MiningPubKey = make(map[string][]byte)
 	key.MiningPubKey[common.BlsConsensus] = miningKey.PubKey[bls]
-	key.MiningPubKey[common.BriConsensus] = miningKey.PubKey[bri]
+	key.MiningPubKey[common.BridgeConsensus] = miningKey.PubKey[bri]
 	return key
 }
 

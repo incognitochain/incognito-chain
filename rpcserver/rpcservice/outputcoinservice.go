@@ -37,7 +37,7 @@ func (outputCounService OutputCoinService) ListUnspentOutputCoinsByKey(listKeyPa
 
 		err = keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+			return nil, NewRPCError(UnexpectedError, err)
 		}
 		shardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1])
 		tokenID := &common.Hash{}
@@ -81,7 +81,7 @@ func (outputCounService OutputCoinService) ListOutputCoinsByKey(listKeyParams []
 		readonlyKey, err := wallet.Base58CheckDeserialize(readonlyKeyStr)
 		if err != nil {
 			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
-			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+			return nil, NewRPCError(UnexpectedError, err)
 		}
 
 		// get keyset only contain pub-key by deserializing
@@ -89,7 +89,7 @@ func (outputCounService OutputCoinService) ListOutputCoinsByKey(listKeyParams []
 		pubKey, err := wallet.Base58CheckDeserialize(pubKeyStr)
 		if err != nil {
 			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
-			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+			return nil, NewRPCError(UnexpectedError, err)
 		}
 
 		// create a key set
@@ -102,7 +102,7 @@ func (outputCounService OutputCoinService) ListOutputCoinsByKey(listKeyParams []
 		outputCoins, err := outputCounService.BlockChain.GetListOutputCoinsByKeyset(&keySet, shardIDSender, &tokenID)
 		if err != nil {
 			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
-			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+			return nil, NewRPCError(UnexpectedError, err)
 		}
 		item := make([]jsonresult.OutCoin, 0)
 
