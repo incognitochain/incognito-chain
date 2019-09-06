@@ -85,9 +85,9 @@ func TestCommitteePublicKey_FromString(t *testing.T) {
 				t.Errorf("CommitteePublicKey.FromString() error = %v, wantErr %v", err, tt.wantErr)
 			} else {
 				fmt.Println(pubKey.GetNormalKey())
-				blsBytes, _ := pubKey.GetMiningKey(common.BLS_CONSENSUS)
+				blsBytes, _ := pubKey.GetMiningKey(common.BlsConsensus)
 				fmt.Println(base58.Base58Check{}.Encode(blsBytes, common.Base58Version))
-				fmt.Println(pubKey.GetMiningKey(common.BRI_CONSENSUS))
+				fmt.Println(pubKey.GetMiningKey(common.BridgeConsensus))
 			}
 
 		})
