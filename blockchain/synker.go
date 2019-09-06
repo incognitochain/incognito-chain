@@ -854,7 +854,7 @@ var currentInsert = struct {
 
 func (synker *Synker) InsertBlockFromPool() {
 	go func() {
-		if !synker.blockchain.config.ConsensusEngine.IsOngoing(common.BEACON_CHAINKEY) {
+		if !synker.blockchain.config.ConsensusEngine.IsOngoing(common.BeaconChainKey) {
 			synker.InsertBeaconBlockFromPool()
 		}
 	}()
@@ -877,7 +877,7 @@ func (synker *Synker) InsertBeaconBlockFromPool() {
 	currentInsert.Beacon.Lock()
 	defer currentInsert.Beacon.Unlock()
 	blocks := synker.blockchain.config.BeaconPool.GetValidBlock()
-	chain := synker.blockchain.Chains[common.BEACON_CHAINKEY]
+	chain := synker.blockchain.Chains[common.BeaconChainKey]
 
 	curEpoch := GetBeaconBestState().Epoch
 	sameCommitteeBlock := blocks

@@ -137,7 +137,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	}
 	isChanged := !reflect.DeepEqual(snapshotBeaconCommittee, newBeaconCommittee)
 	if isChanged {
-		go blockchain.config.ConsensusEngine.CommitteeChange(common.BEACON_CHAINKEY)
+		go blockchain.config.ConsensusEngine.CommitteeChange(common.BeaconChainKey)
 	}
 	//Check shard-pending
 	for shardID, committee := range newAllShardPending {

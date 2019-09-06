@@ -181,7 +181,7 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 					}
 
 					if blockchain.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 {
-						if !blockchain.config.ConsensusEngine.IsOngoing(common.BEACON_CHAINKEY) {
+						if !blockchain.config.ConsensusEngine.IsOngoing(common.BeaconChainKey) {
 							fmt.Println("Beacon block insert", newBlk.Header.Height)
 							err := blockchain.InsertBeaconBlock(newBlk, false)
 							if err != nil {
