@@ -177,7 +177,7 @@ func (db *db) FetchShardBestState(shardID byte) ([]byte, error) {
 }
 
 func (db *db) CleanShardBestState() error {
-	for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
+	for shardID := byte(0); shardID < common.MaxShardNumber; shardID++ {
 		key := append(bestBlockKeyPrefix, shardID)
 		err := db.Delete(key)
 		if err != nil {
