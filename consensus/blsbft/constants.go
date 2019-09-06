@@ -13,11 +13,11 @@ const (
 	NEWROUND      = "NEWROUND"
 	BLS           = "bls"
 	BRI           = "dsa"
-	CONSENSUSNAME = common.BLS_CONSENSUS
+	CONSENSUSNAME = common.BlsConsensus
 )
 
 //
 const (
-	TIMEOUT             = 20 * time.Second // must be at least twice the time of block creation
+	TIMEOUT             = 20 * time.Second       // must be at least twice the time of block creation
 	MaxNetworkDelayTime = 150 * time.Millisecond // in ms
 )
