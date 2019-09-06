@@ -79,7 +79,7 @@ func (e BLSBFT) ValidateProducerPosition(block common.BlockInterface, lastPropos
 	producerPosition := (lastProposerIndex + block.GetRound()) % len(committeeBLSString)
 	tempProducer := committeeBLSString[producerPosition]
 	if strings.Compare(tempProducer, block.GetProducer()) != 0 {
-		return errors.New("Producer should be should be :" + tempProducer)
+		return consensus.NewConsensusError(consensus.UnExpectedError, errors.New("Producer should be should be :"+tempProducer))
 	}
 
 	return nil
