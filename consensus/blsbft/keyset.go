@@ -26,8 +26,8 @@ type MiningKey struct {
 func (miningKey *MiningKey) GetPublicKey() incognitokey.CommitteePublicKey {
 	key := incognitokey.CommitteePublicKey{}
 	key.MiningPubKey = make(map[string][]byte)
-	key.MiningPubKey[common.BlsConsensus] = miningKey.PubKey[BLS]
-	key.MiningPubKey[common.BridgeConsensus] = miningKey.PubKey[BRI]
+	key.MiningPubKey[common.BlsConsensus] = miningKey.PubKey[bls]
+	key.MiningPubKey[common.BriConsensus] = miningKey.PubKey[bri]
 	return key
 }
 
@@ -48,7 +48,7 @@ func (miningKey *MiningKey) BLSSignData(
 	[]byte,
 	error,
 ) {
-	sigBytes, err := blsmultisig.Sign(data, miningKey.PriKey[BLS], selfIdx, committee)
+	sigBytes, err := blsmultisig.Sign(data, miningKey.PriKey[bls], selfIdx, committee)
 	if err != nil {
 		return nil, consensus.NewConsensusError(consensus.SignDataError, err)
 	}
@@ -61,7 +61,7 @@ func (miningKey *MiningKey) BriSignData(
 	[]byte,
 	error,
 ) {
-	sig, err := bridgesig.Sign(miningKey.PriKey[BRI], data)
+	sig, err := bridgesig.Sign(miningKey.PriKey[bri], data)
 	if err != nil {
 		return nil, consensus.NewConsensusError(consensus.SignDataError, err)
 	}
@@ -81,11 +81,11 @@ func (e *BLSBFT) LoadUserKey(privateSeed string) error {
 	// publicKeyBytes := blsmultisig.PKBytes(blsmultisig.PKGen(privateKey))
 	miningKey.PriKey = map[string][]byte{}
 	miningKey.PubKey = map[string][]byte{}
-	miningKey.PriKey[BLS] = blsmultisig.SKBytes(blsPriKey)
-	miningKey.PubKey[BLS] = blsmultisig.PKBytes(blsPubKey)
+	miningKey.PriKey[bls] = blsmultisig.SKBytes(blsPriKey)
+	miningKey.PubKey[bls] = blsmultisig.PKBytes(blsPubKey)
 	bridgePriKey, bridgePubKey := bridgesig.KeyGen(privateSeedBytes)
-	miningKey.PriKey[BRI] = bridgesig.SKBytes(&bridgePriKey)
-	miningKey.PubKey[BRI] = bridgesig.PKBytes(&bridgePubKey)
+	miningKey.PriKey[bri] = bridgesig.SKBytes(&bridgePriKey)
+	miningKey.PubKey[bri] = bridgesig.PKBytes(&bridgePubKey)
 	e.UserKeySet = &miningKey
 	return nil
 }
@@ -112,7 +112,7 @@ func (e BLSBFT) GetUserPublicKey() *incognitokey.CommitteePublicKey {
 }
 
 func (e BLSBFT) SignData(data []byte) (string, error) {
-	result, err := e.UserKeySet.BLSSignData(data, 0, []blsmultisig.PublicKey{e.UserKeySet.PubKey[BLS]})
+	result, err := e.UserKeySet.BLSSignData(data, 0, []blsmultisig.PublicKey{e.UserKeySet.PubKey[bls]})
 	if err != nil {
 		return "", consensus.NewConsensusError(consensus.SignDataError, err)
 	}
