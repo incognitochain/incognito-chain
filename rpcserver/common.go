@@ -144,10 +144,12 @@ func (rpcServer HttpServer) buildRawTransaction(params interface{}, meta metadat
 	hasPrivacyCoin := int(arrayParams[3].(float64)) > 0
 	/********* END Fetch all component to *******/
 
-	// param#5: info (option)
+	// param #4 for metadata
+
+	// param#6: info (option)
 	info := []byte{}
-	if len(arrayParams) > 4 {
-		infoStr := arrayParams[4].(string)
+	if len(arrayParams) > 5 {
+		infoStr := arrayParams[5].(string)
 		info = []byte(infoStr)
 	}
 
