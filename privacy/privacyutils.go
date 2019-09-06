@@ -1,28 +1,35 @@
 package privacy
 
 import (
-	"math/big"
-	rand2 "math/rand"
-	"time"
-
+	"crypto/rand"
 	"github.com/incognitochain/incognito-chain/common"
+	"math/big"
 )
 
 // RandBytes generates random bytes with length
 func RandBytes(length int) []byte {
-	seed := time.Now().UnixNano()
-	b := make([]byte, length)
-	reader := rand2.New(rand2.NewSource(int64(seed)))
+	//seed := time.Now().UnixNano()
+	//b := make([]byte, length)
+	//reader := rand2.New(rand2.NewSource(int64(seed)))
+	//
+	//for n := 0; n < length; {
+	//	read, err := reader.Read(b[n:])
+	//	if err != nil {
+	//		Logger.Log.Errorf("[PRIVACY LOG] Rand byte error : %v\n", err)
+	//		return nil
+	//	}
+	//	n += read
+	//}
+	//return b
 
-	for n := 0; n < length; {
-		read, err := reader.Read(b[n:])
-		if err != nil {
-			Logger.Log.Errorf("[PRIVACY LOG] Rand byte error : %v\n", err)
-			return nil
-		}
-		n += read
+	res := make([]byte, length)
+	_, err := rand.Read(res)
+	if err != nil {
+		Logger.Log.Errorf("[PRIVACY LOG] Random bytes array error : %v\n", err)
+		return nil
 	}
-	return b
+
+	return res
 }
 
 // RandScalar generates a big int with value less than order of group of elliptic points
