@@ -149,6 +149,7 @@ var HttpHandler = map[string]httpHandler{
 	enableMining:         (*HttpServer).handleEnableMining,
 	getChainMiningStatus: (*HttpServer).handleGetChainMiningStatus,
 	getPublickeyMining:   (*HttpServer).handleGetPublicKeyMining,
+	getPublicKeyRole:     (*HttpServer).handleGetPublicKeyRole,
 }
 
 // Commands that are available to a limited user
