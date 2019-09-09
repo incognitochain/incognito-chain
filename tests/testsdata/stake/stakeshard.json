@@ -9,9 +9,11 @@
         {
           "1NHp2EKw7ALdXUzBfoRJvKrBBM9nkejyDcHVPvUjDcWRyG22dHHyiBKQGL1c":1750000000000
         },
-        10,
+        2,
         0,
         63,
+        "1Uv4APZadR2kbpm4Uazwng2hwfqb2AtuV6Y6QVcypzQurzwE9YvUzTA8TWVndLJxtuAytWPey57YiU97abmSJ7nnPxnDdsjGcXUAiiE6t",
+        "12WQy3WYgtdp1G52hcdpv9zhW2wRg9DnzcM5pZM1cFhNo3VA6pB",
         "1Uv4APZadR2kbpm4Uazwng2hwfqb2AtuV6Y6QVcypzQurzwE9YvUzTA8TWVndLJxtuAytWPey57YiU97abmSJ7nnPxnDdsjGcXUAiiE6t",
         true
       ]
@@ -43,7 +45,7 @@
     "input": {
       "command": "subcribeshardcandidatebypublickey",
       "context": false,
-      "params": ["189NzoXMQznioWS2tZgxKKPhaiJBag1TcLsMMhBRxFH7Re11c8V"],
+      "params": ["121VhftSAygpEJZ6i9jGk9a9efXH5dvhFqk7ihKSHxKV7kp7NrmrXxQjke43KxiTRyzRyQBCvPL57Jcbj6f1DHtzAsZwjGQR3bcQtiL6uJf1ZJu4WFNovDqGUASrA9XqG7GnGsKzESCMbUuyxZfuUeJR7NofNxHEUZXo65nuFyyFqPsmZq6NZtdQv1dAmbzQRzD4MkToiQuDquwVFyoHKgQ4DCKZh9MUmbAEVyqEfrAb9KVK4ckakU3WufA1UAXP3sZgQ7wSw5gNDLKVhXgL1JgpR2eGju8XJzZpBSJtYq638ALEqxmYTx1idBTcuw9xyGPFZvTF5oq5egF4ZEEBwLXBwNU2JYnPGfBVCbNEbZsHrbGDghuh3KxyBtveUca7kZkPgX9PwNfu2gsdFY8TN9ZhAdhBaJQpFugsUnhfwaHMywAn"],
       "type": "ws",
       "wait": 10000
     },
@@ -57,7 +59,7 @@
     "input": {
       "command": "subcribeshardpendingvalidatorbypublickey",
       "context": false,
-      "params": ["189NzoXMQznioWS2tZgxKKPhaiJBag1TcLsMMhBRxFH7Re11c8V"],
+      "params": ["121VhftSAygpEJZ6i9jGk9a9efXH5dvhFqk7ihKSHxKV7kp7NrmrXxQjke43KxiTRyzRyQBCvPL57Jcbj6f1DHtzAsZwjGQR3bcQtiL6uJf1ZJu4WFNovDqGUASrA9XqG7GnGsKzESCMbUuyxZfuUeJR7NofNxHEUZXo65nuFyyFqPsmZq6NZtdQv1dAmbzQRzD4MkToiQuDquwVFyoHKgQ4DCKZh9MUmbAEVyqEfrAb9KVK4ckakU3WufA1UAXP3sZgQ7wSw5gNDLKVhXgL1JgpR2eGju8XJzZpBSJtYq638ALEqxmYTx1idBTcuw9xyGPFZvTF5oq5egF4ZEEBwLXBwNU2JYnPGfBVCbNEbZsHrbGDghuh3KxyBtveUca7kZkPgX9PwNfu2gsdFY8TN9ZhAdhBaJQpFugsUnhfwaHMywAn"],
       "type": "ws",
       "wait": 10000
     },
@@ -71,7 +73,7 @@
     "input": {
       "command": "subcribeshardcommitteebypublickey",
       "context": false,
-      "params": ["189NzoXMQznioWS2tZgxKKPhaiJBag1TcLsMMhBRxFH7Re11c8V"],
+      "params": ["121VhftSAygpEJZ6i9jGk9a9efXH5dvhFqk7ihKSHxKV7kp7NrmrXxQjke43KxiTRyzRyQBCvPL57Jcbj6f1DHtzAsZwjGQR3bcQtiL6uJf1ZJu4WFNovDqGUASrA9XqG7GnGsKzESCMbUuyxZfuUeJR7NofNxHEUZXo65nuFyyFqPsmZq6NZtdQv1dAmbzQRzD4MkToiQuDquwVFyoHKgQ4DCKZh9MUmbAEVyqEfrAb9KVK4ckakU3WufA1UAXP3sZgQ7wSw5gNDLKVhXgL1JgpR2eGju8XJzZpBSJtYq638ALEqxmYTx1idBTcuw9xyGPFZvTF5oq5egF4ZEEBwLXBwNU2JYnPGfBVCbNEbZsHrbGDghuh3KxyBtveUca7kZkPgX9PwNfu2gsdFY8TN9ZhAdhBaJQpFugsUnhfwaHMywAn"],
       "type": "ws",
       "wait": 10000
     },
