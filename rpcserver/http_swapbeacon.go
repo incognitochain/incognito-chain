@@ -52,9 +52,9 @@ func (httpServer *HttpServer) handleGetBeaconSwapProof(params interface{}, close
 	db := *httpServer.config.Database
 
 	// Get proof of instruction on beacon
-	beaconInstProof, _, err := getSwapProofOnBeacon(height, db, httpServer.config.ConsensusEngine, metadata.BeaconSwapConfirmMeta)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	beaconInstProof, _, errProof := getSwapProofOnBeacon(height, db, httpServer.config.ConsensusEngine, metadata.BeaconSwapConfirmMeta)
+	if errProof != nil {
+		return nil, errProof
 	}
 
 	// Decode instruction to send to Ethereum without having to decode on client
@@ -68,17 +68,19 @@ func (httpServer *HttpServer) handleGetBeaconSwapProof(params interface{}, close
 	return buildProofResult(inst, beaconInstProof, bridgeInstProof, "", ""), nil
 }
 
-// getSwapProofOnBeacon finds in a given beacon block a committee swap instruction and returns its proof
+// getSwapProofOnBeacon finds in a given beacon block a committee swap instruction and returns its proof;
+// returns rpcservice.RPCError if proof not found
 func getSwapProofOnBeacon(
 	height uint64,
 	db database.DatabaseInterface,
 	ce ConsensusEngine,
 	meta int,
-) (*swapProof, *blockchain.BeaconBlock, error) {
+) (*swapProof, *blockchain.BeaconBlock, *rpcservice.RPCError) {
 	// Get beacon block
 	beaconBlocks, err := blockchain.FetchBeaconBlockFromHeight(db, height, height)
 	if len(beaconBlocks) == 0 {
-		return nil, nil, fmt.Errorf("cannot find beacon block with height %d", height)
+		err := fmt.Errorf("cannot find beacon block with height %d", height)
+		return nil, nil, rpcservice.NewRPCError(rpcservice.GetBeaconBlockByHeightError, err)
 	}
 	b := beaconBlocks[0]
 
@@ -86,12 +88,13 @@ func getSwapProofOnBeacon(
 	insts := b.Body.Instructions
 	_, instID := findCommSwapInst(insts, meta)
 	if instID < 0 {
-		return nil, nil, fmt.Errorf("cannot find bridge swap instruction in beacon block")
+		err := fmt.Errorf("cannot find bridge swap instruction in beacon block")
+		return nil, nil, rpcservice.NewRPCError(rpcservice.NoSwapConfirmInst, err)
 	}
 	block := &beaconBlock{BeaconBlock: b}
 	proof, err := buildProofForBlock(block, insts, instID, db, ce)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 	return proof, b, nil
 }

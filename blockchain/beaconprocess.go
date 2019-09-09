@@ -810,7 +810,9 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string)
 		Logger.log.Info("Swap Instruction Out Public Keys", outPublickeys)
 		outPublickeyStructs, err := incognitokey.CommitteeBase58KeyListToStruct(outPublickeys)
 		if err != nil {
-			return NewBlockChainError(UnExpectedError, err), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
+			if len(outPublickeys) != 0 {
+				return NewBlockChainError(UnExpectedError, err), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
+			}
 		}
 
 		if instruction[3] == "shard" {
