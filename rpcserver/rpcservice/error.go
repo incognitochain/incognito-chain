@@ -45,6 +45,7 @@ const (
 	GetBeaconBlockByHeightError
 	GeTxFromPoolError
 	TxPoolRejectTxError
+	NoSwapConfirmInst
 	GetKeySetFromPrivateKeyError
 )
 
@@ -104,6 +105,9 @@ var ErrCodeMessage = map[int]struct {
 	// tx pool -6xxx
 	GeTxFromPoolError:   {-6000, "Get tx from mempool error"},
 	TxPoolRejectTxError: {-6001, "Can not insert tx into tx mempool"},
+
+	// decentralized bridge
+	NoSwapConfirmInst: {-7000, "No swap confirm instruction found in block"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse
