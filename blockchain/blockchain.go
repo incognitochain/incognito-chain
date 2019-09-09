@@ -985,7 +985,7 @@ func (blockchain *BlockChain) DecryptOutputCoinByKey(outCoinTemp *privacy.Output
 			CoinDetails:          outCoinTemp.CoinDetails,
 			CoinDetailsEncrypted: outCoinTemp.CoinDetailsEncrypted,
 		}
-		if !result.CoinDetailsEncrypted.IsNil() {
+		if result.CoinDetailsEncrypted != nil && !result.CoinDetailsEncrypted.IsNil() {
 			if len(keySet.ReadonlyKey.Rk) > 0 {
 				// try to decrypt to get more data
 				err := result.Decrypt(keySet.ReadonlyKey)

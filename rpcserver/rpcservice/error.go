@@ -45,6 +45,7 @@ const (
 	GetBeaconBlockByHeightError
 	GeTxFromPoolError
 	TxPoolRejectTxError
+	GetKeySetFromPrivateKeyError
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -77,6 +78,7 @@ var ErrCodeMessage = map[int]struct {
 	RejectInvalidFeeError:              {-1016, "Reject invalid fee"},
 	TxNotExistedInMemAndBLockError:     {-1017, "Tx is not existed in mem and block"},
 	TokenIsInvalidError:                {-1018, "Token is invalid"},
+	GetKeySetFromPrivateKeyError:       {-1019, "Get KeySet From Private Key Error"},
 
 	// for block -2xxx
 	GetShardBlockByHeightError:  {-2000, "Get shard block by height error"},
