@@ -149,6 +149,7 @@ const (
 	enableMining         = "enablemining"
 	getChainMiningStatus = "getchainminingstatus"
 	getPublickeyMining   = "getpublickeymining"
+	getPublicKeyRole     = "getpublickeyrole"
 )
 
 const (

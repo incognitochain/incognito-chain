@@ -1,6 +1,8 @@
 package rpcserver
 
 import (
+	"strings"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -44,4 +46,25 @@ func (httpServer *HttpServer) handleGetChainMiningStatus(params interface{}, clo
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Chain ID component invalid"))
 	}
 	return httpServer.config.Server.GetChainMiningStatus(int(chainIDParam)), nil
+}
+
+func (httpServer *HttpServer) handleGetPublicKeyRole(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param empty"))
+	}
+	keyParts := strings.Split(arrayParams[0].(string), ":")
+	keyType := keyParts[0]
+	publicKey := keyParts[1]
+
+	role, shardID := httpServer.config.Server.GetPublicKeyRole(publicKey, keyType)
+	// role: -1 notstake; 0 candidate; 1 committee
+	result := &struct {
+		Role    int
+		ShardID int
+	}{
+		Role:    role,
+		ShardID: shardID,
+	}
+	return result, nil
 }
