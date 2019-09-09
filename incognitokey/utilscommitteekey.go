@@ -24,6 +24,12 @@ func CommitteeKeyListToString(keyList []CommitteePublicKey) ([]string, error) {
 }
 
 func CommitteeBase58KeyListToStruct(strKeyList []string) ([]CommitteePublicKey, error) {
+	if len(strKeyList) == 0 {
+		return []CommitteePublicKey{}, nil
+	}
+	if len(strKeyList) == 1 && len(strKeyList[0]) == 0 {
+		return []CommitteePublicKey{}, nil
+	}
 	result := []CommitteePublicKey{}
 	for _, key := range strKeyList {
 		var keyStruct CommitteePublicKey
