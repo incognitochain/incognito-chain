@@ -223,7 +223,7 @@ func TestCommonGetShardIDFromLastByte(t *testing.T) {
 
 	for _, item := range data {
 		shardID := GetShardIDFromLastByte(item)
-		assert.Equal(t, item%MAX_SHARD_NUMBER, shardID)
+		assert.Equal(t, item%MaxShardNumber, shardID)
 	}
 }
 

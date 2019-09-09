@@ -2,6 +2,7 @@ package consensus
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -36,6 +37,14 @@ func (engine *Engine) GetCurrentMiningPublicKey() (publickey string, keyType str
 		}
 	}
 	return "", ""
+}
+
+func (engine *Engine) GetAllMiningPublicKeys() []string {
+	var keys []string
+	for keyType, key := range engine.userMiningPublicKeys {
+		keys = append(keys, fmt.Sprintf("%v:%v", keyType, key.GetMiningKeyBase58(keyType)))
+	}
+	return keys
 }
 
 func (engine *Engine) SignDataWithCurrentMiningKey(data []byte) (string, error) {

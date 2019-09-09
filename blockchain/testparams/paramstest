@@ -62,7 +62,7 @@ func init() {
 		//@Notice: InitTxsForBenchmark is for testing and testparams only
 		InitialIncognito: IntegrationTestInitPRV,
 		// InitialIncognito:   TestnetInitPRV,
-		ConsensusAlgorithm: common.BLS_CONSENSUS,
+		ConsensusAlgorithm: common.BlsConsensus,
 	}
 	ChainTestParam = Params{
 		Name:                   TestnetName,
@@ -94,7 +94,7 @@ func init() {
 		PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeMainnetSerializedPubkey,
 		PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeMainnetSerializedPubkey,
 		InitialIncognito:                    MainnetInitPRV,
-		ConsensusAlgorithm:                  common.BLS_CONSENSUS,
+		ConsensusAlgorithm:                  common.BlsConsensus,
 	}
 	ChainMainParam = Params{
 		Name:                   MainetName,

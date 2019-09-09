@@ -32,7 +32,7 @@ func (e *BLSBFT) setState(state string) {
 }
 
 func (e *BLSBFT) getCurrentRound() int {
-	round := int((e.getTimeSinceLastBlock().Seconds() - float64(e.Chain.GetMinBlkInterval().Seconds())) / TIMEOUT.Seconds())
+	round := int((e.getTimeSinceLastBlock().Seconds() - float64(e.Chain.GetMinBlkInterval().Seconds())) / timeout.Seconds())
 	if round < 0 {
 		return 1
 	}
@@ -92,9 +92,9 @@ func (e *BLSBFT) UpdateCommitteeBLSList() {
 		e.RoundData.CommitteeBLS.ByteList = []blsmultisig.PublicKey{}
 		e.RoundData.CommitteeBLS.StringList = []string{}
 		for _, member := range e.RoundData.Committee {
-			e.RoundData.CommitteeBLS.ByteList = append(e.RoundData.CommitteeBLS.ByteList, member.MiningPubKey[CONSENSUSNAME])
+			e.RoundData.CommitteeBLS.ByteList = append(e.RoundData.CommitteeBLS.ByteList, member.MiningPubKey[consensusName])
 		}
-		committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(e.RoundData.Committee, CONSENSUSNAME)
+		committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(e.RoundData.Committee, consensusName)
 		if err != nil {
 			e.logger.Error(err)
 			return

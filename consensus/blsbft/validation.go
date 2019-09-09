@@ -52,7 +52,7 @@ func EncodeValidationData(validationData ValidationData) (string, error) {
 func (e BLSBFT) CreateValidationData(block common.BlockInterface) ValidationData {
 	var valData ValidationData
 	selfPublicKey := e.UserKeySet.GetPublicKey()
-	keyByte, _ := selfPublicKey.GetMiningKey(CONSENSUSNAME)
+	keyByte, _ := selfPublicKey.GetMiningKey(consensusName)
 	valData.ProducerBLSSig, _ = e.UserKeySet.BLSSignData(block.Hash().GetBytes(), 0, []blsmultisig.PublicKey{keyByte})
 	return valData
 }
@@ -109,7 +109,7 @@ func (e BLSBFT) ValidateCommitteeSig(block common.BlockInterface, committee []in
 	}
 	committeeBLSKeys := []blsmultisig.PublicKey{}
 	for _, member := range committee {
-		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[CONSENSUSNAME])
+		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[consensusName])
 	}
 	if err := validateBLSSig(block.Hash(), valData.AggSig, valData.ValidatiorsIdx, committeeBLSKeys); err != nil {
 		fmt.Println(block.Hash(), block.GetValidationField())
