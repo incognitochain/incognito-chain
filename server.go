@@ -1827,3 +1827,63 @@ func (serverObj *Server) PushBlockToAll(block common.BlockInterface, isBeacon bo
 	}
 	return nil
 }
+
+func (serverObj *Server) GetPublicKeyRole(publicKey string, keyType string) (int, int) {
+	var beaconBestState blockchain.BeaconBestState
+	err := beaconBestState.CloneBeaconBestStateFrom(serverObj.blockChain.BestState.Beacon)
+	if err != nil {
+		return -1, -1
+	}
+	for shardID, pubkeyArr := range beaconBestState.ShardPendingValidator {
+		keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(pubkeyArr, beaconBestState.ShardConsensusAlgorithm[shardID])
+		found := common.IndexOfStr(publicKey, keyList)
+		if found > -1 {
+			return 0, int(shardID)
+		}
+	}
+	for shardID, pubkeyArr := range beaconBestState.ShardCommittee {
+		keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(pubkeyArr, beaconBestState.ShardConsensusAlgorithm[shardID])
+		found := common.IndexOfStr(publicKey, keyList)
+		if found > -1 {
+			return 1, int(shardID)
+		}
+	}
+
+	keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.BeaconCommittee, beaconBestState.ConsensusAlgorithm)
+	found := common.IndexOfStr(publicKey, keyList)
+	if found > -1 {
+		return 1, -1
+	}
+
+	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.BeaconPendingValidator, beaconBestState.ConsensusAlgorithm)
+	found = common.IndexOfStr(publicKey, keyList)
+	if found > -1 {
+		return 0, -1
+	}
+
+	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.CandidateBeaconWaitingForCurrentRandom, beaconBestState.ConsensusAlgorithm)
+	found = common.IndexOfStr(publicKey, keyList)
+	if found > -1 {
+		return 0, -1
+	}
+
+	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.CandidateBeaconWaitingForNextRandom, beaconBestState.ConsensusAlgorithm)
+	found = common.IndexOfStr(publicKey, keyList)
+	if found > -1 {
+		return 0, -1
+	}
+
+	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.CandidateShardWaitingForCurrentRandom, beaconBestState.ConsensusAlgorithm)
+	found = common.IndexOfStr(publicKey, keyList)
+	if found > -1 {
+		return 0, -1
+	}
+
+	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.CandidateShardWaitingForNextRandom, beaconBestState.ConsensusAlgorithm)
+	found = common.IndexOfStr(publicKey, keyList)
+	if found > -1 {
+		return 0, -1
+	}
+
+	return -1, -1
+}

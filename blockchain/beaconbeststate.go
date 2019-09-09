@@ -541,6 +541,9 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	return nil
 }
 
+func (beaconBestState *BeaconBestState) CloneBeaconBestStateFrom(target *BeaconBestState) error {
+	return beaconBestState.cloneBeaconBestStateFrom(target)
+}
 func (beaconBestState *BeaconBestState) updateLastCrossShardState(shardStates map[byte][]ShardState) {
 	lastCrossShardState := beaconBestState.LastCrossShardState
 	for fromShard, shardBlocks := range shardStates {
