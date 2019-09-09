@@ -123,7 +123,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	userPubKey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
 	if userPubKey != "" {
 		userRole := blockchain.BestState.Shard[shardID].GetPubkeyRole(userPubKey, 0)
-		if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+		if userRole == common.ProposerRole || userRole == common.ValidatorRole {
 			err = blockchain.config.DataBase.CleanBackup(true, shardBlock.Header.ShardID)
 			if err != nil {
 				return NewBlockChainError(CleanBackUpError, err)
@@ -651,7 +651,7 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 	if err != nil {
 		return err
 	}
-	shardBestState.ConsensusAlgorithm = common.BLS_CONSENSUS
+	shardBestState.ConsensusAlgorithm = common.BlsConsensus
 	return nil
 }
 func (shardBestState *ShardBestState) processShardBlockInstruction(shardBlock *ShardBlock) error {
@@ -673,7 +673,7 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(shardBlock *S
 	for _, l := range shardBlock.Body.Instructions {
 		if l[0] == SwapAction {
 			// #1 remaining pendingValidators, #2 new currentValidators #3 swapped out validator, #4 incoming validator
-			shardPendingValidator, shardCommittee, shardSwappedCommittees, shardNewCommittees, err = SwapValidator(shardPendingValidator, shardCommittee, shardBestState.MaxShardCommitteeSize, common.OFFSET)
+			shardPendingValidator, shardCommittee, shardSwappedCommittees, shardNewCommittees, err = SwapValidator(shardPendingValidator, shardCommittee, shardBestState.MaxShardCommitteeSize, common.Offset)
 			if err != nil {
 				Logger.log.Errorf("SHARD %+v | Blockchain Error %+v", err)
 				return NewBlockChainError(SwapValidatorError, err)
