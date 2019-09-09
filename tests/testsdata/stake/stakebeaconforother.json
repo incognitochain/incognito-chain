@@ -1,6 +1,6 @@
 [
   {
-    "node": "shard1-0",
+    "node": "shard1-1",
     "input": {
       "command": "createandsendstakingtransaction",
       "context": false,
@@ -27,7 +27,7 @@
     }
   },
   {
-    "node": "shard1-0",
+    "node": "shard1-1",
     "input": {
       "command": "subcribependingtransaction",
       "context": true,
@@ -41,7 +41,7 @@
     }
   },
   {
-    "node": "shard1-0",
+    "node": "shard1-1",
     "input": {
       "command": "subcribebeaconcandidatebypublickey",
       "context": false,
@@ -55,7 +55,7 @@
     }
   },
   {
-    "node": "shard1-0",
+    "node": "shard1-1",
     "input": {
       "command": "subcribebeaconpendingvalidatorbypublickey",
       "context": false,
@@ -69,7 +69,7 @@
     }
   },
   {
-    "node": "shard1-0",
+    "node": "shard1-1",
     "input": {
       "command": "subcribebeaconcommitteebypublickey",
       "context": false,
