@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	rpcAuthTimeoutSeconds = 10
+	rpcAuthTimeoutSeconds = 60
 	RpcServerVersion      = "1.0"
 )
 
