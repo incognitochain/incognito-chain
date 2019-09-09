@@ -58,6 +58,31 @@ func (httpServer *HttpServer) handleGetPublicKeyRole(params interface{}, closeCh
 	publicKey := keyParts[1]
 
 	role, shardID := httpServer.config.Server.GetPublicKeyRole(publicKey, keyType)
+	if role == -2 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInternalError, errors.New("Can't get publickey role"))
+	}
+	// role: -1 notstake; 0 candidate; 1 committee
+	result := &struct {
+		Role    int
+		ShardID int
+	}{
+		Role:    role,
+		ShardID: shardID,
+	}
+
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleGetIncognitoPublicKeyRole(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param empty"))
+	}
+
+	role, shardID := httpServer.config.Server.GetIncognitoPublicKeyRole(arrayParams[0].(string))
+	if role == -2 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInternalError, errors.New("Can't get publickey role"))
+	}
 	// role: -1 notstake; 0 candidate; 1 committee
 	result := &struct {
 		Role    int
