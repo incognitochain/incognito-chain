@@ -1832,7 +1832,7 @@ func (serverObj *Server) GetPublicKeyRole(publicKey string, keyType string) (int
 	var beaconBestState blockchain.BeaconBestState
 	err := beaconBestState.CloneBeaconBestStateFrom(serverObj.blockChain.BestState.Beacon)
 	if err != nil {
-		return -1, -1
+		return -2, -1
 	}
 	for shardID, pubkeyArr := range beaconBestState.ShardPendingValidator {
 		keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(pubkeyArr, keyType)
@@ -1883,6 +1883,66 @@ func (serverObj *Server) GetPublicKeyRole(publicKey string, keyType string) (int
 	found = common.IndexOfStr(publicKey, keyList)
 	if found > -1 {
 		return 0, -1
+	}
+
+	return -1, -1
+}
+
+func (serverObj *Server) GetIncognitoPublicKeyRole(publicKey string) (int, int) {
+	var beaconBestState blockchain.BeaconBestState
+	err := beaconBestState.CloneBeaconBestStateFrom(serverObj.blockChain.BestState.Beacon)
+	if err != nil {
+		return -2, -1
+	}
+
+	for shardID, pubkeyArr := range beaconBestState.ShardPendingValidator {
+		for _, key := range pubkeyArr {
+			if key.GetIncKeyBase58() == publicKey {
+				return 0, int(shardID)
+			}
+		}
+	}
+	for shardID, pubkeyArr := range beaconBestState.ShardCommittee {
+		for _, key := range pubkeyArr {
+			if key.GetIncKeyBase58() == publicKey {
+				return 1, int(shardID)
+			}
+		}
+	}
+
+	for _, key := range beaconBestState.BeaconCommittee {
+		if key.GetIncKeyBase58() == publicKey {
+			return 1, -1
+		}
+	}
+
+	for _, key := range beaconBestState.BeaconPendingValidator {
+		if key.GetIncKeyBase58() == publicKey {
+			return 0, -1
+		}
+	}
+
+	for _, key := range beaconBestState.CandidateBeaconWaitingForCurrentRandom {
+		if key.GetIncKeyBase58() == publicKey {
+			return 0, -1
+		}
+	}
+
+	for _, key := range beaconBestState.CandidateBeaconWaitingForNextRandom {
+		if key.GetIncKeyBase58() == publicKey {
+			return 0, -1
+		}
+	}
+
+	for _, key := range beaconBestState.CandidateShardWaitingForCurrentRandom {
+		if key.GetIncKeyBase58() == publicKey {
+			return 0, -1
+		}
+	}
+	for _, key := range beaconBestState.CandidateShardWaitingForNextRandom {
+		if key.GetIncKeyBase58() == publicKey {
+			return 0, -1
+		}
 	}
 
 	return -1, -1
