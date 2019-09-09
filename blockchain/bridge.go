@@ -209,7 +209,7 @@ func parseAndConcatPubkeys(vals []string) ([]byte, error) {
 		if err := cKey.FromBase58(val); err != nil {
 			return nil, err
 		}
-		miningKey := cKey.MiningPubKey[common.BRI_CONSENSUS]
+		miningKey := cKey.MiningPubKey[common.BridgeConsensus]
 		pk, err := crypto.DecompressPubkey(miningKey)
 		if err != nil {
 			return nil, errors.Wrapf(err, "cannot decompress miningKey %v", miningKey)

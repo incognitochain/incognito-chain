@@ -40,7 +40,7 @@ const (
 	SampleConfigFilename          = "sample-config.conf"
 	DefaultDisableRpcTLS          = true
 	DefaultFastStartup            = true
-	DefaultNodeMode               = common.NODEMODE_RELAY
+	DefaultNodeMode               = common.NodeModeRelay
 	DefaultEnableMining           = true
 	DefaultTxPoolTTL              = uint(43200) // 12 hours
 	DefaultTxPoolMaxTx            = uint64(100000)
@@ -626,7 +626,7 @@ func loadConfig() (*config, []string, error) {
 		}
 	}
 
-	if cfg.MiningKeys == "" && cfg.PrivateKey == "" && cfg.NodeMode != common.NODEMODE_RELAY {
+	if cfg.MiningKeys == "" && cfg.PrivateKey == "" && cfg.NodeMode != common.NodeModeRelay {
 		return nil, nil, errors.New("MiningKeys can't be empty if nodemode isn't relay")
 	}
 
