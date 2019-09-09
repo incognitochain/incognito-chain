@@ -36,9 +36,9 @@ func (httpServer *HttpServer) handleGetBridgeSwapProof(params interface{}, close
 	db := *httpServer.config.Database
 
 	// Get proof of instruction on beacon
-	beaconInstProof, beaconBlock, err := getSwapProofOnBeacon(height, db, httpServer.config.ConsensusEngine, metadata.BridgeSwapConfirmMeta)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	beaconInstProof, beaconBlock, errProof := getSwapProofOnBeacon(height, db, httpServer.config.ConsensusEngine, metadata.BridgeSwapConfirmMeta)
+	if errProof != nil {
+		return nil, errProof
 	}
 
 	// Get proof of instruction on bridge
