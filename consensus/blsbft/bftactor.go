@@ -54,7 +54,7 @@ func (e *BLSBFT) IsOngoing() bool {
 }
 
 func (e *BLSBFT) GetConsensusName() string {
-	return CONSENSUSNAME
+	return consensusName
 }
 
 func (e *BLSBFT) Stop() error {
@@ -129,7 +129,7 @@ func (e *BLSBFT) Start() error {
 								continue
 							}
 							if len(voteMsg.Vote.BRI) != 0 {
-								if err := validateSingleBriSig(e.RoundData.Block.Hash(), voteMsg.Vote.BRI, e.RoundData.Committee[validatorIdx].MiningPubKey[common.BRI_CONSENSUS]); err != nil {
+								if err := validateSingleBriSig(e.RoundData.Block.Hash(), voteMsg.Vote.BRI, e.RoundData.Committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
 									e.logger.Error(err)
 									continue
 								}
@@ -147,7 +147,7 @@ func (e *BLSBFT) Start() error {
 
 			case <-ticker:
 				pubKey := e.UserKeySet.GetPublicKey()
-				if common.IndexOfStr(pubKey.GetMiningKeyBase58(CONSENSUSNAME), e.RoundData.CommitteeBLS.StringList) == -1 {
+				if common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList) == -1 {
 					e.isOngoing = false
 					e.enterNewRound()
 					continue
@@ -164,7 +164,7 @@ func (e *BLSBFT) Start() error {
 
 				e.isOngoing = true
 				switch e.RoundData.State {
-				case LISTEN:
+				case listenPhase:
 					// timeout or vote nil?
 					roundKey := getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)
 					if e.Blocks[roundKey] != nil {
@@ -186,7 +186,7 @@ func (e *BLSBFT) Start() error {
 							e.enterVotePhase()
 						}
 					}
-				case VOTE:
+				case votePhase:
 					if e.RoundData.NotYetSendVote {
 						err := e.sendVote()
 						if err != nil {
@@ -218,7 +218,7 @@ func (e *BLSBFT) Start() error {
 							e.logger.Critical(e.RoundData.Committee)
 							fmt.Print("\n")
 							for _, member := range e.RoundData.Committee {
-								fmt.Println(base58.Base58Check{}.Encode(member.MiningPubKey[CONSENSUSNAME], common.Base58Version))
+								fmt.Println(base58.Base58Check{}.Encode(member.MiningPubKey[consensusName], common.Base58Version))
 							}
 							e.logger.Critical(err)
 							time.Sleep(1 * time.Second)
@@ -246,10 +246,10 @@ func (e *BLSBFT) Start() error {
 }
 
 func (e *BLSBFT) enterProposePhase() {
-	if !e.isInTimeFrame() || e.RoundData.State == PROPOSE {
+	if !e.isInTimeFrame() || e.RoundData.State == proposePhase {
 		return
 	}
-	e.setState(PROPOSE)
+	e.setState(proposePhase)
 	time1 := time.Now()
 	block, err := e.Chain.CreateNewBlock(int(e.RoundData.Round))
 	e.logger.Info("create block", time.Since(time1).Seconds())
@@ -273,18 +273,18 @@ func (e *BLSBFT) enterProposePhase() {
 }
 
 func (e *BLSBFT) enterListenPhase() {
-	if !e.isInTimeFrame() || e.RoundData.State == LISTEN {
+	if !e.isInTimeFrame() || e.RoundData.State == listenPhase {
 		return
 	}
-	e.setState(LISTEN)
+	e.setState(listenPhase)
 }
 
 func (e *BLSBFT) enterVotePhase() {
 	e.logger.Info("enter voting phase")
-	if !e.isInTimeFrame() || e.RoundData.State == VOTE {
+	if !e.isInTimeFrame() || e.RoundData.State == votePhase {
 		return
 	}
-	e.setState(VOTE)
+	e.setState(votePhase)
 	err := e.sendVote()
 	if err != nil {
 		e.logger.Error(err)
@@ -298,17 +298,17 @@ func (e *BLSBFT) enterNewRound() {
 		return
 	}
 	//if already running a round for current timeframe
-	if e.isInTimeFrame() && e.RoundData.State != NEWROUND {
+	if e.isInTimeFrame() && e.RoundData.State != newround {
 		return
 	}
-	e.setState(NEWROUND)
+	e.setState(newround)
 	e.waitForNextRound()
 	e.InitRoundData()
 	e.logger.Info("")
 	e.logger.Info("============================================")
 	e.logger.Info("")
 	pubKey := e.UserKeySet.GetPublicKey()
-	if e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(CONSENSUSNAME)) == (e.Chain.GetLastProposerIndex()+e.RoundData.Round)%e.Chain.GetCommitteeSize() {
+	if e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(consensusName)) == (e.Chain.GetLastProposerIndex()+e.RoundData.Round)%e.Chain.GetCommitteeSize() {
 		e.logger.Info("BFT: new round => PROPOSE", e.RoundData.NextHeight, e.RoundData.Round)
 		e.enterProposePhase()
 	} else {
@@ -329,5 +329,5 @@ func (e BLSBFT) NewInstance(chain blockchain.ChainInterface, chainKey string, no
 }
 
 func init() {
-	consensus.RegisterConsensus(common.BLS_CONSENSUS, &BLSBFT{})
+	consensus.RegisterConsensus(common.BlsConsensus, &BLSBFT{})
 }

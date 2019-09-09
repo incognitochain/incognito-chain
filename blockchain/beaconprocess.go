@@ -97,7 +97,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	userPubKey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
 	if userPubKey != "" {
 		userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(userPubKey, 0)
-		if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+		if userRole == common.ProposerRole || userRole == common.ValidatorRole {
 			err := blockchain.config.DataBase.CleanBackup(false, 0)
 			if err != nil {
 				return NewBlockChainError(CleanBackUpError, err)
@@ -137,7 +137,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	}
 	isChanged := !reflect.DeepEqual(snapshotBeaconCommittee, newBeaconCommittee)
 	if isChanged {
-		go blockchain.config.ConsensusEngine.CommitteeChange(common.BEACON_CHAINKEY)
+		go blockchain.config.ConsensusEngine.CommitteeChange(common.BeaconChainKey)
 	}
 	//Check shard-pending
 	for shardID, committee := range newAllShardPending {
@@ -356,7 +356,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 				errValidation := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, currentCommittee, beaconBestState.ShardConsensusAlgorithm[shardID])
 
 				if index == 0 && errValidation != nil {
-					currentCommitteeStr, _, _, _, err = SwapValidator(currentPendingValidatorStr, currentCommitteeStr, blockchain.BestState.Beacon.MaxShardCommitteeSize, common.OFFSET)
+					currentCommitteeStr, _, _, _, err = SwapValidator(currentPendingValidatorStr, currentCommitteeStr, blockchain.BestState.Beacon.MaxShardCommitteeSize, common.Offset)
 					if err != nil {
 						return NewBlockChainError(SwapValidatorError, fmt.Errorf("Failed to swap validator when try to verify shard to beacon block %+v, error %+v, sigError %+v", shardBlock.Header.Height, err, errValidation))
 					}
@@ -731,11 +731,11 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 		newShardCandidate = append(newShardCandidate, tempNewShardCandidate...)
 	}
 	beaconBestState.BeaconCommittee = append(beaconBestState.BeaconCommittee, newBeaconCandidate...)
-	beaconBestState.ConsensusAlgorithm = common.BLS_CONSENSUS
+	beaconBestState.ConsensusAlgorithm = common.BlsConsensus
 	beaconBestState.ShardConsensusAlgorithm = make(map[byte]string)
 	for shardID := 0; shardID < beaconBestState.ActiveShards; shardID++ {
 		beaconBestState.ShardCommittee[byte(shardID)] = append(beaconBestState.ShardCommittee[byte(shardID)], newShardCandidate[shardID*beaconBestState.MinShardCommitteeSize:(shardID+1)*beaconBestState.MinShardCommitteeSize]...)
-		beaconBestState.ShardConsensusAlgorithm[byte(shardID)] = common.BLS_CONSENSUS
+		beaconBestState.ShardConsensusAlgorithm[byte(shardID)] = common.BlsConsensus
 	}
 	beaconBestState.Epoch = 1
 	return nil
@@ -810,7 +810,9 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string)
 		Logger.log.Info("Swap Instruction Out Public Keys", outPublickeys)
 		outPublickeyStructs, err := incognitokey.CommitteeBase58KeyListToStruct(outPublickeys)
 		if err != nil {
-			return NewBlockChainError(UnExpectedError, err), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
+			if len(outPublickeys) != 0 {
+				return NewBlockChainError(UnExpectedError, err), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
+			}
 		}
 
 		if instruction[3] == "shard" {

@@ -43,7 +43,7 @@ func MakeBFTVoteMsg(userKey *MiningKey, chainKey, roundKey string, vote vote) (w
 	var voteCtn BFTVote
 	voteCtn.RoundKey = roundKey
 	key := userKey.GetPublicKey()
-	voteCtn.Validator = key.GetMiningKeyBase58(CONSENSUSNAME)
+	voteCtn.Validator = key.GetMiningKeyBase58(consensusName)
 	voteCtn.Vote = vote
 	voteCtnBytes, err := json.Marshal(voteCtn)
 	if err != nil {
@@ -84,7 +84,7 @@ func (e *BLSBFT) sendVote() error {
 	var Vote vote
 
 	pubKey := e.UserKeySet.GetPublicKey()
-	selfIdx := common.IndexOfStr(pubKey.GetMiningKeyBase58(CONSENSUSNAME), e.RoundData.CommitteeBLS.StringList)
+	selfIdx := common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList)
 
 	blsSig, err := e.UserKeySet.BLSSignData(e.RoundData.Block.Hash().GetBytes(), selfIdx, e.RoundData.CommitteeBLS.ByteList)
 	if err != nil {
@@ -105,7 +105,7 @@ func (e *BLSBFT) sendVote() error {
 	if err != nil {
 		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
-	e.RoundData.Votes[pubKey.GetMiningKeyBase58(CONSENSUSNAME)] = Vote
+	e.RoundData.Votes[pubKey.GetMiningKeyBase58(consensusName)] = Vote
 	e.logger.Info("sending vote...", getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
 	go e.Node.PushMessageToChain(msg, e.Chain)
 	e.RoundData.NotYetSendVote = false

@@ -204,7 +204,7 @@ func (blockService BlockService) RetrieveShardBlock(hashString string, verbosity
 	return &result, nil
 }
 
-func (blockService *BlockService) RetrieveBeaconBlock(hashString string) (*jsonresult.GetBlocksBeaconResult, *RPCError) {
+func (blockService BlockService) RetrieveBeaconBlock(hashString string) (*jsonresult.GetBlocksBeaconResult, *RPCError) {
 	hash, errH := common.Hash{}.NewHashFromStr(hashString)
 	if errH != nil {
 		Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", nil, errH)
@@ -237,7 +237,7 @@ func (blockService *BlockService) RetrieveBeaconBlock(hashString string) (*jsonr
 	return result, nil
 }
 
-func (blockService *BlockService) GetBlocks(shardIDParam int, numBlock int) (interface{}, *RPCError) {
+func (blockService BlockService) GetBlocks(shardIDParam int, numBlock int) (interface{}, *RPCError) {
 	if shardIDParam != -1 {
 		result := make([]jsonresult.GetBlockResult, 0)
 		shardID := byte(shardIDParam)
@@ -289,4 +289,12 @@ func (blockService *BlockService) GetBlocks(shardIDParam int, numBlock int) (int
 		Logger.log.Debugf("handleGetBlocks result: %+v", result)
 		return result, nil
 	}
+}
+
+func (blockService BlockService) GetBeaconBlockByHeight(height uint64) (*blockchain.BeaconBlock, error) {
+	return blockService.BlockChain.GetBeaconBlockByHeight(height)
+}
+
+func (blockService BlockService) GetShardBlockByHeight(height uint64, shardID byte) (*blockchain.ShardBlock, error) {
+	return blockService.BlockChain.GetShardBlockByHeight(height, shardID)
 }
