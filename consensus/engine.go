@@ -226,7 +226,7 @@ func (engine *Engine) GetUserRole() (string, int) {
 		}
 		return userRole, engine.config.Blockchain.Chains[engine.CurrentMiningChain].GetShardID()
 	}
-	return "", 0
+	return "", -2
 }
 
 func getShardFromChainName(chainName string) byte {
