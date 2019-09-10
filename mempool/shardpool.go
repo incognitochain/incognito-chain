@@ -59,7 +59,7 @@ func init() {
 func InitShardPool(pool map[byte]blockchain.ShardPool, pubsubManager *pubsub.PubSubManager) {
 	shardPoolMapMu.Lock()
 	defer shardPoolMapMu.Unlock()
-	for i := 0; i < common.MAX_SHARD_NUMBER; i++ {
+	for i := 0; i < common.MaxShardNumber; i++ {
 		shardPoolMap[byte(i)] = getShardPool(byte(i))
 		shardPoolMap[byte(i)].mtx = new(sync.RWMutex)
 		//update last shard height

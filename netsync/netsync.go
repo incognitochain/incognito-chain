@@ -55,7 +55,7 @@ type NetSyncConfig struct {
 		PushMessageToAll(wire.Message) error
 	}
 	Consensus interface {
-		OnBFTMsg(wire.Message)
+		OnBFTMsg(*wire.MessageBFT)
 	}
 }
 
@@ -156,23 +156,7 @@ out:
 								}
 							}
 						}
-					case *wire.MessageBFTPropose:
-						{
-							netSync.handleMessageBFTMsg(msg)
-						}
-					case *wire.MessageBFTAgree:
-						{
-							netSync.handleMessageBFTMsg(msg)
-						}
-					case *wire.MessageBFTCommit:
-						{
-							netSync.handleMessageBFTMsg(msg)
-						}
-					case *wire.MessageBFTReady:
-						{
-							netSync.handleMessageBFTMsg(msg)
-						}
-					case *wire.MessageBFTReq:
+					case *wire.MessageBFT:
 						{
 							netSync.handleMessageBFTMsg(msg)
 						}
@@ -404,8 +388,8 @@ func (netSync *NetSync) handleMessageShardToBeacon(msg *wire.MessageShardToBeaco
 	}
 }
 
-func (netSync *NetSync) handleMessageBFTMsg(msg wire.Message) {
-	Logger.log.Debug("Handling new message BFTMsg")
+func (netSync *NetSync) handleMessageBFTMsg(msg *wire.MessageBFT) {
+	Logger.log.Info("Handling new message BFTMsg")
 	if err := msg.VerifyMsgSanity(); err != nil {
 		Logger.log.Error(err)
 		return

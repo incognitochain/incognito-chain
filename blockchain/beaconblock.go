@@ -2,45 +2,88 @@ package blockchain
 
 import (
 	"encoding/json"
+	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 )
 
 type BeaconBlock struct {
-	AggregatedSig   string  `json:"AggregatedSig"`
-	R               string  `json:"R"`
-	ValidatorsIndex [][]int `json:"ValidatorsIndex"` //[0]: r | [1]:AggregatedSig
-	ProducerSig     string  `json:"ProducerSig"`
-	Header          BeaconHeader
-	Body            BeaconBody
+	// AggregatedSig string  `json:"AggregatedSig"`
+	// R             string  `json:"R"`
+	// ValidatorsIdx [][]int `json:"ValidatorsIdx"` //[0]: r | [1]:AggregatedSig
+	// ProducerSig   string  `json:"ProducerSig"`
+
+	ValidationData string `json:"ValidationData"`
+
+	Body   BeaconBody
+	Header BeaconHeader
 }
 
 func NewBeaconBlock() *BeaconBlock {
 	return &BeaconBlock{}
 }
 
-func (beaconBlock *BeaconBlock) Hash() *common.Hash {
+func (beaconBlock BeaconBlock) Hash() *common.Hash {
 	hash := beaconBlock.Header.Hash()
 	return &hash
 }
 
+func (beaconBlock BeaconBlock) GetCurrentEpoch() uint64 {
+	return beaconBlock.Header.Epoch
+}
+
+func (beaconBlock BeaconBlock) GetHeight() uint64 {
+	return beaconBlock.Header.Height
+}
+
+// func (beaconBlock *BeaconBlock) GetProducerPubKey() string {
+// 	return string(beaconBlock.Header.ProducerAddress.Pk)
+// }
+
 func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
 	tempBeaconBlock := &struct {
-		AggregatedSig   string  `json:"AggregatedSig"`
-		ValidatorsIndex [][]int `json:"ValidatorsIndex"`
-		ProducerSig     string  `json:"ProducerSig"`
-		R               string  `json:"R"`
-		Header          BeaconHeader
-		Body            BeaconBody
+		ValidationData string `json:"ValidationData"`
+
+		Header BeaconHeader
+		Body   BeaconBody
 	}{}
 	err := json.Unmarshal(data, &tempBeaconBlock)
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
-	beaconBlock.AggregatedSig = tempBeaconBlock.AggregatedSig
-	beaconBlock.R = tempBeaconBlock.R
-	beaconBlock.ValidatorsIndex = tempBeaconBlock.ValidatorsIndex
-	beaconBlock.ProducerSig = tempBeaconBlock.ProducerSig
+	// beaconBlock.AggregatedSig = tempBlk.AggregatedSig
+	// beaconBlock.R = tempBlk.R
+	// beaconBlock.ValidatorsIdx = tempBlk.ValidatorsIdx
+	// beaconBlock.ProducerSig = tempBlk.ProducerSig
+	beaconBlock.ValidationData = tempBeaconBlock.ValidationData
 	beaconBlock.Header = tempBeaconBlock.Header
 	beaconBlock.Body = tempBeaconBlock.Body
 	return nil
+}
+
+func (beaconBlock *BeaconBlock) AddValidationField(validationData string) error {
+	beaconBlock.ValidationData = validationData
+	return nil
+}
+func (beaconBlock BeaconBlock) GetValidationField() string {
+	return beaconBlock.ValidationData
+}
+
+func (beaconBlock BeaconBlock) GetRound() int {
+	return beaconBlock.Header.Round
+}
+func (beaconBlock BeaconBlock) GetRoundKey() string {
+	return fmt.Sprint(beaconBlock.Header.Height, "_", beaconBlock.Header.Round)
+}
+
+func (beaconBlock BeaconBlock) GetInstructions() [][]string {
+	return beaconBlock.Body.Instructions
+}
+
+func (beaconBlock BeaconBlock) GetProducer() string {
+	return beaconBlock.Header.Producer
+}
+
+func (beaconBlock BeaconBlock) GetConsensusType() string {
+	return beaconBlock.Header.ConsensusType
 }
