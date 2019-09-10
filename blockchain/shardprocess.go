@@ -113,9 +113,6 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	if err := blockchain.BestState.Shard[shardID].verifyBestStateWithShardBlock(shardBlock, true, shardID); err != nil {
 		return err
 	}
-
-	// TODO: snapshot and store after all validation
-
 	Logger.log.Infof("SHARD %+v | Update ShardBestState, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	// updateShardBestState best state with new block
 	// Backup beststate
@@ -179,11 +176,19 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewShardblockTopic, shardBlock))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardBeststateTopic, blockchain.BestState.Shard[shardID]))
 	shardIDForMetric := strconv.Itoa(int(shardBlock.Header.ShardID))
-	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+	go metrics.AnalyzeTimeSeriesMetricDataWithTime(map[string]interface{}{
 		metrics.Measurement:      metrics.NumOfBlockInsertToChain,
 		metrics.MeasurementValue: float64(1),
 		metrics.Tag:              metrics.ShardIDTag,
 		metrics.TagValue:         metrics.Shard + shardIDForMetric,
+		metrics.Time:             shardBlock.Header.Timestamp,
+	})
+	go metrics.AnalyzeTimeSeriesMetricDataWithTime(map[string]interface{}{
+		metrics.Measurement:      metrics.NumOfRoundPerBlock,
+		metrics.MeasurementValue: float64(shardBlock.Header.Round),
+		metrics.Tag:              metrics.ShardIDTag,
+		metrics.TagValue:         metrics.Shard + shardIDForMetric,
+		metrics.Time:             shardBlock.Header.Timestamp,
 	})
 	Logger.log.Infof("SHARD %+v | 🔗 Finish Insert new block %d, with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	return nil
