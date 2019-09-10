@@ -77,8 +77,8 @@ const (
 	Testnet            = 0x16
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
-	TestnetEpoch       = 10
-	TestnetRandomTime  = 5
+	TestnetEpoch       = 100
+	TestnetRandomTime  = 50
 
 	TestNetShardCommitteeSize     = 64
 	TestNetMinShardCommitteeSize  = 4
