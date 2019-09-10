@@ -26,6 +26,13 @@ const (
 
 	BeaconBlockRewardNewBeaconBlockRewardInfoFromStrError
 	BeaconBlockRewardBuildInstructionForBeaconBlockRewardError
+
+	StopAutoStakingRequestNotInCommitteeListError
+	StopAutoStakingRequestStakingTransactionNotFoundError
+	StopAutoStakingRequestInvalidTransactionSenderError
+	StopAutoStakingRequestNoAutoStakingAvaiableError
+	StopAutoStakingRequestTypeAssertionError
+	StopAutoStakingRequestAlreadyStopError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -55,6 +62,14 @@ var ErrCodeMessage = map[int]struct {
 	// -3xxx beacon block reward
 	BeaconBlockRewardNewBeaconBlockRewardInfoFromStrError:      {-3000, "Can not new beacon block reward from string"},
 	BeaconBlockRewardBuildInstructionForBeaconBlockRewardError: {-3001, "Can not build instruction for beacon block reward"},
+
+	// -4xxx staking error
+	StopAutoStakingRequestNotInCommitteeListError:         {-4000, "Stop Auto-Staking Request Not In Committee List Error"},
+	StopAutoStakingRequestStakingTransactionNotFoundError: {-4001, "Stop Auto-Staking Request Staking Transaction Not Found Error"},
+	StopAutoStakingRequestInvalidTransactionSenderError:   {-4002, "Stop Auto-Staking Request Invalid Transaction Sender Error"},
+	StopAutoStakingRequestNoAutoStakingAvaiableError:      {-4003, "Stop Auto-Staking Request No Auto Staking Avaliable Error"},
+	StopAutoStakingRequestTypeAssertionError:              {-4004, "Stop Auto-Staking Request Type Assertion Error"},
+	StopAutoStakingRequestAlreadyStopError:                {-4005, "Stop Auto Staking Request Already Stop Error"},
 }
 
 type MetadataTxError struct {

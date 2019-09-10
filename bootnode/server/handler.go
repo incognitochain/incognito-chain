@@ -14,7 +14,7 @@ func (s Handler) GetPeers(args string, responseMessagePeers *[]wire.RawPeer) err
 	fmt.Println(args)
 	// return note list
 	for _, p := range s.rpcServer.peers {
-		*responseMessagePeers = append(*responseMessagePeers, wire.RawPeer{p.rawAddress, p.publicKey})
+		*responseMessagePeers = append(*responseMessagePeers, wire.RawPeer{p.rawAddress, p.publickeyType, p.publicKey})
 	}
 	fmt.Println("Response", *responseMessagePeers)
 	return nil
@@ -26,7 +26,7 @@ func (s Handler) Ping(args *PingArgs, responseMessagePeers *[]wire.RawPeer) erro
 	fmt.Println("Receive ```Ping``` method from ```RPC client``` with data", args)
 
 	// update peer which have just send information to our rpc server
-	err := s.rpcServer.AddOrUpdatePeer(args.RawAddress, args.PublicKey, args.SignData)
+	err := s.rpcServer.AddOrUpdatePeer(args.RawAddress, args.PublicKeyType, args.PublicKey, args.SignData)
 	if err != nil {
 		return err
 	}
@@ -35,7 +35,7 @@ func (s Handler) Ping(args *PingArgs, responseMessagePeers *[]wire.RawPeer) erro
 	defer s.rpcServer.peersMtx.Unlock()
 	// return note list
 	for _, p := range s.rpcServer.peers {
-		*responseMessagePeers = append(*responseMessagePeers, wire.RawPeer{p.rawAddress, p.publicKey})
+		*responseMessagePeers = append(*responseMessagePeers, wire.RawPeer{p.rawAddress, p.publickeyType, p.publicKey})
 	}
 	fmt.Println("Response", *responseMessagePeers)
 	return nil

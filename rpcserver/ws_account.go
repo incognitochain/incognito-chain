@@ -63,12 +63,12 @@ func (wsServer *WsServer) handleSubcribeCrossOutputCoinByPrivateKey(params inter
 				for senderShardID, crossTransactions := range shardBlock.Body.CrossTransactions {
 					for _, crossTransaction := range crossTransactions {
 						for _, crossOutputCoin := range crossTransaction.OutputCoin {
-							proccessedOutputCoin := wsServer.config.BlockChain.DecryptOutputCoinByKey(&crossOutputCoin, &keyWallet.KeySet, senderShardID, &common.PRVCoinID)
+							processedOutputCoin := wsServer.config.BlockChain.DecryptOutputCoinByKey(&crossOutputCoin, &keyWallet.KeySet, senderShardID, &common.PRVCoinID)
 							if value, ok := m[senderShardID]; ok {
-								value += proccessedOutputCoin.CoinDetails.GetValue()
+								value += processedOutputCoin.CoinDetails.GetValue()
 								m[senderShardID] = value
 							} else {
-								m[senderShardID] = proccessedOutputCoin.CoinDetails.GetValue()
+								m[senderShardID] = processedOutputCoin.CoinDetails.GetValue()
 							}
 						}
 					}
