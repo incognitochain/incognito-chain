@@ -35,6 +35,7 @@ type HttpServer struct {
 	// service
 	blockService      *rpcservice.BlockService
 	outputCoinService *rpcservice.OutputCoinService
+	txMemPoolService  *rpcservice.TxMemPoolService
 }
 
 func (httpServer *HttpServer) Init(config *RpcServerConfig) {
