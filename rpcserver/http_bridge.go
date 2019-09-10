@@ -2,18 +2,12 @@ package rpcserver
 
 import (
 	"encoding/json"
-	"fmt"
-	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
-	"strconv"
-
-	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
-	"github.com/incognitochain/incognito-chain/transaction"
-	"github.com/incognitochain/incognito-chain/wallet"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/pkg/errors"
 )
 
@@ -46,43 +40,26 @@ func (httpServer *HttpServer) handleCreateRawTxWithContractingReq(params interfa
 		}
 	}
 
-	senderKeyParam := arrayParams[0]
-	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	err = senderKey.KeySet.InitFromPrivateKey(&senderKey.KeySet.PrivateKey)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	paymentAddr := senderKey.KeySet.PaymentAddress
+	senderKeyParam := arrayParams[0].(string)
 	tokenParamsRaw := arrayParams[4].(map[string]interface{})
-	_, voutsAmount, err := transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	tokenID, err := common.Hash{}.NewHashFromStr(tokenParamsRaw["TokenID"].(string))
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	tokenReceivers := tokenParamsRaw["TokenReceivers"]
+	tokenID := tokenParamsRaw["TokenID"].(string)
+
+	meta, err := rpcservice.NewContractingRequestMetadata(senderKeyParam, tokenReceivers, tokenID)
+	if err != nil{
+		return nil, err
 	}
 
-	meta, _ := metadata.NewContractingRequest(
-		paymentAddr,
-		uint64(voutsAmount),
-		*tokenID,
-		metadata.ContractingRequestMeta,
-	)
 	customTokenTx, rpcErr := httpServer.buildRawPrivacyCustomTokenTransaction(params, meta)
-	// rpcErr := err1.(*RPCError)
 	if rpcErr != nil {
 		Logger.log.Error(rpcErr)
 		return nil, rpcErr
 	}
 
-	byteArrays, err := json.Marshal(customTokenTx)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	byteArrays, err2 := json.Marshal(customTokenTx)
+	if err2 != nil {
+		Logger.log.Error(err2)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
 	}
 	result := jsonresult.CreateTransactionResult{
 		TxID:            customTokenTx.Hash().String(),
@@ -120,48 +97,28 @@ func (httpServer *HttpServer) handleCreateRawTxWithBurningReq(params interface{}
 		}
 	}
 
-	senderKeyParam := arrayParams[0]
-	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	err = senderKey.KeySet.InitFromPrivateKey(&senderKey.KeySet.PrivateKey)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	paymentAddr := senderKey.KeySet.PaymentAddress
-
+	senderKeyParam := arrayParams[0].(string)
 	tokenParamsRaw := arrayParams[4].(map[string]interface{})
-	_, voutsAmount, err := transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	tokenID, err := common.Hash{}.NewHashFromStr(tokenParamsRaw["TokenID"].(string))
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
+	tokenReceivers := tokenParamsRaw["TokenReceivers"]
+	tokenID := tokenParamsRaw["TokenID"].(string)
 	tokenName := tokenParamsRaw["TokenName"].(string)
 	remoteAddress := tokenParamsRaw["RemoteAddress"].(string)
 
-	meta, _ := metadata.NewBurningRequest(
-		paymentAddr,
-		uint64(voutsAmount),
-		*tokenID,
-		tokenName,
-		remoteAddress,
-		metadata.BurningRequestMeta,
-	)
+	meta, err := rpcservice.NewBurningRequestMetadata(senderKeyParam, tokenReceivers, tokenID, tokenName, remoteAddress)
+	if err != nil{
+		return nil, err
+	}
+
 	customTokenTx, rpcErr := httpServer.buildRawPrivacyCustomTokenTransaction(params, meta)
-	// rpcErr := err1.(*RPCError)
 	if rpcErr != nil {
 		Logger.log.Error(rpcErr)
 		return nil, rpcErr
 	}
 
-	byteArrays, err := json.Marshal(customTokenTx)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	byteArrays, err2 := json.Marshal(customTokenTx)
+	if err2 != nil {
+		Logger.log.Error(err2)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
 	}
 	result := jsonresult.CreateTransactionResult{
 		TxID:            customTokenTx.Hash().String(),
@@ -236,14 +193,10 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingETHReq(params inte
 }
 
 func (httpServer *HttpServer) handleCheckETHHashIssued(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	db := httpServer.config.BlockChain.GetDatabase()
 	arrayParams := common.InterfaceSlice(params)
 	data := arrayParams[0].(map[string]interface{})
-	blockHash := rCommon.HexToHash(data["BlockHash"].(string))
-	txIdx := uint(data["TxIndex"].(float64))
-	uniqETHTx := append(blockHash[:], []byte(strconv.Itoa(int(txIdx)))...)
 
-	issued, err := db.IsETHTxHashIssued(uniqETHTx)
+	issued, err := httpServer.databaseService.CheckETHHashIssued(data)
 	if err != nil {
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -251,16 +204,13 @@ func (httpServer *HttpServer) handleCheckETHHashIssued(params interface{}, close
 }
 
 func (httpServer *HttpServer) handleGetAllBridgeTokens(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	db := httpServer.config.BlockChain.GetDatabase()
-	allBridgeTokensBytes, err := db.GetAllBridgeTokens()
-	if err != nil {
+	allBridgeTokensBytes, err := httpServer.databaseService.GetAllBridgeTokens()
+	if err != nil{
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
+
 	var allBridgeTokens []*lvdb.BridgeTokenInfo
 	err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
-	// for _, item := range allBridgeTokens {
-	// 	item.ExternalTokenIDStr = hex.EncodeToString(item.ExternalTokenID)
-	// }
 	if err != nil {
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -270,26 +220,19 @@ func (httpServer *HttpServer) handleGetAllBridgeTokens(params interface{}, close
 func (httpServer *HttpServer) handleGetETHHeaderByHash(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	ethBlockHash := arrayParams[0].(string)
-	//bc := httpServer.config.BlockChain
-	ethHeader, err := metadata.GetETHHeader(rCommon.HexToHash(ethBlockHash))
-	if err != nil {
+
+	ethHeader, err := rpcservice.GetETHHeaderByHash(ethBlockHash)
+		if err != nil {
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 	return ethHeader, nil
 }
 
 func (httpServer *HttpServer) handleGetBridgeReqWithStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	db := httpServer.config.BlockChain.GetDatabase()
 	arrayParams := common.InterfaceSlice(params)
 	data := arrayParams[0].(map[string]interface{})
-	txReqID, err := common.Hash{}.NewHashFromStr(data["TxReqID"].(string))
-	if err != nil {
-		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
 
-	fmt.Println("hahaha rpc txReqID: ", txReqID)
-
-	status, err := db.GetBridgeReqWithStatus(*txReqID)
+	status, err := httpServer.databaseService.GetBridgeReqWithStatus(data["TxReqID"].(string))
 	if err != nil {
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
