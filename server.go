@@ -1888,62 +1888,62 @@ func (serverObj *Server) GetPublicKeyRole(publicKey string, keyType string) (int
 	return -1, -1
 }
 
-func (serverObj *Server) GetIncognitoPublicKeyRole(publicKey string) (int, int) {
+func (serverObj *Server) GetIncognitoPublicKeyRole(publicKey string) (int, bool, int) {
 	var beaconBestState blockchain.BeaconBestState
 	err := beaconBestState.CloneBeaconBestStateFrom(serverObj.blockChain.BestState.Beacon)
 	if err != nil {
-		return -2, -1
+		return -2, false, -1
 	}
 
 	for shardID, pubkeyArr := range beaconBestState.ShardPendingValidator {
 		for _, key := range pubkeyArr {
 			if key.GetIncKeyBase58() == publicKey {
-				return 0, int(shardID)
+				return 1, false, int(shardID)
 			}
 		}
 	}
 	for shardID, pubkeyArr := range beaconBestState.ShardCommittee {
 		for _, key := range pubkeyArr {
 			if key.GetIncKeyBase58() == publicKey {
-				return 1, int(shardID)
+				return 2, false, int(shardID)
 			}
 		}
 	}
 
 	for _, key := range beaconBestState.BeaconCommittee {
 		if key.GetIncKeyBase58() == publicKey {
-			return 1, -1
+			return 2, true, -1
 		}
 	}
 
 	for _, key := range beaconBestState.BeaconPendingValidator {
 		if key.GetIncKeyBase58() == publicKey {
-			return 0, -1
+			return 1, true, -1
 		}
 	}
 
 	for _, key := range beaconBestState.CandidateBeaconWaitingForCurrentRandom {
 		if key.GetIncKeyBase58() == publicKey {
-			return 0, -1
+			return 0, true, -1
 		}
 	}
 
 	for _, key := range beaconBestState.CandidateBeaconWaitingForNextRandom {
 		if key.GetIncKeyBase58() == publicKey {
-			return 0, -1
+			return 0, true, -1
 		}
 	}
 
 	for _, key := range beaconBestState.CandidateShardWaitingForCurrentRandom {
 		if key.GetIncKeyBase58() == publicKey {
-			return 0, -1
+			return 0, false, -1
 		}
 	}
 	for _, key := range beaconBestState.CandidateShardWaitingForNextRandom {
 		if key.GetIncKeyBase58() == publicKey {
-			return 0, -1
+			return 0, false, -1
 		}
 	}
 
-	return -1, -1
+	return -1, false, -1
 }
