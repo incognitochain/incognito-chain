@@ -75,6 +75,36 @@ func generateHashFromMapByteString(maps1 map[byte][]string, maps2 map[byte][]str
 	return generateHashFromStringArray(append(shardPendingValidator, shardValidator...))
 }
 
+func generateHashFromMapStringString(maps1 map[string]string) (common.Hash, error) {
+	var keys []string
+	var res []string
+	for k := range maps1 {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		res = append(res, key)
+		res = append(res, maps1[key])
+	}
+	return generateHashFromStringArray(res)
+}
+func generateHashFromMapStringBool(maps1 map[string]bool) (common.Hash, error) {
+	var keys []string
+	var res []string
+	for k := range maps1 {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		res = append(res, key)
+		if maps1[key] {
+			res = append(res, "true")
+		} else {
+			res = append(res, "false")
+		}
+	}
+	return generateHashFromStringArray(res)
+}
 func generateHashFromShardState(allShardState map[byte][]ShardState) (common.Hash, error) {
 	allShardStateStr := []string{}
 	var keys []int
@@ -117,7 +147,7 @@ func generateLastCrossShardStateHash(lastCrossShardState map[byte]map[byte]uint6
 	}
 	return common.HashH([]byte(res))
 }
-func VerifyHashFromHashArray(hashes []common.Hash, hash common.Hash) bool {
+func VerifyHashFromHashArray(hashes []common.Hash, hash common.Hash) (common.Hash, bool) {
 	strs := []string{}
 	for _, value := range hashes {
 		str := value.String()
@@ -126,12 +156,12 @@ func VerifyHashFromHashArray(hashes []common.Hash, hash common.Hash) bool {
 	return verifyHashFromStringArray(strs, hash)
 }
 
-func verifyHashFromStringArray(strs []string, hash common.Hash) bool {
+func verifyHashFromStringArray(strs []string, hash common.Hash) (common.Hash, bool) {
 	res, err := generateHashFromStringArray(strs)
 	if err != nil {
-		return false
+		return common.Hash{}, false
 	}
-	return bytes.Equal(res.GetBytes(), hash.GetBytes())
+	return res, bytes.Equal(res.GetBytes(), hash.GetBytes())
 }
 
 func verifyHashFromMapByteString(maps1 map[byte][]string, maps2 map[byte][]string, hash common.Hash) bool {
@@ -169,5 +199,19 @@ func calHashFromTxTokenDataList(txTokenDataList []transaction.TxNormalTokenData)
 }
 func verifyLastCrossShardStateHash(lastCrossShardState map[byte]map[byte]uint64, targetHash common.Hash) (common.Hash, bool) {
 	hash := generateLastCrossShardStateHash(lastCrossShardState)
+	return hash, hash.IsEqual(&targetHash)
+}
+func verifyHashFromMapStringString(maps1 map[string]string, targetHash common.Hash) (common.Hash, bool) {
+	hash, err := generateHashFromMapStringString(maps1)
+	if err != nil {
+		return hash, false
+	}
+	return hash, hash.IsEqual(&targetHash)
+}
+func verifyHashFromMapStringBool(maps1 map[string]bool, targetHash common.Hash) (common.Hash, bool) {
+	hash, err := generateHashFromMapStringBool(maps1)
+	if err != nil {
+		return hash, false
+	}
 	return hash, hash.IsEqual(&targetHash)
 }

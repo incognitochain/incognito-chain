@@ -3,6 +3,7 @@ package jsonresult
 import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 type GetShardBestState struct {
@@ -42,17 +43,22 @@ func NewGetShardBestState(data *blockchain.ShardBestState) *GetShardBestState {
 		ShardProposerIdx:       data.ShardProposerIdx,
 		TotalTxns:              data.TotalTxns,
 		TotalTxnsExcludeSalary: data.TotalTxnsExcludeSalary,
-
-		//BestCrossShard:         data.BestCrossShard,
-		//ShardPendingValidator:  data.ShardPendingValidator,
-		//StakingTx:              data.StakingTx,
-		//ShardCommittee:         data.ShardCommittee,
 	}
 
 	result.ShardCommittee = make([]string, len(data.ShardCommittee))
-	copy(result.ShardCommittee, data.ShardCommittee)
+
+	shardCommitteeStr, err := incognitokey.CommitteeKeyListToString(data.ShardCommittee)
+	if err != nil {
+		panic(err)
+	}
+	copy(result.ShardCommittee, shardCommitteeStr)
 	result.ShardPendingValidator = make([]string, len(data.ShardPendingValidator))
-	copy(result.ShardPendingValidator, data.ShardPendingValidator)
+
+	shardPendingValidatorStr, err := incognitokey.CommitteeKeyListToString(data.ShardPendingValidator)
+	if err != nil {
+		panic(err)
+	}
+	copy(result.ShardPendingValidator, shardPendingValidatorStr)
 
 	result.BestCrossShard = make(map[byte]uint64)
 	for k, v := range data.BestCrossShard {

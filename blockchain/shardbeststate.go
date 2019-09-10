@@ -7,8 +7,10 @@ import (
 	"reflect"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 // BestState houses information about the current best block and other info
@@ -22,26 +24,31 @@ import (
 // shared by all callers.
 
 type ShardBestState struct {
-	BestBlockHash          common.Hash       `json:"BestBlockHash"` // hash of block.
-	BestBlock              *ShardBlock       `json:"BestBlock"`     // block data
-	BestBeaconHash         common.Hash       `json:"BestBeaconHash"`
-	BeaconHeight           uint64            `json:"BeaconHeight"`
-	ShardID                byte              `json:"ShardID"`
-	Epoch                  uint64            `json:"Epoch"`
-	ShardHeight            uint64            `json:"ShardHeight"`
-	MaxShardCommitteeSize  int               `json:"MaxShardCommitteeSize"`
-	MinShardCommitteeSize  int               `json:"MinShardCommitteeSize"`
-	ShardProposerIdx       int               `json:"ShardProposerIdx"`
-	ShardCommittee         []string          `json:"ShardCommittee"`
-	ShardPendingValidator  []string          `json:"ShardPendingValidator"`
-	BestCrossShard         map[byte]uint64   `json:"BestCrossShard"` // Best cross shard block by heigh
-	StakingTx              map[string]string `json:"StakingTx"`
-	NumTxns                uint64            `json:"NumTxns"`                // The number of txns in the block.
-	TotalTxns              uint64            `json:"TotalTxns"`              // The total number of txns in the chain.
-	TotalTxnsExcludeSalary uint64            `json:"TotalTxnsExcludeSalary"` // for testing and benchmark
-	ActiveShards           int               `json:"ActiveShards"`
-	MetricBlockHeight      uint64
-	lock                   sync.RWMutex
+	BestBlockHash          common.Hash                       `json:"BestBlockHash"` // hash of block.
+	BestBlock              *ShardBlock                       `json:"BestBlock"`     // block data
+	BestBeaconHash         common.Hash                       `json:"BestBeaconHash"`
+	BeaconHeight           uint64                            `json:"BeaconHeight"`
+	ShardID                byte                              `json:"ShardID"`
+	Epoch                  uint64                            `json:"Epoch"`
+	ShardHeight            uint64                            `json:"ShardHeight"`
+	MaxShardCommitteeSize  int                               `json:"MaxShardCommitteeSize"`
+	MinShardCommitteeSize  int                               `json:"MinShardCommitteeSize"`
+	ShardProposerIdx       int                               `json:"ShardProposerIdx"`
+	ShardCommittee         []incognitokey.CommitteePublicKey `json:"ShardCommittee"`
+	ShardPendingValidator  []incognitokey.CommitteePublicKey `json:"ShardPendingValidator"`
+	BestCrossShard         map[byte]uint64                   `json:"BestCrossShard"` // Best cross shard block by heigh
+	StakingTx              map[string]string                 `json:"StakingTx"`
+	NumTxns                uint64                            `json:"NumTxns"`                // The number of txns in the block.
+	TotalTxns              uint64                            `json:"TotalTxns"`              // The total number of txns in the chain.
+	TotalTxnsExcludeSalary uint64                            `json:"TotalTxnsExcludeSalary"` // for testing and benchmark
+	ActiveShards           int                               `json:"ActiveShards"`
+	ConsensusAlgorithm     string                            `json:"ConsensusAlgorithm"`
+
+	BlockInterval      time.Duration
+	BlockMaxCreateTime time.Duration
+
+	MetricBlockHeight uint64
+	lock              sync.RWMutex
 }
 
 var bestStateShardMap = make(map[byte]*ShardBestState)
@@ -63,15 +70,17 @@ func NewBestStateShardWithConfig(shardID byte, netparam *Params) *ShardBestState
 		panic(err)
 	}
 	bestStateShard.BestBlock = nil
-	bestStateShard.ShardCommittee = []string{}
+	bestStateShard.ShardCommittee = []incognitokey.CommitteePublicKey{}
 	bestStateShard.MaxShardCommitteeSize = netparam.MaxShardCommitteeSize
 	bestStateShard.MinShardCommitteeSize = netparam.MinShardCommitteeSize
-	bestStateShard.ShardPendingValidator = []string{}
+	bestStateShard.ShardPendingValidator = []incognitokey.CommitteePublicKey{}
 	bestStateShard.ActiveShards = netparam.ActiveShards
 	bestStateShard.BestCrossShard = make(map[byte]uint64)
 	bestStateShard.StakingTx = make(map[string]string)
 	bestStateShard.ShardHeight = 1
 	bestStateShard.BeaconHeight = 1
+	bestStateShard.BlockInterval = netparam.MinBeaconBlockInterval
+	bestStateShard.BlockMaxCreateTime = netparam.MaxBeaconBlockCreation
 	return bestStateShard
 }
 
@@ -115,10 +124,18 @@ func (shardBestState *ShardBestState) GetBytes() []byte {
 	binary.LittleEndian.PutUint32(proposerIdxBytes, uint32(shardBestState.ShardProposerIdx))
 	res = append(res, proposerIdxBytes...)
 	for _, value := range shardBestState.ShardCommittee {
-		res = append(res, []byte(value)...)
+		valueBytes, err := value.Bytes()
+		if err != nil {
+			return nil
+		}
+		res = append(res, valueBytes...)
 	}
 	for _, value := range shardBestState.ShardPendingValidator {
-		res = append(res, []byte(value)...)
+		valueBytes, err := value.Bytes()
+		if err != nil {
+			return nil
+		}
+		res = append(res, valueBytes...)
 	}
 	keys := []int{}
 	for k := range shardBestState.BestCrossShard {
@@ -190,18 +207,21 @@ func (shardBestState *ShardBestState) SetMinShardCommitteeSize(minShardCommittee
 }
 
 func (shardBestState *ShardBestState) GetPubkeyRole(pubkey string, round int) string {
-	found := common.IndexOfStr(pubkey, shardBestState.ShardCommittee)
+	keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(shardBestState.ShardCommittee, shardBestState.ConsensusAlgorithm)
+	found := common.IndexOfStr(pubkey, keyList)
 	if found > -1 {
-		tmpID := (shardBestState.ShardProposerIdx + round) % len(shardBestState.ShardCommittee)
+		tmpID := (shardBestState.ShardProposerIdx + round) % len(keyList)
 		if found == tmpID {
-			return common.PROPOSER_ROLE
+			return common.ProposerRole
 		} else {
-			return common.VALIDATOR_ROLE
+			return common.ValidatorRole
 		}
 	}
-	found = common.IndexOfStr(pubkey, shardBestState.ShardPendingValidator)
+
+	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(shardBestState.ShardPendingValidator, shardBestState.ConsensusAlgorithm)
+	found = common.IndexOfStr(pubkey, keyList)
 	if found > -1 {
-		return common.PENDING_ROLE
+		return common.PendingRole
 	}
 	return common.EmptyString
 }
@@ -228,7 +248,7 @@ func (shardBestState ShardBestState) GetBeaconHeight() uint64 {
 	return shardBestState.BeaconHeight
 }
 
-func (shardBestState *ShardBestState) cloneShardBestState(target *ShardBestState) error {
+func (shardBestState *ShardBestState) cloneShardBestStateFrom(target *ShardBestState) error {
 	tempMarshal, err := json.Marshal(target)
 	if err != nil {
 		return NewBlockChainError(MashallJsonShardBestStateError, fmt.Errorf("Shard Best State %+v get %+v", target.ShardHeight, err))
@@ -241,4 +261,13 @@ func (shardBestState *ShardBestState) cloneShardBestState(target *ShardBestState
 		return NewBlockChainError(CloneShardBestStateError, fmt.Errorf("Shard Best State %+v clone failed", target.ShardHeight))
 	}
 	return nil
+}
+func (shardBestState *ShardBestState) GetStakingTx() map[string]string {
+	shardBestState.lock.RLock()
+	defer shardBestState.lock.RUnlock()
+	m := make(map[string]string)
+	for k, v := range shardBestState.StakingTx {
+		m[k] = v
+	}
+	return m
 }
