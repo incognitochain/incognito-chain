@@ -34,8 +34,8 @@ const (
 	DefaultMaxPeersOther          = 125
 	DefaultMaxPeersNoShard        = 125
 	DefaultMaxPeersBeacon         = 50
-	DefaultMaxRPCClients          = 20
-	DefaultMaxRPCWsClients        = 20
+	DefaultMaxRPCClients          = 100
+	DefaultMaxRPCWsClients        = 100
 	DefaultMetricUrl              = ""
 	SampleConfigFilename          = "sample-config.conf"
 	DefaultDisableRpcTLS          = true
