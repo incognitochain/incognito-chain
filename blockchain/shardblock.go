@@ -245,7 +245,7 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 		shardBlock.Header.TotalTxsFee = make(map[common.Hash]uint64)
 	}
 	if ok, err := shardBlock.validateSanityData(); !ok || err != nil {
-		panic(string(data) + err.Error())
+		// panic(string(data) + err.Error())
 		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
 	shardBlock.Body = blkBody

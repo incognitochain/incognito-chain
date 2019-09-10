@@ -23,7 +23,7 @@
 - Balance: `0` 
 #### Custom Token, Custom Token Privacy Transaction
 - Private Key: `112t8rrfnKmgLJ9htCg6Bn3QNfTZmQCBR5gsgoMJRhphK1vfHRrRemqKgu9fE9EAKdEYoJBgy4xhnyhDjccsHRmDY2bF5BmkK4kd2juCdVGk`
-- Payment Address: `1Uv3aYQj3dgMYiVfQNBjHX1YrX4cZn41Uv3aYQj3dgMYiVfQNBjHX1YrX4cZn4cNcNBdKbKa8jR3LQ2CDkV5yn9T5wxq7KoSGkLBALgFL7rqVPhy1jb6FCFJtAxigiKj3xCA7aErcNcNBdKbKa8jR3LQ2CDkV5yn9T5wxq7KoSGkLBALgFL7rqVPhy1jb6FCFJtAxigiKj3xCA7aEr`
+- Payment Address: `1Uv3aYQj3dgMYiVfQNBjHX1YrX4cZn4cNcNBdKbKa8jR3LQ2CDkV5yn9T5wxq7KoSGkLBALgFL7rqVPhy1jb6FCFJtAxigiKj3xCA7aEr`
 - Public Key: `17FYHpLygyHdtQcf6oUnJCLYGDMgswYwDWHBtWPA9Di6oM9yvqB`
 - Mining Seed: `1MZ4jiR4ks5pMQ5GbQamm8rUqgKcYLyPwUHpe6v6xAN8Fr4HD4`
 - Balance: `0`

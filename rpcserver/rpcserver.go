@@ -76,6 +76,8 @@ type RpcServerConfig struct {
 		EnableMining(enable bool) error
 		IsEnableMining() bool
 		GetChainMiningStatus(chain int) string
+		GetPublicKeyRole(publicKey string, keyType string) (int, int)
+		GetIncognitoPublicKeyRole(publicKey string) (int, bool, int)
 	}
 	ConsensusEngine interface {
 		GetUserRole() (string, int)
