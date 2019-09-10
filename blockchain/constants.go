@@ -23,9 +23,9 @@ const (
 	DefaultMaxBlockSyncTime      = 1 * time.Second  // in second
 	DefaultCacheCleanupTime      = 30 * time.Second // in second
 	WorkerNumber                 = 5
-	MAX_S2B_BLOCK                = 50
+	MAX_S2B_BLOCK                = 5
 	DurationHalfLifeRewardForDev = uint64(31536000) // 5 years, after 5 year, reward for devs = 0
-	GetValidBlock                = 50
+	GetValidBlock                = 10
 	CheckForce                   = true
 )
 
@@ -42,6 +42,11 @@ const (
 	MainNetBeaconCommitteeSize = 3
 	MainNetActiveShards        = 2
 	MainNetStakingAmountShard  = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
+
+	MainNetMinBeaconBlkInterval = 10 * time.Second //second
+	MainNetMaxBeaconBlkCreation = 8 * time.Second  //second
+	MainNetMinShardBlkInterval  = 10 * time.Second //second
+	MainNetMaxShardBlkCreation  = 4 * time.Second  //second
 
 	//board and proposal parameters
 	MainnetBasicReward                = 400000000 //40 mili PRV
@@ -75,12 +80,17 @@ const (
 	TestnetEpoch       = 100
 	TestnetRandomTime  = 50
 
-	TestNetShardCommitteeSize     = 32
+	TestNetShardCommitteeSize     = 64
 	TestNetMinShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize    = 4
 	TestNetMinBeaconCommitteeSize = 4
 	TestNetActiveShards           = 8
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
+
+	TestNetMinBeaconBlkInterval = 10 * time.Second //second
+	TestNetMaxBeaconBlkCreation = 8 * time.Second  //second
+	TestNetMinShardBlkInterval  = 10 * time.Second //second
+	TestNetMaxShardBlkCreation  = 4 * time.Second  //second
 
 	//board and proposal parameters
 	TestnetBasicReward                = 400000000 //40 mili PRV
@@ -105,9 +115,10 @@ func init() {
 	}
 
 	type AccountKey struct {
-		PrivateKey string
-		PaymentAdd string
-		PubKey     string
+		PrivateKey     string
+		PaymentAddress string
+		// PubKey     string
+		CommitteePublicKey string
 	}
 
 	type KeyList struct {
@@ -121,16 +132,15 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-
 	for i := 0; i < TestNetMinBeaconCommitteeSize; i++ {
-		PreSelectBeaconNodeTestnetSerializedPubkey = append(PreSelectBeaconNodeTestnetSerializedPubkey, keylist.Beacon[i].PubKey)
-		PreSelectBeaconNodeTestnetSerializedPaymentAddress = append(PreSelectBeaconNodeTestnetSerializedPaymentAddress, keylist.Beacon[i].PaymentAdd)
+		PreSelectBeaconNodeTestnetSerializedPubkey = append(PreSelectBeaconNodeTestnetSerializedPubkey, keylist.Beacon[i].CommitteePublicKey)
+		PreSelectBeaconNodeTestnetSerializedPaymentAddress = append(PreSelectBeaconNodeTestnetSerializedPaymentAddress, keylist.Beacon[i].PaymentAddress)
 	}
 
 	for i := 0; i < TestNetActiveShards; i++ {
 		for j := 0; j < TestNetMinShardCommitteeSize; j++ {
-			PreSelectShardNodeTestnetSerializedPubkey = append(PreSelectShardNodeTestnetSerializedPubkey, keylist.Shard[i][j].PubKey)
-			PreSelectShardNodeTestnetSerializedPaymentAddress = append(PreSelectShardNodeTestnetSerializedPaymentAddress, keylist.Shard[i][j].PaymentAdd)
+			PreSelectShardNodeTestnetSerializedPubkey = append(PreSelectShardNodeTestnetSerializedPubkey, keylist.Shard[i][j].CommitteePublicKey)
+			PreSelectShardNodeTestnetSerializedPaymentAddress = append(PreSelectShardNodeTestnetSerializedPaymentAddress, keylist.Shard[i][j].PaymentAddress)
 		}
 	}
 }
@@ -143,11 +153,12 @@ func init() {
 // -------------- FOR INSTRUCTION --------------
 // Action for instruction
 const (
-	SetAction    = "set"
-	SwapAction   = "swap"
-	RandomAction = "random"
-	StakeAction  = "stake"
-	AssignAction = "assign"
+	SetAction     = "set"
+	SwapAction    = "swap"
+	RandomAction  = "random"
+	StakeAction   = "stake"
+	AssignAction  = "assign"
+	StopAutoStake = "stopautostake"
 )
 
 // ---------------------------------------------

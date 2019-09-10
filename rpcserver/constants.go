@@ -84,8 +84,8 @@ const (
 	listSerialNumbers                          = "listserialnumbers"
 	listCommitments                            = "listcommitments"
 	listCommitmentIndices                      = "listcommitmentindices"
-
-	createAndSendStakingTransaction = "createandsendstakingtransaction"
+	createAndSendStakingTransaction            = "createandsendstakingtransaction"
+	createAndSendStopAutoStakingTransaction    = "createandsendstopautostakingtransaction"
 
 	//===========For Testing and Benchmark==============
 	getAndSendTxsFromFile   = "getandsendtxsfromfile"
@@ -132,9 +132,11 @@ const (
 	getBridgeReqWithStatus           = "getbridgereqwithstatus"
 
 	// Incognito -> Ethereum bridge
-	getBeaconSwapProof = "getbeaconswapproof"
-	getBridgeSwapProof = "getbridgeswapproof"
-	getBurnProof       = "getburnproof"
+	getBeaconSwapProof       = "getbeaconswapproof"
+	getLatestBeaconSwapProof = "getlatestbeaconswapproof"
+	getBridgeSwapProof       = "getbridgeswapproof"
+	getLatestBridgeSwapProof = "getlatestbridgeswapproof"
+	getBurnProof             = "getburnproof"
 
 	// reward
 	CreateRawWithDrawTransaction = "withdrawreward"
@@ -144,9 +146,11 @@ const (
 	revertbeaconchain = "revertbeaconchain"
 	revertshardchain  = "revertshardchain"
 
-	enableMining         = "enablemining"
-	getChainMiningStatus = "getchainminingstatus"
-	getPublickeyMining   = "getpublickeymining"
+	enableMining              = "enablemining"
+	getChainMiningStatus      = "getchainminingstatus"
+	getPublickeyMining        = "getpublickeymining"
+	getPublicKeyRole          = "getpublickeyrole"
+	getIncognitoPublicKeyRole = "getincognitopublickeyrole"
 )
 
 const (

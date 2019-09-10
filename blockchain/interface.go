@@ -4,12 +4,9 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
-
-type BFTBlockInterface interface {
-	// UnmarshalJSON(data []byte) error
-}
 
 type ShardToBeaconPool interface {
 	RemoveBlock(map[byte]uint64)
@@ -37,23 +34,23 @@ type CrossShardPool interface {
 }
 
 type ShardPool interface {
-	RemoveBlock(uint64)
+	RemoveBlock(height uint64)
 	AddShardBlock(block *ShardBlock) error
 	GetValidBlockHash() []common.Hash
 	GetValidBlock() []*ShardBlock
 	GetValidBlockHeight() []uint64
 	GetLatestValidBlockHeight() uint64
-	SetShardState(uint64)
+	SetShardState(height uint64)
 	GetAllBlockHeight() []uint64
 	Start(chan struct{})
 }
 
 type BeaconPool interface {
-	RemoveBlock(uint64)
+	RemoveBlock(height uint64)
 	AddBeaconBlock(block *BeaconBlock) error
 	GetValidBlock() []*BeaconBlock
 	GetValidBlockHeight() []uint64
-	SetBeaconState(uint64)
+	SetBeaconState(height uint64)
 	GetAllBlockHeight() []uint64
 	Start(chan struct{})
 }
@@ -90,4 +87,38 @@ type TxPool interface {
 
 type FeeEstimator interface {
 	RegisterBlock(block *ShardBlock) error
+}
+
+type ChainInterface interface {
+	GetChainName() string
+	GetConsensusType() string
+	GetLastBlockTimeStamp() int64
+	GetMinBlkInterval() time.Duration
+	GetMaxBlkCreateTime() time.Duration
+	IsReady() bool
+	GetActiveShardNumber() int
+	GetPubkeyRole(pubkey string, round int) (string, byte)
+	CurrentHeight() uint64
+	GetCommitteeSize() int
+	GetCommittee() []incognitokey.CommitteePublicKey
+	GetPubKeyCommitteeIndex(string) int
+	GetLastProposerIndex() int
+	UnmarshalBlock(blockString []byte) (common.BlockInterface, error)
+	CreateNewBlock(round int) (common.BlockInterface, error)
+	InsertBlk(block common.BlockInterface) error
+	InsertAndBroadcastBlock(block common.BlockInterface) error
+	ValidateAndInsertBlock(block common.BlockInterface) error
+	ValidateBlockWithBlockChain(block common.BlockInterface) error
+	ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
+	ValidatePreSignBlock(block common.BlockInterface) error
+	GetShardID() int
+}
+
+type BestStateInterface interface {
+	GetLastBlockTimeStamp() uint64
+	GetBlkMinInterval() time.Duration
+	GetBlkMaxCreateTime() time.Duration
+	CurrentHeight() uint64
+	GetCommittee() []string
+	GetLastProposerIdx() int
 }

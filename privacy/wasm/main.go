@@ -33,6 +33,10 @@ func oneOutOfManyProve(_ js.Value, args []js.Value) interface{} {
 	return proof
 }
 
+func generateBLSKeyPairFromSeed(_ js.Value, args []js.Value) interface{} {
+	return gomobile.GenerateBLSKeyPairFromSeed(args[0].String())
+}
+
 func main() {
 	c := make(chan struct{}, 0)
 	println("Hello WASM")
@@ -40,5 +44,6 @@ func main() {
 	js.Global().Set("sayHello", js.FuncOf(sayHello))
 	js.Global().Set("aggregatedRangeProve", js.FuncOf(aggregatedRangeProve))
 	js.Global().Set("oneOutOfManyProve", js.FuncOf(oneOutOfManyProve))
+	js.Global().Set("generateBLSKeyPairFromSeed", js.FuncOf(generateBLSKeyPairFromSeed))
 	<-c
 }*/

@@ -2,12 +2,12 @@ package wire
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
 	"reflect"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/common"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/transaction"
 	peer "github.com/libp2p/go-libp2p-peer"
 )
@@ -32,12 +32,8 @@ const (
 	CmdPing               = "ping"
 
 	// POS Cmd
-	CmdBFTPropose = "bftpropose"
-	CmdBFTAgree   = "bftagree"
-	CmdBFTCommit  = "bftcommit"
-	CmdBFTReady   = "bftready"
-	CmdBFTReq     = "bftreq"
-	CmdPeerState  = "peerstate"
+	CmdBFT       = "bft"
+	CmdPeerState = "peerstate"
 
 	// heavy message check cmd
 	CmdMsgCheck     = "msgcheck"
@@ -53,8 +49,8 @@ type Message interface {
 	JsonDeserialize(string) error
 	SetSenderID(peer.ID) error
 
-	//SignMsg sig this msg with a keyset
-	SignMsg(*incognitokey.KeySet) error
+	// //SignMsg sig this msg with a keyset
+	// SignMsg(*incognitokey.KeySet) error
 
 	//VerifyMsgSanity verify msg before push it to final handler
 	VerifyMsgSanity() error
@@ -110,31 +106,36 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdVerack:
 		msg = &MessageVerAck{}
 		break
-	case CmdBFTReq:
-		msg = &MessageBFTReq{
-			Timestamp: time.Now().Unix(),
-		}
-		break
-	case CmdBFTReady:
-		msg = &MessageBFTReady{
-			Timestamp: time.Now().Unix(),
-		}
-		break
-	case CmdBFTPropose:
-		msg = &MessageBFTPropose{
-			Timestamp: time.Now().Unix(),
-		}
-		break
-	case CmdBFTAgree:
-		msg = &MessageBFTAgree{
-			Timestamp: time.Now().Unix(),
-		}
-		break
-	case CmdBFTCommit:
-		msg = &MessageBFTCommit{
-			Timestamp: time.Now().Unix(),
-		}
-		break
+	// case CmdBFTReq:
+	// 	msg = &MessageBFTReq{
+	// 		Timestamp: time.Now().Unix(),
+	// 	}
+	// 	break
+	// case CmdBFTReady:
+	// 	msg = &MessageBFTReady{
+	// 		Timestamp: time.Now().Unix(),
+	// 	}
+	// 	break
+	// case CmdBFTPropose:
+	// 	msg = &MessageBFTProposeV2{
+	// 		Timestamp: time.Now().Unix(),
+	// 	}
+	// 	break
+	// case CmdBFTPrepare:
+	// 	msg = &MessageBFTPrepareV2{
+	// 		Timestamp: time.Now().Unix(),
+	// 	}
+	// 	break
+	// case CmdBFTAgree:
+	// 	msg = &MessageBFTAgree{
+	// 		Timestamp: time.Now().Unix(),
+	// 	}
+	// 	break
+	// case CmdBFTCommit:
+	// 	msg = &MessageBFTCommit{
+	// 		Timestamp: time.Now().Unix(),
+	// 	}
+	// 	break
 	case CmdPeerState:
 		msg = &MessagePeerState{
 			Timestamp:         time.Now().Unix(),
@@ -158,14 +159,18 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		break
 	case CmdMsgCheck:
 		msg = &MessageMsgCheck{
-			Timestamp: time.Now().UnixNano(),
+			Timestamp: time.Now().Unix(),
 		}
 		break
 	case CmdMsgCheckResp:
 		msg = &MessageMsgCheckResp{
-			Timestamp: time.Now().UnixNano(),
+			Timestamp: time.Now().Unix(),
 		}
 		break
+	case CmdBFT:
+		msg = &MessageBFT{
+			Timestamp: time.Now().Unix(),
+		}
 	default:
 		return nil, fmt.Errorf("unhandled this message type [%s]", messageType)
 	}
@@ -206,22 +211,28 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdAddr, nil
 	case reflect.TypeOf(&MessagePing{}):
 		return CmdPing, nil
-	case reflect.TypeOf(&MessageBFTPropose{}):
-		return CmdBFTPropose, nil
-	case reflect.TypeOf(&MessageBFTAgree{}):
-		return CmdBFTAgree, nil
-	case reflect.TypeOf(&MessageBFTCommit{}):
-		return CmdBFTCommit, nil
-	case reflect.TypeOf(&MessageBFTReady{}):
-		return CmdBFTReady, nil
-	case reflect.TypeOf(&MessageBFTReq{}):
-		return CmdBFTReq, nil
+	// case reflect.TypeOf(&MessageBFTPropose{}):
+	// 	return CmdBFTPropose, nil
+	// case reflect.TypeOf(&MessageBFTProposeV2{}):
+	// 	return CmdBFTPropose, nil
+	// case reflect.TypeOf(&MessageBFTPrepareV2{}):
+	// 	return CmdBFTPrepare, nil
+	// case reflect.TypeOf(&MessageBFTAgree{}):
+	// 	return CmdBFTAgree, nil
+	// case reflect.TypeOf(&MessageBFTCommit{}):
+	// 	return CmdBFTCommit, nil
+	// case reflect.TypeOf(&MessageBFTReady{}):
+	// 	return CmdBFTReady, nil
+	// case reflect.TypeOf(&MessageBFTReq{}):
+	// 	return CmdBFTReq, nil
 	case reflect.TypeOf(&MessagePeerState{}):
 		return CmdPeerState, nil
 	case reflect.TypeOf(&MessageMsgCheck{}):
 		return CmdMsgCheck, nil
 	case reflect.TypeOf(&MessageMsgCheckResp{}):
 		return CmdMsgCheckResp, nil
+	case reflect.TypeOf(&MessageBFT{}):
+		return CmdBFT, nil
 	default:
 		return common.EmptyString, fmt.Errorf("unhandled this message type [%s]", msgType)
 	}
