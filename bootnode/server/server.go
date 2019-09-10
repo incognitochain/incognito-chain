@@ -8,7 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
 )
 
 const (
@@ -17,11 +18,12 @@ const (
 )
 
 type peer struct {
-	id         string
-	rawAddress string
-	publicKey  string
-	firstPing  time.Time
-	lastPing   time.Time
+	id            string
+	rawAddress    string
+	publicKey     string
+	publickeyType string
+	firstPing     time.Time
+	lastPing      time.Time
 }
 
 // rpcServer provides a concurrent safe RPC server to a bootnode server.
@@ -61,23 +63,39 @@ func (rpcServer *RpcServer) Start() error {
 }
 
 // AddOrUpdatePeer - push a connected peer in to list of mem or update an old peer node
-func (rpcServer *RpcServer) AddOrUpdatePeer(rawAddress string, publicKeyB58 string, signDataB58 string) error {
+func (rpcServer *RpcServer) AddOrUpdatePeer(rawAddress string, publicKeyType string, publicKeyB58 string, signDataB58 string) error {
 	rpcServer.peersMtx.Lock()
 	defer rpcServer.peersMtx.Unlock()
 	if signDataB58 != "" && publicKeyB58 != "" && rawAddress != "" {
-		err := incognitokey.ValidateDataB58(publicKeyB58, signDataB58, []byte(rawAddress))
-		if err == nil {
-			rpcServer.peers[publicKeyB58] = &peer{
-				id:         rpcServer.CombineID(rawAddress, publicKeyB58),
-				rawAddress: rawAddress,
-				publicKey:  publicKeyB58,
-				firstPing:  time.Now().Local(),
-				lastPing:   time.Now().Local(),
+
+		sigByte, _, err := base58.Base58Check{}.Decode(signDataB58)
+		if err != nil {
+			return err
+		}
+		publicKeyByte, _, err := base58.Base58Check{}.Decode(publicKeyB58)
+		if err != nil {
+			return err
+		}
+		if publicKeyType == "bls" {
+			valid, err := blsmultisig.Verify(sigByte, []byte(rawAddress), []int{0}, []blsmultisig.PublicKey{publicKeyByte})
+			if valid {
+				rpcServer.peers[publicKeyB58] = &peer{
+					id:            rpcServer.CombineID(rawAddress, publicKeyB58),
+					rawAddress:    rawAddress,
+					publicKey:     publicKeyB58,
+					publickeyType: publicKeyType,
+					firstPing:     time.Now().Local(),
+					lastPing:      time.Now().Local(),
+				}
+			} else {
+				log.Println("AddOrUpdatePeer error", err)
+				return err
 			}
 		} else {
 			log.Println("AddOrUpdatePeer error", err)
 			return err
 		}
+
 	}
 	return nil
 }

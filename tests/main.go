@@ -103,7 +103,6 @@ func main() {
 			}
 			transactionTestcase = append(transactionTestcase, temp)
 		}
-
 		log.Println("Begin to run Transaction Testcase")
 		for _, transactionTestcaseName := range transactionTestcase {
 			log.Printf("Begin to run %+v Testcase \n", transactionTestcaseName)
@@ -145,14 +144,14 @@ func main() {
 	case "stake":
 		tempStakeTestcase, ok := testcaseData["stake"]
 		if !ok {
-			log.Println("Failed to get crossshard testcase")
+			log.Println("Failed to get stake testcase")
 			os.Exit(0)
 		}
 		var stakeTestcase = []string{}
 		for _, value := range tempStakeTestcase.([]interface{}) {
 			temp, ok := value.(string)
 			if !ok {
-				log.Println("Failed to get crossshard testcase")
+				log.Println("Failed to get stake testcase")
 				os.Exit(1)
 			}
 			stakeTestcase = append(stakeTestcase, temp)

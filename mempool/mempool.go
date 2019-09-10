@@ -3,21 +3,19 @@ package mempool
 import (
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics"
-	"github.com/incognitochain/incognito-chain/pubsub"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"reflect"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/metrics"
+	"github.com/incognitochain/incognito-chain/pubsub"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/databasemp"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/transaction"
 )
@@ -34,17 +32,17 @@ const (
 
 // config is a descriptor containing the memory pool configuration.
 type Config struct {
-	BlockChain            *blockchain.BlockChain       // Block chain of node
-	DataBase              database.DatabaseInterface   // main database of blockchain
-	DataBaseMempool       databasemp.DatabaseInterface // database is used for storage data in mempool into lvdb
-	ChainParams           *blockchain.Params
-	FeeEstimator          map[byte]*FeeEstimator // FeeEstimatator provides a feeEstimator. If it is not nil, the mempool records all new transactions it observes into the feeEstimator.
-	TxLifeTime            uint                   // Transaction life time in pool
-	MaxTx                 uint64                 //Max transaction pool may have
-	IsLoadFromMempool     bool                   //Reset mempool database when run node
-	PersistMempool        bool
-	RelayShards           []byte
-	UserKeyset            *incognitokey.KeySet
+	BlockChain        *blockchain.BlockChain       // Block chain of node
+	DataBase          database.DatabaseInterface   // main database of blockchain
+	DataBaseMempool   databasemp.DatabaseInterface // database is used for storage data in mempool into lvdb
+	ChainParams       *blockchain.Params
+	FeeEstimator      map[byte]*FeeEstimator // FeeEstimatator provides a feeEstimator. If it is not nil, the mempool records all new transactions it observes into the feeEstimator.
+	TxLifeTime        uint                   // Transaction life time in pool
+	MaxTx             uint64                 //Max transaction pool may have
+	IsLoadFromMempool bool                   //Reset mempool database when run node
+	PersistMempool    bool
+	RelayShards       []byte
+	// UserKeyset            *incognitokey.KeySet
 	PubSubManager         *pubsub.PubSubManager
 	RoleInCommitteesEvent pubsub.EventChannel
 }
@@ -64,8 +62,10 @@ type TxPool struct {
 	poolSerialNumbersHashList map[common.Hash][]common.Hash // [txHash] -> list hash serialNumbers of input coin
 	poolSerialNumberHash      map[common.Hash]common.Hash   // [hash from list of serialNumber] -> txHash
 	mtx                       sync.RWMutex
-	PoolCandidate             map[common.Hash]string //Candidate List in mempool
+	poolCandidate             map[common.Hash]string //Candidate List in mempool
 	candidateMtx              sync.RWMutex
+	poolRequestStopStaking    map[common.Hash]string //request stop staking list in mempool
+	requestStopStakingMtx     sync.RWMutex
 	poolTokenID               map[common.Hash]string //Token ID List in Mempool
 	tokenIDMtx                sync.RWMutex
 	CPendingTxs               chan<- metadata.Transaction // channel to deliver txs to block gen
@@ -91,7 +91,8 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.poolSerialNumbersHashList = make(map[common.Hash][]common.Hash)
 	tp.poolSerialNumberHash = make(map[common.Hash]common.Hash)
 	tp.poolTokenID = make(map[common.Hash]string)
-	tp.PoolCandidate = make(map[common.Hash]string)
+	tp.poolCandidate = make(map[common.Hash]string)
+	tp.poolRequestStopStaking = make(map[common.Hash]string)
 	tp.duplicateTxs = make(map[common.Hash]uint64)
 	_, subChanRole, _ := tp.config.PubSubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
 	tp.config.RoleInCommitteesEvent = subChanRole
@@ -182,6 +183,7 @@ func (tp *TxPool) MonitorPool() {
 			startTime := txDesc.StartTime
 			tp.removeTx(txDesc.Desc.Tx)
 			tp.removeCandidateByTxHash(txHash)
+			tp.removeRequestStopStakingByTxHash(txHash)
 			tp.removeTokenIDByTxHash(txHash)
 			err := tp.config.DataBaseMempool.RemoveTransaction(txDesc.Desc.Tx.Hash())
 			if err != nil {
@@ -397,7 +399,7 @@ In Param#2: isStore: store transaction to persistence storage only work for tran
 7. Validate tx with blockchain: douple spend, ...
 8. CustomInitToken: Check Custom Init Token try to init exist token ID
 9. Staking Transaction: Check Duplicate stake public key in pool ONLY with staking transaction
-
+10. RequestStopAutoStaking
 */
 func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	var shardID byte
@@ -642,15 +644,9 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 			if !ok {
 				return NewMempoolTxError(GetStakingMetadataError, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata())))
 			}
-			candidatePaymentAddress := stakingMetadata.CandidatePaymentAddress
-			candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
-			if err != nil || candidateWallet == nil {
-				return NewMempoolTxError(WalletKeySerializedError, fmt.Errorf("Expect producer wallet of payment address %+v to be not nil", candidateWallet))
-			}
-			pk := candidateWallet.KeySet.PaymentAddress.Pk
-			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
+			pubkey = stakingMetadata.CommitteePublicKey
 			tp.candidateMtx.RLock()
-			foundPubkey = common.IndexOfStrInHashMap(pkb58, tp.PoolCandidate)
+			foundPubkey = common.IndexOfStrInHashMap(stakingMetadata.CommitteePublicKey, tp.poolCandidate)
 			tp.candidateMtx.RUnlock()
 		}
 	}
@@ -662,6 +658,31 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	})
 	if foundPubkey > 0 {
 		return NewMempoolTxError(RejectDuplicateStakePubkey, fmt.Errorf("This public key already stake and still in pool %+v", pubkey))
+	}
+	// Condition 10: check duplicate request stop auto staking
+	now = time.Now()
+	requestedPublicKey := ""
+	foundRequestStopAutoStaking := -1
+	if tx.GetMetadata() != nil {
+		if tx.GetMetadata().GetType() == metadata.StopAutoStakingMeta {
+			stopAutoStakingMetadata, ok := tx.GetMetadata().(*metadata.StopAutoStakingMetadata)
+			if !ok {
+				return NewMempoolTxError(GetStakingMetadataError, fmt.Errorf("Expect metadata type to be *metadata.StopAutoStakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata())))
+			}
+			requestedPublicKey = stopAutoStakingMetadata.CommitteePublicKey
+			tp.requestStopStakingMtx.RLock()
+			foundRequestStopAutoStaking = common.IndexOfStrInHashMap(stopAutoStakingMetadata.CommitteePublicKey, tp.poolRequestStopStaking)
+			tp.requestStopStakingMtx.RUnlock()
+		}
+	}
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxPoolValidationDetails,
+		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
+		metrics.TagValue:         metrics.Condition10,
+		metrics.Tag:              metrics.ValidateConditionTag,
+	})
+	if foundRequestStopAutoStaking > 0 {
+		return NewMempoolTxError(RejectDuplicateRequestStopAutoStaking, fmt.Errorf("This public key already request to stop auto staking and still in pool %+v", requestedPublicKey))
 	}
 	return nil
 }
@@ -720,7 +741,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 			if isReplaced {
 				txToBeReplaced := txDescToBeReplaced.Desc.Tx
 				tp.removeTx(txToBeReplaced)
-				tp.removeCandidateByTxHash(*txToBeReplaced.Hash())
+				tp.removeRequestStopStakingByTxHash(*txToBeReplaced.Hash())
 				tp.removeTokenIDByTxHash(*txToBeReplaced.Hash())
 				// send tx into channel of CRmoveTxs
 				tp.TriggerCRemoveTxs(tx)
@@ -803,14 +824,15 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) error {
 				if !ok {
 					return NewMempoolTxError(GetStakingMetadataError, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata())))
 				}
-				candidatePaymentAddress := stakingMetadata.CandidatePaymentAddress
-				candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
-				if err != nil || candidateWallet == nil {
-					return NewMempoolTxError(WalletKeySerializedError, fmt.Errorf("Expect producer wallet of payment address %+v to be not nil", candidateWallet))
+				tp.addCandidateToList(*txHash, stakingMetadata.CommitteePublicKey)
+			}
+		case metadata.StopAutoStakingMeta:
+			{
+				stopAutoStakingMetadata, ok := tx.GetMetadata().(*metadata.StopAutoStakingMetadata)
+				if !ok {
+					return NewMempoolTxError(GetStakingMetadataError, fmt.Errorf("Expect metadata type to be *metadata.StopAutoStakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata())))
 				}
-				pk := candidateWallet.KeySet.PaymentAddress.Pk
-				pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
-				tp.addCandidateToList(*txHash, pkb58)
+				tp.addRequestStopStakingToList(*txHash, stopAutoStakingMetadata.CommitteePublicKey)
 			}
 		default:
 			{
@@ -971,14 +993,14 @@ func (tp *TxPool) removeTx(tx metadata.Transaction) {
 func (tp *TxPool) addCandidateToList(txHash common.Hash, candidate string) {
 	tp.candidateMtx.Lock()
 	defer tp.candidateMtx.Unlock()
-	tp.PoolCandidate[txHash] = candidate
+	tp.poolCandidate[txHash] = candidate
 }
 
 func (tp *TxPool) removeCandidateByTxHash(txHash common.Hash) {
 	tp.candidateMtx.Lock()
 	defer tp.candidateMtx.Unlock()
-	if _, exist := tp.PoolCandidate[txHash]; exist {
-		delete(tp.PoolCandidate, txHash)
+	if _, exist := tp.poolCandidate[txHash]; exist {
+		delete(tp.poolCandidate, txHash)
 	}
 }
 
@@ -987,7 +1009,7 @@ func (tp *TxPool) RemoveCandidateList(candidate []string) {
 	defer tp.candidateMtx.Unlock()
 	candidateToBeRemoved := []common.Hash{}
 	for _, value := range candidate {
-		for txHash, currentCandidate := range tp.PoolCandidate {
+		for txHash, currentCandidate := range tp.poolCandidate {
 			if strings.Compare(value, currentCandidate) == 0 {
 				candidateToBeRemoved = append(candidateToBeRemoved, txHash)
 				break
@@ -995,10 +1017,39 @@ func (tp *TxPool) RemoveCandidateList(candidate []string) {
 		}
 	}
 	for _, txHash := range candidateToBeRemoved {
-		delete(tp.PoolCandidate, txHash)
+		delete(tp.poolCandidate, txHash)
+	}
+}
+func (tp *TxPool) addRequestStopStakingToList(txHash common.Hash, requestStopStaking string) {
+	tp.requestStopStakingMtx.Lock()
+	defer tp.requestStopStakingMtx.Unlock()
+	tp.poolRequestStopStaking[txHash] = requestStopStaking
+}
+
+func (tp *TxPool) removeRequestStopStakingByTxHash(txHash common.Hash) {
+	tp.requestStopStakingMtx.Lock()
+	defer tp.requestStopStakingMtx.Unlock()
+	if _, exist := tp.poolRequestStopStaking[txHash]; exist {
+		delete(tp.poolRequestStopStaking, txHash)
 	}
 }
 
+func (tp *TxPool) RemoveRequestStopStakingList(requestStopStakings []string) {
+	tp.requestStopStakingMtx.Lock()
+	defer tp.requestStopStakingMtx.Unlock()
+	requestStopStakingsToBeRemoved := []common.Hash{}
+	for _, requestStopStaking := range requestStopStakings {
+		for txHash, currentRequestStopStaking := range tp.poolRequestStopStaking {
+			if strings.Compare(requestStopStaking, currentRequestStopStaking) == 0 {
+				requestStopStakingsToBeRemoved = append(requestStopStakingsToBeRemoved, txHash)
+				break
+			}
+		}
+	}
+	for _, txHash := range requestStopStakingsToBeRemoved {
+		delete(tp.poolRequestStopStaking, txHash)
+	}
+}
 func (tp *TxPool) addTokenIDToList(txHash common.Hash, tokenID string) {
 	tp.tokenIDMtx.Lock()
 	defer tp.tokenIDMtx.Unlock()
@@ -1099,7 +1150,7 @@ func (tp TxPool) GetClonedPoolCandidate() map[common.Hash]string {
 	tp.mtx.RLock()
 	defer tp.mtx.RUnlock()
 	result := make(map[common.Hash]string)
-	for k, v := range tp.PoolCandidate {
+	for k, v := range tp.poolCandidate {
 		result[k] = v
 	}
 	return result
@@ -1204,14 +1255,14 @@ func (tp *TxPool) EmptyPool() bool {
 	tp.tokenIDMtx.Lock()
 	defer tp.candidateMtx.Unlock()
 	defer tp.tokenIDMtx.Unlock()
-	if len(tp.pool) == 0 && len(tp.poolSerialNumbersHashList) == 0 && len(tp.PoolCandidate) == 0 && len(tp.poolTokenID) == 0 {
+	if len(tp.pool) == 0 && len(tp.poolSerialNumbersHashList) == 0 && len(tp.poolCandidate) == 0 && len(tp.poolTokenID) == 0 {
 		return true
 	}
 	tp.pool = make(map[common.Hash]*TxDesc)
 	tp.poolSerialNumbersHashList = make(map[common.Hash][]common.Hash)
-	tp.PoolCandidate = make(map[common.Hash]string)
+	tp.poolCandidate = make(map[common.Hash]string)
 	tp.poolTokenID = make(map[common.Hash]string)
-	if len(tp.pool) == 0 && len(tp.poolSerialNumbersHashList) == 0 && len(tp.PoolCandidate) == 0 && len(tp.poolTokenID) == 0 {
+	if len(tp.pool) == 0 && len(tp.poolSerialNumbersHashList) == 0 && len(tp.poolCandidate) == 0 && len(tp.poolTokenID) == 0 {
 		return true
 	}
 	return false

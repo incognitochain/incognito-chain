@@ -269,8 +269,8 @@ func (rpcServer HttpServer) buildRawCustomTokenTransaction(
 	senderKeyParam := arrayParams[0]
 	var err error
 	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
-	if err.(*rpcservice.RPCError) != nil {
-		return nil, err.(*rpcservice.RPCError)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetKeySetFromPrivateKeyError, err)
 	}
 	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
