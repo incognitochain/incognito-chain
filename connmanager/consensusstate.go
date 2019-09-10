@@ -12,9 +12,9 @@ type ConsensusState struct {
 	role             string
 	currentShard     *byte
 	beaconCommittee  []string          // list public key of beacon committee
-	committeeByShard map[byte][]string // map[shardID] = list committeePubkeyBase58CheckStr of shard
+	committeeByShard map[byte][]string // map[shardID] = list CommitteePublicKeyBase58CheckStr of shard
 	userPublicKey    string            // in base58check encode format
-	shardByCommittee map[string]byte   // store conversion of ShardCommittee data map[committeePubkeyBase58CheckStr] = shardID
+	shardByCommittee map[string]byte   // store conversion of ShardCommittee data map[CommitteePublicKeyBase58CheckStr] = shardID
 	shardNumber      int
 }
 

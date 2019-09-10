@@ -3,6 +3,7 @@ package metadata
 import (
 	"bytes"
 	"encoding/json"
+	"strconv"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -59,6 +60,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &WithDrawRewardRequest{}
 	case WithDrawRewardResponseMeta:
 		md = &WithDrawRewardResponse{}
+	case StopAutoStakingMeta:
+		md = &StopAutoStakingMetadata{}
 	default:
 		Logger.log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", int(mtTemp["Type"].(float64)))
@@ -112,4 +115,21 @@ func PickAndParseLogMapFromReceipt(constructedReceipt *types.Receipt) (map[strin
 		return nil, nil
 	}
 	return ParseETHLogData(logData)
+}
+
+var bridgeMetas = []string{
+	strconv.Itoa(BeaconSwapConfirmMeta),
+	strconv.Itoa(BridgeSwapConfirmMeta),
+	strconv.Itoa(BurningConfirmMeta),
+}
+
+func HasBridgeInstructions(instructions [][]string) bool {
+	for _, inst := range instructions {
+		for _, meta := range bridgeMetas {
+			if len(inst) > 0 && inst[0] == meta {
+				return true
+			}
+		}
+	}
+	return false
 }

@@ -2,6 +2,7 @@ package incognitokey
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
 )
 
@@ -16,6 +17,7 @@ const (
 	InvalidVerificationKeyErr
 	DecodeFromStringErr
 	SignError
+	JSONError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -32,6 +34,7 @@ var ErrCodeMessage = map[int]struct {
 	InvalidVerificationKeyErr: {-208, "Verification key is invalid"},
 	DecodeFromStringErr:       {-209, "Decode key set from string error"},
 	SignError:                 {-210, "Can not sign data"},
+	JSONError:                 {-211, "JSON Marshal, Unmarshal error"},
 }
 
 type CashecError struct {

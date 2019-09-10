@@ -5,8 +5,10 @@ import (
 	"math/big"
 	"strconv"
 
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/pkg/errors"
 )
@@ -27,9 +29,13 @@ func FlattenAndConvertStringInst(insts [][]string) ([][]byte, error) {
 // decodeInstruction appends all part of an instruction and decode them if necessary (for special instruction that needed to be decoded before submitting to Ethereum)
 func DecodeInstruction(inst []string) ([]byte, error) {
 	flatten := []byte{}
+	var err error
 	switch inst[0] {
 	case strconv.Itoa(metadata.BeaconSwapConfirmMeta), strconv.Itoa(metadata.BridgeSwapConfirmMeta):
-		flatten = decodeSwapConfirmInst(inst)
+		flatten, err = decodeSwapConfirmInst(inst)
+		if err != nil {
+			return nil, err
+		}
 
 	case strconv.Itoa(metadata.BurningConfirmMeta):
 		var err error
@@ -47,24 +53,47 @@ func DecodeInstruction(inst []string) ([]byte, error) {
 }
 
 // decodeSwapConfirmInst flattens all parts of a swap confirm instruction, decodes and concats it
-func decodeSwapConfirmInst(inst []string) []byte {
-	metaType := []byte(inst[0])
-	shardID := []byte(inst[1])
-	height, _, _ := base58.Base58Check{}.Decode(inst[2])
-	numVals, _, _ := base58.Base58Check{}.Decode(inst[3])
+func decodeSwapConfirmInst(inst []string) ([]byte, error) {
+	m, errMeta := strconv.Atoi(inst[0])
+	s, errShard := strconv.Atoi(inst[1])
+	metaType := byte(m)
+	shardID := byte(s)
+	height, _, errHeight := base58.Base58Check{}.Decode(inst[2])
+	numVals, _, errNumVals := base58.Base58Check{}.Decode(inst[3])
 	// Special case: instruction storing beacon/bridge's committee => decode and sign on that instead
 	// We need to decode and then submit the pubkeys to Ethereum because we can't decode it on smart contract
-	pks := []byte(inst[4])
-	if d, _, err := (base58.Base58Check{}).Decode(inst[4]); err == nil {
-		pks = d
+	addrs, errAddrs := parseAndPadAddress(inst[4])
+	if err := common.CheckError(errMeta, errShard, errHeight, errNumVals, errAddrs); err != nil {
+		err = errors.Wrapf(err, "inst: %+v", inst)
+		BLogger.log.Error(err)
+		return nil, err
 	}
+
 	flatten := []byte{}
-	flatten = append(flatten, metaType...)
-	flatten = append(flatten, shardID...)
+	flatten = append(flatten, metaType)
+	flatten = append(flatten, shardID)
 	flatten = append(flatten, toBytes32BigEndian(height)...)
 	flatten = append(flatten, toBytes32BigEndian(numVals)...)
-	flatten = append(flatten, pks...)
-	return flatten
+	flatten = append(flatten, addrs...)
+	return flatten, nil
+}
+
+// parseAndPadAddress decodes a list of address of a committee, pads each of them
+// to 32 bytes and concat them together
+func parseAndPadAddress(instContent string) ([]byte, error) {
+	addrPacked, _, err := base58.DecodeCheck(instContent)
+	if err != nil {
+		return nil, errors.Wrapf(err, "instContent: %v", instContent)
+	}
+	if len(addrPacked)%20 != 0 {
+		return nil, errors.Errorf("invalid packed eth addresses length: %x", addrPacked)
+	}
+	addrs := []byte{}
+	for i := 0; i*20 < len(addrPacked); i++ {
+		addr := toBytes32BigEndian(addrPacked[i*20 : (i+1)*20])
+		addrs = append(addrs, addr...)
+	}
+	return addrs, nil
 }
 
 // decodeBurningConfirmInst decodes and flattens a BurningConfirm instruction
@@ -72,15 +101,17 @@ func decodeBurningConfirmInst(inst []string) ([]byte, error) {
 	if len(inst) < 8 {
 		return nil, errors.New("invalid length of BurningConfirm inst")
 	}
-	metaType := []byte(inst[0])
-	shardID := []byte(inst[1])
+	m, errMeta := strconv.Atoi(inst[0])
+	s, errShard := strconv.Atoi(inst[1])
+	metaType := byte(m)
+	shardID := byte(s)
 	tokenID, _, errToken := base58.Base58Check{}.Decode(inst[2])
 	remoteAddr, errAddr := decodeRemoteAddr(inst[3])
 	amount, _, errAmount := base58.Base58Check{}.Decode(inst[4])
 	txID, errTx := common.Hash{}.NewHashFromStr(inst[5])
 	incTokenID, _, errIncToken := base58.Base58Check{}.Decode(inst[6])
 	height, _, errHeight := base58.Base58Check{}.Decode(inst[7])
-	if err := common.CheckError(errToken, errAddr, errAmount, errTx, errIncToken, errHeight); err != nil {
+	if err := common.CheckError(errMeta, errShard, errToken, errAddr, errAmount, errTx, errIncToken, errHeight); err != nil {
 		err = errors.Wrapf(err, "inst: %+v", inst)
 		BLogger.log.Error(err)
 		return nil, err
@@ -88,8 +119,8 @@ func decodeBurningConfirmInst(inst []string) ([]byte, error) {
 
 	BLogger.log.Infof("Decoded BurningConfirm inst, amount: %d, remoteAddr: %x, tokenID: %x", big.NewInt(0).SetBytes(amount), remoteAddr, tokenID)
 	flatten := []byte{}
-	flatten = append(flatten, metaType...)
-	flatten = append(flatten, shardID...)
+	flatten = append(flatten, metaType)
+	flatten = append(flatten, shardID)
 	flatten = append(flatten, toBytes32BigEndian(tokenID)...)
 	flatten = append(flatten, remoteAddr...)
 	flatten = append(flatten, toBytes32BigEndian(amount)...)
@@ -162,36 +193,41 @@ func pickBurningConfirmInstruction(
 	return insts
 }
 
-// pickBeaconSwapConfirmInst finds all BeaconSwapConfirmMeta instructions in some beacon blocks
-func pickBeaconSwapConfirmInst(
-	beaconBlocks []*BeaconBlock,
-) [][]string {
-	instType := strconv.Itoa(metadata.BeaconSwapConfirmMeta)
-	return pickInstructionFromBeaconBlocks(beaconBlocks, instType)
-}
-
 // pickBridgeSwapConfirmInst finds all BridgeSwapConfirmMeta instructions in a shard to beacon block
 func pickBridgeSwapConfirmInst(
 	block *ShardToBeaconBlock,
 ) [][]string {
-	shardType := strconv.Itoa(metadata.BridgeSwapConfirmMeta)
-	return pickInstructionWithType(block.Instructions, shardType)
+	metaType := strconv.Itoa(metadata.BridgeSwapConfirmMeta)
+	return pickInstructionWithType(block.Instructions, metaType)
 }
 
-// parseAndConcatPubkeys parse pubkeys of a commmittee stored as string and concat them
-func parseAndConcatPubkeys(vals []string) []byte {
-	pks := []byte{}
+// parseAndConcatPubkeys parses pubkeys of a commmittee (stored as string), converts them to addresses and concat them together
+func parseAndConcatPubkeys(vals []string) ([]byte, error) {
+	addrs := []byte{}
 	for _, val := range vals {
-		pk, _, _ := base58.Base58Check{}.Decode(val)
-		pks = append(pks, pk...)
+		cKey := &incognitokey.CommitteePublicKey{}
+		if err := cKey.FromBase58(val); err != nil {
+			return nil, err
+		}
+		miningKey := cKey.MiningPubKey[common.BridgeConsensus]
+		pk, err := crypto.DecompressPubkey(miningKey)
+		if err != nil {
+			return nil, errors.Wrapf(err, "cannot decompress miningKey %v", miningKey)
+		}
+		addr := crypto.PubkeyToAddress(*pk)
+
+		addrs = append(addrs, addr[:]...)
 	}
-	return pks
+	return addrs, nil
 }
 
 // buildSwapConfirmInstruction builds a confirm instruction for either beacon
 // or bridge committee swap
-func buildSwapConfirmInstruction(meta int, currentValidators []string, startHeight uint64) []string {
-	comm := parseAndConcatPubkeys(currentValidators)
+func buildSwapConfirmInstruction(meta int, currentValidators []string, startHeight uint64) ([]string, error) {
+	comm, err := parseAndConcatPubkeys(currentValidators)
+	if err != nil {
+		return nil, err
+	}
 
 	// Convert startHeight to big.Int to get bytes later
 	height := big.NewInt(0).SetUint64(startHeight)
@@ -200,26 +236,25 @@ func buildSwapConfirmInstruction(meta int, currentValidators []string, startHeig
 	numVals := big.NewInt(int64(len(currentValidators)))
 
 	bridgeID := byte(common.BridgeShardID)
-	instContent := base58.Base58Check{}.Encode(comm, 0x00)
 	return []string{
 		strconv.Itoa(meta),
 		strconv.Itoa(int(bridgeID)),
 		base58.Base58Check{}.Encode(height.Bytes(), 0x00),
 		base58.Base58Check{}.Encode(numVals.Bytes(), 0x00),
-		instContent,
-	}
+		base58.Base58Check{}.Encode(comm, 0x00),
+	}, nil
 }
 
 // buildBeaconSwapConfirmInstruction stores in an instruction the list of
 // new beacon validators and the block that they start signing on
-func buildBeaconSwapConfirmInstruction(currentValidators []string, startHeight uint64) []string {
-	BLogger.log.Infof("New beaconComm - startHeight: %d comm: %x", startHeight, currentValidators)
-	return buildSwapConfirmInstruction(metadata.BeaconSwapConfirmMeta, currentValidators, startHeight)
+func buildBeaconSwapConfirmInstruction(currentValidators []string, blockHeight uint64) ([]string, error) {
+	BLogger.log.Infof("New beaconComm - startHeight: %d comm: %x", blockHeight+1, currentValidators)
+	return buildSwapConfirmInstruction(metadata.BeaconSwapConfirmMeta, currentValidators, blockHeight+1)
 }
 
 // buildBridgeSwapConfirmInstruction stores in an instruction the list of
 // new bridge validators and the block that they start signing on
-func buildBridgeSwapConfirmInstruction(currentValidators []string, startHeight uint64) []string {
-	BLogger.log.Infof("New bridgeComm - startHeight: %d comm: %x", startHeight, currentValidators)
-	return buildSwapConfirmInstruction(metadata.BridgeSwapConfirmMeta, currentValidators, startHeight)
+func buildBridgeSwapConfirmInstruction(currentValidators []string, blockHeight uint64) ([]string, error) {
+	BLogger.log.Infof("New bridgeComm - startHeight: %d comm: %x", blockHeight+1, currentValidators)
+	return buildSwapConfirmInstruction(metadata.BridgeSwapConfirmMeta, currentValidators, blockHeight+1)
 }

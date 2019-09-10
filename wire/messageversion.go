@@ -4,13 +4,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/libp2p/go-libp2p-peer"
+	"github.com/incognitochain/incognito-chain/incognitokey"
+	peer "github.com/libp2p/go-libp2p-peer"
 )
 
 const (
-	MaxVersionPayload = 1000 // 1 1Kb
+	MaxVersionPayload = 2000 // 1 1Kb
 )
 
 type MessageVersion struct {
@@ -23,6 +23,7 @@ type MessageVersion struct {
 	RawLocalAddress  string
 	LocalPeerId      peer.ID
 	PublicKey        string
+	PublicKeyType    string
 	SignDataB58      string
 }
 
