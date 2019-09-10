@@ -32,7 +32,7 @@ func NewKey(seed []byte) (*Key, string, string) {
 	masterKey, _ := wallet.NewMasterKey(seed)
 	pubKey := new(Key)
 	pubKey.Payment = masterKey.Base58CheckSerialize(0x1)
-	committeeKey, _ := incognitokey.NewCommitteeKeyFromSeed(common.HashB(masterKey.KeySet.PrivateKey), masterKey.KeySet.PaymentAddress.Pk)
+	committeeKey, _ := incognitokey.NewCommitteeKeyFromSeed(common.HashB(common.HashB(masterKey.KeySet.PrivateKey)), masterKey.KeySet.PaymentAddress.Pk)
 	pubKey.CommitteePubKey, _ = committeeKey.ToBase58()
 	return pubKey, masterKey.Base58CheckSerialize(0x0), base58.Base58Check{}.Encode(common.HashB(masterKey.KeySet.PrivateKey), common.ZeroByte)
 }
@@ -219,6 +219,6 @@ func generateKeydotJson(numberOfShard, numberOfCandidate int) {
 }
 
 func main() {
-	// generateKeydotJson(64, 64)
-	generateKeydotJsonFromGivenKeyList("private_key_testnet.json", 256, 20)
+	generateKeydotJson(64, 100)
+	//generateKeydotJsonFromGivenKeyList("private_key_testnet.json", 256, 100)
 }
