@@ -179,11 +179,19 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 		return err
 	}
 	go blockchain.removeOldDataAfterProcessingBeaconBlock()
-	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+	go metrics.AnalyzeTimeSeriesMetricDataWithTime(map[string]interface{}{
 		metrics.Measurement:      metrics.NumOfBlockInsertToChain,
 		metrics.MeasurementValue: float64(1),
 		metrics.Tag:              metrics.ShardIDTag,
 		metrics.TagValue:         metrics.Beacon,
+		metrics.Time:             beaconBlock.Header.Timestamp,
+	})
+	go metrics.AnalyzeTimeSeriesMetricDataWithTime(map[string]interface{}{
+		metrics.Measurement:      metrics.NumOfRoundPerBlock,
+		metrics.MeasurementValue: float64(beaconBlock.Header.Round),
+		metrics.Tag:              metrics.ShardIDTag,
+		metrics.TagValue:         metrics.Beacon,
+		metrics.Time:             beaconBlock.Header.Timestamp,
 	})
 	Logger.log.Infof("Finish Insert new Beacon Block %+v, with hash %+v \n", beaconBlock.Header.Height, *beaconBlock.Hash())
 	if beaconBlock.Header.Height%50 == 0 {
