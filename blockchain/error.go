@@ -128,7 +128,6 @@ const (
 	StoreBeaconBestStateError
 	StoreBeaconBlockError
 	StoreBeaconBlockIndexError
-	StoreCommitteeFromShardBestStateError
 	GetStakingTransactionError
 	DecodeHashError
 	GetTransactionFromDatabaseError
@@ -144,6 +143,20 @@ const (
 	StoreRewardReceiverByHeightError
 	CreateNormalTokenTxForCrossShardError
 	SnapshotCommitteeError
+	ExtractPublicKeyFromCommitteeKeyListError
+	PendingValidatorRootError
+	CommitteeHashError
+	StakingTxHashError
+	StopAutoStakingRequestHashError
+	StopAutoStakingMetadataError
+	AutoStakingRootHashError
+	FetchAllCommitteeValidatorCandidateError
+	BackupFromTxViewPointError
+	BackupFromCrossTxViewPointError
+	BackupDatabaseFromBeaconInstructionError
+	SnapshotRewardReceiverError
+	StoreAutoStakingByHeightError
+	FetchAutoStakingByHeightError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -259,7 +272,6 @@ var ErrCodeMessage = map[int]struct {
 	UpdateDatabaseWithBlockRewardInfoError:            {-1106, "Update Database With Block Reward Info Error"},
 	CreateCrossShardBlockError:                        {-1107, "Create Cross Shard Block Error"},
 	VerifyCrossShardBlockShardTxRootError:             {-1108, "Verify Cross Shard Block ShardTxRoot Error"},
-	StoreCommitteeFromShardBestStateError:             {-1109, "Store Committee From ShardBestState Error"},
 	GetStakingTransactionError:                        {-1110, "Get Staking Transaction Error"},
 	DecodeHashError:                                   {-1111, "Decode Hash Error"},
 	GetTransactionFromDatabaseError:                   {-1112, "Get Transaction From Database Error"},
@@ -272,6 +284,20 @@ var ErrCodeMessage = map[int]struct {
 	StoreRewardReceiverByHeightError:                  {-1119, "Store Reward Receiver By Height Error"},
 	CreateNormalTokenTxForCrossShardError:             {-1120, "Create Normal Token Tx For Cross Shard Error"},
 	SnapshotCommitteeError:                            {-1121, "Snapshot Committee Error"},
+	ExtractPublicKeyFromCommitteeKeyListError:         {-1122, "Extract Public Key From Committee Key List"},
+	PendingValidatorRootError:                         {-1123, "Pending Validator Root Error"},
+	CommitteeHashError:                                {-1124, "Committee Root Hash Error"},
+	StakingTxHashError:                                {-1124, "Staking Tx Root Hash Error"},
+	StopAutoStakingRequestHashError:                   {-1125, "Stop Auto Staking Request Root Hash Error"},
+	StopAutoStakingMetadataError:                      {-1126, "StopAutoStaking Metadata Error"},
+	AutoStakingRootHashError:                          {-1127, "Auto Re Staking Root Hash Error"},
+	FetchAllCommitteeValidatorCandidateError:          {-1128, "Fetch All Committee Validator Candidate Error"},
+	BackupFromTxViewPointError:                        {-1129, "Create Backup From TxViewPoint Error"},
+	BackupFromCrossTxViewPointError:                   {-1130, "Create Backup From CrossTxViewPoint Error"},
+	BackupDatabaseFromBeaconInstructionError:          {-1131, "Backup Database From BeaconInstruction Error"},
+	SnapshotRewardReceiverError:                       {-1132, "Snapshot Reward Receiver Error"},
+	StoreAutoStakingByHeightError:                     {-1133, "Store Auto Staking By Height Error"},
+	FetchAutoStakingByHeightError:                     {-1134, "Fetch Auto Staking By Height Error"},
 }
 
 type BlockChainError struct {

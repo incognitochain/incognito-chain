@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/oneoutofmany"
 	"math/big"
 	"time"
@@ -129,14 +130,14 @@ func OneOutOfManyProve(args string) (string, error) {
 	wit.Set(commitmentPoints, randBN, indexIsZeroUint64)
 	println("Wit: ", wit)
 	// proving
-	start := time.Now()
+	//start := time.Now()
 	proof, err := wit.Prove()
 	//fmt.Printf("Proof go: %v\n", proof)
 	if err != nil {
 		println("Err: %v\n", err)
 	}
-	end := time.Since(start)
-	println("One out of many proving time: %v\n", end)
+	//end := time.Since(start)
+	//fmt.Printf("One out of many proving time: %v\n", end)
 
 	// convert proof to bytes array
 	proofBytes := proof.Bytes()
@@ -146,4 +147,25 @@ func OneOutOfManyProve(args string) (string, error) {
 	//println("proofBase64: %v\n", proofBase64)
 
 	return proofBase64, nil
+}
+
+// GenerateBLSKeyPairFromSeed generates BLS key pair from seed
+func GenerateBLSKeyPairFromSeed(args string) string {
+	// convert seed from string to bytes array
+	//fmt.Printf("args: %v\n", args)
+	seed, _ := base64.StdEncoding.DecodeString(args)
+	//fmt.Printf("bls seed: %v\n", seed)
+
+	// generate  bls key
+	privateKey, publicKey := blsmultisig.KeyGen(seed)
+
+	// append key pair to one bytes array
+	keyPairBytes := []byte{}
+	keyPairBytes = append(keyPairBytes, privateKey.Bytes()...)
+	keyPairBytes = append(keyPairBytes, blsmultisig.CmprG2(publicKey)...)
+
+	//  base64.StdEncoding.EncodeToString()
+	keyPairEncode := base64.StdEncoding.EncodeToString(keyPairBytes)
+
+	return keyPairEncode
 }

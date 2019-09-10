@@ -158,7 +158,7 @@ func ResetMempoolTest() {
 	tp.poolSerialNumbersHashList = make(map[common.Hash][]common.Hash)
 	tp.poolSerialNumberHash = make(map[common.Hash]common.Hash)
 	tp.poolTokenID = make(map[common.Hash]string)
-	tp.PoolCandidate = make(map[common.Hash]string)
+	tp.poolCandidate = make(map[common.Hash]string)
 	tp.duplicateTxs = make(map[common.Hash]uint64)
 	tp.RoleInCommittees = -1
 	tp.IsBlockGenStarted = false
@@ -721,14 +721,14 @@ func TestTxPoolAddTx(t *testing.T) {
 	if len(tp.poolSerialNumbersHashList) != 6 {
 		t.Fatalf("Expect 6 transaction from mempool but get %+v", len(tp.poolSerialNumbersHashList))
 	}
-	if common.IndexOfStrInHashMap(stakingPublicKey, tp.PoolCandidate) < 0 {
-		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.PoolCandidate)
+	if common.IndexOfStrInHashMap(stakingPublicKey, tp.poolCandidate) < 0 {
+		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.poolCandidate)
 	}
-	if len(tp.PoolCandidate) != 1 {
-		t.Fatalf("Expect 1 but get %+v", len(tp.PoolCandidate))
+	if len(tp.poolCandidate) != 1 {
+		t.Fatalf("Expect 1 but get %+v", len(tp.poolCandidate))
 	}
 	if common.IndexOfStrInHashMap(tokenID, tp.poolTokenID) < 0 {
-		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.PoolCandidate)
+		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.poolCandidate)
 	}
 	if len(tp.poolTokenID) != 1 {
 		t.Fatalf("Expect 1 but get %+v", len(tp.poolTokenID))
@@ -752,14 +752,14 @@ func TestTxPoolAddTx(t *testing.T) {
 	if len(tp.poolSerialNumbersHashList) != 6 {
 		t.Fatalf("Expect 6 transaction from mempool but get %+v", len(tp.poolSerialNumbersHashList))
 	}
-	if common.IndexOfStrInHashMap(stakingPublicKey, tp.PoolCandidate) < 0 {
-		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.PoolCandidate)
+	if common.IndexOfStrInHashMap(stakingPublicKey, tp.poolCandidate) < 0 {
+		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.poolCandidate)
 	}
-	if len(tp.PoolCandidate) != 1 {
-		t.Fatalf("Expect 1 but get %+v", len(tp.PoolCandidate))
+	if len(tp.poolCandidate) != 1 {
+		t.Fatalf("Expect 1 but get %+v", len(tp.poolCandidate))
 	}
 	if common.IndexOfStrInHashMap(tokenID, tp.poolTokenID) < 0 {
-		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.PoolCandidate)
+		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.poolCandidate)
 	}
 	if len(tp.poolTokenID) != 1 {
 		t.Fatalf("Expect 1 but get %+v", len(tp.poolTokenID))
@@ -1004,7 +1004,7 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	}
 	// check Condition 9: Check Init Custom Token
 	ResetMempoolTest()
-	tp.PoolCandidate[*txStakingShard.Hash()] = stakingPublicKey
+	tp.poolCandidate[*txStakingShard.Hash()] = stakingPublicKey
 	err13 := tp.validateTransaction(txStakingShard)
 	if err13 == nil {
 		t.Fatal("Expect duplicate staking pubkey error error but no error")
@@ -1079,14 +1079,14 @@ func TestTxPoolmayBeAcceptTransaction(t *testing.T) {
 	if len(tp.poolSerialNumbersHashList) != 6 {
 		t.Fatalf("Expect 6 transaction from mempool but get %+v", len(tp.poolSerialNumbersHashList))
 	}
-	if common.IndexOfStrInHashMap(stakingPublicKey, tp.PoolCandidate) < 0 {
-		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.PoolCandidate)
+	if common.IndexOfStrInHashMap(stakingPublicKey, tp.poolCandidate) < 0 {
+		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.poolCandidate)
 	}
-	if len(tp.PoolCandidate) != 1 {
-		t.Fatalf("Expect 1 but get %+v", len(tp.PoolCandidate))
+	if len(tp.poolCandidate) != 1 {
+		t.Fatalf("Expect 1 but get %+v", len(tp.poolCandidate))
 	}
 	if common.IndexOfStrInHashMap(tokenID, tp.poolTokenID) < 0 {
-		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.PoolCandidate)
+		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.poolCandidate)
 	}
 	if len(tp.poolTokenID) != 1 {
 		t.Fatalf("Expect 1 but get %+v", len(tp.poolTokenID))
@@ -1221,14 +1221,14 @@ func TestTxPoolRemoveTx(t *testing.T) {
 	if len(tp.poolSerialNumberHash) != 6 {
 		t.Fatalf("Expect 6 transaction from poolSerialNumberHash but get %+v", len(tp.poolSerialNumberHash))
 	}
-	if common.IndexOfStrInHashMap(stakingPublicKey, tp.PoolCandidate) < 0 {
-		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.PoolCandidate)
+	if common.IndexOfStrInHashMap(stakingPublicKey, tp.poolCandidate) < 0 {
+		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.poolCandidate)
 	}
-	if len(tp.PoolCandidate) != 1 {
-		t.Fatalf("Expect 1 but get %+v", len(tp.PoolCandidate))
+	if len(tp.poolCandidate) != 1 {
+		t.Fatalf("Expect 1 but get %+v", len(tp.poolCandidate))
 	}
 	if common.IndexOfStrInHashMap(tokenID, tp.poolTokenID) < 0 {
-		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.PoolCandidate)
+		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.poolCandidate)
 	}
 	if len(tp.poolTokenID) != 1 {
 		t.Fatalf("Expect 1 but get %+v", len(tp.poolTokenID))
@@ -1243,31 +1243,31 @@ func TestTxPoolRemoveTx(t *testing.T) {
 	if len(tp.poolSerialNumberHash) != 0 {
 		t.Fatalf("Expect 0 transaction from mempool but get %+v", len(tp.poolSerialNumberHash))
 	}
-	if common.IndexOfStrInHashMap(stakingPublicKey, tp.PoolCandidate) < 0 {
-		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.PoolCandidate)
+	if common.IndexOfStrInHashMap(stakingPublicKey, tp.poolCandidate) < 0 {
+		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.poolCandidate)
 	}
-	if len(tp.PoolCandidate) != 1 {
-		t.Fatalf("Expect 1 but get %+v", len(tp.PoolCandidate))
+	if len(tp.poolCandidate) != 1 {
+		t.Fatalf("Expect 1 but get %+v", len(tp.poolCandidate))
 	}
 	if common.IndexOfStrInHashMap(tokenID, tp.poolTokenID) < 0 {
-		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.PoolCandidate)
+		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.poolCandidate)
 	}
 	if len(tp.poolTokenID) != 1 {
 		t.Fatalf("Expect 1 but get %+v", len(tp.poolTokenID))
 	}
 	tp.RemoveCandidateList([]string{stakingPublicKey})
 	tp.RemoveTokenIDList([]string{tokenID})
-	if len(tp.PoolCandidate) != 0 {
-		t.Fatalf("Expect 0 but get %+v", len(tp.PoolCandidate))
+	if len(tp.poolCandidate) != 0 {
+		t.Fatalf("Expect 0 but get %+v", len(tp.poolCandidate))
 	}
 	if len(tp.poolTokenID) != 0 {
 		t.Fatalf("Expect 0 but get %+v", len(tp.poolTokenID))
 	}
-	if common.IndexOfStrInHashMap(stakingPublicKey, tp.PoolCandidate) > 0 {
-		t.Fatalf("Expect %+v NOT in pool but get %+v", stakingPublicKey, tp.PoolCandidate)
+	if common.IndexOfStrInHashMap(stakingPublicKey, tp.poolCandidate) > 0 {
+		t.Fatalf("Expect %+v NOT in pool but get %+v", stakingPublicKey, tp.poolCandidate)
 	}
 	if common.IndexOfStrInHashMap(tokenID, tp.poolTokenID) > 0 {
-		t.Fatalf("Expect %+v NOT in pool but get %+v", stakingPublicKey, tp.PoolCandidate)
+		t.Fatalf("Expect %+v NOT in pool but get %+v", stakingPublicKey, tp.poolCandidate)
 	}
 	// no persist mempool
 	ResetMempoolTest()
@@ -1386,8 +1386,8 @@ func TestTxPoolEmptyPool(t *testing.T) {
 	if len(tp.poolSerialNumbersHashList) != 6 {
 		t.Fatalf("Expect 6 transaction from mempool but get %+v", len(tp.poolSerialNumbersHashList))
 	}
-	if len(tp.PoolCandidate) != 1 {
-		t.Fatalf("Expect 1 but get %+v", len(tp.PoolCandidate))
+	if len(tp.poolCandidate) != 1 {
+		t.Fatalf("Expect 1 but get %+v", len(tp.poolCandidate))
 	}
 	if len(tp.poolTokenID) != 1 {
 		t.Fatalf("Expect 1 but get %+v", len(tp.poolTokenID))
@@ -1400,7 +1400,7 @@ func TestTxPoolEmptyPool(t *testing.T) {
 	if len(tp.poolSerialNumbersHashList) != 0 {
 		t.Fatal("Can't empty pool serial number")
 	}
-	if len(tp.PoolCandidate) != 0 {
+	if len(tp.poolCandidate) != 0 {
 		t.Fatal("Can't empty candidate pool")
 	}
 	if len(tp.poolTokenID) != 0 {

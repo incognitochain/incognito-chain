@@ -15,8 +15,10 @@
     "TestCreateAndSendCrossCustomTokenTransaction",
     "TestCreateAndSendCrossCustomTokenPrivacyTransaction"
   ],
-  "stake": [
-    "TestStakeShard",
+  "stakeshard": [
+    "TestStakeShard"
+  ],
+  "stakebeacon": [
     "TestStakeBeacon"
   ]
 }

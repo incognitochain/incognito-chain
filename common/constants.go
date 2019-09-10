@@ -1,7 +1,5 @@
 package common
 
-import "time"
-
 // for common
 const (
 	EmptyString       = ""
@@ -21,16 +19,19 @@ const (
 // size data for incognito key and signature
 const (
 	// for key size
-	PrivateKeySize      = 32 // bytes
-	PublicKeySize       = 33 // bytes
-	TransmissionKeySize = 33 //bytes
-	ReceivingKeySize    = 32 // bytes
-	PaymentAddressSize  = 66 // bytes
+	PrivateKeySize      = 32  // bytes
+	PublicKeySize       = 33  // bytes
+	BLSPublicKeySize    = 128 // bytes
+	BriPublicKeySize    = 33  // bytes
+	TransmissionKeySize = 33  //bytes
+	ReceivingKeySize    = 32  // bytes
+	PaymentAddressSize  = 66  // bytes
 	// for signature size
 	// it is used for both privacy and no privacy
 	SigPubKeySize    = 33
 	SigNoPrivacySize = 64
 	SigPrivacySize   = 96
+	IncPubKeyB58Size = 51
 )
 
 // for exit code
@@ -55,13 +56,6 @@ var (
 	MaxBlockSize = uint64(2000) //unit kilobytes = 2 Megabyte
 )
 
-// for mining consensus
-const (
-	MinBeaconBlkInterval = 10 * time.Second //second
-	MinShardBlkInterval  = 10 * time.Second //second => process block in
-	MinShardBlkCreation  = 4 * time.Second  //second => process block in
-)
-
 // special token ids (aka. PropertyID in custom token)
 var (
 	PRVCoinID = Hash{4} // To send PRV in custom token
@@ -82,28 +76,31 @@ const (
 
 // CONSENSUS
 const (
-	OFFSET = 1
+	Offset = 1
 
-	NODEMODE_RELAY  = "relay"
-	NODEMODE_SHARD  = "shard"
-	NODEMODE_AUTO   = "auto"
-	NODEMODE_BEACON = "beacon"
+	NodeModeRelay  = "relay"
+	NodeModeShard  = "shard"
+	NodeModeAuto   = "auto"
+	NodeModeBeacon = "beacon"
 
-	BEACON_ROLE    = "beacon"
-	SHARD_ROLE     = "shard"
-	PROPOSER_ROLE  = "proposer"
-	VALIDATOR_ROLE = "validator"
-	PENDING_ROLE   = "pending"
+	BeaconRole    = "beacon"
+	ShardRole     = "shard"
+	ProposerRole  = "proposer"
+	ValidatorRole = "validator"
+	PendingRole   = "pending"
 
-	MAX_SHARD_NUMBER = 8
+	MaxShardNumber = 8
+
+	BlsConsensus    = "bls"
+	BridgeConsensus = "dsa"
 )
 
 // Ethereum Decentralized bridge
 const (
-	ABIJSON               = `[{"name": "Deposit", "inputs": [{"type": "address", "name": "_token", "indexed": false}, {"type": "string", "name": "_incognito_address", "indexed": false}, {"type": "uint256", "name": "_amount", "indexed": false, "unit": "wei"}], "anonymous": false, "type": "event"}, {"name": "Withdraw", "inputs": [{"type": "address", "name": "_token", "indexed": false}, {"type": "address", "name": "_to", "indexed": false}, {"type": "uint256", "name": "_amount", "indexed": false, "unit": "wei"}], "anonymous": false, "type": "event"}, {"name": "NotifyString", "inputs": [{"type": "string", "name": "content", "indexed": false}], "anonymous": false, "type": "event"}, {"name": "NotifyBytes32", "inputs": [{"type": "bytes32", "name": "content", "indexed": false}], "anonymous": false, "type": "event"}, {"name": "NotifyBool", "inputs": [{"type": "bool", "name": "content", "indexed": false}], "anonymous": false, "type": "event"}, {"name": "NotifyUint256", "inputs": [{"type": "uint256", "name": "content", "indexed": false}], "anonymous": false, "type": "event"}, {"name": "NotifyAddress", "inputs": [{"type": "address", "name": "content", "indexed": false}], "anonymous": false, "type": "event"}, {"outputs": [], "inputs": [{"type": "address", "name": "incognitoProxyAddress"}], "constant": false, "payable": false, "type": "constructor"}, {"name": "deposit", "outputs": [], "inputs": [{"type": "string", "name": "incognito_address"}], "constant": false, "payable": true, "type": "function", "gas": 25690}, {"name": "depositERC20", "outputs": [], "inputs": [{"type": "address", "name": "token"}, {"type": "uint256", "name": "amount"}, {"type": "string", "name": "incognito_address"}], "constant": false, "payable": false, "type": "function", "gas": 27797}, {"name": "parseBurnInst", "outputs": [{"type": "uint256", "name": "out"}, {"type": "address", "name": "out"}, {"type": "address", "name": "out"}, {"type": "uint256", "name": "out"}], "inputs": [{"type": "bytes", "name": "inst"}], "constant": true, "payable": false, "type": "function", "gas": 2681}, {"name": "withdraw", "outputs": [], "inputs": [{"type": "bytes", "name": "inst"}, {"type": "uint256", "name": "beaconHeight"}, {"type": "bytes32[8]", "name": "beaconInstPath"}, {"type": "bool[8]", "name": "beaconInstPathIsLeft"}, {"type": "int128", "name": "beaconInstPathLen"}, {"type": "bytes32", "name": "beaconInstRoot"}, {"type": "bytes32", "name": "beaconBlkData"}, {"type": "bytes32", "name": "beaconBlkHash"}, {"type": "uint256", "name": "beaconSignerSig"}, {"type": "int128", "name": "beaconNumR"}, {"type": "uint256[8]", "name": "beaconXs"}, {"type": "uint256[8]", "name": "beaconYs"}, {"type": "int128[8]", "name": "beaconRIdxs"}, {"type": "int128", "name": "beaconNumSig"}, {"type": "uint256[8]", "name": "beaconSigIdxs"}, {"type": "uint256", "name": "beaconRx"}, {"type": "uint256", "name": "beaconRy"}, {"type": "bytes", "name": "beaconR"}, {"type": "uint256", "name": "bridgeHeight"}, {"type": "bytes32[8]", "name": "bridgeInstPath"}, {"type": "bool[8]", "name": "bridgeInstPathIsLeft"}, {"type": "int128", "name": "bridgeInstPathLen"}, {"type": "bytes32", "name": "bridgeInstRoot"}, {"type": "bytes32", "name": "bridgeBlkData"}, {"type": "bytes32", "name": "bridgeBlkHash"}, {"type": "uint256", "name": "bridgeSignerSig"}, {"type": "int128", "name": "bridgeNumR"}, {"type": "uint256[8]", "name": "bridgeXs"}, {"type": "uint256[8]", "name": "bridgeYs"}, {"type": "int128[8]", "name": "bridgeRIdxs"}, {"type": "int128", "name": "bridgeNumSig"}, {"type": "uint256[8]", "name": "bridgeSigIdxs"}, {"type": "uint256", "name": "bridgeRx"}, {"type": "uint256", "name": "bridgeRy"}, {"type": "bytes", "name": "bridgeR"}], "constant": false, "payable": false, "type": "function", "gas": 100530}, {"name": "withdrawed", "outputs": [{"type": "bool", "name": "out"}], "inputs": [{"type": "bytes32", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 736}, {"name": "incognito", "outputs": [{"type": "address", "unit": "Incognito_proxy", "name": "out"}], "inputs": [], "constant": true, "payable": false, "type": "function", "gas": 633}]`
+	AbiJson               = `[{"constant":false,"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"string","name":"incognitoAddress","type":"string"}],"name":"depositERC20","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"constant":true,"inputs":[{"internalType":"bytes","name":"inst","type":"bytes"}],"name":"parseBurnInst","outputs":[{"internalType":"uint8","name":"","type":"uint8"},{"internalType":"uint8","name":"","type":"uint8"},{"internalType":"address","name":"","type":"address"},{"internalType":"address payable","name":"","type":"address"},{"internalType":"uint256","name":"","type":"uint256"}],"payable":false,"stateMutability":"pure","type":"function"},{"constant":true,"inputs":[],"name":"incognito","outputs":[{"internalType":"contract Incognito","name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"internalType":"string","name":"incognitoAddress","type":"string"}],"name":"deposit","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"constant":true,"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"name":"withdrawed","outputs":[{"internalType":"bool","name":"","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"internalType":"bytes","name":"inst","type":"bytes"},{"internalType":"uint256[2]","name":"heights","type":"uint256[2]"},{"internalType":"bytes32[][2]","name":"instPaths","type":"bytes32[][2]"},{"internalType":"bool[][2]","name":"instPathIsLefts","type":"bool[][2]"},{"internalType":"bytes32[2]","name":"instRoots","type":"bytes32[2]"},{"internalType":"bytes32[2]","name":"blkData","type":"bytes32[2]"},{"internalType":"uint256[][2]","name":"sigIdxs","type":"uint256[][2]"},{"internalType":"uint8[][2]","name":"sigVs","type":"uint8[][2]"},{"internalType":"bytes32[][2]","name":"sigRs","type":"bytes32[][2]"},{"internalType":"bytes32[][2]","name":"sigSs","type":"bytes32[][2]"}],"name":"withdraw","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"incognitoProxyAddress","type":"address"}],"payable":true,"stateMutability":"payable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"token","type":"address"},{"indexed":false,"internalType":"string","name":"incognitoAddress","type":"string"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"Deposit","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"token","type":"address"},{"indexed":false,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"Withdraw","type":"event"}]`
 	BridgeShardID         = 1
 	EthAddrStr            = "0x0000000000000000000000000000000000000000"
-	EthContractAddressStr = "0xe97f7d3f866cb8200941082c887c7ae5eeab1f58"
+	EthContractAddressStr = "0xaB4d7995bBfe53e86EAAF365c473B443C5320527" // v19 - solidity, for testnet
 )
 
 const (
@@ -111,4 +108,9 @@ const (
 	BridgeRequestProcessingStatus = 1
 	BridgeRequestAcceptedStatus   = 2
 	BridgeRequestRejectedStatus   = 3
+)
+
+const (
+	BeaconChainKey = "beacon"
+	ShardChainKey  = "shard"
 )

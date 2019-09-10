@@ -10,7 +10,7 @@ var (
 	beaconBestBlockkeyPrefix = []byte("bea-bestBlock")
 	committeePrefix          = []byte("com-")
 	rewardReceiverPrefix     = []byte("rewardreceiver-")
-	heightPrefix             = []byte("ep-") // TODO rename key value
+	heightPrefix             = []byte("height-")
 	shardIDPrefix            = []byte("s-")
 	blockKeyPrefix           = []byte("b-")
 	blockHeaderKeyPrefix     = []byte("bh-")
@@ -18,6 +18,7 @@ var (
 	crossShardKeyPrefix      = []byte("csh-")
 	nextCrossShardKeyPrefix  = []byte("ncsh-")
 	shardPrefix              = []byte("shd-")
+	autoStakingPrefix        = []byte("aust-")
 
 	shardToBeaconKeyPrefix       = []byte("stb-")
 	transactionKeyPrefix         = []byte("tx-")
