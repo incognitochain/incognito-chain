@@ -126,10 +126,6 @@ func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, co
 	return nil
 }
 
-func (chain *ShardChain) ValidateBlockWithBlockChain(common.BlockInterface) error {
-	return nil
-}
-
 func (chain *ShardChain) InsertBlk(block common.BlockInterface) error {
 	chain.lock.Lock()
 	defer chain.lock.Unlock()
