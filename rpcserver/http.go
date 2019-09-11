@@ -36,6 +36,7 @@ type HttpServer struct {
 	blockService      *rpcservice.BlockService
 	outputCoinService *rpcservice.OutputCoinService
 	txMemPoolService  *rpcservice.TxMemPoolService
+	databaseService *rpcservice.DatabaseService
 }
 
 func (httpServer *HttpServer) Init(config *RpcServerConfig) {
@@ -55,6 +56,8 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 	// init service
 	httpServer.blockService = &rpcservice.BlockService{BlockChain: httpServer.config.BlockChain}
 	httpServer.outputCoinService = &rpcservice.OutputCoinService{BlockChain: httpServer.config.BlockChain}
+	httpServer.txMemPoolService = &rpcservice.TxMemPoolService{TxMemPool: httpServer.config.TxMemPool}
+	httpServer.databaseService = &rpcservice.DatabaseService{DB: *httpServer.config.Database}
 }
 
 // Start is used by rpcserver.go to start the rpc listener.
