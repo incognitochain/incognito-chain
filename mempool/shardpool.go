@@ -213,6 +213,9 @@ func (shardPool *ShardPool) PromotePendingPool() {
 	shardPool.mtx.Lock()
 	defer shardPool.mtx.Unlock()
 	shardPool.promotePendingPool()
+	sort.Slice(shardPool.validPool, func(i, j int) bool {
+		return shardPool.validPool[i].Header.Height < shardPool.validPool[j].Header.Height
+	})
 }
 
 /*
@@ -321,6 +324,7 @@ func (shardPool *ShardPool) removeBlock(lastBlockHeight uint64) {
 			break
 		}
 	}
+	fmt.Println("Remove block routine", shardPool.validPool[0])
 	shardPool.updateLatestShardState()
 }
 
