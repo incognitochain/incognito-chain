@@ -74,17 +74,17 @@ var (
 
 // CONSTANT for network TESTNET
 const (
-	Testnet            = 0x16
+	Testnet            = 0x35
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
 	TestnetEpoch       = 100
 	TestnetRandomTime  = 50
 
 	TestNetShardCommitteeSize     = 64
-	TestNetMinShardCommitteeSize  = 4
+	TestNetMinShardCommitteeSize  = 64
 	TestNetBeaconCommitteeSize    = 4
 	TestNetMinBeaconCommitteeSize = 4
-	TestNetActiveShards           = 8
+	TestNetActiveShards           = 2
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	TestNetMinBeaconBlkInterval = 10 * time.Second //second

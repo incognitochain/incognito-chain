@@ -74,14 +74,14 @@ var (
 
 // CONSTANT for network TESTNET
 const (
-	Testnet            = 0x16
+	Testnet            = 0x34
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
 	TestnetEpoch       = 100
 	TestnetRandomTime  = 50
 
-	TestNetShardCommitteeSize     = 4
-	TestNetMinShardCommitteeSize  = 4
+	TestNetShardCommitteeSize     = 64
+	TestNetMinShardCommitteeSize  = 64
 	TestNetBeaconCommitteeSize    = 4
 	TestNetMinBeaconCommitteeSize = 4
 	TestNetActiveShards           = 2
