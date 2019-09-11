@@ -13,7 +13,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/wire"
-	"github.com/libp2p/go-libp2p-peer"
+	peer "github.com/libp2p/go-libp2p-peer"
 )
 
 type PeerConn struct {
@@ -101,7 +101,7 @@ func (p *PeerConn) setConnState(connState ConnState) {
 }
 
 func (p PeerConn) GetRemoteRawAddress() string {
-	return p.remoteRawAddress
+	return p.remotePeer.rawAddress
 }
 
 func (p PeerConn) GetRemotePeer() *Peer {
@@ -335,25 +335,9 @@ func (peerConn *PeerConn) processMessageForEachType(messageType reflect.Type, me
 		if peerConn.config.MessageListeners.OnGetAddr != nil {
 			peerConn.config.MessageListeners.OnAddr(peerConn, message.(*wire.MessageAddr))
 		}
-	case reflect.TypeOf(&wire.MessageBFTPropose{}):
+	case reflect.TypeOf(&wire.MessageBFT{}):
 		if peerConn.config.MessageListeners.OnBFTMsg != nil {
-			peerConn.config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTPropose))
-		}
-	case reflect.TypeOf(&wire.MessageBFTAgree{}):
-		if peerConn.config.MessageListeners.OnBFTMsg != nil {
-			peerConn.config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTAgree))
-		}
-	case reflect.TypeOf(&wire.MessageBFTCommit{}):
-		if peerConn.config.MessageListeners.OnBFTMsg != nil {
-			peerConn.config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTCommit))
-		}
-	case reflect.TypeOf(&wire.MessageBFTReady{}):
-		if peerConn.config.MessageListeners.OnBFTMsg != nil {
-			peerConn.config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTReady))
-		}
-	case reflect.TypeOf(&wire.MessageBFTReq{}):
-		if peerConn.config.MessageListeners.OnBFTMsg != nil {
-			peerConn.config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTReq))
+			peerConn.config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFT))
 		}
 	case reflect.TypeOf(&wire.MessagePeerState{}):
 		if peerConn.config.MessageListeners.OnPeerState != nil {
@@ -669,5 +653,10 @@ func (p *PeerConn) close() {
 // ForceClose - set flag and close channel
 func (p *PeerConn) ForceClose() {
 	p.setIsForceClose(true)
-	close(p.cClose)
+	select {
+	case <-p.cClose:
+		return
+	default:
+		close(p.cClose)
+	}
 }

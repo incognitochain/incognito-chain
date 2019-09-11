@@ -12,12 +12,13 @@ import (
 )
 
 const (
-	MaxGetAddressPayload = 100000 // 1 Kb
+	MaxGetAddressPayload = 100000 // 100 Kb
 )
 
 type RawPeer struct {
-	RawAddress string
-	PublicKey  string
+	RawAddress    string
+	PublicKeyType string
+	PublicKey     string
 }
 
 type MessageAddr struct {
