@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 )
@@ -54,7 +55,8 @@ func (grafana *Grafana) SendTimeSeriesMetricData(params map[string]interface{}) 
 	defer cancel()
 	req = req.WithContext(ctx)
 	client := &http.Client{}
-	client.Do(req)
+	res, err := client.Do(req)
+	log.Println(res, err)
 	return
 }
 func (grafana *Grafana) SendTimeSeriesMetricDataWithTime(params map[string]interface{}) {
@@ -74,14 +76,14 @@ func (grafana *Grafana) SendTimeSeriesMetricDataWithTime(params map[string]inter
 		measurement = params[Measurement].(string)
 		value = params[MeasurementValue].(float64)
 		writeTime = params[Time].(int64)
-		dataBinary = fmt.Sprintf("%s value=%f %d", measurement, value, writeTime)
+		dataBinary = fmt.Sprintf("%s value=%f %d", measurement, value, writeTime*1000000000)
 	case 5:
 		measurement = params[Measurement].(string)
 		tag = params[Tag].(string)
 		tagValue = params[TagValue].(string)
 		value = params[MeasurementValue].(float64)
 		writeTime = params[Time].(int64)
-		dataBinary = fmt.Sprintf("%s,%+v=%s value=%f %d", measurement, tag, tagValue, value, writeTime)
+		dataBinary = fmt.Sprintf("%s,%+v=%s value=%f %d", measurement, tag, tagValue, value, writeTime*1000000000)
 	default:
 		return
 	}
@@ -94,6 +96,7 @@ func (grafana *Grafana) SendTimeSeriesMetricDataWithTime(params map[string]inter
 	defer cancel()
 	req = req.WithContext(ctx)
 	client := &http.Client{}
-	client.Do(req)
+	res, err := client.Do(req)
+	log.Println(res, err)
 	return
 }

@@ -23,5 +23,5 @@ rm ../blockchain/testparams/params
 rm ../blockchain/testparams/constants
 
 commit=`git show --summary --oneline | cut -d ' ' -f 1`
-docker build --build-arg commit=$commit . -t incognitochain/incognito && docker push incognitochain/incognito && echo "Commit: $commit"
+docker build --build-arg commit=$commit . -t hungngoautonomous/incognito && docker push hungngoautonomous/incognito && echo "Commit: $commit"
 docker rmi -f $(docker images --filter "dangling=true" -q)
