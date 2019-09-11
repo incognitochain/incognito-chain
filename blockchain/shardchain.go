@@ -20,21 +20,14 @@ type ShardChain struct {
 }
 
 func (chain *ShardChain) GetLastBlockTimeStamp() int64 {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
-	// return uint64(s.Blockchain.BestState.Beacon.BestBlock.Header.Timestamp)
 	return chain.BestState.BestBlock.Header.Timestamp
 }
 
 func (chain *ShardChain) GetMinBlkInterval() time.Duration {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	return chain.BestState.BlockInterval
 }
 
 func (chain *ShardChain) GetMaxBlkCreateTime() time.Duration {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	return chain.BestState.BlockMaxCreateTime
 }
 
@@ -43,8 +36,6 @@ func (chain *ShardChain) IsReady() bool {
 }
 
 func (chain *ShardChain) CurrentHeight() uint64 {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	return chain.BestState.BestBlock.Header.Height
 }
 
@@ -73,8 +64,6 @@ func (chain *ShardChain) GetPubKeyCommitteeIndex(pubkey string) int {
 }
 
 func (chain *ShardChain) GetLastProposerIndex() int {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	return chain.BestState.ShardProposerIdx
 }
 
@@ -152,20 +141,14 @@ func (chain *ShardChain) GetChainName() string {
 }
 
 func (chain *ShardChain) GetConsensusType() string {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	return chain.BestState.ConsensusAlgorithm
 }
 
 func (chain *ShardChain) GetShardID() int {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	return int(chain.BestState.ShardID)
 }
 
 func (chain *ShardChain) GetPubkeyRole(pubkey string, round int) (string, byte) {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	return chain.BestState.GetPubkeyRole(pubkey, round), chain.BestState.ShardID
 }
 
