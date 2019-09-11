@@ -898,7 +898,11 @@ func (synker *Synker) InsertBeaconBlockFromPool() {
 	}
 
 	for _, v := range sameCommitteeBlock {
-		chain.InsertBlk(v)
+		err := chain.InsertBlk(v)
+		if err != nil {
+			Logger.log.Error(err)
+			break
+		}
 	}
 }
 
