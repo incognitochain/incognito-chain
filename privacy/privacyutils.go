@@ -2,45 +2,31 @@ package privacy
 
 import (
 	"crypto/rand"
-	"github.com/incognitochain/incognito-chain/common"
+	"io"
 	"math/big"
 )
 
 // RandBytes generates random bytes with length
 func RandBytes(length int) []byte {
-	//seed := time.Now().UnixNano()
-	//b := make([]byte, length)
-	//reader := rand2.New(rand2.NewSource(int64(seed)))
-	//
-	//for n := 0; n < length; {
-	//	read, err := reader.Read(b[n:])
-	//	if err != nil {
-	//		Logger.Log.Errorf("[PRIVACY LOG] Rand byte error : %v\n", err)
-	//		return nil
-	//	}
-	//	n += read
-	//}
-	//return b
-
-	res := make([]byte, length)
-	_, err := rand.Read(res)
-	if err != nil {
-		Logger.Log.Errorf("[PRIVACY LOG] Random bytes array error : %v\n", err)
-		return nil
-	}
-
-	return res
+	rbytes := make([]byte, length)
+	rand.Read(rbytes)
+	return rbytes
 }
 
 // RandScalar generates a big int with value less than order of group of elliptic points
-func RandScalar() *big.Int {
-	randNum := new(big.Int)
+func RandScalar(r io.Reader) *big.Int {
+	var k *big.Int
+	var err error
 	for {
-		randNum.SetBytes(RandBytes(common.BigIntSize))
-		if randNum.Cmp(Curve.Params().N) == -1 {
-			return randNum
+		k, err = rand.Int(r, Curve.Params().N)
+		if err != nil {
+			continue
+		}
+		if k.Sign() > 0 {
+			break
 		}
 	}
+	return k
 }
 
 // ConvertIntToBinary represents a integer number in binary array with little endian with size n
