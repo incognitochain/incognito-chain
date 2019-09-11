@@ -89,5 +89,84 @@
       "error": null,
       "response": 999999999998980
     }
+  },
+  {
+    "node": "shard1-0",
+    "input": {
+      "command": "createandsendtransaction",
+      "context": false,
+      "params": [
+        "112t8rrEgLjxmpzQTh3i2SFxxV27WntXpAkoe9JbseqFvDBPpaPaudzJWXFctZorJXtivEXv1nPzggnmNfNDyj9d5PKh5S4N3UTs6fHBWgeo",
+        {
+          "1Uv46dF2p9Qph8qn1BtMbXpiGp9pFPiank4hgHoSp3cgzUXrSJEC25W1C3LeF9bK2uQTWkqW8BNSb39N8F4HmZJTbEyf8J7S8PxsAikaV": 500
+        },
+        10,
+        0
+      ]
+    },
+    "output": {
+      "error": null,
+      "response": {}
+    },
+    "store": {
+      "TxID1": "TxID"
+    }
+  },
+  {
+    "node": "shard1-0",
+    "input": {
+      "command": "subcribependingtransaction",
+      "context": true,
+      "params": ["TxID1"],
+      "type": "ws",
+      "wait": 60
+    },
+    "output": {
+      "error": null,
+      "response": {}
+    }
+  },
+  {
+    "node": "shard0-0",
+    "input": {
+      "command": "subcribecrossoutputcoinbyprivatekey",
+      "context": false,
+      "params": ["112t8rnj1Xs9p5D6ue4fuLnVq9mJz5kKtyRMLEVBr8hxxmgd7haNFhruwezHswtEu9YKgAUWrnPrU1uvJE1gvep2pixy55ctDNc593c5pHmB"],
+      "type": "ws",
+      "wait": 1000
+    },
+    "output": {
+      "error": null,
+      "response": {
+        "SenderShardID": 1,
+        "ReceiverShardID": 0,
+        "PaymentAddress": "1Uv46dF2p9Qph8qn1BtMbXpiGp9pFPiank4hgHoSp3cgzUXrSJEC25W1C3LeF9bK2uQTWkqW8BNSb39N8F4HmZJTbEyf8J7S8PxsAikaV",
+        "Value": 500
+      }
+    }
+  },
+  {
+    "node": "shard1-0",
+    "input": {
+      "command": "getbalancebyprivatekey",
+      "context": false,
+      "params": ["112t8rrEgLjxmpzQTh3i2SFxxV27WntXpAkoe9JbseqFvDBPpaPaudzJWXFctZorJXtivEXv1nPzggnmNfNDyj9d5PKh5S4N3UTs6fHBWgeo"]
+    },
+    "output": {
+      "error": null,
+      "response": 480
+    }
+  },
+  {
+    "node": "shard0-0",
+    "input": {
+      "command": "getbalancebyprivatekey",
+      "context": false,
+      "params": ["112t8rnj1Xs9p5D6ue4fuLnVq9mJz5kKtyRMLEVBr8hxxmgd7haNFhruwezHswtEu9YKgAUWrnPrU1uvJE1gvep2pixy55ctDNc593c5pHmB"]
+    },
+    "output": {
+      "error": null,
+      "response": 500
+    }
   }
 ]

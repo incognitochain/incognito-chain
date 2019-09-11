@@ -1,16 +1,21 @@
 package jsonresult
 
-import "github.com/incognitochain/incognito-chain/blockchain"
+import (
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/incognitokey"
+)
 
 /*
 	Candidate Result From Best State
 */
 type CandidateListsResult struct {
-	Epoch                                  uint64   `json:"Epoch"`
-	CandidateShardWaitingForCurrentRandom  []string `json:"CandidateShardWaitingForCurrentRandom"`
-	CandidateBeaconWaitingForCurrentRandom []string `json:"CandidateBeaconWaitingForCurrentRandom"`
-	CandidateShardWaitingForNextRandom     []string `json:"CandidateShardWaitingForNextRandom"`
-	CandidateBeaconWaitingForNextRandom    []string `json:"CandidateBeaconWaitingForNextRandom"`
+	Epoch                                  uint64                            `json:"Epoch"`
+	CandidateShardWaitingForCurrentRandom  []incognitokey.CommitteePublicKey `json:"CandidateShardWaitingForCurrentRandom"`
+	CandidateBeaconWaitingForCurrentRandom []incognitokey.CommitteePublicKey `json:"CandidateBeaconWaitingForCurrentRandom"`
+	CandidateShardWaitingForNextRandom     []incognitokey.CommitteePublicKey `json:"CandidateShardWaitingForNextRandom"`
+	CandidateBeaconWaitingForNextRandom    []incognitokey.CommitteePublicKey `json:"CandidateBeaconWaitingForNextRandom"`
 }
 
 type CommitteeListsResult struct {
@@ -21,23 +26,31 @@ type CommitteeListsResult struct {
 	BeaconPendingValidator []string          `json:"BeaconPendingValidator"`
 }
 
-func NewCommitteeListsResult(epoch uint64, shardComm map[byte][]string, shardPendingValidator map[byte][]string, beaconCommittee []string, beaconPendingValidator []string) *CommitteeListsResult {
+func NewCommitteeListsResult(epoch uint64, shardComm map[byte][]incognitokey.CommitteePublicKey, shardPendingValidator map[byte][]incognitokey.CommitteePublicKey, beaconCommittee []incognitokey.CommitteePublicKey, beaconPendingValidator []incognitokey.CommitteePublicKey) *CommitteeListsResult {
 	result := &CommitteeListsResult{
 		Epoch: epoch,
 	}
-	result.BeaconPendingValidator = make([]string, len(beaconPendingValidator))
-	copy(result.BeaconPendingValidator, beaconPendingValidator)
-	result.BeaconCommittee = make([]string, len(beaconCommittee))
-	copy(result.BeaconCommittee, beaconCommittee)
+	result.BeaconPendingValidator = make([]string, 0)
+	for _, v := range beaconPendingValidator {
+		result.BeaconPendingValidator = append(result.BeaconPendingValidator, base58.Base58Check{}.Encode(v.IncPubKey, common.ZeroByte))
+	}
+	result.BeaconCommittee = make([]string, 0)
+	for _, v := range beaconCommittee {
+		result.BeaconCommittee = append(result.BeaconCommittee, base58.Base58Check{}.Encode(v.IncPubKey, common.ZeroByte))
+	}
 	result.ShardCommittee = make(map[byte][]string)
 	for k, v := range shardComm {
-		result.ShardCommittee[k] = make([]string, len(v))
-		copy(result.ShardCommittee[k], v)
+		result.ShardCommittee[k] = make([]string, 0)
+		for _, v1 := range v {
+			result.ShardCommittee[k] = append(result.ShardCommittee[k], base58.Base58Check{}.Encode(v1.IncPubKey, common.ZeroByte))
+		}
 	}
 	result.ShardPendingValidator = make(map[byte][]string)
 	for k, v := range shardPendingValidator {
-		result.ShardPendingValidator[k] = make([]string, len(v))
-		copy(result.ShardPendingValidator[k], v)
+		result.ShardPendingValidator[k] = make([]string, 0)
+		for _, v1 := range v {
+			result.ShardPendingValidator[k] = append(result.ShardPendingValidator[k], base58.Base58Check{}.Encode(v1.IncPubKey, common.ZeroByte))
+		}
 	}
 	return result
 }

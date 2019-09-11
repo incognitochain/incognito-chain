@@ -12,29 +12,35 @@ import (
 )
 
 type ShardBlock struct {
-	AggregatedSig   string  `json:"AggregatedSig"`
-	R               string  `json:"R"`
-	ValidatorsIndex [][]int `json:"ValidatorsIndex"` //[0]: R | [1]:AggregatedSig
-	ProducerSig     string  `json:"ProducerSig"`
-	Body            ShardBody
-	Header          ShardHeader
+	// AggregatedSig string  `json:"AggregatedSig"`
+	// R             string  `json:"R"`
+	// ValidatorsIdx [][]int `json:"ValidatorsIdx"` //[0]: R | [1]:AggregatedSig
+	// ProducerSig   string  `json:"ProducerSig"`
+
+	ValidationData string `json:"ValidationData"`
+
+	Body   ShardBody
+	Header ShardHeader
 }
 
 type ShardToBeaconBlock struct {
-	AggregatedSig   string  `json:"AggregatedSig"`
-	R               string  `json:"R"`
-	ValidatorsIndex [][]int `json:"ValidatorsIndex"` //[0]: R | [1]:AggregatedSig
-	ProducerSig     string  `json:"ProducerSig"`
+	// AggregatedSig  string  `json:"AggregatedSig"`
+	// R              string  `json:"R"`
+	// ValidatorsIdx  [][]int `json:"ValidatorsIdx"` //[0]: R | [1]:AggregatedSig
+	// ProducerSig    string  `json:"ProducerSig"`
+	ValidationData string `json:"ValidationData"`
 
 	Instructions [][]string
 	Header       ShardHeader
 }
 
 type CrossShardBlock struct {
-	AggregatedSig   string  `json:"AggregatedSig"`
-	R               string  `json:"R"`
-	ValidatorsIndex [][]int `json:"ValidatorsIndex"` //[0]: R | [1]:AggregatedSig
-	ProducerSig     string  `json:"ProducerSig"`
+	// AggregatedSig   string  `json:"AggregatedSig"`
+	// R               string  `json:"R"`
+	// ValidatorsIdx   [][]int `json:"ValidatorsIdx"` //[0]: R | [1]:AggregatedSig
+	// ProducerSig     string  `json:"ProducerSig"`
+	ValidationData string `json:"ValidationData"`
+
 	Header          ShardHeader
 	ToShardID       byte
 	MerklePathShard []common.Hash
@@ -83,9 +89,18 @@ func (shardBlock *ShardBlock) BuildShardBlockBody(instructions [][]string, cross
 	shardBlock.Body.CrossTransactions = crossTransaction
 	shardBlock.Body.Transactions = append(shardBlock.Body.Transactions, transactions...)
 }
+
+func (crossShardBlock CrossShardBlock) GetCurrentEpoch() uint64 {
+	return crossShardBlock.Header.Epoch
+}
+
 func (crossShardBlock *CrossShardBlock) Hash() *common.Hash {
 	hash := crossShardBlock.Header.Hash()
 	return &hash
+}
+
+func (shardToBeaconBlock ShardToBeaconBlock) GetCurrentEpoch() uint64 {
+	return shardToBeaconBlock.Header.Epoch
 }
 
 func (shardToBeaconBlock *ShardToBeaconBlock) Hash() *common.Hash {
@@ -93,18 +108,18 @@ func (shardToBeaconBlock *ShardToBeaconBlock) Hash() *common.Hash {
 	return &hash
 }
 
-func (shardBlock *ShardBlock) Hash() *common.Hash {
+func (shardBlock ShardBlock) Hash() *common.Hash {
 	hash := shardBlock.Header.Hash()
 	return &hash
 }
 func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	//Check Header
-	if shardBlock.Header.Height == 1 && len(shardBlock.Header.ProducerAddress.Bytes()) != 0 {
-		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block with Height 1 Producer Address have %+v bytes but get %+v bytes", 0, len(shardBlock.Header.ProducerAddress.Bytes())))
+	if shardBlock.Header.Height == 1 && len(shardBlock.ValidationData) != 0 {
+		return false, NewBlockChainError(ShardBlockSanityError, errors.New("Expect Shard Block with Height 1 to not have validationData"))
 	}
 	// producer address must have 66 bytes: 33-byte public key, 33-byte transmission key
-	if shardBlock.Header.Height > 1 && len(shardBlock.Header.ProducerAddress.Bytes()) != 66 {
-		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Producer Address have %+v bytes but get %+v bytes", 66, len(shardBlock.Header.ProducerAddress.Bytes())))
+	if shardBlock.Header.Height > 1 && len(shardBlock.ValidationData) == 0 {
+		return false, NewBlockChainError(ShardBlockSanityError, errors.New("Expect Shard Block to have validationData"))
 	}
 	if int(shardBlock.Header.ShardID) < 0 || int(shardBlock.Header.ShardID) > 256 {
 		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block ShardID in range 0 - 255 but get %+v ", shardBlock.Header.ShardID))
@@ -157,6 +172,9 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	if len(shardBlock.Header.PendingValidatorRoot[:]) != common.HashSize {
 		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Committee Root in the right format"))
 	}
+	if len(shardBlock.Header.StakingTxRoot[:]) != common.HashSize {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Staking Tx Root in the right format"))
+	}
 	if len(shardBlock.Header.CrossShardBitMap) > 254 {
 		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Cross Shard Length Less Than 255"))
 	}
@@ -198,29 +216,22 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 }
 
 func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
-	tempBlk := &struct {
-		AggregatedSig string  `json:"AggregatedSig"`
-		R             string  `json:"R"`
-		ValidatorsIdx [][]int `json:"ValidatorsIndex"`
-		ProducerSig   string  `json:"ProducerSig"`
-		Header        ShardHeader
-		Body          *json.RawMessage
+	tempShardBlock := &struct {
+		ValidationData string `json:"ValidationData"`
+		Header         ShardHeader
+		Body           *json.RawMessage
 	}{}
-	err := json.Unmarshal(data, &tempBlk)
+	err := json.Unmarshal(data, &tempShardBlock)
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
-	shardBlock.AggregatedSig = tempBlk.AggregatedSig
-	shardBlock.R = tempBlk.R
-	shardBlock.ValidatorsIndex = tempBlk.ValidatorsIdx
-	shardBlock.ProducerSig = tempBlk.ProducerSig
+	shardBlock.ValidationData = tempShardBlock.ValidationData
 	blkBody := ShardBody{}
-	err = blkBody.UnmarshalJSON(*tempBlk.Body)
+	err = blkBody.UnmarshalJSON(*tempShardBlock.Body)
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
-	shardBlock.Header = tempBlk.Header
-	// Init shard block data if get nil value
+	shardBlock.Header = tempShardBlock.Header
 	if shardBlock.Body.Transactions == nil {
 		shardBlock.Body.Transactions = []metadata.Transaction{}
 	}
@@ -234,6 +245,7 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 		shardBlock.Header.TotalTxsFee = make(map[common.Hash]uint64)
 	}
 	if ok, err := shardBlock.validateSanityData(); !ok || err != nil {
+		// panic(string(data) + err.Error())
 		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
 	shardBlock.Body = blkBody
@@ -251,17 +263,61 @@ func (shardBlock *ShardBlock) AddTransaction(tx metadata.Transaction) error {
 	shardBlock.Body.Transactions = append(shardBlock.Body.Transactions, tx)
 	return nil
 }
+
+// func (shardBlock *ShardBlock) GetProducerPubKey() string {
+// 	return string(shardBlock.Header.ProducerAddress.Pk)
+// }
+
+// func (shardBlock *ShardBlock) VerifyBlockReward(blockchain *BlockChain) error {
+// 	hasBlockReward := false
+// 	txsFee := uint64(0)
+// 	for _, tx := range shardBlock.Body.Transactions {
+// 		if tx.GetMetadataType() == metadata.ShardBlockReward {
+// 			if hasBlockReward {
+// 				return errors.New("This block contains more than one coinbase transaction for shard block producer!")
+// 			}
+// 			hasBlockReward = true
+// 		} else {
+// 			txsFee += tx.GetTxFee()
+// 		}
+// 	}
+// 	if !hasBlockReward {
+// 		return errors.New("This block dont have coinbase tx for shard block producer")
+// 	}
+// 	numberOfTxs := len(shardBlock.Body.Transactions)
+// 	if shardBlock.Body.Transactions[numberOfTxs-1].GetMetadataType() != metadata.ShardBlockReward {
+// 		return errors.New("Coinbase transaction must be the last transaction")
+// 	}
+
+// 	receivers, values := shardBlock.Body.Transactions[numberOfTxs-1].GetReceivers()
+// 	if len(receivers) != 1 {
+// 		return errors.New("Wrong receiver")
+// 	}
+// 	if !common.ByteEqual(receivers[0], shardBlock.Header.ProducerAddress.Pk) {
+// 		return errors.New("Wrong receiver")
+// 	}
+// 	reward := blockchain.getRewardAmount(shardBlock.Header.Height)
+// 	reward += txsFee
+// 	if reward != values[0] {
+// 		return errors.New("Wrong reward value")
+// 	}
+// 	return nil
+// }
+
 func (shardBlock *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBlock {
 	if bc.IsTest {
 		return &ShardToBeaconBlock{}
 	}
 	block := ShardToBeaconBlock{}
-	block.AggregatedSig = shardBlock.AggregatedSig
-	block.ValidatorsIndex = make([][]int, 2)                                                      //multi-node
-	block.ValidatorsIndex[0] = append(block.ValidatorsIndex[0], shardBlock.ValidatorsIndex[0]...) //multi-node
-	block.ValidatorsIndex[1] = append(block.ValidatorsIndex[1], shardBlock.ValidatorsIndex[1]...) //multi-node
-	block.R = shardBlock.R
-	block.ProducerSig = shardBlock.ProducerSig
+
+	// block.AggregatedSig = blk.AggregatedSig
+	// block.ValidatorsIdx = make([][]int, 2)                                           //multi-node
+	// block.ValidatorsIdx[0] = append(block.ValidatorsIdx[0], blk.ValidatorsIdx[0]...) //multi-node
+	// block.ValidatorsIdx[1] = append(block.ValidatorsIdx[1], blk.ValidatorsIdx[1]...) //multi-node
+	// block.R = blk.R
+	// block.ProducerSig = blk.ProducerSig
+
+	block.ValidationData = shardBlock.ValidationData
 	block.Header = shardBlock.Header
 	block.Instructions = shardBlock.Body.Instructions
 	previousShardBlockByte, err := bc.config.DataBase.FetchBlock(shardBlock.Header.PreviousBlockHash)
@@ -317,12 +373,14 @@ func (shardBlock *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBl
 		return crossShard, NewBlockChainError(VerifyCrossShardBlockShardTxRootError, fmt.Errorf("Expect Shard Tx Root To be %+v but get %+v", shardBlock.Header.ShardTxRoot, merkleShardRoot))
 	}
 	//Copy signature and header
-	crossShard.AggregatedSig = shardBlock.AggregatedSig
-	crossShard.ValidatorsIndex = make([][]int, 2)                                                           //multi-node
-	crossShard.ValidatorsIndex[0] = append(crossShard.ValidatorsIndex[0], shardBlock.ValidatorsIndex[0]...) //multi-node
-	crossShard.ValidatorsIndex[1] = append(crossShard.ValidatorsIndex[1], shardBlock.ValidatorsIndex[1]...) //multi-node
-	crossShard.R = shardBlock.R
-	crossShard.ProducerSig = shardBlock.ProducerSig
+	// crossShard.AggregatedSig = block.AggregatedSig
+	// crossShard.ValidatorsIdx = make([][]int, 2)                                                  //multi-node
+	// crossShard.ValidatorsIdx[0] = append(crossShard.ValidatorsIdx[0], block.ValidatorsIdx[0]...) //multi-node
+	// crossShard.ValidatorsIdx[1] = append(crossShard.ValidatorsIdx[1], block.ValidatorsIdx[1]...) //multi-node
+	// crossShard.R = block.R
+	// crossShard.ProducerSig = block.ProducerSig
+
+	crossShard.ValidationData = shardBlock.ValidationData
 	crossShard.Header = shardBlock.Header
 	crossShard.MerklePathShard = merklePathShard
 	crossShard.CrossOutputCoin = crossOutputCoin
@@ -330,4 +388,107 @@ func (shardBlock *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBl
 	crossShard.CrossTxTokenPrivacyData = crossCustomTokenPrivacyData
 	crossShard.ToShardID = shardID
 	return crossShard, nil
+}
+
+// func (block *ShardBlock) getBlockRewardInst(blockHeight uint64) ([]string, error) {
+// 	txsFee := uint64(0)
+
+// 	for _, tx := range block.Body.Transactions {
+// 		txsFee += tx.GetTxFee()
+// 	}
+// 	blkRewardInfo := metadata.NewBlockRewardInfo(txsFee, blockHeight)
+// 	inst, err := blkRewardInfo.GetStringFormat()
+// 	return inst, err
+// }
+
+func (block *ShardBlock) AddValidationField(validationData string) error {
+	block.ValidationData = validationData
+	return nil
+}
+
+func (block ShardBlock) GetCurrentEpoch() uint64 {
+	return block.Header.Epoch
+}
+
+func (block ShardBlock) GetProducer() string {
+	return block.Header.Producer
+}
+
+func (block ShardBlock) GetValidationField() string {
+	return block.ValidationData
+}
+
+func (block ShardBlock) GetHeight() uint64 {
+	return block.Header.Height
+}
+
+func (block ShardBlock) GetRound() int {
+	return block.Header.Round
+}
+
+func (block ShardBlock) GetRoundKey() string {
+	return fmt.Sprint(block.Header.Height, "_", block.Header.Round)
+}
+
+func (block ShardBlock) GetInstructions() [][]string {
+	return block.Body.Instructions
+}
+
+func (block CrossShardBlock) GetProducer() string {
+	return block.Header.Producer
+}
+
+func (block CrossShardBlock) GetHeight() uint64 {
+	return block.Header.Height
+}
+
+func (block CrossShardBlock) GetValidationField() string {
+	return block.ValidationData
+}
+
+func (block CrossShardBlock) GetRound() int {
+	return block.Header.Round
+}
+
+func (block CrossShardBlock) GetRoundKey() string {
+	return fmt.Sprint(block.Header.Height, "_", block.Header.Round)
+}
+
+func (block CrossShardBlock) GetInstructions() [][]string {
+	return [][]string{}
+}
+
+func (block ShardToBeaconBlock) GetValidationField() string {
+	return block.ValidationData
+}
+
+func (block ShardToBeaconBlock) GetHeight() uint64 {
+	return block.Header.Height
+}
+
+func (block ShardToBeaconBlock) GetRound() int {
+	return block.Header.Round
+}
+
+func (block ShardToBeaconBlock) GetRoundKey() string {
+	return fmt.Sprint(block.Header.Height, "_", block.Header.Round)
+}
+func (block ShardToBeaconBlock) GetInstructions() [][]string {
+	return block.Instructions
+}
+
+func (block ShardToBeaconBlock) GetProducer() string {
+	return block.Header.Producer
+}
+
+func (block ShardBlock) GetConsensusType() string {
+	return block.Header.ConsensusType
+}
+
+func (block CrossShardBlock) GetConsensusType() string {
+	return block.Header.ConsensusType
+}
+
+func (block ShardToBeaconBlock) GetConsensusType() string {
+	return block.Header.ConsensusType
 }

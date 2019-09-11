@@ -58,20 +58,20 @@ var HttpHandler = map[string]httpHandler{
 	getCrossShardBlock:  (*HttpServer).handleGetCrossShardBlock,
 
 	// transaction
-	listOutputCoins:                 (*HttpServer).handleListOutputCoins,
-	createRawTransaction:            (*HttpServer).handleCreateRawTransaction,
-	sendRawTransaction:              (*HttpServer).handleSendRawTransaction,
-	createAndSendTransaction:        (*HttpServer).handleCreateAndSendTx,
-	getTransactionByHash:            (*HttpServer).handleGetTransactionByHash,
-	gettransactionhashbyreceiver:    (*HttpServer).handleGetTransactionHashByReceiver,
-	createAndSendStakingTransaction: (*HttpServer).handleCreateAndSendStakingTx,
-	randomCommitments:               (*HttpServer).handleRandomCommitments,
-	hasSerialNumbers:                (*HttpServer).handleHasSerialNumbers,
-	hasSnDerivators:                 (*HttpServer).handleHasSnDerivators,
-	listSnDerivators:                (*HttpServer).handleListSNDerivator,
-	listSerialNumbers:               (*HttpServer).handleListSerialNumbers,
-	listCommitments:                 (*HttpServer).handleListCommitments,
-	listCommitmentIndices:           (*HttpServer).handleListCommitmentIndices,
+	listOutputCoins:                         (*HttpServer).handleListOutputCoins,
+	createRawTransaction:                    (*HttpServer).handleCreateRawTransaction,
+	sendRawTransaction:                      (*HttpServer).handleSendRawTransaction,
+	createAndSendTransaction:                (*HttpServer).handleCreateAndSendTx,
+	getTransactionByHash:                    (*HttpServer).handleGetTransactionByHash,
+	gettransactionhashbyreceiver:            (*HttpServer).handleGetTransactionHashByReceiver,
+	createAndSendStakingTransaction:         (*HttpServer).handleCreateAndSendStakingTx,
+	createAndSendStopAutoStakingTransaction: (*HttpServer).handleCreateAndSendStopAutoStakingTransaction,
+	randomCommitments:                       (*HttpServer).handleRandomCommitments,
+	hasSerialNumbers:                        (*HttpServer).handleHasSerialNumbers,
+	hasSnDerivators:                         (*HttpServer).handleHasSnDerivators,
+	listSerialNumbers:                       (*HttpServer).handleListSerialNumbers,
+	listCommitments:                         (*HttpServer).handleListCommitments,
+	listCommitmentIndices:                   (*HttpServer).handleListCommitmentIndices,
 
 	//======Testing and Benchmark======
 	getAndSendTxsFromFile:   (*HttpServer).handleGetAndSendTxsFromFile,
@@ -129,9 +129,11 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendTxWithIssuingETHReq: (*HttpServer).handleCreateAndSendTxWithIssuingETHReq,
 
 	// Incognito -> Ethereum bridge
-	getBeaconSwapProof: (*HttpServer).handleGetBeaconSwapProof,
-	getBridgeSwapProof: (*HttpServer).handleGetBridgeSwapProof,
-	getBurnProof:       (*HttpServer).handleGetBurnProof,
+	getBeaconSwapProof:       (*HttpServer).handleGetBeaconSwapProof,
+	getLatestBeaconSwapProof: (*HttpServer).handleGetLatestBeaconSwapProof,
+	getBridgeSwapProof:       (*HttpServer).handleGetBridgeSwapProof,
+	getLatestBridgeSwapProof: (*HttpServer).handleGetLatestBridgeSwapProof,
+	getBurnProof:             (*HttpServer).handleGetBurnProof,
 
 	//reward
 	CreateRawWithDrawTransaction: (*HttpServer).handleCreateAndSendWithDrawTransaction,
@@ -143,10 +145,12 @@ var HttpHandler = map[string]httpHandler{
 	revertshardchain:  (*HttpServer).handleRevertShard,
 
 	// mining info
-	getMiningInfo:        (*HttpServer).handleGetMiningInfo,
-	enableMining:         (*HttpServer).handleEnableMining,
-	getChainMiningStatus: (*HttpServer).handleGetChainMiningStatus,
-	getPublickeyMining:   (*HttpServer).handleGetPublicKeyMining,
+	getMiningInfo:             (*HttpServer).handleGetMiningInfo,
+	enableMining:              (*HttpServer).handleEnableMining,
+	getChainMiningStatus:      (*HttpServer).handleGetChainMiningStatus,
+	getPublickeyMining:        (*HttpServer).handleGetPublicKeyMining,
+	getPublicKeyRole:          (*HttpServer).handleGetPublicKeyRole,
+	getIncognitoPublicKeyRole: (*HttpServer).handleGetIncognitoPublicKeyRole,
 }
 
 // Commands that are available to a limited user

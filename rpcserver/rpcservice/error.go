@@ -45,6 +45,8 @@ const (
 	GetBeaconBlockByHeightError
 	GeTxFromPoolError
 	TxPoolRejectTxError
+	NoSwapConfirmInst
+	GetKeySetFromPrivateKeyError
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -77,6 +79,7 @@ var ErrCodeMessage = map[int]struct {
 	RejectInvalidFeeError:              {-1016, "Reject invalid fee"},
 	TxNotExistedInMemAndBLockError:     {-1017, "Tx is not existed in mem and block"},
 	TokenIsInvalidError:                {-1018, "Token is invalid"},
+	GetKeySetFromPrivateKeyError:       {-1019, "Get KeySet From Private Key Error"},
 
 	// for block -2xxx
 	GetShardBlockByHeightError:  {-2000, "Get shard block by height error"},
@@ -102,6 +105,9 @@ var ErrCodeMessage = map[int]struct {
 	// tx pool -6xxx
 	GeTxFromPoolError:   {-6000, "Get tx from mempool error"},
 	TxPoolRejectTxError: {-6001, "Can not insert tx into tx mempool"},
+
+	// decentralized bridge
+	NoSwapConfirmInst: {-7000, "No swap confirm instruction found in block"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse

@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/libp2p/go-libp2p"
 	crypto "github.com/libp2p/go-libp2p-crypto"
@@ -51,6 +50,7 @@ type Peer struct {
 	pendingPeers     map[string]*Peer
 	pendingPeersMtx  *sync.Mutex
 	publicKey        string
+	publicKeyType    string
 	listeningAddress common.SimpleAddr
 	seed             int64
 
@@ -63,10 +63,15 @@ type Peer struct {
 // config is the struct to hold configuration options useful to RemotePeer.
 type Config struct {
 	MessageListeners MessageListeners
-	UserKeySet       *incognitokey.KeySet
-	MaxOutPeers      int
-	MaxInPeers       int
-	MaxPeers         int
+	// UserKeySet       *incognitokey.KeySet
+	MaxOutPeers     int
+	MaxInPeers      int
+	MaxPeers        int
+	ConsensusEngine interface {
+		GetCurrentMiningPublicKey() (publickey string, keyType string)
+		VerifyData(data []byte, sig string, publicKey string, consensusType string) error
+		SignDataWithCurrentMiningKey(data []byte) (string, error)
+	}
 }
 
 /*
@@ -177,11 +182,13 @@ func (peerObj *Peer) SetPeerConnsMtx(v *sync.Mutex) {
 	peerObj.peerConnsMtx = v
 }
 
-func (peerObj Peer) GetPublicKey() string {
-	return peerObj.publicKey
+// GetPublicKey return publicKey and keyType
+func (peerObj Peer) GetPublicKey() (string, string) {
+	return peerObj.publicKey, peerObj.publicKeyType
 }
 
-func (peerObj *Peer) SetPublicKey(publicKey string) {
+func (peerObj *Peer) SetPublicKey(publicKey string, keyType string) {
+	peerObj.publicKeyType = keyType
 	peerObj.publicKey = publicKey
 }
 
@@ -437,13 +444,13 @@ func (peerObj *Peer) setPeerConn(peerConn *PeerConn) {
 	peerObj.peerConnsMtx.Lock()
 	defer peerObj.peerConnsMtx.Unlock()
 	peerIDStr := peerConn.remotePeer.peerID.Pretty()
-	internalConnPeer, ok := peerObj.peerConns[peerIDStr]
-	if ok {
-		if internalConnPeer.getIsConnected() {
-			internalConnPeer.close()
-		}
-		Logger.log.Debugf("SetPeerConn and Remove %s %s", peerIDStr, internalConnPeer.remotePeer.rawAddress)
-	}
+	//internalConnPeer, ok := peerObj.peerConns[peerIDStr]
+	//if ok {
+	//	//if internalConnPeer.getIsConnected() {
+	//	//	internalConnPeer.close()
+	//	//}
+	//	Logger.log.Debugf("SetPeerConn and Remove %s %s", peerIDStr, internalConnPeer.remotePeer.rawAddress)
+	//}
 	peerObj.peerConns[peerIDStr] = peerConn
 }
 
@@ -613,7 +620,8 @@ func (peerObj *Peer) handleNewStreamIn(stream net.Stream, cDone chan *PeerConn) 
 		isOutbound:   false, // we are connected from remote peer -> this is an inbound peer
 		listenerPeer: peerObj,
 		remotePeer: &Peer{
-			peerID: remotePeerID,
+			peerID:     remotePeerID,
+			rawAddress: stream.Conn().RemoteMultiaddr().String(),
 		},
 		config:             peerConfig,
 		remotePeerID:       remotePeerID,

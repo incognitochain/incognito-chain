@@ -30,9 +30,10 @@ type AddrManager struct {
 
 // data structure of address which need to be saving in file
 type serializedKnownAddress struct {
-	Addr      string `json:"Addr"`
-	Src       string `json:"Src"`
-	PublicKey string `json:"PublicKey"`
+	Addr          string `json:"Addr"`
+	Src           string `json:"Src"`
+	PublicKey     string `json:"PublicKey"`
+	PublicKeyType string `json:"PublicKeyType"`
 }
 
 // data structure of list address which need to be saving in file
@@ -82,7 +83,7 @@ func (addrManager *AddrManager) savePeers() error {
 		addressData.Addr = rawAddress
 		Logger.log.Debug("PeerID", peerID.String(), len(peerID.String()))
 		addressData.Src = pretty
-		addressData.PublicKey = peerObj.GetPublicKey()
+		addressData.PublicKey, addressData.PublicKeyType = peerObj.GetPublicKey()
 
 		// push into array
 		storageData.Addresses = append(storageData.Addresses, addressData)
@@ -164,7 +165,7 @@ func (addrManager *AddrManager) deserializePeers(filePath string) error {
 		peer := new(peer.Peer)
 		peer.SetPeerID(peer2.ID(storagePeer.Src))
 		peer.SetRawAddress(storagePeer.Addr)
-		peer.SetPublicKey(storagePeer.PublicKey)
+		peer.SetPublicKey(storagePeer.PublicKey, storagePeer.PublicKeyType)
 
 		addrManager.addrIndex[peer.GetRawAddress()] = peer
 

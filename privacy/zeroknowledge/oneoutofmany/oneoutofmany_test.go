@@ -64,7 +64,8 @@ func TestPKOneOfMany(t *testing.T) {
 
 		// revert bytes array to proof
 		proof2 := new(OneOutOfManyProof).Init()
-		proof2.SetBytes(proofBytes)
+		err = proof2.SetBytes(proofBytes)
+		assert.Equal(t, nil, err)
 		proof2.Statement.Commitments = commitments
 		assert.Equal(t, proof, proof2)
 

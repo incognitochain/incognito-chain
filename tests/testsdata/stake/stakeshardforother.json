@@ -1,6 +1,6 @@
 [
   {
-    "node": "shard0-0",
+    "node": "shard0-1",
     "input": {
       "command": "createandsendstakingtransaction",
       "context": false,
@@ -12,7 +12,9 @@
         10,
         0,
         63,
-        "1Uv2AicsBXdpiWqpNMpe12sJVo6oBP98MBdCzurbwkei3FrexJCiL4NHzx159ew1wn25pXK3UHM4E3yokiKC82JLG4sRdii31qUusGa7K",
+        "1Uv3B8RVFJi9dJjLUKPTx9tAy2ozZ3aPhRktfban527RqJ8MoeF3LMVesYUCSdZKnS56vRfPPz59x2Bou5yF3aFChdLx77RaQZWWCg1WK",
+        "1QQBgnxJ64Ms4JjXT97CPa8fd2NKaMGKpAdCk7SQKYo3s7Rh89",
+        "1Uv3B8RVFJi9dJjLUKPTx9tAy2ozZ3aPhRktfban527RqJ8MoeF3LMVesYUCSdZKnS56vRfPPz59x2Bou5yF3aFChdLx77RaQZWWCg1WK",
         true
       ]
     },
@@ -25,7 +27,7 @@
     }
   },
   {
-    "node": "shard0-0",
+    "node": "shard0-1",
     "input": {
       "command": "subcribependingtransaction",
       "context": true,
@@ -39,11 +41,11 @@
     }
   },
   {
-    "node": "shard0-0",
+    "node": "shard0-1",
     "input": {
       "command": "subcribeshardcandidatebypublickey",
       "context": false,
-      "params": ["156Dn56RgP6mTFSPaZkqoFMuNanVsr8NABsfkXdHv6YejnB15pN"],
+      "params": ["121VhftSAygpEJZ6i9jGk9eKW2e2edvTfmZXDVdt8qTxwzuUVFHUtpf9JGKZN9damEuDoy381bwjwq6g5D4M6Zn2KUh2giSEktUca7nbvoM7L23aq9XXtsmyQKvVBseCVvUNmyERNHRZpzvzNCn6gwnzyMR58uBcibUBwV5441jYR18RxwwyKh2w8S6ogEmdrERAxdMYdxPXwj43Ve5aHnZtT8ZfV6vPPKnPmgyM95Bpw5ep1HmWoZvtF4s5WkqbCoaAYoBd94Bcysx4wzVQbvmU1SCD5hCpF3nDtE9n7G3SnNAerDE3DWiZt5GjpLtSpQyAjbaQekqpBnyKVqbsnPiDh5EynFqzETZLkt9p9hvAK2EuzQXBVZXpFwbwoiiw918LhZ2nw11xy2eQF6hGXG5GzaYYiBHmA4Fyd8rywPGA1QH4"],
       "type": "ws",
       "wait": 10000
     },
@@ -53,11 +55,11 @@
     }
   },
   {
-    "node": "shard0-0",
+    "node": "shard0-1",
     "input": {
       "command": "subcribeshardpendingvalidatorbypublickey",
       "context": false,
-      "params": ["156Dn56RgP6mTFSPaZkqoFMuNanVsr8NABsfkXdHv6YejnB15pN"],
+      "params": ["121VhftSAygpEJZ6i9jGk9eKW2e2edvTfmZXDVdt8qTxwzuUVFHUtpf9JGKZN9damEuDoy381bwjwq6g5D4M6Zn2KUh2giSEktUca7nbvoM7L23aq9XXtsmyQKvVBseCVvUNmyERNHRZpzvzNCn6gwnzyMR58uBcibUBwV5441jYR18RxwwyKh2w8S6ogEmdrERAxdMYdxPXwj43Ve5aHnZtT8ZfV6vPPKnPmgyM95Bpw5ep1HmWoZvtF4s5WkqbCoaAYoBd94Bcysx4wzVQbvmU1SCD5hCpF3nDtE9n7G3SnNAerDE3DWiZt5GjpLtSpQyAjbaQekqpBnyKVqbsnPiDh5EynFqzETZLkt9p9hvAK2EuzQXBVZXpFwbwoiiw918LhZ2nw11xy2eQF6hGXG5GzaYYiBHmA4Fyd8rywPGA1QH4"],
       "type": "ws",
       "wait": 10000
     },
@@ -67,11 +69,11 @@
     }
   },
   {
-    "node": "shard0-0",
+    "node": "shard0-1",
     "input": {
       "command": "subcribeshardcommitteebypublickey",
       "context": false,
-      "params": ["156Dn56RgP6mTFSPaZkqoFMuNanVsr8NABsfkXdHv6YejnB15pN"],
+      "params": ["121VhftSAygpEJZ6i9jGk9eKW2e2edvTfmZXDVdt8qTxwzuUVFHUtpf9JGKZN9damEuDoy381bwjwq6g5D4M6Zn2KUh2giSEktUca7nbvoM7L23aq9XXtsmyQKvVBseCVvUNmyERNHRZpzvzNCn6gwnzyMR58uBcibUBwV5441jYR18RxwwyKh2w8S6ogEmdrERAxdMYdxPXwj43Ve5aHnZtT8ZfV6vPPKnPmgyM95Bpw5ep1HmWoZvtF4s5WkqbCoaAYoBd94Bcysx4wzVQbvmU1SCD5hCpF3nDtE9n7G3SnNAerDE3DWiZt5GjpLtSpQyAjbaQekqpBnyKVqbsnPiDh5EynFqzETZLkt9p9hvAK2EuzQXBVZXpFwbwoiiw918LhZ2nw11xy2eQF6hGXG5GzaYYiBHmA4Fyd8rywPGA1QH4"],
       "type": "ws",
       "wait": 10000
     },
