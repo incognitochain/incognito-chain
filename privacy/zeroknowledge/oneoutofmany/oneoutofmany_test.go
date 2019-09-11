@@ -1,6 +1,7 @@
 package oneoutofmany
 
 import (
+	"crypto/rand"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -37,9 +38,11 @@ func TestPKOneOfMany(t *testing.T) {
 		snDerivators := make([]*big.Int, privacy.CommitmentRingSize)
 		randoms := make([]*big.Int, privacy.CommitmentRingSize)
 
+		var r = rand.Reader
+
 		for i := 0; i < privacy.CommitmentRingSize; i++ {
-			snDerivators[i] = privacy.RandScalar()
-			randoms[i] = privacy.RandScalar()
+			snDerivators[i] = privacy.RandScalar(r)
+			randoms[i] = privacy.RandScalar(r)
 			commitments[i] = privacy.PedCom.CommitAtIndex(snDerivators[i], randoms[i], privacy.PedersenSndIndex)
 		}
 
