@@ -186,13 +186,15 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 		metrics.TagValue:         metrics.Beacon,
 		metrics.Time:             beaconBlock.Header.Timestamp,
 	})
-	go metrics.AnalyzeTimeSeriesMetricDataWithTime(map[string]interface{}{
-		metrics.Measurement:      metrics.NumOfRoundPerBlock,
-		metrics.MeasurementValue: float64(beaconBlock.Header.Round),
-		metrics.Tag:              metrics.ShardIDTag,
-		metrics.TagValue:         metrics.Beacon,
-		metrics.Time:             beaconBlock.Header.Timestamp,
-	})
+	if beaconBlock.Header.Height > 1 {
+		go metrics.AnalyzeTimeSeriesMetricDataWithTime(map[string]interface{}{
+			metrics.Measurement:      metrics.NumOfRoundPerBlock,
+			metrics.MeasurementValue: float64(beaconBlock.Header.Round),
+			metrics.Tag:              metrics.ShardIDTag,
+			metrics.TagValue:         metrics.Beacon,
+			metrics.Time:             beaconBlock.Header.Timestamp,
+		})
+	}
 	Logger.log.Infof("Finish Insert new Beacon Block %+v, with hash %+v \n", beaconBlock.Header.Height, *beaconBlock.Hash())
 	if beaconBlock.Header.Height%50 == 0 {
 		BLogger.log.Debugf("Inserted beacon height: %d", beaconBlock.Header.Height)
