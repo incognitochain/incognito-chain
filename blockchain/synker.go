@@ -927,7 +927,11 @@ func (synker *Synker) InsertShardBlockFromPool(shardID byte) {
 	}
 
 	for _, v := range sameCommitteeBlock {
-		chain.InsertBlk(v)
+		err := chain.InsertBlk(v)
+		if err != nil {
+			Logger.log.Error(err)
+			break
+		}
 	}
 
 }
