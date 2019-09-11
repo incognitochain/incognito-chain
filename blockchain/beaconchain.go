@@ -20,20 +20,14 @@ type BeaconChain struct {
 }
 
 func (chain *BeaconChain) GetLastBlockTimeStamp() int64 {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	return chain.BestState.BestBlock.Header.Timestamp
 }
 
 func (chain *BeaconChain) GetMinBlkInterval() time.Duration {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	return chain.BestState.BlockInterval
 }
 
 func (chain *BeaconChain) GetMaxBlkCreateTime() time.Duration {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	return chain.BestState.BlockMaxCreateTime
 }
 
@@ -42,21 +36,17 @@ func (chain *BeaconChain) IsReady() bool {
 }
 
 func (chain *BeaconChain) CurrentHeight() uint64 {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	return chain.BestState.BestBlock.Header.Height
 }
 
 func (chain *BeaconChain) GetCommittee() []incognitokey.CommitteePublicKey {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	return chain.BestState.GetBeaconCommittee()
 }
 
 func (chain *BeaconChain) GetCommitteeSize() int {
 	chain.BestState.lock.RLock()
 	defer chain.BestState.lock.RUnlock()
-	return len(chain.BestState.GetBeaconCommittee())
+	return len(chain.BestState.BeaconCommittee)
 }
 
 func (chain *BeaconChain) GetPubKeyCommitteeIndex(pubkey string) int {
@@ -69,8 +59,6 @@ func (chain *BeaconChain) GetPubKeyCommitteeIndex(pubkey string) int {
 }
 
 func (chain *BeaconChain) GetLastProposerIndex() int {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	return chain.BestState.BeaconProposerIndex
 }
 
@@ -102,8 +90,6 @@ func (chain *BeaconChain) InsertAndBroadcastBlock(block common.BlockInterface) e
 }
 
 func (chain *BeaconChain) GetActiveShardNumber() int {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	return chain.BestState.ActiveShards
 }
 
@@ -112,8 +98,6 @@ func (chain *BeaconChain) GetChainName() string {
 }
 
 func (chain *BeaconChain) GetPubkeyRole(pubkey string, round int) (string, byte) {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	return chain.BestState.GetPubkeyRole(pubkey, round)
 }
 
@@ -150,8 +134,6 @@ func (chain *BeaconChain) ValidateBlockSignatures(block common.BlockInterface, c
 }
 
 func (chain *BeaconChain) GetConsensusType() string {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	return chain.BestState.ConsensusAlgorithm
 }
 
