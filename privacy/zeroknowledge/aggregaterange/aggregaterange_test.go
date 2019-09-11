@@ -1,6 +1,7 @@
 package aggregaterange
 
 import (
+	"crypto/rand"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -140,9 +141,11 @@ func TestAggregatedRangeProve(t *testing.T) {
 	values := make([]*big.Int, numValue)
 	rands := make([]*big.Int, numValue)
 
+	var r = rand.Reader
+
 	for i := range values {
 		values[i] = new(big.Int).SetBytes(privacy.RandBytes(2))
-		rands[i] = privacy.RandScalar()
+		rands[i] = privacy.RandScalar(r)
 	}
 	wit.Set(values, rands)
 

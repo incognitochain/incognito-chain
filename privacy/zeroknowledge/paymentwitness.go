@@ -1,6 +1,7 @@
 package zkp
 
 import (
+	"crypto/rand"
 	"errors"
 	"math/big"
 
@@ -69,9 +70,11 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 	myCommitmentIndices := PaymentWitnessParam.MyCommitmentIndices
 	_ = PaymentWitnessParam.Fee
 
+	var r = rand.Reader
+
 	if !hasPrivacy {
 		for _, outCoin := range outputCoins {
-			outCoin.CoinDetails.SetRandomness(privacy.RandScalar())
+			outCoin.CoinDetails.SetRandomness(privacy.RandScalar(r))
 			err := outCoin.CoinDetails.CommitAll()
 			if err != nil {
 				return privacy.NewPrivacyErr(privacy.CommitNewOutputCoinNoPrivacyErr, nil)
@@ -103,7 +106,7 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 
 	numInputCoin := len(wit.inputCoins)
 
-	randInputSK := privacy.RandScalar()
+	randInputSK := privacy.RandScalar(r)
 	// set rand sk for Schnorr signature
 	wit.randSecretKey = new(big.Int).Set(randInputSK)
 
@@ -111,7 +114,7 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 	wit.comInputSecretKey = new(privacy.EllipticPoint)
 	wit.comInputSecretKey.Set(cmInputSK.GetX(), cmInputSK.GetY())
 
-	randInputShardID := privacy.RandScalar()
+	randInputShardID := privacy.RandScalar(r)
 	senderShardID := common.GetShardIDFromLastByte(publicKeyLastByteSender)
 	wit.comInputShardID = privacy.PedCom.CommitAtIndex(big.NewInt(int64(senderShardID)), randInputShardID, privacy.PedersenShardIDIndex)
 
@@ -145,8 +148,8 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 
 	for i, inputCoin := range wit.inputCoins {
 		// commit each component of coin commitment
-		randInputValue[i] = privacy.RandScalar()
-		randInputSND[i] = privacy.RandScalar()
+		randInputValue[i] = privacy.RandScalar(r)
+		randInputSND[i] = privacy.RandScalar(r)
 
 		wit.comInputValue[i] = privacy.PedCom.CommitAtIndex(new(big.Int).SetUint64(inputCoin.CoinDetails.GetValue()), randInputValue[i], privacy.PedersenValueIndex)
 		wit.comInputSerialNumberDerivator[i] = privacy.PedCom.CommitAtIndex(inputCoin.CoinDetails.GetSNDerivator(), randInputSND[i], privacy.PedersenSndIndex)
@@ -230,11 +233,11 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 			randOutputValue[i] = new(big.Int).Sub(randInputValueAll, randOutputValueAll)
 			randOutputValue[i].Mod(randOutputValue[i], privacy.Curve.Params().N)
 		} else {
-			randOutputValue[i] = privacy.RandScalar()
+			randOutputValue[i] = privacy.RandScalar(r)
 		}
 
-		randOutputSND[i] = privacy.RandScalar()
-		randOutputShardID[i] = privacy.RandScalar()
+		randOutputSND[i] = privacy.RandScalar(r)
+		randOutputShardID[i] = privacy.RandScalar(r)
 
 		cmOutputValue[i] = privacy.PedCom.CommitAtIndex(new(big.Int).SetUint64(outputCoin.CoinDetails.GetValue()), randOutputValue[i], privacy.PedersenValueIndex)
 		cmOutputSND[i] = privacy.PedCom.CommitAtIndex(outputCoin.CoinDetails.GetSNDerivator(), randOutputSND[i], privacy.PedersenSndIndex)

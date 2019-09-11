@@ -1,6 +1,7 @@
 package privacy
 
 import (
+	"crypto/rand"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -215,13 +216,14 @@ func (multisigScheme MultiSigScheme) GenerateRandomFromSeed(i *big.Int) (*Ellipt
 }
 
 func (multisigScheme MultiSigScheme) GenerateRandom() (*EllipticPoint, *big.Int) {
-	r := RandScalar()
+	var r = rand.Reader
+	randomNumer := RandScalar(r)
 	GPoint := new(EllipticPoint)
 	GPoint.x, GPoint.y = big.NewInt(0), big.NewInt(0)
 	GPoint.x.Set(Curve.Params().Gx)
 	GPoint.y.Set(Curve.Params().Gy)
-	R := GPoint.ScalarMult(r)
-	return R, r
+	R := GPoint.ScalarMult(randomNumer)
+	return R, randomNumer
 }
 
 /*
