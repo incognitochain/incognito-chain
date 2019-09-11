@@ -149,10 +149,6 @@ func (chain *BeaconChain) ValidateBlockSignatures(block common.BlockInterface, c
 	return nil
 }
 
-func (chain *BeaconChain) ValidateBlockWithBlockChain(common.BlockInterface) error {
-	return nil
-}
-
 func (chain *BeaconChain) GetConsensusType() string {
 	chain.BestState.lock.RLock()
 	defer chain.BestState.lock.RUnlock()
