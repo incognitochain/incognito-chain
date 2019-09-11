@@ -16,8 +16,6 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/jessevdk/go-flags"
 )
 
@@ -36,13 +34,13 @@ const (
 	DefaultMaxPeersOther          = 125
 	DefaultMaxPeersNoShard        = 125
 	DefaultMaxPeersBeacon         = 50
-	DefaultMaxRPCClients          = 20
-	DefaultMaxRPCWsClients        = 20
+	DefaultMaxRPCClients          = 100
+	DefaultMaxRPCWsClients        = 100
 	DefaultMetricUrl              = ""
 	SampleConfigFilename          = "sample-config.conf"
 	DefaultDisableRpcTLS          = true
 	DefaultFastStartup            = true
-	DefaultNodeMode               = common.NODEMODE_RELAY
+	DefaultNodeMode               = common.NodeModeRelay
 	DefaultEnableMining           = true
 	DefaultTxPoolTTL              = uint(43200) // 12 hours
 	DefaultTxPoolMaxTx            = uint64(100000)
@@ -119,7 +117,6 @@ type config struct {
 	// Net config
 	TestNet bool `long:"testnet" description:"Use the test network"`
 
-	PrivateKey  string `long:"privatekey" description:"User spending key used for operation in consensus"`
 	NodeMode    string `long:"nodemode" description:"Role of this node (beacon/shard/wallet/relay | default role is 'relay' (relayshards must be set to run), 'auto' mode will switch between 'beacon' and 'shard')"`
 	RelayShards string `long:"relayshards" description:"set relay shards of this node when in 'relay' mode if noderole is auto then it only sync shard data when user is a shard producer/validator"`
 	// For Wallet
@@ -145,8 +142,9 @@ type config struct {
 	BtcClientUsername string `long:"btcclientusername" description:"Bitcoin Client Username for RPC"`
 	BtcClientPassword string `long:"btcclientpassword" description:"Bitcoin Client Password for RPC"`
 	EnableMining      bool   `long:"mining" description:"enable mining"`
-
-	Accelerator bool `long:"accelerator" description:"Relay Node Configuration For Consensus"`
+	MiningKeys        string `long:"miningkeys" description:"keys used for different consensus algorigthm"`
+	PrivateKey        string `long:"privatekey" description:"your wallet privatekey"`
+	Accelerator       bool   `long:"accelerator" description:"Relay Node Configuration For Consensus"`
 }
 
 // serviceOptions defines the configuration options for the daemon as a service on
@@ -318,6 +316,7 @@ func loadConfig() (*config, []string, error) {
 		TestNet:              true,
 		DiscoverPeersAddress: "127.0.0.1:9330", //"35.230.8.182:9339",
 		NodeMode:             DefaultNodeMode,
+		MiningKeys:           common.EmptyString,
 		PrivateKey:           common.EmptyString,
 		FastStartup:          DefaultFastStartup,
 		TxPoolTTL:            DefaultTxPoolTTL,
@@ -627,6 +626,10 @@ func loadConfig() (*config, []string, error) {
 		}
 	}
 
+	if cfg.MiningKeys == "" && cfg.PrivateKey == "" && cfg.NodeMode != common.NodeModeRelay {
+		return nil, nil, errors.New("MiningKeys can't be empty if nodemode isn't relay")
+	}
+
 	// Warn about missing config file only after all other configuration is
 	// done.  This prevents the warning on help messages and invalid
 	// options.  Note this should go directly before the return.
@@ -715,20 +718,4 @@ func parseAndSetDebugLevels(debugLevel string) error {
 		setLogLevel(subsysID, logLevel)
 	}
 	return nil
-}
-
-func (conf *config) GetUserKeySet() (*incognitokey.KeySet, error) {
-	if conf.PrivateKey == common.EmptyString {
-		return nil, errors.New("user key set cant be empty")
-	}
-	KeySetUser := &incognitokey.KeySet{}
-	temp, err := wallet.Base58CheckDeserialize(conf.PrivateKey)
-	if err != nil {
-		return nil, err
-	}
-	err = KeySetUser.InitFromPrivateKey(&temp.KeySet.PrivateKey)
-	if err != nil {
-		return nil, err
-	}
-	return KeySetUser, nil
 }

@@ -1,0 +1,21 @@
+{
+    "Shard": {
+        "0": [{
+            "PaymentAdd": "1Uv29xSxpvAS5WJjSBxkGeXkNsq2K12AJrRs1TvKxyqyzPmi5JN82VA3RTa1kjeesQZqgFuCRYy8KbpRM3stG5dW7A2KKV2eXA2MQ5A6Q",
+            "CommitteePublicKey": "121VhftSAygpEJZ6i9jGk9dThWefTTHnmngAi2p6mbUs5JD1N7SeaKLHDYSohXmYTGfmf9i7RVtyaBLGJdPYAk9wRmmGkcWtV389NXSKEoG51mWD2ngAzNnnXZMQgtE3nsE2hEYcfPjkBWMFoiGosno98KGWYyJ6UH2qkWpk7t35gqdGnrwUJTZnj2AuYEDHdTFEKyK1qRr1FmEJHrewcoiXqjH7WMn7jeXpCMJLR1EkV4btYXMvFqKmxx3sPicCoNT5m3Ra8qtYQbHLtWFMSzBjQK6CtLcum34GkxrHWgpYL3SgBZtt6SfR66Zbt5V2TG1JfxZA4C63rVGV3nhn3BMB9HVR1wMLddMhU3ZBw1xB7WxUtSk1SBmvbGMMfcyNjfzYWw51fSXL8UL2qGF3D3F7aAiYcNtmB4u7eWmn4UihuYSJ"
+        }]
+    },
+    "Beacon": [{
+            "PaymentAdd": "1Uv4P9DNK5JYfFKYHqQxXLZGk4W4nepqLSSbUaoGfH3iivHy5jNvhXGGgonttTPCB5Jsk8Z3ZxH844oyKbUHrH2CvMUW8orfZDhXVwtPr",
+            "CommitteePublicKey": "121VhftSAygpEJZ6i9jGk9aLxmUBY6pQUqSW8d4rZZJspoQTir8oBsKQrmYhCoYQ6JCPRW4LNTne7DACDYukzrU96Tysd7gWAATYyKNhEhKie13mC27KYfF4aQaPxT8jnUxuNz7jLUbAJxAXC1Wzk9VbAnaxKGw2yCznqwP8fK13qba2fFai9QWwcnZMVKEs9dAujR4jjAB6U63SUxaxYVfSUVHZ8mbWfbsmnBimR38SNhvKCKA44J9Nu9U9BKhtwdTaPF2fEeD4BF4icXopx6V9GLaotpT8q9YVrvj9zesPZzLTEXaG7R8zC9YStc5GAe37LhDMAYvNgrfdHXu6RmH5QEcygZ3g2hKmgVbqdQyiBLFtXJd73hfdvwPaUKo2ukHpHjCkFwBLtwdaJ5PBSCFXbs6rghpAiDn1iuNMwkR5vF2V"
+        },
+        {
+            "PaymentAdd": "1Uv3soZTYekqB28zPmiCr9vzf1NEe5pNtCKxaBSYPwWjiRP3U4wLLJDgQCmves4RAc6NtB4dFUS4CA9NG1TUcGDru9HGqR3ypNQeyJvmN",
+            "CommitteePublicKey": "121VhftSAygpEJZ6i9jGk9ZwRriWLXtMJ6jLLtk51FvhQq6pkWxL8b8QxbuGJNqUuq4bTJayrARFdnWDJA7RDzi8Aur22F7bR741YFBJj6wjMaoSv5Pe8U6JJxBYDtPW3HpoJZ91SPD9XVAdqGcTCXiL8htXmevP4N3PmY2Vim4sJcbsxFxYHaGEHTQxDHfopopp5FLDyWh1Lvwr5P7rxvtRkiPXJpAQLPSow3f7oAi6tJzsWq9ahd91rNkys2LaBSWvwS8xuh4pCiyUzbtvXJdgM7Nurxr9zpkSiM3Y7MRqBtcQVb7aQN9SijLg1iMaSm582VcpfEnJmZMQsCxGHJREazTgSaXZ9Mpf3bJhLnxSpi2e9zRJ6DZj2NrjUGQggXA3XzkfcNbdTidU1hLyx6JEJpFmVhYNQJgWQ8Tus9zpMRLW"
+        },
+        {
+            "PaymentAdd": "1Uv47vmtywpo4hwoqjKvewTJqrkSowRqnTZvysnZnyTWs1fCkDPv6SDQo4K3WDaPcaUfHFJYPTujuuodcEE45DumZTi9qXET5qETqQzmz",
+            "CommitteePublicKey": "121VhftSAygpEJZ6i9jGk9a93j5sKNuvy9i2Umat3Jx2SGAo6fFtSaMm3RNrLacM9uMA1LaiXskbh6ZKW5vcdR2Um2UQu2rXCXfUELWmReTFSYfjTMGhjAJupFbz66RcefzGvjDez3XEabjQfCr5NcTo8DPL6fpmvcx6Abd4eykc8cAAbaWKwX2HEAUoeQmDrCyurV4WRLDHyprSfFt4AyDB8gLMuHCEwppTaemszLm8ewDoYMb3DgoLqztueZaUQpQKmUzwj9trw6UEn627eNDe9StmkNfijv3GxGdRY8n8NBUtwXRLWs7hoX3R3Civ3MT351wxyZSi47BUxHPPZ4TbCACPGWkqndPWJc7dtnXPDXgsdCPyHb2PzvNkkpFjhPcvuPJHKPDVAqJdQ7gRBVFpUZbs5aL1XpusS1roWH4bEuNT"
+        }
+    ]
+}

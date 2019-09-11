@@ -21,10 +21,10 @@ type BeaconRewardInfo struct {
 	// InfoHash       *common.Hash
 }
 
-func BuildInstForBeaconReward(reward map[common.Hash]uint64, payToPublicKey string) ([]string, error) {
-	b, _, _ := base58.Base58Check{}.Decode(payToPublicKey)
+func BuildInstForBeaconReward(reward map[common.Hash]uint64, payToPublicKey []byte) ([]string, error) {
+	publicKeyString := base58.Base58Check{}.Encode(payToPublicKey, common.ZeroByte)
 	beaconRewardInfo := BeaconRewardInfo{
-		PayToPublicKey: payToPublicKey,
+		PayToPublicKey: publicKeyString,
 		BeaconReward:   reward,
 	}
 
@@ -35,7 +35,7 @@ func BuildInstForBeaconReward(reward map[common.Hash]uint64, payToPublicKey stri
 
 	returnedInst := []string{
 		strconv.Itoa(BeaconRewardRequestMeta),
-		strconv.Itoa(int(common.GetShardIDFromLastByte(b[len(b)-1]))),
+		strconv.Itoa(int(common.GetShardIDFromLastByte(payToPublicKey[len(payToPublicKey)-1]))),
 		"beaconRewardInst",
 		string(contentStr),
 	}

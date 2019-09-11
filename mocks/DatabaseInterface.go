@@ -446,6 +446,29 @@ func (_m *DatabaseInterface) DeleteTransactionIndex(txId common.Hash) error {
 	return r0
 }
 
+// FetchAutoStakingByHeight provides a mock function with given fields: _a0
+func (_m *DatabaseInterface) FetchAutoStakingByHeight(_a0 uint64) ([]byte, error) {
+	ret := _m.Called(_a0)
+
+	var r0 []byte
+	if rf, ok := ret.Get(0).(func(uint64) []byte); ok {
+		r0 = rf(_a0)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]byte)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(uint64) error); ok {
+		r1 = rf(_a0)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // FetchBeaconBestState provides a mock function with given fields:
 func (_m *DatabaseInterface) FetchBeaconBestState() ([]byte, error) {
 	ret := _m.Called()
@@ -531,29 +554,6 @@ func (_m *DatabaseInterface) FetchBlock(hash common.Hash) ([]byte, error) {
 	var r1 error
 	if rf, ok := ret.Get(1).(func(common.Hash) error); ok {
 		r1 = rf(hash)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// FetchCommitteeFromShardBestState provides a mock function with given fields: shardID, shardHeight
-func (_m *DatabaseInterface) FetchCommitteeFromShardBestState(shardID byte, shardHeight uint64) ([]byte, error) {
-	ret := _m.Called(shardID, shardHeight)
-
-	var r0 []byte
-	if rf, ok := ret.Get(0).(func(byte, uint64) []byte); ok {
-		r0 = rf(shardID, shardHeight)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]byte)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(byte, uint64) error); ok {
-		r1 = rf(shardID, shardHeight)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1288,20 +1288,20 @@ func (_m *DatabaseInterface) HasIncomingCrossShard(shardID byte, crossShardID by
 	return r0
 }
 
-// HasSNDerivator provides a mock function with given fields: tokenID, data, shardID
-func (_m *DatabaseInterface) HasSNDerivator(tokenID common.Hash, data []byte, shardID byte) (bool, error) {
-	ret := _m.Called(tokenID, data, shardID)
+// HasSNDerivator provides a mock function with given fields: tokenID, data
+func (_m *DatabaseInterface) HasSNDerivator(tokenID common.Hash, data []byte) (bool, error) {
+	ret := _m.Called(tokenID, data)
 
 	var r0 bool
-	if rf, ok := ret.Get(0).(func(common.Hash, []byte, byte) bool); ok {
-		r0 = rf(tokenID, data, shardID)
+	if rf, ok := ret.Get(0).(func(common.Hash, []byte) bool); ok {
+		r0 = rf(tokenID, data)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(common.Hash, []byte, byte) error); ok {
-		r1 = rf(tokenID, data, shardID)
+	if rf, ok := ret.Get(1).(func(common.Hash, []byte) error); ok {
+		r1 = rf(tokenID, data)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1407,6 +1407,52 @@ func (_m *DatabaseInterface) IsETHTxHashIssued(uniqETHTx []byte) (bool, error) {
 	return r0, r1
 }
 
+// ListCommitment provides a mock function with given fields: tokenID, shardID
+func (_m *DatabaseInterface) ListCommitment(tokenID common.Hash, shardID byte) (map[string]uint64, error) {
+	ret := _m.Called(tokenID, shardID)
+
+	var r0 map[string]uint64
+	if rf, ok := ret.Get(0).(func(common.Hash, byte) map[string]uint64); ok {
+		r0 = rf(tokenID, shardID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[string]uint64)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(common.Hash, byte) error); ok {
+		r1 = rf(tokenID, shardID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// ListCommitmentIndices provides a mock function with given fields: tokenID, shardID
+func (_m *DatabaseInterface) ListCommitmentIndices(tokenID common.Hash, shardID byte) (map[uint64]string, error) {
+	ret := _m.Called(tokenID, shardID)
+
+	var r0 map[uint64]string
+	if rf, ok := ret.Get(0).(func(common.Hash, byte) map[uint64]string); ok {
+		r0 = rf(tokenID, shardID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[uint64]string)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(common.Hash, byte) error); ok {
+		r1 = rf(tokenID, shardID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // ListCommitteeReward provides a mock function with given fields:
 func (_m *DatabaseInterface) ListCommitteeReward() map[string]map[common.Hash]uint64 {
 	ret := _m.Called()
@@ -1485,6 +1531,29 @@ func (_m *DatabaseInterface) ListPrivacyTokenCrossShard() ([][]byte, error) {
 	var r1 error
 	if rf, ok := ret.Get(1).(func() error); ok {
 		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// ListSNDerivator provides a mock function with given fields: tokenID
+func (_m *DatabaseInterface) ListSNDerivator(tokenID common.Hash) ([][]byte, error) {
+	ret := _m.Called(tokenID)
+
+	var r0 [][]byte
+	if rf, ok := ret.Get(0).(func(common.Hash) [][]byte); ok {
+		r0 = rf(tokenID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([][]byte)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(common.Hash) error); ok {
+		r1 = rf(tokenID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1743,6 +1812,20 @@ func (_m *DatabaseInterface) StoreAcceptedShardToBeacon(shardID byte, blkHeight 
 	return r0
 }
 
+// StoreAutoStakingByHeight provides a mock function with given fields: _a0, _a1
+func (_m *DatabaseInterface) StoreAutoStakingByHeight(_a0 uint64, _a1 interface{}) error {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uint64, interface{}) error); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // StoreBeaconBestState provides a mock function with given fields: v
 func (_m *DatabaseInterface) StoreBeaconBestState(v interface{}) error {
 	ret := _m.Called(v)
@@ -1820,20 +1903,6 @@ func (_m *DatabaseInterface) StoreCommitments(tokenID common.Hash, pubkey []byte
 	var r0 error
 	if rf, ok := ret.Get(0).(func(common.Hash, []byte, [][]byte, byte) error); ok {
 		r0 = rf(tokenID, pubkey, commitment, shardID)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// StoreCommitteeFromShardBestState provides a mock function with given fields: shardID, shardHeight, v
-func (_m *DatabaseInterface) StoreCommitteeFromShardBestState(shardID byte, shardHeight uint64, v interface{}) error {
-	ret := _m.Called(shardID, shardHeight, v)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(byte, uint64, interface{}) error); ok {
-		r0 = rf(shardID, shardHeight, v)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -1995,13 +2064,13 @@ func (_m *DatabaseInterface) StoreRewardReceiverByHeight(_a0 uint64, _a1 interfa
 	return r0
 }
 
-// StoreSNDerivators provides a mock function with given fields: tokenID, sndArray, shardID
-func (_m *DatabaseInterface) StoreSNDerivators(tokenID common.Hash, sndArray [][]byte, shardID byte) error {
-	ret := _m.Called(tokenID, sndArray, shardID)
+// StoreSNDerivators provides a mock function with given fields: tokenID, sndArray
+func (_m *DatabaseInterface) StoreSNDerivators(tokenID common.Hash, sndArray [][]byte) error {
+	ret := _m.Called(tokenID, sndArray)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(common.Hash, [][]byte, byte) error); ok {
-		r0 = rf(tokenID, sndArray, shardID)
+	if rf, ok := ret.Get(0).(func(common.Hash, [][]byte) error); ok {
+		r0 = rf(tokenID, sndArray)
 	} else {
 		r0 = ret.Error(0)
 	}

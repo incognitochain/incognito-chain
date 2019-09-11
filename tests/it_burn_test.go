@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
 
 func TestBurnPrivateETH(t *testing.T) {
@@ -21,6 +22,6 @@ func checkError(t *testing.T, err error) {
 	}
 
 	if rpcError, ok := err.(*rpcservice.RPCError); !ok || rpcError != nil {
-		t.Fatal(err)
+		t.Fatalf("%+v", err)
 	}
 }

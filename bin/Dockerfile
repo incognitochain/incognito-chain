@@ -8,12 +8,14 @@ RUN  apk update && \
 ARG commit=commit
 ENV commit=$commit
 
-COPY ./incognito /
+
+
+
 COPY ./bootnode /
 COPY ./keylist.json /
 COPY ./sample-config.conf /
 
-RUN chmod +x /incognito
+
 RUN chmod +x /bootnode
 
 COPY ./run_bootnode.sh /
@@ -53,3 +55,9 @@ RUN mkdir /utility
 #COPY ./txs-shard1-privacy-3000.2.json /utility/
 #COPY ./txs-shard1-privacy-3000.3.json /utility/
 CMD ["/bin/sh","run_incognito.sh"]
+
+ARG commit=commit
+ENV commit=$commit
+
+COPY ./incognito /
+RUN chmod +x /incognito

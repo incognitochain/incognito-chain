@@ -37,13 +37,13 @@ func (httpServer *HttpServer) handleGetBurnProof(params interface{}, closeChan <
 	}
 
 	// Get proof of instruction on bridge
-	bridgeInstProof, err := getBurnProofOnBridge(txID, bridgeBlock, db)
+	bridgeInstProof, err := getBurnProofOnBridge(txID, bridgeBlock, db, httpServer.config.ConsensusEngine)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
 	// Get proof of instruction on beacon
-	beaconInstProof, err := getBurnProofOnBeacon(bridgeInstProof.inst, beaconBlocks, db)
+	beaconInstProof, err := getBurnProofOnBeacon(bridgeInstProof.inst, beaconBlocks, db, httpServer.config.ConsensusEngine)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -60,6 +60,7 @@ func getBurnProofOnBridge(
 	txID *common.Hash,
 	bridgeBlock *blockchain.ShardBlock,
 	db database.DatabaseInterface,
+	ce ConsensusEngine,
 ) (*swapProof, error) {
 	insts := bridgeBlock.Body.Instructions
 	_, instID := findBurnConfirmInst(insts, txID)
@@ -68,7 +69,7 @@ func getBurnProofOnBridge(
 	}
 
 	block := &shardBlock{ShardBlock: bridgeBlock}
-	proof, err := buildProofForBlock(block, insts, instID, db)
+	proof, err := buildProofForBlock(block, insts, instID, db, ce)
 	if err != nil {
 		return nil, err
 	}
@@ -80,6 +81,7 @@ func getBurnProofOnBeacon(
 	inst []string,
 	beaconBlocks []*blockchain.BeaconBlock,
 	db database.DatabaseInterface,
+	ce ConsensusEngine,
 ) (*swapProof, error) {
 	// Get beacon block and check if it contains beacon swap instruction
 	b, instID := findBeaconBlockWithBurnInst(beaconBlocks, inst)
@@ -89,7 +91,7 @@ func getBurnProofOnBeacon(
 
 	insts := b.Body.Instructions
 	block := &beaconBlock{BeaconBlock: b}
-	return buildProofForBlock(block, insts, instID, db)
+	return buildProofForBlock(block, insts, instID, db, ce)
 }
 
 // findBeaconBlockWithBurnInst finds a beacon block with a specific burning instruction and the instruction's index; nil if not found
