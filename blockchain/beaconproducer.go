@@ -390,16 +390,24 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 				shardID := calculateCandidateShardID(candidateStr, rand, beaconBestState.ActiveShards)
 				assignedCandidates[shardID] = append(assignedCandidates[shardID], candidate)
 			}
-			for shardId, candidates := range assignedCandidates {
+
+			var keys []int
+			for k := range assignedCandidates {
+				keys = append(keys, int(k))
+			}
+			sort.Ints(keys)
+			for _, key := range keys {
+				shardID := byte(key)
+				candidates := assignedCandidates[shardID]
 				candidatesStr, err := incognitokey.CommitteeKeyListToString(candidates)
 				if err != nil {
 					panic(err)
 				}
-				Logger.log.Infof("Assign Candidate at Shard %+v: %+v", shardId, candidatesStr)
+				Logger.log.Infof("Assign Candidate at Shard %+v: %+v", shardID, candidatesStr)
 				shardAssingInstruction := []string{AssignAction}
 				shardAssingInstruction = append(shardAssingInstruction, strings.Join(candidatesStr, ","))
 				shardAssingInstruction = append(shardAssingInstruction, "shard")
-				shardAssingInstruction = append(shardAssingInstruction, fmt.Sprintf("%v", shardId))
+				shardAssingInstruction = append(shardAssingInstruction, fmt.Sprintf("%v", shardID))
 				instructions = append(instructions, shardAssingInstruction)
 			}
 		}
