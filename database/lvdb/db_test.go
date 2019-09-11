@@ -11,13 +11,13 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
+	_ "github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/incognitochain/incognito-chain/database"
-	_ "github.com/incognitochain/incognito-chain/database/lvdb"
 )
 
 var db database.DatabaseInterface
@@ -278,7 +278,7 @@ func TestDb_StoreTxIndex(t *testing.T) {
 		assert.Equal(t, err, nil)
 
 		blockHash, index, err := db.GetTransactionIndexById(*block.Body.Transactions[1].Hash())
-		if err.(*database.DatabaseError) != nil {
+		if err != nil && err.(*database.DatabaseError) != nil {
 			t.Error(err)
 		}
 		assert.Equal(t, blockHash, *block.Hash())
@@ -384,22 +384,22 @@ func TestDb_StoreCommitteeByHeight(t *testing.T) {
 		bestState := blockchain.BestState{
 			Beacon: &blockchain.BeaconBestState{
 				Epoch:          100,
-				ShardCommittee: make(map[byte][]string),
+				ShardCommittee: make(map[byte][]incognitokey.CommitteePublicKey),
 			},
 		}
-		bestState.Beacon.ShardCommittee[0] = make([]string, 0)
-		bestState.Beacon.ShardCommittee[0] = append(bestState.Beacon.ShardCommittee[0], "committee1")
-		bestState.Beacon.ShardCommittee[0] = append(bestState.Beacon.ShardCommittee[0], "committee2")
+		bestState.Beacon.ShardCommittee[0] = make([]incognitokey.CommitteePublicKey, 0)
+		bestState.Beacon.ShardCommittee[0] = append(bestState.Beacon.ShardCommittee[0], incognitokey.CommitteePublicKey{MiningPubKey: map[string][]byte{common.BlsConsensus: []byte("committee1")}})
+		bestState.Beacon.ShardCommittee[0] = append(bestState.Beacon.ShardCommittee[0], incognitokey.CommitteePublicKey{MiningPubKey: map[string][]byte{common.BlsConsensus: []byte("committee2")}})
 		err := db.StoreShardCommitteeByHeight(block.Header.Height, bestState.Beacon.GetShardCommittee())
 		assert.Equal(t, err, nil)
 
-		shardCommittee := make(map[byte][]string)
+		shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
 		data, err := db.FetchShardCommitteeByHeight(block.Header.Height)
 		assert.Equal(t, err, nil)
 		err = json.Unmarshal(data, &shardCommittee)
 		assert.Equal(t, err, nil)
-		assert.Equal(t, shardCommittee[0][0], "committee1")
-		assert.Equal(t, shardCommittee[0][1], "committee2")
+		assert.Equal(t, shardCommittee[0][0].MiningPubKey[common.BlsConsensus], []byte("committee1"))
+		assert.Equal(t, shardCommittee[0][1].MiningPubKey[common.BlsConsensus], []byte("committee2"))
 
 		has, err := db.HasShardCommitteeByHeight(block.Header.Height)
 		assert.Equal(t, has, true)

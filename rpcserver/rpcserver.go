@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/pubsub"
 
@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	rpcAuthTimeoutSeconds = 10
+	rpcAuthTimeoutSeconds = 60
 	RpcServerVersion      = "1.0"
 )
 
@@ -72,10 +72,18 @@ type RpcServerConfig struct {
 		PushMessageToAll(message wire.Message) error
 		PushMessageToPeer(message wire.Message, id peer2.ID) error
 		GetNodeRole() string
-		GetUserKeySet() *incognitokey.KeySet
+		// GetUserKeySet() *incognitokey.KeySet
 		EnableMining(enable bool) error
 		IsEnableMining() bool
 		GetChainMiningStatus(chain int) string
+		GetPublicKeyRole(publicKey string, keyType string) (int, int)
+		GetIncognitoPublicKeyRole(publicKey string) (int, bool, int)
+	}
+	ConsensusEngine interface {
+		GetUserRole() (string, int)
+		GetCurrentMiningPublicKey() (publickey string, keyType string)
+		GetAllMiningPublicKeys() []string
+		ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error)
 	}
 	TxMemPool         *mempool.TxPool
 	ShardToBeaconPool *mempool.ShardToBeaconPool
@@ -93,8 +101,8 @@ type RpcServerConfig struct {
 	// the mempool before they are mined into blocks.
 	FeeEstimator map[byte]*mempool.FeeEstimator
 	// IsMiningNode    bool   // flag mining node. True: mining, False: not mining
-	MiningPubKeyB58 string // base58check encode of mining pubkey
-	PubSubManager   *pubsub.PubSubManager
+	MiningKeys    string // encode of mining key
+	PubSubManager *pubsub.PubSubManager
 }
 
 func (rpcServer *RpcServer) Init(config *RpcServerConfig) {

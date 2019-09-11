@@ -10,57 +10,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (db *db) StoreCrossShardNextHeight(fromShard byte, toShard byte, curHeight uint64, nextHeight uint64) error {
-	//ncsh-{fromShard}-{toShard}-{curHeight} = nextHeight
-	key := append(nextCrossShardKeyPrefix, fromShard)
-	key = append(key, []byte("-")...)
-	key = append(key, toShard)
-	key = append(key, []byte("-")...)
-	curHeightBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(curHeightBytes, curHeight)
-	key = append(key, curHeightBytes...)
-
-	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, nextHeight)
-
-	if err := db.Put(key, buf); err != nil {
-		return database.NewDatabaseError(database.StoreCrossShardNextHeightError, err)
-	}
-
-	return nil
-}
-
-func (db *db) HasCrossShardNextHeight(key []byte) (bool, error) {
-	exist, err := db.HasValue(key)
-	if err != nil {
-		return false, database.NewDatabaseError(database.HasCrossShardNextHeightError, err)
-	} else {
-		return exist, nil
-	}
-}
-
-func (db *db) FetchCrossShardNextHeight(fromShard byte, toShard byte, curHeight uint64) (uint64, error) {
-	//ncsh-{fromShard}-{toShard}-{curHeight} = nextHeight
-	key := append(nextCrossShardKeyPrefix, fromShard)
-	key = append(key, []byte("-")...)
-	key = append(key, toShard)
-	key = append(key, []byte("-")...)
-	curHeightBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(curHeightBytes, curHeight)
-	key = append(key, curHeightBytes...)
-
-	if _, err := db.HasCrossShardNextHeight(key); err != nil {
-		return 0, database.NewDatabaseError(database.FetchCrossShardNextHeightError, err)
-	}
-	info, err := db.Get(key)
-	if err != nil {
-		return 0, database.NewDatabaseError(database.FetchCrossShardNextHeightError, err)
-	}
-	var nextHeight uint64
-	err = binary.Read(bytes.NewReader(info[:8]), binary.LittleEndian, &nextHeight)
-	return nextHeight, err
-}
-
 func (db *db) StoreBeaconBlock(v interface{}, hash common.Hash) error {
 	var (
 		// b-{hash}
@@ -374,17 +323,38 @@ func (db *db) FetchRewardReceiverByHeight(height uint64) ([]byte, error) {
 	return b, nil
 }
 
-func (db *db) HasCommitteeByHeight(height uint64) (bool, error) {
-	key := append(beaconPrefix, shardIDPrefix...)
-	key = append(key, committeePrefix...)
+func (db *db) StoreAutoStakingByHeight(height uint64, v interface{}) error {
+	//key: bea-aust-ep-{height}
+	//value: auto staking: map[string]bool
+	key := append(beaconPrefix, autoStakingPrefix...)
 	key = append(key, heightPrefix...)
 	buf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(buf, height)
 	key = append(key, buf[:]...)
 
-	exist, err := db.HasValue(key)
+	val, err := json.Marshal(v)
 	if err != nil {
-		return false, database.NewDatabaseError(database.HasShardCommitteeByHeightError, err)
+		return database.NewDatabaseError(database.StoreAutoStakingByHeightError, err)
 	}
-	return exist, nil
+
+	if err := db.Put(key, val); err != nil {
+		return database.NewDatabaseError(database.StoreAutoStakingByHeightError, err)
+	}
+	return nil
+}
+
+func (db *db) FetchAutoStakingByHeight(height uint64) ([]byte, error) {
+	//key: bea-aust-ep-{height}
+	//value: auto staking: map[string]bool
+	key := append(beaconPrefix, autoStakingPrefix...)
+	key = append(key, heightPrefix...)
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, height)
+	key = append(key, buf[:]...)
+
+	b, err := db.Get(key)
+	if err != nil {
+		return nil, database.NewDatabaseError(database.FetchAutoStakingByHeightError, err)
+	}
+	return b, nil
 }

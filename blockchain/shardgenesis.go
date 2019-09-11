@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
 )
 
@@ -28,7 +27,6 @@ func CreateShardGenesisBlock(
 		BeaconHeight:      1,
 		Epoch:             1,
 		Round:             1,
-		ProducerAddress:   privacy.PaymentAddress{},
 	}
 
 	for _, tx := range icoParams.InitialIncognito {
