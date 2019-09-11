@@ -183,13 +183,15 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 		metrics.TagValue:         metrics.Shard + shardIDForMetric,
 		metrics.Time:             shardBlock.Header.Timestamp,
 	})
-	go metrics.AnalyzeTimeSeriesMetricDataWithTime(map[string]interface{}{
-		metrics.Measurement:      metrics.NumOfRoundPerBlock,
-		metrics.MeasurementValue: float64(shardBlock.Header.Round),
-		metrics.Tag:              metrics.ShardIDTag,
-		metrics.TagValue:         metrics.Shard + shardIDForMetric,
-		metrics.Time:             shardBlock.Header.Timestamp,
-	})
+	if shardBlock.Header.Height > 1 {
+		go metrics.AnalyzeTimeSeriesMetricDataWithTime(map[string]interface{}{
+			metrics.Measurement:      metrics.NumOfRoundPerBlock,
+			metrics.MeasurementValue: float64(shardBlock.Header.Round),
+			metrics.Tag:              metrics.ShardIDTag,
+			metrics.TagValue:         metrics.Shard + shardIDForMetric,
+			metrics.Time:             shardBlock.Header.Timestamp,
+		})
+	}
 	Logger.log.Infof("SHARD %+v | 🔗 Finish Insert new block %d, with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	return nil
 }
