@@ -25,7 +25,7 @@ func (httpServer *HttpServer) handleGetBurnProof(params interface{}, closeChan <
 	db := *httpServer.config.Database
 
 	// Get block height from txID
-	height, err := db.GetBurningConfirm(*txID)
+	height, err := httpServer.databaseService.GetBurningConfirm(*txID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, fmt.Errorf("proof of tx not found"))
 	}
