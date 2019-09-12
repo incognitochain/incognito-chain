@@ -388,11 +388,11 @@ func (rpcServer HttpServer) buildPrivacyCustomTokenParam(tokenParamsRaw map[stri
 			if err != nil {
 				return nil, nil, nil, rpcservice.NewRPCError(rpcservice.GetOutputCoinError, err)
 			}
-			candidateOutputTokens, _, _, err := rpcServer.chooseBestOutCoinsToSpent(outputTokens, uint64(voutsAmount))
+			outputTokens, err = rpcServer.txMemPoolService.FilterMemPoolOutcoinsToSpent(outputTokens)
 			if err != nil {
 				return nil, nil, nil, rpcservice.NewRPCError(rpcservice.GetOutputCoinError, err)
 			}
-			candidateOutputTokens, err = rpcServer.txMemPoolService.FilterMemPoolOutcoinsToSpent(candidateOutputTokens)
+			candidateOutputTokens, _, _, err := rpcServer.chooseBestOutCoinsToSpent(outputTokens, uint64(voutsAmount))
 			if err != nil {
 				return nil, nil, nil, rpcservice.NewRPCError(rpcservice.GetOutputCoinError, err)
 			}

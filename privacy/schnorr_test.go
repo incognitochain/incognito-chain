@@ -1,6 +1,7 @@
 package privacy
 
 import (
+	"crypto/rand"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -9,9 +10,10 @@ import (
 
 func TestSchnorrSignature(t *testing.T) {
 	// generate Schnorr Private Key
+	var r = rand.Reader
 	privKey := new(SchnorrPrivateKey)
-	privKey.privateKey = RandScalar()
-	privKey.randomness = RandScalar()
+	privKey.privateKey = RandScalar(r)
+	privKey.randomness = RandScalar(r)
 
 	// generate Schnorr Public Key
 	privKey.publicKey = new(SchnorrPublicKey)
@@ -21,13 +23,13 @@ func TestSchnorrSignature(t *testing.T) {
 	privKey.publicKey.g.Set(Curve.Params().Gx, Curve.Params().Gy)
 
 	// H = alpha*G
-	privKey.publicKey.h = privKey.publicKey.g.ScalarMult(RandScalar())
+	privKey.publicKey.h = privKey.publicKey.g.ScalarMult(RandScalar(r))
 
 	// PK = G^SK * H^R
 	privKey.publicKey.publicKey = privKey.publicKey.g.ScalarMult(privKey.privateKey).Add(privKey.publicKey.h.ScalarMult(privKey.randomness))
 
 	// random message to sign
-	data := RandScalar()
+	data := RandScalar(r)
 
 	// sign on message
 	signature, err := privKey.Sign(data.Bytes())
