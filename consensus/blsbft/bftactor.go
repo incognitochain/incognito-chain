@@ -187,6 +187,10 @@ func (e *BLSBFT) Start() error {
 							time.Sleep(1 * time.Second)
 							continue
 						}
+						blockData, _ := json.Marshal(e.Blocks[roundKey])
+						msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
+						go e.Node.PushMessageToChain(msg, e.Chain)
+
 						if e.RoundData.Block == nil {
 							e.RoundData.Block = e.Blocks[roundKey]
 							valData, err := DecodeValidationData(e.RoundData.Block.GetValidationField())

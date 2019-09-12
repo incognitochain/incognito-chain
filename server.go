@@ -1,13 +1,11 @@
 package main
 
 import (
-	"cloud.google.com/go/storage"
 	"context"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"google.golang.org/api/option"
 	"io/ioutil"
 	"log"
 	"net"
@@ -18,6 +16,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"cloud.google.com/go/storage"
+	"google.golang.org/api/option"
 
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/consensus"
@@ -1951,4 +1952,64 @@ func (serverObj *Server) GetIncognitoPublicKeyRole(publicKey string) (int, bool,
 	}
 
 	return -1, false, -1
+}
+
+func (serverObj *Server) GetMinerIncognitoPublickey(publicKey string, keyType string) []byte {
+	var beaconBestState blockchain.BeaconBestState
+	err := beaconBestState.CloneBeaconBestStateFrom(serverObj.blockChain.BestState.Beacon)
+	if err != nil {
+		return nil
+	}
+	for _, pubkeyArr := range beaconBestState.ShardPendingValidator {
+		keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(pubkeyArr, keyType)
+		found := common.IndexOfStr(publicKey, keyList)
+		if found > -1 {
+			return pubkeyArr[found].GetNormalKey()
+		}
+	}
+	for _, pubkeyArr := range beaconBestState.ShardCommittee {
+		keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(pubkeyArr, keyType)
+		found := common.IndexOfStr(publicKey, keyList)
+		if found > -1 {
+			return pubkeyArr[found].GetNormalKey()
+		}
+	}
+
+	keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.BeaconCommittee, keyType)
+	found := common.IndexOfStr(publicKey, keyList)
+	if found > -1 {
+		return beaconBestState.BeaconCommittee[found].GetNormalKey()
+	}
+
+	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.BeaconPendingValidator, keyType)
+	found = common.IndexOfStr(publicKey, keyList)
+	if found > -1 {
+		return beaconBestState.BeaconPendingValidator[found].GetNormalKey()
+	}
+
+	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.CandidateBeaconWaitingForCurrentRandom, keyType)
+	found = common.IndexOfStr(publicKey, keyList)
+	if found > -1 {
+		return beaconBestState.CandidateBeaconWaitingForCurrentRandom[found].GetNormalKey()
+	}
+
+	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.CandidateBeaconWaitingForNextRandom, keyType)
+	found = common.IndexOfStr(publicKey, keyList)
+	if found > -1 {
+		return beaconBestState.CandidateBeaconWaitingForNextRandom[found].GetNormalKey()
+	}
+
+	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.CandidateShardWaitingForCurrentRandom, keyType)
+	found = common.IndexOfStr(publicKey, keyList)
+	if found > -1 {
+		return beaconBestState.CandidateShardWaitingForCurrentRandom[found].GetNormalKey()
+	}
+
+	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.CandidateShardWaitingForNextRandom, keyType)
+	found = common.IndexOfStr(publicKey, keyList)
+	if found > -1 {
+		return beaconBestState.CandidateShardWaitingForNextRandom[found].GetNormalKey()
+	}
+
+	return nil
 }
