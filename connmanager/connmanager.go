@@ -2,6 +2,7 @@ package connmanager
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics"
 	"math"
 	"net"
 	"net/rpc"
@@ -359,6 +360,7 @@ func (connManager *ConnManager) discoverPeers(discoverPeerAddress string) {
 // node peers are shard commttee
 // other role of other peers
 func (connManager *ConnManager) processDiscoverPeers() error {
+	startTime := time.Now()
 	discoverPeerAddress := connManager.discoverPeerAddress
 	if discoverPeerAddress == common.EmptyString {
 		// we dont have config to make discover peer
@@ -455,6 +457,11 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 		// connect to no shard peers
 		connManager.handleRandPeersOfNoShard(connManager.config.MaxPeersNoShard, responsePeers)
 	}
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.ProcessDiscoverPeersTime,
+		metrics.MeasurementValue: float64(time.Since(startTime).Seconds()),
+		metrics.Tag:              metrics.ExternalAddressTag,
+		metrics.TagValue:         connManager.config.ExternalAddress})
 	return nil
 }
 
