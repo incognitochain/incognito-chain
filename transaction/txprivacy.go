@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -227,10 +228,11 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 	// create SNDs for output coins
 	ok := true
 	sndOuts := make([]*big.Int, 0)
+	var r = rand.Reader
 	for ok {
 		var sndOut *big.Int
 		for i := 0; i < len(params.paymentInfo); i++ {
-			sndOut = privacy.RandScalar()
+			sndOut = privacy.RandScalar(r)
 			for {
 
 				ok1, err := CheckSNDerivatorExistence(params.tokenID, sndOut, params.db)
@@ -239,7 +241,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 				}
 				// if sndOut existed, then re-random it
 				if ok1 {
-					sndOut = privacy.RandScalar()
+					sndOut = privacy.RandScalar(r)
 				} else {
 					break
 				}
@@ -1157,10 +1159,12 @@ func (tx *Tx) InitTxSalary(
 	if err != nil {
 		return err
 	}
-	tempOutputCoin[0].CoinDetails.SetRandomness(privacy.RandScalar())
+
+	var r = rand.Reader
+	tempOutputCoin[0].CoinDetails.SetRandomness(privacy.RandScalar(r))
 	tx.Proof.SetOutputCoins(tempOutputCoin)
 
-	sndOut := privacy.RandScalar()
+	sndOut := privacy.RandScalar(r)
 	for {
 		tokenID := &common.Hash{}
 		err := tokenID.SetBytes(common.PRVCoinID[:])
@@ -1172,7 +1176,7 @@ func (tx *Tx) InitTxSalary(
 			return NewTransactionErr(SndExistedError, err)
 		}
 		if ok {
-			sndOut = privacy.RandScalar()
+			sndOut = privacy.RandScalar(r)
 		} else {
 			break
 		}
