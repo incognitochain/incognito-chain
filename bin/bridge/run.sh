@@ -2,6 +2,8 @@
 
 run()
 {
+  docker -v || bash -c "wget -qO- https://get.docker.com/ | sh"
+  
   private_key=xxx # enter private key or remove this line
   validator_key=yyy # enter validator key or remove this line
   latest_tag=$1
