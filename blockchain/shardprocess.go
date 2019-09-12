@@ -183,7 +183,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 		metrics.TagValue:         metrics.Shard + shardIDForMetric,
 		metrics.Time:             shardBlock.Header.Timestamp,
 	})
-	if shardBlock.Header.Height > 1 {
+	if shardBlock.Header.Height > 2 {
 		go metrics.AnalyzeTimeSeriesMetricDataWithTime(map[string]interface{}{
 			metrics.Measurement:      metrics.NumOfRoundPerBlock,
 			metrics.MeasurementValue: float64(shardBlock.Header.Round),

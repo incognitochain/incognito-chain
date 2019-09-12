@@ -82,8 +82,8 @@ const (
 
 	TestNetShardCommitteeSize     = 64
 	TestNetMinShardCommitteeSize  = 64
-	TestNetBeaconCommitteeSize    = 4
-	TestNetMinBeaconCommitteeSize = 4
+	TestNetBeaconCommitteeSize    = 16
+	TestNetMinBeaconCommitteeSize = 16
 	TestNetActiveShards           = 2
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
