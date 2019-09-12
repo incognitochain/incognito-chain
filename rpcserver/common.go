@@ -41,7 +41,7 @@ func (rpcServer HttpServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.Payme
 		return nil, 0, rpcservice.NewRPCError(rpcservice.GetOutputCoinError, err)
 	}
 	// remove out coin in mem pool
-	outCoins, err = rpcServer.filterMemPoolOutCoinsToSpent(outCoins)
+	outCoins, err = rpcServer.txMemPoolService.FilterMemPoolOutcoinsToSpent(outCoins)
 	if err != nil {
 		return nil, 0, rpcservice.NewRPCError(rpcservice.GetOutputCoinError, err)
 	}
@@ -111,13 +111,10 @@ func (rpcServer HttpServer) buildRawTransaction(params interface{}, meta metadat
 
 	// param #1: private key of sender
 	senderKeyParam := arrayParams[0]
-	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
+	senderKeySet, shardIDSender, err := rpcservice.GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.InvalidSenderPrivateKeyError, err)
 	}
-	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
-	shardIDSender := common.GetShardIDFromLastByte(lastByte)
-	//fmt.Printf("Done param #1: keyset: %+v\n", senderKeySet)
 
 	// param #2: list receiver
 	receiversPaymentAddressStrParam := make(map[string]interface{})
@@ -184,6 +181,32 @@ func (rpcServer HttpServer) buildRawTransaction(params interface{}, meta metadat
 	}
 
 	return &tx, nil
+}
+
+func (rpcServer HttpServer) buildTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet, shardIDSender byte)(
+	*transaction.CustomTokenParamTx, *transaction.CustomTokenPrivacyParamTx, *rpcservice.RPCError) {
+
+	var customTokenParams *transaction.CustomTokenParamTx
+	var customPrivacyTokenParam *transaction.CustomTokenPrivacyParamTx
+	var err *rpcservice.RPCError
+
+	isPrivacy := tokenParamsRaw["Privacy"].(bool)
+	if !isPrivacy {
+		// Check normal custom token param
+		customTokenParams, _, err = rpcServer.buildCustomTokenParam(tokenParamsRaw, senderKeySet)
+		if err != nil {
+			return nil, nil, err
+		}
+	} else {
+		// Check privacy custom token param
+		customPrivacyTokenParam, _, _, err = rpcServer.buildPrivacyCustomTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	return customTokenParams, customPrivacyTokenParam, nil
+
 }
 
 func (rpcServer HttpServer) buildCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet) (*transaction.CustomTokenParamTx, map[common.Hash]transaction.TxNormalToken, *rpcservice.RPCError) {
@@ -268,12 +291,10 @@ func (rpcServer HttpServer) buildRawCustomTokenTransaction(
 	// param #1: private key of sender
 	senderKeyParam := arrayParams[0]
 	var err error
-	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
+	senderKeySet, shardIDSender, err := rpcservice.GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetKeySetFromPrivateKeyError, err)
 	}
-	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
-	shardIDSender := common.GetShardIDFromLastByte(lastByte)
 
 	// param #2: list receiver
 	receiversPaymentAddressParam := make(map[string]interface{})
@@ -371,7 +392,7 @@ func (rpcServer HttpServer) buildPrivacyCustomTokenParam(tokenParamsRaw map[stri
 			if err != nil {
 				return nil, nil, nil, rpcservice.NewRPCError(rpcservice.GetOutputCoinError, err)
 			}
-			candidateOutputTokens, err = rpcServer.filterMemPoolOutCoinsToSpent(candidateOutputTokens)
+			candidateOutputTokens, err = rpcServer.txMemPoolService.FilterMemPoolOutcoinsToSpent(candidateOutputTokens)
 			if err != nil {
 				return nil, nil, nil, rpcservice.NewRPCError(rpcservice.GetOutputCoinError, err)
 			}
@@ -399,12 +420,10 @@ func (rpcServer HttpServer) buildRawPrivacyCustomTokenTransaction(
 	/****** START FEtch data from component *********/
 	// param #1: private key of sender
 	senderKeyParam := arrayParams[0]
-	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
+	senderKeySet, shardIDSender, err := rpcservice.GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.InvalidSenderPrivateKeyError, err)
 	}
-	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
-	shardIDSender := common.GetShardIDFromLastByte(lastByte)
 
 	// param #2: list receiver
 	receiversPaymentAddressStrParam := make(map[string]interface{})
@@ -547,16 +566,6 @@ func (rpcServer HttpServer) estimateFee(
 	return realFee, estimateFeeCoinPerKb, estimateTxSizeInKb
 }
 
-func (rpcServer HttpServer) filterMemPoolOutCoinsToSpent(outCoins []*privacy.OutputCoin) (remainOutputCoins []*privacy.OutputCoin, err error) {
-	remainOutputCoins = make([]*privacy.OutputCoin, 0)
-	for _, outCoin := range outCoins {
-		if rpcServer.config.TxMemPool.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().Compress()) == nil {
-			remainOutputCoins = append(remainOutputCoins, outCoin)
-		}
-	}
-	return remainOutputCoins, nil
-}
-
 // chooseBestOutCoinsToSpent returns list of unspent coins for spending with amount
 func (rpcServer HttpServer) chooseBestOutCoinsToSpent(outCoins []*privacy.OutputCoin, amount uint64) (resultOutputCoins []*privacy.OutputCoin, remainOutputCoins []*privacy.OutputCoin, totalResultOutputCoinAmount uint64, err error) {
 	resultOutputCoins = make([]*privacy.OutputCoin, 0)
@@ -611,35 +620,10 @@ func (rpcServer HttpServer) chooseBestOutCoinsToSpent(outCoins []*privacy.Output
 // GetPaymentAddressFromPrivateKeyParams- deserialize a private key string
 // and return paymentaddress object which relate to private key exactly
 func (rpcServer HttpServer) GetPaymentAddressFromPrivateKeyParams(senderKeyParam string) (*privacy.PaymentAddress, error) {
-	keySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam)
+	keySet, _, err := rpcservice.GetKeySetFromPrivateKeyParams(senderKeyParam)
 	if err != nil {
 		return nil, err
 	}
 	return &keySet.PaymentAddress, err
 }
 
-// GetKeySetFromKeyParams - deserialize a key string(wallet serialized)
-// into keyWallet - this keywallet may contain
-func (rpcServer HttpServer) GetKeySetFromKeyParams(keyParam string) (*incognitokey.KeySet, error) {
-	keyWallet, err := wallet.Base58CheckDeserialize(keyParam)
-	if err != nil {
-		return nil, err
-	}
-	return &keyWallet.KeySet, nil
-}
-
-// GetKeySetFromPrivateKeyParams - deserialize a private key string
-// into keyWallet object and fill all keyset in keywallet with private key
-func (rpcServer HttpServer) GetKeySetFromPrivateKeyParams(privateKeyWalletStr string) (*incognitokey.KeySet, error) {
-	// deserialize to crate keywallet object which contain private key
-	keyWallet, err := wallet.Base58CheckDeserialize(privateKeyWalletStr)
-	if err != nil {
-		return nil, err
-	}
-	// fill paymentaddress and readonly key with privatekey
-	err = keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
-	if err != nil {
-		return nil, err
-	}
-	return &keyWallet.KeySet, nil
-}
