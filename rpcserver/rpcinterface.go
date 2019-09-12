@@ -145,12 +145,13 @@ var HttpHandler = map[string]httpHandler{
 	revertshardchain:  (*HttpServer).handleRevertShard,
 
 	// mining info
-	getMiningInfo:             (*HttpServer).handleGetMiningInfo,
-	enableMining:              (*HttpServer).handleEnableMining,
-	getChainMiningStatus:      (*HttpServer).handleGetChainMiningStatus,
-	getPublickeyMining:        (*HttpServer).handleGetPublicKeyMining,
-	getPublicKeyRole:          (*HttpServer).handleGetPublicKeyRole,
-	getIncognitoPublicKeyRole: (*HttpServer).handleGetIncognitoPublicKeyRole,
+	getMiningInfo:               (*HttpServer).handleGetMiningInfo,
+	enableMining:                (*HttpServer).handleEnableMining,
+	getChainMiningStatus:        (*HttpServer).handleGetChainMiningStatus,
+	getPublickeyMining:          (*HttpServer).handleGetPublicKeyMining,
+	getPublicKeyRole:            (*HttpServer).handleGetPublicKeyRole,
+	getIncognitoPublicKeyRole:   (*HttpServer).handleGetIncognitoPublicKeyRole,
+	getMinerRewardFromMiningKey: (*HttpServer).handleGetMinerRewardFromMiningKey,
 }
 
 // Commands that are available to a limited user
