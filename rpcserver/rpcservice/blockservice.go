@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/transaction"
+	"errors"
 )
 
 type BlockService struct {
@@ -316,6 +317,52 @@ func (blockService BlockService) GetValidStakers(publicKeys []string) ([]string,
 
 	return validPublicKeys, nil
 }
+
+func (blockService BlockService) GetShardBlockByHash(hash common.Hash) (*blockchain.ShardBlock, uint64, error) {
+	return blockService.BlockChain.GetShardBlockByHash(hash)
+}
+
+func (blockService BlockService) GetBeaconBlockByHash(hash common.Hash) (*blockchain.BeaconBlock, uint64, error) {
+	return blockService.BlockChain.GetBeaconBlockByHash(hash)
+}
+
+func (blockService BlockService) CheckHashValue(hashStr string) (isTransaction bool, isShardBlock bool, isBeaconBlock bool, err error){
+	isTransaction = false
+	isShardBlock = false
+	isBeaconBlock = false
+
+	hash, err2 := common.Hash{}.NewHashFromStr(hashStr)
+	if err2 != nil {
+		err = errors.New("expected hash string value")
+		return
+	}
+
+	_, _, err = blockService.GetShardBlockByHash(*hash)
+	if err == nil{
+		isShardBlock = true
+		return
+	} else {
+		_, _, err = blockService.GetBeaconBlockByHash(*hash)
+		if err == nil{
+			isBeaconBlock = true
+			return
+		} else{
+			_, _, _, _, err = blockService.BlockChain.GetTransactionByHash(*hash)
+			if err == nil{
+				isTransaction = true
+			} else {
+				err = nil
+			}
+		}
+	}
+
+	return
+}
+
+func (blockService BlockService) GetActiveShards() (int) {
+	return blockService.BlockChain.BestState.Beacon.ActiveShards
+}
+
 
 
 
