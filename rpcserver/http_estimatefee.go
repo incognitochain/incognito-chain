@@ -78,6 +78,7 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 			customTokenParams, customPrivacyTokenParam, err = httpServer.buildTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
 			if err.(*rpcservice.RPCError) != nil {
 				return nil, err.(*rpcservice.RPCError)
+
 			}
 		}
 
