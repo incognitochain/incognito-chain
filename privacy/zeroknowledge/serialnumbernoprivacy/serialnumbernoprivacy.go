@@ -1,6 +1,7 @@
 package serialnumbernoprivacy
 
 import (
+	"crypto/rand"
 	"errors"
 	"math/big"
 
@@ -200,8 +201,9 @@ func (pro *SNNoPrivacyProof) SetBytes(bytes []byte) error {
 }
 
 func (wit SNNoPrivacyWitness) Prove(mess []byte) (*SNNoPrivacyProof, error) {
+	var r = rand.Reader
 	// randomness
-	eSK := privacy.RandScalar()
+	eSK := privacy.RandScalar(r)
 
 	// calculate tSeed = g_SK^eSK
 	tSK := privacy.PedCom.G[privacy.PedersenPrivateKeyIndex].ScalarMult(eSK)
