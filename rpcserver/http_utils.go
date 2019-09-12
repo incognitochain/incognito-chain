@@ -26,7 +26,7 @@ func (httpServer *HttpServer) createRawTxWithMetadata(params interface{}, closeC
 	metaRaw := arrayParams[len(arrayParams)-1].(map[string]interface{})
 	meta, errCons := metaConstructorType(metaRaw)
 
-	_, errParseKey := httpServer.GetKeySetFromPrivateKeyParams(arrayParams[0].(string))
+	_, _, errParseKey := rpcservice.GetKeySetFromPrivateKeyParams(arrayParams[0].(string))
 	if err := common.CheckError(errCons, errParseKey); err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
