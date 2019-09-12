@@ -71,13 +71,21 @@ func (engine *Engine) watchConsensusCommittee() {
 				break
 			}
 		}
-
 	}
 
 	for chainName, chain := range engine.config.Blockchain.Chains {
 		if _, ok := AvailableConsensus[chain.GetConsensusType()]; ok {
 			engine.ChainConsensusList[chainName] = AvailableConsensus[chain.GetConsensusType()].NewInstance(chain, chainName, engine.config.Node, Logger.log)
 		}
+	}
+
+	if engine.CurrentMiningChain == common.BeaconChainKey {
+		go engine.NotifyBeaconRole(true)
+		go engine.NotifyShardRole(-1)
+	}
+	if engine.CurrentMiningChain != common.BeaconChainKey && engine.CurrentMiningChain != "" {
+		go engine.NotifyBeaconRole(false)
+		go engine.NotifyShardRole(int(getShardFromChainName(engine.CurrentMiningChain)))
 	}
 
 	for {
