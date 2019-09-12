@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"math"
@@ -245,9 +246,11 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 			if err != nil {
 				return NewTransactionErr(DecompressPaymentAddressError, err)
 			}
-			tempOutputCoin[0].CoinDetails.SetRandomness(privacy.RandScalar())
 
-			sndOut := privacy.RandScalar()
+			var r = rand.Reader
+			tempOutputCoin[0].CoinDetails.SetRandomness(privacy.RandScalar(r))
+
+			sndOut := privacy.RandScalar(r)
 			tempOutputCoin[0].CoinDetails.SetSNDerivator(sndOut)
 			temp.Proof.SetOutputCoins(tempOutputCoin)
 			// create coin commitment
