@@ -573,13 +573,10 @@ func (httpServer *HttpServer) buildRawDefragmentAccountTransaction(params interf
 	/********* END Fetch all component to *******/
 
 	// param #1: private key of sender
-	senderKeySet, err := httpServer.GetKeySetFromPrivateKeyParams(senderKeyParam)
+	senderKeySet, shardIDSender, err := rpcservice.GetKeySetFromPrivateKeyParams(senderKeyParam)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.InvalidSenderPrivateKeyError, err)
 	}
-	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
-	shardIDSender := common.GetShardIDFromLastByte(lastByte)
-	//fmt.Printf("Done param #1: keyset: %+v\n", senderKeySet)
 
 	prvCoinID := &common.Hash{}
 	err1 := prvCoinID.SetBytes(common.PRVCoinID[:])
@@ -591,7 +588,7 @@ func (httpServer *HttpServer) buildRawDefragmentAccountTransaction(params interf
 		return nil, rpcservice.NewRPCError(rpcservice.GetOutputCoinError, err)
 	}
 	// remove out coin in mem pool
-	outCoins, err = httpServer.filterMemPoolOutCoinsToSpent(outCoins)
+	outCoins, err = httpServer.txMemPoolService.FilterMemPoolOutcoinsToSpent(outCoins)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetOutputCoinError, err)
 	}
