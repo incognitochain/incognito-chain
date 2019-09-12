@@ -90,3 +90,55 @@ func (httpServer *HttpServer) handleGetIncognitoPublicKeyRole(params interface{}
 	}
 	return result, nil
 }
+
+func (httpServer *HttpServer) handleGetMinerRewardFromMiningKey(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param empty"))
+	}
+
+	keyParts := strings.Split(arrayParams[0].(string), ":")
+	keyType := keyParts[0]
+	publicKey := keyParts[1]
+
+	incPublicKey := httpServer.config.Server.GetMinerIncognitoPublickey(publicKey, keyType)
+
+	allCoinIDs, err := httpServer.config.BlockChain.GetAllCoinID()
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	rewardAmountResult := make(map[string]uint64)
+	rewardAmounts := make(map[common.Hash]uint64)
+
+	for _, coinID := range allCoinIDs {
+		amount, err := (*httpServer.config.Database).GetCommitteeReward(incPublicKey, coinID)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
+		if coinID == common.PRVCoinID {
+			rewardAmountResult["PRV"] = amount
+		} else {
+			rewardAmounts[coinID] = amount
+		}
+	}
+
+	cusPrivTok, crossPrivToken, err := httpServer.config.BlockChain.ListPrivacyCustomToken()
+
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	for _, token := range cusPrivTok {
+		if rewardAmounts[token.TxPrivacyTokenData.PropertyID] > 0 {
+			rewardAmountResult[token.TxPrivacyTokenData.PropertyID.String()] = rewardAmounts[token.TxPrivacyTokenData.PropertyID]
+		}
+	}
+
+	for _, token := range crossPrivToken {
+		if rewardAmounts[token.TokenID] > 0 {
+			rewardAmountResult[token.TokenID.String()] = rewardAmounts[token.TokenID]
+		}
+	}
+
+	return rewardAmountResult, nil
+}
