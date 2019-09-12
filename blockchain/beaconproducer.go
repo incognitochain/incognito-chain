@@ -287,11 +287,12 @@ func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestS
 				break
 			}
 			totalBlock = index
+			if totalBlock > MAX_S2B_BLOCK {
+				totalBlock = MAX_S2B_BLOCK
+				break
+			}
 		}
 		Logger.log.Infof("Beacon Producer/ AFTER FILTER, Shard %+v ONLY GET %+v block", shardID, totalBlock+1)
-		if totalBlock > MAX_S2B_BLOCK {
-			totalBlock = MAX_S2B_BLOCK
-		}
 		for _, shardBlock := range shardBlocks[:totalBlock+1] {
 			shardState, validStakeInstruction, validSwapInstruction, bridgeInstruction, acceptedRewardInstruction, stopAutoStakingInstruction := blockGenerator.chain.GetShardStateFromBlock(beaconBestState.BeaconHeight+1, shardBlock, shardID, true)
 			shardStates[shardID] = append(shardStates[shardID], shardState[shardID])

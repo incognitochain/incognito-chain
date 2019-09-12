@@ -31,9 +31,9 @@ const (
 	TxPoolRemovedTime                = "TxPoolRemovedTime"
 	TxPoolRemovedTimeDetails         = "TxPoolRemovedTimeDetails"
 	TxPoolTxBeginEnter               = "TxPoolTxBeginEnter"
-
-	BeaconBlock = "BeaconBlock"
-	ShardBlock  = "ShardBlock"
+	ProcessDiscoverPeersTime         = "ProcessDiscoverPeersTime"
+	BeaconBlock                      = "BeaconBlock"
+	ShardBlock                       = "ShardBlock"
 )
 
 // tag
@@ -49,6 +49,7 @@ const (
 	NodeIDTag            = "node"
 	TxHashTag            = "txhash"
 	FuncTag              = "func"
+	ExternalAddressTag   = "externaladdresstag"
 )
 
 //Tag value
