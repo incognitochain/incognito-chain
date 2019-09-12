@@ -136,6 +136,19 @@ func (e *BLSBFT) Start() error {
 							}
 							e.RoundData.Votes[voteMsg.Validator] = voteMsg.Vote
 							e.logger.Warn("vote added...")
+							go func() {
+								voteCtnBytes, err := json.Marshal(voteMsg)
+								if err != nil {
+									e.logger.Error(consensus.NewConsensusError(consensus.UnExpectedError, err))
+									return
+								}
+								msg, _ := wire.MakeEmptyMessage(wire.CmdBFT)
+								msg.(*wire.MessageBFT).ChainKey = e.ChainKey
+								msg.(*wire.MessageBFT).Content = voteCtnBytes
+								msg.(*wire.MessageBFT).Type = MSG_VOTE
+								e.Node.PushMessageToChain(msg, e.Chain)
+							}()
+
 							continue
 						}
 					}
@@ -174,6 +187,10 @@ func (e *BLSBFT) Start() error {
 							time.Sleep(1 * time.Second)
 							continue
 						}
+						blockData, _ := json.Marshal(e.Blocks[roundKey])
+						msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
+						go e.Node.PushMessageToChain(msg, e.Chain)
+
 						if e.RoundData.Block == nil {
 							e.RoundData.Block = e.Blocks[roundKey]
 							valData, err := DecodeValidationData(e.RoundData.Block.GetValidationField())
