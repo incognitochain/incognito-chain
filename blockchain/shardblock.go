@@ -331,13 +331,13 @@ func (shardBlock *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToB
 		Logger.log.Error(err)
 		return nil
 	}
-	instructions, err := CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, bc, shardBlock.Header.ShardID)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil
-	}
+	// instructions, err := CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, bc, shardBlock.Header.ShardID)
+	// if err != nil {
+	// 	Logger.log.Error(err)
+	// 	return nil
+	// }
 
-	block.Instructions = append(block.Instructions, instructions...)
+	// block.Instructions = append(block.Instructions, instructions...)
 	return &block
 }
 
