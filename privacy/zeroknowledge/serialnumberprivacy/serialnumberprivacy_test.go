@@ -1,6 +1,7 @@
 package serialnumberprivacy
 
 import (
+	"crypto/rand"
 	"fmt"
 	"math/big"
 	"testing"
@@ -15,10 +16,11 @@ func TestPKSNPrivacy(t *testing.T) {
 	// prepare witness for Serial number privacy protocol
 	sk := privacy.GeneratePrivateKey([]byte{123})
 	skInt := new(big.Int).SetBytes(sk)
-	SND := privacy.RandScalar()
+	var r = rand.Reader
+	SND := privacy.RandScalar(r)
 
-	rSK := privacy.RandScalar()
-	rSND := privacy.RandScalar()
+	rSK := privacy.RandScalar(r)
+	rSND := privacy.RandScalar(r)
 
 	serialNumber := privacy.PedCom.G[privacy.PedersenPrivateKeyIndex].Derive(skInt, SND)
 

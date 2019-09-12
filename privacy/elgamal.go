@@ -1,6 +1,7 @@
 package privacy
 
 import (
+	"crypto/rand"
 	"math/big"
 )
 
@@ -77,7 +78,8 @@ func (ciphertext *elGamalCipherText) SetBytes(bytes []byte) error {
 // encrypt encrypts plaintext (is an elliptic point) using public key ElGamal
 // returns ElGamal ciphertext
 func (pub elGamalPublicKey) encrypt(plaintext *EllipticPoint) *elGamalCipherText {
-	randomness := RandScalar()
+	var r = rand.Reader
+	randomness := RandScalar(r)
 
 	ciphertext := new(elGamalCipherText)
 
