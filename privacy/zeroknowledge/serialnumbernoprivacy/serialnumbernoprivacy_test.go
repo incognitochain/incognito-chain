@@ -1,6 +1,7 @@
 package serialnumbernoprivacy
 
 import (
+	"crypto/rand"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 	"github.com/stretchr/testify/assert"
@@ -17,7 +18,8 @@ func TestPKSNNoPrivacy(t *testing.T) {
 	pkPoint := new(privacy.EllipticPoint)
 	pkPoint.Decompress(pk)
 
-	SND := privacy.RandScalar()
+	var r = rand.Reader
+	SND := privacy.RandScalar(r)
 
 	serialNumber := privacy.PedCom.G[privacy.PedersenPrivateKeyIndex].Derive(skInt, SND)
 
