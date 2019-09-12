@@ -1,6 +1,7 @@
 package privacy
 
 import (
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
@@ -59,8 +60,9 @@ func TestCoinCommitAll(t *testing.T) {
 
 		// init other fields for coin
 		coin.publicKey.Decompress(publicKey)
-		coin.snDerivator = RandScalar()
-		coin.randomness = RandScalar()
+		var r = rand.Reader
+		coin.snDerivator = RandScalar(r)
+		coin.randomness = RandScalar(r)
 		coin.value = new(big.Int).SetBytes(RandBytes(2)).Uint64()
 		coin.serialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.snDerivator)
 		coin.CommitAll()
@@ -145,8 +147,9 @@ func TestCoinMarshalJSON(t *testing.T) {
 
 	// init other fields for coin
 	coin.publicKey.Decompress(publicKey)
-	coin.snDerivator = RandScalar()
-	coin.randomness = RandScalar()
+	var r = rand.Reader
+	coin.snDerivator = RandScalar(r)
+	coin.randomness = RandScalar(r)
 	coin.value = uint64(100)
 	coin.serialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.snDerivator)
 	coin.CommitAll()
@@ -176,8 +179,9 @@ func TestCoinBytesSetBytes(t *testing.T) {
 
 	// init other fields for coin
 	coin.publicKey.Decompress(publicKey)
-	coin.snDerivator = RandScalar()
-	coin.randomness = RandScalar()
+	var r = rand.Reader
+	coin.snDerivator = RandScalar(r)
+	coin.randomness = RandScalar(r)
 	coin.value = uint64(100)
 	coin.serialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.snDerivator)
 	coin.CommitAll()
@@ -206,8 +210,9 @@ func TestCoinBytesSetBytesWithMissingFields(t *testing.T) {
 
 	// init other fields for coin (exclude serial number, coin commitment)
 	coin.publicKey.Decompress(publicKey)
-	coin.snDerivator = RandScalar()
-	coin.randomness = RandScalar()
+	var r = rand.Reader
+	coin.snDerivator = RandScalar(r)
+	coin.randomness = RandScalar(r)
 	coin.value = uint64(100)
 	//coin.SerialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.SNDerivator)
 	//coin.CommitAll()
@@ -236,8 +241,9 @@ func TestCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
 
 	// init other fields for coin (exclude serial number)
 	coin.publicKey.Decompress(publicKey)
-	coin.snDerivator = RandScalar()
-	coin.randomness = RandScalar()
+	var r = rand.Reader
+	coin.snDerivator = RandScalar(r)
+	coin.randomness = RandScalar(r)
 	coin.value = uint64(100)
 	coin.serialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.snDerivator)
 	coin.CommitAll()
@@ -280,8 +286,9 @@ func TestCoinHashH(t *testing.T) {
 
 	// init other fields for coin (exclude serial number)
 	coin.publicKey.Decompress(publicKey)
-	coin.snDerivator = RandScalar()
-	coin.randomness = RandScalar()
+	var r = rand.Reader
+	coin.snDerivator = RandScalar(r)
+	coin.randomness = RandScalar(r)
 	coin.value = uint64(100)
 	coin.serialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.snDerivator)
 	coin.CommitAll()
@@ -305,8 +312,9 @@ func TestInputCoinBytesSetBytes(t *testing.T) {
 
 	// init other fields for coin
 	coin.CoinDetails.publicKey.Decompress(publicKey)
-	coin.CoinDetails.snDerivator = RandScalar()
-	coin.CoinDetails.randomness = RandScalar()
+	var r = rand.Reader
+	coin.CoinDetails.snDerivator = RandScalar(r)
+	coin.CoinDetails.randomness = RandScalar(r)
 	coin.CoinDetails.value = uint64(100)
 	coin.CoinDetails.serialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.CoinDetails.snDerivator)
 	coin.CoinDetails.CommitAll()
@@ -335,8 +343,9 @@ func TestInputCoinBytesSetBytesWithMissingFields(t *testing.T) {
 
 	// init other fields for coin (exclude serial number, coin commitment)
 	coin.CoinDetails.publicKey.Decompress(publicKey)
-	coin.CoinDetails.snDerivator = RandScalar()
-	coin.CoinDetails.randomness = RandScalar()
+	var r = rand.Reader
+	coin.CoinDetails.snDerivator = RandScalar(r)
+	coin.CoinDetails.randomness = RandScalar(r)
 	coin.CoinDetails.value = uint64(100)
 	coin.CoinDetails.info = []byte("Incognito chain")
 	coin.CoinDetails.serialNumber = nil
@@ -364,8 +373,9 @@ func TestInputCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
 
 	// init other fields for coin (exclude serial number)
 	coin.CoinDetails.publicKey.Decompress(publicKey)
-	coin.CoinDetails.snDerivator = RandScalar()
-	coin.CoinDetails.randomness = RandScalar()
+	var r = rand.Reader
+	coin.CoinDetails.snDerivator = RandScalar(r)
+	coin.CoinDetails.randomness = RandScalar(r)
 	coin.CoinDetails.value = uint64(100)
 	coin.CoinDetails.serialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.CoinDetails.snDerivator)
 	coin.CoinDetails.CommitAll()
@@ -410,8 +420,9 @@ func TestOutputCoinBytesSetBytes(t *testing.T) {
 
 	// init other fields for coin
 	coin.CoinDetails.publicKey.Decompress(publicKey)
-	coin.CoinDetails.snDerivator = RandScalar()
-	coin.CoinDetails.randomness = RandScalar()
+	var r = rand.Reader
+	coin.CoinDetails.snDerivator = RandScalar(r)
+	coin.CoinDetails.randomness = RandScalar(r)
 	coin.CoinDetails.value = uint64(100)
 	coin.CoinDetails.serialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.CoinDetails.snDerivator)
 	coin.CoinDetails.CommitAll()
@@ -441,8 +452,9 @@ func TestOutputCoinBytesSetBytesWithMissingFields(t *testing.T) {
 
 	// init other fields for coin (exclude serial number, coin commitment, CoinDetailsEncrypted)
 	coin.CoinDetails.publicKey.Decompress(publicKey)
-	coin.CoinDetails.snDerivator = RandScalar()
-	coin.CoinDetails.randomness = RandScalar()
+	var r = rand.Reader
+	coin.CoinDetails.snDerivator = RandScalar(r)
+	coin.CoinDetails.randomness = RandScalar(r)
 	coin.CoinDetails.value = uint64(100)
 	coin.CoinDetails.info = []byte("Incognito chain")
 	coin.CoinDetails.serialNumber = nil
@@ -470,8 +482,9 @@ func TestOutputCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
 
 	// init other fields for coin (exclude serial number)
 	coin.CoinDetails.publicKey.Decompress(publicKey)
-	coin.CoinDetails.snDerivator = RandScalar()
-	coin.CoinDetails.randomness = RandScalar()
+	var r = rand.Reader
+	coin.CoinDetails.snDerivator = RandScalar(r)
+	coin.CoinDetails.randomness = RandScalar(r)
 	coin.CoinDetails.value = uint64(100)
 	coin.CoinDetails.serialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.CoinDetails.snDerivator)
 	coin.CoinDetails.CommitAll()
@@ -510,10 +523,11 @@ func TestOutputCoinEncryptDecrypt(t *testing.T) {
 	paymentAddress := GeneratePaymentAddress(privateKey)
 	viewingKey := GenerateViewingKey(privateKey)
 
+	var r = rand.Reader
 	for i := 0; i < 100; i++ {
 		// new output coin with value and randomness
 		coin := new(OutputCoin).Init()
-		coin.CoinDetails.randomness = RandScalar()
+		coin.CoinDetails.randomness = RandScalar(r)
 		coin.CoinDetails.value = new(big.Int).SetBytes(RandBytes(2)).Uint64()
 		coin.CoinDetails.publicKey.Decompress(paymentAddress.Pk)
 
@@ -546,7 +560,8 @@ func TestOutputCoinEncryptDecryptWithUnmatchedKey(t *testing.T) {
 
 	// new output coin with value and randomness
 	coin := new(OutputCoin).Init()
-	coin.CoinDetails.randomness = RandScalar()
+	var r = rand.Reader
+	coin.CoinDetails.randomness = RandScalar(r)
 	coin.CoinDetails.value = new(big.Int).SetBytes(RandBytes(2)).Uint64()
 	coin.CoinDetails.publicKey.Decompress(paymentAddress.Pk)
 
@@ -579,7 +594,8 @@ func TestOutputCoinEncryptWithInvalidKey(t *testing.T) {
 
 	// new output coin with value and randomness
 	coin := new(OutputCoin).Init()
-	coin.CoinDetails.randomness = RandScalar()
+	var r = rand.Reader
+	coin.CoinDetails.randomness = RandScalar(r)
 	coin.CoinDetails.value = new(big.Int).SetBytes(RandBytes(2)).Uint64()
 	coin.CoinDetails.publicKey.Decompress(publicKey)
 
