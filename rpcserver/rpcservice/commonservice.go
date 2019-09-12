@@ -1,6 +1,7 @@
 package rpcservice
 
 import (
+	"errors"
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -130,4 +131,30 @@ func NewPaymentInfosFromReceiversParam(receiversParam map[string]interface{}) ([
 	}
 
 	return paymentInfos, nil
+}
+
+func GetStakingAmount(stakingType int, stakingShardAmountParam uint64) uint64 {
+	amount := uint64(0)
+	stakingData, _ := metadata.NewStakingMetadata(metadata.ShardStakingMeta, "", "", stakingShardAmountParam, "", true)
+	if stakingType == 1 {
+		amount = stakingData.GetBeaconStakeAmount()
+	}
+	if stakingType == 0 {
+		amount = stakingData.GetShardStateAmount()
+	}
+
+	return amount
+}
+
+func HashToIdenticon(hashStrs []interface{}) ([]string, error){
+	result := make([]string, 0)
+	for _, hash := range hashStrs {
+		temp, err := common.Hash{}.NewHashFromStr(hash.(string))
+		if err != nil {
+			return nil, errors.New("Hash string is invalid")
+		}
+		result = append(result, common.Render(temp.GetBytes()))
+	}
+
+	return result, nil
 }
