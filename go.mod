@@ -3,6 +3,7 @@ module github.com/incognitochain/incognito-chain
 go 1.12
 
 require (
+	cloud.google.com/go v0.38.0
 	github.com/0xsirrush/color v1.7.0
 	github.com/allegro/bigcache v1.2.1 // indirect
 	github.com/aristanetworks/goarista v0.0.0-20190704150520-f44d68189fd7 // indirect
@@ -14,6 +15,7 @@ require (
 	github.com/elastic/gosigar v0.10.4 // indirect
 	github.com/ethereum/go-ethereum v1.8.22-0.20190710074244-72029f0f88f6
 	github.com/fortytw2/leaktest v1.3.0 // indirect
+	github.com/googleapis/gax-go v2.0.2+incompatible // indirect
 	github.com/gorilla/websocket v1.4.0
 	github.com/hashicorp/golang-lru v0.5.1
 	github.com/jessevdk/go-flags v1.4.0
@@ -42,5 +44,6 @@ require (
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
 	golang.org/x/net v0.0.0-20190628185345-da137c7871d7 // indirect
 	golang.org/x/sys v0.0.0-20190624142023-c5567b49c5d0 // indirect
+	google.golang.org/api v0.10.0
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 )
