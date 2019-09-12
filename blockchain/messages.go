@@ -123,15 +123,16 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 							err := blockchain.config.ShardPool[newBlk.Header.ShardID].AddShardBlock(newBlk)
 							if err != nil {
 								Logger.log.Errorf("Add block %+v from shard %+v error %+v: \n", newBlk.Header.Height, newBlk.Header.ShardID, err)
+								return
 							}
 						} else if !isConsensusOngoing {
 							Logger.log.Infof("Insert New Shard Block %+v, ShardID %+v \n", newBlk.Header.Height, newBlk.Header.ShardID)
 							err := blockchain.InsertShardBlock(newBlk, true)
 							if err != nil {
 								Logger.log.Error(err)
+								return
 							}
 						}
-						return
 					}
 				}
 			}
@@ -188,6 +189,7 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 								Logger.log.Error(err)
 								return
 							}
+							return
 						}
 					}
 				}

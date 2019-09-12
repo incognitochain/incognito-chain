@@ -1,6 +1,7 @@
 package privacy
 
 import (
+	"crypto/rand"
 	"errors"
 	"math/big"
 
@@ -67,11 +68,13 @@ func (privateKey SchnorrPrivateKey) Sign(data []byte) (*SchnSignature, error) {
 
 	signature := new(SchnSignature)
 
+	var r = rand.Reader
 	// has privacy
 	if privateKey.randomness.Cmp(big.NewInt(0)) != 0 {
 		// generates random numbers s1, s2 in [0, Curve.Params().N - 1]
-		s1 := RandScalar()
-		s2 := RandScalar()
+
+		s1 := RandScalar(r)
+		s2 := RandScalar(r)
 
 		// t = s1*G + s2*H
 		t := privateKey.publicKey.g.ScalarMult(s1).Add(privateKey.publicKey.h.ScalarMult(s2))
@@ -89,7 +92,7 @@ func (privateKey SchnorrPrivateKey) Sign(data []byte) (*SchnSignature, error) {
 	}
 
 	// generates random numbers s, k2 in [0, Curve.Params().N - 1]
-	s := RandScalar()
+	s := RandScalar(r)
 
 	// t = s*G
 	t := privateKey.publicKey.g.ScalarMult(s)
