@@ -1,17 +1,17 @@
 package oneoutofmany
 
 import (
+	"crypto/rand"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
+	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"log"
 	"math/big"
 	"testing"
 	"time"
-
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
@@ -28,7 +28,6 @@ var _ = func() (_ struct{}) {
 //TestPKOneOfMany test protocol for one of many Commitment is Commitment to zero
 func TestPKOneOfMany(t *testing.T) {
 	// prepare witness for Out out of many protocol
-
 	for i := 0; i < 10; i++ {
 		witness := new(OneOutOfManyWitness)
 
@@ -39,9 +38,11 @@ func TestPKOneOfMany(t *testing.T) {
 		snDerivators := make([]*big.Int, privacy.CommitmentRingSize)
 		randoms := make([]*big.Int, privacy.CommitmentRingSize)
 
+		var r = rand.Reader
+
 		for i := 0; i < privacy.CommitmentRingSize; i++ {
-			snDerivators[i] = privacy.RandScalar()
-			randoms[i] = privacy.RandScalar()
+			snDerivators[i] = privacy.RandScalar(r)
+			randoms[i] = privacy.RandScalar(r)
 			commitments[i] = privacy.PedCom.CommitAtIndex(snDerivators[i], randoms[i], privacy.PedersenSndIndex)
 		}
 

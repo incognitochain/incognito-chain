@@ -1,6 +1,7 @@
 package oneoutofmany
 
 import (
+	"crypto/rand"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -295,14 +296,15 @@ func (wit OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 	ca := make([]*privacy.EllipticPoint, n)
 	cb := make([]*privacy.EllipticPoint, n)
 	cd := make([]*privacy.EllipticPoint, n)
+	var rReader = rand.Reader
 
 	for j := 0; j < n; j++ {
 		// Generate random numbers
-		r[j] = privacy.RandScalar()
-		a[j] = privacy.RandScalar()
-		s[j] = privacy.RandScalar()
-		t[j] = privacy.RandScalar()
-		u[j] = privacy.RandScalar()
+		r[j] = privacy.RandScalar(rReader)
+		a[j] = privacy.RandScalar(rReader)
+		s[j] = privacy.RandScalar(rReader)
+		t[j] = privacy.RandScalar(rReader)
+		u[j] = privacy.RandScalar(rReader)
 
 		// convert indexIsZeroBinary[j] to big.Int
 		indexInt := big.NewInt(int64(indexIsZeroBinary[j]))
