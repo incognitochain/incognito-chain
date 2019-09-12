@@ -122,33 +122,37 @@ func (e *BLSBFT) Start() error {
 				if getRoundKey(e.RoundData.NextHeight, e.RoundData.Round) == voteMsg.RoundKey {
 					//validate single sig
 					if e.RoundData.Block != nil {
-						validatorIdx := common.IndexOfStr(voteMsg.Validator, e.RoundData.CommitteeBLS.StringList)
-						if validatorIdx != -1 {
-							if err := validateSingleBLSSig(e.RoundData.Block.Hash(), voteMsg.Vote.BLS, validatorIdx, e.RoundData.CommitteeBLS.ByteList); err != nil {
-								e.logger.Error(err)
-								continue
-							}
-							if len(voteMsg.Vote.BRI) != 0 {
-								if err := validateSingleBriSig(e.RoundData.Block.Hash(), voteMsg.Vote.BRI, e.RoundData.Committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
+						if _, ok := e.RoundData.Votes[voteMsg.Validator]; ok {
+							validatorIdx := common.IndexOfStr(voteMsg.Validator, e.RoundData.CommitteeBLS.StringList)
+							if validatorIdx != -1 {
+								if err := validateSingleBLSSig(e.RoundData.Block.Hash(), voteMsg.Vote.BLS, validatorIdx, e.RoundData.CommitteeBLS.ByteList); err != nil {
 									e.logger.Error(err)
 									continue
 								}
-							}
-							e.RoundData.Votes[voteMsg.Validator] = voteMsg.Vote
-							e.logger.Warn("vote added...")
-							go func() {
-								voteCtnBytes, err := json.Marshal(voteMsg)
-								if err != nil {
-									e.logger.Error(consensus.NewConsensusError(consensus.UnExpectedError, err))
-									return
+								if len(voteMsg.Vote.BRI) != 0 {
+									if err := validateSingleBriSig(e.RoundData.Block.Hash(), voteMsg.Vote.BRI, e.RoundData.Committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
+										e.logger.Error(err)
+										continue
+									}
 								}
-								msg, _ := wire.MakeEmptyMessage(wire.CmdBFT)
-								msg.(*wire.MessageBFT).ChainKey = e.ChainKey
-								msg.(*wire.MessageBFT).Content = voteCtnBytes
-								msg.(*wire.MessageBFT).Type = MSG_VOTE
-								e.Node.PushMessageToChain(msg, e.Chain)
-							}()
+								e.RoundData.Votes[voteMsg.Validator] = voteMsg.Vote
+								e.logger.Warn("vote added...")
+								go func() {
+									voteCtnBytes, err := json.Marshal(voteMsg)
+									if err != nil {
+										e.logger.Error(consensus.NewConsensusError(consensus.UnExpectedError, err))
+										return
+									}
+									msg, _ := wire.MakeEmptyMessage(wire.CmdBFT)
+									msg.(*wire.MessageBFT).ChainKey = e.ChainKey
+									msg.(*wire.MessageBFT).Content = voteCtnBytes
+									msg.(*wire.MessageBFT).Type = MSG_VOTE
+									e.Node.PushMessageToChain(msg, e.Chain)
+								}()
 
+								continue
+							}
+						} else {
 							continue
 						}
 					}
@@ -187,11 +191,12 @@ func (e *BLSBFT) Start() error {
 							time.Sleep(1 * time.Second)
 							continue
 						}
-						blockData, _ := json.Marshal(e.Blocks[roundKey])
-						msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
-						go e.Node.PushMessageToChain(msg, e.Chain)
 
 						if e.RoundData.Block == nil {
+							blockData, _ := json.Marshal(e.Blocks[roundKey])
+							msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
+							go e.Node.PushMessageToChain(msg, e.Chain)
+
 							e.RoundData.Block = e.Blocks[roundKey]
 							valData, err := DecodeValidationData(e.RoundData.Block.GetValidationField())
 							if err != nil {
