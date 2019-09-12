@@ -2,6 +2,8 @@ package rpcservice
 
 import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/mempool"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"log"
 	"strconv"
 
@@ -12,11 +14,22 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-type OutputCoinService struct {
+type CoinService struct {
 	BlockChain *blockchain.BlockChain
+	TxMemPool *mempool.TxPool
 }
 
-func (outputCounService OutputCoinService) ListUnspentOutputCoinsByKey(listKeyParams []interface{}) (*jsonresult.ListOutputCoins, *RPCError) {
+func (coinService CoinService) ListOutputCoinsByKeySet(keySet *incognitokey.KeySet, shardID byte) ([]*privacy.OutputCoin, error){
+	prvCoinID := &common.Hash{}
+	err := prvCoinID.SetBytes(common.PRVCoinID[:])
+	if err != nil {
+		return nil, err
+	}
+
+	return coinService.BlockChain.GetListOutputCoinsByKeyset(keySet, shardID, prvCoinID)
+}
+
+func (coinService CoinService) ListUnspentOutputCoinsByKey(listKeyParams []interface{}) (*jsonresult.ListOutputCoins, *RPCError) {
 	result := &jsonresult.ListOutputCoins{
 		Outputs: make(map[string][]jsonresult.OutCoin),
 	}
@@ -45,7 +58,7 @@ func (outputCounService OutputCoinService) ListUnspentOutputCoinsByKey(listKeyPa
 		if err != nil {
 			return nil, NewRPCError(TokenIsInvalidError, err)
 		}
-		outCoins, err := outputCounService.BlockChain.GetListOutputCoinsByKeyset(&keyWallet.KeySet, shardID, tokenID)
+		outCoins, err := coinService.BlockChain.GetListOutputCoinsByKeyset(&keyWallet.KeySet, shardID, tokenID)
 		if err != nil {
 			return nil, NewRPCError(UnexpectedError, err)
 		}
@@ -69,7 +82,7 @@ func (outputCounService OutputCoinService) ListUnspentOutputCoinsByKey(listKeyPa
 	return result, nil
 }
 
-func (outputCounService OutputCoinService) ListOutputCoinsByKey(listKeyParams []interface{}, tokenID common.Hash) (*jsonresult.ListOutputCoins, *RPCError) {
+func (coinService CoinService) ListOutputCoinsByKey(listKeyParams []interface{}, tokenID common.Hash) (*jsonresult.ListOutputCoins, *RPCError) {
 	result := &jsonresult.ListOutputCoins{
 		Outputs: make(map[string][]jsonresult.OutCoin),
 	}
@@ -99,7 +112,7 @@ func (outputCounService OutputCoinService) ListOutputCoinsByKey(listKeyParams []
 		}
 		lastByte := keySet.PaymentAddress.Pk[len(keySet.PaymentAddress.Pk)-1]
 		shardIDSender := common.GetShardIDFromLastByte(lastByte)
-		outputCoins, err := outputCounService.BlockChain.GetListOutputCoinsByKeyset(&keySet, shardIDSender, &tokenID)
+		outputCoins, err := coinService.BlockChain.GetListOutputCoinsByKeyset(&keySet, shardIDSender, &tokenID)
 		if err != nil {
 			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
 			return nil, NewRPCError(UnexpectedError, err)
