@@ -39,6 +39,7 @@ type HttpServer struct {
 	databaseService   *rpcservice.DatabaseService
 	networkService    *rpcservice.NetworkService
 	poolStateService * rpcservice.PoolStateService
+	txService *rpcservice.TxService
 }
 
 func (httpServer *HttpServer) Init(config *RpcServerConfig) {
@@ -62,6 +63,13 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 	httpServer.databaseService = &rpcservice.DatabaseService{DB: *httpServer.config.Database}
 	httpServer.networkService = &rpcservice.NetworkService{ConnMgr: httpServer.config.ConnMgr}
 	httpServer.poolStateService = &rpcservice.PoolStateService{}
+	httpServer.txService = &rpcservice.TxService{
+		DB: httpServer.config.Database,
+		BlockChain: httpServer.config.BlockChain,
+		Wallet: httpServer.config.Wallet,
+		FeeEstimator: httpServer.config.FeeEstimator,
+		TxMemPool: httpServer.config.TxMemPool,
+	}
 }
 
 // Start is used by rpcserver.go to start the rpc listener.
