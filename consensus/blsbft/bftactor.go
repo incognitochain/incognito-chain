@@ -163,23 +163,20 @@ func (e *BLSBFT) Start() error {
 				e.EarlyVotes[voteMsg.RoundKey][voteMsg.Validator] = voteMsg.Vote
 
 			case <-ticker:
+				e.isOngoing = false
 				pubKey := e.UserKeySet.GetPublicKey()
 				if common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList) == -1 {
-					e.isOngoing = false
 					e.enterNewRound()
 					continue
 				}
 
 				if !e.Chain.IsReady() {
-					e.isOngoing = false
 					continue
 				}
 
 				if !e.isInTimeFrame() || e.RoundData.State == "" {
 					e.enterNewRound()
 				}
-
-				e.isOngoing = true
 				switch e.RoundData.State {
 				case listenPhase:
 					// timeout or vote nil?
@@ -206,6 +203,7 @@ func (e *BLSBFT) Start() error {
 							}
 							e.RoundData.BlockValidateData = *valData
 							e.enterVotePhase()
+							e.isOngoing = true
 						}
 					}
 				case votePhase:
