@@ -50,7 +50,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithContractingReq(params interfa
 		return nil, err
 	}
 
-	customTokenTx, rpcErr := httpServer.buildRawPrivacyCustomTokenTransaction(params, meta)
+	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
 	if rpcErr != nil {
 		Logger.log.Error(rpcErr)
 		return nil, rpcErr
@@ -109,7 +109,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithBurningReq(params interface{}
 		return nil, err
 	}
 
-	customTokenTx, rpcErr := httpServer.buildRawPrivacyCustomTokenTransaction(params, meta)
+	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
 	if rpcErr != nil {
 		Logger.log.Error(rpcErr)
 		return nil, rpcErr
@@ -156,7 +156,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithIssuingETHReq(params interfac
 		Logger.log.Error(rpcErr)
 		return nil, rpcErr
 	}
-	tx, err1 := httpServer.buildRawTransaction(params, meta)
+	tx, err1 := httpServer.txService.BuildRawTransaction(params, meta)
 
 	if err1 != nil {
 		Logger.log.Error(err1)
