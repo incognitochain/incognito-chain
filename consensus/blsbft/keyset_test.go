@@ -44,7 +44,7 @@ func Test_newMiningKey(t *testing.T) {
 		{
 			name: "Get mining key from private seed",
 			args: args{
-				privateSeed: "aaa",
+				privateSeed: "1Md5Jd3syKLygiphTyXZGLQFswsbgPpVfchYfiVrHX86A6Zsyn",
 			},
 			wantErr: false,
 		},
