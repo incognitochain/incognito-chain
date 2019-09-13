@@ -602,7 +602,7 @@ func (httpServer *HttpServer) buildRawDefragmentAccountTransaction(params interf
 	}
 	paymentInfos := []*privacy.PaymentInfo{paymentInfo}
 	// check real fee(nano PRV) per tx
-	realFee, _, _ := httpServer.estimateFee(estimateFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacyCoin, nil, nil, nil)
+	realFee, _, _ := httpServer.txService.EstimateFee(estimateFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacyCoin, nil, nil, nil)
 	if len(outCoins) == 0 {
 		realFee = 0
 	}

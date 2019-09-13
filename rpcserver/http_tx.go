@@ -12,7 +12,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -26,19 +25,14 @@ import (
 */
 func (httpServer *HttpServer) handleCreateRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleCreateRawTransaction params: %+v", params)
-	var err error
-	tx, err := httpServer.buildRawTransaction(params, nil)
-	if err.(*rpcservice.RPCError) != nil {
-		Logger.log.Critical(err)
-		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
-	}
-	byteArrays, err := json.Marshal(tx)
+
+	txHash, txBytes, txShardID, err := httpServer.txService.CreateRawTransaction(params, nil)
 	if err != nil {
 		// return hex for a new tx
-		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+		return nil, err
 	}
-	txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-	result := jsonresult.NewCreateTransactionResult(tx.Hash(), common.EmptyString, byteArrays, txShardID)
+
+	result := jsonresult.NewCreateTransactionResult(txHash, common.EmptyString, txBytes, txShardID)
 	Logger.log.Debugf("handleCreateRawTransaction result: %+v", result)
 	return result, nil
 }
@@ -53,49 +47,54 @@ func (httpServer *HttpServer) handleSendRawTransaction(params interface{}, close
 	Logger.log.Debugf("handleSendRawTransaction params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	base58CheckData := arrayParams[0].(string)
-	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
-	if err != nil {
-		Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
-		return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)
+
+	txMsg, txHash, LastBytePubKeySender, err := httpServer.txService.SendRawTransaction(base58CheckData)
+	if err != nil{
+		return nil, err
 	}
-	var tx transaction.Tx
-	err = json.Unmarshal(rawTxBytes, &tx)
-	if err != nil {
-		Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
-		return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)
+	//rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
+	//if err != nil {
+	//	Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
+	//	return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)
+	//}
+	//var tx transaction.Tx
+	//err = json.Unmarshal(rawTxBytes, &tx)
+	//if err != nil {
+	//	Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
+	//	return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)
+	//}
+	//
+	//hash, _, err := httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+	////httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
+	//if err != nil {
+	//	mempoolErr, ok := err.(*mempool.MempoolTxError)
+	//	if ok {
+	//		if mempoolErr.Code == mempool.ErrCodeMessage[mempool.RejectInvalidFee].Code {
+	//			Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
+	//			return nil, rpcservice.NewRPCError(rpcservice.RejectInvalidFeeError, mempoolErr)
+	//		}
+	//	}
+	//	Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
+	//	return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)
+	//}
+	//
+	//Logger.log.Debugf("New transaction hash: %+v \n", *hash)
+	//
+	//// broadcast Message
+	//txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
+	//if err != nil {
+	//	Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
+	//	return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)
+	//}
+
+
+	err2 := httpServer.config.Server.PushMessageToAll(txMsg)
+	if err2 == nil {
+		Logger.log.Infof("handleSendRawTransaction result: %+v, err: %+v", nil, err2)
+		httpServer.config.TxMemPool.MarkForwardedTransaction(*txHash)
 	}
 
-	hash, _, err := httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
-	//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
-	if err != nil {
-		mempoolErr, ok := err.(*mempool.MempoolTxError)
-		if ok {
-			if mempoolErr.Code == mempool.ErrCodeMessage[mempool.RejectInvalidFee].Code {
-				Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
-				return nil, rpcservice.NewRPCError(rpcservice.RejectInvalidFeeError, mempoolErr)
-			}
-		}
-		Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
-		return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)
-	}
-
-	Logger.log.Debugf("New transaction hash: %+v \n", *hash)
-
-	// broadcast Message
-	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
-	if err != nil {
-		Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
-		return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)
-	}
-
-	txMsg.(*wire.MessageTx).Transaction = &tx
-	err = httpServer.config.Server.PushMessageToAll(txMsg)
-	if err == nil {
-		Logger.log.Infof("handleSendRawTransaction result: %+v, err: %+v", nil, err)
-		httpServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
-	}
-
-	result := jsonresult.NewCreateTransactionResult(tx.Hash(), common.EmptyString, nil, common.GetShardIDFromLastByte(tx.PubKeyLastByteSender))
+	result := jsonresult.NewCreateTransactionResult(txHash, common.EmptyString, nil, common.GetShardIDFromLastByte(LastBytePubKeySender))
 	Logger.log.Debugf("\n\n\n\n\n\nhandleSendRawTransaction result: %+v\n\n\n\n\n", result)
 	return result, nil
 }
@@ -203,7 +202,7 @@ func (httpServer *HttpServer) handleGetTransactionByHash(params interface{}, clo
 func (httpServer *HttpServer) handleCreateRawCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleCreateRawCustomTokenTransaction params: %+v", params)
 	var err error
-	tx, err := httpServer.buildRawCustomTokenTransaction(params, nil)
+	tx, err := httpServer.txService.BuildRawCustomTokenTransaction(params, nil)
 	if err.(*rpcservice.RPCError) != nil {
 		Logger.log.Error(err)
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
@@ -1074,7 +1073,7 @@ func (httpServer *HttpServer) handleHasSnDerivators(params interface{}, closeCha
 func (httpServer *HttpServer) handleCreateRawPrivacyCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleCreateRawPrivacyCustomTokenTransaction params: %+v", params)
 	var err error
-	tx, err := httpServer.buildRawPrivacyCustomTokenTransaction(params, nil)
+	tx, err := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, nil)
 	if err.(*rpcservice.RPCError) != nil {
 		Logger.log.Error(err)
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
@@ -1255,7 +1254,7 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 	stakingMetadata, err := metadata.NewStakingMetadata(int(stakingType), funderPaymentAddress, rewardReceiverPaymentAddress, httpServer.config.ChainParams.StakingAmountShard, base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte), autoReStaking)
 	// metadata, err := metadata.NewStakingMetadata(int(stakingType), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), httpServer.config.ChainParams.StakingAmountShard, base58.Base58Check{}.Encode(blsPKBytes, common.ZeroByte))
 
-	tx, err := httpServer.buildRawTransaction(params, stakingMetadata)
+	tx, err := httpServer.txService.BuildRawTransaction(params, stakingMetadata)
 	if err.(*rpcservice.RPCError) != nil {
 		Logger.log.Critical(err)
 		Logger.log.Debugf("handleCreateRawStakingTransaction result: %+v, err: %+v", nil, err)
@@ -1357,7 +1356,7 @@ func (httpServer *HttpServer) handleCreateRawStopAutoStakingTransaction(params i
 
 	stakingMetadata, err := metadata.NewStopAutoStakingMetadata(int(stopAutoStakingType), base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte))
 
-	tx, err := httpServer.buildRawTransaction(params, stakingMetadata)
+	tx, err := httpServer.txService.BuildRawTransaction(params, stakingMetadata)
 	if err.(*rpcservice.RPCError) != nil {
 		Logger.log.Critical(err)
 		Logger.log.Debugf("handleCreateRawStakingTransaction result: %+v, err: %+v", nil, err)
