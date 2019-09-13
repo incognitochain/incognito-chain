@@ -854,7 +854,9 @@ var currentInsert = struct {
 
 func (synker *Synker) InsertBlockFromPool() {
 	go func() {
-		synker.InsertBeaconBlockFromPool()
+		if !synker.blockchain.config.ConsensusEngine.IsOngoing(common.BeaconChainKey) {
+			synker.InsertBeaconBlockFromPool()
+		}
 	}()
 
 	synker.Status.Lock()
@@ -862,7 +864,11 @@ func (synker *Synker) InsertBlockFromPool() {
 		if _, ok := currentInsert.Shards[shardID]; !ok {
 			currentInsert.Shards[shardID] = &sync.Mutex{}
 		}
-		synker.InsertShardBlockFromPool(shardID)
+		if !synker.blockchain.config.ConsensusEngine.IsOngoing(common.GetShardChainKey(shardID)) {
+			go func(shardID byte) {
+				synker.InsertShardBlockFromPool(shardID)
+			}(shardID)
+		}
 	}
 	synker.Status.Unlock()
 }
