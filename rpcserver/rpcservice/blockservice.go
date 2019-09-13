@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"errors"
@@ -12,6 +13,7 @@ import (
 
 type BlockService struct {
 	BlockChain *blockchain.BlockChain
+	DB  *database.DatabaseInterface
 }
 
 func (blockService BlockService) GetShardBestStates() map[byte]*blockchain.ShardBestState {
@@ -363,6 +365,55 @@ func (blockService BlockService) GetActiveShards() (int) {
 	return blockService.BlockChain.BestState.Beacon.ActiveShards
 }
 
+func (blockService BlockService) ListPrivacyCustomToken() (map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData, error){
+	return blockService.BlockChain.ListPrivacyCustomToken()
+}
+
+
+func (blockService BlockService) GetAllCoinID() ([]common.Hash, error){
+	return blockService.BlockChain.GetAllCoinID()
+}
+
+func (blockService BlockService) GetMinerRewardFromMiningKey(incPublicKey []byte) (map[string]uint64, error) {
+	allCoinIDs, err := blockService.GetAllCoinID()
+	if err != nil {
+		return nil, err
+	}
+
+	rewardAmountResult := make(map[string]uint64)
+	rewardAmounts := make(map[common.Hash]uint64)
+
+	for _, coinID := range allCoinIDs {
+		amount, err := (*blockService.DB).GetCommitteeReward(incPublicKey, coinID)
+		if err != nil {
+			return nil, err
+		}
+		if coinID == common.PRVCoinID {
+			rewardAmountResult["PRV"] = amount
+		} else {
+			rewardAmounts[coinID] = amount
+		}
+	}
+
+	privateToken, crossPrivateToken, err := blockService.ListPrivacyCustomToken()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, token := range privateToken {
+		if rewardAmounts[token.TxPrivacyTokenData.PropertyID] > 0 {
+			rewardAmountResult[token.TxPrivacyTokenData.PropertyID.String()] = rewardAmounts[token.TxPrivacyTokenData.PropertyID]
+		}
+	}
+
+	for _, token := range crossPrivateToken {
+		if rewardAmounts[token.TokenID] > 0 {
+			rewardAmountResult[token.TokenID.String()] = rewardAmounts[token.TokenID]
+		}
+	}
+
+	return rewardAmountResult, nil
+}
 
 
 
