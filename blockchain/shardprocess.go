@@ -532,7 +532,10 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(shardBlock *
 	producerPosition := (shardBestState.ShardProposerIdx + shardBlock.Header.Round) % len(shardBestState.ShardCommittee)
 
 	//verify producer
-	tempProducer := shardBestState.ShardCommittee[producerPosition].GetMiningKeyBase58(shardBestState.ConsensusAlgorithm)
+	tempProducer, err := shardBestState.ShardCommittee[producerPosition].ToBase58() //.GetMiningKeyBase58(common.BridgeConsensus)
+	if err != nil {
+		return NewBlockChainError(UnExpectedError, err)
+	}
 	if strings.Compare(tempProducer, producerPublicKey) != 0 {
 		return NewBlockChainError(ProducerError, fmt.Errorf("Producer should be should be %+v", tempProducer))
 	}
