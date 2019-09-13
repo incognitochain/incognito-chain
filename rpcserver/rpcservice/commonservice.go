@@ -87,18 +87,28 @@ func GetKeySetFromPrivateKeyParams(privateKeyWalletStr string) (*incognitokey.Ke
 	if err != nil {
 		return nil, byte(0), err
 	}
+
+	return GetKeySetFromPrivateKey(keyWallet.KeySet.PrivateKey)
+}
+
+// GetKeySetFromPrivateKeyParams - deserialize a private key string
+// into keyWallet object and fill all keyset in keywallet with private key
+// return key set and shard ID
+func GetKeySetFromPrivateKey(privateKey privacy.PrivateKey) (*incognitokey.KeySet, byte, error) {
+	keySet := new(incognitokey.KeySet)
 	// fill paymentaddress and readonly key with privatekey
-	err = keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	err := keySet.InitFromPrivateKey(&privateKey)
 	if err != nil {
 		return nil, byte(0), err
 	}
 
 	// calculate shard ID
-	lastByte := keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1]
+	lastByte := keySet.PaymentAddress.Pk[len(keySet.PaymentAddress.Pk)-1]
 	shardID := common.GetShardIDFromLastByte(lastByte)
 
-	return &keyWallet.KeySet, shardID, nil
+	return keySet, shardID, nil
 }
+
 
 // GetKeySetFromPaymentAddressParam - deserialize a key string(wallet serialized)
 // into keyWallet - this keywallet may contain
