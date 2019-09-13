@@ -168,3 +168,4 @@ func HashToIdenticon(hashStrs []interface{}) ([]string, error){
 
 	return result, nil
 }
+
