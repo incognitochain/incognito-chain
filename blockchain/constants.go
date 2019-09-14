@@ -23,9 +23,9 @@ const (
 	DefaultMaxBlockSyncTime      = 1 * time.Second  // in second
 	DefaultCacheCleanupTime      = 30 * time.Second // in second
 	WorkerNumber                 = 5
-	MAX_S2B_BLOCK                = 5
+	MAX_S2B_BLOCK                = 2
 	DurationHalfLifeRewardForDev = uint64(31536000) // 5 years, after 5 year, reward for devs = 0
-	GetValidBlock                = 5
+	GetValidBlock                = 2
 	CheckForce                   = true
 )
 
@@ -74,17 +74,17 @@ var (
 
 // CONSTANT for network TESTNET
 const (
-	Testnet            = 0x35
+	Testnet            = 0x36
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
 	TestnetEpoch       = 100
 	TestnetRandomTime  = 50
 
-	TestNetShardCommitteeSize     = 8
-	TestNetMinShardCommitteeSize  = 8
-	TestNetBeaconCommitteeSize    = 12
-	TestNetMinBeaconCommitteeSize = 12
-	TestNetActiveShards           = 32
+	TestNetShardCommitteeSize     = 100
+	TestNetMinShardCommitteeSize  = 100
+	TestNetBeaconCommitteeSize    = 24
+	TestNetMinBeaconCommitteeSize = 24
+	TestNetActiveShards           = 2
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	TestNetMinBeaconBlkInterval = 10 * time.Second //second
