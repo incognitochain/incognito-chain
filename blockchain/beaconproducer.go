@@ -281,6 +281,9 @@ func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestS
 		currentCommittee := beaconBestState.GetAShardCommittee(shardID)
 		for index, shardBlock := range shardBlocks {
 			// hash := shardBlock.Header.Hash()
+			if index == MAX_S2B_BLOCK-1 {
+				break
+			}
 			err := blockGenerator.chain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, currentCommittee, beaconBestState.ShardConsensusAlgorithm[shardID])
 			Logger.log.Infof("Beacon Producer/ Validate Agg Signature for shard %+v, block height %+v, err %+v", shardID, shardBlock.Header.Height, err == nil)
 			if err != nil {
