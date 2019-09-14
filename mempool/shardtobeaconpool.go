@@ -2,6 +2,7 @@ package mempool
 
 import (
 	"errors"
+	"reflect"
 	"sort"
 	"strconv"
 	"sync"
@@ -119,11 +120,22 @@ func (self *ShardToBeaconPool) AddShardToBeaconBlock(block *blockchain.ShardToBe
 		return 0, 0, NewBlockPoolError(OldBlockError, errors.New("Receive block "+strconv.Itoa(int(blockHeight))+" but expect greater than "+strconv.Itoa(int(self.latestValidHeight[shardID]))))
 	}
 	//If block already in pool, it will ignore
-	for _, blkItem := range self.pool[shardID] {
+	for i, blkItem := range self.pool[shardID] {
 		if blkItem.Header.Height == blockHeight {
+			if i+1 < len(self.pool[shardID]) {
+				if !reflect.DeepEqual(*blkItem.Hash(), self.pool[shardID][i+1].Header.PreviousBlockHash) {
+					self.pool[shardID][i] = block
+					return 0, 0, nil
+				}
+			}
+			if blkItem.Header.Round < block.Header.Round {
+				self.pool[shardID][i] = block
+				return 0, 0, nil
+			}
 			return 0, 0, NewBlockPoolError(DuplicateBlockError, errors.New("Receive Duplicate block "+strconv.Itoa(int(blockHeight))))
 		}
 	}
+
 	//Check if satisfy pool capacity (for valid and invalid)
 	if len(self.pool[shardID]) != 0 {
 		numValidPedingBlk := int(self.latestValidHeight[shardID] - self.pool[shardID][0].Header.Height + 1)

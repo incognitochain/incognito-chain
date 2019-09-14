@@ -34,3 +34,7 @@ func (dbService DatabaseService) GetBridgeReqWithStatus(txID string) (byte, erro
 	status, err := dbService.DB.GetBridgeReqWithStatus(*txIDHash)
 	return status, err
 }
+
+func (dbService DatabaseService) GetBurningConfirm(txID common.Hash) (uint64, error) {
+	return dbService.DB.GetBurningConfirm(txID)
+}
