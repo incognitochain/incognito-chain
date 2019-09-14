@@ -53,6 +53,10 @@ func (e *BLSBFT) isInTimeFrame() bool {
 }
 
 func (e *BLSBFT) isHasMajorityVotes() bool {
+	e.RoundData.lockVotes.Lock()
+	defer e.RoundData.lockVotes.Unlock()
+	e.lockEarlyVotes.Lock()
+	defer e.lockEarlyVotes.Unlock()
 	roundKey := getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)
 	earlyVote, ok := e.EarlyVotes[roundKey]
 	if ok {
