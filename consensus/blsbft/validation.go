@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -51,16 +51,17 @@ func EncodeValidationData(validationData ValidationData) (string, error) {
 
 func (e BLSBFT) CreateValidationData(block common.BlockInterface) ValidationData {
 	var valData ValidationData
-	selfPublicKey := e.UserKeySet.GetPublicKey()
-	keyByte, _ := selfPublicKey.GetMiningKey(consensusName)
-	valData.ProducerBLSSig, _ = e.UserKeySet.BLSSignData(block.Hash().GetBytes(), 0, []blsmultisig.PublicKey{keyByte})
+	// selfPublicKey := e.UserKeySet.GetPublicKey()
+	// keyByte, _ := selfPublicKey.GetMiningKey(consensusName)
+	// valData.ProducerBLSSig, _ = e.UserKeySet.BLSSignData(block.Hash().GetBytes(), 0, []blsmultisig.PublicKey{keyByte})
+	valData.ProducerBLSSig, _ = e.UserKeySet.BriSignData(block.Hash().GetBytes()) //, 0, []blsmultisig.PublicKey{keyByte})
 	return valData
 }
 
 func (e BLSBFT) validatePreSignBlock(block common.BlockInterface) error {
 	e.logger.Info("verifying block...")
 	e.logger.Info("ValidateProducerPosition...")
-	if err := e.ValidateProducerPosition(block, e.RoundData.LastProposerIndex, e.RoundData.CommitteeBLS.StringList); err != nil {
+	if err := e.ValidateProducerPosition(block, e.RoundData.LastProposerIndex, e.RoundData.Committee); err != nil {
 		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
 	e.logger.Info("ValidateProducerSig...")
@@ -75,14 +76,16 @@ func (e BLSBFT) validatePreSignBlock(block common.BlockInterface) error {
 	return nil
 }
 
-func (e BLSBFT) ValidateProducerPosition(block common.BlockInterface, lastProposerIndex int, committeeBLSString []string) error {
-	producerPosition := (lastProposerIndex + block.GetRound()) % len(committeeBLSString)
-	tempProducer := committeeBLSString[producerPosition]
-	if strings.Compare(tempProducer, block.GetProducer()) != 0 {
-		return consensus.NewConsensusError(consensus.UnExpectedError, errors.New("Producer should be should be :"+tempProducer))
+func (e BLSBFT) ValidateProducerPosition(block common.BlockInterface, lastProposerIndex int, committee []incognitokey.CommitteePublicKey) error {
+	producerPosition := (lastProposerIndex + block.GetRound()) % len(committee)
+	tempProducer, err := committee[producerPosition].ToBase58()
+	if err != nil {
+		return err
 	}
-
-	return nil
+	if tempProducer == block.GetProducer() {
+		return nil
+	}
+	return consensus.NewConsensusError(consensus.UnExpectedError, errors.New("Producer should be should be :"+tempProducer))
 }
 
 func (e BLSBFT) ValidateProducerSig(block common.BlockInterface) error {
@@ -91,14 +94,20 @@ func (e BLSBFT) ValidateProducerSig(block common.BlockInterface) error {
 		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
 
-	producerBase58 := block.GetProducer()
-	producerBytes, _, err := base58.Base58Check{}.Decode(producerBase58)
+	// producerBase58 := block.GetProducer()
+	// producerBytes, _, err := base58.Base58Check{}.Decode(producerBase58)
+
+	producerKey := incognitokey.CommitteePublicKey{}
+	err = producerKey.FromBase58(block.GetProducer())
 	if err != nil {
 		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
-	if err := validateSingleBLSSig(block.Hash(), valData.ProducerBLSSig, 0, []blsmultisig.PublicKey{producerBytes}); err != nil {
+	start := time.Now()
+	if err := validateSingleBriSig(block.Hash(), valData.ProducerBLSSig, producerKey.MiningPubKey[common.BridgeConsensus]); err != nil {
 		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
+	end := time.Now().Sub(start)
+	fmt.Printf("ConsLog just verify %v\n", end.Seconds())
 	return nil
 }
 
@@ -140,7 +149,10 @@ func validateSingleBLSSig(
 	selfIdx int,
 	committee []blsmultisig.PublicKey,
 ) error {
+	start := time.Now()
 	result, err := blsmultisig.Verify(blsSig, dataHash.GetBytes(), []int{selfIdx}, committee)
+	end := time.Now().Sub(start)
+	fmt.Printf("ConsLog single verify %v\n", end.Seconds())
 	if err != nil {
 		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
