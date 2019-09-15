@@ -82,6 +82,9 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	}
 	//==========Fetch Beacon Blocks============
 	BLogger.log.Infof("Producing block: %d", blockGenerator.chain.BestState.Shard[shardID].ShardHeight+1)
+	if beaconHeight-shardBestState.BeaconHeight > MAX_BEACON_BLOCK {
+		beaconHeight = shardBestState.BeaconHeight + MAX_BEACON_BLOCK
+	}
 	beaconHash, err := blockGenerator.chain.config.DataBase.GetBeaconBlockHashByIndex(beaconHeight)
 	if err != nil {
 		return nil, err
