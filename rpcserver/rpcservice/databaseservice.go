@@ -109,3 +109,7 @@ func (dbService DatabaseService) HasSnDerivators(paymentAddressStr string, snDer
 	}
 	return result, nil
 }
+
+func (dbService DatabaseService) ListRewardAmount() map[string]map[common.Hash]uint64{
+	return dbService.DB.ListCommitteeReward()
+}
