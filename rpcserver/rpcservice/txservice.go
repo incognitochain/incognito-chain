@@ -1322,3 +1322,104 @@ func (txService TxService) CreateRawStopAutoStakingTransaction(params interface{
 
 	return tx.Hash().String(), byteArrays, txShardID, nil
 }
+
+func (txService TxService) BuildRawDefragmentAccountTransaction(params interface{}, meta metadata.Metadata) (*transaction.Tx, *RPCError){
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 4 {
+		return nil, NewRPCError(RPCInvalidParamsError, nil)
+	}
+	senderKeyParam, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("senderKeyParam is invalid"))
+	}
+	maxValTemp, ok := arrayParams[1].(float64)
+	if !ok {
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("maxVal is invalid"))
+	}
+	maxVal := uint64(maxValTemp)
+	estimateFeeCoinPerKbtemp, ok := arrayParams[2].(float64)
+	if !ok {
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("estimateFeeCoinPerKb is invalid"))
+	}
+	estimateFeeCoinPerKb := int64(estimateFeeCoinPerKbtemp)
+	// param #4: hasPrivacyCoin flag: 1 or -1
+	hasPrivacyCoin := int(arrayParams[3].(float64)) > 0
+	/********* END Fetch all component to *******/
+
+	// param #1: private key of sender
+	senderKeySet, shardIDSender, err := GetKeySetFromPrivateKeyParams(senderKeyParam)
+	if err != nil {
+		return nil, NewRPCError(InvalidSenderPrivateKeyError, err)
+	}
+
+	prvCoinID := &common.Hash{}
+	err1 := prvCoinID.SetBytes(common.PRVCoinID[:])
+	if err1 != nil {
+		return nil, NewRPCError(TokenIsInvalidError, err1)
+	}
+	outCoins, err := txService.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, shardIDSender, prvCoinID)
+	if err != nil {
+		return nil, NewRPCError(GetOutputCoinError, err)
+	}
+	// remove out coin in mem pool
+	outCoins, err = txService.filterMemPoolOutcoinsToSpent(outCoins)
+	if err != nil {
+		return nil, NewRPCError(GetOutputCoinError, err)
+	}
+	outCoins, amount := txService.calculateOutputCoinsByMinValue(outCoins, maxVal)
+	if len(outCoins) == 0 {
+		return nil, NewRPCError(GetOutputCoinError, nil)
+	}
+	paymentInfo := &privacy.PaymentInfo{
+		Amount:         uint64(amount),
+		PaymentAddress: senderKeySet.PaymentAddress,
+	}
+	paymentInfos := []*privacy.PaymentInfo{paymentInfo}
+	// check real fee(nano PRV) per tx
+	realFee, _, _ := txService.EstimateFee(estimateFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacyCoin, nil, nil, nil)
+	if len(outCoins) == 0 {
+		realFee = 0
+	}
+
+	if uint64(amount) < realFee {
+		return nil, NewRPCError(GetOutputCoinError, err)
+	}
+	paymentInfo.Amount = uint64(amount) - realFee
+
+	inputCoins := transaction.ConvertOutputCoinToInputCoin(outCoins)
+
+	/******* END GET output native coins(PRV), which is used to create tx *****/
+	// START create tx
+	// missing flag for privacy
+	// false by default
+	tx := transaction.Tx{}
+	err = tx.Init(
+		transaction.NewTxPrivacyInitParams(&senderKeySet.PrivateKey,
+			paymentInfos,
+			inputCoins,
+			realFee,
+			hasPrivacyCoin,
+			*txService.DB,
+			nil, // use for prv coin -> nil is valid
+			meta, nil))
+	// END create tx
+
+	if err != nil {
+		return nil, NewRPCError(CreateTxDataError, err)
+	}
+
+	return &tx, nil
+}
+
+//calculateOutputCoinsByMinValue
+func (txService TxService) calculateOutputCoinsByMinValue(outCoins []*privacy.OutputCoin, maxVal uint64) ([]*privacy.OutputCoin, uint64) {
+	outCoinsTmp := make([]*privacy.OutputCoin, 0)
+	amount := uint64(0)
+	for _, outCoin := range outCoins {
+		if outCoin.CoinDetails.GetValue() <= maxVal {
+			outCoinsTmp = append(outCoinsTmp, outCoin)
+			amount += outCoin.CoinDetails.GetValue()
+		}
+	}
+	return outCoinsTmp, amount
+}

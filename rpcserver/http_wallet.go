@@ -1,20 +1,13 @@
 package rpcserver
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
-	"github.com/incognitochain/incognito-chain/transaction"
-	"log"
-	"math/rand"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
-	"github.com/incognitochain/incognito-chain/wallet"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"log"
 )
 
 /*
@@ -26,28 +19,9 @@ Result—a list of accounts and their balances
 
 */
 func (httpServer *HttpServer) handleListAccounts(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	result := jsonresult.ListAccounts{
-		Accounts:   make(map[string]uint64),
-		WalletName: httpServer.config.Wallet.Name,
-	}
-	accounts := httpServer.config.Wallet.ListAccounts()
-	for accountName, account := range accounts {
-		lastByte := account.Key.KeySet.PaymentAddress.Pk[len(account.Key.KeySet.PaymentAddress.Pk)-1]
-		shardIDSender := common.GetShardIDFromLastByte(lastByte)
-		prvCoinID := &common.Hash{}
-		err := prvCoinID.SetBytes(common.PRVCoinID[:])
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.TokenIsInvalidError, err)
-		}
-		outCoins, err := httpServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, shardIDSender, prvCoinID)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-		}
-		amount := uint64(0)
-		for _, out := range outCoins {
-			amount += out.CoinDetails.GetValue()
-		}
-		result.Accounts[accountName] = amount
+	result, err := httpServer.walletService.ListAccounts()
+	if err != nil{
+		return nil, err
 	}
 
 	return result, nil
@@ -62,12 +36,12 @@ func (httpServer *HttpServer) handleGetAccount(params interface{}, closeChan <-c
 	if !ok {
 		return nil, nil
 	}
-	for _, account := range httpServer.config.Wallet.MasterAccount.Child {
-		address := account.Key.Base58CheckSerialize(wallet.PaymentAddressType)
-		if address == paramTemp {
-			return account.Name, nil
-		}
+
+	accountName, _ := httpServer.walletService.GetAccount(paramTemp)
+	if accountName != ""{
+		return accountName, nil
 	}
+
 	return nil, nil
 }
 
@@ -82,8 +56,13 @@ func (httpServer *HttpServer) handleGetAddressesByAccount(params interface{}, cl
 	if !ok {
 		return nil, nil
 	}
+
+	addresses, err := httpServer.walletService.GetAddressesByAccount(paramTemp)
+	if err != nil{
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
 	result := jsonresult.GetAddressesByAccount{}
-	result.Addresses = httpServer.config.Wallet.GetAddressesByAccName(paramTemp)
+	result.Addresses = addresses
 	return result, nil
 }
 
@@ -95,24 +74,15 @@ Parameter #1—an account name
 Result—a incognito address
 */
 func (httpServer *HttpServer) handleGetAccountAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	paramTemp, ok := params.(string)
+	accountName, ok := params.(string)
 	if !ok {
 		return nil, nil
 	}
-	activeShards := httpServer.config.BlockChain.BestState.Beacon.ActiveShards
-	shardID := httpServer.config.Wallet.GetConfig().ShardID
-	// if shardID is nil -> create with any shard
-	if shardID != nil {
-		// if shardID is configured with not nil
-		shardIDInt := int(*shardID)
-		// check with activeshards
-		if shardIDInt >= activeShards || shardIDInt <= 0 {
-			randShard := rand.Int31n(int32(activeShards))
-			temp := byte(randShard)
-			shardID = &temp
-		}
+
+	result, err := httpServer.walletService.GetAccountAddress(accountName)
+	if err != nil{
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
-	result := httpServer.config.Wallet.GetAddressByAccName(paramTemp, shardID)
 	return result, nil
 }
 
@@ -127,7 +97,7 @@ func (httpServer *HttpServer) handleDumpPrivkey(params interface{}, closeChan <-
 	if !ok {
 		return nil, nil
 	}
-	result := httpServer.config.Wallet.DumpPrivateKey(paramTemp)
+	result := httpServer.walletService.DumpPrivkey(paramTemp)
 	return result, nil
 }
 
@@ -155,15 +125,12 @@ func (httpServer *HttpServer) handleImportAccount(params interface{}, closeChan 
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("passPhrase is invalid"))
 	}
-	account, err := httpServer.config.Wallet.ImportAccount(privateKey, accountName, passPhrase)
-	if err != nil {
+
+	result, err := httpServer.walletService.ImportAccount(privateKey, accountName, passPhrase)
+	if err != nil{
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
-	result := wallet.KeySerializedData{
-		PaymentAddress: account.Key.Base58CheckSerialize(wallet.PaymentAddressType),
-		Pubkey:         hex.EncodeToString(account.Key.KeySet.PaymentAddress.Pk),
-		ReadonlyKey:    account.Key.Base58CheckSerialize(wallet.ReadonlyKeyType),
-	}
+
 	Logger.log.Debugf("handleImportAccount result: %+v", result)
 	return result, nil
 }
@@ -186,65 +153,26 @@ func (httpServer *HttpServer) handleRemoveAccount(params interface{}, closeChan 
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("passPhrase is invalid"))
 	}
-	err := httpServer.config.Wallet.RemoveAccount(privateKey, passPhrase)
-	if err != nil {
-		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	return true, nil
+
+	return httpServer.walletService.RemoveAccount(privateKey, passPhrase)
 }
 
 // handleGetBalanceByPrivatekey -  return balance of private key
 func (httpServer *HttpServer) handleGetBalanceByPrivatekey(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	log.Println(params)
-	balance := uint64(0)
-
 	// all component
 	arrayParams := common.InterfaceSlice(params)
-
 	if len(arrayParams) != 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("key component invalid"))
 	}
 	// param #1: private key of sender
-	senderKeyParam := arrayParams[0]
-	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
-	if err != nil {
-		log.Println(err)
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	err = senderKey.KeySet.InitFromPrivateKey(&senderKey.KeySet.PrivateKey)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	log.Println(senderKey)
+	senderKeyParam := arrayParams[0].(string)
 
-	// get balance for accountName in wallet
-	lastByte := senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1]
-	shardIDSender := common.GetShardIDFromLastByte(lastByte)
-	prvCoinID := &common.Hash{}
-	err = prvCoinID.SetBytes(common.PRVCoinID[:])
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.TokenIsInvalidError, err)
-	}
-	outcoints, err := httpServer.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, shardIDSender, prvCoinID)
-	log.Println(err)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	for _, out := range outcoints {
-		balance += out.CoinDetails.GetValue()
-	}
-	log.Println(balance)
-	//return jsonresult.AccountBalanceResult{
-	//	Account: senderKey.Base58CheckSerialize(wallet.PaymentAddressType),
-	//	Balance: balance,
-	//}, nil
-	return balance, nil
+	return httpServer.walletService.GetBalanceByPrivateKey(senderKeyParam)
 }
 
 // handleGetBalanceByPaymentAddress -  return balance of paymentaddress
 func (httpServer *HttpServer) handleGetBalanceByPaymentAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	balance := uint64(0)
 
 	// all component
 	arrayParams := common.InterfaceSlice(params)
@@ -252,64 +180,37 @@ func (httpServer *HttpServer) handleGetBalanceByPaymentAddress(params interface{
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("key component invalid"))
 	}
 	// param #1: private key of sender
-	paymentAddressParam := arrayParams[0]
-	accountWithPaymentAddress, err := wallet.Base58CheckDeserialize(paymentAddressParam.(string))
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
+	paymentAddressParam := arrayParams[0].(string)
 
-	// get balance for accountName in wallet
-	lastByte := accountWithPaymentAddress.KeySet.PaymentAddress.Pk[len(accountWithPaymentAddress.KeySet.PaymentAddress.Pk)-1]
-	shardIDSender := common.GetShardIDFromLastByte(lastByte)
-
-	prvCoinID := &common.Hash{}
-	err1 := prvCoinID.SetBytes(common.PRVCoinID[:])
-	if err1 != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.TokenIsInvalidError, err1)
-	}
-	outcoints, err := httpServer.config.BlockChain.GetListOutputCoinsByKeyset(&accountWithPaymentAddress.KeySet, shardIDSender, prvCoinID)
-	Logger.log.Debugf("OutCoins: %+v", outcoints)
-	Logger.log.Debugf("shardIDSender: %+v", shardIDSender)
-	Logger.log.Debugf("accountWithPaymentAddress.KeySet: %+v", accountWithPaymentAddress.KeySet)
-	Logger.log.Debugf("paymentAddressParam: %+v", paymentAddressParam)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	for _, out := range outcoints {
-		balance += out.CoinDetails.GetValue()
-	}
-
-	return balance, nil
+	return httpServer.walletService.GetBalanceByPaymentAddress(paymentAddressParam)
 }
 
 /*
 handleGetBalance - RPC gets the balances in decimal
 */
 func (httpServer *HttpServer) handleGetBalance(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	balance := uint64(0)
-
 	if httpServer.config.Wallet == nil {
-		return balance, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("wallet is not existed"))
+		return uint64(0), rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("wallet is not existed"))
 	}
 	if len(httpServer.config.Wallet.MasterAccount.Child) == 0 {
-		return balance, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("no account is existed"))
+		return uint64(0), rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("no account is existed"))
 	}
 
 	// convert component to array
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 3 {
-		return balance, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("params is invalid"))
+		return uint64(0), rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("params is invalid"))
 	}
 	// Param #1: account "*" for all or a particular account
 	accountName, ok := arrayParams[0].(string)
 	if !ok {
-		return balance, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("accountName is invalid"))
+		return uint64(0), rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("accountName is invalid"))
 	}
 
 	// Param #2: the minimum number of confirmations an output must have
 	minTemp, ok := arrayParams[1].(float64)
 	if !ok {
-		return balance, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("min is invalid"))
+		return uint64(0), rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("min is invalid"))
 	}
 	min := int(minTemp)
 	_ = min
@@ -317,50 +218,14 @@ func (httpServer *HttpServer) handleGetBalance(params interface{}, closeChan <-c
 	// Param #3: passphrase to access local wallet of node
 	passPhrase, ok := arrayParams[2].(string)
 	if !ok {
-		return balance, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("passPhrase is invalid"))
+		return uint64(0), rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("passPhrase is invalid"))
 	}
 
 	if passPhrase != httpServer.config.Wallet.PassPhrase {
-		return balance, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("password phrase is wrong for local wallet"))
+		return uint64(0), rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("password phrase is wrong for local wallet"))
 	}
 
-	prvCoinID := &common.Hash{}
-	err1 := prvCoinID.SetBytes(common.PRVCoinID[:])
-	if err1 != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.TokenIsInvalidError, err1)
-	}
-	if accountName == "*" {
-		// get balance for all accounts in wallet
-		for _, account := range httpServer.config.Wallet.MasterAccount.Child {
-			lastByte := account.Key.KeySet.PaymentAddress.Pk[len(account.Key.KeySet.PaymentAddress.Pk)-1]
-			shardIDSender := common.GetShardIDFromLastByte(lastByte)
-			outCoins, err := httpServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, shardIDSender, prvCoinID)
-			if err != nil {
-				return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-			}
-			for _, out := range outCoins {
-				balance += out.CoinDetails.GetValue()
-			}
-		}
-	} else {
-		for _, account := range httpServer.config.Wallet.MasterAccount.Child {
-			if account.Name == accountName {
-				// get balance for accountName in wallet
-				lastByte := account.Key.KeySet.PaymentAddress.Pk[len(account.Key.KeySet.PaymentAddress.Pk)-1]
-				shardIDSender := common.GetShardIDFromLastByte(lastByte)
-				outCoins, err := httpServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, shardIDSender, prvCoinID)
-				if err != nil {
-					return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-				}
-				for _, out := range outCoins {
-					balance += out.CoinDetails.GetValue()
-				}
-				break
-			}
-		}
-	}
-
-	return balance, nil
+	return httpServer.walletService.GetBalance(accountName)
 }
 
 /*
@@ -406,27 +271,7 @@ func (httpServer *HttpServer) handleGetReceivedByAccount(params interface{}, clo
 		return balance, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("password phrase is wrong for local wallet"))
 	}
 
-	for _, account := range httpServer.config.Wallet.MasterAccount.Child {
-		if account.Name == accountName {
-			// get balance for accountName in wallet
-			lastByte := account.Key.KeySet.PaymentAddress.Pk[len(account.Key.KeySet.PaymentAddress.Pk)-1]
-			shardIDSender := common.GetShardIDFromLastByte(lastByte)
-			prvCoinID := &common.Hash{}
-			err1 := prvCoinID.SetBytes(common.PRVCoinID[:])
-			if err1 != nil {
-				return nil, rpcservice.NewRPCError(rpcservice.TokenIsInvalidError, err1)
-			}
-			outCoins, err := httpServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, shardIDSender, prvCoinID)
-			if err != nil {
-				return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-			}
-			for _, out := range outCoins {
-				balance += out.CoinDetails.GetValue()
-			}
-			break
-		}
-	}
-	return balance, nil
+	return httpServer.walletService.GetReceivedByAccount(accountName)
 }
 
 /*
@@ -440,7 +285,7 @@ func (httpServer *HttpServer) handleSetTxFee(params interface{}, closeChan <-cha
 
 // handleListCustomToken - return list all custom token in network
 func (httpServer *HttpServer) handleListCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	temps, err := httpServer.config.BlockChain.ListCustomToken()
+	temps, err := httpServer.blockService.ListCustomToken()
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -453,7 +298,7 @@ func (httpServer *HttpServer) handleListCustomToken(params interface{}, closeCha
 }
 
 func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	temps, listCustomTokenCrossShard, err := httpServer.config.BlockChain.ListPrivacyCustomToken()
+	temps, listCustomTokenCrossShard, err := httpServer.blockService.ListPrivacyCustomToken()
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -486,12 +331,11 @@ func (httpServer *HttpServer) handleGetPublicKeyFromPaymentAddress(params interf
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("paymentAddress is invalid"))
 	}
 
-	key, err := wallet.Base58CheckDeserialize(paymentAddress)
-	if err != nil {
+	keySet, _, err := rpcservice.GetKeySetFromPaymentAddressParam(paymentAddress)
+	if err != nil{
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
-
-	result := jsonresult.NewGetPublicKeyFromPaymentAddressResult(key.KeySet.PaymentAddress.Pk[:])
+	result := jsonresult.NewGetPublicKeyFromPaymentAddressResult(keySet.PaymentAddress.Pk[:])
 
 	return result, nil
 }
@@ -529,7 +373,7 @@ func (httpServer *HttpServer) handleDefragmentAccount(params interface{}, closeC
 */
 func (httpServer *HttpServer) createRawDefragmentAccountTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	var err error
-	tx, err := httpServer.buildRawDefragmentAccountTransaction(params, nil)
+	tx, err := httpServer.txService.BuildRawDefragmentAccountTransaction(params, nil)
 	if err.(*rpcservice.RPCError) != nil {
 		Logger.log.Critical(err)
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
@@ -548,106 +392,5 @@ func (httpServer *HttpServer) createRawDefragmentAccountTransaction(params inter
 	return result, nil
 }
 
-// buildRawDefragmentAccountTransaction
-func (httpServer *HttpServer) buildRawDefragmentAccountTransaction(params interface{}, meta metadata.Metadata) (*transaction.Tx, *rpcservice.RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) < 4 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, nil)
-	}
-	senderKeyParam, ok := arrayParams[0].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("senderKeyParam is invalid"))
-	}
-	maxValTemp, ok := arrayParams[1].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("maxVal is invalid"))
-	}
-	maxVal := uint64(maxValTemp)
-	estimateFeeCoinPerKbtemp, ok := arrayParams[2].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("estimateFeeCoinPerKb is invalid"))
-	}
-	estimateFeeCoinPerKb := int64(estimateFeeCoinPerKbtemp)
-	// param #4: hasPrivacyCoin flag: 1 or -1
-	hasPrivacyCoin := int(arrayParams[3].(float64)) > 0
-	/********* END Fetch all component to *******/
-
-	// param #1: private key of sender
-	senderKeySet, shardIDSender, err := rpcservice.GetKeySetFromPrivateKeyParams(senderKeyParam)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.InvalidSenderPrivateKeyError, err)
-	}
-
-	prvCoinID := &common.Hash{}
-	err1 := prvCoinID.SetBytes(common.PRVCoinID[:])
-	if err1 != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.TokenIsInvalidError, err1)
-	}
-	outCoins, err := httpServer.config.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, shardIDSender, prvCoinID)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetOutputCoinError, err)
-	}
-	// remove out coin in mem pool
-	outCoins, err = httpServer.txMemPoolService.FilterMemPoolOutcoinsToSpent(outCoins)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetOutputCoinError, err)
-	}
-	outCoins, amount := httpServer.calculateOutputCoinsByMinValue(outCoins, maxVal)
-	if len(outCoins) == 0 {
-		return nil, rpcservice.NewRPCError(rpcservice.GetOutputCoinError, nil)
-	}
-	paymentInfo := &privacy.PaymentInfo{
-		Amount:         uint64(amount),
-		PaymentAddress: senderKeySet.PaymentAddress,
-	}
-	paymentInfos := []*privacy.PaymentInfo{paymentInfo}
-	// check real fee(nano PRV) per tx
-	realFee, _, _ := httpServer.txService.EstimateFee(estimateFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacyCoin, nil, nil, nil)
-	if len(outCoins) == 0 {
-		realFee = 0
-	}
-
-	if uint64(amount) < realFee {
-		return nil, rpcservice.NewRPCError(rpcservice.GetOutputCoinError, err)
-	}
-	paymentInfo.Amount = uint64(amount) - realFee
-
-	inputCoins := transaction.ConvertOutputCoinToInputCoin(outCoins)
-
-	/******* END GET output native coins(PRV), which is used to create tx *****/
-	// START create tx
-	// missing flag for privacy
-	// false by default
-	tx := transaction.Tx{}
-	err = tx.Init(
-		transaction.NewTxPrivacyInitParams(&senderKeySet.PrivateKey,
-			paymentInfos,
-			inputCoins,
-			realFee,
-			hasPrivacyCoin,
-			*httpServer.config.Database,
-			nil, // use for prv coin -> nil is valid
-			meta, nil))
-	// END create tx
-
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
-	}
-
-	return &tx, nil
-}
-
-//calculateOutputCoinsByMinValue
-func (httpServer *HttpServer) calculateOutputCoinsByMinValue(outCoins []*privacy.OutputCoin, maxVal uint64) ([]*privacy.OutputCoin, uint64) {
-	outCoinsTmp := make([]*privacy.OutputCoin, 0)
-	amount := uint64(0)
-	for _, outCoin := range outCoins {
-		if outCoin.CoinDetails.GetValue() <= maxVal {
-			outCoinsTmp = append(outCoinsTmp, outCoin)
-			amount += outCoin.CoinDetails.GetValue()
-		}
-	}
-	return outCoinsTmp, amount
-}
 
 // ----------------------------- End ------------------------------------
