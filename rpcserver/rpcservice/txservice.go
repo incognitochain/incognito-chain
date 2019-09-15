@@ -1124,5 +1124,201 @@ func (txService TxService) RandomCommitments(paymentAddressStr string, outputs [
 	return commitmentIndexs, myCommitmentIndexs, commitments, nil
 }
 
+func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData string) (wire.Message, *transaction.TxCustomTokenPrivacy, error){
+	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
+	if err != nil {
+		Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction result: %+v, err: %+v", nil, err)
+		return nil, nil, err
+	}
 
+	tx := transaction.TxCustomTokenPrivacy{}
+	err = json.Unmarshal(rawTxBytes, &tx)
+	if err != nil {
+		Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction result: %+v, err: %+v", nil, err)
+		return nil, nil, err
+	}
 
+	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx)
+	//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
+	if err != nil {
+		Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction result: %+v, err: %+v", nil, err)
+		return nil, nil, err
+	}
+
+	Logger.log.Debugf("there is hash of transaction: %s\n", hash.String())
+
+	txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
+	if err != nil {
+		Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction result: %+v, err: %+v", nil, err)
+		return nil, nil, err
+	}
+
+	txMsg.(*wire.MessageTxPrivacyToken).Transaction = &tx
+
+	return txMsg, &tx, nil
+}
+
+func (txService TxService) CreateRawStakingTransaction(params interface{}, shardAmountStaking uint64) (string, []byte, byte, *RPCError){
+	paramsArray := common.InterfaceSlice(params)
+	//var err error
+	if len(paramsArray) != 9 {
+		return "", nil, byte(0), NewRPCError(RPCInvalidParamsError, fmt.Errorf("Empty Params For Staking Transaction %+v", paramsArray))
+	}
+	//Get sender keyset
+	senderKeyParam := paramsArray[0]
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if err != nil {
+		Logger.log.Critical(err)
+		Logger.log.Debugf("handleCreateRawStakingTransaction result: %+v, err: %+v", nil, err)
+		return "", nil, byte(0), NewRPCError(RPCInvalidParamsError, errors.New("Cannot get payment address"))
+	}
+	err = senderKey.KeySet.InitFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	if err != nil {
+		return "", nil, byte(0), NewRPCError(RPCInvalidParamsError, errors.New("Cannot import key set"))
+	}
+	funderPaymentAddress := senderKey.Base58CheckSerialize(wallet.PaymentAddressType)
+	//Get staking type
+	stakingType, ok := paramsArray[4].(float64)
+	if !ok {
+		return "", nil, byte(0), NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Staking Type For Staking Transaction %+v", paramsArray[4]))
+	}
+
+	//Get Candidate Payment Address
+	candidatePaymentAddress, ok := paramsArray[5].(string)
+	if !ok {
+		return "", nil, byte(0), NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Producer Payment Address for Staking Transaction %+v", paramsArray[5]))
+	}
+
+	// Get private seed, a.k.a mining key
+	privateSeed := paramsArray[6].(string)
+	privateSeedBytes, ver, err := base58.Base58Check{}.Decode(privateSeed)
+	if (err != nil) || (ver != common.ZeroByte) {
+		return "", nil, byte(0), NewRPCError(UnexpectedError, errors.New("Decode privateseed failed!"))
+	}
+
+	//Get RewardReceiver Payment Address
+	rewardReceiverPaymentAddress, ok := paramsArray[7].(string)
+	if !ok {
+		return "", nil, byte(0), NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Producer Payment Address for Staking Transaction %+v", paramsArray[7]))
+	}
+
+	//Get auto staking flag
+	autoReStaking, ok := paramsArray[8].(bool)
+	if !ok {
+		return "", nil, byte(0), NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid auto restaking flag %+v", paramsArray[8]))
+	}
+	paymentAddress, _ := senderKey.Serialize(wallet.PaymentAddressType)
+
+	// Get candidate publickey
+	candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
+	if err != nil || candidateWallet == nil {
+		return "", nil, byte(0), NewRPCError(RPCInvalidParamsError, errors.New("Base58CheckDeserialize candidate Payment Address failed"))
+	}
+	pk := candidateWallet.KeySet.PaymentAddress.Pk
+
+	committeePK, err := incognitokey.NewCommitteeKeyFromSeed(privateSeedBytes, pk)
+	if err != nil {
+		Logger.log.Critical(err)
+		Logger.log.Debugf("handleCreateRawStakingTransaction result: %+v, err: %+v", nil, err)
+		return "", nil, byte(0), NewRPCError(RPCInvalidParamsError, errors.New("Cannot get payment address"))
+	}
+
+	committeePKBytes, err := committeePK.Bytes()
+	if err != nil {
+		return "", nil, byte(0), NewRPCError(RPCInvalidParamsError, errors.New("Cannot import key set"))
+	}
+
+	Logger.log.Info("Staking Public Key", base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte))
+
+	stakingMetadata, err := metadata.NewStakingMetadata(
+		int(stakingType), funderPaymentAddress, rewardReceiverPaymentAddress,
+		shardAmountStaking,
+		base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte), autoReStaking)
+	// metadata, err := metadata.NewStakingMetadata(int(stakingType), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), httpServer.config.ChainParams.StakingAmountShard, base58.Base58Check{}.Encode(blsPKBytes, common.ZeroByte))
+
+	tx, err := txService.BuildRawTransaction(params, stakingMetadata)
+	if err.(*RPCError) != nil {
+		Logger.log.Critical(err)
+		Logger.log.Debugf("handleCreateRawStakingTransaction result: %+v, err: %+v", nil, err)
+		return "", nil, byte(0), NewRPCError(CreateTxDataError, err)
+	}
+	byteArrays, err := json.Marshal(tx)
+	if err != nil {
+		// return hex for a new tx
+		Logger.log.Debugf("handleCreateRawStakingTransaction result: %+v, err: %+v", nil, err)
+		return "", nil, byte(0), NewRPCError(CreateTxDataError, err)
+	}
+	txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+
+	return tx.Hash().String(), byteArrays, txShardID, nil
+}
+
+func (txService TxService) CreateRawStopAutoStakingTransaction(params interface{}) (string, []byte, byte, *RPCError){
+	paramsArray := common.InterfaceSlice(params)
+	//var err error
+	if len(paramsArray) != 7 {
+		return "", nil, byte(0), NewRPCError(RPCInvalidParamsError, fmt.Errorf("Empty Params For Staking Transaction %+v", paramsArray))
+	}
+	//Get sender keyset
+	senderKeyParam := paramsArray[0]
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if err != nil {
+		Logger.log.Critical(err)
+		Logger.log.Debugf("handleCreateRawStakingTransaction result: %+v, err: %+v", nil, err)
+		return "", nil, byte(0), NewRPCError(RPCInvalidParamsError, errors.New("Cannot get payment address"))
+	}
+	err = senderKey.KeySet.InitFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	if err != nil {
+		return "", nil, byte(0), NewRPCError(RPCInvalidParamsError, errors.New("Cannot import key set"))
+	}
+	//Get staking type
+	stopAutoStakingType, ok := paramsArray[4].(float64)
+	if !ok {
+		return "", nil, byte(0), NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Staking Type For Staking Transaction %+v", paramsArray[4]))
+	}
+	//Get Candidate Payment Address
+	candidatePaymentAddress, ok := paramsArray[5].(string)
+	if !ok {
+		return "", nil, byte(0), NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Producer Payment Address for Staking Transaction %+v", paramsArray[5]))
+	}
+	// Get private seed, a.k.a mining key
+	privateSeed := paramsArray[6].(string)
+	privateSeedBytes, ver, err := base58.Base58Check{}.Decode(privateSeed)
+	if (err != nil) || (ver != common.ZeroByte) {
+		return "", nil, byte(0), NewRPCError(UnexpectedError, errors.New("Decode privateseed failed!"))
+	}
+	// Get candidate publickey
+	candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
+	if err != nil || candidateWallet == nil {
+		return "", nil, byte(0), NewRPCError(RPCInvalidParamsError, errors.New("Base58CheckDeserialize candidate Payment Address failed"))
+	}
+	pk := candidateWallet.KeySet.PaymentAddress.Pk
+
+	committeePK, err := incognitokey.NewCommitteeKeyFromSeed(privateSeedBytes, pk)
+	if err != nil {
+		return "", nil, byte(0), NewRPCError(RPCInvalidParamsError, err)
+	}
+
+	committeePKBytes, err := committeePK.Bytes()
+	if err != nil {
+		return "", nil, byte(0), NewRPCError(RPCInvalidParamsError, err)
+	}
+
+	stakingMetadata, err := metadata.NewStopAutoStakingMetadata(int(stopAutoStakingType), base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte))
+
+	tx, err := txService.BuildRawTransaction(params, stakingMetadata)
+	if err.(*RPCError) != nil {
+		Logger.log.Critical(err)
+		Logger.log.Debugf("handleCreateRawStakingTransaction result: %+v, err: %+v", nil, err)
+		return "", nil, byte(0), NewRPCError(CreateTxDataError, err)
+	}
+	byteArrays, err := json.Marshal(tx)
+	if err != nil {
+		// return hex for a new tx
+		Logger.log.Debugf("handleCreateRawStakingTransaction result: %+v, err: %+v", nil, err)
+		return "", nil, byte(0), NewRPCError(CreateTxDataError, err)
+	}
+	txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+
+	return tx.Hash().String(), byteArrays, txShardID, nil
+}
