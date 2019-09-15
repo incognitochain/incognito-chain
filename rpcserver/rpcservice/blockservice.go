@@ -424,5 +424,9 @@ func (blockService BlockService) RevertShard(shardID byte) error {
 	return blockService.BlockChain.RevertShardState(shardID)
 }
 
+func (blockService BlockService) ListCustomToken() (map[common.Hash]transaction.TxNormalToken, error){
+	return blockService.BlockChain.ListCustomToken()
+}
+
 
 
