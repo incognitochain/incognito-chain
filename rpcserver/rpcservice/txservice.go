@@ -1423,3 +1423,64 @@ func (txService TxService) calculateOutputCoinsByMinValue(outCoins []*privacy.Ou
 	}
 	return outCoinsTmp, amount
 }
+
+func (txService TxService) SendRawTxWithMetadata(base58CheckDate string) (wire.Message, *common.Hash, *RPCError){
+	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckDate)
+	if err != nil {
+		return nil, nil, NewRPCError(RPCInvalidParamsError, err)
+	}
+
+	tx := transaction.Tx{}
+	err = json.Unmarshal(rawTxBytes, &tx)
+	if err != nil {
+		return nil, nil, NewRPCError(JsonError, err)
+	}
+
+	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx)
+	if err != nil {
+		return nil, nil, NewRPCError(TxPoolRejectTxError, err)
+	}
+
+	Logger.log.Debugf("there is hash of transaction: %s\n", hash.String())
+
+	// broadcast message
+	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
+	if err != nil {
+		return nil, nil, NewRPCError(UnexpectedError, err)
+	}
+
+	txMsg.(*wire.MessageTx).Transaction = &tx
+	
+	return txMsg, hash, nil
+}
+
+func (txService TxService) SendRawCustomTokenTxWithMetadata(base58CheckDate string) (wire.Message, *common.Hash, *RPCError){
+	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckDate)
+	if err != nil {
+		return nil, nil,  NewRPCError(RPCInvalidParamsError, err)
+	}
+
+	tx := transaction.TxNormalToken{}
+	err = json.Unmarshal(rawTxBytes, &tx)
+	fmt.Printf("%+v\n", tx)
+	if err != nil {
+		return nil, nil, NewRPCError(JsonError, err)
+	}
+
+	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx)
+	if err != nil {
+		return nil, nil, NewRPCError(TxPoolRejectTxError, err)
+	}
+
+	Logger.log.Debugf("there is hash of transaction: %s\n", hash.String())
+
+	// broadcast message
+	txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)
+	if err != nil {
+		return nil, nil, NewRPCError(UnexpectedError, err)
+	}
+
+	txMsg.(*wire.MessageTxToken).Transaction = &tx
+
+	return txMsg, hash, nil
+}

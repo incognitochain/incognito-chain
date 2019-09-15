@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"errors"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type BlockService struct {
@@ -428,5 +429,57 @@ func (blockService BlockService) ListCustomToken() (map[common.Hash]transaction.
 	return blockService.BlockChain.ListCustomToken()
 }
 
+func (blockService BlockService) GetRewardAmount(paymentAddress string) (map[string]uint64, *RPCError){
+	rewardAmountResult := make(map[string]uint64)
+	rewardAmounts := make(map[common.Hash]uint64)
+	var publicKey []byte
+	if paymentAddress != "" {
+		senderKey, err := wallet.Base58CheckDeserialize(paymentAddress)
+		if err != nil {
+			return nil, NewRPCError(UnexpectedError, err)
+		}
 
+		publicKey = senderKey.KeySet.PaymentAddress.Pk
+	}
+	if publicKey == nil {
+		return rewardAmountResult, nil
+	}
+
+	allCoinIDs, err := blockService.BlockChain.GetAllCoinID()
+	if err != nil {
+		return nil, NewRPCError(UnexpectedError, err)
+	}
+
+	for _, coinID := range allCoinIDs {
+		amount, err := (*blockService.DB).GetCommitteeReward(publicKey, coinID)
+		if err != nil {
+			return nil, NewRPCError(UnexpectedError, err)
+		}
+		if coinID == common.PRVCoinID {
+			rewardAmountResult["PRV"] = amount
+		} else {
+			rewardAmounts[coinID] = amount
+		}
+	}
+
+	cusPrivTok, crossPrivToken, err := blockService.BlockChain.ListPrivacyCustomToken()
+
+	if err != nil {
+		return nil, NewRPCError(UnexpectedError, err)
+	}
+
+	for _, token := range cusPrivTok {
+		if rewardAmounts[token.TxPrivacyTokenData.PropertyID] > 0 {
+			rewardAmountResult[token.TxPrivacyTokenData.PropertyID.String()] = rewardAmounts[token.TxPrivacyTokenData.PropertyID]
+		}
+	}
+
+	for _, token := range crossPrivToken {
+		if rewardAmounts[token.TokenID] > 0 {
+			rewardAmountResult[token.TokenID.String()] = rewardAmounts[token.TokenID]
+		}
+	}
+
+	return rewardAmountResult, nil
+}
 
