@@ -2,8 +2,7 @@
 
 run()
 {
-  private_key=xxx # enter private key or remove this line
-  validator_key=yyy # enter validator key or remove this line
+  validator_key=xxx
   latest_tag=$1
   current_tag=$2
   data_dir="data"
