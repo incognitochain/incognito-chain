@@ -68,8 +68,10 @@ func (chain *ShardChain) GetLastProposerIndex() int {
 }
 
 func (chain *ShardChain) CreateNewBlock(round int) (common.BlockInterface, error) {
-	chain.lock.Lock()
-	defer chain.lock.Unlock()
+	// chain.lock.Lock()
+	// defer chain.lock.Unlock()
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
 	start := time.Now()
 	Logger.log.Infof("Begin Create New Block %+v", start)
 	beaconHeight := chain.Blockchain.Synker.States.ClosestState.ClosestBeaconState
