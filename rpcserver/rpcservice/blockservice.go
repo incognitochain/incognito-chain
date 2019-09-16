@@ -312,11 +312,11 @@ func (blockService BlockService) GetShardBlockByHeight(height uint64, shardID by
 }
 
 func (blockService BlockService) IsBeaconBestStateNil() (bool) {
-	return blockService.BlockChain.BestState.Beacon == nil
+	return blockService.BlockChain.BestState == nil || blockService.BlockChain.BestState.Beacon == nil
 }
 
 func (blockService BlockService) IsShardBestStateNil() (bool) {
-	return blockService.BlockChain.BestState.Shard == nil || len(blockService.BlockChain.BestState.Shard) <= 0
+	return blockService.BlockChain.BestState == nil || blockService.BlockChain.BestState.Shard == nil || len(blockService.BlockChain.BestState.Shard) <= 0
 }
 
 func (blockService BlockService) GetValidStakers(publicKeys []string) ([]string,  *RPCError) {
