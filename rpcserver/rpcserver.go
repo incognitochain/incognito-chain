@@ -21,8 +21,9 @@ import (
 )
 
 const (
-	rpcAuthTimeoutSeconds = 60
-	RpcServerVersion      = "1.0"
+	rpcAuthTimeoutSeconds    = 60
+	rpcProcessTimeoutSeconds = 90
+	RpcServerVersion         = "1.0"
 )
 
 // timeZeroVal is simply the zero value for a time.Time and is used to avoid
