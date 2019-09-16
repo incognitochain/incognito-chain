@@ -56,9 +56,9 @@ type Synker struct {
 		PeersState   map[libp2p.ID]*peerState
 		ClosestState struct {
 			ClosestBeaconState uint64
-			ClosestShardsState map[byte]uint64
-			ShardToBeaconPool  map[byte]uint64
-			CrossShardPool     map[byte]uint64
+			ClosestShardsState sync.Map
+			ShardToBeaconPool  sync.Map
+			CrossShardPool     sync.Map
 		}
 		PoolsState struct {
 			BeaconPool        []uint64
@@ -101,9 +101,9 @@ func (synker *Synker) Start() {
 	synker.Status.Shards = make(map[byte]struct{})
 	synker.Status.IsLatest.Shards = make(map[byte]bool)
 	synker.States.PeersState = make(map[libp2p.ID]*peerState)
-	synker.States.ClosestState.ClosestShardsState = make(map[byte]uint64)
-	synker.States.ClosestState.ShardToBeaconPool = make(map[byte]uint64)
-	synker.States.ClosestState.CrossShardPool = make(map[byte]uint64)
+	synker.States.ClosestState.ClosestShardsState = sync.Map{}
+	synker.States.ClosestState.ShardToBeaconPool = sync.Map{}
+	synker.States.ClosestState.CrossShardPool = sync.Map{}
 	synker.States.PoolsState.ShardToBeaconPool = make(map[byte][]uint64)
 	synker.States.PoolsState.CrossShardPool = make(map[byte][]uint64)
 	synker.States.PoolsState.ShardsPool = make(map[byte][]uint64)
@@ -285,10 +285,15 @@ func (synker *Synker) UpdateState() {
 
 	synker.States.ClosestState.ClosestBeaconState = beaconStateClone.BeaconHeight
 	for shardID, beststate := range synker.blockchain.BestState.Shard {
-		synker.States.ClosestState.ClosestShardsState[shardID] = beststate.ShardHeight
+		synker.States.ClosestState.ClosestShardsState.Store(shardID, beststate.ShardHeight)
 	}
-	synker.States.ClosestState.ShardToBeaconPool = synker.blockchain.config.ShardToBeaconPool.GetLatestValidPendingBlockHeight()
-	synker.States.ClosestState.CrossShardPool = synker.blockchain.config.CrossShardPool[userShardID].GetLatestValidBlockHeight()
+
+	for k, v := range synker.blockchain.config.ShardToBeaconPool.GetLatestValidPendingBlockHeight() {
+		synker.States.ClosestState.ShardToBeaconPool.Store(k, v)
+	}
+	for k, v := range synker.blockchain.config.CrossShardPool[userShardID].GetLatestValidBlockHeight() {
+		synker.States.ClosestState.CrossShardPool.Store(k, v)
+	}
 
 	RCS := reportedChainState{
 		ClosestBeaconState: ChainState{
@@ -363,10 +368,11 @@ func (synker *Synker) UpdateState() {
 								if len(commonHeights) > 0 {
 									for idx := len(commonHeights) - 1; idx == 0; idx-- {
 										if idx == 0 {
-											synker.States.ClosestState.ShardToBeaconPool[shardID] = commonHeights[idx]
+											synker.States.ClosestState.ShardToBeaconPool.Store(shardID, commonHeights[idx])
 										}
-										if synker.States.ClosestState.ShardToBeaconPool[shardID] > commonHeights[idx] {
-											synker.States.ClosestState.ShardToBeaconPool[shardID] = commonHeights[idx]
+										height, _ := synker.States.ClosestState.ShardToBeaconPool.Load(shardID)
+										if height.(uint64) > commonHeights[idx] {
+											synker.States.ClosestState.ShardToBeaconPool.Store(shardID, commonHeights[idx])
 											break
 										}
 									}
@@ -404,8 +410,9 @@ func (synker *Synker) UpdateState() {
 							sort.Slice(commonHeights, func(i, j int) bool { return blkHeights[i] < blkHeights[j] })
 							if len(commonHeights) > 0 {
 								for idx := len(commonHeights) - 1; idx < 0; idx-- {
-									if synker.States.ClosestState.CrossShardPool[shardID] > commonHeights[idx] {
-										synker.States.ClosestState.CrossShardPool[shardID] = commonHeights[idx]
+									height, _ := synker.States.ClosestState.CrossShardPool.Load(shardID)
+									if height.(uint64) > commonHeights[idx] {
+										synker.States.ClosestState.CrossShardPool.Store(shardID, commonHeights[idx])
 									}
 								}
 							}
@@ -418,7 +425,7 @@ func (synker *Synker) UpdateState() {
 
 	synker.States.ClosestState.ClosestBeaconState = RCS.ClosestBeaconState.Height
 	for shardID, state := range RCS.ClosestShardsState {
-		synker.States.ClosestState.ClosestShardsState[shardID] = state.Height
+		synker.States.ClosestState.ClosestShardsState.Store(shardID, state.Height)
 	}
 
 	if len(synker.States.PeersState) > 0 {
@@ -854,7 +861,9 @@ var currentInsert = struct {
 
 func (synker *Synker) InsertBlockFromPool() {
 	go func() {
-		synker.InsertBeaconBlockFromPool()
+		if !synker.blockchain.config.ConsensusEngine.IsOngoing(common.BeaconChainKey) {
+			synker.InsertBeaconBlockFromPool()
+		}
 	}()
 
 	synker.Status.Lock()
@@ -862,7 +871,11 @@ func (synker *Synker) InsertBlockFromPool() {
 		if _, ok := currentInsert.Shards[shardID]; !ok {
 			currentInsert.Shards[shardID] = &sync.Mutex{}
 		}
-		synker.InsertShardBlockFromPool(shardID)
+		if !synker.blockchain.config.ConsensusEngine.IsOngoing(common.GetShardChainKey(shardID)) {
+			go func(shardID byte) {
+				synker.InsertShardBlockFromPool(shardID)
+			}(shardID)
+		}
 	}
 	synker.Status.Unlock()
 }
@@ -935,21 +948,23 @@ func (synker *Synker) InsertShardBlockFromPool(shardID byte) {
 }
 
 func (synker *Synker) GetClosestShardToBeaconPoolState() map[byte]uint64 {
-	synker.States.Lock()
 	result := make(map[byte]uint64)
-	for shardID, height := range synker.States.ClosestState.ShardToBeaconPool {
+	synker.States.ClosestState.ShardToBeaconPool.Range(func(k interface{}, v interface{}) bool {
+		shardID := k.(byte)
+		height := v.(uint64)
 		result[shardID] = height
-	}
-	synker.States.Unlock()
+		return true
+	})
 	return result
 }
 
 func (synker *Synker) GetClosestCrossShardPoolState() map[byte]uint64 {
-	synker.States.Lock()
 	result := make(map[byte]uint64)
-	for shardID, height := range synker.States.ClosestState.CrossShardPool {
+	synker.States.ClosestState.CrossShardPool.Range(func(k interface{}, v interface{}) bool {
+		shardID := k.(byte)
+		height := v.(uint64)
 		result[shardID] = height
-	}
-	synker.States.Unlock()
+		return true
+	})
 	return result
 }
