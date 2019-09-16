@@ -244,7 +244,7 @@ func (engine *Engine) Init(config *EngineConfig) error {
 		if err != nil {
 			panic(err)
 		}
-	} else {
+	} else if config.Node.GetMiningKeys() != "" {
 		err := engine.LoadMiningKeys(config.Node.GetMiningKeys())
 		if err != nil {
 			panic(err)
