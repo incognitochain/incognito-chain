@@ -75,7 +75,7 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 			// param #5: token params
 			tokenParamsRaw := arrayParams[4].(map[string]interface{})
 
-			customTokenParams, customPrivacyTokenParam, err = httpServer.buildTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
+			customTokenParams, customPrivacyTokenParam, err = httpServer.txService.BuildTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
 			if err.(*rpcservice.RPCError) != nil {
 				return nil, err.(*rpcservice.RPCError)
 
@@ -83,7 +83,7 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 		}
 
 		// check real fee(nano PRV) per tx
-		_, estimateFeeCoinPerKb, estimateTxSizeInKb = httpServer.estimateFee(defaultFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy, nil, customTokenParams, customPrivacyTokenParam)
+		_, estimateFeeCoinPerKb, estimateTxSizeInKb = httpServer.txService.EstimateFee(defaultFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy, nil, customTokenParams, customPrivacyTokenParam)
 	}
 	result := jsonresult.NewEstimateFeeResult(estimateFeeCoinPerKb, estimateTxSizeInKb)
 	Logger.log.Debugf("handleEstimateFee result: %+v", result)
@@ -127,7 +127,7 @@ func (httpServer *HttpServer) handleEstimateFeeWithEstimator(params interface{},
 		}
 	}
 
-	estimateFeeCoinPerKb := httpServer.estimateFeeWithEstimator(defaultFeeCoinPerKb, shardIDSender, numblock, tokenId)
+	estimateFeeCoinPerKb := httpServer.txService.EstimateFeeWithEstimator(defaultFeeCoinPerKb, shardIDSender, numblock, tokenId)
 
 	result := jsonresult.NewEstimateFeeResult(estimateFeeCoinPerKb, 0)
 	Logger.log.Debugf("handleEstimateFeeWithEstimator result: %+v", result)

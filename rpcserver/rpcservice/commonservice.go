@@ -1,6 +1,7 @@
 package rpcservice
 
 import (
+	"errors"
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -86,18 +87,28 @@ func GetKeySetFromPrivateKeyParams(privateKeyWalletStr string) (*incognitokey.Ke
 	if err != nil {
 		return nil, byte(0), err
 	}
+
+	return GetKeySetFromPrivateKey(keyWallet.KeySet.PrivateKey)
+}
+
+// GetKeySetFromPrivateKeyParams - deserialize a private key string
+// into keyWallet object and fill all keyset in keywallet with private key
+// return key set and shard ID
+func GetKeySetFromPrivateKey(privateKey privacy.PrivateKey) (*incognitokey.KeySet, byte, error) {
+	keySet := new(incognitokey.KeySet)
 	// fill paymentaddress and readonly key with privatekey
-	err = keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	err := keySet.InitFromPrivateKey(&privateKey)
 	if err != nil {
 		return nil, byte(0), err
 	}
 
 	// calculate shard ID
-	lastByte := keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1]
+	lastByte := keySet.PaymentAddress.Pk[len(keySet.PaymentAddress.Pk)-1]
 	shardID := common.GetShardIDFromLastByte(lastByte)
 
-	return &keyWallet.KeySet, shardID, nil
+	return keySet, shardID, nil
 }
+
 
 // GetKeySetFromPaymentAddressParam - deserialize a key string(wallet serialized)
 // into keyWallet - this keywallet may contain
@@ -131,3 +142,30 @@ func NewPaymentInfosFromReceiversParam(receiversParam map[string]interface{}) ([
 
 	return paymentInfos, nil
 }
+
+func GetStakingAmount(stakingType int, stakingShardAmountParam uint64) uint64 {
+	amount := uint64(0)
+	stakingData, _ := metadata.NewStakingMetadata(metadata.ShardStakingMeta, "", "", stakingShardAmountParam, "", true)
+	if stakingType == 1 {
+		amount = stakingData.GetBeaconStakeAmount()
+	}
+	if stakingType == 0 {
+		amount = stakingData.GetShardStateAmount()
+	}
+
+	return amount
+}
+
+func HashToIdenticon(hashStrs []interface{}) ([]string, error){
+	result := make([]string, 0)
+	for _, hash := range hashStrs {
+		temp, err := common.Hash{}.NewHashFromStr(hash.(string))
+		if err != nil {
+			return nil, errors.New("Hash string is invalid")
+		}
+		result = append(result, common.Render(temp.GetBytes()))
+	}
+
+	return result, nil
+}
+

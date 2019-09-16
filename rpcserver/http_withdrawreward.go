@@ -43,67 +43,17 @@ func (httpServer *HttpServer) handleCreateAndSendWithDrawTransaction(params inte
 
 // handleGetRewardAmount - Get the reward amount of a payment address with all existed token
 func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	rewardAmountResult := make(map[string]uint64)
-	rewardAmounts := make(map[common.Hash]uint64)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("key component invalid"))
 	}
-	paymentAddress := arrayParams[0]
-	var publicKey []byte
+	paymentAddress := arrayParams[0].(string)
 
-	if paymentAddress != "" {
-		senderKey, err := wallet.Base58CheckDeserialize(paymentAddress.(string))
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-		}
-
-		publicKey = senderKey.KeySet.PaymentAddress.Pk
-	}
-	if publicKey == nil {
-		return rewardAmountResult, nil
-	}
-
-	allCoinIDs, err := httpServer.config.BlockChain.GetAllCoinID()
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-
-	for _, coinID := range allCoinIDs {
-		amount, err := (*httpServer.config.Database).GetCommitteeReward(publicKey, coinID)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-		}
-		if coinID == common.PRVCoinID {
-			rewardAmountResult["PRV"] = amount
-		} else {
-			rewardAmounts[coinID] = amount
-		}
-	}
-
-	cusPrivTok, crossPrivToken, err := httpServer.config.BlockChain.ListPrivacyCustomToken()
-
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-
-	for _, token := range cusPrivTok {
-		if rewardAmounts[token.TxPrivacyTokenData.PropertyID] > 0 {
-			rewardAmountResult[token.TxPrivacyTokenData.PropertyID.String()] = rewardAmounts[token.TxPrivacyTokenData.PropertyID]
-		}
-	}
-
-	for _, token := range crossPrivToken {
-		if rewardAmounts[token.TokenID] > 0 {
-			rewardAmountResult[token.TokenID.String()] = rewardAmounts[token.TokenID]
-		}
-	}
-
-	return rewardAmountResult, nil
+	return httpServer.blockService.GetRewardAmount(paymentAddress)
 }
 
 // handleListRewardAmount - Get the reward amount of all committee with all existed token
 func (httpServer *HttpServer) handleListRewardAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	result := (*httpServer.config.Database).ListCommitteeReward()
+	result := httpServer.databaseService.ListRewardAmount()
 	return result, nil
 }
