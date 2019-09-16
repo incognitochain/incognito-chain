@@ -362,6 +362,8 @@ func (connManager *ConnManager) discoverPeers(discoverPeerAddress string) {
 func (connManager *ConnManager) processDiscoverPeers() error {
 	startTime := time.Now()
 	discoverPeerAddress := connManager.discoverPeerAddress
+	fmt.Println("CONN: processDiscoverPeers")
+
 	if discoverPeerAddress == common.EmptyString {
 		// we dont have config to make discover peer
 		// so we dont need to do anything here
@@ -434,11 +436,14 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 		err := client.Call("Handler.Ping", args, &response)
 
 		if err != nil {
+			fmt.Println("CONN: cannot ping bootnode")
 			// can not call method PING to rpc server of boot node
 			Logger.log.Error("[Exchange Peers] Ping:")
 			Logger.log.Error(err)
 			client = nil
 			return err
+		} else {
+			fmt.Println("CONN: bootnode return", len(response))
 		}
 		// make models
 		responsePeers := make(map[string]*wire.RawPeer)
