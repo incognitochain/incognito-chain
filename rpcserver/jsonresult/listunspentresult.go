@@ -41,12 +41,22 @@ func NewOutcoinFromInterface(data interface{}) (*OutCoin, error) {
 }
 
 func NewOutCoin(outCoin *privacy.OutputCoin) OutCoin {
+	serialNumber := ""
+	zeroPoint := privacy.EllipticPoint{}
+	zeroPoint.Zero()
+	if outCoin.CoinDetails.GetSerialNumber() != nil && !outCoin.CoinDetails.GetSerialNumber().IsEqual(&zeroPoint) {
+		serialNumber = base58.Base58Check{}.Encode(outCoin.CoinDetails.GetSerialNumber().Compress(), common.ZeroByte)
+	}
+
 	result := OutCoin{
 		PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.GetPublicKey().Compress(), common.ZeroByte),
 		Value:          strconv.FormatUint(outCoin.CoinDetails.GetValue(), 10),
 		Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.GetInfo()[:], common.ZeroByte),
 		CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.GetCoinCommitment().Compress(), common.ZeroByte),
 		Randomness:     base58.Base58Check{}.Encode(outCoin.CoinDetails.GetRandomness().Bytes(), common.ZeroByte),
-		SNDerivator:    base58.Base58Check{}.Encode(outCoin.CoinDetails.GetSNDerivator().Bytes(), common.ZeroByte)}
+		SNDerivator:    base58.Base58Check{}.Encode(outCoin.CoinDetails.GetSNDerivator().Bytes(), common.ZeroByte),
+		SerialNumber:   serialNumber,
+	}
+
 	return result
 }
