@@ -23,8 +23,8 @@ const (
 	DefaultMaxBlockSyncTime      = 1 * time.Second  // in second
 	DefaultCacheCleanupTime      = 30 * time.Second // in second
 	WorkerNumber                 = 5
-	MAX_S2B_BLOCK                = 5
-	MAX_BEACON_BLOCK             = 10
+	MAX_S2B_BLOCK                = 2
+	MAX_BEACON_BLOCK             = 2
 	DurationHalfLifeRewardForDev = uint64(31536000) // 5 years, after 5 year, reward for devs = 0
 	GetValidBlock                = 2
 	CheckForce                   = true
