@@ -65,6 +65,8 @@ func (chain *BeaconChain) GetLastProposerIndex() int {
 func (chain *BeaconChain) CreateNewBlock(round int) (common.BlockInterface, error) {
 	// chain.lock.Lock()
 	// defer chain.lock.Unlock()
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
 	newBlock, err := chain.BlockGen.NewBlockBeacon(round, chain.Blockchain.Synker.GetClosestShardToBeaconPoolState())
 	if err != nil {
 		return nil, err
