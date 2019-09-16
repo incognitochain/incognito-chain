@@ -167,7 +167,7 @@ func (httpServer *HttpServer) handleRequest(w http.ResponseWriter, r *http.Reque
 
 	select {
 	case <-done:
-	case <-time.After(time.Minute):
+	case <-time.After(time.Second * rpcProcessTimeoutSeconds):
 	}
 
 }
