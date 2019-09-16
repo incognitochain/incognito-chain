@@ -14,7 +14,7 @@ func CreateShardGenesisBlock(
 ) *ShardBlock {
 	body := ShardBody{}
 	layout := "2006-01-02T15:04:05.000Z"
-	str := "2018-08-01T00:00:00.000Z"
+	str := "2019-09-16T00:00:00.000Z"
 	genesisTime, err := time.Parse(layout, str)
 	if err != nil {
 		fmt.Println(err)
