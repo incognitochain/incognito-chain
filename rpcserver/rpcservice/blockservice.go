@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/transaction"
 )
@@ -14,6 +15,7 @@ import (
 type BlockService struct {
 	BlockChain *blockchain.BlockChain
 	DB  *database.DatabaseInterface
+	TxMemPool * mempool.TxPool
 }
 
 func (blockService BlockService) GetShardBestStates() map[byte]*blockchain.ShardBestState {
@@ -22,6 +24,9 @@ func (blockService BlockService) GetShardBestStates() map[byte]*blockchain.Shard
 }
 
 func (blockService BlockService) GetShardBestStateByShardID(shardID byte) (*blockchain.ShardBestState, error) {
+	if blockService.IsShardBestStateNil() {
+		return nil, errors.New("Best State shard not existed")
+	}
 	shard, err := blockService.BlockChain.BestState.GetClonedAShardBestState(shardID)
 	return shard, err
 }
@@ -55,6 +60,11 @@ func (blockService BlockService) GetShardBestBlockHashByShardID(shardID byte) co
 }
 
 func (blockService BlockService) GetBeaconBestState() (*blockchain.BeaconBestState, error) {
+	if blockService.IsBeaconBestStateNil() {
+		Logger.log.Debugf("handleGetBeaconBestState result: %+v", nil)
+		return nil, errors.New("Best State beacon not existed")
+	}
+
 	beacon, err := blockService.BlockChain.BestState.GetClonedBeaconBestState()
 	return beacon, err
 }
@@ -478,4 +488,26 @@ func (blockService BlockService) GetRewardAmount(paymentAddress string) (map[str
 
 	return rewardAmountResult, nil
 }
+
+
+func (blockService BlockService) CanPubkeyStake(publicKey string) (bool, error){
+	canStake := true
+	validStakers, err := blockService.GetValidStakers([]string{publicKey})
+	if err != nil {
+		return false, err
+	}
+
+	if len(validStakers) == 0 {
+		canStake = false
+	} else {
+		// get pool candidate
+		poolCandidate := blockService.TxMemPool.GetClonedPoolCandidate()
+		if common.IndexOfStrInHashMap(publicKey, poolCandidate) > 0 {
+			canStake = false
+		}
+	}
+
+	return canStake, nil
+}
+
 
