@@ -10,26 +10,28 @@ import (
 )
 
 func (engine *Engine) LoadMiningKeys(keysString string) error {
-	engine.userMiningPublicKeys = make(map[string]incognitokey.CommitteePublicKey)
-	keys := strings.Split(keysString, "|")
-	if len(keys) > 0 {
-		for _, key := range keys {
-			keyParts := strings.Split(key, ":")
-			availableConsensus := common.BlsConsensus
-			keyConsensus := keyParts[0]
-			if len(keyParts) == 2 {
-				availableConsensus = keyParts[0]
-				keyConsensus = keyParts[1]
-			}
-
-			if _, ok := AvailableConsensus[availableConsensus]; ok {
-				err := AvailableConsensus[availableConsensus].LoadUserKey(keyConsensus)
-				if err != nil {
-					return errors.New("Key for this consensus can not load - " + keyConsensus)
+	if len(keysString) > 0 {
+		engine.userMiningPublicKeys = make(map[string]incognitokey.CommitteePublicKey)
+		keys := strings.Split(keysString, "|")
+		if len(keys) > 0 {
+			for _, key := range keys {
+				keyParts := strings.Split(key, ":")
+				availableConsensus := common.BlsConsensus
+				keyConsensus := keyParts[0]
+				if len(keyParts) == 2 {
+					availableConsensus = keyParts[0]
+					keyConsensus = keyParts[1]
 				}
-				engine.userMiningPublicKeys[availableConsensus] = *AvailableConsensus[availableConsensus].GetUserPublicKey()
-			} else {
-				return errors.New("Consensus type for this key isn't exist " + availableConsensus)
+
+				if _, ok := AvailableConsensus[availableConsensus]; ok {
+					err := AvailableConsensus[availableConsensus].LoadUserKey(keyConsensus)
+					if err != nil {
+						return errors.New("Key for this consensus can not load - " + keyConsensus)
+					}
+					engine.userMiningPublicKeys[availableConsensus] = *AvailableConsensus[availableConsensus].GetUserPublicKey()
+				} else {
+					return errors.New("Consensus type for this key isn't exist " + availableConsensus)
+				}
 			}
 		}
 	}
