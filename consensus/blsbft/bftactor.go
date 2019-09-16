@@ -269,14 +269,13 @@ func (e *BLSBFT) enterProposePhase() {
 		return
 	}
 	e.setState(proposePhase)
-	time1 := time.Now()
-	block, err := e.Chain.CreateNewBlock(int(e.RoundData.Round))
-	e.logger.Info("create block", time.Since(time1).Seconds())
 
+	block, err := e.createNewBlock()
 	if err != nil {
 		e.logger.Error("can't create block", err)
 		return
 	}
+
 	validationData := e.CreateValidationData(block)
 	validationDataString, _ := EncodeValidationData(validationData)
 	block.(blockValidation).AddValidationField(validationDataString)
@@ -286,7 +285,7 @@ func (e *BLSBFT) enterProposePhase() {
 
 	blockData, _ := json.Marshal(e.RoundData.Block)
 	msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
-	e.logger.Info("push block", time.Since(time1).Seconds())
+	// e.logger.Info("push block", time.Since(time1).Seconds())
 	go e.Node.PushMessageToChain(msg, e.Chain)
 	e.enterVotePhase()
 }
@@ -355,6 +354,35 @@ func (e *BLSBFT) addEarlyVote(voteMsg BFTVote) {
 	return
 }
 
+func (e *BLSBFT) createNewBlock() (common.BlockInterface, error) {
+
+	var errCh chan error
+	var timeoutCh chan struct{}
+	var block common.BlockInterface
+	errCh = make(chan error)
+	timeoutCh = make(chan struct{})
+	timeout := time.AfterFunc(e.Chain.GetMaxBlkCreateTime(), func() {
+		timeoutCh <- struct{}{}
+	})
+
+	go func() {
+		time1 := time.Now()
+		var err error
+		block, err = e.Chain.CreateNewBlock(int(e.RoundData.Round))
+		e.logger.Info("create block", time.Since(time1).Seconds())
+		errCh <- err
+	}()
+
+	select {
+	case err := <-errCh:
+		timeout.Stop()
+		close(timeoutCh)
+		return block, err
+	case <-timeoutCh:
+		return nil, consensus.NewConsensusError(consensus.BlockCreationError, errors.New("block creation timeout"))
+	}
+
+}
 func (e BLSBFT) NewInstance(chain blockchain.ChainInterface, chainKey string, node consensus.NodeInterface, logger common.Logger) consensus.ConsensusInterface {
 	var newInstance BLSBFT
 	newInstance.Chain = chain
