@@ -10,7 +10,7 @@ import (
 )
 
 type DatabaseService struct {
-	DB database.DatabaseInterface
+	DB *database.DatabaseInterface
 }
 
 func (dbService DatabaseService) CheckETHHashIssued(data map[string]interface{}) (bool, error) {
@@ -18,12 +18,12 @@ func (dbService DatabaseService) CheckETHHashIssued(data map[string]interface{})
 	txIdx := uint(data["TxIndex"].(float64))
 	uniqETHTx := append(blockHash[:], []byte(strconv.Itoa(int(txIdx)))...)
 
-	issued, err := dbService.DB.IsETHTxHashIssued(uniqETHTx)
+	issued, err := (*dbService.DB).IsETHTxHashIssued(uniqETHTx)
 	return issued, err
 }
 
 func (dbService DatabaseService) GetAllBridgeTokens() ([]byte, error) {
-	allBridgeTokensBytes, err := dbService.DB.GetAllBridgeTokens()
+	allBridgeTokensBytes, err := (*dbService.DB).GetAllBridgeTokens()
 	return allBridgeTokensBytes, err
 }
 
@@ -33,20 +33,20 @@ func (dbService DatabaseService) GetBridgeReqWithStatus(txID string) (byte, erro
 		return byte(0), err
 	}
 
-	status, err := dbService.DB.GetBridgeReqWithStatus(*txIDHash)
+	status, err := (*dbService.DB).GetBridgeReqWithStatus(*txIDHash)
 	return status, err
 }
 
 func (dbService DatabaseService) GetBurningConfirm(txID common.Hash) (uint64, error)  {
-	return dbService.DB.GetBurningConfirm(txID)
+	return (*dbService.DB).GetBurningConfirm(txID)
 }
 
 func (dbService DatabaseService) ListSerialNumbers(tokenID common.Hash, shardID byte) (map[string]uint64, error){
-	return dbService.DB.ListSerialNumber(tokenID, shardID)
+	return (*dbService.DB).ListSerialNumber(tokenID, shardID)
 }
 
 func (dbService DatabaseService) ListSNDerivator(tokenID common.Hash) ([]big.Int, error){
-	resultInBytes, err := dbService.DB.ListSNDerivator(tokenID)
+	resultInBytes, err := (*dbService.DB).ListSNDerivator(tokenID)
 	if err != nil{
 		return nil, err
 	}
@@ -60,11 +60,11 @@ func (dbService DatabaseService) ListSNDerivator(tokenID common.Hash) ([]big.Int
 }
 
 func (dbService DatabaseService) ListCommitments(tokenID common.Hash, shardID byte) (map[string]uint64, error){
-	return dbService.DB.ListCommitment(tokenID, shardID)
+	return (*dbService.DB).ListCommitment(tokenID, shardID)
 }
 
 func (dbService DatabaseService) ListCommitmentIndices(tokenID common.Hash, shardID byte) (map[uint64]string, error){
-	return dbService.DB.ListCommitmentIndices(tokenID, shardID)
+	return (*dbService.DB).ListCommitmentIndices(tokenID, shardID)
 }
 
 func (dbService DatabaseService) HasSerialNumbers(paymentAddressStr string, serialNumbersStr []interface{}, tokenID common.Hash) ([]bool, error){
@@ -76,7 +76,7 @@ func (dbService DatabaseService) HasSerialNumbers(paymentAddressStr string, seri
 	result := make([]bool, 0)
 	for _, item := range serialNumbersStr {
 		serialNumber, _, _ := base58.Base58Check{}.Decode(item.(string))
-		ok, _ := dbService.DB.HasSerialNumber(tokenID, serialNumber, shardIDSender)
+		ok, _ := (*dbService.DB).HasSerialNumber(tokenID, serialNumber, shardIDSender)
 		if ok {
 			// serial number in db
 			result = append(result, true)
@@ -98,7 +98,7 @@ func (dbService DatabaseService) HasSnDerivators(paymentAddressStr string, snDer
 	result := make([]bool, 0)
 	for _, item := range snDerivatorStr {
 		snderivator, _, _ := base58.Base58Check{}.Decode(item.(string))
-		ok, err := dbService.DB.HasSNDerivator(tokenID, common.AddPaddingBigInt(new(big.Int).SetBytes(snderivator), common.BigIntSize))
+		ok, err := (*dbService.DB).HasSNDerivator(tokenID, common.AddPaddingBigInt(new(big.Int).SetBytes(snderivator), common.BigIntSize))
 		if ok && err == nil {
 			// SnD in db
 			result = append(result, true)
@@ -111,5 +111,5 @@ func (dbService DatabaseService) HasSnDerivators(paymentAddressStr string, snDer
 }
 
 func (dbService DatabaseService) ListRewardAmount() map[string]map[common.Hash]uint64{
-	return dbService.DB.ListCommitteeReward()
+	return (*dbService.DB).ListCommitteeReward()
 }
