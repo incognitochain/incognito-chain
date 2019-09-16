@@ -24,7 +24,7 @@ func (engine *Engine) LoadMiningKeys(keysString string) error {
 		if _, ok := AvailableConsensus[availableConsensus]; ok {
 			err := AvailableConsensus[availableConsensus].LoadUserKey(keyConsensus)
 			if err != nil {
-				errors.New("Key for this consensus can not load - " + keyConsensus)
+				return errors.New("Key for this consensus can not load - " + keyConsensus)
 			}
 			engine.userMiningPublicKeys[availableConsensus] = *AvailableConsensus[availableConsensus].GetUserPublicKey()
 		} else {
