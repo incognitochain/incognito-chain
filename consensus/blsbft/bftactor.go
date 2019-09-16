@@ -184,7 +184,6 @@ func (e *BLSBFT) Start() error {
 						if err := e.validatePreSignBlock(e.Blocks[roundKey]); err != nil {
 							delete(e.Blocks, roundKey)
 							e.logger.Error(err)
-							time.Sleep(1 * time.Second)
 							continue
 						}
 
@@ -197,7 +196,6 @@ func (e *BLSBFT) Start() error {
 							valData, err := DecodeValidationData(e.RoundData.Block.GetValidationField())
 							if err != nil {
 								e.logger.Error(err)
-								time.Sleep(1 * time.Second)
 								continue
 							}
 							e.RoundData.BlockValidateData = *valData
@@ -217,7 +215,6 @@ func (e *BLSBFT) Start() error {
 						aggSig, brigSigs, validatorIdx, err := combineVotes(e.RoundData.Votes, e.RoundData.CommitteeBLS.StringList)
 						if err != nil {
 							e.logger.Error(err)
-							time.Sleep(1 * time.Second)
 							continue
 						}
 
@@ -240,7 +237,6 @@ func (e *BLSBFT) Start() error {
 								fmt.Println(base58.Base58Check{}.Encode(member.MiningPubKey[consensusName], common.Base58Version))
 							}
 							e.logger.Critical(err)
-							time.Sleep(1 * time.Second)
 							continue
 						}
 
@@ -250,7 +246,6 @@ func (e *BLSBFT) Start() error {
 									e.logger.Error(err)
 								}
 							}
-							time.Sleep(1 * time.Second)
 							continue
 						}
 						// e.Node.PushMessageToAll()
@@ -270,7 +265,9 @@ func (e *BLSBFT) enterProposePhase() {
 	}
 	e.setState(proposePhase)
 	time1 := time.Now()
+	e.logger.Infof("Begin enterProposePhase %+v", time1)
 	block, err := e.Chain.CreateNewBlock(int(e.RoundData.Round))
+	e.logger.Infof("Finish enterProposePhase %+v", time1)
 	e.logger.Info("create block", time.Since(time1).Seconds())
 
 	if err != nil {
