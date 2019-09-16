@@ -10,6 +10,8 @@ import (
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/transaction"
+	"log"
+	"strconv"
 )
 
 type BlockService struct {
@@ -508,6 +510,87 @@ func (blockService BlockService) CanPubkeyStake(publicKey string) (bool, error){
 	}
 
 	return canStake, nil
+}
+
+func (blockService BlockService) GetBlockHashByHeight(shardID int, height uint64) (string, error){
+	var hash *common.Hash
+	var err error
+	var beaconBlock *blockchain.BeaconBlock
+	var shardBlock *blockchain.ShardBlock
+
+	isGetBeacon := shardID == -1
+
+	if isGetBeacon {
+		beaconBlock, err = blockService.GetBeaconBlockByHeight(height)
+	} else {
+		shardBlock, err = blockService.GetShardBlockByHeight(height, byte(shardID))
+	}
+
+	if err != nil {
+		Logger.log.Debugf("handleGetBlockHash result: %+v", nil)
+		return "", err
+	}
+
+	if isGetBeacon {
+		hash = beaconBlock.Hash()
+	} else {
+		hash = shardBlock.Hash()
+	}
+
+	result := hash.String()
+	return result, nil
+}
+
+func (blockService BlockService) GetBlockHeader(getBy string, blockParam string, shardID float64) (
+	*blockchain.ShardHeader, int, string, *RPCError){
+	switch getBy {
+	case "blockhash":
+		hash := common.Hash{}
+		err := hash.Decode(&hash, blockParam)
+		log.Printf("%+v", hash)
+		if err != nil {
+			Logger.log.Debugf("handleGetBlockHeader result: %+v", nil)
+			return nil, 0, "",  NewRPCError(RPCInvalidParamsError, errors.New("invalid blockhash format"))
+		}
+		// block, err := httpServer.config.BlockChain.GetBlockByHash(&bhash)
+		block, _, err := blockService.BlockChain.GetShardBlockByHash(hash)
+		if err != nil {
+			Logger.log.Debugf("handleGetBlockHeader result: %+v", nil)
+			return nil, 0, "", NewRPCError(GetShardBlockByHashError, errors.New("blockParam not exist"))
+		}
+
+		blockNum := int(block.Header.Height) + 1
+
+		return &block.Header, blockNum, hash.String(), nil
+	case "blocknum":
+		blockNum, err := strconv.Atoi(blockParam)
+		if err != nil {
+			Logger.log.Debugf("handleGetBlockHeader result: %+v", nil)
+			return nil, 0, "", NewRPCError(RPCInvalidParamsError, errors.New("invalid blocknum format"))
+		}
+
+		shard, err := blockService.GetShardBestStateByShardID(byte(shardID))
+		if err != nil {
+			return nil, 0, "", NewRPCError(GetClonedShardBestStateError, err)
+		}
+
+		var blockHeader = blockchain.ShardHeader{}
+		var blockHash = ""
+		if uint64(blockNum-1) > shard.BestBlock.Header.Height || blockNum <= 0 {
+			Logger.log.Debugf("handleGetBlockHeader result: %+v", nil)
+			return nil, 0, "", NewRPCError(GetShardBestBlockError, errors.New("Block not exist"))
+		}
+		block, _ := blockService.GetShardBlockByHeight(uint64(blockNum-1), uint8(shardID))
+		if block != nil {
+			blockHeader = block.Header
+			blockHash = block.Hash().String()
+		}
+
+		return &blockHeader, blockNum, blockHash, nil
+	default:
+		Logger.log.Debugf("handleGetBlockHeader result: %+v", nil)
+		return  nil, 0, "", NewRPCError(RPCInvalidParamsError, errors.New("wrong request format"))
+	}
 }
 
 
