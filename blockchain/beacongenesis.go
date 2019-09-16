@@ -45,7 +45,7 @@ func CreateBeaconGenesisBlock(
 	inst = append(inst, []string{SetAction, "randomnumber", strconv.Itoa(int(0))})
 
 	layout := "2006-01-02T15:04:05.000Z"
-	str := "2018-08-01T00:00:00.000Z"
+	str := GenesisBlockTime
 	genesisTime, err := time.Parse(layout, str)
 
 	if err != nil {
