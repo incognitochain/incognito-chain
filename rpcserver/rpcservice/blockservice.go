@@ -3,13 +3,12 @@ package rpcservice
 import (
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/transaction"
-	"errors"
-	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type BlockService struct {
@@ -432,15 +431,12 @@ func (blockService BlockService) ListCustomToken() (map[common.Hash]transaction.
 func (blockService BlockService) GetRewardAmount(paymentAddress string) (map[string]uint64, *RPCError){
 	rewardAmountResult := make(map[string]uint64)
 	rewardAmounts := make(map[common.Hash]uint64)
-	var publicKey []byte
-	if paymentAddress != "" {
-		senderKey, err := wallet.Base58CheckDeserialize(paymentAddress)
-		if err != nil {
-			return nil, NewRPCError(UnexpectedError, err)
-		}
 
-		publicKey = senderKey.KeySet.PaymentAddress.Pk
+	keySet, _, err := GetKeySetFromPaymentAddressParam(paymentAddress)
+	if err != nil{
+		return nil, NewRPCError(UnexpectedError, err)
 	}
+	publicKey := keySet.PaymentAddress.Pk
 	if publicKey == nil {
 		return rewardAmountResult, nil
 	}
