@@ -82,7 +82,7 @@ var GetMiningKeyBase58Cache, _ = lru.New(2000)
 
 func (pubKey *CommitteePublicKey) GetMiningKeyBase58(schemeName string) string {
 	b, _ := pubKey.Bytes()
-	key := append([]byte(schemeName), b...)
+	key := schemeName + string(b)
 	value, exist := GetMiningKeyBase58Cache.Get(key)
 	if exist {
 		return value.(string)
