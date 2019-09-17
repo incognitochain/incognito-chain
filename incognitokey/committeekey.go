@@ -2,7 +2,7 @@ package incognitokey
 
 import (
 	"encoding/json"
-
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
@@ -78,12 +78,22 @@ func (pubKey *CommitteePublicKey) GetMiningKey(schemeName string) ([]byte, error
 	return result, nil
 }
 
+var GetMiningKeyBase58Cache, _ = lru.New(2000)
+
 func (pubKey *CommitteePublicKey) GetMiningKeyBase58(schemeName string) string {
+	b, _ := pubKey.Bytes()
+	key := append([]byte(schemeName), b...)
+	value, exist := GetMiningKeyBase58Cache.Get(key)
+	if exist {
+		return value.(string)
+	}
 	keyBytes, ok := pubKey.MiningPubKey[schemeName]
 	if !ok {
 		return ""
 	}
-	return base58.Base58Check{}.Encode(keyBytes, common.Base58Version)
+	encodeData := base58.Base58Check{}.Encode(keyBytes, common.Base58Version)
+	GetMiningKeyBase58Cache.Add(key, encodeData)
+	return encodeData
 }
 
 func (pubKey *CommitteePublicKey) GetIncKeyBase58() string {
