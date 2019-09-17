@@ -490,7 +490,7 @@ func (connManager *ConnManager) countPeerConnOfShard(shard *byte) int {
 	count := 0
 	listener := connManager.config.ListenerPeer
 	if listener != nil {
-		fmt.Println("COUNT: count peer", *shard)
+		fmt.Println("COUNT: count peer")
 		allPeers := listener.GetPeerConnOfAll()
 		fmt.Println("COUNT: all peer", len(allPeers))
 		for _, peerConn := range allPeers {
