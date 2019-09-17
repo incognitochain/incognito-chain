@@ -14,7 +14,7 @@ import (
 
 const (
 	heartbeatInterval = 10
-	heartbeatTimeout  = 60
+	heartbeatTimeout  = 120
 )
 
 type peer struct {
