@@ -526,10 +526,13 @@ func (connManager *ConnManager) checkBeaconOfPbk(pbk string) bool {
 
 // closePeerConnOfShard
 func (connManager *ConnManager) closePeerConnOfShard(shard byte) {
+	fmt.Println("CLOSE: get peer")
 	cPeers := connManager.getPeerConnOfShard(&shard)
+	fmt.Println("CLOSE: close", len(cPeers))
 	for _, p := range cPeers {
 		p.ForceClose()
 	}
+	fmt.Println("CLOSE: finish")
 }
 
 func (connManager *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int, mPeers map[string]*wire.RawPeer) int {
@@ -537,6 +540,7 @@ func (connManager *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int
 		return 0
 	}
 	//Logger.log.Info("handleRandPeersOfShard", *shard)
+	fmt.Println("CONN: handleRandPeersOfShard", *shard)
 	countPeerShard := connManager.countPeerConnOfShard(shard)
 	fmt.Println("CONN: shard ", *shard, "has", countPeerShard, "peers")
 	if countPeerShard >= maxPeers {
@@ -570,11 +574,13 @@ func (connManager *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int
 			fmt.Println("CONN: cannot find", pbk)
 		}
 	}
+	fmt.Println("CONN: finish handleRandPeersOfShard", countPeerShard)
 	return countPeerShard
 }
 
 func (connManager *ConnManager) handleRandPeersOfOtherShard(cShard *byte, maxShardPeers int, maxPeers int, mPeers map[string]*wire.RawPeer) int {
 	//Logger.log.Info("handleRandPeersOfOtherShard", maxShardPeers, maxPeers)
+	fmt.Println("CONN: handleRandPeersOfOtherShard")
 	countPeers := 0
 	for _, shard := range connManager.randShards {
 		if cShard == nil || (cShard != nil && *cShard != shard) {
@@ -587,10 +593,12 @@ func (connManager *ConnManager) handleRandPeersOfOtherShard(cShard *byte, maxSha
 				}
 			}
 			if countPeers >= maxPeers {
+				fmt.Println("CONN: close peer conn of shard", countPeers, maxPeers)
 				connManager.closePeerConnOfShard(shard)
 			}
 		}
 	}
+	fmt.Println("CONN: finish handleRandPeersOfOtherShard")
 	return countPeers
 }
 
