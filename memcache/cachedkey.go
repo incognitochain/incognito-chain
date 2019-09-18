@@ -21,6 +21,12 @@ func GetShardBestStateCachedKey() []byte {
 	return key
 }
 
+func GetBeaconBestStateCachedKey() []byte {
+	key := make([]byte, 0)
+	key = append(key, []byte(beaconBestStateCacheKey)...)
+	return key
+}
+
 func GetBlocksCachedKey(shardID int, numBlock int) []byte {
 	key := make([]byte, 0)
 	key = append(key, []byte("getblocks")...)
