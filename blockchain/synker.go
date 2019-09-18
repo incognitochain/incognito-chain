@@ -80,6 +80,13 @@ type Synker struct {
 	cQuit         chan struct{}
 }
 
+var currentInsert = struct {
+	Beacon sync.Mutex
+	Shards map[byte]*sync.Mutex
+}{
+	Shards: make(map[byte]*sync.Mutex),
+}
+
 func newSyncker(cQuit chan struct{}, blockchain *BlockChain, pubSubManager *pubsub.PubSubManager) Synker {
 	s := Synker{
 		blockchain:    blockchain,
@@ -107,6 +114,9 @@ func (synker *Synker) Start() {
 	synker.States.PoolsState.ShardToBeaconPool = make(map[byte][]uint64)
 	synker.States.PoolsState.CrossShardPool = make(map[byte][]uint64)
 	synker.States.PoolsState.ShardsPool = make(map[byte][]uint64)
+	for shardID := 0; shardID < common.MaxShardNumber; shardID++ {
+		currentInsert.Shards[byte(shardID)] = &sync.Mutex{}
+	}
 	synker.Status.Lock()
 	synker.startSyncRelayShards()
 	synker.Status.Unlock()
@@ -852,13 +862,6 @@ func (synker *Synker) GetCurrentSyncShards() []byte {
 	return currentSyncShards
 }
 
-var currentInsert = struct {
-	Beacon sync.Mutex
-	Shards map[byte]*sync.Mutex
-}{
-	Shards: make(map[byte]*sync.Mutex),
-}
-
 func (synker *Synker) InsertBlockFromPool() {
 	go func() {
 		if !synker.blockchain.config.ConsensusEngine.IsOngoing(common.BeaconChainKey) {
@@ -868,9 +871,6 @@ func (synker *Synker) InsertBlockFromPool() {
 
 	synker.Status.Lock()
 	for shardID := range synker.Status.Shards {
-		if _, ok := currentInsert.Shards[shardID]; !ok {
-			currentInsert.Shards[shardID] = &sync.Mutex{}
-		}
 		if !synker.blockchain.config.ConsensusEngine.IsOngoing(common.GetShardChainKey(shardID)) {
 			go func(shardID byte) {
 				synker.InsertShardBlockFromPool(shardID)

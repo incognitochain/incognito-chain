@@ -640,7 +640,10 @@ func (serverObj Server) Start() {
 	// managers.
 	serverObj.waitGroup.Add(1)
 
-	go serverObj.peerHandler()
+	go func() {
+		time.Sleep(1 * time.Second)
+		serverObj.peerHandler()
+	}()
 	if !cfg.DisableRPC && serverObj.rpcServer != nil {
 		serverObj.waitGroup.Add(1)
 
