@@ -464,18 +464,18 @@ func (blockService BlockService) GetActiveShards() int {
 }
 
 func (blockService BlockService) ListPrivacyCustomToken() (map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData, error) {
-	listPrivacyToken, listPrivacyTokenCrossShard, err := blockService.BlockChain.ListPrivacyCustomToken()
-	return listPrivacyToken, listPrivacyTokenCrossShard, err
+	listTxInitPrivacyToken, listTxInitPrivacyTokenCrossShard, err := blockService.BlockChain.ListPrivacyCustomToken()
+	return listTxInitPrivacyToken, listTxInitPrivacyTokenCrossShard, err
 }
 
 func (blockService BlockService) ListPrivacyCustomTokenCached() (map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData, error) {
-	listPrivacyToken := make(map[common.Hash]transaction.TxCustomTokenPrivacy)
-	listPrivacyTokenCrossShard := make(map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData)
+	listTxInitPrivacyToken := make(map[common.Hash]transaction.TxCustomTokenPrivacy)
+	listTxInitPrivacyTokenCrossShard := make(map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData)
 
 	cachedKeyPrivacyToken := memcache.GetListPrivacyTokenCachedKey()
 	cachedValuePrivacyToken, err := blockService.MemCache.Get(cachedKeyPrivacyToken)
 	if err == nil && len(cachedValuePrivacyToken) > 0 {
-		err1 := json.Unmarshal(cachedValuePrivacyToken, &listPrivacyToken)
+		err1 := json.Unmarshal(cachedValuePrivacyToken, &listTxInitPrivacyToken)
 		if err1 != nil {
 			Logger.log.Error("Json Unmarshal cachedKeyPrivacyToken err", err1)
 		}
@@ -484,16 +484,22 @@ func (blockService BlockService) ListPrivacyCustomTokenCached() (map[common.Hash
 	cachedKeyPrivacyTokenCrossShard := memcache.GetListPrivacyTokenCrossShardCachedKey()
 	cachedValuePrivacyTokenCrossShard, err := blockService.MemCache.Get(cachedKeyPrivacyTokenCrossShard)
 	if err == nil && len(cachedValuePrivacyToken) > 0 {
-		err1 := json.Unmarshal(cachedValuePrivacyTokenCrossShard, &listPrivacyTokenCrossShard)
+		err1 := json.Unmarshal(cachedValuePrivacyTokenCrossShard, &listTxInitPrivacyTokenCrossShard)
 		if err1 != nil {
 			Logger.log.Error("Json Unmarshal cachedKeyPrivacyToken err", err1)
 		}
 	}
 
-	if len(listPrivacyToken) == 0 || len(listPrivacyTokenCrossShard) == 0 {
-		listPrivacyToken, listPrivacyTokenCrossShard, err = blockService.ListPrivacyCustomToken()
+	if len(listTxInitPrivacyToken) == 0 || len(listTxInitPrivacyTokenCrossShard) == 0 {
+		listTxInitPrivacyToken, listTxInitPrivacyTokenCrossShard, err = blockService.ListPrivacyCustomToken()
 
-		cachedValuePrivacyToken, err = json.Marshal(listPrivacyToken)
+		for k, v := range listTxInitPrivacyToken {
+			temp := v
+			temp.Tx = transaction.Tx{}
+			temp.TxPrivacyTokenData.TxNormal = transaction.Tx{}
+			listTxInitPrivacyToken[k] = temp
+		}
+		cachedValuePrivacyToken, err = json.Marshal(listTxInitPrivacyToken)
 		if err == nil {
 			err1 := blockService.MemCache.PutExpired(cachedKeyPrivacyToken, cachedValuePrivacyToken, 60*1000)
 			if err1 != nil {
@@ -501,7 +507,7 @@ func (blockService BlockService) ListPrivacyCustomTokenCached() (map[common.Hash
 			}
 		}
 
-		cachedValuePrivacyTokenCrossShard, err = json.Marshal(listPrivacyTokenCrossShard)
+		cachedValuePrivacyTokenCrossShard, err = json.Marshal(listTxInitPrivacyTokenCrossShard)
 		if err == nil {
 			err1 := blockService.MemCache.PutExpired(cachedKeyPrivacyTokenCrossShard, cachedValuePrivacyTokenCrossShard, 60*1000)
 			if err1 != nil {
@@ -509,7 +515,7 @@ func (blockService BlockService) ListPrivacyCustomTokenCached() (map[common.Hash
 			}
 		}
 	}
-	return listPrivacyToken, listPrivacyTokenCrossShard, err
+	return listTxInitPrivacyToken, listTxInitPrivacyTokenCrossShard, err
 }
 
 func (blockService BlockService) GetAllCoinID() ([]common.Hash, error) {
