@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 )
@@ -55,8 +54,7 @@ func (grafana *Grafana) SendTimeSeriesMetricData(params map[string]interface{}) 
 	defer cancel()
 	req = req.WithContext(ctx)
 	client := &http.Client{}
-	res, err := client.Do(req)
-	log.Println(res, err)
+	client.Do(req)
 	return
 }
 func (grafana *Grafana) SendTimeSeriesMetricDataWithTime(params map[string]interface{}) {
@@ -96,7 +94,6 @@ func (grafana *Grafana) SendTimeSeriesMetricDataWithTime(params map[string]inter
 	defer cancel()
 	req = req.WithContext(ctx)
 	client := &http.Client{}
-	res, err := client.Do(req)
-	log.Println(res, err)
+	client.Do(req)
 	return
 }
