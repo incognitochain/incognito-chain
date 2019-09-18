@@ -146,7 +146,7 @@ func (db *db) ListCommitteeReward() map[string]map[common.Hash]uint64 {
 		value := make([]byte, len(iterator.Value()))
 		copy(value, iterator.Value())
 		reward, _ := common.BytesToUint64(value)
-		publicKeyInByte := key[len(committeeRewardPrefix) : len(committeeRewardPrefix)+33]
+		publicKeyInByte := key[len(committeeRewardPrefix) : len(committeeRewardPrefix)+common.PublicKeySize]
 		publicKeyInBase58Check := base58.Base58Check{}.Encode(publicKeyInByte, 0x0)
 		tokenIDBytes := key[len(key)-32:]
 		tokenID, _ := common.Hash{}.NewHash(tokenIDBytes)
