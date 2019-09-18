@@ -125,7 +125,9 @@ func (e *BLSBFT) Start() error {
 					if getRoundKey(e.RoundData.NextHeight, e.RoundData.Round) == voteMsg.RoundKey {
 						//validate single sig
 						if e.RoundData.Block != nil {
+							e.RoundData.lockVotes.Lock()
 							if _, ok := e.RoundData.Votes[voteMsg.Validator]; !ok {
+								e.RoundData.lockVotes.Unlock()
 								validatorIdx := common.IndexOfStr(voteMsg.Validator, e.RoundData.CommitteeBLS.StringList)
 								if validatorIdx != -1 {
 									if err := validateSingleBLSSig(e.RoundData.Block.Hash(), voteMsg.Vote.BLS, validatorIdx, e.RoundData.CommitteeBLS.ByteList); err != nil {
@@ -154,6 +156,7 @@ func (e *BLSBFT) Start() error {
 									return
 								}
 							} else {
+								e.RoundData.lockVotes.Unlock()
 								return
 							}
 						}
