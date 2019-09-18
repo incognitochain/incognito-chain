@@ -106,11 +106,6 @@ func (httpServer *HttpServer) handleGetShardPoolState(params interface{}, closeC
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("Shard to Beacon Pool not init"))
 	}
 
-	// todo: remove this
-	// result := shardPool.GetAllBlockHeight()
-	//sort.Slice(result, func(i, j int) bool {
-	//	return result[i] < result[j]
-	//})
 	result := jsonresult.NewBlocksFromShardPool(*shardPool)
 	Logger.log.Debugf("handleGetShardPoolState result: %+v", result)
 	return result, nil
@@ -208,11 +203,6 @@ func (httpServer *HttpServer) handleGetShardPoolStateV2(params interface{}, clos
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
-	// todo: remove this
-	//result := shardPool.GetAllBlockHeight()
-	//sort.Slice(result, func(i, j int) bool {
-	//	return result[i] < result[j]
-	//})
 	result := jsonresult.NewBlocksFromShardPool(*shardPool)
 	Logger.log.Debugf("handleGetShardPoolStateV2 result: %+v", result)
 	return result, nil
