@@ -34,3 +34,15 @@ func GetBlocksCachedKey(shardID int, numBlock int) []byte {
 	key = append(key, common.IntToBytes(numBlock)...)
 	return key
 }
+
+func GetListPrivacyTokenCachedKey() []byte {
+	key := make([]byte, 0)
+	key = append(key, []byte("getlistprivacytoken")...)
+	return key
+}
+
+func GetListPrivacyTokenCrossShardCachedKey() []byte {
+	key := make([]byte, 0)
+	key = append(key, []byte("getlistprivacytokencrossshard")...)
+	return key
+}
