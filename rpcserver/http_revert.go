@@ -8,7 +8,7 @@ import (
 
 func (httpServer *HttpServer) handleRevertBeacon(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Info("handleRevertBeacon")
-	err := httpServer.config.BlockChain.RevertBeaconState()
+	err := httpServer.blockService.RevertBeacon()
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -26,7 +26,7 @@ func (httpServer *HttpServer) handleRevertShard(params interface{}, closeChan <-
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Shard ID component invalid"))
 	}
 	shardID := byte(shardIdParam)
-	err := httpServer.config.BlockChain.RevertShardState(shardID)
+	err := httpServer.blockService.RevertShard(shardID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
