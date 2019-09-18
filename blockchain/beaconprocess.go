@@ -314,6 +314,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 	rewardByEpochInstruction := [][]string{}
 	tempShardStates := make(map[byte][]ShardState)
 	stakeInstructions := [][]string{}
+	validStakePublicKeys := []string{}
 	swapInstructions := make(map[byte][][]string)
 	bridgeInstructions := [][]string{}
 	acceptedBlockRewardInstructions := [][]string{}
@@ -384,13 +385,14 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 				}
 			}
 			for _, shardBlock := range shardBlocks {
-				tempShardState, stakeInstruction, swapInstruction, bridgeInstruction, acceptedBlockRewardInstruction, stopAutoStakingInstruction := blockchain.GetShardStateFromBlock(beaconBlock.Header.Height, shardBlock, shardID, false)
+				tempShardState, stakeInstruction, tempValidStakePublicKeys, swapInstruction, bridgeInstruction, acceptedBlockRewardInstruction, stopAutoStakingInstruction := blockchain.GetShardStateFromBlock(beaconBlock.Header.Height, shardBlock, shardID, false, validStakePublicKeys)
 				tempShardStates[shardID] = append(tempShardStates[shardID], tempShardState[shardID])
 				stakeInstructions = append(stakeInstructions, stakeInstruction...)
 				swapInstructions[shardID] = append(swapInstructions[shardID], swapInstruction[shardID]...)
 				bridgeInstructions = append(bridgeInstructions, bridgeInstruction...)
 				acceptedBlockRewardInstructions = append(acceptedBlockRewardInstructions, acceptedBlockRewardInstruction)
 				stopAutoStakingInstructions = append(stopAutoStakingInstructions, stopAutoStakingInstruction...)
+				validStakePublicKeys = append(validStakePublicKeys, tempValidStakePublicKeys...)
 			}
 		} else {
 			return NewBlockChainError(GetShardBlocksError, fmt.Errorf("Expect to get more than %+v ShardToBeaconBlock but only get %+v", len(beaconBlock.Body.ShardState[shardID]), len(shardBlocks)))
