@@ -130,10 +130,14 @@ func (e *BLSBFT) Start() error {
 								e.RoundData.lockVotes.Unlock()
 								validatorIdx := common.IndexOfStr(voteMsg.Validator, e.RoundData.CommitteeBLS.StringList)
 								if validatorIdx != -1 {
-									if err := validateSingleBLSSig(e.RoundData.Block.Hash(), voteMsg.Vote.BLS, validatorIdx, e.RoundData.CommitteeBLS.ByteList); err != nil {
+									if err := e.preValidateVote(&(voteMsg.Vote), e.RoundData.Committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
 										e.logger.Error(err)
 										return
 									}
+									// if err := validateSingleBLSSig(e.RoundData.Block.Hash(), voteMsg.Vote.BLS, validatorIdx, e.RoundData.CommitteeBLS.ByteList); err != nil {
+									// 	e.logger.Error(err)
+									// 	return
+									// }
 									if len(voteMsg.Vote.BRI) != 0 {
 										if err := validateSingleBriSig(e.RoundData.Block.Hash(), voteMsg.Vote.BRI, e.RoundData.Committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
 											e.logger.Error(err)
@@ -187,7 +191,7 @@ func (e *BLSBFT) Start() error {
 						if err := e.validatePreSignBlock(e.Blocks[roundKey]); err != nil {
 							delete(e.Blocks, roundKey)
 							e.logger.Error(err)
-							time.Sleep(1 * time.Second)
+							// time.Sleep(1 * time.Second)
 							continue
 						}
 
@@ -200,7 +204,7 @@ func (e *BLSBFT) Start() error {
 							valData, err := DecodeValidationData(e.RoundData.Block.GetValidationField())
 							if err != nil {
 								e.logger.Error(err)
-								time.Sleep(1 * time.Second)
+								// time.Sleep(1 * time.Second)
 								continue
 							}
 							e.RoundData.BlockValidateData = *valData
@@ -222,7 +226,7 @@ func (e *BLSBFT) Start() error {
 						e.RoundData.lockVotes.Unlock()
 						if err != nil {
 							e.logger.Error(err)
-							time.Sleep(1 * time.Second)
+							// time.Sleep(1 * time.Second)
 							continue
 						}
 
@@ -234,6 +238,7 @@ func (e *BLSBFT) Start() error {
 						e.RoundData.Block.(blockValidation).AddValidationField(validationDataString)
 
 						//TODO: check issue invalid sig when swap
+						//TODO 0xakk0r0kamui trace who is malicious node if ValidateCommitteeSig return false
 						err = e.ValidateCommitteeSig(e.RoundData.Block, e.RoundData.Committee)
 						if err != nil {
 							fmt.Print("\n")
@@ -245,7 +250,7 @@ func (e *BLSBFT) Start() error {
 								fmt.Println(base58.Base58Check{}.Encode(member.MiningPubKey[consensusName], common.Base58Version))
 							}
 							e.logger.Critical(err)
-							time.Sleep(1 * time.Second)
+							// time.Sleep(1 * time.Second)
 							continue
 						}
 
@@ -255,7 +260,7 @@ func (e *BLSBFT) Start() error {
 									e.logger.Error(err)
 								}
 							}
-							time.Sleep(1 * time.Second)
+							// time.Sleep(1 * time.Second)
 							continue
 						}
 						// e.Node.PushMessageToAll()

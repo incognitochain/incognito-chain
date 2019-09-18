@@ -273,11 +273,15 @@ func (synker *Synker) UpdateState() {
 	shardsStateClone = make(map[byte]ShardBestState)
 	beaconStateCloneBytes, err := synker.blockchain.BestState.Beacon.MarshalJSON()
 	if err != nil {
+		synker.Status.Unlock()
+		synker.States.Unlock()
 		panic(err)
 	}
 	var beaconStateClone BeaconBestState
 	err = json.Unmarshal(beaconStateCloneBytes, &beaconStateClone)
 	if err != nil {
+		synker.Status.Unlock()
+		synker.States.Unlock()
 		panic(err)
 	}
 	var (
@@ -285,11 +289,12 @@ func (synker *Synker) UpdateState() {
 		userShardID   byte
 		userShardRole string
 	)
-	userMiningKey, _ := synker.blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
-	if userMiningKey != "" {
-		userRole, userShardID = beaconStateClone.GetPubkeyRole(userMiningKey, beaconStateClone.BestBlock.Header.Round)
+	userKeyForCheckRole, _ := synker.blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey() //(synker.blockchain.BestState.Beacon.ConsensusAlgorithm)
+
+	if userKeyForCheckRole != "" {
+		userRole, userShardID = beaconStateClone.GetPubkeyRole(userKeyForCheckRole, beaconStateClone.BestBlock.Header.Round)
 		synker.syncShard(userShardID)
-		userShardRole = synker.blockchain.BestState.Shard[userShardID].GetPubkeyRole(userMiningKey, synker.blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
+		userShardRole = synker.blockchain.BestState.Shard[userShardID].GetPubkeyRole(userKeyForCheckRole, synker.blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
 	}
 	synker.stopSyncUnnecessaryShard()
 
@@ -443,7 +448,7 @@ func (synker *Synker) UpdateState() {
 			if RCS.ClosestBeaconState.Height == beaconStateClone.BeaconHeight {
 				synker.SetChainState(false, 0, true)
 			} else {
-				fmt.Println("beacon not ready", RCS.ClosestBeaconState.Height)
+				fmt.Printf("beacon not ready %v %v\n\n\n\n", userRole, RCS.ClosestBeaconState.Height)
 				synker.SetChainState(false, 0, false)
 			}
 		}
@@ -547,13 +552,24 @@ func (synker *Synker) UpdateState() {
 	case common.ValidatorRole, common.ProposerRole:
 		userLayer = common.BeaconRole
 	}
+	//TODO hy Get Committee LightWeightPublicKey ExtractMiningPublickeysFromCommitteeKeyList
+	// beaconCommittee, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconStateClone.BeaconCommittee, beaconStateClone.ConsensusAlgorithm)
+	// shardCommittee := make(map[byte][]string)
+	// for shardID, committee := range beaconStateClone.GetShardCommittee() {
+	// 	shardCommittee[shardID], _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(committee, beaconStateClone.ShardConsensusAlgorithm[shardID])
+	// }
 
-	beaconCommittee, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconStateClone.BeaconCommittee, beaconStateClone.ConsensusAlgorithm)
+	beaconCommittee, _ := incognitokey.ExtractMiningPublickeysFromCommitteeKeyList(beaconStateClone.BeaconCommittee, beaconStateClone.ConsensusAlgorithm)
 	shardCommittee := make(map[byte][]string)
 	for shardID, committee := range beaconStateClone.GetShardCommittee() {
-		shardCommittee[shardID], _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(committee, beaconStateClone.ShardConsensusAlgorithm[shardID])
+		shardCommittee[shardID], _ = incognitokey.ExtractMiningPublickeysFromCommitteeKeyList(committee, beaconStateClone.ShardConsensusAlgorithm[shardID])
 	}
-
+	userMiningKey, err := synker.blockchain.config.ConsensusEngine.GetMiningPublicKeyByConsensus(synker.blockchain.BestState.Beacon.ConsensusAlgorithm)
+	if err != nil {
+		synker.Status.Unlock()
+		synker.States.Unlock()
+		panic(err)
+	}
 	if userRole == common.ShardRole {
 		synker.blockchain.config.Server.UpdateConsensusState(userLayer, userMiningKey, &userShardID, beaconCommittee, shardCommittee)
 	} else {
