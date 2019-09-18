@@ -345,6 +345,7 @@ func (engine *Engine) updateConsensusState() {
 func (engine *Engine) updateCurrentPublicKey(consensusType string) {
 	userMiningKey, _ := engine.userMiningPublicKeys[consensusType]
 	engine.currentMiningPublickey.Keys = userMiningKey
+	engine.currentMiningPublickey.KeysBase58 = make(map[string]string)
 	engine.currentMiningPublickey.KeysBase58[common.IncKeyType] = userMiningKey.GetIncKeyBase58()
 	for keyType := range userMiningKey.MiningPubKey {
 		engine.currentMiningPublickey.KeysBase58[keyType] = userMiningKey.GetMiningKeyBase58(keyType)
