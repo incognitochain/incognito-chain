@@ -217,7 +217,9 @@ func (e *BLSBFT) Start() error {
 						}
 					}
 					if e.RoundData.Block != nil && e.isHasMajorityVotes() {
+						e.RoundData.lockVotes.Lock()
 						aggSig, brigSigs, validatorIdx, err := combineVotes(e.RoundData.Votes, e.RoundData.CommitteeBLS.StringList)
+						e.RoundData.lockVotes.Unlock()
 						if err != nil {
 							e.logger.Error(err)
 							time.Sleep(1 * time.Second)
