@@ -314,9 +314,8 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 		if _, ok := tokenIDs[tokenID]; ok {
 			continue
 		}
-		item := jsonresult.CustomToken{}
-		item.InitPrivacyForCrossShard(token)
-		result.ListCustomToken = append(result.ListCustomToken, item)
+		item := jsonresult.NewPrivacyForCrossShard(token)
+		result.ListCustomToken = append(result.ListCustomToken, *item)
 	}
 	return result, nil
 }
