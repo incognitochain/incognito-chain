@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
-
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
 )
 
 func TestNewCommitteeKeyFromSeed(t *testing.T) {
@@ -85,9 +82,9 @@ func TestCommitteePublicKey_FromString(t *testing.T) {
 				t.Errorf("CommitteePublicKey.FromString() error = %v, wantErr %v", err, tt.wantErr)
 			} else {
 				fmt.Println(pubKey.GetNormalKey())
-				blsBytes, _ := pubKey.GetMiningKey(common.BlsConsensus)
-				fmt.Println(base58.Base58Check{}.Encode(blsBytes, common.Base58Version))
-				fmt.Println(pubKey.GetMiningKey(common.BridgeConsensus))
+				// blsBytes, _ := pubKey.GetMiningKey(common.BlsConsensus)
+				// fmt.Println(base58.Base58Check{}.Encode(blsBytes, common.Base58Version))
+				// fmt.Println(pubKey.GetMiningKey(common.BridgeConsensus))
 			}
 
 		})
