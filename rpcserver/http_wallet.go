@@ -20,7 +20,7 @@ Result—a list of accounts and their balances
 */
 func (httpServer *HttpServer) handleListAccounts(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	result, err := httpServer.walletService.ListAccounts()
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 
@@ -38,7 +38,7 @@ func (httpServer *HttpServer) handleGetAccount(params interface{}, closeChan <-c
 	}
 
 	accountName, _ := httpServer.walletService.GetAccount(paramTemp)
-	if accountName != ""{
+	if accountName != "" {
 		return accountName, nil
 	}
 
@@ -58,7 +58,7 @@ func (httpServer *HttpServer) handleGetAddressesByAccount(params interface{}, cl
 	}
 
 	addresses, err := httpServer.walletService.GetAddressesByAccount(paramTemp)
-	if err != nil{
+	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 	result := jsonresult.GetAddressesByAccount{}
@@ -80,7 +80,7 @@ func (httpServer *HttpServer) handleGetAccountAddress(params interface{}, closeC
 	}
 
 	result, err := httpServer.walletService.GetAccountAddress(accountName)
-	if err != nil{
+	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 	return result, nil
@@ -127,7 +127,7 @@ func (httpServer *HttpServer) handleImportAccount(params interface{}, closeChan 
 	}
 
 	result, err := httpServer.walletService.ImportAccount(privateKey, accountName, passPhrase)
-	if err != nil{
+	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
@@ -298,18 +298,19 @@ func (httpServer *HttpServer) handleListCustomToken(params interface{}, closeCha
 }
 
 func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	temps, listCustomTokenCrossShard, err := httpServer.blockService.ListPrivacyCustomToken()
+	listPrivacyToken, listPrivacyTokenCrossShard, err := httpServer.blockService.ListPrivacyCustomTokenCached()
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
+
 	result := jsonresult.ListCustomToken{ListCustomToken: []jsonresult.CustomToken{}}
 	tokenIDs := make(map[common.Hash]interface{})
-	for tokenID, token := range temps {
+	for tokenID, token := range listPrivacyToken {
 		item := jsonresult.NewPrivacyToken(token)
 		tokenIDs[tokenID] = 0
 		result.ListCustomToken = append(result.ListCustomToken, *item)
 	}
-	for tokenID, token := range listCustomTokenCrossShard {
+	for tokenID, token := range listPrivacyTokenCrossShard {
 		if _, ok := tokenIDs[tokenID]; ok {
 			continue
 		}
@@ -332,7 +333,7 @@ func (httpServer *HttpServer) handleGetPublicKeyFromPaymentAddress(params interf
 	}
 
 	keySet, _, err := rpcservice.GetKeySetFromPaymentAddressParam(paymentAddress)
-	if err != nil{
+	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 	result := jsonresult.NewGetPublicKeyFromPaymentAddressResult(keySet.PaymentAddress.Pk[:])
@@ -391,6 +392,5 @@ func (httpServer *HttpServer) createRawDefragmentAccountTransaction(params inter
 	}
 	return result, nil
 }
-
 
 // ----------------------------- End ------------------------------------
