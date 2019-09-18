@@ -6,15 +6,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/netsync"
-	"github.com/incognitochain/incognito-chain/pubsub"
-
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/connmanager"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/mempool"
+	"github.com/incognitochain/incognito-chain/netsync"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
 	peer2 "github.com/libp2p/go-libp2p-peer"
@@ -62,6 +62,7 @@ type RpcServerConfig struct {
 	ProtocolVersion string
 	ChainParams     *blockchain.Params
 	BlockChain      *blockchain.BlockChain
+	MemCache        *memcache.MemoryCache
 	Database        *database.DatabaseInterface
 	Wallet          *wallet.Wallet
 	ConnMgr         *connmanager.ConnManager
