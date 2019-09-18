@@ -14,3 +14,9 @@ func GetListOutputcoinCachedKey(publicKey []byte, tokenID *common.Hash, shardID 
 	key = append(key, shardID)
 	return key
 }
+
+func GetShardBestStateCachedKey() []byte {
+	key := make([]byte, 0)
+	key = append(key, []byte(shardBestStateCacheKey)...)
+	return key
+}
