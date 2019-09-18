@@ -108,6 +108,13 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 			}
 		}
 	}
+	// process for slashing, make sure this one is called before update best state
+	// since we'd like to process with old committee not updated committee
+	slashErr := blockchain.processForSlashing(beaconBlock)
+	if slashErr != nil {
+		Logger.log.Errorf("Failed to process slashing with error: %+v", NewBlockChainError(ProcessSlashingError, slashErr))
+	}
+
 	// snapshot current beacon committee and shard committee
 	snapshotBeaconCommittee, snapshotAllShardCommittee, err := snapshotCommittee(blockchain.BestState.Beacon.BeaconCommittee, blockchain.BestState.Beacon.ShardCommittee)
 	if err != nil {
@@ -127,6 +134,9 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	if err := blockchain.BestState.Beacon.updateBeaconBestState(beaconBlock, blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.RandomTime); err != nil {
 		return err
 	}
+	// updateNumOfBlocksByProducers updates number of blocks produced by producers
+	blockchain.BestState.Beacon.updateNumOfBlocksByProducers(beaconBlock, blockchain.config.ChainParams.Epoch)
+
 	newBeaconCommittee, newAllShardCommittee, err := snapshotCommittee(blockchain.BestState.Beacon.BeaconCommittee, blockchain.BestState.Beacon.ShardCommittee)
 	if err != nil {
 		return NewBlockChainError(SnapshotCommitteeError, err)
@@ -192,6 +202,23 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, beaconBlock))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.BeaconBeststateTopic, blockchain.BestState.Beacon))
 	return nil
+}
+
+// updateNumOfBlocksByProducers updates number of blocks produced by producers
+func (beaconBestState *BeaconBestState) updateNumOfBlocksByProducers(beaconBlock *BeaconBlock, chainParamEpoch uint64) {
+	producer := beaconBlock.GetProducer()
+	if beaconBlock.GetHeight()%chainParamEpoch == 1 {
+		beaconBestState.NumOfBlocksByProducers = map[string]uint64{
+			producer: 1,
+		}
+	}
+	// Update number of blocks produced by producers in epoch
+	numOfBlks, found := beaconBestState.NumOfBlocksByProducers[producer]
+	if !found {
+		beaconBestState.NumOfBlocksByProducers[producer] = 1
+	} else {
+		beaconBestState.NumOfBlocksByProducers[producer] = numOfBlks + 1
+	}
 }
 
 /*
@@ -279,6 +306,26 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *Beacon
 	return nil
 }
 
+func extractSwapInstFromShardBlock(shardID byte, shardBlock *ShardToBeaconBlock) []string {
+	instructions := shardBlock.Instructions
+	for _, instruction := range instructions {
+		if len(instruction) == 0 {
+			continue
+		}
+		if instruction[0] != SwapAction {
+			continue
+		}
+		if instruction[3] == "beacon" {
+			continue
+		}
+		if instruction[3] == "shard" && len(instruction) != 5 && instruction[4] != strconv.Itoa(int(shardID)) {
+			continue
+		}
+		return instruction
+	}
+	return []string{}
+}
+
 /*
 	verifyPreProcessingBeaconBlockForSigning
 	Must pass these following condition:
@@ -342,36 +389,39 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 				}
 			}
 			// Only accept block in one epoch
-			for index, shardBlock := range shardBlocks {
+			for _, shardBlock := range shardBlocks {
 				currentCommittee := blockchain.BestState.Beacon.GetAShardCommittee(shardID)
-				currentCommitteeStr, err := incognitokey.CommitteeKeyListToString(currentCommittee)
-				if err != nil {
-					return NewBlockChainError(UnExpectedError, err)
-				}
-				currentPendingValidator := blockchain.BestState.Beacon.GetAShardPendingValidator(shardID)
-				currentPendingValidatorStr, err := incognitokey.CommitteeKeyListToString(currentPendingValidator)
-				if err != nil {
-					return NewBlockChainError(UnExpectedError, err)
-				}
+				// currentCommitteeStr, err := incognitokey.CommitteeKeyListToString(currentCommittee)
+				// if err != nil {
+				// 	return NewBlockChainError(UnExpectedError, err)
+				// }
+				// currentPendingValidator := blockchain.BestState.Beacon.GetAShardPendingValidator(shardID)
+				// currentPendingValidatorStr, err := incognitokey.CommitteeKeyListToString(currentPendingValidator)
+				// if err != nil {
+				// 	return NewBlockChainError(UnExpectedError, err)
+				// }
 				errValidation := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, currentCommittee, beaconBestState.ShardConsensusAlgorithm[shardID])
-
-				if index == 0 && errValidation != nil {
-					currentCommitteeStr, _, _, _, err = SwapValidator(currentPendingValidatorStr, currentCommitteeStr, blockchain.BestState.Beacon.MaxShardCommitteeSize, common.Offset)
-					if err != nil {
-						return NewBlockChainError(SwapValidatorError, fmt.Errorf("Failed to swap validator when try to verify shard to beacon block %+v, error %+v, sigError %+v", shardBlock.Header.Height, err, errValidation))
-					}
-					currentCommittee, err = incognitokey.CommitteeBase58KeyListToStruct(currentCommitteeStr)
-					if err != nil {
-						return NewBlockChainError(UnExpectedError, err)
-					}
-					err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, currentCommittee, beaconBestState.ShardConsensusAlgorithm[shardID])
-					if err != nil {
-						return NewBlockChainError(SignatureError, fmt.Errorf("Failed to verify Signature of Shard To Beacon Block %+v, error %+v", shardBlock.Header.Height, err))
-					}
-				}
-				if index != 0 && err != nil {
+				if errValidation != nil {
 					return NewBlockChainError(ShardStateError, fmt.Errorf("Fail to verify with Shard To Beacon Block %+v, error %+v", shardBlock.Header.Height, err))
 				}
+
+				// if index == 0 && errValidation != nil {
+				// 	currentCommitteeStr, _, _, _, err = SwapValidator(currentPendingValidatorStr, currentCommitteeStr, blockchain.BestState.Beacon.MaxShardCommitteeSize, common.Offset)
+				// 	if err != nil {
+				// 		return NewBlockChainError(SwapValidatorError, fmt.Errorf("Failed to swap validator when try to verify shard to beacon block %+v, error %+v, sigError %+v", shardBlock.Header.Height, err, errValidation))
+				// 	}
+				// 	currentCommittee, err = incognitokey.CommitteeBase58KeyListToStruct(currentCommitteeStr)
+				// 	if err != nil {
+				// 		return NewBlockChainError(UnExpectedError, err)
+				// 	}
+				// 	err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, currentCommittee, beaconBestState.ShardConsensusAlgorithm[shardID])
+				// 	if err != nil {
+				// 		return NewBlockChainError(SignatureError, fmt.Errorf("Failed to verify Signature of Shard To Beacon Block %+v, error %+v", shardBlock.Header.Height, err))
+				// 	}
+				// }
+				// if index != 0 && err != nil {
+				// 	return NewBlockChainError(ShardStateError, fmt.Errorf("Fail to verify with Shard To Beacon Block %+v, error %+v", shardBlock.Header.Height, err))
+				// }
 			}
 			for _, shardBlock := range shardBlocks {
 				tempShardState, stakeInstruction, swapInstruction, bridgeInstruction, acceptedBlockRewardInstruction, stopAutoStakingInstruction := blockchain.GetShardStateFromBlock(beaconBlock.Header.Height, shardBlock, shardID, false)
@@ -390,7 +440,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 		stakeInstructions, swapInstructions, stopAutoStakingInstructions,
 		blockchain.BestState.Beacon.CandidateShardWaitingForCurrentRandom,
 		bridgeInstructions, acceptedBlockRewardInstructions,
-		blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.RandomTime)
+		blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.RandomTime, blockchain)
 	if len(rewardByEpochInstruction) != 0 {
 		tempInstruction = append(tempInstruction, rewardByEpochInstruction...)
 	}
@@ -990,6 +1040,7 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string)
 	}
 	return nil, false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
 }
+
 func (blockchain *BlockChain) processStoreBeaconBlock(
 	beaconBlock *BeaconBlock,
 	snapshotBeaconCommittees []incognitokey.CommitteePublicKey,

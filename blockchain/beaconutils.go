@@ -79,59 +79,118 @@ func calculateCandidateShardID(candidate string, rand int64, activeShards int) (
 	return shardID
 }
 
+func filterValidators(
+	validators []string,
+	producersBlackList map[string]uint8,
+	isExistenceIncluded bool,
+) []string {
+	resultingValidators := []string{}
+	for _, pv := range validators {
+		_, found := producersBlackList[pv]
+		if (found && isExistenceIncluded) || (!found && !isExistenceIncluded) {
+			resultingValidators = append(resultingValidators, pv)
+		}
+	}
+	return resultingValidators
+}
+
+func isBadProducer(badProducers []string, producer string) bool {
+	for _, badProducer := range badProducers {
+		if badProducer == producer {
+			return true
+		}
+	}
+	return false
+}
+
+func swap(
+	pendingValidators []string,
+	currentGoodProducers []string,
+	currentBadProducers []string,
+	maxCommittee int,
+	offset int,
+) ([]string, []string, []string, []string, error) {
+	// if swap offset = 0 then do nothing
+	if offset == 0 {
+		return pendingValidators, currentGoodProducers, currentBadProducers, []string{}, errors.New("no pending validator for swapping")
+	}
+	if offset > maxCommittee {
+		return pendingValidators, currentGoodProducers, currentBadProducers, []string{}, errors.New("try to swap too many validators")
+	}
+	tempValidators := []string{}
+	swapValidator := currentBadProducers
+	diff := maxCommittee - len(currentGoodProducers)
+	if diff >= offset {
+		tempValidators = append(tempValidators, pendingValidators[:offset]...)
+		currentGoodProducers = append(currentGoodProducers, tempValidators...)
+		pendingValidators = pendingValidators[offset:]
+		return pendingValidators, currentGoodProducers, swapValidator, tempValidators, nil
+	}
+	offset -= diff
+	tempValidators = append(tempValidators, pendingValidators[:diff]...)
+	pendingValidators = pendingValidators[diff:]
+	currentGoodProducers = append(currentGoodProducers, tempValidators...)
+
+	// out pubkey: swapped out validator
+	swapValidator = append(swapValidator, currentGoodProducers[:offset]...)
+	// unqueue validator with index from 0 to offset-1 from currentValidators list
+	currentGoodProducers = currentGoodProducers[offset:]
+	// in pubkey: unqueue validator with index from 0 to offset-1 from pendingValidators list
+	tempValidators = append(tempValidators, pendingValidators[:offset]...)
+	// enqueue new validator to the remaning of current validators list
+	currentGoodProducers = append(currentGoodProducers, pendingValidators[:offset]...)
+	// save new pending validators list
+	pendingValidators = pendingValidators[offset:]
+	return pendingValidators, currentGoodProducers, swapValidator, tempValidators, nil
+}
+
 // consider these list as queue structure
 // unqueue a number of validator out of currentValidators list
 // enqueue a number of validator into currentValidators list <=> unqueue a number of validator out of pendingValidators list
 // return value: #1 remaining pendingValidators, #2 new currentValidators #3 swapped out validator, #4 incoming validator #5 error
-func SwapValidator(pendingValidators []string, currentValidators []string, maxCommittee int, offset int) ([]string, []string, []string, []string, error) {
-	if maxCommittee < 0 || offset < 0 {
-		panic("committee can't be zero")
-	}
-	if offset == 0 {
-		return []string{}, pendingValidators, currentValidators, []string{}, errors.New("can't not swap 0 validator")
-	}
-	// if number of pending validator is less or equal than offset, set offset equal to number of pending validator
-	if offset > len(pendingValidators) {
-		offset = len(pendingValidators)
-	}
-	// if swap offset = 0 then do nothing
-	if offset == 0 {
-		return pendingValidators, currentValidators, []string{}, []string{}, errors.New("no pending validator for swapping")
-	}
-	if offset > maxCommittee {
-		return pendingValidators, currentValidators, []string{}, []string{}, errors.New("trying to swap too many validator")
-	}
-	tempValidators := []string{}
-	swapValidator := []string{}
-	// if len(currentValidator) < maxCommittee then push validator until it is full
-	if len(currentValidators) < maxCommittee {
-		diff := maxCommittee - len(currentValidators)
-		if diff >= offset {
-			tempValidators = append(tempValidators, pendingValidators[:offset]...)
-			currentValidators = append(currentValidators, tempValidators...)
-			pendingValidators = pendingValidators[offset:]
-			return pendingValidators, currentValidators, swapValidator, tempValidators, nil
-		} else {
-			offset -= diff
-			tempValidators := append(tempValidators, pendingValidators[:diff]...)
-			pendingValidators = pendingValidators[diff:]
-			currentValidators = append(currentValidators, tempValidators...)
+func SwapValidator(
+	pendingValidators []string,
+	currentValidators []string,
+	maxCommittee int,
+	minCommittee int,
+	offset int,
+	producersBlackList map[string]uint8,
+) ([]string, []string, []string, []string, error) {
+	pendingValidators = filterValidators(pendingValidators, producersBlackList, false)
+	currentBadProducers := filterValidators(currentValidators, producersBlackList, true)
+	currentGoodProducers := filterValidators(currentValidators, producersBlackList, false)
+	pendingValidatorsLen := len(pendingValidators)
+
+	if len(currentGoodProducers) >= minCommittee {
+		//push items in pendingValidators to currentGoodProducers until len(currentGoodProducers) is equal to maxCommittee
+		if offset > pendingValidatorsLen {
+			offset = pendingValidatorsLen
 		}
+		return swap(pendingValidators, currentGoodProducers, currentBadProducers, maxCommittee, offset)
 	}
-	// out pubkey: swapped out validator
-	swapValidator = append(swapValidator, currentValidators[:offset]...)
-	// unqueue validator with index from 0 to offset-1 from currentValidators list
-	currentValidators = currentValidators[offset:]
-	// in pubkey: unqueue validator with index from 0 to offset-1 from pendingValidators list
-	tempValidators = append(tempValidators, pendingValidators[:offset]...)
-	// enqueue new validator to the remaning of current validators list
-	currentValidators = append(currentValidators, pendingValidators[:offset]...)
-	// save new pending validators list
-	pendingValidators = pendingValidators[offset:]
-	if len(currentValidators) > maxCommittee {
-		panic("Length of current validator greater than max committee in Swap validator ")
+
+	minProducersNeeded := minCommittee - len(currentGoodProducers)
+	if len(pendingValidators) >= minProducersNeeded {
+		if offset < minProducersNeeded {
+			offset = minProducersNeeded
+		} else if offset > pendingValidatorsLen {
+			offset = pendingValidatorsLen
+		}
+		return swap(pendingValidators, currentGoodProducers, currentBadProducers, maxCommittee, offset)
 	}
-	return pendingValidators, currentValidators, swapValidator, tempValidators, nil
+
+	producersNumCouldBeSwapped := len(pendingValidators) + len(currentValidators) - minCommittee
+	swappedProducers := []string{}
+	remainingProducers := []string{}
+	for _, producer := range currentValidators {
+		if isBadProducer(currentBadProducers, producer) && len(swappedProducers) < producersNumCouldBeSwapped {
+			swappedProducers = append(swappedProducers, producer)
+			continue
+		}
+		remainingProducers = append(remainingProducers, producer)
+	}
+	newProducers := append(remainingProducers, pendingValidators...)
+	return []string{}, newProducers, swappedProducers, pendingValidators, nil
 }
 
 // return: #param1: validator list after remove

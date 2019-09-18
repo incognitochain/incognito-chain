@@ -97,8 +97,11 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLi
 		}
 	}
 	tempShardState, stakeInstructions, swapInstructions, bridgeInstructions, acceptedRewardInstructions, stopAutoStakingInstructions := blockGenerator.GetShardState(beaconBestState, shardsToBeaconLimit)
-	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock.Header.Height, stakeInstructions, swapInstructions, stopAutoStakingInstructions, beaconBestState.CandidateShardWaitingForCurrentRandom,
-		bridgeInstructions, acceptedRewardInstructions, blockGenerator.chain.config.ChainParams.Epoch, blockGenerator.chain.config.ChainParams.RandomTime)
+	tempInstruction := beaconBestState.GenerateInstruction(
+		beaconBlock.Header.Height, stakeInstructions, swapInstructions, stopAutoStakingInstructions,
+		beaconBestState.CandidateShardWaitingForCurrentRandom, bridgeInstructions, acceptedRewardInstructions, blockGenerator.chain.config.ChainParams.Epoch,
+		blockGenerator.chain.config.ChainParams.RandomTime, blockGenerator.chain,
+	)
 	if len(rewardByEpochInstruction) != 0 {
 		tempInstruction = append(tempInstruction, rewardByEpochInstruction...)
 	}
@@ -327,6 +330,7 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 	acceptedRewardInstructions [][]string,
 	chainParamEpoch uint64,
 	randomTime uint64,
+	blockchain *BlockChain,
 ) [][]string {
 	instructions := [][]string{}
 	instructions = append(instructions, bridgeInstructions...)
@@ -355,7 +359,11 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 			panic(err)
 		}
 
-		_, currentValidators, swappedValidator, beaconNextCommittee, err := SwapValidator(beaconPendingValidatorStr, beaconCommitteeStr, beaconBestState.MaxBeaconCommitteeSize, common.Offset)
+		producersBlackList, err := blockchain.getUpdatedProducersBlackList(true, -1, beaconCommitteeStr)
+		if err != nil {
+			Logger.log.Error(err)
+		}
+		_, currentValidators, swappedValidator, beaconNextCommittee, err := SwapValidator(beaconPendingValidatorStr, beaconCommitteeStr, beaconBestState.MaxBeaconCommitteeSize, beaconBestState.MinBeaconCommitteeSize, common.Offset, producersBlackList)
 		if len(swappedValidator) > 0 || len(beaconNextCommittee) > 0 && err == nil {
 			swapBeaconInstructions = append(swapBeaconInstructions, "swap")
 			swapBeaconInstructions = append(swapBeaconInstructions, strings.Join(beaconNextCommittee, ","))
@@ -534,7 +542,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 				if instruction[3] == "beacon" {
 					continue
 				}
-				if instruction[3] == "shard" && len(instruction) != 5 && instruction[4] != strconv.Itoa(int(shardID)) {
+				if instruction[3] == "shard" && len(instruction) != 6 && instruction[4] != strconv.Itoa(int(shardID)) {
 					continue
 				}
 				swapInstructions[shardID] = append(swapInstructions[shardID], instruction)

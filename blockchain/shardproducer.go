@@ -459,7 +459,7 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 		instructions          = [][]string{}
 		bridgeSwapConfirmInst = []string{}
 		swapInstruction       = []string{}
-		err                   error
+		// err                   error
 	)
 	if beaconHeight%blockchain.config.ChainParams.Epoch == 0 {
 		if len(shardPendingValidator) > 0 {
@@ -467,7 +467,17 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 			Logger.log.Info("ShardCommittee", shardCommittee)
 			Logger.log.Info("MaxShardCommitteeSize", blockchain.BestState.Shard[shardID].MaxShardCommitteeSize)
 			Logger.log.Info("ShardID", shardID)
-			swapInstruction, shardPendingValidator, shardCommittee, err = CreateSwapAction(shardPendingValidator, shardCommittee, blockchain.BestState.Shard[shardID].MaxShardCommitteeSize, shardID)
+
+			producersBlackList, err := blockchain.getUpdatedProducersBlackList(false, int(shardID), shardCommittee)
+			if err != nil {
+				Logger.log.Error(err)
+				return instructions, shardPendingValidator, shardCommittee, err
+			}
+
+			maxShardCommitteeSize := blockchain.BestState.Shard[shardID].MaxShardCommitteeSize
+			minShardCommitteeSize := blockchain.BestState.Shard[shardID].MinShardCommitteeSize
+			badProducersWithPunishment := blockchain.buildBadProducersWithPunishment(false, int(shardID), shardCommittee)
+			swapInstruction, shardPendingValidator, shardCommittee, err = CreateSwapAction(shardPendingValidator, shardCommittee, maxShardCommitteeSize, minShardCommitteeSize, shardID, producersBlackList, badProducersWithPunishment)
 			if err != nil {
 				Logger.log.Error(err)
 				return instructions, shardPendingValidator, shardCommittee, err
