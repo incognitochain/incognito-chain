@@ -83,6 +83,10 @@ const (
 	// reward
 	GetCommitteeRewardError
 	RemoveCommitteeRewardError
+
+	// slash
+	GetProducersBlackListError
+	StoreProducersBlackListError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -166,6 +170,10 @@ var ErrCodeMessage = map[int]struct {
 	// -11xxx reward
 	GetCommitteeRewardError:    {-11000, "Get committee reward error"},
 	RemoveCommitteeRewardError: {-11001, "Remove committee reward error"},
+
+	// -12xxx Slash
+	GetProducersBlackListError:   {-12000, "Get producers black list error"},
+	StoreProducersBlackListError: {-12001, "Store producers black list error"},
 }
 
 type DatabaseError struct {

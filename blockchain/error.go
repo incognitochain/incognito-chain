@@ -157,6 +157,7 @@ const (
 	SnapshotRewardReceiverError
 	StoreAutoStakingByHeightError
 	FetchAutoStakingByHeightError
+	ProcessSlashingError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -298,6 +299,7 @@ var ErrCodeMessage = map[int]struct {
 	SnapshotRewardReceiverError:                       {-1132, "Snapshot Reward Receiver Error"},
 	StoreAutoStakingByHeightError:                     {-1133, "Store Auto Staking By Height Error"},
 	FetchAutoStakingByHeightError:                     {-1134, "Fetch Auto Staking By Height Error"},
+	ProcessSlashingError:                              {-1135, "Process slashing Error"},
 }
 
 type BlockChainError struct {
