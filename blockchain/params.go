@@ -6,6 +6,11 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
+type SlashLevel struct {
+	MinRange        uint8
+	PunishedEpoches uint8
+}
+
 /*
 Params defines a network by its component. These component may be used by Applications
 to differentiate network as well as addresses and keys for one network
@@ -31,6 +36,7 @@ type Params struct {
 	RewardHalflife         uint64
 	Epoch                  uint64
 	RandomTime             uint64
+	SlashLevels            []SlashLevel
 }
 
 type GenesisParams struct {
@@ -85,6 +91,11 @@ func init() {
 		RewardHalflife:         TestnetRewardHalflife,
 		Epoch:                  TestnetEpoch,
 		RandomTime:             TestnetRandomTime,
+		SlashLevels: []SlashLevel{
+			SlashLevel{MinRange: 20, PunishedEpoches: 5},
+			SlashLevel{MinRange: 50, PunishedEpoches: 10},
+			SlashLevel{MinRange: 75, PunishedEpoches: 20},
+		},
 	}
 	// END TESTNET
 	// FOR MAINNET
@@ -115,5 +126,10 @@ func init() {
 		RewardHalflife:         MainnetRewardHalflife,
 		Epoch:                  MainnetEpoch,
 		RandomTime:             MainnetRandomTime,
+		SlashLevels: []SlashLevel{
+			SlashLevel{MinRange: 20, PunishedEpoches: 5},
+			SlashLevel{MinRange: 50, PunishedEpoches: 10},
+			SlashLevel{MinRange: 75, PunishedEpoches: 20},
+		},
 	}
 }

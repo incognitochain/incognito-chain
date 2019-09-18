@@ -44,6 +44,9 @@ type ShardBestState struct {
 	ActiveShards           int                               `json:"ActiveShards"`
 	ConsensusAlgorithm     string                            `json:"ConsensusAlgorithm"`
 
+	// Number of blocks produced by producers in epoch
+	NumOfBlocksByProducers map[string]uint64 `json:"NumOfBlocksByProducers"`
+
 	BlockInterval      time.Duration
 	BlockMaxCreateTime time.Duration
 

@@ -104,12 +104,24 @@ func CreateCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) 
 	#3: new committees after swapped
 	#4: error
 */
-func CreateSwapAction(pendingValidator []string, commitees []string, committeeSize int, shardID byte) ([]string, []string, []string, error) {
-	newPendingValidator, newShardCommittees, shardSwapedCommittees, shardNewCommittees, err := SwapValidator(pendingValidator, commitees, committeeSize, common.Offset)
+func CreateSwapAction(
+	pendingValidator []string,
+	commitees []string,
+	maxCommitteeSize int,
+	minCommitteeSize int,
+	shardID byte,
+	producersBlackList map[string]uint8,
+	badProducersWithPunishment map[string]uint8,
+) ([]string, []string, []string, error) {
+	newPendingValidator, newShardCommittees, shardSwapedCommittees, shardNewCommittees, err := SwapValidator(pendingValidator, commitees, maxCommitteeSize, minCommitteeSize, common.Offset, producersBlackList)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	swapInstruction := []string{"swap", strings.Join(shardNewCommittees, ","), strings.Join(shardSwapedCommittees, ","), "shard", strconv.Itoa(int(shardID))}
+	badProducersWithPunishmentBytes, err := json.Marshal(badProducersWithPunishment)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	swapInstruction := []string{"swap", strings.Join(shardNewCommittees, ","), strings.Join(shardSwapedCommittees, ","), "shard", strconv.Itoa(int(shardID)), string(badProducersWithPunishmentBytes)}
 	return swapInstruction, newPendingValidator, newShardCommittees, nil
 }
 
