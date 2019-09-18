@@ -1,6 +1,7 @@
 package memcache
 
 const (
-	splitChar          = "-"
-	outputCoinCacheKey = "listoutputcoin"
+	splitChar              = "-"
+	outputCoinCacheKey     = "listoutputcoin"
+	shardBestStateCacheKey = "shardbeststate"
 )
