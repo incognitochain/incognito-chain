@@ -4,24 +4,46 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"log"
+	"strconv"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/transaction"
-	"log"
-	"strconv"
 )
 
 type BlockService struct {
 	BlockChain *blockchain.BlockChain
-	DB  *database.DatabaseInterface
-	TxMemPool * mempool.TxPool
+	DB         *database.DatabaseInterface
+	TxMemPool  *mempool.TxPool
+	MemCache   *memcache.MemoryCache
 }
 
 func (blockService BlockService) GetShardBestStates() map[byte]*blockchain.ShardBestState {
-	shards := blockService.BlockChain.BestState.GetClonedAllShardBestState()
+	shards := make(map[byte]*blockchain.ShardBestState)
+	cacheKey := memcache.GetShardBestStateCachedKey()
+	cacheValue, err := blockService.MemCache.Get(cacheKey)
+	if err == nil && len(cacheValue) > 0 {
+		err1 := json.Unmarshal(cacheValue, &shards)
+		if err1 != nil {
+			Logger.log.Error("Json Unmarshal cache of shard best state error", err1)
+		}
+	}
+	if len(shards) == 0 {
+		shards = blockService.BlockChain.BestState.GetClonedAllShardBestState()
+		cacheValue, err := json.Marshal(shards)
+		if err == nil {
+			err1 := blockService.MemCache.PutExpired(cacheKey, cacheValue, 10*time.Second)
+			if err1 != nil {
+				Logger.log.Error("Cache data of shard best state error", err1)
+			}
+		}
+	}
 	return shards
 }
 
@@ -313,15 +335,15 @@ func (blockService BlockService) GetShardBlockByHeight(height uint64, shardID by
 	return blockService.BlockChain.GetShardBlockByHeight(height, shardID)
 }
 
-func (blockService BlockService) IsBeaconBestStateNil() (bool) {
+func (blockService BlockService) IsBeaconBestStateNil() bool {
 	return blockService.BlockChain.BestState == nil || blockService.BlockChain.BestState.Beacon == nil
 }
 
-func (blockService BlockService) IsShardBestStateNil() (bool) {
+func (blockService BlockService) IsShardBestStateNil() bool {
 	return blockService.BlockChain.BestState == nil || blockService.BlockChain.BestState.Shard == nil || len(blockService.BlockChain.BestState.Shard) <= 0
 }
 
-func (blockService BlockService) GetValidStakers(publicKeys []string) ([]string,  *RPCError) {
+func (blockService BlockService) GetValidStakers(publicKeys []string) ([]string, *RPCError) {
 	beaconBestState, err := blockService.GetBeaconBestState()
 	if err != nil {
 		return nil, NewRPCError(GetClonedBeaconBestStateError, err)
@@ -340,7 +362,7 @@ func (blockService BlockService) GetBeaconBlockByHash(hash common.Hash) (*blockc
 	return blockService.BlockChain.GetBeaconBlockByHash(hash)
 }
 
-func (blockService BlockService) CheckHashValue(hashStr string) (isTransaction bool, isShardBlock bool, isBeaconBlock bool, err error){
+func (blockService BlockService) CheckHashValue(hashStr string) (isTransaction bool, isShardBlock bool, isBeaconBlock bool, err error) {
 	isTransaction = false
 	isShardBlock = false
 	isBeaconBlock = false
@@ -352,17 +374,17 @@ func (blockService BlockService) CheckHashValue(hashStr string) (isTransaction b
 	}
 
 	_, _, err = blockService.GetShardBlockByHash(*hash)
-	if err == nil{
+	if err == nil {
 		isShardBlock = true
 		return
 	} else {
 		_, _, err = blockService.GetBeaconBlockByHash(*hash)
-		if err == nil{
+		if err == nil {
 			isBeaconBlock = true
 			return
-		} else{
+		} else {
 			_, _, _, _, err = blockService.BlockChain.GetTransactionByHash(*hash)
-			if err == nil{
+			if err == nil {
 				isTransaction = true
 			} else {
 				err = nil
@@ -373,16 +395,15 @@ func (blockService BlockService) CheckHashValue(hashStr string) (isTransaction b
 	return
 }
 
-func (blockService BlockService) GetActiveShards() (int) {
+func (blockService BlockService) GetActiveShards() int {
 	return blockService.BlockChain.BestState.Beacon.ActiveShards
 }
 
-func (blockService BlockService) ListPrivacyCustomToken() (map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData, error){
+func (blockService BlockService) ListPrivacyCustomToken() (map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData, error) {
 	return blockService.BlockChain.ListPrivacyCustomToken()
 }
 
-
-func (blockService BlockService) GetAllCoinID() ([]common.Hash, error){
+func (blockService BlockService) GetAllCoinID() ([]common.Hash, error) {
 	return blockService.BlockChain.GetAllCoinID()
 }
 
@@ -431,21 +452,20 @@ func (blockService BlockService) RevertBeacon() error {
 	return blockService.BlockChain.RevertBeaconState()
 }
 
-
 func (blockService BlockService) RevertShard(shardID byte) error {
 	return blockService.BlockChain.RevertShardState(shardID)
 }
 
-func (blockService BlockService) ListCustomToken() (map[common.Hash]transaction.TxNormalToken, error){
+func (blockService BlockService) ListCustomToken() (map[common.Hash]transaction.TxNormalToken, error) {
 	return blockService.BlockChain.ListCustomToken()
 }
 
-func (blockService BlockService) GetRewardAmount(paymentAddress string) (map[string]uint64, *RPCError){
+func (blockService BlockService) GetRewardAmount(paymentAddress string) (map[string]uint64, *RPCError) {
 	rewardAmountResult := make(map[string]uint64)
 	rewardAmounts := make(map[common.Hash]uint64)
 
 	keySet, _, err := GetKeySetFromPaymentAddressParam(paymentAddress)
-	if err != nil{
+	if err != nil {
 		return nil, NewRPCError(UnexpectedError, err)
 	}
 	publicKey := keySet.PaymentAddress.Pk
@@ -491,8 +511,7 @@ func (blockService BlockService) GetRewardAmount(paymentAddress string) (map[str
 	return rewardAmountResult, nil
 }
 
-
-func (blockService BlockService) CanPubkeyStake(publicKey string) (bool, error){
+func (blockService BlockService) CanPubkeyStake(publicKey string) (bool, error) {
 	canStake := true
 	validStakers, err := blockService.GetValidStakers([]string{publicKey})
 	if err != nil {
@@ -512,7 +531,7 @@ func (blockService BlockService) CanPubkeyStake(publicKey string) (bool, error){
 	return canStake, nil
 }
 
-func (blockService BlockService) GetBlockHashByHeight(shardID int, height uint64) (string, error){
+func (blockService BlockService) GetBlockHashByHeight(shardID int, height uint64) (string, error) {
 	var hash *common.Hash
 	var err error
 	var beaconBlock *blockchain.BeaconBlock
@@ -542,7 +561,7 @@ func (blockService BlockService) GetBlockHashByHeight(shardID int, height uint64
 }
 
 func (blockService BlockService) GetBlockHeader(getBy string, blockParam string, shardID float64) (
-	*blockchain.ShardHeader, int, string, *RPCError){
+	*blockchain.ShardHeader, int, string, *RPCError) {
 	switch getBy {
 	case "blockhash":
 		hash := common.Hash{}
@@ -550,7 +569,7 @@ func (blockService BlockService) GetBlockHeader(getBy string, blockParam string,
 		log.Printf("%+v", hash)
 		if err != nil {
 			Logger.log.Debugf("handleGetBlockHeader result: %+v", nil)
-			return nil, 0, "",  NewRPCError(RPCInvalidParamsError, errors.New("invalid blockhash format"))
+			return nil, 0, "", NewRPCError(RPCInvalidParamsError, errors.New("invalid blockhash format"))
 		}
 		// block, err := httpServer.config.BlockChain.GetBlockByHash(&bhash)
 		block, _, err := blockService.BlockChain.GetShardBlockByHash(hash)
@@ -589,8 +608,6 @@ func (blockService BlockService) GetBlockHeader(getBy string, blockParam string,
 		return &blockHeader, blockNum, blockHash, nil
 	default:
 		Logger.log.Debugf("handleGetBlockHeader result: %+v", nil)
-		return  nil, 0, "", NewRPCError(RPCInvalidParamsError, errors.New("wrong request format"))
+		return nil, 0, "", NewRPCError(RPCInvalidParamsError, errors.New("wrong request format"))
 	}
 }
-
-
