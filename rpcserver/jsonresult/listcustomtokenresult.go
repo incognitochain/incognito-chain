@@ -38,7 +38,7 @@ func NewPrivacyToken(obj transaction.TxCustomTokenPrivacy) *CustomToken {
 }
 
 func NewPrivacyForCrossShard(obj blockchain.CrossShardTokenPrivacyMetaData) *CustomToken {
-	var customToken *CustomToken
+	customToken := &CustomToken{}
 	customToken.ID = obj.TokenID.String()
 	customToken.Symbol = obj.PropertySymbol
 	customToken.Name = obj.PropertyName
