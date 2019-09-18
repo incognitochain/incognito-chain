@@ -6,7 +6,6 @@ import (
 	"errors"
 	"log"
 	"strconv"
-	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -38,7 +37,7 @@ func (blockService BlockService) GetShardBestStates() map[byte]*blockchain.Shard
 		shards = blockService.BlockChain.BestState.GetClonedAllShardBestState()
 		cacheValue, err := json.Marshal(shards)
 		if err == nil {
-			err1 := blockService.MemCache.PutExpired(cacheKey, cacheValue, 10*time.Second)
+			err1 := blockService.MemCache.PutExpired(cacheKey, cacheValue, 10000)
 			if err1 != nil {
 				Logger.log.Error("Cache data of shard best state error", err1)
 			}
@@ -274,56 +273,103 @@ func (blockService BlockService) RetrieveBeaconBlock(hashString string) (*jsonre
 }
 
 func (blockService BlockService) GetBlocks(shardIDParam int, numBlock int) (interface{}, *RPCError) {
+	result := make([]jsonresult.GetBlockResult, 0)
+	resultBeacon := make([]jsonresult.GetBlocksBeaconResult, 0)
+	var cacheKey []byte
 	if shardIDParam != -1 {
-		result := make([]jsonresult.GetBlockResult, 0)
-		shardID := byte(shardIDParam)
-		clonedShardBestState, err := blockService.BlockChain.BestState.GetClonedAShardBestState(shardID)
-		if err != nil {
-			return nil, NewRPCError(GetClonedShardBestStateError, err)
-		}
-		bestBlock := clonedShardBestState.BestBlock
-		previousHash := bestBlock.Hash()
-		for numBlock > 0 {
-			numBlock--
-			// block, errD := blockService.BlockChain.GetBlockByHash(previousHash)
-			block, size, errD := blockService.BlockChain.GetShardBlockByHash(*previousHash)
-			if errD != nil {
-				Logger.log.Debugf("handleGetBlocks result: %+v, err: %+v", nil, errD)
-				return nil, NewRPCError(GetShardBlockByHashError, errD)
-			}
-			blockResult := jsonresult.NewGetBlockResult(block, size, common.EmptyString)
-			result = append(result, *blockResult)
-			previousHash = &block.Header.PreviousBlockHash
-			if previousHash.String() == (common.Hash{}).String() {
-				break
+		cacheKey = memcache.GetBlocksCachedKey(shardIDParam, numBlock)
+		cacheValue, err := blockService.MemCache.Get(cacheKey)
+		if err == nil && len(cacheValue) > 0 {
+			err1 := json.Unmarshal(cacheValue, &result)
+			if err1 != nil {
+				Logger.log.Error("Json Unmarshal cache of get shard blocks error", err1)
+			} else {
+				return result, nil
 			}
 		}
-		Logger.log.Debugf("handleGetBlocks result: %+v", result)
+	} else {
+		cacheKey = memcache.GetBlocksCachedKey(shardIDParam, numBlock)
+		cacheValue, err := blockService.MemCache.Get(cacheKey)
+		if err == nil && len(cacheValue) > 0 {
+			err1 := json.Unmarshal(cacheValue, &resultBeacon)
+			if err1 != nil {
+				Logger.log.Error("Json Unmarshal cache of get beacon blocks error", err1)
+			} else {
+				return resultBeacon, nil
+			}
+		}
+	}
+
+	if shardIDParam != -1 {
+		if len(result) == 0 {
+			shardID := byte(shardIDParam)
+			clonedShardBestState, err := blockService.BlockChain.BestState.GetClonedAShardBestState(shardID)
+			if err != nil {
+				return nil, NewRPCError(GetClonedShardBestStateError, err)
+			}
+			bestBlock := clonedShardBestState.BestBlock
+			previousHash := bestBlock.Hash()
+			for numBlock > 0 {
+				numBlock--
+				// block, errD := blockService.BlockChain.GetBlockByHash(previousHash)
+				block, size, errD := blockService.BlockChain.GetShardBlockByHash(*previousHash)
+				if errD != nil {
+					Logger.log.Debugf("handleGetBlocks result: %+v, err: %+v", nil, errD)
+					return nil, NewRPCError(GetShardBlockByHashError, errD)
+				}
+				blockResult := jsonresult.NewGetBlockResult(block, size, common.EmptyString)
+				result = append(result, *blockResult)
+				previousHash = &block.Header.PreviousBlockHash
+				if previousHash.String() == (common.Hash{}).String() {
+					break
+				}
+			}
+			Logger.log.Debugf("handleGetBlocks result: %+v", result)
+			if len(result) > 0 {
+				cacheValue, err := json.Marshal(result)
+				if err == nil {
+					err1 := blockService.MemCache.PutExpired(cacheKey, cacheValue, 10000)
+					if err1 != nil {
+						Logger.log.Error("Cache data of shard best state error", err1)
+					}
+				}
+			}
+		}
 		return result, nil
 	} else {
-		result := make([]jsonresult.GetBlocksBeaconResult, 0)
-		clonedBeaconBestState, err := blockService.BlockChain.BestState.GetClonedBeaconBestState()
-		if err != nil {
-			return nil, NewRPCError(GetClonedBeaconBestStateError, err)
-		}
-		bestBlock := clonedBeaconBestState.BestBlock
-		previousHash := bestBlock.Hash()
-		for numBlock > 0 {
-			numBlock--
-			// block, errD := blockService.BlockChain.GetBlockByHash(previousHash)
-			block, size, errD := blockService.BlockChain.GetBeaconBlockByHash(*previousHash)
-			if errD != nil {
-				return nil, NewRPCError(GetBeaconBlockByHashError, errD)
+		if len(resultBeacon) == 0 {
+			clonedBeaconBestState, err := blockService.BlockChain.BestState.GetClonedBeaconBestState()
+			if err != nil {
+				return nil, NewRPCError(GetClonedBeaconBestStateError, err)
 			}
-			blockResult := jsonresult.NewGetBlocksBeaconResult(block, size, common.EmptyString)
-			result = append(result, *blockResult)
-			previousHash = &block.Header.PreviousBlockHash
-			if previousHash.String() == (common.Hash{}).String() {
-				break
+			bestBlock := clonedBeaconBestState.BestBlock
+			previousHash := bestBlock.Hash()
+			for numBlock > 0 {
+				numBlock--
+				// block, errD := blockService.BlockChain.GetBlockByHash(previousHash)
+				block, size, errD := blockService.BlockChain.GetBeaconBlockByHash(*previousHash)
+				if errD != nil {
+					return nil, NewRPCError(GetBeaconBlockByHashError, errD)
+				}
+				blockResult := jsonresult.NewGetBlocksBeaconResult(block, size, common.EmptyString)
+				resultBeacon = append(resultBeacon, *blockResult)
+				previousHash = &block.Header.PreviousBlockHash
+				if previousHash.String() == (common.Hash{}).String() {
+					break
+				}
+			}
+			Logger.log.Debugf("handleGetBlocks result: %+v", resultBeacon)
+			if len(resultBeacon) > 0 {
+				cacheValue, err := json.Marshal(resultBeacon)
+				if err == nil {
+					err1 := blockService.MemCache.PutExpired(cacheKey, cacheValue, 10000)
+					if err1 != nil {
+						Logger.log.Error("Cache data of shard best state error", err1)
+					}
+				}
 			}
 		}
-		Logger.log.Debugf("handleGetBlocks result: %+v", result)
-		return result, nil
+		return resultBeacon, nil
 	}
 }
 

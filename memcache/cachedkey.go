@@ -20,3 +20,17 @@ func GetShardBestStateCachedKey() []byte {
 	key = append(key, []byte(shardBestStateCacheKey)...)
 	return key
 }
+
+func GetBlocksCachedKey(shardID int, numBlock int) []byte {
+	key := make([]byte, 0)
+	key = append(key, []byte("getblocks")...)
+	key = append(key, []byte(splitChar)...)
+	if shardID >= 0 {
+		key = append(key, byte(shardID))
+	} else {
+		key = append(key, []byte(splitChar)...)
+	}
+	key = append(key, []byte(splitChar)...)
+	key = append(key, common.IntToBytes(numBlock)...)
+	return key
+}
