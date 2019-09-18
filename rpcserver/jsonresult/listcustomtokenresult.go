@@ -32,7 +32,7 @@ func NewPrivacyToken(obj transaction.TxCustomTokenPrivacy) *CustomToken {
 	customToken.Symbol = obj.TxPrivacyTokenData.PropertySymbol
 	customToken.Name = obj.TxPrivacyTokenData.PropertyName
 	customToken.Amount = obj.TxPrivacyTokenData.Amount
-	customToken.Image = common.Render(obj.TxPrivacyTokenData.PropertyID[:])
+	//customToken.Image = common.Render(obj.TxPrivacyTokenData.PropertyID[:])
 	customToken.IsPrivacy = true
 	return customToken
 }
