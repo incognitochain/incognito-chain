@@ -493,6 +493,10 @@ func (blockService BlockService) ListPrivacyCustomTokenCached() (map[common.Hash
 	if len(listPrivacyToken) == 0 || len(listPrivacyTokenCrossShard) == 0 {
 		listPrivacyToken, listPrivacyTokenCrossShard, err = blockService.ListPrivacyCustomToken()
 
+		for _, v := range listPrivacyToken {
+			v.Tx = transaction.Tx{}
+			v.TxPrivacyTokenData.TxNormal = transaction.Tx{}
+		}
 		cachedValuePrivacyToken, err = json.Marshal(listPrivacyToken)
 		if err == nil {
 			err1 := blockService.MemCache.PutExpired(cachedKeyPrivacyToken, cachedValuePrivacyToken, 60*1000)
