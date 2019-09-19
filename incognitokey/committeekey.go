@@ -58,6 +58,14 @@ func (pubKey *CommitteePublicKey) FromBytes(keyBytes []byte) error {
 	return nil
 }
 
+func (pubKey *CommitteePublicKey) RawBytes() ([]byte, error) {
+	res := pubKey.IncPubKey
+	for _, v := range pubKey.MiningPubKey {
+		res = append(res, v...)
+	}
+	return res, nil
+}
+
 func (pubKey *CommitteePublicKey) Bytes() ([]byte, error) {
 	res, err := json.Marshal(pubKey)
 	if err != nil {
@@ -81,7 +89,7 @@ func (pubKey *CommitteePublicKey) GetMiningKey(schemeName string) ([]byte, error
 var GetMiningKeyBase58Cache, _ = lru.New(2000)
 
 func (pubKey *CommitteePublicKey) GetMiningKeyBase58(schemeName string) string {
-	b, _ := pubKey.Bytes()
+	b, _ := pubKey.RawBytes()
 	key := schemeName + string(b)
 	value, exist := GetMiningKeyBase58Cache.Get(key)
 	if exist {
