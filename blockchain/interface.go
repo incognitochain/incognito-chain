@@ -108,7 +108,6 @@ type ChainInterface interface {
 	InsertBlk(block common.BlockInterface) error
 	InsertAndBroadcastBlock(block common.BlockInterface) error
 	ValidateAndInsertBlock(block common.BlockInterface) error
-	ValidateBlockWithBlockChain(block common.BlockInterface) error
 	ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 	ValidatePreSignBlock(block common.BlockInterface) error
 	GetShardID() int

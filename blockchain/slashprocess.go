@@ -2,8 +2,6 @@ package blockchain
 
 import (
 	"encoding/json"
-
-	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 func (blockchain *BlockChain) buildBadProducersWithPunishment(
@@ -23,17 +21,35 @@ func (blockchain *BlockChain) buildBadProducersWithPunishment(
 	for _, numBlk := range numOfBlocksByProducers {
 		numBlkPerEpoch += numBlk
 	}
-	expectedNumBlkByEachProducer := numBlkPerEpoch / uint64(len(committee))
-	badProducersWithPunishment := map[string]uint8{}
-	for producer, numBlk := range numOfBlocksByProducers {
-		missingPercent := uint8((numBlk * 100) / expectedNumBlkByEachProducer)
+	badProducersWithPunishment := make(map[string]uint8)
+	committeeLen := len(committee)
+	if committeeLen == 0 {
+		return badProducersWithPunishment
+	}
+	expectedNumBlkByEachProducer := numBlkPerEpoch / uint64(committeeLen)
+
+	if expectedNumBlkByEachProducer == 0 {
+		return badProducersWithPunishment
+	}
+	// for producer, numBlk := range numOfBlocksByProducers {
+	for _, producer := range committee {
+		numBlk, found := numOfBlocksByProducers[producer]
+		if !found {
+			numBlk = 0
+		}
+		if numBlk >= expectedNumBlkByEachProducer {
+			continue
+		}
+		missingPercent := uint8((-(numBlk - expectedNumBlkByEachProducer) * 100) / expectedNumBlkByEachProducer)
 		var selectedSlLev *SlashLevel
 		for _, slLev := range slashLevels {
 			if missingPercent >= slLev.MinRange {
 				selectedSlLev = &slLev
 			}
 		}
-		badProducersWithPunishment[producer] = selectedSlLev.PunishedEpoches
+		if selectedSlLev != nil {
+			badProducersWithPunishment[producer] = selectedSlLev.PunishedEpoches
+		}
 	}
 	return badProducersWithPunishment
 }
@@ -71,42 +87,57 @@ func (blockchain *BlockChain) getUpdatedProducersBlackList(
 }
 
 func (blockchain *BlockChain) processForSlashing(block *BeaconBlock) error {
+	var err error
 	db := blockchain.GetDatabase()
+	producersBlackList, err := db.GetProducersBlackList()
+	if err != nil {
+		return err
+	}
 	chainParamEpoch := blockchain.config.ChainParams.Epoch
 	newBeaconHeight := block.GetHeight()
-	updatedProducersBlackList := map[string]uint8{}
-	var err error
-	if newBeaconHeight%uint64(chainParamEpoch) == 0 { // process for beacon swap
-		beaconBestState := blockchain.BestState.Beacon
-		beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.BeaconCommittee)
-		if err != nil {
-			return err
+	if newBeaconHeight%uint64(chainParamEpoch) == 0 { // end of epoch
+		punishedProducersFinished := []string{}
+		for producer := range producersBlackList {
+			producersBlackList[producer]--
+			if producersBlackList[producer] == 0 {
+				punishedProducersFinished = append(punishedProducersFinished, producer)
+			}
 		}
-		updatedProducersBlackList, err = blockchain.getUpdatedProducersBlackList(true, -1, beaconCommitteeStr)
-		if err != nil {
-			return err
+		for _, producer := range punishedProducersFinished {
+			delete(producersBlackList, producer)
 		}
 	}
-	// process for shards swap
+
 	for _, inst := range block.GetInstructions() {
-		if len(inst) != 6 { // length  of swap instruction should be 6
+		if len(inst) == 0 {
 			continue
 		}
 		if inst[0] != SwapAction {
 			continue
 		}
+		badProducersWithPunishmentBytes := []byte{}
+		if len(inst) == 6 && inst[3] == "shard" {
+			badProducersWithPunishmentBytes = []byte(inst[5])
+		}
+		if len(inst) == 5 && inst[3] == "beacon" {
+			badProducersWithPunishmentBytes = []byte(inst[4])
+		}
+		if len(badProducersWithPunishmentBytes) == 0 {
+			continue
+		}
+
 		var badProducersWithPunishment map[string]uint8
-		err = json.Unmarshal([]byte(inst[5]), &badProducersWithPunishment)
+		err = json.Unmarshal(badProducersWithPunishmentBytes, &badProducersWithPunishment)
 		if err != nil {
 			return err
 		}
 		for producer, punishedEpoches := range badProducersWithPunishment {
-			epoches, found := updatedProducersBlackList[producer]
+			epoches, found := producersBlackList[producer]
 			if !found || epoches < punishedEpoches {
-				updatedProducersBlackList[producer] = punishedEpoches
+				producersBlackList[producer] = punishedEpoches
 			}
 		}
 	}
-	err = db.StoreProducersBlackList(updatedProducersBlackList)
+	err = db.StoreProducersBlackList(producersBlackList)
 	return err
 }

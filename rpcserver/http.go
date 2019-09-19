@@ -34,9 +34,13 @@ type HttpServer struct {
 
 	// service
 	blockService      *rpcservice.BlockService
-	outputCoinService *rpcservice.OutputCoinService
+	outputCoinService *rpcservice.CoinService
 	txMemPoolService  *rpcservice.TxMemPoolService
-	databaseService *rpcservice.DatabaseService
+	databaseService   *rpcservice.DatabaseService
+	networkService    *rpcservice.NetworkService
+	poolStateService * rpcservice.PoolStateService
+	txService *rpcservice.TxService
+	walletService *rpcservice.WalletService
 }
 
 func (httpServer *HttpServer) Init(config *RpcServerConfig) {
@@ -54,10 +58,23 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 	}
 
 	// init service
-	httpServer.blockService = &rpcservice.BlockService{BlockChain: httpServer.config.BlockChain}
-	httpServer.outputCoinService = &rpcservice.OutputCoinService{BlockChain: httpServer.config.BlockChain}
+	httpServer.blockService = &rpcservice.BlockService{BlockChain: httpServer.config.BlockChain, DB: httpServer.config.Database}
+	httpServer.outputCoinService = &rpcservice.CoinService{BlockChain: httpServer.config.BlockChain}
 	httpServer.txMemPoolService = &rpcservice.TxMemPoolService{TxMemPool: httpServer.config.TxMemPool}
 	httpServer.databaseService = &rpcservice.DatabaseService{DB: *httpServer.config.Database}
+	httpServer.networkService = &rpcservice.NetworkService{ConnMgr: httpServer.config.ConnMgr}
+	httpServer.poolStateService = &rpcservice.PoolStateService{}
+	httpServer.txService = &rpcservice.TxService{
+		DB: httpServer.config.Database,
+		BlockChain: httpServer.config.BlockChain,
+		Wallet: httpServer.config.Wallet,
+		FeeEstimator: httpServer.config.FeeEstimator,
+		TxMemPool: httpServer.config.TxMemPool,
+	}
+	httpServer.walletService = &rpcservice.WalletService{
+		Wallet: httpServer.config.Wallet,
+		BlockChain: httpServer.config.BlockChain,
+	}
 }
 
 // Start is used by rpcserver.go to start the rpc listener.
@@ -128,8 +145,13 @@ func (httpServer *HttpServer) handleRequest(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Keep track of the number of connected clients.
+	done := make(chan int)
+	//before := httpServer.numClients
 	httpServer.IncrementClients()
-	defer httpServer.DecrementClients()
+	defer func() {
+		httpServer.DecrementClients()
+		//fmt.Println("RPCCON:", before, httpServer.numClients)
+	}()
 	// Check authentication for rpc user
 	ok, isLimitUser, err := httpServer.checkAuth(r, true)
 	if err != nil || !ok {
@@ -138,7 +160,16 @@ func (httpServer *HttpServer) handleRequest(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	httpServer.ProcessRpcRequest(w, r, isLimitUser)
+	go func() {
+		httpServer.ProcessRpcRequest(w, r, isLimitUser)
+		done <- 1
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(time.Minute):
+	}
+
 }
 
 /*

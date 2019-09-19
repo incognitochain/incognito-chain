@@ -27,6 +27,7 @@ const (
 	DurationHalfLifeRewardForDev = uint64(31536000) // 5 years, after 5 year, reward for devs = 0
 	GetValidBlock                = 10
 	CheckForce                   = true
+	GenesisBlockTime             = "2019-09-16T00:00:00.000Z"
 )
 
 // CONSTANT for network MAINNET
