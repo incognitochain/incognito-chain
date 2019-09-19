@@ -8,7 +8,8 @@ const (
 
 const (
 	CompressedEllipticPointSize = 33 // EllipticPoint compress size
-
+	Ed25519KeySize = 32
 	CommitmentRingSize    = 8
 	CommitmentRingSizeExp = 3
+	CStringBulletProof = "bulletproof"
 )
