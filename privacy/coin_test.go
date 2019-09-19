@@ -45,10 +45,10 @@ func TestCoinCommitAll(t *testing.T) {
 	//coin.info = []byte("Incognito chain")
 	//
 	//expectedCm := coin.publicKey
-	//expectedCm = expectedCm.Add(PedCom.G[PedersenValueIndex].ScalarMult(big.NewInt(int64(coin.value))))
-	//expectedCm = expectedCm.Add(PedCom.G[PedersenSndIndex].ScalarMult(coin.snDerivator))
-	//expectedCm = expectedCm.Add(PedCom.G[PedersenShardIDIndex].ScalarMult(big.NewInt(int64(common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())))))
-	//expectedCm = expectedCm.Add(PedCom.G[PedersenRandomnessIndex].ScalarMult(coin.randomness))
+	//expectedCm = expectedCm.Add(PedCom.G[PedersenValueIndex].ScalarMul(big.NewInt(int64(coin.value))))
+	//expectedCm = expectedCm.Add(PedCom.G[PedersenSndIndex].ScalarMul(coin.snDerivator))
+	//expectedCm = expectedCm.Add(PedCom.G[PedersenShardIDIndex].ScalarMul(big.NewInt(int64(common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())))))
+	//expectedCm = expectedCm.Add(PedCom.G[PedersenRandomnessIndex].ScalarMul(coin.randomness))
 	//
 	//assert.Equal(t, expectedCm, coin.coinCommitment)
 
@@ -69,10 +69,10 @@ func TestCoinCommitAll(t *testing.T) {
 		coin.info = []byte("Incognito chain")
 
 		//expectedCm := coin.publicKey
-		//expectedCm = expectedCm.Add(PedCom.G[PedersenValueIndex].ScalarMult(big.NewInt(int64(coin.value))))
-		//expectedCm = expectedCm.Add(PedCom.G[PedersenSndIndex].ScalarMult(coin.snDerivator))
-		//expectedCm = expectedCm.Add(PedCom.G[PedersenShardIDIndex].ScalarMult(big.NewInt(int64(common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())))))
-		//expectedCm = expectedCm.Add(PedCom.G[PedersenRandomnessIndex].ScalarMult(coin.randomness))
+		//expectedCm = expectedCm.Add(PedCom.G[PedersenValueIndex].ScalarMul(big.NewInt(int64(coin.value))))
+		//expectedCm = expectedCm.Add(PedCom.G[PedersenSndIndex].ScalarMul(coin.snDerivator))
+		//expectedCm = expectedCm.Add(PedCom.G[PedersenShardIDIndex].ScalarMul(big.NewInt(int64(common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())))))
+		//expectedCm = expectedCm.Add(PedCom.G[PedersenRandomnessIndex].ScalarMul(coin.randomness))
 
 
 		cmTmp := coin.GetPublicKey()
