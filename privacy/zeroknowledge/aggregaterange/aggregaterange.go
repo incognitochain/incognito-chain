@@ -1,6 +1,7 @@
 package aggregaterange
 
 import (
+	"crypto/rand"
 	"github.com/pkg/errors"
 	"math/big"
 	"sync"
@@ -247,7 +248,8 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	}
 
 	// random alpha
-	alpha := privacy.RandScalar()
+	var r = rand.Reader
+	alpha := privacy.RandScalar(r)
 
 	// Commitment to aL, aR: A = h^alpha * G^aL * H^aR
 	A, err := encodeVectors(aL, aR, AggParam.g, AggParam.h)
@@ -261,12 +263,12 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	sL := make([]*big.Int, n*numValuePad)
 	sR := make([]*big.Int, n*numValuePad)
 	for i := range sL {
-		sL[i] = privacy.RandScalar()
-		sR[i] = privacy.RandScalar()
+		sL[i] = privacy.RandScalar(r)
+		sR[i] = privacy.RandScalar(r)
 	}
 
 	// random rho
-	rho := privacy.RandScalar()
+	rho := privacy.RandScalar(r)
 
 	// Commitment to sL, sR : S = h^rho * G^sL * H^sR
 	S, err := encodeVectors(sL, sR, AggParam.g, AggParam.h)
@@ -371,8 +373,8 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	}
 
 	// commitment to t1, t2
-	tau1 := privacy.RandScalar()
-	tau2 := privacy.RandScalar()
+	tau1 := privacy.RandScalar(r)
+	tau2 := privacy.RandScalar(r)
 
 	proof.t1 = privacy.PedCom.CommitAtIndex(t1, tau1, privacy.PedersenValueIndex)
 	proof.t2 = privacy.PedCom.CommitAtIndex(t2, tau2, privacy.PedersenValueIndex)

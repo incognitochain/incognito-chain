@@ -2,6 +2,7 @@ package privacy
 
 import (
 	"crypto/elliptic"
+	"crypto/rand"
 	"encoding/json"
 	"math/big"
 
@@ -106,8 +107,9 @@ func (point EllipticPoint) inverse() (*EllipticPoint, error) {
 // Randomize generates a random elliptic point on P256 curve
 // the elliptic point must be not a double point (which is the point has order is two)
 func (point *EllipticPoint) Randomize() {
+	var r = rand.Reader
 	for {
-		point.x = RandScalar()
+		point.x = RandScalar(r)
 		err := point.computeYCoord()
 		if (err == nil) && (point.IsSafe()) {
 			break

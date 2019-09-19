@@ -1,6 +1,7 @@
 package privacy
 
 import (
+	"crypto/rand"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -13,7 +14,8 @@ func TestHybridEncryption(t *testing.T) {
 	msg := RandBytes(100)
 
 	// generate key pair for ElGamal
-	privKey := RandScalar()
+	var r = rand.Reader
+	privKey := RandScalar(r)
 	publicKey := PedCom.G[0].ScalarMult(privKey)
 
 	// encrypt message using public key
