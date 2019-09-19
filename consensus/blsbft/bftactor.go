@@ -125,13 +125,19 @@ func (e *BLSBFT) Start() error {
 					if getRoundKey(e.RoundData.NextHeight, e.RoundData.Round) == voteMsg.RoundKey {
 						//validate single sig
 						if e.RoundData.Block != nil {
+							blockHash := e.RoundData.Block.Hash()
 							e.RoundData.lockVotes.Lock()
 							if _, ok := e.RoundData.Votes[voteMsg.Validator]; !ok {
 								e.RoundData.lockVotes.Unlock()
 								validatorIdx := common.IndexOfStr(voteMsg.Validator, e.RoundData.CommitteeBLS.StringList)
 								if validatorIdx != -1 {
-									if err := e.preValidateVote(&(voteMsg.Vote), e.RoundData.Committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
-										e.logger.Error(err)
+									if blockHash != nil {
+										if err := e.preValidateVote(blockHash.GetBytes(), &(voteMsg.Vote), e.RoundData.Committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
+											e.logger.Error(err)
+											return
+										}
+									} else {
+										e.logger.Error(errors.New("UnExpectedError, block hash is nil"))
 										return
 									}
 									// if err := validateSingleBLSSig(e.RoundData.Block.Hash(), voteMsg.Vote.BLS, validatorIdx, e.RoundData.CommitteeBLS.ByteList); err != nil {
