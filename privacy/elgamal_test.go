@@ -1,6 +1,7 @@
 package privacy
 
 import (
+	"crypto/rand"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -11,7 +12,8 @@ import (
 func TestElGamalEncryption(t *testing.T) {
 	// generate private key
 	privKey := new(elGamalPrivateKey)
-	privKey.x = RandScalar()
+	var r = rand.Reader
+	privKey.x = RandScalar(r)
 
 	// generate public key
 	pubKey := new(elGamalPublicKey)

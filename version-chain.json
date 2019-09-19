@@ -1,5 +1,5 @@
 {
-  "Version": "1.0.0-beta",
-  "Note": "Change consensus to BLS and committee size on shard 64",
+  "Version": "1.2.0-beta",
+  "Note": "Hotfix issue duplicated committee member",
   "RemoveData": true
 }

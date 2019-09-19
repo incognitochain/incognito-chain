@@ -202,15 +202,19 @@ func RemoveValidator(validators []string, removedValidators []string) ([]string,
 	if len(removedValidators) > len(validators) {
 		return validators, errors.New("trying to remove too many validators")
 	}
-	for index, validator := range removedValidators {
-		if strings.Compare(validators[index], validator) == 0 {
-			validators = validators[1:]
-		} else {
-			// not found wanted validator
-			return validators, errors.New("remove Validator with Wrong Format")
+	remainingValidators := []string{}
+	for _, validator := range validators {
+		isRemoved := false
+		for _, removedValidator := range removedValidators {
+			if strings.Compare(validator, removedValidator) == 0 {
+				isRemoved = true
+			}
+		}
+		if !isRemoved {
+			remainingValidators = append(remainingValidators, validator)
 		}
 	}
-	return validators, nil
+	return remainingValidators, nil
 }
 
 /*

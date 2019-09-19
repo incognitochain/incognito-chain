@@ -3,6 +3,7 @@ module github.com/incognitochain/incognito-chain
 go 1.12
 
 require (
+	cloud.google.com/go v0.38.0
 	github.com/0xsirrush/color v1.7.0
 	github.com/allegro/bigcache v1.2.1 // indirect
 	github.com/aristanetworks/goarista v0.0.0-20190704150520-f44d68189fd7 // indirect
@@ -43,6 +44,6 @@ require (
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
 	golang.org/x/net v0.0.0-20190628185345-da137c7871d7 // indirect
 	golang.org/x/sys v0.0.0-20190624142023-c5567b49c5d0 // indirect
-	google.golang.org/api v0.10.0 // indirect
+	google.golang.org/api v0.10.0
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 )

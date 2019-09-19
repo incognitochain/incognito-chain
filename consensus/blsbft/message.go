@@ -39,11 +39,10 @@ func MakeBFTProposeMsg(block []byte, chainKey string, userKeySet *MiningKey) (wi
 	return msg, nil
 }
 
-func MakeBFTVoteMsg(userKey *MiningKey, chainKey, roundKey string, vote vote) (wire.Message, error) {
+func MakeBFTVoteMsg(userPublicKey string, chainKey, roundKey string, vote vote) (wire.Message, error) {
 	var voteCtn BFTVote
 	voteCtn.RoundKey = roundKey
-	key := userKey.GetPublicKey()
-	voteCtn.Validator = key.GetMiningKeyBase58(consensusName)
+	voteCtn.Validator = userPublicKey
 	voteCtn.Vote = vote
 	voteCtnBytes, err := json.Marshal(voteCtn)
 	if err != nil {
@@ -101,7 +100,9 @@ func (e *BLSBFT) sendVote() error {
 	Vote.BLS = blsSig
 	Vote.BRI = bridgeSig
 
-	msg, err := MakeBFTVoteMsg(e.UserKeySet, e.ChainKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), Vote)
+	key := e.UserKeySet.GetPublicKey()
+
+	msg, err := MakeBFTVoteMsg(key.GetMiningKeyBase58(consensusName), e.ChainKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), Vote)
 	if err != nil {
 		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}

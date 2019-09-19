@@ -193,7 +193,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 }
 
 // updateNumOfBlocksByProducers updates number of blocks produced by producers to shard best state
-func (shardBestState *ShardBestState) updateNumOfBlocksByProducers(shardBlock *ShardBlock)  {
+func (shardBestState *ShardBestState) updateNumOfBlocksByProducers(shardBlock *ShardBlock) {
 	isSwapInstContained := false
 	for _, inst := range shardBlock.Body.Instructions {
 		if len(inst) > 0 && inst[0] == SwapAction {
@@ -201,7 +201,7 @@ func (shardBestState *ShardBestState) updateNumOfBlocksByProducers(shardBlock *S
 			break
 		}
 	}
-	producer := shardBlock.GetProducer()
+	producer := shardBlock.GetProducerPubKeyStr()
 	if isSwapInstContained {
 		// reset number of blocks produced by producers
 		shardBestState.NumOfBlocksByProducers = map[string]uint64{
@@ -681,6 +681,7 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 		return err
 	}
 	shardBestState.ConsensusAlgorithm = common.BlsConsensus
+	shardBestState.NumOfBlocksByProducers = make(map[string]uint64)
 	return nil
 }
 

@@ -151,6 +151,10 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	if err != nil {
 		return nil, NewBlockChainError(ExtractPublicKeyFromCommitteeKeyListError, fmt.Errorf("Failed to extract key of producer in shard block %+v of shardID %+v", newShardBlock.Header.Height, newShardBlock.Header.ShardID))
 	}
+	producerPubKeyStr, err := blockGenerator.chain.BestState.Shard[shardID].ShardCommittee[producerPosition].ToBase58()
+	if err != nil {
+		return nil, NewBlockChainError(ConvertCommitteePubKeyToBase58Error, fmt.Errorf("Failed to convert pub key of producer to base58 string in shard block %+v of shardID %+v", newShardBlock.Header.Height, newShardBlock.Header.ShardID))
+	}
 	for _, tx := range newShardBlock.Body.Transactions {
 		totalTxsFee[*tx.GetTokenID()] += tx.GetTxFee()
 		txType := tx.GetType()
@@ -161,6 +165,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	}
 	newShardBlock.Header = ShardHeader{
 		Producer:          committeeMiningKeys[producerPosition],
+		ProducerPubKeyStr: producerPubKeyStr,
 		ShardID:           shardID,
 		Version:           SHARD_BLOCK_VERSION,
 		PreviousBlockHash: shardBestState.BestBlockHash,

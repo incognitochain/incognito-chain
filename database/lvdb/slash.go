@@ -15,10 +15,10 @@ func (db *db) GetProducersBlackList() (map[string]uint8, error) {
 	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
 		return nil, database.NewDatabaseError(database.GetProducersBlackListError, dbErr)
 	}
+	producersBlackList := make(map[string]uint8)
 	if len(producersBlackListBytes) == 0 {
-		return nil, nil
+		return producersBlackList, nil
 	}
-	var producersBlackList map[string]uint8
 	err := json.Unmarshal(producersBlackListBytes, &producersBlackList)
 	return producersBlackList, err
 }
