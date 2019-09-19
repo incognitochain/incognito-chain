@@ -60,6 +60,8 @@ func GenerateAddressByte(seeds [][]byte) ([]string, []string, error) {
 	}
 	return privateKeys, pubAddresses, nil
 }
+
+//Todo: not found usage
 func GenerateKeyPair() [][]byte {
 	seed := [][]byte{}
 	i := 0
