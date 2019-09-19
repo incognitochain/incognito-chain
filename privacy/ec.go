@@ -156,7 +156,7 @@ func (point *EllipticPoint) Decompress(compressPointBytes []byte) error {
 		return errors.New("invalid magic in compressed compressPoint bytes")
 	}
 
-	point.x = new(big.Int).SetBytes(compressPointBytes[1:33])
+	point.x = new(big.Int).SetBytes(compressPointBytes[1:common.PublicKeySize])
 
 	err := point.computeYCoord()
 	if err != nil {

@@ -1,8 +1,6 @@
 package rpcserver
 
 import (
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
@@ -30,7 +28,7 @@ func (httpServer *HttpServer) handleGetRawMempool(params interface{}, closeChan 
 
 func (httpServer *HttpServer) handleGetNumberOfTxsInMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleGetNumberOfTxsInMempool params: %+v", params)
-	result := len(httpServer.config.TxMemPool.ListTxs())
+	result := httpServer.txMemPoolService.GetNumberOfTxsInMempool()
 	Logger.log.Debugf("handleGetNumberOfTxsInMempool result: %+v", result)
 	return result, nil
 }
@@ -44,19 +42,13 @@ func (httpServer *HttpServer) handleMempoolEntry(params interface{}, closeChan <
 	if params == nil {
 		params = ""
 	}
-	txID, err := common.Hash{}.NewHashFromStr(params.(string))
-	if err != nil {
-		Logger.log.Debugf("handleMempoolEntry result: nil %+v", err)
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+
+	txInPool, shardID, err := httpServer.txMemPoolService.MempoolEntry(params.(string))
+	if err != nil{
+		return nil, err
 	}
 
-	txInPool, err := httpServer.config.TxMemPool.GetTx(txID)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, rpcservice.NewRPCError(rpcservice.GeTxFromPoolError, err)
-	}
-	shardIDTemp := common.GetShardIDFromLastByte(txInPool.GetSenderAddrLastByte())
-	tx, errM := jsonresult.NewTransactionDetail(txInPool, nil, 0, 0, shardIDTemp)
+	tx, errM := jsonresult.NewTransactionDetail(txInPool, nil, 0, 0, shardID)
 	if errM != nil {
 		Logger.log.Error(errM)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errM)
@@ -71,17 +63,6 @@ func (httpServer *HttpServer) handleRemoveTxInMempool(params interface{}, closeC
 	if params == nil {
 		params = ""
 	}
-	txID, err := common.Hash{}.NewHashFromStr(params.(string))
-	if err != nil {
-		Logger.log.Debugf("handleMempoolEntry result: nil %+v", err)
-		return false, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
-	}
 
-	tempTx, err := httpServer.config.TxMemPool.GetTx(txID)
-	if err != nil {
-		return false, rpcservice.NewRPCError(rpcservice.GeTxFromPoolError, err)
-	}
-	httpServer.config.TxMemPool.RemoveTx([]metadata.Transaction{tempTx}, false)
-	httpServer.config.TxMemPool.TriggerCRemoveTxs(tempTx)
-	return true, nil
+	return httpServer.txMemPoolService.RemoveTxInMempool(params.(string))
 }

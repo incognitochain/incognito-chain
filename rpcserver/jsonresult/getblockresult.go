@@ -8,10 +8,7 @@ import (
 type GetBlocksBeaconResult struct {
 	Hash   string `json:"Hash"`
 	Height uint64 `json:"Height"`
-	// AggregatedSig     string     `json:"AggregatedSig"`
-	// R                 string     `json:"R"`
-	// BlockProducerSign string     `json:"BlockProducerSign"`
-	// BlockProducer     string     `json:"BlockProducer"`
+	BlockProducer     string     `json:"BlockProducer"`
 	ValidationData    string     `json:"ValidationData"`
 	ConsensusType     string     `json:"ConsensusType"`
 	Version           int        `json:"Version"`
@@ -36,23 +33,20 @@ type GetBlockResult struct {
 	NextBlockHash     string             `json:"NextBlockHash"`
 	TxHashes          []string           `json:"TxHashes"`
 	Txs               []GetBlockTxResult `json:"Txs"`
-	// BlockProducerSign string             `json:"BlockProducerSign"`
-	// BlockProducer     string             `json:"BlockProducer"`
-	ValidationData  string `json:"ValidationData"`
-	ConsensusType   string `json:"ConsensusType"`
-	Data            string `json:"Data"`
-	BeaconHeight    uint64 `json:"BeaconHeight"`
-	BeaconBlockHash string `json:"BeaconBlockHash"`
-	// AggregatedSig     string             `json:"AggregatedSig"`
-	// R                 string             `json:"R"`
-	Round            int        `json:"Round"`
-	Epoch            uint64     `json:"Epoch"`
-	Reward           uint64     `json:"Reward"`
-	RewardBeacon     uint64     `json:"RewardBeacon"`
-	Fee              uint64     `json:"Fee"`
-	Size             uint64     `json:"Size"`
-	Instruction      [][]string `json:"Instruction"`
-	CrossShardBitMap []int      `json:"CrossShardBitMap"`
+	BlockProducer     string             `json:"BlockProducer"`
+	ValidationData    string             `json:"ValidationData"`
+	ConsensusType     string             `json:"ConsensusType"`
+	Data              string             `json:"Data"`
+	BeaconHeight      uint64             `json:"BeaconHeight"`
+	BeaconBlockHash   string             `json:"BeaconBlockHash"`
+	Round             int                `json:"Round"`
+	Epoch             uint64             `json:"Epoch"`
+	Reward            uint64             `json:"Reward"`
+	RewardBeacon      uint64             `json:"RewardBeacon"`
+	Fee               uint64             `json:"Fee"`
+	Size              uint64             `json:"Size"`
+	Instruction       [][]string         `json:"Instruction"`
+	CrossShardBitMap  []int              `json:"CrossShardBitMap"`
 }
 
 type GetBlockTxResult struct {
@@ -66,10 +60,7 @@ func NewGetBlocksBeaconResult(block *blockchain.BeaconBlock, size uint64, nextBl
 	getBlockResult.Version = block.Header.Version
 	getBlockResult.Hash = block.Hash().String()
 	getBlockResult.Height = block.Header.Height
-	// getBlockResult.AggregatedSig = block.AggregatedSig
-	// getBlockResult.R = block.R
-	// getBlockResult.BlockProducer = block.Header.ProducerAddress.String()
-	// getBlockResult.BlockProducerSign = block.ProducerSig
+	getBlockResult.BlockProducer = block.Header.Producer
 	getBlockResult.ValidationData = block.ValidationData
 	getBlockResult.ConsensusType = block.Header.ConsensusType
 	getBlockResult.Epoch = block.Header.Epoch
@@ -84,8 +75,7 @@ func NewGetBlocksBeaconResult(block *blockchain.BeaconBlock, size uint64, nextBl
 
 func NewGetBlockResult(block *blockchain.ShardBlock, size uint64, nextBlockHash string) *GetBlockResult {
 	getBlockResult := &GetBlockResult{}
-	// getBlockResult.BlockProducerSign = block.ProducerSig
-	// getBlockResult.BlockProducer = block.Header.ProducerAddress.String()
+	getBlockResult.BlockProducer = block.Header.Producer
 	getBlockResult.ValidationData = block.ValidationData
 	getBlockResult.Hash = block.Hash().String()
 	getBlockResult.PreviousBlockHash = block.Header.PreviousBlockHash.String()
@@ -103,8 +93,6 @@ func NewGetBlockResult(block *blockchain.ShardBlock, size uint64, nextBlockHash 
 	}
 	getBlockResult.BeaconHeight = block.Header.BeaconHeight
 	getBlockResult.BeaconBlockHash = block.Header.BeaconHash.String()
-	// getBlockResult.AggregatedSig = block.AggregatedSig
-	// getBlockResult.R = block.R
 	getBlockResult.Round = block.Header.Round
 	getBlockResult.CrossShardBitMap = []int{}
 	if len(block.Header.CrossShardBitMap) > 0 {
