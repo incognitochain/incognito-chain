@@ -230,7 +230,7 @@ func (point EllipticPoint) IsEqual(p *EllipticPoint) bool {
 	return point.x.Cmp(p.x) == 0 && point.y.Cmp(p.y) == 0
 }
 
-// ScalarMult returns x*P for x in Z_N and P in E(Z_P)
+// ScalarMul returns x*P for x in Z_N and P in E(Z_P)
 func (point EllipticPoint) ScalarMult(factor *big.Int) *EllipticPoint {
 	res := new(EllipticPoint)
 	res.Zero()
