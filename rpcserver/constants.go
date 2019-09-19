@@ -146,11 +146,15 @@ const (
 	revertbeaconchain = "revertbeaconchain"
 	revertshardchain  = "revertshardchain"
 
-	enableMining              = "enablemining"
-	getChainMiningStatus      = "getchainminingstatus"
-	getPublickeyMining        = "getpublickeymining"
-	getPublicKeyRole          = "getpublickeyrole"
-	getIncognitoPublicKeyRole = "getincognitopublickeyrole"
+	enableMining                = "enablemining"
+	getChainMiningStatus        = "getchainminingstatus"
+	getPublickeyMining          = "getpublickeymining"
+	getPublicKeyRole            = "getpublickeyrole"
+	getIncognitoPublicKeyRole   = "getincognitopublickeyrole"
+	getMinerRewardFromMiningKey = "getminerrewardfromminingkey"
+
+	// slash
+	getProducersBlackList = "getproducersblacklist"
 )
 
 const (

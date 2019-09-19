@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
@@ -71,11 +70,6 @@ func (httpServer *HttpServer) handleGetNetWorkInfo(params interface{}, closeChan
 
 func (httpServer *HttpServer) handleCheckHashValue(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleCheckHashValue params: %+v", params)
-	var (
-		isTransaction bool
-		isBlock       bool
-		isBeaconBlock bool
-	)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) == 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Expected array component"))
@@ -87,53 +81,18 @@ func (httpServer *HttpServer) handleCheckHashValue(params interface{}, closeChan
 	// param #1: transaction Hash
 	Logger.log.Debugf("Check hash value  input Param %+v", arrayParams[0].(string))
 	log.Printf("Check hash value  input Param %+v", hashParams)
-	hash, err2 := common.Hash{}.NewHashFromStr(hashParams)
-	if err2 != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Expected hash string value"))
+
+	isTransaction, isShardBlock, isBeaconBlock, err := httpServer.blockService.CheckHashValue(hashParams)
+	if err != nil{
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	// Check block
-	_, _, err := httpServer.config.BlockChain.GetShardBlockByHash(*hash)
-	if err != nil {
-		isBlock = false
-		_, _, err = httpServer.config.BlockChain.GetBeaconBlockByHash(*hash)
-		if err != nil {
-			isBeaconBlock = false
-		} else {
-			result := jsonresult.HashValueDetail{
-				IsBlock:       isBlock,
-				IsTransaction: false,
-				IsBeaconBlock: true,
-			}
-			Logger.log.Debugf("handleCheckHashValue result: %+v", result)
-			return result, nil
-		}
-	} else {
-		isBlock = true
-		result := jsonresult.HashValueDetail{
-			IsBlock:       isBlock,
-			IsTransaction: false,
-		}
-		Logger.log.Debugf("handleCheckHashValue result: %+v", result)
-		return result, nil
-	}
-	_, _, _, _, err1 := httpServer.config.BlockChain.GetTransactionByHash(*hash)
-	if err1 != nil {
-		isTransaction = false
-	} else {
-		isTransaction = true
-		result := jsonresult.HashValueDetail{
-			IsBlock:       false,
-			IsTransaction: isTransaction,
-		}
-		Logger.log.Debugf("handleCheckHashValue result: %+v", result)
-		return result, nil
-	}
+
 	result := jsonresult.HashValueDetail{
-		IsBlock:       isBlock,
+		IsBlock:       isShardBlock,
 		IsTransaction: isTransaction,
 		IsBeaconBlock: isBeaconBlock,
 	}
-	Logger.log.Debugf("handleCheckHashValue result: %+v", result)
+
 	return result, nil
 }
 
@@ -142,12 +101,7 @@ handleGetConnectionCount - RPC returns the number of connections to other nodes.
 */
 func (httpServer *HttpServer) handleGetConnectionCount(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleGetConnectionCount params: %+v", params)
-	if httpServer.config.ConnMgr == nil || httpServer.config.ConnMgr.GetListeningPeer() == nil {
-		return 0, nil
-	}
-	result := 0
-	listeningPeer := httpServer.config.ConnMgr.GetListeningPeer()
-	result += len(listeningPeer.GetPeerConns())
+	result := httpServer.networkService.GetConnectionCount()
 	Logger.log.Debugf("handleGetConnectionCount result: %+v", result)
 	return result, nil
 }
@@ -155,7 +109,7 @@ func (httpServer *HttpServer) handleGetConnectionCount(params interface{}, close
 // handleGetActiveShards - return active shard num
 func (httpServer *HttpServer) handleGetActiveShards(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleGetActiveShards params: %+v", params)
-	activeShards := httpServer.config.BlockChain.BestState.Beacon.ActiveShards
+	activeShards := httpServer.blockService.GetActiveShards()
 	Logger.log.Debugf("handleGetActiveShards result: %+v", activeShards)
 	return activeShards, nil
 }
@@ -173,15 +127,9 @@ func (httpServer *HttpServer) handleGetStakingAmount(params interface{}, closeCh
 	if len(arrayParams) <= 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("ErrRPCInvalidParams"))
 	}
-	stackingType := int(arrayParams[0].(float64))
-	amount := uint64(0)
-	stakingData, _ := metadata.NewStakingMetadata(metadata.ShardStakingMeta, "", "", httpServer.config.ChainParams.StakingAmountShard, "", true)
-	if stackingType == 1 {
-		amount = stakingData.GetBeaconStakeAmount()
-	}
-	if stackingType == 0 {
-		amount = stakingData.GetShardStateAmount()
-	}
+
+	stakingType := int(arrayParams[0].(float64))
+	amount := rpcservice.GetStakingAmount(stakingType, httpServer.config.ChainParams.StakingAmountShard)
 	Logger.log.Debugf("handleGetStakingAmount result: %+v", amount)
 	return amount, nil
 }
@@ -189,12 +137,10 @@ func (httpServer *HttpServer) handleGetStakingAmount(params interface{}, closeCh
 func (httpServer *HttpServer) handleHashToIdenticon(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	result := make([]string, 0)
-	for _, hash := range arrayParams {
-		temp, err := common.Hash{}.NewHashFromStr(hash.(string))
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("Hash string is invalid"))
-		}
-		result = append(result, common.Render(temp.GetBytes()))
+
+	result, err := rpcservice.HashToIdenticon(arrayParams)
+	if err != nil{
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 	return result, nil
 }

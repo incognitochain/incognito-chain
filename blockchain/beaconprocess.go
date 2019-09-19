@@ -109,7 +109,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 		}
 	}
 	// process for slashing, make sure this one is called before update best state
-	// since we'd like to process with old committee not updated committee
+	// since we'd like to process with old committee, not updated committee
 	slashErr := blockchain.processForSlashing(beaconBlock)
 	if slashErr != nil {
 		Logger.log.Errorf("Failed to process slashing with error: %+v", NewBlockChainError(ProcessSlashingError, slashErr))
@@ -206,7 +206,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 
 // updateNumOfBlocksByProducers updates number of blocks produced by producers
 func (beaconBestState *BeaconBestState) updateNumOfBlocksByProducers(beaconBlock *BeaconBlock, chainParamEpoch uint64) {
-	producer := beaconBlock.GetProducer()
+	producer := beaconBlock.GetProducerPubKeyStr()
 	if beaconBlock.GetHeight()%chainParamEpoch == 1 {
 		beaconBestState.NumOfBlocksByProducers = map[string]uint64{
 			producer: 1,
@@ -306,26 +306,6 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *Beacon
 	return nil
 }
 
-func extractSwapInstFromShardBlock(shardID byte, shardBlock *ShardToBeaconBlock) []string {
-	instructions := shardBlock.Instructions
-	for _, instruction := range instructions {
-		if len(instruction) == 0 {
-			continue
-		}
-		if instruction[0] != SwapAction {
-			continue
-		}
-		if instruction[3] == "beacon" {
-			continue
-		}
-		if instruction[3] == "shard" && len(instruction) != 5 && instruction[4] != strconv.Itoa(int(shardID)) {
-			continue
-		}
-		return instruction
-	}
-	return []string{}
-}
-
 /*
 	verifyPreProcessingBeaconBlockForSigning
 	Must pass these following condition:
@@ -351,6 +331,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 	rewardByEpochInstruction := [][]string{}
 	tempShardStates := make(map[byte][]ShardState)
 	stakeInstructions := [][]string{}
+	validStakePublicKeys := []string{}
 	swapInstructions := make(map[byte][][]string)
 	bridgeInstructions := [][]string{}
 	acceptedBlockRewardInstructions := [][]string{}
@@ -424,13 +405,14 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 				// }
 			}
 			for _, shardBlock := range shardBlocks {
-				tempShardState, stakeInstruction, swapInstruction, bridgeInstruction, acceptedBlockRewardInstruction, stopAutoStakingInstruction := blockchain.GetShardStateFromBlock(beaconBlock.Header.Height, shardBlock, shardID, false)
+				tempShardState, stakeInstruction, tempValidStakePublicKeys, swapInstruction, bridgeInstruction, acceptedBlockRewardInstruction, stopAutoStakingInstruction := blockchain.GetShardStateFromBlock(beaconBlock.Header.Height, shardBlock, shardID, false, validStakePublicKeys)
 				tempShardStates[shardID] = append(tempShardStates[shardID], tempShardState[shardID])
 				stakeInstructions = append(stakeInstructions, stakeInstruction...)
 				swapInstructions[shardID] = append(swapInstructions[shardID], swapInstruction[shardID]...)
 				bridgeInstructions = append(bridgeInstructions, bridgeInstruction...)
 				acceptedBlockRewardInstructions = append(acceptedBlockRewardInstructions, acceptedBlockRewardInstruction)
 				stopAutoStakingInstructions = append(stopAutoStakingInstructions, stopAutoStakingInstruction...)
+				validStakePublicKeys = append(validStakePublicKeys, tempValidStakePublicKeys...)
 			}
 		} else {
 			return NewBlockChainError(GetShardBlocksError, fmt.Errorf("Expect to get more than %+v ShardToBeaconBlock but only get %+v", len(beaconBlock.Body.ShardState[shardID]), len(shardBlocks)))
@@ -788,6 +770,7 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 		beaconBestState.ShardConsensusAlgorithm[byte(shardID)] = common.BlsConsensus
 	}
 	beaconBestState.Epoch = 1
+	beaconBestState.NumOfBlocksByProducers = make(map[string]uint64)
 	return nil
 }
 

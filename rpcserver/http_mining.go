@@ -90,3 +90,22 @@ func (httpServer *HttpServer) handleGetIncognitoPublicKeyRole(params interface{}
 	}
 	return result, nil
 }
+
+func (httpServer *HttpServer) handleGetMinerRewardFromMiningKey(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param empty"))
+	}
+
+	keyParts := strings.Split(arrayParams[0].(string), ":")
+	keyType := keyParts[0]
+	publicKey := keyParts[1]
+
+	incPublicKey := httpServer.config.Server.GetMinerIncognitoPublickey(publicKey, keyType)
+	rewardAmountResult, err := httpServer.blockService.GetMinerRewardFromMiningKey(incPublicKey)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	return rewardAmountResult, nil
+}

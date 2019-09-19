@@ -5,12 +5,16 @@ import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/transaction"
+	"errors"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type BlockService struct {
 	BlockChain *blockchain.BlockChain
+	DB  *database.DatabaseInterface
 }
 
 func (blockService BlockService) GetShardBestStates() map[byte]*blockchain.ShardBestState {
@@ -317,5 +321,165 @@ func (blockService BlockService) GetValidStakers(publicKeys []string) ([]string,
 	return validPublicKeys, nil
 }
 
+func (blockService BlockService) GetShardBlockByHash(hash common.Hash) (*blockchain.ShardBlock, uint64, error) {
+	return blockService.BlockChain.GetShardBlockByHash(hash)
+}
 
+func (blockService BlockService) GetBeaconBlockByHash(hash common.Hash) (*blockchain.BeaconBlock, uint64, error) {
+	return blockService.BlockChain.GetBeaconBlockByHash(hash)
+}
+
+func (blockService BlockService) CheckHashValue(hashStr string) (isTransaction bool, isShardBlock bool, isBeaconBlock bool, err error){
+	isTransaction = false
+	isShardBlock = false
+	isBeaconBlock = false
+
+	hash, err2 := common.Hash{}.NewHashFromStr(hashStr)
+	if err2 != nil {
+		err = errors.New("expected hash string value")
+		return
+	}
+
+	_, _, err = blockService.GetShardBlockByHash(*hash)
+	if err == nil{
+		isShardBlock = true
+		return
+	} else {
+		_, _, err = blockService.GetBeaconBlockByHash(*hash)
+		if err == nil{
+			isBeaconBlock = true
+			return
+		} else{
+			_, _, _, _, err = blockService.BlockChain.GetTransactionByHash(*hash)
+			if err == nil{
+				isTransaction = true
+			} else {
+				err = nil
+			}
+		}
+	}
+
+	return
+}
+
+func (blockService BlockService) GetActiveShards() (int) {
+	return blockService.BlockChain.BestState.Beacon.ActiveShards
+}
+
+func (blockService BlockService) ListPrivacyCustomToken() (map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData, error){
+	return blockService.BlockChain.ListPrivacyCustomToken()
+}
+
+
+func (blockService BlockService) GetAllCoinID() ([]common.Hash, error){
+	return blockService.BlockChain.GetAllCoinID()
+}
+
+func (blockService BlockService) GetMinerRewardFromMiningKey(incPublicKey []byte) (map[string]uint64, error) {
+	allCoinIDs, err := blockService.GetAllCoinID()
+	if err != nil {
+		return nil, err
+	}
+
+	rewardAmountResult := make(map[string]uint64)
+	rewardAmounts := make(map[common.Hash]uint64)
+
+	for _, coinID := range allCoinIDs {
+		amount, err := (*blockService.DB).GetCommitteeReward(incPublicKey, coinID)
+		if err != nil {
+			return nil, err
+		}
+		if coinID == common.PRVCoinID {
+			rewardAmountResult["PRV"] = amount
+		} else {
+			rewardAmounts[coinID] = amount
+		}
+	}
+
+	privateToken, crossPrivateToken, err := blockService.ListPrivacyCustomToken()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, token := range privateToken {
+		if rewardAmounts[token.TxPrivacyTokenData.PropertyID] > 0 {
+			rewardAmountResult[token.TxPrivacyTokenData.PropertyID.String()] = rewardAmounts[token.TxPrivacyTokenData.PropertyID]
+		}
+	}
+
+	for _, token := range crossPrivateToken {
+		if rewardAmounts[token.TokenID] > 0 {
+			rewardAmountResult[token.TokenID.String()] = rewardAmounts[token.TokenID]
+		}
+	}
+
+	return rewardAmountResult, nil
+}
+
+func (blockService BlockService) RevertBeacon() error {
+	return blockService.BlockChain.RevertBeaconState()
+}
+
+
+func (blockService BlockService) RevertShard(shardID byte) error {
+	return blockService.BlockChain.RevertShardState(shardID)
+}
+
+func (blockService BlockService) ListCustomToken() (map[common.Hash]transaction.TxNormalToken, error){
+	return blockService.BlockChain.ListCustomToken()
+}
+
+func (blockService BlockService) GetRewardAmount(paymentAddress string) (map[string]uint64, *RPCError){
+	rewardAmountResult := make(map[string]uint64)
+	rewardAmounts := make(map[common.Hash]uint64)
+	var publicKey []byte
+	if paymentAddress != "" {
+		senderKey, err := wallet.Base58CheckDeserialize(paymentAddress)
+		if err != nil {
+			return nil, NewRPCError(UnexpectedError, err)
+		}
+
+		publicKey = senderKey.KeySet.PaymentAddress.Pk
+	}
+	if publicKey == nil {
+		return rewardAmountResult, nil
+	}
+
+	allCoinIDs, err := blockService.BlockChain.GetAllCoinID()
+	if err != nil {
+		return nil, NewRPCError(UnexpectedError, err)
+	}
+
+	for _, coinID := range allCoinIDs {
+		amount, err := (*blockService.DB).GetCommitteeReward(publicKey, coinID)
+		if err != nil {
+			return nil, NewRPCError(UnexpectedError, err)
+		}
+		if coinID == common.PRVCoinID {
+			rewardAmountResult["PRV"] = amount
+		} else {
+			rewardAmounts[coinID] = amount
+		}
+	}
+
+	cusPrivTok, crossPrivToken, err := blockService.BlockChain.ListPrivacyCustomToken()
+
+	if err != nil {
+		return nil, NewRPCError(UnexpectedError, err)
+	}
+
+	for _, token := range cusPrivTok {
+		if rewardAmounts[token.TxPrivacyTokenData.PropertyID] > 0 {
+			rewardAmountResult[token.TxPrivacyTokenData.PropertyID.String()] = rewardAmounts[token.TxPrivacyTokenData.PropertyID]
+		}
+	}
+
+	for _, token := range crossPrivToken {
+		if rewardAmounts[token.TokenID] > 0 {
+			rewardAmountResult[token.TokenID.String()] = rewardAmounts[token.TokenID]
+		}
+	}
+
+	return rewardAmountResult, nil
+}
 
