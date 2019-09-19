@@ -28,9 +28,9 @@ const (
 	DefaultLogLevel               = "info"
 	DefaultLogDirname             = "logs"
 	DefaultLogFilename            = "log.log"
-	DefaultMaxPeers               = 700
+	DefaultMaxPeers               = 1000
 	DefaultMaxPeersSameShard      = 300
-	DefaultMaxPeersOtherShard     = 300
+	DefaultMaxPeersOtherShard     = 600
 	DefaultMaxPeersOther          = 300
 	DefaultMaxPeersNoShard        = 100
 	DefaultMaxPeersBeacon         = 50
