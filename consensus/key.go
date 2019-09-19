@@ -42,7 +42,7 @@ func (engine *Engine) GetCurrentMiningPublicKey() (publickey string, keyType str
 	if engine != nil && engine.CurrentMiningChain != "" {
 		if _, ok := engine.ChainConsensusList[engine.CurrentMiningChain]; ok {
 			keytype := engine.ChainConsensusList[engine.CurrentMiningChain].GetConsensusName()
-			pubkey := engine.currentMiningPublickey.KeysBase58[keytype]
+			pubkey := engine.userCurrentState.KeysBase58[keytype]
 			return pubkey, keytype
 		}
 	}
