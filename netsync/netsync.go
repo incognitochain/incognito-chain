@@ -125,6 +125,7 @@ func (netSync *NetSync) Stop() {
 	close(netSync.cQuit)
 }
 
+//TODO merman receive all of message and process here
 // messageHandler is the main handler for the sync manager.  It must be run as a
 // goroutine.  It processes block and inv messages in a separate goroutine
 // from the peer handlers so the block (MsgBlock) messages are handled by a
