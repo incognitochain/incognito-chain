@@ -201,7 +201,6 @@ func (connManager *ConnManager) GetPeerId(addr string) (string, error) {
 // Connect assigns an id and dials a connection to the address of the
 // connection request.
 func (connManager *ConnManager) Connect(addr string, publicKey string, publicKeyType string, cConn chan *peer.PeerConn) error {
-	fmt.Printf("CONNLog Try to connect %v %v \n", addr, publicKey)
 	if atomic.LoadInt32(&connManager.stop) != 0 {
 		return NewConnManagerError(ConnectError, errors.New("Can not connect because connManager is stoped"))
 	}
@@ -256,7 +255,7 @@ func (connManager *ConnManager) Connect(addr string, publicKey string, publicKey
 
 	// add remote address peer into our listening node peer
 	listeningPeer.GetHost().Peerstore().AddAddr(peer.GetPeerID(), peer.GetTargetAddress(), pstore.PermanentAddrTTL)
-	fmt.Printf("\n\n\n\n\n\n\nAdd Peer %v %v %v %v\n\n\n\n\n\n", publicKey, peer.GetPeerID(), peer.GetTargetAddress(), pstore.PermanentAddrTTL)
+	// fmt.Printf("\n\n\n\n\n\n\nAdd Peer %v %v %v %v\n\n\n\n\n\n", publicKey, peer.GetPeerID(), peer.GetTargetAddress(), pstore.PermanentAddrTTL)
 	pk, pkT := peer.GetPublicKey()
 	Logger.log.Debug("DEBUG Connect to RemotePeer", pkT, pk)
 	Logger.log.Debug(listeningPeer.GetHost().Peerstore().Addrs(peer.GetPeerID()))
@@ -361,15 +360,12 @@ func (connManager *ConnManager) discoverPeers(discoverPeerAddress string) {
 // node peers are shard commttee
 // other role of other peers
 func (connManager *ConnManager) processDiscoverPeers() error {
-	fmt.Printf("CONNLog ~~~~~~~~~~~~~~~~~~~~~~~~~~~processDiscoverPeers~~~~~~~~~~~~~~~~~~~~~~~~ \n")
-	fmt.Printf("\n\n\n\n ~~~~~~~~~~~~~~~~~~~~~~~~~~~processDiscoverPeers~~~~~~~~~~~~~~~~~~~~~~~~ \n\n\n\n")
+	// fmt.Printf("\n\n\n\n ~~~~~~~~~~~~~~~~~~~~~~~~~~~processDiscoverPeers~~~~~~~~~~~~~~~~~~~~~~~~ \n\n\n\n")
 	discoverPeerAddress := connManager.discoverPeerAddress
 	if discoverPeerAddress == common.EmptyString {
 		// we dont have config to make discover peer
 		// so we dont need to do anything here
-		fmt.Printf("\n\n\n\n ~~~~~~~~~~~~~~~~~~~~~~~~~~~Not config discovery peer~~~~~~~~~~~~~~~~~~~~~~~~ \n\n\n\n")
-
-		Logger.log.Debug("Not config discovery peer")
+		Logger.log.Error("Not config discovery peer")
 		return nil
 	}
 
@@ -383,7 +379,6 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 		// provided "discover peer address" in config
 		Logger.log.Error("[Exchange Peers] re-connect:")
 		Logger.log.Error(err)
-		fmt.Printf("\n\n\n\n ~~~~~~~~~~~~~~~~~~~~~~~~~~~[Exchange Peers] re-connect:~~~~~~~~~~~~~~~~~~~~~~~~ \n\n\n\n", err)
 		return err
 	}
 	if client != nil {
@@ -431,9 +426,9 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 		// 	}
 		// }
 		publicKeyMining, publicKeyType, signDataInBase58CheckEncode, err := listener.GetConfig().ConsensusEngine.SignDataWithCurrentMiningKey([]byte(rawAddress))
-		fmt.Printf("CONNLog User Publickey in Ping message RawAddress %v PublicKey %v \n", rawAddress, publicKeyMining)
+		// fmt.Printf("CONNLog User Publickey in Ping message RawAddress %v PublicKey %v \n", rawAddress, publicKeyMining)
 		if err != nil {
-			fmt.Printf("CONNLog %v \n", err)
+			Logger.log.Error(err)
 			//return NewConnManagerError(UnexpectedError, err)
 		}
 		//TODO hy init ping
@@ -445,7 +440,7 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 		err = client.Call("Handler.Ping", args, &response)
 
 		if err != nil {
-			fmt.Printf("CONNLog Ping error %v\n", err)
+			// fmt.Printf("CONNLog Ping error %v\n", err)
 			// can not call method PING to rpc server of boot node
 			Logger.log.Error("[Exchange Peers] Ping:")
 			Logger.log.Error(err)
@@ -569,7 +564,7 @@ func (connManager *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int
 			cPbk := connManager.config.ConsensusState.userPublicKey
 			// if existed conn then not append to array
 			if cPbk != pbk && !connManager.checkPeerConnOfPublicKey(pbk) {
-				fmt.Println("CONN: try to connect peer in shard ", peerI.RawAddress, peerI.PublicKeyType, peerI.PublicKey, pbk)
+				// fmt.Println("CONN: try to connect peer in shard ", peerI.RawAddress, peerI.PublicKeyType, peerI.PublicKey, pbk)
 				go connManager.Connect(peerI.RawAddress, peerI.PublicKey, peerI.PublicKeyType, nil)
 				countPeerShard++
 			}
@@ -577,7 +572,7 @@ func (connManager *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int
 				return countPeerShard
 			}
 		} else {
-			fmt.Println("CONN: cannot find", pbk)
+			Logger.log.Warn("CONN: cannot find", pbk)
 		}
 	}
 	return countPeerShard
@@ -612,14 +607,12 @@ func (connManager *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPee
 		randN := common.RandInt() % len(pBKs)
 		pbk := pBKs[randN]
 		pBKs = append(pBKs[:randN], pBKs[randN+1:]...)
-		fmt.Printf("\n\n\n\n\n\nFuckkkkkkkkkkkkk %v\n\n\n\n\n\n\n\n", pbk)
-		// for k, _ := range
 		peerI, ok := mPeers[pbk]
 		if ok {
 			cPbk := connManager.config.ConsensusState.userPublicKey
 			// if existed conn then not append to array
 			if cPbk != pbk && !connManager.checkPeerConnOfPublicKey(pbk) {
-				fmt.Println("CONN: try to connect peer in beacon ", peerI.RawAddress, peerI.PublicKeyType, peerI.PublicKey, pbk)
+				// fmt.Println("CONN: try to connect peer in beacon ", peerI.RawAddress, peerI.PublicKeyType, peerI.PublicKey, pbk)
 				go connManager.Connect(peerI.RawAddress, peerI.PublicKey, peerI.PublicKeyType, nil)
 			}
 			countPeerShard++
@@ -675,12 +668,10 @@ func (connManager *ConnManager) makeRandShards(maxShards int) []byte {
 // CheckForAcceptConn - return true if our connection manager can accept a new connection from new peer
 func (connManager *ConnManager) CheckForAcceptConn(peerConn *peer.PeerConn) (bool, error) {
 	if peerConn == nil {
-		fmt.Printf("\n\n\n\n\n\n\n peerConn nil \n\n\n\n\n\n\n")
 		return false, NewConnManagerError(NotAcceptConnectionError, errors.New("peerConn is nil"))
 	}
 	// check max shard conn
 	pk, _ := peerConn.GetRemotePeer().GetPublicKey()
-	fmt.Printf("\n\n\n\n\n\n\n peerConn.GetRemotePeer().GetPublicKey() %v \n\n\n\n\n\n\n", pk)
 	shardID := connManager.getShardOfPublicKey(pk)
 	currentShard := connManager.config.ConsensusState.currentShard
 	if shardID != nil && currentShard != nil && *shardID == *currentShard {
@@ -728,10 +719,9 @@ func (connManager *ConnManager) GetPeerConnOfShard(shard byte) []*peer.PeerConn 
 	listener := connManager.config.ListenerPeer
 	if listener != nil {
 		allPeers := listener.GetPeerConnOfAll()
-		fmt.Printf("\n\n\n\n Fuck All peer %v \n\n\n\n\n\n", len(allPeers))
+		Logger.log.Info("Number of peer connection: ", len(allPeers))
 		for _, peerConn := range allPeers {
-			pk, typee := peerConn.GetRemotePeer().GetPublicKey()
-			fmt.Printf("%v %v eiiii\n", pk, typee)
+			pk, _ := peerConn.GetRemotePeer().GetPublicKey()
 			shardT := connManager.getShardOfPublicKey(pk)
 			if shardT != nil && *shardT == shard {
 				peerConns = append(peerConns, peerConn)
@@ -749,9 +739,7 @@ func (connManager *ConnManager) GetPeerConnOfBeacon() []*peer.PeerConn {
 		allPeers := listener.GetPeerConnOfAll()
 		for _, peerConn := range allPeers {
 			pk, _ := peerConn.GetRemotePeer().GetPublicKey()
-			// fmt.Println("bbbbbbbbbbbbbbb", pk)
 			if pk != common.EmptyString && connManager.checkBeaconOfPbk(pk) {
-				// fmt.Println("eeeeeeeeeeeeeeeeeee", pk)
 				peerConns = append(peerConns, peerConn)
 			}
 		}
@@ -812,7 +800,6 @@ func (connManager *ConnManager) handleRelayNode(mPeers map[string]*wire.RawPeer)
 			common.IndexOfStr(publicKey, relayNode) == -1 {
 			continue
 		}
-		fmt.Println("CONN: try to connect someone I dont know, maybe relay", p.RawAddress, p.PublicKeyType, p.PublicKey)
 		go connManager.Connect(p.RawAddress, p.PublicKey, p.PublicKeyType, nil)
 	}
 }
