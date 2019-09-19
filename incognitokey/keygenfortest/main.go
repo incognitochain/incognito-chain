@@ -219,6 +219,6 @@ func generateKeydotJson(numberOfShard, numberOfCandidate int) {
 }
 
 func main() {
-	generateKeydotJson(64, 100)
+	generateKeydotJson(2, 256)
 	//generateKeydotJsonFromGivenKeyList("private_key_testnet.json", 256, 100)
 }
