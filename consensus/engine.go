@@ -1,7 +1,6 @@
 package consensus
 
 import (
-	"encoding/json"
 	"errors"
 	"strconv"
 	"strings"
@@ -19,13 +18,15 @@ var AvailableConsensus map[string]ConsensusInterface
 
 type Engine struct {
 	sync.Mutex
-	cQuit                  chan struct{}
-	started                bool
-	ChainConsensusList     map[string]ConsensusInterface
-	CurrentMiningChain     string
-	userMiningPublicKeys   map[string]incognitokey.CommitteePublicKey
-	currentMiningPublickey struct {
-		Keys       incognitokey.CommitteePublicKey
+	cQuit                chan struct{}
+	started              bool
+	ChainConsensusList   map[string]ConsensusInterface
+	CurrentMiningChain   string
+	userMiningPublicKeys map[string]incognitokey.CommitteePublicKey
+	userCurrentState     struct {
+		UserRole   string
+		ShardID    byte
+		Keys       *incognitokey.CommitteePublicKey
 		KeysBase58 map[string]string
 	}
 	chainCommitteeChange chan string
@@ -58,24 +59,32 @@ func (engine *Engine) watchConsensusCommittee() {
 				keys, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(committee, consensusType)
 				if common.IndexOfStr(publickey.GetMiningKeyBase58(consensusType), keys) != -1 {
 					engine.CurrentMiningChain = chainName
-					engine.updateCurrentPublicKey(consensusType)
+					var userRole string
+					var shardID byte
+					if chainName != common.BeaconChainKey {
+						userRole = common.ShardRole
+						shardID = getShardFromChainName(chainName)
+					} else {
+						userRole = common.BeaconRole
+					}
+					engine.updateUserState(&publickey, userRole, shardID)
 					break
 				}
 			}
 		}
 	}
-	for consensusType, publickey := range engine.userMiningPublicKeys {
-		if engine.CurrentMiningChain == "" {
-			role, shardID := engine.config.Blockchain.Chains[common.BeaconChainKey].GetPubkeyRole(publickey.GetMiningKeyBase58(consensusType), 0)
-			test, _ := json.Marshal(publickey)
-			Logger.log.Critical(string(test))
-			if role == common.ShardRole {
-				engine.CurrentMiningChain = common.GetShardChainKey(shardID)
-				engine.updateCurrentPublicKey(consensusType)
-				break
-			}
-		}
-	}
+	// if engine.CurrentMiningChain == "" {
+	// 	for consensusType, publickey := range engine.userMiningPublicKeys {
+	// 		role, shardID := engine.config.Blockchain.Chains[common.BeaconChainKey].GetPubkeyRole(publickey.GetMiningKeyBase58(consensusType), 0)
+	// 		test, _ := json.Marshal(publickey)
+	// 		Logger.log.Critical(string(test))
+	// 		if role == common.ShardRole {
+	// 			engine.CurrentMiningChain = common.GetShardChainKey(shardID)
+	// 			engine.updateUserState(&publickey)
+	// 			break
+	// 		}
+	// 	}
+	// }
 
 	for chainName, chain := range engine.config.Blockchain.Chains {
 		if _, ok := AvailableConsensus[chain.GetConsensusType()]; ok {
@@ -98,9 +107,10 @@ func (engine *Engine) watchConsensusCommittee() {
 		case chainName := <-engine.chainCommitteeChange:
 			Logger.log.Critical("chain committee change", chainName)
 			consensusType := engine.config.Blockchain.Chains[chainName].GetConsensusType()
-			userCurrentPublicKey, ok := engine.currentMiningPublickey.KeysBase58[consensusType]
+			userCurrentPublicKey, ok := engine.userCurrentState.KeysBase58[consensusType]
+			var userMiningKey incognitokey.CommitteePublicKey
 			if !ok {
-				userMiningKey, ok := engine.userMiningPublicKeys[consensusType]
+				userMiningKey, ok = engine.userMiningPublicKeys[consensusType]
 				if !ok {
 					continue
 				}
@@ -111,8 +121,8 @@ func (engine *Engine) watchConsensusCommittee() {
 				if role == common.ShardRole {
 					if engine.CurrentMiningChain == common.EmptyString {
 						engine.CurrentMiningChain = common.GetShardChainKey(shardID)
-						if userCurrentPublicKey != engine.currentMiningPublickey.KeysBase58[consensusType] {
-							engine.updateCurrentPublicKey(consensusType)
+						if userCurrentPublicKey != engine.userCurrentState.KeysBase58[consensusType] {
+							engine.updateUserState(&userMiningKey, role, shardID)
 						}
 						engine.config.Node.DropAllConnections()
 						engine.updateConsensusState()
@@ -120,8 +130,8 @@ func (engine *Engine) watchConsensusCommittee() {
 				} else {
 					if engine.CurrentMiningChain == common.EmptyString {
 						engine.CurrentMiningChain = common.BeaconChainKey
-						if userCurrentPublicKey != engine.currentMiningPublickey.KeysBase58[consensusType] {
-							engine.updateCurrentPublicKey(consensusType)
+						if userCurrentPublicKey != engine.userCurrentState.KeysBase58[consensusType] {
+							engine.updateUserState(&userMiningKey, role, shardID)
 						}
 						engine.config.Node.DropAllConnections()
 						engine.updateConsensusState()
@@ -131,8 +141,8 @@ func (engine *Engine) watchConsensusCommittee() {
 				//Beacon said validator not belong to committee anymore but Chain itself isn't update yet
 				if engine.CurrentMiningChain != common.EmptyString && engine.config.Blockchain.Chains[engine.CurrentMiningChain].GetPubKeyCommitteeIndex(userCurrentPublicKey) == -1 {
 					engine.CurrentMiningChain = common.EmptyString
-					if userCurrentPublicKey != engine.currentMiningPublickey.KeysBase58[consensusType] {
-						engine.updateCurrentPublicKey(consensusType)
+					if userCurrentPublicKey != engine.userCurrentState.KeysBase58[consensusType] {
+						engine.updateUserState(&userMiningKey, role, shardID)
 					}
 					engine.config.Node.DropAllConnections()
 					engine.updateConsensusState()
@@ -212,12 +222,10 @@ func (engine *Engine) OnBFTMsg(msg *wire.MessageBFT) {
 
 func (engine *Engine) GetUserRole() (string, int) {
 	if engine.CurrentMiningChain != "" {
-		publicKey, _ := engine.GetCurrentMiningPublicKey()
-		userRole, _ := engine.config.Blockchain.Chains[engine.CurrentMiningChain].GetPubkeyRole(publicKey, 0)
-		if engine.CurrentMiningChain == common.BeaconChainKey {
-			return userRole, -1
+		if engine.userCurrentState.UserRole == common.BeaconChainKey {
+			return engine.userCurrentState.UserRole, -1
 		}
-		return userRole, engine.config.Blockchain.Chains[engine.CurrentMiningChain].GetShardID()
+		return engine.userCurrentState.UserRole, int(engine.userCurrentState.ShardID)
 	}
 	return "", -2
 }
@@ -342,12 +350,19 @@ func (engine *Engine) updateConsensusState() {
 	}
 }
 
-func (engine *Engine) updateCurrentPublicKey(consensusType string) {
-	userMiningKey, _ := engine.userMiningPublicKeys[consensusType]
-	engine.currentMiningPublickey.Keys = userMiningKey
-	engine.currentMiningPublickey.KeysBase58 = make(map[string]string)
-	engine.currentMiningPublickey.KeysBase58[common.IncKeyType] = userMiningKey.GetIncKeyBase58()
-	for keyType := range userMiningKey.MiningPubKey {
-		engine.currentMiningPublickey.KeysBase58[keyType] = userMiningKey.GetMiningKeyBase58(keyType)
+func (engine *Engine) updateUserState(keySet *incognitokey.CommitteePublicKey, role string, shardID byte) {
+	if role == "" {
+		engine.userCurrentState.UserRole = ""
+		engine.userCurrentState.ShardID = 0
+		engine.userCurrentState.Keys = nil
+		engine.userCurrentState.KeysBase58 = make(map[string]string)
+	} else {
+		engine.userCurrentState.UserRole = role
+		engine.userCurrentState.Keys = keySet
+		engine.userCurrentState.KeysBase58 = make(map[string]string)
+		engine.userCurrentState.KeysBase58[common.IncKeyType] = keySet.GetIncKeyBase58()
+		for keyType := range keySet.MiningPubKey {
+			engine.userCurrentState.KeysBase58[keyType] = keySet.GetMiningKeyBase58(keyType)
+		}
 	}
 }
