@@ -18,8 +18,8 @@ const (
 	DefaultMaxBlkReqPerPeer      = 600
 	DefaultMaxBlkReqPerTime      = 1200
 	MinCommitteeSize             = 3                // min size to run bft
-	DefaultBroadcastStateTime    = 2 * time.Second  // in second
-	DefaultStateUpdateTime       = 3 * time.Second  // in second
+	DefaultBroadcastStateTime    = 6 * time.Second  // in second
+	DefaultStateUpdateTime       = 8 * time.Second  // in second
 	DefaultMaxBlockSyncTime      = 1 * time.Second  // in second
 	DefaultCacheCleanupTime      = 30 * time.Second // in second
 	WorkerNumber                 = 5
