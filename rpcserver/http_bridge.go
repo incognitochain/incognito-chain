@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/pkg/errors"
@@ -50,7 +51,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithContractingReq(params interfa
 		return nil, err
 	}
 
-	customTokenTx, rpcErr := httpServer.buildRawPrivacyCustomTokenTransaction(params, meta)
+	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
 	if rpcErr != nil {
 		Logger.log.Error(rpcErr)
 		return nil, rpcErr
@@ -109,7 +110,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithBurningReq(params interface{}
 		return nil, err
 	}
 
-	customTokenTx, rpcErr := httpServer.buildRawPrivacyCustomTokenTransaction(params, meta)
+	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
 	if rpcErr != nil {
 		Logger.log.Error(rpcErr)
 		return nil, rpcErr
@@ -149,15 +150,25 @@ func (httpServer *HttpServer) handleCreateAndSendBurningRequest(params interface
 func (httpServer *HttpServer) handleCreateRawTxWithIssuingETHReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
-	data := arrayParams[4].(map[string]interface{})
+	// get meta data from params
+	data, ok := arrayParams[4].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+	}
 	meta, err := metadata.NewIssuingETHRequestFromMap(data)
 	if err != nil {
 		rpcErr := rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 		Logger.log.Error(rpcErr)
 		return nil, rpcErr
 	}
-	tx, err1 := httpServer.buildRawTransaction(params, meta)
 
+	// create new param to build raw tx from param interface
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	if errNewParam != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+	}
+
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
 	if err1 != nil {
 		Logger.log.Error(err1)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)

@@ -37,6 +37,10 @@ type HttpServer struct {
 	outputCoinService *rpcservice.CoinService
 	txMemPoolService  *rpcservice.TxMemPoolService
 	databaseService   *rpcservice.DatabaseService
+	networkService    *rpcservice.NetworkService
+	poolStateService  *rpcservice.PoolStateService
+	txService         *rpcservice.TxService
+	walletService     *rpcservice.WalletService
 }
 
 func (httpServer *HttpServer) Init(config *RpcServerConfig) {
@@ -54,10 +58,23 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 	}
 
 	// init service
-	httpServer.blockService = &rpcservice.BlockService{BlockChain: httpServer.config.BlockChain}
+	httpServer.blockService = &rpcservice.BlockService{BlockChain: httpServer.config.BlockChain, DB: httpServer.config.Database, MemCache: httpServer.config.MemCache}
 	httpServer.outputCoinService = &rpcservice.CoinService{BlockChain: httpServer.config.BlockChain}
 	httpServer.txMemPoolService = &rpcservice.TxMemPoolService{TxMemPool: httpServer.config.TxMemPool}
-	httpServer.databaseService = &rpcservice.DatabaseService{DB: *httpServer.config.Database}
+	httpServer.databaseService = &rpcservice.DatabaseService{DB: httpServer.config.Database}
+	httpServer.networkService = &rpcservice.NetworkService{ConnMgr: httpServer.config.ConnMgr}
+	httpServer.poolStateService = &rpcservice.PoolStateService{}
+	httpServer.txService = &rpcservice.TxService{
+		DB:           httpServer.config.Database,
+		BlockChain:   httpServer.config.BlockChain,
+		Wallet:       httpServer.config.Wallet,
+		FeeEstimator: httpServer.config.FeeEstimator,
+		TxMemPool:    httpServer.config.TxMemPool,
+	}
+	httpServer.walletService = &rpcservice.WalletService{
+		Wallet:     httpServer.config.Wallet,
+		BlockChain: httpServer.config.BlockChain,
+	}
 }
 
 // Start is used by rpcserver.go to start the rpc listener.
@@ -150,7 +167,7 @@ func (httpServer *HttpServer) handleRequest(w http.ResponseWriter, r *http.Reque
 
 	select {
 	case <-done:
-	case <-time.After(time.Minute):
+	case <-time.After(time.Second * rpcProcessTimeoutSeconds):
 	}
 
 }

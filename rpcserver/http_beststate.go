@@ -13,11 +13,6 @@ handleGetBeaconBestState - RPC get beacon best state
 func (httpServer *HttpServer) handleGetBeaconBestState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleGetBeaconBestState params: %+v", params)
 
-	if httpServer.blockService.IsBeaconBestStateNil() {
-		Logger.log.Debugf("handleGetBeaconBestState result: %+v", nil)
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("Best State beacon not existed"))
-	}
-
 	clonedBeaconBestState, err := httpServer.blockService.GetBeaconBestState()
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)
@@ -43,10 +38,6 @@ func (httpServer *HttpServer) handleGetShardBestState(params interface{}, closeC
 	}
 	shardID := byte(shardIdParam)
 
-	if httpServer.blockService.IsShardBestStateNil() {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("Best State shard not existed"))
-	}
-
 	clonedShardBestState, err := httpServer.blockService.GetShardBestStateByShardID(shardID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetClonedShardBestStateError, err)
@@ -60,11 +51,6 @@ func (httpServer *HttpServer) handleGetShardBestState(params interface{}, closeC
 // handleGetCandidateList - return list candidate of committee
 func (httpServer *HttpServer) handleGetCandidateList(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleGetCandidateList params: %+v", params)
-
-	if httpServer.blockService.IsBeaconBestStateNil() {
-		Logger.log.Debugf("handleGetCandidateList result: %+v", nil)
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("Best State beacon not existed"))
-	}
 
 	beacon, err := httpServer.blockService.GetBeaconBestState()
 	if err != nil {
@@ -122,24 +108,12 @@ func (httpServer *HttpServer) handleCanPubkeyStake(params interface{}, closeChan
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Pub key is invalid"))
 	}
 
-	temp, err := httpServer.blockService.GetValidStakers([]string{publicKey})
-	if err != nil {
-		return nil, err
-	}
-	if len(temp) == 0 {
-		result := jsonresult.NewStakeResult(publicKey, false)
-		Logger.log.Debugf("handleCanPubkeyStake result: %+v", result)
-		return result, nil
+	canStake, err := httpServer.blockService.CanPubkeyStake(publicKey)
+	if err != nil{
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
-	poolCandidate := httpServer.txMemPoolService.GetPoolCandidate()
-	if common.IndexOfStrInHashMap(publicKey, poolCandidate) > 0 {
-		result := jsonresult.NewStakeResult(publicKey, false)
-		Logger.log.Debugf("handleCanPubkeyStake result: %+v", result)
-		return result, nil
-	}
-
-	result := jsonresult.NewStakeResult(publicKey, true)
+	result := jsonresult.NewStakeResult(publicKey, canStake)
 	Logger.log.Debugf("handleCanPubkeyStake result: %+v", result)
 	return result, nil
 }
