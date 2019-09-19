@@ -345,14 +345,14 @@ func (peerObj *Peer) processConn() {
 			Logger.log.Critical("ProcessConn QUIT")
 			return
 		case newPeerMsg := <-peerObj.cNewConn:
-			fmt.Printf("CONNLog cNewConn Try to connect??? %v %v %v\n", newPeerMsg.peer.peerID.Pretty(), newPeerMsg.peer.rawAddress, newPeerMsg.peer.publicKey)
+			// fmt.Printf("CONNLog cNewConn Try to connect??? %v %v %v\n", newPeerMsg.peer.peerID.Pretty(), newPeerMsg.peer.rawAddress, newPeerMsg.peer.publicKey)
 			Logger.log.Debugf("ProcessConn START CONN %s %s", newPeerMsg.peer.peerID.Pretty(), newPeerMsg.peer.rawAddress)
 			cConn := make(chan *PeerConn)
 			go func(peerObj *Peer) {
 				peerConn, err := peerObj.handleNewConnectionOut(newPeerMsg.peer, cConn)
 				if err != nil && peerConn == nil {
 					Logger.log.Errorf("Fail in opening stream from PEER Id - %s with err: %s", peerObj.peerID.Pretty(), err.Error())
-					fmt.Printf("CONNLog Fail in opening stream from PEER Id - %s with err: %s\n", peerObj.peerID.Pretty(), err.Error())
+					// fmt.Printf("CONNLog Fail in opening stream from PEER Id - %s with err: %s\n", peerObj.peerID.Pretty(), err.Error())
 				}
 			}(peerObj)
 			p := <-cConn
@@ -360,7 +360,7 @@ func (peerObj *Peer) processConn() {
 				newPeerMsg.cConn <- p
 			}
 			Logger.log.Debugf("ProcessConn END CONN %s %s", newPeerMsg.peer.peerID.Pretty(), newPeerMsg.peer.rawAddress)
-			fmt.Printf("CONNLog END CONN %s %s\n", newPeerMsg.peer.peerID.Pretty(), newPeerMsg.peer.rawAddress)
+			// fmt.Printf("CONNLog END CONN %s %s\n", newPeerMsg.peer.peerID.Pretty(), newPeerMsg.peer.rawAddress)
 			continue
 		case newStreamMsg := <-peerObj.cNewStream:
 			remotePeerID := newStreamMsg.stream.Conn().RemotePeer()
