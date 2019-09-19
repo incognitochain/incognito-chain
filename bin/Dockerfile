@@ -11,6 +11,7 @@ ENV commit=$commit
 
 COPY ./bootnode /
 COPY ./keylist.json /
+COPY ./keylist_256.json /
 COPY ./sample-config.conf /
 
 

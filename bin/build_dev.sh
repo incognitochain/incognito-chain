@@ -15,6 +15,7 @@ cp ../blockchain/testparams/constantstest ../blockchain/constants.go
 env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags '-w' -o incognito ../*.go
 env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags '-w' -o bootnode ../bootnode/*.go
 cp ../keylist.json .
+cp ../keylist_256.json .
 cp ../sample-config.conf .
 
 cp ../blockchain/testparams/params ../blockchain/params.go
