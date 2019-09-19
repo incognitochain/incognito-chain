@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
@@ -84,7 +83,7 @@ func (httpServer *HttpServer) handleCheckHashValue(params interface{}, closeChan
 	log.Printf("Check hash value  input Param %+v", hashParams)
 
 	isTransaction, isShardBlock, isBeaconBlock, err := httpServer.blockService.CheckHashValue(hashParams)
-	if err != nil{
+	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
@@ -102,12 +101,7 @@ handleGetConnectionCount - RPC returns the number of connections to other nodes.
 */
 func (httpServer *HttpServer) handleGetConnectionCount(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleGetConnectionCount params: %+v", params)
-	if httpServer.config.ConnMgr == nil || httpServer.config.ConnMgr.GetListeningPeer() == nil {
-		return 0, nil
-	}
-	result := 0
-	listeningPeer := httpServer.config.ConnMgr.GetListeningPeer()
-	result += len(listeningPeer.GetPeerConns())
+	result := httpServer.networkService.GetConnectionCount()
 	Logger.log.Debugf("handleGetConnectionCount result: %+v", result)
 	return result, nil
 }
@@ -133,15 +127,9 @@ func (httpServer *HttpServer) handleGetStakingAmount(params interface{}, closeCh
 	if len(arrayParams) <= 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("ErrRPCInvalidParams"))
 	}
-	stackingType := int(arrayParams[0].(float64))
-	amount := uint64(0)
-	stakingData, _ := metadata.NewStakingMetadata(metadata.ShardStakingMeta, "", "", httpServer.config.ChainParams.StakingAmountShard, "", true)
-	if stackingType == 1 {
-		amount = stakingData.GetBeaconStakeAmount()
-	}
-	if stackingType == 0 {
-		amount = stakingData.GetShardStateAmount()
-	}
+
+	stakingType := int(arrayParams[0].(float64))
+	amount := rpcservice.GetStakingAmount(stakingType, httpServer.config.ChainParams.StakingAmountShard)
 	Logger.log.Debugf("handleGetStakingAmount result: %+v", amount)
 	return amount, nil
 }
@@ -149,12 +137,10 @@ func (httpServer *HttpServer) handleGetStakingAmount(params interface{}, closeCh
 func (httpServer *HttpServer) handleHashToIdenticon(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	result := make([]string, 0)
-	for _, hash := range arrayParams {
-		temp, err := common.Hash{}.NewHashFromStr(hash.(string))
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("Hash string is invalid"))
-		}
-		result = append(result, common.Render(temp.GetBytes()))
+
+	result, err := rpcservice.HashToIdenticon(arrayParams)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 	return result, nil
 }
@@ -163,7 +149,8 @@ func (httpServer *HttpServer) handleHashToIdenticon(params interface{}, closeCha
 func (httpServer *HttpServer) handleGetPublicKeyMining(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	keys := httpServer.config.ConsensusEngine.GetAllMiningPublicKeys()
 	if len(keys) == 0 {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("Can not find key"))
+		//return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("Can not find key"))
+		return keys, nil
 	}
 	return keys, nil
 }

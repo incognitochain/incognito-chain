@@ -3,14 +3,13 @@ package rpcserver
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
-	"github.com/incognitochain/incognito-chain/transaction"
-	"github.com/incognitochain/incognito-chain/wire"
 )
 
 type metaConstructorType func(map[string]interface{}) (metadata.Metadata, error)
@@ -31,7 +30,13 @@ func (httpServer *HttpServer) createRawTxWithMetadata(params interface{}, closeC
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
-	tx, err := httpServer.buildRawTransaction(params, meta)
+	// create new param to build raw tx from param interface
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	if errNewParam != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+	}
+
+	tx, err := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
 	if err != nil {
 		Logger.log.Errorf("\n\n\n\n\n\n\n createRawTxWithMetadata Error 0 %+v \n\n\n\n\n\n", err)
 		return nil, err
@@ -57,7 +62,7 @@ func (httpServer *HttpServer) createRawCustomTokenTxWithMetadata(params interfac
 	if errCons != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errCons)
 	}
-	tx, err := httpServer.buildRawCustomTokenTransaction(params, meta)
+	tx, err := httpServer.txService.BuildRawCustomTokenTransaction(params, meta)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -79,38 +84,19 @@ func (httpServer *HttpServer) sendRawTxWithMetadata(params interface{}, closeCha
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	base58CheckDate := arrayParams[0].(string)
-	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckDate)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+
+	txMsg, txHash, err := httpServer.txService.SendRawTxWithMetadata(base58CheckDate)
+	if err != nil{
+		return nil, err
 	}
 
-	tx := transaction.Tx{}
-	err = json.Unmarshal(rawTxBytes, &tx)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.JsonError, err)
+	err2 := httpServer.config.Server.PushMessageToAll(txMsg)
+	if err2 == nil {
+		httpServer.config.TxMemPool.MarkForwardedTransaction(*txHash)
 	}
-
-	hash, _, err := httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.TxPoolRejectTxError, err)
-	}
-
-	Logger.log.Debugf("there is hash of transaction: %s\n", hash.String())
-
-	// broadcast message
-	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-
-	txMsg.(*wire.MessageTx).Transaction = &tx
-	err = httpServer.config.Server.PushMessageToAll(txMsg)
-	if err == nil {
-		httpServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
-	}
-	httpServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
+	httpServer.config.TxMemPool.MarkForwardedTransaction(*txHash)
 	result := jsonresult.CreateTransactionResult{
-		TxID: tx.Hash().String(),
+		TxID: txHash.String(),
 	}
 	return result, nil
 }
@@ -119,39 +105,19 @@ func (httpServer *HttpServer) sendRawCustomTokenTxWithMetadata(params interface{
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	base58CheckDate := arrayParams[0].(string)
-	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckDate)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+
+	txMsg, txHash, err := httpServer.txService.SendRawCustomTokenTxWithMetadata(base58CheckDate)
+	if err != nil{
+		return nil, err
 	}
 
-	tx := transaction.TxNormalToken{}
-	err = json.Unmarshal(rawTxBytes, &tx)
-	fmt.Printf("%+v\n", tx)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.JsonError, err)
+	err2 := httpServer.config.Server.PushMessageToAll(txMsg)
+	if err2 == nil {
+		httpServer.config.TxMemPool.MarkForwardedTransaction(*txHash)
 	}
-
-	hash, _, err := httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.TxPoolRejectTxError, err)
-	}
-
-	Logger.log.Debugf("there is hash of transaction: %s\n", hash.String())
-
-	// broadcast message
-	txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-
-	txMsg.(*wire.MessageTxToken).Transaction = &tx
-	err = httpServer.config.Server.PushMessageToAll(txMsg)
-	if err == nil {
-		httpServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
-	}
-	httpServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
+	httpServer.config.TxMemPool.MarkForwardedTransaction(*txHash)
 	result := jsonresult.CreateTransactionResult{
-		TxID: tx.Hash().String(),
+		TxID: txHash.String(),
 	}
 	return result, nil
 }
