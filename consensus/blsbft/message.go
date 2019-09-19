@@ -55,6 +55,7 @@ func MakeBFTVoteMsg(userPublicKey string, chainKey, roundKey string, vote vote) 
 	return msg, nil
 }
 
+//TODO merman
 func (e *BLSBFT) ProcessBFTMsg(msg *wire.MessageBFT) {
 	switch msg.Type {
 	case MSG_PROPOSE:
@@ -89,9 +90,8 @@ func (e *BLSBFT) confirmVote(Vote *vote) error {
 	return err
 }
 
-func (e *BLSBFT) preValidateVote(Vote *vote, candidate []byte) error {
-	data := e.RoundData.Block.Hash().GetBytes()
-	data = append(data, Vote.BLS...)
+func (e *BLSBFT) preValidateVote(blockHash []byte, Vote *vote, candidate []byte) error {
+	data := append(blockHash, Vote.BLS...)
 	data = append(data, Vote.BRI...)
 	dataHash := common.HashH(data)
 	err := validateSingleBriSig(&dataHash, Vote.Confirmation, candidate)
