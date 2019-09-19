@@ -1,22 +1,18 @@
 package rpcservice
 
 import (
-	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/mempool"
-	"github.com/incognitochain/incognito-chain/privacy"
-	"log"
-	"strconv"
-
+	"errors"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"log"
 )
 
 type CoinService struct {
 	BlockChain *blockchain.BlockChain
-	TxMemPool *mempool.TxPool
 }
 
 func (coinService CoinService) ListOutputCoinsByKeySet(keySet *incognitokey.KeySet, shardID byte) ([]*privacy.OutputCoin, error){
@@ -37,6 +33,9 @@ func (coinService CoinService) ListUnspentOutputCoinsByKey(listKeyParams []inter
 		keys := keyParam.(map[string]interface{})
 
 		// get keyset only contain pri-key by deserializing
+		if _, ok  := keys["PrivateKey"]; !ok{
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid private key"))
+		}
 		priKeyStr := keys["PrivateKey"].(string)
 		keyWallet, err := wallet.Base58CheckDeserialize(priKeyStr)
 		if err != nil {
@@ -48,34 +47,23 @@ func (coinService CoinService) ListUnspentOutputCoinsByKey(listKeyParams []inter
 			continue
 		}
 
-		err = keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+		keySetTmp, shardID, err := GetKeySetFromPrivateKey(keyWallet.KeySet.PrivateKey)
 		if err != nil {
 			return nil, NewRPCError(UnexpectedError, err)
 		}
-		shardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1])
-		tokenID := &common.Hash{}
-		err = tokenID.SetBytes(common.PRVCoinID[:])
-		if err != nil {
-			return nil, NewRPCError(TokenIsInvalidError, err)
-		}
-		outCoins, err := coinService.BlockChain.GetListOutputCoinsByKeyset(&keyWallet.KeySet, shardID, tokenID)
+		keyWallet.KeySet = *keySetTmp
+
+		outCoins, err := coinService.ListOutputCoinsByKeySet(&keyWallet.KeySet, shardID)
 		if err != nil {
 			return nil, NewRPCError(UnexpectedError, err)
 		}
+
 		item := make([]jsonresult.OutCoin, 0)
 		for _, outCoin := range outCoins {
 			if outCoin.CoinDetails.GetValue() == 0 {
 				continue
 			}
-			item = append(item, jsonresult.OutCoin{
-				SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.GetSerialNumber().Compress(), common.ZeroByte),
-				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.GetPublicKey().Compress(), common.ZeroByte),
-				Value:          strconv.FormatUint(outCoin.CoinDetails.GetValue(), 10),
-				Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.GetInfo()[:], common.ZeroByte),
-				CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.GetCoinCommitment().Compress(), common.ZeroByte),
-				Randomness:     base58.Base58Check{}.Encode(outCoin.CoinDetails.GetRandomness().Bytes(), common.ZeroByte),
-				SNDerivator:    base58.Base58Check{}.Encode(outCoin.CoinDetails.GetSNDerivator().Bytes(), common.ZeroByte),
-			})
+			item = append(item, jsonresult.NewOutCoin(outCoin))
 		}
 		result.Outputs[priKeyStr] = item
 	}
@@ -90,6 +78,10 @@ func (coinService CoinService) ListOutputCoinsByKey(listKeyParams []interface{},
 		keys := keyParam.(map[string]interface{})
 
 		// get keyset only contain readonly-key by deserializing
+		if _, ok := keys["ReadonlyKey"]; !ok {
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid readonly key"))
+		}
+
 		readonlyKeyStr := keys["ReadonlyKey"].(string)
 		readonlyKey, err := wallet.Base58CheckDeserialize(readonlyKeyStr)
 		if err != nil {
@@ -98,6 +90,9 @@ func (coinService CoinService) ListOutputCoinsByKey(listKeyParams []interface{},
 		}
 
 		// get keyset only contain pub-key by deserializing
+		if _, ok := keys["PaymentAddress"]; !ok {
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid payment address"))
+		}
 		pubKeyStr := keys["PaymentAddress"].(string)
 		pubKey, err := wallet.Base58CheckDeserialize(pubKeyStr)
 		if err != nil {
