@@ -30,7 +30,7 @@ func (httpServer *HttpServer) handleGetBestBlock(params interface{}, closeChan <
 	}
 
 	// for beacon
-	if httpServer.blockService.IsBeaconBestStateNil(){
+	if httpServer.blockService.IsBeaconBestStateNil() {
 		Logger.log.Debugf("handleGetBestBlock result: %+v", result)
 		return result, nil
 	}
@@ -183,13 +183,13 @@ func (httpServer *HttpServer) handleGetBlockCount(params interface{}, closeChan 
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("component empty"))
 	}
 
-	paramNumber, ok := arrayParams[0].(int)
+	paramNumberFloat, ok := arrayParams[0].(float64)
 	if !ok {
 		Logger.log.Debugf("handleGetBlockChainInfo result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Expected get float number component"))
 	}
-	shardID := byte(paramNumber)
-	isGetBeacon := paramNumber == -1
+	shardID := byte(int(paramNumberFloat))
+	isGetBeacon := int(paramNumberFloat) == -1
 
 	if isGetBeacon {
 		beacon, err := httpServer.blockService.GetBeaconBestState()
@@ -239,7 +239,7 @@ func (httpServer *HttpServer) handleGetBlockHash(params interface{}, closeChan <
 	height := uint64(heightParam)
 
 	result, err := httpServer.blockService.GetBlockHashByHeight(shardID, height)
-	if err != nil{
+	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetShardBlockByHeightError, err)
 	}
 	Logger.log.Debugf("handleGetBlockHash result: %+v", result)
@@ -249,7 +249,6 @@ func (httpServer *HttpServer) handleGetBlockHash(params interface{}, closeChan <
 // handleGetBlockHeader - return block header data
 func (httpServer *HttpServer) handleGetBlockHeader(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleGetBlockHeader params: %+v", params)
-
 
 	arrayParams := common.InterfaceSlice(params)
 	log.Printf("arrayParams: %+v", arrayParams)
@@ -270,7 +269,7 @@ func (httpServer *HttpServer) handleGetBlockHeader(params interface{}, closeChan
 	}
 
 	blockHeader, blockNum, blockHashStr, err := httpServer.blockService.GetBlockHeader(getBy, block, shardID)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 	result := jsonresult.NewHeaderResult(*blockHeader, blockNum, blockHashStr, byte(shardID))
