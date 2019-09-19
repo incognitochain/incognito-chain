@@ -135,50 +135,51 @@ func TestInnerProductProve(t *testing.T) {
 }
 
 func TestAggregatedRangeProve(t *testing.T) {
-	// prepare witness for Aggregated range protocol
-	wit := new(AggregatedRangeWitness)
-	numValue := 3
-	values := make([]*big.Int, numValue)
-	rands := make([]*big.Int, numValue)
+	for i:= 0; i<5; i++{
+		// prepare witness for Aggregated range protocol
+		wit := new(AggregatedRangeWitness)
+		numValue := 17
+		values := make([]*big.Int, numValue)
+		rands := make([]*big.Int, numValue)
 
-	var r = rand.Reader
+		for i := range values {
+			values[i] = new(big.Int).SetBytes(privacy.RandBytes(2))
+			rands[i] = privacy.RandScalar(rand.Reader)
+		}
+		wit.Set(values, rands)
 
-	for i := range values {
-		values[i] = new(big.Int).SetBytes(privacy.RandBytes(2))
-		rands[i] = privacy.RandScalar(r)
+		// proving
+		start := time.Now()
+		proof, err := wit.Prove()
+		assert.Equal(t, nil, err)
+
+		end := time.Since(start)
+		privacy.Logger.Log.Info("Aggregated range proving time: %v\n", end)
+
+		// validate sanity for proof
+		isValidSanity := proof.ValidateSanity()
+		assert.Equal(t, true, isValidSanity)
+
+		// convert proof to bytes array
+		bytes := proof.Bytes()
+		expectProofSize := EstimateMultiRangeProofSize(numValue)
+		assert.Equal(t, int(expectProofSize), len(bytes))
+		fmt.Printf("Aggregated range proof size: %v\n", len(bytes))
+
+		// new aggregatedRangeProof from bytes array
+		proof2 := new(AggregatedRangeProof)
+		proof2.SetBytes(bytes)
+
+		// verify the proof
+		start = time.Now()
+		res, err := proof2.Verify()
+		end = time.Since(start)
+		privacy.Logger.Log.Info("Aggregated range verification time: %v\n", end)
+
+		assert.Equal(t, true, res)
+		assert.Equal(t, nil, err)
 	}
-	wit.Set(values, rands)
 
-	// proving
-	start := time.Now()
-	proof, err := wit.Prove()
-	assert.Equal(t, nil, err)
-
-	end := time.Since(start)
-	privacy.Logger.Log.Info("Aggregated range proving time: %v\n", end)
-
-	// validate sanity for proof
-	isValidSanity := proof.ValidateSanity()
-	assert.Equal(t, true, isValidSanity)
-
-	// convert proof to bytes array
-	bytes := proof.Bytes()
-	expectProofSize := EstimateMultiRangeProofSize(numValue)
-	assert.Equal(t, int(expectProofSize), len(bytes))
-	fmt.Printf("Aggregated range proof size: %v\n", len(bytes))
-
-	// new aggregatedRangeProof from bytes array
-	proof2 := new(AggregatedRangeProof)
-	proof2.SetBytes(bytes)
-
-	// verify the proof
-	start = time.Now()
-	res, err := proof2.Verify()
-	end = time.Since(start)
-	privacy.Logger.Log.Info("Aggregated range verification time: %v\n", end)
-
-	assert.Equal(t, true, res)
-	assert.Equal(t, nil, err)
 }
 
 func TestPad(t *testing.T) {
