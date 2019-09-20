@@ -10,36 +10,40 @@ import (
 	Unit test for Hybrid encryption
 */
 func TestHybridEncryption(t *testing.T) {
-	// random message
-	msg := RandBytes(100)
 
-	// generate key pair for ElGamal
-	var r = rand.Reader
-	privKey := RandScalar(r)
-	publicKey := PedCom.G[0].ScalarMult(privKey)
+	for i:=0; i<100000; i++{
+		// random message
+		msg := RandBytes(100)
 
-	// encrypt message using public key
-	ciphertext, err := hybridEncrypt(msg, publicKey)
+		// generate key pair for ElGamal
+		var r = rand.Reader
+		privKey := RandScalar(r)
+		publicKey := PedCom.G[0].ScalarMult(privKey)
 
-	assert.Equal(t, nil, err)
-	assert.Equal(t, elGamalCiphertextSize, len(ciphertext.symKeyEncrypted))
-	assert.Greater(t, len(ciphertext.msgEncrypted), 0)
+		// encrypt message using public key
+		ciphertext, err := hybridEncrypt(msg, publicKey)
 
-	// convert hybridCipherText to bytes array
-	ciphertextBytes := ciphertext.Bytes()
+		assert.Equal(t, nil, err)
+		assert.Equal(t, elGamalCiphertextSize, len(ciphertext.symKeyEncrypted))
+		assert.Greater(t, len(ciphertext.msgEncrypted), 0)
 
-	assert.Greater(t, len(ciphertextBytes), elGamalCiphertextSize)
+		// convert hybridCipherText to bytes array
+		ciphertextBytes := ciphertext.Bytes()
 
-	// new hybridCipherText to set bytes array
-	ciphertext2 := new(hybridCipherText)
-	err2 := ciphertext2.SetBytes(ciphertextBytes)
+		assert.Greater(t, len(ciphertextBytes), elGamalCiphertextSize)
 
-	assert.Equal(t, nil, err2)
-	assert.Equal(t, ciphertext, ciphertext2)
+		// new hybridCipherText to set bytes array
+		ciphertext2 := new(hybridCipherText)
+		err2 := ciphertext2.SetBytes(ciphertextBytes)
 
-	// decrypt message using private key
-	msg2, err := hybridDecrypt(ciphertext2, privKey)
+		assert.Equal(t, nil, err2)
+		assert.Equal(t, ciphertext, ciphertext2)
 
-	assert.Equal(t, nil, err)
-	assert.Equal(t, msg, msg2)
+		// decrypt message using private key
+		msg2, err := hybridDecrypt(ciphertext2, privKey)
+
+		assert.Equal(t, nil, err)
+		assert.Equal(t, msg, msg2)
+	}
+
 }
