@@ -1,6 +1,7 @@
 package bridgesig
 
 import (
+	"fmt"
 	"reflect"
 
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
@@ -23,6 +24,9 @@ func Sign(keyBytes []byte, data []byte) ([]byte, error) {
 }
 
 func Verify(pubkeyBytes []byte, data []byte, sig []byte) (bool, error) {
+	fmt.Println(sig, len(sig))
+	fmt.Println(pubkeyBytes, len(pubkeyBytes))
+	fmt.Println(data, len(data))
 	hash := ethcrypto.Keccak256Hash(data)
 	pk, err := ethcrypto.SigToPub(hash.Bytes(), sig)
 	if err != nil {

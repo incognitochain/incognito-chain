@@ -11,6 +11,20 @@ func ExtractPublickeysFromCommitteeKeyList(keyList []CommitteePublicKey, keyType
 	return result, nil
 }
 
+func ExtractMiningPublickeysFromCommitteeKeyList(keyList []CommitteePublicKey, keyType string) ([]string, error) {
+	result := []string{}
+	for _, keySet := range keyList {
+		key, err := keySet.GetMiningKey(keyType)
+		if err != nil {
+			return nil, err
+		}
+		if string(key) != "" {
+			result = append(result, string(key))
+		}
+	}
+	return result, nil
+}
+
 func CommitteeKeyListToString(keyList []CommitteePublicKey) ([]string, error) {
 	result := []string{}
 	for _, key := range keyList {
