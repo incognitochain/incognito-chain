@@ -55,6 +55,7 @@ func MakeBFTVoteMsg(userPublicKey string, chainKey, roundKey string, vote vote) 
 	return msg, nil
 }
 
+//TODO merman
 func (e *BLSBFT) ProcessBFTMsg(msg *wire.MessageBFT) {
 	switch msg.Type {
 	case MSG_PROPOSE:
@@ -79,6 +80,24 @@ func (e *BLSBFT) ProcessBFTMsg(msg *wire.MessageBFT) {
 	}
 }
 
+func (e *BLSBFT) confirmVote(Vote *vote) error {
+	data := e.RoundData.Block.Hash().GetBytes()
+	data = append(data, Vote.BLS...)
+	data = append(data, Vote.BRI...)
+	data = common.HashB(data)
+	var err error
+	Vote.Confirmation, err = e.UserKeySet.BriSignData(data)
+	return err
+}
+
+func (e *BLSBFT) preValidateVote(blockHash []byte, Vote *vote, candidate []byte) error {
+	data := append(blockHash, Vote.BLS...)
+	data = append(data, Vote.BRI...)
+	dataHash := common.HashH(data)
+	err := validateSingleBriSig(&dataHash, Vote.Confirmation, candidate)
+	return err
+}
+
 func (e *BLSBFT) sendVote() error {
 	var Vote vote
 
@@ -100,6 +119,11 @@ func (e *BLSBFT) sendVote() error {
 	Vote.BLS = blsSig
 	Vote.BRI = bridgeSig
 
+	//TODO hy
+	err = e.confirmVote(&Vote)
+	if err != nil {
+		return consensus.NewConsensusError(consensus.UnExpectedError, err)
+	}
 	key := e.UserKeySet.GetPublicKey()
 
 	msg, err := MakeBFTVoteMsg(key.GetMiningKeyBase58(consensusName), e.ChainKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), Vote)

@@ -478,6 +478,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			NetSync:         serverObj.netSync,
 			PubSubManager:   pubsubManager,
 			ConsensusEngine: serverObj.consensusEngine,
+			MemCache:        serverObj.memCache,
 		}
 		serverObj.rpcServer = &rpcserver.RpcServer{}
 		serverObj.rpcServer.Init(&rpcConfig)
@@ -1022,7 +1023,11 @@ func (serverObj *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVer
 	pbk := ""
 	pbkType := ""
 	if msg.PublicKey != "" {
+		//TODO hy set publickey here
+		fmt.Printf("Message %v %v %v\n", msg.SignDataB58, msg.PublicKey, msg.PublicKeyType)
 		err := serverObj.consensusEngine.VerifyData([]byte(peerConn.GetListenerPeer().GetPeerID().Pretty()), msg.SignDataB58, msg.PublicKey, msg.PublicKeyType)
+		fmt.Println(err)
+
 		if err == nil {
 			pbk = msg.PublicKey
 			pbkType = msg.PublicKeyType
@@ -1161,6 +1166,10 @@ func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 	isRelayNodeForConsensus := cfg.Accelerator
 	if isRelayNodeForConsensus {
 		senderPublicKey, _ := p.GetRemotePeer().GetPublicKey()
+		// panic(senderPublicKey)
+		// fmt.Println("eiiiiiiiiiiiii")
+		// os.Exit(0)
+		//TODO hy check here
 		bestState := blockchain.GetBeaconBestState()
 		beaconCommitteeList, err := incognitokey.CommitteeKeyListToString(bestState.BeaconCommittee)
 		if err != nil {
@@ -1198,7 +1207,8 @@ func (serverObj *Server) OnPeerState(_ *peer.PeerConn, msg *wire.MessagePeerStat
 
 func (serverObj *Server) GetPeerIDsFromPublicKey(pubKey string) []libp2p.ID {
 	result := []libp2p.ID{}
-
+	// panic(pubKey)
+	// os.Exit(0)
 	listener := serverObj.connManager.GetConfig().ListenerPeer
 	for _, peerConn := range listener.GetPeerConns() {
 		// Logger.log.Debug("Test PeerConn", peerConn.RemotePeer.PaymentAddress)
@@ -1381,6 +1391,7 @@ func (serverObj *Server) PushMessageToBeacon(msg wire.Message, exclusivePeerIDs 
 		listener := serverObj.connManager.GetConfig().ListenerPeer
 		listener.QueueMessageWithEncoding(msg, nil, peer.MessageToBeacon, nil)
 	}
+	// panic("Fuck you PushMessageToBeacon")
 	return errors.New("RemotePeer of beacon not found")
 }
 
@@ -1403,6 +1414,7 @@ func (serverObj *Server) PushRawBytesToBeacon(p *peer.PeerConn, msgBytes *[]byte
 			}
 		}
 	}
+	// panic("Fuck you PushRawBytesToBeacon")
 	return nil
 }
 
@@ -1430,18 +1442,18 @@ func (serverObj *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	msg.(*wire.MessageVersion).ProtocolVersion = serverObj.protocolVersion
 
 	// ValidateTransaction Public Key from ProducerPrvKey
-	publicKeyInBase58CheckEncode, publicKeyType := peerConn.GetListenerPeer().GetConfig().ConsensusEngine.GetCurrentMiningPublicKey()
+	// publicKeyInBase58CheckEncode, publicKeyType := peerConn.GetListenerPeer().GetConfig().ConsensusEngine.GetCurrentMiningPublicKey()
 	signDataInBase58CheckEncode := common.EmptyString
-	if publicKeyInBase58CheckEncode != "" {
-		msg.(*wire.MessageVersion).PublicKey = publicKeyInBase58CheckEncode
-		msg.(*wire.MessageVersion).PublicKeyType = publicKeyType
-		Logger.log.Info("Start Process Discover Peers", publicKeyInBase58CheckEncode)
-		// sign data
-		signDataInBase58CheckEncode, err = peerConn.GetListenerPeer().GetConfig().ConsensusEngine.SignDataWithCurrentMiningKey([]byte(peerConn.GetRemotePeer().GetPeerID().Pretty()))
-		if err == nil {
-			msg.(*wire.MessageVersion).SignDataB58 = signDataInBase58CheckEncode
-		}
+	// if publicKeyInBase58CheckEncode != "" {
+	// msg.(*wire.MessageVersion).PublicKey = publicKeyInBase58CheckEncode
+	// msg.(*wire.MessageVersion).PublicKeyType = publicKeyType
+	// Logger.log.Info("Start Process Discover Peers", publicKeyInBase58CheckEncode)
+	// sign data
+	msg.(*wire.MessageVersion).PublicKey, msg.(*wire.MessageVersion).PublicKeyType, signDataInBase58CheckEncode, err = peerConn.GetListenerPeer().GetConfig().ConsensusEngine.SignDataWithCurrentMiningKey([]byte(peerConn.GetRemotePeer().GetPeerID().Pretty()))
+	if err == nil {
+		msg.(*wire.MessageVersion).SignDataB58 = signDataInBase58CheckEncode
 	}
+	// }
 	// if peerConn.GetListenerPeer().GetConfig().UserKeySet != nil {
 	// 	msg.(*wire.MessageVersion).PublicKey = peerConn.GetListenerPeer().GetConfig().UserKeySet.GetPublicKeyInBase58CheckEncode()
 	// 	signDataB58, err := peerConn.GetListenerPeer().GetConfig().UserKeySet.SignDataInBase58CheckEncode()
