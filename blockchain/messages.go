@@ -17,21 +17,25 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 	}
 
 	var (
-		userRole      string
-		userShardID   byte
-		userShardRole string
+		userRole    string
+		userShardID byte
 	)
-	miningKey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
-	if miningKey != "" {
-		userRole, userShardID = blockchain.BestState.Beacon.GetPubkeyRole(miningKey, blockchain.BestState.Beacon.BestBlock.Header.Round)
+
+	userRole, userShardIDInt := blockchain.config.ConsensusEngine.GetUserRole()
+	if userRole == common.ShardRole {
+		userShardID = byte(userShardIDInt)
 	}
+	// miningKey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
+	// if miningKey != "" {
+	// 	userRole, userShardID = blockchain.BestState.Beacon.GetPubkeyRole(miningKey, blockchain.BestState.Beacon.BestBlock.Header.Round)
+	// }
 	pState := &peerState{
 		Shard:  make(map[byte]*ChainState),
 		Beacon: beacon,
 		Peer:   peerID,
 	}
 	nodeMode := blockchain.config.NodeMode
-	if userRole == common.ProposerRole || userRole == common.ValidatorRole {
+	if userRole == common.BeaconRole {
 		pState.ShardToBeaconPool = shardToBeaconPool
 		for shardID := byte(0); shardID < byte(common.MaxShardNumber); shardID++ {
 			if shardState, ok := (*shard)[shardID]; ok {
@@ -42,16 +46,16 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 		}
 	}
 	if userRole == common.ShardRole && (nodeMode == common.NodeModeAuto || nodeMode == common.NodeModeBeacon) {
-		userShardRole = blockchain.BestState.Shard[userShardID].GetPubkeyRole(miningKey, blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
-		if userShardRole == common.ProposerRole || userShardRole == common.ValidatorRole {
-			if shardState, ok := (*shard)[userShardID]; ok && shardState.Height >= blockchain.BestState.Shard[userShardID].ShardHeight {
-				pState.Shard[userShardID] = &shardState
-				if pool, ok := (*crossShardPool)[userShardID]; ok {
-					pState.CrossShardPool = make(map[byte]*map[byte][]uint64)
-					pState.CrossShardPool[userShardID] = &pool
-				}
+		// userShardRole = blockchain.BestState.Shard[userShardID].GetPubkeyRole(miningKey, blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
+		// if userShardRole == common.ProposerRole || userShardRole == common.ValidatorRole {
+		if shardState, ok := (*shard)[userShardID]; ok && shardState.Height >= blockchain.BestState.Shard[userShardID].ShardHeight {
+			pState.Shard[userShardID] = &shardState
+			if pool, ok := (*crossShardPool)[userShardID]; ok {
+				pState.CrossShardPool = make(map[byte]*map[byte][]uint64)
+				pState.CrossShardPool[userShardID] = &pool
 			}
 		}
+		// }
 	}
 	blockchain.Synker.Status.Lock()
 	for shardID := 0; shardID < blockchain.BestState.Beacon.ActiveShards; shardID++ {
