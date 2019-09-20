@@ -32,6 +32,7 @@ const (
 	TxPoolRemovedTimeDetails         = "TxPoolRemovedTimeDetails"
 	TxPoolTxBeginEnter               = "TxPoolTxBeginEnter"
 	ProcessDiscoverPeersTime         = "ProcessDiscoverPeersTime"
+	AllConnectedPeers                = "AllConnectedPeers"
 	BeaconBlock                      = "BeaconBlock"
 	ShardBlock                       = "ShardBlock"
 	CreateNewShardBlock              = "CreateNewShardBlock"
