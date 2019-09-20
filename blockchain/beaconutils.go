@@ -47,11 +47,25 @@ func AssignValidator(candidates []incognitokey.CommitteePublicKey, rand int64, a
 }
 
 // AssignValidatorShard, param for better convenice than AssignValidator
-func AssignValidatorShard(currentCandidates map[byte][]incognitokey.CommitteePublicKey, shardCandidates []incognitokey.CommitteePublicKey, rand int64, activeShards int) error {
+func AssignValidatorShard(currentShardPendingValidator map[byte][]incognitokey.CommitteePublicKey, shardCandidates []incognitokey.CommitteePublicKey, rand int64, activeShards int) error {
+	// filter list candidate, it should not already exist in pending list
+	filterShardCandidates := make([]incognitokey.CommitteePublicKey, len(shardCandidates))
+	copy(filterShardCandidates, shardCandidates)
+	for i, v := range filterShardCandidates {
+		for _, slice := range currentShardPendingValidator {
+			ok, _ := common.SliceExists(slice, v) // item in candidate list already exist in current pending validator
+			if ok {
+				filterShardCandidates = append(filterShardCandidates[:i], filterShardCandidates[i+1:]...)
+			}
+		}
+	}
+	shardCandidates = filterShardCandidates
+	// end
+
 	for _, candidate := range shardCandidates {
 		candidateStr, _ := candidate.ToBase58()
 		shardID := calculateCandidateShardID(candidateStr, rand, activeShards)
-		currentCandidates[shardID] = append(currentCandidates[shardID], candidate)
+		currentShardPendingValidator[shardID] = append(currentShardPendingValidator[shardID], candidate)
 	}
 	return nil
 }
@@ -84,6 +98,18 @@ func calculateCandidateShardID(candidate string, rand int64, activeShards int) (
 // enqueue a number of validator into currentValidators list <=> unqueue a number of validator out of pendingValidators list
 // return value: #1 remaining pendingValidators, #2 new currentValidators #3 swapped out validator, #4 incoming validator #5 error
 func SwapValidator(pendingValidators []string, currentValidators []string, maxCommittee int, offset int) ([]string, []string, []string, []string, error) {
+	// filter for pending validator, , it should not already exist in current validator list
+	filterPendingValidators := make([]string, len(pendingValidators))
+	copy(filterPendingValidators, pendingValidators)
+	for i, v := range filterPendingValidators {
+		ok, _ := common.SliceExists(currentValidators, v) // item in pending list already exist in current list
+		if ok {
+			filterPendingValidators = append(filterPendingValidators[:i], filterPendingValidators[i+1:]...)
+		}
+	}
+	pendingValidators = filterPendingValidators
+	// end
+
 	if maxCommittee < 0 || offset < 0 {
 		panic("committee can't be zero")
 	}
