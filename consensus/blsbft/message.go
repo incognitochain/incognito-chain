@@ -91,7 +91,9 @@ func (e *BLSBFT) confirmVote(Vote *vote) error {
 }
 
 func (e *BLSBFT) preValidateVote(blockHash []byte, Vote *vote, candidate []byte) error {
-	data := append(blockHash, Vote.BLS...)
+	data := []byte{}
+	data = append(data, blockHash...)
+	data = append(data, Vote.BLS...)
 	data = append(data, Vote.BRI...)
 	dataHash := common.HashH(data)
 	err := validateSingleBriSig(&dataHash, Vote.Confirmation, candidate)
