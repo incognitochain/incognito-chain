@@ -33,6 +33,18 @@ func (sc *Scalar) UnmarshalText(data []byte) (*Scalar, error) {
 	return sc, nil
 }
 
+func (sc Scalar) ToBytes() [Ed25519KeySize]byte {
+	return sc.key.ToBytes()
+}
+
+func (sc *Scalar) FromBytes(b [Ed25519KeySize]byte) *Scalar {
+	if sc == nil {
+		sc = new(Scalar)
+	}
+	sc.key.FromBytes(b)
+	return sc
+}
+
 func (sc *Scalar) SetKey(a *C25519.Key) (*Scalar, error) {
 	if sc == nil {
 		sc = new(Scalar)
@@ -57,6 +69,14 @@ func HashToScalar(data []byte) *Scalar {
 	if error != nil {
 		return nil
 	}
+	return sc
+}
+
+func (sc *Scalar) SetInt64(i uint64) *Scalar {
+	if sc == nil {
+		sc = new(Scalar)
+	}
+	sc.SetKey(d2h(i))
 	return sc
 }
 

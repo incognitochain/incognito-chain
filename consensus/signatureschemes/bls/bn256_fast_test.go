@@ -38,7 +38,7 @@ func TestMultiScalarMultG2(t *testing.T) {
 		// MultiscalarMult
 		res := MultiScalarMultG2(pointLs, scalarLs)
 
-		// Add list of ScalarMul
+		// Add list of ScalarMult
 		resPrime := new(bn256.G2).ScalarMult(pointLs[0],scalarLs[0])
 		for j:= 1; j< len; j++ {
 			tmp:= new(bn256.G2).ScalarMult(pointLs[j], scalarLs[j])
