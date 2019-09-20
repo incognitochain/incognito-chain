@@ -29,7 +29,7 @@ type BLSBFT struct {
 
 	RoundData struct {
 		Block             common.BlockInterface
-		BlockHash         *common.Hash
+		BlockHash         common.Hash
 		BlockValidateData ValidationData
 		lockVotes         sync.Mutex
 		Votes             map[string]vote
@@ -133,7 +133,7 @@ func (e *BLSBFT) Start() error {
 					}
 					if roundKey == voteMsg.RoundKey {
 						//validate single sig
-						if e.RoundData.BlockHash != nil {
+						if !(new(common.Hash).IsEqual(&e.RoundData.BlockHash)) {
 							e.RoundData.lockVotes.Lock()
 							if _, ok := e.RoundData.Votes[voteMsg.Validator]; !ok {
 								e.RoundData.lockVotes.Unlock()
@@ -203,7 +203,7 @@ func (e *BLSBFT) Start() error {
 							go e.Node.PushMessageToChain(msg, e.Chain)
 
 							e.RoundData.Block = e.Blocks[roundKey]
-							e.RoundData.BlockHash = e.RoundData.Block.Hash()
+							e.RoundData.BlockHash = *e.RoundData.Block.Hash()
 							valData, err := DecodeValidationData(e.RoundData.Block.GetValidationField())
 							if err != nil {
 								e.logger.Error(err)
@@ -223,7 +223,7 @@ func (e *BLSBFT) Start() error {
 							continue
 						}
 					}
-					if e.RoundData.BlockHash != nil && e.isHasMajorityVotes() {
+					if !(new(common.Hash).IsEqual(&e.RoundData.BlockHash)) && e.isHasMajorityVotes() {
 						e.RoundData.lockVotes.Lock()
 						aggSig, brigSigs, validatorIdx, err := combineVotes(e.RoundData.Votes, e.RoundData.CommitteeBLS.StringList)
 						e.RoundData.lockVotes.Unlock()
