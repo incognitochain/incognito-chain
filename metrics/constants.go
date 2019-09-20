@@ -40,6 +40,14 @@ const (
 	HandleMessagePeerStateTime       = "HandleMessagePeerStateTime"
 	HandleMessageBFTMsgTime          = "HandleMessageBFTMsgTime"
 	HandleAllMessage                 = "HandleAllMessage"
+	HandleMessageGetBlockBeacon      = "HandleMessageGetBlockBeacon"
+	HandleMessageGetShardToBeacon    = "HandleMessageGetShardToBeacon"
+	HandleMessageGetCrossShard       = "HandleMessageGetCrossShard"
+	HandleMessageGetBlockShard       = "HandleMessageGetBlockShard"
+	HandleMessageShardToBeacon       = "HandleMessageShardToBeacon"
+	HandleMessageCrossShard          = "HandleMessageCrossShard"
+	HandleMessageShardBlock          = "HandleMessageShardBlock"
+	HandleMessageBeaconBlock         = "HandleMessageBeaconBlock"
 )
 
 // tag
