@@ -550,8 +550,7 @@ func (db *db) GetTxByPublicKey(publicKey []byte) (map[byte][]common.Hash, error)
 			result[shardID] = make([]common.Hash, 0)
 		}
 		txID := common.Hash{}
-		//todo: recheck
-		err := txID.SetBytes(key[33 : 33+32])
+		err := txID.SetBytes(key[common.PublicKeySize : common.PublicKeySize+common.HashSize])
 		if err != nil {
 			database.Logger.Log.Debugf("Err at GetTxByPublicKey", err)
 			return nil, database.NewDatabaseError(database.GetTxByPublicKeyError, err, publicKey)
