@@ -3,6 +3,8 @@ package blsbft
 import (
 	"fmt"
 	"reflect"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -95,6 +97,22 @@ func (e *BLSBFT) isHasMajorityVotes() bool {
 
 func getRoundKey(nextHeight uint64, round int) string {
 	return fmt.Sprint(nextHeight, "_", round)
+}
+
+func parseRoundKey(roundKey string) (uint64, int) {
+	stringArray := strings.Split(roundKey, "_")
+	if len(stringArray) != 2 {
+		return 0, 0
+	}
+	height, err := strconv.Atoi(stringArray[0])
+	if err != nil {
+		return 0, 0
+	}
+	round, err := strconv.Atoi(stringArray[1])
+	if err != nil {
+		return 0, 0
+	}
+	return uint64(height), round
 }
 
 func (e *BLSBFT) ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error) {
