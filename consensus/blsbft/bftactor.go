@@ -123,49 +123,44 @@ func (e *BLSBFT) Start() error {
 			case msg := <-e.VoteMessageCh:
 				e.logger.Info("receive vote", msg.RoundKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
 				go func(voteMsg BFTVote) {
-					if getRoundKey(e.RoundData.NextHeight, e.RoundData.Round) == voteMsg.RoundKey {
+					validatorIdx := common.IndexOfStr(voteMsg.Validator, e.RoundData.CommitteeBLS.StringList)
+					if validatorIdx == -1 {
+						return
+					}
+					roundKey := getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)
+					if roundKey > voteMsg.RoundKey {
+						return
+					}
+					if roundKey == voteMsg.RoundKey {
 						//validate single sig
-						if e.RoundData.Block != nil {
-							blockHash := e.RoundData.Block.Hash()
+						if e.RoundData.BlockHash != nil {
 							e.RoundData.lockVotes.Lock()
 							if _, ok := e.RoundData.Votes[voteMsg.Validator]; !ok {
 								e.RoundData.lockVotes.Unlock()
-								validatorIdx := common.IndexOfStr(voteMsg.Validator, e.RoundData.CommitteeBLS.StringList)
-								if validatorIdx != -1 {
-									if blockHash != nil {
-										if err := e.preValidateVote(blockHash.GetBytes(), &(voteMsg.Vote), e.RoundData.Committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
-											e.logger.Error(err)
-											return
-										}
-									} else {
-										e.logger.Error(errors.New("UnExpectedError, block hash is nil"))
-										return
-									}
-									// if err := validateSingleBLSSig(e.RoundData.Block.Hash(), voteMsg.Vote.BLS, validatorIdx, e.RoundData.CommitteeBLS.ByteList); err != nil {
-									// 	e.logger.Error(err)
-									// 	return
-									// }
-									if len(voteMsg.Vote.BRI) != 0 {
-										if err := validateSingleBriSig(e.RoundData.Block.Hash(), voteMsg.Vote.BRI, e.RoundData.Committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
-											e.logger.Error(err)
-											return
-										}
-									}
-									go e.addVote(voteMsg)
-									go func() {
-										voteCtnBytes, err := json.Marshal(voteMsg)
-										if err != nil {
-											e.logger.Error(consensus.NewConsensusError(consensus.UnExpectedError, err))
-											return
-										}
-										msg, _ := wire.MakeEmptyMessage(wire.CmdBFT)
-										msg.(*wire.MessageBFT).ChainKey = e.ChainKey
-										msg.(*wire.MessageBFT).Content = voteCtnBytes
-										msg.(*wire.MessageBFT).Type = MSG_VOTE
-										e.Node.PushMessageToChain(msg, e.Chain)
-									}()
+								if err := e.preValidateVote(e.RoundData.BlockHash.GetBytes(), &(voteMsg.Vote), e.RoundData.Committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
+									e.logger.Error(err)
 									return
 								}
+								if len(voteMsg.Vote.BRI) != 0 {
+									if err := validateSingleBriSig(e.RoundData.Block.Hash(), voteMsg.Vote.BRI, e.RoundData.Committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
+										e.logger.Error(err)
+										return
+									}
+								}
+								go e.addVote(voteMsg)
+								go func() {
+									voteCtnBytes, err := json.Marshal(voteMsg)
+									if err != nil {
+										e.logger.Error(consensus.NewConsensusError(consensus.UnExpectedError, err))
+										return
+									}
+									msg, _ := wire.MakeEmptyMessage(wire.CmdBFT)
+									msg.(*wire.MessageBFT).ChainKey = e.ChainKey
+									msg.(*wire.MessageBFT).Content = voteCtnBytes
+									msg.(*wire.MessageBFT).Type = MSG_VOTE
+									e.Node.PushMessageToChain(msg, e.Chain)
+								}()
+								return
 							} else {
 								e.RoundData.lockVotes.Unlock()
 								return
@@ -228,7 +223,7 @@ func (e *BLSBFT) Start() error {
 							continue
 						}
 					}
-					if e.RoundData.Block != nil && e.isHasMajorityVotes() {
+					if e.RoundData.BlockHash != nil && e.isHasMajorityVotes() {
 						e.RoundData.lockVotes.Lock()
 						aggSig, brigSigs, validatorIdx, err := combineVotes(e.RoundData.Votes, e.RoundData.CommitteeBLS.StringList)
 						e.RoundData.lockVotes.Unlock()
