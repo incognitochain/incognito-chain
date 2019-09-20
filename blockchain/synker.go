@@ -289,8 +289,8 @@ func (synker *Synker) UpdateState() {
 		userShardID   byte
 		userShardRole string
 	)
-	userMiningKey, _ := synker.blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
-	if userMiningKey != "" {
+	userKeyForCheckRole, _ := synker.blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
+	if userKeyForCheckRole != "" {
 		userRole, userShardIDInt := synker.blockchain.config.ConsensusEngine.GetUserRole()
 		if userRole == common.ShardRole {
 			userShardID = byte(userShardIDInt)
