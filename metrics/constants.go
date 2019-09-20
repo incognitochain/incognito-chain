@@ -35,6 +35,11 @@ const (
 	BeaconBlock                      = "BeaconBlock"
 	ShardBlock                       = "ShardBlock"
 	CreateNewShardBlock              = "CreateNewShardBlock"
+	HandleMessagePeerState           = "HandleMessagePeerState"
+	HandleMessageBFTMsg              = "HandleMessageBFTMsg"
+	HandleMessagePeerStateTime       = "HandleMessagePeerStateTime"
+	HandleMessageBFTMsgTime          = "HandleMessageBFTMsgTime"
+	HandleAllMessage                 = "HandleAllMessage"
 )
 
 // tag
