@@ -3,6 +3,7 @@ package blsbft
 import (
 	"fmt"
 	"reflect"
+	"sync"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/consensus"
@@ -53,25 +54,40 @@ func (e *BLSBFT) isInTimeFrame() bool {
 }
 
 func (e *BLSBFT) isHasMajorityVotes() bool {
-	e.RoundData.lockVotes.Lock()
-	defer e.RoundData.lockVotes.Unlock()
+	// e.RoundData.lockVotes.Lock()
+	// defer e.RoundData.lockVotes.Unlock()
 	e.lockEarlyVotes.Lock()
 	defer e.lockEarlyVotes.Unlock()
 	roundKey := getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)
 	earlyVote, ok := e.EarlyVotes[roundKey]
+	committeeSize := len(e.RoundData.Committee)
 	if ok {
-		for validator, vote := range earlyVote {
-			validatorIdx := common.IndexOfStr(validator, e.RoundData.CommitteeBLS.StringList)
-			if err := validateSingleBLSSig(e.RoundData.Block.Hash(), vote.BLS, validatorIdx, e.RoundData.CommitteeBLS.ByteList); err != nil {
-				e.logger.Error(err)
-				continue
-			}
-			e.RoundData.Votes[validator] = vote
+		wg := sync.WaitGroup{}
+		blockHashBytes := e.RoundData.BlockHash.GetBytes()
+		for k, v := range earlyVote {
+			wg.Add(1)
+			go func(validatorKey string, voteData vote) {
+				defer wg.Done()
+				validatorIdx := common.IndexOfStr(validatorKey, e.RoundData.CommitteeBLS.StringList)
+				if err := e.preValidateVote(blockHashBytes, &voteData, e.RoundData.Committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err == nil {
+					// if err := validateSingleBLSSig(e.RoundData.Block.Hash(), vote.BLS, validatorIdx, e.RoundData.CommitteeBLS.ByteList); err != nil {
+					// 	e.logger.Error(err)
+					// 	continue
+					// }
+					e.RoundData.lockVotes.Lock()
+					e.RoundData.Votes[validatorKey] = voteData
+					e.RoundData.lockVotes.Unlock()
+				} else {
+					e.logger.Error(err)
+				}
+			}(k, v)
 		}
-		delete(e.EarlyVotes, roundKey)
+		wg.Wait()
+		if len(e.RoundData.Votes) > 2*committeeSize/3 {
+			delete(e.EarlyVotes, roundKey)
+		}
 	}
-	size := len(e.RoundData.Committee)
-	if len(e.RoundData.Votes) > 2*size/3 {
+	if len(e.RoundData.Votes) > 2*committeeSize/3 {
 		return true
 	}
 	return false
@@ -116,6 +132,7 @@ func (e *BLSBFT) InitRoundData() {
 	e.RoundData.Round = e.getCurrentRound()
 	e.RoundData.Votes = make(map[string]vote)
 	e.RoundData.Block = nil
+	e.RoundData.BlockHash = nil
 	e.RoundData.NotYetSendVote = true
 	e.RoundData.LastProposerIndex = e.Chain.GetLastProposerIndex()
 	e.UpdateCommitteeBLSList()
