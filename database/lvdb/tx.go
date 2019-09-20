@@ -1,6 +1,7 @@
 package lvdb
 
 import (
+	"github.com/ninjadotorg/constant/privacy"
 	"math/big"
 	"strconv"
 	"strings"
@@ -73,7 +74,7 @@ func (db *db) ListSerialNumber(tokenID common.Hash, shardID byte) (map[string]ui
 		if string(key1[len(key1)-3:]) == "len" {
 			continue
 		}
-		serialNumberInByte := key1[len(key1)-33:]
+		serialNumberInByte := key1[len(key1)-privacy.CompressedPointSize:]
 		value := make([]byte, len(iterator.Value()))
 		copy(value, iterator.Value())
 		index := big.Int{}
@@ -225,10 +226,10 @@ func (db *db) ListCommitment(tokenID common.Hash, shardID byte) (map[string]uint
 		if string(key1[len(key1)-3:]) == "len" {
 			continue
 		}
-		if len(key1) < len(key)+33 {
+		if len(key1) < len(key)+privacy.CompressedPointSize {
 			continue
 		}
-		commitmentInByte := key1[len(key1)-33:]
+		commitmentInByte := key1[len(key1)-privacy.CompressedPointSize:]
 		value := make([]byte, len(iterator.Value()))
 		copy(value, iterator.Value())
 		index := big.Int{}
@@ -255,7 +256,7 @@ func (db *db) ListCommitmentIndices(tokenID common.Hash, shardID byte) (map[uint
 
 		commitmentInByte := make([]byte, len(iterator.Value()))
 		copy(commitmentInByte, iterator.Value())
-		if len(commitmentInByte) != 33 {
+		if len(commitmentInByte) != privacy.CompressedPointSize {
 			continue
 		}
 		indexInByte := key1[45:]
@@ -548,7 +549,7 @@ func (db *db) GetTxByPublicKey(publicKey []byte) (map[byte][]common.Hash, error)
 			result[shardID] = make([]common.Hash, 0)
 		}
 		txID := common.Hash{}
-		err := txID.SetBytes(key[33 : 33+32])
+		err := txID.SetBytes(key[common.PublicKeySize : common.PublicKeySize+common.HashSize])
 		if err != nil {
 			database.Logger.Log.Debugf("Err at GetTxByPublicKey", err)
 			return nil, database.NewDatabaseError(database.GetTxByPublicKeyError, err, publicKey)
