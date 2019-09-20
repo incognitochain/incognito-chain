@@ -1,13 +1,12 @@
 package generator
 
 import (
-	"crypto/rand"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"strconv"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -59,17 +58,4 @@ func GenerateAddressByte(seeds [][]byte) ([]string, []string, error) {
 		pubAddresses = append(pubAddresses, pubAddress)
 	}
 	return privateKeys, pubAddresses, nil
-}
-
-//Todo: not found usage
-func GenerateKeyPair() [][]byte {
-	seed := [][]byte{}
-	i := 0
-	for i < 1024 {
-		token := make([]byte, 33)
-		rand.Read(token)
-		seed = append(seed, token[:])
-		i++
-	}
-	return seed
 }
