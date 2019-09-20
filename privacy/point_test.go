@@ -167,3 +167,15 @@ func TestHashToPoint(t *testing.T) {
 		fmt.Println()
 	}
 }
+
+func TestPoint_FromBytes(t *testing.T) {
+	//bytes := [32]byte{}
+	//bytes[0] = 12
+	//point, err := new(Point).FromBytes(bytes)
+	//
+	//ok := point.PointValid()
+	//
+	//if !ok {
+	//	t.Fatalf("expected point is valid!")
+	//}
+}

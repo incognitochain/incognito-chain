@@ -72,7 +72,7 @@ func (privateKey SchnorrPrivateKey) Sign(data []byte) (*SchnSignature, error) {
 		t.Add(t, new(Point).ScalarMult(privateKey.publicKey.h, s2))
 
 		// E is the hash of elliptic point t and data need to be signed
-		msg := append(arrayToSlice(t.ToBytes()), data...)
+		msg := append(ArrayToSlice(t.ToBytes()), data...)
 
 		signature.e = HashToScalar(msg)
 
@@ -92,7 +92,7 @@ func (privateKey SchnorrPrivateKey) Sign(data []byte) (*SchnSignature, error) {
 	t := new(Point).ScalarMult(privateKey.publicKey.g, s)
 
 	// E is the hash of elliptic point t and data need to be signed
-	msg := append(arrayToSlice(t.ToBytes()), data...)
+	msg := append(ArrayToSlice(t.ToBytes()), data...)
 	signature.e = HashToScalar(msg)
 
 	// Z1 = s - e*sk
@@ -114,17 +114,17 @@ func (publicKey SchnorrPublicKey) Verify(signature *SchnSignature, data []byte) 
 	if signature.z2 != nil {
 		rv.Add(rv, new(Point).ScalarMult(publicKey.h, signature.z2))
 	}
-	msg := append(arrayToSlice(rv.ToBytes()), data...)
+	msg := append(ArrayToSlice(rv.ToBytes()), data...)
 
 	ev := HashToScalar(msg)
-	return subtle.ConstantTimeCompare(arrayToSlice(ev.ToBytes()), arrayToSlice(signature.e.ToBytes())) == 1
+	return subtle.ConstantTimeCompare(ArrayToSlice(ev.ToBytes()), ArrayToSlice(signature.e.ToBytes())) == 1
 }
 
 func (sig SchnSignature) Bytes() []byte {
-	bytes := append(arrayToSlice(sig.e.ToBytes()), arrayToSlice(sig.z1.ToBytes())...)
+	bytes := append(ArrayToSlice(sig.e.ToBytes()), ArrayToSlice(sig.z1.ToBytes())...)
 	// Z2 is nil when has no privacy
 	if sig.z2 != nil {
-		bytes = append(bytes, arrayToSlice(sig.z2.ToBytes())...)
+		bytes = append(bytes, ArrayToSlice(sig.z2.ToBytes())...)
 	}
 	return bytes
 }
@@ -133,10 +133,10 @@ func (sig *SchnSignature) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
 		return NewPrivacyErr(InvalidInputToSetBytesErr, nil)
 	}
-	sig.e = new(Scalar).FromBytes(sliceToArray(bytes[0:Ed25519KeySize]))
-	sig.z1 = new(Scalar).FromBytes(sliceToArray(bytes[Ed25519KeySize : 2*Ed25519KeySize]))
+	sig.e = new(Scalar).FromBytes(SliceToArray(bytes[0:Ed25519KeySize]))
+	sig.z1 = new(Scalar).FromBytes(SliceToArray(bytes[Ed25519KeySize : 2*Ed25519KeySize]))
 	if len(bytes) == 3*Ed25519KeySize {
-		sig.z2 = new(Scalar).FromBytes(sliceToArray(bytes[2*Ed25519KeySize:]))
+		sig.z2 = new(Scalar).FromBytes(SliceToArray(bytes[2*Ed25519KeySize:]))
 	} else {
 		sig.z2 = nil
 	}
