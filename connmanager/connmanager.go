@@ -502,6 +502,11 @@ func (connManager *ConnManager) countPeerConnOfShard(shard *byte) int {
 	if listener != nil {
 		fmt.Println("COUNT: count peer")
 		allPeers := listener.GetPeerConnOfAll()
+		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+			metrics.Measurement:      metrics.AllConnectedPeers,
+			metrics.MeasurementValue: float64(len(allPeers)),
+			metrics.Tag:              metrics.ExternalAddressTag,
+			metrics.TagValue:         connManager.config.ExternalAddress})
 		fmt.Println("COUNT: all peer", len(allPeers))
 		for _, peerConn := range allPeers {
 			fmt.Println("COUNT: start get")
