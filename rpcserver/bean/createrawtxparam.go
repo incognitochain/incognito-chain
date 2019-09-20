@@ -54,20 +54,21 @@ func NewCreateRawTxParam(params interface{}) (*CreateRawTxParam, error) {
 	}
 
 	// param #2: list receivers
-	receivers := arrayParams[1].(map[string]interface{})
+	receivers := make(map[string]interface{})
+	if arrayParams[1] != nil {
+		receivers = arrayParams[1].(map[string]interface{})
+	}
 	paymentInfos := make([]*privacy.PaymentInfo, 0)
-	if len(receivers) > 0 {
-		for paymentAddressStr, amount := range receivers {
-			keyWalletReceiver, err := wallet.Base58CheckDeserialize(paymentAddressStr)
-			if err != nil {
-				return nil, err
-			}
-			paymentInfo := &privacy.PaymentInfo{
-				Amount:         uint64(amount.(float64)),
-				PaymentAddress: keyWalletReceiver.KeySet.PaymentAddress,
-			}
-			paymentInfos = append(paymentInfos, paymentInfo)
+	for paymentAddressStr, amount := range receivers {
+		keyWalletReceiver, err := wallet.Base58CheckDeserialize(paymentAddressStr)
+		if err != nil {
+			return nil, err
 		}
+		paymentInfo := &privacy.PaymentInfo{
+			Amount:         uint64(amount.(float64)),
+			PaymentAddress: keyWalletReceiver.KeySet.PaymentAddress,
+		}
+		paymentInfos = append(paymentInfos, paymentInfo)
 	}
 
 	// param #3: estimation fee nano P per kb
