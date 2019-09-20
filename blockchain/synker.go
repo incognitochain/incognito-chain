@@ -289,10 +289,12 @@ func (synker *Synker) UpdateState() {
 		userShardID   byte
 		userShardRole string
 	)
-	userKeyForCheckRole, _ := synker.blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey() //(synker.blockchain.BestState.Beacon.ConsensusAlgorithm)
-
-	if userKeyForCheckRole != "" {
-		userRole, userShardID = beaconStateClone.GetPubkeyRole(userKeyForCheckRole, beaconStateClone.BestBlock.Header.Round)
+	userMiningKey, _ := synker.blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
+	if userMiningKey != "" {
+		userRole, userShardIDInt := synker.blockchain.config.ConsensusEngine.GetUserRole()
+		if userRole == common.ShardRole {
+			userShardID = byte(userShardIDInt)
+		}
 		synker.syncShard(userShardID)
 		userShardRole = synker.blockchain.BestState.Shard[userShardID].GetPubkeyRole(userKeyForCheckRole, synker.blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
 	}
