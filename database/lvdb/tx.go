@@ -74,8 +74,7 @@ func (db *db) ListSerialNumber(tokenID common.Hash, shardID byte) (map[string]ui
 		if string(key1[len(key1)-3:]) == "len" {
 			continue
 		}
-		//todo: recheck
-		serialNumberInByte := key1[len(key1)-33:]
+		serialNumberInByte := key1[len(key1)-privacy.CompressedPointSize:]
 		value := make([]byte, len(iterator.Value()))
 		copy(value, iterator.Value())
 		index := big.Int{}
