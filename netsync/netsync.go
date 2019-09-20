@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/metrics"
+	"reflect"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -139,12 +140,17 @@ out:
 		select {
 		case msgChan := <-netSync.cMessage:
 			{
-				go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-					metrics.Measurement:      metrics.HandleAllMessage,
-					metrics.MeasurementValue: float64(1),
-					metrics.Tag:              metrics.ShardIDTag,
-					metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees)})
 				go func(msgC interface{}) {
+					go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+						metrics.Measurement:      metrics.HandleAllMessage,
+						metrics.MeasurementValue: float64(1),
+						metrics.Tag:              metrics.ShardIDTag,
+						metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees)})
+					go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+						metrics.Measurement:      metrics.HandleAllMessageSize,
+						metrics.MeasurementValue: float64(reflect.TypeOf(msgC).Size()),
+						metrics.Tag:              metrics.ShardIDTag,
+						metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees)})
 					switch msg := msgC.(type) {
 					case *wire.MessageTx, *wire.MessageTxToken, *wire.MessageTxPrivacyToken:
 						{
