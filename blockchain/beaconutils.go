@@ -47,7 +47,9 @@ func AssignValidator(candidates []incognitokey.CommitteePublicKey, rand int64, a
 }
 
 // AssignValidatorShard, param for better convenice than AssignValidator
-func AssignValidatorShard(currentShardPendingValidator map[byte][]incognitokey.CommitteePublicKey, shardCandidates []incognitokey.CommitteePublicKey, rand int64, activeShards int) error {
+func AssignValidatorShard(currentShardPendingValidator map[byte][]incognitokey.CommitteePublicKey, currentBeaconPendingValidator []incognitokey.CommitteePublicKey,
+	currentShardCommittee map[byte][]incognitokey.CommitteePublicKey, currentBeaconCommittee []incognitokey.CommitteePublicKey,
+	shardCandidates []incognitokey.CommitteePublicKey, rand int64, activeShards int) error {
 	// filter list candidate, it should not already exist in pending list
 	filterShardCandidates := make([]incognitokey.CommitteePublicKey, len(shardCandidates))
 	copy(filterShardCandidates, shardCandidates)
@@ -59,7 +61,29 @@ func AssignValidatorShard(currentShardPendingValidator map[byte][]incognitokey.C
 			}
 		}
 	}
-	shardCandidates = filterShardCandidates
+	for i, v := range filterShardCandidates {
+		for _, slice := range currentShardCommittee {
+			ok, _ := common.SliceExists(slice, v) // item in candidate list already exist in current pending validator
+			if ok {
+				filterShardCandidates = append(filterShardCandidates[:i], filterShardCandidates[i+1:]...)
+			}
+		}
+	}
+	for i, v := range filterShardCandidates {
+		ok, _ := common.SliceExists(currentBeaconPendingValidator, v) // item in candidate list already exist in current pending validator
+		if ok {
+			filterShardCandidates = append(filterShardCandidates[:i], filterShardCandidates[i+1:]...)
+		}
+	}
+	for i, v := range filterShardCandidates {
+		ok, _ := common.SliceExists(currentBeaconCommittee, v) // item in candidate list already exist in current pending validator
+		if ok {
+			filterShardCandidates = append(filterShardCandidates[:i], filterShardCandidates[i+1:]...)
+		}
+	}
+	if len(filterShardCandidates) < len(shardCandidates) {
+		shardCandidates = filterShardCandidates
+	}
 	// end
 
 	for _, candidate := range shardCandidates {
@@ -107,7 +131,9 @@ func SwapValidator(pendingValidators []string, currentValidators []string, maxCo
 			filterPendingValidators = append(filterPendingValidators[:i], filterPendingValidators[i+1:]...)
 		}
 	}
-	pendingValidators = filterPendingValidators
+	if len(filterPendingValidators) < len(pendingValidators) {
+		pendingValidators = filterPendingValidators
+	}
 	// end
 
 	if maxCommittee < 0 || offset < 0 {
