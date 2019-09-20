@@ -2,21 +2,18 @@ package privacy
 
 import (
 	"encoding/hex"
-	"math/big"
-
-	"github.com/incognitochain/incognito-chain/common"
 )
 
 // 32-byte spending key
 type PrivateKey []byte
 
-// 33-byte public key
+// 32-byte public key
 type PublicKey []byte
 
 // 32-byte receiving key
 type ReceivingKey []byte
 
-// 33-byte transmission key
+// 32-byte transmission key
 type TransmissionKey []byte
 
 // ViewingKey is a public/private key pair to encrypt coins in an outgoing transaction
@@ -40,38 +37,29 @@ type PaymentInfo struct {
 
 // GeneratePrivateKey generates a random 32-byte spending key
 func GeneratePrivateKey(seed []byte) PrivateKey {
-	privateKey := common.HashB(seed)
-
-	temp := new(big.Int)
-	for temp.SetBytes(privateKey).Cmp(Curve.Params().N) == 1 {
-		privateKey = common.HashB(privateKey)
-	}
+	bip32PrivKey := HashToScalar(seed)
+	privateKey := arrayToSlice(bip32PrivKey.ToBytes())
 	return privateKey
 }
 
-// GeneratePublicKey computes a 33-byte public-key corresponding to a spending key
+// GeneratePublicKey computes a 32-byte public-key corresponding to a spending key
 func GeneratePublicKey(privateKey []byte) PublicKey {
-	var publicKey EllipticPoint
-	publicKey.x, publicKey.y = Curve.ScalarBaseMult(privateKey)
-	return publicKey.Compress()
+	privScalar := new(Scalar).FromBytes(sliceToArray(privateKey))
+	publicKey := new(Point).ScalarMultBase(privScalar)
+	return arrayToSlice(publicKey.ToBytes())
 }
 
 // GenerateReceivingKey generates a 32-byte receiving key
 func GenerateReceivingKey(privateKey []byte) ReceivingKey {
-	receivingKey := common.HashB(privateKey)
-
-	temp := new(big.Int)
-	for temp.SetBytes(receivingKey).Cmp(Curve.Params().N) == 1 {
-		receivingKey = common.HashB(receivingKey)
-	}
-	return receivingKey
+	receivingKey := HashToScalar(privateKey)
+	return arrayToSlice(receivingKey.ToBytes())
 }
 
 // GenerateTransmissionKey computes a 33-byte transmission key corresponding to a receiving key
 func GenerateTransmissionKey(receivingKey []byte) TransmissionKey {
-	var transmissionKey EllipticPoint
-	transmissionKey.x, transmissionKey.y = Curve.ScalarBaseMult(receivingKey)
-	return transmissionKey.Compress()
+	receiScalar := new(Scalar).FromBytes(sliceToArray(receivingKey))
+	transmissionKey := new(Point).ScalarMultBase(receiScalar)
+	return arrayToSlice(transmissionKey.ToBytes())
 }
 
 // GenerateViewingKey generates a viewingKey corresponding to a spending key
@@ -98,9 +86,9 @@ func (addr *PaymentAddress) Bytes() []byte {
 // SetBytes reverts bytes array to payment address
 func (addr *PaymentAddress) SetBytes(bytes []byte) *PaymentAddress {
 	// the first 33 bytes are public key
-	addr.Pk = bytes[:CompressedEllipticPointSize]
+	addr.Pk = bytes[:Ed25519KeySize]
 	// the last 33 bytes are transmission key
-	addr.Tk = bytes[CompressedEllipticPointSize:]
+	addr.Tk = bytes[Ed25519KeySize:]
 	return addr
 }
 
@@ -108,4 +96,16 @@ func (addr *PaymentAddress) SetBytes(bytes []byte) *PaymentAddress {
 func (addr PaymentAddress) String() string {
 	byteArrays := addr.Bytes()
 	return hex.EncodeToString(byteArrays[:])
+}
+
+func sliceToArray(slice []byte) [Ed25519KeySize]byte {
+	var array [Ed25519KeySize]byte
+	copy(array[:],slice)
+	return array
+}
+
+func arrayToSlice(array [Ed25519KeySize]byte) []byte{
+	var slice []byte
+	slice = array[:]
+	return slice
 }

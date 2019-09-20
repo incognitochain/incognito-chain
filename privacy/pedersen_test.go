@@ -1,43 +1,44 @@
 package privacy
 
 import (
-	"crypto/rand"
 	"github.com/stretchr/testify/assert"
-	"math/big"
 	"testing"
 )
 
 func TestPedersenCommitAll(t *testing.T) {
-	var r = rand.Reader
-	openings := make([]*big.Int, len(PedCom.G))
-	for i := 0; i < len(openings); i++ {
-		openings[i] = RandScalar(r)
+	for i:= 0; i < 100; i ++ {
+		openings := make([]*Scalar, len(PedCom.G))
+		for i := 0; i < len(openings); i++ {
+			openings[i] = RandomScalar()
+		}
+
+		commitment, err := PedCom.commitAll(openings)
+		isValid := commitment.PointValid()
+
+		assert.NotEqual(t, commitment, nil)
+		assert.Equal(t, true, isValid)
+		assert.Equal(t, nil, err)
 	}
-
-	commitment, err := PedCom.commitAll(openings)
-	isOnCurve := Curve.IsOnCurve(commitment.x, commitment.y)
-
-	assert.NotEqual(t, commitment, nil)
-	assert.Equal(t, true, isOnCurve)
-	assert.Equal(t, nil, err)
 }
 
 func TestPedersenCommitAtIndex(t *testing.T) {
-	var r = rand.Reader
-	data := []struct {
-		value *big.Int
-		rand  *big.Int
-		index byte
-	}{
-		{RandScalar(r), RandScalar(r), PedersenPrivateKeyIndex},
-		{RandScalar(r), RandScalar(r), PedersenValueIndex},
-		{RandScalar(r), RandScalar(r), PedersenSndIndex},
-		{RandScalar(r), RandScalar(r), PedersenShardIDIndex},
-	}
+	for i:= 0; i < 100; i++ {
+		data := []struct {
+			value *Scalar
+			rand  *Scalar
+			index byte
+		}{
+			{RandomScalar(), RandomScalar(), PedersenPrivateKeyIndex},
+			{RandomScalar(), RandomScalar(), PedersenValueIndex},
+			{RandomScalar(), RandomScalar(), PedersenSndIndex},
+			{RandomScalar(), RandomScalar(), PedersenShardIDIndex},
+		}
 
-	for _, item := range data {
-		commitment := PedCom.CommitAtIndex(item.value, item.rand, item.index)
-		expectedCm := PedCom.G[item.index].ScalarMult(item.value).Add(PedCom.G[PedersenRandomnessIndex].ScalarMult(item.rand))
-		assert.Equal(t, expectedCm, commitment)
+		for _, item := range data {
+			commitment := PedCom.CommitAtIndex(item.value, item.rand, item.index)
+			expectedCm := new(Point).ScalarMult(PedCom.G[item.index], item.value)
+			expectedCm.Add(expectedCm, new(Point).ScalarMult(PedCom.G[PedersenRandomnessIndex], item.rand))
+			assert.Equal(t, expectedCm, commitment)
+		}
 	}
 }

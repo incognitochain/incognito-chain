@@ -7,15 +7,30 @@ import (
 	"testing"
 )
 
+func TestPoint_IsZero(t *testing.T) {
+	p := new(Point).Zero()
+	fmt.Println(p.IsZero())
+}
+
+func TestPoint_MarshalText(t *testing.T) {
+	p := RandomPoint()
+	fmt.Println(p)
+	pByte := p.MarshalText()
+	fmt.Println(len(pByte))
+	pPrime, _ := new(Point).UnmarshalText(pByte)
+	fmt.Println(pPrime)
+}
+
+
 func TestScalarMul(t *testing.T) {
 	for i:=0; i< 1000; i++ {
 		a := RandomScalar()
 		pa := RandomPoint()
 		b := RandomScalar()
 
-		res := new(Point).ScalarMul(pa, a)
-		res.ScalarMul(res, b)
-		res = new(Point).ScalarMul(res, a)
+		res := new(Point).ScalarMult(pa, a)
+		res.ScalarMult(res, b)
+		res = new(Point).ScalarMult(res, a)
 		tmpres := res.MarshalText()
 
 		resPrime := C25519.ScalarMultKey(&pa.key, &a.key)
@@ -35,8 +50,8 @@ func TestScalarMulBase(t *testing.T) {
 		a := RandomScalar()
 		b := RandomScalar()
 
-		res1 := new(Point).ScalarMulBase(a)
-		res2 := new(Point).ScalarMulBase(b)
+		res1 := new(Point).ScalarMultBase(a)
+		res2 := new(Point).ScalarMultBase(b)
 		res := new(Point).Add(res1, res2)
 		tmpres := res.MarshalText()
 
@@ -105,6 +120,7 @@ func TestPoint_Sub(t *testing.T) {
 		if !okk {
 			t.Fatalf("expected Sub correct !")
 		}
+
 	}
 }
 
@@ -114,8 +130,8 @@ func TestPoint_InvertScalarMul(t *testing.T) {
 		pa := RandomPoint()
 
 		// compute (pa^a)^1/a = pa
-		res := new(Point).ScalarMul(pa, a)
-		res.InvertScalarMul(res, a)
+		res := new(Point).ScalarMult(pa, a)
+		res.InvertScalarMult(res, a)
 		tmpres:= res.MarshalText()
 
 		tmpresPrime := pa.MarshalText()
@@ -131,8 +147,8 @@ func TestPoint_InvertScalarMultBase(t *testing.T) {
 		a := RandomScalar()
 
 		// compute (g^1/a)^a = g
-		res := new(Point).InvertScalarMulBase(a)
-		res.ScalarMul(res, a)
+		res := new(Point).InvertScalarMultBase(a)
+		res.ScalarMult(res, a)
 		tmpres := res.MarshalText()
 
 		tmpresPrime, _ := C25519.GBASE.MarshalText()
