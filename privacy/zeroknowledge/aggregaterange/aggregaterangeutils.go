@@ -145,7 +145,7 @@ func EstimateMultiRangeProofSize(nOutput int) uint64 {
 
 // CommitAll commits a list of PCM_CAPACITY value(s)
 func encodeVectors(l []*big.Int, r []*big.Int, g []*privacy.EllipticPoint, h []*privacy.EllipticPoint) (*privacy.EllipticPoint, error) {
-	if len(l) != len(r) || len(g) != len(h) || len(l) != len(g) {
+	if len(l) != len(r) || len(g) != len(l) || len(h) != len(g) {
 		return nil, errors.New("invalid input")
 	}
 

@@ -19,7 +19,7 @@ type bulletproofParams struct {
 
 func newBulletproofParams(m int) *bulletproofParams {
 	gen := new(bulletproofParams)
-	capacity := 64 * m // fixed value
+	capacity := maxExp * m // fixed value
 	gen.g = make([]*privacy.EllipticPoint, capacity)
 	gen.h = make([]*privacy.EllipticPoint, capacity)
 
@@ -29,15 +29,29 @@ func newBulletproofParams(m int) *bulletproofParams {
 		go func(i int, wg *sync.WaitGroup) {
 			defer wg.Done()
 			gen.g[i] = privacy.PedCom.G[0].Hash(int64(5 + i))
-			gen.h[i] = privacy.PedCom.G[0].Hash(int64(5 + i + capacity))
+			gen.h[i] = privacy.PedCom.G[0].Hash(int64(5 + i + maxOutputNumber*maxExp))
 		}(i, &wg)
 	}
 	wg.Wait()
 	gen.u = new(privacy.EllipticPoint)
-	gen.u = gen.h[0].Hash(int64(5 + 2*capacity))
+	gen.u = gen.h[0].Hash(int64(5 + 2*maxOutputNumber*64))
 
 	return gen
 }
+
+func addBulletproofParams(extraNumber int) *bulletproofParams {
+	currentCapacity := len(AggParam.g)
+	newCapacity := currentCapacity + maxExp * extraNumber
+
+	for i := 0; i < newCapacity - currentCapacity; i++ {
+		AggParam.g = append(AggParam.g, privacy.PedCom.G[0].Hash(int64(5 + i + currentCapacity)))
+		AggParam.h = append(AggParam.h, privacy.PedCom.G[0].Hash(int64(5 + i + currentCapacity + maxOutputNumber*maxExp)))
+	}
+
+	return AggParam
+}
+
+var AggParam = newBulletproofParams(numOutputParam)
 
 func generateChallengeForAggRange(AggParam *bulletproofParams, values [][]byte) *big.Int {
 	bytes := AggParam.g[0].Compress()

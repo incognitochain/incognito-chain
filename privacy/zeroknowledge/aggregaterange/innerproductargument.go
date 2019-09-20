@@ -258,7 +258,7 @@ func (proof InnerProductProof) Verify(AggParam *bulletproofParams) bool {
 		xSquare := new(big.Int).Mul(x, x)
 		xSquareInverse := new(big.Int).ModInverse(xSquare, privacy.Curve.Params().N)
 
-		//PPrime := l.ScalarMult(xSquare).Add(p).Add(r.ScalarMult(xSquareInverse)) // x^2 * l + P + xInverse^2 * r
+		//PPrime := l.ScalarMul(xSquare).Add(p).Add(r.ScalarMul(xSquareInverse)) // x^2 * l + P + xInverse^2 * r
 		var temp1, temp2 *privacy.EllipticPoint
 		wg.Add(2)
 		go func(wg *sync.WaitGroup) {
