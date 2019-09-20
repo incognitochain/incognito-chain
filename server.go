@@ -1391,7 +1391,6 @@ func (serverObj *Server) PushMessageToBeacon(msg wire.Message, exclusivePeerIDs 
 		listener := serverObj.connManager.GetConfig().ListenerPeer
 		listener.QueueMessageWithEncoding(msg, nil, peer.MessageToBeacon, nil)
 	}
-	// panic("Fuck you PushMessageToBeacon")
 	return errors.New("RemotePeer of beacon not found")
 }
 
@@ -1414,7 +1413,6 @@ func (serverObj *Server) PushRawBytesToBeacon(p *peer.PeerConn, msgBytes *[]byte
 			}
 		}
 	}
-	// panic("Fuck you PushRawBytesToBeacon")
 	return nil
 }
 
