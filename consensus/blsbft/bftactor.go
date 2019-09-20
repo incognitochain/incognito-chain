@@ -125,15 +125,25 @@ func (e *BLSBFT) Start() error {
 					if getRoundKey(e.RoundData.NextHeight, e.RoundData.Round) == voteMsg.RoundKey {
 						//validate single sig
 						if e.RoundData.Block != nil {
+							blockHash := e.RoundData.Block.Hash()
 							e.RoundData.lockVotes.Lock()
 							if _, ok := e.RoundData.Votes[voteMsg.Validator]; !ok {
 								e.RoundData.lockVotes.Unlock()
 								validatorIdx := common.IndexOfStr(voteMsg.Validator, e.RoundData.CommitteeBLS.StringList)
 								if validatorIdx != -1 {
-									if err := validateSingleBLSSig(e.RoundData.Block.Hash(), voteMsg.Vote.BLS, validatorIdx, e.RoundData.CommitteeBLS.ByteList); err != nil {
-										e.logger.Error(err)
+									if blockHash != nil {
+										if err := e.preValidateVote(blockHash.GetBytes(), &(voteMsg.Vote), e.RoundData.Committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
+											e.logger.Error(err)
+											return
+										}
+									} else {
+										e.logger.Error(errors.New("UnExpectedError, block hash is nil"))
 										return
 									}
+									// if err := validateSingleBLSSig(e.RoundData.Block.Hash(), voteMsg.Vote.BLS, validatorIdx, e.RoundData.CommitteeBLS.ByteList); err != nil {
+									// 	e.logger.Error(err)
+									// 	return
+									// }
 									if len(voteMsg.Vote.BRI) != 0 {
 										if err := validateSingleBriSig(e.RoundData.Block.Hash(), voteMsg.Vote.BRI, e.RoundData.Committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
 											e.logger.Error(err)
@@ -231,6 +241,7 @@ func (e *BLSBFT) Start() error {
 						e.RoundData.Block.(blockValidation).AddValidationField(validationDataString)
 
 						//TODO: check issue invalid sig when swap
+						//TODO 0xakk0r0kamui trace who is malicious node if ValidateCommitteeSig return false
 						err = e.ValidateCommitteeSig(e.RoundData.Block, e.RoundData.Committee)
 						if err != nil {
 							fmt.Print("\n")

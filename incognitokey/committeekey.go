@@ -79,9 +79,19 @@ func (pubKey *CommitteePublicKey) GetNormalKey() []byte {
 }
 
 func (pubKey *CommitteePublicKey) GetMiningKey(schemeName string) ([]byte, error) {
-	result, ok := pubKey.MiningPubKey[schemeName]
+	allKey := map[string][]byte{}
+	var ok bool
+	allKey[schemeName], ok = pubKey.MiningPubKey[schemeName]
 	if !ok {
 		return nil, errors.New("this schemeName doesn't exist")
+	}
+	allKey[common.BridgeConsensus], ok = pubKey.MiningPubKey[common.BridgeConsensus]
+	if !ok {
+		return nil, errors.New("this lightweight schemeName doesn't exist")
+	}
+	result, err := json.Marshal(allKey)
+	if err != nil {
+		return nil, err
 	}
 	return result, nil
 }

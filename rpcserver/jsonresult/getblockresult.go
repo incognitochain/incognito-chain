@@ -8,10 +8,7 @@ import (
 type GetBlocksBeaconResult struct {
 	Hash   string `json:"Hash"`
 	Height uint64 `json:"Height"`
-	// AggregatedSig     string     `json:"AggregatedSig"`
-	// R                 string     `json:"R"`
-	// BlockProducerSign string     `json:"BlockProducerSign"`
-	// BlockProducer     string     `json:"BlockProducer"`
+	BlockProducer     string     `json:"BlockProducer"`
 	ValidationData    string     `json:"ValidationData"`
 	ConsensusType     string     `json:"ConsensusType"`
 	Version           int        `json:"Version"`
@@ -63,10 +60,7 @@ func NewGetBlocksBeaconResult(block *blockchain.BeaconBlock, size uint64, nextBl
 	getBlockResult.Version = block.Header.Version
 	getBlockResult.Hash = block.Hash().String()
 	getBlockResult.Height = block.Header.Height
-	// getBlockResult.AggregatedSig = block.AggregatedSig
-	// getBlockResult.R = block.R
-	// getBlockResult.BlockProducer = block.Header.ProducerAddress.String()
-	// getBlockResult.BlockProducerSign = block.ProducerSig
+	getBlockResult.BlockProducer = block.Header.Producer
 	getBlockResult.ValidationData = block.ValidationData
 	getBlockResult.ConsensusType = block.Header.ConsensusType
 	getBlockResult.Epoch = block.Header.Epoch

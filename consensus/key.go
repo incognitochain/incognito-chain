@@ -1,6 +1,7 @@
 package consensus
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -49,6 +50,31 @@ func (engine *Engine) GetCurrentMiningPublicKey() (publickey string, keyType str
 	return "", ""
 }
 
+func (engine *Engine) GetMiningPublicKeyByConsensus(consensusName string) (publickey string, err error) {
+	keyBytes := map[string][]byte{}
+	if engine != nil && engine.CurrentMiningChain != "" {
+		if _, ok := engine.ChainConsensusList[engine.CurrentMiningChain]; ok {
+			keytype := engine.ChainConsensusList[engine.CurrentMiningChain].GetConsensusName()
+			lightweightKey, exist := engine.userMiningPublicKeys[keytype].MiningPubKey[common.BridgeConsensus]
+			if !exist {
+				return "", NewConsensusError(LoadKeyError, errors.New("Lightweight key not found"))
+			}
+			keyBytes[keytype], exist = engine.userMiningPublicKeys[keytype].MiningPubKey[keytype]
+			if !exist {
+				return "", NewConsensusError(LoadKeyError, errors.New("Key not found"))
+			}
+			keyBytes[common.BridgeConsensus] = lightweightKey
+			// pubkey := engine.userMiningPublicKeys[keytype]
+			// return pubkey.GetMiningKeyBase58(keytype), keytype
+		}
+	}
+	res, err := json.Marshal(keyBytes)
+	if err != nil {
+		return "", NewConsensusError(UnExpectedError, err)
+	}
+	return string(res), nil
+}
+
 func (engine *Engine) GetAllMiningPublicKeys() []string {
 	var keys []string
 	for keyType, key := range engine.userMiningPublicKeys {
@@ -57,21 +83,46 @@ func (engine *Engine) GetAllMiningPublicKeys() []string {
 	return keys
 }
 
-func (engine *Engine) SignDataWithCurrentMiningKey(data []byte) (string, error) {
+func (engine *Engine) SignDataWithCurrentMiningKey(
+	data []byte,
+) (
+	publicKeyStr string,
+	publicKeyType string,
+	signature string,
+	err error,
+) {
+	publicKeyStr = ""
+	publicKeyType = ""
+	signature = ""
 	if engine != nil && engine.CurrentMiningChain != "" {
-		if _, ok := engine.ChainConsensusList[engine.CurrentMiningChain]; ok {
-			keytype := engine.ChainConsensusList[engine.CurrentMiningChain].GetConsensusName()
-			return AvailableConsensus[keytype].SignData(data)
+		// engine.Lock()
+		_, ok := engine.ChainConsensusList[engine.CurrentMiningChain]
+		// engine.Unlock()
+		if ok {
+			publicKeyType = engine.config.Blockchain.BestState.Beacon.ConsensusAlgorithm
+			publicKeyStr, err = engine.GetMiningPublicKeyByConsensus(publicKeyType)
+			if err != nil {
+				return
+			}
+			signature, err = AvailableConsensus[publicKeyType].SignData(data)
+			return
 		}
 	}
-	return "", errors.New("oops")
+	err = errors.New("oops")
+	return
 }
 
 func (engine *Engine) VerifyData(data []byte, sig string, publicKey string, consensusType string) error {
 	if _, ok := AvailableConsensus[consensusType]; !ok {
 		return NewConsensusError(ConsensusTypeNotExistError, errors.New(consensusType))
 	}
-	return AvailableConsensus[consensusType].ValidateData(data, sig, publicKey)
+	mapPublicKey := map[string][]byte{}
+	err := json.Unmarshal([]byte(publicKey), &mapPublicKey)
+	if err != nil {
+		return NewConsensusError(LoadKeyError, err)
+	}
+	fmt.Printf("data %v, sig %v, publicKey %v\n", data, sig, publicKey)
+	return AvailableConsensus[consensusType].ValidateData(data, sig, string(mapPublicKey[common.BridgeConsensus]))
 }
 
 func (engine *Engine) ValidateProducerSig(block common.BlockInterface, consensusType string) error {

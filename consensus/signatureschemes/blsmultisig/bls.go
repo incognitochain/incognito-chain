@@ -26,6 +26,23 @@ func Sign(data, skBytes []byte, selfIdx int, committee []PublicKey) ([]byte, err
 	return CmprG1(sig), nil
 }
 
+// Sign return BLS signature
+// func Sign(data, skBytes []byte, selfIdx int, committee []PublicKey) ([]byte, error) {
+// 	if len(skBytes) != CSKSz {
+// 		return []byte{0}, NewBLSSignatureError(InvalidPrivateKeyErr, errors.New(ErrCodeMessage[InvalidPrivateKeyErr].Message))
+// 	}
+// 	sk := B2I(skBytes)
+// 	// if selfIdx >= len(committee) || (selfIdx < 0) || (len(committee) < 1) {
+// 	// 	return []byte{0}, NewBLSSignatureError(InvalidCommitteeInfoErr, errors.New(ErrCodeMessage[InvalidCommitteeInfoErr].Message))
+// 	// }
+// 	dataPn := B2G1P(data)
+// 	// aiSk := AiGen(committee, selfIdx)
+// 	// aiSk.Mul(aiSk, sk)
+// 	// aiSk.Mod(aiSk, bn256.Order)
+// 	sig := dataPn.ScalarMult(dataPn, sk)
+// 	return CmprG1(sig), nil
+// }
+
 // Verify verify BLS sig on given data and list public key
 func Verify(sig, data []byte, signersIdx []int, committee []PublicKey) (bool, error) {
 	for _, idx := range signersIdx {
