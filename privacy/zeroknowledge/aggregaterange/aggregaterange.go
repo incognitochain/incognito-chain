@@ -220,7 +220,15 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 		rands[i] = big.NewInt(0)
 	}
 
-	AggParam := newBulletproofParams(numValuePad)
+	aggParam := new(bulletproofParams)
+	extraNumber := numValuePad - len(AggParam.g) / 64
+	if extraNumber > 0 {
+		aggParam = addBulletproofParams(extraNumber)
+	} else {
+		aggParam.g = AggParam.g[0:numValuePad*64]
+		aggParam.h = AggParam.h[0:numValuePad*64]
+		aggParam.u = AggParam.u
+	}
 
 	proof.cmsValue = make([]*privacy.EllipticPoint, numValue)
 	for i := 0; i < numValue; i++ {
@@ -252,7 +260,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	alpha := privacy.RandScalar(r)
 
 	// Commitment to aL, aR: A = h^alpha * G^aL * H^aR
-	A, err := encodeVectors(aL, aR, AggParam.g, AggParam.h)
+	A, err := encodeVectors(aL, aR, aggParam.g, aggParam.h)
 	if err != nil {
 		return nil, err
 	}
@@ -271,7 +279,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	rho := privacy.RandScalar(r)
 
 	// Commitment to sL, sR : S = h^rho * G^sL * H^sR
-	S, err := encodeVectors(sL, sR, AggParam.g, AggParam.h)
+	S, err := encodeVectors(sL, sR, aggParam.g, aggParam.h)
 	if err != nil {
 		return nil, err
 	}
@@ -279,8 +287,8 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	proof.s = S
 
 	// challenge y, z
-	y := generateChallengeForAggRange(AggParam, [][]byte{A.Compress(), S.Compress()})
-	z := generateChallengeForAggRange(AggParam, [][]byte{A.Compress(), S.Compress(), y.Bytes()})
+	y := generateChallengeForAggRange(aggParam, [][]byte{A.Compress(), S.Compress()})
+	z := generateChallengeForAggRange(aggParam, [][]byte{A.Compress(), S.Compress(), y.Bytes()})
 	zNeg := new(big.Int).Neg(z)
 	zNeg.Mod(zNeg, privacy.Curve.Params().N)
 	zSquare := new(big.Int).Mul(z, z)
@@ -380,7 +388,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	proof.t2 = privacy.PedCom.CommitAtIndex(t2, tau2, privacy.PedersenValueIndex)
 
 	// challenge x = hash(G || H || A || S || T1 || T2)
-	x := generateChallengeForAggRange(AggParam, [][]byte{proof.a.Compress(), proof.s.Compress(), proof.t1.Compress(), proof.t2.Compress()})
+	x := generateChallengeForAggRange(aggParam, [][]byte{proof.a.Compress(), proof.s.Compress(), proof.t1.Compress(), proof.t2.Compress()})
 	xSquare := new(big.Int).Exp(x, twoNumber, privacy.Curve.Params().N)
 
 	// lVector = aL - z*1^n + sL*x
@@ -444,13 +452,13 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	innerProductWit := new(InnerProductWitness)
 	innerProductWit.a = lVector
 	innerProductWit.b = rVector
-	innerProductWit.p, err = encodeVectors(lVector, rVector, AggParam.g, AggParam.h)
+	innerProductWit.p, err = encodeVectors(lVector, rVector, aggParam.g, aggParam.h)
 	if err != nil {
 		return nil, err
 	}
-	innerProductWit.p = innerProductWit.p.Add(AggParam.u.ScalarMult(proof.tHat))
+	innerProductWit.p = innerProductWit.p.Add(aggParam.u.ScalarMult(proof.tHat))
 
-	proof.innerProductProof, err = innerProductWit.Prove(AggParam)
+	proof.innerProductProof, err = innerProductWit.Prove(aggParam)
 	if err != nil {
 		return nil, err
 	}
@@ -470,7 +478,16 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 		tmpcmsValue = append(tmpcmsValue, zero)
 	}
 
-	AggParam := newBulletproofParams(numValuePad)
+	aggParam := new(bulletproofParams)
+	extraNumber := numValuePad - len(AggParam.g) / 64
+	if extraNumber > 0 {
+		aggParam = addBulletproofParams(extraNumber)
+	} else {
+		aggParam.g = AggParam.g[0:numValuePad*64]
+		aggParam.h = AggParam.h[0:numValuePad*64]
+		aggParam.u = AggParam.u
+	}
+
 	n := maxExp
 	oneNumber := big.NewInt(1)
 	twoNumber := big.NewInt(2)
@@ -479,15 +496,15 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	twoVectorN := powerVector(twoNumber, n)
 
 	// recalculate challenge y, z
-	y := generateChallengeForAggRange(AggParam, [][]byte{proof.a.Compress(), proof.s.Compress()})
-	z := generateChallengeForAggRange(AggParam, [][]byte{proof.a.Compress(), proof.s.Compress(), y.Bytes()})
+	y := generateChallengeForAggRange(aggParam, [][]byte{proof.a.Compress(), proof.s.Compress()})
+	z := generateChallengeForAggRange(aggParam, [][]byte{proof.a.Compress(), proof.s.Compress(), y.Bytes()})
 	zNeg := new(big.Int).Neg(z)
 	zNeg.Mod(zNeg, privacy.Curve.Params().N)
 	zSquare := new(big.Int).Exp(z, twoNumber, privacy.Curve.Params().N)
 
 	// challenge x = hash(G || H || A || S || T1 || T2)
 	//fmt.Printf("T2: %v\n", proof.t2)
-	x := generateChallengeForAggRange(AggParam, [][]byte{proof.a.Compress(), proof.s.Compress(), proof.t1.Compress(), proof.t2.Compress()})
+	x := generateChallengeForAggRange(aggParam, [][]byte{proof.a.Compress(), proof.s.Compress(), proof.t1.Compress(), proof.t2.Compress()})
 	xSquare := new(big.Int).Exp(x, twoNumber, privacy.Curve.Params().N)
 
 	yVector := powerVector(y, n*numValuePad)
@@ -499,7 +516,7 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	for i := 0; i < n*numValuePad; i++ {
 		go func(i int, wg *sync.WaitGroup) {
 			defer wg.Done()
-			HPrime[i] = AggParam.h[i].ScalarMult(new(big.Int).Exp(y, big.NewInt(int64(-i)), privacy.Curve.Params().N))
+			HPrime[i] = aggParam.h[i].ScalarMult(new(big.Int).Exp(y, big.NewInt(int64(-i)), privacy.Curve.Params().N))
 		}(i, &wg)
 	}
 	wg.Wait()
@@ -563,7 +580,7 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 		return false, errors.New("verify aggregated range proof statement 1 failed")
 	}
 
-	innerProductArgValid := proof.innerProductProof.Verify(AggParam)
+	innerProductArgValid := proof.innerProductProof.Verify(aggParam)
 	if !innerProductArgValid {
 		privacy.Logger.Log.Errorf("verify aggregated range proof statement 2 failed")
 		return false, errors.New("verify aggregated range proof statement 2 failed")
