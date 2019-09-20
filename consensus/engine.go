@@ -3,6 +3,7 @@ package consensus
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -213,6 +214,7 @@ func (engine *Engine) OnBFTMsg(msg *wire.MessageBFT) {
 func (engine *Engine) GetUserRole() (string, int) {
 	if engine.CurrentMiningChain != "" {
 		publicKey, _ := engine.GetCurrentMiningPublicKey()
+		// publicKey, _ := engine.GetMiningPublicKeyByConsensus(engine.config.Blockchain.BestState.Beacon.ConsensusAlgorithm)
 		userRole, _ := engine.config.Blockchain.Chains[engine.CurrentMiningChain].GetPubkeyRole(publicKey, 0)
 		if engine.CurrentMiningChain == common.BeaconChainKey {
 			return userRole, -1
@@ -317,23 +319,40 @@ func (engine *Engine) updateConsensusState() {
 		go engine.NotifyBeaconRole(false)
 		go engine.NotifyShardRole(int(getShardFromChainName(engine.CurrentMiningChain)))
 	}
-	publicKey, _ := engine.GetCurrentMiningPublicKey()
-
+	publicKey, err := engine.GetMiningPublicKeyByConsensus(engine.config.Blockchain.BestState.Beacon.ConsensusAlgorithm)
+	if err != nil {
+		Logger.log.Error(err)
+		return
+	}
+	//ExtractMiningPublickeysFromCommitteeKeyList
 	allcommittee := engine.config.Blockchain.Chains[common.BeaconChainKey].(BeaconInterface).GetAllCommittees()
 	beaconCommittee := []string{}
 	shardCommittee := map[byte][]string{}
 	shardCommittee = make(map[byte][]string)
+	// for keyType, committees := range allcommittee {
+	// 	for chain, committee := range committees {
+	// 		if chain == common.BeaconChainKey {
+	// 			keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(committee, keyType)
+	// 			beaconCommittee = append(beaconCommittee, keyList...)
+	// 		} else {
+	// 			keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(committee, keyType)
+	// 			shardCommittee[getShardFromChainName(chain)] = keyList
+	// 		}
+	// 	}
+	// }
+
 	for keyType, committees := range allcommittee {
 		for chain, committee := range committees {
 			if chain == common.BeaconChainKey {
-				keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(committee, keyType)
+				keyList, _ := incognitokey.ExtractMiningPublickeysFromCommitteeKeyList(committee, keyType)
 				beaconCommittee = append(beaconCommittee, keyList...)
 			} else {
-				keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(committee, keyType)
+				keyList, _ := incognitokey.ExtractMiningPublickeysFromCommitteeKeyList(committee, keyType)
 				shardCommittee[getShardFromChainName(chain)] = keyList
 			}
 		}
 	}
+	fmt.Printf("UpdateConsensusState %v %v\n", userLayer, publicKey)
 	if userLayer == common.ShardRole {
 		shardID := getShardFromChainName(engine.CurrentMiningChain)
 		engine.config.Node.UpdateConsensusState(userLayer, publicKey, &shardID, beaconCommittee, shardCommittee)
