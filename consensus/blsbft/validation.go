@@ -15,8 +15,9 @@ import (
 )
 
 type vote struct {
-	BLS []byte
-	BRI []byte
+	BLS          []byte
+	BRI          []byte
+	Confirmation []byte
 }
 
 type blockValidation interface {
@@ -132,15 +133,18 @@ func (e BLSBFT) ValidateData(data []byte, sig string, publicKey string) error {
 	if err != nil {
 		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
-	publicKeyByte, _, err := base58.Base58Check{}.Decode(publicKey)
+	publicKeyByte := []byte(publicKey)
+	// if err != nil {
+	// 	return consensus.NewConsensusError(consensus.UnExpectedError, err)
+	// }
+	fmt.Printf("ValidateData data %v, sig %v, publicKey %v\n", data, sig, publicKeyByte)
+	dataHash := new(common.Hash)
+	dataHash.NewHash(data)
+	_, err = bridgesig.Verify(publicKeyByte, data, sigByte) //blsmultisig.Verify(sigByte, data, []int{0}, []blsmultisig.PublicKey{publicKeyByte})
 	if err != nil {
 		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
-	valid, err := blsmultisig.Verify(sigByte, data, []int{0}, []blsmultisig.PublicKey{publicKeyByte})
-	if valid {
-		return nil
-	}
-	return consensus.NewConsensusError(consensus.UnExpectedError, err)
+	return nil
 }
 
 func validateSingleBLSSig(
@@ -167,12 +171,13 @@ func validateSingleBriSig(
 	briSig []byte,
 	candidate []byte,
 ) error {
+	fmt.Printf("data %v, sig %v, publicKey %v", dataHash.GetBytes(), briSig, string(candidate))
 	result, err := bridgesig.Verify(candidate, dataHash.GetBytes(), briSig)
 	if err != nil {
 		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
 	if !result {
-		return consensus.NewConsensusError(consensus.UnExpectedError, errors.New("invali BRI Signature"))
+		return consensus.NewConsensusError(consensus.UnExpectedError, errors.New("invalid BRI Signature"))
 	}
 	return nil
 }

@@ -112,7 +112,7 @@ func (e BLSBFT) GetUserPublicKey() *incognitokey.CommitteePublicKey {
 }
 
 func (e BLSBFT) SignData(data []byte) (string, error) {
-	result, err := e.UserKeySet.BLSSignData(data, 0, []blsmultisig.PublicKey{e.UserKeySet.PubKey[common.BlsConsensus]})
+	result, err := e.UserKeySet.BriSignData(data) //, 0, []blsmultisig.PublicKey{e.UserKeySet.PubKey[common.BlsConsensus]})
 	if err != nil {
 		return "", consensus.NewConsensusError(consensus.SignDataError, err)
 	}
