@@ -29,6 +29,7 @@ type BLSBFT struct {
 
 	RoundData struct {
 		Block             common.BlockInterface
+		BlockHash         *common.Hash
 		BlockValidateData ValidationData
 		lockVotes         sync.Mutex
 		Votes             map[string]vote
@@ -207,6 +208,7 @@ func (e *BLSBFT) Start() error {
 							go e.Node.PushMessageToChain(msg, e.Chain)
 
 							e.RoundData.Block = e.Blocks[roundKey]
+							e.RoundData.BlockHash = e.RoundData.Block.Hash()
 							valData, err := DecodeValidationData(e.RoundData.Block.GetValidationField())
 							if err != nil {
 								e.logger.Error(err)
