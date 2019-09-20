@@ -1,7 +1,6 @@
 package lvdb
 
 import (
-	"github.com/ninjadotorg/constant/privacy"
 	"math/big"
 	"strconv"
 	"strings"
@@ -9,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
@@ -74,7 +74,7 @@ func (db *db) ListSerialNumber(tokenID common.Hash, shardID byte) (map[string]ui
 		if string(key1[len(key1)-3:]) == "len" {
 			continue
 		}
-		serialNumberInByte := key1[len(key1)-privacy.CompressedPointSize:]
+		serialNumberInByte := key1[len(key1)-privacy.CompressedEllipticPointSize:]
 		value := make([]byte, len(iterator.Value()))
 		copy(value, iterator.Value())
 		index := big.Int{}
@@ -226,10 +226,10 @@ func (db *db) ListCommitment(tokenID common.Hash, shardID byte) (map[string]uint
 		if string(key1[len(key1)-3:]) == "len" {
 			continue
 		}
-		if len(key1) < len(key)+privacy.CompressedPointSize {
+		if len(key1) < len(key)+privacy.CompressedEllipticPointSize {
 			continue
 		}
-		commitmentInByte := key1[len(key1)-privacy.CompressedPointSize:]
+		commitmentInByte := key1[len(key1)-privacy.CompressedEllipticPointSize:]
 		value := make([]byte, len(iterator.Value()))
 		copy(value, iterator.Value())
 		index := big.Int{}
@@ -256,7 +256,7 @@ func (db *db) ListCommitmentIndices(tokenID common.Hash, shardID byte) (map[uint
 
 		commitmentInByte := make([]byte, len(iterator.Value()))
 		copy(commitmentInByte, iterator.Value())
-		if len(commitmentInByte) != privacy.CompressedPointSize {
+		if len(commitmentInByte) != privacy.CompressedEllipticPointSize {
 			continue
 		}
 		indexInByte := key1[45:]
