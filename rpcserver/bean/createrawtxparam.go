@@ -9,13 +9,12 @@ import (
 )
 
 type CreateRawTxParam struct {
-	SenderKeySet *incognitokey.KeySet
-	ShardIDSender byte
-	PaymentInfos []*privacy.PaymentInfo
+	SenderKeySet         *incognitokey.KeySet
+	ShardIDSender        byte
+	PaymentInfos         []*privacy.PaymentInfo
 	EstimateFeeCoinPerKb int64
-	HasPrivacyCoin bool
-	Info []byte
-
+	HasPrivacyCoin       bool
+	Info                 []byte
 }
 
 func GetKeySetFromPrivateKeyParams(privateKeyWalletStr string) (*incognitokey.KeySet, byte, error) {
@@ -38,8 +37,7 @@ func GetKeySetFromPrivateKeyParams(privateKeyWalletStr string) (*incognitokey.Ke
 	return &keyWallet.KeySet, shardID, nil
 }
 
-
-func NewCreateRawTxParam(params interface{}) (*CreateRawTxParam, error){
+func NewCreateRawTxParam(params interface{}) (*CreateRawTxParam, error) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 3 {
 		return nil, errors.New("not enough param")
@@ -56,11 +54,10 @@ func NewCreateRawTxParam(params interface{}) (*CreateRawTxParam, error){
 	}
 
 	// param #2: list receivers
-	receivers, ok := arrayParams[1].(map[string]interface{})
-	if !ok {
-		return nil,  errors.New("receiver param is invalid")
+	receivers := make(map[string]interface{})
+	if arrayParams[1] != nil {
+		receivers = arrayParams[1].(map[string]interface{})
 	}
-
 	paymentInfos := make([]*privacy.PaymentInfo, 0)
 	for paymentAddressStr, amount := range receivers {
 		keyWalletReceiver, err := wallet.Base58CheckDeserialize(paymentAddressStr)
@@ -102,11 +99,11 @@ func NewCreateRawTxParam(params interface{}) (*CreateRawTxParam, error){
 	}
 
 	return &CreateRawTxParam{
-		SenderKeySet : senderKeySet,
-		ShardIDSender : shardIDSender,
-		PaymentInfos: paymentInfos,
-		EstimateFeeCoinPerKb:int64(estimateFeeCoinPerKb),
-		HasPrivacyCoin : hasPrivacyCoin,
-		Info : info,
+		SenderKeySet:         senderKeySet,
+		ShardIDSender:        shardIDSender,
+		PaymentInfos:         paymentInfos,
+		EstimateFeeCoinPerKb: int64(estimateFeeCoinPerKb),
+		HasPrivacyCoin:       hasPrivacyCoin,
+		Info:                 info,
 	}, nil
 }

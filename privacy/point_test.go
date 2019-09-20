@@ -120,7 +120,6 @@ func TestPoint_Sub(t *testing.T) {
 		if !okk {
 			t.Fatalf("expected Sub correct !")
 		}
-
 	}
 }
 
