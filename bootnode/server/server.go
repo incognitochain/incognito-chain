@@ -1,6 +1,8 @@
 package server
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -8,8 +10,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
+	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/bridgesig"
 )
 
 const (
@@ -63,26 +66,36 @@ func (rpcServer *RpcServer) Start() error {
 }
 
 // AddOrUpdatePeer - push a connected peer in to list of mem or update an old peer node
-func (rpcServer *RpcServer) AddOrUpdatePeer(rawAddress string, publicKeyType string, publicKeyB58 string, signDataB58 string) error {
+func (rpcServer *RpcServer) AddOrUpdatePeer(rawAddress string, publicKeyType string, publicKeyMining string, signDataB58 string) error {
 	rpcServer.peersMtx.Lock()
 	defer rpcServer.peersMtx.Unlock()
-	if signDataB58 != "" && publicKeyB58 != "" && rawAddress != "" {
+	if signDataB58 != "" && publicKeyMining != "" && rawAddress != "" {
 
 		sigByte, _, err := base58.Base58Check{}.Decode(signDataB58)
 		if err != nil {
 			return err
 		}
-		publicKeyByte, _, err := base58.Base58Check{}.Decode(publicKeyB58)
-		if err != nil {
-			return err
-		}
-		if publicKeyType == "bls" {
-			valid, err := blsmultisig.Verify(sigByte, []byte(rawAddress), []int{0}, []blsmultisig.PublicKey{publicKeyByte})
+		publicKeyByte := []byte(publicKeyMining)
+		miningKey := map[string][]byte{}
+		if publicKeyType == common.BlsConsensus {
+			err := json.Unmarshal(publicKeyByte, &miningKey)
+			if err != nil {
+				return err
+			}
+			ecdsaKeyByte, ok := miningKey[common.BridgeConsensus]
+			if !ok {
+				return errors.New("ECDSA Public key not found")
+			}
+			valid, err := bridgesig.Verify(ecdsaKeyByte, []byte(rawAddress), sigByte) //, []int{0}, []blsmultisig.PublicKey{publicKeyByte})
 			if valid {
-				rpcServer.peers[publicKeyB58] = &peer{
-					id:            rpcServer.CombineID(rawAddress, publicKeyB58),
+				// blsKeyByte, ok := miningKey[common.BlsConsensus]
+				// if !ok {
+				// 	return errors.New("BLS Public key not found")
+				// }
+				rpcServer.peers[publicKeyMining] = &peer{
+					id:            rpcServer.CombineID(rawAddress, publicKeyMining),
 					rawAddress:    rawAddress,
-					publicKey:     publicKeyB58,
+					publicKey:     publicKeyMining,
 					publickeyType: publicKeyType,
 					firstPing:     time.Now().Local(),
 					lastPing:      time.Now().Local(),

@@ -28,6 +28,7 @@ func (s Handler) Ping(args *PingArgs, responseMessagePeers *[]wire.RawPeer) erro
 	// update peer which have just send information to our rpc server
 	err := s.rpcServer.AddOrUpdatePeer(args.RawAddress, args.PublicKeyType, args.PublicKey, args.SignData)
 	if err != nil {
+		fmt.Println("Fucking error")
 		return err
 	}
 
