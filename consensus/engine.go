@@ -132,6 +132,7 @@ func (engine *Engine) watchConsensusCommittee() {
 					if engine.CurrentMiningChain == common.EmptyString {
 						engine.CurrentMiningChain = common.BeaconChainKey
 						if userCurrentPublicKey != engine.userCurrentState.KeysBase58[consensusType] {
+
 							engine.updateUserState(&userMiningKey, role, shardID)
 						}
 						engine.config.Node.DropAllConnections()
@@ -375,6 +376,7 @@ func (engine *Engine) updateUserState(keySet *incognitokey.CommitteePublicKey, r
 		engine.userCurrentState.Keys = nil
 		engine.userCurrentState.KeysBase58 = make(map[string]string)
 	} else {
+		engine.userCurrentState.ShardID = shardID
 		engine.userCurrentState.UserRole = role
 		engine.userCurrentState.Keys = keySet
 		engine.userCurrentState.KeysBase58 = make(map[string]string)
