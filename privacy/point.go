@@ -53,12 +53,16 @@ func (p Point) ToBytes() [Ed25519KeySize]byte {
 	return p.key.ToBytes()
 }
 
-func (p *Point) FromBytes(b [Ed25519KeySize]byte) *Point {
+func (p *Point) FromBytes(b [Ed25519KeySize]byte) (*Point, error) {
 	if p == nil {
 		p = new(Point)
 	}
 	p.key.FromBytes(b)
-	return p
+	if !p.PointValid(){
+		return nil, errors.New("Point is invalid")
+	}
+
+	return p, nil
 }
 
 func (p *Point) Zero() *Point {
@@ -109,6 +113,11 @@ func (p *Point) InvertScalarMult(pa *Point, a *Scalar) *Point {
 	inv := new(Scalar).Invert(a)
 	p.ScalarMult(pa,inv)
 	return p
+}
+
+func (p *Point) Derive(pa *Point, a *Scalar, b *Scalar) *Point{
+	c := new(Scalar).Add(a, b)
+	return p.InvertScalarMult(pa, c)
 }
 
 func (p *Point) Add(pa, pb *Point) *Point {
