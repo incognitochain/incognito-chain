@@ -49,6 +49,18 @@ func (p *Point) UnmarshalText(data []byte) (*Point, error) {
 	return p, nil
 }
 
+func (p Point) ToBytes() [Ed25519KeySize]byte {
+	return p.key.ToBytes()
+}
+
+func (p *Point) FromBytes(b [Ed25519KeySize]byte) *Point {
+	if p == nil {
+		p = new(Point)
+	}
+	p.key.FromBytes(b)
+	return p
+}
+
 func (p *Point) Zero() *Point {
 	if p == nil {
 		p = new(Point)
@@ -57,8 +69,15 @@ func (p *Point) Zero() *Point {
 	return p
 }
 
+func (p Point) IsZero() bool {
+	if p.key == C25519.Zero {
+		return true
+	}
+	return false
+}
+
 // does a * G where a is a scalar and G is the curve basepoint
-func (p *Point) ScalarMulBase(a *Scalar) *Point {
+func (p *Point) ScalarMultBase(a *Scalar) *Point {
 	if p == nil {
 		p = new(Point)
 	}
@@ -68,7 +87,7 @@ func (p *Point) ScalarMulBase(a *Scalar) *Point {
 	return p
 }
 
-func (p *Point) ScalarMul(pa *Point, a *Scalar) *Point {
+func (p *Point) ScalarMult(pa *Point, a *Scalar) *Point {
 	if p == nil {
 		p = new(Point)
 	}
@@ -77,18 +96,18 @@ func (p *Point) ScalarMul(pa *Point, a *Scalar) *Point {
 	return p
 }
 
-func (p *Point) InvertScalarMulBase(a *Scalar) *Point {
+func (p *Point) InvertScalarMultBase(a *Scalar) *Point {
 	if p == nil {
 		p = new(Point)
 	}
 	inv := new(Scalar).Invert(a)
-	p.ScalarMulBase(inv)
+	p.ScalarMultBase(inv)
 	return p
 }
 
-func (p *Point) InvertScalarMul(pa *Point, a *Scalar) *Point {
+func (p *Point) InvertScalarMult(pa *Point, a *Scalar) *Point {
 	inv := new(Scalar).Invert(a)
-	p.ScalarMul(pa,inv)
+	p.ScalarMult(pa,inv)
 	return p
 }
 
@@ -124,7 +143,7 @@ func IsEqual(pa *Point, pb *Point) bool {
 func RandomPoint() *Point {
 	p := new(Point)
 	sc := RandomScalar()
-	p = new(Point).ScalarMulBase(sc)
+	p = new(Point).ScalarMultBase(sc)
 	return p
 }
 
