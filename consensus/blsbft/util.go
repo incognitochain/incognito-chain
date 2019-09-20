@@ -116,6 +116,7 @@ func (e *BLSBFT) InitRoundData() {
 	e.RoundData.Round = e.getCurrentRound()
 	e.RoundData.Votes = make(map[string]vote)
 	e.RoundData.Block = nil
+	e.RoundData.BlockHash = nil
 	e.RoundData.NotYetSendVote = true
 	e.RoundData.LastProposerIndex = e.Chain.GetLastProposerIndex()
 	e.UpdateCommitteeBLSList()
