@@ -5,17 +5,41 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"runtime"
 	"time"
 )
 
 type Grafana struct {
-	url string
+	url             string
+	externalAddress string
 }
 
-func NewGrafana(url string) Grafana {
+func NewGrafana(url, externalAddress string) Grafana {
 	return Grafana{
-		url: url,
+		url:             url,
+		externalAddress: externalAddress,
 	}
+}
+func StartSystemMetrics() {
+	if metricTool == nil {
+		return
+	}
+	var externalAddress string
+	if metricTool.GetExternalAddress() != "" {
+		externalAddress = metricTool.GetExternalAddress()
+	}
+	ticker := time.NewTicker(1 * time.Second)
+	for _ = range ticker.C {
+		go metricTool.SendTimeSeriesMetricData(map[string]interface{}{
+			Measurement:      NumberOfGoRoutine,
+			MeasurementValue: float64(runtime.NumGoroutine()),
+			Tag:              ExternalAddressTag,
+			TagValue:         externalAddress,
+		})
+	}
+}
+func (grafana *Grafana) GetExternalAddress() string {
+	return grafana.externalAddress
 }
 
 //Influxdb write query

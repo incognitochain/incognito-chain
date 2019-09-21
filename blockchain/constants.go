@@ -82,11 +82,11 @@ const (
 	TestnetEpoch       = 100
 	TestnetRandomTime  = 50
 
-	TestNetShardCommitteeSize     = 256
-	TestNetMinShardCommitteeSize  = 256
+	TestNetShardCommitteeSize     = 8
+	TestNetMinShardCommitteeSize  = 8
 	TestNetBeaconCommitteeSize    = 6
 	TestNetMinBeaconCommitteeSize = 6
-	TestNetActiveShards           = 1
+	TestNetActiveShards           = 64
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	TestNetMinBeaconBlkInterval = 10 * time.Second //second
@@ -111,7 +111,7 @@ func init() {
 	if len(os.Args) > 0 && (strings.Contains(os.Args[0], "test") || strings.Contains(os.Args[0], "Test")) {
 		return
 	}
-	keyData, err := ioutil.ReadFile("keylist_256.json")
+	keyData, err := ioutil.ReadFile("keylist.json")
 	if err != nil {
 		panic(err)
 	}
