@@ -3,6 +3,7 @@ package metrics
 type MetricTool interface {
 	SendTimeSeriesMetricData(params map[string]interface{})
 	SendTimeSeriesMetricDataWithTime(params map[string]interface{})
+	GetExternalAddress() string
 }
 
 var metricTool MetricTool
