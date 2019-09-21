@@ -24,12 +24,12 @@ import (
 	error2 "github.com/pkg/errors"
 )
 
-type TxService struct{
-	DB *database.DatabaseInterface
-	BlockChain *blockchain.BlockChain
-	Wallet *wallet.Wallet
+type TxService struct {
+	DB           *database.DatabaseInterface
+	BlockChain   *blockchain.BlockChain
+	Wallet       *wallet.Wallet
 	FeeEstimator map[byte]*mempool.FeeEstimator
-	TxMemPool *mempool.TxPool
+	TxMemPool    *mempool.TxPool
 }
 
 // chooseBestOutCoinsToSpent returns list of unspent coins for spending with amount
@@ -237,7 +237,7 @@ func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID by
 	return estimateFeeCoinPerKb
 }
 
-func (txService TxService) BuildRawTransaction(params *bean.CreateRawTxParam, meta metadata.Metadata) (*transaction.Tx, *RPCError){
+func (txService TxService) BuildRawTransaction(params *bean.CreateRawTxParam, meta metadata.Metadata) (*transaction.Tx, *RPCError) {
 	Logger.log.Infof("Params: \n%+v\n\n\n", params)
 
 	// get output coins to spend and real fee
@@ -270,7 +270,7 @@ func (txService TxService) BuildRawTransaction(params *bean.CreateRawTxParam, me
 	return &tx, nil
 }
 
-func (txService TxService) CreateRawTransaction(params *bean.CreateRawTxParam, meta metadata.Metadata) (*common.Hash, []byte, byte, *RPCError){
+func (txService TxService) CreateRawTransaction(params *bean.CreateRawTxParam, meta metadata.Metadata) (*common.Hash, []byte, byte, *RPCError) {
 	var err error
 	tx, err := txService.BuildRawTransaction(params, meta)
 	if err.(*RPCError) != nil {
@@ -289,7 +289,7 @@ func (txService TxService) CreateRawTransaction(params *bean.CreateRawTxParam, m
 	return tx.Hash(), txBytes, txShardID, nil
 }
 
-func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, *common.Hash, byte, *RPCError){
+func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, *common.Hash, byte, *RPCError) {
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(txB58Check)
 	if err != nil {
 		Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
@@ -322,7 +322,7 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
 	if err != nil {
 		Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
-		return nil, nil, byte(0),  NewRPCError(SendTxDataError, err)
+		return nil, nil, byte(0), NewRPCError(SendTxDataError, err)
 	}
 
 	txMsg.(*wire.MessageTx).Transaction = &tx
@@ -330,7 +330,7 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 	return txMsg, tx.Hash(), tx.PubKeyLastByteSender, nil
 }
 
-func (txService TxService) BuildTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet, shardIDSender byte)(
+func (txService TxService) BuildTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet, shardIDSender byte) (
 	*transaction.CustomTokenParamTx, *transaction.CustomTokenPrivacyParamTx, *RPCError) {
 
 	var customTokenParams *transaction.CustomTokenParamTx
@@ -355,7 +355,6 @@ func (txService TxService) BuildTokenParam(tokenParamsRaw map[string]interface{}
 	return customTokenParams, customPrivacyTokenParam, nil
 
 }
-
 
 func (txService TxService) BuildCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet) (*transaction.CustomTokenParamTx, map[common.Hash]transaction.TxNormalToken, *RPCError) {
 	tokenParams := &transaction.CustomTokenParamTx{
@@ -427,7 +426,6 @@ func (txService TxService) BuildCustomTokenParam(tokenParamsRaw map[string]inter
 	//return tokenParams, listCustomTokens, nil
 	return tokenParams, nil, nil
 }
-
 
 // BuildRawCustomTokenTransaction ...
 func (txService TxService) BuildRawCustomTokenTransaction(
@@ -563,44 +561,13 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransaction(
 	params interface{},
 	metaData metadata.Metadata,
 ) (*transaction.TxCustomTokenPrivacy, *RPCError) {
-	// all component
-	arrayParams := common.InterfaceSlice(params)
-
-	/****** START FEtch data from component *********/
-	// param #1: private key of sender
-	senderKeyParam := arrayParams[0]
-	senderKeySet, shardIDSender, err := GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
-	if err != nil {
-		return nil, NewRPCError(InvalidSenderPrivateKeyError, err)
+	txParam, errParam := bean.NewCreateRawPrivacyTokenTxParam(params)
+	if errParam != nil {
+		return nil, NewRPCError(RPCInvalidParamsError, errParam)
 	}
-
-	// param #2: list receiver
-	receiversPaymentAddressStrParam := make(map[string]interface{})
-	if arrayParams[1] != nil {
-		receiversPaymentAddressStrParam = arrayParams[1].(map[string]interface{})
-	}
-	paymentInfos := make([]*privacy.PaymentInfo, 0)
-	for paymentAddressStr, amount := range receiversPaymentAddressStrParam {
-		keyWalletReceiver, err := wallet.Base58CheckDeserialize(paymentAddressStr)
-		if err != nil {
-			return nil, NewRPCError(InvalidReceiverPaymentAddressError, err)
-		}
-		paymentInfo := &privacy.PaymentInfo{
-			Amount:         uint64(amount.(float64)),
-			PaymentAddress: keyWalletReceiver.KeySet.PaymentAddress,
-		}
-		paymentInfos = append(paymentInfos, paymentInfo)
-	}
-
-	// param #3: estimation fee coin per kb
-	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
-
-	// param #4: hasPrivacy flag for native coin
-	hasPrivacyCoin := int(arrayParams[3].(float64)) > 0
-
-	// param #5: token component
-	tokenParamsRaw := arrayParams[4].(map[string]interface{})
-	tokenParams, listCustomTokens, listCustomTokenCrossShard, err := txService.BuildPrivacyCustomTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
+	tokenParamsRaw := txParam.TokenParamsRaw
+	var err error
+	tokenParams, listCustomTokens, listCustomTokenCrossShard, err := txService.BuildPrivacyCustomTokenParam(tokenParamsRaw, txParam.SenderKeySet, txParam.ShardIDSender)
 
 	_ = listCustomTokenCrossShard
 	_ = listCustomTokens
@@ -608,48 +575,33 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransaction(
 		return nil, err.(*RPCError)
 	}
 
-	// param #6: hasPrivacyToken flag for token
-	hasPrivacyToken := true
-	if len(arrayParams) >= 6 {
-		hasPrivacyToken = int(arrayParams[5].(float64)) > 0
-	}
-
-	// param#7: info (option)
-	info := []byte{}
-	if len(arrayParams) >= 7 {
-		infoStr := arrayParams[6].(string)
-		info = []byte(infoStr)
-	}
-
-	/****** END FEtch data from params *********/
-
 	/******* START choose output native coins(PRV), which is used to create tx *****/
 	var inputCoins []*privacy.InputCoin
 	var realFeePrv uint64
-	inputCoins, realFeePrv, err = txService.chooseOutsCoinByKeyset(paymentInfos,
-		estimateFeeCoinPerKb, 0, senderKeySet,
-		shardIDSender, hasPrivacyCoin, nil,
+	inputCoins, realFeePrv, err = txService.chooseOutsCoinByKeyset(txParam.PaymentInfos,
+		txParam.EstimateFeeCoinPerKb, 0, txParam.SenderKeySet,
+		txParam.ShardIDSender, txParam.HasPrivacyCoin, nil,
 		nil, tokenParams)
 	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)
 	}
-	if len(paymentInfos) == 0 && realFeePrv == 0 {
-		hasPrivacyCoin = false
+	if len(txParam.PaymentInfos) == 0 && realFeePrv == 0 {
+		txParam.HasPrivacyCoin = false
 	}
 	/******* END GET output coins native coins(PRV), which is used to create tx *****/
 
 	tx := &transaction.TxCustomTokenPrivacy{}
 	err = tx.Init(
-		transaction.NewTxPrivacyTokenInitParams(&senderKeySet.PrivateKey,
-			nil,
+		transaction.NewTxPrivacyTokenInitParams(&txParam.SenderKeySet.PrivateKey,
+			txParam.PaymentInfos,
 			inputCoins,
 			realFeePrv,
 			tokenParams,
 			*txService.DB,
 			metaData,
-			hasPrivacyCoin,
-			hasPrivacyToken,
-			shardIDSender, info))
+			txParam.HasPrivacyCoin,
+			txParam.HasPrivacyToken,
+			txParam.ShardIDSender, txParam.Info))
 
 	if err != nil {
 		return nil, NewRPCError(CreateTxDataError, err)
@@ -675,7 +627,7 @@ func (txService TxService) GetTransactionHashByReceiver(paymentAddressParam stri
 	return txService.BlockChain.GetTransactionHashByReceiver(keySet)
 }
 
-func (txService TxService) GetTransactionByHash(txHashStr string) (*jsonresult.TransactionDetail, *RPCError){
+func (txService TxService) GetTransactionByHash(txHashStr string) (*jsonresult.TransactionDetail, *RPCError) {
 	txHash, _ := common.Hash{}.NewHashFromStr(txHashStr)
 	Logger.log.Infof("Get Transaction By Hash %+v", *txHash)
 
@@ -708,7 +660,7 @@ func (txService TxService) GetTransactionByHash(txHashStr string) (*jsonresult.T
 	return result, nil
 }
 
-func (txService TxService) SendRawCustomTokenTransaction(base58CheckData string) (wire.Message, *transaction.TxNormalToken, *RPCError){
+func (txService TxService) SendRawCustomTokenTransaction(base58CheckData string) (wire.Message, *transaction.TxNormalToken, *RPCError) {
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
 	if err != nil {
 		Logger.log.Debugf("handleSendRawCustomTokenTransaction result: %+v, err: %+v", nil, err)
@@ -743,7 +695,7 @@ func (txService TxService) SendRawCustomTokenTransaction(base58CheckData string)
 	return txMsg, &tx, nil
 }
 
-func (txService TxService) GetListCustomTokenHolders(tokenIDString string) (map[string]uint64, *RPCError){
+func (txService TxService) GetListCustomTokenHolders(tokenIDString string) (map[string]uint64, *RPCError) {
 	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDString)
 	if err != nil {
 		return nil, NewRPCError(RPCInvalidParamsError, errors.New("TokenID is invalid"))
@@ -756,7 +708,7 @@ func (txService TxService) GetListCustomTokenHolders(tokenIDString string) (map[
 	return result, nil
 }
 
-func (txService TxService) GetListCustomTokenBalance(accountParam string)(jsonresult.ListCustomTokenBalance, error){
+func (txService TxService) GetListCustomTokenBalance(accountParam string) (jsonresult.ListCustomTokenBalance, error) {
 	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
 	account, err := wallet.Base58CheckDeserialize(accountParam)
 	if err != nil {
@@ -793,7 +745,6 @@ func (txService TxService) GetListCustomTokenBalance(accountParam string)(jsonre
 
 	return result, nil
 }
-
 
 func (txService TxService) GetListPrivacyCustomTokenBalance(privateKey string) (jsonresult.ListCustomTokenBalance, *RPCError) {
 	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
@@ -890,7 +841,7 @@ func (txService TxService) GetListPrivacyCustomTokenBalance(privateKey string) (
 	return result, nil
 }
 
-func (txService TxService) GetBalancePrivacyCustomToken(privateKey string, tokenID string) (uint64, *RPCError){
+func (txService TxService) GetBalancePrivacyCustomToken(privateKey string, tokenID string) (uint64, *RPCError) {
 	account, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
 		Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
@@ -960,7 +911,7 @@ func (txService TxService) PrivacyCustomTokenDetail(tokenIDStr string) ([]common
 	return txs, nil
 }
 
-func (txService TxService) ListUnspentCustomToken(senderKeyParam string, tokenIDParam string) ([]transaction.TxTokenVout, error){
+func (txService TxService) ListUnspentCustomToken(senderKeyParam string, tokenIDParam string) ([]transaction.TxTokenVout, error) {
 	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam)
 	if err != nil {
 		Logger.log.Debugf("handleListUnspentCustomToken result: %+v, err: %+v", nil, err)
@@ -979,7 +930,7 @@ func (txService TxService) ListUnspentCustomToken(senderKeyParam string, tokenID
 	return unspentTxTokenOuts, nil
 }
 
-func (txService TxService) GetBalanceCustomToken(senderKeyParam string, tokenIDParam string) (uint64, error){
+func (txService TxService) GetBalanceCustomToken(senderKeyParam string, tokenIDParam string) (uint64, error) {
 	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam)
 	if err != nil {
 		Logger.log.Debugf("handleGetBalanceCustomToken result: %+v, err: %+v", nil, err)
@@ -1002,7 +953,7 @@ func (txService TxService) GetBalanceCustomToken(senderKeyParam string, tokenIDP
 	return totalValue, nil
 }
 
-func (txService TxService) CreateSignatureOnCustomTokenTx(base58CheckDate string, senderKeyParam string) (string, error){
+func (txService TxService) CreateSignatureOnCustomTokenTx(base58CheckDate string, senderKeyParam string) (string, error) {
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckDate)
 
 	if err != nil {
@@ -1014,8 +965,8 @@ func (txService TxService) CreateSignatureOnCustomTokenTx(base58CheckDate string
 		return "", err
 	}
 
-	keySet,_, err := GetKeySetFromPrivateKeyParams(senderKeyParam)
-	if err != nil{
+	keySet, _, err := GetKeySetFromPrivateKeyParams(senderKeyParam)
+	if err != nil {
 		Logger.log.Debugf("handleCreateSignatureOnCustomTokenTx result: %+v, err: %+v", nil, err)
 		return "", err
 	}
@@ -1030,7 +981,7 @@ func (txService TxService) CreateSignatureOnCustomTokenTx(base58CheckDate string
 	return result, nil
 }
 
-func (txService TxService) RandomCommitments(paymentAddressStr string, outputs []interface{}, tokenID *common.Hash)([]uint64, []uint64, [][]byte, *RPCError){
+func (txService TxService) RandomCommitments(paymentAddressStr string, outputs []interface{}, tokenID *common.Hash) ([]uint64, []uint64, [][]byte, *RPCError) {
 	_, shardIDSender, err := GetKeySetFromPaymentAddressParam(paymentAddressStr)
 	if err != nil {
 		Logger.log.Debugf("handleRandomCommitments result: %+v, err: %+v", nil, err)
@@ -1077,7 +1028,7 @@ func (txService TxService) RandomCommitments(paymentAddressStr string, outputs [
 	return commitmentIndexs, myCommitmentIndexs, commitments, nil
 }
 
-func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData string) (wire.Message, *transaction.TxCustomTokenPrivacy, error){
+func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData string) (wire.Message, *transaction.TxCustomTokenPrivacy, error) {
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
 	if err != nil {
 		Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction result: %+v, err: %+v", nil, err)
@@ -1111,7 +1062,7 @@ func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData 
 	return txMsg, &tx, nil
 }
 
-func (txService TxService) BuildRawDefragmentAccountTransaction(params interface{}, meta metadata.Metadata) (*transaction.Tx, *RPCError){
+func (txService TxService) BuildRawDefragmentAccountTransaction(params interface{}, meta metadata.Metadata) (*transaction.Tx, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 4 {
 		return nil, NewRPCError(RPCInvalidParamsError, nil)
@@ -1212,7 +1163,7 @@ func (txService TxService) calculateOutputCoinsByMinValue(outCoins []*privacy.Ou
 	return outCoinsTmp, amount
 }
 
-func (txService TxService) SendRawTxWithMetadata(base58CheckDate string) (wire.Message, *common.Hash, *RPCError){
+func (txService TxService) SendRawTxWithMetadata(base58CheckDate string) (wire.Message, *common.Hash, *RPCError) {
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckDate)
 	if err != nil {
 		return nil, nil, NewRPCError(RPCInvalidParamsError, err)
@@ -1238,14 +1189,14 @@ func (txService TxService) SendRawTxWithMetadata(base58CheckDate string) (wire.M
 	}
 
 	txMsg.(*wire.MessageTx).Transaction = &tx
-	
+
 	return txMsg, hash, nil
 }
 
-func (txService TxService) SendRawCustomTokenTxWithMetadata(base58CheckDate string) (wire.Message, *common.Hash, *RPCError){
+func (txService TxService) SendRawCustomTokenTxWithMetadata(base58CheckDate string) (wire.Message, *common.Hash, *RPCError) {
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckDate)
 	if err != nil {
-		return nil, nil,  NewRPCError(RPCInvalidParamsError, err)
+		return nil, nil, NewRPCError(RPCInvalidParamsError, err)
 	}
 
 	tx := transaction.TxNormalToken{}
