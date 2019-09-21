@@ -496,7 +496,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 	//Init Metric Tool
 	if cfg.MetricUrl != "" {
-		grafana := metrics.NewGrafana(cfg.MetricUrl)
+		grafana := metrics.NewGrafana(cfg.MetricUrl, cfg.ExternalAddress)
 		metrics.InitMetricTool(&grafana)
 	}
 	return nil
@@ -679,6 +679,7 @@ func (serverObj Server) Start() {
 		go serverObj.memPool.MonitorPool()
 	}
 	go serverObj.pusubManager.Start()
+	go metrics.StartSystemMetrics()
 }
 
 func (serverObj *Server) GetActiveShardNumber() int {

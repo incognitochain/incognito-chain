@@ -50,6 +50,7 @@ const (
 	HandleMessageCrossShard          = "HandleMessageCrossShard"
 	HandleMessageShardBlock          = "HandleMessageShardBlock"
 	HandleMessageBeaconBlock         = "HandleMessageBeaconBlock"
+	NumberOfGoRoutine                = "NumberOfGoRoutine"
 )
 
 // tag
