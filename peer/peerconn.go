@@ -209,37 +209,37 @@ func (peerConn *PeerConn) processInMessageString(msgStr string) error {
 		Logger.log.Errorf("Msg size exceed MsgType %s max size, size %+v | max allow is %+v \n", commandType, len(jsonDecodeBytes), message.MaxPayloadLength(1))
 		return NewPeerError(MessageTypeError, err, nil)
 	}
-	// check forward
-	//if peerConn.config.MessageListeners.GetCurrentRoleShard != nil {
-	//	cRole, cShard := peerConn.config.MessageListeners.GetCurrentRoleShard()
-	//	if cShard != nil {
-	//		fT := messageHeader[wire.MessageCmdTypeSize]
-	//		if fT == MessageToShard {
-	//			fS := messageHeader[wire.MessageCmdTypeSize+1]
-	//			if *cShard != fS {
-	//				if peerConn.config.MessageListeners.PushRawBytesToShard != nil {
-	//					err1 := peerConn.config.MessageListeners.PushRawBytesToShard(peerConn, &jsonDecodeBytesRaw, *cShard)
-	//					if err1 != nil {
-	//						Logger.log.Error(err1)
-	//					}
-	//				}
-	//				return NewPeerError(CheckForwardError, err, nil)
-	//			}
-	//		}
-	//	}
-	//	if cRole != "" {
-	//		fT := messageHeader[wire.MessageCmdTypeSize]
-	//		if fT == MessageToBeacon && cRole != "beacon" {
-	//			if peerConn.config.MessageListeners.PushRawBytesToBeacon != nil {
-	//				err1 := peerConn.config.MessageListeners.PushRawBytesToBeacon(peerConn, &jsonDecodeBytesRaw)
-	//				if err1 != nil {
-	//					Logger.log.Error(err1)
-	//				}
-	//			}
-	//			return NewPeerError(CheckForwardError, err, nil)
-	//		}
-	//	}
-	//}
+	// check forward TODO
+	/*if peerConn.config.MessageListeners.GetCurrentRoleShard != nil {
+		cRole, cShard := peerConn.config.MessageListeners.GetCurrentRoleShard()
+		if cShard != nil {
+			fT := messageHeader[wire.MessageCmdTypeSize]
+			if fT == MessageToShard {
+				fS := messageHeader[wire.MessageCmdTypeSize+1]
+				if *cShard != fS {
+					if peerConn.config.MessageListeners.PushRawBytesToShard != nil {
+						err1 := peerConn.config.MessageListeners.PushRawBytesToShard(peerConn, &jsonDecodeBytesRaw, *cShard)
+						if err1 != nil {
+							Logger.log.Error(err1)
+						}
+					}
+					return NewPeerError(CheckForwardError, err, nil)
+				}
+			}
+		}
+		if cRole != "" {
+			fT := messageHeader[wire.MessageCmdTypeSize]
+			if fT == MessageToBeacon && cRole != "beacon" {
+				if peerConn.config.MessageListeners.PushRawBytesToBeacon != nil {
+					err1 := peerConn.config.MessageListeners.PushRawBytesToBeacon(peerConn, &jsonDecodeBytesRaw)
+					if err1 != nil {
+						Logger.log.Error(err1)
+					}
+				}
+				return NewPeerError(CheckForwardError, err, nil)
+			}
+		}
+	}*/
 
 	err = json.Unmarshal(messageBody, &message)
 	if err != nil {
