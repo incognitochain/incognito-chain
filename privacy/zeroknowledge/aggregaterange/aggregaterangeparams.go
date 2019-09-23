@@ -55,14 +55,14 @@ var AggParam = newBulletproofParams(numOutputParam)
 func generateChallengeForAggRange(AggParam *bulletproofParams, values [][]byte) *privacy.Scalar {
 	bytes := []byte{}
 	for i := 0; i < len(AggParam.g); i++ {
-		bytes = append(bytes, AggParam.g[i].ToBytes()[:]...)
+		bytes = append(bytes, privacy.ArrayToSlice(AggParam.g[i].ToBytes())...)
 	}
 
 	for i := 0; i < len(AggParam.h); i++ {
-		bytes = append(bytes, AggParam.h[i].ToBytes()[:]...)
+		bytes = append(bytes, privacy.ArrayToSlice(AggParam.h[i].ToBytes())...)
 	}
 
-	bytes = append(bytes, AggParam.u.ToBytes()[:]...)
+	bytes = append(bytes, privacy.ArrayToSlice(AggParam.u.ToBytes())...)
 
 	for i := 0; i < len(values); i++ {
 		bytes = append(bytes, values[i]...)

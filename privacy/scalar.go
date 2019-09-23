@@ -88,6 +88,15 @@ func (sc *Scalar) SetUint64(i uint64) *Scalar {
 	return sc
 }
 
+func (sc *Scalar) ToUint64() uint64 {
+	if sc == nil {
+		return 0
+	}
+
+	keyBN := new(big.Int).SetBytes(ArrayToSlice(sc.ToBytes()))
+	return keyBN.Uint64()
+}
+
 func (sc *Scalar) Add(a, b *Scalar) *Scalar {
 	if sc == nil {
 		sc = new(Scalar)
@@ -118,14 +127,14 @@ func (sc *Scalar) Mul(a, b *Scalar) *Scalar {
 	return sc
 }
 
-func (sc *Scalar) Exp(a *Scalar, n int) *Scalar {
+func (sc *Scalar) Exp(a *Scalar, n uint64) *Scalar {
 	if sc == nil {
 		sc = new(Scalar)
 	}
 
 	sc.Set(a)
 
-	for i := 1; i < n; i++ {
+	for i := uint64(1); i < n; i++ {
 		sc.Mul(sc, a)
 	}
 	return sc
