@@ -83,7 +83,7 @@ func (coin *Coin) Init() *Coin {
 
 	coin.coinCommitment = new(Point).Zero()
 
-	coin.snDerivator = new(Scalar)
+	coin.snDerivator = new(Scalar).SetUint64(0)
 
 	coin.serialNumber = new(Point).Zero()
 
@@ -149,7 +149,7 @@ func (coin *Coin) CommitAll() error {
 func (coin *Coin) Bytes() []byte {
 	var coinBytes []byte
 
-	if coin.publicKey != nil {
+	if coin.publicKey != nil || coin.publicKey.IsZero() {
 		publicKey := ArrayToSlice(coin.publicKey.ToBytes())
 		coinBytes = append(coinBytes, byte(Ed25519KeySize))
 		coinBytes = append(coinBytes, publicKey...)
@@ -157,7 +157,7 @@ func (coin *Coin) Bytes() []byte {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if coin.coinCommitment != nil {
+	if coin.coinCommitment != nil || coin.coinCommitment.IsZero() {
 		coinCommitment := ArrayToSlice(coin.coinCommitment.ToBytes())
 		coinBytes = append(coinBytes, byte(Ed25519KeySize))
 		coinBytes = append(coinBytes, coinCommitment...)
@@ -165,14 +165,14 @@ func (coin *Coin) Bytes() []byte {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if coin.snDerivator != nil {
+	if coin.snDerivator != nil || coin.snDerivator.IsZero() {
 		coinBytes = append(coinBytes, byte(Ed25519KeySize))
 		coinBytes = append(coinBytes, ArrayToSlice(coin.snDerivator.ToBytes())...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if coin.serialNumber != nil {
+	if coin.serialNumber != nil || coin.serialNumber.IsZero() {
 		serialNumber := ArrayToSlice(coin.serialNumber.ToBytes())
 		coinBytes = append(coinBytes, byte(Ed25519KeySize))
 		coinBytes = append(coinBytes, serialNumber...)
@@ -180,7 +180,7 @@ func (coin *Coin) Bytes() []byte {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if coin.randomness != nil {
+	if coin.randomness != nil || coin.randomness.IsZero() {
 		coinBytes = append(coinBytes, byte(Ed25519KeySize))
 		coinBytes = append(coinBytes, ArrayToSlice(coin.randomness.ToBytes())...)
 	} else {
