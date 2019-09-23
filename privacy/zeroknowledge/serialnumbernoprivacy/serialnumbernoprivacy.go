@@ -2,6 +2,7 @@ package serialnumbernoprivacy
 
 import (
 	"errors"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 )
@@ -133,14 +134,14 @@ func (pro SNNoPrivacyProof) Bytes() []byte {
 	}
 
 	var bytes []byte
-	bytes = append(bytes, pro.stmt.output.ToBytes()[:]...)
-	bytes = append(bytes, pro.stmt.vKey.ToBytes()[:]...)
-	bytes = append(bytes, pro.stmt.input.ToBytes()[:]...)
+	bytes = append(bytes, privacy.ArrayToSlice(pro.stmt.output.ToBytes())...)
+	bytes = append(bytes, privacy.ArrayToSlice(pro.stmt.vKey.ToBytes())...)
+	bytes = append(bytes, privacy.ArrayToSlice(pro.stmt.input.ToBytes())...)
 
-	bytes = append(bytes, pro.tSeed.ToBytes()[:]...)
-	bytes = append(bytes, pro.tOutput.ToBytes()[:]...)
+	bytes = append(bytes, privacy.ArrayToSlice(pro.tSeed.ToBytes())...)
+	bytes = append(bytes, privacy.ArrayToSlice(pro.tOutput.ToBytes())...)
 
-	bytes = append(bytes, pro.zSeed.ToBytes()[:]...)
+	bytes = append(bytes, privacy.ArrayToSlice(pro.zSeed.ToBytes())...)
 
 	return bytes
 }
@@ -198,10 +199,11 @@ func (wit SNNoPrivacyWitness) Prove(mess []byte) (*SNNoPrivacyProof, error) {
 	if mess == nil {
 		// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
 		// recheck frombytes is valid scalar
-		x.FromBytes(privacy.SliceToArray(utils.GenerateChallenge([][]byte{tSK.ToBytes()[:], tE.ToBytes()[:]})))
+		x.FromBytes(privacy.SliceToArray(utils.GenerateChallenge([][]byte{privacy.ArrayToSlice(tSK.ToBytes()), privacy.ArrayToSlice(tE.ToBytes())})))
 	} else {
 		x.FromBytes(privacy.SliceToArray(mess))
 	}
+	fmt.Printf("Prove x: %v\n", x)
 
 	// Calculate zSeed = SK * x + eSK
 	zSK := new(privacy.Scalar).Mul(wit.seed, x)
@@ -218,34 +220,39 @@ func (pro SNNoPrivacyProof) Verify(mess []byte) (bool, error) {
 	x := new(privacy.Scalar)
 	if mess == nil {
 		// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
-		x.FromBytes(privacy.SliceToArray(utils.GenerateChallenge([][]byte{pro.tSeed.ToBytes()[:], pro.tOutput.ToBytes()[:]})))
+		x.FromBytes(privacy.SliceToArray(utils.GenerateChallenge([][]byte{privacy.ArrayToSlice(pro.tSeed.ToBytes()), privacy.ArrayToSlice(pro.tOutput.ToBytes())})))
 	} else {
 		x.FromBytes(privacy.SliceToArray(mess))
 	}
+
+	fmt.Printf("Verify x: %v\n", x)
 
 	// Check gSK^zSeed = vKey^x * tSeed
 	leftPoint1 := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex], pro.zSeed)
 
 	rightPoint1 := new(privacy.Point).ScalarMult(pro.stmt.vKey, x)
-	rightPoint1.Add(rightPoint1, pro.tSeed)
+	rightPoint1 = rightPoint1.Add(rightPoint1, pro.tSeed)
 
 	if !privacy.IsEqual(leftPoint1, rightPoint1) {
-		privacy.Logger.Log.Errorf("verify serial number no privacy proof statement 1 failed")
+		//fmt.Printf("left1: %v\n", leftPoint1)
+		//fmt.Printf("right1: %v\n", rightPoint1)
+		//privacy.Logger.Log.Errorf("verify serial number no privacy proof statement 1 failed")
 		return false, errors.New("verify serial number no privacy proof statement 1 failed")
 	}
 
 	// Check sn^(zSeed + x*input) = gSK^x * tOutput
-
 	tmp := new(privacy.Scalar).Add(pro.zSeed, new(privacy.Scalar).Mul(x, pro.stmt.input))
 	leftPoint2 := new(privacy.Point).ScalarMult(pro.stmt.output, tmp)
 
 	rightPoint2 := new (privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex], x)
-	rightPoint2.Add(rightPoint2, pro.tOutput)
+	rightPoint2 = rightPoint2.Add(rightPoint2, pro.tOutput)
 
 	if !privacy.IsEqual(leftPoint2, rightPoint2) {
-		privacy.Logger.Log.Errorf("verify serial number no privacy proof statement 2 failed")
+		//privacy.Logger.Log.Errorf("verify serial number no privacy proof statement 2 failed")
 		return false, errors.New("verify serial number no privacy proof statement 2 failed")
 	}
+
+
 
 	return true, nil
 }

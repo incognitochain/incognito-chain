@@ -46,3 +46,13 @@ func TestKey(t *testing.T) {
 		assert.Equal(t, paymentAddress.Tk, paymentAddress2.Tk)
 	}
 }
+
+
+func TestArrayToSlice(t *testing.T) {
+	for i:=0; i<100000; i++{
+		num := RandomScalar()
+
+		bytes := ArrayToSlice(num.key.ToBytes())
+		assert.Equal(t, Ed25519KeySize, len(bytes))
+	}
+}

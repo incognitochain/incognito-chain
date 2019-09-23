@@ -42,33 +42,20 @@ func ConvertIntToBinary(inum int, n int) []byte {
 }
 
 // ConvertIntToBinary represents a integer number in binary
-func ConvertBigIntToBinary(number *big.Int, n int) []*big.Int {
-	if number.Cmp(big.NewInt(0)) == 0 {
-		res := make([]*big.Int, n)
+func ConvertUint64ToBinaryInBigInt(number uint64, n int) []*Scalar {
+	if number == 0 {
+		res := make([]*Scalar, n)
 		for i := 0; i < n; i++ {
-			res[i] = big.NewInt(0)
+			res[i] = new(Scalar).SetUint64(0)
 		}
 		return res
 	}
 
-	binary := make([]*big.Int, n)
-	numberClone := new(big.Int)
-	numberClone.Set(number)
-
-	zeroNumber := big.NewInt(0)
-	twoNumber := big.NewInt(2)
+	binary := make([]*Scalar, n)
 
 	for i := 0; i < n; i++ {
-		binary[i] = new(big.Int)
-		binary[i] = new(big.Int).Mod(numberClone, twoNumber)
-		numberClone.Div(numberClone, twoNumber)
-
-		if numberClone.Cmp(zeroNumber) == 0 && i != n-1 {
-			for j := i + 1; j < n; j++ {
-				binary[j] = zeroNumber
-			}
-			break
-		}
+		binary[i] = new(Scalar).SetUint64(number % 2)
+		number = number / 2
 	}
 	return binary
 }
