@@ -317,6 +317,7 @@ func (wallet *Wallet) GetAddressByAccName(accountName string, shardID *byte) Key
 				PaymentAddress: account.Key.Base58CheckSerialize(PaymentAddressType),
 				Pubkey:         hex.EncodeToString(account.Key.KeySet.PaymentAddress.Pk),
 				ReadonlyKey:    account.Key.Base58CheckSerialize(ReadonlyKeyType),
+				PrivateKey:     account.Key.Base58CheckSerialize(PriKeyType),
 			}
 			return key
 		}
@@ -326,6 +327,7 @@ func (wallet *Wallet) GetAddressByAccName(accountName string, shardID *byte) Key
 		PaymentAddress: newAccount.Key.Base58CheckSerialize(PaymentAddressType),
 		Pubkey:         hex.EncodeToString(newAccount.Key.KeySet.PaymentAddress.Pk),
 		ReadonlyKey:    newAccount.Key.Base58CheckSerialize(ReadonlyKeyType),
+		PrivateKey:     newAccount.Key.Base58CheckSerialize(PriKeyType),
 	}
 	return key
 }
