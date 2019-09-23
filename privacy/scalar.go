@@ -56,6 +56,14 @@ func (sc *Scalar) SetKey(a *C25519.Key) (*Scalar, error) {
 	return sc, nil
 }
 
+func (sc *Scalar) Set(a *Scalar) (*Scalar) {
+	if sc == nil {
+		sc = new(Scalar)
+	}
+	sc.key = a.key
+	return sc
+}
+
 func RandomScalar() *Scalar {
 	sc := new(Scalar)
 	key := C25519.RandomScalar()
@@ -80,37 +88,50 @@ func (sc *Scalar) SetUint64(i uint64) *Scalar {
 	return sc
 }
 
-func (sc *Scalar) Add(a,b *Scalar) *Scalar {
+func (sc *Scalar) Add(a, b *Scalar) *Scalar {
 	if sc == nil {
 		sc = new(Scalar)
 	}
 	var res C25519.Key
-	C25519.ScAdd(&res, &a.key ,&b.key)
+	C25519.ScAdd(&res, &a.key, &b.key)
 	sc.key = res
 	return sc
 }
 
-func (sc *Scalar) Sub(a,b *Scalar) * Scalar {
+func (sc *Scalar) Sub(a, b *Scalar) *Scalar {
 	if sc == nil {
 		sc = new(Scalar)
 	}
 	var res C25519.Key
-	C25519.ScSub(&res, &a.key ,&b.key)
+	C25519.ScSub(&res, &a.key, &b.key)
 	sc.key = res
 	return sc
 }
 
-func (sc *Scalar) Mul(a,b *Scalar) * Scalar {
+func (sc *Scalar) Mul(a, b *Scalar) *Scalar {
 	if sc == nil {
 		sc = new(Scalar)
 	}
 	var res C25519.Key
-	C25519.ScMul(&res, &a.key ,&b.key)
+	C25519.ScMul(&res, &a.key, &b.key)
 	sc.key = res
 	return sc
 }
 
-func (sc *Scalar)  ScalarValid() bool {
+func (sc *Scalar) Exp(a *Scalar, n int) *Scalar {
+	if sc == nil {
+		sc = new(Scalar)
+	}
+
+	sc.Set(a)
+
+	for i := 1; i < n; i++ {
+		sc.Mul(sc, a)
+	}
+	return sc
+}
+
+func (sc *Scalar) ScalarValid() bool {
 	if sc == nil {
 		return false
 	}
@@ -119,10 +140,10 @@ func (sc *Scalar)  ScalarValid() bool {
 
 func (sc *Scalar) IsOne() bool {
 	s := sc.key
-	return ((int(s[0]|s[1]|s[2]|s[3]|s[4]|s[5]|s[6]|s[7]|s[8]|
-		s[9]|s[10]|s[11]|s[12]|s[13]|s[14]|s[15]|s[16]|s[17]|
-		s[18]|s[19]|s[20]|s[21]|s[22]|s[23]|s[24]|s[25]|s[26]|
-		s[27]|s[28]|s[29]|s[30]|s[31])-1)>>8)+1 == 1
+	return ((int(s[0] | s[1] | s[2] | s[3] | s[4] | s[5] | s[6] | s[7] | s[8] |
+		s[9] | s[10] | s[11] | s[12] | s[13] | s[14] | s[15] | s[16] | s[17] |
+		s[18] | s[19] | s[20] | s[21] | s[22] | s[23] | s[24] | s[25] | s[26] |
+		s[27] | s[28] | s[29] | s[30] | s[31]) - 1) >> 8)+1 == 1
 }
 
 func (sc *Scalar) IsZero() bool {
@@ -132,7 +153,7 @@ func (sc *Scalar) IsZero() bool {
 	return C25519.ScIsZero(&sc.key)
 }
 
-func (sc *Scalar)Invert(a *Scalar) *Scalar {
+func (sc *Scalar) Invert(a *Scalar) *Scalar {
 	if sc == nil {
 		sc = new(Scalar)
 	}
