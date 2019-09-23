@@ -53,16 +53,16 @@ func (proof InnerProductProof) Bytes() []byte {
 
 	res = append(res, byte(len(proof.l)))
 	for _, l := range proof.l {
-		res = append(res, l.ToBytes()[:]...)
+		res = append(res, privacy.ArrayToSlice(l.ToBytes())...)
 	}
 
 	for _, r := range proof.r {
-		res = append(res, r.ToBytes()[:]...)
+		res = append(res, privacy.ArrayToSlice(r.ToBytes())...)
 	}
 
-	res = append(res, proof.a.ToBytes()[:]...)
-	res = append(res, proof.b.ToBytes()[:]...)
-	res = append(res, proof.p.ToBytes()[:]...)
+	res = append(res, privacy.ArrayToSlice(proof.a.ToBytes())...)
+	res = append(res, privacy.ArrayToSlice(proof.b.ToBytes())...)
+	res = append(res, privacy.ArrayToSlice(proof.p.ToBytes())...)
 
 	return res
 }
@@ -166,7 +166,7 @@ func (wit InnerProductWitness) Prove(AggParam *bulletproofParams) (*InnerProduct
 		proof.r = append(proof.r, R)
 
 		// calculate challenge x = hash(G || H || u || p ||  l || r)
-		x := generateChallengeForAggRange(AggParam, [][]byte{p.ToBytes()[:], L.ToBytes()[:], R.ToBytes()[:]})
+		x := generateChallengeForAggRange(AggParam, [][]byte{privacy.ArrayToSlice(p.ToBytes()), privacy.ArrayToSlice(L.ToBytes()), privacy.ArrayToSlice(R.ToBytes())})
 		xInverse := new(privacy.Scalar).Invert(x)
 
 		// calculate GPrime, HPrime, PPrime for the next loop
@@ -232,7 +232,7 @@ func (proof InnerProductProof) Verify(AggParam *bulletproofParams) bool {
 	for i := range proof.l {
 		nPrime := n / 2
 		// calculate challenge x = hash(G || H || u || p ||  l || r)
-		x := generateChallengeForAggRange(AggParam, [][]byte{p.ToBytes()[:], proof.l[i].ToBytes()[:], proof.r[i].ToBytes()[:]})
+		x := generateChallengeForAggRange(AggParam, [][]byte{privacy.ArrayToSlice(p.ToBytes()), privacy.ArrayToSlice(proof.l[i].ToBytes()), privacy.ArrayToSlice(proof.r[i].ToBytes())})
 		xInverse := new(privacy.Scalar).Invert(x)
 
 		// calculate GPrime, HPrime, PPrime for the next loop
