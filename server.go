@@ -6,6 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/peerv2"
+	peer2 "github.com/libp2p/go-libp2p-core/peer"
+	p2pPubSub "github.com/libp2p/go-libp2p-pubsub"
+	"github.com/multiformats/go-multiaddr"
 	"io/ioutil"
 	"log"
 	"net"
@@ -615,6 +619,50 @@ out:
 	}
 }
 
+func (serverObj Server) p2pHandler() {
+	Logger.log.Debug("Listenner: ", cfg.Listener)
+	Logger.log.Debug("Bootnode: ", cfg.DiscoverPeersAddress)
+	Logger.log.Debug("PrivateKey: ", cfg.PrivateKey)
+
+	ip, port := peerv2.ParseListenner(cfg.Listener, "127.0.0.1", 9433)
+	host := peerv2.NewHost(version(), ip, port, []byte(cfg.PrivateKey))
+
+	//connect to proxy node
+	proxyIP, proxyPort := peerv2.ParseListenner(cfg.DiscoverPeersAddress, "127.0.0.1", 9300)
+	ipfsaddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", proxyIP, proxyPort))
+	if err != nil {
+		panic(err)
+	}
+	peerid, err := peer2.IDB58Decode("QmbV4AAHWFFEtE67qqmNeEYXs5Yw5xNMS75oEKtdBvfoKN")
+	must(host.Host.Connect(context.Background(), peer2.AddrInfo{peerid, append([]multiaddr.Multiaddr{}, ipfsaddr)}))
+
+	pubsub, err := p2pPubSub.NewGossipSub(context.Background(), host.Host)
+	must(err)
+
+	//subscribe to beacon
+	st, err := pubsub.Subscribe("beacon")
+	must(err)
+
+	go func() {
+		time.Sleep(1 * time.Second)
+		must(pubsub.Publish("beacon", []byte("abc")))
+	}()
+	for {
+		m, e := st.Next(context.Background())
+		if e != nil {
+			log.Println(e)
+		}
+		log.Println("st2", string(m.Data))
+	}
+
+}
+
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
 /*
 // Start begins accepting connections from peers.
 */
@@ -639,7 +687,7 @@ func (serverObj Server) Start() {
 	// managers.
 	serverObj.waitGroup.Add(1)
 
-	go serverObj.peerHandler()
+	go serverObj.p2pHandler()
 	if !cfg.DisableRPC && serverObj.rpcServer != nil {
 		serverObj.waitGroup.Add(1)
 
@@ -1458,10 +1506,10 @@ func (serverObj *Server) GetCurrentRoleShard() (string, *byte) {
 }
 
 func (serverObj *Server) UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string) {
-	changed := serverObj.connManager.UpdateConsensusState(role, userPbk, currentShard, beaconCommittee, shardCommittee)
-	if changed {
-		Logger.log.Debug("UpdateConsensusState is true")
-	}
+	//changed := serverObj.connManager.UpdateConsensusState(role, userPbk, currentShard, beaconCommittee, shardCommittee)
+	//if changed {
+	//	Logger.log.Debug("UpdateConsensusState is true")
+	//}
 }
 
 func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint64, peerID libp2p.ID) error {
