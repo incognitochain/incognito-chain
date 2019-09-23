@@ -55,8 +55,9 @@ func (sm *StakingMetadata) ValidateMetadataByItself() bool {
 	if err != nil || rewardReceiverWallet == nil {
 		return false
 	}
-
-	// pk := candidateWallet.KeySet.PaymentAddress.Pk
+	if !incognitokey.IsInBase58ShortFormat([]string{sm.CommitteePublicKey}) {
+		return false
+	}
 	CommitteePublicKey := new(incognitokey.CommitteePublicKey)
 	if err := CommitteePublicKey.FromString(sm.CommitteePublicKey); err != nil {
 		return false
