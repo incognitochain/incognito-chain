@@ -127,11 +127,15 @@ func (e *BLSBFT) Start() error {
 					if validatorIdx == -1 {
 						return
 					}
-					roundKey := getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)
-					if roundKey > voteMsg.RoundKey {
+					height, round := parseRoundKey(voteMsg.RoundKey)
+					if height < e.RoundData.NextHeight {
 						return
 					}
-					if roundKey == voteMsg.RoundKey {
+					if (height == e.RoundData.NextHeight) && (round < e.RoundData.Round) {
+						return
+					}
+					// roundKey := getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)
+					if (height == e.RoundData.NextHeight) && (round == e.RoundData.Round) {
 						//validate single sig
 						if !(new(common.Hash).IsEqual(&e.RoundData.BlockHash)) {
 							e.RoundData.lockVotes.Lock()
@@ -142,7 +146,7 @@ func (e *BLSBFT) Start() error {
 									return
 								}
 								if len(voteMsg.Vote.BRI) != 0 {
-									if err := validateSingleBriSig(e.RoundData.Block.Hash(), voteMsg.Vote.BRI, e.RoundData.Committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
+									if err := validateSingleBriSig(&e.RoundData.BlockHash, voteMsg.Vote.BRI, e.RoundData.Committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
 										e.logger.Error(err)
 										return
 									}
