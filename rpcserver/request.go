@@ -40,7 +40,7 @@ type JsonRequest struct {
 
 func parseJsonRequest(rawMessage []byte, method string) (*JsonRequest, error) {
 	var request JsonRequest
-	if len(rawMessage) == 0 && method != "HEAD" {
+	if len(rawMessage) == 0 && method == "POST" {
 		fmt.Println("Method - " + method)
 		return &request, rpcservice.NewRPCError(rpcservice.RPCParseError, nil)
 	}
