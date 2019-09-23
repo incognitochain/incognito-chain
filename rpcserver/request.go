@@ -41,6 +41,7 @@ func parseJsonRequest(rawMessage []byte) (*JsonRequest, error) {
 	var request JsonRequest
 	err := json.Unmarshal(rawMessage, &request)
 	if err != nil {
+		Logger.log.Error("Can not parse", string(rawMessage))
 		return &request, rpcservice.NewRPCError(rpcservice.RPCParseError, err)
 	} else {
 		return &request, nil
