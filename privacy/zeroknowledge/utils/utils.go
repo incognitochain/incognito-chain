@@ -12,7 +12,7 @@ import (
 func GenerateChallenge(values [][]byte) []byte {
 	bytes := []byte{}
 	for i := 0; i < len(privacy.PedCom.G); i++ {
-		bytes = append(bytes, privacy.PedCom.G[i].ToBytes()[:]...)
+		bytes = append(bytes, privacy.ArrayToSlice(privacy.PedCom.G[i].ToBytes())...)
 	}
 
 	for i := 0; i < len(values); i++ {

@@ -70,21 +70,21 @@ func TestUtilsConvertIntToBinary(t *testing.T) {
 	}
 }
 
-func TestUtilsConvertBigIntToBinary(t *testing.T) {
-	data := []struct {
-		number *big.Int
-		size   int
-		binary []*big.Int
-	}{
-		{new(big.Int).SetUint64(uint64(64)), 8, []*big.Int{new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(1), new(big.Int).SetInt64(0)}},
-		{new(big.Int).SetUint64(uint64(100)), 10, []*big.Int{new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(1), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(1), new(big.Int).SetInt64(1), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0)}},
-	}
-
-	for _, item := range data {
-		res := ConvertBigIntToBinary(item.number, item.size)
-		assert.Equal(t, item.binary, res)
-	}
-}
+//func TestUtilsConvertBigIntToBinary(t *testing.T) {
+//	data := []struct {
+//		number *big.Int
+//		size   int
+//		binary []*big.Int
+//	}{
+//		{new(big.Int).SetUint64(uint64(64)), 8, []*big.Int{new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(1), new(big.Int).SetInt64(0)}},
+//		{new(big.Int).SetUint64(uint64(100)), 10, []*big.Int{new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(1), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(1), new(big.Int).SetInt64(1), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0)}},
+//	}
+//
+//	for _, item := range data {
+//		res := ConvertBigIntToBinary(item.number, item.size)
+//		assert.Equal(t, item.binary, res)
+//	}
+//}
 
 func TestUtilsAddPaddingBigInt(t *testing.T) {
 	data := []struct {

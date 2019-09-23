@@ -93,7 +93,7 @@ func powerVector(base *privacy.Scalar, n int) []*privacy.Scalar {
 	for i := 1; i < n; i++ {
 		go func(i int, wg *sync.WaitGroup) {
 			defer wg.Done()
-			res[i] = new(privacy.Scalar).Exp(base, i)
+			res[i] = new(privacy.Scalar).Exp(base, uint64(i))
 		}(i, &wg)
 	}
 	wg.Wait()
