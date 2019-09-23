@@ -162,6 +162,17 @@ func HashToPoint(index int64) *Point {
 	return p
 }
 
+func (point *Point) Derive(seed, derivator *Scalar) *Point {
+	// point must be on the curve
+	if !point.PointValid() {
+		return nil
+	}
+	sum := new(Scalar).Add(seed, derivator)
+	sumInv:= new(Scalar).Invert(sum)
+	res := new(Point).ScalarMult(point, sumInv)
+	return res
+}
+
 
 
 
