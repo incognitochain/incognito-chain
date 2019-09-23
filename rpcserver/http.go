@@ -139,7 +139,7 @@ func (httpServer *HttpServer) handleRequest(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if r.Method == "OPTIONS" {
+	if r.Method == "OPTIONS" || r.Method == "HEAD" {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
@@ -220,7 +220,7 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 	var jsonErr error
 	var result interface{}
 	var request *JsonRequest
-	request, jsonErr = parseJsonRequest(body)
+	request, jsonErr = parseJsonRequest(body, r.Method)
 
 	if jsonErr == nil {
 		if request.Id == nil && !(httpServer.config.RPCQuirks && request.Jsonrpc == "") {
@@ -263,8 +263,14 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 		}
 	}
 	if jsonErr.(*rpcservice.RPCError) != nil && r.Method != "OPTIONS" {
+		if jsonErr.(*rpcservice.RPCError).Code == rpcservice.ErrCodeMessage[rpcservice.RPCParseError].Code {
+			Logger.log.Errorf("RPC function process with err \n %+v", jsonErr)
+			httpServer.writeHTTPResponseHeaders(r, w.Header(), http.StatusBadRequest, buf)
+			return
+		}
+
 		// Logger.log.Errorf("RPC function process with err \n %+v", jsonErr)
-		fmt.Println(request.Method)
+		//fmt.Println(request.Method)
 		if request.Method != getTransactionByHash {
 			Logger.log.Errorf("RPC function process with err \n %+v", jsonErr)
 		}
