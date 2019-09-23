@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
 
@@ -37,8 +38,12 @@ type JsonRequest struct {
 	Id      interface{} `json:"Id"`
 }
 
-func parseJsonRequest(rawMessage []byte) (*JsonRequest, error) {
+func parseJsonRequest(rawMessage []byte, method string) (*JsonRequest, error) {
 	var request JsonRequest
+	if len(rawMessage) == 0 {
+		fmt.Println("Method - " + method)
+		return &request, rpcservice.NewRPCError(rpcservice.RPCParseError, nil)
+	}
 	err := json.Unmarshal(rawMessage, &request)
 	if err != nil {
 		Logger.log.Error("Can not parse", string(rawMessage))
