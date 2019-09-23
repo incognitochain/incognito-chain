@@ -139,7 +139,7 @@ func (httpServer *HttpServer) handleRequest(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if r.Method == "OPTIONS" {
+	if r.Method == "OPTIONS" || r.Method == "HEAD" {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
