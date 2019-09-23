@@ -2,6 +2,7 @@ package aggregaterange
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -167,6 +168,8 @@ func (wit InnerProductWitness) Prove(AggParam *bulletproofParams) (*InnerProduct
 
 		// calculate challenge x = hash(G || H || u || p ||  l || r)
 		x := generateChallengeForAggRange(AggParam, [][]byte{privacy.ArrayToSlice(p.ToBytes()), privacy.ArrayToSlice(L.ToBytes()), privacy.ArrayToSlice(R.ToBytes())})
+		fmt.Printf("n = %v, x = %v\n  ",nPrime, x.ToBytes())
+
 		xInverse := new(privacy.Scalar).Invert(x)
 
 		// calculate GPrime, HPrime, PPrime for the next loop
@@ -233,6 +236,7 @@ func (proof InnerProductProof) Verify(AggParam *bulletproofParams) bool {
 		nPrime := n / 2
 		// calculate challenge x = hash(G || H || u || p ||  l || r)
 		x := generateChallengeForAggRange(AggParam, [][]byte{privacy.ArrayToSlice(p.ToBytes()), privacy.ArrayToSlice(proof.l[i].ToBytes()), privacy.ArrayToSlice(proof.r[i].ToBytes())})
+		fmt.Printf("Verify n = %v, x = %v\n  ",nPrime, x.ToBytes())
 		xInverse := new(privacy.Scalar).Invert(x)
 
 		// calculate GPrime, HPrime, PPrime for the next loop
@@ -290,6 +294,9 @@ func (proof InnerProductProof) Verify(AggParam *bulletproofParams) bool {
 		privacy.Logger.Log.Error("Inner product argument failed:")
 		privacy.Logger.Log.Error("p: %v\n", p)
 		privacy.Logger.Log.Error("rightPoint: %v\n", rightPoint)
+		fmt.Printf("Inner product argument failed:")
+		fmt.Printf("p: %v\n", p)
+		fmt.Printf("rightPoint: %v\n", rightPoint)
 	}
 
 	return res
