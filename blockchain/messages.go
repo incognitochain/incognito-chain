@@ -224,11 +224,12 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block *ShardToBeaconB
 			return
 		}
 
-		err := blockchain.config.ConsensusEngine.ValidateProducerSig(block, block.Header.ConsensusType)
-		if err != nil {
-			Logger.log.Error(err)
-			return
-		}
+		//err := blockchain.config.ConsensusEngine.ValidateProducerSig(block, block.Header.ConsensusType)
+		//if err != nil {
+		//	Logger.log.Error(err)
+		//	return
+		//}
+		
 		from, to, err := blockchain.config.ShardToBeaconPool.AddShardToBeaconBlock(block)
 		if err != nil {
 			if err.Error() != "receive old block" && err.Error() != "receive duplicate block" {
