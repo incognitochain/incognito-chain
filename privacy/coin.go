@@ -134,7 +134,7 @@ func (coin *Coin) HashH() *common.Hash {
 // public key, value, serial number derivator, shardID form last byte public key, randomness
 func (coin *Coin) CommitAll() error {
 	shardID := common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())
-	values := []*Scalar{new(Scalar).SetInt64(0), new(Scalar).SetInt64(coin.value), coin.snDerivator, new(Scalar).SetInt64(uint64(shardID)), coin.randomness}
+	values := []*Scalar{new(Scalar).SetUint64(0), new(Scalar).SetUint64(coin.value), coin.snDerivator, new(Scalar).SetUint64(uint64(shardID)), coin.randomness}
 	commitment, err := PedCom.commitAll(values)
 	if err != nil {
 		return err
@@ -150,7 +150,7 @@ func (coin *Coin) Bytes() []byte {
 	var coinBytes []byte
 
 	if coin.publicKey != nil {
-		publicKey := arrayToSlice(coin.publicKey.ToBytes())
+		publicKey := ArrayToSlice(coin.publicKey.ToBytes())
 		coinBytes = append(coinBytes, byte(Ed25519KeySize))
 		coinBytes = append(coinBytes, publicKey...)
 	} else {
@@ -158,7 +158,7 @@ func (coin *Coin) Bytes() []byte {
 	}
 
 	if coin.coinCommitment != nil {
-		coinCommitment := arrayToSlice(coin.coinCommitment.ToBytes())
+		coinCommitment := ArrayToSlice(coin.coinCommitment.ToBytes())
 		coinBytes = append(coinBytes, byte(Ed25519KeySize))
 		coinBytes = append(coinBytes, coinCommitment...)
 	} else {
@@ -167,13 +167,13 @@ func (coin *Coin) Bytes() []byte {
 
 	if coin.snDerivator != nil {
 		coinBytes = append(coinBytes, byte(Ed25519KeySize))
-		coinBytes = append(coinBytes, arrayToSlice(coin.snDerivator.ToBytes())...)
+		coinBytes = append(coinBytes, ArrayToSlice(coin.snDerivator.ToBytes())...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
 	if coin.serialNumber != nil {
-		serialNumber := arrayToSlice(coin.serialNumber.ToBytes())
+		serialNumber := ArrayToSlice(coin.serialNumber.ToBytes())
 		coinBytes = append(coinBytes, byte(Ed25519KeySize))
 		coinBytes = append(coinBytes, serialNumber...)
 	} else {
@@ -182,7 +182,7 @@ func (coin *Coin) Bytes() []byte {
 
 	if coin.randomness != nil {
 		coinBytes = append(coinBytes, byte(Ed25519KeySize))
-		coinBytes = append(coinBytes, arrayToSlice(coin.randomness.ToBytes())...)
+		coinBytes = append(coinBytes, ArrayToSlice(coin.randomness.ToBytes())...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
@@ -213,13 +213,17 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	}
 
 	offset := 0
+	var err error
 
 	// Parse PublicKey
 	lenField := coinBytes[offset]
 	offset++
 	if lenField != 0 {
 		data := coinBytes[offset : offset+int(lenField)]
-		coin.publicKey = new(Point).FromBytes(sliceToArray(data))
+		coin.publicKey, err = new(Point).FromBytes(SliceToArray(data))
+		if err != nil {
+			return err
+		}
 		offset += int(lenField)
 	}
 
@@ -228,7 +232,10 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	offset++
 	if lenField != 0 {
 		data := coinBytes[offset : offset+int(lenField)]
-		coin.coinCommitment = new(Point).FromBytes(sliceToArray(data))
+		coin.coinCommitment, err = new(Point).FromBytes(SliceToArray(data))
+		if err != nil {
+			return err
+		}
 		offset += int(lenField)
 	}
 
@@ -237,7 +244,8 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	offset++
 	if lenField != 0 {
 		data := coinBytes[offset : offset+int(lenField)]
-		coin.snDerivator = new(Scalar).FromBytes(sliceToArray(data))
+		coin.snDerivator = new(Scalar).FromBytes(SliceToArray(data))
+
 		offset += int(lenField)
 	}
 
@@ -246,7 +254,10 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	offset++
 	if lenField != 0 {
 		data := coinBytes[offset : offset+int(lenField)]
-		coin.serialNumber = new(Point).FromBytes(sliceToArray(data))
+		coin.serialNumber, err = new(Point).FromBytes(SliceToArray(data))
+		if err != nil {
+			return err
+		}
 		offset += int(lenField)
 	}
 
@@ -255,7 +266,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	offset++
 	if lenField != 0 {
 		data := coinBytes[offset : offset+int(lenField)]
-		coin.randomness = new(Scalar).FromBytes(sliceToArray(data))
+		coin.randomness = new(Scalar).FromBytes(SliceToArray(data))
 		offset += int(lenField)
 	}
 
@@ -376,11 +387,13 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 // and ElGamal cryptosystem is used as a key encapsulation scheme.
 func (outputCoin *OutputCoin) Encrypt(recipientTK TransmissionKey) *PrivacyError {
 	// 32-byte first: Randomness, the rest of msg is value of coin
-	msg := append(arrayToSlice(outputCoin.CoinDetails.randomness.ToBytes()), new(big.Int).SetUint64(outputCoin.CoinDetails.value).Bytes()...)
+	msg := append(ArrayToSlice(outputCoin.CoinDetails.randomness.ToBytes()), new(big.Int).SetUint64(outputCoin.CoinDetails.value).Bytes()...)
 
-	pubKeyPoint := new(Point).FromBytes(sliceToArray(recipientTK))
+	pubKeyPoint, err := new(Point).FromBytes(SliceToArray(recipientTK))
+	if err != nil {
+		return NewPrivacyErr(EncryptOutputCoinErr, err)
+	}
 
-	var err error
 	outputCoin.CoinDetailsEncrypted, err = hybridEncrypt(msg, pubKeyPoint)
 	if err != nil {
 		return NewPrivacyErr(EncryptOutputCoinErr, err)
@@ -391,13 +404,13 @@ func (outputCoin *OutputCoin) Encrypt(recipientTK TransmissionKey) *PrivacyError
 
 // Decrypt decrypts a ciphertext encrypting for coin with recipient's receiving key
 func (outputCoin *OutputCoin) Decrypt(viewingKey ViewingKey) *PrivacyError {
-	msg, err := hybridDecrypt(outputCoin.CoinDetailsEncrypted, new(Scalar).FromBytes(sliceToArray(viewingKey.Rk)))
+	msg, err := hybridDecrypt(outputCoin.CoinDetailsEncrypted, new(Scalar).FromBytes(SliceToArray(viewingKey.Rk)))
 	if err != nil {
 		return NewPrivacyErr(DecryptOutputCoinErr, err)
 	}
 
 	// Assign randomness and value to outputCoin details
-	outputCoin.CoinDetails.randomness = new(Scalar).FromBytes(sliceToArray(msg[0:Ed25519KeySize]))
+	outputCoin.CoinDetails.randomness = new(Scalar).FromBytes(SliceToArray(msg[0:Ed25519KeySize]))
 	outputCoin.CoinDetails.value = new(big.Int).SetBytes(msg[Ed25519KeySize:]).Uint64()
 
 	return nil

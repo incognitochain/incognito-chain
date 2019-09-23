@@ -1,5 +1,6 @@
 package privacy
 
+
 import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/stretchr/testify/assert"
@@ -27,31 +28,121 @@ func TestMain(m *testing.M) {
 func TestCoinCommitAll(t *testing.T) {
 	for i:= 0; i<10000; i++{
 		coin := new(Coin).Init()
-		seedKey := arrayToSlice(RandomScalar().ToBytes())
+		seedKey := ArrayToSlice(RandomScalar().ToBytes())
 		privateKey := GeneratePrivateKey(seedKey)
 		publicKey := GeneratePublicKey(privateKey)
 
 		// init other fields for coin
-		coin.publicKey.FromBytes(sliceToArray(publicKey))
+		coin.publicKey.FromBytes(SliceToArray(publicKey))
 
 		coin.snDerivator = RandomScalar()
 		coin.randomness = RandomScalar()
 		coin.value = new(big.Int).SetBytes(RandBytes(2)).Uint64()
-		coin.serialNumber = PedCom.G[0].Derive(new(Scalar).FromBytes(sliceToArray(privateKey)), coin.snDerivator)
+		coin.serialNumber = new(Point).Derive(PedCom.G[0], new(Scalar).FromBytes(SliceToArray(privateKey)), coin.snDerivator)
 		coin.CommitAll()
 		coin.info = []byte("Incognito chain")
 
 		cmTmp := coin.GetPublicKey()
 		shardID := common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())
-		cmTmp.Add(cmTmp, new(Point).ScalarMult(PedCom.G[PedersenValueIndex], new(Scalar).SetInt64(uint64(coin.GetValue()))))
+		cmTmp.Add(cmTmp, new(Point).ScalarMult(PedCom.G[PedersenValueIndex], new(Scalar).SetUint64(uint64(coin.GetValue()))))
 		cmTmp.Add(cmTmp, new(Point).ScalarMult(PedCom.G[PedersenSndIndex], coin.snDerivator))
-		cmTmp.Add(cmTmp, new(Point).ScalarMult(PedCom.G[PedersenShardIDIndex], new(Scalar).SetInt64(uint64(shardID))))
+		cmTmp.Add(cmTmp, new(Point).ScalarMult(PedCom.G[PedersenShardIDIndex], new(Scalar).SetUint64(uint64(shardID))))
 		cmTmp.Add(cmTmp, new(Point).ScalarMult(PedCom.G[PedersenRandomnessIndex], coin.GetRandomness()))
 
 		res := IsEqual(cmTmp, coin.GetCoinCommitment())
 		assert.Equal(t, true, res)
 	}
 }
+
+//
+//import (
+//	"crypto/rand"
+//	"errors"
+//	"fmt"
+//	"github.com/incognitochain/incognito-chain/common"
+//	"github.com/stretchr/testify/assert"
+//	"io/ioutil"
+//	"log"
+//	"math/big"
+//	"testing"
+//)
+//
+//var _ = func() (_ struct{}) {
+//	Logger.Init(common.NewBackend(nil).Logger("test", true))
+//	Logger.Log.Info("This runs before init()!")
+//	return
+//}()
+//
+//func TestMain(m *testing.M) {
+//	log.SetOutput(ioutil.Discard)
+//	m.Run()
+//}
+//
+///*
+//	Unit test for CommitAll Coin
+//*/
+//
+//func TestCoinCommitAll(t *testing.T) {
+//	// init coin with fully fields
+//	// init public key
+//	//coin := new(Coin).Init()
+//	//seedKey := []byte{1, 2, 3}
+//	//privateKey := GeneratePrivateKey(seedKey)
+//	//publicKey := GeneratePublicKey(privateKey)
+//	//
+//	//// init other fields for coin
+//	//coin.publicKey.Decompress(publicKey)
+//	//coin.snDerivator = RandScalar()
+//	//coin.randomness = RandScalar()
+//	//coin.value = uint64(100)
+//	//coin.serialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.snDerivator)
+//	//coin.CommitAll()
+//	//coin.info = []byte("Incognito chain")
+//	//
+//	//expectedCm := coin.publicKey
+//	//expectedCm = expectedCm.Add(PedCom.G[PedersenValueIndex].ScalarMul(big.NewInt(int64(coin.value))))
+//	//expectedCm = expectedCm.Add(PedCom.G[PedersenSndIndex].ScalarMul(coin.snDerivator))
+//	//expectedCm = expectedCm.Add(PedCom.G[PedersenShardIDIndex].ScalarMul(big.NewInt(int64(common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())))))
+//	//expectedCm = expectedCm.Add(PedCom.G[PedersenRandomnessIndex].ScalarMul(coin.randomness))
+//	//
+//	//assert.Equal(t, expectedCm, coin.coinCommitment)
+//
+//	for i:= 0; i<10000; i++{
+//		coin := new(Coin).Init()
+//		seedKey := RandBytes(3)
+//		privateKey := GeneratePrivateKey(seedKey)
+//		publicKey := GeneratePublicKey(privateKey)
+//
+//		// init other fields for coin
+//		coin.publicKey.Decompress(publicKey)
+//		var r = rand.Reader
+//		coin.snDerivator = RandScalar(r)
+//		coin.randomness = RandScalar(r)
+//		coin.value = new(big.Int).SetBytes(RandBytes(2)).Uint64()
+//		coin.serialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.snDerivator)
+//		coin.CommitAll()
+//		coin.info = []byte("Incognito chain")
+//
+//		//expectedCm := coin.publicKey
+//		//expectedCm = expectedCm.Add(PedCom.G[PedersenValueIndex].ScalarMul(big.NewInt(int64(coin.value))))
+//		//expectedCm = expectedCm.Add(PedCom.G[PedersenSndIndex].ScalarMul(coin.snDerivator))
+//		//expectedCm = expectedCm.Add(PedCom.G[PedersenShardIDIndex].ScalarMul(big.NewInt(int64(common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())))))
+//		//expectedCm = expectedCm.Add(PedCom.G[PedersenRandomnessIndex].ScalarMul(coin.randomness))
+//
+//
+//		cmTmp := coin.GetPublicKey()
+//		cmTmp = cmTmp.Add(PedCom.G[PedersenValueIndex].ScalarMult(big.NewInt(int64(coin.GetValue()))))
+//		cmTmp = cmTmp.Add(PedCom.G[PedersenSndIndex].ScalarMult(coin.GetSNDerivator()))
+//		shardID := common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())
+//		cmTmp = cmTmp.Add(PedCom.G[PedersenShardIDIndex].ScalarMult(new(big.Int).SetBytes([]byte{shardID})))
+//		cmTmp = cmTmp.Add(PedCom.G[PedersenRandomnessIndex].ScalarMult(coin.GetRandomness()))
+//
+//		res := cmTmp.IsEqual(coin.GetCoinCommitment())
+//
+//		assert.Equal(t, true, res)
+//	}
+//}
+>>>>>>> d9e96e1bf1e4efd21d5dd5085ff57013db3761be
 //
 //func TestCoin2(t *testing.T){
 //	outCoin2 := new(OutputCoin)
@@ -129,10 +220,17 @@ func TestCoinCommitAll(t *testing.T) {
 //	assert.Equal(t, nil, err2)
 //	assert.Equal(t, coin, coin2)
 //}
+<<<<<<< HEAD
 
 /*
 	Unit test for Bytes/SetBytes Coin function
 */
+=======
+//
+///*
+//	Unit test for Bytes/SetBytes Coin function
+//*/
+>>>>>>> d9e96e1bf1e4efd21d5dd5085ff57013db3761be
 //
 //func TestCoinBytesSetBytes(t *testing.T) {
 //	// init coin with fully fields

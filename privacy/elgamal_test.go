@@ -1,7 +1,7 @@
 package privacy
 
 import (
-	"crypto/rand"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -9,22 +9,36 @@ import (
 /*
 	Unit test for elgamal encryption
 */
-func TestElGamalEncryption(t *testing.T) {
-	for i := 0; i < 1000; i ++ {
+
+func TestElGamalCipherText_Bytes(t *testing.T) {
+	privKey := new(elGamalPrivateKey)
+	privKey.x = RandomScalar()
+
+	// generate public key
+	pubKey := new(elGamalPublicKey)
+	pubKey.h = new(Point).ScalarMultBase(privKey.x)
+
+	message := RandomPoint()
+
+	// Encrypt message using public key
+	c := pubKey.encrypt(message)
+	fmt.Println(c.c1.key, c.c2.key)
+	cBytes := c.Bytes()
+	fmt.Println(len(cBytes))
+}
+
+func TestElGamalPublicKey_Encryption(t *testing.T) {
+	for i:=0 ; i <5000; i ++ {
 		// generate private key
-		privKey := new(elGamalPrivateKeyOld)
-		var r= rand.Reader
-		privKey.x = RandScalar(r)
+		privKey := new(elGamalPrivateKey)
+		privKey.x = RandomScalar()
 
 		// generate public key
-		pubKey := new(elGamalPublicKeyOld)
-		pubKey.h = new(EllipticPoint)
-		pubKey.h.Set(Curve.Params().Gx, Curve.Params().Gy)
-		pubKey.h = pubKey.h.ScalarMult(privKey.x)
+		pubKey := new(elGamalPublicKey)
+		pubKey.h = new(Point).ScalarMultBase(privKey.x)
 
 		// random message (msg is an elliptic point)
-		message := new(EllipticPoint)
-		message.Randomize()
+		message := RandomPoint()
 
 		// Encrypt message using public key
 		ciphertext1 := pubKey.encrypt(message)
@@ -33,13 +47,13 @@ func TestElGamalEncryption(t *testing.T) {
 		ciphertext1Bytes := ciphertext1.Bytes()
 
 		// new ciphertext2
-		ciphertext2 := new(elGamalCipherTextOld)
+		ciphertext2 := new(elGamalCipherText)
 		ciphertext2.SetBytes(ciphertext1Bytes)
 
 		assert.Equal(t, ciphertext1, ciphertext2)
 
 		// decrypt ciphertext using privateKey
-		decryptedCiphertext, err := privKey.decrypt(ciphertext2)
+		decryptedCiphertext, err := privKey.decrypt(ciphertext1)
 
 		assert.Equal(t, nil, err)
 		assert.Equal(t, message, decryptedCiphertext)
