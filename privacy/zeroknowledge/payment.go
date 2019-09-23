@@ -486,7 +486,8 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 
 	pubKeyLastByteSender := pubKey[len(pubKey)-1]
 	senderShardID := common.GetShardIDFromLastByte(pubKeyLastByteSender)
-	cmShardIDSender := privacy.PedCom.G[privacy.PedersenShardIDIndex].ScalarMult(new(big.Int).SetBytes([]byte{senderShardID}))
+	cmShardIDSender := new(privacy.Point)
+	cmShardIDSender.ScalarMult(privacy.PedCom.G[privacy.PedersenShardIDIndex], new(privacy.Scalar).FromBytes([privacy.Ed25519KeySize]byte{senderShardID}))
 
 	for i := 0; i < len(proof.inputCoins); i++ {
 		// Check input coins' Serial number is created from input coins' input and sender's spending key
@@ -497,12 +498,16 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 		}
 
 		// Check input coins' cm is calculated correctly
-		cmTmp := proof.inputCoins[i].CoinDetails.GetPublicKey()
-		cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenValueIndex].ScalarMult(big.NewInt(int64(proof.inputCoins[i].CoinDetails.GetValue()))))
-		cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenSndIndex].ScalarMult(proof.inputCoins[i].CoinDetails.GetSNDerivator()))
-		cmTmp = cmTmp.Add(cmShardIDSender)
-		cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenRandomnessIndex].ScalarMult(proof.inputCoins[i].CoinDetails.GetRandomness()))
-		if !cmTmp.IsEqual(proof.inputCoins[i].CoinDetails.GetCoinCommitment()) {
+		cmSK := proof.inputCoins[i].CoinDetails.GetPublicKey()
+		cmValue := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenValueIndex], new(privacy.Scalar).SetUint64(proof.inputCoins[i].CoinDetails.GetValue()))
+		cmSND := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenSndIndex], proof.inputCoins[i].CoinDetails.GetSNDerivator())
+		cmRandomness := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenRandomnessIndex], proof.inputCoins[i].CoinDetails.GetRandomness())
+		cmTmp := new(privacy.Point).Add(cmSK, cmValue)
+		cmTmp.Add(cmSND, cmShardIDSender)
+		cmTmp.Add(cmTmp, cmRandomness)
+
+
+		if !privacy.IsEqual(cmTmp, proof.inputCoins[i].CoinDetails.GetCoinCommitment()) {
 			privacy.Logger.Log.Errorf("Input coins %v commitment wrong!\n", i)
 			return false, privacy.NewPrivacyErr(privacy.VerifyCoinCommitmentInputFailedErr, nil)
 		}
@@ -513,13 +518,18 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 
 	for i := 0; i < len(proof.outputCoins); i++ {
 		// Check output coins' cm is calculated correctly
-		cmTmp := proof.outputCoins[i].CoinDetails.GetPublicKey()
-		cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenValueIndex].ScalarMult(big.NewInt(int64(proof.outputCoins[i].CoinDetails.GetValue()))))
-		cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenSndIndex].ScalarMult(proof.outputCoins[i].CoinDetails.GetSNDerivator()))
 		shardID := common.GetShardIDFromLastByte(proof.outputCoins[i].CoinDetails.GetPubKeyLastByte())
-		cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenShardIDIndex].ScalarMult(new(big.Int).SetBytes([]byte{shardID})))
-		cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenRandomnessIndex].ScalarMult(proof.outputCoins[i].CoinDetails.GetRandomness()))
-		if !cmTmp.IsEqual(proof.outputCoins[i].CoinDetails.GetCoinCommitment()) {
+		cmSK := proof.outputCoins[i].CoinDetails.GetPublicKey()
+		cmValue := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenValueIndex], new(privacy.Scalar).SetUint64(proof.outputCoins[i].CoinDetails.GetValue()))
+		cmSND := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenSndIndex], proof.outputCoins[i].CoinDetails.GetSNDerivator())
+		cmShardID := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenShardIDIndex], new(privacy.Scalar).FromBytes([privacy.Ed25519KeySize]byte{shardID}))
+		cmRandomness := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenRandomnessIndex], proof.outputCoins[i].CoinDetails.GetRandomness())
+
+		cmTmp := new(privacy.Point).Add(cmSK, cmValue)
+		cmTmp.Add(cmSND, cmShardID)
+		cmTmp.Add(cmTmp, cmRandomness)
+
+		if !privacy.IsEqual(cmTmp, proof.outputCoins[i].CoinDetails.GetCoinCommitment()) {
 			privacy.Logger.Log.Errorf("Output coins %v commitment wrong!\n", i)
 			return false, privacy.NewPrivacyErr(privacy.VerifyCoinCommitmentOutputFailedErr, nil)
 		}
