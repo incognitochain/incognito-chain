@@ -220,7 +220,7 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 	var jsonErr error
 	var result interface{}
 	var request *JsonRequest
-	request, jsonErr = parseJsonRequest(body)
+	request, jsonErr = parseJsonRequest(body, r.Method)
 
 	if jsonErr == nil {
 		if request.Id == nil && !(httpServer.config.RPCQuirks && request.Jsonrpc == "") {
