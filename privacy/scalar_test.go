@@ -3,6 +3,7 @@ package privacy
 import (
 	"crypto/subtle"
 	C25519 "github.com/deroproject/derosuite/crypto"
+	"fmt"
 	"testing"
 )
 
@@ -69,6 +70,15 @@ func TestScalar_Sub(t *testing.T) {
 		}
 	}
 }
+func TestScalar_Exp(t *testing.T) {
+	for i:=0; i< 100; i++ {
+		a := RandomScalar()
+		b := RandomScalar()
+
+		res := new(Scalar).Exp(a, b)
+		fmt.Printf("REs: %v\n", res)
+	}
+}
 
 func TestScalar_Invert(t *testing.T) {
 	for i:=0; i< 100; i++ {
@@ -81,4 +91,8 @@ func TestScalar_Invert(t *testing.T) {
 			t.Fatalf("expected Scalar Invert correct !")
 		}
 	}
+
+	b := new(Scalar).SetUint64(1)
+	bInverse := b.Invert(b)
+	fmt.Printf("bInverse %v\n", bInverse)
 }
