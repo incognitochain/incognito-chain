@@ -639,13 +639,17 @@ func (connManager *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPee
 			cPbk := connManager.config.ConsensusState.userPublicKey
 			// if existed conn then not append to array
 			if cPbk != pbk && !connManager.checkPeerConnOfPublicKey(pbk) {
-				// fmt.Println("CONN: try to connect peer in beacon ", peerI.RawAddress, peerI.PublicKeyType, peerI.PublicKey, pbk)
-				go connManager.Connect(peerI.RawAddress, peerI.PublicKey, peerI.PublicKeyType, nil)
+				fmt.Println("CONN: beacon try to connect", peerI.RawAddress, peerI.PublicKeyType, peerI.PublicKey, pbk)
+				go func() {
+					fmt.Println("CONN: beacon connect result", connManager.Connect(peerI.RawAddress, peerI.PublicKey, peerI.PublicKeyType, nil))
+				}()
 			}
 			countPeerShard++
 			if countPeerShard >= maxBeaconPeers {
 				return countPeerShard
 			}
+		} else {
+			fmt.Println("CONN: beacon cannot find", pbk)
 		}
 	}
 	return countPeerShard
