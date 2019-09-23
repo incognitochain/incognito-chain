@@ -263,8 +263,14 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 		}
 	}
 	if jsonErr.(*rpcservice.RPCError) != nil && r.Method != "OPTIONS" {
+		if jsonErr.(*rpcservice.RPCError).Code == rpcservice.ErrCodeMessage[rpcservice.RPCParseError].Code {
+			Logger.log.Errorf("RPC function process with err \n %+v", jsonErr)
+			httpServer.writeHTTPResponseHeaders(r, w.Header(), http.StatusBadRequest, buf)
+			return
+		}
+
 		// Logger.log.Errorf("RPC function process with err \n %+v", jsonErr)
-		fmt.Println(request.Method)
+		//fmt.Println(request.Method)
 		if request.Method != getTransactionByHash {
 			Logger.log.Errorf("RPC function process with err \n %+v", jsonErr)
 		}
