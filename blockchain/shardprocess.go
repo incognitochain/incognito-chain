@@ -720,7 +720,7 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(blockchain *B
 			if len(l[2]) != 0 && l[2] != "" {
 				swapedCommittees = strings.Split(l[2], ",")
 			}
-			newCommittees := strings.Split(l[1], ",")
+
 			for _, v := range swapedCommittees {
 				if txId, ok := shardBestState.StakingTx[v]; ok {
 					if checkReturnStakingTxExistence(txId, shardBlock) {
@@ -730,6 +730,11 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(blockchain *B
 			}
 			if !reflect.DeepEqual(swapedCommittees, shardSwappedCommittees) {
 				return NewBlockChainError(SwapValidatorError, fmt.Errorf("Expect swapped committees to be %+v but get %+v", swapedCommittees, shardSwappedCommittees))
+			}
+
+			newCommittees := []string{}
+			if len(l[1]) > 0 {
+				newCommittees = strings.Split(l[1], ",")
 			}
 			if !reflect.DeepEqual(newCommittees, shardNewCommittees) {
 				return NewBlockChainError(SwapValidatorError, fmt.Errorf("Expect new committees to be %+v but get %+v", newCommittees, shardNewCommittees))

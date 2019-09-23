@@ -478,6 +478,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			NetSync:         serverObj.netSync,
 			PubSubManager:   pubsubManager,
 			ConsensusEngine: serverObj.consensusEngine,
+			MemCache:        serverObj.memCache,
 		}
 		serverObj.rpcServer = &rpcserver.RpcServer{}
 		serverObj.rpcServer.Init(&rpcConfig)
