@@ -137,7 +137,7 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(
 	if err != nil || rewardReceiverWallet == nil {
 		return false, false, errors.New("Invalid Candidate Payment Address, Failed to Deserialized Into Key Wallet")
 	}
-	if len(rewardReceiverWallet.KeySet.PaymentAddress.Pk) != 33 {
+	if len(rewardReceiverWallet.KeySet.PaymentAddress.Pk) != common.PublicKeySize {
 		return false, false, errors.New("Invalid Public Key of Candidate Payment Address")
 	}
 

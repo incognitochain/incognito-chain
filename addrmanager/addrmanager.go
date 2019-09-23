@@ -59,6 +59,9 @@ func NewAddrManager(dataDir string, key common.Hash) *AddrManager {
 // savePeers saves all the known addresses to a file so they can be read back
 // in at next run.
 func (addrManager *AddrManager) savePeers() error {
+	addrManager.mtx.Lock()
+	defer addrManager.mtx.Unlock()
+
 	// check len of addrIndex
 	if len(addrManager.addrIndex) == 0 {
 		// dont have anything to save into file data

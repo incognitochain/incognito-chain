@@ -686,7 +686,7 @@ func (beaconBestState *BeaconBestState) updateBeaconBestState(beaconBlock *Beaco
 		// assign CandidateShardWaitingForCurrentRandom to ShardPendingValidator with CurrentRandom
 		if randomFlag {
 			beaconBestState.IsGetRandomNumber = true
-			err := AssignValidatorShard(beaconBestState.ShardPendingValidator, beaconBestState.CandidateShardWaitingForCurrentRandom, beaconBestState.CurrentRandomNumber, beaconBestState.ActiveShards)
+			err := AssignValidatorShard(beaconBestState.ShardPendingValidator, beaconBestState.BeaconPendingValidator, beaconBestState.ShardCommittee, beaconBestState.BeaconCommittee, beaconBestState.CandidateShardWaitingForCurrentRandom, beaconBestState.CurrentRandomNumber, beaconBestState.ActiveShards)
 			if err != nil {
 				return NewBlockChainError(AssignValidatorToShardError, err)
 			}
