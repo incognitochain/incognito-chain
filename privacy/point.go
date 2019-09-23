@@ -66,6 +66,7 @@ func (p *Point) FromBytes(b [Ed25519KeySize]byte) (*Point, error) {
 		p = new(Point)
 	}
 	p.key.FromBytes(b)
+
 	if !p.PointValid(){
 		return nil, errors.New("Point is invalid")
 	}
@@ -77,7 +78,7 @@ func (p *Point) Zero() *Point {
 	if p == nil {
 		p = new(Point)
 	}
-	copy(p.key[:], C25519.Zero.String())
+	p.key = C25519.Zero
 	return p
 }
 
