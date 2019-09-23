@@ -72,7 +72,7 @@ func HashToScalar(data []byte) *Scalar {
 	return sc
 }
 
-func (sc *Scalar) SetInt64(i uint64) *Scalar {
+func (sc *Scalar) SetUint64(i uint64) *Scalar {
 	if sc == nil {
 		sc = new(Scalar)
 	}
