@@ -40,3 +40,31 @@ func CommitteeBase58KeyListToStruct(strKeyList []string) ([]CommitteePublicKey, 
 	}
 	return result, nil
 }
+func IsInBase58ShortFormat(strKeyList []string) bool {
+	tempStruct, err := CommitteeBase58KeyListToStruct(strKeyList)
+	if err != nil {
+		return false
+	}
+	tempString, err := CommitteeKeyListToString(tempStruct)
+	if len(tempString) != len(strKeyList) {
+		return false
+	}
+	for index, value := range tempString {
+		if value != strKeyList[index] {
+			return false
+		}
+	}
+	return true
+}
+
+func ConvertToBase58ShortFormat(strKeyList []string) ([]string, error) {
+	tempStruct, err := CommitteeBase58KeyListToStruct(strKeyList)
+	if err != nil {
+		return []string{}, err
+	}
+	tempString, err := CommitteeKeyListToString(tempStruct)
+	if err != nil {
+		return []string{}, err
+	}
+	return tempString, nil
+}
