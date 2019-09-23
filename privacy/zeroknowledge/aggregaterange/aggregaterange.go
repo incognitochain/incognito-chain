@@ -13,47 +13,47 @@ import (
 // This protocol proves in zero-knowledge that a list of committed values falls in [0, 2^64)
 
 type AggregatedRangeWitness struct {
-	values []*big.Int
-	rands  []*big.Int
+	values []*privacy.Scalar
+	rands  []*privacy.Scalar
 }
 
 type AggregatedRangeProof struct {
-	cmsValue          []*privacy.EllipticPoint
-	a                 *privacy.EllipticPoint
-	s                 *privacy.EllipticPoint
-	t1                *privacy.EllipticPoint
-	t2                *privacy.EllipticPoint
-	tauX              *big.Int
-	tHat              *big.Int
-	mu                *big.Int
+	cmsValue          []*privacy.Point
+	a                 *privacy.Point
+	s                 *privacy.Point
+	t1                *privacy.Point
+	t2                *privacy.Point
+	tauX              *privacy.Scalar
+	tHat              *privacy.Scalar
+	mu                *privacy.Scalar
 	innerProductProof *InnerProductProof
 }
 
 func (proof AggregatedRangeProof) ValidateSanity() bool {
 	for i := 0; i < len(proof.cmsValue); i++ {
-		if !proof.cmsValue[i].IsSafe() {
+		if !proof.cmsValue[i].PointValid() {
 			return false
 		}
 	}
-	if !proof.a.IsSafe() {
+	if !proof.a.PointValid() {
 		return false
 	}
-	if !proof.s.IsSafe() {
+	if !proof.s.PointValid() {
 		return false
 	}
-	if !proof.t1.IsSafe() {
+	if !proof.t1.PointValid() {
 		return false
 	}
-	if !proof.t2.IsSafe() {
+	if !proof.t2.PointValid() {
 		return false
 	}
-	if proof.tauX.BitLen() > 256 {
+	if !proof.tauX.ScalarValid() {
 		return false
 	}
-	if proof.tHat.BitLen() > 256 {
+	if !proof.tHat.ScalarValid(){
 		return false
 	}
-	if proof.mu.BitLen() > 256 {
+	if !proof.mu.ScalarValid() {
 		return false
 	}
 
@@ -61,17 +61,13 @@ func (proof AggregatedRangeProof) ValidateSanity() bool {
 }
 
 func (proof *AggregatedRangeProof) Init() {
-	proof.a = new(privacy.EllipticPoint)
-	proof.a.Zero()
-	proof.s = new(privacy.EllipticPoint)
-	proof.s.Zero()
-	proof.t1 = new(privacy.EllipticPoint)
-	proof.t1.Zero()
-	proof.t2 = new(privacy.EllipticPoint)
-	proof.t2.Zero()
-	proof.tauX = new(big.Int)
-	proof.tHat = new(big.Int)
-	proof.mu = new(big.Int)
+	proof.a = new(privacy.Point).Zero()
+	proof.s = new(privacy.Point).Zero()
+	proof.t1 = new(privacy.Point).Zero()
+	proof.t2 = new(privacy.Point).Zero()
+	proof.tauX = new(privacy.Scalar)
+	proof.tHat = new(privacy.Scalar)
+	proof.mu = new(privacy.Scalar)
 	proof.innerProductProof = new(InnerProductProof)
 }
 
@@ -109,17 +105,17 @@ func (proof AggregatedRangeProof) Bytes() []byte {
 
 	res = append(res, byte(len(proof.cmsValue)))
 	for i := 0; i < len(proof.cmsValue); i++ {
-		res = append(res, proof.cmsValue[i].Compress()...)
+		res = append(res, proof.cmsValue[i].ToBytes()[:]...)
 	}
 
-	res = append(res, proof.a.Compress()...)
-	res = append(res, proof.s.Compress()...)
-	res = append(res, proof.t1.Compress()...)
-	res = append(res, proof.t2.Compress()...)
+	res = append(res, proof.a.ToBytes()[:]...)
+	res = append(res, proof.s.ToBytes()[:]...)
+	res = append(res, proof.t1.ToBytes()[:]...)
+	res = append(res, proof.t2.ToBytes()[:]...)
 
-	res = append(res, common.AddPaddingBigInt(proof.tauX, common.BigIntSize)...)
-	res = append(res, common.AddPaddingBigInt(proof.tHat, common.BigIntSize)...)
-	res = append(res, common.AddPaddingBigInt(proof.mu, common.BigIntSize)...)
+	res = append(res, proof.tauX.ToBytes()[:]...)
+	res = append(res, proof.tHat.ToBytes()[:]...)
+	res = append(res, proof.mu.ToBytes()[:]...)
 	res = append(res, proof.innerProductProof.Bytes()...)
 
 	//privacy.Logger.Log.Debugf("BYTES ------------ %v\n", res)
@@ -136,53 +132,49 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 
 	lenValues := int(bytes[0])
 	offset := 1
+	var err error
 
-	proof.cmsValue = make([]*privacy.EllipticPoint, lenValues)
+	proof.cmsValue = make([]*privacy.Point, lenValues)
 	for i := 0; i < lenValues; i++ {
-		proof.cmsValue[i] = new(privacy.EllipticPoint)
-		err := proof.cmsValue[i].Decompress(bytes[offset : offset+privacy.CompressedEllipticPointSize])
+		proof.cmsValue[i], err = new(privacy.Point).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
 		if err != nil {
 			return err
 		}
-		offset += privacy.CompressedEllipticPointSize
+		offset += privacy.Ed25519KeySize
 	}
 
-	proof.a = new(privacy.EllipticPoint)
-	err := proof.a.Decompress(bytes[offset:])
+	proof.a, err = new(privacy.Point).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
 	if err != nil {
 		return err
 	}
-	offset += privacy.CompressedEllipticPointSize
+	offset += privacy.Ed25519KeySize
 
-	proof.s = new(privacy.EllipticPoint)
-	err = proof.s.Decompress(bytes[offset:])
+	proof.s, err = new(privacy.Point).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
 	if err != nil {
 		return err
 	}
-	offset += privacy.CompressedEllipticPointSize
+	offset += privacy.Ed25519KeySize
 
-	proof.t1 = new(privacy.EllipticPoint)
-	err = proof.t1.Decompress(bytes[offset:])
+	proof.t1, err = new(privacy.Point).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
 	if err != nil {
 		return err
 	}
-	offset += privacy.CompressedEllipticPointSize
+	offset += privacy.Ed25519KeySize
 
-	proof.t2 = new(privacy.EllipticPoint)
-	err = proof.t2.Decompress(bytes[offset:])
+	proof.t2, err = new(privacy.Point).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
 	if err != nil {
 		return err
 	}
-	offset += privacy.CompressedEllipticPointSize
+	offset += privacy.Ed25519KeySize
 
-	proof.tauX = new(big.Int).SetBytes(bytes[offset : offset+common.BigIntSize])
-	offset += common.BigIntSize
+	proof.tauX = new(privacy.Scalar).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+	offset += privacy.Ed25519KeySize
 
-	proof.tHat = new(big.Int).SetBytes(bytes[offset : offset+common.BigIntSize])
-	offset += common.BigIntSize
+	proof.tHat = new(privacy.Scalar).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+	offset += privacy.Ed25519KeySize
 
-	proof.mu = new(big.Int).SetBytes(bytes[offset : offset+common.BigIntSize])
-	offset += common.BigIntSize
+	proof.mu = new(privacy.Scalar).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+	offset += privacy.Ed25519KeySize
 
 	proof.innerProductProof = new(InnerProductProof)
 	proof.innerProductProof.SetBytes(bytes[offset:])
@@ -191,14 +183,14 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 	return nil
 }
 
-func (wit *AggregatedRangeWitness) Set(values []*big.Int, rands []*big.Int) {
+func (wit *AggregatedRangeWitness) Set(values []*privacy.Scalar, rands []*privacy.Scalar) {
 	numValue := len(values)
-	wit.values = make([]*big.Int, numValue)
-	wit.rands = make([]*big.Int, numValue)
+	wit.values = make([]*privacy.Scalar, numValue)
+	wit.rands = make([]*privacy.Scalar, numValue)
 
 	for i := range values {
-		wit.values[i] = new(big.Int).Set(values[i])
-		wit.rands[i] = new(big.Int).Set(rands[i])
+		wit.values[i] = new(privacy.Scalar).Set(values[i])
+		wit.rands[i] = new(privacy.Scalar).Set(rands[i])
 	}
 }
 
@@ -207,17 +199,17 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 
 	numValue := len(wit.values)
 	numValuePad := pad(numValue)
-	values := make([]*big.Int, numValuePad)
-	rands := make([]*big.Int, numValuePad)
+	values := make([]*privacy.Scalar, numValuePad)
+	rands := make([]*privacy.Scalar, numValuePad)
 
 	for i := range wit.values {
-		values[i] = new(big.Int).Set(wit.values[i])
-		rands[i] = new(big.Int).Set(wit.rands[i])
+		values[i] = new(privacy.Scalar).Set(wit.values[i])
+		rands[i] = new(privacy.Scalar).Set(wit.rands[i])
 	}
 
 	for i := numValue; i < numValuePad; i++ {
-		values[i] = big.NewInt(0)
-		rands[i] = big.NewInt(0)
+		values[i] = new(privacy.Scalar).SetUint64(0)
+		rands[i] = new(privacy.Scalar).SetUint64(0)
 	}
 
 	aggParam := new(bulletproofParams)
@@ -230,14 +222,14 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 		aggParam.u = AggParam.u
 	}
 
-	proof.cmsValue = make([]*privacy.EllipticPoint, numValue)
+	proof.cmsValue = make([]*privacy.Point, numValue)
 	for i := 0; i < numValue; i++ {
 		proof.cmsValue[i] = privacy.PedCom.CommitAtIndex(values[i], rands[i], privacy.PedersenValueIndex)
 	}
 
 	n := maxExp
 	// Convert values to binary array
-	aL := make([]*big.Int, numValuePad*n)
+	aL := make([]*privacy.Scalar, numValuePad*n)
 	for i, value := range values {
 		tmp := privacy.ConvertBigIntToBinary(value, n)
 		for j := 0; j < n; j++ {
@@ -248,10 +240,10 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	twoNumber := big.NewInt(2)
 	twoVectorN := powerVector(twoNumber, n)
 
-	aR := make([]*big.Int, numValuePad*n)
+	aR := make([]*privacy.Scalar, numValuePad*n)
 
 	for i := 0; i < numValuePad*n; i++ {
-		aR[i] = new(big.Int).Sub(aL[i], big.NewInt(1))
+		aR[i] = new(privacy.Scalar).Sub(aL[i], big.NewInt(1))
 		aR[i].Mod(aR[i], privacy.Curve.Params().N)
 	}
 
@@ -268,8 +260,8 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	proof.a = A
 
 	// Random blinding vectors sL, sR
-	sL := make([]*big.Int, n*numValuePad)
-	sR := make([]*big.Int, n*numValuePad)
+	sL := make([]*privacy.Scalar, n*numValuePad)
+	sR := make([]*privacy.Scalar, n*numValuePad)
 	for i := range sL {
 		sL[i] = privacy.RandScalar(r)
 		sR[i] = privacy.RandScalar(r)
@@ -289,9 +281,9 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	// challenge y, z
 	y := generateChallengeForAggRange(aggParam, [][]byte{A.Compress(), S.Compress()})
 	z := generateChallengeForAggRange(aggParam, [][]byte{A.Compress(), S.Compress(), y.Bytes()})
-	zNeg := new(big.Int).Neg(z)
+	zNeg := new(privacy.Scalar).Neg(z)
 	zNeg.Mod(zNeg, privacy.Curve.Params().N)
-	zSquare := new(big.Int).Mul(z, z)
+	zSquare := new(privacy.Scalar).Mul(z, z)
 	zSquare.Mod(zSquare, privacy.Curve.Params().N)
 
 	// l(X) = (aL -z*1^n) + sL*X
@@ -306,13 +298,13 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 		return nil, err
 	}
 
-	vectorSum := make([]*big.Int, n*numValuePad)
-	zTmp := new(big.Int).Set(z)
+	vectorSum := make([]*privacy.Scalar, n*numValuePad)
+	zTmp := new(privacy.Scalar).Set(z)
 	for j := 0; j < numValuePad; j++ {
 		zTmp.Mul(zTmp, z)
 		zTmp.Mod(zTmp, privacy.Curve.Params().N)
 		for i := 0; i < n; i++ {
-			vectorSum[j*n+i] = new(big.Int).Mul(twoVectorN[i], zTmp)
+			vectorSum[j*n+i] = new(privacy.Scalar).Mul(twoVectorN[i], zTmp)
 			vectorSum[j*n+i].Mod(vectorSum[j*n+i], privacy.Curve.Params().N)
 		}
 	}
@@ -330,7 +322,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	//t(X) = <l(X), r(X)> = t0 + t1*X + t2*X^2
 
 	//calculate t0 = v*z^2 + delta(y, z)
-	deltaYZ := new(big.Int).Sub(z, zSquare)
+	deltaYZ := new(privacy.Scalar).Sub(z, zSquare)
 
 	// innerProduct1 = <1^(n*m), y^(n*m)>
 	innerProduct1 := big.NewInt(0)
@@ -349,7 +341,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	innerProduct2.Mod(innerProduct2, privacy.Curve.Params().N)
 
 	sum := big.NewInt(0)
-	zTmp = new(big.Int).Set(zSquare)
+	zTmp = new(privacy.Scalar).Set(zSquare)
 	for j := 0; j < numValuePad; j++ {
 		zTmp.Mul(zTmp, z)
 		zTmp.Mod(zTmp, privacy.Curve.Params().N)
@@ -371,7 +363,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 		return nil, err
 	}
 
-	t1 := new(big.Int).Add(innerProduct3, innerProduct4)
+	t1 := new(privacy.Scalar).Add(innerProduct3, innerProduct4)
 	t1.Mod(t1, privacy.Curve.Params().N)
 
 	// t2 = <l1, r1>
@@ -389,7 +381,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 
 	// challenge x = hash(G || H || A || S || T1 || T2)
 	x := generateChallengeForAggRange(aggParam, [][]byte{proof.a.Compress(), proof.s.Compress(), proof.t1.Compress(), proof.t2.Compress()})
-	xSquare := new(big.Int).Exp(x, twoNumber, privacy.Curve.Params().N)
+	xSquare := new(privacy.Scalar).Exp(x, twoNumber, privacy.Curve.Params().N)
 
 	// lVector = aL - z*1^n + sL*x
 	lVector, err := vectorAdd(vectorAddScalar(aL, zNeg), vectorMulScalar(sL, x))
@@ -407,13 +399,13 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 		return nil, err
 	}
 
-	vectorSum = make([]*big.Int, n*numValuePad)
-	zTmp = new(big.Int).Set(z)
+	vectorSum = make([]*privacy.Scalar, n*numValuePad)
+	zTmp = new(privacy.Scalar).Set(z)
 	for j := 0; j < numValuePad; j++ {
 		zTmp.Mul(zTmp, z)
 		zTmp.Mod(zTmp, privacy.Curve.Params().N)
 		for i := 0; i < n; i++ {
-			vectorSum[j*n+i] = new(big.Int).Mul(twoVectorN[i], zTmp)
+			vectorSum[j*n+i] = new(privacy.Scalar).Mul(twoVectorN[i], zTmp)
 			vectorSum[j*n+i].Mod(vectorSum[j*n+i], privacy.Curve.Params().N)
 		}
 	}
@@ -430,10 +422,10 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	}
 
 	// blinding value for tHat: tauX = tau2*x^2 + tau1*x + z^2*rand
-	proof.tauX = new(big.Int).Mul(tau2, xSquare)
-	proof.tauX.Add(proof.tauX, new(big.Int).Mul(tau1, x))
-	zTmp = new(big.Int).Set(z)
-	tmpBN := new(big.Int)
+	proof.tauX = new(privacy.Scalar).Mul(tau2, xSquare)
+	proof.tauX.Add(proof.tauX, new(privacy.Scalar).Mul(tau1, x))
+	zTmp = new(privacy.Scalar).Set(z)
+	tmpBN := new(privacy.Scalar)
 	for j := 0; j < numValuePad; j++ {
 		zTmp.Mul(zTmp, z)
 		zTmp.Mod(zTmp, privacy.Curve.Params().N)
@@ -444,7 +436,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 
 	// alpha, rho blind A, S
 	// mu = alpha + rho*x
-	proof.mu = new(big.Int).Mul(rho, x)
+	proof.mu = new(privacy.Scalar).Mul(rho, x)
 	proof.mu.Add(proof.mu, alpha)
 	proof.mu.Mod(proof.mu, privacy.Curve.Params().N)
 
@@ -473,7 +465,7 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	tmpcmsValue := proof.cmsValue
 
 	for i := numValue; i < numValuePad; i++ {
-		zero := new(privacy.EllipticPoint)
+		zero := new(privacy.Point)
 		zero.Zero()
 		tmpcmsValue = append(tmpcmsValue, zero)
 	}
@@ -498,31 +490,31 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	// recalculate challenge y, z
 	y := generateChallengeForAggRange(aggParam, [][]byte{proof.a.Compress(), proof.s.Compress()})
 	z := generateChallengeForAggRange(aggParam, [][]byte{proof.a.Compress(), proof.s.Compress(), y.Bytes()})
-	zNeg := new(big.Int).Neg(z)
+	zNeg := new(privacy.Scalar).Neg(z)
 	zNeg.Mod(zNeg, privacy.Curve.Params().N)
-	zSquare := new(big.Int).Exp(z, twoNumber, privacy.Curve.Params().N)
+	zSquare := new(privacy.Scalar).Exp(z, twoNumber, privacy.Curve.Params().N)
 
 	// challenge x = hash(G || H || A || S || T1 || T2)
 	//fmt.Printf("T2: %v\n", proof.t2)
 	x := generateChallengeForAggRange(aggParam, [][]byte{proof.a.Compress(), proof.s.Compress(), proof.t1.Compress(), proof.t2.Compress()})
-	xSquare := new(big.Int).Exp(x, twoNumber, privacy.Curve.Params().N)
+	xSquare := new(privacy.Scalar).Exp(x, twoNumber, privacy.Curve.Params().N)
 
 	yVector := powerVector(y, n*numValuePad)
 
 	// HPrime = H^(y^(1-i)
-	HPrime := make([]*privacy.EllipticPoint, n*numValuePad)
+	HPrime := make([]*privacy.Point, n*numValuePad)
 	var wg sync.WaitGroup
 	wg.Add(len(HPrime))
 	for i := 0; i < n*numValuePad; i++ {
 		go func(i int, wg *sync.WaitGroup) {
 			defer wg.Done()
-			HPrime[i] = aggParam.h[i].ScalarMult(new(big.Int).Exp(y, big.NewInt(int64(-i)), privacy.Curve.Params().N))
+			HPrime[i] = aggParam.h[i].ScalarMult(new(privacy.Scalar).Exp(y, big.NewInt(int64(-i)), privacy.Curve.Params().N))
 		}(i, &wg)
 	}
 	wg.Wait()
 
 	// g^tHat * h^tauX = V^(z^2) * g^delta(y,z) * T1^x * T2^(x^2)
-	deltaYZ := new(big.Int).Sub(z, zSquare)
+	deltaYZ := new(privacy.Scalar).Sub(z, zSquare)
 
 	// innerProduct1 = <1^(n*m), y^(n*m)>
 	innerProduct1, err := innerProduct(oneVector, yVector)
@@ -539,7 +531,7 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	}
 
 	sum := big.NewInt(0)
-	zTmp := new(big.Int).Set(zSquare)
+	zTmp := new(privacy.Scalar).Set(zSquare)
 	for j := 0; j < numValuePad; j++ {
 		zTmp.Mul(zTmp, z)
 		zTmp.Mod(zTmp, privacy.Curve.Params().N)
@@ -552,7 +544,7 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 
 	left1 := privacy.PedCom.CommitAtIndex(proof.tHat, proof.tauX, privacy.PedersenValueIndex)
 
-	var temp1, temp2, temp3 *privacy.EllipticPoint
+	var temp1, temp2, temp3 *privacy.Point
 
 	wg.Add(3)
 	go func(wg *sync.WaitGroup) {
