@@ -3,8 +3,6 @@ package privacy
 import (
 	"encoding/json"
 	"errors"
-	"math/big"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 )
@@ -12,34 +10,35 @@ import (
 // hybridCipherText_Old represents to hybridCipherText_Old for Hybrid encryption
 // Hybrid encryption uses AES scheme to encrypt message with arbitrary size
 // and uses Elgamal encryption to encrypt AES key
-type hybridCipherText_Old struct {
+type hybridCipherText struct {
 	msgEncrypted    []byte
 	symKeyEncrypted []byte
 }
 
-func (ciphertext hybridCipherText_Old) GetMsgEncrypted() []byte {
+func (ciphertext hybridCipherText) GetMsgEncrypted() []byte {
 	return ciphertext.msgEncrypted
 }
 
-func (ciphertext hybridCipherText_Old) GetSymKeyEncrypted() []byte {
+func (ciphertext hybridCipherText) GetSymKeyEncrypted() []byte {
 	return ciphertext.symKeyEncrypted
 }
 
 // isNil check whether ciphertext is nil or not
-func (ciphertext hybridCipherText_Old) IsNil() bool {
+func (ciphertext hybridCipherText) IsNil() bool {
 	if len(ciphertext.msgEncrypted) == 0 {
 		return true
 	}
+
 	return len(ciphertext.symKeyEncrypted) == 0
 }
 
-func (hybridCipherText hybridCipherText_Old) MarshalJSON() ([]byte, error) {
+func (hybridCipherText hybridCipherText) MarshalJSON() ([]byte, error) {
 	data := hybridCipherText.Bytes()
 	temp := base58.Base58Check{}.Encode(data, common.ZeroByte)
 	return json.Marshal(temp)
 }
 
-func (hybridCipherText *hybridCipherText_Old) UnmarshalJSON(data []byte) error {
+func (hybridCipherText *hybridCipherText) UnmarshalJSON(data []byte) error {
 	dataStr := ""
 	_ = json.Unmarshal(data, &dataStr)
 	temp, _, err := base58.Base58Check{}.Decode(dataStr)
@@ -52,7 +51,7 @@ func (hybridCipherText *hybridCipherText_Old) UnmarshalJSON(data []byte) error {
 
 // Bytes converts ciphertext to bytes array
 // if ciphertext is nil, return empty byte array
-func (ciphertext hybridCipherText_Old) Bytes() []byte {
+func (ciphertext hybridCipherText) Bytes() []byte {
 	if ciphertext.IsNil() {
 		return []byte{}
 	}
@@ -65,7 +64,7 @@ func (ciphertext hybridCipherText_Old) Bytes() []byte {
 }
 
 // SetBytes reverts bytes array to hybridCipherText_Old
-func (ciphertext *hybridCipherText_Old) SetBytes(bytes []byte) error {
+func (ciphertext *hybridCipherText) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
 		return NewPrivacyErr(InvalidInputToSetBytesErr, nil)
 	}
@@ -79,29 +78,27 @@ func (ciphertext *hybridCipherText_Old) SetBytes(bytes []byte) error {
 // hybridEncrypt_Old generates AES key by randomize an elliptic point aesKeyPoint and get X-coordinate
 // using AES key to encrypt message
 // After that, using ElGamal encryption encrypt aesKeyPoint using publicKey
-func hybridEncrypt_Old(msg []byte, publicKey *EllipticPoint) (ciphertext *hybridCipherText_Old, err error) {
-	ciphertext = new(hybridCipherText_Old)
-	// Generate a AES key as the abscissa of a random elliptic point
-	aesKeyPoint := new(EllipticPoint)
-	aesKeyPoint.Randomize()
-	aesKeyByte := common.AddPaddingBigInt(aesKeyPoint.x, common.BigIntSize)
+func hybridEncrypt(msg []byte, publicKey *Point) (ciphertext *hybridCipherText, err error) {
+	ciphertext = new(hybridCipherText)
 
+	// Generate a AES key bytes
+	sKeyPoint := RandomPoint()
+	sKeyByte := sKeyPoint.ToBytes()
 	// Encrypt msg using aesKeyByte
-	aesScheme := &common.AES{
-		Key: aesKeyByte,
-	}
 
+	aesKey := sKeyByte[:]
+	aesScheme := &common.AES{
+		Key: aesKey,
+	}
 	ciphertext.msgEncrypted, err = aesScheme.Encrypt(msg)
 	if err != nil {
 		return nil, err
 	}
 
 	// Using ElGamal cryptosystem for encrypting AES sym key
-	pubKey := new(elGamalPublicKeyOld)
-	pubKey.h = new(EllipticPoint)
-	pubKey.h.Set(publicKey.x, publicKey.y)
-
-	ciphertext.symKeyEncrypted = pubKey.encrypt(aesKeyPoint).Bytes()
+	pubKey := new(elGamalPublicKey)
+	pubKey.h = publicKey
+	ciphertext.symKeyEncrypted = pubKey.encrypt(sKeyPoint).Bytes()
 
 	return ciphertext, nil
 }
@@ -109,18 +106,18 @@ func hybridEncrypt_Old(msg []byte, publicKey *EllipticPoint) (ciphertext *hybrid
 // hybridDecrypt_Old receives a ciphertext and privateKey
 // it decrypts aesKeyPoint, using ElGamal encryption with privateKey
 // Using X-coordinate of aesKeyPoint to decrypts message
-func hybridDecrypt_Old(ciphertext *hybridCipherText_Old, privateKey *big.Int) (msg []byte, err error) {
+func hybridDecrypt(ciphertext *hybridCipherText, privateKey *Scalar) (msg []byte, err error) {
 	// Validate ciphertext
 	if ciphertext.IsNil() {
 		return []byte{}, errors.New("ciphertext must not be nil")
 	}
 
 	// Get receiving key, which is a private key of ElGamal cryptosystem
-	privKey := new(elGamalPrivateKeyOld)
+	privKey := new(elGamalPrivateKey)
 	privKey.set(privateKey)
 
 	// Parse encrypted AES key encoded as an elliptic point from EncryptedSymKey
-	encryptedAESKey := new(elGamalCipherTextOld)
+	encryptedAESKey := new(elGamalCipherText)
 	err = encryptedAESKey.SetBytes(ciphertext.symKeyEncrypted)
 	if err != nil {
 		return []byte{}, err
@@ -133,8 +130,10 @@ func hybridDecrypt_Old(ciphertext *hybridCipherText_Old, privateKey *big.Int) (m
 	}
 
 	// Get AES key
+	aesKeyByte := aesKeyPoint.ToBytes()
+	aesKey := aesKeyByte[:]
 	aesScheme := &common.AES{
-		Key: common.AddPaddingBigInt(aesKeyPoint.x, common.BigIntSize),
+		Key: aesKey,
 	}
 
 	// Decrypt encrypted coin randomness using AES keysatt

@@ -15,7 +15,7 @@ import (
 
 // PaymentWitness contains all of witness for proving when spending coins
 type PaymentWitness struct {
-	privateKey          *big.Int
+	privateKey          *privacy.Scalar
 	inputCoins          []*privacy.InputCoin
 	outputCoins         []*privacy.OutputCoin
 	commitmentIndices   []uint64
@@ -45,11 +45,11 @@ func (paymentWitness PaymentWitness) GetRandSecretKey() *big.Int {
 
 type PaymentWitnessParam struct {
 	HasPrivacy              bool
-	PrivateKey              *big.Int
+	PrivateKey              *privacy.Scalar
 	InputCoins              []*privacy.InputCoin
 	OutputCoins             []*privacy.OutputCoin
 	PublicKeyLastByteSender byte
-	Commitments             []*privacy.EllipticPoint
+	Commitments             []*privacy.Point
 	CommitmentIndices       []uint64
 	MyCommitmentIndices     []uint64
 	Fee                     uint64
@@ -74,7 +74,7 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 
 	if !hasPrivacy {
 		for _, outCoin := range outputCoins {
-			outCoin.CoinDetails.SetRandomness(privacy.RandScalar(r))
+			outCoin.CoinDetails.SetRandomness(privacy.RandomScalar())
 			err := outCoin.CoinDetails.CommitAll()
 			if err != nil {
 				return privacy.NewPrivacyErr(privacy.CommitNewOutputCoinNoPrivacyErr, nil)

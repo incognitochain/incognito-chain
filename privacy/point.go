@@ -53,12 +53,16 @@ func (p Point) ToBytes() [Ed25519KeySize]byte {
 	return p.key.ToBytes()
 }
 
-func (p *Point) FromBytes(b [Ed25519KeySize]byte) *Point {
+func (p *Point) FromBytes(b [Ed25519KeySize]byte) (*Point, error) {
 	if p == nil {
 		p = new(Point)
 	}
 	p.key.FromBytes(b)
-	return p
+	if !p.PointValid(){
+		return nil, errors.New("Point is invalid")
+	}
+
+	return p, nil
 }
 
 func (p *Point) Zero() *Point {
@@ -111,6 +115,11 @@ func (p *Point) InvertScalarMult(pa *Point, a *Scalar) *Point {
 	return p
 }
 
+func (p *Point) Derive(pa *Point, a *Scalar, b *Scalar) *Point{
+	c := new(Scalar).Add(a, b)
+	return p.InvertScalarMult(pa, c)
+}
+
 func (p *Point) Add(pa, pb *Point) *Point {
 	if p == nil {
 		p = new(Point)
@@ -161,19 +170,6 @@ func HashToPoint(index int64) *Point {
 	}
 	return p
 }
-
-func (point *Point) Derive(seed, derivator *Scalar) *Point {
-	// point must be on the curve
-	if !point.PointValid() {
-		return nil
-	}
-	sum := new(Scalar).Add(seed, derivator)
-	sumInv:= new(Scalar).Invert(sum)
-	res := new(Point).ScalarMult(point, sumInv)
-	return res
-}
-
-
 
 
 
