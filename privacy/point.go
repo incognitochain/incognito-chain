@@ -32,6 +32,14 @@ func (p *Point) SetKey(a *C25519.Key) (*Point, error) {
 	return p, nil
 }
 
+func (p *Point) Set(q *Point) (*Point) {
+	if p == nil {
+		p = new(Point)
+	}
+	p.key = q.key
+	return p
+}
+
 func (p Point) MarshalText() ([]byte) {
 	return []byte(fmt.Sprintf("%x", p.key[:]))
 }
