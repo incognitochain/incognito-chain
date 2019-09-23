@@ -209,8 +209,8 @@ func (peerConn *PeerConn) processInMessageString(msgStr string) error {
 		Logger.log.Errorf("Msg size exceed MsgType %s max size, size %+v | max allow is %+v \n", commandType, len(jsonDecodeBytes), message.MaxPayloadLength(1))
 		return NewPeerError(MessageTypeError, err, nil)
 	}
-	// check forward
-	if peerConn.config.MessageListeners.GetCurrentRoleShard != nil {
+	// check forward TODO
+	/*if peerConn.config.MessageListeners.GetCurrentRoleShard != nil {
 		cRole, cShard := peerConn.config.MessageListeners.GetCurrentRoleShard()
 		if cShard != nil {
 			fT := messageHeader[wire.MessageCmdTypeSize]
@@ -239,7 +239,7 @@ func (peerConn *PeerConn) processInMessageString(msgStr string) error {
 				return NewPeerError(CheckForwardError, err, nil)
 			}
 		}
-	}
+	}*/
 
 	err = json.Unmarshal(messageBody, &message)
 	if err != nil {

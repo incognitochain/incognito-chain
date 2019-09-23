@@ -32,18 +32,20 @@ func NewPrivacyToken(obj transaction.TxCustomTokenPrivacy) *CustomToken {
 	customToken.Symbol = obj.TxPrivacyTokenData.PropertySymbol
 	customToken.Name = obj.TxPrivacyTokenData.PropertyName
 	customToken.Amount = obj.TxPrivacyTokenData.Amount
-	customToken.Image = common.Render(obj.TxPrivacyTokenData.PropertyID[:])
+	//customToken.Image = common.Render(obj.TxPrivacyTokenData.PropertyID[:])
 	customToken.IsPrivacy = true
 	return customToken
 }
 
-func (customToken *CustomToken) InitPrivacyForCrossShard(obj blockchain.CrossShardTokenPrivacyMetaData) {
+func NewPrivacyForCrossShard(obj blockchain.CrossShardTokenPrivacyMetaData) *CustomToken {
+	customToken := &CustomToken{}
 	customToken.ID = obj.TokenID.String()
 	customToken.Symbol = obj.PropertySymbol
 	customToken.Name = obj.PropertyName
 	customToken.Amount = obj.Amount
-	customToken.Image = common.Render(obj.TokenID[:])
+	//customToken.Image = common.Render(obj.TokenID[:])
 	customToken.IsPrivacy = true
+	return customToken
 }
 
 type ListCustomToken struct {
