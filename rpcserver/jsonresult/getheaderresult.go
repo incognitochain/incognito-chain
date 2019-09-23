@@ -8,3 +8,12 @@ type GetHeaderResult struct {
 	BlockHash string                 `json:"Blockhash"`
 	Header    blockchain.ShardHeader `json:"Header"`
 }
+
+func NewHeaderResult(header blockchain.ShardHeader, blockNum int, blockHash string, shardID byte) (GetHeaderResult) {
+	result := GetHeaderResult{}
+	result.Header = header
+	result.BlockNum = blockNum
+	result.BlockHash = blockHash
+	result.ShardID = shardID
+	return result
+}

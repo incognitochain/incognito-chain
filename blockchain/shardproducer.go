@@ -467,38 +467,38 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 		// err                   error
 	)
 	if beaconHeight%blockchain.config.ChainParams.Epoch == 0 {
-		if len(shardPendingValidator) > 0 {
-			Logger.log.Info("ShardPendingValidator", shardPendingValidator)
-			Logger.log.Info("ShardCommittee", shardCommittee)
-			Logger.log.Info("MaxShardCommitteeSize", blockchain.BestState.Shard[shardID].MaxShardCommitteeSize)
-			Logger.log.Info("ShardID", shardID)
+		// if len(shardPendingValidator) > 0 {
+		Logger.log.Info("ShardPendingValidator", shardPendingValidator)
+		Logger.log.Info("ShardCommittee", shardCommittee)
+		Logger.log.Info("MaxShardCommitteeSize", blockchain.BestState.Shard[shardID].MaxShardCommitteeSize)
+		Logger.log.Info("ShardID", shardID)
 
-			producersBlackList, err := blockchain.getUpdatedProducersBlackList(false, int(shardID), shardCommittee)
-			if err != nil {
-				Logger.log.Error(err)
-				return instructions, shardPendingValidator, shardCommittee, err
-			}
-
-			maxShardCommitteeSize := blockchain.BestState.Shard[shardID].MaxShardCommitteeSize
-			minShardCommitteeSize := blockchain.BestState.Shard[shardID].MinShardCommitteeSize
-			badProducersWithPunishment := blockchain.buildBadProducersWithPunishment(false, int(shardID), shardCommittee)
-			swapInstruction, shardPendingValidator, shardCommittee, err = CreateSwapAction(shardPendingValidator, shardCommittee, maxShardCommitteeSize, minShardCommitteeSize, shardID, producersBlackList, badProducersWithPunishment)
-			if err != nil {
-				Logger.log.Error(err)
-				return instructions, shardPendingValidator, shardCommittee, err
-			}
-			// Generate instruction storing merkle root of validators pubkey and send to beacon
-			bridgeID := byte(common.BridgeShardID)
-			if shardID == bridgeID {
-				blockHeight := blockchain.BestState.Shard[shardID].ShardHeight + 1
-				bridgeSwapConfirmInst, err = buildBridgeSwapConfirmInstruction(shardCommittee, blockHeight)
-				if err != nil {
-					BLogger.log.Error(err)
-					return instructions, shardPendingValidator, shardCommittee, err
-				}
-				BLogger.log.Infof("Add Bridge swap inst in ShardID %+v block %d", shardID, blockHeight)
-			}
+		producersBlackList, err := blockchain.getUpdatedProducersBlackList(false, int(shardID), shardCommittee)
+		if err != nil {
+			Logger.log.Error(err)
+			return instructions, shardPendingValidator, shardCommittee, err
 		}
+
+		maxShardCommitteeSize := blockchain.BestState.Shard[shardID].MaxShardCommitteeSize
+		minShardCommitteeSize := blockchain.BestState.Shard[shardID].MinShardCommitteeSize
+		badProducersWithPunishment := blockchain.buildBadProducersWithPunishment(false, int(shardID), shardCommittee)
+		swapInstruction, shardPendingValidator, shardCommittee, err = CreateSwapAction(shardPendingValidator, shardCommittee, maxShardCommitteeSize, minShardCommitteeSize, shardID, producersBlackList, badProducersWithPunishment)
+		if err != nil {
+			Logger.log.Error(err)
+			return instructions, shardPendingValidator, shardCommittee, err
+		}
+		// Generate instruction storing merkle root of validators pubkey and send to beacon
+		bridgeID := byte(common.BridgeShardID)
+		if shardID == bridgeID {
+			blockHeight := blockchain.BestState.Shard[shardID].ShardHeight + 1
+			bridgeSwapConfirmInst, err = buildBridgeSwapConfirmInstruction(shardCommittee, blockHeight)
+			if err != nil {
+				BLogger.log.Error(err)
+				return instructions, shardPendingValidator, shardCommittee, err
+			}
+			BLogger.log.Infof("Add Bridge swap inst in ShardID %+v block %d", shardID, blockHeight)
+		}
+		// }
 	}
 	if len(swapInstruction) > 0 {
 		instructions = append(instructions, swapInstruction)

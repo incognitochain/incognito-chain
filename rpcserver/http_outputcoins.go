@@ -87,7 +87,7 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 		}
 	}
 	result, err1 := httpServer.outputCoinService.ListOutputCoinsByKey(listKeyParams, *tokenID)
-	if err != nil {
+	if err1 != nil {
 		return nil, err1
 	}
 	Logger.log.Debugf("handleListOutputCoins result: %+v", result)

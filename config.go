@@ -13,6 +13,7 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/incognitochain/incognito-chain/common"
@@ -28,7 +29,7 @@ const (
 	DefaultLogLevel               = "info"
 	DefaultLogDirname             = "logs"
 	DefaultLogFilename            = "log.log"
-	DefaultMaxPeers               = 125
+	DefaultMaxPeers               = 500
 	DefaultMaxPeersSameShard      = 50
 	DefaultMaxPeersOtherShard     = 50
 	DefaultMaxPeersOther          = 125
@@ -42,7 +43,7 @@ const (
 	DefaultFastStartup            = true
 	DefaultNodeMode               = common.NodeModeRelay
 	DefaultEnableMining           = true
-	DefaultTxPoolTTL              = uint(43200) // 12 hours
+	DefaultTxPoolTTL              = uint(12 * time.Hour) // 12 hours
 	DefaultTxPoolMaxTx            = uint64(100000)
 	DefaultLimitFee               = uint64(0)
 	DefaultLimitFeeToken          = uint64(0)
