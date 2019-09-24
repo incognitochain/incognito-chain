@@ -7,6 +7,36 @@ import (
 	"testing"
 )
 
+
+func TestPoint_ScalarMultPRIME(t *testing.T) {
+	for i:=0; i< 10000; i++ {
+		a := RandomScalar()
+		pa := RandomPoint()
+		b := RandomScalar()
+
+		res := new(Point).ScalarMult(pa, a)
+		res.ScalarMult(res, b)
+		tmpres := res.MarshalText()
+
+		tmp := new(Scalar).Mul(a,b)
+		tmpP := new(Point).ScalarMult(pa, tmp)
+
+		resPrime := C25519.ScalarMultKey(&pa.key, &a.key)
+		resPrime = C25519.ScalarMultKey(resPrime, &b.key)
+
+		tmpresPrime, _ := resPrime.MarshalText()
+		ok := subtle.ConstantTimeCompare(tmpres, tmpresPrime) == 1
+		if !ok {
+			t.Fatalf("expected Scalar Mul Base correct !")
+		}
+
+		ok1:= subtle.ConstantTimeCompare(tmpP.MarshalText(), tmpresPrime) == 1
+		if !ok1 {
+			t.Fatalf("expected Scalar Mul Base correct !")
+		}
+	}
+}
+
 func TestPoint_IsZero(t *testing.T) {
 	p := new(Point).Zero()
 	fmt.Println(p.IsZero())

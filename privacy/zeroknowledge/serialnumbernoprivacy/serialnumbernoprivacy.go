@@ -203,7 +203,6 @@ func (wit SNNoPrivacyWitness) Prove(mess []byte) (*SNNoPrivacyProof, error) {
 	} else {
 		x.FromBytes(privacy.SliceToArray(mess))
 	}
-	fmt.Printf("Prove x: %v\n", x)
 
 	// Calculate zSeed = SK * x + eSK
 	zSK := new(privacy.Scalar).Mul(wit.seed, x)
@@ -234,9 +233,6 @@ func (pro SNNoPrivacyProof) Verify(mess []byte) (bool, error) {
 	rightPoint1 = rightPoint1.Add(rightPoint1, pro.tSeed)
 
 	if !privacy.IsEqual(leftPoint1, rightPoint1) {
-		//fmt.Printf("left1: %v\n", leftPoint1)
-		//fmt.Printf("right1: %v\n", rightPoint1)
-		//privacy.Logger.Log.Errorf("verify serial number no privacy proof statement 1 failed")
 		return false, errors.New("verify serial number no privacy proof statement 1 failed")
 	}
 

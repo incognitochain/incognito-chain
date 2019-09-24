@@ -2,6 +2,7 @@ package privacy
 
 import (
 	"crypto/subtle"
+	"fmt"
 	C25519 "github.com/deroproject/derosuite/crypto"
 	"testing"
 )
@@ -9,6 +10,12 @@ import (
 func TestScalar_Mul(t *testing.T) {
 
 	for i:=0; i< 100; i++ {
+		sk := GeneratePrivateKey(RandBytes(10))
+		skScalar := new(Scalar).FromBytes(SliceToArray(sk))
+		fmt.Println(skScalar.ScalarValid())
+		pk := GeneratePublicKey(sk)
+		pkPoint, err := new(Point).FromBytes(SliceToArray(pk))
+		fmt.Println(err, pkPoint)
 		a := RandomScalar()
 		b := RandomScalar()
 		c := RandomScalar()
