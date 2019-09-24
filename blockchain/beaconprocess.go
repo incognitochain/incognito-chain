@@ -372,37 +372,10 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 			// Only accept block in one epoch
 			for _, shardBlock := range shardBlocks {
 				currentCommittee := blockchain.BestState.Beacon.GetAShardCommittee(shardID)
-				// currentCommitteeStr, err := incognitokey.CommitteeKeyListToString(currentCommittee)
-				// if err != nil {
-				// 	return NewBlockChainError(UnExpectedError, err)
-				// }
-				// currentPendingValidator := blockchain.BestState.Beacon.GetAShardPendingValidator(shardID)
-				// currentPendingValidatorStr, err := incognitokey.CommitteeKeyListToString(currentPendingValidator)
-				// if err != nil {
-				// 	return NewBlockChainError(UnExpectedError, err)
-				// }
 				errValidation := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, currentCommittee, beaconBestState.ShardConsensusAlgorithm[shardID])
 				if errValidation != nil {
 					return NewBlockChainError(ShardStateError, fmt.Errorf("Fail to verify with Shard To Beacon Block %+v, error %+v", shardBlock.Header.Height, err))
 				}
-
-				// if index == 0 && errValidation != nil {
-				// 	currentCommitteeStr, _, _, _, err = SwapValidator(currentPendingValidatorStr, currentCommitteeStr, blockchain.BestState.Beacon.MaxShardCommitteeSize, common.Offset)
-				// 	if err != nil {
-				// 		return NewBlockChainError(SwapValidatorError, fmt.Errorf("Failed to swap validator when try to verify shard to beacon block %+v, error %+v, sigError %+v", shardBlock.Header.Height, err, errValidation))
-				// 	}
-				// 	currentCommittee, err = incognitokey.CommitteeBase58KeyListToStruct(currentCommitteeStr)
-				// 	if err != nil {
-				// 		return NewBlockChainError(UnExpectedError, err)
-				// 	}
-				// 	err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, currentCommittee, beaconBestState.ShardConsensusAlgorithm[shardID])
-				// 	if err != nil {
-				// 		return NewBlockChainError(SignatureError, fmt.Errorf("Failed to verify Signature of Shard To Beacon Block %+v, error %+v", shardBlock.Header.Height, err))
-				// 	}
-				// }
-				// if index != 0 && err != nil {
-				// 	return NewBlockChainError(ShardStateError, fmt.Errorf("Fail to verify with Shard To Beacon Block %+v, error %+v", shardBlock.Header.Height, err))
-				// }
 			}
 			for _, shardBlock := range shardBlocks {
 				tempShardState, stakeInstruction, tempValidStakePublicKeys, swapInstruction, bridgeInstruction, acceptedBlockRewardInstruction, stopAutoStakingInstruction := blockchain.GetShardStateFromBlock(beaconBlock.Header.Height, shardBlock, shardID, false, validStakePublicKeys)
