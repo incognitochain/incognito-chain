@@ -121,9 +121,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	}
 	transactionsForNewBlock = append(transactionsForNewBlock, crossTxTokenTransactions...)
 	// Get Transaction for new block
-	// TODO: uncomment for next deploy
-	//blockCreationLeftOver := blockGenerator.chain.BestState.Shard[shardID].BlockMaxCreateTime.Nanoseconds() - time.Since(start).Nanoseconds()
-	blockCreationLeftOver := TestNetMaxShardBlkCreation.Nanoseconds() - time.Since(start).Nanoseconds()
+	blockCreationLeftOver := blockGenerator.chain.BestState.Shard[shardID].BlockMaxCreateTime.Nanoseconds() - time.Since(start).Nanoseconds()
 	txsToAddFromBlock, err := blockGenerator.getTransactionForNewBlock(&tempPrivateKey, shardID, blockGenerator.chain.config.DataBase, beaconBlocks, blockCreationLeftOver)
 	if err != nil {
 		return nil, err
