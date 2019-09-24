@@ -40,12 +40,12 @@ func CommitteeBase58KeyListToStruct(strKeyList []string) ([]CommitteePublicKey, 
 		return []CommitteePublicKey{}, nil
 	}
 	result := []CommitteePublicKey{}
-	keyStruct := new(CommitteePublicKey)
 	for _, key := range strKeyList {
+		var keyStruct CommitteePublicKey
 		if err := keyStruct.FromString(key); err != nil {
 			return nil, err
 		}
-		result = append(result, *keyStruct)
+		result = append(result, keyStruct)
 	}
 	return result, nil
 }
