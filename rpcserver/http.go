@@ -252,13 +252,13 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 					command = LimitedHttpHandler[request.Method]
 				} else {
 					result = nil
-					jsonErr = rpcservice.NewRPCError(rpcservice.RPCMethodNotFoundError, nil)
+					jsonErr = rpcservice.NewRPCError(rpcservice.RPCMethodNotFoundError, errors.New("Method not found: "+request.Method))
 				}
 			}
 			if command != nil {
 				result, jsonErr = command(httpServer, request.Params, closeChan)
 			} else {
-				jsonErr = rpcservice.NewRPCError(rpcservice.RPCMethodNotFoundError, nil)
+				jsonErr = rpcservice.NewRPCError(rpcservice.RPCMethodNotFoundError, errors.New("Method not found: "+request.Method))
 			}
 		}
 	}
