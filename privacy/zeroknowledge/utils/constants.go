@@ -3,7 +3,7 @@ package utils
 const (
 	// size of zero knowledge proof corresponding one input
 	OneOfManyProofSize   = 716
-	SnPrivacyProofSize   = 326
+	SnPrivacyProofSize   = 320
 	SnNoPrivacyProofSize = 192
 
 	inputCoinsPrivacySize    = 40  // serial number + 7 for flag

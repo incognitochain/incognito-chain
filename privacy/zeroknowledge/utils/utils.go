@@ -19,11 +19,11 @@ func GenerateChallenge(values [][]byte) []byte {
 		bytes = append(bytes, values[i]...)
 	}
 
-	hash := common.HashB(bytes)
+	hash := privacy.HashToScalar(bytes)
 
 	//res := new(big.Int).SetBytes(hash)
 	//res.Mod(res, privacy.Curve.Params().N)
-	return hash
+	return privacy.ArrayToSlice(hash.ToBytes())
 }
 
 // EstimateProofSize returns the estimated size of the proof in bytes
