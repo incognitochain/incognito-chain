@@ -9,9 +9,6 @@ import (
 )
 
 func TestPKSNNoPrivacy(t *testing.T) {
-
-	count := 0
-
 	for i:=0; i<1000; i++{
 		// prepare witness for Serial number no privacy protocol
 		sk := privacy.GeneratePrivateKey(privacy.RandBytes(10))
@@ -45,7 +42,6 @@ func TestPKSNNoPrivacy(t *testing.T) {
 		assert.Equal(t, true, res)
 		assert.Equal(t, nil, err)
 
-
 		// convert proof to bytes array
 		proofBytes := proof.Bytes()
 		assert.Equal(t, utils.SnNoPrivacyProofSize, len(proofBytes))
@@ -61,7 +57,5 @@ func TestPKSNNoPrivacy(t *testing.T) {
 		assert.Equal(t, true, res2)
 		assert.Equal(t, nil, err)
 	}
-
-	fmt.Printf("Number of test case right: %v\n", count)
 
 }

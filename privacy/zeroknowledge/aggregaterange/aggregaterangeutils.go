@@ -5,7 +5,6 @@ import (
 	"math"
 	"sync"
 
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
@@ -93,7 +92,7 @@ func powerVector(base *privacy.Scalar, n int) []*privacy.Scalar {
 	for i := 1; i < n; i++ {
 		go func(i int, wg *sync.WaitGroup) {
 			defer wg.Done()
-			res[i] = new(privacy.Scalar).Exp(base, uint64(i))
+			res[i] = new(privacy.Scalar).Exp(base, new(privacy.Scalar).SetUint64(uint64(i)))
 		}(i, &wg)
 	}
 	wg.Wait()
@@ -134,7 +133,7 @@ func vectorMulScalar(v []*privacy.Scalar, s *privacy.Scalar) []*privacy.Scalar {
 
 // estimateMultiRangeProofSize estimate multi range proof size
 func EstimateMultiRangeProofSize(nOutput int) uint64 {
-	return uint64((nOutput+2*int(math.Log2(float64(maxExp*pad(nOutput))))+5)*privacy.CompressedEllipticPointSize + 5*common.BigIntSize + 2)
+	return uint64((nOutput+2*int(math.Log2(float64(maxExp*pad(nOutput))))+5)*privacy.Ed25519KeySize + 5*privacy.Ed25519KeySize + 2)
 }
 
 // CommitAll commits a list of PCM_CAPACITY value(s)

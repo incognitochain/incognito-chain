@@ -127,16 +127,21 @@ func (sc *Scalar) Mul(a, b *Scalar) *Scalar {
 	return sc
 }
 
-func (sc *Scalar) Exp(a *Scalar, n uint64) *Scalar {
+func (sc *Scalar) Exp(a *Scalar, b *Scalar) *Scalar {
 	if sc == nil {
 		sc = new(Scalar)
 	}
 
-	sc.Set(a)
+	tmp := C25519.CurveOrder()
 
-	for i := uint64(1); i < n; i++ {
-		sc.Mul(sc, a)
-	}
+	curveOrder := new(big.Int).SetBytes(ArrayToSlice(tmp.ToBytes()))
+
+	aBN := new(big.Int).SetBytes(ArrayToSlice(a.key.ToBytes()))
+	bBN := new(big.Int).SetBytes(ArrayToSlice(b.key.ToBytes()))
+	aBN.Exp(aBN, bBN, curveOrder)
+
+	sc.FromBytes(SliceToArray(aBN.Bytes()))
+
 	return sc
 }
 
