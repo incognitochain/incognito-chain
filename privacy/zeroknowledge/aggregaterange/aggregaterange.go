@@ -368,7 +368,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	x := generateChallengeForAggRange(aggParam,
 		[][]byte{privacy.ArrayToSlice(proof.a.ToBytes()), privacy.ArrayToSlice(proof.s.ToBytes()),
 		privacy.ArrayToSlice(proof.t1.ToBytes()), privacy.ArrayToSlice(proof.t2.ToBytes())})
-	xSquare := new(privacy.Scalar).Exp(x, 2)
+	xSquare := new(privacy.Scalar).Exp(x, new(privacy.Scalar).SetUint64(2))
 
 	// lVector = aL - z*1^n + sL*x
 	lVector, err := vectorAdd(vectorAddScalar(aL, zNeg), vectorMulScalar(sL, x))
@@ -486,16 +486,16 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	// HPrime = H^(y^(1-i)
 	HPrime := make([]*privacy.Point, n*numValuePad)
 	var wg sync.WaitGroup
-	wg.Add(len(HPrime))
+	//wg.Add(len(HPrime))
 	for i := 0; i < n*numValuePad; i++ {
-		go func(i int, wg *sync.WaitGroup) {
-			defer wg.Done()
+		//go func(i int, wg *sync.WaitGroup) {
+		//	defer wg.Done()
 			// todo: recheck exp
 			iInverse := new(privacy.Scalar).Invert(new(privacy.Scalar).SetUint64(uint64(i)))
-			HPrime[i] = new(privacy.Point).ScalarMult(aggParam.h[i], new(privacy.Scalar).Exp(y, iInverse.ToUint64()))
-		}(i, &wg)
+			HPrime[i] = new(privacy.Point).ScalarMult(aggParam.h[i], new(privacy.Scalar).Exp(y, iInverse))
+		//}(i, &wg)
 	}
-	wg.Wait()
+	//wg.Wait()
 
 	// g^tHat * h^tauX = V^(z^2) * g^delta(y,z) * T1^x * T2^(x^2)
 	deltaYZ := new(privacy.Scalar).Sub(z, zSquare)

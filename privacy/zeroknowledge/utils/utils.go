@@ -20,7 +20,6 @@ func GenerateChallenge(values [][]byte) []byte {
 	}
 
 	hash := privacy.HashToScalar(bytes)
-
 	//res := new(big.Int).SetBytes(hash)
 	//res.Mod(res, privacy.Curve.Params().N)
 	return privacy.ArrayToSlice(hash.ToBytes())
