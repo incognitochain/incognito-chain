@@ -227,16 +227,18 @@ func SwapValidator(
 	currentBadProducers := filterValidators(currentValidators, producersBlackList, true)
 	currentGoodProducers := filterValidators(currentValidators, producersBlackList, false)
 	pendingValidatorsLen := len(pendingValidators)
+	currentGoodProducersLen := len(currentGoodProducers)
 
-	if len(currentGoodProducers) >= minCommittee {
-		//push items in pendingValidators to currentGoodProducers until len(currentGoodProducers) is equal to maxCommittee
-		if offset > pendingValidatorsLen {
+	if currentGoodProducersLen >= minCommittee {
+		if currentGoodProducersLen == maxCommittee {
+			offset = common.SwapOffset
+		} else if offset > pendingValidatorsLen {
 			offset = pendingValidatorsLen
 		}
 		return swap(pendingValidators, currentGoodProducers, currentBadProducers, maxCommittee, offset)
 	}
 
-	minProducersNeeded := minCommittee - len(currentGoodProducers)
+	minProducersNeeded := minCommittee - currentGoodProducersLen
 	if len(pendingValidators) >= minProducersNeeded {
 		if offset < minProducersNeeded {
 			offset = minProducersNeeded
