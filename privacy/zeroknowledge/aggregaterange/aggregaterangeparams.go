@@ -3,7 +3,6 @@ package aggregaterange
 import (
 	"sync"
 
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
@@ -68,8 +67,9 @@ func generateChallengeForAggRange(AggParam *bulletproofParams, values [][]byte) 
 		bytes = append(bytes, values[i]...)
 	}
 
-	hash := common.HashB(bytes)
+	//hash := common.HashB(bytes)
+	hash := privacy.HashToScalar(bytes)
 
-	res := new(privacy.Scalar).FromBytes(privacy.SliceToArray(hash))
-	return res
+	//res := new(privacy.Scalar).FromBytes(privacy.SliceToArray(hash))
+	return hash
 }
