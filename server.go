@@ -1121,7 +1121,7 @@ func (serverObj *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerA
 		listen.GetPeerConnsMtx().Lock()
 		for _, peerConn := range listen.GetPeerConns() {
 			Logger.log.Debug("QueueMessageWithEncoding", peerConn)
-			go peerConn.QueueMessageWithEncoding(msgSA, doneChan, peer.MessageToPeer, nil)
+			peerConn.QueueMessageWithEncoding(msgSA, doneChan, peer.MessageToPeer, nil)
 		}
 		listen.GetPeerConnsMtx().Unlock()
 	} else {
