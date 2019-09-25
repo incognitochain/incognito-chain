@@ -15,6 +15,29 @@ type bulletproofParams struct {
 	u *privacy.Point
 }
 
+
+func newBulletproofParamsPrime(m int) *bulletproofParams {
+	gen := new(bulletproofParams)
+	capacity := 64 * m // fixed value
+	gen.g = make([]*privacy.Point, capacity)
+	gen.h = make([]*privacy.Point, capacity)
+
+	var wg sync.WaitGroup
+	wg.Add(capacity)
+	for i := 0; i < capacity; i++ {
+		go func(i int, wg *sync.WaitGroup) {
+			defer wg.Done()
+			gen.g[i] = privacy.HashToPoint(int64(5 + i))
+			gen.h[i] = privacy.HashToPoint(int64(5 + i + capacity))
+		}(i, &wg)
+	}
+	wg.Wait()
+	gen.u = new(privacy.Point)
+	gen.u = privacy.HashToPoint(int64(5 + 2*capacity))
+
+	return gen
+}
+
 func newBulletproofParams(m int) *bulletproofParams {
 	gen := new(bulletproofParams)
 	capacity := maxExp * m // fixed value

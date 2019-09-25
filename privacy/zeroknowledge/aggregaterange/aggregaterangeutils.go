@@ -53,10 +53,10 @@ func innerProduct(a []*privacy.Scalar, b []*privacy.Scalar) (*privacy.Scalar, er
 	}
 
 	res := new(privacy.Scalar).SetUint64(uint64(0))
-	tmp := new(privacy.Scalar)
 
 	for i := range a {
-		res.Add(res, tmp.Mul(a[i], b[i]))
+		//res = a[i]*b[i] + res % l
+		res.MulAdd(a[i], b[i], res)
 	}
 
 	return res, nil
@@ -92,7 +92,7 @@ func powerVector(base *privacy.Scalar, n int) []*privacy.Scalar {
 	for i := 1; i < n; i++ {
 		go func(i int, wg *sync.WaitGroup) {
 			defer wg.Done()
-			res[i] = new(privacy.Scalar).Exp(base, new(privacy.Scalar).SetUint64(uint64(i)))
+			res[i] = new(privacy.Scalar).Exp(base, uint64(i))
 		}(i, &wg)
 	}
 	wg.Wait()
@@ -142,8 +142,8 @@ func encodeVectors(l []*privacy.Scalar, r []*privacy.Scalar, g []*privacy.Point,
 		return nil, errors.New("invalid input")
 	}
 
-	res := new(privacy.Point)
-	res.Zero()
+	res := new(privacy.Point).Identity()
+	//res.Zero()
 	var wg sync.WaitGroup
 	var tmp1, tmp2 *privacy.Point
 
