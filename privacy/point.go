@@ -13,11 +13,27 @@ type Point struct {
 }
 
 func (p *Point) PointValid() bool {
+	tmp := new(Point).ScalarMult(p, new(Scalar).SetUint64(2))
+	if tmp.IsZero() {
+		fmt.Println("Fucking  Dero ")
+	}
+
+	tmp1 := new(Point).ScalarMult(p, new(Scalar).SetUint64(4))
+	if tmp1.IsZero() {
+		fmt.Println("Fucking  Dero ")
+	}
+
+	tmp2 := new(Point).ScalarMult(p, new(Scalar).SetUint64(8))
+	if tmp2.IsZero() {
+		fmt.Println("Fucking  Dero ")
+	}
+
 	var point C25519.ExtendedGroupElement
 	return point.FromBytes(&p.key)
 }
 
 func (p Point) GetKey() C25519.Key {
+
 	return p.key
 }
 
@@ -26,7 +42,10 @@ func (p *Point) SetKey(a *C25519.Key) (*Point, error) {
 		p = new(Point)
 	}
 	p.key = *a
-	if p.PointValid() == false {
+
+	var point C25519.ExtendedGroupElement
+
+	if point.FromBytes(&p.key) == false {
 		return nil, errors.New("Invalid key value")
 	}
 	return p, nil
@@ -74,11 +93,11 @@ func (p *Point) FromBytes(b [Ed25519KeySize]byte) (*Point, error) {
 	return p, nil
 }
 
-func (p *Point) Zero() *Point {
+func (p *Point) Identity() *Point {
 	if p == nil {
 		p = new(Point)
 	}
-	p.key = C25519.Zero
+	p.key = C25519.Identity
 	return p
 }
 
