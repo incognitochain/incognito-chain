@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/pkg/errors"
 
@@ -178,13 +177,23 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 		}
 		return err
 	}
-	go blockchain.removeOldDataAfterProcessingBeaconBlock()
-	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-		metrics.Measurement:      metrics.NumOfBlockInsertToChain,
-		metrics.MeasurementValue: float64(1),
-		metrics.Tag:              metrics.ShardIDTag,
-		metrics.TagValue:         metrics.Beacon,
-	})
+	blockchain.removeOldDataAfterProcessingBeaconBlock()
+	// go metrics.AnalyzeTimeSeriesMetricDataWithTime(map[string]interface{}{
+	// 	metrics.Measurement:      metrics.NumOfBlockInsertToChain,
+	// 	metrics.MeasurementValue: float64(1),
+	// 	metrics.Tag:              metrics.ShardIDTag,
+	// 	metrics.TagValue:         metrics.Beacon,
+	// 	metrics.Time:             beaconBlock.Header.Timestamp,
+	// })
+	// if beaconBlock.Header.Height > 2 {
+	// 	go metrics.AnalyzeTimeSeriesMetricDataWithTime(map[string]interface{}{
+	// 		metrics.Measurement:      metrics.NumOfRoundPerBlock,
+	// 		metrics.MeasurementValue: float64(beaconBlock.Header.Round),
+	// 		metrics.Tag:              metrics.ShardIDTag,
+	// 		metrics.TagValue:         metrics.Beacon,
+	// 		metrics.Time:             beaconBlock.Header.Timestamp,
+	// 	})
+	// }
 	Logger.log.Infof("Finish Insert new Beacon Block %+v, with hash %+v \n", beaconBlock.Header.Height, *beaconBlock.Hash())
 	if beaconBlock.Header.Height%50 == 0 {
 		BLogger.log.Debugf("Inserted beacon height: %d", beaconBlock.Header.Height)
@@ -430,7 +439,10 @@ func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(beaconBlo
 	//verify producer via index
 	producerPublicKey := beaconBlock.Header.Producer
 	producerPosition := (beaconBestState.BeaconProposerIndex + beaconBlock.Header.Round) % len(beaconBestState.BeaconCommittee)
-	tempProducer := beaconBestState.BeaconCommittee[producerPosition].GetMiningKeyBase58(beaconBestState.ConsensusAlgorithm)
+	tempProducer, err := beaconBestState.BeaconCommittee[producerPosition].ToBase58() //.GetMiningKeyBase58(common.BridgeConsensus)
+	if err != nil {
+		return NewBlockChainError(UnExpectedError, err)
+	}
 	if strings.Compare(string(tempProducer), producerPublicKey) != 0 {
 		return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
 	}
@@ -683,7 +695,7 @@ func (beaconBestState *BeaconBestState) updateBeaconBestState(beaconBlock *Beaco
 		// assign CandidateShardWaitingForCurrentRandom to ShardPendingValidator with CurrentRandom
 		if randomFlag {
 			beaconBestState.IsGetRandomNumber = true
-			err := AssignValidatorShard(beaconBestState.ShardPendingValidator, beaconBestState.CandidateShardWaitingForCurrentRandom, beaconBestState.CurrentRandomNumber, beaconBestState.ActiveShards)
+			err := AssignValidatorShard(beaconBestState.ShardPendingValidator, beaconBestState.BeaconPendingValidator, beaconBestState.ShardCommittee, beaconBestState.BeaconCommittee, beaconBestState.CandidateShardWaitingForCurrentRandom, beaconBestState.CurrentRandomNumber, beaconBestState.ActiveShards)
 			if err != nil {
 				return NewBlockChainError(AssignValidatorToShardError, err)
 			}
