@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/google"
+	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
 	"github.com/incognitochain/incognito-chain/common/base58"
 )
 

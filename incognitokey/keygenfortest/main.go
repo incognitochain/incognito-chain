@@ -24,7 +24,7 @@ func (key *Key) NewFromSeed(seed []byte) {
 	wl := wallet.KeyWallet{}
 	wl.KeySet = *incKeySet
 	key.Payment = wl.Base58CheckSerialize(0x1)
-	committeeKey, _ := incognitokey.NewCommitteeKeyFromSeed(common.HashB(incKeySet.PrivateKey), incKeySet.PaymentAddress.Pk)
+	committeeKey, _ := incognitokey.NewCommitteeKeyFromSeed(common.HashB(common.HashB(incKeySet.PrivateKey)), incKeySet.PaymentAddress.Pk)
 	key.CommitteePubKey, _ = committeeKey.ToBase58()
 }
 
@@ -32,9 +32,9 @@ func NewKey(seed []byte) (*Key, string, string) {
 	masterKey, _ := wallet.NewMasterKey(seed)
 	pubKey := new(Key)
 	pubKey.Payment = masterKey.Base58CheckSerialize(0x1)
-	committeeKey, _ := incognitokey.NewCommitteeKeyFromSeed(common.HashB(masterKey.KeySet.PrivateKey), masterKey.KeySet.PaymentAddress.Pk)
+	committeeKey, _ := incognitokey.NewCommitteeKeyFromSeed(common.HashB(common.HashB(masterKey.KeySet.PrivateKey)), masterKey.KeySet.PaymentAddress.Pk)
 	pubKey.CommitteePubKey, _ = committeeKey.ToBase58()
-	return pubKey, masterKey.Base58CheckSerialize(0x0), base58.Base58Check{}.Encode(common.HashB(masterKey.KeySet.PrivateKey), common.ZeroByte)
+	return pubKey, masterKey.Base58CheckSerialize(0x0), base58.Base58Check{}.Encode(common.HashB(common.HashB(masterKey.KeySet.PrivateKey)), common.ZeroByte)
 }
 
 func NewKeyFromIncKey(key string) (*Key, string, string) {
@@ -42,9 +42,9 @@ func NewKeyFromIncKey(key string) (*Key, string, string) {
 	masterKey.KeySet.InitFromPrivateKey(&masterKey.KeySet.PrivateKey)
 	pubKey := new(Key)
 	pubKey.Payment = masterKey.Base58CheckSerialize(0x1)
-	committeeKey, _ := incognitokey.NewCommitteeKeyFromSeed(common.HashB(masterKey.KeySet.PrivateKey), masterKey.KeySet.PaymentAddress.Pk)
+	committeeKey, _ := incognitokey.NewCommitteeKeyFromSeed(common.HashB(common.HashB(masterKey.KeySet.PrivateKey)), masterKey.KeySet.PaymentAddress.Pk)
 	pubKey.CommitteePubKey, _ = committeeKey.ToBase58()
-	return pubKey, masterKey.Base58CheckSerialize(0x0), base58.Base58Check{}.Encode(common.HashB(masterKey.KeySet.PrivateKey), common.ZeroByte)
+	return pubKey, masterKey.Base58CheckSerialize(0x0), base58.Base58Check{}.Encode(common.HashB(common.HashB(masterKey.KeySet.PrivateKey)), common.ZeroByte)
 }
 
 type ShardPrivate struct {
@@ -219,6 +219,6 @@ func generateKeydotJson(numberOfShard, numberOfCandidate int) {
 }
 
 func main() {
-	// generateKeydotJson(64, 64)
-	generateKeydotJsonFromGivenKeyList("private_key_testnet.json", 256, 20)
+	// generateKeydotJson(2, 256)
+	generateKeydotJsonFromGivenKeyList("private_key_testnet.json", 256, 100)
 }
