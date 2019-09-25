@@ -26,10 +26,10 @@ func newPedersenParams() PedersenCommitment {
 	var pcm PedersenCommitment
 	const capacity = 5 // fixed value = 5
 	pcm.G = make([]*Point, capacity)
-	pcm.G[0] = new(Point).ScalarMultBase(new(Scalar).SetUint64(1))
+	pcm.G[0] = new(Point).ScalarMultBase(new(Scalar).FromUint64(1))
 
 	for i := 1; i < len(pcm.G); i++ {
-		pcm.G[i] = HashToPoint(int64(i))
+		pcm.G[i] = HashToPointFromIndex(int64(i))
 	}
 	return pcm
 }

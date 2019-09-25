@@ -3,7 +3,8 @@ package privacy
 import (
 	"crypto/subtle"
 	"fmt"
-	C25519 "github.com/deroproject/derosuite/crypto"
+	//C25519 "github.com/deroproject/derosuite/crypto"
+	C25519 "github.com/incognitochain/incognito-chain/privacy/curve25519"
 	"testing"
 )
 
@@ -24,7 +25,7 @@ func TestPoint_ScalarMultPRIME(t *testing.T) {
 		resPrime := C25519.ScalarMultKey(&pa.key, &a.key)
 		resPrime = C25519.ScalarMultKey(resPrime, &b.key)
 
-		tmpresPrime, _ := resPrime.MarshalText()
+		tmpresPrime := resPrime.MarshalText()
 		ok := subtle.ConstantTimeCompare(tmpres, tmpresPrime) == 1
 		if !ok {
 			t.Fatalf("expected Scalar Mul Base correct !")
@@ -35,11 +36,6 @@ func TestPoint_ScalarMultPRIME(t *testing.T) {
 			t.Fatalf("expected Scalar Mul Base correct !")
 		}
 	}
-}
-
-func TestPoint_IsZero(t *testing.T) {
-	p := new(Point).Zero()
-	fmt.Println(p.IsZero())
 }
 
 func TestPoint_MarshalText(t *testing.T) {
@@ -67,7 +63,7 @@ func TestScalarMul(t *testing.T) {
 		resPrime = C25519.ScalarMultKey(resPrime, &b.key)
 		resPrime = C25519.ScalarMultKey(resPrime, &a.key)
 
-		tmpresPrime, _ := resPrime.MarshalText()
+		tmpresPrime := resPrime.MarshalText()
 		ok := subtle.ConstantTimeCompare(tmpres, tmpresPrime) == 1
 		if !ok {
 			t.Fatalf("expected Scalar Mul Base correct !")
@@ -85,13 +81,13 @@ func TestScalarMulBase(t *testing.T) {
 		res := new(Point).Add(res1, res2)
 		tmpres := res.MarshalText()
 
-		resPrime1 := C25519.ScalarmultBase(a.key)
-		resPrime2 := C25519.ScalarmultBase(b.key)
+		resPrime1 := C25519.ScalarmultBase(&a.key)
+		resPrime2 := C25519.ScalarmultBase(&b.key)
 		var resPrime C25519.Key
 
-		C25519.AddKeys(&resPrime, &resPrime1, &resPrime2)
+		C25519.AddKeys(&resPrime, resPrime1, resPrime2)
 
-		tmpresPrime, _ := resPrime.MarshalText()
+		tmpresPrime  := resPrime.MarshalText()
 		ok := subtle.ConstantTimeCompare(tmpres, tmpresPrime) == 1
 		if !ok {
 			t.Fatalf("expected Scalar Mul Base correct !")
@@ -113,13 +109,13 @@ func TestPoint_Add(t *testing.T) {
 		C25519.AddKeys(&resPrime, &pa.key, &pb.key)
 		C25519.AddKeys(&resPrime, &resPrime, &pc.key)
 
-		tmpresPrime, _ := resPrime.MarshalText()
+		tmpresPrime := resPrime.MarshalText()
 		ok := subtle.ConstantTimeCompare(tmpres, tmpresPrime) == 1
 		if !ok {
 			t.Fatalf("expected Add correct !")
 		}
 		resPrimePrime, _ := new(Point).SetKey(&resPrime)
-		okk := IsEqual(res, resPrimePrime)
+		okk := IsPointEqual(res, resPrimePrime)
 		if !okk {
 			t.Fatalf("expected Add correct !")
 		}
@@ -140,13 +136,13 @@ func TestPoint_Sub(t *testing.T) {
 		C25519.SubKeys(&resPrime, &pa.key, &pb.key)
 		C25519.SubKeys(&resPrime, &resPrime, &pc.key)
 
-		tmpresPrime, _ := resPrime.MarshalText()
+		tmpresPrime := resPrime.MarshalText()
 		ok := subtle.ConstantTimeCompare(tmpres, tmpresPrime) == 1
 		if !ok {
 			t.Fatalf("expected Sub correct !")
 		}
 		resPrimePrime, _ := new(Point).SetKey(&resPrime)
-		okk := IsEqual(res, resPrimePrime)
+		okk := IsPointEqual(res, resPrimePrime)
 		if !okk {
 			t.Fatalf("expected Sub correct !")
 		}
@@ -180,7 +176,7 @@ func TestPoint_InvertScalarMultBase(t *testing.T) {
 		res.ScalarMult(res, a)
 		tmpres := res.MarshalText()
 
-		tmpresPrime, _ := C25519.GBASE.MarshalText()
+		tmpresPrime := C25519.GBASE.MarshalText()
 		ok := subtle.ConstantTimeCompare(tmpres, tmpresPrime) == 1
 		if !ok {
 			t.Fatalf("expected Invert Scalar Mul Base correct !")
@@ -191,7 +187,7 @@ func TestPoint_InvertScalarMultBase(t *testing.T) {
 func TestHashToPoint(t *testing.T) {
 	for i:=0; i< 10; i++ {
 		for j:= 0; j< 6; j++ {
-			p := HashToPoint(int64(j))
+			p := HashToPointFromIndex(int64(j))
 			fmt.Println(p.key)
 		}
 		fmt.Println()

@@ -13,7 +13,7 @@ import (
 func TestPKSNPrivacy(t *testing.T) {
 	for i:= 0 ; i <1000; i++ {
 		sk := privacy.GeneratePrivateKey(privacy.RandBytes(31))
-		skScalar := new(privacy.Scalar).FromBytes(privacy.SliceToArray(sk))
+		skScalar := new(privacy.Scalar).FromBytes(sk)
 		if skScalar.ScalarValid() == false {
 			fmt.Println("Invalid scala key value")
 		}

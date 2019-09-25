@@ -22,7 +22,6 @@ func TestElGamalCipherText_Bytes(t *testing.T) {
 
 	// Encrypt message using public key
 	c := pubKey.encrypt(message)
-	fmt.Println(c.c1.key, c.c2.key)
 	cBytes := c.Bytes()
 	fmt.Println(len(cBytes))
 }

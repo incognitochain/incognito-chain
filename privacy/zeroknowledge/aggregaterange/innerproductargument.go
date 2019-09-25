@@ -287,7 +287,7 @@ func (proof InnerProductProof) Verify(AggParam *bulletproofParams) bool {
 	rightPoint.Add(rightPoint, new(privacy.Point).ScalarMult(H[0], proof.b))
 	rightPoint.Add(rightPoint, new(privacy.Point).ScalarMult(AggParam.u, c))
 
-	res := privacy.IsEqual(rightPoint, p)
+	res := privacy.IsPointEqual(rightPoint, p)
 	if !res {
 		privacy.Logger.Log.Error("Inner product argument failed:")
 		privacy.Logger.Log.Error("p: %v\n", p)
