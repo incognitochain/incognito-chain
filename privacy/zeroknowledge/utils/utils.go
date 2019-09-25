@@ -9,7 +9,7 @@ import (
 // GenerateChallengeFromByte get hash of n points in G append with input values
 // return blake_2b(G[0]||G[1]||...||G[CM_CAPACITY-1]||<values>)
 // G[i] is list of all generator point of Curve
-func GenerateChallenge(values [][]byte) []byte {
+func GenerateChallenge(values [][]byte) *privacy.Scalar {
 	bytes := []byte{}
 	for i := 0; i < len(privacy.PedCom.G); i++ {
 		bytes = append(bytes, privacy.ArrayToSlice(privacy.PedCom.G[i].ToBytes())...)
@@ -22,7 +22,7 @@ func GenerateChallenge(values [][]byte) []byte {
 	hash := privacy.HashToScalar(bytes)
 	//res := new(big.Int).SetBytes(hash)
 	//res.Mod(res, privacy.Curve.Params().N)
-	return privacy.ArrayToSlice(hash.ToBytes())
+	return hash
 }
 
 // EstimateProofSize returns the estimated size of the proof in bytes
