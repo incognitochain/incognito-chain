@@ -2,6 +2,9 @@ package netsync
 
 import (
 	"errors"
+	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics"
+	"reflect"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -125,6 +128,7 @@ func (netSync *NetSync) Stop() {
 	close(netSync.cQuit)
 }
 
+//TODO merman receive all of message and process here
 // messageHandler is the main handler for the sync manager.  It must be run as a
 // goroutine.  It processes block and inv messages in a separate goroutine
 // from the peer handlers so the block (MsgBlock) messages are handled by a
@@ -138,6 +142,16 @@ out:
 		case msgChan := <-netSync.cMessage:
 			{
 				go func(msgC interface{}) {
+					go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+						metrics.Measurement:      metrics.HandleAllMessage,
+						metrics.MeasurementValue: float64(1),
+						metrics.Tag:              metrics.ShardIDTag,
+						metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees)})
+					go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+						metrics.Measurement:      metrics.HandleAllMessageSize,
+						metrics.MeasurementValue: float64(reflect.TypeOf(msgC).Size()),
+						metrics.Tag:              metrics.ShardIDTag,
+						metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees)})
 					switch msg := msgC.(type) {
 					case *wire.MessageTx, *wire.MessageTxToken, *wire.MessageTxPrivacyToken:
 						{
@@ -358,6 +372,12 @@ func (netSync *NetSync) handleMessageTxPrivacyToken(msg *wire.MessageTxPrivacyTo
 
 func (netSync *NetSync) handleMessageBeaconBlock(msg *wire.MessageBlockBeacon) {
 	Logger.log.Debug("Handling new message BlockBeacon")
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.HandleMessageBeaconBlock,
+		metrics.MeasurementValue: float64(1),
+		metrics.Tag:              metrics.ShardIDTag,
+		metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees),
+	})
 	//if oldBlock := netSync.IsOldBeaconBlock(msg.Block.Header.Height); !oldBlock {
 	if isAdded := netSync.handleCacheBlock("b" + msg.Block.Header.Hash().String()); !isAdded {
 		netSync.config.BlockChain.OnBlockBeaconReceived(msg.Block)
@@ -367,6 +387,12 @@ func (netSync *NetSync) handleMessageBeaconBlock(msg *wire.MessageBlockBeacon) {
 
 func (netSync *NetSync) handleMessageShardBlock(msg *wire.MessageBlockShard) {
 	Logger.log.Debug("Handling new message BlockShard")
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.HandleMessageShardBlock,
+		metrics.MeasurementValue: float64(1),
+		metrics.Tag:              metrics.ShardIDTag,
+		metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees),
+	})
 	if isAdded := netSync.handleCacheBlock("s" + msg.Block.Header.Hash().String()); !isAdded {
 		netSync.config.BlockChain.OnBlockShardReceived(msg.Block)
 		return
@@ -375,6 +401,12 @@ func (netSync *NetSync) handleMessageShardBlock(msg *wire.MessageBlockShard) {
 
 func (netSync *NetSync) handleMessageCrossShard(msg *wire.MessageCrossShard) {
 	Logger.log.Debug("Handling new message CrossShard")
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.HandleMessageCrossShard,
+		metrics.MeasurementValue: float64(1),
+		metrics.Tag:              metrics.ShardIDTag,
+		metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees),
+	})
 	if isAdded := netSync.handleCacheBlock("c" + msg.Block.Header.Hash().String()); !isAdded {
 		netSync.config.BlockChain.OnCrossShardBlockReceived(msg.Block)
 	}
@@ -383,32 +415,70 @@ func (netSync *NetSync) handleMessageCrossShard(msg *wire.MessageCrossShard) {
 
 func (netSync *NetSync) handleMessageShardToBeacon(msg *wire.MessageShardToBeacon) {
 	Logger.log.Debug("Handling new message ShardToBeacon")
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.HandleMessageShardToBeacon,
+		metrics.MeasurementValue: float64(1),
+		metrics.Tag:              metrics.ShardIDTag,
+		metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees),
+	})
 	if isAdded := netSync.handleCacheBlock("s2b" + msg.Block.Header.Hash().String()); !isAdded {
 		netSync.config.BlockChain.OnShardToBeaconBlockReceived(msg.Block)
 	}
 }
 
 func (netSync *NetSync) handleMessageBFTMsg(msg *wire.MessageBFT) {
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.HandleMessageBFTMsg,
+		metrics.MeasurementValue: float64(1),
+		metrics.Tag:              metrics.ShardIDTag,
+		metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees),
+	})
 	Logger.log.Info("Handling new message BFTMsg")
+	startTime := time.Now()
 	if err := msg.VerifyMsgSanity(); err != nil {
 		Logger.log.Error(err)
 		return
 	}
 	netSync.config.Consensus.OnBFTMsg(msg)
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.HandleMessageBFTMsgTime,
+		metrics.MeasurementValue: float64(time.Since(startTime).Seconds()),
+		metrics.Tag:              metrics.ShardIDTag,
+		metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees),
+	})
 }
 
 func (netSync *NetSync) handleMessagePeerState(msg *wire.MessagePeerState) {
 	Logger.log.Debug("Handling new message peerstate", msg.SenderID)
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.HandleMessagePeerState,
+		metrics.MeasurementValue: float64(1),
+		metrics.Tag:              metrics.ShardIDTag,
+		metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees),
+	})
+	startTime := time.Now()
 	peerID, err := libp2p.IDB58Decode(msg.SenderID)
 	if err != nil {
 		Logger.log.Error(err)
 		return
 	}
 	netSync.config.BlockChain.OnPeerStateReceived(&msg.Beacon, &msg.Shards, &msg.ShardToBeaconPool, &msg.CrossShardPool, peerID)
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.HandleMessagePeerStateTime,
+		metrics.MeasurementValue: float64(time.Since(startTime).Seconds()),
+		metrics.Tag:              metrics.ShardIDTag,
+		metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees),
+	})
 }
 
 func (netSync *NetSync) handleMessageGetBlockShard(msg *wire.MessageGetBlockShard) {
 	Logger.log.Debug("Handling new message - " + wire.CmdGetBlockShard)
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.HandleMessageGetBlockShard,
+		metrics.MeasurementValue: float64(1),
+		metrics.Tag:              metrics.ShardIDTag,
+		metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees),
+	})
 	peerID, err := libp2p.IDB58Decode(msg.SenderID)
 	if err != nil {
 		Logger.log.Error(err)
@@ -423,6 +493,12 @@ func (netSync *NetSync) handleMessageGetBlockShard(msg *wire.MessageGetBlockShar
 
 func (netSync *NetSync) handleMessageGetBlockBeacon(msg *wire.MessageGetBlockBeacon) {
 	Logger.log.Debug("Handling new message - " + wire.CmdGetBlockBeacon)
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.HandleMessageGetBlockBeacon,
+		metrics.MeasurementValue: float64(1),
+		metrics.Tag:              metrics.ShardIDTag,
+		metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees),
+	})
 	peerID, err := libp2p.IDB58Decode(msg.SenderID)
 	if err != nil {
 		Logger.log.Error(err)
@@ -437,6 +513,12 @@ func (netSync *NetSync) handleMessageGetBlockBeacon(msg *wire.MessageGetBlockBea
 
 func (netSync *NetSync) handleMessageGetShardToBeacon(msg *wire.MessageGetShardToBeacon) {
 	Logger.log.Debug("Handling new message getshardtobeacon")
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.HandleMessageGetShardToBeacon,
+		metrics.MeasurementValue: float64(1),
+		metrics.Tag:              metrics.ShardIDTag,
+		metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees),
+	})
 	peerID, err := libp2p.IDB58Decode(msg.SenderID)
 	if err != nil {
 		Logger.log.Error(err)
@@ -451,6 +533,12 @@ func (netSync *NetSync) handleMessageGetShardToBeacon(msg *wire.MessageGetShardT
 
 func (netSync *NetSync) handleMessageGetCrossShard(msg *wire.MessageGetCrossShard) {
 	Logger.log.Debug("Handling new message getcrossshard")
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.HandleMessageGetCrossShard,
+		metrics.MeasurementValue: float64(1),
+		metrics.Tag:              metrics.ShardIDTag,
+		metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees),
+	})
 	peerID, err := libp2p.IDB58Decode(msg.SenderID)
 	if err != nil {
 		Logger.log.Error(err)
