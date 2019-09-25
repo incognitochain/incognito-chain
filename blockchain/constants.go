@@ -18,17 +18,16 @@ const (
 	DefaultMaxBlkReqPerPeer      = 600
 	DefaultMaxBlkReqPerTime      = 1200
 	MinCommitteeSize             = 3                // min size to run bft
-	DefaultBroadcastStateTime    = 6 * time.Second  // in second
-	DefaultStateUpdateTime       = 8 * time.Second  // in second
+	DefaultBroadcastStateTime    = 2 * time.Second  // in second
+	DefaultStateUpdateTime       = 3 * time.Second  // in second
 	DefaultMaxBlockSyncTime      = 1 * time.Second  // in second
 	DefaultCacheCleanupTime      = 30 * time.Second // in second
 	WorkerNumber                 = 5
-	MAX_S2B_BLOCK                = 2
-	MAX_BEACON_BLOCK             = 2
+	MAX_S2B_BLOCK                = 5
 	DurationHalfLifeRewardForDev = uint64(31536000) // 5 years, after 5 year, reward for devs = 0
 	GetValidBlock                = 10
-	CheckForce                   = false
-	GenesisBlockTime             = "2019-09-16T00:00:00.000Z"
+	CheckForce                   = true
+	GenesisBlockTime             = "2019-09-24T00:00:00.000Z"
 )
 
 // CONSTANT for network MAINNET
@@ -76,23 +75,23 @@ var (
 
 // CONSTANT for network TESTNET
 const (
-	Testnet            = 0x37
+	Testnet            = 0x16
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
 	TestnetEpoch       = 100
 	TestnetRandomTime  = 50
 
-	TestNetShardCommitteeSize     = 8
-	TestNetMinShardCommitteeSize  = 8
-	TestNetBeaconCommitteeSize    = 6
-	TestNetMinBeaconCommitteeSize = 6
-	TestNetActiveShards           = 64
+	TestNetShardCommitteeSize     = 64
+	TestNetMinShardCommitteeSize  = 4
+	TestNetBeaconCommitteeSize    = 4
+	TestNetMinBeaconCommitteeSize = 4
+	TestNetActiveShards           = 8
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	TestNetMinBeaconBlkInterval = 10 * time.Second //second
-	TestNetMaxBeaconBlkCreation = 3 * time.Second  //second
+	TestNetMaxBeaconBlkCreation = 8 * time.Second  //second
 	TestNetMinShardBlkInterval  = 10 * time.Second //second
-	TestNetMaxShardBlkCreation  = 3 * time.Second  //second
+	TestNetMaxShardBlkCreation  = 4 * time.Second  //second
 
 	//board and proposal parameters
 	TestnetBasicReward                = 400000000 //40 mili PRV
