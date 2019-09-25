@@ -7,9 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/peerv2"
-	peer2 "github.com/libp2p/go-libp2p-core/peer"
-	p2pPubSub "github.com/libp2p/go-libp2p-pubsub"
-	"github.com/multiformats/go-multiaddr"
 	"io/ioutil"
 	"log"
 	"net"
@@ -627,33 +624,28 @@ func (serverObj Server) p2pHandler() {
 	ip, port := peerv2.ParseListenner(cfg.Listener, "127.0.0.1", 9433)
 	host := peerv2.NewHost(version(), ip, port, []byte(cfg.PrivateKey))
 
-	//connect to proxy node
-	proxyIP, proxyPort := peerv2.ParseListenner(cfg.DiscoverPeersAddress, "127.0.0.1", 9300)
-	ipfsaddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", proxyIP, proxyPort))
-	if err != nil {
-		panic(err)
+	conn := &peerv2.ConnManager{
+		LocalHost:            host,
+		DiscoverPeersAddress: cfg.DiscoverPeersAddress,
 	}
-	peerid, err := peer2.IDB58Decode("QmbV4AAHWFFEtE67qqmNeEYXs5Yw5xNMS75oEKtdBvfoKN")
-	must(host.Host.Connect(context.Background(), peer2.AddrInfo{peerid, append([]multiaddr.Multiaddr{}, ipfsaddr)}))
-
-	pubsub, err := p2pPubSub.NewGossipSub(context.Background(), host.Host)
-	must(err)
-
-	//subscribe to beacon
-	st, err := pubsub.Subscribe("beacon")
-	must(err)
-
-	go func() {
-		time.Sleep(1 * time.Second)
-		must(pubsub.Publish("beacon", []byte("abc")))
-	}()
-	for {
-		m, e := st.Next(context.Background())
-		if e != nil {
-			log.Println(e)
-		}
-		log.Println("st2", string(m.Data))
-	}
+	conn.Start()
+	//
+	//
+	////subscribe to beacon
+	//st, err := pubsub.Subscribe("beacon")
+	//must(err)
+	//
+	//go func() {
+	//	time.Sleep(1 * time.Second)
+	//	must(pubsub.Publish("beacon", []byte("abc")))
+	//}()
+	//for {
+	//	m, e := st.Next(context.Background())
+	//	if e != nil {
+	//		log.Println(e)
+	//	}
+	//	log.Println("st2", string(m.Data))
+	//}
 
 }
 
