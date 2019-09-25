@@ -2,6 +2,7 @@ package connmanager
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics"
 	"math"
 	"net"
 	"net/rpc"
@@ -360,8 +361,10 @@ func (connManager *ConnManager) discoverPeers(discoverPeerAddress string) {
 // node peers are shard commttee
 // other role of other peers
 func (connManager *ConnManager) processDiscoverPeers() error {
-	// fmt.Printf("\n\n\n\n ~~~~~~~~~~~~~~~~~~~~~~~~~~~processDiscoverPeers~~~~~~~~~~~~~~~~~~~~~~~~ \n\n\n\n")
+	startTime := time.Now()
 	discoverPeerAddress := connManager.discoverPeerAddress
+	fmt.Println("CONN: processDiscoverPeers")
+
 	if discoverPeerAddress == common.EmptyString {
 		// we dont have config to make discover peer
 		// so we dont need to do anything here
@@ -440,12 +443,14 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 		err = client.Call("Handler.Ping", args, &response)
 
 		if err != nil {
-			// fmt.Printf("CONNLog Ping error %v\n", err)
+			fmt.Println("CONN: cannot ping bootnode")
 			// can not call method PING to rpc server of boot node
 			Logger.log.Error("[Exchange Peers] Ping:")
 			Logger.log.Error(err)
 			client = nil
 			return err
+		} else {
+			fmt.Println("CONN: bootnode return", len(response))
 		}
 		// make models
 		responsePeers := make(map[string]*wire.RawPeer)
@@ -465,6 +470,11 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 		// connect to no shard peers
 		connManager.handleRandPeersOfNoShard(connManager.config.MaxPeersNoShard, responsePeers)
 	}
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.ProcessDiscoverPeersTime,
+		metrics.MeasurementValue: float64(time.Since(startTime).Seconds()),
+		metrics.Tag:              metrics.ExternalAddressTag,
+		metrics.TagValue:         connManager.config.ExternalAddress})
 	return nil
 }
 
@@ -490,10 +500,19 @@ func (connManager *ConnManager) countPeerConnOfShard(shard *byte) int {
 	count := 0
 	listener := connManager.config.ListenerPeer
 	if listener != nil {
+		fmt.Println("COUNT: count peer")
 		allPeers := listener.GetPeerConnOfAll()
+		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+			metrics.Measurement:      metrics.AllConnectedPeers,
+			metrics.MeasurementValue: float64(len(allPeers)),
+			metrics.Tag:              metrics.ExternalAddressTag,
+			metrics.TagValue:         connManager.config.ExternalAddress})
+		fmt.Println("COUNT: all peer", len(allPeers))
 		for _, peerConn := range allPeers {
+			fmt.Println("COUNT: start get")
 			pk, _ := peerConn.GetRemotePeer().GetPublicKey()
 			sh := connManager.getShardOfPublicKey(pk)
+			fmt.Println("COUNT: finish get")
 			if (shard == nil && sh == nil) || (sh != nil && shard != nil && *sh == *shard) {
 				count++
 			}
@@ -531,10 +550,13 @@ func (connManager *ConnManager) checkBeaconOfPbk(pbk string) bool {
 
 // closePeerConnOfShard
 func (connManager *ConnManager) closePeerConnOfShard(shard byte) {
+	fmt.Println("CLOSE: get peer")
 	cPeers := connManager.getPeerConnOfShard(&shard)
+	fmt.Println("CLOSE: close", len(cPeers))
 	for _, p := range cPeers {
 		p.ForceClose()
 	}
+	fmt.Println("CLOSE: finish")
 }
 
 func (connManager *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int, mPeers map[string]*wire.RawPeer) int {
@@ -542,6 +564,7 @@ func (connManager *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int
 		return 0
 	}
 	//Logger.log.Info("handleRandPeersOfShard", *shard)
+	fmt.Println("CONN: handleRandPeersOfShard", *shard)
 	countPeerShard := connManager.countPeerConnOfShard(shard)
 	fmt.Println("CONN: shard ", *shard, "has", countPeerShard, "peers")
 	if countPeerShard >= maxPeers {
@@ -575,11 +598,13 @@ func (connManager *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int
 			Logger.log.Warn("CONN: cannot find", pbk)
 		}
 	}
+	fmt.Println("CONN: finish handleRandPeersOfShard", countPeerShard)
 	return countPeerShard
 }
 
 func (connManager *ConnManager) handleRandPeersOfOtherShard(cShard *byte, maxShardPeers int, maxPeers int, mPeers map[string]*wire.RawPeer) int {
 	//Logger.log.Info("handleRandPeersOfOtherShard", maxShardPeers, maxPeers)
+	fmt.Println("CONN: handleRandPeersOfOtherShard")
 	countPeers := 0
 	for _, shard := range connManager.randShards {
 		if cShard == nil || (cShard != nil && *cShard != shard) {
@@ -592,10 +617,12 @@ func (connManager *ConnManager) handleRandPeersOfOtherShard(cShard *byte, maxSha
 				}
 			}
 			if countPeers >= maxPeers {
+				fmt.Println("CONN: close peer conn of shard", countPeers, maxPeers)
 				connManager.closePeerConnOfShard(shard)
 			}
 		}
 	}
+	fmt.Println("CONN: finish handleRandPeersOfOtherShard")
 	return countPeers
 }
 
@@ -613,7 +640,7 @@ func (connManager *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPee
 			// if existed conn then not append to array
 			if cPbk != pbk && !connManager.checkPeerConnOfPublicKey(pbk) {
 				fmt.Println("CONN: beacon try to connect", peerI.RawAddress, peerI.PublicKeyType, peerI.PublicKey, pbk)
-				go func(){
+				go func() {
 					fmt.Println("CONN: beacon connect result", connManager.Connect(peerI.RawAddress, peerI.PublicKey, peerI.PublicKeyType, nil))
 				}()
 			}
