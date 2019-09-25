@@ -269,10 +269,10 @@ func (wit SNPrivacyWitness) Prove(mess []byte) (*SNPrivacyProof, error) {
 	// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
 	x := new(privacy.Scalar)
 	if mess == nil {
-		x.FromBytes(privacy.SliceToArray(utils.GenerateChallenge([][]byte{
+		x = utils.GenerateChallenge([][]byte{
 			privacy.ArrayToSlice(tSeed.ToBytes()),
 			privacy.ArrayToSlice(tInput.ToBytes()),
-			privacy.ArrayToSlice(tOutput.ToBytes())})))
+			privacy.ArrayToSlice(tOutput.ToBytes())})
 	} else {
 		x.FromBytes(privacy.SliceToArray(mess))
 	}
@@ -306,10 +306,10 @@ func (proof SNPrivacyProof) Verify(mess []byte) (bool, error) {
 	// re-calculate x = hash(tSeed || tInput || tSND2 || tOutput)
 	x := new(privacy.Scalar)
 	if mess == nil {
-		x.FromBytes(privacy.SliceToArray(utils.GenerateChallenge([][]byte{
+		x = utils.GenerateChallenge([][]byte{
 			privacy.ArrayToSlice(proof.tSK.ToBytes()),
 			privacy.ArrayToSlice(proof.tInput.ToBytes()),
-			privacy.ArrayToSlice(proof.tSN.ToBytes())})))
+			privacy.ArrayToSlice(proof.tSN.ToBytes())})
 	} else {
 		x.FromBytes(privacy.SliceToArray(mess))
 	}
