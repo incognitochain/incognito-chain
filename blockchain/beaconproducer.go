@@ -666,29 +666,33 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 // ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
 func (beaconBestState *BeaconBestState) generateRandomInstruction(timestamp int64) ([]string, int64) {
 	//COMMENT FOR TESTING
-	//var (
-	//	blockHeight int
-	//	chainTimestamp int64
-	//	nonce int64
-	//  strs []string
-	//	err error
-	//)
-	//for {
-	//	blockHeight, chainTimestamp, nonce, err = beaconBestState.randomClient.GetNonceByTimestamp(timestamp)
-	//	if err == nil {
-	//		break
-	//	}
-	//}
-	//strs = append(strs, "random")
-	//strs = append(strs, strconv.Itoa(int(nonce)))
-	//strs = append(strs, strconv.Itoa(blockHeight))
-	//strs = append(strs, strconv.Itoa(int(timestamp)))
-	//strs = append(strs, strconv.Itoa(int(chainTimestamp)))
-	//@NOTICE: Hard Code for testing
-	var strs []string
-	reses := []string{"1000", strconv.Itoa(int(timestamp)), strconv.Itoa(int(timestamp) + 1)}
-	strs = append(strs, RandomAction)
-	strs = append(strs, reses...)
-	strs = append(strs, strconv.Itoa(int(timestamp)))
-	return strs, int64(1000)
+	if !TestRandom {
+		var (
+			blockHeight    int
+			chainTimestamp int64
+			nonce          int64
+			strs           []string
+			err            error
+		)
+		for {
+			blockHeight, chainTimestamp, nonce, err = beaconBestState.randomClient.GetNonceByTimestamp(timestamp)
+			if err == nil {
+				break
+			}
+		}
+		strs = append(strs, "random")
+		strs = append(strs, strconv.Itoa(int(nonce)))
+		strs = append(strs, strconv.Itoa(blockHeight))
+		strs = append(strs, strconv.Itoa(int(timestamp)))
+		strs = append(strs, strconv.Itoa(int(chainTimestamp)))
+		return strs, int64(nonce)
+	} else {
+		//@NOTICE: Hard Code for testing
+		var strs []string
+		reses := []string{"1000", strconv.Itoa(int(timestamp)), strconv.Itoa(int(timestamp) + 1)}
+		strs = append(strs, RandomAction)
+		strs = append(strs, reses...)
+		strs = append(strs, strconv.Itoa(int(timestamp)))
+		return strs, int64(1000)
+	}
 }
