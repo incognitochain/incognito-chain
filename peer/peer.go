@@ -691,7 +691,7 @@ func (peerObj *Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- 
 	peerObj.peerConnsMtx.Lock()
 	defer peerObj.peerConnsMtx.Unlock()
 	for _, peerConnection := range peerObj.peerConns {
-		go peerConnection.QueueMessageWithEncoding(msg, doneChan, msgType, msgShard)
+		peerConnection.QueueMessageWithEncoding(msg, doneChan, msgType, msgShard)
 	}
 }
 

@@ -157,7 +157,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 		Logger.log.Infof("SHARD %+v | SKIP Verify Post Processing, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	}
 	Logger.log.Infof("SHARD %+v | Remove Data After Processed, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-	go blockchain.removeOldDataAfterProcessingShardBlock(shardBlock, shardID)
+	blockchain.removeOldDataAfterProcessingShardBlock(shardBlock, shardID)
 	Logger.log.Infof("SHARD %+v | Update Beacon Instruction, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	err = blockchain.updateDatabaseFromBeaconInstructions(beaconBlocks, shardID)
 	if err != nil {
@@ -937,6 +937,9 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock 
 		candidates := []string{}
 		tokenIDs := []string{}
 		for _, tx := range shardBlock.Body.Transactions {
+			if blockchain.config.IsBlockGenStarted {
+				blockchain.config.CRemovedTxs <- tx
+			}
 			if tx.GetMetadata() != nil {
 				if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
 					stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
@@ -953,22 +956,12 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock 
 					tokenIDs = append(tokenIDs, tokenID)
 				}
 			}
-			if blockchain.config.IsBlockGenStarted {
-				blockchain.config.CRemovedTxs <- tx
-			}
 		}
 		go blockchain.config.TxPool.RemoveCandidateList(candidates)
 		go blockchain.config.TxPool.RemoveTokenIDList(tokenIDs)
 
 		//Remove tx out of pool
 		go blockchain.config.TxPool.RemoveTx(shardBlock.Body.Transactions, true)
-		for _, tx := range shardBlock.Body.Transactions {
-			go func(tx metadata.Transaction) {
-				if blockchain.config.IsBlockGenStarted {
-					blockchain.config.CRemovedTxs <- tx
-				}
-			}(tx)
-		}
 	}()
 }
 
