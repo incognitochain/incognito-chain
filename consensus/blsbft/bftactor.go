@@ -197,7 +197,6 @@ func (e *BLSBFT) Start() error {
 						if err := e.validatePreSignBlock(e.Blocks[roundKey]); err != nil {
 							delete(e.Blocks, roundKey)
 							e.logger.Error(err)
-							// time.Sleep(1 * time.Second)
 							continue
 						}
 
@@ -211,7 +210,6 @@ func (e *BLSBFT) Start() error {
 							valData, err := DecodeValidationData(e.RoundData.Block.GetValidationField())
 							if err != nil {
 								e.logger.Error(err)
-								// time.Sleep(1 * time.Second)
 								continue
 							}
 							e.RoundData.BlockValidateData = *valData
@@ -233,7 +231,6 @@ func (e *BLSBFT) Start() error {
 						e.RoundData.lockVotes.Unlock()
 						if err != nil {
 							e.logger.Error(err)
-							// time.Sleep(1 * time.Second)
 							continue
 						}
 
@@ -257,7 +254,6 @@ func (e *BLSBFT) Start() error {
 								fmt.Println(base58.Base58Check{}.Encode(member.MiningPubKey[consensusName], common.Base58Version))
 							}
 							e.logger.Critical(err)
-							// time.Sleep(1 * time.Second)
 							continue
 						}
 
@@ -267,7 +263,6 @@ func (e *BLSBFT) Start() error {
 									e.logger.Error(err)
 								}
 							}
-							// time.Sleep(1 * time.Second)
 							continue
 						}
 						// e.Node.PushMessageToAll()
