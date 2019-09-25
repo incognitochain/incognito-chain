@@ -52,7 +52,7 @@ func innerProduct(a []*privacy.Scalar, b []*privacy.Scalar) (*privacy.Scalar, er
 		return nil, errors.New("InnerProduct: Arrays not of the same length")
 	}
 
-	res := new(privacy.Scalar).SetUint64(uint64(0))
+	res := new(privacy.Scalar).FromUint64(uint64(0))
 
 	for i := range a {
 		//res = a[i]*b[i] + res % l
@@ -69,15 +69,12 @@ func hadamardProduct(a []*privacy.Scalar, b []*privacy.Scalar) ([]*privacy.Scala
 	}
 
 	res := make([]*privacy.Scalar, len(a))
-	var wg sync.WaitGroup
-	wg.Add(len(a))
+
 	for i := 0; i < len(res); i++ {
-		go func(i int, wg *sync.WaitGroup) {
-			defer wg.Done()
+
 			res[i] = new(privacy.Scalar).Mul(a[i], b[i])
-		}(i, &wg)
+
 	}
-	wg.Wait()
 
 	return res, nil
 }
@@ -85,17 +82,14 @@ func hadamardProduct(a []*privacy.Scalar, b []*privacy.Scalar) ([]*privacy.Scala
 // powerVector calculates base^n
 func powerVector(base *privacy.Scalar, n int) []*privacy.Scalar {
 	res := make([]*privacy.Scalar, n)
-	res[0] = new(privacy.Scalar).SetUint64(1)
+	res[0] = new(privacy.Scalar).FromUint64(1)
+	if n >1 {
+		res[1] = new(privacy.Scalar).Set(base)
 
-	var wg sync.WaitGroup
-	wg.Add(n - 1)
-	for i := 1; i < n; i++ {
-		go func(i int, wg *sync.WaitGroup) {
-			defer wg.Done()
-			res[i] = new(privacy.Scalar).Exp(base, uint64(i))
-		}(i, &wg)
+		for i := 2; i < n; i++ {
+			res[i] = new(privacy.Scalar).Mul(res[i-1], base)
+		}
 	}
-	wg.Wait()
 	return res
 }
 
@@ -103,15 +97,9 @@ func powerVector(base *privacy.Scalar, n int) []*privacy.Scalar {
 func vectorAddScalar(v []*privacy.Scalar, s *privacy.Scalar) []*privacy.Scalar {
 	res := make([]*privacy.Scalar, len(v))
 
-	var wg sync.WaitGroup
-	wg.Add(len(v))
 	for i := range v {
-		go func(i int, wg *sync.WaitGroup) {
-			defer wg.Done()
-			res[i] = new(privacy.Scalar).Add(v[i], s)
-		}(i, &wg)
+		res[i] = new(privacy.Scalar).Add(v[i], s)
 	}
-	wg.Wait()
 	return res
 }
 
@@ -119,15 +107,9 @@ func vectorAddScalar(v []*privacy.Scalar, s *privacy.Scalar) []*privacy.Scalar {
 func vectorMulScalar(v []*privacy.Scalar, s *privacy.Scalar) []*privacy.Scalar {
 	res := make([]*privacy.Scalar, len(v))
 
-	var wg sync.WaitGroup
-	wg.Add(len(v))
 	for i := range v {
-		go func(i int, wg *sync.WaitGroup) {
-			defer wg.Done()
-			res[i] = new(privacy.Scalar).Mul(v[i], s)
-		}(i, &wg)
+		res[i] = new(privacy.Scalar).Mul(v[i], s)
 	}
-	wg.Wait()
 	return res
 }
 
@@ -142,27 +124,9 @@ func encodeVectors(l []*privacy.Scalar, r []*privacy.Scalar, g []*privacy.Point,
 		return nil, errors.New("invalid input")
 	}
 
-	res := new(privacy.Point).Identity()
-	//res.Zero()
-	var wg sync.WaitGroup
-	var tmp1, tmp2 *privacy.Point
+	tmp1 := new(privacy.Point).MultiScalarMult(l, g)
+	tmp2 := new(privacy.Point).MultiScalarMult(r, h)
 
-	for i := 0; i < len(l); i++ {
-		wg.Add(2)
-		go func(i int, wg *sync.WaitGroup) {
-			defer wg.Done()
-			tmp1 = new(privacy.Point).ScalarMult(g[i], l[i])
-		}(i, &wg)
-
-		go func(i int, wg *sync.WaitGroup) {
-			defer wg.Done()
-			tmp2 = new(privacy.Point).ScalarMult(h[i], r[i])
-		}(i, &wg)
-
-		wg.Wait()
-
-		res = res.Add(res, tmp1)
-		res = res.Add(res, tmp2)
-	}
+	res := new(privacy.Point).Add(tmp1, tmp2)
 	return res, nil
 }

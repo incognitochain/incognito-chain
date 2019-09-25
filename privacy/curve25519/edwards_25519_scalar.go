@@ -956,71 +956,6 @@ func ScValid(s *Key) bool {
 
 }
 
-func GeMultiScalarMult(r *ProjectiveGroupElement, scalars []*Key, points []*ExtendedGroupElement) {
-	if len(scalars) != len(points) {
-		panic("called MultiscalarMul with different size inputs")
-	}
-
-	digitsLs := make([][64]int8, len(scalars))
-
-	for i:= range digitsLs {
-		digitsLs[i] = scalars[i].SignedRadix16()
-	}
-
-	AiLs := make([][8]CachedGroupElement, len(scalars))
-	for i:= 0; i < len(scalars); i++ {
-		// A,2A,3A,4A,5A,6A,7A,8A
-		t := new(CompletedGroupElement)
-		u := new(ExtendedGroupElement)
-		points[i].ToCached(&AiLs[i][0])
-		for j := 0; j < 7; j++ {
-			geAdd(t, points[i], &AiLs[i][j])
-			t.ToExtended(u)
-			u.ToCached(&AiLs[i][j+1])
-		}
-	}
-
-	t := new(CompletedGroupElement)
-	u := new(ExtendedGroupElement)
-
-	r.Zero()
-	cur := new(CachedGroupElement)
-	minusCur := new(CachedGroupElement)
-	for i := 63; i >= 0; i-- {
-		r.Double(t)
-		t.ToProjective(r)
-		r.Double(t)
-		t.ToProjective(r)
-		r.Double(t)
-		t.ToProjective(r)
-		r.Double(t)
-		t.ToExtended(u)
-
-		for j:= 0; j < len(scalars); j++ {
-			cur.Zero()
-			b := digitsLs[j][i]
-			bNegative := int8(negative(int32(b)))
-			bAbs := b - (((-bNegative) & b) << 1)
-
-			for k := int32(0); k < 8; k++ {
-				if equal(int32(bAbs), k+1) == 1 { // optimisation
-					CachedGroupElementCMove(cur, &AiLs[j][k], equal(int32(bAbs), k+1))
-				}
-			}
-			FeCopy(&minusCur.yPlusX, &cur.yMinusX)
-			FeCopy(&minusCur.yMinusX, &cur.yPlusX)
-			FeCopy(&minusCur.Z, &cur.Z)
-			FeNeg(&minusCur.T2d, &cur.T2d)
-			CachedGroupElementCMove(cur, minusCur, int32(bNegative))
-
-			geAdd(t, u, cur)
-			t.ToExtended(u)
-		}
-		t.ToProjective(r)
-	}
-}
-
-
 // GeScalarMult computes h = a*A, where
 //   a = a[0]+256*a[1]+...+256^31 a[31]
 //   A is a point on the curve
@@ -1053,7 +988,6 @@ func GeScalarMult(r *ProjectiveGroupElement, a *Key, A *ExtendedGroupElement) {
 		t.ToExtended(u)
 		u.ToCached(&Ai[i+1])
 	}
-
 	r.Zero()
 	cur := new(CachedGroupElement)
 	minusCur := new(CachedGroupElement)
@@ -1085,8 +1019,8 @@ func GeScalarMult(r *ProjectiveGroupElement, a *Key, A *ExtendedGroupElement) {
 		CachedGroupElementCMove(cur, minusCur, int32(bNegative))
 
 		geAdd(t, u, cur)
-
 		t.ToProjective(r)
+
 	}
 }
 

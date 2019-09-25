@@ -274,83 +274,6 @@ func ScalarMultKey(Point *Key, scalar *Key) (result *Key) {
 	resultPoint.ToBytes(result)
 	return
 }
-
-func MultiScalarMultKey(points []*Key, scalars []*Key) (result *Key) {
-	r := new(ProjectiveGroupElement)
-
-	if len(scalars) != len(points) {
-		panic("called MultiscalarMul with different size inputs")
-	}
-	pointLs := make([]*ExtendedGroupElement, len(points))
-
-	digitsLs := make([][64]int8, len(scalars))
-	for i:= range digitsLs {
-		digitsLs[i] = scalars[i].SignedRadix16()
-	}
-
-	AiLs := make([][8]CachedGroupElement, len(scalars))
-	for i:= 0; i < len(scalars); i++ {
-		var Ai [8]CachedGroupElement // A,2A,3A,4A,5A,6A,7A,8A
-		t := new(CompletedGroupElement)
-		u := new(ExtendedGroupElement)
-		pointLs[i].ToCached(&Ai[0])
-		for i := 0; i < 7; i++ {
-			geAdd(t, pointLs[i], &Ai[i])
-			t.ToExtended(u)
-			u.ToCached(&Ai[i+1])
-		}
-		AiLs[i] = Ai
-	}
-
-	t := new(CompletedGroupElement)
-	u := new(ExtendedGroupElement)
-
-	r.Zero()
-	cachedBase := new(ExtendedGroupElement)
-	cur := new(CachedGroupElement)
-	minusCur := new(CachedGroupElement)
-	for i := 63; i >= 0; i-- {
-		r.Double(t)
-		t.ToProjective(r)
-		r.Double(t)
-		t.ToProjective(r)
-		r.Double(t)
-		t.ToProjective(r)
-		r.Double(t)
-		t.ToExtended(u)
-
-		cachedBase.Zero()
-		tmpt := new(CompletedGroupElement)
-		for j:= 0; j < len(scalars); j++ {
-			cur.Zero()
-			b := digitsLs[j][i]
-			bNegative := int8(negative(int32(b)))
-			bAbs := b - (((-bNegative) & b) << 1)
-
-			for k := int32(0); k < 8; k++ {
-				if equal(int32(bAbs), k+1) == 1 { // optimisation
-					CachedGroupElementCMove(cur, &AiLs[j][k], equal(int32(bAbs), k+1))
-				}
-			}
-			FeCopy(&minusCur.yPlusX, &cur.yMinusX)
-			FeCopy(&minusCur.yMinusX, &cur.yPlusX)
-			FeCopy(&minusCur.Z, &cur.Z)
-			FeNeg(&minusCur.T2d, &cur.T2d)
-			CachedGroupElementCMove(cur, minusCur, int32(bNegative))
-
-			geAdd(tmpt, cachedBase, cur)
-			tmpt.ToExtended(cachedBase)
-		}
-		tmpv := new(CachedGroupElement)
-		cachedBase.ToCached(tmpv)
-		geAdd(t, u, tmpv)
-		t.ToProjective(r)
-	}
-	result = new(Key)
-	r.ToBytes(result)
-	return
-}
-
 // multiply a scalar by H (second curve point of Pedersen Commitment)
 func ScalarMultH(scalar *Key) (result *Key) {
 	h := new(ExtendedGroupElement)
@@ -523,6 +446,7 @@ func (kd *Key) KeyDerivation_To_PrivateKey(outputIndex uint64, baseKey Key) Key 
 
 	tmp := baseKey
 	ScAdd(&tmp, &tmp, scalar)
+
 	return tmp
 }
 
@@ -537,4 +461,78 @@ func GenerateKeyImage(pub Key, private Key) Key {
 	var ki Key
 	proj.ToBytes(&ki)
 	return ki
+}
+
+func MultiScalarMultKey(points []*Key, scalars []*Key) (result *Key) {
+	r := new(ProjectiveGroupElement)
+
+
+	pointLs := make([]ExtendedGroupElement, len(points))
+
+	digitsLs := make([][64]int8, len(scalars))
+	for i:= range digitsLs {
+		digitsLs[i] = scalars[i].SignedRadix16()
+	}
+
+	AiLs := make([][8]CachedGroupElement, len(scalars))
+	for i:= 0; i < len(scalars); i++ {
+		// A,2A,3A,4A,5A,6A,7A,8A
+		t := new(CompletedGroupElement)
+		u := new(ExtendedGroupElement)
+		pointLs[i].FromBytes(points[i])
+		pointLs[i].ToCached(&AiLs[i][0])
+		for j := 0; j < 7; j++ {
+			geAdd(t, &pointLs[i], &AiLs[i][j])
+			t.ToExtended(u)
+			u.ToCached(&AiLs[i][j+1])
+		}
+	}
+
+	t := new(CompletedGroupElement)
+	u := new(ExtendedGroupElement)
+
+	r.Zero()
+	cachedBase := new(ExtendedGroupElement)
+	cur := new(CachedGroupElement)
+	minusCur := new(CachedGroupElement)
+	for i := 63; i >= 0; i-- {
+		r.Double(t)
+		t.ToProjective(r)
+		r.Double(t)
+		t.ToProjective(r)
+		r.Double(t)
+		t.ToProjective(r)
+		r.Double(t)
+		t.ToExtended(u)
+
+		cachedBase.Zero()
+		tmpt := new(CompletedGroupElement)
+		for j:= 0; j < len(scalars); j++ {
+			cur.Zero()
+			b := digitsLs[j][i]
+			bNegative := int8(negative(int32(b)))
+			bAbs := b - (((-bNegative) & b) << 1)
+
+			for k := int32(0); k < 8; k++ {
+				if equal(int32(bAbs), k+1) == 1 { // optimisation
+					CachedGroupElementCMove(cur, &AiLs[j][k], equal(int32(bAbs), k+1))
+				}
+			}
+			FeCopy(&minusCur.yPlusX, &cur.yMinusX)
+			FeCopy(&minusCur.yMinusX, &cur.yPlusX)
+			FeCopy(&minusCur.Z, &cur.Z)
+			FeNeg(&minusCur.T2d, &cur.T2d)
+			CachedGroupElementCMove(cur, minusCur, int32(bNegative))
+
+			geAdd(tmpt, cachedBase, cur)
+			tmpt.ToExtended(cachedBase)
+		}
+		tmpv := new(CachedGroupElement)
+		cachedBase.ToCached(tmpv)
+		geAdd(t, u, tmpv)
+		t.ToProjective(r)
+	}
+	result = new(Key)
+	r.ToBytes(result)
+	return result
 }
