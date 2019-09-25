@@ -3,7 +3,7 @@ package blsmultisig
 import (
 	"math/big"
 
-	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/google"
+	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
 	"golang.org/x/crypto/sha3"
 )
 

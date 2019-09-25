@@ -11,11 +11,13 @@
         },
         2,
         0,
-        63,
-        "1Uv4APZadR2kbpm4Uazwng2hwfqb2AtuV6Y6QVcypzQurzwE9YvUzTA8TWVndLJxtuAytWPey57YiU97abmSJ7nnPxnDdsjGcXUAiiE6t",
-        "12WQy3WYgtdp1G52hcdpv9zhW2wRg9DnzcM5pZM1cFhNo3VA6pB",
-        "1Uv4APZadR2kbpm4Uazwng2hwfqb2AtuV6Y6QVcypzQurzwE9YvUzTA8TWVndLJxtuAytWPey57YiU97abmSJ7nnPxnDdsjGcXUAiiE6t",
-        true
+        {
+          "StakingType": 63,
+          "CandidatePaymentAddress": "1Uv4APZadR2kbpm4Uazwng2hwfqb2AtuV6Y6QVcypzQurzwE9YvUzTA8TWVndLJxtuAytWPey57YiU97abmSJ7nnPxnDdsjGcXUAiiE6t",
+          "PrivateSeed": "12WQy3WYgtdp1G52hcdpv9zhW2wRg9DnzcM5pZM1cFhNo3VA6pB",
+          "RewardReceiverPaymentAddress": "1Uv4APZadR2kbpm4Uazwng2hwfqb2AtuV6Y6QVcypzQurzwE9YvUzTA8TWVndLJxtuAytWPey57YiU97abmSJ7nnPxnDdsjGcXUAiiE6t",
+          "AutoReStaking": true
+        }
       ]
     },
     "output": {
