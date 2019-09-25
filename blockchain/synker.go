@@ -122,41 +122,22 @@ func (synker *Synker) Start() {
 	synker.Status.Unlock()
 
 	broadcastTicker := time.NewTicker(DefaultBroadcastStateTime)
-	insertPoolTicker := time.NewTicker(time.Millisecond * 500)
+	insertPoolTicker := time.NewTicker(1 * time.Second)
 	updateStatesTicker := time.NewTicker(DefaultStateUpdateTime)
 	defer func() {
 		broadcastTicker.Stop()
 		insertPoolTicker.Stop()
 		updateStatesTicker.Stop()
 	}()
-	go func() {
-		time.Sleep(2 * time.Second)
-		for {
-			select {
-			case <-synker.cQuit:
-				return
-			case <-broadcastTicker.C:
-				synker.blockchain.config.Server.BoardcastNodeState()
-			}
-		}
-	}()
-
-	go func() {
-		time.Sleep(5 * time.Second)
-		for {
-			select {
-			case <-synker.cQuit:
-				return
-			case <-insertPoolTicker.C:
-				synker.InsertBlockFromPool()
-			}
-		}
-	}()
 
 	for {
 		select {
 		case <-synker.cQuit:
 			return
+		case <-insertPoolTicker.C:
+			synker.InsertBlockFromPool()
+		case <-broadcastTicker.C:
+			synker.blockchain.config.Server.BoardcastNodeState()
 		case <-updateStatesTicker.C:
 			synker.UpdateState()
 		case msg := <-synker.Event.requestSyncShardBlockByHashEvent:

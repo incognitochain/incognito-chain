@@ -178,7 +178,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 		}
 		return err
 	}
-	go blockchain.removeOldDataAfterProcessingBeaconBlock()
+	blockchain.removeOldDataAfterProcessingBeaconBlock()
 	go metrics.AnalyzeTimeSeriesMetricDataWithTime(map[string]interface{}{
 		metrics.Measurement:      metrics.NumOfBlockInsertToChain,
 		metrics.MeasurementValue: float64(1),

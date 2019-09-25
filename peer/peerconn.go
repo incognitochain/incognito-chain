@@ -14,7 +14,14 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/wire"
 	peer "github.com/libp2p/go-libp2p-peer"
+	"github.com/patrickmn/go-cache"
 )
+
+var maxMsgProcessPerTime *cache.Cache
+
+func init() {
+	maxMsgProcessPerTime = cache.New(1*time.Second, 1*time.Second)
+}
 
 type PeerConn struct {
 	connState      ConnState
@@ -388,7 +395,12 @@ func (peerConn *PeerConn) inMessageHandler(rw *bufio.ReadWriter) error {
 			// Get an good message, make an process to do something on it
 			if !peerConn.isUnitTest {
 				// not use for unit test -> call go routine for process
-				go peerConn.processInMessageString(str)
+				count := maxMsgProcessPerTime.ItemCount()
+				if count > 10000 {
+					continue
+				}
+				maxMsgProcessPerTime.Add(str, nil, 1*time.Second)
+				peerConn.processInMessageString(str)
 			} else {
 				// not use for unit test -> not call go routine for process
 				// and break for loop
