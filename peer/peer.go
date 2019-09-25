@@ -454,7 +454,7 @@ func (peerObj *Peer) setPeerConn(peerConn *PeerConn) {
 		}
 		Logger.log.Debugf("SetPeerConn and Remove %s %s", peerIDStr, internalConnPeer.remotePeer.rawAddress)
 	}
-	fmt.Println("CONN: setPeerConn",peerIDStr)
+	fmt.Println("CONN: setPeerConn", peerIDStr)
 	peerObj.peerConns[peerIDStr] = peerConn
 }
 
