@@ -1,6 +1,7 @@
 package aggregaterange
 
 import (
+	"fmt"
 	"github.com/pkg/errors"
 	"sync"
 
@@ -58,10 +59,10 @@ func (proof AggregatedRangeProof) ValidateSanity() bool {
 }
 
 func (proof *AggregatedRangeProof) Init() {
-	proof.a = new(privacy.Point).Zero()
-	proof.s = new(privacy.Point).Zero()
-	proof.t1 = new(privacy.Point).Zero()
-	proof.t2 = new(privacy.Point).Zero()
+	proof.a = new(privacy.Point).Identity()
+	proof.s = new(privacy.Point).Identity()
+	proof.t1 = new(privacy.Point).Identity()
+	proof.t2 = new(privacy.Point).Identity()
 	proof.tauX = new(privacy.Scalar)
 	proof.tHat = new(privacy.Scalar)
 	proof.mu = new(privacy.Scalar)
@@ -219,6 +220,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 		aggParam.u = AggParam.u
 	}
 
+
 	proof.cmsValue = make([]*privacy.Point, numValue)
 	for i := 0; i < numValue; i++ {
 		proof.cmsValue[i] = privacy.PedCom.CommitAtIndex(new(privacy.Scalar).SetUint64(values[i]), rands[i], privacy.PedersenValueIndex)
@@ -368,7 +370,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	x := generateChallengeForAggRange(aggParam,
 		[][]byte{privacy.ArrayToSlice(proof.a.ToBytes()), privacy.ArrayToSlice(proof.s.ToBytes()),
 		privacy.ArrayToSlice(proof.t1.ToBytes()), privacy.ArrayToSlice(proof.t2.ToBytes())})
-	xSquare := new(privacy.Scalar).Exp(x, new(privacy.Scalar).SetUint64(2))
+	xSquare := new(privacy.Scalar).Mul(x,x)
 
 	// lVector = aL - z*1^n + sL*x
 	lVector, err := vectorAdd(vectorAddScalar(aL, zNeg), vectorMulScalar(sL, x))
@@ -447,9 +449,8 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	tmpcmsValue := proof.cmsValue
 
 	for i := numValue; i < numValuePad; i++ {
-		zero := new(privacy.Point)
-		zero.Zero()
-		tmpcmsValue = append(tmpcmsValue, zero)
+		identity := new(privacy.Point).Identity()
+		tmpcmsValue = append(tmpcmsValue, identity)
 	}
 
 	aggParam := new(bulletproofParams)
@@ -461,6 +462,7 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 		aggParam.h = AggParam.h[0:numValuePad*64]
 		aggParam.u = AggParam.u
 	}
+
 
 	n := maxExp
 	oneNumber := new(privacy.Scalar).SetUint64(1)
@@ -491,8 +493,10 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 		//go func(i int, wg *sync.WaitGroup) {
 		//	defer wg.Done()
 			// todo: recheck exp
-			iInverse := new(privacy.Scalar).Invert(new(privacy.Scalar).SetUint64(uint64(i)))
-			HPrime[i] = new(privacy.Point).ScalarMult(aggParam.h[i], new(privacy.Scalar).Exp(y, iInverse))
+			yInverse := new(privacy.Scalar).Invert(y)
+			tmp := new(privacy.Scalar).Mul(y, yInverse)
+			fmt.Println("Hello", tmp.String())
+			HPrime[i] = new(privacy.Point).ScalarMult(aggParam.h[i], new(privacy.Scalar).Exp(yInverse, uint64(i)))
 		//}(i, &wg)
 	}
 	//wg.Wait()

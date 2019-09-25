@@ -79,13 +79,13 @@ func (coin *Coin) SetInfo(v []byte) {
 
 // Init (Coin) initializes a coin
 func (coin *Coin) Init() *Coin {
-	coin.publicKey = new(Point).Zero()
+	coin.publicKey = new(Point).Identity()
 
-	coin.coinCommitment = new(Point).Zero()
+	coin.coinCommitment = new(Point).Identity()
 
 	coin.snDerivator = new(Scalar).SetUint64(0)
 
-	coin.serialNumber = new(Point).Zero()
+	coin.serialNumber = new(Point).Identity()
 
 	coin.randomness = new(Scalar)
 

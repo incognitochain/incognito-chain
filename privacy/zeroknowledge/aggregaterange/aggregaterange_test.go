@@ -50,86 +50,92 @@ func TestInnerProduct(t *testing.T) {
 }
 
 func TestEncodeVectors(t *testing.T) {
-	var AggParam = newBulletproofParams(1)
-	n := 64
-	a := make([]*privacy.Scalar, n)
-	b := make([]*privacy.Scalar, n)
-	G := make([]*privacy.Point, n)
-	H := make([]*privacy.Point, n)
+	for i:= 0; i<100; i++ {
+		var AggParam= newBulletproofParams(1)
+		n := 64
+		a := make([]*privacy.Scalar, n)
+		b := make([]*privacy.Scalar, n)
+		G := make([]*privacy.Point, n)
+		H := make([]*privacy.Point, n)
 
-	for i := range a {
-		a[i] = privacy.RandomScalar()
-		b[i] = privacy.RandomScalar()
+		for i := range a {
+			a[i] = privacy.RandomScalar()
+			b[i] = privacy.RandomScalar()
 
-		G[i] = new(privacy.Point).Set(AggParam.g[i])
+			G[i] = new(privacy.Point).Set(AggParam.g[i])
 
-		H[i] = new(privacy.Point).Set(AggParam.h[i])
+			H[i] = new(privacy.Point).Set(AggParam.h[i])
+		}
+		start := time.Now()
+		actualRes, err := encodeVectors(a, b, G, H)
+		end := time.Since(start)
+		privacy.Logger.Log.Info("Time encode vector: %v\n", end)
+		if err != nil {
+			privacy.Logger.Log.Info("Err: %v\n", err)
+		}
+		start = time.Now()
+		//expectedRes := new(privacy.Point).Zero()
+		expectedRes := new(privacy.Point).Identity()
+		for i := 0; i < n; i++ {
+			expectedRes.Add(expectedRes, new(privacy.Point).ScalarMult(G[i], a[i]))
+			expectedRes.Add(expectedRes, new(privacy.Point).ScalarMult(H[i], b[i]))
+		}
+
+		end = time.Since(start)
+		privacy.Logger.Log.Info("Time normal encode vector: %v\n", end)
+
+		assert.Equal(t, expectedRes, actualRes)
 	}
-	start := time.Now()
-	actualRes, err := encodeVectors(a, b, G, H)
-	end := time.Since(start)
-	privacy.Logger.Log.Info("Time encode vector: %v\n", end)
-	if err != nil {
-		privacy.Logger.Log.Info("Err: %v\n", err)
-	}
-	start = time.Now()
-	expectedRes := new(privacy.Point).Zero()
-	for i := 0; i < n; i++ {
-		expectedRes.Add(expectedRes, new(privacy.Point).ScalarMult(G[i], a[i]))
-		expectedRes.Add(expectedRes, new(privacy.Point).ScalarMult(H[i], b[i]))
-	}
-
-	end = time.Since(start)
-	privacy.Logger.Log.Info("Time normal encode vector: %v\n", end)
-
-	assert.Equal(t, expectedRes, actualRes)
 }
 
+
+
+
 func TestInnerProductProve(t *testing.T) {
-	var AggParam = newBulletproofParams(1)
-	wit := new(InnerProductWitness)
-	n := maxExp
-	wit.a = make([]*privacy.Scalar, n)
-	wit.b = make([]*privacy.Scalar, n)
+	for k :=0; k< 100; k++ {
+		var AggParam= newBulletproofParams(1)
+		wit := new(InnerProductWitness)
+		n := maxExp
+		wit.a = make([]*privacy.Scalar, n)
+		wit.b = make([]*privacy.Scalar, n)
 
-	for i := range wit.a {
-		//wit.a[i] = privacy.Randprivacy.Scalar()
-		//wit.b[i] = privacy.Randprivacy.Scalar()
-		tmp := privacy.RandBytes(3)
+		for i := range wit.a {
+			wit.a[i] = privacy.RandomScalar()
+			wit.b[i] = privacy.RandomScalar()
+ 		}
 
-		wit.a[i] = new(privacy.Scalar).FromBytes(privacy.SliceToArray(tmp))
-		wit.b[i] = new(privacy.Scalar).FromBytes(privacy.SliceToArray(tmp))
+		//wit.p = new(privacy.Point)
+		//wit.p.Zero()
+
+		c, err := innerProduct(wit.a, wit.b)
+
+		if err != nil {
+			privacy.Logger.Log.Info("Err: %v\n", err)
+		}
+		wit.p = new(privacy.Point).ScalarMult(AggParam.u, c)
+
+		for i := range wit.a {
+			wit.p.Add(wit.p, new(privacy.Point).ScalarMult(AggParam.g[i], wit.a[i]))
+			wit.p.Add(wit.p, new(privacy.Point).ScalarMult(AggParam.h[i], wit.b[i]))
+		}
+
+		proof, err := wit.Prove(AggParam)
+		if err != nil {
+			privacy.Logger.Log.Info("Err: %v\n", err)
+		}
+
+		res2 := proof.Verify(AggParam)
+		assert.Equal(t, true, res2)
+
+		//bytes := proof.Bytes()
+		//
+		//proof2 := new(InnerProductProof)
+		//proof2.SetBytes(bytes)
+		//
+		//res := proof2.Verify(AggParam)
+		//
+		//assert.Equal(t, true, res)
 	}
-
-	wit.p = new(privacy.Point)
-	wit.p.Zero()
-	c, err := innerProduct(wit.a, wit.b)
-	if err != nil {
-		privacy.Logger.Log.Info("Err: %v\n", err)
-	}
-
-	for i := range wit.a {
-		wit.p.Add(wit.p, new(privacy.Point).ScalarMult(AggParam.g[i], wit.a[i]))
-		wit.p.Add(wit.p,  new(privacy.Point).ScalarMult(AggParam.h[i], wit.b[i]))
-	}
-	wit.p = wit.p.Add(wit.p, new(privacy.Point).ScalarMult(AggParam.u, c))
-
-	proof, err := wit.Prove(AggParam)
-	if err != nil {
-		privacy.Logger.Log.Info("Err: %v\n", err)
-	}
-
-	res2 := proof.Verify(AggParam)
-	assert.Equal(t, true, res2)
-
-	//bytes := proof.Bytes()
-	//
-	//proof2 := new(InnerProductProof)
-	//proof2.SetBytes(bytes)
-	//
-	//res := proof2.Verify(AggParam)
-	//
-	//assert.Equal(t, true, res)
 }
 
 func TestAggregatedRangeProve(t *testing.T) {
