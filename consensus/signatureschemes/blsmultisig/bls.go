@@ -6,7 +6,7 @@ import (
 	"math/big"
 	"sync"
 
-	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/google"
+	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
 )
 
 // Sign return BLS signature
@@ -26,15 +26,15 @@ func Sign(data, skBytes []byte, selfIdx int, committee []PublicKey) ([]byte, err
 	return CmprG1(sig), nil
 }
 
-// Sign return BLS signature
-// func Sign(data, skBytes []byte, selfIdx int, committee []PublicKey) ([]byte, error) {
+// SingleSign return BLS signature
+// func SingleSign(data, skBytes []byte, selfIdx int, committee []PublicKey) ([]byte, error) {
 // 	if len(skBytes) != CSKSz {
 // 		return []byte{0}, NewBLSSignatureError(InvalidPrivateKeyErr, errors.New(ErrCodeMessage[InvalidPrivateKeyErr].Message))
 // 	}
 // 	sk := B2I(skBytes)
-// 	// if selfIdx >= len(committee) || (selfIdx < 0) || (len(committee) < 1) {
-// 	// 	return []byte{0}, NewBLSSignatureError(InvalidCommitteeInfoErr, errors.New(ErrCodeMessage[InvalidCommitteeInfoErr].Message))
-// 	// }
+// 	if selfIdx >= len(committee) || (selfIdx < 0) || (len(committee) < 1) {
+// 		return []byte{0}, NewBLSSignatureError(InvalidCommitteeInfoErr, errors.New(ErrCodeMessage[InvalidCommitteeInfoErr].Message))
+// 	}
 // 	dataPn := B2G1P(data)
 // 	// aiSk := AiGen(committee, selfIdx)
 // 	// aiSk.Mul(aiSk, sk)
@@ -97,6 +97,37 @@ func Verify(sig, data []byte, signersIdx []int, committee []PublicKey) (bool, er
 	// fmt.Printf("ConsLog %v %v %v %v %v %v %v\n", e1.Seconds(), e2.Seconds(), e3.Seconds(), e4.Seconds(), e5.Seconds(), e6.Seconds(), e7.Seconds())
 	return true, nil
 }
+
+// Verify verify BLS sig on given data and list public key
+// func SingleVerify(sig, data []byte, signersIdx []int, committee []PublicKey) (bool, error) {
+// 	// if len(skBytes) != CSKSz {
+// 	// 	return []byte{0}, NewBLSSignatureError(InvalidPrivateKeyErr, errors.New(ErrCodeMessage[InvalidPrivateKeyErr].Message))
+// 	// }
+// 	// sk := B2I(skBytes)
+// 	for _, idx := range signersIdx {
+// 		if (idx < 0) || (idx >= len(committee)) {
+// 			return false, NewBLSSignatureError(InvalidCommitteeInfoErr, errors.New(ErrCodeMessage[InvalidCommitteeInfoErr].Message))
+// 		}
+// 	}
+// 	if len(signersIdx) > len(committee) || (len(committee) < 1) {
+// 		return false, NewBLSSignatureError(InvalidCommitteeInfoErr, errors.New(ErrCodeMessage[InvalidCommitteeInfoErr].Message))
+// 	}
+// 	gG2Pn := new(bn256.G2)
+// 	gG2Pn.ScalarBaseMult(big.NewInt(1))
+// 	sigPn, err := DecmprG1(sig)
+// 	if err != nil {
+// 		return false, NewBLSSignatureError(DecompressFromByteErr, err)
+// 	}
+// 	lPair := bn256.Pair(sigPn, gG2Pn)
+// 	// apk := APKGen(committee, signersIdx)
+// 	pk, _ := DecmprG2(committee[signersIdx[0]])
+// 	dataPn := B2G1P(data)
+// 	rPair := bn256.Pair(dataPn, pk)
+// 	if !reflect.DeepEqual(lPair.Marshal(), rPair.Marshal()) {
+// 		return false, nil
+// 	}
+// 	return true, nil
+// }
 
 // Combine combine list of bls signature
 func Combine(sigs [][]byte) ([]byte, error) {

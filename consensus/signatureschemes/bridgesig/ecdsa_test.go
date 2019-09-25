@@ -3,6 +3,7 @@ package bridgesig
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
 )
@@ -37,7 +38,9 @@ func Test_flowECDSASignVerify(t *testing.T) {
 		sigs[i], err = Sign(listSKsBytes[i], data)
 	}
 	for i := 0; i < size; i++ {
+		start := time.Now()
 		res, err := Verify(listPKsBytes[i], data, sigs[i])
-		fmt.Println(res, err)
+		t := time.Now().Sub(start)
+		fmt.Println(res, err, t.Seconds()*1000)
 	}
 }

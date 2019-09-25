@@ -24,7 +24,6 @@ import (
 	"github.com/incognitochain/incognito-chain/consensus"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/memcache"
-	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/pubsub"
 
 	"github.com/incognitochain/incognito-chain/addrmanager"
@@ -495,10 +494,10 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	}
 
 	//Init Metric Tool
-	if cfg.MetricUrl != "" {
-		grafana := metrics.NewGrafana(cfg.MetricUrl, cfg.ExternalAddress)
-		metrics.InitMetricTool(&grafana)
-	}
+	// if cfg.MetricUrl != "" {
+	// 	grafana := metrics.NewGrafana(cfg.MetricUrl, cfg.ExternalAddress)
+	// 	metrics.InitMetricTool(&grafana)
+	// }
 	return nil
 }
 
@@ -679,7 +678,7 @@ func (serverObj Server) Start() {
 		go serverObj.memPool.MonitorPool()
 	}
 	go serverObj.pusubManager.Start()
-	go metrics.StartSystemMetrics()
+	// go metrics.StartSystemMetrics()
 }
 
 func (serverObj *Server) GetActiveShardNumber() int {
