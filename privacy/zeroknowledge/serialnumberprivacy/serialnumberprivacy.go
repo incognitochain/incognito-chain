@@ -320,7 +320,7 @@ func (proof SNPrivacyProof) Verify(mess []byte) (bool, error) {
 	rightPoint1 := new(privacy.Point).ScalarMult(proof.stmt.comInput, x)
 	rightPoint1.Add(rightPoint1, proof.tInput)
 
-	if !privacy.IsEqual(leftPoint1, rightPoint1) {
+	if !privacy.IsPointEqual(leftPoint1, rightPoint1) {
 		privacy.Logger.Log.Errorf("verify serial number privacy proof statement 1 failed")
 		return false, errors.New("verify serial number privacy proof statement 1 failed")
 	}
@@ -331,7 +331,7 @@ func (proof SNPrivacyProof) Verify(mess []byte) (bool, error) {
 	rightPoint2 := new(privacy.Point).ScalarMult(proof.stmt.comSK, x)
 	rightPoint2.Add(rightPoint2, proof.tSK)
 
-	if !privacy.IsEqual(leftPoint2, rightPoint2) {
+	if !privacy.IsPointEqual(leftPoint2, rightPoint2) {
 		privacy.Logger.Log.Errorf("verify serial number privacy proof statement 2 failed")
 		return false, errors.New("verify serial number privacy proof statement 2 failed")
 	}
@@ -342,7 +342,7 @@ func (proof SNPrivacyProof) Verify(mess []byte) (bool, error) {
 	rightPoint3 := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex], x)
 	rightPoint3.Add(rightPoint3, proof.tSN)
 
-	if !privacy.IsEqual(leftPoint3, rightPoint3) {
+	if !privacy.IsPointEqual(leftPoint3, rightPoint3) {
 		privacy.Logger.Log.Errorf("verify serial number privacy proof statement 3 failed")
 		return false, errors.New("verify serial number privacy proof statement 3 failed")
 	}

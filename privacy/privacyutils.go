@@ -46,7 +46,7 @@ func ConvertUint64ToBinaryInBigInt(number uint64, n int) []*Scalar {
 	if number == 0 {
 		res := make([]*Scalar, n)
 		for i := 0; i < n; i++ {
-			res[i] = new(Scalar).SetUint64(0)
+			res[i] = new(Scalar).FromUint64(0)
 		}
 		return res
 	}
@@ -54,7 +54,7 @@ func ConvertUint64ToBinaryInBigInt(number uint64, n int) []*Scalar {
 	binary := make([]*Scalar, n)
 
 	for i := 0; i < n; i++ {
-		binary[i] = new(Scalar).SetUint64(number % 2)
+		binary[i] = new(Scalar).FromUint64(number % 2)
 		number = number / 2
 	}
 	return binary

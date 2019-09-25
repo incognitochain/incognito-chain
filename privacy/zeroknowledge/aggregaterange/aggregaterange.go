@@ -1,7 +1,6 @@
 package aggregaterange
 
 import (
-	"fmt"
 	"github.com/pkg/errors"
 	"sync"
 
@@ -207,7 +206,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 
 	for i := numValue; i < numValuePad; i++ {
 		values[i] = uint64(0)
-		rands[i] = new(privacy.Scalar).SetUint64(0)
+		rands[i] = new(privacy.Scalar).FromUint64(0)
 	}
 
 	aggParam := new(bulletproofParams)
@@ -223,7 +222,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 
 	proof.cmsValue = make([]*privacy.Point, numValue)
 	for i := 0; i < numValue; i++ {
-		proof.cmsValue[i] = privacy.PedCom.CommitAtIndex(new(privacy.Scalar).SetUint64(values[i]), rands[i], privacy.PedersenValueIndex)
+		proof.cmsValue[i] = privacy.PedCom.CommitAtIndex(new(privacy.Scalar).FromUint64(values[i]), rands[i], privacy.PedersenValueIndex)
 	}
 
 	n := maxExp
@@ -236,13 +235,13 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 		}
 	}
 
-	twoNumber := new(privacy.Scalar).SetUint64(2)
+	twoNumber := new(privacy.Scalar).FromUint64(2)
 	twoVectorN := powerVector(twoNumber, n)
 
 	aR := make([]*privacy.Scalar, numValuePad*n)
 
 	for i := 0; i < numValuePad*n; i++ {
-		aR[i] = new(privacy.Scalar).Sub(aL[i], new(privacy.Scalar).SetUint64(1))
+		aR[i] = new(privacy.Scalar).Sub(aL[i], new(privacy.Scalar).FromUint64(1))
 	}
 
 	// random alpha
@@ -278,7 +277,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	// challenge y, z
 	y := generateChallengeForAggRange(aggParam, [][]byte{privacy.ArrayToSlice(A.ToBytes()), privacy.ArrayToSlice(S.ToBytes())})
 	z := generateChallengeForAggRange(aggParam, [][]byte{privacy.ArrayToSlice(A.ToBytes()), privacy.ArrayToSlice(S.ToBytes()), privacy.ArrayToSlice(y.ToBytes())})
-	zNeg := new(privacy.Scalar).Sub(new(privacy.Scalar).SetUint64(0), z)
+	zNeg := new(privacy.Scalar).Sub(new(privacy.Scalar).FromUint64(0), z)
 	zSquare := new(privacy.Scalar).Mul(z, z)
 
 	// l(X) = (aL -z*1^n) + sL*X
@@ -318,7 +317,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	deltaYZ := new(privacy.Scalar).Sub(z, zSquare)
 
 	// innerProduct1 = <1^(n*m), y^(n*m)>
-	innerProduct1 := new(privacy.Scalar).SetUint64(0)
+	innerProduct1 := new(privacy.Scalar).FromUint64(0)
 	for i := 0; i < n*numValuePad; i++ {
 		innerProduct1 = innerProduct1.Add(innerProduct1, yVector[i])
 	}
@@ -326,12 +325,12 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	deltaYZ.Mul(deltaYZ, innerProduct1)
 
 	// innerProduct2 = <1^n, 2^n>
-	innerProduct2 := new(privacy.Scalar).SetUint64(0)
+	innerProduct2 := new(privacy.Scalar).FromUint64(0)
 	for i := 0; i < n; i++ {
 		innerProduct2 = innerProduct2.Add(innerProduct2, twoVectorN[i])
 	}
 
-	sum := new(privacy.Scalar).SetUint64(0)
+	sum := new(privacy.Scalar).FromUint64(0)
 	zTmp = new(privacy.Scalar).Set(zSquare)
 	for j := 0; j < numValuePad; j++ {
 		zTmp.Mul(zTmp, z)
@@ -465,8 +464,8 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 
 
 	n := maxExp
-	oneNumber := new(privacy.Scalar).SetUint64(1)
-	twoNumber := new(privacy.Scalar).SetUint64(2)
+	oneNumber := new(privacy.Scalar).FromUint64(1)
+	twoNumber := new(privacy.Scalar).FromUint64(2)
 	oneVector := powerVector(oneNumber, n*numValuePad)
 	oneVectorN := powerVector(oneNumber, n)
 	twoVectorN := powerVector(twoNumber, n)
@@ -494,8 +493,6 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 		//	defer wg.Done()
 			// todo: recheck exp
 			yInverse := new(privacy.Scalar).Invert(y)
-			tmp := new(privacy.Scalar).Mul(y, yInverse)
-			fmt.Println("Hello", tmp.String())
 			HPrime[i] = new(privacy.Point).ScalarMult(aggParam.h[i], new(privacy.Scalar).Exp(yInverse, uint64(i)))
 		//}(i, &wg)
 	}
@@ -518,7 +515,7 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 		return false, privacy.NewPrivacyErr(privacy.CalInnerProductErr, err)
 	}
 
-	sum := new(privacy.Scalar).SetUint64(0)
+	sum := new(privacy.Scalar).FromUint64(0)
 	zTmp := new(privacy.Scalar).Set(zSquare)
 	for j := 0; j < numValuePad; j++ {
 		zTmp.Mul(zTmp, z)
@@ -554,7 +551,7 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 		right1 = new(privacy.Point).Add(right1, new(privacy.Point).ScalarMult(cm, expVector[i]))
 	}
 
-	if !privacy.IsEqual(left1, right1) {
+	if !privacy.IsPointEqual(left1, right1) {
 		privacy.Logger.Log.Errorf("verify aggregated range proof statement 1 failed")
 		return false, errors.New("verify aggregated range proof statement 1 failed")
 	}
