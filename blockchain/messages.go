@@ -227,15 +227,13 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block *ShardToBeaconB
 			Logger.log.Debugf("Invalid Verion of block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID)
 			return
 		}
-		// fmt.Printf("ConsLog %v %v\n", block.Header.ShardID, block.GetHeight())
-		// start := time.Now()
-		err := blockchain.config.ConsensusEngine.ValidateProducerSig(block, block.Header.ConsensusType)
-		// end := time.Now().Sub(start)
-		// fmt.Printf("ConsLog Time to verify %v\n", end.Seconds())
-		if err != nil {
-			Logger.log.Error(err)
-			return
-		}
+
+		//err := blockchain.config.ConsensusEngine.ValidateProducerSig(block, block.Header.ConsensusType)
+		//if err != nil {
+		//	Logger.log.Error(err)
+		//	return
+		//}
+		
 		from, to, err := blockchain.config.ShardToBeaconPool.AddShardToBeaconBlock(block)
 		if err != nil {
 			if err.Error() != "receive old block" && err.Error() != "receive duplicate block" {

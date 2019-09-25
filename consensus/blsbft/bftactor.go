@@ -122,25 +122,25 @@ func (e *BLSBFT) Start() error {
 				}
 			case msg := <-e.VoteMessageCh:
 				e.logger.Info("receive vote", msg.RoundKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
-				go func(voteMsg BFTVote) {
-					validatorIdx := common.IndexOfStr(voteMsg.Validator, e.RoundData.CommitteeBLS.StringList)
-					if validatorIdx == -1 {
-						return
-					}
-					height, round := parseRoundKey(voteMsg.RoundKey)
-					if height < e.RoundData.NextHeight {
-						return
-					}
-					if (height == e.RoundData.NextHeight) && (round < e.RoundData.Round) {
-						return
-					}
-					// roundKey := getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)
-					if (height == e.RoundData.NextHeight) && (round == e.RoundData.Round) {
-						//validate single sig
-						if !(new(common.Hash).IsEqual(&e.RoundData.BlockHash)) {
-							e.RoundData.lockVotes.Lock()
-							if _, ok := e.RoundData.Votes[voteMsg.Validator]; !ok {
-								e.RoundData.lockVotes.Unlock()
+				validatorIdx := common.IndexOfStr(msg.Validator, e.RoundData.CommitteeBLS.StringList)
+				if validatorIdx == -1 {
+					continue
+				}
+				height, round := parseRoundKey(msg.RoundKey)
+				if height < e.RoundData.NextHeight {
+					continue
+				}
+				if (height == e.RoundData.NextHeight) && (round < e.RoundData.Round) {
+					continue
+				}
+				// roundKey := getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)
+				if (height == e.RoundData.NextHeight) && (round == e.RoundData.Round) {
+					//validate single sig
+					if !(new(common.Hash).IsEqual(&e.RoundData.BlockHash)) {
+						e.RoundData.lockVotes.Lock()
+						if _, ok := e.RoundData.Votes[msg.Validator]; !ok {
+							e.RoundData.lockVotes.Unlock()
+							go func(voteMsg BFTVote) {
 								if err := e.preValidateVote(e.RoundData.BlockHash.GetBytes(), &(voteMsg.Vote), e.RoundData.Committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
 									e.logger.Error(err)
 									return
@@ -151,7 +151,6 @@ func (e *BLSBFT) Start() error {
 										return
 									}
 								}
-								go e.addVote(voteMsg)
 								go func() {
 									voteCtnBytes, err := json.Marshal(voteMsg)
 									if err != nil {
@@ -164,15 +163,16 @@ func (e *BLSBFT) Start() error {
 									msg.(*wire.MessageBFT).Type = MSG_VOTE
 									e.Node.PushMessageToChain(msg, e.Chain)
 								}()
-								return
-							} else {
-								e.RoundData.lockVotes.Unlock()
-								return
-							}
+								e.addVote(voteMsg)
+							}(msg)
+							continue
+						} else {
+							e.RoundData.lockVotes.Unlock()
+							continue
 						}
 					}
-					e.addEarlyVote(voteMsg)
-				}(msg)
+				}
+				e.addEarlyVote(msg)
 
 			case <-ticker:
 				e.isOngoing = false
