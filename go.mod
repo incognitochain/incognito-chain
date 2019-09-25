@@ -15,6 +15,7 @@ require (
 	github.com/elastic/gosigar v0.10.4 // indirect
 	github.com/ethereum/go-ethereum v1.8.22-0.20190710074244-72029f0f88f6
 	github.com/fortytw2/leaktest v1.3.0 // indirect
+	github.com/golang/protobuf v1.3.1
 	github.com/gorilla/websocket v1.4.0
 	github.com/hashicorp/golang-lru v0.5.1
 	github.com/jessevdk/go-flags v1.4.0
@@ -26,6 +27,7 @@ require (
 	github.com/libp2p/go-libp2p-net v0.1.0
 	github.com/libp2p/go-libp2p-peer v0.2.0
 	github.com/libp2p/go-libp2p-peerstore v0.1.3
+	github.com/libp2p/go-libp2p-protocol v0.1.0 // indirect
 	github.com/libp2p/go-libp2p-pubsub v0.1.1
 	github.com/libp2p/go-libp2p-swarm v0.2.1
 	github.com/mailru/easyjson v0.0.0-20190626092158-b2ccc519800e // indirect
@@ -33,6 +35,7 @@ require (
 	github.com/multiformats/go-multiaddr v0.0.4
 	github.com/olekukonko/tablewriter v0.0.1 // indirect
 	github.com/olivere/elastic v6.2.21+incompatible
+	github.com/paralin/go-libp2p-grpc v0.0.0-20171228081709-3d5d33466aef
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/tsdb v0.9.1 // indirect
@@ -45,5 +48,6 @@ require (
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
 	golang.org/x/net v0.0.0-20190628185345-da137c7871d7 // indirect
 	google.golang.org/api v0.10.0
+	google.golang.org/grpc v1.20.1
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 )
