@@ -4,7 +4,7 @@ import (
 	"errors"
 	"math/big"
 
-	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/google"
+	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
 )
 
 // CmprG1 take a point in G1 group and return bytes array
