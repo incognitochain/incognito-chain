@@ -55,8 +55,9 @@ func (sm *StakingMetadata) ValidateMetadataByItself() bool {
 	if err != nil || rewardReceiverWallet == nil {
 		return false
 	}
-
-	// pk := candidateWallet.KeySet.PaymentAddress.Pk
+	if !incognitokey.IsInBase58ShortFormat([]string{sm.CommitteePublicKey}) {
+		return false
+	}
 	CommitteePublicKey := new(incognitokey.CommitteePublicKey)
 	if err := CommitteePublicKey.FromString(sm.CommitteePublicKey); err != nil {
 		return false
@@ -80,19 +81,22 @@ func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(
 	if err != nil {
 		return false, err
 	}
-	tempStaker := []string{stakingMetadata.CommitteePublicKey}
+	tempStaker, err := incognitokey.CommitteeBase58KeyListToStruct([]string{stakingMetadata.CommitteePublicKey})
+	if err != nil {
+		return false, err
+	}
 	for _, committees := range SC {
-		tempStaker = common.GetValidStaker(committees, tempStaker)
+		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(committees, tempStaker)
 	}
 	for _, validators := range SPV {
-		tempStaker = common.GetValidStaker(validators, tempStaker)
+		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(validators, tempStaker)
 	}
-	tempStaker = common.GetValidStaker(BC, tempStaker)
-	tempStaker = common.GetValidStaker(BPV, tempStaker)
-	tempStaker = common.GetValidStaker(CBWFCR, tempStaker)
-	tempStaker = common.GetValidStaker(CBWFNR, tempStaker)
-	tempStaker = common.GetValidStaker(CSWFCR, tempStaker)
-	tempStaker = common.GetValidStaker(CSWFNR, tempStaker)
+	tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(BC, tempStaker)
+	tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(BPV, tempStaker)
+	tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(CBWFCR, tempStaker)
+	tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(CBWFNR, tempStaker)
+	tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(CSWFCR, tempStaker)
+	tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(CSWFNR, tempStaker)
 	if len(tempStaker) == 0 {
 		return false, errors.New("invalid Staker, This pubkey may staked already")
 	}
@@ -137,7 +141,7 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(
 	if err != nil || rewardReceiverWallet == nil {
 		return false, false, errors.New("Invalid Candidate Payment Address, Failed to Deserialized Into Key Wallet")
 	}
-	if len(rewardReceiverWallet.KeySet.PaymentAddress.Pk) != 33 {
+	if len(rewardReceiverWallet.KeySet.PaymentAddress.Pk) != common.PublicKeySize {
 		return false, false, errors.New("Invalid Public Key of Candidate Payment Address")
 	}
 

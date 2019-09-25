@@ -38,9 +38,9 @@ type HttpServer struct {
 	txMemPoolService  *rpcservice.TxMemPoolService
 	databaseService   *rpcservice.DatabaseService
 	networkService    *rpcservice.NetworkService
-	poolStateService * rpcservice.PoolStateService
-	txService *rpcservice.TxService
-	walletService *rpcservice.WalletService
+	poolStateService  *rpcservice.PoolStateService
+	txService         *rpcservice.TxService
+	walletService     *rpcservice.WalletService
 }
 
 func (httpServer *HttpServer) Init(config *RpcServerConfig) {
@@ -58,21 +58,21 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 	}
 
 	// init service
-	httpServer.blockService = &rpcservice.BlockService{BlockChain: httpServer.config.BlockChain, DB: httpServer.config.Database}
+	httpServer.blockService = &rpcservice.BlockService{BlockChain: httpServer.config.BlockChain, DB: httpServer.config.Database, MemCache: httpServer.config.MemCache}
 	httpServer.outputCoinService = &rpcservice.CoinService{BlockChain: httpServer.config.BlockChain}
 	httpServer.txMemPoolService = &rpcservice.TxMemPoolService{TxMemPool: httpServer.config.TxMemPool}
-	httpServer.databaseService = &rpcservice.DatabaseService{DB: *httpServer.config.Database}
+	httpServer.databaseService = &rpcservice.DatabaseService{DB: httpServer.config.Database}
 	httpServer.networkService = &rpcservice.NetworkService{ConnMgr: httpServer.config.ConnMgr}
 	httpServer.poolStateService = &rpcservice.PoolStateService{}
 	httpServer.txService = &rpcservice.TxService{
-		DB: httpServer.config.Database,
-		BlockChain: httpServer.config.BlockChain,
-		Wallet: httpServer.config.Wallet,
+		DB:           httpServer.config.Database,
+		BlockChain:   httpServer.config.BlockChain,
+		Wallet:       httpServer.config.Wallet,
 		FeeEstimator: httpServer.config.FeeEstimator,
-		TxMemPool: httpServer.config.TxMemPool,
+		TxMemPool:    httpServer.config.TxMemPool,
 	}
 	httpServer.walletService = &rpcservice.WalletService{
-		Wallet: httpServer.config.Wallet,
+		Wallet:     httpServer.config.Wallet,
 		BlockChain: httpServer.config.BlockChain,
 	}
 }
@@ -139,7 +139,7 @@ func (httpServer *HttpServer) handleRequest(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if r.Method == "OPTIONS" {
+	if r.Method == "OPTIONS" || r.Method == "HEAD" {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
@@ -167,7 +167,7 @@ func (httpServer *HttpServer) handleRequest(w http.ResponseWriter, r *http.Reque
 
 	select {
 	case <-done:
-	case <-time.After(time.Minute):
+	case <-time.After(time.Second * rpcProcessTimeoutSeconds):
 	}
 
 }
@@ -220,7 +220,7 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 	var jsonErr error
 	var result interface{}
 	var request *JsonRequest
-	request, jsonErr = parseJsonRequest(body)
+	request, jsonErr = parseJsonRequest(body, r.Method)
 
 	if jsonErr == nil {
 		if request.Id == nil && !(httpServer.config.RPCQuirks && request.Jsonrpc == "") {
@@ -252,19 +252,25 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 					command = LimitedHttpHandler[request.Method]
 				} else {
 					result = nil
-					jsonErr = rpcservice.NewRPCError(rpcservice.RPCMethodNotFoundError, nil)
+					jsonErr = rpcservice.NewRPCError(rpcservice.RPCMethodNotFoundError, errors.New("Method not found: "+request.Method))
 				}
 			}
 			if command != nil {
 				result, jsonErr = command(httpServer, request.Params, closeChan)
 			} else {
-				jsonErr = rpcservice.NewRPCError(rpcservice.RPCMethodNotFoundError, nil)
+				jsonErr = rpcservice.NewRPCError(rpcservice.RPCMethodNotFoundError, errors.New("Method not found: "+request.Method))
 			}
 		}
 	}
 	if jsonErr.(*rpcservice.RPCError) != nil && r.Method != "OPTIONS" {
+		if jsonErr.(*rpcservice.RPCError).Code == rpcservice.ErrCodeMessage[rpcservice.RPCParseError].Code {
+			Logger.log.Errorf("RPC function process with err \n %+v", jsonErr)
+			httpServer.writeHTTPResponseHeaders(r, w.Header(), http.StatusBadRequest, buf)
+			return
+		}
+
 		// Logger.log.Errorf("RPC function process with err \n %+v", jsonErr)
-		fmt.Println(request.Method)
+		//fmt.Println(request.Method)
 		if request.Method != getTransactionByHash {
 			Logger.log.Errorf("RPC function process with err \n %+v", jsonErr)
 		}

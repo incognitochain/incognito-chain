@@ -83,7 +83,7 @@ func (httpServer *HttpServer) handleCheckHashValue(params interface{}, closeChan
 	log.Printf("Check hash value  input Param %+v", hashParams)
 
 	isTransaction, isShardBlock, isBeaconBlock, err := httpServer.blockService.CheckHashValue(hashParams)
-	if err != nil{
+	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
@@ -139,7 +139,7 @@ func (httpServer *HttpServer) handleHashToIdenticon(params interface{}, closeCha
 	result := make([]string, 0)
 
 	result, err := rpcservice.HashToIdenticon(arrayParams)
-	if err != nil{
+	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 	return result, nil
@@ -149,7 +149,8 @@ func (httpServer *HttpServer) handleHashToIdenticon(params interface{}, closeCha
 func (httpServer *HttpServer) handleGetPublicKeyMining(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	keys := httpServer.config.ConsensusEngine.GetAllMiningPublicKeys()
 	if len(keys) == 0 {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("Can not find key"))
+		//return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("Can not find key"))
+		return keys, nil
 	}
 	return keys, nil
 }
