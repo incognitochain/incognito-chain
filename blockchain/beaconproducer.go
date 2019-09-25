@@ -81,7 +81,10 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLi
 	committee := blockGenerator.chain.BestState.Beacon.GetBeaconCommittee()
 	producerPosition := (blockGenerator.chain.BestState.Beacon.BeaconProposerIndex + round) % len(beaconBestState.BeaconCommittee)
 	beaconBlock.Header.ConsensusType = beaconBestState.ConsensusAlgorithm
-	beaconBlock.Header.Producer = committee[producerPosition].GetMiningKeyBase58(beaconBestState.ConsensusAlgorithm)
+	beaconBlock.Header.Producer, err = committee[producerPosition].ToBase58() // .GetMiningKeyBase58(common.BridgeConsensus)
+	if err != nil {
+		return nil, err
+	}
 	beaconBlock.Header.Version = BEACON_BLOCK_VERSION
 	beaconBlock.Header.Height = beaconBestState.BeaconHeight + 1
 	beaconBlock.Header.Epoch = epoch
@@ -282,17 +285,21 @@ func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestS
 		currentCommittee := beaconBestState.GetAShardCommittee(shardID)
 		for index, shardBlock := range shardBlocks {
 			// hash := shardBlock.Header.Hash()
+			if index == MAX_S2B_BLOCK-1 {
+				break
+			}
 			err := blockGenerator.chain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, currentCommittee, beaconBestState.ShardConsensusAlgorithm[shardID])
 			Logger.log.Infof("Beacon Producer/ Validate Agg Signature for shard %+v, block height %+v, err %+v", shardID, shardBlock.Header.Height, err == nil)
 			if err != nil {
 				break
 			}
 			totalBlock = index
+			if totalBlock > MAX_S2B_BLOCK {
+				totalBlock = MAX_S2B_BLOCK
+				break
+			}
 		}
 		Logger.log.Infof("Beacon Producer/ AFTER FILTER, Shard %+v ONLY GET %+v block", shardID, totalBlock+1)
-		if totalBlock > MAX_S2B_BLOCK {
-			totalBlock = MAX_S2B_BLOCK
-		}
 		for _, shardBlock := range shardBlocks[:totalBlock+1] {
 			shardState, validStakeInstruction, tempValidStakePublicKeys, validSwapInstruction, bridgeInstruction, acceptedRewardInstruction, stopAutoStakingInstruction := blockGenerator.chain.GetShardStateFromBlock(beaconBestState.BeaconHeight+1, shardBlock, shardID, true, validStakePublicKeys)
 			shardStates[shardID] = append(shardStates[shardID], shardState[shardID])
