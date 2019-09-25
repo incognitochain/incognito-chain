@@ -227,6 +227,10 @@ func (blockService BlockService) RetrieveShardBlock(hashString string, verbosity
 		result.Round = block.Header.Round
 		result.CrossShardBitMap = []int{}
 		result.Instruction = block.Body.Instructions
+		instructions, err := blockchain.CreateShardInstructionsFromTransactionAndInstruction(block.Body.Transactions, blockService.BlockChain, block.Header.ShardID)
+		if err == nil {
+			result.Instruction = append(result.Instruction, instructions...)
+		}
 		if len(block.Header.CrossShardBitMap) > 0 {
 			for _, shardID := range block.Header.CrossShardBitMap {
 				result.CrossShardBitMap = append(result.CrossShardBitMap, int(shardID))
