@@ -225,7 +225,7 @@ func (point EllipticPoint) Sub(targetPoint *EllipticPoint) (*EllipticPoint, erro
 	return res, nil
 }
 
-// IsEqual returns true if two input elliptic points are equal, false otherwise
+// IsPointEqual returns true if two input elliptic points are equal, false otherwise
 func (point EllipticPoint) IsEqual(p *EllipticPoint) bool {
 	return point.x.Cmp(p.x) == 0 && point.y.Cmp(p.y) == 0
 }

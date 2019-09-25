@@ -27,13 +27,13 @@ func newBulletproofParamsPrime(m int) *bulletproofParams {
 	for i := 0; i < capacity; i++ {
 		go func(i int, wg *sync.WaitGroup) {
 			defer wg.Done()
-			gen.g[i] = privacy.HashToPoint(int64(5 + i))
-			gen.h[i] = privacy.HashToPoint(int64(5 + i + capacity))
+			gen.g[i] = privacy.HashToPointFromIndex(int64(5 + i))
+			gen.h[i] = privacy.HashToPointFromIndex(int64(5 + i + capacity))
 		}(i, &wg)
 	}
 	wg.Wait()
 	gen.u = new(privacy.Point)
-	gen.u = privacy.HashToPoint(int64(5 + 2*capacity))
+	gen.u = privacy.HashToPointFromIndex(int64(5 + 2*capacity))
 
 	return gen
 }
@@ -49,13 +49,13 @@ func newBulletproofParams(m int) *bulletproofParams {
 	for i := 0; i < capacity; i++ {
 		go func(i int, wg *sync.WaitGroup) {
 			defer wg.Done()
-			gen.g[i] = privacy.HashToPoint(int64(5 + i))
-			gen.h[i] = privacy.HashToPoint(int64(5 + i + maxOutputNumber*maxExp))
+			gen.g[i] = privacy.HashToPointFromIndex(int64(5 + i))
+			gen.h[i] = privacy.HashToPointFromIndex(int64(5 + i + maxOutputNumber*maxExp))
 		}(i, &wg)
 	}
 	wg.Wait()
 	gen.u = new(privacy.Point)
-	gen.u = privacy.HashToPoint(int64(5 + 2*maxOutputNumber*maxExp))
+	gen.u = privacy.HashToPointFromIndex(int64(5 + 2*maxOutputNumber*maxExp))
 
 	return gen
 }
@@ -65,8 +65,8 @@ func addBulletproofParams(extraNumber int) *bulletproofParams {
 	newCapacity := currentCapacity + maxExp * extraNumber
 
 	for i := 0; i < newCapacity - currentCapacity; i++ {
-		AggParam.g = append(AggParam.g, privacy.HashToPoint(int64(5 + i + currentCapacity)))
-		AggParam.h = append(AggParam.h, privacy.HashToPoint(int64(5 + i + currentCapacity + maxOutputNumber*maxExp)))
+		AggParam.g = append(AggParam.g, privacy.HashToPointFromIndex(int64(5 + i + currentCapacity)))
+		AggParam.h = append(AggParam.h, privacy.HashToPointFromIndex(int64(5 + i + currentCapacity + maxOutputNumber*maxExp)))
 	}
 
 	return AggParam

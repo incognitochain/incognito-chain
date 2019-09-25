@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	C25519 "github.com/deroproject/derosuite/crypto"
+	C25519 "github.com/incognitochain/incognito-chain/privacy/curve25519"
 	"math/big"
 )
 
@@ -37,11 +37,36 @@ func (sc Scalar) ToBytes() [Ed25519KeySize]byte {
 	return sc.key.ToBytes()
 }
 
-func (sc *Scalar) FromBytes(b [Ed25519KeySize]byte) *Scalar {
+func (sc Scalar) ToBytesS() []byte {
+	slice := sc.key.ToBytes()
+	return slice[:]
+}
+
+func (sc *Scalar) FromBytes(b [Ed25519KeySize]byte) (*Scalar) {
 	if sc == nil {
 		sc = new(Scalar)
 	}
 	sc.key.FromBytes(b)
+	//if !C25519.ScValid(&sc.key) {
+	//	panic("Invalid Scalar Value")
+	//}
+	return sc
+}
+
+func (sc *Scalar) FromBytesS(b []byte) (*Scalar) {
+	//if len(b) != Ed25519KeySize {
+	//	panic("Invalid Ed25519 Key Size")
+	//}
+	if sc == nil {
+		sc = new(Scalar)
+	}
+	var array [Ed25519KeySize]byte
+	copy(array[:], b)
+	sc.key.FromBytes(array)
+
+	//if !C25519.ScValid(&sc.key) {
+	//	panic("Invalid Scalar Value")
+	//}
 	return sc
 }
 
@@ -54,6 +79,10 @@ func (sc *Scalar) SetKey(a *C25519.Key) (*Scalar, error) {
 		return nil, errors.New("Invalid key value")
 	}
 	return sc, nil
+}
+
+func (sc Scalar) GetKey() C25519.Key {
+	return sc.key
 }
 
 func (sc *Scalar) Set(a *Scalar) (*Scalar) {
@@ -80,7 +109,7 @@ func HashToScalar(data []byte) *Scalar {
 	return sc
 }
 
-func (sc *Scalar) SetUint64(i uint64) *Scalar {
+func (sc *Scalar) FromUint64(i uint64) *Scalar {
 	if sc == nil {
 		sc = new(Scalar)
 	}
@@ -92,7 +121,6 @@ func (sc *Scalar) ToUint64() uint64 {
 	if sc == nil {
 		return 0
 	}
-
 	keyBN := new(big.Int).SetBytes(ArrayToSlice(sc.ToBytes()))
 	return keyBN.Uint64()
 }
@@ -157,7 +185,7 @@ func (sc *Scalar) ScalarValid() bool {
 	if sc == nil {
 		return false
 	}
-	return C25519.Sc_check(&sc.key)
+	return C25519.ScValid(&sc.key)
 }
 
 func (sc *Scalar) IsOne() bool {
@@ -183,10 +211,10 @@ func (sc *Scalar) Invert(a *Scalar) *Scalar {
 	var inverse_result C25519.Key
 	x := a.key
 
-	reversex := reverse(x)
+	reversex := Reverse(x)
 	bigX := new(big.Int).SetBytes(reversex[:])
 
-	reverseL := reverse(C25519.CurveOrder()) // as speed improvements it can be made constant
+	reverseL := Reverse(C25519.CurveOrder()) // as speed improvements it can be made constant
 	bigL := new(big.Int).SetBytes(reverseL[:])
 
 	var inverse big.Int
@@ -207,7 +235,7 @@ func (sc *Scalar) Invert(a *Scalar) *Scalar {
 	return sc
 }
 
-func reverse(x C25519.Key) (result C25519.Key) {
+func Reverse(x C25519.Key) (result C25519.Key) {
 	result = x
 	// A key is in little-endian, but the big package wants the bytes in
 	// big-endian, so reverse them.

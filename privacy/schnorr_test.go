@@ -38,7 +38,7 @@ func TestSchnorrSignatureWithoutZ2(t *testing.T) {
 		// generate Schnorr Private Key
 
 		privKey := new(SchnorrPrivateKey)
-		privKey.Set(RandomScalar(), new(Scalar).SetUint64(0))
+		privKey.Set(RandomScalar(), new(Scalar).FromUint64(0))
 
 		// random message to sign
 		data := RandomScalar()

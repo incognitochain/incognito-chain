@@ -5,35 +5,24 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	C25519 "github.com/deroproject/derosuite/crypto"
+	C25519 "github.com/incognitochain/incognito-chain/privacy/curve25519"
 )
 
 type Point struct {
 	key C25519.Key
 }
 
-func (p *Point) PointValid() bool {
-	tmp := new(Point).ScalarMult(p, new(Scalar).SetUint64(2))
-	if tmp.IsZero() {
-		fmt.Println("Fucking  Dero ")
-	}
+func RandomPoint() *Point {
+	sc := RandomScalar()
+	return new(Point).ScalarMultBase(sc)
+}
 
-	tmp1 := new(Point).ScalarMult(p, new(Scalar).SetUint64(4))
-	if tmp1.IsZero() {
-		fmt.Println("Fucking  Dero ")
-	}
-
-	tmp2 := new(Point).ScalarMult(p, new(Scalar).SetUint64(8))
-	if tmp2.IsZero() {
-		fmt.Println("Fucking  Dero ")
-	}
-
+func (p Point) PointValid() bool {
 	var point C25519.ExtendedGroupElement
 	return point.FromBytes(&p.key)
 }
 
 func (p Point) GetKey() C25519.Key {
-
 	return p.key
 }
 
@@ -44,9 +33,8 @@ func (p *Point) SetKey(a *C25519.Key) (*Point, error) {
 	p.key = *a
 
 	var point C25519.ExtendedGroupElement
-
-	if point.FromBytes(&p.key) == false {
-		return nil, errors.New("Invalid key value")
+	if !point.FromBytes(&p.key){
+		return nil, errors.New("Invalid point value")
 	}
 	return p, nil
 }
@@ -80,14 +68,40 @@ func (p Point) ToBytes() [Ed25519KeySize]byte {
 	return p.key.ToBytes()
 }
 
+func (p Point) ToBytesS() []byte {
+	slice := p.key.ToBytes()
+	return slice[:]
+}
+
 func (p *Point) FromBytes(b [Ed25519KeySize]byte) (*Point, error) {
 	if p == nil {
 		p = new(Point)
 	}
 	p.key.FromBytes(b)
 
-	if !p.PointValid(){
-		return nil, errors.New("Point is invalid")
+	var point C25519.ExtendedGroupElement
+	if !point.FromBytes(&p.key){
+		return nil, errors.New("Invalid point value")
+	}
+
+	return p, nil
+}
+
+func (p *Point) FromBytesS(b []byte) (*Point, error) {
+	if len(b) != Ed25519KeySize {
+		return nil, errors.New("Invalid Ed25519 Key Size")
+	}
+
+	if p == nil {
+		p = new(Point)
+	}
+	var array [Ed25519KeySize]byte
+	copy(array[:],b)
+	p.key.FromBytes(array)
+
+	var point C25519.ExtendedGroupElement
+	if !point.FromBytes(&p.key){
+		return nil, errors.New("Invalid point value")
 	}
 
 	return p, nil
@@ -101,8 +115,8 @@ func (p *Point) Identity() *Point {
 	return p
 }
 
-func (p Point) IsZero() bool {
-	if p.key == C25519.Zero {
+func (p Point) IsIdentity() bool {
+	if p.key == C25519.Identity {
 		return true
 	}
 	return false
@@ -113,9 +127,8 @@ func (p *Point) ScalarMultBase(a *Scalar) *Point {
 	if p == nil {
 		p = new(Point)
 	}
-
-	key := C25519.ScalarmultBase(a.key)
-	p.key = key
+	key := C25519.ScalarmultBase(&a.key)
+	p.key = *key
 	return p
 }
 
@@ -124,8 +137,27 @@ func (p *Point) ScalarMult(pa *Point, a *Scalar) *Point {
 		p = new(Point)
 	}
 	key := C25519.ScalarMultKey(&pa.key, &a.key)
-	p.SetKey(key)
+	p.key = *key
 	return p
+}
+
+func (p *Point) MultiScalarMult(scalarLs []*Scalar, pointLs []*Point) *Point {
+	nSc := len(scalarLs)
+	nPoint := len(pointLs)
+
+	if nSc != nPoint {
+		panic("Cannot MultiscalarMul with different size inputs")
+	}
+
+	scalarKeyLs := make([]*C25519.Key, nSc)
+	pointKeyLs := make([]*C25519.Key, nSc)
+	for i:= 0; i < nSc ; i++ {
+		scalarKeyLs[i] = &scalarLs[i].key
+		pointKeyLs[i] = &pointLs[i].key
+	}
+	key := C25519.MultiScalarMultKey(pointKeyLs, scalarKeyLs)
+	res, _ := new(Point).SetKey(key)
+	return res
 }
 
 func (p *Point) InvertScalarMultBase(a *Scalar) *Point {
@@ -168,38 +200,30 @@ func (p *Point) Sub(pa, pb *Point) *Point {
 	return p
 }
 
-func IsEqual(pa *Point, pb *Point) bool {
-	tmpa, errora := pa.key.MarshalText()
-	tmpb, errorb := pb.key.MarshalText()
-	if errora != nil || errorb != nil {
-		return false
-	}
+func IsPointEqual(pa *Point, pb *Point) bool {
+	tmpa := pa.ToBytesS()
+	tmpb := pb.ToBytesS()
+
 	return subtle.ConstantTimeCompare(tmpa, tmpb) == 1
 }
 
-func RandomPoint() *Point {
-	p := new(Point)
-	sc := RandomScalar()
-	p = new(Point).ScalarMultBase(sc)
-	return p
-}
-
-func HashToPoint(index int64) *Point {
-	msg, _ := C25519.GBASE.MarshalText()
+func HashToPointFromIndex(index int64) *Point {
+	array := C25519.GBASE.ToBytes()
+	msg := array[:]
 	msg = append(msg,[]byte(CStringBulletProof)...)
 	msg = append(msg,[]byte(string(index))...)
 
 	keyHash := C25519.Key(C25519.Keccak256(msg))
 	keyPoint := keyHash.HashToPoint()
 
-	p, error := new(Point).SetKey(&keyPoint)
-	if error != nil {
-		return nil
-	}
+	p, _ := new(Point).SetKey(keyPoint)
 	return p
 }
 
+func HashToPoint(b []byte) *Point {
+	keyHash := C25519.Key(C25519.Keccak256(b))
+	keyPoint := keyHash.HashToPoint()
 
-
-
-
+	p, _ := new(Point).SetKey(keyPoint)
+	return p
+}
