@@ -66,8 +66,8 @@ func init() {
 		PreSelectShardNodeSerializedPubkey:          PreSelectShardNodeTestnetSerializedPubkey,
 		PreSelectShardNodeSerializedPaymentAddress:  PreSelectShardNodeTestnetSerializedPaymentAddress,
 		//@Notice: InitTxsForBenchmark is for testing and testparams only
-		//InitialIncognito: IntegrationTestInitPRV,
-		InitialIncognito:   TestnetInitPRV,
+		InitialIncognito: IntegrationTestInitPRV,
+		//InitialIncognito:   TestnetInitPRV,
 		ConsensusAlgorithm: common.BlsConsensus,
 	}
 	ChainTestParam = Params{
@@ -94,7 +94,7 @@ func init() {
 		SlashLevels: []SlashLevel{
 			SlashLevel{MinRange: 20, PunishedEpoches: 5},
 			SlashLevel{MinRange: 50, PunishedEpoches: 10},
-			SlashLevel{MinRange: 75, PunishedEpoches: 20},
+			SlashLevel{MinRange: 75, PunishedEpoches: 25},
 		},
 	}
 	// END TESTNET

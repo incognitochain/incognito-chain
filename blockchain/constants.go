@@ -18,16 +18,18 @@ const (
 	DefaultMaxBlkReqPerPeer      = 600
 	DefaultMaxBlkReqPerTime      = 1200
 	MinCommitteeSize             = 3                // min size to run bft
-	DefaultBroadcastStateTime    = 2 * time.Second  // in second
-	DefaultStateUpdateTime       = 3 * time.Second  // in second
+	DefaultBroadcastStateTime    = 6 * time.Second  // in second
+	DefaultStateUpdateTime       = 8 * time.Second  // in second
 	DefaultMaxBlockSyncTime      = 1 * time.Second  // in second
 	DefaultCacheCleanupTime      = 30 * time.Second // in second
 	WorkerNumber                 = 5
 	MAX_S2B_BLOCK                = 5
+	MAX_BEACON_BLOCK             = 5
 	DurationHalfLifeRewardForDev = uint64(31536000) // 5 years, after 5 year, reward for devs = 0
 	GetValidBlock                = 10
 	CheckForce                   = true
-	GenesisBlockTime             = "2019-09-16T00:00:00.000Z"
+	GenesisBlockTime             = "2019-09-25T00:00:00.000Z"
+	TestRandom                   = false
 )
 
 // CONSTANT for network MAINNET
@@ -78,8 +80,8 @@ const (
 	Testnet            = 0x16
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
-	TestnetEpoch       = 100
-	TestnetRandomTime  = 50
+	TestnetEpoch       = 1000
+	TestnetRandomTime  = 500
 
 	TestNetShardCommitteeSize     = 64
 	TestNetMinShardCommitteeSize  = 4
@@ -91,7 +93,7 @@ const (
 	TestNetMinBeaconBlkInterval = 10 * time.Second //second
 	TestNetMaxBeaconBlkCreation = 8 * time.Second  //second
 	TestNetMinShardBlkInterval  = 10 * time.Second //second
-	TestNetMaxShardBlkCreation  = 4 * time.Second  //second
+	TestNetMaxShardBlkCreation  = 6 * time.Second  //second
 
 	//board and proposal parameters
 	TestnetBasicReward                = 400000000 //40 mili PRV

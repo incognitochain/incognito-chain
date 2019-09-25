@@ -94,6 +94,7 @@ const (
 
 	BlsConsensus    = "bls"
 	BridgeConsensus = "dsa"
+	IncKeyType      = "inc"
 )
 
 // Ethereum Decentralized bridge
