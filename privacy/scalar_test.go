@@ -4,7 +4,6 @@ import (
 	"crypto/subtle"
 	"fmt"
 	C25519 "github.com/deroproject/derosuite/crypto"
-	"fmt"
 	"testing"
 )
 
@@ -36,7 +35,7 @@ func TestScalar_Mul(t *testing.T) {
 }
 
 func TestScalar_Add(t *testing.T) {
-	for i:=0; i< 1000; i++ {
+	for i:=0; i< 100; i++ {
 		a := RandomScalar()
 		b := RandomScalar()
 		c := RandomScalar()
@@ -59,6 +58,15 @@ func TestScalar_Add(t *testing.T) {
 }
 
 func TestScalar_Sub(t *testing.T) {
+	a := new(Scalar).SetUint64(1)
+	b := new(Scalar).SetUint64(2)
+	c := new(Scalar).Sub(a,b)
+	d := new(Scalar).Add(c,b)
+	fmt.Println(a.key)
+	fmt.Println(b.key)
+	fmt.Println(c.key)
+	fmt.Println(d.key)
+
 	for i:=0; i< 100; i++ {
 		a := RandomScalar()
 		b := RandomScalar()
@@ -78,12 +86,30 @@ func TestScalar_Sub(t *testing.T) {
 	}
 }
 func TestScalar_Exp(t *testing.T) {
-	for i:=0; i< 100; i++ {
+	for i:=0; i< 1; i++ {
 		a := RandomScalar()
-		b := RandomScalar()
+		b := uint64(15)
 
 		res := new(Scalar).Exp(a, b)
-		fmt.Printf("REs: %v\n", res)
+		resPrime := new(Scalar).Mul(a,a)
+		resPrime.Mul(resPrime, a)
+		resPrime.Mul(resPrime, a)
+		resPrime.Mul(resPrime, a)
+
+		resPrime.Mul(resPrime, a)
+		resPrime.Mul(resPrime, a)
+		resPrime.Mul(resPrime, a)
+		resPrime.Mul(resPrime, a)
+		resPrime.Mul(resPrime, a)
+
+		resPrime.Mul(resPrime, a)
+		resPrime.Mul(resPrime, a)
+		resPrime.Mul(resPrime, a)
+		resPrime.Mul(resPrime, a)
+		resPrime.Mul(resPrime, a)
+
+		fmt.Println(resPrime)
+		fmt.Println(res.key)
 	}
 }
 

@@ -126,7 +126,6 @@ func (wit InnerProductWitness) Prove(AggParam *bulletproofParams) (*InnerProduct
 	}
 
 	p := new(privacy.Point).Set(wit.p)
-
 	G := make([]*privacy.Point, n)
 	H := make([]*privacy.Point, n)
 	for i := range G {
@@ -137,7 +136,7 @@ func (wit InnerProductWitness) Prove(AggParam *bulletproofParams) (*InnerProduct
 	proof := new(InnerProductProof)
 	proof.l = make([]*privacy.Point, 0)
 	proof.r = make([]*privacy.Point, 0)
-	proof.p = wit.p
+	proof.p = new(privacy.Point).Set(wit.p)
 
 	for n > 1 {
 		nPrime := n / 2
@@ -156,19 +155,18 @@ func (wit InnerProductWitness) Prove(AggParam *bulletproofParams) (*InnerProduct
 		if err != nil {
 			return nil, err
 		}
-		L = L.Add(L, new(privacy.Point).ScalarMult(AggParam.u, cL))
+		L.Add(L, new(privacy.Point).ScalarMult(AggParam.u, cL))
 		proof.l = append(proof.l, L)
 
 		R, err := encodeVectors(a[nPrime:], b[:nPrime], G[:nPrime], H[nPrime:])
 		if err != nil {
 			return nil, err
 		}
-		R = R.Add(R, new(privacy.Point).ScalarMult(AggParam.u, cR))
+		R.Add(R, new(privacy.Point).ScalarMult(AggParam.u, cR))
 		proof.r = append(proof.r, R)
 
 		// calculate challenge x = hash(G || H || u || p ||  l || r)
 		x := generateChallengeForAggRange(AggParam, [][]byte{privacy.ArrayToSlice(p.ToBytes()), privacy.ArrayToSlice(L.ToBytes()), privacy.ArrayToSlice(R.ToBytes())})
-		fmt.Printf("n = %v, x = %v\n  ",nPrime, x.ToBytes())
 
 		xInverse := new(privacy.Scalar).Invert(x)
 
@@ -198,10 +196,10 @@ func (wit InnerProductWitness) Prove(AggParam *bulletproofParams) (*InnerProduct
 
 		for i := range aPrime {
 			aPrime[i] = new(privacy.Scalar).Mul(a[i], x)
-			aPrime[i].Add(aPrime[i], new(privacy.Scalar).Mul(a[i+nPrime], xInverse))
+			aPrime[i] = new(privacy.Scalar).MulAdd(a[i+nPrime], xInverse, aPrime[i])
 
 			bPrime[i] = new(privacy.Scalar).Mul(b[i], xInverse)
-			bPrime[i].Add(bPrime[i], new(privacy.Scalar).Mul(b[i+nPrime], x))
+			bPrime[i]= new(privacy.Scalar).MulAdd(b[i+nPrime], x, bPrime[i])
 		}
 
 		a = aPrime
@@ -212,8 +210,8 @@ func (wit InnerProductWitness) Prove(AggParam *bulletproofParams) (*InnerProduct
 		n = nPrime
 	}
 
-	proof.a = a[0]
-	proof.b = b[0]
+	proof.a = new(privacy.Scalar).Set(a[0])
+	proof.b = new(privacy.Scalar).Set(b[0])
 
 	return proof, nil
 }
@@ -236,7 +234,6 @@ func (proof InnerProductProof) Verify(AggParam *bulletproofParams) bool {
 		nPrime := n / 2
 		// calculate challenge x = hash(G || H || u || p ||  l || r)
 		x := generateChallengeForAggRange(AggParam, [][]byte{privacy.ArrayToSlice(p.ToBytes()), privacy.ArrayToSlice(proof.l[i].ToBytes()), privacy.ArrayToSlice(proof.r[i].ToBytes())})
-		fmt.Printf("Verify n = %v, x = %v\n  ",nPrime, x.ToBytes())
 		xInverse := new(privacy.Scalar).Invert(x)
 
 		// calculate GPrime, HPrime, PPrime for the next loop
@@ -250,6 +247,7 @@ func (proof InnerProductProof) Verify(AggParam *bulletproofParams) bool {
 				defer wg.Done()
 				GPrime[i] = new(privacy.Point).ScalarMult(G[i], xInverse)
 				GPrime[i].Add(GPrime[i], new(privacy.Point).ScalarMult(G[i+nPrime], x))
+
 			}(i, &wg)
 			go func(i int, wg *sync.WaitGroup) {
 				defer wg.Done()

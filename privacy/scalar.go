@@ -127,21 +127,29 @@ func (sc *Scalar) Mul(a, b *Scalar) *Scalar {
 	return sc
 }
 
-func (sc *Scalar) Exp(a *Scalar, b *Scalar) *Scalar {
+// a*b + c % l
+func (sc *Scalar) MulAdd(a,b, c *Scalar) *Scalar {
+	if sc == nil {
+		sc = new(Scalar)
+	}
+	var res C25519.Key
+	C25519.ScMulAdd(&res, &a.key, &b.key, &c.key)
+	sc.key = res
+	return sc
+}
+
+func (sc *Scalar) Exp(a *Scalar, v uint64) *Scalar {
 	if sc == nil {
 		sc = new(Scalar)
 	}
 
-	tmp := C25519.CurveOrder()
+	var res C25519.Key
+	C25519.ScMul(&res, &a.key, &a.key)
+	for i:=0; i< int(v)-2; i++ {
+		C25519.ScMul(&res, &res, &a.key)
+	}
 
-	curveOrder := new(big.Int).SetBytes(ArrayToSlice(tmp.ToBytes()))
-
-	aBN := new(big.Int).SetBytes(ArrayToSlice(a.key.ToBytes()))
-	bBN := new(big.Int).SetBytes(ArrayToSlice(b.key.ToBytes()))
-	aBN.Exp(aBN, bBN, curveOrder)
-
-	sc.FromBytes(SliceToArray(aBN.Bytes()))
-
+	sc.key =res
 	return sc
 }
 
