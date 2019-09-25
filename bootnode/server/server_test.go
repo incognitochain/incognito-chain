@@ -1,11 +1,11 @@
 package server
 
 import (
+	"testing"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus/blsbft"
-	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
-	"testing"
 )
 
 func TestRpcServer_AddOrUpdatePeer(t *testing.T) {
@@ -20,13 +20,13 @@ func TestRpcServer_AddOrUpdatePeer(t *testing.T) {
 		t.Error(err)
 	}
 	blsBft.LoadUserKey(privateSeed)
-	blsPublicKeyBytes := blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BlsConsensus]
+	blsPublicKeyBytes := blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BridgeConsensus]
 
 	args := &PingArgs{
 		RawAddress: "localhost:9333",
 		PublicKey:  base58.Base58Check{}.Encode(blsPublicKeyBytes, common.ZeroByte),
 	}
-	signDataInByte, err := blsBft.UserKeySet.BLSSignData([]byte(args.RawAddress), 0, []blsmultisig.PublicKey{blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BlsConsensus]})
+	signDataInByte, err := blsBft.UserKeySet.BriSignData([]byte(args.RawAddress)) //, 0, []blsmultisig.PublicKey{blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BlsConsensus]})
 	if err != nil {
 		t.Error(err)
 	}
@@ -49,13 +49,13 @@ func TestRpcServer_RemovePeerByPbk(t *testing.T) {
 		t.Error(err)
 	}
 	blsBft.LoadUserKey(privateSeed)
-	blsPublicKeyBytes := blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BlsConsensus]
+	briPublicKeyBytes := blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BridgeConsensus]
 
 	args := &PingArgs{
 		RawAddress: "localhost:9333",
-		PublicKey:  base58.Base58Check{}.Encode(blsPublicKeyBytes, common.ZeroByte),
+		PublicKey:  base58.Base58Check{}.Encode(briPublicKeyBytes, common.ZeroByte),
 	}
-	signDataInByte, err := blsBft.UserKeySet.BLSSignData([]byte(args.RawAddress), 0, []blsmultisig.PublicKey{blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BlsConsensus]})
+	signDataInByte, err := blsBft.UserKeySet.BriSignData([]byte(args.RawAddress)) //, 0, []blsmultisig.PublicKey{blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BlsConsensus]})
 	if err != nil {
 		t.Error(err)
 	}
@@ -84,13 +84,13 @@ func TestRpcServer_PeerHeartBeat(t *testing.T) {
 		t.Error(err)
 	}
 	blsBft.LoadUserKey(privateSeed)
-	blsPublicKeyBytes := blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BlsConsensus]
+	briPublicKeyBytes := blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BridgeConsensus]
 
 	args := &PingArgs{
 		RawAddress: "localhost:9333",
-		PublicKey:  base58.Base58Check{}.Encode(blsPublicKeyBytes, common.ZeroByte),
+		PublicKey:  base58.Base58Check{}.Encode(briPublicKeyBytes, common.ZeroByte),
 	}
-	signDataInByte, err := blsBft.UserKeySet.BLSSignData([]byte(args.RawAddress), 0, []blsmultisig.PublicKey{blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BlsConsensus]})
+	signDataInByte, err := blsBft.UserKeySet.BriSignData([]byte(args.RawAddress)) //, 0, []blsmultisig.PublicKey{blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BlsConsensus]})
 	if err != nil {
 		t.Error(err)
 	}
