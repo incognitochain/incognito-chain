@@ -12,7 +12,6 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/pkg/errors"
 
-	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/pubsub"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -113,9 +112,6 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	if err := blockchain.BestState.Shard[shardID].verifyBestStateWithShardBlock(shardBlock, true, shardID); err != nil {
 		return err
 	}
-
-	// TODO: snapshot and store after all validation
-
 	Logger.log.Infof("SHARD %+v | Update ShardBestState, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	// updateShardBestState best state with new block
 	// Backup beststate
@@ -163,7 +159,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 		Logger.log.Infof("SHARD %+v | SKIP Verify Post Processing, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	}
 	Logger.log.Infof("SHARD %+v | Remove Data After Processed, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-	go blockchain.removeOldDataAfterProcessingShardBlock(shardBlock, shardID)
+	blockchain.removeOldDataAfterProcessingShardBlock(shardBlock, shardID)
 	Logger.log.Infof("SHARD %+v | Update Beacon Instruction, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	err = blockchain.updateDatabaseFromBeaconInstructions(beaconBlocks, shardID)
 	if err != nil {
@@ -181,13 +177,23 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	}
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewShardblockTopic, shardBlock))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardBeststateTopic, blockchain.BestState.Shard[shardID]))
-	shardIDForMetric := strconv.Itoa(int(shardBlock.Header.ShardID))
-	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-		metrics.Measurement:      metrics.NumOfBlockInsertToChain,
-		metrics.MeasurementValue: float64(1),
-		metrics.Tag:              metrics.ShardIDTag,
-		metrics.TagValue:         metrics.Shard + shardIDForMetric,
-	})
+	// shardIDForMetric := strconv.Itoa(int(shardBlock.Header.ShardID))
+	// go metrics.AnalyzeTimeSeriesMetricDataWithTime(map[string]interface{}{
+	// 	metrics.Measurement:      metrics.NumOfBlockInsertToChain,
+	// 	metrics.MeasurementValue: float64(1),
+	// 	metrics.Tag:              metrics.ShardIDTag,
+	// 	metrics.TagValue:         metrics.Shard + shardIDForMetric,
+	// 	metrics.Time:             shardBlock.Header.Timestamp,
+	// })
+	// if shardBlock.Header.Height > 2 {
+	// 	go metrics.AnalyzeTimeSeriesMetricDataWithTime(map[string]interface{}{
+	// 		metrics.Measurement:      metrics.NumOfRoundPerBlock,
+	// 		metrics.MeasurementValue: float64(shardBlock.Header.Round),
+	// 		metrics.Tag:              metrics.ShardIDTag,
+	// 		metrics.TagValue:         metrics.Shard + shardIDForMetric,
+	// 		metrics.Time:             shardBlock.Header.Timestamp,
+	// 	})
+	// }
 	Logger.log.Infof("SHARD %+v | 🔗 Finish Insert new block %d, with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	return nil
 }
@@ -561,7 +567,10 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(shardBlock *
 	producerPosition := (shardBestState.ShardProposerIdx + shardBlock.Header.Round) % len(shardBestState.ShardCommittee)
 
 	//verify producer
-	tempProducer := shardBestState.ShardCommittee[producerPosition].GetMiningKeyBase58(shardBestState.ConsensusAlgorithm)
+	tempProducer, err := shardBestState.ShardCommittee[producerPosition].ToBase58() //.GetMiningKeyBase58(common.BridgeConsensus)
+	if err != nil {
+		return NewBlockChainError(UnExpectedError, err)
+	}
 	if strings.Compare(tempProducer, producerPublicKey) != 0 {
 		return NewBlockChainError(ProducerError, fmt.Errorf("Producer should be should be %+v", tempProducer))
 	}
@@ -911,14 +920,14 @@ func (blockchain *BlockChain) processStoreShardBlockAndUpdateDatabase(shardBlock
 		}
 	}
 	Logger.log.Infof("SHARD %+v | 🔎 %d transactions in block height %+v \n", shardBlock.Header.ShardID, len(shardBlock.Body.Transactions), shardBlock.Header.Height)
-	if shardBlock.Header.Height != 1 {
-		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-			metrics.Measurement:      metrics.TxInOneBlock,
-			metrics.MeasurementValue: float64(len(shardBlock.Body.Transactions)),
-			metrics.Tag:              metrics.BlockHeightTag,
-			metrics.TagValue:         fmt.Sprintf("%d", shardBlock.Header.Height),
-		})
-	}
+	// if shardBlock.Header.Height != 1 {
+	// 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+	// 		metrics.Measurement:      metrics.TxInOneBlock,
+	// 		metrics.MeasurementValue: float64(len(shardBlock.Body.Transactions)),
+	// 		metrics.Tag:              metrics.BlockHeightTag,
+	// 		metrics.TagValue:         fmt.Sprintf("%d", shardBlock.Header.Height),
+	// 	})
+	// }
 	return nil
 }
 
@@ -969,6 +978,9 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock 
 		candidates := []string{}
 		tokenIDs := []string{}
 		for _, tx := range shardBlock.Body.Transactions {
+			if blockchain.config.IsBlockGenStarted {
+				blockchain.config.CRemovedTxs <- tx
+			}
 			if tx.GetMetadata() != nil {
 				if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
 					stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
@@ -985,22 +997,12 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock 
 					tokenIDs = append(tokenIDs, tokenID)
 				}
 			}
-			if blockchain.config.IsBlockGenStarted {
-				blockchain.config.CRemovedTxs <- tx
-			}
 		}
 		go blockchain.config.TxPool.RemoveCandidateList(candidates)
 		go blockchain.config.TxPool.RemoveTokenIDList(tokenIDs)
 
 		//Remove tx out of pool
 		go blockchain.config.TxPool.RemoveTx(shardBlock.Body.Transactions, true)
-		for _, tx := range shardBlock.Body.Transactions {
-			go func(tx metadata.Transaction) {
-				if blockchain.config.IsBlockGenStarted {
-					blockchain.config.CRemovedTxs <- tx
-				}
-			}(tx)
-		}
 	}()
 }
 

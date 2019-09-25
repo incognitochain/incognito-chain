@@ -82,8 +82,11 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLi
 	committee := blockGenerator.chain.BestState.Beacon.GetBeaconCommittee()
 	producerPosition := (blockGenerator.chain.BestState.Beacon.BeaconProposerIndex + round) % len(beaconBestState.BeaconCommittee)
 	beaconBlock.Header.ConsensusType = beaconBestState.ConsensusAlgorithm
-	beaconBlock.Header.Producer = committee[producerPosition].GetMiningKeyBase58(beaconBestState.ConsensusAlgorithm)
 
+	beaconBlock.Header.Producer, err = committee[producerPosition].ToBase58() // .GetMiningKeyBase58(common.BridgeConsensus)
+	if err != nil {
+		return nil, err
+	}
 	beaconBlock.Header.ProducerPubKeyStr, err = committee[producerPosition].ToBase58()
 	if err != nil {
 		Logger.log.Error(err)
@@ -292,17 +295,21 @@ func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestS
 		currentCommittee := beaconBestState.GetAShardCommittee(shardID)
 		for index, shardBlock := range shardBlocks {
 			// hash := shardBlock.Header.Hash()
+			if index == MAX_S2B_BLOCK-1 {
+				break
+			}
 			err := blockGenerator.chain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, currentCommittee, beaconBestState.ShardConsensusAlgorithm[shardID])
 			Logger.log.Infof("Beacon Producer/ Validate Agg Signature for shard %+v, block height %+v, err %+v", shardID, shardBlock.Header.Height, err == nil)
 			if err != nil {
 				break
 			}
 			totalBlock = index
+			if totalBlock > MAX_S2B_BLOCK {
+				totalBlock = MAX_S2B_BLOCK
+				break
+			}
 		}
 		Logger.log.Infof("Beacon Producer/ AFTER FILTER, Shard %+v ONLY GET %+v block", shardID, totalBlock+1)
-		if totalBlock > MAX_S2B_BLOCK {
-			totalBlock = MAX_S2B_BLOCK
-		}
 		for _, shardBlock := range shardBlocks[:totalBlock+1] {
 			shardState, validStakeInstruction, tempValidStakePublicKeys, validSwapInstruction, bridgeInstruction, acceptedRewardInstruction, stopAutoStakingInstruction := blockGenerator.chain.GetShardStateFromBlock(beaconBestState.BeaconHeight+1, shardBlock, shardID, true, validStakePublicKeys)
 			shardStates[shardID] = append(shardStates[shardID], shardState[shardID])
@@ -681,29 +688,33 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 // ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
 func (beaconBestState *BeaconBestState) generateRandomInstruction(timestamp int64) ([]string, int64) {
 	//COMMENT FOR TESTING
-	//var (
-	//	blockHeight int
-	//	chainTimestamp int64
-	//	nonce int64
-	//  strs []string
-	//	err error
-	//)
-	//for {
-	//	blockHeight, chainTimestamp, nonce, err = beaconBestState.randomClient.GetNonceByTimestamp(timestamp)
-	//	if err == nil {
-	//		break
-	//	}
-	//}
-	//strs = append(strs, "random")
-	//strs = append(strs, strconv.Itoa(int(nonce)))
-	//strs = append(strs, strconv.Itoa(blockHeight))
-	//strs = append(strs, strconv.Itoa(int(timestamp)))
-	//strs = append(strs, strconv.Itoa(int(chainTimestamp)))
-	//@NOTICE: Hard Code for testing
-	var strs []string
-	reses := []string{"1000", strconv.Itoa(int(timestamp)), strconv.Itoa(int(timestamp) + 1)}
-	strs = append(strs, RandomAction)
-	strs = append(strs, reses...)
-	strs = append(strs, strconv.Itoa(int(timestamp)))
-	return strs, int64(1000)
+	if !TestRandom {
+		var (
+			blockHeight    int
+			chainTimestamp int64
+			nonce          int64
+			strs           []string
+			err            error
+		)
+		for {
+			blockHeight, chainTimestamp, nonce, err = beaconBestState.randomClient.GetNonceByTimestamp(timestamp)
+			if err == nil {
+				break
+			}
+		}
+		strs = append(strs, "random")
+		strs = append(strs, strconv.Itoa(int(nonce)))
+		strs = append(strs, strconv.Itoa(blockHeight))
+		strs = append(strs, strconv.Itoa(int(timestamp)))
+		strs = append(strs, strconv.Itoa(int(chainTimestamp)))
+		return strs, int64(nonce)
+	} else {
+		//@NOTICE: Hard Code for testing
+		var strs []string
+		reses := []string{"1000", strconv.Itoa(int(timestamp)), strconv.Itoa(int(timestamp) + 1)}
+		strs = append(strs, RandomAction)
+		strs = append(strs, reses...)
+		strs = append(strs, strconv.Itoa(int(timestamp)))
+		return strs, int64(1000)
+	}
 }
