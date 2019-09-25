@@ -198,7 +198,7 @@ func (wit SNNoPrivacyWitness) Prove(mess []byte) (*SNNoPrivacyProof, error) {
 	if mess == nil {
 		// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
 		// recheck frombytes is valid scalar
-		x.FromBytes(privacy.SliceToArray(utils.GenerateChallenge([][]byte{privacy.ArrayToSlice(tSK.ToBytes()), privacy.ArrayToSlice(tE.ToBytes())})))
+		x = utils.GenerateChallenge([][]byte{privacy.ArrayToSlice(tSK.ToBytes()), privacy.ArrayToSlice(tE.ToBytes())})
 	} else {
 		x.FromBytes(privacy.SliceToArray(mess))
 	}
@@ -217,7 +217,7 @@ func (pro SNNoPrivacyProof) Verify(mess []byte) (bool, error) {
 	x := new(privacy.Scalar)
 	if mess == nil {
 		// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
-		x.FromBytes(privacy.SliceToArray(utils.GenerateChallenge([][]byte{privacy.ArrayToSlice(pro.tSeed.ToBytes()), privacy.ArrayToSlice(pro.tOutput.ToBytes())})))
+		x = utils.GenerateChallenge([][]byte{privacy.ArrayToSlice(pro.tSeed.ToBytes()), privacy.ArrayToSlice(pro.tOutput.ToBytes())})
 	} else {
 		x.FromBytes(privacy.SliceToArray(mess))
 	}
