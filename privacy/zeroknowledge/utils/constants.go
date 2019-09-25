@@ -2,7 +2,7 @@ package utils
 
 const (
 	// size of zero knowledge proof corresponding one input
-	OneOfManyProofSize   = 716
+	OneOfManyProofSize   = 704
 	SnPrivacyProofSize   = 320
 	SnNoPrivacyProofSize = 192
 
