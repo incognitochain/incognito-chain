@@ -463,6 +463,81 @@ func GenerateKeyImage(pub Key, private Key) Key {
 	return ki
 }
 
+func PreComputeForMultiScalar (p *Key) [8]CachedGroupElement {
+	// A,2A,3A,4A,5A,6A,7A,8A
+	var Ai [8]CachedGroupElement
+	var A ExtendedGroupElement
+	t := new(CompletedGroupElement)
+	u := new(ExtendedGroupElement)
+
+	A.FromBytes(p)
+	A.ToCached(&Ai[0])
+	for j := 0; j < 7; j++ {
+		geAdd(t, &A, &Ai[j])
+		t.ToExtended(u)
+		u.ToCached(&Ai[j+1])
+	}
+	return Ai
+}
+
+
+func MultiScalarMultKeyCached(AiLs [][8]CachedGroupElement, scalars []*Key, ) (result *Key) {
+	r := new(ProjectiveGroupElement)
+
+	digitsLs := make([][64]int8, len(scalars))
+	for i:= range digitsLs {
+		digitsLs[i] = scalars[i].SignedRadix16()
+	}
+
+	t := new(CompletedGroupElement)
+	u := new(ExtendedGroupElement)
+
+	r.Zero()
+	cachedBase := new(ExtendedGroupElement)
+	cur := new(CachedGroupElement)
+	minusCur := new(CachedGroupElement)
+	for i := 63; i >= 0; i-- {
+		r.Double(t)
+		t.ToProjective(r)
+		r.Double(t)
+		t.ToProjective(r)
+		r.Double(t)
+		t.ToProjective(r)
+		r.Double(t)
+		t.ToExtended(u)
+
+		cachedBase.Zero()
+		tmpt := new(CompletedGroupElement)
+		for j:= 0; j < len(scalars); j++ {
+			cur.Zero()
+			b := digitsLs[j][i]
+			bNegative := int8(negative(int32(b)))
+			bAbs := b - (((-bNegative) & b) << 1)
+
+			for k := int32(0); k < 8; k++ {
+				if equal(int32(bAbs), k+1) == 1 { // optimisation
+					CachedGroupElementCMove(cur, &AiLs[j][k], equal(int32(bAbs), k+1))
+				}
+			}
+			FeCopy(&minusCur.yPlusX, &cur.yMinusX)
+			FeCopy(&minusCur.yMinusX, &cur.yPlusX)
+			FeCopy(&minusCur.Z, &cur.Z)
+			FeNeg(&minusCur.T2d, &cur.T2d)
+			CachedGroupElementCMove(cur, minusCur, int32(bNegative))
+
+			geAdd(tmpt, cachedBase, cur)
+			tmpt.ToExtended(cachedBase)
+		}
+		tmpv := new(CachedGroupElement)
+		cachedBase.ToCached(tmpv)
+		geAdd(t, u, tmpv)
+		t.ToProjective(r)
+	}
+	result = new(Key)
+	r.ToBytes(result)
+	return result
+}
+
 func MultiScalarMultKey(points []*Key, scalars []*Key) (result *Key) {
 	r := new(ProjectiveGroupElement)
 

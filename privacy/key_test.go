@@ -8,7 +8,7 @@ import (
 func TestKey(t *testing.T) {
 	for i:=0; i< 1000; i ++ {
 		// random seed
-		seed := ArrayToSlice(RandomScalar().ToBytes())
+		seed := RandomScalar().ToBytesS()
 
 		// generate private key from seed
 		privateKey := GeneratePrivateKey(seed)
@@ -44,15 +44,5 @@ func TestKey(t *testing.T) {
 
 		assert.Equal(t, paymentAddress.Pk, paymentAddress2.Pk)
 		assert.Equal(t, paymentAddress.Tk, paymentAddress2.Tk)
-	}
-}
-
-
-func TestArrayToSlice(t *testing.T) {
-	for i:=0; i<100000; i++{
-		num := RandomScalar()
-
-		bytes := ArrayToSlice(num.key.ToBytes())
-		assert.Equal(t, Ed25519KeySize, len(bytes))
 	}
 }

@@ -28,7 +28,7 @@ func TestMain(m *testing.M) {
 func TestCoinCommitAll(t *testing.T) {
 	for i:= 0; i<1000; i++{
 		coin := new(Coin).Init()
-		seedKey := ArrayToSlice(RandomScalar().ToBytes())
+		seedKey := RandomScalar().ToBytesS()
 		privateKey := GeneratePrivateKey(seedKey)
 		publicKey := GeneratePublicKey(privateKey)
 
@@ -58,7 +58,7 @@ func TestCoinMarshalJSON(t *testing.T) {
 
 	for i:= 0; i < 1000; i++ {
 		coin := new(Coin).Init()
-		seedKey := ArrayToSlice(RandomScalar().ToBytes())
+		seedKey := RandomScalar().ToBytesS()
 		privateKey := GeneratePrivateKey(seedKey)
 		publicKey := GeneratePublicKey(privateKey)
 
@@ -91,7 +91,7 @@ func TestCoinBytesSetBytes(t *testing.T) {
 
 	for i:= 0; i < 1000; i ++ {
 		coin := new(Coin).Init()
-		seedKey := ArrayToSlice(RandomScalar().ToBytes())
+		seedKey := RandomScalar().ToBytesS()
 		privateKey := GeneratePrivateKey(seedKey)
 		publicKey := GeneratePublicKey(privateKey)
 
@@ -122,7 +122,7 @@ func TestCoinBytesSetBytes(t *testing.T) {
 func TestCoinBytesSetBytesWithMissingFields(t *testing.T) {
 	for i:=0 ; i< 1000; i++ {
 		coin := new(Coin).Init()
-		seedKey := ArrayToSlice(RandomScalar().ToBytes())
+		seedKey := RandomScalar().ToBytesS()
 		privateKey := GeneratePrivateKey(seedKey)
 		publicKey := GeneratePublicKey(privateKey)
 
@@ -153,7 +153,7 @@ func TestCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
 	// init coin with fully fields
 	// init public key
 	coin := new(Coin).Init()
-	seedKey := ArrayToSlice(RandomScalar().ToBytes())
+	seedKey := RandomScalar().ToBytesS()
 	privateKey := GeneratePrivateKey(seedKey)
 	publicKey := GeneratePublicKey(privateKey)
 
@@ -196,7 +196,7 @@ func TestCoinBytesSetBytesWithEmptyBytes(t *testing.T) {
 func TestInputCoinBytesSetBytes(t *testing.T) {
 	for i:= 0; i< 1000; i++ {
 		coin := new(InputCoin).Init()
-		seedKey := ArrayToSlice(RandomScalar().ToBytes())
+		seedKey := RandomScalar().ToBytesS()
 		privateKey := GeneratePrivateKey(seedKey)
 		publicKey := GeneratePublicKey(privateKey)
 
@@ -226,7 +226,7 @@ func TestInputCoinBytesSetBytes(t *testing.T) {
 
 func TestInputCoinBytesSetBytesWithMissingFields(t *testing.T) {
 	coin := new(InputCoin).Init()
-	seedKey := ArrayToSlice(RandomScalar().ToBytes())
+	seedKey := RandomScalar().ToBytesS()
 	privateKey := GeneratePrivateKey(seedKey)
 	publicKey := GeneratePublicKey(privateKey)
 
@@ -253,7 +253,7 @@ func TestInputCoinBytesSetBytesWithMissingFields(t *testing.T) {
 
 func TestInputCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
 	coin := new(InputCoin).Init()
-	seedKey := ArrayToSlice(RandomScalar().ToBytes())
+	seedKey := RandomScalar().ToBytesS()
 	privateKey := GeneratePrivateKey(seedKey)
 	publicKey := GeneratePublicKey(privateKey)
 
@@ -296,7 +296,7 @@ func TestInputCoinBytesSetBytesWithEmptyBytes(t *testing.T) {
 
 func TestOutputCoinBytesSetBytes(t *testing.T) {
 	coin := new(OutputCoin).Init()
-	seedKey := ArrayToSlice(RandomScalar().ToBytes())
+	seedKey := RandomScalar().ToBytesS()
 	privateKey := GeneratePrivateKey(seedKey)
 	publicKey := GeneratePublicKey(privateKey)
 	paymentAddr := GeneratePaymentAddress(privateKey)
@@ -326,7 +326,7 @@ func TestOutputCoinBytesSetBytes(t *testing.T) {
 
 func TestOutputCoinBytesSetBytesWithMissingFields(t *testing.T) {
 	coin := new(OutputCoin).Init()
-	seedKey := ArrayToSlice(RandomScalar().ToBytes())
+	seedKey := RandomScalar().ToBytesS()
 	privateKey := GeneratePrivateKey(seedKey)
 	publicKey := GeneratePublicKey(privateKey)
 	paymentAddr := GeneratePaymentAddress(privateKey)
@@ -356,7 +356,7 @@ func TestOutputCoinBytesSetBytesWithMissingFields(t *testing.T) {
 
 func TestOutputCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
 	coin := new(OutputCoin).Init()
-	seedKey := ArrayToSlice(RandomScalar().ToBytes())
+	seedKey := RandomScalar().ToBytesS()
 	privateKey := GeneratePrivateKey(seedKey)
 	publicKey := GeneratePublicKey(privateKey)
 	paymentAddr := GeneratePaymentAddress(privateKey)
@@ -399,7 +399,7 @@ func TestOutputCoinBytesSetBytesWithEmptyBytes(t *testing.T) {
 */
 func TestOutputCoinEncryptDecrypt(t *testing.T) {
 	// prepare key
-	seedKey := ArrayToSlice(RandomScalar().ToBytes())
+	seedKey := RandomScalar().ToBytesS()
 	privateKey := GeneratePrivateKey(seedKey)
 	paymentAddress := GeneratePaymentAddress(privateKey)
 	viewingKey := GenerateViewingKey(privateKey)
@@ -433,7 +433,7 @@ func TestOutputCoinEncryptDecrypt(t *testing.T) {
 
 func TestOutputCoinEncryptDecryptWithUnmatchedKey(t *testing.T) {
 	// prepare key
-	seedKey := ArrayToSlice(RandomScalar().ToBytes())
+	seedKey := RandomScalar().ToBytesS()
 	privateKey := GeneratePrivateKey(seedKey)
 	paymentAddress := GeneratePaymentAddress(privateKey)
 	viewingKey := GenerateViewingKey(privateKey)

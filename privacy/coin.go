@@ -150,7 +150,7 @@ func (coin *Coin) Bytes() []byte {
 	var coinBytes []byte
 
 	if coin.publicKey != nil || coin.publicKey.IsIdentity() {
-		publicKey := ArrayToSlice(coin.publicKey.ToBytes())
+		publicKey := coin.publicKey.ToBytesS()
 		coinBytes = append(coinBytes, byte(Ed25519KeySize))
 		coinBytes = append(coinBytes, publicKey...)
 	} else {
@@ -158,7 +158,7 @@ func (coin *Coin) Bytes() []byte {
 	}
 
 	if coin.coinCommitment != nil || coin.coinCommitment.IsIdentity() {
-		coinCommitment := ArrayToSlice(coin.coinCommitment.ToBytes())
+		coinCommitment := coin.coinCommitment.ToBytesS()
 		coinBytes = append(coinBytes, byte(Ed25519KeySize))
 		coinBytes = append(coinBytes, coinCommitment...)
 	} else {
@@ -167,13 +167,13 @@ func (coin *Coin) Bytes() []byte {
 
 	if coin.snDerivator != nil || coin.snDerivator.IsZero() {
 		coinBytes = append(coinBytes, byte(Ed25519KeySize))
-		coinBytes = append(coinBytes, ArrayToSlice(coin.snDerivator.ToBytes())...)
+		coinBytes = append(coinBytes, coin.snDerivator.ToBytesS()...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
 	if coin.serialNumber != nil || coin.serialNumber.IsIdentity() {
-		serialNumber := ArrayToSlice(coin.serialNumber.ToBytes())
+		serialNumber := coin.serialNumber.ToBytesS()
 		coinBytes = append(coinBytes, byte(Ed25519KeySize))
 		coinBytes = append(coinBytes, serialNumber...)
 	} else {
@@ -182,7 +182,7 @@ func (coin *Coin) Bytes() []byte {
 
 	if coin.randomness != nil || coin.randomness.IsZero() {
 		coinBytes = append(coinBytes, byte(Ed25519KeySize))
-		coinBytes = append(coinBytes, ArrayToSlice(coin.randomness.ToBytes())...)
+		coinBytes = append(coinBytes, coin.randomness.ToBytesS()...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
@@ -387,7 +387,7 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 // and ElGamal cryptosystem is used as a key encapsulation scheme.
 func (outputCoin *OutputCoin) Encrypt(recipientTK TransmissionKey) *PrivacyError {
 	// 32-byte first: Randomness, the rest of msg is value of coin
-	msg := append(ArrayToSlice(outputCoin.CoinDetails.randomness.ToBytes()), new(big.Int).SetUint64(outputCoin.CoinDetails.value).Bytes()...)
+	msg := append(outputCoin.CoinDetails.randomness.ToBytesS(), new(big.Int).SetUint64(outputCoin.CoinDetails.value).Bytes()...)
 
 	pubKeyPoint, err := new(Point).FromBytes(recipientTK)
 	if err != nil {
