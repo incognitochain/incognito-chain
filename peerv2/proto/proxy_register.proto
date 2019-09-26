@@ -4,11 +4,12 @@ package peerv2;
 option go_package="peerv2";
 
 message ProxyRegisterMsg {
-    string pubkey = 1;
+    string CommitteePublicKey = 1;
+    repeated string WantedMessages = 2;
 }
 
 message ProxyRegisterResponse {
-    string result = 1;
+    repeated string Topics = 1;
 }
 
 service ProxyRegisterService{
