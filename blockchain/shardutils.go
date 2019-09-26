@@ -113,8 +113,10 @@ func CreateSwapAction(
 	shardID byte,
 	producersBlackList map[string]uint8,
 	badProducersWithPunishment map[string]uint8,
+	offset int,
+	swapOffset int,
 ) ([]string, []string, []string, error) {
-	newPendingValidator, newShardCommittees, shardSwapedCommittees, shardNewCommittees, err := SwapValidator(pendingValidator, commitees, maxCommitteeSize, minCommitteeSize, common.Offset, producersBlackList)
+	newPendingValidator, newShardCommittees, shardSwapedCommittees, shardNewCommittees, err := SwapValidator(pendingValidator, commitees, maxCommitteeSize, minCommitteeSize, offset, producersBlackList, swapOffset)
 	if err != nil {
 		return nil, nil, nil, err
 	}
