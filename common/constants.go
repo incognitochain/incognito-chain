@@ -76,7 +76,8 @@ const (
 
 // CONSENSUS
 const (
-	Offset = 1
+	Offset     = 20 // default offset for swap policy, is used for cases that good producers length is less than max committee size
+	SwapOffset = 2  // is used for case that good producers length is equal to max committee size
 
 	NodeModeRelay  = "relay"
 	NodeModeShard  = "shard"
