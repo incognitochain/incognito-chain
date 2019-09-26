@@ -222,6 +222,7 @@ func SwapValidator(
 	minCommittee int,
 	offset int,
 	producersBlackList map[string]uint8,
+	swapOffset int,
 ) ([]string, []string, []string, []string, error) {
 	pendingValidators = filterValidators(pendingValidators, producersBlackList, false)
 	currentBadProducers := filterValidators(currentValidators, producersBlackList, true)
@@ -231,7 +232,7 @@ func SwapValidator(
 
 	if currentGoodProducersLen >= minCommittee {
 		if currentGoodProducersLen == maxCommittee {
-			offset = common.SwapOffset
+			offset = swapOffset
 		}
 		if offset > pendingValidatorsLen {
 			offset = pendingValidatorsLen
