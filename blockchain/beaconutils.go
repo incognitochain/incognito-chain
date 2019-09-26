@@ -232,7 +232,8 @@ func SwapValidator(
 	if currentGoodProducersLen >= minCommittee {
 		if currentGoodProducersLen == maxCommittee {
 			offset = common.SwapOffset
-		} else if offset > pendingValidatorsLen {
+		}
+		if offset > pendingValidatorsLen {
 			offset = pendingValidatorsLen
 		}
 		return swap(pendingValidators, currentGoodProducers, currentBadProducers, maxCommittee, offset)
