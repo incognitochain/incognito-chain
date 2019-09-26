@@ -3,21 +3,17 @@ package privacy
 import (
 	"crypto/subtle"
 	"fmt"
-	C25519 "github.com/deroproject/derosuite/crypto"
-	"github.com/incognitochain/incognito-chain/common"
+
 	"math/big"
+	//C25519 "github.com/deroproject/derosuite/crypto"
+	C25519 "github.com/incognitochain/incognito-chain/privacy/curve25519"
 	"testing"
 )
 
 func TestScalar_Mul(t *testing.T) {
 	count := 0
 	for i:=0; i< 100; i++ {
-		sk := GeneratePrivateKey(RandBytes(10))
-		skScalar := new(Scalar).FromBytes(SliceToArray(sk))
-		fmt.Println(skScalar.ScalarValid())
-		pk := GeneratePublicKey(sk)
-		pkPoint, err := new(Point).FromBytes(SliceToArray(pk))
-		fmt.Println(err, pkPoint)
+
 		a := RandomScalar()
 		b := RandomScalar()
 		c := RandomScalar()
@@ -38,7 +34,7 @@ func TestScalar_Mul(t *testing.T) {
 		var resPrime C25519.Key
 		C25519.ScMul(&resPrime, &a.key, &b.key)
 		C25519.ScMul(&resPrime, &resPrime, &c.key)
-		tmp, _ := resPrime.MarshalText()
+		tmp := resPrime.MarshalText()
 		ok := subtle.ConstantTimeCompare(res.MarshalText(), tmp) == 1
 		if !ok {
 			t.Fatalf("expected Scalar Mul correct !")
@@ -61,40 +57,22 @@ func TestScalar_Add(t *testing.T) {
 		res = res.Add(res,a)
 
 
-		curveOrder := C25519.CurveOrder()
+		var resPrime C25519.Key
+		C25519.ScAdd(&resPrime, &a.key, &b.key)
+		C25519.ScAdd(&resPrime, &resPrime, &c.key)
+		C25519.ScAdd(&resPrime,&resPrime, &a.key)
 
-		resBN := new(big.Int).SetBytes(ArrayToSlice(res.ToBytes()))
-		curveOrderBN := new(big.Int).SetBytes(ArrayToSlice(curveOrder.ToBytes()))
-
-		if resBN.Cmp(curveOrderBN) == 1{
-			count ++
-			fmt.Printf("Wrong!!!!!\n")
+		tmp := resPrime.MarshalText()
+		ok := subtle.ConstantTimeCompare(res.MarshalText(), tmp) == 1
+		if !ok {
+			t.Fatalf("expected Scalar Mul correct !")
 		}
-
-		//var resPrime C25519.Key
-		//C25519.ScAdd(&resPrime, &a.key, &b.key)
-		//C25519.ScAdd(&resPrime, &resPrime, &c.key)
-		//C25519.ScAdd(&resPrime,&resPrime, &a.key)
-		//
-		//tmp, _ := resPrime.MarshalText()
-		//ok := subtle.ConstantTimeCompare(res.MarshalText(), tmp) == 1
-		//if !ok {
-		//	t.Fatalf("expected Scalar Mul correct !")
-		//}
 	}
 
 	fmt.Printf("Count : %v\n", count)
 }
 
 func TestScalar_Sub(t *testing.T) {
-	a := new(Scalar).SetUint64(1)
-	b := new(Scalar).SetUint64(2)
-	c := new(Scalar).Sub(a,b)
-	d := new(Scalar).Add(c,b)
-	fmt.Println(a.key)
-	fmt.Println(b.key)
-	fmt.Println(c.key)
-	fmt.Println(d.key)
 
 	for i:=0; i< 100; i++ {
 		a := RandomScalar()
@@ -107,7 +85,7 @@ func TestScalar_Sub(t *testing.T) {
 		var resPrime C25519.Key
 		C25519.ScSub(&resPrime, &a.key, &b.key)
 		C25519.ScSub(&resPrime, &resPrime, &c.key)
-		tmp, _ := resPrime.MarshalText()
+		tmp := resPrime.MarshalText()
 		ok := subtle.ConstantTimeCompare(res.MarshalText(), tmp) == 1
 		if !ok {
 			t.Fatalf("expected Scalar Mul correct !")
@@ -154,34 +132,34 @@ func TestScalar_Invert(t *testing.T) {
 		}
 	}
 
-	b := new(Scalar).SetUint64(1)
+	b := new(Scalar).FromUint64(1)
 	bInverse := b.Invert(b)
 	fmt.Printf("bInverse %v\n", bInverse)
 }
 
-func Test(t *testing.T){
-	a := new(Scalar).SetUint64(253)
-	b := new(Scalar).SetUint64(253)
-	c := new(Scalar).Mul(a,b)
-	fmt.Println("c: ", c)
-	cPrime  := Reverse(c.key)
-
-	cB := cPrime.ToBytes()
-	fmt.Println("cB: ", cB)
-	aI := new(big.Int).SetBytes(ArrayToSlice(cB))
-	fmt.Println("aI: ", aI)
-	fmt.Println("aI.Bytes(): ", aI.Bytes())
-	fmt.Println("SliceToArray(aI.Bytes()): ", SliceToArray(aI.Bytes()))
-
-	key := new(C25519.Key)
-	key.FromBytes(SliceToArray(common.AddPaddingBigInt(aI, 32)))
-	fmt.Printf("Key: %v\n", key)
-
-	keyInverse := Reverse(*key)
-	fmt.Printf("keyInverse: %v\n", keyInverse)
-
-	sc, err := new(Scalar).SetKey(key)
-	fmt.Printf("sc: %v\n", sc)
-	fmt.Printf("err: %v\n", err)
-
-}
+//func Test(t *testing.T){
+//	a := new(Scalar).SetUint64(253)
+//	b := new(Scalar).SetUint64(253)
+//	c := new(Scalar).Mul(a,b)
+//	fmt.Println("c: ", c)
+//	cPrime  := Reverse(c.key)
+//
+//	cB := cPrime.ToBytes()
+//	fmt.Println("cB: ", cB)
+//	aI := new(big.Int).SetBytes(ArrayToSlice(cB))
+//	fmt.Println("aI: ", aI)
+//	fmt.Println("aI.Bytes(): ", aI.Bytes())
+//	fmt.Println("SliceToArray(aI.Bytes()): ", SliceToArray(aI.Bytes()))
+//
+//	key := new(C25519.Key)
+//	key.FromBytes(SliceToArray(common.AddPaddingBigInt(aI, 32)))
+//	fmt.Printf("Key: %v\n", key)
+//
+//	keyInverse := Reverse(*key)
+//	fmt.Printf("keyInverse: %v\n", keyInverse)
+//
+//	sc, err := new(Scalar).SetKey(key)
+//	fmt.Printf("sc: %v\n", sc)
+//	fmt.Printf("err: %v\n", err)
+//
+//}
