@@ -41,7 +41,7 @@ func (priv elGamalPrivateKey) GetX() *Scalar {
 
 // Bytes converts ciphertext to 66-byte array
 func (ciphertext elGamalCipherText) Bytes() []byte {
-	if ciphertext.c1.IsZero() {
+	if ciphertext.c1.IsIdentity() {
 		return []byte{}
 	}
 	b1 := ciphertext.c1.ToBytes()

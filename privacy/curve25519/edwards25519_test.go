@@ -17,7 +17,7 @@
 package curve25519
 
 import (
-	"fmt"
+	"crypto/subtle"
 	"os"
 )
 import "runtime/pprof"
@@ -76,8 +76,8 @@ func TestScalarMult(t *testing.T) {
 	}{
 		{
 			name:      "zero",
-			scalarHex: "04b937fca95b2f1e93e41e62fc3c78818ff38a66096fad6e7973e5c90006d321",
-			pointHex:  "2f1132ca61ab38dff00f2fea3228f24c6c71d58085b80e47e19515cb27e8d047",
+			scalarHex: "0000000000000000000000000000000000000000000000000000000000000000",
+			pointHex:  "0100000000000000000000000000000000000000000000000000000000000000",
 			wantHex:   "0100000000000000000000000000000000000000000000000000000000000000",
 		},
 		{
@@ -94,7 +94,7 @@ func TestScalarMult(t *testing.T) {
 		},
 		{
 			name:      "basepoint * 2",
-			scalarHex: "2f1132ca61ab38dff00f2fea3228f24c6c71d58085b80e47e19515cb27e8d047",
+			scalarHex: "0200000000000000000000000000000000000000000000000000000000000000",
 			pointHex:  "2f1132ca61ab38dff00f2fea3228f24c6c71d58085b80e47e19515cb27e8d047",
 			wantHex:   "b4b937fca95b2f1e93e41e62fc3c78818ff38a66096fad6e7973e5c90006d321",
 		},
@@ -122,60 +122,87 @@ func TestScalarMult(t *testing.T) {
 	}
 }
 
+func TestMultiScalarMultKey(t *testing.T) {
+	for i := 0; i < 100; i++ {
+		len := 64
+		scalarLs := make([]*Key, len)
+		pointLs := make([]*Key, len)
+
+		for j:=0; j <len; j++ {
+			scalarLs[j] = RandomScalar()
+			pointLs[j] = RandomPubKey()
+
+		}
+
+		res := ScalarMultKey(pointLs[0],scalarLs[0])
+
+		for j:= 1; j < len; j++ {
+			tmp := ScalarMultKey(pointLs[j],scalarLs[j])
+			AddKeys(res, res, tmp)
+		}
+
+		resultPrime := MultiScalarMultKey(pointLs, scalarLs)
+		ok := subtle.ConstantTimeCompare(res.MarshalText(), resultPrime.MarshalText()) == 1
+		if !ok {
+			t.Fatalf("expected Multi Scalar Mul correct !")
+		}
+	}
+}
+
 func BenchmarkMultiScalarMultKey(b *testing.B) {
 	len := 64
 	scalarLs := make([]*Key, len)
-	pointLs := make([]*ExtendedGroupElement, len)
-	resultPrime := new(ProjectiveGroupElement)
+	pointLs := make([]*Key, len)
 
-	for i := 0; i< len; i ++ {
-		scalarLs[i] = RandomScalar()
-		pointLs[i] = new(ExtendedGroupElement)
-		GeScalarMultBase(pointLs[i],scalarLs[i])
+	for j:=0; j <len; j++ {
+		scalarLs[j] = RandomScalar()
+		pointLs[j] = RandomPubKey()
+
 	}
 
 	b.ResetTimer()
 
 	for i:=0; i< b.N; i++ {
 
-		GeMultiScalarMult(resultPrime, scalarLs, pointLs)
+		MultiScalarMultKey(pointLs, scalarLs)
 	}
 }
-func TestMultiScalarMultKey(t *testing.T) {
-	len := 8
-	scalarLs := make([]*Key, len)
-	pointLs := make([]*ExtendedGroupElement, len)
-	resultProjLs := make([]*ProjectiveGroupElement, len)
-	resultKeyLs := make([]*Key, len)
-	result := new(Key)
-
-	scalarLs[0] = RandomScalar()
-	pointLs[0] = new(ExtendedGroupElement)
-	GeScalarMultBase(pointLs[0],scalarLs[0])
-	resultProjLs[0] = new(ProjectiveGroupElement)
-	GeScalarMult(resultProjLs[0],scalarLs[0], pointLs[0])
-	resultProjLs[0].ToBytes(result)
-
-	for i := 1; i< len; i ++ {
-		scalarLs[i] = RandomScalar()
-		pointLs[i] = new(ExtendedGroupElement)
-		GeScalarMultBase(pointLs[i],scalarLs[i])
-		resultProjLs[i] = new(ProjectiveGroupElement)
-		GeScalarMult(resultProjLs[i],scalarLs[i], pointLs[i])
-		resultKeyLs[i] = new(Key)
-		resultProjLs[i].ToBytes(resultKeyLs[i])
-		AddKeys(result, result, resultKeyLs[i])
-	}
-
-	fmt.Println(result)
-
-	resultPrime := new(ProjectiveGroupElement)
-	GeMultiScalarMult(resultPrime, scalarLs, pointLs)
-
-	resultPrimeKey := new(Key)
-	resultPrime.ToBytes(resultPrimeKey)
-	fmt.Println(resultPrimeKey)
-}
+//
+//func TestMultiScalarMultKey(t *testing.T) {
+//	len := 64
+//	scalarLs := make([]*Key, len)
+//	pointLs := make([]*ExtendedGroupElement, len)
+//	resultProjLs := make([]*ProjectiveGroupElement, len)
+//	resultKeyLs := make([]*Key, len)
+//	result := new(Key)
+//
+//	scalarLs[0] = RandomScalar()
+//	pointLs[0] = new(ExtendedGroupElement)
+//	GeScalarMultBase(pointLs[0],scalarLs[0])
+//	resultProjLs[0] = new(ProjectiveGroupElement)
+//	GeScalarMult(resultProjLs[0],scalarLs[0], pointLs[0])
+//	resultProjLs[0].ToBytes(result)
+//
+//	for i := 1; i< len; i ++ {
+//		scalarLs[i] = RandomScalar()
+//		pointLs[i] = new(ExtendedGroupElement)
+//		GeScalarMultBase(pointLs[i],scalarLs[i])
+//		resultProjLs[i] = new(ProjectiveGroupElement)
+//		GeScalarMult(resultProjLs[i],scalarLs[i], pointLs[i])
+//		resultKeyLs[i] = new(Key)
+//		resultProjLs[i].ToBytes(resultKeyLs[i])
+//		AddKeys(result, result, resultKeyLs[i])
+//	}
+//
+//	fmt.Println(result)
+//
+//	resultPrime := new(ProjectiveGroupElement)
+//	GeMultiScalarMult(resultPrime, scalarLs, pointLs)
+//
+//	resultPrimeKey := new(Key)
+//	resultPrime.ToBytes(resultPrimeKey)
+//	fmt.Println(resultPrimeKey)
+//}
 
 func TestGeMul8(t *testing.T) {
 	tests := []struct {
@@ -332,7 +359,7 @@ func TestGeDoubleScalarMultPrecompVartime(t *testing.T) {
 }
 
 func TestScValid(t *testing.T) {
-	// All tests from github.com/monero-project/monero/tests/curve25519/tests.txt
+	// All tests from github.com/monero-project/monero/tests/crypto/tests.txt
 	tests := []struct {
 		scalarHex string
 		valid     bool
