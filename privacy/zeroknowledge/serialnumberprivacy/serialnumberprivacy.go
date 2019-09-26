@@ -170,18 +170,18 @@ func (proof SNPrivacyProof) Bytes() []byte {
 	}
 
 	var bytes []byte
-	bytes = append(bytes, privacy.ArrayToSlice(proof.stmt.sn.ToBytes())...)
-	bytes = append(bytes, privacy.ArrayToSlice(proof.stmt.comSK.ToBytes())...)
-	bytes = append(bytes, privacy.ArrayToSlice(proof.stmt.comInput.ToBytes())...)
+	bytes = append(bytes, proof.stmt.sn.ToBytesS()...)
+	bytes = append(bytes, proof.stmt.comSK.ToBytesS()...)
+	bytes = append(bytes, proof.stmt.comInput.ToBytesS()...)
 
-	bytes = append(bytes, privacy.ArrayToSlice(proof.tSK.ToBytes())...)
-	bytes = append(bytes, privacy.ArrayToSlice(proof.tInput.ToBytes())...)
-	bytes = append(bytes, privacy.ArrayToSlice(proof.tSN.ToBytes())...)
+	bytes = append(bytes, proof.tSK.ToBytesS()...)
+	bytes = append(bytes, proof.tInput.ToBytesS()...)
+	bytes = append(bytes, proof.tSN.ToBytesS()...)
 
-	bytes = append(bytes, privacy.ArrayToSlice(proof.zSK.ToBytes())...)
-	bytes = append(bytes, privacy.ArrayToSlice(proof.zRSK.ToBytes())...)
-	bytes = append(bytes, privacy.ArrayToSlice(proof.zInput.ToBytes())...)
-	bytes = append(bytes, privacy.ArrayToSlice(proof.zRInput.ToBytes())...)
+	bytes = append(bytes, proof.zSK.ToBytesS()...)
+	bytes = append(bytes, proof.zRSK.ToBytesS()...)
+	bytes = append(bytes, proof.zInput.ToBytesS()...)
+	bytes = append(bytes, proof.zRInput.ToBytesS()...)
 
 	return bytes
 }
@@ -270,9 +270,9 @@ func (wit SNPrivacyWitness) Prove(mess []byte) (*SNPrivacyProof, error) {
 	x := new(privacy.Scalar)
 	if mess == nil {
 		x = utils.GenerateChallenge([][]byte{
-			privacy.ArrayToSlice(tSeed.ToBytes()),
-			privacy.ArrayToSlice(tInput.ToBytes()),
-			privacy.ArrayToSlice(tOutput.ToBytes())})
+			tSeed.ToBytesS(),
+			tInput.ToBytesS(),
+			tOutput.ToBytesS()})
 	} else {
 		x.FromBytes(privacy.SliceToArray(mess))
 	}
@@ -307,9 +307,9 @@ func (proof SNPrivacyProof) Verify(mess []byte) (bool, error) {
 	x := new(privacy.Scalar)
 	if mess == nil {
 		x = utils.GenerateChallenge([][]byte{
-			privacy.ArrayToSlice(proof.tSK.ToBytes()),
-			privacy.ArrayToSlice(proof.tInput.ToBytes()),
-			privacy.ArrayToSlice(proof.tSN.ToBytes())})
+			proof.tSK.ToBytesS(),
+			proof.tInput.ToBytesS(),
+			proof.tSN.ToBytesS()})
 	} else {
 		x.FromBytes(privacy.SliceToArray(mess))
 	}

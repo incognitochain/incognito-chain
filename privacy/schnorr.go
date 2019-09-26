@@ -72,7 +72,7 @@ func (privateKey SchnorrPrivateKey) Sign(data []byte) (*SchnSignature, error) {
 		t.Add(t, new(Point).ScalarMult(privateKey.publicKey.h, s2))
 
 		// E is the hash of elliptic point t and data need to be signed
-		msg := append(ArrayToSlice(t.ToBytes()), data...)
+		msg := append(t.ToBytesS(), data...)
 
 		signature.e = HashToScalar(msg)
 
@@ -92,7 +92,7 @@ func (privateKey SchnorrPrivateKey) Sign(data []byte) (*SchnSignature, error) {
 	t := new(Point).ScalarMult(privateKey.publicKey.g, s)
 
 	// E is the hash of elliptic point t and data need to be signed
-	msg := append(ArrayToSlice(t.ToBytes()), data...)
+	msg := append(t.ToBytesS(), data...)
 	signature.e = HashToScalar(msg)
 
 	// Z1 = s - e*sk
@@ -114,17 +114,17 @@ func (publicKey SchnorrPublicKey) Verify(signature *SchnSignature, data []byte) 
 	if signature.z2 != nil {
 		rv.Add(rv, new(Point).ScalarMult(publicKey.h, signature.z2))
 	}
-	msg := append(ArrayToSlice(rv.ToBytes()), data...)
+	msg := append(rv.ToBytesS(), data...)
 
 	ev := HashToScalar(msg)
-	return subtle.ConstantTimeCompare(ArrayToSlice(ev.ToBytes()), ArrayToSlice(signature.e.ToBytes())) == 1
+	return subtle.ConstantTimeCompare(ev.ToBytesS(), signature.e.ToBytesS()) == 1
 }
 
 func (sig SchnSignature) Bytes() []byte {
-	bytes := append(ArrayToSlice(sig.e.ToBytes()), ArrayToSlice(sig.z1.ToBytes())...)
+	bytes := append(sig.e.ToBytesS(), sig.z1.ToBytesS()...)
 	// Z2 is nil when has no privacy
 	if sig.z2 != nil {
-		bytes = append(bytes, ArrayToSlice(sig.z2.ToBytes())...)
+		bytes = append(bytes, sig.z2.ToBytesS()...)
 	}
 	return bytes
 }
