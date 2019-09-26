@@ -1,5 +1,6 @@
 package privacy
 
+import "C"
 import (
 	"crypto/subtle"
 	"encoding/hex"
@@ -141,6 +142,24 @@ func (p *Point) ScalarMult(pa *Point, a *Scalar) *Point {
 	return p
 }
 
+
+func (p *Point) MultiScalarMultCached(scalarLs []*Scalar, pointPreComputedLs [][8]C25519.CachedGroupElement) *Point {
+	nSc := len(scalarLs)
+
+	if nSc != len(pointPreComputedLs) {
+		panic("Cannot MultiscalarMul with different size inputs")
+	}
+
+	scalarKeyLs := make([]*C25519.Key, nSc)
+	for i:= 0; i < nSc ; i++ {
+		scalarKeyLs[i] = &scalarLs[i].key
+	}
+	key := C25519.MultiScalarMultKeyCached(pointPreComputedLs, scalarKeyLs)
+	res, _ := new(Point).SetKey(key)
+	return res
+}
+
+
 func (p *Point) MultiScalarMult(scalarLs []*Scalar, pointLs []*Point) *Point {
 	nSc := len(scalarLs)
 	nPoint := len(pointLs)
@@ -187,6 +206,39 @@ func (p *Point) Add(pa, pb *Point) *Point {
 	res := p.key
 	C25519.AddKeys(&res, &pa.key, &pb.key)
 	p.key = res
+	return p
+}
+
+// aA + bB
+func (p *Point) AddPedersen(a *Scalar, A *Point, b *Scalar, B *Point) *Point {
+	if p == nil {
+		p = new(Point)
+	}
+
+	var A_Precomputed [8]C25519.CachedGroupElement
+	Ae := new(C25519.ExtendedGroupElement)
+	Ae.FromBytes(&A.key)
+	C25519.GePrecompute(&A_Precomputed, Ae)
+
+	var B_Precomputed [8]C25519.CachedGroupElement
+	Be := new(C25519.ExtendedGroupElement)
+	Be.FromBytes(&B.key)
+	C25519.GePrecompute(&B_Precomputed, Be)
+
+	var key C25519.Key
+	C25519.AddKeys3_3(&key, &a.key, &A_Precomputed, &b.key, &B_Precomputed)
+	p.key = key
+	return p
+}
+
+func (p *Point) AddPedersenCached(a *Scalar, APreCompute [8]C25519.CachedGroupElement, b *Scalar, BPreCompute [8]C25519.CachedGroupElement) *Point {
+	if p == nil {
+		p = new(Point)
+	}
+
+	var key C25519.Key
+	C25519.AddKeys3_3(&key, &a.key, &APreCompute, &b.key, &BPreCompute)
+	p.key = key
 	return p
 }
 

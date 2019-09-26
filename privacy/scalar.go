@@ -121,7 +121,7 @@ func (sc *Scalar) ToUint64() uint64 {
 	if sc == nil {
 		return 0
 	}
-	keyBN := new(big.Int).SetBytes(ArrayToSlice(sc.ToBytes()))
+	keyBN := new(big.Int).SetBytes(sc.ToBytesS())
 	return keyBN.Uint64()
 }
 
