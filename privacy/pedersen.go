@@ -51,9 +51,13 @@ func (com PedersenCommitment) commitAll(openings []*Scalar) (*Point, error) {
 }
 
 // CommitAtIndex commits specific value with index and returns 34 bytes
+// g^v x h^rand
 func (com PedersenCommitment) CommitAtIndex(value, rand *Scalar, index byte) *Point {
-	commitment := new(Point).ScalarMult(com.G[index], value)
-	commitment.Add(commitment, new(Point).ScalarMult(com.G[PedersenRandomnessIndex], rand))
-
-	return commitment
+	//commitment := new(Point).ScalarMult(com.G[index], value)
+	//commitment.Add(commitment, new(Point).ScalarMult(com.G[PedersenRandomnessIndex], rand))
+	//
+	//return commitment
+	return new(Point).AddPedersen(value, com.G[index], rand, com.G[PedersenRandomnessIndex])
 }
+
+

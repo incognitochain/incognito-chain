@@ -16,7 +16,7 @@ func TestSchnorrSignature(t *testing.T) {
 		// random message to sign
 		data := RandomScalar()
 		// sign on message
-		signature, err := privKey.Sign(ArrayToSlice(data.ToBytes()))
+		signature, err := privKey.Sign(data.ToBytesS())
 		assert.Equal(t, nil, err)
 
 		// convert signature to bytes array
@@ -28,7 +28,7 @@ func TestSchnorrSignature(t *testing.T) {
 		assert.Equal(t, signature, signature2)
 
 		// verify the signature with private key
-		res := privKey.publicKey.Verify(signature2, ArrayToSlice(data.ToBytes()))
+		res := privKey.publicKey.Verify(signature2, data.ToBytesS())
 		assert.Equal(t, true, res)
 	}
 }
@@ -43,7 +43,7 @@ func TestSchnorrSignatureWithoutZ2(t *testing.T) {
 		// random message to sign
 		data := RandomScalar()
 		// sign on message
-		signature, err := privKey.Sign(ArrayToSlice(data.ToBytes()))
+		signature, err := privKey.Sign(data.ToBytesS())
 		assert.Equal(t, nil, err)
 
 		// convert signature to bytes array
@@ -55,7 +55,7 @@ func TestSchnorrSignatureWithoutZ2(t *testing.T) {
 		assert.Equal(t, signature, signature2)
 
 		// verify the signature with private key
-		res := privKey.publicKey.Verify(signature2, ArrayToSlice(data.ToBytes()))
+		res := privKey.publicKey.Verify(signature2, data.ToBytesS())
 		assert.Equal(t, true, res)
 	}
 }
