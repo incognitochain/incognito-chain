@@ -152,6 +152,9 @@ const (
 	getPublicKeyRole            = "getpublickeyrole"
 	getIncognitoPublicKeyRole   = "getincognitopublickeyrole"
 	getMinerRewardFromMiningKey = "getminerrewardfromminingkey"
+
+	// slash
+	getProducersBlackList = "getproducersblacklist"
 )
 
 const (
