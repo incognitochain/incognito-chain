@@ -81,3 +81,15 @@ func paddedAppend(size uint, dst, src []byte) []byte {
 	}
 	return append(dst, src...)
 }
+
+
+func ConvertScalarArrayToBigIntArray(scalarArr []*Scalar) []*big.Int{
+	res := make([]*big.Int, len(scalarArr))
+
+	for i:=0; i<len(res); i++{
+		tmp := Reverse(scalarArr[i].GetKey())
+		res[i] = new(big.Int).SetBytes(ArrayToSlice(tmp.ToBytes()))
+	}
+
+	return res
+}
