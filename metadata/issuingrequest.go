@@ -101,7 +101,7 @@ func (iReq IssuingRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
-	keySet, err := wallet.Base58CheckDeserialize(common.CentralizedWebsitePaymentAddress)
+	keySet, err := wallet.Base58CheckDeserialize(bcr.GetCentralizedWebsitePaymentAddress())
 	if err != nil || !bytes.Equal(txr.GetSigPubKey(), keySet.KeySet.PaymentAddress.Pk) {
 		return false, NewMetadataTxError(IssuingRequestValidateTxWithBlockChainError, errors.New("the issuance request must be called by centralized website"))
 	}

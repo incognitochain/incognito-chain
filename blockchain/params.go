@@ -17,30 +17,31 @@ to differentiate network as well as addresses and keys for one network
 from those intended for use on another network
 */
 type Params struct {
-	Name                   string // Name defines a human-readable identifier for the network.
-	Net                    uint32 // Net defines the magic bytes used to identify the network.
-	DefaultPort            string // DefaultPort defines the default peer-to-peer port for the network.
-	MaxShardCommitteeSize  int
-	MinShardCommitteeSize  int
-	MaxBeaconCommitteeSize int
-	MinBeaconCommitteeSize int
-	MinShardBlockInterval  time.Duration
-	MaxShardBlockCreation  time.Duration
-	MinBeaconBlockInterval time.Duration
-	MaxBeaconBlockCreation time.Duration
-	StakingAmountShard     uint64
-	ActiveShards           int
-	GenesisBeaconBlock     *BeaconBlock // GenesisBlock defines the first block of the chain.
-	GenesisShardBlock      *ShardBlock  // GenesisBlock defines the first block of the chain.
-	BasicReward            uint64
-	RewardHalflife         uint64
-	Epoch                  uint64
-	RandomTime             uint64
-	SlashLevels            []SlashLevel
-	EthContractAddressStr  string // smart contract of ETH for bridge
-	Offset                 int    // default offset for swap policy, is used for cases that good producers length is less than max committee size
-	SwapOffset             int    // is used for case that good producers length is equal to max committee size
-	DevAddress             string
+	Name                             string // Name defines a human-readable identifier for the network.
+	Net                              uint32 // Net defines the magic bytes used to identify the network.
+	DefaultPort                      string // DefaultPort defines the default peer-to-peer port for the network.
+	MaxShardCommitteeSize            int
+	MinShardCommitteeSize            int
+	MaxBeaconCommitteeSize           int
+	MinBeaconCommitteeSize           int
+	MinShardBlockInterval            time.Duration
+	MaxShardBlockCreation            time.Duration
+	MinBeaconBlockInterval           time.Duration
+	MaxBeaconBlockCreation           time.Duration
+	StakingAmountShard               uint64
+	ActiveShards                     int
+	GenesisBeaconBlock               *BeaconBlock // GenesisBlock defines the first block of the chain.
+	GenesisShardBlock                *ShardBlock  // GenesisBlock defines the first block of the chain.
+	BasicReward                      uint64
+	RewardHalflife                   uint64
+	Epoch                            uint64
+	RandomTime                       uint64
+	SlashLevels                      []SlashLevel
+	EthContractAddressStr            string // smart contract of ETH for bridge
+	Offset                           int    // default offset for swap policy, is used for cases that good producers length is less than max committee size
+	SwapOffset                       int    // is used for case that good producers length is equal to max committee size
+	DevAddress                       string
+	CentralizedWebsitePaymentAddress string //centralized website's pubkey
 }
 
 type GenesisParams struct {
@@ -85,20 +86,21 @@ func init() {
 		StakingAmountShard:     TestNetStakingAmountShard,
 		ActiveShards:           TestNetActiveShards,
 		// blockChain parameters
-		GenesisBeaconBlock:     CreateBeaconGenesisBlock(1, genesisParamsTestnetNew),
-		GenesisShardBlock:      CreateShardGenesisBlock(1, genesisParamsTestnetNew),
-		MinShardBlockInterval:  TestNetMinShardBlkInterval,
-		MaxShardBlockCreation:  TestNetMaxShardBlkCreation,
-		MinBeaconBlockInterval: TestNetMinBeaconBlkInterval,
-		MaxBeaconBlockCreation: TestNetMaxBeaconBlkCreation,
-		BasicReward:            TestnetBasicReward,
-		RewardHalflife:         TestnetRewardHalflife,
-		Epoch:                  TestnetEpoch,
-		RandomTime:             TestnetRandomTime,
-		Offset:                 MainnetOffset,
-		SwapOffset:             MainnetSwapOffset,
-		EthContractAddressStr:  TestnetContractAddressStr,
-		DevAddress:             MainnetDevAddress,
+		GenesisBeaconBlock:               CreateBeaconGenesisBlock(1, genesisParamsTestnetNew),
+		GenesisShardBlock:                CreateShardGenesisBlock(1, genesisParamsTestnetNew),
+		MinShardBlockInterval:            TestNetMinShardBlkInterval,
+		MaxShardBlockCreation:            TestNetMaxShardBlkCreation,
+		MinBeaconBlockInterval:           TestNetMinBeaconBlkInterval,
+		MaxBeaconBlockCreation:           TestNetMaxBeaconBlkCreation,
+		BasicReward:                      TestnetBasicReward,
+		RewardHalflife:                   TestnetRewardHalflife,
+		Epoch:                            TestnetEpoch,
+		RandomTime:                       TestnetRandomTime,
+		Offset:                           MainnetOffset,
+		SwapOffset:                       MainnetSwapOffset,
+		EthContractAddressStr:            TestnetContractAddressStr,
+		DevAddress:                       MainnetDevAddress,
+		CentralizedWebsitePaymentAddress: MainnetCentralizedWebsitePaymentAddress,
 		SlashLevels: []SlashLevel{
 			SlashLevel{MinRange: 20, PunishedEpoches: 5},
 			SlashLevel{MinRange: 50, PunishedEpoches: 10},
@@ -124,20 +126,21 @@ func init() {
 		StakingAmountShard:     MainNetStakingAmountShard,
 		ActiveShards:           MainNetActiveShards,
 		// blockChain parameters
-		GenesisBeaconBlock:     CreateBeaconGenesisBlock(1, genesisParamsMainnetNew),
-		GenesisShardBlock:      CreateShardGenesisBlock(1, genesisParamsMainnetNew),
-		MinShardBlockInterval:  TestNetMinShardBlkInterval,
-		MaxShardBlockCreation:  TestNetMaxShardBlkCreation,
-		MinBeaconBlockInterval: TestNetMinBeaconBlkInterval,
-		MaxBeaconBlockCreation: TestNetMaxBeaconBlkCreation,
-		BasicReward:            MainnetBasicReward,
-		RewardHalflife:         MainnetRewardHalflife,
-		Epoch:                  MainnetEpoch,
-		RandomTime:             MainnetRandomTime,
-		Offset:                 TestnetOffset,
-		SwapOffset:             TestnetSwapOffset,
-		EthContractAddressStr:  MainEthContractAddressStr,
-		DevAddress:             TestnetDevAddress,
+		GenesisBeaconBlock:               CreateBeaconGenesisBlock(1, genesisParamsMainnetNew),
+		GenesisShardBlock:                CreateShardGenesisBlock(1, genesisParamsMainnetNew),
+		MinShardBlockInterval:            TestNetMinShardBlkInterval,
+		MaxShardBlockCreation:            TestNetMaxShardBlkCreation,
+		MinBeaconBlockInterval:           TestNetMinBeaconBlkInterval,
+		MaxBeaconBlockCreation:           TestNetMaxBeaconBlkCreation,
+		BasicReward:                      MainnetBasicReward,
+		RewardHalflife:                   MainnetRewardHalflife,
+		Epoch:                            MainnetEpoch,
+		RandomTime:                       MainnetRandomTime,
+		Offset:                           TestnetOffset,
+		SwapOffset:                       TestnetSwapOffset,
+		EthContractAddressStr:            MainEthContractAddressStr,
+		DevAddress:                       TestnetDevAddress,
+		CentralizedWebsitePaymentAddress: TestnetCentralizedWebsitePaymentAddress,
 		SlashLevels: []SlashLevel{
 			SlashLevel{MinRange: 20, PunishedEpoches: 5},
 			SlashLevel{MinRange: 50, PunishedEpoches: 10},
