@@ -38,6 +38,8 @@ type Params struct {
 	RandomTime             uint64
 	SlashLevels            []SlashLevel
 	EthContractAddressStr  string // smart contract of ETH for bridge
+	Offset                 int    // default offset for swap policy, is used for cases that good producers length is less than max committee size
+	SwapOffset             int    // is used for case that good producers length is equal to max committee size
 }
 
 type GenesisParams struct {
@@ -92,6 +94,8 @@ func init() {
 		RewardHalflife:         TestnetRewardHalflife,
 		Epoch:                  TestnetEpoch,
 		RandomTime:             TestnetRandomTime,
+		Offset:                 MainnetOffset,
+		SwapOffset:             MainnetSwapOffset,
 		EthContractAddressStr:  TestnetContractAddressStr,
 		SlashLevels: []SlashLevel{
 			SlashLevel{MinRange: 20, PunishedEpoches: 5},
@@ -128,6 +132,8 @@ func init() {
 		RewardHalflife:         MainnetRewardHalflife,
 		Epoch:                  MainnetEpoch,
 		RandomTime:             MainnetRandomTime,
+		Offset:                 TestnetOffset,
+		SwapOffset:             TestnetSwapOffset,
 		EthContractAddressStr:  MainEthContractAddressStr,
 		SlashLevels: []SlashLevel{
 			SlashLevel{MinRange: 20, PunishedEpoches: 5},
