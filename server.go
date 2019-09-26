@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/peerv2"
 	"io/ioutil"
 	"log"
 	"net"
@@ -17,6 +16,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/peerv2"
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/option"
@@ -624,9 +625,12 @@ func (serverObj Server) p2pHandler() {
 	ip, port := peerv2.ParseListenner(cfg.Listener, "127.0.0.1", 9433)
 	host := peerv2.NewHost(version(), ip, port, []byte(cfg.PrivateKey))
 
+	miningKeys := serverObj.consensusEngine.GetMiningPublicKeys()
+	pubkey := miningKeys[common.BlsConsensus]
 	conn := &peerv2.ConnManager{
 		LocalHost:            host,
 		DiscoverPeersAddress: cfg.DiscoverPeersAddress,
+		IdentityKey:          &pubkey,
 	}
 	conn.Start()
 	//

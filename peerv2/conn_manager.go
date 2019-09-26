@@ -3,6 +3,8 @@ package peerv2
 import (
 	"context"
 	"fmt"
+
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
 )
@@ -10,10 +12,10 @@ import (
 type ConnManager struct {
 	LocalHost            *Host
 	DiscoverPeersAddress string
+	IdentityKey          *incognitokey.CommitteePublicKey
 }
 
 func (s *ConnManager) Start() {
-
 	//connect to proxy node
 	proxyIP, proxyPort := ParseListenner(s.DiscoverPeersAddress, "127.0.0.1", 9300)
 	ipfsaddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", proxyIP, proxyPort))
@@ -29,7 +31,8 @@ func (s *ConnManager) Start() {
 
 	//client on this node
 	client := GRPCService_Client{s.LocalHost.GRPC}
-	res, err := client.ProxyRegister(context.Background(), peerid, "mypub")
+	pubkey, _ := s.IdentityKey.ToBase58()
+	res, err := client.ProxyRegister(context.Background(), peerid, pubkey)
 
 	fmt.Println(res, err)
 }
