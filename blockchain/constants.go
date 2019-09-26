@@ -55,6 +55,7 @@ const (
 	MainnetBasicReward                = 400000000 //40 mili PRV
 	MainnetRewardHalflife             = 3155760   //1 year, reduce 12.5% per year
 	MainnetGenesisblockPaymentAddress = "1Uv2zzR4LgfX8ToQe8ub3bYcCLk3uDU1sm9U9hiu9EKYXoS77UdikfT9s8d5YjhsTJm61eazsMwk2otFZBYpPHwiMn8z6bKWWJRspsLky"
+	MainEthContractAddressStr         = "0x10e492e6383DfE37d0d0B7B86015AE0876e88663"
 	// ------------- end Mainnet --------------------------------------
 )
 
@@ -99,6 +100,7 @@ const (
 	TestnetBasicReward                = 400000000 //40 mili PRV
 	TestnetRewardHalflife             = 3155760   //1 year, reduce 12.5% per year
 	TestnetGenesisBlockPaymentAddress = "1Uv46Pu4pqBvxCcPw7MXhHfiAD5Rmi2xgEE7XB6eQurFAt4vSYvfyGn3uMMB1xnXDq9nRTPeiAZv5gRFCBDroRNsXJF1sxPSjNQtivuHk"
+	TestnetContractAddressStr         = "0x10e492e6383DfE37d0d0B7B86015AE0876e88663"
 )
 
 // for beacon

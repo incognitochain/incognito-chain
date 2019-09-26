@@ -37,6 +37,7 @@ type Params struct {
 	Epoch                  uint64
 	RandomTime             uint64
 	SlashLevels            []SlashLevel
+	EthContractAddressStr  string // smart contract of ETH for bridge
 }
 
 type GenesisParams struct {
@@ -91,6 +92,7 @@ func init() {
 		RewardHalflife:         TestnetRewardHalflife,
 		Epoch:                  TestnetEpoch,
 		RandomTime:             TestnetRandomTime,
+		EthContractAddressStr:  TestnetContractAddressStr,
 		SlashLevels: []SlashLevel{
 			SlashLevel{MinRange: 20, PunishedEpoches: 5},
 			SlashLevel{MinRange: 50, PunishedEpoches: 10},
@@ -126,6 +128,7 @@ func init() {
 		RewardHalflife:         MainnetRewardHalflife,
 		Epoch:                  MainnetEpoch,
 		RandomTime:             MainnetRandomTime,
+		EthContractAddressStr:  MainEthContractAddressStr,
 		SlashLevels: []SlashLevel{
 			SlashLevel{MinRange: 20, PunishedEpoches: 5},
 			SlashLevel{MinRange: 50, PunishedEpoches: 10},
