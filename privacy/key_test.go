@@ -8,7 +8,7 @@ import (
 func TestKey(t *testing.T) {
 	for i:=0; i< 1000; i ++ {
 		// random seed
-		seed := ArrayToSlice(RandomScalar().ToBytes())
+		seed := RandomScalar().ToBytesS()
 
 		// generate private key from seed
 		privateKey := GeneratePrivateKey(seed)
@@ -17,8 +17,8 @@ func TestKey(t *testing.T) {
 		publicKey := GeneratePublicKey(privateKey)
 
 		// check public key
-		publicKeyPrime := new(Point).ScalarMultBase(new(Scalar).FromBytes(SliceToArray(privateKey)))
-		assert.Equal(t, publicKeyPrime.ToBytes(), SliceToArray(publicKey))
+		publicKeyPrime := new(Point).ScalarMultBase(new(Scalar).FromBytes(privateKey))
+		assert.Equal(t, publicKeyPrime.ToBytes(), publicKey)
 
 		// generate receiving key from private key
 		receivingKey := GenerateReceivingKey(privateKey)
@@ -27,8 +27,8 @@ func TestKey(t *testing.T) {
 		transmissionKey := GenerateTransmissionKey(receivingKey)
 
 		// decompress transmission key to transmissionKeyPoint
-		transmissionKeyPrime := new(Point).ScalarMultBase(new(Scalar).FromBytes(SliceToArray(receivingKey)))
-		assert.Equal(t, transmissionKeyPrime.ToBytes(), SliceToArray(transmissionKey))
+		transmissionKeyPrime := new(Point).ScalarMultBase(new(Scalar).FromBytes(receivingKey))
+		assert.Equal(t, transmissionKeyPrime.ToBytes(), transmissionKey)
 
 		// generate payment address from private key
 		paymentAddress := GeneratePaymentAddress(privateKey)
@@ -44,15 +44,5 @@ func TestKey(t *testing.T) {
 
 		assert.Equal(t, paymentAddress.Pk, paymentAddress2.Pk)
 		assert.Equal(t, paymentAddress.Tk, paymentAddress2.Tk)
-	}
-}
-
-
-func TestArrayToSlice(t *testing.T) {
-	for i:=0; i<100000; i++{
-		num := RandomScalar()
-
-		bytes := ArrayToSlice(num.key.ToBytes())
-		assert.Equal(t, Ed25519KeySize, len(bytes))
 	}
 }

@@ -1,42 +1,31 @@
 package aggregaterange
 
 import (
-	"sync"
-
 	"github.com/incognitochain/incognito-chain/privacy"
+	C25519 "github.com/incognitochain/incognito-chain/privacy/curve25519"
 )
 
 /***** Bullet proof component *****/
+
+const (
+	maxExp = 64
+	numOutputParam = 32
+	maxOutputNumber = 256
+)
 
 // bulletproofParams includes all generator for aggregated range proof
 type bulletproofParams struct {
 	g []*privacy.Point
 	h []*privacy.Point
 	u *privacy.Point
+	gPrecomputed [][8]C25519.CachedGroupElement
+	hPrecomputed [][8]C25519.CachedGroupElement
+
+	gPreMultiScalar [][8]C25519.CachedGroupElement
+	hPreMultiScalar [][8]C25519.CachedGroupElement
 }
 
-
-func newBulletproofParamsPrime(m int) *bulletproofParams {
-	gen := new(bulletproofParams)
-	capacity := 64 * m // fixed value
-	gen.g = make([]*privacy.Point, capacity)
-	gen.h = make([]*privacy.Point, capacity)
-
-	var wg sync.WaitGroup
-	wg.Add(capacity)
-	for i := 0; i < capacity; i++ {
-		go func(i int, wg *sync.WaitGroup) {
-			defer wg.Done()
-			gen.g[i] = privacy.HashToPoint(int64(5 + i))
-			gen.h[i] = privacy.HashToPoint(int64(5 + i + capacity))
-		}(i, &wg)
-	}
-	wg.Wait()
-	gen.u = new(privacy.Point)
-	gen.u = privacy.HashToPoint(int64(5 + 2*capacity))
-
-	return gen
-}
+var AggParam = newBulletproofParams(numOutputParam)
 
 func newBulletproofParams(m int) *bulletproofParams {
 	gen := new(bulletproofParams)
@@ -44,18 +33,29 @@ func newBulletproofParams(m int) *bulletproofParams {
 	gen.g = make([]*privacy.Point, capacity)
 	gen.h = make([]*privacy.Point, capacity)
 
-	var wg sync.WaitGroup
-	wg.Add(capacity)
+	gen.gPrecomputed = make([][8]C25519.CachedGroupElement, capacity)
+	gen.hPrecomputed = make([][8]C25519.CachedGroupElement, capacity)
+
+	gen.gPreMultiScalar = make([][8]C25519.CachedGroupElement, capacity)
+	gen.hPreMultiScalar = make([][8]C25519.CachedGroupElement, capacity)
+
 	for i := 0; i < capacity; i++ {
-		go func(i int, wg *sync.WaitGroup) {
-			defer wg.Done()
-			gen.g[i] = privacy.HashToPoint(int64(5 + i))
-			gen.h[i] = privacy.HashToPoint(int64(5 + i + maxOutputNumber*maxExp))
-		}(i, &wg)
+		gen.g[i] = privacy.HashToPointFromIndex(int64(5 + i))
+		tmpKey := gen.g[i].GetKey()
+		gE := new(C25519.ExtendedGroupElement)
+		gE.FromBytes(&tmpKey)
+		C25519.GePrecompute(&gen.gPrecomputed[i], gE)
+		gen.gPreMultiScalar[i] = C25519.PreComputeForMultiScalar(&tmpKey)
+
+		gen.h[i] = privacy.HashToPointFromIndex(int64(5 + i + maxOutputNumber*maxExp))
+		tmpKey = gen.h[i].GetKey()
+		hE := new(C25519.ExtendedGroupElement)
+		hE.FromBytes(&tmpKey)
+		C25519.GePrecompute(&gen.hPrecomputed[i], hE)
+		gen.hPreMultiScalar[i] = C25519.PreComputeForMultiScalar(&tmpKey)
 	}
-	wg.Wait()
 	gen.u = new(privacy.Point)
-	gen.u = privacy.HashToPoint(int64(5 + 2*maxOutputNumber*maxExp))
+	gen.u = privacy.HashToPointFromIndex(int64(5 + 2*maxOutputNumber*maxExp))
 
 	return gen
 }
@@ -65,34 +65,46 @@ func addBulletproofParams(extraNumber int) *bulletproofParams {
 	newCapacity := currentCapacity + maxExp * extraNumber
 
 	for i := 0; i < newCapacity - currentCapacity; i++ {
-		AggParam.g = append(AggParam.g, privacy.HashToPoint(int64(5 + i + currentCapacity)))
-		AggParam.h = append(AggParam.h, privacy.HashToPoint(int64(5 + i + currentCapacity + maxOutputNumber*maxExp)))
+		AggParam.g = append(AggParam.g, privacy.HashToPointFromIndex(int64(5 + i + currentCapacity)))
+		tmpKey := AggParam.g[i].GetKey()
+		gE := new(C25519.ExtendedGroupElement)
+		gE.FromBytes(&tmpKey)
+		var gPre [8]C25519.CachedGroupElement
+		C25519.GePrecompute(&gPre, gE)
+		AggParam.gPrecomputed = append(AggParam.gPrecomputed, gPre)
+		AggParam.gPreMultiScalar = append(AggParam.gPreMultiScalar, C25519.PreComputeForMultiScalar(&tmpKey))
+
+		AggParam.h = append(AggParam.h, privacy.HashToPointFromIndex(int64(5 + i + currentCapacity + maxOutputNumber*maxExp)))
+		tmpKey = AggParam.h[i].GetKey()
+		hE := new(C25519.ExtendedGroupElement)
+		hE.FromBytes(&tmpKey)
+		var hPre [8]C25519.CachedGroupElement
+		C25519.GePrecompute(&hPre, hE)
+		AggParam.hPrecomputed = append(AggParam.hPrecomputed, hPre)
+		AggParam.hPreMultiScalar = append(AggParam.hPreMultiScalar, C25519.PreComputeForMultiScalar(&tmpKey))
+
+
 	}
 
 	return AggParam
 }
 
-var AggParam = newBulletproofParams(numOutputParam)
-
 func generateChallengeForAggRange(AggParam *bulletproofParams, values [][]byte) *privacy.Scalar {
 	bytes := []byte{}
 	for i := 0; i < len(AggParam.g); i++ {
-		bytes = append(bytes, privacy.ArrayToSlice(AggParam.g[i].ToBytes())...)
+		bytes = append(bytes, AggParam.g[i].ToBytesS()...)
 	}
 
 	for i := 0; i < len(AggParam.h); i++ {
-		bytes = append(bytes, privacy.ArrayToSlice(AggParam.h[i].ToBytes())...)
+		bytes = append(bytes, AggParam.h[i].ToBytesS()...)
 	}
 
-	bytes = append(bytes, privacy.ArrayToSlice(AggParam.u.ToBytes())...)
+	bytes = append(bytes, AggParam.u.ToBytesS()...)
 
 	for i := 0; i < len(values); i++ {
 		bytes = append(bytes, values[i]...)
 	}
 
-	//hash := common.HashB(bytes)
 	hash := privacy.HashToScalar(bytes)
-
-	//res := new(privacy.Scalar).FromBytes(privacy.SliceToArray(hash))
 	return hash
 }

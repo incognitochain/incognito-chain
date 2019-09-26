@@ -133,14 +133,14 @@ func (pro SNNoPrivacyProof) Bytes() []byte {
 	}
 
 	var bytes []byte
-	bytes = append(bytes, privacy.ArrayToSlice(pro.stmt.output.ToBytes())...)
-	bytes = append(bytes, privacy.ArrayToSlice(pro.stmt.vKey.ToBytes())...)
-	bytes = append(bytes, privacy.ArrayToSlice(pro.stmt.input.ToBytes())...)
+	bytes = append(bytes, pro.stmt.output.ToBytesS()...)
+	bytes = append(bytes, pro.stmt.vKey.ToBytesS()...)
+	bytes = append(bytes, pro.stmt.input.ToBytesS()...)
 
-	bytes = append(bytes, privacy.ArrayToSlice(pro.tSeed.ToBytes())...)
-	bytes = append(bytes, privacy.ArrayToSlice(pro.tOutput.ToBytes())...)
+	bytes = append(bytes, pro.tSeed.ToBytesS()...)
+	bytes = append(bytes, pro.tOutput.ToBytesS()...)
 
-	bytes = append(bytes, privacy.ArrayToSlice(pro.zSeed.ToBytes())...)
+	bytes = append(bytes, pro.zSeed.ToBytesS()...)
 
 	return bytes
 }
@@ -198,7 +198,7 @@ func (wit SNNoPrivacyWitness) Prove(mess []byte) (*SNNoPrivacyProof, error) {
 	if mess == nil {
 		// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
 		// recheck frombytes is valid scalar
-		x = utils.GenerateChallenge([][]byte{privacy.ArrayToSlice(tSK.ToBytes()), privacy.ArrayToSlice(tE.ToBytes())})
+		x = utils.GenerateChallenge([][]byte{tSK.ToBytesS(), tE.ToBytesS()})
 	} else {
 		x.FromBytes(privacy.SliceToArray(mess))
 	}
@@ -217,7 +217,7 @@ func (pro SNNoPrivacyProof) Verify(mess []byte) (bool, error) {
 	x := new(privacy.Scalar)
 	if mess == nil {
 		// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
-		x = utils.GenerateChallenge([][]byte{privacy.ArrayToSlice(pro.tSeed.ToBytes()), privacy.ArrayToSlice(pro.tOutput.ToBytes())})
+		x = utils.GenerateChallenge([][]byte{pro.tSeed.ToBytesS(), pro.tOutput.ToBytesS()})
 	} else {
 		x.FromBytes(privacy.SliceToArray(mess))
 	}
@@ -228,7 +228,7 @@ func (pro SNNoPrivacyProof) Verify(mess []byte) (bool, error) {
 	rightPoint1 := new(privacy.Point).ScalarMult(pro.stmt.vKey, x)
 	rightPoint1 = rightPoint1.Add(rightPoint1, pro.tSeed)
 
-	if !privacy.IsEqual(leftPoint1, rightPoint1) {
+	if !privacy.IsPointEqual(leftPoint1, rightPoint1) {
 		privacy.Logger.Log.Errorf("verify serial number no privacy proof statement 1 failed")
 		return false, errors.New("verify serial number no privacy proof statement 1 failed")
 	}
@@ -240,7 +240,7 @@ func (pro SNNoPrivacyProof) Verify(mess []byte) (bool, error) {
 	rightPoint2 := new (privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex], x)
 	rightPoint2 = rightPoint2.Add(rightPoint2, pro.tOutput)
 
-	if !privacy.IsEqual(leftPoint2, rightPoint2) {
+	if !privacy.IsPointEqual(leftPoint2, rightPoint2) {
 		privacy.Logger.Log.Errorf("verify serial number no privacy proof statement 2 failed")
 		return false, errors.New("verify serial number no privacy proof statement 2 failed")
 	}

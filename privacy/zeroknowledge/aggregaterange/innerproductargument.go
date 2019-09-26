@@ -54,16 +54,16 @@ func (proof InnerProductProof) Bytes() []byte {
 
 	res = append(res, byte(len(proof.l)))
 	for _, l := range proof.l {
-		res = append(res, privacy.ArrayToSlice(l.ToBytes())...)
+		res = append(res, l.ToBytesS()...)
 	}
 
 	for _, r := range proof.r {
-		res = append(res, privacy.ArrayToSlice(r.ToBytes())...)
+		res = append(res, r.ToBytesS()...)
 	}
 
-	res = append(res, privacy.ArrayToSlice(proof.a.ToBytes())...)
-	res = append(res, privacy.ArrayToSlice(proof.b.ToBytes())...)
-	res = append(res, privacy.ArrayToSlice(proof.p.ToBytes())...)
+	res = append(res, proof.a.ToBytesS()...)
+	res = append(res, proof.b.ToBytesS()...)
+	res = append(res, proof.p.ToBytesS()...)
 
 	return res
 }
@@ -166,7 +166,7 @@ func (wit InnerProductWitness) Prove(AggParam *bulletproofParams) (*InnerProduct
 		proof.r = append(proof.r, R)
 
 		// calculate challenge x = hash(G || H || u || p ||  l || r)
-		x := generateChallengeForAggRange(AggParam, [][]byte{privacy.ArrayToSlice(p.ToBytes()), privacy.ArrayToSlice(L.ToBytes()), privacy.ArrayToSlice(R.ToBytes())})
+		x := generateChallengeForAggRange(AggParam, [][]byte{p.ToBytesS(), L.ToBytesS(), R.ToBytesS()})
 
 		xInverse := new(privacy.Scalar).Invert(x)
 
@@ -233,7 +233,7 @@ func (proof InnerProductProof) Verify(AggParam *bulletproofParams) bool {
 	for i := range proof.l {
 		nPrime := n / 2
 		// calculate challenge x = hash(G || H || u || p ||  l || r)
-		x := generateChallengeForAggRange(AggParam, [][]byte{privacy.ArrayToSlice(p.ToBytes()), privacy.ArrayToSlice(proof.l[i].ToBytes()), privacy.ArrayToSlice(proof.r[i].ToBytes())})
+		x := generateChallengeForAggRange(AggParam, [][]byte{p.ToBytesS(), proof.l[i].ToBytesS(), proof.r[i].ToBytesS()})
 		xInverse := new(privacy.Scalar).Invert(x)
 
 		// calculate GPrime, HPrime, PPrime for the next loop
@@ -287,7 +287,7 @@ func (proof InnerProductProof) Verify(AggParam *bulletproofParams) bool {
 	rightPoint.Add(rightPoint, new(privacy.Point).ScalarMult(H[0], proof.b))
 	rightPoint.Add(rightPoint, new(privacy.Point).ScalarMult(AggParam.u, c))
 
-	res := privacy.IsEqual(rightPoint, p)
+	res := privacy.IsPointEqual(rightPoint, p)
 	if !res {
 		privacy.Logger.Log.Error("Inner product argument failed:")
 		privacy.Logger.Log.Error("p: %v\n", p)
