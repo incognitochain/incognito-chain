@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"reflect"
 	"sort"
 	"strconv"
@@ -69,7 +70,6 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLi
 	if err != nil {
 		return nil, err
 	}
-	beaconBestState.InitRandomClient(blockGenerator.chain.config.RandomClient)
 	//======Build Header Essential Data=======
 	// beaconBlock.Header.ProducerAddress = *producerAddress
 	beaconBlock.Header.Version = BEACON_BLOCK_VERSION
@@ -413,9 +413,9 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 		//==================================
 		assignedCandidates := make(map[byte][]incognitokey.CommitteePublicKey)
 		if chainTimeStamp > beaconBestState.CurrentRandomTimeStamp {
-			randomInstruction, rand := beaconBestState.generateRandomInstruction(beaconBestState.CurrentRandomTimeStamp)
+			randomInstruction, rand := beaconBestState.generateRandomInstruction(beaconBestState.CurrentRandomTimeStamp, blockchain.config.RandomClient)
 			instructions = append(instructions, randomInstruction)
-			Logger.log.Infof("Beacon Producer found Random Instruction at Block Height %+v", randomInstruction, newBeaconHeight)
+			Logger.log.Infof("Beacon Producer found Random Instruction at Block Height %+v, %+v", randomInstruction, newBeaconHeight)
 			for _, candidate := range shardCandidates {
 				candidateStr, _ := candidate.ToBase58()
 				shardID := calculateCandidateShardID(candidateStr, rand, beaconBestState.ActiveShards)
@@ -686,7 +686,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 }
 
 // ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
-func (beaconBestState *BeaconBestState) generateRandomInstruction(timestamp int64) ([]string, int64) {
+func (beaconBestState *BeaconBestState) generateRandomInstruction(timestamp int64, randomClient btc.RandomClient) ([]string, int64) {
 	//COMMENT FOR TESTING
 	if !TestRandom {
 		var (
@@ -697,7 +697,7 @@ func (beaconBestState *BeaconBestState) generateRandomInstruction(timestamp int6
 			err            error
 		)
 		for {
-			blockHeight, chainTimestamp, nonce, err = beaconBestState.randomClient.GetNonceByTimestamp(timestamp)
+			blockHeight, chainTimestamp, nonce, err = randomClient.GetNonceByTimestamp(timestamp)
 			if err == nil {
 				break
 			}
