@@ -8,7 +8,7 @@ import (
 )
 
 // Data structure for a polynomial
-// Just an array in reverse
+// Just an array in Reverse
 // f(x) = 3x^3 + 2x + 1 => [1 2 0 3]
 type Poly []*big.Int
 
