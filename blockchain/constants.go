@@ -29,7 +29,7 @@ const (
 	GetValidBlock                = 10
 	CheckForce                   = true
 	GenesisBlockTime             = "2019-09-25T00:00:00.000Z"
-	TestRandom                   = true
+	TestRandom                   = false
 )
 
 // CONSTANT for network MAINNET
