@@ -1352,7 +1352,7 @@ func (blockchain *BlockChain) GetAllCoinID() ([]common.Hash, error) {
 
 func (blockchain *BlockChain) BuildInstRewardForDev(epoch uint64, totalReward map[common.Hash]uint64) ([][]string, error) {
 	resInst := [][]string{}
-	devRewardInst, err := metadata.BuildInstForDevReward(totalReward)
+	devRewardInst, err := metadata.BuildInstForDevReward(totalReward, blockchain.config.ChainParams.DevAddress)
 	if err != nil {
 		Logger.log.Errorf("BuildInstRewardForDev error %+v\n Totalreward: %+v, epoch: %+v\n", err, totalReward, epoch)
 		return nil, err
