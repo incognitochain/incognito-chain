@@ -3,29 +3,29 @@
 ###### MULTI_MEMBERS
 # Shard 0
 if [ "$1" == "shard0-0" ]; then
-./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rqEd6a7v4PfWu9CwXFAmRyazCNRNEQi8G8eGBYtrg2Cix6GNYhhs3tz1JRPxJ4FsHq3mH7fJBq3bC8c3DJM3noWAQE8eY4sMeHxXYDe" --nodemode "auto" --datadir "data/shard0-0" --listen "0.0.0.0:9434" --externaladdress "0.0.0.0:9434" --norpcauth --rpclisten "0.0.0.0:9334" --enablewallet --wallet "wallet1" --walletpassphrase "12345678" --walletautoinit --rpcwslisten "0.0.0.0:19334"
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rqEd6a7v4PfWu9CwXFAmRyazCNRNEQi8G8eGBYtrg2Cix6GNYhhs3tz1JRPxJ4FsHq3mH7fJBq3bC8c3DJM3noWAQE8eY4sMeHxXYDe" --nodemode "auto" --datadir "data/shard0-0" --listen "0.0.0.0:9434" --externaladdress "0.0.0.0:9434" --norpcauth --rpclisten "0.0.0.0:9334" --enablewallet --wallet "wallet1" --walletpassphrase "12345678" --walletautoinit --rpcwslisten "0.0.0.0:19334" --btcclient 1 --btcclientip "159.65.142.153" --btcclientport "8332" --btcclientusername "admin" --btcclientpassword "autonomous"
 fi
 if [ "$1" == "shard0-1" ]; then
-./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rtidnuL3BBzhfVptK6mPmAr2AttXgmcdE8xZwYyQd3t7t5a16dDPPnSSx4KzzWAvM7AgXo8UQBCo5o4Wn1K6Cs27hHCjQpSY8UjV5Gy" --nodemode "auto" --datadir "data/shard0-1" --listen "0.0.0.0:9435" --externaladdress "0.0.0.0:9435" --norpcauth --rpclisten "0.0.0.0:9335" --rpcwslisten "0.0.0.0:19335"
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rtidnuL3BBzhfVptK6mPmAr2AttXgmcdE8xZwYyQd3t7t5a16dDPPnSSx4KzzWAvM7AgXo8UQBCo5o4Wn1K6Cs27hHCjQpSY8UjV5Gy" --nodemode "auto" --datadir "data/shard0-1" --listen "0.0.0.0:9435" --externaladdress "0.0.0.0:9435" --norpcauth --rpclisten "0.0.0.0:9335" --rpcwslisten "0.0.0.0:19335" --btcclient 1 --btcclientip "159.65.142.153" --btcclientport "8332" --btcclientusername "admin" --btcclientpassword "autonomous"
 fi
 if [ "$1" == "shard0-2" ]; then
-./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rtxdpGEx5H7MHi5EXGKZhKAxgbEkRv1d8TH1cbqKzc5j4mXEKC2NUCeCSQRA3zDeUQxKUW54sAGzpqFi86JQGaPAh4Ao4Gqo7q51yGw" --nodemode "auto" --datadir "data/shard0-2" --listen "0.0.0.0:9436" --externaladdress "0.0.0.0:9436" --norpcauth --rpclisten "0.0.0.0:9336"
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rtxdpGEx5H7MHi5EXGKZhKAxgbEkRv1d8TH1cbqKzc5j4mXEKC2NUCeCSQRA3zDeUQxKUW54sAGzpqFi86JQGaPAh4Ao4Gqo7q51yGw" --nodemode "auto" --datadir "data/shard0-2" --listen "0.0.0.0:9436" --externaladdress "0.0.0.0:9436" --norpcauth --rpclisten "0.0.0.0:9336" --btcclient 1 --btcclientip "159.65.142.153" --btcclientport "8332" --btcclientusername "admin" --btcclientpassword "autonomous"
 fi
 if [ "$1" == "shard0-3" ]; then
-./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8ruUPhxinaPG89z372Gza7B7G7ZZHkHaXa3PvARVpqdAjB6Nwe32Qtt8fV3yCEA4jgnZGuYHsS2Un89juYwv9Uqpw9v5b8cunXmtoULJ" --nodemode "auto" --datadir "data/shard0-3" --listen "0.0.0.0:9437" --externaladdress "0.0.0.0:9437" --norpcauth --rpclisten "0.0.0.0:9337"
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8ruUPhxinaPG89z372Gza7B7G7ZZHkHaXa3PvARVpqdAjB6Nwe32Qtt8fV3yCEA4jgnZGuYHsS2Un89juYwv9Uqpw9v5b8cunXmtoULJ" --nodemode "auto" --datadir "data/shard0-3" --listen "0.0.0.0:9437" --externaladdress "0.0.0.0:9437" --norpcauth --rpclisten "0.0.0.0:9337" --btcclient 1 --btcclientip "159.65.142.153" --btcclientport "8332" --btcclientusername "admin" --btcclientpassword "autonomous"
 fi
 # Shard 1
 if [ "$1" == "shard1-0" ]; then
-./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8roCAzRKCBy3VpSwujBaM2iPJZ82Sb5dtYJiyS1Cknax3bxd3x9aynNkZmoNsNLJWb8NMtJZXf9S68RHHy5W9iuvVErrd1Q37eW3uerc" --nodemode "auto" --datadir "data/shard1-0" --listen "0.0.0.0:9438" --externaladdress "0.0.0.0:9438" --norpcauth --rpclisten "0.0.0.0:9338" --enablewallet --wallet "wallet2" --walletpassphrase "12345678" --walletautoinit --rpcwslisten "127.0.0.1:19338"
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8roCAzRKCBy3VpSwujBaM2iPJZ82Sb5dtYJiyS1Cknax3bxd3x9aynNkZmoNsNLJWb8NMtJZXf9S68RHHy5W9iuvVErrd1Q37eW3uerc" --nodemode "auto" --datadir "data/shard1-0" --listen "0.0.0.0:9438" --externaladdress "0.0.0.0:9438" --norpcauth --rpclisten "0.0.0.0:9338" --enablewallet --wallet "wallet2" --walletpassphrase "12345678" --walletautoinit --rpcwslisten "127.0.0.1:19338" --btcclient 1 --btcclientip "159.65.142.153" --btcclientport "8332" --btcclientusername "admin" --btcclientpassword "autonomous"
 fi
 if [ "$1" == "shard1-1" ]; then
-./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rpHmXL5Eb9tW4wuKT3sh5ADthEBKJPw8thFreVNJyvY6o9iRTbdomrCC3VchVmLYox6pnxS7pvNzwdPrykokmaNQa1Q1ZYfNVEDMwKS" --nodemode "auto" --datadir "data/shard1-1" --listen "0.0.0.0:9439" --externaladdress "0.0.0.0:9439" --norpcauth --rpclisten "0.0.0.0:9339" --rpcwslisten "127.0.0.1:19339"
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rpHmXL5Eb9tW4wuKT3sh5ADthEBKJPw8thFreVNJyvY6o9iRTbdomrCC3VchVmLYox6pnxS7pvNzwdPrykokmaNQa1Q1ZYfNVEDMwKS" --nodemode "auto" --datadir "data/shard1-1" --listen "0.0.0.0:9439" --externaladdress "0.0.0.0:9439" --norpcauth --rpclisten "0.0.0.0:9339" --rpcwslisten "127.0.0.1:19339" --btcclient 1 --btcclientip "159.65.142.153" --btcclientport "8332" --btcclientusername "admin" --btcclientpassword "autonomous"
 fi
 if [ "$1" == "shard1-2" ]; then
-./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rqXccVRRjL4CGxoJUD3Fya7rzfWXXF5uakQokbNuiiWSabr78SwnXLEqSozeJZzgUWajgZkUbMJmoAUnkVvkDgYTEBzjhKeU9ECNPtY" --nodemode "auto" --datadir "data/shard1-2" --listen "0.0.0.0:9440" --externaladdress "0.0.0.0:9440" --norpcauth --rpclisten "0.0.0.0:9340"
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rqXccVRRjL4CGxoJUD3Fya7rzfWXXF5uakQokbNuiiWSabr78SwnXLEqSozeJZzgUWajgZkUbMJmoAUnkVvkDgYTEBzjhKeU9ECNPtY" --nodemode "auto" --datadir "data/shard1-2" --listen "0.0.0.0:9440" --externaladdress "0.0.0.0:9440" --norpcauth --rpclisten "0.0.0.0:9340" --btcclient 1 --btcclientip "159.65.142.153" --btcclientport "8332" --btcclientusername "admin" --btcclientpassword "autonomous"
 fi
 if [ "$1" == "shard1-3" ]; then
-./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rrYgmYrxDRyBoWHw7RMksy2RoETHC9DRXTMLTDrN6gid6M3wsvYfUZ9Gn9vsFHC25tujQBkvYKeJNAtUAActG69V6Rp6rgy69g8zcrA" --nodemode "auto" --datadir "data/shard1-3" --listen "0.0.0.0:9441" --externaladdress "0.0.0.0:9441" --norpcauth --rpclisten "0.0.0.0:9341"
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rrYgmYrxDRyBoWHw7RMksy2RoETHC9DRXTMLTDrN6gid6M3wsvYfUZ9Gn9vsFHC25tujQBkvYKeJNAtUAActG69V6Rp6rgy69g8zcrA" --nodemode "auto" --datadir "data/shard1-3" --listen "0.0.0.0:9441" --externaladdress "0.0.0.0:9441" --norpcauth --rpclisten "0.0.0.0:9341" --btcclient 1 --btcclientip "159.65.142.153" --btcclientport "8332" --btcclientusername "admin" --btcclientpassword "autonomous"
 fi
 # Shard 2
 if [ "$1" == "shard2-0" ]; then
@@ -55,16 +55,16 @@ if [ "$1" == "shard3-3" ]; then
 fi
 # Beacon
 if [ "$1" == "beacon-0" ]; then
-./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8sDsj4tnDQ7mv5E26hfrHpsjyueJybmyJyKfn2uB7NbVY8pAzQEiLrKURuqihV8EvwrJoMLoz2apTyJWPYTQeEPMtDgnAKXjCKGPmvkb" --nodemode "auto" --datadir "data/beacon-0" --listen "0.0.0.0:9450" --externaladdress "0.0.0.0:9450" --norpcauth --rpclisten "0.0.0.0:9350"
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8sDsj4tnDQ7mv5E26hfrHpsjyueJybmyJyKfn2uB7NbVY8pAzQEiLrKURuqihV8EvwrJoMLoz2apTyJWPYTQeEPMtDgnAKXjCKGPmvkb" --nodemode "auto" --datadir "data/beacon-0" --listen "0.0.0.0:9450" --externaladdress "0.0.0.0:9450" --norpcauth --rpclisten "0.0.0.0:9350" --btcclient 1 --btcclientip "159.65.142.153" --btcclientport "8332" --btcclientusername "admin" --btcclientpassword "autonomous"
 fi
 if [ "$1" == "beacon-1" ]; then
-./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8sFHLcDnYJyndjBYs7UFRQGnzq9MtDcr6xsgQ8wfZZ7kXRFexnGxSA7u1SB7iJXoWXRB2ono5BHzKb1eqzTATEWTA32G82GcGc2krrSm" --nodemode "auto" --datadir "data/beacon-1" --listen "0.0.0.0:9451" --externaladdress "0.0.0.0:9451" --norpcauth --rpclisten "0.0.0.0:9351"
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8sFHLcDnYJyndjBYs7UFRQGnzq9MtDcr6xsgQ8wfZZ7kXRFexnGxSA7u1SB7iJXoWXRB2ono5BHzKb1eqzTATEWTA32G82GcGc2krrSm" --nodemode "auto" --datadir "data/beacon-1" --listen "0.0.0.0:9451" --externaladdress "0.0.0.0:9451" --norpcauth --rpclisten "0.0.0.0:9351" --btcclient 1 --btcclientip "159.65.142.153" --btcclientport "8332" --btcclientusername "admin" --btcclientpassword "autonomous"
 fi
 if [ "$1" == "beacon-2" ]; then
-./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8sL2pTLHdZuTuZSFAeDq6rzBruAqvyMYwKyav9TKUc1zKTz3ScSbT44MG4GgiN9KxC1234j63fFgBE88pHfE1Wbrz6qbm6vGohhNua2h" --nodemode "auto" --datadir "data/beacon-2" --listen "0.0.0.0:9452" --externaladdress "0.0.0.0:9452" --norpcauth --rpclisten "0.0.0.0:9352"
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8sL2pTLHdZuTuZSFAeDq6rzBruAqvyMYwKyav9TKUc1zKTz3ScSbT44MG4GgiN9KxC1234j63fFgBE88pHfE1Wbrz6qbm6vGohhNua2h" --nodemode "auto" --datadir "data/beacon-2" --listen "0.0.0.0:9452" --externaladdress "0.0.0.0:9452" --norpcauth --rpclisten "0.0.0.0:9352" --btcclient 1 --btcclientip "159.65.142.153" --btcclientport "8332" --btcclientusername "admin" --btcclientpassword "autonomous"
 fi
 if [ "$1" == "beacon-3" ]; then
-./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8sP8ZgYgFTjMTVmzZ9YpPpESfoe5b78a7TqvWn9PAkVPUrQsccx5QB62TAupWm4zCPVh9DKFeorMRxYpgQtRGEBCDv4MCEkePXZ4gbek" --nodemode "auto" --datadir "data/beacon-3" --listen "0.0.0.0:9453" --externaladdress "0.0.0.0:9453" --norpcauth --rpclisten "0.0.0.0:9353"
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8sP8ZgYgFTjMTVmzZ9YpPpESfoe5b78a7TqvWn9PAkVPUrQsccx5QB62TAupWm4zCPVh9DKFeorMRxYpgQtRGEBCDv4MCEkePXZ4gbek" --nodemode "auto" --datadir "data/beacon-3" --listen "0.0.0.0:9453" --externaladdress "0.0.0.0:9453" --norpcauth --rpclisten "0.0.0.0:9353" --btcclient 1 --btcclientip "159.65.142.153" --btcclientport "8332" --btcclientusername "admin" --btcclientpassword "autonomous"
 fi
 # FullNode
 #if [ "$1" == "full_node" ]; then

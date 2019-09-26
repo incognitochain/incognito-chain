@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"reflect"
 	"sort"
 	"strconv"
@@ -56,7 +57,7 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(beaconBlock *BeaconBlock,
 		return err
 	}
 	// Post verififcation: verify new beaconstate with corresponding block
-	if err := beaconBestState.verifyPostProcessingBeaconBlock(beaconBlock); err != nil {
+	if err := beaconBestState.verifyPostProcessingBeaconBlock(beaconBlock, blockchain.config.RandomClient); err != nil {
 		return err
 	}
 	Logger.log.Infof("BEACON | Block %d, with hash %+v is VALID to be 🖊 signed", beaconBlock.Header.Height, *beaconBlock.Hash())
@@ -173,7 +174,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	if !isValidated {
 		Logger.log.Infof("BEACON | Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 		// Post verification: verify new beacon best state with corresponding beacon block
-		if err := blockchain.BestState.Beacon.verifyPostProcessingBeaconBlock(beaconBlock); err != nil {
+		if err := blockchain.BestState.Beacon.verifyPostProcessingBeaconBlock(beaconBlock, blockchain.config.RandomClient); err != nil {
 			return err
 		}
 	} else {
@@ -506,7 +507,7 @@ func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(beaconBlo
 - Shard Validator root: ShardCommittee + ShardPendingValidator
 - Random number if have in instruction
 */
-func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBlock *BeaconBlock) error {
+func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBlock *BeaconBlock, randomClient btc.RandomClient) error {
 	beaconBestState.lock.RLock()
 	defer beaconBestState.lock.RUnlock()
 	var (
@@ -589,12 +590,13 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 		instructions := beaconBlock.Body.Instructions
 		for _, l := range instructions {
 			if l[0] == "random" {
-				temp, err := strconv.Atoi(l[3])
+				// ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
+				nonce, err := strconv.Atoi(l[1])
 				if err != nil {
 					Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 					return NewBlockChainError(UnExpectedError, err)
 				}
-				ok, err = beaconBestState.randomClient.VerifyNonceWithTimestamp(beaconBestState.CurrentRandomTimeStamp, int64(temp))
+				ok, err = randomClient.VerifyNonceWithTimestamp(beaconBestState.CurrentRandomTimeStamp, int64(nonce))
 				Logger.log.Infof("Verify Random number %+v", ok)
 				if err != nil {
 					Logger.log.Error("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
