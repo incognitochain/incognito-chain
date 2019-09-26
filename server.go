@@ -627,12 +627,8 @@ func (serverObj Server) p2pHandler() {
 
 	miningKeys := serverObj.consensusEngine.GetMiningPublicKeys()
 	pubkey := miningKeys[common.BlsConsensus]
-	conn := &peerv2.ConnManager{
-		LocalHost:            host,
-		DiscoverPeersAddress: cfg.DiscoverPeersAddress,
-		IdentityKey:          &pubkey,
-	}
-	conn.Start()
+	cm := peerv2.NewConnManager(host, cfg.DiscoverPeersAddress, &pubkey, serverObj.consensusEngine)
+	cm.Start()
 	//
 	//
 	////subscribe to beacon
