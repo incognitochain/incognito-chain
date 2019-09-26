@@ -138,6 +138,9 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	if err := blockchain.BestState.Shard[shardID].updateShardBestState(blockchain, shardBlock, beaconBlocks); err != nil {
 		return err
 	}
+	// update number of blocks produced by producers to shard best state
+	blockchain.BestState.Shard[shardID].updateNumOfBlocksByProducers(shardBlock)
+
 	newCommittee, err := incognitokey.CommitteeKeyListToString(blockchain.BestState.Shard[shardID].ShardCommittee)
 	if err != nil {
 		return err
@@ -193,6 +196,32 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	// }
 	Logger.log.Infof("SHARD %+v | 🔗 Finish Insert new block %d, with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	return nil
+}
+
+// updateNumOfBlocksByProducers updates number of blocks produced by producers to shard best state
+func (shardBestState *ShardBestState) updateNumOfBlocksByProducers(shardBlock *ShardBlock) {
+	isSwapInstContained := false
+	for _, inst := range shardBlock.Body.Instructions {
+		if len(inst) > 0 && inst[0] == SwapAction {
+			isSwapInstContained = true
+			break
+		}
+	}
+	producer := shardBlock.GetProducerPubKeyStr()
+	if isSwapInstContained {
+		// reset number of blocks produced by producers
+		shardBestState.NumOfBlocksByProducers = map[string]uint64{
+			producer: 1,
+		}
+	} else {
+		// Update number of blocks produced by producers in epoch
+		numOfBlks, found := shardBestState.NumOfBlocksByProducers[producer]
+		if !found {
+			shardBestState.NumOfBlocksByProducers[producer] = 1
+		} else {
+			shardBestState.NumOfBlocksByProducers[producer] = numOfBlks + 1
+		}
+	}
 }
 
 /* Verify Pre-prosessing data
@@ -614,7 +643,7 @@ func (shardBestState *ShardBestState) updateShardBestState(blockchain *BlockChai
 	for stakePublicKey, txHash := range stakingTx {
 		shardBestState.StakingTx[stakePublicKey] = txHash
 	}
-	err = shardBestState.processShardBlockInstruction(shardBlock)
+	err = shardBestState.processShardBlockInstruction(blockchain, shardBlock)
 	if err != nil {
 		return err
 	}
@@ -656,19 +685,22 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 	for stakePublicKey, txHash := range stakingTx {
 		shardBestState.StakingTx[stakePublicKey] = txHash
 	}
-	err = shardBestState.processShardBlockInstruction(genesisShardBlock)
+	err = shardBestState.processShardBlockInstruction(blockchain, genesisShardBlock)
 	if err != nil {
 		return err
 	}
 	shardBestState.ConsensusAlgorithm = common.BlsConsensus
+	shardBestState.NumOfBlocksByProducers = make(map[string]uint64)
 	return nil
 }
-func (shardBestState *ShardBestState) processShardBlockInstruction(shardBlock *ShardBlock) error {
+
+func (shardBestState *ShardBestState) processShardBlockInstruction(blockchain *BlockChain, shardBlock *ShardBlock) error {
 	var err error
 	shardPendingValidator, err := incognitokey.CommitteeKeyListToString(shardBestState.ShardPendingValidator)
 	if err != nil {
 		return err
 	}
+	shardID := shardBestState.ShardID
 	shardCommittee, err := incognitokey.CommitteeKeyListToString(shardBestState.ShardCommittee)
 	if err != nil {
 		return err
@@ -678,11 +710,17 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(shardBlock *S
 	if len(shardBlock.Body.Instructions) != 0 {
 		Logger.log.Info("Shard Process/updateShardBestState: Shard Instruction", shardBlock.Body.Instructions)
 	}
+
+	producersBlackList, err := blockchain.getUpdatedProducersBlackList(false, int(shardID), shardCommittee)
+	if err != nil {
+		Logger.log.Error(err)
+		return err
+	}
 	// Swap committee
 	for _, l := range shardBlock.Body.Instructions {
 		if l[0] == SwapAction {
 			// #1 remaining pendingValidators, #2 new currentValidators #3 swapped out validator, #4 incoming validator
-			shardPendingValidator, shardCommittee, shardSwappedCommittees, shardNewCommittees, err = SwapValidator(shardPendingValidator, shardCommittee, shardBestState.MaxShardCommitteeSize, common.Offset)
+			shardPendingValidator, shardCommittee, shardSwappedCommittees, shardNewCommittees, err = SwapValidator(shardPendingValidator, shardCommittee, shardBestState.MaxShardCommitteeSize, shardBestState.MinShardCommitteeSize, common.Offset, producersBlackList)
 			if err != nil {
 				Logger.log.Errorf("SHARD %+v | Blockchain Error %+v", err)
 				return NewBlockChainError(SwapValidatorError, err)
@@ -691,7 +729,7 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(shardBlock *S
 			if len(l[2]) != 0 && l[2] != "" {
 				swapedCommittees = strings.Split(l[2], ",")
 			}
-			newCommittees := strings.Split(l[1], ",")
+
 			for _, v := range swapedCommittees {
 				if txId, ok := shardBestState.StakingTx[v]; ok {
 					if checkReturnStakingTxExistence(txId, shardBlock) {
@@ -701,6 +739,11 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(shardBlock *S
 			}
 			if !reflect.DeepEqual(swapedCommittees, shardSwappedCommittees) {
 				return NewBlockChainError(SwapValidatorError, fmt.Errorf("Expect swapped committees to be %+v but get %+v", swapedCommittees, shardSwappedCommittees))
+			}
+
+			newCommittees := []string{}
+			if len(l[1]) > 0 {
+				newCommittees = strings.Split(l[1], ",")
 			}
 			if !reflect.DeepEqual(newCommittees, shardNewCommittees) {
 				return NewBlockChainError(SwapValidatorError, fmt.Errorf("Expect new committees to be %+v but get %+v", newCommittees, shardNewCommittees))
@@ -717,7 +760,6 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(shardBlock *S
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 

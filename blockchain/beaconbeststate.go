@@ -62,6 +62,10 @@ type BeaconBestState struct {
 	// e.g 1 -> 3 -> 2 // shard 1 send cross shard to shard 3 at  height 2
 	LastCrossShardState map[byte]map[byte]uint64 `json:"LastCrossShardState"`
 	ShardHandle         map[byte]bool            `json:"ShardHandle"` // lock sync.RWMutex
+
+	// Number of blocks produced by producers in epoch
+	NumOfBlocksByProducers map[string]uint64 `json:"NumOfBlocksByProducers"`
+
 	lock                sync.RWMutex
 	randomClient        btc.RandomClient
 	BlockInterval       time.Duration
