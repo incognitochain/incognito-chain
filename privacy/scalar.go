@@ -12,6 +12,11 @@ type Scalar struct {
 	key C25519.Key
 }
 
+
+func (sc Scalar) GetKey() C25519.Key {
+	return sc.key
+}
+
 func (sc Scalar) String() string {
 	return fmt.Sprintf("%x", sc.key[:])
 }
@@ -50,6 +55,7 @@ func (sc *Scalar) SetKey(a *C25519.Key) (*Scalar, error) {
 		sc = new(Scalar)
 	}
 	sc.key = *a
+	fmt.Println(sc.key)
 	if sc.ScalarValid() == false {
 		return nil, errors.New("Invalid key value")
 	}
@@ -183,10 +189,10 @@ func (sc *Scalar) Invert(a *Scalar) *Scalar {
 	var inverse_result C25519.Key
 	x := a.key
 
-	reversex := reverse(x)
+	reversex := Reverse(x)
 	bigX := new(big.Int).SetBytes(reversex[:])
 
-	reverseL := reverse(C25519.CurveOrder()) // as speed improvements it can be made constant
+	reverseL := Reverse(C25519.CurveOrder()) // as speed improvements it can be made constant
 	bigL := new(big.Int).SetBytes(reverseL[:])
 
 	var inverse big.Int
@@ -207,10 +213,10 @@ func (sc *Scalar) Invert(a *Scalar) *Scalar {
 	return sc
 }
 
-func reverse(x C25519.Key) (result C25519.Key) {
+func Reverse(x C25519.Key) (result C25519.Key) {
 	result = x
 	// A key is in little-endian, but the big package wants the bytes in
-	// big-endian, so reverse them.
+	// big-endian, so Reverse them.
 	blen := len(x) // its hardcoded 32 bytes, so why do len but lets do it
 	for i := 0; i < blen/2; i++ {
 		result[i], result[blen-1-i] = result[blen-1-i], result[i]
