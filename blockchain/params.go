@@ -40,6 +40,7 @@ type Params struct {
 	EthContractAddressStr  string // smart contract of ETH for bridge
 	Offset                 int    // default offset for swap policy, is used for cases that good producers length is less than max committee size
 	SwapOffset             int    // is used for case that good producers length is equal to max committee size
+	DevAddress             string
 }
 
 type GenesisParams struct {
@@ -97,6 +98,7 @@ func init() {
 		Offset:                 MainnetOffset,
 		SwapOffset:             MainnetSwapOffset,
 		EthContractAddressStr:  TestnetContractAddressStr,
+		DevAddress:             MainnetDevAddress,
 		SlashLevels: []SlashLevel{
 			SlashLevel{MinRange: 20, PunishedEpoches: 5},
 			SlashLevel{MinRange: 50, PunishedEpoches: 10},
@@ -135,6 +137,7 @@ func init() {
 		Offset:                 TestnetOffset,
 		SwapOffset:             TestnetSwapOffset,
 		EthContractAddressStr:  MainEthContractAddressStr,
+		DevAddress:             TestnetDevAddress,
 		SlashLevels: []SlashLevel{
 			SlashLevel{MinRange: 20, PunishedEpoches: 5},
 			SlashLevel{MinRange: 50, PunishedEpoches: 10},
