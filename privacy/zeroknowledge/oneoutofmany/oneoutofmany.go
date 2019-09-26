@@ -1,6 +1,8 @@
 package oneoutofmany
 
 import (
+	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
 	"math/big"
 
 	C25519 "github.com/deroproject/derosuite/crypto"
@@ -319,7 +321,7 @@ func (wit OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 	// Calculate: cd_k = ci^pi,k
 	for k := 0; k < n; k++ {
 		// Calculate pi,k which is coefficient of x^k in polynomial pi(x)
-		cd[k] = new(privacy.Point).Zero()
+		cd[k] = new(privacy.Point).Identity()
 
 		for i := 0; i < N; i++ {
 			iBinary := privacy.ConvertIntToBinary(i, n)
@@ -333,8 +335,16 @@ func (wit OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 	// Calculate x
 	x := new(privacy.Scalar).SetUint64(0)
 	for j := 0; j < n; j++ {
-		x = utils.GenerateChallenge([][]byte{privacy.ArrayToSlice(x.ToBytes()), privacy.ArrayToSlice(cl[j].ToBytes()), privacy.ArrayToSlice(ca[j].ToBytes()), privacy.ArrayToSlice(cb[j].ToBytes()), privacy.ArrayToSlice(cd[j].ToBytes())})
+		x = utils.GenerateChallenge([][]byte{
+			privacy.ArrayToSlice(x.ToBytes()),
+			privacy.ArrayToSlice(cl[j].ToBytes()),
+			privacy.ArrayToSlice(ca[j].ToBytes()),
+			privacy.ArrayToSlice(cb[j].ToBytes()),
+			privacy.ArrayToSlice(cd[j].ToBytes()),
+		})
 	}
+
+	fmt.Printf("Prove x: %v\n", x.ToBytes())
 
 	// Calculate za, zb zd
 	za := make([]*privacy.Scalar, n)
@@ -358,21 +368,31 @@ func (wit OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 	}
 
 	// zd = rand * x^n - sum_{k=0}^{n-1} u[k] * x^k
-	zd.Exp(x, new(privacy.Scalar).SetUint64(uint64(n)))
-	zd.Mul(zd, wit.rand)
+	tmp3 := new(privacy.Scalar).Mul(x, x)
+	for i:=0; i<n-2; i++{
+		tmp3.Mul(tmp3, x)
+	}
+	//zd.Exp(x, uint64(n))
+
+	zd.Mul(tmp3, wit.rand)
 
 	uxInt := new(privacy.Scalar).SetUint64(0)
 	sumInt := new(privacy.Scalar).SetUint64(0)
+	tmp := new(privacy.Scalar).SetUint64(1)
 	for k := 0; k < n; k++ {
-		uxInt.Exp(x, new(privacy.Scalar).SetUint64(uint64(k)))
-		uxInt.Mul(uxInt, u[k])
+		//uxInt.Exp(x, uint64(k))
+
+		uxInt.Mul(tmp, u[k])
 		sumInt.Add(sumInt, uxInt)
+		tmp.Mul(tmp, x)
 	}
 
 	zd.Sub(zd, sumInt)
 
 	proof := new(OneOutOfManyProof).Init()
 	proof.Set(wit.stmt.Commitments, cl, ca, cb, cd, f, za, zb, zd)
+
+
 
 	return proof, nil
 }
@@ -392,8 +412,8 @@ func (proof OneOutOfManyProof) Verify() (bool, error) {
 
 	for j := 0; j < n; j++ {
 		x = utils.GenerateChallenge([][]byte{privacy.ArrayToSlice(x.ToBytes()), privacy.ArrayToSlice(proof.cl[j].ToBytes()), privacy.ArrayToSlice(proof.ca[j].ToBytes()), privacy.ArrayToSlice(proof.cb[j].ToBytes()), privacy.ArrayToSlice(proof.cd[j].ToBytes())})
-
 	}
+	fmt.Printf("Verify x: %v\n", x.ToBytes())
 
 	for i := 0; i < n; i++ {
 		//Check cl^x * ca = Com(f, za)
@@ -420,10 +440,8 @@ func (proof OneOutOfManyProof) Verify() (bool, error) {
 		}
 	}
 
-	leftPoint3 := new(privacy.Point)
-	leftPoint3.Zero()
-	leftPoint32 := new(privacy.Point)
-	leftPoint32.Zero()
+	leftPoint3 := new(privacy.Point).Identity()
+	leftPoint32 := new(privacy.Point).Identity()
 
 	for i := 0; i < N; i++ {
 		iBinary := privacy.ConvertIntToBinary(i, n)
@@ -440,16 +458,15 @@ func (proof OneOutOfManyProof) Verify() (bool, error) {
 			exp.Mul(exp, fji)
 		}
 
-		leftPoint3 = leftPoint3.Add(leftPoint3, new(privacy.Point).ScalarMult(proof.Statement.Commitments[i], exp))
+		leftPoint3.Add(leftPoint3, new(privacy.Point).ScalarMult(proof.Statement.Commitments[i], exp))
 	}
 
+	tmp2 := new(privacy.Scalar).SetUint64(1)
 	for k := 0; k < n; k++ {
-		xk := new(privacy.Scalar).Exp(x, new(privacy.Scalar).SetUint64(uint64(k)))
-		//todo: recheck
-		//xk.Sub(privacy.Curve.Params().N, xk)
-		xk.Invert(xk)
+		xk := new(privacy.Scalar).Invert(tmp2)
 
-		leftPoint32 = leftPoint32.Add(leftPoint32, new(privacy.Point).ScalarMult(proof.cd[k], xk))
+		leftPoint32.Add(leftPoint32, new(privacy.Point).ScalarMult(proof.cd[k], xk))
+		tmp2.Mul(tmp2, x)
 	}
 
 	leftPoint3.Add(leftPoint3, leftPoint32)
@@ -457,6 +474,8 @@ func (proof OneOutOfManyProof) Verify() (bool, error) {
 	rightPoint3 := privacy.PedCom.CommitAtIndex(new(privacy.Scalar).SetUint64(0), proof.zd, privacy.PedersenPrivateKeyIndex)
 
 	if !privacy.IsEqual(leftPoint3, rightPoint3) {
+		fmt.Printf("leftPoint3: %v\n", leftPoint3)
+		fmt.Printf("rightPoint3: %v\n", rightPoint3)
 		privacy.Logger.Log.Errorf("verify one out of many proof statement 3 failed")
 		return false, errors.New("verify one out of many proof statement 3 failed")
 	}
@@ -464,23 +483,17 @@ func (proof OneOutOfManyProof) Verify() (bool, error) {
 	return true, nil
 }
 
-func convertScalarArrayToBigIntArray(scalarArr []*privacy.Scalar) []*big.Int{
-	res := make([]*big.Int, len(scalarArr))
 
-	for i:=0; i<len(res); i++{
-		res[i] = new(big.Int).SetBytes(privacy.ArrayToSlice(scalarArr[i].ToBytes()))
-	}
-
-	return res
-}
 
 // Get coefficient of x^k in the polynomial p_i(x)
 func getCoefficient(iBinary []byte, k int, n int, a []*privacy.Scalar, l []byte) *privacy.Scalar {
-	aBN := convertScalarArrayToBigIntArray(a)
+	aBN := privacy.ConvertScalarArrayToBigIntArray(a)
 	res := privacy.Poly{big.NewInt(1)}
 	var fji privacy.Poly
 
-	tmp := C25519.CurveOrder()
+	tmp := privacy.Reverse(C25519.L)
+
+
 	curveOrder := new(big.Int).SetBytes(privacy.ArrayToSlice(tmp.ToBytes()))
 
 	for j := n - 1; j >= 0; j-- {
@@ -497,5 +510,56 @@ func getCoefficient(iBinary []byte, k int, n int, a []*privacy.Scalar, l []byte)
 	if res.GetDegree() < k {
 		return new(privacy.Scalar).SetUint64(0)
 	}
-	return new(privacy.Scalar).FromBytes(privacy.SliceToArray(res[k].Bytes()))
+	//h:= common.AddPaddingBigInt(res[k], 32)
+	//fmt.Printf("h: %v\n", h)
+
+	fmt.Printf("res[k]: %v\n", res[k].Bytes())
+	fmt.Printf("res[k]: %v\n", len(res[k].Bytes()))
+
+	key := new(C25519.Key)
+	key.FromBytes(privacy.SliceToArray(common.AddPaddingBigInt(res[k], 32)))
+
+	key2 := privacy.Reverse(*key)
+
+	//key := new(privacy.Scalar).FromBytes(privacy.SliceToArray(h)).GetKey()
+	fmt.Printf("key2: %v\n", key2)
+	tmp2, err := new(privacy.Scalar).SetKey(&key2)
+	fmt.Printf("tmp2: %v\n", tmp2.ToBytes())
+
+	if err != nil{
+		fmt.Printf("Error: %v\n", err)
+	}
+	return tmp2
+}
+
+// Get coefficient of x^k in the polynomial p_i(x)
+func getCoefficient2(iBinary []byte, k int, n int, a []*big.Int, l []byte) *big.Int {
+	res := privacy.Poly{big.NewInt(1)}
+	var fji privacy.Poly
+
+	tmp := C25519.CurveOrder()
+	curveOrder := new(big.Int).SetBytes(privacy.ArrayToSlice(tmp.ToBytes()))
+
+	for j := n - 1; j >= 0; j-- {
+		fj := privacy.Poly{a[j], big.NewInt(int64(l[j]))}
+		if iBinary[j] == 0 {
+			fji = privacy.Poly{big.NewInt(0), big.NewInt(1)}.Sub(fj, curveOrder)
+		} else {
+			fji = fj
+		}
+
+		res = res.Mul(fji, curveOrder)
+	}
+
+	if res.GetDegree() < k {
+		return new(big.Int).SetUint64(0)
+	}
+
+	//fmt.Printf("res: %v\n", res)
+	//
+	//res[1].Add(res[1], big.NewInt(3))
+	//res[1].Mod(res[1], curveOrder)
+	fmt.Printf("res[1]: %v\n", res[k].Bytes())
+
+	return res[k]
 }

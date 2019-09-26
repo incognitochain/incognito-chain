@@ -62,6 +62,7 @@ func TestUtilsConvertIntToBinary(t *testing.T) {
 	}{
 		{64, 8, []byte{0, 0, 0, 0, 0, 0, 1, 0}},
 		{100, 10, []byte{0, 0, 1, 0, 0, 1, 1, 0, 0, 0}},
+		{1, 8, []byte{1, 0, 0, 0, 0, 0, 0, 0}},
 	}
 
 	for _, item := range data {
@@ -120,3 +121,5 @@ func TestUtilsIntToByteArr(t *testing.T) {
 		assert.Equal(t, item.number, number)
 	}
 }
+
+

@@ -627,3 +627,23 @@ func TestEval(t *testing.T) {
 		}
 	}
 }
+
+
+func TestScalar(t *testing.T){
+	//arr1 := []*big.Int{big.NewInt(2), big.NewInt(2), big.NewInt(2)}
+	arr2 := []*Scalar{new(Scalar).SetUint64(2), new(Scalar).SetUint64(2), new(Scalar).SetUint64(2)}
+	arrBN2 := ConvertScalarArrayToBigIntArray(arr2)
+
+	poly1 := Poly{big.NewInt(2), big.NewInt(2), big.NewInt(2)}
+	poly2 := Poly{big.NewInt(2), big.NewInt(2), big.NewInt(2)}
+	polySum := poly1.add(poly2, nil)
+	fmt.Printf("PolySum: %v\n", polySum)
+
+	poly3 := Poly{arrBN2[0], arrBN2[1], arrBN2[2]}
+	poly4 := Poly{arrBN2[0], arrBN2[1], arrBN2[2]}
+	polySum2 := poly3.add(poly4, nil)
+	fmt.Printf("polySum2: %v\n", polySum2)
+
+
+
+}
