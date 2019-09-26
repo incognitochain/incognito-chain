@@ -386,3 +386,7 @@ func (engine *Engine) updateUserState(keySet *incognitokey.CommitteePublicKey, r
 		}
 	}
 }
+
+func (engine *Engine) GetMiningPublicKeys() map[string]incognitokey.CommitteePublicKey {
+	return engine.userMiningPublicKeys
+}
