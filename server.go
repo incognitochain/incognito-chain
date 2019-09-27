@@ -77,6 +77,7 @@ type Server struct {
 	// The fee estimator keeps track of how long transactions are left in
 	// the mempool before they are mined into blocks.
 	feeEstimator map[byte]*mempool.FeeEstimator
+	highway      *peerv2.ConnManager
 
 	cQuit     chan struct{}
 	cNewPeers chan *peer.Peer
@@ -440,6 +441,23 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		go serverObj.connManager.Connect(addr, "", "", nil)
 	}
 
+	// Connect to highway
+	Logger.log.Debug("Listenner: ", cfg.Listener)
+	Logger.log.Debug("Bootnode: ", cfg.DiscoverPeersAddress)
+	Logger.log.Debug("PrivateKey: ", cfg.PrivateKey)
+
+	ip, port := peerv2.ParseListenner(cfg.Listener, "127.0.0.1", 9433)
+	host := peerv2.NewHost(version(), ip, port, []byte(cfg.PrivateKey))
+
+	miningKeys := serverObj.consensusEngine.GetMiningPublicKeys()
+	pubkey := miningKeys[common.BlsConsensus]
+	serverObj.highway = peerv2.NewConnManager(
+		host,
+		cfg.DiscoverPeersAddress,
+		&pubkey,
+		serverObj.consensusEngine,
+	)
+
 	if !cfg.DisableRPC {
 		// Setup listeners for the configured RPC listen addresses and
 		// TLS settings.
@@ -617,38 +635,6 @@ out:
 	}
 }
 
-func (serverObj Server) p2pHandler() {
-	Logger.log.Debug("Listenner: ", cfg.Listener)
-	Logger.log.Debug("Bootnode: ", cfg.DiscoverPeersAddress)
-	Logger.log.Debug("PrivateKey: ", cfg.PrivateKey)
-
-	ip, port := peerv2.ParseListenner(cfg.Listener, "127.0.0.1", 9433)
-	host := peerv2.NewHost(version(), ip, port, []byte(cfg.PrivateKey))
-
-	miningKeys := serverObj.consensusEngine.GetMiningPublicKeys()
-	pubkey := miningKeys[common.BlsConsensus]
-	cm := peerv2.NewConnManager(host, cfg.DiscoverPeersAddress, &pubkey, serverObj.consensusEngine)
-	cm.Start()
-	//
-	//
-	////subscribe to beacon
-	//st, err := pubsub.Subscribe("beacon")
-	//must(err)
-	//
-	//go func() {
-	//	time.Sleep(1 * time.Second)
-	//	must(pubsub.Publish("beacon", []byte("abc")))
-	//}()
-	//for {
-	//	m, e := st.Next(context.Background())
-	//	if e != nil {
-	//		log.Println(e)
-	//	}
-	//	log.Println("st2", string(m.Data))
-	//}
-
-}
-
 func must(err error) {
 	if err != nil {
 		panic(err)
@@ -679,7 +665,8 @@ func (serverObj Server) Start() {
 	// managers.
 	serverObj.waitGroup.Add(1)
 
-	go serverObj.p2pHandler()
+	go serverObj.highway.Start()
+
 	if !cfg.DisableRPC && serverObj.rpcServer != nil {
 		serverObj.waitGroup.Add(1)
 
@@ -1361,6 +1348,12 @@ func (serverObj *Server) PushMessageToShard(msg wire.Message, shard byte, exclus
 	peerConns := serverObj.connManager.GetPeerConnOfShard(shard)
 	relayConns := serverObj.connManager.GetConnOfRelayNode()
 	peerConns = append(relayConns, peerConns...)
+
+	// Publish message to highway
+	if err := serverObj.highway.PublishMessage(msg); err != nil {
+		return err
+	}
+
 	if len(peerConns) > 0 {
 		for _, peerConn := range peerConns {
 			if isExcluded, ok := exclusivePeerIDs[peerConn.GetRemotePeerID()]; ok {
@@ -1410,6 +1403,12 @@ func (serverObj *Server) PushMessageToBeacon(msg wire.Message, exclusivePeerIDs 
 	peerConns := serverObj.connManager.GetPeerConnOfBeacon()
 	relayConns := serverObj.connManager.GetConnOfRelayNode()
 	peerConns = append(relayConns, peerConns...)
+
+	// Publish message to highway
+	if err := serverObj.highway.PublishMessage(msg); err != nil {
+		return err
+	}
+
 	if len(peerConns) > 0 {
 		fmt.Println("BFT:", len(peerConns))
 		for _, peerConn := range peerConns {
