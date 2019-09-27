@@ -115,9 +115,7 @@ func (e *BLSBFT) Start() error {
 							continue
 						}
 					} else {
-						if block.GetRound() > e.RoundData.Round {
-							e.Blocks[blockRoundKey] = block
-						}
+						e.Blocks[blockRoundKey] = block
 					}
 				}
 			case msg := <-e.VoteMessageCh:
@@ -292,6 +290,7 @@ func (e *BLSBFT) enterProposePhase() {
 	block.(blockValidation).AddValidationField(validationDataString)
 
 	e.RoundData.Block = block
+	e.RoundData.BlockHash = *block.Hash()
 	e.RoundData.BlockValidateData = validationData
 
 	blockData, _ := json.Marshal(e.RoundData.Block)
