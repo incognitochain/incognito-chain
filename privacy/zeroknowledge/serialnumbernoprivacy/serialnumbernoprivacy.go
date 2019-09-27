@@ -152,34 +152,34 @@ func (pro *SNNoPrivacyProof) SetBytes(bytes []byte) error {
 
 	offset := 0
 	var err error
-	pro.stmt.output, err = new(privacy.Point).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+	pro.stmt.output, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
 	offset += privacy.Ed25519KeySize
 
-	pro.stmt.vKey, err = new(privacy.Point).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+	pro.stmt.vKey, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
 	offset += privacy.Ed25519KeySize
 
-	pro.stmt.input.FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+	pro.stmt.input.FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 	offset += privacy.Ed25519KeySize
 
-	pro.tSeed, err = new(privacy.Point).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+	pro.tSeed, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
 	offset += privacy.Ed25519KeySize
 
-	pro.tOutput, err = new(privacy.Point).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+	pro.tOutput, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
 	offset += privacy.Ed25519KeySize
 
-	pro.zSeed.FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+	pro.zSeed.FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 
 	return nil
 }
@@ -200,7 +200,7 @@ func (wit SNNoPrivacyWitness) Prove(mess []byte) (*SNNoPrivacyProof, error) {
 		// recheck frombytes is valid scalar
 		x = utils.GenerateChallenge([][]byte{tSK.ToBytesS(), tE.ToBytesS()})
 	} else {
-		x.FromBytes(privacy.SliceToArray(mess))
+		x.FromBytesS(mess)
 	}
 
 	// Calculate zSeed = SK * x + eSK
@@ -219,7 +219,7 @@ func (pro SNNoPrivacyProof) Verify(mess []byte) (bool, error) {
 		// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
 		x = utils.GenerateChallenge([][]byte{pro.tSeed.ToBytesS(), pro.tOutput.ToBytesS()})
 	} else {
-		x.FromBytes(privacy.SliceToArray(mess))
+		x.FromBytesS(mess)
 	}
 
 	// Check gSK^zSeed = vKey^x * tSeed

@@ -142,7 +142,7 @@ func TestAggregatedRangeProve(t *testing.T) {
 	for i:= 0; i<10; i++{
 		//prepare witness for Aggregated range protocol
 		wit := new(AggregatedRangeWitness)
-		numValue := 5 //5. 10
+		numValue := 10 //5. 10
 		values := make([]uint64, numValue)
 		rands := make([]*privacy.Scalar, numValue)
 
