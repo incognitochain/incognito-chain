@@ -10,6 +10,20 @@ import (
 )
 
 
+func BenchmarkPoint_AddPedersen(b *testing.B) {
+	a := RandomScalar()
+	c := RandomScalar()
+
+	A := RandomPoint()
+	C := RandomPoint()
+
+	b.ResetTimer()
+
+	for i:=0; i< b.N; i++ {
+		new(Point).AddPedersen(a,A,c,C)
+	}
+}
+
 func TestPoint_ScalarMultPRIME(t *testing.T) {
 	for i:=0; i< 10000; i++ {
 		a := RandomScalar()

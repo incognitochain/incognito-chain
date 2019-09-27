@@ -149,7 +149,7 @@ func (coin *Coin) CommitAll() error {
 func (coin *Coin) Bytes() []byte {
 	var coinBytes []byte
 
-	if coin.publicKey != nil || coin.publicKey.IsIdentity() {
+	if coin.publicKey != nil {
 		publicKey := coin.publicKey.ToBytesS()
 		coinBytes = append(coinBytes, byte(Ed25519KeySize))
 		coinBytes = append(coinBytes, publicKey...)
@@ -157,7 +157,7 @@ func (coin *Coin) Bytes() []byte {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if coin.coinCommitment != nil || coin.coinCommitment.IsIdentity() {
+	if coin.coinCommitment != nil {
 		coinCommitment := coin.coinCommitment.ToBytesS()
 		coinBytes = append(coinBytes, byte(Ed25519KeySize))
 		coinBytes = append(coinBytes, coinCommitment...)
@@ -165,14 +165,14 @@ func (coin *Coin) Bytes() []byte {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if coin.snDerivator != nil || coin.snDerivator.IsZero() {
+	if coin.snDerivator != nil {
 		coinBytes = append(coinBytes, byte(Ed25519KeySize))
 		coinBytes = append(coinBytes, coin.snDerivator.ToBytesS()...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if coin.serialNumber != nil || coin.serialNumber.IsIdentity() {
+	if coin.serialNumber != nil {
 		serialNumber := coin.serialNumber.ToBytesS()
 		coinBytes = append(coinBytes, byte(Ed25519KeySize))
 		coinBytes = append(coinBytes, serialNumber...)
@@ -180,7 +180,7 @@ func (coin *Coin) Bytes() []byte {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if coin.randomness != nil || coin.randomness.IsZero() {
+	if coin.randomness != nil  {
 		coinBytes = append(coinBytes, byte(Ed25519KeySize))
 		coinBytes = append(coinBytes, coin.randomness.ToBytesS()...)
 	} else {
@@ -389,7 +389,7 @@ func (outputCoin *OutputCoin) Encrypt(recipientTK TransmissionKey) *PrivacyError
 	// 32-byte first: Randomness, the rest of msg is value of coin
 	msg := append(outputCoin.CoinDetails.randomness.ToBytesS(), new(big.Int).SetUint64(outputCoin.CoinDetails.value).Bytes()...)
 
-	pubKeyPoint, err := new(Point).FromBytes(recipientTK)
+	pubKeyPoint, err := new(Point).FromBytesS(recipientTK)
 	if err != nil {
 		return NewPrivacyErr(EncryptOutputCoinErr, err)
 	}
@@ -404,7 +404,7 @@ func (outputCoin *OutputCoin) Encrypt(recipientTK TransmissionKey) *PrivacyError
 
 // Decrypt decrypts a ciphertext encrypting for coin with recipient's receiving key
 func (outputCoin *OutputCoin) Decrypt(viewingKey ViewingKey) *PrivacyError {
-	msg, err := hybridDecrypt(outputCoin.CoinDetailsEncrypted, new(Scalar).FromBytes(viewingKey.Rk))
+	msg, err := hybridDecrypt(outputCoin.CoinDetailsEncrypted, new(Scalar).FromBytesS(viewingKey.Rk))
 	if err != nil {
 		return NewPrivacyErr(DecryptOutputCoinErr, err)
 	}

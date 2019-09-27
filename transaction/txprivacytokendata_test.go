@@ -9,12 +9,10 @@ import (
 
 func TestTxTokenPrivacyData(t *testing.T) {
 	coin1 := &privacy.Coin{}
-	zero := new(privacy.EllipticPoint)
-	zero.Zero()
-	coin1.SetPublicKey(zero)
+	coin1.SetPublicKey(new(privacy.Point).Identity())
 	coin1.SetValue(10)
 	coin2 := &privacy.Coin{}
-	coin2.SetPublicKey(zero)
+	coin2.SetPublicKey(new(privacy.Point).Identity())
 	coin2.SetValue(10)
 	proof := &zkp.PaymentProof{}
 	proof.SetOutputCoins([]*privacy.OutputCoin{{
