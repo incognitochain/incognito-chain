@@ -170,7 +170,8 @@ func isBadProducer(badProducers []string, producer string) bool {
 }
 
 func swap(
-	pendingValidators []string,
+	badPendingValidators []string,
+	goodPendingValidators []string,
 	currentGoodProducers []string,
 	currentBadProducers []string,
 	maxCommittee int,
@@ -179,23 +180,23 @@ func swap(
 	// if swap offset = 0 then do nothing
 	if offset == 0 {
 		// return pendingValidators, currentGoodProducers, currentBadProducers, []string{}, errors.New("no pending validator for swapping")
-		return pendingValidators, currentGoodProducers, currentBadProducers, []string{}, nil
+		return append(goodPendingValidators, badPendingValidators...), currentGoodProducers, currentBadProducers, []string{}, nil
 	}
 	if offset > maxCommittee {
-		return pendingValidators, currentGoodProducers, currentBadProducers, []string{}, errors.New("try to swap too many validators")
+		return append(goodPendingValidators, badPendingValidators...), currentGoodProducers, currentBadProducers, []string{}, errors.New("try to swap too many validators")
 	}
 	tempValidators := []string{}
 	swapValidator := currentBadProducers
 	diff := maxCommittee - len(currentGoodProducers)
 	if diff >= offset {
-		tempValidators = append(tempValidators, pendingValidators[:offset]...)
+		tempValidators = append(tempValidators, goodPendingValidators[:offset]...)
 		currentGoodProducers = append(currentGoodProducers, tempValidators...)
-		pendingValidators = pendingValidators[offset:]
-		return pendingValidators, currentGoodProducers, swapValidator, tempValidators, nil
+		goodPendingValidators = goodPendingValidators[offset:]
+		return append(goodPendingValidators, badPendingValidators...), currentGoodProducers, swapValidator, tempValidators, nil
 	}
 	offset -= diff
-	tempValidators = append(tempValidators, pendingValidators[:diff]...)
-	pendingValidators = pendingValidators[diff:]
+	tempValidators = append(tempValidators, goodPendingValidators[:diff]...)
+	goodPendingValidators = goodPendingValidators[diff:]
 	currentGoodProducers = append(currentGoodProducers, tempValidators...)
 
 	// out pubkey: swapped out validator
@@ -203,12 +204,12 @@ func swap(
 	// unqueue validator with index from 0 to offset-1 from currentValidators list
 	currentGoodProducers = currentGoodProducers[offset:]
 	// in pubkey: unqueue validator with index from 0 to offset-1 from pendingValidators list
-	tempValidators = append(tempValidators, pendingValidators[:offset]...)
+	tempValidators = append(tempValidators, goodPendingValidators[:offset]...)
 	// enqueue new validator to the remaning of current validators list
-	currentGoodProducers = append(currentGoodProducers, pendingValidators[:offset]...)
+	currentGoodProducers = append(currentGoodProducers, goodPendingValidators[:offset]...)
 	// save new pending validators list
-	pendingValidators = pendingValidators[offset:]
-	return pendingValidators, currentGoodProducers, swapValidator, tempValidators, nil
+	goodPendingValidators = goodPendingValidators[offset:]
+	return append(goodPendingValidators, badPendingValidators...), currentGoodProducers, swapValidator, tempValidators, nil
 }
 
 // consider these list as queue structure
@@ -224,33 +225,34 @@ func SwapValidator(
 	producersBlackList map[string]uint8,
 	swapOffset int,
 ) ([]string, []string, []string, []string, error) {
-	pendingValidators = filterValidators(pendingValidators, producersBlackList, false)
+	goodPendingValidators := filterValidators(pendingValidators, producersBlackList, false)
+	badPendingValidators := filterValidators(pendingValidators, producersBlackList, true)
 	currentBadProducers := filterValidators(currentValidators, producersBlackList, true)
 	currentGoodProducers := filterValidators(currentValidators, producersBlackList, false)
-	pendingValidatorsLen := len(pendingValidators)
+	goodPendingValidatorsLen := len(goodPendingValidators)
 	currentGoodProducersLen := len(currentGoodProducers)
 
 	if currentGoodProducersLen >= minCommittee {
 		if currentGoodProducersLen == maxCommittee {
 			offset = swapOffset
 		}
-		if offset > pendingValidatorsLen {
-			offset = pendingValidatorsLen
+		if offset > goodPendingValidatorsLen {
+			offset = goodPendingValidatorsLen
 		}
-		return swap(pendingValidators, currentGoodProducers, currentBadProducers, maxCommittee, offset)
+		return swap(badPendingValidators, goodPendingValidators, currentGoodProducers, currentBadProducers, maxCommittee, offset)
 	}
 
 	minProducersNeeded := minCommittee - currentGoodProducersLen
 	if len(pendingValidators) >= minProducersNeeded {
 		if offset < minProducersNeeded {
 			offset = minProducersNeeded
-		} else if offset > pendingValidatorsLen {
-			offset = pendingValidatorsLen
+		} else if offset > goodPendingValidatorsLen {
+			offset = goodPendingValidatorsLen
 		}
-		return swap(pendingValidators, currentGoodProducers, currentBadProducers, maxCommittee, offset)
+		return swap(badPendingValidators, goodPendingValidators, currentGoodProducers, currentBadProducers, maxCommittee, offset)
 	}
 
-	producersNumCouldBeSwapped := len(pendingValidators) + len(currentValidators) - minCommittee
+	producersNumCouldBeSwapped := len(goodPendingValidators) + len(currentValidators) - minCommittee
 	swappedProducers := []string{}
 	remainingProducers := []string{}
 	for _, producer := range currentValidators {
@@ -260,8 +262,8 @@ func SwapValidator(
 		}
 		remainingProducers = append(remainingProducers, producer)
 	}
-	newProducers := append(remainingProducers, pendingValidators...)
-	return []string{}, newProducers, swappedProducers, pendingValidators, nil
+	newProducers := append(remainingProducers, goodPendingValidators...)
+	return badPendingValidators, newProducers, swappedProducers, goodPendingValidators, nil
 }
 
 // return: #param1: validator list after remove
