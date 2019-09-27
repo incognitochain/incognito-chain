@@ -79,7 +79,7 @@ func (proof *InnerProductProof) SetBytes(bytes []byte) error {
 
 	proof.l = make([]*privacy.Point, lenLArray)
 	for i := 0; i < lenLArray; i++ {
-		proof.l[i], err = new(privacy.Point).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+		proof.l[i], err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 		if err != nil{
 			return err
 		}
@@ -88,20 +88,20 @@ func (proof *InnerProductProof) SetBytes(bytes []byte) error {
 
 	proof.r = make([]*privacy.Point, lenLArray)
 	for i := 0; i < lenLArray; i++ {
-		proof.r[i], err = new(privacy.Point).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+		proof.r[i], err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 		if err != nil{
 			return err
 		}
 		offset += privacy.Ed25519KeySize
 	}
 
-	proof.a = new(privacy.Scalar).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+	proof.a = new(privacy.Scalar).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 	offset += privacy.Ed25519KeySize
 
-	proof.b = new(privacy.Scalar).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+	proof.b = new(privacy.Scalar).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 	offset += privacy.Ed25519KeySize
 
-	proof.p, err = new(privacy.Point).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+	proof.p, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 	if err != nil{
 		return err
 	}

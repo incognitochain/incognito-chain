@@ -6,6 +6,27 @@ import (
 	"testing"
 )
 
+func TestConvert(t *testing.T) {
+
+	L1 := RandomScalar()
+	L2 := RandomScalar()
+	L3 := RandomScalar()
+	LRes := new(Scalar).Sub(L1, L2)
+	LRes.Sub(LRes, L3)
+	fmt.Println(LRes)
+
+	I1 := ScalarToBigInt(L1)
+	I2 := ScalarToBigInt(L2)
+	I3 := ScalarToBigInt(L3)
+
+	tmp := new(big.Int).Sub(I1, I2)
+	tmp = tmp.Sub(tmp, I3)
+	IRes:= tmp.Mod(tmp, LInt)
+	LResPrime := BigIntToScalar(IRes)
+	fmt.Println(LResPrime)
+
+}
+
 func TestPrettyPrint(t *testing.T) {
 	cases := []struct {
 		p   Poly
@@ -626,24 +647,4 @@ func TestEval(t *testing.T) {
 			t.Errorf("f(x) = %v, f(%v) != %v (your answer was %v)\n", c.p, c.x, c.ans, res)
 		}
 	}
-}
-
-
-func TestScalar(t *testing.T){
-	//arr1 := []*big.Int{big.NewInt(2), big.NewInt(2), big.NewInt(2)}
-	arr2 := []*Scalar{new(Scalar).SetUint64(2), new(Scalar).SetUint64(2), new(Scalar).SetUint64(2)}
-	arrBN2 := ConvertScalarArrayToBigIntArray(arr2)
-
-	poly1 := Poly{big.NewInt(2), big.NewInt(2), big.NewInt(2)}
-	poly2 := Poly{big.NewInt(2), big.NewInt(2), big.NewInt(2)}
-	polySum := poly1.add(poly2, nil)
-	fmt.Printf("PolySum: %v\n", polySum)
-
-	poly3 := Poly{arrBN2[0], arrBN2[1], arrBN2[2]}
-	poly4 := Poly{arrBN2[0], arrBN2[1], arrBN2[2]}
-	polySum2 := poly3.add(poly4, nil)
-	fmt.Printf("polySum2: %v\n", polySum2)
-
-
-
 }

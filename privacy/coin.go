@@ -220,7 +220,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	offset++
 	if lenField != 0 {
 		data := coinBytes[offset : offset+int(lenField)]
-		coin.publicKey, err = new(Point).FromBytes(SliceToArray(data))
+		coin.publicKey, err = new(Point).FromBytesS(data)
 		if err != nil {
 			return err
 		}
@@ -232,7 +232,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	offset++
 	if lenField != 0 {
 		data := coinBytes[offset : offset+int(lenField)]
-		coin.coinCommitment, err = new(Point).FromBytes(SliceToArray(data))
+		coin.coinCommitment, err = new(Point).FromBytesS(data)
 		if err != nil {
 			return err
 		}
@@ -410,7 +410,7 @@ func (outputCoin *OutputCoin) Decrypt(viewingKey ViewingKey) *PrivacyError {
 	}
 
 	// Assign randomness and value to outputCoin details
-	outputCoin.CoinDetails.randomness = new(Scalar).FromBytes(SliceToArray(msg[0:Ed25519KeySize]))
+	outputCoin.CoinDetails.randomness = new(Scalar).FromBytesS(msg[0:Ed25519KeySize])
 	outputCoin.CoinDetails.value = new(big.Int).SetBytes(msg[Ed25519KeySize:]).Uint64()
 
 	return nil

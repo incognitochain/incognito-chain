@@ -80,15 +80,10 @@ func (sc *Scalar) SetKey(a *C25519.Key) (*Scalar, error) {
 		sc = new(Scalar)
 	}
 	sc.key = *a
-	fmt.Println(sc.key)
 	if sc.ScalarValid() == false {
 		return nil, errors.New("Invalid key value")
 	}
 	return sc, nil
-}
-
-func (sc Scalar) GetKey() C25519.Key {
-	return sc.key
 }
 
 func (sc *Scalar) Set(a *Scalar) (*Scalar) {

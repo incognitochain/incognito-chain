@@ -27,6 +27,11 @@ type bulletproofParams struct {
 
 var AggParam = newBulletproofParams(numOutputParam)
 
+func InitParam(noOutPutParam int) *bulletproofParams {
+	AggParam = newBulletproofParams(noOutPutParam)
+	return AggParam
+}
+
 func newBulletproofParams(m int) *bulletproofParams {
 	gen := new(bulletproofParams)
 	capacity := maxExp * m // fixed value

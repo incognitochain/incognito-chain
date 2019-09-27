@@ -18,7 +18,7 @@ func TestKey(t *testing.T) {
 
 		// check public key
 		publicKeyPrime := new(Point).ScalarMultBase(new(Scalar).FromBytes(privateKey))
-		assert.Equal(t, publicKeyPrime.ToBytes(), publicKey)
+		assert.Equal(t, ArrayToSlice(publicKeyPrime.ToBytes()), ArrayToSlice(publicKey))
 
 		// generate receiving key from private key
 		receivingKey := GenerateReceivingKey(privateKey)
@@ -28,7 +28,7 @@ func TestKey(t *testing.T) {
 
 		// decompress transmission key to transmissionKeyPoint
 		transmissionKeyPrime := new(Point).ScalarMultBase(new(Scalar).FromBytes(receivingKey))
-		assert.Equal(t, transmissionKeyPrime.ToBytes(), transmissionKey)
+		assert.Equal(t, ArrayToSlice(transmissionKeyPrime.ToBytes()), ArrayToSlice(transmissionKey))
 
 		// generate payment address from private key
 		paymentAddress := GeneratePaymentAddress(privateKey)
