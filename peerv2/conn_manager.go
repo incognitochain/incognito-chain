@@ -18,14 +18,19 @@ type ConsensusData interface {
 	GetUserRole() (string, int)
 }
 
+type Topic struct {
+	Name string
+	Sub  *pubsub.Subscription
+}
+
 type ConnManager struct {
 	LocalHost            *Host
 	DiscoverPeersAddress string
 	IdentityKey          *incognitokey.CommitteePublicKey
 
 	ps       *pubsub.PubSub
-	subs     map[string]*pubsub.Subscription
-	messages chan *pubsub.Message
+	subs     map[string]Topic     // mapping from message to topic's subscription
+	messages chan *pubsub.Message // queue messages from all topics
 
 	cd ConsensusData
 }
@@ -54,14 +59,10 @@ func (cm *ConnManager) Start() {
 	peerid, err := peer.IDB58Decode("QmbV4AAHWFFEtE67qqmNeEYXs5Yw5xNMS75oEKtdBvfoKN")
 	must(cm.LocalHost.Host.Connect(context.Background(), peer.AddrInfo{peerid, append([]multiaddr.Multiaddr{}, ipfsaddr)}))
 
-	//server service on this node
-	gRPCService := GRPCService_Server{}
-	gRPCService.registerServices(cm.LocalHost.GRPC.GetGRPCServer())
-
 	// Pubsub
 	// TODO(@0xbunyip): handle error
 	cm.ps, _ = pubsub.NewFloodSub(context.Background(), cm.LocalHost.Host)
-	cm.subs = map[string]*pubsub.Subscription{}
+	cm.subs = map[string]Topic{}
 	cm.messages = make(chan *pubsub.Message, 1000)
 
 	go cm.manageRoleSubscription()
@@ -75,7 +76,7 @@ func (cm *ConnManager) manageRoleSubscription() {
 
 	lastRole := "dummy"
 	lastShardID := -1000 // dummy value
-	lastTopics := []string{}
+	lastTopics := m2t{}
 	for range time.Tick(10 * time.Second) {
 		// Update when role changes
 		role, shardID := cd.GetUserRole()
@@ -107,10 +108,10 @@ func (cm *ConnManager) manageRoleSubscription() {
 }
 
 // subscribeNewTopics subscribes to new topics and unsubcribes any topics that aren't needed anymore
-func (cm *ConnManager) subscribeNewTopics(topics []string, subscribed []string) error {
-	found := func(s string, l []string) bool {
-		for _, m := range l {
-			if s == m {
+func (cm *ConnManager) subscribeNewTopics(topics, subscribed m2t) error {
+	found := func(s string, m m2t) bool {
+		for _, v := range m {
+			if s == v {
 				return true
 			}
 		}
@@ -118,7 +119,7 @@ func (cm *ConnManager) subscribeNewTopics(topics []string, subscribed []string) 
 	}
 
 	// Subscribe to new topics
-	for _, t := range topics {
+	for m, t := range topics {
 		if found(t, subscribed) {
 			continue
 		}
@@ -128,20 +129,19 @@ func (cm *ConnManager) subscribeNewTopics(topics []string, subscribed []string) 
 		if err != nil {
 			return err
 		}
-		cm.subs[t] = s
+		cm.subs[m] = Topic{Name: t, Sub: s}
 		go processSubscriptionMessage(cm.messages, s)
 	}
 
 	// Unsubscribe to old ones
-	for _, t := range subscribed {
+	for m, t := range subscribed {
 		if found(t, topics) {
 			continue
 		}
 
 		fmt.Println("unsubscribing", t)
-		s := cm.subs[t]
-		s.Cancel()
-		delete(cm.subs, t)
+		cm.subs[m].Sub.Cancel()
+		delete(cm.subs, m)
 	}
 	return nil
 }
@@ -161,20 +161,33 @@ func processSubscriptionMessage(inbox chan *pubsub.Message, sub *pubsub.Subscrip
 	}
 }
 
+type m2t map[string]string // Message to topic name
+
 func (cm *ConnManager) registerToProxy(
 	peerID peer.ID,
 	pubkey string,
 	role string,
 	shardID int,
-) ([]string, error) {
+) (m2t, error) {
 	// Client on this node
 	client := GRPCService_Client{cm.LocalHost.GRPC}
-	return client.ProxyRegister(
+	messagesWanted := getMessagesForRole(role, shardID)
+	pairs, err := client.ProxyRegister(
 		context.Background(),
 		peerID,
 		pubkey,
-		getMessagesForRole(role, shardID),
+		messagesWanted,
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Mapping from message to topic name
+	topics := m2t{}
+	for _, p := range pairs {
+		topics[p.Message] = p.Topic
+	}
+	return topics, nil
 }
 
 func getMessagesForRole(role string, shardID int) []string {
