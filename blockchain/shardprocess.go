@@ -943,40 +943,15 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock 
 					tokenIDs = append(tokenIDs, tokenID)
 				}
 			}
-			if blockchain.config.IsBlockGenStarted {
-				blockchain.config.CRemovedTxs <- tx
-			}
 		}
 		go blockchain.config.TxPool.RemoveCandidateList(candidates)
 		go blockchain.config.TxPool.RemoveTokenIDList(tokenIDs)
-
-		//Remove tx out of pool
+		// remove Pending Tx in Blockgen via Pool
 		go blockchain.config.TxPool.RemoveTx(shardBlock.Body.Transactions, true)
-		for _, tx := range shardBlock.Body.Transactions {
-			go func(tx metadata.Transaction) {
-				if blockchain.config.IsBlockGenStarted {
-					blockchain.config.CRemovedTxs <- tx
-				}
-			}(tx)
-		}
+
 	}()
 }
 
-//TODO: move this function to beaconprocess.go
-func (blockchain *BlockChain) removeOldDataAfterProcessingBeaconBlock() {
-	blockchain.BestState.Beacon.lock.RLock()
-	defer blockchain.BestState.Beacon.lock.RUnlock()
-	//=========Remove beacon beaconBlock in pool
-	go blockchain.config.BeaconPool.SetBeaconState(blockchain.BestState.Beacon.BeaconHeight)
-	go blockchain.config.BeaconPool.RemoveBlock(blockchain.BestState.Beacon.BeaconHeight)
-	//=========Remove shard to beacon beaconBlock in pool
-
-	go func() {
-		//force release readLock first, before execute the params in below function (which use same readLock).
-		//if writeLock occur before release, readLock will be block
-		blockchain.config.ShardToBeaconPool.SetShardState(blockchain.BestState.Beacon.GetBestShardHeight())
-	}()
-}
 func (blockchain *BlockChain) verifyCrossShardCustomToken(CrossTxTokenData map[byte][]CrossTxTokenData, shardID byte, txs []metadata.Transaction) error {
 	txTokenDataListFromTxs := []transaction.TxNormalTokenData{}
 	_, txTokenDataList, err := blockchain.createNormalTokenTxForCrossShard(nil, CrossTxTokenData, shardID)
