@@ -26,6 +26,16 @@ func (httpServer *HttpServer) handleGetRawMempool(params interface{}, closeChan 
 	return result, nil
 }
 
+/*
+handleGetPendingTxsInBlockgen - RPC returns all transaction ids in blockgen
+*/
+func (httpServer *HttpServer) handleGetPendingTxsInBlockgen(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	Logger.log.Debugf("handleGetRawMempool params: %+v", params)
+	result := jsonresult.NewGetPendingTxsInBlockgenResult(httpServer.config.Blockgen.GetPendingTxsV2())
+	Logger.log.Debugf("handleGetRawMempool result: %+v", result)
+	return result, nil
+}
+
 func (httpServer *HttpServer) handleGetNumberOfTxsInMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleGetNumberOfTxsInMempool params: %+v", params)
 	result := httpServer.txMemPoolService.GetNumberOfTxsInMempool()
@@ -44,7 +54,7 @@ func (httpServer *HttpServer) handleMempoolEntry(params interface{}, closeChan <
 	}
 
 	txInPool, shardID, err := httpServer.txMemPoolService.MempoolEntry(params.(string))
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 
