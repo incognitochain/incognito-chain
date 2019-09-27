@@ -1263,9 +1263,11 @@ func (tp *TxPool) EmptyPool() bool {
 	}
 	tp.pool = make(map[common.Hash]*TxDesc)
 	tp.poolSerialNumbersHashList = make(map[common.Hash][]common.Hash)
+	tp.poolSerialNumberHash = make(map[common.Hash]common.Hash)
 	tp.poolCandidate = make(map[common.Hash]string)
 	tp.poolTokenID = make(map[common.Hash]string)
-	if len(tp.pool) == 0 && len(tp.poolSerialNumbersHashList) == 0 && len(tp.poolCandidate) == 0 && len(tp.poolTokenID) == 0 {
+	tp.poolRequestStopStaking = make(map[common.Hash]string)
+	if len(tp.pool) == 0 && len(tp.poolSerialNumbersHashList) == 0 && len(tp.poolSerialNumberHash) == 0 && len(tp.poolCandidate) == 0 && len(tp.poolTokenID) == 0 && len(tp.poolRequestStopStaking) == 0 {
 		return true
 	}
 	return false
