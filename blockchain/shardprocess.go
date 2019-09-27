@@ -943,22 +943,12 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock 
 					tokenIDs = append(tokenIDs, tokenID)
 				}
 			}
-			if blockchain.config.IsBlockGenStarted {
-				blockchain.config.CRemovedTxs <- tx
-			}
 		}
 		go blockchain.config.TxPool.RemoveCandidateList(candidates)
 		go blockchain.config.TxPool.RemoveTokenIDList(tokenIDs)
-
-		//Remove tx out of pool
+		// remove Pending Tx in Blockgen via Pool
 		go blockchain.config.TxPool.RemoveTx(shardBlock.Body.Transactions, true)
-		for _, tx := range shardBlock.Body.Transactions {
-			go func(tx metadata.Transaction) {
-				if blockchain.config.IsBlockGenStarted {
-					blockchain.config.CRemovedTxs <- tx
-				}
-			}(tx)
-		}
+
 	}()
 }
 
