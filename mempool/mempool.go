@@ -182,6 +182,7 @@ func (tp *TxPool) MonitorPool() {
 			txHash := *txDesc.Desc.Tx.Hash()
 			startTime := txDesc.StartTime
 			tp.removeTx(txDesc.Desc.Tx)
+			tp.TriggerCRemoveTxs(txDesc.Desc.Tx)
 			tp.removeCandidateByTxHash(txHash)
 			tp.removeRequestStopStakingByTxHash(txHash)
 			tp.removeTokenIDByTxHash(txHash)
@@ -741,6 +742,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 			if isReplaced {
 				txToBeReplaced := txDescToBeReplaced.Desc.Tx
 				tp.removeTx(txToBeReplaced)
+				tp.TriggerCRemoveTxs(txToBeReplaced)
 				tp.removeRequestStopStakingByTxHash(*txToBeReplaced.Hash())
 				tp.removeTokenIDByTxHash(*txToBeReplaced.Hash())
 				// send tx into channel of CRmoveTxs
@@ -908,6 +910,7 @@ func (tp *TxPool) RemoveTx(txs []metadata.Transaction, isInBlock bool) {
 		})
 		now = time.Now()
 		tp.removeTx(tx)
+		tp.TriggerCRemoveTxs(tx)
 		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 			metrics.Measurement:      metrics.TxPoolRemovedTimeDetails,
 			metrics.MeasurementValue: float64(time.Since(now).Seconds()),
