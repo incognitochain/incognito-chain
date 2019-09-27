@@ -1,11 +1,13 @@
 package privacy
 
 import (
+	"crypto/subtle"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	C25519 "github.com/incognitochain/incognito-chain/privacy/curve25519"
 	"math/big"
+	"sort"
 )
 
 type Scalar struct {
@@ -197,11 +199,47 @@ func (sc *Scalar) IsOne() bool {
 		s[27] | s[28] | s[29] | s[30] | s[31]) - 1) >> 8)+1 == 1
 }
 
+func IsScalarEqual(sc1, sc2 *Scalar) bool {
+	tmpa := sc1.ToBytesS()
+	tmpb := sc2.ToBytesS()
+
+	return subtle.ConstantTimeCompare(tmpa, tmpb) == 1
+}
+
+func Compare(sca, scb *Scalar) int {
+	tmpa := sca.ToBytesS()
+	tmpb := scb.ToBytesS()
+
+	for i:= Ed25519KeySize-1; i>=0; i-- {
+		if uint64(tmpa[i]) > uint64(tmpb[i]) {
+			return 1
+		}
+
+		if uint64(tmpa[i]) < uint64(tmpb[i]) {
+			return -1
+		}
+	}
+	return 0
+}
+
 func (sc *Scalar) IsZero() bool {
 	if sc == nil {
 		return false
 	}
 	return C25519.ScIsZero(&sc.key)
+}
+
+func CheckDuplicateScalarArray(arr []*Scalar) bool {
+	sort.Slice(arr, func(i, j int) bool {
+		return Compare(arr[i], arr[j]) == -1
+	})
+
+	for i := 0; i < len(arr)-1; i++ {
+		if IsScalarEqual(arr[i], arr[i+1]) == true {
+			return true
+		}
+	}
+	return false
 }
 
 func (sc *Scalar) Invert(a *Scalar) *Scalar {

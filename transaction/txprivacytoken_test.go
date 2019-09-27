@@ -5,7 +5,6 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/stretchr/testify/assert"
-	"math/big"
 	"testing"
 )
 
@@ -135,11 +134,13 @@ func TestInitTxPrivacyToken(t *testing.T) {
 	outputCoins := ConvertOutputCoinToInputCoin(tx.TxPrivacyTokenData.TxNormal.Proof.GetOutputCoins())
 
 	// calculate serial number for input coins
-	outputCoins[0].CoinDetails.SetSerialNumber(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex].Derive(new(big.Int).SetBytes(senderKey.KeySet.PrivateKey),
-		outputCoins[0].CoinDetails.GetSNDerivator()))
+	serialNumber := new(privacy.Point).Derive(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex],
+		new(privacy.Scalar).FromBytesS(senderKey.KeySet.PrivateKey),
+		outputCoins[0].CoinDetails.GetSNDerivator())
+	outputCoins[0].CoinDetails.SetSerialNumber(serialNumber)
 
 	db.StorePrivacyToken(*tx.GetTokenID(), tx.Hash()[:])
-	db.StoreCommitments(*tx.GetTokenID(), senderKey.KeySet.PaymentAddress.Pk[:], [][]byte{outputCoins[0].CoinDetails.GetCoinCommitment().Compress()}, shardID)
+	db.StoreCommitments(*tx.GetTokenID(), senderKey.KeySet.PaymentAddress.Pk[:], [][]byte{outputCoins[0].CoinDetails.GetCoinCommitment().ToBytesS()}, shardID)
 
 	listTokens, err := db.ListPrivacyToken()
 	assert.Equal(t, nil, err)

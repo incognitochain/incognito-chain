@@ -28,7 +28,7 @@ const (
 	PaymentAddressSize  = 64  // bytes
 	// for signature size
 	// it is used for both privacy and no privacy
-	SigPubKeySize    = 33
+	SigPubKeySize    = 32
 	SigNoPrivacySize = 64
 	SigPrivacySize   = 96
 	IncPubKeyB58Size = 51
