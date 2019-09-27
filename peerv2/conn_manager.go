@@ -2,8 +2,10 @@ package peerv2
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"log"
+	"reflect"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -13,6 +15,99 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/multiformats/go-multiaddr"
 )
+
+func NewConnManager(
+	host *Host,
+	dpa string,
+	ikey *incognitokey.CommitteePublicKey,
+	cd ConsensusData,
+) *ConnManager {
+	return &ConnManager{
+		LocalHost:            host,
+		DiscoverPeersAddress: dpa,
+		IdentityKey:          ikey,
+		cd:                   cd,
+	}
+}
+
+func (cm *ConnManager) PublishMessage(msg wire.Message) error {
+	publishable := []string{wire.CmdBlockShard, wire.CmdBFT}
+	msgType := msg.MessageType()
+	for _, p := range publishable {
+		if msgType == p {
+			fmt.Println("[db] Publishing message", msgType)
+			return cm.encodeAndPublish(msg)
+		}
+	}
+
+	log.Println("Cannot publish message", msgType)
+	return nil
+}
+
+func (cm *ConnManager) encodeAndPublish(msg wire.Message) error {
+	// NOTE: copy from peerConn.outMessageHandler
+	// Create and send messageHex
+	messageBytes, err := msg.JsonSerialize()
+	if err != nil {
+		fmt.Println("Can not serialize json format for messageHex:" + msg.MessageType())
+		fmt.Println(err)
+		return err
+	}
+
+	// Add 24 bytes headerBytes into messageHex
+	headerBytes := make([]byte, wire.MessageHeaderSize)
+	// add command type of message
+	cmdType, messageErr := wire.GetCmdType(reflect.TypeOf(msg))
+	if messageErr != nil {
+		fmt.Println("Can not get cmd type for " + msg.MessageType())
+		fmt.Println(messageErr)
+		return err
+	}
+	copy(headerBytes[:], []byte(cmdType))
+	// add forward type of message at 13st byte
+	forwardType := byte('s')
+	forwardValue := byte(0)
+	copy(headerBytes[wire.MessageCmdTypeSize:], []byte{forwardType})
+	copy(headerBytes[wire.MessageCmdTypeSize+1:], []byte{forwardValue})
+	messageBytes = append(messageBytes, headerBytes...)
+	fmt.Printf("[db] OutMessageHandler TYPE %s CONTENT %s\n", cmdType, string(messageBytes))
+
+	// zip data before send
+	messageBytes, err = common.GZipFromBytes(messageBytes)
+	if err != nil {
+		fmt.Println("Can not gzip for messageHex:" + msg.MessageType())
+		fmt.Println(err)
+		return err
+	}
+	messageHex := hex.EncodeToString(messageBytes)
+	//log.Debugf("Content in hex encode: %s", string(messageHex))
+	// add end character to messageHex (delim '\n')
+	messageHex += "\n"
+
+	// Publish
+	topic := msg.MessageType()
+	fmt.Printf("[db] Publishing to topic %s\n", topic)
+	return cm.ps.Publish(topic, []byte(messageHex))
+}
+
+func (cm *ConnManager) Start() {
+	//connect to proxy node
+	proxyIP, proxyPort := ParseListenner(cm.DiscoverPeersAddress, "127.0.0.1", 9300)
+	ipfsaddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", proxyIP, proxyPort))
+	if err != nil {
+		panic(err)
+	}
+	peerid, err := peer.IDB58Decode("QmbV4AAHWFFEtE67qqmNeEYXs5Yw5xNMS75oEKtdBvfoKN")
+	must(cm.LocalHost.Host.Connect(context.Background(), peer.AddrInfo{peerid, append([]multiaddr.Multiaddr{}, ipfsaddr)}))
+
+	// Pubsub
+	// TODO(@0xbunyip): handle error
+	cm.ps, _ = pubsub.NewFloodSub(context.Background(), cm.LocalHost.Host)
+	cm.subs = map[string]Topic{}
+	cm.messages = make(chan *pubsub.Message, 1000)
+
+	go cm.manageRoleSubscription()
+}
 
 type ConsensusData interface {
 	GetUserRole() (string, int)
@@ -35,39 +130,6 @@ type ConnManager struct {
 	cd ConsensusData
 }
 
-func NewConnManager(
-	host *Host,
-	dpa string,
-	ikey *incognitokey.CommitteePublicKey,
-	cd ConsensusData,
-) *ConnManager {
-	return &ConnManager{
-		LocalHost:            host,
-		DiscoverPeersAddress: dpa,
-		IdentityKey:          ikey,
-		cd:                   cd,
-	}
-}
-
-func (cm *ConnManager) Start() {
-	//connect to proxy node
-	proxyIP, proxyPort := ParseListenner(cm.DiscoverPeersAddress, "127.0.0.1", 9300)
-	ipfsaddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", proxyIP, proxyPort))
-	if err != nil {
-		panic(err)
-	}
-	peerid, err := peer.IDB58Decode("QmbV4AAHWFFEtE67qqmNeEYXs5Yw5xNMS75oEKtdBvfoKN")
-	must(cm.LocalHost.Host.Connect(context.Background(), peer.AddrInfo{peerid, append([]multiaddr.Multiaddr{}, ipfsaddr)}))
-
-	// Pubsub
-	// TODO(@0xbunyip): handle error
-	cm.ps, _ = pubsub.NewFloodSub(context.Background(), cm.LocalHost.Host)
-	cm.subs = map[string]Topic{}
-	cm.messages = make(chan *pubsub.Message, 1000)
-
-	go cm.manageRoleSubscription()
-}
-
 // manageRoleSubscription: polling current role every minute and subscribe to relevant topics
 func (cm *ConnManager) manageRoleSubscription() {
 	cd := cm.cd
@@ -77,7 +139,7 @@ func (cm *ConnManager) manageRoleSubscription() {
 	lastRole := "dummy"
 	lastShardID := -1000 // dummy value
 	lastTopics := m2t{}
-	for range time.Tick(10 * time.Second) {
+	for range time.Tick(5 * time.Second) {
 		// Update when role changes
 		role, shardID := cd.GetUserRole()
 		if role == lastRole && shardID == lastShardID {
@@ -124,7 +186,7 @@ func (cm *ConnManager) subscribeNewTopics(topics, subscribed m2t) error {
 			continue
 		}
 
-		fmt.Println("subscribing", t)
+		fmt.Println("[db] subscribing", m, t)
 		s, err := cm.ps.Subscribe(t)
 		if err != nil {
 			return err
@@ -139,8 +201,8 @@ func (cm *ConnManager) subscribeNewTopics(topics, subscribed m2t) error {
 			continue
 		}
 
-		fmt.Println("unsubscribing", t)
-		cm.subs[m].Sub.Cancel()
+		fmt.Println("[db] unsubscribing", m, t)
+		cm.subs[m].Sub.Cancel() // TODO(@0xbunyip): lock
 		delete(cm.subs, m)
 	}
 	return nil
@@ -151,6 +213,7 @@ func processSubscriptionMessage(inbox chan *pubsub.Message, sub *pubsub.Subscrip
 	ctx := context.Background()
 	for {
 		msg, err := sub.Next(ctx)
+		fmt.Println("[db] Found new msg")
 		if err != nil {
 			log.Println(err)
 			return
