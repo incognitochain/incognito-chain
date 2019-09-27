@@ -175,7 +175,6 @@ func (e *BLSBFT) Start() error {
 				e.addEarlyVote(msg)
 
 			case <-ticker:
-				e.isOngoing = false
 				pubKey := e.UserKeySet.GetPublicKey()
 				if common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList) == -1 {
 					e.enterNewRound()
@@ -183,6 +182,7 @@ func (e *BLSBFT) Start() error {
 				}
 
 				if !e.Chain.IsReady() {
+					e.isOngoing = false
 					continue
 				}
 
@@ -214,7 +214,6 @@ func (e *BLSBFT) Start() error {
 							}
 							e.RoundData.BlockValidateData = *valData
 							e.enterVotePhase()
-							e.isOngoing = true
 						}
 					}
 				case votePhase:
@@ -314,6 +313,7 @@ func (e *BLSBFT) enterVotePhase() {
 	if !e.isInTimeFrame() || e.RoundData.State == votePhase {
 		return
 	}
+	e.isOngoing = true
 	e.setState(votePhase)
 	err := e.sendVote()
 	if err != nil {
@@ -331,6 +331,7 @@ func (e *BLSBFT) enterNewRound() {
 	if e.isInTimeFrame() && e.RoundData.State != newround {
 		return
 	}
+	e.isOngoing = false
 	e.setState(newround)
 	e.waitForNextRound()
 	e.InitRoundData()
