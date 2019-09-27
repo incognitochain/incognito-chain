@@ -1022,6 +1022,7 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingBeaconBlock() {
 		blockchain.config.ShardToBeaconPool.SetShardState(shardHeightMap)
 	}()
 }
+
 func (blockchain *BlockChain) verifyCrossShardCustomToken(CrossTxTokenData map[byte][]CrossTxTokenData, shardID byte, txs []metadata.Transaction) error {
 	txTokenDataListFromTxs := []transaction.TxNormalTokenData{}
 	_, txTokenDataList, err := blockchain.createNormalTokenTxForCrossShard(nil, CrossTxTokenData, shardID)

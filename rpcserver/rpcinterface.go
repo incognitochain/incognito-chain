@@ -33,6 +33,7 @@ var HttpHandler = map[string]httpHandler{
 	getMempoolEntry:         (*HttpServer).handleMempoolEntry,
 	removeTxInMempool:       (*HttpServer).handleRemoveTxInMempool,
 	getMempoolInfo:          (*HttpServer).handleGetMempoolInfo,
+	getPendingTxsInBlockgen: (*HttpServer).handleGetPendingTxsInBlockgen,
 
 	// block pool ver.2
 	getShardToBeaconPoolStateV2: (*HttpServer).handleGetShardToBeaconPoolStateV2,
