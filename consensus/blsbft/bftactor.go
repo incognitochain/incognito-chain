@@ -104,21 +104,23 @@ func (e *BLSBFT) Start() error {
 				}
 				blockRoundKey := getRoundKey(block.GetHeight(), block.GetRound())
 				e.logger.Info("receive block", blockRoundKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
-				if block.GetHeight() >= e.RoundData.NextHeight {
-					if e.RoundData.NextHeight == block.GetHeight() && e.RoundData.Round > block.GetRound() {
-						e.logger.Error("wrong round")
-						continue
-					}
+				if block.GetHeight() == e.RoundData.NextHeight {
 					if e.RoundData.Round == block.GetRound() {
 						if e.RoundData.Block == nil {
 							e.Blocks[blockRoundKey] = block
 							continue
 						}
 					} else {
-						if block.GetRound() > e.RoundData.Round {
+						if e.RoundData.Round < block.GetRound() {
 							e.Blocks[blockRoundKey] = block
+							continue
 						}
 					}
+					continue
+				}
+				if block.GetHeight() > e.RoundData.NextHeight {
+					e.Blocks[blockRoundKey] = block
+					continue
 				}
 			case msg := <-e.VoteMessageCh:
 				e.logger.Info("receive vote", msg.RoundKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
@@ -292,6 +294,7 @@ func (e *BLSBFT) enterProposePhase() {
 	block.(blockValidation).AddValidationField(validationDataString)
 
 	e.RoundData.Block = block
+	e.RoundData.BlockHash = *block.Hash()
 	e.RoundData.BlockValidateData = validationData
 
 	blockData, _ := json.Marshal(e.RoundData.Block)
