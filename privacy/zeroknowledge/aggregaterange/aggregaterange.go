@@ -133,44 +133,44 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 
 	proof.cmsValue = make([]*privacy.Point, lenValues)
 	for i := 0; i < lenValues; i++ {
-		proof.cmsValue[i], err = new(privacy.Point).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+		proof.cmsValue[i], err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 		if err != nil {
 			return err
 		}
 		offset += privacy.Ed25519KeySize
 	}
 
-	proof.a, err = new(privacy.Point).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+	proof.a, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
 	offset += privacy.Ed25519KeySize
 
-	proof.s, err = new(privacy.Point).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+	proof.s, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
 	offset += privacy.Ed25519KeySize
 
-	proof.t1, err = new(privacy.Point).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+	proof.t1, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
 	offset += privacy.Ed25519KeySize
 
-	proof.t2, err = new(privacy.Point).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+	proof.t2, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
 	offset += privacy.Ed25519KeySize
 
-	proof.tauX = new(privacy.Scalar).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+	proof.tauX = new(privacy.Scalar).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 	offset += privacy.Ed25519KeySize
 
-	proof.tHat = new(privacy.Scalar).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+	proof.tHat = new(privacy.Scalar).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 	offset += privacy.Ed25519KeySize
 
-	proof.mu = new(privacy.Scalar).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+	proof.mu = new(privacy.Scalar).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 	offset += privacy.Ed25519KeySize
 
 	proof.innerProductProof = new(InnerProductProof)

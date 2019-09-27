@@ -195,57 +195,57 @@ func (proof *SNPrivacyProof) SetBytes(bytes []byte) error {
 	var err error
 
 	proof.stmt.sn = new(privacy.Point)
-	proof.stmt.sn, err = new(privacy.Point).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+	proof.stmt.sn, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
 	offset += privacy.Ed25519KeySize
 
 	proof.stmt.comSK = new(privacy.Point)
-	proof.stmt.comSK, err = new(privacy.Point).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+	proof.stmt.comSK, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
 
 	offset += privacy.Ed25519KeySize
 	proof.stmt.comInput = new(privacy.Point)
-	proof.stmt.comInput, err = new(privacy.Point).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+	proof.stmt.comInput, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
 
 	offset += privacy.Ed25519KeySize
 	proof.tSK = new(privacy.Point)
-	proof.tSK, err = new(privacy.Point).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+	proof.tSK, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
 
 	offset += privacy.Ed25519KeySize
 	proof.tInput = new(privacy.Point)
-	proof.tInput, err = new(privacy.Point).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+	proof.tInput, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
 
 	offset += privacy.Ed25519KeySize
 	proof.tSN = new(privacy.Point)
-	proof.tSN, err = new(privacy.Point).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+	proof.tSN, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
 
 	offset += privacy.Ed25519KeySize
-	proof.zSK = new(privacy.Scalar).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+	proof.zSK = new(privacy.Scalar).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 
 	offset += privacy.Ed25519KeySize
-	proof.zRSK = new(privacy.Scalar).FromBytes(privacy.SliceToArray(bytes[offset : offset+privacy.Ed25519KeySize]))
+	proof.zRSK = new(privacy.Scalar).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 
 	offset += privacy.Ed25519KeySize
-	proof.zInput = new(privacy.Scalar).FromBytes(privacy.SliceToArray(bytes[offset : offset+common.BigIntSize]))
+	proof.zInput = new(privacy.Scalar).FromBytesS(bytes[offset : offset+common.BigIntSize])
 
 	offset += privacy.Ed25519KeySize
-	proof.zRInput = new(privacy.Scalar).FromBytes(privacy.SliceToArray(bytes[offset : offset+common.BigIntSize]))
+	proof.zRInput = new(privacy.Scalar).FromBytesS(bytes[offset : offset+common.BigIntSize])
 
 	return nil
 }
@@ -274,7 +274,7 @@ func (wit SNPrivacyWitness) Prove(mess []byte) (*SNPrivacyProof, error) {
 			tInput.ToBytesS(),
 			tOutput.ToBytesS()})
 	} else {
-		x.FromBytes(privacy.SliceToArray(mess))
+		x.FromBytesS(mess)
 	}
 
 	// Calculate zSeed = sk * x + eSK
@@ -311,7 +311,7 @@ func (proof SNPrivacyProof) Verify(mess []byte) (bool, error) {
 			proof.tInput.ToBytesS(),
 			proof.tSN.ToBytesS()})
 	} else {
-		x.FromBytes(privacy.SliceToArray(mess))
+		x.FromBytesS(mess)
 	}
 
 	// Check gSND^zInput * h^zRInput = input^x * tInput
