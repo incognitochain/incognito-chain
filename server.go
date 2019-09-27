@@ -459,6 +459,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			RPCMaxWSClients: cfg.RPCMaxWSClients,
 			ChainParams:     chainParams,
 			BlockChain:      serverObj.blockChain,
+			Blockgen:        serverObj.blockgen,
 			TxMemPool:       serverObj.memPool,
 			Server:          serverObj,
 			Wallet:          serverObj.wallet,

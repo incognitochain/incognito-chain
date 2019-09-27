@@ -62,6 +62,7 @@ type RpcServerConfig struct {
 	ProtocolVersion string
 	ChainParams     *blockchain.Params
 	BlockChain      *blockchain.BlockChain
+	Blockgen        *blockchain.BlockGenerator
 	MemCache        *memcache.MemoryCache
 	Database        *database.DatabaseInterface
 	Wallet          *wallet.Wallet

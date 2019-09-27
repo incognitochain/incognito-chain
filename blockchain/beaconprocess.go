@@ -231,6 +231,21 @@ func (beaconBestState *BeaconBestState) updateNumOfBlocksByProducers(beaconBlock
 	}
 }
 
+/*func (blockchain *BlockChain) removeOldDataAfterProcessingBeaconBlock() {
+	blockchain.BestState.Beacon.lock.RLock()
+	defer blockchain.BestState.Beacon.lock.RUnlock()
+	//=========Remove beacon beaconBlock in pool
+	go blockchain.config.BeaconPool.SetBeaconState(blockchain.BestState.Beacon.BeaconHeight)
+	go blockchain.config.BeaconPool.RemoveBlock(blockchain.BestState.Beacon.BeaconHeight)
+	//=========Remove shard to beacon beaconBlock in pool
+
+	go func() {
+		//force release readLock first, before execute the params in below function (which use same readLock).
+		//if writeLock occur before release, readLock will be block
+		blockchain.config.ShardToBeaconPool.SetShardState(blockchain.BestState.Beacon.GetBestShardHeight())
+	}()
+}*/
+
 /*
 	VerifyPreProcessingBeaconBlock
 	This function DOES NOT verify new block with best state
