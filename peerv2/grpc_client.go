@@ -18,7 +18,7 @@ func (self *GRPCService_Client) ProxyRegister(
 	peerID peer.ID,
 	pubkey string,
 	messages []string,
-) ([]string, error) {
+) ([]*MessageTopicPair, error) {
 	grpcConn, err := self.p2pgrpc.Dial(ctx, peerID, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return nil, err
@@ -29,5 +29,5 @@ func (self *GRPCService_Client) ProxyRegister(
 		log.Fatalln(err)
 		return nil, err
 	}
-	return reply.Topics, nil
+	return reply.Pair, nil
 }
