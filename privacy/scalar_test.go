@@ -22,7 +22,7 @@ func TestScalar_Mul(t *testing.T) {
 
 		curveOrder := C25519.CurveOrder()
 
-		resBN := new(big.Int).SetBytes(ArrayToSlice(res.ToBytes()))
+		resBN := new(big.Int).SetBytes(res.ToBytesS())
 		curveOrderBN := new(big.Int).SetBytes(ArrayToSlice(curveOrder.ToBytes()))
 
 		if resBN.Cmp(curveOrderBN) == 1{

@@ -133,10 +133,10 @@ func (sig *SchnSignature) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
 		return NewPrivacyErr(InvalidInputToSetBytesErr, nil)
 	}
-	sig.e = new(Scalar).FromBytes(SliceToArray(bytes[0:Ed25519KeySize]))
-	sig.z1 = new(Scalar).FromBytes(SliceToArray(bytes[Ed25519KeySize : 2*Ed25519KeySize]))
+	sig.e = new(Scalar).FromBytesS(bytes[0:Ed25519KeySize])
+	sig.z1 = new(Scalar).FromBytesS(bytes[Ed25519KeySize : 2*Ed25519KeySize])
 	if len(bytes) == 3*Ed25519KeySize {
-		sig.z2 = new(Scalar).FromBytes(SliceToArray(bytes[2*Ed25519KeySize:]))
+		sig.z2 = new(Scalar).FromBytesS(bytes[2*Ed25519KeySize:])
 	} else {
 		sig.z2 = nil
 	}
