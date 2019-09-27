@@ -33,7 +33,6 @@ func vectorAdd(a []*privacy.Scalar, b []*privacy.Scalar) ([]*privacy.Scalar, err
 	}
 
 	res := make([]*privacy.Scalar, len(a))
-
 	for i := range a {
 		res[i] = new(privacy.Scalar).Add(a[i], b[i])
 	}
@@ -45,14 +44,11 @@ func innerProduct(a []*privacy.Scalar, b []*privacy.Scalar) (*privacy.Scalar, er
 	if len(a) != len(b) {
 		return nil, errors.New("InnerProduct: Arrays not of the same length")
 	}
-
 	res := new(privacy.Scalar).FromUint64(uint64(0))
-
 	for i := range a {
 		//res = a[i]*b[i] + res % l
 		res.MulAdd(a[i], b[i], res)
 	}
-
 	return res, nil
 }
 
@@ -63,13 +59,9 @@ func hadamardProduct(a []*privacy.Scalar, b []*privacy.Scalar) ([]*privacy.Scala
 	}
 
 	res := make([]*privacy.Scalar, len(a))
-
 	for i := 0; i < len(res); i++ {
-
-			res[i] = new(privacy.Scalar).Mul(a[i], b[i])
-
+		res[i] = new(privacy.Scalar).Mul(a[i], b[i])
 	}
-
 	return res, nil
 }
 
@@ -79,7 +71,6 @@ func powerVector(base *privacy.Scalar, n int) []*privacy.Scalar {
 	res[0] = new(privacy.Scalar).FromUint64(1)
 	if n >1 {
 		res[1] = new(privacy.Scalar).Set(base)
-
 		for i := 2; i < n; i++ {
 			res[i] = new(privacy.Scalar).Mul(res[i-1], base)
 		}
@@ -119,7 +110,7 @@ func encodeVectors(l []*privacy.Scalar, r []*privacy.Scalar, g []*privacy.Point,
 	res := new(privacy.Point).Add(tmp1, tmp2)
 	return res, nil
 
-	//AddPedersen Approach
+	////AddPedersen Approach
 	//if len(l) != len(r) || len(g) != len(l) || len(h) != len(g) {
 	//	return nil, errors.New("invalid input")
 	//}
@@ -135,28 +126,28 @@ func encodeVectors(l []*privacy.Scalar, r []*privacy.Scalar, g []*privacy.Point,
 
 func encodeCachedVectors(l []*privacy.Scalar, r []*privacy.Scalar, gPre [][8]C25519.CachedGroupElement, hPre [][8]C25519.CachedGroupElement) (*privacy.Point, error) {
 	// MultiscalarMul Approach
-	if len(l) != len(r) || len(gPre) != len(l) || len(hPre) != len(gPre) {
-		return nil, errors.New("invalid input")
-	}
-	tmp1 := new(privacy.Point).MultiScalarMultCached(l, gPre)
-	tmp2 := new(privacy.Point).MultiScalarMultCached(r, hPre)
-
-	res := new(privacy.Point).Add(tmp1, tmp2)
-	return res, nil
+	//if len(l) != len(r) || len(gPre) != len(l) || len(hPre) != len(gPre) {
+	//	return nil, errors.New("invalid input")
+	//}
+	//tmp1 := new(privacy.Point).MultiScalarMultCached(l, gPre)
+	//tmp2 := new(privacy.Point).MultiScalarMultCached(r, hPre)
+	//
+	//res := new(privacy.Point).Add(tmp1, tmp2)
+	//return res, nil
 
 
 	//CacheAddPedersen Approach
-	//if len(l) != len(r) || len(gPre) != len(l) || len(hPre) != len(hPre) {
-	//	return nil, errors.New("invalid input")
-	//}
-	//
-	//res := new(privacy.Point).Identity()
-	//
-	//for i := 0; i < len(l); i++ {
-	//	tmp := new(privacy.Point).AddPedersenCached(l[i], gPre[i], r[i], hPre[i])
-	//	res.Add(res, tmp)
-	//}
-	//return res, nil
+	if len(l) != len(r) || len(gPre) != len(l) || len(hPre) != len(hPre) {
+		return nil, errors.New("invalid input")
+	}
+
+	res := new(privacy.Point).Identity()
+
+	for i := 0; i < len(l); i++ {
+		tmp := new(privacy.Point).AddPedersenCached(l[i], gPre[i], r[i], hPre[i])
+		res.Add(res, tmp)
+	}
+	return res, nil
 }
 
 

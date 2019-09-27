@@ -3,7 +3,6 @@ package transaction
 import (
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"testing"
 	"time"
 
@@ -42,8 +41,10 @@ func TestUnmarshalJSON(t *testing.T) {
 func TestInitTx(t *testing.T) {
 	senderKey, err := wallet.Base58CheckDeserialize("112t8rnXCqbbNYBquntyd6EvDT4WiDDQw84ZSRDKmazkqrzi6w8rWyCVt7QEZgAiYAV4vhJiX7V9MCfuj4hGLoDN7wdU1LoWGEFpLs59X7K3")
 	assert.Equal(t, nil, err)
+
 	err = senderKey.KeySet.InitFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	assert.Equal(t, nil, err)
+
 	senderPaymentAddress := senderKey.KeySet.PaymentAddress
 	senderPublicKey := senderPaymentAddress.Pk
 
@@ -61,7 +62,7 @@ func TestInitTx(t *testing.T) {
 	db.StoreCommitments(
 		common.PRVCoinID,
 		senderPaymentAddress.Pk,
-		[][]byte{coinBaseTx.(*Tx).Proof.GetOutputCoins()[0].CoinDetails.GetCoinCommitment().Compress()},
+		[][]byte{coinBaseTx.(*Tx).Proof.GetOutputCoins()[0].CoinDetails.GetCoinCommitment().ToBytesS()},
 		shardID)
 
 	// get output coins from coin base tx to create new tx
@@ -70,8 +71,11 @@ func TestInitTx(t *testing.T) {
 	// init new tx without privacy
 	tx1 := Tx{}
 	// calculate serial number for input coins
-	coinBaseOutput[0].CoinDetails.SetSerialNumber(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex].Derive(new(big.Int).SetBytes(senderKey.KeySet.PrivateKey),
-		coinBaseOutput[0].CoinDetails.GetSNDerivator()))
+	serialNumber := new(privacy.Point).Derive(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex],
+		new(privacy.Scalar).FromBytesS(senderKey.KeySet.PrivateKey),
+		coinBaseOutput[0].CoinDetails.GetSNDerivator())
+
+	coinBaseOutput[0].CoinDetails.SetSerialNumber(serialNumber)
 
 	// receiver's address
 	receiverPaymentAddress, _ := wallet.Base58CheckDeserialize("1Uv3BkYiWy9Mjt1yBa4dXBYKo3az22TeCVEpeXN93ieJ8qhrTDuUZBzsPZWjjP2AeRQnjw1y18iFPHTRuAqqufwVC1vNUAWs4wHFbbWC2")
@@ -120,7 +124,7 @@ func TestInitTx(t *testing.T) {
 
 	listInputSerialNumber := tx1.ListSerialNumbersHashH()
 	assert.Equal(t, 1, len(listInputSerialNumber))
-	assert.Equal(t, common.HashH(coinBaseOutput[0].CoinDetails.GetSerialNumber().Compress()), listInputSerialNumber[0])
+	assert.Equal(t, common.HashH(coinBaseOutput[0].CoinDetails.GetSerialNumber().ToBytesS()), listInputSerialNumber[0])
 
 	isValidSanity, err = tx1.ValidateSanityData(nil)
 	assert.Equal(t, true, isValidSanity)

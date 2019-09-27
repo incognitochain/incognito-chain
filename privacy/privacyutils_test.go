@@ -1,7 +1,6 @@
 package privacy
 
 import (
-	"crypto/rand"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/stretchr/testify/assert"
@@ -28,28 +27,6 @@ func TestUtilsRandBytes(t *testing.T) {
 		res := RandBytes(item)
 		fmt.Printf("Res: %v\n", res)
 		assert.Equal(t, item, len(res))
-	}
-}
-
-func TestUtilsRandScalar(t *testing.T) {
-	var r = rand.Reader
-	for i := 0; i < 100; i++ {
-		scalar := RandScalar(r)
-		isLessThanN := scalar.Cmp(Curve.Params().N)
-		assert.Equal(t, -1, isLessThanN)
-		assert.GreaterOrEqual(t, common.BigIntSize, len(scalar.Bytes()))
-	}
-}
-
-func TestUtilsRandScalar2(t *testing.T) {
-	//var r io.Reader
-	var r = rand.Reader
-	for i := 0; i < 100; i++ {
-		scalar := RandScalar(r)
-		isLessThanN := scalar.Cmp(Curve.Params().N)
-		fmt.Printf("Scalar: %v\n", scalar.Bytes())
-		assert.Equal(t, -1, isLessThanN)
-		assert.GreaterOrEqual(t, common.BigIntSize, len(scalar.Bytes()))
 	}
 }
 

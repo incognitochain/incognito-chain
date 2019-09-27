@@ -1,10 +1,8 @@
 package aggregaterange
 
 import (
-	"github.com/pkg/errors"
-	"sync"
-
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/pkg/errors"
 )
 
 // This protocol proves in zero-knowledge that a list of committed values falls in [0, 2^64)
@@ -216,11 +214,11 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	} else {
 		aggParam.g = AggParam.g[0:numValuePad*64]
 		aggParam.h = AggParam.h[0:numValuePad*64]
-		aggParam.gPrecomputed = AggParam.gPrecomputed[0:numValuePad*64]
-		aggParam.hPrecomputed = AggParam.hPrecomputed[0:numValuePad*64]
-		aggParam.gPreMultiScalar = AggParam.gPreMultiScalar[0:numValuePad*64]
-		aggParam.hPreMultiScalar = AggParam.hPreMultiScalar[0:numValuePad*64]
 		aggParam.u = AggParam.u
+		//aggParam.gPrecomputed = AggParam.gPrecomputed[0:numValuePad*64]
+		//aggParam.hPrecomputed = AggParam.hPrecomputed[0:numValuePad*64]
+		//aggParam.gPreMultiScalar = AggParam.gPreMultiScalar[0:numValuePad*64]
+		//aggParam.hPreMultiScalar = AggParam.hPreMultiScalar[0:numValuePad*64]
 	}
 
 	proof.cmsValue = make([]*privacy.Point, numValue)
@@ -251,8 +249,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	alpha := privacy.RandomScalar()
 
 	// Commitment to aL, aR: A = h^alpha * G^aL * H^aR
-	A, err := encodeCachedVectors(aL, aR, aggParam.gPreMultiScalar, aggParam.hPreMultiScalar)
-	//A, err := encodeVectors(aL, aR, aggParam.g, aggParam.h)
+	A, err := encodeVectors(aL, aR, aggParam.g, aggParam.h)
 	if err != nil {
 		return nil, err
 	}
@@ -271,8 +268,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	rho :=privacy.RandomScalar()
 
 	// Commitment to sL, sR : S = h^rho * G^sL * H^sR
-	S, err := encodeCachedVectors(sL, sR, aggParam.gPreMultiScalar, aggParam.hPreMultiScalar)
-	//S, err := encodeVectors(sL, sR, aggParam.g, aggParam.h)
+	S, err := encodeVectors(sL, sR, aggParam.g, aggParam.h)
 	if err != nil {
 		return nil, err
 	}
@@ -418,7 +414,6 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	tmpBN := new(privacy.Scalar)
 	for j := 0; j < numValuePad; j++ {
 		zTmp.Mul(zTmp, z)
-
 		proof.tauX.Add(proof.tauX, tmpBN.Mul(zTmp, rands[j]))
 	}
 
@@ -431,8 +426,8 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	innerProductWit := new(InnerProductWitness)
 	innerProductWit.a = lVector
 	innerProductWit.b = rVector
-	innerProductWit.p, err = encodeCachedVectors(lVector, rVector, aggParam.gPreMultiScalar, aggParam.hPreMultiScalar)
-	//innerProductWit.p, err = encodeVectors(lVector, rVector, aggParam.g, aggParam.h)
+	//innerProductWit.p, err = encodeCachedVectors(lVector, rVector, aggParam.gPrecomputed, aggParam.hPrecomputed)
+	innerProductWit.p, err = encodeVectors(lVector, rVector, aggParam.g, aggParam.h)
 	if err != nil {
 		return nil, err
 	}
@@ -464,13 +459,12 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	} else {
 		aggParam.g = AggParam.g[0:numValuePad*64]
 		aggParam.h = AggParam.h[0:numValuePad*64]
-		aggParam.gPrecomputed = AggParam.gPrecomputed[0:numValuePad*64]
-		aggParam.hPrecomputed = AggParam.hPrecomputed[0:numValuePad*64]
-		aggParam.gPreMultiScalar = AggParam.gPreMultiScalar[0:numValuePad*64]
-		aggParam.hPreMultiScalar = AggParam.hPreMultiScalar[0:numValuePad*64]
 		aggParam.u = AggParam.u
+		//aggParam.gPrecomputed = AggParam.gPrecomputed[0:numValuePad*64]
+		//aggParam.hPrecomputed = AggParam.hPrecomputed[0:numValuePad*64]
+		//aggParam.gPreMultiScalar = AggParam.gPreMultiScalar[0:numValuePad*64]
+		//aggParam.hPreMultiScalar = AggParam.hPreMultiScalar[0:numValuePad*64]
 	}
-
 
 	n := maxExp
 	oneNumber := new(privacy.Scalar).FromUint64(1)
@@ -490,20 +484,14 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	xSquare := new(privacy.Scalar).Mul(x, x)
 
 	yVector := powerVector(y, n*numValuePad)
-
 	// HPrime = H^(y^(1-i)
 	HPrime := make([]*privacy.Point, n*numValuePad)
-	var wg sync.WaitGroup
-	//wg.Add(len(HPrime))
+	yInverse := new(privacy.Scalar).Invert(y)
+	expyInverse := new(privacy.Scalar).FromUint64(1)
 	for i := 0; i < n*numValuePad; i++ {
-		//go func(i int, wg *sync.WaitGroup) {
-		//	defer wg.Done()
-			// todo: recheck exp
-			yInverse := new(privacy.Scalar).Invert(y)
-			HPrime[i] = new(privacy.Point).ScalarMult(aggParam.h[i], new(privacy.Scalar).Exp(yInverse, uint64(i)))
-		//}(i, &wg)
+		HPrime[i] = new(privacy.Point).ScalarMult(aggParam.h[i], expyInverse)
+		expyInverse.Mul(expyInverse, yInverse)
 	}
-	//wg.Wait()
 
 	// g^tHat * h^tauX = V^(z^2) * g^delta(y,z) * T1^x * T2^(x^2)
 	deltaYZ := new(privacy.Scalar).Sub(z, zSquare)
@@ -526,7 +514,6 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	zTmp := new(privacy.Scalar).Set(zSquare)
 	for j := 0; j < numValuePad; j++ {
 		zTmp.Mul(zTmp, z)
-
 		sum.Add(sum, zTmp)
 	}
 	sum.Mul(sum, innerProduct2)
@@ -534,29 +521,10 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 
 	left1 := privacy.PedCom.CommitAtIndex(proof.tHat, proof.tauX, privacy.PedersenValueIndex)
 
-	var temp1, temp2, temp3 *privacy.Point
-
-	wg.Add(3)
-	go func(wg *sync.WaitGroup) {
-		defer wg.Done()
-		temp1 = new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenValueIndex], deltaYZ)
-	}(&wg)
-	go func(wg *sync.WaitGroup) {
-		defer wg.Done()
-		temp2 = new(privacy.Point).ScalarMult(proof.t1, x)
-	}(&wg)
-	go func(wg *sync.WaitGroup) {
-		defer wg.Done()
-		temp3 = new(privacy.Point).ScalarMult( proof.t2, xSquare)
-	}(&wg)
-	wg.Wait()
-	right1 := new(privacy.Point).Add(temp1, temp2)
-	right1.Add(right1, temp3)
-
+	right1 := new(privacy.Point).ScalarMult( proof.t2, xSquare)
+	right1.Add(right1, new(privacy.Point).AddPedersen(deltaYZ,privacy.PedCom.G[privacy.PedersenValueIndex], x, proof.t1))
 	expVector := vectorMulScalar(powerVector(z, numValuePad), zSquare)
-	for i, cm := range tmpcmsValue {
-		right1 = new(privacy.Point).Add(right1, new(privacy.Point).ScalarMult(cm, expVector[i]))
-	}
+	right1.Add(right1, new(privacy.Point).MultiScalarMult(expVector, tmpcmsValue))
 
 	if !privacy.IsPointEqual(left1, right1) {
 		privacy.Logger.Log.Errorf("verify aggregated range proof statement 1 failed")

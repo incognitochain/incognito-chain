@@ -278,7 +278,7 @@ func TestCommonIndexOfStrInHashMap(t *testing.T) {
 }
 
 /*
-	Unit test for CheckDuplicateBigIntArray function
+	Unit test for CheckDuplicateScalarArray function
 */
 
 func TestCommonCheckDuplicateBigIntArray(t *testing.T) {
@@ -291,7 +291,7 @@ func TestCommonCheckDuplicateBigIntArray(t *testing.T) {
 	}
 
 	for _, dataItem := range data {
-		isDuplicate := CheckDuplicateBigIntArray(dataItem.arr)
+		isDuplicate := CheckDuplicateScalarArray(dataItem.arr)
 		assert.Equal(t, dataItem.isDuplicate, isDuplicate)
 	}
 }

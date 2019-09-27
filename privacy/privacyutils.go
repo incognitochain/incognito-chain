@@ -2,7 +2,6 @@ package privacy
 
 import (
 	"crypto/rand"
-	"io"
 	"math/big"
 )
 
@@ -11,22 +10,6 @@ func RandBytes(length int) []byte {
 	rbytes := make([]byte, length)
 	rand.Read(rbytes)
 	return rbytes
-}
-
-// RandScalar generates a big int with value less than order of group of elliptic points
-func RandScalar(r io.Reader) *big.Int {
-	var k *big.Int
-	var err error
-	for {
-		k, err = rand.Int(r, Curve.Params().N)
-		if err != nil {
-			continue
-		}
-		if k.Sign() > 0 {
-			break
-		}
-	}
-	return k
 }
 
 // ConvertIntToBinary represents a integer number in binary array with little endian with size n

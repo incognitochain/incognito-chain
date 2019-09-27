@@ -10,6 +10,23 @@ import (
 	"testing"
 )
 
+
+func TestCompare(t *testing.T) {
+	a := new(Scalar).FromUint64(1001)
+	b := new(Scalar).FromUint64(1001)
+	fmt.Println(Compare(a,b))
+}
+
+func TestCheckDuplicateScalarArray(t *testing.T) {
+	a := RandomScalar()
+	b := RandomScalar()
+	c := RandomScalar()
+	d := RandomScalar()
+
+	flag := CheckDuplicateScalarArray([]*Scalar{a,b,c, d, a, b})
+	fmt.Println(flag)
+}
+
 func TestScalar_Mul(t *testing.T) {
 	count := 0
 	for i:=0; i< 100; i++ {
@@ -29,7 +46,6 @@ func TestScalar_Mul(t *testing.T) {
 			count ++
 			fmt.Printf("Wrong!!!!!\n")
 		}
-
 
 		var resPrime C25519.Key
 		C25519.ScMul(&resPrime, &a.key, &b.key)
