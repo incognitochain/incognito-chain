@@ -5,16 +5,16 @@ import (
 )
 
 // 32-byte spending key
-type PrivateKey [Ed25519KeySize]byte
+type PrivateKey []byte
 
 // 32-byte public key
-type PublicKey [Ed25519KeySize]byte
+type PublicKey []byte
 
 // 32-byte receiving key
-type ReceivingKey [Ed25519KeySize]byte
+type ReceivingKey []byte
 
 // 32-byte transmission key
-type TransmissionKey [Ed25519KeySize]byte
+type TransmissionKey []byte
 
 // ViewingKey is a public/private key pair to encrypt coins in an outgoing transaction
 // and decrypt coins in an incoming transaction
@@ -38,32 +38,32 @@ type PaymentInfo struct {
 // GeneratePrivateKey generates a random 32-byte spending key
 func GeneratePrivateKey(seed []byte) PrivateKey {
 	bip32PrivKey := HashToScalar(seed)
-	privateKey := bip32PrivKey.ToBytes()
+	privateKey := bip32PrivKey.ToBytesS()
 	return privateKey
 }
 
 // GeneratePublicKey computes a 32-byte public-key corresponding to a spending key
-func GeneratePublicKey(privateKey [Ed25519KeySize]byte) PublicKey {
-	privScalar := new(Scalar).FromBytes(privateKey)
+func GeneratePublicKey(privateKey []byte) PublicKey {
+	privScalar := new(Scalar).FromBytesS(privateKey)
 	publicKey := new(Point).ScalarMultBase(privScalar)
-	return publicKey.ToBytes()
+	return publicKey.ToBytesS()
 }
 
 // GenerateReceivingKey generates a 32-byte receiving key
-func GenerateReceivingKey(privateKey [Ed25519KeySize]byte) ReceivingKey {
+func GenerateReceivingKey(privateKey []byte) ReceivingKey {
 	receivingKey := HashToScalar(privateKey[:])
-	return receivingKey.ToBytes()
+	return receivingKey.ToBytesS()
 }
 
 // GenerateTransmissionKey computes a 33-byte transmission key corresponding to a receiving key
-func GenerateTransmissionKey(receivingKey [Ed25519KeySize]byte) TransmissionKey {
-	receiScalar := new(Scalar).FromBytes(receivingKey)
+func GenerateTransmissionKey(receivingKey []byte) TransmissionKey {
+	receiScalar := new(Scalar).FromBytesS(receivingKey)
 	transmissionKey := new(Point).ScalarMultBase(receiScalar)
-	return transmissionKey.ToBytes()
+	return transmissionKey.ToBytesS()
 }
 
 // GenerateViewingKey generates a viewingKey corresponding to a spending key
-func GenerateViewingKey(privateKey [Ed25519KeySize]byte) ViewingKey {
+func GenerateViewingKey(privateKey []byte) ViewingKey {
 	var viewingKey ViewingKey
 	viewingKey.Pk = GeneratePublicKey(privateKey)
 	viewingKey.Rk = GenerateReceivingKey(privateKey)
@@ -71,7 +71,7 @@ func GenerateViewingKey(privateKey [Ed25519KeySize]byte) ViewingKey {
 }
 
 // GeneratePaymentAddress generates a payment address corresponding to a spending key
-func GeneratePaymentAddress(privateKey [Ed25519KeySize]byte) PaymentAddress {
+func GeneratePaymentAddress(privateKey []byte) PaymentAddress {
 	var paymentAddress PaymentAddress
 	paymentAddress.Pk = GeneratePublicKey(privateKey)
 	paymentAddress.Tk = GenerateTransmissionKey(GenerateReceivingKey(privateKey))
@@ -86,9 +86,9 @@ func (addr *PaymentAddress) Bytes() []byte {
 // SetBytes reverts bytes array to payment address
 func (addr *PaymentAddress) SetBytes(bytes []byte) *PaymentAddress {
 	// the first 33 bytes are public key
-	addr.Pk = SliceToArray(bytes[:Ed25519KeySize])
+	addr.Pk = bytes[:Ed25519KeySize]
 	// the last 33 bytes are transmission key
-	addr.Tk = SliceToArray(bytes[Ed25519KeySize:])
+	addr.Tk = bytes[Ed25519KeySize:]
 	return addr
 }
 

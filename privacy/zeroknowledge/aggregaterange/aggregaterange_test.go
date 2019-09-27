@@ -88,8 +88,73 @@ func TestEncodeVectors(t *testing.T) {
 	}
 }
 
+func BenchmarkInnerProductWitness_Prove(b *testing.B) {
+	var AggParam= newBulletproofParams(1)
+	wit := new(InnerProductWitness)
+	n := maxExp
+	wit.a = make([]*privacy.Scalar, n)
+	wit.b = make([]*privacy.Scalar, n)
 
+	for i := range wit.a {
+		wit.a[i] = privacy.RandomScalar()
+		wit.b[i] = privacy.RandomScalar()
+	}
 
+	//wit.p = new(privacy.Point)
+	//wit.p.Zero()
+
+	c, err := innerProduct(wit.a, wit.b)
+
+	if err != nil {
+		privacy.Logger.Log.Info("Err: %v\n", err)
+	}
+	wit.p = new(privacy.Point).ScalarMult(AggParam.u, c)
+
+	for i := range wit.a {
+		wit.p.Add(wit.p, new(privacy.Point).ScalarMult(AggParam.g[i], wit.a[i]))
+		wit.p.Add(wit.p, new(privacy.Point).ScalarMult(AggParam.h[i], wit.b[i]))
+	}
+
+	b.ResetTimer()
+	for i:= 0; i < b.N; i++ {
+		wit.Prove(AggParam)
+	}
+}
+
+func BenchmarkInnerProductProof_Verify(b *testing.B) {
+	var AggParam= newBulletproofParams(1)
+	wit := new(InnerProductWitness)
+	n := maxExp
+	wit.a = make([]*privacy.Scalar, n)
+	wit.b = make([]*privacy.Scalar, n)
+
+	for i := range wit.a {
+		wit.a[i] = privacy.RandomScalar()
+		wit.b[i] = privacy.RandomScalar()
+	}
+
+	//wit.p = new(privacy.Point)
+	//wit.p.Zero()
+
+	c, err := innerProduct(wit.a, wit.b)
+
+	if err != nil {
+		privacy.Logger.Log.Info("Err: %v\n", err)
+	}
+	wit.p = new(privacy.Point).ScalarMult(AggParam.u, c)
+
+	for i := range wit.a {
+		wit.p.Add(wit.p, new(privacy.Point).ScalarMult(AggParam.g[i], wit.a[i]))
+		wit.p.Add(wit.p, new(privacy.Point).ScalarMult(AggParam.h[i], wit.b[i]))
+	}
+
+	proof, err := wit.Prove(AggParam)
+
+	b.ResetTimer()
+	for i:= 0; i < b.N; i++ {
+		proof.Verify(AggParam)
+	}
+}
 
 func TestInnerProductProve(t *testing.T) {
 	for k :=0; k< 100; k++ {
@@ -137,12 +202,52 @@ func TestInnerProductProve(t *testing.T) {
 		assert.Equal(t, true, res)
 	}
 }
+var NumValue = 3
+
+func BenchmarkAggregatedRangeWitness_Prove(b *testing.B) {
+	wit := new(AggregatedRangeWitness)
+	numValue := NumValue //5. 10
+	values := make([]uint64, numValue)
+	rands := make([]*privacy.Scalar, numValue)
+
+	for i := range values {
+		values[i] = uint64(common.RandInt64())
+		rands[i] = privacy.RandomScalar()
+	}
+	wit.Set(values, rands)
+
+	b.ResetTimer()
+
+	for i:=0; i< b.N; i++ {
+		wit.Prove()
+	}
+}
+
+func BenchmarkAggregatedRangeProof_Verify(b *testing.B) {
+	wit := new(AggregatedRangeWitness)
+	numValue := NumValue //5. 10
+	values := make([]uint64, numValue)
+	rands := make([]*privacy.Scalar, numValue)
+
+	for i := range values {
+		values[i] = uint64(common.RandInt64())
+		rands[i] = privacy.RandomScalar()
+	}
+	wit.Set(values, rands)
+	proof, _ := wit.Prove()
+
+	b.ResetTimer()
+
+	for i:=0; i< b.N; i++ {
+		proof.Verify()
+	}
+}
 
 func TestAggregatedRangeProve(t *testing.T) {
 	for i:= 0; i<10; i++{
 		//prepare witness for Aggregated range protocol
 		wit := new(AggregatedRangeWitness)
-		numValue := 10 //5. 10
+		numValue := 12 //5. 10
 		values := make([]uint64, numValue)
 		rands := make([]*privacy.Scalar, numValue)
 
