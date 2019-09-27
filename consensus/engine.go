@@ -174,7 +174,7 @@ func (engine *Engine) Start() error {
 
 				for chainName, consensus := range engine.ChainConsensusList {
 					if chainName == engine.CurrentMiningChain {
-						Logger.log.Critical("current mining chain", chainName)
+						// Logger.log.Critical("current mining chain", chainName)
 						consensus.Start()
 					} else {
 						consensus.Stop()
