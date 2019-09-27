@@ -743,8 +743,15 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 	}
 
 	// check privacy custom token
-	for indexTx, privacyCustomTokenSubView := range view.privacyCustomTokenViewPoint {
-		privacyCustomTokenTx := view.privacyCustomTokenTxs[indexTx]
+	// sort by index
+	indices := []int{}
+	for index := range view.privacyCustomTokenViewPoint {
+		indices = append(indices, int(index))
+	}
+	sort.Ints(indices)
+	for _, indexTx := range indices {
+		privacyCustomTokenSubView := view.privacyCustomTokenViewPoint[int32(indexTx)]
+		privacyCustomTokenTx := view.privacyCustomTokenTxs[int32(indexTx)]
 		switch privacyCustomTokenTx.TxPrivacyTokenData.Type {
 		case transaction.CustomTokenInit:
 			{
@@ -759,7 +766,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 				Logger.log.Info("Transfer custom token %+v", privacyCustomTokenTx)
 			}
 		}
-		err = blockchain.config.DataBase.StorePrivacyTokenTx(privacyCustomTokenTx.TxPrivacyTokenData.PropertyID, block.Header.ShardID, block.Header.Height, indexTx, privacyCustomTokenTx.Hash()[:])
+		err = blockchain.config.DataBase.StorePrivacyTokenTx(privacyCustomTokenTx.TxPrivacyTokenData.PropertyID, block.Header.ShardID, block.Header.Height, int32(indexTx), privacyCustomTokenTx.Hash()[:])
 		if err != nil {
 			return err
 		}
@@ -818,7 +825,16 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBloc
 		Logger.log.Error("CreateAndSaveCrossTransactionCoinViewPointFromBlock", err)
 		return err
 	}
-	for _, privacyCustomTokenSubView := range view.privacyCustomTokenViewPoint {
+
+	// sort by index
+	indices := []int{}
+	for index := range view.privacyCustomTokenViewPoint {
+		indices = append(indices, int(index))
+	}
+	sort.Ints(indices)
+
+	for _, index := range indices {
+		privacyCustomTokenSubView := view.privacyCustomTokenViewPoint[int32(index)]
 		// 0xsirrush updated: check existed tokenID
 		tokenID := privacyCustomTokenSubView.tokenID
 		existed := blockchain.PrivacyCustomTokenIDExisted(tokenID)
