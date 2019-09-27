@@ -38,7 +38,7 @@ var (
 	rpcServiceLogger       = backendLog.Logger("RPC service Log", false)
 	rpcServiceBridgeLogger = backendLog.Logger("RPC service DeBridge Log", false)
 	netsyncLogger          = backendLog.Logger("Netsync Log", true)
-	peerLogger             = backendLog.Logger("Peer Log", true)
+	peerLogger             = backendLog.Logger("Peer Log", false)
 	dbLogger               = backendLog.Logger("Database Log", false)
 	dbmpLogger             = backendLog.Logger("Mempool Persistence DB Log", false)
 	walletLogger           = backendLog.Logger("Wallet log", false)

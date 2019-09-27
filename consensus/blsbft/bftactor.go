@@ -182,9 +182,10 @@ func (e *BLSBFT) Start() error {
 					continue
 				}
 
-				if !e.Chain.IsReady() {
-					continue
-				}
+				// e.logger.Debugf("Is ready: %v", e.Chain.IsReady())
+				// if !e.Chain.IsReady() {
+				// 	continue
+				// }
 
 				if !e.isInTimeFrame() || e.RoundData.State == "" {
 					e.enterNewRound()
@@ -323,10 +324,10 @@ func (e *BLSBFT) enterVotePhase() {
 
 func (e *BLSBFT) enterNewRound() {
 	//if chain is not ready,  return
-	if !e.Chain.IsReady() {
-		e.RoundData.State = ""
-		return
-	}
+	// if !e.Chain.IsReady() {
+	// 	e.RoundData.State = ""
+	// 	return
+	// }
 	//if already running a round for current timeframe
 	if e.isInTimeFrame() && e.RoundData.State != newround {
 		return
