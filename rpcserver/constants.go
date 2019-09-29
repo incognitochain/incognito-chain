@@ -58,6 +58,7 @@ const (
 	sendRawPrivacyCustomTokenTransaction       = "sendrawprivacycustomtokentransaction"
 	createAndSendPrivacyCustomTokenTransaction = "createandsendprivacycustomtokentransaction"
 	getMempoolInfo                             = "getmempoolinfo"
+	getPendingTxsInBlockgen                    = "getpendingtxsinblockgen"
 	getCandidateList                           = "getcandidatelist"
 	getCommitteeList                           = "getcommitteelist"
 	canPubkeyStake                             = "canpubkeystake"
