@@ -165,8 +165,9 @@ func (wit InnerProductWitness) Prove(AggParam *bulletproofParams) (*InnerProduct
 
 		// calculate challenge x = hash(G || H || u || p ||  l || r)
 		x := generateChallengeForAggRange(AggParam, [][]byte{p.ToBytesS(), L.ToBytesS(), R.ToBytesS()})
-
 		xInverse := new(privacy.Scalar).Invert(x)
+		xSquare := new(privacy.Scalar).Mul(x, x)
+		xSquareInverse := new(privacy.Scalar).Mul(xInverse, xInverse)
 
 		// calculate GPrime, HPrime, PPrime for the next loop
 		GPrime := make([]*privacy.Point, nPrime)
@@ -183,14 +184,7 @@ func (wit InnerProductWitness) Prove(AggParam *bulletproofParams) (*InnerProduct
 			HPrime[i] = new(privacy.Point).AddPedersen(x, H[i], xInverse, H[i+nPrime])
 		}
 
-		xSquare := new(privacy.Scalar).Mul(x, x)
-		xSquareInverse := new(privacy.Scalar).Invert(xSquare)
-
 		// x^2 * l + P + xInverse^2 * r
-		//PPrime := new(privacy.Point).ScalarMult(L, xSquare)
-		//PPrime.Add(PPrime, p)
-		//PPrime.Add(PPrime, new(privacy.Point).ScalarMult(R, xSquareInverse))
-
 		PPrime := new(privacy.Point).AddPedersen(xSquare, L, xSquareInverse, R)
 		PPrime.Add(PPrime, p)
 
@@ -247,13 +241,13 @@ func (proof InnerProductProof) Verify(AggParam *bulletproofParams) bool {
 		HPrime := make([]*privacy.Point, nPrime)
 
 		for j := 0; j < len(GPrime); j++ {
-			GPrime[j] = new(privacy.Point).ScalarMult(G[j], xInverse)
-			GPrime[j].Add(GPrime[j], new(privacy.Point).ScalarMult(G[j+nPrime], x))
-			//GPrime[j] = new(privacy.Point).AddPedersen(xInverse, G[j], x, G[j+nPrime])
+			//GPrime[j] = new(privacy.Point).ScalarMult(G[j], xInverse)
+			//GPrime[j].Add(GPrime[j], new(privacy.Point).ScalarMult(G[j+nPrime], x))
+			GPrime[j] = new(privacy.Point).AddPedersen(xInverse, G[j], x, G[j+nPrime])
 
-			HPrime[j] = new(privacy.Point).ScalarMult(H[j], x)
-			HPrime[j].Add(HPrime[j], new(privacy.Point).ScalarMult(H[j+nPrime], xInverse))
-			//HPrime[j] = new(privacy.Point).AddPedersen(x, H[j], xInverse, H[j+nPrime])
+			//HPrime[j] = new(privacy.Point).ScalarMult(H[j], x)
+			//HPrime[j].Add(HPrime[j], new(privacy.Point).ScalarMult(H[j+nPrime], xInverse))
+			HPrime[j] = new(privacy.Point).AddPedersen(x, H[j], xInverse, H[j+nPrime])
 		}
 
 		//PPrime := l.ScalarMul(xSquare).Add(p).Add(r.ScalarMul(xSquareInverse)) // x^2 * l + P + xInverse^2 * r

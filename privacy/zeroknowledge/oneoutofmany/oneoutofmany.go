@@ -424,7 +424,7 @@ func (proof OneOutOfManyProof) Verify() (bool, error) {
 
 	leftPoint3 := new(privacy.Point).Identity()
 	leftPoint32 := new(privacy.Point).Identity()
-
+	fmt.Println(n, N)
 	for i := 0; i < N; i++ {
 		iBinary := privacy.ConvertIntToBinary(i, n)
 
@@ -473,11 +473,6 @@ func getCoefficient(iBinary []byte, k int, n int, scLs []*privacy.Scalar, l []by
 		a[i] = privacy.ScalarToBigInt(scLs[i])
 	}
 
-	//AP1
-	ap1 := getCoefficientInt(iBinary, k, n, a, l)
-	sc1 := privacy.BigIntToScalar(ap1)
-	fmt.Println("SC1 ", sc1)
-
 	//AP2
 	curveOrder := privacy.LInt
 	res := privacy.Poly{big.NewInt(1)}
@@ -498,7 +493,6 @@ func getCoefficient(iBinary []byte, k int, n int, scLs []*privacy.Scalar, l []by
 	} else {
 		sc2 = privacy.BigIntToScalar(res[k])
 	}
-	fmt.Println("SC2 ", sc2)
 	return sc2
 }
 
