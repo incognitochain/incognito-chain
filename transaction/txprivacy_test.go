@@ -487,15 +487,15 @@ func TestInitTx2(t *testing.T) {
 	assert.Equal(t, nil, err)
 	fmt.Printf("err2 %v\n", err2)
 
-	//isValid, err := tx1.ValidateTransaction(hasPrivacy, db, shardID, tokenID)
-	//assert.Equal(t, true, isValid)
-	//assert.Equal(t, nil, err)
-	////fmt.Printf("err %v\n", err)
-	//
-	//
-	//isValid, err = tx1.ValidateTxByItself(hasPrivacy, db, nil, shardID)
-	//assert.Equal(t, nil, err)
-	//assert.Equal(t, true, isValid)
+	isValid, err := tx1.ValidateTransaction(hasPrivacy, db, shardID, tokenID)
+	assert.Equal(t, true, isValid)
+	assert.Equal(t, nil, err)
+	//fmt.Printf("err %v\n", err)
+
+
+	isValid, err = tx1.ValidateTxByItself(hasPrivacy, db, nil, shardID)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, true, isValid)
 
 
 
