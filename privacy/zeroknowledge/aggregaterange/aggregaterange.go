@@ -426,7 +426,6 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	innerProductWit := new(InnerProductWitness)
 	innerProductWit.a = lVector
 	innerProductWit.b = rVector
-	//innerProductWit.p, err = encodeCachedVectors(lVector, rVector, aggParam.gPrecomputed, aggParam.hPrecomputed)
 	innerProductWit.p, err = encodeVectors(lVector, rVector, aggParam.g, aggParam.h)
 	if err != nil {
 		return nil, err
@@ -523,6 +522,7 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 
 	right1 := new(privacy.Point).ScalarMult( proof.t2, xSquare)
 	right1.Add(right1, new(privacy.Point).AddPedersen(deltaYZ,privacy.PedCom.G[privacy.PedersenValueIndex], x, proof.t1))
+
 	expVector := vectorMulScalar(powerVector(z, numValuePad), zSquare)
 	right1.Add(right1, new(privacy.Point).MultiScalarMult(expVector, tmpcmsValue))
 
