@@ -277,11 +277,14 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(privatekey *priv
 		Logger.log.Info("Creating empty block...")
 	}
 	go blockGenerator.txPool.RemoveTx(txToRemove, false)
-	go func() {
-		for _, tx := range txToRemove {
-			blockGenerator.chain.config.CRemovedTxs <- tx
-		}
-	}()
+	// remove Pending Tx in Blockgen via Pool
+	//go func() {
+	//	for _, tx := range txToRemove {
+	//		go func() {
+	//			blockGenerator.chain.config.CRemovedTxs <- tx
+	//		}()
+	//	}
+	//}()
 	var responsedTxsBeacon []metadata.Transaction
 	var cError chan error
 	cError = make(chan error)
