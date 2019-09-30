@@ -33,6 +33,7 @@ var HttpHandler = map[string]httpHandler{
 	getMempoolEntry:         (*HttpServer).handleMempoolEntry,
 	removeTxInMempool:       (*HttpServer).handleRemoveTxInMempool,
 	getMempoolInfo:          (*HttpServer).handleGetMempoolInfo,
+	getPendingTxsInBlockgen: (*HttpServer).handleGetPendingTxsInBlockgen,
 
 	// block pool ver.2
 	getShardToBeaconPoolStateV2: (*HttpServer).handleGetShardToBeaconPoolStateV2,
@@ -152,6 +153,7 @@ var HttpHandler = map[string]httpHandler{
 	getPublicKeyRole:            (*HttpServer).handleGetPublicKeyRole,
 	getIncognitoPublicKeyRole:   (*HttpServer).handleGetIncognitoPublicKeyRole,
 	getMinerRewardFromMiningKey: (*HttpServer).handleGetMinerRewardFromMiningKey,
+	getProducersBlackList:       (*HttpServer).handleGetProducersBlackList,
 }
 
 // Commands that are available to a limited user
