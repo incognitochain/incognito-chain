@@ -28,7 +28,7 @@ const (
 	DurationHalfLifeRewardForDev = uint64(31536000) // 5 years, after 5 year, reward for devs = 0
 	GetValidBlock                = 20
 	CheckForce                   = true
-	GenesisBlockTime             = "2019-09-25T00:00:00.000Z"
+	GenesisBlockTime             = "2019-09-30T00:00:00.000Z"
 	TestRandom                   = false
 )
 
@@ -40,7 +40,7 @@ const (
 	MainnetDefaultPort = "9333"
 	MainnetEpoch       = 30000
 	MainnetRandomTime  = 15000
-	MainnetOffset      = 20
+	MainnetOffset      = 10
 	MainnetSwapOffset  = 2
 
 	MainNetShardCommitteeSize  = 3
@@ -87,7 +87,7 @@ const (
 	TestnetDefaultPort = "9444"
 	TestnetEpoch       = 1000
 	TestnetRandomTime  = 500
-	TestnetOffset      = 20
+	TestnetOffset      = 10
 	TestnetSwapOffset  = 2
 
 	TestNetShardCommitteeSize     = 64
