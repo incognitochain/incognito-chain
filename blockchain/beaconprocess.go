@@ -238,9 +238,7 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingBeaconBlock() {
 	//=========Remove shard to beacon beaconBlock in pool
 
 	go func() {
-		blockchain.BestState.Beacon.lock.RLock()
 		shardHeightMap := blockchain.BestState.Beacon.GetBestShardHeight()
-		blockchain.BestState.Beacon.lock.RUnlock()
 		//force release readLock first, before execute the params in below function (which use same readLock).
 		//if writeLock occur before release, readLock will be block
 		blockchain.config.ShardToBeaconPool.SetShardState(shardHeightMap)
@@ -1097,11 +1095,11 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 	//=============================END Store cross shard state ==================================
 	// Store new Beaconblock and new Beacon bestState in cache
-	Logger.log.Debugf("Store Beacon BestState Height %+v", beaconBlock.Header.Height)
+	Logger.log.Infof("BEACON | Store Beacon BestState Height %+v", beaconBlock.Header.Height)
 	if err := blockchain.StoreBeaconBestState(); err != nil {
 		return NewBlockChainError(StoreBeaconBestStateError, err)
 	}
-	Logger.log.Debugf("Store Beacon Block Height %+v with Hash %+v ", beaconBlock.Header.Height, blockHash)
+	Logger.log.Infof("BEACON | Store Beacon Block Height %+v with Hash %+v ", beaconBlock.Header.Height, blockHash)
 	if err := blockchain.config.DataBase.StoreBeaconBlock(beaconBlock, blockHash); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
