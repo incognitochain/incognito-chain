@@ -156,6 +156,7 @@ func (db *db) UpdateBridgeTokenInfo(
 	isCentralized bool,
 	updatingAmt uint64,
 	updateType string,
+	bd *[]database.BatchData,
 ) error {
 	prefix := getBridgePrefix(isCentralized)
 	key := append(prefix, incTokenID[:]...)
@@ -201,6 +202,10 @@ func (db *db) UpdateBridgeTokenInfo(
 		return marshalErr
 	}
 
+	if bd != nil {
+		*bd = append(*bd, database.BatchData{key, contentBytes})
+		return nil
+	}
 	dbErr = db.Put(key, contentBytes)
 	if dbErr != nil {
 		return database.NewDatabaseError(database.BridgeUnexpectedError, dbErr)

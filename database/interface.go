@@ -40,7 +40,7 @@ type DatabaseInterface interface {
 	DeleteAcceptedShardToBeacon(shardID byte, shardBlkHash common.Hash) error
 
 	// Beacon
-	StoreBeaconBlock(v interface{}, hash common.Hash) error
+	StoreBeaconBlock(v interface{}, hash common.Hash, bd *[]BatchData) error
 	FetchBeaconBlock(hash common.Hash) ([]byte, error)
 	HasBeaconBlock(hash common.Hash) (bool, error)
 	DeleteBeaconBlock(hash common.Hash, idx uint64) error
@@ -76,7 +76,7 @@ type DatabaseInterface interface {
 	CleanShardBestState() error
 
 	// Best state of beacon chain
-	StoreBeaconBestState(v interface{}) error
+	StoreBeaconBestState(v interface{}, bd *[]BatchData) error
 	FetchBeaconBestState() ([]byte, error)
 	CleanBeaconBestState() error
 
@@ -171,13 +171,13 @@ type DatabaseInterface interface {
 	IsETHTxHashIssued(uniqETHTx []byte) (bool, error)
 	CanProcessTokenPair(externalTokenID []byte, incTokenID common.Hash) (bool, error)
 	CanProcessCIncToken(incTokenID common.Hash) (bool, error)
-	UpdateBridgeTokenInfo(incTokenID common.Hash, externalTokenID []byte, isCentralized bool, updatingAmt uint64, updateType string) error
+	UpdateBridgeTokenInfo(incTokenID common.Hash, externalTokenID []byte, isCentralized bool, updatingAmt uint64, updateType string, bd *[]BatchData) error
 	GetAllBridgeTokens() ([]byte, error)
 	TrackBridgeReqWithStatus(txReqID common.Hash, status byte, bd *[]BatchData) error
 	GetBridgeReqWithStatus(txReqID common.Hash) (byte, error)
 
 	// Block reward
-	AddShardRewardRequest(epoch uint64, shardID byte, amount uint64, tokenID common.Hash) error
+	AddShardRewardRequest(epoch uint64, shardID byte, amount uint64, tokenID common.Hash, bd *[]BatchData) error
 	GetRewardOfShardByEpoch(epoch uint64, shardID byte, tokenID common.Hash) (uint64, error)
 	AddCommitteeReward(committeeAddress []byte, amount uint64, tokenID common.Hash) error
 	GetCommitteeReward(committeeAddress []byte, tokenID common.Hash) (uint64, error)
