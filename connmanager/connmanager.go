@@ -80,7 +80,6 @@ func (connManager ConnManager) GetListeningPeer() *peer.Peer {
 func (connManager *ConnManager) UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string) bool {
 	connManager.config.ConsensusState.Lock()
 	defer connManager.config.ConsensusState.Unlock()
-
 	bChange := false
 	if connManager.config.ConsensusState.role != role {
 		connManager.config.ConsensusState.role = role
@@ -335,7 +334,6 @@ func (connManager *ConnManager) discoverPeers(discoverPeerAddress string) {
 		err := connManager.processDiscoverPeers()
 		if err != nil {
 			Logger.log.Error(err)
-			continue
 		}
 		select {
 		case <-connManager.cDiscoveredPeers:
