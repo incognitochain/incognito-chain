@@ -102,7 +102,7 @@ func init() {
 		DevAddress:                       MainnetDevAddress,
 		CentralizedWebsitePaymentAddress: MainnetCentralizedWebsitePaymentAddress,
 		SlashLevels: []SlashLevel{
-			SlashLevel{MinRange: 20, PunishedEpoches: 5},
+			//SlashLevel{MinRange: 20, PunishedEpoches: 5},
 			SlashLevel{MinRange: 50, PunishedEpoches: 10},
 			SlashLevel{MinRange: 75, PunishedEpoches: 25},
 		},
@@ -142,7 +142,7 @@ func init() {
 		DevAddress:                       TestnetDevAddress,
 		CentralizedWebsitePaymentAddress: TestnetCentralizedWebsitePaymentAddress,
 		SlashLevels: []SlashLevel{
-			SlashLevel{MinRange: 20, PunishedEpoches: 5},
+			//SlashLevel{MinRange: 20, PunishedEpoches: 5},
 			SlashLevel{MinRange: 50, PunishedEpoches: 10},
 			SlashLevel{MinRange: 75, PunishedEpoches: 20},
 		},
