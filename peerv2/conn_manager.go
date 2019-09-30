@@ -21,12 +21,14 @@ func NewConnManager(
 	dpa string,
 	ikey *incognitokey.CommitteePublicKey,
 	cd ConsensusData,
+	dispatcher *Dispatcher,
 ) *ConnManager {
 	return &ConnManager{
 		LocalHost:            host,
 		DiscoverPeersAddress: dpa,
 		IdentityKey:          ikey,
 		cd:                   cd,
+		disp:                 dispatcher,
 	}
 }
 
@@ -42,6 +44,63 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 
 	log.Println("Cannot publish message", msgType)
 	return nil
+}
+
+func (cm *ConnManager) Start() {
+	// connect to proxy node
+	proxyIP, proxyPort := ParseListenner(cm.DiscoverPeersAddress, "127.0.0.1", 9300)
+	ipfsaddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", proxyIP, proxyPort))
+	if err != nil {
+		panic(err)
+	}
+	peerid, err := peer.IDB58Decode("QmbV4AAHWFFEtE67qqmNeEYXs5Yw5xNMS75oEKtdBvfoKN")
+
+	// Pubsub
+	// TODO(@0xbunyip): handle error
+	cm.ps, _ = pubsub.NewFloodSub(context.Background(), cm.LocalHost.Host)
+	cm.subs = map[string]Topic{}
+	cm.messages = make(chan *pubsub.Message, 1000)
+
+	// Must Connect after creating FloodSub
+	must(cm.LocalHost.Host.Connect(context.Background(), peer.AddrInfo{peerid, append([]multiaddr.Multiaddr{}, ipfsaddr)}))
+
+	go cm.manageRoleSubscription()
+
+	cm.process()
+}
+
+type ConsensusData interface {
+	GetUserRole() (string, int)
+}
+
+type Topic struct {
+	Name string
+	Sub  *pubsub.Subscription
+}
+
+type ConnManager struct {
+	LocalHost            *Host
+	DiscoverPeersAddress string
+	IdentityKey          *incognitokey.CommitteePublicKey
+
+	ps       *pubsub.PubSub
+	subs     map[string]Topic     // mapping from message to topic's subscription
+	messages chan *pubsub.Message // queue messages from all topics
+
+	cd   ConsensusData
+	disp *Dispatcher
+}
+
+func (cm *ConnManager) process() {
+	for {
+		select {
+		case msg := <-cm.messages:
+			fmt.Println("[db] go cm.disp.processInMessageString(string(msg.Data))")
+			// go cm.disp.processInMessageString(string(msg.Data))
+			err := cm.disp.processInMessageString(string(msg.Data))
+			fmt.Printf("err: %+v\n", err)
+		}
+	}
 }
 
 func (cm *ConnManager) encodeAndPublish(msg wire.Message) error {
@@ -82,7 +141,7 @@ func (cm *ConnManager) encodeAndPublish(msg wire.Message) error {
 	messageHex := hex.EncodeToString(messageBytes)
 	//log.Debugf("Content in hex encode: %s", string(messageHex))
 	// add end character to messageHex (delim '\n')
-	messageHex += "\n"
+	// messageHex += "\n"
 
 	// Publish
 	topic := cm.subs[msg.MessageType()].Name
@@ -90,51 +149,8 @@ func (cm *ConnManager) encodeAndPublish(msg wire.Message) error {
 	return cm.ps.Publish(topic, []byte(messageHex))
 }
 
-func (cm *ConnManager) Start() {
-	// connect to proxy node
-	proxyIP, proxyPort := ParseListenner(cm.DiscoverPeersAddress, "127.0.0.1", 9300)
-	ipfsaddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", proxyIP, proxyPort))
-	if err != nil {
-		panic(err)
-	}
-	peerid, err := peer.IDB58Decode("QmbV4AAHWFFEtE67qqmNeEYXs5Yw5xNMS75oEKtdBvfoKN")
-
-	// Pubsub
-	// TODO(@0xbunyip): handle error
-	cm.ps, _ = pubsub.NewFloodSub(context.Background(), cm.LocalHost.Host)
-	cm.subs = map[string]Topic{}
-	cm.messages = make(chan *pubsub.Message, 1000)
-
-	// Must Connect after creating FloodSub
-	must(cm.LocalHost.Host.Connect(context.Background(), peer.AddrInfo{peerid, append([]multiaddr.Multiaddr{}, ipfsaddr)}))
-
-	go cm.manageRoleSubscription()
-}
-
-type ConsensusData interface {
-	GetUserRole() (string, int)
-}
-
-type Topic struct {
-	Name string
-	Sub  *pubsub.Subscription
-}
-
-type ConnManager struct {
-	LocalHost            *Host
-	DiscoverPeersAddress string
-	IdentityKey          *incognitokey.CommitteePublicKey
-
-	ps       *pubsub.PubSub
-	subs     map[string]Topic     // mapping from message to topic's subscription
-	messages chan *pubsub.Message // queue messages from all topics
-
-	cd ConsensusData
-}
-
 // manageRoleSubscription: polling current role every minute and subscribe to relevant topics
 func (cm *ConnManager) manageRoleSubscription() {
-	cd := cm.cd
 	peerid, _ := peer.IDB58Decode("QmbV4AAHWFFEtE67qqmNeEYXs5Yw5xNMS75oEKtdBvfoKN")
 	pubkey, _ := cm.IdentityKey.ToBase58()
 
@@ -143,7 +159,7 @@ func (cm *ConnManager) manageRoleSubscription() {
 	lastTopics := m2t{}
 	for range time.Tick(5 * time.Second) {
 		// Update when role changes
-		role, shardID := cd.GetUserRole()
+		role, shardID := cm.cd.GetUserRole()
 		if role == lastRole && shardID == lastShardID {
 			continue
 		}
@@ -216,11 +232,12 @@ func processSubscriptionMessage(inbox chan *pubsub.Message, sub *pubsub.Subscrip
 	for {
 		msg, err := sub.Next(ctx)
 		fmt.Println("[db] Found new msg")
-		if err != nil {
-			log.Println(err)
-			return
-			// TODO(@0xbunyip): check if topic is unsubbed then return, otherwise just continue
-		}
+		_ = err
+		// if err != nil {
+		// 	log.Println(err)
+		// 	return
+		// 	// TODO(@0xbunyip): check if topic is unsubbed then return, otherwise just continue
+		// }
 
 		inbox <- msg
 	}
