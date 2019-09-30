@@ -153,7 +153,7 @@ func (iReq *IssuingRequest) BuildReqActions(tx Transaction, bcr BlockchainRetrie
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
 	action := []string{strconv.Itoa(IssuingRequestMeta), actionContentBase64Str}
 	// track the request status to leveldb
-	err = bcr.GetDatabase().TrackBridgeReqWithStatus(txReqID, byte(common.BridgeRequestProcessingStatus))
+	err = bcr.GetDatabase().TrackBridgeReqWithStatus(txReqID, byte(common.BridgeRequestProcessingStatus), nil)
 	if err != nil {
 		return [][]string{}, NewMetadataTxError(IssuingRequestBuildReqActionsError, err)
 	}

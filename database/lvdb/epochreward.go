@@ -192,6 +192,7 @@ func (db *db) RemoveCommitteeReward(
 	committeeAddress []byte,
 	amount uint64,
 	tokenID common.Hash,
+	bd *[]database.BatchData,
 ) error {
 	key := newKeyAddCommitteeReward(committeeAddress, tokenID)
 	oldValue, isExist := db.Get(key)
@@ -204,6 +205,11 @@ func (db *db) RemoveCommitteeReward(
 			newValue -= amount
 		} else {
 			newValue = 0
+		}
+
+		if bd != nil {
+			*bd = append(*bd, database.BatchData{key, common.Uint64ToBytes(newValue)})
+			return nil
 		}
 		err = db.Put(key, common.Uint64ToBytes(newValue))
 		if err != nil {
