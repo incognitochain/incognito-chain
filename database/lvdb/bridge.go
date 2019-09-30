@@ -266,8 +266,13 @@ func (db *db) GetAllBridgeTokens() ([]byte, error) {
 	return allBridgeTokensBytes, nil
 }
 
-func (db *db) TrackBridgeReqWithStatus(txReqID common.Hash, status byte) error {
+func (db *db) TrackBridgeReqWithStatus(txReqID common.Hash, status byte, bd *[]database.BatchData) error {
 	key := append(bridgePrefix, txReqID[:]...)
+
+	if bd != nil {
+		*bd = append(*bd, database.BatchData{key, []byte{status}})
+		return nil
+	}
 	return db.Put(key, []byte{status})
 }
 
