@@ -175,7 +175,7 @@ func (btcClient *BTCClient) GetBlockHashByHeight(blockHeight int) (string, error
 		return common.EmptyString, err
 	}
 	if tempBlockHash, ok := result["result"]; ok {
-		if blockHash, ok := tempBlockHash.(string); ok {
+		if blockHash, ok2 := tempBlockHash.(string); ok2 {
 			return blockHash, nil
 		} else {
 			return common.EmptyString, NewBTCAPIError(BlockHashParseError, fmt.Errorf("Failed to perform type assertion with value %+v", tempBlockHash))
