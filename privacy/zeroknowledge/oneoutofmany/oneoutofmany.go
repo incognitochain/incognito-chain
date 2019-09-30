@@ -339,8 +339,6 @@ func (wit OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 		})
 	}
 
-	fmt.Printf("Prove x: %v\n", x.ToBytes())
-
 	// Calculate za, zb zd
 	za := make([]*privacy.Scalar, n)
 	zb := make([]*privacy.Scalar, n)
@@ -395,7 +393,6 @@ func (proof OneOutOfManyProof) Verify() (bool, error) {
 	for j := 0; j < n; j++ {
 		x = utils.GenerateChallenge([][]byte{x.ToBytesS(), proof.cl[j].ToBytesS(), proof.ca[j].ToBytesS(), proof.cb[j].ToBytesS(), proof.cd[j].ToBytesS()})
 	}
-	fmt.Printf("Verify x: %v\n", x.ToBytes())
 
 	for i := 0; i < n; i++ {
 		//Check cl^x * ca = Com(f, za)
@@ -456,8 +453,6 @@ func (proof OneOutOfManyProof) Verify() (bool, error) {
 	rightPoint3 := privacy.PedCom.CommitAtIndex(new(privacy.Scalar).FromUint64(0), proof.zd, privacy.PedersenPrivateKeyIndex)
 
 	if !privacy.IsPointEqual(leftPoint3, rightPoint3) {
-		fmt.Printf("leftPoint3: %v\n", leftPoint3)
-		fmt.Printf("rightPoint3: %v\n", rightPoint3)
 		privacy.Logger.Log.Errorf("verify one out of many proof statement 3 failed")
 		return false, errors.New("verify one out of many proof statement 3 failed")
 	}
