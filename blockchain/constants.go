@@ -28,7 +28,7 @@ const (
 	DurationHalfLifeRewardForDev = uint64(31536000) // 5 years, after 5 year, reward for devs = 0
 	GetValidBlock                = 20
 	CheckForce                   = true
-	GenesisBlockTime             = "2019-09-25T00:00:00.000Z"
+	GenesisBlockTime             = "2019-09-30T00:00:00.000Z"
 	TestRandom                   = false
 )
 
@@ -40,7 +40,7 @@ const (
 	MainnetDefaultPort = "9333"
 	MainnetEpoch       = 30000
 	MainnetRandomTime  = 15000
-	MainnetOffset      = 20
+	MainnetOffset      = 10
 	MainnetSwapOffset  = 2
 
 	MainNetShardCommitteeSize  = 3
@@ -106,7 +106,7 @@ const (
 	TestnetBasicReward                      = 400000000 //40 mili PRV
 	TestnetRewardHalflife                   = 3155760   //1 year, reduce 12.5% per year
 	TestnetGenesisBlockPaymentAddress       = "1Uv46Pu4pqBvxCcPw7MXhHfiAD5Rmi2xgEE7XB6eQurFAt4vSYvfyGn3uMMB1xnXDq9nRTPeiAZv5gRFCBDroRNsXJF1sxPSjNQtivuHk"
-	TestnetContractAddressStr               = "0x10e492e6383DfE37d0d0B7B86015AE0876e88663"
+	TestnetContractAddressStr               = "0x0384745f3513d110714B8aB005969795f19046c7"
 	TestnetDevAddress                       = "1Uv2vrb74e6ScxuQiXvW9UcKoEbXnRMbuBJ6W2FBWxqhtHNGHi3sUP1D14rNEnWWzkYSMsZCmA4DKV6igmjd7qaJfj9TuMmyqz2ZG2SNx"
 	TestnetCentralizedWebsitePaymentAddress = "1Uv2zzR4LgfX8ToQe8ub3bYcCLk3uDU1sm9U9hiu9EKYXoS77UdikfT9s8d5YjhsTJm61eazsMwk2otFZBYpPHwiMn8z6bKWWJRspsLky"
 )
