@@ -278,25 +278,6 @@ func TestCommonIndexOfStrInHashMap(t *testing.T) {
 }
 
 /*
-	Unit test for CheckDuplicateScalarArray function
-*/
-
-func TestCommonCheckDuplicateBigIntArray(t *testing.T) {
-	data := []struct {
-		arr         []*big.Int
-		isDuplicate bool
-	}{
-		{[]*big.Int{big.NewInt(int64(100)), big.NewInt(int64(1000)), big.NewInt(int64(10000)), big.NewInt(int64(100000)), big.NewInt(int64(10000000))}, false},
-		{[]*big.Int{big.NewInt(int64(10000)), big.NewInt(int64(100)), big.NewInt(int64(1000)), big.NewInt(int64(1000)), big.NewInt(int64(100000)), big.NewInt(int64(10000000))}, true},
-	}
-
-	for _, dataItem := range data {
-		isDuplicate := CheckDuplicateScalarArray(dataItem.arr)
-		assert.Equal(t, dataItem.isDuplicate, isDuplicate)
-	}
-}
-
-/*
 	Unit test for RandBigIntMaxRange function
 */
 

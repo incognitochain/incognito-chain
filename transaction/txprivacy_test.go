@@ -43,10 +43,13 @@ func TestUnmarshalJSON(t *testing.T) {
 }
 
 func TestInitTx(t *testing.T) {
-	senderKey, err := wallet.Base58CheckDeserialize("112t8rnXCqbbNYBquntyd6EvDT4WiDDQw84ZSRDKmazkqrzi6w8rWyCVt7QEZgAiYAV4vhJiX7V9MCfuj4hGLoDN7wdU1LoWGEFpLs59X7K3")
-	assert.Equal(t, nil, err)
+	privateKey := privacy.GeneratePrivateKey([]byte{123})
+	//senderKey, err := wallet.Base58CheckDeserialize("112t8rnXCqbbNYBquntyd6EvDT4WiDDQw84ZSRDKmazkqrzi6w8rWyCVt7QEZgAiYAV4vhJiX7V9MCfuj4hGLoDN7wdU1LoWGEFpLs59X7K3")
+	//assert.Equal(t, nil, err)
 
-	err = senderKey.KeySet.InitFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	senderKey := new(wallet.KeyWallet)
+
+	err := senderKey.KeySet.InitFromPrivateKey(&privateKey)
 	assert.Equal(t, nil, err)
 
 	senderPaymentAddress := senderKey.KeySet.PaymentAddress
@@ -82,7 +85,12 @@ func TestInitTx(t *testing.T) {
 	coinBaseOutput[0].CoinDetails.SetSerialNumber(serialNumber)
 
 	// receiver's address
-	receiverPaymentAddress, _ := wallet.Base58CheckDeserialize("1Uv3BkYiWy9Mjt1yBa4dXBYKo3az22TeCVEpeXN93ieJ8qhrTDuUZBzsPZWjjP2AeRQnjw1y18iFPHTRuAqqufwVC1vNUAWs4wHFbbWC2")
+	receiverPrivateKey := privacy.GeneratePrivateKey([]byte{10})
+	receiverKey := new(wallet.KeyWallet)
+	err = receiverKey.KeySet.InitFromPrivateKey(&receiverPrivateKey)
+	assert.Equal(t, nil, err)
+	receiverPaymentAddress := receiverKey.KeySet.PaymentAddress
+
 	// transfer amount
 	transferAmount := 5
 	hasPrivacy := false
@@ -90,7 +98,7 @@ func TestInitTx(t *testing.T) {
 	err = tx1.Init(
 		NewTxPrivacyInitParams(
 			&senderKey.KeySet.PrivateKey,
-			[]*privacy.PaymentInfo{{PaymentAddress: receiverPaymentAddress.KeySet.PaymentAddress, Amount: uint64(transferAmount)}},
+			[]*privacy.PaymentInfo{{PaymentAddress: receiverPaymentAddress, Amount: uint64(transferAmount)}},
 			coinBaseOutput, uint64(fee), hasPrivacy, db, nil, nil, []byte{},
 		),
 	)
@@ -109,13 +117,13 @@ func TestInitTx(t *testing.T) {
 
 	unique, pubk, amount := tx1.GetUniqueReceiver()
 	assert.Equal(t, true, unique)
-	assert.Equal(t, string(pubk[:]), string(receiverPaymentAddress.KeySet.PaymentAddress.Pk[:]))
+	assert.Equal(t, string(pubk[:]), string(receiverPaymentAddress.Pk[:]))
 	assert.Equal(t, uint64(5), amount)
 
 	unique, pubk, amount, coinID := tx1.GetTransferData()
 	assert.Equal(t, true, unique)
 	assert.Equal(t, common.PRVCoinID.String(), coinID.String())
-	assert.Equal(t, string(pubk[:]), string(receiverPaymentAddress.KeySet.PaymentAddress.Pk[:]))
+	assert.Equal(t, string(pubk[:]), string(receiverPaymentAddress.Pk[:]))
 
 	a, b := tx1.GetTokenReceivers()
 	assert.Equal(t, 0, len(a))
@@ -502,8 +510,5 @@ func TestInitTx2(t *testing.T) {
 	isValid, err = tx1.ValidateTxByItself(hasPrivacy, db, nil, shardID)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, true, isValid)
-
-
-
 }
 

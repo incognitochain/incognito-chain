@@ -87,7 +87,7 @@ func (txService TxService) filterMemPoolOutcoinsToSpent(outCoins []*privacy.Outp
 	remainOutputCoins := make([]*privacy.OutputCoin, 0)
 
 	for _, outCoin := range outCoins {
-		if txService.TxMemPool.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().Compress()) == nil {
+		if txService.TxMemPool.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().ToBytesS()) == nil {
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}
 	}
@@ -1002,19 +1002,17 @@ func (txService TxService) RandomCommitments(paymentAddressStr string, outputs [
 			CoinDetails: coin,
 		}
 		RandomnessInBytes, _, _ := base58.Base58Check{}.Decode(out.Randomness)
-		i.CoinDetails.SetRandomness(new(big.Int).SetBytes(RandomnessInBytes))
+		i.CoinDetails.SetRandomness(new(privacy.Scalar).FromBytesS(RandomnessInBytes))
 
 		SNDerivatorInBytes, _, _ := base58.Base58Check{}.Decode(out.SNDerivator)
-		i.CoinDetails.SetSNDerivator(new(big.Int).SetBytes(SNDerivatorInBytes))
+		i.CoinDetails.SetSNDerivator(new(privacy.Scalar).FromBytesS(SNDerivatorInBytes))
 
 		CoinCommitmentBytes, _, _ := base58.Base58Check{}.Decode(out.CoinCommitment)
-		CoinCommitment := &privacy.EllipticPoint{}
-		_ = CoinCommitment.Decompress(CoinCommitmentBytes)
+		CoinCommitment, _ := new(privacy.Point).FromBytesS(CoinCommitmentBytes)
 		i.CoinDetails.SetCoinCommitment(CoinCommitment)
 
 		PublicKeyBytes, _, _ := base58.Base58Check{}.Decode(out.PublicKey)
-		PublicKey := &privacy.EllipticPoint{}
-		_ = PublicKey.Decompress(PublicKeyBytes)
+		PublicKey , _ := new(privacy.Point).FromBytesS(PublicKeyBytes)
 		i.CoinDetails.SetPublicKey(PublicKey)
 
 		InfoBytes, _, _ := base58.Base58Check{}.Decode(out.Info)

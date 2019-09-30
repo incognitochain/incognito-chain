@@ -45,12 +45,13 @@ func AggregatedRangeProve(args string) string {
 		println("Wrong args")
 	}
 
-	values := make([]*big.Int, len(temp["values"]))
-	rands := make([]*big.Int, len(temp["values"]))
+	values := make([]uint64, len(temp["values"]))
+	rands := make([]*privacy.Scalar, len(temp["values"]))
 
+	//todo
 	for i := 0; i < len(temp["values"]); i++ {
-		values[i], _ = new(big.Int).SetString(temp["values"][i], 10)
-		rands[i], _ = new(big.Int).SetString(temp["rands"][i], 10)
+		values[i] = temp["values"][i]
+		rands[i], _ = new(privacy.Scalar).SetString(temp["rands"][i], 10)
 	}
 
 	wit := new(aggregaterange.AggregatedRangeWitness)
@@ -99,7 +100,7 @@ func OneOutOfManyProve(args string) (string, error) {
 		return "", errors.New("the number of Commitment list's elements must be equal to CMRingSize")
 	}
 
-	commitmentPoints := make([]*privacy.EllipticPoint, len(commitmentStrs))
+	commitmentPoints := make([]*privacy.Point, len(commitmentStrs))
 
 	for i := 0; i < len(commitmentStrs); i++ {
 		//fmt.Printf("commitments %v: %v\n", i,  commitmentStrs[i])
@@ -107,12 +108,8 @@ func OneOutOfManyProve(args string) (string, error) {
 		tmpByte := tmp.Bytes()
 		//fmt.Printf("tmpByte %v: %v\n", i, tmpByte)
 
-		commitmentPoints[i] = new(privacy.EllipticPoint)
-		err = commitmentPoints[i].Decompress(tmpByte)
-		if err != nil {
-			println(err)
-			return "", err
-		}
+		commitmentPoints[i] = new(privacy.Point)
+		commitmentPoints[i].FromBytesS(tmpByte)
 	}
 
 	// rand

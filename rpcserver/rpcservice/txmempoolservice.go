@@ -20,7 +20,7 @@ func (txMemPoolService TxMemPoolService) FilterMemPoolOutcoinsToSpent(outCoins [
 	remainOutputCoins := make([]*privacy.OutputCoin, 0)
 
 	for _, outCoin := range outCoins {
-		if txMemPoolService.TxMemPool.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().Compress()) == nil {
+		if txMemPoolService.TxMemPool.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().ToBytesS()) == nil {
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}
 	}

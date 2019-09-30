@@ -351,7 +351,7 @@ func (httpServer *HttpServer) handleGetCrossShardBlock(params interface{}, close
 		}
 		for _, crossTransaction := range crossTransactions {
 			for _, outputCoin := range crossTransaction.OutputCoin {
-				pubkey := outputCoin.CoinDetails.GetPublicKey().Compress()
+				pubkey := outputCoin.CoinDetails.GetPublicKey().ToBytesS()
 				pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
 				if outputCoin.CoinDetailsEncrypted == nil {
 					crossShardPRVResult := jsonresult.CrossShardPRVResult{
@@ -376,7 +376,7 @@ func (httpServer *HttpServer) handleGetCrossShardBlock(params interface{}, close
 					CrossShardPrivacyCSTokenResultList: []jsonresult.CrossShardPrivacyCSTokenResult{},
 				}
 				for _, outputCoin := range tokenPrivacyData.OutputCoin {
-					pubkey := outputCoin.CoinDetails.GetPublicKey().Compress()
+					pubkey := outputCoin.CoinDetails.GetPublicKey().ToBytesS()
 					pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
 					crossShardPrivacyCSTokenResult := jsonresult.CrossShardPrivacyCSTokenResult{
 						PublicKey: pubkeyStr,
