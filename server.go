@@ -451,11 +451,35 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 	miningKeys := serverObj.consensusEngine.GetMiningPublicKeys()
 	pubkey := miningKeys[common.BlsConsensus]
+	dispatcher := &peerv2.Dispatcher{
+		MessageListeners: &peerv2.MessageListeners{
+			OnBlockShard:       serverObj.OnBlockShard,
+			OnBlockBeacon:      serverObj.OnBlockBeacon,
+			OnCrossShard:       serverObj.OnCrossShard,
+			OnShardToBeacon:    serverObj.OnShardToBeacon,
+			OnTx:               serverObj.OnTx,
+			OnTxToken:          serverObj.OnTxToken,
+			OnTxPrivacyToken:   serverObj.OnTxPrivacyToken,
+			OnVersion:          serverObj.OnVersion,
+			OnGetBlockBeacon:   serverObj.OnGetBlockBeacon,
+			OnGetBlockShard:    serverObj.OnGetBlockShard,
+			OnGetCrossShard:    serverObj.OnGetCrossShard,
+			OnGetShardToBeacon: serverObj.OnGetShardToBeacon,
+			OnVerAck:           serverObj.OnVerAck,
+			OnGetAddr:          serverObj.OnGetAddr,
+			OnAddr:             serverObj.OnAddr,
+
+			//mubft
+			OnBFTMsg:    serverObj.OnBFTMsg,
+			OnPeerState: serverObj.OnPeerState,
+		},
+	}
 	serverObj.highway = peerv2.NewConnManager(
 		host,
 		cfg.DiscoverPeersAddress,
 		&pubkey,
 		serverObj.consensusEngine,
+		dispatcher,
 	)
 
 	if !cfg.DisableRPC {
