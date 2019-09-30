@@ -2,6 +2,7 @@ package zkp
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -503,7 +504,8 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 		cmSND := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenSndIndex], proof.inputCoins[i].CoinDetails.GetSNDerivator())
 		cmRandomness := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenRandomnessIndex], proof.inputCoins[i].CoinDetails.GetRandomness())
 		cmTmp := new(privacy.Point).Add(cmSK, cmValue)
-		cmTmp.Add(cmSND, cmShardIDSender)
+		cmTmp.Add(cmTmp, cmSND)
+		cmTmp.Add(cmTmp, cmShardIDSender)
 		cmTmp.Add(cmTmp, cmRandomness)
 
 
@@ -526,7 +528,8 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 		cmRandomness := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenRandomnessIndex], proof.outputCoins[i].CoinDetails.GetRandomness())
 
 		cmTmp := new(privacy.Point).Add(cmSK, cmValue)
-		cmTmp.Add(cmSND, cmShardID)
+		cmTmp.Add(cmTmp, cmSND)
+		cmTmp.Add(cmTmp, cmShardID)
 		cmTmp.Add(cmTmp, cmRandomness)
 
 		if !privacy.IsPointEqual(cmTmp, proof.outputCoins[i].CoinDetails.GetCoinCommitment()) {
@@ -595,12 +598,14 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 
 		valid, err := proof.oneOfManyProof[i].Verify()
 		if !valid {
+			fmt.Printf("One of many failed\n")
 			privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: One out of many failed")
 			return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, err)
 		}
 		// Verify for the Proof that input coins' serial number is derived from the committed derivator
 		valid, err = proof.serialNumberProof[i].Verify(nil)
 		if !valid {
+			fmt.Printf("Serial number failed\n")
 			privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Serial number privacy failed")
 			return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberPrivacyProofFailedErr, err)
 		}
@@ -613,6 +618,8 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 		cmTmp.Add(cmTmp, proof.commitmentOutputShardID[i])
 
 		if !privacy.IsPointEqual(cmTmp, proof.outputCoins[i].CoinDetails.GetCoinCommitment()) {
+			fmt.Printf("cmTmp: %v\n", cmTmp.ToBytesS())
+			fmt.Printf("proof.outputCoins[i].CoinDetails.GetCoinCommitment(): %v\n", proof.outputCoins[i].CoinDetails.GetCoinCommitment().ToBytesS())
 			privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Commitment for output coins are not computed correctly")
 			return false, privacy.NewPrivacyErr(privacy.VerifyCoinCommitmentOutputFailedErr, nil)
 		}
