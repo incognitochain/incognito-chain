@@ -228,6 +228,111 @@ func TestInitTx(t *testing.T) {
 	assert.Equal(t, true, isValidTx)
 }
 
+func TestInitTxWithMultiScenario(t *testing.T) {
+	// sender key
+	privateKey := privacy.GeneratePrivateKey([]byte{123})
+	senderKey := new(wallet.KeyWallet)
+	err := senderKey.KeySet.InitFromPrivateKey(&privateKey)
+	assert.Equal(t, nil, err)
+	senderPaymentAddress := senderKey.KeySet.PaymentAddress
+	//senderPublicKey := senderPaymentAddress.Pk
+
+	// shard ID of sender
+	shardID := common.GetShardIDFromLastByte(senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1])
+
+	// create coin base tx to mint PRV
+	mintedAmount := 1000
+	coinBaseTx, err := BuildCoinBaseTxByCoinID(NewBuildCoinBaseTxByCoinIDParams(&senderPaymentAddress, uint64(mintedAmount), &senderKey.KeySet.PrivateKey, db, nil, common.Hash{}, NormalCoinType, "PRV", 0))
+
+	isValidSanity, err := coinBaseTx.ValidateSanityData(nil)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, true, isValidSanity)
+
+	// store output coin's coin commitments in coin base tx
+	db.StoreCommitments(
+		common.PRVCoinID,
+		senderPaymentAddress.Pk,
+		[][]byte{coinBaseTx.(*Tx).Proof.GetOutputCoins()[0].CoinDetails.GetCoinCommitment().ToBytesS()},
+		shardID)
+
+	// get output coins from coin base tx to create new tx
+	coinBaseOutput := ConvertOutputCoinToInputCoin(coinBaseTx.(*Tx).Proof.GetOutputCoins())
+
+	// init new tx with privacy
+	tx1 := Tx{}
+	// calculate serial number for input coins
+	serialNumber := new(privacy.Point).Derive(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex],
+		new(privacy.Scalar).FromBytesS(senderKey.KeySet.PrivateKey),
+		coinBaseOutput[0].CoinDetails.GetSNDerivator())
+
+	coinBaseOutput[0].CoinDetails.SetSerialNumber(serialNumber)
+
+	// receiver's address
+	receiverPrivateKey := privacy.GeneratePrivateKey([]byte{10})
+	receiverKey := new(wallet.KeyWallet)
+	err = receiverKey.KeySet.InitFromPrivateKey(&receiverPrivateKey)
+	assert.Equal(t, nil, err)
+	receiverPaymentAddress := receiverKey.KeySet.PaymentAddress
+
+	// transfer amount
+	transferAmount := 5
+	hasPrivacy := true
+	fee := 1
+	err = tx1.Init(
+		NewTxPrivacyInitParams(
+			&senderKey.KeySet.PrivateKey,
+			[]*privacy.PaymentInfo{{PaymentAddress: receiverPaymentAddress, Amount: uint64(transferAmount)}},
+			coinBaseOutput, uint64(fee), hasPrivacy, db, nil, nil, []byte{},
+		),
+	)
+	assert.Equal(t, nil, err)
+
+	isValidSanity, err = tx1.ValidateSanityData(nil)
+	assert.Equal(t, true, isValidSanity)
+	assert.Equal(t, nil, err)
+
+	isValid, err := tx1.ValidateTransaction(hasPrivacy, db, shardID, nil)
+	assert.Equal(t, true, isValid)
+	assert.Equal(t, nil, err)
+
+	err = tx1.ValidateDoubleSpendWithBlockchain(nil, shardID, db, nil)
+	assert.Equal(t, nil, err)
+
+	err = tx1.ValidateTxWithBlockChain(nil, shardID, db)
+	assert.Equal(t, nil, err)
+
+	isValid, err = tx1.ValidateTxByItself(hasPrivacy, db, nil, shardID)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, true, isValid)
+
+	// create tx with invalid signature
+	tx2 := tx1
+	tx2.Sig[len(tx2.Sig) - 1] = 0
+
+	isValid2, err2 := tx2.ValidateTransaction(hasPrivacy, db, shardID, nil)
+	assert.Equal(t, false, isValid2)
+	assert.NotEqual(t, nil, err2)
+
+	// create tx with invalid signature verification key
+	tx3 := tx1
+	tx3.SigPubKey[len(tx3.SigPubKey) - 1] = 0
+
+	isValid3, err3 := tx3.ValidateTransaction(hasPrivacy, db, shardID, nil)
+	assert.Equal(t, false, isValid3)
+	assert.NotEqual(t, nil, err3)
+
+	// create tx with invalid proof
+	proofBytes := tx1.Proof.Bytes()
+	tx4 := tx1
+	proofBytes[len(proofBytes) -1] = 255
+
+	tx4.Proof.SetBytes(proofBytes)
+
+	isValid4, err4 := tx4.ValidateTransaction(hasPrivacy, db, shardID, nil)
+	assert.Equal(t, false, isValid4)
+	assert.NotEqual(t, nil, err4)
+}
+
 func TestInitSalaryTx(t *testing.T) {
 	salary := uint64(1000)
 
