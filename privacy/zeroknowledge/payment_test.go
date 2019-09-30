@@ -1,12 +1,9 @@
 package zkp
 
 import (
-	"crypto/rand"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"math/big"
 	"testing"
 )
 
@@ -27,22 +24,22 @@ func ParseCoinObjectToStruct(coinObjects []CoinObject) ([]*privacy.InputCoin, ui
 	for i := 0; i<len(coins); i++{
 
 		publicKey, _, _ := base58.Base58Check{}.Decode(coinObjects[i].PublicKey)
-		publicKeyPoint := new(privacy.EllipticPoint)
-		publicKeyPoint.Decompress(publicKey)
+		publicKeyPoint := new(privacy.Point)
+		publicKeyPoint.FromBytesS(publicKey)
 
 		coinCommitment, _, _ := base58.Base58Check{}.Decode(coinObjects[i].CoinCommitment)
-		coinCommitmentPoint := new(privacy.EllipticPoint)
-		coinCommitmentPoint.Decompress(coinCommitment)
+		coinCommitmentPoint := new(privacy.Point)
+		coinCommitmentPoint.FromBytesS(coinCommitment)
 
 		snd, _, _ := base58.Base58Check{}.Decode(coinObjects[i].SNDerivator)
-		sndBN := new(big.Int).SetBytes(snd)
+		sndBN := new(privacy.Scalar).FromBytesS(snd)
 
 		serialNumber, _, _ := base58.Base58Check{}.Decode(coinObjects[i].CoinCommitment)
-		serialNumberPoint := new(privacy.EllipticPoint)
-		serialNumberPoint.Decompress(serialNumber)
+		serialNumberPoint := new(privacy.Point)
+		serialNumberPoint.FromBytesS(serialNumber)
 
 		randomness, _, _ := base58.Base58Check{}.Decode(coinObjects[i].Randomness)
-		randomnessBN := new(big.Int).SetBytes(randomness)
+		randomnessBN := new(privacy.Scalar).FromBytesS(randomness)
 
 		coins[i] = new(privacy.InputCoin).Init()
 		coins[i].CoinDetails.SetPublicKey(publicKeyPoint)
@@ -61,14 +58,14 @@ func ParseCoinObjectToStruct(coinObjects []CoinObject) ([]*privacy.InputCoin, ui
 
 
 func TestPaymentProofToBytes(t *testing.T){
-	witness := new(PaymentWitness)
+	//witness := new(PaymentWitness)
 	witnessParam := new(PaymentWitnessParam)
 
 	keyWallet, _ := wallet.Base58CheckDeserialize("112t8rnXHD9s2MXSXigMyMtKdGFtSJmhA9cCBN34Fj55ox3cJVL6Fykv8uNWkDagL56RnA4XybQKNRrNXinrDDfKZmq9Y4LR18NscSrc9inc")
 	_ = keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
-	senderKeyBN := new(big.Int).SetBytes(keyWallet.KeySet.PrivateKey)
-	senderPKPoint := new(privacy.EllipticPoint)
-	senderPKPoint.Decompress(keyWallet.KeySet.PaymentAddress.Pk)
+	senderKeyBN := new(privacy.Scalar).FromBytesS(keyWallet.KeySet.PrivateKey)
+	senderPKPoint := new(privacy.Point)
+	senderPKPoint.FromBytesS(keyWallet.KeySet.PaymentAddress.Pk)
 
 
 	coinStrs := []CoinObject{
@@ -134,8 +131,8 @@ func TestPaymentProofToBytes(t *testing.T){
 	_ = keyWalletReceiver.KeySet.InitFromPrivateKey(&keyWalletReceiver.KeySet.PrivateKey)
 	//receiverKeyBN := new(big.Int).SetBytes(keyWalletReceiver.KeySet.PrivateKey)
 	receiverPublicKey := keyWalletReceiver.KeySet.PaymentAddress.Pk
-	receiverPublicKeyPoint := new(privacy.EllipticPoint)
-	receiverPublicKeyPoint.Decompress(receiverPublicKey)
+	receiverPublicKeyPoint := new(privacy.Point)
+	receiverPublicKeyPoint.FromBytesS(receiverPublicKey)
 
 	amountTransfer := uint64(1000000000)
 
@@ -143,14 +140,14 @@ func TestPaymentProofToBytes(t *testing.T){
 	outputCoins[0].Init()
 	outputCoins[0].CoinDetails.SetValue(uint64(amountTransfer))
 	outputCoins[0].CoinDetails.SetPublicKey(receiverPublicKeyPoint)
-	outputCoins[0].CoinDetails.SetSNDerivator(privacy.RandScalar(rand.Reader))
+	outputCoins[0].CoinDetails.SetSNDerivator(privacy.RandomScalar())
 
 	changeAmount :=sumValue - amountTransfer
 
 	outputCoins[1].Init()
 	outputCoins[1].CoinDetails.SetValue(changeAmount)
 	outputCoins[1].CoinDetails.SetPublicKey(senderPKPoint)
-	outputCoins[1].CoinDetails.SetSNDerivator(privacy.RandScalar(rand.Reader))
+	outputCoins[1].CoinDetails.SetSNDerivator(privacy.RandomScalar())
 
 
 
@@ -159,7 +156,7 @@ func TestPaymentProofToBytes(t *testing.T){
 	//InputCoins              []*privacy.InputCoin
 	//OutputCoins             []*privacy.OutputCoin
 	//PublicKeyLastByteSender byte
-	//Commitments             []*privacy.EllipticPoint
+	//Commitments             []*privacy.Point
 	//CommitmentIndices       []uint64
 	//MyCommitmentIndices     []uint64
 	//Fee                     uint64
@@ -171,7 +168,7 @@ func TestPaymentProofToBytes(t *testing.T){
 
 
 
-	witness.Init()
+	//witness.Init()
 
 
 }

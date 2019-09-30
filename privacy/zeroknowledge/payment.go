@@ -234,7 +234,7 @@ func (proof *PaymentProof) Bytes() []byte {
 		bytes = append(bytes, comOutputShardID...)
 	}
 
-	//ComInputSK 				*privacy.EllipticPoint
+	//ComInputSK 				*privacy.Point
 	if proof.commitmentInputSecretKey != nil {
 		comInputSK := proof.commitmentInputSecretKey.ToBytesS()
 		bytes = append(bytes, byte(privacy.CompressedEllipticPointSize))
@@ -243,7 +243,7 @@ func (proof *PaymentProof) Bytes() []byte {
 		bytes = append(bytes, byte(0))
 	}
 
-	//ComInputValue 		[]*privacy.EllipticPoint
+	//ComInputValue 		[]*privacy.Point
 	bytes = append(bytes, byte(len(proof.commitmentInputValue)))
 	for i := 0; i < len(proof.commitmentInputValue); i++ {
 		comInputValue := proof.commitmentInputValue[i].ToBytesS()
@@ -251,7 +251,7 @@ func (proof *PaymentProof) Bytes() []byte {
 		bytes = append(bytes, comInputValue...)
 	}
 
-	//ComInputSND 			[]*privacy.EllipticPoint
+	//ComInputSND 			[]*privacy.Point
 	bytes = append(bytes, byte(len(proof.commitmentInputSND)))
 	for i := 0; i < len(proof.commitmentInputSND); i++ {
 		comInputSND := proof.commitmentInputSND[i].ToBytesS()
@@ -259,7 +259,7 @@ func (proof *PaymentProof) Bytes() []byte {
 		bytes = append(bytes, comInputSND...)
 	}
 
-	//ComInputShardID 	*privacy.EllipticPoint
+	//ComInputShardID 	*privacy.Point
 	if proof.commitmentInputShardID != nil {
 		comInputShardID := proof.commitmentInputShardID.ToBytesS()
 		bytes = append(bytes, byte(privacy.CompressedEllipticPointSize))
@@ -373,7 +373,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 		}
 		offset += lenOutputCoin
 	}
-	//ComOutputValue   []*privacy.EllipticPoint
+	//ComOutputValue   []*privacy.Point
 	lenComOutputValueArray := int(proofbytes[offset])
 	offset += 1
 	proof.commitmentOutputValue = make([]*privacy.Point, lenComOutputValueArray)
@@ -387,7 +387,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 		}
 		offset += lenComOutputValue
 	}
-	//ComOutputSND     []*privacy.EllipticPoint
+	//ComOutputSND     []*privacy.Point
 	lenComOutputSNDArray := int(proofbytes[offset])
 	offset += 1
 	proof.commitmentOutputSND = make([]*privacy.Point, lenComOutputSNDArray)
@@ -416,7 +416,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 		offset += lenComOutputShardId
 	}
 
-	//ComInputSK 				*privacy.EllipticPoint
+	//ComInputSK 				*privacy.Point
 	lenComInputSK := int(proofbytes[offset])
 	offset += 1
 	if lenComInputSK > 0 {
@@ -427,7 +427,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 		}
 		offset += lenComInputSK
 	}
-	//ComInputValue 		[]*privacy.EllipticPoint
+	//ComInputValue 		[]*privacy.Point
 	lenComInputValueArr := int(proofbytes[offset])
 	offset += 1
 	proof.commitmentInputValue = make([]*privacy.Point, lenComInputValueArr)
@@ -441,7 +441,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 		}
 		offset += lenComInputValue
 	}
-	//ComInputSND 			[]*privacy.EllipticPoint
+	//ComInputSND 			[]*privacy.Point
 	lenComInputSNDArr := int(proofbytes[offset])
 	offset += 1
 	proof.commitmentInputSND = make([]*privacy.Point, lenComInputSNDArr)
@@ -455,7 +455,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 		}
 		offset += lenComInputSND
 	}
-	//ComInputShardID 	*privacy.EllipticPoint
+	//ComInputShardID 	*privacy.Point
 	lenComInputShardID := int(proofbytes[offset])
 	offset += 1
 	if lenComInputShardID > 0 {

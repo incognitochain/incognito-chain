@@ -6,9 +6,9 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/transaction"
-	"math/big"
 	"time"
 )
 
@@ -68,7 +68,7 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 				Info:        string(tempTx.Info),
 			}
 			if result.Proof != nil && len(result.Proof.GetInputCoins()) > 0 && result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey() != nil {
-				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress(), common.ZeroByte)
+				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte)
 			}
 			if tempTx.Metadata != nil {
 				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
@@ -99,7 +99,7 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 			txCustomData, _ := json.MarshalIndent(tempTx.TxTokenData, "", "\t")
 			result.CustomTokenData = string(txCustomData)
 			if result.Proof != nil && len(result.Proof.GetInputCoins()) > 0 && result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey() != nil {
-				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress(), common.ZeroByte)
+				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte)
 			}
 			if tempTx.Metadata != nil {
 				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
@@ -128,7 +128,7 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 				Info:        string(tempTx.Info),
 			}
 			if result.Proof != nil && len(result.Proof.GetInputCoins()) > 0 && result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey() != nil {
-				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress(), common.ZeroByte)
+				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte)
 			}
 			tokenData, _ := json.MarshalIndent(tempTx.TxPrivacyTokenData, "", "\t")
 			result.PrivacyCustomTokenData = string(tokenData)
@@ -163,7 +163,7 @@ func (proofDetail *ProofDetail) ConvertFromProof(proof *zkp.PaymentProof) {
 			in.CoinDetails.Value = input.CoinDetails.GetValue()
 			in.CoinDetails.Info = base58.Base58Check{}.Encode(input.CoinDetails.GetInfo(), 0x0)
 			if input.CoinDetails.GetCoinCommitment() != nil {
-				in.CoinDetails.CoinCommitment = base58.Base58Check{}.Encode(input.CoinDetails.GetCoinCommitment().Compress(), 0x0)
+				in.CoinDetails.CoinCommitment = base58.Base58Check{}.Encode(input.CoinDetails.GetCoinCommitment().ToBytesS(), 0x0)
 			}
 			if input.CoinDetails.GetRandomness() != nil {
 				in.CoinDetails.Randomness = *input.CoinDetails.GetRandomness()
@@ -172,10 +172,10 @@ func (proofDetail *ProofDetail) ConvertFromProof(proof *zkp.PaymentProof) {
 				in.CoinDetails.SNDerivator = *input.CoinDetails.GetSNDerivator()
 			}
 			if input.CoinDetails.GetSerialNumber() != nil {
-				in.CoinDetails.SerialNumber = base58.Base58Check{}.Encode(input.CoinDetails.GetSerialNumber().Compress(), 0x0)
+				in.CoinDetails.SerialNumber = base58.Base58Check{}.Encode(input.CoinDetails.GetSerialNumber().ToBytesS(), 0x0)
 			}
 			if input.CoinDetails.GetPublicKey() != nil {
-				in.CoinDetails.PublicKey = base58.Base58Check{}.Encode(input.CoinDetails.GetPublicKey().Compress(), 0x0)
+				in.CoinDetails.PublicKey = base58.Base58Check{}.Encode(input.CoinDetails.GetPublicKey().ToBytesS(), 0x0)
 			}
 		}
 		proofDetail.InputCoins = append(proofDetail.InputCoins, &in)
@@ -189,7 +189,7 @@ func (proofDetail *ProofDetail) ConvertFromProof(proof *zkp.PaymentProof) {
 			out.CoinDetails.Value = output.CoinDetails.GetValue()
 			out.CoinDetails.Info = base58.Base58Check{}.Encode(output.CoinDetails.GetInfo(), 0x0)
 			if output.CoinDetails.GetCoinCommitment() != nil {
-				out.CoinDetails.CoinCommitment = base58.Base58Check{}.Encode(output.CoinDetails.GetCoinCommitment().Compress(), 0x0)
+				out.CoinDetails.CoinCommitment = base58.Base58Check{}.Encode(output.CoinDetails.GetCoinCommitment().ToBytesS(), 0x0)
 			}
 			if output.CoinDetails.GetRandomness() != nil {
 				out.CoinDetails.Randomness = *output.CoinDetails.GetRandomness()
@@ -198,10 +198,10 @@ func (proofDetail *ProofDetail) ConvertFromProof(proof *zkp.PaymentProof) {
 				out.CoinDetails.SNDerivator = *output.CoinDetails.GetSNDerivator()
 			}
 			if output.CoinDetails.GetSerialNumber() != nil {
-				out.CoinDetails.SerialNumber = base58.Base58Check{}.Encode(output.CoinDetails.GetSerialNumber().Compress(), 0x0)
+				out.CoinDetails.SerialNumber = base58.Base58Check{}.Encode(output.CoinDetails.GetSerialNumber().ToBytesS(), 0x0)
 			}
 			if output.CoinDetails.GetPublicKey() != nil {
-				out.CoinDetails.PublicKey = base58.Base58Check{}.Encode(output.CoinDetails.GetPublicKey().Compress(), 0x0)
+				out.CoinDetails.PublicKey = base58.Base58Check{}.Encode(output.CoinDetails.GetPublicKey().ToBytesS(), 0x0)
 			}
 			if output.CoinDetailsEncrypted != nil {
 				out.CoinDetailsEncrypted = base58.Base58Check{}.Encode(output.CoinDetailsEncrypted.Bytes(), 0x0)
@@ -219,9 +219,9 @@ type CoinDetail struct {
 type Coin struct {
 	PublicKey      string
 	CoinCommitment string
-	SNDerivator    big.Int
+	SNDerivator    privacy.Scalar
 	SerialNumber   string
-	Randomness     big.Int
+	Randomness     privacy.Scalar
 	Value          uint64
 	Info           string
 }

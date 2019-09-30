@@ -114,7 +114,7 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 	wit.comInputValue = make([]*privacy.Point, numInputCoin)
 	wit.comInputSerialNumberDerivator = make([]*privacy.Point, numInputCoin)
 	// It is used for proving 2 commitments commit to the same value (input)
-	//cmInputSNDIndexSK := make([]*privacy.EllipticPoint, numInputCoin)
+	//cmInputSNDIndexSK := make([]*privacy.Point, numInputCoin)
 
 	randInputValue := make([]*privacy.Scalar, numInputCoin)
 	randInputSND := make([]*privacy.Scalar, numInputCoin)

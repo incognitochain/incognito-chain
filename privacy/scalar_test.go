@@ -3,7 +3,7 @@ package privacy
 import (
 	"crypto/subtle"
 	"fmt"
-
+	"github.com/stretchr/testify/assert"
 	"math/big"
 	//C25519 "github.com/deroproject/derosuite/crypto"
 	C25519 "github.com/incognitochain/incognito-chain/privacy/curve25519"
@@ -25,6 +25,19 @@ func TestCheckDuplicateScalarArray(t *testing.T) {
 
 	flag := CheckDuplicateScalarArray([]*Scalar{a,b,c, d, a, b})
 	fmt.Println(flag)
+
+	data := []struct {
+		arr         []*Scalar
+		isDuplicate bool
+	}{
+		{[]*Scalar{new(Scalar).FromUint64(uint64(100)), new(Scalar).FromUint64(uint64(1000)), new(Scalar).FromUint64(uint64(10000)), new(Scalar).FromUint64(uint64(100000)),new(Scalar).FromUint64(uint64(100000))}, true},
+		{[]*Scalar{new(Scalar).FromUint64(uint64(100)), new(Scalar).FromUint64(uint64(1000)), new(Scalar).FromUint64(uint64(10000)), new(Scalar).FromUint64(uint64(100000)),new(Scalar).FromUint64(uint64(1000000))}, false},
+	}
+
+	for _, dataItem := range data {
+		isDuplicate := CheckDuplicateScalarArray(dataItem.arr)
+		assert.Equal(t, dataItem.isDuplicate, isDuplicate)
+	}
 }
 
 func TestScalar_Mul(t *testing.T) {
