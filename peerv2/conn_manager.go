@@ -85,20 +85,20 @@ func (cm *ConnManager) encodeAndPublish(msg wire.Message) error {
 	messageHex += "\n"
 
 	// Publish
-	topic := msg.MessageType()
+	topic := cm.subs[msg.MessageType()].Name
 	fmt.Printf("[db] Publishing to topic %s\n", topic)
 	return cm.ps.Publish(topic, []byte(messageHex))
 }
 
 func (cm *ConnManager) Start() {
-	//connect to proxy node
-	proxyIP, proxyPort := ParseListenner(cm.DiscoverPeersAddress, "127.0.0.1", 9300)
-	ipfsaddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", proxyIP, proxyPort))
-	if err != nil {
-		panic(err)
-	}
-	peerid, err := peer.IDB58Decode("QmbV4AAHWFFEtE67qqmNeEYXs5Yw5xNMS75oEKtdBvfoKN")
-	must(cm.LocalHost.Host.Connect(context.Background(), peer.AddrInfo{peerid, append([]multiaddr.Multiaddr{}, ipfsaddr)}))
+	////connect to proxy node
+	//proxyIP, proxyPort := ParseListenner(cm.DiscoverPeersAddress, "127.0.0.1", 9300)
+	//ipfsaddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", proxyIP, proxyPort))
+	//if err != nil {
+	//	panic(err)
+	//}
+	//peerid, err := peer.IDB58Decode("QmbV4AAHWFFEtE67qqmNeEYXs5Yw5xNMS75oEKtdBvfoKN")
+	//must(cm.LocalHost.Host.Connect(context.Background(), peer.AddrInfo{peerid, append([]multiaddr.Multiaddr{}, ipfsaddr)}))
 
 	// Pubsub
 	// TODO(@0xbunyip): handle error
@@ -162,6 +162,16 @@ func (cm *ConnManager) manageRoleSubscription() {
 			log.Println(err)
 			continue
 		}
+
+		//connect to proxy node
+		proxyIP, proxyPort := ParseListenner(cm.DiscoverPeersAddress, "127.0.0.1", 9300)
+		ipfsaddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", proxyIP, proxyPort))
+		if err != nil {
+			panic(err)
+		}
+		peerid, err := peer.IDB58Decode("QmbV4AAHWFFEtE67qqmNeEYXs5Yw5xNMS75oEKtdBvfoKN")
+		must(cm.LocalHost.Host.Connect(context.Background(), peer.AddrInfo{peerid, append([]multiaddr.Multiaddr{}, ipfsaddr)}))
+		fmt.Println("[db] Connected\n\n\n")
 
 		lastRole = role
 		lastShardID = shardID
@@ -232,25 +242,36 @@ func (cm *ConnManager) registerToProxy(
 	role string,
 	shardID int,
 ) (m2t, error) {
+	fmt.Println("[db] Registering to Proxy\n\n\n")
 	// Client on this node
-	client := GRPCService_Client{cm.LocalHost.GRPC}
-	messagesWanted := getMessagesForRole(role, shardID)
-	pairs, err := client.ProxyRegister(
-		context.Background(),
-		peerID,
-		pubkey,
-		messagesWanted,
-	)
-	if err != nil {
-		return nil, err
-	}
+	// client := GRPCService_Client{cm.LocalHost.GRPC}
+	// messagesWanted := getMessagesForRole(role, shardID)
+	// pairs, err := client.ProxyRegister(
+	// 	context.Background(),
+	// 	peerID,
+	// 	pubkey,
+	// 	messagesWanted,
+	// )
+	// if err != nil {
+	// 	fmt.Println("[db] err:", err, pairs)
+	// 	// return nil, err
+	// }
 
-	// Mapping from message to topic name
-	topics := m2t{}
-	for _, p := range pairs {
-		topics[p.Message] = p.Topic
+	// // Mapping from message to topic name
+	// topics := m2t{}
+	// for _, p := range pairs {
+	// 	topics[p.Message] = p.Topic
+	// }
+	// fmt.Println("[db]", topics)
+	tmp := m2t{
+		"blockshard":  "PROXYblockshard",
+		"blockbeacon": "PROXYblockbeacon",
+		"bft":         "PROXYbft",
+		"peerstate":   "PROXYpeerstate",
+		"crossshard":  "PROXYcrossshard",
+		"blkshdtobcn": "PROXYblkshdtobcn",
 	}
-	return topics, nil
+	return tmp, nil
 }
 
 func getMessagesForRole(role string, shardID int) []string {
