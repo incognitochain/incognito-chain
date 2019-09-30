@@ -57,10 +57,15 @@ func (db *db) AddShardRewardRequest(
 	shardID byte,
 	rewardAmount uint64,
 	tokenID common.Hash,
+	bd *[]database.BatchData,
 ) error {
 	key := newKeyAddShardRewardRequest(epoch, shardID, tokenID)
 	oldValue, err := db.Get(key)
 	if err != nil {
+		if bd != nil {
+			*bd = append(*bd, database.BatchData{key, common.Uint64ToBytes(rewardAmount)})
+			return nil
+		}
 		err1 := db.Put(key, common.Uint64ToBytes(rewardAmount))
 		if err1 != nil {
 			return database.NewDatabaseError(database.UnexpectedError, err1)
@@ -71,6 +76,11 @@ func (db *db) AddShardRewardRequest(
 			return database.NewDatabaseError(database.UnexpectedError, err)
 		}
 		newValue += rewardAmount
+
+		if bd != nil {
+			*bd = append(*bd, database.BatchData{key, common.Uint64ToBytes(newValue)})
+			return nil
+		}
 		err = db.Put(key, common.Uint64ToBytes(newValue))
 		if err != nil {
 			return database.NewDatabaseError(database.UnexpectedError, err)

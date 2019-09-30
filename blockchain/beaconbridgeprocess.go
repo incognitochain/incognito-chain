@@ -31,7 +31,7 @@ type BurningReqAction struct {
 	RequestedTxID *common.Hash            `json:"RequestedTxID"`
 }
 
-func (blockchain *BlockChain) processBridgeInstructions(block *BeaconBlock) error {
+func (blockchain *BlockChain) processBridgeInstructions(block *BeaconBlock, bd *[]database.BatchData) error {
 	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
 	for _, inst := range block.Body.Instructions {
 		if len(inst) < 2 {
@@ -73,6 +73,7 @@ func (blockchain *BlockChain) processBridgeInstructions(block *BeaconBlock) erro
 			updatingInfo.isCentralized,
 			updatingAmt,
 			updatingType,
+			bd,
 		)
 		if err != nil {
 			return err
