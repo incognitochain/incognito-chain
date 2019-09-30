@@ -1149,18 +1149,14 @@ func (tx *Tx) InitTxSalary(
 	// create new output coins with info: Pk, value, input, randomness, last byte pk, coin commitment
 	tx.Proof = new(zkp.PaymentProof)
 	tempOutputCoin := make([]*privacy.OutputCoin, 1)
-	tempOutputCoin[0] = new(privacy.OutputCoin)
-	//tx.Proof.OutputCoins[0].CoinDetailsEncrypted = new(privacy.CoinDetailsEncrypted).Init()
-	tempOutputCoin[0].CoinDetails = new(privacy.Coin)
-	tempOutputCoin[0].CoinDetails.SetValue(salary)
-	PK := new(privacy.Point)
-	PK , err = tempOutputCoin[0].CoinDetails.GetPublicKey().FromBytesS(receiverAddr.Pk)
+	tempOutputCoin[0] = new(privacy.OutputCoin).Init()
+	publicKey, err := new(privacy.Point).FromBytesS(receiverAddr.Pk)
 	if err != nil {
 		return err
 	}
-	tempOutputCoin[0].CoinDetails.SetPublicKey(PK)
+	tempOutputCoin[0].CoinDetails.SetPublicKey(publicKey)
+	tempOutputCoin[0].CoinDetails.SetValue(salary)
 	tempOutputCoin[0].CoinDetails.SetRandomness(privacy.RandomScalar())
-	tx.Proof.SetOutputCoins(tempOutputCoin)
 
 	sndOut := privacy.RandomScalar()
 	for {
@@ -1179,14 +1175,13 @@ func (tx *Tx) InitTxSalary(
 			break
 		}
 	}
-
-	tx.Proof.GetOutputCoins()[0].CoinDetails.SetSNDerivator(sndOut)
-
+	tempOutputCoin[0].CoinDetails.SetSNDerivator(sndOut)
 	// create coin commitment
-	err = tx.Proof.GetOutputCoins()[0].CoinDetails.CommitAll()
+	err = tempOutputCoin[0].CoinDetails.CommitAll()
 	if err != nil {
 		return NewTransactionErr(CommitOutputCoinError, err)
 	}
+	tx.Proof.SetOutputCoins(tempOutputCoin)
 
 	// get last byte
 	tx.PubKeyLastByteSender = receiverAddr.Pk[len(receiverAddr.Pk)-1]
