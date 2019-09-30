@@ -141,6 +141,7 @@ func (coin *Coin) CommitAll() error {
 	}
 	coin.coinCommitment = commitment
 	coin.coinCommitment.Add(coin.coinCommitment, coin.publicKey)
+
 	return nil
 }
 
