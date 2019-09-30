@@ -1187,6 +1187,7 @@ func (tx *Tx) InitTxSalary(
 	if err != nil {
 		return NewTransactionErr(CommitOutputCoinError, err)
 	}
+
 	// get last byte
 	tx.PubKeyLastByteSender = receiverAddr.Pk[len(receiverAddr.Pk)-1]
 
@@ -1231,23 +1232,15 @@ func (tx Tx) ValidateTxSalary(
 	}
 
 	// check output coin's coin commitment is calculated correctly
-	var tmpValue *privacy.Scalar
-	cmTmp := tx.Proof.GetOutputCoins()[0].CoinDetails.GetPublicKey()
+	coin := tx.Proof.GetOutputCoins()[0].CoinDetails
+	shardID2 := common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())
+	cmTmp2 := new(privacy.Point)
+	cmTmp2.Add(coin.GetPublicKey(), new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenValueIndex], new(privacy.Scalar).FromUint64(uint64(coin.GetValue()))))
+	cmTmp2.Add(cmTmp2, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenSndIndex], coin.GetSNDerivator()))
+	cmTmp2.Add(cmTmp2, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenShardIDIndex], new(privacy.Scalar).FromUint64(uint64(shardID2))))
+	cmTmp2.Add(cmTmp2, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenRandomnessIndex], coin.GetRandomness()))
 
-	tmpValue = new(privacy.Scalar).FromUint64(uint64(tx.Proof.GetOutputCoins()[0].CoinDetails.GetValue()))
-	cmTmp.Add(cmTmp, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenValueIndex], tmpValue))
-
-	tmpValue = tx.Proof.GetOutputCoins()[0].CoinDetails.GetSNDerivator()
-	cmTmp.Add(cmTmp, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenSndIndex], tmpValue))
-
-	shardID := common.GetShardIDFromLastByte(tx.Proof.GetOutputCoins()[0].CoinDetails.GetPubKeyLastByte())
-	tmpValue = new(privacy.Scalar).FromUint64(uint64(shardID))
-	cmTmp.Add(cmTmp, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenShardIDIndex], tmpValue))
-
-	tmpValue = tx.Proof.GetOutputCoins()[0].CoinDetails.GetRandomness()
-	cmTmp.Add(cmTmp, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenRandomnessIndex], tmpValue))
-
-	ok := privacy.IsPointEqual(cmTmp, tx.Proof.GetOutputCoins()[0].CoinDetails.GetCoinCommitment())
+	ok := privacy.IsPointEqual(cmTmp2, tx.Proof.GetOutputCoins()[0].CoinDetails.GetCoinCommitment())
 	if !ok {
 		return ok, NewTransactionErr(UnexpectedError, errors.New("check output coin's coin commitment isn't calculated correctly"))
 	}
