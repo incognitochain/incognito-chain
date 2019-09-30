@@ -762,7 +762,7 @@ func (blockchain *BlockChain) revertBeaconState() error {
 		return err
 	}
 	blockchain.BestState.Beacon = &beaconBestState
-	if err := blockchain.StoreBeaconBestState(); err != nil {
+	if err := blockchain.StoreBeaconBestState(nil); err != nil {
 		return err
 	}
 	return nil
