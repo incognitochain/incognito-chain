@@ -326,11 +326,11 @@ func (blockchain *BlockChain) initBeaconState() error {
 		return err
 	}
 	// Insert new block into beacon chain
-	if err := blockchain.StoreBeaconBestState(); err != nil {
+	if err := blockchain.StoreBeaconBestState(nil); err != nil {
 		Logger.log.Error("Error Store best state for block", blockchain.BestState.Beacon.BestBlockHash, "in beacon chain")
 		return NewBlockChainError(UnExpectedError, err)
 	}
-	if err := blockchain.config.DataBase.StoreBeaconBlock(&blockchain.BestState.Beacon.BestBlock, blockchain.BestState.Beacon.BestBlock.Header.Hash()); err != nil {
+	if err := blockchain.config.DataBase.StoreBeaconBlock(&blockchain.BestState.Beacon.BestBlock, blockchain.BestState.Beacon.BestBlock.Header.Hash(), nil); err != nil {
 		Logger.log.Error("Error store beacon block", blockchain.BestState.Beacon.BestBlockHash, "in beacon chain")
 		return err
 	}
@@ -487,8 +487,8 @@ func (blockchain *BlockChain) GetShardBlockByHash(hash common.Hash) (*ShardBlock
 /*
 Store best state of block(best block, num of tx, ...) into Database
 */
-func (blockchain *BlockChain) StoreBeaconBestState() error {
-	return blockchain.config.DataBase.StoreBeaconBestState(blockchain.BestState.Beacon)
+func (blockchain *BlockChain) StoreBeaconBestState(bd *[]database.BatchData) error {
+	return blockchain.config.DataBase.StoreBeaconBestState(blockchain.BestState.Beacon, bd)
 }
 
 /*

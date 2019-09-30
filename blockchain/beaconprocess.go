@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
+	"github.com/incognitochain/incognito-chain/database"
 	"reflect"
 	"sort"
 	"strconv"
@@ -1035,6 +1036,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	snapshotAllShardCommittees map[byte][]incognitokey.CommitteePublicKey,
 	snapshotRewardReceivers map[string]string,
 ) error {
+
 	Logger.log.Debugf("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, beaconBlock.Header.Hash())
 	blockHash := beaconBlock.Header.Hash()
 	for shardID, shardStates := range beaconBlock.Body.ShardState {
@@ -1096,26 +1098,30 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		GetBeaconBestState().lock.Unlock()
 	}
 	//=============================END Store cross shard state ==================================
-	// Store new Beaconblock and new Beacon bestState in cache
-	Logger.log.Debugf("Store Beacon BestState Height %+v", beaconBlock.Header.Height)
-	if err := blockchain.StoreBeaconBestState(); err != nil {
-		return NewBlockChainError(StoreBeaconBestStateError, err)
-	}
-	Logger.log.Debugf("Store Beacon Block Height %+v with Hash %+v ", beaconBlock.Header.Height, blockHash)
-	if err := blockchain.config.DataBase.StoreBeaconBlock(beaconBlock, blockHash); err != nil {
-		return NewBlockChainError(StoreBeaconBlockError, err)
-	}
 	if err := blockchain.config.DataBase.StoreBeaconBlockIndex(blockHash, beaconBlock.Header.Height); err != nil {
 		return NewBlockChainError(StoreBeaconBlockIndexError, err)
 	}
-	err := blockchain.updateDatabaseWithBlockRewardInfo(beaconBlock)
+
+	batchPutData := []database.BatchData{}
+
+	Logger.log.Debugf("Store Beacon BestState Height %+v", beaconBlock.Header.Height)
+	if err := blockchain.StoreBeaconBestState(&batchPutData); err != nil {
+		return NewBlockChainError(StoreBeaconBestStateError, err)
+	}
+	Logger.log.Debugf("Store Beacon Block Height %+v with Hash %+v ", beaconBlock.Header.Height, blockHash)
+	if err := blockchain.config.DataBase.StoreBeaconBlock(beaconBlock, blockHash, &batchPutData); err != nil {
+		return NewBlockChainError(StoreBeaconBlockError, err)
+	}
+
+	err := blockchain.updateDatabaseWithBlockRewardInfo(beaconBlock, &batchPutData)
 	if err != nil {
 		return NewBlockChainError(UpdateDatabaseWithBlockRewardInfoError, err)
 	}
 	// execute, store
-	err = blockchain.processBridgeInstructions(beaconBlock)
+	err = blockchain.processBridgeInstructions(beaconBlock, &batchPutData)
 	if err != nil {
 		return NewBlockChainError(ProcessBridgeInstructionError, err)
 	}
-	return nil
+
+	return blockchain.config.DataBase.PutBatch(batchPutData)
 }
