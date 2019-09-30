@@ -32,7 +32,9 @@ func NewGetNetworkInfoResult(protocolVerion string, connMgr connmanager.ConnMana
 		LocalAddresses: []string{},
 	}
 	listener := connMgr.GetListeningPeer()
-	result.Connections = len(listener.GetPeerConns())
+	if listener != nil {
+		result.Connections = len(listener.GetPeerConns())
+	}
 	result.LocalAddresses = append(result.LocalAddresses, listener.GetRawAddress())
 	ifaces, err := net.Interfaces()
 	if err != nil {
