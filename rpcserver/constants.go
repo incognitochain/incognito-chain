@@ -58,6 +58,7 @@ const (
 	sendRawPrivacyCustomTokenTransaction       = "sendrawprivacycustomtokentransaction"
 	createAndSendPrivacyCustomTokenTransaction = "createandsendprivacycustomtokentransaction"
 	getMempoolInfo                             = "getmempoolinfo"
+	getPendingTxsInBlockgen                    = "getpendingtxsinblockgen"
 	getCandidateList                           = "getcandidatelist"
 	getCommitteeList                           = "getcommitteelist"
 	canPubkeyStake                             = "canpubkeystake"
@@ -152,6 +153,9 @@ const (
 	getPublicKeyRole            = "getpublickeyrole"
 	getIncognitoPublicKeyRole   = "getincognitopublickeyrole"
 	getMinerRewardFromMiningKey = "getminerrewardfromminingkey"
+
+	// slash
+	getProducersBlackList = "getproducersblacklist"
 )
 
 const (
