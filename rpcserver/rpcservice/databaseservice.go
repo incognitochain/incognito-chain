@@ -1,12 +1,13 @@
 package rpcservice
 
 import (
+	"math/big"
+	"strconv"
+
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
-	"math/big"
-	"strconv"
 )
 
 type DatabaseService struct {
@@ -37,17 +38,17 @@ func (dbService DatabaseService) GetBridgeReqWithStatus(txID string) (byte, erro
 	return status, err
 }
 
-func (dbService DatabaseService) GetBurningConfirm(txID common.Hash) (uint64, error)  {
+func (dbService DatabaseService) GetBurningConfirm(txID common.Hash) (uint64, error) {
 	return (*dbService.DB).GetBurningConfirm(txID)
 }
 
-func (dbService DatabaseService) ListSerialNumbers(tokenID common.Hash, shardID byte) (map[string]uint64, error){
+func (dbService DatabaseService) ListSerialNumbers(tokenID common.Hash, shardID byte) (map[string]uint64, error) {
 	return (*dbService.DB).ListSerialNumber(tokenID, shardID)
 }
 
-func (dbService DatabaseService) ListSNDerivator(tokenID common.Hash) ([]big.Int, error){
+func (dbService DatabaseService) ListSNDerivator(tokenID common.Hash) ([]big.Int, error) {
 	resultInBytes, err := (*dbService.DB).ListSNDerivator(tokenID)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 
@@ -59,17 +60,17 @@ func (dbService DatabaseService) ListSNDerivator(tokenID common.Hash) ([]big.Int
 	return result, nil
 }
 
-func (dbService DatabaseService) ListCommitments(tokenID common.Hash, shardID byte) (map[string]uint64, error){
+func (dbService DatabaseService) ListCommitments(tokenID common.Hash, shardID byte) (map[string]uint64, error) {
 	return (*dbService.DB).ListCommitment(tokenID, shardID)
 }
 
-func (dbService DatabaseService) ListCommitmentIndices(tokenID common.Hash, shardID byte) (map[uint64]string, error){
+func (dbService DatabaseService) ListCommitmentIndices(tokenID common.Hash, shardID byte) (map[uint64]string, error) {
 	return (*dbService.DB).ListCommitmentIndices(tokenID, shardID)
 }
 
-func (dbService DatabaseService) HasSerialNumbers(paymentAddressStr string, serialNumbersStr []interface{}, tokenID common.Hash) ([]bool, error){
+func (dbService DatabaseService) HasSerialNumbers(paymentAddressStr string, serialNumbersStr []interface{}, tokenID common.Hash) ([]bool, error) {
 	_, shardIDSender, err := GetKeySetFromPaymentAddressParam(paymentAddressStr)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 
@@ -89,9 +90,9 @@ func (dbService DatabaseService) HasSerialNumbers(paymentAddressStr string, seri
 	return result, nil
 }
 
-func (dbService DatabaseService) HasSnDerivators(paymentAddressStr string, snDerivatorStr []interface{}, tokenID common.Hash) ([]bool, error){
+func (dbService DatabaseService) HasSnDerivators(paymentAddressStr string, snDerivatorStr []interface{}, tokenID common.Hash) ([]bool, error) {
 	_, _, err := GetKeySetFromPaymentAddressParam(paymentAddressStr)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 
@@ -110,6 +111,10 @@ func (dbService DatabaseService) HasSnDerivators(paymentAddressStr string, snDer
 	return result, nil
 }
 
-func (dbService DatabaseService) ListRewardAmount() map[string]map[common.Hash]uint64{
+func (dbService DatabaseService) ListRewardAmount() map[string]map[common.Hash]uint64 {
 	return (*dbService.DB).ListCommitteeReward()
+}
+
+func (dbService DatabaseService) GetProducersBlackList() (map[string]uint8, error) {
+	return (*dbService.DB).GetProducersBlackList()
 }

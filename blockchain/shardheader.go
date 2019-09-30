@@ -14,6 +14,7 @@ import (
 */
 type ShardHeader struct {
 	Producer              string                 `json:"Producer"`
+	ProducerPubKeyStr     string                 `json:"ProducerPubKeyStr"`
 	ShardID               byte                   `json:"ShardID"`               // shard ID which block belong to
 	Version               int                    `json:"Version"`               // version of block structure
 	PreviousBlockHash     common.Hash            `json:"PreviousBlockHash"`     // previous block hash or Parent block hash
