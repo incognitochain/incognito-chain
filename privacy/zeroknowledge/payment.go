@@ -2,7 +2,6 @@ package zkp
 
 import (
 	"encoding/json"
-	"fmt"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -598,14 +597,12 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 
 		valid, err := proof.oneOfManyProof[i].Verify()
 		if !valid {
-			fmt.Printf("One of many failed\n")
 			privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: One out of many failed")
 			return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, err)
 		}
 		// Verify for the Proof that input coins' serial number is derived from the committed derivator
 		valid, err = proof.serialNumberProof[i].Verify(nil)
 		if !valid {
-			fmt.Printf("Serial number failed\n")
 			privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Serial number privacy failed")
 			return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberPrivacyProofFailedErr, err)
 		}
@@ -618,8 +615,6 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 		cmTmp.Add(cmTmp, proof.commitmentOutputShardID[i])
 
 		if !privacy.IsPointEqual(cmTmp, proof.outputCoins[i].CoinDetails.GetCoinCommitment()) {
-			fmt.Printf("cmTmp: %v\n", cmTmp.ToBytesS())
-			fmt.Printf("proof.outputCoins[i].CoinDetails.GetCoinCommitment(): %v\n", proof.outputCoins[i].CoinDetails.GetCoinCommitment().ToBytesS())
 			privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Commitment for output coins are not computed correctly")
 			return false, privacy.NewPrivacyErr(privacy.VerifyCoinCommitmentOutputFailedErr, nil)
 		}
