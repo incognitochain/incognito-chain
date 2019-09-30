@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/database"
 	"math/big"
 	"strconv"
 
@@ -163,7 +164,7 @@ func (blockchain *BlockChain) processIssuingETHReq(instruction []string, updatin
 			fmt.Println("WARNING: an error occured while building tx request id in bytes from string: ", err)
 			return nil, nil
 		}
-		err = blockchain.GetDatabase().TrackBridgeReqWithStatus(*txReqID, common.BridgeRequestRejectedStatus)
+		err = blockchain.GetDatabase().TrackBridgeReqWithStatus(*txReqID, common.BridgeRequestRejectedStatus, nil)
 		if err != nil {
 			fmt.Println("WARNING: an error occured while tracking bridge request with rejected status to leveldb: ", err)
 		}
@@ -215,7 +216,7 @@ func (blockchain *BlockChain) processIssuingReq(instruction []string, updatingIn
 			fmt.Println("WARNING: an error occured while building tx request id in bytes from string: ", err)
 			return nil, nil
 		}
-		err = blockchain.GetDatabase().TrackBridgeReqWithStatus(*txReqID, common.BridgeRequestRejectedStatus)
+		err = blockchain.GetDatabase().TrackBridgeReqWithStatus(*txReqID, common.BridgeRequestRejectedStatus, nil)
 		if err != nil {
 			fmt.Println("WARNING: an error occured while tracking bridge request with rejected status to leveldb: ", err)
 		}
@@ -257,7 +258,7 @@ func decodeContent(content string, action interface{}) error {
 	return json.Unmarshal(contentBytes, &action)
 }
 
-func (blockchain *BlockChain) storeBurningConfirm(block *ShardBlock) error {
+func (blockchain *BlockChain) storeBurningConfirm(block *ShardBlock, bd *[]database.BatchData) error {
 	for _, inst := range block.Body.Instructions {
 		if inst[0] != strconv.Itoa(metadata.BurningConfirmMeta) {
 			continue
@@ -268,14 +269,14 @@ func (blockchain *BlockChain) storeBurningConfirm(block *ShardBlock) error {
 		if err != nil {
 			return errors.Wrap(err, "txid invalid")
 		}
-		if err := blockchain.config.DataBase.StoreBurningConfirm(*txID, block.Header.Height); err != nil {
+		if err := blockchain.config.DataBase.StoreBurningConfirm(*txID, block.Header.Height, bd); err != nil {
 			return errors.Wrapf(err, "store failed, txID: %x", txID)
 		}
 	}
 	return nil
 }
 
-func (blockchain *BlockChain) updateBridgeIssuanceStatus(block *ShardBlock) error {
+func (blockchain *BlockChain) updateBridgeIssuanceStatus(block *ShardBlock, bd *[]database.BatchData) error {
 	db := blockchain.config.DataBase
 	for _, tx := range block.Body.Transactions {
 		metaType := tx.GetMetadataType()
@@ -288,7 +289,7 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(block *ShardBlock) erro
 			reqTxID = meta.RequestedTxID
 		}
 		var err error
-		err = db.TrackBridgeReqWithStatus(reqTxID, common.BridgeRequestAcceptedStatus)
+		err = db.TrackBridgeReqWithStatus(reqTxID, common.BridgeRequestAcceptedStatus, bd)
 		if err != nil {
 			return err
 		}
