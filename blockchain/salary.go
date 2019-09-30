@@ -210,7 +210,7 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(beaconBlocks 
 					if err != nil {
 						return err
 					}
-					keyWalletDevAccount, err := wallet.Base58CheckDeserialize(common.DevAddress)
+					keyWalletDevAccount, err := wallet.Base58CheckDeserialize(blockchain.config.ChainParams.DevAddress)
 					if err != nil {
 						return err
 					}
