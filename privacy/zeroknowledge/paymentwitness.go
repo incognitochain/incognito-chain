@@ -232,8 +232,8 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 
 		cmOutputSum[i] = new(privacy.Point).Identity()
 		cmOutputSum[i].Add(cmOutputValue[i], cmOutputSND[i])
-		cmOutputSum[i].Add(cmOutputValue[i], outputCoins[i].CoinDetails.GetPublicKey())
-		cmOutputSum[i].Add(cmOutputValue[i], cmOutputShardID[i])
+		cmOutputSum[i].Add(cmOutputSum[i], outputCoins[i].CoinDetails.GetPublicKey())
+		cmOutputSum[i].Add(cmOutputSum[i], cmOutputShardID[i])
 
 		cmOutputValueAll.Add(cmOutputValueAll, cmOutputValue[i])
 		randOutputValueAll.Add(randOutputValueAll, randOutputValue[i])
