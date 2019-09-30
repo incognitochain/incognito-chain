@@ -7,7 +7,6 @@ import (
 
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	"github.com/pkg/errors"
 )
@@ -98,7 +97,7 @@ func GetETHHeader(
 	return getBlockByNumberRes.Result, nil
 }
 
-func PickAndParseLogMapFromReceipt(constructedReceipt *types.Receipt) (map[string]interface{}, error) {
+func PickAndParseLogMapFromReceipt(constructedReceipt *types.Receipt, ethContractAddressStr string) (map[string]interface{}, error) {
 	logData := []byte{}
 	logLen := len(constructedReceipt.Logs)
 	if logLen == 0 {
@@ -106,7 +105,7 @@ func PickAndParseLogMapFromReceipt(constructedReceipt *types.Receipt) (map[strin
 		return nil, nil
 	}
 	for _, log := range constructedReceipt.Logs {
-		if bytes.Equal(rCommon.HexToAddress(common.EthContractAddressStr).Bytes(), log.Address.Bytes()) {
+		if bytes.Equal(rCommon.HexToAddress(ethContractAddressStr).Bytes(), log.Address.Bytes()) {
 			logData = log.Data
 			break
 		}
