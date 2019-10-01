@@ -33,7 +33,7 @@ func NewConnManager(
 }
 
 func (cm *ConnManager) PublishMessage(msg wire.Message) error {
-	publishable := []string{wire.CmdBlockShard, wire.CmdBFT}
+	publishable := []string{wire.CmdBlockShard, wire.CmdBFT, wire.CmdBlockBeacon}
 	msgType := msg.MessageType()
 	for _, p := range publishable {
 		if msgType == p {
@@ -48,7 +48,7 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 
 func (cm *ConnManager) Start() {
 	// connect to proxy node
-	proxyIP, proxyPort := ParseListenner(cm.DiscoverPeersAddress, "127.0.0.1", 9300)
+	proxyIP, proxyPort := ParseListenner(cm.DiscoverPeersAddress, "127.0.0.1", 9330)
 	ipfsaddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", proxyIP, proxyPort))
 	if err != nil {
 		panic(err)
