@@ -26,7 +26,7 @@ const (
 	MAX_S2B_BLOCK                = 5
 	DurationHalfLifeRewardForDev = uint64(31536000) // 5 years, after 5 year, reward for devs = 0
 	GetValidBlock                = 10
-	CheckForce                   = true
+	CheckForce                   = false
 	GenesisBlockTime             = "2019-09-24T00:00:00.000Z"
 )
 
