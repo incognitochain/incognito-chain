@@ -2,7 +2,6 @@ package incognitokey
 
 import (
 	"errors"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -22,7 +21,6 @@ type KeySet struct {
 func (keySet *KeySet) GenerateKey(seed []byte) *KeySet {
 	keySet.PrivateKey = privacy.GeneratePrivateKey(seed)
 	keySet.PaymentAddress = privacy.GeneratePaymentAddress(keySet.PrivateKey[:])
-	fmt.Println(keySet.PaymentAddress)
 	keySet.ReadonlyKey = privacy.GenerateViewingKey(keySet.PrivateKey[:])
 	return keySet
 }

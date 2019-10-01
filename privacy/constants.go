@@ -9,7 +9,6 @@ const (
 )
 
 const (
-	CompressedEllipticPointSize = 33 // EllipticPoint compress size
 	Ed25519KeySize = 32
 	AESKeySize = 32
 	CommitmentRingSize    = 8

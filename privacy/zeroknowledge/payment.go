@@ -214,7 +214,7 @@ func (proof *PaymentProof) Bytes() []byte {
 	bytes = append(bytes, byte(len(proof.commitmentOutputValue)))
 	for i := 0; i < len(proof.commitmentOutputValue); i++ {
 		comOutputValue := proof.commitmentOutputValue[i].ToBytesS()
-		bytes = append(bytes, byte(privacy.CompressedEllipticPointSize))
+		bytes = append(bytes, byte(privacy.Ed25519KeySize))
 		bytes = append(bytes, comOutputValue...)
 	}
 
@@ -222,7 +222,7 @@ func (proof *PaymentProof) Bytes() []byte {
 	bytes = append(bytes, byte(len(proof.commitmentOutputSND)))
 	for i := 0; i < len(proof.commitmentOutputSND); i++ {
 		comOutputSND := proof.commitmentOutputSND[i].ToBytesS()
-		bytes = append(bytes, byte(privacy.CompressedEllipticPointSize))
+		bytes = append(bytes, byte(privacy.Ed25519KeySize))
 		bytes = append(bytes, comOutputSND...)
 	}
 
@@ -230,14 +230,14 @@ func (proof *PaymentProof) Bytes() []byte {
 	bytes = append(bytes, byte(len(proof.commitmentOutputShardID)))
 	for i := 0; i < len(proof.commitmentOutputShardID); i++ {
 		comOutputShardID := proof.commitmentOutputShardID[i].ToBytesS()
-		bytes = append(bytes, byte(privacy.CompressedEllipticPointSize))
+		bytes = append(bytes, byte(privacy.Ed25519KeySize))
 		bytes = append(bytes, comOutputShardID...)
 	}
 
 	//ComInputSK 				*privacy.Point
 	if proof.commitmentInputSecretKey != nil {
 		comInputSK := proof.commitmentInputSecretKey.ToBytesS()
-		bytes = append(bytes, byte(privacy.CompressedEllipticPointSize))
+		bytes = append(bytes, byte(privacy.Ed25519KeySize))
 		bytes = append(bytes, comInputSK...)
 	} else {
 		bytes = append(bytes, byte(0))
@@ -247,7 +247,7 @@ func (proof *PaymentProof) Bytes() []byte {
 	bytes = append(bytes, byte(len(proof.commitmentInputValue)))
 	for i := 0; i < len(proof.commitmentInputValue); i++ {
 		comInputValue := proof.commitmentInputValue[i].ToBytesS()
-		bytes = append(bytes, byte(privacy.CompressedEllipticPointSize))
+		bytes = append(bytes, byte(privacy.Ed25519KeySize))
 		bytes = append(bytes, comInputValue...)
 	}
 
@@ -255,14 +255,14 @@ func (proof *PaymentProof) Bytes() []byte {
 	bytes = append(bytes, byte(len(proof.commitmentInputSND)))
 	for i := 0; i < len(proof.commitmentInputSND); i++ {
 		comInputSND := proof.commitmentInputSND[i].ToBytesS()
-		bytes = append(bytes, byte(privacy.CompressedEllipticPointSize))
+		bytes = append(bytes, byte(privacy.Ed25519KeySize))
 		bytes = append(bytes, comInputSND...)
 	}
 
 	//ComInputShardID 	*privacy.Point
 	if proof.commitmentInputShardID != nil {
 		comInputShardID := proof.commitmentInputShardID.ToBytesS()
-		bytes = append(bytes, byte(privacy.CompressedEllipticPointSize))
+		bytes = append(bytes, byte(privacy.Ed25519KeySize))
 		bytes = append(bytes, comInputShardID...)
 	} else {
 		bytes = append(bytes, byte(0))

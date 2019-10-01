@@ -1,7 +1,6 @@
 package oneoutofmany
 
 import (
-	"fmt"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 	"github.com/pkg/errors"
@@ -421,7 +420,7 @@ func (proof OneOutOfManyProof) Verify() (bool, error) {
 
 	leftPoint3 := new(privacy.Point).Identity()
 	leftPoint32 := new(privacy.Point).Identity()
-	fmt.Println(n, N)
+
 	for i := 0; i < N; i++ {
 		iBinary := privacy.ConvertIntToBinary(i, n)
 
