@@ -74,3 +74,14 @@ func TestVerifyNonceByTimeStamp(t *testing.T) {
 		t.Error("Fail to verify nonce by timestamp")
 	}
 }
+func TestVerifyNonceByTimeStamp2(t *testing.T) {
+	//[random 3495548982 596624 1569472740 1569470553],
+	var btcClient = NewBTCClient("admin", "autonomous", "159.65.142.153", "8332")
+	isOk, err := btcClient.VerifyNonceWithTimestamp(1569472740, 3495548982)
+	if err != nil {
+		t.Error("Fail to get chain timestamp and nonce")
+	}
+	if !isOk {
+		t.Error("Fail to verify nonce by timestamp")
+	}
+}

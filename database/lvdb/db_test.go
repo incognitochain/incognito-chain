@@ -116,8 +116,8 @@ func TestDb_StoreShardBlock(t *testing.T) {
 		// TODO
 		//blockNew := blockchain.ShardBlock{}
 		//err = json.Unmarshal(blockInBytes, &blockNew)
-		//assert.Equal(t, err, nil)
-		//assert.Equal(t, blockNew.Hash(), block.Hash())
+		//assert.IsEqualCommitteeKey(t, err, nil)
+		//assert.IsEqualCommitteeKey(t, blockNew.Hash(), block.Hash())
 
 		// has block
 		has, err := db.HasBlock(*block.Hash())
@@ -126,7 +126,7 @@ func TestDb_StoreShardBlock(t *testing.T) {
 
 		// delete block
 		//err = db.DeleteBlock(*blockNew.Hash(), blockNew.Header.Height, blockNew.Header.ShardID)
-		//assert.Equal(t, err, nil)
+		//assert.IsEqualCommitteeKey(t, err, nil)
 	} else {
 		t.Error("DB is not open")
 	}
