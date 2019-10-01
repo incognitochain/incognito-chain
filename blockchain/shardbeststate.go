@@ -44,6 +44,9 @@ type ShardBestState struct {
 	ActiveShards           int                               `json:"ActiveShards"`
 	ConsensusAlgorithm     string                            `json:"ConsensusAlgorithm"`
 
+	// Number of blocks produced by producers in epoch
+	NumOfBlocksByProducers map[string]uint64 `json:"NumOfBlocksByProducers"`
+
 	BlockInterval      time.Duration
 	BlockMaxCreateTime time.Duration
 
@@ -208,6 +211,7 @@ func (shardBestState *ShardBestState) SetMinShardCommitteeSize(minShardCommittee
 
 func (shardBestState *ShardBestState) GetPubkeyRole(pubkey string, round int) string {
 	keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(shardBestState.ShardCommittee, shardBestState.ConsensusAlgorithm)
+	// fmt.Printf("pubkey %v key list %v\n\n\n\n", pubkey, keyList)
 	found := common.IndexOfStr(pubkey, keyList)
 	if found > -1 {
 		tmpID := (shardBestState.ShardProposerIdx + round) % len(keyList)

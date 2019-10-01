@@ -10,8 +10,8 @@ import (
 )
 
 type GetNetworkInfoResult struct {
-	Commit          string                   `json:"commit"`
-	Version         string                   `json:"version"`
+	Commit          string                   `json:"Commit"`
+	Version         string                   `json:"Version"`
 	SubVersion      string                   `json:"SubVersion"`
 	ProtocolVersion string                   `json:"ProtocolVersion"`
 	NetworkActive   bool                     `json:"NetworkActive"`
@@ -32,8 +32,10 @@ func NewGetNetworkInfoResult(protocolVerion string, connMgr connmanager.ConnMana
 		LocalAddresses: []string{},
 	}
 	listener := connMgr.GetListeningPeer()
-	result.Connections = len(listener.GetPeerConns())
-	result.LocalAddresses = append(result.LocalAddresses, listener.GetRawAddress())
+	if listener != nil {
+		result.Connections = len(listener.GetPeerConns())
+		result.LocalAddresses = append(result.LocalAddresses, listener.GetRawAddress())
+	}
 	ifaces, err := net.Interfaces()
 	if err != nil {
 		return nil, err
