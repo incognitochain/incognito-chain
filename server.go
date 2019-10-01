@@ -1321,6 +1321,12 @@ PushMessageToAll broadcast msg
 */
 func (serverObj *Server) PushMessageToAll(msg wire.Message) error {
 	Logger.log.Debug("Push msg to all peers")
+
+	// Publish message to highway
+	if err := serverObj.highway.PublishMessage(msg); err != nil {
+		return err
+	}
+
 	var dc chan<- struct{}
 	msg.SetSenderID(serverObj.connManager.GetConfig().ListenerPeer.GetPeerID())
 	serverObj.connManager.GetConfig().ListenerPeer.QueueMessageWithEncoding(msg, dc, peer.MessageToAll, nil)
