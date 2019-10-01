@@ -42,7 +42,8 @@ type Params struct {
 	SwapOffset                       int    // is used for case that good producers length is equal to max committee size
 	DevAddress                       string
 	CentralizedWebsitePaymentAddress string //centralized website's pubkey
-	CheckForce                       bool
+	CheckForce                       bool   // true on testnet and false on mainnet
+	ChainVersion                     string
 }
 
 type GenesisParams struct {
@@ -107,7 +108,8 @@ func init() {
 			SlashLevel{MinRange: 50, PunishedEpoches: 10},
 			SlashLevel{MinRange: 75, PunishedEpoches: 25},
 		},
-		CheckForce: true,
+		CheckForce:   true,
+		ChainVersion: "version-chain-main.json",
 	}
 	// END TESTNET
 	// FOR MAINNET
@@ -148,6 +150,7 @@ func init() {
 			SlashLevel{MinRange: 50, PunishedEpoches: 10},
 			SlashLevel{MinRange: 75, PunishedEpoches: 20},
 		},
-		CheckForce: false,
+		CheckForce:   false,
+		ChainVersion: "version-chain.json",
 	}
 }
