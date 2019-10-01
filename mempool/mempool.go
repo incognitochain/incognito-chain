@@ -1100,7 +1100,9 @@ func (tp *TxPool) MarkForwardedTransaction(txHash common.Hash) {
 	if tp.IsTest {
 		return
 	}
-	tp.pool[txHash].IsFowardMessage = true
+	if _, ok := tp.pool[txHash]; ok {
+		tp.pool[txHash].IsFowardMessage = true
+	}
 }
 
 // GetTx get transaction info by hash

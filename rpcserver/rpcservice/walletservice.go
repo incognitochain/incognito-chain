@@ -2,20 +2,21 @@ package rpcservice
 
 import (
 	"encoding/hex"
+	"log"
+	"math/rand"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"log"
-	"math/rand"
 )
 
-type WalletService struct{
-	Wallet * wallet.Wallet
+type WalletService struct {
+	Wallet     *wallet.Wallet
 	BlockChain *blockchain.BlockChain
 }
 
-func (walletService WalletService) ListAccounts() (jsonresult.ListAccounts, *RPCError){
+func (walletService WalletService) ListAccounts() (jsonresult.ListAccounts, *RPCError) {
 	result := jsonresult.ListAccounts{
 		Accounts:   make(map[string]uint64),
 		WalletName: walletService.Wallet.Name,
@@ -43,7 +44,7 @@ func (walletService WalletService) ListAccounts() (jsonresult.ListAccounts, *RPC
 	return result, nil
 }
 
-func (walletService WalletService) GetAccount(param string) (string, error){
+func (walletService WalletService) GetAccount(param string) (string, error) {
 	for _, account := range walletService.Wallet.MasterAccount.Child {
 		address := account.Key.Base58CheckSerialize(wallet.PaymentAddressType)
 		if address == param {
@@ -57,9 +58,9 @@ func (walletService WalletService) GetAddressesByAccount(accountName string) ([]
 	return walletService.Wallet.GetAddressesByAccName(accountName), nil
 }
 
-func (walletService * WalletService) GetAccountAddress(accountName string) (wallet.KeySerializedData, error) {
+func (walletService *WalletService) GetAccountAddress(accountName string) (wallet.KeySerializedData, error) {
 	activeShards := walletService.BlockChain.BestState.Beacon.ActiveShards
-	shardID :=walletService.Wallet.GetConfig().ShardID
+	shardID := walletService.Wallet.GetConfig().ShardID
 	// if shardID is nil -> create with any shard
 	if shardID != nil {
 		// if shardID is configured with not nil
@@ -75,11 +76,11 @@ func (walletService * WalletService) GetAccountAddress(accountName string) (wall
 	return result, nil
 }
 
-func (walletService WalletService) DumpPrivkey(param string) wallet.KeySerializedData{
+func (walletService WalletService) DumpPrivkey(param string) wallet.KeySerializedData {
 	return walletService.Wallet.DumpPrivateKey(param)
 }
 
-func (walletService * WalletService) ImportAccount(privateKey string, accountName string, passPhrase string) (wallet.KeySerializedData, error){
+func (walletService *WalletService) ImportAccount(privateKey string, accountName string, passPhrase string) (wallet.KeySerializedData, error) {
 	account, err := walletService.Wallet.ImportAccount(privateKey, accountName, passPhrase)
 	if err != nil {
 		return wallet.KeySerializedData{}, err
@@ -93,7 +94,7 @@ func (walletService * WalletService) ImportAccount(privateKey string, accountNam
 	return result, nil
 }
 
-func (walletService * WalletService) RemoveAccount(privateKey string, passPhrase string) (bool, *RPCError){
+func (walletService *WalletService) RemoveAccount(privateKey string, passPhrase string) (bool, *RPCError) {
 	err := walletService.Wallet.RemoveAccount(privateKey, passPhrase)
 	if err != nil {
 		return false, NewRPCError(UnexpectedError, err)
@@ -101,7 +102,7 @@ func (walletService * WalletService) RemoveAccount(privateKey string, passPhrase
 	return true, nil
 }
 
-func (walletService WalletService) GetBalanceByPrivateKey (privateKey string) (uint64, *RPCError){
+func (walletService WalletService) GetBalanceByPrivateKey(privateKey string) (uint64, *RPCError) {
 	keySet, shardIDSender, err := GetKeySetFromPrivateKeyParams(privateKey)
 
 	prvCoinID := &common.Hash{}
@@ -109,7 +110,7 @@ func (walletService WalletService) GetBalanceByPrivateKey (privateKey string) (u
 	if err != nil {
 		return uint64(0), NewRPCError(TokenIsInvalidError, err)
 	}
-	outcoints, err :=walletService.BlockChain.GetListOutputCoinsByKeyset(keySet, shardIDSender, prvCoinID)
+	outcoints, err := walletService.BlockChain.GetListOutputCoinsByKeyset(keySet, shardIDSender, prvCoinID)
 	log.Println(err)
 	if err != nil {
 		return uint64(0), NewRPCError(UnexpectedError, err)
@@ -124,9 +125,9 @@ func (walletService WalletService) GetBalanceByPrivateKey (privateKey string) (u
 	return balance, nil
 }
 
-func (walletService WalletService) GetBalanceByPaymentAddress (paymentAddress string) (uint64, *RPCError){
+func (walletService WalletService) GetBalanceByPaymentAddress(paymentAddress string) (uint64, *RPCError) {
 	keySet, shardIDSender, err := GetKeySetFromPaymentAddressParam(paymentAddress)
-	
+
 	prvCoinID := &common.Hash{}
 	err1 := prvCoinID.SetBytes(common.PRVCoinID[:])
 	if err1 != nil {
@@ -148,7 +149,7 @@ func (walletService WalletService) GetBalanceByPaymentAddress (paymentAddress st
 	return balance, nil
 }
 
-func (walletService WalletService) GetBalance (accountName string) (uint64, *RPCError){
+func (walletService WalletService) GetBalance(accountName string) (uint64, *RPCError) {
 	prvCoinID := &common.Hash{}
 	err1 := prvCoinID.SetBytes(common.PRVCoinID[:])
 	if err1 != nil {
@@ -190,7 +191,7 @@ func (walletService WalletService) GetBalance (accountName string) (uint64, *RPC
 	return balance, nil
 }
 
-func (walletService WalletService) GetReceivedByAccount(accountName string) (uint64, *RPCError){
+func (walletService WalletService) GetReceivedByAccount(accountName string) (uint64, *RPCError) {
 	balance := uint64(0)
 	for _, account := range walletService.Wallet.MasterAccount.Child {
 		if account.Name == accountName {
