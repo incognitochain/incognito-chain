@@ -1,4 +1,4 @@
-package btc
+package random
 
 //Random Client Using Bitcoin
 type RandomClient interface {

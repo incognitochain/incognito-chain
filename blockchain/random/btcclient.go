@@ -1,4 +1,4 @@
-package btc
+package random
 
 import (
 	"encoding/json"

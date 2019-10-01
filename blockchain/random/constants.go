@@ -1,6 +1,6 @@
-package btc
+package random
 
 const (
 	MaxTimeStamp = 4762368000
-	TIMESTAMP = "timestamp"
+	TIMESTAMP    = "timestamp"
 )

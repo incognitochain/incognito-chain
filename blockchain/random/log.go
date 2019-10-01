@@ -1,4 +1,4 @@
-package btc
+package random
 
 import "github.com/incognitochain/incognito-chain/common"
 
