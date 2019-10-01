@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -169,6 +170,10 @@ func TestHDWalletBase58CheckSerialize(t *testing.T) {
 	privKeyBytes := masterKey.Base58CheckSerialize(PriKeyType)
 	paymentAddrBytes := masterKey.Base58CheckSerialize(PaymentAddressType)
 	readonlyKeyBytes := masterKey.Base58CheckSerialize(ReadonlyKeyType)
+
+	fmt.Printf("privKeyBytes: %v\n", privKeyBytes)
+	fmt.Printf("paymentAddrBytes: %v\n", paymentAddrBytes)
+	fmt.Printf("readonlyKeyBytes: %v\n", readonlyKeyBytes)
 
 	assert.Equal(t, privKeyBase58CheckSerializedBytesLen, len(privKeyBytes))
 	assert.Equal(t, paymentAddrBase58CheckSerializedBytesLen, len(paymentAddrBytes))

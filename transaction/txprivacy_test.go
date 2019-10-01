@@ -3,16 +3,15 @@ package transaction
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/incognitochain/incognito-chain/common/base58"
-	"testing"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestUnmarshalJSON(t *testing.T) {
@@ -230,6 +229,7 @@ func TestInitTx(t *testing.T) {
 
 		isValidTx, err := tx2.ValidateTransaction(true, db, shardID, &common.PRVCoinID)
 		assert.Equal(t, true, isValidTx)
+
 	}
 }
 
