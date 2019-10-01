@@ -137,6 +137,7 @@ func TestPaymentProofToBytes(t *testing.T){
 	amountTransfer := uint64(1000000000)
 
 	outputCoins := make([]*privacy.OutputCoin, 2)
+	outputCoins[0] = new(privacy.OutputCoin)
 	outputCoins[0].Init()
 	outputCoins[0].CoinDetails.SetValue(uint64(amountTransfer))
 	outputCoins[0].CoinDetails.SetPublicKey(receiverPublicKeyPoint)
@@ -144,6 +145,7 @@ func TestPaymentProofToBytes(t *testing.T){
 
 	changeAmount :=sumValue - amountTransfer
 
+	outputCoins[1] = new(privacy.OutputCoin)
 	outputCoins[1].Init()
 	outputCoins[1].CoinDetails.SetValue(changeAmount)
 	outputCoins[1].CoinDetails.SetPublicKey(senderPKPoint)
