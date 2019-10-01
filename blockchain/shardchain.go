@@ -71,6 +71,7 @@ func (chain *ShardChain) CreateNewBlock(round int) (common.BlockInterface, error
 	chain.lock.Lock()
 	defer chain.lock.Unlock()
 	start := time.Now()
+	Logger.log.Infof("Begin Create New Block %+v", start)
 	beaconHeight := chain.Blockchain.Synker.States.ClosestState.ClosestBeaconState
 	if chain.Blockchain.BestState.Beacon.BeaconHeight < beaconHeight {
 		beaconHeight = chain.Blockchain.BestState.Beacon.BeaconHeight
@@ -79,10 +80,13 @@ func (chain *ShardChain) CreateNewBlock(round int) (common.BlockInterface, error
 			beaconHeight = GetBestStateShard(byte(chain.GetShardID())).BeaconHeight
 		}
 	}
+	Logger.log.Infof("Begin Enter New Block Shard %+v", time.Now())
 	newBlock, err := chain.BlockGen.NewBlockShard(byte(chain.GetShardID()), round, chain.Blockchain.Synker.GetClosestCrossShardPoolState(), beaconHeight, start)
+	Logger.log.Infof("Begin Finish New Block Shard %+v", time.Now())
 	if err != nil {
 		return nil, err
 	}
+	Logger.log.Infof("Finish Create New Block %+v", start)
 	return newBlock, nil
 }
 
