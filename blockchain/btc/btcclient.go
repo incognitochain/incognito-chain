@@ -3,6 +3,7 @@ package btc
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"io/ioutil"
 	"net/http"
@@ -150,9 +151,13 @@ func (btcClient *BTCClient) GetTimeStampAndNonceByBlockHash(blockHash string) (i
 	if err != nil {
 		return -1, -1, err
 	}
-	timeStamp := result["result"].(map[string]interface{})["time"].(float64)
-	nonce := result["result"].(map[string]interface{})["nonce"].(float64)
-	return int64(timeStamp), int64(nonce), nil
+	if parsedResult, ok := result["result"]; ok {
+		timeStamp := parsedResult.(map[string]interface{})["time"].(float64)
+		nonce := parsedResult.(map[string]interface{})["nonce"].(float64)
+		return int64(timeStamp), int64(nonce), nil
+	} else {
+		return -1, -1, NewBTCAPIError(GetBlockHeaderResultError, fmt.Errorf("Failed to parse block header result %+v", result))
+	}
 }
 func (btcClient *BTCClient) GetTimeStampAndNonceByBlockHeight(blockHeight int) (int64, int64, error) {
 	blockHash, err := btcClient.GetBlockHashByHeight(blockHeight)
@@ -169,8 +174,15 @@ func (btcClient *BTCClient) GetBlockHashByHeight(blockHeight int) (string, error
 	if err != nil {
 		return common.EmptyString, err
 	}
-	blockHash := result["result"].(string)
-	return blockHash, nil
+	if tempBlockHash, ok := result["result"]; ok {
+		if blockHash, ok2 := tempBlockHash.(string); ok2 {
+			return blockHash, nil
+		} else {
+			return common.EmptyString, NewBTCAPIError(BlockHashParseError, fmt.Errorf("Failed to perform type assertion with value %+v", tempBlockHash))
+		}
+	} else {
+		return common.EmptyString, NewBTCAPIError(GetBlockHashResultError, fmt.Errorf("Failed to get block hash from block height %+v", blockHeight))
+	}
 }
 
 func (btcClient *BTCClient) callRPC(method string, params string) (map[string]interface{}, error) {
@@ -183,7 +195,7 @@ func (btcClient *BTCClient) callRPC(method string, params string) (map[string]in
 	}
 	req.SetBasicAuth(btcClient.User, btcClient.Password)
 	req.Header.Set("Content-Type", "text/plain;")
-	
+
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return result, NewBTCAPIError(APIError, err)

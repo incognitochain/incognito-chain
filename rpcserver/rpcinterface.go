@@ -153,6 +153,7 @@ var HttpHandler = map[string]httpHandler{
 	getPublicKeyRole:            (*HttpServer).handleGetPublicKeyRole,
 	getIncognitoPublicKeyRole:   (*HttpServer).handleGetIncognitoPublicKeyRole,
 	getMinerRewardFromMiningKey: (*HttpServer).handleGetMinerRewardFromMiningKey,
+	getProducersBlackList:       (*HttpServer).handleGetProducersBlackList,
 }
 
 // Commands that are available to a limited user
