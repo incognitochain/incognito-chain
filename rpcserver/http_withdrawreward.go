@@ -11,8 +11,6 @@ import (
 )
 
 func (httpServer *HttpServer) handleCreateRawWithDrawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	//VoteProposal - Step 2: Create Raw vote proposal transaction
-	// params = setBuildRawBurnTransactionParams(params, FeeVote)
 	arrayParams := common.InterfaceSlice(params)
 	arrayParams[1] = nil
 	param := map[string]interface{}{}
@@ -32,7 +30,6 @@ func (httpServer *HttpServer) handleCreateRawWithDrawTransaction(params interfac
 }
 
 func (httpServer *HttpServer) handleCreateAndSendWithDrawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	//VoteProposal - Step 1: Client call rpc function to create vote proposal transaction
 	return httpServer.createAndSendTxWithMetadata(
 		params,
 		closeChan,

@@ -12,7 +12,7 @@ type DevRewardInfo struct {
 	DevReward map[common.Hash]uint64
 }
 
-func BuildInstForDevReward(reward map[common.Hash]uint64) ([]string, error) {
+func BuildInstForDevReward(reward map[common.Hash]uint64, devAddress string) ([]string, error) {
 
 	devRewardInfo := DevRewardInfo{
 		DevReward: reward,
@@ -23,7 +23,7 @@ func BuildInstForDevReward(reward map[common.Hash]uint64) ([]string, error) {
 		return nil, err
 	}
 
-	keyWalletDevAccount, _ := wallet.Base58CheckDeserialize(common.DevAddress)
+	keyWalletDevAccount, _ := wallet.Base58CheckDeserialize(devAddress)
 	returnedInst := []string{
 		strconv.Itoa(DevRewardRequestMeta),
 		strconv.Itoa(int(common.GetShardIDFromLastByte(keyWalletDevAccount.KeySet.PaymentAddress.Pk[32]))),

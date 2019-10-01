@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"reflect"
 	"sort"
 	"strconv"
@@ -104,12 +105,26 @@ func CreateCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) 
 	#3: new committees after swapped
 	#4: error
 */
-func CreateSwapAction(pendingValidator []string, commitees []string, committeeSize int, shardID byte) ([]string, []string, []string, error) {
-	newPendingValidator, newShardCommittees, shardSwapedCommittees, shardNewCommittees, err := SwapValidator(pendingValidator, commitees, committeeSize, common.Offset)
+func CreateSwapAction(
+	pendingValidator []string,
+	commitees []string,
+	maxCommitteeSize int,
+	minCommitteeSize int,
+	shardID byte,
+	producersBlackList map[string]uint8,
+	badProducersWithPunishment map[string]uint8,
+	offset int,
+	swapOffset int,
+) ([]string, []string, []string, error) {
+	newPendingValidator, newShardCommittees, shardSwapedCommittees, shardNewCommittees, err := SwapValidator(pendingValidator, commitees, maxCommitteeSize, minCommitteeSize, offset, producersBlackList, swapOffset)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	swapInstruction := []string{"swap", strings.Join(shardNewCommittees, ","), strings.Join(shardSwapedCommittees, ","), "shard", strconv.Itoa(int(shardID))}
+	badProducersWithPunishmentBytes, err := json.Marshal(badProducersWithPunishment)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	swapInstruction := []string{"swap", strings.Join(shardNewCommittees, ","), strings.Join(shardSwapedCommittees, ","), "shard", strconv.Itoa(int(shardID)), string(badProducersWithPunishmentBytes)}
 	return swapInstruction, newPendingValidator, newShardCommittees, nil
 }
 
@@ -132,11 +147,19 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 	stakeShardAutoStaking := []string{}
 	stakeBeaconAutoStaking := []string{}
 	stopAutoStaking := []string{}
-	instructions, err = buildActionsFromMetadata(transactions, bc, shardID)
-	if err != nil {
-		return nil, err
-	}
+	// @Notice: move build action from metadata into one loop
+	//instructions, err = buildActionsFromMetadata(transactions, bc, shardID)
+	//if err != nil {
+	//	return nil, err
+	//}
 	for _, tx := range transactions {
+		metadataValue := tx.GetMetadata()
+		if metadataValue != nil {
+			actionPairs, err := metadataValue.BuildReqActions(tx, bc, shardID)
+			if err == nil {
+				instructions = append(instructions, actionPairs...)
+			}
+		}
 		switch tx.GetMetadataType() {
 		case metadata.ShardStakingMeta:
 			stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
@@ -178,6 +201,10 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 		if len(stakeShardPublicKey) != len(stakeShardTxID) && len(stakeShardTxID) != len(stakeShardRewardReceiver) && len(stakeShardRewardReceiver) != len(stakeShardAutoStaking) {
 			return nil, NewBlockChainError(StakeInstructionError, fmt.Errorf("Expect public key list (length %+v) and reward receiver list (length %+v), auto restaking (length %+v) to be equal", len(stakeShardPublicKey), len(stakeShardRewardReceiver), len(stakeShardAutoStaking)))
 		}
+		stakeShardPublicKey, err = incognitokey.ConvertToBase58ShortFormat(stakeShardPublicKey)
+		if err != nil {
+			return nil, fmt.Errorf("Failed To Convert Stake Shard Public Key to Base58 Short Form")
+		}
 		// ["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "flag1,flag2,..."]
 		instruction := []string{StakeAction, strings.Join(stakeShardPublicKey, ","), "shard", strings.Join(stakeShardTxID, ","), strings.Join(stakeShardRewardReceiver, ","), strings.Join(stakeShardAutoStaking, ",")}
 		instructions = append(instructions, instruction)
@@ -185,6 +212,10 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 	if !reflect.DeepEqual(stakeBeaconPublicKey, []string{}) {
 		if len(stakeBeaconPublicKey) != len(stakeBeaconTxID) && len(stakeBeaconTxID) != len(stakeBeaconRewardReceiver) && len(stakeBeaconRewardReceiver) != len(stakeBeaconAutoStaking) {
 			return nil, NewBlockChainError(StakeInstructionError, fmt.Errorf("Expect public key list (length %+v) and reward receiver list (length %+v), auto restaking (length %+v) to be equal", len(stakeBeaconPublicKey), len(stakeBeaconRewardReceiver), len(stakeBeaconAutoStaking)))
+		}
+		stakeBeaconPublicKey, err = incognitokey.ConvertToBase58ShortFormat(stakeBeaconPublicKey)
+		if err != nil {
+			return nil, fmt.Errorf("Failed To Convert Stake Beacon Public Key to Base58 Short Form")
 		}
 		// ["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "flag1,flag2,..."]
 		instruction := []string{StakeAction, strings.Join(stakeBeaconPublicKey, ","), "beacon", strings.Join(stakeBeaconTxID, ","), strings.Join(stakeBeaconRewardReceiver, ","), strings.Join(stakeBeaconAutoStaking, ",")}
