@@ -9,7 +9,7 @@ import (
 	"math/big"
 	"sort"
 	"strconv"
-	"time"
+	//"time"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -17,7 +17,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -30,7 +30,7 @@ type Tx struct {
 	Info     []byte // 512 bytes
 
 	// Sign and Privacy proof, required
-	SigPubKey            []byte `json:"SigPubKey, omitempty"` // 33 bytes
+	SigPubKey            []byte `json:"SigPubKey, omitempty"` // 32 bytes
 	Sig                  []byte `json:"Sig, omitempty"`       //
 	Proof                *zkp.PaymentProof
 	PubKeyLastByteSender byte
@@ -129,10 +129,10 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 	}
 
 	// Calculate execution time
-	start := time.Now()
+	//start := time.Now()
 
 	if tx.LockTime == 0 {
-		tx.LockTime = time.Now().Unix()
+		tx.LockTime = 0
 	}
 
 	// create sender's key set from sender's spending key
@@ -190,7 +190,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 	}
 
 	// Calculate execution time for creating payment proof
-	startPrivacy := time.Now()
+	//startPrivacy := time.Now()
 
 	// Calculate sum of all output coins' value
 	sumOutputValue := uint64(0)
@@ -361,10 +361,10 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 		return NewTransactionErr(SignTxError, err)
 	}
 
-	elapsedPrivacy := time.Since(startPrivacy)
-	elapsed := time.Since(start)
-	Logger.log.Debugf("Creating payment proof time %s", elapsedPrivacy)
-	Logger.log.Debugf("Successfully Creating normal tx %+v in %s time", *tx.Hash(), elapsed)
+	//elapsedPrivacy := time.Since(startPrivacy)
+	//elapsed := time.Since(start)
+	//Logger.log.Debugf("Creating payment proof time %s", elapsedPrivacy)
+	//Logger.log.Debugf("Successfully Creating normal tx %+v in %s time", *tx.Hash(), elapsed)
 	return nil
 }
 
@@ -809,9 +809,9 @@ func (tx Tx) validateNormalTxSanityData() (bool, error) {
 		return false, errors.New(fmt.Sprintf("tx version is %d. Wrong version tx. Only support for version >= %d", tx.Version, txVersion))
 	}
 	// check LockTime before now
-	if int64(tx.LockTime) > time.Now().Unix() {
-		return false, errors.New("wrong tx locktime")
-	}
+	//if int64(tx.LockTime) > time.Now().Unix() {
+	//	return false, errors.New("wrong tx locktime")
+	//}
 
 	// check tx size
 	if tx.GetTxActualSize() > common.MaxTxSize {
@@ -1143,7 +1143,8 @@ func (tx *Tx) InitTxSalary(
 	tx.Type = common.TxRewardType
 
 	if tx.LockTime == 0 {
-		tx.LockTime = time.Now().Unix()
+		//tx.LockTime = time.Now().Unix()
+		tx.LockTime = 0
 	}
 
 	var err error
