@@ -25,6 +25,7 @@ type BeaconHeader struct {
 	AutoStakingRoot                 common.Hash `json:"AutoStakingRoot"`
 	ConsensusType                   string      `json:"ConsensusType"`
 	Producer                        string      `json:"Producer"`
+	ProducerPubKeyStr               string      `json:"ProducerPubKeyStr"`
 }
 
 func (beaconHeader *BeaconHeader) toString() string {

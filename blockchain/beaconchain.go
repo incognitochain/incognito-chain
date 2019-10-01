@@ -44,8 +44,6 @@ func (chain *BeaconChain) GetCommittee() []incognitokey.CommitteePublicKey {
 }
 
 func (chain *BeaconChain) GetCommitteeSize() int {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	return len(chain.BestState.BeaconCommittee)
 }
 
@@ -63,8 +61,8 @@ func (chain *BeaconChain) GetLastProposerIndex() int {
 }
 
 func (chain *BeaconChain) CreateNewBlock(round int) (common.BlockInterface, error) {
-	chain.lock.Lock()
-	defer chain.lock.Unlock()
+	// chain.lock.Lock()
+	// defer chain.lock.Unlock()
 	newBlock, err := chain.BlockGen.NewBlockBeacon(round, chain.Blockchain.Synker.GetClosestShardToBeaconPoolState())
 	if err != nil {
 		return nil, err

@@ -24,7 +24,6 @@ import (
 	"github.com/incognitochain/incognito-chain/consensus"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/memcache"
-	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/pubsub"
 
 	"github.com/incognitochain/incognito-chain/addrmanager"
@@ -235,12 +234,15 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	var randomClient btc.RandomClient
 	if cfg.BtcClient == 0 {
 		randomClient = &btc.BlockCypherClient{}
+		Logger.log.Info("Init 3-rd Party Random Client")
+
 	} else {
 		if cfg.BtcClientIP == common.EmptyString || cfg.BtcClientUsername == common.EmptyString || cfg.BtcClientPassword == common.EmptyString {
 			Logger.log.Error("Please input Bitcoin Client Ip, Username, password. Otherwise, set btcclient is 0 or leave it to default value")
 			os.Exit(2)
 		}
 		randomClient = btc.NewBTCClient(cfg.BtcClientUsername, cfg.BtcClientPassword, cfg.BtcClientIP, cfg.BtcClientPort)
+		Logger.log.Infof("Init Bitcoin Core Client with IP %+v, Port %+v, Username %+v, Password %+v", cfg.BtcClientIP, cfg.BtcClientPort, cfg.BtcClientUsername, cfg.BtcClientPassword)
 	}
 	// Init block template generator
 	serverObj.blockgen, err = blockchain.NewBlockGenerator(serverObj.memPool, serverObj.blockChain, serverObj.shardToBeaconPool, serverObj.crossShardPool, cPendingTxs, cRemovedTxs)
@@ -496,10 +498,10 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	}
 
 	//Init Metric Tool
-	if cfg.MetricUrl != "" {
-		grafana := metrics.NewGrafana(cfg.MetricUrl)
-		metrics.InitMetricTool(&grafana)
-	}
+	// if cfg.MetricUrl != "" {
+	// 	grafana := metrics.NewGrafana(cfg.MetricUrl, cfg.ExternalAddress)
+	// 	metrics.InitMetricTool(&grafana)
+	// }
 	return nil
 }
 
@@ -641,7 +643,10 @@ func (serverObj Server) Start() {
 	// managers.
 	serverObj.waitGroup.Add(1)
 
-	go serverObj.peerHandler()
+	go func() {
+		time.Sleep(1 * time.Second)
+		serverObj.peerHandler()
+	}()
 	if !cfg.DisableRPC && serverObj.rpcServer != nil {
 		serverObj.waitGroup.Add(1)
 
@@ -677,6 +682,7 @@ func (serverObj Server) Start() {
 		go serverObj.memPool.MonitorPool()
 	}
 	go serverObj.pusubManager.Start()
+	// go metrics.StartSystemMetrics()
 }
 
 func (serverObj *Server) GetActiveShardNumber() int {
@@ -1021,7 +1027,11 @@ func (serverObj *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVer
 	pbk := ""
 	pbkType := ""
 	if msg.PublicKey != "" {
+		//TODO hy set publickey here
+		//fmt.Printf("Message %v %v %v\n", msg.SignDataB58, msg.PublicKey, msg.PublicKeyType)
 		err := serverObj.consensusEngine.VerifyData([]byte(peerConn.GetListenerPeer().GetPeerID().Pretty()), msg.SignDataB58, msg.PublicKey, msg.PublicKeyType)
+		fmt.Println(err)
+
 		if err == nil {
 			pbk = msg.PublicKey
 			pbkType = msg.PublicKeyType
@@ -1115,7 +1125,7 @@ func (serverObj *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerA
 		listen.GetPeerConnsMtx().Lock()
 		for _, peerConn := range listen.GetPeerConns() {
 			Logger.log.Debug("QueueMessageWithEncoding", peerConn)
-			go peerConn.QueueMessageWithEncoding(msgSA, doneChan, peer.MessageToPeer, nil)
+			peerConn.QueueMessageWithEncoding(msgSA, doneChan, peer.MessageToPeer, nil)
 		}
 		listen.GetPeerConnsMtx().Unlock()
 	} else {
@@ -1160,6 +1170,10 @@ func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 	isRelayNodeForConsensus := cfg.Accelerator
 	if isRelayNodeForConsensus {
 		senderPublicKey, _ := p.GetRemotePeer().GetPublicKey()
+		// panic(senderPublicKey)
+		// fmt.Println("eiiiiiiiiiiiii")
+		// os.Exit(0)
+		//TODO hy check here
 		bestState := blockchain.GetBeaconBestState()
 		beaconCommitteeList, err := incognitokey.CommitteeKeyListToString(bestState.BeaconCommittee)
 		if err != nil {
@@ -1197,7 +1211,8 @@ func (serverObj *Server) OnPeerState(_ *peer.PeerConn, msg *wire.MessagePeerStat
 
 func (serverObj *Server) GetPeerIDsFromPublicKey(pubKey string) []libp2p.ID {
 	result := []libp2p.ID{}
-
+	// panic(pubKey)
+	// os.Exit(0)
 	listener := serverObj.connManager.GetConfig().ListenerPeer
 	for _, peerConn := range listener.GetPeerConns() {
 		// Logger.log.Debug("Test PeerConn", peerConn.RemotePeer.PaymentAddress)
@@ -1429,18 +1444,18 @@ func (serverObj *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	msg.(*wire.MessageVersion).ProtocolVersion = serverObj.protocolVersion
 
 	// ValidateTransaction Public Key from ProducerPrvKey
-	publicKeyInBase58CheckEncode, publicKeyType := peerConn.GetListenerPeer().GetConfig().ConsensusEngine.GetCurrentMiningPublicKey()
+	// publicKeyInBase58CheckEncode, publicKeyType := peerConn.GetListenerPeer().GetConfig().ConsensusEngine.GetCurrentMiningPublicKey()
 	signDataInBase58CheckEncode := common.EmptyString
-	if publicKeyInBase58CheckEncode != "" {
-		msg.(*wire.MessageVersion).PublicKey = publicKeyInBase58CheckEncode
-		msg.(*wire.MessageVersion).PublicKeyType = publicKeyType
-		Logger.log.Info("Start Process Discover Peers", publicKeyInBase58CheckEncode)
-		// sign data
-		signDataInBase58CheckEncode, err = peerConn.GetListenerPeer().GetConfig().ConsensusEngine.SignDataWithCurrentMiningKey([]byte(peerConn.GetRemotePeer().GetPeerID().Pretty()))
-		if err == nil {
-			msg.(*wire.MessageVersion).SignDataB58 = signDataInBase58CheckEncode
-		}
+	// if publicKeyInBase58CheckEncode != "" {
+	// msg.(*wire.MessageVersion).PublicKey = publicKeyInBase58CheckEncode
+	// msg.(*wire.MessageVersion).PublicKeyType = publicKeyType
+	// Logger.log.Info("Start Process Discover Peers", publicKeyInBase58CheckEncode)
+	// sign data
+	msg.(*wire.MessageVersion).PublicKey, msg.(*wire.MessageVersion).PublicKeyType, signDataInBase58CheckEncode, err = peerConn.GetListenerPeer().GetConfig().ConsensusEngine.SignDataWithCurrentMiningKey([]byte(peerConn.GetRemotePeer().GetPeerID().Pretty()))
+	if err == nil {
+		msg.(*wire.MessageVersion).SignDataB58 = signDataInBase58CheckEncode
 	}
+	// }
 	// if peerConn.GetListenerPeer().GetConfig().UserKeySet != nil {
 	// 	msg.(*wire.MessageVersion).PublicKey = peerConn.GetListenerPeer().GetConfig().UserKeySet.GetPublicKeyInBase58CheckEncode()
 	// 	signDataB58, err := peerConn.GetListenerPeer().GetConfig().UserKeySet.SignDataInBase58CheckEncode()
