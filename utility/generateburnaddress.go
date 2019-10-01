@@ -10,8 +10,8 @@ import (
 func main() {
 	temp := 0
 	for i := 0; ; i++ {
-		burnPubKeyE := privacy.PedCom.G[0].Hash(int64(i))
-		burnPubKey := burnPubKeyE.Compress()
+		burnPubKeyE := privacy.RandomPoint()
+		burnPubKey := burnPubKeyE.ToBytesS()
 		if burnPubKey[len(burnPubKey)-1] == 0 {
 			burnKey := wallet.KeyWallet{
 				KeySet: incognitokey.KeySet{
