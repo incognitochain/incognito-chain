@@ -8,12 +8,12 @@ const (
 	privateKeySerializedLen = 108 // len string
 
 	privKeySerializedBytesLen     = 75 // bytes
-	paymentAddrSerializedBytesLen = 73 // bytes
-	readOnlyKeySerializedBytesLen = 72 // bytes
+	paymentAddrSerializedBytesLen = 71 // bytes
+	readOnlyKeySerializedBytesLen = 71 // bytes
 
 	privKeyBase58CheckSerializedBytesLen     = 107 // len string
-	paymentAddrBase58CheckSerializedBytesLen = 105 // len string
-	readOnlyKeyBase58CheckSerializedBytesLen = 104 // len string
+	paymentAddrBase58CheckSerializedBytesLen = 103 // len string
+	readOnlyKeyBase58CheckSerializedBytesLen = 103 // len string
 )
 
 const (

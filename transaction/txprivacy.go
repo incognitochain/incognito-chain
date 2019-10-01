@@ -533,7 +533,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 
 func (tx Tx) String() string {
 	record := strconv.Itoa(int(tx.Version))
-	//fmt.
+
 	record += strconv.FormatInt(tx.LockTime, 10)
 	record += strconv.FormatUint(tx.Fee, 10)
 	if tx.Proof != nil {
@@ -815,6 +815,7 @@ func (tx Tx) validateNormalTxSanityData() (bool, error) {
 
 	// check tx size
 	if tx.GetTxActualSize() > common.MaxTxSize {
+		fmt.Print(tx.GetTxActualSize(), common.MaxTxSize)
 		return false, errors.New("tx size is too large")
 	}
 
