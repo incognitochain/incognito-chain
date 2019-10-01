@@ -9,8 +9,14 @@ import (
 )
 
 func TestInitTxPrivacyToken(t *testing.T) {
-	senderKey, err := wallet.Base58CheckDeserialize("112t8rnXCqbbNYBquntyd6EvDT4WiDDQw84ZSRDKmazkqrzi6w8rWyCVt7QEZgAiYAV4vhJiX7V9MCfuj4hGLoDN7wdU1LoWGEFpLs59X7K3")
-	assert.Equal(t, nil, err)
+	privateKey := privacy.GeneratePrivateKey([]byte{123})
+	//senderKey, err := wallet.Base58CheckDeserialize("112t8rnXCqbbNYBquntyd6EvDT4WiDDQw84ZSRDKmazkqrzi6w8rWyCVt7QEZgAiYAV4vhJiX7V9MCfuj4hGLoDN7wdU1LoWGEFpLs59X7K3")
+	//assert.Equal(t, nil, err)
+
+	senderKey := new(wallet.KeyWallet)
+
+	err := senderKey.KeySet.InitFromPrivateKey(&privateKey)
+
 	err = senderKey.KeySet.InitFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	assert.Equal(t, nil, err)
 	//senderPaymentAddress := senderKey.KeySet.PaymentAddress
@@ -21,7 +27,13 @@ func TestInitTxPrivacyToken(t *testing.T) {
 	shardID := common.GetShardIDFromLastByte(senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1])
 
 	// receiver's address
-	receiverPaymentAddress, _ := wallet.Base58CheckDeserialize("1Uv3BkYiWy9Mjt1yBa4dXBYKo3az22TeCVEpeXN93ieJ8qhrTDuUZBzsPZWjjP2AeRQnjw1y18iFPHTRuAqqufwVC1vNUAWs4wHFbbWC2")
+	receiverPrivateKey := privacy.GeneratePrivateKey([]byte{10})
+	receiverKey := new(wallet.KeyWallet)
+	err = receiverKey.KeySet.InitFromPrivateKey(&receiverPrivateKey)
+	assert.Equal(t, nil, err)
+
+	receiverPaymentAddress := receiverKey.KeySet.PaymentAddress
+
 	initAmount := uint64(10000)
 	paymentInfo := []*privacy.PaymentInfo{{PaymentAddress: senderKey.KeySet.PaymentAddress, Amount: initAmount}}
 
@@ -148,7 +160,7 @@ func TestInitTxPrivacyToken(t *testing.T) {
 
 	transferAmount := uint64(10)
 
-	paymentInfo2 := []*privacy.PaymentInfo{{PaymentAddress: receiverPaymentAddress.KeySet.PaymentAddress, Amount: transferAmount}}
+	paymentInfo2 := []*privacy.PaymentInfo{{PaymentAddress: receiverPaymentAddress, Amount: transferAmount}}
 
 	// token param for transfer token
 	tokenParam2 := &CustomTokenPrivacyParamTx{
