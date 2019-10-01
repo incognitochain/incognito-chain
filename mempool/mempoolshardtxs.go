@@ -24,21 +24,19 @@ func (tp *TxPool) ValidateTxList(txs []metadata.Transaction) error {
 	validTxCount := 0
 	// salaryTxCount := 0
 	//validate individual tx
-	go func() {
-		for _, tx := range txs {
-			go func(tx metadata.Transaction) {
-				if tx.GetType() == common.TxCustomTokenType {
-					customTokenTx := tx.(*transaction.TxNormalToken)
-					if customTokenTx.TxTokenData.Type == transaction.CustomTokenCrossShard {
-						errCh <- nil
-						return
-					}
+	for _, tx := range txs {
+		go func(tx metadata.Transaction) {
+			if tx.GetType() == common.TxCustomTokenType {
+				customTokenTx := tx.(*transaction.TxNormalToken)
+				if customTokenTx.TxTokenData.Type == transaction.CustomTokenCrossShard {
+					errCh <- nil
+					return
 				}
-				err := tp.validateTxIndependentProperties(tx)
-				errCh <- err
-			}(tx)
-		}
-	}()
+			}
+			err := tp.validateTxIndependentProperties(tx)
+			errCh <- err
+		}(tx)
+	}
 
 	for {
 		err := <-errCh

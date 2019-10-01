@@ -9,7 +9,7 @@ import (
 	"time"
 
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
-	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/google"
+	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
 )
 
 func testAvgTimeG1P2I(loop int64) int64 {
