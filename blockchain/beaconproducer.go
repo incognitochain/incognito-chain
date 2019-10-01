@@ -406,13 +406,16 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 	if newBeaconHeight%uint64(chainParamEpoch) > randomTime && !beaconBestState.IsGetRandomNumber {
 		//=================================
 		// COMMENT FOR TESTING
-		//var err error
-		//chainTimeStamp, err := beaconBestState.randomClient.GetCurrentChainTimeStamp()
-		// UNCOMMENT FOR TESTING
-		chainTimeStamp := beaconBestState.CurrentRandomTimeStamp + 1
+		var err error
+		chainTimeStamp, err := blockchain.config.RandomClient.GetCurrentChainTimeStamp()
+		if err != nil {
+			Logger.log.Error(err)
+		}
+		//UNCOMMENT FOR TESTING
+		//chainTimeStamp := beaconBestState.CurrentRandomTimeStamp + 1
 		//==================================
-		assignedCandidates := make(map[byte][]incognitokey.CommitteePublicKey)
-		if chainTimeStamp > beaconBestState.CurrentRandomTimeStamp {
+		if err == nil && chainTimeStamp > beaconBestState.CurrentRandomTimeStamp {
+			assignedCandidates := make(map[byte][]incognitokey.CommitteePublicKey)
 			randomInstruction, rand := beaconBestState.generateRandomInstruction(beaconBestState.CurrentRandomTimeStamp, blockchain.config.RandomClient)
 			instructions = append(instructions, randomInstruction)
 			Logger.log.Infof("Beacon Producer found Random Instruction at Block Height %+v, %+v", randomInstruction, newBeaconHeight)
@@ -697,9 +700,13 @@ func (beaconBestState *BeaconBestState) generateRandomInstruction(timestamp int6
 			err            error
 		)
 		for {
+			Logger.log.Debug("GetNonceByTimestamp", timestamp)
 			blockHeight, chainTimestamp, nonce, err = randomClient.GetNonceByTimestamp(timestamp)
+			time.Sleep(time.Millisecond * 500)
 			if err == nil {
 				break
+			} else {
+				Logger.log.Error("generateRandomInstruction", err)
 			}
 		}
 		strs = append(strs, "random")
