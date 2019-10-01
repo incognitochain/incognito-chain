@@ -1,6 +1,5 @@
 package privacy
 
-import "C"
 import (
 	"crypto/subtle"
 	"encoding/hex"
