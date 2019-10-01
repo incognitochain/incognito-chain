@@ -407,9 +407,22 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 		//=================================
 		// COMMENT FOR TESTING
 		var err error
-		chainTimeStamp, err := blockchain.config.RandomClient.GetCurrentChainTimeStamp()
-		if err != nil {
-			Logger.log.Error(err)
+		var chainTimeStamp int64
+		if newBeaconHeight%chainParamEpoch == chainParamEpoch-1 {
+			for {
+				chainTimeStamp, err = blockchain.config.RandomClient.GetCurrentChainTimeStamp()
+				if err != nil {
+					Logger.log.Error(err)
+				} else {
+					break
+				}
+				time.Sleep(100 * time.Millisecond)
+			}
+		} else {
+			chainTimeStamp, err = blockchain.config.RandomClient.GetCurrentChainTimeStamp()
+			if err != nil {
+				Logger.log.Error(err)
+			}
 		}
 		//UNCOMMENT FOR TESTING
 		//chainTimeStamp := beaconBestState.CurrentRandomTimeStamp + 1
