@@ -66,7 +66,7 @@ type Config struct {
 	FeeEstimator      map[byte]FeeEstimator
 	IsBlockGenStarted bool
 	PubSubManager     *pubsub.PubSubManager
-	RandomClient      btc.RandomClient
+	RandomClient      random.RandomClient
 	Server            interface {
 		BoardcastNodeState() error
 

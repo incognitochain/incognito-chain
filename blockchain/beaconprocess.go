@@ -524,7 +524,7 @@ func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(beaconBlo
 - Shard Validator root: ShardCommittee + ShardPendingValidator
 - Random number if have in instruction
 */
-func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBlock *BeaconBlock, randomClient btc.RandomClient) error {
+func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBlock *BeaconBlock, randomClient random.RandomClient) error {
 	beaconBestState.lock.RLock()
 	defer beaconBestState.lock.RUnlock()
 	var (

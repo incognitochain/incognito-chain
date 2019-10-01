@@ -718,7 +718,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 }
 
 // ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
-func (beaconBestState *BeaconBestState) generateRandomInstruction(timestamp int64, randomClient btc.RandomClient) ([]string, int64, error) {
+func (beaconBestState *BeaconBestState) generateRandomInstruction(timestamp int64, randomClient random.RandomClient) ([]string, int64, error) {
 	//COMMENT FOR TESTING
 	if !TestRandom {
 		var (
