@@ -1,7 +1,9 @@
 package blockchain
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"reflect"
 	"sort"
 	"strconv"
@@ -68,7 +70,6 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLi
 	if err != nil {
 		return nil, err
 	}
-	beaconBestState.InitRandomClient(blockGenerator.chain.config.RandomClient)
 	//======Build Header Essential Data=======
 	// beaconBlock.Header.ProducerAddress = *producerAddress
 	beaconBlock.Header.Version = BEACON_BLOCK_VERSION
@@ -81,7 +82,16 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLi
 	committee := blockGenerator.chain.BestState.Beacon.GetBeaconCommittee()
 	producerPosition := (blockGenerator.chain.BestState.Beacon.BeaconProposerIndex + round) % len(beaconBestState.BeaconCommittee)
 	beaconBlock.Header.ConsensusType = beaconBestState.ConsensusAlgorithm
-	beaconBlock.Header.Producer = committee[producerPosition].GetMiningKeyBase58(beaconBestState.ConsensusAlgorithm)
+
+	beaconBlock.Header.Producer, err = committee[producerPosition].ToBase58() // .GetMiningKeyBase58(common.BridgeConsensus)
+	if err != nil {
+		return nil, err
+	}
+	beaconBlock.Header.ProducerPubKeyStr, err = committee[producerPosition].ToBase58()
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, NewBlockChainError(ConvertCommitteePubKeyToBase58Error, err)
+	}
 	beaconBlock.Header.Version = BEACON_BLOCK_VERSION
 	beaconBlock.Header.Height = beaconBestState.BeaconHeight + 1
 	beaconBlock.Header.Epoch = epoch
@@ -97,8 +107,14 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLi
 		}
 	}
 	tempShardState, stakeInstructions, swapInstructions, bridgeInstructions, acceptedRewardInstructions, stopAutoStakingInstructions := blockGenerator.GetShardState(beaconBestState, shardsToBeaconLimit)
-	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock.Header.Height, stakeInstructions, swapInstructions, stopAutoStakingInstructions, beaconBestState.CandidateShardWaitingForCurrentRandom,
-		bridgeInstructions, acceptedRewardInstructions, blockGenerator.chain.config.ChainParams.Epoch, blockGenerator.chain.config.ChainParams.RandomTime)
+	tempInstruction, err := beaconBestState.GenerateInstruction(
+		beaconBlock.Header.Height, stakeInstructions, swapInstructions, stopAutoStakingInstructions,
+		beaconBestState.CandidateShardWaitingForCurrentRandom, bridgeInstructions, acceptedRewardInstructions, blockGenerator.chain.config.ChainParams.Epoch,
+		blockGenerator.chain.config.ChainParams.RandomTime, blockGenerator.chain,
+	)
+	if err != nil {
+		return nil, err
+	}
 	if len(rewardByEpochInstruction) != 0 {
 		tempInstruction = append(tempInstruction, rewardByEpochInstruction...)
 	}
@@ -282,17 +298,21 @@ func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestS
 		currentCommittee := beaconBestState.GetAShardCommittee(shardID)
 		for index, shardBlock := range shardBlocks {
 			// hash := shardBlock.Header.Hash()
+			if index == MAX_S2B_BLOCK-1 {
+				break
+			}
 			err := blockGenerator.chain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, currentCommittee, beaconBestState.ShardConsensusAlgorithm[shardID])
 			Logger.log.Infof("Beacon Producer/ Validate Agg Signature for shard %+v, block height %+v, err %+v", shardID, shardBlock.Header.Height, err == nil)
 			if err != nil {
 				break
 			}
 			totalBlock = index
+			if totalBlock > MAX_S2B_BLOCK {
+				totalBlock = MAX_S2B_BLOCK
+				break
+			}
 		}
 		Logger.log.Infof("Beacon Producer/ AFTER FILTER, Shard %+v ONLY GET %+v block", shardID, totalBlock+1)
-		if totalBlock > MAX_S2B_BLOCK {
-			totalBlock = MAX_S2B_BLOCK
-		}
 		for _, shardBlock := range shardBlocks[:totalBlock+1] {
 			shardState, validStakeInstruction, tempValidStakePublicKeys, validSwapInstruction, bridgeInstruction, acceptedRewardInstruction, stopAutoStakingInstruction := blockGenerator.chain.GetShardStateFromBlock(beaconBestState.BeaconHeight+1, shardBlock, shardID, true, validStakePublicKeys)
 			shardStates[shardID] = append(shardStates[shardID], shardState[shardID])
@@ -329,7 +349,8 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 	acceptedRewardInstructions [][]string,
 	chainParamEpoch uint64,
 	randomTime uint64,
-) [][]string {
+	blockchain *BlockChain,
+) ([][]string, error) {
 	instructions := [][]string{}
 	instructions = append(instructions, bridgeInstructions...)
 	instructions = append(instructions, acceptedRewardInstructions...)
@@ -357,12 +378,23 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 			panic(err)
 		}
 
-		_, currentValidators, swappedValidator, beaconNextCommittee, err := SwapValidator(beaconPendingValidatorStr, beaconCommitteeStr, beaconBestState.MaxBeaconCommitteeSize, common.Offset)
+		producersBlackList, err := blockchain.getUpdatedProducersBlackList(true, -1, beaconCommitteeStr)
+		if err != nil {
+			Logger.log.Error(err)
+		}
+
+		badProducersWithPunishment := blockchain.buildBadProducersWithPunishment(true, -1, beaconCommitteeStr)
+		badProducersWithPunishmentBytes, err := json.Marshal(badProducersWithPunishment)
+		if err != nil {
+			Logger.log.Error(err)
+		}
+		_, currentValidators, swappedValidator, beaconNextCommittee, err := SwapValidator(beaconPendingValidatorStr, beaconCommitteeStr, beaconBestState.MaxBeaconCommitteeSize, beaconBestState.MinBeaconCommitteeSize, blockchain.config.ChainParams.Offset, producersBlackList, blockchain.config.ChainParams.SwapOffset)
 		if len(swappedValidator) > 0 || len(beaconNextCommittee) > 0 && err == nil {
 			swapBeaconInstructions = append(swapBeaconInstructions, "swap")
 			swapBeaconInstructions = append(swapBeaconInstructions, strings.Join(beaconNextCommittee, ","))
 			swapBeaconInstructions = append(swapBeaconInstructions, strings.Join(swappedValidator, ","))
 			swapBeaconInstructions = append(swapBeaconInstructions, "beacon")
+			swapBeaconInstructions = append(swapBeaconInstructions, string(badProducersWithPunishmentBytes))
 			instructions = append(instructions, swapBeaconInstructions)
 			// Generate instruction storing validators pubkey and send to bridge
 			beaconRootInst, _ := buildBeaconSwapConfirmInstruction(currentValidators, newBeaconHeight)
@@ -374,19 +406,48 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 	// Stop Auto Staking
 	instructions = append(instructions, stopAutoStakingInstructions...)
 	// Random number for Assign Instruction
-	if newBeaconHeight%uint64(chainParamEpoch) > randomTime && !beaconBestState.IsGetRandomNumber {
+	if newBeaconHeight%chainParamEpoch > randomTime && !beaconBestState.IsGetRandomNumber {
 		//=================================
 		// COMMENT FOR TESTING
-		//var err error
-		//chainTimeStamp, err := beaconBestState.randomClient.GetCurrentChainTimeStamp()
-		// UNCOMMENT FOR TESTING
-		chainTimeStamp := beaconBestState.CurrentRandomTimeStamp + 1
+		var err error
+		var chainTimeStamp int64
+		if newBeaconHeight%chainParamEpoch == chainParamEpoch-1 {
+			startTime := time.Now()
+			for {
+				Logger.log.Criticalf("Block %+v, Enter final block of epoch but still no random number", newBeaconHeight)
+				chainTimeStamp, err = blockchain.config.RandomClient.GetCurrentChainTimeStamp()
+				if err != nil {
+					Logger.log.Error(err)
+				} else {
+					if chainTimeStamp < beaconBestState.CurrentRandomTimeStamp {
+						Logger.log.Infof("Final Block %+v in Epoch but still haven't found new random number", newBeaconHeight)
+					} else {
+						break
+					}
+				}
+				if time.Since(startTime).Seconds() > beaconBestState.BlockMaxCreateTime.Seconds() {
+					return [][]string{}, NewBlockChainError(GenerateInstructionError, fmt.Errorf("Get Current Chain Timestamp for New Block Height %+v Timeout", newBeaconHeight))
+				}
+				time.Sleep(100 * time.Millisecond)
+			}
+		} else {
+			Logger.log.Criticalf("Block %+v, finding random number", newBeaconHeight)
+			chainTimeStamp, err = blockchain.config.RandomClient.GetCurrentChainTimeStamp()
+			if err != nil {
+				Logger.log.Error(err)
+			}
+		}
+		//UNCOMMENT FOR TESTING
+		//chainTimeStamp := beaconBestState.CurrentRandomTimeStamp + 1
 		//==================================
-		assignedCandidates := make(map[byte][]incognitokey.CommitteePublicKey)
-		if chainTimeStamp > beaconBestState.CurrentRandomTimeStamp {
-			randomInstruction, rand := beaconBestState.generateRandomInstruction(beaconBestState.CurrentRandomTimeStamp)
+		if err == nil && chainTimeStamp > beaconBestState.CurrentRandomTimeStamp {
+			assignedCandidates := make(map[byte][]incognitokey.CommitteePublicKey)
+			randomInstruction, rand, err := beaconBestState.generateRandomInstruction(beaconBestState.CurrentRandomTimeStamp, blockchain.config.RandomClient)
+			if err != nil {
+				return [][]string{}, err
+			}
 			instructions = append(instructions, randomInstruction)
-			Logger.log.Infof("Beacon Producer found Random Instruction at Block Height %+v", randomInstruction, newBeaconHeight)
+			Logger.log.Infof("Beacon Producer found Random Instruction at Block Height %+v, %+v", randomInstruction, newBeaconHeight)
 			for _, candidate := range shardCandidates {
 				candidateStr, _ := candidate.ToBase58()
 				shardID := calculateCandidateShardID(candidateStr, rand, beaconBestState.ActiveShards)
@@ -414,7 +475,7 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 			}
 		}
 	}
-	return instructions
+	return instructions, nil
 }
 
 func (beaconBestState *BeaconBestState) GetValidStakers(stakers []string) []string {
@@ -537,7 +598,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 				if instruction[3] == "beacon" {
 					continue
 				}
-				if instruction[3] == "shard" && len(instruction) != 5 && instruction[4] != strconv.Itoa(int(shardID)) {
+				if instruction[3] == "shard" && len(instruction) != 6 && instruction[4] != strconv.Itoa(int(shardID)) {
 					continue
 				}
 				swapInstructions[shardID] = append(swapInstructions[shardID], instruction)
@@ -657,31 +718,43 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 }
 
 // ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
-func (beaconBestState *BeaconBestState) generateRandomInstruction(timestamp int64) ([]string, int64) {
+func (beaconBestState *BeaconBestState) generateRandomInstruction(timestamp int64, randomClient btc.RandomClient) ([]string, int64, error) {
 	//COMMENT FOR TESTING
-	//var (
-	//	blockHeight int
-	//	chainTimestamp int64
-	//	nonce int64
-	//  strs []string
-	//	err error
-	//)
-	//for {
-	//	blockHeight, chainTimestamp, nonce, err = beaconBestState.randomClient.GetNonceByTimestamp(timestamp)
-	//	if err == nil {
-	//		break
-	//	}
-	//}
-	//strs = append(strs, "random")
-	//strs = append(strs, strconv.Itoa(int(nonce)))
-	//strs = append(strs, strconv.Itoa(blockHeight))
-	//strs = append(strs, strconv.Itoa(int(timestamp)))
-	//strs = append(strs, strconv.Itoa(int(chainTimestamp)))
-	//@NOTICE: Hard Code for testing
-	var strs []string
-	reses := []string{"1000", strconv.Itoa(int(timestamp)), strconv.Itoa(int(timestamp) + 1)}
-	strs = append(strs, RandomAction)
-	strs = append(strs, reses...)
-	strs = append(strs, strconv.Itoa(int(timestamp)))
-	return strs, int64(1000)
+	if !TestRandom {
+		var (
+			blockHeight    int
+			chainTimestamp int64
+			nonce          int64
+			strs           []string
+			err            error
+		)
+		startTime := time.Now()
+		for {
+			Logger.log.Debug("GetNonceByTimestamp", timestamp)
+			blockHeight, chainTimestamp, nonce, err = randomClient.GetNonceByTimestamp(timestamp)
+			if err == nil {
+				break
+			} else {
+				Logger.log.Error("generateRandomInstruction", err)
+			}
+			if time.Since(startTime).Seconds() > beaconBestState.BlockMaxCreateTime.Seconds() {
+				return []string{}, -1, NewBlockChainError(GenerateInstructionError, fmt.Errorf("Get Random Number By Timestmap %+v Timeout", timestamp))
+			}
+			time.Sleep(time.Millisecond * 500)
+		}
+		strs = append(strs, "random")
+		strs = append(strs, strconv.Itoa(int(nonce)))
+		strs = append(strs, strconv.Itoa(blockHeight))
+		strs = append(strs, strconv.Itoa(int(timestamp)))
+		strs = append(strs, strconv.Itoa(int(chainTimestamp)))
+		return strs, int64(nonce), nil
+	} else {
+		//@NOTICE: Hard Code for testing
+		var strs []string
+		reses := []string{"1000", strconv.Itoa(int(timestamp)), strconv.Itoa(int(timestamp) + 1)}
+		strs = append(strs, RandomAction)
+		strs = append(strs, reses...)
+		strs = append(strs, strconv.Itoa(int(timestamp)))
+		return strs, int64(1000), nil
+	}
 }
