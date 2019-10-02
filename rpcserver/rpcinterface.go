@@ -85,6 +85,7 @@ var HttpHandler = map[string]httpHandler{
 	getCommitteeList:              (*HttpServer).handleGetCommitteeList,
 	getShardBestState:             (*HttpServer).handleGetShardBestState,
 	getBeaconBestState:            (*HttpServer).handleGetBeaconBestState,
+	getBeaconBestStateDetail:      (*HttpServer).handleGetBeaconBestStateDetail,
 	getBeaconPoolState:            (*HttpServer).handleGetBeaconPoolState,
 	getShardPoolState:             (*HttpServer).handleGetShardPoolState,
 	getShardPoolLatestValidHeight: (*HttpServer).handleGetShardPoolLatestValidHeight,
@@ -154,6 +155,7 @@ var HttpHandler = map[string]httpHandler{
 	getIncognitoPublicKeyRole:   (*HttpServer).handleGetIncognitoPublicKeyRole,
 	getMinerRewardFromMiningKey: (*HttpServer).handleGetMinerRewardFromMiningKey,
 	getProducersBlackList:       (*HttpServer).handleGetProducersBlackList,
+	getProducersBlackListDetail: (*HttpServer).handleGetProducersBlackListDetail,
 }
 
 // Commands that are available to a limited user
