@@ -568,7 +568,7 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 		Logger.log.Info("MaxShardCommitteeSize", blockchain.BestState.Shard[shardID].MaxShardCommitteeSize)
 		Logger.log.Info("ShardID", shardID)
 
-		producersBlackList, err := blockchain.getUpdatedProducersBlackList(false, int(shardID), shardCommittee)
+		producersBlackList, err := blockchain.getUpdatedProducersBlackList(false, int(shardID), shardCommittee, beaconHeight)
 		if err != nil {
 			Logger.log.Error(err)
 			return instructions, shardPendingValidator, shardCommittee, err

@@ -3,12 +3,13 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/btc"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -378,7 +379,7 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 			panic(err)
 		}
 
-		producersBlackList, err := blockchain.getUpdatedProducersBlackList(true, -1, beaconCommitteeStr)
+		producersBlackList, err := blockchain.getUpdatedProducersBlackList(true, -1, beaconCommitteeStr, newBeaconHeight-1)
 		if err != nil {
 			Logger.log.Error(err)
 		}
@@ -438,7 +439,7 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 			}
 		}
 		//UNCOMMENT FOR TESTING
-		//chainTimeStamp := beaconBestState.CurrentRandomTimeStamp + 1
+		// chainTimeStamp := beaconBestState.CurrentRandomTimeStamp + 1
 		//==================================
 		if err == nil && chainTimeStamp > beaconBestState.CurrentRandomTimeStamp {
 			assignedCandidates := make(map[byte][]incognitokey.CommitteePublicKey)
