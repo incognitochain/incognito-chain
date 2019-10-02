@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/database"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/database"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/pkg/errors"
@@ -137,6 +138,10 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 		return err
 	}
 	if err := blockchain.BestState.Shard[shardID].updateShardBestState(blockchain, shardBlock, beaconBlocks); err != nil {
+		errRevert := blockchain.revertShardBestState(shardID)
+		if errRevert != nil {
+			return errors.WithStack(errRevert)
+		}
 		return err
 	}
 	// update number of blocks produced by producers to shard best state
@@ -170,10 +175,10 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	//========Store new  Shard block and new shard bestState
 	err = blockchain.processStoreShardBlockAndUpdateDatabase(shardBlock)
 	if err != nil {
-		//revertErr := blockchain.revertShardState(shardID)
-		//if revertErr != nil {
-		//	return errors.WithStack(revertErr)
-		//}
+		revertErr := blockchain.revertShardState(shardID)
+		if revertErr != nil {
+			return errors.WithStack(revertErr)
+		}
 		return err
 	}
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewShardblockTopic, shardBlock))
