@@ -1,12 +1,20 @@
 package rpcserver
 
 import (
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
 
 func (httpServer *HttpServer) handleGetProducersBlackList(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	producersBlackList, err := httpServer.databaseService.GetProducersBlackList()
+	// beaconHeight := httpServer.config.BlockChain.BestState.Beacon.BeaconHeight
+
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) == 0 {
+		return nil, nil
+	}
+	beaconHeight := uint64(arrayParams[0].(float64))
+	producersBlackList, err := httpServer.databaseService.GetProducersBlackList(beaconHeight)
 	if err != nil {
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -14,7 +22,14 @@ func (httpServer *HttpServer) handleGetProducersBlackList(params interface{}, cl
 }
 
 func (httpServer *HttpServer) handleGetProducersBlackListDetail(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	producersBlackList, err := httpServer.databaseService.GetProducersBlackList()
+	// beaconHeight := httpServer.config.BlockChain.BestState.Beacon.BeaconHeight
+
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) == 0 {
+		return nil, nil
+	}
+	beaconHeight := uint64(arrayParams[0].(float64))
+	producersBlackList, err := httpServer.databaseService.GetProducersBlackList(beaconHeight)
 	if err != nil {
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
