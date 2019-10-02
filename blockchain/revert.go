@@ -71,16 +71,7 @@ func (blockchain *BlockChain) RevertShardState(shardID byte) error {
 	return blockchain.revertShardState(shardID)
 }
 
-func (blockchain *BlockChain) revertShardState(shardID byte) error {
-	//Steps:
-	// 1. Restore current beststate to previous beststate
-	// 2. Set pool shardstate
-	// 3. Delete newly inserted block
-	// 4. Remove incoming crossShardBlks
-	// 5. Delete txs and its related stuff (ex: txview) belong to block
-	currentBestState := blockchain.BestState.Shard[shardID]
-	currentBestStateBlk := currentBestState.BestBlock
-
+func (blockchain *BlockChain) revertShardBestState(shardID byte) error {
 	prevBST, err := blockchain.config.DataBase.FetchPrevBestState(false, shardID)
 	if err != nil {
 		return err
@@ -88,6 +79,25 @@ func (blockchain *BlockChain) revertShardState(shardID byte) error {
 	shardBestState := ShardBestState{}
 	if err := json.Unmarshal(prevBST, &shardBestState); err != nil {
 		return err
+	}
+	blockchain.BestState.Shard[shardID] = &shardBestState
+	return nil
+}
+
+func (blockchain *BlockChain) revertShardState(shardID byte) error {
+	//Steps:
+	// 1. Restore current beststate to previous beststate
+	// 2. Set pool shardstate
+	// 3. Delete newly inserted block
+	// 4. Remove incoming crossShardBlks
+	// 5. Delete txs and its related stuff (ex: txview) belong to block
+	var currentBestState ShardBestState
+	currentBestState.cloneShardBestStateFrom(blockchain.BestState.Shard[shardID])
+	currentBestStateBlk := currentBestState.BestBlock
+
+	err := blockchain.revertShardBestState(shardID)
+	if err != nil {
+		return NewBlockChainError(UnExpectedError, err)
 	}
 
 	err = blockchain.DeleteIncomingCrossShard(currentBestStateBlk)
@@ -109,7 +119,7 @@ func (blockchain *BlockChain) revertShardState(shardID byte) error {
 		return err
 	}
 
-	prevBeaconHeight := shardBestState.BeaconHeight
+	prevBeaconHeight := currentBestState.BeaconHeight
 	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain.config.DataBase, prevBeaconHeight+1, currentBestStateBlk.Header.BeaconHeight)
 	if err != nil {
 		return err
@@ -121,8 +131,8 @@ func (blockchain *BlockChain) revertShardState(shardID byte) error {
 
 	// DeleteIncomingCrossShard
 	blockchain.config.DataBase.DeleteBlock(currentBestStateBlk.Header.Hash(), currentBestStateBlk.Header.Height, shardID)
-	blockchain.BestState.Shard[shardID] = &shardBestState
-	if err := blockchain.StoreShardBestState(shardID); err != nil {
+
+	if err := blockchain.StoreShardBestState(shardID, nil); err != nil {
 		return err
 	}
 	return nil
@@ -684,15 +694,7 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 	return blockchain.revertBeaconState()
 }
 
-func (blockchain *BlockChain) revertBeaconState() error {
-	//Steps:
-	// 1. Restore current beststate to previous beststate
-	// 2. Set beacon/shardtobeacon pool state
-	// 3. Delete newly inserted block
-	// 4. Delete data store by block
-	currentBestState := blockchain.BestState.Beacon
-	currentBestStateBlk := currentBestState.BestBlock
-
+func (blockchain *BlockChain) revertBeaconBestState() error {
 	prevBST, err := blockchain.config.DataBase.FetchPrevBestState(true, 0)
 	if err != nil {
 		return err
@@ -701,8 +703,29 @@ func (blockchain *BlockChain) revertBeaconState() error {
 	if err := json.Unmarshal(prevBST, &beaconBestState); err != nil {
 		return err
 	}
+
+	blockchain.BestState.Beacon = &beaconBestState
 	blockchain.config.BeaconPool.SetBeaconState(beaconBestState.BeaconHeight)
 	blockchain.config.ShardToBeaconPool.SetShardState(blockchain.BestState.Beacon.GetBestShardHeight())
+
+	return nil
+}
+
+func (blockchain *BlockChain) revertBeaconState() error {
+	//Steps:
+	// 1. Restore current beststate to previous beststate
+	// 2. Set beacon/shardtobeacon pool state
+	// 3. Delete newly inserted block
+	// 4. Delete data store by block
+	var currentBestState BeaconBestState
+	currentBestState.CloneBeaconBestStateFrom(blockchain.BestState.Beacon)
+	currentBestStateBlk := currentBestState.BestBlock
+
+	err := blockchain.revertBeaconBestState()
+	if err != nil {
+		return err
+	}
+
 	if err := blockchain.config.DataBase.DeleteCommitteeByHeight(currentBestStateBlk.Header.Height); err != nil {
 		return err
 	}
@@ -761,8 +784,8 @@ func (blockchain *BlockChain) revertBeaconState() error {
 	if err != nil {
 		return err
 	}
-	blockchain.BestState.Beacon = &beaconBestState
-	if err := blockchain.StoreBeaconBestState(); err != nil {
+
+	if err := blockchain.StoreBeaconBestState(nil); err != nil {
 		return err
 	}
 	return nil

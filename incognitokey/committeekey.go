@@ -2,6 +2,7 @@ package incognitokey
 
 import (
 	"encoding/json"
+
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -132,4 +133,23 @@ func (pubKey *CommitteePublicKey) FromBase58(keyString string) error {
 		return errors.New("wrong input")
 	}
 	return json.Unmarshal(keyBytes, pubKey)
+}
+
+type CommitteeKeyString struct {
+	IncPubKey    string
+	MiningPubKey map[string]string
+}
+
+func CommitteeKeyListToMapString(keyList []CommitteePublicKey) []CommitteeKeyString {
+	result := []CommitteeKeyString{}
+	for _, key := range keyList {
+		var keyMap CommitteeKeyString
+		keyMap.IncPubKey = key.GetIncKeyBase58()
+		keyMap.MiningPubKey = make(map[string]string)
+		for keyType := range key.MiningPubKey {
+			keyMap.MiningPubKey[keyType] = key.GetMiningKeyBase58(keyType)
+		}
+		result = append(result, keyMap)
+	}
+	return result
 }
