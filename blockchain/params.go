@@ -42,6 +42,8 @@ type Params struct {
 	SwapOffset                       int    // is used for case that good producers length is equal to max committee size
 	DevAddress                       string
 	CentralizedWebsitePaymentAddress string //centralized website's pubkey
+	CheckForce                       bool   // true on testnet and false on mainnet
+	ChainVersion                     string
 }
 
 type GenesisParams struct {
@@ -96,16 +98,18 @@ func init() {
 		RewardHalflife:                   TestnetRewardHalflife,
 		Epoch:                            TestnetEpoch,
 		RandomTime:                       TestnetRandomTime,
-		Offset:                           MainnetOffset,
-		SwapOffset:                       MainnetSwapOffset,
+		Offset:                           TestnetOffset,
+		SwapOffset:                       TestnetSwapOffset,
 		EthContractAddressStr:            TestnetContractAddressStr,
-		DevAddress:                       MainnetDevAddress,
-		CentralizedWebsitePaymentAddress: MainnetCentralizedWebsitePaymentAddress,
+		DevAddress:                       TestnetDevAddress,
+		CentralizedWebsitePaymentAddress: TestnetCentralizedWebsitePaymentAddress,
 		SlashLevels: []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 5},
 			SlashLevel{MinRange: 50, PunishedEpoches: 10},
 			SlashLevel{MinRange: 75, PunishedEpoches: 25},
 		},
+		CheckForce:   true,
+		ChainVersion: "version-chain-main.json",
 	}
 	// END TESTNET
 	// FOR MAINNET
@@ -128,23 +132,25 @@ func init() {
 		// blockChain parameters
 		GenesisBeaconBlock:               CreateBeaconGenesisBlock(1, genesisParamsMainnetNew),
 		GenesisShardBlock:                CreateShardGenesisBlock(1, genesisParamsMainnetNew),
-		MinShardBlockInterval:            TestNetMinShardBlkInterval,
-		MaxShardBlockCreation:            TestNetMaxShardBlkCreation,
-		MinBeaconBlockInterval:           TestNetMinBeaconBlkInterval,
-		MaxBeaconBlockCreation:           TestNetMaxBeaconBlkCreation,
+		MinShardBlockInterval:            MainnetMinShardBlkInterval,
+		MaxShardBlockCreation:            MainnetMaxShardBlkCreation,
+		MinBeaconBlockInterval:           MainnetMinBeaconBlkInterval,
+		MaxBeaconBlockCreation:           MainnetMaxBeaconBlkCreation,
 		BasicReward:                      MainnetBasicReward,
 		RewardHalflife:                   MainnetRewardHalflife,
 		Epoch:                            MainnetEpoch,
 		RandomTime:                       MainnetRandomTime,
-		Offset:                           TestnetOffset,
-		SwapOffset:                       TestnetSwapOffset,
+		Offset:                           MainnetOffset,
+		SwapOffset:                       MainnetSwapOffset,
 		EthContractAddressStr:            MainEthContractAddressStr,
-		DevAddress:                       TestnetDevAddress,
-		CentralizedWebsitePaymentAddress: TestnetCentralizedWebsitePaymentAddress,
+		DevAddress:                       MainnetDevAddress,
+		CentralizedWebsitePaymentAddress: MainnetCentralizedWebsitePaymentAddress,
 		SlashLevels: []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 5},
 			SlashLevel{MinRange: 50, PunishedEpoches: 10},
 			SlashLevel{MinRange: 75, PunishedEpoches: 20},
 		},
+		CheckForce:   false,
+		ChainVersion: "version-chain.json",
 	}
 }
