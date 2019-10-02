@@ -232,18 +232,33 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		}
 	}
 	var randomClient random.RandomClient
-	if cfg.BtcClient == 0 {
-		randomClient = &random.BlockCypherClient{}
-		Logger.log.Info("Init 3-rd Party Random Client")
-
-	} else {
-		if cfg.BtcClientIP == common.EmptyString || cfg.BtcClientUsername == common.EmptyString || cfg.BtcClientPassword == common.EmptyString {
-			Logger.log.Error("Please input Bitcoin Client Ip, Username, password. Otherwise, set btcclient is 0 or leave it to default value")
-			os.Exit(2)
+	switch serverObj.chainParams.RandomProvider {
+	case blockchain.TestnetRandomProvider:
+		{
+			if cfg.RandomClient != 1 {
+				Logger.log.Errorf("Expect Random Client Is Ethereum but get %+v", cfg.RandomClient)
+				os.Exit(2)
+			}
+			ip := metadata.EthereumLightNodeHost
+			port := metadata.EthereumLightNodePort
+			protocol := metadata.EthereumLightNodeProtocol
+			Logger.log.Infof("Init Ethereum CLient with protocol %+v, ip %+v, port %+v", protocol, ip, port)
+			randomClient = random.NewETHClient(protocol, ip, port)
 		}
-		randomClient = random.NewBTCClient(cfg.BtcClientUsername, cfg.BtcClientPassword, cfg.BtcClientIP, cfg.BtcClientPort)
-		Logger.log.Infof("Init Bitcoin Core Client with IP %+v, Port %+v, Username %+v, Password %+v", cfg.BtcClientIP, cfg.BtcClientPort, cfg.BtcClientUsername, cfg.BtcClientPassword)
+	default:
+		if cfg.BtcClient == 0 {
+			randomClient = &random.BlockCypherClient{}
+			Logger.log.Info("Init 3-rd Party Random Client")
+		} else {
+			if cfg.RandomClientIP == common.EmptyString || cfg.RandomClientUsername == common.EmptyString || cfg.RandomClientPassword == common.EmptyString {
+				Logger.log.Error("Please input Bitcoin Client Ip, Username, password. Otherwise, set btcclient is 0 or leave it to default value")
+				os.Exit(2)
+			}
+			randomClient = random.NewBTCClient(cfg.RandomClientUsername, cfg.RandomClientPassword, cfg.RandomClientIP, cfg.RandomClientPort)
+			Logger.log.Infof("Init Bitcoin Core Client with IP %+v, Port %+v, Username %+v, Password %+v", cfg.RandomClientIP, cfg.RandomClientPort, cfg.RandomClientUsername, cfg.RandomClientPassword)
+		}
 	}
+
 	// Init block template generator
 	serverObj.blockgen, err = blockchain.NewBlockGenerator(serverObj.memPool, serverObj.blockChain, serverObj.shardToBeaconPool, serverObj.crossShardPool, cPendingTxs, cRemovedTxs)
 	if err != nil {

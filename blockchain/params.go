@@ -109,8 +109,9 @@ func init() {
 			SlashLevel{MinRange: 50, PunishedEpoches: 10},
 			SlashLevel{MinRange: 75, PunishedEpoches: 25},
 		},
-		CheckForce:   true,
-		ChainVersion: "version-chain-main.json",
+		CheckForce:     true,
+		ChainVersion:   "version-chain-main.json",
+		RandomProvider: TestnetRandomProvider,
 	}
 	// END TESTNET
 	// FOR MAINNET
@@ -151,7 +152,8 @@ func init() {
 			SlashLevel{MinRange: 50, PunishedEpoches: 10},
 			SlashLevel{MinRange: 75, PunishedEpoches: 20},
 		},
-		CheckForce:   false,
-		ChainVersion: "version-chain.json",
+		CheckForce:     false,
+		ChainVersion:   "version-chain.json",
+		RandomProvider: MainnetRandomProvider,
 	}
 }

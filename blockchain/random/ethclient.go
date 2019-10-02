@@ -9,6 +9,8 @@ import (
 )
 
 type ETHClient struct {
+	Protocol string
+
 	IP   string
 	Port string
 }
@@ -22,10 +24,11 @@ type GetBlockHeaderResult struct {
 	Result *types.Header `json:"result"`
 }
 
-func NewETHClient(ip string, port string) *ETHClient {
+func NewETHClient(protocol string, ip string, port string) *ETHClient {
 	return &ETHClient{
-		IP:   ip,
-		Port: port,
+		Protocol: protocol,
+		IP:       ip,
+		Port:     port,
 	}
 }
 func (ethClient *ETHClient) GetCurrentChainTimeStamp() (int64, error) {
@@ -38,7 +41,7 @@ func (ethClient *ETHClient) GetCurrentChainTimeStamp() (int64, error) {
 func (ethClient *ETHClient) GetChainTimeStampAndNonce() (int, int64, int64, error) {
 	rpcClient := rpccaller.NewRPCClient()
 	getBlockNumberResult := &GetBlockNumberResult{}
-	err := rpcClient.RPCCall("http", ethClient.IP, ethClient.Port, "eth_blockNumber", []interface{}{}, getBlockNumberResult)
+	err := rpcClient.RPCCall(ethClient.Protocol, ethClient.IP, ethClient.Port, "eth_blockNumber", []interface{}{}, getBlockNumberResult)
 	if err != nil {
 		return -1, -1, -1, NewRandomClientError(GetBlockNumberResultError, err)
 	}
@@ -46,7 +49,7 @@ func (ethClient *ETHClient) GetChainTimeStampAndNonce() (int, int64, int64, erro
 		return -1, -1, -1, NewRandomClientError(GetBlockNumberResultError, err)
 	}
 	getBlockHeaderResult := &GetBlockHeaderResult{}
-	err = rpcClient.RPCCall("http", ethClient.IP, ethClient.Port, "eth_getBlockByNumber", []interface{}{getBlockNumberResult.Result, false}, getBlockHeaderResult)
+	err = rpcClient.RPCCall(ethClient.Protocol, ethClient.IP, ethClient.Port, "eth_getBlockByNumber", []interface{}{getBlockNumberResult.Result, false}, getBlockHeaderResult)
 	if err != nil {
 		return -1, -1, -1, NewRandomClientError(GetBlockHeaderResultError, err)
 	}
@@ -63,7 +66,7 @@ func (ethClient *ETHClient) GetChainTimeStampAndNonce() (int, int64, int64, erro
 func (ethClient *ETHClient) GetTimeStampAndNonceByBlockHeight(blockHeight int) (int64, int64, error) {
 	rpcClient := rpccaller.NewRPCClient()
 	getBlockHeaderResult := &GetBlockHeaderResult{}
-	err := rpcClient.RPCCall("http", ethClient.IP, ethClient.Port, "eth_getBlockByNumber", []interface{}{hexutil.EncodeUint64(uint64(blockHeight)), false}, getBlockHeaderResult)
+	err := rpcClient.RPCCall(ethClient.Protocol, ethClient.IP, ethClient.Port, "eth_getBlockByNumber", []interface{}{hexutil.EncodeUint64(uint64(blockHeight)), false}, getBlockHeaderResult)
 	if err != nil {
 		return -1, -1, NewRandomClientError(GetBlockHeaderResultError, err)
 	}

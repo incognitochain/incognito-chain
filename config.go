@@ -52,6 +52,7 @@ const (
 	DefaultPersistMempool = false
 	DefaultBtcClient      = 0
 	DefaultBtcClientPort  = "8332"
+	DefaultRandomClient   = 0
 )
 
 var (
@@ -134,18 +135,19 @@ type config struct {
 	LimitFee      uint64 `long:"limitfee" description:"Limited fee for tx(per Kb data), default is 0.00 PRV"`
 	LimitFeeToken uint64 `long:"limitfeetoken" description:"Limited fee for tx(per Kb data), default is 0 token"`
 
-	LoadMempool       bool   `long:"loadmempool" description:"Load transactions from Mempool database"`
-	PersistMempool    bool   `long:"persistmempool" description:"Persistence transaction in memepool database"`
-	MetricUrl         string `long:"metricurl" description:"Metric URL"`
-	BtcClient         uint   `long:"btcclient" description:"Default 0: BlockCypherClient, 1: Self Host Bitcoin Client (Must pass in btcclientip, btcclientport, btcclientusername, btcclientpassword"`
-	BtcClientIP       string `long:"btcclientip" description:"Bitcoin Client IP (Static IP)"`
-	BtcClientPort     string `long:"btcclientport" description:"Bitcoin Client Port (default 8332)"`
-	BtcClientUsername string `long:"btcclientusername" description:"Bitcoin Client Username for RPC"`
-	BtcClientPassword string `long:"btcclientpassword" description:"Bitcoin Client Password for RPC"`
-	EnableMining      bool   `long:"mining" description:"enable mining"`
-	MiningKeys        string `long:"miningkeys" description:"keys used for different consensus algorigthm"`
-	PrivateKey        string `long:"privatekey" description:"your wallet privatekey"`
-	Accelerator       bool   `long:"accelerator" description:"Relay Node Configuration For Consensus"`
+	LoadMempool          bool   `long:"loadmempool" description:"Load transactions from Mempool database"`
+	PersistMempool       bool   `long:"persistmempool" description:"Persistence transaction in memepool database"`
+	MetricUrl            string `long:"metricurl" description:"Metric URL"`
+	RandomClient         uint   `long:"randomclient" description:"Default 0: Bitcoin, 1: Ethereum"`
+	BtcClient            uint   `long:"btcclient" description:"Default 0: BlockCypherClient, 1: Self Host Bitcoin Client (Must pass in btcclientip, btcclientport, btcclientusername, btcclientpassword"`
+	RandomClientIP       string `long:"randomclientip" description:"Bitcoin Client IP (Static IP)"`
+	RandomClientPort     string `long:"randomclientport" description:"Bitcoin Client Port (default 8332)"`
+	RandomClientUsername string `long:"randomclientusername" description:"Bitcoin Client Username for RPC"`
+	RandomClientPassword string `long:"randomclientpassword" description:"Bitcoin Client Password for RPC"`
+	EnableMining         bool   `long:"mining" description:"enable mining"`
+	MiningKeys           string `long:"miningkeys" description:"keys used for different consensus algorigthm"`
+	PrivateKey           string `long:"privatekey" description:"your wallet privatekey"`
+	Accelerator          bool   `long:"accelerator" description:"Relay Node Configuration For Consensus"`
 }
 
 // serviceOptions defines the configuration options for the daemon as a service on
@@ -327,8 +329,9 @@ func loadConfig() (*config, []string, error) {
 		LimitFeeToken:        DefaultLimitFeeToken,
 		MetricUrl:            DefaultMetricUrl,
 		BtcClient:            DefaultBtcClient,
-		BtcClientPort:        DefaultBtcClientPort,
+		RandomClientPort:     DefaultBtcClientPort,
 		EnableMining:         DefaultEnableMining,
+		RandomClient:         DefaultRandomClient,
 	}
 
 	// Service options which are only added on Windows.
