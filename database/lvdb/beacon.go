@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (db *db) StoreBeaconBlock(v interface{}, hash common.Hash) error {
+func (db *db) StoreBeaconBlock(v interface{}, hash common.Hash, bd *[]database.BatchData) error {
 	var (
 		// b-{hash}
 		keyBlockHash = addPrefixToKeyHash(string(blockKeyPrefix), hash)
@@ -23,6 +23,12 @@ func (db *db) StoreBeaconBlock(v interface{}, hash common.Hash) error {
 	val, err := json.Marshal(v)
 	if err != nil {
 		return database.NewDatabaseError(database.StoreBeaconBlockError, err)
+	}
+
+	if bd != nil {
+		*bd = append(*bd, database.BatchData{keyBeaconBlock, keyBlockHash})
+		*bd = append(*bd, database.BatchData{keyBlockHash, val})
+		return nil
 	}
 	if err := db.Put(keyBeaconBlock, keyBlockHash); err != nil {
 		return database.NewDatabaseError(database.StoreBeaconBlockError, err)
@@ -130,12 +136,17 @@ func (db *db) DeleteBeaconBlock(hash common.Hash, idx uint64) error {
 	return nil
 }
 
-func (db *db) StoreBeaconBestState(v interface{}) error {
+func (db *db) StoreBeaconBestState(v interface{}, bd *[]database.BatchData) error {
 	val, err := json.Marshal(v)
 	if err != nil {
 		return database.NewDatabaseError(database.StoreBeaconBestStateError, err)
 	}
 	key := beaconBestBlockkeyPrefix
+
+	if bd != nil {
+		*bd = append(*bd, database.BatchData{key, val})
+		return nil
+	}
 	if err := db.Put(key, val); err != nil {
 		return database.NewDatabaseError(database.StoreBeaconBestStateError, err)
 	}

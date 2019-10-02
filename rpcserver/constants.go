@@ -94,8 +94,9 @@ const (
 	unlockMempool           = "unlockmempool"
 	//==================================================
 
-	getShardBestState  = "getshardbeststate"
-	getBeaconBestState = "getbeaconbeststate"
+	getShardBestState        = "getshardbeststate"
+	getBeaconBestState       = "getbeaconbeststate"
+	getBeaconBestStateDetail = "getbeaconbeststatedetail"
 
 	// Wallet rpc cmd
 	listAccounts               = "listaccounts"
@@ -155,7 +156,8 @@ const (
 	getMinerRewardFromMiningKey = "getminerrewardfromminingkey"
 
 	// slash
-	getProducersBlackList = "getproducersblacklist"
+	getProducersBlackList       = "getproducersblacklist"
+	getProducersBlackListDetail = "getproducersblacklistdetail"
 )
 
 const (
