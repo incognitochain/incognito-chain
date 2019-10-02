@@ -4,21 +4,17 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/random"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/pkg/errors"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/incognitochain/incognito-chain/blockchain/btc"
+	"github.com/incognitochain/incognito-chain/blockchain/random"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
-
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/pubsub"
-	"github.com/pkg/errors"
-
-	"github.com/incognitochain/incognito-chain/common"
 )
 
 /*
