@@ -27,10 +27,10 @@ const (
 	MAX_BEACON_BLOCK             = 5
 	DurationHalfLifeRewardForDev = uint64(31536000) // 5 years, after 5 year, reward for devs = 0
 
-	GetValidBlock                = 20
-	CheckForce                   = true
-	GenesisBlockTime             = "2019-09-30T00:00:00.000Z"
-	TestRandom                   = false
+	GetValidBlock    = 20
+	CheckForce       = true
+	GenesisBlockTime = "2019-09-30T00:00:00.000Z"
+	TestRandom       = false
 )
 
 // CONSTANT for network MAINNET
@@ -178,17 +178,17 @@ const (
 // ---------------------------------------------
 var TestnetInitPRV = []string{
 	`{
-  "Version": 1,
-  "Type": "s",
-  "LockTime": 1563438751,
-  "Fee": 0,
-  "Info": null,
-  "SigPubKey": "AsKCsGYkt3JthzFysVzWHxkESGfEoSRFeWafGB+DZRQA",
-  "Sig": "OA3DSbUjZt28zPtTRdbHRvwI8CfZvLeVpsBggHnDMusfpkGmE3MgkmTuhqh9/rOwlEgB1ULgU3yxmdYRSUQpOA==",
-  "Proof": "1111111dP9RnNmXbXtb5GKjmThj1fuurPVnBJjr5Nw15gvMRyNfy8QdqGFnPrYmeQe5NpYwgRvx7hRsgDaYGwZmM8rNGBszCM5CGyTcFsHUP95AqhTzZFugrmRU3EFt8TnfM3LktX13eD9ep7V51Ww2UcQ2PewVLz3VwktfUAvmZ3tbPWtQoQLmSFmZ4z7A47gkk7q6WjjRDLtfUbF1yj6CcswkKwMN",
-  "PubKeyLastByteSender": 0,
-  "Metadata": null
-}`,
+	"Version":1,
+	"Type":"s",
+	"LockTime":1569998535,
+	"Fee":0,
+	"Info":null,
+	"SigPubKey":"5xVSzcZpA3uHmBO5ejENk13iayexILopySACdieLugA=",
+	"Sig":"7/LB5PU6ZsS/L5rRxYiUzsihYaBRir2HLjpvsUMHYgNmHFkHrbKHiUPStEBrBAESY+Cnh+BMZhP5KOX0P66CCA==",
+	"Proof":"1111111QALwUZMkUodxyejDj1bE1Q8fKJS1jHidHpmjVgRbXyK4BXYZjp3w41w23SCqp86XbumedWMJBcAw5YLgbNQBaL5z2H4q1ZuUPqtucvgokvra7FaCGXsC4dECtNn758f6CCi63AHvbjVrtXrFcx8xDKsYRCaJ5166fBziLn4h6d6H5sau7U1BfZvgu4oPmca5nv38SHfkpz2AGoQtLL5i3yZAfQRnxG4cjTibgHUjQLt6AvbjGaXzYd7EHd1QY",
+	"PubKeyLastByteSender":0,
+	"Metadata":null
+	}`,
 }
 var IntegrationTestInitPRV = []string{`{"Version":1,"Type":"s","LockTime":1564213226,"Fee":0,"Info":null,"SigPubKey":"A6zmFqIlTKgsV23Qk9jz2roo3VhisVy5Flg6EGuOKaQA","Sig":"f+JDTKpO7+veF6DVYobNp6l0l6rAYxCZjYCNRrsFN0lx7aOMOwXhZK0OGrKiDLfqSIMX7CXr9ProBz7TIx3yqg==","Proof":"1111111dP9RnNnGCD9afUsg4bvrBHNWfjZijttFU2bkFYLYFGqCoK6i6RCeSEk2NUmv7p8B4kyhi1qaoMjvYCotjhDogGiuYrEqUT4NQLXatq2xqkfxgX8DURcv9xCgrgqVceQ2DrBR5NcgbMQHHBnW1xV3Dte2kmq837EeufP3KoQpz3m5N3oN6x1UssfWSeHAuw4t2dUinKDTe7SgRnFFhfF59dvy","PubKeyLastByteSender":0,"Metadata":null}`,
 	`{"Version":1,"Type":"s","LockTime":1564213226,"Fee":0,"Info":null,"SigPubKey":"As3StzeOJhR5qheXo9stChC6WqQJChZNqmPqdgNOFtkA","Sig":"ccWpvPZjitORv6+9WOWv7K5e8purHA4sX7mfBNE9m9YYFyPJ2awx5+1iHuWKD7BH9oum64XCiLYtW9iihVGlDw==","Proof":"1111111dP9RnNmZen93jhEW3eXaKkne72tbWVGtcdfAEfnbdf7fPDQmwYaTve2a9MBA56HHWXzXCbDxx79KCrtrArUqQKnxgun69qQpCjDZhaBdpKNZAAvYf7uBHrnxpm7qxRA4XLGSKbuLS6mBtrCUFPnit9BDbSAu9ZxQsPnr7XPPyHdbBofrBzFLqf2zTPMrqCAZqBqapA5AMtd8J8yknUHX6hWJ","PubKeyLastByteSender":0,"Metadata":null}`,
