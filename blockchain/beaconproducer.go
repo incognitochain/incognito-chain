@@ -3,15 +3,13 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/random"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/blockchain/btc"
-
+	"github.com/incognitochain/incognito-chain/blockchain/random"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
