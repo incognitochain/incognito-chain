@@ -175,6 +175,7 @@ func (db *db) StoreCommitments(tokenID common.Hash, pubkey []byte, commitments [
 		lenData = lenCommitment.Uint64()
 	}
 	for _, c := range commitments {
+
 		newIndex := new(big.Int).SetUint64(lenData).Bytes()
 		if lenData == 0 {
 			newIndex = []byte{0}
@@ -483,9 +484,14 @@ func (db *db) CleanFeeEstimator() error {
   Key: prefixTx-txHash
 	H: blockHash-blockIndex
 */
-func (db *db) StoreTransactionIndex(txId common.Hash, blockHash common.Hash, index int) error {
+func (db *db) StoreTransactionIndex(txId common.Hash, blockHash common.Hash, index int, bd *[]database.BatchData) error {
 	key := string(transactionKeyPrefix) + txId.String()
 	value := blockHash.String() + string(Splitter) + strconv.Itoa(index)
+
+	if bd != nil {
+		*bd = append(*bd, database.BatchData{[]byte(key), []byte(value)})
+		return nil
+	}
 	if err := db.Put([]byte(key), []byte(value)); err != nil {
 		return database.NewDatabaseError(database.StoreTransactionIndexError, err, txId.String(), blockHash.String(), index)
 	}
