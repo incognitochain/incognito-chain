@@ -11,6 +11,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/incognitochain/incognito-chain/blockchain/btc"
+	"github.com/incognitochain/incognito-chain/database"
+
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/pkg/errors"
@@ -133,6 +136,10 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	// Update best state with new beaconBlock
 
 	if err := blockchain.BestState.Beacon.updateBeaconBestState(beaconBlock, blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.RandomTime); err != nil {
+		errRevert := blockchain.revertBeaconBestState()
+		if errRevert != nil {
+			return errors.WithStack(errRevert)
+		}
 		return err
 	}
 	// updateNumOfBlocksByProducers updates number of blocks produced by producers
