@@ -122,7 +122,7 @@ func (blockchain *BlockChain) revertShardState(shardID byte) error {
 	// DeleteIncomingCrossShard
 	blockchain.config.DataBase.DeleteBlock(currentBestStateBlk.Header.Hash(), currentBestStateBlk.Header.Height, shardID)
 	blockchain.BestState.Shard[shardID] = &shardBestState
-	if err := blockchain.StoreShardBestState(shardID); err != nil {
+	if err := blockchain.StoreShardBestState(shardID, nil); err != nil {
 		return err
 	}
 	return nil
@@ -762,7 +762,7 @@ func (blockchain *BlockChain) revertBeaconState() error {
 		return err
 	}
 	blockchain.BestState.Beacon = &beaconBestState
-	if err := blockchain.StoreBeaconBestState(); err != nil {
+	if err := blockchain.StoreBeaconBestState(nil); err != nil {
 		return err
 	}
 	return nil
