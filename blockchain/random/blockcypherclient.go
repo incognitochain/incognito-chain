@@ -31,27 +31,27 @@ func (blockCypherClient *BlockCypherClient) GetNonceByTimestamp(timestamp int64)
 	if resp.StatusCode == http.StatusOK {
 		chainBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return 0, 0, -1, NewBTCAPIError(UnExpectedError, err)
+			return 0, 0, -1, NewRandomClientError(UnExpectedError, err)
 		}
 		chain := make(map[string]interface{})
 		err = json.Unmarshal(chainBytes, &chain)
 		if err != nil {
-			return 0, 0, -1, NewBTCAPIError(UnmashallJsonBlockError, err)
+			return 0, 0, -1, NewRandomClientError(UnmashallJsonBlockError, err)
 		}
 		chainHeightFloat, ok := chain["height"].(float64)
 		if !ok {
-			return 0, 0, -1, NewBTCAPIError(WrongTypeError, errors.New("Height's Type should be float64"))
+			return 0, 0, -1, NewRandomClientError(WrongTypeError, errors.New("Height's Type should be float64"))
 		}
 		chainHeight := int(chainHeightFloat)
 		chainTimestampString, ok := chain["time"].(string)
 		if !ok {
-			return 0, 0, -1, NewBTCAPIError(WrongTypeError, errors.New("Time's Type should be string"))
+			return 0, 0, -1, NewRandomClientError(WrongTypeError, errors.New("Time's Type should be string"))
 		}
 		chainTimestamp, err := makeTimestamp2(chainTimestampString)
 		if err != nil {
-			return 0, 0, -1, NewBTCAPIError(TimeParseError, err)
+			return 0, 0, -1, NewRandomClientError(TimeParseError, err)
 		}
-		blockHeight, err := estimateBlockHeight(blockCypherClient, timestamp, chainHeight, chainTimestamp)
+		blockHeight, err := estimateBlockHeight(blockCypherClient, timestamp, chainHeight, chainTimestamp, 600)
 		if err != nil {
 			return 0, 0, -1, err
 		}
@@ -60,7 +60,7 @@ func (blockCypherClient *BlockCypherClient) GetNonceByTimestamp(timestamp int64)
 			return 0, 0, -1, err
 		}
 		if blockTimestamp == MaxTimeStamp {
-			return 0, 0, -1, NewBTCAPIError(APIError, errors.New("Can't get result from API"))
+			return 0, 0, -1, NewRandomClientError(APIError, errors.New("Can't get result from API"))
 		}
 		if blockTimestamp > timestamp {
 			for blockTimestamp > timestamp {
@@ -70,7 +70,7 @@ func (blockCypherClient *BlockCypherClient) GetNonceByTimestamp(timestamp int64)
 					return 0, 0, -1, err
 				}
 				if blockTimestamp == MaxTimeStamp {
-					return 0, 0, -1, NewBTCAPIError(APIError, errors.New("Can't get result from API"))
+					return 0, 0, -1, NewRandomClientError(APIError, errors.New("Can't get result from API"))
 				}
 				if blockTimestamp <= timestamp {
 					blockHeight++
@@ -81,14 +81,14 @@ func (blockCypherClient *BlockCypherClient) GetNonceByTimestamp(timestamp int64)
 			for blockTimestamp <= timestamp {
 				blockHeight++
 				if blockHeight > chainHeight {
-					return 0, 0, -1, NewBTCAPIError(APIError, errors.New("Timestamp is greater than timestamp of highest block"))
+					return 0, 0, -1, NewRandomClientError(APIError, errors.New("Timestamp is greater than timestamp of highest block"))
 				}
 				blockTimestamp, _, err = blockCypherClient.GetTimeStampAndNonceByBlockHeight(blockHeight)
 				if err != nil {
 					return 0, 0, -1, err
 				}
 				if blockTimestamp == MaxTimeStamp {
-					return 0, 0, -1, NewBTCAPIError(APIError, errors.New("Can't get result from API"))
+					return 0, 0, -1, NewRandomClientError(APIError, errors.New("Can't get result from API"))
 				}
 				if blockTimestamp > timestamp {
 					break
@@ -101,7 +101,7 @@ func (blockCypherClient *BlockCypherClient) GetNonceByTimestamp(timestamp int64)
 		}
 		return blockHeight, timestamp, nonce, nil
 	}
-	return 0, 0, -1, NewBTCAPIError(NonceError, errors.New("Can't get nonce"))
+	return 0, 0, -1, NewRandomClientError(NonceError, errors.New("Can't get nonce"))
 }
 
 func (blockCypherClient *BlockCypherClient) VerifyNonceWithTimestamp(timestamp int64, nonce int64) (bool, error) {
@@ -139,33 +139,33 @@ func (blockCypherClient *BlockCypherClient) GetTimeStampAndNonceByBlockHeight(bl
 	<-time.Tick(15 * time.Second)
 	resp, err := http.Get("https://api.blockcypher.com/v1/btc/main/blocks/" + strconv.Itoa(blockHeight) + "?start=1&limit=1")
 	if err != nil {
-		return MaxTimeStamp, -1, NewBTCAPIError(APIError, err)
+		return MaxTimeStamp, -1, NewRandomClientError(APIError, err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusOK {
 		blockBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return MaxTimeStamp, -1, NewBTCAPIError(APIError, err)
+			return MaxTimeStamp, -1, NewRandomClientError(APIError, err)
 		}
 		block := make(map[string]interface{})
 		err = json.Unmarshal(blockBytes, &block)
 		if err != nil {
-			return MaxTimeStamp, -1, NewBTCAPIError(UnmashallJsonBlockError, errors.New("Can't get nonce or timestamp"))
+			return MaxTimeStamp, -1, NewRandomClientError(UnmashallJsonBlockError, errors.New("Can't get nonce or timestamp"))
 		}
 		nonce, ok := block["nonce"].(float64)
 		if !ok {
-			return MaxTimeStamp, -1, NewBTCAPIError(WrongTypeError, errors.New("Nonce's type should be float64"))
+			return MaxTimeStamp, -1, NewRandomClientError(WrongTypeError, errors.New("Nonce's type should be float64"))
 		}
 		timeString, ok := block["time"].(string)
 		if !ok {
-			return MaxTimeStamp, -1, NewBTCAPIError(WrongTypeError, errors.New("String's type should be string"))
+			return MaxTimeStamp, -1, NewRandomClientError(WrongTypeError, errors.New("String's type should be string"))
 		}
 		timeTime, err := time.Parse(time.RFC3339, timeString)
 		if err != nil {
-			return MaxTimeStamp, -1, NewBTCAPIError(APIError, err)
+			return MaxTimeStamp, -1, NewRandomClientError(APIError, err)
 		}
 		timeInt64 := makeTimestamp(timeTime)
 		return timeInt64, int64(nonce), nil
 	}
-	return MaxTimeStamp, -1, NewBTCAPIError(UnExpectedError, errors.New("Can't get nonce or timestamp, status code response "+strconv.Itoa(resp.StatusCode)+" when get block height "+strconv.Itoa(blockHeight)))
+	return MaxTimeStamp, -1, NewRandomClientError(UnExpectedError, errors.New("Can't get nonce or timestamp, status code response "+strconv.Itoa(resp.StatusCode)+" when get block height "+strconv.Itoa(blockHeight)))
 }

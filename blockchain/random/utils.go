@@ -26,7 +26,7 @@ func makeTimestamp2(t string) (int64, error) {
 // this function will based on the given #param1 timestamp and #param3 chainTimestamp
 // to calculate blockheight with approximate timestamp with #param1
 // blockHeight = chainHeight - (chainTimestamp - timestamp) / 600
-func estimateBlockHeight(self RandomClient, timestamp int64, chainHeight int, chainTimestamp int64) (int, error) {
+func estimateBlockHeight(self RandomClient, timestamp int64, chainHeight int, chainTimestamp int64, blockInterval int64) (int, error) {
 	var estimateBlockHeight int
 	// fmt.Printf("EstimateBlockHeight timestamp %d, chainHeight %d, chainTimestamp %d\n", timestamp, chainHeight, chainTimestamp)
 	offsetSeconds := timestamp - chainTimestamp
@@ -36,7 +36,7 @@ func estimateBlockHeight(self RandomClient, timestamp int64, chainHeight int, ch
 		estimateBlockHeight = chainHeight
 		// diff is negative
 		for true {
-			diff := int(offsetSeconds / 600)
+			diff := int(offsetSeconds / blockInterval)
 			estimateBlockHeight = estimateBlockHeight + diff
 			//fmt.Printf("Estimate blockHeight %d \n", estimateBlockHeight)
 			if math.Abs(float64(diff)) < 3 {
@@ -48,10 +48,10 @@ func estimateBlockHeight(self RandomClient, timestamp int64, chainHeight int, ch
 				return -1, err
 			}
 			if blockTimestamp == MaxTimeStamp {
-				return -1, NewBTCAPIError(APIError, errors.New("Can't get result from API"))
+				return -1, NewRandomClientError(APIError, errors.New("Can't get result from API"))
 			}
 			offsetSeconds = timestamp - blockTimestamp
 		}
 	}
-	return chainHeight, NewBTCAPIError(UnExpectedError, errors.New("Can't estimate block height"))
+	return chainHeight, NewRandomClientError(UnExpectedError, errors.New("Can't estimate block height"))
 }

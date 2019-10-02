@@ -44,6 +44,7 @@ type Params struct {
 	CentralizedWebsitePaymentAddress string //centralized website's pubkey
 	CheckForce                       bool   // true on testnet and false on mainnet
 	ChainVersion                     string
+	RandomProvider                   string
 }
 
 type GenesisParams struct {

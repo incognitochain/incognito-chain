@@ -38,7 +38,7 @@ func (btcClient *BTCClient) GetNonceByTimestamp(timestamp int64) (int, int64, in
 	if err != nil {
 		return 0, 0, -1, err
 	}
-	blockHeight, err := estimateBlockHeight(btcClient, timestamp, chainHeight, chainTimestamp)
+	blockHeight, err := estimateBlockHeight(btcClient, timestamp, chainHeight, chainTimestamp, 600)
 	if err != nil {
 		return 0, 0, -1, err
 	}
@@ -47,7 +47,7 @@ func (btcClient *BTCClient) GetNonceByTimestamp(timestamp int64) (int, int64, in
 		return 0, 0, -1, err
 	}
 	if blockTimestamp == MaxTimeStamp {
-		return 0, 0, -1, NewBTCAPIError(APIError, errors.New("Can't get result from API"))
+		return 0, 0, -1, NewRandomClientError(APIError, errors.New("Can't get result from API"))
 	}
 	if blockTimestamp > timestamp {
 		for blockTimestamp > timestamp {
@@ -57,7 +57,7 @@ func (btcClient *BTCClient) GetNonceByTimestamp(timestamp int64) (int, int64, in
 				return 0, 0, -1, err
 			}
 			if blockTimestamp == MaxTimeStamp {
-				return 0, 0, -1, NewBTCAPIError(APIError, errors.New("Can't get result from API"))
+				return 0, 0, -1, NewRandomClientError(APIError, errors.New("Can't get result from API"))
 			}
 			if blockTimestamp <= timestamp {
 				blockHeight++
@@ -68,14 +68,14 @@ func (btcClient *BTCClient) GetNonceByTimestamp(timestamp int64) (int, int64, in
 		for blockTimestamp <= timestamp {
 			blockHeight++
 			if blockHeight > chainHeight {
-				return 0, 0, -1, NewBTCAPIError(APIError, errors.New("Timestamp is greater than timestamp of highest block"))
+				return 0, 0, -1, NewRandomClientError(APIError, errors.New("Timestamp is greater than timestamp of highest block"))
 			}
 			_, blockTimestamp, err = btcClient.GetTimeStampAndNonceByBlockHeight(blockHeight)
 			if err != nil {
 				return 0, 0, -1, err
 			}
 			if blockTimestamp == MaxTimeStamp {
-				return 0, 0, -1, NewBTCAPIError(APIError, errors.New("Can't get result from API"))
+				return 0, 0, -1, NewRandomClientError(APIError, errors.New("Can't get result from API"))
 			}
 			if blockTimestamp > timestamp {
 				break
@@ -156,7 +156,7 @@ func (btcClient *BTCClient) GetTimeStampAndNonceByBlockHash(blockHash string) (i
 		nonce := parsedResult.(map[string]interface{})["nonce"].(float64)
 		return int64(timeStamp), int64(nonce), nil
 	} else {
-		return -1, -1, NewBTCAPIError(GetBlockHeaderResultError, fmt.Errorf("Failed to parse block header result %+v", result))
+		return -1, -1, NewRandomClientError(GetBlockHeaderResultError, fmt.Errorf("Failed to parse block header result %+v", result))
 	}
 }
 func (btcClient *BTCClient) GetTimeStampAndNonceByBlockHeight(blockHeight int) (int64, int64, error) {
@@ -178,10 +178,10 @@ func (btcClient *BTCClient) GetBlockHashByHeight(blockHeight int) (string, error
 		if blockHash, ok2 := tempBlockHash.(string); ok2 {
 			return blockHash, nil
 		} else {
-			return common.EmptyString, NewBTCAPIError(BlockHashParseError, fmt.Errorf("Failed to perform type assertion with value %+v", tempBlockHash))
+			return common.EmptyString, NewRandomClientError(BlockHashParseError, fmt.Errorf("Failed to perform type assertion with value %+v", tempBlockHash))
 		}
 	} else {
-		return common.EmptyString, NewBTCAPIError(GetBlockHashResultError, fmt.Errorf("Failed to get block hash from block height %+v", blockHeight))
+		return common.EmptyString, NewRandomClientError(GetBlockHashResultError, fmt.Errorf("Failed to get block hash from block height %+v", blockHeight))
 	}
 }
 
@@ -191,23 +191,23 @@ func (btcClient *BTCClient) callRPC(method string, params string) (map[string]in
 	body := strings.NewReader("{\"jsonrpc\":\"1.0\",\"id\":\"curltext\",\"method\":\"" + method + "\",\"params\":[" + params + "]}")
 	req, err := http.NewRequest("POST", "http://"+btcClient.IP+":"+btcClient.Port, body)
 	if err != nil {
-		return result, NewBTCAPIError(APIError, err)
+		return result, NewRandomClientError(APIError, err)
 	}
 	req.SetBasicAuth(btcClient.User, btcClient.Password)
 	req.Header.Set("Content-Type", "text/plain;")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return result, NewBTCAPIError(APIError, err)
+		return result, NewRandomClientError(APIError, err)
 	}
 	defer resp.Body.Close()
 	response, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return result, NewBTCAPIError(APIError, err)
+		return result, NewRandomClientError(APIError, err)
 	}
 	err = json.Unmarshal(response, &result)
 	if err != nil {
-		return result, NewBTCAPIError(APIError, err)
+		return result, NewRandomClientError(APIError, err)
 	}
 	return result, nil
 }
