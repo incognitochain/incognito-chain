@@ -115,6 +115,6 @@ func (dbService DatabaseService) ListRewardAmount() map[string]map[common.Hash]u
 	return (*dbService.DB).ListCommitteeReward()
 }
 
-func (dbService DatabaseService) GetProducersBlackList() (map[string]uint8, error) {
-	return (*dbService.DB).GetProducersBlackList()
+func (dbService DatabaseService) GetProducersBlackList(beaconHeight uint64) (map[string]uint8, error) {
+	return (*dbService.DB).GetProducersBlackList(beaconHeight)
 }

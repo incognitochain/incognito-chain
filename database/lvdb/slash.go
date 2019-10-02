@@ -2,6 +2,7 @@ package lvdb
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/pkg/errors"
 
@@ -9,8 +10,10 @@ import (
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 )
 
-func (db *db) GetProducersBlackList() (map[string]uint8, error) {
-	key := producersBlackListPrefix
+func (db *db) GetProducersBlackList(beaconHeight uint64) (map[string]uint8, error) {
+	// key := producersBlackListPrefix
+	beaconHeightBytes := []byte(fmt.Sprintf("%d", beaconHeight))
+	key := append(producersBlackListPrefix, beaconHeightBytes...)
 	producersBlackListBytes, dbErr := db.lvdb.Get(key, nil)
 	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
 		return nil, database.NewDatabaseError(database.GetProducersBlackListError, dbErr)
@@ -23,12 +26,14 @@ func (db *db) GetProducersBlackList() (map[string]uint8, error) {
 	return producersBlackList, err
 }
 
-func (db *db) StoreProducersBlackList(producersBlackList map[string]uint8) error {
+func (db *db) StoreProducersBlackList(beaconHeight uint64, producersBlackList map[string]uint8) error {
 	producersBlackListBytes, err := json.Marshal(producersBlackList)
 	if err != nil {
 		return err
 	}
-	key := producersBlackListPrefix
+	// key := producersBlackListPrefix
+	beaconHeightBytes := []byte(fmt.Sprintf("%d", beaconHeight))
+	key := append(producersBlackListPrefix, beaconHeightBytes...)
 	dbErr := db.Put(key, producersBlackListBytes)
 	if dbErr != nil {
 		return database.NewDatabaseError(database.StoreProducersBlackListError, errors.Wrap(dbErr, "db.lvdb.put"))
