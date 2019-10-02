@@ -21,7 +21,7 @@ import (
 	- Key: b-{blockHash}
 	- Value: {block}
 */
-func (db *db) StoreShardBlock(v interface{}, hash common.Hash, shardID byte) error {
+func (db *db) StoreShardBlock(v interface{}, hash common.Hash, shardID byte, bd *[]database.BatchData) error {
 	var (
 		// key: b-{blockhash}:block
 		keyBlockHash = addPrefixToKeyHash(string(blockKeyPrefix), hash)
@@ -35,6 +35,13 @@ func (db *db) StoreShardBlock(v interface{}, hash common.Hash, shardID byte) err
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
 	}
+
+	if bd != nil {
+		*bd = append(*bd, database.BatchData{keyShardBlock, keyBlockHash})
+		*bd = append(*bd, database.BatchData{keyBlockHash, val})
+		return nil
+	}
+
 	if err := db.Put(keyShardBlock, keyBlockHash); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
 	}
@@ -81,10 +88,16 @@ func (db *db) FetchBlock(hash common.Hash) ([]byte, error) {
 	+ key: {index-shardID}
 	+ value: {hash}
 */
-func (db *db) StoreShardBlockIndex(hash common.Hash, idx uint64, shardID byte) error {
+func (db *db) StoreShardBlockIndex(hash common.Hash, idx uint64, shardID byte, bd *[]database.BatchData) error {
 	buf := make([]byte, 9)
 	binary.LittleEndian.PutUint64(buf, idx)
 	buf[8] = shardID
+
+	if bd != nil {
+		*bd = append(*bd, database.BatchData{addPrefixToKeyHash(string(blockKeyIdxPrefix), hash), buf})
+		*bd = append(*bd, database.BatchData{buf, hash[:]})
+		return nil
+	}
 	//{i-[hash]}:index-shardID
 	if err := db.Put(addPrefixToKeyHash(string(blockKeyIdxPrefix), hash), buf); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
@@ -155,12 +168,17 @@ func (db *db) DeleteBlock(hash common.Hash, idx uint64, shardID byte) error {
 	return nil
 }
 
-func (db *db) StoreShardBestState(v interface{}, shardID byte) error {
+func (db *db) StoreShardBestState(v interface{}, shardID byte, bd *[]database.BatchData) error {
 	val, err := json.Marshal(v)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
 	}
 	key := append(bestBlockKeyPrefix, shardID)
+
+	if bd != nil {
+		*bd = append(*bd, database.BatchData{key, val})
+		return nil
+	}
 	if err := db.Put(key, val); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.put"))
 	}
