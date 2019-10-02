@@ -190,6 +190,6 @@ type DatabaseInterface interface {
 	RestoreCommitteeReward(committeeAddress []byte, tokenID common.Hash) error       //shard
 
 	// slash
-	GetProducersBlackList() (map[string]uint8, error)
-	StoreProducersBlackList(producersBlackList map[string]uint8) error
+	GetProducersBlackList(beaconHeight uint64) (map[string]uint8, error)
+	StoreProducersBlackList(beaconHeight uint64, producersBlackList map[string]uint8) error
 }
