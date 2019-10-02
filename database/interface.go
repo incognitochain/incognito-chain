@@ -22,13 +22,13 @@ type DatabaseInterface interface {
 	Close() error
 
 	// Process on Block data
-	StoreShardBlock(v interface{}, hash common.Hash, shardID byte) error
+	StoreShardBlock(v interface{}, hash common.Hash, shardID byte, bd *[]BatchData) error
 	FetchBlock(hash common.Hash) ([]byte, error)
 	HasBlock(hash common.Hash) (bool, error)
 	DeleteBlock(hash common.Hash, idx uint64, shardID byte) error
 
 	// Process on Incomming Cross shard data
-	StoreIncomingCrossShard(shardID byte, crossShardID byte, blkHeight uint64, crossBlkHash common.Hash) error
+	StoreIncomingCrossShard(shardID byte, crossShardID byte, blkHeight uint64, crossBlkHash common.Hash, bd *[]BatchData) error
 	HasIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHash common.Hash) error
 	GetIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHash common.Hash) (uint64, error)
 	DeleteIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHash common.Hash) error
@@ -40,7 +40,7 @@ type DatabaseInterface interface {
 	DeleteAcceptedShardToBeacon(shardID byte, shardBlkHash common.Hash) error
 
 	// Beacon
-	StoreBeaconBlock(v interface{}, hash common.Hash) error
+	StoreBeaconBlock(v interface{}, hash common.Hash, bd *[]BatchData) error
 	FetchBeaconBlock(hash common.Hash) ([]byte, error)
 	HasBeaconBlock(hash common.Hash) (bool, error)
 	DeleteBeaconBlock(hash common.Hash, idx uint64) error
@@ -51,7 +51,7 @@ type DatabaseInterface interface {
 	RestoreCrossShardNextHeights(fromShard byte, toShard byte, curHeight uint64) error
 
 	// Block index
-	StoreShardBlockIndex(hash common.Hash, idx uint64, shardID byte) error
+	StoreShardBlockIndex(hash common.Hash, idx uint64, shardID byte, bd *[]BatchData) error
 	GetIndexOfBlock(hash common.Hash) (uint64, byte, error)
 	GetBlockByIndex(idx uint64, shardID byte) (common.Hash, error)
 
@@ -61,7 +61,7 @@ type DatabaseInterface interface {
 	GetBeaconBlockHashByIndex(idx uint64) (common.Hash, error)
 
 	// Transaction index
-	StoreTransactionIndex(txId common.Hash, blockHash common.Hash, indexInBlock int) error
+	StoreTransactionIndex(txId common.Hash, blockHash common.Hash, indexInBlock int, bd *[]BatchData) error
 	GetTransactionIndexById(txId common.Hash) (common.Hash, int, error)
 	DeleteTransactionIndex(txId common.Hash) error
 
@@ -71,12 +71,12 @@ type DatabaseInterface interface {
 	CleanBackup(isBeacon bool, shardID byte) error
 
 	// Best state of shard chain
-	StoreShardBestState(v interface{}, shardID byte) error
+	StoreShardBestState(v interface{}, shardID byte, bd *[]BatchData) error
 	FetchShardBestState(shardID byte) ([]byte, error)
 	CleanShardBestState() error
 
 	// Best state of beacon chain
-	StoreBeaconBestState(v interface{}) error
+	StoreBeaconBestState(v interface{}, bd *[]BatchData) error
 	FetchBeaconBestState() ([]byte, error)
 	CleanBeaconBestState() error
 
@@ -162,7 +162,7 @@ type DatabaseInterface interface {
 	RestoreBridgedTokenByTokenID(tokenID common.Hash) error
 
 	// Incognito -> Ethereum relay
-	StoreBurningConfirm(txID common.Hash, height uint64) error
+	StoreBurningConfirm(txID common.Hash, height uint64, bd *[]BatchData) error
 	GetBurningConfirm(txID common.Hash) (uint64, error)
 
 	// Decentralized bridge
@@ -171,17 +171,17 @@ type DatabaseInterface interface {
 	IsETHTxHashIssued(uniqETHTx []byte) (bool, error)
 	CanProcessTokenPair(externalTokenID []byte, incTokenID common.Hash) (bool, error)
 	CanProcessCIncToken(incTokenID common.Hash) (bool, error)
-	UpdateBridgeTokenInfo(incTokenID common.Hash, externalTokenID []byte, isCentralized bool, updatingAmt uint64, updateType string) error
+	UpdateBridgeTokenInfo(incTokenID common.Hash, externalTokenID []byte, isCentralized bool, updatingAmt uint64, updateType string, bd *[]BatchData) error
 	GetAllBridgeTokens() ([]byte, error)
-	TrackBridgeReqWithStatus(txReqID common.Hash, status byte) error
+	TrackBridgeReqWithStatus(txReqID common.Hash, status byte, bd *[]BatchData) error
 	GetBridgeReqWithStatus(txReqID common.Hash) (byte, error)
 
 	// Block reward
-	AddShardRewardRequest(epoch uint64, shardID byte, amount uint64, tokenID common.Hash) error
+	AddShardRewardRequest(epoch uint64, shardID byte, amount uint64, tokenID common.Hash, bd *[]BatchData) error
 	GetRewardOfShardByEpoch(epoch uint64, shardID byte, tokenID common.Hash) (uint64, error)
 	AddCommitteeReward(committeeAddress []byte, amount uint64, tokenID common.Hash) error
 	GetCommitteeReward(committeeAddress []byte, tokenID common.Hash) (uint64, error)
-	RemoveCommitteeReward(committeeAddress []byte, amount uint64, tokenID common.Hash) error
+	RemoveCommitteeReward(committeeAddress []byte, amount uint64, tokenID common.Hash, bd *[]BatchData) error
 	ListCommitteeReward() map[string]map[common.Hash]uint64
 
 	BackupShardRewardRequest(epoch uint64, shardID byte, tokenID common.Hash) error  //beacon
@@ -190,6 +190,6 @@ type DatabaseInterface interface {
 	RestoreCommitteeReward(committeeAddress []byte, tokenID common.Hash) error       //shard
 
 	// slash
-	GetProducersBlackList() (map[string]uint8, error)
-	StoreProducersBlackList(producersBlackList map[string]uint8) error
+	GetProducersBlackList(beaconHeight uint64) (map[string]uint8, error)
+	StoreProducersBlackList(beaconHeight uint64, producersBlackList map[string]uint8) error
 }
