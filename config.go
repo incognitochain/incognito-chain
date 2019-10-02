@@ -51,7 +51,7 @@ const (
 	DefaultWalletName     = "wallet"
 	DefaultPersistMempool = false
 	DefaultBtcClient      = 0
-	DefaultBtcClientPort  = "8332"
+	DefaultBtcClientPort  = ""
 	DefaultRandomClient   = 0
 )
 

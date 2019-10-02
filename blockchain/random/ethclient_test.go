@@ -96,3 +96,38 @@ func TestConvertGetBlockNumberResult(t *testing.T) {
 		t.Fatal("Unexpected value ", res2)
 	}
 }
+
+func TestGetChainTimeStampAndNonceEthereum(t *testing.T) {
+	ethClient := NewETHClient("http", "127.0.0.1", "8545")
+	chainHeight, timestamp, nonce, err := ethClient.GetChainTimeStampAndNonce()
+	if err != nil {
+		t.Fatal(err)
+	} else {
+		t.Log(chainHeight, timestamp, nonce)
+	}
+}
+
+func TestGetTimeStampAndNonceByBlockHeightEthereum(t *testing.T) {
+	ethClient := NewETHClient("http", "127.0.0.1", "8545")
+	timestamp, nonce, err := ethClient.GetTimeStampAndNonceByBlockHeight(13873480)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(13873480, timestamp, nonce)
+	timestamp1, nonce1, err1 := ethClient.GetTimeStampAndNonceByBlockHeight(13873479)
+	if err1 != nil {
+		t.Fatal(err1)
+	}
+	t.Log(13873479, timestamp1, nonce1)
+	timestamp2, nonce2, err2 := ethClient.GetTimeStampAndNonceByBlockHeight(13873478)
+	if err2 != nil {
+		t.Fatal(err2)
+	}
+	t.Log(13873478, timestamp2, nonce2)
+	chainHeight, timestamp, nonce, err := ethClient.GetNonceByTimestamp(1570006186)
+	if err != nil {
+		t.Fatal(err)
+	} else {
+		t.Log(chainHeight, timestamp, nonce)
+	}
+}

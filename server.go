@@ -241,6 +241,9 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			}
 			ip := metadata.EthereumLightNodeHost
 			port := metadata.EthereumLightNodePort
+			if cfg.RandomClientPort != "" {
+				port = cfg.RandomClientPort
+			}
 			protocol := metadata.EthereumLightNodeProtocol
 			Logger.log.Infof("Init Ethereum CLient with protocol %+v, ip %+v, port %+v", protocol, ip, port)
 			randomClient = random.NewETHClient(protocol, ip, port)

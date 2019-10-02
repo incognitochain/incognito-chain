@@ -94,11 +94,11 @@ func (ethClient *ETHClient) GetNonceByTimestamp(timestamp int64) (int, int64, in
 	if err != nil {
 		return 0, 0, -1, err
 	}
-	blockHeight, err := estimateBlockHeight(ethClient, timestamp, chainHeight, chainTimestamp, 4)
+	blockHeight, err := estimateBlockHeight(ethClient, timestamp, chainHeight, chainTimestamp, EthereumKovanEsitmateTime)
 	if err != nil {
 		return 0, 0, -1, err
 	}
-	_, blockTimestamp, err = ethClient.GetTimeStampAndNonceByBlockHeight(blockHeight)
+	blockTimestamp, _, err = ethClient.GetTimeStampAndNonceByBlockHeight(blockHeight)
 	if err != nil {
 		return 0, 0, -1, err
 	}
@@ -108,7 +108,7 @@ func (ethClient *ETHClient) GetNonceByTimestamp(timestamp int64) (int, int64, in
 	if blockTimestamp > timestamp {
 		for blockTimestamp > timestamp {
 			blockHeight--
-			_, blockTimestamp, err = ethClient.GetTimeStampAndNonceByBlockHeight(blockHeight)
+			blockTimestamp, _, err = ethClient.GetTimeStampAndNonceByBlockHeight(blockHeight)
 			if err != nil {
 				return 0, 0, -1, err
 			}
@@ -126,7 +126,7 @@ func (ethClient *ETHClient) GetNonceByTimestamp(timestamp int64) (int, int64, in
 			if blockHeight > chainHeight {
 				return 0, 0, -1, NewRandomClientError(APIError, errors.New("Timestamp is greater than timestamp of highest block"))
 			}
-			_, blockTimestamp, err = ethClient.GetTimeStampAndNonceByBlockHeight(blockHeight)
+			blockTimestamp, _, err = ethClient.GetTimeStampAndNonceByBlockHeight(blockHeight)
 			if err != nil {
 				return 0, 0, -1, err
 			}

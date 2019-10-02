@@ -51,7 +51,7 @@ func (blockCypherClient *BlockCypherClient) GetNonceByTimestamp(timestamp int64)
 		if err != nil {
 			return 0, 0, -1, NewRandomClientError(TimeParseError, err)
 		}
-		blockHeight, err := estimateBlockHeight(blockCypherClient, timestamp, chainHeight, chainTimestamp, 600)
+		blockHeight, err := estimateBlockHeight(blockCypherClient, timestamp, chainHeight, chainTimestamp, BitcoinEstimateTime)
 		if err != nil {
 			return 0, 0, -1, err
 		}
