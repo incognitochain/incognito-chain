@@ -27,7 +27,6 @@ const (
 	MAX_BEACON_BLOCK             = 5
 	DurationHalfLifeRewardForDev = uint64(31536000) // 5 years, after 5 year, reward for devs = 0
 	GetValidBlock                = 20
-	CheckForce                   = true
 	GenesisBlockTime             = "2019-09-30T00:00:00.000Z"
 	TestRandom                   = false
 )
@@ -48,10 +47,10 @@ const (
 	MainNetActiveShards        = 2
 	MainNetStakingAmountShard  = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
-	MainNetMinBeaconBlkInterval = 10 * time.Second //second
-	MainNetMaxBeaconBlkCreation = 8 * time.Second  //second
-	MainNetMinShardBlkInterval  = 10 * time.Second //second
-	MainNetMaxShardBlkCreation  = 4 * time.Second  //second
+	MainnetMinBeaconBlkInterval = 10 * time.Second //second
+	MainnetMaxBeaconBlkCreation = 8 * time.Second  //second
+	MainnetMinShardBlkInterval  = 10 * time.Second //second
+	MainnetMaxShardBlkCreation  = 6 * time.Second  //second
 
 	//board and proposal parameters
 	MainnetBasicReward                      = 400000000 //40 mili PRV
@@ -87,7 +86,7 @@ const (
 	TestnetDefaultPort = "9444"
 	TestnetEpoch       = 1000
 	TestnetRandomTime  = 500
-	TestnetOffset      = 20
+	TestnetOffset      = 10
 	TestnetSwapOffset  = 2
 
 	TestNetShardCommitteeSize     = 64
