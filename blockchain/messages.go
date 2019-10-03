@@ -21,7 +21,7 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 		userShardID byte
 	)
 
-	userRole, userShardIDInt := blockchain.config.ConsensusEngine.GetUserRole()
+	userRole, userShardIDInt := blockchain.config.ConsensusEngine.GetUserLayer()
 	if userRole == common.ShardRole {
 		userShardID = byte(userShardIDInt)
 	}

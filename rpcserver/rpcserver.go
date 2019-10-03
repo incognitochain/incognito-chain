@@ -84,7 +84,7 @@ type RpcServerConfig struct {
 		GetMinerIncognitoPublickey(publicKey string, keyType string) []byte
 	}
 	ConsensusEngine interface {
-		GetUserRole() (string, int)
+		GetUserLayer() (string, int)
 		GetCurrentMiningPublicKey() (publickey string, keyType string)
 		GetAllMiningPublicKeys() []string
 		ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error)
