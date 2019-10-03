@@ -90,6 +90,7 @@ func (engine *Engine) watchConsensusCommittee() {
 
 		for consensusType, publickey := range engine.userMiningPublicKeys {
 			beaconPendingList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(engine.config.Blockchain.Chains[common.BeaconChainKey].(BeaconInterface).GetBeaconPendingList(), consensusType)
+			beaconWaitingList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(engine.config.Blockchain.Chains[common.BeaconChainKey].(BeaconInterface).GetBeaconWaitingList(), consensusType)
 			shardsWaitingList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(engine.config.Blockchain.Chains[common.BeaconChainKey].(BeaconInterface).GetShardsWaitingList(), consensusType)
 
 			var shardsPendingList map[string][]string
@@ -102,6 +103,11 @@ func (engine *Engine) watchConsensusCommittee() {
 			if common.IndexOfStr(publickey.GetMiningKeyBase58(consensusType), beaconPendingList) != -1 {
 				engine.CurrentMiningChain = common.BeaconChainKey
 				engine.updateUserState(&publickey, common.BeaconRole, common.PendingRole, 0)
+				break
+			}
+			if common.IndexOfStr(publickey.GetMiningKeyBase58(consensusType), beaconWaitingList) != -1 {
+				engine.CurrentMiningChain = common.BeaconChainKey
+				engine.updateUserState(&publickey, common.BeaconRole, common.WaitingRole, 0)
 				break
 			}
 			if common.IndexOfStr(publickey.GetMiningKeyBase58(consensusType), shardsWaitingList) != -1 {
@@ -215,7 +221,7 @@ func (engine *Engine) watchConsensusCommittee() {
 						if common.IndexOfStr(publickey.GetMiningKeyBase58(consensusType), committee) != -1 {
 							engine.CurrentMiningChain = chainName
 							engine.updateUserState(&publickey, common.ShardRole, common.PendingRole, getShardFromChainName(chainName))
-							continue
+							break
 						}
 					}
 					if engine.CurrentMiningChain != "" {
@@ -228,7 +234,7 @@ func (engine *Engine) watchConsensusCommittee() {
 					if engine.CurrentMiningChain == common.EmptyString {
 						engine.CurrentMiningChain = common.GetShardChainKey(shardID)
 						if userCurrentPublicKey != engine.userCurrentState.KeysBase58[consensusType] {
-							engine.updateUserState(&userMiningKey, common.ShardRole, role, shardID)
+							engine.updateUserState(&userMiningKey, common.ShardRole, common.CommitteeRole, shardID)
 						}
 						engine.config.Node.DropAllConnections()
 						engine.updateConsensusState()
@@ -258,7 +264,7 @@ func (engine *Engine) Start() error {
 				time.Sleep(time.Millisecond * 1000)
 
 				for chainName, consensus := range engine.ChainConsensusList {
-					if chainName == engine.CurrentMiningChain {
+					if chainName == engine.CurrentMiningChain && engine.userCurrentState.UserRole == common.CommitteeRole {
 						Logger.log.Critical("current mining chain", chainName)
 						consensus.Start()
 					} else {
@@ -320,13 +326,15 @@ func (engine *Engine) GetUserLayer() (string, int) {
 func (engine *Engine) GetUserRole() (string, string, int) {
 	//layer,role,shardID
 	if engine.CurrentMiningChain != "" {
-		if engine.userCurrentState.UserLayer == common.BeaconRole {
-			return engine.userCurrentState.UserLayer, engine.userCurrentState.UserRole, -1
+		userLayer := engine.userCurrentState.UserLayer
+		userRole := engine.userCurrentState.UserRole
+		shardID := -1
+		if userRole == common.CommitteeRole || userRole == common.PendingRole {
+			if userLayer == common.ShardRole {
+				shardID = int(engine.userCurrentState.ShardID)
+			}
 		}
-		if engine.userCurrentState.UserRole == common.CommitteeRole {
-			return engine.userCurrentState.UserLayer, engine.userCurrentState.UserRole, -1
-		}
-		return engine.userCurrentState.UserLayer, engine.userCurrentState.UserRole, int(engine.userCurrentState.ShardID)
+		return engine.userCurrentState.UserLayer, engine.userCurrentState.UserRole, shardID
 	}
 	return "", "", -2
 }
@@ -386,34 +394,6 @@ func (engine *Engine) ExtractBridgeValidationData(block common.BlockInterface) (
 	return nil, nil, NewConsensusError(ConsensusTypeNotExistError, errors.New(block.GetConsensusType()))
 }
 
-// func (engine *Engine) SwitchConsensus(chainkey string, consensus string) error {
-// 	if engine.ChainConsensusList[common.BEACON_CHAINKEY].GetConsensusName() != engine.config.Blockchain.BestState.Beacon.ConsensusAlgorithm {
-// 		consensus, ok := AvailableConsensus[engine.ChainConsensusList[common.BEACON_CHAINKEY].GetConsensusName()]
-// 		if ok {
-// 			engine.ChainConsensusList[common.BEACON_CHAINKEY] = consensus.NewInstance(engine.config.Blockchain.Chains[common.BEACON_CHAINKEY], chainkey, engine.config.Node, Logger.log)
-// 		} else {
-// 			panic("Update code please")
-// 		}
-// 	}
-// 	for idx := 0; idx < engine.config.Blockchain.BestState.Beacon.ActiveShards; idx++ {
-// 		shard, ok := engine.config.Blockchain.BestState.Shard[byte(idx)]
-// 		if ok {
-// 			chainKey := common.GetShardChainKey(byte(idx))
-// 			if shard.ConsensusAlgorithm != engine.ChainConsensusList[chainKey].GetConsensusName() {
-// 				consensus, ok := AvailableConsensus[engine.ChainConsensusList[chainKey].GetConsensusName()]
-// 				if ok {
-// 					engine.ChainConsensusList[chainKey] = consensus.NewInstance(engine.config.Blockchain.Chains[chainKey], chainkey, engine.config.Node, Logger.log)
-// 				} else {
-// 					panic("Update code please")
-// 				}
-// 			}
-// 		} else {
-// 			panic("Oops... Maybe a bug cause this, please update code")
-// 		}
-// 	}
-// 	return nil
-// }
-
 func (engine *Engine) updateConsensusState() {
 	userLayer := ""
 	if engine.CurrentMiningChain == common.BeaconChainKey {
@@ -436,17 +416,6 @@ func (engine *Engine) updateConsensusState() {
 	beaconCommittee := []string{}
 	shardCommittee := map[byte][]string{}
 	shardCommittee = make(map[byte][]string)
-	// for keyType, committees := range allcommittee {
-	// 	for chain, committee := range committees {
-	// 		if chain == common.BeaconChainKey {
-	// 			keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(committee, keyType)
-	// 			beaconCommittee = append(beaconCommittee, keyList...)
-	// 		} else {
-	// 			keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(committee, keyType)
-	// 			shardCommittee[getShardFromChainName(chain)] = keyList
-	// 		}
-	// 	}
-	// }
 
 	for keyType, committees := range allcommittee {
 		for chain, committee := range committees {
