@@ -18,7 +18,7 @@ type GetMiningInfoResult struct {
 	IsEnableMining      bool   `json:"IsEnableMining"`
 }
 
-func NewGetMiningInfoResult(txMemPool mempool.TxPool, blChain blockchain.BlockChain, consensus interface{ GetUserRole() (string, int) }, param blockchain.Params, isEnableMining bool) *GetMiningInfoResult {
+func NewGetMiningInfoResult(txMemPool mempool.TxPool, blChain blockchain.BlockChain, consensus interface{ GetUserLayer() (string, int) }, param blockchain.Params, isEnableMining bool) *GetMiningInfoResult {
 	result := &GetMiningInfoResult{}
 	result.IsCommittee = true
 	result.PoolSize = txMemPool.Count()
@@ -27,7 +27,7 @@ func NewGetMiningInfoResult(txMemPool mempool.TxPool, blChain blockchain.BlockCh
 	result.BeaconHeight = blChain.BestState.Beacon.BeaconHeight
 
 	// role, shardID := httpServer.config.BlockChain.BestState.Beacon.GetPubkeyRole(httpServer.config.MiningPubKeyB58, 0)
-	role, shardID := consensus.GetUserRole()
+	role, shardID := consensus.GetUserLayer()
 	result.Role = role
 
 	switch shardID {

@@ -53,4 +53,7 @@ type ConsensusInterface interface {
 type BeaconInterface interface {
 	blockchain.ChainInterface
 	GetAllCommittees() map[string]map[string][]incognitokey.CommitteePublicKey
+	GetBeaconPendingList() []incognitokey.CommitteePublicKey
+	GetShardsPendingList() map[string]map[string][]incognitokey.CommitteePublicKey
+	GetShardsWaitingList() []incognitokey.CommitteePublicKey
 }

@@ -155,6 +155,38 @@ func (chain *BeaconChain) GetAllCommittees() map[string]map[string][]incognitoke
 	return result
 }
 
+func (chain *BeaconChain) GetBeaconPendingList() []incognitokey.CommitteePublicKey {
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
+	var result []incognitokey.CommitteePublicKey
+
+	result = append(result, chain.BestState.BeaconPendingValidator...)
+	return result
+}
+
+func (chain *BeaconChain) GetShardsPendingList() map[string]map[string][]incognitokey.CommitteePublicKey {
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
+	var result map[string]map[string][]incognitokey.CommitteePublicKey
+	result = make(map[string]map[string][]incognitokey.CommitteePublicKey)
+
+	for shardID, consensusType := range chain.BestState.ShardConsensusAlgorithm {
+		if _, ok := result[consensusType]; !ok {
+			result[consensusType] = make(map[string][]incognitokey.CommitteePublicKey)
+		}
+		result[consensusType][common.GetShardChainKey(shardID)] = append([]incognitokey.CommitteePublicKey{}, chain.BestState.ShardPendingValidator[shardID]...)
+	}
+	return result
+}
+
+func (chain *BeaconChain) GetShardsWaitingList() []incognitokey.CommitteePublicKey {
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
+	var result []incognitokey.CommitteePublicKey
+	result = append(result, chain.BestState.CandidateShardWaitingForNextRandom...)
+	result = append(result, chain.BestState.CandidateShardWaitingForCurrentRandom...)
+	return result
+}
 func (chain *BeaconChain) UnmarshalBlock(blockString []byte) (common.BlockInterface, error) {
 	var beaconBlk BeaconBlock
 	err := json.Unmarshal(blockString, &beaconBlk)
