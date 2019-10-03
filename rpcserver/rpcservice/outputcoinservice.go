@@ -15,7 +15,7 @@ type CoinService struct {
 	BlockChain *blockchain.BlockChain
 }
 
-func (coinService CoinService) ListOutputCoinsByKeySet(keySet *incognitokey.KeySet, shardID byte) ([]*privacy.OutputCoin, error){
+func (coinService CoinService) ListOutputCoinsByKeySet(keySet *incognitokey.KeySet, shardID byte) ([]*privacy.OutputCoin, error) {
 	prvCoinID := &common.Hash{}
 	err := prvCoinID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
@@ -33,7 +33,7 @@ func (coinService CoinService) ListUnspentOutputCoinsByKey(listKeyParams []inter
 		keys := keyParam.(map[string]interface{})
 
 		// get keyset only contain pri-key by deserializing
-		if _, ok  := keys["PrivateKey"]; !ok{
+		if _, ok := keys["PrivateKey"]; !ok {
 			return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid private key"))
 		}
 		priKeyStr := keys["PrivateKey"].(string)
@@ -82,7 +82,10 @@ func (coinService CoinService) ListOutputCoinsByKey(listKeyParams []interface{},
 			return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid readonly key"))
 		}
 
-		readonlyKeyStr := keys["ReadonlyKey"].(string)
+		readonlyKeyStr, ok := keys["ReadonlyKey"].(string)
+		if !ok {
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid payment address"))
+		}
 		readonlyKey, err := wallet.Base58CheckDeserialize(readonlyKeyStr)
 		if err != nil {
 			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
@@ -93,7 +96,10 @@ func (coinService CoinService) ListOutputCoinsByKey(listKeyParams []interface{},
 		if _, ok := keys["PaymentAddress"]; !ok {
 			return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid payment address"))
 		}
-		pubKeyStr := keys["PaymentAddress"].(string)
+		pubKeyStr, ok := keys["PaymentAddress"].(string)
+		if !ok {
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid payment address"))
+		}
 		pubKey, err := wallet.Base58CheckDeserialize(pubKeyStr)
 		if err != nil {
 			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
