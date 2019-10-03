@@ -94,7 +94,7 @@ type Config struct {
 		ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey, consensusType string) error
 		GetCurrentMiningPublicKey() (string, string)
 		GetMiningPublicKeyByConsensus(consensusName string) (string, error)
-		GetUserRole() (string, int)
+		GetUserLayer() (string, int)
 		IsOngoing(chainName string) bool
 		CommitteeChange(chainName string)
 	}
