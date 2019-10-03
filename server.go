@@ -1241,7 +1241,7 @@ func (serverObj *Server) GetNodeRole() string {
 	if cfg.NodeMode == "relay" {
 		return "RELAY"
 	}
-	role, shardID := serverObj.consensusEngine.GetUserRole()
+	role, shardID := serverObj.consensusEngine.GetUserLayer()
 
 	switch shardID {
 	case -2:
@@ -1697,7 +1697,7 @@ func (serverObj *Server) BoardcastNodeState() error {
 	publicKeyInBase58CheckEncode, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
 	// signDataInBase58CheckEncode := common.EmptyString
 	if publicKeyInBase58CheckEncode != "" {
-		_, shardID := serverObj.consensusEngine.GetUserRole()
+		_, shardID := serverObj.consensusEngine.GetUserLayer()
 		if (cfg.NodeMode == common.NodeModeAuto || cfg.NodeMode == common.NodeModeShard) && shardID >= 0 {
 			msg.(*wire.MessagePeerState).CrossShardPool[byte(shardID)] = serverObj.crossShardPool[byte(shardID)].GetValidBlockHeight()
 		}
@@ -1740,7 +1740,7 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 	}
 	if cfg.MiningKeys != "" || cfg.PrivateKey != "" {
 		//Beacon: chain = -1
-		role, shardID := serverObj.consensusEngine.GetUserRole()
+		role, shardID := serverObj.consensusEngine.GetUserLayer()
 		if chain == -1 && shardID == -1 {
 			if cfg.NodeMode != common.NodeModeAuto && cfg.NodeMode != common.NodeModeBeacon {
 				return notmining
