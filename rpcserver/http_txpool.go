@@ -1,6 +1,9 @@
 package rpcserver
 
 import (
+	"errors"
+
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
@@ -71,8 +74,18 @@ func (httpServer *HttpServer) handleMempoolEntry(params interface{}, closeChan <
 // handleRemoveTxInMempool - try to remove tx from tx mempool
 func (httpServer *HttpServer) handleRemoveTxInMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	if params == nil {
-		params = ""
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param is invalid"))
 	}
-
-	return httpServer.txMemPoolService.RemoveTxInMempool(params.(string))
+	result := []bool{}
+	arrays := common.InterfaceSlice(params)
+	for _, txHashString := range arrays {
+		txHash, ok := txHashString.(string)
+		if ok {
+			t, _ := httpServer.txMemPoolService.RemoveTxInMempool(txHash)
+			result = append(result, t)
+		} else {
+			result = append(result, false)
+		}
+	}
+	return result, nil
 }
