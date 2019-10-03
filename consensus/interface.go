@@ -56,4 +56,5 @@ type BeaconInterface interface {
 	GetBeaconPendingList() []incognitokey.CommitteePublicKey
 	GetShardsPendingList() map[string]map[string][]incognitokey.CommitteePublicKey
 	GetShardsWaitingList() []incognitokey.CommitteePublicKey
+	GetBeaconWaitingList() []incognitokey.CommitteePublicKey
 }

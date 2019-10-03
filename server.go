@@ -1734,52 +1734,52 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 		ready     = "ready"
 		mining    = "mining"
 		pending   = "pending"
+		waiting   = "waiting"
 	)
 	if chain >= common.MaxShardNumber || chain < -1 {
 		return notmining
 	}
 	if cfg.MiningKeys != "" || cfg.PrivateKey != "" {
 		//Beacon: chain = -1
-		role, shardID := serverObj.consensusEngine.GetUserLayer()
-		if chain == -1 && shardID == -1 {
-			if cfg.NodeMode != common.NodeModeAuto && cfg.NodeMode != common.NodeModeBeacon {
-				return notmining
-			}
-			if serverObj.blockChain.Synker.IsLatest(false, 0) {
-				if serverObj.isEnableMining {
-					if role == common.ValidatorRole || role == common.ProposerRole {
-						return mining
-					}
-					if role == common.PendingRole {
-						return pending
-					}
+		layer, role, shardID := serverObj.consensusEngine.GetUserRole()
+
+		if shardID == -2 {
+			return notmining
+		}
+		if chain != -1 && layer == common.BeaconRole {
+			return notmining
+		}
+
+		switch layer {
+		case common.BeaconRole:
+			switch role {
+			case common.CommitteeRole:
+				if serverObj.blockChain.Synker.IsLatest(false, 0) {
+					return mining
 				}
-				return ready
+				return syncing
+			case common.PendingRole:
+				return pending
+			case common.WaitingRole:
+				return waiting
 			}
-			return syncing
-		} else {
-			if shardID == -2 {
+		case common.ShardRole:
+			if chain != shardID {
 				return notmining
 			}
-			if cfg.NodeMode != common.NodeModeAuto && cfg.NodeMode != common.NodeModeShard {
-				return notmining
-			}
-			currentSynsShards := serverObj.blockChain.Synker.GetCurrentSyncShards()
-			if common.IndexOfByte(byte(chain), currentSynsShards) == -1 {
-				return notmining
-			}
-			if serverObj.blockChain.Synker.IsLatest(true, byte(chain)) {
-				if serverObj.isEnableMining && shardID == chain {
-					if role == common.ValidatorRole || role == common.ProposerRole {
-						return mining
-					}
-					if role == common.PendingRole {
-						return pending
-					}
+			switch role {
+			case common.CommitteeRole:
+				if serverObj.blockChain.Synker.IsLatest(true, byte(chain)) {
+					return mining
 				}
-				return ready
+				return syncing
+			case common.PendingRole:
+				return pending
+			case common.WaitingRole:
+				return waiting
 			}
-			return syncing
+		default:
+			return notmining
 		}
 
 	}
