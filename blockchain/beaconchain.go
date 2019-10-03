@@ -187,6 +187,16 @@ func (chain *BeaconChain) GetShardsWaitingList() []incognitokey.CommitteePublicK
 	result = append(result, chain.BestState.CandidateShardWaitingForCurrentRandom...)
 	return result
 }
+
+func (chain *BeaconChain) GetBeaconWaitingList() []incognitokey.CommitteePublicKey {
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
+	var result []incognitokey.CommitteePublicKey
+	result = append(result, chain.BestState.CandidateBeaconWaitingForNextRandom...)
+	result = append(result, chain.BestState.CandidateBeaconWaitingForCurrentRandom...)
+	return result
+}
+
 func (chain *BeaconChain) UnmarshalBlock(blockString []byte) (common.BlockInterface, error) {
 	var beaconBlk BeaconBlock
 	err := json.Unmarshal(blockString, &beaconBlk)
