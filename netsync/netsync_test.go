@@ -25,43 +25,11 @@ var (
 	consensus         = NewConsensus()
 	shardToBeaconPool = mempool.GetShardToBeaconPool()
 	crossShardPool    = make(map[byte]blockchain.CrossShardPool)
-	msgBFTPropose     = &wire.MessageBFTPropose{
-		Layer:      "shard",
-		ShardID:    0,
-		Block:      []byte{123, 34, 65, 103, 103, 114, 101, 103, 97, 116, 101, 100, 83, 105, 103, 34, 58, 34, 34, 44, 34, 82, 34, 58, 34, 34, 44, 34, 86, 97, 108, 105, 100, 97, 116, 111, 114, 115, 73, 100, 120, 34, 58, 110, 117, 108, 108, 44, 34, 80, 114, 111, 100, 117, 99, 101, 114, 83, 105, 103, 34, 58, 34, 49, 66, 52, 110, 54, 54, 99, 65, 119, 109, 80, 55, 106, 50, 68, 65, 88, 101, 57, 57, 101, 122, 100, 82, 80, 87, 85, 115, 56, 77, 65, 106, 104, 115, 71, 109, 100, 75, 77, 101, 112, 80, 106, 74, 82, 115, 82, 84, 114, 102, 67, 82, 85, 75, 84, 99, 68, 118, 99, 74, 77, 106, 120, 90, 52, 115, 100, 83, 85, 90, 67, 69, 101, 49, 102, 68, 120, 75, 115, 66, 88, 85, 56, 98, 97, 53, 98, 122, 49, 49, 52, 90, 85, 119, 34, 44, 34, 66, 111, 100, 121, 34, 58, 123, 34, 73, 110, 115, 116, 114, 117, 99, 116, 105, 111, 110, 115, 34, 58, 91, 93, 44, 34, 67, 114, 111, 115, 115, 84, 114, 97, 110, 115, 97, 99, 116, 105, 111, 110, 115, 34, 58, 123, 125, 44, 34, 84, 114, 97, 110, 115, 97, 99, 116, 105, 111, 110, 115, 34, 58, 91, 93, 125, 44, 34, 72, 101, 97, 100, 101, 114, 34, 58, 123, 34, 80, 114, 111, 100, 117, 99, 101, 114, 65, 100, 100, 114, 101, 115, 115, 34, 58, 123, 34, 80, 107, 34, 58, 34, 65, 53, 90, 117, 78, 52, 97, 116, 66, 110, 105, 70, 89, 97, 52, 120, 117, 122, 48, 66, 53, 101, 103, 47, 70, 80, 51, 105, 68, 77, 108, 57, 55, 101, 90, 43, 55, 97, 90, 73, 48, 106, 115, 65, 34, 44, 34, 84, 107, 34, 58, 34, 65, 116, 54, 98, 72, 84, 100, 47, 107, 83, 67, 57, 78, 47, 78, 116, 78, 118, 70, 108, 67, 89, 47, 116, 47, 82, 90, 118, 119, 85, 108, 113, 112, 98, 52, 90, 43, 102, 77, 105, 101, 70, 74, 66, 34, 125, 44, 34, 83, 104, 97, 114, 100, 73, 68, 34, 58, 48, 44, 34, 86, 101, 114, 115, 105, 111, 110, 34, 58, 49, 44, 34, 80, 114, 101, 118, 66, 108, 111, 99, 107, 72, 97, 115, 104, 34, 58, 34, 102, 55, 55, 55, 51, 55, 102, 100, 49, 51, 57, 98, 56, 56, 99, 100, 98, 99, 57, 102, 52, 52, 48, 102, 101, 57, 52, 50, 97, 101, 102, 54, 48, 50, 56, 99, 56, 51, 57, 54, 51, 97, 100, 50, 50, 100, 54, 101, 55, 57, 99, 51, 53, 97, 101, 101, 98, 49, 102, 98, 51, 55, 56, 49, 34, 44, 34, 72, 101, 105, 103, 104, 116, 34, 58, 49, 51, 52, 50, 44, 34, 82, 111, 117, 110, 100, 34, 58, 50, 44, 34, 69, 112, 111, 99, 104, 34, 58, 57, 48, 44, 34, 84, 105, 109, 101, 115, 116, 97, 109, 112, 34, 58, 49, 53, 54, 49, 55, 51, 51, 52, 57, 55, 44, 34, 84, 120, 82, 111, 111, 116, 34, 58, 34, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 34, 44, 34, 83, 104, 97, 114, 100, 84, 120, 82, 111, 111, 116, 34, 58, 34, 50, 54, 101, 55, 100, 50, 49, 102, 98, 54, 100, 102, 102, 101, 53, 57, 56, 97, 97, 57, 49, 101, 55, 56, 48, 57, 57, 53, 56, 56, 53, 100, 97, 101, 56, 50, 49, 50, 97, 97, 99, 57, 56, 51, 57, 52, 102, 98, 57, 56, 52, 50, 99, 99, 55, 97, 98, 54, 52, 102, 48, 53, 52, 51, 34, 44, 34, 67, 114, 111, 115, 115, 84, 114, 97, 110, 115, 97, 99, 116, 105, 111, 110, 82, 111, 111, 116, 34, 58, 34, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 34, 44, 34, 73, 110, 115, 116, 114, 117, 99, 116, 105, 111, 110, 115, 82, 111, 111, 116, 34, 58, 34, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 34, 44, 34, 67, 111, 109, 109, 105, 116, 116, 101, 101, 82, 111, 111, 116, 34, 58, 34, 102, 49, 57, 51, 101, 53, 102, 51, 101, 53, 98, 57, 97, 97, 100, 52, 57, 57, 49, 101, 48, 53, 101, 99, 50, 52, 51, 101, 56, 50, 49, 54, 54, 52, 99, 98, 53, 102, 53, 101, 102, 54, 53, 49, 101, 49, 99, 49, 55, 98, 55, 48, 101, 54, 101, 99, 101, 48, 98, 51, 102, 54, 48, 102, 34, 44, 34, 80, 101, 110, 100, 105, 110, 103, 86, 97, 108, 105, 100, 97, 116, 111, 114, 82, 111, 111, 116, 34, 58, 34, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 34, 44, 34, 67, 114, 111, 115, 115, 83, 104, 97, 114, 100, 115, 34, 58, 34, 34, 44, 34, 66, 101, 97, 99, 111, 110, 72, 101, 105, 103, 104, 116, 34, 58, 52, 52, 56, 57, 44, 34, 66, 101, 97, 99, 111, 110, 72, 97, 115, 104, 34, 58, 34, 49, 57, 52, 51, 52, 100, 53, 50, 101, 55, 98, 99, 102, 101, 98, 99, 101, 50, 57, 57, 57, 56, 49, 48, 56, 101, 50, 57, 102, 50, 50, 102, 98, 49, 53, 52, 48, 100, 101, 102, 54, 49, 52, 51, 54, 102, 101, 101, 50, 55, 49, 101, 98, 56, 56, 51, 48, 56, 97, 101, 101, 48, 49, 51, 34, 44, 34, 84, 111, 116, 97, 108, 84, 120, 115, 70, 101, 101, 34, 58, 123, 125, 125, 125},
-		ContentSig: "1PzyQea5pRRjfLkEK8W3oNGbXSGH3SWYrXFPYvHsnLtcs6Fmdpne5fuiz4SfatzDpqLZZFuLc5Sr2oSLsan6rhYYjFfZj6",
-		Pubkey:     "17yV5NTyFPm73sHa7tK3mdKbMJmVavdrvZzhCynAexcg81BYfQe",
-		Timestamp:  1561733497,
-	}
-	//{BlkHash:dfa89f9a1d93bef29935b79c4f480da1d0bbe7f81713d338c774051bef3aa240 Ri:[3 69 69 47 30 22 85 174 141 181 207 120 94 218 195 112 26 182 133 60 106 134 232 55 197 41 114 91 210 246 71 119 236] Pubkey:17tN32moCx4QdmV9n9suPxqSCvrQPnujVNgvjwvFrKPTUU4r6rj ContentSig:1VuJx44CHUavQKPCktJxiHH89o31ih3HA7XCuCZN5hNQVje48BXcsrBvZzMEXcuwhovqAtKVTAC2mFhXHSxmcrXaZRDTcd Timestamp:1561733497}
-	msgBFTAgree = &wire.MessageBFTAgree{
-		Ri:         []byte{3, 69, 69, 47, 30, 22, 85, 174, 141, 181, 207, 120, 94, 218, 195, 112, 26, 182, 133, 60, 106, 134, 232, 55, 197, 41, 114, 91, 210, 246, 71, 119, 236},
-		Pubkey:     "17tN32moCx4QdmV9n9suPxqSCvrQPnujVNgvjwvFrKPTUU4r6rj",
-		ContentSig: "1VuJx44CHUavQKPCktJxiHH89o31ih3HA7XCuCZN5hNQVje48BXcsrBvZzMEXcuwhovqAtKVTAC2mFhXHSxmcrXaZRDTcd",
-		Timestamp:  1561733497,
-	}
-	// &{BestStateHash:8289d23a4d2b7bd9df1821f9074901f252fda8cae44b53a8ec91cf5863400078 Round:1 Pubkey:17tN32moCx4QdmV9n9suPxqSCvrQPnujVNgvjwvFrKPTUU4r6rj ContentSig:1UMCTHhncrgK54Uyh1q5s5A5jxKegrMkB3e7rhisv8P6VZ1CD4cE5AhrtJ8XB3zUt9wjNkFCoN2Z7oXMMgRwWBsAVfcxjQ Timestamp:1561733485}
-	msgBFTReady = &wire.MessageBFTReady{
-		Round:      1,
-		Pubkey:     "17tN32moCx4QdmV9n9suPxqSCvrQPnujVNgvjwvFrKPTUU4r6rj",
-		ContentSig: "1UMCTHhncrgK54Uyh1q5s5A5jxKegrMkB3e7rhisv8P6VZ1CD4cE5AhrtJ8XB3zUt9wjNkFCoN2Z7oXMMgRwWBsAVfcxjQ",
-		Timestamp:  1561733485,
-	}
-	// &{BestStateHash:8289d23a4d2b7bd9df1821f9074901f252fda8cae44b53a8ec91cf5863400078 Round:1 Pubkey:17tN32moCx4QdmV9n9suPxqSCvrQPnujVNgvjwvFrKPTUU4r6rj ContentSig:1UMCTHhncrgK54Uyh1q5s5A5jxKegrMkB3e7rhisv8P6VZ1CD4cE5AhrtJ8XB3zUt9wjNkFCoN2Z7oXMMgRwWBsAVfcxjQ Timestamp:1561733485}
-	msgBFTReq = &wire.MessageBFTReq{
-		Round:      1,
-		Pubkey:     "17tN32moCx4QdmV9n9suPxqSCvrQPnujVNgvjwvFrKPTUU4r6rj",
-		ContentSig: "1UMCTHhncrgK54Uyh1q5s5A5jxKegrMkB3e7rhisv8P6VZ1CD4cE5AhrtJ8XB3zUt9wjNkFCoN2Z7oXMMgRwWBsAVfcxjQ",
-		Timestamp:  1561733485,
-	}
-	// &{CommitSig:12GuGZd6TRq6XiqZdewNmAaAdonQhJEXcno7BMKKwk48xxhYNu9FzqzrLd6ypykHyNJuQeTrKNM7gyB34gpDfrwXeaQWDYs R:15urAahVkbs1hK91CQKLnzmt6xx6Fb1rS82gdoy2xZjaxQ9hXo7 ValidatorsIndex:[0 1 2] Pubkey:17yV5NTyFPm73sHa7tK3mdKbMJmVavdrvZzhCynAexcg81BYfQe ContentSig:19J3wNPPdsn4HmWqLh5UAGnoc5AGkEb4y6Enz9iwuAkguLRUf3zcBVCGBMZgn7GtgBhXVic1cNVWC8p725LpKU7Tq1wPc9 Timestamp:1561733485}
-	msgBFTCommit = &wire.MessageBFTCommit{
-		CommitSig:     "12GuGZd6TRq6XiqZdewNmAaAdonQhJEXcno7BMKKwk48xxhYNu9FzqzrLd6ypykHyNJuQeTrKNM7gyB34gpDfrwXeaQWDYs",
-		R:             "15urAahVkbs1hK91CQKLnzmt6xx6Fb1rS82gdoy2xZjaxQ9hXo7",
-		ValidatorsIdx: []int{0, 1, 2},
-		Pubkey:        "17yV5NTyFPm73sHa7tK3mdKbMJmVavdrvZzhCynAexcg81BYfQe",
-		ContentSig:    "19J3wNPPdsn4HmWqLh5UAGnoc5AGkEb4y6Enz9iwuAkguLRUf3zcBVCGBMZgn7GtgBhXVic1cNVWC8p725LpKU7Tq1wPc9",
-		Timestamp:     1561733485,
+	msgPBFT           = &wire.MessageBFT{
+		Type:      "",
+		Content:   nil,
+		ChainKey:  "",
+		Timestamp: 0,
 	}
 	crossShardBlock    = blockchain.CrossShardBlock{}
 	shardToBeaconBlock = blockchain.ShardToBeaconBlock{}
@@ -216,13 +184,16 @@ var (
 )
 
 type Consensus struct {
-	ch chan interface{}
+	NumberOfPBFTMessage int
 }
 
 func NewConsensus() *Consensus {
 	return &Consensus{
-		ch: make(chan interface{}),
+		NumberOfPBFTMessage: 0,
 	}
+}
+func (consensus *Consensus) OnBFTMsg(*wire.MessageBFT) {
+	consensus.NumberOfPBFTMessage += 1
 }
 
 type Server struct{}
@@ -259,7 +230,6 @@ func TestNetSyncStart(t *testing.T) {
 		TxMemPool:     txPool,
 		Consensus:     consensus,
 	})
-	consensus.ch = make(chan interface{})
 	go pb.Start()
 	netSync.Start()
 	if netSync.started != 1 {
@@ -317,7 +287,7 @@ func TestNetSyncStop(t *testing.T) {
 		TxMemPool:     txPool,
 		Consensus:     consensus,
 	})
-	consensus.ch = make(chan interface{})
+
 	defer func() {
 		if r := recover(); r != nil {
 			t.Skipped()
@@ -345,7 +315,7 @@ func TestNetSyncHandleTxWithRole(t *testing.T) {
 		TxMemPool:     txPool,
 		Consensus:     consensus,
 	})
-	consensus.ch = make(chan interface{})
+
 	netSync.config.RoleInCommittees = 0
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckDataTx)
 	if err != nil {
@@ -373,7 +343,7 @@ func TestNetSyncHandleCacheTx(t *testing.T) {
 		TxMemPool:     txPool,
 		Consensus:     consensus,
 	})
-	consensus.ch = make(chan interface{})
+
 	hash := common.HashH([]byte{0})
 	res := netSync.handleCacheTx(hash)
 	if res {
@@ -394,7 +364,7 @@ func TestNetSyncHandleCacheTxHash(t *testing.T) {
 		TxMemPool:     txPool,
 		Consensus:     consensus,
 	})
-	consensus.ch = make(chan interface{})
+
 	hash := common.HashH([]byte{0})
 	netSync.handleCacheTx(hash)
 	res := netSync.handleCacheTx(hash)
@@ -412,7 +382,7 @@ func TestNetSyncHandleMessageTx(t *testing.T) {
 		TxMemPool:     txPool,
 		Consensus:     consensus,
 	})
-	consensus.ch = make(chan interface{})
+
 	netSync.config.RoleInCommittees = 0
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckDataTx)
 	if err != nil {
@@ -445,7 +415,7 @@ func TestNetSyncHandleMessageTxToken(t *testing.T) {
 		TxMemPool:     txPool,
 		Consensus:     consensus,
 	})
-	consensus.ch = make(chan interface{})
+
 	netSync.config.RoleInCommittees = 1
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckDataTxToken)
 	if err != nil {
@@ -479,7 +449,7 @@ func TestNetSyncHandleMessageTxPrivacyToken(t *testing.T) {
 		TxMemPool:     txPool,
 		Consensus:     consensus,
 	})
-	consensus.ch = make(chan interface{})
+
 	netSync.config.RoleInCommittees = 1
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckDataTxTokenPrivacy)
 	if err != nil {
@@ -508,7 +478,7 @@ func TestHandleCacheBlock(t *testing.T) {
 		TxMemPool:     txPool,
 		Consensus:     consensus,
 	})
-	consensus.ch = make(chan interface{})
+
 	hash := common.HashH([]byte{0})
 	res := netSync.handleCacheBlock(hash.String())
 	if res {
@@ -528,7 +498,7 @@ func TestNetSyncHandleMessageBeaconBlock(t *testing.T) {
 		TxMemPool:     txPool,
 		Consensus:     consensus,
 	})
-	consensus.ch = make(chan interface{})
+
 	block := blockchain.BeaconBlock{}
 	block.Header.Height = 2
 	netSync.Start()
@@ -550,7 +520,7 @@ func TestNetSyncHandleMessageShardBlock(t *testing.T) {
 		TxMemPool:     txPool,
 		Consensus:     consensus,
 	})
-	consensus.ch = make(chan interface{})
+
 	block := blockchain.ShardBlock{}
 	block.Header.Height = 2
 	netSync.Start()
@@ -572,7 +542,7 @@ func TestNetSyncHandleMessageShardToBeacon(t *testing.T) {
 		TxMemPool:     txPool,
 		Consensus:     consensus,
 	})
-	consensus.ch = make(chan interface{})
+
 	block := blockchain.ShardToBeaconBlock{}
 	block.Header.Height = 2
 	netSync.Start()
@@ -594,7 +564,7 @@ func TestNetSyncHandleMessageCrossShard(t *testing.T) {
 		TxMemPool:     txPool,
 		Consensus:     consensus,
 	})
-	consensus.ch = make(chan interface{})
+
 	block := blockchain.CrossShardBlock{}
 	block.Header.Height = 2
 	netSync.Start()
@@ -616,7 +586,7 @@ func TestNetSyncQueueTx(t *testing.T) {
 		TxMemPool:     txPool,
 		Consensus:     consensus,
 	})
-	consensus.ch = make(chan interface{})
+
 	netSync.config.RoleInCommittees = 0
 	pr := &peer.Peer{}
 	done := make(chan struct{})
@@ -663,7 +633,7 @@ func TestNetSyncQueueTxToken(t *testing.T) {
 		TxMemPool:     txPool,
 		Consensus:     consensus,
 	})
-	consensus.ch = make(chan interface{})
+
 	netSync.config.RoleInCommittees = 0
 	pr := &peer.Peer{}
 	done := make(chan struct{})
@@ -710,7 +680,7 @@ func TestNetSyncQueueTxPrivacyToken(t *testing.T) {
 		TxMemPool:     txPool,
 		Consensus:     consensus,
 	})
-	consensus.ch = make(chan interface{})
+
 	netSync.config.RoleInCommittees = 0
 	pr := &peer.Peer{}
 	done := make(chan struct{})
@@ -757,7 +727,7 @@ func TestNetSyncQueueBlock(t *testing.T) {
 		TxMemPool:     txPool,
 		Consensus:     consensus,
 	})
-	consensus.ch = make(chan interface{})
+
 	pr := &peer.Peer{}
 	done := make(chan struct{})
 	crossShardBlock.Header.Height = 2
@@ -849,7 +819,7 @@ func TestNetSyncQueueGetBlockShard(t *testing.T) {
 		TxMemPool:     txPool,
 		Consensus:     consensus,
 	})
-	consensus.ch = make(chan interface{})
+
 	pr := &peer.Peer{}
 	done := make(chan struct{})
 	// no start net sync
@@ -883,7 +853,7 @@ func TestNetSyncQueueGetBlockBeacon(t *testing.T) {
 		TxMemPool:     txPool,
 		Consensus:     consensus,
 	})
-	consensus.ch = make(chan interface{})
+
 	pr := &peer.Peer{}
 	done := make(chan struct{})
 	// no start net sync
@@ -919,7 +889,7 @@ func TestNetSyncHandleMessageGetShardToBeacon(t *testing.T) {
 		Consensus:         consensus,
 		ShardToBeaconPool: shardToBeaconPool,
 	})
-	consensus.ch = make(chan interface{})
+
 	// start netsyc
 	netSync.Start()
 	netSync.cMessage <- msgGetShardToBeacon
@@ -941,7 +911,7 @@ func TestNetSyncHandleMessageGetCrossShard(t *testing.T) {
 		Consensus:      consensus,
 		CrossShardPool: crossShardPool,
 	})
-	consensus.ch = make(chan interface{})
+
 	// start netsyc
 	netSync.Start()
 	netSync.cMessage <- msgGetCrossShard
@@ -962,7 +932,7 @@ func TestNetSyncQueueMessage(t *testing.T) {
 		TxMemPool:     txPool,
 		Consensus:     consensus,
 	})
-	consensus.ch = make(chan interface{})
+
 	pr := &peer.Peer{}
 	done := make(chan struct{})
 	// no start net sync
@@ -992,48 +962,6 @@ func TestNetSyncQueueMessage(t *testing.T) {
 	netSync.Stop()
 }
 
-func (consensus *Consensus) OnBFTMsg(msg wire.Message) {
-	switch msg.(type) {
-	case *wire.MessageBFTPropose:
-		consensus.ch <- msg.(*wire.MessageBFTPropose)
-		return
-	case *wire.MessageBFTAgree:
-		consensus.ch <- msg.(*wire.MessageBFTAgree)
-		return
-	case *wire.MessageBFTCommit:
-		consensus.ch <- msg.(*wire.MessageBFTCommit)
-		return
-	case *wire.MessageBFTReady:
-		consensus.ch <- msg.(*wire.MessageBFTReady)
-		return
-	case *wire.MessageBFTReq:
-		consensus.ch <- msg.(*wire.MessageBFTReq)
-		return
-	default:
-		consensus.ch <- msg
-		return
-	}
-}
-
-func TestNetSyncHandleMessageBFTMsgError(t *testing.T) {
-	netSync := NetSync{}
-	netSync.Init(&NetSyncConfig{
-		BlockChain:    bc,
-		PubSubManager: pb,
-		Server:        server,
-		TxMemPool:     txPool,
-		Consensus:     consensus,
-	})
-	consensus.ch = make(chan interface{})
-	netSync.Start()
-	// fail to verify sanity
-	go func() {
-		netSync.cMessage <- &wire.MessageBFTPropose{}
-	}()
-	<-time.Tick(1 * time.Second)
-	netSync.Stop()
-}
-
 func TestNetSyncHandleMessageBFTMsg(t *testing.T) {
 	netSync := NetSync{}
 	netSync.Init(&NetSyncConfig{
@@ -1043,137 +971,17 @@ func TestNetSyncHandleMessageBFTMsg(t *testing.T) {
 		TxMemPool:     txPool,
 		Consensus:     consensus,
 	})
-	consensus.ch = make(chan interface{})
-	go netSync.handleMessageBFTMsg(msgPing)
-	now := time.Now()
-out:
-	for {
-		select {
-		case temp := <-consensus.ch:
-			_, ok := temp.(*wire.MessagePing)
-			if !ok {
-				t.Fatal("Wrong Message Type")
-			} else {
-				break out
-			}
-		default:
-			if time.Since(now).Seconds() >= time.Duration(30*time.Second).Seconds() {
-				t.Fatal("Timeout")
-			}
-		}
-	}
+
 	netSync.Start()
+	// fail to verify sanity
 	go func() {
-		netSync.cMessage <- msgBFTPropose
+		netSync.cMessage <- &wire.MessageBFT{}
 	}()
 	<-time.Tick(1 * time.Second)
-	now = time.Now()
-out2:
-	for {
-		select {
-		case temp := <-consensus.ch:
-			_, ok := temp.(*wire.MessageBFTPropose)
-			if !ok {
-				t.Fatal("Wrong Message Type, should be MessageBFTPropose")
-			} else {
-				break out2
-			}
-		default:
-			if time.Since(now).Seconds() >= time.Duration(30*time.Second).Seconds() {
-				t.Fatal("Timeout")
-			}
-		}
+	if consensus.NumberOfPBFTMessage != 1 {
+		t.Fatalf("Expect to receive only 1 BPFT message")
 	}
-	go func() {
-		hash, _ := common.Hash{}.NewHashFromStr("dfa89f9a1d93bef29935b79c4f480da1d0bbe7f81713d338c774051bef3aa240")
-		msgBFTAgree.BlkHash = *hash
-		netSync.cMessage <- msgBFTAgree
-	}()
-	<-time.Tick(1 * time.Second)
-	now = time.Now()
-out3:
-	for {
-		select {
-		case temp := <-consensus.ch:
-			_, ok := temp.(*wire.MessageBFTAgree)
-			if !ok {
-				t.Fatal("Wrong Message Type, should be MessageBFTAgree")
-			} else {
-				break out3
-			}
-		default:
-			if time.Since(now).Seconds() >= time.Duration(30*time.Second).Seconds() {
-				t.Fatal("Timeout")
-			}
-		}
-	}
-out4:
-	for {
-		go func() {
-			netSync.cMessage <- msgBFTCommit
-		}()
-		<-time.Tick(1 * time.Second)
-		now = time.Now()
-		select {
-		case temp := <-consensus.ch:
-			_, ok := temp.(*wire.MessageBFTCommit)
-			if !ok {
-				t.Fatal("Wrong Message Type, should be MessageBFTCommit")
-			} else {
-				break out4
-			}
-		default:
-			if time.Since(now).Seconds() >= time.Duration(30*time.Second).Seconds() {
-				t.Fatal("Timeout")
-			}
-		}
-	}
-	go func() {
-		hash, _ := common.Hash{}.NewHashFromStr("8289d23a4d2b7bd9df1821f9074901f252fda8cae44b53a8ec91cf5863400078")
-		msgBFTReady.BestStateHash = *hash
-		netSync.cMessage <- msgBFTReady
-	}()
-	<-time.Tick(1 * time.Second)
-	now = time.Now()
-out5:
-	for {
-		select {
-		case temp := <-consensus.ch:
-			_, ok := temp.(*wire.MessageBFTReady)
-			if !ok {
-				t.Fatal("Wrong Message Type, should be MessageBFTReady")
-			} else {
-				break out5
-			}
-		default:
-			if time.Since(now).Seconds() >= time.Duration(30*time.Second).Seconds() {
-				t.Fatal("Timeout")
-			}
-		}
-	}
-	go func() {
-		hash, _ := common.Hash{}.NewHashFromStr("8289d23a4d2b7bd9df1821f9074901f252fda8cae44b53a8ec91cf5863400078")
-		msgBFTReq.BestStateHash = *hash
-		netSync.cMessage <- msgBFTReq
-	}()
-	<-time.Tick(1 * time.Second)
-	now = time.Now()
-out6:
-	for {
-		select {
-		case temp := <-consensus.ch:
-			_, ok := temp.(*wire.MessageBFTReq)
-			if !ok {
-				t.Fatal("Wrong Message Type, should be MessageBFTReq")
-			} else {
-				break out6
-			}
-		default:
-			if time.Since(now).Seconds() >= time.Duration(30*time.Second).Seconds() {
-				t.Fatal("Timeout")
-			}
-		}
-	}
+	netSync.Stop()
 }
 
 func TestHandleMessagePeerState(t *testing.T) {
@@ -1185,7 +993,7 @@ func TestHandleMessagePeerState(t *testing.T) {
 		TxMemPool:     txPool,
 		Consensus:     consensus,
 	})
-	consensus.ch = make(chan interface{})
+
 	netSync.Start()
 	netSync.cMessage <- msgPeerState
 	<-time.Tick(1 * time.Second)
