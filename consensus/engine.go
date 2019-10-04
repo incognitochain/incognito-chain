@@ -31,12 +31,6 @@ type Engine struct {
 		Keys       *incognitokey.CommitteePublicKey
 		KeysBase58 map[string]string
 	}
-	// currentChainsCommittee struct {
-	// 	BeaconCommittee []string
-	// 	ShardsCommittee map[string]map[byte][]string
-	// 	ShardsPending   map[string]map[byte][]string
-	// 	ShardsWaiting   []string
-	// }
 	chainCommitteeChange chan string
 	config               *EngineConfig
 }
