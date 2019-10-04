@@ -11,35 +11,28 @@ type GetMiningInfoResult struct {
 	CurrentShardBlockTx int    `json:"CurrentShardBlockTx"`
 	PoolSize            int    `json:"PoolSize"`
 	Chain               string `json:"Chain"`
-	IsCommittee         bool   `json:"IsCommittee"`
 	ShardID             int    `json:"ShardID"`
+	Layer               string `json:"Layer"`
 	Role                string `json:"Role"`
 	MiningPublickey     string `json:"MiningPublickey"`
 	IsEnableMining      bool   `json:"IsEnableMining"`
 }
 
-func NewGetMiningInfoResult(txMemPool mempool.TxPool, blChain blockchain.BlockChain, consensus interface{ GetUserLayer() (string, int) }, param blockchain.Params, isEnableMining bool) *GetMiningInfoResult {
+func NewGetMiningInfoResult(txMemPool mempool.TxPool, blChain blockchain.BlockChain, consensus interface{ GetUserRole() (string, string, int) }, param blockchain.Params, isEnableMining bool) *GetMiningInfoResult {
 	result := &GetMiningInfoResult{}
-	result.IsCommittee = true
 	result.PoolSize = txMemPool.Count()
 	result.Chain = param.Name
 	result.IsEnableMining = isEnableMining
 	result.BeaconHeight = blChain.BestState.Beacon.BeaconHeight
 
 	// role, shardID := httpServer.config.BlockChain.BestState.Beacon.GetPubkeyRole(httpServer.config.MiningPubKeyB58, 0)
-	role, shardID := consensus.GetUserLayer()
+	layer, role, shardID := consensus.GetUserRole()
 	result.Role = role
-
-	switch shardID {
-	case -2:
-		result.ShardID = -2
-		result.IsCommittee = false
-	case -1:
-		result.IsCommittee = true
-	default:
+	result.Layer = layer
+	result.ShardID = shardID
+	if shardID >= 0 {
 		result.ShardHeight = blChain.BestState.Shard[byte(shardID)].ShardHeight
 		result.CurrentShardBlockTx = len(blChain.BestState.Shard[byte(shardID)].BestBlock.Body.Transactions)
-		result.ShardID = shardID
 	}
 
 	return result
