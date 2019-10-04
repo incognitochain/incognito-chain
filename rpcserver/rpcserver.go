@@ -85,6 +85,7 @@ type RpcServerConfig struct {
 	}
 	ConsensusEngine interface {
 		GetUserLayer() (string, int)
+		GetUserRole() (string, string, int)
 		GetCurrentMiningPublicKey() (publickey string, keyType string)
 		GetAllMiningPublicKeys() []string
 		ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error)

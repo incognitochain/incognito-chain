@@ -183,7 +183,9 @@ func (engine *Engine) watchConsensusCommittee() {
 								userRole = common.CommitteeRole
 							}
 							engine.updateUserState(&userMiningKey, userLayer, userRole, shardID)
-							continue
+							engine.config.Node.DropAllConnections()
+							engine.updateConsensusState()
+							break
 						}
 					}
 				}

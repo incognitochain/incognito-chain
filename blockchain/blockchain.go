@@ -95,6 +95,7 @@ type Config struct {
 		GetCurrentMiningPublicKey() (string, string)
 		GetMiningPublicKeyByConsensus(consensusName string) (string, error)
 		GetUserLayer() (string, int)
+		GetUserRole() (string, string, int)
 		IsOngoing(chainName string) bool
 		CommitteeChange(chainName string)
 	}
