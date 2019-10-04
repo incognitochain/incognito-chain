@@ -506,10 +506,10 @@ func (connManager *ConnManager) countPeerConnOfShard(shard *byte) int {
 		// 	metrics.TagValue:         connManager.config.ExternalAddress})
 		// fmt.Println("COUNT: all peer", len(allPeers))
 		for _, peerConn := range allPeers {
-			fmt.Println("COUNT: start get")
+			//fmt.Println("COUNT: start get")
 			pk, _ := peerConn.GetRemotePeer().GetPublicKey()
 			sh := connManager.getShardOfPublicKey(pk)
-			fmt.Println("COUNT: finish get")
+			//fmt.Println("COUNT: finish get")
 			if (shard == nil && sh == nil) || (sh != nil && shard != nil && *sh == *shard) {
 				count++
 			}
