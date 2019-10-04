@@ -227,10 +227,9 @@ func (synker *Synker) stopSyncUnnecessaryShard() {
 
 func (synker *Synker) stopSyncShard(shardID byte) error {
 	if synker.blockchain.config.NodeMode == common.NodeModeAuto || synker.blockchain.config.NodeMode == common.NodeModeShard {
-		userMiningKey, _ := synker.blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
-		if userMiningKey != "" {
-			userRole, userShardID := synker.blockchain.BestState.Beacon.GetPubkeyRole(userMiningKey, 0)
-			if userRole == common.ShardRole && shardID == userShardID {
+		_, _, userShardIDInt := synker.blockchain.config.ConsensusEngine.GetUserRole()
+		if userShardIDInt >= 0 {
+			if byte(userShardIDInt) == shardID {
 				return errors.New("Shard " + fmt.Sprintf("%d", shardID) + " synchronzation can't be stopped")
 			}
 		}
@@ -267,18 +266,19 @@ func (synker *Synker) UpdateState() {
 	}
 	var (
 		userRole       string
-		userShardID    byte
+		userLayer      string
 		userShardRole  string
 		userShardIDInt int
 	)
 	userKeyForCheckRole, _ := synker.blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
 	if userKeyForCheckRole != "" {
-		userRole, userShardIDInt = synker.blockchain.config.ConsensusEngine.GetUserLayer()
-		if userRole == common.ShardRole {
-			userShardID = byte(userShardIDInt)
+		userLayer, userRole, userShardIDInt = synker.blockchain.config.ConsensusEngine.GetUserRole()
+		if userLayer == common.ShardRole && userRole != common.WaitingRole {
+			// userShardID = byte(userShardIDInt)
+			synker.syncShard(byte(userShardIDInt))
+			userShardRole = synker.blockchain.BestState.Shard[byte(userShardIDInt)].GetPubkeyRole(userKeyForCheckRole, synker.blockchain.BestState.Shard[byte(userShardIDInt)].BestBlock.Header.Round)
 		}
-		synker.syncShard(userShardID)
-		userShardRole = synker.blockchain.BestState.Shard[userShardID].GetPubkeyRole(userKeyForCheckRole, synker.blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
+
 	}
 	synker.stopSyncUnnecessaryShard()
 
@@ -290,8 +290,10 @@ func (synker *Synker) UpdateState() {
 	for k, v := range synker.blockchain.config.ShardToBeaconPool.GetLatestValidPendingBlockHeight() {
 		synker.States.ClosestState.ShardToBeaconPool.Store(k, v)
 	}
-	for k, v := range synker.blockchain.config.CrossShardPool[userShardID].GetLatestValidBlockHeight() {
-		synker.States.ClosestState.CrossShardPool.Store(k, v)
+	if userShardIDInt >= 0 {
+		for k, v := range synker.blockchain.config.CrossShardPool[byte(userShardIDInt)].GetLatestValidBlockHeight() {
+			synker.States.ClosestState.CrossShardPool.Store(k, v)
+		}
 	}
 
 	RCS := reportedChainState{
@@ -350,9 +352,9 @@ func (synker *Synker) UpdateState() {
 		}
 
 		// record pool state
-		switch userRole {
-		case common.ProposerRole, common.ValidatorRole:
-			if synker.blockchain.config.NodeMode == common.NodeModeAuto || synker.blockchain.config.NodeMode == common.NodeModeBeacon {
+		switch userLayer {
+		case common.BeaconRole:
+			if (synker.blockchain.config.NodeMode == common.NodeModeAuto || synker.blockchain.config.NodeMode == common.NodeModeBeacon) && userRole == common.CommitteeRole {
 				//fmt.Println("SYN: s2b", peerState.ShardToBeaconPool)
 				if peerState.ShardToBeaconPool != nil {
 					for shardID, blkHeights := range *peerState.ShardToBeaconPool {
@@ -397,7 +399,7 @@ func (synker *Synker) UpdateState() {
 			}
 		case common.ShardRole:
 			if (synker.blockchain.config.NodeMode == common.NodeModeAuto || synker.blockchain.config.NodeMode == common.NodeModeShard) && (userShardRole == common.ProposerRole || userShardRole == common.ValidatorRole) {
-				if pool, ok := peerState.CrossShardPool[userShardID]; ok {
+				if pool, ok := peerState.CrossShardPool[byte(userShardIDInt)]; ok {
 					for shardID, blkHeights := range *pool {
 						if _, ok := RCS.CrossShardBlks[shardID]; !ok {
 							RCS.CrossShardBlks[shardID] = make(map[libp2p.ID][]uint64)
@@ -438,22 +440,22 @@ func (synker *Synker) UpdateState() {
 		}
 
 		if userRole == common.ShardRole && RCS.ClosestBeaconState.Height-1 <= beaconStateClone.BeaconHeight {
-			if RCS.ClosestShardsState[userShardID].Height == GetBestStateShard(userShardID).ShardHeight && RCS.ClosestShardsState[userShardID].Height >= GetBeaconBestState().GetBestHeightOfShard(userShardID) {
+			if RCS.ClosestShardsState[byte(userShardIDInt)].Height == GetBestStateShard(byte(userShardIDInt)).ShardHeight && RCS.ClosestShardsState[byte(userShardIDInt)].Height >= GetBeaconBestState().GetBestHeightOfShard(byte(userShardIDInt)) {
 				synker.SetChainState(false, 0, true)
-				synker.SetChainState(true, userShardID, true)
+				synker.SetChainState(true, byte(userShardIDInt), true)
 			} else {
-				fmt.Println("shard not ready", RCS.ClosestShardsState[userShardID].Height)
+				fmt.Println("shard not ready", RCS.ClosestShardsState[byte(userShardIDInt)].Height)
 				synker.SetChainState(false, 0, false)
-				synker.SetChainState(true, userShardID, false)
+				synker.SetChainState(true, byte(userShardIDInt), false)
 			}
 		}
 	}
 
 	// sync ShardToBeacon & CrossShard pool
 	if synker.IsLatest(false, 0) {
-		switch userRole {
-		case common.ProposerRole, common.ValidatorRole:
-			if synker.blockchain.config.NodeMode == common.NodeModeAuto || synker.blockchain.config.NodeMode == common.NodeModeBeacon {
+		switch userLayer {
+		case common.BeaconRole:
+			if (synker.blockchain.config.NodeMode == common.NodeModeAuto || synker.blockchain.config.NodeMode == common.NodeModeBeacon) && userRole == common.CommitteeRole {
 				for shardID, peer := range RCS.ShardToBeaconBlks {
 					for peerID, blks := range peer {
 						synker.SyncBlkShardToBeacon(shardID, false, true, true, nil, blks, 0, 0, peerID)
@@ -477,10 +479,10 @@ func (synker *Synker) UpdateState() {
 			}
 		case common.ShardRole:
 			if (synker.blockchain.config.NodeMode == common.NodeModeAuto || synker.blockchain.config.NodeMode == common.NodeModeShard) && (userShardRole == common.ProposerRole || userShardRole == common.ValidatorRole) {
-				if synker.IsLatest(true, userShardID) {
+				if synker.IsLatest(true, byte(userShardIDInt)) {
 					for shardID, peer := range RCS.CrossShardBlks {
 						for peerID, blks := range peer {
-							synker.SyncBlkCrossShard(true, false, nil, blks, shardID, userShardID, peerID)
+							synker.SyncBlkCrossShard(true, false, nil, blks, shardID, byte(userShardIDInt), peerID)
 						}
 					}
 				}
@@ -531,11 +533,6 @@ func (synker *Synker) UpdateState() {
 			}
 		}
 	}
-	userLayer := userRole
-	switch userRole {
-	case common.ValidatorRole, common.ProposerRole:
-		userLayer = common.BeaconRole
-	}
 	//TODO hy Get Committee LightWeightPublicKey ExtractMiningPublickeysFromCommitteeKeyList
 	// beaconCommittee, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconStateClone.BeaconCommittee, beaconStateClone.ConsensusAlgorithm)
 	// shardCommittee := make(map[byte][]string)
@@ -554,23 +551,24 @@ func (synker *Synker) UpdateState() {
 		synker.States.Unlock()
 		panic(err)
 	}
-	if userRole == common.ShardRole {
-		synker.blockchain.config.Server.UpdateConsensusState(userLayer, userMiningKey, &userShardID, beaconCommittee, shardCommittee)
+	if userLayer == common.ShardRole {
+		shardID := byte(userShardIDInt)
+		synker.blockchain.config.Server.UpdateConsensusState(userLayer, userMiningKey, &shardID, beaconCommittee, shardCommittee)
 	} else {
 		synker.blockchain.config.Server.UpdateConsensusState(userLayer, userMiningKey, nil, beaconCommittee, shardCommittee)
 	}
 
-	if userLayer == common.ShardRole {
+	if userLayer == common.ShardRole && (userShardRole == common.ProposerRole || userShardRole == common.ValidatorRole) {
 		for shardID, shard := range synker.blockchain.BestState.Beacon.LastCrossShardState {
-			height, ok := shard[userShardID]
+			height, ok := shard[byte(userShardIDInt)]
 			if !ok {
 				continue
 			}
-			if height > synker.blockchain.BestState.Shard[userShardID].BestCrossShard[shardID] {
+			if height > synker.blockchain.BestState.Shard[byte(userShardIDInt)].BestCrossShard[shardID] {
 				for peerID := range synker.States.PeersState {
 					if shardState, ok := synker.States.PeersState[peerID].Shard[shardID]; ok {
 						if shardState.Height >= height {
-							synker.SyncBlkCrossShard(false, false, nil, []uint64{height}, shardID, userShardID, peerID)
+							synker.SyncBlkCrossShard(false, false, nil, []uint64{height}, shardID, byte(userShardIDInt), peerID)
 							break
 						}
 					}
