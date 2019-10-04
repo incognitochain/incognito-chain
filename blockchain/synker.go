@@ -430,7 +430,7 @@ func (synker *Synker) UpdateState() {
 	}
 
 	if len(synker.States.PeersState) > 0 {
-		if userRole != common.ShardRole {
+		if userLayer != common.ShardRole {
 			if RCS.ClosestBeaconState.Height == beaconStateClone.BeaconHeight {
 				synker.SetChainState(false, 0, true)
 			} else {
@@ -439,7 +439,7 @@ func (synker *Synker) UpdateState() {
 			}
 		}
 
-		if userRole == common.ShardRole && RCS.ClosestBeaconState.Height-1 <= beaconStateClone.BeaconHeight {
+		if userLayer == common.ShardRole && RCS.ClosestBeaconState.Height-1 <= beaconStateClone.BeaconHeight {
 			if RCS.ClosestShardsState[byte(userShardIDInt)].Height == GetBestStateShard(byte(userShardIDInt)).ShardHeight && RCS.ClosestShardsState[byte(userShardIDInt)].Height >= GetBeaconBestState().GetBestHeightOfShard(byte(userShardIDInt)) {
 				synker.SetChainState(false, 0, true)
 				synker.SetChainState(true, byte(userShardIDInt), true)
