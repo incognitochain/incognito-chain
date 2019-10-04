@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,7 +13,6 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -537,7 +537,8 @@ func (tx Tx) String() string {
 	record += strconv.FormatInt(tx.LockTime, 10)
 	record += strconv.FormatUint(tx.Fee, 10)
 	if tx.Proof != nil {
-		tmp := base58.Base58Check{}.Encode(tx.Proof.Bytes()[:], 0x00)
+		tmp := base64.StdEncoding.EncodeToString(tx.Proof.Bytes())
+		//tmp := base58.Base58Check{}.Encode(tx.Proof.Bytes(), 0x00)
 		record += tmp
 		// fmt.Printf("Proof check base 58: %v\n",tmp)
 	}
