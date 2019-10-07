@@ -18,17 +18,17 @@ const (
 	DefaultMaxBlkReqPerPeer      = 600
 	DefaultMaxBlkReqPerTime      = 1200
 	MinCommitteeSize             = 3                // min size to run bft
-	DefaultBroadcastStateTime    = 2 * time.Second  // in second
-	DefaultStateUpdateTime       = 3 * time.Second  // in second
+	DefaultBroadcastStateTime    = 6 * time.Second  // in second
+	DefaultStateUpdateTime       = 8 * time.Second  // in second
 	DefaultMaxBlockSyncTime      = 1 * time.Second  // in second
 	DefaultCacheCleanupTime      = 30 * time.Second // in second
 	WorkerNumber                 = 5
 	MAX_S2B_BLOCK                = 5
 	MAX_BEACON_BLOCK             = 5
 	DurationHalfLifeRewardForDev = uint64(31536000) // 5 years, after 5 year, reward for devs = 0
-	GetValidBlock                = 10
-	CheckForce                   = true
-	GenesisBlockTime             = "2019-09-24T00:00:00.000Z"
+	GetValidBlock                = 20
+	GenesisBlockTime             = "2019-10-01T00:00:00.000Z"
+	TestRandom                   = false
 )
 
 // CONSTANT for network MAINNET
@@ -39,21 +39,26 @@ const (
 	MainnetDefaultPort = "9333"
 	MainnetEpoch       = 30000
 	MainnetRandomTime  = 15000
+	MainnetOffset      = 10
+	MainnetSwapOffset  = 2
 
 	MainNetShardCommitteeSize  = 3
 	MainNetBeaconCommitteeSize = 3
 	MainNetActiveShards        = 2
 	MainNetStakingAmountShard  = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
-	MainNetMinBeaconBlkInterval = 10 * time.Second //second
-	MainNetMaxBeaconBlkCreation = 8 * time.Second  //second
-	MainNetMinShardBlkInterval  = 10 * time.Second //second
-	MainNetMaxShardBlkCreation  = 4 * time.Second  //second
+	MainnetMinBeaconBlkInterval = 10 * time.Second //second
+	MainnetMaxBeaconBlkCreation = 8 * time.Second  //second
+	MainnetMinShardBlkInterval  = 10 * time.Second //second
+	MainnetMaxShardBlkCreation  = 6 * time.Second  //second
 
 	//board and proposal parameters
-	MainnetBasicReward                = 400000000 //40 mili PRV
-	MainnetRewardHalflife             = 3155760   //1 year, reduce 12.5% per year
-	MainnetGenesisblockPaymentAddress = "1Uv2zzR4LgfX8ToQe8ub3bYcCLk3uDU1sm9U9hiu9EKYXoS77UdikfT9s8d5YjhsTJm61eazsMwk2otFZBYpPHwiMn8z6bKWWJRspsLky"
+	MainnetBasicReward                      = 400000000 //40 mili PRV
+	MainnetRewardHalflife                   = 3155760   //1 year, reduce 12.5% per year
+	MainnetGenesisblockPaymentAddress       = "1Uv2zzR4LgfX8ToQe8ub3bYcCLk3uDU1sm9U9hiu9EKYXoS77UdikfT9s8d5YjhsTJm61eazsMwk2otFZBYpPHwiMn8z6bKWWJRspsLky"
+	MainEthContractAddressStr               = "0x10e492e6383DfE37d0d0B7B86015AE0876e88663"
+	MainnetDevAddress                       = "1Uv2vrb74e6ScxuQiXvW9UcKoEbXnRMbuBJ6W2FBWxqhtHNGHi3sUP1D14rNEnWWzkYSMsZCmA4DKV6igmjd7qaJfj9TuMmyqz2ZG2SNx"
+	MainnetCentralizedWebsitePaymentAddress = "1Uv2zzR4LgfX8ToQe8ub3bYcCLk3uDU1sm9U9hiu9EKYXoS77UdikfT9s8d5YjhsTJm61eazsMwk2otFZBYpPHwiMn8z6bKWWJRspsLky"
 	// ------------- end Mainnet --------------------------------------
 )
 
@@ -79,8 +84,10 @@ const (
 	Testnet            = 0x16
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
-	TestnetEpoch       = 100
-	TestnetRandomTime  = 50
+	TestnetEpoch       = 1000
+	TestnetRandomTime  = 500
+	TestnetOffset      = 10
+	TestnetSwapOffset  = 2
 
 	TestNetShardCommitteeSize     = 64
 	TestNetMinShardCommitteeSize  = 4
@@ -92,12 +99,15 @@ const (
 	TestNetMinBeaconBlkInterval = 10 * time.Second //second
 	TestNetMaxBeaconBlkCreation = 8 * time.Second  //second
 	TestNetMinShardBlkInterval  = 10 * time.Second //second
-	TestNetMaxShardBlkCreation  = 4 * time.Second  //second
+	TestNetMaxShardBlkCreation  = 6 * time.Second  //second
 
 	//board and proposal parameters
-	TestnetBasicReward                = 400000000 //40 mili PRV
-	TestnetRewardHalflife             = 3155760   //1 year, reduce 12.5% per year
-	TestnetGenesisBlockPaymentAddress = "1Uv46Pu4pqBvxCcPw7MXhHfiAD5Rmi2xgEE7XB6eQurFAt4vSYvfyGn3uMMB1xnXDq9nRTPeiAZv5gRFCBDroRNsXJF1sxPSjNQtivuHk"
+	TestnetBasicReward                      = 400000000 //40 mili PRV
+	TestnetRewardHalflife                   = 3155760   //1 year, reduce 12.5% per year
+	TestnetGenesisBlockPaymentAddress       = "1Uv46Pu4pqBvxCcPw7MXhHfiAD5Rmi2xgEE7XB6eQurFAt4vSYvfyGn3uMMB1xnXDq9nRTPeiAZv5gRFCBDroRNsXJF1sxPSjNQtivuHk"
+	TestnetContractAddressStr               = "0x644A04566260C771032413199af6cb047Df17E91"
+	TestnetDevAddress                       = "1Uv2vrb74e6ScxuQiXvW9UcKoEbXnRMbuBJ6W2FBWxqhtHNGHi3sUP1D14rNEnWWzkYSMsZCmA4DKV6igmjd7qaJfj9TuMmyqz2ZG2SNx"
+	TestnetCentralizedWebsitePaymentAddress = "1Uv2zzR4LgfX8ToQe8ub3bYcCLk3uDU1sm9U9hiu9EKYXoS77UdikfT9s8d5YjhsTJm61eazsMwk2otFZBYpPHwiMn8z6bKWWJRspsLky"
 )
 
 // for beacon
