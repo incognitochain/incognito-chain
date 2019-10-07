@@ -37,8 +37,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &IssuingResponse{}
 	case ContractingRequestMeta:
 		md = &ContractingRequest{}
-	case IssuingETHRequestMeta:
-		md = &IssuingETHRequest{}
+	//case IssuingETHRequestMeta:
+	//	md = &IssuingETHRequest{}
 	case IssuingETHResponseMeta:
 		md = &IssuingETHResponse{}
 	case BeaconSalaryResponseMeta:
