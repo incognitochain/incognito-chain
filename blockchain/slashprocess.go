@@ -58,9 +58,10 @@ func (blockchain *BlockChain) getUpdatedProducersBlackList(
 	isBeacon bool,
 	shardID int,
 	committee []string,
+	beaconHeight uint64,
 ) (map[string]uint8, error) {
 	db := blockchain.GetDatabase()
-	producersBlackList, err := db.GetProducersBlackList()
+	producersBlackList, err := db.GetProducersBlackList(beaconHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +90,8 @@ func (blockchain *BlockChain) getUpdatedProducersBlackList(
 func (blockchain *BlockChain) processForSlashing(block *BeaconBlock) error {
 	var err error
 	db := blockchain.GetDatabase()
-	producersBlackList, err := db.GetProducersBlackList()
+	beaconHeight := block.GetHeight()
+	producersBlackList, err := db.GetProducersBlackList(beaconHeight - 1)
 	if err != nil {
 		return err
 	}
@@ -138,6 +140,6 @@ func (blockchain *BlockChain) processForSlashing(block *BeaconBlock) error {
 			}
 		}
 	}
-	err = db.StoreProducersBlackList(producersBlackList)
+	err = db.StoreProducersBlackList(beaconHeight, producersBlackList)
 	return err
 }

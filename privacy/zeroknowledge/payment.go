@@ -1,11 +1,11 @@
 package zkp
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/aggregaterange"
@@ -133,7 +133,8 @@ func (proof *PaymentProof) Init() {
 // MarshalJSON - override function
 func (proof PaymentProof) MarshalJSON() ([]byte, error) {
 	data := proof.Bytes()
-	temp := base58.Base58Check{}.Encode(data, common.ZeroByte)
+	//temp := base58.Base58Check{}.Encode(data, common.ZeroByte)
+	temp := base64.StdEncoding.EncodeToString(data)
 	return json.Marshal(temp)
 }
 
@@ -144,7 +145,8 @@ func (proof *PaymentProof) UnmarshalJSON(data []byte) error {
 	if errJson != nil {
 		return errJson
 	}
-	temp, _, err := base58.Base58Check{}.Decode(dataStr)
+	//temp, _, err := base58.Base58Check{}.Decode(dataStr)
+	temp, err := base64.StdEncoding.DecodeString(dataStr)
 	if err != nil {
 		return err
 	}
