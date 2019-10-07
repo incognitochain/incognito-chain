@@ -2,13 +2,14 @@ package privacy
 
 import (
 	"github.com/stretchr/testify/assert"
+	"fmt"
 	"testing"
 )
 
 func TestKey(t *testing.T) {
-	for i:=0; i< 1000; i ++ {
+	for i:=0; i< 1; i ++ {
 		// random seed
-		seed := RandomScalar().ToBytesS()
+		seed := []byte{123}
 
 		// generate private key from seed
 		privateKey := GeneratePrivateKey(seed)
@@ -44,5 +45,11 @@ func TestKey(t *testing.T) {
 
 		assert.Equal(t, paymentAddress.Pk, paymentAddress2.Pk)
 		assert.Equal(t, paymentAddress.Tk, paymentAddress2.Tk)
+
+		fmt.Printf("Private key: %v\n", privateKey)
+		fmt.Printf("publicKey: %v\n", publicKey)
+		fmt.Printf("receivingKey: %v\n", receivingKey)
+		fmt.Printf("transmissionKey: %v\n", transmissionKey)
+
 	}
 }

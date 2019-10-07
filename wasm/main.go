@@ -18,9 +18,11 @@ import (
 //	}
 //	return proof
 //}
-//func generateBLSKeyPairFromSeed(_ js.Value, args []js.Value) interface{} {
-//	return gomobile.GenerateBLSKeyPairFromSeed(args[0].String())
-//}
+
+
+func generateBLSKeyPairFromSeed(_ js.Value, args []js.Value) interface{} {
+	return gomobile.GenerateBLSKeyPairFromSeed(args[0].String())
+}
 
 func generateKeyFromSeed(_ js.Value, args []js.Value) interface{} {
 	result, err := gomobile.GenerateKeyFromSeed(args[0].String())
@@ -84,11 +86,14 @@ func main() {
 	println("Hello WASM")
 	//js.Global().Set("aggregatedRangeProve", js.FuncOf(aggregatedRangeProve))
 	//js.Global().Set("oneOutOfManyProve", js.FuncOf(oneOutOfManyProve))
-	//js.Global().Set("generateBLSKeyPairFromSeed", js.FuncOf(generateBLSKeyPairFromSeed))
+
+
 	js.Global().Set("initTx", js.FuncOf(initTx))
 	js.Global().Set("deriveSerialNumber", js.FuncOf(deriveSerialNumber))
+
 	js.Global().Set("generateKeyFromSeed", js.FuncOf(generateKeyFromSeed))
 	js.Global().Set("scalarMultBase", js.FuncOf(scalarMultBase))
 	js.Global().Set("randomScalars", js.FuncOf(randomScalars))
+	js.Global().Set("generateBLSKeyPairFromSeed", js.FuncOf(generateBLSKeyPairFromSeed))
 	<-c
 }

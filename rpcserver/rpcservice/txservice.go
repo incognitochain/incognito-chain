@@ -308,7 +308,7 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 		mempoolErr, ok := err.(*mempool.MempoolTxError)
 		if ok {
 			if mempoolErr.Code == mempool.ErrCodeMessage[mempool.RejectInvalidFee].Code {
-				Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
+				Logger.log.Errorf("handleSendRawTransaction result: s%+v, err: %+v", nil, err)
 				return nil, nil, byte(0), NewRPCError(RejectInvalidFeeError, mempoolErr)
 			}
 		}
