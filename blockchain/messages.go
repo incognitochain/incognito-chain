@@ -21,7 +21,7 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 		userShardID byte
 	)
 
-	userRole, userShardIDInt := blockchain.config.ConsensusEngine.GetUserRole()
+	userRole, userShardIDInt := blockchain.config.ConsensusEngine.GetUserLayer()
 	if userRole == common.ShardRole {
 		userShardID = byte(userShardIDInt)
 	}
@@ -233,7 +233,7 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block *ShardToBeaconB
 		//	Logger.log.Error(err)
 		//	return
 		//}
-		
+
 		from, to, err := blockchain.config.ShardToBeaconPool.AddShardToBeaconBlock(block)
 		if err != nil {
 			if err.Error() != "receive old block" && err.Error() != "receive duplicate block" {
@@ -249,6 +249,9 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block *ShardToBeaconB
 }
 
 func (blockchain *BlockChain) OnCrossShardBlockReceived(block *CrossShardBlock) {
+	if blockchain.IsTest {
+		return
+	}
 	Logger.log.Info("Received CrossShardBlock", block.Header.Height, block.Header.ShardID)
 	if blockchain.IsTest {
 		return

@@ -104,21 +104,23 @@ func (e *BLSBFT) Start() error {
 				}
 				blockRoundKey := getRoundKey(block.GetHeight(), block.GetRound())
 				e.logger.Info("receive block", blockRoundKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
-				if block.GetHeight() >= e.RoundData.NextHeight {
-					if e.RoundData.NextHeight == block.GetHeight() && e.RoundData.Round > block.GetRound() {
-						e.logger.Error("wrong round")
-						continue
-					}
+				if block.GetHeight() == e.RoundData.NextHeight {
 					if e.RoundData.Round == block.GetRound() {
 						if e.RoundData.Block == nil {
 							e.Blocks[blockRoundKey] = block
 							continue
 						}
 					} else {
-						if block.GetRound() > e.RoundData.Round {
+						if e.RoundData.Round < block.GetRound() {
 							e.Blocks[blockRoundKey] = block
+							continue
 						}
 					}
+					continue
+				}
+				if block.GetHeight() > e.RoundData.NextHeight {
+					e.Blocks[blockRoundKey] = block
+					continue
 				}
 			case msg := <-e.VoteMessageCh:
 				e.logger.Info("receive vote", msg.RoundKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
@@ -175,17 +177,16 @@ func (e *BLSBFT) Start() error {
 				e.addEarlyVote(msg)
 
 			case <-ticker:
-				e.isOngoing = false
 				pubKey := e.UserKeySet.GetPublicKey()
 				if common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList) == -1 {
 					e.enterNewRound()
 					continue
 				}
 
-				// e.logger.Debugf("Is ready: %v", e.Chain.IsReady())
-				// if !e.Chain.IsReady() {
-				// 	continue
-				// }
+				if !e.Chain.IsReady() {
+					e.isOngoing = false
+					continue
+				}
 
 				if !e.isInTimeFrame() || e.RoundData.State == "" {
 					e.enterNewRound()
@@ -215,7 +216,6 @@ func (e *BLSBFT) Start() error {
 							}
 							e.RoundData.BlockValidateData = *valData
 							e.enterVotePhase()
-							e.isOngoing = true
 						}
 					}
 				case votePhase:
@@ -294,6 +294,7 @@ func (e *BLSBFT) enterProposePhase() {
 	block.(blockValidation).AddValidationField(validationDataString)
 
 	e.RoundData.Block = block
+	e.RoundData.BlockHash = *block.Hash()
 	e.RoundData.BlockValidateData = validationData
 
 	blockData, _ := json.Marshal(e.RoundData.Block)
@@ -315,6 +316,7 @@ func (e *BLSBFT) enterVotePhase() {
 	if !e.isInTimeFrame() || e.RoundData.State == votePhase {
 		return
 	}
+	e.isOngoing = true
 	e.setState(votePhase)
 	err := e.sendVote()
 	if err != nil {
@@ -332,6 +334,7 @@ func (e *BLSBFT) enterNewRound() {
 	if e.isInTimeFrame() && e.RoundData.State != newround {
 		return
 	}
+	e.isOngoing = false
 	e.setState(newround)
 	e.waitForNextRound()
 	e.InitRoundData()
