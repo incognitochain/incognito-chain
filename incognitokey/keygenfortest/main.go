@@ -230,6 +230,7 @@ func GenerateKey(numberOfCandidate int, numberOfShard int) {
 		child, _ := masterKey.NewChildKey(uint32(i))
 		privKeyB58 := child.Base58CheckSerialize(wallet.PriKeyType)
 		paymentAddressB58 := child.Base58CheckSerialize(wallet.PaymentAddressType)
+		//viewingKeyB58 := child.Base58CheckSerialize(wallet.ReadonlyKeyType)
 		//publicKeyB58 := child.KeySet.GetPublicKeyInBase58CheckEncode()
 
 		committeeKey, _ := incognitokey.NewCommitteeKeyFromSeed(common.HashB(common.HashB(child.KeySet.PrivateKey)), child.KeySet.PaymentAddress.Pk)
