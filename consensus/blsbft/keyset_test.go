@@ -21,16 +21,18 @@ func TestMiningKey_GetPublicKey(t *testing.T) {
 		child, _ := masterKey.NewChildKey(uint32(i))
 		privKeyB58 := child.Base58CheckSerialize(wallet.PriKeyType)
 		paymentAddressB58 := child.Base58CheckSerialize(wallet.PaymentAddressType)
+		viewingKeyB58 := child.Base58CheckSerialize(wallet.ReadonlyKeyType)
 		publicKeyB58 := child.KeySet.GetPublicKeyInBase58CheckEncode()
 
-		fmt.Println(privKeyB58)
-		fmt.Println(publicKeyB58)
-		fmt.Println(paymentAddressB58)
+		fmt.Println("privKeyB58: ", privKeyB58)
+		fmt.Println("publicKeyB58: ", publicKeyB58)
+		fmt.Println("paymentAddressB58: ", paymentAddressB58)
+		fmt.Println("viewingKeyB58: ", viewingKeyB58)
 
 		blsBft := BLSBFT{}
 		privateSeed, _ := blsBft.LoadUserKeyFromIncPrivateKey(privKeyB58)
 
-		fmt.Println(privateSeed)
+		fmt.Println("privateSeed: ", privateSeed)
 		fmt.Println()
 	}
 }
