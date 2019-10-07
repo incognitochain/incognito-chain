@@ -119,7 +119,7 @@ func (chain *BeaconChain) ValidateAndInsertBlock(block common.BlockInterface) er
 	if err := chain.ValidateBlockSignatures(block, beaconBestState.BeaconCommittee); err != nil {
 		return err
 	}
-	return chain.Blockchain.InsertBeaconBlock(beaconBlock, true)
+	return chain.Blockchain.InsertBeaconBlock(beaconBlock, false)
 }
 
 func (chain *BeaconChain) ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
