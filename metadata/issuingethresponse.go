@@ -1,16 +1,8 @@
 package metadata
 
 import (
-	"bytes"
-	"encoding/base64"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"strconv"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
-	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type IssuingETHResponse struct {
@@ -76,64 +68,64 @@ func (iRes *IssuingETHResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-func (iRes IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
-	txsInBlock []Transaction,
-	txsUsed []int,
-	insts [][]string,
-	instUsed []int,
-	shardID byte,
-	tx Transaction,
-	bcr BlockchainRetriever,
-	ac *AccumulatedValues,
-) (bool, error) {
-	idx := -1
-	for i, inst := range insts {
-		if len(inst) < 4 { // this is not IssuingETHRequest instruction
-			continue
-		}
-		instMetaType := inst[0]
-		if instUsed[i] > 0 ||
-			instMetaType != strconv.Itoa(IssuingETHRequestMeta) {
-			continue
-		}
-
-		contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
-		if err != nil {
-			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
-			continue
-		}
-		var issuingETHAcceptedInst IssuingETHAcceptedInst
-		err = json.Unmarshal(contentBytes, &issuingETHAcceptedInst)
-		if err != nil {
-			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
-			continue
-		}
-
-		if !bytes.Equal(iRes.RequestedTxID[:], issuingETHAcceptedInst.TxReqID[:]) ||
-			!bytes.Equal(iRes.UniqETHTx, issuingETHAcceptedInst.UniqETHTx) ||
-			!bytes.Equal(iRes.ExternalTokenID, issuingETHAcceptedInst.ExternalTokenID) ||
-			shardID != issuingETHAcceptedInst.ShardID {
-			continue
-		}
-
-		addressStr := issuingETHAcceptedInst.ReceiverAddrStr
-		key, err := wallet.Base58CheckDeserialize(addressStr)
-		if err != nil {
-			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
-			continue
-		}
-		_, pk, paidAmount, assetID := tx.GetTransferData()
-		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
-			issuingETHAcceptedInst.IssuingAmount != paidAmount ||
-			!bytes.Equal(issuingETHAcceptedInst.IncTokenID[:], assetID[:]) {
-			continue
-		}
-		idx = i
-		break
-	}
-	if idx == -1 { // not found the issuance request tx for this response
-		return false, errors.New(fmt.Sprintf("no IssuingETHRequest tx found for IssuingETHResponse tx %s", tx.Hash().String()))
-	}
-	instUsed[idx] = 1
-	return true, nil
-}
+//func (iRes IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
+//	txsInBlock []Transaction,
+//	txsUsed []int,
+//	insts [][]string,
+//	instUsed []int,
+//	shardID byte,
+//	tx Transaction,
+//	bcr BlockchainRetriever,
+//	ac *AccumulatedValues,
+//) (bool, error) {
+//	idx := -1
+//	for i, inst := range insts {
+//		if len(inst) < 4 { // this is not IssuingETHRequest instruction
+//			continue
+//		}
+//		instMetaType := inst[0]
+//		if instUsed[i] > 0 ||
+//			instMetaType != strconv.Itoa(IssuingETHRequestMeta) {
+//			continue
+//		}
+//
+//		contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
+//		if err != nil {
+//			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
+//			continue
+//		}
+//		var issuingETHAcceptedInst IssuingETHAcceptedInst
+//		err = json.Unmarshal(contentBytes, &issuingETHAcceptedInst)
+//		if err != nil {
+//			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
+//			continue
+//		}
+//
+//		if !bytes.Equal(iRes.RequestedTxID[:], issuingETHAcceptedInst.TxReqID[:]) ||
+//			!bytes.Equal(iRes.UniqETHTx, issuingETHAcceptedInst.UniqETHTx) ||
+//			!bytes.Equal(iRes.ExternalTokenID, issuingETHAcceptedInst.ExternalTokenID) ||
+//			shardID != issuingETHAcceptedInst.ShardID {
+//			continue
+//		}
+//
+//		addressStr := issuingETHAcceptedInst.ReceiverAddrStr
+//		key, err := wallet.Base58CheckDeserialize(addressStr)
+//		if err != nil {
+//			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
+//			continue
+//		}
+//		_, pk, paidAmount, assetID := tx.GetTransferData()
+//		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
+//			issuingETHAcceptedInst.IssuingAmount != paidAmount ||
+//			!bytes.Equal(issuingETHAcceptedInst.IncTokenID[:], assetID[:]) {
+//			continue
+//		}
+//		idx = i
+//		break
+//	}
+//	if idx == -1 { // not found the issuance request tx for this response
+//		return false, errors.New(fmt.Sprintf("no IssuingETHRequest tx found for IssuingETHResponse tx %s", tx.Hash().String()))
+//	}
+//	instUsed[idx] = 1
+//	return true, nil
+//}
