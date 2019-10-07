@@ -1,6 +1,6 @@
 package metadata
 
-import (
+/*import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
@@ -285,3 +285,4 @@ func PickAndParseLogMapFromReceipt(constructedReceipt *types.Receipt, ethContrac
 	}
 	return ParseETHLogData(logData)
 }
+*/

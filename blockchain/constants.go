@@ -178,15 +178,15 @@ var TestnetInitPRV = []string{
 	`{
 		"Version":1,
 		"Type":"s",
-		"LockTime":1570010502,
+		"LockTime":1570159128,
 		"Fee":0,
 		"Info":null,
 		"SigPubKey":"5xVSzcZpA3uHmBO5ejENk13iayexILopySACdieLugA=",
-		"Sig":"ArTWxCNMgCSlW2DCn+SHyHzXIjKPpuER7VYPZ5ecRwinFWyu8rZb9C83afGaGc6OSyl/NIfmdVhqVuVM+nPUBA==",
-		"Proof":"1111111baVi1dseZPpXBXj4AfkFuemAbf9SprEdR6HFmgPXxJdTVHzMoPPGn7sKnGmHkJJAQNPCiZVYt6Cpde7ffJHunhn5ew6X6Aj9bgK1QcsXoc4zA2iNsRHoRp6Tf6qPNSiUTRfNqGboGiq2Yaz1E3cG9ixgcQ7wQBu4WnJkaypBojmdPTMn5sstxucBk7kodj79KVhVHoRmPZj3W3gqcy8ycVtsLYhdvbAqhvrkg2YC2WQAoBAjHNhB18KGrpeUiw4cN",
+		"Sig":"oMJPBLxKgTnfQhMgfvvH68ed0UTuTfl3ofOoWgk8dgvfhovgvued9HH4dXz60rY32H4Y4c85Zd8bSXSnvNhZAA==",
+		"Proof":"AAAAAAAAAbAAriDnFVLNxmkDe4eYE7l6MQ2TXeJrJ7EguinJIAJ2J4u6ACARCc1/qyLEePe1zSthzmRSqf2VNOlo036JwtDgbNg24yAb6hGuk1tRBVMO4ruHaNEasY09ZiBc4iuK/dpDSyNTCCABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDMoX8yNBbY68SO44umD1CMfz/r0T4YiXhDgDgT6+k4BgdY0V4XYoAAAAAAAAAAAAA=",
 		"PubKeyLastByteSender":0,
 		"Metadata":null
-		}`,
+	}`,
 }
 var IntegrationTestInitPRV = []string{`{"Version":1,"Type":"s","LockTime":1564213226,"Fee":0,"Info":null,"SigPubKey":"A6zmFqIlTKgsV23Qk9jz2roo3VhisVy5Flg6EGuOKaQA","Sig":"f+JDTKpO7+veF6DVYobNp6l0l6rAYxCZjYCNRrsFN0lx7aOMOwXhZK0OGrKiDLfqSIMX7CXr9ProBz7TIx3yqg==","Proof":"1111111dP9RnNnGCD9afUsg4bvrBHNWfjZijttFU2bkFYLYFGqCoK6i6RCeSEk2NUmv7p8B4kyhi1qaoMjvYCotjhDogGiuYrEqUT4NQLXatq2xqkfxgX8DURcv9xCgrgqVceQ2DrBR5NcgbMQHHBnW1xV3Dte2kmq837EeufP3KoQpz3m5N3oN6x1UssfWSeHAuw4t2dUinKDTe7SgRnFFhfF59dvy","PubKeyLastByteSender":0,"Metadata":null}`,
 	`{"Version":1,"Type":"s","LockTime":1564213226,"Fee":0,"Info":null,"SigPubKey":"As3StzeOJhR5qheXo9stChC6WqQJChZNqmPqdgNOFtkA","Sig":"ccWpvPZjitORv6+9WOWv7K5e8purHA4sX7mfBNE9m9YYFyPJ2awx5+1iHuWKD7BH9oum64XCiLYtW9iihVGlDw==","Proof":"1111111dP9RnNmZen93jhEW3eXaKkne72tbWVGtcdfAEfnbdf7fPDQmwYaTve2a9MBA56HHWXzXCbDxx79KCrtrArUqQKnxgun69qQpCjDZhaBdpKNZAAvYf7uBHrnxpm7qxRA4XLGSKbuLS6mBtrCUFPnit9BDbSAu9ZxQsPnr7XPPyHdbBofrBzFLqf2zTPMrqCAZqBqapA5AMtd8J8yknUHX6hWJ","PubKeyLastByteSender":0,"Metadata":null}`,
