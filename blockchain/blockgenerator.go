@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"strconv"
 	"sync"
 	"time"
 
@@ -75,6 +76,13 @@ func (blockGenerator *BlockGenerator) GetPendingTxsV2() []metadata.Transaction {
 	defer blockGenerator.mtx.Unlock()
 	pendingTxs := []metadata.Transaction{}
 	for _, tx := range blockGenerator.PendingTxs {
+		if string(tx.GetInfo()) != "" {
+			i, e := strconv.Atoi(string(tx.GetInfo()))
+			if e != nil || time.Now().Unix() < int64(i) {
+				continue
+			}
+
+		}
 		pendingTxs = append(pendingTxs, tx)
 	}
 	return pendingTxs
