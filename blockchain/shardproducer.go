@@ -329,7 +329,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	newShardBlock.Header.CommitteeRoot = committeeRoot
 	newShardBlock.Header.PendingValidatorRoot = pendingValidatorRoot
 	newShardBlock.Header.StakingTxRoot = stakingTxRoot
-	newShardBlock.Header.Timestamp = time.Now().Unix()
+	newShardBlock.Header.Timestamp = start.Unix()
 	copy(newShardBlock.Header.InstructionMerkleRoot[:], instMerkleRoot)
 	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
@@ -730,9 +730,9 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	currentSize := uint64(0)
 	for _, tx := range sourceTxns {
 		if tx.IsPrivacy() {
-			txsProcessTimeInBlockCreation = blockCreationTime - time.Duration(500*time.Millisecond).Nanoseconds()
+			txsProcessTimeInBlockCreation = blockCreationTime - time.Duration(2500*time.Millisecond).Nanoseconds()
 		} else {
-			txsProcessTimeInBlockCreation = blockCreationTime - time.Duration(50*time.Millisecond).Nanoseconds()
+			txsProcessTimeInBlockCreation = blockCreationTime - time.Duration(2550*time.Millisecond).Nanoseconds()
 		}
 		elasped = time.Since(startTime).Nanoseconds()
 		if elasped >= txsProcessTimeInBlockCreation {

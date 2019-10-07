@@ -126,6 +126,10 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	if err != nil {
 		return NewBlockChainError(SnapshotCommitteeError, err)
 	}
+
+	snapshotShardWaiting := append([]incognitokey.CommitteePublicKey{}, blockchain.BestState.Beacon.CandidateShardWaitingForNextRandom...)
+	snapshotShardWaiting = append(snapshotShardWaiting, blockchain.BestState.Beacon.CandidateBeaconWaitingForCurrentRandom...)
+
 	snapshotRewardReceiver, err := snapshotRewardReceiver(blockchain.BestState.Beacon.RewardReceiver)
 	if err != nil {
 		return NewBlockChainError(SnapshotRewardReceiverError, err)
@@ -151,10 +155,20 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	if err != nil {
 		return NewBlockChainError(SnapshotCommitteeError, err)
 	}
+
+	newShardWaiting := append([]incognitokey.CommitteePublicKey{}, blockchain.BestState.Beacon.CandidateShardWaitingForNextRandom...)
+	newShardWaiting = append(newShardWaiting, blockchain.BestState.Beacon.CandidateBeaconWaitingForCurrentRandom...)
+
 	isChanged := !reflect.DeepEqual(snapshotBeaconCommittee, newBeaconCommittee)
 	if isChanged {
 		go blockchain.config.ConsensusEngine.CommitteeChange(common.BeaconChainKey)
 	}
+
+	isChanged = !reflect.DeepEqual(snapshotShardWaiting, newShardWaiting)
+	if isChanged {
+		go blockchain.config.ConsensusEngine.CommitteeChange(common.BeaconChainKey)
+	}
+
 	//Check shard-pending
 	for shardID, committee := range newAllShardPending {
 		if _, ok := snapshotAllShardPending[shardID]; ok {
@@ -177,6 +191,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 			go blockchain.config.ConsensusEngine.CommitteeChange(common.GetShardChainKey(shardID))
 		}
 	}
+
 	if !isValidated {
 		Logger.log.Infof("BEACON | Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 		// Post verification: verify new beacon best state with corresponding beacon block

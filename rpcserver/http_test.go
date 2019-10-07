@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -15,28 +16,36 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 )
 
 var (
-	netAddrs            []common.SimpleAddr
-	errHttp             error
-	httpServer          = &HttpServer{}
-	rpcListener         = []string{"127.0.0.1:9334"}
-	bc                  *blockchain.BlockChain
-	pb                  = pubsub.NewPubSubManager()
-	rpcConfig           = &RpcServerConfig{}
-	user                = "admin"
-	limitUser           = "admin@123"
-	pass                = "autonomous"
-	limitPass           = "autonomous@123"
-	wrongUser           = "ad"
-	wrongPass           = "au"
-	header              = make(map[string][]string)
-	getBlockchainInfo   = []byte{123, 10, 9, 34, 106, 115, 111, 110, 114, 112, 99, 34, 58, 32, 34, 49, 46, 48, 34, 44, 10, 32, 32, 32, 32, 34, 109, 101, 116, 104, 111, 100, 34, 58, 32, 34, 103, 101, 116, 98, 108, 111, 99, 107, 99, 104, 97, 105, 110, 105, 110, 102, 111, 34, 44, 10, 32, 32, 32, 32, 34, 112, 97, 114, 97, 109, 115, 34, 58, 32, 34, 34, 44, 10, 32, 32, 32, 32, 34, 105, 100, 34, 58, 32, 49, 10, 125}
-	testRpcServerString = `{"jsonrpc": "1.0","method": "testrpcserver","params": "","id": 1}`
-	writeBuf            = bufio.NewWriterSize(NewHijackerResponse(), 1000)
+	netAddrs           []common.SimpleAddr
+	errHttp            error
+	httpServer         = &HttpServer{}
+	rpcListener        = []string{"127.0.0.1:9334"}
+	bc                 *blockchain.BlockChain
+	pb                 = pubsub.NewPubSubManager()
+	rpcConfig          = &RpcServerConfig{}
+	user               = "admin"
+	limitUser          = "admin@123"
+	pass               = "autonomous"
+	limitPass          = "autonomous@123"
+	wrongUser          = "ad"
+	wrongPass          = "au"
+	header             = make(map[string][]string)
+	getBlockchainInfo  = []byte{123, 10, 9, 34, 106, 115, 111, 110, 114, 112, 99, 34, 58, 32, 34, 49, 46, 48, 34, 44, 10, 32, 32, 32, 32, 34, 109, 101, 116, 104, 111, 100, 34, 58, 32, 34, 103, 101, 116, 98, 108, 111, 99, 107, 99, 104, 97, 105, 110, 105, 110, 102, 111, 34, 44, 10, 32, 32, 32, 32, 34, 112, 97, 114, 97, 109, 115, 34, 58, 32, 34, 34, 44, 10, 32, 32, 32, 32, 34, 105, 100, 34, 58, 32, 49, 10, 125}
+	testRPCBodyRequest = &JsonRequest{
+		Jsonrpc: "1.0",
+		Method:  "testrpcserver",
+		Params:  "",
+		Id:      1,
+	}
+	getBlockchainInfoBody = `{"jsonrpc": "1.0","method": "getblockchaininfo","params": "","id": 1}`
+	testRpcServerString   = `{"jsonrpc": "1.0","method": "testrpcserver","params": "","id": 1}`
+	writeBuf              = bufio.NewWriterSize(NewHijackerResponse(), 1000)
 )
 
 type HijackerResponse struct {
@@ -250,11 +259,15 @@ func TestHttpServerProcessRpcRequest(t *testing.T) {
 	httpServer.Init(rpcConfig)
 	httpServer.Start()
 	w := httptest.NewRecorder()
+	testRPCBodyBytes, err := json.Marshal(testRPCBodyRequest)
+	if err != nil {
+		t.Fatalf("Expect to marshal Json Request %+v", testRPCBodyRequest)
+	}
 	r := &http.Request{
 		Method:        "POST",
 		Header:        header,
 		Body:          ioutil.NopCloser(&FakeReader{}),
-		ContentLength: int64(len(getBlockchainInfo)),
+		ContentLength: int64(len(testRPCBodyBytes)),
 	}
 	r.Header.Set("content-type", "json")
 	httpServer.ProcessRpcRequest(w, r, false)
@@ -262,7 +275,7 @@ func TestHttpServerProcessRpcRequest(t *testing.T) {
 		t.Fatalf("Expect code %+v but get %+v", http.StatusBadRequest, w.Code)
 	}
 	w = httptest.NewRecorder()
-	r.Body = ioutil.NopCloser(bytes.NewBuffer(getBlockchainInfo))
+	r.Body = ioutil.NopCloser(strings.NewReader(testRpcServerString))
 	// not hijack connection
 	httpServer.ProcessRpcRequest(w, r, false)
 	if w.Code != http.StatusInternalServerError {
@@ -270,15 +283,10 @@ func TestHttpServerProcessRpcRequest(t *testing.T) {
 	}
 	hijackW := NewHijackerResponse()
 	//server start => can dial connection => return connection and no error
+	r.Body = ioutil.NopCloser(strings.NewReader(testRpcServerString))
 	httpServer.ProcessRpcRequest(hijackW, r, false)
-	if hijackW.Code != http.StatusOK {
-		t.Fatalf("Expect code %+v but get %+v", http.StatusOK, w.Code)
-	}
-	r.Body = ioutil.NopCloser(bytes.NewBufferString(testRpcServerString))
-	w = httptest.NewRecorder()
-	httpServer.ProcessRpcRequest(hijackW, r, false)
-	if hijackW.Code != http.StatusOK {
-		t.Fatalf("Expect code %+v but get %+v", http.StatusOK, w.Code)
+	if hijackW.Code == http.StatusBadRequest || hijackW.Code == http.StatusInternalServerError {
+		t.Fatalf("Expect no bad status")
 	}
 	httpServer.Stop()
 	httpServer.shutdown = 0

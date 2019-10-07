@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/databasemp"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -46,7 +47,31 @@ var (
 		"112t8rsTnwLyHZyivAGbayRD9ASzBTju2w2gzF57JkikxEToDSf5ZY5qcn1io7MZGqMpPKHZivQnPVp3UKt7W8FeMAGuW7aAh8CMECWWrGp8",
 		"112t8rsc13sf2hep7MN4j2tfmEQJkXX9PVTervzXBig88h1Ntijq1bkM5tUiaKWBVcuoYBsr3Qsf8nRneTm3AGUuQPu4ajEWosRHx7YomUo5",
 	}
-	stakingPublicKey        = "151vzKx6AaQs8Jw5Q8PefGSPu3E16w2E2tSRXd1tEyM1qUA4H1r" // public key of 112t8rsCuDdsPecRrinj5n23onjKaCanM4JTUUyiU2rgjAL3nhEJH7VX1TYazxdWnvBudQvCvEjfhJ4hVjrdAqVK1s3a8fecmYXd8HWNHitC
+	miningSeedShard0 = []string{
+		"12N3BfpMP18LxLLTcGDEKEpVrciuuFqniVbovDqXweyH2tysx2Z",
+		"1KrNte7w4Wy4igBehAZpH63KSpAwgLkR4YcGo6xzCKTP34jDxu",
+		"1Vs1hubckf1NoGzmVANZT7QPjo3HyCXB6UWx722uhE285LrvGD",
+		"1ywGtB7MASWBSWYrdvLFkMQFq6NLcbNY7w7jtY45Grvve16TQj",
+		"12QMYUKVo4vqkpeSHaduMTXTWMkbocxukX7G1vwURMwevXJkm8E",
+		"12oYwtqXsy3aKGQ3ewNTUEs3FmfwhFrHHhR2ajjkP1UPKZ2azCX",
+		"1PLo6quoqNW754vPocS7jgwxjH8vbHoCpviAMrXSGp5JRUWJBF",
+		"1dzj2DxqgQphjPcy3bc4QM3mivJ25essyZfqer9S1wdEu8AoXV",
+		"12ocMcMRmamq82Vi7Z7wsP56U6svnbKJVZKP8KN8MnenMTMkAZC",
+		"19N5JLGtxvXAZhR9ra8oTRGMXPh5noR7EZoUWUjgRRxQgshfhT",
+	}
+	publicKeyShard0 = []string{
+		"185azaQSWjk4WUhVKavjdbvzLNaFRQH9BABLVh7LVZsMEAQbE2b",
+		"15P9cpSnqFDHZXdZ5gA7poUuWwNH9JnMbu8yvTLWJypsryYR7Zk",
+		"15Fepa7m851vTema3fPQTbyiuxa289dLfL73tDuJYYLCd9hssmf",
+		"17odhKmHJhy537BzSPyLH7f2u6TAadnoko6MdHzpC1xvzVTJo87",
+		"151vzKx6AaQs8Jw5Q8PefGSPu3E16w2E2tSRXd1tEyM1qUA4H1r",
+		"173mJJm5Yuw3VDPeZhvwC4GALgQon1ZucTi5MRgtXLuKRg3MEPL",
+		"18NBXkSazuSk9C5gTwafehZ1L8LeXwCLpNHNaiatYXwVNGGH36t",
+		"15SwUShJ8MkG7rzAckV2KR4kFUWmDeZf99rU5bE2RKuAPYhMxeR",
+		"161VJhDDWsyM6ATC8cnmPjqPEc4kYk1suKcwdLNzr3MVTQrPjBd",
+		"18JBEghYX65CWTZLdnw4TPEz4S2hNgYgyxfaep3oruq6UTakrJV",
+	}
+	stakingPublicKey        = "121VhftSAygpEJZ6i9jGk9dTC3uabPA1YiZELGnnUm955coLbEs92MhiRybYp5CXpWbSJYdpV2hPuMMgcig1wTdsAxnwePEb8zLMRgB1VGTTJYGfbAxct7e6tZKVE13So23YbyRiRhgBh9w2nTGRnHEyUzpFfV4ycF6Hx4McqSTScjZyTNgLkMcv44nwDtn1iNjBmrkndqK2hEwymRBKJLGfK2QA2MMHfdsJzhp7HfdD3ZvmGjUTQmGaQSG1kAkuktEi18YRnMPA9pUHWAcEuupUR5BBBa1KK11e2zxtALhWDCFaxD3dsaZwXGxhgm3hMsTuuMEubvTJztbKVV5kUWwsfq26jD7JrDcuze4YFKqoBv7MephHP9Mg2WUPkBzoxRFoPaoZZZWofYE7RFsufFLLezfHxqNweehi3S1Fv4E1UTZE" // public key of 112t8rsCuDdsPecRrinj5n23onjKaCanM4JTUUyiU2rgjAL3nhEJH7VX1TYazxdWnvBudQvCvEjfhJ4hVjrdAqVK1s3a8fecmYXd8HWNHitC
 	receiverPaymentAddress1 = "1Uv34F64ktQkX1eyd6YEG8KTENV8W5w48LRsi6oqqxVm65uvcKxEAzL2dp5DDJTqAQA7HANfQ1enKXCh2EvVdvBftko6GtGnjSZ1KqJhi"
 	receiverPaymentAddress2 = "1Uv2wgU5FR5jjeN3uY3UJ4SYYyjqj97spYBEDa6cTLGiP3w6BCY7mqmASKwXz8hXfLr6mpDjhWDJ8TiM5v5U5f2cxxqCn5kwy5JM9wBgi"
 	tokenID                 = "6efff7b815f2890758f55763c53c4563feada766726ea4c08fe04dba8fd11b89"
@@ -122,7 +147,7 @@ var _ = func() (_ struct{}) {
 		Body: blockchain.ShardBody{
 			Transactions: transactions,
 		},
-	})
+	}, &[]database.BatchData{})
 	transactions = []metadata.Transaction{}
 	for _, privateKey := range privateKeyShard0 {
 		txs := initTx(strconv.Itoa(maxAmount), privateKey, db)
@@ -133,7 +158,7 @@ var _ = func() (_ struct{}) {
 		Body: blockchain.ShardBody{
 			Transactions: transactions,
 		},
-	})
+	}, &[]database.BatchData{})
 	if err != nil {
 		fmt.Println("Can not fetch transaction")
 		return
@@ -310,13 +335,14 @@ func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacy
 			hasPrivacyCoin,
 			db,
 			nil, // use for prv coin -> nil is valid
-			nil))
+			nil,
+			[]byte{}))
 	if err1 != nil {
 		panic("no tx found")
 	}
 	return &tx
 }
-func CreateAndSaveTestStakingTransaction(privateKey string, fee int64, isBeacon bool) metadata.Transaction {
+func CreateAndSaveTestStakingTransaction(privateKey string, privateSeed string, fee int64, isBeacon bool) metadata.Transaction {
 	// get sender key set from private key
 	hasPrivacyCoin := false
 	senderKeySet, _ := wallet.Base58CheckDeserialize(privateKey)
@@ -367,11 +393,25 @@ func CreateAndSaveTestStakingTransaction(privateKey string, fee int64, isBeacon 
 		return nil
 	}
 	paymentAddress, _ := senderKeySet.Serialize(wallet.PaymentAddressType)
+
+	privateSeedBytes, ver, errDecode := base58.Base58Check{}.Decode(privateSeed)
+	if (errDecode != nil) || (ver != common.ZeroByte) {
+		return nil
+	}
+	committeePK, err := incognitokey.NewCommitteeKeyFromSeed(privateSeedBytes, senderKeySet.KeySet.PaymentAddress.Pk)
+	if err != nil {
+		return nil
+	}
+	committeePKBytes, err := committeePK.Bytes()
+	if err != nil {
+		return nil
+	}
+	committeePKBase58 := base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte)
 	var stakingMetadata *metadata.StakingMetadata
 	if isBeacon {
-		stakingMetadata, _ = metadata.NewStakingMetadata(64, base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), tp.config.ChainParams.StakingAmountShard, true)
+		stakingMetadata, _ = metadata.NewStakingMetadata(64, base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), tp.config.ChainParams.StakingAmountShard, committeePKBase58, true)
 	} else {
-		stakingMetadata, _ = metadata.NewStakingMetadata(63, base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), tp.config.ChainParams.StakingAmountShard, true)
+		stakingMetadata, _ = metadata.NewStakingMetadata(63, base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), tp.config.ChainParams.StakingAmountShard, committeePKBase58, true)
 	}
 	estimateTxSizeInKb := transaction.EstimateTxSize(transaction.NewEstimateTxSizeParam(candidateOutputCoins, paymentInfos, hasPrivacyCoin, stakingMetadata, nil, nil, 1))
 	realFee := uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
@@ -398,7 +438,8 @@ func CreateAndSaveTestStakingTransaction(privateKey string, fee int64, isBeacon 
 			hasPrivacyCoin,
 			db,
 			nil, // use for prv coin -> nil is valid
-			stakingMetadata))
+			stakingMetadata,
+			[]byte{}))
 	if err1 != nil {
 		panic("no tx found")
 	}
@@ -571,7 +612,8 @@ func CreateAndSaveTestInitCustomTokenTransactionPrivacy(privateKey string, fee i
 			nil,
 			hasPrivacyCoin,
 			true,
-			shardIDSender))
+			shardIDSender,
+			[]byte{}))
 	if err1 != nil {
 		panic("no tx found")
 	}
@@ -700,8 +742,8 @@ func TestTxPoolAddTx(t *testing.T) {
 	txDesc2 := createTxDescMempool(tx2, 1, 10, 0)
 	txDesc3 := createTxDescMempool(tx3, 1, 10, 0)
 	txInitCustomToken := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[3], commonFee, defaultTokenParams, false)
-	txStakingShard := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], commonFee, false)
-	txStakingBeacon := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], commonFee, true)
+	txStakingShard := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], miningSeedShard0[4], commonFee, false)
+	txStakingBeacon := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], miningSeedShard0[4], commonFee, true)
 	tx6 := CreateAndSaveTestNormalTransaction(privateKeyShard0[5], commonFee, true, 50)
 	tp.addTx(txDesc1, false)
 	tp.addTx(txDesc2, false)
@@ -817,8 +859,8 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	tx5 := CreateAndSaveTestNormalTransaction(privateKeyShard0[4], commonFee, false, normalTranferAmount)
 	txInitCustomToken := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[3], commonFee, defaultTokenParams, false)
 	txInitCustomTokenFailed := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[4], commonFee, defaultTokenParams, false)
-	txStakingShard := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], commonFee, false)
-	txStakingBeacon := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], commonFee, true)
+	txStakingShard := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], miningSeedShard0[4], commonFee, false)
+	txStakingBeacon := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], miningSeedShard0[4], commonFee, true)
 	txDesc1 := createTxDescMempool(tx1, 1, tx1.GetTxFee(), tx1.GetTxFeeToken())
 	txDesc1CustomTokenPrivacy := createTxDescMempool(txInitCustomTokenPrivacy, 1, txInitCustomTokenPrivacy.GetTxFee(), txInitCustomTokenPrivacy.GetTxFeeToken())
 	// Check condition 1: Sanity - Max version error
@@ -972,25 +1014,26 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 		}
 	}
 	// check Condition 6: validate by it self
-	// check Condition 7: Check double spend with blockchain
 	ResetMempoolTest()
 	err = tp.config.BlockChain.CreateAndSaveTxViewPointFromBlock(&blockchain.ShardBlock{
 		Header: blockchain.ShardHeader{ShardID: 0},
 		Body: blockchain.ShardBody{
 			Transactions: []metadata.Transaction{tx1},
 		},
-	})
+	}, &[]database.BatchData{})
 	if err != nil {
 		t.Fatalf("Expect no error but get %+v", err)
 	}
+	// snd existed
 	err11 := tp.validateTransaction(tx1)
 	if err11 == nil {
 		t.Fatal("Expect double spend with blockchain error error but no error")
 	} else {
-		if err11.(*MempoolTxError).Code != ErrCodeMessage[RejectDoubleSpendWithBlockchainTx].Code {
-			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectDoubleSpendWithBlockchainTx], err)
+		if err11.(*MempoolTxError).Code != ErrCodeMessage[RejectInvalidTx].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectInvalidTx], err11)
 		}
 	}
+	// check Condition 7: Check double spend with blockchain
 	// check Condition 8: Check Init Custom Token
 	ResetMempoolTest()
 	tp.poolTokenID[*txInitCustomToken.Hash()] = "6efff7b815f2890758f55763c53c4563feada766726ea4c08fe04dba8fd11b89"
@@ -1043,7 +1086,7 @@ func TestTxPoolmayBeAcceptTransaction(t *testing.T) {
 	tx3 := CreateAndSaveTestNormalTransaction(privateKeyShard0[2], commonFee, false, normalTranferAmount)
 	txInitCustomToken := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[3], commonFee, defaultTokenParams, false)
 	txInitCustomTokenFailed := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[4], commonFee, defaultTokenParams, false)
-	txStakingBeacon := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], commonFee, true)
+	txStakingBeacon := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], miningSeedShard0[4], commonFee, true)
 	tx6 := CreateAndSaveTestNormalTransaction(privateKeyShard0[5], commonFee, true, 50)
 	_, _, err1 := tp.maybeAcceptTransaction(tx1, false, true)
 	if err1 != nil {
@@ -1203,7 +1246,7 @@ func TestTxPoolRemoveTx(t *testing.T) {
 	tx2 := CreateAndSaveTestNormalTransaction(privateKeyShard0[1], 10, false, normalTranferAmount)
 	tx3 := CreateAndSaveTestNormalTransaction(privateKeyShard0[2], 10, false, normalTranferAmount)
 	txInitCustomToken := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[3], commonFee, defaultTokenParams, false)
-	txStakingBeacon := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], commonFee, true)
+	txStakingBeacon := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], miningSeedShard0[4], commonFee, true)
 	tx6 := CreateAndSaveTestNormalTransaction(privateKeyShard0[5], commonFee, true, 50)
 	txs := []metadata.Transaction{tx1, tx2, tx3, txInitCustomToken, txStakingBeacon, tx6}
 	tp.maybeAcceptTransaction(tx1, false, true)
@@ -1372,7 +1415,7 @@ func TestTxPoolEmptyPool(t *testing.T) {
 	tx2 := CreateAndSaveTestNormalTransaction(privateKeyShard0[1], 10, false, normalTranferAmount)
 	tx3 := CreateAndSaveTestNormalTransaction(privateKeyShard0[2], 10, false, normalTranferAmount)
 	txInitCustomToken := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[3], commonFee, defaultTokenParams, false)
-	txStakingBeacon := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], commonFee, true)
+	txStakingBeacon := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], miningSeedShard0[4], commonFee, true)
 	tx6 := CreateAndSaveTestNormalTransaction(privateKeyShard0[5], commonFee, true, 50)
 	tp.maybeAcceptTransaction(tx1, true, true)
 	tp.maybeAcceptTransaction(tx2, true, true)

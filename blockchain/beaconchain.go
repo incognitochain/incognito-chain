@@ -79,11 +79,12 @@ func (chain *BeaconChain) InsertBlk(block common.BlockInterface) error {
 func (chain *BeaconChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
 	chain.lock.Lock()
 	defer chain.lock.Unlock()
+	go chain.Blockchain.config.Server.PushBlockToAll(block, true)
 	err := chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true)
 	if err != nil {
 		return err
 	}
-	go chain.Blockchain.config.Server.PushBlockToAll(block, true)
+
 	return nil
 }
 
@@ -152,6 +153,48 @@ func (chain *BeaconChain) GetAllCommittees() map[string]map[string][]incognitoke
 		}
 		result[consensusType][common.GetShardChainKey(shardID)] = append([]incognitokey.CommitteePublicKey{}, chain.BestState.ShardCommittee[shardID]...)
 	}
+	return result
+}
+
+func (chain *BeaconChain) GetBeaconPendingList() []incognitokey.CommitteePublicKey {
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
+	var result []incognitokey.CommitteePublicKey
+
+	result = append(result, chain.BestState.BeaconPendingValidator...)
+	return result
+}
+
+func (chain *BeaconChain) GetShardsPendingList() map[string]map[string][]incognitokey.CommitteePublicKey {
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
+	var result map[string]map[string][]incognitokey.CommitteePublicKey
+	result = make(map[string]map[string][]incognitokey.CommitteePublicKey)
+
+	for shardID, consensusType := range chain.BestState.ShardConsensusAlgorithm {
+		if _, ok := result[consensusType]; !ok {
+			result[consensusType] = make(map[string][]incognitokey.CommitteePublicKey)
+		}
+		result[consensusType][common.GetShardChainKey(shardID)] = append([]incognitokey.CommitteePublicKey{}, chain.BestState.ShardPendingValidator[shardID]...)
+	}
+	return result
+}
+
+func (chain *BeaconChain) GetShardsWaitingList() []incognitokey.CommitteePublicKey {
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
+	var result []incognitokey.CommitteePublicKey
+	result = append(result, chain.BestState.CandidateShardWaitingForNextRandom...)
+	result = append(result, chain.BestState.CandidateShardWaitingForCurrentRandom...)
+	return result
+}
+
+func (chain *BeaconChain) GetBeaconWaitingList() []incognitokey.CommitteePublicKey {
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
+	var result []incognitokey.CommitteePublicKey
+	result = append(result, chain.BestState.CandidateBeaconWaitingForNextRandom...)
+	result = append(result, chain.BestState.CandidateBeaconWaitingForCurrentRandom...)
 	return result
 }
 
