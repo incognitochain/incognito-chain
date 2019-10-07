@@ -100,7 +100,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	if userPubKey != "" {
 		userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(userPubKey, 0)
 		if userRole == common.ProposerRole || userRole == common.ValidatorRole {
-			err := blockchain.config.DataBase.CleanBackup(false, 0)
+			err := blockchain.config.DataBase.CleanBackup(true, 0)
 			if err != nil {
 				return NewBlockChainError(CleanBackUpError, err)
 			}
