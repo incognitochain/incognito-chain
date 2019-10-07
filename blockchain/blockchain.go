@@ -325,11 +325,11 @@ func (blockchain *BlockChain) initBeaconState() error {
 		return err
 	}
 	// Insert new block into beacon chain
-	if err := blockchain.StoreBeaconBestState(); err != nil {
+	if err := blockchain.StoreBeaconBestState(nil); err != nil {
 		Logger.log.Error("Error Store best state for block", blockchain.BestState.Beacon.BestBlockHash, "in beacon chain")
 		return NewBlockChainError(UnExpectedError, err)
 	}
-	if err := blockchain.config.DataBase.StoreBeaconBlock(&blockchain.BestState.Beacon.BestBlock, blockchain.BestState.Beacon.BestBlock.Header.Hash()); err != nil {
+	if err := blockchain.config.DataBase.StoreBeaconBlock(&blockchain.BestState.Beacon.BestBlock, blockchain.BestState.Beacon.BestBlock.Header.Hash(), nil); err != nil {
 		Logger.log.Error("Error store beacon block", blockchain.BestState.Beacon.BestBlockHash, "in beacon chain")
 		return err
 	}
@@ -486,15 +486,15 @@ func (blockchain *BlockChain) GetShardBlockByHash(hash common.Hash) (*ShardBlock
 /*
 Store best state of block(best block, num of tx, ...) into Database
 */
-func (blockchain *BlockChain) StoreBeaconBestState() error {
-	return blockchain.config.DataBase.StoreBeaconBestState(blockchain.BestState.Beacon)
+func (blockchain *BlockChain) StoreBeaconBestState(bd *[]database.BatchData) error {
+	return blockchain.config.DataBase.StoreBeaconBestState(blockchain.BestState.Beacon, bd)
 }
 
 /*
 Store best state of block(best block, num of tx, ...) into Database
 */
-func (blockchain *BlockChain) StoreShardBestState(shardID byte) error {
-	return blockchain.config.DataBase.StoreShardBestState(blockchain.BestState.Shard[shardID], shardID)
+func (blockchain *BlockChain) StoreShardBestState(shardID byte, bd *[]database.BatchData) error {
+	return blockchain.config.DataBase.StoreShardBestState(blockchain.BestState.Shard[shardID], shardID, bd)
 }
 
 /*
@@ -513,8 +513,8 @@ func (blockchain *BlockChain) GetShardBestState(shardID byte) (*ShardBestState, 
 /*
 Store block into Database
 */
-func (blockchain *BlockChain) StoreShardBlock(block *ShardBlock) error {
-	return blockchain.config.DataBase.StoreShardBlock(block, block.Header.Hash(), block.Header.ShardID)
+func (blockchain *BlockChain) StoreShardBlock(block *ShardBlock, bd *[]database.BatchData) error {
+	return blockchain.config.DataBase.StoreShardBlock(block, block.Header.Hash(), block.Header.ShardID, bd)
 }
 
 /*
@@ -522,12 +522,12 @@ Save index(height) of block by block hash
 and
 Save block hash by index(height) of block
 */
-func (blockchain *BlockChain) StoreShardBlockIndex(block *ShardBlock) error {
-	return blockchain.config.DataBase.StoreShardBlockIndex(block.Header.Hash(), block.Header.Height, block.Header.ShardID)
+func (blockchain *BlockChain) StoreShardBlockIndex(block *ShardBlock, bd *[]database.BatchData) error {
+	return blockchain.config.DataBase.StoreShardBlockIndex(block.Header.Hash(), block.Header.Height, block.Header.ShardID, bd)
 }
 
-func (blockchain *BlockChain) StoreTransactionIndex(txHash *common.Hash, blockHash common.Hash, index int) error {
-	return blockchain.config.DataBase.StoreTransactionIndex(*txHash, blockHash, index)
+func (blockchain *BlockChain) StoreTransactionIndex(txHash *common.Hash, blockHash common.Hash, index int, bd *[]database.BatchData) error {
+	return blockchain.config.DataBase.StoreTransactionIndex(*txHash, blockHash, index, bd)
 }
 
 /*
@@ -681,7 +681,7 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint, 
 // CreateAndSaveTxViewPointFromBlock - fetch data from block, put into txviewpoint variable and save into db
 // @note: still storage full data of commitments, serialnumbersm snderivator to check double spend
 // @note: this function only work for transaction transfer token/prv within shard
-func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBlock) error {
+func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBlock, bd *[]database.BatchData) error {
 	//startTime := time.Now()
 	// Fetch data from block into tx View point
 	view := NewTxViewPoint(block.Header.ShardID)
@@ -818,7 +818,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 	return nil
 }
 
-func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBlock(block *ShardBlock) error {
+func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBlock(block *ShardBlock, bd *[]database.BatchData) error {
 	// Fetch data from block into tx View point
 	view := NewTxViewPoint(block.Header.ShardID)
 	err := view.fetchCrossTransactionViewPointFromBlock(blockchain.config.DataBase, block)
@@ -1650,11 +1650,11 @@ func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
 	return nil
 }
 
-func (blockchain *BlockChain) StoreIncomingCrossShard(block *ShardBlock) error {
+func (blockchain *BlockChain) StoreIncomingCrossShard(block *ShardBlock, bd *[]database.BatchData) error {
 	crossShardMap, _ := block.Body.ExtractIncomingCrossShardMap()
 	for crossShard, crossBlks := range crossShardMap {
 		for _, crossBlk := range crossBlks {
-			err := blockchain.config.DataBase.StoreIncomingCrossShard(block.Header.ShardID, crossShard, block.Header.Height, crossBlk)
+			err := blockchain.config.DataBase.StoreIncomingCrossShard(block.Header.ShardID, crossShard, block.Header.Height, crossBlk, bd)
 			if err != nil {
 				return NewBlockChainError(StoreIncomingCrossShardError, err)
 			}
