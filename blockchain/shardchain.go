@@ -106,7 +106,7 @@ func (chain *ShardChain) ValidateAndInsertBlock(block common.BlockInterface) err
 	if err := chain.ValidateBlockSignatures(block, shardBestState.ShardCommittee); err != nil {
 		return err
 	}
-	return chain.Blockchain.InsertShardBlock(shardBlock, true)
+	return chain.Blockchain.InsertShardBlock(shardBlock, false)
 }
 
 func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
