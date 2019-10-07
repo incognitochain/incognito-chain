@@ -551,6 +551,12 @@ func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 			if tokenParams.Receiver[0].Amount != tokenParams.Amount { // Init with wrong max amount of custom token
 				return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Init with wrong max amount of property"))
 			}
+			if tokenParams.PropertyName == "" {
+				return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Init with wrong name of property"))
+			}
+			if tokenParams.PropertySymbol == "" {
+				return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Init with wrong symbol of property"))
+			}
 		}
 	}
 	return tokenParams, nil, nil, nil
