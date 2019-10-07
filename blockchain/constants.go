@@ -27,7 +27,7 @@ const (
 	MAX_BEACON_BLOCK             = 5
 	DurationHalfLifeRewardForDev = uint64(31536000) // 5 years, after 5 year, reward for devs = 0
 	GetValidBlock                = 20
-	GenesisBlockTime             = "2019-10-07T00:00:00.000Z"
+	GenesisBlockTime             = "2019-10-07T11:00:00.000Z"
 	TestRandom                   = false
 )
 
