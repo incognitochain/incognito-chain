@@ -16,11 +16,11 @@ import (
 )
 
 func TestMiningKey_GetKeyTuble(t *testing.T) {
-	lenOutput := 100
+	lenOutput := 500
 	for j := 0; j < common.MaxShardNumber; j++ {
 		privKeyLs := make([]string, 0)
 		paymentAddLs := make([]string, 0)
-		for i := 0; i < 2000; i++ {
+		for i := 0; i < 10000; i++ {
 			seed := privacy.RandomScalar().ToBytesS()
 			masterKey, _ := wallet.NewMasterKey(seed)
 			child, _ := masterKey.NewChildKey(uint32(i))
@@ -28,19 +28,19 @@ func TestMiningKey_GetKeyTuble(t *testing.T) {
 			paymentAddressB58 := child.Base58CheckSerialize(wallet.PaymentAddressType)
 			shardID := common.GetShardIDFromLastByte(child.KeySet.PaymentAddress.Pk[len(child.KeySet.PaymentAddress.Pk)-1])
 
-			viewingKeyB58 := child.Base58CheckSerialize(wallet.ReadonlyKeyType)
-			publicKeyB58 := child.KeySet.GetPublicKeyInBase58CheckEncode()
+			//viewingKeyB58 := child.Base58CheckSerialize(wallet.ReadonlyKeyType)
+			//publicKeyB58 := child.KeySet.GetPublicKeyInBase58CheckEncode()
 
-			fmt.Println("privKeyB58: ", privKeyB58)
-			fmt.Println("publicKeyB58: ", publicKeyB58)
-			fmt.Println("paymentAddressB58: ", paymentAddressB58)
-			fmt.Println("viewingKeyB58: ", viewingKeyB58)
+			//fmt.Println("privKeyB58: ", privKeyB58)
+			//fmt.Println("publicKeyB58: ", publicKeyB58)
+			//fmt.Println("paymentAddressB58: ", paymentAddressB58)
+			//fmt.Println("viewingKeyB58: ", viewingKeyB58)
 
-			blsBft := BLSBFT{}
-			privateSeed, _ := blsBft.LoadUserKeyFromIncPrivateKey(privKeyB58)
+			//blsBft := BLSBFT{}
+			//privateSeed, _ := blsBft.LoadUserKeyFromIncPrivateKey(privKeyB58)
 
-			fmt.Println("privateSeed: ", privateSeed)
-			fmt.Println()
+			//fmt.Println("privateSeed: ", privateSeed)
+			//fmt.Println()
 			if int(shardID) == j {
 
 				privKeyLs = append(privKeyLs, strconv.Quote(privKeyB58))
@@ -50,8 +50,8 @@ func TestMiningKey_GetKeyTuble(t *testing.T) {
 				}
 			}
 		}
-		fmt.Println(j, strings.Join(privKeyLs, ", "))
-		fmt.Println(j, strings.Join(paymentAddLs, ", "))
+		fmt.Println("privKeyLs"+ strconv.Itoa(j)," = [", strings.Join(privKeyLs, ", "), "]")
+		fmt.Println("paymentAddLs" + strconv.Itoa(j), " = [",  strings.Join(paymentAddLs, ", "), "]")
 	}
 }
 

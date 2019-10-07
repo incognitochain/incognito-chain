@@ -73,12 +73,13 @@ const (
 	NodeModeAuto   = "auto"
 	NodeModeBeacon = "beacon"
 
-	BeaconRole    = "beacon"
-	ShardRole     = "shard"
-	ProposerRole  = "proposer"
-	ValidatorRole = "validator"
-	PendingRole   = "pending"
-
+	BeaconRole     = "beacon"
+	ShardRole      = "shard"
+	CommitteeRole  = "committee"
+	ProposerRole   = "proposer"
+	ValidatorRole  = "validator"
+	PendingRole    = "pending"
+	WaitingRole    = "waiting"
 	MaxShardNumber = 8
 
 	BlsConsensus    = "bls"
