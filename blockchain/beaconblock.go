@@ -84,6 +84,10 @@ func (beaconBlock BeaconBlock) GetProducer() string {
 	return beaconBlock.Header.Producer
 }
 
+func (beaconBlock BeaconBlock) GetProducerPubKeyStr() string {
+	return beaconBlock.Header.ProducerPubKeyStr
+}
+
 func (beaconBlock BeaconBlock) GetConsensusType() string {
 	return beaconBlock.Header.ConsensusType
 }

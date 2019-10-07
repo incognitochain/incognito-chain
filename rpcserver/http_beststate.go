@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"errors"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -109,7 +110,7 @@ func (httpServer *HttpServer) handleCanPubkeyStake(params interface{}, closeChan
 	}
 
 	canStake, err := httpServer.blockService.CanPubkeyStake(publicKey)
-	if err != nil{
+	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
@@ -140,5 +141,18 @@ func (httpServer *HttpServer) handleGetTotalTransaction(params interface{}, clos
 
 	result := jsonresult.NewTotalTransactionInShard(clonedShardBestState)
 	Logger.log.Debugf("handleGetTotalTransaction result: %+v", result)
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleGetBeaconBestStateDetail(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	Logger.log.Debugf("handleGetBeaconBestState params: %+v", params)
+
+	clonedBeaconBestState, err := httpServer.blockService.GetBeaconBestState()
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)
+	}
+
+	result := jsonresult.NewGetBeaconBestStateDetail(clonedBeaconBestState)
+	Logger.log.Debugf("Get Beacon BestState: %+v", clonedBeaconBestState)
 	return result, nil
 }
