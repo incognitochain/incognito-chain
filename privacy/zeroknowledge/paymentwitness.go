@@ -327,6 +327,6 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.Priva
 		return nil, privacy.NewPrivacyErr(privacy.ProveAggregatedRangeErr, err)
 	}
 
-	privacy.Logger.Log.Debug("Privacy log: PROVING DONE!!!")
+	//privacy.Logger.Log.Debug("Privacy log: PROVING DONE!!!")
 	return proof, nil
 }

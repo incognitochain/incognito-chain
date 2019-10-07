@@ -22,10 +22,56 @@ import (
 //	return gomobile.GenerateBLSKeyPairFromSeed(args[0].String())
 //}
 
+func generateKeyFromSeed(_ js.Value, args []js.Value) interface{} {
+	result, err := gomobile.GenerateKeyFromSeed(args[0].String())
+	if err != nil {
+		return nil
+	}
+
+	println("[Go] Result: ", result)
+
+	return result
+}
+
+func scalarMultBase(_ js.Value, args []js.Value) interface{} {
+	result, err := gomobile.ScalarMultBase(args[0].String())
+	if err != nil {
+		return nil
+	}
+
+	println("[Go] Result: ", result)
+
+	return result
+}
+
+func deriveSerialNumber(_ js.Value, args []js.Value) interface{} {
+	result, err := gomobile.DeriveSerialNumber(args[0].String())
+	if err != nil {
+		return nil
+	}
+
+	println("[Go] Result: ", result)
+
+	return result
+}
+
+func randomScalars(_ js.Value, args []js.Value) interface{} {
+	result, err := gomobile.RandomScalars(args[0].String())
+	if err != nil {
+		return nil
+	}
+
+	println("[Go] Result: ", result)
+
+	return result
+}
+
+
+// args[0]: private key base58 check serialize
+// args[1]: payment address base58 check serialize
+// args[2]:
 func initTx(_ js.Value, args []js.Value) interface{} {
 	result, err := gomobile.InitPrivacyTx(args[0].String())
-
-
 	if err != nil {
 		return nil
 	}
@@ -40,5 +86,9 @@ func main() {
 	//js.Global().Set("oneOutOfManyProve", js.FuncOf(oneOutOfManyProve))
 	//js.Global().Set("generateBLSKeyPairFromSeed", js.FuncOf(generateBLSKeyPairFromSeed))
 	js.Global().Set("initTx", js.FuncOf(initTx))
+	js.Global().Set("deriveSerialNumber", js.FuncOf(deriveSerialNumber))
+	js.Global().Set("generateKeyFromSeed", js.FuncOf(generateKeyFromSeed))
+	js.Global().Set("scalarMultBase", js.FuncOf(scalarMultBase))
+	js.Global().Set("randomScalars", js.FuncOf(randomScalars))
 	<-c
 }
