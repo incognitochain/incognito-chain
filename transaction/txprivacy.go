@@ -1551,6 +1551,12 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 		return NewTransactionErr(SignTxError, err)
 	}
 
+	snProof := tx.Proof.GetSerialNumberProof()
+	for i:=0; i<len(snProof); i++{
+		res, _ := snProof[i].Verify(nil)
+		println("Verify serial number proof: ", i, ": ", res)
+	}
+
 	//elapsedPrivacy := time.Since(startPrivacy)
 	//elapsed := time.Since(start)
 	//Logger.log.Debugf("Creating payment proof time %s", elapsedPrivacy)

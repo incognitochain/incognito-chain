@@ -343,7 +343,7 @@ func (proof SNPrivacyProof) Verify(mess []byte) (bool, error) {
 	rightPoint3.Add(rightPoint3, proof.tSN)
 
 	if !privacy.IsPointEqual(leftPoint3, rightPoint3) {
-		privacy.Logger.Log.Errorf("verify serial number privacy proof statement 3 failed")
+		//privacy.Logger.Log.Errorf("verify serial number privacy proof statement 3 failed")
 		return false, errors.New("verify serial number privacy proof statement 3 failed")
 	}
 
