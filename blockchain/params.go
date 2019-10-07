@@ -109,7 +109,7 @@ func init() {
 			SlashLevel{MinRange: 75, PunishedEpoches: 3},
 		},
 		CheckForce:   true,
-		ChainVersion: "version-chain-main.json",
+		ChainVersion: "version-chain.json",
 	}
 	// END TESTNET
 	// FOR MAINNET
@@ -151,6 +151,6 @@ func init() {
 			SlashLevel{MinRange: 75, PunishedEpoches: 3},
 		},
 		CheckForce:   false,
-		ChainVersion: "version-chain.json",
+		ChainVersion: "version-chain-main.json",
 	}
 }
