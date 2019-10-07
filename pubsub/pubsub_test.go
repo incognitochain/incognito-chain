@@ -47,7 +47,7 @@ func TestRegisterNewSubcribeWithUnregisteredTopic(t *testing.T) {
 	if pubsubErr, ok := err.(*PubSubError); !ok {
 		t.Error("Wrong error type")
 	} else {
-		if pubsubErr.Code != -1002 {
+		if pubsubErr.Code != ErrCodeMessage[UnregisteredTopicError].Code {
 			t.Error("Wrong Error code")
 		}
 	}
