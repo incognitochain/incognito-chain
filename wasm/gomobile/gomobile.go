@@ -1,11 +1,15 @@
 package gomobile
 
 import (
+	"encoding/base64"
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"github.com/pkg/errors"
+	"strconv"
 )
 
 //args {
@@ -156,6 +160,101 @@ import (
 //
 //
 
+// args: seed
+func GenerateKeyFromSeed(seedB64Encoded string) (string, error){
+	seed, err := base64.StdEncoding.DecodeString(seedB64Encoded)
+	if err != nil{
+		return "", nil
+	}
+
+	key := privacy.GeneratePrivateKey(seed)
+	res := base64.StdEncoding.EncodeToString(key)
+	return res, nil
+}
+
+func ScalarMultBase(scalarB64Encode string) (string, error){
+	scalar, err := base64.StdEncoding.DecodeString(scalarB64Encode)
+	if err != nil{
+		return "", nil
+	}
+
+	point := new(privacy.Point).ScalarMultBase(new(privacy.Scalar).FromBytesS(scalar))
+	res := base64.StdEncoding.EncodeToString(point.ToBytesS())
+	return res, nil
+}
+
+func DeriveSerialNumber(args string) (string, error) {
+	// parse data
+	bytes := []byte(args)
+	println("Bytes: %v\n", bytes)
+
+	paramMaps := make(map[string]interface{})
+
+	err := json.Unmarshal(bytes, &paramMaps)
+	if err != nil {
+		println("Error can not unmarshal data : %v\n", err)
+		return "", err
+	}
+
+	privateKeyStr, ok := paramMaps["privateKey"].(string)
+	if !ok {
+		println("Invalid private key")
+		return "", errors.New("Invalid private key")
+	}
+
+	keyWallet, err :=wallet.Base58CheckDeserialize(privateKeyStr)
+	if err != nil{
+		println("Can not decode private key")
+		return "", errors.New("Can not decode private key")
+	}
+	privateKeyScalar := new(privacy.Scalar).FromBytesS(keyWallet.KeySet.PrivateKey)
+
+	snds, ok := paramMaps["snds"].([]interface{})
+	if !ok {
+		println("Invalid list of serial number derivator")
+		return "", errors.New("Invalid list of serial number derivator")
+
+	}
+	sndScalars := make([]*privacy.Scalar, len(snds))
+
+	for i:=0; i<len(snds); i++{
+		tmp, ok := snds[i].(string)
+		println("tmp: ", tmp)
+		if !ok {
+			println("Invalid serial number derivator")
+			return "", errors.New("Invalid serial number derivator")
+
+		}
+		sndBytes, _, err := base58.Base58Check{}.Decode(tmp)
+		println("sndBytes: ", sndBytes)
+		if err != nil{
+			println("Can not decode serial number derivator")
+			return "", errors.New("Can not decode serial number derivator")
+		}
+		sndScalars[i] = new(privacy.Scalar).FromBytesS(sndBytes)
+	}
+
+	// calculate serial number and return result
+
+	serialNumberPoint := make([]*privacy.Point, len(sndScalars))
+	serialNumberStr := make([]string, len(serialNumberPoint))
+
+	serialNumberBytes := make([]byte, 0)
+
+	for i:= 0; i<len(sndScalars); i++{
+		serialNumberPoint[i] = new(privacy.Point).Derive(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex], privateKeyScalar, sndScalars[i])
+		println("serialNumberPoint[i]: ", serialNumberPoint[i])
+
+		serialNumberStr[i] = base58.Base58Check{}.Encode(serialNumberPoint[i].ToBytesS(), 0x00)
+		println("serialNumberStr[i]: ",serialNumberStr[i])
+		serialNumberBytes = append(serialNumberBytes, serialNumberPoint[i].ToBytesS()...)
+	}
+
+	result := base64.StdEncoding.EncodeToString(serialNumberBytes )
+
+	return result, nil
+}
+
 func InitPrivacyTx(args string) (string, error){
 	bytes := []byte(args)
 	println("Bytes: %v\n", bytes)
@@ -174,7 +273,7 @@ func InitPrivacyTx(args string) (string, error){
 	senderSKParam, ok := paramMaps["senderSK"].(string)
 	if !ok {
 		println("Invalid sender private key!")
-		return "", err
+		return "", errors.New("Invalid sender private key")
 	}
 	println("senderSKParam: %v\n", senderSKParam)
 
@@ -188,51 +287,164 @@ func InitPrivacyTx(args string) (string, error){
 
 	//get payment infos
 	println(paramMaps["paramPaymentInfos"])
-	paymentInfoParams, ok := paramMaps["paramPaymentInfos"].(map[string]uint64)
-	if !ok {
-		println("Invalid payment info params!")
-		return "", err
-	}
+	paymentInfoParams := paramMaps["paramPaymentInfos"].([]interface{})
+	//if !ok {
+	//	println("Invalid payment info params!")
+	//	return "", errors.New("Invalid payment info params")
+	//}
 
 	paymentInfo := make([]*privacy.PaymentInfo, 0)
-	for key, value := range paymentInfoParams{
+	for i:= 0; i<len(paymentInfoParams); i++{
+		tmp := paymentInfoParams[i].(map[string]interface{})
+		paymentAddrStr, ok := tmp["paymentAddressStr"].(string)
+		if !ok {
+			println("Invalid payment info params!")
+			return "", err
+		}
+
+		amount, ok := tmp["amount"].(float64)
+
 		paymentInfoTmp := new(privacy.PaymentInfo)
-		keyWallet, err := wallet.Base58CheckDeserialize(key)
+		keyWallet, err := wallet.Base58CheckDeserialize(paymentAddrStr)
 		if err != nil{
 			println("Error can not decode sender private key : %v\n", err)
 			return "", err
 		}
 		paymentInfoTmp.PaymentAddress = keyWallet.KeySet.PaymentAddress
-		paymentInfoTmp.Amount = value
+		paymentInfoTmp.Amount = uint64(amount)
 
 		paymentInfo = append(paymentInfo, paymentInfoTmp)
 	}
 
 	//get fee
-	fee := paramMaps["fee"].(uint64)
+	fee := paramMaps["fee"].(float64)
 	println("fee: ", fee)
 
 	// get has Privacy
-	hasPrivacy := paramMaps["hasPrivacy"].(bool)
+	hasPrivacy := paramMaps["isPrivacy"].(bool)
+
 	println("hasPrivacy: ", hasPrivacy)
 
-	inputCoins := make([]*privacy.InputCoin, 0)
+	inputCoinStrs, _ := paramMaps["inputCoinStrs"].([]interface{})
+	println("inputCoinStrs: ", inputCoinStrs)
+
+	inputCoins := make([]*privacy.InputCoin, len(inputCoinStrs))
+	for i:=0; i< len(inputCoins); i++{
+		tmp := inputCoinStrs[i].(map[string]interface{})
+		coinObjTmp := new(privacy.CoinObject)
+		coinObjTmp.PublicKey = tmp["PublicKey"].(string)
+		coinObjTmp.CoinCommitment = tmp["CoinCommitment"].(string)
+		coinObjTmp.SNDerivator = tmp["SNDerivator"].(string)
+		coinObjTmp.SerialNumber = tmp["SerialNumber"].(string)
+		coinObjTmp.Randomness = tmp["Randomness"].(string)
+		coinObjTmp.Value = tmp["Value"].(string)
+		coinObjTmp.Info = tmp["Info"].(string)
+
+		inputCoins[i] = new(privacy.InputCoin).Init()
+		inputCoins[i].ParseCoinObjectToInputCoin(*coinObjTmp)
+	}
+
+
+
 	println("inputCoins: ", inputCoins)
 
-	db := new(database.DatabaseInterface)
-	println("db: ", db)
+	commitmentIndicesParam, ok := paramMaps["commitmentIndices"].([]interface{})
+	if !ok {
+		return "", errors.New("invalid commitment indices param")
+	}
+	commitmentStrsParam, ok := paramMaps["commitmentStrs"].([]interface{})
+	if !ok {
+		return "", errors.New("invalid commitment strings param")
+	}
 
-	paramCreateTx := transaction.NewTxPrivacyInitParams(&senderSK, paymentInfo, inputCoins, fee, hasPrivacy, *db, nil, nil, nil )
+	myCommitmentIndicesParam, ok := paramMaps["myCommitmentIndices"].([]interface{})
+	if !ok {
+		return "", errors.New("invalid my commitment indices param")
+	}
+
+	sndOutputsParam, ok := paramMaps["sndOutputs"].([]interface{})
+	if !ok {
+		return "", errors.New("invalid snd outputs param")
+	}
+
+	println("sndOutputsParam: ", sndOutputsParam)
+
+	commitmentIndices := make([]uint64, len(commitmentIndicesParam))
+	commitmentStrs := make([]string, len(commitmentStrsParam))
+	myCommitmentIndices := make([]uint64, len(myCommitmentIndicesParam))
+	sndOutputs := make([]*privacy.Scalar, len(sndOutputsParam))
+
+	commitmentBytes := make([][]byte, len(commitmentStrsParam))
+	for i:=0; i<len(commitmentIndices); i++ {
+		commitmentIndices[i] = uint64(commitmentIndicesParam[i].(float64))
+		commitmentStrs[i] = commitmentStrsParam[i].(string)
+
+		commitmentBytes[i], _, err = base58.Base58Check{}.Decode(commitmentStrs[i])
+		if err != nil{
+			return "", nil
+		}
+	}
+
+	for i:=0;i< len(myCommitmentIndices); i++{
+		myCommitmentIndices[i] = uint64(myCommitmentIndicesParam[i].(float64))
+	}
+
+	for i:=0;i< len(sndOutputs); i++{
+
+		println("sndOutputsParam[i].(string): ", sndOutputsParam[i].(string))
+		tmp, _, err := base58.Base58Check{}.Decode(sndOutputsParam[i].(string))
+		if err != nil{
+			return "", nil
+		}
+
+		sndOutputs[i] = new(privacy.Scalar).FromBytesS(tmp)
+	}
+
+
+
+	paramCreateTx := transaction.NewTxPrivacyInitParamsForASM(&senderSK, paymentInfo, inputCoins, uint64(fee), hasPrivacy, nil, nil, nil,  commitmentIndices, commitmentBytes, myCommitmentIndices, sndOutputs)
 	println("paramCreateTx: ", paramCreateTx)
 
 
-	//tx:= new(transaction.Tx)
-	//err = tx.Init(paramCreateTx)
-	//if err != nil{
-	//	println("Can not create tx: ", err)
-	//	return "", err
-	//}
+	tx:= new(transaction.Tx)
+	err = tx.InitForASM(paramCreateTx)
 
-	return "", nil
+	println("tx.SigPubKey: ", tx.SigPubKey)
+	println("tx.Sig: ", tx.Sig)
 
+	if err != nil{
+		println("Can not create tx: ", err)
+		return "", err
+	}
+
+	// serialize tx json
+	txJson, err := json.Marshal(tx)
+	if err != nil{
+		println("Can not marshal tx: ", err)
+		return "", err
+	}
+
+	txB58CheckEncode := base58.Base58Check{}.Encode(txJson, common.ZeroByte)
+
+	println("txB58CheckEncode: ", txB58CheckEncode)
+	return txB58CheckEncode, nil
+}
+
+func RandomScalars(n string) (string, error){
+	nInt, err := strconv.ParseUint(n, 10, 64)
+	println("nInt: ", nInt)
+	if err != nil{
+		return "", nil
+	}
+
+	scalars := make([]byte, 0)
+	for i:=0; i<int(nInt); i++{
+		scalars = append(scalars, privacy.RandomScalar().ToBytesS()...)
+	}
+
+	res:= base64.StdEncoding.EncodeToString(scalars)
+
+	println("res scalars: ", res)
+
+	return res, nil
 }

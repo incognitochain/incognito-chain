@@ -166,7 +166,10 @@ func (httpServer *HttpServer) handleGetBalanceByPrivatekey(params interface{}, c
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("key component invalid"))
 	}
 	// param #1: private key of sender
-	senderKeyParam := arrayParams[0].(string)
+	senderKeyParam, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("invalid private key"))
+	}
 
 	return httpServer.walletService.GetBalanceByPrivateKey(senderKeyParam)
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"math/big"
+	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -313,6 +314,105 @@ func (inputCoin *InputCoin) Bytes() []byte {
 func (inputCoin *InputCoin) SetBytes(bytes []byte) error {
 	inputCoin.CoinDetails = new(Coin)
 	return inputCoin.CoinDetails.SetBytes(bytes)
+}
+
+type CoinObject struct {
+	PublicKey      string `json:"PublicKey"`
+	CoinCommitment string `json:"CoinCommitment"`
+	SNDerivator    string `json:"SNDerivator"`
+	SerialNumber   string `json:"SerialNumber"`
+	Randomness     string `json:"Randomness"`
+	Value          string `json:"Value"`
+	Info           string `json:"Info"`
+}
+
+// SetBytes (InputCoin) receives a coinBytes (in bytes array), and
+// reverts coinBytes to a InputCoin object
+func (inputCoin *InputCoin) ParseCoinObjectToInputCoin(coinObj CoinObject) error {
+	inputCoin.CoinDetails = new(Coin).Init()
+
+	if coinObj.PublicKey != ""{
+		publicKey, _, err := base58.Base58Check{}.Decode(coinObj.PublicKey)
+		if err != nil{
+			return err
+		}
+
+		publicKeyPoint, err := new(Point).FromBytesS(publicKey)
+		if err != nil{
+			return err
+		}
+		inputCoin.CoinDetails.SetPublicKey(publicKeyPoint)
+	}
+
+	if coinObj.CoinCommitment != ""{
+		coinCommitment, _, err := base58.Base58Check{}.Decode(coinObj.CoinCommitment)
+		if err != nil{
+			return err
+		}
+
+		coinCommitmentPoint, err := new(Point).FromBytesS(coinCommitment)
+		if err != nil{
+			return err
+		}
+		inputCoin.CoinDetails.SetCoinCommitment(coinCommitmentPoint)
+	}
+
+	if coinObj.SNDerivator != ""{
+		snderivator, _, err := base58.Base58Check{}.Decode(coinObj.SNDerivator)
+		if err != nil{
+			return err
+		}
+
+		snderivatorScalar := new(Scalar).FromBytesS(snderivator)
+		if err != nil{
+			return err
+		}
+		inputCoin.CoinDetails.SetSNDerivator(snderivatorScalar)
+	}
+
+	if coinObj.SerialNumber != ""{
+		serialNumber, _, err := base58.Base58Check{}.Decode(coinObj.SerialNumber)
+		if err != nil{
+			return err
+		}
+
+		serialNumberPoint, err := new(Point).FromBytesS(serialNumber)
+		if err != nil{
+			return err
+		}
+		inputCoin.CoinDetails.SetSerialNumber(serialNumberPoint)
+	}
+
+	if coinObj.Randomness != ""{
+		randomness, _, err := base58.Base58Check{}.Decode(coinObj.Randomness)
+		if err != nil{
+			return err
+		}
+
+		randomnessScalar := new(Scalar).FromBytesS(randomness)
+		if err != nil{
+			return err
+		}
+		inputCoin.CoinDetails.SetRandomness(randomnessScalar)
+	}
+
+
+	if coinObj.Value != ""{
+		value , err := strconv.ParseUint(coinObj.Value, 10, 64)
+		if err != nil{
+			return err
+		}
+		inputCoin.CoinDetails.SetValue(value)
+	}
+
+	if coinObj.Info != ""{
+		infoBytes, _, err := base58.Base58Check{}.Decode(coinObj.Info)
+		if err != nil{
+			return err
+		}
+		inputCoin.CoinDetails.SetInfo(infoBytes)
+	}
+	return nil
 }
 
 // OutputCoin represents a output coin of transaction
