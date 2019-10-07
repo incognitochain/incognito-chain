@@ -39,7 +39,7 @@ const (
 	MainnetDefaultPort = "9333"
 	MainnetEpoch       = 30000
 	MainnetRandomTime  = 15000
-	MainnetOffset      = 10
+	MainnetOffset      = 5
 	MainnetSwapOffset  = 2
 
 	MainNetShardCommitteeSize  = 3
