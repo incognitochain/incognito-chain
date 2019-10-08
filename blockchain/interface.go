@@ -20,6 +20,7 @@ type ShardToBeaconPool interface {
 	GetBlockByHeight(shardID byte, height uint64) *ShardToBeaconBlock
 	SetShardState(map[byte]uint64)
 	GetAllBlockHeight() map[byte][]uint64
+	RevertShardToBeaconPool(s byte, height uint64)
 }
 
 type CrossShardPool interface {
@@ -31,6 +32,7 @@ type CrossShardPool interface {
 	RemoveBlockByHeight(map[byte]uint64)
 	UpdatePool() map[byte]uint64
 	GetAllBlockHeight() map[byte][]uint64
+	RevertCrossShardPool(uint64)
 }
 
 type ShardPool interface {
@@ -41,6 +43,7 @@ type ShardPool interface {
 	GetValidBlockHeight() []uint64
 	GetLatestValidBlockHeight() uint64
 	SetShardState(height uint64)
+	RevertShardPool(uint64)
 	GetAllBlockHeight() []uint64
 	Start(chan struct{})
 }
@@ -51,6 +54,7 @@ type BeaconPool interface {
 	GetValidBlock() []*BeaconBlock
 	GetValidBlockHeight() []uint64
 	SetBeaconState(height uint64)
+	RevertBeconPool(height uint64)
 	GetAllBlockHeight() []uint64
 	Start(chan struct{})
 }

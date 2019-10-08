@@ -98,14 +98,28 @@ func (beaconPool *BeaconPool) SetBeaconState(lastestBeaconHeight uint64) {
 		beaconPool.latestValidHeight = lastestBeaconHeight
 	}
 }
-
+func (beaconPool *BeaconPool) RevertBeconPool(latestValidHeight uint64) {
+	beaconPool.mtx.Lock()
+	defer beaconPool.mtx.Unlock()
+	Logger.log.Infof("Begin Revert BeaconPool with latest valid height %+v", latestValidHeight)
+	beaconBlocks := []*blockchain.BeaconBlock{}
+	for _, shardBlock := range beaconPool.validPool {
+		beaconBlocks = append(beaconBlocks, shardBlock)
+	}
+	beaconPool.validPool = []*blockchain.BeaconBlock{}
+	for _, shardBlock := range beaconBlocks {
+		err := beaconPool.addBeaconBlock(shardBlock)
+		if err == nil {
+			continue
+		} else {
+			return
+		}
+	}
+}
 func (beaconPool BeaconPool) GetBeaconState() uint64 {
 	return beaconPool.latestValidHeight
 }
-
-func (beaconPool *BeaconPool) AddBeaconBlock(block *blockchain.BeaconBlock) error {
-	beaconPool.mtx.Lock()
-	defer beaconPool.mtx.Unlock()
+func (beaconPool *BeaconPool) addBeaconBlock(block *blockchain.BeaconBlock) error {
 	go beaconPool.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, block))
 	err := beaconPool.validateBeaconBlock(block, false)
 	if err != nil {
@@ -114,6 +128,11 @@ func (beaconPool *BeaconPool) AddBeaconBlock(block *blockchain.BeaconBlock) erro
 	beaconPool.insertNewBeaconBlockToPool(block)
 	beaconPool.promotePendingPool()
 	return nil
+}
+func (beaconPool *BeaconPool) AddBeaconBlock(block *blockchain.BeaconBlock) error {
+	beaconPool.mtx.Lock()
+	defer beaconPool.mtx.Unlock()
+	return beaconPool.addBeaconBlock(block)
 }
 
 func (beaconPool *BeaconPool) validateBeaconBlock(block *blockchain.BeaconBlock, isPending bool) error {
