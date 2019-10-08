@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/oneoutofmany"
 	"math/big"
@@ -161,7 +162,7 @@ func GenerateBLSKeyPairFromSeed(args string) string {
 
 	// append key pair to one bytes array
 	keyPairBytes := []byte{}
-	keyPairBytes = append(keyPairBytes, privateKey.Bytes()...)
+	keyPairBytes = append(keyPairBytes, common.AddPaddingBigInt(privateKey, common.BigIntSize)...)
 	keyPairBytes = append(keyPairBytes, blsmultisig.CmprG2(publicKey)...)
 
 	//  base64.StdEncoding.EncodeToString()
