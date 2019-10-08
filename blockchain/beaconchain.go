@@ -36,8 +36,6 @@ func (chain *BeaconChain) IsReady() bool {
 }
 
 func (chain *BeaconChain) CurrentHeight() uint64 {
-	chain.BestState.lock.Lock()
-	defer chain.BestState.lock.Unlock()
 	return chain.BestState.BestBlock.Header.Height
 }
 
@@ -73,14 +71,10 @@ func (chain *BeaconChain) CreateNewBlock(round int) (common.BlockInterface, erro
 }
 
 func (chain *BeaconChain) InsertBlk(block common.BlockInterface) error {
-	chain.lock.Lock()
-	defer chain.lock.Unlock()
 	return chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true)
 }
 
 func (chain *BeaconChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
-	chain.lock.Lock()
-	defer chain.lock.Unlock()
 	err := chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true)
 	if err != nil {
 		return err
