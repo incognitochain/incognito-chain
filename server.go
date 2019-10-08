@@ -804,7 +804,9 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 // CheckForceUpdateSourceCode - loop to check current version with update version is equal
 // Force source code to be updated and remove data
 func (serverObject Server) CheckForceUpdateSourceCode() {
+	return
 	go func() {
+
 		ctx := context.Background()
 		myClient, err := storage.NewClient(ctx, option.WithoutAuthentication())
 		if err != nil {
@@ -1333,9 +1335,9 @@ func (serverObj *Server) PushMessageToAll(msg wire.Message) error {
 		return err
 	}
 
-	var dc chan<- struct{}
-	msg.SetSenderID(serverObj.connManager.GetConfig().ListenerPeer.GetPeerID())
-	serverObj.connManager.GetConfig().ListenerPeer.QueueMessageWithEncoding(msg, dc, peer.MessageToAll, nil)
+	// var dc chan<- struct{}
+	// msg.SetSenderID(serverObj.connManager.GetConfig().ListenerPeer.GetPeerID())
+	// serverObj.connManager.GetConfig().ListenerPeer.QueueMessageWithEncoding(msg, dc, peer.MessageToAll, nil)
 	return nil
 }
 
@@ -1738,6 +1740,46 @@ func (serverObj *Server) PushMessageGetBlockCrossShardBySpecificHeight(fromShard
 		return serverObj.PushMessageToShard(msg, fromShard, map[libp2p.ID]bool{})
 	}
 	return serverObj.PushMessageToPeer(msg, peerID)
+}
+
+func (serverObj *Server) PublishNodeState() error {
+	userKey, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
+	var userRole string
+	var shardID byte
+	if userKey != "" {
+		userRole, shardID = serverObj.blockChain.BestState.Beacon.GetPubkeyRole(userKey, serverObj.blockChain.BestState.Beacon.BestBlock.Header.Round)
+	} else {
+		return errors.New("Can not load current mining key")
+	}
+	msg, err := wire.MakeEmptyMessage(wire.CmdPeerState)
+	if err != nil {
+		return err
+	}
+	msg.(*wire.MessagePeerState).Beacon = blockchain.ChainState{
+		serverObj.blockChain.BestState.Beacon.BestBlock.Header.Timestamp,
+		serverObj.blockChain.BestState.Beacon.BeaconHeight,
+		serverObj.blockChain.BestState.Beacon.BestBlockHash,
+		serverObj.blockChain.BestState.Beacon.Hash(),
+	}
+	if userRole != common.BeaconRole {
+		msg.(*wire.MessagePeerState).Shards[shardID] = blockchain.ChainState{
+			serverObj.blockChain.BestState.Shard[shardID].BestBlock.Header.Timestamp,
+			serverObj.blockChain.BestState.Shard[shardID].ShardHeight,
+			serverObj.blockChain.BestState.Shard[shardID].BestBlockHash,
+			serverObj.blockChain.BestState.Shard[shardID].Hash(),
+		}
+	} else {
+		msg.(*wire.MessagePeerState).ShardToBeaconPool = serverObj.shardToBeaconPool.GetValidBlockHeight()
+	}
+	publicKeyInBase58CheckEncode, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
+	if publicKeyInBase58CheckEncode != "" {
+		_, _, shardID := serverObj.consensusEngine.GetUserRole()
+		if (cfg.NodeMode == common.NodeModeAuto || cfg.NodeMode == common.NodeModeShard) && shardID >= 0 {
+			msg.(*wire.MessagePeerState).CrossShardPool[byte(shardID)] = serverObj.crossShardPool[byte(shardID)].GetValidBlockHeight()
+		}
+	}
+	serverObj.PushMessageToAll(msg)
+	return nil
 }
 
 func (serverObj *Server) BoardcastNodeState() error {
