@@ -166,5 +166,9 @@ func (httpServer *HttpServer) handleGenerateTokenID(params interface{}, closeCha
 		rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token name invalid"))
 	}
 	tokenID, err := rpcservice.GenerateTokenID(network, tokenName)
-	return tokenID.String(), rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	} else {
+		return tokenID.String(), nil
+	}
 }
