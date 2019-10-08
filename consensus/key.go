@@ -108,7 +108,6 @@ func (engine *Engine) SignDataWithCurrentMiningKey(
 			return
 		}
 	}
-	err = errors.New("oops")
 	return
 }
 
