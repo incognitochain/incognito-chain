@@ -273,6 +273,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 	previousBlockHash := shardBlock.Header.PreviousBlockHash
 	previousShardBlockData, err := blockchain.config.DataBase.FetchBlock(previousBlockHash)
 	if err != nil {
+		blockchain.Synker.SyncBlkShard(shardID, true, false, false, []common.Hash{previousBlockHash}, nil, 0, 0, "")
 		return NewBlockChainError(FetchPreviousBlockError, err)
 	}
 	previousShardBlock := ShardBlock{}
