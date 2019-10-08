@@ -518,7 +518,7 @@ func (synker *Synker) UpdateState() {
 
 		for peerID := range synker.States.PeersState {
 			if shardState, ok := synker.States.PeersState[peerID].Shard[shardID]; ok {
-				fmt.Println("SyncShard state from other shard", shardID, shardState.Height)
+				fmt.Println("SyncShard state from other shard", shardID, currentShardReqHeight, RCS.ClosestShardsState[shardID].Height)
 				if shardState.Height >= currentShardReqHeight {
 					if currentShardReqHeight+DefaultMaxBlkReqPerPeer-1 >= RCS.ClosestShardsState[shardID].Height {
 						fmt.Println("SyncShard 1234 ", currentShardReqHeight, RCS.ClosestShardsState[shardID].Height)
