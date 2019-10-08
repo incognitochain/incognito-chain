@@ -36,27 +36,19 @@ func (chain *ShardChain) IsReady() bool {
 }
 
 func (chain *ShardChain) CurrentHeight() uint64 {
-	chain.BestState.lock.Lock()
-	defer chain.BestState.lock.Unlock()
 	return chain.BestState.BestBlock.Header.Height
 }
 
 func (chain *ShardChain) GetCommittee() []incognitokey.CommitteePublicKey {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	result := []incognitokey.CommitteePublicKey{}
 	return append(result, chain.BestState.ShardCommittee...)
 }
 
 func (chain *ShardChain) GetCommitteeSize() int {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	return len(chain.BestState.ShardCommittee)
 }
 
 func (chain *ShardChain) GetPubKeyCommitteeIndex(pubkey string) int {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	for index, key := range chain.BestState.ShardCommittee {
 		if key.GetMiningKeyBase58(chain.BestState.ConsensusAlgorithm) == pubkey {
 			return index
@@ -122,14 +114,10 @@ func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, co
 }
 
 func (chain *ShardChain) InsertBlk(block common.BlockInterface) error {
-	chain.lock.Lock()
-	defer chain.lock.Unlock()
 	return chain.Blockchain.InsertShardBlock(block.(*ShardBlock), false)
 }
 
 func (chain *ShardChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
-	chain.lock.Lock()
-	defer chain.lock.Unlock()
 	err := chain.Blockchain.InsertShardBlock(block.(*ShardBlock), true)
 	if err != nil {
 		return err
