@@ -10,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"log"
 )
 
 func NewContractingRequestMetadata(senderPrivateKeyStr string, tokenReceivers interface{}, tokenID string) (*metadata.ContractingRequest, *RPCError) {
@@ -167,6 +168,13 @@ func HashToIdenticon(hashStrs []interface{}) ([]string, error) {
 	return result, nil
 }
 
-func GenerateTokenID(newwork string, name string) (common.Hash, error) {
-	return common.Hash{}, nil
+func GenerateTokenID(network string, name string) (common.Hash, error) {
+	point := privacy.HashToPoint([]byte(network + "-" + name))
+	hash := new(common.Hash)
+	err := hash.SetBytes(point.ToBytesS())
+	if err != nil {
+		log.Println("Wrong param")
+		return common.Hash{}, err
+	}
+	return *hash, nil
 }
