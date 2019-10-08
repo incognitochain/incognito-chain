@@ -135,6 +135,7 @@ func (blockchain *BlockChain) revertShardState(shardID byte) error {
 	if err := blockchain.StoreShardBestState(shardID, nil); err != nil {
 		return err
 	}
+	Logger.log.Critical("REVERT SHARD SUCCESS")
 	return nil
 }
 
@@ -787,6 +788,7 @@ func (blockchain *BlockChain) revertBeaconState() error {
 	if err := blockchain.StoreBeaconBestState(nil); err != nil {
 		return err
 	}
+	Logger.log.Critical("REVERT BEACON SUCCESS")
 	return nil
 }
 
