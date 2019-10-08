@@ -132,14 +132,7 @@ func (beaconPool *BeaconPool) addBeaconBlock(block *blockchain.BeaconBlock) erro
 func (beaconPool *BeaconPool) AddBeaconBlock(block *blockchain.BeaconBlock) error {
 	beaconPool.mtx.Lock()
 	defer beaconPool.mtx.Unlock()
-	go beaconPool.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, block))
-	err := beaconPool.validateBeaconBlock(block, false)
-	if err != nil {
-		return err
-	}
-	beaconPool.insertNewBeaconBlockToPool(block)
-	beaconPool.promotePendingPool()
-	return nil
+	return beaconPool.addBeaconBlock(block)
 }
 
 func (beaconPool *BeaconPool) validateBeaconBlock(block *blockchain.BeaconBlock, isPending bool) error {
