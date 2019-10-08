@@ -16,6 +16,8 @@ import (
 	"github.com/multiformats/go-multiaddr"
 )
 
+var HighwayPeerID = "12D3KooW9sbQK4J64Qat5D9vQEhBCnDYD3WPqWmgUZD4M7CJ2rXS"
+
 func NewConnManager(
 	host *Host,
 	dpa string,
@@ -53,7 +55,7 @@ func (cm *ConnManager) Start() {
 	if err != nil {
 		panic(err)
 	}
-	peerid, err := peer.IDB58Decode("QmbV4AAHWFFEtE67qqmNeEYXs5Yw5xNMS75oEKtdBvfoKN")
+	peerid, err := peer.IDB58Decode(HighwayPeerID)
 
 	// Pubsub
 	// TODO(@0xbunyip): handle error
@@ -151,7 +153,7 @@ func (cm *ConnManager) encodeAndPublish(msg wire.Message) error {
 
 // manageRoleSubscription: polling current role every minute and subscribe to relevant topics
 func (cm *ConnManager) manageRoleSubscription() {
-	peerid, _ := peer.IDB58Decode("QmbV4AAHWFFEtE67qqmNeEYXs5Yw5xNMS75oEKtdBvfoKN")
+	peerid, _ := peer.IDB58Decode(HighwayPeerID)
 	pubkey, _ := cm.IdentityKey.ToBase58()
 
 	lastRole := "dummy"
