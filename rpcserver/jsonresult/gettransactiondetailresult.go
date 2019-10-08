@@ -35,6 +35,7 @@ type TransactionDetail struct {
 	CustomTokenData               string      `json:"CustomTokenData"`
 	PrivacyCustomTokenData        string      `json:"PrivacyCustomTokenData"`
 	PrivacyCustomTokenProofDetail ProofDetail `json:"PrivacyCustomTokenProofDetail"`
+	PrivacyCustomTokenIsPrivacy   bool        `json:"PrivacyCustomTokenIsPrivacy"`
 
 	IsInMempool bool `json:"IsInMempool"`
 	IsInBlock   bool `json:"IsInBlock"`
@@ -140,6 +141,7 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 			if result.Proof != nil {
 				result.ProofDetail.ConvertFromProof(result.Proof)
 			}
+			result.PrivacyCustomTokenIsPrivacy = tempTx.TxPrivacyTokenData.TxNormal.IsPrivacy()
 			if tempTx.TxPrivacyTokenData.TxNormal.Proof != nil {
 				result.PrivacyCustomTokenProofDetail.ConvertFromProof(tempTx.TxPrivacyTokenData.TxNormal.Proof)
 			}
