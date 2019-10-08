@@ -1,6 +1,7 @@
 package rpcservice
 
 import (
+	"github.com/pkg/errors"
 	"math/big"
 	"strconv"
 
@@ -76,7 +77,11 @@ func (dbService DatabaseService) HasSerialNumbers(paymentAddressStr string, seri
 
 	result := make([]bool, 0)
 	for _, item := range serialNumbersStr {
-		serialNumber, _, _ := base58.Base58Check{}.Decode(item.(string))
+		itemStr, okParam := item.(string)
+		if !okParam {
+			return nil, errors.New("Invalid serial number param")
+		}
+		serialNumber, _, _ := base58.Base58Check{}.Decode(itemStr)
 		ok, _ := (*dbService.DB).HasSerialNumber(tokenID, serialNumber, shardIDSender)
 		if ok {
 			// serial number in db
