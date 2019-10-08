@@ -33,8 +33,7 @@ func processCmd() {
 				log.Println("Wrong param")
 				return
 			}
-			tokenID := common.Hash{}
-
+			//tokenID := common.Hash{}
 			//hashPNetWork := common.HashH([]byte(cfg.PNetwork))
 			//log.Printf("hashPNetWork: %+v\n", hashPNetWork.String())
 			//copy(tokenID[:16], hashPNetWork[:16])
@@ -44,11 +43,10 @@ func processCmd() {
 			//log.Printf("hashPToken: %+v\n", hashPToken.String())
 			//copy(tokenID[16:], hashPToken[:16])
 
-
 			point := privacy.HashToPoint([]byte(cfg.PNetwork + "-" + cfg.PToken))
 			hash := new(common.Hash)
 			err := hash.SetBytes(point.ToBytesS())
-			if err != nil{
+			if err != nil {
 				log.Println("Wrong param")
 				return
 			}
