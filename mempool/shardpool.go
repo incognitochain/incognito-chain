@@ -159,13 +159,7 @@ func (shardPool *ShardPool) addShardBlock(block *blockchain.ShardBlock) error {
 func (shardPool *ShardPool) AddShardBlock(block *blockchain.ShardBlock) error {
 	shardPool.mtx.Lock()
 	defer shardPool.mtx.Unlock()
-	var err error
-	err = shardPool.validateShardBlock(block, false)
-	if err != nil {
-		return err
-	}
-	shardPool.insertNewShardBlockToPool(block)
-	shardPool.promotePendingPool()
+	return shardPool.addShardBlock(block)
 	return nil
 }
 
