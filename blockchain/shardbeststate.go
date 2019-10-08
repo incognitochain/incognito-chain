@@ -98,7 +98,7 @@ func GetBestStateShard(shardID byte) *ShardBestState {
 }
 
 func SetBestStateShard(shardID byte, beststateShard *ShardBestState) {
-	*bestStateShardMap[shardID] = *beststateShard
+	*GetBestStateShard(shardID) = *beststateShard
 }
 
 // Get role of a public key base on best state shard
