@@ -33,7 +33,7 @@ func NewConnManager(
 }
 
 func (cm *ConnManager) PublishMessage(msg wire.Message) error {
-	publishable := []string{wire.CmdBlockShard, wire.CmdBFT, wire.CmdBlockBeacon}
+	publishable := []string{wire.CmdBlockShard, wire.CmdBFT, wire.CmdBlockBeacon, wire.CmdPeerState}
 	msgType := msg.MessageType()
 	for _, p := range publishable {
 		if msgType == p {
@@ -70,7 +70,7 @@ func (cm *ConnManager) Start() {
 }
 
 type ConsensusData interface {
-	GetUserRole() (string, int)
+	GetUserRole() (string, string, int)
 }
 
 type Topic struct {
@@ -145,6 +145,9 @@ func (cm *ConnManager) encodeAndPublish(msg wire.Message) error {
 
 	// Publish
 	topic := cm.subs[msg.MessageType()].Name
+	if isJustPubOrSub(msg.MessageType()) {
+		topic = topic + "-nodepub"
+	}
 	fmt.Printf("[db] Publishing to topic %s\n", topic)
 	return cm.ps.Publish(topic, []byte(messageHex))
 }
@@ -159,7 +162,7 @@ func (cm *ConnManager) manageRoleSubscription() {
 	lastTopics := m2t{}
 	for range time.Tick(5 * time.Second) {
 		// Update when role changes
-		role, shardID := cm.cd.GetUserRole()
+		_, role, shardID := cm.cd.GetUserRole()
 		if role == lastRole && shardID == lastShardID {
 			continue
 		}
@@ -200,12 +203,17 @@ func (cm *ConnManager) subscribeNewTopics(topics, subscribed m2t) error {
 
 	// Subscribe to new topics
 	for m, t := range topics {
-		if found(t, subscribed) {
+		topic4Subs := t
+		if isJustPubOrSub(t) {
+			topic4Subs = topic4Subs + "_nodesub"
+		}
+		if found(topic4Subs, subscribed) {
 			continue
 		}
 
-		fmt.Println("[db] subscribing", m, t)
-		s, err := cm.ps.Subscribe(t)
+		fmt.Println("[db] subscribing", m, topic4Subs)
+
+		s, err := cm.ps.Subscribe(topic4Subs)
 		if err != nil {
 			return err
 		}
@@ -215,7 +223,11 @@ func (cm *ConnManager) subscribeNewTopics(topics, subscribed m2t) error {
 
 	// Unsubscribe to old ones
 	for m, t := range subscribed {
-		if found(t, topics) {
+		topic4Subs := t
+		if isJustPubOrSub(t) {
+			topic4Subs = topic4Subs + "_nodesub"
+		}
+		if found(topic4Subs, topics) {
 			continue
 		}
 
@@ -291,6 +303,13 @@ func getMessagesForRole(role string, shardID int) []string {
 		}
 	}
 	return []string{}
+}
+
+func isJustPubOrSub(message string) bool {
+	if message == wire.CmdPeerState {
+		return true
+	}
+	return false
 }
 
 //go run *.go --listen "127.0.0.1:9433" --externaladdress "127.0.0.1:9433" --datadir "/data/fullnode" --discoverpeersaddress "127.0.0.1:9330" --loglevel debug
