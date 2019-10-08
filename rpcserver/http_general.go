@@ -154,3 +154,21 @@ func (httpServer *HttpServer) handleGetPublicKeyMining(params interface{}, close
 	}
 	return keys, nil
 }
+
+func (httpServer *HttpServer) handleGenerateTokenID(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	network, ok := arrayParams[0].(string)
+	if !ok {
+		rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("network invalid"))
+	}
+	tokenName, ok := arrayParams[1].(string)
+	if !ok {
+		rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token name invalid"))
+	}
+	tokenID, err := rpcservice.GenerateTokenID(network, tokenName)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	} else {
+		return tokenID.String(), nil
+	}
+}
