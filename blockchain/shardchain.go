@@ -124,7 +124,7 @@ func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, co
 func (chain *ShardChain) InsertBlk(block common.BlockInterface) error {
 	chain.lock.Lock()
 	defer chain.lock.Unlock()
-	return chain.Blockchain.InsertShardBlock(block.(*ShardBlock), true)
+	return chain.Blockchain.InsertShardBlock(block.(*ShardBlock), false)
 }
 
 func (chain *ShardChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
