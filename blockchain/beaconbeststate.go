@@ -107,7 +107,7 @@ func NewBeaconBestStateWithConfig(netparam *Params) *BeaconBestState {
 	return beaconBestState
 }
 func SetBeaconBestState(beacon *BeaconBestState) {
-	*beaconBestState = *beacon
+	*GetBeaconBestState() = *beacon
 }
 
 func GetBeaconBestState() *BeaconBestState {
