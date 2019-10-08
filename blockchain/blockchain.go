@@ -69,6 +69,7 @@ type Config struct {
 	RandomClient      btc.RandomClient
 	Server            interface {
 		BoardcastNodeState() error
+		PublishNodeState() error
 
 		PushMessageGetBlockBeaconByHeight(from uint64, to uint64, peerID libp2p.ID) error
 		PushMessageGetBlockBeaconByHash(blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error
