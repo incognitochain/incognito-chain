@@ -23,12 +23,17 @@ func (httpServer *HttpServer) handleGetProducersBlackList(params interface{}, cl
 
 func (httpServer *HttpServer) handleGetProducersBlackListDetail(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	// beaconHeight := httpServer.config.BlockChain.BestState.Beacon.BeaconHeight
-
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) == 0 {
 		return nil, nil
 	}
-	beaconHeight := uint64(arrayParams[0].(float64))
+
+	param0, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, nil
+	}
+	beaconHeight := uint64(param0)
+
 	producersBlackList, err := httpServer.databaseService.GetProducersBlackList(beaconHeight)
 	if err != nil {
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
