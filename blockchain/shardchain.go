@@ -36,6 +36,8 @@ func (chain *ShardChain) IsReady() bool {
 }
 
 func (chain *ShardChain) CurrentHeight() uint64 {
+	chain.BestState.lock.Lock()
+	defer chain.BestState.lock.Unlock()
 	return chain.BestState.BestBlock.Header.Height
 }
 
