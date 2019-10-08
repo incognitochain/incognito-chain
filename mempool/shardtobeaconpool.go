@@ -271,7 +271,7 @@ func (shardToBeaconPool *ShardToBeaconPool) GetValidBlock(limit map[byte]uint64)
 	for shardID, blks := range shardToBeaconPool.pool {
 		shardToBeaconPool.checkLatestValidHeightValidity(shardID)
 		for i, blk := range blks {
-			if blks[i].Header.Height > shardToBeaconPool.latestValidHeight[shardID] {
+			if blks[i].Header.Height > shardToBeaconPool.latestValidHeight[shardID]-1 {
 				break
 			}
 			// ?

@@ -127,10 +127,10 @@ func (shardPool *ShardPool) GetShardState() uint64 {
 	defer shardPool.mtx.RUnlock()
 	return shardPool.latestValidHeight
 }
-func (shardPool *ShardPool) RevertShardPool(shardID byte, latestValidHeight uint64) {
+func (shardPool *ShardPool) RevertShardPool(latestValidHeight uint64) {
 	shardPool.mtx.Lock()
 	defer shardPool.mtx.Unlock()
-	Logger.log.Infof("Begin Revert ShardPool of Shard %+v with latest valid height %+v", shardID, latestValidHeight)
+	Logger.log.Infof("Begin Revert ShardPool of Shard %+v with latest valid height %+v", shardPool.shardID, latestValidHeight)
 	shardBlocks := []*blockchain.ShardBlock{}
 	for _, shardBlock := range shardPool.validPool {
 		shardBlocks = append(shardBlocks, shardBlock)
