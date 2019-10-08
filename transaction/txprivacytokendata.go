@@ -54,8 +54,13 @@ func (txTokenPrivacyData TxPrivacyTokenData) JSONString() string {
 
 // Hash - return hash of custom token data, be used as Token ID
 func (txTokenPrivacyData TxPrivacyTokenData) Hash() (*common.Hash, error) {
-	hash := common.HashH([]byte(txTokenPrivacyData.String()))
-	return &hash, nil
+	point := privacy.HashToPoint([]byte(txTokenPrivacyData.String()))
+	hash := new(common.Hash)
+	err := hash.SetBytes(point.ToBytesS())
+	if err != nil{
+		return nil, err
+	}
+	return hash, nil
 }
 
 // CustomTokenParamTx - use for rpc request json body
