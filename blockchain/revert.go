@@ -80,7 +80,7 @@ func (blockchain *BlockChain) revertShardBestState(shardID byte) error {
 	if err := json.Unmarshal(prevBST, &shardBestState); err != nil {
 		return err
 	}
-	blockchain.BestState.Shard[shardID] = &shardBestState
+	SetBestStateShard(shardID, &shardBestState)
 	return nil
 }
 
