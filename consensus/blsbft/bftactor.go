@@ -191,9 +191,14 @@ func (e *BLSBFT) Start() error {
 				if !e.isInTimeFrame() || e.RoundData.State == "" {
 					e.enterNewRound()
 				}
+
 				switch e.RoundData.State {
 				case listenPhase:
 					// timeout or vote nil?
+					if e.Chain.CurrentHeight() == e.RoundData.NextHeight {
+						e.enterNewRound()
+						continue
+					}
 					roundKey := getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)
 					if e.Blocks[roundKey] != nil {
 						if err := e.validatePreSignBlock(e.Blocks[roundKey]); err != nil {
