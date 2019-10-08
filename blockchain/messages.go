@@ -111,7 +111,7 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 							return
 						}
 						fmt.Println("REVERTED SHARD", newBlk.Header.ShardID, newBlk.Header.Height)
-						err := blockchain.InsertShardBlock(newBlk, true)
+						err := blockchain.InsertShardBlock(newBlk, false)
 						if err != nil {
 							Logger.log.Error(err)
 						}
@@ -131,7 +131,7 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 							}
 						} else if !isConsensusOngoing {
 							Logger.log.Infof("Insert New Shard Block %+v, ShardID %+v \n", newBlk.Header.Height, newBlk.Header.ShardID)
-							err := blockchain.InsertShardBlock(newBlk, true)
+							err := blockchain.InsertShardBlock(newBlk, false)
 							if err != nil {
 								Logger.log.Error(err)
 								return
