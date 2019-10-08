@@ -214,78 +214,7 @@ func (shardToBeaconPool *ShardToBeaconPool) AddShardToBeaconBlock(block *blockch
 	defer shardToBeaconPool.mtx.Unlock()
 	shardToBeaconPool.latestValidHeightMutex.Lock()
 	defer shardToBeaconPool.latestValidHeightMutex.Unlock()
-
-	shardToBeaconPool.checkLatestValidHeightValidity(shardID)
-	//If receive old block, it will ignore
-	if blockHeight <= shardToBeaconPool.latestValidHeight[shardID] {
-		// if old block has round > current block in pool then swap
-		if _, ok := shardToBeaconPool.pool[shardID]; ok {
-			for index, existedBlock := range shardToBeaconPool.pool[shardID] {
-				if existedBlock.Header.Height == blockHeight {
-					if existedBlock.Header.Round < block.Header.Round {
-						// replace current existed block in pool
-						shardToBeaconPool.pool[shardID][index] = block
-						return 0, 0, nil
-					}
-				}
-			}
-		}
-		return 0, 0, NewBlockPoolError(OldBlockError, errors.New("Receive block "+strconv.Itoa(int(blockHeight))+" but expect greater than "+strconv.Itoa(int(shardToBeaconPool.latestValidHeight[shardID]))))
-	}
-	//If block already in pool, it will ignore
-	for i, blkItem := range shardToBeaconPool.pool[shardID] {
-		if blkItem.Header.Height == blockHeight {
-			if i+1 < len(shardToBeaconPool.pool[shardID]) {
-				if !reflect.DeepEqual(*blkItem.Hash(), shardToBeaconPool.pool[shardID][i+1].Header.PreviousBlockHash) {
-					shardToBeaconPool.pool[shardID][i] = block
-					return 0, 0, nil
-				}
-			}
-			if blkItem.Header.Round < block.Header.Round {
-				shardToBeaconPool.pool[shardID][i] = block
-				return 0, 0, nil
-			}
-			return 0, 0, NewBlockPoolError(DuplicateBlockError, errors.New("Receive Duplicate block "+strconv.Itoa(int(blockHeight))))
-		}
-	}
-
-	//Check if satisfy pool capacity (for valid and invalid)
-	if len(shardToBeaconPool.pool[shardID]) != 0 {
-		numValidPedingBlk := int(shardToBeaconPool.latestValidHeight[shardID] - shardToBeaconPool.pool[shardID][0].Header.Height + 1)
-		if numValidPedingBlk < 0 {
-			numValidPedingBlk = 0
-		}
-		numInValidPedingBlk := len(shardToBeaconPool.pool[shardID]) - numValidPedingBlk + 1
-		if numValidPedingBlk >= maxValidShardToBeaconBlockInPool {
-			return 0, 0, NewBlockPoolError(MaxPoolSizeError, errors.New("exceed max valid block"))
-		}
-		lastBlockInPool := shardToBeaconPool.pool[shardID][len(shardToBeaconPool.pool[shardID])-1]
-		if numInValidPedingBlk >= maxInvalidShardToBeaconBlockInPool {
-			//If invalid block is better than current invalid block
-			if lastBlockInPool.Header.Height > blockHeight {
-				//remove latest block and add better invalid to pool
-				shardToBeaconPool.pool[shardID] = shardToBeaconPool.pool[shardID][:len(shardToBeaconPool.pool[shardID])-1]
-			} else {
-				return 0, 0, NewBlockPoolError(MaxPoolSizeError, errors.New("exceed invalid pending block"))
-			}
-		}
-	}
-	shardToBeaconPool.pool[shardID] = append(shardToBeaconPool.pool[shardID], block)
-	//sort pool
-	sort.Slice(shardToBeaconPool.pool[shardID], func(i, j int) bool {
-		return shardToBeaconPool.pool[shardID][i].Header.Height < shardToBeaconPool.pool[shardID][j].Header.Height
-	})
-	//update last valid pending ShardState
-	shardToBeaconPool.updateLatestShardState()
-	//@NOTICE: check logic again
-	if shardToBeaconPool.pool[shardID][0].Header.Height > shardToBeaconPool.latestValidHeight[shardID] {
-		offset := shardToBeaconPool.pool[shardID][0].Header.Height - shardToBeaconPool.latestValidHeight[shardID]
-		if offset > maxValidShardToBeaconBlockInPool {
-			offset = maxValidShardToBeaconBlockInPool
-		}
-		return shardToBeaconPool.latestValidHeight[shardID] + 1, shardToBeaconPool.latestValidHeight[shardID] + offset, nil
-	}
-	return 0, 0, nil
+	return shardToBeaconPool.addShardToBeaconBlock(block)
 }
 
 func (shardToBeaconPool *ShardToBeaconPool) updateLatestShardState() {

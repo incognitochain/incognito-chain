@@ -148,31 +148,7 @@ func (crossShardPool *CrossShardPool) addCrossShardBlock(crossShardBlock *blockc
 func (crossShardPool *CrossShardPool) AddCrossShardBlock(crossShardBlock *blockchain.CrossShardBlock) (map[byte]uint64, byte, error) {
 	crossShardPool.mtx.Lock()
 	defer crossShardPool.mtx.Unlock()
-
-	shardID := crossShardBlock.Header.ShardID
-	blockHeight := crossShardBlock.Header.Height
-
-	Logger.log.Infof("Receiver Block %+v from shard %+v at Cross Shard Pool \n", blockHeight, shardID)
-	// validate cross shard block
-	if err := crossShardPool.validateCrossShardBlockBeforeSignatureValidation(crossShardBlock); err != nil {
-		return nil, crossShardPool.shardID, err
-	}
-	if len(crossShardPool.pendingPool[shardID]) > maxPendingCrossShardInPool {
-		if crossShardPool.pendingPool[shardID][len(crossShardPool.pendingPool[shardID])-1].Header.Height > crossShardBlock.Header.Height {
-			crossShardPool.pendingPool[shardID] = crossShardPool.pendingPool[shardID][:len(crossShardPool.pendingPool[shardID])-1]
-		} else {
-			return nil, crossShardPool.shardID, NewBlockPoolError(MaxPoolSizeError, fmt.Errorf("Reach max pending cross shard block %+v", maxPendingCrossShardInPool))
-		}
-	}
-	// check pool size
-	crossShardPool.pendingPool[shardID] = append(crossShardPool.pendingPool[shardID], crossShardBlock)
-	sort.Slice(crossShardPool.pendingPool[shardID], func(i, j int) bool {
-		return crossShardPool.pendingPool[shardID][i].Header.Height < crossShardPool.pendingPool[shardID][j].Header.Height
-	})
-	Logger.log.Infof("Finish Verify and Add To Pending Pool Cross Shard Block %+v from shard %+v \n", blockHeight, shardID)
-	// update pool states
-	expectedHeight := crossShardPool.updatePool()
-	return expectedHeight, crossShardPool.shardID, nil
+	return crossShardPool.addCrossShardBlock(crossShardBlock)
 }
 
 /*
