@@ -1243,12 +1243,13 @@ func (tp *TxPool) ListTxsDetail() []metadata.Transaction {
 // ValidateSerialNumberHashH - check serialNumberHashH which is
 // used by a tx in mempool
 func (tp *TxPool) ValidateSerialNumberHashH(serialNumber []byte) error {
+	tp.mtx.RLock()
+	defer tp.mtx.RUnlock()
 	hash := common.HashH(serialNumber)
 	for txHash, serialNumbersHashH := range tp.poolSerialNumbersHashList {
-		_ = txHash
 		for _, serialNumberHashH := range serialNumbersHashH {
 			if serialNumberHashH.IsEqual(&hash) {
-				return errors.New("Coin is in used")
+				return NewMempoolTxError(DuplicateSerialNumbersHashError, fmt.Errorf("Transaction %+v use duplicate current serial number in pool", txHash))
 			}
 		}
 	}
