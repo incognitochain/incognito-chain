@@ -11,7 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -21,7 +21,7 @@ import (
 // TxCustomTokenPrivacy is an advance format of TxNormalToken
 // so that user need to spend a lot fee to create this class tx
 type TxCustomTokenPrivacy struct {
-	Tx                                    // inherit from normal tx of P(supporting privacy) with a high fee to ensure that tx could contain a big data of privacy for token
+	Tx                                                                // inherit from normal tx of P(supporting privacy) with a high fee to ensure that tx could contain a big data of privacy for token
 	TxPrivacyTokenData TxPrivacyTokenData `json:"TxTokenPrivacyData"` // supporting privacy format
 
 	// private field, not use for json parser, only use as temp variable
@@ -664,4 +664,225 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetTokenID() *common.Hash {
 // GetTxFee - return fee PRV of Tx which contain privacy token Tx
 func (tx TxCustomTokenPrivacy) GetTxFee() uint64 {
 	return tx.Tx.GetTxFee()
+}
+
+type TxPrivacyTokenInitParamsForASM struct {
+	//senderKey       *privacy.PrivateKey
+	//paymentInfo     []*privacy.PaymentInfo
+	//inputCoin       []*privacy.InputCoin
+	//feeNativeCoin   uint64
+	//tokenParams     *CustomTokenPrivacyParamTx
+	//db              database.DatabaseInterface
+	//metaData        metadata.Metadata
+	//hasPrivacyCoin  bool
+	//hasPrivacyToken bool
+	//shardID         byte
+	//info            []byte
+
+	txParam                           TxPrivacyTokenInitParams
+	commitmentIndicesForNativeToken   []uint64
+	commitmentBytesForNativeToken     [][]byte
+	myCommitmentIndicesForNativeToken []uint64
+	sndOutputsForNativeToken          []*privacy.Scalar
+
+	commitmentIndicesForPToken   []uint64
+	commitmentBytesForPToken     [][]byte
+	myCommitmentIndicesForPToken []uint64
+	sndOutputsForPToken          []*privacy.Scalar
+}
+
+func NewTxPrivacyTokenInitParamsForASM(
+	senderKey *privacy.PrivateKey,
+	paymentInfo []*privacy.PaymentInfo,
+	inputCoin []*privacy.InputCoin,
+	feeNativeCoin uint64,
+	tokenParams *CustomTokenPrivacyParamTx,
+	metaData metadata.Metadata,
+	hasPrivacyCoin bool,
+	hasPrivacyToken bool,
+	shardID byte,
+	info []byte,
+	commitmentIndicesForNativeToken []uint64,
+	commitmentBytesForNativeToken [][]byte,
+	myCommitmentIndicesForNativeToken []uint64,
+	sndOutputsForNativeToken []*privacy.Scalar,
+
+	commitmentIndicesForPToken []uint64,
+	commitmentBytesForPToken [][]byte,
+	myCommitmentIndicesForPToken []uint64,
+	sndOutputsForPToken []*privacy.Scalar, ) *TxPrivacyTokenInitParamsForASM {
+
+	txParam := NewTxPrivacyTokenInitParams(senderKey, paymentInfo, inputCoin, feeNativeCoin, tokenParams, nil, metaData, hasPrivacyCoin, hasPrivacyToken, shardID, info)
+	params := &TxPrivacyTokenInitParamsForASM{
+		txParam:                           *txParam,
+		commitmentIndicesForNativeToken:   commitmentIndicesForNativeToken,
+		commitmentBytesForNativeToken:     commitmentBytesForNativeToken,
+		myCommitmentIndicesForNativeToken: myCommitmentIndicesForNativeToken,
+		sndOutputsForNativeToken:          sndOutputsForNativeToken,
+
+		commitmentIndicesForPToken:   commitmentIndicesForPToken,
+		commitmentBytesForPToken:     commitmentBytesForPToken,
+		myCommitmentIndicesForPToken: myCommitmentIndicesForPToken,
+		sndOutputsForPToken:          sndOutputsForPToken,
+	}
+	return params
+}
+
+// Init -  build normal tx component and privacy custom token data
+func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTokenInitParamsForASM) error {
+	var err error
+	// init data for tx PRV for fee
+	normalTx := Tx{}
+	err = normalTx.InitForASM(NewTxPrivacyInitParamsForASM(
+		params.txParam.senderKey,
+		params.txParam.paymentInfo,
+		params.txParam.inputCoin,
+		params.txParam.feeNativeCoin,
+		params.txParam.hasPrivacyCoin,
+		nil,
+		params.txParam.metaData,
+		params.txParam.info,
+		params.commitmentIndicesForNativeToken,
+		params.commitmentBytesForNativeToken,
+		params.myCommitmentIndicesForNativeToken,
+		params.sndOutputsForNativeToken,
+	))
+	if err != nil {
+		return NewTransactionErr(PrivacyTokenInitPRVError, err)
+	}
+
+	// override TxCustomTokenPrivacyType type
+	normalTx.Type = common.TxCustomTokenPrivacyType
+	txCustomTokenPrivacy.Tx = normalTx
+
+	// check action type and create privacy custom toke data
+	var handled = false
+	// Add token data component
+	switch params.txParam.tokenParams.TokenTxType {
+	case CustomTokenInit:
+		// case init a new privacy custom token
+		{
+			handled = true
+			txCustomTokenPrivacy.TxPrivacyTokenData = TxPrivacyTokenData{
+				Type:           params.txParam.tokenParams.TokenTxType,
+				PropertyName:   params.txParam.tokenParams.PropertyName,
+				PropertySymbol: params.txParam.tokenParams.PropertySymbol,
+				Amount:         params.txParam.tokenParams.Amount,
+			}
+
+			// issue token with data of privacy
+			temp := Tx{}
+			temp.Type = common.TxNormalType
+			temp.Proof = new(zkp.PaymentProof)
+			tempOutputCoin := make([]*privacy.OutputCoin, 1)
+			tempOutputCoin[0] = new(privacy.OutputCoin)
+			tempOutputCoin[0].CoinDetails = new(privacy.Coin)
+			tempOutputCoin[0].CoinDetails.SetValue(params.txParam.tokenParams.Amount)
+			PK, err := new(privacy.Point).FromBytesS(params.txParam.tokenParams.Receiver[0].PaymentAddress.Pk)
+			if err != nil {
+				return NewTransactionErr(DecompressPaymentAddressError, err)
+			}
+			tempOutputCoin[0].CoinDetails.SetPublicKey(PK)
+			tempOutputCoin[0].CoinDetails.SetRandomness(privacy.RandomScalar())
+
+			sndOut := privacy.RandomScalar()
+			tempOutputCoin[0].CoinDetails.SetSNDerivator(sndOut)
+			temp.Proof.SetOutputCoins(tempOutputCoin)
+
+			// create coin commitment
+			err = temp.Proof.GetOutputCoins()[0].CoinDetails.CommitAll()
+			if err != nil {
+				return NewTransactionErr(CommitOutputCoinError, err)
+			}
+			// get last byte
+			temp.PubKeyLastByteSender = params.txParam.tokenParams.Receiver[0].PaymentAddress.Pk[len(params.txParam.tokenParams.Receiver[0].PaymentAddress.Pk)-1]
+
+			// sign Tx
+			temp.SigPubKey = params.txParam.tokenParams.Receiver[0].PaymentAddress.Pk
+			temp.sigPrivKey = *params.txParam.senderKey
+			err = temp.signTx()
+			if err != nil {
+				Logger.log.Error(errors.New("can't sign this tx"))
+				return NewTransactionErr(SignTxError, err)
+			}
+
+			txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal = temp
+			hashInitToken, err := txCustomTokenPrivacy.TxPrivacyTokenData.Hash()
+			if err != nil {
+				Logger.log.Error(errors.New("can't hash this token data"))
+				return NewTransactionErr(UnexpectedError, err)
+			}
+
+			if params.txParam.tokenParams.Mintable {
+				propertyID, err := common.Hash{}.NewHashFromStr(params.txParam.tokenParams.PropertyID)
+				if err != nil {
+					return NewTransactionErr(TokenIDInvalidError, err)
+				}
+				txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID = *propertyID
+				txCustomTokenPrivacy.TxPrivacyTokenData.Mintable = true
+			} else {
+				//NOTICE: @merman update PropertyID calculated from hash of tokendata and shardID
+				newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), params.txParam.shardID))
+				Logger.log.Debug("New Privacy Token %+v ", newHashInitToken)
+				// todo: check client
+				//existed := params.db.PrivacyTokenIDExisted(newHashInitToken)
+				//if existed {
+				//	Logger.log.Error("INIT Tx Custom Token Privacy is Existed", newHashInitToken)
+				//	return NewTransactionErr(TokenIDExistedError, errors.New("this token is existed in network"))
+				//}
+				//existed = params.db.PrivacyTokenIDCrossShardExisted(newHashInitToken)
+				//if existed {
+				//	Logger.log.Error("INIT Tx Custom Token Privacy is Existed(crossshard)", newHashInitToken)
+				//	return NewTransactionErr(TokenIDExistedByCrossShardError, errors.New("this token is existed in network via cross shard"))
+				//}
+				txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID = newHashInitToken
+				Logger.log.Debugf("A new token privacy wil be issued with ID: %+v", txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID.String())
+			}
+		}
+	case CustomTokenTransfer:
+		{
+			handled = true
+			// make a transfering for privacy custom token
+			// fee always 0 and reuse function of normal tx for custom token ID
+			temp := Tx{}
+			propertyID, _ := common.Hash{}.NewHashFromStr(params.txParam.tokenParams.PropertyID)
+			// todo: check client
+			//existed := params.db.PrivacyTokenIDExisted(*propertyID)
+			//existedCross := params.db.PrivacyTokenIDCrossShardExisted(*propertyID)
+			//if !existed && !existedCross {
+			//	return NewTransactionErr(TokenIDExistedError, errors.New("invalid Token ID"))
+			//}
+			Logger.log.Debugf("Token %+v wil be transfered with", propertyID)
+			txCustomTokenPrivacy.TxPrivacyTokenData = TxPrivacyTokenData{
+				Type:           params.txParam.tokenParams.TokenTxType,
+				PropertyName:   params.txParam.tokenParams.PropertyName,
+				PropertySymbol: params.txParam.tokenParams.PropertySymbol,
+				PropertyID:     *propertyID,
+				Mintable:       params.txParam.tokenParams.Mintable,
+			}
+			err := temp.InitForASM(NewTxPrivacyInitParamsForASM(
+				params.txParam.senderKey,
+				params.txParam.tokenParams.Receiver,
+				params.txParam.tokenParams.TokenInput,
+				params.txParam.tokenParams.Fee,
+				params.txParam.hasPrivacyToken,
+				propertyID,
+				nil,
+				params.txParam.info,
+				params.commitmentIndicesForPToken,
+				params.commitmentBytesForPToken,
+				params.myCommitmentIndicesForPToken,
+				params.sndOutputsForPToken,
+			))
+			if err != nil {
+				return NewTransactionErr(PrivacyTokenInitTokenDataError, err)
+			}
+			txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal = temp
+		}
+	}
+
+	if !handled {
+		return NewTransactionErr(PrivacyTokenTxTypeNotHandleError, errors.New("can't handle this TokenTxType"))
+	}
+	return nil
 }
