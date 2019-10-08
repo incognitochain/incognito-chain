@@ -91,16 +91,16 @@ func (crossShardPool *CrossShardPool) GetNextCrossShardHeight(fromShard, toShard
 	return nextHeight
 
 }
-func (crossShardPool *CrossShardPool) RevertCrossShardPool(shardID byte, latestValidHeight uint64) {
+func (crossShardPool *CrossShardPool) RevertCrossShardPool(latestValidHeight uint64) {
 	crossShardPool.mtx.Lock()
 	defer crossShardPool.mtx.Unlock()
-	Logger.log.Infof("Begin Revert CrossShardPool of Shard %+v with latest valid height %+v", shardID, latestValidHeight)
+	Logger.log.Infof("Begin Revert CrossShardPool of Shard %+v with latest valid height %+v", crossShardPool.shardID, latestValidHeight)
 	crossShardBlocks := []*blockchain.CrossShardBlock{}
-	if _, ok := crossShardPool.validPool[shardID]; ok {
-		for _, crossShardBlock := range crossShardPool.validPool[shardID] {
+	if _, ok := crossShardPool.validPool[crossShardPool.shardID]; ok {
+		for _, crossShardBlock := range crossShardPool.validPool[crossShardPool.shardID] {
 			crossShardBlocks = append(crossShardBlocks, crossShardBlock)
 		}
-		crossShardPool.validPool[shardID] = []*blockchain.CrossShardBlock{}
+		crossShardPool.validPool[crossShardPool.shardID] = []*blockchain.CrossShardBlock{}
 		for _, crossShardBlock := range crossShardBlocks {
 			_, _, err := crossShardPool.addCrossShardBlock(crossShardBlock)
 			if err == nil {
