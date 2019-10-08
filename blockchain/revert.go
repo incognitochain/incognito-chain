@@ -703,8 +703,7 @@ func (blockchain *BlockChain) revertBeaconBestState() error {
 	if err := json.Unmarshal(prevBST, &beaconBestState); err != nil {
 		return err
 	}
-
-	blockchain.BestState.Beacon = &beaconBestState
+	SetBeaconBestState(&beaconBestState)
 	blockchain.config.BeaconPool.SetBeaconState(beaconBestState.BeaconHeight)
 	blockchain.config.ShardToBeaconPool.SetShardState(blockchain.BestState.Beacon.GetBestShardHeight())
 
