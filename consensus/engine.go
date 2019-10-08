@@ -71,7 +71,9 @@ func (engine *Engine) watchConsensusCommittee() {
 						userLayer = common.BeaconRole
 						userRole = common.CommitteeRole
 					}
-					engine.updateUserState(&publickey, userLayer, userRole, shardID)
+					if engine.updateUserState(&publickey, userLayer, userRole, shardID) {
+						engine.config.Node.DropAllConnections()
+					}
 					break
 				}
 			}
@@ -96,23 +98,31 @@ func (engine *Engine) watchConsensusCommittee() {
 
 			if common.IndexOfStr(publickey.GetMiningKeyBase58(consensusType), beaconPendingList) != -1 {
 				engine.CurrentMiningChain = common.BeaconChainKey
-				engine.updateUserState(&publickey, common.BeaconRole, common.PendingRole, 0)
+				if engine.updateUserState(&publickey, common.BeaconRole, common.PendingRole, 0) {
+					engine.config.Node.DropAllConnections()
+				}
 				break
 			}
 			if common.IndexOfStr(publickey.GetMiningKeyBase58(consensusType), beaconWaitingList) != -1 {
 				engine.CurrentMiningChain = common.BeaconChainKey
-				engine.updateUserState(&publickey, common.BeaconRole, common.WaitingRole, 0)
+				if engine.updateUserState(&publickey, common.BeaconRole, common.WaitingRole, 0) {
+					engine.config.Node.DropAllConnections()
+				}
 				break
 			}
 			if common.IndexOfStr(publickey.GetMiningKeyBase58(consensusType), shardsWaitingList) != -1 {
 				engine.CurrentMiningChain = common.BeaconChainKey
-				engine.updateUserState(&publickey, common.ShardRole, common.WaitingRole, 0)
+				if engine.updateUserState(&publickey, common.ShardRole, common.WaitingRole, 0) {
+					engine.config.Node.DropAllConnections()
+				}
 				break
 			}
 			for chainName, committee := range shardsPendingList {
 				if common.IndexOfStr(publickey.GetMiningKeyBase58(consensusType), committee) != -1 {
 					engine.CurrentMiningChain = chainName
-					engine.updateUserState(&publickey, common.ShardRole, common.PendingRole, getShardFromChainName(chainName))
+					if engine.updateUserState(&publickey, common.ShardRole, common.PendingRole, getShardFromChainName(chainName)) {
+						engine.config.Node.DropAllConnections()
+					}
 					break
 				}
 			}
@@ -158,8 +168,9 @@ func (engine *Engine) watchConsensusCommittee() {
 				role, _ := engine.config.Blockchain.Chains[chainName].GetPubkeyRole(userCurrentPublicKey, 0)
 				if role == common.EmptyString {
 					engine.CurrentMiningChain = common.EmptyString
-					engine.updateUserState(&userMiningKey, common.EmptyString, common.EmptyString, 0)
-					engine.config.Node.DropAllConnections()
+					if engine.updateUserState(&userMiningKey, common.EmptyString, common.EmptyString, 0) {
+						engine.config.Node.DropAllConnections()
+					}
 					engine.updateConsensusState()
 				}
 			}
@@ -182,8 +193,9 @@ func (engine *Engine) watchConsensusCommittee() {
 								userLayer = common.BeaconRole
 								userRole = common.CommitteeRole
 							}
-							engine.updateUserState(&userMiningKey, userLayer, userRole, shardID)
-							engine.config.Node.DropAllConnections()
+							if engine.updateUserState(&userMiningKey, userLayer, userRole, shardID) {
+								engine.config.Node.DropAllConnections()
+							}
 							engine.updateConsensusState()
 							break
 						}
@@ -205,18 +217,24 @@ func (engine *Engine) watchConsensusCommittee() {
 
 					if common.IndexOfStr(publickey.GetMiningKeyBase58(consensusType), beaconPendingList) != -1 {
 						engine.CurrentMiningChain = common.BeaconChainKey
-						engine.updateUserState(&publickey, common.BeaconRole, common.PendingRole, 0)
+						if engine.updateUserState(&publickey, common.BeaconRole, common.PendingRole, 0) {
+							engine.config.Node.DropAllConnections()
+						}
 						continue
 					}
 					if common.IndexOfStr(publickey.GetMiningKeyBase58(consensusType), shardsWaitingList) != -1 {
 						engine.CurrentMiningChain = common.BeaconChainKey
-						engine.updateUserState(&publickey, common.ShardRole, common.WaitingRole, 0)
+						if engine.updateUserState(&publickey, common.ShardRole, common.WaitingRole, 0) {
+							engine.config.Node.DropAllConnections()
+						}
 						continue
 					}
 					for chainName, committee := range shardsPendingList {
 						if common.IndexOfStr(publickey.GetMiningKeyBase58(consensusType), committee) != -1 {
 							engine.CurrentMiningChain = chainName
-							engine.updateUserState(&publickey, common.ShardRole, common.PendingRole, getShardFromChainName(chainName))
+							if engine.updateUserState(&publickey, common.ShardRole, common.PendingRole, getShardFromChainName(chainName)) {
+								engine.config.Node.DropAllConnections()
+							}
 							break
 						}
 					}
@@ -229,10 +247,9 @@ func (engine *Engine) watchConsensusCommittee() {
 				if role == common.ShardRole {
 					if engine.CurrentMiningChain == common.EmptyString {
 						engine.CurrentMiningChain = common.GetShardChainKey(shardID)
-						if userCurrentPublicKey != engine.userCurrentState.KeysBase58[consensusType] {
-							engine.updateUserState(&userMiningKey, common.ShardRole, common.CommitteeRole, shardID)
+						if engine.updateUserState(&userMiningKey, common.ShardRole, common.CommitteeRole, shardID) {
+							engine.config.Node.DropAllConnections()
 						}
-						engine.config.Node.DropAllConnections()
 						engine.updateConsensusState()
 					}
 					continue
@@ -433,7 +450,22 @@ func (engine *Engine) updateConsensusState() {
 	}
 }
 
-func (engine *Engine) updateUserState(keySet *incognitokey.CommitteePublicKey, layer string, role string, shardID byte) {
+func (engine *Engine) updateUserState(keySet *incognitokey.CommitteePublicKey, layer string, role string, shardID byte) bool {
+	isChange := false
+
+	if engine.userCurrentState.ShardID != shardID {
+		isChange = true
+	}
+	if engine.userCurrentState.UserLayer != layer {
+		isChange = true
+	}
+	if engine.userCurrentState.UserRole != role {
+		isChange = true
+	}
+	if engine.userCurrentState.Keys != keySet {
+		isChange = true
+	}
+
 	if role == "" {
 		engine.userCurrentState.UserLayer = ""
 		engine.userCurrentState.UserRole = ""
@@ -451,4 +483,5 @@ func (engine *Engine) updateUserState(keySet *incognitokey.CommitteePublicKey, l
 			engine.userCurrentState.KeysBase58[keyType] = keySet.GetMiningKeyBase58(keyType)
 		}
 	}
+	return isChange
 }
