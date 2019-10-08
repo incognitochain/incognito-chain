@@ -174,10 +174,10 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 		if _, ok := snapshotAllShardPending[shardID]; ok {
 			isChanged := !reflect.DeepEqual(snapshotAllShardPending[shardID], committee)
 			if isChanged {
-				go blockchain.config.ConsensusEngine.CommitteeChange(common.GetShardChainKey(shardID))
+				go blockchain.config.ConsensusEngine.CommitteeChange(common.BeaconChainKey)
 			}
 		} else {
-			go blockchain.config.ConsensusEngine.CommitteeChange(common.GetShardChainKey(shardID))
+			go blockchain.config.ConsensusEngine.CommitteeChange(common.BeaconChainKey)
 		}
 	}
 	//Check shard-committee
@@ -185,10 +185,10 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 		if _, ok := snapshotAllShardCommittee[shardID]; ok {
 			isChanged := !reflect.DeepEqual(snapshotAllShardCommittee[shardID], committee)
 			if isChanged {
-				go blockchain.config.ConsensusEngine.CommitteeChange(common.GetShardChainKey(shardID))
+				go blockchain.config.ConsensusEngine.CommitteeChange(common.BeaconChainKey)
 			}
 		} else {
-			go blockchain.config.ConsensusEngine.CommitteeChange(common.GetShardChainKey(shardID))
+			go blockchain.config.ConsensusEngine.CommitteeChange(common.BeaconChainKey)
 		}
 	}
 
