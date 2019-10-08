@@ -33,7 +33,7 @@ func processCmd() {
 				log.Println("Wrong param")
 				return
 			}
-			tokenID := common.Hash{}
+			//tokenID := common.Hash{}
 
 			//hashPNetWork := common.HashH([]byte(cfg.PNetwork))
 			//log.Printf("hashPNetWork: %+v\n", hashPNetWork.String())
