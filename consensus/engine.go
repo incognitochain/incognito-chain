@@ -172,6 +172,7 @@ func (engine *Engine) watchConsensusCommittee() {
 						engine.config.Node.DropAllConnections()
 					}
 					engine.updateConsensusState()
+					continue
 				}
 			}
 
