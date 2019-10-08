@@ -44,6 +44,10 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-peer"
+
+	p2ppubsub "github.com/libp2p/go-libp2p-pubsub"
+
+	pb "github.com/libp2p/go-libp2p-pubsub/pb"
 )
 
 type Server struct {
@@ -1588,18 +1592,20 @@ func (serverObj *Server) PushMessageGetBlockBeaconByHash(blkHashes []common.Hash
 }
 
 func (serverObj *Server) PushMessageGetBlockShardByHeight(shardID byte, from uint64, to uint64, peerID libp2p.ID) error {
-	msg, err := wire.MakeEmptyMessage(wire.CmdGetBlockShard)
+	res, err := serverObj.highway.Client.GetBlockShardByHeight(int32(shardID), from, to)
 	if err != nil {
+		Logger.log.Error(err)
 		return err
 	}
-	msg.(*wire.MessageGetBlockShard).BlkHeights = append(msg.(*wire.MessageGetBlockShard).BlkHeights, from)
-	msg.(*wire.MessageGetBlockShard).BlkHeights = append(msg.(*wire.MessageGetBlockShard).BlkHeights, to)
-	msg.(*wire.MessageGetBlockShard).ShardID = shardID
-	if peerID == "" {
-		return serverObj.PushMessageToShard(msg, shardID, map[libp2p.ID]bool{})
-	}
-	return serverObj.PushMessageToPeer(msg, peerID)
 
+	// Create dummy msg wrapping grpc response
+	msg := &p2ppubsub.Message{
+		&pb.Message{
+			Data: res,
+		},
+	}
+	serverObj.highway.PutMessage(msg)
+	return nil
 }
 
 func (serverObj *Server) PushMessageGetBlockShardBySpecificHeight(shardID byte, heights []uint64, getFromPool bool, peerID libp2p.ID) error {
