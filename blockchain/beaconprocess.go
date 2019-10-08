@@ -295,7 +295,12 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *Beacon
 	previousBlockHash := beaconBlock.Header.PreviousBlockHash
 	parentBlockBytes, err := blockchain.config.DataBase.FetchBeaconBlock(previousBlockHash)
 	if err != nil {
+		Logger.log.Critical("FORK BEACON DETECTED")
 		blockchain.Synker.SyncBlkBeacon(true, false, false, []common.Hash{previousBlockHash}, nil, 0, 0, "")
+		revertErr := blockchain.revertBeaconState()
+		if revertErr != nil {
+			return errors.WithStack(revertErr)
+		}
 		return NewBlockChainError(FetchBeaconBlockError, err)
 	}
 	previousBeaconBlock := NewBeaconBlock()
