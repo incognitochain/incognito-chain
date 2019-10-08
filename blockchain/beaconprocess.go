@@ -174,10 +174,10 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 		if _, ok := snapshotAllShardPending[shardID]; ok {
 			isChanged := !reflect.DeepEqual(snapshotAllShardPending[shardID], committee)
 			if isChanged {
-				go blockchain.config.ConsensusEngine.CommitteeChange(common.GetShardChainKey(shardID))
+				go blockchain.config.ConsensusEngine.CommitteeChange(common.BeaconChainKey)
 			}
 		} else {
-			go blockchain.config.ConsensusEngine.CommitteeChange(common.GetShardChainKey(shardID))
+			go blockchain.config.ConsensusEngine.CommitteeChange(common.BeaconChainKey)
 		}
 	}
 	//Check shard-committee
@@ -185,10 +185,10 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 		if _, ok := snapshotAllShardCommittee[shardID]; ok {
 			isChanged := !reflect.DeepEqual(snapshotAllShardCommittee[shardID], committee)
 			if isChanged {
-				go blockchain.config.ConsensusEngine.CommitteeChange(common.GetShardChainKey(shardID))
+				go blockchain.config.ConsensusEngine.CommitteeChange(common.BeaconChainKey)
 			}
 		} else {
-			go blockchain.config.ConsensusEngine.CommitteeChange(common.GetShardChainKey(shardID))
+			go blockchain.config.ConsensusEngine.CommitteeChange(common.BeaconChainKey)
 		}
 	}
 
@@ -295,7 +295,12 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *Beacon
 	previousBlockHash := beaconBlock.Header.PreviousBlockHash
 	parentBlockBytes, err := blockchain.config.DataBase.FetchBeaconBlock(previousBlockHash)
 	if err != nil {
+		Logger.log.Critical("FORK BEACON DETECTED")
 		blockchain.Synker.SyncBlkBeacon(true, false, false, []common.Hash{previousBlockHash}, nil, 0, 0, "")
+		revertErr := blockchain.revertBeaconState()
+		if revertErr != nil {
+			return errors.WithStack(revertErr)
+		}
 		return NewBlockChainError(FetchBeaconBlockError, err)
 	}
 	previousBeaconBlock := NewBeaconBlock()

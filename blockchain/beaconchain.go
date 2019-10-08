@@ -36,6 +36,8 @@ func (chain *BeaconChain) IsReady() bool {
 }
 
 func (chain *BeaconChain) CurrentHeight() uint64 {
+	chain.BestState.lock.Lock()
+	defer chain.BestState.lock.Unlock()
 	return chain.BestState.BestBlock.Header.Height
 }
 
