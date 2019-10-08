@@ -151,7 +151,7 @@ func GenerateBLSKeyPairFromSeed(args string) string {
 
 	// append key pair to one bytes array
 	keyPairBytes := []byte{}
-	keyPairBytes = append(keyPairBytes, privateKey.Bytes()...)
+	keyPairBytes = append(keyPairBytes, common.AddPaddingBigInt(privateKey, common.BigIntSize)...)
 	keyPairBytes = append(keyPairBytes, blsmultisig.CmprG2(publicKey)...)
 
 	//  base64.StdEncoding.EncodeToString()
