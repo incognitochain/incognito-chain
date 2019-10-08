@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	MaxBlockPayload = 2000000 // 2 Mb
+	MaxBlockPayload = 5000000 // 2 Mb
 )
 
 type MessageBlockShard struct {
