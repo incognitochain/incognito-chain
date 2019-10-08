@@ -157,36 +157,47 @@ func (cm *ConnManager) manageRoleSubscription() {
 	peerid, _ := peer.IDB58Decode("QmbV4AAHWFFEtE67qqmNeEYXs5Yw5xNMS75oEKtdBvfoKN")
 	pubkey, _ := cm.IdentityKey.ToBase58()
 
-	lastRole := "dummy"
-	lastShardID := -1000 // dummy value
+	lastRole := newUserRole("dummyLayer", "dummyRole", -1000)
 	lastTopics := m2t{}
 	for range time.Tick(5 * time.Second) {
 		// Update when role changes
-		_, role, shardID := cm.cd.GetUserRole()
-		if role == lastRole && shardID == lastShardID {
+		newRole := newUserRole(cm.cd.GetUserRole())
+		if newRole == lastRole {
+			continue
+		}
+		log.Printf("Role changed: %v -> %v", lastRole, newRole)
+		lastRole = newRole
+
+		// TODO(@0xbunyip): Pending & Waiting roles?
+		if newRole.role != common.CommitteeRole {
 			continue
 		}
 
 		// Get new topics
-		topics := lastTopics
-		if role == common.ShardRole || role == common.BeaconRole {
-			var err error
-			topics, err = cm.registerToProxy(peerid, pubkey, role, shardID)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-		}
-
-		err := cm.subscribeNewTopics(topics, lastTopics)
+		topics, err := cm.registerToProxy(peerid, pubkey, newRole.layer, newRole.shardID)
 		if err != nil {
 			log.Println(err)
 			continue
 		}
-
-		lastRole = role
-		lastShardID = shardID
+		if err := cm.subscribeNewTopics(topics, lastTopics); err != nil {
+			log.Println(err)
+			continue
+		}
 		lastTopics = topics
+	}
+}
+
+type userRole struct {
+	layer   string
+	role    string
+	shardID int
+}
+
+func newUserRole(layer, role string, shardID int) *userRole {
+	return &userRole{
+		layer:   layer,
+		role:    role,
+		shardID: shardID,
 	}
 }
 
@@ -260,12 +271,12 @@ type m2t map[string]string // Message to topic name
 func (cm *ConnManager) registerToProxy(
 	peerID peer.ID,
 	pubkey string,
-	role string,
+	layer string,
 	shardID int,
 ) (m2t, error) {
 	// Client on this node
 	client := GRPCService_Client{cm.LocalHost.GRPC}
-	messagesWanted := getMessagesForRole(role, shardID)
+	messagesWanted := getMessagesForLayer(layer, shardID)
 	pairs, err := client.ProxyRegister(
 		context.Background(),
 		peerID,
@@ -284,8 +295,8 @@ func (cm *ConnManager) registerToProxy(
 	return topics, nil
 }
 
-func getMessagesForRole(role string, shardID int) []string {
-	if role == common.ShardRole {
+func getMessagesForLayer(layer string, shardID int) []string {
+	if layer == common.ShardRole {
 		return []string{
 			wire.CmdBlockShard,
 			wire.CmdBlockBeacon,
@@ -294,7 +305,7 @@ func getMessagesForRole(role string, shardID int) []string {
 			wire.CmdCrossShard,
 			wire.CmdBlkShardToBeacon,
 		}
-	} else if role == common.BeaconRole {
+	} else if layer == common.BeaconRole {
 		return []string{
 			wire.CmdBlockBeacon,
 			wire.CmdBFT,
