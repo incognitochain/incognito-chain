@@ -282,6 +282,7 @@ func (cm *ConnManager) registerToProxy(
 		peerID,
 		pubkey,
 		messagesWanted,
+		cm.LocalHost.Host.ID(),
 	)
 	if err != nil {
 		return nil, err
