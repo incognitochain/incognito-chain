@@ -74,6 +74,7 @@ func (engine *Engine) watchConsensusCommittee() {
 					if engine.updateUserState(&publickey, userLayer, userRole, shardID) {
 						engine.config.Node.DropAllConnections()
 					}
+					engine.updateConsensusState()
 					break
 				}
 			}
@@ -101,6 +102,7 @@ func (engine *Engine) watchConsensusCommittee() {
 				if engine.updateUserState(&publickey, common.BeaconRole, common.PendingRole, 0) {
 					engine.config.Node.DropAllConnections()
 				}
+				engine.updateConsensusState()
 				break
 			}
 			if common.IndexOfStr(publickey.GetMiningKeyBase58(consensusType), beaconWaitingList) != -1 {
@@ -108,6 +110,7 @@ func (engine *Engine) watchConsensusCommittee() {
 				if engine.updateUserState(&publickey, common.BeaconRole, common.WaitingRole, 0) {
 					engine.config.Node.DropAllConnections()
 				}
+				engine.updateConsensusState()
 				break
 			}
 			if common.IndexOfStr(publickey.GetMiningKeyBase58(consensusType), shardsWaitingList) != -1 {
@@ -115,6 +118,7 @@ func (engine *Engine) watchConsensusCommittee() {
 				if engine.updateUserState(&publickey, common.ShardRole, common.WaitingRole, 0) {
 					engine.config.Node.DropAllConnections()
 				}
+				engine.updateConsensusState()
 				break
 			}
 			for chainName, committee := range shardsPendingList {
@@ -123,6 +127,7 @@ func (engine *Engine) watchConsensusCommittee() {
 					if engine.updateUserState(&publickey, common.ShardRole, common.PendingRole, getShardFromChainName(chainName)) {
 						engine.config.Node.DropAllConnections()
 					}
+					engine.updateConsensusState()
 					break
 				}
 			}
@@ -221,6 +226,7 @@ func (engine *Engine) watchConsensusCommittee() {
 						if engine.updateUserState(&publickey, common.BeaconRole, common.PendingRole, 0) {
 							engine.config.Node.DropAllConnections()
 						}
+						engine.updateConsensusState()
 						continue
 					}
 					if common.IndexOfStr(publickey.GetMiningKeyBase58(consensusType), shardsWaitingList) != -1 {
@@ -228,6 +234,7 @@ func (engine *Engine) watchConsensusCommittee() {
 						if engine.updateUserState(&publickey, common.ShardRole, common.WaitingRole, 0) {
 							engine.config.Node.DropAllConnections()
 						}
+						engine.updateConsensusState()
 						continue
 					}
 					for chainName, committee := range shardsPendingList {
@@ -236,6 +243,7 @@ func (engine *Engine) watchConsensusCommittee() {
 							if engine.updateUserState(&publickey, common.ShardRole, common.PendingRole, getShardFromChainName(chainName)) {
 								engine.config.Node.DropAllConnections()
 							}
+							engine.updateConsensusState()
 							break
 						}
 					}
