@@ -213,9 +213,8 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block *ShardToBeaconB
 		return
 	}
 	if blockchain.config.NodeMode == common.NodeModeBeacon || blockchain.config.NodeMode == common.NodeModeAuto {
-		publicKey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
-		beaconRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(publicKey, 0)
-		if beaconRole != common.ProposerRole && beaconRole != common.ValidatorRole {
+		layer, role, _ := blockchain.config.ConsensusEngine.GetUserRole()
+		if layer != common.BeaconRole || role != common.CommitteeRole {
 			return
 		}
 	} else {
@@ -257,9 +256,8 @@ func (blockchain *BlockChain) OnCrossShardBlockReceived(block *CrossShardBlock) 
 		return
 	}
 	if blockchain.config.NodeMode == common.NodeModeShard || blockchain.config.NodeMode == common.NodeModeAuto {
-		publickey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
-		shardRole := blockchain.BestState.Shard[block.ToShardID].GetPubkeyRole(publickey, 0)
-		if shardRole != common.ProposerRole && shardRole != common.ValidatorRole {
+		layer, role, _ := blockchain.config.ConsensusEngine.GetUserRole()
+		if layer != common.ShardRole || role != common.CommitteeRole {
 			return
 		}
 	} else {
