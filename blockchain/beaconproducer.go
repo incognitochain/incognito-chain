@@ -408,38 +408,38 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 	instructions = append(instructions, stopAutoStakingInstructions...)
 	// Random number for Assign Instruction
 	if newBeaconHeight%chainParamEpoch > randomTime && !beaconBestState.IsGetRandomNumber {
-		//=================================
-		// COMMENT FOR TESTING
 		var err error
 		var chainTimeStamp int64
-		if newBeaconHeight%chainParamEpoch == chainParamEpoch-1 {
-			startTime := time.Now()
-			for {
-				Logger.log.Criticalf("Block %+v, Enter final block of epoch but still no random number", newBeaconHeight)
+		if !TestRandom {
+			if newBeaconHeight%chainParamEpoch == chainParamEpoch-1 {
+				startTime := time.Now()
+				for {
+					Logger.log.Criticalf("Block %+v, Enter final block of epoch but still no random number", newBeaconHeight)
+					chainTimeStamp, err = blockchain.config.RandomClient.GetCurrentChainTimeStamp()
+					if err != nil {
+						Logger.log.Error(err)
+					} else {
+						if chainTimeStamp < beaconBestState.CurrentRandomTimeStamp {
+							Logger.log.Infof("Final Block %+v in Epoch but still haven't found new random number", newBeaconHeight)
+						} else {
+							break
+						}
+					}
+					if time.Since(startTime).Seconds() > beaconBestState.BlockMaxCreateTime.Seconds() {
+						return [][]string{}, NewBlockChainError(GenerateInstructionError, fmt.Errorf("Get Current Chain Timestamp for New Block Height %+v Timeout", newBeaconHeight))
+					}
+					time.Sleep(100 * time.Millisecond)
+				}
+			} else {
+				Logger.log.Criticalf("Block %+v, finding random number", newBeaconHeight)
 				chainTimeStamp, err = blockchain.config.RandomClient.GetCurrentChainTimeStamp()
 				if err != nil {
 					Logger.log.Error(err)
-				} else {
-					if chainTimeStamp < beaconBestState.CurrentRandomTimeStamp {
-						Logger.log.Infof("Final Block %+v in Epoch but still haven't found new random number", newBeaconHeight)
-					} else {
-						break
-					}
 				}
-				if time.Since(startTime).Seconds() > beaconBestState.BlockMaxCreateTime.Seconds() {
-					return [][]string{}, NewBlockChainError(GenerateInstructionError, fmt.Errorf("Get Current Chain Timestamp for New Block Height %+v Timeout", newBeaconHeight))
-				}
-				time.Sleep(100 * time.Millisecond)
 			}
 		} else {
-			Logger.log.Criticalf("Block %+v, finding random number", newBeaconHeight)
-			chainTimeStamp, err = blockchain.config.RandomClient.GetCurrentChainTimeStamp()
-			if err != nil {
-				Logger.log.Error(err)
-			}
+			chainTimeStamp = beaconBestState.CurrentRandomTimeStamp + 1
 		}
-		//UNCOMMENT FOR TESTING
-		// chainTimeStamp := beaconBestState.CurrentRandomTimeStamp + 1
 		//==================================
 		if err == nil && chainTimeStamp > beaconBestState.CurrentRandomTimeStamp {
 			assignedCandidates := make(map[byte][]incognitokey.CommitteePublicKey)
@@ -720,7 +720,6 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 
 // ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
 func (beaconBestState *BeaconBestState) generateRandomInstruction(timestamp int64, randomClient btc.RandomClient) ([]string, int64, error) {
-	//COMMENT FOR TESTING
 	if !TestRandom {
 		var (
 			blockHeight    int
@@ -750,7 +749,6 @@ func (beaconBestState *BeaconBestState) generateRandomInstruction(timestamp int6
 		strs = append(strs, strconv.Itoa(int(chainTimestamp)))
 		return strs, int64(nonce), nil
 	} else {
-		//@NOTICE: Hard Code for testing
 		var strs []string
 		reses := []string{"1000", strconv.Itoa(int(timestamp)), strconv.Itoa(int(timestamp) + 1)}
 		strs = append(strs, RandomAction)
