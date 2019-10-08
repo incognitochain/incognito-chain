@@ -98,7 +98,7 @@ func (beaconPool *BeaconPool) SetBeaconState(lastestBeaconHeight uint64) {
 		beaconPool.latestValidHeight = lastestBeaconHeight
 	}
 }
-func (beaconPool *BeaconPool) RevertShardPool(latestValidHeight uint64) {
+func (beaconPool *BeaconPool) RevertBeconPool(latestValidHeight uint64) {
 	beaconPool.mtx.Lock()
 	defer beaconPool.mtx.Unlock()
 	Logger.log.Infof("Begin Revert BeaconPool with latest valid height %+v", latestValidHeight)
