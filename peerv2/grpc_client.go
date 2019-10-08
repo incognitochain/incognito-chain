@@ -23,8 +23,14 @@ func (self *GRPCService_Client) ProxyRegister(
 	if err != nil {
 		return nil, err
 	}
-	client := NewProxyRegisterServiceClient(grpcConn)
-	reply, err := client.ProxyRegister(ctx, &ProxyRegisterMsg{CommitteePublicKey: pubkey, WantedMessages: messages})
+	client := NewHighwayServiceClient(grpcConn)
+	reply, err := client.Register(
+		ctx,
+		&RegisterRequest{
+			CommitteePublicKey: pubkey,
+			WantedMessages:     messages,
+		},
+	)
 	if err != nil {
 		log.Fatalln(err)
 		return nil, err
