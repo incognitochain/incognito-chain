@@ -69,11 +69,17 @@ func randomScalars(_ js.Value, args []js.Value) interface{} {
 }
 
 
-// args[0]: private key base58 check serialize
-// args[1]: payment address base58 check serialize
-// args[2]:
 func initTx(_ js.Value, args []js.Value) interface{} {
 	result, err := gomobile.InitPrivacyTx(args[0].String())
+	if err != nil {
+		return nil
+	}
+
+	return result
+}
+
+func initPrivacyTokenTx(_ js.Value, args []js.Value) interface{} {
+	result, err := gomobile.InitPrivacyTokenTx(args[0].String())
 	if err != nil {
 		return nil
 	}
@@ -89,6 +95,7 @@ func main() {
 
 
 	js.Global().Set("initTx", js.FuncOf(initTx))
+	js.Global().Set("initPrivacyTokenTx", js.FuncOf(initPrivacyTokenTx))
 	js.Global().Set("deriveSerialNumber", js.FuncOf(deriveSerialNumber))
 
 	js.Global().Set("generateKeyFromSeed", js.FuncOf(generateKeyFromSeed))

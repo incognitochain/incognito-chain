@@ -1296,7 +1296,8 @@ type TxPrivacyInitParamsForASM struct {
 	sndOutputs          []*privacy.Scalar
 }
 
-func NewTxPrivacyInitParamsForASM(senderSK *privacy.PrivateKey,
+func NewTxPrivacyInitParamsForASM(
+	senderSK *privacy.PrivateKey,
 	paymentInfo []*privacy.PaymentInfo,
 	inputCoins []*privacy.InputCoin,
 	fee uint64,

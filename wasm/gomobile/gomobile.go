@@ -429,6 +429,237 @@ func InitPrivacyTx(args string) (string, error) {
 	return B64Res, nil
 }
 
+func InitPrivacyTokenTx(args string) (string, error) {
+	bytes := []byte(args)
+	println("Bytes: %v\n", bytes)
+
+	paramMaps := make(map[string]interface{})
+
+	err := json.Unmarshal(bytes, &paramMaps)
+	if err != nil {
+		println("Error can not unmarshal data : %v\n", err)
+		return "", err
+	}
+
+	println("paramMaps:", paramMaps)
+
+	// sender's private key
+	senderSKParam, ok := paramMaps["senderSK"].(string)
+	if !ok {
+		println("Invalid sender private key!")
+		return "", errors.New("Invalid sender private key")
+	}
+	println("senderSKParam: %v\n", senderSKParam)
+
+	keyWallet, err := wallet.Base58CheckDeserialize(senderSKParam)
+	if err != nil {
+		println("Error can not decode sender private key : %v\n", err)
+		return "", err
+	}
+	senderSK := keyWallet.KeySet.PrivateKey
+	println("senderSK: ", senderSK)
+
+	//get payment infos
+	println(paramMaps["paramPaymentInfos"])
+	paymentInfoParams := paramMaps["paramPaymentInfos"].([]interface{})
+	//if !ok {
+	//	println("Invalid payment info params!")
+	//	return "", errors.New("Invalid payment info params")
+	//}
+
+	paymentInfo := make([]*privacy.PaymentInfo, 0)
+	for i := 0; i < len(paymentInfoParams); i++ {
+		tmp := paymentInfoParams[i].(map[string]interface{})
+		paymentAddrStr, ok := tmp["paymentAddressStr"].(string)
+		if !ok {
+			println("Invalid payment info params!")
+			return "", err
+		}
+
+		amount, ok := tmp["amount"].(float64)
+
+		paymentInfoTmp := new(privacy.PaymentInfo)
+		keyWallet, err := wallet.Base58CheckDeserialize(paymentAddrStr)
+		if err != nil {
+			println("Error can not decode sender private key : %v\n", err)
+			return "", err
+		}
+		paymentInfoTmp.PaymentAddress = keyWallet.KeySet.PaymentAddress
+		paymentInfoTmp.Amount = uint64(amount)
+
+		paymentInfo = append(paymentInfo, paymentInfoTmp)
+	}
+
+	//get fee
+	fee := paramMaps["fee"].(float64)
+	println("fee: ", fee)
+
+	// get has Privacy
+	hasPrivacy := paramMaps["isPrivacy"].(bool)
+
+	println("hasPrivacy: ", hasPrivacy)
+
+	inputCoinStrs, _ := paramMaps["inputCoinStrs"].([]interface{})
+	println("inputCoinStrs: ", inputCoinStrs)
+
+	inputCoins := make([]*privacy.InputCoin, len(inputCoinStrs))
+	for i := 0; i < len(inputCoins); i++ {
+		tmp := inputCoinStrs[i].(map[string]interface{})
+		coinObjTmp := new(privacy.CoinObject)
+		coinObjTmp.PublicKey = tmp["PublicKey"].(string)
+		coinObjTmp.CoinCommitment = tmp["CoinCommitment"].(string)
+		coinObjTmp.SNDerivator = tmp["SNDerivator"].(string)
+		coinObjTmp.SerialNumber = tmp["SerialNumber"].(string)
+		coinObjTmp.Randomness = tmp["Randomness"].(string)
+		coinObjTmp.Value = tmp["Value"].(string)
+		coinObjTmp.Info = tmp["Info"].(string)
+
+		inputCoins[i] = new(privacy.InputCoin).Init()
+		inputCoins[i].ParseCoinObjectToInputCoin(*coinObjTmp)
+	}
+
+	println("inputCoins: ", inputCoins)
+
+	// for native token
+	commitmentIndicesParamForNativeToken, ok := paramMaps["commitmentIndicesForNativeToken"].([]interface{})
+	if !ok {
+		return "", errors.New("invalid commitment indices param")
+	}
+	commitmentStrsParamForNativeToken, ok := paramMaps["commitmentStrsForNativeToken"].([]interface{})
+	if !ok {
+		return "", errors.New("invalid commitment strings param")
+	}
+
+	myCommitmentIndicesParamForNativeToken, ok := paramMaps["myCommitmentIndicesForNativeToken"].([]interface{})
+	if !ok {
+		return "", errors.New("invalid my commitment indices param")
+	}
+
+	sndOutputsParamForNativeToken, ok := paramMaps["sndOutputsForNativeToken"].([]interface{})
+	if !ok {
+		return "", errors.New("invalid snd outputs param")
+	}
+
+	println("sndOutputsParamForNativeToken: ", sndOutputsParamForNativeToken)
+
+	commitmentIndicesForNativeToken := make([]uint64, len(commitmentIndicesParamForNativeToken))
+	commitmentStrsForNativeToken := make([]string, len(commitmentStrsParamForNativeToken))
+	myCommitmentIndicesForNativeToken := make([]uint64, len(myCommitmentIndicesParamForNativeToken))
+	sndOutputsForNativeToken := make([]*privacy.Scalar, len(sndOutputsParamForNativeToken))
+
+	commitmentBytesForNativeToken := make([][]byte, len(commitmentStrsParamForNativeToken))
+	for i := 0; i < len(commitmentIndicesForNativeToken); i++ {
+		commitmentIndicesForNativeToken[i] = uint64(commitmentIndicesParamForNativeToken[i].(float64))
+		commitmentStrsForNativeToken[i] = commitmentStrsParamForNativeToken[i].(string)
+
+		commitmentBytesForNativeToken[i], _, err = base58.Base58Check{}.Decode(commitmentStrsForNativeToken[i])
+		if err != nil {
+			return "", nil
+		}
+	}
+
+	for i := 0; i < len(myCommitmentIndicesForNativeToken); i++ {
+		myCommitmentIndicesForNativeToken[i] = uint64(myCommitmentIndicesParamForNativeToken[i].(float64))
+	}
+
+	for i := 0; i < len(sndOutputsForNativeToken); i++ {
+
+		println("sndOutputsParamForNativeToken[i].(string): ", sndOutputsParamForNativeToken[i].(string))
+		tmp, _, err := base58.Base58Check{}.Decode(sndOutputsParamForNativeToken[i].(string))
+		if err != nil {
+			return "", nil
+		}
+
+		sndOutputsForNativeToken[i] = new(privacy.Scalar).FromBytesS(tmp)
+	}
+
+	// for privacy token
+	commitmentIndicesParamForPToken, ok := paramMaps["commitmentIndicesForNativeToken"].([]interface{})
+	if !ok {
+		return "", errors.New("invalid commitment indices param")
+	}
+	commitmentStrsParamForPToken, ok := paramMaps["commitmentStrsForNativeToken"].([]interface{})
+	if !ok {
+		return "", errors.New("invalid commitment strings param")
+	}
+
+	myCommitmentIndicesParamForPToken, ok := paramMaps["myCommitmentIndicesForNativeToken"].([]interface{})
+	if !ok {
+		return "", errors.New("invalid my commitment indices param")
+	}
+
+	sndOutputsParamForPToken, ok := paramMaps["sndOutputsForNativeToken"].([]interface{})
+	if !ok {
+		return "", errors.New("invalid snd outputs param")
+	}
+
+	println("sndOutputsParamForPToken: ", sndOutputsParamForPToken)
+
+	commitmentIndicesForPToken := make([]uint64, len(commitmentIndicesParamForPToken))
+	commitmentStrsForPToken := make([]string, len(commitmentStrsParamForPToken))
+	myCommitmentIndicesForPToken := make([]uint64, len(myCommitmentIndicesParamForPToken))
+	sndOutputsForPToken := make([]*privacy.Scalar, len(sndOutputsParamForPToken))
+
+	commitmentBytesForPToken := make([][]byte, len(commitmentStrsParamForPToken))
+	for i := 0; i < len(commitmentIndicesForPToken); i++ {
+		commitmentIndicesForPToken[i] = uint64(commitmentIndicesParamForPToken[i].(float64))
+		commitmentStrsForPToken[i] = commitmentStrsParamForPToken[i].(string)
+
+		commitmentBytesForPToken[i], _, err = base58.Base58Check{}.Decode(commitmentStrsForPToken[i])
+		if err != nil {
+			return "", nil
+		}
+	}
+
+	for i := 0; i < len(myCommitmentIndicesForPToken); i++ {
+		myCommitmentIndicesForPToken[i] = uint64(myCommitmentIndicesParamForPToken[i].(float64))
+	}
+
+	for i := 0; i < len(sndOutputsForPToken); i++ {
+		println("sndOutputsParamForNativeToken[i].(string): ", sndOutputsParamForPToken[i].(string))
+		tmp, _, err := base58.Base58Check{}.Decode(sndOutputsParamForPToken[i].(string))
+		if err != nil {
+			return "", nil
+		}
+
+		sndOutputsForPToken[i] = new(privacy.Scalar).FromBytesS(tmp)
+	}
+
+	//todo:
+	privacyTokenParam := new(transaction.CustomTokenPrivacyParamTx)
+	hasPrivacyForPToken := false
+	shardID := byte(1)
+	info := []byte{}
+
+	paramCreateTx := transaction.NewTxPrivacyTokenInitParamsForASM(
+		&senderSK, paymentInfo, inputCoins, uint64(fee), privacyTokenParam, nil, hasPrivacy, hasPrivacyForPToken, shardID, info,
+		commitmentIndicesForNativeToken, commitmentBytesForNativeToken, myCommitmentIndicesForNativeToken, sndOutputsForNativeToken,
+		commitmentIndicesForPToken, commitmentBytesForPToken, myCommitmentIndicesForPToken, sndOutputsForPToken)
+	println("paramCreateTx: ", paramCreateTx)
+
+	tx := new(transaction.TxCustomTokenPrivacy)
+	err = tx.InitForASM(paramCreateTx)
+
+	if err != nil {
+		println("Can not create tx: ", err)
+		return "", err
+	}
+
+	// serialize tx json
+	txJson, err := json.Marshal(tx)
+	if err != nil {
+		println("Can not marshal tx: ", err)
+		return "", err
+	}
+
+	lockTimeBytes := common.AddPaddingBigInt(new(big.Int).SetInt64(tx.LockTime), 8)
+	resBytes := append(txJson, lockTimeBytes...)
+
+	B64Res := base64.StdEncoding.EncodeToString(resBytes)
+
+	return B64Res, nil
+}
+
 
 func RandomScalars(n string) (string, error) {
 	nInt, err := strconv.ParseUint(n, 10, 64)
