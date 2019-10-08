@@ -45,7 +45,7 @@ func (d *Dispatcher) processInMessageString(msgStr string) error {
 		return errors.WithStack(err)
 	}
 
-	fmt.Printf("In message content : %s", string(jsonDecodeBytes))
+	// fmt.Printf("In message content : %s", string(jsonDecodeBytes))
 
 	// Parse Message body
 	messageBody := jsonDecodeBytes[:len(jsonDecodeBytes)-wire.MessageHeaderSize]
@@ -106,7 +106,7 @@ func (d *Dispatcher) processInMessageString(msgStr string) error {
 		return errors.WithStack(err)
 	}
 	realType := reflect.TypeOf(message)
-	fmt.Printf("Cmd message type of struct %s", realType.String())
+	// fmt.Printf("Cmd message type of struct %s", realType.String())
 
 	// // cache message hash
 	// if peerConn.listenerPeer != nil {

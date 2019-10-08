@@ -65,6 +65,11 @@ func (cm *ConnManager) Start() {
 
 	// Must Connect after creating FloodSub
 	must(cm.LocalHost.Host.Connect(context.Background(), peer.AddrInfo{peerid, append([]multiaddr.Multiaddr{}, ipfsaddr)}))
+	client, err := NewClient(cm.LocalHost.GRPC, peerid)
+	if err != nil {
+		panic(err)
+	}
+	cm.Client = client
 
 	go cm.manageRoleSubscription()
 
@@ -89,8 +94,13 @@ type ConnManager struct {
 	subs     map[string]Topic     // mapping from message to topic's subscription
 	messages chan *pubsub.Message // queue messages from all topics
 
-	cd   ConsensusData
-	disp *Dispatcher
+	cd     ConsensusData
+	disp   *Dispatcher
+	Client *GRPCService_Client
+}
+
+func (cm *ConnManager) PutMessage(msg *pubsub.Message) {
+	cm.messages <- msg
 }
 
 func (cm *ConnManager) process() {
@@ -253,12 +263,9 @@ func (cm *ConnManager) registerToProxy(
 	role string,
 	shardID int,
 ) (m2t, error) {
-	// Client on this node
-	client := GRPCService_Client{cm.LocalHost.GRPC}
 	messagesWanted := getMessagesForRole(role, shardID)
-	pairs, err := client.ProxyRegister(
+	pairs, err := cm.Client.Register(
 		context.Background(),
-		peerID,
 		pubkey,
 		messagesWanted,
 	)

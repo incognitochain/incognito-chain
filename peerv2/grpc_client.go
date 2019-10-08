@@ -10,20 +10,28 @@ import (
 )
 
 type GRPCService_Client struct {
-	p2pgrpc *p2pgrpc.GRPCProtocol
+	conn *grpc.ClientConn
 }
 
-func (self *GRPCService_Client) ProxyRegister(
-	ctx context.Context,
-	peerID peer.ID,
-	pubkey string,
-	messages []string,
-) ([]*MessageTopicPair, error) {
-	grpcConn, err := self.p2pgrpc.Dial(ctx, peerID, grpc.WithInsecure(), grpc.WithBlock())
+func NewClient(pr *p2pgrpc.GRPCProtocol, peerID peer.ID) (*GRPCService_Client, error) {
+	conn, err := pr.Dial(
+		context.Background(),
+		peerID,
+		grpc.WithInsecure(),
+		grpc.WithBlock(),
+	)
 	if err != nil {
 		return nil, err
 	}
-	client := NewHighwayServiceClient(grpcConn)
+	return &GRPCService_Client{conn: conn}, nil
+}
+
+func (c *GRPCService_Client) Register(
+	ctx context.Context,
+	pubkey string,
+	messages []string,
+) ([]*MessageTopicPair, error) {
+	client := NewHighwayServiceClient(c.conn)
 	reply, err := client.Register(
 		ctx,
 		&RegisterRequest{
@@ -36,4 +44,28 @@ func (self *GRPCService_Client) ProxyRegister(
 		return nil, err
 	}
 	return reply.Pair, nil
+}
+
+func (c *GRPCService_Client) GetBlockShardByHeight(
+	shardID int32,
+	from uint64,
+	to uint64,
+) ([]byte, error) {
+	client := NewHighwayServiceClient(c.conn)
+	reply, err := client.GetBlockShardByHeight(
+		context.Background(),
+		&GetBlockShardByHeightRequest{
+			Shard:      shardID,
+			Specific:   false,
+			FromHeight: from,
+			ToHeight:   to,
+			Heights:    nil,
+			FromPool:   false,
+		},
+	)
+	if err != nil {
+		log.Fatalln(err)
+		return nil, err
+	}
+	return reply.Data, nil
 }
