@@ -284,7 +284,7 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingBeaconBlock() {
 */
 func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *BeaconBlock, isPreSign bool) error {
 	beaconLock := blockchain.BestState.Beacon.lock
-	beaconLock.Lock()
+	beaconLock.RLock()
 	defer beaconLock.RUnlock()
 
 	// if len(beaconBlock.Header.Producer) == 0 {
