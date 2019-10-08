@@ -59,7 +59,30 @@ func GetShardToBeaconPool() *ShardToBeaconPool {
 	}
 	return shardToBeaconPool
 }
-
+func (shardToBeaconPool *ShardToBeaconPool) RevertShardToBeaconPool(shardID byte, latestValidHeight uint64) {
+	shardToBeaconPool.mtx.Lock()
+	defer shardToBeaconPool.mtx.Unlock()
+	shardToBeaconPool.latestValidHeightMutex.Lock()
+	defer shardToBeaconPool.latestValidHeightMutex.Unlock()
+	Logger.log.Infof("Begin Revert ShardToBeaconPool of Shard %+v with latest valid height %+v", shardID, latestValidHeight)
+	shardToBeaconBlocks := []*blockchain.ShardToBeaconBlock{}
+	if _, ok := shardToBeaconPool.pool[shardID]; ok {
+		for _, shardToBeaconBlock := range shardToBeaconPool.pool[shardID] {
+			shardToBeaconBlocks = append(shardToBeaconBlocks, shardToBeaconBlock)
+		}
+		shardToBeaconPool.pool[shardID] = []*blockchain.ShardToBeaconBlock{}
+		for _, shardToBeaconBlock := range shardToBeaconBlocks {
+			_, _, err := shardToBeaconPool.addShardToBeaconBlock(shardToBeaconBlock)
+			if err == nil {
+				continue
+			} else {
+				return
+			}
+		}
+	} else {
+		return
+	}
+}
 func (shardToBeaconPool *ShardToBeaconPool) SetShardState(latestShardState map[byte]uint64) {
 	// Logger.log.Info("SetShardState")
 	shardToBeaconPool.mtx.Lock()
@@ -105,14 +128,10 @@ func (shardToBeaconPool *ShardToBeaconPool) checkLatestValidHeightValidity(shard
 	#3 error
 */
 
-func (shardToBeaconPool *ShardToBeaconPool) AddShardToBeaconBlock(block *blockchain.ShardToBeaconBlock) (uint64, uint64, error) {
+func (shardToBeaconPool *ShardToBeaconPool) addShardToBeaconBlock(block *blockchain.ShardToBeaconBlock) (uint64, uint64, error) {
 	shardID := block.Header.ShardID
 	blockHeight := block.Header.Height
 	Logger.log.Infof("Add ShardToBeaconBlock from shard %+v, height %+v \n", shardID, blockHeight)
-	shardToBeaconPool.mtx.Lock()
-	defer shardToBeaconPool.mtx.Unlock()
-	shardToBeaconPool.latestValidHeightMutex.Lock()
-	defer shardToBeaconPool.latestValidHeightMutex.Unlock()
 
 	shardToBeaconPool.checkLatestValidHeightValidity(shardID)
 	//If receive old block, it will ignore
@@ -185,6 +204,17 @@ func (shardToBeaconPool *ShardToBeaconPool) AddShardToBeaconBlock(block *blockch
 		return shardToBeaconPool.latestValidHeight[shardID] + 1, shardToBeaconPool.latestValidHeight[shardID] + offset, nil
 	}
 	return 0, 0, nil
+}
+
+func (shardToBeaconPool *ShardToBeaconPool) AddShardToBeaconBlock(block *blockchain.ShardToBeaconBlock) (uint64, uint64, error) {
+	shardID := block.Header.ShardID
+	blockHeight := block.Header.Height
+	Logger.log.Infof("Add ShardToBeaconBlock from shard %+v, height %+v \n", shardID, blockHeight)
+	shardToBeaconPool.mtx.Lock()
+	defer shardToBeaconPool.mtx.Unlock()
+	shardToBeaconPool.latestValidHeightMutex.Lock()
+	defer shardToBeaconPool.latestValidHeightMutex.Unlock()
+	return shardToBeaconPool.addShardToBeaconBlock(block)
 }
 
 func (shardToBeaconPool *ShardToBeaconPool) updateLatestShardState() {
