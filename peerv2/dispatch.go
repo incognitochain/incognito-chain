@@ -14,7 +14,8 @@ import (
 )
 
 type Dispatcher struct {
-	MessageListeners *MessageListeners
+	MessageListeners   *MessageListeners
+	PublishableMessage []string
 }
 
 // processInMessageString - this is sub-function of InMessageHandler
