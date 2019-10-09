@@ -518,14 +518,14 @@ func (synker *Synker) UpdateState() {
 
 		for peerID := range synker.States.PeersState {
 			if shardState, ok := synker.States.PeersState[peerID].Shard[shardID]; ok {
-				fmt.Println("SyncShard state from other shard", shardID, shardState.Height)
+				fmt.Println("SyncShard state from other shard", shardID, currentShardReqHeight, shardState.Height, RCS.ClosestShardsState[shardID].Height)
 				if shardState.Height >= currentShardReqHeight {
 					if currentShardReqHeight+DefaultMaxBlkReqPerPeer-1 >= RCS.ClosestShardsState[shardID].Height {
-						fmt.Println("SyncShard 1234 ", currentShardReqHeight, RCS.ClosestShardsState[shardID].Height)
+						fmt.Println("SyncShard sent to a peer ", currentShardReqHeight, RCS.ClosestShardsState[shardID].Height+1)
 						synker.SyncBlkShard(shardID, false, false, false, nil, nil, currentShardReqHeight, RCS.ClosestShardsState[shardID].Height+1, peerID)
 						break
 					} else {
-						fmt.Println("SyncShard 12345")
+						fmt.Println("SyncShard sent to a peer ", currentShardReqHeight, currentShardReqHeight+DefaultMaxBlkReqPerPeer-1)
 						synker.SyncBlkShard(shardID, false, false, false, nil, nil, currentShardReqHeight, currentShardReqHeight+DefaultMaxBlkReqPerPeer-1, peerID)
 						currentShardReqHeight += DefaultMaxBlkReqPerPeer - 1
 					}
@@ -919,6 +919,8 @@ func (synker *Synker) InsertShardBlockFromPool(shardID byte) {
 	chain := synker.blockchain.Chains[common.GetShardChainKey(shardID)]
 	curEpoch := GetBestStateShard(shardID).Epoch
 	sameCommitteeBlock := blocks
+
+	fmt.Println("InsertShardBlockFromPool", len(blocks))
 	for i, v := range blocks {
 		if v.GetCurrentEpoch() == curEpoch+1 {
 			sameCommitteeBlock = blocks[:i+1]
