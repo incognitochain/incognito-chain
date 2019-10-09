@@ -351,6 +351,8 @@ func (engine *Engine) Start() error {
 						Logger.log.Critical("current mining chain", chainName)
 						consensus.Start()
 					} else {
+
+						Logger.log.Critical("stop mining chain", chainName)
 						consensus.Stop()
 					}
 				}

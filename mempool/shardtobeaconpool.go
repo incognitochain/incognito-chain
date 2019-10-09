@@ -221,12 +221,20 @@ func (shardToBeaconPool *ShardToBeaconPool) updateLatestShardState() {
 	for shardID, blks := range shardToBeaconPool.pool {
 		shardToBeaconPool.checkLatestValidHeightValidity(shardID)
 		lastHeight := shardToBeaconPool.latestValidHeight[shardID]
-		for _, blk := range blks {
+		for i, blk := range blks {
 			// if block height is greater than lastHeight 2 value then break
 			if blk.Header.Height > lastHeight && blk.Header.Height != lastHeight+1 {
 				break
 			}
-			// if block height is greater than lastHeight only 1 value than set new lastHeight to block height
+			if blk.Header.Height != 2 {
+				if i==(len(blks)-1) {
+					break
+				} else {
+					if !reflect.DeepEqual(blks[i+1].Header.PreviousBlockHash, *blk.Hash()) {
+						break
+					}
+				}
+			}
 			lastHeight = blk.Header.Height
 		}
 		shardToBeaconPool.latestValidHeight[shardID] = lastHeight
@@ -271,7 +279,7 @@ func (shardToBeaconPool *ShardToBeaconPool) GetValidBlock(limit map[byte]uint64)
 	for shardID, blks := range shardToBeaconPool.pool {
 		shardToBeaconPool.checkLatestValidHeightValidity(shardID)
 		for i, blk := range blks {
-			if blks[i].Header.Height > shardToBeaconPool.latestValidHeight[shardID]-1 {
+			if blks[i].Header.Height > shardToBeaconPool.latestValidHeight[shardID]{
 				break
 			}
 			// ?
