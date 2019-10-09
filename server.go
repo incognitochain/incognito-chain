@@ -1592,7 +1592,7 @@ func (serverObj *Server) PushMessageGetBlockBeaconByHash(blkHashes []common.Hash
 }
 
 func (serverObj *Server) PushMessageGetBlockShardByHeight(shardID byte, from uint64, to uint64, peerID libp2p.ID) error {
-	res, err := serverObj.highway.Client.GetBlockShardByHeight(int32(shardID), from, to)
+	res, err := serverObj.highway.Requester.GetBlockShardByHeight(int32(shardID), from, to)
 	if err != nil {
 		Logger.log.Error(err)
 		return err
