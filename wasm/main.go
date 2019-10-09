@@ -78,6 +78,15 @@ func initTx(_ js.Value, args []js.Value) interface{} {
 	return result
 }
 
+func staking(_ js.Value, args []js.Value) interface{} {
+	result, err := gomobile.Staking(args[0].String())
+	if err != nil {
+		return nil
+	}
+
+	return result
+}
+
 func initPrivacyTokenTx(_ js.Value, args []js.Value) interface{} {
 	result, err := gomobile.InitPrivacyTokenTx(args[0].String())
 	if err != nil {
@@ -95,6 +104,7 @@ func main() {
 
 
 	js.Global().Set("initTx", js.FuncOf(initTx))
+	js.Global().Set("staking", js.FuncOf(staking))
 	js.Global().Set("initPrivacyTokenTx", js.FuncOf(initPrivacyTokenTx))
 	js.Global().Set("deriveSerialNumber", js.FuncOf(deriveSerialNumber))
 
