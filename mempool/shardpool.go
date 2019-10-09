@@ -346,9 +346,9 @@ func (shardPool *ShardPool) removeBlock(lastBlockHeight uint64) {
 			break
 		}
 	}
-	if len(shardPool.validPool) > 0 {
-		fmt.Println("Remove block routine", shardPool.shardID, shardPool.validPool[0].Header.Height)
-	}
+	//if len(shardPool.validPool) > 0 {
+	//	fmt.Println("Remove block routine", shardPool.shardID, shardPool.validPool[0].Header.Height)
+	//}
 	shardPool.updateLatestShardState()
 }
 

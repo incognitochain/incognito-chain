@@ -137,7 +137,7 @@ func (e BLSBFT) ValidateData(data []byte, sig string, publicKey string) error {
 	// if err != nil {
 	// 	return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	// }
-	fmt.Printf("ValidateData data %v, sig %v, publicKey %v\n", data, sig, publicKeyByte)
+	//fmt.Printf("ValidateData data %v, sig %v, publicKey %v\n", data, sig, publicKeyByte)
 	dataHash := new(common.Hash)
 	dataHash.NewHash(data)
 	_, err = bridgesig.Verify(publicKeyByte, dataHash.GetBytes(), sigByte) //blsmultisig.Verify(sigByte, data, []int{0}, []blsmultisig.PublicKey{publicKeyByte})
@@ -171,7 +171,7 @@ func validateSingleBriSig(
 	briSig []byte,
 	candidate []byte,
 ) error {
-	fmt.Printf("data %v, sig %v, publicKey %v", dataHash.GetBytes(), briSig, string(candidate))
+	//fmt.Printf("data %v, sig %v, publicKey %v", dataHash.GetBytes(), briSig, string(candidate))
 	result, err := bridgesig.Verify(candidate, dataHash.GetBytes(), briSig)
 	if err != nil {
 		return consensus.NewConsensusError(consensus.UnExpectedError, err)
