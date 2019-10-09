@@ -71,6 +71,8 @@ func (cm *ConnManager) Start() {
 	}
 	cm.Requester = req
 
+	cm.Provider = NewBlockProvider(cm.LocalHost.GRPC)
+
 	go cm.manageRoleSubscription()
 
 	cm.process()
@@ -97,6 +99,7 @@ type ConnManager struct {
 	cd        ConsensusData
 	disp      *Dispatcher
 	Requester *BlockRequester
+	Provider  *BlockProvider
 }
 
 func (cm *ConnManager) PutMessage(msg *pubsub.Message) {
