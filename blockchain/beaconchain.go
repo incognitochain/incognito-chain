@@ -100,8 +100,6 @@ func (chain *BeaconChain) ValidatePreSignBlock(block common.BlockInterface) erro
 }
 
 func (chain *BeaconChain) ValidateAndInsertBlock(block common.BlockInterface) error {
-	chain.lock.Lock()
-	defer chain.lock.Unlock()
 	var beaconBestState BeaconBestState
 	beaconBlock := block.(*BeaconBlock)
 	beaconBestState.cloneBeaconBestStateFrom(chain.BestState)
@@ -136,13 +134,11 @@ func (chain *BeaconChain) GetShardID() int {
 }
 
 func (chain *BeaconChain) GetAllCommittees() map[string]map[string][]incognitokey.CommitteePublicKey {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	var result map[string]map[string][]incognitokey.CommitteePublicKey
 	result = make(map[string]map[string][]incognitokey.CommitteePublicKey)
 	result[chain.BestState.ConsensusAlgorithm] = make(map[string][]incognitokey.CommitteePublicKey)
 	result[chain.BestState.ConsensusAlgorithm][common.BeaconChainKey] = append([]incognitokey.CommitteePublicKey{}, chain.BestState.BeaconCommittee...)
-	for shardID, consensusType := range chain.BestState.ShardConsensusAlgorithm {
+	for shardID, consensusType := range chain.BestState.GetShardConsensusAlgorithm() {
 		if _, ok := result[consensusType]; !ok {
 			result[consensusType] = make(map[string][]incognitokey.CommitteePublicKey)
 		}
@@ -152,21 +148,15 @@ func (chain *BeaconChain) GetAllCommittees() map[string]map[string][]incognitoke
 }
 
 func (chain *BeaconChain) GetBeaconPendingList() []incognitokey.CommitteePublicKey {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	var result []incognitokey.CommitteePublicKey
-
 	result = append(result, chain.BestState.BeaconPendingValidator...)
 	return result
 }
 
 func (chain *BeaconChain) GetShardsPendingList() map[string]map[string][]incognitokey.CommitteePublicKey {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	var result map[string]map[string][]incognitokey.CommitteePublicKey
 	result = make(map[string]map[string][]incognitokey.CommitteePublicKey)
-
-	for shardID, consensusType := range chain.BestState.ShardConsensusAlgorithm {
+	for shardID, consensusType := range chain.BestState.GetShardConsensusAlgorithm() {
 		if _, ok := result[consensusType]; !ok {
 			result[consensusType] = make(map[string][]incognitokey.CommitteePublicKey)
 		}
@@ -176,8 +166,6 @@ func (chain *BeaconChain) GetShardsPendingList() map[string]map[string][]incogni
 }
 
 func (chain *BeaconChain) GetShardsWaitingList() []incognitokey.CommitteePublicKey {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	var result []incognitokey.CommitteePublicKey
 	result = append(result, chain.BestState.CandidateShardWaitingForNextRandom...)
 	result = append(result, chain.BestState.CandidateShardWaitingForCurrentRandom...)
@@ -185,8 +173,6 @@ func (chain *BeaconChain) GetShardsWaitingList() []incognitokey.CommitteePublicK
 }
 
 func (chain *BeaconChain) GetBeaconWaitingList() []incognitokey.CommitteePublicKey {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	var result []incognitokey.CommitteePublicKey
 	result = append(result, chain.BestState.CandidateBeaconWaitingForNextRandom...)
 	result = append(result, chain.BestState.CandidateBeaconWaitingForCurrentRandom...)
