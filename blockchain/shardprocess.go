@@ -116,22 +116,15 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 		return err
 	}
 	Logger.log.Infof("SHARD %+v | Update ShardBestState, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-	// updateShardBestState best state with new block
+
 	// Backup beststate
-	// TODO: fix this later
-	userPubKey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
-	if userPubKey != "" {
-		userRole := blockchain.BestState.Shard[shardID].GetPubkeyRole(userPubKey, 0)
-		if userRole == common.ProposerRole || userRole == common.ValidatorRole {
-			err = blockchain.config.DataBase.CleanBackup(false, shardBlock.Header.ShardID)
-			if err != nil {
-				return NewBlockChainError(CleanBackUpError, err)
-			}
-			err = blockchain.BackupCurrentShardState(shardBlock, beaconBlocks)
-			if err != nil {
-				return NewBlockChainError(BackUpBestStateError, err)
-			}
-		}
+	err = blockchain.config.DataBase.CleanBackup(false, shardBlock.Header.ShardID)
+	if err != nil {
+		return NewBlockChainError(CleanBackUpError, err)
+	}
+	err = blockchain.BackupCurrentShardState(shardBlock, beaconBlocks)
+	if err != nil {
+		return NewBlockChainError(BackUpBestStateError, err)
 	}
 
 	oldCommittee, err := incognitokey.CommitteeKeyListToString(blockchain.BestState.Shard[shardID].ShardCommittee)
