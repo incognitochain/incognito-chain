@@ -82,7 +82,6 @@ func (blockchain *BlockChain) revertShardBestState(shardID byte) error {
 	}
 
 	SetBestStateShard(shardID, &shardBestState)
-	blockchain.BestState.Shard[shardID].lock.Lock()
 
 	blockchain.config.ShardPool[shardID].RevertShardPool(shardBestState.ShardHeight)
 	for sid, height := range shardBestState.BestCrossShard {
@@ -713,7 +712,6 @@ func (blockchain *BlockChain) revertBeaconBestState() error {
 		return err
 	}
 	SetBeaconBestState(&beaconBestState)
-	blockchain.BestState.Beacon.lock.Lock()
 
 	blockchain.config.BeaconPool.RevertBeconPool(beaconBestState.BeaconHeight)
 	for sid, height := range blockchain.BestState.Beacon.GetBestShardHeight() {
