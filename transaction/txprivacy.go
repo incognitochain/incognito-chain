@@ -1388,7 +1388,7 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 	//Logger.log.Debugf("len(inputCoins), fee, hasPrivacy: %d, %d, %v\n", len(params.inputCoins), params.fee, params.hasPrivacy)
 
 	if len(params.txParam.inputCoins) == 0 && params.txParam.fee == 0 && !params.txParam.hasPrivacy {
-		Logger.log.Debugf("len(inputCoins) == 0 && fee == 0 && !hasPrivacy\n")
+		//Logger.log.Debugf("len(inputCoins) == 0 && fee == 0 && !hasPrivacy\n")
 		tx.Fee = params.txParam.fee
 		tx.sigPrivKey = *params.txParam.senderSK
 		tx.PubKeyLastByteSender = pkLastByteSender
