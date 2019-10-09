@@ -9,11 +9,11 @@ import (
 	"google.golang.org/grpc"
 )
 
-type GRPCService_Client struct {
+type BlockRequester struct {
 	conn *grpc.ClientConn
 }
 
-func NewClient(pr *p2pgrpc.GRPCProtocol, peerID peer.ID) (*GRPCService_Client, error) {
+func NewRequester(pr *p2pgrpc.GRPCProtocol, peerID peer.ID) (*BlockRequester, error) {
 	conn, err := pr.Dial(
 		context.Background(),
 		peerID,
@@ -23,10 +23,10 @@ func NewClient(pr *p2pgrpc.GRPCProtocol, peerID peer.ID) (*GRPCService_Client, e
 	if err != nil {
 		return nil, err
 	}
-	return &GRPCService_Client{conn: conn}, nil
+	return &BlockRequester{conn: conn}, nil
 }
 
-func (c *GRPCService_Client) Register(
+func (c *BlockRequester) Register(
 	ctx context.Context,
 	pubkey string,
 	messages []string,
@@ -46,7 +46,7 @@ func (c *GRPCService_Client) Register(
 	return reply.Pair, nil
 }
 
-func (c *GRPCService_Client) GetBlockShardByHeight(
+func (c *BlockRequester) GetBlockShardByHeight(
 	shardID int32,
 	from uint64,
 	to uint64,
@@ -64,7 +64,6 @@ func (c *GRPCService_Client) GetBlockShardByHeight(
 		},
 	)
 	if err != nil {
-		log.Fatalln(err)
 		return nil, err
 	}
 	return reply.Data, nil
