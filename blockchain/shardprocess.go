@@ -76,6 +76,11 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidated bool) error {
 	shardID := shardBlock.Header.ShardID
 	blockHash := shardBlock.Header.Hash()
+
+	isConsensusOngoing := blockchain.config.ConsensusEngine.IsOngoing(common.GetShardChainKey(shardBlock.Header.ShardID))
+	if isConsensusOngoing {
+		return NewBlockChainError(ConsensusIsOngoingError, errors.New(fmt.Sprint(shardID, shardBlock.Header.Height, blockHash)))
+	}
 	shardLock := &blockchain.BestState.Shard[shardID].lock
 	shardLock.Lock()
 	defer shardLock.Unlock()
