@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -260,7 +261,7 @@ func DeriveSerialNumber(args string) (string, error) {
 	return result, nil
 }
 
-func InitPrivacyTx(args string) (string, error) {
+func InitParamCreatePrivacyTx(args string) (*transaction.TxPrivacyInitParamsForASM, error) {
 	bytes := []byte(args)
 	println("Bytes: %v\n", bytes)
 
@@ -269,7 +270,7 @@ func InitPrivacyTx(args string) (string, error) {
 	err := json.Unmarshal(bytes, &paramMaps)
 	if err != nil {
 		println("Error can not unmarshal data : %v\n", err)
-		return "", err
+		return nil, err
 	}
 
 	println("paramMaps:", paramMaps)
@@ -278,14 +279,14 @@ func InitPrivacyTx(args string) (string, error) {
 	senderSKParam, ok := paramMaps["senderSK"].(string)
 	if !ok {
 		println("Invalid sender private key!")
-		return "", errors.New("Invalid sender private key")
+		return nil, errors.New("Invalid sender private key")
 	}
 	println("senderSKParam: %v\n", senderSKParam)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(senderSKParam)
 	if err != nil {
 		println("Error can not decode sender private key : %v\n", err)
-		return "", err
+		return nil, err
 	}
 	senderSK := keyWallet.KeySet.PrivateKey
 	println("senderSK: ", senderSK)
@@ -295,7 +296,7 @@ func InitPrivacyTx(args string) (string, error) {
 	paymentInfoParams, ok := paramMaps["paramPaymentInfos"].([]interface{})
 	if !ok {
 		println("Invalid payment info params!")
-		return "", errors.New("Invalid payment info params")
+		return nil, errors.New("Invalid payment info params")
 	}
 
 	paymentInfo := make([]*privacy.PaymentInfo, 0)
@@ -303,25 +304,25 @@ func InitPrivacyTx(args string) (string, error) {
 		tmp, ok := paymentInfoParams[i].(map[string]interface{})
 		if !ok {
 			println("Invalid payment info param!")
-			return "", errors.New("Invalid payment info param")
+			return nil, errors.New("Invalid payment info param")
 		}
 		paymentAddrStr, ok := tmp["paymentAddressStr"].(string)
 		if !ok {
 			println("Invalid payment info param payment address string")
-			return "", errors.New("Invalid payment info param payment address string")
+			return nil, errors.New("Invalid payment info param payment address string")
 		}
 
 		amount, ok := tmp["amount"].(float64)
 		if !ok {
 			println("Invalid payment info param amount")
-			return "", errors.New("Invalid payment info param amount")
+			return nil, errors.New("Invalid payment info param amount")
 		}
 
 		paymentInfoTmp := new(privacy.PaymentInfo)
 		keyWallet, err := wallet.Base58CheckDeserialize(paymentAddrStr)
 		if err != nil {
 			println("Error can not decode sender private key : %v\n", err)
-			return "", err
+			return nil, err
 		}
 		paymentInfoTmp.PaymentAddress = keyWallet.KeySet.PaymentAddress
 		paymentInfoTmp.Amount = uint64(amount)
@@ -332,7 +333,7 @@ func InitPrivacyTx(args string) (string, error) {
 	fee, ok := paramMaps["fee"].(float64)
 	if !ok {
 		println("Invalid fee param!")
-		return "", errors.New("Invalid fee param")
+		return nil, errors.New("Invalid fee param")
 	}
 	println("fee: ", fee)
 
@@ -340,7 +341,7 @@ func InitPrivacyTx(args string) (string, error) {
 	hasPrivacy, ok := paramMaps["isPrivacy"].(bool)
 	if !ok {
 		println("Invalid is privacy param!")
-		return "", errors.New("Invalid is privacy param")
+		return nil, errors.New("Invalid is privacy param")
 	}
 	println("hasPrivacy: ", hasPrivacy)
 
@@ -348,7 +349,7 @@ func InitPrivacyTx(args string) (string, error) {
 	info, ok := paramMaps["info"].(string)
 	if !ok {
 		println("Invalid info param!")
-		return "", errors.New("Invalid info param")
+		return nil, errors.New("Invalid info param")
 	}
 	infoBytes := []byte(info)
 	println("infoBytes: ", infoBytes)
@@ -356,7 +357,7 @@ func InitPrivacyTx(args string) (string, error) {
 	inputCoinStrs, ok := paramMaps["inputCoinStrs"].([]interface{})
 	if !ok {
 		println("Invalid input coin string params!")
-		return "", errors.New("Invalid input coin string params")
+		return nil, errors.New("Invalid input coin string params")
 	}
 	println("inputCoinStrs: ", inputCoinStrs)
 
@@ -365,43 +366,43 @@ func InitPrivacyTx(args string) (string, error) {
 		tmp, ok := inputCoinStrs[i].(map[string]interface{})
 		if !ok {
 			println("Invalid input coin string param!")
-			return "", errors.New("Invalid input coin string param")
+			return nil, errors.New("Invalid input coin string param")
 		}
 		coinObjTmp := new(privacy.CoinObject)
 		coinObjTmp.PublicKey, ok = tmp["PublicKey"].(string)
 		if !ok {
 			println("Invalid input coin public key param!")
-			return "", errors.New("Invalid input coin public key param")
+			return nil, errors.New("Invalid input coin public key param")
 		}
 		coinObjTmp.CoinCommitment, ok = tmp["CoinCommitment"].(string)
 		if !ok {
 			println("Invalid input coin coin commitment param!")
-			return "", errors.New("Invalid input coin coin commitment param")
+			return nil, errors.New("Invalid input coin coin commitment param")
 		}
 		coinObjTmp.SNDerivator, ok = tmp["SNDerivator"].(string)
 		if !ok {
 			println("Invalid input coin snderivator param!")
-			return "", errors.New("Invalid input coin snderivator param")
+			return nil, errors.New("Invalid input coin snderivator param")
 		}
 		coinObjTmp.SerialNumber, ok = tmp["SerialNumber"].(string)
 		if !ok {
 			println("Invalid input coin serial number param!")
-			return "", errors.New("Invalid input coin serial number param")
+			return nil, errors.New("Invalid input coin serial number param")
 		}
 		coinObjTmp.Randomness, ok = tmp["Randomness"].(string)
 		if !ok {
 			println("Invalid input coin randomness param!")
-			return "", errors.New("Invalid input coin randomness param")
+			return nil, errors.New("Invalid input coin randomness param")
 		}
 		coinObjTmp.Value, ok = tmp["Value"].(string)
 		if !ok {
 			println("Invalid input coin value param!")
-			return "", errors.New("Invalid input coin value param")
+			return nil, errors.New("Invalid input coin value param")
 		}
 		coinObjTmp.Info, ok = tmp["Info"].(string)
 		if !ok {
 			println("Invalid input coin info param!")
-			return "", errors.New("Invalid input coin info param")
+			return nil, errors.New("Invalid input coin info param")
 		}
 
 		inputCoins[i] = new(privacy.InputCoin).Init()
@@ -412,21 +413,21 @@ func InitPrivacyTx(args string) (string, error) {
 
 	commitmentIndicesParam, ok := paramMaps["commitmentIndices"].([]interface{})
 	if !ok {
-		return "", errors.New("invalid commitment indices param")
+		return nil, errors.New("invalid commitment indices param")
 	}
 	commitmentStrsParam, ok := paramMaps["commitmentStrs"].([]interface{})
 	if !ok {
-		return "", errors.New("invalid commitment strings param")
+		return nil, errors.New("invalid commitment strings param")
 	}
 
 	myCommitmentIndicesParam, ok := paramMaps["myCommitmentIndices"].([]interface{})
 	if !ok {
-		return "", errors.New("invalid my commitment indices param")
+		return nil, errors.New("invalid my commitment indices param")
 	}
 
 	sndOutputsParam, ok := paramMaps["sndOutputs"].([]interface{})
 	if !ok {
-		return "", errors.New("invalid snd outputs param")
+		return nil, errors.New("invalid snd outputs param")
 	}
 
 	println("sndOutputsParam: ", sndOutputsParam)
@@ -440,24 +441,24 @@ func InitPrivacyTx(args string) (string, error) {
 	for i := 0; i < len(commitmentIndices); i++ {
 		tmp, ok := commitmentIndicesParam[i].(float64)
 		if !ok {
-			return "", errors.New("invalid commitment indices param")
+			return nil, errors.New("invalid commitment indices param")
 		}
 		commitmentIndices[i] = uint64(tmp)
 		commitmentStrs[i], ok = commitmentStrsParam[i].(string)
 		if !ok {
-			return "", errors.New("invalid commitment string param")
+			return nil, errors.New("invalid commitment string param")
 		}
 
 		commitmentBytes[i], _, err = base58.Base58Check{}.Decode(commitmentStrs[i])
 		if err != nil {
-			return "", nil
+			return nil, nil
 		}
 	}
 
 	for i := 0; i < len(myCommitmentIndices); i++ {
 		tmp, ok :=  myCommitmentIndicesParam[i].(float64)
 		if !ok {
-			return "", errors.New("invalid my commitment index param")
+			return nil, errors.New("invalid my commitment index param")
 		}
 		myCommitmentIndices[i] = uint64(tmp)
 	}
@@ -466,7 +467,7 @@ func InitPrivacyTx(args string) (string, error) {
 		println("sndOutputsParam[i].(string): ", sndOutputsParam[i].(string))
 		tmp, _, err := base58.Base58Check{}.Decode(sndOutputsParam[i].(string))
 		if err != nil {
-			return "", nil
+			return nil, err
 		}
 
 		sndOutputs[i] = new(privacy.Scalar).FromBytesS(tmp)
@@ -474,6 +475,15 @@ func InitPrivacyTx(args string) (string, error) {
 
 	paramCreateTx := transaction.NewTxPrivacyInitParamsForASM(&senderSK, paymentInfo, inputCoins, uint64(fee), hasPrivacy, nil, nil, nil, commitmentIndices, commitmentBytes, myCommitmentIndices, sndOutputs)
 	println("paramCreateTx: ", paramCreateTx)
+
+	return paramCreateTx, nil
+}
+
+func InitPrivacyTx(args string) (string, error) {
+	paramCreateTx, err := InitParamCreatePrivacyTx(args)
+	if err!= nil{
+		return "", err
+	}
 
 	tx := new(transaction.Tx)
 	err = tx.InitForASM(paramCreateTx)
@@ -497,6 +507,95 @@ func InitPrivacyTx(args string) (string, error) {
 
 	return B64Res, nil
 }
+
+func Staking(args string) (string, error) {
+	// parse meta data
+	bytes := []byte(args)
+	println("Bytes: %v\n", bytes)
+
+	paramMaps := make(map[string]interface{})
+
+	err := json.Unmarshal(bytes, &paramMaps)
+	if err != nil {
+		println("Error can not unmarshal data : %v\n", err)
+		return "", err
+	}
+
+	println("paramMaps:", paramMaps)
+
+	metaDataParam, ok := paramMaps["metaData"].(map[string]interface{})
+	if !ok {
+		return "", errors.New("Invalid meta data param")
+	}
+
+	metaDataType, ok := metaDataParam["Type"].(int)
+	if !ok {
+		println("Invalid meta data type param")
+		return "", errors.New("Invalid meta data type param")
+	}
+
+	funderPaymentAddress, ok := metaDataParam["FunderPaymentAddress"].(string)
+	if !ok {
+		println("Invalid meta data funder payment address param")
+		return "", errors.New("Invalid meta data funder payment address param")
+	}
+	rewardReceiverPaymentAddress, ok := metaDataParam["RewardReceiverPaymentAddress"].(string)
+	if !ok {
+		println("Invalid meta data reward receiver payment address param")
+		return "", errors.New("Invalid meta data reward receiver payment address param")
+	}
+	stakingAmountShard, ok := metaDataParam["StakingAmountShard"].(float64)
+	if !ok {
+		println("Invalid meta data staking amount param")
+		return "", errors.New("Invalid meta data staking amount param")
+	}
+	committeePublicKey, ok := metaDataParam["CommitteePublicKey"].(string)
+	if !ok {
+		println("Invalid meta data committee public key param")
+		return "", errors.New("Invalid meta data committee public key param")
+	}
+	autoReStaking, ok := metaDataParam["AutoReStaking"].(bool)
+	if !ok {
+		println("Invalid meta data auto restaking param")
+		return "", errors.New("Invalid meta data auto restaking param")
+	}
+
+	metaData, err := metadata.NewStakingMetadata(metaDataType, funderPaymentAddress, rewardReceiverPaymentAddress, uint64(stakingAmountShard), committeePublicKey, autoReStaking)
+	if err!= nil{
+		return "", err
+	}
+
+	paramCreateTx, err := InitParamCreatePrivacyTx(args)
+	if err!= nil{
+		return "", err
+	}
+
+	paramCreateTx.SetMetaData(metaData)
+
+	tx := new(transaction.Tx)
+	err = tx.InitForASM(paramCreateTx)
+
+	if err != nil {
+		println("Can not create tx: ", err)
+		return "", err
+	}
+
+	// serialize tx json
+	txJson, err := json.Marshal(tx)
+	if err != nil {
+		println("Can not marshal tx: ", err)
+		return "", err
+	}
+
+	lockTimeBytes := common.AddPaddingBigInt(new(big.Int).SetInt64(tx.LockTime), 8)
+	resBytes := append(txJson, lockTimeBytes...)
+
+	B64Res := base64.StdEncoding.EncodeToString(resBytes)
+
+	return B64Res, nil
+}
+
+//func InitParamCreatePrivacyTx
 
 func InitPrivacyTokenTx(args string) (string, error) {
 	bytes := []byte(args)
@@ -826,31 +925,6 @@ func InitPrivacyTokenTx(args string) (string, error) {
 		return "", errors.New("Invalid fee token param")
 	}
 	privacyTokenParam.Fee = uint64(tmpFeePToken)
-	//paymentInfoForPToken, ok := pTokenParam["paymentInfoForPToken"].([]map[string]interface{})
-	//if !ok {
-	//	return "", errors.New("Invalid receiver payment address param")
-	//}
-	//amountTransfer, ok := pTokenParam["amountTransfer"].(uint64)
-	//if !ok {
-	//	return "", errors.New("Invalid amount transfer param")
-	//}
-	//
-	//paymentInfoTmp := new(privacy.PaymentInfo)
-	//paymentInfoForPToken := make([]*privacy.PaymentInfo, 0)
-	//for i:=0; i<len(receiverPaymentAddressStr); i++{
-	//	receiverKeyWallet, err := wallet.Base58CheckDeserialize(receiverPaymentAddressStr[0])
-	//	if err != nil {
-	//		println("Error can not decode sender private key : %v\n", err)
-	//		return "", err
-	//	}
-	//
-	//	paymentInfoTmp.PaymentAddress = receiverKeyWallet.KeySet.PaymentAddress
-	//	paymentInfoTmp.Amount = uint64(amountTransfer)
-	//	paymentInfoForPToken = append(paymentInfoForPToken, paymentInfoTmp)
-	//}
-	//
-	//privacyTokenParam.Receiver = paymentInfoForPToken
-
 	paymentInfoForPTokenParam, ok := pTokenParam["paymentInfoForPToken"].([]interface{})
 	if !ok {
 		println("Invalid payment info params!")
@@ -931,6 +1005,8 @@ func InitPrivacyTokenTx(args string) (string, error) {
 
 	return B64Res, nil
 }
+
+
 
 
 func RandomScalars(n string) (string, error) {

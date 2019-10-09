@@ -87,6 +87,18 @@ func TestScalarMul(t *testing.T) {
 }
 
 func TestScalarMulBase(t *testing.T) {
+
+	Gbytes := PedCom.G[0].ToBytesS()
+	fmt.Printf("Gbytes: %v\n", Gbytes)
+
+	array := []byte{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,1,2,3,4,5,6,7,8,9,10,11,12}
+	aScalar := new(Scalar)
+	aScalar.FromBytesS(array)
+	res1 := new(Point).ScalarMultBase(aScalar)
+	res2 := new(Point).ScalarMult(PedCom.G[0], aScalar)
+	fmt.Printf("Res1: %v\n", res1.ToBytesS())
+	fmt.Printf("Res2: %v\n", res2.ToBytesS())
+
 	for i:=0; i< 1000; i++ {
 		a := RandomScalar()
 		b := RandomScalar()
