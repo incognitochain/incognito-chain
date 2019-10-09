@@ -67,10 +67,6 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(beaconBlock *BeaconBlock,
 }
 
 func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isValidated bool) error {
-
-	if blockchain.config.ConsensusEngine.IsOngoing(common.BeaconChainKey) {
-		return NewBlockChainError(ConsensusIsOngoingError, errors.New(fmt.Sprint(beaconBlock.Header.Height, beaconBlock.Hash())))
-	}
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
 
