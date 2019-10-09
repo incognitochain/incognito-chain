@@ -712,7 +712,6 @@ func (blockchain *BlockChain) revertBeaconBestState() error {
 		return err
 	}
 	SetBeaconBestState(&beaconBestState)
-	blockchain.BestState.Beacon.lock.Lock()
 
 	blockchain.config.BeaconPool.RevertBeconPool(beaconBestState.BeaconHeight)
 	for sid, height := range blockchain.BestState.Beacon.GetBestShardHeight() {
