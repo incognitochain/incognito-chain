@@ -823,7 +823,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 			} else {
 				//NOTICE: @merman update PropertyID calculated from hash of tokendata and shardID
 				newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), params.txParam.shardID))
-				Logger.log.Debug("New Privacy Token %+v ", newHashInitToken)
+				//Logger.log.Debug("New Privacy Token %+v ", newHashInitToken)
 				// todo: check client
 				//existed := params.db.PrivacyTokenIDExisted(newHashInitToken)
 				//if existed {
@@ -836,7 +836,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 				//	return NewTransactionErr(TokenIDExistedByCrossShardError, errors.New("this token is existed in network via cross shard"))
 				//}
 				txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID = newHashInitToken
-				Logger.log.Debugf("A new token privacy wil be issued with ID: %+v", txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID.String())
+				//Logger.log.Debugf("A new token privacy wil be issued with ID: %+v", txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID.String())
 			}
 		}
 	case CustomTokenTransfer:
