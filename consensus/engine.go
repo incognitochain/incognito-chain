@@ -189,6 +189,7 @@ func (engine *Engine) watchConsensusCommittee() {
 									}
 								}
 							} else {
+								isSkip = true
 								userLayer = common.BeaconRole
 							}
 
