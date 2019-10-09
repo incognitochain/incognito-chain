@@ -227,7 +227,7 @@ func (shardToBeaconPool *ShardToBeaconPool) updateLatestShardState() {
 				break
 			}
 			if blk.Header.Height != 2 {
-				if i==(len(blks)-1) {
+				if i == (len(blks) - 1) {
 					break
 				} else {
 					if !reflect.DeepEqual(blks[i+1].Header.PreviousBlockHash, *blk.Hash()) {
@@ -253,7 +253,7 @@ func (shardToBeaconPool *ShardToBeaconPool) RemoveBlock(blockItems map[byte]uint
 func (shardToBeaconPool *ShardToBeaconPool) removeBlock(blockItems map[byte]uint64) {
 	for shardID, blockHeight := range blockItems {
 		for index, block := range shardToBeaconPool.pool[shardID] {
-			Logger.log.Info("ShardToBeaconPool/Pool BEFORE Remove", block.Header.Height)
+			Logger.log.Debugf("ShardToBeaconPool/Pool BEFORE Remove", block.Header.Height)
 			if block.Header.Height <= blockHeight {
 				if index == len(shardToBeaconPool.pool[shardID])-1 {
 					shardToBeaconPool.pool[shardID] = shardToBeaconPool.pool[shardID][index+1:]
@@ -265,7 +265,7 @@ func (shardToBeaconPool *ShardToBeaconPool) removeBlock(blockItems map[byte]uint
 			}
 		}
 		if blockHeight != 1 {
-			Logger.log.Infof("ShardToBeaconPool: Removed/LastValidHeight %+v of shard %+v \n", blockHeight, shardID)
+			Logger.log.Debugf("ShardToBeaconPool: Removed/LastValidHeight %+v of shard %+v \n", blockHeight, shardID)
 		}
 	}
 }
@@ -279,7 +279,7 @@ func (shardToBeaconPool *ShardToBeaconPool) GetValidBlock(limit map[byte]uint64)
 	for shardID, blks := range shardToBeaconPool.pool {
 		shardToBeaconPool.checkLatestValidHeightValidity(shardID)
 		for i, blk := range blks {
-			if blks[i].Header.Height > shardToBeaconPool.latestValidHeight[shardID]{
+			if blks[i].Header.Height > shardToBeaconPool.latestValidHeight[shardID] {
 				break
 			}
 			// ?
