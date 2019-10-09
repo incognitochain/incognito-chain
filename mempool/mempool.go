@@ -1133,7 +1133,13 @@ func (tp *TxPool) MiningDescs() []*metadata.TxDesc {
 	return descs
 }
 
-func (tp *TxPool) GetPool() map[common.Hash]*TxDesc {
+func (tp TxPool) GetPool() map[common.Hash]*TxDesc {
+	tp.mtx.RLock()
+	defer tp.mtx.RUnlock()
+	pool := make(map[common.Hash]*TxDesc)
+	for k, v := range tp.pool {
+		pool[k] = v
+	}
 	return tp.pool
 }
 
@@ -1289,10 +1295,21 @@ func (tp *TxPool) calPoolSize() uint64 {
 
 // ----------- transaction.MempoolRetriever's implementation -----------------
 func (tp TxPool) GetSerialNumbersHashH() map[common.Hash][]common.Hash {
-	return tp.poolSerialNumbersHashList
+	tp.mtx.RLock()
+	defer tp.mtx.RUnlock()
+	m := make(map[common.Hash][]common.Hash)
+	for k, hashList := range tp.poolSerialNumbersHashList {
+		m[k] = []common.Hash{}
+		for _, v := range hashList {
+			m[k] = append(m[k], v)
+		}
+	}
+	return m
 }
 
 func (tp TxPool) GetTxsInMem() map[common.Hash]metadata.TxDesc {
+	tp.mtx.RLock()
+	defer tp.mtx.RUnlock()
 	txsInMem := make(map[common.Hash]metadata.TxDesc)
 	for hash, txDesc := range tp.pool {
 		txsInMem[hash] = txDesc.Desc
