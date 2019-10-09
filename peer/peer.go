@@ -454,7 +454,7 @@ func (peerObj *Peer) setPeerConn(peerConn *PeerConn) {
 		}
 		Logger.log.Debugf("SetPeerConn and Remove %s %s", peerIDStr, internalConnPeer.remotePeer.rawAddress)
 	}
-	fmt.Println("CONN: setPeerConn", peerIDStr)
+	//fmt.Println("CONN: setPeerConn", peerIDStr)
 	peerObj.peerConns[peerIDStr] = peerConn
 }
 
@@ -605,7 +605,7 @@ func (peerObj *Peer) handleNewStreamIn(stream net.Stream, cDone chan *PeerConn) 
 
 	remotePeerID := stream.Conn().RemotePeer()
 	Logger.log.Debugf("PEER %s Received a new stream from OTHER PEER with Id %s", peerObj.host.ID().String(), remotePeerID.Pretty())
-	fmt.Printf("\n\n\n\\n\nReceived a new stream from OTHER PEER with Id %s %s \n\n\n\n\n\n\n", peerObj.host.ID().String(), remotePeerID.Pretty())
+	//fmt.Printf("\n\n\n\\n\nReceived a new stream from OTHER PEER with Id %s %s \n\n\n\n\n\n\n", peerObj.host.ID().String(), remotePeerID.Pretty())
 	peerObj.peerConnsMtx.Lock()
 	_, ok := peerObj.peerConns[remotePeerID.Pretty()]
 	peerObj.peerConnsMtx.Unlock()
@@ -716,7 +716,7 @@ func (peerObj *Peer) Stop() {
 // handleConnected - set established flag to a peer when being connected
 func (peerObj *Peer) handleConnected(peerConn *PeerConn) {
 	Logger.log.Debugf("handleConnected %s", peerConn.remotePeerID.Pretty())
-	fmt.Printf("handleConnected %s", peerConn.remotePeerID.Pretty())
+	//fmt.Printf("handleConnected %s", peerConn.remotePeerID.Pretty())
 	peerConn.retryCount = 0
 	peerConn.setConnState(connEstablished)
 
