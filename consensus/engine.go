@@ -480,9 +480,6 @@ func (engine *Engine) updateUserState(keySet *incognitokey.CommitteePublicKey, l
 	if engine.userCurrentState.UserLayer != layer {
 		isChange = true
 	}
-	if engine.userCurrentState.UserRole != role {
-		isChange = true
-	}
 	if engine.userCurrentState.Keys != keySet {
 		isChange = true
 	}
