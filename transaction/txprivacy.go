@@ -579,6 +579,10 @@ func (tx Tx) GetTxFeeToken() uint64 {
 
 // GetTxActualSize computes the actual size of a given transaction in kilobyte
 func (tx Tx) GetTxActualSize() uint64 {
+	//txBytes, _ := json.Marshal(tx)
+	//txSizeInByte := len(txBytes)
+	//
+	//return uint64(math.Ceil(float64(txSizeInByte) / 1024))
 	if tx.cachedActualSize != nil {
 		return *tx.cachedActualSize
 	}
