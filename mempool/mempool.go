@@ -1097,6 +1097,8 @@ func (tp *TxPool) SendTransactionToBlockGen() {
 
 // MarkForwardedTransaction - mart a transaction is forward message
 func (tp *TxPool) MarkForwardedTransaction(txHash common.Hash) {
+	tp.mtx.RLock()
+	defer tp.mtx.RUnlock()
 	if tp.IsTest {
 		return
 	}
