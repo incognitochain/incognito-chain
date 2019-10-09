@@ -1030,7 +1030,7 @@ func (serverObj *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVer
 		//TODO hy set publickey here
 		//fmt.Printf("Message %v %v %v\n", msg.SignDataB58, msg.PublicKey, msg.PublicKeyType)
 		err := serverObj.consensusEngine.VerifyData([]byte(peerConn.GetListenerPeer().GetPeerID().Pretty()), msg.SignDataB58, msg.PublicKey, msg.PublicKeyType)
-		fmt.Println(err)
+		//fmt.Println(err)
 
 		if err == nil {
 			pbk = msg.PublicKey
@@ -1478,7 +1478,7 @@ func (serverObj *Server) UpdateConsensusState(role string, userPbk string, curre
 	changed := serverObj.connManager.UpdateConsensusState(role, userPbk, currentShard, beaconCommittee, shardCommittee)
 	if changed {
 		Logger.log.Debug("UpdateConsensusState is true")
-	}else {
+	} else {
 		Logger.log.Debug("UpdateConsensusState is false")
 	}
 }

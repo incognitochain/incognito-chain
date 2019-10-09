@@ -294,14 +294,12 @@ func (engine *Engine) Start() error {
 				return
 			default:
 				time.Sleep(time.Millisecond * 1000)
-
 				for chainName, consensus := range engine.ChainConsensusList {
 					if chainName == engine.CurrentMiningChain && engine.userCurrentState.UserRole == common.CommitteeRole {
 						Logger.log.Critical("current mining chain", chainName)
 						consensus.Start()
+						Logger.log.Critical(chainName, "started")
 					} else {
-
-						Logger.log.Critical("stop mining chain", chainName)
 						consensus.Stop()
 					}
 				}
