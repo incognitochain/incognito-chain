@@ -98,6 +98,7 @@ func GetBestStateShard(shardID byte) *ShardBestState {
 }
 
 func SetBestStateShard(shardID byte, beststateShard *ShardBestState) {
+	beststateShard.lock = GetBestStateShard(shardID).lock
 	*GetBestStateShard(shardID) = *beststateShard
 }
 
