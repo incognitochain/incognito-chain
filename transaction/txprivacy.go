@@ -1334,6 +1334,10 @@ func NewTxPrivacyInitParamsForASM(
 	return params
 }
 
+func (param *TxPrivacyInitParamsForASM) SetMetaData(meta metadata.Metadata){
+	param.txParam.metaData = meta
+}
+
 func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 
 	//Logger.log.Debugf("CREATING TX........\n")
