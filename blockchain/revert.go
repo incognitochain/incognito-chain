@@ -82,7 +82,6 @@ func (blockchain *BlockChain) revertShardBestState(shardID byte) error {
 	}
 
 	SetBestStateShard(shardID, &shardBestState)
-	blockchain.BestState.Shard[shardID].lock.Lock()
 
 	blockchain.config.ShardPool[shardID].RevertShardPool(shardBestState.ShardHeight)
 	for sid, height := range shardBestState.BestCrossShard {
