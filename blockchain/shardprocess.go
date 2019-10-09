@@ -91,8 +91,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 			return err
 		}
 		if err := blockchain.RevertShardState(shardBlock.Header.ShardID); err != nil {
-			Logger.log.Error(err)
-			return err
+			panic(err)
 		}
 		fmt.Println("REVERTED SHARD", shardBlock.Header.ShardID, shardBlock.Header.Height)
 	}
