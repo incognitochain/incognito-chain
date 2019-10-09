@@ -578,3 +578,13 @@ func TestCommonAppendSliceString(t *testing.T) {
 	finalArr := AppendSliceString(arr1, arr2, arr3)
 	assert.Equal(t, 6, len(finalArr))
 }
+
+func TestCommonHashToString(t *testing.T){
+	for i:=0; i< 1000; i++{
+		hash := new(Hash)
+		hash.SetBytes([]byte{1,2,3,4})
+
+		fmt.Printf("Hash string len: %v\n", len(hash.String()))
+	}
+
+}

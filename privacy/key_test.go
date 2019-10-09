@@ -9,7 +9,7 @@ import (
 func TestKey(t *testing.T) {
 	for i:=0; i< 1; i ++ {
 		// random seed
-		seed := []byte{123}
+		seed := []byte{1,2,3}
 
 		// generate private key from seed
 		privateKey := GeneratePrivateKey(seed)
