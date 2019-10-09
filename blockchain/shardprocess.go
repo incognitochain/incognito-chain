@@ -82,6 +82,21 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 
 	Logger.log.Criticalf("SHARD %+v | Begin insert new block height %+v with hash %+v", shardID, shardBlock.Header.Height, blockHash)
 	Logger.log.Infof("SHARD %+v | Check block existence for insert height %+v with hash %+v", shardID, shardBlock.Header.Height, blockHash)
+	currentShardBestState := blockchain.BestState.Shard[shardBlock.Header.ShardID]
+
+	if currentShardBestState.ShardHeight == shardBlock.Header.Height && currentShardBestState.BestBlock.Header.Timestamp < shardBlock.Header.Timestamp && currentShardBestState.BestBlock.Header.Round < shardBlock.Header.Round {
+		fmt.Println("FORK SHARD", shardBlock.Header.ShardID, shardBlock.Header.Height)
+		if err := blockchain.ValidateBlockWithPrevShardBestState(shardBlock); err != nil {
+			Logger.log.Error(err)
+			return err
+		}
+		if err := blockchain.RevertShardState(shardBlock.Header.ShardID); err != nil {
+			Logger.log.Error(err)
+			return err
+		}
+		fmt.Println("REVERTED SHARD", shardBlock.Header.ShardID, shardBlock.Header.Height)
+	}
+
 	// force non-committee member not to validate blk
 	// if blockchain.config.UserKeySet != nil && (blockchain.config.NodeMode == common.NODEMODE_AUTO || blockchain.config.NodeMode == common.NODEMODE_SHARD) {
 	// 	userRole := blockchain.BestState.Shard[block.Header.ShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyInBase58CheckEncode(), 0)
