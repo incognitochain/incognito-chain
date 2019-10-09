@@ -2,6 +2,7 @@ package mempool
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"sort"
 	"strconv"
@@ -230,7 +231,12 @@ func (shardToBeaconPool *ShardToBeaconPool) updateLatestShardState() {
 				if i == (len(blks) - 1) {
 					break
 				} else {
+					if blks[i+1].Header.Height != blk.Header.Height+1 {
+						break
+					}
 					if !reflect.DeepEqual(blks[i+1].Header.PreviousBlockHash, *blk.Hash()) {
+						fmt.Println("Not equal", blk.Header.ShardID, blk.Header.Height, blks[i+1].Header.Height, (*blk.Hash()).String(), blks[i+1].Header.PreviousBlockHash.String(), lastHeight)
+						shardToBeaconPool.pool[shardID] = append(blks[:i], blks[i+1:]...)
 						break
 					}
 				}
