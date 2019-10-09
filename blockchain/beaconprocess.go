@@ -283,7 +283,7 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingBeaconBlock() {
 	- If verify block for signing then verifyPreProcessingBeaconBlockForSigning
 */
 func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *BeaconBlock, isPreSign bool) error {
-	beaconLock := blockchain.BestState.Beacon.lock
+	beaconLock := &blockchain.BestState.Beacon.lock
 	beaconLock.RLock()
 	defer beaconLock.RUnlock()
 
