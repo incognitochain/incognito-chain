@@ -1295,8 +1295,8 @@ func (tp *TxPool) calPoolSize() uint64 {
 
 // ----------- transaction.MempoolRetriever's implementation -----------------
 func (tp TxPool) GetSerialNumbersHashH() map[common.Hash][]common.Hash {
-	tp.mtx.RLock()
-	defer tp.mtx.RUnlock()
+	//tp.mtx.RLock()
+	//defer tp.mtx.RUnlock()
 	m := make(map[common.Hash][]common.Hash)
 	for k, hashList := range tp.poolSerialNumbersHashList {
 		m[k] = []common.Hash{}
@@ -1308,8 +1308,8 @@ func (tp TxPool) GetSerialNumbersHashH() map[common.Hash][]common.Hash {
 }
 
 func (tp TxPool) GetTxsInMem() map[common.Hash]metadata.TxDesc {
-	tp.mtx.RLock()
-	defer tp.mtx.RUnlock()
+	//tp.mtx.RLock()
+	//defer tp.mtx.RUnlock()
 	txsInMem := make(map[common.Hash]metadata.TxDesc)
 	for hash, txDesc := range tp.pool {
 		txsInMem[hash] = txDesc.Desc
