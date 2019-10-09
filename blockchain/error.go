@@ -159,6 +159,7 @@ const (
 	FetchAutoStakingByHeightError
 	ProcessSlashingError
 	ConvertCommitteePubKeyToBase58Error
+	ConsensusIsOngoingError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -302,6 +303,7 @@ var ErrCodeMessage = map[int]struct {
 	FetchAutoStakingByHeightError:                     {-1134, "Fetch Auto Staking By Height Error"},
 	ProcessSlashingError:                              {-1135, "Process slashing Error"},
 	ConvertCommitteePubKeyToBase58Error:               {-1136, "Convert committee pub key to base58 Error"},
+	ConsensusIsOngoingError:                           {-1137, "Consensus Is Ongoing Error"},
 }
 
 type BlockChainError struct {
