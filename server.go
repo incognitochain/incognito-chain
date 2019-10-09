@@ -1478,6 +1478,8 @@ func (serverObj *Server) UpdateConsensusState(role string, userPbk string, curre
 	changed := serverObj.connManager.UpdateConsensusState(role, userPbk, currentShard, beaconCommittee, shardCommittee)
 	if changed {
 		Logger.log.Debug("UpdateConsensusState is true")
+	}else {
+		Logger.log.Debug("UpdateConsensusState is false")
 	}
 }
 
