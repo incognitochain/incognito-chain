@@ -186,7 +186,6 @@ func (e *BLSBFT) Start() error {
 
 				if !e.Chain.IsReady() {
 					e.isOngoing = false
-
 					fmt.Println("CONSENSUS: ticker 1")
 					continue
 				}

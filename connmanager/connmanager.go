@@ -298,16 +298,16 @@ func (connManager *ConnManager) listenHandler(listen *peer.Peer) {
 }
 
 func (connManager *ConnManager) handleConnected(peerConn *peer.PeerConn) {
-	Logger.log.Infof("handleConnected %s", peerConn.GetRemotePeerID().Pretty())
+	Logger.log.Debugf("handleConnected %s", peerConn.GetRemotePeerID().Pretty())
 	if peerConn.GetIsOutbound() {
-		Logger.log.Infof("handleConnected OUTBOUND %s", peerConn.GetRemotePeerID().Pretty())
+		Logger.log.Debugf("handleConnected OUTBOUND %s", peerConn.GetRemotePeerID().Pretty())
 
 		if connManager.config.OnOutboundConnection != nil {
 			connManager.config.OnOutboundConnection(peerConn)
 		}
 
 	} else {
-		Logger.log.Infof("handleConnected INBOUND %s", peerConn.GetRemotePeerID().Pretty())
+		Logger.log.Debugf("handleConnected INBOUND %s", peerConn.GetRemotePeerID().Pretty())
 	}
 }
 
@@ -452,7 +452,7 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 		// make models
 		responsePeers := make(map[string]*wire.RawPeer)
 		for _, rawPeer := range response {
-			fmt.Printf("CONNLog Ping Response PublicKey %v %v\n", rawPeer.RawAddress, rawPeer.PublicKey)
+			//fmt.Printf("CONNLog Ping Response PublicKey %v %v\n", rawPeer.RawAddress, rawPeer.PublicKey)
 			p := rawPeer
 			responsePeers[rawPeer.PublicKey] = &p
 		}
@@ -484,7 +484,7 @@ func (connManager *ConnManager) getPeerConnOfShard(shard *byte) []*peer.PeerConn
 		pk, _ := peerConn.GetRemotePeer().GetPublicKey()
 
 		sh := connManager.getShardOfPublicKey(pk)
-		fmt.Println(pk, sh)
+		//fmt.Println(pk, sh)
 		if (shard == nil && sh == nil) || (sh != nil && shard != nil && *sh == *shard) {
 			c = append(c, peerConn)
 		}
@@ -497,7 +497,7 @@ func (connManager *ConnManager) countPeerConnOfShard(shard *byte) int {
 	count := 0
 	listener := connManager.config.ListenerPeer
 	if listener != nil {
-		fmt.Println("COUNT: count peer")
+		//fmt.Println("COUNT: count peer")
 		allPeers := listener.GetPeerConnOfAll()
 		// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		// 	metrics.Measurement:      metrics.AllConnectedPeers,
@@ -833,6 +833,7 @@ func (connManager *ConnManager) handleRelayNode(mPeers map[string]*wire.RawPeer)
 }
 
 func (connManager *ConnManager) DropAllConnections() {
+	fmt.Println("DEBUG: DropAllConnections")
 	listener := connManager.config.ListenerPeer
 	if listener != nil {
 		allPeers := listener.GetPeerConnOfAll()
