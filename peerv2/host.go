@@ -6,13 +6,14 @@ import (
 	"context"
 	crypto2 "crypto"
 	"fmt"
+
+	p2pgrpc "github.com/incognitochain/go-libp2p-grpc"
 	"github.com/libp2p/go-libp2p"
 	core "github.com/libp2p/go-libp2p-core"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
-	p2pgrpc "github.com/paralin/go-libp2p-grpc"
 )
 
 type PeerConn struct {
@@ -76,7 +77,7 @@ func NewHost(version string, pubIP string, port int, rand []byte) *Host {
 		Host:     p2pHost,
 		SelfPeer: selfPeer,
 		Version:  version,
-		GRPC:     p2pgrpc.NewGRPCProtocol(context.Background(), p2pHost),
+		GRPC:     p2pgrpc.NewGRPCProtocol(ctx, p2pHost),
 	}
 
 	fmt.Println(selfPeer)

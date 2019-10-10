@@ -4,8 +4,8 @@ import (
 	"context"
 	"log"
 
+	p2pgrpc "github.com/incognitochain/go-libp2p-grpc"
 	"github.com/libp2p/go-libp2p-core/peer"
-	p2pgrpc "github.com/paralin/go-libp2p-grpc"
 	"google.golang.org/grpc"
 )
 
