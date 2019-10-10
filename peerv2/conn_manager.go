@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -33,7 +34,8 @@ func NewConnManager(
 }
 
 func (cm *ConnManager) PublishMessage(msg wire.Message) error {
-	publishable := []string{wire.CmdBlockShard, wire.CmdBFT, wire.CmdBlockBeacon, wire.CmdPeerState}
+	publishable := []string{wire.CmdBlockShard, wire.CmdCrossShard, wire.CmdBFT, wire.CmdBlockBeacon, wire.CmdPeerState, wire.CmdBlkShardToBeacon}
+	// msgCrossShard := msg.(wire.MessageCrossShard)
 	msgType := msg.MessageType()
 	for _, p := range publishable {
 		if msgType == p {
@@ -163,7 +165,7 @@ func (cm *ConnManager) manageRoleSubscription() {
 	for range time.Tick(5 * time.Second) {
 		// Update when role changes
 		newRole := newUserRole(cm.cd.GetUserRole())
-		if newRole == lastRole {
+		if *newRole == *lastRole {
 			continue
 		}
 		log.Printf("Role changed: %v -> %v", lastRole, newRole)
@@ -220,7 +222,7 @@ func (cm *ConnManager) subscribeNewTopics(newTopics, subscribed m2t) error {
 		for _, t := range topicList {
 			topic4Subs := t.Name
 			if isJustPubOrSub(topic4Subs) {
-				topic4Subs = topic4Subs + "_nodesub"
+				topic4Subs = topic4Subs + "-nodesub"
 			}
 			if found(t.Name, subscribed) {
 				continue
@@ -247,7 +249,7 @@ func (cm *ConnManager) subscribeNewTopics(newTopics, subscribed m2t) error {
 		for _, t := range topicList {
 			topic4Subs := t.Name
 			if isJustPubOrSub(topic4Subs) {
-				topic4Subs = topic4Subs + "_nodesub"
+				topic4Subs = topic4Subs + "-nodesub"
 			}
 			if found(t.Name, newTopics) {
 				continue
@@ -343,8 +345,13 @@ func getMessagesForLayer(layer string, shardID int) []string {
 	return []string{}
 }
 
-func isJustPubOrSub(message string) bool {
-	if message == wire.CmdPeerState {
+func isJustPubOrSub(topic string) bool {
+	topicElements := strings.Split(topic, "-")
+	if len(topicElements) == 0 {
+		return false
+	}
+	switch topicElements[0] {
+	case wire.CmdPeerState, wire.CmdBlockBeacon, wire.CmdBlkShardToBeacon:
 		return true
 	}
 	return false
