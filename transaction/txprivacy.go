@@ -554,7 +554,7 @@ func (tx Tx) String() string {
 	return record
 }
 
-func (tx Tx) Hash() *common.Hash {
+func (tx *Tx) Hash() *common.Hash {
 	if tx.cachedHash != nil {
 		return tx.cachedHash
 	}
