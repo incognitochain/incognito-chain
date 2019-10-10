@@ -632,9 +632,10 @@ func (synker *Synker) SyncBlkShard(shardID byte, byHash bool, bySpecificHeights 
 		prefix := getBlkPrefixSyncKey(true, ShardBlk, shardID, 0)
 		blksNeedToGet := getBlkNeedToGetByHash(prefix, blksHash, cacheItems, peerID)
 		if len(blksNeedToGet) > 0 {
-			synker.blockchain.config.Server.PushMessageGetBlockShardByHash(shardID, blksNeedToGet, getFromPool, peerID)
+			go synker.blockchain.config.Server.PushMessageGetBlockShardByHash(shardID, blksNeedToGet, getFromPool, peerID)
 		}
 		for _, blkHash := range blksNeedToGet {
+			Logger.log.Criticalf("Block need to get hash=%+v", blkHash.String())
 			synker.Status.CurrentlySyncBlks.Add(fmt.Sprintf("%v%v", prefix, blkHash.String()), time.Now().Unix(), DefaultMaxBlockSyncTime)
 		}
 	} else {
