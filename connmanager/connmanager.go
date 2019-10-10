@@ -712,13 +712,13 @@ func (connManager *ConnManager) CheckForAcceptConn(peerConn *peer.PeerConn) (boo
 		//	other shard
 		countPeerShard := connManager.countPeerConnOfShard(shardID)
 		if countPeerShard > connManager.config.MaxPeersOtherShard {
-			return false, NewConnManagerError(NotAcceptConnectionError, fmt.Errorf("same shard but countPeerShard(%+v) > connManager.config.MaxPeersSameShard(%+v)", countPeerShard, connManager.config.MaxPeersSameShard))
+			return false, NewConnManagerError(NotAcceptConnectionError, fmt.Errorf("same shard but countPeerShard(%+v) > connManager.config.MaxPeersOtherShard(%+v)", countPeerShard, connManager.config.MaxPeersOtherShard))
 		}
 	} else if shardID == nil {
 		// none shard
 		countPeerShard := connManager.countPeerConnOfShard(nil)
 		if countPeerShard > connManager.config.MaxPeersNoShard {
-			return false, NewConnManagerError(NotAcceptConnectionError, fmt.Errorf("same shard but countPeerShard(%+v) > connManager.config.MaxPeersSameShard(%+v)", countPeerShard, connManager.config.MaxPeersSameShard))
+			return false, NewConnManagerError(NotAcceptConnectionError, fmt.Errorf("same shard but countPeerShard(%+v) > connManager.config.MaxPeersNoShard(%+v)", countPeerShard, connManager.config.MaxPeersNoShard))
 		}
 	}
 	return true, nil
