@@ -528,7 +528,7 @@ func Staking(args string) (string, error) {
 		return "", errors.New("Invalid meta data param")
 	}
 
-	metaDataType, ok := metaDataParam["Type"].(int)
+	metaDataType, ok := metaDataParam["Type"].(float64)
 	if !ok {
 		println("Invalid meta data type param")
 		return "", errors.New("Invalid meta data type param")
@@ -560,7 +560,7 @@ func Staking(args string) (string, error) {
 		return "", errors.New("Invalid meta data auto restaking param")
 	}
 
-	metaData, err := metadata.NewStakingMetadata(metaDataType, funderPaymentAddress, rewardReceiverPaymentAddress, uint64(stakingAmountShard), committeePublicKey, autoReStaking)
+	metaData, err := metadata.NewStakingMetadata(int(metaDataType), funderPaymentAddress, rewardReceiverPaymentAddress, uint64(stakingAmountShard), committeePublicKey, autoReStaking)
 	if err!= nil{
 		return "", err
 	}
@@ -960,11 +960,73 @@ func InitParamCreatePrivacyTokenTx(args string) (*transaction.TxPrivacyTokenInit
 			return nil, err
 		}
 		paymentInfoTmp.PaymentAddress = keyWallet.KeySet.PaymentAddress
+		println("PK receiver token: ", paymentInfoTmp.PaymentAddress.Pk)
 		paymentInfoTmp.Amount = uint64(amount)
 		paymentInfoForPToken = append(paymentInfoForPToken, paymentInfoTmp)
 	}
 
 	privacyTokenParam.Receiver = paymentInfoForPToken
+
+	tokenInputsParam, ok := pTokenParam["tokenInputs"].([]interface{})
+	if !ok {
+		println("Invalid token input coin string params!")
+		return nil, errors.New("Invalid token input coin string params")
+	}
+	println("tokenInputs: ", tokenInputsParam)
+
+	tokenInputs := make([]*privacy.InputCoin, len(tokenInputsParam))
+	for i := 0; i < len(tokenInputs); i++ {
+		tmp, ok := tokenInputsParam[i].(map[string]interface{})
+		if !ok {
+			println("Invalid input coin string param!")
+			return nil, errors.New("Invalid input coin string param")
+		}
+		coinObjTmp := new(privacy.CoinObject)
+		coinObjTmp.PublicKey, ok = tmp["PublicKey"].(string)
+		if !ok {
+			println("Invalid input coin public key param!")
+			return nil, errors.New("Invalid input coin public key param")
+		}
+		coinObjTmp.CoinCommitment, ok = tmp["CoinCommitment"].(string)
+		if !ok {
+			println("Invalid input coin coin commitment param!")
+			return nil, errors.New("Invalid input coin coin commitment param")
+		}
+		coinObjTmp.SNDerivator, ok = tmp["SNDerivator"].(string)
+		if !ok {
+			println("Invalid input coin snderivator param!")
+			return nil, errors.New("Invalid input coin snderivator param")
+		}
+		coinObjTmp.SerialNumber, ok = tmp["SerialNumber"].(string)
+		if !ok {
+			println("Invalid input coin serial number param!")
+			return nil, errors.New("Invalid input coin serial number param")
+		}
+		coinObjTmp.Randomness, ok = tmp["Randomness"].(string)
+		if !ok {
+			println("Invalid input coin randomness param!")
+			return nil, errors.New("Invalid input coin randomness param")
+		}
+		coinObjTmp.Value, ok = tmp["Value"].(string)
+		if !ok {
+			println("Invalid input coin value param!")
+			return nil, errors.New("Invalid input coin value param")
+		}
+		coinObjTmp.Info, ok = tmp["Info"].(string)
+		if !ok {
+			println("Invalid input coin info param!")
+			return nil, errors.New("Invalid input coin info param")
+		}
+
+		tokenInputs[i] = new(privacy.InputCoin).Init()
+		tokenInputs[i].ParseCoinObjectToInputCoin(*coinObjTmp)
+	}
+
+	println("tokenInputs: ", tokenInputs)
+	privacyTokenParam.TokenInput = tokenInputs
+
+
+	// Todo: token param token inputs param
 
 
 	println("privacyTokenParam: ", len(privacyTokenParam.Receiver))
@@ -1036,7 +1098,7 @@ func InitBurningRequestTx(args string) (string, error) {
 		return "", errors.New("Invalid meta data param")
 	}
 
-	metaDataType, ok := metaDataParam["Type"].(int)
+	metaDataType, ok := metaDataParam["Type"].(float64)
 	if !ok {
 		println("Invalid meta data type param")
 		return "", errors.New("Invalid meta data type param")
@@ -1079,7 +1141,7 @@ func InitBurningRequestTx(args string) (string, error) {
 		return "", errors.New("Invalid meta data remote address param")
 	}
 
-	metaData, err := metadata.NewBurningRequest(burnerAddress, uint64(burningAmount), *tokenIDHash, tokenName, remoteAddress, metaDataType)
+	metaData, err := metadata.NewBurningRequest(burnerAddress, uint64(burningAmount), *tokenIDHash, tokenName, remoteAddress, int(metaDataType))
 	if err!= nil{
 		return "", err
 	}
