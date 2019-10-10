@@ -284,6 +284,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 	if err != nil {
 		Logger.log.Critical("FORK SHARD DETECTED")
 		blockchain.Synker.SyncBlkShard(shardID, true, false, false, []common.Hash{previousBlockHash}, nil, 0, 0, "")
+		Logger.log.Critical("SEND REQUEST FOR BLOCK HASH", previousBlockHash.String())
 		revertErr := blockchain.revertShardState(shardID)
 		if revertErr != nil {
 			return errors.WithStack(revertErr)
