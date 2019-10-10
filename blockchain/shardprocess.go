@@ -282,11 +282,12 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 	previousBlockHash := shardBlock.Header.PreviousBlockHash
 	previousShardBlockData, err := blockchain.config.DataBase.FetchBlock(previousBlockHash)
 	if err != nil {
-		Logger.log.Critical("FORK SHARD DETECTED")
+		Logger.log.Critical("FORK SHARD DETECTED shardID=%+v", shardID)
 		blockchain.Synker.SyncBlkShard(shardID, true, false, false, []common.Hash{previousBlockHash}, nil, 0, 0, "")
 		Logger.log.Critical("SEND REQUEST FOR BLOCK HASH", previousBlockHash.String(), shardBlock.Header.Height, shardBlock.Header.ShardID)
 		revertErr := blockchain.revertShardState(shardID)
 		if revertErr != nil {
+			Logger.log.Error("blockchain.revertShardState error", revertErr)
 			return errors.WithStack(revertErr)
 		}
 		return NewBlockChainError(FetchPreviousBlockError, err)
