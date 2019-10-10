@@ -6,12 +6,13 @@ import (
 
 	"github.com/incognitochain/incognito-chain/wire"
 
-	p2pgrpc "github.com/paralin/go-libp2p-grpc"
+	p2pgrpc "github.com/incognitochain/go-libp2p-grpc"
 )
 
 func NewBlockProvider(p *p2pgrpc.GRPCProtocol) *BlockProvider {
 	bp := &BlockProvider{}
 	RegisterHighwayServiceServer(p.GetGRPCServer(), bp)
+	go p.Serve() // NOTE: must serve after registering all services
 	return bp
 }
 
