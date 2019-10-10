@@ -9,8 +9,8 @@ import (
 	p2pgrpc "github.com/incognitochain/go-libp2p-grpc"
 )
 
-func NewBlockProvider(p *p2pgrpc.GRPCProtocol) *BlockProvider {
-	bp := &BlockProvider{}
+func NewBlockProvider(p *p2pgrpc.GRPCProtocol, ns NetSync) *BlockProvider {
+	bp := &BlockProvider{NetSync: ns}
 	RegisterHighwayServiceServer(p.GetGRPCServer(), bp)
 	go p.Serve() // NOTE: must serve after registering all services
 	return bp
@@ -32,6 +32,7 @@ func (bp *BlockProvider) GetBlockShardByHeight(ctx context.Context, req *GetBloc
 		[]uint64{req.FromHeight, req.ToHeight},
 		0,
 	)
+	log.Println("Blockshard received from netsync:", blkMsgs)
 	resp := &GetBlockShardByHeightResponse{}
 	for _, msg := range blkMsgs {
 		encoded, err := encodeMessage(msg)
@@ -70,7 +71,9 @@ func (bp *BlockProvider) GetBlockCrossShardByHash(ctx context.Context, req *GetB
 }
 
 type BlockProvider struct {
-	NetSync interface {
-		GetBlockShardByHeight(bool, byte, bool, byte, []uint64, byte) []wire.Message
-	}
+	NetSync NetSync
+}
+
+type NetSync interface {
+	GetBlockShardByHeight(bool, byte, bool, byte, []uint64, byte) []wire.Message
 }
