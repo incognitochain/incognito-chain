@@ -52,7 +52,7 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 	return nil
 }
 
-func (cm *ConnManager) Start() {
+func (cm *ConnManager) Start(ns NetSync) {
 	// connect to proxy node
 	proxyIP, proxyPort := ParseListenner(cm.DiscoverPeersAddress, "127.0.0.1", 9330)
 	ipfsaddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", proxyIP, proxyPort))
@@ -75,7 +75,7 @@ func (cm *ConnManager) Start() {
 	}
 	cm.Requester = req
 
-	cm.Provider = NewBlockProvider(cm.LocalHost.GRPC)
+	cm.Provider = NewBlockProvider(cm.LocalHost.GRPC, ns)
 
 	go cm.manageRoleSubscription()
 
@@ -186,7 +186,7 @@ func (cm *ConnManager) manageRoleSubscription() {
 	for range time.Tick(5 * time.Second) {
 		// Update when role changes
 		newRole := newUserRole(cm.cd.GetUserRole())
-		if newRole == lastRole {
+		if *newRole == *lastRole {
 			continue
 		}
 		log.Printf("Role changed: %v -> %v", lastRole, newRole)
