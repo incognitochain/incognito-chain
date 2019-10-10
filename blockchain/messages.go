@@ -96,7 +96,9 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 		if currentShardBestState.ShardHeight <= newBlk.Header.Height {
 			layer, role, _ := blockchain.config.ConsensusEngine.GetUserRole()
 			fmt.Println("Shard block received 0", layer, role)
-			if layer == common.ShardRole && role == common.CommitteeRole {
+			currentShardBestState := blockchain.BestState.Shard[newBlk.Header.ShardID]
+
+			if currentShardBestState.ShardHeight == newBlk.Header.Height && currentShardBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentShardBestState.BestBlock.Header.Round < newBlk.Header.Round {
 				fmt.Println("Shard block received 1", role)
 				err := blockchain.InsertShardBlock(newBlk, false)
 				if err != nil {
@@ -127,21 +129,15 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 			return
 		}
 		if blockchain.BestState.Beacon.BeaconHeight <= newBlk.Header.Height {
-
-			publicKey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
-			if publicKey != "" {
-				// Revert beststate
-
-				userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(publicKey, 0)
-				if userRole == common.ProposerRole || userRole == common.ValidatorRole {
-					fmt.Println("Beacon block insert", newBlk.Header.Height)
-					err := blockchain.InsertBeaconBlock(newBlk, false)
-					if err != nil {
-						Logger.log.Error(err)
-						return
-					}
+			currentBeaconBestState := blockchain.BestState.Beacon
+			if currentBeaconBestState.BeaconHeight == newBlk.Header.Height && currentBeaconBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentBeaconBestState.BestBlock.Header.Round < newBlk.Header.Round {
+				fmt.Println("Beacon block insert", newBlk.Header.Height)
+				err := blockchain.InsertBeaconBlock(newBlk, false)
+				if err != nil {
+					Logger.log.Error(err)
 					return
 				}
+				return
 			}
 			fmt.Println("Beacon block prepare add to pool", newBlk.Header.Height)
 			err := blockchain.config.BeaconPool.AddBeaconBlock(newBlk)
