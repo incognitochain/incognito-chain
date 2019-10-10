@@ -2,6 +2,8 @@ package peerv2
 
 import (
 	"context"
+	"log"
+	"github.com/incognitochain/incognito-chain/wire"
 
 	p2pgrpc "github.com/paralin/go-libp2p-grpc"
 )
@@ -13,38 +15,60 @@ func NewBlockProvider(p *p2pgrpc.GRPCProtocol) *BlockProvider {
 }
 
 func (bp *BlockProvider) Register(ctx context.Context, req *RegisterRequest) (*RegisterResponse, error) {
-	logger.Infof("Receive new request from %v via gRPC", req.GetCommitteePublicKey())
+	log.Printf("Receive new request from %v via gRPC", req.GetCommitteePublicKey())
 	return nil, nil
 }
 
-func (bp *BlockProvider) GetBlockShardByHeight(context.Context, *GetBlockShardByHeightRequest) (*GetBlockShardByHeightResponse, error) {
-	logger.Println("Receive GetBlockShardByHeight request")
+func (bp *BlockProvider) GetBlockShardByHeight(ctx context.Context, req *GetBlockShardByHeightRequest) (*GetBlockShardByHeightResponse, error) {
+	log.Println("Receive GetBlockShardByHeight request")
+	blkType := byte(0) // TODO(@0xbunyip): define in common file
+	blkMsgs := bp.NetSync.GetBlockShardByHeight(
+		req.FromPool, 
+		blkType, 
+		false, 
+		byte(req.Shard),
+		[]uint64{req.FromBlock, req.ToBlock},
+		0,
+	)
+	resp := &GetBlockShardByHeightResponse{}
+	for _, msg := range blkMsgs {
+		encoded, err := encodeMessage(msg)
+		if err != nil {
+			log.Errorf("Failed encoding message %v", msg.GetType())
+			continue
+		}
+		resp.Data = append(resp.Data, []byte(encoded))
+	}
+	return resp, nil
+}
+
+func (bp *BlockProvider) GetBlockShardByHash(ctx context.Context, req *GetBlockShardByHashRequest) (*GetBlockShardByHashResponse, error) {
+	log.Println("Receive GetBlockShardByHash request")
 	return nil, nil
 }
 
-func (bp *BlockProvider) GetBlockShardByHash(context.Context, *GetBlockShardByHashRequest) (*GetBlockShardByHashResponse, error) {
-	logger.Println("Receive GetBlockShardByHash request")
+func (bp *BlockProvider) GetBlockBeaconByHeight(ctx context.Context, req *GetBlockBeaconByHeightRequest) (*GetBlockBeaconByHeightResponse, error) {
+	log.Println("Receive GetBlockBeaconByHeight request")
 	return nil, nil
 }
 
-func (bp *BlockProvider) GetBlockBeaconByHeight(context.Context, *GetBlockBeaconByHeightRequest) (*GetBlockBeaconByHeightResponse, error) {
-	logger.Println("Receive GetBlockBeaconByHeight request")
+func (bp *BlockProvider) GetBlockBeaconByHash(ctx context.Context, req *GetBlockBeaconByHashRequest) (*GetBlockBeaconByHashResponse, error) {
+	log.Println("Receive GetBlockBeaconByHash request")
 	return nil, nil
 }
 
-func (bp *BlockProvider) GetBlockBeaconByHash(context.Context, *GetBlockBeaconByHashRequest) (*GetBlockBeaconByHashResponse, error) {
-	logger.Println("Receive GetBlockBeaconByHash request")
+func (bp *BlockProvider) GetBlockCrossShardByHeight(ctx context.Context, req *GetBlockCrossShardByHeightRequest) (*GetBlockCrossShardByHeightResponse, error) {
+	log.Println("Receive GetBlockCrossShardByHeight request")
 	return nil, nil
 }
 
-func (bp *BlockProvider) GetBlockCrossShardByHeight(context.Context, *GetBlockCrossShardByHeightRequest) (*GetBlockCrossShardByHeightResponse, error) {
-	logger.Println("Receive GetBlockCrossShardByHeight request")
+func (bp *BlockProvider) GetBlockCrossShardByHash(ctx context.Context, req *GetBlockCrossShardByHashRequest) (*GetBlockCrossShardByHashResponse, error) {
+	log.Println("Receive GetBlockCrossShardByHash request")
 	return nil, nil
 }
 
-func (bp *BlockProvider) GetBlockCrossShardByHash(context.Context, *GetBlockCrossShardByHashRequest) (*GetBlockCrossShardByHashResponse, error) {
-	logger.Println("Receive GetBlockCrossShardByHash request")
-	return nil, nil
+type BlockProvider struct{
+	NetSync interface {
+		GetBlockShardByHeight(bool, byte, bool, byte, []uint64, byte) []wire.Message
+	}
 }
-
-type BlockProvider struct{}
