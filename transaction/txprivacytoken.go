@@ -691,6 +691,10 @@ type TxPrivacyTokenInitParamsForASM struct {
 	sndOutputsForPToken          []*privacy.Scalar
 }
 
+func (param *TxPrivacyTokenInitParamsForASM) SetMetaData(meta metadata.Metadata){
+	param.txParam.metaData = meta
+}
+
 func NewTxPrivacyTokenInitParamsForASM(
 	senderKey *privacy.PrivateKey,
 	paymentInfo []*privacy.PaymentInfo,
