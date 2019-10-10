@@ -62,6 +62,7 @@ type RpcServerConfig struct {
 	ProtocolVersion string
 	ChainParams     *blockchain.Params
 	BlockChain      *blockchain.BlockChain
+	Blockgen        *blockchain.BlockGenerator
 	MemCache        *memcache.MemoryCache
 	Database        *database.DatabaseInterface
 	Wallet          *wallet.Wallet
@@ -83,7 +84,8 @@ type RpcServerConfig struct {
 		GetMinerIncognitoPublickey(publicKey string, keyType string) []byte
 	}
 	ConsensusEngine interface {
-		GetUserRole() (string, int)
+		GetUserLayer() (string, int)
+		GetUserRole() (string, string, int)
 		GetCurrentMiningPublicKey() (publickey string, keyType string)
 		GetAllMiningPublicKeys() []string
 		ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error)

@@ -64,3 +64,16 @@ func NewGetRawMempoolResult(txMemPool mempool.TxPool) *GetRawMempoolResult {
 	}
 	return result
 }
+
+type GetPendingTxsInBlockgenResult struct {
+	TxHashes []string
+}
+
+func NewGetPendingTxsInBlockgenResult(txs []metadata.Transaction) GetPendingTxsInBlockgenResult {
+	txHashes := []string{}
+	for _, tx := range txs {
+		txHash := tx.Hash().String()
+		txHashes = append(txHashes, txHash)
+	}
+	return GetPendingTxsInBlockgenResult{TxHashes: txHashes}
+}
