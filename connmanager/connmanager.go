@@ -80,7 +80,6 @@ func (connManager ConnManager) GetListeningPeer() *peer.Peer {
 func (connManager *ConnManager) UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string) bool {
 	connManager.config.ConsensusState.Lock()
 	defer connManager.config.ConsensusState.Unlock()
-
 	bChange := false
 	if connManager.config.ConsensusState.role != role {
 		connManager.config.ConsensusState.role = role
@@ -335,7 +334,6 @@ func (connManager *ConnManager) discoverPeers(discoverPeerAddress string) {
 		err := connManager.processDiscoverPeers()
 		if err != nil {
 			Logger.log.Error(err)
-			continue
 		}
 		select {
 		case <-connManager.cDiscoveredPeers:
@@ -508,10 +506,10 @@ func (connManager *ConnManager) countPeerConnOfShard(shard *byte) int {
 		// 	metrics.TagValue:         connManager.config.ExternalAddress})
 		// fmt.Println("COUNT: all peer", len(allPeers))
 		for _, peerConn := range allPeers {
-			fmt.Println("COUNT: start get")
+			//fmt.Println("COUNT: start get")
 			pk, _ := peerConn.GetRemotePeer().GetPublicKey()
 			sh := connManager.getShardOfPublicKey(pk)
-			fmt.Println("COUNT: finish get")
+			//fmt.Println("COUNT: finish get")
 			if (shard == nil && sh == nil) || (sh != nil && shard != nil && *sh == *shard) {
 				count++
 			}

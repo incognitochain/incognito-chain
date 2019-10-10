@@ -60,17 +60,21 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 
 	// loop to create list usable commitments from usableInputCoins
 	listUsableCommitments := make(map[common.Hash][]byte)
+	listUsableCommitmentsIndices := make([]common.Hash, len(param.usableInputCoins))
 	// tick index of each usable commitment with full db commitments
 	mapIndexCommitmentsInUsableTx := make(map[string]*big.Int)
-	for _, in := range param.usableInputCoins {
+	for i, in := range param.usableInputCoins {
 		usableCommitment := in.CoinDetails.GetCoinCommitment().Compress()
-		listUsableCommitments[common.HashH(usableCommitment)] = usableCommitment
+		commitmentInHash := common.HashH(usableCommitment)
+		listUsableCommitments[commitmentInHash] = usableCommitment
+		listUsableCommitmentsIndices[i] = commitmentInHash
 		index, err := param.db.GetCommitmentIndex(*param.tokenID, usableCommitment, param.shardID)
 		if err != nil {
 			Logger.log.Error(err)
 			return
 		}
-		mapIndexCommitmentsInUsableTx[base58.Base58Check{}.Encode(usableCommitment, common.ZeroByte)] = index
+		commitmentInBase58Check := base58.Base58Check{}.Encode(usableCommitment, common.ZeroByte)
+		mapIndexCommitmentsInUsableTx[commitmentInBase58Check] = index
 	}
 
 	// loop to random commitmentIndexs
@@ -112,12 +116,13 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 
 	// loop to insert usable commitments into commitmentIndexs for every group
 	j := 0
-	for _, value := range listUsableCommitments {
-		index := mapIndexCommitmentsInUsableTx[base58.Base58Check{}.Encode(value, common.ZeroByte)]
+	for _, commitmentInHash := range listUsableCommitmentsIndices {
+		commitmentValue := listUsableCommitments[commitmentInHash]
+		index := mapIndexCommitmentsInUsableTx[base58.Base58Check{}.Encode(commitmentValue, common.ZeroByte)]
 		randInt := rand.Intn(param.randNum)
 		i := (j * param.randNum) + randInt
 		commitmentIndexs = append(commitmentIndexs[:i], append([]uint64{index.Uint64()}, commitmentIndexs[i:]...)...)
-		commitments = append(commitments[:i], append([][]byte{value}, commitments[i:]...)...)
+		commitments = append(commitments[:i], append([][]byte{commitmentValue}, commitments[i:]...)...)
 		myCommitmentIndexs = append(myCommitmentIndexs, uint64(i)) // create myCommitmentIndexs
 		j++
 	}
