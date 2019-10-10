@@ -1564,6 +1564,7 @@ func (serverObj *Server) PushMessageGetBlockShardByHash(shardID byte, blksHash [
 	msg.(*wire.MessageGetBlockShard).FromPool = getFromPool
 	msg.(*wire.MessageGetBlockShard).BlkHashes = blksHash
 	msg.(*wire.MessageGetBlockShard).ShardID = shardID
+	Logger.log.Critical("SEND REQUEST FOR BLOCK HASH", blksHash[0].String(), shardID)
 	if peerID == "" {
 		return serverObj.PushMessageToShard(msg, shardID, map[libp2p.ID]bool{})
 	}
