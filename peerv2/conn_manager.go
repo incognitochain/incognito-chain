@@ -40,7 +40,8 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 	for _, p := range publishable {
 		if msgType == p {
 			fmt.Println("[db] Publishing message", msgType)
-			return cm.encodeAndPublish(msg)
+			topic := cm.subs[msgType].Name
+			return broadcastMessage(msg, topic, cm.ps)
 		}
 	}
 
@@ -118,14 +119,14 @@ func (cm *ConnManager) process() {
 	}
 }
 
-func (cm *ConnManager) encodeAndPublish(msg wire.Message) error {
+func encodeMessage(msg wire.Message) (string, error) {
 	// NOTE: copy from peerConn.outMessageHandler
-	// Create and send messageHex
+	// Create messageHex
 	messageBytes, err := msg.JsonSerialize()
 	if err != nil {
 		fmt.Println("Can not serialize json format for messageHex:" + msg.MessageType())
 		fmt.Println(err)
-		return err
+		return nil, err
 	}
 
 	// Add 24 bytes headerBytes into messageHex
@@ -135,7 +136,7 @@ func (cm *ConnManager) encodeAndPublish(msg wire.Message) error {
 	if messageErr != nil {
 		fmt.Println("Can not get cmd type for " + msg.MessageType())
 		fmt.Println(messageErr)
-		return err
+		return nil, err
 	}
 	copy(headerBytes[:], []byte(cmdType))
 	// add forward type of message at 13st byte
@@ -151,17 +152,25 @@ func (cm *ConnManager) encodeAndPublish(msg wire.Message) error {
 	if err != nil {
 		fmt.Println("Can not gzip for messageHex:" + msg.MessageType())
 		fmt.Println(err)
-		return err
+		return nil, err
 	}
 	messageHex := hex.EncodeToString(messageBytes)
 	//log.Debugf("Content in hex encode: %s", string(messageHex))
 	// add end character to messageHex (delim '\n')
 	// messageHex += "\n"
+	return messageHex, nil
+}
 
-	// Publish
-	topic := cm.subs[msg.MessageType()].Name
+func broadcastMessage(msg wire.Message, topic string, ps *pubsub.PubSub) error {
+	// Encode message to string first
+	messageHex, err := encodeMessage(msg)
+	if err != nil {
+		return err
+	}	
+
+	// Broadcast
 	fmt.Printf("[db] Publishing to topic %s\n", topic)
-	return cm.ps.Publish(topic, []byte(messageHex))
+	return ps.Publish(topic, []byte(messageHex))
 }
 
 // manageRoleSubscription: polling current role every minute and subscribe to relevant topics
