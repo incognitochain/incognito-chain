@@ -3,12 +3,12 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/pkg/errors"
 )
 
 type BeaconChain struct {
@@ -71,6 +71,9 @@ func (chain *BeaconChain) CreateNewBlock(round int) (common.BlockInterface, erro
 }
 
 func (chain *BeaconChain) InsertBlk(block common.BlockInterface) error {
+	if chain.Blockchain.config.ConsensusEngine.IsOngoing(common.BeaconChainKey) {
+		return NewBlockChainError(ConsensusIsOngoingError, errors.New(fmt.Sprint(common.BeaconChainKey, block.Hash())))
+	}
 	return chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true)
 }
 
@@ -99,21 +102,21 @@ func (chain *BeaconChain) ValidatePreSignBlock(block common.BlockInterface) erro
 	return chain.Blockchain.VerifyPreSignBeaconBlock(block.(*BeaconBlock), true)
 }
 
-func (chain *BeaconChain) ValidateAndInsertBlock(block common.BlockInterface) error {
-	var beaconBestState BeaconBestState
-	beaconBlock := block.(*BeaconBlock)
-	beaconBestState.cloneBeaconBestStateFrom(chain.BestState)
-	producerPublicKey := beaconBlock.Header.Producer
-	producerPosition := (beaconBestState.BeaconProposerIndex + beaconBlock.Header.Round) % len(beaconBestState.BeaconCommittee)
-	tempProducer := beaconBestState.BeaconCommittee[producerPosition].GetMiningKeyBase58(beaconBestState.ConsensusAlgorithm)
-	if strings.Compare(tempProducer, producerPublicKey) != 0 {
-		return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
-	}
-	if err := chain.ValidateBlockSignatures(block, beaconBestState.BeaconCommittee); err != nil {
-		return err
-	}
-	return chain.Blockchain.InsertBeaconBlock(beaconBlock, false)
-}
+// func (chain *BeaconChain) ValidateAndInsertBlock(block common.BlockInterface) error {
+// 	var beaconBestState BeaconBestState
+// 	beaconBlock := block.(*BeaconBlock)
+// 	beaconBestState.cloneBeaconBestStateFrom(chain.BestState)
+// 	producerPublicKey := beaconBlock.Header.Producer
+// 	producerPosition := (beaconBestState.BeaconProposerIndex + beaconBlock.Header.Round) % len(beaconBestState.BeaconCommittee)
+// 	tempProducer := beaconBestState.BeaconCommittee[producerPosition].GetMiningKeyBase58(beaconBestState.ConsensusAlgorithm)
+// 	if strings.Compare(tempProducer, producerPublicKey) != 0 {
+// 		return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
+// 	}
+// 	if err := chain.ValidateBlockSignatures(block, beaconBestState.BeaconCommittee); err != nil {
+// 		return err
+// 	}
+// 	return chain.Blockchain.InsertBeaconBlock(beaconBlock, false)
+// }
 
 func (chain *BeaconChain) ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
