@@ -67,9 +67,22 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(beaconBlock *BeaconBlock,
 }
 
 func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isValidated bool) error {
+	currentBeaconBestState := blockchain.BestState.Beacon
+	if currentBeaconBestState.BeaconHeight == beaconBlock.Header.Height && currentBeaconBestState.BestBlock.Header.Timestamp < beaconBlock.Header.Timestamp && currentBeaconBestState.BestBlock.Header.Round < beaconBlock.Header.Round {
+		fmt.Println("FORK BEACON", beaconBlock.Header.Height)
+		if err := blockchain.ValidateBlockWithPrevBeaconBestState(beaconBlock); err != nil {
+			Logger.log.Error(err)
+			return err
+		}
+		if err := blockchain.RevertBeaconState(); err != nil {
+			panic(err)
+		}
+		blockchain.BestState.Beacon.lock.Unlock()
+		fmt.Println("REVERTED BEACON")
+	}
+
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
-
 	blockHash := beaconBlock.Header.Hash()
 	Logger.log.Infof("BEACON | Begin insert new Beacon Block height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	Logger.log.Infof("BEACON | Check Beacon Block existence before insert block height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
