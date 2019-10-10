@@ -699,7 +699,7 @@ func (serverObj Server) Start() {
 
 	serverObj.netSync.Start()
 
-	go serverObj.highway.Start()
+	go serverObj.highway.Start(serverObj.netSync)
 
 	if !cfg.DisableRPC && serverObj.rpcServer != nil {
 		serverObj.waitGroup.Add(1)
