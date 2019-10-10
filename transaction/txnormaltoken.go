@@ -349,7 +349,7 @@ func (customTokenTx *TxNormalToken) JSONString() string {
 }
 
 // Hash returns the hash of all fields of the transaction
-func (customTokenTx TxNormalToken) Hash() *common.Hash {
+func (customTokenTx *TxNormalToken) Hash() *common.Hash {
 	if customTokenTx.cachedHash != nil {
 		return customTokenTx.cachedHash
 	}
