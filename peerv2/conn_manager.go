@@ -126,7 +126,7 @@ func encodeMessage(msg wire.Message) (string, error) {
 	if err != nil {
 		fmt.Println("Can not serialize json format for messageHex:" + msg.MessageType())
 		fmt.Println(err)
-		return nil, err
+		return "", err
 	}
 
 	// Add 24 bytes headerBytes into messageHex
@@ -136,7 +136,7 @@ func encodeMessage(msg wire.Message) (string, error) {
 	if messageErr != nil {
 		fmt.Println("Can not get cmd type for " + msg.MessageType())
 		fmt.Println(messageErr)
-		return nil, err
+		return "", err
 	}
 	copy(headerBytes[:], []byte(cmdType))
 	// add forward type of message at 13st byte
@@ -152,7 +152,7 @@ func encodeMessage(msg wire.Message) (string, error) {
 	if err != nil {
 		fmt.Println("Can not gzip for messageHex:" + msg.MessageType())
 		fmt.Println(err)
-		return nil, err
+		return "", err
 	}
 	messageHex := hex.EncodeToString(messageBytes)
 	//log.Debugf("Content in hex encode: %s", string(messageHex))
@@ -166,7 +166,7 @@ func broadcastMessage(msg wire.Message, topic string, ps *pubsub.PubSub) error {
 	messageHex, err := encodeMessage(msg)
 	if err != nil {
 		return err
-	}	
+	}
 
 	// Broadcast
 	fmt.Printf("[db] Publishing to topic %s\n", topic)

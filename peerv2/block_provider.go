@@ -3,6 +3,7 @@ package peerv2
 import (
 	"context"
 	"log"
+
 	"github.com/incognitochain/incognito-chain/wire"
 
 	p2pgrpc "github.com/paralin/go-libp2p-grpc"
@@ -23,18 +24,18 @@ func (bp *BlockProvider) GetBlockShardByHeight(ctx context.Context, req *GetBloc
 	log.Println("Receive GetBlockShardByHeight request")
 	blkType := byte(0) // TODO(@0xbunyip): define in common file
 	blkMsgs := bp.NetSync.GetBlockShardByHeight(
-		req.FromPool, 
-		blkType, 
-		false, 
+		req.FromPool,
+		blkType,
+		false,
 		byte(req.Shard),
-		[]uint64{req.FromBlock, req.ToBlock},
+		[]uint64{req.FromHeight, req.ToHeight},
 		0,
 	)
 	resp := &GetBlockShardByHeightResponse{}
 	for _, msg := range blkMsgs {
 		encoded, err := encodeMessage(msg)
 		if err != nil {
-			log.Errorf("Failed encoding message %v", msg.GetType())
+			log.Printf("ERROR Failed encoding message %v", msg.MessageType())
 			continue
 		}
 		resp.Data = append(resp.Data, []byte(encoded))
@@ -67,7 +68,7 @@ func (bp *BlockProvider) GetBlockCrossShardByHash(ctx context.Context, req *GetB
 	return nil, nil
 }
 
-type BlockProvider struct{
+type BlockProvider struct {
 	NetSync interface {
 		GetBlockShardByHeight(bool, byte, bool, byte, []uint64, byte) []wire.Message
 	}
