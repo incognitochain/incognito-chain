@@ -35,12 +35,15 @@ func NewConnManager(
 }
 
 func (cm *ConnManager) PublishMessage(msg wire.Message) error {
-	publishable := []string{wire.CmdBlockShard, wire.CmdBFT, wire.CmdBlockBeacon}
+	publishable := []string{wire.CmdBlockShard, wire.CmdBFT, wire.CmdBlockBeacon, wire.CmdPeerState}
 	msgType := msg.MessageType()
 	for _, p := range publishable {
 		if msgType == p {
 			fmt.Println("[db] Publishing message", msgType)
 			topic := cm.subs[msgType].Name
+			if isJustPubOrSub(msg.MessageType()) {
+				topic = topic + "-nodepub"
+			}
 			return broadcastMessage(msg, topic, cm.ps)
 		}
 	}
@@ -80,7 +83,7 @@ func (cm *ConnManager) Start() {
 }
 
 type ConsensusData interface {
-	GetUserRole() (string, int)
+	GetUserRole() (string, string, int)
 }
 
 type Topic struct {
@@ -178,36 +181,47 @@ func (cm *ConnManager) manageRoleSubscription() {
 	peerid, _ := peer.IDB58Decode(HighwayPeerID)
 	pubkey, _ := cm.IdentityKey.ToBase58()
 
-	lastRole := "dummy"
-	lastShardID := -1000 // dummy value
+	lastRole := newUserRole("dummyLayer", "dummyRole", -1000)
 	lastTopics := m2t{}
 	for range time.Tick(5 * time.Second) {
 		// Update when role changes
-		role, shardID := cm.cd.GetUserRole()
-		if role == lastRole && shardID == lastShardID {
+		newRole := newUserRole(cm.cd.GetUserRole())
+		if newRole == lastRole {
+			continue
+		}
+		log.Printf("Role changed: %v -> %v", lastRole, newRole)
+		lastRole = newRole
+
+		// TODO(@0xbunyip): Pending & Waiting roles?
+		if newRole.role != common.CommitteeRole {
 			continue
 		}
 
 		// Get new topics
-		topics := lastTopics
-		if role == common.ShardRole || role == common.BeaconRole {
-			var err error
-			topics, err = cm.registerToProxy(peerid, pubkey, role, shardID)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-		}
-
-		err := cm.subscribeNewTopics(topics, lastTopics)
+		topics, err := cm.registerToProxy(peerid, pubkey, newRole.layer, newRole.shardID)
 		if err != nil {
 			log.Println(err)
 			continue
 		}
-
-		lastRole = role
-		lastShardID = shardID
+		if err := cm.subscribeNewTopics(topics, lastTopics); err != nil {
+			log.Println(err)
+			continue
+		}
 		lastTopics = topics
+	}
+}
+
+type userRole struct {
+	layer   string
+	role    string
+	shardID int
+}
+
+func newUserRole(layer, role string, shardID int) *userRole {
+	return &userRole{
+		layer:   layer,
+		role:    role,
+		shardID: shardID,
 	}
 }
 
@@ -224,12 +238,17 @@ func (cm *ConnManager) subscribeNewTopics(topics, subscribed m2t) error {
 
 	// Subscribe to new topics
 	for m, t := range topics {
-		if found(t, subscribed) {
+		topic4Subs := t
+		if isJustPubOrSub(t) {
+			topic4Subs = topic4Subs + "_nodesub"
+		}
+		if found(topic4Subs, subscribed) {
 			continue
 		}
 
-		fmt.Println("[db] subscribing", m, t)
-		s, err := cm.ps.Subscribe(t)
+		fmt.Println("[db] subscribing", m, topic4Subs)
+
+		s, err := cm.ps.Subscribe(topic4Subs)
 		if err != nil {
 			return err
 		}
@@ -239,7 +258,11 @@ func (cm *ConnManager) subscribeNewTopics(topics, subscribed m2t) error {
 
 	// Unsubscribe to old ones
 	for m, t := range subscribed {
-		if found(t, topics) {
+		topic4Subs := t
+		if isJustPubOrSub(t) {
+			topic4Subs = topic4Subs + "_nodesub"
+		}
+		if found(topic4Subs, topics) {
 			continue
 		}
 
@@ -272,14 +295,15 @@ type m2t map[string]string // Message to topic name
 func (cm *ConnManager) registerToProxy(
 	peerID peer.ID,
 	pubkey string,
-	role string,
+	layer string,
 	shardID int,
 ) (m2t, error) {
-	messagesWanted := getMessagesForRole(role, shardID)
+	messagesWanted := getMessagesForLayer(layer, shardID)
 	pairs, err := cm.Requester.Register(
 		context.Background(),
 		pubkey,
 		messagesWanted,
+		cm.LocalHost.Host.ID(),
 	)
 	if err != nil {
 		return nil, err
@@ -293,8 +317,8 @@ func (cm *ConnManager) registerToProxy(
 	return topics, nil
 }
 
-func getMessagesForRole(role string, shardID int) []string {
-	if role == common.ShardRole {
+func getMessagesForLayer(layer string, shardID int) []string {
+	if layer == common.ShardRole {
 		return []string{
 			wire.CmdBlockShard,
 			wire.CmdBlockBeacon,
@@ -303,7 +327,7 @@ func getMessagesForRole(role string, shardID int) []string {
 			wire.CmdCrossShard,
 			wire.CmdBlkShardToBeacon,
 		}
-	} else if role == common.BeaconRole {
+	} else if layer == common.BeaconRole {
 		return []string{
 			wire.CmdBlockBeacon,
 			wire.CmdBFT,
@@ -312,6 +336,13 @@ func getMessagesForRole(role string, shardID int) []string {
 		}
 	}
 	return []string{}
+}
+
+func isJustPubOrSub(message string) bool {
+	if message == wire.CmdPeerState {
+		return true
+	}
+	return false
 }
 
 //go run *.go --listen "127.0.0.1:9433" --externaladdress "127.0.0.1:9433" --datadir "/data/fullnode" --discoverpeersaddress "127.0.0.1:9330" --loglevel debug

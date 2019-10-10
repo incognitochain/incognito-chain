@@ -1,6 +1,9 @@
 package rpcserver
 
 import (
+	"errors"
+
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
@@ -26,6 +29,16 @@ func (httpServer *HttpServer) handleGetRawMempool(params interface{}, closeChan 
 	return result, nil
 }
 
+/*
+handleGetPendingTxsInBlockgen - RPC returns all transaction ids in blockgen
+*/
+func (httpServer *HttpServer) handleGetPendingTxsInBlockgen(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	Logger.log.Debugf("handleGetRawMempool params: %+v", params)
+	result := jsonresult.NewGetPendingTxsInBlockgenResult(httpServer.config.Blockgen.GetPendingTxsV2())
+	Logger.log.Debugf("handleGetRawMempool result: %+v", result)
+	return result, nil
+}
+
 func (httpServer *HttpServer) handleGetNumberOfTxsInMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleGetNumberOfTxsInMempool params: %+v", params)
 	result := httpServer.txMemPoolService.GetNumberOfTxsInMempool()
@@ -44,7 +57,7 @@ func (httpServer *HttpServer) handleMempoolEntry(params interface{}, closeChan <
 	}
 
 	txInPool, shardID, err := httpServer.txMemPoolService.MempoolEntry(params.(string))
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 
@@ -61,8 +74,18 @@ func (httpServer *HttpServer) handleMempoolEntry(params interface{}, closeChan <
 // handleRemoveTxInMempool - try to remove tx from tx mempool
 func (httpServer *HttpServer) handleRemoveTxInMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	if params == nil {
-		params = ""
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param is invalid"))
 	}
-
-	return httpServer.txMemPoolService.RemoveTxInMempool(params.(string))
+	result := []bool{}
+	arrays := common.InterfaceSlice(params)
+	for _, txHashString := range arrays {
+		txHash, ok := txHashString.(string)
+		if ok {
+			t, _ := httpServer.txMemPoolService.RemoveTxInMempool(txHash)
+			result = append(result, t)
+		} else {
+			result = append(result, false)
+		}
+	}
+	return result, nil
 }

@@ -30,6 +30,7 @@ func (c *BlockRequester) Register(
 	ctx context.Context,
 	pubkey string,
 	messages []string,
+	selfID peer.ID,
 ) ([]*MessageTopicPair, error) {
 	client := NewHighwayServiceClient(c.conn)
 	reply, err := client.Register(
@@ -37,6 +38,7 @@ func (c *BlockRequester) Register(
 		&RegisterRequest{
 			CommitteePublicKey: pubkey,
 			WantedMessages:     messages,
+			PeerID:             peer.IDB58Encode(selfID),
 		},
 	)
 	if err != nil {

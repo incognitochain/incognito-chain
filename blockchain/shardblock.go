@@ -414,6 +414,10 @@ func (block ShardBlock) GetProducer() string {
 	return block.Header.Producer
 }
 
+func (block ShardBlock) GetProducerPubKeyStr() string {
+	return block.Header.ProducerPubKeyStr
+}
+
 func (block ShardBlock) GetValidationField() string {
 	return block.ValidationData
 }

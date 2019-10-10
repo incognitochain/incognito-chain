@@ -172,3 +172,7 @@ func (blockchain *BlockChain) GetStakingTx(shardID byte) map[string]string {
 func (blockchain *BlockChain) GetAutoStakingList() map[string]bool {
 	return blockchain.BestState.Beacon.GetAutoStakingList()
 }
+
+func (blockchain *BlockChain) GetCentralizedWebsitePaymentAddress() string {
+	return blockchain.config.ChainParams.CentralizedWebsitePaymentAddress
+}

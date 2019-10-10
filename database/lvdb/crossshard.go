@@ -61,7 +61,7 @@ func (db *db) FetchCrossShardNextHeight(fromShard byte, toShard byte, curHeight 
 }
 
 //StoreIncomingCrossShard which store crossShardHash from which shard has been include in which block height
-func (db *db) StoreIncomingCrossShard(shardID byte, crossShardID byte, blkHeight uint64, crossBlkHash common.Hash) error {
+func (db *db) StoreIncomingCrossShard(shardID byte, crossShardID byte, blkHeight uint64, crossBlkHash common.Hash, bd *[]database.BatchData) error {
 	buf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(buf, blkHeight)
 	prefix := append([]byte{shardID}, append([]byte{crossShardID}, crossBlkHash[:]...)...)
@@ -69,6 +69,11 @@ func (db *db) StoreIncomingCrossShard(shardID byte, crossShardID byte, blkHeight
 	key := append(crossShardKeyPrefix, prefix...)
 	if ok, _ := db.HasValue(key); ok {
 		return database.NewDatabaseError(database.BlockExisted, errors.Errorf("block %d already exists", blkHeight))
+	}
+
+	if bd != nil {
+		*bd = append(*bd, database.BatchData{key, buf})
+		return nil
 	}
 	if err := db.Put(key, buf); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))

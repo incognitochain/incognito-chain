@@ -54,6 +54,9 @@ var (
 	// public variable
 	TokenPaymentAddressPrefix = []byte("token-paymentaddress-")
 	Splitter                  = []byte("-[-]-")
+
+	// slash
+	producersBlackListPrefix = []byte("producersblacklist-")
 )
 
 // value

@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/database"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -210,7 +211,7 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(beaconBlocks 
 					if err != nil {
 						return err
 					}
-					keyWalletDevAccount, err := wallet.Base58CheckDeserialize(common.DevAddress)
+					keyWalletDevAccount, err := wallet.Base58CheckDeserialize(blockchain.config.ChainParams.DevAddress)
 					if err != nil {
 						return err
 					}
@@ -256,7 +257,7 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(beaconBlocks 
 	return nil
 }
 
-func (blockchain *BlockChain) updateDatabaseWithBlockRewardInfo(beaconBlock *BeaconBlock) error {
+func (blockchain *BlockChain) updateDatabaseWithBlockRewardInfo(beaconBlock *BeaconBlock, bd *[]database.BatchData) error {
 	db := blockchain.config.DataBase
 	for _, inst := range beaconBlock.Body.Instructions {
 		if len(inst) <= 2 {
@@ -285,7 +286,7 @@ func (blockchain *BlockChain) updateDatabaseWithBlockRewardInfo(beaconBlock *Bea
 			}
 			for key, value := range acceptedBlkRewardInfo.TxsFee {
 				if value != 0 {
-					err = db.AddShardRewardRequest(beaconBlock.Header.Epoch, acceptedBlkRewardInfo.ShardID, value, key)
+					err = db.AddShardRewardRequest(beaconBlock.Header.Epoch, acceptedBlkRewardInfo.ShardID, value, key, bd)
 					if err != nil {
 						return err
 					}
