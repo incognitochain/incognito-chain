@@ -827,20 +827,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 			} else {
 				//NOTICE: @merman update PropertyID calculated from hash of tokendata and shardID
 				newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), params.txParam.shardID))
-				//Logger.log.Debug("New Privacy Token %+v ", newHashInitToken)
-				// todo: check client
-				//existed := params.db.PrivacyTokenIDExisted(newHashInitToken)
-				//if existed {
-				//	Logger.log.Error("INIT Tx Custom Token Privacy is Existed", newHashInitToken)
-				//	return NewTransactionErr(TokenIDExistedError, errors.New("this token is existed in network"))
-				//}
-				//existed = params.db.PrivacyTokenIDCrossShardExisted(newHashInitToken)
-				//if existed {
-				//	Logger.log.Error("INIT Tx Custom Token Privacy is Existed(crossshard)", newHashInitToken)
-				//	return NewTransactionErr(TokenIDExistedByCrossShardError, errors.New("this token is existed in network via cross shard"))
-				//}
 				txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID = newHashInitToken
-				//Logger.log.Debugf("A new token privacy wil be issued with ID: %+v", txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID.String())
 			}
 		}
 	case CustomTokenTransfer:
@@ -850,13 +837,6 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 			// fee always 0 and reuse function of normal tx for custom token ID
 			temp := Tx{}
 			propertyID, _ := common.Hash{}.NewHashFromStr(params.txParam.tokenParams.PropertyID)
-			// todo: check client
-			//existed := params.db.PrivacyTokenIDExisted(*propertyID)
-			//existedCross := params.db.PrivacyTokenIDCrossShardExisted(*propertyID)
-			//if !existed && !existedCross {
-			//	return NewTransactionErr(TokenIDExistedError, errors.New("invalid Token ID"))
-			//}
-			Logger.log.Debugf("Token %+v wil be transfered with", propertyID)
 			txCustomTokenPrivacy.TxPrivacyTokenData = TxPrivacyTokenData{
 				Type:           params.txParam.tokenParams.TokenTxType,
 				PropertyName:   params.txParam.tokenParams.PropertyName,
