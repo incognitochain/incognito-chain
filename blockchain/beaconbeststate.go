@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -62,10 +61,13 @@ type BeaconBestState struct {
 	// e.g 1 -> 3 -> 2 // shard 1 send cross shard to shard 3 at  height 2
 	LastCrossShardState map[byte]map[byte]uint64 `json:"LastCrossShardState"`
 	ShardHandle         map[byte]bool            `json:"ShardHandle"` // lock sync.RWMutex
-	lock                sync.RWMutex
-	randomClient        btc.RandomClient
-	BlockInterval       time.Duration
-	BlockMaxCreateTime  time.Duration
+
+	// Number of blocks produced by producers in epoch
+	NumOfBlocksByProducers map[string]uint64 `json:"NumOfBlocksByProducers"`
+
+	lock               sync.RWMutex
+	BlockInterval      time.Duration
+	BlockMaxCreateTime time.Duration
 }
 
 var beaconBestState *BeaconBestState
@@ -114,10 +116,6 @@ func GetBeaconBestState() *BeaconBestState {
 	}
 	beaconBestState = NewBeaconBestState()
 	return beaconBestState
-}
-
-func (beaconBestState *BeaconBestState) InitRandomClient(randomClient btc.RandomClient) {
-	beaconBestState.randomClient = randomClient
 }
 
 func (beaconBestState *BeaconBestState) MarshalJSON() ([]byte, error) {

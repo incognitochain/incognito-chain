@@ -125,7 +125,6 @@ func (netSync *NetSync) Stop() {
 	close(netSync.cQuit)
 }
 
-//TODO merman receive all of message and process here
 // messageHandler is the main handler for the sync manager.  It must be run as a
 // goroutine.  It processes block and inv messages in a separate goroutine
 // from the peer handlers so the block (MsgBlock) messages are handled by a
@@ -454,12 +453,13 @@ func (netSync *NetSync) handleMessagePeerState(msg *wire.MessagePeerState) {
 	// 	metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees),
 	// })
 	// startTime := time.Now()
-	peerID, err := libp2p.IDB58Decode(msg.SenderID)
-	if err != nil {
-		Logger.log.Error(err)
-		return
-	}
-	netSync.config.BlockChain.OnPeerStateReceived(&msg.Beacon, &msg.Shards, &msg.ShardToBeaconPool, &msg.CrossShardPool, peerID)
+	// peerID, err := libp2p.IDB58Decode(msg.SenderID)
+	// msg.
+	// if err != nil {
+	// 	Logger.log.Error(err)
+	// 	return
+	// }
+	netSync.config.BlockChain.OnPeerStateV2Received(&msg.Beacon, &msg.Shards, &msg.ShardToBeaconPool, &msg.CrossShardPool, msg.SenderMiningPublicKeyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy)
 	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 	// 	metrics.Measurement:      metrics.HandleMessagePeerStateTime,
 	// 	metrics.MeasurementValue: float64(time.Since(startTime).Seconds()),

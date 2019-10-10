@@ -58,6 +58,7 @@ const (
 	sendRawPrivacyCustomTokenTransaction       = "sendrawprivacycustomtokentransaction"
 	createAndSendPrivacyCustomTokenTransaction = "createandsendprivacycustomtokentransaction"
 	getMempoolInfo                             = "getmempoolinfo"
+	getPendingTxsInBlockgen                    = "getpendingtxsinblockgen"
 	getCandidateList                           = "getcandidatelist"
 	getCommitteeList                           = "getcommitteelist"
 	canPubkeyStake                             = "canpubkeystake"
@@ -93,8 +94,9 @@ const (
 	unlockMempool           = "unlockmempool"
 	//==================================================
 
-	getShardBestState  = "getshardbeststate"
-	getBeaconBestState = "getbeaconbeststate"
+	getShardBestState        = "getshardbeststate"
+	getBeaconBestState       = "getbeaconbeststate"
+	getBeaconBestStateDetail = "getbeaconbeststatedetail"
 
 	// Wallet rpc cmd
 	listAccounts               = "listaccounts"
@@ -152,6 +154,10 @@ const (
 	getPublicKeyRole            = "getpublickeyrole"
 	getIncognitoPublicKeyRole   = "getincognitopublickeyrole"
 	getMinerRewardFromMiningKey = "getminerrewardfromminingkey"
+
+	// slash
+	getProducersBlackList       = "getproducersblacklist"
+	getProducersBlackListDetail = "getproducersblacklistdetail"
 )
 
 const (
