@@ -74,6 +74,8 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 	@Notice: this block must have full information (complete block)
 */
 func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidated bool) error {
+	blockchain.chainLock.Lock()
+	defer blockchain.chainLock.Unlock()
 	shardID := shardBlock.Header.ShardID
 	blockHash := shardBlock.Header.Hash()
 	shardLock := &blockchain.BestState.Shard[shardID].lock
