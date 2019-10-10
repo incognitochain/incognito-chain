@@ -50,7 +50,7 @@ func (c *BlockRequester) GetBlockShardByHeight(
 	shardID int32,
 	from uint64,
 	to uint64,
-) ([]byte, error) {
+) ([][]byte, error) {
 	client := NewHighwayServiceClient(c.conn)
 	reply, err := client.GetBlockShardByHeight(
 		context.Background(),

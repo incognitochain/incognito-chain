@@ -1592,19 +1592,21 @@ func (serverObj *Server) PushMessageGetBlockBeaconByHash(blkHashes []common.Hash
 }
 
 func (serverObj *Server) PushMessageGetBlockShardByHeight(shardID byte, from uint64, to uint64, peerID libp2p.ID) error {
-	res, err := serverObj.highway.Requester.GetBlockShardByHeight(int32(shardID), from, to)
+	msgs, err := serverObj.highway.Requester.GetBlockShardByHeight(int32(shardID), from, to)
 	if err != nil {
 		Logger.log.Error(err)
 		return err
 	}
 
-	// Create dummy msg wrapping grpc response
-	msg := &p2ppubsub.Message{
-		&pb.Message{
-			Data: res,
-		},
+	for _, msg := range msgs {
+		// Create dummy msg wrapping grpc response
+		psMsg := &p2ppubsub.Message{
+			&pb.Message{
+				Data: msg,
+			},
+		}
+		serverObj.highway.PutMessage(psMsg)
 	}
-	serverObj.highway.PutMessage(msg)
 	return nil
 }
 
