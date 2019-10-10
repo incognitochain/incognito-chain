@@ -58,7 +58,7 @@ func (cm *ConnManager) Start() {
 	// Pubsub
 	// TODO(@0xbunyip): handle error
 	cm.ps, _ = pubsub.NewFloodSub(context.Background(), cm.LocalHost.Host)
-	cm.subs = map[string]Topic{}
+	cm.subs = m2t{}
 	cm.messages = make(chan *pubsub.Message, 1000)
 
 	// Must Connect after creating FloodSub
@@ -76,6 +76,7 @@ type ConsensusData interface {
 type Topic struct {
 	Name string
 	Sub  *pubsub.Subscription
+	Act  MessageTopicPair_Action
 }
 
 type ConnManager struct {
@@ -84,7 +85,7 @@ type ConnManager struct {
 	IdentityKey          *incognitokey.CommitteePublicKey
 
 	ps       *pubsub.PubSub
-	subs     map[string]Topic     // mapping from message to topic's subscription
+	subs     m2t                  // mapping from message to topic's subscription
 	messages chan *pubsub.Message // queue messages from all topics
 
 	cd   ConsensusData
@@ -144,7 +145,7 @@ func (cm *ConnManager) encodeAndPublish(msg wire.Message) error {
 	// messageHex += "\n"
 
 	// Publish
-	topic := cm.subs[msg.MessageType()].Name
+	topic := cm.subs[msg.MessageType()][0].Name
 	if isJustPubOrSub(msg.MessageType()) {
 		topic = topic + "-nodepub"
 	}
@@ -202,49 +203,69 @@ func newUserRole(layer, role string, shardID int) *userRole {
 }
 
 // subscribeNewTopics subscribes to new topics and unsubcribes any topics that aren't needed anymore
-func (cm *ConnManager) subscribeNewTopics(topics, subscribed m2t) error {
-	found := func(s string, m m2t) bool {
-		for _, v := range m {
-			if s == v {
-				return true
+func (cm *ConnManager) subscribeNewTopics(newTopics, subscribed m2t) error {
+	found := func(tName string, tmap m2t) bool {
+		for _, topicList := range tmap {
+			for _, t := range topicList {
+				if tName == t.Name {
+					return true
+				}
 			}
 		}
 		return false
 	}
 
 	// Subscribe to new topics
-	for m, t := range topics {
-		topic4Subs := t
-		if isJustPubOrSub(t) {
-			topic4Subs = topic4Subs + "_nodesub"
-		}
-		if found(topic4Subs, subscribed) {
-			continue
-		}
+	for m, topicList := range newTopics {
+		for _, t := range topicList {
+			topic4Subs := t.Name
+			if isJustPubOrSub(topic4Subs) {
+				topic4Subs = topic4Subs + "_nodesub"
+			}
+			if found(t.Name, subscribed) {
+				continue
+			}
 
-		fmt.Println("[db] subscribing", m, topic4Subs)
+			// TODO(@0xakk0r0kamui): check here
+			if t.Act == MessageTopicPair_PUB {
+				continue
+			}
 
-		s, err := cm.ps.Subscribe(topic4Subs)
-		if err != nil {
-			return err
+			fmt.Println("[db] subscribing", m, topic4Subs)
+
+			s, err := cm.ps.Subscribe(topic4Subs)
+			if err != nil {
+				return err
+			}
+			cm.subs[m] = append(cm.subs[m], Topic{Name: t.Name, Sub: s, Act: t.Act})
+			go processSubscriptionMessage(cm.messages, s)
 		}
-		cm.subs[m] = Topic{Name: t, Sub: s}
-		go processSubscriptionMessage(cm.messages, s)
 	}
 
 	// Unsubscribe to old ones
-	for m, t := range subscribed {
-		topic4Subs := t
-		if isJustPubOrSub(t) {
-			topic4Subs = topic4Subs + "_nodesub"
-		}
-		if found(topic4Subs, topics) {
-			continue
-		}
+	for m, topicList := range subscribed {
+		for _, t := range topicList {
+			topic4Subs := t.Name
+			if isJustPubOrSub(topic4Subs) {
+				topic4Subs = topic4Subs + "_nodesub"
+			}
+			if found(t.Name, newTopics) {
+				continue
+			}
 
-		fmt.Println("[db] unsubscribing", m, t)
-		cm.subs[m].Sub.Cancel() // TODO(@0xbunyip): lock
-		delete(cm.subs, m)
+			// TODO(@0xakk0r0kamui): check here
+			if t.Act == MessageTopicPair_PUB {
+				continue
+			}
+
+			fmt.Println("[db] unsubscribing", m, t.Name)
+			for _, s := range cm.subs[m] {
+				if s.Name == t.Name {
+					s.Sub.Cancel() // TODO(@0xbunyip): lock
+				}
+			}
+			delete(cm.subs, m)
+		}
 	}
 	return nil
 }
@@ -266,7 +287,7 @@ func processSubscriptionMessage(inbox chan *pubsub.Message, sub *pubsub.Subscrip
 	}
 }
 
-type m2t map[string]string // Message to topic name
+type m2t map[string][]Topic // Message to topics
 
 func (cm *ConnManager) registerToProxy(
 	peerID peer.ID,
@@ -288,10 +309,15 @@ func (cm *ConnManager) registerToProxy(
 		return nil, err
 	}
 
-	// Mapping from message to topic name
+	// Mapping from message to list of topics
 	topics := m2t{}
 	for _, p := range pairs {
-		topics[p.Message] = p.Topic
+		for i, t := range p.Topic {
+			topics[p.Message] = append(topics[p.Message], Topic{
+				Name: t,
+				Act:  p.Act[i],
+			})
+		}
 	}
 	return topics, nil
 }
