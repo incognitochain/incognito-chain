@@ -907,6 +907,9 @@ func (synker *Synker) UpdateStatev2() {
 			}
 		}
 
+		Logger.log.Info("synker.SyncBlkShard", currentShardReqHeight)
+		synker.SyncBlkShard(shardID, false, false, false, nil, nil, currentShardReqHeight, currentShardReqHeight+1, "")
+
 		for peerID := range synker.States.PeersState {
 			if shardState, ok := synker.States.PeersState[peerID].Shard[shardID]; ok {
 				fmt.Println("SyncShard state from other shard", shardID, shardState.Height)
