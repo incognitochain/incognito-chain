@@ -107,7 +107,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 		return nil, err
 	}
 	epoch := beaconBlock.Header.Epoch
-	if epoch-shardBestState.Epoch > 1 {
+	if epoch-shardBestState.Epoch >= 1 {
 		beaconHeight = shardBestState.Epoch * blockGenerator.chain.config.ChainParams.Epoch
 		newBeaconHash, err := blockGenerator.chain.config.DataBase.GetBeaconBlockHashByIndex(beaconHeight)
 		if err != nil {
