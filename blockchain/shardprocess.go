@@ -78,9 +78,14 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	defer blockchain.chainLock.Unlock()
 	shardID := shardBlock.Header.ShardID
 	blockHash := shardBlock.Header.Hash()
+
 	shardLock := &blockchain.BestState.Shard[shardID].lock
 	shardLock.Lock()
 	defer shardLock.Unlock()
+
+	if shardBlock.Header.Height != GetBestStateShard(shardID).ShardHeight+1 {
+		return errors.New("Not expected height")
+	}
 
 	Logger.log.Criticalf("SHARD %+v | Begin insert new block height %+v with hash %+v", shardID, shardBlock.Header.Height, blockHash)
 	Logger.log.Infof("SHARD %+v | Check block existence for insert height %+v with hash %+v", shardID, shardBlock.Header.Height, blockHash)
