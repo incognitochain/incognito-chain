@@ -78,11 +78,11 @@ func (chain *BeaconChain) InsertBlk(block common.BlockInterface) error {
 }
 
 func (chain *BeaconChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
+	go chain.Blockchain.config.Server.PushBlockToAll(block, true)
 	err := chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true)
 	if err != nil {
 		return err
 	}
-	go chain.Blockchain.config.Server.PushBlockToAll(block, true)
 	return nil
 }
 
