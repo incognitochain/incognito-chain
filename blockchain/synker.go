@@ -542,8 +542,7 @@ func (synker *Synker) UpdateState() {
 
 	beaconCommittee, _ := incognitokey.ExtractMiningPublickeysFromCommitteeKeyList(beaconStateClone.BeaconCommittee, beaconStateClone.ConsensusAlgorithm)
 	shardCommittee := make(map[byte][]string)
-	for shardID, shardState := range shardsStateClone {
-		committee := shardState.ShardCommittee
+	for shardID, committee := range beaconStateClone.GetShardCommittee() {
 		shardCommittee[shardID], _ = incognitokey.ExtractMiningPublickeysFromCommitteeKeyList(committee, beaconStateClone.ShardConsensusAlgorithm[shardID])
 	}
 	userMiningKey, err := synker.blockchain.config.ConsensusEngine.GetMiningPublicKeyByConsensus(synker.blockchain.BestState.Beacon.ConsensusAlgorithm)
@@ -554,6 +553,9 @@ func (synker *Synker) UpdateState() {
 	}
 	if userLayer == common.ShardRole {
 		shardID := byte(userShardIDInt)
+		shardState := shardsStateClone[shardID]
+		keyList, _ := incognitokey.ExtractMiningPublickeysFromCommitteeKeyList(shardState.ShardCommittee, shardState.ConsensusAlgorithm)
+		shardCommittee[shardID] = keyList
 		synker.blockchain.config.Server.UpdateConsensusState(userLayer, userMiningKey, &shardID, beaconCommittee, shardCommittee)
 	} else {
 		synker.blockchain.config.Server.UpdateConsensusState(userLayer, userMiningKey, nil, beaconCommittee, shardCommittee)
