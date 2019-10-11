@@ -329,7 +329,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	newShardBlock.Header.CommitteeRoot = committeeRoot
 	newShardBlock.Header.PendingValidatorRoot = pendingValidatorRoot
 	newShardBlock.Header.StakingTxRoot = stakingTxRoot
-	newShardBlock.Header.Timestamp = time.Now().Unix()
+	newShardBlock.Header.Timestamp = start.Unix()
 	copy(newShardBlock.Header.InstructionMerkleRoot[:], instMerkleRoot)
 	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
