@@ -893,12 +893,30 @@ func (synker *Synker) InsertBeaconBlockFromPool() {
 		}
 	}
 
+	for i, blk := range sameCommitteeBlock {
+		if i == len(sameCommitteeBlock)-1 {
+			break
+		}
+		if blk.Header.Height != sameCommitteeBlock[i+1].Header.Height-1 {
+			//fmt.Println(sameCommitteeBlock[0].Header.Height, blk.Header.Height, sameCommitteeBlock[i+1].Header.Height)
+			sameCommitteeBlock = blocks[:i+1]
+			break
+		}
+	}
+
 	for i := len(sameCommitteeBlock) - 1; i >= 0; i-- {
 		if err := chain.ValidateBlockSignatures(sameCommitteeBlock[i], beaconBestState.BeaconCommittee); err != nil {
 			sameCommitteeBlock = sameCommitteeBlock[:i]
 			//TODO: remove invalid block
 		} else {
 			break
+		}
+	}
+
+	if len(sameCommitteeBlock) > 0 {
+		if sameCommitteeBlock[0].Header.Height-1 != GetBeaconBestState().BeaconHeight {
+			//fmt.Println("DEBUG: beacon", sameCommitteeBlock[0].Header.Height-1, GetBeaconBestState().BeaconHeight)
+			return
 		}
 	}
 
@@ -912,10 +930,13 @@ func (synker *Synker) InsertBeaconBlockFromPool() {
 }
 
 func (synker *Synker) InsertShardBlockFromPool(shardID byte) {
+	fmt.Println("InsertShardBlockFromPool start")
 	currentInsert.Shards[shardID].Lock()
 	defer currentInsert.Shards[shardID].Unlock()
 
 	blocks := synker.blockchain.config.ShardPool[shardID].GetValidBlock()
+	fmt.Println("InsertShardBlockFromPool", len(blocks))
+
 	chain := synker.blockchain.Chains[common.GetShardChainKey(shardID)]
 	curEpoch := GetBestStateShard(shardID).Epoch
 	sameCommitteeBlock := blocks
@@ -923,6 +944,17 @@ func (synker *Synker) InsertShardBlockFromPool(shardID byte) {
 	fmt.Println("InsertShardBlockFromPool", len(blocks))
 	for i, v := range blocks {
 		if v.GetCurrentEpoch() == curEpoch+1 {
+			sameCommitteeBlock = blocks[:i+1]
+			break
+		}
+	}
+
+	for i, blk := range sameCommitteeBlock {
+		if i == len(sameCommitteeBlock)-1 {
+			break
+		}
+		if blk.Header.Height != sameCommitteeBlock[i+1].Header.Height-1 {
+			//fmt.Println(sameCommitteeBlock[0].Header.Height, blk.Header.Height, sameCommitteeBlock[i+1].Header.Height)
 			sameCommitteeBlock = blocks[:i+1]
 			break
 		}
@@ -937,8 +969,18 @@ func (synker *Synker) InsertShardBlockFromPool(shardID byte) {
 		}
 	}
 
+	if len(sameCommitteeBlock) > 0 {
+		if sameCommitteeBlock[0].Header.Height-1 != GetBestStateShard(shardID).ShardHeight {
+			fmt.Println("DEBUG: shard", sameCommitteeBlock[0].Header.Height-1, GetBestStateShard(shardID).ShardHeight)
+			return
+		}
+	}
+
 	for _, v := range sameCommitteeBlock {
+		time1 := time.Now()
+		fmt.Println("DEBUG: shard", v.Header.Height)
 		err := chain.InsertBlk(v)
+		fmt.Println("DEBUG: shard ", time.Since(time1).Seconds())
 		if err != nil {
 			Logger.log.Error(err)
 			break
