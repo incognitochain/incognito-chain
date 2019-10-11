@@ -365,7 +365,7 @@ func (synker *Synker) UpdateState() {
 							RCS.ShardToBeaconBlks[shardID][peerID] = blkHeights
 							if len(blkHeights) > 0 && len(blkHeights) <= len(synker.States.PoolsState.ShardToBeaconPool[shardID]) {
 								commonHeights := arrayCommonElements(blkHeights, synker.States.PoolsState.ShardToBeaconPool[shardID])
-								sort.Slice(commonHeights, func(i, j int) bool { return blkHeights[i] < blkHeights[j] })
+								sort.Slice(commonHeights, func(i, j int) bool { return commonHeights[i] < commonHeights[j] })
 								if len(commonHeights) > 0 {
 									for idx := len(commonHeights) - 1; idx == 0; idx-- {
 										if idx == 0 {
@@ -408,7 +408,7 @@ func (synker *Synker) UpdateState() {
 
 						if len(blkHeights) > 0 && len(blkHeights) <= len(synker.States.PoolsState.CrossShardPool[shardID]) {
 							commonHeights := arrayCommonElements(blkHeights, synker.States.PoolsState.CrossShardPool[shardID])
-							sort.Slice(commonHeights, func(i, j int) bool { return blkHeights[i] < blkHeights[j] })
+							sort.Slice(commonHeights, func(i, j int) bool { return commonHeights[i] < commonHeights[j] })
 							if len(commonHeights) > 0 {
 								for idx := len(commonHeights) - 1; idx < 0; idx-- {
 									height, _ := synker.States.ClosestState.CrossShardPool.Load(shardID)
@@ -687,6 +687,7 @@ func (synker *Synker) SyncBlkShardToBeacon(shardID byte, byHash bool, bySpecific
 			synker.Status.CurrentlySyncBlks.Add(fmt.Sprintf("%v%v", prefix, blkHash.String()), time.Now().Unix(), DefaultMaxBlockSyncTime)
 		}
 	} else {
+		Logger.log.Info("REQUEST SYNC S2B", blkHeights,shardID)
 		//Sync by height
 		prefix := getBlkPrefixSyncKey(false, ShardToBeaconBlk, shardID, 0)
 		if bySpecificHeights {
