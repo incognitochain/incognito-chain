@@ -1383,31 +1383,31 @@ PushMessageToPeer push msg to pbk
 */
 func (serverObj *Server) PushMessageToShard(msg wire.Message, shard byte, exclusivePeerIDs map[libp2p.ID]bool) error {
 	Logger.log.Debugf("Push msg to shard %d", shard)
-	peerConns := serverObj.connManager.GetPeerConnOfShard(shard)
-	relayConns := serverObj.connManager.GetConnOfRelayNode()
-	peerConns = append(relayConns, peerConns...)
+	// peerConns := serverObj.connManager.GetPeerConnOfShard(shard)
+	// relayConns := serverObj.connManager.GetConnOfRelayNode()
+	// peerConns = append(relayConns, peerConns...)
 
 	// Publish message to highway
-	if err := serverObj.highway.PublishMessage(msg); err != nil {
+	if err := serverObj.highway.PublishMessageToShard(msg, shard); err != nil {
 		return err
 	}
 
-	if len(peerConns) > 0 {
-		for _, peerConn := range peerConns {
-			if isExcluded, ok := exclusivePeerIDs[peerConn.GetRemotePeerID()]; ok {
-				if isExcluded {
-					continue
-				}
-			}
-			msg.SetSenderID(peerConn.GetListenerPeer().GetPeerID())
-			peerConn.QueueMessageWithEncoding(msg, nil, peer.MessageToShard, &shard)
-		}
-		Logger.log.Debugf("Pushed shard %d", shard)
-	} else {
-		Logger.log.Error("RemotePeer of shard not exist!")
-		listener := serverObj.connManager.GetConfig().ListenerPeer
-		listener.QueueMessageWithEncoding(msg, nil, peer.MessageToShard, &shard)
-	}
+	// if len(peerConns) > 0 {
+	// 	for _, peerConn := range peerConns {
+	// 		if isExcluded, ok := exclusivePeerIDs[peerConn.GetRemotePeerID()]; ok {
+	// 			if isExcluded {
+	// 				continue
+	// 			}
+	// 		}
+	// 		msg.SetSenderID(peerConn.GetListenerPeer().GetPeerID())
+	// 		peerConn.QueueMessageWithEncoding(msg, nil, peer.MessageToShard, &shard)
+	// 	}
+	// 	Logger.log.Debugf("Pushed shard %d", shard)
+	// } else {
+	// 	Logger.log.Error("RemotePeer of shard not exist!")
+	// 	listener := serverObj.connManager.GetConfig().ListenerPeer
+	// 	listener.QueueMessageWithEncoding(msg, nil, peer.MessageToShard, &shard)
+	// }
 	return nil
 }
 
@@ -1743,6 +1743,7 @@ func (serverObj *Server) PushMessageGetBlockCrossShardBySpecificHeight(fromShard
 }
 
 func (serverObj *Server) PublishNodeState() error {
+	listener := serverObj.connManager.GetConfig().ListenerPeer
 	userKey, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
 	var userRole string
 	var shardID byte
@@ -1778,6 +1779,12 @@ func (serverObj *Server) PublishNodeState() error {
 			msg.(*wire.MessagePeerState).CrossShardPool[byte(shardID)] = serverObj.crossShardPool[byte(shardID)].GetValidBlockHeight()
 		}
 	}
+	msg.(*wire.MessagePeerState).SenderMiningPublicKey, err = serverObj.consensusEngine.GetMiningPublicKeyByConsensus(serverObj.blockChain.BestState.Beacon.ConsensusAlgorithm)
+	msg.SetSenderID(listener.GetPeerID())
+	if err != nil {
+		return err
+	}
+	Logger.log.Debugf("Publish peerstate from %s", listener.GetRawAddress())
 	serverObj.PushMessageToAll(msg)
 	return nil
 }
@@ -1946,7 +1953,7 @@ func (serverObj *Server) PushBlockToAll(block common.BlockInterface, isBeacon bo
 		}
 		msgShardToBeacon.(*wire.MessageShardToBeacon).Block = shardToBeaconBlk
 		serverObj.PushMessageToBeacon(msgShardToBeacon, map[libp2p.ID]bool{})
-
+		//TODO hy check
 		crossShardBlks := shardBlock.CreateAllCrossShardBlock(serverObj.blockChain.BestState.Beacon.ActiveShards)
 		for shardID, crossShardBlk := range crossShardBlks {
 			msgCrossShardShard, err := wire.MakeEmptyMessage(wire.CmdCrossShard)

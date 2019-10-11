@@ -807,13 +807,12 @@ func (synker *Synker) UpdateStatev2() {
 	for shardID, state := range RCSv2.ClosestShardsState {
 		synker.States.ClosestState.ClosestShardsState.Store(shardID, state.Height)
 	}
-
 	if len(synker.States.PeersStatev2) > 0 {
 		if userLayer != common.ShardRole {
 			if RCSv2.ClosestBeaconState.Height == beaconStateClone.BeaconHeight {
 				synker.SetChainState(false, 0, true)
 			} else {
-				fmt.Printf("beacon not ready %v %v\n\n\n\n", userRole, RCSv2.ClosestBeaconState.Height)
+				fmt.Printf("beacon not ready %v %v\n", userRole, RCSv2.ClosestBeaconState.Height)
 				synker.SetChainState(false, 0, false)
 			}
 		}
