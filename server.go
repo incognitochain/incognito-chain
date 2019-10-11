@@ -1788,8 +1788,14 @@ func (serverObj *Server) PublishNodeState() error {
 			msg.(*wire.MessagePeerState).CrossShardPool[byte(shardID)] = serverObj.crossShardPool[byte(shardID)].GetValidBlockHeight()
 		}
 	}
-	msg.(*wire.MessagePeerState).SenderMiningPublicKey, err = serverObj.consensusEngine.GetMiningPublicKeyByConsensus(serverObj.blockChain.BestState.Beacon.ConsensusAlgorithm)
+	//
+	currentMiningKey := serverObj.consensusEngine.GetMiningPublicKeys()[serverObj.blockChain.BestState.Beacon.ConsensusAlgorithm]
+	msg.(*wire.MessagePeerState).SenderMiningPublicKey, err = currentMiningKey.ToBase58()
+	if err != nil {
+		return err
+	}
 	msg.SetSenderID(listener.GetPeerID())
+	fmt.Printf("PeerID send to Proxy when publish node state %v \n", listener.GetPeerID())
 	if err != nil {
 		return err
 	}
