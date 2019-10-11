@@ -299,3 +299,14 @@ func TestHDWalletBase58CheckDeserializeWithInvalidData(t *testing.T) {
 	_, err = Base58CheckDeserialize(readonlyKeyStr)
 	assert.NotEqual(t, nil, err)
 }
+
+func TestPrivateKeyToPaymentAddress(t *testing.T){
+	//Todo: need to fill private key
+	privateKeyStr := ""
+
+	KeyWallet, _ := Base58CheckDeserialize(privateKeyStr)
+	KeyWallet.KeySet.InitFromPrivateKey(&KeyWallet.KeySet.PrivateKey)
+	paymentAddStr := KeyWallet.Base58CheckSerialize(PaymentAddressType)
+	fmt.Printf("paymentAddStr: %v\n", paymentAddStr)
+
+}
