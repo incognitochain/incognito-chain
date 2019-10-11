@@ -18,6 +18,7 @@ require (
 	github.com/golang/protobuf v1.3.2
 	github.com/gorilla/websocket v1.4.0
 	github.com/hashicorp/golang-lru v0.5.1
+	github.com/incognitochain/go-libp2p-grpc v0.0.0-20181024123959-d1f24bf49b50
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/jrick/logrotate v1.0.0
 	github.com/libp2p/go-libp2p v0.3.1
@@ -35,7 +36,6 @@ require (
 	github.com/multiformats/go-multiaddr v0.0.4
 	github.com/olekukonko/tablewriter v0.0.1 // indirect
 	github.com/olivere/elastic v6.2.21+incompatible
-	github.com/paralin/go-libp2p-grpc v0.0.0-20171228081709-3d5d33466aef
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/tsdb v0.9.1 // indirect
