@@ -44,6 +44,10 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-peer"
+
+	p2ppubsub "github.com/libp2p/go-libp2p-pubsub"
+
+	pb "github.com/libp2p/go-libp2p-pubsub/pb"
 )
 
 type Server struct {
@@ -695,7 +699,7 @@ func (serverObj Server) Start() {
 
 	serverObj.netSync.Start()
 
-	go serverObj.highway.Start()
+	go serverObj.highway.Start(serverObj.netSync)
 
 	if !cfg.DisableRPC && serverObj.rpcServer != nil {
 		serverObj.waitGroup.Add(1)
@@ -1217,6 +1221,7 @@ func (serverObj *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) 
 }
 
 func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
+	fmt.Println("[db] Receive a BFTMsg START \n\n\n")
 	Logger.log.Debug("Receive a BFTMsg START")
 	var txProcessed chan struct{}
 	isRelayNodeForConsensus := cfg.Accelerator
@@ -1593,18 +1598,22 @@ func (serverObj *Server) PushMessageGetBlockBeaconByHash(blkHashes []common.Hash
 }
 
 func (serverObj *Server) PushMessageGetBlockShardByHeight(shardID byte, from uint64, to uint64, peerID libp2p.ID) error {
-	msg, err := wire.MakeEmptyMessage(wire.CmdGetBlockShard)
+	msgs, err := serverObj.highway.Requester.GetBlockShardByHeight(int32(shardID), from, to)
 	if err != nil {
+		Logger.log.Error(err)
 		return err
 	}
-	msg.(*wire.MessageGetBlockShard).BlkHeights = append(msg.(*wire.MessageGetBlockShard).BlkHeights, from)
-	msg.(*wire.MessageGetBlockShard).BlkHeights = append(msg.(*wire.MessageGetBlockShard).BlkHeights, to)
-	msg.(*wire.MessageGetBlockShard).ShardID = shardID
-	if peerID == "" {
-		return serverObj.PushMessageToShard(msg, shardID, map[libp2p.ID]bool{})
-	}
-	return serverObj.PushMessageToPeer(msg, peerID)
 
+	for _, msg := range msgs {
+		// Create dummy msg wrapping grpc response
+		psMsg := &p2ppubsub.Message{
+			&pb.Message{
+				Data: msg,
+			},
+		}
+		serverObj.highway.PutMessage(psMsg)
+	}
+	return nil
 }
 
 func (serverObj *Server) PushMessageGetBlockShardBySpecificHeight(shardID byte, heights []uint64, getFromPool bool, peerID libp2p.ID) error {
@@ -1830,7 +1839,7 @@ func (serverObj *Server) BoardcastNodeState() error {
 		}
 	}
 	msg.SetSenderID(listener.GetPeerID())
-	Logger.log.Debugf("Boardcast peerstate from %s", listener.GetRawAddress())
+	Logger.log.Debugf("Broadcast peerstate from %s", listener.GetRawAddress())
 	serverObj.PushMessageToAll(msg)
 	return nil
 }
