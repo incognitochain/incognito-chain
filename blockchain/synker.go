@@ -553,6 +553,9 @@ func (synker *Synker) UpdateState() {
 	}
 	if userLayer == common.ShardRole {
 		shardID := byte(userShardIDInt)
+		shardState := shardsStateClone[shardID]
+		keyList, _ := incognitokey.ExtractMiningPublickeysFromCommitteeKeyList(shardState.ShardCommittee, shardState.ConsensusAlgorithm)
+		shardCommittee[shardID] = keyList
 		synker.blockchain.config.Server.UpdateConsensusState(userLayer, userMiningKey, &shardID, beaconCommittee, shardCommittee)
 	} else {
 		synker.blockchain.config.Server.UpdateConsensusState(userLayer, userMiningKey, nil, beaconCommittee, shardCommittee)
@@ -635,6 +638,7 @@ func (synker *Synker) SyncBlkShard(shardID byte, byHash bool, bySpecificHeights 
 			go synker.blockchain.config.Server.PushMessageGetBlockShardByHash(shardID, blksNeedToGet, getFromPool, peerID)
 		}
 		for _, blkHash := range blksNeedToGet {
+			Logger.log.Criticalf("Block need to get hash=%+v", blkHash.String())
 			synker.Status.CurrentlySyncBlks.Add(fmt.Sprintf("%v%v", prefix, blkHash.String()), time.Now().Unix(), DefaultMaxBlockSyncTime)
 		}
 	} else {
@@ -941,7 +945,6 @@ func (synker *Synker) InsertShardBlockFromPool(shardID byte) {
 	curEpoch := GetBestStateShard(shardID).Epoch
 	sameCommitteeBlock := blocks
 
-	fmt.Println("InsertShardBlockFromPool", len(blocks))
 	for i, v := range blocks {
 		if v.GetCurrentEpoch() == curEpoch+1 {
 			sameCommitteeBlock = blocks[:i+1]
@@ -977,10 +980,10 @@ func (synker *Synker) InsertShardBlockFromPool(shardID byte) {
 	}
 
 	for _, v := range sameCommitteeBlock {
-		time1 := time.Now()
-		fmt.Println("DEBUG: shard", v.Header.Height)
+		//time1 := time.Now()
+		//fmt.Println("DEBUG: shard", v.Header.Height)
 		err := chain.InsertBlk(v)
-		fmt.Println("DEBUG: shard ", time.Since(time1).Seconds())
+		//fmt.Println("DEBUG: shard ", time.Since(time1).Seconds())
 		if err != nil {
 			Logger.log.Error(err)
 			break

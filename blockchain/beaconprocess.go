@@ -70,6 +70,20 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
 
+	currentBeaconBestState := GetBeaconBestState()
+	if currentBeaconBestState.BeaconHeight == beaconBlock.Header.Height && currentBeaconBestState.BestBlock.Header.Timestamp < beaconBlock.Header.Timestamp && currentBeaconBestState.BestBlock.Header.Round < beaconBlock.Header.Round {
+		fmt.Println("FORK BEACON", beaconBlock.Header.Height)
+		if err := blockchain.ValidateBlockWithPrevBeaconBestState(beaconBlock); err != nil {
+			Logger.log.Error(err)
+			return err
+		}
+		if err := blockchain.RevertBeaconState(); err != nil {
+			panic(err)
+		}
+		blockchain.BestState.Beacon.lock.Unlock()
+		fmt.Println("REVERTED BEACON")
+	}
+
 	if beaconBlock.Header.Height != GetBeaconBestState().BeaconHeight+1 {
 		return errors.New("Not expected height")
 	}
@@ -101,19 +115,13 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 		Logger.log.Infof("BEACON | SKIP Verify Best State With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	}
 	// Backup beststate
-	userPubKey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
-	if userPubKey != "" {
-		userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(userPubKey, 0)
-		if userRole == common.ProposerRole || userRole == common.ValidatorRole {
-			err := blockchain.config.DataBase.CleanBackup(true, 0)
-			if err != nil {
-				return NewBlockChainError(CleanBackUpError, err)
-			}
-			err = blockchain.BackupCurrentBeaconState(beaconBlock)
-			if err != nil {
-				return NewBlockChainError(BackUpBestStateError, err)
-			}
-		}
+	err := blockchain.config.DataBase.CleanBackup(true, 0)
+	if err != nil {
+		return NewBlockChainError(CleanBackUpError, err)
+	}
+	err = blockchain.BackupCurrentBeaconState(beaconBlock)
+	if err != nil {
+		return NewBlockChainError(BackUpBestStateError, err)
 	}
 	// process for slashing, make sure this one is called before update best state
 	// since we'd like to process with old committee, not updated committee
