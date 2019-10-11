@@ -83,10 +83,6 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	shardLock.Lock()
 	defer shardLock.Unlock()
 
-	if shardBlock.Header.Height != GetBestStateShard(shardID).ShardHeight+1 {
-		return errors.New("Not expected height")
-	}
-
 	Logger.log.Criticalf("SHARD %+v | Begin insert new block height %+v with hash %+v", shardID, shardBlock.Header.Height, blockHash)
 	Logger.log.Infof("SHARD %+v | Check block existence for insert height %+v with hash %+v", shardID, shardBlock.Header.Height, blockHash)
 	currentShardBestState := blockchain.BestState.Shard[shardBlock.Header.ShardID]
@@ -103,6 +99,9 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 		fmt.Println("REVERTED SHARD", shardBlock.Header.ShardID, shardBlock.Header.Height)
 	}
 
+	if shardBlock.Header.Height != GetBestStateShard(shardID).ShardHeight+1 {
+		return errors.New("Not expected height")
+	}
 	// force non-committee member not to validate blk
 	// if blockchain.config.UserKeySet != nil && (blockchain.config.NodeMode == common.NODEMODE_AUTO || blockchain.config.NodeMode == common.NODEMODE_SHARD) {
 	// 	userRole := blockchain.BestState.Shard[block.Header.ShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyInBase58CheckEncode(), 0)

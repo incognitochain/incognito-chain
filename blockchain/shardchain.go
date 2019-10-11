@@ -121,11 +121,11 @@ func (chain *ShardChain) InsertBlk(block common.BlockInterface) error {
 }
 
 func (chain *ShardChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
+	go chain.Blockchain.config.Server.PushBlockToAll(block, false)
 	err := chain.Blockchain.InsertShardBlock(block.(*ShardBlock), true)
 	if err != nil {
 		return err
 	}
-	go chain.Blockchain.config.Server.PushBlockToAll(block, false)
 	return nil
 }
 
