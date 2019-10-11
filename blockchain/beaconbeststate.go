@@ -107,6 +107,7 @@ func NewBeaconBestStateWithConfig(netparam *Params) *BeaconBestState {
 	return beaconBestState
 }
 func SetBeaconBestState(beacon *BeaconBestState) {
+	beacon.lock = GetBeaconBestState().lock
 	*GetBeaconBestState() = *beacon
 }
 
