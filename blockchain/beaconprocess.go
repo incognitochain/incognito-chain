@@ -70,6 +70,10 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
 
+	if beaconBlock.Header.Height != GetBeaconBestState().BeaconHeight+1 {
+		return errors.New("Not expected height")
+	}
+
 	blockHash := beaconBlock.Header.Hash()
 	Logger.log.Infof("BEACON | Begin insert new Beacon Block height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	Logger.log.Infof("BEACON | Check Beacon Block existence before insert block height %+v with hash %+v", beaconBlock.Header.Height, blockHash)

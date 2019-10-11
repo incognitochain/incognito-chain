@@ -80,6 +80,10 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	shardLock.Lock()
 	defer shardLock.Unlock()
 
+	if shardBlock.Header.Height != GetBestStateShard(shardID).ShardHeight+1 {
+		return errors.New("Not expected height")
+	}
+
 	Logger.log.Criticalf("SHARD %+v | Begin insert new block height %+v with hash %+v", shardID, shardBlock.Header.Height, blockHash)
 	Logger.log.Infof("SHARD %+v | Check block existence for insert height %+v with hash %+v", shardID, shardBlock.Header.Height, blockHash)
 	// force non-committee member not to validate blk
