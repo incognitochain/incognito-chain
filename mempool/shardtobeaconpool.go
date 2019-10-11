@@ -2,6 +2,7 @@ package mempool
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"sort"
 	"strconv"
@@ -222,23 +223,31 @@ func (shardToBeaconPool *ShardToBeaconPool) updateLatestShardState() {
 		shardToBeaconPool.checkLatestValidHeightValidity(shardID)
 		lastHeight := shardToBeaconPool.latestValidHeight[shardID]
 		for i, blk := range blks {
-			// if block height is greater than lastHeight 2 value then break
-			if blk.Header.Height > lastHeight && blk.Header.Height != lastHeight+1 {
+			// if block height is not next expected
+			if blk.Header.Height != lastHeight+1 {
 				break
 			}
 			if blk.Header.Height != 2 {
 				if i == (len(blks) - 1) {
 					break
 				} else {
+					if blks[i+1].Header.Height != blk.Header.Height+1 {
+						break
+					}
 					if !reflect.DeepEqual(blks[i+1].Header.PreviousBlockHash, *blk.Hash()) {
+						fmt.Println("Not equal", blk.Header.ShardID, blk.Header.Height, blks[i+1].Header.Height, (*blk.Hash()).String(), blks[i+1].Header.PreviousBlockHash.String(), lastHeight)
+						shardToBeaconPool.pool[shardID] = append(blks[:i], blks[i+1:]...)
 						break
 					}
 				}
 			}
 			lastHeight = blk.Header.Height
 		}
-		shardToBeaconPool.latestValidHeight[shardID] = lastHeight
-		Logger.log.Debugf("ShardToBeaconPool: Updated/LastValidHeight %+v of Shard %+v \n", lastHeight, shardID)
+		if shardToBeaconPool.latestValidHeight[shardID] != lastHeight {
+			Logger.log.Infof("ShardToBeaconPool: Updated/LastValidHeight %+v of Shard %+v \n", lastHeight, shardID)
+			shardToBeaconPool.latestValidHeight[shardID] = lastHeight
+		}
+
 	}
 }
 

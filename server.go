@@ -1324,10 +1324,11 @@ func (serverObj *Server) PushMessageToPbk(msg wire.Message, pbk string) error {
 PushMessageToPeer push msg to pbk
 */
 func (serverObj *Server) PushMessageToShard(msg wire.Message, shard byte, exclusivePeerIDs map[libp2p.ID]bool) error {
-	Logger.log.Debugf("Push msg to shard %d", shard)
+	Logger.log.Criticalf("Push msg to shard %d", shard)
 	peerConns := serverObj.connManager.GetPeerConnOfShard(shard)
 	relayConns := serverObj.connManager.GetConnOfRelayNode()
 	peerConns = append(relayConns, peerConns...)
+	Logger.log.Criticalf("Push msg to shard %d, peeConns has %+v conns", shard, len(peerConns))
 	if len(peerConns) > 0 {
 		for _, peerConn := range peerConns {
 			if isExcluded, ok := exclusivePeerIDs[peerConn.GetRemotePeerID()]; ok {
@@ -1564,8 +1565,10 @@ func (serverObj *Server) PushMessageGetBlockShardByHash(shardID byte, blksHash [
 	msg.(*wire.MessageGetBlockShard).FromPool = getFromPool
 	msg.(*wire.MessageGetBlockShard).BlkHashes = blksHash
 	msg.(*wire.MessageGetBlockShard).ShardID = shardID
+	Logger.log.Critical("SEND REQUEST FOR BLOCK HASH peerID=empty shard=%+v blksHash[0]", peerID, shardID, blksHash[0].String())
 	if peerID == "" {
-		return serverObj.PushMessageToShard(msg, shardID, map[libp2p.ID]bool{})
+		exclusivePeerIDs := map[libp2p.ID]bool{}
+		return serverObj.PushMessageToShard(msg, shardID, exclusivePeerIDs)
 	}
 	return serverObj.PushMessageToPeer(msg, peerID)
 

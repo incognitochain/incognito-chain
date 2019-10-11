@@ -80,7 +80,7 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) JSONString() string {
 }
 
 // Hash returns the hash of all fields of the transaction
-func (txCustomTokenPrivacy TxCustomTokenPrivacy) Hash() *common.Hash {
+func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Hash() *common.Hash {
 	if txCustomTokenPrivacy.cachedHash != nil {
 		return txCustomTokenPrivacy.cachedHash
 	}
