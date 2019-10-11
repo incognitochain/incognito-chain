@@ -17,6 +17,8 @@ import (
 	"github.com/multiformats/go-multiaddr"
 )
 
+var HighwayPeerID = "12D3KooW9sbQK4J64Qat5D9vQEhBCnDYD3WPqWmgUZD4M7CJ2rXS"
+
 func NewConnManager(
 	host *Host,
 	dpa string,
@@ -52,7 +54,7 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 				return errors.New("Can not find topic of this message type " + msgType + "for publish")
 			}
 			fmt.Println("[db] Publishing message", msgType)
-			return cm.encodeAndPublish(msg, topic)
+			return broadcastMessage(msg, topic, cm.ps)
 		}
 	}
 
@@ -69,12 +71,14 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 			// Get topic for mess
 			//TODO hy add more logic
 			if msgType == wire.CmdCrossShard {
-				return cm.encodeAndPublish(msg, cm.subs[msgType][shardID].Name)
+				// return cm.encodeAndPublish(msg, cm.subs[msgType][shardID].Name)
+				return broadcastMessage(msg, cm.subs[msgType][shardID].Name, cm.ps)
 			} else {
 				for _, availableTopic := range cm.subs[msgType] {
 					fmt.Println(availableTopic)
 					if (availableTopic.Act == MessageTopicPair_PUB) || (availableTopic.Act == MessageTopicPair_PUBSUB) {
-						return cm.encodeAndPublish(msg, availableTopic.Name)
+						// return cm.encodeAndPublish(msg,)
+						return broadcastMessage(msg, availableTopic.Name, cm.ps)
 					}
 				}
 			}
@@ -85,14 +89,15 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 	return nil
 }
 
-func (cm *ConnManager) Start() {
+// return broadcastMessage(msg, topic, cm.ps)
+func (cm *ConnManager) Start(ns NetSync) {
 	// connect to proxy node
 	proxyIP, proxyPort := ParseListenner(cm.DiscoverPeersAddress, "127.0.0.1", 9330)
 	ipfsaddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", proxyIP, proxyPort))
 	if err != nil {
 		panic(err)
 	}
-	peerid, err := peer.IDB58Decode("QmbV4AAHWFFEtE67qqmNeEYXs5Yw5xNMS75oEKtdBvfoKN")
+	peerid, err := peer.IDB58Decode(HighwayPeerID)
 
 	// Pubsub
 	// TODO(@0xbunyip): handle error
@@ -102,6 +107,13 @@ func (cm *ConnManager) Start() {
 
 	// Must Connect after creating FloodSub
 	must(cm.LocalHost.Host.Connect(context.Background(), peer.AddrInfo{peerid, append([]multiaddr.Multiaddr{}, ipfsaddr)}))
+	req, err := NewRequester(cm.LocalHost.GRPC, peerid)
+	if err != nil {
+		panic(err)
+	}
+	cm.Requester = req
+
+	cm.Provider = NewBlockProvider(cm.LocalHost.GRPC, ns)
 
 	go cm.manageRoleSubscription()
 
@@ -127,8 +139,14 @@ type ConnManager struct {
 	subs     m2t                  // mapping from message to topic's subscription
 	messages chan *pubsub.Message // queue messages from all topics
 
-	cd   ConsensusData
-	disp *Dispatcher
+	cd        ConsensusData
+	disp      *Dispatcher
+	Requester *BlockRequester
+	Provider  *BlockProvider
+}
+
+func (cm *ConnManager) PutMessage(msg *pubsub.Message) {
+	cm.messages <- msg
 }
 
 func (cm *ConnManager) process() {
@@ -143,14 +161,14 @@ func (cm *ConnManager) process() {
 	}
 }
 
-func (cm *ConnManager) encodeAndPublish(msg wire.Message, topic string) error {
+func encodeMessage(msg wire.Message) (string, error) {
 	// NOTE: copy from peerConn.outMessageHandler
-	// Create and send messageHex
+	// Create messageHex
 	messageBytes, err := msg.JsonSerialize()
 	if err != nil {
 		fmt.Println("Can not serialize json format for messageHex:" + msg.MessageType())
 		fmt.Println(err)
-		return err
+		return "", err
 	}
 
 	// Add 24 bytes headerBytes into messageHex
@@ -160,7 +178,7 @@ func (cm *ConnManager) encodeAndPublish(msg wire.Message, topic string) error {
 	if messageErr != nil {
 		fmt.Println("Can not get cmd type for " + msg.MessageType())
 		fmt.Println(messageErr)
-		return err
+		return "", err
 	}
 	copy(headerBytes[:], []byte(cmdType))
 	// add forward type of message at 13st byte
@@ -176,20 +194,30 @@ func (cm *ConnManager) encodeAndPublish(msg wire.Message, topic string) error {
 	if err != nil {
 		fmt.Println("Can not gzip for messageHex:" + msg.MessageType())
 		fmt.Println(err)
-		return err
+		return "", err
 	}
 	messageHex := hex.EncodeToString(messageBytes)
 	//log.Debugf("Content in hex encode: %s", string(messageHex))
 	// add end character to messageHex (delim '\n')
 	// messageHex += "\n"
+	return messageHex, nil
+}
 
+func broadcastMessage(msg wire.Message, topic string, ps *pubsub.PubSub) error {
+	// Encode message to string first
+	messageHex, err := encodeMessage(msg)
+	if err != nil {
+		return err
+	}
+
+	// Broadcast
 	fmt.Printf("[db] Publishing to topic %s\n", topic)
-	return cm.ps.Publish(topic, []byte(messageHex))
+	return ps.Publish(topic, []byte(messageHex))
 }
 
 // manageRoleSubscription: polling current role every minute and subscribe to relevant topics
 func (cm *ConnManager) manageRoleSubscription() {
-	peerid, _ := peer.IDB58Decode("QmbV4AAHWFFEtE67qqmNeEYXs5Yw5xNMS75oEKtdBvfoKN")
+	peerid, _ := peer.IDB58Decode(HighwayPeerID)
 	pubkey, _ := cm.IdentityKey.ToBase58()
 
 	lastRole := newUserRole("dummyLayer", "dummyRole", -1000)
@@ -326,12 +354,9 @@ func (cm *ConnManager) registerToProxy(
 	layer string,
 	shardID int,
 ) (m2t, error) {
-	// Client on this node
-	client := GRPCService_Client{cm.LocalHost.GRPC}
 	messagesWanted := getMessagesForLayer(layer, shardID)
-	pairs, err := client.ProxyRegister(
+	pairs, err := cm.Requester.Register(
 		context.Background(),
-		peerID,
 		pubkey,
 		messagesWanted,
 		cm.LocalHost.Host.ID(),
