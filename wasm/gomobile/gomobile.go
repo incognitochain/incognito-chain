@@ -165,7 +165,7 @@ func GenerateBLSKeyPairFromSeed(args string) string {
 func GenerateKeyFromSeed(seedB64Encoded string) (string, error) {
 	seed, err := base64.StdEncoding.DecodeString(seedB64Encoded)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 
 	println("[Go] Seed: ", seed)
@@ -1026,9 +1026,6 @@ func InitParamCreatePrivacyTokenTx(args string) (*transaction.TxPrivacyTokenInit
 	privacyTokenParam.TokenInput = tokenInputs
 
 
-	// Todo: token param token inputs param
-
-
 	println("privacyTokenParam: ", len(privacyTokenParam.Receiver))
 	println("privacyTokenParam.PropertyName: ", privacyTokenParam.PropertyName)
 	println("privacyTokenParam.PropertySymbol: ", privacyTokenParam.PropertySymbol)
@@ -1196,4 +1193,91 @@ func RandomScalars(n string) (string, error) {
 	println("res scalars: ", res)
 
 	return res, nil
+}
+
+
+func InitWithdrawRewardTx(args string) (string, error) {
+	// parse meta data
+	bytes := []byte(args)
+	println("Bytes: %v\n", bytes)
+
+	paramMaps := make(map[string]interface{})
+
+	err := json.Unmarshal(bytes, &paramMaps)
+	if err != nil {
+		println("Error can not unmarshal data : %v\n", err)
+		return "", err
+	}
+
+	println("paramMaps:", paramMaps)
+
+	metaDataParam, ok := paramMaps["metaData"].(map[string]interface{})
+	if !ok {
+		return "", errors.New("Invalid meta data param")
+	}
+
+	metaDataType, ok := metaDataParam["Type"].(float64)
+	if !ok {
+		println("Invalid meta data type param")
+		return "", errors.New("Invalid meta data type param")
+	}
+
+	paymentAddressParam, ok := metaDataParam["PaymentAddress"].(string)
+	if !ok {
+		println("Invalid meta data payment address param")
+		return "", errors.New("Invalid meta data payment address param")
+	}
+	keyWallet, err := wallet.Base58CheckDeserialize(paymentAddressParam)
+	if err != nil{
+		return "", nil
+	}
+	paymentAddress := keyWallet.KeySet.PaymentAddress
+
+
+
+	tokenIDParam, ok := metaDataParam["TokenID"].(string)
+	if !ok {
+		println("Invalid meta data token id param")
+		return "", errors.New("Invalid meta data token id param")
+	}
+
+	tokenId, err := new(common.Hash).NewHashFromStr(tokenIDParam)
+	if err != nil {
+		return "", err
+	}
+
+	tmp := &metadata.WithDrawRewardRequest{
+		PaymentAddress: paymentAddress,
+		MetadataBase: *metadata.NewMetadataBase(int(metaDataType)),
+		TokenID: *tokenId,
+	}
+
+	paramCreateTx, err := InitParamCreatePrivacyTx(args)
+	if err!= nil{
+		return "", err
+	}
+
+	paramCreateTx.SetMetaData(tmp)
+
+	tx := new(transaction.Tx)
+	err = tx.InitForASM(paramCreateTx)
+
+	if err != nil {
+		println("Can not create tx: ", err)
+		return "", err
+	}
+
+	// serialize tx json
+	txJson, err := json.Marshal(tx)
+	if err != nil {
+		println("Can not marshal tx: ", err)
+		return "", err
+	}
+
+	lockTimeBytes := common.AddPaddingBigInt(new(big.Int).SetInt64(tx.LockTime), 8)
+	resBytes := append(txJson, lockTimeBytes...)
+
+	B64Res := base64.StdEncoding.EncodeToString(resBytes)
+
+	return B64Res, nil
 }
