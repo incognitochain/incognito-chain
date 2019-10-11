@@ -105,6 +105,15 @@ func initBurningRequestTx(_ js.Value, args []js.Value) interface{} {
 	return result
 }
 
+func initWithdrawRewardTx(_ js.Value, args []js.Value) interface{} {
+	result, err := gomobile.InitWithdrawRewardTx(args[0].String())
+	if err != nil {
+		return nil
+	}
+
+	return result
+}
+
 func main() {
 	c := make(chan struct{}, 0)
 	println("Hello WASM")
@@ -116,6 +125,7 @@ func main() {
 	js.Global().Set("staking", js.FuncOf(staking))
 	js.Global().Set("initPrivacyTokenTx", js.FuncOf(initPrivacyTokenTx))
 	js.Global().Set("initBurningRequestTx", js.FuncOf(initBurningRequestTx))
+	js.Global().Set("initWithdrawRewardTx", js.FuncOf(initWithdrawRewardTx))
 	js.Global().Set("deriveSerialNumber", js.FuncOf(deriveSerialNumber))
 
 	js.Global().Set("generateKeyFromSeed", js.FuncOf(generateKeyFromSeed))
