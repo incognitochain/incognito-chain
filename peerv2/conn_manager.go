@@ -3,10 +3,10 @@ package peerv2
 import (
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"log"
 	"reflect"
-	"strings"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -34,13 +34,50 @@ func NewConnManager(
 }
 
 func (cm *ConnManager) PublishMessage(msg wire.Message) error {
-	publishable := []string{wire.CmdBlockShard, wire.CmdCrossShard, wire.CmdBFT, wire.CmdBlockBeacon, wire.CmdPeerState, wire.CmdBlkShardToBeacon}
+	var topic string
+	publishable := []string{wire.CmdBlockShard, wire.CmdBFT, wire.CmdBlockBeacon, wire.CmdPeerState, wire.CmdBlkShardToBeacon}
 	// msgCrossShard := msg.(wire.MessageCrossShard)
+	msgType := msg.MessageType()
+	for _, p := range publishable {
+		topic = ""
+		if msgType == p {
+			for _, availableTopic := range cm.subs[msgType] {
+				fmt.Println(availableTopic)
+				if (availableTopic.Act == MessageTopicPair_PUB) || (availableTopic.Act == MessageTopicPair_PUBSUB) {
+					topic = availableTopic.Name
+				}
+
+			}
+			if topic == "" {
+				return errors.New("Can not find topic of this message type " + msgType + "for publish")
+			}
+			fmt.Println("[db] Publishing message", msgType)
+			return cm.encodeAndPublish(msg, topic)
+		}
+	}
+
+	log.Println("Cannot publish message", msgType)
+	return nil
+}
+
+func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) error {
+	publishable := []string{wire.CmdCrossShard, wire.CmdBFT}
 	msgType := msg.MessageType()
 	for _, p := range publishable {
 		if msgType == p {
 			fmt.Println("[db] Publishing message", msgType)
-			return cm.encodeAndPublish(msg)
+			// Get topic for mess
+			//TODO hy add more logic
+			if msgType == wire.CmdCrossShard {
+				return cm.encodeAndPublish(msg, cm.subs[msgType][shardID].Name)
+			} else {
+				for _, availableTopic := range cm.subs[msgType] {
+					fmt.Println(availableTopic)
+					if (availableTopic.Act == MessageTopicPair_PUB) || (availableTopic.Act == MessageTopicPair_PUBSUB) {
+						return cm.encodeAndPublish(msg, availableTopic.Name)
+					}
+				}
+			}
 		}
 	}
 
@@ -106,7 +143,7 @@ func (cm *ConnManager) process() {
 	}
 }
 
-func (cm *ConnManager) encodeAndPublish(msg wire.Message) error {
+func (cm *ConnManager) encodeAndPublish(msg wire.Message, topic string) error {
 	// NOTE: copy from peerConn.outMessageHandler
 	// Create and send messageHex
 	messageBytes, err := msg.JsonSerialize()
@@ -146,11 +183,6 @@ func (cm *ConnManager) encodeAndPublish(msg wire.Message) error {
 	// add end character to messageHex (delim '\n')
 	// messageHex += "\n"
 
-	// Publish
-	topic := cm.subs[msg.MessageType()][0].Name
-	if isJustPubOrSub(msg.MessageType()) {
-		topic = topic + "-nodepub"
-	}
 	fmt.Printf("[db] Publishing to topic %s\n", topic)
 	return cm.ps.Publish(topic, []byte(messageHex))
 }
@@ -219,23 +251,24 @@ func (cm *ConnManager) subscribeNewTopics(newTopics, subscribed m2t) error {
 
 	// Subscribe to new topics
 	for m, topicList := range newTopics {
+		fmt.Printf("Process message %v and topic %v\n", m, topicList)
 		for _, t := range topicList {
-			topic4Subs := t.Name
-			if isJustPubOrSub(topic4Subs) {
-				topic4Subs = topic4Subs + "-nodesub"
-			}
+
 			if found(t.Name, subscribed) {
+				fmt.Printf("Countinue 1 %v %v\n", t.Name, subscribed)
 				continue
 			}
 
 			// TODO(@0xakk0r0kamui): check here
 			if t.Act == MessageTopicPair_PUB {
+				cm.subs[m] = append(cm.subs[m], Topic{Name: t.Name, Sub: nil, Act: t.Act})
+				fmt.Printf("Countinue 2 %v %v\n", t.Name, subscribed)
 				continue
 			}
 
-			fmt.Println("[db] subscribing", m, topic4Subs)
+			fmt.Println("[db] subscribing", m, t.Name)
 
-			s, err := cm.ps.Subscribe(topic4Subs)
+			s, err := cm.ps.Subscribe(t.Name)
 			if err != nil {
 				return err
 			}
@@ -247,10 +280,6 @@ func (cm *ConnManager) subscribeNewTopics(newTopics, subscribed m2t) error {
 	// Unsubscribe to old ones
 	for m, topicList := range subscribed {
 		for _, t := range topicList {
-			topic4Subs := t.Name
-			if isJustPubOrSub(topic4Subs) {
-				topic4Subs = topic4Subs + "-nodesub"
-			}
 			if found(t.Name, newTopics) {
 				continue
 			}
@@ -343,18 +372,6 @@ func getMessagesForLayer(layer string, shardID int) []string {
 		}
 	}
 	return []string{}
-}
-
-func isJustPubOrSub(topic string) bool {
-	topicElements := strings.Split(topic, "-")
-	if len(topicElements) == 0 {
-		return false
-	}
-	switch topicElements[0] {
-	case wire.CmdPeerState, wire.CmdBlockBeacon, wire.CmdBlkShardToBeacon:
-		return true
-	}
-	return false
 }
 
 //go run *.go --listen "127.0.0.1:9433" --externaladdress "127.0.0.1:9433" --datadir "/data/fullnode" --discoverpeersaddress "127.0.0.1:9330" --loglevel debug
