@@ -71,10 +71,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	defer blockchain.chainLock.Unlock()
 
 	currentBeaconBestState := GetBeaconBestState()
-	if beaconBlock.Header.Height != currentBeaconBestState.BeaconHeight+1 {
-		return errors.New("Not expected height")
-	}
-
 	if currentBeaconBestState.BeaconHeight == beaconBlock.Header.Height && currentBeaconBestState.BestBlock.Header.Timestamp < beaconBlock.Header.Timestamp && currentBeaconBestState.BestBlock.Header.Round < beaconBlock.Header.Round {
 		fmt.Println("FORK BEACON", beaconBlock.Header.Height)
 		if err := blockchain.ValidateBlockWithPrevBeaconBestState(beaconBlock); err != nil {
@@ -86,6 +82,10 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 		}
 		blockchain.BestState.Beacon.lock.Unlock()
 		fmt.Println("REVERTED BEACON")
+	}
+
+	if beaconBlock.Header.Height != GetBeaconBestState().BeaconHeight+1 {
+		return errors.New("Not expected height")
 	}
 
 	blockHash := beaconBlock.Header.Hash()
