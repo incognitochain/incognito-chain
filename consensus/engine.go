@@ -461,6 +461,12 @@ func (engine *Engine) updateConsensusState() {
 			}
 		}
 	}
+	if userLayer == common.ShardRole {
+		committee := engine.config.Blockchain.Chains[engine.CurrentMiningChain].GetCommittee()
+		keyList, _ := incognitokey.ExtractMiningPublickeysFromCommitteeKeyList(committee, engine.config.Blockchain.Chains[engine.CurrentMiningChain].GetConsensusType())
+		shardCommittee[getShardFromChainName(engine.CurrentMiningChain)] = keyList
+	}
+
 	fmt.Printf("UpdateConsensusState %v %v\n", userLayer, publicKey)
 	if userLayer == common.ShardRole {
 		shardID := getShardFromChainName(engine.CurrentMiningChain)
@@ -501,8 +507,9 @@ func (engine *Engine) updateUserState(keySet *incognitokey.CommitteePublicKey, l
 		}
 	}
 
+	engine.updateConsensusState()
+
 	if isChange {
 		engine.config.Node.DropAllConnections()
 	}
-	engine.updateConsensusState()
 }
