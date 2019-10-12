@@ -881,10 +881,14 @@ func (synker *Synker) UpdateStatev2() {
 	}
 
 	// sync beacon
-	// currentBcnReqHeight := beaconStateClone.BeaconHeight + 1
+	currentBcnReqHeight := beaconStateClone.BeaconHeight + 1
 	if RCSv2.ClosestBeaconState.Height-beaconStateClone.BeaconHeight > DefaultMaxBlkReqPerTime {
 		RCSv2.ClosestBeaconState.Height = beaconStateClone.BeaconHeight + DefaultMaxBlkReqPerTime
 	}
+
+	Logger.log.Info("synker.SyncBlkBeacon", currentBcnReqHeight, RCSv2.ClosestBeaconState.Height+1)
+	synker.SyncBlkBeacon(false, false, false, nil, nil, currentBcnReqHeight, RCSv2.ClosestBeaconState.Height+1, "")
+
 	// for peerID := range synker.States.PeersState {
 	// 	if currentBcnReqHeight+DefaultMaxBlkReqPerPeer-1 >= RCSv2.ClosestBeaconState.Height {
 	// 		//fmt.Println("SyncBlk1:", currentBcnReqHeight, RCS.ClosestBeaconState.Height)
