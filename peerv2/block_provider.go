@@ -22,7 +22,7 @@ func (bp *BlockProvider) Register(ctx context.Context, req *RegisterRequest) (*R
 }
 
 func (bp *BlockProvider) GetBlockShardByHeight(ctx context.Context, req *GetBlockShardByHeightRequest) (*GetBlockShardByHeightResponse, error) {
-	log.Println("Receive GetBlockShardByHeight request")
+	log.Println("[db] Receive GetBlockShardByHeight request")
 	blkType := byte(0) // TODO(@0xbunyip): define in common file
 	blkMsgs := bp.NetSync.GetBlockShardByHeight(
 		req.FromPool,
@@ -32,7 +32,7 @@ func (bp *BlockProvider) GetBlockShardByHeight(ctx context.Context, req *GetBloc
 		[]uint64{req.FromHeight, req.ToHeight},
 		0,
 	)
-	log.Println("Blockshard received from netsync:", blkMsgs)
+	log.Println("[db] Blockshard received from netsync:", blkMsgs)
 	resp := &GetBlockShardByHeightResponse{}
 	for _, msg := range blkMsgs {
 		encoded, err := encodeMessage(msg)
