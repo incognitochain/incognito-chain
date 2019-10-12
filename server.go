@@ -1557,16 +1557,22 @@ func (serverObj *Server) UpdateConsensusState(role string, userPbk string, curre
 }
 
 func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint64, peerID libp2p.ID) error {
-	msg, err := wire.MakeEmptyMessage(wire.CmdGetBlockBeacon)
+	msgs, err := serverObj.highway.Requester.GetBlockBeaconByHeight(from, to)
 	if err != nil {
+		Logger.log.Error(err)
 		return err
 	}
-	msg.(*wire.MessageGetBlockBeacon).BlkHeights = append(msg.(*wire.MessageGetBlockBeacon).BlkHeights, from)
-	msg.(*wire.MessageGetBlockBeacon).BlkHeights = append(msg.(*wire.MessageGetBlockBeacon).BlkHeights, to)
-	if peerID != "" {
-		return serverObj.PushMessageToPeer(msg, peerID)
+
+	for _, msg := range msgs {
+		// Create dummy msg wrapping grpc response
+		psMsg := &p2ppubsub.Message{
+			&pb.Message{
+				Data: msg,
+			},
+		}
+		serverObj.highway.PutMessage(psMsg)
 	}
-	return serverObj.PushMessageToAll(msg)
+	return nil
 }
 
 func (serverObj *Server) PushMessageGetBlockBeaconBySpecificHeight(heights []uint64, getFromPool bool, peerID libp2p.ID) error {
