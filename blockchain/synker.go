@@ -200,6 +200,7 @@ func (synker *Synker) syncShard(shardID byte) error {
 	if _, ok := synker.Status.Shards[shardID]; ok {
 		return errors.New("Shard " + fmt.Sprintf("%d", shardID) + " synchronzation is already started")
 	}
+	Logger.log.Infof("*** Start syncing shard %+v ***", shardID)
 	synker.Status.Shards[shardID] = struct{}{}
 	return nil
 }
