@@ -27,8 +27,8 @@ const (
 	MAX_BEACON_BLOCK             = 5
 	DurationHalfLifeRewardForDev = uint64(31536000) // 5 years, after 5 year, reward for devs = 0
 	GetValidBlock                = 20
-	GenesisBlockTime             = "2019-10-11T00:00:00.000Z"
-	TestRandom                   = false
+	GenesisBlockTime             = "2019-10-13T00:00:00.000Z"
+	TestRandom                   = true
 )
 
 // CONSTANT for network MAINNET
@@ -39,8 +39,8 @@ const (
 	MainnetDefaultPort = "9333"
 	MainnetEpoch       = 30000
 	MainnetRandomTime  = 15000
-	MainnetOffset      = 5
-	MainnetSwapOffset  = 2
+	MainnetOffset      = 2
+	MainnetSwapOffset  = 1
 
 	MainNetShardCommitteeSize  = 3
 	MainNetBeaconCommitteeSize = 3
@@ -84,10 +84,10 @@ const (
 	Testnet            = 0x16
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
-	TestnetEpoch       = 1000
-	TestnetRandomTime  = 500
-	TestnetOffset      = 5
-	TestnetSwapOffset  = 2
+	TestnetEpoch       = 100
+	TestnetRandomTime  = 50
+	TestnetOffset      = 1
+	TestnetSwapOffset  = 1
 
 	TestNetShardCommitteeSize     = 32
 	TestNetMinShardCommitteeSize  = 4
@@ -105,7 +105,7 @@ const (
 	TestnetBasicReward                      = 400000000 //40 mili PRV
 	TestnetRewardHalflife                   = 3155760   //1 year, reduce 12.5% per year
 	TestnetGenesisBlockPaymentAddress       = "1Uv46Pu4pqBvxCcPw7MXhHfiAD5Rmi2xgEE7XB6eQurFAt4vSYvfyGn3uMMB1xnXDq9nRTPeiAZv5gRFCBDroRNsXJF1sxPSjNQtivuHk"
-	TestnetETHContractAddressStr            = "0xa681b6fC99567B30a8b4dEB229582fc8Ea834362"
+	TestnetETHContractAddressStr            = "0x828867A9006Ebd7C6FaE19346f3E152B84006628"
 	TestnetDevAddress                       = "1Uv2vrb74e6ScxuQiXvW9UcKoEbXnRMbuBJ6W2FBWxqhtHNGHi3sUP1D14rNEnWWzkYSMsZCmA4DKV6igmjd7qaJfj9TuMmyqz2ZG2SNx"
 	TestnetCentralizedWebsitePaymentAddress = "1Uv2zzR4LgfX8ToQe8ub3bYcCLk3uDU1sm9U9hiu9EKYXoS77UdikfT9s8d5YjhsTJm61eazsMwk2otFZBYpPHwiMn8z6bKWWJRspsLky"
 )
