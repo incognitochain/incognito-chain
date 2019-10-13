@@ -810,7 +810,11 @@ func (serverObject Server) CheckForceUpdateSourceCode() {
 					"\n*********************************************************************************\n")
 				if versionChain.RemoveData {
 					serverObject.Stop()
-					os.RemoveAll(cfg.DataDir)
+					errRemove := os.RemoveAll(cfg.DataDir)
+					if errRemove != nil {
+						Logger.log.Error("We NEEDD to REMOVE database directory but can not process by error", errRemove)
+					}
+					time.Sleep(60 * time.Second)
 				}
 				os.Exit(common.ExitCodeForceUpdate)
 			}
