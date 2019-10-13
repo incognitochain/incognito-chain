@@ -271,16 +271,17 @@ func (synker *Synker) UpdateState() {
 		userShardRole  string
 		userShardIDInt int
 	)
-	userKeyForCheckRole, _ := synker.blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
-	if userKeyForCheckRole != "" {
-		userLayer, userRole, userShardIDInt = synker.blockchain.config.ConsensusEngine.GetUserRole()
-		if userLayer == common.ShardRole && userRole != common.WaitingRole {
-			// userShardID = byte(userShardIDInt)
-			synker.syncShard(byte(userShardIDInt))
-			userShardRole = synker.blockchain.BestState.Shard[byte(userShardIDInt)].GetPubkeyRole(userKeyForCheckRole, synker.blockchain.BestState.Shard[byte(userShardIDInt)].BestBlock.Header.Round)
-		}
 
+	userLayer, userRole, userShardIDInt = synker.blockchain.config.ConsensusEngine.GetUserRole()
+
+	fmt.Println("TESTING ", userLayer, userRole, userShardIDInt)
+	if userLayer == common.ShardRole && userRole != common.WaitingRole {
+		// userShardID = byte(userShardIDInt)
+		synker.syncShard(byte(userShardIDInt))
+		userKeyForCheckRole, _ := synker.blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
+		userShardRole = synker.blockchain.BestState.Shard[byte(userShardIDInt)].GetPubkeyRole(userKeyForCheckRole, synker.blockchain.BestState.Shard[byte(userShardIDInt)].BestBlock.Header.Round)
 	}
+	
 	synker.stopSyncUnnecessaryShard()
 
 	synker.States.ClosestState.ClosestBeaconState = beaconStateClone.BeaconHeight
