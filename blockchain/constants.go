@@ -89,7 +89,7 @@ const (
 	TestnetOffset      = 1
 	TestnetSwapOffset  = 1
 
-	TestNetShardCommitteeSize     = 32
+	TestNetShardCommitteeSize     = 16
 	TestNetMinShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize    = 4
 	TestNetMinBeaconCommitteeSize = 4
