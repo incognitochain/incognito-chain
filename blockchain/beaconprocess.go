@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -410,8 +411,17 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 	}
 	// get shard to beacon blocks from pool
 	allShardBlocks := blockchain.config.ShardToBeaconPool.GetValidBlock(nil)
-	for shardID, shardStates := range beaconBlock.Body.ShardState {
+
+	var keys []int
+	for k := range beaconBlock.Body.ShardState {
+		keys = append(keys, int(k))
+	}
+	sort.Ints(keys)
+
+	for _, value := range keys {
+		shardID := byte(value)
 		shardBlocks, ok := allShardBlocks[shardID]
+		shardStates := beaconBlock.Body.ShardState[shardID]
 		if !ok {
 			return NewBlockChainError(GetShardToBeaconBlocksError, fmt.Errorf("Expect to get from pool ShardToBeacon Block from Shard %+v but failed", shardID))
 		}
