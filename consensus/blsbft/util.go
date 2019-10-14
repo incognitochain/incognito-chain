@@ -19,15 +19,14 @@ func (e *BLSBFT) getTimeSinceLastBlock() time.Duration {
 	return time.Since(time.Unix(int64(e.Chain.GetLastBlockTimeStamp()), 0))
 }
 
-func (e *BLSBFT) waitForNextRound() {
+func (e *BLSBFT) waitForNextRound() bool {
 	timeSinceLastBlk := e.getTimeSinceLastBlock()
-	if timeSinceLastBlk > e.Chain.GetMinBlkInterval() {
-		return
+	if timeSinceLastBlk >= e.Chain.GetMinBlkInterval() {
+		return false
+	} else {
+		//fmt.Println("\n\nWait for", e.Chain.GetMinBlkInterval()-timeSinceLastBlk, "\n\n")
+		return true
 	}
-	//TODO: chunk time sleep into small time chunk -> if change view during sleep => break it
-	fmt.Println("Sleep for", e.Chain.GetMinBlkInterval()-timeSinceLastBlk)
-
-	time.Sleep(e.Chain.GetMinBlkInterval() - timeSinceLastBlk)
 }
 
 func (e *BLSBFT) setState(state string) {
