@@ -426,7 +426,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 			return NewBlockChainError(GetShardToBeaconBlocksError, fmt.Errorf("Expect to get from pool ShardToBeacon Block from Shard %+v but failed", shardID))
 		}
 		// repeatly compare each shard to beacon block and shard state in new beacon block body
-		if len(shardBlocks) >= len(shardStates) {
+		if true || len(shardBlocks) >= len(shardStates) {
 			shardBlocks = shardBlocks[:len(beaconBlock.Body.ShardState[shardID])]
 			for index, shardState := range shardStates {
 				if shardBlocks[index].Header.Height != shardState.Height {
