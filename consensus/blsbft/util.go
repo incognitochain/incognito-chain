@@ -21,11 +21,11 @@ func (e *BLSBFT) getTimeSinceLastBlock() time.Duration {
 
 func (e *BLSBFT) waitForNextRound() bool {
 	timeSinceLastBlk := e.getTimeSinceLastBlock()
-	if timeSinceLastBlk > e.Chain.GetMinBlkInterval() {
-		return true
+	if timeSinceLastBlk >= e.Chain.GetMinBlkInterval() {
+		return false
 	} else {
 		//fmt.Println("\n\nWait for", e.Chain.GetMinBlkInterval()-timeSinceLastBlk, "\n\n")
-		return false
+		return true
 	}
 }
 
