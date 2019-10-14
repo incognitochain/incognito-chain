@@ -562,7 +562,10 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 		// err                   error
 	)
 	if beaconHeight%blockchain.config.ChainParams.Epoch == 0 {
-		// if len(shardPendingValidator) > 0 {
+		// TODO: 0xmerman
+		fixedProducerShardCommittee := shardCommittee[0]
+		shardCommittee = shardCommittee[1:]
+
 		Logger.log.Info("ShardPendingValidator", shardPendingValidator)
 		Logger.log.Info("ShardCommittee", shardCommittee)
 		Logger.log.Info("MaxShardCommitteeSize", blockchain.BestState.Shard[shardID].MaxShardCommitteeSize)
@@ -593,7 +596,8 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 			}
 			BLogger.log.Infof("Add Bridge swap inst in ShardID %+v block %d", shardID, blockHeight)
 		}
-		// }
+		//TODO: 0xmerman
+		shardCommittee = append([]string{fixedProducerShardCommittee}, shardCommittee...)
 	}
 	if len(swapInstruction) > 0 {
 		instructions = append(instructions, swapInstruction)
