@@ -1328,7 +1328,7 @@ func (serverObj *Server) PushMessageToPbk(msg wire.Message, pbk string) error {
 PushMessageToPeer push msg to pbk
 */
 func (serverObj *Server) PushMessageToShard(msg wire.Message, shard byte, exclusivePeerIDs map[libp2p.ID]bool) error {
-	Logger.log.Criticalf("Push msg to shard %d", shard)
+	//Logger.log.Criticalf("Push msg to shard %d", shard)
 	peerConns := serverObj.connManager.GetPeerConnOfShard(shard)
 	relayConns := serverObj.connManager.GetConnOfRelayNode()
 	peerConns = append(relayConns, peerConns...)
