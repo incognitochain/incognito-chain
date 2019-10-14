@@ -20,6 +20,7 @@ func TestMiningKey_GetKeyTuble(t *testing.T) {
 	for j := 0; j < common.MaxShardNumber; j++ {
 		privKeyLs := make([]string, 0)
 		paymentAddLs := make([]string, 0)
+		miningSeedLs := make([]string, 0)
 		for i := 0; i < 10000; i++ {
 			seed := privacy.RandomScalar().ToBytesS()
 			masterKey, _ := wallet.NewMasterKey(seed)
@@ -27,6 +28,7 @@ func TestMiningKey_GetKeyTuble(t *testing.T) {
 			privKeyB58 := child.Base58CheckSerialize(wallet.PriKeyType)
 			paymentAddressB58 := child.Base58CheckSerialize(wallet.PaymentAddressType)
 			shardID := common.GetShardIDFromLastByte(child.KeySet.PaymentAddress.Pk[len(child.KeySet.PaymentAddress.Pk)-1])
+			miningSeed := base58.Base58Check{}.Encode(common.HashB(common.HashB(child.KeySet.PrivateKey)), common.ZeroByte)
 
 			//viewingKeyB58 := child.Base58CheckSerialize(wallet.ReadonlyKeyType)
 			//publicKeyB58 := child.KeySet.GetPublicKeyInBase58CheckEncode()
@@ -45,6 +47,7 @@ func TestMiningKey_GetKeyTuble(t *testing.T) {
 
 				privKeyLs = append(privKeyLs, strconv.Quote(privKeyB58))
 				paymentAddLs = append(paymentAddLs, strconv.Quote(paymentAddressB58))
+				miningSeedLs = append(miningSeedLs, strconv.Quote(miningSeed))
 				if len(privKeyLs) >= lenOutput {
 					break
 				}
@@ -52,6 +55,7 @@ func TestMiningKey_GetKeyTuble(t *testing.T) {
 		}
 		fmt.Println("privKeyLs"+ strconv.Itoa(j)," = [", strings.Join(privKeyLs, ", "), "]")
 		fmt.Println("paymentAddLs" + strconv.Itoa(j), " = [",  strings.Join(paymentAddLs, ", "), "]")
+		fmt.Println("miningSeedLs" + strconv.Itoa(j), " = [",  strings.Join(miningSeedLs, ", "), "]")
 	}
 }
 

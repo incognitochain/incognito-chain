@@ -69,7 +69,7 @@ func randomScalars(_ js.Value, args []js.Value) interface{} {
 }
 
 
-func initTx(_ js.Value, args []js.Value) interface{} {
+func initPrivacyTx(_ js.Value, args []js.Value) interface{} {
 	result, err := gomobile.InitPrivacyTx(args[0].String())
 	if err != nil {
 		return nil
@@ -121,7 +121,7 @@ func main() {
 	//js.Global().Set("oneOutOfManyProve", js.FuncOf(oneOutOfManyProve))
 
 
-	js.Global().Set("initTx", js.FuncOf(initTx))
+	js.Global().Set("initPrivacyTx", js.FuncOf(initPrivacyTx))
 	js.Global().Set("staking", js.FuncOf(staking))
 	js.Global().Set("initPrivacyTokenTx", js.FuncOf(initPrivacyTokenTx))
 	js.Global().Set("initBurningRequestTx", js.FuncOf(initBurningRequestTx))
