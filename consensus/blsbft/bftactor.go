@@ -141,16 +141,16 @@ func (e *BLSBFT) Start() error {
 					if !(new(common.Hash).IsEqual(&e.RoundData.BlockHash)) {
 						e.RoundData.lockVotes.Lock()
 						if _, ok := e.RoundData.Votes[msg.Validator]; !ok {
-							committeeArr := []incognitokey.CommitteePublicKey{}
-							committeeArr = append(committeeArr, e.RoundData.Committee...)
+							// committeeArr := []incognitokey.CommitteePublicKey{}
+							// committeeArr = append(committeeArr, e.RoundData.Committee...)
 							e.RoundData.lockVotes.Unlock()
 							go func(voteMsg BFTVote, blockHash common.Hash, committee []incognitokey.CommitteePublicKey) {
-								if err := e.preValidateVote(blockHash.GetBytes(), &(voteMsg.Vote), committeeArr[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
+								if err := e.preValidateVote(blockHash.GetBytes(), &(voteMsg.Vote), committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
 									e.logger.Error(err)
 									return
 								}
 								if len(voteMsg.Vote.BRI) != 0 {
-									if err := validateSingleBriSig(&blockHash, voteMsg.Vote.BRI, committeeArr[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
+									if err := validateSingleBriSig(&blockHash, voteMsg.Vote.BRI, committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
 										e.logger.Error(err)
 										return
 									}
@@ -168,7 +168,7 @@ func (e *BLSBFT) Start() error {
 									e.Node.PushMessageToChain(msg, e.Chain)
 								}()
 								e.addVote(voteMsg)
-							}(msg, e.RoundData.BlockHash, committeeArr)
+							}(msg, e.RoundData.BlockHash, append([]incognitokey.CommitteePublicKey{}, e.RoundData.Committee...))
 							continue
 						} else {
 							e.RoundData.lockVotes.Unlock()
