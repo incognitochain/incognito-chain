@@ -58,8 +58,7 @@ func (chain *ShardChain) GetPubKeyCommitteeIndex(pubkey string) int {
 }
 
 func (chain *ShardChain) GetLastProposerIndex() int {
-	return 0
-	//return chain.BestState.ShardProposerIdx
+	return chain.BestState.ShardProposerIdx
 }
 
 func (chain *ShardChain) CreateNewBlock(round int) (common.BlockInterface, error) {

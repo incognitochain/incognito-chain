@@ -669,8 +669,8 @@ func (shardBestState *ShardBestState) updateShardBestState(blockchain *BlockChai
 	shardBestState.NumTxns = uint64(len(shardBlock.Body.Transactions))
 	if shardBlock.Header.Height == 1 {
 		shardBestState.ShardProposerIdx = 0
-	} else {
-		shardBestState.ShardProposerIdx = (shardBestState.ShardProposerIdx + shardBlock.Header.Round) % len(shardBestState.ShardCommittee)
+	} else { //TODO: 0xsirush revert this code
+		shardBestState.ShardProposerIdx = 0 //(shardBestState.ShardProposerIdx + shardBlock.Header.Round) % len(shardBestState.ShardCommittee)
 	}
 	//shardBestState.processBeaconBlocks(shardBlock, beaconBlocks)
 	shardPendingValidator, stakingTx := blockchain.processInstructionFromBeacon(beaconBlocks, shardBlock.Header.ShardID)
