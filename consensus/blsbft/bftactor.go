@@ -346,7 +346,7 @@ func (e *BLSBFT) enterNewRound() {
 	}
 	e.isOngoing = false
 	e.setState(newround)
-	if !e.waitForNextRound() {
+	if e.waitForNextRound() {
 		return
 	}
 	e.InitRoundData()
