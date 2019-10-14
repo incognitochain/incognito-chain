@@ -268,6 +268,7 @@ func (e *BLSBFT) Start() error {
 						}
 
 						if err := e.Chain.InsertAndBroadcastBlock(e.RoundData.Block); err != nil {
+							e.logger.Error(err)
 							if blockchainError, ok := err.(*blockchain.BlockChainError); ok {
 								if blockchainError.Code != blockchain.ErrCodeMessage[blockchain.DuplicateShardBlockError].Code {
 									e.logger.Error(err)
@@ -345,7 +346,9 @@ func (e *BLSBFT) enterNewRound() {
 	}
 	e.isOngoing = false
 	e.setState(newround)
-	e.waitForNextRound()
+	if e.waitForNextRound() {
+		return
+	}
 	e.InitRoundData()
 	e.logger.Info("")
 	e.logger.Info("============================================")
