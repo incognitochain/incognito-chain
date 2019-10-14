@@ -1,5 +1,5 @@
 {
-  "Version": "1.10.0-beta",
-  "Note": "Fix bug fork block",
+  "Version": "1.13.0-beta",
+  "Note": "Fix bug sync",
   "RemoveData": true
 }

@@ -810,7 +810,11 @@ func (serverObject Server) CheckForceUpdateSourceCode() {
 					"\n*********************************************************************************\n")
 				if versionChain.RemoveData {
 					serverObject.Stop()
-					os.RemoveAll(cfg.DataDir)
+					errRemove := os.RemoveAll(cfg.DataDir)
+					if errRemove != nil {
+						Logger.log.Error("We NEEDD to REMOVE database directory but can not process by error", errRemove)
+					}
+					time.Sleep(60 * time.Second)
 				}
 				os.Exit(common.ExitCodeForceUpdate)
 			}
@@ -1324,7 +1328,7 @@ func (serverObj *Server) PushMessageToPbk(msg wire.Message, pbk string) error {
 PushMessageToPeer push msg to pbk
 */
 func (serverObj *Server) PushMessageToShard(msg wire.Message, shard byte, exclusivePeerIDs map[libp2p.ID]bool) error {
-	Logger.log.Criticalf("Push msg to shard %d", shard)
+	//Logger.log.Criticalf("Push msg to shard %d", shard)
 	peerConns := serverObj.connManager.GetPeerConnOfShard(shard)
 	relayConns := serverObj.connManager.GetConnOfRelayNode()
 	peerConns = append(relayConns, peerConns...)

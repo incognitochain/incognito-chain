@@ -100,7 +100,7 @@ func init() {
 		RandomTime:                       TestnetRandomTime,
 		Offset:                           TestnetOffset,
 		SwapOffset:                       TestnetSwapOffset,
-		EthContractAddressStr:            TestnetContractAddressStr,
+		EthContractAddressStr:            TestnetETHContractAddressStr,
 		DevAddress:                       TestnetDevAddress,
 		CentralizedWebsitePaymentAddress: TestnetCentralizedWebsitePaymentAddress,
 		SlashLevels: []SlashLevel{
@@ -142,7 +142,7 @@ func init() {
 		RandomTime:                       MainnetRandomTime,
 		Offset:                           MainnetOffset,
 		SwapOffset:                       MainnetSwapOffset,
-		EthContractAddressStr:            MainEthContractAddressStr,
+		EthContractAddressStr:            MainETHContractAddressStr,
 		DevAddress:                       MainnetDevAddress,
 		CentralizedWebsitePaymentAddress: MainnetCentralizedWebsitePaymentAddress,
 		SlashLevels: []SlashLevel{
