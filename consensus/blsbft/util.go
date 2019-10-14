@@ -34,9 +34,6 @@ func (e *BLSBFT) setState(state string) {
 }
 
 func (e *BLSBFT) getCurrentRound() int {
-	// TODO: 0xsirrush remove this code
-	return 1
-	// end
 	round := int((e.getTimeSinceLastBlock().Seconds() - float64(e.Chain.GetMinBlkInterval().Seconds())) / timeout.Seconds())
 	if round < 0 {
 		return 1

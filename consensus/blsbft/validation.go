@@ -60,15 +60,16 @@ func (e BLSBFT) CreateValidationData(block common.BlockInterface) ValidationData
 }
 
 func (e BLSBFT) validatePreSignBlock(block common.BlockInterface) error {
-	e.logger.Info("verifying block...")
-	e.logger.Info("ValidateProducerPosition...")
-	if err := e.ValidateProducerPosition(block, e.RoundData.LastProposerIndex, e.RoundData.Committee); err != nil {
-		return consensus.NewConsensusError(consensus.UnExpectedError, err)
-	}
-	e.logger.Info("ValidateProducerSig...")
-	if err := e.ValidateProducerSig(block); err != nil {
-		return consensus.NewConsensusError(consensus.ProducerSignatureError, err)
-	}
+	//TODO: 0xsirush remove this code
+	//e.logger.Info("verifying block...")
+	//e.logger.Info("ValidateProducerPosition...")
+	//if err := e.ValidateProducerPosition(block, e.RoundData.LastProposerIndex, e.RoundData.Committee); err != nil {
+	//	return consensus.NewConsensusError(consensus.UnExpectedError, err)
+	//}
+	//e.logger.Info("ValidateProducerSig...")
+	//if err := e.ValidateProducerSig(block); err != nil {
+	//	return consensus.NewConsensusError(consensus.ProducerSignatureError, err)
+	//}
 	e.logger.Info("ValidatePreSignBlock...")
 	if err := e.Chain.ValidatePreSignBlock(block); err != nil {
 		return consensus.NewConsensusError(consensus.UnExpectedError, err)

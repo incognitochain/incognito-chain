@@ -341,9 +341,11 @@ func (e *BLSBFT) enterNewRound() {
 		return
 	}
 	//if already running a round for current timeframe
-	if e.isInTimeFrame() && e.RoundData.State != newround {
+	if e.isInTimeFrame() && (e.RoundData.State != newround && e.RoundData.State != "") {
+		fmt.Println("CONSENSUS", e.isInTimeFrame(), e.getCurrentRound(), e.getTimeSinceLastBlock().Seconds(), e.RoundData.State)
 		return
 	}
+
 	e.isOngoing = false
 	e.setState(newround)
 	if e.waitForNextRound() {

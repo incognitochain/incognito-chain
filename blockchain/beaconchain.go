@@ -57,7 +57,8 @@ func (chain *BeaconChain) GetPubKeyCommitteeIndex(pubkey string) int {
 }
 
 func (chain *BeaconChain) GetLastProposerIndex() int {
-	return chain.BestState.BeaconProposerIndex
+	return 0
+	//return chain.BestState.BeaconProposerIndex
 }
 
 func (chain *BeaconChain) CreateNewBlock(round int) (common.BlockInterface, error) {
