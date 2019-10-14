@@ -743,6 +743,10 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(blockchain *B
 	if err != nil {
 		return err
 	}
+	// TODO: 0xmerman
+	fixedProducerShardCommittee := shardCommittee[0]
+	shardCommittee = shardCommittee[1:]
+
 	shardSwappedCommittees := []string{}
 	shardNewCommittees := []string{}
 	if len(shardBlock.Body.Instructions) != 0 {
@@ -794,7 +798,8 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(blockchain *B
 	if err != nil {
 		return err
 	}
-	shardBestState.ShardCommittee, err = incognitokey.CommitteeBase58KeyListToStruct(shardCommittee)
+	//TODO: merman
+	shardBestState.ShardCommittee, err = incognitokey.CommitteeBase58KeyListToStruct(append([]string{fixedProducerShardCommittee}, shardCommittee...))
 	if err != nil {
 		return err
 	}
