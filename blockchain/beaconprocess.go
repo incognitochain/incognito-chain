@@ -411,18 +411,23 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 	}
 	// get shard to beacon blocks from pool
 	allShardBlocks := blockchain.config.ShardToBeaconPool.GetValidBlock(nil)
+
 	var keys []int
-	for k := range allShardBlocks {
+	for k := range beaconBlock.Body.ShardState {
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
+
 	for _, value := range keys {
 		shardID := byte(value)
-		shardBlocks := allShardBlocks[shardID]
+		shardBlocks, ok := allShardBlocks[shardID]
+		shardStates := beaconBlock.Body.ShardState[shardID]
+		if !ok {
+			return NewBlockChainError(GetShardToBeaconBlocksError, fmt.Errorf("Expect to get from pool ShardToBeacon Block from Shard %+v but failed", shardID))
+		}
 		// repeatly compare each shard to beacon block and shard state in new beacon block body
-		if len(shardBlocks) >= len(beaconBlock.Body.ShardState[shardID]) {
+		if len(shardBlocks) >= len(shardStates) {
 			shardBlocks = shardBlocks[:len(beaconBlock.Body.ShardState[shardID])]
-			shardStates := beaconBlock.Body.ShardState[shardID]
 			for index, shardState := range shardStates {
 				if shardBlocks[index].Header.Height != shardState.Height {
 					return NewBlockChainError(ShardStateHeightError, fmt.Errorf("Expect shard state height to be %+v but get %+v from pool", shardState.Height, shardBlocks[index].Header.Height))
@@ -454,7 +459,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 				validStakePublicKeys = append(validStakePublicKeys, tempValidStakePublicKeys...)
 			}
 		} else {
-			return NewBlockChainError(GetShardBlocksError, fmt.Errorf("Expect to get more than %+v ShardToBeaconBlock but only get %+v", len(beaconBlock.Body.ShardState[shardID]), len(shardBlocks)))
+			return NewBlockChainError(GetShardToBeaconBlocksError, fmt.Errorf("Expect to get more than %+v ShardToBeaconBlock but only get %+v", len(beaconBlock.Body.ShardState[shardID]), len(shardBlocks)))
 		}
 	}
 	tempInstruction, err := blockchain.BestState.Beacon.GenerateInstruction(beaconBlock.Header.Height,
