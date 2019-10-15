@@ -207,7 +207,9 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	//==========Build Essential Header Data=========
 	// startStep = time.Now()
 	// producer key
-	producerPosition := (blockGenerator.chain.BestState.Shard[shardID].ShardProposerIdx + round) % len(currentCommitteePubKeys)
+	//TODO: revert this
+	//producerPosition := (blockGenerator.chain.BestState.Shard[shardID].ShardProposerIdx + round) % len(currentCommitteePubKeys)
+	producerPosition := (blockGenerator.chain.BestState.Shard[shardID].ShardProposerIdx) % len(currentCommitteePubKeys)
 	// committeeMiningKeys, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(blockGenerator.chain.BestState.Shard[shardID].ShardCommittee, common.BridgeConsensus)
 	// if err != nil {
 	// 	return nil, NewBlockChainError(ExtractPublicKeyFromCommitteeKeyListError, fmt.Errorf("Failed to extract key of producer in shard block %+v of shardID %+v", newShardBlock.Header.Height, newShardBlock.Header.ShardID))

@@ -506,7 +506,7 @@ func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(beaconBlo
 	defer beaconBestState.lock.RUnlock()
 	//verify producer via index
 	producerPublicKey := beaconBlock.Header.Producer
-	producerPosition := (beaconBestState.BeaconProposerIndex + beaconBlock.Header.Round) % len(beaconBestState.BeaconCommittee)
+	producerPosition := beaconBestState.GetProducerIndexFromBlock(beaconBlock)
 	tempProducer, err := beaconBestState.BeaconCommittee[producerPosition].ToBase58() //.GetMiningKeyBase58(common.BridgeConsensus)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)

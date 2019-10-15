@@ -210,12 +210,20 @@ func (shardBestState *ShardBestState) SetMinShardCommitteeSize(minShardCommittee
 	return false
 }
 
+func (shardBestState *ShardBestState) GetProducerIndexFromBlock(block *ShardBlock) int {
+	//TODO: revert his
+	//return (shardBestState.ShardProposerIndex + block.Header.Round) % len(shardBestState.BeaconCommittee)
+	return 0
+}
+
 func (shardBestState *ShardBestState) GetPubkeyRole(pubkey string, round int) string {
 	keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(shardBestState.ShardCommittee, shardBestState.ConsensusAlgorithm)
 	// fmt.Printf("pubkey %v key list %v\n\n\n\n", pubkey, keyList)
 	found := common.IndexOfStr(pubkey, keyList)
 	if found > -1 {
-		tmpID := (shardBestState.ShardProposerIdx + round) % len(keyList)
+		//TODO: revert this
+		//tmpID := (shardBestState.ShardProposerIdx + round) % len(keyList)
+		tmpID := (shardBestState.ShardProposerIdx) % len(keyList)
 		if found == tmpID {
 			return common.ProposerRole
 		} else {
