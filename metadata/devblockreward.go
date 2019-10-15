@@ -30,7 +30,7 @@ func BuildInstForDevReward(reward map[common.Hash]uint64, devAddress string) ([]
 	}
 	returnedInst := []string{
 		strconv.Itoa(DevRewardRequestMeta),
-		strconv.Itoa(int(common.GetShardIDFromLastByte(keyWalletDevAccount.KeySet.PaymentAddress.Pk[32]))),
+		strconv.Itoa(int(common.GetShardIDFromLastByte(keyWalletDevAccount.KeySet.PaymentAddress.Pk[common.PublicKeySize-1]))),
 		"devRewardInst",
 		string(contentStr),
 	}
