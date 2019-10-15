@@ -141,14 +141,16 @@ func (e *BLSBFT) Start() error {
 					if !(new(common.Hash).IsEqual(&e.RoundData.BlockHash)) {
 						e.RoundData.lockVotes.Lock()
 						if _, ok := e.RoundData.Votes[msg.Validator]; !ok {
+							// committeeArr := []incognitokey.CommitteePublicKey{}
+							// committeeArr = append(committeeArr, e.RoundData.Committee...)
 							e.RoundData.lockVotes.Unlock()
-							go func(voteMsg BFTVote) {
-								if err := e.preValidateVote(e.RoundData.BlockHash.GetBytes(), &(voteMsg.Vote), e.RoundData.Committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
+							go func(voteMsg BFTVote, blockHash common.Hash, committee []incognitokey.CommitteePublicKey) {
+								if err := e.preValidateVote(blockHash.GetBytes(), &(voteMsg.Vote), committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
 									e.logger.Error(err)
 									return
 								}
 								if len(voteMsg.Vote.BRI) != 0 {
-									if err := validateSingleBriSig(&e.RoundData.BlockHash, voteMsg.Vote.BRI, e.RoundData.Committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
+									if err := validateSingleBriSig(&blockHash, voteMsg.Vote.BRI, committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
 										e.logger.Error(err)
 										return
 									}
@@ -166,7 +168,7 @@ func (e *BLSBFT) Start() error {
 									e.Node.PushMessageToChain(msg, e.Chain)
 								}()
 								e.addVote(voteMsg)
-							}(msg)
+							}(msg, e.RoundData.BlockHash, append([]incognitokey.CommitteePublicKey{}, e.RoundData.Committee...))
 							continue
 						} else {
 							e.RoundData.lockVotes.Unlock()
@@ -180,13 +182,13 @@ func (e *BLSBFT) Start() error {
 				pubKey := e.UserKeySet.GetPublicKey()
 				if common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList) == -1 {
 					e.enterNewRound()
-					fmt.Println("CONSENSUS: ticker 0")
+					//fmt.Println("CONSENSUS: ticker 0")
 					continue
 				}
 
 				if !e.Chain.IsReady() {
 					e.isOngoing = false
-					fmt.Println("CONSENSUS: ticker 1")
+					//fmt.Println("CONSENSUS: ticker 1")
 					continue
 				}
 
@@ -197,14 +199,14 @@ func (e *BLSBFT) Start() error {
 				switch e.RoundData.State {
 				case listenPhase:
 					// timeout or vote nil?
-					fmt.Println("CONSENSUS: listen phase 1")
+					//fmt.Println("CONSENSUS: listen phase 1")
 					if e.Chain.CurrentHeight() == e.RoundData.NextHeight {
 						e.enterNewRound()
 						continue
 					}
 					roundKey := getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)
 					if e.Blocks[roundKey] != nil {
-						fmt.Println("CONSENSUS: listen phase 2")
+						//fmt.Println("CONSENSUS: listen phase 2")
 						if err := e.validatePreSignBlock(e.Blocks[roundKey]); err != nil {
 							delete(e.Blocks, roundKey)
 							e.logger.Error(err)
