@@ -22,7 +22,7 @@ func (bp *BlockProvider) Register(ctx context.Context, req *RegisterRequest) (*R
 }
 
 func (bp *BlockProvider) GetBlockShardByHeight(ctx context.Context, req *GetBlockShardByHeightRequest) (*GetBlockShardByHeightResponse, error) {
-	log.Println("Receive GetBlockShardByHeight request")
+	log.Println("[db] Receive GetBlockShardByHeight request")
 	blkType := byte(0) // TODO(@0xbunyip): define in common file
 	blkMsgs := bp.NetSync.GetBlockShardByHeight(
 		req.FromPool,
@@ -51,8 +51,23 @@ func (bp *BlockProvider) GetBlockShardByHash(ctx context.Context, req *GetBlockS
 }
 
 func (bp *BlockProvider) GetBlockBeaconByHeight(ctx context.Context, req *GetBlockBeaconByHeightRequest) (*GetBlockBeaconByHeightResponse, error) {
-	log.Println("Receive GetBlockBeaconByHeight request")
-	return nil, nil
+	log.Println("[db] Receive GetBlockBeaconByHeight request")
+	blkMsgs := bp.NetSync.GetBlockBeaconByHeight(
+		req.FromPool,
+		false,
+		[]uint64{req.FromHeight, req.ToHeight},
+	)
+	log.Println("[db] Block beacon received from netsync:", blkMsgs)
+	resp := &GetBlockBeaconByHeightResponse{}
+	for _, msg := range blkMsgs {
+		encoded, err := encodeMessage(msg)
+		if err != nil {
+			log.Printf("ERROR Failed encoding message %v", msg.MessageType())
+			continue
+		}
+		resp.Data = append(resp.Data, []byte(encoded))
+	}
+	return resp, nil
 }
 
 func (bp *BlockProvider) GetBlockBeaconByHash(ctx context.Context, req *GetBlockBeaconByHashRequest) (*GetBlockBeaconByHashResponse, error) {
@@ -76,4 +91,5 @@ type BlockProvider struct {
 
 type NetSync interface {
 	GetBlockShardByHeight(bool, byte, bool, byte, []uint64, byte) []wire.Message
+	GetBlockBeaconByHeight(bool, bool, []uint64) []wire.Message
 }

@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 if [ "$1" == "s01" ]; then
-go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:1oHW8buNXixuCZoNLxkyHfdJP6iJosFDJUgbDiMgVc2amfj6H7" --nodemode "auto" --datadir "data/s01" --listen "0.0.0.0:8334" --externaladdress "0.0.0.0:8334" --norpcauth --rpclisten "0.0.0.0:9334" --enablewallet --wallet "wallet1" --walletpassphrase "12345678" --walletautoinit --loglevel debug
+go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:1oHW8buNXixuCZoNLxkyHfdJP6iJosFDJUgbDiMgVc2amfj6H7" --nodemode "auto" --datadir "data/s01" --listen "0.0.0.0:8334" --externaladdress "0.0.0.0:8334" --norpcauth --rpclisten "0.0.0.0:9334" --enablewallet --wallet "wallet1" --walletpassphrase "12345678" --walletautoinit --loglevel info
 fi
 if [ "$1" == "s02" ]; then
-go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:12UXBbiNwmrBPHQZr9oKGCd5ZxTd4dzj6SmKFKw3mcsJ7X1YdK5" --nodemode "auto" --datadir "data/s02" --listen "0.0.0.0:8335" --externaladdress "0.0.0.0:8335" --rpclisten "0.0.0.0:9335" --norpc --loglevel debug
+go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:12UXBbiNwmrBPHQZr9oKGCd5ZxTd4dzj6SmKFKw3mcsJ7X1YdK5" --nodemode "auto" --datadir "data/s02" --listen "0.0.0.0:8335" --externaladdress "0.0.0.0:8335" --rpclisten "0.0.0.0:9335" --norpc --loglevel info
 fi
 if [ "$1" == "s03" ]; then
-go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:12AY9ACUVXNWCUv6KTERsvPigdgXqKyet3HW6dUjmsfyn7CkEhM" --nodemode "auto" --datadir "data/s03" --listen "0.0.0.0:8336" --externaladdress "0.0.0.0:8336" --rpclisten "0.0.0.0:9336" --norpc --loglevel debug
+go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:12AY9ACUVXNWCUv6KTERsvPigdgXqKyet3HW6dUjmsfyn7CkEhM" --nodemode "auto" --datadir "data/s03" --listen "0.0.0.0:8336" --externaladdress "0.0.0.0:8336" --rpclisten "0.0.0.0:9336" --norpc --loglevel info
 fi
 if [ "$1" == "s04" ]; then
-go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:1Xm6FiWKXcaamPgXz5gJGF25c4BtmbrGYmc1iqkDr4FTJ24EdU" --nodemode "auto" --datadir "data/s04" --listen "0.0.0.0:8337" --externaladdress "0.0.0.0:8337" --rpclisten "0.0.0.0:9337" --norpc --loglevel debug
+go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:1Xm6FiWKXcaamPgXz5gJGF25c4BtmbrGYmc1iqkDr4FTJ24EdU" --nodemode "auto" --datadir "data/s04" --listen "0.0.0.0:8337" --externaladdress "0.0.0.0:8337" --rpclisten "0.0.0.0:9337" --norpc --loglevel info
 fi
 
 if [ "$1" == "s11" ]; then
