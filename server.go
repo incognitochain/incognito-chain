@@ -1054,9 +1054,11 @@ func (serverObj *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVer
 	remotePeer.SetPublicKey(pbk, pbkType)
 	serverObj.cNewPeers <- remotePeer
 	//valid := false
-	//if msg.ProtocolVersion == serverObj.protocolVersion {
-	//	valid = true
-	//}
+	if msg.ProtocolVersion != serverObj.protocolVersion {
+		Logger.log.Error(errors.New("Not correct version "))
+		peerConn.ForceClose()
+		return
+	}
 
 	// check for accept connection
 	if accepted, e := serverObj.connManager.CheckForAcceptConn(peerConn); !accepted {
