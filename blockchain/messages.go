@@ -80,8 +80,8 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 	}
 	fmt.Println("Shard block received from shard", newBlk.Header.ShardID, newBlk.Header.Height)
 	if newBlk.Header.Timestamp < GetBestStateShard(newBlk.Header.ShardID).BestBlock.Header.Timestamp { // not receive block older than current latest block
-		fmt.Println("Shard block received 0")
-		return
+		//fmt.Println("Shard block received 0")
+		//return
 	}
 
 	if _, ok := blockchain.Synker.Status.Shards[newBlk.Header.ShardID]; ok {
@@ -94,12 +94,12 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 		currentShardBestState := blockchain.BestState.Shard[newBlk.Header.ShardID]
 
 		if currentShardBestState.ShardHeight <= newBlk.Header.Height {
-			layer, role, _ := blockchain.config.ConsensusEngine.GetUserRole()
-			fmt.Println("Shard block received 0", layer, role)
+			//layer, role, _ := blockchain.config.ConsensusEngine.GetUserRole()
+			//fmt.Println("Shard block received 0", layer, role)
 			currentShardBestState := blockchain.BestState.Shard[newBlk.Header.ShardID]
 
 			if currentShardBestState.ShardHeight == newBlk.Header.Height && currentShardBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentShardBestState.BestBlock.Header.Round < newBlk.Header.Round {
-				fmt.Println("Shard block received 1", role)
+				//fmt.Println("Shard block received 1", role)
 				err := blockchain.InsertShardBlock(newBlk, false)
 				if err != nil {
 					Logger.log.Error(err)
@@ -112,10 +112,10 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 				Logger.log.Errorf("Add block %+v from shard %+v error %+v: \n", newBlk.Header.Height, newBlk.Header.ShardID, err)
 			}
 		} else {
-			fmt.Println("Shard block received 2")
+			//fmt.Println("Shard block received 2")
 		}
 	} else {
-		fmt.Println("Shard block received 1")
+		//fmt.Println("Shard block received 1")
 	}
 }
 
