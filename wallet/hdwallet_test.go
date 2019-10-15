@@ -213,6 +213,8 @@ func TestHDWalletDeserialize(t *testing.T) {
 	paymentAddrBytes, err := masterKey.Serialize(PaymentAddressType)
 	readonlyKeyBytes, err := masterKey.Serialize(ReadonlyKeyType)
 
+	fmt.Printf("paymentAddrBytes.len: %v\n", len(paymentAddrBytes))
+
 	keyWallet, err := deserialize(privKeyBytes)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, masterKey.KeySet.PrivateKey, keyWallet.KeySet.PrivateKey)
