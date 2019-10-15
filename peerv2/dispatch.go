@@ -18,6 +18,7 @@ type Dispatcher struct {
 	PublishableMessage []string
 }
 
+//TODO hy parse msg here
 // processInMessageString - this is sub-function of InMessageHandler
 // after receiving a good message from stream,
 // we need analyze it and process with corresponding message type
