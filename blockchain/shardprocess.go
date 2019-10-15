@@ -92,7 +92,9 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	currentShardBestState := blockchain.BestState.Shard[shardBlock.Header.ShardID]
 
 	if currentShardBestState.ShardHeight == shardBlock.Header.Height && currentShardBestState.BestBlock.Header.Timestamp < shardBlock.Header.Timestamp && currentShardBestState.BestBlock.Header.Round < shardBlock.Header.Round {
-		fmt.Println("FORK SHARD", shardBlock.Header.ShardID, shardBlock.Header.Height)
+		currentShardHeight := currentShardBestState.ShardHeight
+		currentShardHash := currentShardBestState.BestBlockHash
+		Logger.log.Infof("FORK SHARDID %+v, Current Block Height %+v, Block Hash %+v | Try To Insert New Shard Block Height %+v, Hash %+v", shardBlock.Header.ShardID, currentShardBestState.ShardHeight, currentShardBestState.BestBlockHash, shardBlock.Header.Height, shardBlock.Header.Hash())
 		if err := blockchain.ValidateBlockWithPrevShardBestState(shardBlock); err != nil {
 			Logger.log.Error(err)
 			return err
@@ -100,7 +102,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 		if err := blockchain.RevertShardState(shardBlock.Header.ShardID); err != nil {
 			panic(err)
 		}
-		fmt.Println("REVERTED SHARD", shardBlock.Header.ShardID, shardBlock.Header.Height)
+		Logger.log.Infof("REVERTED SHARDID %+v, Revert Current Block Height %+v, Block Hash %+v", shardBlock.Header.ShardID, currentShardHeight, currentShardHash)
 	}
 
 	if shardBlock.Header.Height != GetBestStateShard(shardID).ShardHeight+1 {
@@ -140,8 +142,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	if err := blockchain.BestState.Shard[shardID].verifyBestStateWithShardBlock(shardBlock, true, shardID); err != nil {
 		return err
 	}
-	Logger.log.Infof("SHARD %+v | Update ShardBestState, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-
+	Logger.log.Infof("SHARD %+v | BackupCurrentShardState, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	// Backup beststate
 	err = blockchain.config.DataBase.CleanBackup(false, shardBlock.Header.ShardID)
 	if err != nil {
@@ -156,6 +157,8 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	if err != nil {
 		return err
 	}
+
+	Logger.log.Infof("SHARD %+v | Update ShardBestState, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	if err := blockchain.BestState.Shard[shardID].updateShardBestState(blockchain, shardBlock, beaconBlocks); err != nil {
 		errRevert := blockchain.revertShardBestState(shardID)
 		if errRevert != nil {
@@ -163,6 +166,8 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 		}
 		return err
 	}
+
+	Logger.log.Infof("SHARD %+v | Update NumOfBlocksByProducers, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	// update number of blocks produced by producers to shard best state
 	blockchain.BestState.Shard[shardID].updateNumOfBlocksByProducers(shardBlock)
 

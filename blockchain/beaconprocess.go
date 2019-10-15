@@ -72,7 +72,8 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 
 	currentBeaconBestState := GetBeaconBestState()
 	if currentBeaconBestState.BeaconHeight == beaconBlock.Header.Height && currentBeaconBestState.BestBlock.Header.Timestamp < beaconBlock.Header.Timestamp && currentBeaconBestState.BestBlock.Header.Round < beaconBlock.Header.Round {
-		fmt.Println("FORK BEACON", beaconBlock.Header.Height)
+		currentBeaconHeight, currentBeaconHash := currentBeaconBestState.BeaconHeight, currentBeaconBestState.BestBlockHash
+		Logger.log.Infof("FORK BEACON, Current Beacon Block Height %+v, Hash %+v | Try to Insert New Beacon Block Height %+v, Hash %+v", currentBeaconBestState.BeaconHeight, currentBeaconBestState.BestBlockHash, beaconBlock.Header.Height, beaconBlock.Header.Hash())
 		if err := blockchain.ValidateBlockWithPrevBeaconBestState(beaconBlock); err != nil {
 			Logger.log.Error(err)
 			return err
@@ -81,7 +82,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 			panic(err)
 		}
 		blockchain.BestState.Beacon.lock.Unlock()
-		fmt.Println("REVERTED BEACON")
+		Logger.log.Infof("REVERTED BEACON, Revert Current Beacon Block Height %+v, Hash %+v", currentBeaconHeight, currentBeaconHash)
 	}
 
 	if beaconBlock.Header.Height != GetBeaconBestState().BeaconHeight+1 {
@@ -310,7 +311,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *Beacon
 	previousBlockHash := beaconBlock.Header.PreviousBlockHash
 	parentBlockBytes, err := blockchain.config.DataBase.FetchBeaconBlock(previousBlockHash)
 	if err != nil {
-		Logger.log.Critical("FORK BEACON DETECTED")
+		Logger.log.Criticalf("FORK BEACON DETECTED, New Beacon Block Height %+v, Hash %+v, Expected Previous Hash %+v, BUT Current Best State Height %+v and Hash %+v", beaconBlock.Header.Height, beaconBlock.Header.Hash(), beaconBlock.Header.PreviousBlockHash, blockchain.BestState.Beacon.BeaconHeight, blockchain.BestState.Beacon.BestBlockHash)
 		blockchain.Synker.SyncBlkBeacon(true, false, false, []common.Hash{previousBlockHash}, nil, 0, 0, "")
 		revertErr := blockchain.revertBeaconState()
 		if revertErr != nil {
