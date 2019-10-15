@@ -889,7 +889,7 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 handleCreateAndSendStakingTx - RPC creates staking transaction and send to network
 */
 func (httpServer *HttpServer) handleCreateAndSendStakingTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleCreateAndSendStakingTx params: %+v", params)
+	Logger.log.Infof("handleCreateAndSendStakingTx params: %+v", params)
 
 	var err error
 	data, err := httpServer.handleCreateRawStakingTransaction(params, closeChan)
@@ -898,7 +898,7 @@ func (httpServer *HttpServer) handleCreateAndSendStakingTx(params interface{}, c
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
 	base58CheckData := tx.Base58CheckData
-
+	Logger.log.Infof("handleCreateAndSendStakingTx create success tx=%+v", tx.TxID)
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
 	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
@@ -907,7 +907,7 @@ func (httpServer *HttpServer) handleCreateAndSendStakingTx(params interface{}, c
 		return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)
 	}
 	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, tx.ShardID)
-	Logger.log.Debugf("handleCreateAndSendStakingTx result: %+v", result)
+	Logger.log.Infof("handleCreateAndSendStakingTx result: %+v", result)
 	return result, nil
 }
 
