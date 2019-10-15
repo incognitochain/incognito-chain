@@ -3,6 +3,7 @@ package peerv2
 import (
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"log"
 	"reflect"
@@ -35,16 +36,51 @@ func NewConnManager(
 }
 
 func (cm *ConnManager) PublishMessage(msg wire.Message) error {
-	publishable := []string{wire.CmdBlockShard, wire.CmdBFT, wire.CmdBlockBeacon, wire.CmdPeerState}
+	var topic string
+	publishable := []string{wire.CmdBlockShard, wire.CmdBFT, wire.CmdBlockBeacon, wire.CmdPeerState, wire.CmdBlkShardToBeacon}
+	// msgCrossShard := msg.(wire.MessageCrossShard)
+	msgType := msg.MessageType()
+	for _, p := range publishable {
+		topic = ""
+		if msgType == p {
+			for _, availableTopic := range cm.subs[msgType] {
+				fmt.Println(availableTopic)
+				if (availableTopic.Act == MessageTopicPair_PUB) || (availableTopic.Act == MessageTopicPair_PUBSUB) {
+					topic = availableTopic.Name
+				}
+
+			}
+			if topic == "" {
+				return errors.New("Can not find topic of this message type " + msgType + "for publish")
+			}
+			fmt.Println("[db] Publishing message", msgType)
+			return broadcastMessage(msg, topic, cm.ps)
+		}
+	}
+
+	log.Println("Cannot publish message", msgType)
+	return nil
+}
+
+func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) error {
+	publishable := []string{wire.CmdCrossShard, wire.CmdBFT}
 	msgType := msg.MessageType()
 	for _, p := range publishable {
 		if msgType == p {
 			fmt.Println("[db] Publishing message", msgType)
-			topic := cm.subs[msgType].Name
-			if isJustPubOrSub(msg.MessageType()) {
-				topic = topic + "-nodepub"
+			// Get topic for mess
+			//TODO hy add more logic
+			if msgType == wire.CmdCrossShard {
+				// TODO(@0xakk0r0kamui): implicit order of subscriptions?
+				return broadcastMessage(msg, cm.subs[msgType][shardID].Name, cm.ps)
+			} else {
+				for _, availableTopic := range cm.subs[msgType] {
+					fmt.Println(availableTopic)
+					if (availableTopic.Act == MessageTopicPair_PUB) || (availableTopic.Act == MessageTopicPair_PUBSUB) {
+						return broadcastMessage(msg, availableTopic.Name, cm.ps)
+					}
+				}
 			}
-			return broadcastMessage(msg, topic, cm.ps)
 		}
 	}
 
@@ -64,7 +100,7 @@ func (cm *ConnManager) Start(ns NetSync) {
 	// Pubsub
 	// TODO(@0xbunyip): handle error
 	cm.ps, _ = pubsub.NewFloodSub(context.Background(), cm.LocalHost.Host)
-	cm.subs = map[string]Topic{}
+	cm.subs = m2t{}
 	cm.messages = make(chan *pubsub.Message, 1000)
 
 	// Must Connect after creating FloodSub
@@ -89,6 +125,7 @@ type ConsensusData interface {
 type Topic struct {
 	Name string
 	Sub  *pubsub.Subscription
+	Act  MessageTopicPair_Action
 }
 
 type ConnManager struct {
@@ -97,7 +134,7 @@ type ConnManager struct {
 	IdentityKey          *incognitokey.CommitteePublicKey
 
 	ps       *pubsub.PubSub
-	subs     map[string]Topic     // mapping from message to topic's subscription
+	subs     m2t                  // mapping from message to topic's subscription
 	messages chan *pubsub.Message // queue messages from all topics
 
 	cd        ConsensusData
@@ -226,49 +263,66 @@ func newUserRole(layer, role string, shardID int) *userRole {
 }
 
 // subscribeNewTopics subscribes to new topics and unsubcribes any topics that aren't needed anymore
-func (cm *ConnManager) subscribeNewTopics(topics, subscribed m2t) error {
-	found := func(s string, m m2t) bool {
-		for _, v := range m {
-			if s == v {
-				return true
+func (cm *ConnManager) subscribeNewTopics(newTopics, subscribed m2t) error {
+	found := func(tName string, tmap m2t) bool {
+		for _, topicList := range tmap {
+			for _, t := range topicList {
+				if tName == t.Name {
+					return true
+				}
 			}
 		}
 		return false
 	}
 
 	// Subscribe to new topics
-	for m, t := range topics {
-		topic4Subs := t
-		if isJustPubOrSub(t) {
-			topic4Subs = topic4Subs + "_nodesub"
-		}
-		if found(topic4Subs, subscribed) {
-			continue
-		}
+	for m, topicList := range newTopics {
+		fmt.Printf("Process message %v and topic %v\n", m, topicList)
+		for _, t := range topicList {
 
-		fmt.Println("[db] subscribing", m, topic4Subs)
+			if found(t.Name, subscribed) {
+				fmt.Printf("Countinue 1 %v %v\n", t.Name, subscribed)
+				continue
+			}
 
-		s, err := cm.ps.Subscribe(topic4Subs)
-		if err != nil {
-			return err
+			// TODO(@0xakk0r0kamui): check here
+			if t.Act == MessageTopicPair_PUB {
+				cm.subs[m] = append(cm.subs[m], Topic{Name: t.Name, Sub: nil, Act: t.Act})
+				fmt.Printf("Countinue 2 %v %v\n", t.Name, subscribed)
+				continue
+			}
+
+			fmt.Println("[db] subscribing", m, t.Name)
+
+			s, err := cm.ps.Subscribe(t.Name)
+			if err != nil {
+				return err
+			}
+			cm.subs[m] = append(cm.subs[m], Topic{Name: t.Name, Sub: s, Act: t.Act})
+			go processSubscriptionMessage(cm.messages, s)
 		}
-		cm.subs[m] = Topic{Name: t, Sub: s}
-		go processSubscriptionMessage(cm.messages, s)
 	}
 
 	// Unsubscribe to old ones
-	for m, t := range subscribed {
-		topic4Subs := t
-		if isJustPubOrSub(t) {
-			topic4Subs = topic4Subs + "_nodesub"
-		}
-		if found(topic4Subs, topics) {
-			continue
-		}
+	for m, topicList := range subscribed {
+		for _, t := range topicList {
+			if found(t.Name, newTopics) {
+				continue
+			}
 
-		fmt.Println("[db] unsubscribing", m, t)
-		cm.subs[m].Sub.Cancel() // TODO(@0xbunyip): lock
-		delete(cm.subs, m)
+			// TODO(@0xakk0r0kamui): check here
+			if t.Act == MessageTopicPair_PUB {
+				continue
+			}
+
+			fmt.Println("[db] unsubscribing", m, t.Name)
+			for _, s := range cm.subs[m] {
+				if s.Name == t.Name {
+					s.Sub.Cancel() // TODO(@0xbunyip): lock
+				}
+			}
+			delete(cm.subs, m)
+		}
 	}
 	return nil
 }
@@ -290,7 +344,7 @@ func processSubscriptionMessage(inbox chan *pubsub.Message, sub *pubsub.Subscrip
 	}
 }
 
-type m2t map[string]string // Message to topic name
+type m2t map[string][]Topic // Message to topics
 
 func (cm *ConnManager) registerToProxy(
 	peerID peer.ID,
@@ -309,10 +363,15 @@ func (cm *ConnManager) registerToProxy(
 		return nil, err
 	}
 
-	// Mapping from message to topic name
+	// Mapping from message to list of topics
 	topics := m2t{}
 	for _, p := range pairs {
-		topics[p.Message] = p.Topic
+		for i, t := range p.Topic {
+			topics[p.Message] = append(topics[p.Message], Topic{
+				Name: t,
+				Act:  p.Act[i],
+			})
+		}
 	}
 	return topics, nil
 }
@@ -336,13 +395,6 @@ func getMessagesForLayer(layer string, shardID int) []string {
 		}
 	}
 	return []string{}
-}
-
-func isJustPubOrSub(message string) bool {
-	if message == wire.CmdPeerState {
-		return true
-	}
-	return false
 }
 
 //go run *.go --listen "127.0.0.1:9433" --externaladdress "127.0.0.1:9433" --datadir "/data/fullnode" --discoverpeersaddress "127.0.0.1:9330" --loglevel debug

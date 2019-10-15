@@ -53,6 +53,7 @@ func (c *BlockRequester) GetBlockShardByHeight(
 	from uint64,
 	to uint64,
 ) ([][]byte, error) {
+	log.Printf("Requesting shard block by height: shard = %v from = %v to = %v", shardID, from, to)
 	client := NewHighwayServiceClient(c.conn)
 	reply, err := client.GetBlockShardByHeight(
 		context.Background(),
@@ -65,6 +66,30 @@ func (c *BlockRequester) GetBlockShardByHeight(
 			FromPool:   false,
 		},
 	)
+	log.Printf("Received block shard data %v", reply)
+	if err != nil {
+		return nil, err
+	}
+	return reply.Data, nil
+}
+
+func (c *BlockRequester) GetBlockBeaconByHeight(
+	from uint64,
+	to uint64,
+) ([][]byte, error) {
+	log.Printf("Requesting beaconblock by height: from = %v to = %v", from, to)
+	client := NewHighwayServiceClient(c.conn)
+	reply, err := client.GetBlockBeaconByHeight(
+		context.Background(),
+		&GetBlockBeaconByHeightRequest{
+			Specific:   false,
+			FromHeight: from,
+			ToHeight:   to,
+			Heights:    nil,
+			FromPool:   false,
+		},
+	)
+	log.Printf("Received block beacon data %v", reply)
 	if err != nil {
 		return nil, err
 	}
