@@ -454,7 +454,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	Logger.log.Debug("PrivateKey: ", cfg.PrivateKey)
 
 	ip, port := peerv2.ParseListenner(cfg.Listener, "127.0.0.1", 9433)
-	host := peerv2.NewHost(version(), ip, port, []byte(cfg.PrivateKey))
+	host := peerv2.NewHost(version(), ip, port, cfg.Libp2pPrivateKey)
 
 	miningKeys := serverObj.consensusEngine.GetMiningPublicKeys()
 	pubkey := miningKeys[common.BlsConsensus]
