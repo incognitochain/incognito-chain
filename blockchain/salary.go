@@ -324,7 +324,7 @@ func (blockchain *BlockChain) buildWithDrawTransactionResponse(
 		blockchain.GetDatabase(),
 		responseMeta,
 		requestDetail.TokenID,
-		common.GetShardIDFromLastByte(requestDetail.PaymentAddress.Pk[32]))
+		common.GetShardIDFromLastByte(requestDetail.PaymentAddress.Pk[common.PublicKeySize -1]))
 }
 
 // mapPlusMap(src, dst): dst = dst + src
