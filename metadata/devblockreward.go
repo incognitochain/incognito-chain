@@ -23,10 +23,14 @@ func BuildInstForDevReward(reward map[common.Hash]uint64, devAddress string) ([]
 		return nil, err
 	}
 
-	keyWalletDevAccount, _ := wallet.Base58CheckDeserialize(devAddress)
+	keyWalletDevAccount, err := wallet.Base58CheckDeserialize(devAddress)
+	if err != nil {
+		Logger.log.Error(NewMetadataTxError(WrongDevPaymentAddressError, err))
+		return nil, err
+	}
 	returnedInst := []string{
 		strconv.Itoa(DevRewardRequestMeta),
-		strconv.Itoa(int(common.GetShardIDFromLastByte(keyWalletDevAccount.KeySet.PaymentAddress.Pk[32]))),
+		strconv.Itoa(int(common.GetShardIDFromLastByte(keyWalletDevAccount.KeySet.PaymentAddress.Pk[common.PublicKeySize-1]))),
 		"devRewardInst",
 		string(contentStr),
 	}
