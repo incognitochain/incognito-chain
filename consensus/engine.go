@@ -289,6 +289,7 @@ func (engine *Engine) Start() error {
 	go engine.config.BlockGen.Start(engine.cQuit)
 	go func() {
 		go engine.watchConsensusCommittee()
+		chainStatus := map[string]bool{}
 		for {
 			select {
 			case <-engine.cQuit:
@@ -297,11 +298,23 @@ func (engine *Engine) Start() error {
 				time.Sleep(time.Millisecond * 1000)
 				for chainName, consensus := range engine.ChainConsensusList {
 					if chainName == engine.CurrentMiningChain && engine.userCurrentState.UserRole == common.CommitteeRole {
-						Logger.log.Critical("current mining chain", chainName)
+						if _, ok := chainStatus[chainName]; !ok {
+							Logger.log.Critical("BFT: starting bft engine ", chainName)
+						}
 						consensus.Start()
-						Logger.log.Critical(chainName, "started")
+						if _, ok := chainStatus[chainName]; !ok {
+							Logger.log.Critical("BFT: started bft engine ", chainName)
+							chainStatus[chainName] = true
+						}
 					} else {
+						if _, ok := chainStatus[chainName]; ok {
+							Logger.log.Critical("BFT: stopping bft engine ", chainName)
+						}
 						consensus.Stop()
+						if _, ok := chainStatus[chainName]; ok {
+							Logger.log.Critical("BFT: stopped bft engine ", chainName)
+							delete(chainStatus, chainName)
+						}
 					}
 				}
 			}
