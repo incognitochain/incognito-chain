@@ -25,6 +25,7 @@ const (
 	NewEntropyError
 	NewMnemonicError
 	MnemonicInvalidError
+	InvalidSeserializedKey
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -51,6 +52,7 @@ var ErrCodeMessage = map[int]struct {
 	NewEntropyError:       {-1014, "Can not create entropy"},
 	NewMnemonicError:      {-1015, "Can not create mnemonic"},
 	MnemonicInvalidError:  {-1016, "Mnemonic is invalid"},
+	InvalidSeserializedKey:  {-1016, "Serialized key is invalid"},
 }
 
 type WalletError struct {
