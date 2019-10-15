@@ -160,6 +160,7 @@ const (
 	ProcessSlashingError
 	ConvertCommitteePubKeyToBase58Error
 	ConsensusIsOngoingError
+	RevertStateError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -305,6 +306,7 @@ var ErrCodeMessage = map[int]struct {
 	ConvertCommitteePubKeyToBase58Error:               {-1136, "Convert committee pub key to base58 Error"},
 	ConsensusIsOngoingError:                           {-1137, "Consensus Is Ongoing Error"},
 	GetShardToBeaconBlocksError:                       {-1138, "Get Shard To Beacon Blocks Error"},
+	RevertStateError:                                  {-1139, "Revert State Error"},
 }
 
 type BlockChainError struct {
