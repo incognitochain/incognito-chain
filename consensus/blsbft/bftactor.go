@@ -394,7 +394,12 @@ func (e *BLSBFT) createNewBlock() (common.BlockInterface, error) {
 	errCh = make(chan error)
 	timeoutCh = make(chan struct{})
 	timeout := time.AfterFunc(e.Chain.GetMaxBlkCreateTime(), func() {
-		timeoutCh <- struct{}{}
+		select {
+		case <-timeoutCh:
+			return
+		default:
+			timeoutCh <- struct{}{}
+		}
 	})
 
 	go func() {
