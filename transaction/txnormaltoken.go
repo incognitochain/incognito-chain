@@ -719,7 +719,10 @@ func (txCustomToken TxNormalToken) IsCoinsBurning() bool {
 		return false
 	}
 	senderPk := vins[0].PaymentAddress.Pk
-	keyWalletBurningAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
+	keyWalletBurningAccount, err := wallet.Base58CheckDeserialize(common.BurningAddress)
+	if err != nil{
+		return false
+	}
 	keysetBurningAccount := keyWalletBurningAccount.KeySet
 	paymentAddressBurningAccount := keysetBurningAccount.PaymentAddress
 	for _, vout := range vouts {
