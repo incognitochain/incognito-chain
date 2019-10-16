@@ -267,6 +267,47 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		return err
 	}
 
+	// Connect to highway
+	Logger.log.Debug("Listenner: ", cfg.Listener)
+	Logger.log.Debug("Bootnode: ", cfg.DiscoverPeersAddress)
+	Logger.log.Debug("PrivateKey: ", cfg.PrivateKey)
+
+	ip, port := peerv2.ParseListenner(cfg.Listener, "127.0.0.1", 9433)
+	host := peerv2.NewHost(version(), ip, port, cfg.Libp2pPrivateKey)
+
+	miningKeys := serverObj.consensusEngine.GetMiningPublicKeys()
+	pubkey := miningKeys[common.BlsConsensus]
+	dispatcher := &peerv2.Dispatcher{
+		MessageListeners: &peerv2.MessageListeners{
+			OnBlockShard:       serverObj.OnBlockShard,
+			OnBlockBeacon:      serverObj.OnBlockBeacon,
+			OnCrossShard:       serverObj.OnCrossShard,
+			OnShardToBeacon:    serverObj.OnShardToBeacon,
+			OnTx:               serverObj.OnTx,
+			OnTxToken:          serverObj.OnTxToken,
+			OnTxPrivacyToken:   serverObj.OnTxPrivacyToken,
+			OnVersion:          serverObj.OnVersion,
+			OnGetBlockBeacon:   serverObj.OnGetBlockBeacon,
+			OnGetBlockShard:    serverObj.OnGetBlockShard,
+			OnGetCrossShard:    serverObj.OnGetCrossShard,
+			OnGetShardToBeacon: serverObj.OnGetShardToBeacon,
+			OnVerAck:           serverObj.OnVerAck,
+			OnGetAddr:          serverObj.OnGetAddr,
+			OnAddr:             serverObj.OnAddr,
+
+			//mubft
+			OnBFTMsg:    serverObj.OnBFTMsg,
+			OnPeerState: serverObj.OnPeerState,
+		},
+	}
+	serverObj.highway = peerv2.NewConnManager(
+		host,
+		cfg.DiscoverPeersAddress,
+		&pubkey,
+		serverObj.consensusEngine,
+		dispatcher,
+	)
+
 	err = serverObj.blockChain.Init(&blockchain.Config{
 		ChainParams: serverObj.chainParams,
 		DataBase:    serverObj.dataBase,
@@ -286,6 +327,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		PubSubManager:   pubsubManager,
 		RandomClient:    randomClient,
 		ConsensusEngine: serverObj.consensusEngine,
+		Highway:         serverObj.highway,
 	})
 	if err != nil {
 		return err
@@ -447,47 +489,6 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	for _, addr := range permanentPeers {
 		go serverObj.connManager.Connect(addr, "", "", nil)
 	}
-
-	// Connect to highway
-	Logger.log.Debug("Listenner: ", cfg.Listener)
-	Logger.log.Debug("Bootnode: ", cfg.DiscoverPeersAddress)
-	Logger.log.Debug("PrivateKey: ", cfg.PrivateKey)
-
-	ip, port := peerv2.ParseListenner(cfg.Listener, "127.0.0.1", 9433)
-	host := peerv2.NewHost(version(), ip, port, cfg.Libp2pPrivateKey)
-
-	miningKeys := serverObj.consensusEngine.GetMiningPublicKeys()
-	pubkey := miningKeys[common.BlsConsensus]
-	dispatcher := &peerv2.Dispatcher{
-		MessageListeners: &peerv2.MessageListeners{
-			OnBlockShard:       serverObj.OnBlockShard,
-			OnBlockBeacon:      serverObj.OnBlockBeacon,
-			OnCrossShard:       serverObj.OnCrossShard,
-			OnShardToBeacon:    serverObj.OnShardToBeacon,
-			OnTx:               serverObj.OnTx,
-			OnTxToken:          serverObj.OnTxToken,
-			OnTxPrivacyToken:   serverObj.OnTxPrivacyToken,
-			OnVersion:          serverObj.OnVersion,
-			OnGetBlockBeacon:   serverObj.OnGetBlockBeacon,
-			OnGetBlockShard:    serverObj.OnGetBlockShard,
-			OnGetCrossShard:    serverObj.OnGetCrossShard,
-			OnGetShardToBeacon: serverObj.OnGetShardToBeacon,
-			OnVerAck:           serverObj.OnVerAck,
-			OnGetAddr:          serverObj.OnGetAddr,
-			OnAddr:             serverObj.OnAddr,
-
-			//mubft
-			OnBFTMsg:    serverObj.OnBFTMsg,
-			OnPeerState: serverObj.OnPeerState,
-		},
-	}
-	serverObj.highway = peerv2.NewConnManager(
-		host,
-		cfg.DiscoverPeersAddress,
-		&pubkey,
-		serverObj.consensusEngine,
-		dispatcher,
-	)
 
 	if !cfg.DisableRPC {
 		// Setup listeners for the configured RPC listen addresses and

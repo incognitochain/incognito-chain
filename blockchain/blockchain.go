@@ -100,6 +100,10 @@ type Config struct {
 		IsOngoing(chainName string) bool
 		CommitteeChange(chainName string)
 	}
+
+	Highway interface {
+		BroadcastCommittee(uint64, []incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey)
+	}
 }
 
 func NewBlockChain(config *Config, isTest bool) *BlockChain {
