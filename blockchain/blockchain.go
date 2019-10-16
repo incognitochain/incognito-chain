@@ -1141,9 +1141,7 @@ func (blockchain *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset incogni
 func (blockchain *BlockChain) GetTransactionByHash(txHash common.Hash) (byte, common.Hash, int, metadata.Transaction, error) {
 	blockHash, index, err := blockchain.config.DataBase.GetTransactionIndexById(txHash)
 	if err != nil {
-		abc := NewBlockChainError(UnExpectedError, err)
-		Logger.log.Error(abc)
-		return byte(255), common.Hash{}, -1, nil, abc
+		return byte(255), common.Hash{}, -1, nil, NewBlockChainError(UnExpectedError, err)
 	}
 	block, _, err1 := blockchain.GetShardBlockByHash(blockHash)
 	if err1 != nil {
