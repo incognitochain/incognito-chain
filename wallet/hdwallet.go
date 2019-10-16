@@ -164,9 +164,9 @@ func deserialize(data []byte) (*KeyWallet, error) {
 		key.KeySet.PrivateKey = make([]byte, keyLength)
 		copy(key.KeySet.PrivateKey[:], data[39:39+keyLength])
 	} else if keyType == PaymentAddressType {
-		if len(data) != paymentAddrSerializedBytesLen{
-			return nil, NewWalletError(InvalidSeserializedKey, nil)
-		}
+		//if len(data) != paymentAddrSerializedBytesLen{
+		//	return nil, NewWalletError(InvalidSeserializedKey, nil)
+		//}
 
 		apkKeyLength := int(data[1])
 		pkencKeyLength := int(data[apkKeyLength+2])
