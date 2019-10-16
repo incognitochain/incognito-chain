@@ -389,37 +389,29 @@ func (e *BLSBFT) addEarlyVote(voteMsg BFTVote) {
 func (e *BLSBFT) createNewBlock() (common.BlockInterface, error) {
 
 	var errCh chan error
-	var timeoutCh chan struct{}
 	var block common.BlockInterface
 	errCh = make(chan error)
-	timeoutCh = make(chan struct{})
-	timeout := time.AfterFunc(e.Chain.GetMaxBlkCreateTime(), func() {
-		select {
-		case <-timeoutCh:
-			return
-		default:
-			timeoutCh <- struct{}{}
-		}
-	})
+	timeout := time.NewTimer(e.Chain.GetMaxBlkCreateTime()).C
 
 	go func() {
 		time1 := time.Now()
 		var err error
 		block, err = e.Chain.CreateNewBlock(int(e.RoundData.Round))
 		e.logger.Info("create block", time.Since(time1).Seconds())
-		errCh <- err
+		select {
+		case errCh <- err:
+		default:
+		}
 	}()
 
 	select {
 	case err := <-errCh:
-		timeout.Stop()
-		close(timeoutCh)
 		return block, err
-	case <-timeoutCh:
+	case <-timeout:
 		return nil, consensus.NewConsensusError(consensus.BlockCreationError, errors.New("block creation timeout"))
 	}
-
 }
+
 func (e BLSBFT) NewInstance(chain blockchain.ChainInterface, chainKey string, node consensus.NodeInterface, logger common.Logger) consensus.ConsensusInterface {
 	var newInstance BLSBFT
 	newInstance.Chain = chain
