@@ -1152,8 +1152,8 @@ func (tp *TxPool) Count() int {
 }
 
 func (tp TxPool) GetClonedPoolCandidate() map[common.Hash]string {
-	tp.mtx.RLock()
-	defer tp.mtx.RUnlock()
+	tp.candidateMtx.RLock()
+	defer tp.candidateMtx.RUnlock()
 	result := make(map[common.Hash]string)
 	for k, v := range tp.poolCandidate {
 		result[k] = v
