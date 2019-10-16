@@ -1143,14 +1143,6 @@ func (tp TxPool) GetPool() map[common.Hash]*TxDesc {
 	return tp.pool
 }
 
-func (tp *TxPool) LockPool() {
-	tp.mtx.Lock()
-}
-
-func (tp *TxPool) UnlockPool() {
-	tp.mtx.Unlock()
-}
-
 // Count return len of transaction pool
 func (tp *TxPool) Count() int {
 	tp.mtx.RLock()
