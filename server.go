@@ -699,7 +699,6 @@ func (serverObj *Server) GetActiveShardNumber() int {
 
 func (serverObj *Server) TransactionPoolBroadcastLoop() {
 	<-time.Tick(serverObj.memPool.ScanTime)
-	serverObj.memPool.LockPool()
 	txDescs := serverObj.memPool.GetPool()
 	for _, txDesc := range txDescs {
 		<-time.Tick(50 * time.Millisecond)
@@ -748,7 +747,6 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 			}
 		}
 	}
-	serverObj.memPool.UnlockPool()
 }
 
 // CheckForceUpdateSourceCode - loop to check current version with update version is equal
