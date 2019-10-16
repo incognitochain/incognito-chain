@@ -580,7 +580,12 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) IsCoinsBurning() bool {
 	if len(proof.GetInputCoins()) > 0 {
 		senderPKBytes = proof.GetInputCoins()[0].CoinDetails.GetPublicKey().ToBytesS()
 	}
-	keyWalletBurningAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
+	keyWalletBurningAccount, err := wallet.Base58CheckDeserialize(common.BurningAddress)
+	if err!= nil{
+		Logger.log.Errorf("Can not deserialize burn address: %v\n", common.BurningAddress)
+		return false
+	}
+
 	keysetBurningAccount := keyWalletBurningAccount.KeySet
 	paymentAddressBurningAccount := keysetBurningAccount.PaymentAddress
 	for _, outCoin := range proof.GetOutputCoins() {

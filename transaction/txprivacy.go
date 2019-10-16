@@ -1093,7 +1093,10 @@ func (tx Tx) IsCoinsBurning() bool {
 	if len(tx.Proof.GetInputCoins()) > 0 {
 		senderPKBytes = tx.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().ToBytesS()
 	}
-	keyWalletBurningAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
+	keyWalletBurningAccount, err := wallet.Base58CheckDeserialize(common.BurningAddress)
+	if err != nil{
+		return false
+	}
 	keysetBurningAccount := keyWalletBurningAccount.KeySet
 	paymentAddressBurningAccount := keysetBurningAccount.PaymentAddress
 	for _, outCoin := range tx.Proof.GetOutputCoins() {
