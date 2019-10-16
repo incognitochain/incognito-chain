@@ -1053,9 +1053,9 @@ func (serverObj *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVer
 	remotePeer.SetRawAddress(msg.RawLocalAddress)
 	remotePeer.SetPublicKey(pbk, pbkType)
 	serverObj.cNewPeers <- remotePeer
-	valid := false
-	if msg.ProtocolVersion == serverObj.protocolVersion {
-		valid = true
+	if msg.ProtocolVersion != serverObj.protocolVersion {
+		peerConn.ForceClose()
+		return
 	}
 
 	// check for accept connection
@@ -1071,7 +1071,7 @@ func (serverObj *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVer
 		return
 	}
 
-	msgV.(*wire.MessageVerAck).Valid = valid
+	msgV.(*wire.MessageVerAck).Valid = true
 	msgV.(*wire.MessageVerAck).Timestamp = time.Now()
 
 	peerConn.QueueMessageWithEncoding(msgV, nil, peer.MessageToPeer, nil)
@@ -1100,40 +1100,40 @@ func (serverObj *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerA
 			serverObj.addrManager.Good(peerConn.GetRemotePeer())
 		}
 
-		// send message for get addr
-		msgSG, err := wire.MakeEmptyMessage(wire.CmdGetAddr)
-		if err != nil {
-			return
-		}
-		var dc chan<- struct{}
-		peerConn.QueueMessageWithEncoding(msgSG, dc, peer.MessageToPeer, nil)
-
-		//	broadcast addr to all peer
-		listen := serverObj.connManager.GetListeningPeer()
-		msgSA, err := wire.MakeEmptyMessage(wire.CmdAddr)
-		if err != nil {
-			return
-		}
-
-		rawPeers := []wire.RawPeer{}
-		peers := serverObj.addrManager.AddressCache()
-		for _, peer := range peers {
-			getPeerId, _ := serverObj.connManager.GetPeerId(peer.GetRawAddress())
-			if peerConn.GetRemotePeerID().Pretty() != getPeerId {
-				pk, pkT := peer.GetPublicKey()
-				rawPeers = append(rawPeers, wire.RawPeer{peer.GetRawAddress(), pkT, pk})
-			}
-		}
-		msgSA.(*wire.MessageAddr).RawPeers = rawPeers
-		var doneChan chan<- struct{}
-		listen.GetPeerConnsMtx().Lock()
-		for _, peerConn := range listen.GetPeerConns() {
-			Logger.log.Debug("QueueMessageWithEncoding", peerConn)
-			peerConn.QueueMessageWithEncoding(msgSA, doneChan, peer.MessageToPeer, nil)
-		}
-		listen.GetPeerConnsMtx().Unlock()
+		//// send message for get addr
+		//msgSG, err := wire.MakeEmptyMessage(wire.CmdGetAddr)
+		//if err != nil {
+		//	return
+		//}
+		//var dc chan<- struct{}
+		//peerConn.QueueMessageWithEncoding(msgSG, dc, peer.MessageToPeer, nil)
+		//
+		////	broadcast addr to all peer
+		//listen := serverObj.connManager.GetListeningPeer()
+		//msgSA, err := wire.MakeEmptyMessage(wire.CmdAddr)
+		//if err != nil {
+		//	return
+		//}
+		//
+		//rawPeers := []wire.RawPeer{}
+		//peers := serverObj.addrManager.AddressCache()
+		//for _, peer := range peers {
+		//	getPeerId, _ := serverObj.connManager.GetPeerId(peer.GetRawAddress())
+		//	if peerConn.GetRemotePeerID().Pretty() != getPeerId {
+		//		pk, pkT := peer.GetPublicKey()
+		//		rawPeers = append(rawPeers, wire.RawPeer{peer.GetRawAddress(), pkT, pk})
+		//	}
+		//}
+		//msgSA.(*wire.MessageAddr).RawPeers = rawPeers
+		//var doneChan chan<- struct{}
+		//listen.GetPeerConnsMtx().Lock()
+		//for _, peerConn := range listen.GetPeerConns() {
+		//	Logger.log.Debug("QueueMessageWithEncoding", peerConn)
+		//	peerConn.QueueMessageWithEncoding(msgSA, doneChan, peer.MessageToPeer, nil)
+		//}
+		//listen.GetPeerConnsMtx().Unlock()
 	} else {
-		peerConn.SetVerValid(true)
+		peerConn.SetVerValid(false)
 	}
 
 	Logger.log.Debug("Receive verack message END")

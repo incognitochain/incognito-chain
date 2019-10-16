@@ -119,6 +119,7 @@ func (beaconPool *BeaconPool) RevertBeconPool(latestValidHeight uint64) {
 func (beaconPool BeaconPool) GetBeaconState() uint64 {
 	return beaconPool.latestValidHeight
 }
+
 func (beaconPool *BeaconPool) addBeaconBlock(block *blockchain.BeaconBlock) error {
 	go beaconPool.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, block))
 	err := beaconPool.validateBeaconBlock(block, false)
@@ -129,6 +130,7 @@ func (beaconPool *BeaconPool) addBeaconBlock(block *blockchain.BeaconBlock) erro
 	beaconPool.promotePendingPool()
 	return nil
 }
+
 func (beaconPool *BeaconPool) AddBeaconBlock(block *blockchain.BeaconBlock) error {
 	beaconPool.mtx.Lock()
 	defer beaconPool.mtx.Unlock()
@@ -194,7 +196,9 @@ func (beaconPool *BeaconPool) insertNewBeaconBlockToPool(block *blockchain.Beaco
 					beaconPool.updateLatestBeaconState()
 					return true
 				} else {
-					beaconPool.cache.Add(block.Header.Hash(), block)
+					fmt.Println("BPool: block is fork at height %v with hash %v (block hash should be %v)", block.Header.Height, blockHeader, preHash)
+					delete(beaconPool.pendingPool,block.Header.Height)
+					beaconPool.cache.Add(block.Header.Hash(), block) // mark as wrong block for validating later
 					beaconPool.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.RequestBeaconBlockByHashTopic, preHash))
 				}
 			} else {
