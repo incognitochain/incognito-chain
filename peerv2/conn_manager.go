@@ -18,6 +18,7 @@ import (
 )
 
 var HighwayPeerID = "12D3KooW9sbQK4J64Qat5D9vQEhBCnDYD3WPqWmgUZD4M7CJ2rXS"
+var MasterNodeID = "QmYMpCasu9oJSTmca9fotDs21fTC5jHEWQ2oUaytNXiRnT"
 
 func NewConnManager(
 	host *Host,
@@ -26,12 +27,14 @@ func NewConnManager(
 	cd ConsensusData,
 	dispatcher *Dispatcher,
 ) *ConnManager {
+	master := peer.IDB58Encode(host.Host.ID()) == MasterNodeID
 	return &ConnManager{
 		LocalHost:            host,
 		DiscoverPeersAddress: dpa,
 		IdentityKey:          ikey,
 		cd:                   cd,
 		disp:                 dispatcher,
+		IsMasterNode:         master,
 	}
 }
 
@@ -118,6 +121,37 @@ func (cm *ConnManager) Start(ns NetSync) {
 	cm.process()
 }
 
+// BroadcastCommittee floods message to topic `chain_committee` for highways
+// Only masternode actually does the broadcast, other's messages will be ignored by highway
+func (cm *ConnManager) BroadcastCommittee(
+	epoch uint64,
+	newBeaconCommittee []incognitokey.CommitteePublicKey,
+	newAllShardCommittee map[byte][]incognitokey.CommitteePublicKey,
+	newAllShardPending map[byte][]incognitokey.CommitteePublicKey,
+) {
+	if !cm.IsMasterNode {
+		return
+	}
+
+	cc := &ChainCommittee{
+		Epoch:             epoch,
+		BeaconCommittee:   newBeaconCommittee,
+		AllShardCommittee: newAllShardCommittee,
+		AllShardPending:   newAllShardPending,
+	}
+	data, err := cc.ToByte()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	topic := "chain_committee"
+	err = cm.ps.Publish(topic, data)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
 type ConsensusData interface {
 	GetUserRole() (string, string, int)
 }
@@ -132,6 +166,7 @@ type ConnManager struct {
 	LocalHost            *Host
 	DiscoverPeersAddress string
 	IdentityKey          *incognitokey.CommitteePublicKey
+	IsMasterNode         bool
 
 	ps       *pubsub.PubSub
 	subs     m2t                  // mapping from message to topic's subscription
