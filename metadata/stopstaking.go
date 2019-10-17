@@ -104,7 +104,7 @@ func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateSanityData(bcr Bl
 		return false, false, errors.New("staking Transaction Should Have 1 Output Amount crossponding to 1 Receiver")
 	}
 	keyWalletBurningAdd, err := wallet.Base58CheckDeserialize(common.BurningAddress)
-	if err != nil{
+	if err != nil {
 		return false, false, err
 	}
 	if !bytes.Equal(pubkey, keyWalletBurningAdd.KeySet.PaymentAddress.Pk) {
@@ -114,7 +114,7 @@ func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateSanityData(bcr Bl
 		return false, false, errors.New("receiver amount should be zero")
 	}
 	CommitteePublicKey := new(incognitokey.CommitteePublicKey)
-	err := CommitteePublicKey.FromString(stopAutoStakingMetadata.CommitteePublicKey)
+	err = CommitteePublicKey.FromString(stopAutoStakingMetadata.CommitteePublicKey)
 	if err != nil {
 		return false, false, err
 	}
