@@ -49,7 +49,7 @@ Incognito is currently running on the testnet. Block rewards are being paid out 
 
 Just follow the instructions here to [Run a Virtual Node](https://incognito.org/validator).
 
-## Use Incognito: Download the wallet 
+## Use Incognito: Download the wallet
 
 The Incognito mobile wallet allows you to privately store, send and receive all your crypto assets. Turn on privacy for your BTC, ETH, DAI and more.
 
@@ -81,7 +81,6 @@ These instructions will get you up and running on your local machine for develop
     ./incognito --enablewallet --wallet "wallet" --walletpassphrase "12345678" --testnet --norpcauth --walletautoinit
     ```
 
-
 ## License
 
-Incognito is released under the terms of the MIT license. See [COPYING](https://github.com/incognitochain/incognito-chain/blob/master/COPYING) for more information or see https://opensource.org/licenses/MIT
+Incognito is released under the terms of the MIT license. See [COPYING](https://github.com/incognitochain/incognito-chain/blob/master/COPYING) for more information or see [LICENSE](https://opensource.org/licenses/MIT)
