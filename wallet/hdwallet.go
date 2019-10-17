@@ -172,7 +172,7 @@ func deserialize(data []byte) (*KeyWallet, error) {
 		copy(key.KeySet.PaymentAddress.Tk[:], data[3+apkKeyLength:3+apkKeyLength+pkencKeyLength])
 	} else if keyType == ReadonlyKeyType {
 		apkKeyLength := int(data[1])
-		if len(data) > apkKeyLength+3 {
+		if len(data) < apkKeyLength+3 {
 			return nil, NewWalletError(InvalidKeyTypeErr, nil)
 		}
 		skencKeyLength := int(data[apkKeyLength+2])
