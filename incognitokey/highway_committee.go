@@ -1,16 +1,14 @@
-package peerv2
+package incognitokey
 
 import (
 	"encoding/json"
-
-	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 type ChainCommittee struct {
 	Epoch             uint64
-	BeaconCommittee   []incognitokey.CommitteePublicKey
-	AllShardCommittee map[byte][]incognitokey.CommitteePublicKey
-	AllShardPending   map[byte][]incognitokey.CommitteePublicKey
+	BeaconCommittee   []CommitteePublicKey
+	AllShardCommittee map[byte][]CommitteePublicKey
+	AllShardPending   map[byte][]CommitteePublicKey
 }
 
 func (cc *ChainCommittee) ToByte() ([]byte, error) {
