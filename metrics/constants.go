@@ -22,6 +22,7 @@ const (
 	TxPoolRemoveAfterLifeTime        = "TxPoolRemoveAfterLifeTime"
 	TxAddedIntoPoolType              = "TxAddedIntoPoolType"
 	TxPoolPrivacyOrNot               = "TxPoolPrivacyOrNot"
+	TxEnterNetSyncSuccess            = "TxEnterNetSyncSuccess"
 	PoolSize                         = "PoolSize"
 	TxInOneBlock                     = "TxInOneBlock"
 	TxPoolDuplicateTxs               = "DuplicateTxs"
