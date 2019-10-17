@@ -95,7 +95,7 @@ func (httpServer *HttpServer) handleRetrieveBlock(params interface{}, closeChan 
 		return result, nil
 	}
 	Logger.log.Debugf("handleRetrieveBlock result: %+v", nil)
-	return nil, nil
+	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 elements"))
 }
 
 /*
@@ -117,7 +117,7 @@ func (httpServer *HttpServer) handleRetrieveBeaconBlock(params interface{}, clos
 		return result, nil
 	}
 	Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", nil, nil)
-	return nil, nil
+	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
 }
 
 // handleGetBlocks - get n top blocks from chain ID
@@ -252,7 +252,7 @@ func (httpServer *HttpServer) handleGetBlockHeader(params interface{}, closeChan
 
 	arrayParams := common.InterfaceSlice(params)
 	log.Printf("arrayParams: %+v", arrayParams)
-	if arrayParams == nil || len(arrayParams) == 0 || len(arrayParams) <= 3 {
+	if arrayParams == nil || len(arrayParams) < 3 {
 		arrayParams = []interface{}{"", "", 0.0}
 	}
 	getBy, ok := arrayParams[0].(string)
