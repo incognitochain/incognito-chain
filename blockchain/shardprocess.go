@@ -230,7 +230,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 			metrics.Measurement:      metrics.TxInOneBlock,
 			metrics.MeasurementValue: float64(len(shardBlock.Body.Transactions)),
 			metrics.Tag:              metrics.BlockHeightTag,
-			metrics.TagValue:         fmt.Sprintf("%d", shardBlock.Header.Height),
+			metrics.TagValue:         fmt.Sprintf("%d-%d", shardBlock.Header.ShardID, shardBlock.Header.Height),
 		})
 	}
 	Logger.log.Infof("SHARD %+v | 🔗 Finish Insert new block %d, with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
