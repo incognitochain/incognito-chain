@@ -195,7 +195,7 @@ func (tp *TxPool) MonitorPool() {
 				metrics.Measurement:      metrics.TxPoolRemoveAfterLifeTime,
 				metrics.MeasurementValue: float64(time.Since(startTime).Seconds()),
 				metrics.Tag:              metrics.TxSizeTag,
-				metrics.TagValue:         txSize,
+				metrics.TagValue:         fmt.Sprintf("%d", txSize),
 			})
 			size := len(tp.pool)
 			go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
