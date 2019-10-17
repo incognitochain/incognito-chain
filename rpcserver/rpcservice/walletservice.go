@@ -104,11 +104,17 @@ func (walletService *WalletService) RemoveAccount(privateKey string, passPhrase 
 
 func (walletService WalletService) GetBalanceByPrivateKey(privateKey string) (uint64, *RPCError) {
 	keySet, shardIDSender, err := GetKeySetFromPrivateKeyParams(privateKey)
+	if err != nil {
+		return uint64(0), NewRPCError(RPCInvalidParamsError, err)
+	}
 
 	prvCoinID := &common.Hash{}
 	err = prvCoinID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
 		return uint64(0), NewRPCError(TokenIsInvalidError, err)
+	}
+	if keySet == nil {
+		return uint64(0), NewRPCError(InvalidSenderPrivateKeyError, err)
 	}
 	outcoints, err := walletService.BlockChain.GetListOutputCoinsByKeyset(keySet, shardIDSender, prvCoinID)
 	log.Println(err)
