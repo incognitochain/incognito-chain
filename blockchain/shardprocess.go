@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics"
 	"reflect"
 	"sort"
 	"strconv"
@@ -207,23 +208,31 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	}
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewShardblockTopic, shardBlock))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardBeststateTopic, blockchain.BestState.Shard[shardID]))
-	// shardIDForMetric := strconv.Itoa(int(shardBlock.Header.ShardID))
-	// go metrics.AnalyzeTimeSeriesMetricDataWithTime(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.NumOfBlockInsertToChain,
-	// 	metrics.MeasurementValue: float64(1),
-	// 	metrics.Tag:              metrics.ShardIDTag,
-	// 	metrics.TagValue:         metrics.Shard + shardIDForMetric,
-	// 	metrics.Time:             shardBlock.Header.Timestamp,
-	// })
-	// if shardBlock.Header.Height > 2 {
-	// 	go metrics.AnalyzeTimeSeriesMetricDataWithTime(map[string]interface{}{
-	// 		metrics.Measurement:      metrics.NumOfRoundPerBlock,
-	// 		metrics.MeasurementValue: float64(shardBlock.Header.Round),
-	// 		metrics.Tag:              metrics.ShardIDTag,
-	// 		metrics.TagValue:         metrics.Shard + shardIDForMetric,
-	// 		metrics.Time:             shardBlock.Header.Timestamp,
-	// 	})
-	// }
+	shardIDForMetric := strconv.Itoa(int(shardBlock.Header.ShardID))
+	go metrics.AnalyzeTimeSeriesMetricDataWithTime(map[string]interface{}{
+		metrics.Measurement:      metrics.NumOfBlockInsertToChain,
+		metrics.MeasurementValue: float64(1),
+		metrics.Tag:              metrics.ShardIDTag,
+		metrics.TagValue:         metrics.Shard + shardIDForMetric,
+		metrics.Time:             shardBlock.Header.Timestamp,
+	})
+	if shardBlock.Header.Height > 2 {
+		go metrics.AnalyzeTimeSeriesMetricDataWithTime(map[string]interface{}{
+			metrics.Measurement:      metrics.NumOfRoundPerBlock,
+			metrics.MeasurementValue: float64(shardBlock.Header.Round),
+			metrics.Tag:              metrics.ShardIDTag,
+			metrics.TagValue:         metrics.Shard + shardIDForMetric,
+			metrics.Time:             shardBlock.Header.Timestamp,
+		})
+	}
+	if shardBlock.Header.Height != 1 {
+		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+			metrics.Measurement:      metrics.TxInOneBlock,
+			metrics.MeasurementValue: float64(len(shardBlock.Body.Transactions)),
+			metrics.Tag:              metrics.BlockHeightTag,
+			metrics.TagValue:         fmt.Sprintf("%d", shardBlock.Header.Height),
+		})
+	}
 	Logger.log.Infof("SHARD %+v | 🔗 Finish Insert new block %d, with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	return nil
 }
@@ -972,15 +981,6 @@ func (blockchain *BlockChain) processStoreShardBlockAndUpdateDatabase(shardBlock
 		}
 	}
 	Logger.log.Infof("SHARD %+v | 🔎 %d transactions in block height %+v \n", shardBlock.Header.ShardID, len(shardBlock.Body.Transactions), shardBlock.Header.Height)
-	//if shardBlock.Header.Height != 1 {
-	//	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	//		metrics.Measurement:      metrics.TxInOneBlock,
-	//		metrics.MeasurementValue: float64(len(shardBlock.Body.Transactions)),
-	//		metrics.Tag:              metrics.BlockHeightTag,
-	//		metrics.TagValue:         fmt.Sprintf("%d", shardBlock.Header.Height),
-	//	})
-	//}
-
 	return blockchain.config.DataBase.PutBatch(batchPutData)
 	//return nil
 }
