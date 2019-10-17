@@ -1,4 +1,6 @@
-If you see this below error when building gomobile:
+When you build gomobile for Android/iOS, maybe you see these following issues:
+
+1. panic: read proc auxv failed: open /proc/self/auxv: permission denied:
 
 ```
 E/Go: panic: read proc auxv failed: open /proc/self/auxv: permission denied
@@ -9,7 +11,7 @@ E/Go: 	<redacted>/vendor/golang.org/x/sys/cpu/cpu_linux.go:31
 
 ```
 
-Please comment this statement in <redacted>/vendor/golang.org/x/sys/cpu/cpu_linux.go :
+Please replace file <redacted>/vendor/golang.org/x/sys/cpu/cpu_linux.go by https://github.com/golang/sys/blob/master/cpu/cpu_linux.go :
 ```
 buf, err := ioutil.ReadFile(procAuxv)
 if err != nil {
@@ -17,3 +19,7 @@ if err != nil {
 }
 
 ```
+
+2. `libproc.h` file not found
+Please comment 2 files: metadata/issuingethrequest.go and metadata/issuingethresponse.go
+
