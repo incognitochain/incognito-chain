@@ -308,7 +308,7 @@ func (netSync *NetSync) handleMessageTx(msg *wire.MessageTx) {
 			// Broadcast to network
 			go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 				metrics.Measurement:      metrics.TxEnterNetSyncSuccess,
-				metrics.MeasurementValue: 1,
+				metrics.MeasurementValue: float64(1),
 				metrics.Tag:              metrics.TxHashTag,
 				metrics.TagValue:         msg.Transaction.Hash().String(),
 			})
