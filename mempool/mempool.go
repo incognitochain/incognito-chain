@@ -714,7 +714,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				replaceFee = float64(tx.GetTxFee())
 				// not a higher enough fee than return error
 				if baseReplaceFee*tp.ReplaceFeeRatio >= replaceFee {
-					return NewMempoolTxError(RejectReplacementTxError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
+					return NewMempoolTxError(RejectReplacementTxError, fmt.Errorf("Expect fee to be greater than %+v but get %+v ", baseReplaceFee, replaceFee)), true
 				}
 				isReplaced = true
 			} else if txDescToBeReplaced.Desc.Fee == 0 && txDescToBeReplaced.Desc.FeeToken > 0 {
@@ -723,7 +723,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				replaceFeeToken = float64(tx.GetTxFeeToken())
 				// not a higher enough fee than return error
 				if baseReplaceFeeToken*tp.ReplaceFeeRatio >= replaceFeeToken {
-					return NewMempoolTxError(RejectReplacementTxError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFeeToken, replaceFeeToken)), true
+					return NewMempoolTxError(RejectReplacementTxError, fmt.Errorf("Expect fee to be greater than %+v but get %+v ", baseReplaceFeeToken, replaceFeeToken)), true
 				}
 				isReplaced = true
 			} else if txDescToBeReplaced.Desc.Fee > 0 && txDescToBeReplaced.Desc.FeeToken > 0 {
@@ -735,7 +735,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				replaceFeeToken = float64(tx.GetTxFeeToken())
 				// not a higher enough fee than return error
 				if baseReplaceFee*tp.ReplaceFeeRatio >= replaceFee || baseReplaceFeeToken*tp.ReplaceFeeRatio >= replaceFeeToken {
-					return NewMempoolTxError(RejectReplacementTxError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
+					return NewMempoolTxError(RejectReplacementTxError, fmt.Errorf("Expect fee to be greater than %+v but get %+v ", baseReplaceFee, replaceFee)), true
 				}
 				isReplaced = true
 			}
