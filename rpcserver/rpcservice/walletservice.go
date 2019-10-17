@@ -107,14 +107,13 @@ func (walletService WalletService) GetBalanceByPrivateKey(privateKey string) (ui
 	if err != nil {
 		return uint64(0), NewRPCError(RPCInvalidParamsError, err)
 	}
-
+	if keySet == nil {
+		return uint64(0), NewRPCError(InvalidSenderPrivateKeyError, err)
+	}
 	prvCoinID := &common.Hash{}
 	err = prvCoinID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
 		return uint64(0), NewRPCError(TokenIsInvalidError, err)
-	}
-	if keySet == nil {
-		return uint64(0), NewRPCError(InvalidSenderPrivateKeyError, err)
 	}
 	outcoints, err := walletService.BlockChain.GetListOutputCoinsByKeyset(keySet, shardIDSender, prvCoinID)
 	log.Println(err)
