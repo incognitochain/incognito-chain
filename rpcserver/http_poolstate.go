@@ -49,26 +49,29 @@ func (httpServer *HttpServer) handleGetNextCrossShard(params interface{}, closeC
 	Logger.log.Debugf("handleGetNextCrossShard params: %+v", params)
 	// get component
 	paramsArray := common.InterfaceSlice(params)
-	if len(paramsArray) < 3 {
+	if paramsArray == nil || len(paramsArray) < 3 {
 		Logger.log.Debugf("handleGetNextCrossShard result: %+v", nil)
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("invalid list Key component"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 3 elements"))
 	}
+
 	fromShardTemp, ok := paramsArray[0].(float64)
 	if !ok {
 		Logger.log.Debugf("handleGetNextCrossShard result: %+v", nil)
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("invalid list Key component"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("from shard id param is invalid"))
 	}
 	fromShard := byte(fromShardTemp)
+
 	toShardTemp, ok := paramsArray[1].(float64)
 	if !ok {
 		Logger.log.Debugf("handleGetNextCrossShard result: %+v", nil)
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("invalid list Key component"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("to shard id param is invalid"))
 	}
 	toShard := byte(toShardTemp)
+
 	startHeightTemp, ok := paramsArray[2].(float64)
 	if !ok {
 		Logger.log.Debugf("handleGetNextCrossShard result: %+v", nil)
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("invalid list Key component"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("start height param is invalid"))
 	}
 	startHeight := uint64(startHeightTemp)
 
@@ -91,19 +94,20 @@ func (httpServer *HttpServer) handleGetShardPoolState(params interface{}, closeC
 	Logger.log.Debugf("handleGetShardPoolState params: %+v", params)
 	// get params
 	paramsArray := common.InterfaceSlice(params)
-	if len(paramsArray) < 1 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("invalid list Key params"))
+	if paramsArray == nil || len(paramsArray) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
 	}
+
 	shardIDTemp, ok := paramsArray[0].(float64)
 	if !ok {
 		Logger.log.Debugf("handleGetShardPoolState result: %+v", nil)
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("invalid list Key component"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("shard id param is invalid"))
 	}
 	shardID := byte(shardIDTemp)
 
 	shardPool, err := httpServer.poolStateService.GetShardPoolState(shardID)
 	if err != nil{
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("Shard to Beacon Pool not init"))
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("shard to Beacon Pool not init"))
 	}
 
 	result := jsonresult.NewBlocksFromShardPool(*shardPool)
@@ -115,20 +119,21 @@ func (httpServer *HttpServer) handleGetShardPoolLatestValidHeight(params interfa
 	Logger.log.Debugf("handleGetShardPoolLatestValidHeight params: %+v", params)
 	// get params
 	paramsArray := common.InterfaceSlice(params)
-	if len(paramsArray) < 1 {
+	if paramsArray == nil || len(paramsArray) < 1 {
 		Logger.log.Debugf("handleGetShardPoolLatestValidHeight result: %+v", nil)
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("invalid list Key params"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
 	}
+
 	shardIDTemp, ok := paramsArray[0].(float64)
 	if !ok {
 		Logger.log.Debugf("handleGetShardPoolLatestValidHeight result: %+v", nil)
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("invalid list Key params"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("shard id param is invalid"))
 	}
 	shardID := byte(shardIDTemp)
 
 	result, err := httpServer.poolStateService.GetShardPoolLatestValidHeight(shardID)
 	if err != nil{
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("Shard to Beacon Pool not init"))
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("shard to Beacon Pool not init"))
 	}
 
 	Logger.log.Debugf("handleGetShardPoolLatestValidHeight result: %+v", result)
@@ -164,11 +169,16 @@ func (httpServer *HttpServer) handleGetCrossShardPoolStateV2(params interface{},
 	Logger.log.Debugf("handleGetCrossShardPoolStateV2 params: %+v", params)
 
 	paramsArray := common.InterfaceSlice(params)
-	if len(paramsArray) != 1 {
+	if paramsArray == nil || len(paramsArray) != 1 {
 		Logger.log.Debugf("handleGetCrossShardPoolStateV2 result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("wrong format params"))
 	}
-	shardID := byte(paramsArray[0].(float64))
+
+	shardIDParam, ok := paramsArray[0].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("shard id param is invalid"))
+	}
+	shardID := byte(shardIDParam)
 
 	allValidBlockHeight, allPendingBlockHeight, err := httpServer.poolStateService.GetCrossShardPoolStateV2(shardID)
 	if err != nil {
@@ -187,10 +197,11 @@ handleGetShardPoolState - RPC get shard block in pool
 func (httpServer *HttpServer) handleGetShardPoolStateV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleGetShardPoolStateV2 params: %+v", params)
 	paramsArray := common.InterfaceSlice(params)
-	if len(paramsArray) < 1 {
+	if paramsArray == nil || len(paramsArray) < 1 {
 		Logger.log.Debugf("handleGetShardPoolStateV2 result: %+v", nil)
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("invalid list Key params"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
 	}
+
 	shardIDTemp, ok := paramsArray[0].(float64)
 	if !ok {
 		Logger.log.Debugf("handleGetShardPoolStateV2 result: %+v", nil)
