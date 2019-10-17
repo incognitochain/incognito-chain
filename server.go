@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	peer2 "github.com/libp2p/go-libp2p-core/peer"
 	"io/ioutil"
 	"log"
 	"net"
@@ -1051,7 +1052,7 @@ func (serverObj *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVer
 	remotePeer.SetRawAddress(msg.RawLocalAddress)
 	remotePeer.SetPublicKey(pbk, pbkType)
 	serverObj.cNewPeers <- remotePeer
-	//valid := false
+
 	if msg.ProtocolVersion != serverObj.protocolVersion {
 		Logger.log.Error(errors.New("Not correct version "))
 		peerConn.ForceClose()
@@ -1066,23 +1067,23 @@ func (serverObj *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVer
 		return
 	}
 
-	//msgV, err := wire.MakeEmptyMessage(wire.CmdVerack)
-	//if err != nil {
-	//	return
-	//}
-	//
-	//msgV.(*wire.MessageVerAck).Valid = valid
-	//msgV.(*wire.MessageVerAck).Timestamp = time.Now()
-	//
-	//peerConn.QueueMessageWithEncoding(msgV, nil, peer.MessageToPeer, nil)
-	//
-	////	push version message again
-	//if !peerConn.VerAckReceived() {
-	//	err := serverObj.PushVersionMessage(peerConn)
-	//	if err != nil {
-	//		Logger.log.Error(err)
-	//	}
-	//}
+	msgV, err := wire.MakeEmptyMessage(wire.CmdVerack)
+	if err != nil {
+		return
+	}
+
+	msgV.(*wire.MessageVerAck).Valid = true
+	msgV.(*wire.MessageVerAck).Timestamp = time.Now()
+
+	peerConn.QueueMessageWithEncoding(msgV, nil, peer.MessageToPeer, nil)
+
+	//	push version message again
+	if !peerConn.VerAckReceived() {
+		err := serverObj.PushVersionMessage(peerConn)
+		if err != nil {
+			Logger.log.Error(err)
+		}
+	}
 
 	Logger.log.Debug("Receive version message END")
 }
@@ -1283,8 +1284,14 @@ PushMessageToAll broadcast msg
 func (serverObj *Server) PushMessageToAll(msg wire.Message) error {
 	Logger.log.Debug("Push msg to all peers")
 	var dc chan<- struct{}
-	msg.SetSenderID(serverObj.connManager.GetConfig().ListenerPeer.GetPeerID())
-	serverObj.connManager.GetConfig().ListenerPeer.QueueMessageWithEncoding(msg, dc, peer.MessageToAll, nil)
+	if serverObj.connManager.GetConfig().ListenerPeer != nil {
+		err := msg.SetSenderID(serverObj.connManager.GetConfig().ListenerPeer.GetPeerID())
+		if err != nil {
+			Logger.log.Error(err)
+			return err
+		}
+		serverObj.connManager.GetConfig().ListenerPeer.QueueMessageWithEncoding(msg, dc, peer.MessageToAll, nil)
+	}
 	return nil
 }
 
@@ -1329,6 +1336,13 @@ func (serverObj *Server) PushMessageToPbk(msg wire.Message, pbk string) error {
 PushMessageToPeer push msg to pbk
 */
 func (serverObj *Server) PushMessageToShard(msg wire.Message, shard byte, exclusivePeerIDs map[libp2p.ID]bool) error {
+	key := append([]byte(msg.Hash()), shard)
+	b, e := serverObj.memCache.Get(key)
+	if e != nil && b != nil {
+		return nil
+	}
+	serverObj.memCache.PutExpired(key, []byte{}, 30*time.Second)
+
 	//Logger.log.Criticalf("Push msg to shard %d", shard)
 	peerConns := serverObj.connManager.GetPeerConnOfShard(shard)
 	relayConns := serverObj.connManager.GetConnOfRelayNode()
@@ -1498,7 +1512,7 @@ func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint6
 	if peerID != "" {
 		return serverObj.PushMessageToPeer(msg, peerID)
 	}
-	return serverObj.PushMessageToAll(msg)
+	return serverObj.PushMessageToBeacon(msg, map[peer2.ID]bool{})
 }
 
 func (serverObj *Server) PushMessageGetBlockBeaconBySpecificHeight(heights []uint64, getFromPool bool, peerID libp2p.ID) error {
@@ -1512,7 +1526,7 @@ func (serverObj *Server) PushMessageGetBlockBeaconBySpecificHeight(heights []uin
 	if peerID != "" {
 		return serverObj.PushMessageToPeer(msg, peerID)
 	}
-	return serverObj.PushMessageToAll(msg)
+	return serverObj.PushMessageToBeacon(msg, map[peer2.ID]bool{})
 }
 
 func (serverObj *Server) PushMessageGetBlockBeaconByHash(blkHashes []common.Hash, getFromPool bool, peerID libp2p.ID) error {
@@ -1526,7 +1540,7 @@ func (serverObj *Server) PushMessageGetBlockBeaconByHash(blkHashes []common.Hash
 	if peerID != "" {
 		return serverObj.PushMessageToPeer(msg, peerID)
 	}
-	return serverObj.PushMessageToAll(msg)
+	return serverObj.PushMessageToBeacon(msg, map[peer2.ID]bool{})
 }
 
 func (serverObj *Server) PushMessageGetBlockShardByHeight(shardID byte, from uint64, to uint64, peerID libp2p.ID) error {
