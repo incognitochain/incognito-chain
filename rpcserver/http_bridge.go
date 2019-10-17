@@ -33,7 +33,7 @@ func (httpServer *HttpServer) handleCreateAndSendIssuingRequest(params interface
 
 func (httpServer *HttpServer) handleCreateRawTxWithContractingReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) < 5 {
+	if arrayParams == nil || len(arrayParams) < 5 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 5 elements"))
 	}
 
@@ -109,7 +109,7 @@ func (httpServer *HttpServer) handleCreateAndSendContractingRequest(params inter
 
 func (httpServer *HttpServer) handleCreateRawTxWithBurningReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) < 5 {
+	if arrayParams == nil || len(arrayParams) < 5 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 5 elements"))
 	}
 
@@ -194,7 +194,7 @@ func (httpServer *HttpServer) handleCreateAndSendBurningRequest(params interface
 
 func (httpServer *HttpServer) handleCreateRawTxWithIssuingETHReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) < 5 {
+	if arrayParams == nil || len(arrayParams) < 5 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 5 elements"))
 	}
 
@@ -253,7 +253,7 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingETHReq(params inte
 
 func (httpServer *HttpServer) handleCheckETHHashIssued(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) < 1 {
+	if arrayParams == nil || len(arrayParams) < 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
 	}
 	data := arrayParams[0].(map[string]interface{})
@@ -281,7 +281,7 @@ func (httpServer *HttpServer) handleGetAllBridgeTokens(params interface{}, close
 
 func (httpServer *HttpServer) handleGetETHHeaderByHash(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) < 1 {
+	if arrayParams == nil || len(arrayParams) < 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
 	}
 	ethBlockHash := arrayParams[0].(string)
@@ -295,7 +295,7 @@ func (httpServer *HttpServer) handleGetETHHeaderByHash(params interface{}, close
 
 func (httpServer *HttpServer) handleGetBridgeReqWithStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) < 1 {
+	if arrayParams == nil || len(arrayParams) < 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
 	}
 	data := arrayParams[0].(map[string]interface{})
