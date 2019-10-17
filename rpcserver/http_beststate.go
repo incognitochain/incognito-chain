@@ -30,7 +30,7 @@ handleGetShardBestState - RPC get shard best state
 func (httpServer *HttpServer) handleGetShardBestState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleGetShardBestState params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) < 1 {
+	if arrayParams == nil || len(arrayParams) < 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Shard ID empty"))
 	}
 	shardIdParam, ok := arrayParams[0].(float64)
@@ -102,6 +102,9 @@ func (httpServer *HttpServer) handleGetCommitteeList(params interface{}, closeCh
 func (httpServer *HttpServer) handleCanPubkeyStake(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleCanPubkeyStake params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Shard ID empty"))
+	}
 
 	publicKey, ok := arrayParams[0].(string)
 	if !ok {
@@ -122,7 +125,7 @@ func (httpServer *HttpServer) handleCanPubkeyStake(params interface{}, closeChan
 func (httpServer *HttpServer) handleGetTotalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleGetTotalTransaction params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) < 1 {
+	if arrayParams == nil || len(arrayParams) < 1 {
 		Logger.log.Debugf("handleGetTotalTransaction result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Shard ID empty"))
 	}
