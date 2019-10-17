@@ -133,7 +133,7 @@ func (cm *ConnManager) BroadcastCommittee(
 		return
 	}
 
-	cc := &ChainCommittee{
+	cc := &incognitokey.ChainCommittee{
 		Epoch:             epoch,
 		BeaconCommittee:   newBeaconCommittee,
 		AllShardCommittee: newAllShardCommittee,
