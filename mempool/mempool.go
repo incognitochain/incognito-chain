@@ -714,7 +714,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				replaceFee = float64(tx.GetTxFee())
 				// not a higher enough fee than return error
 				if baseReplaceFee*tp.ReplaceFeeRatio >= replaceFee {
-					return NewMempoolTxError(RejectReplacementTxError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
+					return NewMempoolTxError(RejectReplacementTxError, fmt.Errorf("Expect fee to be greater than %+v but get %+v ", baseReplaceFee, replaceFee)), true
 				}
 				isReplaced = true
 			} else if txDescToBeReplaced.Desc.Fee == 0 && txDescToBeReplaced.Desc.FeeToken > 0 {
@@ -723,7 +723,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				replaceFeeToken = float64(tx.GetTxFeeToken())
 				// not a higher enough fee than return error
 				if baseReplaceFeeToken*tp.ReplaceFeeRatio >= replaceFeeToken {
-					return NewMempoolTxError(RejectReplacementTxError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFeeToken, replaceFeeToken)), true
+					return NewMempoolTxError(RejectReplacementTxError, fmt.Errorf("Expect fee to be greater than %+v but get %+v ", baseReplaceFeeToken, replaceFeeToken)), true
 				}
 				isReplaced = true
 			} else if txDescToBeReplaced.Desc.Fee > 0 && txDescToBeReplaced.Desc.FeeToken > 0 {
@@ -735,7 +735,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				replaceFeeToken = float64(tx.GetTxFeeToken())
 				// not a higher enough fee than return error
 				if baseReplaceFee*tp.ReplaceFeeRatio >= replaceFee || baseReplaceFeeToken*tp.ReplaceFeeRatio >= replaceFeeToken {
-					return NewMempoolTxError(RejectReplacementTxError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
+					return NewMempoolTxError(RejectReplacementTxError, fmt.Errorf("Expect fee to be greater than %+v but get %+v ", baseReplaceFee, replaceFee)), true
 				}
 				isReplaced = true
 			}
@@ -1143,14 +1143,6 @@ func (tp TxPool) GetPool() map[common.Hash]*TxDesc {
 	return tp.pool
 }
 
-func (tp *TxPool) LockPool() {
-	tp.mtx.Lock()
-}
-
-func (tp *TxPool) UnlockPool() {
-	tp.mtx.Unlock()
-}
-
 // Count return len of transaction pool
 func (tp *TxPool) Count() int {
 	tp.mtx.RLock()
@@ -1160,8 +1152,8 @@ func (tp *TxPool) Count() int {
 }
 
 func (tp TxPool) GetClonedPoolCandidate() map[common.Hash]string {
-	tp.mtx.RLock()
-	defer tp.mtx.RUnlock()
+	tp.candidateMtx.RLock()
+	defer tp.candidateMtx.RUnlock()
 	result := make(map[common.Hash]string)
 	for k, v := range tp.poolCandidate {
 		result[k] = v
