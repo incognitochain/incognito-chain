@@ -71,13 +71,13 @@ type Config struct {
 		BoardcastNodeState() error
 		PublishNodeState() error
 
-		PushMessageGetBlockBeaconByHeight(from uint64, to uint64, peerID libp2p.ID) error
+		PushMessageGetBlockBeaconByHeight(from uint64, to uint64, peerPublicKey string) error
 		PushMessageGetBlockBeaconByHash(blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error
-		PushMessageGetBlockBeaconBySpecificHeight(heights []uint64, getFromPool bool, peerID libp2p.ID) error
+		PushMessageGetBlockBeaconBySpecificHeight(heights []uint64, getFromPool bool, peerPublicKey string) error
 
-		PushMessageGetBlockShardByHeight(shardID byte, from uint64, to uint64, peerID libp2p.ID) error
+		PushMessageGetBlockShardByHeight(shardID byte, from uint64, to uint64, peerPublicKey string) error
 		PushMessageGetBlockShardByHash(shardID byte, blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error
-		PushMessageGetBlockShardBySpecificHeight(shardID byte, heights []uint64, getFromPool bool, peerID libp2p.ID) error
+		PushMessageGetBlockShardBySpecificHeight(shardID byte, heights []uint64, getFromPool bool, peerPublicKey string) error
 
 		PushMessageGetBlockShardToBeaconByHeight(shardID byte, from uint64, to uint64, peerID libp2p.ID) error
 		PushMessageGetBlockShardToBeaconByHash(shardID byte, blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error

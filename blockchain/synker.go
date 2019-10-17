@@ -567,10 +567,10 @@ func (synker *Synker) UpdateState() {
 		}
 	}
 	//TODO hy Get Committee LightWeightPublicKey ExtractMiningPublickeysFromCommitteeKeyList
-	// beaconCommittee, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconStateClone.BeaconCommittee, beaconStateClone.ConsensusAlgorithm)
+	// beaconCommittee, _ := incognitokey.ExtractPubliToromCommitteeKeyList(beaconStateClone.BeaconCommittee, beaconStateClone.ConsensusAlgorithm)
 	// shardCommittee := make(map[byte][]string)
-	// for shardID, committee := range beaconStateClone.GetShardCommittee() {
-	// 	shardCommittee[shardID], _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(committee, beaconStateClone.ShardConsensusAlgorithm[shardID])
+	// for shardID, committee := range beaconStateClonTohardCommittee() {
+	// 	shardCommittee[shardID], _ = incognitokey.ExtrTolickeysFromCommitteeKeyList(committee, beaconStateClone.ShardConsensusAlgorithm[shardID])
 	// }
 
 	beaconCommittee, _ := incognitokey.ExtractMiningPublickeysFromCommitteeKeyList(beaconStateClone.BeaconCommittee, beaconStateClone.ConsensusAlgorithm)
@@ -675,15 +675,6 @@ func (synker *Synker) UpdateStatev2() {
 		ShardToBeaconBlks:  make(map[byte]map[string][]uint64),
 		CrossShardBlks:     make(map[byte]map[string][]uint64),
 	}
-
-	// RCSv2 := reportedChainStatev2{
-	// 	ClosestBeaconState: ChainState{
-	// 		Height: beaconStateClone.BeaconHeight,
-	// 	},
-	// 	ClosestShardsState: make(map[byte]ChainState),
-	// 	ShardToBeaconBlks:  make(map[byte]map[string][]uint64),
-	// 	CrossShardBlks:     make(map[byte]map[string][]uint64),
-	// }
 
 	bestShardsHeight := beaconStateClone.GetBestShardHeight()
 	for shardID := byte(0); shardID < common.MaxShardNumber; shardID++ {
@@ -840,12 +831,12 @@ func (synker *Synker) UpdateStatev2() {
 		switch userLayer {
 		case common.BeaconRole:
 			if (synker.blockchain.config.NodeMode == common.NodeModeAuto || synker.blockchain.config.NodeMode == common.NodeModeBeacon) && userRole == common.CommitteeRole {
-				for shardID, peer := range RCSv2.ShardToBeaconBlks {
-					for peerID, blks := range peer {
+				for shardID, shardState := range RCSv2.ShardToBeaconBlks {
+					for _, blks := range shardState {
 						//useless log
-						Logger.log.Critical(shardID, peerID, blks)
+						Logger.log.Critical(shardID, blks)
 						//TODO @0xakk0r0kamui sync block here
-						// synker.SyncBlkShardToBeacon(shardID, false, true, true, nil, blks, 0, 0, new
+						// synker.SyncBlkShardToBeacon(shardID, false, true, true, nil, blks,
 					}
 				}
 				for shardID := byte(0); shardID < common.MaxShardNumber; shardID++ {
@@ -872,7 +863,7 @@ func (synker *Synker) UpdateStatev2() {
 							//useless log
 							Logger.log.Critical(shardID, peerID, blks)
 							//TODO @0xakk0r0kamui sync cross shard here
-							// synker.SyncBlkCrossShard(true, false, nil, blks, shardID, byte(userShardIDInt), peerID)
+							synker.SyncBlkCrossShard(true, false, nil, blks, shardID, byte(userShardIDInt), peer.ID(""))
 						}
 					}
 				}
@@ -889,17 +880,17 @@ func (synker *Synker) UpdateStatev2() {
 	Logger.log.Info("synker.SyncBlkBeacon", currentBcnReqHeight, RCSv2.ClosestBeaconState.Height+1)
 	synker.SyncBlkBeacon(false, false, false, nil, nil, currentBcnReqHeight, RCSv2.ClosestBeaconState.Height+1, "")
 
-	// for peerID := range synker.States.PeersState {
-	// 	if currentBcnReqHeight+DefaultMaxBlkReqPerPeer-1 >= RCSv2.ClosestBeaconState.Height {
-	// 		//fmt.Println("SyncBlk1:", currentBcnReqHeight, RCS.ClosestBeaconState.Height)
-	// 		synker.SyncBlkBeacon(false, false, false, nil, nil, currentBcnReqHeight, RCSv2.ClosestBeaconState.Height+1, peerID)
-	// 		break
-	// 	} else {
-	// 		//fmt.Println("SyncBlk2:", currentBcnReqHeight, currentBcnReqHeight+DefaultMaxBlkReqPerPeer-1)
-	// 		synker.SyncBlkBeacon(false, false, false, nil, nil, currentBcnReqHeight, currentBcnReqHeight+DefaultMaxBlkReqPerPeer-1, peerID)
-	// 		currentBcnReqHeight += DefaultMaxBlkReqPerPeer - 1
-	// 	}
-	// }
+	for peerPublicKey := range synker.States.PeersStatev2 {
+		if currentBcnReqHeight+DefaultMaxBlkReqPerPeer-1 >= RCSv2.ClosestBeaconState.Height {
+			// fmt.Println("SyncBlk1:", currentBcnReqHeight, RCS.ClosestBeaconState.Height)
+			synker.SyncBlkBeaconByPublicKey(false, false, false, nil, nil, currentBcnReqHeight, RCSv2.ClosestBeaconState.Height+1, peerPublicKey)
+			break
+		} else {
+			// fmt.Println("SyncBlk2:", currentBcnReqHeight, currentBcnReqHeight+DefaultMaxBlkReqPerPeer-1)
+			synker.SyncBlkBeaconByPublicKey(false, false, false, nil, nil, currentBcnReqHeight, currentBcnReqHeight+DefaultMaxBlkReqPerPeer-1, peerPublicKey)
+			currentBcnReqHeight += DefaultMaxBlkReqPerPeer - 1
+		}
+	}
 
 	// sync shard
 	for shardID := range synker.Status.Shards {
@@ -910,25 +901,25 @@ func (synker *Synker) UpdateStatev2() {
 			}
 		}
 
-		Logger.log.Info("synker.SyncBlkShard", currentShardReqHeight)
-		synker.SyncBlkShard(shardID, false, false, false, nil, nil, currentShardReqHeight, currentShardReqHeight+1, "")
+		// Logger.log.Info("synker.SyncBlkShard", currentShardReqHeight)
+		// synker.SyncBlkShard(shardID, false, false, false, nil, nil, currentShardReqHeight, currentShardReqHeight+1, "")
 
-		// for peerPublicKey := range synker.States.PeersStatev2 {
-		// 	if shardState, ok := synker.States.PeersStatev2[peerPublicKey].Shard[shardID]; ok {
-		// 		fmt.Println("SyncShard state from other shard", shardID, shardState.Height)
-		// 		if shardState.Height >= currentShardReqHeight {
-		// 			if currentShardReqHeight+DefaultMaxBlkReqPerPeer-1 >= RCSv2.ClosestShardsState[shardID].Height {
-		// 				fmt.Println("SyncShard 1234 ", currentShardReqHeight, RCSv2.ClosestShardsState[shardID].Height)
-		// 				synker.SyncBlkShard(shardID, false, false, false, nil, nil, currentShardReqHeight, RCSv2.ClosestShardsState[shardID].Height+1, peerPublicKey)
-		// 				break
-		// 			} else {
-		// 				fmt.Println("SyncShard 12345")
-		// 				synker.SyncBlkShard(shardID, false, false, false, nil, nil, currentShardReqHeight, currentShardReqHeight+DefaultMaxBlkReqPerPeer-1, peerPublicKey)
-		// 				currentShardReqHeight += DefaultMaxBlkReqPerPeer - 1
-		// 			}
-		// 		}
-		// 	}
-		// }
+		for peerPublicKey := range synker.States.PeersStatev2 {
+			if shardState, ok := synker.States.PeersStatev2[peerPublicKey].Shard[shardID]; ok {
+				fmt.Println("SyncShard state from other shard", shardID, shardState.Height)
+				if shardState.Height >= currentShardReqHeight {
+					if currentShardReqHeight+DefaultMaxBlkReqPerPeer-1 >= RCSv2.ClosestShardsState[shardID].Height {
+						fmt.Println("SyncShard 1234 ", currentShardReqHeight, RCSv2.ClosestShardsState[shardID].Height)
+						synker.SyncBlkShardByPublicKey(shardID, false, false, false, nil, nil, currentShardReqHeight, RCSv2.ClosestShardsState[shardID].Height+1, peerPublicKey)
+						break
+					} else {
+						fmt.Println("SyncShard 12345")
+						synker.SyncBlkShardByPublicKey(shardID, false, false, false, nil, nil, currentShardReqHeight, currentShardReqHeight+DefaultMaxBlkReqPerPeer-1, peerPublicKey)
+						currentShardReqHeight += DefaultMaxBlkReqPerPeer - 1
+					}
+				}
+			}
+		}
 	}
 	//TODO hy Get Committee LightWeightPublicKey ExtractMiningPublickeysFromCommitteeKeyList
 	// beaconCommittee, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconStateClone.BeaconCommittee, beaconStateClone.ConsensusAlgorithm)
@@ -1002,10 +993,10 @@ func (synker *Synker) SyncBlkBeacon(byHash bool, bySpecificHeights bool, getFrom
 		prefix := getBlkPrefixSyncKey(false, BeaconBlk, 0, 0)
 		if bySpecificHeights {
 		} else {
-			blkBatchsNeedToGet := getBlkNeedToGetByHeight(prefix, from, to, cacheItems, synker.GetBeaconPoolStateByHeight(), peerID)
+			blkBatchsNeedToGet := getBlkNeedToGetByHeight(prefix, from, to, cacheItems, synker.GetBeaconPoolStateByHeight())
 			if len(blkBatchsNeedToGet) > 0 {
 				for fromHeight, toHeight := range blkBatchsNeedToGet {
-					go synker.blockchain.config.Server.PushMessageGetBlockBeaconByHeight(fromHeight, toHeight, peerID)
+					go synker.blockchain.config.Server.PushMessageGetBlockBeaconByHeight(fromHeight, toHeight, "peerID")
 					for height := fromHeight; height <= toHeight; height++ {
 						synker.Status.CurrentlySyncBlks.Add(fmt.Sprintf("%v%v", prefix, height), time.Now().Unix(), DefaultMaxBlockSyncTime)
 					}
@@ -1038,20 +1029,20 @@ func (synker *Synker) SyncBlkShard(shardID byte, byHash bool, bySpecificHeights 
 		//Sync by height
 		prefix := getBlkPrefixSyncKey(false, ShardBlk, shardID, 0)
 		if bySpecificHeights {
-			blksNeedToGet := getBlkNeedToGetBySpecificHeight(prefix, blkHeights, cacheItems, synker.GetShardPoolStateByHeight(shardID), peerID)
+			blksNeedToGet := getBlkNeedToGetBySpecificHeight(prefix, blkHeights, cacheItems, synker.GetShardPoolStateByHeight(shardID))
 			if len(blksNeedToGet) > 0 {
-				go synker.blockchain.config.Server.PushMessageGetBlockShardBySpecificHeight(shardID, blksNeedToGet, getFromPool, peerID)
+				go synker.blockchain.config.Server.PushMessageGetBlockShardBySpecificHeight(shardID, blksNeedToGet, getFromPool, "peerID")
 				for _, blkHeight := range blksNeedToGet {
 					synker.Status.CurrentlySyncBlks.Add(fmt.Sprintf("%v%v", prefix, blkHeight), time.Now().Unix(), DefaultMaxBlockSyncTime)
 				}
 			}
 		} else {
-			blkBatchsNeedToGet := getBlkNeedToGetByHeight(prefix, from, to, cacheItems, synker.GetShardPoolStateByHeight(shardID), peerID)
+			blkBatchsNeedToGet := getBlkNeedToGetByHeight(prefix, from, to, cacheItems, synker.GetShardPoolStateByHeight(shardID))
 			fmt.Println("SyncBlkShard", from, to, blkBatchsNeedToGet)
 			if len(blkBatchsNeedToGet) > 0 {
 				for fromHeight, toHeight := range blkBatchsNeedToGet {
 					fmt.Println("SyncBlkShard", shardID, fromHeight, toHeight, peerID)
-					go synker.blockchain.config.Server.PushMessageGetBlockShardByHeight(shardID, fromHeight, toHeight, peerID)
+					go synker.blockchain.config.Server.PushMessageGetBlockShardByHeight(shardID, fromHeight, toHeight, "peerID")
 					for height := fromHeight; height <= toHeight; height++ {
 						synker.Status.CurrentlySyncBlks.Add(fmt.Sprintf("%v%v", prefix, height), time.Now().Unix(), DefaultMaxBlockSyncTime)
 					}
@@ -1059,6 +1050,82 @@ func (synker *Synker) SyncBlkShard(shardID byte, byHash bool, bySpecificHeights 
 			}
 		}
 	}
+}
+
+func (synker *Synker) SyncBlkBeaconByPublicKey(byHash bool, bySpecificHeights bool, getFromPool bool, blksHash []common.Hash, blkHeights []uint64, from uint64, to uint64, peerPublicKey string) {
+	cacheItems := synker.Status.CurrentlySyncBlks.Items()
+	// if byHash {
+	// 	//Sync block by hash
+	// 	prefix := getBlkPrefixSyncKey(true, BeaconBlk, 0, 0)
+	// 	blksNeedToGet := getBlkNeedToGetByHash(prefix, blksHash, cacheItems, peerID)
+	// 	if len(blksNeedToGet) > 0 {
+	// 		go synker.blockchain.config.Server.PushMessageGetBlockBeaconByHash(blksNeedToGet, getFromPool, peerID)
+	// 	}
+	// 	for _, blkHash := range blksNeedToGet {
+	// 		synker.Status.CurrentlySyncBlks.Add(fmt.Sprintf("%v%v", prefix, blkHash.String()), time.Now().Unix(), DefaultMaxBlockSyncTime)
+	// 	}
+	// } else {
+	//Sync by height
+	prefix := getBlkPrefixSyncKey(false, BeaconBlk, 0, 0)
+	if bySpecificHeights {
+	} else {
+		blkBatchsNeedToGet := getBlkNeedToGetByHeightv2(prefix, from, to, cacheItems, synker.GetBeaconPoolStateByHeight())
+		if len(blkBatchsNeedToGet) > 0 {
+			for fromHeight, toHeight := range blkBatchsNeedToGet {
+				go synker.blockchain.config.Server.PushMessageGetBlockBeaconByHeight(fromHeight, toHeight, peerPublicKey)
+				for height := fromHeight; height <= toHeight; height++ {
+					synker.Status.CurrentlySyncBlks.Add(fmt.Sprintf("%v%v", prefix, height), time.Now().Unix(), DefaultMaxBlockSyncTime)
+				}
+			}
+		}
+	}
+
+	// }
+}
+
+//SyncBlkShard Send a req to sync shard block
+/*
+	- by Hash + blksHash: get by hash
+	- from + to: get from main chain by height
+	- GetFromPool: ignore mainchain, used only for hash
+*/
+func (synker *Synker) SyncBlkShardByPublicKey(shardID byte, byHash bool, bySpecificHeights bool, getFromPool bool, blksHash []common.Hash, blkHeights []uint64, from uint64, to uint64, peerPublicKey string) {
+	cacheItems := synker.Status.CurrentlySyncBlks.Items()
+	// if byHash {
+	// 	//Sync block by hash
+	// 	prefix := getBlkPrefixSyncKey(true, ShardBlk, shardID, 0)
+	// 	blksNeedToGet := getBlkNeedToGetByHash(prefix, blksHash, cacheItems, peerID)
+	// 	if len(blksNeedToGet) > 0 {
+	// 		go synker.blockchain.config.Server.PushMessageGetBlockShardByHash(shardID, blksNeedToGet, getFromPool, peerID)
+	// 	}
+	// 	for _, blkHash := range blksNeedToGet {
+	// 		synker.Status.CurrentlySyncBlks.Add(fmt.Sprintf("%v%v", prefix, blkHash.String()), time.Now().Unix(), DefaultMaxBlockSyncTime)
+	// 	}
+	// } else {
+	//Sync by height
+	prefix := getBlkPrefixSyncKey(false, ShardBlk, shardID, 0)
+	if bySpecificHeights {
+		blksNeedToGet := getBlkNeedToGetBySpecificHeightv2(prefix, blkHeights, cacheItems, synker.GetShardPoolStateByHeight(shardID))
+		if len(blksNeedToGet) > 0 {
+			go synker.blockchain.config.Server.PushMessageGetBlockShardBySpecificHeight(shardID, blksNeedToGet, getFromPool, peerPublicKey)
+			for _, blkHeight := range blksNeedToGet {
+				synker.Status.CurrentlySyncBlks.Add(fmt.Sprintf("%v%v", prefix, blkHeight), time.Now().Unix(), DefaultMaxBlockSyncTime)
+			}
+		}
+	} else {
+		blkBatchsNeedToGet := getBlkNeedToGetByHeight(prefix, from, to, cacheItems, synker.GetShardPoolStateByHeight(shardID))
+		fmt.Println("SyncBlkShard", from, to, blkBatchsNeedToGet)
+		if len(blkBatchsNeedToGet) > 0 {
+			for fromHeight, toHeight := range blkBatchsNeedToGet {
+				fmt.Println("SyncBlkShard", shardID, fromHeight, toHeight, peerPublicKey)
+				go synker.blockchain.config.Server.PushMessageGetBlockShardByHeight(shardID, fromHeight, toHeight, peerPublicKey)
+				for height := fromHeight; height <= toHeight; height++ {
+					synker.Status.CurrentlySyncBlks.Add(fmt.Sprintf("%v%v", prefix, height), time.Now().Unix(), DefaultMaxBlockSyncTime)
+				}
+			}
+		}
+	}
+	// }
 }
 
 //SyncBlkShardToBeacon Send a req to sync shardToBeacon block
@@ -1083,7 +1150,7 @@ func (synker *Synker) SyncBlkShardToBeacon(shardID byte, byHash bool, bySpecific
 		//Sync by height
 		prefix := getBlkPrefixSyncKey(false, ShardToBeaconBlk, shardID, 0)
 		if bySpecificHeights {
-			blksNeedToGet := getBlkNeedToGetBySpecificHeight(prefix, blkHeights, cacheItems, synker.GetShardToBeaconPoolStateByHeight(shardID), peerID)
+			blksNeedToGet := getBlkNeedToGetBySpecificHeight(prefix, blkHeights, cacheItems, synker.GetShardToBeaconPoolStateByHeight(shardID))
 			if len(blksNeedToGet) > 0 {
 				go synker.blockchain.config.Server.PushMessageGetBlockShardToBeaconBySpecificHeight(shardID, blksNeedToGet, getFromPool, peerID)
 				for _, blkHeight := range blksNeedToGet {
@@ -1091,7 +1158,7 @@ func (synker *Synker) SyncBlkShardToBeacon(shardID byte, byHash bool, bySpecific
 				}
 			}
 		} else {
-			blkBatchsNeedToGet := getBlkNeedToGetByHeight(prefix, from, to, cacheItems, synker.GetShardToBeaconPoolStateByHeight(shardID), peerID)
+			blkBatchsNeedToGet := getBlkNeedToGetByHeight(prefix, from, to, cacheItems, synker.GetShardToBeaconPoolStateByHeight(shardID))
 			if len(blkBatchsNeedToGet) > 0 {
 				for fromHeight, toHeight := range blkBatchsNeedToGet {
 					go synker.blockchain.config.Server.PushMessageGetBlockShardToBeaconByHeight(shardID, fromHeight, toHeight, peerID)
@@ -1135,7 +1202,7 @@ func (synker *Synker) SyncBlkCrossShard(getFromPool bool, byHash bool, blksHash 
 		if len(blksHeight) == 0 {
 			return
 		}
-		blksNeedToGet := getBlkNeedToGetBySpecificHeight(prefix, blksHeight, cacheItems, synker.GetCrossShardPoolStateByHeight(fromShard), peerID)
+		blksNeedToGet := getBlkNeedToGetBySpecificHeight(prefix, blksHeight, cacheItems, synker.GetCrossShardPoolStateByHeight(fromShard))
 		if len(blksNeedToGet) > 0 {
 			go synker.blockchain.config.Server.PushMessageGetBlockCrossShardBySpecificHeight(fromShard, toShard, blksNeedToGet, getFromPool, peerID)
 			for _, blkHeight := range blksNeedToGet {
