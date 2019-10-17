@@ -14,13 +14,13 @@ handleGetBeaconBestState - RPC get beacon best state
 func (httpServer *HttpServer) handleGetBeaconBestState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleGetBeaconBestState params: %+v", params)
 
-	clonedBeaconBestState, err := httpServer.blockService.GetBeaconBestState()
+	beaconBestState, err := httpServer.blockService.GetBeaconBestState()
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)
 	}
 
-	result := jsonresult.NewGetBeaconBestState(clonedBeaconBestState)
-	Logger.log.Debugf("Get Beacon BestState: %+v", clonedBeaconBestState)
+	result := jsonresult.NewGetBeaconBestState(beaconBestState)
+	Logger.log.Debugf("Get Beacon BestState: %+v", beaconBestState)
 	return result, nil
 }
 
@@ -39,12 +39,12 @@ func (httpServer *HttpServer) handleGetShardBestState(params interface{}, closeC
 	}
 	shardID := byte(shardIdParam)
 
-	clonedShardBestState, err := httpServer.blockService.GetShardBestStateByShardID(shardID)
+	shardBestState, err := httpServer.blockService.GetShardBestStateByShardID(shardID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetClonedShardBestStateError, err)
 	}
 
-	result := jsonresult.NewGetShardBestState(clonedShardBestState)
+	result := jsonresult.NewGetShardBestState(shardBestState)
 	Logger.log.Debugf("Get Shard BestState result: %+v", result)
 	return result, nil
 }
