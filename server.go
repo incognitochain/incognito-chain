@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics"
 	"io/ioutil"
 	"log"
 	"net"
@@ -498,10 +499,10 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	}
 
 	//Init Metric Tool
-	// if cfg.MetricUrl != "" {
-	// 	grafana := metrics.NewGrafana(cfg.MetricUrl, cfg.ExternalAddress)
-	// 	metrics.InitMetricTool(&grafana)
-	// }
+	if cfg.MetricUrl != "" {
+		grafana := metrics.NewGrafana(cfg.MetricUrl, cfg.ExternalAddress)
+		metrics.InitMetricTool(&grafana)
+	}
 	return nil
 }
 
