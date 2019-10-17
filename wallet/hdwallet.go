@@ -151,6 +151,9 @@ func (key *KeyWallet) Base58CheckSerialize(keyType byte) string {
 // it returns KeySet just contain corresponding key
 func deserialize(data []byte) (*KeyWallet, error) {
 	var key = &KeyWallet{}
+	if len(data) < 2 {
+		return nil, NewWalletError(InvalidKeyTypeErr, nil)
+	}
 	keyType := data[0]
 	if keyType == PriKeyType {
 		if len(data) != privKeySerializedBytesLen{
@@ -185,6 +188,9 @@ func deserialize(data []byte) (*KeyWallet, error) {
 		}
 
 		apkKeyLength := int(data[1])
+		if len(data) < apkKeyLength+3 {
+			return nil, NewWalletError(InvalidKeyTypeErr, nil)
+		}
 		skencKeyLength := int(data[apkKeyLength+2])
 		key.KeySet.ReadonlyKey.Pk = make([]byte, apkKeyLength)
 		key.KeySet.ReadonlyKey.Rk = make([]byte, skencKeyLength)
