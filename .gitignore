@@ -60,3 +60,6 @@ config
 mempool/testdatabase
 cmd/incognito
 blockchain/testparams/*
+
+
+*~
