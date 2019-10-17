@@ -46,6 +46,10 @@ Result—a TXID or error Message
 func (httpServer *HttpServer) handleSendRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleSendRawTransaction params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 1{
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+	}
+
 	base58CheckData, ok := arrayParams[0].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("base58 check data is invalid"))
@@ -94,9 +98,10 @@ func (httpServer *HttpServer) handleCreateAndSendTx(params interface{}, closeCha
 
 func (httpServer *HttpServer) handleGetTransactionHashByReceiver(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) != 1 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("key component invalid"))
+	if arrayParams == nil || len(arrayParams) < 1{
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
 	}
+
 	paymentAddress, ok := arrayParams[0].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payment address"))
@@ -114,16 +119,16 @@ func (httpServer *HttpServer) handleGetTransactionHashByReceiver(params interfac
 func (httpServer *HttpServer) handleGetTransactionByHash(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleGetTransactionByHash params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
-	// param #1: transaction Hash
-	if len(arrayParams) < 1 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Tx hash is empty"))
+	if arrayParams == nil || len(arrayParams) < 1{
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
 	}
-	Logger.log.Debugf("Get TransactionByHash input Param %+v", arrayParams[0].(string))
+
+	// param #1: transaction Hash
 	txHashStr, ok := arrayParams[0].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Tx hash is invalid"))
 	}
-
+	Logger.log.Debugf("Get TransactionByHash input Param %+v", txHashStr)
 	return httpServer.txService.GetTransactionByHash(txHashStr)
 }
 
@@ -158,6 +163,10 @@ func (httpServer *HttpServer) handleCreateRawCustomTokenTransaction(params inter
 func (httpServer *HttpServer) handleSendRawCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleSendRawCustomTokenTransaction params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 1{
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+	}
+
 	base58CheckData, ok := arrayParams[0].(string)
 	if !ok {
 		Logger.log.Debugf("handleSendRawCustomTokenTransaction result: %+v", nil)
@@ -209,10 +218,14 @@ func (httpServer *HttpServer) handleCreateAndSendCustomTokenTransaction(params i
 // handleGetListCustomTokenHolders - return all custom token holder
 func (httpServer *HttpServer) handleGetListCustomTokenHolders(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) < 1 {
+	if arrayParams == nil || len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+	}
+
+	tokenIDStr, ok := arrayParams[0].(string)
+	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("TokenID is invalid"))
 	}
-	tokenIDStr := arrayParams[0].(string)
 
 	return httpServer.txService.GetListCustomTokenHolders(tokenIDStr)
 }
@@ -222,6 +235,10 @@ func (httpServer *HttpServer) handleGetListCustomTokenBalance(params interface{}
 	Logger.log.Debugf("handleGetListCustomTokenBalance params: %+v", params)
 	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
 	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+	}
+
 	accountParam, ok := arrayParams[0].(string)
 	if len(accountParam) == 0 || !ok {
 		Logger.log.Debugf("handleGetListCustomTokenBalance result: %+v", nil)
@@ -240,6 +257,10 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 	Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance params: %+v", params)
 
 	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+	}
+
 	privateKey, ok := arrayParams[0].(string)
 	if len(privateKey) == 0 || !ok {
 		Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v", nil)
@@ -258,18 +279,21 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 func (httpServer *HttpServer) handleGetBalancePrivacyCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleGetBalancePrivacyCustomToken params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) != 2 {
+	if arrayParams == nil || len(arrayParams) < 2 {
 		Logger.log.Debugf("handleGetBalancePrivacyCustomToken error: Need 2 params but get %+v", len(arrayParams))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 elements"))
 	}
+
 	privateKey, ok := arrayParams[0].(string)
 	if len(privateKey) == 0 || !ok {
 		Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v", nil)
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Private key is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("private key is invalid"))
 	}
+
 	tokenID, ok := arrayParams[1].(string)
 	if len(tokenID) == 0 || !ok {
 		Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v", nil)
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("TokenID is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("tokenID is invalid"))
 	}
 
 	totalValue, err2 := httpServer.txService.GetBalancePrivacyCustomToken(privateKey, tokenID)
@@ -285,10 +309,11 @@ func (httpServer *HttpServer) handleGetBalancePrivacyCustomToken(params interfac
 func (httpServer *HttpServer) handleCustomTokenDetail(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleCustomTokenDetail params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) < 1 {
+	if arrayParams == nil || len(arrayParams) < 1 {
 		Logger.log.Debugf("handleCustomTokenDetail result: %+v", nil)
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("tokenID is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("param must be an array at least 1 element"))
 	}
+
 	tokenIDTemp, ok := arrayParams[0].(string)
 	if !ok {
 		Logger.log.Debugf("handleCustomTokenDetail result: %+v", nil)
@@ -314,10 +339,11 @@ func (httpServer *HttpServer) handleCustomTokenDetail(params interface{}, closeC
 func (httpServer *HttpServer) handlePrivacyCustomTokenDetail(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handlePrivacyCustomTokenDetail params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) < 1 {
+	if arrayParams == nil || len(arrayParams) < 1 {
 		Logger.log.Debugf("handlePrivacyCustomTokenDetail result: %+v", nil)
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("tokenID is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("param must be an array at least 1 element"))
 	}
+
 	tokenIDTemp, ok := arrayParams[0].(string)
 	if !ok {
 		Logger.log.Debugf("handlePrivacyCustomTokenDetail result: %+v", nil)
@@ -343,9 +369,9 @@ func (httpServer *HttpServer) handlePrivacyCustomTokenDetail(params interface{},
 func (httpServer *HttpServer) handleListUnspentCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleListUnspentCustomToken params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) < 2 {
+	if arrayParams == nil || len(arrayParams) < 2 {
 		Logger.log.Debugf("handleListUnspentCustomToken result: %+v", nil)
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Not enough params"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 element"))
 	}
 	// param #1: paymentaddress of sender
 	senderKeyParam, ok := arrayParams[0].(string)
@@ -385,9 +411,9 @@ func (httpServer *HttpServer) handleListUnspentCustomToken(params interface{}, c
 func (httpServer *HttpServer) handleGetBalanceCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleGetBalanceCustomToken params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) < 2 {
+	if arrayParams == nil || len(arrayParams) < 2 {
 		Logger.log.Debugf("handleListUnspentCustomToken result: %+v", nil)
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Not enough params"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 element"))
 	}
 	// param #1: paymentaddress of sender
 	senderKeyParam, ok := arrayParams[0].(string)
@@ -416,11 +442,21 @@ func (httpServer *HttpServer) handleGetBalanceCustomToken(params interface{}, cl
 func (httpServer *HttpServer) handleCreateSignatureOnCustomTokenTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleCreateSignatureOnCustomTokenTx params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
-	base58CheckDate := arrayParams[0].(string)
+	if arrayParams == nil || len(arrayParams) < 2 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 element"))
+	}
 
-	senderKeyParam := arrayParams[1].(string)
+	base58CheckData, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("base58 check data is invalid"))
+	}
 
-	result, err := httpServer.txService.CreateSignatureOnCustomTokenTx(base58CheckDate, senderKeyParam)
+	senderPrivateKeyParam, ok := arrayParams[1].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("private key is invalid"))
+	}
+
+	result, err := httpServer.txService.CreateSignatureOnCustomTokenTx(base58CheckData, senderPrivateKeyParam)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
 	}
@@ -433,6 +469,9 @@ func (httpServer *HttpServer) handleCreateSignatureOnCustomTokenTx(params interf
 func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleRandomCommitments params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 2 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 element"))
+	}
 
 	// #1: payment address
 	paymentAddressStr, ok := arrayParams[0].(string)
@@ -502,7 +541,10 @@ func (httpServer *HttpServer) handleListSerialNumbers(params interface{}, closeC
 	}
 	shardID := 0
 	if len(arrayParams) > 1 {
-		shardID = int(arrayParams[1].(float64))
+		shardIDParam, ok := arrayParams[1].(float64)
+		if ok {
+			shardID = int(shardIDParam)
+		}
 	}
 
 	result, err := httpServer.databaseService.ListSerialNumbers(*tokenID, byte(shardID))
@@ -568,7 +610,10 @@ func (httpServer *HttpServer) handleListCommitments(params interface{}, closeCha
 	}
 	shardID := 0
 	if len(arrayParams) > 1 {
-		shardID = int(arrayParams[1].(float64))
+		shardIDParam, ok := arrayParams[1].(float64)
+		if ok {
+			shardID = int(shardIDParam)
+		}
 	}
 
 	result, err := httpServer.databaseService.ListCommitments(*tokenID, byte(shardID))
@@ -601,12 +646,15 @@ func (httpServer *HttpServer) handleListCommitmentIndices(params interface{}, cl
 			}
 		}
 	}
-	shardID := 0
+	shardID := byte(0)
 	if len(arrayParams) > 1 {
-		shardID = int(arrayParams[1].(float64))
+		shardIDParam, ok := arrayParams[1].(float64)
+		if ok {
+			shardID = byte(shardIDParam)
+		}
 	}
 
-	result, err := httpServer.databaseService.ListCommitmentIndices(*tokenID, byte(shardID))
+	result, err := httpServer.databaseService.ListCommitmentIndices(*tokenID, shardID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.ListCustomTokenNotFoundError, err)
 	}
@@ -617,6 +665,9 @@ func (httpServer *HttpServer) handleListCommitmentIndices(params interface{}, cl
 func (httpServer *HttpServer) handleHasSerialNumbers(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleHasSerialNumbers params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 2 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 elements"))
+	}
 
 	// #1: payment address
 	paymentAddressStr, ok := arrayParams[0].(string)
@@ -665,6 +716,9 @@ func (httpServer *HttpServer) handleHasSerialNumbers(params interface{}, closeCh
 func (httpServer *HttpServer) handleHasSnDerivators(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleHasSnDerivators params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 2 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 elements"))
+	}
 
 	// #1: payment address
 	paymentAddressStr, ok := arrayParams[0].(string)
@@ -739,10 +793,11 @@ func (httpServer *HttpServer) handleCreateRawPrivacyCustomTokenTransaction(param
 func (httpServer *HttpServer) handleSendRawPrivacyCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) == 0 {
+	if arrayParams == nil || len(arrayParams) < 1 {
 		Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction result: %+v", nil)
-		return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, errors.New("Param is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, errors.New("param must be an array at least 1 element"))
 	}
+
 	base58CheckData, ok := arrayParams[0].(string)
 	if !ok {
 		Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction result: %+v", nil)
@@ -795,6 +850,10 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 	Logger.log.Debugf("handleCreateRawStakingTransaction params: %+v", params)
 
 	paramsArray := common.InterfaceSlice(params)
+	if paramsArray == nil || len(paramsArray) < 5 {
+		Logger.log.Debugf("handleCreateRawStakingTransaction result: %+v", nil)
+		return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, errors.New("param must be an array at least 5 element"))
+	}
 
 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
 	if errNewParam != nil {
@@ -913,8 +972,13 @@ func (httpServer *HttpServer) handleCreateAndSendStakingTx(params interface{}, c
 
 func (httpServer *HttpServer) handleCreateRawStopAutoStakingTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	// get component
-	Logger.log.Debugf("handleCreateRawStakingTransaction params: %+v", params)
+	Logger.log.Debugf("handleCreateRawStopAutoStakingTransaction params: %+v", params)
 	paramsArray := common.InterfaceSlice(params)
+	if paramsArray == nil || len(paramsArray) < 5 {
+		Logger.log.Debugf("handleCreateRawStopAutoStakingTransaction result: %+v", nil)
+		return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, errors.New("param must be an array at least 5 element"))
+	}
+
 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
 	if errNewParam != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
