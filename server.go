@@ -1283,8 +1283,14 @@ PushMessageToAll broadcast msg
 func (serverObj *Server) PushMessageToAll(msg wire.Message) error {
 	Logger.log.Debug("Push msg to all peers")
 	var dc chan<- struct{}
-	msg.SetSenderID(serverObj.connManager.GetConfig().ListenerPeer.GetPeerID())
-	serverObj.connManager.GetConfig().ListenerPeer.QueueMessageWithEncoding(msg, dc, peer.MessageToAll, nil)
+	if serverObj.connManager.GetConfig().ListenerPeer != nil {
+		err := msg.SetSenderID(serverObj.connManager.GetConfig().ListenerPeer.GetPeerID())
+		if err != nil {
+			Logger.log.Error(err)
+			return err
+		}
+		serverObj.connManager.GetConfig().ListenerPeer.QueueMessageWithEncoding(msg, dc, peer.MessageToAll, nil)
+	}
 	return nil
 }
 
