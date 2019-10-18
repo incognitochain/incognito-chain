@@ -900,7 +900,7 @@ func (synker *Synker) UpdateStatev2() {
 	}
 
 	Logger.log.Info("synker.SyncBlkBeacon", currentBcnReqHeight, RCSv2.ClosestBeaconState.Height+1)
-	synker.SyncBlkBeacon(false, false, false, nil, nil, currentBcnReqHeight, RCSv2.ClosestBeaconState.Height+1, "")
+	synker.SyncBlkBeacon(false, false, false, nil, nil, currentBcnReqHeight, RCSv2.ClosestBeaconState.Height+20, "")
 
 	// for peerID := range synker.States.PeersState {
 	// 	if currentBcnReqHeight+DefaultMaxBlkReqPerPeer-1 >= RCSv2.ClosestBeaconState.Height {
@@ -924,7 +924,7 @@ func (synker *Synker) UpdateStatev2() {
 		}
 
 		Logger.log.Info("synker.SyncBlkShard", currentShardReqHeight)
-		synker.SyncBlkShard(shardID, false, false, false, nil, nil, currentShardReqHeight, currentShardReqHeight+1, "")
+		synker.SyncBlkShard(shardID, false, false, false, nil, nil, currentShardReqHeight, currentShardReqHeight+20, "")
 
 		// for peerPublicKey := range synker.States.PeersStatev2 {
 		// 	if shardState, ok := synker.States.PeersStatev2[peerPublicKey].Shard[shardID]; ok {
