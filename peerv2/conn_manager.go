@@ -56,7 +56,6 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 			if topic == "" {
 				return errors.New("Can not find topic of this message type " + msgType + "for publish")
 			}
-			fmt.Println("[db] Publishing message", msgType)
 			return broadcastMessage(msg, topic, cm.ps)
 		}
 	}
@@ -70,7 +69,6 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 	msgType := msg.MessageType()
 	for _, p := range publishable {
 		if msgType == p {
-			fmt.Println("[db] Publishing message", msgType)
 			// Get topic for mess
 			//TODO hy add more logic
 			if msgType == wire.CmdCrossShard {
@@ -186,10 +184,12 @@ func (cm *ConnManager) process() {
 	for {
 		select {
 		case msg := <-cm.messages:
-			fmt.Println("[db] go cm.disp.processInMessageString(string(msg.Data))")
+			// fmt.Println("[db] go cm.disp.processInMessageString(string(msg.Data))")
 			// go cm.disp.processInMessageString(string(msg.Data))
 			err := cm.disp.processInMessageString(string(msg.Data))
-			fmt.Printf("err: %+v\n", err)
+			if err != nil {
+				log.Println(err)
+			}
 		}
 	}
 }
@@ -220,7 +220,7 @@ func encodeMessage(msg wire.Message) (string, error) {
 	copy(headerBytes[wire.MessageCmdTypeSize:], []byte{forwardType})
 	copy(headerBytes[wire.MessageCmdTypeSize+1:], []byte{forwardValue})
 	messageBytes = append(messageBytes, headerBytes...)
-	fmt.Printf("[db] OutMessageHandler TYPE %s CONTENT %s\n", cmdType, string(messageBytes))
+	log.Printf("Encoded message TYPE %s CONTENT %s", cmdType, string(messageBytes))
 
 	// zip data before send
 	messageBytes, err = common.GZipFromBytes(messageBytes)
@@ -366,14 +366,12 @@ func (cm *ConnManager) subscribeNewTopics(newTopics, subscribed m2t) error {
 func processSubscriptionMessage(inbox chan *pubsub.Message, sub *pubsub.Subscription) {
 	ctx := context.Background()
 	for {
+		// TODO(@0xbunyip): check if topic is unsubbed then return, otherwise just continue
 		msg, err := sub.Next(ctx)
-		fmt.Println("[db] Found new msg")
-		_ = err
-		// if err != nil {
-		// 	log.Println(err)
-		// 	return
-		// 	// TODO(@0xbunyip): check if topic is unsubbed then return, otherwise just continue
-		// }
+		if err != nil {
+			log.Println(err)
+			continue
+		}
 
 		inbox <- msg
 	}

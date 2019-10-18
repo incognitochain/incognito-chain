@@ -419,6 +419,8 @@ func (netSync *NetSync) handleMessageShardToBeacon(msg *wire.MessageShardToBeaco
 	// })
 	if isAdded := netSync.handleCacheBlock("s2b" + msg.Block.Header.Hash().String()); !isAdded {
 		netSync.config.BlockChain.OnShardToBeaconBlockReceived(msg.Block)
+	} else {
+		Logger.log.Infof("handleMessageShardToBeacon blkHash && isAdded: %+v %+v", msg.Block.Header.Hash(), isAdded)
 	}
 }
 
