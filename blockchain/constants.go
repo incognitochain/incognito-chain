@@ -34,13 +34,14 @@ const (
 // CONSTANT for network MAINNET
 const (
 	// ------------- Mainnet ---------------------------------------------
-	Mainnet            = 0x01
-	MainetName         = "mainnet"
-	MainnetDefaultPort = "9333"
-	MainnetEpoch       = 30000
-	MainnetRandomTime  = 15000
-	MainnetOffset      = 2
-	MainnetSwapOffset  = 1
+	Mainnet             = 0x01
+	MainetName          = "mainnet"
+	MainnetDefaultPort  = "9333"
+	MainnetEpoch        = 30000
+	MainnetRandomTime   = 15000
+	MainnetOffset       = 2
+	MainnetSwapOffset   = 1
+	MainnetAssignOffset = 4
 
 	MainNetShardCommitteeSize  = 3
 	MainNetBeaconCommitteeSize = 3
@@ -81,13 +82,14 @@ var (
 
 // CONSTANT for network TESTNET
 const (
-	Testnet            = 0x16
-	TestnetName        = "testnet"
-	TestnetDefaultPort = "9444"
-	TestnetEpoch       = 100
-	TestnetRandomTime  = 50
-	TestnetOffset      = 1
-	TestnetSwapOffset  = 1
+	Testnet             = 0x16
+	TestnetName         = "testnet"
+	TestnetDefaultPort  = "9444"
+	TestnetEpoch        = 100
+	TestnetRandomTime   = 50
+	TestnetOffset       = 1
+	TestnetSwapOffset   = 1
+	TestnetAssignOffset = 2
 
 	TestNetShardCommitteeSize     = 16
 	TestNetMinShardCommitteeSize  = 4

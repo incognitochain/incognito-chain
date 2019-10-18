@@ -710,17 +710,6 @@ func (beaconBestState *BeaconBestState) updateBeaconBestState(beaconBlock *Beaco
 	if beaconBestState.BestShardHeight == nil {
 		beaconBestState.BestShardHeight = make(map[byte]uint64)
 	}
-	// allShardState := beaconBlock.Body.ShardState
-	// if beaconBestState.AllShardState == nil {
-	// 	beaconBestState.AllShardState = make(map[byte][]ShardState)
-	// 	for index := 0; index < common.MAX_SHARD_NUMBER; index++ {
-	// 		beaconBestState.AllShardState[byte(index)] = []ShardState{
-	// 			ShardState{
-	// 				Height: 1,
-	// 			},
-	// 		}
-	// 	}
-	// }
 	// Update new best new block hash
 	for shardID, shardStates := range beaconBlock.Body.ShardState {
 		beaconBestState.BestShardHash[shardID] = shardStates[len(shardStates)-1].Hash
@@ -769,9 +758,28 @@ func (beaconBestState *BeaconBestState) updateBeaconBestState(beaconBlock *Beaco
 		// assign CandidateShardWaitingForCurrentRandom to ShardPendingValidator with CurrentRandom
 		if randomFlag {
 			beaconBestState.IsGetRandomNumber = true
-			err := AssignValidatorShard(beaconBestState.ShardPendingValidator, beaconBestState.BeaconPendingValidator, beaconBestState.ShardCommittee, beaconBestState.BeaconCommittee, beaconBestState.CandidateShardWaitingForCurrentRandom, beaconBestState.CurrentRandomNumber, beaconBestState.ActiveShards)
+			numberOfPendingValidator := make(map[byte]int)
+			for shardID, pendingValidators := range beaconBestState.ShardPendingValidator {
+				numberOfPendingValidator[shardID] = len(pendingValidators)
+			}
+			shardCandidatesStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForCurrentRandom)
 			if err != nil {
-				return NewBlockChainError(AssignValidatorToShardError, err)
+				panic(err)
+			}
+			remainShardCandidatesStr, assignedCandidates := assignShardCandidate(shardCandidatesStr, numberOfPendingValidator, beaconBestState.CurrentRandomNumber)
+			remainShardCandidates, err := incognitokey.CommitteeBase58KeyListToStruct(remainShardCandidatesStr)
+			if err != nil {
+				panic(err)
+			}
+			// append remain candidate into shard waiting for next random list
+			beaconBestState.CandidateShardWaitingForNextRandom = append(beaconBestState.CandidateShardWaitingForNextRandom, remainShardCandidates...)
+			// assign candidate into shard pending validator list
+			for shardID, candidateListStr := range assignedCandidates {
+				candidateList, err := incognitokey.CommitteeBase58KeyListToStruct(candidateListStr)
+				if err != nil {
+					panic(err)
+				}
+				beaconBestState.ShardPendingValidator[shardID] = append(beaconBestState.ShardPendingValidator[shardID], candidateList...)
 			}
 			// delete CandidateShardWaitingForCurrentRandom list
 			beaconBestState.CandidateShardWaitingForCurrentRandom = []incognitokey.CommitteePublicKey{}
