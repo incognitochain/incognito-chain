@@ -257,7 +257,7 @@ func (cm *ConnManager) manageRoleSubscription() {
 
 	lastRole := newUserRole("dummyLayer", "dummyRole", -1000)
 	lastTopics := m2t{}
-	for range time.Tick(5 * time.Second) {
+	for ; true; <-time.Tick(5 * time.Second) { // Loop immediately and then periodically
 		// Update when role changes
 		newRole := newUserRole(cm.cd.GetUserRole())
 		if *newRole == *lastRole {
@@ -266,8 +266,7 @@ func (cm *ConnManager) manageRoleSubscription() {
 		log.Printf("Role changed: %v -> %v", lastRole, newRole)
 		lastRole = newRole
 
-		// TODO(@0xbunyip): Pending & Waiting roles?
-		if newRole.role != common.CommitteeRole {
+		if newRole.role == common.WaitingRole {
 			continue
 		}
 
