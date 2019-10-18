@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"time"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus"
@@ -103,12 +101,12 @@ func (e BLSBFT) ValidateProducerSig(block common.BlockInterface) error {
 	if err != nil {
 		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
-	start := time.Now()
+	//start := time.Now()
 	if err := validateSingleBriSig(block.Hash(), valData.ProducerBLSSig, producerKey.MiningPubKey[common.BridgeConsensus]); err != nil {
 		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
-	end := time.Now().Sub(start)
-	fmt.Printf("ConsLog just verify %v\n", end.Seconds())
+	//end := time.Now().Sub(start)
+	//fmt.Printf("ConsLog just verify %v\n", end.Seconds())
 	return nil
 }
 
@@ -137,7 +135,7 @@ func (e BLSBFT) ValidateData(data []byte, sig string, publicKey string) error {
 	// if err != nil {
 	// 	return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	// }
-	fmt.Printf("ValidateData data %v, sig %v, publicKey %v\n", data, sig, publicKeyByte)
+	//fmt.Printf("ValidateData data %v, sig %v, publicKey %v\n", data, sig, publicKeyByte)
 	dataHash := new(common.Hash)
 	dataHash.NewHash(data)
 	_, err = bridgesig.Verify(publicKeyByte, dataHash.GetBytes(), sigByte) //blsmultisig.Verify(sigByte, data, []int{0}, []blsmultisig.PublicKey{publicKeyByte})
@@ -153,10 +151,10 @@ func validateSingleBLSSig(
 	selfIdx int,
 	committee []blsmultisig.PublicKey,
 ) error {
-	start := time.Now()
+	//start := time.Now()
 	result, err := blsmultisig.Verify(blsSig, dataHash.GetBytes(), []int{selfIdx}, committee)
-	end := time.Now().Sub(start)
-	fmt.Printf("ConsLog single verify %v\n", end.Seconds())
+	//end := time.Now().Sub(start)
+	//fmt.Printf("ConsLog single verify %v\n", end.Seconds())
 	if err != nil {
 		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
@@ -171,7 +169,7 @@ func validateSingleBriSig(
 	briSig []byte,
 	candidate []byte,
 ) error {
-	fmt.Printf("data %v, sig %v, publicKey %v", dataHash.GetBytes(), briSig, string(candidate))
+	//fmt.Printf("data %v, sig %v, publicKey %v", dataHash.GetBytes(), briSig, string(candidate))
 	result, err := bridgesig.Verify(candidate, dataHash.GetBytes(), briSig)
 	if err != nil {
 		return consensus.NewConsensusError(consensus.UnExpectedError, err)
