@@ -795,13 +795,13 @@ func (httpServer *HttpServer) handleSendRawPrivacyCustomTokenTransaction(params 
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 1 {
 		Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction result: %+v", nil)
-		return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, errors.New("param must be an array at least 1 element"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
 	}
 
 	base58CheckData, ok := arrayParams[0].(string)
 	if !ok {
 		Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction result: %+v", nil)
-		return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, errors.New("Param is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param is invalid"))
 	}
 
 	txMsg, tx, err := httpServer.txService.SendRawPrivacyCustomTokenTransaction(base58CheckData)
@@ -852,7 +852,7 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 	paramsArray := common.InterfaceSlice(params)
 	if paramsArray == nil || len(paramsArray) < 5 {
 		Logger.log.Debugf("handleCreateRawStakingTransaction result: %+v", nil)
-		return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, errors.New("param must be an array at least 5 element"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 5 element"))
 	}
 
 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
@@ -976,7 +976,7 @@ func (httpServer *HttpServer) handleCreateRawStopAutoStakingTransaction(params i
 	paramsArray := common.InterfaceSlice(params)
 	if paramsArray == nil || len(paramsArray) < 5 {
 		Logger.log.Debugf("handleCreateRawStopAutoStakingTransaction result: %+v", nil)
-		return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, errors.New("param must be an array at least 5 element"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 5 element"))
 	}
 
 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
