@@ -57,7 +57,6 @@ func (bp *BlockProvider) GetBlockBeaconByHeight(ctx context.Context, req *GetBlo
 		false,
 		[]uint64{req.FromHeight, req.ToHeight},
 	)
-	log.Println("[db] Block beacon received from netsync:", blkMsgs)
 	resp := &GetBlockBeaconByHeightResponse{}
 	for _, msg := range blkMsgs {
 		encoded, err := encodeMessage(msg)

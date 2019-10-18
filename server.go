@@ -1222,7 +1222,6 @@ func (serverObj *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) 
 }
 
 func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
-	fmt.Println("[db] Receive a BFTMsg START \n\n\n")
 	Logger.log.Debug("Receive a BFTMsg START")
 	var txProcessed chan struct{}
 	isRelayNodeForConsensus := cfg.Accelerator
