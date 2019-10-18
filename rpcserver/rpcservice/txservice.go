@@ -94,8 +94,9 @@ func (txService TxService) filterMemPoolOutcoinsToSpent(outCoins []*privacy.Outp
 	return remainOutputCoins, nil
 }
 
-func (txService TxService) chooseOutsCoinByKeyset(paymentInfos []*privacy.PaymentInfo,
-	estimateFeeCoinPerKb int64, numBlock uint64, keyset *incognitokey.KeySet, shardIDSender byte,
+func (txService TxService) chooseOutsCoinByKeyset(
+	paymentInfos []*privacy.PaymentInfo,
+	estimateFeeCoinPerKb int64, numBlock uint64, keySet *incognitokey.KeySet, shardIDSender byte,
 	hasPrivacy bool,
 	metadataParam metadata.Metadata,
 	customTokenParams *transaction.CustomTokenParamTx,
@@ -114,7 +115,7 @@ func (txService TxService) chooseOutsCoinByKeyset(paymentInfos []*privacy.Paymen
 	// get list outputcoins tx
 	prvCoinID := &common.Hash{}
 	prvCoinID.SetBytes(common.PRVCoinID[:])
-	outCoins, err := txService.BlockChain.GetListOutputCoinsByKeyset(keyset, shardIDSender, prvCoinID)
+	outCoins, err := txService.BlockChain.GetListOutputCoinsByKeyset(keySet, shardIDSender, prvCoinID)
 	if err != nil {
 		return nil, 0, NewRPCError(GetOutputCoinError, err)
 	}
@@ -136,7 +137,7 @@ func (txService TxService) chooseOutsCoinByKeyset(paymentInfos []*privacy.Paymen
 	if overBalanceAmount > 0 {
 		// add more into output for estimate fee
 		paymentInfos = append(paymentInfos, &privacy.PaymentInfo{
-			PaymentAddress: keyset.PaymentAddress,
+			PaymentAddress: keySet.PaymentAddress,
 			Amount:         overBalanceAmount,
 		})
 	}
@@ -489,8 +490,8 @@ func (txService TxService) BuildRawCustomTokenTransaction(
 	if !ok {
 		return nil, NewRPCError(RPCInvalidParamsError, errors.New("token param is invalid"))
 	}
-	tokenParams, listCustomTokens, err := txService.BuildCustomTokenParam(tokenParamsRaw, txparam.SenderKeySet)
-	_ = listCustomTokens
+	tokenParams, _, err := txService.BuildTokenParam(tokenParamsRaw, txparam.SenderKeySet, txparam.ShardIDSender)
+
 	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)
 	}
@@ -617,10 +618,8 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransaction(
 	}
 	tokenParamsRaw := txParam.TokenParamsRaw
 	var err error
-	tokenParams, listCustomTokens, listCustomTokenCrossShard, err := txService.BuildPrivacyCustomTokenParam(tokenParamsRaw, txParam.SenderKeySet, txParam.ShardIDSender)
+	_, tokenParams, err := txService.BuildTokenParam(tokenParamsRaw, txParam.SenderKeySet, txParam.ShardIDSender)
 
-	_ = listCustomTokenCrossShard
-	_ = listCustomTokens
 	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)
 	}
