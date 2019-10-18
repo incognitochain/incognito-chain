@@ -72,13 +72,13 @@ func VerifyValidator(candidate string, rand int64, shardID byte, activeShards in
 	- return param #1: remain shard candidate (not assign yet)
 	- return param #2: assigned candidate
 */
-func assignShardCandidate(candidates []string, numberOfPendingValidator map[byte]int, rand int64) ([]string, map[byte][]string) {
+func assignShardCandidate(candidates []string, numberOfPendingValidator map[byte]int, rand int64, testnetAssignOffset int, activeShards int) ([]string, map[byte][]string) {
 	assignedCandidates := make(map[byte][]string)
 	remainShardCandidates := []string{}
 	shuffledCandidate := shuffleShardCandidate(candidates, rand)
 	for _, candidate := range shuffledCandidate {
-		shardID := calculateCandidateShardID(candidate, rand, beaconBestState.ActiveShards)
-		if numberOfPendingValidator[shardID]+1 > TestnetAssignOffset {
+		shardID := calculateCandidateShardID(candidate, rand, activeShards)
+		if numberOfPendingValidator[shardID]+1 > testnetAssignOffset {
 			remainShardCandidates = append(remainShardCandidates, candidate)
 			continue
 		} else {
