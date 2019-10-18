@@ -99,4 +99,30 @@ func TestUtilsIntToByteArr(t *testing.T) {
 	}
 }
 
+func TestInterface(t *testing.T) {
+	a:= make(map[string]interface{})
+	a["x"] = "10"
+
+	value, ok := a["y"].(string)
+	if !ok {
+		fmt.Printf("Param is invalid\n")
+	}
+
+	value2, ok := a["y"]
+	if !ok {
+		fmt.Printf("Param is invalid\n")
+	}
+
+	value3, ok := a["x"].(string)
+	if !ok {
+		fmt.Printf("Param is invalid\n")
+	}
+
+	fmt.Printf("Value: %v\n", value)
+	fmt.Printf("Value2: %v\n", value2)
+	fmt.Printf("Value2: %v\n", value3)
+}
+
+
+
 
