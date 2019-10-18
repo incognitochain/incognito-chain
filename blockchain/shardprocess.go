@@ -74,12 +74,36 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 	@Notice: this block must have full information (complete block)
 */
 func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidated bool) error {
+	blockchain.chainLock.Lock()
+	defer blockchain.chainLock.Unlock()
 	shardID := shardBlock.Header.ShardID
 	blockHash := shardBlock.Header.Hash()
-	blockchain.BestState.Shard[shardID].lock.Lock()
-	defer blockchain.BestState.Shard[shardID].lock.Unlock()
+
+	shardLock := &blockchain.BestState.Shard[shardID].lock
+	shardLock.Lock()
+	defer shardLock.Unlock()
+
 	Logger.log.Criticalf("SHARD %+v | Begin insert new block height %+v with hash %+v", shardID, shardBlock.Header.Height, blockHash)
 	Logger.log.Infof("SHARD %+v | Check block existence for insert height %+v with hash %+v", shardID, shardBlock.Header.Height, blockHash)
+	currentShardBestState := blockchain.BestState.Shard[shardBlock.Header.ShardID]
+
+	if currentShardBestState.ShardHeight == shardBlock.Header.Height && currentShardBestState.BestBlock.Header.Timestamp < shardBlock.Header.Timestamp && currentShardBestState.BestBlock.Header.Round < shardBlock.Header.Round {
+		currentShardHeight := currentShardBestState.ShardHeight
+		currentShardHash := currentShardBestState.BestBlockHash
+		Logger.log.Infof("FORK SHARDID %+v, Current Block Height %+v, Block Hash %+v | Try To Insert New Shard Block Height %+v, Hash %+v", shardBlock.Header.ShardID, currentShardBestState.ShardHeight, currentShardBestState.BestBlockHash, shardBlock.Header.Height, shardBlock.Header.Hash())
+		if err := blockchain.ValidateBlockWithPrevShardBestState(shardBlock); err != nil {
+			Logger.log.Error(err)
+			return err
+		}
+		if err := blockchain.RevertShardState(shardBlock.Header.ShardID); err != nil {
+			panic(err)
+		}
+		Logger.log.Infof("REVERTED SHARDID %+v, Revert Current Block Height %+v, Block Hash %+v", shardBlock.Header.ShardID, currentShardHeight, currentShardHash)
+	}
+
+	if shardBlock.Header.Height != GetBestStateShard(shardID).ShardHeight+1 {
+		return errors.New("Not expected height")
+	}
 	// force non-committee member not to validate blk
 	// if blockchain.config.UserKeySet != nil && (blockchain.config.NodeMode == common.NODEMODE_AUTO || blockchain.config.NodeMode == common.NODEMODE_SHARD) {
 	// 	userRole := blockchain.BestState.Shard[block.Header.ShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyInBase58CheckEncode(), 0)
@@ -114,29 +138,23 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	if err := blockchain.BestState.Shard[shardID].verifyBestStateWithShardBlock(shardBlock, true, shardID); err != nil {
 		return err
 	}
-	Logger.log.Infof("SHARD %+v | Update ShardBestState, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-	// updateShardBestState best state with new block
+	Logger.log.Infof("SHARD %+v | BackupCurrentShardState, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	// Backup beststate
-	// TODO: fix this later
-	userPubKey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
-	if userPubKey != "" {
-		userRole := blockchain.BestState.Shard[shardID].GetPubkeyRole(userPubKey, 0)
-		if userRole == common.ProposerRole || userRole == common.ValidatorRole {
-			err = blockchain.config.DataBase.CleanBackup(true, shardBlock.Header.ShardID)
-			if err != nil {
-				return NewBlockChainError(CleanBackUpError, err)
-			}
-			err = blockchain.BackupCurrentShardState(shardBlock, beaconBlocks)
-			if err != nil {
-				return NewBlockChainError(BackUpBestStateError, err)
-			}
-		}
+	err = blockchain.config.DataBase.CleanBackup(false, shardBlock.Header.ShardID)
+	if err != nil {
+		return NewBlockChainError(CleanBackUpError, err)
+	}
+	err = blockchain.BackupCurrentShardState(shardBlock, beaconBlocks)
+	if err != nil {
+		return NewBlockChainError(BackUpBestStateError, err)
 	}
 
 	oldCommittee, err := incognitokey.CommitteeKeyListToString(blockchain.BestState.Shard[shardID].ShardCommittee)
 	if err != nil {
 		return err
 	}
+
+	Logger.log.Infof("SHARD %+v | Update ShardBestState, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	if err := blockchain.BestState.Shard[shardID].updateShardBestState(blockchain, shardBlock, beaconBlocks); err != nil {
 		errRevert := blockchain.revertShardBestState(shardID)
 		if errRevert != nil {
@@ -144,6 +162,8 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 		}
 		return err
 	}
+
+	Logger.log.Infof("SHARD %+v | Update NumOfBlocksByProducers, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	// update number of blocks produced by producers to shard best state
 	blockchain.BestState.Shard[shardID].updateNumOfBlocksByProducers(shardBlock)
 
@@ -269,11 +289,29 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 	if shardBlock.Header.Version != SHARD_BLOCK_VERSION {
 		return NewBlockChainError(WrongVersionError, fmt.Errorf("Expect shardBlock version %+v but get %+v", SHARD_BLOCK_VERSION, shardBlock.Header.Version))
 	}
+
+	if shardBlock.Header.Height > blockchain.BestState.Shard[shardID].ShardHeight+1 {
+		return NewBlockChainError(WrongBlockHeightError, fmt.Errorf("Expect shardBlock height %+v but get %+v", blockchain.BestState.Shard[shardID].ShardHeight+1, shardBlock.Header.Height))
+	}
 	// Verify parent hash exist or not
 	previousBlockHash := shardBlock.Header.PreviousBlockHash
 	previousShardBlockData, err := blockchain.config.DataBase.FetchBlock(previousBlockHash)
 	if err != nil {
-		blockchain.Synker.SyncBlkShard(shardID, true, false, false, []common.Hash{previousBlockHash}, nil, 0, 0, "")
+		if !isPreSign {
+			Logger.log.Criticalf("FORK SHARD DETECTED shardID=%+v at BlockHeight=%+v hash=%+v pre-hash=%+v",
+				shardID,
+				shardBlock.Header.Height,
+				shardBlock.Hash().String(),
+				previousBlockHash.String())
+
+			blockchain.Synker.SyncBlkShard(shardID, true, false, false, []common.Hash{previousBlockHash}, nil, 0, 0, "")
+			Logger.log.Critical("SEND REQUEST FOR BLOCK HASH", previousBlockHash.String(), shardBlock.Header.Height, shardBlock.Header.ShardID)
+			revertErr := blockchain.revertShardState(shardID)
+			if revertErr != nil {
+				Logger.log.Error("blockchain.revertShardState error", revertErr)
+				return errors.WithStack(revertErr)
+			}
+		}
 		return NewBlockChainError(FetchPreviousBlockError, err)
 	}
 	previousShardBlock := ShardBlock{}

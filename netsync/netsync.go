@@ -417,10 +417,13 @@ func (netSync *NetSync) handleMessageShardToBeacon(msg *wire.MessageShardToBeaco
 	// 	metrics.Tag:              metrics.ShardIDTag,
 	// 	metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees),
 	// })
-	if isAdded := netSync.handleCacheBlock("s2b" + msg.Block.Header.Hash().String()); !isAdded {
-		netSync.config.BlockChain.OnShardToBeaconBlockReceived(msg.Block)
-	} else {
-		Logger.log.Infof("handleMessageShardToBeacon blkHash && isAdded: %+v %+v", msg.Block.Header.Hash(), isAdded)
+	block := msg.Block
+	if block != nil {
+		if isAdded := netSync.handleCacheBlock("s2b" + block.Header.Hash().String()); !isAdded {
+			netSync.config.BlockChain.OnShardToBeaconBlockReceived(block)
+		} else {
+			Logger.log.Infof("handleMessageShardToBeacon blkHash && isAdded: %+v %+v", msg.Block.Header.Hash(), isAdded)
+		}
 	}
 }
 

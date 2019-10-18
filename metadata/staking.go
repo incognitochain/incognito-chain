@@ -65,7 +65,9 @@ func (sm *StakingMetadata) ValidateMetadataByItself() bool {
 	if !CommitteePublicKey.CheckSanityData() {
 		return false
 	}
-	return (sm.Type == ShardStakingMeta || sm.Type == BeaconStakingMeta)
+	//return (sm.Type == ShardStakingMeta || sm.Type == BeaconStakingMeta)
+	// only stake to shard
+	return sm.Type == ShardStakingMeta
 }
 
 func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(

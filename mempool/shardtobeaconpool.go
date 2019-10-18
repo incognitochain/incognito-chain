@@ -2,6 +2,7 @@ package mempool
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"sort"
 	"strconv"
@@ -59,7 +60,30 @@ func GetShardToBeaconPool() *ShardToBeaconPool {
 	}
 	return shardToBeaconPool
 }
-
+func (shardToBeaconPool *ShardToBeaconPool) RevertShardToBeaconPool(shardID byte, latestValidHeight uint64) {
+	shardToBeaconPool.mtx.Lock()
+	defer shardToBeaconPool.mtx.Unlock()
+	shardToBeaconPool.latestValidHeightMutex.Lock()
+	defer shardToBeaconPool.latestValidHeightMutex.Unlock()
+	Logger.log.Infof("Begin Revert ShardToBeaconPool of Shard %+v with latest valid height %+v", shardID, latestValidHeight)
+	shardToBeaconBlocks := []*blockchain.ShardToBeaconBlock{}
+	if _, ok := shardToBeaconPool.pool[shardID]; ok {
+		for _, shardToBeaconBlock := range shardToBeaconPool.pool[shardID] {
+			shardToBeaconBlocks = append(shardToBeaconBlocks, shardToBeaconBlock)
+		}
+		shardToBeaconPool.pool[shardID] = []*blockchain.ShardToBeaconBlock{}
+		for _, shardToBeaconBlock := range shardToBeaconBlocks {
+			_, _, err := shardToBeaconPool.addShardToBeaconBlock(shardToBeaconBlock)
+			if err == nil {
+				continue
+			} else {
+				return
+			}
+		}
+	} else {
+		return
+	}
+}
 func (shardToBeaconPool *ShardToBeaconPool) SetShardState(latestShardState map[byte]uint64) {
 	// Logger.log.Info("SetShardState")
 	shardToBeaconPool.mtx.Lock()
@@ -105,14 +129,10 @@ func (shardToBeaconPool *ShardToBeaconPool) checkLatestValidHeightValidity(shard
 	#3 error
 */
 
-func (shardToBeaconPool *ShardToBeaconPool) AddShardToBeaconBlock(block *blockchain.ShardToBeaconBlock) (uint64, uint64, error) {
+func (shardToBeaconPool *ShardToBeaconPool) addShardToBeaconBlock(block *blockchain.ShardToBeaconBlock) (uint64, uint64, error) {
 	shardID := block.Header.ShardID
 	blockHeight := block.Header.Height
 	Logger.log.Infof("Add ShardToBeaconBlock from shard %+v, height %+v \n", shardID, blockHeight)
-	shardToBeaconPool.mtx.Lock()
-	defer shardToBeaconPool.mtx.Unlock()
-	shardToBeaconPool.latestValidHeightMutex.Lock()
-	defer shardToBeaconPool.latestValidHeightMutex.Unlock()
 
 	shardToBeaconPool.checkLatestValidHeightValidity(shardID)
 	//If receive old block, it will ignore
@@ -187,20 +207,47 @@ func (shardToBeaconPool *ShardToBeaconPool) AddShardToBeaconBlock(block *blockch
 	return 0, 0, nil
 }
 
+func (shardToBeaconPool *ShardToBeaconPool) AddShardToBeaconBlock(block *blockchain.ShardToBeaconBlock) (uint64, uint64, error) {
+	shardID := block.Header.ShardID
+	blockHeight := block.Header.Height
+	Logger.log.Infof("Add ShardToBeaconBlock from shard %+v, height %+v \n", shardID, blockHeight)
+	shardToBeaconPool.mtx.Lock()
+	defer shardToBeaconPool.mtx.Unlock()
+	shardToBeaconPool.latestValidHeightMutex.Lock()
+	defer shardToBeaconPool.latestValidHeightMutex.Unlock()
+	return shardToBeaconPool.addShardToBeaconBlock(block)
+}
+
 func (shardToBeaconPool *ShardToBeaconPool) updateLatestShardState() {
 	for shardID, blks := range shardToBeaconPool.pool {
 		shardToBeaconPool.checkLatestValidHeightValidity(shardID)
 		lastHeight := shardToBeaconPool.latestValidHeight[shardID]
-		for _, blk := range blks {
-			// if block height is greater than lastHeight 2 value then break
-			if blk.Header.Height > lastHeight && blk.Header.Height != lastHeight+1 {
+		for i, blk := range blks {
+			// if block height is not next expected
+			if blk.Header.Height != lastHeight+1 {
 				break
 			}
-			// if block height is greater than lastHeight only 1 value than set new lastHeight to block height
+			if blk.Header.Height != 2 {
+				if i == (len(blks) - 1) {
+					break
+				} else {
+					if blks[i+1].Header.Height != blk.Header.Height+1 {
+						break
+					}
+					if !reflect.DeepEqual(blks[i+1].Header.PreviousBlockHash, *blk.Hash()) {
+						fmt.Println("Not equal", blk.Header.ShardID, blk.Header.Height, blks[i+1].Header.Height, (*blk.Hash()).String(), blks[i+1].Header.PreviousBlockHash.String(), lastHeight)
+						shardToBeaconPool.pool[shardID] = append(blks[:i], blks[i+1:]...)
+						break
+					}
+				}
+			}
 			lastHeight = blk.Header.Height
 		}
-		shardToBeaconPool.latestValidHeight[shardID] = lastHeight
-		Logger.log.Debugf("ShardToBeaconPool: Updated/LastValidHeight %+v of Shard %+v \n", lastHeight, shardID)
+		if shardToBeaconPool.latestValidHeight[shardID] != lastHeight {
+			Logger.log.Infof("ShardToBeaconPool: Updated/LastValidHeight %+v of Shard %+v \n", lastHeight, shardID)
+			shardToBeaconPool.latestValidHeight[shardID] = lastHeight
+		}
+
 	}
 }
 
@@ -215,7 +262,7 @@ func (shardToBeaconPool *ShardToBeaconPool) RemoveBlock(blockItems map[byte]uint
 func (shardToBeaconPool *ShardToBeaconPool) removeBlock(blockItems map[byte]uint64) {
 	for shardID, blockHeight := range blockItems {
 		for index, block := range shardToBeaconPool.pool[shardID] {
-			Logger.log.Info("ShardToBeaconPool/Pool BEFORE Remove", block.Header.Height)
+			Logger.log.Debugf("ShardToBeaconPool/Pool BEFORE Remove", block.Header.Height)
 			if block.Header.Height <= blockHeight {
 				if index == len(shardToBeaconPool.pool[shardID])-1 {
 					shardToBeaconPool.pool[shardID] = shardToBeaconPool.pool[shardID][index+1:]
@@ -227,7 +274,7 @@ func (shardToBeaconPool *ShardToBeaconPool) removeBlock(blockItems map[byte]uint
 			}
 		}
 		if blockHeight != 1 {
-			Logger.log.Infof("ShardToBeaconPool: Removed/LastValidHeight %+v of shard %+v \n", blockHeight, shardID)
+			Logger.log.Debugf("ShardToBeaconPool: Removed/LastValidHeight %+v of shard %+v \n", blockHeight, shardID)
 		}
 	}
 }

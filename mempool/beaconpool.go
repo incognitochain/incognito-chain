@@ -98,14 +98,28 @@ func (beaconPool *BeaconPool) SetBeaconState(lastestBeaconHeight uint64) {
 		beaconPool.latestValidHeight = lastestBeaconHeight
 	}
 }
-
+func (beaconPool *BeaconPool) RevertBeconPool(latestValidHeight uint64) {
+	beaconPool.mtx.Lock()
+	defer beaconPool.mtx.Unlock()
+	Logger.log.Infof("Begin Revert BeaconPool with latest valid height %+v", latestValidHeight)
+	beaconBlocks := []*blockchain.BeaconBlock{}
+	for _, shardBlock := range beaconPool.validPool {
+		beaconBlocks = append(beaconBlocks, shardBlock)
+	}
+	beaconPool.validPool = []*blockchain.BeaconBlock{}
+	for _, shardBlock := range beaconBlocks {
+		err := beaconPool.addBeaconBlock(shardBlock)
+		if err == nil {
+			continue
+		} else {
+			return
+		}
+	}
+}
 func (beaconPool BeaconPool) GetBeaconState() uint64 {
 	return beaconPool.latestValidHeight
 }
-
-func (beaconPool *BeaconPool) AddBeaconBlock(block *blockchain.BeaconBlock) error {
-	beaconPool.mtx.Lock()
-	defer beaconPool.mtx.Unlock()
+func (beaconPool *BeaconPool) addBeaconBlock(block *blockchain.BeaconBlock) error {
 	go beaconPool.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, block))
 	err := beaconPool.validateBeaconBlock(block, false)
 	if err != nil {
@@ -114,6 +128,11 @@ func (beaconPool *BeaconPool) AddBeaconBlock(block *blockchain.BeaconBlock) erro
 	beaconPool.insertNewBeaconBlockToPool(block)
 	beaconPool.promotePendingPool()
 	return nil
+}
+func (beaconPool *BeaconPool) AddBeaconBlock(block *blockchain.BeaconBlock) error {
+	beaconPool.mtx.Lock()
+	defer beaconPool.mtx.Unlock()
+	return beaconPool.addBeaconBlock(block)
 }
 
 func (beaconPool *BeaconPool) validateBeaconBlock(block *blockchain.BeaconBlock, isPending bool) error {
@@ -175,7 +194,9 @@ func (beaconPool *BeaconPool) insertNewBeaconBlockToPool(block *blockchain.Beaco
 					beaconPool.updateLatestBeaconState()
 					return true
 				} else {
-					beaconPool.cache.Add(block.Header.Hash(), block)
+					fmt.Println("BPool: block is fork at height %v with hash %v (block hash should be %v)", block.Header.Height, blockHeader, preHash)
+					delete(beaconPool.pendingPool, block.Header.Height)
+					beaconPool.cache.Add(block.Header.Hash(), block) // mark as wrong block for validating later
 					beaconPool.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.RequestBeaconBlockByHashTopic, preHash))
 				}
 			} else {
