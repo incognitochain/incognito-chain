@@ -18,7 +18,7 @@ import (
 )
 
 var HighwayPeerID = "12D3KooW9sbQK4J64Qat5D9vQEhBCnDYD3WPqWmgUZD4M7CJ2rXS"
-var MasterNodeID = "QmYMpCasu9oJSTmca9fotDs21fTC5jHEWQ2oUaytNXiRnT"
+var MasterNodeID = "QmVsCnV9kRZ182MX11CpcHMyFAReyXV49a599AbqmwtNrV"
 
 func NewConnManager(
 	host *Host,
@@ -28,6 +28,7 @@ func NewConnManager(
 	dispatcher *Dispatcher,
 ) *ConnManager {
 	master := peer.IDB58Encode(host.Host.ID()) == MasterNodeID
+	log.Println("IsMasterNode:", master)
 	return &ConnManager{
 		LocalHost:            host,
 		DiscoverPeersAddress: dpa,
@@ -131,6 +132,7 @@ func (cm *ConnManager) BroadcastCommittee(
 		return
 	}
 
+	log.Println("Broadcasting committee to highways!!!")
 	cc := &incognitokey.ChainCommittee{
 		Epoch:             epoch,
 		BeaconCommittee:   newBeaconCommittee,
