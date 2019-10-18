@@ -47,8 +47,7 @@ type Params struct {
 }
 
 type GenesisParams struct {
-	InitialPaymentAddress                       string
-	InitialIncognito                            []string
+	InitialIncognito                            []string // init tx for genesis block
 	FeePerTxKb                                  uint64
 	RandomNumber                                uint64
 	PreSelectBeaconNodeSerializedPubkey         []string
@@ -66,7 +65,6 @@ var ChainMainParam = Params{}
 // FOR TESTNET
 func init() {
 	var genesisParamsTestnetNew = GenesisParams{
-		InitialPaymentAddress:                       TestnetGenesisBlockPaymentAddress,
 		RandomNumber:                                0,
 		PreSelectBeaconNodeSerializedPubkey:         PreSelectBeaconNodeTestnetSerializedPubkey,
 		PreSelectBeaconNodeSerializedPaymentAddress: PreSelectBeaconNodeTestnetSerializedPaymentAddress,
@@ -114,7 +112,6 @@ func init() {
 	// END TESTNET
 	// FOR MAINNET
 	var genesisParamsMainnetNew = GenesisParams{
-		InitialPaymentAddress:               MainnetGenesisblockPaymentAddress,
 		RandomNumber:                        0,
 		PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeMainnetSerializedPubkey,
 		PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeMainnetSerializedPubkey,
