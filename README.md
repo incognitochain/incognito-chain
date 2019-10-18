@@ -16,7 +16,7 @@ We believe you should have a choice.
 
 If you’re here reading this, you already know how fast crypto assets are changing the way we think about money. For those who value privacy, crypto assets come with a big tradeoff. Transactions are recorded on public ledgers, displaying amounts involved, inscribing virtual identities of their senders and receivers.
 
-Given the choice, we strongly believe that very few people will willingly disclose their crypto financials to the entire world. Incognito offers anyone the option to turn on privacy mode in this new world of crypto networks.
+Given the choice, we strongly believe that very few people will willingly disclose their crypto financials to the entire world. Incognito offers anyone the option to turn on privacy mode in this new world of cryptonetworks.
 
 ## A full-stack approach to decentralized privacy
 
@@ -75,7 +75,7 @@ These instructions will get you up and running on your local machine for develop
     go build -o incognito
     ```
 
-- Get your node up
+- Run an Incognito Node
 
     ```shell
     ./incognito --enablewallet --wallet "wallet" --walletpassphrase "12345678" --testnet --norpcauth --walletautoinit
