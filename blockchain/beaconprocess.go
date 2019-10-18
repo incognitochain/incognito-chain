@@ -766,7 +766,7 @@ func (beaconBestState *BeaconBestState) updateBeaconBestState(beaconBlock *Beaco
 			if err != nil {
 				panic(err)
 			}
-			remainShardCandidatesStr, assignedCandidates := assignShardCandidate(shardCandidatesStr, numberOfPendingValidator, beaconBestState.CurrentRandomNumber)
+			remainShardCandidatesStr, assignedCandidates := assignShardCandidate(shardCandidatesStr, numberOfPendingValidator, beaconBestState.CurrentRandomNumber, TestnetAssignOffset, beaconBestState.ActiveShards)
 			remainShardCandidates, err := incognitokey.CommitteeBase58KeyListToStruct(remainShardCandidatesStr)
 			if err != nil {
 				panic(err)
