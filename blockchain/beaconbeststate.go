@@ -107,7 +107,8 @@ func NewBeaconBestStateWithConfig(netparam *Params) *BeaconBestState {
 	return beaconBestState
 }
 func SetBeaconBestState(beacon *BeaconBestState) {
-	beaconBestState = beacon
+	beacon.lock = GetBeaconBestState().lock
+	*GetBeaconBestState() = *beacon
 }
 
 func GetBeaconBestState() *BeaconBestState {
@@ -137,6 +138,26 @@ func (beaconBestState *BeaconBestState) SetBestShardHeight(shardID byte, height 
 	beaconBestState.lock.RLock()
 	defer beaconBestState.lock.RUnlock()
 	beaconBestState.BestShardHeight[shardID] = height
+}
+
+func (beaconBestState *BeaconBestState) GetShardConsensusAlgorithm() map[byte]string {
+	beaconBestState.lock.RLock()
+	defer beaconBestState.lock.RUnlock()
+	res := make(map[byte]string)
+	for index, element := range beaconBestState.ShardConsensusAlgorithm {
+		res[index] = element
+	}
+	return res
+}
+
+func (beaconBestState *BeaconBestState) GetBestShardHash() map[byte]common.Hash {
+	beaconBestState.lock.RLock()
+	defer beaconBestState.lock.RUnlock()
+	res := make(map[byte]common.Hash)
+	for index, element := range beaconBestState.BestShardHash {
+		res[index] = element
+	}
+	return res
 }
 
 func (beaconBestState *BeaconBestState) GetBestShardHeight() map[byte]uint64 {
