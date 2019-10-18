@@ -91,15 +91,35 @@ func (crossShardPool *CrossShardPool) GetNextCrossShardHeight(fromShard, toShard
 	return nextHeight
 
 }
+func (crossShardPool *CrossShardPool) RevertCrossShardPool(latestValidHeight uint64) {
+	crossShardPool.mtx.Lock()
+	defer crossShardPool.mtx.Unlock()
+	Logger.log.Infof("Begin Revert CrossShardPool of Shard %+v with latest valid height %+v", crossShardPool.shardID, latestValidHeight)
+	crossShardBlocks := []*blockchain.CrossShardBlock{}
+	if _, ok := crossShardPool.validPool[crossShardPool.shardID]; ok {
+		for _, crossShardBlock := range crossShardPool.validPool[crossShardPool.shardID] {
+			crossShardBlocks = append(crossShardBlocks, crossShardBlock)
+		}
+		crossShardPool.validPool[crossShardPool.shardID] = []*blockchain.CrossShardBlock{}
+		for _, crossShardBlock := range crossShardBlocks {
+			_, _, err := crossShardPool.addCrossShardBlock(crossShardBlock)
+			if err == nil {
+				continue
+			} else {
+				return
+			}
+		}
+	} else {
+		return
+	}
+}
 
 /*
 	Validate Cross Shard Block Before Signature Validation
 
 */
-func (crossShardPool *CrossShardPool) AddCrossShardBlock(crossShardBlock *blockchain.CrossShardBlock) (map[byte]uint64, byte, error) {
-	crossShardPool.mtx.Lock()
-	defer crossShardPool.mtx.Unlock()
 
+func (crossShardPool *CrossShardPool) addCrossShardBlock(crossShardBlock *blockchain.CrossShardBlock) (map[byte]uint64, byte, error) {
 	shardID := crossShardBlock.Header.ShardID
 	blockHeight := crossShardBlock.Header.Height
 
@@ -124,6 +144,11 @@ func (crossShardPool *CrossShardPool) AddCrossShardBlock(crossShardBlock *blockc
 	// update pool states
 	expectedHeight := crossShardPool.updatePool()
 	return expectedHeight, crossShardPool.shardID, nil
+}
+func (crossShardPool *CrossShardPool) AddCrossShardBlock(crossShardBlock *blockchain.CrossShardBlock) (map[byte]uint64, byte, error) {
+	crossShardPool.mtx.Lock()
+	defer crossShardPool.mtx.Unlock()
+	return crossShardPool.addCrossShardBlock(crossShardBlock)
 }
 
 /*
@@ -188,7 +213,7 @@ func (crossShardPool *CrossShardPool) validateCrossShardBlockSignature(crossShar
 	- Beacon Confirm this Cross Shard Block and Store in Database
 */
 func (crossShardPool *CrossShardPool) updatePool() map[byte]uint64 {
-	Logger.log.Infof("Update Cross Shard Pool %+v State", crossShardPool.shardID)
+	Logger.log.Debugf("Update Cross Shard Pool %+v State", crossShardPool.shardID)
 	crossShardPool.crossShardState = blockchain.GetBestStateShard(crossShardPool.shardID).BestCrossShard
 	crossShardPool.removeBlockByHeight(crossShardPool.crossShardState)
 	expectedHeight := make(map[byte]uint64)

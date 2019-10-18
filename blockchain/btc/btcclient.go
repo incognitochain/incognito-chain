@@ -42,7 +42,7 @@ func (btcClient *BTCClient) GetNonceByTimestamp(timestamp int64) (int, int64, in
 	if err != nil {
 		return 0, 0, -1, err
 	}
-	_, blockTimestamp, err = btcClient.GetTimeStampAndNonceByBlockHeight(blockHeight)
+	blockTimestamp, _, err = btcClient.GetTimeStampAndNonceByBlockHeight(blockHeight)
 	if err != nil {
 		return 0, 0, -1, err
 	}
@@ -52,7 +52,7 @@ func (btcClient *BTCClient) GetNonceByTimestamp(timestamp int64) (int, int64, in
 	if blockTimestamp > timestamp {
 		for blockTimestamp > timestamp {
 			blockHeight--
-			_, blockTimestamp, err = btcClient.GetTimeStampAndNonceByBlockHeight(blockHeight)
+			blockTimestamp, _, err = btcClient.GetTimeStampAndNonceByBlockHeight(blockHeight)
 			if err != nil {
 				return 0, 0, -1, err
 			}
@@ -70,7 +70,7 @@ func (btcClient *BTCClient) GetNonceByTimestamp(timestamp int64) (int, int64, in
 			if blockHeight > chainHeight {
 				return 0, 0, -1, NewBTCAPIError(APIError, errors.New("Timestamp is greater than timestamp of highest block"))
 			}
-			_, blockTimestamp, err = btcClient.GetTimeStampAndNonceByBlockHeight(blockHeight)
+			blockTimestamp, _, err = btcClient.GetTimeStampAndNonceByBlockHeight(blockHeight)
 			if err != nil {
 				return 0, 0, -1, err
 			}

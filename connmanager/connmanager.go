@@ -298,16 +298,16 @@ func (connManager *ConnManager) listenHandler(listen *peer.Peer) {
 }
 
 func (connManager *ConnManager) handleConnected(peerConn *peer.PeerConn) {
-	Logger.log.Infof("handleConnected %s", peerConn.GetRemotePeerID().Pretty())
+	Logger.log.Debugf("handleConnected %s", peerConn.GetRemotePeerID().Pretty())
 	if peerConn.GetIsOutbound() {
-		Logger.log.Infof("handleConnected OUTBOUND %s", peerConn.GetRemotePeerID().Pretty())
+		Logger.log.Debugf("handleConnected OUTBOUND %s", peerConn.GetRemotePeerID().Pretty())
 
 		if connManager.config.OnOutboundConnection != nil {
 			connManager.config.OnOutboundConnection(peerConn)
 		}
 
 	} else {
-		Logger.log.Infof("handleConnected INBOUND %s", peerConn.GetRemotePeerID().Pretty())
+		Logger.log.Debugf("handleConnected INBOUND %s", peerConn.GetRemotePeerID().Pretty())
 	}
 }
 
@@ -452,7 +452,7 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 		// make models
 		responsePeers := make(map[string]*wire.RawPeer)
 		for _, rawPeer := range response {
-			fmt.Printf("CONNLog Ping Response PublicKey %v %v\n", rawPeer.RawAddress, rawPeer.PublicKey)
+			//fmt.Printf("CONNLog Ping Response PublicKey %v %v\n", rawPeer.RawAddress, rawPeer.PublicKey)
 			p := rawPeer
 			responsePeers[rawPeer.PublicKey] = &p
 		}
@@ -484,7 +484,7 @@ func (connManager *ConnManager) getPeerConnOfShard(shard *byte) []*peer.PeerConn
 		pk, _ := peerConn.GetRemotePeer().GetPublicKey()
 
 		sh := connManager.getShardOfPublicKey(pk)
-		fmt.Println(pk, sh)
+		//fmt.Println(pk, sh)
 		if (shard == nil && sh == nil) || (sh != nil && shard != nil && *sh == *shard) {
 			c = append(c, peerConn)
 		}
@@ -497,7 +497,7 @@ func (connManager *ConnManager) countPeerConnOfShard(shard *byte) int {
 	count := 0
 	listener := connManager.config.ListenerPeer
 	if listener != nil {
-		fmt.Println("COUNT: count peer")
+		//fmt.Println("COUNT: count peer")
 		allPeers := listener.GetPeerConnOfAll()
 		// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		// 	metrics.Measurement:      metrics.AllConnectedPeers,
@@ -561,7 +561,7 @@ func (connManager *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int
 		return 0
 	}
 	//Logger.log.Info("handleRandPeersOfShard", *shard)
-	fmt.Println("CONN: handleRandPeersOfShard", *shard)
+	//fmt.Println("CONN: handleRandPeersOfShard", *shard)
 	countPeerShard := connManager.countPeerConnOfShard(shard)
 	fmt.Println("CONN: shard ", *shard, "has", countPeerShard, "peers")
 	if countPeerShard >= maxPeers {
@@ -584,7 +584,7 @@ func (connManager *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int
 			cPbk := connManager.config.ConsensusState.userPublicKey
 			// if existed conn then not append to array
 			if cPbk != pbk && !connManager.checkPeerConnOfPublicKey(pbk) {
-				// fmt.Println("CONN: try to connect peer in shard ", peerI.RawAddress, peerI.PublicKeyType, peerI.PublicKey, pbk)
+				fmt.Println("CONN: try to connect peer in shard ", peerI.RawAddress, peerI.PublicKeyType, peerI.PublicKey, pbk)
 				go connManager.Connect(peerI.RawAddress, peerI.PublicKey, peerI.PublicKeyType, nil)
 				countPeerShard++
 			}
@@ -595,13 +595,13 @@ func (connManager *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int
 			Logger.log.Warn("CONN: cannot find", pbk)
 		}
 	}
-	fmt.Println("CONN: finish handleRandPeersOfShard", countPeerShard)
+	//fmt.Println("CONN: finish handleRandPeersOfShard", countPeerShard)
 	return countPeerShard
 }
 
 func (connManager *ConnManager) handleRandPeersOfOtherShard(cShard *byte, maxShardPeers int, maxPeers int, mPeers map[string]*wire.RawPeer) int {
 	//Logger.log.Info("handleRandPeersOfOtherShard", maxShardPeers, maxPeers)
-	fmt.Println("CONN: handleRandPeersOfOtherShard")
+	//fmt.Println("CONN: handleRandPeersOfOtherShard")
 	countPeers := 0
 	for _, shard := range connManager.randShards {
 		if cShard == nil || (cShard != nil && *cShard != shard) {
@@ -619,7 +619,6 @@ func (connManager *ConnManager) handleRandPeersOfOtherShard(cShard *byte, maxSha
 			}
 		}
 	}
-	fmt.Println("CONN: finish handleRandPeersOfOtherShard")
 	return countPeers
 }
 
@@ -637,9 +636,7 @@ func (connManager *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPee
 			// if existed conn then not append to array
 			if cPbk != pbk && !connManager.checkPeerConnOfPublicKey(pbk) {
 				fmt.Println("CONN: beacon try to connect", peerI.RawAddress, peerI.PublicKeyType, peerI.PublicKey, pbk)
-				go func() {
-					fmt.Println("CONN: beacon connect result", connManager.Connect(peerI.RawAddress, peerI.PublicKey, peerI.PublicKeyType, nil))
-				}()
+				go connManager.Connect(peerI.RawAddress, peerI.PublicKey, peerI.PublicKeyType, nil)
 			}
 			countPeerShard++
 			if countPeerShard >= maxBeaconPeers {
@@ -706,19 +703,19 @@ func (connManager *ConnManager) CheckForAcceptConn(peerConn *peer.PeerConn) (boo
 		//	same shard
 		countPeerShard := connManager.countPeerConnOfShard(shardID)
 		if countPeerShard > connManager.config.MaxPeersSameShard {
-			return false, NewConnManagerError(NotAcceptConnectionError, errors.New("same shard but countPeerShard > connManager.config.MaxPeersSameShard"))
+			return false, NewConnManagerError(NotAcceptConnectionError, fmt.Errorf("same shard because countPeerShard(%+v) > connManager.config.MaxPeersSameShard(%+v)", countPeerShard, connManager.config.MaxPeersSameShard))
 		}
 	} else if shardID != nil {
 		//	other shard
 		countPeerShard := connManager.countPeerConnOfShard(shardID)
 		if countPeerShard > connManager.config.MaxPeersOtherShard {
-			return false, NewConnManagerError(NotAcceptConnectionError, errors.New("other shard but countPeerShard > connManager.config.MaxPeersOtherShard"))
+			return false, NewConnManagerError(NotAcceptConnectionError, fmt.Errorf("other shard because countPeerShard(%+v) > connManager.config.MaxPeersOtherShard(%+v)", countPeerShard, connManager.config.MaxPeersOtherShard))
 		}
 	} else if shardID == nil {
 		// none shard
 		countPeerShard := connManager.countPeerConnOfShard(nil)
 		if countPeerShard > connManager.config.MaxPeersNoShard {
-			return false, NewConnManagerError(NotAcceptConnectionError, errors.New("none shard but countPeerShard > connManager.config.MaxPeersNoShard"))
+			return false, NewConnManagerError(NotAcceptConnectionError, fmt.Errorf("no shard because countPeerShard(%+v) > connManager.config.MaxPeersNoShard(%+v)", countPeerShard, connManager.config.MaxPeersNoShard))
 		}
 	}
 	return true, nil
@@ -833,6 +830,7 @@ func (connManager *ConnManager) handleRelayNode(mPeers map[string]*wire.RawPeer)
 }
 
 func (connManager *ConnManager) DropAllConnections() {
+	fmt.Println("DEBUG: DropAllConnections")
 	listener := connManager.config.ListenerPeer
 	if listener != nil {
 		allPeers := listener.GetPeerConnOfAll()

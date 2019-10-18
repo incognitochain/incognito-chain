@@ -127,10 +127,26 @@ func (shardPool *ShardPool) GetShardState() uint64 {
 	defer shardPool.mtx.RUnlock()
 	return shardPool.latestValidHeight
 }
-
-func (shardPool *ShardPool) AddShardBlock(block *blockchain.ShardBlock) error {
+func (shardPool *ShardPool) RevertShardPool(latestValidHeight uint64) {
 	shardPool.mtx.Lock()
 	defer shardPool.mtx.Unlock()
+	Logger.log.Infof("Begin Revert ShardPool of Shard %+v with latest valid height %+v", shardPool.shardID, latestValidHeight)
+	shardBlocks := []*blockchain.ShardBlock{}
+	for _, shardBlock := range shardPool.validPool {
+		shardBlocks = append(shardBlocks, shardBlock)
+	}
+	shardPool.validPool = []*blockchain.ShardBlock{}
+	for _, shardBlock := range shardBlocks {
+		err := shardPool.addShardBlock(shardBlock)
+		if err == nil {
+			continue
+		} else {
+			return
+		}
+	}
+}
+
+func (shardPool *ShardPool) addShardBlock(block *blockchain.ShardBlock) error {
 	var err error
 	err = shardPool.validateShardBlock(block, false)
 	if err != nil {
@@ -138,6 +154,12 @@ func (shardPool *ShardPool) AddShardBlock(block *blockchain.ShardBlock) error {
 	}
 	shardPool.insertNewShardBlockToPool(block)
 	shardPool.promotePendingPool()
+	return nil
+}
+func (shardPool *ShardPool) AddShardBlock(block *blockchain.ShardBlock) error {
+	shardPool.mtx.Lock()
+	defer shardPool.mtx.Unlock()
+	return shardPool.addShardBlock(block)
 	return nil
 }
 
@@ -324,9 +346,9 @@ func (shardPool *ShardPool) removeBlock(lastBlockHeight uint64) {
 			break
 		}
 	}
-	if len(shardPool.validPool) > 0 {
-		fmt.Println("Remove block routine", shardPool.shardID, shardPool.validPool[0].Header.Height)
-	}
+	//if len(shardPool.validPool) > 0 {
+	//	fmt.Println("Remove block routine", shardPool.shardID, shardPool.validPool[0].Header.Height)
+	//}
 	shardPool.updateLatestShardState()
 }
 
