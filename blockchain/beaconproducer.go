@@ -445,8 +445,12 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 		//==================================
 		if err == nil && chainTimeStamp > beaconBestState.CurrentRandomTimeStamp {
 			numberOfPendingValidator := make(map[byte]int)
-			for shardID, pendingValidators := range beaconBestState.ShardPendingValidator {
-				numberOfPendingValidator[shardID] = len(pendingValidators)
+			for i := 0; i < beaconBestState.ActiveShards; i++ {
+				if pendingValidators, ok := beaconBestState.ShardPendingValidator[byte(i)]; ok {
+					numberOfPendingValidator[byte(i)] = len(pendingValidators)
+				} else {
+					numberOfPendingValidator[byte(i)] = 0
+				}
 			}
 			randomInstruction, rand, err := beaconBestState.generateRandomInstruction(beaconBestState.CurrentRandomTimeStamp, blockchain.config.RandomClient)
 			if err != nil {
@@ -458,12 +462,7 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 			if err != nil {
 				panic(err)
 			}
-			remainShardCandidatesStr, assignedCandidates := assignShardCandidate(shardCandidatesStr, numberOfPendingValidator, rand)
-			remainShardCandidates, err := incognitokey.CommitteeBase58KeyListToStruct(remainShardCandidatesStr)
-			if err != nil {
-				panic(err)
-			}
-			beaconBestState.CandidateShardWaitingForNextRandom = append(beaconBestState.CandidateShardWaitingForNextRandom, remainShardCandidates...)
+			_, assignedCandidates := assignShardCandidate(shardCandidatesStr, numberOfPendingValidator, rand)
 			var keys []int
 			for k := range assignedCandidates {
 				keys = append(keys, int(k))
