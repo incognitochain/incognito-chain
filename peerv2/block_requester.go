@@ -9,6 +9,8 @@ import (
 	"google.golang.org/grpc"
 )
 
+// TODO(@0xbunyip): cache all requests to prevent querying the same height multiple times
+
 type BlockRequester struct {
 	conn *grpc.ClientConn
 }
@@ -89,9 +91,10 @@ func (c *BlockRequester) GetBlockBeaconByHeight(
 			FromPool:   false,
 		},
 	)
-	log.Printf("Received block beacon data %v", reply)
 	if err != nil {
 		return nil, err
+	} else if reply != nil {
+		log.Printf("Received block beacon data len: %v", len(reply.Data))
 	}
 	return reply.Data, nil
 }
