@@ -47,7 +47,7 @@ type Params struct {
 }
 
 type GenesisParams struct {
-	InitialIncognito                            []string
+	InitialIncognito                            []string // init tx for genesis block
 	FeePerTxKb                                  uint64
 	RandomNumber                                uint64
 	PreSelectBeaconNodeSerializedPubkey         []string
