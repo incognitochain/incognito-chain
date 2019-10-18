@@ -63,7 +63,7 @@ func NewBurningRequestMetadata(senderPrivateKeyStr string, tokenReceivers interf
 		return nil, NewRPCError(UnexpectedError, err)
 	}
 
-	meta, _ := metadata.NewBurningRequest(
+	meta, err := metadata.NewBurningRequest(
 		paymentAddr,
 		uint64(voutsAmount),
 		*tokenIDHash,
@@ -71,6 +71,9 @@ func NewBurningRequestMetadata(senderPrivateKeyStr string, tokenReceivers interf
 		remoteAddress,
 		metadata.BurningRequestMeta,
 	)
+	if err != nil{
+		return nil, NewRPCError(UnexpectedError, err)
+	}
 
 	return meta, nil
 }
