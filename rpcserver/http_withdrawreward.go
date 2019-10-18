@@ -12,15 +12,33 @@ import (
 
 func (httpServer *HttpServer) handleCreateRawWithDrawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 5 elements"))
+	}
 	arrayParams[1] = nil
-	param := map[string]interface{}{}
-	keyWallet, err := wallet.Base58CheckDeserialize(arrayParams[0].(string))
+
+	privateKeyParam, ok := arrayParams[0].(string)
+	if !ok{
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("private key is invalid"))
+	}
+	keyWallet, err := wallet.Base58CheckDeserialize(privateKeyParam)
 	if err != nil {
 		return []byte{}, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New(fmt.Sprintf("Wrong privatekey %+v", err)))
 	}
 	keyWallet.KeySet.InitFromPrivateKeyByte(keyWallet.KeySet.PrivateKey)
+
+	metaParam, ok := arrayParams[4].(map[string]interface{})
+	if !ok{
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+	}
+	tokenIDParam, ok := metaParam["TokenID"]
+	if !ok{
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token ID is invalid"))
+	}
+
+	param := map[string]interface{}{}
 	param["PaymentAddress"] = keyWallet.Base58CheckSerialize(1)
-	param["TokenID"] = arrayParams[4].(map[string]interface{})["TokenID"]
+	param["TokenID"] = tokenIDParam
 	arrayParams[4] = interface{}(param)
 	return httpServer.createRawTxWithMetadata(
 		arrayParams,
@@ -41,10 +59,14 @@ func (httpServer *HttpServer) handleCreateAndSendWithDrawTransaction(params inte
 // handleGetRewardAmount - Get the reward amount of a payment address with all existed token
 func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) != 1 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("key component invalid"))
+	if arrayParams == nil || len(arrayParams) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
 	}
-	paymentAddress := arrayParams[0].(string)
+
+	paymentAddress, ok := arrayParams[0].(string)
+	if !ok{
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("payment address is invalid"))
+	}
 
 	return httpServer.blockService.GetRewardAmount(paymentAddress)
 }
