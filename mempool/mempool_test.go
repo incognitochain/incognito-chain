@@ -296,7 +296,7 @@ func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacy
 	}
 	remainOutputCoins := make([]*privacy.OutputCoin, 0)
 	for _, outCoin := range outCoins {
-		if tp.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().Compress()) == nil {
+		if tp.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().ToBytesS()) == nil {
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}
 	}
@@ -379,7 +379,7 @@ func CreateAndSaveTestStakingTransaction(privateKey string, privateSeed string, 
 	}
 	remainOutputCoins := make([]*privacy.OutputCoin, 0)
 	for _, outCoin := range outCoins {
-		if tp.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().Compress()) == nil {
+		if tp.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().ToBytesS()) == nil {
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}
 	}
@@ -477,7 +477,7 @@ func CreateAndSaveTestInitCustomTokenTransaction(privateKey string, fee int64, t
 	}
 	remainOutputCoins := make([]*privacy.OutputCoin, 0)
 	for _, outCoin := range outCoins {
-		if tp.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().Compress()) == nil {
+		if tp.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().ToBytesS()) == nil {
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}
 	}
@@ -562,7 +562,7 @@ func CreateAndSaveTestInitCustomTokenTransactionPrivacy(privateKey string, fee i
 	}
 	remainOutputCoins := make([]*privacy.OutputCoin, 0)
 	for _, outCoin := range outCoins {
-		if tp.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().Compress()) == nil {
+		if tp.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().ToBytesS()) == nil {
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}
 	}
@@ -839,7 +839,7 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	sum := uint64(0)
 	outCoins, _ := tp.config.BlockChain.GetListOutputCoinsByKeyset(&senderKeySet.KeySet, shardIDSender, prvCoinID)
 	for _, outCoin := range outCoins {
-		hash := common.HashH(outCoin.CoinDetails.GetSerialNumber().Compress())
+		hash := common.HashH(outCoin.CoinDetails.GetSerialNumber().ToBytesS())
 		log.Println("Serial Number: ", hash)
 		sum += outCoin.CoinDetails.GetValue()
 	}
@@ -1221,8 +1221,8 @@ func TestTxPoolmayBeAcceptTransaction(t *testing.T) {
 	fee := tp.MaxFee()
 	assert.Equal(t, uint64(30), uint64(fee))
 
-	tp.LockPool()
-	tp.UnlockPool()
+	/*tp.LockPool()
+	tp.UnlockPool()*/
 
 	pool := tp.GetPool()
 	assert.NotEqual(t, nil, pool)
