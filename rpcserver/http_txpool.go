@@ -2,7 +2,6 @@ package rpcserver
 
 import (
 	"errors"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -33,9 +32,9 @@ func (httpServer *HttpServer) handleGetRawMempool(params interface{}, closeChan 
 handleGetPendingTxsInBlockgen - RPC returns all transaction ids in blockgen
 */
 func (httpServer *HttpServer) handleGetPendingTxsInBlockgen(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleGetRawMempool params: %+v", params)
+	Logger.log.Debugf("handleGetPendingTxsInBlockgen params: %+v", params)
 	result := jsonresult.NewGetPendingTxsInBlockgenResult(httpServer.config.Blockgen.GetPendingTxsV2())
-	Logger.log.Debugf("handleGetRawMempool result: %+v", result)
+	Logger.log.Debugf("handleGetPendingTxsInBlockgen result: %+v", result)
 	return result, nil
 }
 
@@ -52,11 +51,12 @@ handleMempoolEntry - RPC fetch a specific transaction from the mempool
 func (httpServer *HttpServer) handleMempoolEntry(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleMempoolEntry params: %+v", params)
 	// Param #1: hash string of tx(tx id)
-	if params == nil {
-		params = ""
+	txIDParam, ok := params.(string)
+	if !ok || txIDParam == "" {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("transaction id is invalid"))
 	}
 
-	txInPool, shardID, err := httpServer.txMemPoolService.MempoolEntry(params.(string))
+	txInPool, shardID, err := httpServer.txMemPoolService.MempoolEntry(txIDParam)
 	if err != nil {
 		return nil, err
 	}
@@ -73,11 +73,12 @@ func (httpServer *HttpServer) handleMempoolEntry(params interface{}, closeChan <
 
 // handleRemoveTxInMempool - try to remove tx from tx mempool
 func (httpServer *HttpServer) handleRemoveTxInMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	if params == nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param is invalid"))
-	}
-	result := []bool{}
 	arrays := common.InterfaceSlice(params)
+	if arrays == nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param is invalid"))
+	}
+
+	result := []bool{}
 	for _, txHashString := range arrays {
 		txHash, ok := txHashString.(string)
 		if ok {
