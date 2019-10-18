@@ -58,3 +58,8 @@ fi
 if [ "$1" == "3" ]; then
 go run *.go --miningkeys "bls:12v9jokoYDWFQ7731mR6QjjkvUG1Q" --nodemode "auto" --datadir "data/3" --listen "0.0.0.0:9437" --externaladdress "0.0.0.0:9437" --norpcauth --rpclisten "0.0.0.0:9337"
 fi
+
+# masternode: (using st2 miningkeys)
+if [ "$1" == "masternode" ]; then
+go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:1UCU4M3U6XXJTgjcpT7e5fY9swXnM74sWSoP6Qyx9CD4GKSKGG" --nodemode "auto" --datadir "data/masternode" --listen "0.0.0.0:8534" --externaladdress "0.0.0.0:8534" --norpcauth --rpclisten "0.0.0.0:9534" --enablewallet --wallet "wallet1" --walletpassphrase "12345678" --walletautoinit --loglevel info --libp2pprivatekey "CAMSeTB3AgEBBCCGewUjqizjTjLNdHfij13yll2yRQGOAOF/NzOkGDSvPaAKBggqhkjOPQMBB6FEA0IABNRXIZhVbIPhkuEl2SlSrDo6MSMqerEd3dhi1EwGSASQvDs0oETOapH5xhzVcHUdRbLgU5KUgI9I1DrWjMy5Vjc="
+fi
