@@ -462,7 +462,7 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 			if err != nil {
 				panic(err)
 			}
-			_, assignedCandidates := assignShardCandidate(shardCandidatesStr, numberOfPendingValidator, rand)
+			_, assignedCandidates := assignShardCandidate(shardCandidatesStr, numberOfPendingValidator, rand, TestnetAssignOffset, beaconBestState.ActiveShards)
 			var keys []int
 			for k := range assignedCandidates {
 				keys = append(keys, int(k))
