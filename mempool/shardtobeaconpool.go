@@ -238,9 +238,11 @@ func (shardToBeaconPool *ShardToBeaconPool) GetValidBlock(limit map[byte]uint64)
 	shardToBeaconPool.latestValidHeightMutex.Lock()
 	defer shardToBeaconPool.latestValidHeightMutex.Unlock()
 	finalBlocks := make(map[byte][]*blockchain.ShardToBeaconBlock)
+	Logger.log.Infof("In GetValidBlock pool: %+v", shardToBeaconPool.pool)
 	for shardID, blks := range shardToBeaconPool.pool {
 		shardToBeaconPool.checkLatestValidHeightValidity(shardID)
 		for i, blk := range blks {
+			Logger.log.Infof("In GetValidBlock blks[i]Height && latestValidHeight: %+v %+v", blks[i].Header.Height, shardToBeaconPool.latestValidHeight[shardID])
 			if blks[i].Header.Height > shardToBeaconPool.latestValidHeight[shardID] {
 				break
 			}

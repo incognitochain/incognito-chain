@@ -277,9 +277,11 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block *ShardToBeaconB
 	if blockchain.IsTest {
 		return
 	}
+	Logger.log.Infof("OnShardToBeaconBlockReceived NodeMode: %+v", blockchain.config.NodeMode)
 	if blockchain.config.NodeMode == common.NodeModeBeacon || blockchain.config.NodeMode == common.NodeModeAuto {
 		publicKey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
 		beaconRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(publicKey, 0)
+		Logger.log.Infof("OnShardToBeaconBlockReceived beaconRole: %+v", beaconRole)
 		if beaconRole != common.ProposerRole && beaconRole != common.ValidatorRole {
 			return
 		}
@@ -287,6 +289,7 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block *ShardToBeaconB
 		return
 	}
 
+	Logger.log.Infof("OnShardToBeaconBlockReceived IsLatest: %+v", blockchain.Synker.IsLatest(false, 0))
 	if blockchain.Synker.IsLatest(false, 0) {
 		if block.Header.Version != SHARD_BLOCK_VERSION {
 			Logger.log.Debugf("Invalid Verion of block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID)
