@@ -2,9 +2,9 @@ package rpcserver
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -22,10 +22,23 @@ var metaConstructors = map[string]metaConstructorType{
 func (httpServer *HttpServer) createRawTxWithMetadata(params interface{}, closeChan <-chan struct{}, metaConstructorType metaConstructorType) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
-	metaRaw := arrayParams[len(arrayParams)-1].(map[string]interface{})
-	meta, errCons := metaConstructorType(metaRaw)
+	if arrayParams == nil || len(arrayParams) < 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 5 elements"))
+	}
 
-	_, _, errParseKey := rpcservice.GetKeySetFromPrivateKeyParams(arrayParams[0].(string))
+	// param #5 get meta data param
+	metaRaw, ok := arrayParams[4].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
+	}
+
+	privateKeyParam, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("private key is invalid"))
+	}
+
+	meta, errCons := metaConstructorType(metaRaw)
+	_, _, errParseKey := rpcservice.GetKeySetFromPrivateKeyParams(privateKeyParam)
 	if err := common.CheckError(errCons, errParseKey); err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
@@ -54,38 +67,46 @@ func (httpServer *HttpServer) createRawTxWithMetadata(params interface{}, closeC
 	return result, nil
 }
 
-func (httpServer *HttpServer) createRawCustomTokenTxWithMetadata(params interface{}, closeChan <-chan struct{}, metaConstructorType metaConstructorType) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Info(params)
-	arrayParams := common.InterfaceSlice(params)
-	metaRaw := arrayParams[len(arrayParams)-1].(map[string]interface{})
-	meta, errCons := metaConstructorType(metaRaw)
-	if errCons != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errCons)
-	}
-	tx, err := httpServer.txService.BuildRawCustomTokenTransaction(params, meta)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	fmt.Printf("sigPubKey after build: %v\n", tx.SigPubKey)
-	byteArrays, errMarshal := json.Marshal(tx)
-	if errMarshal != nil {
-		// return hex for a new tx
-		return nil, rpcservice.NewRPCError(rpcservice.JsonError, errMarshal)
-	}
-	fmt.Printf("Created raw tx: %+v\n", tx)
-	result := jsonresult.CreateTransactionResult{
-		TxID:            tx.Hash().String(),
-		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
-	}
-	return result, nil
-}
+// not to be used
+//func (httpServer *HttpServer) createRawCustomTokenTxWithMetadata(params interface{}, closeChan <-chan struct{}, metaConstructorType metaConstructorType) (interface{}, *rpcservice.RPCError) {
+//	Logger.log.Info(params)
+//	arrayParams := common.InterfaceSlice(params)
+//	metaRaw := arrayParams[len(arrayParams)-1].(map[string]interface{})
+//	meta, errCons := metaConstructorType(metaRaw)
+//	if errCons != nil {
+//		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errCons)
+//	}
+//	tx, err := httpServer.txService.BuildRawCustomTokenTransaction(params, meta)
+//	if err != nil {
+//		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+//	}
+//	fmt.Printf("sigPubKey after build: %v\n", tx.SigPubKey)
+//	byteArrays, errMarshal := json.Marshal(tx)
+//	if errMarshal != nil {
+//		// return hex for a new tx
+//		return nil, rpcservice.NewRPCError(rpcservice.JsonError, errMarshal)
+//	}
+//	fmt.Printf("Created raw tx: %+v\n", tx)
+//	result := jsonresult.CreateTransactionResult{
+//		TxID:            tx.Hash().String(),
+//		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+//	}
+//	return result, nil
+//}
 
 func (httpServer *HttpServer) sendRawTxWithMetadata(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
-	base58CheckDate := arrayParams[0].(string)
+	if arrayParams == nil || len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+	}
 
-	txMsg, txHash, err := httpServer.txService.SendRawTxWithMetadata(base58CheckDate)
+	base58CheckData, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("base58CheckData param is invalid"))
+	}
+
+	txMsg, txHash, err := httpServer.txService.SendRawTxWithMetadata(base58CheckData)
 	if err != nil{
 		return nil, err
 	}
@@ -104,9 +125,16 @@ func (httpServer *HttpServer) sendRawTxWithMetadata(params interface{}, closeCha
 func (httpServer *HttpServer) sendRawCustomTokenTxWithMetadata(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
-	base58CheckDate := arrayParams[0].(string)
+	if arrayParams == nil || len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+	}
 
-	txMsg, txHash, err := httpServer.txService.SendRawCustomTokenTxWithMetadata(base58CheckDate)
+	base58CheckData, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("base58CheckData param is invalid"))
+	}
+
+	txMsg, txHash, err := httpServer.txService.SendRawCustomTokenTxWithMetadata(base58CheckData)
 	if err != nil{
 		return nil, err
 	}
@@ -124,7 +152,7 @@ func (httpServer *HttpServer) sendRawCustomTokenTxWithMetadata(params interface{
 
 func (httpServer *HttpServer) createAndSendTxWithMetadata(params interface{}, closeChan <-chan struct{}, createHandler, sendHandler httpHandler) (interface{}, *rpcservice.RPCError) {
 	data, err := createHandler(httpServer, params, closeChan)
-	fmt.Printf("err create handler: %v\n", err)
+	Logger.log.Errorf("err create handler: %v\n", err)
 	if err != nil {
 		return nil, err
 	}
