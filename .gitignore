@@ -64,3 +64,5 @@ blockchain/testparams/*
 # vim
 *.swp   
 *.swo
+*~
+tags
