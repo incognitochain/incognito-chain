@@ -38,7 +38,7 @@ There is more than 1 million lines of code in the Incognito codebase. Below is a
 
   * **Peer Management**. Peer management handles peer-to-peer communications such as finding peers, connecting to them, sending and receiving transactions, blocks, and messages. Its code is in the [connmanager](https://github.com/incognitochain/incognito-chain/tree/master/connmanager) package and the [addrmanager](https://github.com/incognitochain/incognito-chain/tree/master/addrmanager) package.
 
-  * **NetSync**. NetSync is a mediator that receives incoming messsages, parses them, and route the message to the right components. Its code is in [netsync](https://github.com/incognitochain/incognito-chain/tree/master/netsync) package.
+  * **NetSync**. NetSync is a mediator that receives incoming messages, parses them, and routes the messages to the right components. Its code is in [netsync](https://github.com/incognitochain/incognito-chain/tree/master/netsync) package.
 
   * **Highway**. Highway is a new network topology design that speeds up P2P communications. It is under development under the [highway](https://github.com/incognitochain/incognito-chain/tree/highway) branch and will be merged into the master branch in November 2019.
 
@@ -60,7 +60,7 @@ There is more than 1 million lines of code in the Incognito codebase. Below is a
 
   * **Consensus**
 
-    * **pBFT**. For consenus algorithm, Incognito implements pBFT (Practical Byzantine Fault Tolerance). Its code is in the [blsbft](https://github.com/incognitochain/incognito-chain/tree/master/consensus/blsbft) package.
+    * **pBFT**. For consensus algorithm, Incognito implements pBFT (Practical Byzantine Fault Tolerance). Its code is in the [blsbft](https://github.com/incognitochain/incognito-chain/tree/master/consensus/blsbft) package.
 
     * **BLS**. For multi-signature agregation, Incognito implements BLS Multi-Signatures. Its code is in the [blsmultisig](https://github.com/incognitochain/incognito-chain/tree/master/consensus/signatureschemes/blsmultisig) package.
 
@@ -68,7 +68,7 @@ There is more than 1 million lines of code in the Incognito codebase. Below is a
 
   * **Privacy**
 
-    * **RingCT**. For privacy, Incognito implements RingCT (Ring Confidental Transaction) with ring signatures, stealth addresses, and confidential transactions. Its code is in the [privacy](https://github.com/incognitochain/incognito-chain/tree/master/privacy) package.
+    * **RingCT**. For privacy, Incognito implements RingCT (Ring Confidential Transaction) with ring signatures, stealth addresses, and confidential transactions. Its code is in the [privacy](https://github.com/incognitochain/incognito-chain/tree/master/privacy) package.
 
     * **Confidential Asset**. RingCT hides the amount of the transaction, but it doesn't hide the type of asset being sent. Confidential Asset solves that. It's under development under the [new-privacy-dev](https://github.com/incognitochain/incognito-chain/tree/new-privacy-dev) branch and will be merged into the master branch in December 2019.
 
