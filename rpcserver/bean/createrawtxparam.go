@@ -2,6 +2,7 @@ package bean
 
 import (
 	"errors"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -102,7 +103,10 @@ func NewCreateRawTxParam(params interface{}) (*CreateRawTxParam, error) {
 	// param#6: info (optional)
 	info := []byte{}
 	if len(arrayParams) > 5 {
-		infoStr := arrayParams[5].(string)
+		infoStr, ok := arrayParams[5].(string)
+		if !ok {
+			return nil, fmt.Errorf("arrayParams[5] is %+v", arrayParams[5])
+		}
 		info = []byte(infoStr)
 	}
 
