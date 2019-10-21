@@ -22,7 +22,7 @@ import (
 
 // default value
 const (
-	defaultScanTime          = 1 * time.Hour
+	defaultScanTime          = 10 * time.Minute
 	defaultIsUnlockMempool   = true
 	defaultIsBlockGenStarted = false
 	defaultRoleInCommittees  = -1
@@ -195,7 +195,7 @@ func (tp *TxPool) MonitorPool() {
 				metrics.Measurement:      metrics.TxPoolRemoveAfterLifeTime,
 				metrics.MeasurementValue: float64(time.Since(startTime).Seconds()),
 				metrics.Tag:              metrics.TxSizeTag,
-				metrics.TagValue:         txSize,
+				metrics.TagValue:         fmt.Sprintf("%d", txSize),
 			})
 			size := len(tp.pool)
 			go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
@@ -1097,6 +1097,8 @@ func (tp *TxPool) SendTransactionToBlockGen() {
 
 // MarkForwardedTransaction - mart a transaction is forward message
 func (tp *TxPool) MarkForwardedTransaction(txHash common.Hash) {
+	tp.mtx.RLock()
+	defer tp.mtx.RUnlock()
 	if tp.IsTest {
 		return
 	}
@@ -1131,16 +1133,14 @@ func (tp *TxPool) MiningDescs() []*metadata.TxDesc {
 	return descs
 }
 
-func (tp *TxPool) GetPool() map[common.Hash]*TxDesc {
+func (tp TxPool) GetPool() map[common.Hash]*TxDesc {
+	tp.mtx.RLock()
+	defer tp.mtx.RUnlock()
+	pool := make(map[common.Hash]*TxDesc)
+	for k, v := range tp.pool {
+		pool[k] = v
+	}
 	return tp.pool
-}
-
-func (tp *TxPool) LockPool() {
-	tp.mtx.Lock()
-}
-
-func (tp *TxPool) UnlockPool() {
-	tp.mtx.Unlock()
 }
 
 // Count return len of transaction pool
@@ -1152,8 +1152,8 @@ func (tp *TxPool) Count() int {
 }
 
 func (tp TxPool) GetClonedPoolCandidate() map[common.Hash]string {
-	tp.mtx.RLock()
-	defer tp.mtx.RUnlock()
+	tp.candidateMtx.RLock()
+	defer tp.candidateMtx.RUnlock()
 	result := make(map[common.Hash]string)
 	for k, v := range tp.poolCandidate {
 		result[k] = v
@@ -1243,12 +1243,13 @@ func (tp *TxPool) ListTxsDetail() []metadata.Transaction {
 // ValidateSerialNumberHashH - check serialNumberHashH which is
 // used by a tx in mempool
 func (tp *TxPool) ValidateSerialNumberHashH(serialNumber []byte) error {
+	tp.mtx.RLock()
+	defer tp.mtx.RUnlock()
 	hash := common.HashH(serialNumber)
 	for txHash, serialNumbersHashH := range tp.poolSerialNumbersHashList {
-		_ = txHash
 		for _, serialNumberHashH := range serialNumbersHashH {
 			if serialNumberHashH.IsEqual(&hash) {
-				return errors.New("Coin is in used")
+				return NewMempoolTxError(DuplicateSerialNumbersHashError, fmt.Errorf("Transaction %+v use duplicate current serial number in pool", txHash))
 			}
 		}
 	}
@@ -1286,10 +1287,21 @@ func (tp *TxPool) calPoolSize() uint64 {
 
 // ----------- transaction.MempoolRetriever's implementation -----------------
 func (tp TxPool) GetSerialNumbersHashH() map[common.Hash][]common.Hash {
-	return tp.poolSerialNumbersHashList
+	//tp.mtx.RLock()
+	//defer tp.mtx.RUnlock()
+	m := make(map[common.Hash][]common.Hash)
+	for k, hashList := range tp.poolSerialNumbersHashList {
+		m[k] = []common.Hash{}
+		for _, v := range hashList {
+			m[k] = append(m[k], v)
+		}
+	}
+	return m
 }
 
 func (tp TxPool) GetTxsInMem() map[common.Hash]metadata.TxDesc {
+	//tp.mtx.RLock()
+	//defer tp.mtx.RUnlock()
 	txsInMem := make(map[common.Hash]metadata.TxDesc)
 	for hash, txDesc := range tp.pool {
 		txsInMem[hash] = txDesc.Desc

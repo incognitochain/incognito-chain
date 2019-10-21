@@ -274,7 +274,8 @@ func (synker *Synker) UpdateState() {
 
 	userLayer, userRole, userShardIDInt = synker.blockchain.config.ConsensusEngine.GetUserRole()
 
-	fmt.Println("TESTING ", userLayer, userRole, userShardIDInt)
+	Logger.log.Infof("Chain: %v, Role: %v, ShardID: %v", userLayer, userRole, userShardIDInt)
+
 	if userLayer == common.ShardRole && userRole != common.WaitingRole {
 		// userShardID = byte(userShardIDInt)
 		synker.syncShard(byte(userShardIDInt))
@@ -534,7 +535,7 @@ func (synker *Synker) UpdateState() {
 						synker.SyncBlkShard(shardID, false, false, false, nil, nil, currentShardReqHeight, RCS.ClosestShardsState[shardID].Height+10, peerID)
 						break
 					} else {
-						fmt.Println("SyncShard sent to a peer ", currentShardReqHeight, currentShardReqHeight+DefaultMaxBlkReqPerPeer-1)
+						//fmt.Println("SyncShard sent to a peer ", currentShardReqHeight, currentShardReqHeight+DefaultMaxBlkReqPerPeer-1)
 						synker.SyncBlkShard(shardID, false, false, false, nil, nil, currentShardReqHeight, currentShardReqHeight+DefaultMaxBlkReqPerPeer-1, peerID)
 						currentShardReqHeight += DefaultMaxBlkReqPerPeer - 1
 					}
@@ -897,6 +898,10 @@ func (synker *Synker) InsertBeaconBlockFromPool() {
 	currentInsert.Beacon.Lock()
 	defer currentInsert.Beacon.Unlock()
 	blocks := synker.blockchain.config.BeaconPool.GetValidBlock()
+	if len(blocks) > 0 {
+		fmt.Println("InsertBeaconBlockFromPool", len(blocks))
+	}
+
 	chain := synker.blockchain.Chains[common.BeaconChainKey]
 
 	curEpoch := GetBeaconBestState().Epoch
@@ -945,11 +950,14 @@ func (synker *Synker) InsertBeaconBlockFromPool() {
 }
 
 func (synker *Synker) InsertShardBlockFromPool(shardID byte) {
+	fmt.Println("InsertShardBlockFromPool start")
 	currentInsert.Shards[shardID].Lock()
 	defer currentInsert.Shards[shardID].Unlock()
 
 	blocks := synker.blockchain.config.ShardPool[shardID].GetValidBlock()
-	fmt.Println("InsertShardBlockFromPool", len(blocks))
+	if len(blocks) > 0 {
+		fmt.Println("InsertShardBlockFromPool", len(blocks))
+	}
 
 	chain := synker.blockchain.Chains[common.GetShardChainKey(shardID)]
 	curEpoch := GetBestStateShard(shardID).Epoch
@@ -984,7 +992,7 @@ func (synker *Synker) InsertShardBlockFromPool(shardID byte) {
 
 	if len(sameCommitteeBlock) > 0 {
 		if sameCommitteeBlock[0].Header.Height-1 != GetBestStateShard(shardID).ShardHeight {
-			fmt.Println("DEBUG: shard", sameCommitteeBlock[0].Header.Height-1, GetBestStateShard(shardID).ShardHeight)
+			//fmt.Println("DEBUG: shard", sameCommitteeBlock[0].Header.Height-1, GetBestStateShard(shardID).ShardHeight)
 			return
 		}
 	}

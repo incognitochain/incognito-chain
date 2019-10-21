@@ -4,13 +4,9 @@ import (
 	"encoding/json"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/libp2p/go-libp2p-peer"
-)
-
-const (
-	MaxBlockPayload = 2000000 // 2 Mb
 )
 
 type MessageBlockShard struct {

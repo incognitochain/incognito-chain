@@ -182,13 +182,13 @@ func (e *BLSBFT) Start() error {
 				pubKey := e.UserKeySet.GetPublicKey()
 				if common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList) == -1 {
 					e.enterNewRound()
-					fmt.Println("CONSENSUS: ticker 0")
+					//fmt.Println("CONSENSUS: ticker 0")
 					continue
 				}
 
 				if !e.Chain.IsReady() {
 					e.isOngoing = false
-					fmt.Println("CONSENSUS: ticker 1")
+					//fmt.Println("CONSENSUS: ticker 1")
 					continue
 				}
 
@@ -199,14 +199,14 @@ func (e *BLSBFT) Start() error {
 				switch e.RoundData.State {
 				case listenPhase:
 					// timeout or vote nil?
-					fmt.Println("CONSENSUS: listen phase 1")
+					//fmt.Println("CONSENSUS: listen phase 1")
 					if e.Chain.CurrentHeight() == e.RoundData.NextHeight {
 						e.enterNewRound()
 						continue
 					}
 					roundKey := getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)
 					if e.Blocks[roundKey] != nil {
-						fmt.Println("CONSENSUS: listen phase 2")
+						//fmt.Println("CONSENSUS: listen phase 2")
 						if err := e.validatePreSignBlock(e.Blocks[roundKey]); err != nil {
 							delete(e.Blocks, roundKey)
 							e.logger.Error(err)

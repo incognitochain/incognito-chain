@@ -76,7 +76,7 @@ func TestRandomCommitmentsProcess(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	db.StoreCommitments(common.Hash{}, paymentAddress.Pk, [][]byte{tx1.Proof.GetOutputCoins()[0].CoinDetails.GetCoinCommitment().Compress()}, 0)
+	db.StoreCommitments(common.Hash{}, paymentAddress.Pk, [][]byte{tx1.Proof.GetOutputCoins()[0].CoinDetails.GetCoinCommitment().ToBytesS()}, 0)
 
 	in1 := ConvertOutputCoinToInputCoin(tx1.Proof.GetOutputCoins())
 
@@ -90,10 +90,10 @@ func TestRandomCommitmentsProcess(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	db.StoreCommitments(common.Hash{}, paymentAddress.Pk, [][]byte{tx2.Proof.GetOutputCoins()[0].CoinDetails.GetCoinCommitment().Compress()}, 0)
+	db.StoreCommitments(common.Hash{}, paymentAddress.Pk, [][]byte{tx2.Proof.GetOutputCoins()[0].CoinDetails.GetCoinCommitment().ToBytesS()}, 0)
 	tx3 := &Tx{}
 	err = tx3.InitTxSalary(5, &paymentAddress, &key.KeySet.PrivateKey, db, nil)
-	db.StoreCommitments(common.Hash{}, paymentAddress.Pk, [][]byte{tx3.Proof.GetOutputCoins()[0].CoinDetails.GetCoinCommitment().Compress()}, 0)
+	db.StoreCommitments(common.Hash{}, paymentAddress.Pk, [][]byte{tx3.Proof.GetOutputCoins()[0].CoinDetails.GetCoinCommitment().ToBytesS()}, 0)
 	in2 := ConvertOutputCoinToInputCoin(tx2.Proof.GetOutputCoins())
 	in := append(in1, in2...)
 

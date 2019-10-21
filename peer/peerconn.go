@@ -398,6 +398,7 @@ func (peerConn *PeerConn) inMessageHandler(rw *bufio.ReadWriter) error {
 				// not use for unit test -> call go routine for process
 				count := maxMsgProcessPerTime.ItemCount()
 				if count > 10000 {
+					fmt.Println("DEBUG: maxMsgProcessPerTime exceed 10000")
 					continue
 				}
 				maxMsgProcessPerTime.Add(str, nil, 1*time.Second)

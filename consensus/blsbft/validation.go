@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"time"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus"
@@ -106,12 +104,12 @@ func (e BLSBFT) ValidateProducerSig(block common.BlockInterface) error {
 	if err != nil {
 		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
-	start := time.Now()
+	//start := time.Now()
 	if err := validateSingleBriSig(block.Hash(), valData.ProducerBLSSig, producerKey.MiningPubKey[common.BridgeConsensus]); err != nil {
 		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
-	end := time.Now().Sub(start)
-	fmt.Printf("ConsLog just verify %v\n", end.Seconds())
+	//end := time.Now().Sub(start)
+	//fmt.Printf("ConsLog just verify %v\n", end.Seconds())
 	return nil
 }
 
@@ -156,10 +154,10 @@ func validateSingleBLSSig(
 	selfIdx int,
 	committee []blsmultisig.PublicKey,
 ) error {
-	start := time.Now()
+	//start := time.Now()
 	result, err := blsmultisig.Verify(blsSig, dataHash.GetBytes(), []int{selfIdx}, committee)
-	end := time.Now().Sub(start)
-	fmt.Printf("ConsLog single verify %v\n", end.Seconds())
+	//end := time.Now().Sub(start)
+	//fmt.Printf("ConsLog single verify %v\n", end.Seconds())
 	if err != nil {
 		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}

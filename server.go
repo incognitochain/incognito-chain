@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	peer2 "github.com/libp2p/go-libp2p-core/peer"
+	//"github.com/incognitochain/incognito-chain/metrics"
 	"io/ioutil"
 	"log"
 	"net"
@@ -499,10 +500,10 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	}
 
 	//Init Metric Tool
-	// if cfg.MetricUrl != "" {
-	// 	grafana := metrics.NewGrafana(cfg.MetricUrl, cfg.ExternalAddress)
-	// 	metrics.InitMetricTool(&grafana)
-	// }
+	//if cfg.MetricUrl != "" {
+	//	grafana := metrics.NewGrafana(cfg.MetricUrl, cfg.ExternalAddress)
+	//	metrics.InitMetricTool(&grafana)
+	//}
 	return nil
 }
 
@@ -700,7 +701,6 @@ func (serverObj *Server) GetActiveShardNumber() int {
 
 func (serverObj *Server) TransactionPoolBroadcastLoop() {
 	<-time.Tick(serverObj.memPool.ScanTime)
-	serverObj.memPool.LockPool()
 	txDescs := serverObj.memPool.GetPool()
 	for _, txDesc := range txDescs {
 		<-time.Tick(50 * time.Millisecond)
@@ -749,7 +749,6 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 			}
 		}
 	}
-	serverObj.memPool.UnlockPool()
 }
 
 // CheckForceUpdateSourceCode - loop to check current version with update version is equal
@@ -1054,7 +1053,9 @@ func (serverObj *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVer
 	remotePeer.SetRawAddress(msg.RawLocalAddress)
 	remotePeer.SetPublicKey(pbk, pbkType)
 	serverObj.cNewPeers <- remotePeer
+
 	if msg.ProtocolVersion != serverObj.protocolVersion {
+		Logger.log.Error(errors.New("Not correct version "))
 		peerConn.ForceClose()
 		return
 	}
@@ -1101,15 +1102,15 @@ func (serverObj *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerA
 			serverObj.addrManager.Good(peerConn.GetRemotePeer())
 		}
 
-		//// send message for get addr
+		// send message for get addr
 		//msgSG, err := wire.MakeEmptyMessage(wire.CmdGetAddr)
 		//if err != nil {
 		//	return
 		//}
 		//var dc chan<- struct{}
 		//peerConn.QueueMessageWithEncoding(msgSG, dc, peer.MessageToPeer, nil)
-		//
-		////	broadcast addr to all peer
+
+		//	broadcast addr to all peer
 		//listen := serverObj.connManager.GetListeningPeer()
 		//msgSA, err := wire.MakeEmptyMessage(wire.CmdAddr)
 		//if err != nil {
@@ -1158,6 +1159,7 @@ func (serverObj *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGet
 			rawPeers = append(rawPeers, wire.RawPeer{peer.GetRawAddress(), pkT, pk})
 		}
 	}
+
 	msgS.(*wire.MessageAddr).RawPeers = rawPeers
 	var dc chan<- struct{}
 	peerConn.QueueMessageWithEncoding(msgS, dc, peer.MessageToPeer, nil)
@@ -1283,7 +1285,9 @@ PushMessageToAll broadcast msg
 func (serverObj *Server) PushMessageToAll(msg wire.Message) error {
 	Logger.log.Debug("Push msg to all peers")
 	var dc chan<- struct{}
-	if serverObj.connManager.GetConfig().ListenerPeer != nil {
+	if serverObj.connManager.GetConfig().ListenerPeer != nil &&
+		serverObj.connManager != nil &&
+		serverObj.connManager.GetConfig() != nil {
 		err := msg.SetSenderID(serverObj.connManager.GetConfig().ListenerPeer.GetPeerID())
 		if err != nil {
 			Logger.log.Error(err)
@@ -1399,12 +1403,11 @@ func (serverObj *Server) PushMessageToBeacon(msg wire.Message, exclusivePeerIDs 
 	}
 	serverObj.memCache.PutExpired(key, []byte{}, 30*time.Second)
 
-	Logger.log.Debugf("Push msg to beacon")
 	peerConns := serverObj.connManager.GetPeerConnOfBeacon()
 	relayConns := serverObj.connManager.GetConnOfRelayNode()
 	peerConns = append(relayConns, peerConns...)
+	Logger.log.Info("Push msg to beacon", len(peerConns))
 	if len(peerConns) > 0 {
-		fmt.Println("BFT:", len(peerConns))
 		for _, peerConn := range peerConns {
 			if isExcluded, ok := exclusivePeerIDs[peerConn.GetRemotePeerID()]; ok {
 				if isExcluded {
