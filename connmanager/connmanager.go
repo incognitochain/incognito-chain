@@ -697,6 +697,10 @@ func (connManager *ConnManager) CheckForAcceptConn(peerConn *peer.PeerConn) (boo
 	}
 	// check max shard conn
 	pk, _ := peerConn.GetRemotePeer().GetPublicKey()
+	if connManager.isBeaconPubKey(pk) {
+		return true, nil
+	}
+
 	shardID := connManager.getShardOfPublicKey(pk)
 	currentShard := connManager.config.ConsensusState.currentShard
 	if shardID != nil && currentShard != nil && *shardID == *currentShard {
@@ -734,6 +738,18 @@ func (connManager *ConnManager) getShardOfPublicKey(publicKey string) *byte {
 		return nil
 	}
 	return &shardID
+}
+
+func (connManager *ConnManager) isBeaconPubKey(publicKey string) bool {
+	if connManager == nil || connManager.config.ConsensusState == nil {
+		return false
+	}
+	committee := connManager.config.ConsensusState.beaconCommittee
+	id := common.IndexOfStr(publicKey, committee)
+	if id >= 0 {
+		return true
+	}
+	return false
 }
 
 // GetCurrentRoleShard - return current role in shard of connected peer
