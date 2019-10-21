@@ -1285,7 +1285,9 @@ PushMessageToAll broadcast msg
 func (serverObj *Server) PushMessageToAll(msg wire.Message) error {
 	Logger.log.Debug("Push msg to all peers")
 	var dc chan<- struct{}
-	if serverObj.connManager.GetConfig().ListenerPeer != nil {
+	if serverObj.connManager.GetConfig().ListenerPeer != nil &&
+		serverObj.connManager != nil &&
+		serverObj.connManager.GetConfig() != nil {
 		err := msg.SetSenderID(serverObj.connManager.GetConfig().ListenerPeer.GetPeerID())
 		if err != nil {
 			Logger.log.Error(err)
