@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 	peer2 "github.com/libp2p/go-libp2p-core/peer"
-	"github.com/incognitochain/incognito-chain/metrics"
+	//"github.com/incognitochain/incognito-chain/metrics"
 	"io/ioutil"
 	"log"
 	"net"
@@ -500,10 +500,10 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	}
 
 	//Init Metric Tool
-	if cfg.MetricUrl != "" {
-		grafana := metrics.NewGrafana(cfg.MetricUrl, cfg.ExternalAddress)
-		metrics.InitMetricTool(&grafana)
-	}
+	//if cfg.MetricUrl != "" {
+	//	grafana := metrics.NewGrafana(cfg.MetricUrl, cfg.ExternalAddress)
+	//	metrics.InitMetricTool(&grafana)
+	//}
 	return nil
 }
 
