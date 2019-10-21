@@ -74,7 +74,7 @@ The life cycle of a validator is as follow:
 
 4. The **new validator** starts producing blocks for $s_{i}$.
 
-5. The **ex-validator** becomes a normal user and can choose to stake again (go back to step 1).
+5. The **ex-validator** becomes a normal user and can manually stake again (go back to step 1). Note that there is an "auto re-stake" option for validators who don't want to manually re-stake.
 
 ![Incognito Validator Life Cycle](https://i.postimg.cc/KcCZ1cVf/image.png)
 
