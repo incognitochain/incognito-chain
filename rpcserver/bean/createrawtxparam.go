@@ -5,7 +5,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -59,7 +58,7 @@ func NewCreateRawTxParam(params interface{}) (*CreateRawTxParam, error) {
 	if arrayParams[1] != nil {
 		receivers, ok = arrayParams[1].(map[string]interface{})
 		if !ok  {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("receivers param is invalid"))
+			return nil, errors.New("receivers param is invalid")
 		}
 	}
 	paymentInfos := make([]*privacy.PaymentInfo, 0)

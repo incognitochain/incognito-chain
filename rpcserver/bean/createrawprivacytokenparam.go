@@ -4,7 +4,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/pkg/errors"
 )
 
@@ -35,7 +34,7 @@ func NewCreateRawPrivacyTokenTxParam(params interface{}) (*CreateRawPrivacyToken
 	// param #5: token component
 	tokenParamsRaw, ok := arrayParams[4].(map[string]interface{})
 	if !ok  {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token param is invalid"))
+		return nil, errors.New("token param is invalid")
 	}
 
 	// param #7: hasPrivacyToken flag for token
@@ -43,7 +42,7 @@ func NewCreateRawPrivacyTokenTxParam(params interface{}) (*CreateRawPrivacyToken
 	if len(arrayParams) >= 7 {
 		hasPrivacyTokenParam, ok := arrayParams[6].(float64)
 		if !ok  {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("has privacy for token param is invalid"))
+			return nil, errors.New("has privacy for token param is invalid")
 		}
 		hasPrivacyToken = int(hasPrivacyTokenParam) > 0
 	}
