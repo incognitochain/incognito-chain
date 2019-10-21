@@ -95,7 +95,7 @@ func (httpServer *HttpServer) handleRetrieveBlock(params interface{}, closeChan 
 		return result, nil
 	}
 	Logger.log.Debugf("handleRetrieveBlock result: %+v", nil)
-	return nil, nil
+	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 elements"))
 }
 
 /*
@@ -117,7 +117,7 @@ func (httpServer *HttpServer) handleRetrieveBeaconBlock(params interface{}, clos
 		return result, nil
 	}
 	Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", nil, nil)
-	return nil, nil
+	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
 }
 
 // handleGetBlocks - get n top blocks from chain ID
@@ -178,7 +178,7 @@ getblockcount RPC return information fo blockchain node
 func (httpServer *HttpServer) handleGetBlockCount(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleGetBlockCount params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) < 1 {
+	if arrayParams == nil || len(arrayParams) < 1 {
 		Logger.log.Debugf("handleGetBlockChainInfo result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("component empty"))
 	}
@@ -252,7 +252,7 @@ func (httpServer *HttpServer) handleGetBlockHeader(params interface{}, closeChan
 
 	arrayParams := common.InterfaceSlice(params)
 	log.Printf("arrayParams: %+v", arrayParams)
-	if arrayParams == nil || len(arrayParams) == 0 || len(arrayParams) <= 3 {
+	if arrayParams == nil || len(arrayParams) < 3 {
 		arrayParams = []interface{}{"", "", 0.0}
 	}
 	getBy, ok := arrayParams[0].(string)
@@ -351,7 +351,7 @@ func (httpServer *HttpServer) handleGetCrossShardBlock(params interface{}, close
 		}
 		for _, crossTransaction := range crossTransactions {
 			for _, outputCoin := range crossTransaction.OutputCoin {
-				pubkey := outputCoin.CoinDetails.GetPublicKey().Compress()
+				pubkey := outputCoin.CoinDetails.GetPublicKey().ToBytesS()
 				pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
 				if outputCoin.CoinDetailsEncrypted == nil {
 					crossShardPRVResult := jsonresult.CrossShardPRVResult{
@@ -376,7 +376,7 @@ func (httpServer *HttpServer) handleGetCrossShardBlock(params interface{}, close
 					CrossShardPrivacyCSTokenResultList: []jsonresult.CrossShardPrivacyCSTokenResult{},
 				}
 				for _, outputCoin := range tokenPrivacyData.OutputCoin {
-					pubkey := outputCoin.CoinDetails.GetPublicKey().Compress()
+					pubkey := outputCoin.CoinDetails.GetPublicKey().ToBytesS()
 					pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
 					crossShardPrivacyCSTokenResult := jsonresult.CrossShardPrivacyCSTokenResult{
 						PublicKey: pubkeyStr,

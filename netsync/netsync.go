@@ -2,6 +2,7 @@ package netsync
 
 import (
 	"errors"
+	"github.com/incognitochain/incognito-chain/metrics"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -305,6 +306,12 @@ func (netSync *NetSync) handleMessageTx(msg *wire.MessageTx) {
 			Logger.log.Error(err)
 		} else {
 			// Broadcast to network
+			go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+				metrics.Measurement:      metrics.TxEnterNetSyncSuccess,
+				metrics.MeasurementValue: float64(1),
+				metrics.Tag:              metrics.TxHashTag,
+				metrics.TagValue:         msg.Transaction.Hash().String(),
+			})
 			Logger.log.Debugf("there is hash of transaction %s", hash.String())
 			err := netSync.config.Server.PushMessageToAll(msg)
 			if err != nil {

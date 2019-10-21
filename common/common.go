@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
 	"unicode"
@@ -272,20 +271,6 @@ func CleanAndExpandPath(path string, defaultHomeDir string) string {
 	return filepath.Clean(os.ExpandEnv(path))
 }
 
-// CheckDuplicate returns true if there are at least 2 elements have the same value in the array
-func CheckDuplicateBigIntArray(arr []*big.Int) bool {
-	sort.Slice(arr, func(i, j int) bool {
-		return arr[i].Cmp(arr[j]) == -1
-	})
-
-	for i := 0; i < len(arr)-1; i++ {
-		if arr[i].Cmp(arr[i+1]) == 0 {
-			return true
-		}
-	}
-
-	return false
-}
 
 // RandBigIntMaxRange generates a big int with maximum value
 func RandBigIntMaxRange(max *big.Int) (*big.Int, error) {

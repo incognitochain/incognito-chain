@@ -20,15 +20,15 @@ const (
 const (
 	// for key size
 	PrivateKeySize      = 32  // bytes
-	PublicKeySize       = 33  // bytes
+	PublicKeySize       = 32  // bytes
 	BLSPublicKeySize    = 128 // bytes
 	BriPublicKeySize    = 33  // bytes
-	TransmissionKeySize = 33  //bytes
+	TransmissionKeySize = 32  //bytes
 	ReceivingKeySize    = 32  // bytes
-	PaymentAddressSize  = 66  // bytes
+	PaymentAddressSize  = 64  // bytes
 	// for signature size
 	// it is used for both privacy and no privacy
-	SigPubKeySize    = 33
+	SigPubKeySize    = 32
 	SigNoPrivacySize = 64
 	SigPrivacySize   = 96
 	IncPubKeyB58Size = 51
@@ -63,7 +63,7 @@ var (
 
 // burning addresses
 const (
-	BurningAddress = "1NHp2EKw7ALdXUzBfoRJvKrBBM9nkejyDcHVPvUjDcWRyG22dHHyiBKQGL1c"
+	BurningAddress = "15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs"
 )
 
 // CONSENSUS
