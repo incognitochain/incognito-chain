@@ -425,7 +425,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 		shardID := byte(value)
 		shardBlocks, ok := allShardBlocks[shardID]
 		shardStates := beaconBlock.Body.ShardState[shardID]
-		if !ok {
+		if !ok && len(shardStates) > 0 {
 			return NewBlockChainError(GetShardToBeaconBlocksError, fmt.Errorf("Expect to get from pool ShardToBeacon Block from Shard %+v but failed", shardID))
 		}
 		// repeatly compare each shard to beacon block and shard state in new beacon block body
@@ -434,6 +434,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 			for index, shardState := range shardStates {
 				if shardBlocks[index].Header.Height != shardState.Height {
 					return NewBlockChainError(ShardStateHeightError, fmt.Errorf("Expect shard state height to be %+v but get %+v from pool", shardState.Height, shardBlocks[index].Header.Height))
+					return NewBlockChainError(ShardStateHeightError, fmt.Errorf("Expect shard state height to be %+v but get %+v from pool(shard %v)", shardState.Height, shardBlocks[index].Header.Height, shardID))
 				}
 				blockHash := shardBlocks[index].Header.Hash()
 				if !blockHash.IsEqual(&shardState.Hash) {
@@ -462,7 +463,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 				validStakePublicKeys = append(validStakePublicKeys, tempValidStakePublicKeys...)
 			}
 		} else {
-			return NewBlockChainError(GetShardToBeaconBlocksError, fmt.Errorf("Expect to get more than %+v ShardToBeaconBlock but only get %+v", len(beaconBlock.Body.ShardState[shardID]), len(shardBlocks)))
+			return NewBlockChainError(GetShardToBeaconBlocksError, fmt.Errorf("Expect to get more than %+v ShardToBeaconBlock but only get %+v (shard %v)", len(beaconBlock.Body.ShardState[shardID]), len(shardBlocks), shardID))
 		}
 	}
 	tempInstruction, err := blockchain.BestState.Beacon.GenerateInstruction(beaconBlock.Header.Height,
