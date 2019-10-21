@@ -98,9 +98,9 @@ const (
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	TestNetMinBeaconBlkInterval = 10 * time.Second //second
-	TestNetMaxBeaconBlkCreation = 13 * time.Second //second, timeout is 25
+	TestNetMaxBeaconBlkCreation = 8 * time.Second  //second, timeout is 25
 	TestNetMinShardBlkInterval  = 10 * time.Second //second
-	TestNetMaxShardBlkCreation  = 13 * time.Second //second, timeout is 25
+	TestNetMaxShardBlkCreation  = 6 * time.Second  //second, timeout is 25
 
 	//board and proposal parameters
 	TestnetBasicReward                      = 400000000 //40 mili PRV
