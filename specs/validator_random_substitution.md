@@ -32,67 +32,67 @@ Parameter fine-tuning is an important part of Incognito mechanism design. Parame
 
 | Parameter | Description |
 | --------- | ----------- |
-| $X$       | the required staking amount |
-| $N$       | the number of shards |
-| $M$       | the maximum number of validators per shards |
-| $K$       | the maximum number of substitutions per shard in an epoch |
-| $S$       | the maximum number of substitutes per shard |
-| $T$       | the number of blocks in an epoch |
-| $\alpha$  | the ratio between substitutes and substitutions |
+| X       | the required staking amount |
+| N       | the number of shards |
+| M       | the maximum number of validators per shards |
+| K       | the maximum number of substitutions per shard in an epoch |
+| P       | the maximum number of substitutes per shard |
+| T       | the number of blocks in an epoch |
+| A       | the ratio between substitutes and substitutions |
 
 ## The validator role
 
-The Incognito blockchain is composed of $N+1$ subchains: 1 beacon subchain and $N$ shard subchains.
+The Incognito blockchain is composed of N+1 subchains: 1 beacon subchain and N shard subchains.
 
 <img src="https://i.postimg.cc/nrvqWYzz/0-Lrtbq-R3rm-Laured-N.png" width=600>
 
-Each subchain is a Proof-of-Stake blockchain with its own committee of $M$ validators.
+Each subchain is a Proof-of-Stake blockchain with its own committee of M validators.
 
 * The validators produce new blocks via a Practical Byzantine Fault Tolerance (pBFT) consensus algorithm.
 
-* Via a round-robin setup, each validator takes turns to become the block producer and proposes a new block to the committee. If at least $\frac{2}{3}M+1$ validators confirm the validity of the block, the block will be added to the subchain.
+* Via a round-robin setup, each validator takes turns to become the block producer and proposes a new block to the committee. If at least (2/3)*M+1 validators confirm the validity of the block, the block will be added to the subchain.
 
-* Every epoch (or $T$ blocks), the committee will be shuffled. $K$ random validators in the current committee will be substituted by new validators.
+* Every epoch (or T blocks), the committee will be shuffled. K random validators in the current committee will be substituted by new validators.
 
 ## The life cycle of a validator
 
 The life cycle of a validator is as follow:
 
-1. The **user** stakes $X$ amount of PRV to become a candidate.
+1. The **user** stakes X amount of PRV to become a candidate.
 
-2. The **candidate** is randomly selected to become a substitute for a specific shard $s_{i}$.
+2. The **candidate** is randomly selected to become a substitute for a specific shard S.
 
-   * If the number of current substitutes is less than $S$, the candidate automatically becomes a new substitute for shard $s_{i}$.
+   * If the number of current substitutes is less than P, the candidate automatically becomes a new substitute for shard S.
 
    * Otherwise, the candidate will wait until the next epoch for the next random selection.
 
-3. The **substitute** must sync all block data of shard $s_{i}$ in advance.
+3. The **substitute** must sync all block data of shard S in advance.
 
-   * If the number of current validators in $s_{i}$ is less than $M$, the substitute automatically becomes a new validator for $s_{i}$ at the next epoch.
+   * If the number of current validators in shard S is less than M, the substitute automatically becomes a new validator for shard S at the next epoch.
 
-   * Otherwise, the substitute will replace an existing validator in $s_{i}$, being selected randomly, at the next epoch.
+   * Otherwise, the substitute will replace an existing validator in shard S at the next epoch.
 
-4. The **new validator** starts producing blocks for $s_{i}$.
+4. The **new validator** starts producing blocks for shard S.
 
 5. The **ex-validator** becomes a normal user and can manually stake again (go back to step 1). Note that there is an "auto re-stake" option for validators who don't want to manually re-stake.
 
 ![Incognito Validator Life Cycle](https://i.postimg.cc/KcCZ1cVf/image.png)
 
-## What should be the value of $K$?
+## What should be the value of K?
 
-Because Incognito implements pBFT, it requires at least $\frac{2}{3}M+1$ honest validators in a shard at all time. If we make too many substitutions at a time, it may significantly reduce the security of the shard.
+Because Incognito implements pBFT, it requires at least (2/3)*M+1 honest validators in a shard at all time. If we make too many substitutions at a time, it may significantly reduce the security of the shard.
 
-The initial value of $K$ is set as $\frac{1}{10}M$.
+The initial value of K is set as (1/10)*M.
 
-## What should be the value of $P$?
+## What should be the value of P?
 
-Because there are $K$ substitutions per shard every epoch, $P$ can't be smaller than $K$.
+Because there are K substitutions per shard every epoch, P can't be smaller than K.
 
 Additionally, we feel that there should be a buffer so that in case a substitute is offline or some substitutes need more time to complete block data syncing.
 
-$P=\alpha*K$
+P = A*K
 
-The initial value of $\alpha$ is set as $2$.
+The initial value of A is set as 2.
 
 ## Future work
 
@@ -104,4 +104,4 @@ Weighted random selection could further improve the design. We will explore vari
 
 While the current solution select substitutes randomly from the candidate pool, the existing validators are being replaced as first-in first-out. Random substitution could further improve the design by selecting existing validators randomly.
 
-A side note, this design could hurt validator experience as a user had been waiting for 10 epochs, just started working for 1 epoch, and now is being substituted. One idea is to set a threshold $H$ so that only validators who work more than $H$ epochs are part of the random substitution.
+A side note, this design could hurt validator experience as a user had been waiting for 10 epochs, just started working for 1 epoch, and now is being substituted. One idea is to set a threshold H so that only validators who work more than H epochs are part of the random substitution.
