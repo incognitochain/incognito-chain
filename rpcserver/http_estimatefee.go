@@ -17,7 +17,7 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 	/******* START Fetch all component to ******/
 	// all component
 	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) < 4 {
+	if arrayParams == nil || len(arrayParams) < 4 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Not enough params"))
 	}
 	// param #1: private key of sender
@@ -60,7 +60,10 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 		// param #2: list receiver
 		receiversPaymentAddressStrParam := make(map[string]interface{})
 		if arrayParams[1] != nil {
-			receiversPaymentAddressStrParam = arrayParams[1].(map[string]interface{})
+			receiversPaymentAddressStrParam, ok = arrayParams[1].(map[string]interface{})
+			if !ok {
+				return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("receivers payment address is invalid"))
+			}
 		}
 
 		paymentInfos, err := rpcservice.NewPaymentInfosFromReceiversParam(receiversPaymentAddressStrParam)
@@ -73,7 +76,10 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 		var customPrivacyTokenParam *transaction.CustomTokenPrivacyParamTx
 		if len(arrayParams) > 4 {
 			// param #5: token params
-			tokenParamsRaw := arrayParams[4].(map[string]interface{})
+			tokenParamsRaw, ok := arrayParams[4].(map[string]interface{})
+			if !ok {
+				return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token param is invalid"))
+			}
 
 			customTokenParams, customPrivacyTokenParam, err = httpServer.txService.BuildTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
 			if err.(*rpcservice.RPCError) != nil {
@@ -95,7 +101,7 @@ func (httpServer *HttpServer) handleEstimateFeeWithEstimator(params interface{},
 	Logger.log.Debugf("handleEstimateFeeWithEstimator params: %+v", params)
 	// all params
 	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) < 2 {
+	if arrayParams == nil || len(arrayParams) < 2 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Not enough params"))
 	}
 	// param #1: estimation fee coin per kb from client
@@ -106,8 +112,11 @@ func (httpServer *HttpServer) handleEstimateFeeWithEstimator(params interface{},
 	defaultFeeCoinPerKb := int64(defaultFeeCoinPerKbTemp)
 
 	// param #2: payment address
-	senderKeyParam := arrayParams[1]
-	_, shardIDSender, err := rpcservice.GetKeySetFromPaymentAddressParam(senderKeyParam.(string))
+	paymentAddressParam, ok := arrayParams[1].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("sender key param is invalid"))
+	}
+	_, shardIDSender, err := rpcservice.GetKeySetFromPaymentAddressParam(paymentAddressParam)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.InvalidSenderPrivateKeyError, err)
 	}
@@ -115,13 +124,21 @@ func (httpServer *HttpServer) handleEstimateFeeWithEstimator(params interface{},
 	// param #2: numbloc
 	numblock := uint64(8)
 	if len(arrayParams) >= 3 {
-		numblock = uint64(arrayParams[2].(float64))
+		numBlockParam, ok := arrayParams[2].(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("num block param is invalid"))
+		}
+		numblock = uint64(numBlockParam)
 	}
 
 	// param #3: tokenId
 	var tokenId *common.Hash
 	if len(arrayParams) >= 4 && arrayParams[3] != nil {
-		tokenId, err = common.Hash{}.NewHashFromStr(arrayParams[3].(string))
+		tokenIdParam, ok := arrayParams[3].(string)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token id param is invalid"))
+		}
+		tokenId, err = common.Hash{}.NewHashFromStr(tokenIdParam)
 		if err != nil {
 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 		}

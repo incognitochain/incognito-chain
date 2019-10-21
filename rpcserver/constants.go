@@ -121,6 +121,7 @@ const (
 
 	// utils
 	hashToIdenticon = "hashtoidenticon"
+	generateTokenID = "generatetokenid"
 
 	createIssuingRequest             = "createissuingrequest"
 	sendIssuingRequest               = "sendissuingrequest"

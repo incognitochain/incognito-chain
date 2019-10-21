@@ -2,8 +2,6 @@ package incognitokey
 
 import (
 	"errors"
-	"math/big"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -65,7 +63,7 @@ func (keySet KeySet) Sign(data []byte) ([]byte, error) {
 
 	hash := common.HashB(data)
 	privateKeySig := new(privacy.SchnorrPrivateKey)
-	privateKeySig.Set(new(big.Int).SetBytes(keySet.PrivateKey), big.NewInt(0))
+	privateKeySig.Set(new(privacy.Scalar).FromBytesS(keySet.PrivateKey), new(privacy.Scalar).FromUint64(0))
 
 	signature, err := privateKeySig.Sign(hash)
 	if err != nil {
@@ -82,8 +80,7 @@ func (keySet KeySet) Verify(data, signature []byte) (bool, error) {
 	isValid := false
 
 	pubKeySig := new(privacy.SchnorrPublicKey)
-	PK := new(privacy.EllipticPoint)
-	err := PK.Decompress(keySet.PaymentAddress.Pk)
+	PK, err := new(privacy.Point).FromBytesS(keySet.PaymentAddress.Pk)
 	if err != nil {
 		return false, NewCashecError(InvalidVerificationKeyErr, nil)
 	}

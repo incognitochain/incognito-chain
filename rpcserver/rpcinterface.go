@@ -121,6 +121,7 @@ var HttpHandler = map[string]httpHandler{
 	getAllBridgeTokens:              (*HttpServer).handleGetAllBridgeTokens,
 	getETHHeaderByHash:              (*HttpServer).handleGetETHHeaderByHash,
 	getBridgeReqWithStatus:          (*HttpServer).handleGetBridgeReqWithStatus,
+	generateTokenID:                 (*HttpServer).handleGenerateTokenID,
 
 	// wallet
 	getPublicKeyFromPaymentAddress:   (*HttpServer).handleGetPublicKeyFromPaymentAddress,
