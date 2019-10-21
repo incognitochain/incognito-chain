@@ -43,7 +43,7 @@ const (
 	DefaultFastStartup            = true
 	DefaultNodeMode               = common.NodeModeRelay
 	DefaultEnableMining           = true
-	DefaultTxPoolTTL              = uint(12 * time.Hour) // 12 hours
+	DefaultTxPoolTTL              = uint(1 * time.Hour) // 1 hours
 	DefaultTxPoolMaxTx            = uint64(100000)
 	DefaultLimitFee               = uint64(0)
 	DefaultLimitFeeToken          = uint64(0)
