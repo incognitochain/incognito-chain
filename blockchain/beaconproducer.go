@@ -408,8 +408,6 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 	instructions = append(instructions, stopAutoStakingInstructions...)
 	// Random number for Assign Instruction
 	if newBeaconHeight%chainParamEpoch > randomTime && !beaconBestState.IsGetRandomNumber {
-		//=================================
-		// COMMENT FOR TESTING
 		var err error
 		var chainTimeStamp int64
 		if !TestRandom {
@@ -722,7 +720,6 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 
 // ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
 func (beaconBestState *BeaconBestState) generateRandomInstruction(timestamp int64, randomClient btc.RandomClient) ([]string, int64, error) {
-	//COMMENT FOR TESTING
 	if !TestRandom {
 		var (
 			blockHeight    int
@@ -752,7 +749,6 @@ func (beaconBestState *BeaconBestState) generateRandomInstruction(timestamp int6
 		strs = append(strs, strconv.Itoa(int(chainTimestamp)))
 		return strs, int64(nonce), nil
 	} else {
-		//@NOTICE: Hard Code for testing
 		var strs []string
 		reses := []string{"1000", strconv.Itoa(int(timestamp)), strconv.Itoa(int(timestamp) + 1)}
 		strs = append(strs, RandomAction)

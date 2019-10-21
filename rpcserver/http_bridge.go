@@ -33,7 +33,11 @@ func (httpServer *HttpServer) handleCreateAndSendIssuingRequest(params interface
 
 func (httpServer *HttpServer) handleCreateRawTxWithContractingReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 5 elements"))
+	}
 
+	// check privacy mode param
 	if len(arrayParams) > 5 {
 		hasPrivacyToken := int(arrayParams[5].(float64)) > 0
 		if hasPrivacyToken {
@@ -41,12 +45,27 @@ func (httpServer *HttpServer) handleCreateRawTxWithContractingReq(params interfa
 		}
 	}
 
-	senderKeyParam := arrayParams[0].(string)
-	tokenParamsRaw := arrayParams[4].(map[string]interface{})
-	tokenReceivers := tokenParamsRaw["TokenReceivers"]
-	tokenID := tokenParamsRaw["TokenID"].(string)
+	senderPrivateKeyParam, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("private key is invalid"))
+	}
 
-	meta, err := rpcservice.NewContractingRequestMetadata(senderKeyParam, tokenReceivers, tokenID)
+	tokenParamsRaw, ok := arrayParams[4].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token param is invalid"))
+	}
+
+	tokenReceivers, ok := tokenParamsRaw["TokenReceivers"].(interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token receivers is invalid"))
+	}
+
+	tokenID, ok := tokenParamsRaw["TokenID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token ID is invalid"))
+	}
+
+	meta, err := rpcservice.NewContractingRequestMetadata(senderPrivateKeyParam, tokenReceivers, tokenID)
 	if err != nil{
 		return nil, err
 	}
@@ -90,22 +109,48 @@ func (httpServer *HttpServer) handleCreateAndSendContractingRequest(params inter
 
 func (httpServer *HttpServer) handleCreateRawTxWithBurningReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 5 elements"))
+	}
 
-	if len(arrayParams) >= 5 {
+	if len(arrayParams) > 5 {
 		hasPrivacyToken := int(arrayParams[5].(float64)) > 0
 		if hasPrivacyToken {
 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("The privacy mode must be disabled"))
 		}
 	}
 
-	senderKeyParam := arrayParams[0].(string)
-	tokenParamsRaw := arrayParams[4].(map[string]interface{})
-	tokenReceivers := tokenParamsRaw["TokenReceivers"]
-	tokenID := tokenParamsRaw["TokenID"].(string)
-	tokenName := tokenParamsRaw["TokenName"].(string)
-	remoteAddress := tokenParamsRaw["RemoteAddress"].(string)
+	senderPrivateKeyParam, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("private key is invalid"))
+	}
 
-	meta, err := rpcservice.NewBurningRequestMetadata(senderKeyParam, tokenReceivers, tokenID, tokenName, remoteAddress)
+	tokenParamsRaw, ok := arrayParams[4].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token param is invalid"))
+	}
+
+	tokenReceivers, ok := tokenParamsRaw["TokenReceivers"].(interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token receivers is invalid"))
+	}
+
+	tokenID, ok := tokenParamsRaw["TokenID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token ID is invalid"))
+	}
+
+	tokenName, ok := tokenParamsRaw["TokenName"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token name is invalid"))
+	}
+
+	remoteAddress, ok := tokenParamsRaw["RemoteAddress"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("remote address is invalid"))
+	}
+
+	meta, err := rpcservice.NewBurningRequestMetadata(senderPrivateKeyParam, tokenReceivers, tokenID, tokenName, remoteAddress)
 	if err != nil{
 		return nil, err
 	}
@@ -149,6 +194,9 @@ func (httpServer *HttpServer) handleCreateAndSendBurningRequest(params interface
 
 func (httpServer *HttpServer) handleCreateRawTxWithIssuingETHReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 5 elements"))
+	}
 
 	// get meta data from params
 	data, ok := arrayParams[4].(map[string]interface{})
@@ -205,6 +253,9 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingETHReq(params inte
 
 func (httpServer *HttpServer) handleCheckETHHashIssued(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+	}
 	data := arrayParams[0].(map[string]interface{})
 
 	issued, err := httpServer.databaseService.CheckETHHashIssued(data)
@@ -230,6 +281,9 @@ func (httpServer *HttpServer) handleGetAllBridgeTokens(params interface{}, close
 
 func (httpServer *HttpServer) handleGetETHHeaderByHash(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+	}
 	ethBlockHash := arrayParams[0].(string)
 
 	ethHeader, err := rpcservice.GetETHHeaderByHash(ethBlockHash)
@@ -241,6 +295,9 @@ func (httpServer *HttpServer) handleGetETHHeaderByHash(params interface{}, close
 
 func (httpServer *HttpServer) handleGetBridgeReqWithStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+	}
 	data := arrayParams[0].(map[string]interface{})
 
 	status, err := httpServer.databaseService.GetBridgeReqWithStatus(data["TxReqID"].(string))
