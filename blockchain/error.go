@@ -161,6 +161,7 @@ const (
 	ConvertCommitteePubKeyToBase58Error
 	ConsensusIsOngoingError
 	RevertStateError
+	NotEnoughRewardError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -307,6 +308,7 @@ var ErrCodeMessage = map[int]struct {
 	ConsensusIsOngoingError:                           {-1137, "Consensus Is Ongoing Error"},
 	GetShardToBeaconBlocksError:                       {-1138, "Get Shard To Beacon Blocks Error"},
 	RevertStateError:                                  {-1139, "Revert State Error"},
+	NotEnoughRewardError:                              {-1140, "Not enough reward Error"},
 }
 
 type BlockChainError struct {
