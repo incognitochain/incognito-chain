@@ -10,8 +10,8 @@ import (
 func main() {
 	temp := 0
 	for i := 0; ; i++ {
-		burnPubKeyE := privacy.PedCom.G[0].Hash(int64(i))
-		burnPubKey := burnPubKeyE.Compress()
+		burnPubKeyE := privacy.RandomPoint()
+		burnPubKey := burnPubKeyE.ToBytesS()
 		if burnPubKey[len(burnPubKey)-1] == 0 {
 			burnKey := wallet.KeyWallet{
 				KeySet: incognitokey.KeySet{
@@ -37,16 +37,17 @@ Out:
 }
 
 // result
-/*Special payment address : 1NHpWKZYCLQeGKSSsJewsA8p3nsPoAZbmEmtsuBqd6yU7KJnzJZVt39b7AgP 897
+/*Special payment address : 15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs 1   // burning address
 ======================================
-[3 216 102 168 155 36 135 253 243 218 209 109 131 105 134 20 37 96 171 207 227 0 236 35 158 98 24 188 68 32 191 99 0]
+[99 183 246 161 68 172 228 222 153 9 172 39 208 245 167 79 11 2 114 65 241 69 85 40 193 104 199 79 70 4 53 0]
 ======================================
-Special payment address : 1NHoFQ3Nr8fQm3ZLk2ACSgZXjVH6JobpuV65RD3QAEEGe76KknMQhGbc4g8P 934
+Special payment address : 15onyX2Ux1Che2mh4e4ap3D8zy68AetHkCY5jDeQQJhmKs1nT5vz6p62qEJ 21
 ======================================
-[2 139 228 54 166 17 174 144 173 226 219 133 190 139 124 163 248 126 160 134 203 144 245 151 192 33 123 164 122 174 191 255 0]
+[3 10 141 47 195 123 109 123 58 104 169 33 117 142 250 119 151 254 2 51 116 226 9 129 244 218 44 154 155 167 176 0]
 ======================================
-Special payment address : 1NHp2EKw7ALdXUzBfoRJvKrBBM9nkejyDcHVPvUjDcWRyG22dHHyiBKQGL1c 1103
+Special payment address : 15pcY2K1Rs7t7HE65P3tkEziR6HjGH1h8UB8mhB9mHdmryEqww7tQBHzHWa 248
 ======================================
-[3 88 81 5 73 221 37 60 3 235 186 153 134 46 49 204 20 7 56 45 188 104 251 173 161 65 36 61 137 49 132 248 0]
-======================================*/
+[219 231 166 157 154 232 141 223 243 199 38 25 202 237 18 255 126 111 109 146 166 92 228 73 5 48 186 134 98 55 231 0]
+======================================
+*/
 //

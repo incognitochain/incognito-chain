@@ -1,6 +1,7 @@
 package rpcservice
 
 import (
+	"github.com/pkg/errors"
 	"math/big"
 	"strconv"
 
@@ -15,8 +16,17 @@ type DatabaseService struct {
 }
 
 func (dbService DatabaseService) CheckETHHashIssued(data map[string]interface{}) (bool, error) {
-	blockHash := rCommon.HexToHash(data["BlockHash"].(string))
-	txIdx := uint(data["TxIndex"].(float64))
+	blockHashParam, ok := data["BlockHash"].(string)
+	if !ok {
+		return false, errors.New("Block hash param is invalid")
+	}
+	blockHash := rCommon.HexToHash(blockHashParam)
+
+	txIdxParam, ok := data["TxIndex"].(float64)
+	if !ok {
+		return false, errors.New("Tx index param is invalid")
+	}
+	txIdx := uint(txIdxParam)
 	uniqETHTx := append(blockHash[:], []byte(strconv.Itoa(int(txIdx)))...)
 
 	issued, err := (*dbService.DB).IsETHTxHashIssued(uniqETHTx)
@@ -76,7 +86,14 @@ func (dbService DatabaseService) HasSerialNumbers(paymentAddressStr string, seri
 
 	result := make([]bool, 0)
 	for _, item := range serialNumbersStr {
-		serialNumber, _, _ := base58.Base58Check{}.Decode(item.(string))
+		itemStr, okParam := item.(string)
+		if !okParam {
+			return nil, errors.New("Invalid serial number param")
+		}
+		serialNumber, _, err := base58.Base58Check{}.Decode(itemStr)
+		if err != nil {
+			return nil, errors.New("Invalid serial number param")
+		}
 		ok, _ := (*dbService.DB).HasSerialNumber(tokenID, serialNumber, shardIDSender)
 		if ok {
 			// serial number in db
@@ -98,7 +115,15 @@ func (dbService DatabaseService) HasSnDerivators(paymentAddressStr string, snDer
 
 	result := make([]bool, 0)
 	for _, item := range snDerivatorStr {
-		snderivator, _, _ := base58.Base58Check{}.Decode(item.(string))
+		itemStr, okParam := item.(string)
+		if !okParam {
+			return nil, errors.New("Invalid serial number derivator param")
+		}
+		snderivator, _, err := base58.Base58Check{}.Decode(itemStr)
+		if err != nil {
+			return nil, errors.New("Invalid serial number derivator param")
+		}
+
 		ok, err := (*dbService.DB).HasSNDerivator(tokenID, common.AddPaddingBigInt(new(big.Int).SetBytes(snderivator), common.BigIntSize))
 		if ok && err == nil {
 			// SnD in db

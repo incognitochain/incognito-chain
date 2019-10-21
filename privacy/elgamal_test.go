@@ -1,7 +1,7 @@
 package privacy
 
 import (
-	"crypto/rand"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -9,37 +9,52 @@ import (
 /*
 	Unit test for elgamal encryption
 */
-func TestElGamalEncryption(t *testing.T) {
-	// generate private key
+
+func TestElGamalCipherText_Bytes(t *testing.T) {
 	privKey := new(elGamalPrivateKey)
-	var r = rand.Reader
-	privKey.x = RandScalar(r)
+	privKey.x = RandomScalar()
 
 	// generate public key
 	pubKey := new(elGamalPublicKey)
-	pubKey.h = new(EllipticPoint)
-	pubKey.h.Set(Curve.Params().Gx, Curve.Params().Gy)
-	pubKey.h = pubKey.h.ScalarMult(privKey.x)
+	pubKey.h = new(Point).ScalarMultBase(privKey.x)
 
-	// random message (msg is an elliptic point)
-	message := new(EllipticPoint)
-	message.Randomize()
+	message := RandomPoint()
 
 	// Encrypt message using public key
-	ciphertext1 := pubKey.encrypt(message)
+	c := pubKey.encrypt(message)
+	cBytes := c.Bytes()
+	fmt.Println(len(cBytes))
+}
 
-	// convert ciphertext1 to bytes array
-	ciphertext1Bytes := ciphertext1.Bytes()
+func TestElGamalPublicKey_Encryption(t *testing.T) {
+	for i:=0 ; i <5000; i ++ {
+		// generate private key
+		privKey := new(elGamalPrivateKey)
+		privKey.x = RandomScalar()
 
-	// new ciphertext2
-	ciphertext2 := new(elGamalCipherText)
-	ciphertext2.SetBytes(ciphertext1Bytes)
+		// generate public key
+		pubKey := new(elGamalPublicKey)
+		pubKey.h = new(Point).ScalarMultBase(privKey.x)
 
-	assert.Equal(t, ciphertext1, ciphertext2)
+		// random message (msg is an elliptic point)
+		message := RandomPoint()
 
-	// decrypt ciphertext using privateKey
-	decryptedCiphertext, err := privKey.decrypt(ciphertext2)
+		// Encrypt message using public key
+		ciphertext1 := pubKey.encrypt(message)
 
-	assert.Equal(t, nil, err)
-	assert.Equal(t, message, decryptedCiphertext)
+		// convert ciphertext1 to bytes array
+		ciphertext1Bytes := ciphertext1.Bytes()
+
+		// new ciphertext2
+		ciphertext2 := new(elGamalCipherText)
+		ciphertext2.SetBytes(ciphertext1Bytes)
+
+		assert.Equal(t, ciphertext1, ciphertext2)
+
+		// decrypt ciphertext using privateKey
+		decryptedCiphertext, err := privKey.decrypt(ciphertext1)
+
+		assert.Equal(t, nil, err)
+		assert.Equal(t, message, decryptedCiphertext)
+	}
 }

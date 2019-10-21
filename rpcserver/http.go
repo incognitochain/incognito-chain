@@ -58,12 +58,23 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 	}
 
 	// init service
-	httpServer.blockService = &rpcservice.BlockService{BlockChain: httpServer.config.BlockChain, DB: httpServer.config.Database, MemCache: httpServer.config.MemCache}
-	httpServer.outputCoinService = &rpcservice.CoinService{BlockChain: httpServer.config.BlockChain}
-	httpServer.txMemPoolService = &rpcservice.TxMemPoolService{TxMemPool: httpServer.config.TxMemPool}
-	httpServer.databaseService = &rpcservice.DatabaseService{DB: httpServer.config.Database}
-	httpServer.networkService = &rpcservice.NetworkService{ConnMgr: httpServer.config.ConnMgr}
-	httpServer.poolStateService = &rpcservice.PoolStateService{}
+	httpServer.blockService = &rpcservice.BlockService{
+		BlockChain: httpServer.config.BlockChain,
+		DB: httpServer.config.Database,
+		MemCache: httpServer.config.MemCache,
+	}
+	httpServer.outputCoinService = &rpcservice.CoinService{
+		BlockChain: httpServer.config.BlockChain,
+	}
+	httpServer.txMemPoolService = &rpcservice.TxMemPoolService{
+		TxMemPool: httpServer.config.TxMemPool,
+	}
+	httpServer.databaseService = &rpcservice.DatabaseService{
+		DB: httpServer.config.Database,
+	}
+	httpServer.networkService = &rpcservice.NetworkService{
+		ConnMgr: httpServer.config.ConnMgr,
+	}
 	httpServer.txService = &rpcservice.TxService{
 		DB:           httpServer.config.Database,
 		BlockChain:   httpServer.config.BlockChain,
@@ -75,6 +86,7 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 		Wallet:     httpServer.config.Wallet,
 		BlockChain: httpServer.config.BlockChain,
 	}
+	httpServer.poolStateService = &rpcservice.PoolStateService{}
 }
 
 // Start is used by rpcserver.go to start the rpc listener.
