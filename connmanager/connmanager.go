@@ -723,6 +723,9 @@ func (connManager *ConnManager) CheckForAcceptConn(peerConn *peer.PeerConn) (boo
 
 //getShardOfPublicKey - return shardID of public key of peer connection
 func (connManager *ConnManager) getShardOfPublicKey(publicKey string) *byte {
+	if connManager == nil || connManager.config.ConsensusState == nil {
+		return nil
+	}
 	connManager.config.ConsensusState.Lock()
 	committee := connManager.config.ConsensusState.shardByCommittee //getShardByCommittee()
 	shardID, ok := committee[publicKey]

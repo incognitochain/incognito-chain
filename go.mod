@@ -11,6 +11,7 @@ require (
 	github.com/dchest/siphash v1.2.1 // indirect
 	github.com/deckarep/golang-set v1.7.1 // indirect
 	github.com/dgryski/go-identicon v0.0.0-20140725220403-371855927d74
+	github.com/ebfe/keccak v0.0.0-20150115210727-5cc570678d1b
 	github.com/edsrzf/mmap-go v1.0.0 // indirect
 	github.com/elastic/gosigar v0.10.4 // indirect
 	github.com/ethereum/go-ethereum v1.8.22-0.20190710074244-72029f0f88f6

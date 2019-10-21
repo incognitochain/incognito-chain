@@ -10,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"log"
 )
 
 func NewContractingRequestMetadata(senderPrivateKeyStr string, tokenReceivers interface{}, tokenID string) (*metadata.ContractingRequest, *RPCError) {
@@ -62,7 +63,7 @@ func NewBurningRequestMetadata(senderPrivateKeyStr string, tokenReceivers interf
 		return nil, NewRPCError(UnexpectedError, err)
 	}
 
-	meta, _ := metadata.NewBurningRequest(
+	meta, err := metadata.NewBurningRequest(
 		paymentAddr,
 		uint64(voutsAmount),
 		*tokenIDHash,
@@ -70,6 +71,9 @@ func NewBurningRequestMetadata(senderPrivateKeyStr string, tokenReceivers interf
 		remoteAddress,
 		metadata.BurningRequestMeta,
 	)
+	if err != nil{
+		return nil, NewRPCError(UnexpectedError, err)
+	}
 
 	return meta, nil
 }
@@ -109,7 +113,6 @@ func GetKeySetFromPrivateKey(privateKey privacy.PrivateKey) (*incognitokey.KeySe
 	return keySet, shardID, nil
 }
 
-
 // GetKeySetFromPaymentAddressParam - deserialize a key string(wallet serialized)
 // into keyWallet - this keywallet may contain
 func GetKeySetFromPaymentAddressParam(paymentAddressStr string) (*incognitokey.KeySet, byte, error) {
@@ -125,8 +128,7 @@ func GetKeySetFromPaymentAddressParam(paymentAddressStr string) (*incognitokey.K
 	return &keyWallet.KeySet, shardID, nil
 }
 
-
-func NewPaymentInfosFromReceiversParam(receiversParam map[string]interface{}) ([]*privacy.PaymentInfo, error){
+func NewPaymentInfosFromReceiversParam(receiversParam map[string]interface{}) ([]*privacy.PaymentInfo, error) {
 	paymentInfos := make([]*privacy.PaymentInfo, 0)
 	for paymentAddressStr, amount := range receiversParam {
 		keyWalletReceiver, err := wallet.Base58CheckDeserialize(paymentAddressStr)
@@ -156,7 +158,7 @@ func GetStakingAmount(stakingType int, stakingShardAmountParam uint64) uint64 {
 	return amount
 }
 
-func HashToIdenticon(hashStrs []interface{}) ([]string, error){
+func HashToIdenticon(hashStrs []interface{}) ([]string, error) {
 	result := make([]string, 0)
 	for _, hash := range hashStrs {
 		temp, err := common.Hash{}.NewHashFromStr(hash.(string))
@@ -169,3 +171,13 @@ func HashToIdenticon(hashStrs []interface{}) ([]string, error){
 	return result, nil
 }
 
+func GenerateTokenID(network string, name string) (common.Hash, error) {
+	point := privacy.HashToPoint([]byte(network + "-" + name))
+	hash := new(common.Hash)
+	err := hash.SetBytes(point.ToBytesS())
+	if err != nil {
+		log.Println("Wrong param")
+		return common.Hash{}, err
+	}
+	return *hash, nil
+}

@@ -1,13 +1,9 @@
 package metadata
 
 import (
-	"bytes"
 	"encoding/json"
 	"strconv"
 
-	rCommon "github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	"github.com/pkg/errors"
 )
 
@@ -71,49 +67,6 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		return nil, err
 	}
 	return md, nil
-}
-
-func GetETHHeader(
-	ethBlockHash rCommon.Hash,
-) (*types.Header, error) {
-	rpcClient := rpccaller.NewRPCClient()
-	params := []interface{}{ethBlockHash, false}
-	var getBlockByNumberRes GetBlockByNumberRes
-	err := rpcClient.RPCCall(
-		EthereumLightNodeProtocol,
-		EthereumLightNodeHost,
-		EthereumLightNodePort,
-		"eth_getBlockByHash",
-		params,
-		&getBlockByNumberRes,
-	)
-	if err != nil {
-		return nil, err
-	}
-	if getBlockByNumberRes.RPCError != nil {
-		Logger.log.Debugf("WARNING: an error occured during calling eth_getBlockByHash: %s", getBlockByNumberRes.RPCError.Message)
-		return nil, nil
-	}
-	return getBlockByNumberRes.Result, nil
-}
-
-func PickAndParseLogMapFromReceipt(constructedReceipt *types.Receipt, ethContractAddressStr string) (map[string]interface{}, error) {
-	logData := []byte{}
-	logLen := len(constructedReceipt.Logs)
-	if logLen == 0 {
-		Logger.log.Debug("WARNING: LOG data is invalid.")
-		return nil, nil
-	}
-	for _, log := range constructedReceipt.Logs {
-		if bytes.Equal(rCommon.HexToAddress(ethContractAddressStr).Bytes(), log.Address.Bytes()) {
-			logData = log.Data
-			break
-		}
-	}
-	if len(logData) == 0 {
-		return nil, nil
-	}
-	return ParseETHLogData(logData)
 }
 
 var bridgeMetas = []string{

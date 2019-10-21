@@ -27,7 +27,7 @@ const (
 	MAX_BEACON_BLOCK             = 5
 	DurationHalfLifeRewardForDev = uint64(31536000) // 5 years, after 5 year, reward for devs = 0
 	GetValidBlock                = 20
-	GenesisBlockTime             = "2019-10-14T00:00:10.000Z"
+	GenesisBlockTime             = "2019-10-15T00:00:10.000Z"
 	TestRandom                   = true
 )
 
@@ -96,16 +96,16 @@ const (
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	TestNetMinBeaconBlkInterval = 10 * time.Second //second
-	TestNetMaxBeaconBlkCreation = 8 * time.Second  //second
+	TestNetMaxBeaconBlkCreation = 13 * time.Second //second, timeout is 25
 	TestNetMinShardBlkInterval  = 10 * time.Second //second
-	TestNetMaxShardBlkCreation  = 6 * time.Second  //second
+	TestNetMaxShardBlkCreation  = 13 * time.Second //second, timeout is 25
 
 	//board and proposal parameters
 	TestnetBasicReward                      = 400000000 //40 mili PRV
 	TestnetRewardHalflife                   = 3155760   //1 year, reduce 12.5% per year
-	TestnetETHContractAddressStr            = "0x862078F5e2B36924DdB704C677b962521b3433AB"
-	TestnetDevAddress                       = "1Uv2vrb74e6ScxuQiXvW9UcKoEbXnRMbuBJ6W2FBWxqhtHNGHi3sUP1D14rNEnWWzkYSMsZCmA4DKV6igmjd7qaJfj9TuMmyqz2ZG2SNx"
-	TestnetCentralizedWebsitePaymentAddress = "1Uv2zzR4LgfX8ToQe8ub3bYcCLk3uDU1sm9U9hiu9EKYXoS77UdikfT9s8d5YjhsTJm61eazsMwk2otFZBYpPHwiMn8z6bKWWJRspsLky"
+	TestnetETHContractAddressStr            = "0x717B5F3667A21a0b5e09A8d0E8648C1D525503C4"
+	TestnetDevAddress                       = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
+	TestnetCentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 )
 
 // for beacon
@@ -174,17 +174,17 @@ const (
 // ---------------------------------------------
 var TestnetInitPRV = []string{
 	`{
-  "Version": 1,
-  "Type": "s",
-  "LockTime": 1563438751,
-  "Fee": 0,
-  "Info": null,
-  "SigPubKey": "AsKCsGYkt3JthzFysVzWHxkESGfEoSRFeWafGB+DZRQA",
-  "Sig": "OA3DSbUjZt28zPtTRdbHRvwI8CfZvLeVpsBggHnDMusfpkGmE3MgkmTuhqh9/rOwlEgB1ULgU3yxmdYRSUQpOA==",
-  "Proof": "1111111dP9RnNmXbXtb5GKjmThj1fuurPVnBJjr5Nw15gvMRyNfy8QdqGFnPrYmeQe5NpYwgRvx7hRsgDaYGwZmM8rNGBszCM5CGyTcFsHUP95AqhTzZFugrmRU3EFt8TnfM3LktX13eD9ep7V51Ww2UcQ2PewVLz3VwktfUAvmZ3tbPWtQoQLmSFmZ4z7A47gkk7q6WjjRDLtfUbF1yj6CcswkKwMN",
-  "PubKeyLastByteSender": 0,
-  "Metadata": null
-}`,
+		"Version":1,
+		"Type":"s",
+		"LockTime":1570159128,
+		"Fee":0,
+		"Info":null,
+		"SigPubKey":"5xVSzcZpA3uHmBO5ejENk13iayexILopySACdieLugA=",
+		"Sig":"oMJPBLxKgTnfQhMgfvvH68ed0UTuTfl3ofOoWgk8dgvfhovgvued9HH4dXz60rY32H4Y4c85Zd8bSXSnvNhZAA==",
+		"Proof":"AAAAAAAAAbAAriDnFVLNxmkDe4eYE7l6MQ2TXeJrJ7EguinJIAJ2J4u6ACARCc1/qyLEePe1zSthzmRSqf2VNOlo036JwtDgbNg24yAb6hGuk1tRBVMO4ruHaNEasY09ZiBc4iuK/dpDSyNTCCABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDMoX8yNBbY68SO44umD1CMfz/r0T4YiXhDgDgT6+k4BgdY0V4XYoAAAAAAAAAAAAA=",
+		"PubKeyLastByteSender":0,
+		"Metadata":null
+	}`,
 }
 var IntegrationTestInitPRV = []string{`{"Version":1,"Type":"s","LockTime":1564213226,"Fee":0,"Info":null,"SigPubKey":"A6zmFqIlTKgsV23Qk9jz2roo3VhisVy5Flg6EGuOKaQA","Sig":"f+JDTKpO7+veF6DVYobNp6l0l6rAYxCZjYCNRrsFN0lx7aOMOwXhZK0OGrKiDLfqSIMX7CXr9ProBz7TIx3yqg==","Proof":"1111111dP9RnNnGCD9afUsg4bvrBHNWfjZijttFU2bkFYLYFGqCoK6i6RCeSEk2NUmv7p8B4kyhi1qaoMjvYCotjhDogGiuYrEqUT4NQLXatq2xqkfxgX8DURcv9xCgrgqVceQ2DrBR5NcgbMQHHBnW1xV3Dte2kmq837EeufP3KoQpz3m5N3oN6x1UssfWSeHAuw4t2dUinKDTe7SgRnFFhfF59dvy","PubKeyLastByteSender":0,"Metadata":null}`,
 	`{"Version":1,"Type":"s","LockTime":1564213226,"Fee":0,"Info":null,"SigPubKey":"As3StzeOJhR5qheXo9stChC6WqQJChZNqmPqdgNOFtkA","Sig":"ccWpvPZjitORv6+9WOWv7K5e8purHA4sX7mfBNE9m9YYFyPJ2awx5+1iHuWKD7BH9oum64XCiLYtW9iihVGlDw==","Proof":"1111111dP9RnNmZen93jhEW3eXaKkne72tbWVGtcdfAEfnbdf7fPDQmwYaTve2a9MBA56HHWXzXCbDxx79KCrtrArUqQKnxgun69qQpCjDZhaBdpKNZAAvYf7uBHrnxpm7qxRA4XLGSKbuLS6mBtrCUFPnit9BDbSAu9ZxQsPnr7XPPyHdbBofrBzFLqf2zTPMrqCAZqBqapA5AMtd8J8yknUHX6hWJ","PubKeyLastByteSender":0,"Metadata":null}`,

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	peer2 "github.com/libp2p/go-libp2p-core/peer"
+	"github.com/incognitochain/incognito-chain/metrics"
 	"io/ioutil"
 	"log"
 	"net"
@@ -499,10 +500,10 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	}
 
 	//Init Metric Tool
-	// if cfg.MetricUrl != "" {
-	// 	grafana := metrics.NewGrafana(cfg.MetricUrl, cfg.ExternalAddress)
-	// 	metrics.InitMetricTool(&grafana)
-	// }
+	if cfg.MetricUrl != "" {
+		grafana := metrics.NewGrafana(cfg.MetricUrl, cfg.ExternalAddress)
+		metrics.InitMetricTool(&grafana)
+	}
 	return nil
 }
 
@@ -700,7 +701,6 @@ func (serverObj *Server) GetActiveShardNumber() int {
 
 func (serverObj *Server) TransactionPoolBroadcastLoop() {
 	<-time.Tick(serverObj.memPool.ScanTime)
-	serverObj.memPool.LockPool()
 	txDescs := serverObj.memPool.GetPool()
 	for _, txDesc := range txDescs {
 		<-time.Tick(50 * time.Millisecond)
@@ -749,7 +749,6 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 			}
 		}
 	}
-	serverObj.memPool.UnlockPool()
 }
 
 // CheckForceUpdateSourceCode - loop to check current version with update version is equal
