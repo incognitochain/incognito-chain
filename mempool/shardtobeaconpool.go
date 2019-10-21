@@ -210,7 +210,7 @@ func (shardToBeaconPool *ShardToBeaconPool) addShardToBeaconBlock(block *blockch
 func (shardToBeaconPool *ShardToBeaconPool) AddShardToBeaconBlock(block *blockchain.ShardToBeaconBlock) (uint64, uint64, error) {
 	shardID := block.Header.ShardID
 	blockHeight := block.Header.Height
-	Logger.log.Infof("Add ShardToBeaconBlock from shard %+v, height %+v \n", shardID, blockHeight)
+	Logger.log.Infof("Add ShardToBeaconBlock from shard %+v, height %+v, hash %v \n", shardID, blockHeight, block.Hash().String())
 	shardToBeaconPool.mtx.Lock()
 	defer shardToBeaconPool.mtx.Unlock()
 	shardToBeaconPool.latestValidHeightMutex.Lock()
@@ -224,9 +224,13 @@ func (shardToBeaconPool *ShardToBeaconPool) updateLatestShardState() {
 		lastHeight := shardToBeaconPool.latestValidHeight[shardID]
 		for i, blk := range blks {
 			// if block height is not next expected
-			if blk.Header.Height != lastHeight+1 {
+			if blk.Header.Height < lastHeight+1 {
+				continue
+			}
+			if blk.Header.Height > lastHeight+1 {
 				break
 			}
+
 			if blk.Header.Height != 2 {
 				if i == (len(blks) - 1) {
 					break
