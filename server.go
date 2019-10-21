@@ -1396,6 +1396,13 @@ func (serverObj *Server) PushRawBytesToShard(p *peer.PeerConn, msgBytes *[]byte,
 PushMessageToPeer push msg to beacon node
 */
 func (serverObj *Server) PushMessageToBeacon(msg wire.Message, exclusivePeerIDs map[libp2p.ID]bool) error {
+	key := []byte(msg.Hash())
+	b, e := serverObj.memCache.Get(key)
+	if e != nil && b != nil {
+		return nil
+	}
+	serverObj.memCache.PutExpired(key, []byte{}, 30*time.Second)
+
 	peerConns := serverObj.connManager.GetPeerConnOfBeacon()
 	relayConns := serverObj.connManager.GetConnOfRelayNode()
 	peerConns = append(relayConns, peerConns...)
