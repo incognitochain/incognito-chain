@@ -63,11 +63,13 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 	listUsableCommitmentsIndices := make([]common.Hash, len(param.usableInputCoins))
 	// tick index of each usable commitment with full db commitments
 	mapIndexCommitmentsInUsableTx := make(map[string]*big.Int)
+
 	for i, in := range param.usableInputCoins {
-		usableCommitment := in.CoinDetails.GetCoinCommitment().Compress()
+		usableCommitment := in.CoinDetails.GetCoinCommitment().ToBytesS()
 		commitmentInHash := common.HashH(usableCommitment)
 		listUsableCommitments[commitmentInHash] = usableCommitment
 		listUsableCommitmentsIndices[i] = commitmentInHash
+
 		index, err := param.db.GetCommitmentIndex(*param.tokenID, usableCommitment, param.shardID)
 		if err != nil {
 			Logger.log.Error(err)
@@ -91,7 +93,7 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 	}
 	if lenCommitment.Uint64() == 1 {
 		commitmentIndexs = []uint64{0, 0, 0, 0, 0, 0, 0}
-		temp := param.usableInputCoins[0].CoinDetails.GetCoinCommitment().Compress()
+		temp := param.usableInputCoins[0].CoinDetails.GetCoinCommitment().ToBytesS()
 		commitments = [][]byte{temp, temp, temp, temp, temp, temp, temp}
 	} else {
 		for i := 0; i < cpRandNum; i++ {
@@ -130,8 +132,8 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 }
 
 // CheckSNDerivatorExistence return true if snd exists in snDerivators list
-func CheckSNDerivatorExistence(tokenID *common.Hash, snd *big.Int, db database.DatabaseInterface) (bool, error) {
-	ok, err := db.HasSNDerivator(*tokenID, common.AddPaddingBigInt(snd, common.BigIntSize))
+func CheckSNDerivatorExistence(tokenID *common.Hash, snd *privacy.Scalar, db database.DatabaseInterface) (bool, error) {
+	ok, err := db.HasSNDerivator(*tokenID, snd.ToBytesS())
 	if err != nil {
 		return false, err
 	}

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha512"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -157,6 +156,10 @@ func deserialize(data []byte) (*KeyWallet, error) {
 	}
 	keyType := data[0]
 	if keyType == PriKeyType {
+		if len(data) != privKeySerializedBytesLen{
+			return nil, NewWalletError(InvalidSeserializedKey, nil)
+		}
+
 		key.Depth = data[1]
 		key.ChildNumber = data[2:6]
 		key.ChainCode = data[6:38]
@@ -164,6 +167,15 @@ func deserialize(data []byte) (*KeyWallet, error) {
 		key.KeySet.PrivateKey = make([]byte, keyLength)
 		copy(key.KeySet.PrivateKey[:], data[39:39+keyLength])
 	} else if keyType == PaymentAddressType {
+		bytesBurnAddress,_, err := base58.Base58Check{}.Decode(common.BurningAddress)
+		if err != nil{
+			return nil, NewWalletError(UnexpectedErr, nil)
+		}
+		if !bytes.Equal(bytesBurnAddress, data){
+			if len(data) != paymentAddrSerializedBytesLen{
+				return nil, NewWalletError(InvalidSeserializedKey, nil)
+			}
+		}
 		apkKeyLength := int(data[1])
 		pkencKeyLength := int(data[apkKeyLength+2])
 		key.KeySet.PaymentAddress.Pk = make([]byte, apkKeyLength)
@@ -171,6 +183,10 @@ func deserialize(data []byte) (*KeyWallet, error) {
 		copy(key.KeySet.PaymentAddress.Pk[:], data[2:2+apkKeyLength])
 		copy(key.KeySet.PaymentAddress.Tk[:], data[3+apkKeyLength:3+apkKeyLength+pkencKeyLength])
 	} else if keyType == ReadonlyKeyType {
+		if len(data) != readOnlyKeySerializedBytesLen{
+			return nil, NewWalletError(InvalidSeserializedKey, nil)
+		}
+
 		apkKeyLength := int(data[1])
 		if len(data) < apkKeyLength+3 {
 			return nil, NewWalletError(InvalidKeyTypeErr, nil)

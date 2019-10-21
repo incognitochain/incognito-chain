@@ -9,10 +9,6 @@ import (
 	"github.com/libp2p/go-libp2p-peer"
 )
 
-const (
-	MaxBlockPayload = 2000000 // 2 Mb
-)
-
 type MessageBlockShard struct {
 	Block *blockchain.ShardBlock
 }
