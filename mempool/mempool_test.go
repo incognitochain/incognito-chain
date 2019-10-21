@@ -36,30 +36,30 @@ var (
 	cPendingTxs      = make(chan metadata.Transaction, 1000)
 	cRemoveTxs       = make(chan metadata.Transaction, 1000)
 	privateKeyShard0 = []string{
-		"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",
+		"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",
 	}
 	miningSeedShard0 = []string{
 		"12N3BfpMP18LxLLTcGDEKEpVrciuuFqniVbovDqXweyH2tysx2Z",
 		"1KrNte7w4Wy4igBehAZpH63KSpAwgLkR4YcGo6xzCKTP34jDxu",
 		"1Vs1hubckf1NoGzmVANZT7QPjo3HyCXB6UWx722uhE285LrvGD",
 		"1ywGtB7MASWBSWYrdvLFkMQFq6NLcbNY7w7jtY45Grvve16TQj",
-		"12QMYUKVo4vqkpeSHaduMTXTWMkbocxukX7G1vwURMwevXJkm8E",
+		"12QQCaNNEBk3z8gumUvxFeFmLGLQgyUuAwUY4z5rLQuLL8amri1",
 		"12oYwtqXsy3aKGQ3ewNTUEs3FmfwhFrHHhR2ajjkP1UPKZ2azCX",
 		"1PLo6quoqNW754vPocS7jgwxjH8vbHoCpviAMrXSGp5JRUWJBF",
 		"1dzj2DxqgQphjPcy3bc4QM3mivJ25essyZfqer9S1wdEu8AoXV",
 		"12ocMcMRmamq82Vi7Z7wsP56U6svnbKJVZKP8KN8MnenMTMkAZC",
 		"19N5JLGtxvXAZhR9ra8oTRGMXPh5noR7EZoUWUjgRRxQgshfhT",
 	}
-	publicKeyShard0 = []string{
+	/*publicKeyShard0 = []string{
 		"185azaQSWjk4WUhVKavjdbvzLNaFRQH9BABLVh7LVZsMEAQbE2b",
 		"15P9cpSnqFDHZXdZ5gA7poUuWwNH9JnMbu8yvTLWJypsryYR7Zk",
 		"15Fepa7m851vTema3fPQTbyiuxa289dLfL73tDuJYYLCd9hssmf",
@@ -70,11 +70,14 @@ var (
 		"15SwUShJ8MkG7rzAckV2KR4kFUWmDeZf99rU5bE2RKuAPYhMxeR",
 		"161VJhDDWsyM6ATC8cnmPjqPEc4kYk1suKcwdLNzr3MVTQrPjBd",
 		"18JBEghYX65CWTZLdnw4TPEz4S2hNgYgyxfaep3oruq6UTakrJV",
-	}
-	stakingPublicKey        = "121VhftSAygpEJZ6i9jGk9dTC3uabPA1YiZELGnnUm955coLbEs92MhiRybYp5CXpWbSJYdpV2hPuMMgcig1wTdsAxnwePEb8zLMRgB1VGTTJYGfbAxct7e6tZKVE13So23YbyRiRhgBh9w2nTGRnHEyUzpFfV4ycF6Hx4McqSTScjZyTNgLkMcv44nwDtn1iNjBmrkndqK2hEwymRBKJLGfK2QA2MMHfdsJzhp7HfdD3ZvmGjUTQmGaQSG1kAkuktEi18YRnMPA9pUHWAcEuupUR5BBBa1KK11e2zxtALhWDCFaxD3dsaZwXGxhgm3hMsTuuMEubvTJztbKVV5kUWwsfq26jD7JrDcuze4YFKqoBv7MephHP9Mg2WUPkBzoxRFoPaoZZZWofYE7RFsufFLLezfHxqNweehi3S1Fv4E1UTZE" // public key of 112t8rsCuDdsPecRrinj5n23onjKaCanM4JTUUyiU2rgjAL3nhEJH7VX1TYazxdWnvBudQvCvEjfhJ4hVjrdAqVK1s3a8fecmYXd8HWNHitC
-	receiverPaymentAddress1 = "1Uv34F64ktQkX1eyd6YEG8KTENV8W5w48LRsi6oqqxVm65uvcKxEAzL2dp5DDJTqAQA7HANfQ1enKXCh2EvVdvBftko6GtGnjSZ1KqJhi"
-	receiverPaymentAddress2 = "1Uv2wgU5FR5jjeN3uY3UJ4SYYyjqj97spYBEDa6cTLGiP3w6BCY7mqmASKwXz8hXfLr6mpDjhWDJ8TiM5v5U5f2cxxqCn5kwy5JM9wBgi"
-	tokenID                 = "6efff7b815f2890758f55763c53c4563feada766726ea4c08fe04dba8fd11b89"
+	}*/
+	stakingPublicKey = "121VhftSAygpEJZ6i9jGkLm73VBfy9sVFpajamtqFcTu1NAE6ok2Cym9q4z5X8VXchEhsxcRcppLCmbAdhTdNNNaLySwFa82noFgf8fkv4HrFkZuXUdVM5Ut4RsBiWQ2kUHUsiyEac7HV3Kx19w1MoEUHMsffJDEyMe96cEEzUPFKNq2qLQ5DFZvnkZDiDga8rTBb2UWFnf6Y6QuEw8X18oCbzJFqBMbbpr8USTXxW56ruYFvY5LhvsPPYjqbH2vtnBzqErD786kb1FSrGYyXPz7KXqTKS6B3tuMwmN6Uzs4kHbfZqhnxsX5sqGk6J5KpzaKuHywLHmZmUtzPUKsGTjADCQXxKhydbgYJkFLRt8qJaTm5EjV8WSQ6yTPDs2AsAS7jG8P1sNnKtrEbA2bfY688d1snZwKFncLswgSgPjzTvHE"
+	// public key of 112t8rndVbFQpRHNbcq6Dd7ggMcDkZsKmxcU5smoTDQMLGAn4Uh81gEQ41XWuCKeamMcDfaivXHbkgHqqzPHtY69ah4tDKofERiWaPNpiY1m at 4
+
+	receiverPaymentAddress1 = "12RsQ3xTPfebpiomuGbBgFFHMDaPSnmtbvEkipTBiSj6qmQ8ya5BMKUY28oQaSht7vjzrTk4TvZDwwve1eqEFXeW29FgAZFXU9PRkNU"
+	receiverPaymentAddress2 = "12S4TkmzjyV2vdQuaj5WxxUjJ4epXjkXmAvGoYiiPSfHHe5JS2GPTbkA9TpYq6aCpM1BnoQQY4pMp7xD3W5eMHjTy7XoztFxEPaqHpD"
+	tokenID                 = "1a871b83b0724955e0f9331eea059f0e7c83c44985088b561835cf5add4a3810"
+	normalTokenID           = "275ef76d02bf242d5da17baba45a9b6c9bd4c9211738800f2d4ffe938c8fa525"
 	maxAmount               = 1750000000000 * 4
 	normalTranferAmount     = 50
 	commonFee               = int64(10)
@@ -171,7 +174,7 @@ var _ = func() (_ struct{}) {
 	defaultTokenReceiver[receiverPaymentAddress1] = float64(1000)
 	defaultTokenParams["TokenReceivers"] = defaultTokenReceiver
 	defaultTokenParams["TokenFee"] = defaultTokenFee
-	// token id custom token: 6efff7b815f2890758f55763c53c4563feada766726ea4c08fe04dba8fd11b89
+	// token id custom token: 1a871b83b0724955e0f9331eea059f0e7c83c44985088b561835cf5add4a3810
 	Logger.Init(common.NewBackend(nil).Logger("test", true))
 	privacy.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	transaction.Logger.Init(common.NewBackend(nil).Logger("test", true))
@@ -296,7 +299,7 @@ func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacy
 	}
 	remainOutputCoins := make([]*privacy.OutputCoin, 0)
 	for _, outCoin := range outCoins {
-		if tp.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().Compress()) == nil {
+		if tp.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().ToBytesS()) == nil {
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}
 	}
@@ -379,7 +382,7 @@ func CreateAndSaveTestStakingTransaction(privateKey string, privateSeed string, 
 	}
 	remainOutputCoins := make([]*privacy.OutputCoin, 0)
 	for _, outCoin := range outCoins {
-		if tp.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().Compress()) == nil {
+		if tp.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().ToBytesS()) == nil {
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}
 	}
@@ -477,7 +480,7 @@ func CreateAndSaveTestInitCustomTokenTransaction(privateKey string, fee int64, t
 	}
 	remainOutputCoins := make([]*privacy.OutputCoin, 0)
 	for _, outCoin := range outCoins {
-		if tp.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().Compress()) == nil {
+		if tp.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().ToBytesS()) == nil {
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}
 	}
@@ -525,6 +528,7 @@ func CreateAndSaveTestInitCustomTokenTransaction(privateKey string, fee int64, t
 			nil,
 			hasPrivacyCoin,
 			shardIDSender))
+	fmt.Println(tx.TxTokenData.PropertyID.String())
 	if err1 != nil {
 		panic("no tx found")
 	}
@@ -562,7 +566,7 @@ func CreateAndSaveTestInitCustomTokenTransactionPrivacy(privateKey string, fee i
 	}
 	remainOutputCoins := make([]*privacy.OutputCoin, 0)
 	for _, outCoin := range outCoins {
-		if tp.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().Compress()) == nil {
+		if tp.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().ToBytesS()) == nil {
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}
 	}
@@ -614,6 +618,7 @@ func CreateAndSaveTestInitCustomTokenTransactionPrivacy(privateKey string, fee i
 			true,
 			shardIDSender,
 			[]byte{}))
+	fmt.Println(tx.TxPrivacyTokenData.PropertyID.String())
 	if err1 != nil {
 		panic("no tx found")
 	}
@@ -742,6 +747,7 @@ func TestTxPoolAddTx(t *testing.T) {
 	txDesc2 := createTxDescMempool(tx2, 1, 10, 0)
 	txDesc3 := createTxDescMempool(tx3, 1, 10, 0)
 	txInitCustomToken := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[3], commonFee, defaultTokenParams, false)
+	//fmt.Println(txInitCustomToken.)
 	txStakingShard := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], miningSeedShard0[4], commonFee, false)
 	txStakingBeacon := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], miningSeedShard0[4], commonFee, true)
 	tx6 := CreateAndSaveTestNormalTransaction(privateKeyShard0[5], commonFee, true, 50)
@@ -763,14 +769,19 @@ func TestTxPoolAddTx(t *testing.T) {
 	if len(tp.poolSerialNumbersHashList) != 6 {
 		t.Fatalf("Expect 6 transaction from mempool but get %+v", len(tp.poolSerialNumbersHashList))
 	}
+	for _, v := range tp.poolCandidate {
+		candidate := incognitokey.CommitteePublicKey{}
+		candidate.FromString(v)
+		_ = candidate
+	}
 	if common.IndexOfStrInHashMap(stakingPublicKey, tp.poolCandidate) < 0 {
 		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.poolCandidate)
 	}
 	if len(tp.poolCandidate) != 1 {
 		t.Fatalf("Expect 1 but get %+v", len(tp.poolCandidate))
 	}
-	if common.IndexOfStrInHashMap(tokenID, tp.poolTokenID) < 0 {
-		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.poolCandidate)
+	if common.IndexOfStrInHashMap(normalTokenID, tp.poolTokenID) < 0 {
+		t.Fatalf("Expect %+v in pool but get %+v", tokenID, tp.poolTokenID)
 	}
 	if len(tp.poolTokenID) != 1 {
 		t.Fatalf("Expect 1 but get %+v", len(tp.poolTokenID))
@@ -800,7 +811,7 @@ func TestTxPoolAddTx(t *testing.T) {
 	if len(tp.poolCandidate) != 1 {
 		t.Fatalf("Expect 1 but get %+v", len(tp.poolCandidate))
 	}
-	if common.IndexOfStrInHashMap(tokenID, tp.poolTokenID) < 0 {
+	if common.IndexOfStrInHashMap(normalTokenID, tp.poolTokenID) < 0 {
 		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.poolCandidate)
 	}
 	if len(tp.poolTokenID) != 1 {
@@ -839,7 +850,7 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	sum := uint64(0)
 	outCoins, _ := tp.config.BlockChain.GetListOutputCoinsByKeyset(&senderKeySet.KeySet, shardIDSender, prvCoinID)
 	for _, outCoin := range outCoins {
-		hash := common.HashH(outCoin.CoinDetails.GetSerialNumber().Compress())
+		hash := common.HashH(outCoin.CoinDetails.GetSerialNumber().ToBytesS())
 		log.Println("Serial Number: ", hash)
 		sum += outCoin.CoinDetails.GetValue()
 	}
@@ -860,7 +871,7 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	txInitCustomToken := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[3], commonFee, defaultTokenParams, false)
 	txInitCustomTokenFailed := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[4], commonFee, defaultTokenParams, false)
 	txStakingShard := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], miningSeedShard0[4], commonFee, false)
-	txStakingBeacon := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], miningSeedShard0[4], commonFee, true)
+	//txStakingBeacon := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], miningSeedShard0[4], commonFee, true)
 	txDesc1 := createTxDescMempool(tx1, 1, tx1.GetTxFee(), tx1.GetTxFeeToken())
 	txDesc1CustomTokenPrivacy := createTxDescMempool(txInitCustomTokenPrivacy, 1, txInitCustomTokenPrivacy.GetTxFee(), txInitCustomTokenPrivacy.GetTxFeeToken())
 	// Check condition 1: Sanity - Max version error
@@ -1036,7 +1047,7 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	// check Condition 7: Check double spend with blockchain
 	// check Condition 8: Check Init Custom Token
 	ResetMempoolTest()
-	tp.poolTokenID[*txInitCustomToken.Hash()] = "6efff7b815f2890758f55763c53c4563feada766726ea4c08fe04dba8fd11b89"
+	tp.poolTokenID[*txInitCustomToken.Hash()] = normalTokenID
 	err12 := tp.validateTransaction(txInitCustomTokenFailed)
 	if err12 == nil {
 		t.Fatal("Expect duplicate init token error error but no error")
@@ -1056,7 +1067,7 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectDuplicateStakePubkey], err)
 		}
 	}
-	err13 = tp.validateTransaction(txStakingBeacon)
+	err13 = tp.validateTransaction(txStakingShard)
 	if err13 == nil {
 		t.Fatal("Expect duplicate staking pubkey error error but no error")
 	} else {
@@ -1104,10 +1115,11 @@ func TestTxPoolmayBeAcceptTransaction(t *testing.T) {
 	if err4 != nil {
 		t.Fatal("Expect no error but get ", err4)
 	}
+	/* can not stake beacon
 	_, _, err5 := tp.maybeAcceptTransaction(txStakingBeacon, false, true)
 	if err5 != nil {
 		t.Fatal("Expect no error but get ", err5)
-	}
+	}*/
 	_, _, err6 := tp.maybeAcceptTransaction(tx6, false, true)
 	if err6 != nil {
 		t.Fatal("Expect no error but get ", err6)
@@ -1116,19 +1128,19 @@ func TestTxPoolmayBeAcceptTransaction(t *testing.T) {
 	if err7 == nil {
 		t.Fatalf("Expect error %+v but get no error", err7)
 	}
-	if len(tp.pool) != 6 {
-		t.Fatalf("Expect 6 transaction from mempool but get %+v", len(tp.pool))
+	if len(tp.pool) != 5 {
+		t.Fatalf("Expect 5 transaction from mempool but get %+v", len(tp.pool))
 	}
-	if len(tp.poolSerialNumbersHashList) != 6 {
-		t.Fatalf("Expect 6 transaction from mempool but get %+v", len(tp.poolSerialNumbersHashList))
+	if len(tp.poolSerialNumbersHashList) != 5 {
+		t.Fatalf("Expect 5 transaction from mempool but get %+v", len(tp.poolSerialNumbersHashList))
 	}
-	if common.IndexOfStrInHashMap(stakingPublicKey, tp.poolCandidate) < 0 {
+	/*if common.IndexOfStrInHashMap(stakingPublicKey, tp.poolCandidate) < 0 {
 		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.poolCandidate)
 	}
 	if len(tp.poolCandidate) != 1 {
 		t.Fatalf("Expect 1 but get %+v", len(tp.poolCandidate))
-	}
-	if common.IndexOfStrInHashMap(tokenID, tp.poolTokenID) < 0 {
+	}*/
+	if common.IndexOfStrInHashMap(normalTokenID, tp.poolTokenID) < 0 {
 		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.poolCandidate)
 	}
 	if len(tp.poolTokenID) != 1 {
@@ -1175,9 +1187,9 @@ func TestTxPoolmayBeAcceptTransaction(t *testing.T) {
 	if isOk, err := tp.config.DataBaseMempool.HasTransaction(txInitCustomToken.Hash()); !isOk || err != nil {
 		t.Fatalf("Expect tx hash %+v in database mempool but counter err", txInitCustomToken.Hash())
 	}
-	if isOk, err := tp.config.DataBaseMempool.HasTransaction(txStakingBeacon.Hash()); !isOk || err != nil {
+	/*if isOk, err := tp.config.DataBaseMempool.HasTransaction(txStakingBeacon.Hash()); !isOk || err != nil {
 		t.Fatalf("Expect tx hash %+v in database mempool but counter err", txStakingBeacon.Hash())
-	}
+	}*/
 
 	tx1Data, err := tp.getTransactionFromDatabaseMempool(tx1.Hash())
 	assert.Equal(t, nil, err)
@@ -1207,10 +1219,10 @@ func TestTxPoolmayBeAcceptTransaction(t *testing.T) {
 	assert.Equal(t, nil, err)
 
 	list := tp.ListTxs()
-	assert.Equal(t, 6, len(list))
+	assert.Equal(t, 5, len(list))
 
 	c := tp.Count()
-	assert.Equal(t, 6, c)
+	assert.Equal(t, 5, c)
 
 	has := tp.HaveTransaction(tx1.Hash())
 	assert.Equal(t, true, has)
@@ -1221,15 +1233,15 @@ func TestTxPoolmayBeAcceptTransaction(t *testing.T) {
 	fee := tp.MaxFee()
 	assert.Equal(t, uint64(30), uint64(fee))
 
-	tp.LockPool()
-	tp.UnlockPool()
+	/*tp.LockPool()
+	tp.UnlockPool()*/
 
 	pool := tp.GetPool()
 	assert.NotEqual(t, nil, pool)
 
 	mining := tp.MiningDescs()
 	assert.NotEqual(t, nil, mining)
-	assert.Equal(t, 6, len(mining))
+	assert.Equal(t, 5, len(mining))
 
 	tx1Temp, err := tp.GetTx(tx1.Hash())
 	assert.Equal(t, nil, err)
@@ -1253,24 +1265,24 @@ func TestTxPoolRemoveTx(t *testing.T) {
 	tp.maybeAcceptTransaction(tx2, false, true)
 	tp.maybeAcceptTransaction(tx3, false, true)
 	tp.maybeAcceptTransaction(txInitCustomToken, false, true)
-	tp.maybeAcceptTransaction(txStakingBeacon, false, true)
+	tp.maybeAcceptTransaction(txStakingBeacon, false, true) // this is fail because can not stake beacon now
 	tp.maybeAcceptTransaction(tx6, false, true)
-	if len(tp.pool) != 6 {
-		t.Fatalf("Expect 6 transaction from pool but get %+v", len(tp.pool))
+	if len(tp.pool) != 5 {
+		t.Fatalf("Expect 5 transaction from pool but get %+v", len(tp.pool))
 	}
-	if len(tp.poolSerialNumbersHashList) != 6 {
-		t.Fatalf("Expect 6 transaction from poolSerialNumbersHashList but get %+v", len(tp.poolSerialNumbersHashList))
+	if len(tp.poolSerialNumbersHashList) != 5 {
+		t.Fatalf("Expect 5 transaction from poolSerialNumbersHashList but get %+v", len(tp.poolSerialNumbersHashList))
 	}
-	if len(tp.poolSerialNumberHash) != 6 {
-		t.Fatalf("Expect 6 transaction from poolSerialNumberHash but get %+v", len(tp.poolSerialNumberHash))
+	if len(tp.poolSerialNumberHash) != 5 {
+		t.Fatalf("Expect 5 transaction from poolSerialNumberHash but get %+v", len(tp.poolSerialNumberHash))
 	}
-	if common.IndexOfStrInHashMap(stakingPublicKey, tp.poolCandidate) < 0 {
+	if common.IndexOfStrInHashMap(stakingPublicKey, tp.poolCandidate) >= 0 { // because can not stake to beacon
 		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.poolCandidate)
 	}
-	if len(tp.poolCandidate) != 1 {
-		t.Fatalf("Expect 1 but get %+v", len(tp.poolCandidate))
+	if len(tp.poolCandidate) != 0 { // because can not stake beacon
+		t.Fatalf("Expect 0 but get %+v", len(tp.poolCandidate))
 	}
-	if common.IndexOfStrInHashMap(tokenID, tp.poolTokenID) < 0 {
+	if common.IndexOfStrInHashMap(tokenID, tp.poolTokenID) >= 0 {
 		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.poolCandidate)
 	}
 	if len(tp.poolTokenID) != 1 {
@@ -1286,13 +1298,13 @@ func TestTxPoolRemoveTx(t *testing.T) {
 	if len(tp.poolSerialNumberHash) != 0 {
 		t.Fatalf("Expect 0 transaction from mempool but get %+v", len(tp.poolSerialNumberHash))
 	}
-	if common.IndexOfStrInHashMap(stakingPublicKey, tp.poolCandidate) < 0 {
+	if common.IndexOfStrInHashMap(stakingPublicKey, tp.poolCandidate) >= 0 {
 		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.poolCandidate)
 	}
-	if len(tp.poolCandidate) != 1 {
+	if len(tp.poolCandidate) != 0 { // beacause can not stake to beacon
 		t.Fatalf("Expect 1 but get %+v", len(tp.poolCandidate))
 	}
-	if common.IndexOfStrInHashMap(tokenID, tp.poolTokenID) < 0 {
+	if common.IndexOfStrInHashMap(normalTokenID, tp.poolTokenID) < 0 {
 		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.poolCandidate)
 	}
 	if len(tp.poolTokenID) != 1 {
@@ -1303,8 +1315,8 @@ func TestTxPoolRemoveTx(t *testing.T) {
 	if len(tp.poolCandidate) != 0 {
 		t.Fatalf("Expect 0 but get %+v", len(tp.poolCandidate))
 	}
-	if len(tp.poolTokenID) != 0 {
-		t.Fatalf("Expect 0 but get %+v", len(tp.poolTokenID))
+	if len(tp.poolTokenID) != 1 {
+		t.Fatalf("Expect 1 but get %+v", len(tp.poolTokenID))
 	}
 	if common.IndexOfStrInHashMap(stakingPublicKey, tp.poolCandidate) > 0 {
 		t.Fatalf("Expect %+v NOT in pool but get %+v", stakingPublicKey, tp.poolCandidate)
@@ -1421,16 +1433,16 @@ func TestTxPoolEmptyPool(t *testing.T) {
 	tp.maybeAcceptTransaction(tx2, true, true)
 	tp.maybeAcceptTransaction(tx3, true, true)
 	tp.maybeAcceptTransaction(txInitCustomToken, true, true)
-	tp.maybeAcceptTransaction(txStakingBeacon, true, true)
+	tp.maybeAcceptTransaction(txStakingBeacon, true, true) // this is fail because can not stake beacon now
 	tp.maybeAcceptTransaction(tx6, true, true)
-	if len(tp.pool) != 6 {
-		t.Fatalf("Expect 6 transaction from mempool but get %+v", len(tp.pool))
+	if len(tp.pool) != 5 {
+		t.Fatalf("Expect 5 transaction from mempool but get %+v", len(tp.pool))
 	}
-	if len(tp.poolSerialNumbersHashList) != 6 {
-		t.Fatalf("Expect 6 transaction from mempool but get %+v", len(tp.poolSerialNumbersHashList))
+	if len(tp.poolSerialNumbersHashList) != 5 {
+		t.Fatalf("Expect 5 transaction from mempool but get %+v", len(tp.poolSerialNumbersHashList))
 	}
-	if len(tp.poolCandidate) != 1 {
-		t.Fatalf("Expect 1 but get %+v", len(tp.poolCandidate))
+	if len(tp.poolCandidate) != 0 { // because can not stake beacon
+		t.Fatalf("Expect 0 but get %+v", len(tp.poolCandidate))
 	}
 	if len(tp.poolTokenID) != 1 {
 		t.Fatalf("Expect 1 but get %+v", len(tp.poolTokenID))

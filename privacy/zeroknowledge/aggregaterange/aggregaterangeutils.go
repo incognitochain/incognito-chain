@@ -2,12 +2,9 @@ package aggregaterange
 
 import (
 	"errors"
-	"math"
-	"math/big"
-	"sync"
-
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
+	C25519 "github.com/incognitochain/incognito-chain/privacy/curve25519"
+	"math"
 )
 
 // pad returns number has format 2^k that it is the nearest number to num
@@ -30,145 +27,131 @@ func pad(num int) int {
 // The length here always has to be a power of two
 
 //vectorAdd adds two vector and returns result vector
-func vectorAdd(a []*big.Int, b []*big.Int) ([]*big.Int, error) {
+func vectorAdd(a []*privacy.Scalar, b []*privacy.Scalar) ([]*privacy.Scalar, error) {
 	if len(a) != len(b) {
 		return nil, errors.New("VectorAdd: Arrays not of the same length")
 	}
 
-	res := make([]*big.Int, len(a))
-	var wg sync.WaitGroup
-	wg.Add(len(a))
+	res := make([]*privacy.Scalar, len(a))
 	for i := range a {
-		go func(i int, wg *sync.WaitGroup) {
-			defer wg.Done()
-			res[i] = new(big.Int).Add(a[i], b[i])
-			res[i] = res[i].Mod(res[i], privacy.Curve.Params().N)
-		}(i, &wg)
+		res[i] = new(privacy.Scalar).Add(a[i], b[i])
 	}
-	wg.Wait()
 	return res, nil
 }
 
 // innerProduct calculates inner product between two vectors a and b
-func innerProduct(a []*big.Int, b []*big.Int) (*big.Int, error) {
+func innerProduct(a []*privacy.Scalar, b []*privacy.Scalar) (*privacy.Scalar, error) {
 	if len(a) != len(b) {
 		return nil, errors.New("InnerProduct: Arrays not of the same length")
 	}
-
-	res := big.NewInt(0)
-	tmp := new(big.Int)
-
+	res := new(privacy.Scalar).FromUint64(uint64(0))
 	for i := range a {
-		res.Add(res, tmp.Mul(a[i], b[i]))
-		res.Mod(res, privacy.Curve.Params().N)
+		//res = a[i]*b[i] + res % l
+		res.MulAdd(a[i], b[i], res)
 	}
-
 	return res, nil
 }
 
 // hadamardProduct calculates hadamard product between two vectors a and b
-func hadamardProduct(a []*big.Int, b []*big.Int) ([]*big.Int, error) {
+func hadamardProduct(a []*privacy.Scalar, b []*privacy.Scalar) ([]*privacy.Scalar, error) {
 	if len(a) != len(b) {
 		return nil, errors.New("InnerProduct: Arrays not of the same length")
 	}
 
-	res := make([]*big.Int, len(a))
-	var wg sync.WaitGroup
-	wg.Add(len(a))
+	res := make([]*privacy.Scalar, len(a))
 	for i := 0; i < len(res); i++ {
-		go func(i int, wg *sync.WaitGroup) {
-			defer wg.Done()
-			res[i] = new(big.Int).Mul(a[i], b[i])
-			res[i].Mod(res[i], privacy.Curve.Params().N)
-		}(i, &wg)
+		res[i] = new(privacy.Scalar).Mul(a[i], b[i])
 	}
-	wg.Wait()
-
 	return res, nil
 }
 
 // powerVector calculates base^n
-func powerVector(base *big.Int, n int) []*big.Int {
-	res := make([]*big.Int, n)
-	res[0] = big.NewInt(1)
-
-	var wg sync.WaitGroup
-	wg.Add(n - 1)
-	for i := 1; i < n; i++ {
-		go func(i int, wg *sync.WaitGroup) {
-			defer wg.Done()
-			res[i] = new(big.Int).Exp(base, new(big.Int).SetInt64(int64(i)), privacy.Curve.Params().N)
-		}(i, &wg)
+func powerVector(base *privacy.Scalar, n int) []*privacy.Scalar {
+	res := make([]*privacy.Scalar, n)
+	res[0] = new(privacy.Scalar).FromUint64(1)
+	if n >1 {
+		res[1] = new(privacy.Scalar).Set(base)
+		for i := 2; i < n; i++ {
+			res[i] = new(privacy.Scalar).Mul(res[i-1], base)
+		}
 	}
-	wg.Wait()
 	return res
 }
 
 // vectorAddScalar adds a vector to a big int, returns big int array
-func vectorAddScalar(v []*big.Int, s *big.Int) []*big.Int {
-	res := make([]*big.Int, len(v))
+func vectorAddScalar(v []*privacy.Scalar, s *privacy.Scalar) []*privacy.Scalar {
+	res := make([]*privacy.Scalar, len(v))
 
-	var wg sync.WaitGroup
-	wg.Add(len(v))
 	for i := range v {
-		go func(i int, wg *sync.WaitGroup) {
-			defer wg.Done()
-			res[i] = new(big.Int).Add(v[i], s)
-			res[i].Mod(res[i], privacy.Curve.Params().N)
-		}(i, &wg)
+		res[i] = new(privacy.Scalar).Add(v[i], s)
 	}
-	wg.Wait()
 	return res
 }
 
 // vectorMulScalar mul a vector to a big int, returns a vector
-func vectorMulScalar(v []*big.Int, s *big.Int) []*big.Int {
-	res := make([]*big.Int, len(v))
+func vectorMulScalar(v []*privacy.Scalar, s *privacy.Scalar) []*privacy.Scalar {
+	res := make([]*privacy.Scalar, len(v))
 
-	var wg sync.WaitGroup
-	wg.Add(len(v))
 	for i := range v {
-		go func(i int, wg *sync.WaitGroup) {
-			defer wg.Done()
-			res[i] = new(big.Int).Mul(v[i], s)
-			res[i].Mod(res[i], privacy.Curve.Params().N)
-		}(i, &wg)
+		res[i] = new(privacy.Scalar).Mul(v[i], s)
 	}
-	wg.Wait()
 	return res
 }
 
-// estimateMultiRangeProofSize estimate multi range proof size
-func EstimateMultiRangeProofSize(nOutput int) uint64 {
-	return uint64((nOutput+2*int(math.Log2(float64(maxExp*pad(nOutput))))+5)*privacy.CompressedEllipticPointSize + 5*common.BigIntSize + 2)
+// CommitAll commits a list of PCM_CAPACITY value(s)
+func encodeVectors(l []*privacy.Scalar, r []*privacy.Scalar, g []*privacy.Point, h []*privacy.Point) (*privacy.Point, error) {
+	// MultiscalarMul Approach
+	if len(l) != len(r) || len(g) != len(l) || len(h) != len(g) {
+		return nil, errors.New("invalid input")
+	}
+	tmp1 := new(privacy.Point).MultiScalarMult(l, g)
+	tmp2 := new(privacy.Point).MultiScalarMult(r, h)
+
+	res := new(privacy.Point).Add(tmp1, tmp2)
+	return res, nil
+
+	////AddPedersen Approach
+	//if len(l) != len(r) || len(g) != len(l) || len(h) != len(g) {
+	//	return nil, errors.New("invalid input")
+	//}
+	//
+	//res := new(privacy.Point).Identity()
+	//
+	//for i := 0; i < len(l); i++ {
+	//	tmp := new(privacy.Point).AddPedersen(l[i], g[i], r[i], h[i])
+	//	res.Add(res, tmp)
+	//}
+	//return res, nil
 }
 
-// CommitAll commits a list of PCM_CAPACITY value(s)
-func encodeVectors(l []*big.Int, r []*big.Int, g []*privacy.EllipticPoint, h []*privacy.EllipticPoint) (*privacy.EllipticPoint, error) {
-	if len(l) != len(r) || len(g) != len(h) || len(l) != len(g) {
+func encodeCachedVectors(l []*privacy.Scalar, r []*privacy.Scalar, gPre [][8]C25519.CachedGroupElement, hPre [][8]C25519.CachedGroupElement) (*privacy.Point, error) {
+	// MultiscalarMul Approach
+	//if len(l) != len(r) || len(gPre) != len(l) || len(hPre) != len(gPre) {
+	//	return nil, errors.New("invalid input")
+	//}
+	//tmp1 := new(privacy.Point).MultiScalarMultCached(l, gPre)
+	//tmp2 := new(privacy.Point).MultiScalarMultCached(r, hPre)
+	//
+	//res := new(privacy.Point).Add(tmp1, tmp2)
+	//return res, nil
+
+
+	//CacheAddPedersen Approach
+	if len(l) != len(r) || len(gPre) != len(l) || len(hPre) != len(hPre) {
 		return nil, errors.New("invalid input")
 	}
 
-	res := new(privacy.EllipticPoint)
-	res.Zero()
-	var wg sync.WaitGroup
-	var tmp1, tmp2 *privacy.EllipticPoint
+	res := new(privacy.Point).Identity()
 
 	for i := 0; i < len(l); i++ {
-		wg.Add(2)
-		go func(i int, wg *sync.WaitGroup) {
-			defer wg.Done()
-			tmp1 = g[i].ScalarMult(l[i])
-		}(i, &wg)
-
-		go func(i int, wg *sync.WaitGroup) {
-			defer wg.Done()
-			tmp2 = h[i].ScalarMult(r[i])
-		}(i, &wg)
-
-		wg.Wait()
-
-		res = res.Add(tmp1).Add(tmp2)
+		tmp := new(privacy.Point).AddPedersenCached(l[i], gPre[i], r[i], hPre[i])
+		res.Add(res, tmp)
 	}
 	return res, nil
+}
+
+
+// estimateMultiRangeProofSize estimate multi range proof size
+func EstimateMultiRangeProofSize(nOutput int) uint64 {
+	return uint64((nOutput+2*int(math.Log2(float64(maxExp*pad(nOutput))))+5)*privacy.Ed25519KeySize + 5*privacy.Ed25519KeySize + 2)
 }

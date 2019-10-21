@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"math/big"
 	"sort"
 	"strconv"
 	"strings"
@@ -998,7 +997,7 @@ func (blockchain *BlockChain) DecryptOutputCoinByKey(outCoinTemp *privacy.Output
 		in case readonly-key: return all outputcoin tx with amount value
 		in case payment-address: return all outputcoin tx with no amount value
 	*/
-	pubkeyCompress := outCoinTemp.CoinDetails.GetPublicKey().Compress()
+	pubkeyCompress := outCoinTemp.CoinDetails.GetPublicKey().ToBytesS()
 	if bytes.Equal(pubkeyCompress, keySet.PaymentAddress.Pk[:]) {
 		result := &privacy.OutputCoin{
 			CoinDetails:          outCoinTemp.CoinDetails,
@@ -1015,9 +1014,12 @@ func (blockchain *BlockChain) DecryptOutputCoinByKey(outCoinTemp *privacy.Output
 		}
 		if len(keySet.PrivateKey) > 0 {
 			// check spent with private-key
-			result.CoinDetails.SetSerialNumber(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex].Derive(new(big.Int).SetBytes(keySet.PrivateKey),
-				result.CoinDetails.GetSNDerivator()))
-			ok, err := blockchain.config.DataBase.HasSerialNumber(*tokenID, result.CoinDetails.GetSerialNumber().Compress(), shardID)
+			result.CoinDetails.SetSerialNumber(
+				new(privacy.Point).Derive(
+					privacy.PedCom.G[privacy.PedersenPrivateKeyIndex],
+					new(privacy.Scalar).FromBytesS(keySet.PrivateKey),
+					result.CoinDetails.GetSNDerivator()))
+			ok, err := blockchain.config.DataBase.HasSerialNumber(*tokenID, result.CoinDetails.GetSerialNumber().ToBytesS(), shardID)
 			if ok || err != nil {
 				return nil
 			}
