@@ -11,24 +11,25 @@ import (
 //Network fixed params
 const (
 	// SHARD_BLOCK_VERSION is the current latest supported block version.
-	VERSION                      = 1
-	RANDOM_NUMBER                = 3
-	SHARD_BLOCK_VERSION          = 1
-	BEACON_BLOCK_VERSION         = 1
-	DefaultMaxBlkReqPerPeer      = 600
-	DefaultMaxBlkReqPerTime      = 1200
-	MinCommitteeSize             = 3                // min size to run bft
-	DefaultBroadcastStateTime    = 6 * time.Second  // in second
-	DefaultStateUpdateTime       = 8 * time.Second  // in second
-	DefaultMaxBlockSyncTime      = 1 * time.Second  // in second
-	DefaultCacheCleanupTime      = 30 * time.Second // in second
-	WorkerNumber                 = 5
-	MAX_S2B_BLOCK                = 30
-	MAX_BEACON_BLOCK             = 5
-	DurationHalfLifeRewardForDev = uint64(31536000) // 5 years, after 5 year, reward for devs = 0
-	GetValidBlock                = 20
-	GenesisBlockTime             = "2019-10-15T00:00:10.000Z"
-	TestRandom                   = true
+	VERSION                    = 1
+	RANDOM_NUMBER              = 3
+	SHARD_BLOCK_VERSION        = 1
+	BEACON_BLOCK_VERSION       = 1
+	DefaultMaxBlkReqPerPeer    = 600
+	DefaultMaxBlkReqPerTime    = 1200
+	MinCommitteeSize           = 3                // min size to run bft
+	DefaultBroadcastStateTime  = 6 * time.Second  // in second
+	DefaultStateUpdateTime     = 8 * time.Second  // in second
+	DefaultMaxBlockSyncTime    = 1 * time.Second  // in second
+	DefaultCacheCleanupTime    = 30 * time.Second // in second
+	WorkerNumber               = 5
+	MAX_S2B_BLOCK              = 30
+	MAX_BEACON_BLOCK           = 5
+	LowerBoundPercentForIncDAO = 3
+	UpperBoundPercentForIncDAO = 10
+	GetValidBlock              = 20
+	GenesisBlockTime           = "2019-10-07T11:00:00.000Z"
+	TestRandom                 = true
 )
 
 // CONSTANT for network MAINNET
@@ -57,7 +58,7 @@ const (
 	MainnetBasicReward                      = 400000000 //40 mili PRV
 	MainnetRewardHalflife                   = 3155760   //1 year, reduce 12.5% per year
 	MainETHContractAddressStr               = "0x10e492e6383DfE37d0d0B7B86015AE0876e88663"
-	MainnetDevAddress                       = "1Uv2vrb74e6ScxuQiXvW9UcKoEbXnRMbuBJ6W2FBWxqhtHNGHi3sUP1D14rNEnWWzkYSMsZCmA4DKV6igmjd7qaJfj9TuMmyqz2ZG2SNx"
+	MainnetIncognitoDAOAddress              = "1Uv2vrb74e6ScxuQiXvW9UcKoEbXnRMbuBJ6W2FBWxqhtHNGHi3sUP1D14rNEnWWzkYSMsZCmA4DKV6igmjd7qaJfj9TuMmyqz2ZG2SNx"
 	MainnetCentralizedWebsitePaymentAddress = "1Uv2zzR4LgfX8ToQe8ub3bYcCLk3uDU1sm9U9hiu9EKYXoS77UdikfT9s8d5YjhsTJm61eazsMwk2otFZBYpPHwiMn8z6bKWWJRspsLky"
 	// ------------- end Mainnet --------------------------------------
 )
@@ -106,7 +107,7 @@ const (
 	TestnetBasicReward                      = 400000000 //40 mili PRV
 	TestnetRewardHalflife                   = 3155760   //1 year, reduce 12.5% per year
 	TestnetETHContractAddressStr            = "0x717B5F3667A21a0b5e09A8d0E8648C1D525503C4"
-	TestnetDevAddress                       = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
+	TestnetIncognitoDAOAddress              = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 	TestnetCentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 )
 

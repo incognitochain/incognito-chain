@@ -1370,11 +1370,11 @@ func (blockchain *BlockChain) GetAllCoinID() ([]common.Hash, error) {
 	return allCoinID, nil
 }
 
-func (blockchain *BlockChain) BuildInstRewardForDev(epoch uint64, totalReward map[common.Hash]uint64) ([][]string, error) {
+func (blockchain *BlockChain) BuildInstRewardForIncDAO(epoch uint64, totalReward map[common.Hash]uint64) ([][]string, error) {
 	resInst := [][]string{}
-	devRewardInst, err := metadata.BuildInstForDevReward(totalReward, blockchain.config.ChainParams.DevAddress)
+	devRewardInst, err := metadata.BuildInstForIncDAOReward(totalReward, blockchain.config.ChainParams.IncognitoDAOAddress)
 	if err != nil {
-		Logger.log.Errorf("BuildInstRewardForDev error %+v\n Totalreward: %+v, epoch: %+v\n", err, totalReward, epoch)
+		Logger.log.Errorf("BuildInstRewardForIncDAO error %+v\n Totalreward: %+v, epoch: %+v\n", err, totalReward, epoch)
 		return nil, err
 	}
 	resInst = append(resInst, devRewardInst)
@@ -1760,7 +1760,7 @@ func (blockchain *BlockChain) GetActiveShardNumber() int {
 // 					if err != nil {
 // 						return err
 // 					}
-// 					keyWalletDevAccount, err := wallet.Base58CheckDeserialize(common.DevAddress)
+// 					keyWalletDevAccount, err := wallet.Base58CheckDeserialize(common.IncognitoDAOAddress)
 // 					if err != nil {
 // 						return err
 // 					}
@@ -1982,7 +1982,7 @@ func (blockchain *BlockChain) GetActiveShardNumber() int {
 // 					if err != nil {
 // 						return err
 // 					}
-// 					keyWalletDevAccount, err := wallet.Base58CheckDeserialize(common.DevAddress)
+// 					keyWalletDevAccount, err := wallet.Base58CheckDeserialize(common.IncognitoDAOAddress)
 // 					if err != nil {
 // 						return err
 // 					}
