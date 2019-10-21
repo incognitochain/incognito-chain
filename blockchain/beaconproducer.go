@@ -442,19 +442,25 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 		}
 		//==================================
 		if err == nil && chainTimeStamp > beaconBestState.CurrentRandomTimeStamp {
-			assignedCandidates := make(map[byte][]incognitokey.CommitteePublicKey)
+			numberOfPendingValidator := make(map[byte]int)
+			for i := 0; i < beaconBestState.ActiveShards; i++ {
+				if pendingValidators, ok := beaconBestState.ShardPendingValidator[byte(i)]; ok {
+					numberOfPendingValidator[byte(i)] = len(pendingValidators)
+				} else {
+					numberOfPendingValidator[byte(i)] = 0
+				}
+			}
 			randomInstruction, rand, err := beaconBestState.generateRandomInstruction(beaconBestState.CurrentRandomTimeStamp, blockchain.config.RandomClient)
 			if err != nil {
 				return [][]string{}, err
 			}
 			instructions = append(instructions, randomInstruction)
 			Logger.log.Infof("Beacon Producer found Random Instruction at Block Height %+v, %+v", randomInstruction, newBeaconHeight)
-			for _, candidate := range shardCandidates {
-				candidateStr, _ := candidate.ToBase58()
-				shardID := calculateCandidateShardID(candidateStr, rand, beaconBestState.ActiveShards)
-				assignedCandidates[shardID] = append(assignedCandidates[shardID], candidate)
+			shardCandidatesStr, err := incognitokey.CommitteeKeyListToString(shardCandidates)
+			if err != nil {
+				panic(err)
 			}
-
+			_, assignedCandidates := assignShardCandidate(shardCandidatesStr, numberOfPendingValidator, rand, TestnetAssignOffset, beaconBestState.ActiveShards)
 			var keys []int
 			for k := range assignedCandidates {
 				keys = append(keys, int(k))
@@ -463,13 +469,9 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 			for _, key := range keys {
 				shardID := byte(key)
 				candidates := assignedCandidates[shardID]
-				candidatesStr, err := incognitokey.CommitteeKeyListToString(candidates)
-				if err != nil {
-					panic(err)
-				}
-				Logger.log.Infof("Assign Candidate at Shard %+v: %+v", shardID, candidatesStr)
+				Logger.log.Infof("Assign Candidate at Shard %+v: %+v", shardID, candidates)
 				shardAssingInstruction := []string{AssignAction}
-				shardAssingInstruction = append(shardAssingInstruction, strings.Join(candidatesStr, ","))
+				shardAssingInstruction = append(shardAssingInstruction, strings.Join(candidates, ","))
 				shardAssingInstruction = append(shardAssingInstruction, "shard")
 				shardAssingInstruction = append(shardAssingInstruction, fmt.Sprintf("%v", shardID))
 				instructions = append(instructions, shardAssingInstruction)
