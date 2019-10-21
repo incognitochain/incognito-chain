@@ -1,5 +1,5 @@
 {
-  "Version": "1.16.0-beta",
-  "Note": "Fix bug sync",
+  "Version": "1.17.0-beta",
+  "Note": "Apply new curve",
   "RemoveData": true
 }
