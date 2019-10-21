@@ -120,7 +120,6 @@ func (engine *Engine) VerifyData(data []byte, sig string, publicKey string, cons
 	if err != nil {
 		return NewConsensusError(LoadKeyError, err)
 	}
-	//fmt.Printf("data %v, sig %v, publicKey %v\n", data, sig, publicKey)
 	return AvailableConsensus[consensusType].ValidateData(data, sig, string(mapPublicKey[common.BridgeConsensus]))
 }
 
