@@ -44,6 +44,7 @@ type Params struct {
 	CentralizedWebsitePaymentAddress string //centralized website's pubkey
 	CheckForce                       bool   // true on testnet and false on mainnet
 	ChainVersion                     string
+	AssignOffset                     int
 }
 
 type GenesisParams struct {
@@ -97,6 +98,7 @@ func init() {
 		Epoch:                            TestnetEpoch,
 		RandomTime:                       TestnetRandomTime,
 		Offset:                           TestnetOffset,
+		AssignOffset:                     TestnetAssignOffset,
 		SwapOffset:                       TestnetSwapOffset,
 		EthContractAddressStr:            TestnetETHContractAddressStr,
 		IncognitoDAOAddress:              TestnetIncognitoDAOAddress,
@@ -139,6 +141,7 @@ func init() {
 		RandomTime:                       MainnetRandomTime,
 		Offset:                           MainnetOffset,
 		SwapOffset:                       MainnetSwapOffset,
+		AssignOffset:                     MainnetAssignOffset,
 		EthContractAddressStr:            MainETHContractAddressStr,
 		IncognitoDAOAddress:              MainnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: MainnetCentralizedWebsitePaymentAddress,
