@@ -30,7 +30,7 @@ run()
 
   docker run -ti --restart=always --net inc_net -d -p 8545:8545  -p 30303:30303 -p 30303:30303/udp -v $PWD/${eth_data_dir}:/home/parity/.local/share/io.parity.ethereum/ --name inc_kovan  parity/parity:stable --light  --chain kovan  --jsonrpc-interface all --jsonrpc-hosts all  --jsonrpc-apis all --mode last  --base-path=/home/parity/.local/share/io.parity.ethereum/
 
-  docker run --restart=always --net inc_net -p 9334:9334 -p 9433:9433 -e GETH_NAME=inc_kovan -e MININGKEY=${validator_key} -v $PWD/${data_dir}:/data -d --name inc_miner incognitochain/incognito:${latest_tag}
+  docker run --restart=always --net inc_net -p 9334:9334 -p 9433:9433 -e GETH_NAME=inc_kovan -e MININGKEY=${validator_key} -e TESTNET=true -v $PWD/${data_dir}:/data -d --name inc_miner incognitochain/incognito:${latest_tag}
 
   if [ $is_shipping_logs -eq 1 ]
   then
