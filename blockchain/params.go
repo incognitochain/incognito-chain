@@ -40,7 +40,7 @@ type Params struct {
 	EthContractAddressStr            string // smart contract of ETH for bridge
 	Offset                           int    // default offset for swap policy, is used for cases that good producers length is less than max committee size
 	SwapOffset                       int    // is used for case that good producers length is equal to max committee size
-	DevAddress                       string
+	IncognitoDAOAddress              string
 	CentralizedWebsitePaymentAddress string //centralized website's pubkey
 	CheckForce                       bool   // true on testnet and false on mainnet
 	ChainVersion                     string
@@ -99,7 +99,7 @@ func init() {
 		Offset:                           TestnetOffset,
 		SwapOffset:                       TestnetSwapOffset,
 		EthContractAddressStr:            TestnetETHContractAddressStr,
-		DevAddress:                       TestnetDevAddress,
+		IncognitoDAOAddress:              TestnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: TestnetCentralizedWebsitePaymentAddress,
 		SlashLevels:                      []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
@@ -140,7 +140,7 @@ func init() {
 		Offset:                           MainnetOffset,
 		SwapOffset:                       MainnetSwapOffset,
 		EthContractAddressStr:            MainETHContractAddressStr,
-		DevAddress:                       MainnetDevAddress,
+		IncognitoDAOAddress:              MainnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: MainnetCentralizedWebsitePaymentAddress,
 		SlashLevels:                      []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
