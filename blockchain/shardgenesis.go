@@ -30,10 +30,6 @@ func CreateShardGenesisBlock(
 		PreviousBlockHash: common.Hash{},
 	}
 
-	if net == Mainnet {
-		header.Version += int(net)
-	}
-
 	for _, tx := range icoParams.InitialIncognito {
 		testSalaryTX := transaction.Tx{}
 		testSalaryTX.UnmarshalJSON([]byte(tx))
