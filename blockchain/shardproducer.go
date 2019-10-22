@@ -565,8 +565,8 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 	)
 	if beaconHeight%blockchain.config.ChainParams.Epoch == 0 {
 		// TODO: 0xmerman
-		fixedProducerShardCommittee := shardCommittee[0]
-		shardCommittee = shardCommittee[1:]
+		fixedProducerShardValidators := shardCommittee[:NumberOfFixedBlockValidators]
+		shardCommittee = shardCommittee[NumberOfFixedBlockValidators:]
 
 		Logger.log.Info("ShardPendingValidator", shardPendingValidator)
 		Logger.log.Info("ShardCommittee", shardCommittee)
@@ -579,8 +579,13 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 			return instructions, shardPendingValidator, shardCommittee, err
 		}
 
-		maxShardCommitteeSize := blockchain.BestState.Shard[shardID].MaxShardCommitteeSize
-		minShardCommitteeSize := blockchain.BestState.Shard[shardID].MinShardCommitteeSize
+		maxShardCommitteeSize := blockchain.BestState.Shard[shardID].MaxShardCommitteeSize - NumberOfFixedBlockValidators
+		var minShardCommitteeSize int
+		if blockchain.BestState.Shard[shardID].MinShardCommitteeSize-NumberOfFixedBlockValidators < 0 {
+			minShardCommitteeSize = 0
+		} else {
+			minShardCommitteeSize = blockchain.BestState.Shard[shardID].MinShardCommitteeSize - NumberOfFixedBlockValidators
+		}
 		badProducersWithPunishment := blockchain.buildBadProducersWithPunishment(false, int(shardID), shardCommittee)
 		swapInstruction, shardPendingValidator, shardCommittee, err = CreateSwapAction(shardPendingValidator, shardCommittee, maxShardCommitteeSize, minShardCommitteeSize, shardID, producersBlackList, badProducersWithPunishment, blockchain.config.ChainParams.Offset, blockchain.config.ChainParams.SwapOffset)
 		if err != nil {
@@ -599,7 +604,7 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 			BLogger.log.Infof("Add Bridge swap inst in ShardID %+v block %d", shardID, blockHeight)
 		}
 		//TODO: 0xmerman
-		shardCommittee = append([]string{fixedProducerShardCommittee}, shardCommittee...)
+		shardCommittee = append(fixedProducerShardValidators, shardCommittee...)
 	}
 	if len(swapInstruction) > 0 {
 		instructions = append(instructions, swapInstruction)
