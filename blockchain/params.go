@@ -124,8 +124,10 @@ func init() {
 		Name:                   MainetName,
 		Net:                    Mainnet,
 		DefaultPort:            MainnetDefaultPort,
-		MaxShardCommitteeSize:  MainNetShardCommitteeSize,  //MainNetShardCommitteeSize,
+		MaxShardCommitteeSize:  MainNetShardCommitteeSize, //MainNetShardCommitteeSize,
+		MinShardCommitteeSize:  MainNetMinShardCommitteeSize,
 		MaxBeaconCommitteeSize: MainNetBeaconCommitteeSize, //MainNetBeaconCommitteeSize,
+		MinBeaconCommitteeSize: MainNetMinBeaconCommitteeSize,
 		StakingAmountShard:     MainNetStakingAmountShard,
 		ActiveShards:           MainNetActiveShards,
 		// blockChain parameters
