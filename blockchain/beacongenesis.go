@@ -68,10 +68,6 @@ func CreateBeaconGenesisBlock(
 		InstructionHash:                 common.Hash{},
 	}
 
-	if net == Mainnet {
-		header.Version += int(net)
-	}
-
 	block := &BeaconBlock{
 		Body:   body,
 		Header: header,
