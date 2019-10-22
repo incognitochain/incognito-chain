@@ -44,10 +44,10 @@ const (
 	MainnetSwapOffset   = 1
 	MainnetAssignOffset = 4
 
-	MainNetShardCommitteeSize     = 3
+	MainNetShardCommitteeSize     = 32
 	MainNetMinShardCommitteeSize  = 4
-	MainNetBeaconCommitteeSize    = 3
-	MainNetMinBeaconCommitteeSize = 4
+	MainNetBeaconCommitteeSize    = 7
+	MainNetMinBeaconCommitteeSize = 7
 	MainNetActiveShards           = 2
 	MainNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
