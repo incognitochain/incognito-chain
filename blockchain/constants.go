@@ -44,10 +44,12 @@ const (
 	MainnetSwapOffset   = 1
 	MainnetAssignOffset = 4
 
-	MainNetShardCommitteeSize  = 3
-	MainNetBeaconCommitteeSize = 3
-	MainNetActiveShards        = 2
-	MainNetStakingAmountShard  = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
+	MainNetShardCommitteeSize     = 3
+	MainNetMinShardCommitteeSize  = 4
+	MainNetBeaconCommitteeSize    = 3
+	MainNetMinBeaconCommitteeSize = 4
+	MainNetActiveShards           = 2
+	MainNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	MainnetMinBeaconBlkInterval = 10 * time.Second //second
 	MainnetMaxBeaconBlkCreation = 8 * time.Second  //second
@@ -156,6 +158,18 @@ func init() {
 			PreSelectShardNodeTestnetSerializedPaymentAddress = append(PreSelectShardNodeTestnetSerializedPaymentAddress, keylist.Shard[i][j].PaymentAddress)
 		}
 	}
+
+	/*for i := 0; i < MainNetMinBeaconCommitteeSize; i++ {
+		PreSelectBeaconNodeTestnetSerializedPubkey = append(PreSelectBeaconNodeTestnetSerializedPubkey, keylist.Beacon[i].CommitteePublicKey)
+		PreSelectBeaconNodeTestnetSerializedPaymentAddress = append(PreSelectBeaconNodeTestnetSerializedPaymentAddress, keylist.Beacon[i].PaymentAddress)
+	}
+
+	for i := 0; i < MainNetActiveShards; i++ {
+		for j := 0; j < MainNetMinShardCommitteeSize; j++ {
+			PreSelectShardNodeTestnetSerializedPubkey = append(PreSelectShardNodeTestnetSerializedPubkey, keylist.Shard[i][j].CommitteePublicKey)
+			PreSelectShardNodeTestnetSerializedPaymentAddress = append(PreSelectShardNodeTestnetSerializedPaymentAddress, keylist.Shard[i][j].PaymentAddress)
+		}
+	}*/
 }
 
 // For shard
