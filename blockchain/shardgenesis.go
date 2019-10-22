@@ -21,12 +21,12 @@ func CreateShardGenesisBlock(
 	}
 	header := ShardHeader{
 		Timestamp:         genesisTime.Unix(),
-		Height:            1,
 		Version:           version,
-		PreviousBlockHash: common.Hash{},
 		BeaconHeight:      1,
 		Epoch:             1,
 		Round:             1,
+		Height:            1,
+		PreviousBlockHash: common.Hash{},
 	}
 
 	for _, tx := range icoParams.InitialIncognito {
