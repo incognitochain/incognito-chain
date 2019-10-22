@@ -1,0 +1,15 @@
+filebeat.inputs:
+- type: log
+  enabled: true
+  paths:
+{json_log_paths}
+  json.keys_under_root: true
+
+- type: log
+  enabled: true
+  paths:
+{raw_log_paths}
+
+output.logstash:
+  hosts: [{logstash_addresses}]
+
