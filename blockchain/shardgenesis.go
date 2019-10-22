@@ -10,6 +10,7 @@ import (
 
 func CreateShardGenesisBlock(
 	version int,
+	net uint16,
 	icoParams GenesisParams,
 ) *ShardBlock {
 	body := ShardBody{}
