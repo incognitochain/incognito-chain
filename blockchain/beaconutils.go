@@ -103,6 +103,7 @@ func shuffleShardCandidate(candidates []string, rand int64) []string {
 		temp = append(temp, hash)
 	}
 	if len(m) != len(temp) {
+		fmt.Println(candidates)
 		panic("Failed To Shuffle Shard Candidate Before Assign to Shard")
 	}
 	sort.Strings(temp)
