@@ -28,21 +28,21 @@ const (
 	LowerBoundPercentForIncDAO = 3
 	UpperBoundPercentForIncDAO = 10
 	GetValidBlock              = 20
-	GenesisBlockTime           = "2019-10-21T00:00:20.000Z"
 	TestRandom                 = true
 )
 
 // CONSTANT for network MAINNET
 const (
 	// ------------- Mainnet ---------------------------------------------
-	Mainnet             = 0x01
-	MainetName          = "mainnet"
-	MainnetDefaultPort  = "9333"
-	MainnetEpoch        = 30000
-	MainnetRandomTime   = 15000
-	MainnetOffset       = 4
-	MainnetSwapOffset   = 4
-	MainnetAssignOffset = 8
+	Mainnet                 = 0x01
+	MainetName              = "mainnet"
+	MainnetDefaultPort      = "9333"
+	MainnetGenesisBlockTime = "2019-10-21T00:00:20.000Z"
+	MainnetEpoch            = 30000
+	MainnetRandomTime       = 15000
+	MainnetOffset           = 4
+	MainnetSwapOffset       = 4
+	MainnetAssignOffset     = 8
 
 	MainNetShardCommitteeSize     = 32
 	MainNetMinShardCommitteeSize  = 4
@@ -57,8 +57,8 @@ const (
 	MainnetMaxShardBlkCreation  = 6 * time.Second  //second
 
 	//board and proposal parameters
-	MainnetBasicReward                      = 400000000 //40 mili PRV
-	MainnetRewardHalflife                   = 3155760   //1 year, reduce 12.5% per year
+	MainnetBasicReward                      = 1386666000 //1.386666 PRV
+	MainnetRewardHalflife                   = 3155760    //1 year, reduce 12.5% per year
 	MainETHContractAddressStr               = "0x10e492e6383DfE37d0d0B7B86015AE0876e88663"
 	MainnetIncognitoDAOAddress              = "1Uv2vrb74e6ScxuQiXvW9UcKoEbXnRMbuBJ6W2FBWxqhtHNGHi3sUP1D14rNEnWWzkYSMsZCmA4DKV6igmjd7qaJfj9TuMmyqz2ZG2SNx"
 	MainnetCentralizedWebsitePaymentAddress = "1Uv2zzR4LgfX8ToQe8ub3bYcCLk3uDU1sm9U9hiu9EKYXoS77UdikfT9s8d5YjhsTJm61eazsMwk2otFZBYpPHwiMn8z6bKWWJRspsLky"
@@ -84,14 +84,15 @@ var (
 
 // CONSTANT for network TESTNET
 const (
-	Testnet             = 0x16
-	TestnetName         = "testnet"
-	TestnetDefaultPort  = "9444"
-	TestnetEpoch        = 100
-	TestnetRandomTime   = 50
-	TestnetOffset       = 1
-	TestnetSwapOffset   = 1
-	TestnetAssignOffset = 2
+	Testnet                 = 0x16
+	TestnetName             = "testnet"
+	TestnetDefaultPort      = "9444"
+	TestnetGenesisBlockTime = "2019-10-21T00:00:20.000Z"
+	TestnetEpoch            = 100
+	TestnetRandomTime       = 50
+	TestnetOffset           = 1
+	TestnetSwapOffset       = 1
+	TestnetAssignOffset     = 2
 
 	TestNetShardCommitteeSize     = 63
 	TestNetMinShardCommitteeSize  = 4

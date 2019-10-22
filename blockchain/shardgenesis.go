@@ -11,11 +11,12 @@ import (
 func CreateShardGenesisBlock(
 	version int,
 	net uint16,
+	genesisBlockTime string,
 	icoParams GenesisParams,
 ) *ShardBlock {
 	body := ShardBody{}
 	layout := "2006-01-02T15:04:05.000Z"
-	str := GenesisBlockTime
+	str := genesisBlockTime
 	genesisTime, err := time.Parse(layout, str)
 	if err != nil {
 		fmt.Println(err)
