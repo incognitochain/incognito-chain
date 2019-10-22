@@ -11,6 +11,7 @@ import (
 
 func CreateBeaconGenesisBlock(
 	version int,
+	net uint16,
 	genesisParams GenesisParams,
 ) *BeaconBlock {
 	inst := [][]string{}
