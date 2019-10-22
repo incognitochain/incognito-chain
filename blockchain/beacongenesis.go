@@ -11,6 +11,7 @@ import (
 
 func CreateBeaconGenesisBlock(
 	version int,
+	net uint16,
 	genesisParams GenesisParams,
 ) *BeaconBlock {
 	inst := [][]string{}
@@ -54,10 +55,10 @@ func CreateBeaconGenesisBlock(
 	body := BeaconBody{ShardState: nil, Instructions: inst}
 	header := BeaconHeader{
 		Timestamp:                       genesisTime.Unix(),
-		Height:                          1,
-		Version:                         1,
-		Round:                           1,
+		Version:                         version,
 		Epoch:                           1,
+		Height:                          1,
+		Round:                           1,
 		PreviousBlockHash:               common.Hash{},
 		BeaconCommitteeAndValidatorRoot: common.Hash{},
 		BeaconCandidateRoot:             common.Hash{},
