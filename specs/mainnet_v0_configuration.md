@@ -70,8 +70,6 @@ The total supply of the network is 100,000,000 PRV.  So the total staking amount
 
 The total block rewards for the first year are 8,751,974 PRV.
 
-Block reward: 0.13867 PRV
-
 Block rewards are reduced by 9% for every subsequent year. 100% of PRV is fully mined after ~40 years.
 
 ## Limitations & future work
