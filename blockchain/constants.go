@@ -38,9 +38,9 @@ const (
 	Mainnet                 = 0x01
 	MainetName              = "mainnet"
 	MainnetDefaultPort      = "9333"
-	MainnetGenesisBlockTime = "2019-10-21T00:00:20.000Z"
-	MainnetEpoch            = 30000
-	MainnetRandomTime       = 15000
+	MainnetGenesisBlockTime = "2019-10-31T00:00:00.000Z"
+	MainnetEpoch            = 350
+	MainnetRandomTime       = 175
 	MainnetOffset           = 4
 	MainnetSwapOffset       = 4
 	MainnetAssignOffset     = 8
@@ -48,14 +48,14 @@ const (
 	MainNetShardCommitteeSize     = 32
 	MainNetMinShardCommitteeSize  = 4
 	MainNetBeaconCommitteeSize    = 7
-	MainNetMinBeaconCommitteeSize = 7
-	MainNetActiveShards           = 2
+	MainNetMinBeaconCommitteeSize = 4
+	MainNetActiveShards           = 8
 	MainNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
-	MainnetMinBeaconBlkInterval = 10 * time.Second //second
-	MainnetMaxBeaconBlkCreation = 8 * time.Second  //second
-	MainnetMinShardBlkInterval  = 10 * time.Second //second
-	MainnetMaxShardBlkCreation  = 6 * time.Second  //second
+	MainnetMinBeaconBlkInterval = 40 * time.Second //second
+	MainnetMaxBeaconBlkCreation = 10 * time.Second //second
+	MainnetMinShardBlkInterval  = 40 * time.Second //second
+	MainnetMaxShardBlkCreation  = 10 * time.Second //second
 
 	//board and proposal parameters
 	MainnetBasicReward                      = 1386666000 //1.386666 PRV
@@ -126,9 +126,19 @@ func init() {
 	if len(os.Args) > 0 && (strings.Contains(os.Args[0], "test") || strings.Contains(os.Args[0], "Test")) {
 		return
 	}
-	keyData, err := ioutil.ReadFile("keylist.json")
-	if err != nil {
-		panic(err)
+	var keyData []byte
+	var err error
+	var IsTestNet = true
+	if IsTestNet {
+		keyData, err = ioutil.ReadFile("keylist.json")
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		keyData, err = ioutil.ReadFile("keylist-mainnet.json")
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	type AccountKey struct {
@@ -149,29 +159,32 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	for i := 0; i < TestNetMinBeaconCommitteeSize; i++ {
-		PreSelectBeaconNodeTestnetSerializedPubkey = append(PreSelectBeaconNodeTestnetSerializedPubkey, keylist.Beacon[i].CommitteePublicKey)
-		PreSelectBeaconNodeTestnetSerializedPaymentAddress = append(PreSelectBeaconNodeTestnetSerializedPaymentAddress, keylist.Beacon[i].PaymentAddress)
-	}
 
-	for i := 0; i < TestNetActiveShards; i++ {
-		for j := 0; j < TestNetMinShardCommitteeSize; j++ {
-			PreSelectShardNodeTestnetSerializedPubkey = append(PreSelectShardNodeTestnetSerializedPubkey, keylist.Shard[i][j].CommitteePublicKey)
-			PreSelectShardNodeTestnetSerializedPaymentAddress = append(PreSelectShardNodeTestnetSerializedPaymentAddress, keylist.Shard[i][j].PaymentAddress)
+	if IsTestNet {
+		for i := 0; i < TestNetMinBeaconCommitteeSize; i++ {
+			PreSelectBeaconNodeTestnetSerializedPubkey = append(PreSelectBeaconNodeTestnetSerializedPubkey, keylist.Beacon[i].CommitteePublicKey)
+			PreSelectBeaconNodeTestnetSerializedPaymentAddress = append(PreSelectBeaconNodeTestnetSerializedPaymentAddress, keylist.Beacon[i].PaymentAddress)
+		}
+
+		for i := 0; i < TestNetActiveShards; i++ {
+			for j := 0; j < TestNetMinShardCommitteeSize; j++ {
+				PreSelectShardNodeTestnetSerializedPubkey = append(PreSelectShardNodeTestnetSerializedPubkey, keylist.Shard[i][j].CommitteePublicKey)
+				PreSelectShardNodeTestnetSerializedPaymentAddress = append(PreSelectShardNodeTestnetSerializedPaymentAddress, keylist.Shard[i][j].PaymentAddress)
+			}
+		}
+	} else {
+		for i := 0; i < MainNetMinBeaconCommitteeSize; i++ {
+			PreSelectBeaconNodeTestnetSerializedPubkey = append(PreSelectBeaconNodeTestnetSerializedPubkey, keylist.Beacon[i].CommitteePublicKey)
+			PreSelectBeaconNodeTestnetSerializedPaymentAddress = append(PreSelectBeaconNodeTestnetSerializedPaymentAddress, keylist.Beacon[i].PaymentAddress)
+		}
+
+		for i := 0; i < MainNetActiveShards; i++ {
+			for j := 0; j < MainNetMinShardCommitteeSize; j++ {
+				PreSelectShardNodeTestnetSerializedPubkey = append(PreSelectShardNodeTestnetSerializedPubkey, keylist.Shard[i][j].CommitteePublicKey)
+				PreSelectShardNodeTestnetSerializedPaymentAddress = append(PreSelectShardNodeTestnetSerializedPaymentAddress, keylist.Shard[i][j].PaymentAddress)
+			}
 		}
 	}
-
-	/*for i := 0; i < MainNetMinBeaconCommitteeSize; i++ {
-		PreSelectBeaconNodeTestnetSerializedPubkey = append(PreSelectBeaconNodeTestnetSerializedPubkey, keylist.Beacon[i].CommitteePublicKey)
-		PreSelectBeaconNodeTestnetSerializedPaymentAddress = append(PreSelectBeaconNodeTestnetSerializedPaymentAddress, keylist.Beacon[i].PaymentAddress)
-	}
-
-	for i := 0; i < MainNetActiveShards; i++ {
-		for j := 0; j < MainNetMinShardCommitteeSize; j++ {
-			PreSelectShardNodeTestnetSerializedPubkey = append(PreSelectShardNodeTestnetSerializedPubkey, keylist.Shard[i][j].CommitteePublicKey)
-			PreSelectShardNodeTestnetSerializedPaymentAddress = append(PreSelectShardNodeTestnetSerializedPaymentAddress, keylist.Shard[i][j].PaymentAddress)
-		}
-	}*/
 }
 
 // For shard
