@@ -494,12 +494,20 @@ func (engine *Engine) updateUserState(keySet *incognitokey.CommitteePublicKey, l
 
 	if engine.userCurrentState.ShardID != shardID {
 		isChange = true
+		fmt.Println("DEBUG: ShardID change!", role)
 	}
 	if engine.userCurrentState.UserLayer != layer {
 		isChange = true
+		fmt.Println("DEBUG: UserLayer change!", role)
 	}
-	if engine.userCurrentState.Keys != keySet {
-		isChange = true
+	if engine.userCurrentState.Keys != nil {
+		incKey, ok := engine.userCurrentState.KeysBase58[common.IncKeyType]
+		if ok {
+			if incKey != keySet.GetIncKeyBase58() {
+				isChange = true
+				fmt.Println("DEBUG: Keys change!", role)
+			}
+		}
 	}
 
 	if role == "" {
