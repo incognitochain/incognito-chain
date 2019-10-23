@@ -68,7 +68,9 @@ func (wsServer *WsServer) handleSubcribeCrossOutputCoinByPrivateKey(params inter
 								value += processedOutputCoin.CoinDetails.GetValue()
 								m[senderShardID] = value
 							} else {
-								m[senderShardID] = processedOutputCoin.CoinDetails.GetValue()
+								if processedOutputCoin.CoinDetails != nil {
+									m[senderShardID] = processedOutputCoin.CoinDetails.GetValue()
+								}
 							}
 						}
 					}
