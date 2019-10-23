@@ -1,6 +1,6 @@
 # Incognito Decentralized Exchange (Incognito DEX)
 
-**Designers:** @0xankylosaurus, @duyhtq
+**Designers:** @0xankylosaurus, @0xgazeka, @hieu013, @duyhtq
 
 **Developers:** @0xankylosaurus
 
