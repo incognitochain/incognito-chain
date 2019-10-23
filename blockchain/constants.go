@@ -46,7 +46,7 @@ const (
 
 	MainNetShardCommitteeSize     = 32
 	MainNetMinShardCommitteeSize  = 4
-	MainNetBeaconCommitteeSize    = 7
+	MainNetBeaconCommitteeSize    = 32
 	MainNetMinBeaconCommitteeSize = 4
 	MainNetActiveShards           = 8
 	MainNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
