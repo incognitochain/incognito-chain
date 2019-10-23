@@ -524,9 +524,12 @@ func (connManager *ConnManager) checkPeerConnOfPublicKey(publicKey string) bool 
 	if listener != nil {
 		pcs := listener.GetPeerConnOfAll()
 		for _, peerConn := range pcs {
-			pk, _ := peerConn.GetRemotePeer().GetPublicKey()
-			if pk == publicKey {
-				return true
+			peer := peerConn.GetRemotePeer()
+			if peer != nil {
+				pk, _ := peer.GetPublicKey()
+				if pk == publicKey {
+					return true
+				}
 			}
 		}
 	}
