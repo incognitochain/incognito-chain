@@ -11,44 +11,46 @@ import (
 //Network fixed params
 const (
 	// SHARD_BLOCK_VERSION is the current latest supported block version.
-	VERSION                      = 1
-	RANDOM_NUMBER                = 3
-	SHARD_BLOCK_VERSION          = 1
-	BEACON_BLOCK_VERSION         = 1
-	DefaultMaxBlkReqPerPeer      = 600
-	DefaultMaxBlkReqPerTime      = 1200
-	MinCommitteeSize             = 3                // min size to run bft
-	DefaultBroadcastStateTime    = 6 * time.Second  // in second
-	DefaultStateUpdateTime       = 8 * time.Second  // in second
-	DefaultMaxBlockSyncTime      = 1 * time.Second  // in second
-	DefaultCacheCleanupTime      = 30 * time.Second // in second
-	WorkerNumber                 = 5
-	MAX_S2B_BLOCK                = 30
-	MAX_BEACON_BLOCK             = 5
-	LowerBoundPercentForIncDAO   = 3
-	UpperBoundPercentForIncDAO   = 10
-	GetValidBlock                = 20
+	VERSION                    = 1
+	RANDOM_NUMBER              = 3
+	SHARD_BLOCK_VERSION        = 1
+	BEACON_BLOCK_VERSION       = 1
+	DefaultMaxBlkReqPerPeer    = 600
+	DefaultMaxBlkReqPerTime    = 1200
+	MinCommitteeSize           = 3                // min size to run bft
+	DefaultBroadcastStateTime  = 6 * time.Second  // in second
+	DefaultStateUpdateTime     = 8 * time.Second  // in second
+	DefaultMaxBlockSyncTime    = 1 * time.Second  // in second
+	DefaultCacheCleanupTime    = 30 * time.Second // in second
+	WorkerNumber               = 5
+	MAX_S2B_BLOCK              = 30
+	MAX_BEACON_BLOCK           = 5
+	LowerBoundPercentForIncDAO = 3
+	UpperBoundPercentForIncDAO = 10
+	GetValidBlock              = 20
+	TestRandom                 = true
 	NumberOfFixedBlockValidators = 2
-	GenesisBlockTime             = "2019-10-21T00:00:20.000Z"
-	TestRandom                   = true
 )
 
 // CONSTANT for network MAINNET
 const (
 	// ------------- Mainnet ---------------------------------------------
-	Mainnet             = 0x01
-	MainetName          = "mainnet"
-	MainnetDefaultPort  = "9333"
-	MainnetEpoch        = 30000
-	MainnetRandomTime   = 15000
-	MainnetOffset       = 1
-	MainnetSwapOffset   = 1
-	MainnetAssignOffset = 2
+	Mainnet                 = 0x01
+	MainetName              = "mainnet"
+	MainnetDefaultPort      = "9333"
+	MainnetGenesisBlockTime = "2019-10-21T00:00:20.000Z"
+	MainnetEpoch            = 30000
+	MainnetRandomTime       = 15000
+	MainnetOffset           = 4
+	MainnetSwapOffset       = 4
+	MainnetAssignOffset     = 8
 
-	MainNetShardCommitteeSize  = 3
-	MainNetBeaconCommitteeSize = 3
-	MainNetActiveShards        = 2
-	MainNetStakingAmountShard  = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
+	MainNetShardCommitteeSize     = 32
+	MainNetMinShardCommitteeSize  = 4
+	MainNetBeaconCommitteeSize    = 7
+	MainNetMinBeaconCommitteeSize = 7
+	MainNetActiveShards           = 2
+	MainNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	MainnetMinBeaconBlkInterval = 10 * time.Second //second
 	MainnetMaxBeaconBlkCreation = 8 * time.Second  //second
@@ -56,8 +58,8 @@ const (
 	MainnetMaxShardBlkCreation  = 6 * time.Second  //second
 
 	//board and proposal parameters
-	MainnetBasicReward                      = 400000000 //40 mili PRV
-	MainnetRewardHalflife                   = 3155760   //1 year, reduce 12.5% per year
+	MainnetBasicReward                      = 1386666000 //1.386666 PRV
+	MainnetRewardHalflife                   = 3155760    //1 year, reduce 12.5% per year
 	MainETHContractAddressStr               = "0x10e492e6383DfE37d0d0B7B86015AE0876e88663"
 	MainnetIncognitoDAOAddress              = "1Uv2vrb74e6ScxuQiXvW9UcKoEbXnRMbuBJ6W2FBWxqhtHNGHi3sUP1D14rNEnWWzkYSMsZCmA4DKV6igmjd7qaJfj9TuMmyqz2ZG2SNx"
 	MainnetCentralizedWebsitePaymentAddress = "1Uv2zzR4LgfX8ToQe8ub3bYcCLk3uDU1sm9U9hiu9EKYXoS77UdikfT9s8d5YjhsTJm61eazsMwk2otFZBYpPHwiMn8z6bKWWJRspsLky"
@@ -83,14 +85,15 @@ var (
 
 // CONSTANT for network TESTNET
 const (
-	Testnet             = 0x16
-	TestnetName         = "testnet"
-	TestnetDefaultPort  = "9444"
-	TestnetEpoch        = 20
-	TestnetRandomTime   = 10
-	TestnetOffset       = 1
-	TestnetSwapOffset   = 1
-	TestnetAssignOffset = 2
+	Testnet                 = 0x16
+	TestnetName             = "testnet"
+	TestnetDefaultPort      = "9444"
+	TestnetGenesisBlockTime = "2019-10-21T00:00:20.000Z"
+	TestnetEpoch            = 100
+	TestnetRandomTime       = 50
+	TestnetOffset           = 1
+	TestnetSwapOffset       = 1
+	TestnetAssignOffset     = 2
 
 	TestNetShardCommitteeSize     = 7
 	TestNetMinShardCommitteeSize  = 4
@@ -157,6 +160,18 @@ func init() {
 			PreSelectShardNodeTestnetSerializedPaymentAddress = append(PreSelectShardNodeTestnetSerializedPaymentAddress, keylist.Shard[i][j].PaymentAddress)
 		}
 	}
+
+	/*for i := 0; i < MainNetMinBeaconCommitteeSize; i++ {
+		PreSelectBeaconNodeTestnetSerializedPubkey = append(PreSelectBeaconNodeTestnetSerializedPubkey, keylist.Beacon[i].CommitteePublicKey)
+		PreSelectBeaconNodeTestnetSerializedPaymentAddress = append(PreSelectBeaconNodeTestnetSerializedPaymentAddress, keylist.Beacon[i].PaymentAddress)
+	}
+
+	for i := 0; i < MainNetActiveShards; i++ {
+		for j := 0; j < MainNetMinShardCommitteeSize; j++ {
+			PreSelectShardNodeTestnetSerializedPubkey = append(PreSelectShardNodeTestnetSerializedPubkey, keylist.Shard[i][j].CommitteePublicKey)
+			PreSelectShardNodeTestnetSerializedPaymentAddress = append(PreSelectShardNodeTestnetSerializedPaymentAddress, keylist.Shard[i][j].PaymentAddress)
+		}
+	}*/
 }
 
 // For shard
