@@ -11,25 +11,26 @@ import (
 //Network fixed params
 const (
 	// SHARD_BLOCK_VERSION is the current latest supported block version.
-	VERSION                    = 1
-	RANDOM_NUMBER              = 3
-	SHARD_BLOCK_VERSION        = 1
-	BEACON_BLOCK_VERSION       = 1
-	DefaultMaxBlkReqPerPeer    = 600
-	DefaultMaxBlkReqPerTime    = 1200
-	MinCommitteeSize           = 3                // min size to run bft
-	DefaultBroadcastStateTime  = 6 * time.Second  // in second
-	DefaultStateUpdateTime     = 8 * time.Second  // in second
-	DefaultMaxBlockSyncTime    = 1 * time.Second  // in second
-	DefaultCacheCleanupTime    = 30 * time.Second // in second
-	WorkerNumber               = 5
-	MAX_S2B_BLOCK              = 30
-	MAX_BEACON_BLOCK           = 5
-	LowerBoundPercentForIncDAO = 3
-	UpperBoundPercentForIncDAO = 10
-	GetValidBlock              = 20
-	GenesisBlockTime           = "2019-10-21T00:00:20.000Z"
-	TestRandom                 = true
+	VERSION                      = 1
+	RANDOM_NUMBER                = 3
+	SHARD_BLOCK_VERSION          = 1
+	BEACON_BLOCK_VERSION         = 1
+	DefaultMaxBlkReqPerPeer      = 600
+	DefaultMaxBlkReqPerTime      = 1200
+	MinCommitteeSize             = 3                // min size to run bft
+	DefaultBroadcastStateTime    = 6 * time.Second  // in second
+	DefaultStateUpdateTime       = 8 * time.Second  // in second
+	DefaultMaxBlockSyncTime      = 1 * time.Second  // in second
+	DefaultCacheCleanupTime      = 30 * time.Second // in second
+	WorkerNumber                 = 5
+	MAX_S2B_BLOCK                = 30
+	MAX_BEACON_BLOCK             = 5
+	LowerBoundPercentForIncDAO   = 3
+	UpperBoundPercentForIncDAO   = 10
+	GetValidBlock                = 20
+	NumberOfFixedBlockValidators = 2
+	GenesisBlockTime             = "2019-10-21T00:00:20.000Z"
+	TestRandom                   = true
 )
 
 // CONSTANT for network MAINNET
@@ -85,17 +86,17 @@ const (
 	Testnet             = 0x16
 	TestnetName         = "testnet"
 	TestnetDefaultPort  = "9444"
-	TestnetEpoch        = 100
-	TestnetRandomTime   = 50
+	TestnetEpoch        = 20
+	TestnetRandomTime   = 10
 	TestnetOffset       = 1
 	TestnetSwapOffset   = 1
 	TestnetAssignOffset = 2
 
-	TestNetShardCommitteeSize     = 63
+	TestNetShardCommitteeSize     = 7
 	TestNetMinShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize    = 4
 	TestNetMinBeaconCommitteeSize = 4
-	TestNetActiveShards           = 8
+	TestNetActiveShards           = 1
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	TestNetMinBeaconBlkInterval = 10 * time.Second //second
@@ -196,3 +197,4 @@ var IntegrationTestInitPRV = []string{
 	`{"Version":1,"Type":"s","LockTime":1571731249,"Fee":0,"Info":null,"SigPubKey":"NO5G5g4ppdudWnsU1cmEIsHErlV53B3gpHXeEpAogAE=","Sig":"jXkLYClmHg8PJGiEsrwc3eHLrx3ltjVOeRJtZKutEQWiF1omE7hbfvVFrLF066Ezbh26cgwylhuyT3oHXF1BAA==","Proof":"AAAAAAAAAbAAriA07kbmDiml251aexTVyYQiwcSuVXncHeCkdd4SkCiAASDM5SDr3N2e+9uxCv4xXGSUhm4BnS+c10zIcpSdEcEhuSCQ/fZMC5DFydGQ2YSa+t6ati94w2NbY/a98/r7YD+fCSABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBcP2W++8InwVZ0d2LuazW/3LHQf289EmJNTyerC0GaDAcDjX6kxoAAAAAAAAAAAAA=","PubKeyLastByteSender":1,"Metadata":null}`,
 	`{"Version":1,"Type":"s","LockTime":1571731249,"Fee":0,"Info":null,"SigPubKey":"iCyiBFOex1ZENgUORIgI7n1dnHU0SG42M5FLUJbqNgE=","Sig":"G8dgLjoWHAX8EsDu5hXlFa27Al1YpSxpBV+4luR6GQB+d1XC1iX18b6cHav1RtUGyieJaUAzVLVzH9f5fO6tBQ==","Proof":"AAAAAAAAAbAAriCILKIEU57HVkQ2BQ5EiAjufV2cdTRIbjYzkUtQluo2ASA+BMHwZ0sseyitECq/9uYTqsi2TCbG42KUN832niu6wCAzddFyWlXTPzQT3zwiuPg6SCZu51ZXuVXlqQNGhywbAiABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAr265F7yxwbvsC9kz5yMDIQPxWwrX1rXyAyPxJ5+eFBgcDjX6kxoAAAAAAAAAAAAA=","PubKeyLastByteSender":1,"Metadata":null}`,
 	`{"Version":1,"Type":"s","LockTime":1571731249,"Fee":0,"Info":null,"SigPubKey":"2SRglEGb200vgeuGC8sT1VhYdEn5aWNgoYvB19NBWwE=","Sig":"FItaAX0rg57zf542eln8OAtIn0YR08EZQCJabFipqwcQerMkJ3Ay2Py4TMV7yItqBHect+TJcpxFcrhIaXAgBg==","Proof":"AAAAAAAAAbAAriDZJGCUQZvbTS+B64YLyxPVWFh0SflpY2Chi8HX00FbASBKG0ZrdSXBGqWnuLBrF+/sk1qvtx+4K+r/s4Z61//C3iDfoUbeXyDyIJ34GqLfGSQYqnQZ6cODxId3UgKjd9SECSABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBnqg/K6lHPnX8k3+LZ6CXayYUgD54kon4rHQlDP6s3BQcDjX6kxoAAAAAAAAAAAAA=","PubKeyLastByteSender":1,"Metadata":null}`,
+}
