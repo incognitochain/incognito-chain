@@ -45,7 +45,7 @@ const (
 	DefaultEnableMining           = true
 	DefaultTxPoolTTL              = uint(1 * time.Hour) // 1 hours
 	DefaultTxPoolMaxTx            = uint64(100000)
-	DefaultLimitFee               = uint64(0)
+	DefaultLimitFee               = uint64(1) // 1 nano PRV = 10^-9 PRV
 	DefaultLimitFeeToken          = uint64(0)
 	// For wallet
 	DefaultWalletName     = "wallet"

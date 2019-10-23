@@ -37,9 +37,9 @@ const (
 	Mainnet                 = 0x01
 	MainetName              = "mainnet"
 	MainnetDefaultPort      = "9333"
-	MainnetGenesisBlockTime = "2019-10-21T00:00:20.000Z"
-	MainnetEpoch            = 30000
-	MainnetRandomTime       = 15000
+	MainnetGenesisBlockTime = "2019-10-31T00:00:00.000Z"
+	MainnetEpoch            = 350
+	MainnetRandomTime       = 175
 	MainnetOffset           = 4
 	MainnetSwapOffset       = 4
 	MainnetAssignOffset     = 8
@@ -48,13 +48,13 @@ const (
 	MainNetMinShardCommitteeSize  = 4
 	MainNetBeaconCommitteeSize    = 7
 	MainNetMinBeaconCommitteeSize = 7
-	MainNetActiveShards           = 2
+	MainNetActiveShards           = 8
 	MainNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
-	MainnetMinBeaconBlkInterval = 10 * time.Second //second
-	MainnetMaxBeaconBlkCreation = 8 * time.Second  //second
-	MainnetMinShardBlkInterval  = 10 * time.Second //second
-	MainnetMaxShardBlkCreation  = 6 * time.Second  //second
+	MainnetMinBeaconBlkInterval = 40 * time.Second //second
+	MainnetMaxBeaconBlkCreation = 10 * time.Second //second
+	MainnetMinShardBlkInterval  = 40 * time.Second //second
+	MainnetMaxShardBlkCreation  = 10 * time.Second //second
 
 	//board and proposal parameters
 	MainnetBasicReward                      = 1386666000 //1.386666 PRV
