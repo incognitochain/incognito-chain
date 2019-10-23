@@ -163,6 +163,8 @@ func (engine *Engine) watchConsensusCommittee() {
 					continue
 				}
 				userCurrentPublicKey = userMiningKey.GetMiningKeyBase58(consensusType)
+			} else {
+				userMiningKey = engine.userMiningPublicKeys[consensusType]
 			}
 
 			if chainName == common.BeaconChainKey || engine.userCurrentState.UserRole == common.WaitingRole {
