@@ -56,6 +56,7 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 
 	estimateFeeCoinPerKb := uint64(0)
 	estimateTxSizeInKb := uint64(0)
+	isFeePToken := false
 	if len(outCoins) > 0 {
 		// param #2: list receiver
 		receiversPaymentAddressStrParam := make(map[string]interface{})
@@ -74,6 +75,7 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 		// Check custom token param
 		var customTokenParams *transaction.CustomTokenParamTx
 		var customPrivacyTokenParam *transaction.CustomTokenPrivacyParamTx
+		isGetPTokenFee := false
 		if len(arrayParams) > 4 {
 			// param #5: token params
 			tokenParamsRaw, ok := arrayParams[4].(map[string]interface{})
@@ -84,14 +86,22 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 			customTokenParams, customPrivacyTokenParam, err = httpServer.txService.BuildTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
 			if err.(*rpcservice.RPCError) != nil {
 				return nil, err.(*rpcservice.RPCError)
+			}
 
+			if len(arrayParams) > 5 {
+				isGetPTokenFeeParam, ok := arrayParams[5].(bool)
+				if !ok {
+					return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token param is invalid"))
+				}
+
+				isGetPTokenFee = isGetPTokenFeeParam
 			}
 		}
 
 		// check real fee(nano PRV) per tx
-		_, estimateFeeCoinPerKb, estimateTxSizeInKb = httpServer.txService.EstimateFee(defaultFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy, nil, customTokenParams, customPrivacyTokenParam)
+		_, estimateFeeCoinPerKb, estimateTxSizeInKb, isFeePToken = httpServer.txService.EstimateFee(defaultFeeCoinPerKb, isGetPTokenFee, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy, nil, customTokenParams, customPrivacyTokenParam)
 	}
-	result := jsonresult.NewEstimateFeeResult(estimateFeeCoinPerKb, estimateTxSizeInKb)
+	result := jsonresult.NewEstimateFeeResult(estimateFeeCoinPerKb, estimateTxSizeInKb, isFeePToken)
 	Logger.log.Debugf("handleEstimateFee result: %+v", result)
 	return result, nil
 }
@@ -132,6 +142,8 @@ func (httpServer *HttpServer) handleEstimateFeeWithEstimator(params interface{},
 	}
 
 	// param #3: tokenId
+	// if tokenID != nil, return fee for privacy token
+	// if tokenID != nil, return fee for native token
 	var tokenId *common.Hash
 	if len(arrayParams) >= 4 && arrayParams[3] != nil {
 		tokenIdParam, ok := arrayParams[3].(string)
@@ -144,9 +156,9 @@ func (httpServer *HttpServer) handleEstimateFeeWithEstimator(params interface{},
 		}
 	}
 
-	estimateFeeCoinPerKb := httpServer.txService.EstimateFeeWithEstimator(defaultFeeCoinPerKb, shardIDSender, numblock, tokenId)
+	estimateFeeCoinPerKb, isFeePToken := httpServer.txService.EstimateFeeWithEstimator(defaultFeeCoinPerKb, shardIDSender, numblock, tokenId)
 
-	result := jsonresult.NewEstimateFeeResult(estimateFeeCoinPerKb, 0)
+	result := jsonresult.NewEstimateFeeResult(estimateFeeCoinPerKb, 0, isFeePToken)
 	Logger.log.Debugf("handleEstimateFeeWithEstimator result: %+v", result)
 	return result, nil
 }
