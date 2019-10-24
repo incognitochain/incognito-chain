@@ -127,17 +127,10 @@ func init() {
 	}
 	var keyData []byte
 	var err error
-	var IsTestNet = true
-	if IsTestNet {
-		keyData, err = ioutil.ReadFile("keylist.json")
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		keyData, err = ioutil.ReadFile("keylist-mainnet.json")
-		if err != nil {
-			panic(err)
-		}
+
+	keyData, err = ioutil.ReadFile("keylist.json")
+	if err != nil {
+		panic(err)
 	}
 
 	type AccountKey struct {
@@ -159,6 +152,7 @@ func init() {
 		panic(err)
 	}
 
+	var IsTestNet = true
 	if IsTestNet {
 		for i := 0; i < TestNetMinBeaconCommitteeSize; i++ {
 			PreSelectBeaconNodeTestnetSerializedPubkey = append(PreSelectBeaconNodeTestnetSerializedPubkey, keylist.Beacon[i].CommitteePublicKey)
