@@ -11,25 +11,25 @@ import (
 //Network fixed params
 const (
 	// SHARD_BLOCK_VERSION is the current latest supported block version.
-	VERSION                    = 1
-	RANDOM_NUMBER              = 3
-	SHARD_BLOCK_VERSION        = 1
-	BEACON_BLOCK_VERSION       = 1
-	DefaultMaxBlkReqPerPeer    = 600
-	DefaultMaxBlkReqPerTime    = 1200
-	MinCommitteeSize           = 3                // min size to run bft
-	DefaultBroadcastStateTime  = 6 * time.Second  // in second
-	DefaultStateUpdateTime     = 8 * time.Second  // in second
-	DefaultMaxBlockSyncTime    = 1 * time.Second  // in second
-	DefaultCacheCleanupTime    = 30 * time.Second // in second
-	WorkerNumber               = 5
-	MAX_S2B_BLOCK              = 30
-	MAX_BEACON_BLOCK           = 5
-	LowerBoundPercentForIncDAO = 3
-	UpperBoundPercentForIncDAO = 10
-	GetValidBlock              = 20
-	TestRandom                 = true
-	NumberOfFixedBlockValidators = 2
+	VERSION                      = 1
+	RANDOM_NUMBER                = 3
+	SHARD_BLOCK_VERSION          = 1
+	BEACON_BLOCK_VERSION         = 1
+	DefaultMaxBlkReqPerPeer      = 600
+	DefaultMaxBlkReqPerTime      = 1200
+	MinCommitteeSize             = 3                // min size to run bft
+	DefaultBroadcastStateTime    = 6 * time.Second  // in second
+	DefaultStateUpdateTime       = 8 * time.Second  // in second
+	DefaultMaxBlockSyncTime      = 1 * time.Second  // in second
+	DefaultCacheCleanupTime      = 30 * time.Second // in second
+	WorkerNumber                 = 5
+	MAX_S2B_BLOCK                = 30
+	MAX_BEACON_BLOCK             = 5
+	LowerBoundPercentForIncDAO   = 3
+	UpperBoundPercentForIncDAO   = 10
+	GetValidBlock                = 20
+	TestRandom                   = true
+	NumberOfFixedBlockValidators = 22
 )
 
 // CONSTANT for network MAINNET
@@ -91,15 +91,15 @@ const (
 	TestnetGenesisBlockTime = "2019-10-21T00:00:20.000Z"
 	TestnetEpoch            = 100
 	TestnetRandomTime       = 50
-	TestnetOffset           = 1
-	TestnetSwapOffset       = 1
-	TestnetAssignOffset     = 2
+	TestnetOffset           = 4
+	TestnetSwapOffset       = 4
+	TestnetAssignOffset     = 8
 
-	TestNetShardCommitteeSize     = 7
-	TestNetMinShardCommitteeSize  = 4
+	TestNetShardCommitteeSize     = 32
+	TestNetMinShardCommitteeSize  = 23
 	TestNetBeaconCommitteeSize    = 4
 	TestNetMinBeaconCommitteeSize = 4
-	TestNetActiveShards           = 1
+	TestNetActiveShards           = 8
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	TestNetMinBeaconBlkInterval = 10 * time.Second //second
