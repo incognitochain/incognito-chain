@@ -592,10 +592,8 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 			Logger.log.Error(err)
 			return instructions, shardPendingValidator, shardCommittee, err
 		}
-
-		////TODO: 0xmerman
-		//shardCommittee = append([]string{fixedProducerShardCommittee}, shardCommittee...)
-
+		//TODO: 0xmerman
+		shardCommittee = append(fixedProducerShardValidators, shardCommittee...)
 		// NOTE: shardCommittee must be finalized before building Bridge instruction here
 		// shardCommittee must include all producers and validators in the right order
 		// Generate instruction storing merkle root of validators pubkey and send to beacon
@@ -609,8 +607,6 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 			}
 			BLogger.log.Infof("Add Bridge swap inst in ShardID %+v block %d", shardID, blockHeight)
 		}
-		//TODO: 0xmerman
-		shardCommittee = append(fixedProducerShardValidators, shardCommittee...)
 	}
 	if len(swapInstruction) > 0 {
 		instructions = append(instructions, swapInstruction)
