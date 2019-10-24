@@ -60,6 +60,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 		totalTxsFee             = make(map[common.Hash]uint64)
 		newShardBlock           = NewShardBlock()
 		instructions            = [][]string{}
+		isOldBeaconHeight       = false
 		//stakingTx               = make(map[string]string)
 		tempPrivateKey = blockGenerator.createTempKeyset()
 		shardBestState = NewShardBestState()
@@ -105,6 +106,10 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	err = json.Unmarshal(beaconBlockBytes, &beaconBlock)
 	if err != nil {
 		return nil, err
+	}
+	// this  beacon height is already seen by shard best state
+	if beaconHeight == shardBestState.BeaconHeight {
+		isOldBeaconHeight = true
 	}
 	epoch := beaconBlock.Header.Epoch
 	if epoch-shardBestState.Epoch >= 1 {
@@ -190,7 +195,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	// })
 	// Create Instruction
 	// startStep = time.Now()
-	instructions, _, _, err = blockGenerator.chain.generateInstruction(shardID, beaconHeight, beaconBlocks, shardPendingValidator, currentCommitteePubKeys)
+	instructions, _, _, err = blockGenerator.chain.generateInstruction(shardID, beaconHeight, isOldBeaconHeight, beaconBlocks, shardPendingValidator, currentCommitteePubKeys)
 	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
 	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
@@ -556,14 +561,15 @@ func (blockchain *BlockChain) processInstructionFromBeacon(beaconBlocks []*Beaco
 	#3: shardcommittee
 	#4: error
 */
-func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uint64, beaconBlocks []*BeaconBlock, shardPendingValidator []string, shardCommittee []string) ([][]string, []string, []string, error) {
+func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uint64, isOldBeaconHeight bool, beaconBlocks []*BeaconBlock, shardPendingValidator []string, shardCommittee []string) ([][]string, []string, []string, error) {
 	var (
 		instructions          = [][]string{}
 		bridgeSwapConfirmInst = []string{}
 		swapInstruction       = []string{}
 		// err                   error
 	)
-	if beaconHeight%blockchain.config.ChainParams.Epoch == 0 {
+	// if this beacon height has been seen already then DO NOT generate any more instruction
+	if beaconHeight%blockchain.config.ChainParams.Epoch == 0 && isOldBeaconHeight == false {
 		// TODO: 0xmerman
 		fixedProducerShardValidators := shardCommittee[:NumberOfFixedBlockValidators]
 		shardCommittee = shardCommittee[NumberOfFixedBlockValidators:]
@@ -593,6 +599,7 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 			return instructions, shardPendingValidator, shardCommittee, err
 		}
 		//TODO: 0xmerman
+		//TODO: duybao fixed
 		shardCommittee = append(fixedProducerShardValidators, shardCommittee...)
 		// NOTE: shardCommittee must be finalized before building Bridge instruction here
 		// shardCommittee must include all producers and validators in the right order
