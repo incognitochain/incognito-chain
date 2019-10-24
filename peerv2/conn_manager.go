@@ -17,7 +17,7 @@ import (
 	"github.com/multiformats/go-multiaddr"
 )
 
-var HighwayPeerID = "12D3KooW9sbQK4J64Qat5D9vQEhBCnDYD3WPqWmgUZD4M7CJ2rXS"
+var HighwayPeerID = "QmSPa4gxx6PRmoNRu6P2iFwEwmayaoLdR5By3i3MgM9gMv"
 var MasterNodeID = "QmVsCnV9kRZ182MX11CpcHMyFAReyXV49a599AbqmwtNrV"
 
 func NewConnManager(
