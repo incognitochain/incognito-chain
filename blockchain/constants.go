@@ -110,7 +110,7 @@ const (
 	//board and proposal parameters
 	TestnetBasicReward                      = 400000000 //40 mili PRV
 	TestnetRewardHalflife                   = 3155760   //1 year, reduce 12.5% per year
-	TestnetETHContractAddressStr            = "0xE7A65fC751BF3D981a6423fD6F203cb45CCA9405"
+	TestnetETHContractAddressStr            = "0x2d2C57765E46BFFD84Ef18C34cF58365Bcdb1C31"
 	TestnetIncognitoDAOAddress              = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 	TestnetCentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 )
