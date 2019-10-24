@@ -10,7 +10,7 @@ ENV commit=$commit
 
 
 COPY ./bootnode /
-COPY ./keylist-mainnet.json /
+COPY ./keylist.json /
 COPY ./sample-config.conf /
 
 
