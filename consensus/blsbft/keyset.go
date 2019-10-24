@@ -2,6 +2,8 @@ package blsbft
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"sort"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -136,4 +138,34 @@ func combineVotes(votes map[string]vote, committee []string) (aggSig []byte, bri
 		return nil, nil, nil, consensus.NewConsensusError(consensus.CombineSignatureError, err)
 	}
 	return
+}
+
+func GenerateKeyWithSpecificShardID(shardID byte, n int){
+	for i:=0; i<n; i++ {
+		for {
+			seed := privacy.RandomScalar().ToBytesS()
+			masterKey, _ := wallet.NewMasterKey(seed)
+			child, _ := masterKey.NewChildKey(uint32(i))
+
+			shardIDTmp :=child.KeySet.PaymentAddress.Pk[len(child.KeySet.PaymentAddress.Pk)-1]
+			if shardIDTmp == shardID {
+				privKeyB58 := child.Base58CheckSerialize(wallet.PriKeyType)
+				paymentAddressB58 := child.Base58CheckSerialize(wallet.PaymentAddressType)
+
+				miningSeed := base58.Base58Check{}.Encode(common.HashB(common.HashB(child.KeySet.PrivateKey)), common.ZeroByte)
+				publicKey := base58.Base58Check{}.Encode(child.KeySet.PaymentAddress.Pk, common.ZeroByte)
+				//committeeKey, _ := incognitokey.NewCommitteeKeyFromSeed(common.HashB(common.HashB(child.KeySet.PrivateKey)), child.KeySet.PaymentAddress.Pk)
+				fmt.Printf("****=====================================****\n")
+				fmt.Printf("Account shard %v\n", shardID)
+				fmt.Printf("Private key %v\n", privKeyB58)
+				fmt.Printf("Public key: %v\n", publicKey)
+				fmt.Printf("Payment address: %v\n", paymentAddressB58)
+				fmt.Printf("Mining seed: %v\n", miningSeed)
+				//fmt.Printf("Commitee key: %v\n", committeeKey)
+				fmt.Printf("****=====================================****\n")
+
+				break
+			}
+		}
+	}
 }

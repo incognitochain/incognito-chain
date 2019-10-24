@@ -165,3 +165,8 @@ func TestGenerateKey(t *testing.T) {
 		}
 	}
 }
+
+func TestGenerateKeyWithSpecficShardId(t *testing.T){
+	GenerateKeyWithSpecificShardID(byte(0), 2)
+	//GenerateKeyWithSpecificShardID(byte(4), 2)
+}
