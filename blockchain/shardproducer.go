@@ -107,10 +107,6 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	if err != nil {
 		return nil, err
 	}
-	// this  beacon height is already seen by shard best state
-	if beaconHeight == shardBestState.BeaconHeight {
-		isOldBeaconHeight = true
-	}
 	epoch := beaconBlock.Header.Epoch
 	if epoch-shardBestState.Epoch >= 1 {
 		beaconHeight = shardBestState.Epoch * blockGenerator.chain.config.ChainParams.Epoch
@@ -126,6 +122,10 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	beaconBlocks, err := FetchBeaconBlockFromHeight(blockGenerator.chain.config.DataBase, shardBestState.BeaconHeight+1, beaconHeight)
 	if err != nil {
 		return nil, err
+	}
+	// this  beacon height is already seen by shard best state
+	if beaconHeight == shardBestState.BeaconHeight {
+		isOldBeaconHeight = true
 	}
 	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
