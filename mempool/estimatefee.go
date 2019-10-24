@@ -546,7 +546,7 @@ func (b *estimateFeeSet) estimateFeeForToken(confirmations int, tokenId *common.
 
 // newEstimateFeeSet creates a temporary data structure that
 // can be used to find all fee estimates.
-func (ef *FeeEstimator) newEstimateFeeSet(tokenID *common.Hash) *estimateFeeSet {
+func (ef *FeeEstimator) newEstimateFeeSet() *estimateFeeSet {
 	set := &estimateFeeSet{}
 
 	capacity := 0
@@ -563,22 +563,8 @@ func (ef *FeeEstimator) newEstimateFeeSet(tokenID *common.Hash) *estimateFeeSet 
 	for _, b := range ef.bin {
 		for _, o := range b {
 			set.feeRate[i] = o.feeRate
-
-			if tokenID != nil {
-				for key, value := range o.feeRateForToken {
-					if key.IsEqual(tokenID) {
-						set.feeRateForToken[key] = append(set.feeRateForToken[key], value)
-					}
-				}
-			}
-
 			i++
 		}
-	}
-
-	if tokenID == nil {
-		sort.Sort(set)
-	} else {
 	}
 
 	return set
@@ -586,16 +572,12 @@ func (ef *FeeEstimator) newEstimateFeeSet(tokenID *common.Hash) *estimateFeeSet 
 
 // estimates returns the set of all fee estimates from 1 to estimateFeeDepth
 // confirmations from now.
-func (ef *FeeEstimator) estimates(tokenID *common.Hash) []CoinPerKilobyte {
-	set := ef.newEstimateFeeSet(tokenID)
+func (ef *FeeEstimator) estimates() []CoinPerKilobyte {
+	set := ef.newEstimateFeeSet()
 
 	estimates := make([]CoinPerKilobyte, estimateFeeDepth)
 	for i := 0; i < estimateFeeDepth; i++ {
-		if tokenID != nil {
-			estimates[i] = set.estimateFeeForToken(i+1, tokenID)
-		} else {
-			estimates[i] = set.estimateFee(i + 1)
-		}
+		estimates[i] = set.estimateFee(i + 1)
 	}
 
 	return estimates
@@ -603,7 +585,7 @@ func (ef *FeeEstimator) estimates(tokenID *common.Hash) []CoinPerKilobyte {
 
 // EstimateFee estimates the fee per byte to have a tx confirmed a given
 // number of blocks from now.
-func (ef *FeeEstimator) EstimateFee(numBlocks uint64, tokenID *common.Hash) (CoinPerKilobyte, error) {
+func (ef *FeeEstimator) EstimateFee(numBlocks uint64) (CoinPerKilobyte, error) {
 	ef.mtx.Lock()
 	defer ef.mtx.Unlock()
 
@@ -625,7 +607,7 @@ func (ef *FeeEstimator) EstimateFee(numBlocks uint64, tokenID *common.Hash) (Coi
 
 	// If there are no cached results, generate them.
 	if ef.cached == nil {
-		ef.cached = ef.estimates(tokenID)
+		ef.cached = ef.estimates()
 	}
 
 	result := ef.cached[int(numBlocks)-1]
@@ -807,10 +789,29 @@ func RestoreFeeEstimator(data FeeEstimatorState) (*FeeEstimator, error) {
 	return ef, nil
 }
 
-func (ef FeeEstimator) GetLimitFee(tokenID *common.Hash) uint64 {
+// returns error if there is no rate between native token and privacy token
+func (ef FeeEstimator) GetLimitFee(tokenID *common.Hash) (uint64, bool) {
+	limitFee := ef.limitFee
+	isFeePToken := false
+
 	if tokenID != nil {
-		return ef.limitFeeToken
+		limitFeePToken, err := ConvertNativeTokenToPrivacyToken(ef.limitFee, tokenID)
+		if err == nil {
+			limitFee = limitFeePToken
+			isFeePToken = true
+		}
 	}
 
-	return ef.limitFee
+	return limitFee, isFeePToken
+}
+
+// todo:
+// return -1 if there is no rate between native token and privacy token
+func ConvertNativeTokenToPrivacyToken(nativeTokenAmount uint64, tokenID *common.Hash) (uint64, error) {
+	return nativeTokenAmount, nil
+}
+
+// return -1 if there is no rate between native token and privacy token
+func ConvertPrivacyTokenToNativeToken(privacyTokenAmount uint64, tokenID *common.Hash) (uint64, error) {
+	return privacyTokenAmount, nil
 }
