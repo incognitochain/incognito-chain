@@ -807,6 +807,10 @@ func RestoreFeeEstimator(data FeeEstimatorState) (*FeeEstimator, error) {
 	return ef, nil
 }
 
-func (ef FeeEstimator) GetLimitFee() uint64 {
+func (ef FeeEstimator) GetLimitFee(tokenID *common.Hash) uint64 {
+	if tokenID != nil {
+		return ef.limitFeeToken
+	}
+
 	return ef.limitFee
 }
