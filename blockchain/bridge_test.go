@@ -14,10 +14,81 @@ import (
 )
 
 func TestGenerateInstruction(t *testing.T) {
+	testCases := []struct {
+		desc    string
+		pending int
+		val     int
+		out     int // -1: expecting no SwapConfirm inst
+		err     bool
+	}{
+		{
+			desc:    "In 1, out 0",
+			pending: 2,
+			val:     22,
+			out:     23,
+		},
+		{
+			desc:    "Committee not changed",
+			pending: 0,
+			val:     22,
+			out:     -1,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			bc, shardID, beaconHeight, beaconBlocks, shardPendingValidator, shardCommittee := getGenerateInstructionTestcase(tc.pending, tc.val)
+
+			insts, _, _, err := bc.generateInstruction(
+				shardID,
+				beaconHeight,
+				beaconBlocks,
+				shardPendingValidator,
+				shardCommittee,
+			)
+			isErr := err != nil
+			if isErr != tc.err {
+				t.Error(errors.Errorf("expect error = %t, got %v", tc.err, err))
+			}
+			if tc.err {
+				return
+			}
+
+			if tc.out < 0 {
+				if len(insts) > 1 {
+					t.Errorf("expect no SwapConfirm inst, found: %+v", insts[1:])
+				}
+				return
+			}
+
+			if len(insts) != 2 { // Swap and SwapConfirm insts
+				t.Errorf("expect 2 insts, found %d: %+v", len(insts), insts)
+			}
+
+			// Check number of validators in instruction
+			sc := insts[1]
+			b, _, _ := base58.DecodeCheck(sc[3])
+			exp := int64(tc.out)
+			if numVals := (&big.Int{}).SetBytes(b); numVals.Int64() != exp {
+				t.Errorf("expected %d validators, found %d: %+v", exp, numVals, sc)
+			}
+
+		})
+	}
+}
+
+func getGenerateInstructionTestcase(pending, val int) (
+	*BlockChain,
+	byte,
+	uint64,
+	[]*BeaconBlock,
+	[]string,
+	[]string,
+) {
 	beaconHeight := uint64(100)
 	db := &mocks.DatabaseInterface{}
 	db.On("GetProducersBlackList", beaconHeight).Return(nil, nil)
-	bc := BlockChain{
+	bc := &BlockChain{
 		config: Config{
 			ChainParams: &Params{
 				Epoch:      100,
@@ -40,11 +111,16 @@ func TestGenerateInstruction(t *testing.T) {
 
 	shardID := byte(1)
 	beaconBlocks := []*BeaconBlock{}
-	shardPendingValidator := []string{
+	vals := keyStore()
+	shardPendingValidator := vals[:pending]
+	shardCommittee := vals[pending : pending+val]
+	return bc, shardID, beaconHeight, beaconBlocks, shardPendingValidator, shardCommittee
+}
+
+func keyStore() []string {
+	return []string{
 		"121VhftSAygpEJZ6i9jGkPeSh639JGGRPCwJrPpigvhQDiybPLFWFWYRcAWEgbyPYbRZnUCSkV2E1As81pwmLrmtFmJ4Mx5XasPdKof5aMyozUd9B6sfkht6KYxA241HiNV9s8RVMQ73FZt89kwVYKBWZ95L3PUwGMXW7QhYhw1QSpHsJf2D5KtUEaKTDkv7uT4SqnCXA7kKELjrNCbi8r3A6enhU2uC5PHzxX9KPu32avsxGXxT62ymAkHwRUdcegPWAnpi7xMujppVrCj3aKUoKdvTQSRo46CXZp48EU2b5VgRcTNLnoDSRJj4g7Q5or5i46KNT12ky6kbjJNZGa1YtZdiT4cx2bwox68U799p62XGTZQs6QGGJnpdvDAAbbUAKMGoRGNnKLnd8ZaD7VGi8Yg2oDCv8tjwtih2r3ji7nLk",
 		"121VhftSAygpEJZ6i9jGkQEYCUWHqV8683PzacqPiGrkBEHy9iDhXhvT1NfAjLk57AXrkppfSCYErjgoZ4vWM14fSsGqK52GiCjqiYBCAEhtoW9bJtACh5PVpvWBiWdw5e4E7q7Ug6w2j6gMS8pTfqYn2hRNWsFznK4WzNcZbHyHnsCVdrWfqnqY4iU8uYSFbfhNJT8sJ5HqPhZtJoY8L6ra89xggJjbAsgHZWCFVbR7TYERKgo7YVTZjiSo5agWq2TyY6yMgShqvGvWsRnzZc6Ay873txL6KCkLJCNP2nufD1iAPoutJFN2Vw7bsafCBsRNqYBNRPBpRG2dfNLkz9CzrnzmyzXaXoiPui1X9ZTpmiXvV86fYkXq1swLjGmLgdnMUtHb6D9gLYukgAiGxNUtCgZSmt97z15in2bBY5iVgDS1",
-	}
-	shardCommittee := []string{
 		"121VhftSAygpEJZ6i9jGkEKLMQTKTiiHzeUfeuhpQCcLZtys8FazpWwytpHebkAwgCxvqgUUF13fcSMtp5dgV1YkbRMj3z42TW2EebzAaiGg2DkGPodckN2UsbqhVDibpMgJUHVkLXardemfLdgUqWGtymdxaaRyPM38BAZcLpo2pAjxKv5vG5Uh9zHMkn7ZHtdNHmBmhG8B46UeiGBXYTwhyMe9KGS83jCMPAoUwHhTEXj5qQh6586dHjVxwEkRzp7SKn9iG1FFWdJ97xEkP2ezAapNQ46quVrMggcHFvoZofs1xdd4o5vAmPKnPTZtGTKunFiTWGnpSG9L6r5QpcmapqvRrK5SiuFhNM5DqgzUeHBb7fTfoiWd2N29jkbTGSq8CPUSjx3zdLR9sZguvPdnAA8g25cFPGSZt8aEnFJoPRzM",
 		"121VhftSAygpEJZ6i9jGkEqPGAXcmKffwMbzpwxnEfzJxen4oZKPukWAUBbqvV5xPnowZ2eQmAj2mEebG2oexebQPh1MPFC6vEZAk6i7AiRPrZmfaRrRVrBp4WXnVJmL3xK4wzTfkR2rZkhUmSZm112TTyhDNkDQSaBGJkexrPbryqUygazCA2eyo6LnK5qs7jz2RhhsWqUTQ3sQJUuFcYdf2pSnYwhqZqphDCSRizDHeysaua5L7LwS8fY7KZHhPgTuFjvUWWnWSRTmV8u1dTY5kcmMdDZsPiyN9WfqjgVoTFNALjFG8U4GMvzV3kKwVVjuPMsM2XqyPDVpdNQUgLnv2bJS8Tr22A9NgF1FQfWyAny1DYyY3N5H3tfCggsybzZXzrbYPPgokvEynac91y8hPkRdgKW1e7FHzuBnEisPuKzy",
 		"121VhftSAygpEJZ6i9jGkGLcYhJBeaJTGY5aFjqQA2WwyxU69Utrviuy9AJ3ATkeEyigVGScQUZw22cD1HeFKiyASYAs82WEamujt3nefYA9FPhURBpRTn6jDmGKUdb4QNbs7HVCJkRRaL9aktg1yaQaZE8TJFg2UeE9tBqUdmvD8fy36aDCYM5W86jaTVCXeEJQWPxUunP2EEL3e283PJ8zqPeBkpoFvkvhB28Hk3oRDeCCTC7QhbaV18ayKeToYqAxoUMBBihanfA33ixeX1daeKpajLCgDZ6jrfphwdYwQbf7dMcZ2NVvQ1a5JUCTJUZypwgKRt8tnTAKCowt2L1KNGP4NJJZm61cfHAGbKRyG9QxCJgK2SdMKsKPVefZSc9LbVaB7VeBby5LHxvMoCD7bN7g1HYRp4BX9n1fZJUeEkVa",
@@ -67,30 +143,6 @@ func TestGenerateInstruction(t *testing.T) {
 		"121VhftSAygpEJZ6i9jGk9aDE6tzzy5tkuPjj543vETWhspQNd9pa7cZ3moCSxsaHYmqpJWRSPTRB6xvgfEBE6v5j8xckznMAj8kB57d5rAWEb8poJswQGVwprz6PtL3WRAEcCNjvmg8akZcCjEjCKWK3yj6WuHksxbrbGUk6x29NQesssgFm9ZiRB9v9KpopVUYLwvZQ16ZAhvr3F7u7gGsvZ1aiGpT28EE7e8DemjMBm6FAVRVjfLMqp6Gtf83K6gCeG2CgvZfCqRxQBVdZLSGKRV6DFHy9KY7AJFQp8jDaXui7E3BwXo1eHPtheJ3kHqzmgj5gAmMVFWjwvHbcdoWpKGepRMAhxN3S9GF69b4SqLbK2Pd4ATTnNeZg6XoMAfyLigArLFX6FvMnTrFipweqDG7azmHjUea32KdCM5g7Qxd",
 		"121VhftSAygpEJZ6i9jGkL7HbJ9vNLWKZTXCG9ioPj5NB2QupvJk9gcL7EsaTjRfjAuZxjaPqjPVzphV1iihwzsWhmeXqo1f7Pj6rkStRxPN74rvecwBnUtxsh6oVXUznS4VsRwcvorAbCbrvuvqyMzE9mKQUtxUGPHMugj9s4h6qhJGGcRP49s9GwCDoff513bg8VjXrvn1rRzdWTSYe6U5rgEyajQZbpsD2SxnGxgowE9KjAekoVcgYd3bNVbJB1Jp426HSjriA5sB7wLLr4P9WtMyMskyxpEWXXH98Daa44kFEVSPoQFEMpdtJbxXuiTwSBtqZSVen2V6k8itiHWwWxWpRu6wWWqW789dnzCFw7bVuLQ6228qpcKatkGYgZ37NVFdHgKENB4M32muwPeNF6fpudhVDNWYT385DfBR4Ma9",
 		"121VhftSAygpEJZ6i9jGkCH8YaNkcF3v7ieeocbagdmyh9kkzw2xmReK6kMpV9u9YBF4StcUEWQJaFADJ6eKmU1jytFYPoyrQgdsq3Zvq57mqetimfiXCxD3PDn65tXov4sjzFGyCXWxNGYQS7ooKNCWrxvsxqfByso4e95m6wtmeHQU8tM9h1zuHnkHLFS5SxxnEJ6q4PSidwAVHPi7Su2H858jZRBAAmiF9VVCgN4LRhryeDUQJX3SJEJ8MS8ZjVuYQpM7viFLQ5f7vGuU942wq8yWU9VnXxEgSR8CqGS33emQm6FUYhqPb3QHZQ9eSMtdon6WXNvNLN19EDCNp3dYGgurMmvV57yLyvx8DdgyBAfM5QezsCMKVrbEzxZv9wM1uP2wJJK7EgzpT73HpNrgTa59XtMBDd1UEPoNJtgjMC4Z",
-	}
-
-	insts, _, _, err := bc.generateInstruction(
-		shardID,
-		beaconHeight,
-		beaconBlocks,
-		shardPendingValidator,
-		shardCommittee,
-	)
-	if err != nil {
-		t.Errorf("err: %+v", err)
-	}
-
-	// Swap and SwapConfirm insts
-	if len(insts) != 2 {
-		t.Errorf("expect 2 insts, found %d: %+v", len(insts), insts)
-	}
-
-	// Check number of validators in instruction
-	sc := insts[1]
-	b, _, _ := base58.DecodeCheck(sc[3])
-	exp := int64(23)
-	if numVals := (&big.Int{}).SetBytes(b); numVals.Int64() != exp {
-		t.Errorf("expected %d validators, found %d: %+v", exp, numVals, sc)
 	}
 }
 
