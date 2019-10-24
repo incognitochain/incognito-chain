@@ -94,6 +94,7 @@ func (txService TxService) filterMemPoolOutcoinsToSpent(outCoins []*privacy.Outp
 	return remainOutputCoins, nil
 }
 
+// chooseOutsCoinByKeyset returns list of input coins native token to spent
 func (txService TxService) chooseOutsCoinByKeyset(
 	paymentInfos []*privacy.PaymentInfo,
 	estimateFeeCoinPerKb int64, numBlock uint64, keySet *incognitokey.KeySet, shardIDSender byte,
@@ -143,7 +144,8 @@ func (txService TxService) chooseOutsCoinByKeyset(
 	}
 
 	// check real fee(nano PRV) per tx
-	realFee, _, _ := txService.EstimateFee(estimateFeeCoinPerKb, candidateOutputCoins,
+	isGetPTokenFee := false
+	realFee, _, _, _ := txService.EstimateFee(estimateFeeCoinPerKb, isGetPTokenFee, candidateOutputCoins,
 		paymentInfos, shardIDSender, numBlock, hasPrivacy,
 		metadataParam, customTokenParams,
 		privacyCustomTokenParams)
@@ -182,16 +184,17 @@ func (txService TxService) chooseOutsCoinByKeyset(
 }
 
 // EstimateFee - estimate fee from tx data and return real full fee, fee per kb and real tx size
-// if tokenID != nil: return fee for ptoken
-// if tokenID == nil: return fee for native token
+// if isGetPTokenFee == true: return fee for ptoken
+// if isGetPTokenFee == false: return fee for native token
 func (txService TxService) EstimateFee(
 	defaultFee int64,
+	isGetPTokenFee bool,
 	candidateOutputCoins []*privacy.OutputCoin,
 	paymentInfos []*privacy.PaymentInfo, shardID byte,
 	numBlock uint64, hasPrivacy bool,
 	metadata metadata.Metadata,
 	customTokenParams *transaction.CustomTokenParamTx,
-	privacyCustomTokenParams *transaction.CustomTokenPrivacyParamTx) (uint64, uint64, uint64) {
+	privacyCustomTokenParams *transaction.CustomTokenPrivacyParamTx) (uint64, uint64, uint64, bool) {
 	if numBlock == 0 {
 		numBlock = 1000
 	}
@@ -201,11 +204,13 @@ func (txService TxService) EstimateFee(
 	estimateTxSizeInKb := uint64(0)
 
 	tokenId := &common.Hash{}
-	if privacyCustomTokenParams != nil {
-		tokenId, _ = common.Hash{}.NewHashFromStr(privacyCustomTokenParams.PropertyID)
+	if isGetPTokenFee {
+		if privacyCustomTokenParams != nil {
+			tokenId, _ = common.Hash{}.NewHashFromStr(privacyCustomTokenParams.PropertyID)
+		}
 	}
 
-	estimateFeeCoinPerKb = txService.EstimateFeeWithEstimator(defaultFee, shardID, numBlock, tokenId)
+	estimateFeeCoinPerKb, isFeePToken := txService.EstimateFeeWithEstimator(defaultFee, shardID, numBlock, tokenId)
 
 	if txService.Wallet != nil {
 		estimateFeeCoinPerKb += uint64(txService.Wallet.GetConfig().IncrementalFee)
@@ -213,42 +218,53 @@ func (txService TxService) EstimateFee(
 
 	limitFee := uint64(0)
 	if feeEstimator, ok := txService.FeeEstimator[shardID]; ok {
-		limitFee = feeEstimator.GetLimitFee(tokenId)
+		limitFee, _ = feeEstimator.GetLimitFee(tokenId)
 	}
 	estimateTxSizeInKb = transaction.EstimateTxSize(transaction.NewEstimateTxSizeParam(candidateOutputCoins, paymentInfos, hasPrivacy, metadata, customTokenParams, privacyCustomTokenParams, limitFee))
 
 	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
-	return realFee, estimateFeeCoinPerKb, estimateTxSizeInKb
+	return realFee, estimateFeeCoinPerKb, estimateTxSizeInKb, isFeePToken
 }
 
 // EstimateFeeWithEstimator - only estimate fee by estimator and return fee per kb
 // if tokenID != nil: return fee per kb for pToken
 // if tokenID == nil: return fee per kb for native token
-func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID byte, numBlock uint64, tokenId *common.Hash) uint64 {
+func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID byte, numBlock uint64, tokenId *common.Hash) (uint64, bool) {
 	estimateFeeCoinPerKb := uint64(0)
 	if defaultFee == -1 {
-		// estimate fee on the blocks before
+		// estimate fee on the blocks before (only in native token)
 		if _, ok := txService.FeeEstimator[shardID]; ok {
-			temp, _ := txService.FeeEstimator[shardID].EstimateFee(numBlock, tokenId)
+			temp, _ := txService.FeeEstimator[shardID].EstimateFee(numBlock)
 			estimateFeeCoinPerKb = uint64(temp)
 		}
 	} else {
-		// get default fee
+		// get default fee (in native token or in ptoken)
 		estimateFeeCoinPerKb = uint64(defaultFee)
 	}
 
-	// check with limit fee
+	// get with limit fee
 	limitFee := uint64(0)
+	isFeePToken := false
 	if feeEstimator, ok := txService.FeeEstimator[shardID]; ok {
-		limitFee = feeEstimator.GetLimitFee(tokenId)
+		limitFee, isFeePToken = feeEstimator.GetLimitFee(tokenId)
 	}
 
+	// convert native token fee to ptoken fee (if necessary)
+	if isFeePToken && defaultFee == -1 && tokenId != nil {
+		tmp, err := mempool.ConvertNativeTokenToPrivacyToken(estimateFeeCoinPerKb, tokenId)
+		if err == nil {
+			estimateFeeCoinPerKb = tmp
+		} else {
+			isFeePToken = false
+		}
+	}
 
+	// check with limit fee
 	if estimateFeeCoinPerKb < limitFee {
 		estimateFeeCoinPerKb = limitFee
 	}
 
-	return estimateFeeCoinPerKb
+	return estimateFeeCoinPerKb, isFeePToken
 }
 
 func (txService TxService) BuildRawTransaction(params *bean.CreateRawTxParam, meta metadata.Metadata) (*transaction.Tx, *RPCError) {
@@ -1074,39 +1090,39 @@ func (txService TxService) RandomCommitments(paymentAddressStr string, outputs [
 		outputCoin.CoinDetails.SetValue(valueBNTmp.Uint64())
 
 		RandomnessInBytes, _, err := base58.Base58Check{}.Decode(out.Randomness)
-		if err != nil{
+		if err != nil {
 			return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New(fmt.Sprint("randomness output is invalid", out.Randomness)))
 		}
 		outputCoin.CoinDetails.SetRandomness(new(privacy.Scalar).FromBytesS(RandomnessInBytes))
 
 		SNDerivatorInBytes, _, err := base58.Base58Check{}.Decode(out.SNDerivator)
-		if err != nil{
+		if err != nil {
 			return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New(fmt.Sprint("snderivator output is invalid", out.SNDerivator)))
 		}
 		outputCoin.CoinDetails.SetSNDerivator(new(privacy.Scalar).FromBytesS(SNDerivatorInBytes))
 
 		CoinCommitmentBytes, _, err := base58.Base58Check{}.Decode(out.CoinCommitment)
-		if err != nil{
+		if err != nil {
 			return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New(fmt.Sprint("coin commitment output is invalid", out.CoinCommitment)))
 		}
 		CoinCommitment, err := new(privacy.Point).FromBytesS(CoinCommitmentBytes)
-		if err != nil{
+		if err != nil {
 			return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New(fmt.Sprint("coin commitment output is invalid", CoinCommitmentBytes)))
 		}
 		outputCoin.CoinDetails.SetCoinCommitment(CoinCommitment)
 
 		PublicKeyBytes, _, err := base58.Base58Check{}.Decode(out.PublicKey)
-		if err != nil{
+		if err != nil {
 			return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New(fmt.Sprint("public key output is invalid", out.PublicKey)))
 		}
 		PublicKey, err := new(privacy.Point).FromBytesS(PublicKeyBytes)
-		if err != nil{
+		if err != nil {
 			return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New(fmt.Sprint("public key output is invalid", PublicKeyBytes)))
 		}
 		outputCoin.CoinDetails.SetPublicKey(PublicKey)
 
 		InfoBytes, _, err := base58.Base58Check{}.Decode(out.Info)
-		if err != nil{
+		if err != nil {
 			return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New(fmt.Sprint("Info output is invalid", out.Info)))
 		}
 		outputCoin.CoinDetails.SetInfo(InfoBytes)
@@ -1211,7 +1227,8 @@ func (txService TxService) BuildRawDefragmentAccountTransaction(params interface
 	}
 	paymentInfos := []*privacy.PaymentInfo{paymentInfo}
 	// check real fee(nano PRV) per tx
-	realFee, _, _ := txService.EstimateFee(estimateFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacyCoin, nil, nil, nil)
+	isGetPTokenFee := false
+	realFee, _, _, _ := txService.EstimateFee(estimateFeeCoinPerKb, isGetPTokenFee, outCoins, paymentInfos, shardIDSender, 8, hasPrivacyCoin, nil, nil, nil)
 	if len(outCoins) == 0 {
 		realFee = 0
 	}
