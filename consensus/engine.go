@@ -163,6 +163,8 @@ func (engine *Engine) watchConsensusCommittee() {
 					continue
 				}
 				userCurrentPublicKey = userMiningKey.GetMiningKeyBase58(consensusType)
+			} else {
+				userMiningKey = engine.userMiningPublicKeys[consensusType]
 			}
 
 			if chainName == common.BeaconChainKey || engine.userCurrentState.UserRole == common.WaitingRole {
@@ -498,8 +500,13 @@ func (engine *Engine) updateUserState(keySet *incognitokey.CommitteePublicKey, l
 	if engine.userCurrentState.UserLayer != layer {
 		isChange = true
 	}
-	if engine.userCurrentState.Keys != keySet {
-		isChange = true
+	if engine.userCurrentState.Keys != nil {
+		incKey, ok := engine.userCurrentState.KeysBase58[common.IncKeyType]
+		if ok {
+			if incKey != keySet.GetIncKeyBase58() {
+				isChange = true
+			}
+		}
 	}
 
 	if role == "" {

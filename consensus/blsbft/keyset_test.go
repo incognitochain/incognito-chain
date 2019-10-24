@@ -118,3 +118,50 @@ func Test_newMiningKey(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateKey(t *testing.T) {
+	lenOutput := 22
+	seed := []byte("safafsafafsafafsafafsafafsafafsafafsafafsafafsafafsafaf")
+	for j := 0; j < common.MaxShardNumber; j++ {
+		privKeyLs := make([]string, 0)
+		paymentAddLs := make([]string, 0)
+		miningSeedLs := make([]string, 0)
+		publicKeyLs := make([]string, 0)
+		committeeKeyLs := make([]string, 0)
+		for i := 0; i < 1000; i++ {
+			masterKey, _ := wallet.NewMasterKey(seed)
+			child, _ := masterKey.NewChildKey(uint32(i))
+
+			privKeyB58 := child.Base58CheckSerialize(wallet.PriKeyType)
+			paymentAddressB58 := child.Base58CheckSerialize(wallet.PaymentAddressType)
+			shardID := common.GetShardIDFromLastByte(child.KeySet.PaymentAddress.Pk[len(child.KeySet.PaymentAddress.Pk)-1])
+			miningSeed := base58.Base58Check{}.Encode(common.HashB(common.HashB(child.KeySet.PrivateKey)), common.ZeroByte)
+			publicKey := base58.Base58Check{}.Encode(child.KeySet.PaymentAddress.Pk, common.ZeroByte)
+			committeeKey, _ := incognitokey.NewCommitteeKeyFromSeed(common.HashB(common.HashB(child.KeySet.PrivateKey)), child.KeySet.PaymentAddress.Pk)
+
+			if int(shardID) == j {
+
+				privKeyLs = append(privKeyLs, (privKeyB58))
+				paymentAddLs = append(paymentAddLs, (paymentAddressB58))
+				miningSeedLs = append(miningSeedLs, (miningSeed))
+				publicKeyLs = append(publicKeyLs, (publicKey))
+				temp, _ := committeeKey.ToBase58()
+				committeeKeyLs = append(committeeKeyLs, (temp))
+				if len(privKeyLs) >= lenOutput {
+					break
+				}
+			}
+		}
+
+		fmt.Printf("\n\n\n ***** Shard %+v **** \n\n\n", j)
+		for i := 0; i < len(privKeyLs); i++ {
+			fmt.Println(i)
+			fmt.Println("Private Key: " + privKeyLs[i])
+			fmt.Println("Payment Address: " + paymentAddLs[i])
+			fmt.Println("Public key: " + publicKeyLs[i])
+			fmt.Println("Mining key: " + miningSeedLs[i])
+			fmt.Println("Committee key set: " + committeeKeyLs[i])
+			fmt.Println("------------------------------------------------------------")
+		}
+	}
+}
