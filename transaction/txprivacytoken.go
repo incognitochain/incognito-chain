@@ -21,7 +21,7 @@ import (
 // TxCustomTokenPrivacy is an advance format of TxNormalToken
 // so that user need to spend a lot fee to create this class tx
 type TxCustomTokenPrivacy struct {
-	Tx                                                                // inherit from normal tx of P(supporting privacy) with a high fee to ensure that tx could contain a big data of privacy for token
+	Tx                                    // inherit from normal tx of P(supporting privacy) with a high fee to ensure that tx could contain a big data of privacy for token
 	TxPrivacyTokenData TxPrivacyTokenData `json:"TxTokenPrivacyData"` // supporting privacy format
 
 	// private field, not use for json parser, only use as temp variable
@@ -131,6 +131,9 @@ func (tx TxCustomTokenPrivacy) GetTxPrivacyTokenActualSize() uint64 {
 func (tx TxCustomTokenPrivacy) CheckTransactionFee(minFeePerKbTx uint64) bool {
 	if tx.IsSalaryTx() {
 		return true
+	}
+	if tx.Metadata != nil {
+		return tx.Metadata.CheckTransactionFee(&tx, minFeePerKbTx)
 	}
 	fullFee := minFeePerKbTx * tx.GetTxActualSize()
 	return tx.GetTxFee() >= fullFee
@@ -581,7 +584,7 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) IsCoinsBurning() bool {
 		senderPKBytes = proof.GetInputCoins()[0].CoinDetails.GetPublicKey().ToBytesS()
 	}
 	keyWalletBurningAccount, err := wallet.Base58CheckDeserialize(common.BurningAddress)
-	if err!= nil{
+	if err != nil {
 		Logger.log.Errorf("Can not deserialize burn address: %v\n", common.BurningAddress)
 		return false
 	}
@@ -696,7 +699,7 @@ type TxPrivacyTokenInitParamsForASM struct {
 	sndOutputsForPToken          []*privacy.Scalar
 }
 
-func (param *TxPrivacyTokenInitParamsForASM) SetMetaData(meta metadata.Metadata){
+func (param *TxPrivacyTokenInitParamsForASM) SetMetaData(meta metadata.Metadata) {
 	param.txParam.metaData = meta
 }
 
@@ -719,7 +722,7 @@ func NewTxPrivacyTokenInitParamsForASM(
 	commitmentIndicesForPToken []uint64,
 	commitmentBytesForPToken [][]byte,
 	myCommitmentIndicesForPToken []uint64,
-	sndOutputsForPToken []*privacy.Scalar, ) *TxPrivacyTokenInitParamsForASM {
+	sndOutputsForPToken []*privacy.Scalar) *TxPrivacyTokenInitParamsForASM {
 
 	txParam := NewTxPrivacyTokenInitParams(senderKey, paymentInfo, inputCoin, feeNativeCoin, tokenParams, nil, metaData, hasPrivacyCoin, hasPrivacyToken, shardID, info)
 	params := &TxPrivacyTokenInitParamsForASM{
