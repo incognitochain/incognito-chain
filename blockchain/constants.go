@@ -45,7 +45,7 @@ const (
 	MainnetAssignOffset     = 8
 
 	MainNetShardCommitteeSize     = 32
-	MainNetMinShardCommitteeSize  = 4
+	MainNetMinShardCommitteeSize  = 22
 	MainNetBeaconCommitteeSize    = 32
 	MainNetMinBeaconCommitteeSize = 4
 	MainNetActiveShards           = 8
