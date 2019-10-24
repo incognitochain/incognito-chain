@@ -108,9 +108,9 @@ const (
 	TestNetMaxShardBlkCreation  = 6 * time.Second  //second
 
 	//board and proposal parameters
-	TestnetBasicReward                      = 400000000 //40 mili PRV
-	TestnetRewardHalflife                   = 3155760   //1 year, reduce 12.5% per year
-	TestnetETHContractAddressStr            = "0x2d2C57765E46BFFD84Ef18C34cF58365Bcdb1C31"
+	TestnetBasicReward                      = 400000000                                    //40 mili PRV
+	TestnetRewardHalflife                   = 3155760                                      //1 year, reduce 12.5% per year
+	TestnetETHContractAddressStr            = "0x904836fb12c4A8eafCfFe805F1C561cC2940932a" // v35 - kovan, devnet, for branch dev/issue339
 	TestnetIncognitoDAOAddress              = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 	TestnetCentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 )
