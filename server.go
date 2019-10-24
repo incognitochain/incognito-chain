@@ -308,7 +308,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			if err == nil && len(feeEstimatorData) > 0 {
 				feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)
 				if err != nil {
-					Logger.log.Errorf("Failed to restore fee estimator %v", err)
+					Logger.log.Debugf("Failed to restore fee estimator %v", err)
 					Logger.log.Debug("Init NewFeeEstimator")
 					serverObj.feeEstimator[shardID] = mempool.NewFeeEstimator(
 						mempool.DefaultEstimateFeeMaxRollback,
@@ -318,7 +318,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 					serverObj.feeEstimator[shardID] = feeEstimator
 				}
 			} else {
-				Logger.log.Errorf("Failed to get fee estimator from DB %v", err)
+				Logger.log.Debugf("Failed to get fee estimator from DB %v", err)
 				Logger.log.Debug("Init NewFeeEstimator")
 				serverObj.feeEstimator[shardID] = mempool.NewFeeEstimator(
 					mempool.DefaultEstimateFeeMaxRollback,
