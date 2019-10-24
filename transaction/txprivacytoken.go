@@ -132,6 +132,9 @@ func (tx TxCustomTokenPrivacy) CheckTransactionFee(minFeePerKbTx uint64) bool {
 	if tx.IsSalaryTx() {
 		return true
 	}
+	if tx.Metadata != nil {
+		return tx.Metadata.CheckTransactionFee(&tx, minFeePerKbTx)
+	}
 	fullFee := minFeePerKbTx * tx.GetTxActualSize()
 	return tx.GetTxFee() >= fullFee
 }
