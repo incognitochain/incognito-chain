@@ -803,7 +803,7 @@ func RestoreFeeEstimator(data FeeEstimatorState) (*FeeEstimator, error) {
 			return nil, err
 		}
 	}
-
+	Logger.log.Infof("Fee estimator data when restoring #%d", ef)
 	return ef, nil
 }
 
