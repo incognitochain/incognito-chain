@@ -804,6 +804,7 @@ func RestoreFeeEstimator(data FeeEstimatorState) (*FeeEstimator, error) {
 		}
 	}
 
+	Logger.log.Infof("Estimator fee after restore: %+v\n", ef)
 	return ef, nil
 }
 

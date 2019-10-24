@@ -554,13 +554,14 @@ func (serverObj *Server) Stop() error {
 
 	// Save fee estimator in the db
 	for shardID, feeEstimator := range serverObj.feeEstimator {
+		Logger.log.Infof("Fee estimator data #%d", feeEstimator)
 		feeEstimatorData := feeEstimator.Save()
 		if len(feeEstimatorData) > 0 {
 			err := serverObj.dataBase.StoreFeeEstimator(feeEstimatorData, shardID)
 			if err != nil {
 				Logger.log.Errorf("Can't save fee estimator data on chain #%d: %v", shardID, err)
 			} else {
-				Logger.log.Debugf("Save fee estimator data on chain #%d", shardID)
+				Logger.log.Infof("Save fee estimator data on chain #%d", shardID)
 			}
 		}
 	}
