@@ -182,6 +182,8 @@ func (txService TxService) chooseOutsCoinByKeyset(
 }
 
 // EstimateFee - estimate fee from tx data and return real full fee, fee per kb and real tx size
+// if tokenID != nil: return fee for ptoken
+// if tokenID == nil: return fee for native token
 func (txService TxService) EstimateFee(
 	defaultFee int64,
 	candidateOutputCoins []*privacy.OutputCoin,
@@ -211,7 +213,7 @@ func (txService TxService) EstimateFee(
 
 	limitFee := uint64(0)
 	if feeEstimator, ok := txService.FeeEstimator[shardID]; ok {
-		limitFee = feeEstimator.GetLimitFee()
+		limitFee = feeEstimator.GetLimitFee(tokenId)
 	}
 	estimateTxSizeInKb = transaction.EstimateTxSize(transaction.NewEstimateTxSizeParam(candidateOutputCoins, paymentInfos, hasPrivacy, metadata, customTokenParams, privacyCustomTokenParams, limitFee))
 
@@ -220,6 +222,8 @@ func (txService TxService) EstimateFee(
 }
 
 // EstimateFeeWithEstimator - only estimate fee by estimator and return fee per kb
+// if tokenID != nil: return fee per kb for pToken
+// if tokenID == nil: return fee per kb for native token
 func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID byte, numBlock uint64, tokenId *common.Hash) uint64 {
 	estimateFeeCoinPerKb := uint64(0)
 	if defaultFee == -1 {
@@ -236,8 +240,9 @@ func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID by
 	// check with limit fee
 	limitFee := uint64(0)
 	if feeEstimator, ok := txService.FeeEstimator[shardID]; ok {
-		limitFee = feeEstimator.GetLimitFee()
+		limitFee = feeEstimator.GetLimitFee(tokenId)
 	}
+
 
 	if estimateFeeCoinPerKb < limitFee {
 		estimateFeeCoinPerKb = limitFee
