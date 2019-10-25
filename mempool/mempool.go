@@ -220,6 +220,7 @@ func (tp *TxPool) MonitorPool() {
 // #1: tx
 // #2: default nil, contain input coins hash, which are used for creating this tx
 func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash, *TxDesc, error) {
+	//tp.config.BlockChain.BestState.Beacon.BeaconHeight
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
 	if tp.IsTest {
@@ -482,7 +483,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 
 			// get limit fee in native token
 			actualTxSize := tx.GetTxActualSize()
-			limitFee, _ := tp.config.FeeEstimator[shardID].GetLimitFee(nil)
+			limitFee := tp.config.FeeEstimator[shardID].GetLimitFeeForNativeToken()
 
 			// check fee in native token
 			minFee := actualTxSize * limitFee
@@ -528,7 +529,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 			//}
 			//if txPrivacyToken.TxPrivacyTokenData.TxNormal.Proof != nil {
 			//	tokenID := txPrivacyToken.TxPrivacyTokenData.PropertyID
-			//	limitFeeToken, isFeePToken := tp.config.FeeEstimator[shardID].GetLimitFee(&tokenID)
+			//	limitFeeToken, isFeePToken := tp.config.FeeEstimator[shardID].GetLimitFeeForNativeToken(&tokenID)
 			//	if limitFeeToken > 0 {
 			//		if !isPaidByPRV {
 			//			// not paid anything by PRV
