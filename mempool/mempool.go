@@ -464,67 +464,98 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	case common.TxCustomTokenPrivacyType:
 		{
 			txPrivacyToken := tx.(*transaction.TxCustomTokenPrivacy)
-			isPaidByPRV := false
-			isPaidPartiallyPRV := false
-			// check PRV element and pToken element
-			if txPrivacyToken.Tx.Proof != nil || txPrivacyToken.TxPrivacyTokenData.Type == transaction.CustomTokenInit {
-				// tx contain PRV data -> check with PRV fee
-				// @notice: check limit fee but apply for token fee
-				limitFee := tp.config.FeeEstimator[shardID].limitFee
-				if limitFee > 0 {
-					if txPrivacyToken.GetTxFeeToken() == 0 || // not paid with token -> use PRV for paying fee
-						txPrivacyToken.TxPrivacyTokenData.Type == transaction.CustomTokenInit { // or init token -> need to use PRV for paying fee
-						// paid all with PRV
-						ok := txPrivacyToken.CheckTransactionFee(limitFee)
-						if !ok {
-							return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees PRV which is under the required amount of %d",
-								txHash.String(),
-								txPrivacyToken.Tx.GetTxFee(),
-								limitFee*txPrivacyToken.GetTxActualSize()))
-						}
-						isPaidPartiallyPRV = false
-					} else {
-						// paid partial with PRV
-						ok := txPrivacyToken.Tx.CheckTransactionFee(limitFee)
-						if !ok {
-							return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees PRV which is under the required amount of %d",
-								txHash.String(),
-								txPrivacyToken.Tx.GetTxFee(),
-								limitFee*txPrivacyToken.Tx.GetTxActualSize()))
-						}
-						isPaidPartiallyPRV = true
-					}
+			tokenID := txPrivacyToken.TxPrivacyTokenData.PropertyID
+			feeNativeToken := tx.GetTxFee()
+			feePToken := tx.GetTxFeeToken()
+
+			//convert fee in Ptoken to fee in native token (if feePToken > 0)
+			if feePToken > 0 {
+				feePTokenToNativeToken, err := ConvertPrivacyTokenToNativeToken(feePToken, &tokenID)
+				if err != nil{
+					return NewMempoolTxError(RejectInvalidFee,
+						fmt.Errorf("transaction %+v: %+v %v can not convert to native token",
+							txHash.String(), feePToken, tokenID))
 				}
-				isPaidByPRV = true
+
+				feeNativeToken += feePTokenToNativeToken
 			}
-			if txPrivacyToken.TxPrivacyTokenData.TxNormal.Proof != nil {
-				limitFeeToken := tp.config.FeeEstimator[shardID].limitFeeToken
-				if limitFeeToken > 0 {
-					if !isPaidByPRV {
-						// not paid anything by PRV
-						// -> check fee on total tx size(prv tx container + pToken tx) and use token as fee
-						ok := txPrivacyToken.CheckTransactionFeeByFeeToken(limitFeeToken)
-						if !ok {
-							return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
-								txHash.String(),
-								tx.GetTxFeeToken(),
-								limitFeeToken*txPrivacyToken.GetTxActualSize()))
-						}
-					} else {
-						// paid by PRV
-						if isPaidPartiallyPRV {
-							// paid partially -> check fee on pToken tx data size(only for pToken tx)
-							ok := txPrivacyToken.CheckTransactionFeeByFeeTokenForTokenData(limitFeeToken)
-							if !ok {
-								return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
-									txHash.String(),
-									tx.GetTxFeeToken(),
-									limitFeeToken*txPrivacyToken.GetTxPrivacyTokenActualSize()))
-							}
-						}
-					}
-				}
+
+			// get limit fee in native token
+			actualTxSize := tx.GetTxActualSize()
+			limitFee, _ := tp.config.FeeEstimator[shardID].GetLimitFee(nil)
+
+			// check fee in native token
+			minFee := actualTxSize * limitFee
+			if feeNativeToken < minFee {
+				return NewMempoolTxError(RejectInvalidFee,
+					fmt.Errorf("transaction %+v has %d fees PRV which is under the required amount of %d",
+						txHash.String(), feeNativeToken, minFee))
 			}
+
+
+			//txPrivacyToken := tx.(*transaction.TxCustomTokenPrivacy)
+			//isPaidByPRV := false
+			//isPaidPartiallyPRV := false
+			//// check PRV element and pToken element
+			//if txPrivacyToken.Tx.Proof != nil || txPrivacyToken.TxPrivacyTokenData.Type == transaction.CustomTokenInit {
+			//	// tx contain PRV data -> check with PRV fee
+			//	// @notice: check limit fee but apply for token fee
+			//	limitFee := tp.config.FeeEstimator[shardID].limitFee
+			//	if limitFee > 0 {
+			//		if txPrivacyToken.GetTxFeeToken() == 0 || // not paid with token -> use PRV for paying fee
+			//			txPrivacyToken.TxPrivacyTokenData.Type == transaction.CustomTokenInit { // or init token -> need to use PRV for paying fee
+			//			// paid all with PRV
+			//			ok := txPrivacyToken.CheckTransactionFee(limitFee)
+			//			if !ok {
+			//				return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees PRV which is under the required amount of %d",
+			//					txHash.String(),
+			//					txPrivacyToken.Tx.GetTxFee(),
+			//					limitFee*txPrivacyToken.GetTxActualSize()))
+			//			}
+			//			isPaidPartiallyPRV = false
+			//		} else {
+			//			// paid partial with PRV
+			//			ok := txPrivacyToken.Tx.CheckTransactionFee(limitFee)
+			//			if !ok {
+			//				return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees PRV which is under the required amount of %d",
+			//					txHash.String(),
+			//					txPrivacyToken.Tx.GetTxFee(),
+			//					limitFee*txPrivacyToken.Tx.GetTxActualSize()))
+			//			}
+			//			isPaidPartiallyPRV = true
+			//		}
+			//	}
+			//	isPaidByPRV = true
+			//}
+			//if txPrivacyToken.TxPrivacyTokenData.TxNormal.Proof != nil {
+			//	tokenID := txPrivacyToken.TxPrivacyTokenData.PropertyID
+			//	limitFeeToken, isFeePToken := tp.config.FeeEstimator[shardID].GetLimitFee(&tokenID)
+			//	if limitFeeToken > 0 {
+			//		if !isPaidByPRV {
+			//			// not paid anything by PRV
+			//			// -> check fee on total tx size(prv tx container + pToken tx) and use token as fee
+			//			ok := txPrivacyToken.CheckTransactionFeeByFeeToken(limitFeeToken)
+			//			if !ok {
+			//				return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
+			//					txHash.String(),
+			//					tx.GetTxFeeToken(),
+			//					limitFeeToken*txPrivacyToken.GetTxActualSize()))
+			//			}
+			//		} else {
+			//			// paid by PRV
+			//			if isPaidPartiallyPRV {
+			//				// paid partially -> check fee on pToken tx data size(only for pToken tx)
+			//				ok := txPrivacyToken.CheckTransactionFeeByFeeTokenForTokenData(limitFeeToken)
+			//				if !ok {
+			//					return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
+			//						txHash.String(),
+			//						tx.GetTxFeeToken(),
+			//						limitFeeToken*txPrivacyToken.GetTxPrivacyTokenActualSize()))
+			//				}
+			//			}
+			//		}
+			//	}
+			//}
 		}
 	case common.TxCustomTokenType:
 		{

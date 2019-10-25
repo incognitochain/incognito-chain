@@ -313,7 +313,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 					serverObj.feeEstimator[shardID] = mempool.NewFeeEstimator(
 						mempool.DefaultEstimateFeeMaxRollback,
 						mempool.DefaultEstimateFeeMinRegisteredBlocks,
-						cfg.LimitFee, cfg.LimitFeeToken)
+						cfg.LimitFee)
 				} else {
 					serverObj.feeEstimator[shardID] = feeEstimator
 				}
@@ -323,7 +323,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 				serverObj.feeEstimator[shardID] = mempool.NewFeeEstimator(
 					mempool.DefaultEstimateFeeMaxRollback,
 					mempool.DefaultEstimateFeeMinRegisteredBlocks,
-					cfg.LimitFee, cfg.LimitFeeToken)
+					cfg.LimitFee)
 			}
 		}
 	} else {
