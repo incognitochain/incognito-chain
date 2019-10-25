@@ -1,13 +1,16 @@
 This is the setup to run the very basic incognito blockchain on your local server. Then blockchain will contain 4 node in Beacon, 4 node in Shard-0, 4 node in Shard-1. In short, you will setup 12 node in only one server.
+
 **Prerequisites:** 
  + Ubuntu 18.04 or higher
  + git
  + golang 1.12.9
  + tmux
  + curl
+ 
 **Minimum hardware requirement:**
  + 8 CPU ~ 2.4Ghz
  + 12 GB of RAM
+ 
 **recommended hardware requirement:**
  + 16 CPU ~ 2.4Ghz
  + 24 GB of RAM
@@ -16,9 +19,11 @@ This is the setup to run the very basic incognito blockchain on your local serve
 #SECTION I: DEPLOY THE CHAIN
 --------------------
 1. clone the repo:
+
 `git clone https://github.com/incognitochain/incognito-chain.git`
 
 2. checkout the branch master-temp-B
+
 `git checkout master-temp-B `
 
 3. Modify the following params in *./incognito-chain/common/constants.go*
@@ -36,7 +41,7 @@ randomString := []byte("YourRandomStringOne")    	// A random string used to cre
 
 `go run utility/genkeywithpassword.go `
 
-Sample output:
+- Sample output:
 ```
  ***** Shard 0 **** 
 0
@@ -75,12 +80,12 @@ Committee key set: 121VhftSAygpEJZ6i9jGkPwHkhs51e63kTqfpfs7pSZTqfozwtHS8kdNK5Bjc
 ```
 
 5. Generate genesis block data. Use the address of shard-0 that we created at step4, as the address to received the initial PRV
+
 `go run utility/transaction/main.go "<initial_PRV_ammount_in_nanoPRV>" "<private_key_shard_0>"`
 
-For eg.: 1mil PRV
+- For eg.: 1mil PRV
 
 `go run utility/transaction/main.go "1000000000000000" "112t8rncBDbGaFrAE7MZz14d2NPVWprXQuHHXCD2TgSV8USaDFZY3MihVWSqKjwy47sTQ6XvBgNYgdKH2iDVZruKQpRSB5JqxDAX6sjMoUT6"`
-output:
 ```
 [{
   "Version": 1,
@@ -108,7 +113,7 @@ output:
 }]
 ```
 
-6. Copy genesis block data to *./incognito-chain/blockchain/constant.go* 
+6. Copy genesis block data to *./incognito-chain/blockchain/constant.go*, 
 replace the output at step5 to the section TestnetInitPRV. (Get the block of node that has `Info: null`)
 ```
 var TestnetInitPRV = []string{
@@ -151,10 +156,10 @@ CheckForce:   false, 					// Avoid system update when received signal from Maste
 numberOfKey := 6                              		// Number of keyset that you want to be generated. 6 address in 2 shard: 6x2=12 (keyset)
 randomString := []byte("YourRandomStringTwo")    	// A random string used to create keyset. The same string create the same keyset
 ```
-Execute the script to generate keyset:
+- Execute the script to generate keyset:
 `go run utility/genkeywithpassword.go `
 
-Sample Output:
+- Sample Output:
 `go run utility/genkeywithpassword.go `
 ```
  ***** Shard 0 **** 
@@ -199,11 +204,11 @@ Sample Output:
 ```
 
 10. Edit the *./incognito-chain/keylist.json*, replace the PaymentAddress and CommitteePublicKey that we generated at step9
- - use 2 shard-0 keyset for beacon-0 & beacon-1
- - use 2 shard-1 keyset for beacon-2 & beacon-3
- - use 4 shard-0 keyset for shard-00 01 02 03
- - use 4 shard-1 keyset for shard-10 11 12 13 
- - ignore the keylist in shard-2 3 4 5 6 7
+ - use 2 shard-0 keyset for `beacon-0` & `beacon-1`
+ - use 2 shard-1 keyset for `beacon-2` & `beacon-3`
+ - use 4 shard-0 keyset for `shard-00 01 02 03`
+ - use 4 shard-1 keyset for `shard-10 11 12 13 `
+ - ignore the keylist in `shard-2 3 4 5 6 7`
 
 11. Edit the *./incognito-chain/start_node.sh*, replace the PrivateKey that we generated at step9
 
@@ -218,13 +223,16 @@ go build -o bootnode
 ```
 
 13. Create Tmux session
+
 `bash create_tmux.sh`
 
 14. Start the chain
+
 `bash start_chain.sh`
 
 15. Verify that the chain is running: go to each tmux session, you would see the running log on screen.
 eg:
+
 `tmux a -t fullnode`
 
 
@@ -233,9 +241,11 @@ eg:
 Simply check out this branch `git checkout qc-testing`
 (the code is up to date with branch `master-temp-B`, included all the configuration above)
 - Run the following script:
-`bash build_chain.sh`
-`bash create_tmux.sh`
-`bash start_chain.sh`
+```
+bash build_chain.sh
+bash create_tmux.sh
+bash start_chain.sh
+```
 
 - This is the privatekey and payment address for your testing at section III:
 ```
@@ -277,6 +287,7 @@ curl --header "Content-Type: application/json" \
   --data '{"jsonrpc":"1.0","method":"getbalancebyprivatekey","params":["<private_key>"],"id":1}' \
   http://192.168.0.1:9334
 ```
+
 **Send PRV:**
 ```
 curl --header "Content-Type: application/json" \
@@ -284,6 +295,7 @@ curl --header "Content-Type: application/json" \
   --data '{"jsonrpc": "1.0","method": "createandsendtransaction","params": ["<private_key>",{"<payment_address>": <ammount_in_nanoPRV>}, -1, 0],"id": 1}' \
   http://192.168.0.1:9334
 ```
+
 **Eg:**
 - Get balance address 0
 ```
