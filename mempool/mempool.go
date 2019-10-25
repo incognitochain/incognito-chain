@@ -219,7 +219,7 @@ func (tp *TxPool) MonitorPool() {
 // This function is safe for concurrent access.
 // #1: tx
 // #2: default nil, contain input coins hash, which are used for creating this tx
-func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash, *TxDesc, error) {
+func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight int64) (*common.Hash, *TxDesc, error) {
 	//tp.config.BlockChain.BestState.Beacon.BeaconHeight
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
@@ -255,7 +255,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 		return nil, nil, NewMempoolTxError(MaxPoolSizeError, errors.New("Pool reach max number of transaction"))
 	}
 	startAdd := time.Now()
-	hash, txDesc, err := tp.maybeAcceptTransaction(tx, tp.config.PersistMempool, true)
+	hash, txDesc, err := tp.maybeAcceptTransaction(tx, tp.config.PersistMempool, true, beaconHeight)
 	elapsed := float64(time.Since(startAdd).Seconds())
 	//==========
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
@@ -304,10 +304,11 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 }
 
 // This function is safe for concurrent access.
-func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transaction) (*metadata.TxDesc, error) {
+func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transaction, beaconHeight int64) (*metadata.TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
-	_, txDesc, err := tp.maybeAcceptTransaction(tx, false, false)
+	// todo: recheck beacon height is -1
+	_, txDesc, err := tp.maybeAcceptTransaction(tx, false, false, beaconHeight)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
@@ -322,7 +323,7 @@ func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transactio
 // #2: store into db
 // #3: default nil, contain input coins hash, which are used for creating this tx
 */
-func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, isNewTransaction bool) (*common.Hash, *TxDesc, error) {
+func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, isNewTransaction bool, beaconHeight int64) (*common.Hash, *TxDesc, error) {
 	txType := tx.GetType()
 	if txType == common.TxNormalType {
 		if tx.IsPrivacy() {
@@ -334,7 +335,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 	txSize := fmt.Sprintf("%d", tx.GetTxActualSize())
 	startValidate := time.Now()
 	// validate tx
-	err := tp.validateTransaction(tx)
+	err := tp.validateTransaction(tx, beaconHeight)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -403,7 +404,7 @@ In Param#2: isStore: store transaction to persistence storage only work for tran
 9. Staking Transaction: Check Duplicate stake public key in pool ONLY with staking transaction
 10. RequestStopAutoStaking
 */
-func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
+func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int64) error {
 	var shardID byte
 	var err error
 	var now time.Time
@@ -471,7 +472,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 
 			//convert fee in Ptoken to fee in native token (if feePToken > 0)
 			if feePToken > 0 {
-				feePTokenToNativeToken, err := ConvertPrivacyTokenToNativeToken(feePToken, &tokenID)
+				feePTokenToNativeToken, err := ConvertPrivacyTokenToNativeToken(feePToken, &tokenID, beaconHeight)
 				if err != nil{
 					return NewMempoolTxError(RejectInvalidFee,
 						fmt.Errorf("transaction %+v: %+v %v can not convert to native token",
