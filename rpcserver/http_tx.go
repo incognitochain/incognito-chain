@@ -805,6 +805,9 @@ func (httpServer *HttpServer) handleSendRawPrivacyCustomTokenTransaction(params 
 	}
 
 	txMsg, tx, err := httpServer.txService.SendRawPrivacyCustomTokenTransaction(base58CheckData)
+	if err != nil{
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
 
 	err = httpServer.config.Server.PushMessageToAll(txMsg)
 	//Mark forwarded message
