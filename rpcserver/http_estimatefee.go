@@ -171,7 +171,7 @@ func (httpServer *HttpServer) handleEstimateFeeWithEstimator(params interface{},
 		}
 	}
 
-	estimateFeeCoinPerKb, err := httpServer.txService.EstimateFeeWithEstimator(defaultFeeCoinPerKb, shardIDSender, numblock, tokenId)
+	estimateFeeCoinPerKb, err := httpServer.txService.EstimateFeeWithEstimator(defaultFeeCoinPerKb, shardIDSender, numblock, tokenId, -1)
 	if err != nil{
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}

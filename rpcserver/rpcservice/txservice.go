@@ -221,7 +221,7 @@ func (txService TxService) EstimateFee(
 		tokenId = nil
 	}
 
-	estimateFeeCoinPerKb, err := txService.EstimateFeeWithEstimator(defaultFee, shardID, numBlock, tokenId)
+	estimateFeeCoinPerKb, err := txService.EstimateFeeWithEstimator(defaultFee, shardID, numBlock, tokenId, -1)
 	if err != nil{
 		return 0, 0, 0, err
 	}
@@ -243,7 +243,7 @@ func (txService TxService) EstimateFee(
 // EstimateFeeWithEstimator - only estimate fee by estimator and return fee per kb
 // if tokenID != nil: return fee per kb for pToken (return error if there is no exchange rate between pToken and native token)
 // if tokenID == nil: return fee per kb for native token
-func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID byte, numBlock uint64, tokenId *common.Hash) (uint64, error) {
+func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID byte, numBlock uint64, tokenId *common.Hash, beaconHeight int64) (uint64, error) {
 	if defaultFee == 0 {
 		return uint64(defaultFee), nil
 	}
@@ -269,7 +269,7 @@ func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID by
 	// convert ptoken fee to native token fee (if necessary)
 	var err error
 	if tokenId != nil {
-		unitFee, err = mempool.ConvertPrivacyTokenToNativeToken(unitFee, tokenId)
+		unitFee, err = mempool.ConvertPrivacyTokenToNativeToken(unitFee, tokenId, beaconHeight)
 		if err != nil {
 			return uint64(0), err
 		}
@@ -287,7 +287,7 @@ func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID by
 
 	// return fee in ptoken (if tokenid != nil)
 	if tokenId != nil {
-		unitFee, err = mempool.ConvertNativeTokenToPrivacyToken(unitFee, tokenId)
+		unitFee, err = mempool.ConvertNativeTokenToPrivacyToken(unitFee, tokenId, beaconHeight)
 		if err != nil {
 			return uint64(0), err
 		}
@@ -361,7 +361,7 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 		return nil, nil, byte(0), NewRPCError(SendTxDataError, err)
 	}
 
-	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx)
+	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx, -1)
 	//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 	if err != nil {
 		mempoolErr, ok := err.(*mempool.MempoolTxError)
@@ -701,6 +701,7 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransaction(
 		tokenParams.Fee = estimateFee
 	} else{
 		realFeePRV = estimateFee
+		tokenParams.Fee = 0
 	}
 
 	if len(txParam.PaymentInfos) == 0 && realFeePRV == 0 {
@@ -795,7 +796,7 @@ func (txService TxService) SendRawCustomTokenTransaction(base58CheckData string)
 		return nil, nil, NewRPCError(SendTxDataError, err)
 	}
 
-	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx)
+	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx, -1)
 	//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 	if err != nil {
 		Logger.log.Debugf("handleSendRawCustomTokenTransaction result: %+v, err: %+v", nil, err)
@@ -1189,7 +1190,7 @@ func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData 
 		return nil, nil, err
 	}
 
-	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx)
+	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx, -1)
 	//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 	if err != nil {
 		Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction result: %+v, err: %+v", nil, err)
@@ -1328,7 +1329,7 @@ func (txService TxService) SendRawTxWithMetadata(base58CheckDate string) (wire.M
 		return nil, nil, NewRPCError(JsonError, err)
 	}
 
-	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx)
+	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx, -1)
 	if err != nil {
 		return nil, nil, NewRPCError(TxPoolRejectTxError, err)
 	}
@@ -1359,7 +1360,7 @@ func (txService TxService) SendRawCustomTokenTxWithMetadata(base58CheckDate stri
 		return nil, nil, NewRPCError(JsonError, err)
 	}
 
-	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx)
+	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx, -1)
 	if err != nil {
 		return nil, nil, NewRPCError(TxPoolRejectTxError, err)
 	}

@@ -743,7 +743,10 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 		if txShardID != shardID {
 			continue
 		}
-		tempTxDesc, err := blockGenerator.chain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx)
+		//todo: recheck beacon height
+		// shard block haven't been created so there is no beacon height in shard block
+		beaconHeight := int64(-1)
+		tempTxDesc, err := blockGenerator.chain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx, beaconHeight)
 		if err != nil {
 			txToRemove = append(txToRemove, tx)
 			continue
