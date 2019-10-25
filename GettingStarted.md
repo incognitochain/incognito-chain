@@ -32,7 +32,7 @@ MaxShardNumber = 2
 ```
 
 4. Generate 4 (or more) key set for user: 
-- edit the *./incognito-chain/utility/genkeywithpassword.go*
+- Edit the *./incognito-chain/utility/genkeywithpassword.go*
 ```
 numberOfKey := 2                              		// Number of keyset that you want to be generated; 2 address x 2 shard = 4 keyset
 randomString := []byte("YourRandomStringOne")    	// A random string used to create keyset. The same string create the same keyset
@@ -323,3 +323,10 @@ curl --header "Content-Type: application/json" \
 - Get balance address 0
 - Get balance address 1
 - Get balance address 2
+
+#SECTION IV: WRITING GOLANG TEST SCRIPT:
+-----------------------------------
+- Check the file `./incognito-chain/chain_test.go` for sample test case template
+- Execute the test script:
+
+`go test -run chain_test.go`
