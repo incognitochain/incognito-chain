@@ -132,7 +132,7 @@ type config struct {
 	TxPoolTTL     uint   `long:"txpoolttl" description:"Set Time To Live (TTL) Value for transaction that enter pool"`
 	TxPoolMaxTx   uint64 `long:"txpoolmaxtx" description:"Set Maximum number of transaction in pool"`
 	LimitFee      uint64 `long:"limitfee" description:"Limited fee for tx(per Kb data), default is 0.00 PRV"`
-	LimitFeeToken uint64 `long:"limitfeetoken" description:"Limited fee for tx(per Kb data), default is 0 token"`
+	//LimitFeeToken uint64 `long:"limitfeetoken" description:"Limited fee for tx(per Kb data), default is 0 token"`
 
 	LoadMempool       bool   `long:"loadmempool" description:"Load transactions from Mempool database"`
 	PersistMempool    bool   `long:"persistmempool" description:"Persistence transaction in memepool database"`
@@ -324,7 +324,7 @@ func loadConfig() (*config, []string, error) {
 		TxPoolMaxTx:          DefaultTxPoolMaxTx,
 		PersistMempool:       DefaultPersistMempool,
 		LimitFee:             DefaultLimitFee,
-		LimitFeeToken:        DefaultLimitFeeToken,
+		//LimitFeeToken:        DefaultLimitFeeToken,
 		MetricUrl:            DefaultMetricUrl,
 		BtcClient:            DefaultBtcClient,
 		BtcClientPort:        DefaultBtcClientPort,
