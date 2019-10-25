@@ -488,10 +488,9 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 			minFee := actualTxSize * limitFee
 			if feeNativeToken < minFee {
 				return NewMempoolTxError(RejectInvalidFee,
-					fmt.Errorf("transaction %+v has %d fees PRV which is under the required amount of %d",
-						txHash.String(), feeNativeToken, minFee))
+					fmt.Errorf("transaction %+v has %d fees PRV which is under the required amount of %d, tx size %d",
+						txHash.String(), feeNativeToken, minFee, actualTxSize))
 			}
-
 
 			//txPrivacyToken := tx.(*transaction.TxCustomTokenPrivacy)
 			//isPaidByPRV := false
@@ -578,7 +577,9 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 				txFee := txNormal.GetTxFee()
 				ok := tx.CheckTransactionFee(limitFee)
 				if !ok {
-					return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", txHash.String(), txFee, limitFee*tx.GetTxActualSize()))
+					return NewMempoolTxError(RejectInvalidFee,
+						fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
+							txHash.String(), txFee, limitFee*tx.GetTxActualSize()))
 				}
 			}
 		}
