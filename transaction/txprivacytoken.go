@@ -128,31 +128,31 @@ func (tx TxCustomTokenPrivacy) GetTxPrivacyTokenActualSize() uint64 {
 }
 
 // CheckTransactionFee - check fee for all tx by use PRV as fee
-func (tx TxCustomTokenPrivacy) CheckTransactionFee(minFeePerKbTx uint64) bool {
+func (tx TxCustomTokenPrivacy) CheckTransactionFee(minFeePerKbTxInNativeToken uint64) bool {
 	if tx.IsSalaryTx() {
 		return true
 	}
-	fullFee := minFeePerKbTx * tx.GetTxActualSize()
+	fullFee := minFeePerKbTxInNativeToken * tx.GetTxActualSize()
 	return tx.GetTxFee() >= fullFee
 }
 
-// CheckTransactionFeeByFeeToken - check fee for all tx by use token as fee
-func (tx TxCustomTokenPrivacy) CheckTransactionFeeByFeeToken(minFeePerKbTx uint64) bool {
-	if tx.IsSalaryTx() {
-		return true
-	}
-	fullFee := minFeePerKbTx * tx.GetTxActualSize()
-	return tx.GetTxFeeToken() >= fullFee
-}
-
-// CheckTransactionFeeByFeeTokenForTokenData - check fee for token data info in tx by use token as fee
-func (tx TxCustomTokenPrivacy) CheckTransactionFeeByFeeTokenForTokenData(minFeePerKbTx uint64) bool {
-	if tx.IsSalaryTx() {
-		return true
-	}
-	fullFee := minFeePerKbTx * tx.GetTxPrivacyTokenActualSize()
-	return tx.GetTxFeeToken() >= fullFee
-}
+//// CheckTransactionFeeByFeeToken - check fee for all tx by use token as fee
+//func (tx TxCustomTokenPrivacy) CheckTransactionFeeByFeeToken(minFeePerKbTx uint64) bool {
+//	if tx.IsSalaryTx() {
+//		return true
+//	}
+//	fullFee := minFeePerKbTx * tx.GetTxActualSize()
+//	return tx.GetTxFeeToken() >= fullFee
+//}
+//
+//// CheckTransactionFeeByFeeTokenForTokenData - check fee for token data info in tx by use token as fee
+//func (tx TxCustomTokenPrivacy) CheckTransactionFeeByFeeTokenForTokenData(minFeePerKbTx uint64) bool {
+//	if tx.IsSalaryTx() {
+//		return true
+//	}
+//	fullFee := minFeePerKbTx * tx.GetTxPrivacyTokenActualSize()
+//	return tx.GetTxFeeToken() >= fullFee
+//}
 
 type TxPrivacyTokenInitParams struct {
 	senderKey       *privacy.PrivateKey
