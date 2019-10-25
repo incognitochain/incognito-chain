@@ -824,11 +824,13 @@ func (ef FeeEstimator) GetLimitFeeForNativeToken() uint64 {
 
 // todo:
 // return error if there is no exchange rate between native token and privacy token
-func ConvertNativeTokenToPrivacyToken(nativeTokenAmount uint64, tokenID *common.Hash) (uint64, error) {
+// beaconHeight = -1: get the latest beacon height
+func ConvertNativeTokenToPrivacyToken(nativeTokenAmount uint64, tokenID *common.Hash, beaconHeight int64) (uint64, error) {
 	return nativeTokenAmount, nil
 }
 
 // return error if there is no exchange rate between native token and privacy token
-func ConvertPrivacyTokenToNativeToken(privacyTokenAmount uint64, tokenID *common.Hash) (uint64, error) {
+// beaconHeight = -1: get the latest beacon height
+func ConvertPrivacyTokenToNativeToken(privacyTokenAmount uint64, tokenID *common.Hash, beaconHeight int64) (uint64, error) {
 	return privacyTokenAmount, nil
 }
