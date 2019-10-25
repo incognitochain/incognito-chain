@@ -151,18 +151,20 @@ out:
 					switch msg := msgC.(type) {
 					case *wire.MessageTx, *wire.MessageTxToken, *wire.MessageTxPrivacyToken:
 						{
+							//todo: recheck beaconHeight
+							beaconHeight := netSync.config.BlockChain.BestState.Beacon.BeaconHeight
 							switch msg := msgC.(type) {
 							case *wire.MessageTx:
 								{
-									netSync.handleMessageTx(msg)
+									netSync.handleMessageTx(msg, int64(beaconHeight))
 								}
 							case *wire.MessageTxToken:
 								{
-									netSync.handleMessageTxToken(msg)
+									netSync.handleMessageTxToken(msg, int64(beaconHeight))
 								}
 							case *wire.MessageTxPrivacyToken:
 								{
-									netSync.handleMessageTxPrivacyToken(msg)
+									netSync.handleMessageTxPrivacyToken(msg, int64(beaconHeight))
 								}
 							}
 						}
@@ -294,13 +296,14 @@ func (netSync *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done cha
 }
 
 // handleTxMsg handles transaction messages from all peers.
-func (netSync *NetSync) handleMessageTx(msg *wire.MessageTx) {
+func (netSync *NetSync) handleMessageTx(msg *wire.MessageTx, beaconHeight int64) {
 	Logger.log.Debug("Handling new message tx")
 	if !netSync.handleTxWithRole(msg.Transaction) {
 		return
 	}
 	if isAdded := netSync.handleCacheTx(*msg.Transaction.Hash()); !isAdded {
-		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction)
+		// todo: recheck beaconHeight
+		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction, beaconHeight)
 		if err != nil {
 			Logger.log.Error(err)
 		} else {
@@ -324,13 +327,13 @@ func (netSync *NetSync) handleMessageTx(msg *wire.MessageTx) {
 }
 
 // handleTxMsg handles transaction messages from all peers.
-func (netSync *NetSync) handleMessageTxToken(msg *wire.MessageTxToken) {
+func (netSync *NetSync) handleMessageTxToken(msg *wire.MessageTxToken, beaconHeight int64) {
 	Logger.log.Debug("Handling new message tx")
 	if !netSync.handleTxWithRole(msg.Transaction) {
 		return
 	}
 	if isAdded := netSync.handleCacheTx(*msg.Transaction.Hash()); !isAdded {
-		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction)
+		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction, beaconHeight)
 
 		if err != nil {
 			Logger.log.Error(err)
@@ -349,13 +352,13 @@ func (netSync *NetSync) handleMessageTxToken(msg *wire.MessageTxToken) {
 }
 
 // handleTxMsg handles transaction messages from all peers.
-func (netSync *NetSync) handleMessageTxPrivacyToken(msg *wire.MessageTxPrivacyToken) {
+func (netSync *NetSync) handleMessageTxPrivacyToken(msg *wire.MessageTxPrivacyToken, beaconHeight int64) {
 	Logger.log.Debug("Handling new message tx")
 	if !netSync.handleTxWithRole(msg.Transaction) {
 		return
 	}
 	if isAdded := netSync.handleCacheTx(*msg.Transaction.Hash()); !isAdded {
-		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction)
+		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction, beaconHeight)
 		if err != nil {
 			Logger.log.Error(err)
 		} else {
