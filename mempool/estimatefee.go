@@ -806,12 +806,12 @@ func (ef FeeEstimator) GetLimitFee(tokenID *common.Hash) (uint64, bool) {
 }
 
 // todo:
-// return -1 if there is no rate between native token and privacy token
+// return error if there is no exchange rate between native token and privacy token
 func ConvertNativeTokenToPrivacyToken(nativeTokenAmount uint64, tokenID *common.Hash) (uint64, error) {
 	return nativeTokenAmount, nil
 }
 
-// return -1 if there is no rate between native token and privacy token
+// return error if there is no exchange rate between native token and privacy token
 func ConvertPrivacyTokenToNativeToken(privacyTokenAmount uint64, tokenID *common.Hash) (uint64, error) {
 	return privacyTokenAmount, nil
 }
