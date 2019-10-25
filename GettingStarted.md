@@ -18,11 +18,11 @@ This is the setup to run the very basic incognito blockchain on your local serve
 
 #SECTION I: DEPLOY THE CHAIN
 --------------------
-1. clone the repo:
+1. Clone the repo:
 
 `git clone https://github.com/incognitochain/incognito-chain.git`
 
-2. checkout the branch master-temp-B
+2. Checkout the branch master-temp-B
 
 `git checkout master-temp-B `
 
@@ -157,9 +157,11 @@ numberOfKey := 6                              		// Number of keyset that you wan
 randomString := []byte("YourRandomStringTwo")    	// A random string used to create keyset. The same string create the same keyset
 ```
 - Execute the script to generate keyset:
+
 `go run utility/genkeywithpassword.go `
 
 - Sample Output:
+
 `go run utility/genkeywithpassword.go `
 ```
  ***** Shard 0 **** 
