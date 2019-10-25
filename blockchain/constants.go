@@ -29,7 +29,7 @@ const (
 	UpperBoundPercentForIncDAO   = 10
 	GetValidBlock                = 20
 	TestRandom                   = true
-	NumberOfFixedBlockValidators = 22
+	NumberOfFixedBlockValidators = 4
 )
 
 // CONSTANT for network MAINNET
@@ -67,19 +67,24 @@ const (
 )
 
 // VARIABLE for mainnet
-var (
-	MainnetInitPRV = []string{}
-	// for beacon
-	// public key
-	PreSelectBeaconNodeMainnetSerializedPubkey = PreSelectBeaconNodeTestnetSerializedPubkey
-	// For shard
-	// public key
-	PreSelectShardNodeMainnetSerializedPubkey = PreSelectShardNodeTestnetSerializedPubkey
-	MaxTxsInBlock                             = 600
-	MaxTxsProcessTimeInBlockCreation          = float64(0.85)
-	TxsAverageProcessTime                     = int64(5000) // count in nano second ~= 5 mili seconds
-	DefaultTxsAverageProcessTime              = int64(5000) // count in nano second
-)
+var PreSelectBeaconNodeMainnetSerializedPubkey = []string{}
+var PreSelectBeaconNodeMainnetSerializedPaymentAddress = []string{}
+var PreSelectShardNodeMainnetSerializedPubkey = []string{}
+var PreSelectShardNodeMainnetSerializedPaymentAddress = []string{}
+var MainnetInitPRV = []string{`
+	{
+		"Version":1,
+		"Type":"s",
+		"LockTime":1570159128,
+		"Fee":0,
+		"Info":null,
+		"SigPubKey":"5xVSzcZpA3uHmBO5ejENk13iayexILopySACdieLugA=",
+		"Sig":"oMJPBLxKgTnfQhMgfvvH68ed0UTuTfl3ofOoWgk8dgvfhovgvued9HH4dXz60rY32H4Y4c85Zd8bSXSnvNhZAA==",
+		"Proof":"AAAAAAAAAbAAriDnFVLNxmkDe4eYE7l6MQ2TXeJrJ7EguinJIAJ2J4u6ACARCc1/qyLEePe1zSthzmRSqf2VNOlo036JwtDgbNg24yAb6hGuk1tRBVMO4ruHaNEasY09ZiBc4iuK/dpDSyNTCCABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDMoX8yNBbY68SO44umD1CMfz/r0T4YiXhDgDgT6+k4BgdY0V4XYoAAAAAAAAAAAAA=",
+		"PubKeyLastByteSender":0,
+		"Metadata":null
+	}
+	`}
 
 // END CONSTANT for network MAINNET
 
@@ -91,12 +96,12 @@ const (
 	TestnetGenesisBlockTime = "2019-10-21T00:00:20.000Z"
 	TestnetEpoch            = 100
 	TestnetRandomTime       = 50
-	TestnetOffset           = 4
-	TestnetSwapOffset       = 4
-	TestnetAssignOffset     = 8
+	TestnetOffset           = 1
+	TestnetSwapOffset       = 1
+	TestnetAssignOffset     = 2
 
-	TestNetShardCommitteeSize     = 32
-	TestNetMinShardCommitteeSize  = 22
+	TestNetShardCommitteeSize     = 63
+	TestNetMinShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize    = 4
 	TestNetMinBeaconCommitteeSize = 4
 	TestNetActiveShards           = 8
@@ -108,19 +113,32 @@ const (
 	TestNetMaxShardBlkCreation  = 6 * time.Second  //second
 
 	//board and proposal parameters
-	TestnetBasicReward                      = 400000000                                    //40 mili PRV
-	TestnetRewardHalflife                   = 3155760                                      //1 year, reduce 12.5% per year
-	TestnetETHContractAddressStr            = "0x904836fb12c4A8eafCfFe805F1C561cC2940932a" // v35 - kovan, devnet, for branch dev/issue339
+	TestnetBasicReward                      = 400000000 //40 mili PRV
+	TestnetRewardHalflife                   = 3155760   //1 year, reduce 12.5% per year
+	TestnetETHContractAddressStr            = "0xE7A65fC751BF3D981a6423fD6F203cb45CCA9405"
 	TestnetIncognitoDAOAddress              = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 	TestnetCentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 )
 
-// for beacon
-// public key
+// VARIABLE for testnet
 var PreSelectBeaconNodeTestnetSerializedPubkey = []string{}
 var PreSelectBeaconNodeTestnetSerializedPaymentAddress = []string{}
 var PreSelectShardNodeTestnetSerializedPubkey = []string{}
 var PreSelectShardNodeTestnetSerializedPaymentAddress = []string{}
+var TestnetInitPRV = []string{
+	`{
+		"Version":1,
+		"Type":"s",
+		"LockTime":1570159128,
+		"Fee":0,
+		"Info":null,
+		"SigPubKey":"5xVSzcZpA3uHmBO5ejENk13iayexILopySACdieLugA=",
+		"Sig":"oMJPBLxKgTnfQhMgfvvH68ed0UTuTfl3ofOoWgk8dgvfhovgvued9HH4dXz60rY32H4Y4c85Zd8bSXSnvNhZAA==",
+		"Proof":"AAAAAAAAAbAAriDnFVLNxmkDe4eYE7l6MQ2TXeJrJ7EguinJIAJ2J4u6ACARCc1/qyLEePe1zSthzmRSqf2VNOlo036JwtDgbNg24yAb6hGuk1tRBVMO4ruHaNEasY09ZiBc4iuK/dpDSyNTCCABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDMoX8yNBbY68SO44umD1CMfz/r0T4YiXhDgDgT6+k4BgdY0V4XYoAAAAAAAAAAAAA=",
+		"PubKeyLastByteSender":0,
+		"Metadata":null
+	}`,
+}
 
 func init() {
 	if len(os.Args) > 0 && (strings.Contains(os.Args[0], "test") || strings.Contains(os.Args[0], "Test")) {
@@ -168,14 +186,14 @@ func init() {
 		}
 	} else {
 		for i := 0; i < MainNetMinBeaconCommitteeSize; i++ {
-			PreSelectBeaconNodeTestnetSerializedPubkey = append(PreSelectBeaconNodeTestnetSerializedPubkey, keylist.Beacon[i].CommitteePublicKey)
-			PreSelectBeaconNodeTestnetSerializedPaymentAddress = append(PreSelectBeaconNodeTestnetSerializedPaymentAddress, keylist.Beacon[i].PaymentAddress)
+			PreSelectBeaconNodeMainnetSerializedPubkey = append(PreSelectBeaconNodeMainnetSerializedPubkey, keylist.Beacon[i].CommitteePublicKey)
+			PreSelectBeaconNodeMainnetSerializedPaymentAddress = append(PreSelectBeaconNodeMainnetSerializedPaymentAddress, keylist.Beacon[i].PaymentAddress)
 		}
 
 		for i := 0; i < MainNetActiveShards; i++ {
 			for j := 0; j < MainNetMinShardCommitteeSize; j++ {
-				PreSelectShardNodeTestnetSerializedPubkey = append(PreSelectShardNodeTestnetSerializedPubkey, keylist.Shard[i][j].CommitteePublicKey)
-				PreSelectShardNodeTestnetSerializedPaymentAddress = append(PreSelectShardNodeTestnetSerializedPaymentAddress, keylist.Shard[i][j].PaymentAddress)
+				PreSelectShardNodeMainnetSerializedPubkey = append(PreSelectShardNodeMainnetSerializedPubkey, keylist.Shard[i][j].CommitteePublicKey)
+				PreSelectShardNodeMainnetSerializedPaymentAddress = append(PreSelectShardNodeMainnetSerializedPaymentAddress, keylist.Shard[i][j].PaymentAddress)
 			}
 		}
 	}
@@ -197,21 +215,6 @@ const (
 	StopAutoStake = "stopautostake"
 )
 
-// ---------------------------------------------
-var TestnetInitPRV = []string{
-	`{
-		"Version":1,
-		"Type":"s",
-		"LockTime":1570159128,
-		"Fee":0,
-		"Info":null,
-		"SigPubKey":"5xVSzcZpA3uHmBO5ejENk13iayexILopySACdieLugA=",
-		"Sig":"oMJPBLxKgTnfQhMgfvvH68ed0UTuTfl3ofOoWgk8dgvfhovgvued9HH4dXz60rY32H4Y4c85Zd8bSXSnvNhZAA==",
-		"Proof":"AAAAAAAAAbAAriDnFVLNxmkDe4eYE7l6MQ2TXeJrJ7EguinJIAJ2J4u6ACARCc1/qyLEePe1zSthzmRSqf2VNOlo036JwtDgbNg24yAb6hGuk1tRBVMO4ruHaNEasY09ZiBc4iuK/dpDSyNTCCABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDMoX8yNBbY68SO44umD1CMfz/r0T4YiXhDgDgT6+k4BgdY0V4XYoAAAAAAAAAAAAA=",
-		"PubKeyLastByteSender":0,
-		"Metadata":null
-	}`,
-}
 var IntegrationTestInitPRV = []string{
 	`{"Version":1,"Type":"s","LockTime":1571731249,"Fee":0,"Info":null,"SigPubKey":"Lhv3KVghjL8k/2/ytRvrKgCNIEbAE5Pk/cDs8tvJ6gA=","Sig":"FNyMr0FCI/dSjZQRBgWKm0YmVj56oBNmkm153TEiTQbU4JWWcwYtniXXUfaT1r3POIfYQdhZXq/qW5+GVu5uDA==","Proof":"AAAAAAAAAbAAriAuG/cpWCGMvyT/b/K1G+sqAI0gRsATk+T9wOzy28nqACDp/9qCrAy6kJ0DnjtDNBs0dAAqO4vzPnfF1YGWpgM1/CCsxrZUKrLqlCH3RWruqDgKQfCrH8BF7JbMIW4EOyc8DyABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBEz/l9o3i63Hok6N2sDfKWQZviNfBvDBHdjIg3PKscAwcDjX6kxoAAAAAAAAAAAAA=","PubKeyLastByteSender":0,"Metadata":null}`,
 	`{"Version":1,"Type":"s","LockTime":1571731249,"Fee":0,"Info":null,"SigPubKey":"0vbTakF/PEd8VFP+yDc/qI5Az2yF53EvUB7ybNPFkwA=","Sig":"UR7iP8LDBFfeFRFevq/mGsiCve9Xxk2aVa9vPqO5DQLcObqcVIA6zP0/ctMST/RYxnEPKPl4NPr1nOr+dBJSAg==","Proof":"AAAAAAAAAbAAriDS9tNqQX88R3xUU/7INz+ojkDPbIXncS9QHvJs08WTACDhMuKM5EQsPDgCd7IricPaQS6N9uMM3gN4PZRe1yXwYCCBAEWU8c2Gt0kJe7t4UZBQEcEZXxuQ9ndVQKWbNqLeCSABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDWy9/ILNqq+MpLFPg0v1trqCR64z6Gw2WrX1laMaDhAQcDjX6kxoAAAAAAAAAAAAA=","PubKeyLastByteSender":0,"Metadata":null}`,
