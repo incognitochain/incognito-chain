@@ -221,6 +221,9 @@ func (txService TxService) EstimateFee(
 
 // EstimateFeeWithEstimator - only estimate fee by estimator and return fee per kb
 func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID byte, numBlock uint64, tokenId *common.Hash) uint64 {
+	if defaultFee == 0 {
+		return uint64(defaultFee)
+	}
 	estimateFeeCoinPerKb := uint64(0)
 	if defaultFee == -1 {
 		// estimate fee on the blocks before

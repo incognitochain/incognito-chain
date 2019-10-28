@@ -329,6 +329,39 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 			continue
 		}
 		item := jsonresult.NewPrivacyForCrossShard(token)
+		if item.Name == "" {
+			txs, err := httpServer.txService.PrivacyCustomTokenDetail(item.ID)
+			if err != nil {
+				Logger.log.Error(err)
+			} else {
+				if len(txs) > 1 {
+					initTx := txs[len(txs)-1]
+					var err2 *rpcservice.RPCError
+					tx, err2 := httpServer.txService.GetTransactionByHash(initTx.String())
+					if err2 != nil {
+						Logger.log.Error(err)
+					} else {
+						metaData := make(map[string]interface{})
+						err1 := json.Unmarshal([]byte(tx.Metadata), &metaData)
+						if err1 != nil {
+							Logger.log.Error(err)
+						} else {
+							var ok bool
+							item.Name, ok = metaData["TokenName"].(string)
+							if !ok {
+								Logger.log.Error("Not found token name")
+							}
+							item.Symbol, ok = metaData["TokenSymbol"].(string)
+							if !ok {
+								Logger.log.Error("Not found token symbol")
+							} else {
+								item.Symbol = item.Name
+							}
+						}
+					}
+				}
+			}
+		}
 		result.ListCustomToken = append(result.ListCustomToken, *item)
 	}
 
