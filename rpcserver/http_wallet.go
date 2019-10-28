@@ -112,7 +112,7 @@ handleImportAccount - import a new account by private-key
 func (httpServer *HttpServer) handleImportAccount(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleImportAccount params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
-	if arrayParams== nil || len(arrayParams) < 3 {
+	if arrayParams == nil || len(arrayParams) < 3 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 3 elements"))
 	}
 
@@ -143,7 +143,7 @@ func (httpServer *HttpServer) handleImportAccount(params interface{}, closeChan 
 func (httpServer *HttpServer) handleRemoveAccount(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleRemoveAccount params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
-	if arrayParams== nil || len(arrayParams) < 2 {
+	if arrayParams == nil || len(arrayParams) < 2 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 elements"))
 	}
 
@@ -253,7 +253,7 @@ func (httpServer *HttpServer) handleGetReceivedByAccount(params interface{}, clo
 
 	// convert component to array
 	arrayParams := common.InterfaceSlice(params)
-	if arrayParams == nil ||  len(arrayParams) < 3 {
+	if arrayParams == nil || len(arrayParams) < 3 {
 		return balance, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 3 elements"))
 	}
 	// Param #1: account "*" for all or a particular account
@@ -329,6 +329,39 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 			continue
 		}
 		item := jsonresult.NewPrivacyForCrossShard(token)
+		if item.Name == "" {
+			txs, err := httpServer.txService.PrivacyCustomTokenDetail(item.ID)
+			if err != nil {
+				Logger.log.Error(err)
+			} else {
+				if len(txs) > 1 {
+					initTx := txs[len(txs)-1]
+					var err2 *rpcservice.RPCError
+					tx, err2 := httpServer.txService.GetTransactionByHash(initTx.String())
+					if err2 != nil {
+						Logger.log.Error(err)
+					} else {
+						metaData := make(map[string]interface{})
+						err1 := json.Unmarshal([]byte(tx.Metadata), &metaData)
+						if err1 != nil {
+							Logger.log.Error(err)
+						} else {
+							var ok bool
+							item.Name, ok = metaData["TokenName"].(string)
+							if !ok {
+								Logger.log.Error("Not found token name")
+							}
+							item.Symbol, ok = metaData["TokenSymbol"].(string)
+							if !ok {
+								Logger.log.Error("Not found token symbol")
+							} else {
+								item.Symbol = item.Name
+							}
+						}
+					}
+				}
+			}
+		}
 		result.ListCustomToken = append(result.ListCustomToken, *item)
 	}
 
@@ -357,7 +390,7 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 // handleGetPublicKeyFromPaymentAddress - return base58check encode of public key which is got from payment address
 func (httpServer *HttpServer) handleGetPublicKeyFromPaymentAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	if arrayParams== nil || len(arrayParams) < 1 {
+	if arrayParams == nil || len(arrayParams) < 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("params is invalid"))
 	}
 	paymentAddress, ok := arrayParams[0].(string)
