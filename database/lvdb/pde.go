@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -312,6 +314,40 @@ func (db *db) GetPDEPoolForPair(
 	tokenIDToBuyStr string,
 	tokenIDToSellStr string,
 ) ([]byte, error) {
+	pdePoolForPairKey := BuildPDEPoolForPairKey(beaconHeight, tokenIDToBuyStr, tokenIDToSellStr)
+	pdePoolForPairBytes, err := db.lvdb.Get(pdePoolForPairKey, nil)
+	if err != nil && err != lvdberr.ErrNotFound {
+		return []byte{}, database.NewDatabaseError(database.GetPDEPoolForPairKeyError, err)
+	}
+	return pdePoolForPairBytes, nil
+}
+
+func (db *db) GetLatestPDEPoolForPair(
+	tokenIDToBuyStr string,
+	tokenIDToSellStr string,
+) ([]byte, error) {
+	iter := db.lvdb.NewIterator(util.BytesPrefix(PDEPoolPrefix), nil)
+	ok := iter.Last()
+	if !ok {
+		return []byte{}, nil
+	}
+	key := iter.Key()
+	keyBytes := make([]byte, len(key))
+	iter.Release()
+	err := iter.Error()
+	if err != nil {
+		return []byte{}, err
+	}
+
+	parts := strings.Split(string(keyBytes), "-")
+	if len(parts) <= 1 {
+		return []byte{}, nil
+	}
+	beaconHeight, err := strconv.ParseUint(parts[1], 10, 64)
+	if err != nil {
+		return []byte{}, err
+	}
+
 	pdePoolForPairKey := BuildPDEPoolForPairKey(beaconHeight, tokenIDToBuyStr, tokenIDToSellStr)
 	pdePoolForPairBytes, err := db.lvdb.Get(pdePoolForPairKey, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
