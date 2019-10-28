@@ -3,7 +3,6 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -45,13 +44,13 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 	}
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
-		fmt.Println("WARNING: an error occured while decoding content string of pde trade instruction: ", err)
+		Logger.log.Errorf("ERROR: an error occured while decoding content string of pde trade instruction: %+v", err)
 		return [][]string{}, nil
 	}
 	var pdeTradeReqAction metadata.PDETradeRequestAction
 	err = json.Unmarshal(contentBytes, &pdeTradeReqAction)
 	if err != nil {
-		fmt.Println("WARNING: an error occured while unmarshaling pde trade instruction: ", err)
+		Logger.log.Errorf("ERROR: an error occured while unmarshaling pde trade instruction: %+v", err)
 		return [][]string{}, nil
 	}
 	pairKey := string(lvdb.BuildPDEPoolForPairKey(beaconHeight, pdeTradeReqAction.Meta.TokenIDToBuyStr, pdeTradeReqAction.Meta.TokenIDToSellStr))
@@ -125,7 +124,7 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 	}
 	pdeTradeAcceptedContentBytes, err := json.Marshal(pdeTradeAcceptedContent)
 	if err != nil {
-		fmt.Println("WARNING: an error occured while marshaling pdeTradeAcceptedContent: ", err)
+		Logger.log.Errorf("ERROR: an error occured while marshaling pdeTradeAcceptedContent: %+v", err)
 		return [][]string{}, nil
 	}
 	inst := []string{
@@ -248,7 +247,7 @@ func buildPDEWithdrawalAcceptedInst(
 	}
 	wdAcceptedContentBytes, err := json.Marshal(wdAcceptedContent)
 	if err != nil {
-		fmt.Println("WARNING: an error occured while marshaling PDEWithdrawalAcceptedContent: ", err)
+		Logger.log.Errorf("ERROR: an error occured while marshaling PDEWithdrawalAcceptedContent: %+v", err)
 		return []string{}, nil
 	}
 	return []string{
@@ -268,13 +267,13 @@ func (blockchain *BlockChain) buildInstructionsForPDEWithdrawal(
 ) ([][]string, error) {
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
-		fmt.Println("WARNING: an error occured while decoding content string of pde withdrawal action: ", err)
+		Logger.log.Errorf("ERROR: an error occured while decoding content string of pde withdrawal action: %+v", err)
 		return [][]string{}, nil
 	}
 	var pdeWithdrawalRequestAction metadata.PDEWithdrawalRequestAction
 	err = json.Unmarshal(contentBytes, &pdeWithdrawalRequestAction)
 	if err != nil {
-		fmt.Println("WARNING: an error occured while unmarshaling pde withdrawal request action: ", err)
+		Logger.log.Errorf("ERROR: an error occured while unmarshaling pde withdrawal request action: %+v", err)
 		return [][]string{}, nil
 	}
 	// db := blockchain.GetDatabase()
