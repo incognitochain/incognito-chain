@@ -36,6 +36,9 @@ const (
 	StopAutoStakingRequestAlreadyStopError
 
 	WrongIncognitoDAOPaymentAddressError
+
+	// pde
+	PDEWithdrawalRequestFromMapError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -76,6 +79,9 @@ var ErrCodeMessage = map[int]struct {
 
 	// -5xxx dev reward error
 	WrongIncognitoDAOPaymentAddressError: {-5001, "Invalid dev account"},
+
+	// pde
+	PDEWithdrawalRequestFromMapError: {-6001, "PDE withdrawal request Error"},
 }
 
 type MetadataTxError struct {
