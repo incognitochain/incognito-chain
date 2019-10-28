@@ -280,13 +280,13 @@ func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID by
 		unitFee = limitFee
 	}
 
-	// add extra fee to make sure it is valid when create block
-	if unitFee < mempool.MaxFeeInNativeToken {
-		unitFee += uint64(mempool.ExtraFeeInNativeToken)
-	}
-
 	// return fee in ptoken (if tokenid != nil)
 	if tokenId != nil {
+		// add extra fee to make sure it is valid when create block
+		if unitFee < mempool.MaxFeeInNativeToken {
+			unitFee += uint64(mempool.ExtraFeeInNativeToken)
+		}
+
 		unitFee, err = mempool.ConvertNativeTokenToPrivacyToken(unitFee, tokenId, beaconHeight)
 		if err != nil {
 			return uint64(0), err
