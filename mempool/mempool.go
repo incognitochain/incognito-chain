@@ -307,7 +307,6 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transaction, beaconHeight int64) (*metadata.TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
-	// todo: recheck beacon height is -1
 	_, txDesc, err := tp.maybeAcceptTransaction(tx, false, false, beaconHeight)
 	if err != nil {
 		Logger.log.Error(err)
@@ -472,7 +471,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int6
 
 			//convert fee in Ptoken to fee in native token (if feePToken > 0)
 			if feePToken > 0 {
-				feePTokenToNativeToken, err := ConvertPrivacyTokenToNativeToken(feePToken, &tokenID, beaconHeight)
+				feePTokenToNativeToken, err := ConvertPrivacyTokenToNativeToken(feePToken, &tokenID, beaconHeight, tp.config.DataBase)
 				if err != nil{
 					return NewMempoolTxError(RejectInvalidFee,
 						fmt.Errorf("transaction %+v: %+v %v can not convert to native token",
