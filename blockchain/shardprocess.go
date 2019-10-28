@@ -497,7 +497,6 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock *ShardBlock, beaconBlocks []*BeaconBlock, txInstructions [][]string, shardID byte) error {
 	var err error
 	// Verify Transaction
-	//todo: recheck beacon height
 	//get beacon height from shard block
 	beaconHeight := shardBlock.Header.BeaconHeight
 	if err := blockchain.verifyTransactionFromNewBlock(shardBlock.Body.Transactions, int64(beaconHeight)); err != nil {
