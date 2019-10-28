@@ -454,6 +454,14 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 				if len(l) >= 4 && l[2] == "accepted" {
 					newTx, err = blockGenerator.buildIssuanceTx(l[3], producerPrivateKey, shardID)
 				}
+			case metadata.PDETradeRequestMeta:
+				if len(l) >= 4 {
+					newTx, err = blockGenerator.buildPDETradeIssuanceTx(l[2], l[3], producerPrivateKey, shardID)
+				}
+			case metadata.PDEWithdrawalRequestMeta:
+				if len(l) >= 4 && l[2] == "accepted" {
+					newTx, err = blockGenerator.buildPDEWithdrawalTx(l[3], producerPrivateKey, shardID)
+				}
 
 			default:
 				continue
