@@ -57,6 +57,16 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &WithDrawRewardResponse{}
 	case StopAutoStakingMeta:
 		md = &StopAutoStakingMetadata{}
+	case PDEContributionMeta:
+		md = &PDEContribution{}
+	case PDETradeRequestMeta:
+		md = &PDETradeRequest{}
+	case PDETradeResponseMeta:
+		md = &PDETradeResponse{}
+	case PDEWithdrawalRequestMeta:
+		md = &PDEWithdrawalRequest{}
+	case PDEWithdrawalResponseMeta:
+		md = &PDEWithdrawalResponse{}
 	default:
 		Logger.log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", int(mtTemp["Type"].(float64)))

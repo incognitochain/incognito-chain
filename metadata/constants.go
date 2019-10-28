@@ -32,6 +32,13 @@ const (
 	BeaconSwapConfirmMeta = 70
 	BridgeSwapConfirmMeta = 71
 	BurningConfirmMeta    = 72
+
+	// pde
+	PDEContributionMeta       = 90
+	PDETradeRequestMeta       = 91
+	PDETradeResponseMeta      = 92
+	PDEWithdrawalRequestMeta  = 93
+	PDEWithdrawalResponseMeta = 94
 )
 
 var minerCreatedMetaTypes = []int{
