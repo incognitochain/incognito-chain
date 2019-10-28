@@ -22,6 +22,10 @@ func (blockchain *BlockChain) buildBridgeInstructions(
 	beaconHeight uint64,
 	db database.DatabaseInterface,
 ) ([][]string, error) {
+	currentPDEState, err := InitCurrentPDEStateFromDB(db, beaconHeight-1)
+	if err != nil {
+		Logger.log.Error(err)
+	}
 	accumulatedValues := &metadata.AccumulatedValues{
 		UniqETHTxsUsed:   [][]byte{},
 		DBridgeTokenPair: map[string][]byte{},
@@ -56,6 +60,15 @@ func (blockchain *BlockChain) buildBridgeInstructions(
 			burningConfirm := []string{}
 			burningConfirm, err = buildBurningConfirmInst(inst, beaconHeight, db)
 			newInst = [][]string{burningConfirm}
+
+		case metadata.PDEContributionMeta:
+			newInst, err = blockchain.buildInstructionsForPDEContribution(contentStr, shardID, metaType)
+
+		case metadata.PDETradeRequestMeta:
+			newInst, err = blockchain.buildInstructionsForPDETrade(contentStr, shardID, metaType, currentPDEState, beaconHeight-1)
+
+		case metadata.PDEWithdrawalRequestMeta:
+			newInst, err = blockchain.buildInstructionsForPDEWithdrawal(contentStr, shardID, metaType, currentPDEState, beaconHeight-1)
 
 		default:
 			continue
