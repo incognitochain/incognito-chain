@@ -151,20 +151,19 @@ out:
 					switch msg := msgC.(type) {
 					case *wire.MessageTx, *wire.MessageTxToken, *wire.MessageTxPrivacyToken:
 						{
-							//todo: recheck beaconHeight
-							beaconHeight := netSync.config.BlockChain.BestState.Beacon.BeaconHeight
+							beaconHeight := int64(-1)
 							switch msg := msgC.(type) {
 							case *wire.MessageTx:
 								{
-									netSync.handleMessageTx(msg, int64(beaconHeight))
+									netSync.handleMessageTx(msg, beaconHeight)
 								}
 							case *wire.MessageTxToken:
 								{
-									netSync.handleMessageTxToken(msg, int64(beaconHeight))
+									netSync.handleMessageTxToken(msg, beaconHeight)
 								}
 							case *wire.MessageTxPrivacyToken:
 								{
-									netSync.handleMessageTxPrivacyToken(msg, int64(beaconHeight))
+									netSync.handleMessageTxPrivacyToken(msg, beaconHeight)
 								}
 							}
 						}
@@ -302,7 +301,6 @@ func (netSync *NetSync) handleMessageTx(msg *wire.MessageTx, beaconHeight int64)
 		return
 	}
 	if isAdded := netSync.handleCacheTx(*msg.Transaction.Hash()); !isAdded {
-		// todo: recheck beaconHeight
 		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction, beaconHeight)
 		if err != nil {
 			Logger.log.Error(err)
