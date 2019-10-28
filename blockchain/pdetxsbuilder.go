@@ -3,7 +3,6 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
@@ -18,13 +17,13 @@ func parseTradeRefundContent(
 ) (*metadata.PDETradeRequestAction, error) {
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
-		fmt.Println("WARNING: an error occured while decoding content string of pde trade refund instruction: ", err)
+		Logger.log.Errorf("ERROR: an error occured while decoding content string of pde trade refund instruction: %+v", err)
 		return nil, err
 	}
 	var pdeTradeRequestAction metadata.PDETradeRequestAction
 	err = json.Unmarshal(contentBytes, &pdeTradeRequestAction)
 	if err != nil {
-		fmt.Println("WARNING: an error occured while unmarshaling pde trade refund content: ", err)
+		Logger.log.Errorf("ERROR: an error occured while unmarshaling pde trade refund content: %+v", err)
 		return nil, err
 	}
 	return &pdeTradeRequestAction, nil
@@ -35,13 +34,13 @@ func parseTradeAcceptedContent(
 ) (*metadata.PDETradeAcceptedContent, error) {
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
-		fmt.Println("WARNING: an error occured while decoding content string of pde trade refund instruction: ", err)
+		Logger.log.Errorf("ERROR: an error occured while decoding content string of pde trade refund instruction: %+v", err)
 		return nil, err
 	}
 	var pdeTradeAcceptedContent metadata.PDETradeAcceptedContent
 	err = json.Unmarshal(contentBytes, &pdeTradeAcceptedContent)
 	if err != nil {
-		fmt.Println("WARNING: an error occured while unmarshaling pde trade accepted content: ", err)
+		Logger.log.Errorf("ERROR: an error occured while unmarshaling pde trade accepted content: %+v", err)
 		return nil, err
 	}
 	return &pdeTradeAcceptedContent, nil
@@ -64,12 +63,12 @@ func buildTradeResTx(
 	)
 	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
 	if err != nil {
-		fmt.Println("WARNING: an error occured while converting tokenid to hash: ", err)
+		Logger.log.Errorf("ERROR: an error occured while converting tokenid to hash: %+v", err)
 		return nil, err
 	}
 	keyWallet, err := wallet.Base58CheckDeserialize(receiverAddressStr)
 	if err != nil {
-		fmt.Println("WARNING: an error occured while deserializing trader address string: ", err)
+		Logger.log.Errorf("ERROR: an error occured while deserializing trader address string: %+v", err)
 		return nil, err
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
@@ -126,7 +125,7 @@ func buildTradeResTx(
 		),
 	)
 	if initErr != nil {
-		fmt.Println("WARNING: an error occured while initializing trade response tx: ", initErr)
+		Logger.log.Errorf("ERROR: an error occured while initializing trade response tx: %+v", initErr)
 		return nil, initErr
 	}
 	return resTx, nil
@@ -156,10 +155,10 @@ func (blockGenerator *BlockGenerator) buildPDETradeRefundTx(
 		blockGenerator.chain.config.DataBase,
 	)
 	if err != nil {
-		fmt.Println("WARNING: an error occured while initializing refunded trading response tx: ", err)
+		Logger.log.Errorf("ERROR: an error occured while initializing refunded trading response tx: %+v", err)
 		return nil, nil
 	}
-	fmt.Println("[PDE Trade] Create refunded tx ok.")
+	Logger.log.Info("[PDE Trade] Create refunded tx ok.")
 	return resTx, nil
 }
 
@@ -187,10 +186,10 @@ func (blockGenerator *BlockGenerator) buildPDETradeAcceptedTx(
 		blockGenerator.chain.config.DataBase,
 	)
 	if err != nil {
-		fmt.Println("WARNING: an error occured while initializing accepted trading response tx: ", err)
+		Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)
 		return nil, nil
 	}
-	fmt.Println("[PDE Trade] Create accepted tx ok.")
+	Logger.log.Info("[PDE Trade] Create accepted tx ok.")
 	return resTx, nil
 }
 
@@ -200,7 +199,7 @@ func (blockGenerator *BlockGenerator) buildPDETradeIssuanceTx(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 ) (metadata.Transaction, error) {
-	fmt.Println("[PDE Trade] Starting...")
+	Logger.log.Info("[PDE Trade] Starting...")
 	if instStatus == "refund" {
 		return blockGenerator.buildPDETradeRefundTx(
 			instStatus,
@@ -222,16 +221,16 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 ) (metadata.Transaction, error) {
-	fmt.Println("[PDE Withdrawal] Starting...")
+	Logger.log.Info("[PDE Withdrawal] Starting...")
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
-		fmt.Println("WARNING: an error occured while decoding content string of pde withdrawal instruction: ", err)
+		Logger.log.Errorf("ERROR: an error occured while decoding content string of pde withdrawal instruction: %+v", err)
 		return nil, nil
 	}
 	var wdAcceptedContent metadata.PDEWithdrawalAcceptedContent
 	err = json.Unmarshal(contentBytes, &wdAcceptedContent)
 	if err != nil {
-		fmt.Println("WARNING: an error occured while unmarshaling pde withdrawal content: ", err)
+		Logger.log.Errorf("ERROR: an error occured while unmarshaling pde withdrawal content: %+v", err)
 		return nil, nil
 	}
 	if wdAcceptedContent.ShardID != shardID {
@@ -243,12 +242,12 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 	withdrawalTokenIDStr := wdAcceptedContent.WithdrawalTokenIDStr
 	tokenID, err := common.Hash{}.NewHashFromStr(withdrawalTokenIDStr)
 	if err != nil {
-		fmt.Println("WARNING: an error occured while converting tokenid to hash: ", err)
+		Logger.log.Errorf("ERROR: an error occured while converting tokenid to hash: %+v", err)
 		return nil, nil
 	}
 	keyWallet, err := wallet.Base58CheckDeserialize(wdAcceptedContent.WithdrawerAddressStr)
 	if err != nil {
-		fmt.Println("WARNING: an error occured while deserializing trader address string: ", err)
+		Logger.log.Errorf("ERROR: an error occured while deserializing trader address string: %+v", err)
 		return nil, nil
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
@@ -263,7 +262,7 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 			meta,
 		)
 		if err != nil {
-			fmt.Println("WARNING: an error occured while initializing withdrawal (normal) tx: ", err)
+			Logger.log.Errorf("ERROR: an error occured while initializing withdrawal (normal) tx: %+v", err)
 			return nil, nil
 		}
 		//modify the type of the salary transaction
@@ -306,7 +305,7 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 		),
 	)
 	if initErr != nil {
-		fmt.Println("WARNING: an error occured while initializing withdrawal response (privacy custom token) tx: ", initErr)
+		Logger.log.Errorf("ERROR: an error occured while initializing withdrawal response (privacy custom token) tx: %+v", initErr)
 		return nil, nil
 	}
 	return resTx, nil
