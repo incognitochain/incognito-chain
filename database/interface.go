@@ -204,4 +204,5 @@ type DatabaseInterface interface {
 	GetTotalSharesForTokenIDOnAPair(token1IDStr string, token2IDStr string, contributedTokenIDStr string) (uint64, error)
 	GetAllRecordsByPrefix(beaconHeight uint64, prefix []byte) ([][]byte, [][]byte, error)
 	DeductSharesForWithdrawal(beaconHeight uint64, token1IDStr string, token2IDStr string, targetingTokenIDStr string, withdrawerAddressStr string, amt uint64) error
+	GetLatestPDEPoolForPair(tokenIDToBuyStr string, tokenIDToSellStr string) ([]byte, error)
 }

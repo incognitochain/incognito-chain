@@ -7,6 +7,7 @@ package mempool
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -18,6 +19,8 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/transaction"
 )
 
@@ -155,7 +158,7 @@ type FeeEstimator struct {
 	dropped []*registeredBlock
 
 	// min fee which be needed for payment on tx(per Kb data)
-	limitFee      uint64
+	limitFee uint64
 }
 
 // NewFeeEstimator creates a feeEstimator for which at most maxRollback blocks
@@ -822,15 +825,78 @@ func (ef FeeEstimator) GetLimitFeeForNativeToken() uint64 {
 	return limitFee
 }
 
+func getPDEPoolPair(
+	prvIDStr, tokenIDStr string,
+	beaconHeight int64,
+	db database.DatabaseInterface,
+) (*lvdb.PDEPoolForPair, error) {
+	var pdePoolForPair lvdb.PDEPoolForPair
+	var err error
+	poolPairBytes := []byte{}
+	if beaconHeight == -1 {
+		poolPairBytes, err = db.GetLatestPDEPoolForPair(prvIDStr, tokenIDStr)
+	} else {
+		poolPairBytes, err = db.GetPDEPoolForPair(uint64(beaconHeight), prvIDStr, tokenIDStr)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if len(poolPairBytes) == 0 {
+		return nil, errors.New(fmt.Sprintf("could not find out pdePoolForPair with token ids: %s & %s", prvIDStr, tokenIDStr))
+	}
+	err = json.Unmarshal(poolPairBytes, &pdePoolForPair)
+	if err != nil {
+		return nil, err
+	}
+	return &pdePoolForPair, nil
+}
+
 // todo:
 // return error if there is no exchange rate between native token and privacy token
 // beaconHeight = -1: get the latest beacon height
-func ConvertNativeTokenToPrivacyToken(nativeTokenAmount uint64, tokenID *common.Hash, beaconHeight int64) (uint64, error) {
-	return nativeTokenAmount, nil
+func ConvertNativeTokenToPrivacyToken(
+	nativeTokenAmount uint64,
+	tokenID *common.Hash,
+	beaconHeight int64,
+	db database.DatabaseInterface,
+) (uint64, error) {
+	prvIDStr := common.PRVCoinID.String()
+	tokenIDStr := tokenID.String()
+	pdePoolForPair, err := getPDEPoolPair(prvIDStr, tokenIDStr, beaconHeight, db)
+	if err != nil {
+		return 0, nil
+	}
+	invariant := pdePoolForPair.Token1PoolValue * pdePoolForPair.Token2PoolValue
+	if invariant == 0 {
+		return 0, errors.New("Could not get exchange rate.")
+	}
+	if pdePoolForPair.Token1IDStr == prvIDStr {
+		return invariant / (pdePoolForPair.Token1PoolValue + nativeTokenAmount), nil
+	}
+	return invariant / (pdePoolForPair.Token2PoolValue + nativeTokenAmount), nil
 }
 
 // return error if there is no exchange rate between native token and privacy token
 // beaconHeight = -1: get the latest beacon height
-func ConvertPrivacyTokenToNativeToken(privacyTokenAmount uint64, tokenID *common.Hash, beaconHeight int64) (uint64, error) {
-	return privacyTokenAmount, nil
+func ConvertPrivacyTokenToNativeToken(
+	privacyTokenAmount uint64,
+	tokenID *common.Hash,
+	beaconHeight int64,
+	db database.DatabaseInterface,
+) (uint64, error) {
+	prvIDStr := common.PRVCoinID.String()
+	tokenIDStr := tokenID.String()
+	pdePoolForPair, err := getPDEPoolPair(prvIDStr, tokenIDStr, beaconHeight, db)
+	if err != nil {
+		return 0, nil
+	}
+
+	invariant := pdePoolForPair.Token1PoolValue * pdePoolForPair.Token2PoolValue
+	if invariant == 0 {
+		return 0, errors.New("Could not get exchange rate.")
+	}
+	if pdePoolForPair.Token1IDStr == tokenIDStr {
+		return invariant / (pdePoolForPair.Token1PoolValue + privacyTokenAmount), nil
+	}
+	return invariant / (pdePoolForPair.Token2PoolValue + privacyTokenAmount), nil
 }
