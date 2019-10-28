@@ -57,6 +57,12 @@ var (
 
 	// slash
 	producersBlackListPrefix = []byte("producersblacklist-")
+
+	// PDE
+	WaitingPDEContributionPrefix = []byte("waitingpdecontribution-")
+	PDEPoolPrefix                = []byte("pdepool-")
+	PDESharePrefix               = []byte("pdeshare-")
+	PDETradeFeePrefix            = []byte("pdetradefee-")
 )
 
 // value
