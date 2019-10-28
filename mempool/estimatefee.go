@@ -842,7 +842,7 @@ func getPDEPoolPair(
 		return nil, err
 	}
 	if len(poolPairBytes) == 0 {
-		return nil, errors.New(fmt.Sprintf("could not find out pdePoolForPair with token ids: %s & %s", prvIDStr, tokenIDStr))
+		return nil, NewMempoolTxError(CouldNotGetExchangeRateError, fmt.Errorf("Could not find out pdePoolForPair with token ids: %s & %s", prvIDStr, tokenIDStr))
 	}
 	err = json.Unmarshal(poolPairBytes, &pdePoolForPair)
 	if err != nil {
@@ -867,7 +867,7 @@ func ConvertNativeTokenToPrivacyToken(
 	}
 	invariant := pdePoolForPair.Token1PoolValue * pdePoolForPair.Token2PoolValue
 	if invariant == 0 {
-		return 0, errors.New("Could not get exchange rate.")
+		return 0, NewMempoolTxError(CouldNotGetExchangeRateError, err)
 	}
 	if pdePoolForPair.Token1IDStr == prvIDStr {
 		return invariant / (pdePoolForPair.Token1PoolValue + nativeTokenAmount), nil
@@ -892,7 +892,7 @@ func ConvertPrivacyTokenToNativeToken(
 
 	invariant := pdePoolForPair.Token1PoolValue * pdePoolForPair.Token2PoolValue
 	if invariant == 0 {
-		return 0, errors.New("Could not get exchange rate.")
+		return 0, NewMempoolTxError(CouldNotGetExchangeRateError, err)
 	}
 	if pdePoolForPair.Token1IDStr == tokenIDStr {
 		return invariant / (pdePoolForPair.Token1PoolValue + privacyTokenAmount), nil
