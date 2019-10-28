@@ -3,7 +3,6 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"sort"
 	"strconv"
 
@@ -187,13 +186,13 @@ func (blockchain *BlockChain) processPDEContribution(
 	}
 	contentBytes, err := base64.StdEncoding.DecodeString(instruction[3])
 	if err != nil {
-		fmt.Println("WARNING: an error occured while decoding content string of pde contribution instruction: ", err)
+		Logger.log.Errorf("WARNING: an error occured while decoding content string of pde contribution instruction: %+v", err)
 		return nil
 	}
 	var pdeContributionInst metadata.PDEContributionAction
 	err = json.Unmarshal(contentBytes, &pdeContributionInst)
 	if err != nil {
-		fmt.Println("WARNING: an error occured while unmarshaling pde contribution instruction: ", err)
+		Logger.log.Errorf("WARNING: an error occured while unmarshaling pde contribution instruction: %+v", err)
 		return nil
 	}
 	meta := pdeContributionInst.Meta
@@ -240,14 +239,14 @@ func (blockchain *BlockChain) processPDETrade(
 	var pdeTradeAcceptedContent metadata.PDETradeAcceptedContent
 	err := json.Unmarshal([]byte(instruction[3]), &pdeTradeAcceptedContent)
 	if err != nil {
-		fmt.Println("WARNING: an error occured while unmarshaling PDETradeAcceptedContent: ", err)
+		Logger.log.Errorf("WARNING: an error occured while unmarshaling PDETradeAcceptedContent: %+v", err)
 		return nil
 	}
 	// db := blockchain.GetDatabase()
 	pdePoolForPairKey := string(lvdb.BuildPDEPoolForPairKey(beaconHeight, pdeTradeAcceptedContent.Token1IDStr, pdeTradeAcceptedContent.Token2IDStr))
 	pdePoolForPair, found := currentPDEState.PDEPoolPairs[pdePoolForPairKey]
 	if !found || pdePoolForPair == nil {
-		fmt.Printf("WARNING: could not find out pdePoolForPair with token ids: %s & %s", pdeTradeAcceptedContent.Token1IDStr, pdeTradeAcceptedContent.Token2IDStr)
+		Logger.log.Errorf("WARNING: could not find out pdePoolForPair with token ids: %s & %s", pdeTradeAcceptedContent.Token1IDStr, pdeTradeAcceptedContent.Token2IDStr)
 		return nil
 	}
 
@@ -315,7 +314,7 @@ func (blockchain *BlockChain) processPDEWithdrawal(
 	var wdAcceptedContent metadata.PDEWithdrawalAcceptedContent
 	err := json.Unmarshal([]byte(instruction[3]), &wdAcceptedContent)
 	if err != nil {
-		fmt.Println("WARNING: an error occured while unmarshaling PDEWithdrawalAcceptedContent: ", err)
+		Logger.log.Errorf("WARNING: an error occured while unmarshaling PDEWithdrawalAcceptedContent: %+v", err)
 		return nil
 	}
 
@@ -327,7 +326,7 @@ func (blockchain *BlockChain) processPDEWithdrawal(
 	))
 	pdePoolForPair, found := currentPDEState.PDEPoolPairs[pdePoolForPairKey]
 	if !found || pdePoolForPair == nil {
-		fmt.Printf("WARNING: could not find out pdePoolForPair with token ids: %s & %s", wdAcceptedContent.PairToken1IDStr, wdAcceptedContent.PairToken2IDStr)
+		Logger.log.Errorf("WARNING: could not find out pdePoolForPair with token ids: %s & %s", wdAcceptedContent.PairToken1IDStr, wdAcceptedContent.PairToken2IDStr)
 		return nil
 	}
 	if pdePoolForPair.Token1IDStr == wdAcceptedContent.WithdrawalTokenIDStr {
