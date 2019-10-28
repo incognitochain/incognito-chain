@@ -93,14 +93,14 @@ const (
 	Testnet                 = 0x16
 	TestnetName             = "testnet"
 	TestnetDefaultPort      = "9444"
-	TestnetGenesisBlockTime = "2019-10-21T00:00:20.000Z"
+	TestnetGenesisBlockTime = "2019-10-28T00:00:01.000Z"
 	TestnetEpoch            = 100
 	TestnetRandomTime       = 50
 	TestnetOffset           = 1
 	TestnetSwapOffset       = 1
 	TestnetAssignOffset     = 2
 
-	TestNetShardCommitteeSize     = 63
+	TestNetShardCommitteeSize     = 32
 	TestNetMinShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize    = 4
 	TestNetMinBeaconCommitteeSize = 4
@@ -115,7 +115,7 @@ const (
 	//board and proposal parameters
 	TestnetBasicReward                      = 400000000 //40 mili PRV
 	TestnetRewardHalflife                   = 3155760   //1 year, reduce 12.5% per year
-	TestnetETHContractAddressStr            = "0xE7A65fC751BF3D981a6423fD6F203cb45CCA9405"
+	TestnetETHContractAddressStr            = "0x63837136B048F4F07fAFA5e6b10b92103df64A4E"
 	TestnetIncognitoDAOAddress              = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 	TestnetCentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 )
