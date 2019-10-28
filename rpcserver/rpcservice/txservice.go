@@ -104,6 +104,7 @@ func (txService TxService) chooseOutsCoinByKeyset(
 	privacyCustomTokenParams *transaction.CustomTokenPrivacyParamTx,
 	isGetFeePToken bool,
 	unitFeePToken int64,
+	db database.DatabaseInterface,
 ) ([]*privacy.InputCoin, uint64, *RPCError) {
 	// estimate fee according to 8 recent block
 	if numBlock == 0 {
@@ -154,7 +155,7 @@ func (txService TxService) chooseOutsCoinByKeyset(
 	realFee, _, _, err := txService.EstimateFee(unitFee, isGetFeePToken, candidateOutputCoins,
 		paymentInfos, shardIDSender, numBlock, hasPrivacy,
 		metadataParam, customTokenParams,
-		privacyCustomTokenParams)
+		privacyCustomTokenParams, db)
 	if err != nil{
 		return nil, 0, NewRPCError(RejectInvalidFeeError, err)
 	}
@@ -203,7 +204,8 @@ func (txService TxService) EstimateFee(
 	numBlock uint64, hasPrivacy bool,
 	metadata metadata.Metadata,
 	customTokenParams *transaction.CustomTokenParamTx,
-	privacyCustomTokenParams *transaction.CustomTokenPrivacyParamTx) (uint64, uint64, uint64, error) {
+	privacyCustomTokenParams *transaction.CustomTokenPrivacyParamTx,
+	db database.DatabaseInterface) (uint64, uint64, uint64, error) {
 	if numBlock == 0 {
 		numBlock = 1000
 	}
@@ -221,7 +223,7 @@ func (txService TxService) EstimateFee(
 		tokenId = nil
 	}
 
-	estimateFeeCoinPerKb, err := txService.EstimateFeeWithEstimator(defaultFee, shardID, numBlock, tokenId, -1)
+	estimateFeeCoinPerKb, err := txService.EstimateFeeWithEstimator(defaultFee, shardID, numBlock, tokenId, -1, db)
 	if err != nil{
 		return 0, 0, 0, err
 	}
@@ -243,7 +245,7 @@ func (txService TxService) EstimateFee(
 // EstimateFeeWithEstimator - only estimate fee by estimator and return fee per kb
 // if tokenID != nil: return fee per kb for pToken (return error if there is no exchange rate between pToken and native token)
 // if tokenID == nil: return fee per kb for native token
-func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID byte, numBlock uint64, tokenId *common.Hash, beaconHeight int64) (uint64, error) {
+func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID byte, numBlock uint64, tokenId *common.Hash, beaconHeight int64, db database.DatabaseInterface) (uint64, error) {
 	if defaultFee == 0 {
 		return uint64(defaultFee), nil
 	}
@@ -269,7 +271,7 @@ func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID by
 	// convert ptoken fee to native token fee (if necessary)
 	var err error
 	if tokenId != nil {
-		unitFee, err = mempool.ConvertPrivacyTokenToNativeToken(unitFee, tokenId, beaconHeight)
+		unitFee, err = mempool.ConvertPrivacyTokenToNativeToken(unitFee, tokenId, beaconHeight, db)
 		if err != nil {
 			return uint64(0), err
 		}
@@ -287,7 +289,7 @@ func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID by
 			unitFee += uint64(mempool.ExtraFeeInNativeToken)
 		}
 
-		unitFee, err = mempool.ConvertNativeTokenToPrivacyToken(unitFee, tokenId, beaconHeight)
+		unitFee, err = mempool.ConvertNativeTokenToPrivacyToken(unitFee, tokenId, beaconHeight, db)
 		if err != nil {
 			return uint64(0), err
 		}
@@ -296,14 +298,14 @@ func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID by
 	return unitFee, nil
 }
 
-func (txService TxService) BuildRawTransaction(params *bean.CreateRawTxParam, meta metadata.Metadata) (*transaction.Tx, *RPCError) {
+func (txService TxService) BuildRawTransaction(params *bean.CreateRawTxParam, meta metadata.Metadata, db database.DatabaseInterface) (*transaction.Tx, *RPCError) {
 	Logger.log.Infof("Params: \n%+v\n\n\n", params)
 
 	// get output coins to spend and real fee
 	inputCoins, realFee, err1 := txService.chooseOutsCoinByKeyset(
 		params.PaymentInfos, params.EstimateFeeCoinPerKb, 0,
 		params.SenderKeySet, params.ShardIDSender, params.HasPrivacyCoin,
-		meta, nil, nil, false, int64(0))
+		meta, nil, nil, false, int64(0), db)
 	if err1 != nil {
 		return nil, err1
 	}
@@ -329,9 +331,9 @@ func (txService TxService) BuildRawTransaction(params *bean.CreateRawTxParam, me
 	return &tx, nil
 }
 
-func (txService TxService) CreateRawTransaction(params *bean.CreateRawTxParam, meta metadata.Metadata) (*common.Hash, []byte, byte, *RPCError) {
+func (txService TxService) CreateRawTransaction(params *bean.CreateRawTxParam, meta metadata.Metadata, db database.DatabaseInterface) (*common.Hash, []byte, byte, *RPCError) {
 	var err error
-	tx, err := txService.BuildRawTransaction(params, meta)
+	tx, err := txService.BuildRawTransaction(params, meta, db)
 	if err.(*RPCError) != nil {
 		Logger.log.Critical(err)
 		return nil, nil, byte(0), NewRPCError(CreateTxDataError, err)
@@ -529,6 +531,7 @@ func (txService TxService) BuildCustomTokenParam(tokenParamsRaw map[string]inter
 func (txService TxService) BuildRawCustomTokenTransaction(
 	params interface{},
 	metaData metadata.Metadata,
+	db database.DatabaseInterface,
 ) (*transaction.TxNormalToken, *RPCError) {
 	// all params
 	arrayParams := common.InterfaceSlice(params)
@@ -556,7 +559,7 @@ func (txService TxService) BuildRawCustomTokenTransaction(
 	/******* START choose output coins native coins(PRV), which is used to create tx *****/
 	inputCoins, realFee, err := txService.chooseOutsCoinByKeyset(txparam.PaymentInfos, txparam.EstimateFeeCoinPerKb, 0,
 		txparam.SenderKeySet, txparam.ShardIDSender, txparam.HasPrivacyCoin,
-		metaData, tokenParams, nil, false, int64(0))
+		metaData, tokenParams, nil, false, int64(0), db)
 	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)
 	}
@@ -672,6 +675,7 @@ func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 func (txService TxService) BuildRawPrivacyCustomTokenTransaction(
 	params interface{},
 	metaData metadata.Metadata,
+	db database.DatabaseInterface,
 ) (*transaction.TxCustomTokenPrivacy, *RPCError) {
 	txParam, errParam := bean.NewCreateRawPrivacyTokenTxParam(params)
 	if errParam != nil {
@@ -692,7 +696,7 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransaction(
 	inputCoins, estimateFee, err = txService.chooseOutsCoinByKeyset(txParam.PaymentInfos,
 		txParam.EstimateFeeCoinPerKb, 0, txParam.SenderKeySet,
 		txParam.ShardIDSender, txParam.HasPrivacyCoin, nil,
-		nil, tokenParams, txParam.IsGetPTokenFee, txParam.UnitPTokenFee)
+		nil, tokenParams, txParam.IsGetPTokenFee, txParam.UnitPTokenFee, db)
 	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)
 	}
@@ -1210,7 +1214,7 @@ func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData 
 	return txMsg, &tx, nil
 }
 
-func (txService TxService) BuildRawDefragmentAccountTransaction(params interface{}, meta metadata.Metadata) (*transaction.Tx, *RPCError) {
+func (txService TxService) BuildRawDefragmentAccountTransaction(params interface{}, meta metadata.Metadata, db database.DatabaseInterface) (*transaction.Tx, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 4 {
 		return nil, NewRPCError(RPCInvalidParamsError, nil)
@@ -1269,7 +1273,9 @@ func (txService TxService) BuildRawDefragmentAccountTransaction(params interface
 	paymentInfos := []*privacy.PaymentInfo{paymentInfo}
 	// check real fee(nano PRV) per tx
 	isGetPTokenFee := false
-	realFee, _, _, _ := txService.EstimateFee(estimateFeeCoinPerKb, isGetPTokenFee, outCoins, paymentInfos, shardIDSender, 8, hasPrivacyCoin, nil, nil, nil)
+	realFee, _, _, _ := txService.EstimateFee(
+		estimateFeeCoinPerKb, isGetPTokenFee, outCoins, paymentInfos, shardIDSender, 8, hasPrivacyCoin,
+		nil, nil, nil, db)
 	if len(outCoins) == 0 {
 		realFee = 0
 	}
