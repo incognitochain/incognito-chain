@@ -851,7 +851,6 @@ func getPDEPoolPair(
 	return &pdePoolForPair, nil
 }
 
-// todo:
 // return error if there is no exchange rate between native token and privacy token
 // beaconHeight = -1: get the latest beacon height
 func ConvertNativeTokenToPrivacyToken(
