@@ -77,8 +77,8 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithPRVContribution(params in
 func (httpServer *HttpServer) handleCreateRawTxWithPTokenContribution(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
-	if len(arrayParams) >= 5 {
-		hasPrivacyToken := int(arrayParams[5].(float64)) > 0
+	if len(arrayParams) >= 7 {
+		hasPrivacyToken := int(arrayParams[6].(float64)) > 0
 		if hasPrivacyToken {
 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("The privacy mode must be disabled"))
 		}
@@ -198,8 +198,8 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithPRVTradeReq(params interf
 func (httpServer *HttpServer) handleCreateRawTxWithPTokenTradeReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
-	if len(arrayParams) >= 5 {
-		hasPrivacyToken := int(arrayParams[5].(float64)) > 0
+	if len(arrayParams) >= 7 {
+		hasPrivacyToken := int(arrayParams[6].(float64)) > 0
 		if hasPrivacyToken {
 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("The privacy mode must be disabled"))
 		}
