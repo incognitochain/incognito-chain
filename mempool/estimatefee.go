@@ -863,7 +863,7 @@ func ConvertNativeTokenToPrivacyToken(
 	tokenIDStr := tokenID.String()
 	pdePoolForPair, err := getPDEPoolPair(prvIDStr, tokenIDStr, beaconHeight, db)
 	if err != nil {
-		return 0, nil
+		return 0, NewMempoolTxError(CouldNotGetExchangeRateError, err)
 	}
 	invariant := pdePoolForPair.Token1PoolValue * pdePoolForPair.Token2PoolValue
 	if invariant == 0 {
@@ -887,7 +887,7 @@ func ConvertPrivacyTokenToNativeToken(
 	tokenIDStr := tokenID.String()
 	pdePoolForPair, err := getPDEPoolPair(prvIDStr, tokenIDStr, beaconHeight, db)
 	if err != nil {
-		return 0, nil
+		return 0, NewMempoolTxError(CouldNotGetExchangeRateError, err)
 	}
 
 	invariant := pdePoolForPair.Token1PoolValue * pdePoolForPair.Token2PoolValue
