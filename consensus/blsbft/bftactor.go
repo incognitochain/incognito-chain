@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics"
 	"sync"
 	"time"
 
@@ -179,6 +180,9 @@ func (e *BLSBFT) Start() error {
 				e.addEarlyVote(msg)
 
 			case <-ticker:
+
+				metrics.SetGlobalParam("RoundKey", getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), "Phase", e.RoundData.State)
+
 				pubKey := e.UserKeySet.GetPublicKey()
 				if common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList) == -1 {
 					e.enterNewRound()
@@ -349,10 +353,11 @@ func (e *BLSBFT) enterNewRound() {
 	}
 
 	e.isOngoing = false
-	e.setState(newround)
+	e.setState("")
 	if e.waitForNextRound() {
 		return
 	}
+	e.setState(newround)
 	e.InitRoundData()
 	e.logger.Info("")
 	e.logger.Info("============================================")

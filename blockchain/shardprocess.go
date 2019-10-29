@@ -99,7 +99,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 			Logger.log.Error(err)
 			return err
 		}
-		if err := blockchain.RevertShardState(shardBlock.Header.ShardID); err != nil {
+		if err := blockchain.revertShardState(shardBlock.Header.ShardID); err != nil {
 			panic(err)
 		}
 		Logger.log.Infof("REVERTED SHARDID %+v, Revert Current Block Height %+v, Block Hash %+v", shardBlock.Header.ShardID, currentShardHeight, currentShardHash)
