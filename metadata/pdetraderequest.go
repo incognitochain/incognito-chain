@@ -78,7 +78,7 @@ func (pc PDETradeRequest) ValidateTxWithBlockChain(
 
 func (pc PDETradeRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
-	if reflect.TypeOf(txr).String() == "*transaction.Tx" {
+	if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
 		return true, true, nil
 	}
 
@@ -114,6 +114,15 @@ func (pc PDETradeRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transa
 	if !bytes.Equal(txr.GetTokenID()[:], tokenIDToSell[:]) {
 		return false, false, errors.New("Wrong request info's token id, it should be equal to tx's token id.")
 	}
+
+	if txr.GetType() == common.TxNormalType && pc.TokenIDToSellStr != common.PRVCoinID.String() {
+		return false, false, errors.New("With tx normal privacy, the tokenIDStr should be PRV, not custom token.")
+	}
+
+	if txr.GetType() == common.TxCustomTokenPrivacyType && pc.TokenIDToSellStr == common.PRVCoinID.String() {
+		return false, false, errors.New("With tx custome token privacy, the tokenIDStr should not be PRV, but custom token.")
+	}
+
 	return true, true, nil
 }
 
