@@ -17,6 +17,8 @@ type CreateRawPrivacyTokenTxParam struct {
 	TokenParams          map[string]interface{}
 	HasPrivacyToken      bool
 	Info                 []byte
+	IsGetPTokenFee       bool
+	UnitPTokenFee        int64
 }
 
 func NewCreateRawPrivacyTokenTxParam(params interface{}) (*CreateRawPrivacyTokenTxParam, error) {
@@ -33,15 +35,25 @@ func NewCreateRawPrivacyTokenTxParam(params interface{}) (*CreateRawPrivacyToken
 
 	// param #5: token component
 	tokenParamsRaw, ok := arrayParams[4].(map[string]interface{})
-	if !ok  {
+	if !ok {
 		return nil, errors.New("token param is invalid")
+	}
+
+	isGetPTokenFee := false
+	if isGetPTokenFeeParam, ok := tokenParamsRaw["IsGetPTokenFee"].(bool); ok {
+		isGetPTokenFee = isGetPTokenFeeParam
+	}
+
+	unitPTokenFee := int64(-1)
+	if unitPTokenFeeParam, ok := tokenParamsRaw["UnitPTokenFee"].(float64); ok {
+		unitPTokenFee = int64(unitPTokenFeeParam)
 	}
 
 	// param #7: hasPrivacyToken flag for token
 	hasPrivacyToken := true
 	if len(arrayParams) >= 7 {
 		hasPrivacyTokenParam, ok := arrayParams[6].(float64)
-		if !ok  {
+		if !ok {
 			return nil, errors.New("has privacy for token param is invalid")
 		}
 		hasPrivacyToken = int(hasPrivacyTokenParam) > 0
@@ -58,5 +70,7 @@ func NewCreateRawPrivacyTokenTxParam(params interface{}) (*CreateRawPrivacyToken
 		Info:                 txparam.Info,
 		HasPrivacyToken:      hasPrivacyToken,
 		TokenParamsRaw:       tokenParamsRaw,
+		IsGetPTokenFee:       isGetPTokenFee,
+		UnitPTokenFee:        unitPTokenFee,
 	}, nil
 }
