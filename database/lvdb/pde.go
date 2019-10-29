@@ -333,6 +333,7 @@ func (db *db) GetLatestPDEPoolForPair(
 	}
 	key := iter.Key()
 	keyBytes := make([]byte, len(key))
+	copy(keyBytes, key)
 	iter.Release()
 	err := iter.Error()
 	if err != nil {
