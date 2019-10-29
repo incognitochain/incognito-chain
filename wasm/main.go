@@ -120,7 +120,6 @@ func main() {
 	//js.Global().Set("aggregatedRangeProve", js.FuncOf(aggregatedRangeProve))
 	//js.Global().Set("oneOutOfManyProve", js.FuncOf(oneOutOfManyProve))
 
-
 	js.Global().Set("initPrivacyTx", js.FuncOf(initPrivacyTx))
 	js.Global().Set("staking", js.FuncOf(staking))
 	js.Global().Set("initPrivacyTokenTx", js.FuncOf(initPrivacyTokenTx))

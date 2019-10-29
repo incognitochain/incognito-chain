@@ -160,6 +160,14 @@ const (
 	// slash
 	getProducersBlackList       = "getproducersblacklist"
 	getProducersBlackListDetail = "getproducersblacklistdetail"
+
+	// pde
+	getPDEState                           = "getpdestate"
+	createAndSendTxWithWithdrawalReq      = "createandsendtxwithwithdrawalreq"
+	createAndSendTxWithPTokenTradeReq     = "createandsendtxwithptokentradereq"
+	createAndSendTxWithPRVTradeReq        = "createandsendtxwithprvtradereq"
+	createAndSendTxWithPTokenContribution = "createandsendtxwithptokencontribution"
+	createAndSendTxWithPRVContribution    = "createandsendtxwithprvcontribution"
 )
 
 const (

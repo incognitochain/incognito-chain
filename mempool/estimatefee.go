@@ -7,6 +7,7 @@ package mempool
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -18,6 +19,8 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/transaction"
 )
 
@@ -155,14 +158,13 @@ type FeeEstimator struct {
 	dropped []*registeredBlock
 
 	// min fee which be needed for payment on tx(per Kb data)
-	limitFee      uint64
-	limitFeeToken uint64
+	limitFee uint64
 }
 
 // NewFeeEstimator creates a feeEstimator for which at most maxRollback blocks
 // can be unregistered and which returns an error unless minRegisteredBlocks
 // have been registered with it.
-func NewFeeEstimator(maxRollback, minRegisteredBlocks uint32, limitFee uint64, limitFeeToken uint64) *FeeEstimator {
+func NewFeeEstimator(maxRollback, minRegisteredBlocks uint32, limitFee uint64) *FeeEstimator {
 	return &FeeEstimator{
 		maxRollback:         maxRollback,
 		minRegisteredBlocks: minRegisteredBlocks,
@@ -172,7 +174,6 @@ func NewFeeEstimator(maxRollback, minRegisteredBlocks uint32, limitFee uint64, l
 		observed:            make(map[common.Hash]*observedTransaction),
 		dropped:             make([]*registeredBlock, 0, maxRollback),
 		limitFee:            limitFee,
-		limitFeeToken:       limitFeeToken,
 	}
 }
 
@@ -603,7 +604,7 @@ func (ef *FeeEstimator) estimates(tokenID *common.Hash) []CoinPerKilobyte {
 
 // EstimateFee estimates the fee per byte to have a tx confirmed a given
 // number of blocks from now.
-func (ef *FeeEstimator) EstimateFee(numBlocks uint64, tokenID *common.Hash) (CoinPerKilobyte, error) {
+func (ef *FeeEstimator) EstimateFee(numBlocks uint64, tokenId *common.Hash) (CoinPerKilobyte, error) {
 	ef.mtx.Lock()
 	defer ef.mtx.Unlock()
 
@@ -625,7 +626,7 @@ func (ef *FeeEstimator) EstimateFee(numBlocks uint64, tokenID *common.Hash) (Coi
 
 	// If there are no cached results, generate them.
 	if ef.cached == nil {
-		ef.cached = ef.estimates(tokenID)
+		ef.cached = ef.estimates(tokenId)
 	}
 
 	result := ef.cached[int(numBlocks)-1]
@@ -807,6 +808,104 @@ func RestoreFeeEstimator(data FeeEstimatorState) (*FeeEstimator, error) {
 	return ef, nil
 }
 
-func (ef FeeEstimator) GetLimitFee() uint64 {
-	return ef.limitFee
+// returns the limit fee of tokenID
+// if there is no exchange rate between native token and privacy token, return limit fee of native token
+func (ef FeeEstimator) GetLimitFeeForNativeToken() uint64 {
+	limitFee := ef.limitFee
+	//isFeePToken := false
+
+	//if tokenID != nil {
+	//	limitFeePToken, err := ConvertNativeTokenToPrivacyToken(ef.limitFee, tokenID)
+	//	if err == nil {
+	//		limitFee = limitFeePToken
+	//		isFeePToken = true
+	//	}
+	//}
+
+	return limitFee
+}
+
+func getPDEPoolPair(
+	prvIDStr, tokenIDStr string,
+	beaconHeight int64,
+	db database.DatabaseInterface,
+) (*lvdb.PDEPoolForPair, error) {
+	var pdePoolForPair lvdb.PDEPoolForPair
+	var err error
+	poolPairBytes := []byte{}
+	if beaconHeight == -1 {
+		poolPairBytes, err = db.GetLatestPDEPoolForPair(prvIDStr, tokenIDStr)
+	} else {
+		poolPairBytes, err = db.GetPDEPoolForPair(uint64(beaconHeight), prvIDStr, tokenIDStr)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if len(poolPairBytes) == 0 {
+		return nil, NewMempoolTxError(CouldNotGetExchangeRateError, fmt.Errorf("Could not find out pdePoolForPair with token ids: %s & %s", prvIDStr, tokenIDStr))
+	}
+	err = json.Unmarshal(poolPairBytes, &pdePoolForPair)
+	if err != nil {
+		return nil, err
+	}
+	return &pdePoolForPair, nil
+}
+
+func convertValueBetweenCurrencies(
+	amount uint64,
+	currentCurrencyIDStr string,
+	tokenID *common.Hash,
+	beaconHeight int64,
+	db database.DatabaseInterface,
+) (uint64, error) {
+	prvIDStr := common.PRVCoinID.String()
+	tokenIDStr := tokenID.String()
+	pdePoolForPair, err := getPDEPoolPair(prvIDStr, tokenIDStr, beaconHeight, db)
+	if err != nil {
+		return 0, NewMempoolTxError(CouldNotGetExchangeRateError, err)
+	}
+	invariant := pdePoolForPair.Token1PoolValue * pdePoolForPair.Token2PoolValue
+	if invariant == 0 {
+		return 0, NewMempoolTxError(CouldNotGetExchangeRateError, err)
+	}
+	if pdePoolForPair.Token1IDStr == currentCurrencyIDStr {
+		remainingValue := invariant / (pdePoolForPair.Token1PoolValue + amount)
+		return pdePoolForPair.Token2PoolValue - remainingValue, nil
+	}
+	remainingValue := invariant / (pdePoolForPair.Token2PoolValue + amount)
+	return pdePoolForPair.Token1PoolValue - remainingValue, nil
+}
+
+// return error if there is no exchange rate between native token and privacy token
+// beaconHeight = -1: get the latest beacon height
+func ConvertNativeTokenToPrivacyToken(
+	nativeTokenAmount uint64,
+	tokenID *common.Hash,
+	beaconHeight int64,
+	db database.DatabaseInterface,
+) (uint64, error) {
+	return convertValueBetweenCurrencies(
+		nativeTokenAmount,
+		common.PRVCoinID.String(),
+		tokenID,
+		beaconHeight,
+		db,
+	)
+}
+
+// return error if there is no exchange rate between native token and privacy token
+// beaconHeight = -1: get the latest beacon height
+func ConvertPrivacyTokenToNativeToken(
+	privacyTokenAmount uint64,
+	tokenID *common.Hash,
+	beaconHeight int64,
+	db database.DatabaseInterface,
+) (uint64, error) {
+	return convertValueBetweenCurrencies(
+		privacyTokenAmount,
+		tokenID.String(),
+		tokenID,
+		beaconHeight,
+		db,
+	)
 }

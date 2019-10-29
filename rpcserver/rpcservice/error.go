@@ -47,6 +47,7 @@ const (
 	TxPoolRejectTxError
 	NoSwapConfirmInst
 	GetKeySetFromPrivateKeyError
+	GetPDEStateError
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -108,6 +109,9 @@ var ErrCodeMessage = map[int]struct {
 
 	// decentralized bridge
 	NoSwapConfirmInst: {-7000, "No swap confirm instruction found in block"},
+
+	// pde
+	GetPDEStateError: {-8000, "Get pde state error"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse
