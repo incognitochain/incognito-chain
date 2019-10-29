@@ -24,9 +24,9 @@ type PDEWithdrawalRequest struct {
 }
 
 type PDEWithdrawalRequestAction struct {
-	Meta    PDEWithdrawalRequest `json:"meta"`
-	TxReqID common.Hash          `json:"txReqId"`
-	ShardID byte                 `json:"shardId"`
+	Meta    PDEWithdrawalRequest
+	TxReqID common.Hash
+	ShardID byte
 }
 
 type PDEWithdrawalAcceptedContent struct {
