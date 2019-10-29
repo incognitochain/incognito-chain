@@ -59,7 +59,7 @@ const (
 	//board and proposal parameters
 	MainnetBasicReward                      = 1386666000 //1.386666 PRV
 	MainnetRewardHalflife                   = 3155760    //1 year, reduce 12.5% per year
-	MainETHContractAddressStr               = ""
+	MainETHContractAddressStr               = "0xd8f7cac14156eb1d1EA1a28cd04D23cE0f142602"
 	MainnetIncognitoDAOAddress              = "12S32fSyF4h8VxFHt4HfHvU1m9KHvBQsab5zp4TpQctmMdWuveXFH9KYWNemo7DRKvaBEvMgqm4XAuq1a1R4cNk2kfUfvXR3DdxCho3" // community fund
 	MainnetCentralizedWebsitePaymentAddress = "12Rvjw6J3FWY3YZ1eDZ5uTy6DTPjFeLhCK7SXgppjivg9ShX2RRq3s8pdoapnH8AMoqvUSqZm1Gqzw7rrKsNzRJwSK2kWbWf1ogy885"
 	// ------------- end Mainnet --------------------------------------
