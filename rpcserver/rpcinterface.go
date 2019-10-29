@@ -158,6 +158,14 @@ var HttpHandler = map[string]httpHandler{
 	getMinerRewardFromMiningKey: (*HttpServer).handleGetMinerRewardFromMiningKey,
 	getProducersBlackList:       (*HttpServer).handleGetProducersBlackList,
 	getProducersBlackListDetail: (*HttpServer).handleGetProducersBlackListDetail,
+
+	// pde
+	getPDEState:                           (*HttpServer).handleGetPDEState,
+	createAndSendTxWithWithdrawalReq:      (*HttpServer).handleCreateAndSendTxWithWithdrawalReq,
+	createAndSendTxWithPTokenTradeReq:     (*HttpServer).handleCreateAndSendTxWithPTokenTradeReq,
+	createAndSendTxWithPRVTradeReq:        (*HttpServer).handleCreateAndSendTxWithPRVTradeReq,
+	createAndSendTxWithPTokenContribution: (*HttpServer).handleCreateAndSendTxWithPTokenContribution,
+	createAndSendTxWithPRVContribution:    (*HttpServer).handleCreateAndSendTxWithPRVContribution,
 }
 
 // Commands that are available to a limited user
