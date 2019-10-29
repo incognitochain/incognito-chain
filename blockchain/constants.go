@@ -30,6 +30,7 @@ const (
 	GetValidBlock                = 20
 	TestRandom                   = true
 	NumberOfFixedBlockValidators = 4
+	PDEFree                      = 3 // 3/1000
 )
 
 // CONSTANT for network MAINNET

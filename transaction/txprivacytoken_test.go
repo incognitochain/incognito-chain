@@ -81,11 +81,11 @@ func TestInitTxPrivacyToken(t *testing.T) {
 		isValidFee := tx.CheckTransactionFee(uint64(0))
 		assert.Equal(t, true, isValidFee)
 
-		isValidFeeToken := tx.CheckTransactionFeeByFeeToken(uint64(0))
-		assert.Equal(t, true, isValidFeeToken)
-
-		isValidFeeTokenForTokenData := tx.CheckTransactionFeeByFeeTokenForTokenData(uint64(0))
-		assert.Equal(t, true, isValidFeeTokenForTokenData)
+		//isValidFeeToken := tx.CheckTransactionFeeByFeeToken(uint64(0))
+		//assert.Equal(t, true, isValidFeeToken)
+		//
+		//isValidFeeTokenForTokenData := tx.CheckTransactionFeeByFeeTokenForTokenData(uint64(0))
+		//assert.Equal(t, true, isValidFeeTokenForTokenData)
 
 		isValidType := tx.ValidateType()
 		assert.Equal(t, true, isValidType)
