@@ -18,8 +18,14 @@ func NewWithDrawRewardRequestFromRPC(data map[string]interface{}) (Metadata, err
 	metadataBase := MetadataBase{
 		Type: WithDrawRewardRequestMeta,
 	}
-	requesterPaymentStr := data["PaymentAddress"].(string)
-	requestTokenID := data["TokenID"].(string)
+	requesterPaymentStr, ok := data["PaymentAddress"].(string)
+	if !ok {
+		return nil, errors.New("Invalid payment address receiver")
+	}
+	requestTokenID, ok := data["TokenID"].(string)
+	if !ok {
+		return nil, errors.New("Invalid token Id")
+	}
 	tokenID, err := common.Hash{}.NewHashFromStr(requestTokenID)
 	if err != nil {
 		return nil, err
