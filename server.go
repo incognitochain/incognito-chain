@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics"
 	peer2 "github.com/libp2p/go-libp2p-core/peer"
 	//"github.com/incognitochain/incognito-chain/metrics"
 	"io/ioutil"
@@ -1738,6 +1739,7 @@ func (serverObj *Server) BoardcastNodeState() error {
 	}
 	userKey, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
 	if userKey != "" {
+		metrics.SetGlobalParam("MINING_PUBKEY", userKey)
 		userRole, shardID := serverObj.blockChain.BestState.Beacon.GetPubkeyRole(userKey, serverObj.blockChain.BestState.Beacon.BestBlock.Header.Round)
 		if (cfg.NodeMode == common.NodeModeAuto || cfg.NodeMode == common.NodeModeShard) && userRole == common.NodeModeShard {
 			userRole = serverObj.blockChain.BestState.Shard[shardID].GetPubkeyRole(userKey, serverObj.blockChain.BestState.Shard[shardID].BestBlock.Header.Round)

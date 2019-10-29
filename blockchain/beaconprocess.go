@@ -78,7 +78,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 			Logger.log.Error(err)
 			return err
 		}
-		if err := blockchain.RevertBeaconState(); err != nil {
+		if err := blockchain.revertBeaconState(); err != nil {
 			panic(err)
 		}
 		blockchain.BestState.Beacon.lock.Unlock()
