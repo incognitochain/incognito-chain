@@ -457,7 +457,7 @@ func (db *db) DeductSharesForWithdrawal(
 func (db *db) GetAllRecordsByPrefix(beaconHeight uint64, prefix []byte) ([][]byte, [][]byte, error) {
 	keys := [][]byte{}
 	values := [][]byte{}
-	beaconHeightBytes := []byte(fmt.Sprintf("%d", beaconHeight))
+	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 	prefixByBeaconHeight := append(prefix, beaconHeightBytes...)
 	iter := db.lvdb.NewIterator(util.BytesPrefix(prefixByBeaconHeight), nil)
 	for iter.Next() {
