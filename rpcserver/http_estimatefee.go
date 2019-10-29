@@ -75,7 +75,6 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 		var customTokenParams *transaction.CustomTokenParamTx
 		var customPrivacyTokenParam *transaction.CustomTokenPrivacyParamTx
 		isGetPTokenFee := false
-		unitFeePToken := int64(-1)
 		if len(arrayParams) > 4 {
 			// param #5: token params
 			tokenParamsRaw, ok := arrayParams[4].(map[string]interface{})
@@ -87,32 +86,11 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 			if err.(*rpcservice.RPCError) != nil {
 				return nil, err.(*rpcservice.RPCError)
 			}
-
-			if len(arrayParams) > 5 {
-				isGetPTokenFeeParam, ok := arrayParams[5].(bool)
-				if !ok {
-					return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token param is invalid"))
-				}
-
-				isGetPTokenFee = isGetPTokenFeeParam
-			}
-			if len(arrayParams) > 6 {
-				unitFeePTokenTmp, ok := arrayParams[6].(float64)
-				if !ok {
-					return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("unit fee ptoken is invalid"))
-				}
-
-				unitFeePToken = int64(unitFeePTokenTmp)
-			}
 		}
 
-		unitFee := defaultFeeCoinPerKb
-		if isGetPTokenFee {
-			unitFee = unitFeePToken
-		}
 		var err2 error
 		_, estimateFeeCoinPerKb, estimateTxSizeInKb, err2 = httpServer.txService.EstimateFee(
-			unitFee, isGetPTokenFee, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy, nil,
+			defaultFeeCoinPerKb, isGetPTokenFee, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy, nil,
 			customTokenParams, customPrivacyTokenParam, *httpServer.config.Database)
 		if err2 != nil{
 			return nil, rpcservice.NewRPCError(rpcservice.RejectInvalidFeeError, err2)
