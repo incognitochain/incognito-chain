@@ -38,7 +38,7 @@ const (
 	Mainnet                 = 0x01
 	MainetName              = "mainnet"
 	MainnetDefaultPort      = "9333"
-	MainnetGenesisBlockTime = "2019-10-31T00:00:00.000Z"
+	MainnetGenesisBlockTime = "2019-10-29T00:00:00.000Z"
 	MainnetEpoch            = 350
 	MainnetRandomTime       = 175
 	MainnetOffset           = 4
