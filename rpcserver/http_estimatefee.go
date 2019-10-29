@@ -74,6 +74,7 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 		// Check custom token param
 		var customTokenParams *transaction.CustomTokenParamTx
 		var customPrivacyTokenParam *transaction.CustomTokenPrivacyParamTx
+		isGetPTokenFee := false
 		if len(arrayParams) > 4 {
 			// param #5: token params
 			tokenParamsRaw, ok := arrayParams[4].(map[string]interface{})
@@ -84,12 +85,16 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 			customTokenParams, customPrivacyTokenParam, err = httpServer.txService.BuildTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
 			if err.(*rpcservice.RPCError) != nil {
 				return nil, err.(*rpcservice.RPCError)
-
 			}
 		}
 
-		// check real fee(nano PRV) per tx
-		_, estimateFeeCoinPerKb, estimateTxSizeInKb = httpServer.txService.EstimateFee(defaultFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy, nil, customTokenParams, customPrivacyTokenParam)
+		var err2 error
+		_, estimateFeeCoinPerKb, estimateTxSizeInKb, err2 = httpServer.txService.EstimateFee(
+			defaultFeeCoinPerKb, isGetPTokenFee, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy, nil,
+			customTokenParams, customPrivacyTokenParam, *httpServer.config.Database)
+		if err2 != nil{
+			return nil, rpcservice.NewRPCError(rpcservice.RejectInvalidFeeError, err2)
+		}
 	}
 	result := jsonresult.NewEstimateFeeResult(estimateFeeCoinPerKb, estimateTxSizeInKb)
 	Logger.log.Debugf("handleEstimateFee result: %+v", result)
@@ -132,6 +137,8 @@ func (httpServer *HttpServer) handleEstimateFeeWithEstimator(params interface{},
 	}
 
 	// param #3: tokenId
+	// if tokenID != nil, return fee for privacy token
+	// if tokenID != nil, return fee for native token
 	var tokenId *common.Hash
 	if len(arrayParams) >= 4 && arrayParams[3] != nil {
 		tokenIdParam, ok := arrayParams[3].(string)
@@ -144,7 +151,10 @@ func (httpServer *HttpServer) handleEstimateFeeWithEstimator(params interface{},
 		}
 	}
 
-	estimateFeeCoinPerKb := httpServer.txService.EstimateFeeWithEstimator(defaultFeeCoinPerKb, shardIDSender, numblock, tokenId)
+	estimateFeeCoinPerKb, err := httpServer.txService.EstimateFeeWithEstimator(defaultFeeCoinPerKb, shardIDSender, numblock, tokenId, -1, *httpServer.config.Database)
+	if err != nil{
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
 
 	result := jsonresult.NewEstimateFeeResult(estimateFeeCoinPerKb, 0)
 	Logger.log.Debugf("handleEstimateFeeWithEstimator result: %+v", result)
