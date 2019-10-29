@@ -78,7 +78,7 @@ func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(
 }
 
 func (blockchain *BlockChain) getRewardAmount(blkHeight uint64) uint64 {
-	n := blkHeight / blockchain.config.ChainParams.RewardHalflife
+	n := getNoBlkPerYear(uint64(blockchain.config.ChainParams.MaxBeaconBlockCreation.Seconds()))
 	reward := uint64(blockchain.config.ChainParams.BasicReward)
 	for ; n > 0; n-- {
 		reward *= 9
