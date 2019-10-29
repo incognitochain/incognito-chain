@@ -135,7 +135,6 @@ func (tp *TxPool) loadDatabaseMP() ([]TxDesc, error) {
 			}
 		}
 		//if not validated by current blockchain db then remove
-		// todo: get beacon height or -1
 		err = tp.validateTransaction(txDesc.Desc.Tx, -1)
 		if err != nil {
 			Logger.log.Error(err)
