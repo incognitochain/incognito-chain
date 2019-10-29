@@ -15,6 +15,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -70,12 +71,13 @@ func init() {
 			runtime.ReadMemStats(&m)
 			bheight := blockchain.GetBeaconBestState().BeaconHeight
 			bhash := blockchain.GetBeaconBestState().BestBlockHash
+
 			for i := 0; i < blockchain.GetBeaconBestState().ActiveShards; i++ {
 				shash := blockchain.GetBestStateShard(byte(i)).BestBlockHash
 				sheight := blockchain.GetBestStateShard(byte(i)).ShardHeight
-				l.Add(fmt.Sprintf("ShardHeight-%v", i), sheight, fmt.Sprintf("ShardHash-%v", i), shash)
+				l.Add(fmt.Sprintf("Shard%v", i), fmt.Sprintf("%v:%v", sheight, shash.String()))
 			}
-			l.Add("CPU_USAGE", fmt.Sprintf("%.2f", cpuUsage), "MEM_USAGE", m.Sys>>20, "BeaconHeight", bheight, "BeaconHash", bhash)
+			l.Add("CPU_USAGE", fmt.Sprintf("%.2f", cpuUsage), "MEM_USAGE", m.Sys>>20, "Beacon", fmt.Sprintf("%v:%v", bheight, bhash.String()))
 			idle0, total0 = getCPUSample()
 			l.Write()
 		}
@@ -84,6 +86,7 @@ func init() {
 
 type logKV struct {
 	param map[string]interface{}
+	sync.RWMutex
 }
 
 func SetGlobalParam(p ...interface{}) {
@@ -105,6 +108,8 @@ func (s *logKV) Add(p ...interface{}) *logKV {
 		fmt.Println(len(p))
 		return s
 	}
+	s.Lock()
+	defer s.Unlock()
 	for i, v := range p {
 		if i%2 == 0 {
 			s.param[v.(string)] = p[i+1]
@@ -114,11 +119,13 @@ func (s *logKV) Add(p ...interface{}) *logKV {
 }
 
 func (s *logKV) Write() {
+	s.RLock()
+	defer s.RUnlock()
 	//fn, f, l := getMethodName(2)
 	//s.param["FILE"] = fmt.Sprintf("%s:%s", f, l)
 	//r, _ := regexp.Compile("(^[^\\.]*)")
 	//s.param["PACKAGE"] = fmt.Sprintf("%s", r.FindStringSubmatch(fn)[1])
-	//s.param["TIME"] = fmt.Sprintf("%s", time.Now().Format(time.RFC3339))
+	s.param["Time"] = fmt.Sprintf("%s", time.Now().Format(time.RFC3339))
 	b, _ := json.Marshal(s.param)
 
 	io.Copy(monitorFile, bytes.NewReader(b))
