@@ -147,12 +147,8 @@ func (txService TxService) chooseOutsCoinByKeyset(
 	}
 
 	// check real fee(nano PRV) per tx
-	unitFee := unitFeeNativeToken
-	if isGetFeePToken{
-		unitFee = unitFeePToken
-	}
 
-	realFee, _, _, err := txService.EstimateFee(unitFee, isGetFeePToken, candidateOutputCoins,
+	realFee, _, _, err := txService.EstimateFee(unitFeeNativeToken, false, candidateOutputCoins,
 		paymentInfos, shardIDSender, numBlock, hasPrivacy,
 		metadataParam, customTokenParams,
 		privacyCustomTokenParams, db)
@@ -692,20 +688,12 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransaction(
 	/******* START choose output native coins(PRV), which is used to create tx *****/
 	var inputCoins []*privacy.InputCoin
 	realFeePRV := uint64(0)
-	estimateFee := uint64(0)
-	inputCoins, estimateFee, err = txService.chooseOutsCoinByKeyset(txParam.PaymentInfos,
+	inputCoins, realFeePRV, err = txService.chooseOutsCoinByKeyset(txParam.PaymentInfos,
 		txParam.EstimateFeeCoinPerKb, 0, txParam.SenderKeySet,
 		txParam.ShardIDSender, txParam.HasPrivacyCoin, nil,
 		nil, tokenParams, txParam.IsGetPTokenFee, txParam.UnitPTokenFee, db)
 	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)
-	}
-
-	if txParam.IsGetPTokenFee {
-		tokenParams.Fee = estimateFee
-	} else{
-		realFeePRV = estimateFee
-		tokenParams.Fee = 0
 	}
 
 	if len(txParam.PaymentInfos) == 0 && realFeePRV == 0 {
