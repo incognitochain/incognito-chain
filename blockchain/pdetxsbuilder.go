@@ -32,13 +32,9 @@ func parseTradeRefundContent(
 func parseTradeAcceptedContent(
 	contentStr string,
 ) (*metadata.PDETradeAcceptedContent, error) {
-	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while decoding content string of pde trade refund instruction: %+v", err)
-		return nil, err
-	}
+	contentBytes := []byte(contentStr)
 	var pdeTradeAcceptedContent metadata.PDETradeAcceptedContent
-	err = json.Unmarshal(contentBytes, &pdeTradeAcceptedContent)
+	err := json.Unmarshal(contentBytes, &pdeTradeAcceptedContent)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while unmarshaling pde trade accepted content: %+v", err)
 		return nil, err
@@ -222,13 +218,9 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 	shardID byte,
 ) (metadata.Transaction, error) {
 	Logger.log.Info("[PDE Withdrawal] Starting...")
-	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while decoding content string of pde withdrawal instruction: %+v", err)
-		return nil, nil
-	}
+	contentBytes := []byte(contentStr)
 	var wdAcceptedContent metadata.PDEWithdrawalAcceptedContent
-	err = json.Unmarshal(contentBytes, &wdAcceptedContent)
+	err := json.Unmarshal(contentBytes, &wdAcceptedContent)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while unmarshaling pde withdrawal content: %+v", err)
 		return nil, nil
@@ -255,7 +247,7 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 	if withdrawalTokenIDStr == common.PRVCoinID.String() {
 		resTx := new(transaction.Tx)
 		err = resTx.InitTxSalary(
-			wdAcceptedContent.DeductingPoolValue,
+			wdAcceptedContent.DeductingPoolValue+wdAcceptedContent.DeductingTradeFees,
 			&receiverAddr,
 			producerPrivateKey,
 			blockGenerator.chain.config.DataBase,
@@ -272,7 +264,7 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 
 	// in case the returned currency is privacy custom token
 	receiver := &privacy.PaymentInfo{
-		Amount:         wdAcceptedContent.DeductingPoolValue,
+		Amount:         wdAcceptedContent.DeductingPoolValue + wdAcceptedContent.DeductingTradeFees,
 		PaymentAddress: receiverAddr,
 	}
 	var propertyID [common.HashSize]byte
@@ -282,7 +274,7 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 		PropertyID: propID.String(),
 		// PropertyName:   issuingAcceptedInst.IncTokenName,
 		// PropertySymbol: issuingAcceptedInst.IncTokenName,
-		Amount:      wdAcceptedContent.DeductingPoolValue,
+		Amount:      wdAcceptedContent.DeductingPoolValue + wdAcceptedContent.DeductingTradeFees,
 		TokenTxType: transaction.CustomTokenInit,
 		Receiver:    []*privacy.PaymentInfo{receiver},
 		TokenInput:  []*privacy.InputCoin{},
