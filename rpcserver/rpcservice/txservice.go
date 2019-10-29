@@ -622,6 +622,7 @@ func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 	}
 	voutsAmount := int64(0)
 	tokenParams.Receiver, voutsAmount = transaction.CreateCustomTokenPrivacyReceiverArray(tokenParamsRaw["TokenReceivers"])
+	voutsAmount += int64(tokenFee)
 
 	// get list custom token
 	switch tokenParams.TokenTxType {
