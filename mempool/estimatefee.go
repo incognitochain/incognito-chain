@@ -851,10 +851,9 @@ func getPDEPoolPair(
 	return &pdePoolForPair, nil
 }
 
-// return error if there is no exchange rate between native token and privacy token
-// beaconHeight = -1: get the latest beacon height
-func ConvertNativeTokenToPrivacyToken(
-	nativeTokenAmount uint64,
+func convertValueBetweenCurrencies(
+	amount uint64,
+	currentCurrencyIDStr string,
 	tokenID *common.Hash,
 	beaconHeight int64,
 	db database.DatabaseInterface,
@@ -869,10 +868,29 @@ func ConvertNativeTokenToPrivacyToken(
 	if invariant == 0 {
 		return 0, NewMempoolTxError(CouldNotGetExchangeRateError, err)
 	}
-	if pdePoolForPair.Token1IDStr == prvIDStr {
-		return invariant / (pdePoolForPair.Token1PoolValue + nativeTokenAmount), nil
+	if pdePoolForPair.Token1IDStr == currentCurrencyIDStr {
+		remainingValue := invariant / (pdePoolForPair.Token1PoolValue + amount)
+		return pdePoolForPair.Token2PoolValue - remainingValue, nil
 	}
-	return invariant / (pdePoolForPair.Token2PoolValue + nativeTokenAmount), nil
+	remainingValue := invariant / (pdePoolForPair.Token2PoolValue + amount)
+	return pdePoolForPair.Token1PoolValue - remainingValue, nil
+}
+
+// return error if there is no exchange rate between native token and privacy token
+// beaconHeight = -1: get the latest beacon height
+func ConvertNativeTokenToPrivacyToken(
+	nativeTokenAmount uint64,
+	tokenID *common.Hash,
+	beaconHeight int64,
+	db database.DatabaseInterface,
+) (uint64, error) {
+	return convertValueBetweenCurrencies(
+		nativeTokenAmount,
+		common.PRVCoinID.String(),
+		tokenID,
+		beaconHeight,
+		db,
+	)
 }
 
 // return error if there is no exchange rate between native token and privacy token
@@ -883,19 +901,11 @@ func ConvertPrivacyTokenToNativeToken(
 	beaconHeight int64,
 	db database.DatabaseInterface,
 ) (uint64, error) {
-	prvIDStr := common.PRVCoinID.String()
-	tokenIDStr := tokenID.String()
-	pdePoolForPair, err := getPDEPoolPair(prvIDStr, tokenIDStr, beaconHeight, db)
-	if err != nil {
-		return 0, NewMempoolTxError(CouldNotGetExchangeRateError, err)
-	}
-
-	invariant := pdePoolForPair.Token1PoolValue * pdePoolForPair.Token2PoolValue
-	if invariant == 0 {
-		return 0, NewMempoolTxError(CouldNotGetExchangeRateError, err)
-	}
-	if pdePoolForPair.Token1IDStr == tokenIDStr {
-		return invariant / (pdePoolForPair.Token1PoolValue + privacyTokenAmount), nil
-	}
-	return invariant / (pdePoolForPair.Token2PoolValue + privacyTokenAmount), nil
+	return convertValueBetweenCurrencies(
+		privacyTokenAmount,
+		tokenID.String(),
+		tokenID,
+		beaconHeight,
+		db,
+	)
 }
