@@ -33,7 +33,6 @@ type Params struct {
 	GenesisBeaconBlock               *BeaconBlock // GenesisBlock defines the first block of the chain.
 	GenesisShardBlock                *ShardBlock  // GenesisBlock defines the first block of the chain.
 	BasicReward                      uint64
-	RewardHalflife                   uint64
 	Epoch                            uint64
 	RandomTime                       uint64
 	SlashLevels                      []SlashLevel
@@ -92,7 +91,6 @@ func init() {
 		MinBeaconBlockInterval:           TestNetMinBeaconBlkInterval,
 		MaxBeaconBlockCreation:           TestNetMaxBeaconBlkCreation,
 		BasicReward:                      TestnetBasicReward,
-		RewardHalflife:                   TestnetRewardHalflife,
 		Epoch:                            TestnetEpoch,
 		RandomTime:                       TestnetRandomTime,
 		Offset:                           TestnetOffset,
@@ -137,7 +135,6 @@ func init() {
 		MinBeaconBlockInterval:           MainnetMinBeaconBlkInterval,
 		MaxBeaconBlockCreation:           MainnetMaxBeaconBlkCreation,
 		BasicReward:                      MainnetBasicReward,
-		RewardHalflife:                   MainnetRewardHalflife,
 		Epoch:                            MainnetEpoch,
 		RandomTime:                       MainnetRandomTime,
 		Offset:                           MainnetOffset,
