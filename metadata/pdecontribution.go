@@ -23,8 +23,8 @@ type PDEContribution struct {
 }
 
 type PDEContributionAction struct {
-	Meta    PDEContribution `json:"meta"`
-	TxReqID common.Hash     `json:"txReqId"`
+	Meta    PDEContribution
+	TxReqID common.Hash
 }
 
 func NewPDEContribution(
