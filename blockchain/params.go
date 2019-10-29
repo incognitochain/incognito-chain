@@ -50,7 +50,6 @@ type Params struct {
 type GenesisParams struct {
 	InitialIncognito                            []string // init tx for genesis block
 	FeePerTxKb                                  uint64
-	RandomNumber                                uint64
 	PreSelectBeaconNodeSerializedPubkey         []string
 	PreSelectBeaconNodeSerializedPaymentAddress []string
 	PreSelectBeaconNode                         []string
@@ -66,7 +65,6 @@ var ChainMainParam = Params{}
 // FOR TESTNET
 func init() {
 	var genesisParamsTestnetNew = GenesisParams{
-		RandomNumber:                                0,
 		PreSelectBeaconNodeSerializedPubkey:         PreSelectBeaconNodeTestnetSerializedPubkey,
 		PreSelectBeaconNodeSerializedPaymentAddress: PreSelectBeaconNodeTestnetSerializedPaymentAddress,
 		PreSelectShardNodeSerializedPubkey:          PreSelectShardNodeTestnetSerializedPubkey,
@@ -114,11 +112,12 @@ func init() {
 	// END TESTNET
 	// FOR MAINNET
 	var genesisParamsMainnetNew = GenesisParams{
-		RandomNumber:                        0,
-		PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeMainnetSerializedPubkey,
-		PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeMainnetSerializedPubkey,
-		InitialIncognito:                    MainnetInitPRV,
-		ConsensusAlgorithm:                  common.BlsConsensus,
+		PreSelectBeaconNodeSerializedPubkey:         PreSelectBeaconNodeMainnetSerializedPubkey,
+		PreSelectBeaconNodeSerializedPaymentAddress: PreSelectBeaconNodeMainnetSerializedPaymentAddress,
+		PreSelectShardNodeSerializedPubkey:          PreSelectShardNodeMainnetSerializedPubkey,
+		PreSelectShardNodeSerializedPaymentAddress:  PreSelectShardNodeMainnetSerializedPaymentAddress,
+		InitialIncognito:                            MainnetInitPRV,
+		ConsensusAlgorithm:                          common.BlsConsensus,
 	}
 	ChainMainParam = Params{
 		Name:                   MainetName,
