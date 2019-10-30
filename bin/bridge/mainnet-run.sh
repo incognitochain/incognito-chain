@@ -3,7 +3,7 @@
 run()
 {
   validator_key=xxx
-  bootnode="34.80.244.84:9334"
+  bootnode="34.80.244.84:9330"
   is_shipping_logs=1
   latest_tag=$1
   current_tag=$2
