@@ -73,11 +73,10 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 		tokenPoolValueToBuy = pdePoolPair.Token2PoolValue
 	}
 	invariant := tokenPoolValueToSell * tokenPoolValueToBuy
+	fee := pdeTradeReqAction.Meta.SellAmount / PDEDevisionAmountForFee
 	newTokenPoolValueToSell := tokenPoolValueToSell + pdeTradeReqAction.Meta.SellAmount
-	newTokenPoolValueToBuy := invariant / newTokenPoolValueToSell
-	buyAmt := tokenPoolValueToBuy - newTokenPoolValueToBuy
-	tradeFee := (buyAmt * PDEFree) / 1000
-	receiveAmt := buyAmt - tradeFee
+	newTokenPoolValueToBuy := invariant / (newTokenPoolValueToSell - fee)
+	receiveAmt := tokenPoolValueToBuy - newTokenPoolValueToBuy
 
 	// update current pde state on mem
 	pdePoolPair.Token1PoolValue = newTokenPoolValueToBuy
@@ -86,19 +85,11 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 		pdePoolPair.Token1PoolValue = newTokenPoolValueToSell
 		pdePoolPair.Token2PoolValue = newTokenPoolValueToBuy
 	}
-	tradeFeeKey := string(lvdb.BuildPDETradeFeesKey(
-		beaconHeight,
-		pdeTradeReqAction.Meta.TokenIDToBuyStr,
-		pdeTradeReqAction.Meta.TokenIDToSellStr,
-		pdeTradeReqAction.Meta.TokenIDToBuyStr,
-	))
-	currentPDEState.PDEFees[tradeFeeKey] += tradeFee
 
 	pdeTradeAcceptedContent := metadata.PDETradeAcceptedContent{
 		TraderAddressStr: pdeTradeReqAction.Meta.TraderAddressStr,
 		TokenIDToBuyStr:  pdeTradeReqAction.Meta.TokenIDToBuyStr,
 		ReceiveAmount:    receiveAmt,
-		TradeFee:         tradeFee,
 		Token1IDStr:      pdePoolPair.Token1IDStr,
 		Token2IDStr:      pdePoolPair.Token2IDStr,
 		ShardID:          shardID,
@@ -106,7 +97,7 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 	}
 	pdeTradeAcceptedContent.Token1PoolValueOperation = metadata.TokenPoolValueOperation{
 		Operator: "-",
-		Value:    buyAmt,
+		Value:    receiveAmt,
 	}
 	pdeTradeAcceptedContent.Token2PoolValueOperation = metadata.TokenPoolValueOperation{
 		Operator: "+",
@@ -119,7 +110,7 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 		}
 		pdeTradeAcceptedContent.Token2PoolValueOperation = metadata.TokenPoolValueOperation{
 			Operator: "-",
-			Value:    buyAmt,
+			Value:    receiveAmt,
 		}
 	}
 	pdeTradeAcceptedContentBytes, err := json.Marshal(pdeTradeAcceptedContent)
@@ -160,13 +151,14 @@ func deductPDEAmounts(
 	if !found || currentSharesForToken == 0 {
 		return deductingAmounts
 	}
+
+	totalSharesForTokenPrefix := string(lvdb.BuildPDESharesKey(
+		beaconHeight,
+		wdMeta.WithdrawalToken1IDStr, wdMeta.WithdrawalToken2IDStr,
+		withdrawalTokenIDStr, "",
+	))
 	totalSharesForToken := uint64(0)
 	for shareKey, shareAmt := range currentPDEState.PDEShares {
-		totalSharesForTokenPrefix := string(lvdb.BuildPDESharesKey(
-			beaconHeight,
-			wdMeta.WithdrawalToken1IDStr, wdMeta.WithdrawalToken2IDStr,
-			withdrawalTokenIDStr, "",
-		))
 		if strings.Contains(shareKey, totalSharesForTokenPrefix) {
 			totalSharesForToken += shareAmt
 		}
@@ -202,27 +194,13 @@ func deductPDEAmounts(
 			pdePoolPair.Token1PoolValue -= deductingPoolValue
 		}
 	}
-	currentPDEState.PDEShares[shareForTokenKey] -= wdSharesForToken
+	if currentPDEState.PDEShares[shareForTokenKey] < wdSharesForToken {
+		currentPDEState.PDEShares[shareForTokenKey] = 0
+	} else {
+		currentPDEState.PDEShares[shareForTokenKey] -= wdSharesForToken
+	}
 	deductingAmounts.PoolValue = deductingPoolValue
 	deductingAmounts.Shares = wdSharesForToken
-
-	// fee
-	tradeFeeKey := string(lvdb.BuildPDETradeFeesKey(
-		beaconHeight,
-		wdMeta.WithdrawalToken1IDStr, wdMeta.WithdrawalToken2IDStr,
-		withdrawalTokenIDStr,
-	))
-	totalFeesOnToken, found := currentPDEState.PDEFees[tradeFeeKey]
-	if !found || totalFeesOnToken == 0 {
-		return deductingAmounts
-	}
-	deductingFee := totalFeesOnToken * wdSharesForToken / totalSharesForToken
-	deductingAmounts.TradeFees = deductingFee
-	if currentPDEState.PDEFees[tradeFeeKey] < deductingFee {
-		currentPDEState.PDEFees[tradeFeeKey] = 0
-	} else {
-		currentPDEState.PDEFees[tradeFeeKey] -= deductingFee
-	}
 	return deductingAmounts
 }
 
@@ -239,7 +217,6 @@ func buildPDEWithdrawalAcceptedInst(
 		WithdrawerAddressStr: wdMeta.WithdrawerAddressStr,
 		DeductingPoolValue:   deductingAmountsForToken.PoolValue,
 		DeductingShares:      deductingAmountsForToken.Shares,
-		DeductingTradeFees:   deductingAmountsForToken.TradeFees,
 		PairToken1IDStr:      wdMeta.WithdrawalToken1IDStr,
 		PairToken2IDStr:      wdMeta.WithdrawalToken2IDStr,
 		TxReqID:              txReqID,
@@ -276,7 +253,6 @@ func (blockchain *BlockChain) buildInstructionsForPDEWithdrawal(
 		Logger.log.Errorf("ERROR: an error occured while unmarshaling pde withdrawal request action: %+v", err)
 		return [][]string{}, nil
 	}
-	// db := blockchain.GetDatabase()
 	wdMeta := pdeWithdrawalRequestAction.Meta
 	deductingAmountsForToken1 := deductPDEAmounts(
 		wdMeta.WithdrawalToken1IDStr,
