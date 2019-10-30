@@ -36,9 +36,3 @@ const (
 const (
 	maxPendingCrossShardInPool = 2000 //per shardID
 )
-
-// Estimate fee
-const (
-	ExtraFeeInNativeToken = 1000 // in nano PRV
-	MaxFeeInNativeToken = 1e9    // in nano PRV
-)
