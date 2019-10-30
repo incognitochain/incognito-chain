@@ -33,7 +33,6 @@ type Params struct {
 	GenesisBeaconBlock               *BeaconBlock // GenesisBlock defines the first block of the chain.
 	GenesisShardBlock                *ShardBlock  // GenesisBlock defines the first block of the chain.
 	BasicReward                      uint64
-	RewardHalflife                   uint64
 	Epoch                            uint64
 	RandomTime                       uint64
 	SlashLevels                      []SlashLevel
@@ -50,7 +49,6 @@ type Params struct {
 type GenesisParams struct {
 	InitialIncognito                            []string // init tx for genesis block
 	FeePerTxKb                                  uint64
-	RandomNumber                                uint64
 	PreSelectBeaconNodeSerializedPubkey         []string
 	PreSelectBeaconNodeSerializedPaymentAddress []string
 	PreSelectBeaconNode                         []string
@@ -66,7 +64,6 @@ var ChainMainParam = Params{}
 // FOR TESTNET
 func init() {
 	var genesisParamsTestnetNew = GenesisParams{
-		RandomNumber:                                0,
 		PreSelectBeaconNodeSerializedPubkey:         PreSelectBeaconNodeTestnetSerializedPubkey,
 		PreSelectBeaconNodeSerializedPaymentAddress: PreSelectBeaconNodeTestnetSerializedPaymentAddress,
 		PreSelectShardNodeSerializedPubkey:          PreSelectShardNodeTestnetSerializedPubkey,
@@ -94,7 +91,6 @@ func init() {
 		MinBeaconBlockInterval:           TestNetMinBeaconBlkInterval,
 		MaxBeaconBlockCreation:           TestNetMaxBeaconBlkCreation,
 		BasicReward:                      TestnetBasicReward,
-		RewardHalflife:                   TestnetRewardHalflife,
 		Epoch:                            TestnetEpoch,
 		RandomTime:                       TestnetRandomTime,
 		Offset:                           TestnetOffset,
@@ -114,11 +110,12 @@ func init() {
 	// END TESTNET
 	// FOR MAINNET
 	var genesisParamsMainnetNew = GenesisParams{
-		RandomNumber:                        0,
-		PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeMainnetSerializedPubkey,
-		PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeMainnetSerializedPubkey,
-		InitialIncognito:                    MainnetInitPRV,
-		ConsensusAlgorithm:                  common.BlsConsensus,
+		PreSelectBeaconNodeSerializedPubkey:         PreSelectBeaconNodeMainnetSerializedPubkey,
+		PreSelectBeaconNodeSerializedPaymentAddress: PreSelectBeaconNodeMainnetSerializedPaymentAddress,
+		PreSelectShardNodeSerializedPubkey:          PreSelectShardNodeMainnetSerializedPubkey,
+		PreSelectShardNodeSerializedPaymentAddress:  PreSelectShardNodeMainnetSerializedPaymentAddress,
+		InitialIncognito:                            MainnetInitPRV,
+		ConsensusAlgorithm:                          common.BlsConsensus,
 	}
 	ChainMainParam = Params{
 		Name:                   MainetName,
@@ -138,7 +135,6 @@ func init() {
 		MinBeaconBlockInterval:           MainnetMinBeaconBlkInterval,
 		MaxBeaconBlockCreation:           MainnetMaxBeaconBlkCreation,
 		BasicReward:                      MainnetBasicReward,
-		RewardHalflife:                   MainnetRewardHalflife,
 		Epoch:                            MainnetEpoch,
 		RandomTime:                       MainnetRandomTime,
 		Offset:                           MainnetOffset,
