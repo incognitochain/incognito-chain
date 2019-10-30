@@ -114,6 +114,51 @@ func initWithdrawRewardTx(_ js.Value, args []js.Value) interface{} {
 	return result
 }
 
+func initPRVContributionTx(_ js.Value, args []js.Value) interface{} {
+	result, err := gomobile.InitPRVContributionTx(args[0].String())
+	if err != nil {
+		return nil
+	}
+
+	return result
+}
+
+func initPTokenContributionTx(_ js.Value, args []js.Value) interface{} {
+	result, err := gomobile.InitPTokenContributionTx(args[0].String())
+	if err != nil {
+		return nil
+	}
+
+	return result
+}
+
+func initPRVTradeTx(_ js.Value, args []js.Value) interface{} {
+	result, err := gomobile.InitPRVTradeTx(args[0].String())
+	if err != nil {
+		return nil
+	}
+
+	return result
+}
+
+func initPTokenTradeTx(_ js.Value, args []js.Value) interface{} {
+	result, err := gomobile.InitPTokenTradeTx(args[0].String())
+	if err != nil {
+		return nil
+	}
+
+	return result
+}
+
+func withdrawDexTx(_ js.Value, args []js.Value) interface{} {
+	result, err := gomobile.WithdrawDexTx(args[0].String())
+	if err != nil {
+		return nil
+	}
+
+	return result
+}
+
 func main() {
 	c := make(chan struct{}, 0)
 	println("Hello WASM")
@@ -131,5 +176,12 @@ func main() {
 	js.Global().Set("scalarMultBase", js.FuncOf(scalarMultBase))
 	js.Global().Set("randomScalars", js.FuncOf(randomScalars))
 	js.Global().Set("generateBLSKeyPairFromSeed", js.FuncOf(generateBLSKeyPairFromSeed))
+
+	js.Global().Set("initPRVContributionTx", js.FuncOf(initPRVContributionTx))
+	js.Global().Set("initPTokenContributionTx", js.FuncOf(initPTokenContributionTx))
+	js.Global().Set("initPRVTradeTx", js.FuncOf(initPRVTradeTx))
+	js.Global().Set("initPTokenTradeTx", js.FuncOf(initPTokenTradeTx))
+	js.Global().Set("withdrawDexTx", js.FuncOf(withdrawDexTx))
+
 	<-c
 }

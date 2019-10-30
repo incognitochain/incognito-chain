@@ -25,6 +25,20 @@ FOUNDATION_EXPORT NSString* _Nonnull GomobileGenerateKeyFromSeed(NSString* _Null
 
 FOUNDATION_EXPORT NSString* _Nonnull GomobileInitBurningRequestTx(NSString* _Nullable args, NSError* _Nullable* _Nullable error);
 
+// skipped function InitPEDContributionMetadataFromParam with unsupported parameter or return types
+
+
+// skipped function InitPEDTradeRequestMetadataFromParam with unsupported parameter or return types
+
+
+FOUNDATION_EXPORT NSString* _Nonnull GomobileInitPRVContributionTx(NSString* _Nullable args, NSError* _Nullable* _Nullable error);
+
+FOUNDATION_EXPORT NSString* _Nonnull GomobileInitPRVTradeTx(NSString* _Nullable args, NSError* _Nullable* _Nullable error);
+
+FOUNDATION_EXPORT NSString* _Nonnull GomobileInitPTokenContributionTx(NSString* _Nullable args, NSError* _Nullable* _Nullable error);
+
+FOUNDATION_EXPORT NSString* _Nonnull GomobileInitPTokenTradeTx(NSString* _Nullable args, NSError* _Nullable* _Nullable error);
+
 // skipped function InitParamCreatePrivacyTokenTx with unsupported parameter or return types
 
 
@@ -42,5 +56,7 @@ FOUNDATION_EXPORT NSString* _Nonnull GomobileRandomScalars(NSString* _Nullable n
 FOUNDATION_EXPORT NSString* _Nonnull GomobileScalarMultBase(NSString* _Nullable scalarB64Encode, NSError* _Nullable* _Nullable error);
 
 FOUNDATION_EXPORT NSString* _Nonnull GomobileStaking(NSString* _Nullable args, NSError* _Nullable* _Nullable error);
+
+FOUNDATION_EXPORT NSString* _Nonnull GomobileWithdrawDexTx(NSString* _Nullable args, NSError* _Nullable* _Nullable error);
 
 #endif
