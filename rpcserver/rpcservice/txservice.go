@@ -152,7 +152,7 @@ func (txService TxService) chooseOutsCoinByKeyset(
 		paymentInfos, shardIDSender, numBlock, hasPrivacy,
 		metadataParam, customTokenParams,
 		privacyCustomTokenParams, db)
-	if err != nil{
+	if err != nil {
 		return nil, 0, NewRPCError(RejectInvalidFeeError, err)
 	}
 
@@ -169,7 +169,7 @@ func (txService TxService) chooseOutsCoinByKeyset(
 		}
 		if privacyCustomTokenParams != nil {
 			// for privacy token
-			return nil, 0,  nil
+			return nil, 0, nil
 		}
 	}
 
@@ -186,7 +186,7 @@ func (txService TxService) chooseOutsCoinByKeyset(
 	}
 	// convert to inputcoins
 	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateOutputCoins)
-	return inputCoins, realFee,  nil
+	return inputCoins, realFee, nil
 }
 
 // EstimateFee - estimate fee from tx data and return real full fee, fee per kb and real tx size
@@ -215,12 +215,12 @@ func (txService TxService) EstimateFee(
 		if privacyCustomTokenParams != nil {
 			tokenId, _ = common.Hash{}.NewHashFromStr(privacyCustomTokenParams.PropertyID)
 		}
-	} else{
+	} else {
 		tokenId = nil
 	}
 
 	estimateFeeCoinPerKb, err := txService.EstimateFeeWithEstimator(defaultFee, shardID, numBlock, tokenId, -1, db)
-	if err != nil{
+	if err != nil {
 		return 0, 0, 0, err
 	}
 
@@ -280,11 +280,6 @@ func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID by
 
 	// return fee in ptoken (if tokenid != nil)
 	if tokenId != nil {
-		// add extra fee to make sure it is valid when create block
-		if unitFee < mempool.MaxFeeInNativeToken {
-			unitFee += uint64(mempool.ExtraFeeInNativeToken)
-		}
-
 		unitFee, err = mempool.ConvertNativeTokenToPrivacyToken(unitFee, tokenId, beaconHeight, db)
 		if err != nil {
 			return uint64(0), err
@@ -608,7 +603,7 @@ func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 	if !ok {
 		return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Token fee is invalid"))
 	}
-	if tokenTxType == transaction.CustomTokenInit{
+	if tokenTxType == transaction.CustomTokenInit {
 		tokenFee = 0
 	}
 	tokenParams := &transaction.CustomTokenPrivacyParamTx{
