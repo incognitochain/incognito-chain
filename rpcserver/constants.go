@@ -95,6 +95,7 @@ const (
 	//==================================================
 
 	getShardBestState        = "getshardbeststate"
+	getShardBestStateDetail  = "getshardbeststatedetail"
 	getBeaconBestState       = "getbeaconbeststate"
 	getBeaconBestStateDetail = "getbeaconbeststatedetail"
 

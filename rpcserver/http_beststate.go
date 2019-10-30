@@ -159,3 +159,28 @@ func (httpServer *HttpServer) handleGetBeaconBestStateDetail(params interface{},
 	Logger.log.Debugf("Get Beacon BestState: %+v", clonedBeaconBestState)
 	return result, nil
 }
+
+/*
+handleGetShardBestState - RPC get shard best state
+*/
+func (httpServer *HttpServer) handleGetShardBestStateDetail(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	Logger.log.Debugf("handleGetShardBestStateDetail params: %+v", params)
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Shard ID empty"))
+	}
+	shardIdParam, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Shard ID component invalid"))
+	}
+	shardID := byte(shardIdParam)
+
+	shardBestState, err := httpServer.blockService.GetShardBestStateByShardID(shardID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetClonedShardBestStateError, err)
+	}
+
+	result := jsonresult.NewGetShardBestStateDetail(shardBestState)
+	Logger.log.Debugf("Get Shard BestState result: %+v", result)
+	return result, nil
+}
