@@ -17,7 +17,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -642,16 +642,16 @@ func (tx Tx) CheckTxVersion(maxTxVersion int8) bool {
 	return !(tx.Version > maxTxVersion)
 }
 
-func (tx Tx) CheckTransactionFee(minFeePerKbTx uint64) bool {
-	if tx.IsSalaryTx() {
-		return true
-	}
-	if tx.Metadata != nil {
-		return tx.Metadata.CheckTransactionFee(&tx, minFeePerKbTx)
-	}
-	fullFee := minFeePerKbTx * tx.GetTxActualSize()
-	return tx.Fee >= fullFee
-}
+// func (tx Tx) CheckTransactionFee(minFeePerKbTx uint64) bool {
+// 	if tx.IsSalaryTx() {
+// 		return true
+// 	}
+// 	if tx.Metadata != nil {
+// 		return tx.Metadata.CheckTransactionFee(&tx, minFeePerKbTx)
+// 	}
+// 	fullFee := minFeePerKbTx * tx.GetTxActualSize()
+// 	return tx.Fee >= fullFee
+// }
 
 func (tx Tx) IsSalaryTx() bool {
 	// Check normal tx(not an action tx)
