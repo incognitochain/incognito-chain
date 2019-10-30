@@ -465,33 +465,47 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int6
 	case common.TxCustomTokenPrivacyType:
 		{
 			txPrivacyToken := tx.(*transaction.TxCustomTokenPrivacy)
-			tokenID := txPrivacyToken.TxPrivacyTokenData.PropertyID
-			feeNativeToken := tx.GetTxFee()
-			feePToken := tx.GetTxFeeToken()
-
-			//convert fee in Ptoken to fee in native token (if feePToken > 0)
-			if feePToken > 0 {
-				feePTokenToNativeToken, err := ConvertPrivacyTokenToNativeToken(feePToken, &tokenID, beaconHeight, tp.config.DataBase)
-				if err != nil{
-					return NewMempoolTxError(RejectInvalidFee,
-						fmt.Errorf("transaction %+v: %+v %v can not convert to native token",
-							txHash.String(), feePToken, tokenID))
-				}
-
-				feeNativeToken += feePTokenToNativeToken
-			}
-
-			// get limit fee in native token
-			actualTxSize := tx.GetTxActualSize()
 			limitFee := tp.config.FeeEstimator[shardID].GetLimitFeeForNativeToken()
 
-			// check fee in native token
-			minFee := actualTxSize * limitFee
-			if feeNativeToken < minFee {
-				return NewMempoolTxError(RejectInvalidFee,
-					fmt.Errorf("transaction %+v has %d fees PRV which is under the required amount of %d, tx size %d",
-						txHash.String(), feeNativeToken, minFee, actualTxSize))
+			// check transaction fee for meta data
+			if txPrivacyToken.Metadata != nil {
+				ok := txPrivacyToken.Metadata.CheckTransactionFee(txPrivacyToken, limitFee)
+				if !ok {
+					return NewMempoolTxError(RejectInvalidFee,
+						fmt.Errorf("transaction %+v: Invalid fee metadata",
+							txHash.String()))
+				}
+			} else {
+				tokenID := txPrivacyToken.TxPrivacyTokenData.PropertyID
+				feeNativeToken := tx.GetTxFee()
+				feePToken := tx.GetTxFeeToken()
+
+				//convert fee in Ptoken to fee in native token (if feePToken > 0)
+				if feePToken > 0 {
+					feePTokenToNativeToken, err := ConvertPrivacyTokenToNativeToken(feePToken, &tokenID, beaconHeight, tp.config.DataBase)
+					if err != nil{
+						return NewMempoolTxError(RejectInvalidFee,
+							fmt.Errorf("transaction %+v: %+v %v can not convert to native token",
+								txHash.String(), feePToken, tokenID))
+					}
+
+					feeNativeToken += feePTokenToNativeToken
+				}
+
+				// get limit fee in native token
+				actualTxSize := tx.GetTxActualSize()
+
+
+				// check fee in native token
+				minFee := actualTxSize * limitFee
+				if feeNativeToken < minFee {
+					return NewMempoolTxError(RejectInvalidFee,
+						fmt.Errorf("transaction %+v has %d fees PRV which is under the required amount of %d, tx size %d",
+							txHash.String(), feeNativeToken, minFee, actualTxSize))
+				}
 			}
+
+
 
 			//txPrivacyToken := tx.(*transaction.TxCustomTokenPrivacy)
 			//isPaidByPRV := false

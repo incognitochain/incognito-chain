@@ -23,9 +23,9 @@ type PDETradeRequest struct {
 }
 
 type PDETradeRequestAction struct {
-	Meta    PDETradeRequest `json:"meta"`
-	TxReqID common.Hash     `json:"txReqId"`
-	ShardID byte            `json:"shardId"`
+	Meta    PDETradeRequest
+	TxReqID common.Hash
+	ShardID byte
 }
 
 type TokenPoolValueOperation struct {
