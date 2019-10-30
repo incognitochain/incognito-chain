@@ -29,6 +29,7 @@ type BLSBFT struct {
 	VoteMessageCh    chan BFTVote
 
 	RoundData struct {
+		TimeStart         time.Time
 		Block             common.BlockInterface
 		BlockHash         common.Hash
 		BlockValidateData ValidationData
@@ -210,6 +211,7 @@ func (e *BLSBFT) Start() error {
 					}
 					roundKey := getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)
 					if e.Blocks[roundKey] != nil {
+						metrics.SetGlobalParam("ReceiveBlockTime", time.Since(e.RoundData.TimeStart).Seconds())
 						//fmt.Println("CONSENSUS: listen phase 2")
 						if err := e.validatePreSignBlock(e.Blocks[roundKey]); err != nil {
 							delete(e.Blocks, roundKey)
@@ -282,6 +284,7 @@ func (e *BLSBFT) Start() error {
 							}
 							continue
 						}
+						metrics.SetGlobalParam("CommitTime", time.Since(time.Unix(e.Chain.GetLastBlockTimeStamp(), 0)).Seconds())
 						// e.Node.PushMessageToAll()
 						e.logger.Warn("Commit block! Wait for next round")
 						e.enterNewRound()
@@ -298,8 +301,9 @@ func (e *BLSBFT) enterProposePhase() {
 		return
 	}
 	e.setState(proposePhase)
-
 	block, err := e.createNewBlock()
+	metrics.SetGlobalParam("CreateTime", time.Since(e.RoundData.TimeStart).Seconds())
+
 	if err != nil {
 		e.logger.Error("can't create block", err)
 		return

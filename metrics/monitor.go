@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"io"
+	"os"
+
 	"io/ioutil"
 	"net/http"
-	"os"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -52,11 +52,11 @@ func init() {
 	uid := uuid.New()
 	globalParam = &logKV{param: make(map[string]interface{})}
 	SetGlobalParam("UID", uid.String())
-	var err error
-	monitorFile, err = os.OpenFile("/data/monitor.json", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
-	if err != nil {
-		panic("Cannot open to monitor file")
-	}
+	//var err error
+	//monitorFile, err = os.OpenFile("/data/monitor.json", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
+	//if err != nil {
+	//	panic("Cannot open to monitor file")
+	//}
 
 	go func() {
 		ticker := time.NewTicker(5 * time.Second)
@@ -72,7 +72,39 @@ func init() {
 			bheight := blockchain.GetBeaconBestState().BeaconHeight
 			bhash := blockchain.GetBeaconBestState().BestBlockHash
 
+			beaconValidator := []string{}
+			for _, v := range blockchain.GetBeaconBestState().GetBeaconCommittee() {
+				beaconValidator = append(beaconValidator, v.GetMiningKeyBase58("bls"))
+			}
+			l.Add("beaconValidator", beaconValidator)
+
+			waitingCandidateCurrentNumber := make([]string, len(blockchain.GetBeaconBestState().CandidateShardWaitingForCurrentRandom))
+			for _, v := range blockchain.GetBeaconBestState().CandidateShardWaitingForCurrentRandom {
+				waitingCandidateCurrentNumber = append(waitingCandidateCurrentNumber, v.GetMiningKeyBase58("bls"))
+			}
+			l.Add("waitingShardCandidateCurrentNumber  ", waitingCandidateCurrentNumber)
+
+			waitingCandidateNextNumber := make([]string, len(blockchain.GetBeaconBestState().CandidateShardWaitingForNextRandom))
+			for _, v := range blockchain.GetBeaconBestState().CandidateShardWaitingForNextRandom {
+				waitingCandidateNextNumber = append(waitingCandidateNextNumber, v.GetMiningKeyBase58("bls"))
+			}
+			l.Add("waitingShardCandidateNextNumber", waitingCandidateNextNumber)
+
+			pendingShardValidator := map[byte][]string{}
+			shardValidator := map[byte][]string{}
+
 			for i := 0; i < blockchain.GetBeaconBestState().ActiveShards; i++ {
+				for _, v := range blockchain.GetBestStateShard(byte(i)).ShardCommittee {
+					shardValidator[byte(i)] = append(shardValidator[byte(i)], v.GetMiningKeyBase58("bls"))
+				}
+				l.Add("shardValidator", shardValidator)
+
+				for _, v := range blockchain.GetBestStateShard(byte(i)).ShardPendingValidator {
+					pendingShardValidator[byte(i)] = append(pendingShardValidator[byte(i)], v.GetMiningKeyBase58("bls"))
+
+				}
+				l.Add("pendingShardValidator", pendingShardValidator)
+
 				shash := blockchain.GetBestStateShard(byte(i)).BestBlockHash
 				sheight := blockchain.GetBestStateShard(byte(i)).ShardHeight
 				l.Add(fmt.Sprintf("Shard%v", i), fmt.Sprintf("%v:%v", sheight, shash.String()))
@@ -128,11 +160,11 @@ func (s *logKV) Write() {
 	s.param["Time"] = fmt.Sprintf("%s", time.Now().Format(time.RFC3339))
 	b, _ := json.Marshal(s.param)
 
-	io.Copy(monitorFile, bytes.NewReader(b))
-	io.Copy(monitorFile, bytes.NewReader([]byte("\n")))
+	//io.Copy(monitorFile, bytes.NewReader(b))
+	//io.Copy(monitorFile, bytes.NewReader([]byte("\n")))
 
 	go func() {
-		req, err := http.NewRequest(http.MethodPost, "http://51.91.220.58:33333", bytes.NewBuffer(b))
+		req, err := http.NewRequest(http.MethodPost, "http://localhost:33333", bytes.NewBuffer(b))
 		req.Header.Set("Content-Type", "application/json")
 		if err != nil {
 			Logger.log.Debug("Create Request failed with err: ", err)
