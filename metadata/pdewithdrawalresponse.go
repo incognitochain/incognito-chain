@@ -29,7 +29,7 @@ func NewPDEWithdrawalResponse(
 	}
 }
 
-func (iRes PDEWithdrawalResponse) CheckTransactionFee(tr Transaction, minFee uint64) bool {
+func (iRes PDEWithdrawalResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db database.DatabaseInterface) bool {
 	// no need to have fee for this tx
 	return true
 }
