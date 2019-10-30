@@ -17,7 +17,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -27,7 +27,7 @@ type Tx struct {
 	Type     string `json:"Type"` // Transaction type
 	LockTime int64  `json:"LockTime"`
 	Fee      uint64 `json:"Fee"` // Fee applies: always consant
-	Info     []byte              // 512 bytes
+	Info     []byte // 512 bytes
 
 	// Sign and Privacy proof, required
 	SigPubKey            []byte `json:"SigPubKey, omitempty"` // 33 bytes
@@ -368,7 +368,6 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 	return nil
 }
 
-
 // signTx - signs tx
 func (tx *Tx) signTx() error {
 	//Check input transaction
@@ -643,16 +642,16 @@ func (tx Tx) CheckTxVersion(maxTxVersion int8) bool {
 	return !(tx.Version > maxTxVersion)
 }
 
-func (tx Tx) CheckTransactionFee(minFeePerKbTx uint64) bool {
-	if tx.IsSalaryTx() {
-		return true
-	}
-	if tx.Metadata != nil {
-		return tx.Metadata.CheckTransactionFee(&tx, minFeePerKbTx)
-	}
-	fullFee := minFeePerKbTx * tx.GetTxActualSize()
-	return tx.Fee >= fullFee
-}
+// func (tx Tx) CheckTransactionFee(minFeePerKbTx uint64) bool {
+// 	if tx.IsSalaryTx() {
+// 		return true
+// 	}
+// 	if tx.Metadata != nil {
+// 		return tx.Metadata.CheckTransactionFee(&tx, minFeePerKbTx)
+// 	}
+// 	fullFee := minFeePerKbTx * tx.GetTxActualSize()
+// 	return tx.Fee >= fullFee
+// }
 
 func (tx Tx) IsSalaryTx() bool {
 	// Check normal tx(not an action tx)
@@ -1094,7 +1093,7 @@ func (tx Tx) IsCoinsBurning() bool {
 		senderPKBytes = tx.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().ToBytesS()
 	}
 	keyWalletBurningAccount, err := wallet.Base58CheckDeserialize(common.BurningAddress)
-	if err != nil{
+	if err != nil {
 		return false
 	}
 	keysetBurningAccount := keyWalletBurningAccount.KeySet
@@ -1294,9 +1293,8 @@ func (tx Tx) VerifyMinerCreatedTxBeforeGettingInBlock(
 	return true, nil
 }
 
-
 type TxPrivacyInitParamsForASM struct {
-	txParam TxPrivacyInitParams
+	txParam             TxPrivacyInitParams
 	commitmentIndices   []uint64
 	commitmentBytes     [][]byte
 	myCommitmentIndices []uint64
@@ -1313,31 +1311,31 @@ func NewTxPrivacyInitParamsForASM(
 	metaData metadata.Metadata,
 	info []byte,
 	commitmentIndices []uint64,
-	commitmentBytes     [][]byte,
+	commitmentBytes [][]byte,
 	myCommitmentIndices []uint64,
-	sndOutputs          []*privacy.Scalar) *TxPrivacyInitParamsForASM {
+	sndOutputs []*privacy.Scalar) *TxPrivacyInitParamsForASM {
 
 	txParam := TxPrivacyInitParams{
-		senderSK: senderSK,
-		paymentInfo:        paymentInfo,
-		inputCoins:        inputCoins,
-		fee      :            fee,
-		hasPrivacy:           hasPrivacy,
-		tokenID:tokenID,
-		metaData:metaData,
-		info:info,
+		senderSK:    senderSK,
+		paymentInfo: paymentInfo,
+		inputCoins:  inputCoins,
+		fee:         fee,
+		hasPrivacy:  hasPrivacy,
+		tokenID:     tokenID,
+		metaData:    metaData,
+		info:        info,
 	}
 	params := &TxPrivacyInitParamsForASM{
-		txParam : txParam,
-		commitmentIndices : commitmentIndices,
+		txParam:             txParam,
+		commitmentIndices:   commitmentIndices,
 		commitmentBytes:     commitmentBytes,
 		myCommitmentIndices: myCommitmentIndices,
-		sndOutputs :sndOutputs,
+		sndOutputs:          sndOutputs,
 	}
 	return params
 }
 
-func (param *TxPrivacyInitParamsForASM) SetMetaData(meta metadata.Metadata){
+func (param *TxPrivacyInitParamsForASM) SetMetaData(meta metadata.Metadata) {
 	param.txParam.metaData = meta
 }
 
@@ -1444,7 +1442,7 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 		return NewTransactionErr(WrongInputError,
 			errors.New(
 				fmt.Sprintf("input value less than output value. sumInputValue=%d sumOutputValue=%d fee=%d",
-				sumInputValue, sumOutputValue, params.txParam.fee)))
+					sumInputValue, sumOutputValue, params.txParam.fee)))
 	}
 
 	// if overBalance > 0, create a new payment info with pk is sender's pk and amount is overBalance
@@ -1564,7 +1562,7 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 	}
 
 	snProof := tx.Proof.GetSerialNumberProof()
-	for i:=0; i<len(snProof); i++{
+	for i := 0; i < len(snProof); i++ {
 		res, _ := snProof[i].Verify(nil)
 		println("Verify serial number proof: ", i, ": ", res)
 	}
@@ -1575,4 +1573,3 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 	//Logger.log.Debugf("Successfully Creating normal tx %+v in %s time", *tx.Hash(), elapsed)
 	return nil
 }
-

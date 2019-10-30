@@ -19,7 +19,6 @@ import (
 //	return proof
 //}
 
-
 func generateBLSKeyPairFromSeed(_ js.Value, args []js.Value) interface{} {
 	return gomobile.GenerateBLSKeyPairFromSeed(args[0].String())
 }
@@ -67,7 +66,6 @@ func randomScalars(_ js.Value, args []js.Value) interface{} {
 
 	return result
 }
-
 
 func initPrivacyTx(_ js.Value, args []js.Value) interface{} {
 	result, err := gomobile.InitPrivacyTx(args[0].String())
