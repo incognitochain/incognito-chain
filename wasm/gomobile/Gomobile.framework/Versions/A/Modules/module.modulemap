@@ -1,8 +1,0 @@
-framework module "Gomobile" {
-	header "ref.h"
-    header "Gomobile.objc.h"
-    header "Universe.objc.h"
-    header "Gomobile.h"
-
-    export *
-}
