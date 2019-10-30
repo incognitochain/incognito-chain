@@ -1,8 +1,12 @@
 package metadata
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 )
@@ -11,7 +15,7 @@ import (
 type Metadata interface {
 	GetType() int
 	Hash() *common.Hash
-	CheckTransactionFee(Transaction, uint64) bool
+	CheckTransactionFee(Transaction, uint64, int64, database.DatabaseInterface) bool
 	ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error)
 	ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error)
 	ValidateMetadataByItself() bool
@@ -98,7 +102,7 @@ type Transaction interface {
 
 	// VALIDATE FUNC
 	CheckTxVersion(int8) bool
-	CheckTransactionFee(minFeePerKbTx uint64) bool
+	// CheckTransactionFee(minFeePerKbTx uint64) bool
 	ValidateTxWithCurrentMempool(MempoolRetriever) error
 	ValidateTxWithBlockChain(BlockchainRetriever, byte, database.DatabaseInterface) error
 	ValidateDoubleSpendWithBlockchain(BlockchainRetriever, byte, database.DatabaseInterface, *common.Hash) error
@@ -112,4 +116,89 @@ type Transaction interface {
 	IsCoinsBurning() bool
 	CalculateTxValue() uint64
 	IsSalaryTx() bool
+}
+
+func getPDEPoolPair(
+	prvIDStr, tokenIDStr string,
+	beaconHeight int64,
+	db database.DatabaseInterface,
+) (*lvdb.PDEPoolForPair, error) {
+	var pdePoolForPair lvdb.PDEPoolForPair
+	var err error
+	poolPairBytes := []byte{}
+	if beaconHeight == -1 {
+		poolPairBytes, err = db.GetLatestPDEPoolForPair(prvIDStr, tokenIDStr)
+	} else {
+		poolPairBytes, err = db.GetPDEPoolForPair(uint64(beaconHeight), prvIDStr, tokenIDStr)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if len(poolPairBytes) == 0 {
+		return nil, NewMetadataTxError(CouldNotGetExchangeRateError, fmt.Errorf("Could not find out pdePoolForPair with token ids: %s & %s", prvIDStr, tokenIDStr))
+	}
+	err = json.Unmarshal(poolPairBytes, &pdePoolForPair)
+	if err != nil {
+		return nil, err
+	}
+	return &pdePoolForPair, nil
+}
+
+func convertValueBetweenCurrencies(
+	amount uint64,
+	currentCurrencyIDStr string,
+	tokenID *common.Hash,
+	beaconHeight int64,
+	db database.DatabaseInterface,
+) (uint64, error) {
+	prvIDStr := common.PRVCoinID.String()
+	tokenIDStr := tokenID.String()
+	pdePoolForPair, err := getPDEPoolPair(prvIDStr, tokenIDStr, beaconHeight, db)
+	if err != nil {
+		return 0, NewMetadataTxError(CouldNotGetExchangeRateError, err)
+	}
+	invariant := pdePoolForPair.Token1PoolValue * pdePoolForPair.Token2PoolValue
+	if invariant == 0 {
+		return 0, NewMetadataTxError(CouldNotGetExchangeRateError, err)
+	}
+	if pdePoolForPair.Token1IDStr == currentCurrencyIDStr {
+		remainingValue := invariant / (pdePoolForPair.Token1PoolValue + amount)
+		return pdePoolForPair.Token2PoolValue - remainingValue, nil
+	}
+	remainingValue := invariant / (pdePoolForPair.Token2PoolValue + amount)
+	return pdePoolForPair.Token1PoolValue - remainingValue, nil
+}
+
+// return error if there is no exchange rate between native token and privacy token
+// beaconHeight = -1: get the latest beacon height
+func ConvertNativeTokenToPrivacyToken(
+	nativeTokenAmount uint64,
+	tokenID *common.Hash,
+	beaconHeight int64,
+	db database.DatabaseInterface,
+) (uint64, error) {
+	return convertValueBetweenCurrencies(
+		nativeTokenAmount,
+		common.PRVCoinID.String(),
+		tokenID,
+		beaconHeight,
+		db,
+	)
+}
+
+// return error if there is no exchange rate between native token and privacy token
+// beaconHeight = -1: get the latest beacon height
+func ConvertPrivacyTokenToNativeToken(
+	privacyTokenAmount uint64,
+	tokenID *common.Hash,
+	beaconHeight int64,
+	db database.DatabaseInterface,
+) (uint64, error) {
+	return convertValueBetweenCurrencies(
+		privacyTokenAmount,
+		tokenID.String(),
+		tokenID,
+		beaconHeight,
+		db,
+	)
 }
