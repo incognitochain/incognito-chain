@@ -206,7 +206,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 	Logger.log.Debugf("sumInputValue: %d\n", sumInputValue)
 
 	// Calculate over balance, it will be returned to sender
-	overBalance := int(sumInputValue - sumOutputValue - params.fee)
+	overBalance := int64(sumInputValue - sumOutputValue - params.fee)
 
 	// Check if sum of input coins' value is at least sum of output coins' value and tx fee
 	if overBalance < 0 {
@@ -1435,7 +1435,7 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 	//Logger.log.Debugf("sumInputValue: %d\n", sumInputValue)
 
 	// Calculate over balance, it will be returned to sender
-	overBalance := int(sumInputValue - sumOutputValue - params.txParam.fee)
+	overBalance := int64(sumInputValue - sumOutputValue - params.txParam.fee)
 
 	// Check if sum of input coins' value is at least sum of output coins' value and tx fee
 	if overBalance < 0 {
