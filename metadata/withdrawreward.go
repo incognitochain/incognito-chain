@@ -61,7 +61,7 @@ func (withDrawRewardResponse WithDrawRewardResponse) Hash() *common.Hash {
 	return withDrawRewardResponse.TxRequest
 }
 
-func (withDrawRewardRequest WithDrawRewardRequest) CheckTransactionFee(tr Transaction, minFee uint64) bool {
+func (withDrawRewardRequest WithDrawRewardRequest) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db database.DatabaseInterface) bool {
 	//this transaction can be a zero-fee transaction, but in fact, user can set nonzero-fee for this tx
 	return true
 }
@@ -98,7 +98,7 @@ func (withDrawRewardRequest WithDrawRewardRequest) ValidateMetadataByItself() bo
 	return true
 }
 
-func (withDrawRewardResponse *WithDrawRewardResponse) CheckTransactionFee(tr Transaction, minFee uint64) bool {
+func (withDrawRewardResponse *WithDrawRewardResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db database.DatabaseInterface) bool {
 	//this transaction can be a zero-fee transaction, but in fact, user can set nonzero-fee for this tx
 	return true
 }
