@@ -78,8 +78,8 @@ func TestInitTxPrivacyToken(t *testing.T) {
 		txPrivacyTokenActualSize := tx.GetTxPrivacyTokenActualSize()
 		assert.Greater(t, txPrivacyTokenActualSize, uint64(0))
 
-		isValidFee := tx.CheckTransactionFee(uint64(0))
-		assert.Equal(t, true, isValidFee)
+		//isValidFee := tx.CheckTransactionFee(uint64(0))
+		//assert.Equal(t, true, isValidFee)
 
 		//isValidFeeToken := tx.CheckTransactionFeeByFeeToken(uint64(0))
 		//assert.Equal(t, true, isValidFeeToken)

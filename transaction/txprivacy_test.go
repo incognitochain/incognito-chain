@@ -3,7 +3,6 @@ package transaction
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -151,8 +150,8 @@ func TestInitTx(t *testing.T) {
 		isValidTxVersion := tx1.CheckTxVersion(1)
 		assert.Equal(t, true, isValidTxVersion)
 
-		isValidTxFee := tx1.CheckTransactionFee(0)
-		assert.Equal(t, true, isValidTxFee)
+		//isValidTxFee := tx1.CheckTransactionFee(0)
+		//assert.Equal(t, true, isValidTxFee)
 
 		isSalaryTx := tx1.IsSalaryTx()
 		assert.Equal(t, false, isSalaryTx)
