@@ -247,7 +247,7 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 	if withdrawalTokenIDStr == common.PRVCoinID.String() {
 		resTx := new(transaction.Tx)
 		err = resTx.InitTxSalary(
-			wdAcceptedContent.DeductingPoolValue+wdAcceptedContent.DeductingTradeFees,
+			wdAcceptedContent.DeductingPoolValue,
 			&receiverAddr,
 			producerPrivateKey,
 			blockGenerator.chain.config.DataBase,
@@ -264,7 +264,7 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 
 	// in case the returned currency is privacy custom token
 	receiver := &privacy.PaymentInfo{
-		Amount:         wdAcceptedContent.DeductingPoolValue + wdAcceptedContent.DeductingTradeFees,
+		Amount:         wdAcceptedContent.DeductingPoolValue,
 		PaymentAddress: receiverAddr,
 	}
 	var propertyID [common.HashSize]byte
@@ -274,7 +274,7 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 		PropertyID: propID.String(),
 		// PropertyName:   issuingAcceptedInst.IncTokenName,
 		// PropertySymbol: issuingAcceptedInst.IncTokenName,
-		Amount:      wdAcceptedContent.DeductingPoolValue + wdAcceptedContent.DeductingTradeFees,
+		Amount:      wdAcceptedContent.DeductingPoolValue,
 		TokenTxType: transaction.CustomTokenInit,
 		Receiver:    []*privacy.PaymentInfo{receiver},
 		TokenInput:  []*privacy.InputCoin{},
