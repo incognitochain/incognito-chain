@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
+	"sort"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -18,8 +21,6 @@ import (
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
-	"math/big"
-	"sort"
 
 	error2 "github.com/pkg/errors"
 )
@@ -267,7 +268,7 @@ func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID by
 	// convert ptoken fee to native token fee (if necessary)
 	var err error
 	if tokenId != nil {
-		unitFee, err = mempool.ConvertPrivacyTokenToNativeToken(unitFee, tokenId, beaconHeight, db)
+		unitFee, err = metadata.ConvertPrivacyTokenToNativeToken(unitFee, tokenId, beaconHeight, db)
 		if err != nil {
 			return uint64(0), err
 		}
@@ -280,7 +281,7 @@ func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID by
 
 	// return fee in ptoken (if tokenid != nil)
 	if tokenId != nil {
-		unitFee, err = mempool.ConvertNativeTokenToPrivacyToken(unitFee, tokenId, beaconHeight, db)
+		unitFee, err = metadata.ConvertNativeTokenToPrivacyToken(unitFee, tokenId, beaconHeight, db)
 		if err != nil {
 			return uint64(0), err
 		}
