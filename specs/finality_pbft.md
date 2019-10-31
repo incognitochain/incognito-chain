@@ -4,7 +4,7 @@
 ## Goal
 *	Safety: block is proposed by a correctness validator and all validator agree on it
 *	Liveness: all correctness validators decide finality block
-*	Progressive: validators keep producing & adding new blocks into chain
+*	Non-blocking: validators keep producing & adding new blocks into chain if more than 2/3 correct  are working
 ## PBFT in general
 ![Picture1](https://user-images.githubusercontent.com/37530661/67836086-3d724380-fb1e-11e9-9b89-6576cdff1060.png)
 PROPOSE PHASE
@@ -106,14 +106,14 @@ Let N be the size of committee.
 The worst case scenario is as in **Claim 4**.
 
 The proposers must in minor group (<= 1/3 N), only this minor group can propose and commit on new block. 
-This group is divided into two smaller groups, called A & , each one have (1/6)N members, which holds chain A and , respectively. 
+This group is divided into two smaller groups, called A & , each one have (1/6)N members, which holds chain A and B, respectively. 
 
-The probability that a proposer be in group A or  is 1/6.
+The probability that a proposer be in group A or B is 1/6.
 The probability that the chain is forked into two chains with length 1-block per chain is 1/6.
 The probability that the chain is forked into two chains with length 2-block per chain is satisfied:
 * 	The first block forked, probability 1/6 
 * 	The next block proposer is in small group, probability 1/6
-* 	The next block proposer is on the other chain, probability ½
-Thus, this case happens with probability. (1/6)*(1/2)*(1/6) =. (1/6) * (1/12)
+* 	The next block proposer is on the other chain, probability 1/2
+Thus, this case happens with probability (1/6)*(1/2)*(1/6) = (1/6) * (1/12)
 
 Generally, the probability that the chain is forked into two chains with length n-block per chain is:  (1/6)*(1/12)^n.
