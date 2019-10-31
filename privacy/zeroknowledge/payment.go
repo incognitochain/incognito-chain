@@ -3,6 +3,8 @@ package zkp
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
+	"github.com/pkg/errors"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -542,6 +544,12 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 		sumOutputValue += proof.outputCoins[i].CoinDetails.GetValue()
 	}
 
+	// check overflow output's value and fee
+	tmp := sumOutputValue + fee
+	if tmp < sumOutputValue || tmp < fee {
+		return false, privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("Overflow fee or output value"))
+	}
+
 	// check if sum of input values equal sum of output values
 	if sumInputValue != sumOutputValue+fee {
 		privacy.Logger.Log.Debugf("sumInputValue: %v\n", sumInputValue)
@@ -644,8 +652,8 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 		comOutputValueSum.Add(comOutputValueSum, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenValueIndex], new(privacy.Scalar).FromUint64(uint64(fee))))
 	}
 
-	privacy.Logger.Log.Debugf("comInputValueSum: ", comInputValueSum)
-	privacy.Logger.Log.Debugf("comOutputValueSum: ", comOutputValueSum)
+	fmt.Printf("comInputValueSum: %v\n", comInputValueSum.ToBytesS())
+	fmt.Printf("comOutputValueSum: %v\n", comOutputValueSum.ToBytesS())
 
 	if !privacy.IsPointEqual(comInputValueSum, comOutputValueSum) {
 		privacy.Logger.Log.Debugf("comInputValueSum: ", comInputValueSum)
