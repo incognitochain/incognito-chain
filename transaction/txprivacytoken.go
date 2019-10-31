@@ -11,7 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -128,14 +128,16 @@ func (tx TxCustomTokenPrivacy) GetTxPrivacyTokenActualSize() uint64 {
 }
 
 // CheckTransactionFee - check fee for all tx by use PRV as fee
-func (tx TxCustomTokenPrivacy) CheckTransactionFee(minFeePerKbTxInNativeToken uint64) bool {
-	if tx.IsSalaryTx() {
-		return true
-	}
-
-	fullFee := minFeePerKbTxInNativeToken * tx.GetTxActualSize()
-	return tx.GetTxFee() >= fullFee
-}
+// func (tx TxCustomTokenPrivacy) CheckTransactionFee(minFeePerKbTxInNativeToken uint64) bool {
+// 	if tx.IsSalaryTx() {
+// 		return true
+// 	}
+// 	if tx.Metadata != nil {
+// 		return tx.Metadata.CheckTransactionFee(&tx, minFeePerKbTxInNativeToken)
+// 	}
+// 	fullFee := minFeePerKbTxInNativeToken * tx.GetTxActualSize()
+// 	return tx.GetTxFee() >= fullFee
+// }
 
 //// CheckTransactionFeeByFeeToken - check fee for all tx by use token as fee
 //func (tx TxCustomTokenPrivacy) CheckTransactionFeeByFeeToken(minFeePerKbTx uint64) bool {

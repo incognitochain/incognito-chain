@@ -456,7 +456,7 @@ func InitParamCreatePrivacyTx(args string) (*transaction.TxPrivacyInitParamsForA
 	}
 
 	for i := 0; i < len(myCommitmentIndices); i++ {
-		tmp, ok :=  myCommitmentIndicesParam[i].(float64)
+		tmp, ok := myCommitmentIndicesParam[i].(float64)
 		if !ok {
 			return nil, errors.New("invalid my commitment index param")
 		}
@@ -481,7 +481,7 @@ func InitParamCreatePrivacyTx(args string) (*transaction.TxPrivacyInitParamsForA
 
 func InitPrivacyTx(args string) (string, error) {
 	paramCreateTx, err := InitParamCreatePrivacyTx(args)
-	if err!= nil{
+	if err != nil {
 		return "", err
 	}
 
@@ -561,12 +561,12 @@ func Staking(args string) (string, error) {
 	}
 
 	metaData, err := metadata.NewStakingMetadata(int(metaDataType), funderPaymentAddress, rewardReceiverPaymentAddress, uint64(stakingAmountShard), committeePublicKey, autoReStaking)
-	if err!= nil{
+	if err != nil {
 		return "", err
 	}
 
 	paramCreateTx, err := InitParamCreatePrivacyTx(args)
-	if err!= nil{
+	if err != nil {
 		return "", err
 	}
 
@@ -595,7 +595,7 @@ func Staking(args string) (string, error) {
 	return B64Res, nil
 }
 
-func InitParamCreatePrivacyTokenTx(args string) (*transaction.TxPrivacyTokenInitParamsForASM, error){
+func InitParamCreatePrivacyTokenTx(args string) (*transaction.TxPrivacyTokenInitParamsForASM, error) {
 	bytes := []byte(args)
 	println("Bytes: %v\n", bytes)
 
@@ -627,7 +627,7 @@ func InitParamCreatePrivacyTokenTx(args string) (*transaction.TxPrivacyTokenInit
 
 	keyWallet.KeySet.InitFromPrivateKeyByte(keyWallet.KeySet.PrivateKey)
 	publicKey := keyWallet.KeySet.PaymentAddress.Pk
-	shardID := common.GetShardIDFromLastByte(publicKey[len(publicKey) - 1])
+	shardID := common.GetShardIDFromLastByte(publicKey[len(publicKey)-1])
 	println("shardID: ", shardID)
 
 	//get payment infos
@@ -758,7 +758,6 @@ func InitParamCreatePrivacyTokenTx(args string) (*transaction.TxPrivacyTokenInit
 
 	println("inputCoins: ", inputCoins)
 
-
 	// for native token
 	commitmentIndicesParamForNativeToken, ok := paramMaps["commitmentIndicesForNativeToken"].([]interface{})
 	if !ok {
@@ -876,7 +875,6 @@ func InitParamCreatePrivacyTokenTx(args string) (*transaction.TxPrivacyTokenInit
 		myCommitmentIndicesForPToken[i] = uint64(tmp)
 	}
 	println("myCommitmentIndicesForPToken: ", myCommitmentIndicesForPToken)
-
 
 	for i := 0; i < len(sndOutputsForPToken); i++ {
 		tmp, _, err := base58.Base58Check{}.Decode(sndOutputsParamForPToken[i].(string))
@@ -1025,7 +1023,6 @@ func InitParamCreatePrivacyTokenTx(args string) (*transaction.TxPrivacyTokenInit
 	println("tokenInputs: ", tokenInputs)
 	privacyTokenParam.TokenInput = tokenInputs
 
-
 	println("privacyTokenParam: ", len(privacyTokenParam.Receiver))
 	println("privacyTokenParam.PropertyName: ", privacyTokenParam.PropertyName)
 	println("privacyTokenParam.PropertySymbol: ", privacyTokenParam.PropertySymbol)
@@ -1045,7 +1042,7 @@ func InitParamCreatePrivacyTokenTx(args string) (*transaction.TxPrivacyTokenInit
 
 func InitPrivacyTokenTx(args string) (string, error) {
 	paramCreateTx, err := InitParamCreatePrivacyTokenTx(args)
-	if err != nil{
+	if err != nil {
 		return "", err
 	}
 
@@ -1107,7 +1104,7 @@ func InitBurningRequestTx(args string) (string, error) {
 		return "", errors.New("Invalid meta data burner payment address param")
 	}
 	keyWalletBurner, err := wallet.Base58CheckDeserialize(burnerAddressParam)
-	if err != nil{
+	if err != nil {
 		return "", nil
 	}
 	burnerAddress := keyWalletBurner.KeySet.PaymentAddress
@@ -1123,7 +1120,7 @@ func InitBurningRequestTx(args string) (string, error) {
 		return "", errors.New("Invalid meta data token id param")
 	}
 	tokenIDHash, err := new(common.Hash).NewHashFromStr(tokenID)
-	if err != nil{
+	if err != nil {
 		return "", err
 	}
 
@@ -1139,12 +1136,12 @@ func InitBurningRequestTx(args string) (string, error) {
 	}
 
 	metaData, err := metadata.NewBurningRequest(burnerAddress, uint64(burningAmount), *tokenIDHash, tokenName, remoteAddress, int(metaDataType))
-	if err!= nil{
+	if err != nil {
 		return "", err
 	}
 
 	paramCreateTx, err := InitParamCreatePrivacyTokenTx(args)
-	if err != nil{
+	if err != nil {
 		return "", err
 	}
 
@@ -1195,7 +1192,6 @@ func RandomScalars(n string) (string, error) {
 	return res, nil
 }
 
-
 func InitWithdrawRewardTx(args string) (string, error) {
 	// parse meta data
 	bytes := []byte(args)
@@ -1228,12 +1224,10 @@ func InitWithdrawRewardTx(args string) (string, error) {
 		return "", errors.New("Invalid meta data payment address param")
 	}
 	keyWallet, err := wallet.Base58CheckDeserialize(paymentAddressParam)
-	if err != nil{
+	if err != nil {
 		return "", nil
 	}
 	paymentAddress := keyWallet.KeySet.PaymentAddress
-
-
 
 	tokenIDParam, ok := metaDataParam["TokenID"].(string)
 	if !ok {
@@ -1248,16 +1242,402 @@ func InitWithdrawRewardTx(args string) (string, error) {
 
 	tmp := &metadata.WithDrawRewardRequest{
 		PaymentAddress: paymentAddress,
-		MetadataBase: *metadata.NewMetadataBase(int(metaDataType)),
-		TokenID: *tokenId,
+		MetadataBase:   *metadata.NewMetadataBase(int(metaDataType)),
+		TokenID:        *tokenId,
 	}
 
 	paramCreateTx, err := InitParamCreatePrivacyTx(args)
-	if err!= nil{
+	if err != nil {
 		return "", err
 	}
 
 	paramCreateTx.SetMetaData(tmp)
+
+	tx := new(transaction.Tx)
+	err = tx.InitForASM(paramCreateTx)
+
+	if err != nil {
+		println("Can not create tx: ", err)
+		return "", err
+	}
+
+	// serialize tx json
+	txJson, err := json.Marshal(tx)
+	if err != nil {
+		println("Can not marshal tx: ", err)
+		return "", err
+	}
+
+	lockTimeBytes := common.AddPaddingBigInt(new(big.Int).SetInt64(tx.LockTime), 8)
+	resBytes := append(txJson, lockTimeBytes...)
+
+	B64Res := base64.StdEncoding.EncodeToString(resBytes)
+
+	return B64Res, nil
+}
+
+func InitPEDContributionMetadataFromParam(metaDataParam map[string]interface{}) (*metadata.PDEContribution, error) {
+	metaDataType, ok := metaDataParam["Type"].(float64)
+	if !ok {
+		println("Invalid meta data type param")
+		return nil, errors.New("Invalid meta data type param")
+	}
+
+	pdeContributionPairID, ok := metaDataParam["PDEContributionPairID"].(string)
+	if !ok {
+		println("Invalid meta data pde contribution pair ID param")
+		return nil, errors.New("Invalid meta data pde contribution pair ID param")
+	}
+	contributorAddressStr, ok := metaDataParam["ContributorAddressStr"].(string)
+	if !ok {
+		println("Invalid meta data contributor payment address param")
+		return nil, errors.New("Invalid meta data contributor payment address param")
+	}
+	contributedAmount, ok := metaDataParam["ContributedAmount"].(float64)
+	if !ok {
+		println("Invalid meta data contribute amount param")
+		return nil, errors.New("Invalid meta data contribute amount param")
+	}
+	tokenIDStr, ok := metaDataParam["TokenIDStr"].(string)
+	if !ok {
+		println("Invalid meta data token id string param")
+		return nil, errors.New("Invalid meta data token id string param")
+	}
+
+	metaData, err := metadata.NewPDEContribution(
+		pdeContributionPairID, contributorAddressStr, uint64(contributedAmount), tokenIDStr, int(metaDataType),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return metaData, nil
+}
+
+func InitPRVContributionTx(args string) (string, error) {
+	// parse meta data
+	bytes := []byte(args)
+	println("Bytes: %v\n", bytes)
+
+	paramMaps := make(map[string]interface{})
+
+	err := json.Unmarshal(bytes, &paramMaps)
+	if err != nil {
+		println("Error can not unmarshal data : %v\n", err)
+		return "", err
+	}
+
+	println("paramMaps:", paramMaps)
+
+	metaDataParam, ok := paramMaps["metaData"].(map[string]interface{})
+	if !ok {
+		return "", errors.New("Invalid meta data param")
+	}
+
+	metaData, err := InitPEDContributionMetadataFromParam(metaDataParam)
+	if err != nil {
+		return "", err
+	}
+
+	paramCreateTx, err := InitParamCreatePrivacyTx(args)
+	if err != nil {
+		return "", err
+	}
+
+	paramCreateTx.SetMetaData(metaData)
+
+	tx := new(transaction.Tx)
+	err = tx.InitForASM(paramCreateTx)
+
+	if err != nil {
+		println("Can not create tx: ", err)
+		return "", err
+	}
+
+	// serialize tx json
+	txJson, err := json.Marshal(tx)
+	if err != nil {
+		println("Can not marshal tx: ", err)
+		return "", err
+	}
+
+	lockTimeBytes := common.AddPaddingBigInt(new(big.Int).SetInt64(tx.LockTime), 8)
+	resBytes := append(txJson, lockTimeBytes...)
+
+	B64Res := base64.StdEncoding.EncodeToString(resBytes)
+
+	return B64Res, nil
+}
+
+func InitPTokenContributionTx(args string) (string, error) {
+	// parse meta data
+	bytes := []byte(args)
+	println("Bytes: %v\n", bytes)
+
+	paramMaps := make(map[string]interface{})
+
+	err := json.Unmarshal(bytes, &paramMaps)
+	if err != nil {
+		println("Error can not unmarshal data : %v\n", err)
+		return "", err
+	}
+
+	println("paramMaps:", paramMaps)
+
+	metaDataParam, ok := paramMaps["metaData"].(map[string]interface{})
+	if !ok {
+		return "", errors.New("Invalid meta data param")
+	}
+
+	metaData, err := InitPEDContributionMetadataFromParam(metaDataParam)
+	if err != nil {
+		return "", err
+	}
+
+	paramCreateTx, err := InitParamCreatePrivacyTokenTx(args)
+	if err != nil {
+		return "", err
+	}
+
+	paramCreateTx.SetMetaData(metaData)
+
+	tx := new(transaction.TxCustomTokenPrivacy)
+	err = tx.InitForASM(paramCreateTx)
+
+	if err != nil {
+		println("Can not create tx: ", err)
+		return "", err
+	}
+
+	// serialize tx json
+	txJson, err := json.Marshal(tx)
+	if err != nil {
+		println("Can not marshal tx: ", err)
+		return "", err
+	}
+
+	lockTimeBytes := common.AddPaddingBigInt(new(big.Int).SetInt64(tx.LockTime), 8)
+	resBytes := append(txJson, lockTimeBytes...)
+
+	B64Res := base64.StdEncoding.EncodeToString(resBytes)
+
+	return B64Res, nil
+}
+
+func InitPEDTradeRequestMetadataFromParam(metaDataParam map[string]interface{}) (*metadata.PDETradeRequest, error) {
+	metaDataType, ok := metaDataParam["Type"].(float64)
+	if !ok {
+		println("Invalid meta data type param")
+		return nil, errors.New("Invalid meta data type param")
+	}
+
+	tokenIDToBuyStr, ok := metaDataParam["TokenIDToBuyStr"].(string)
+	if !ok {
+		println("Invalid meta data token id to buy param")
+		return nil, errors.New("Invalid meta data token id to buy param")
+	}
+	tokenIDToSellStr, ok := metaDataParam["TokenIDToSellStr"].(string)
+	if !ok {
+		println("Invalid meta data token id to sell param")
+		return nil, errors.New("Invalid meta data token id to sell param")
+	}
+	sellAmount, ok := metaDataParam["SellAmount"].(float64)
+	if !ok {
+		println("Invalid meta data sell amount param")
+		return nil, errors.New("Invalid meta data sell amount param")
+	}
+	traderAddressStr, ok := metaDataParam["TraderAddressStr"].(string)
+	if !ok {
+		println("Invalid meta data trader address string param")
+		return nil, errors.New("Invalid meta data trader address string param")
+	}
+
+	metaData, err := metadata.NewPDETradeRequest(
+		tokenIDToBuyStr, tokenIDToSellStr, uint64(sellAmount), traderAddressStr, int(metaDataType),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return metaData, nil
+}
+
+func InitPRVTradeTx(args string) (string, error) {
+	// parse meta data
+	bytes := []byte(args)
+	println("Bytes: %v\n", bytes)
+
+	paramMaps := make(map[string]interface{})
+
+	err := json.Unmarshal(bytes, &paramMaps)
+	if err != nil {
+		println("Error can not unmarshal data : %v\n", err)
+		return "", err
+	}
+
+	println("paramMaps:", paramMaps)
+
+	metaDataParam, ok := paramMaps["metaData"].(map[string]interface{})
+	if !ok {
+		return "", errors.New("Invalid meta data param")
+	}
+
+	metaData, err := InitPEDTradeRequestMetadataFromParam(metaDataParam)
+	if err != nil {
+		return "", err
+	}
+
+	paramCreateTx, err := InitParamCreatePrivacyTx(args)
+	if err != nil {
+		return "", err
+	}
+
+	paramCreateTx.SetMetaData(metaData)
+
+	tx := new(transaction.Tx)
+	err = tx.InitForASM(paramCreateTx)
+
+	if err != nil {
+		println("Can not create tx: ", err)
+		return "", err
+	}
+
+	// serialize tx json
+	txJson, err := json.Marshal(tx)
+	if err != nil {
+		println("Can not marshal tx: ", err)
+		return "", err
+	}
+
+	lockTimeBytes := common.AddPaddingBigInt(new(big.Int).SetInt64(tx.LockTime), 8)
+	resBytes := append(txJson, lockTimeBytes...)
+
+	B64Res := base64.StdEncoding.EncodeToString(resBytes)
+
+	return B64Res, nil
+}
+
+func InitPTokenTradeTx(args string) (string, error) {
+	// parse meta data
+	bytes := []byte(args)
+	println("Bytes: %v\n", bytes)
+
+	paramMaps := make(map[string]interface{})
+
+	err := json.Unmarshal(bytes, &paramMaps)
+	if err != nil {
+		println("Error can not unmarshal data : %v\n", err)
+		return "", err
+	}
+
+	println("paramMaps:", paramMaps)
+
+	metaDataParam, ok := paramMaps["metaData"].(map[string]interface{})
+	if !ok {
+		return "", errors.New("Invalid meta data param")
+	}
+
+	metaData, err := InitPEDTradeRequestMetadataFromParam(metaDataParam)
+	if err != nil {
+		return "", err
+	}
+
+	paramCreateTx, err := InitParamCreatePrivacyTokenTx(args)
+	if err != nil {
+		return "", err
+	}
+
+	paramCreateTx.SetMetaData(metaData)
+
+	tx := new(transaction.TxCustomTokenPrivacy)
+	err = tx.InitForASM(paramCreateTx)
+
+	if err != nil {
+		println("Can not create tx: ", err)
+		return "", err
+	}
+
+	// serialize tx json
+	txJson, err := json.Marshal(tx)
+	if err != nil {
+		println("Can not marshal tx: ", err)
+		return "", err
+	}
+
+	lockTimeBytes := common.AddPaddingBigInt(new(big.Int).SetInt64(tx.LockTime), 8)
+	resBytes := append(txJson, lockTimeBytes...)
+
+	B64Res := base64.StdEncoding.EncodeToString(resBytes)
+
+	return B64Res, nil
+}
+
+func WithdrawDexTx(args string) (string, error) {
+	// parse meta data
+	bytes := []byte(args)
+	println("Bytes: %v\n", bytes)
+
+	paramMaps := make(map[string]interface{})
+
+	err := json.Unmarshal(bytes, &paramMaps)
+	if err != nil {
+		println("Error can not unmarshal data : %v\n", err)
+		return "", err
+	}
+
+	println("paramMaps:", paramMaps)
+
+	metaDataParam, ok := paramMaps["metaData"].(map[string]interface{})
+	if !ok {
+		return "", errors.New("Invalid meta data param")
+	}
+
+	metaDataType, ok := metaDataParam["Type"].(float64)
+	if !ok {
+		println("Invalid meta data type param")
+		return "", errors.New("Invalid meta data type param")
+	}
+
+	withdrawerAddressStr, ok := metaDataParam["WithdrawerAddressStr"].(string)
+	if !ok {
+		println("Invalid meta data withdrawerAddressStr param")
+		return "", errors.New("Invalid meta data withdrawerAddressStr param")
+	}
+	withdrawalToken1IDStr, ok := metaDataParam["WithdrawalToken1IDStr"].(string)
+	if !ok {
+		println("Invalid meta data withdrawalToken1IDStr param")
+		return "", errors.New("Invalid meta data withdrawalToken1IDStr param")
+	}
+	withdrawalShare1Amt, ok := metaDataParam["WithdrawalShare1Amt"].(float64)
+	if !ok {
+		println("Invalid meta data withdrawalShare1Amt param")
+		return "", errors.New("Invalid meta data withdrawalShare1Amt param")
+	}
+	withdrawalToken2IDStr, ok := metaDataParam["WithdrawalToken2IDStr"].(string)
+	if !ok {
+		println("Invalid meta data withdrawalToken2IDStr param")
+		return "", errors.New("Invalid meta data withdrawalToken2IDStr param")
+	}
+	withdrawalShare2Amt, ok := metaDataParam["WithdrawalShare2Amt"].(float64)
+	if !ok {
+		println("Invalid meta data withdrawalShare2Amt param")
+		return "", errors.New("Invalid meta data withdrawalShare2Amt param")
+	}
+
+	metaData, err := metadata.NewPDEWithdrawalRequest(
+		withdrawerAddressStr, withdrawalToken1IDStr, uint64(withdrawalShare1Amt),
+		withdrawalToken2IDStr, uint64(withdrawalShare2Amt), int(metaDataType),
+	)
+	if err != nil {
+		return "", err
+	}
+
+	paramCreateTx, err := InitParamCreatePrivacyTx(args)
+	if err != nil {
+		return "", err
+	}
+
+	paramCreateTx.SetMetaData(metaData)
 
 	tx := new(transaction.Tx)
 	err = tx.InitForASM(paramCreateTx)
