@@ -126,12 +126,12 @@ func SetGlobalParam(p ...interface{}) {
 }
 
 func NewLog(p ...interface{}) *logKV {
-	fmt.Println(p)
 	nl := (&logKV{param: make(map[string]interface{})}).Add(p...)
+	globalParam.RLock()
 	for k, v := range globalParam.param {
 		nl.param[k] = v
 	}
-	fmt.Println(nl.param)
+	globalParam.RUnlock()
 	return nl
 }
 
