@@ -37,7 +37,6 @@ type PDETradeAcceptedContent struct {
 	TraderAddressStr         string
 	TokenIDToBuyStr          string
 	ReceiveAmount            uint64
-	TradeFee                 uint64
 	Token1IDStr              string
 	Token2IDStr              string
 	Token1PoolValueOperation TokenPoolValueOperation
