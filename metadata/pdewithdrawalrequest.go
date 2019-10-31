@@ -34,7 +34,6 @@ type PDEWithdrawalAcceptedContent struct {
 	WithdrawerAddressStr string
 	DeductingPoolValue   uint64
 	DeductingShares      uint64
-	DeductingTradeFees   uint64
 	PairToken1IDStr      string
 	PairToken2IDStr      string
 	TxReqID              common.Hash
