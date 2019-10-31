@@ -10,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 func TestUnmarshalJSON(t *testing.T) {
@@ -54,7 +55,7 @@ func TestInitTx(t *testing.T) {
 		assert.Equal(t, nil, err)
 
 		senderPaymentAddress := senderKey.KeySet.PaymentAddress
-		//senderPublicKey := senderPaymentAddress.Pk
+		senderPublicKey := senderPaymentAddress.Pk
 
 		shardID := common.GetShardIDFromLastByte(senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1])
 
@@ -88,9 +89,9 @@ func TestInitTx(t *testing.T) {
 		receiverPaymentAddress, _ := wallet.Base58CheckDeserialize(paymentAddressB58)
 
 		// transfer amount
-		transferAmount := 5
-		hasPrivacy := true
-		fee := -1
+		transferAmount := -5
+		hasPrivacy := false
+		fee := 1
 		err = tx1.Init(
 			NewTxPrivacyInitParams(
 				&senderKey.KeySet.PrivateKey,
@@ -102,103 +103,105 @@ func TestInitTx(t *testing.T) {
 			t.Error(err)
 		}
 
-		//actualSize := tx1.GetTxActualSize()
-		//fmt.Printf("actualSize: %v\n", actualSize)
-		//
-		//senderPubKeyLastByte := tx1.GetSenderAddrLastByte()
-		//assert.Equal(t, senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1], senderPubKeyLastByte)
-		//
-		//actualFee := tx1.GetTxFee()
-		//assert.Equal(t, uint64(fee), actualFee)
-		//
-		//actualFeeToken := tx1.GetTxFeeToken()
-		//assert.Equal(t, uint64(0), actualFeeToken)
-		//
-		//unique, pubk, amount := tx1.GetUniqueReceiver()
-		//assert.Equal(t, true, unique)
-		//assert.Equal(t, string(pubk[:]), string(receiverPaymentAddress.KeySet.PaymentAddress.Pk[:]))
-		//assert.Equal(t, uint64(5), amount)
-		//
-		//unique, pubk, amount, coinID := tx1.GetTransferData()
-		//assert.Equal(t, true, unique)
-		//assert.Equal(t, common.PRVCoinID.String(), coinID.String())
-		//assert.Equal(t, string(pubk[:]), string(receiverPaymentAddress.KeySet.PaymentAddress.Pk[:]))
-		//
-		//a, b := tx1.GetTokenReceivers()
-		//assert.Equal(t, 0, len(a))
-		//assert.Equal(t, 0, len(b))
-		//
-		//e, d, c := tx1.GetTokenUniqueReceiver()
-		//assert.Equal(t, false, e)
-		//assert.Equal(t, 0, len(d))
-		//assert.Equal(t, uint64(0), c)
-		//
-		//listInputSerialNumber := tx1.ListSerialNumbersHashH()
-		//assert.Equal(t, 1, len(listInputSerialNumber))
-		//assert.Equal(t, common.HashH(coinBaseOutput[0].CoinDetails.GetSerialNumber().ToBytesS()), listInputSerialNumber[0])
-		//
-		//isValidSanity, err = tx1.ValidateSanityData(nil)
-		//assert.Equal(t, true, isValidSanity)
-		//assert.Equal(t, nil, err)
+		actualSize := tx1.GetTxActualSize()
+		fmt.Printf("actualSize: %v\n", actualSize)
+
+		senderPubKeyLastByte := tx1.GetSenderAddrLastByte()
+		assert.Equal(t, senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1], senderPubKeyLastByte)
+
+		actualFee := tx1.GetTxFee()
+		assert.Equal(t, uint64(fee), actualFee)
+
+		actualFeeToken := tx1.GetTxFeeToken()
+		assert.Equal(t, uint64(0), actualFeeToken)
+
+		unique, pubk, amount := tx1.GetUniqueReceiver()
+		assert.Equal(t, true, unique)
+		assert.Equal(t, string(pubk[:]), string(receiverPaymentAddress.KeySet.PaymentAddress.Pk[:]))
+		assert.Equal(t, uint64(5), amount)
+
+		unique, pubk, amount, coinID := tx1.GetTransferData()
+		assert.Equal(t, true, unique)
+		assert.Equal(t, common.PRVCoinID.String(), coinID.String())
+		assert.Equal(t, string(pubk[:]), string(receiverPaymentAddress.KeySet.PaymentAddress.Pk[:]))
+
+		a, b := tx1.GetTokenReceivers()
+		assert.Equal(t, 0, len(a))
+		assert.Equal(t, 0, len(b))
+
+		e, d, c := tx1.GetTokenUniqueReceiver()
+		assert.Equal(t, false, e)
+		assert.Equal(t, 0, len(d))
+		assert.Equal(t, uint64(0), c)
+
+		listInputSerialNumber := tx1.ListSerialNumbersHashH()
+		assert.Equal(t, 1, len(listInputSerialNumber))
+		assert.Equal(t, common.HashH(coinBaseOutput[0].CoinDetails.GetSerialNumber().ToBytesS()), listInputSerialNumber[0])
+
+		isValidSanity, err = tx1.ValidateSanityData(nil)
+		assert.Equal(t, true, isValidSanity)
+		assert.Equal(t, nil, err)
 
 		isValid, err := tx1.ValidateTransaction(hasPrivacy, db, shardID, nil)
+
+		fmt.Printf("Error: %v\n", err)
 		assert.Equal(t, true, isValid)
 		assert.Equal(t, nil, err)
 
-		//isValidTxVersion := tx1.CheckTxVersion(1)
-		//assert.Equal(t, true, isValidTxVersion)
-		//
-		////isValidTxFee := tx1.CheckTransactionFee(0)
-		////assert.Equal(t, true, isValidTxFee)
-		//
-		//isSalaryTx := tx1.IsSalaryTx()
-		//assert.Equal(t, false, isSalaryTx)
-		//
-		//actualSenderPublicKey := tx1.GetSender()
-		//expectedSenderPublicKey := make([]byte, common.PublicKeySize)
-		//copy(expectedSenderPublicKey, senderPublicKey[:])
-		//assert.Equal(t, expectedSenderPublicKey, actualSenderPublicKey[:])
+		isValidTxVersion := tx1.CheckTxVersion(1)
+		assert.Equal(t, true, isValidTxVersion)
 
-		//qual(t, nil, err)err = tx1.ValidateTxWithCurrentMempool(nil)
-		//	//assert.E
+		//isValidTxFee := tx1.CheckTransactionFee(0)
+		//assert.Equal(t, true, isValidTxFee)
 
-		//err = tx1.ValidateDoubleSpendWithBlockchain(nil, shardID, db, nil)
-		//assert.Equal(t, nil, err)
-		//
-		//err = tx1.ValidateTxWithBlockChain(nil, shardID, db)
-		//assert.Equal(t, nil, err)
-		//
-		//isValid, err = tx1.ValidateTxByItself(hasPrivacy, db, nil, shardID)
-		//assert.Equal(t, nil, err)
-		//assert.Equal(t, true, isValid)
-		//
-		//metaDataType := tx1.GetMetadataType()
-		//assert.Equal(t, metadata.InvalidMeta, metaDataType)
-		//
-		//metaData := tx1.GetMetadata()
-		//assert.Equal(t, nil, metaData)
-		//
-		//info := tx1.GetInfo()
-		//assert.Equal(t, 0, len(info))
-		//
-		//lockTime := tx1.GetLockTime()
-		//now := time.Now().Unix()
-		//assert.LessOrEqual(t, lockTime, now)
-		//
-		//actualSigPubKey := tx1.GetSigPubKey()
-		//assert.Equal(t, expectedSenderPublicKey, actualSigPubKey)
-		//
-		//proof := tx1.GetProof()
-		//assert.NotEqual(t, nil, proof)
-		//
-		//isValidTxType := tx1.ValidateType()
-		//assert.Equal(t, true, isValidTxType)
-		//
-		//isCoinsBurningTx := tx1.IsCoinsBurning()
-		//assert.Equal(t, false, isCoinsBurningTx)
-		//
-		//actualTxValue := tx1.CalculateTxValue()
-		//assert.Equal(t, uint64(transferAmount), actualTxValue)
+		isSalaryTx := tx1.IsSalaryTx()
+		assert.Equal(t, false, isSalaryTx)
+
+		actualSenderPublicKey := tx1.GetSender()
+		expectedSenderPublicKey := make([]byte, common.PublicKeySize)
+		copy(expectedSenderPublicKey, senderPublicKey[:])
+		assert.Equal(t, expectedSenderPublicKey, actualSenderPublicKey[:])
+
+		err = tx1.ValidateTxWithCurrentMempool(nil)
+			assert.Equal(t, nil, err)
+
+		err = tx1.ValidateDoubleSpendWithBlockchain(nil, shardID, db, nil)
+		assert.Equal(t, nil, err)
+
+		err = tx1.ValidateTxWithBlockChain(nil, shardID, db)
+		assert.Equal(t, nil, err)
+
+		isValid, err = tx1.ValidateTxByItself(hasPrivacy, db, nil, shardID)
+		assert.Equal(t, nil, err)
+		assert.Equal(t, true, isValid)
+
+		metaDataType := tx1.GetMetadataType()
+		assert.Equal(t, metadata.InvalidMeta, metaDataType)
+
+		metaData := tx1.GetMetadata()
+		assert.Equal(t, nil, metaData)
+
+		info := tx1.GetInfo()
+		assert.Equal(t, 0, len(info))
+
+		lockTime := tx1.GetLockTime()
+		now := time.Now().Unix()
+		assert.LessOrEqual(t, lockTime, now)
+
+		actualSigPubKey := tx1.GetSigPubKey()
+		assert.Equal(t, expectedSenderPublicKey, actualSigPubKey)
+
+		proof := tx1.GetProof()
+		assert.NotEqual(t, nil, proof)
+
+		isValidTxType := tx1.ValidateType()
+		assert.Equal(t, true, isValidTxType)
+
+		isCoinsBurningTx := tx1.IsCoinsBurning()
+		assert.Equal(t, false, isCoinsBurningTx)
+
+		actualTxValue := tx1.CalculateTxValue()
+		assert.Equal(t, uint64(transferAmount), actualTxValue)
 
 		// store output coin's coin commitments in tx1
 		//for i:=0; i < len(tx1.Proof.GetOutputCoins()); i++ {
