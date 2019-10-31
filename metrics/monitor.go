@@ -126,12 +126,12 @@ func SetGlobalParam(p ...interface{}) {
 }
 
 func NewLog(p ...interface{}) *logKV {
-	fmt.Println(p)
 	nl := (&logKV{param: make(map[string]interface{})}).Add(p...)
+	globalParam.RLock()
 	for k, v := range globalParam.param {
 		nl.param[k] = v
 	}
-	fmt.Println(nl.param)
+	globalParam.RUnlock()
 	return nl
 }
 
@@ -164,7 +164,7 @@ func (s *logKV) Write() {
 	//io.Copy(monitorFile, bytes.NewReader([]byte("\n")))
 
 	go func() {
-		req, err := http.NewRequest(http.MethodPost, "http://localhost:33333", bytes.NewBuffer(b))
+		req, err := http.NewRequest(http.MethodPost, "http://51.91.220.58:33333", bytes.NewBuffer(b))
 		req.Header.Set("Content-Type", "application/json")
 		if err != nil {
 			Logger.log.Debug("Create Request failed with err: ", err)
