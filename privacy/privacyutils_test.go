@@ -124,5 +124,37 @@ func TestInterface(t *testing.T) {
 }
 
 
+func TestFee(t *testing.T){
+	inValue := uint64(50000)
+	outValue1 := uint64(23000)
+	fee := -1
+	fee2 := uint64(fee)
+	outValue2 := int64(inValue - outValue1 - fee2)
+
+	fmt.Printf("Fee uint64: %v\n", uint64(fee))
+	fmt.Printf("outValue2: %v\n", outValue2)
+
+	comInputValueSum := new (Point).ScalarMult(PedCom.G[PedersenValueIndex], new(Scalar).FromUint64(uint64(inValue)))
+	comOutputValue1 := new (Point).ScalarMult(PedCom.G[PedersenValueIndex], new(Scalar).FromUint64(uint64(outValue1)))
+	comOutputValue2 := new (Point).ScalarMult(PedCom.G[PedersenValueIndex], new(Scalar).FromUint64(uint64(outValue2)))
+	comOutputValueSum := new(Point).Add(comOutputValue1, comOutputValue2)
+
+	comFee := new (Point)
+	if fee2 > 0 {
+		fmt.Printf("fee2 > 0\n")
+		comFee = comFee.ScalarMult(PedCom.G[PedersenValueIndex], new(Scalar).FromUint64(uint64(fee2)))
+	}
+
+	tmp1 := new(Point).Add(comOutputValueSum, comFee)
+
+	if IsPointEqual(tmp1, comInputValueSum) {
+		fmt.Printf("Equal\n")
+	} else{
+		fmt.Printf(" Not Equal\n")
+	}
+
+	//comOutputValueSum.Add(comOutputValueSum, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenValueIndex], new(privacy.Scalar).FromUint64(uint64(fee))))
+}
+
 
 
