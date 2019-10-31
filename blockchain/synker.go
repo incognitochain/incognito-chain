@@ -858,12 +858,12 @@ func (synker *Synker) UpdateStatev2() {
 		case common.ShardRole:
 			if (synker.blockchain.config.NodeMode == common.NodeModeAuto || synker.blockchain.config.NodeMode == common.NodeModeShard) && (userShardRole == common.ProposerRole || userShardRole == common.ValidatorRole) {
 				if synker.IsLatest(true, byte(userShardIDInt)) {
-					for shardID, peer := range RCSv2.CrossShardBlks {
-						for peerID, blks := range peer {
+					for shardID, shardState := range RCSv2.CrossShardBlks {
+						for peerID, blks := range shardState {
 							//useless log
 							Logger.log.Critical(shardID, peerID, blks)
 							//TODO @0xakk0r0kamui sync cross shard here
-							synker.SyncBlkCrossShard(true, false, nil, blks, shardID, byte(userShardIDInt), peer.ID(""))
+							synker.SyncBlkCrossShard(true, false, nil, blks, shardID, byte(userShardIDInt), libp2p.ID(""))
 						}
 					}
 				}
