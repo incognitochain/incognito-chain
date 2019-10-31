@@ -15,13 +15,11 @@ type CurrentPDEState struct {
 	WaitingPDEContributions map[string]*lvdb.PDEContribution
 	PDEPoolPairs            map[string]*lvdb.PDEPoolForPair
 	PDEShares               map[string]uint64
-	PDEFees                 map[string]uint64
 }
 
 type DeductingAmountsForTokenByWithdrawal struct {
 	PoolValue uint64
 	Shares    uint64
-	TradeFees uint64
 }
 
 func replaceNewBCHeightInKeyStr(key string, newBeaconHeight uint64) string {
@@ -53,23 +51,6 @@ func storePDEShares(
 		dbErr := db.Put([]byte(newKey), buf)
 		if dbErr != nil {
 			return database.NewDatabaseError(database.AddShareAmountUpError, errors.Wrap(dbErr, "db.lvdb.put"))
-		}
-	}
-	return nil
-}
-
-func storePDEFees(
-	db database.DatabaseInterface,
-	beaconHeight uint64,
-	pdeFees map[string]uint64,
-) error {
-	for feeKey, feeAmt := range pdeFees {
-		newKey := replaceNewBCHeightInKeyStr(feeKey, beaconHeight)
-		buf := make([]byte, binary.MaxVarintLen64)
-		binary.LittleEndian.PutUint64(buf, feeAmt)
-		dbErr := db.Put([]byte(newKey), buf)
-		if dbErr != nil {
-			return database.NewDatabaseError(database.AddTradeFeeUpError, errors.Wrap(dbErr, "db.lvdb.put"))
 		}
 	}
 	return nil
@@ -169,22 +150,6 @@ func getPDEShares(
 	return pdeShares, nil
 }
 
-func getPDEFees(
-	db database.DatabaseInterface,
-	beaconHeight uint64,
-) (map[string]uint64, error) {
-	pdeFees := make(map[string]uint64)
-	feesKeysBytes, feesValuesBytes, err := db.GetAllRecordsByPrefix(beaconHeight, lvdb.PDETradeFeePrefix)
-	if err != nil {
-		return nil, err
-	}
-	for idx, feesKeyBytes := range feesKeysBytes {
-		feeAmt := uint64(binary.LittleEndian.Uint64(feesValuesBytes[idx]))
-		pdeFees[string(feesKeyBytes)] = feeAmt
-	}
-	return pdeFees, nil
-}
-
 func InitCurrentPDEStateFromDB(
 	db database.DatabaseInterface,
 	beaconHeight uint64,
@@ -201,15 +166,10 @@ func InitCurrentPDEStateFromDB(
 	if err != nil {
 		return nil, err
 	}
-	pdeFees, err := getPDEFees(db, beaconHeight)
-	if err != nil {
-		return nil, err
-	}
 	return &CurrentPDEState{
 		WaitingPDEContributions: waitingPDEContributions,
 		PDEPoolPairs:            pdePoolPairs,
 		PDEShares:               pdeShares,
-		PDEFees:                 pdeFees,
 	}, nil
 }
 
@@ -227,10 +187,6 @@ func storePDEStateToDB(
 		return err
 	}
 	err = storePDEShares(db, beaconHeight, currentPDEState.PDEShares)
-	if err != nil {
-		return err
-	}
-	err = storePDEFees(db, beaconHeight, currentPDEState.PDEFees)
 	if err != nil {
 		return err
 	}
