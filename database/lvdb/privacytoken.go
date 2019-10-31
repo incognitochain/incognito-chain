@@ -16,8 +16,12 @@ import (
 // Value: txHash
 func (db *db) StorePrivacyToken(tokenID common.Hash, txHash []byte) error {
 	key := addPrefixToKeyHash(string(privacyTokenInitPrefix), tokenID) // token-init-{tokenID}
-	if err := db.Put(key, txHash); err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, err)
+	ok, _ := db.HasValue(key)
+	if !ok {
+		// not exist tx about init this token
+		if err := db.Put(key, txHash); err != nil {
+			return database.NewDatabaseError(database.UnexpectedError, err)
+		}
 	}
 	return nil
 }
