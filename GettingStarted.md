@@ -325,7 +325,7 @@ curl --header "Content-Type: application/json" \
 
 #SECTION IV: WRITING GOLANG TEST SCRIPT:
 -----------------------------------
-- Check the file `./incognito-chain/test-chain.go` for sample test case template
+- Check the file `./incognito-chain/testexample/test-chain.go` for sample test case template
 - Execute the test script:
 
 `go run test-chain.go`
