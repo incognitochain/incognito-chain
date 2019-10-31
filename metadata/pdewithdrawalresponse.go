@@ -102,7 +102,7 @@ func (iRes PDEWithdrawalResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 
 		_, pk, amount, assetID := tx.GetTransferData()
 		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
-			(withdrawalAcceptedContent.DeductingPoolValue+withdrawalAcceptedContent.DeductingTradeFees) != amount ||
+			withdrawalAcceptedContent.DeductingPoolValue != amount ||
 			withdrawalAcceptedContent.WithdrawalTokenIDStr != assetID.String() {
 			continue
 		}
