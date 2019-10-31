@@ -153,6 +153,15 @@ func TestFee(t *testing.T){
 		fmt.Printf(" Not Equal\n")
 	}
 
+	//fee := -10
+	//output := -9
+	//aUint64 := uint64(a)
+	//bUint64 := uint64(b)
+	//
+	//fmt.Printf("aUint64: %v\n", aUint64)
+	//fmt.Printf("bUint64: %v\n", bUint64)
+
+
 	//comOutputValueSum.Add(comOutputValueSum, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenValueIndex], new(privacy.Scalar).FromUint64(uint64(fee))))
 }
 
