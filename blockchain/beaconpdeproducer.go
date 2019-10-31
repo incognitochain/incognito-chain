@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
+	"math/big"
 	"strconv"
 	"strings"
 
@@ -72,10 +73,11 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 		tokenPoolValueToSell = pdePoolPair.Token1PoolValue
 		tokenPoolValueToBuy = pdePoolPair.Token2PoolValue
 	}
-	invariant := tokenPoolValueToSell * tokenPoolValueToBuy
+	invariant := big.NewInt(0)
+	invariant = invariant.Mul(big.NewInt(int64(tokenPoolValueToSell)), big.NewInt(int64(tokenPoolValueToBuy)))
 	fee := pdeTradeReqAction.Meta.SellAmount / PDEDevisionAmountForFee
 	newTokenPoolValueToSell := tokenPoolValueToSell + pdeTradeReqAction.Meta.SellAmount
-	newTokenPoolValueToBuy := invariant / (newTokenPoolValueToSell - fee)
+	newTokenPoolValueToBuy := big.NewInt(0).Div(invariant, big.NewInt(int64(newTokenPoolValueToSell-fee))).Uint64()
 	receiveAmt := tokenPoolValueToBuy - newTokenPoolValueToBuy
 
 	// update current pde state on mem
