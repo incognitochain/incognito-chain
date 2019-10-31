@@ -3,6 +3,7 @@ package metadata
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
@@ -157,15 +158,25 @@ func convertValueBetweenCurrencies(
 	if err != nil {
 		return 0, NewMetadataTxError(CouldNotGetExchangeRateError, err)
 	}
-	invariant := pdePoolForPair.Token1PoolValue * pdePoolForPair.Token2PoolValue
-	if invariant == 0 {
+	invariant := big.NewInt(0)
+	invariant = invariant.Mul(big.NewInt(int64(pdePoolForPair.Token1PoolValue)), big.NewInt(int64(pdePoolForPair.Token2PoolValue)))
+	// invariant := pdePoolForPair.Token1PoolValue * pdePoolForPair.Token2PoolValue
+	if invariant.Cmp(big.NewInt(0)) == 0 {
 		return 0, NewMetadataTxError(CouldNotGetExchangeRateError, err)
 	}
 	if pdePoolForPair.Token1IDStr == currentCurrencyIDStr {
-		remainingValue := invariant / (pdePoolForPair.Token1PoolValue + amount)
+		remainingValue := big.NewInt(0).Div(invariant, big.NewInt(int64(pdePoolForPair.Token1PoolValue+amount))).Uint64()
+		// remainingValue := invariant / (pdePoolForPair.Token1PoolValue + amount)
+		if pdePoolForPair.Token2PoolValue <= remainingValue {
+			return 0, NewMetadataTxError(CouldNotGetExchangeRateError, err)
+		}
 		return pdePoolForPair.Token2PoolValue - remainingValue, nil
 	}
-	remainingValue := invariant / (pdePoolForPair.Token2PoolValue + amount)
+	// remainingValue := invariant / (pdePoolForPair.Token2PoolValue + amount)
+	remainingValue := big.NewInt(0).Div(invariant, big.NewInt(int64(pdePoolForPair.Token2PoolValue+amount))).Uint64()
+	if pdePoolForPair.Token1PoolValue <= remainingValue {
+		return 0, NewMetadataTxError(CouldNotGetExchangeRateError, err)
+	}
 	return pdePoolForPair.Token1PoolValue - remainingValue, nil
 }
 
