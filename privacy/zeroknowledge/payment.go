@@ -663,8 +663,8 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 		comOutputValueSum.Add(comOutputValueSum, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenValueIndex], new(privacy.Scalar).FromUint64(uint64(fee))))
 	}
 
-	fmt.Printf("comInputValueSum: %v\n", comInputValueSum.ToBytesS())
-	fmt.Printf("comOutputValueSum: %v\n", comOutputValueSum.ToBytesS())
+	privacy.Logger.Log.Infof("comInputValueSum: %v\n", comInputValueSum.ToBytesS())
+	privacy.Logger.Log.Infof("comOutputValueSum: %v\n", comOutputValueSum.ToBytesS())
 
 	if !privacy.IsPointEqual(comInputValueSum, comOutputValueSum) {
 		privacy.Logger.Log.Debugf("comInputValueSum: ", comInputValueSum)
