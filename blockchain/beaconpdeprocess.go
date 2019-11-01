@@ -3,8 +3,10 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
+	"math/big"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
@@ -58,9 +60,36 @@ func addShareAmountUp(
 	amt uint64,
 	currentPDEState *CurrentPDEState,
 ) {
+	pdeShareOnTokenPrefix := string(lvdb.BuildPDESharesKey(beaconHeight, token1IDStr, token2IDStr, contributedTokenIDStr, ""))
+	totalSharesOnToken := uint64(0)
+	for key, value := range currentPDEState.PDEShares {
+		if strings.Contains(key, pdeShareOnTokenPrefix) {
+			totalSharesOnToken += value
+		}
+	}
 	pdeShareKey := string(lvdb.BuildPDESharesKey(beaconHeight, token1IDStr, token2IDStr, contributedTokenIDStr, contributorAddrStr))
+	if totalSharesOnToken == 0 {
+		currentPDEState.PDEShares[pdeShareKey] = amt
+		return
+	}
+	poolPairKey := string(lvdb.BuildPDEPoolForPairKey(beaconHeight, token1IDStr, token2IDStr))
+	poolPair, found := currentPDEState.PDEPoolPairs[poolPairKey]
+	if !found || poolPair == nil {
+		currentPDEState.PDEShares[pdeShareKey] = amt
+		return
+	}
+	poolValue := poolPair.Token1PoolValue
+	if poolPair.Token2IDStr == contributedTokenIDStr {
+		poolValue = poolPair.Token2PoolValue
+	}
+	if poolValue == 0 {
+		currentPDEState.PDEShares[pdeShareKey] = amt
+	}
+	increasingAmt := big.NewInt(0)
+	increasingAmt.Mul(big.NewInt(int64(totalSharesOnToken)), big.NewInt(int64(amt)))
+	increasingAmt.Div(increasingAmt, big.NewInt(int64(poolValue)))
 	currentShare, found := currentPDEState.PDEShares[pdeShareKey]
-	addedUpAmt := amt
+	addedUpAmt := increasingAmt.Uint64()
 	if found {
 		addedUpAmt += currentShare
 	}
@@ -208,23 +237,6 @@ func (blockchain *BlockChain) processPDEContribution(
 	return nil
 }
 
-func addTradeFeeUp(
-	beaconHeight uint64,
-	token1IDStr string,
-	token2IDStr string,
-	targetingTokenIDStr string,
-	amt uint64,
-	currentPDEState *CurrentPDEState,
-) {
-	pdeTradeFeeKey := string(lvdb.BuildPDETradeFeesKey(beaconHeight, token1IDStr, token2IDStr, targetingTokenIDStr))
-	currentTradeFee, found := currentPDEState.PDEFees[pdeTradeFeeKey]
-	addedAmt := amt
-	if found {
-		addedAmt = currentTradeFee + amt
-	}
-	currentPDEState.PDEFees[pdeTradeFeeKey] = addedAmt
-}
-
 func (blockchain *BlockChain) processPDETrade(
 	beaconHeight uint64,
 	instruction []string,
@@ -242,7 +254,6 @@ func (blockchain *BlockChain) processPDETrade(
 		Logger.log.Errorf("WARNING: an error occured while unmarshaling PDETradeAcceptedContent: %+v", err)
 		return nil
 	}
-	// db := blockchain.GetDatabase()
 	pdePoolForPairKey := string(lvdb.BuildPDEPoolForPairKey(beaconHeight, pdeTradeAcceptedContent.Token1IDStr, pdeTradeAcceptedContent.Token2IDStr))
 	pdePoolForPair, found := currentPDEState.PDEPoolPairs[pdePoolForPairKey]
 	if !found || pdePoolForPair == nil {
@@ -257,32 +268,7 @@ func (blockchain *BlockChain) processPDETrade(
 		pdePoolForPair.Token1PoolValue -= pdeTradeAcceptedContent.Token1PoolValueOperation.Value
 		pdePoolForPair.Token2PoolValue += pdeTradeAcceptedContent.Token2PoolValueOperation.Value
 	}
-	addTradeFeeUp(
-		beaconHeight,
-		pdePoolForPair.Token1IDStr,
-		pdePoolForPair.Token2IDStr,
-		pdeTradeAcceptedContent.TokenIDToBuyStr,
-		pdeTradeAcceptedContent.TradeFee,
-		currentPDEState,
-	)
 	return nil
-}
-
-func deductTradeFee(
-	beaconHeight uint64,
-	token1IDStr string,
-	token2IDStr string,
-	targetingTokenIDStr string,
-	amt uint64,
-	currentPDEState *CurrentPDEState,
-) {
-	pdeTradeFeeKey := string(lvdb.BuildPDETradeFeesKey(beaconHeight, token1IDStr, token2IDStr, targetingTokenIDStr))
-	currentAmt, found := currentPDEState.PDEFees[pdeTradeFeeKey]
-	adjustingAmt := uint64(0)
-	if found && amt <= currentAmt {
-		adjustingAmt = currentAmt - amt
-	}
-	currentPDEState.PDEFees[pdeTradeFeeKey] = adjustingAmt
 }
 
 func deductSharesForWithdrawal(
@@ -295,8 +281,8 @@ func deductSharesForWithdrawal(
 	currentPDEState *CurrentPDEState,
 ) {
 	pdeShareKey := string(lvdb.BuildPDESharesKey(beaconHeight, token1IDStr, token2IDStr, targetingTokenIDStr, withdrawerAddressStr))
-	currentAmt, found := currentPDEState.PDEShares[pdeShareKey]
 	adjustingAmt := uint64(0)
+	currentAmt, found := currentPDEState.PDEShares[pdeShareKey]
 	if found && amt <= currentAmt {
 		adjustingAmt = currentAmt - amt
 	}
@@ -335,14 +321,6 @@ func (blockchain *BlockChain) processPDEWithdrawal(
 		pdePoolForPair.Token2PoolValue -= wdAcceptedContent.DeductingPoolValue
 	}
 
-	// update pde fee
-	deductTradeFee(
-		beaconHeight,
-		wdAcceptedContent.PairToken1IDStr, wdAcceptedContent.PairToken2IDStr,
-		wdAcceptedContent.WithdrawalTokenIDStr,
-		wdAcceptedContent.DeductingTradeFees,
-		currentPDEState,
-	)
 	// update pde shares
 	deductSharesForWithdrawal(
 		beaconHeight,

@@ -54,6 +54,7 @@ func (tx *Tx) UnmarshalJSON(data []byte) error {
 	}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
+		Logger.log.Error("UnmarshalJSON tx", string(data))
 		return NewTransactionErr(UnexpectedError, err)
 	}
 	meta, parseErr := metadata.ParseMetadata(temp.Metadata)
