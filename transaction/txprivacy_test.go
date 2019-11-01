@@ -3,8 +3,6 @@ package transaction
 import (
 	"encoding/json"
 	"fmt"
-	"time"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -12,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 func TestUnmarshalJSON(t *testing.T) {
@@ -90,7 +89,7 @@ func TestInitTx(t *testing.T) {
 		receiverPaymentAddress, _ := wallet.Base58CheckDeserialize(paymentAddressB58)
 
 		// transfer amount
-		transferAmount := 5
+		transferAmount := -5
 		hasPrivacy := false
 		fee := 1
 		err = tx1.Init(
@@ -144,6 +143,8 @@ func TestInitTx(t *testing.T) {
 		assert.Equal(t, nil, err)
 
 		isValid, err := tx1.ValidateTransaction(hasPrivacy, db, shardID, nil)
+
+		fmt.Printf("Error: %v\n", err)
 		assert.Equal(t, true, isValid)
 		assert.Equal(t, nil, err)
 
@@ -161,8 +162,8 @@ func TestInitTx(t *testing.T) {
 		copy(expectedSenderPublicKey, senderPublicKey[:])
 		assert.Equal(t, expectedSenderPublicKey, actualSenderPublicKey[:])
 
-		//qual(t, nil, err)err = tx1.ValidateTxWithCurrentMempool(nil)
-		//	//assert.E
+		err = tx1.ValidateTxWithCurrentMempool(nil)
+			assert.Equal(t, nil, err)
 
 		err = tx1.ValidateDoubleSpendWithBlockchain(nil, shardID, db, nil)
 		assert.Equal(t, nil, err)
@@ -212,23 +213,23 @@ func TestInitTx(t *testing.T) {
 		//}
 
 		// init tx with privacy
-		tx2 := Tx{}
-
-		err = tx2.Init(
-			NewTxPrivacyInitParams(
-				&senderKey.KeySet.PrivateKey,
-				[]*privacy.PaymentInfo{{PaymentAddress: senderPaymentAddress, Amount: uint64(transferAmount)}},
-				coinBaseOutput, 1, true, db, nil, nil, []byte{}))
-		if err != nil {
-			t.Error(err)
-		}
-
-		isValidSanity, err = tx2.ValidateSanityData(nil)
-		assert.Equal(t, nil, err)
-		assert.Equal(t, true, isValidSanity)
-
-		isValidTx, err := tx2.ValidateTransaction(true, db, shardID, &common.PRVCoinID)
-		assert.Equal(t, true, isValidTx)
+		//tx2 := Tx{}
+		//
+		//err = tx2.Init(
+		//	NewTxPrivacyInitParams(
+		//		&senderKey.KeySet.PrivateKey,
+		//		[]*privacy.PaymentInfo{{PaymentAddress: senderPaymentAddress, Amount: uint64(transferAmount)}},
+		//		coinBaseOutput, 1, true, db, nil, nil, []byte{}))
+		//if err != nil {
+		//	t.Error(err)
+		//}
+		//
+		//isValidSanity, err = tx2.ValidateSanityData(nil)
+		//assert.Equal(t, nil, err)
+		//assert.Equal(t, true, isValidSanity)
+		//
+		//isValidTx, err := tx2.ValidateTransaction(true, db, shardID, &common.PRVCoinID)
+		//assert.Equal(t, true, isValidTx)
 
 	}
 }
