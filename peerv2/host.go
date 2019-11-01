@@ -2,7 +2,6 @@ package peerv2
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	crypto2 "crypto"
 	"fmt"
@@ -43,16 +42,18 @@ type Host struct {
 	GRPC     *p2pgrpc.GRPCProtocol
 }
 
-func NewHost(version string, pubIP string, port int, rand []byte) *Host {
-	if len(rand) == 0 {
-		rand = generateRand()
+func NewHost(version string, pubIP string, port int, privateKey string) *Host {
+	// TODO(@bunyip): handle errors
+	var privKey crypto.PrivKey
+	if len(privateKey) == 0 {
+		privKey, _, _ = crypto.GenerateKeyPair(crypto.ECDSA, 2048)
+		m, _ := crypto.MarshalPrivateKey(privKey)
+		encoded := crypto.ConfigEncodeKey(m)
+		fmt.Println("encoded libp2p key:", encoded)
+	} else {
+		b, _ := crypto.ConfigDecodeKey(privateKey)
+		privKey, _ = crypto.UnmarshalPrivateKey(b)
 	}
-	if len(rand) < 40 {
-		panic("Rand bytes is less than 40")
-	}
-	buf := bytes.NewBuffer(rand)
-	privKey, _, err := crypto.GenerateKeyPairWithReader(crypto.ECDSA, 256, buf)
-	catchError(err)
 
 	listenAddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", pubIP, port))
 	catchError(err)

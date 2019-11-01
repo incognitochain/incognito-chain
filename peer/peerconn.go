@@ -206,6 +206,7 @@ func (peerConn *PeerConn) processInMessageString(msgStr string) error {
 	commandType := string(messageHeader[:len(commandInHeader)])
 	// convert to particular message from message cmd type
 	message, err := wire.MakeEmptyMessage(string(commandType))
+	//fmt.Println("RECEIVE:", reflect.TypeOf(message))
 	if err != nil {
 		Logger.log.Error("Can not find particular message for message cmd type")
 		Logger.log.Error(err)
@@ -397,6 +398,7 @@ func (peerConn *PeerConn) inMessageHandler(rw *bufio.ReadWriter) error {
 				// not use for unit test -> call go routine for process
 				count := maxMsgProcessPerTime.ItemCount()
 				if count > 10000 {
+					fmt.Println("DEBUG: maxMsgProcessPerTime exceed 10000")
 					continue
 				}
 				maxMsgProcessPerTime.Add(str, nil, 1*time.Second)
