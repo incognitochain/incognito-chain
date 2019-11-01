@@ -3,6 +3,7 @@ package zkp
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -536,9 +537,27 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 			privacy.Logger.Log.Errorf("Output coins %v commitment wrong!\n", i)
 			return false, privacy.NewPrivacyErr(privacy.VerifyCoinCommitmentOutputFailedErr, nil)
 		}
+	}
 
-		// Calculate sum of output values
-		sumOutputValue += proof.outputCoins[i].CoinDetails.GetValue()
+	//Calculate sum of output values and check overflow output's value
+	if len(proof.outputCoins) > 0 {
+		sumOutputValue = proof.outputCoins[0].CoinDetails.GetValue()
+
+		for i := 1; i < len(proof.outputCoins); i++ {
+			outValue := proof.outputCoins[i].CoinDetails.GetValue()
+			sumTmp := sumOutputValue + outValue
+			if sumTmp < sumOutputValue || sumTmp < outValue {
+				return false, privacy.NewPrivacyErr(privacy.UnexpectedErr, fmt.Errorf("Overflow output value %v\n", outValue))
+			}
+
+			sumOutputValue += outValue
+		}
+	}
+
+	// check overflow fee value
+	tmp := sumOutputValue + fee
+	if tmp < sumOutputValue || tmp < fee {
+		return false, privacy.NewPrivacyErr(privacy.UnexpectedErr, fmt.Errorf("Overflow fee value %v\n", fee))
 	}
 
 	// check if sum of input values equal sum of output values
@@ -643,8 +662,8 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 		comOutputValueSum.Add(comOutputValueSum, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenValueIndex], new(privacy.Scalar).FromUint64(uint64(fee))))
 	}
 
-	privacy.Logger.Log.Debugf("comInputValueSum: ", comInputValueSum)
-	privacy.Logger.Log.Debugf("comOutputValueSum: ", comOutputValueSum)
+	privacy.Logger.Log.Infof("comInputValueSum: %v\n", comInputValueSum.ToBytesS())
+	privacy.Logger.Log.Infof("comOutputValueSum: %v\n", comOutputValueSum.ToBytesS())
 
 	if !privacy.IsPointEqual(comInputValueSum, comOutputValueSum) {
 		privacy.Logger.Log.Debugf("comInputValueSum: ", comInputValueSum)
