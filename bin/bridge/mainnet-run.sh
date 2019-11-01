@@ -46,7 +46,7 @@ run()
 }
 
 # kill existing run.sh processes
-ps aux | grep '[m]ainnet-run.sh' | awk '{ print $2}' | grep -v "^$$\$" | xargs kill -9
+ps aux | grep '[r]un.sh' | awk '{ print $2}' | grep -v "^$$\$" | xargs kill -9
 
 current_latest_tag=""
 while [ 1 = 1 ]
