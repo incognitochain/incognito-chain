@@ -100,6 +100,10 @@ type Config struct {
 		IsOngoing(chainName string) bool
 		CommitteeChange(chainName string)
 	}
+
+	Highway interface {
+		BroadcastCommittee(uint64, []incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey)
+	}
 }
 
 func NewBlockChain(config *Config, isTest bool) *BlockChain {
@@ -1044,6 +1048,9 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.Ke
 
 	var outCointsInBytes [][]byte
 	var err error
+	if keyset == nil {
+		return nil, NewBlockChainError(UnExpectedError, errors.New("Invalid keyset"))
+	}
 	if blockchain.config.MemCache != nil {
 		// get from cache
 		cachedKey := memcache.GetListOutputcoinCachedKey(keyset.PaymentAddress.Pk[:], tokenID, shardID)
@@ -1140,9 +1147,7 @@ func (blockchain *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset incogni
 func (blockchain *BlockChain) GetTransactionByHash(txHash common.Hash) (byte, common.Hash, int, metadata.Transaction, error) {
 	blockHash, index, err := blockchain.config.DataBase.GetTransactionIndexById(txHash)
 	if err != nil {
-		abc := NewBlockChainError(UnExpectedError, err)
-		Logger.log.Error(abc)
-		return byte(255), common.Hash{}, -1, nil, abc
+		return byte(255), common.Hash{}, -1, nil, NewBlockChainError(UnExpectedError, err)
 	}
 	block, _, err1 := blockchain.GetShardBlockByHash(blockHash)
 	if err1 != nil {

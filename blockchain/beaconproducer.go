@@ -108,6 +108,7 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLi
 		}
 	}
 	tempShardState, stakeInstructions, swapInstructions, bridgeInstructions, acceptedRewardInstructions, stopAutoStakingInstructions := blockGenerator.GetShardState(beaconBestState, shardsToBeaconLimit)
+	Logger.log.Infof("In NewBlockBeacon tempShardState: %+v", tempShardState)
 	tempInstruction, err := beaconBestState.GenerateInstruction(
 		beaconBlock.Header.Height, stakeInstructions, swapInstructions, stopAutoStakingInstructions,
 		beaconBestState.CandidateShardWaitingForCurrentRandom, bridgeInstructions, acceptedRewardInstructions, blockGenerator.chain.config.ChainParams.Epoch,
@@ -277,7 +278,9 @@ func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestS
 	validStopAutoStakingInstructions := [][]string{}
 	validSwapInstructions := make(map[byte][][]string)
 	//Get shard to beacon block from pool
+	Logger.log.Infof("In GetShardState shardsToBeacon limit: %+v", shardsToBeacon)
 	allShardBlocks := blockGenerator.shardToBeaconPool.GetValidBlock(shardsToBeacon)
+	Logger.log.Infof("In GetShardState allShardBlocks: %+v", allShardBlocks)
 	//Shard block is a map ShardId -> array of shard block
 	bridgeInstructions := [][]string{}
 	acceptedRewardInstructions := [][]string{}
@@ -286,6 +289,7 @@ func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestS
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
+	Logger.log.Infof("In GetShardState keys: %+v", keys)
 	for _, value := range keys {
 		shardID := byte(value)
 		shardBlocks := allShardBlocks[shardID]
@@ -412,34 +416,36 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 		// COMMENT FOR TESTING
 		var err error
 		var chainTimeStamp int64
-		if newBeaconHeight%chainParamEpoch == chainParamEpoch-1 {
-			startTime := time.Now()
-			for {
-				Logger.log.Criticalf("Block %+v, Enter final block of epoch but still no random number", newBeaconHeight)
+		if !TestRandom {
+			if newBeaconHeight%chainParamEpoch == chainParamEpoch-1 {
+				startTime := time.Now()
+				for {
+					Logger.log.Criticalf("Block %+v, Enter final block of epoch but still no random number", newBeaconHeight)
+					chainTimeStamp, err = blockchain.config.RandomClient.GetCurrentChainTimeStamp()
+					if err != nil {
+						Logger.log.Error(err)
+					} else {
+						if chainTimeStamp < beaconBestState.CurrentRandomTimeStamp {
+							Logger.log.Infof("Final Block %+v in Epoch but still haven't found new random number", newBeaconHeight)
+						} else {
+							break
+						}
+					}
+					if time.Since(startTime).Seconds() > beaconBestState.BlockMaxCreateTime.Seconds() {
+						return [][]string{}, NewBlockChainError(GenerateInstructionError, fmt.Errorf("Get Current Chain Timestamp for New Block Height %+v Timeout", newBeaconHeight))
+					}
+					time.Sleep(100 * time.Millisecond)
+				}
+			} else {
+				Logger.log.Criticalf("Block %+v, finding random number", newBeaconHeight)
 				chainTimeStamp, err = blockchain.config.RandomClient.GetCurrentChainTimeStamp()
 				if err != nil {
 					Logger.log.Error(err)
-				} else {
-					if chainTimeStamp < beaconBestState.CurrentRandomTimeStamp {
-						Logger.log.Infof("Final Block %+v in Epoch but still haven't found new random number", newBeaconHeight)
-					} else {
-						break
-					}
 				}
-				if time.Since(startTime).Seconds() > beaconBestState.BlockMaxCreateTime.Seconds() {
-					return [][]string{}, NewBlockChainError(GenerateInstructionError, fmt.Errorf("Get Current Chain Timestamp for New Block Height %+v Timeout", newBeaconHeight))
-				}
-				time.Sleep(100 * time.Millisecond)
 			}
 		} else {
-			Logger.log.Criticalf("Block %+v, finding random number", newBeaconHeight)
-			chainTimeStamp, err = blockchain.config.RandomClient.GetCurrentChainTimeStamp()
-			if err != nil {
-				Logger.log.Error(err)
-			}
+			chainTimeStamp = beaconBestState.CurrentRandomTimeStamp + 1
 		}
-		//UNCOMMENT FOR TESTING
-		// chainTimeStamp := beaconBestState.CurrentRandomTimeStamp + 1
 		//==================================
 		if err == nil && chainTimeStamp > beaconBestState.CurrentRandomTimeStamp {
 			assignedCandidates := make(map[byte][]incognitokey.CommitteePublicKey)

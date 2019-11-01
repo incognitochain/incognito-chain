@@ -18,6 +18,7 @@ import (
 )
 
 var HighwayPeerID = "QmSPa4gxx6PRmoNRu6P2iFwEwmayaoLdR5By3i3MgM9gMv"
+var MasterNodeID = "QmVsCnV9kRZ182MX11CpcHMyFAReyXV49a599AbqmwtNrV"
 
 func NewConnManager(
 	host *Host,
@@ -26,12 +27,15 @@ func NewConnManager(
 	cd ConsensusData,
 	dispatcher *Dispatcher,
 ) *ConnManager {
+	master := peer.IDB58Encode(host.Host.ID()) == MasterNodeID
+	log.Println("IsMasterNode:", master)
 	return &ConnManager{
 		LocalHost:            host,
 		DiscoverPeersAddress: dpa,
 		IdentityKey:          ikey,
 		cd:                   cd,
 		disp:                 dispatcher,
+		IsMasterNode:         master,
 	}
 }
 
@@ -53,7 +57,6 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 			if topic == "" {
 				return errors.New("Can not find topic of this message type " + msgType + "for publish")
 			}
-			fmt.Println("[db] Publishing message", msgType)
 			return broadcastMessage(msg, topic, cm.ps)
 		}
 	}
@@ -67,17 +70,15 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 	msgType := msg.MessageType()
 	for _, p := range publishable {
 		if msgType == p {
-			fmt.Println("[db] Publishing message", msgType)
 			// Get topic for mess
 			//TODO hy add more logic
 			if msgType == wire.CmdCrossShard {
-				// return cm.encodeAndPublish(msg, cm.subs[msgType][shardID].Name)
+				// TODO(@0xakk0r0kamui): implicit order of subscriptions?
 				return broadcastMessage(msg, cm.subs[msgType][shardID].Name, cm.ps)
 			} else {
 				for _, availableTopic := range cm.subs[msgType] {
 					fmt.Println(availableTopic)
 					if (availableTopic.Act == MessageTopicPair_PUB) || (availableTopic.Act == MessageTopicPair_PUBSUB) {
-						// return cm.encodeAndPublish(msg,)
 						return broadcastMessage(msg, availableTopic.Name, cm.ps)
 					}
 				}
@@ -89,7 +90,6 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 	return nil
 }
 
-// return broadcastMessage(msg, topic, cm.ps)
 func (cm *ConnManager) Start(ns NetSync) {
 	// connect to proxy node
 	proxyIP, proxyPort := ParseListenner(cm.DiscoverPeersAddress, "127.0.0.1", 9330)
@@ -120,6 +120,38 @@ func (cm *ConnManager) Start(ns NetSync) {
 	cm.process()
 }
 
+// BroadcastCommittee floods message to topic `chain_committee` for highways
+// Only masternode actually does the broadcast, other's messages will be ignored by highway
+func (cm *ConnManager) BroadcastCommittee(
+	epoch uint64,
+	newBeaconCommittee []incognitokey.CommitteePublicKey,
+	newAllShardCommittee map[byte][]incognitokey.CommitteePublicKey,
+	newAllShardPending map[byte][]incognitokey.CommitteePublicKey,
+) {
+	if !cm.IsMasterNode {
+		return
+	}
+
+	log.Println("Broadcasting committee to highways!!!")
+	cc := &incognitokey.ChainCommittee{
+		Epoch:             epoch,
+		BeaconCommittee:   newBeaconCommittee,
+		AllShardCommittee: newAllShardCommittee,
+		AllShardPending:   newAllShardPending,
+	}
+	data, err := cc.ToByte()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	topic := "chain_committee"
+	err = cm.ps.Publish(topic, data)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
 type ConsensusData interface {
 	GetUserRole() (string, string, int)
 }
@@ -134,6 +166,7 @@ type ConnManager struct {
 	LocalHost            *Host
 	DiscoverPeersAddress string
 	IdentityKey          *incognitokey.CommitteePublicKey
+	IsMasterNode         bool
 
 	ps       *pubsub.PubSub
 	subs     m2t                  // mapping from message to topic's subscription
@@ -153,10 +186,12 @@ func (cm *ConnManager) process() {
 	for {
 		select {
 		case msg := <-cm.messages:
-			fmt.Println("[db] go cm.disp.processInMessageString(string(msg.Data))")
+			// fmt.Println("[db] go cm.disp.processInMessageString(string(msg.Data))")
 			// go cm.disp.processInMessageString(string(msg.Data))
 			err := cm.disp.processInMessageString(string(msg.Data))
-			fmt.Printf("err: %+v\n", err)
+			if err != nil {
+				log.Println(err)
+			}
 		}
 	}
 }
@@ -187,7 +222,7 @@ func encodeMessage(msg wire.Message) (string, error) {
 	copy(headerBytes[wire.MessageCmdTypeSize:], []byte{forwardType})
 	copy(headerBytes[wire.MessageCmdTypeSize+1:], []byte{forwardValue})
 	messageBytes = append(messageBytes, headerBytes...)
-	fmt.Printf("[db] OutMessageHandler TYPE %s CONTENT %s\n", cmdType, string(messageBytes))
+	log.Printf("Encoded message TYPE %s CONTENT %s", cmdType, string(messageBytes))
 
 	// zip data before send
 	messageBytes, err = common.GZipFromBytes(messageBytes)
@@ -222,7 +257,7 @@ func (cm *ConnManager) manageRoleSubscription() {
 
 	lastRole := newUserRole("dummyLayer", "dummyRole", -1000)
 	lastTopics := m2t{}
-	for range time.Tick(5 * time.Second) {
+	for ; true; <-time.Tick(5 * time.Second) { // Loop immediately and then periodically
 		// Update when role changes
 		newRole := newUserRole(cm.cd.GetUserRole())
 		if *newRole == *lastRole {
@@ -231,8 +266,7 @@ func (cm *ConnManager) manageRoleSubscription() {
 		log.Printf("Role changed: %v -> %v", lastRole, newRole)
 		lastRole = newRole
 
-		// TODO(@0xbunyip): Pending & Waiting roles?
-		if newRole.role != common.CommitteeRole {
+		if newRole.role == common.WaitingRole {
 			continue
 		}
 
@@ -333,14 +367,12 @@ func (cm *ConnManager) subscribeNewTopics(newTopics, subscribed m2t) error {
 func processSubscriptionMessage(inbox chan *pubsub.Message, sub *pubsub.Subscription) {
 	ctx := context.Background()
 	for {
+		// TODO(@0xbunyip): check if topic is unsubbed then return, otherwise just continue
 		msg, err := sub.Next(ctx)
-		fmt.Println("[db] Found new msg")
-		_ = err
-		// if err != nil {
-		// 	log.Println(err)
-		// 	return
-		// 	// TODO(@0xbunyip): check if topic is unsubbed then return, otherwise just continue
-		// }
+		if err != nil {
+			log.Println(err)
+			continue
+		}
 
 		inbox <- msg
 	}
