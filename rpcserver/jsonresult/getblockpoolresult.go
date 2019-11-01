@@ -58,12 +58,13 @@ func NewShardToBeaconPoolResult(allBlockHeight map[byte][]uint64, allLatestBlock
 	index := 0
 	for shardID, blockHeights := range allBlockHeight {
 		latestBlockHeight := allLatestBlockHeight[shardID]
-		shardToBeaconPoolResult.PendingBlockHeight[index].ShardID = shardID
 		for _, blockHeight := range blockHeights {
 			if blockHeight <= latestBlockHeight {
 				shardToBeaconPoolResult.ValidBlockHeight[index].BlockHeightList = append(shardToBeaconPoolResult.ValidBlockHeight[index].BlockHeightList, blockHeight)
+				shardToBeaconPoolResult.ValidBlockHeight[index].ShardID = shardID
 			} else {
 				shardToBeaconPoolResult.PendingBlockHeight[index].BlockHeightList = append(shardToBeaconPoolResult.PendingBlockHeight[index].BlockHeightList, blockHeight)
+				shardToBeaconPoolResult.PendingBlockHeight[index].ShardID = shardID
 			}
 		}
 		index++

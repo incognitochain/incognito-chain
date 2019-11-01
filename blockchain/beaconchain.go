@@ -3,12 +3,12 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/pkg/errors"
 )
 
 type BeaconChain struct {
@@ -71,19 +71,18 @@ func (chain *BeaconChain) CreateNewBlock(round int) (common.BlockInterface, erro
 }
 
 func (chain *BeaconChain) InsertBlk(block common.BlockInterface) error {
-	chain.lock.Lock()
-	defer chain.lock.Unlock()
+	if chain.Blockchain.config.ConsensusEngine.IsOngoing(common.BeaconChainKey) {
+		return NewBlockChainError(ConsensusIsOngoingError, errors.New(fmt.Sprint(common.BeaconChainKey, block.Hash())))
+	}
 	return chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true)
 }
 
 func (chain *BeaconChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
-	chain.lock.Lock()
-	defer chain.lock.Unlock()
+	go chain.Blockchain.config.Server.PushBlockToAll(block, true)
 	err := chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true)
 	if err != nil {
 		return err
 	}
-	go chain.Blockchain.config.Server.PushBlockToAll(block, true)
 	return nil
 }
 
@@ -103,23 +102,21 @@ func (chain *BeaconChain) ValidatePreSignBlock(block common.BlockInterface) erro
 	return chain.Blockchain.VerifyPreSignBeaconBlock(block.(*BeaconBlock), true)
 }
 
-func (chain *BeaconChain) ValidateAndInsertBlock(block common.BlockInterface) error {
-	chain.lock.Lock()
-	defer chain.lock.Unlock()
-	var beaconBestState BeaconBestState
-	beaconBlock := block.(*BeaconBlock)
-	beaconBestState.cloneBeaconBestStateFrom(chain.BestState)
-	producerPublicKey := beaconBlock.Header.Producer
-	producerPosition := (beaconBestState.BeaconProposerIndex + beaconBlock.Header.Round) % len(beaconBestState.BeaconCommittee)
-	tempProducer := beaconBestState.BeaconCommittee[producerPosition].GetMiningKeyBase58(beaconBestState.ConsensusAlgorithm)
-	if strings.Compare(tempProducer, producerPublicKey) != 0 {
-		return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
-	}
-	if err := chain.ValidateBlockSignatures(block, beaconBestState.BeaconCommittee); err != nil {
-		return err
-	}
-	return chain.Blockchain.InsertBeaconBlock(beaconBlock, false)
-}
+// func (chain *BeaconChain) ValidateAndInsertBlock(block common.BlockInterface) error {
+// 	var beaconBestState BeaconBestState
+// 	beaconBlock := block.(*BeaconBlock)
+// 	beaconBestState.cloneBeaconBestStateFrom(chain.BestState)
+// 	producerPublicKey := beaconBlock.Header.Producer
+// 	producerPosition := (beaconBestState.BeaconProposerIndex + beaconBlock.Header.Round) % len(beaconBestState.BeaconCommittee)
+// 	tempProducer := beaconBestState.BeaconCommittee[producerPosition].GetMiningKeyBase58(beaconBestState.ConsensusAlgorithm)
+// 	if strings.Compare(tempProducer, producerPublicKey) != 0 {
+// 		return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
+// 	}
+// 	if err := chain.ValidateBlockSignatures(block, beaconBestState.BeaconCommittee); err != nil {
+// 		return err
+// 	}
+// 	return chain.Blockchain.InsertBeaconBlock(beaconBlock, false)
+// }
 
 func (chain *BeaconChain) ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
@@ -140,13 +137,11 @@ func (chain *BeaconChain) GetShardID() int {
 }
 
 func (chain *BeaconChain) GetAllCommittees() map[string]map[string][]incognitokey.CommitteePublicKey {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	var result map[string]map[string][]incognitokey.CommitteePublicKey
 	result = make(map[string]map[string][]incognitokey.CommitteePublicKey)
 	result[chain.BestState.ConsensusAlgorithm] = make(map[string][]incognitokey.CommitteePublicKey)
 	result[chain.BestState.ConsensusAlgorithm][common.BeaconChainKey] = append([]incognitokey.CommitteePublicKey{}, chain.BestState.BeaconCommittee...)
-	for shardID, consensusType := range chain.BestState.ShardConsensusAlgorithm {
+	for shardID, consensusType := range chain.BestState.GetShardConsensusAlgorithm() {
 		if _, ok := result[consensusType]; !ok {
 			result[consensusType] = make(map[string][]incognitokey.CommitteePublicKey)
 		}
@@ -156,21 +151,15 @@ func (chain *BeaconChain) GetAllCommittees() map[string]map[string][]incognitoke
 }
 
 func (chain *BeaconChain) GetBeaconPendingList() []incognitokey.CommitteePublicKey {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	var result []incognitokey.CommitteePublicKey
-
 	result = append(result, chain.BestState.BeaconPendingValidator...)
 	return result
 }
 
 func (chain *BeaconChain) GetShardsPendingList() map[string]map[string][]incognitokey.CommitteePublicKey {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	var result map[string]map[string][]incognitokey.CommitteePublicKey
 	result = make(map[string]map[string][]incognitokey.CommitteePublicKey)
-
-	for shardID, consensusType := range chain.BestState.ShardConsensusAlgorithm {
+	for shardID, consensusType := range chain.BestState.GetShardConsensusAlgorithm() {
 		if _, ok := result[consensusType]; !ok {
 			result[consensusType] = make(map[string][]incognitokey.CommitteePublicKey)
 		}
@@ -180,8 +169,6 @@ func (chain *BeaconChain) GetShardsPendingList() map[string]map[string][]incogni
 }
 
 func (chain *BeaconChain) GetShardsWaitingList() []incognitokey.CommitteePublicKey {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	var result []incognitokey.CommitteePublicKey
 	result = append(result, chain.BestState.CandidateShardWaitingForNextRandom...)
 	result = append(result, chain.BestState.CandidateShardWaitingForCurrentRandom...)
@@ -189,8 +176,6 @@ func (chain *BeaconChain) GetShardsWaitingList() []incognitokey.CommitteePublicK
 }
 
 func (chain *BeaconChain) GetBeaconWaitingList() []incognitokey.CommitteePublicKey {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	var result []incognitokey.CommitteePublicKey
 	result = append(result, chain.BestState.CandidateBeaconWaitingForNextRandom...)
 	result = append(result, chain.BestState.CandidateBeaconWaitingForCurrentRandom...)

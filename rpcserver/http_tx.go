@@ -94,7 +94,10 @@ func (httpServer *HttpServer) handleGetTransactionHashByReceiver(params interfac
 	if len(arrayParams) != 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("key component invalid"))
 	}
-	paymentAddress := arrayParams[0].(string)
+	paymentAddress, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payment address"))
+	}
 
 	result, err := httpServer.txService.GetTransactionHashByReceiver(paymentAddress)
 	if err != nil {
@@ -290,7 +293,7 @@ func (httpServer *HttpServer) handleCustomTokenDetail(params interface{}, closeC
 	}
 
 	txs, err := httpServer.txService.CustomTokenDetail(tokenIDTemp)
-	if err != nil{
+	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
@@ -319,7 +322,7 @@ func (httpServer *HttpServer) handlePrivacyCustomTokenDetail(params interface{},
 	}
 
 	txs, err := httpServer.txService.PrivacyCustomTokenDetail(tokenIDTemp)
-	if err != nil{
+	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
@@ -356,7 +359,7 @@ func (httpServer *HttpServer) handleListUnspentCustomToken(params interface{}, c
 	}
 
 	unspentTxTokenOuts, err := httpServer.txService.ListUnspentCustomToken(senderKeyParam, tokenIDParam)
-	if err != nil{
+	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
@@ -398,8 +401,8 @@ func (httpServer *HttpServer) handleGetBalanceCustomToken(params interface{}, cl
 	}
 
 	totalValue, err := httpServer.txService.GetBalanceCustomToken(senderKeyParam, tokenIDParam)
-	if err != nil{
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError,err)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
 	Logger.log.Debugf("handleGetBalanceCustomToken result: %+v", totalValue)
@@ -415,8 +418,8 @@ func (httpServer *HttpServer) handleCreateSignatureOnCustomTokenTx(params interf
 	senderKeyParam := arrayParams[1].(string)
 
 	result, err := httpServer.txService.CreateSignatureOnCustomTokenTx(base58CheckDate, senderKeyParam)
-	if err != nil{
-		return nil,  rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
 	}
 
 	Logger.log.Debugf("handleCreateSignatureOnCustomTokenTx result: %+v", result)
@@ -462,7 +465,7 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 	}
 
 	commitmentIndexs, myCommitmentIndexs, commitments, err2 := httpServer.txService.RandomCommitments(paymentAddressStr, outputs, tokenID)
-	if err2 != nil{
+	if err2 != nil {
 		return nil, err2
 	}
 
@@ -693,7 +696,7 @@ func (httpServer *HttpServer) handleHasSnDerivators(params interface{}, closeCha
 		}
 	}
 	result, err := httpServer.databaseService.HasSnDerivators(paymentAddressStr, snDerivatorStr, *tokenID)
-	if err != nil{
+	if err != nil {
 		Logger.log.Debugf("handleHasSnDerivators result: %+v, err: %+v", nil, err)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -791,7 +794,7 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 	paramsArray := common.InterfaceSlice(params)
 
 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
-	if errNewParam != nil{
+	if errNewParam != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
 
@@ -808,12 +811,12 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 
 	stakingType, ok := data["StakingType"].(float64)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Staking Type For Staking Transaction %+v",  data["StakingType"]))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Staking Type For Staking Transaction %+v", data["StakingType"]))
 	}
 
 	candidatePaymentAddress, ok := data["CandidatePaymentAddress"].(string)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,  fmt.Errorf("Invalid Producer Payment Address for Staking Transaction %+v", data["CandidatePaymentAddress"]))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Producer Payment Address for Staking Transaction %+v", data["CandidatePaymentAddress"]))
 	}
 
 	// Get private seed, a.k.a mining key
@@ -866,7 +869,7 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 	}
 
 	txID, txBytes, txShardID, err := httpServer.txService.CreateRawTransaction(createRawTxParam, stakingMetadata)
-	if err.(*rpcservice.RPCError) != nil{
+	if err.(*rpcservice.RPCError) != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
 	}
 
@@ -910,7 +913,7 @@ func (httpServer *HttpServer) handleCreateRawStopAutoStakingTransaction(params i
 	Logger.log.Debugf("handleCreateRawStakingTransaction params: %+v", params)
 	paramsArray := common.InterfaceSlice(params)
 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
-	if errNewParam != nil{
+	if errNewParam != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
 
@@ -918,7 +921,6 @@ func (httpServer *HttpServer) handleCreateRawStopAutoStakingTransaction(params i
 	keyWallet.KeySet = *createRawTxParam.SenderKeySet
 	funderPaymentAddress := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
 	Logger.log.Info("Staking Public Key: %v\n", funderPaymentAddress)
-
 
 	//Get data to create meta data
 	data, ok := paramsArray[4].(map[string]interface{})
@@ -969,7 +971,7 @@ func (httpServer *HttpServer) handleCreateRawStopAutoStakingTransaction(params i
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 	txID, txBytes, txShardID, err := httpServer.txService.CreateRawTransaction(createRawTxParam, stakingMetadata)
-	if err.(*rpcservice.RPCError) != nil{
+	if err.(*rpcservice.RPCError) != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
 	}
 

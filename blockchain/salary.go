@@ -169,7 +169,7 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(beaconBlocks 
 	epoch := uint64(0)
 	db := blockchain.config.DataBase
 	for _, beaconBlock := range beaconBlocks {
-		fmt.Printf("RewardLog Process BeaconBlock %v\n", beaconBlock.GetHeight())
+		//fmt.Printf("RewardLog Process BeaconBlock %v\n", beaconBlock.GetHeight())
 		for _, l := range beaconBlock.Body.Instructions {
 			if l[0] == StakeAction || l[0] == RandomAction {
 				continue
@@ -206,7 +206,7 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(beaconBlocks 
 					continue
 
 				case metadata.DevRewardRequestMeta:
-					fmt.Printf("RewardLog Process Dev %v\n", l)
+					//fmt.Printf("RewardLog Process Dev %v\n", l)
 					devRewardInfo, err := metadata.NewDevRewardInfoFromStr(l[3])
 					if err != nil {
 						return err
@@ -226,7 +226,7 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(beaconBlocks 
 			}
 			switch metaType {
 			case metadata.ShardBlockRewardRequestMeta:
-				fmt.Printf("RewardLog Process Shard %v\n", l)
+				//fmt.Printf("RewardLog Process Shard %v\n", l)
 				shardRewardInfo, err := metadata.NewShardBlockRewardInfoFromString(l[3])
 				if err != nil {
 					return err

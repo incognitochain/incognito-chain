@@ -32,7 +32,7 @@ func (bp *BlockProvider) GetBlockShardByHeight(ctx context.Context, req *GetBloc
 		[]uint64{req.FromHeight, req.ToHeight},
 		0,
 	)
-	log.Println("[db] Block shard received from netsync:", blkMsgs)
+	log.Println("Blockshard received from netsync:", blkMsgs)
 	resp := &GetBlockShardByHeightResponse{}
 	for _, msg := range blkMsgs {
 		encoded, err := encodeMessage(msg)
@@ -57,7 +57,6 @@ func (bp *BlockProvider) GetBlockBeaconByHeight(ctx context.Context, req *GetBlo
 		false,
 		[]uint64{req.FromHeight, req.ToHeight},
 	)
-	log.Println("[db] Block beacon received from netsync:", blkMsgs)
 	resp := &GetBlockBeaconByHeightResponse{}
 	for _, msg := range blkMsgs {
 		encoded, err := encodeMessage(msg)
