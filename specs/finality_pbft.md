@@ -72,7 +72,7 @@ At this state, nodes may vote for a proposed block B’(n+2) which appended to B
 
 Let N be the size of committee.
 
-Let consider the case that network is so busy, a major group, >=(2/3)N, failed to propose new block but can receive new block, vote for it, but not collect enough votes to commit the block. While a smaller group, <(1/3)N, can commit and propose new blocks. Moreover, this  group is divided into two forked chains. The next proposer is alternatively picked from each forked chain. In this case, the two forked chains can produce block and append to it chain continuously.
+Let consider the case that network is highly congested, a major group, >=(2/3)N, failed to propose new block but can receive new block, vote for it, but not collect enough votes to commit the block. While a smaller group, <(1/3)N, can commit and propose new blocks. Moreover, this  group is divided into two forked chains. The next proposer is alternatively picked from each forked chain. In this case, the two forked chains can produce block and append to it chain continuously.
 
 **Claim 5.**  *In rotated proposer mode, a node with two forked chains, there is one chain is one-block longer than the other as in Fig 1, then the chain can not be blocked if the note is not vote for the shorter chain.*
 
