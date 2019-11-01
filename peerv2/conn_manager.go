@@ -133,11 +133,21 @@ func (cm *ConnManager) BroadcastCommittee(
 	}
 
 	log.Println("Broadcasting committee to highways!!!")
+	beaconCommitteeString := incognitokey.CommitteeKeyListToMapString(newBeaconCommittee)
+	shardCommitteeString := map[byte][]incognitokey.CommitteeKeyString{}
+	shardPendingString := map[byte][]incognitokey.CommitteeKeyString{}
+	for s, keys := range newAllShardCommittee {
+		shardCommitteeString[s] = incognitokey.CommitteeKeyListToMapString(keys)
+	}
+	for s, keys := range newAllShardPending {
+		shardPendingString[s] = incognitokey.CommitteeKeyListToMapString(keys)
+	}
+
 	cc := &incognitokey.ChainCommittee{
 		Epoch:             epoch,
-		BeaconCommittee:   newBeaconCommittee,
-		AllShardCommittee: newAllShardCommittee,
-		AllShardPending:   newAllShardPending,
+		BeaconCommittee:   beaconCommitteeString,
+		AllShardCommittee: shardCommitteeString,
+		AllShardPending:   shardPendingString,
 	}
 	data, err := cc.ToByte()
 	if err != nil {
