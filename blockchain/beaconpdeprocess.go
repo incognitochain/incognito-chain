@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
+	"math/big"
 	"sort"
 	"strconv"
 	"strings"
@@ -84,9 +85,11 @@ func addShareAmountUp(
 	if poolValue == 0 {
 		currentPDEState.PDEShares[pdeShareKey] = amt
 	}
-	increasingAmt := totalSharesOnToken * amt / poolValue
+	increasingAmt := big.NewInt(0)
+	increasingAmt.Mul(big.NewInt(int64(totalSharesOnToken)), big.NewInt(int64(amt)))
+	increasingAmt.Div(increasingAmt, big.NewInt(int64(poolValue)))
 	currentShare, found := currentPDEState.PDEShares[pdeShareKey]
-	addedUpAmt := increasingAmt
+	addedUpAmt := increasingAmt.Uint64()
 	if found {
 		addedUpAmt += currentShare
 	}
