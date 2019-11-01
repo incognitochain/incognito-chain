@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
+	"math/big"
 	"strconv"
 	"strings"
 
@@ -72,33 +73,42 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 		tokenPoolValueToSell = pdePoolPair.Token1PoolValue
 		tokenPoolValueToBuy = pdePoolPair.Token2PoolValue
 	}
-	invariant := tokenPoolValueToSell * tokenPoolValueToBuy
-	newTokenPoolValueToSell := tokenPoolValueToSell + pdeTradeReqAction.Meta.SellAmount
-	newTokenPoolValueToBuy := invariant / newTokenPoolValueToSell
-	buyAmt := tokenPoolValueToBuy - newTokenPoolValueToBuy
-	tradeFee := (buyAmt * PDEFree) / 1000
-	receiveAmt := buyAmt - tradeFee
+	invariant := big.NewInt(0)
+	invariant.Mul(big.NewInt(int64(tokenPoolValueToSell)), big.NewInt(int64(tokenPoolValueToBuy)))
+	fee := pdeTradeReqAction.Meta.SellAmount / PDEDevisionAmountForFee
+	newTokenPoolValueToSell := big.NewInt(0)
+	newTokenPoolValueToSell.Add(big.NewInt(int64(tokenPoolValueToSell)), big.NewInt(int64(pdeTradeReqAction.Meta.SellAmount)))
+	newTokenPoolValueToSellAfterFee := big.NewInt(0).Sub(newTokenPoolValueToSell, big.NewInt(int64(fee)))
 
+	newTokenPoolValueToBuy := big.NewInt(0).Div(invariant, newTokenPoolValueToSellAfterFee).Uint64()
+	modValue := big.NewInt(0).Mod(invariant, newTokenPoolValueToSellAfterFee)
+
+	if modValue.Cmp(big.NewInt(0)) != 0 {
+		newTokenPoolValueToBuy++
+	}
+	if tokenPoolValueToBuy <= newTokenPoolValueToBuy {
+		inst := []string{
+			strconv.Itoa(metaType),
+			strconv.Itoa(int(shardID)),
+			"refund",
+			contentStr,
+		}
+		return [][]string{inst}, nil
+	}
+
+	receiveAmt := tokenPoolValueToBuy - newTokenPoolValueToBuy
 	// update current pde state on mem
 	pdePoolPair.Token1PoolValue = newTokenPoolValueToBuy
-	pdePoolPair.Token2PoolValue = newTokenPoolValueToSell
+	pdePoolPair.Token2PoolValue = newTokenPoolValueToSell.Uint64()
 	if pdePoolPair.Token1IDStr == pdeTradeReqAction.Meta.TokenIDToSellStr {
-		pdePoolPair.Token1PoolValue = newTokenPoolValueToSell
+		pdePoolPair.Token1PoolValue = newTokenPoolValueToSell.Uint64()
 		pdePoolPair.Token2PoolValue = newTokenPoolValueToBuy
 	}
-	tradeFeeKey := string(lvdb.BuildPDETradeFeesKey(
-		beaconHeight,
-		pdeTradeReqAction.Meta.TokenIDToBuyStr,
-		pdeTradeReqAction.Meta.TokenIDToSellStr,
-		pdeTradeReqAction.Meta.TokenIDToBuyStr,
-	))
-	currentPDEState.PDEFees[tradeFeeKey] += tradeFee
 
 	pdeTradeAcceptedContent := metadata.PDETradeAcceptedContent{
 		TraderAddressStr: pdeTradeReqAction.Meta.TraderAddressStr,
 		TokenIDToBuyStr:  pdeTradeReqAction.Meta.TokenIDToBuyStr,
 		ReceiveAmount:    receiveAmt,
-		TradeFee:         tradeFee,
 		Token1IDStr:      pdePoolPair.Token1IDStr,
 		Token2IDStr:      pdePoolPair.Token2IDStr,
 		ShardID:          shardID,
@@ -106,7 +116,7 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 	}
 	pdeTradeAcceptedContent.Token1PoolValueOperation = metadata.TokenPoolValueOperation{
 		Operator: "-",
-		Value:    buyAmt,
+		Value:    receiveAmt,
 	}
 	pdeTradeAcceptedContent.Token2PoolValueOperation = metadata.TokenPoolValueOperation{
 		Operator: "+",
@@ -119,7 +129,7 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 		}
 		pdeTradeAcceptedContent.Token2PoolValueOperation = metadata.TokenPoolValueOperation{
 			Operator: "-",
-			Value:    buyAmt,
+			Value:    receiveAmt,
 		}
 	}
 	pdeTradeAcceptedContentBytes, err := json.Marshal(pdeTradeAcceptedContent)
@@ -160,13 +170,14 @@ func deductPDEAmounts(
 	if !found || currentSharesForToken == 0 {
 		return deductingAmounts
 	}
+
+	totalSharesForTokenPrefix := string(lvdb.BuildPDESharesKey(
+		beaconHeight,
+		wdMeta.WithdrawalToken1IDStr, wdMeta.WithdrawalToken2IDStr,
+		withdrawalTokenIDStr, "",
+	))
 	totalSharesForToken := uint64(0)
 	for shareKey, shareAmt := range currentPDEState.PDEShares {
-		totalSharesForTokenPrefix := string(lvdb.BuildPDESharesKey(
-			beaconHeight,
-			wdMeta.WithdrawalToken1IDStr, wdMeta.WithdrawalToken2IDStr,
-			withdrawalTokenIDStr, "",
-		))
 		if strings.Contains(shareKey, totalSharesForTokenPrefix) {
 			totalSharesForToken += shareAmt
 		}
@@ -186,43 +197,33 @@ func deductPDEAmounts(
 	}
 
 	deductingAmounts = &DeductingAmountsForTokenByWithdrawal{}
-	deductingPoolValue := uint64(0)
+	deductingPoolValue := big.NewInt(0)
 	if withdrawalTokenIDStr == pdePoolPair.Token2IDStr {
-		deductingPoolValue = pdePoolPair.Token2PoolValue * wdSharesForToken / totalSharesForToken
-		if pdePoolPair.Token2PoolValue < deductingPoolValue {
+		deductingPoolValue.Mul(big.NewInt(int64(pdePoolPair.Token2PoolValue)), big.NewInt(int64(wdSharesForToken)))
+		deductingPoolValue.Div(deductingPoolValue, big.NewInt(int64(totalSharesForToken)))
+		// deductingPoolValue = pdePoolPair.Token2PoolValue * wdSharesForToken / totalSharesForToken
+		if pdePoolPair.Token2PoolValue < deductingPoolValue.Uint64() {
 			pdePoolPair.Token2PoolValue = 0
 		} else {
-			pdePoolPair.Token2PoolValue -= deductingPoolValue
+			pdePoolPair.Token2PoolValue -= deductingPoolValue.Uint64()
 		}
 	} else {
-		deductingPoolValue = pdePoolPair.Token1PoolValue * wdSharesForToken / totalSharesForToken
-		if pdePoolPair.Token1PoolValue < deductingPoolValue {
+		// deductingPoolValue = pdePoolPair.Token1PoolValue * wdSharesForToken / totalSharesForToken
+		deductingPoolValue.Mul(big.NewInt(int64(pdePoolPair.Token1PoolValue)), big.NewInt(int64(wdSharesForToken)))
+		deductingPoolValue.Div(deductingPoolValue, big.NewInt(int64(totalSharesForToken)))
+		if pdePoolPair.Token1PoolValue < deductingPoolValue.Uint64() {
 			pdePoolPair.Token1PoolValue = 0
 		} else {
-			pdePoolPair.Token1PoolValue -= deductingPoolValue
+			pdePoolPair.Token1PoolValue -= deductingPoolValue.Uint64()
 		}
 	}
-	currentPDEState.PDEShares[shareForTokenKey] -= wdSharesForToken
-	deductingAmounts.PoolValue = deductingPoolValue
-	deductingAmounts.Shares = wdSharesForToken
-
-	// fee
-	tradeFeeKey := string(lvdb.BuildPDETradeFeesKey(
-		beaconHeight,
-		wdMeta.WithdrawalToken1IDStr, wdMeta.WithdrawalToken2IDStr,
-		withdrawalTokenIDStr,
-	))
-	totalFeesOnToken, found := currentPDEState.PDEFees[tradeFeeKey]
-	if !found || totalFeesOnToken == 0 {
-		return deductingAmounts
-	}
-	deductingFee := totalFeesOnToken * wdSharesForToken / totalSharesForToken
-	deductingAmounts.TradeFees = deductingFee
-	if currentPDEState.PDEFees[tradeFeeKey] < deductingFee {
-		currentPDEState.PDEFees[tradeFeeKey] = 0
+	if currentPDEState.PDEShares[shareForTokenKey] < wdSharesForToken {
+		currentPDEState.PDEShares[shareForTokenKey] = 0
 	} else {
-		currentPDEState.PDEFees[tradeFeeKey] -= deductingFee
+		currentPDEState.PDEShares[shareForTokenKey] -= wdSharesForToken
 	}
+	deductingAmounts.PoolValue = deductingPoolValue.Uint64()
+	deductingAmounts.Shares = wdSharesForToken
 	return deductingAmounts
 }
 
@@ -239,7 +240,6 @@ func buildPDEWithdrawalAcceptedInst(
 		WithdrawerAddressStr: wdMeta.WithdrawerAddressStr,
 		DeductingPoolValue:   deductingAmountsForToken.PoolValue,
 		DeductingShares:      deductingAmountsForToken.Shares,
-		DeductingTradeFees:   deductingAmountsForToken.TradeFees,
 		PairToken1IDStr:      wdMeta.WithdrawalToken1IDStr,
 		PairToken2IDStr:      wdMeta.WithdrawalToken2IDStr,
 		TxReqID:              txReqID,
@@ -276,7 +276,6 @@ func (blockchain *BlockChain) buildInstructionsForPDEWithdrawal(
 		Logger.log.Errorf("ERROR: an error occured while unmarshaling pde withdrawal request action: %+v", err)
 		return [][]string{}, nil
 	}
-	// db := blockchain.GetDatabase()
 	wdMeta := pdeWithdrawalRequestAction.Meta
 	deductingAmountsForToken1 := deductPDEAmounts(
 		wdMeta.WithdrawalToken1IDStr,
