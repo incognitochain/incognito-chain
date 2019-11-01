@@ -145,7 +145,8 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 	}
 	fmt.Println("Shard block received from shard", newBlk.Header.ShardID, newBlk.Header.Height)
 	if newBlk.Header.Timestamp < GetBestStateShard(newBlk.Header.ShardID).BestBlock.Header.Timestamp { // not receive block older than current latest block
-		return
+		//fmt.Println("Shard block received 0")
+		//return
 	}
 
 	if _, ok := blockchain.Synker.Status.Shards[newBlk.Header.ShardID]; ok {
@@ -156,61 +157,30 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 		currentInsert.Shards[newBlk.Header.ShardID].Lock()
 		defer currentInsert.Shards[newBlk.Header.ShardID].Unlock()
 		currentShardBestState := blockchain.BestState.Shard[newBlk.Header.ShardID]
+
 		if currentShardBestState.ShardHeight <= newBlk.Header.Height {
-			userPubKey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
-			if userPubKey != "" {
+			//layer, role, _ := blockchain.config.ConsensusEngine.GetUserRole()
+			//fmt.Println("Shard block received 0", layer, role)
+			currentShardBestState := blockchain.BestState.Shard[newBlk.Header.ShardID]
 
-				userRole := currentShardBestState.GetPubkeyRole(userPubKey, 0)
-				fmt.Println("Shard block received 1", userRole)
-				if userRole == common.ProposerRole || userRole == common.ValidatorRole {
-					// Revert beststate
-					// @NOTICE: Choose block with highest round, because we assume that most of node state is at the highest round
-					if currentShardBestState.ShardHeight == newBlk.Header.Height && currentShardBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentShardBestState.BestBlock.Header.Round < newBlk.Header.Round {
-						fmt.Println("FORK SHARD", newBlk.Header.ShardID, newBlk.Header.Height)
-						if err := blockchain.ValidateBlockWithPrevShardBestState(newBlk); err != nil {
-							Logger.log.Error(err)
-							return
-						}
-						if err := blockchain.RevertShardState(newBlk.Header.ShardID); err != nil {
-							Logger.log.Error(err)
-							return
-						}
-						fmt.Println("REVERTED SHARD", newBlk.Header.ShardID, newBlk.Header.Height)
-						err := blockchain.InsertShardBlock(newBlk, false)
-						if err != nil {
-							Logger.log.Error(err)
-						}
-						return
-					}
-
-					isConsensusOngoing := blockchain.config.ConsensusEngine.IsOngoing(common.GetShardChainKey(newBlk.Header.ShardID))
-					fmt.Println("Shard block received 2", currentShardBestState.ShardHeight, newBlk.Header.Height)
-					if currentShardBestState.ShardHeight == newBlk.Header.Height-1 {
-						fmt.Println("Shard block received 3", isConsensusOngoing, blockchain.Synker.IsLatest(true, newBlk.Header.ShardID))
-						if blockchain.Synker.IsLatest(true, newBlk.Header.ShardID) == false {
-							Logger.log.Info("Insert New Shard Block to pool", newBlk.Header.Height)
-							err := blockchain.config.ShardPool[newBlk.Header.ShardID].AddShardBlock(newBlk)
-							if err != nil {
-								Logger.log.Errorf("Add block %+v from shard %+v error %+v: \n", newBlk.Header.Height, newBlk.Header.ShardID, err)
-								return
-							}
-						} else if !isConsensusOngoing {
-							Logger.log.Infof("Insert New Shard Block %+v, ShardID %+v \n", newBlk.Header.Height, newBlk.Header.ShardID)
-							err := blockchain.InsertShardBlock(newBlk, false)
-							if err != nil {
-								Logger.log.Error(err)
-								return
-							}
-						}
-					}
+			if currentShardBestState.ShardHeight == newBlk.Header.Height && currentShardBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentShardBestState.BestBlock.Header.Round < newBlk.Header.Round {
+				//fmt.Println("Shard block received 1", role)
+				err := blockchain.InsertShardBlock(newBlk, false)
+				if err != nil {
+					Logger.log.Error(err)
 				}
+				return
 			}
 
 			err := blockchain.config.ShardPool[newBlk.Header.ShardID].AddShardBlock(newBlk)
 			if err != nil {
 				Logger.log.Errorf("Add block %+v from shard %+v error %+v: \n", newBlk.Header.Height, newBlk.Header.ShardID, err)
 			}
+		} else {
+			//fmt.Println("Shard block received 2")
 		}
+	} else {
+		//fmt.Println("Shard block received 1")
 	}
 }
 
@@ -224,44 +194,15 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 			return
 		}
 		if blockchain.BestState.Beacon.BeaconHeight <= newBlk.Header.Height {
-
-			publicKey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
-			if publicKey != "" {
-				// Revert beststate
-
-				userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(publicKey, 0)
-				if userRole == common.ProposerRole || userRole == common.ValidatorRole {
-					currentBeaconBestState := blockchain.BestState.Beacon
-					if currentBeaconBestState.BeaconHeight == newBlk.Header.Height && currentBeaconBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentBeaconBestState.BestBlock.Header.Round < newBlk.Header.Round {
-						fmt.Println("FORK BEACON", newBlk.Header.Height)
-						if err := blockchain.ValidateBlockWithPrevBeaconBestState(newBlk); err != nil {
-							Logger.log.Error(err)
-							return
-						}
-						if err := blockchain.RevertBeaconState(); err != nil {
-							Logger.log.Error(err)
-							return
-						}
-						fmt.Println("REVERTED BEACON", newBlk.Header.Height)
-						err := blockchain.InsertBeaconBlock(newBlk, false)
-						if err != nil {
-							Logger.log.Error(err)
-						}
-						return
-					}
-
-					if blockchain.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 {
-						if !blockchain.config.ConsensusEngine.IsOngoing(common.BeaconChainKey) {
-							fmt.Println("Beacon block insert", newBlk.Header.Height)
-							err := blockchain.InsertBeaconBlock(newBlk, false)
-							if err != nil {
-								Logger.log.Error(err)
-								return
-							}
-							return
-						}
-					}
+			currentBeaconBestState := blockchain.BestState.Beacon
+			if currentBeaconBestState.BeaconHeight == newBlk.Header.Height && currentBeaconBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentBeaconBestState.BestBlock.Header.Round < newBlk.Header.Round {
+				fmt.Println("Beacon block insert", newBlk.Header.Height)
+				err := blockchain.InsertBeaconBlock(newBlk, false)
+				if err != nil {
+					Logger.log.Error(err)
+					return
 				}
+				return
 			}
 			fmt.Println("Beacon block prepare add to pool", newBlk.Header.Height)
 			err := blockchain.config.BeaconPool.AddBeaconBlock(newBlk)
@@ -277,16 +218,18 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block *ShardToBeaconB
 	if blockchain.IsTest {
 		return
 	}
+	Logger.log.Infof("OnShardToBeaconBlockReceived NodeMode: %+v", blockchain.config.NodeMode)
 	if blockchain.config.NodeMode == common.NodeModeBeacon || blockchain.config.NodeMode == common.NodeModeAuto {
-		publicKey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
-		beaconRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(publicKey, 0)
-		if beaconRole != common.ProposerRole && beaconRole != common.ValidatorRole {
+		layer, role, _ := blockchain.config.ConsensusEngine.GetUserRole()
+		Logger.log.Infof("OnShardToBeaconBlockReceived layer && role: %+v %+v", layer, role)
+		if layer != common.BeaconRole || role != common.CommitteeRole {
 			return
 		}
 	} else {
 		return
 	}
 
+	Logger.log.Infof("OnShardToBeaconBlockReceived IsLatest: %+v", blockchain.Synker.IsLatest(false, 0))
 	if blockchain.Synker.IsLatest(false, 0) {
 		if block.Header.Version != SHARD_BLOCK_VERSION {
 			Logger.log.Debugf("Invalid Verion of block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID)
@@ -322,9 +265,8 @@ func (blockchain *BlockChain) OnCrossShardBlockReceived(block *CrossShardBlock) 
 		return
 	}
 	if blockchain.config.NodeMode == common.NodeModeShard || blockchain.config.NodeMode == common.NodeModeAuto {
-		publickey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
-		shardRole := blockchain.BestState.Shard[block.ToShardID].GetPubkeyRole(publickey, 0)
-		if shardRole != common.ProposerRole && shardRole != common.ValidatorRole {
+		layer, role, _ := blockchain.config.ConsensusEngine.GetUserRole()
+		if layer != common.ShardRole || role != common.CommitteeRole {
 			return
 		}
 	} else {

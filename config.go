@@ -146,6 +146,9 @@ type config struct {
 	MiningKeys        string `long:"miningkeys" description:"keys used for different consensus algorigthm"`
 	PrivateKey        string `long:"privatekey" description:"your wallet privatekey"`
 	Accelerator       bool   `long:"accelerator" description:"Relay Node Configuration For Consensus"`
+
+	// Highway
+	Libp2pPrivateKey string `long:"libp2pprivatekey" description:"Private key used to create node's PeerID, empty to generate random key each run"`
 }
 
 // serviceOptions defines the configuration options for the daemon as a service on

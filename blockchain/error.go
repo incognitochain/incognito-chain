@@ -109,7 +109,7 @@ const (
 	BeaconBlockSignatureError
 	WrongEpochError
 	GenerateInstructionHashError
-	GetShardBlocksError
+	GetShardToBeaconBlocksError
 	ShardStateHeightError
 	ShardStateCrossShardBitMapError
 	ShardBlockSignatureError
@@ -159,6 +159,8 @@ const (
 	FetchAutoStakingByHeightError
 	ProcessSlashingError
 	ConvertCommitteePubKeyToBase58Error
+	ConsensusIsOngoingError
+	RevertStateError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -207,7 +209,7 @@ var ErrCodeMessage = map[int]struct {
 	CloneBeaconBestStateError:                         {-1039, "Clone Beacon Best State Error"},
 	ShardBestStateNotCompatibleError:                  {-1040, "New Block and Shard Best State Is NOT Compatible"},
 	RegisterEstimatorFeeError:                         {-1041, "Register Fee Estimator Error"},
-	FetchPreviousBlockError:                           {-1042, "Failed To Fetch Previous Block Error"},
+	FetchPreviousBlockError:                           {-1042, "Failed To Fetch Previous Block Error -> need to make request a new Pre Block for checking fork/revert"},
 	TransactionRootHashError:                          {-1043, "Transaction Root Hash Error"},
 	ShardTransactionRootHashError:                     {-1044, "Shard Transaction Root Hash Error"},
 	CrossShardTransactionRootHashError:                {-1045, "Cross Shard Transaction Root Hash Error"},
@@ -302,6 +304,9 @@ var ErrCodeMessage = map[int]struct {
 	FetchAutoStakingByHeightError:                     {-1134, "Fetch Auto Staking By Height Error"},
 	ProcessSlashingError:                              {-1135, "Process slashing Error"},
 	ConvertCommitteePubKeyToBase58Error:               {-1136, "Convert committee pub key to base58 Error"},
+	ConsensusIsOngoingError:                           {-1137, "Consensus Is Ongoing Error"},
+	GetShardToBeaconBlocksError:                       {-1138, "Get Shard To Beacon Blocks Error"},
+	RevertStateError:                                  {-1139, "Revert State Error"},
 }
 
 type BlockChainError struct {

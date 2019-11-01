@@ -2,7 +2,21 @@ package blockchain
 
 import (
 	"encoding/json"
+	"sort"
 )
+
+func sortMapStringUint8Keys(m map[string]uint8) map[string]uint8 {
+	var keys []string
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	sortedMap := make(map[string]uint8)
+	for _, k := range keys {
+		sortedMap[k] = m[k]
+	}
+	return sortedMap
+}
 
 func (blockchain *BlockChain) buildBadProducersWithPunishment(
 	isBeacon bool,
@@ -51,7 +65,7 @@ func (blockchain *BlockChain) buildBadProducersWithPunishment(
 			badProducersWithPunishment[producer] = selectedSlLev.PunishedEpoches
 		}
 	}
-	return badProducersWithPunishment
+	return sortMapStringUint8Keys(badProducersWithPunishment)
 }
 
 func (blockchain *BlockChain) getUpdatedProducersBlackList(
@@ -84,7 +98,7 @@ func (blockchain *BlockChain) getUpdatedProducersBlackList(
 			producersBlackList[producer] = punishedEpoches
 		}
 	}
-	return producersBlackList, nil
+	return sortMapStringUint8Keys(producersBlackList), nil
 }
 
 func (blockchain *BlockChain) processForSlashing(block *BeaconBlock) error {

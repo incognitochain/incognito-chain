@@ -3,12 +3,12 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/pkg/errors"
 )
 
 type ShardChain struct {
@@ -40,21 +40,15 @@ func (chain *ShardChain) CurrentHeight() uint64 {
 }
 
 func (chain *ShardChain) GetCommittee() []incognitokey.CommitteePublicKey {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	result := []incognitokey.CommitteePublicKey{}
 	return append(result, chain.BestState.ShardCommittee...)
 }
 
 func (chain *ShardChain) GetCommitteeSize() int {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	return len(chain.BestState.ShardCommittee)
 }
 
 func (chain *ShardChain) GetPubKeyCommitteeIndex(pubkey string) int {
-	chain.BestState.lock.RLock()
-	defer chain.BestState.lock.RUnlock()
 	for index, key := range chain.BestState.ShardCommittee {
 		if key.GetMiningKeyBase58(chain.BestState.ConsensusAlgorithm) == pubkey {
 			return index
@@ -90,24 +84,24 @@ func (chain *ShardChain) CreateNewBlock(round int) (common.BlockInterface, error
 	return newBlock, nil
 }
 
-func (chain *ShardChain) ValidateAndInsertBlock(block common.BlockInterface) error {
-	//@Bahamoot review later
-	chain.lock.Lock()
-	defer chain.lock.Unlock()
-	var shardBestState ShardBestState
-	shardBlock := block.(*ShardBlock)
-	shardBestState.cloneShardBestStateFrom(chain.BestState)
-	producerPublicKey := shardBlock.Header.Producer
-	producerPosition := (shardBestState.ShardProposerIdx + shardBlock.Header.Round) % len(shardBestState.ShardCommittee)
-	tempProducer := shardBestState.ShardCommittee[producerPosition].GetMiningKeyBase58(shardBestState.ConsensusAlgorithm)
-	if strings.Compare(tempProducer, producerPublicKey) != 0 {
-		return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
-	}
-	if err := chain.ValidateBlockSignatures(block, shardBestState.ShardCommittee); err != nil {
-		return err
-	}
-	return chain.Blockchain.InsertShardBlock(shardBlock, false)
-}
+// func (chain *ShardChain) ValidateAndInsertBlock(block common.BlockInterface) error {
+// 	//@Bahamoot review later
+// 	chain.lock.Lock()
+// 	defer chain.lock.Unlock()
+// 	var shardBestState ShardBestState
+// 	shardBlock := block.(*ShardBlock)
+// 	shardBestState.cloneShardBestStateFrom(chain.BestState)
+// 	producerPublicKey := shardBlock.Header.Producer
+// 	producerPosition := (shardBestState.ShardProposerIdx + shardBlock.Header.Round) % len(shardBestState.ShardCommittee)
+// 	tempProducer := shardBestState.ShardCommittee[producerPosition].GetMiningKeyBase58(shardBestState.ConsensusAlgorithm)
+// 	if strings.Compare(tempProducer, producerPublicKey) != 0 {
+// 		return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
+// 	}
+// 	if err := chain.ValidateBlockSignatures(block, shardBestState.ShardCommittee); err != nil {
+// 		return err
+// 	}
+// 	return chain.Blockchain.InsertShardBlock(shardBlock, false)
+// }
 
 func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
@@ -120,19 +114,18 @@ func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, co
 }
 
 func (chain *ShardChain) InsertBlk(block common.BlockInterface) error {
-	chain.lock.Lock()
-	defer chain.lock.Unlock()
-	return chain.Blockchain.InsertShardBlock(block.(*ShardBlock), true)
+	if chain.Blockchain.config.ConsensusEngine.IsOngoing(chain.ChainName) {
+		return NewBlockChainError(ConsensusIsOngoingError, errors.New(fmt.Sprint(chain.ChainName, block.Hash())))
+	}
+	return chain.Blockchain.InsertShardBlock(block.(*ShardBlock), false)
 }
 
 func (chain *ShardChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
-	chain.lock.Lock()
-	defer chain.lock.Unlock()
+	go chain.Blockchain.config.Server.PushBlockToAll(block, false)
 	err := chain.Blockchain.InsertShardBlock(block.(*ShardBlock), true)
 	if err != nil {
 		return err
 	}
-	go chain.Blockchain.config.Server.PushBlockToAll(block, false)
 	return nil
 }
 

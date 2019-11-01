@@ -38,7 +38,7 @@ if [ "$1" == "s24" ]; then
 go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:12wP2tDBK8dYq8UcKzwxZtS19JhyjUQZS1eE5uFbtckeSQbZBfg" --nodemode "auto" --datadir "data/s24" --listen "0.0.0.0:8357" --externaladdress "0.0.0.0:8357" --rpclisten "0.0.0.0:9357" --norpc
 fi
 if [ "$1" == "st1" ]; then
-go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:12WQy3WYgtdp1G52hcdpv9zhW2wRg9DnzcM5pZM1cFhNo3VA6pB" --nodemode "auto" --datadir "data/st1" --listen "0.0.0.0:8364" --externaladdress "0.0.0.0:8364" --rpclisten "0.0.0.0:9364" --norpc
+go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:12WQy3WYgtdp1G52hcdpv9zhW2wRg9DnzcM5pZM1cFhNo3VA6pB" --nodemode "auto" --datadir "data/st1" --listen "0.0.0.0:8364" --externaladdress "0.0.0.0:8364" --norpcauth --rpclisten "0.0.0.0:9364"
 fi
 if [ "$1" == "st2" ]; then
 go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:1UCU4M3U6XXJTgjcpT7e5fY9swXnM74sWSoP6Qyx9CD4GKSKGG" --nodemode "auto" --datadir "data/st2" --listen "0.0.0.0:8365" --externaladdress "0.0.0.0:8365" --rpclisten "0.0.0.0:9365" --norpc
@@ -57,4 +57,9 @@ go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:1dhmiTWb7M6K
 fi
 if [ "$1" == "3" ]; then
 go run *.go --miningkeys "bls:12v9jokoYDWFQ7731mR6QjjkvUG1Q" --nodemode "auto" --datadir "data/3" --listen "0.0.0.0:9437" --externaladdress "0.0.0.0:9437" --norpcauth --rpclisten "0.0.0.0:9337"
+fi
+
+# masternode: (using st2 miningkeys)
+if [ "$1" == "masternode" ]; then
+go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:1UCU4M3U6XXJTgjcpT7e5fY9swXnM74sWSoP6Qyx9CD4GKSKGG" --nodemode "auto" --datadir "data/masternode" --listen "0.0.0.0:8534" --externaladdress "0.0.0.0:8534" --norpcauth --rpclisten "0.0.0.0:9534" --enablewallet --wallet "wallet1" --walletpassphrase "12345678" --walletautoinit --loglevel info --libp2pprivatekey "CAMSeTB3AgEBBCCGewUjqizjTjLNdHfij13yll2yRQGOAOF/NzOkGDSvPaAKBggqhkjOPQMBB6FEA0IABNRXIZhVbIPhkuEl2SlSrDo6MSMqerEd3dhi1EwGSASQvDs0oETOapH5xhzVcHUdRbLgU5KUgI9I1DrWjMy5Vjc="
 fi

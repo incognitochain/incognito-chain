@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log"
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -134,6 +135,7 @@ func (d *Dispatcher) processInMessageString(msgStr string) error {
 // process message for each of message type
 func (d *Dispatcher) processMessageForEachType(messageType reflect.Type, message wire.Message) error {
 	// NOTE: copy from peerConn.processInMessageString
+	log.Printf("Processing msgType %s", message.MessageType())
 	var peerConn *peer.PeerConn
 	switch messageType {
 	case reflect.TypeOf(&wire.MessageTx{}):
@@ -149,18 +151,22 @@ func (d *Dispatcher) processMessageForEachType(messageType reflect.Type, message
 			d.MessageListeners.OnTxPrivacyToken(peerConn, message.(*wire.MessageTxPrivacyToken))
 		}
 	case reflect.TypeOf(&wire.MessageBlockShard{}):
+		log.Printf("Processing msgContent %+v", message.(*wire.MessageBlockShard).Block)
 		if d.MessageListeners.OnBlockShard != nil {
 			d.MessageListeners.OnBlockShard(peerConn, message.(*wire.MessageBlockShard))
 		}
 	case reflect.TypeOf(&wire.MessageBlockBeacon{}):
+		log.Printf("Processing msgContent %+v", message.(*wire.MessageBlockBeacon).Block)
 		if d.MessageListeners.OnBlockBeacon != nil {
 			d.MessageListeners.OnBlockBeacon(peerConn, message.(*wire.MessageBlockBeacon))
 		}
 	case reflect.TypeOf(&wire.MessageCrossShard{}):
+		log.Printf("Processing msgContent %+v", message.(*wire.MessageCrossShard).Block)
 		if d.MessageListeners.OnCrossShard != nil {
 			d.MessageListeners.OnCrossShard(peerConn, message.(*wire.MessageCrossShard))
 		}
 	case reflect.TypeOf(&wire.MessageShardToBeacon{}):
+		log.Printf("Processing msgContent %+v", message.(*wire.MessageShardToBeacon).Block)
 		if d.MessageListeners.OnShardToBeacon != nil {
 			d.MessageListeners.OnShardToBeacon(peerConn, message.(*wire.MessageShardToBeacon))
 		}
