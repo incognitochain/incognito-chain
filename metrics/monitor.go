@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"os"
+	"syscall"
 
 	"io/ioutil"
 	"net/http"
@@ -108,6 +109,16 @@ func init() {
 				shash := blockchain.GetBestStateShard(byte(i)).BestBlockHash
 				sheight := blockchain.GetBestStateShard(byte(i)).ShardHeight
 				l.Add(fmt.Sprintf("Shard%v", i), fmt.Sprintf("%v:%v", sheight, shash.String()))
+			}
+
+			//disk usage
+			fs := syscall.Statfs_t{}
+			err := syscall.Statfs("/data", &fs)
+			if err == nil {
+				All := fs.Blocks * uint64(fs.Bsize)
+				Free := fs.Bfree * uint64(fs.Bsize)
+				Used := All - Free
+				l.Add("DISK_USAGE", fmt.Sprintf("%.2f", float64(Used*100)/float64(All)))
 			}
 			l.Add("CPU_USAGE", fmt.Sprintf("%.2f", cpuUsage), "MEM_USAGE", m.Sys>>20, "Beacon", fmt.Sprintf("%v:%v", bheight, bhash.String()))
 			idle0, total0 = getCPUSample()
