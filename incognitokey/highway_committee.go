@@ -6,9 +6,9 @@ import (
 
 type ChainCommittee struct {
 	Epoch             uint64
-	BeaconCommittee   []CommitteeKeyString
-	AllShardCommittee map[byte][]CommitteeKeyString
-	AllShardPending   map[byte][]CommitteeKeyString
+	BeaconCommittee   []CommitteePublicKey
+	AllShardCommittee map[byte][]CommitteePublicKey
+	AllShardPending   map[byte][]CommitteePublicKey
 }
 
 func (cc *ChainCommittee) ToByte() ([]byte, error) {
