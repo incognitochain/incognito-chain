@@ -133,21 +133,11 @@ func (cm *ConnManager) BroadcastCommittee(
 	}
 
 	log.Println("Broadcasting committee to highways!!!")
-	beaconCommitteeString := incognitokey.CommitteeKeyListToMapString(newBeaconCommittee)
-	shardCommitteeString := map[byte][]incognitokey.CommitteeKeyString{}
-	shardPendingString := map[byte][]incognitokey.CommitteeKeyString{}
-	for s, keys := range newAllShardCommittee {
-		shardCommitteeString[s] = incognitokey.CommitteeKeyListToMapString(keys)
-	}
-	for s, keys := range newAllShardPending {
-		shardPendingString[s] = incognitokey.CommitteeKeyListToMapString(keys)
-	}
-
 	cc := &incognitokey.ChainCommittee{
 		Epoch:             epoch,
-		BeaconCommittee:   beaconCommitteeString,
-		AllShardCommittee: shardCommitteeString,
-		AllShardPending:   shardPendingString,
+		BeaconCommittee:   newBeaconCommittee,
+		AllShardCommittee: newAllShardCommittee,
+		AllShardPending:   newAllShardPending,
 	}
 	data, err := cc.ToByte()
 	if err != nil {
@@ -264,6 +254,7 @@ func broadcastMessage(msg wire.Message, topic string, ps *pubsub.PubSub) error {
 func (cm *ConnManager) manageRoleSubscription() {
 	peerid, _ := peer.IDB58Decode(HighwayPeerID)
 	pubkey, _ := cm.IdentityKey.ToBase58()
+	fmt.Println("IdentityKey", pubkey)
 
 	lastRole := newUserRole("dummyLayer", "dummyRole", -1000)
 	lastTopics := m2t{}
