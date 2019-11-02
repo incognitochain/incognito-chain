@@ -42,7 +42,7 @@ func estimateBlockHeight(self RandomClient, timestamp int64, chainHeight int, ch
 			diff := int(offsetSeconds / 600)
 			estimateBlockHeight = estimateBlockHeight + diff
 			//fmt.Printf("Estimate blockHeight %d \n", estimateBlockHeight)
-			if math.Abs(float64(diff)) < 3 {
+			if math.Abs(float64(diff)) < 5 {
 				return estimateBlockHeight, nil
 			}
 			blockTimestamp, _, err := self.GetTimeStampAndNonceByBlockHeight(estimateBlockHeight)
