@@ -44,7 +44,7 @@ func (c *BlockRequester) Register(
 		},
 	)
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(err)
 		return nil, err
 	}
 	return reply.Pair, nil
