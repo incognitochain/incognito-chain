@@ -39,7 +39,7 @@ func estimateBlockHeight(self RandomClient, timestamp int64, chainHeight int, ch
 			if time.Since(startTime).Seconds() > maxTime.Seconds() {
 				return -1, errors.New("estimate block height for random instruction exceed time out")
 			}
-			diff := int(offsetSeconds / 600)
+			diff := int(offsetSeconds / (60 * 15))
 			estimateBlockHeight = estimateBlockHeight + diff
 			//fmt.Printf("Estimate blockHeight %d \n", estimateBlockHeight)
 			if math.Abs(float64(diff)) < 5 {
