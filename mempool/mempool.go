@@ -175,6 +175,7 @@ func (tp *TxPool) MonitorPool() {
 		txsToBeRemoved := []*TxDesc{}
 		for _, txDesc := range tp.pool {
 			if time.Since(txDesc.StartTime) > ttl {
+				Logger.log.Info("MonitorPool: Add to list removed tx with txHash=%+v", txDesc.Desc.Tx.Hash().String())
 				txsToBeRemoved = append(txsToBeRemoved, txDesc)
 			}
 		}
@@ -188,6 +189,7 @@ func (tp *TxPool) MonitorPool() {
 			tp.removeTokenIDByTxHash(txHash)
 			err := tp.config.DataBaseMempool.RemoveTransaction(txDesc.Desc.Tx.Hash())
 			if err != nil {
+				Logger.log.Errorf("MonitorPool: RemoveTransaction tx hash=%+v with error %+v", txDesc.Desc.Tx.Hash().String(), err)
 				Logger.log.Error(err)
 			}
 			txSize := txDesc.Desc.Tx.GetTxActualSize()
