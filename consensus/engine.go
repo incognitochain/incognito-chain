@@ -3,6 +3,7 @@ package consensus
 import (
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics"
 	"strconv"
 	"strings"
 	"sync"
@@ -510,12 +511,14 @@ func (engine *Engine) updateUserState(keySet *incognitokey.CommitteePublicKey, l
 	}
 
 	if role == "" {
+		metrics.SetGlobalParam("Layer", "", "Role", "", "ShardID", -2)
 		engine.userCurrentState.UserLayer = ""
 		engine.userCurrentState.UserRole = ""
 		engine.userCurrentState.ShardID = 0
 		engine.userCurrentState.Keys = nil
 		engine.userCurrentState.KeysBase58 = make(map[string]string)
 	} else {
+		metrics.SetGlobalParam("Layer", layer, "Role", role, "ShardID", shardID)
 		engine.userCurrentState.ShardID = shardID
 		engine.userCurrentState.UserLayer = layer
 		engine.userCurrentState.UserRole = role
