@@ -181,10 +181,12 @@ func (e *BLSBFT) Start() error {
 				e.addEarlyVote(msg)
 
 			case <-ticker:
+
+				metrics.SetGlobalParam("RoundKey", getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), "Phase", e.RoundData.State)
+
 				pubKey := e.UserKeySet.GetPublicKey()
 				if common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList) == -1 {
 					e.enterNewRound()
-					metrics.SetGlobalParam("RoundKey", getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), "Phase", e.RoundData.State)
 					continue
 				}
 
