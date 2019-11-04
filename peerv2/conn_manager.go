@@ -12,6 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
+	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/multiformats/go-multiaddr"
@@ -92,11 +93,6 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 
 func (cm *ConnManager) Start(ns NetSync) {
 	// connect to proxy node
-	proxyIP, proxyPort := ParseListenner(cm.DiscoverPeersAddress, "127.0.0.1", 9330)
-	ipfsaddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", proxyIP, proxyPort))
-	if err != nil {
-		panic(err)
-	}
 	peerid, err := peer.IDB58Decode(HighwayPeerID)
 
 	// Pubsub
@@ -105,8 +101,12 @@ func (cm *ConnManager) Start(ns NetSync) {
 	cm.subs = m2t{}
 	cm.messages = make(chan *pubsub.Message, 1000)
 
-	// Must Connect after creating FloodSub
-	must(cm.LocalHost.Host.Connect(context.Background(), peer.AddrInfo{peerid, append([]multiaddr.Multiaddr{}, ipfsaddr)}))
+	// Wait until connection to highway is established to make sure gRPC won't fail
+	// NOTE: must Connect after creating FloodSub
+	connected := make(chan error)
+	go cm.keepHighwayConnection(connected)
+	<-connected
+
 	req, err := NewRequester(cm.LocalHost.GRPC, peerid)
 	if err != nil {
 		panic(err)
@@ -196,6 +196,41 @@ func (cm *ConnManager) process() {
 	}
 }
 
+// keepHighwayConnection periodically checks liveliness of connection to highway
+// and try to connect if it's not available.
+// The method push data to the given channel to signal that the first attempt had finished.
+// Constructor can use this info to initialize other objects.
+func (cm *ConnManager) keepHighwayConnection(connectedOnce chan error) {
+	pid, _ := peer.IDB58Decode(HighwayPeerID)
+	ip, port := ParseListenner(cm.DiscoverPeersAddress, "127.0.0.1", 9330)
+	ipfsaddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", ip, port))
+	if err != nil {
+		panic(fmt.Sprintf("invalid highway config:", err, pid, ip, port))
+	}
+	peerInfo := peer.AddrInfo{
+		ID:    pid,
+		Addrs: append([]multiaddr.Multiaddr{}, ipfsaddr),
+	}
+
+	first := true
+	net := cm.LocalHost.Host.Network()
+	for ; true; <-time.Tick(10 * time.Second) {
+		var err error
+		if net.Connectedness(pid) != network.Connected {
+			log.Println("Not connected to highway, connecting")
+			ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+			if err = cm.LocalHost.Host.Connect(ctx, peerInfo); err != nil {
+				log.Println("Could not connect to highway:", err, peerInfo)
+			}
+		}
+
+		if first {
+			connectedOnce <- err
+			first = false
+		}
+	}
+}
+
 func encodeMessage(msg wire.Message) (string, error) {
 	// NOTE: copy from peerConn.outMessageHandler
 	// Create messageHex
@@ -257,7 +292,7 @@ func (cm *ConnManager) manageRoleSubscription() {
 
 	lastRole := newUserRole("dummyLayer", "dummyRole", -1000)
 	lastTopics := m2t{}
-	for ; true; <-time.Tick(5 * time.Second) { // Loop immediately and then periodically
+	for ; true; <-time.Tick(20 * time.Second) { // Loop immediately and then periodically
 		// Update when role changes
 		newRole := newUserRole(cm.cd.GetUserRole())
 		if *newRole == *lastRole {
