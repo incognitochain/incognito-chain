@@ -670,12 +670,6 @@ out:
 	}
 }
 
-func must(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
 /*
 // Start begins accepting connections from peers.
 */
