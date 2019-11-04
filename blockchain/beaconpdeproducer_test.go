@@ -22,10 +22,7 @@ type PDEProducerSuite struct {
 	currentPDEState *CurrentPDEState
 }
 
-// Make sure that VariableThatShouldStartAtFive is set to five
-// before each test
 func (suite *PDEProducerSuite) SetupTest() {
-	// fmt.Printf("Setup test...: %+v", suite)
 	suite.currentPDEState = &CurrentPDEState{
 		WaitingPDEContributions: make(map[string]*lvdb.PDEContribution),
 		PDEPoolPairs:            make(map[string]*lvdb.PDEPoolForPair),
