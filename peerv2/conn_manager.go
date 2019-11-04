@@ -37,6 +37,7 @@ func NewConnManager(
 		cd:                   cd,
 		disp:                 dispatcher,
 		IsMasterNode:         master,
+		registerRequests:     make(chan int, 100),
 	}
 }
 
@@ -168,9 +169,10 @@ type ConnManager struct {
 	IdentityKey          *incognitokey.CommitteePublicKey
 	IsMasterNode         bool
 
-	ps       *pubsub.PubSub
-	subs     m2t                  // mapping from message to topic's subscription
-	messages chan *pubsub.Message // queue messages from all topics
+	ps               *pubsub.PubSub
+	subs             m2t                  // mapping from message to topic's subscription
+	messages         chan *pubsub.Message // queue messages from all topics
+	registerRequests chan int
 
 	cd        ConsensusData
 	disp      *Dispatcher
@@ -214,9 +216,12 @@ func (cm *ConnManager) keepHighwayConnection(connectedOnce chan error) {
 
 	first := true
 	net := cm.LocalHost.Host.Network()
+	disconnected := true
 	for ; true; <-time.Tick(10 * time.Second) {
+		// Reconnect if not connected
 		var err error
 		if net.Connectedness(pid) != network.Connected {
+			disconnected = true
 			log.Println("Not connected to highway, connecting")
 			ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
 			if err = cm.LocalHost.Host.Connect(ctx, peerInfo); err != nil {
@@ -224,6 +229,13 @@ func (cm *ConnManager) keepHighwayConnection(connectedOnce chan error) {
 			}
 		}
 
+		if disconnected && net.Connectedness(pid) == network.Connected {
+			// Register again since this might be a new highway
+			cm.registerRequests <- 1
+			disconnected = false
+		}
+
+		// Notify that first attempt had finished
 		if first {
 			connectedOnce <- err
 			first = false
@@ -292,31 +304,56 @@ func (cm *ConnManager) manageRoleSubscription() {
 
 	lastRole := newUserRole("dummyLayer", "dummyRole", -1000)
 	lastTopics := m2t{}
-	for ; true; <-time.Tick(20 * time.Second) { // Loop immediately and then periodically
-		// Update when role changes
-		newRole := newUserRole(cm.cd.GetUserRole())
-		if *newRole == *lastRole {
-			continue
-		}
-		log.Printf("Role changed: %v -> %v", lastRole, newRole)
-		lastRole = newRole
+	for {
+		select {
+		case <-time.Tick(20 * time.Second):
+			// Update when role changes
+			newRole := newUserRole(cm.cd.GetUserRole())
+			if *newRole == *lastRole {
+				continue
+			}
+			log.Printf("Role changed: %v -> %v", lastRole, newRole)
 
-		if newRole.role == common.WaitingRole {
-			continue
-		}
+			if newRole.role == common.WaitingRole {
+				lastRole = newRole
+				continue
+			}
 
-		// Get new topics
-		topics, err := cm.registerToProxy(peerid, pubkey, newRole.layer, newRole.shardID)
-		if err != nil {
-			log.Println(err)
-			continue
+			topics, err := cm.registerAndSubscribe(peerid, pubkey, newRole, lastTopics)
+			if err != nil {
+				log.Printf("%+v", err)
+				continue
+			}
+			lastRole = newRole
+			lastTopics = topics
+
+		case <-cm.registerRequests:
+			log.Println("Received request to register")
+			topics, err := cm.registerAndSubscribe(peerid, pubkey, lastRole, lastTopics)
+			if err != nil {
+				log.Printf("%+v", err)
+				continue
+			}
+			lastTopics = topics
 		}
-		if err := cm.subscribeNewTopics(topics, lastTopics); err != nil {
-			log.Println(err)
-			continue
-		}
-		lastTopics = topics
 	}
+}
+
+func (cm *ConnManager) registerAndSubscribe(
+	peerid peer.ID,
+	pubkey string,
+	role *userRole,
+	lastTopics m2t,
+) (m2t, error) {
+	// Get new topics
+	topics, err := cm.registerToProxy(peerid, pubkey, role.layer, role.shardID)
+	if err != nil {
+		return m2t{}, err
+	}
+	if err := cm.subscribeNewTopics(topics, lastTopics); err != nil {
+		return m2t{}, err
+	}
+	return topics, nil
 }
 
 type userRole struct {
