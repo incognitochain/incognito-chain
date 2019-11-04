@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics"
 	"sync"
 	"time"
 
@@ -32,6 +33,7 @@ type BLSBFT struct {
 		BlockHash         common.Hash
 		BlockValidateData ValidationData
 		lockVotes         sync.Mutex
+		TimeStart         time.Time
 		Votes             map[string]vote
 		Round             int
 		NextHeight        uint64
@@ -182,7 +184,7 @@ func (e *BLSBFT) Start() error {
 				pubKey := e.UserKeySet.GetPublicKey()
 				if common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList) == -1 {
 					e.enterNewRound()
-					//fmt.Println("CONSENSUS: ticker 0")
+					metrics.SetGlobalParam("RoundKey", getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), "Phase", e.RoundData.State)
 					continue
 				}
 
@@ -206,6 +208,7 @@ func (e *BLSBFT) Start() error {
 					}
 					roundKey := getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)
 					if e.Blocks[roundKey] != nil {
+						metrics.SetGlobalParam("ReceiveBlockTime", time.Since(e.RoundData.TimeStart).Seconds())
 						//fmt.Println("CONSENSUS: listen phase 2")
 						if err := e.validatePreSignBlock(e.Blocks[roundKey]); err != nil {
 							delete(e.Blocks, roundKey)
@@ -279,6 +282,7 @@ func (e *BLSBFT) Start() error {
 							continue
 						}
 						// e.Node.PushMessageToAll()
+						metrics.SetGlobalParam("CommitTime", time.Since(time.Unix(e.Chain.GetLastBlockTimeStamp(), 0)).Seconds())
 						e.logger.Warn("Commit block! Wait for next round")
 						e.enterNewRound()
 					}
@@ -296,6 +300,7 @@ func (e *BLSBFT) enterProposePhase() {
 	e.setState(proposePhase)
 
 	block, err := e.createNewBlock()
+	metrics.SetGlobalParam("CreateTime", time.Since(e.RoundData.TimeStart).Seconds())
 	if err != nil {
 		e.logger.Error("can't create block", err)
 		return
@@ -414,7 +419,7 @@ func (e *BLSBFT) createNewBlock() (common.BlockInterface, error) {
 		close(timeoutCh)
 		return block, err
 	case <-timeoutCh:
-		return nil, consensus.NewConsensusError(consensus.BlockCreationError, errors.New("block creation timeout"))
+		return nil, consensus.NewConsensusError(consensus.BlockCreationError, errors.New("block crea185tion timeout"))
 	}
 
 }
