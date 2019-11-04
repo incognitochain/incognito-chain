@@ -173,11 +173,14 @@ func (tp *TxPool) MonitorPool() {
 		tp.mtx.Lock()
 		ttl := time.Duration(tp.config.TxLifeTime) * time.Second
 		txsToBeRemoved := []*TxDesc{}
+		Logger.log.Info("MonitorPool: Start to collect timeout ttl tx")
 		for _, txDesc := range tp.pool {
 			if time.Since(txDesc.StartTime) > ttl {
+				Logger.log.Infof("MonitorPool: Add to list removed tx with txHash=%+v", txDesc.Desc.Tx.Hash().String())
 				txsToBeRemoved = append(txsToBeRemoved, txDesc)
 			}
 		}
+		Logger.log.Infof("MonitorPool: End to collect timeout ttl tx - Count of txsToBeRemoved=%+v", len(txsToBeRemoved))
 		for _, txDesc := range txsToBeRemoved {
 			txHash := *txDesc.Desc.Tx.Hash()
 			startTime := txDesc.StartTime
@@ -188,6 +191,7 @@ func (tp *TxPool) MonitorPool() {
 			tp.removeTokenIDByTxHash(txHash)
 			err := tp.config.DataBaseMempool.RemoveTransaction(txDesc.Desc.Tx.Hash())
 			if err != nil {
+				Logger.log.Errorf("MonitorPool: RemoveTransaction tx hash=%+v with error %+v", txDesc.Desc.Tx.Hash().String(), err)
 				Logger.log.Error(err)
 			}
 			txSize := txDesc.Desc.Tx.GetTxActualSize()
