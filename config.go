@@ -13,7 +13,6 @@ import (
 	"runtime"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/incognitochain/incognito-chain/common"
@@ -43,7 +42,7 @@ const (
 	DefaultFastStartup            = true
 	DefaultNodeMode               = common.NodeModeRelay
 	DefaultEnableMining           = true
-	DefaultTxPoolTTL              = uint(1 * time.Hour) // 1 hours
+	DefaultTxPoolTTL              = uint(15 * 60) // 15 minutes
 	DefaultTxPoolMaxTx            = uint64(100000)
 	DefaultLimitFee               = uint64(1) // 1 nano PRV = 10^-9 PRV
 	// For wallet
