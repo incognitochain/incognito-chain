@@ -210,6 +210,10 @@ func (blockchain *BlockChain) processPDEContribution(
 	instruction []string,
 	currentPDEState *CurrentPDEState,
 ) error {
+	if currentPDEState == nil {
+		Logger.log.Warn("WARN - [processPDEContribution]: Current PDE state is null.")
+		return nil
+	}
 	if len(instruction) != 4 {
 		return nil // skip the instruction
 	}
