@@ -702,50 +702,53 @@ func (serverObj *Server) GetActiveShardNumber() int {
 // }
 
 func (serverObj *Server) TransactionPoolBroadcastLoop() {
-	<-time.Tick(serverObj.memPool.ScanTime)
-	txDescs := serverObj.memPool.GetPool()
-	for _, txDesc := range txDescs {
-		<-time.Tick(50 * time.Millisecond)
-		if !txDesc.IsFowardMessage {
-			tx := txDesc.Desc.Tx
-			switch tx.GetType() {
-			case common.TxNormalType:
-				{
-					txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
-					if err != nil {
-						continue
+	ticker := time.NewTicker(serverObj.memPool.ScanTime)
+	defer ticker.Stop()
+	for _ = range ticker.C {
+		txDescs := serverObj.memPool.GetPool()
+		for _, txDesc := range txDescs {
+			<-time.Tick(50 * time.Millisecond)
+			if !txDesc.IsFowardMessage {
+				tx := txDesc.Desc.Tx
+				switch tx.GetType() {
+				case common.TxNormalType:
+					{
+						txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
+						if err != nil {
+							continue
+						}
+						normalTx := tx.(*transaction.Tx)
+						txMsg.(*wire.MessageTx).Transaction = normalTx
+						err = serverObj.PushMessageToAll(txMsg)
+						if err == nil {
+							serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
+						}
 					}
-					normalTx := tx.(*transaction.Tx)
-					txMsg.(*wire.MessageTx).Transaction = normalTx
-					err = serverObj.PushMessageToAll(txMsg)
-					if err == nil {
-						serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
+				case common.TxCustomTokenType:
+					{
+						txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)
+						if err != nil {
+							continue
+						}
+						customTokenTx := tx.(*transaction.TxNormalToken)
+						txMsg.(*wire.MessageTxToken).Transaction = customTokenTx
+						err = serverObj.PushMessageToAll(txMsg)
+						if err == nil {
+							serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
+						}
 					}
-				}
-			case common.TxCustomTokenType:
-				{
-					txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)
-					if err != nil {
-						continue
-					}
-					customTokenTx := tx.(*transaction.TxNormalToken)
-					txMsg.(*wire.MessageTxToken).Transaction = customTokenTx
-					err = serverObj.PushMessageToAll(txMsg)
-					if err == nil {
-						serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
-					}
-				}
-			case common.TxCustomTokenPrivacyType:
-				{
-					txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
-					if err != nil {
-						continue
-					}
-					customPrivacyTokenTx := tx.(*transaction.TxCustomTokenPrivacy)
-					txMsg.(*wire.MessageTxPrivacyToken).Transaction = customPrivacyTokenTx
-					err = serverObj.PushMessageToAll(txMsg)
-					if err == nil {
-						serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
+				case common.TxCustomTokenPrivacyType:
+					{
+						txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
+						if err != nil {
+							continue
+						}
+						customPrivacyTokenTx := tx.(*transaction.TxCustomTokenPrivacy)
+						txMsg.(*wire.MessageTxPrivacyToken).Transaction = customPrivacyTokenTx
+						err = serverObj.PushMessageToAll(txMsg)
+						if err == nil {
+							serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
+						}
 					}
 				}
 			}
