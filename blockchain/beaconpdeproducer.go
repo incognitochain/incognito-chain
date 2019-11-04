@@ -266,7 +266,7 @@ func (blockchain *BlockChain) buildInstructionsForPDEWithdrawal(
 	beaconHeight uint64,
 ) ([][]string, error) {
 	if currentPDEState == nil {
-		Logger.log.Warn("WARN: Current PDE state is null.")
+		Logger.log.Warn("WARN - [buildInstructionsForPDEWithdrawal]: Current PDE state is null.")
 		return [][]string{}, nil
 	}
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
