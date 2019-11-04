@@ -1,5 +1,17 @@
 #!/bin/sh
 mkdir -p /data
+
+echo "/data/*.txt {
+  rotate 3
+  secondly
+  compress
+  missingok
+  delaycompress
+  copytruncate
+  size 100m
+}" > /tmp/logrotate
+logrotate -fv /tmp/logrotate
+
 if [ "$1" == "y" ]; then
     find /data -maxdepth 1 -mindepth 1 -type d | xargs rm -rf
 fi
