@@ -187,7 +187,6 @@ func (e *BLSBFT) Start() error {
 				pubKey := e.UserKeySet.GetPublicKey()
 				if common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList) == -1 {
 					e.enterNewRound()
-					//fmt.Println("CONSENSUS: ticker 0")
 					continue
 				}
 
