@@ -733,7 +733,7 @@ func (beaconBestState *BeaconBestState) generateRandomInstruction(timestamp int6
 		startTime := time.Now()
 		for {
 			Logger.log.Debug("GetNonceByTimestamp", timestamp)
-			blockHeight, chainTimestamp, nonce, err = randomClient.GetNonceByTimestamp(timestamp)
+			blockHeight, chainTimestamp, nonce, err = randomClient.GetNonceByTimestamp(startTime, beaconBestState.BlockMaxCreateTime, timestamp)
 			if err == nil {
 				break
 			} else {
