@@ -265,6 +265,10 @@ func (blockchain *BlockChain) buildInstructionsForPDEWithdrawal(
 	currentPDEState *CurrentPDEState,
 	beaconHeight uint64,
 ) ([][]string, error) {
+	if currentPDEState == nil {
+		Logger.log.Warn("WARN: Current PDE state is null.")
+		return [][]string{}, nil
+	}
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while decoding content string of pde withdrawal action: %+v", err)
