@@ -1,7 +1,13 @@
 package btc
 
 import (
+	"strconv"
 	"testing"
+	"time"
+)
+
+var (
+	duration = 10 * time.Second
 )
 
 func TestBlockHashByHeight(t *testing.T) {
@@ -48,8 +54,9 @@ func TestGetChainTimeStampAndNonce(t *testing.T) {
 	}
 }
 func TestGetNonceByTimeStamp(t *testing.T) {
+	startTime := time.Now()
 	var btcClient = NewBTCClient("admin", "autonomous", "159.65.142.153", "8332")
-	blockHeight, timestamp, nonce, err := btcClient.GetNonceByTimestamp(1373297940)
+	blockHeight, timestamp, nonce, err := btcClient.GetNonceByTimestamp(startTime, duration, 1373297940)
 	t.Log(blockHeight, timestamp, nonce)
 	if err != nil {
 		t.Error("Fail to get chain timestamp and nonce")
@@ -65,23 +72,27 @@ func TestGetNonceByTimeStamp(t *testing.T) {
 	}
 }
 func TestVerifyNonceByTimeStamp(t *testing.T) {
+	startTime := time.Now()
 	var btcClient = NewBTCClient("admin", "autonomous", "159.65.142.153", "8332")
-	isOk, err := btcClient.VerifyNonceWithTimestamp(1373297940, 3029573794)
-	if err != nil {
-		t.Error("Fail to get chain timestamp and nonce")
+	suite := []struct {
+		timestamp int64
+		nonce     int64
+	}{
+		{timestamp: 1373297940, nonce: 3029573794},
+		{timestamp: 1569472740, nonce: 2208937036},
+		{timestamp: 1572924720, nonce: 73996767},
+		{timestamp: 1367725860, nonce: 3580525302},
+		{timestamp: 1432484400, nonce: 2456900135},
 	}
-	if !isOk {
-		t.Error("Fail to verify nonce by timestamp")
-	}
-}
-func TestVerifyNonceByTimeStamp2(t *testing.T) {
-	//[random 3495548982 596624 1569472740 1569470553],
-	var btcClient = NewBTCClient("admin", "autonomous", "159.65.142.153", "8332")
-	isOk, err := btcClient.VerifyNonceWithTimestamp(1569472740, 3495548982)
-	if err != nil {
-		t.Error("Fail to get chain timestamp and nonce")
-	}
-	if !isOk {
-		t.Error("Fail to verify nonce by timestamp")
+	for index, testSuite := range suite {
+		t.Run(strconv.Itoa(index+1), func(t *testing.T) {
+			isOk, err := btcClient.VerifyNonceWithTimestamp(startTime, duration, testSuite.timestamp, testSuite.nonce)
+			if err != nil {
+				t.Fatal("Fail to get chain timestamp and nonce")
+			}
+			if !isOk {
+				t.Fatal("Fail to verify nonce by timestamp")
+			}
+		})
 	}
 }
