@@ -279,7 +279,7 @@ func BenchmarkAggregatedRangeProof_Verify(b *testing.B) {
 }
 
 func TestAggregatedRangeProve(t *testing.T) {
-	for i:= 0; i<10; i++{
+	for i:= 0; i<1000; i++{
 		//prepare witness for Aggregated range protocol
 		wit := new(AggregatedRangeWitness)
 		numValue := 12 //5. 10

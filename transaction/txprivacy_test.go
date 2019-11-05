@@ -89,8 +89,8 @@ func TestInitTx(t *testing.T) {
 		receiverPaymentAddress, _ := wallet.Base58CheckDeserialize(paymentAddressB58)
 
 		// transfer amount
-		transferAmount := -5
-		hasPrivacy := false
+		transferAmount := 5
+		hasPrivacy := true
 		fee := 1
 		err = tx1.Init(
 			NewTxPrivacyInitParams(
