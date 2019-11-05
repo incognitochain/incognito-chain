@@ -12,6 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
+	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/multiformats/go-multiaddr"
@@ -36,6 +37,7 @@ func NewConnManager(
 		cd:                   cd,
 		disp:                 dispatcher,
 		IsMasterNode:         master,
+		registerRequests:     make(chan int, 100),
 	}
 }
 
@@ -92,11 +94,6 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 
 func (cm *ConnManager) Start(ns NetSync) {
 	// connect to proxy node
-	proxyIP, proxyPort := ParseListenner(cm.DiscoverPeersAddress, "127.0.0.1", 9330)
-	ipfsaddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", proxyIP, proxyPort))
-	if err != nil {
-		panic(err)
-	}
 	peerid, err := peer.IDB58Decode(HighwayPeerID)
 
 	// Pubsub
@@ -105,8 +102,12 @@ func (cm *ConnManager) Start(ns NetSync) {
 	cm.subs = m2t{}
 	cm.messages = make(chan *pubsub.Message, 1000)
 
-	// Must Connect after creating FloodSub
-	must(cm.LocalHost.Host.Connect(context.Background(), peer.AddrInfo{peerid, append([]multiaddr.Multiaddr{}, ipfsaddr)}))
+	// Wait until connection to highway is established to make sure gRPC won't fail
+	// NOTE: must Connect after creating FloodSub
+	connected := make(chan error)
+	go cm.keepHighwayConnection(connected)
+	<-connected
+
 	req, err := NewRequester(cm.LocalHost.GRPC, peerid)
 	if err != nil {
 		panic(err)
@@ -168,9 +169,10 @@ type ConnManager struct {
 	IdentityKey          *incognitokey.CommitteePublicKey
 	IsMasterNode         bool
 
-	ps       *pubsub.PubSub
-	subs     m2t                  // mapping from message to topic's subscription
-	messages chan *pubsub.Message // queue messages from all topics
+	ps               *pubsub.PubSub
+	subs             m2t                  // mapping from message to topic's subscription
+	messages         chan *pubsub.Message // queue messages from all topics
+	registerRequests chan int
 
 	cd        ConsensusData
 	disp      *Dispatcher
@@ -192,6 +194,52 @@ func (cm *ConnManager) process() {
 			if err != nil {
 				log.Println(err)
 			}
+		}
+	}
+}
+
+// keepHighwayConnection periodically checks liveliness of connection to highway
+// and try to connect if it's not available.
+// The method push data to the given channel to signal that the first attempt had finished.
+// Constructor can use this info to initialize other objects.
+func (cm *ConnManager) keepHighwayConnection(connectedOnce chan error) {
+	pid, _ := peer.IDB58Decode(HighwayPeerID)
+	ip, port := ParseListenner(cm.DiscoverPeersAddress, "127.0.0.1", 9330)
+	ipfsaddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", ip, port))
+	if err != nil {
+		panic(fmt.Sprintf("invalid highway config:", err, pid, ip, port))
+	}
+	peerInfo := peer.AddrInfo{
+		ID:    pid,
+		Addrs: append([]multiaddr.Multiaddr{}, ipfsaddr),
+	}
+
+	first := true
+	net := cm.LocalHost.Host.Network()
+	disconnected := true
+	for ; true; <-time.Tick(10 * time.Second) {
+		// Reconnect if not connected
+		var err error
+		if net.Connectedness(pid) != network.Connected {
+			disconnected = true
+			log.Println("Not connected to highway, connecting")
+			ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+			if err = cm.LocalHost.Host.Connect(ctx, peerInfo); err != nil {
+				log.Println("Could not connect to highway:", err, peerInfo)
+			}
+		}
+
+		if disconnected && net.Connectedness(pid) == network.Connected {
+			// Register again since this might be a new highway
+			log.Println("Connected to highway, sending register request")
+			cm.registerRequests <- 1
+			disconnected = false
+		}
+
+		// Notify that first attempt had finished
+		if first {
+			connectedOnce <- err
+			first = false
 		}
 	}
 }
@@ -252,37 +300,47 @@ func broadcastMessage(msg wire.Message, topic string, ps *pubsub.PubSub) error {
 
 // manageRoleSubscription: polling current role every minute and subscribe to relevant topics
 func (cm *ConnManager) manageRoleSubscription() {
+	role := newUserRole("dummyLayer", "dummyRole", -1000)
+	topics := m2t{}
+	for {
+		select {
+		case <-time.Tick(20 * time.Second):
+			forced := false // only subscribe when role changed
+			role, topics = cm.subscribe(role, topics, forced)
+
+		case <-cm.registerRequests:
+			log.Println("Received request to register")
+			forced := true // register no matter if role changed or not
+			role, topics = cm.subscribe(role, topics, forced)
+		}
+	}
+}
+
+func (cm *ConnManager) subscribe(role userRole, topics m2t, forced bool) (userRole, m2t) {
+	newRole := newUserRole(cm.cd.GetUserRole())
+	if newRole == role && !forced { // Not forced => no need to subscribe when role stays the same
+		return newRole, topics
+	}
+	log.Printf("Role changed: %v -> %v", role, newRole)
+
+	if newRole.role == common.WaitingRole && !forced { // Not forced => no need to subscribe when role is Waiting
+		return newRole, topics
+	}
+
+	// Registering
 	peerid, _ := peer.IDB58Decode(HighwayPeerID)
 	pubkey, _ := cm.IdentityKey.ToBase58()
-	fmt.Println("IdentityKey", pubkey)
-
-	lastRole := newUserRole("dummyLayer", "dummyRole", -1000)
-	lastTopics := m2t{}
-	for ; true; <-time.Tick(5 * time.Second) { // Loop immediately and then periodically
-		// Update when role changes
-		newRole := newUserRole(cm.cd.GetUserRole())
-		if *newRole == *lastRole {
-			continue
-		}
-		log.Printf("Role changed: %v -> %v", lastRole, newRole)
-		lastRole = newRole
-
-		if newRole.role == common.WaitingRole {
-			continue
-		}
-
-		// Get new topics
-		topics, err := cm.registerToProxy(peerid, pubkey, newRole.layer, newRole.shardID)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		if err := cm.subscribeNewTopics(topics, lastTopics); err != nil {
-			log.Println(err)
-			continue
-		}
-		lastTopics = topics
+	newTopics, err := cm.registerToProxy(peerid, pubkey, newRole.layer, newRole.shardID)
+	if err != nil {
+		return role, topics
 	}
+
+	// Subscribing
+	if err := cm.subscribeNewTopics(newTopics, topics); err != nil {
+		return role, topics
+	}
+
+	return newRole, newTopics
 }
 
 type userRole struct {
@@ -291,8 +349,8 @@ type userRole struct {
 	shardID int
 }
 
-func newUserRole(layer, role string, shardID int) *userRole {
-	return &userRole{
+func newUserRole(layer, role string, shardID int) userRole {
+	return userRole{
 		layer:   layer,
 		role:    role,
 		shardID: shardID,
