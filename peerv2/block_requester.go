@@ -3,29 +3,55 @@ package peerv2
 import (
 	"context"
 	"log"
+	"time"
 
 	p2pgrpc "github.com/incognitochain/go-libp2p-grpc"
 	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 )
 
 // TODO(@0xbunyip): cache all requests to prevent querying the same height multiple times
 
 type BlockRequester struct {
-	conn *grpc.ClientConn
+	conn       *grpc.ClientConn
+	highwayPID peer.ID
+	prtc       *p2pgrpc.GRPCProtocol
 }
 
-func NewRequester(pr *p2pgrpc.GRPCProtocol, peerID peer.ID) (*BlockRequester, error) {
-	conn, err := pr.Dial(
-		context.Background(),
-		peerID,
-		grpc.WithInsecure(),
-		grpc.WithBlock(),
-	)
-	if err != nil {
-		return nil, err
+func NewRequester(prtc *p2pgrpc.GRPCProtocol, peerID peer.ID) (*BlockRequester, error) {
+	req := &BlockRequester{
+		prtc:       prtc,
+		conn:       nil,
+		highwayPID: peerID,
 	}
-	return &BlockRequester{conn: conn}, nil
+	go req.keepConnection()
+	return req, nil
+}
+
+// keepConnection dials highway to establish gRPC connection if it isn't available
+func (c *BlockRequester) keepConnection() {
+	for ; true; <-time.Tick(10 * time.Second) {
+		if c.Ready() {
+			continue
+		}
+
+		log.Println("BlockRequester is not ready, dialing")
+		if conn, err := c.prtc.Dial(
+			context.Background(),
+			c.highwayPID,
+			grpc.WithInsecure(),
+		); err != nil {
+			log.Println("Could not dial to highway grpc server:", err, c.highwayPID)
+		} else {
+			c.conn = conn
+		}
+	}
+}
+
+func (c *BlockRequester) Ready() bool {
+	return c.conn != nil && c.conn.GetState() == connectivity.Ready
 }
 
 func (c *BlockRequester) Register(
@@ -34,6 +60,10 @@ func (c *BlockRequester) Register(
 	messages []string,
 	selfID peer.ID,
 ) ([]*MessageTopicPair, error) {
+	if !c.Ready() {
+		return nil, errors.New("requester not ready")
+	}
+
 	client := NewHighwayServiceClient(c.conn)
 	reply, err := client.Register(
 		ctx,
@@ -56,6 +86,10 @@ func (c *BlockRequester) GetBlockShardByHeight(
 	to uint64,
 	dstCandidatePublicKey string,
 ) ([][]byte, error) {
+	if !c.Ready() {
+		return nil, errors.New("requester not ready")
+	}
+
 	log.Printf("Requesting shard block by height: shard = %v from = %v to = %v", shardID, from, to)
 	client := NewHighwayServiceClient(c.conn)
 	reply, err := client.GetBlockShardByHeight(
@@ -82,6 +116,10 @@ func (c *BlockRequester) GetBlockBeaconByHeight(
 	to uint64,
 	dstCandidatePublicKey string,
 ) ([][]byte, error) {
+	if !c.Ready() {
+		return nil, errors.New("requester not ready")
+	}
+
 	log.Printf("Requesting beaconblock by height: from = %v to = %v", from, to)
 	client := NewHighwayServiceClient(c.conn)
 	reply, err := client.GetBlockBeaconByHeight(
