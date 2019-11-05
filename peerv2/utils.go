@@ -23,12 +23,6 @@ func ParseListenner(s, defaultIP string, defaultPort int) (string, int) {
 	return splitStr[0], 0
 }
 
-func must(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
 func generateRand() []byte {
 	res := make([]byte, 40)
 	fmt.Println(time.Now().UnixNano())
