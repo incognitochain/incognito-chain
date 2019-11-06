@@ -115,6 +115,44 @@ func (httpServer *HttpServer) handleGetTransactionHashByReceiver(params interfac
 	return result, nil
 }
 
+func (httpServer *HttpServer) handleGetTransactionByReceiver(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	paramsArray := common.InterfaceSlice(params)
+	keys, ok := paramsArray[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("key param is invalid"))
+	}
+	// get keyset only contain readonly-key by deserializing
+	readonlyKeyStr, ok := keys["ReadonlyKey"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("invalid readonly key"))
+	}
+	readonlyKey, err := wallet.Base58CheckDeserialize(readonlyKeyStr)
+	if err != nil {
+		Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	// get keyset only contain pub-key by deserializing
+	paymentAddressStr, ok := keys["PaymentAddress"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("invalid payment address"))
+	}
+	paymentAddress, err := wallet.Base58CheckDeserialize(paymentAddressStr)
+	if err != nil {
+		Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	// create a key set
+	keySet := incognitokey.KeySet{
+		ReadonlyKey:    readonlyKey.KeySet.ReadonlyKey,
+		PaymentAddress: paymentAddress.KeySet.PaymentAddress,
+	}
+
+	result, err := httpServer.txService.GetTransactionByReceiver(keySet)
+
+	return result, nil
+}
+
 // Get transaction by Hash
 func (httpServer *HttpServer) handleGetTransactionByHash(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleGetTransactionByHash params: %+v", params)
