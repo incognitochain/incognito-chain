@@ -1,7 +1,6 @@
 package aggregaterange
 
 import (
-	"fmt"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/pkg/errors"
 )
@@ -436,7 +435,6 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	xTmp := generateChallengeForAggRange(aggParam, [][]byte{proof.tHat.ToBytesS()})
 	aggParam.u = new(privacy.Point).ScalarMult(aggParam.u, xTmp)
 	innerProductWit.p = innerProductWit.p.Add(innerProductWit.p, new(privacy.Point).ScalarMult(aggParam.u, proof.tHat))
-	fmt.Printf("p wit: %v\n", innerProductWit.p)
 
 	proof.innerProductProof, err = innerProductWit.Prove(aggParam)
 	if err != nil {
@@ -544,8 +542,6 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 
 	xTmp := generateChallengeForAggRange(aggParam, [][]byte{proof.tHat.ToBytesS()})
 	aggParam.u = new(privacy.Point).ScalarMult(aggParam.u, xTmp)
-
-	fmt.Printf(" proof.innerProductProof.p verify: %v\n", proof.innerProductProof.p)
 
 	innerProductArgValid := proof.innerProductProof.Verify(aggParam)
 	if !innerProductArgValid {
