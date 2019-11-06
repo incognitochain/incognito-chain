@@ -84,7 +84,6 @@ func (c *BlockRequester) GetBlockShardByHeight(
 	shardID int32,
 	from uint64,
 	to uint64,
-	dstCandidatePublicKey string,
 ) ([][]byte, error) {
 	if !c.Ready() {
 		return nil, errors.New("requester not ready")
@@ -113,7 +112,6 @@ func (c *BlockRequester) GetBlockShardByHeight(
 func (c *BlockRequester) GetBlockBeaconByHeight(
 	from uint64,
 	to uint64,
-	dstCandidatePublicKey string,
 ) ([][]byte, error) {
 	if !c.Ready() {
 		return nil, errors.New("requester not ready")
@@ -143,7 +141,6 @@ func (c *BlockRequester) GetBlockShardToBeaconByHeight(
 	shardID int32,
 	from uint64,
 	to uint64,
-	dstCandidatePublicKey string,
 ) ([][]byte, error) {
 	return nil, nil
 	// if !c.Ready() {
