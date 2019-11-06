@@ -84,6 +84,11 @@ func (bp *BlockProvider) GetBlockCrossShardByHash(ctx context.Context, req *GetB
 	return nil, nil
 }
 
+func (bp *BlockProvider) GetBlockShardToBeaconByHeight(ctx context.Context, req *GetBlockShardToBeaconByHeightRequest) (*GetBlockShardToBeaconByHeightResponse, error) {
+	log.Println("Receive GetBlockShardToBeaconByHeight request")
+	return nil, nil
+}
+
 type BlockProvider struct {
 	NetSync NetSync
 }
