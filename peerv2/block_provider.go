@@ -85,8 +85,27 @@ func (bp *BlockProvider) GetBlockCrossShardByHash(ctx context.Context, req *GetB
 }
 
 func (bp *BlockProvider) GetBlockShardToBeaconByHeight(ctx context.Context, req *GetBlockShardToBeaconByHeightRequest) (*GetBlockShardToBeaconByHeightResponse, error) {
-	log.Println("Receive GetBlockShardToBeaconByHeight request")
-	return nil, nil
+	log.Println("[db] Receive GetBlockShardToBeaconByHeight request:", req.FromHeight, req.ToHeight)
+	blkType := byte(2) // TODO(@0xbunyip): define in common file
+	blkMsgs := bp.NetSync.GetBlockShardByHeight(
+		req.FromPool,
+		blkType,
+		false,
+		byte(req.FromShard),
+		[]uint64{req.FromHeight, req.ToHeight},
+		0,
+	)
+	log.Println("BlockS2B received from netsync:", blkMsgs)
+	resp := &GetBlockShardToBeaconByHeightResponse{}
+	for _, msg := range blkMsgs {
+		encoded, err := encodeMessage(msg)
+		if err != nil {
+			log.Printf("ERROR Failed encoding message %v", msg.MessageType())
+			continue
+		}
+		resp.Data = append(resp.Data, []byte(encoded))
+	}
+	return resp, nil
 }
 
 type BlockProvider struct {
