@@ -1534,6 +1534,7 @@ func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint6
 		Logger.log.Error(err)
 		return err
 	}
+	// TODO(@0xbunyip): instead of putting response to queue, use it immediately in synker
 	serverObj.putResponseMsgs(msgs)
 	return nil
 }
@@ -1611,24 +1612,15 @@ func (serverObj *Server) PushMessageGetBlockShardByHash(shardID byte, blksHash [
 
 }
 
-func (serverObj *Server) PushMessageGetBlockShardToBeaconByHeight(shardID byte, from uint64, to uint64, peerID libp2p.ID) error {
-	Logger.log.Debugf("Send a GetShardToBeacon")
-	listener := serverObj.connManager.GetConfig().ListenerPeer
-	msg, err := wire.MakeEmptyMessage(wire.CmdGetShardToBeacon)
+func (serverObj *Server) PushMessageGetBlockShardToBeaconByHeight(shardID byte, from uint64, to uint64, peerPublickKey string) error {
+	msgs, err := serverObj.highway.Requester.GetBlockShardToBeaconByHeight(int32(shardID), from, to, peerPublickKey)
 	if err != nil {
+		Logger.log.Error(err)
 		return err
 	}
-	msg.(*wire.MessageGetShardToBeacon).ShardID = shardID
-	msg.(*wire.MessageGetShardToBeacon).BlkHeights = append(msg.(*wire.MessageGetShardToBeacon).BlkHeights, from)
-	msg.(*wire.MessageGetShardToBeacon).BlkHeights = append(msg.(*wire.MessageGetShardToBeacon).BlkHeights, to)
-	msg.(*wire.MessageGetShardToBeacon).Timestamp = time.Now().Unix()
-	msg.SetSenderID(listener.GetPeerID())
-	Logger.log.Debugf("Send a GetCrossShard from %s", listener.GetRawAddress())
-	if peerID == "" {
-		return serverObj.PushMessageToShard(msg, shardID, map[libp2p.ID]bool{})
-	}
-	return serverObj.PushMessageToPeer(msg, peerID)
 
+	serverObj.putResponseMsgs(msgs)
+	return nil
 }
 
 func (serverObj *Server) PushMessageGetBlockShardToBeaconByHash(shardID byte, blkHashes []common.Hash, getFromPool bool, peerID libp2p.ID) error {
