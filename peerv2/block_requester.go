@@ -142,28 +142,27 @@ func (c *BlockRequester) GetBlockShardToBeaconByHeight(
 	from uint64,
 	to uint64,
 ) ([][]byte, error) {
-	return nil, nil
-	// if !c.Ready() {
-	// 	return nil, errors.New("requester not ready")
-	// }
+	if !c.Ready() {
+		return nil, errors.New("requester not ready")
+	}
 
-	// log.Printf("Requesting blkshdtobcn by height: from = %v to = %v", from, to)
-	// client := NewHighwayServiceClient(c.conn)
-	// reply, err := client.GetBlockBeaconByHeight(
-	// 	context.Background(),
-	// 	&GetBlockBeaconByHeightRequest{
-	// 		Specific:      false,
-	// 		FromHeight:    from,
-	// 		ToHeight:      to,
-	// 		Heights:       nil,
-	// 		FromPool:      false,
-	// 		FromCommittee: dstCandidatePublicKey,
-	// 	},
-	// )
-	// if err != nil {
-	// 	return nil, err
-	// } else if reply != nil {
-	// 	log.Printf("Received block beacon data len: %v", len(reply.Data))
-	// }
-	// return reply.Data, nil
+	log.Printf("Requesting blkshdtobcn by height: from = %v to = %v", from, to)
+	client := NewHighwayServiceClient(c.conn)
+	reply, err := client.GetBlockShardToBeaconByHeight(
+		context.Background(),
+		&GetBlockShardToBeaconByHeightRequest{
+			FromShard:  shardID,
+			Specific:   false,
+			FromHeight: from,
+			ToHeight:   to,
+			Heights:    nil,
+			FromPool:   false,
+		},
+	)
+	if err != nil {
+		return nil, err
+	} else if reply != nil {
+		log.Printf("Received block s2b data len: %v", len(reply.Data))
+	}
+	return reply.Data, nil
 }
