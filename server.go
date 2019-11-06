@@ -1516,13 +1516,7 @@ func (serverObj *Server) UpdateConsensusState(role string, userPbk string, curre
 	}
 }
 
-func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint64, peerPublicKey string) error {
-	msgs, err := serverObj.highway.Requester.GetBlockBeaconByHeight(from, to, peerPublicKey)
-	if err != nil {
-		Logger.log.Error(err)
-		return err
-	}
-
+func (serverObj *Server) putResponseMsgs(msgs [][]byte) {
 	for _, msg := range msgs {
 		// Create dummy msg wrapping grpc response
 		psMsg := &p2ppubsub.Message{
@@ -1532,6 +1526,15 @@ func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint6
 		}
 		serverObj.highway.PutMessage(psMsg)
 	}
+}
+
+func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint64, peerPublicKey string) error {
+	msgs, err := serverObj.highway.Requester.GetBlockBeaconByHeight(from, to, peerPublicKey)
+	if err != nil {
+		Logger.log.Error(err)
+		return err
+	}
+	serverObj.putResponseMsgs(msgs)
 	return nil
 }
 
@@ -1570,15 +1573,7 @@ func (serverObj *Server) PushMessageGetBlockShardByHeight(shardID byte, from uin
 		return err
 	}
 
-	for _, msg := range msgs {
-		// Create dummy msg wrapping grpc response
-		psMsg := &p2ppubsub.Message{
-			&pb.Message{
-				Data: msg,
-			},
-		}
-		serverObj.highway.PutMessage(psMsg)
-	}
+	serverObj.putResponseMsgs(msgs)
 	return nil
 }
 
