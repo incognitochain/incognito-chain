@@ -67,6 +67,7 @@ const (
 	getBalanceCustomToken                      = "getbalancecustomtoken"
 	getTransactionByHash                       = "gettransactionbyhash"
 	gettransactionhashbyreceiver               = "gettransactionhashbyreceiver"
+	gettransactionbyreceiver                   = "gettransactionbyreceiver"
 	listCustomToken                            = "listcustomtoken"
 	listPrivacyCustomToken                     = "listprivacycustomtoken"
 	getBalancePrivacyCustomToken               = "getbalanceprivacycustomtoken"
