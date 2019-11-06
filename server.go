@@ -1528,8 +1528,8 @@ func (serverObj *Server) putResponseMsgs(msgs [][]byte) {
 	}
 }
 
-func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint64, peerPublicKey string) error {
-	msgs, err := serverObj.highway.Requester.GetBlockBeaconByHeight(from, to, peerPublicKey)
+func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint64) error {
+	msgs, err := serverObj.highway.Requester.GetBlockBeaconByHeight(from, to)
 	if err != nil {
 		Logger.log.Error(err)
 		return err
@@ -1539,7 +1539,7 @@ func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint6
 	return nil
 }
 
-func (serverObj *Server) PushMessageGetBlockBeaconBySpecificHeight(heights []uint64, getFromPool bool, peerPublicKey string) error {
+func (serverObj *Server) PushMessageGetBlockBeaconBySpecificHeight(heights []uint64, getFromPool bool) error {
 	msg, err := wire.MakeEmptyMessage(wire.CmdGetBlockBeacon)
 	if err != nil {
 		return err
@@ -1567,8 +1567,8 @@ func (serverObj *Server) PushMessageGetBlockBeaconByHash(blkHashes []common.Hash
 	return serverObj.PushMessageToBeacon(msg, map[peer2.ID]bool{})
 }
 
-func (serverObj *Server) PushMessageGetBlockShardByHeight(shardID byte, from uint64, to uint64, peerPublicKey string) error {
-	msgs, err := serverObj.highway.Requester.GetBlockShardByHeight(int32(shardID), from, to, peerPublicKey)
+func (serverObj *Server) PushMessageGetBlockShardByHeight(shardID byte, from uint64, to uint64) error {
+	msgs, err := serverObj.highway.Requester.GetBlockShardByHeight(int32(shardID), from, to)
 	if err != nil {
 		Logger.log.Error(err)
 		return err
@@ -1578,7 +1578,7 @@ func (serverObj *Server) PushMessageGetBlockShardByHeight(shardID byte, from uin
 	return nil
 }
 
-func (serverObj *Server) PushMessageGetBlockShardBySpecificHeight(shardID byte, heights []uint64, getFromPool bool, peerPublicKey string) error {
+func (serverObj *Server) PushMessageGetBlockShardBySpecificHeight(shardID byte, heights []uint64, getFromPool bool) error {
 	msg, err := wire.MakeEmptyMessage(wire.CmdGetBlockShard)
 	if err != nil {
 		return err
@@ -1612,8 +1612,8 @@ func (serverObj *Server) PushMessageGetBlockShardByHash(shardID byte, blksHash [
 
 }
 
-func (serverObj *Server) PushMessageGetBlockShardToBeaconByHeight(shardID byte, from uint64, to uint64, peerPublickKey string) error {
-	msgs, err := serverObj.highway.Requester.GetBlockShardToBeaconByHeight(int32(shardID), from, to, peerPublickKey)
+func (serverObj *Server) PushMessageGetBlockShardToBeaconByHeight(shardID byte, from uint64, to uint64) error {
+	msgs, err := serverObj.highway.Requester.GetBlockShardToBeaconByHeight(int32(shardID), from, to)
 	if err != nil {
 		Logger.log.Error(err)
 		return err
