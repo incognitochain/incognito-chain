@@ -3,13 +3,11 @@ package metadata
 import (
 	"encoding/json"
 	"fmt"
-	"math/big"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 )
 
 // Interface for all types of metadata in tx
@@ -151,30 +149,30 @@ func convertValueBetweenCurrencies(
 	tokenID *common.Hash,
 	beaconHeight int64,
 	db database.DatabaseInterface,
-) (uint64, error) {
+) (float64, error) {
 	prvIDStr := common.PRVCoinID.String()
 	tokenIDStr := tokenID.String()
 	pdePoolForPair, err := getPDEPoolPair(prvIDStr, tokenIDStr, beaconHeight, db)
 	if err != nil {
 		return 0, NewMetadataTxError(CouldNotGetExchangeRateError, err)
 	}
-	invariant := big.NewInt(0)
-	invariant = invariant.Mul(big.NewInt(int64(pdePoolForPair.Token1PoolValue)), big.NewInt(int64(pdePoolForPair.Token2PoolValue)))
-	if invariant.Cmp(big.NewInt(0)) == 0 {
+	invariant := float64(0)
+	invariant = float64(pdePoolForPair.Token1PoolValue) * float64(pdePoolForPair.Token2PoolValue)
+	if invariant == 0 {
 		return 0, NewMetadataTxError(CouldNotGetExchangeRateError, err)
 	}
 	if pdePoolForPair.Token1IDStr == currentCurrencyIDStr {
-		remainingValue := big.NewInt(0).Div(invariant, big.NewInt(int64(pdePoolForPair.Token1PoolValue+amount))).Uint64()
-		if pdePoolForPair.Token2PoolValue <= remainingValue {
+		remainingValue := invariant / (float64(pdePoolForPair.Token1PoolValue) + float64(amount))
+		if float64(pdePoolForPair.Token2PoolValue) <= remainingValue {
 			return 0, NewMetadataTxError(CouldNotGetExchangeRateError, err)
 		}
-		return pdePoolForPair.Token2PoolValue - remainingValue, nil
+		return float64(pdePoolForPair.Token2PoolValue) - remainingValue, nil
 	}
-	remainingValue := big.NewInt(0).Div(invariant, big.NewInt(int64(pdePoolForPair.Token2PoolValue+amount))).Uint64()
-	if pdePoolForPair.Token1PoolValue <= remainingValue {
+	remainingValue := invariant / (float64(pdePoolForPair.Token2PoolValue) + float64(amount))
+	if float64(pdePoolForPair.Token1PoolValue) <= remainingValue {
 		return 0, NewMetadataTxError(CouldNotGetExchangeRateError, err)
 	}
-	return pdePoolForPair.Token1PoolValue - remainingValue, nil
+	return float64(pdePoolForPair.Token1PoolValue) - remainingValue, nil
 }
 
 // return error if there is no exchange rate between native token and privacy token
@@ -184,7 +182,7 @@ func ConvertNativeTokenToPrivacyToken(
 	tokenID *common.Hash,
 	beaconHeight int64,
 	db database.DatabaseInterface,
-) (uint64, error) {
+) (float64, error) {
 	return convertValueBetweenCurrencies(
 		nativeTokenAmount,
 		common.PRVCoinID.String(),
@@ -201,7 +199,7 @@ func ConvertPrivacyTokenToNativeToken(
 	tokenID *common.Hash,
 	beaconHeight int64,
 	db database.DatabaseInterface,
-) (uint64, error) {
+) (float64, error) {
 	return convertValueBetweenCurrencies(
 		privacyTokenAmount,
 		tokenID.String(),

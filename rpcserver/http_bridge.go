@@ -38,8 +38,8 @@ func (httpServer *HttpServer) handleCreateRawTxWithContractingReq(params interfa
 	}
 
 	// check privacy mode param
-	if len(arrayParams) > 5 {
-		hasPrivacyToken := int(arrayParams[5].(float64)) > 0
+	if len(arrayParams) > 7 {
+		hasPrivacyToken := int(arrayParams[6].(float64)) > 0
 		if hasPrivacyToken {
 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("The privacy mode must be disabled"))
 		}
