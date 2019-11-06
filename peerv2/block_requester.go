@@ -95,13 +95,12 @@ func (c *BlockRequester) GetBlockShardByHeight(
 	reply, err := client.GetBlockShardByHeight(
 		context.Background(),
 		&GetBlockShardByHeightRequest{
-			Shard:         shardID,
-			Specific:      false,
-			FromHeight:    from,
-			ToHeight:      to,
-			Heights:       nil,
-			FromPool:      false,
-			FromCommittee: dstCandidatePublicKey,
+			Shard:      shardID,
+			Specific:   false,
+			FromHeight: from,
+			ToHeight:   to,
+			Heights:    nil,
+			FromPool:   false,
 		},
 	)
 	log.Printf("Received block shard data %v", reply)
@@ -125,12 +124,11 @@ func (c *BlockRequester) GetBlockBeaconByHeight(
 	reply, err := client.GetBlockBeaconByHeight(
 		context.Background(),
 		&GetBlockBeaconByHeightRequest{
-			Specific:      false,
-			FromHeight:    from,
-			ToHeight:      to,
-			Heights:       nil,
-			FromPool:      false,
-			FromCommittee: dstCandidatePublicKey,
+			Specific:   false,
+			FromHeight: from,
+			ToHeight:   to,
+			Heights:    nil,
+			FromPool:   false,
 		},
 	)
 	if err != nil {
@@ -139,4 +137,36 @@ func (c *BlockRequester) GetBlockBeaconByHeight(
 		log.Printf("Received block beacon data len: %v", len(reply.Data))
 	}
 	return reply.Data, nil
+}
+
+func (c *BlockRequester) GetBlockShardToBeaconByHeight(
+	shardID int32,
+	from uint64,
+	to uint64,
+	dstCandidatePublicKey string,
+) ([][]byte, error) {
+	return nil, nil
+	// if !c.Ready() {
+	// 	return nil, errors.New("requester not ready")
+	// }
+
+	// log.Printf("Requesting blkshdtobcn by height: from = %v to = %v", from, to)
+	// client := NewHighwayServiceClient(c.conn)
+	// reply, err := client.GetBlockBeaconByHeight(
+	// 	context.Background(),
+	// 	&GetBlockBeaconByHeightRequest{
+	// 		Specific:      false,
+	// 		FromHeight:    from,
+	// 		ToHeight:      to,
+	// 		Heights:       nil,
+	// 		FromPool:      false,
+	// 		FromCommittee: dstCandidatePublicKey,
+	// 	},
+	// )
+	// if err != nil {
+	// 	return nil, err
+	// } else if reply != nil {
+	// 	log.Printf("Received block beacon data len: %v", len(reply.Data))
+	// }
+	// return reply.Data, nil
 }
