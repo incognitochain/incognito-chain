@@ -1,6 +1,7 @@
 package rpcservice
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -1367,4 +1368,112 @@ func (txService TxService) SendRawCustomTokenTxWithMetadata(base58CheckDate stri
 	txMsg.(*wire.MessageTxToken).Transaction = &tx
 
 	return txMsg, hash, nil
+}
+
+// GetTransactionByReceiver - from keyset of receiver, we can get list tx hash which be sent to receiver
+// if this keyset contain payment-addr, we can detect tx hash
+// if this keyset contain viewing key, we can detect amount in tx, but can not know output in tx is spent
+// because this is monitoring output to get received tx -> can not know this is a returned amount tx
+func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) (*jsonresult.ListReceivedTransaction, *RPCError) {
+	if len(keySet.PaymentAddress.Pk) == 0 {
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Missing payment address"))
+	}
+	listTxsHash, err := txService.BlockChain.GetTransactionHashByReceiver(&keySet)
+	if err != nil {
+		return nil, NewRPCError(UnexpectedError, errors.New("Can not find any tx"))
+	}
+
+	result := jsonresult.ListReceivedTransaction{
+		ReceivedTransactions: []jsonresult.ReceivedTransaction{},
+	}
+	for shardID, txHashs := range listTxsHash {
+		for _, txHash := range txHashs {
+			item := jsonresult.ReceivedTransaction{
+				FromShardID: shardID,
+				Hash:        txHash.String(),
+			}
+			if len(keySet.ReadonlyKey.Rk) != 0 {
+				_, _, _, txDetail, _ := txService.BlockChain.GetTransactionByHash(txHash)
+				txType := txDetail.GetType()
+				switch txType {
+				case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
+					{
+						normalTx := txDetail.(*transaction.Tx)
+						proof := normalTx.GetProof()
+						outputs := proof.GetOutputCoins()
+						for _, output := range outputs {
+							if bytes.Equal(output.CoinDetails.GetPublicKey().ToBytesS(), keySet.PaymentAddress.Pk) {
+								temp := &privacy.OutputCoin{
+									CoinDetails:          output.CoinDetails,
+									CoinDetailsEncrypted: output.CoinDetailsEncrypted,
+								}
+								if temp.CoinDetailsEncrypted != nil && !temp.CoinDetailsEncrypted.IsNil() {
+									// try to decrypt to get more data
+									err := temp.Decrypt(keySet.ReadonlyKey)
+									if err != nil {
+										Logger.log.Error(err)
+										continue
+									}
+									item.ReceivedAmount[common.PRVCoinID] = temp.CoinDetails.GetValue()
+								} else {
+									item.ReceivedAmount[common.PRVCoinID] = temp.CoinDetails.GetValue()
+								}
+							}
+						}
+					}
+				case common.TxCustomTokenPrivacyType:
+					{
+						normalTx := txDetail.(*transaction.TxCustomTokenPrivacy)
+						// prv proof
+						proof := normalTx.GetProof()
+						outputs := proof.GetOutputCoins()
+						for _, output := range outputs {
+							if bytes.Equal(output.CoinDetails.GetPublicKey().ToBytesS(), keySet.PaymentAddress.Pk) {
+								temp := &privacy.OutputCoin{
+									CoinDetails:          output.CoinDetails,
+									CoinDetailsEncrypted: output.CoinDetailsEncrypted,
+								}
+								if temp.CoinDetailsEncrypted != nil && !temp.CoinDetailsEncrypted.IsNil() {
+									// try to decrypt to get more data
+									err := temp.Decrypt(keySet.ReadonlyKey)
+									if err != nil {
+										Logger.log.Error(err)
+										continue
+									}
+									item.ReceivedAmount[common.PRVCoinID] = temp.CoinDetails.GetValue()
+								} else {
+									item.ReceivedAmount[common.PRVCoinID] = temp.CoinDetails.GetValue()
+								}
+							}
+						}
+
+						// token proof
+						proof = normalTx.TxPrivacyTokenData.TxNormal.GetProof()
+						outputs = proof.GetOutputCoins()
+						for _, output := range outputs {
+							if bytes.Equal(output.CoinDetails.GetPublicKey().ToBytesS(), keySet.PaymentAddress.Pk) {
+								temp := &privacy.OutputCoin{
+									CoinDetails:          output.CoinDetails,
+									CoinDetailsEncrypted: output.CoinDetailsEncrypted,
+								}
+								if temp.CoinDetailsEncrypted != nil && !temp.CoinDetailsEncrypted.IsNil() {
+									// try to decrypt to get more data
+									err := temp.Decrypt(keySet.ReadonlyKey)
+									if err != nil {
+										Logger.log.Error(err)
+										continue
+									}
+									item.ReceivedAmount[normalTx.TxPrivacyTokenData.PropertyID] = temp.CoinDetails.GetValue()
+								} else {
+									item.ReceivedAmount[normalTx.TxPrivacyTokenData.PropertyID] = temp.CoinDetails.GetValue()
+								}
+							}
+						}
+					}
+				}
+			}
+			result.ReceivedTransactions = append(result.ReceivedTransactions, item)
+		}
+	}
+	return &result, nil
 }
