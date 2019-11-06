@@ -330,7 +330,7 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 		}
 		item := jsonresult.NewPrivacyForCrossShard(token)
 		if item.Name == "" {
-			txs, err := httpServer.txService.PrivacyCustomTokenDetail(item.ID)
+			txs, _, err := httpServer.txService.PrivacyCustomTokenDetail(item.ID)
 			if err != nil {
 				Logger.log.Error(err)
 			} else {

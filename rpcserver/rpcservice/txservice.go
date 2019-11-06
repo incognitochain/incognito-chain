@@ -1016,14 +1016,20 @@ func (txService TxService) CustomTokenDetail(tokenIDStr string) ([]common.Hash, 
 	return txs, nil
 }
 
-func (txService TxService) PrivacyCustomTokenDetail(tokenIDStr string) ([]common.Hash, error) {
+func (txService TxService) PrivacyCustomTokenDetail(tokenIDStr string) ([]common.Hash, *transaction.TxPrivacyTokenData, error) {
 	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
 	if err != nil {
 		Logger.log.Debugf("handlePrivacyCustomTokenDetail result: %+v, err: %+v", nil, err)
-		return nil, err
+		return nil, nil, err
 	}
+
+	_, _, _ = txService.BlockChain.ListPrivacyCustomToken()
+	/*tokenData := transaction.TxPrivacyTokenData{
+		listTxInitPrivacyToken[tokenID].
+	}*/
+
 	txs, _ := txService.BlockChain.GetPrivacyCustomTokenTxsHash(tokenID)
-	return txs, nil
+	return txs, nil, nil
 }
 
 func (txService TxService) ListUnspentCustomToken(senderKeyParam string, tokenIDParam string) ([]transaction.TxTokenVout, error) {
