@@ -1686,24 +1686,19 @@ func (serverObj *Server) PushMessageGetBlockCrossShardByHash(fromShard byte, toS
 }
 
 func (serverObj *Server) PushMessageGetBlockCrossShardBySpecificHeight(fromShard byte, toShard byte, blkHeights []uint64, getFromPool bool, peerID libp2p.ID) error {
-	Logger.log.Debugf("Send a GetCrossShard")
-	listener := serverObj.connManager.GetConfig().ListenerPeer
-	msg, err := wire.MakeEmptyMessage(wire.CmdGetCrossShard)
+	msgs, err := serverObj.highway.Requester.GetBlockCrossShardByHeight(
+		int32(fromShard),
+		int32(toShard),
+		blkHeights,
+		getFromPool,
+	)
 	if err != nil {
+		Logger.log.Error(err)
 		return err
 	}
-	msg.(*wire.MessageGetCrossShard).FromPool = getFromPool
-	msg.(*wire.MessageGetCrossShard).BySpecificHeight = true
-	msg.(*wire.MessageGetCrossShard).FromShardID = fromShard
-	msg.(*wire.MessageGetCrossShard).ToShardID = toShard
-	msg.(*wire.MessageGetCrossShard).BlkHeights = blkHeights
-	msg.(*wire.MessageGetCrossShard).Timestamp = time.Now().Unix()
-	msg.SetSenderID(listener.GetPeerID())
-	Logger.log.Debugf("Send a GetCrossShard from %s", listener.GetRawAddress())
-	if peerID == "" {
-		return serverObj.PushMessageToShard(msg, fromShard, map[libp2p.ID]bool{})
-	}
-	return serverObj.PushMessageToPeer(msg, peerID)
+
+	serverObj.putResponseMsgs(msgs)
+	return nil
 }
 
 func (serverObj *Server) PublishNodeState() error {
