@@ -166,3 +166,35 @@ func (c *BlockRequester) GetBlockShardToBeaconByHeight(
 	}
 	return reply.Data, nil
 }
+
+func (c *BlockRequester) GetBlockCrossShardByHeight(
+	fromShard int32,
+	toShard int32,
+	heights []uint64,
+	getFromPool bool,
+) ([][]byte, error) {
+	if !c.Ready() {
+		return nil, errors.New("requester not ready")
+	}
+
+	log.Printf("Requesting block crossshard by height: shard %v to %v, height %v", fromShard, toShard, heights)
+	client := NewHighwayServiceClient(c.conn)
+	reply, err := client.GetBlockCrossShardByHeight(
+		context.Background(),
+		&GetBlockCrossShardByHeightRequest{
+			FromShard:  fromShard,
+			ToShard:    toShard,
+			Specific:   true,
+			FromHeight: 0,
+			ToHeight:   0,
+			Heights:    heights,
+			FromPool:   getFromPool,
+		},
+	)
+	if err != nil {
+		return nil, err
+	} else if reply != nil {
+		log.Printf("Received block s2b data len: %v", len(reply.Data))
+	}
+	return reply.Data, nil
+}
