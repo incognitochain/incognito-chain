@@ -3,6 +3,7 @@ package mempool
 import (
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
 	"strings"
 	"sync"
@@ -417,13 +418,15 @@ func (tp *TxPool) checkFees(
 		feePToken := tx.GetTxFeeToken()
 		//convert fee in Ptoken to fee in native token (if feePToken > 0)
 		if feePToken > 0 {
-			feePTokenToNativeToken, err := metadata.ConvertPrivacyTokenToNativeToken(feePToken, tokenID, beaconHeight, tp.config.DataBase)
+			feePTokenToNativeTokenTmp, err := metadata.ConvertPrivacyTokenToNativeToken(feePToken, tokenID, beaconHeight, tp.config.DataBase)
 			if err != nil {
 				Logger.log.Errorf("ERROR: %+v", NewMempoolTxError(RejectInvalidFee,
 					fmt.Errorf("transaction %+v: %+v %v can not convert to native token",
 						tx.Hash().String(), feePToken, tokenID)))
 				return false
 			}
+
+			feePTokenToNativeToken := uint64(math.Ceil(feePTokenToNativeTokenTmp))
 			feeNativeToken += feePTokenToNativeToken
 		}
 		// get limit fee in native token
