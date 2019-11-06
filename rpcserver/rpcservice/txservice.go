@@ -268,7 +268,7 @@ func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID by
 
 	// convert ptoken fee to native token fee (if necessary)
 	var err error
-	if tokenId != nil {
+	if tokenId != nil && unitFee > 0 {
 		unitFee, err = metadata.ConvertPrivacyTokenToNativeToken(unitFee, tokenId, beaconHeight, db)
 		if err != nil {
 			return uint64(0), err
