@@ -1389,8 +1389,9 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 	for shardID, txHashs := range listTxsHash {
 		for _, txHash := range txHashs {
 			item := jsonresult.ReceivedTransaction{
-				FromShardID: shardID,
-				Hash:        txHash.String(),
+				FromShardID:   shardID,
+				Hash:          txHash.String(),
+				ReceivedInfos: make(map[common.Hash]jsonresult.ReceivedInfo),
 			}
 			if len(keySet.ReadonlyKey.Rk) != 0 {
 				_, _, _, txDetail, _ := txService.BlockChain.GetTransactionByHash(txHash)
@@ -1414,9 +1415,9 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 										Logger.log.Error(err)
 										continue
 									}
-									item.ReceivedAmount[common.PRVCoinID] = temp.CoinDetails.GetValue()
+									item.ReceivedInfos[common.PRVCoinID] = jsonresult.ReceivedInfo{OutputCoin: *temp}
 								} else {
-									item.ReceivedAmount[common.PRVCoinID] = temp.CoinDetails.GetValue()
+									item.ReceivedInfos[common.PRVCoinID] = jsonresult.ReceivedInfo{OutputCoin: *temp}
 								}
 							}
 						}
@@ -1440,9 +1441,9 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 										Logger.log.Error(err)
 										continue
 									}
-									item.ReceivedAmount[common.PRVCoinID] = temp.CoinDetails.GetValue()
+									item.ReceivedInfos[common.PRVCoinID] = jsonresult.ReceivedInfo{OutputCoin: *temp}
 								} else {
-									item.ReceivedAmount[common.PRVCoinID] = temp.CoinDetails.GetValue()
+									item.ReceivedInfos[common.PRVCoinID] = jsonresult.ReceivedInfo{OutputCoin: *temp}
 								}
 							}
 						}
@@ -1463,9 +1464,9 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 										Logger.log.Error(err)
 										continue
 									}
-									item.ReceivedAmount[normalTx.TxPrivacyTokenData.PropertyID] = temp.CoinDetails.GetValue()
+									item.ReceivedInfos[normalTx.TxPrivacyTokenData.PropertyID] = jsonresult.ReceivedInfo{OutputCoin: *temp}
 								} else {
-									item.ReceivedAmount[normalTx.TxPrivacyTokenData.PropertyID] = temp.CoinDetails.GetValue()
+									item.ReceivedInfos[normalTx.TxPrivacyTokenData.PropertyID] = jsonresult.ReceivedInfo{OutputCoin: *temp}
 								}
 							}
 						}
