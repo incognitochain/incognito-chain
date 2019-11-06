@@ -278,12 +278,9 @@ func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID by
 
 		return unitFee, nil
 	} else {
-		// to make sure that it can be converted to native token and otherwise
-		unitFee = unitFee * 1e9
-		limitFee = limitFee * 1e9
-
 		// convert limit fee native token to limit fee ptoken
-		limitFeePToken, err := metadata.ConvertNativeTokenToPrivacyToken(limitFee, tokenId, beaconHeight, db)
+		limitFeePTokenTmp, err := metadata.ConvertNativeTokenToPrivacyToken(limitFee, tokenId, beaconHeight, db)
+		limitFeePToken := uint64(math.Ceil(limitFeePTokenTmp))
 		if err != nil {
 			return uint64(0), err
 		}
@@ -292,8 +289,6 @@ func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID by
 		if unitFee < limitFeePToken {
 			unitFee = limitFeePToken
 		}
-
-		unitFee = uint64(math.Ceil(float64(unitFee) / float64(1e9)))
 
 		return unitFee, nil
 	}
