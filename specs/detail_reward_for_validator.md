@@ -44,4 +44,4 @@ Let ![equation](https://latex.codecogs.com/gif.latex?x) be the reward percentage
 The reward of beacon/shard is splitted to each validator equally at the beginning of the next epoch. Slashing will be applied in the future version.
 Epoch length is 350 blocks ~ 4 hours. The shard's epoch is synced with the epoch of the beacon chain. Thus, a shard epoch maybe shorter or longer than 350 blocks.
 
-Initially, Incognito chain started with 8 shards and 1 beacon , the reward for each block at any shard is 1.38666 PRV, this reward is reduced by 9% every 788,400 blocks (~ 1 year).
+Initially, Incognito chain start with 8 shards and 1 beacon, the reward for each block at any shard is 1.38666 PRV, this reward is reduced by 9% every 788,400 blocks (~ 1 year).
