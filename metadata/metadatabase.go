@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -59,12 +60,13 @@ func (mb MetadataBase) CheckTransactionFee(
 		feePToken := tx.GetTxFeeToken()
 		if feePToken > 0 {
 			tokenID := tx.GetTokenID()
-			feePTokenToNativeToken, err := ConvertPrivacyTokenToNativeToken(feePToken, tx.GetTokenID(), beaconHeight, db)
+			feePTokenToNativeTokenTmp, err := ConvertPrivacyTokenToNativeToken(feePToken, tx.GetTokenID(), beaconHeight, db)
 			if err != nil {
 				fmt.Printf("transaction %+v: %+v %v can not convert to native token",
 					tx.Hash().String(), feePToken, tokenID)
 				return false
 			}
+			feePTokenToNativeToken := uint64(math.Ceil(feePTokenToNativeTokenTmp))
 			feeNativeToken += feePTokenToNativeToken
 		}
 		// get limit fee in native token
