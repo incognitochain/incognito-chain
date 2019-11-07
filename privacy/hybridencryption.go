@@ -78,7 +78,7 @@ func (ciphertext *hybridCipherText) SetBytes(bytes []byte) error {
 // hybridEncrypt_Old generates AES key by randomize an elliptic point aesKeyPoint and get X-coordinate
 // using AES key to encrypt message
 // After that, using ElGamal encryption encrypt aesKeyPoint using publicKey
-func hybridEncrypt(msg []byte, publicKey *Point) (ciphertext *hybridCipherText, err error) {
+func HybridEncrypt(msg []byte, publicKey *Point) (ciphertext *hybridCipherText, err error) {
 	ciphertext = new(hybridCipherText)
 
 	// Generate a AES key bytes
@@ -106,7 +106,7 @@ func hybridEncrypt(msg []byte, publicKey *Point) (ciphertext *hybridCipherText, 
 // hybridDecrypt_Old receives a ciphertext and privateKey
 // it decrypts aesKeyPoint, using ElGamal encryption with privateKey
 // Using X-coordinate of aesKeyPoint to decrypts message
-func hybridDecrypt(ciphertext *hybridCipherText, privateKey *Scalar) (msg []byte, err error) {
+func HybridDecrypt(ciphertext *hybridCipherText, privateKey *Scalar) (msg []byte, err error) {
 	// Validate ciphertext
 	if ciphertext.IsNil() {
 		return []byte{}, errors.New("ciphertext must not be nil")
