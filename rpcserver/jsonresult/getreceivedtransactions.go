@@ -2,7 +2,6 @@ package jsonresult
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 type ReceivedTransaction struct {
@@ -12,7 +11,14 @@ type ReceivedTransaction struct {
 }
 
 type ReceivedInfo struct {
-	OutputCoin privacy.OutputCoin
+	CoinDetails          ReceivedCoin
+	CoinDetailsEncrypted string
+}
+
+type ReceivedCoin struct {
+	PublicKey string
+	Info      string
+	Value     uint64
 }
 
 type ListReceivedTransaction struct {
