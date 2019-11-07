@@ -1433,11 +1433,13 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 										}
 									}
 									info := jsonresult.ReceivedInfo{
-										CoinDetailsEncrypted: base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte),
 										CoinDetails: jsonresult.ReceivedCoin{
 											Info:      base58.Base58Check{}.Encode(temp.CoinDetails.GetInfo(), common.ZeroByte),
 											PublicKey: base58.Base58Check{}.Encode(temp.CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte),
 										},
+									}
+									if temp.CoinDetailsEncrypted == nil {
+										info.CoinDetailsEncrypted = base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
 									}
 									item.ReceivedInfos[common.PRVCoinID] = info
 								}
@@ -1466,11 +1468,13 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 										}
 									}
 									info := jsonresult.ReceivedInfo{
-										CoinDetailsEncrypted: base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte),
 										CoinDetails: jsonresult.ReceivedCoin{
 											Info:      base58.Base58Check{}.Encode(temp.CoinDetails.GetInfo(), common.ZeroByte),
 											PublicKey: base58.Base58Check{}.Encode(temp.CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte),
 										},
+									}
+									if temp.CoinDetailsEncrypted == nil {
+										info.CoinDetailsEncrypted = base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
 									}
 									item.ReceivedInfos[common.PRVCoinID] = info
 								}
@@ -1496,11 +1500,13 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 										}
 									}
 									info := jsonresult.ReceivedInfo{
-										CoinDetailsEncrypted: base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte),
 										CoinDetails: jsonresult.ReceivedCoin{
 											Info:      base58.Base58Check{}.Encode(temp.CoinDetails.GetInfo(), common.ZeroByte),
 											PublicKey: base58.Base58Check{}.Encode(temp.CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte),
 										},
+									}
+									if temp.CoinDetailsEncrypted == nil {
+										info.CoinDetailsEncrypted = base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
 									}
 									item.ReceivedInfos[privacyTokenTx.TxPrivacyTokenData.PropertyID] = info
 								}
