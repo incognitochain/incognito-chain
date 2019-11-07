@@ -1436,6 +1436,7 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 										CoinDetails: jsonresult.ReceivedCoin{
 											Info:      base58.Base58Check{}.Encode(temp.CoinDetails.GetInfo(), common.ZeroByte),
 											PublicKey: base58.Base58Check{}.Encode(temp.CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte),
+											Value:     temp.CoinDetails.GetValue(),
 										},
 									}
 									if temp.CoinDetailsEncrypted != nil {
@@ -1471,6 +1472,7 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 										CoinDetails: jsonresult.ReceivedCoin{
 											Info:      base58.Base58Check{}.Encode(temp.CoinDetails.GetInfo(), common.ZeroByte),
 											PublicKey: base58.Base58Check{}.Encode(temp.CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte),
+											Value:     temp.CoinDetails.GetValue(),
 										},
 									}
 									if temp.CoinDetailsEncrypted != nil {
@@ -1503,6 +1505,7 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 										CoinDetails: jsonresult.ReceivedCoin{
 											Info:      base58.Base58Check{}.Encode(temp.CoinDetails.GetInfo(), common.ZeroByte),
 											PublicKey: base58.Base58Check{}.Encode(temp.CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte),
+											Value:     temp.CoinDetails.GetValue(),
 										},
 									}
 									if temp.CoinDetailsEncrypted != nil {
