@@ -1405,7 +1405,7 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 		for _, txHash := range txHashs {
 			item := jsonresult.ReceivedTransaction{
 				FromShardID:   shardID,
-				Hash:          txHash.String(),
+				TxID:          txHash.String(),
 				ReceivedInfos: make(map[common.Hash]jsonresult.ReceivedInfo),
 			}
 			if len(keySet.ReadonlyKey.Rk) != 0 {
