@@ -16,3 +16,5 @@ const (
 	CustomTokenType
 	CustomTokenPrivacyType
 )
+
+const MaxSizeInfo = 512
