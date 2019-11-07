@@ -1410,6 +1410,7 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 			}
 			if len(keySet.ReadonlyKey.Rk) != 0 {
 				_, _, _, txDetail, _ := txService.BlockChain.GetTransactionByHash(txHash)
+				item.LockTime = txDetail.GetLockTime()
 				txType := txDetail.GetType()
 				switch txType {
 				case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
@@ -1519,6 +1520,9 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 				}
 			}
 			result.ReceivedTransactions = append(result.ReceivedTransactions, item)
+			sort.Slice(result.ReceivedTransactions, func(i, j int) bool {
+				return result.ReceivedTransactions[i].LockTime > result.ReceivedTransactions[j].LockTime
+			})
 		}
 	}
 	return &result, nil
