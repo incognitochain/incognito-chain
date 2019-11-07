@@ -1416,72 +1416,78 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 					{
 						normalTx := txDetail.(*transaction.Tx)
 						proof := normalTx.GetProof()
-						outputs := proof.GetOutputCoins()
-						for _, output := range outputs {
-							if bytes.Equal(output.CoinDetails.GetPublicKey().ToBytesS(), keySet.PaymentAddress.Pk) {
-								temp := &privacy.OutputCoin{
-									CoinDetails:          output.CoinDetails,
-									CoinDetailsEncrypted: output.CoinDetailsEncrypted,
-								}
-								if temp.CoinDetailsEncrypted != nil && !temp.CoinDetailsEncrypted.IsNil() {
-									// try to decrypt to get more data
-									err := temp.Decrypt(keySet.ReadonlyKey)
-									if err != nil {
-										Logger.log.Error(err)
-										continue
+						if proof != nil {
+							outputs := proof.GetOutputCoins()
+							for _, output := range outputs {
+								if bytes.Equal(output.CoinDetails.GetPublicKey().ToBytesS(), keySet.PaymentAddress.Pk) {
+									temp := &privacy.OutputCoin{
+										CoinDetails:          output.CoinDetails,
+										CoinDetailsEncrypted: output.CoinDetailsEncrypted,
 									}
-									item.ReceivedInfos[common.PRVCoinID] = jsonresult.ReceivedInfo{OutputCoin: *temp}
-								} else {
-									item.ReceivedInfos[common.PRVCoinID] = jsonresult.ReceivedInfo{OutputCoin: *temp}
+									if temp.CoinDetailsEncrypted != nil && !temp.CoinDetailsEncrypted.IsNil() {
+										// try to decrypt to get more data
+										err := temp.Decrypt(keySet.ReadonlyKey)
+										if err != nil {
+											Logger.log.Error(err)
+											continue
+										}
+										item.ReceivedInfos[common.PRVCoinID] = jsonresult.ReceivedInfo{OutputCoin: *temp}
+									} else {
+										item.ReceivedInfos[common.PRVCoinID] = jsonresult.ReceivedInfo{OutputCoin: *temp}
+									}
 								}
 							}
 						}
 					}
 				case common.TxCustomTokenPrivacyType:
 					{
-						normalTx := txDetail.(*transaction.TxCustomTokenPrivacy)
+						privacyTokenTx := txDetail.(*transaction.TxCustomTokenPrivacy)
 						// prv proof
-						proof := normalTx.GetProof()
-						outputs := proof.GetOutputCoins()
-						for _, output := range outputs {
-							if bytes.Equal(output.CoinDetails.GetPublicKey().ToBytesS(), keySet.PaymentAddress.Pk) {
-								temp := &privacy.OutputCoin{
-									CoinDetails:          output.CoinDetails,
-									CoinDetailsEncrypted: output.CoinDetailsEncrypted,
-								}
-								if temp.CoinDetailsEncrypted != nil && !temp.CoinDetailsEncrypted.IsNil() {
-									// try to decrypt to get more data
-									err := temp.Decrypt(keySet.ReadonlyKey)
-									if err != nil {
-										Logger.log.Error(err)
-										continue
+						proof := privacyTokenTx.GetProof()
+						if proof != nil {
+							outputs := proof.GetOutputCoins()
+							for _, output := range outputs {
+								if bytes.Equal(output.CoinDetails.GetPublicKey().ToBytesS(), keySet.PaymentAddress.Pk) {
+									temp := &privacy.OutputCoin{
+										CoinDetails:          output.CoinDetails,
+										CoinDetailsEncrypted: output.CoinDetailsEncrypted,
 									}
-									item.ReceivedInfos[common.PRVCoinID] = jsonresult.ReceivedInfo{OutputCoin: *temp}
-								} else {
-									item.ReceivedInfos[common.PRVCoinID] = jsonresult.ReceivedInfo{OutputCoin: *temp}
+									if temp.CoinDetailsEncrypted != nil && !temp.CoinDetailsEncrypted.IsNil() {
+										// try to decrypt to get more data
+										err := temp.Decrypt(keySet.ReadonlyKey)
+										if err != nil {
+											Logger.log.Error(err)
+											continue
+										}
+										item.ReceivedInfos[common.PRVCoinID] = jsonresult.ReceivedInfo{OutputCoin: *temp}
+									} else {
+										item.ReceivedInfos[common.PRVCoinID] = jsonresult.ReceivedInfo{OutputCoin: *temp}
+									}
 								}
 							}
 						}
 
 						// token proof
-						proof = normalTx.TxPrivacyTokenData.TxNormal.GetProof()
-						outputs = proof.GetOutputCoins()
-						for _, output := range outputs {
-							if bytes.Equal(output.CoinDetails.GetPublicKey().ToBytesS(), keySet.PaymentAddress.Pk) {
-								temp := &privacy.OutputCoin{
-									CoinDetails:          output.CoinDetails,
-									CoinDetailsEncrypted: output.CoinDetailsEncrypted,
-								}
-								if temp.CoinDetailsEncrypted != nil && !temp.CoinDetailsEncrypted.IsNil() {
-									// try to decrypt to get more data
-									err := temp.Decrypt(keySet.ReadonlyKey)
-									if err != nil {
-										Logger.log.Error(err)
-										continue
+						proof = privacyTokenTx.TxPrivacyTokenData.TxNormal.GetProof()
+						if proof != nil {
+							outputs := proof.GetOutputCoins()
+							for _, output := range outputs {
+								if bytes.Equal(output.CoinDetails.GetPublicKey().ToBytesS(), keySet.PaymentAddress.Pk) {
+									temp := &privacy.OutputCoin{
+										CoinDetails:          output.CoinDetails,
+										CoinDetailsEncrypted: output.CoinDetailsEncrypted,
 									}
-									item.ReceivedInfos[normalTx.TxPrivacyTokenData.PropertyID] = jsonresult.ReceivedInfo{OutputCoin: *temp}
-								} else {
-									item.ReceivedInfos[normalTx.TxPrivacyTokenData.PropertyID] = jsonresult.ReceivedInfo{OutputCoin: *temp}
+									if temp.CoinDetailsEncrypted != nil && !temp.CoinDetailsEncrypted.IsNil() {
+										// try to decrypt to get more data
+										err := temp.Decrypt(keySet.ReadonlyKey)
+										if err != nil {
+											Logger.log.Error(err)
+											continue
+										}
+										item.ReceivedInfos[privacyTokenTx.TxPrivacyTokenData.PropertyID] = jsonresult.ReceivedInfo{OutputCoin: *temp}
+									} else {
+										item.ReceivedInfos[privacyTokenTx.TxPrivacyTokenData.PropertyID] = jsonresult.ReceivedInfo{OutputCoin: *temp}
+									}
 								}
 							}
 						}
