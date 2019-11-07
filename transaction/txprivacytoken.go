@@ -331,7 +331,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 				params.db,
 				propertyID,
 				nil,
-				params.info))
+				nil))
 			if err != nil {
 				return NewTransactionErr(PrivacyTokenInitTokenDataError, err)
 			}
