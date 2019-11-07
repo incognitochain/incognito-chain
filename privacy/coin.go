@@ -75,6 +75,7 @@ func (coin Coin) GetInfo() []byte {
 }
 
 func (coin *Coin) SetInfo(v []byte) {
+	coin.info = make([]byte, len(v))
 	copy(coin.info, v)
 }
 
