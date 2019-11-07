@@ -1,13 +1,14 @@
 package gomobile
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
-	"github.com/incognitochain/incognito-chain/common/base58"
 )
 
 func InitParamCreatePrivacyTx(args string) (*transaction.TxPrivacyInitParamsForASM, error) {
@@ -67,6 +68,21 @@ func InitParamCreatePrivacyTx(args string) (*transaction.TxPrivacyInitParamsForA
 			return nil, errors.New("Invalid payment info param amount")
 		}
 
+		msgBytes := []byte{}
+		if tmp["message"] != nil {
+			msgB64Encode, ok := tmp["message"].(string)
+			if !ok {
+				println("Invalid payment info param amount")
+				return nil, errors.New("Invalid payment info param amount")
+			}
+
+			msgBytes, err = base64.StdEncoding.DecodeString(msgB64Encode)
+			if err != nil{
+				println("Can not decode msg string in payment info")
+				return nil, errors.New("Can not decode msg string in payment info")
+			}
+		}
+
 		paymentInfoTmp := new(privacy.PaymentInfo)
 		keyWallet, err := wallet.Base58CheckDeserialize(paymentAddrStr)
 		if err != nil {
@@ -75,6 +91,7 @@ func InitParamCreatePrivacyTx(args string) (*transaction.TxPrivacyInitParamsForA
 		}
 		paymentInfoTmp.PaymentAddress = keyWallet.KeySet.PaymentAddress
 		paymentInfoTmp.Amount = uint64(amount)
+		paymentInfoTmp.Message = msgBytes
 		paymentInfo = append(paymentInfo, paymentInfoTmp)
 	}
 
@@ -290,6 +307,21 @@ func InitParamCreatePrivacyTokenTx(args string) (*transaction.TxPrivacyTokenInit
 			return nil, errors.New("Invalid payment info param amount")
 		}
 
+		msgBytes := []byte{}
+		if tmp["message"] != nil {
+			msgB64Encode, ok := tmp["message"].(string)
+			if !ok {
+				println("Invalid payment info param amount")
+				return nil, errors.New("Invalid payment info param amount")
+			}
+
+			msgBytes, err = base64.StdEncoding.DecodeString(msgB64Encode)
+			if err != nil{
+				println("Can not decode msg string in payment info")
+				return nil, errors.New("Can not decode msg string in payment info")
+			}
+		}
+
 		paymentInfoTmp := new(privacy.PaymentInfo)
 		keyWallet, err := wallet.Base58CheckDeserialize(paymentAddrStr)
 		if err != nil {
@@ -298,6 +330,7 @@ func InitParamCreatePrivacyTokenTx(args string) (*transaction.TxPrivacyTokenInit
 		}
 		paymentInfoTmp.PaymentAddress = keyWallet.KeySet.PaymentAddress
 		paymentInfoTmp.Amount = uint64(amount)
+		paymentInfoTmp.Message = msgBytes
 		paymentInfo = append(paymentInfo, paymentInfoTmp)
 	}
 
@@ -574,14 +607,29 @@ func InitParamCreatePrivacyTokenTx(args string) (*transaction.TxPrivacyTokenInit
 		}
 		paymentAddrStr, ok := tmp["paymentAddressStr"].(string)
 		if !ok {
-			println("Invalid payment info param payment address string")
-			return nil, errors.New("Invalid payment info param payment address string")
+			println("Invalid payment info for ptoken param payment address string")
+			return nil, errors.New("Invalid payment info for ptoken param payment address string")
 		}
 
 		amount, ok := tmp["amount"].(float64)
 		if !ok {
-			println("Invalid payment info param amount")
-			return nil, errors.New("Invalid payment info param amount")
+			println("Invalid payment info for ptoken param amount")
+			return nil, errors.New("Invalid payment info for ptoken param amount")
+		}
+
+		msgBytes := []byte{}
+		if tmp["message"] != nil {
+			msgB64Encode, ok := tmp["message"].(string)
+			if !ok {
+				println("Invalid payment info for ptoken param amount")
+				return nil, errors.New("Invalid payment info for ptoken param amount")
+			}
+
+			msgBytes, err = base64.StdEncoding.DecodeString(msgB64Encode)
+			if err != nil{
+				println("Can not decode msg string in payment info for ptoken")
+				return nil, errors.New("Can not decode msg string in payment info for ptoken")
+			}
 		}
 
 		paymentInfoTmp := new(privacy.PaymentInfo)
@@ -593,6 +641,7 @@ func InitParamCreatePrivacyTokenTx(args string) (*transaction.TxPrivacyTokenInit
 		paymentInfoTmp.PaymentAddress = keyWallet.KeySet.PaymentAddress
 		println("PK receiver token: ", paymentInfoTmp.PaymentAddress.Pk)
 		paymentInfoTmp.Amount = uint64(amount)
+		paymentInfoTmp.Message = msgBytes
 		paymentInfoForPToken = append(paymentInfoForPToken, paymentInfoTmp)
 	}
 
