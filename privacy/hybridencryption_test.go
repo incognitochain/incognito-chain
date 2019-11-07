@@ -27,11 +27,11 @@ func TestHybridEncryption(t *testing.T) {
 
 		assert.Equal(t, nil, err)
 
-		// convert hybridCipherText to bytes array
+		// convert HybridCipherText to bytes array
 		ciphertextBytes := ciphertext.Bytes()
 
-		// new hybridCipherText to set bytes array
-		ciphertext2 := new(hybridCipherText)
+		// new HybridCipherText to set bytes array
+		ciphertext2 := new(HybridCipherText)
 		err2 := ciphertext2.SetBytes(ciphertextBytes)
 
 		assert.Equal(t, nil, err2)
