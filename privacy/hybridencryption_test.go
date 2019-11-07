@@ -23,7 +23,7 @@ func TestHybridEncryption(t *testing.T) {
 		pubKey.h = new(Point).ScalarMultBase(privKey.x)
 
 		// encrypt message using public key
-		ciphertext, err := hybridEncrypt(msg, pubKey.h)
+		ciphertext, err := HybridEncrypt(msg, pubKey.h)
 
 		assert.Equal(t, nil, err)
 
@@ -38,7 +38,7 @@ func TestHybridEncryption(t *testing.T) {
 		assert.Equal(t, ciphertext, ciphertext2)
 
 		// decrypt message using private key
-		msg2, err := hybridDecrypt(ciphertext2, privKey.x)
+		msg2, err := HybridDecrypt(ciphertext2, privKey.x)
 
 		assert.Equal(t, nil, err)
 		assert.Equal(t, msg, msg2)
@@ -46,7 +46,7 @@ func TestHybridEncryption(t *testing.T) {
 }
 
 func randomMessage() []byte {
-	msg := make([]byte, 32)
+	msg := make([]byte, 128)
 	rand.Read(msg)
 	return msg
 }
