@@ -5,22 +5,23 @@ import (
 )
 
 type ReceivedTransaction struct {
-	Hash          string
-	ReceivedInfos map[common.Hash]ReceivedInfo
-	FromShardID   byte
+	TxID          string                       `json:"TxID"`
+	ReceivedInfos map[common.Hash]ReceivedInfo `json:"ReceivedInfos"`
+	FromShardID   byte                         `json:"FromShardID"`
+	LockTime      int64                        `json:"LockTime"`
 }
 
 type ReceivedInfo struct {
-	CoinDetails          ReceivedCoin
-	CoinDetailsEncrypted string
+	CoinDetails          ReceivedCoin `json:"CoinDetails"`
+	CoinDetailsEncrypted string       `json:"CoinDetailsEncrypted"`
 }
 
 type ReceivedCoin struct {
-	PublicKey string
-	Info      string
-	Value     uint64
+	PublicKey string `json:"PublicKey"`
+	Info      string `json:"Info"`
+	Value     uint64 `json:"Value"`
 }
 
 type ListReceivedTransaction struct {
-	ReceivedTransactions []ReceivedTransaction
+	ReceivedTransactions []ReceivedTransaction `json:"ReceivedTransactions"`
 }
