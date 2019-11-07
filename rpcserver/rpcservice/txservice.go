@@ -290,6 +290,9 @@ func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID by
 			unitFee = limitFeePToken
 		}
 
+		// add extra fee to make sure tx is confirmed
+		// extra fee = unitFee * 10%
+		unitFee += uint64(math.Ceil(float64(unitFee) * float64(0.1)))
 		return unitFee, nil
 	}
 }
