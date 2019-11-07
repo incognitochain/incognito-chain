@@ -13,10 +13,10 @@ run()
 
 
   if [ -z "$node_port" ]; then
-    node_port="9334";
+    node_port="9433";
   fi
   if [ -z "$rpc_port" ]; then
-    rpc_port="9433";
+    rpc_port="9334";
   fi
 
   docker -v || bash -c "wget -qO- https://get.docker.com/ | sh"
