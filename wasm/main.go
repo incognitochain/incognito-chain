@@ -157,6 +157,24 @@ func withdrawDexTx(_ js.Value, args []js.Value) interface{} {
 	return result
 }
 
+func hybridEncryption(_ js.Value, args []js.Value) interface{} {
+	result, err := gomobile.HybridEncryption(args[0].String())
+	if err != nil {
+		return nil
+	}
+
+	return result
+}
+
+func hybridDecryption(_ js.Value, args []js.Value) interface{} {
+	result, err := gomobile.HybridDecryption(args[0].String())
+	if err != nil {
+		return nil
+	}
+
+	return result
+}
+
 func main() {
 	c := make(chan struct{}, 0)
 	println("Hello WASM")
@@ -180,6 +198,9 @@ func main() {
 	js.Global().Set("initPRVTradeTx", js.FuncOf(initPRVTradeTx))
 	js.Global().Set("initPTokenTradeTx", js.FuncOf(initPTokenTradeTx))
 	js.Global().Set("withdrawDexTx", js.FuncOf(withdrawDexTx))
+
+	js.Global().Set("hybridEncryption", js.FuncOf(hybridEncryption))
+	js.Global().Set("hybridDecryption", js.FuncOf(hybridDecryption))
 
 	<-c
 }
