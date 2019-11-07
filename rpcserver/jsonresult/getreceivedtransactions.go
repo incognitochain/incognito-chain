@@ -9,6 +9,7 @@ type ReceivedTransaction struct {
 	ReceivedInfos map[common.Hash]ReceivedInfo `json:"ReceivedInfos"`
 	FromShardID   byte                         `json:"FromShardID"`
 	LockTime      int64                        `json:"LockTime"`
+	TxInfo        string                       `json:"TxInfo"`
 }
 
 type ReceivedInfo struct {
