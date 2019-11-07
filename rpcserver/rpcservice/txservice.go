@@ -1405,11 +1405,12 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 		for _, txHash := range txHashs {
 			item := jsonresult.ReceivedTransaction{
 				FromShardID:   shardID,
-				Hash:          txHash.String(),
+				TxID:          txHash.String(),
 				ReceivedInfos: make(map[common.Hash]jsonresult.ReceivedInfo),
 			}
 			if len(keySet.ReadonlyKey.Rk) != 0 {
 				_, _, _, txDetail, _ := txService.BlockChain.GetTransactionByHash(txHash)
+				item.LockTime = txDetail.GetLockTime()
 				txType := txDetail.GetType()
 				switch txType {
 				case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
@@ -1433,11 +1434,14 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 										}
 									}
 									info := jsonresult.ReceivedInfo{
-										CoinDetailsEncrypted: base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte),
 										CoinDetails: jsonresult.ReceivedCoin{
 											Info:      base58.Base58Check{}.Encode(temp.CoinDetails.GetInfo(), common.ZeroByte),
 											PublicKey: base58.Base58Check{}.Encode(temp.CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte),
+											Value:     temp.CoinDetails.GetValue(),
 										},
+									}
+									if temp.CoinDetailsEncrypted != nil {
+										info.CoinDetailsEncrypted = base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
 									}
 									item.ReceivedInfos[common.PRVCoinID] = info
 								}
@@ -1466,11 +1470,14 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 										}
 									}
 									info := jsonresult.ReceivedInfo{
-										CoinDetailsEncrypted: base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte),
 										CoinDetails: jsonresult.ReceivedCoin{
 											Info:      base58.Base58Check{}.Encode(temp.CoinDetails.GetInfo(), common.ZeroByte),
 											PublicKey: base58.Base58Check{}.Encode(temp.CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte),
+											Value:     temp.CoinDetails.GetValue(),
 										},
+									}
+									if temp.CoinDetailsEncrypted != nil {
+										info.CoinDetailsEncrypted = base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
 									}
 									item.ReceivedInfos[common.PRVCoinID] = info
 								}
@@ -1496,11 +1503,14 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 										}
 									}
 									info := jsonresult.ReceivedInfo{
-										CoinDetailsEncrypted: base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte),
 										CoinDetails: jsonresult.ReceivedCoin{
 											Info:      base58.Base58Check{}.Encode(temp.CoinDetails.GetInfo(), common.ZeroByte),
 											PublicKey: base58.Base58Check{}.Encode(temp.CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte),
+											Value:     temp.CoinDetails.GetValue(),
 										},
+									}
+									if temp.CoinDetailsEncrypted != nil {
+										info.CoinDetailsEncrypted = base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
 									}
 									item.ReceivedInfos[privacyTokenTx.TxPrivacyTokenData.PropertyID] = info
 								}
@@ -1510,6 +1520,9 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 				}
 			}
 			result.ReceivedTransactions = append(result.ReceivedTransactions, item)
+			sort.Slice(result.ReceivedTransactions, func(i, j int) bool {
+				return result.ReceivedTransactions[i].LockTime > result.ReceivedTransactions[j].LockTime
+			})
 		}
 	}
 	return &result, nil
