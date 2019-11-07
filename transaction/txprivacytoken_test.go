@@ -5,7 +5,6 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/stretchr/testify/assert"
-	"fmt"
 	"testing"
 )
 
@@ -33,12 +32,12 @@ func TestInitTxPrivacyToken(t *testing.T) {
 		shardID := common.GetShardIDFromLastByte(senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1])
 
 		// message to receiver
-		//msg := "Incognito-chain"
-		//receiverTK , _:= new(privacy.Point).FromBytesS(senderKey.KeySet.PaymentAddress.Tk)
-		//msgCipherText, _ := privacy.HybridEncrypt([]byte(msg), receiverTK)
+		msg := "Incognito-chain"
+		receiverTK , _:= new(privacy.Point).FromBytesS(senderKey.KeySet.PaymentAddress.Tk)
+		msgCipherText, _ := privacy.HybridEncrypt([]byte(msg), receiverTK)
 
 		initAmount := uint64(10000)
-		paymentInfo := []*privacy.PaymentInfo{{PaymentAddress: senderKey.KeySet.PaymentAddress, Amount: initAmount, /*Message: msgCipherText.Bytes() */}}
+		paymentInfo := []*privacy.PaymentInfo{{PaymentAddress: senderKey.KeySet.PaymentAddress, Amount: initAmount, Message: msgCipherText.Bytes() }}
 
 		inputCoinsPRV := []*privacy.InputCoin{}
 		paymentInfoPRV := []*privacy.PaymentInfo{}
@@ -68,7 +67,9 @@ func TestInitTxPrivacyToken(t *testing.T) {
 		err = tx.Init(paramToCreateTx)
 		assert.Equal(t, nil, err)
 
-		fmt.Printf("Tx: %v\n", tx.TxPrivacyTokenData.TxNormal.Proof.GetOutputCoins()[0].CoinDetails.GetInfo())
+		assert.Equal(t, len(msgCipherText.Bytes()), len(tx.TxPrivacyTokenData.TxNormal.Proof.GetOutputCoins()[0].CoinDetails.GetInfo()))
+
+		//fmt.Printf("Tx: %v\n", tx.TxPrivacyTokenData.TxNormal.Proof.GetOutputCoins()[0].CoinDetails.GetInfo())
 
 		// convert to JSON string and revert
 		txJsonString := tx.JSONString()
@@ -165,11 +166,6 @@ func TestInitTxPrivacyToken(t *testing.T) {
 
 		transferAmount := uint64(10)
 
-		// message to receiver
-		msg := "Incognito-chain"
-		receiverTK , _:= new(privacy.Point).FromBytesS(senderKey.KeySet.PaymentAddress.Tk)
-		msgCipherText, _ := privacy.HybridEncrypt([]byte(msg), receiverTK)
-
 		paymentInfo2 := []*privacy.PaymentInfo{{PaymentAddress: receiverPaymentAddress, Amount: transferAmount, Message: msgCipherText.Bytes()}}
 
 		// token param for transfer token
@@ -193,6 +189,8 @@ func TestInitTxPrivacyToken(t *testing.T) {
 		tx2 := new(TxCustomTokenPrivacy)
 		err = tx2.Init(paramToCreateTx2)
 		assert.Equal(t, nil, err)
+
+		assert.Equal(t, len(msgCipherText.Bytes()), len(tx2.TxPrivacyTokenData.TxNormal.Proof.GetOutputCoins()[0].CoinDetails.GetInfo()))
 
 		err = tx2.ValidateTxWithBlockChain(nil, shardID, db)
 		assert.Equal(t, nil, err)
