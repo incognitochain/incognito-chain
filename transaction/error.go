@@ -51,6 +51,8 @@ const (
 	PrivacyTokenPRVJsonError
 	PrivacyTokenJsonError
 	PrivacyTokenTxTypeNotHandleError
+
+	ExceedSizeInfoTxError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -88,6 +90,7 @@ var ErrCodeMessage = map[int]struct {
 	CommitOutputCoinError:                         {-1027, "Commit all output error"},
 	TokenIDExistedError:                           {-1028, "This token is existed in network"},
 	TokenIDExistedByCrossShardError:               {-1029, "This token is existed in network by cross shard"},
+	ExceedSizeInfoTxError:                         {-1030, "Size of tx info exceed max size info"},
 
 	// for PRV
 	InvalidSanityDataPRVError:  {-2000, "Invalid sanity data for PRV"},
