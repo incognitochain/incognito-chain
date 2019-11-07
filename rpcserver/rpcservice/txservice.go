@@ -1411,6 +1411,7 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 			if len(keySet.ReadonlyKey.Rk) != 0 {
 				_, _, _, txDetail, _ := txService.BlockChain.GetTransactionByHash(txHash)
 				item.LockTime = txDetail.GetLockTime()
+				item.TxInfo = base58.Base58Check{}.Encode(txDetail.GetInfo(), common.ZeroByte)
 				txType := txDetail.GetType()
 				switch txType {
 				case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
