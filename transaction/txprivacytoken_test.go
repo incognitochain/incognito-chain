@@ -5,11 +5,12 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/stretchr/testify/assert"
+	"fmt"
 	"testing"
 )
 
 func TestInitTxPrivacyToken(t *testing.T) {
-	for i :=0; i < 50; i++ {
+	for i :=0; i < 1; i++ {
 		//Generate sender private key & receiver payment address
 		seed := privacy.RandomScalar().ToBytesS()
 		masterKey, _ := wallet.NewMasterKey(seed)
@@ -31,8 +32,13 @@ func TestInitTxPrivacyToken(t *testing.T) {
 
 		shardID := common.GetShardIDFromLastByte(senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1])
 
+		// message to receiver
+		//msg := "Incognito-chain"
+		//receiverTK , _:= new(privacy.Point).FromBytesS(senderKey.KeySet.PaymentAddress.Tk)
+		//msgCipherText, _ := privacy.HybridEncrypt([]byte(msg), receiverTK)
+
 		initAmount := uint64(10000)
-		paymentInfo := []*privacy.PaymentInfo{{PaymentAddress: senderKey.KeySet.PaymentAddress, Amount: initAmount}}
+		paymentInfo := []*privacy.PaymentInfo{{PaymentAddress: senderKey.KeySet.PaymentAddress, Amount: initAmount, /*Message: msgCipherText.Bytes() */}}
 
 		inputCoinsPRV := []*privacy.InputCoin{}
 		paymentInfoPRV := []*privacy.PaymentInfo{}
@@ -61,6 +67,8 @@ func TestInitTxPrivacyToken(t *testing.T) {
 		tx := new(TxCustomTokenPrivacy)
 		err = tx.Init(paramToCreateTx)
 		assert.Equal(t, nil, err)
+
+		fmt.Printf("Tx: %v\n", tx.TxPrivacyTokenData.TxNormal.Proof.GetOutputCoins()[0].CoinDetails.GetInfo())
 
 		// convert to JSON string and revert
 		txJsonString := tx.JSONString()
@@ -157,7 +165,12 @@ func TestInitTxPrivacyToken(t *testing.T) {
 
 		transferAmount := uint64(10)
 
-		paymentInfo2 := []*privacy.PaymentInfo{{PaymentAddress: receiverPaymentAddress, Amount: transferAmount}}
+		// message to receiver
+		msg := "Incognito-chain"
+		receiverTK , _:= new(privacy.Point).FromBytesS(senderKey.KeySet.PaymentAddress.Tk)
+		msgCipherText, _ := privacy.HybridEncrypt([]byte(msg), receiverTK)
+
+		paymentInfo2 := []*privacy.PaymentInfo{{PaymentAddress: receiverPaymentAddress, Amount: transferAmount, Message: msgCipherText.Bytes()}}
 
 		// token param for transfer token
 		tokenParam2 := &CustomTokenPrivacyParamTx{
