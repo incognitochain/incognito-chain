@@ -151,3 +151,51 @@ func RandomScalars(n string) (string, error) {
 
 	return res, nil
 }
+
+// plaintextB64Encode = base64Encode(public key bytes || msg)
+// returns base64Encode(ciphertextBytes)
+func HybridEncryption(dataB64Encode string) (string, error) {
+	data, err := base64.StdEncoding.DecodeString(dataB64Encode)
+	if err != nil {
+		return "", nil
+	}
+
+	publicKeyBytes := data[0:privacy.Ed25519KeySize]
+	publicKeyPoint, err := new(privacy.Point).FromBytesS(publicKeyBytes)
+	if err != nil{
+		return "", errors.New("Invalid public key encryption")
+	}
+
+	msgBytes := data[privacy.Ed25519KeySize:]
+
+	ciphertext, err := privacy.HybridEncrypt(msgBytes, publicKeyPoint)
+	if err != nil{
+		return "", err
+	}
+	res := base64.StdEncoding.EncodeToString(ciphertext.Bytes())
+	return res, nil
+}
+
+// plaintextB64Encode = base64Encode(private key || ciphertext)
+// returns base64Encode(plaintextBytes)
+func HybridDecryption(dataB64Encode string) (string, error) {
+	data, err := base64.StdEncoding.DecodeString(dataB64Encode)
+	if err != nil {
+		return "", nil
+	}
+
+	privateKeyBytes := data[0:privacy.Ed25519KeySize]
+	privateKeyScalar := new(privacy.Scalar).FromBytesS(privateKeyBytes)
+
+	ciphertextBytes := data[privacy.Ed25519KeySize:]
+	ciphertext := new(privacy.HybridCipherText)
+	ciphertext.SetBytes(ciphertextBytes)
+
+	plaintextBytes, err := privacy.HybridDecrypt(ciphertext, privateKeyScalar)
+	if err != nil{
+		return "", err
+	}
+	res := base64.StdEncoding.EncodeToString(plaintextBytes)
+	return res, nil
+}
+
