@@ -6,14 +6,13 @@
 
 ## Introduction
 
-The first generation of exchanges is centralized exchanges like Binance and Coinbase. The second generation of exchanges is decentralized exchanges (DEX) like Bancor, Kyber, and Uniswap. pDEX is an upgraded version of DEX. Like DEX, it's trustless. And it provides additional features like privacy via zero-knowledge proofs, high throughput via sharding, low latency via automated marketing making, and inter-blockchain trading via interoperable bridges.
+The first generation of exchanges is centralized exchanges like Binance and Coinbase. The second generation of exchanges is decentralized exchanges (DEX) like Bancor, Kyber, and Uniswap. pDEX is an upgraded version of DEX. Like DEX, it's trustless. And it provides additional features like privacy via zero-knowledge proofs, high throughput via sharding, and inter-blockchain trading via interoperable bridges.
 
 |                   | DEX   | pDEX  |
 | ---------         | ------| --    |
 | Trustless         | YES   | YES   |
 | Privacy           | NO    | YES   |
 | High throughput   | NO    | YES   |
-| Low latency       | NO    | YES   |
 | Inter-blockchain  | NO    | YES   |
 
 ## Trustless 
@@ -86,13 +85,13 @@ F = min(B + P * V, C)
 
 The core team sets the initial values of these parameters, but in the future, this parameter adjustment responsibility will gradually be transferred to the community.
 
-| Parameter | Description | Initial Value |
-| --------- | ----------- | --------------|
-| F       | the trading fee| 0.1% * V  |
+| Parameter | Description | 
+| --------- | ----------- | 
+| F       | the trading fee| 
 | B       | the base fee| 0 |
-| P       | the percentage on the value of the trade| 0.1% |
-| V       | the value of the trade| |
-| C       | the capped amount on the trading fee | ∞ |
+| P       | the percentage on the value of the trade|
+| V       | the value of the trade|
+| C       | the capped amount on the trading fee |
 
 ## Inter-Blockchain Liquidity
 
@@ -121,12 +120,8 @@ pDEX leverages Incognito's sharded architecture to deliver high throughput. The 
 
 <img src="https://camo.githubusercontent.com/906df0b49559cb1cef57655b94379f7acb9175ff/68747470733a2f2f692e706f7374696d672e63632f6e72767157597a7a2f302d4c727462712d5233726d2d4c61757265642d4e2e706e67" width=800>
 
-## Low Latency
-
-One of the most significant benefits of Automated Market Making is **instant matching**. If you enter an order, it will match right away.
-
-The current block time of Incognito is 40s. A trade will complete within 40s. Incognito plans to reduce the block time to 10s, once transaction size is further optimized.
+One of benefits of Automated Market Making is **instant matching**. If you enter an order, it will match right away. The current block time of Incognito is 40s. Once the block is produced on a shard, it is sent to the beacon chain, which takes another 40s. A trade will complete within 80s. Incognito plans to reduce the block time to 10s, once transaction size is further optimized.
 
 ## Conclusion
 
-Not just being trustless, pDEX combines several advanced technologies like zero-knowledge proofs for privacy, sharding for high throughput, automated market making for low latency, and interoperable bridges for inter-blockchain trading. We hope that it could be a helpful product for the crypto community.
+Not just being trustless, pDEX combines several advanced technologies like zero-knowledge proofs for privacy, sharding for high throughput and interoperable bridges for inter-blockchain trading. We hope that it could be a helpful product for the crypto community.
