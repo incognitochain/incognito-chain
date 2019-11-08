@@ -1413,6 +1413,7 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 				item.LockTime = time.Unix(txDetail.GetLockTime(), 0).Format(common.DateOutputFormat)
 				item.Info = base58.Base58Check{}.Encode(txDetail.GetInfo(), common.ZeroByte)
 				item.BlockHash = blockHash.String()
+				item.Hash = txDetail.Hash().String()
 
 				txType := txDetail.GetType()
 				item.Type = txType
