@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"math/big"
+	"github.com/pkg/errors"
 )
 
 func InitPrivacyTokenTx(args string) (string, error) {
