@@ -41,9 +41,12 @@ func (db *db) FetchPrevBestState(isBeacon bool, shardID byte) ([]byte, error) {
 func (db *db) CleanBackup(isBeacon bool, shardID byte) error {
 	iter := db.lvdb.NewIterator(util.BytesPrefix(getPrevPrefix(isBeacon, shardID)), nil)
 	for iter.Next() {
-		err := db.Delete(iter.Key())
-		if err != nil {
-			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Delete"))
+		key := iter.Key()
+		if ok, err1 := db.HasValue(key); ok && err1 == nil {
+			err := db.Delete(key)
+			if err != nil {
+				return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Delete"))
+			}
 		}
 	}
 	iter.Release()
