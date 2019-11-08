@@ -154,7 +154,7 @@ func RandomScalars(n string) (string, error) {
 
 // plaintextB64Encode = base64Encode(public key bytes || msg)
 // returns base64Encode(ciphertextBytes)
-func HybridEncryption(dataB64Encode string) (string, error) {
+func HybridEncryptionASM(dataB64Encode string) (string, error) {
 	data, err := base64.StdEncoding.DecodeString(dataB64Encode)
 	if err != nil {
 		return "", nil
@@ -178,7 +178,7 @@ func HybridEncryption(dataB64Encode string) (string, error) {
 
 // plaintextB64Encode = base64Encode(private key || ciphertext)
 // returns base64Encode(plaintextBytes)
-func HybridDecryption(dataB64Encode string) (string, error) {
+func HybridDecryptionASM(dataB64Encode string) (string, error) {
 	data, err := base64.StdEncoding.DecodeString(dataB64Encode)
 	if err != nil {
 		return "", nil
