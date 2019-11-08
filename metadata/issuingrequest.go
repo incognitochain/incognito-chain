@@ -80,7 +80,15 @@ func NewIssuingRequestFromMap(data map[string]interface{}) (Metadata, error) {
 		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("TokenName incorrect"))
 	}
 
-	depositedAmt := uint64(data["DepositedAmount"].(float64))
+	depositedAmount, ok := data["DepositedAmount"]
+	if !ok {
+		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("DepositedAmount incorrect"))
+	}
+	depositedAmountFloat, ok := depositedAmount.(float64)
+	if !ok {
+		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("DepositedAmount incorrect"))
+	}
+	depositedAmt := uint64(depositedAmountFloat)
 	keyWallet, err := wallet.Base58CheckDeserialize(data["ReceiveAddress"].(string))
 	if err != nil {
 		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("ReceiveAddress incorrect"))
