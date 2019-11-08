@@ -36,6 +36,7 @@ type TransactionDetail struct {
 	PrivacyCustomTokenData        string      `json:"PrivacyCustomTokenData"`
 	PrivacyCustomTokenProofDetail ProofDetail `json:"PrivacyCustomTokenProofDetail"`
 	PrivacyCustomTokenIsPrivacy   bool        `json:"PrivacyCustomTokenIsPrivacy"`
+	PrivacyCustomTokenFee         uint64      `json:"PrivacyCustomTokenFee"`
 
 	IsInMempool bool `json:"IsInMempool"`
 	IsInBlock   bool `json:"IsInBlock"`
