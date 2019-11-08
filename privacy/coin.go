@@ -444,6 +444,7 @@ func (outputCoin *OutputCoin) Bytes() []byte {
 		outCoinBytes = append(outCoinBytes, byte(0))
 	}
 
+	// todo: len(coinDetailBytes) > 256
 	coinDetailBytes := outputCoin.CoinDetails.Bytes()
 	outCoinBytes = append(outCoinBytes, byte(len(coinDetailBytes)))
 	outCoinBytes = append(outCoinBytes, coinDetailBytes...)
