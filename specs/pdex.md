@@ -103,8 +103,8 @@ pDEX leverages Incognito's bridges to the other blockchains - like Ethereum and 
 As of November 2019, the [Incognito <> Ethereum Bridge](https://github.com/incognitochain/bridge-eth) is the only trustless bridge on the Mainnet. Other bridges are trusted and will migrate to a trustless implementation in early 2020.
 
 | Bridges | Current Implementation | 
-| --------- | ----------- | --------------|
-| Ethereum <> Incognito       | Trustless | |
+| --------- | ----------- | 
+| Ethereum <> Incognito       | Trustless |
 | Bitcoin <> Incognito      | Trusted (Going trustless Q1 2020) |
 | Binance <> Incognito       | Trusted (Going trustless Q1 2020) | 
 | EOS <> Incognito       | Trusted (Going trustless Q2 2020) | 
