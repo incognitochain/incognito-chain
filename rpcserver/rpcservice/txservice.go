@@ -9,6 +9,7 @@ import (
 	"math"
 	"math/big"
 	"sort"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -1404,19 +1405,25 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 	for shardID, txHashs := range listTxsHash {
 		for _, txHash := range txHashs {
 			item := jsonresult.ReceivedTransaction{
-				FromShardID:   shardID,
-				TxID:          txHash.String(),
-				ReceivedInfos: make(map[common.Hash]jsonresult.ReceivedInfo),
+				FromShardID:     shardID,
+				ReceivedAmounts: make(map[common.Hash]jsonresult.ReceivedInfo),
 			}
 			if len(keySet.ReadonlyKey.Rk) != 0 {
-				_, _, _, txDetail, _ := txService.BlockChain.GetTransactionByHash(txHash)
-				item.LockTime = txDetail.GetLockTime()
-				item.TxInfo = base58.Base58Check{}.Encode(txDetail.GetInfo(), common.ZeroByte)
+				_, blockHash, _, txDetail, _ := txService.BlockChain.GetTransactionByHash(txHash)
+				item.LockTime = time.Unix(txDetail.GetLockTime(), 0).Format(common.DateOutputFormat)
+				item.Info = base58.Base58Check{}.Encode(txDetail.GetInfo(), common.ZeroByte)
+				item.BlockHash = blockHash.String()
+
 				txType := txDetail.GetType()
-				switch txType {
+				item.Type = txType
+				switch item.Type {
 				case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
 					{
 						normalTx := txDetail.(*transaction.Tx)
+						item.Version = normalTx.Version
+						item.IsPrivacy = normalTx.IsPrivacy()
+						item.Fee = normalTx.Fee
+
 						proof := normalTx.GetProof()
 						if proof != nil {
 							outputs := proof.GetOutputCoins()
@@ -1444,7 +1451,7 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 									if temp.CoinDetailsEncrypted != nil {
 										info.CoinDetailsEncrypted = base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
 									}
-									item.ReceivedInfos[common.PRVCoinID] = info
+									item.ReceivedAmounts[common.PRVCoinID] = info
 								}
 							}
 						}
@@ -1452,6 +1459,12 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 				case common.TxCustomTokenPrivacyType:
 					{
 						privacyTokenTx := txDetail.(*transaction.TxCustomTokenPrivacy)
+						item.Version = privacyTokenTx.Version
+						item.IsPrivacy = privacyTokenTx.IsPrivacy()
+						item.PrivacyCustomTokenIsPrivacy = privacyTokenTx.TxPrivacyTokenData.TxNormal.IsPrivacy()
+						item.Fee = privacyTokenTx.Fee
+						item.PrivacyCustomTokenFee = privacyTokenTx.TxPrivacyTokenData.TxNormal.Fee
+
 						// prv proof
 						proof := privacyTokenTx.GetProof()
 						if proof != nil {
@@ -1480,7 +1493,7 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 									if temp.CoinDetailsEncrypted != nil {
 										info.CoinDetailsEncrypted = base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
 									}
-									item.ReceivedInfos[common.PRVCoinID] = info
+									item.ReceivedAmounts[common.PRVCoinID] = info
 								}
 							}
 						}
@@ -1513,7 +1526,7 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 									if temp.CoinDetailsEncrypted != nil {
 										info.CoinDetailsEncrypted = base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
 									}
-									item.ReceivedInfos[privacyTokenTx.TxPrivacyTokenData.PropertyID] = info
+									item.ReceivedAmounts[privacyTokenTx.TxPrivacyTokenData.PropertyID] = info
 								}
 							}
 						}
