@@ -251,7 +251,12 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 			tempOutputCoin[0].CoinDetails.SetRandomness(privacy.RandomScalar())
 
 			// set info coin for output coin
-			tempOutputCoin[0].CoinDetails.SetInfo(params.tokenParams.Receiver[0].Message)
+			if len(params.tokenParams.Receiver[0].Message) > 0 {
+				if len(params.tokenParams.Receiver[0].Message) > privacy.MaxSizeInfoCoin {
+					return NewTransactionErr(ExceedSizeInfoOutCoinError, nil)
+				}
+				tempOutputCoin[0].CoinDetails.SetInfo(params.tokenParams.Receiver[0].Message)
+			}
 
 			sndOut := privacy.RandomScalar()
 			tempOutputCoin[0].CoinDetails.SetSNDerivator(sndOut)
@@ -799,6 +804,14 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 			}
 			tempOutputCoin[0].CoinDetails.SetPublicKey(PK)
 			tempOutputCoin[0].CoinDetails.SetRandomness(privacy.RandomScalar())
+
+			// set info coin for output coin
+			if len(params.txParam.tokenParams.Receiver[0].Message) > 0 {
+				if len(params.txParam.tokenParams.Receiver[0].Message) > privacy.MaxSizeInfoCoin {
+					return NewTransactionErr(ExceedSizeInfoOutCoinError, nil)
+				}
+				tempOutputCoin[0].CoinDetails.SetInfo(params.txParam.tokenParams.Receiver[0].Message)
+			}
 
 			sndOut := privacy.RandomScalar()
 			tempOutputCoin[0].CoinDetails.SetSNDerivator(sndOut)
