@@ -1464,6 +1464,9 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 						item.PrivacyCustomTokenIsPrivacy = privacyTokenTx.TxPrivacyTokenData.TxNormal.IsPrivacy()
 						item.Fee = privacyTokenTx.Fee
 						item.PrivacyCustomTokenFee = privacyTokenTx.TxPrivacyTokenData.TxNormal.Fee
+						item.PrivacyCustomTokenID = privacyTokenTx.TxPrivacyTokenData.PropertyID.String()
+						item.PrivacyCustomTokenName = privacyTokenTx.TxPrivacyTokenData.PropertyName
+						item.PrivacyCustomTokenSymbol = privacyTokenTx.TxPrivacyTokenData.PropertySymbol
 
 						// prv proof
 						proof := privacyTokenTx.GetProof()
