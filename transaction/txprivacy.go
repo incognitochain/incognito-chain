@@ -1477,6 +1477,12 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 		outputCoins[i] = new(privacy.OutputCoin)
 		outputCoins[i].CoinDetails = new(privacy.Coin)
 		outputCoins[i].CoinDetails.SetValue(pInfo.Amount)
+		if len(pInfo.Message) > 0 {
+			if len(pInfo.Message) > privacy.MaxSizeInfoCoin {
+				return NewTransactionErr(ExceedSizeInfoOutCoinError, nil)
+			}
+			outputCoins[i].CoinDetails.SetInfo(pInfo.Message)
+		}
 
 		PK, err := new(privacy.Point).FromBytesS(pInfo.PaymentAddress.Pk)
 		if err != nil {
