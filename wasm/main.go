@@ -157,8 +157,8 @@ func withdrawDexTx(_ js.Value, args []js.Value) interface{} {
 	return result
 }
 
-func hybridEncryption(_ js.Value, args []js.Value) interface{} {
-	result, err := gomobile.HybridEncryption(args[0].String())
+func hybridEncryptionASM(_ js.Value, args []js.Value) interface{} {
+	result, err := gomobile.HybridEncryptionASM(args[0].String())
 	if err != nil {
 		return nil
 	}
@@ -166,8 +166,8 @@ func hybridEncryption(_ js.Value, args []js.Value) interface{} {
 	return result
 }
 
-func hybridDecryption(_ js.Value, args []js.Value) interface{} {
-	result, err := gomobile.HybridDecryption(args[0].String())
+func hybridDecryptionASM(_ js.Value, args []js.Value) interface{} {
+	result, err := gomobile.HybridDecryptionASM(args[0].String())
 	if err != nil {
 		return nil
 	}
@@ -199,8 +199,8 @@ func main() {
 	js.Global().Set("initPTokenTradeTx", js.FuncOf(initPTokenTradeTx))
 	js.Global().Set("withdrawDexTx", js.FuncOf(withdrawDexTx))
 
-	js.Global().Set("hybridEncryption", js.FuncOf(hybridEncryption))
-	js.Global().Set("hybridDecryption", js.FuncOf(hybridDecryption))
+	js.Global().Set("hybridEncryptionASM", js.FuncOf(hybridEncryptionASM))
+	js.Global().Set("hybridDecryptionASM", js.FuncOf(hybridDecryptionASM))
 
 	<-c
 }
