@@ -5,11 +5,9 @@ import (
 )
 
 type ReceivedTransaction struct {
-	TxID          string                       `json:"TxID"`
-	ReceivedInfos map[common.Hash]ReceivedInfo `json:"ReceivedInfos"`
-	FromShardID   byte                         `json:"FromShardID"`
-	LockTime      int64                        `json:"LockTime"`
-	TxInfo        string                       `json:"TxInfo"`
+	TransactionDetail
+	ReceivedAmounts map[common.Hash]ReceivedInfo `json:"ReceivedAmounts"`
+	FromShardID     byte                         `json:"FromShardID"`
 }
 
 type ReceivedInfo struct {
