@@ -104,4 +104,16 @@ const (
 	BridgeRequestProcessingStatus = 1
 	BridgeRequestAcceptedStatus   = 2
 	BridgeRequestRejectedStatus   = 3
+
+	PDENotFoundStatus = 0
+
+	PDEContributionWaitingStatus  = 1
+	PDEContributionAcceptedStatus = 2
+	PDEContributionRefundStatus   = 3
+
+	PDETradeAcceptedStatus = 1
+	PDETradeRefundStatus   = 2
+
+	PDEWithdrawalAcceptedStatus = 1
+	PDEWithdrawalRejectedStatus = 2
 )

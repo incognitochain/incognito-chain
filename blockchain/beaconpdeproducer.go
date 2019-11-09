@@ -537,11 +537,17 @@ func (blockchain *BlockChain) buildInstructionsForPDEWithdrawal(
 		beaconHeight,
 	)
 
-	insts := [][]string{}
 	if deductingAmounts == nil {
-		return insts, nil
+		inst := []string{
+			strconv.Itoa(metaType),
+			strconv.Itoa(int(shardID)),
+			"rejected",
+			contentStr,
+		}
+		return [][]string{inst}, nil
 	}
 
+	insts := [][]string{}
 	inst1, err := buildPDEWithdrawalAcceptedInst(
 		wdMeta,
 		shardID,
