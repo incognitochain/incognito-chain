@@ -42,6 +42,19 @@ func BuildPDESharesKey(
 	return append(pdeSharesByBCHeightPrefix, []byte(tokenIDStrs[0]+"-"+tokenIDStrs[1]+"-"+contributedTokenIDStr+"-"+contributorAddressStr)...)
 }
 
+func BuildPDESharesKeyV2(
+	beaconHeight uint64,
+	token1IDStr string,
+	token2IDStr string,
+	contributorAddressStr string,
+) []byte {
+	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+	pdeSharesByBCHeightPrefix := append(PDESharePrefix, beaconHeightBytes...)
+	tokenIDStrs := []string{token1IDStr, token2IDStr}
+	sort.Strings(tokenIDStrs)
+	return append(pdeSharesByBCHeightPrefix, []byte(tokenIDStrs[0]+"-"+tokenIDStrs[1]+"-"+contributorAddressStr)...)
+}
+
 func BuildPDEPoolForPairKey(
 	beaconHeight uint64,
 	token1IDStr string,

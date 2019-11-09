@@ -62,7 +62,7 @@ func (blockchain *BlockChain) buildBridgeInstructions(
 			newInst = [][]string{burningConfirm}
 
 		case metadata.PDEContributionMeta:
-			newInst, err = blockchain.buildInstructionsForPDEContribution(contentStr, shardID, metaType)
+			newInst, err = blockchain.buildInstructionsForPDEContribution(contentStr, shardID, metaType, currentPDEState, beaconHeight-1)
 
 		case metadata.PDETradeRequestMeta:
 			newInst, err = blockchain.buildInstructionsForPDETrade(contentStr, shardID, metaType, currentPDEState, beaconHeight-1)
