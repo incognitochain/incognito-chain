@@ -17,9 +17,12 @@ type CurrentPDEState struct {
 	PDEShares               map[string]uint64
 }
 
-type DeductingAmountsForTokenByWithdrawal struct {
-	PoolValue uint64
-	Shares    uint64
+type DeductingAmountsByWithdrawal struct {
+	Token1IDStr string
+	PoolValue1  uint64
+	Token2IDStr string
+	PoolValue2  uint64
+	Shares      uint64
 }
 
 func replaceNewBCHeightInKeyStr(key string, newBeaconHeight uint64) string {
