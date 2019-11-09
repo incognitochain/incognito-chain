@@ -1,9 +1,11 @@
 package blockchain
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"strconv"
 
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -76,6 +78,7 @@ func (blockchain *BlockChain) processPDEContributionV2(
 	if len(instruction) != 4 {
 		return nil // skip the instruction
 	}
+	db := blockchain.GetDatabase()
 	contributionStatus := instruction[2]
 	if contributionStatus == "waiting" {
 		var waitingContribution metadata.PDEWaitingContribution
@@ -90,6 +93,16 @@ func (blockchain *BlockChain) processPDEContributionV2(
 			TokenIDStr:            waitingContribution.TokenIDStr,
 			Amount:                waitingContribution.ContributedAmount,
 		}
+		err = db.TrackPDEStatus(
+			lvdb.PDEContributionStatusPrefix,
+			beaconHeight+1,
+			[]byte(waitingContribution.PDEContributionPairID),
+			byte(common.PDEContributionWaitingStatus),
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while tracking pde waiting contribution status: %+v", err)
+			return nil
+		}
 
 	} else if contributionStatus == "refund" {
 		var refundContribution metadata.PDERefundContribution
@@ -102,6 +115,16 @@ func (blockchain *BlockChain) processPDEContributionV2(
 		_, found := currentPDEState.WaitingPDEContributions[waitingContribPairKey]
 		if found {
 			delete(currentPDEState.WaitingPDEContributions, waitingContribPairKey)
+		}
+		err = db.TrackPDEStatus(
+			lvdb.PDEContributionStatusPrefix,
+			beaconHeight+1,
+			[]byte(refundContribution.PDEContributionPairID),
+			byte(common.PDEContributionRefundStatus),
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while tracking pde refund contribution status: %+v", err)
+			return nil
 		}
 
 	} else if contributionStatus == "matched" {
@@ -129,6 +152,16 @@ func (blockchain *BlockChain) processPDEContributionV2(
 			currentPDEState,
 		)
 		delete(currentPDEState.WaitingPDEContributions, waitingContribPairKey)
+		err = db.TrackPDEStatus(
+			lvdb.PDEContributionStatusPrefix,
+			beaconHeight+1,
+			[]byte(matchedContribution.PDEContributionPairID),
+			byte(common.PDEContributionAcceptedStatus),
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while tracking pde accepted contribution status: %+v", err)
+			return nil
+		}
 	}
 	return nil
 }
@@ -141,7 +174,28 @@ func (blockchain *BlockChain) processPDETrade(
 	if len(instruction) != 4 {
 		return nil // skip the instruction
 	}
+	db := blockchain.GetDatabase()
 	if instruction[2] == "refund" {
+		contentBytes, err := base64.StdEncoding.DecodeString(instruction[3])
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while decoding content string of pde trade instruction: %+v", err)
+			return nil
+		}
+		var pdeTradeReqAction metadata.PDETradeRequestAction
+		err = json.Unmarshal(contentBytes, &pdeTradeReqAction)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while unmarshaling pde trade instruction: %+v", err)
+			return nil
+		}
+		err = db.TrackPDEStatus(
+			lvdb.PDETradeStatusPrefix,
+			beaconHeight+1,
+			pdeTradeReqAction.TxReqID[:],
+			byte(common.PDETradeRefundStatus),
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while tracking pde refund trade status: %+v", err)
+		}
 		return nil
 	}
 	var pdeTradeAcceptedContent metadata.PDETradeAcceptedContent
@@ -150,6 +204,7 @@ func (blockchain *BlockChain) processPDETrade(
 		Logger.log.Errorf("WARNING: an error occured while unmarshaling PDETradeAcceptedContent: %+v", err)
 		return nil
 	}
+
 	pdePoolForPairKey := string(lvdb.BuildPDEPoolForPairKey(beaconHeight, pdeTradeAcceptedContent.Token1IDStr, pdeTradeAcceptedContent.Token2IDStr))
 	pdePoolForPair, found := currentPDEState.PDEPoolPairs[pdePoolForPairKey]
 	if !found || pdePoolForPair == nil {
@@ -163,6 +218,15 @@ func (blockchain *BlockChain) processPDETrade(
 	} else {
 		pdePoolForPair.Token1PoolValue -= pdeTradeAcceptedContent.Token1PoolValueOperation.Value
 		pdePoolForPair.Token2PoolValue += pdeTradeAcceptedContent.Token2PoolValueOperation.Value
+	}
+	err = db.TrackPDEStatus(
+		lvdb.PDETradeStatusPrefix,
+		beaconHeight+1,
+		pdeTradeAcceptedContent.RequestedTxID[:],
+		byte(common.PDETradeAcceptedStatus),
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while tracking pde accepted trade status: %+v", err)
 	}
 	return nil
 }
@@ -192,6 +256,31 @@ func (blockchain *BlockChain) processPDEWithdrawal(
 	if len(instruction) != 4 {
 		return nil // skip the instruction
 	}
+	db := blockchain.GetDatabase()
+	if instruction[2] == "rejected" {
+		contentBytes, err := base64.StdEncoding.DecodeString(instruction[3])
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while decoding content string of pde withdrawal action: %+v", err)
+			return nil
+		}
+		var pdeWithdrawalRequestAction metadata.PDEWithdrawalRequestAction
+		err = json.Unmarshal(contentBytes, &pdeWithdrawalRequestAction)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while unmarshaling pde withdrawal request action: %+v", err)
+			return nil
+		}
+		err = db.TrackPDEStatus(
+			lvdb.PDEWithdrawalStatusPrefix,
+			beaconHeight+1,
+			pdeWithdrawalRequestAction.TxReqID[:],
+			byte(common.PDEWithdrawalRejectedStatus),
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while tracking pde rejected withdrawal status: %+v", err)
+		}
+		return nil
+	}
+
 	var wdAcceptedContent metadata.PDEWithdrawalAcceptedContent
 	err := json.Unmarshal([]byte(instruction[3]), &wdAcceptedContent)
 	if err != nil {
@@ -224,5 +313,15 @@ func (blockchain *BlockChain) processPDEWithdrawal(
 		wdAcceptedContent.DeductingShares,
 		currentPDEState,
 	)
+
+	err = db.TrackPDEStatus(
+		lvdb.PDEWithdrawalStatusPrefix,
+		beaconHeight+1,
+		wdAcceptedContent.TxReqID[:],
+		byte(common.PDEWithdrawalAcceptedStatus),
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while tracking pde accepted withdrawal status: %+v", err)
+	}
 	return nil
 }
