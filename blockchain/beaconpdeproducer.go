@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"math/big"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -151,49 +150,6 @@ func addShareAmountUpV2(
 		addedUpAmt += currentShare
 	}
 	currentPDEState.PDEShares[pdeShareKey] = addedUpAmt
-}
-
-func updateWaitingContributionPairToPoolV2(
-	beaconHeight uint64,
-	waitingContribution1 *lvdb.PDEContribution,
-	waitingContribution2 *lvdb.PDEContribution,
-	currentPDEState *CurrentPDEState,
-) {
-	addShareAmountUpV2(
-		beaconHeight,
-		waitingContribution1.TokenIDStr,
-		waitingContribution2.TokenIDStr,
-		waitingContribution1.TokenIDStr,
-		waitingContribution1.ContributorAddressStr,
-		waitingContribution1.Amount,
-		currentPDEState,
-	)
-
-	waitingContributions := []*lvdb.PDEContribution{waitingContribution1, waitingContribution2}
-	sort.Slice(waitingContributions, func(i, j int) bool {
-		return waitingContributions[i].TokenIDStr < waitingContributions[j].TokenIDStr
-	})
-	pdePoolForPairKey := string(lvdb.BuildPDEPoolForPairKey(beaconHeight, waitingContributions[0].TokenIDStr, waitingContributions[1].TokenIDStr))
-	pdePoolForPair, found := currentPDEState.PDEPoolPairs[pdePoolForPairKey]
-	if !found || pdePoolForPair == nil {
-		storePDEPoolForPair(
-			pdePoolForPairKey,
-			waitingContributions[0].TokenIDStr,
-			waitingContributions[0].Amount,
-			waitingContributions[1].TokenIDStr,
-			waitingContributions[1].Amount,
-			currentPDEState,
-		)
-		return
-	}
-	storePDEPoolForPair(
-		pdePoolForPairKey,
-		waitingContributions[0].TokenIDStr,
-		pdePoolForPair.Token1PoolValue+waitingContributions[0].Amount,
-		waitingContributions[1].TokenIDStr,
-		pdePoolForPair.Token2PoolValue+waitingContributions[1].Amount,
-		currentPDEState,
-	)
 }
 
 func (blockchain *BlockChain) buildInstructionsForPDEContribution(
