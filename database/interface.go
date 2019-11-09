@@ -205,4 +205,6 @@ type DatabaseInterface interface {
 	GetAllRecordsByPrefix(beaconHeight uint64, prefix []byte) ([][]byte, [][]byte, error)
 	DeductSharesForWithdrawal(beaconHeight uint64, token1IDStr string, token2IDStr string, targetingTokenIDStr string, withdrawerAddressStr string, amt uint64) error
 	GetLatestPDEPoolForPair(tokenIDToBuyStr string, tokenIDToSellStr string) ([]byte, error)
+	TrackPDEStatus(prefix []byte, beaconHeight uint64, suffix []byte, status byte) error
+	GetPDEStatus(prefix []byte, beaconHeight uint64, suffix []byte) (byte, error)
 }
