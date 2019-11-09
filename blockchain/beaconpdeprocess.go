@@ -28,7 +28,7 @@ func (blockchain *BlockChain) processPDEInstructions(block *BeaconBlock, bd *[]d
 		var err error
 		switch inst[0] {
 		case strconv.Itoa(metadata.PDEContributionMeta):
-			err = blockchain.processPDEContribution(beaconHeight, inst, currentPDEState)
+			err = blockchain.processPDEContributionV2(beaconHeight, inst, currentPDEState)
 		case strconv.Itoa(metadata.PDETradeRequestMeta):
 			err = blockchain.processPDETrade(beaconHeight, inst, currentPDEState)
 		case strconv.Itoa(metadata.PDEWithdrawalRequestMeta):
@@ -205,6 +205,75 @@ func contributeToPDE(
 	)
 }
 
+func (blockchain *BlockChain) processPDEContributionV2(
+	beaconHeight uint64,
+	instruction []string,
+	currentPDEState *CurrentPDEState,
+) error {
+	if currentPDEState == nil {
+		Logger.log.Warn("WARN - [processPDEContribution]: Current PDE state is null.")
+		return nil
+	}
+	if len(instruction) != 4 {
+		return nil // skip the instruction
+	}
+	contributionStatus := instruction[2]
+	if contributionStatus == "waiting" {
+		var waitingContribution metadata.PDEWaitingContribution
+		err := json.Unmarshal([]byte(instruction[3]), &waitingContribution)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while unmarshaling content string of pde waiting contribution instruction: %+v", err)
+			return nil
+		}
+		waitingContribPairKey := string(lvdb.BuildWaitingPDEContributionKey(beaconHeight, waitingContribution.PDEContributionPairID))
+		currentPDEState.WaitingPDEContributions[waitingContribPairKey] = &lvdb.PDEContribution{
+			ContributorAddressStr: waitingContribution.ContributorAddressStr,
+			TokenIDStr:            waitingContribution.TokenIDStr,
+			Amount:                waitingContribution.ContributedAmount,
+		}
+
+	} else if contributionStatus == "refund" {
+		var refundContribution metadata.PDERefundContribution
+		err := json.Unmarshal([]byte(instruction[3]), &refundContribution)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while unmarshaling content string of pde refund contribution instruction: %+v", err)
+			return nil
+		}
+		waitingContribPairKey := string(lvdb.BuildWaitingPDEContributionKey(beaconHeight, refundContribution.PDEContributionPairID))
+		_, found := currentPDEState.WaitingPDEContributions[waitingContribPairKey]
+		if found {
+			delete(currentPDEState.WaitingPDEContributions, waitingContribPairKey)
+		}
+
+	} else if contributionStatus == "matched" {
+		var matchedContribution metadata.PDEMatchedContribution
+		err := json.Unmarshal([]byte(instruction[3]), &matchedContribution)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while unmarshaling content string of pde matched contribution instruction: %+v", err)
+			return nil
+		}
+		waitingContribPairKey := string(lvdb.BuildWaitingPDEContributionKey(beaconHeight, matchedContribution.PDEContributionPairID))
+		existingWaitingContribution, found := currentPDEState.WaitingPDEContributions[waitingContribPairKey]
+		if !found || existingWaitingContribution == nil {
+			Logger.log.Errorf("ERROR: could not find out existing waiting contribution with unique pair id: %s", matchedContribution.PDEContributionPairID)
+			return nil
+		}
+		incomingWaitingContribution := &lvdb.PDEContribution{
+			ContributorAddressStr: matchedContribution.ContributorAddressStr,
+			TokenIDStr:            matchedContribution.TokenIDStr,
+			Amount:                matchedContribution.ContributedAmount,
+		}
+		updateWaitingContributionPairToPoolV2(
+			beaconHeight,
+			existingWaitingContribution,
+			incomingWaitingContribution,
+			currentPDEState,
+		)
+		delete(currentPDEState.WaitingPDEContributions, waitingContribPairKey)
+	}
+	return nil
+}
+
 func (blockchain *BlockChain) processPDEContribution(
 	beaconHeight uint64,
 	instruction []string,
@@ -279,12 +348,11 @@ func deductSharesForWithdrawal(
 	beaconHeight uint64,
 	token1IDStr string,
 	token2IDStr string,
-	targetingTokenIDStr string,
 	withdrawerAddressStr string,
 	amt uint64,
 	currentPDEState *CurrentPDEState,
 ) {
-	pdeShareKey := string(lvdb.BuildPDESharesKey(beaconHeight, token1IDStr, token2IDStr, targetingTokenIDStr, withdrawerAddressStr))
+	pdeShareKey := string(lvdb.BuildPDESharesKeyV2(beaconHeight, token1IDStr, token2IDStr, withdrawerAddressStr))
 	adjustingAmt := uint64(0)
 	currentAmt, found := currentPDEState.PDEShares[pdeShareKey]
 	if found && amt <= currentAmt {
@@ -329,7 +397,6 @@ func (blockchain *BlockChain) processPDEWithdrawal(
 	deductSharesForWithdrawal(
 		beaconHeight,
 		wdAcceptedContent.PairToken1IDStr, wdAcceptedContent.PairToken2IDStr,
-		wdAcceptedContent.WithdrawalTokenIDStr,
 		wdAcceptedContent.WithdrawerAddressStr,
 		wdAcceptedContent.DeductingShares,
 		currentPDEState,
