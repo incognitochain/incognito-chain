@@ -143,7 +143,7 @@ func (blockGenerator *BlockGenerator) buildPDETradeRefundTx(
 	resTx, err := buildTradeResTx(
 		instStatus,
 		pdeTradeRequestAction.Meta.TraderAddressStr,
-		pdeTradeRequestAction.Meta.SellAmount,
+		pdeTradeRequestAction.Meta.SellAmount + pdeTradeRequestAction.Meta.TradingFee,
 		pdeTradeRequestAction.Meta.TokenIDToSellStr,
 		pdeTradeRequestAction.TxReqID,
 		producerPrivateKey,
