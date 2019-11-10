@@ -101,6 +101,8 @@ const (
 	DeduceTradeFeeError
 	GetAllRecordsByPrefixError
 	DeduceShareError
+	TrackPDEStatusError
+	GetPDEStatusError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -202,6 +204,8 @@ var ErrCodeMessage = map[int]struct {
 	DeduceTradeFeeError:                    {-13010, "Deduce trade fee error"},
 	GetAllRecordsByPrefixError:             {-13011, "Get all records by prefix error"},
 	DeduceShareError:                       {-13012, "Deduce share error"},
+	TrackPDEStatusError:                    {-13013, "Track pde status error"},
+	GetPDEStatusError:                      {-13014, "Get pde status error"},
 }
 
 type DatabaseError struct {
