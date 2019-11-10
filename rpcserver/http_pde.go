@@ -146,10 +146,14 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVTradeReq(params interface{
 	tokenIDToSellStr := data["TokenIDToSellStr"].(string)
 	sellAmount := uint64(data["SellAmount"].(float64))
 	traderAddressStr := data["TraderAddressStr"].(string)
+	minAcceptableAmount := uint64(data["MinAcceptableAmount"].(float64))
+	tradingFee := uint64(data["TradingFee"].(float64))
 	meta, _ := metadata.NewPDETradeRequest(
 		tokenIDToBuyStr,
 		tokenIDToSellStr,
 		sellAmount,
+		minAcceptableAmount,
+		tradingFee,
 		traderAddressStr,
 		metadata.PDETradeRequestMeta,
 	)
@@ -209,10 +213,14 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenTradeReq(params interfa
 	tokenIDToSellStr := tokenParamsRaw["TokenIDToSellStr"].(string)
 	sellAmount := uint64(tokenParamsRaw["SellAmount"].(float64))
 	traderAddressStr := tokenParamsRaw["TraderAddressStr"].(string)
+	minAcceptableAmount := uint64(tokenParamsRaw["MinAcceptableAmount"].(float64))
+	tradingFee := uint64(tokenParamsRaw["TradingFee"].(float64))
 	meta, _ := metadata.NewPDETradeRequest(
 		tokenIDToBuyStr,
 		tokenIDToSellStr,
 		sellAmount,
+		minAcceptableAmount,
+		tradingFee,
 		traderAddressStr,
 		metadata.PDETradeRequestMeta,
 	)
@@ -264,15 +272,13 @@ func (httpServer *HttpServer) handleCreateRawTxWithWithdrawalReq(params interfac
 	}
 	withdrawerAddressStr := data["WithdrawerAddressStr"].(string)
 	withdrawalToken1IDStr := data["WithdrawalToken1IDStr"].(string)
-	withdrawalShare1Amt := uint64(data["WithdrawalShare1Amt"].(float64))
 	withdrawalToken2IDStr := data["WithdrawalToken2IDStr"].(string)
-	withdrawalShare2Amt := uint64(data["WithdrawalShare2Amt"].(float64))
+	withdrawalShareAmt := uint64(data["WithdrawalShareAmt"].(float64))
 	meta, _ := metadata.NewPDEWithdrawalRequest(
 		withdrawerAddressStr,
 		withdrawalToken1IDStr,
-		withdrawalShare1Amt,
 		withdrawalToken2IDStr,
-		withdrawalShare2Amt,
+		withdrawalShareAmt,
 		metadata.PDEWithdrawalRequestMeta,
 	)
 
