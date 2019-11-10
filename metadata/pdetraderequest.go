@@ -19,6 +19,7 @@ type PDETradeRequest struct {
 	TokenIDToSellStr    string
 	SellAmount          uint64 // must be equal to vout value
 	MinAcceptableAmount uint64
+	TradingFee          uint64
 	TraderAddressStr    string
 	MetadataBase
 }
@@ -51,6 +52,7 @@ func NewPDETradeRequest(
 	tokenIDToSellStr string,
 	sellAmount uint64,
 	minAcceptableAmount uint64,
+	tradingFee uint64,
 	traderAddressStr string,
 	metaType int,
 ) (*PDETradeRequest, error) {
@@ -62,6 +64,7 @@ func NewPDETradeRequest(
 		TokenIDToSellStr:    tokenIDToSellStr,
 		SellAmount:          sellAmount,
 		MinAcceptableAmount: minAcceptableAmount,
+		TradingFee:          tradingFee,
 		TraderAddressStr:    traderAddressStr,
 	}
 	pdeTradeRequest.MetadataBase = metadataBase
@@ -139,6 +142,7 @@ func (pc PDETradeRequest) Hash() *common.Hash {
 	record += pc.TraderAddressStr
 	record += strconv.FormatUint(pc.SellAmount, 10)
 	record += strconv.FormatUint(pc.MinAcceptableAmount, 10)
+	record += strconv.FormatUint(pc.TradingFee, 10)
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash
