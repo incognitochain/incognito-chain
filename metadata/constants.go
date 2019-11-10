@@ -34,11 +34,12 @@ const (
 	BurningConfirmMeta    = 72
 
 	// pde
-	PDEContributionMeta       = 90
-	PDETradeRequestMeta       = 91
-	PDETradeResponseMeta      = 92
-	PDEWithdrawalRequestMeta  = 93
-	PDEWithdrawalResponseMeta = 94
+	PDEContributionMeta         = 90
+	PDETradeRequestMeta         = 91
+	PDETradeResponseMeta        = 92
+	PDEWithdrawalRequestMeta    = 93
+	PDEWithdrawalResponseMeta   = 94
+	PDEContributionResponseMeta = 95
 )
 
 var minerCreatedMetaTypes = []int{
@@ -50,6 +51,7 @@ var minerCreatedMetaTypes = []int{
 	WithDrawRewardResponseMeta,
 	PDETradeResponseMeta,
 	PDEWithdrawalResponseMeta,
+	PDEContributionResponseMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
