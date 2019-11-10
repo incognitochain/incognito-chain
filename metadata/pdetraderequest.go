@@ -99,8 +99,8 @@ func (pc PDETradeRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transa
 	if !txr.IsCoinsBurning() {
 		return false, false, errors.New("Must send coin to burning address")
 	}
-	if pc.SellAmount != txr.CalculateTxValue() {
-		return false, false, errors.New("Contributed Amount should be equal to the tx value")
+	if (pc.SellAmount + pc.TradingFee) != txr.CalculateTxValue() {
+		return false, false, errors.New("Total of selling amount and trading fee should be equal to the tx value")
 	}
 	if !bytes.Equal(txr.GetSigPubKey()[:], traderAddr.Pk[:]) {
 		return false, false, errors.New("TraderAddress incorrect")
