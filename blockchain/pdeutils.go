@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"sort"
 	"strings"
 
@@ -195,6 +196,51 @@ func storePDEStateToDB(
 		return err
 	}
 	return nil
+}
+
+func addShareAmountUpV2(
+	beaconHeight uint64,
+	token1IDStr string,
+	token2IDStr string,
+	contributedTokenIDStr string,
+	contributorAddrStr string,
+	amt uint64,
+	currentPDEState *CurrentPDEState,
+) {
+	pdeShareOnTokenPrefix := string(lvdb.BuildPDESharesKeyV2(beaconHeight, token1IDStr, token2IDStr, ""))
+	totalSharesOnToken := uint64(0)
+	for key, value := range currentPDEState.PDEShares {
+		if strings.Contains(key, pdeShareOnTokenPrefix) {
+			totalSharesOnToken += value
+		}
+	}
+	pdeShareKey := string(lvdb.BuildPDESharesKeyV2(beaconHeight, token1IDStr, token2IDStr, contributorAddrStr))
+	if totalSharesOnToken == 0 {
+		currentPDEState.PDEShares[pdeShareKey] = amt
+		return
+	}
+	poolPairKey := string(lvdb.BuildPDEPoolForPairKey(beaconHeight, token1IDStr, token2IDStr))
+	poolPair, found := currentPDEState.PDEPoolPairs[poolPairKey]
+	if !found || poolPair == nil {
+		currentPDEState.PDEShares[pdeShareKey] = amt
+		return
+	}
+	poolValue := poolPair.Token1PoolValue
+	if poolPair.Token2IDStr == contributedTokenIDStr {
+		poolValue = poolPair.Token2PoolValue
+	}
+	if poolValue == 0 {
+		currentPDEState.PDEShares[pdeShareKey] = amt
+	}
+	increasingAmt := big.NewInt(0)
+	increasingAmt.Mul(big.NewInt(int64(totalSharesOnToken)), big.NewInt(int64(amt)))
+	increasingAmt.Div(increasingAmt, big.NewInt(int64(poolValue)))
+	currentShare, found := currentPDEState.PDEShares[pdeShareKey]
+	addedUpAmt := increasingAmt.Uint64()
+	if found {
+		addedUpAmt += currentShare
+	}
+	currentPDEState.PDEShares[pdeShareKey] = addedUpAmt
 }
 
 func updateWaitingContributionPairToPoolV2(
