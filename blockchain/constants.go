@@ -79,7 +79,7 @@ const (
 	Testnet                 = 0x16
 	TestnetName             = "testnet"
 	TestnetDefaultPort      = "9444"
-	TestnetGenesisBlockTime = "2019-10-28T00:00:01.000Z"
+	TestnetGenesisBlockTime = "2019-11-10T00:00:00.000Z"
 	TestnetEpoch            = 100
 	TestnetRandomTime       = 50
 	TestnetOffset           = 1
@@ -100,7 +100,7 @@ const (
 
 	//board and proposal parameters
 	TestnetBasicReward                      = 400000000 //40 mili PRV
-	TestnetETHContractAddressStr            = "0x63837136B048F4F07fAFA5e6b10b92103df64A4E"
+	TestnetETHContractAddressStr            = "0x83F5697F0e6F57edd92c569e224d0824C42161A0"
 	TestnetIncognitoDAOAddress              = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 	TestnetCentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 )
