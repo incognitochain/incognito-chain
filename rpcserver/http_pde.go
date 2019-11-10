@@ -147,11 +147,13 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVTradeReq(params interface{
 	sellAmount := uint64(data["SellAmount"].(float64))
 	traderAddressStr := data["TraderAddressStr"].(string)
 	minAcceptableAmount := uint64(data["MinAcceptableAmount"].(float64))
+	tradingFee := uint64(data["TradingFee"].(float64))
 	meta, _ := metadata.NewPDETradeRequest(
 		tokenIDToBuyStr,
 		tokenIDToSellStr,
 		sellAmount,
 		minAcceptableAmount,
+		tradingFee,
 		traderAddressStr,
 		metadata.PDETradeRequestMeta,
 	)
@@ -212,11 +214,13 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenTradeReq(params interfa
 	sellAmount := uint64(tokenParamsRaw["SellAmount"].(float64))
 	traderAddressStr := tokenParamsRaw["TraderAddressStr"].(string)
 	minAcceptableAmount := uint64(tokenParamsRaw["MinAcceptableAmount"].(float64))
+	tradingFee := uint64(tokenParamsRaw["TradingFee"].(float64))
 	meta, _ := metadata.NewPDETradeRequest(
 		tokenIDToBuyStr,
 		tokenIDToSellStr,
 		sellAmount,
 		minAcceptableAmount,
+		tradingFee,
 		traderAddressStr,
 		metadata.PDETradeRequestMeta,
 	)
