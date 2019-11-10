@@ -205,7 +205,7 @@ func (blockchain *BlockChain) buildInstructionsForPDEContribution(
 		return [][]string{matchedInst}, nil
 	}
 
-// the contribution was not right with the current ratio of the pair
+	// the contribution was not right with the current ratio of the pair
 	delete(currentPDEState.WaitingPDEContributions, waitingContribPairKey)
 	refundInst1 := buildRefundContributionInst(
 		meta.PDEContributionPairID,
@@ -279,6 +279,16 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 	newTokenPoolValueToSell := big.NewInt(0)
 	newTokenPoolValueToSell.Add(big.NewInt(int64(tokenPoolValueToSell)), big.NewInt(int64(pdeTradeReqAction.Meta.SellAmount)))
 	newTokenPoolValueToSellAfterFee := big.NewInt(0).Sub(newTokenPoolValueToSell, big.NewInt(int64(fee)))
+	// in case the trading fee is very large that leads to negative remaining pool value
+	if !(newTokenPoolValueToSellAfterFee.Cmp(big.NewInt(0)) == 1) {
+		inst := []string{
+			strconv.Itoa(metaType),
+			strconv.Itoa(int(shardID)),
+			"refund",
+			contentStr,
+		}
+		return [][]string{inst}, nil
+	}
 
 	newTokenPoolValueToBuy := big.NewInt(0).Div(invariant, newTokenPoolValueToSellAfterFee).Uint64()
 	modValue := big.NewInt(0).Mod(invariant, newTokenPoolValueToSellAfterFee)
