@@ -103,7 +103,7 @@ func (pc PDEContribution) ValidateSanityData(bcr BlockchainRetriever, txr Transa
 		return false, false, errors.New("Must send coin to burning address")
 	}
 	if pc.ContributedAmount == 0 {
-		return false, false, errors.New("Contributed Amount should be large than 0")
+		return false, false, errors.New("Contributed Amount should be larger than 0")
 	}
 	if pc.ContributedAmount != txr.CalculateTxValue() {
 		return false, false, errors.New("Contributed Amount should be equal to the tx value")
