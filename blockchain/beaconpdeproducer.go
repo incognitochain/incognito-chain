@@ -12,18 +12,218 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
+func buildWaitingContributionInst(
+	pdeContributionPairID string,
+	contributorAddressStr string,
+	contributedAmount uint64,
+	tokenIDStr string,
+	metaType int,
+	shardID byte,
+) []string {
+	waitingContribution := metadata.PDEWaitingContribution{
+		PDEContributionPairID: pdeContributionPairID,
+		ContributorAddressStr: contributorAddressStr,
+		ContributedAmount:     contributedAmount,
+		TokenIDStr:            tokenIDStr,
+	}
+	waitingContributionBytes, _ := json.Marshal(waitingContribution)
+	return []string{
+		strconv.Itoa(metaType),
+		strconv.Itoa(int(shardID)),
+		"waiting",
+		string(waitingContributionBytes),
+	}
+}
+
+func buildRefundContributionInst(
+	pdeContributionPairID string,
+	contributorAddressStr string,
+	contributedAmount uint64,
+	tokenIDStr string,
+	metaType int,
+	shardID byte,
+) []string {
+	refundContribution := metadata.PDERefundContribution{
+		PDEContributionPairID: pdeContributionPairID,
+		ContributorAddressStr: contributorAddressStr,
+		ContributedAmount:     contributedAmount,
+		TokenIDStr:            tokenIDStr,
+	}
+	refundContributionBytes, _ := json.Marshal(refundContribution)
+	return []string{
+		strconv.Itoa(metaType),
+		strconv.Itoa(int(shardID)),
+		"refund",
+		string(refundContributionBytes),
+	}
+}
+
+func buildMatchedContributionInst(
+	pdeContributionPairID string,
+	contributorAddressStr string,
+	contributedAmount uint64,
+	tokenIDStr string,
+	metaType int,
+	shardID byte,
+) []string {
+	matchedContribution := metadata.PDEMatchedContribution{
+		PDEContributionPairID: pdeContributionPairID,
+		ContributorAddressStr: contributorAddressStr,
+		ContributedAmount:     contributedAmount,
+		TokenIDStr:            tokenIDStr,
+	}
+	matchedContributionBytes, _ := json.Marshal(matchedContribution)
+	return []string{
+		strconv.Itoa(metaType),
+		strconv.Itoa(int(shardID)),
+		"matched",
+		string(matchedContributionBytes),
+	}
+}
+
+func isRightRatio(
+	waitingContribution1 *lvdb.PDEContribution,
+	waitingContribution2 *lvdb.PDEContribution,
+	poolPair *lvdb.PDEPoolForPair,
+) bool {
+	if poolPair == nil { // first contribution on the pair
+		return true
+	}
+	if poolPair.Token1PoolValue == 0 || poolPair.Token2PoolValue == 0 {
+		return true
+	}
+	if waitingContribution1.TokenIDStr == poolPair.Token1IDStr {
+		expectedContribAmt := big.NewInt(0)
+		expectedContribAmt.Mul(big.NewInt(int64(waitingContribution1.Amount)), big.NewInt(int64(poolPair.Token2PoolValue)))
+		expectedContribAmt.Div(expectedContribAmt, big.NewInt(int64(poolPair.Token1PoolValue)))
+		return expectedContribAmt.Uint64() == waitingContribution2.Amount
+	}
+	if waitingContribution1.TokenIDStr == poolPair.Token2IDStr {
+		expectedContribAmt := big.NewInt(0)
+		expectedContribAmt.Mul(big.NewInt(int64(waitingContribution1.Amount)), big.NewInt(int64(poolPair.Token1PoolValue)))
+		expectedContribAmt.Div(expectedContribAmt, big.NewInt(int64(poolPair.Token2PoolValue)))
+		return expectedContribAmt.Uint64() == waitingContribution2.Amount
+	}
+	return false
+}
+
 func (blockchain *BlockChain) buildInstructionsForPDEContribution(
 	contentStr string,
 	shardID byte,
 	metaType int,
+	currentPDEState *CurrentPDEState,
+	beaconHeight uint64,
 ) ([][]string, error) {
-	inst := []string{
-		strconv.Itoa(metaType),
-		strconv.Itoa(int(shardID)),
-		"accepted",
-		contentStr,
+	if currentPDEState == nil {
+		Logger.log.Warn("WARN - [buildInstructionsForPDEContribution]: Current PDE state is null.")
+		inst := []string{
+			strconv.Itoa(metaType),
+			strconv.Itoa(int(shardID)),
+			"refund",
+			contentStr,
+		}
+		return [][]string{inst}, nil
 	}
-	return [][]string{inst}, nil
+	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while decoding content string of pde withdrawal action: %+v", err)
+		return [][]string{}, nil
+	}
+	var pdeContributionAction metadata.PDEContributionAction
+	err = json.Unmarshal(contentBytes, &pdeContributionAction)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while unmarshaling pde contribution action: %+v", err)
+		return [][]string{}, nil
+	}
+	meta := pdeContributionAction.Meta
+	waitingContribPairKey := string(lvdb.BuildWaitingPDEContributionKey(beaconHeight, meta.PDEContributionPairID))
+	waitingContribution, found := currentPDEState.WaitingPDEContributions[waitingContribPairKey]
+	if !found || waitingContribution == nil {
+		currentPDEState.WaitingPDEContributions[waitingContribPairKey] = &lvdb.PDEContribution{
+			ContributorAddressStr: meta.ContributorAddressStr,
+			TokenIDStr:            meta.TokenIDStr,
+			Amount:                meta.ContributedAmount,
+		}
+		inst := buildWaitingContributionInst(
+			meta.PDEContributionPairID,
+			meta.ContributorAddressStr,
+			meta.ContributedAmount,
+			meta.TokenIDStr,
+			metaType,
+			shardID,
+		)
+		return [][]string{inst}, nil
+	}
+	if waitingContribution.TokenIDStr == meta.TokenIDStr ||
+		waitingContribution.ContributorAddressStr != meta.ContributorAddressStr {
+		delete(currentPDEState.WaitingPDEContributions, waitingContribPairKey)
+		refundInst1 := buildRefundContributionInst(
+			meta.PDEContributionPairID,
+			meta.ContributorAddressStr,
+			meta.ContributedAmount,
+			meta.TokenIDStr,
+			metaType,
+			shardID,
+		)
+		refundInst2 := buildRefundContributionInst(
+			meta.PDEContributionPairID,
+			waitingContribution.ContributorAddressStr,
+			waitingContribution.Amount,
+			waitingContribution.TokenIDStr,
+			metaType,
+			shardID,
+		)
+		return [][]string{refundInst1, refundInst2}, nil
+	}
+	// contributed to 2 diff sides of a pair and its a first contribution of this pair
+	poolPairs := currentPDEState.PDEPoolPairs
+	poolPairKey := string(lvdb.BuildPDEPoolForPairKey(beaconHeight, waitingContribution.TokenIDStr, meta.TokenIDStr))
+	poolPair, found := poolPairs[poolPairKey]
+	incomingWaitingContribution := &lvdb.PDEContribution{
+		ContributorAddressStr: meta.ContributorAddressStr,
+		TokenIDStr:            meta.TokenIDStr,
+		Amount:                meta.ContributedAmount,
+	}
+
+	if !found || poolPair == nil ||
+		isRightRatio(waitingContribution, incomingWaitingContribution, poolPair) {
+		delete(currentPDEState.WaitingPDEContributions, waitingContribPairKey)
+		updateWaitingContributionPairToPoolV2(
+			beaconHeight,
+			waitingContribution,
+			incomingWaitingContribution,
+			currentPDEState,
+		)
+		matchedInst := buildMatchedContributionInst(
+			meta.PDEContributionPairID,
+			meta.ContributorAddressStr,
+			meta.ContributedAmount,
+			meta.TokenIDStr,
+			metaType,
+			shardID,
+		)
+		return [][]string{matchedInst}, nil
+	}
+
+// the contribution was not right with the current ratio of the pair
+	delete(currentPDEState.WaitingPDEContributions, waitingContribPairKey)
+	refundInst1 := buildRefundContributionInst(
+		meta.PDEContributionPairID,
+		meta.ContributorAddressStr,
+		meta.ContributedAmount,
+		meta.TokenIDStr,
+		metaType,
+		shardID,
+	)
+	refundInst2 := buildRefundContributionInst(
+		meta.PDEContributionPairID,
+		waitingContribution.ContributorAddressStr,
+		waitingContribution.Amount,
+		waitingContribution.TokenIDStr,
+		metaType,
+		shardID,
+	)
+	return [][]string{refundInst1, refundInst2}, nil
 }
 
 func (blockchain *BlockChain) buildInstructionsForPDETrade(
@@ -75,7 +275,7 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 	}
 	invariant := big.NewInt(0)
 	invariant.Mul(big.NewInt(int64(tokenPoolValueToSell)), big.NewInt(int64(tokenPoolValueToBuy)))
-	fee := pdeTradeReqAction.Meta.SellAmount / PDEDevisionAmountForFee
+	fee := pdeTradeReqAction.Meta.TradingFee
 	newTokenPoolValueToSell := big.NewInt(0)
 	newTokenPoolValueToSell.Add(big.NewInt(int64(tokenPoolValueToSell)), big.NewInt(int64(pdeTradeReqAction.Meta.SellAmount)))
 	newTokenPoolValueToSellAfterFee := big.NewInt(0).Sub(newTokenPoolValueToSell, big.NewInt(int64(fee)))
@@ -97,6 +297,16 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 	}
 
 	receiveAmt := tokenPoolValueToBuy - newTokenPoolValueToBuy
+	if pdeTradeReqAction.Meta.MinAcceptableAmount > receiveAmt {
+		inst := []string{
+			strconv.Itoa(metaType),
+			strconv.Itoa(int(shardID)),
+			"refund",
+			contentStr,
+		}
+		return [][]string{inst}, nil
+	}
+
 	// update current pde state on mem
 	pdePoolPair.Token1PoolValue = newTokenPoolValueToBuy
 	pdePoolPair.Token2PoolValue = newTokenPoolValueToSell.Uint64()
@@ -146,100 +356,20 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 	return [][]string{inst}, nil
 }
 
-func deductPDEAmounts(
-	withdrawalTokenIDStr string,
-	wdMeta metadata.PDEWithdrawalRequest,
-	currentPDEState *CurrentPDEState,
-	beaconHeight uint64,
-) *DeductingAmountsForTokenByWithdrawal {
-	var deductingAmounts *DeductingAmountsForTokenByWithdrawal
-	pairKey := string(lvdb.BuildPDEPoolForPairKey(
-		beaconHeight,
-		wdMeta.WithdrawalToken1IDStr, wdMeta.WithdrawalToken2IDStr,
-	))
-	pdePoolPair, found := currentPDEState.PDEPoolPairs[pairKey]
-	if !found || pdePoolPair == nil {
-		return deductingAmounts
-	}
-	shareForTokenKey := string(lvdb.BuildPDESharesKey(
-		beaconHeight,
-		wdMeta.WithdrawalToken1IDStr, wdMeta.WithdrawalToken2IDStr,
-		withdrawalTokenIDStr, wdMeta.WithdrawerAddressStr,
-	))
-	currentSharesForToken, found := currentPDEState.PDEShares[shareForTokenKey]
-	if !found || currentSharesForToken == 0 {
-		return deductingAmounts
-	}
-
-	totalSharesForTokenPrefix := string(lvdb.BuildPDESharesKey(
-		beaconHeight,
-		wdMeta.WithdrawalToken1IDStr, wdMeta.WithdrawalToken2IDStr,
-		withdrawalTokenIDStr, "",
-	))
-	totalSharesForToken := uint64(0)
-	for shareKey, shareAmt := range currentPDEState.PDEShares {
-		if strings.Contains(shareKey, totalSharesForTokenPrefix) {
-			totalSharesForToken += shareAmt
-		}
-	}
-	if totalSharesForToken == 0 {
-		return deductingAmounts
-	}
-	wdSharesForToken := wdMeta.WithdrawalShare1Amt
-	if withdrawalTokenIDStr == wdMeta.WithdrawalToken2IDStr {
-		wdSharesForToken = wdMeta.WithdrawalShare2Amt
-	}
-	if wdSharesForToken > currentSharesForToken {
-		wdSharesForToken = currentSharesForToken
-	}
-	if wdSharesForToken == 0 {
-		return deductingAmounts
-	}
-
-	deductingAmounts = &DeductingAmountsForTokenByWithdrawal{}
-	deductingPoolValue := big.NewInt(0)
-	if withdrawalTokenIDStr == pdePoolPair.Token2IDStr {
-		deductingPoolValue.Mul(big.NewInt(int64(pdePoolPair.Token2PoolValue)), big.NewInt(int64(wdSharesForToken)))
-		deductingPoolValue.Div(deductingPoolValue, big.NewInt(int64(totalSharesForToken)))
-		// deductingPoolValue = pdePoolPair.Token2PoolValue * wdSharesForToken / totalSharesForToken
-		if pdePoolPair.Token2PoolValue < deductingPoolValue.Uint64() {
-			pdePoolPair.Token2PoolValue = 0
-		} else {
-			pdePoolPair.Token2PoolValue -= deductingPoolValue.Uint64()
-		}
-	} else {
-		// deductingPoolValue = pdePoolPair.Token1PoolValue * wdSharesForToken / totalSharesForToken
-		deductingPoolValue.Mul(big.NewInt(int64(pdePoolPair.Token1PoolValue)), big.NewInt(int64(wdSharesForToken)))
-		deductingPoolValue.Div(deductingPoolValue, big.NewInt(int64(totalSharesForToken)))
-		if pdePoolPair.Token1PoolValue < deductingPoolValue.Uint64() {
-			pdePoolPair.Token1PoolValue = 0
-		} else {
-			pdePoolPair.Token1PoolValue -= deductingPoolValue.Uint64()
-		}
-	}
-	if currentPDEState.PDEShares[shareForTokenKey] < wdSharesForToken {
-		currentPDEState.PDEShares[shareForTokenKey] = 0
-	} else {
-		currentPDEState.PDEShares[shareForTokenKey] -= wdSharesForToken
-	}
-	deductingAmounts.PoolValue = deductingPoolValue.Uint64()
-	deductingAmounts.Shares = wdSharesForToken
-	return deductingAmounts
-}
-
 func buildPDEWithdrawalAcceptedInst(
 	wdMeta metadata.PDEWithdrawalRequest,
 	shardID byte,
 	metaType int,
 	withdrawalTokenIDStr string,
-	deductingAmountsForToken *DeductingAmountsForTokenByWithdrawal,
+	deductingPoolValue uint64,
+	deductingShares uint64,
 	txReqID common.Hash,
 ) ([]string, error) {
 	wdAcceptedContent := metadata.PDEWithdrawalAcceptedContent{
 		WithdrawalTokenIDStr: withdrawalTokenIDStr,
 		WithdrawerAddressStr: wdMeta.WithdrawerAddressStr,
-		DeductingPoolValue:   deductingAmountsForToken.PoolValue,
-		DeductingShares:      deductingAmountsForToken.Shares,
+		DeductingPoolValue:   deductingPoolValue,
+		DeductingShares:      deductingShares,
 		PairToken1IDStr:      wdMeta.WithdrawalToken1IDStr,
 		PairToken2IDStr:      wdMeta.WithdrawalToken2IDStr,
 		TxReqID:              txReqID,
@@ -256,6 +386,82 @@ func buildPDEWithdrawalAcceptedInst(
 		"accepted",
 		string(wdAcceptedContentBytes),
 	}, nil
+}
+
+func deductPDEAmountsV2(
+	wdMeta metadata.PDEWithdrawalRequest,
+	currentPDEState *CurrentPDEState,
+	beaconHeight uint64,
+) *DeductingAmountsByWithdrawal {
+	var deductingAmounts *DeductingAmountsByWithdrawal
+	pairKey := string(lvdb.BuildPDEPoolForPairKey(
+		beaconHeight,
+		wdMeta.WithdrawalToken1IDStr, wdMeta.WithdrawalToken2IDStr,
+	))
+	pdePoolPair, found := currentPDEState.PDEPoolPairs[pairKey]
+	if !found || pdePoolPair == nil {
+		return deductingAmounts
+	}
+	shareForWithdrawerKey := string(lvdb.BuildPDESharesKeyV2(
+		beaconHeight,
+		wdMeta.WithdrawalToken1IDStr, wdMeta.WithdrawalToken2IDStr, wdMeta.WithdrawerAddressStr,
+	))
+	currentSharesForWithdrawer, found := currentPDEState.PDEShares[shareForWithdrawerKey]
+	if !found || currentSharesForWithdrawer == 0 {
+		return deductingAmounts
+	}
+
+	totalSharesForPairPrefix := string(lvdb.BuildPDESharesKeyV2(
+		beaconHeight,
+		wdMeta.WithdrawalToken1IDStr, wdMeta.WithdrawalToken2IDStr, "",
+	))
+	totalSharesForPair := uint64(0)
+	for shareKey, shareAmt := range currentPDEState.PDEShares {
+		if strings.Contains(shareKey, totalSharesForPairPrefix) {
+			totalSharesForPair += shareAmt
+		}
+	}
+	if totalSharesForPair == 0 {
+		return deductingAmounts
+	}
+	wdSharesForWithdrawer := wdMeta.WithdrawalShareAmt
+	if wdSharesForWithdrawer > currentSharesForWithdrawer {
+		wdSharesForWithdrawer = currentSharesForWithdrawer
+	}
+	if wdSharesForWithdrawer == 0 {
+		return deductingAmounts
+	}
+
+	deductingAmounts = &DeductingAmountsByWithdrawal{}
+	deductingPoolValueToken1 := big.NewInt(0)
+	deductingPoolValueToken1.Mul(big.NewInt(int64(pdePoolPair.Token1PoolValue)), big.NewInt(int64(wdSharesForWithdrawer)))
+	deductingPoolValueToken1.Div(deductingPoolValueToken1, big.NewInt(int64(totalSharesForPair)))
+	if pdePoolPair.Token1PoolValue < deductingPoolValueToken1.Uint64() {
+		pdePoolPair.Token1PoolValue = 0
+	} else {
+		pdePoolPair.Token1PoolValue -= deductingPoolValueToken1.Uint64()
+	}
+	deductingAmounts.Token1IDStr = pdePoolPair.Token1IDStr
+	deductingAmounts.PoolValue1 = deductingPoolValueToken1.Uint64()
+
+	deductingPoolValueToken2 := big.NewInt(0)
+	deductingPoolValueToken2.Mul(big.NewInt(int64(pdePoolPair.Token2PoolValue)), big.NewInt(int64(wdSharesForWithdrawer)))
+	deductingPoolValueToken2.Div(deductingPoolValueToken2, big.NewInt(int64(totalSharesForPair)))
+	if pdePoolPair.Token2PoolValue < deductingPoolValueToken2.Uint64() {
+		pdePoolPair.Token2PoolValue = 0
+	} else {
+		pdePoolPair.Token2PoolValue -= deductingPoolValueToken2.Uint64()
+	}
+	deductingAmounts.Token2IDStr = pdePoolPair.Token2IDStr
+	deductingAmounts.PoolValue2 = deductingPoolValueToken2.Uint64()
+
+	if currentPDEState.PDEShares[shareForWithdrawerKey] < wdSharesForWithdrawer {
+		currentPDEState.PDEShares[shareForWithdrawerKey] = 0
+	} else {
+		currentPDEState.PDEShares[shareForWithdrawerKey] -= wdSharesForWithdrawer
+	}
+	deductingAmounts.Shares = wdSharesForWithdrawer
+	return deductingAmounts
 }
 
 func (blockchain *BlockChain) buildInstructionsForPDEWithdrawal(
@@ -281,46 +487,48 @@ func (blockchain *BlockChain) buildInstructionsForPDEWithdrawal(
 		return [][]string{}, nil
 	}
 	wdMeta := pdeWithdrawalRequestAction.Meta
-	deductingAmountsForToken1 := deductPDEAmounts(
-		wdMeta.WithdrawalToken1IDStr,
+	deductingAmounts := deductPDEAmountsV2(
 		wdMeta,
 		currentPDEState,
 		beaconHeight,
 	)
-	deductingAmountsForToken2 := deductPDEAmounts(
-		wdMeta.WithdrawalToken2IDStr,
-		wdMeta,
-		currentPDEState,
-		beaconHeight,
-	)
+
+	if deductingAmounts == nil {
+		inst := []string{
+			strconv.Itoa(metaType),
+			strconv.Itoa(int(shardID)),
+			"rejected",
+			contentStr,
+		}
+		return [][]string{inst}, nil
+	}
+
 	insts := [][]string{}
-	if deductingAmountsForToken1 != nil {
-		inst, err := buildPDEWithdrawalAcceptedInst(
-			wdMeta,
-			shardID,
-			metaType,
-			wdMeta.WithdrawalToken1IDStr,
-			deductingAmountsForToken1,
-			pdeWithdrawalRequestAction.TxReqID,
-		)
-		if err != nil {
-			return [][]string{}, nil
-		}
-		insts = append(insts, inst)
+	inst1, err := buildPDEWithdrawalAcceptedInst(
+		wdMeta,
+		shardID,
+		metaType,
+		wdMeta.WithdrawalToken1IDStr,
+		deductingAmounts.PoolValue1,
+		deductingAmounts.Shares,
+		pdeWithdrawalRequestAction.TxReqID,
+	)
+	if err != nil {
+		return [][]string{}, nil
 	}
-	if deductingAmountsForToken2 != nil {
-		inst, err := buildPDEWithdrawalAcceptedInst(
-			wdMeta,
-			shardID,
-			metaType,
-			wdMeta.WithdrawalToken2IDStr,
-			deductingAmountsForToken2,
-			pdeWithdrawalRequestAction.TxReqID,
-		)
-		if err != nil {
-			return [][]string{}, nil
-		}
-		insts = append(insts, inst)
+	insts = append(insts, inst1)
+	inst2, err := buildPDEWithdrawalAcceptedInst(
+		wdMeta,
+		shardID,
+		metaType,
+		wdMeta.WithdrawalToken2IDStr,
+		deductingAmounts.PoolValue2,
+		0,
+		pdeWithdrawalRequestAction.TxReqID,
+	)
+	if err != nil {
+		return [][]string{}, nil
 	}
+	insts = append(insts, inst2)
 	return insts, nil
 }
