@@ -302,3 +302,97 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 	}
 	return resTx, nil
 }
+
+func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
+	contentStr string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+) (metadata.Transaction, error) {
+	Logger.log.Info("[PDE Refund contribution] Starting...")
+	contentBytes := []byte(contentStr)
+	var refundContribution metadata.PDERefundContribution
+	err := json.Unmarshal(contentBytes, &refundContribution)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while unmarshaling pde refund contribution content: %+v", err)
+		return nil, nil
+	}
+	if refundContribution.ShardID != shardID {
+		return nil, nil
+	}
+
+	meta := metadata.NewPDEContributionResponse(
+		"refund",
+		refundContribution.TxReqID,
+		metadata.PDEContributionResponseMeta,
+	)
+	refundTokenIDStr := refundContribution.TokenIDStr
+	tokenID, err := common.Hash{}.NewHashFromStr(refundTokenIDStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while converting tokenid to hash: %+v", err)
+		return nil, nil
+	}
+	keyWallet, err := wallet.Base58CheckDeserialize(refundContribution.ContributorAddressStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while deserializing contributor address string: %+v", err)
+		return nil, nil
+	}
+	receiverAddr := keyWallet.KeySet.PaymentAddress
+	// the returned currency is PRV
+	if refundTokenIDStr == common.PRVCoinID.String() {
+		resTx := new(transaction.Tx)
+		err = resTx.InitTxSalary(
+			refundContribution.ContributedAmount,
+			&receiverAddr,
+			producerPrivateKey,
+			blockGenerator.chain.config.DataBase,
+			meta,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while initializing refund contribution (normal) tx: %+v", err)
+			return nil, nil
+		}
+		//modify the type of the salary transaction
+		// resTx.Type = common.TxBlockProducerCreatedType
+		return resTx, nil
+	}
+
+	// in case the returned currency is privacy custom token
+	receiver := &privacy.PaymentInfo{
+		Amount:         refundContribution.ContributedAmount,
+		PaymentAddress: receiverAddr,
+	}
+	var propertyID [common.HashSize]byte
+	copy(propertyID[:], tokenID[:])
+	propID := common.Hash(propertyID)
+	tokenParams := &transaction.CustomTokenPrivacyParamTx{
+		PropertyID: propID.String(),
+		// PropertyName:   issuingAcceptedInst.IncTokenName,
+		// PropertySymbol: issuingAcceptedInst.IncTokenName,
+		Amount:      refundContribution.ContributedAmount,
+		TokenTxType: transaction.CustomTokenInit,
+		Receiver:    []*privacy.PaymentInfo{receiver},
+		TokenInput:  []*privacy.InputCoin{},
+		Mintable:    true,
+	}
+	resTx := &transaction.TxCustomTokenPrivacy{}
+	initErr := resTx.Init(
+		transaction.NewTxPrivacyTokenInitParams(
+			producerPrivateKey,
+			[]*privacy.PaymentInfo{},
+			nil,
+			0,
+			tokenParams,
+			blockGenerator.chain.config.DataBase,
+			meta,
+			false,
+			false,
+			shardID,
+			nil,
+		),
+	)
+	if initErr != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing refund contribution response (privacy custom token) tx: %+v", initErr)
+		return nil, nil
+	}
+	return resTx, nil
+}
