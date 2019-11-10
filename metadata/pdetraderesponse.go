@@ -112,7 +112,7 @@ func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			txReqIDFromInst = pdeTradeRequestAction.TxReqID
 			receiverAddrStrFromInst = pdeTradeRequestAction.Meta.TraderAddressStr
 			receivingTokenIDStr = pdeTradeRequestAction.Meta.TokenIDToSellStr
-			receivingAmtFromInst = pdeTradeRequestAction.Meta.SellAmount
+			receivingAmtFromInst = pdeTradeRequestAction.Meta.SellAmount + pdeTradeRequestAction.Meta.TradingFee
 		} else { // trade accepted
 			contentBytes := []byte(inst[3])
 			var pdeTradeAcceptedContent PDETradeAcceptedContent
