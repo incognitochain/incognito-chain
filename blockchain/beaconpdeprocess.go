@@ -92,6 +92,7 @@ func (blockchain *BlockChain) processPDEContributionV2(
 			ContributorAddressStr: waitingContribution.ContributorAddressStr,
 			TokenIDStr:            waitingContribution.TokenIDStr,
 			Amount:                waitingContribution.ContributedAmount,
+			TxReqID:               waitingContribution.TxReqID,
 		}
 		err = db.TrackPDEStatus(
 			lvdb.PDEContributionStatusPrefix,
@@ -144,6 +145,7 @@ func (blockchain *BlockChain) processPDEContributionV2(
 			ContributorAddressStr: matchedContribution.ContributorAddressStr,
 			TokenIDStr:            matchedContribution.TokenIDStr,
 			Amount:                matchedContribution.ContributedAmount,
+			TxReqID:               matchedContribution.TxReqID,
 		}
 		updateWaitingContributionPairToPoolV2(
 			beaconHeight,
