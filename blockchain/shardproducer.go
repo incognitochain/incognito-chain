@@ -432,7 +432,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 			return []metadata.Transaction{}, errorInstructions, NewBlockChainError(FetchAutoStakingByHeightError, err)
 		}
 		for _, l := range beaconBlock.Body.Instructions {
-			time.Sleep(5 * time.Millisecond)
+			time.Sleep(1 * time.Second)
 			if l[0] == SwapAction {
 				for _, outPublicKeys := range strings.Split(l[2], ",") {
 					// If out public key has auto staking then ignore this public key
