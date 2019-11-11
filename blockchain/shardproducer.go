@@ -383,11 +383,12 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(privatekey *priv
 	//	}
 	//}()
 	var responsedTxsBeacon []metadata.Transaction
+	var errInstructions [][]string
 	var cError chan error
 	cError = make(chan error)
 	go func() {
 		var err error
-		responsedTxsBeacon, err = blockGenerator.buildResponseTxsFromBeaconInstructions(beaconBlocks, privatekey, shardID)
+		responsedTxsBeacon, errInstructions, err = blockGenerator.buildResponseTxsFromBeaconInstructions(beaconBlocks, privatekey, shardID)
 		cError <- err
 	}()
 	nilCount := 0
@@ -402,21 +403,26 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(privatekey *priv
 		}
 	}
 	txsToAdd = append(txsToAdd, responsedTxsBeacon...)
+	if len(errInstructions) > 0 {
+		Logger.log.Error("List error instructions, which can not create tx", errInstructions)
+	}
 	return txsToAdd, nil
 }
 
 // buildResponseTxsFromBeaconInstructions builds response txs from beacon instructions
-func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(beaconBlocks []*BeaconBlock, producerPrivateKey *privacy.PrivateKey, shardID byte) ([]metadata.Transaction, error) {
+func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(beaconBlocks []*BeaconBlock, producerPrivateKey *privacy.PrivateKey, shardID byte) ([]metadata.Transaction, [][]string, error) {
 	responsedTxs := []metadata.Transaction{}
+	responsedHashTxs := []common.Hash{} // capture hash of responsed tx
+	errorInstructions := [][]string{}   // capture error instruction -> which instruction can not create tx
 	for _, beaconBlock := range beaconBlocks {
 		autoStaking := make(map[string]bool)
 		autoStakingBytes, err := blockGenerator.chain.config.DataBase.FetchAutoStakingByHeight(beaconBlock.Header.Height)
 		if err != nil {
-			return []metadata.Transaction{}, NewBlockChainError(FetchAutoStakingByHeightError, err)
+			return []metadata.Transaction{}, errorInstructions, NewBlockChainError(FetchAutoStakingByHeightError, err)
 		}
 		err = json.Unmarshal(autoStakingBytes, &autoStaking)
 		if err != nil {
-			return []metadata.Transaction{}, NewBlockChainError(FetchAutoStakingByHeightError, err)
+			return []metadata.Transaction{}, errorInstructions, NewBlockChainError(FetchAutoStakingByHeightError, err)
 		}
 		for _, l := range beaconBlock.Body.Instructions {
 			if l[0] == SwapAction {
@@ -430,7 +436,15 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 						Logger.log.Error(err)
 						continue
 					}
+					txHash := *tx.Hash()
+					if ok, _ := common.SliceExists(responsedHashTxs, txHash); ok {
+						data, _ := json.Marshal(tx)
+						Logger.log.Error("Double tx from instruction", l, string(data))
+						errorInstructions = append(errorInstructions, l)
+						continue
+					}
 					responsedTxs = append(responsedTxs, tx)
+					responsedHashTxs = append(responsedHashTxs, txHash)
 				}
 
 			}
@@ -442,7 +456,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 			}
 			metaType, err := strconv.Atoi(l[0])
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			var newTx metadata.Transaction
 			switch metaType {
@@ -471,14 +485,22 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 				continue
 			}
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			if newTx != nil {
+				newTxHash := *newTx.Hash()
+				if ok, _ := common.SliceExists(responsedHashTxs, newTxHash); ok {
+					data, _ := json.Marshal(newTx)
+					Logger.log.Error("Double tx from instruction", l, string(data))
+					errorInstructions = append(errorInstructions, l)
+					continue
+				}
 				responsedTxs = append(responsedTxs, newTx)
+				responsedHashTxs = append(responsedHashTxs, newTxHash)
 			}
 		}
 	}
-	return responsedTxs, nil
+	return responsedTxs, errorInstructions, nil
 }
 
 /*
