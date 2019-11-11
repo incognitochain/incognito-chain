@@ -425,7 +425,6 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 			return []metadata.Transaction{}, errorInstructions, NewBlockChainError(FetchAutoStakingByHeightError, err)
 		}
 		for _, l := range beaconBlock.Body.Instructions {
-			time.Sleep(5 * time.Millisecond)
 			if l[0] == SwapAction {
 				for _, outPublicKeys := range strings.Split(l[2], ",") {
 					// If out public key has auto staking then ignore this public key
@@ -480,6 +479,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 			case metadata.PDEContributionMeta:
 				if len(l) >= 4 && l[2] == "refund" {
 					newTx, err = blockGenerator.buildPDERefundContributionTx(l[3], producerPrivateKey, shardID)
+					time.Sleep(1 * time.Second)
 				}
 
 			default:
