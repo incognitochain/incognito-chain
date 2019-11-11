@@ -19,12 +19,14 @@ func buildWaitingContributionInst(
 	tokenIDStr string,
 	metaType int,
 	shardID byte,
+	txReqID common.Hash,
 ) []string {
 	waitingContribution := metadata.PDEWaitingContribution{
 		PDEContributionPairID: pdeContributionPairID,
 		ContributorAddressStr: contributorAddressStr,
 		ContributedAmount:     contributedAmount,
 		TokenIDStr:            tokenIDStr,
+		TxReqID:               txReqID,
 	}
 	waitingContributionBytes, _ := json.Marshal(waitingContribution)
 	return []string{
@@ -42,12 +44,15 @@ func buildRefundContributionInst(
 	tokenIDStr string,
 	metaType int,
 	shardID byte,
+	txReqID common.Hash,
 ) []string {
 	refundContribution := metadata.PDERefundContribution{
 		PDEContributionPairID: pdeContributionPairID,
 		ContributorAddressStr: contributorAddressStr,
 		ContributedAmount:     contributedAmount,
 		TokenIDStr:            tokenIDStr,
+		TxReqID:               txReqID,
+		ShardID:               shardID,
 	}
 	refundContributionBytes, _ := json.Marshal(refundContribution)
 	return []string{
@@ -65,12 +70,14 @@ func buildMatchedContributionInst(
 	tokenIDStr string,
 	metaType int,
 	shardID byte,
+	txReqID common.Hash,
 ) []string {
 	matchedContribution := metadata.PDEMatchedContribution{
 		PDEContributionPairID: pdeContributionPairID,
 		ContributorAddressStr: contributorAddressStr,
 		ContributedAmount:     contributedAmount,
 		TokenIDStr:            tokenIDStr,
+		TxReqID:               txReqID,
 	}
 	matchedContributionBytes, _ := json.Marshal(matchedContribution)
 	return []string{
@@ -155,6 +162,7 @@ func (blockchain *BlockChain) buildInstructionsForPDEContribution(
 			ContributorAddressStr: meta.ContributorAddressStr,
 			TokenIDStr:            meta.TokenIDStr,
 			Amount:                meta.ContributedAmount,
+			TxReqID:               pdeContributionAction.TxReqID,
 		}
 		inst := buildWaitingContributionInst(
 			meta.PDEContributionPairID,
@@ -163,6 +171,7 @@ func (blockchain *BlockChain) buildInstructionsForPDEContribution(
 			meta.TokenIDStr,
 			metaType,
 			shardID,
+			pdeContributionAction.TxReqID,
 		)
 		return [][]string{inst}, nil
 	}
@@ -176,6 +185,7 @@ func (blockchain *BlockChain) buildInstructionsForPDEContribution(
 			meta.TokenIDStr,
 			metaType,
 			shardID,
+			pdeContributionAction.TxReqID,
 		)
 		refundInst2 := buildRefundContributionInst(
 			meta.PDEContributionPairID,
@@ -184,6 +194,7 @@ func (blockchain *BlockChain) buildInstructionsForPDEContribution(
 			waitingContribution.TokenIDStr,
 			metaType,
 			shardID,
+			waitingContribution.TxReqID,
 		)
 		return [][]string{refundInst1, refundInst2}, nil
 	}
@@ -195,6 +206,7 @@ func (blockchain *BlockChain) buildInstructionsForPDEContribution(
 		ContributorAddressStr: meta.ContributorAddressStr,
 		TokenIDStr:            meta.TokenIDStr,
 		Amount:                meta.ContributedAmount,
+		TxReqID:               pdeContributionAction.TxReqID,
 	}
 
 	if !found || poolPair == nil ||
@@ -213,6 +225,7 @@ func (blockchain *BlockChain) buildInstructionsForPDEContribution(
 			meta.TokenIDStr,
 			metaType,
 			shardID,
+			pdeContributionAction.TxReqID,
 		)
 		return [][]string{matchedInst}, nil
 	}
@@ -226,6 +239,7 @@ func (blockchain *BlockChain) buildInstructionsForPDEContribution(
 		meta.TokenIDStr,
 		metaType,
 		shardID,
+		pdeContributionAction.TxReqID,
 	)
 	refundInst2 := buildRefundContributionInst(
 		meta.PDEContributionPairID,
@@ -234,6 +248,7 @@ func (blockchain *BlockChain) buildInstructionsForPDEContribution(
 		waitingContribution.TokenIDStr,
 		metaType,
 		shardID,
+		waitingContribution.TxReqID,
 	)
 	return [][]string{refundInst1, refundInst2}, nil
 }

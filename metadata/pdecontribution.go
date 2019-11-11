@@ -33,6 +33,7 @@ type PDEWaitingContribution struct {
 	ContributorAddressStr string
 	ContributedAmount     uint64
 	TokenIDStr            string
+	TxReqID               common.Hash
 }
 
 type PDERefundContribution struct {
@@ -49,6 +50,7 @@ type PDEMatchedContribution struct {
 	ContributorAddressStr string
 	ContributedAmount     uint64
 	TokenIDStr            string
+	TxReqID               common.Hash
 }
 
 func NewPDEContribution(
