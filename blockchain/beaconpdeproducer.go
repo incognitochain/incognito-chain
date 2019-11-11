@@ -94,14 +94,26 @@ func isRightRatio(
 	}
 	if waitingContribution1.TokenIDStr == poolPair.Token1IDStr {
 		expectedContribAmt := big.NewInt(0)
-		expectedContribAmt.Mul(big.NewInt(int64(waitingContribution1.Amount)), big.NewInt(int64(poolPair.Token2PoolValue)))
-		expectedContribAmt.Div(expectedContribAmt, big.NewInt(int64(poolPair.Token1PoolValue)))
+		expectedContribAmt.Mul(
+			big.NewInt(int64(waitingContribution1.Amount)),
+			big.NewInt(int64(poolPair.Token2PoolValue)),
+		)
+		expectedContribAmt.Div(
+			expectedContribAmt,
+			big.NewInt(int64(poolPair.Token1PoolValue)),
+		)
 		return expectedContribAmt.Uint64() == waitingContribution2.Amount
 	}
 	if waitingContribution1.TokenIDStr == poolPair.Token2IDStr {
 		expectedContribAmt := big.NewInt(0)
-		expectedContribAmt.Mul(big.NewInt(int64(waitingContribution1.Amount)), big.NewInt(int64(poolPair.Token1PoolValue)))
-		expectedContribAmt.Div(expectedContribAmt, big.NewInt(int64(poolPair.Token2PoolValue)))
+		expectedContribAmt.Mul(
+			big.NewInt(int64(waitingContribution1.Amount)),
+			big.NewInt(int64(poolPair.Token1PoolValue)),
+		)
+		expectedContribAmt.Div(
+			expectedContribAmt,
+			big.NewInt(int64(poolPair.Token2PoolValue)),
+		)
 		return expectedContribAmt.Uint64() == waitingContribution2.Amount
 	}
 	return false
@@ -278,21 +290,9 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 	fee := pdeTradeReqAction.Meta.TradingFee
 	newTokenPoolValueToSell := big.NewInt(0)
 	newTokenPoolValueToSell.Add(big.NewInt(int64(tokenPoolValueToSell)), big.NewInt(int64(pdeTradeReqAction.Meta.SellAmount)))
-	newTokenPoolValueToSellAfterFee := big.NewInt(0).Sub(newTokenPoolValueToSell, big.NewInt(int64(fee)))
-	// in case the trading fee is very large that leads to negative remaining pool value
-	if !(newTokenPoolValueToSellAfterFee.Cmp(big.NewInt(0)) == 1) {
-		inst := []string{
-			strconv.Itoa(metaType),
-			strconv.Itoa(int(shardID)),
-			"refund",
-			contentStr,
-		}
-		return [][]string{inst}, nil
-	}
 
-	newTokenPoolValueToBuy := big.NewInt(0).Div(invariant, newTokenPoolValueToSellAfterFee).Uint64()
-	modValue := big.NewInt(0).Mod(invariant, newTokenPoolValueToSellAfterFee)
-
+	newTokenPoolValueToBuy := big.NewInt(0).Div(invariant, newTokenPoolValueToSell).Uint64()
+	modValue := big.NewInt(0).Mod(invariant, newTokenPoolValueToSell)
 	if modValue.Cmp(big.NewInt(0)) != 0 {
 		newTokenPoolValueToBuy++
 	}
@@ -318,6 +318,7 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 	}
 
 	// update current pde state on mem
+	newTokenPoolValueToSell.Add(newTokenPoolValueToSell, big.NewInt(int64(fee)))
 	pdePoolPair.Token1PoolValue = newTokenPoolValueToBuy
 	pdePoolPair.Token2PoolValue = newTokenPoolValueToSell.Uint64()
 	if pdePoolPair.Token1IDStr == pdeTradeReqAction.Meta.TokenIDToSellStr {
@@ -340,12 +341,12 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 	}
 	pdeTradeAcceptedContent.Token2PoolValueOperation = metadata.TokenPoolValueOperation{
 		Operator: "+",
-		Value:    pdeTradeReqAction.Meta.SellAmount,
+		Value:    pdeTradeReqAction.Meta.SellAmount + fee,
 	}
 	if pdePoolPair.Token1IDStr == pdeTradeReqAction.Meta.TokenIDToSellStr {
 		pdeTradeAcceptedContent.Token1PoolValueOperation = metadata.TokenPoolValueOperation{
 			Operator: "+",
-			Value:    pdeTradeReqAction.Meta.SellAmount,
+			Value:    pdeTradeReqAction.Meta.SellAmount + fee,
 		}
 		pdeTradeAcceptedContent.Token2PoolValueOperation = metadata.TokenPoolValueOperation{
 			Operator: "-",
