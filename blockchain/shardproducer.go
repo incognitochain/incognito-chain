@@ -432,6 +432,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 			return []metadata.Transaction{}, errorInstructions, NewBlockChainError(FetchAutoStakingByHeightError, err)
 		}
 		for _, l := range beaconBlock.Body.Instructions {
+			time.Sleep(5 * time.Millisecond)
 			if l[0] == SwapAction {
 				for _, outPublicKeys := range strings.Split(l[2], ",") {
 					// If out public key has auto staking then ignore this public key
@@ -448,7 +449,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 						data, _ := json.Marshal(tx)
 						Logger.log.Error("Double tx from instruction", l, string(data))
 						errorInstructions = append(errorInstructions, l)
-						continue
+						//continue
 					}
 					responsedTxs = append(responsedTxs, tx)
 					responsedHashTxs = append(responsedHashTxs, txHash)
@@ -500,7 +501,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 					data, _ := json.Marshal(newTx)
 					Logger.log.Error("Double tx from instruction", l, string(data))
 					errorInstructions = append(errorInstructions, l)
-					continue
+					//continue
 				}
 				responsedTxs = append(responsedTxs, newTx)
 				responsedHashTxs = append(responsedHashTxs, newTxHash)
