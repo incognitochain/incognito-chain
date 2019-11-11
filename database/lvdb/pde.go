@@ -20,6 +20,7 @@ type PDEContribution struct {
 	ContributorAddressStr string
 	TokenIDStr            string
 	Amount                uint64
+	TxReqID               common.Hash
 }
 
 type PDEPoolForPair struct {
