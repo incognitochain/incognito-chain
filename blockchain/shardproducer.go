@@ -479,7 +479,6 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 			case metadata.PDEContributionMeta:
 				if len(l) >= 4 && l[2] == "refund" {
 					newTx, err = blockGenerator.buildPDERefundContributionTx(l[3], producerPrivateKey, shardID)
-					time.Sleep(1 * time.Second)
 				}
 
 			default:
