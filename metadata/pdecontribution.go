@@ -25,6 +25,32 @@ type PDEContribution struct {
 type PDEContributionAction struct {
 	Meta    PDEContribution
 	TxReqID common.Hash
+	ShardID byte
+}
+
+type PDEWaitingContribution struct {
+	PDEContributionPairID string
+	ContributorAddressStr string
+	ContributedAmount     uint64
+	TokenIDStr            string
+	TxReqID               common.Hash
+}
+
+type PDERefundContribution struct {
+	PDEContributionPairID string
+	ContributorAddressStr string
+	ContributedAmount     uint64
+	TokenIDStr            string
+	TxReqID               common.Hash
+	ShardID               byte
+}
+
+type PDEMatchedContribution struct {
+	PDEContributionPairID string
+	ContributorAddressStr string
+	ContributedAmount     uint64
+	TokenIDStr            string
+	TxReqID               common.Hash
 }
 
 func NewPDEContribution(
@@ -78,6 +104,9 @@ func (pc PDEContribution) ValidateSanityData(bcr BlockchainRetriever, txr Transa
 	if !txr.IsCoinsBurning() {
 		return false, false, errors.New("Must send coin to burning address")
 	}
+	if pc.ContributedAmount == 0 {
+		return false, false, errors.New("Contributed Amount should be larger than 0")
+	}
 	if pc.ContributedAmount != txr.CalculateTxValue() {
 		return false, false, errors.New("Contributed Amount should be equal to the tx value")
 	}
@@ -124,6 +153,7 @@ func (pc *PDEContribution) BuildReqActions(tx Transaction, bcr BlockchainRetriev
 	actionContent := PDEContributionAction{
 		Meta:    *pc,
 		TxReqID: *tx.Hash(),
+		ShardID: shardID,
 	}
 	actionContentBytes, err := json.Marshal(actionContent)
 	if err != nil {

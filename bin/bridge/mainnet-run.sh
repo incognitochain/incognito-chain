@@ -11,6 +11,14 @@ run()
   eth_data_dir="eth-mainnet-data"
   logshipper_data_dir="logshipper-mainnet-data"
 
+
+  if [ -z "$node_port" ]; then
+    node_port="9433";
+  fi
+  if [ -z "$rpc_port" ]; then
+    rpc_port="9334";
+  fi
+
   docker -v || bash -c "wget -qO- https://get.docker.com/ | sh"
 
   if [ ! -d "$PWD/${eth_data_dir}" ]
@@ -31,7 +39,7 @@ run()
 
   docker run -ti --restart=always --net inc_net -d -p 8545:8545  -p 30303:30303 -p 30303:30303/udp -v $PWD/${eth_data_dir}:/home/parity/.local/share/io.parity.ethereum/ --name eth_mainnet  parity/parity:stable --light --jsonrpc-interface all --jsonrpc-hosts all  --jsonrpc-apis all --mode last --base-path=/home/parity/.local/share/io.parity.ethereum/
 
-  docker run --restart=always --net inc_net -p 9334:9334 -p 9433:9433 -e BOOTNODE_IP=$bootnode -e GETH_NAME=eth_mainnet -e MININGKEY=${validator_key} -e TESTNET=false -v $PWD/${data_dir}:/data -d --name inc_mainnet incognitochain/incognito-mainnet:${latest_tag}
+  docker run --restart=always --net inc_net -p $node_port:$node_port -p $rpc_port:$rpc_port -e NODE_PORT=$node_port -e RPC_PORT=$rpc_port -e BOOTNODE_IP=$bootnode -e GETH_NAME=eth_mainnet -e MININGKEY=${validator_key} -e TESTNET=false -v $PWD/${data_dir}:/data -d --name inc_mainnet incognitochain/incognito-mainnet:${latest_tag}
 
   if [ $is_shipping_logs -eq 1 ]
   then
