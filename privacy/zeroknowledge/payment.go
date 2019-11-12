@@ -209,7 +209,14 @@ func (proof *PaymentProof) Bytes() []byte {
 	for i := 0; i < len(proof.outputCoins); i++ {
 		outputCoins := proof.outputCoins[i].Bytes()
 		lenOutputCoins := len(outputCoins)
-		bytes = append(bytes, byte(lenOutputCoins))
+		lenOutputCoinsBytes := []byte{}
+
+		if lenOutputCoins < 256 {
+			lenOutputCoinsBytes = []byte{byte(lenOutputCoins)}
+		} else{
+			lenOutputCoinsBytes = common.IntToBytes(lenOutputCoins)
+		}
+		bytes = append(bytes, lenOutputCoinsBytes...)
 		bytes = append(bytes, outputCoins...)
 	}
 
@@ -368,7 +375,13 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 	proof.outputCoins = make([]*privacy.OutputCoin, lenOutputCoinsArray)
 	for i := 0; i < lenOutputCoinsArray; i++ {
 		lenOutputCoin := int(proofbytes[offset])
-		offset += 1
+		if lenOutputCoin < utils.OutputCoinsNoPrivacySize {
+			lenOutputCoin = common.BytesToInt(proofbytes[offset: offset + 2])
+			offset += 2
+		} else{
+			offset += 1
+		}
+
 		proof.outputCoins[i] = new(privacy.OutputCoin)
 		err := proof.outputCoins[i].SetBytes(proofbytes[offset : offset+lenOutputCoin])
 		if err != nil {
