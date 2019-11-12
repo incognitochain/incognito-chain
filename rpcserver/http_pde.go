@@ -333,3 +333,66 @@ func (httpServer *HttpServer) handleGetPDEState(params interface{}, closeChan <-
 	}
 	return pdeState, nil
 }
+
+func (httpServer *HttpServer) handleConvertNativeTokenToPrivacyToken(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	data := arrayParams[0].(map[string]interface{})
+	beaconHeight, ok := data["BeaconHeight"].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload is invalid"))
+	}
+	nativeTokenAmount, ok := data["NativeTokenAmount"].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload is invalid"))
+	}
+	tokenIDStr, ok := data["TokenID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload is invalid"))
+	}
+	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload is invalid"))
+	}
+	res, err := metadata.ConvertNativeTokenToPrivacyToken(
+		uint64(nativeTokenAmount),
+		tokenID,
+		int64(beaconHeight),
+		httpServer.config.BlockChain.GetDatabase(),
+	)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+	}
+	return res, nil
+}
+
+func (httpServer *HttpServer) handleConvertPrivacyTokenToNativeToken(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	data := arrayParams[0].(map[string]interface{})
+	beaconHeight, ok := data["BeaconHeight"].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload is invalid"))
+	}
+	privacyTokenAmount, ok := data["PrivacyTokenAmount"].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload is invalid"))
+	}
+	tokenIDStr, ok := data["TokenID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload is invalid"))
+	}
+	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload is invalid"))
+	}
+	res, err := metadata.ConvertPrivacyTokenToNativeToken(
+		uint64(privacyTokenAmount),
+		tokenID,
+		int64(beaconHeight),
+		httpServer.config.BlockChain.GetDatabase(),
+	)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+	}
+	return res, nil
+}
+
