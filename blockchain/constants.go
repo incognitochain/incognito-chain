@@ -29,7 +29,6 @@ const (
 	UpperBoundPercentForIncDAO = 10
 	GetValidBlock              = 20
 	TestRandom                 = true
-	PDEDevisionAmountForFee    = 400 // 0.25%
 )
 
 // CONSTANT for network MAINNET
