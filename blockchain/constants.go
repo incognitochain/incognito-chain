@@ -30,7 +30,6 @@ const (
 	GetValidBlock                = 20
 	TestRandom                   = true
 	NumberOfFixedBlockValidators = 4
-	PDEDevisionAmountForFee      = 400 // 0.25%
 )
 
 // CONSTANT for network MAINNET
