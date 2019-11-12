@@ -209,13 +209,7 @@ func (proof *PaymentProof) Bytes() []byte {
 	for i := 0; i < len(proof.outputCoins); i++ {
 		outputCoins := proof.outputCoins[i].Bytes()
 		lenOutputCoins := len(outputCoins)
-		lenOutputCoinsBytes := []byte{}
-
-		if lenOutputCoins < 256 {
-			lenOutputCoinsBytes = []byte{byte(lenOutputCoins)}
-		} else{
-			lenOutputCoinsBytes = common.IntToBytes(lenOutputCoins)
-		}
+		lenOutputCoinsBytes := common.IntToBytes(lenOutputCoins)
 		bytes = append(bytes, lenOutputCoinsBytes...)
 		bytes = append(bytes, outputCoins...)
 	}
@@ -374,18 +368,21 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 	offset += 1
 	proof.outputCoins = make([]*privacy.OutputCoin, lenOutputCoinsArray)
 	for i := 0; i < lenOutputCoinsArray; i++ {
-		lenOutputCoin := int(proofbytes[offset])
-		if lenOutputCoin < utils.OutputCoinsNoPrivacySize {
-			lenOutputCoin = common.BytesToInt(proofbytes[offset: offset + 2])
-			offset += 2
-		} else{
-			offset += 1
-		}
-
 		proof.outputCoins[i] = new(privacy.OutputCoin)
+		// try get 1-byte for len
+		lenOutputCoin := int(proofbytes[offset])
+		offset += 1
+
 		err := proof.outputCoins[i].SetBytes(proofbytes[offset : offset+lenOutputCoin])
 		if err != nil {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
+			// 1-byte is wrong
+			// try get 2-byte for len
+			lenOutputCoin = common.BytesToInt(proofbytes[offset-1 : offset+1])
+			offset += 1
+			err1 := proof.outputCoins[i].SetBytes(proofbytes[offset : offset+lenOutputCoin])
+			if err1 != nil {
+				return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
+			}
 		}
 		offset += lenOutputCoin
 	}
@@ -522,7 +519,6 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 		cmTmp.Add(cmTmp, cmSND)
 		cmTmp.Add(cmTmp, cmShardIDSender)
 		cmTmp.Add(cmTmp, cmRandomness)
-
 
 		if !privacy.IsPointEqual(cmTmp, proof.inputCoins[i].CoinDetails.GetCoinCommitment()) {
 			privacy.Logger.Log.Errorf("Input coins %v commitment wrong!\n", i)
