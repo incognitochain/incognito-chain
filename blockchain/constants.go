@@ -59,8 +59,8 @@ const (
 	MainnetMaxShardBlkCreation  = 10 * time.Second //second
 
 	//board and proposal parameters
-	MainnetBasicReward                      = 1386666000 //1.386666 PRV
-	MainETHContractAddressStr               = "0xd8f7cac14156eb1d1EA1a28cd04D23cE0f142602"
+	MainnetBasicReward                      = 1386666000                                                                                                //1.386666 PRV
+	MainETHContractAddressStr               = "0xD21155E51b128f4F92708042DD08db1661ECeF9E"                                                              // v1-main - mainnet, branch master-temp-B-deploy, support erc20 with decimals > 18
 	MainnetIncognitoDAOAddress              = "12S32fSyF4h8VxFHt4HfHvU1m9KHvBQsab5zp4TpQctmMdWuveXFH9KYWNemo7DRKvaBEvMgqm4XAuq1a1R4cNk2kfUfvXR3DdxCho3" // community fund
 	MainnetCentralizedWebsitePaymentAddress = "12Rvjw6J3FWY3YZ1eDZ5uTy6DTPjFeLhCK7SXgppjivg9ShX2RRq3s8pdoapnH8AMoqvUSqZm1Gqzw7rrKsNzRJwSK2kWbWf1ogy885"
 	// ------------- end Mainnet --------------------------------------
