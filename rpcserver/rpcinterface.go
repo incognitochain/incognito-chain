@@ -185,6 +185,8 @@ var LimitedHttpHandler = map[string]httpHandler{
 	getBalanceByPaymentAddress: (*HttpServer).handleGetBalanceByPaymentAddress,
 	getReceivedByAccount:       (*HttpServer).handleGetReceivedByAccount,
 	setTxFee:                   (*HttpServer).handleSetTxFee,
+	convertNativeTokenToPrivacyToken: (*HttpServer).handleConvertNativeTokenToPrivacyToken,
+	convertPrivacyTokenToNativeToken: (*HttpServer).handleConvertPrivacyTokenToNativeToken,
 }
 
 var WsHandler = map[string]wsHandler{
