@@ -172,19 +172,21 @@ var HttpHandler = map[string]httpHandler{
 // Commands that are available to a limited user
 var LimitedHttpHandler = map[string]httpHandler{
 	// local WALLET
-	listAccounts:               (*HttpServer).handleListAccounts,
-	getAccount:                 (*HttpServer).handleGetAccount,
-	getAddressesByAccount:      (*HttpServer).handleGetAddressesByAccount,
-	getAccountAddress:          (*HttpServer).handleGetAccountAddress,
-	dumpPrivkey:                (*HttpServer).handleDumpPrivkey,
-	importAccount:              (*HttpServer).handleImportAccount,
-	removeAccount:              (*HttpServer).handleRemoveAccount,
-	listUnspentOutputCoins:     (*HttpServer).handleListUnspentOutputCoins,
-	getBalance:                 (*HttpServer).handleGetBalance,
-	getBalanceByPrivatekey:     (*HttpServer).handleGetBalanceByPrivatekey,
-	getBalanceByPaymentAddress: (*HttpServer).handleGetBalanceByPaymentAddress,
-	getReceivedByAccount:       (*HttpServer).handleGetReceivedByAccount,
-	setTxFee:                   (*HttpServer).handleSetTxFee,
+	listAccounts:                     (*HttpServer).handleListAccounts,
+	getAccount:                       (*HttpServer).handleGetAccount,
+	getAddressesByAccount:            (*HttpServer).handleGetAddressesByAccount,
+	getAccountAddress:                (*HttpServer).handleGetAccountAddress,
+	dumpPrivkey:                      (*HttpServer).handleDumpPrivkey,
+	importAccount:                    (*HttpServer).handleImportAccount,
+	removeAccount:                    (*HttpServer).handleRemoveAccount,
+	listUnspentOutputCoins:           (*HttpServer).handleListUnspentOutputCoins,
+	getBalance:                       (*HttpServer).handleGetBalance,
+	getBalanceByPrivatekey:           (*HttpServer).handleGetBalanceByPrivatekey,
+	getBalanceByPaymentAddress:       (*HttpServer).handleGetBalanceByPaymentAddress,
+	getReceivedByAccount:             (*HttpServer).handleGetReceivedByAccount,
+	setTxFee:                         (*HttpServer).handleSetTxFee,
+	convertNativeTokenToPrivacyToken: (*HttpServer).handleConvertNativeTokenToPrivacyToken,
+	convertPrivacyTokenToNativeToken: (*HttpServer).handleConvertPrivacyTokenToNativeToken,
 }
 
 var WsHandler = map[string]wsHandler{
