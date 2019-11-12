@@ -169,6 +169,8 @@ const (
 	createAndSendTxWithPRVTradeReq        = "createandsendtxwithprvtradereq"
 	createAndSendTxWithPTokenContribution = "createandsendtxwithptokencontribution"
 	createAndSendTxWithPRVContribution    = "createandsendtxwithprvcontribution"
+	convertNativeTokenToPrivacyToken      = "convertnativetokentoprivacytoken"
+	convertPrivacyTokenToNativeToken      = "convertprivacytokentonativetoken"
 )
 
 const (
