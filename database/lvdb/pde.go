@@ -10,6 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
@@ -19,6 +20,7 @@ type PDEContribution struct {
 	ContributorAddressStr string
 	TokenIDStr            string
 	Amount                uint64
+	TxReqID               common.Hash
 }
 
 type PDEPoolForPair struct {
@@ -26,6 +28,16 @@ type PDEPoolForPair struct {
 	Token1PoolValue uint64
 	Token2IDStr     string
 	Token2PoolValue uint64
+}
+
+func BuildPDEStatusKey(
+	prefix []byte,
+	beaconHeight uint64,
+	suffix []byte,
+) []byte {
+	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+	prefixByBeaconHeight := append(prefix, beaconHeightBytes...)
+	return append(prefixByBeaconHeight, suffix...)
 }
 
 func BuildPDESharesKey(
@@ -40,6 +52,19 @@ func BuildPDESharesKey(
 	tokenIDStrs := []string{token1IDStr, token2IDStr}
 	sort.Strings(tokenIDStrs)
 	return append(pdeSharesByBCHeightPrefix, []byte(tokenIDStrs[0]+"-"+tokenIDStrs[1]+"-"+contributedTokenIDStr+"-"+contributorAddressStr)...)
+}
+
+func BuildPDESharesKeyV2(
+	beaconHeight uint64,
+	token1IDStr string,
+	token2IDStr string,
+	contributorAddressStr string,
+) []byte {
+	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+	pdeSharesByBCHeightPrefix := append(PDESharePrefix, beaconHeightBytes...)
+	tokenIDStrs := []string{token1IDStr, token2IDStr}
+	sort.Strings(tokenIDStrs)
+	return append(pdeSharesByBCHeightPrefix, []byte(tokenIDStrs[0]+"-"+tokenIDStrs[1]+"-"+contributorAddressStr)...)
 }
 
 func BuildPDEPoolForPairKey(
@@ -477,4 +502,34 @@ func (db *db) GetAllRecordsByPrefix(beaconHeight uint64, prefix []byte) ([][]byt
 		return keys, values, database.NewDatabaseError(database.GetAllRecordsByPrefixError, err)
 	}
 	return keys, values, nil
+}
+
+func (db *db) TrackPDEStatus(
+	prefix []byte,
+	beaconHeight uint64,
+	suffix []byte,
+	status byte,
+) error {
+	key := BuildPDEStatusKey(prefix, beaconHeight, suffix)
+	err := db.Put(key, []byte{status})
+	if err != nil {
+		return database.NewDatabaseError(database.TrackPDEStatusError, errors.Wrap(err, "db.lvdb.put"))
+	}
+	return nil
+}
+
+func (db *db) GetPDEStatus(
+	prefix []byte,
+	beaconHeight uint64,
+	suffix []byte,
+) (byte, error) {
+	key := BuildPDEStatusKey(prefix, beaconHeight, suffix)
+	pdeStatusBytes, dbErr := db.lvdb.Get(key, nil)
+	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
+		return common.PDENotFoundStatus, database.NewDatabaseError(database.GetPDEStatusError, dbErr)
+	}
+	if len(pdeStatusBytes) == 0 {
+		return common.PDENotFoundStatus, nil
+	}
+	return pdeStatusBytes[0], nil
 }
