@@ -363,7 +363,12 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 		return nil, nil, byte(0), NewRPCError(SendTxDataError, err)
 	}
 
-	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx, -1)
+	beaconHeigh := int64(-1)
+	beaconBestState, err := txService.BlockChain.BestState.GetClonedBeaconBestState()
+	if err == nil {
+		beaconHeigh = int64(beaconBestState.BeaconHeight)
+	}
+	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx, beaconHeigh)
 	//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 	if err != nil {
 		mempoolErr, ok := err.(*mempool.MempoolTxError)
@@ -793,7 +798,12 @@ func (txService TxService) SendRawCustomTokenTransaction(base58CheckData string)
 		return nil, nil, NewRPCError(SendTxDataError, err)
 	}
 
-	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx, -1)
+	beaconHeigh := int64(-1)
+	beaconBestState, err := txService.BlockChain.BestState.GetClonedBeaconBestState()
+	if err == nil {
+		beaconHeigh = int64(beaconBestState.BeaconHeight)
+	}
+	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx, beaconHeigh)
 	//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 	if err != nil {
 		Logger.log.Debugf("handleSendRawCustomTokenTransaction result: %+v, err: %+v", nil, err)
@@ -1193,7 +1203,12 @@ func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData 
 		return nil, nil, err
 	}
 
-	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx, -1)
+	beaconHeigh := int64(-1)
+	beaconBestState, err := txService.BlockChain.BestState.GetClonedBeaconBestState()
+	if err == nil {
+		beaconHeigh = int64(beaconBestState.BeaconHeight)
+	}
+	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx, beaconHeigh)
 	//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 	if err != nil {
 		Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction result: %+v, err: %+v", nil, err)
@@ -1337,7 +1352,12 @@ func (txService TxService) SendRawTxWithMetadata(base58CheckDate string) (wire.M
 		return nil, nil, NewRPCError(JsonError, err)
 	}
 
-	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx, -1)
+	beaconHeigh := int64(-1)
+	beaconBestState, err := txService.BlockChain.BestState.GetClonedBeaconBestState()
+	if err == nil {
+		beaconHeigh = int64(beaconBestState.BeaconHeight)
+	}
+	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx, beaconHeigh)
 	if err != nil {
 		return nil, nil, NewRPCError(TxPoolRejectTxError, err)
 	}
@@ -1368,7 +1388,12 @@ func (txService TxService) SendRawCustomTokenTxWithMetadata(base58CheckDate stri
 		return nil, nil, NewRPCError(JsonError, err)
 	}
 
-	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx, -1)
+	beaconHeigh := int64(-1)
+	beaconBestState, err := txService.BlockChain.BestState.GetClonedBeaconBestState()
+	if err == nil {
+		beaconHeigh = int64(beaconBestState.BeaconHeight)
+	}
+	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx, beaconHeigh)
 	if err != nil {
 		return nil, nil, NewRPCError(TxPoolRejectTxError, err)
 	}
