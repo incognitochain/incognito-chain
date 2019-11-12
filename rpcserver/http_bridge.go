@@ -38,8 +38,12 @@ func (httpServer *HttpServer) handleCreateRawTxWithContractingReq(params interfa
 	}
 
 	// check privacy mode param
-	if len(arrayParams) > 7 {
-		hasPrivacyToken := int(arrayParams[6].(float64)) > 0
+	if len(arrayParams) > 6 {
+		privacyTemp, ok := arrayParams[6].(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("The privacy mode must be valid"))
+		}
+		hasPrivacyToken := int(privacyTemp) > 0
 		if hasPrivacyToken {
 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("The privacy mode must be disabled"))
 		}
@@ -66,7 +70,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithContractingReq(params interfa
 	}
 
 	meta, err := rpcservice.NewContractingRequestMetadata(senderPrivateKeyParam, tokenReceivers, tokenID)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 
@@ -113,8 +117,12 @@ func (httpServer *HttpServer) handleCreateRawTxWithBurningReq(params interface{}
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 5 elements"))
 	}
 
-	if len(arrayParams) > 5 {
-		hasPrivacyToken := int(arrayParams[5].(float64)) > 0
+	if len(arrayParams) > 6 {
+		privacyTemp, ok := arrayParams[6].(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("The privacy mode must be valid "))
+		}
+		hasPrivacyToken := int(privacyTemp) > 0
 		if hasPrivacyToken {
 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("The privacy mode must be disabled"))
 		}
@@ -151,7 +159,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithBurningReq(params interface{}
 	}
 
 	meta, err := rpcservice.NewBurningRequestMetadata(senderPrivateKeyParam, tokenReceivers, tokenID, tokenName, remoteAddress)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 
@@ -267,7 +275,7 @@ func (httpServer *HttpServer) handleCheckETHHashIssued(params interface{}, close
 
 func (httpServer *HttpServer) handleGetAllBridgeTokens(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	allBridgeTokensBytes, err := httpServer.databaseService.GetAllBridgeTokens()
-	if err != nil{
+	if err != nil {
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
@@ -287,7 +295,7 @@ func (httpServer *HttpServer) handleGetETHHeaderByHash(params interface{}, close
 	ethBlockHash := arrayParams[0].(string)
 
 	ethHeader, err := rpcservice.GetETHHeaderByHash(ethBlockHash)
-		if err != nil {
+	if err != nil {
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 	return ethHeader, nil

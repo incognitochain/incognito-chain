@@ -17,9 +17,8 @@ import (
 type PDEWithdrawalRequest struct {
 	WithdrawerAddressStr  string
 	WithdrawalToken1IDStr string
-	WithdrawalShare1Amt   uint64
 	WithdrawalToken2IDStr string
-	WithdrawalShare2Amt   uint64
+	WithdrawalShareAmt    uint64
 	MetadataBase
 }
 
@@ -43,9 +42,8 @@ type PDEWithdrawalAcceptedContent struct {
 func NewPDEWithdrawalRequest(
 	withdrawerAddressStr string,
 	withdrawalToken1IDStr string,
-	withdrawalShare1Amt uint64,
 	withdrawalToken2IDStr string,
-	withdrawalShare2Amt uint64,
+	withdrawalShareAmt uint64,
 	metaType int,
 ) (*PDEWithdrawalRequest, error) {
 	metadataBase := MetadataBase{
@@ -54,9 +52,8 @@ func NewPDEWithdrawalRequest(
 	pdeWithdrawalRequest := &PDEWithdrawalRequest{
 		WithdrawerAddressStr:  withdrawerAddressStr,
 		WithdrawalToken1IDStr: withdrawalToken1IDStr,
-		WithdrawalShare1Amt:   withdrawalShare1Amt,
 		WithdrawalToken2IDStr: withdrawalToken2IDStr,
-		WithdrawalShare2Amt:   withdrawalShare2Amt,
+		WithdrawalShareAmt:    withdrawalShareAmt,
 	}
 	pdeWithdrawalRequest.MetadataBase = metadataBase
 	return pdeWithdrawalRequest, nil
@@ -97,6 +94,9 @@ func (pc PDEWithdrawalRequest) ValidateSanityData(bcr BlockchainRetriever, txr T
 	if err != nil {
 		return false, false, NewMetadataTxError(PDEWithdrawalRequestFromMapError, errors.New("WithdrawalTokenID2Str incorrect"))
 	}
+	if pc.WithdrawalShareAmt == 0 {
+		return false, false, NewMetadataTxError(PDEWithdrawalRequestFromMapError, errors.New("WithdrawalShareAmt should be large than 0"))
+	}
 	return true, true, nil
 }
 
@@ -109,8 +109,7 @@ func (pc PDEWithdrawalRequest) Hash() *common.Hash {
 	record += pc.WithdrawerAddressStr
 	record += pc.WithdrawalToken1IDStr
 	record += pc.WithdrawalToken2IDStr
-	record += strconv.FormatUint(pc.WithdrawalShare1Amt, 10)
-	record += strconv.FormatUint(pc.WithdrawalShare2Amt, 10)
+	record += strconv.FormatUint(pc.WithdrawalShareAmt, 10)
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash

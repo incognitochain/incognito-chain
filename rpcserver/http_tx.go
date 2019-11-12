@@ -121,36 +121,35 @@ func (httpServer *HttpServer) handleGetTransactionByReceiver(params interface{},
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("key param is invalid"))
 	}
+
+	// create a key set
+	keySet := incognitokey.KeySet{}
+
 	// get keyset only contain readonly-key by deserializing
 	readonlyKeyStr, ok := keys["ReadonlyKey"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("invalid readonly key"))
-	}
-	readonlyKey, err := wallet.Base58CheckDeserialize(readonlyKeyStr)
-	if err != nil {
-		Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	if ok {
+		readonlyKey, err := wallet.Base58CheckDeserialize(readonlyKeyStr)
+		if err != nil {
+			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
+		keySet.ReadonlyKey = readonlyKey.KeySet.ReadonlyKey
 	}
 
-	// get keyset only contain pub-key by deserializing
+	// get keyset only contain payment address by deserializing
 	paymentAddressStr, ok := keys["PaymentAddress"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("invalid payment address"))
-	}
-	paymentAddress, err := wallet.Base58CheckDeserialize(paymentAddressStr)
-	if err != nil {
-		Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	// create a key set
-	keySet := incognitokey.KeySet{
-		ReadonlyKey:    readonlyKey.KeySet.ReadonlyKey,
-		PaymentAddress: paymentAddress.KeySet.PaymentAddress,
+	if ok {
+		paymentAddress, err := wallet.Base58CheckDeserialize(paymentAddressStr)
+		if err != nil {
+			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
+		keySet.PaymentAddress = paymentAddress.KeySet.PaymentAddress
 	}
 
 	result, err := httpServer.txService.GetTransactionByReceiver(keySet)
 
-	return result, nil
+	return result, err
 }
 
 // Get transaction by Hash
