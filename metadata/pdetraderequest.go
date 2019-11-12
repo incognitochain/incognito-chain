@@ -15,10 +15,12 @@ import (
 
 // PDETradeRequest - privacy dex trade
 type PDETradeRequest struct {
-	TokenIDToBuyStr  string
-	TokenIDToSellStr string
-	SellAmount       uint64 // must be equal to vout value
-	TraderAddressStr string
+	TokenIDToBuyStr     string
+	TokenIDToSellStr    string
+	SellAmount          uint64 // must be equal to vout value
+	MinAcceptableAmount uint64
+	TradingFee          uint64
+	TraderAddressStr    string
 	MetadataBase
 }
 
@@ -49,6 +51,8 @@ func NewPDETradeRequest(
 	tokenIDToBuyStr string,
 	tokenIDToSellStr string,
 	sellAmount uint64,
+	minAcceptableAmount uint64,
+	tradingFee uint64,
 	traderAddressStr string,
 	metaType int,
 ) (*PDETradeRequest, error) {
@@ -56,10 +60,12 @@ func NewPDETradeRequest(
 		Type: metaType,
 	}
 	pdeTradeRequest := &PDETradeRequest{
-		TokenIDToBuyStr:  tokenIDToBuyStr,
-		TokenIDToSellStr: tokenIDToSellStr,
-		SellAmount:       sellAmount,
-		TraderAddressStr: traderAddressStr,
+		TokenIDToBuyStr:     tokenIDToBuyStr,
+		TokenIDToSellStr:    tokenIDToSellStr,
+		SellAmount:          sellAmount,
+		MinAcceptableAmount: minAcceptableAmount,
+		TradingFee:          tradingFee,
+		TraderAddressStr:    traderAddressStr,
 	}
 	pdeTradeRequest.MetadataBase = metadataBase
 	return pdeTradeRequest, nil
@@ -93,8 +99,8 @@ func (pc PDETradeRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transa
 	if !txr.IsCoinsBurning() {
 		return false, false, errors.New("Must send coin to burning address")
 	}
-	if pc.SellAmount != txr.CalculateTxValue() {
-		return false, false, errors.New("Contributed Amount should be equal to the tx value")
+	if (pc.SellAmount + pc.TradingFee) != txr.CalculateTxValue() {
+		return false, false, errors.New("Total of selling amount and trading fee should be equal to the tx value")
 	}
 	if !bytes.Equal(txr.GetSigPubKey()[:], traderAddr.Pk[:]) {
 		return false, false, errors.New("TraderAddress incorrect")
@@ -135,6 +141,8 @@ func (pc PDETradeRequest) Hash() *common.Hash {
 	record += pc.TokenIDToSellStr
 	record += pc.TraderAddressStr
 	record += strconv.FormatUint(pc.SellAmount, 10)
+	record += strconv.FormatUint(pc.MinAcceptableAmount, 10)
+	record += strconv.FormatUint(pc.TradingFee, 10)
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash

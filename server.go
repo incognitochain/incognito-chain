@@ -859,19 +859,19 @@ func (serverObj *Server) InitListenerPeer(amgr *addrmanager.AddrManager, listenA
 		seed = seedC
 	}
 
-	peer := peer.Peer{}
-	peer.SetSeed(seed)
-	peer.SetListeningAddress(*netAddr)
-	peer.SetPeerConns(nil)
-	peer.SetPendingPeers(nil)
-	peer.SetConfig(*serverObj.NewPeerConfig())
-	err = peer.Init()
+	peerObj := peer.Peer{}
+	peerObj.SetSeed(seed)
+	peerObj.SetListeningAddress(*netAddr)
+	peerObj.SetPeerConns(nil)
+	peerObj.SetPendingPeers(nil)
+	peerObj.SetConfig(*serverObj.NewPeerConfig())
+	err = peerObj.Init(peer.PrefixProtocolID + version()) // it should be /incognito/x.yy.zz-beta
 	if err != nil {
 		return nil, err
 	}
 
 	kc.Save()
-	return &peer, nil
+	return &peerObj, nil
 }
 
 /*

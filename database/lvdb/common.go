@@ -63,6 +63,9 @@ var (
 	PDEPoolPrefix                = []byte("pdepool-")
 	PDESharePrefix               = []byte("pdeshare-")
 	PDETradeFeePrefix            = []byte("pdetradefee-")
+	PDEContributionStatusPrefix  = []byte("pdecontributionstatus-")
+	PDETradeStatusPrefix         = []byte("pdetradestatus-")
+	PDEWithdrawalStatusPrefix    = []byte("pdewithdrawalstatus-")
 )
 
 // value

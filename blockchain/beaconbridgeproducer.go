@@ -2,8 +2,10 @@ package blockchain
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"math/big"
+	"sort"
 	"strconv"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
@@ -32,6 +34,9 @@ func (blockchain *BlockChain) buildBridgeInstructions(
 		CBridgeTokens:    []*common.Hash{},
 	}
 	instructions := [][]string{}
+	pdeContributionInsts := [][]string{}
+	pdeTradeInsts := [][]string{}
+	pdeWithdrawalInsts := [][]string{}
 	for _, inst := range shardBlockInstructions {
 		if len(inst) < 2 {
 			continue
@@ -62,18 +67,155 @@ func (blockchain *BlockChain) buildBridgeInstructions(
 			newInst = [][]string{burningConfirm}
 
 		case metadata.PDEContributionMeta:
-			newInst, err = blockchain.buildInstructionsForPDEContribution(contentStr, shardID, metaType)
+			pdeContributionInsts = append(pdeContributionInsts, inst)
 
 		case metadata.PDETradeRequestMeta:
-			newInst, err = blockchain.buildInstructionsForPDETrade(contentStr, shardID, metaType, currentPDEState, beaconHeight-1)
+			pdeTradeInsts = append(pdeTradeInsts, inst)
 
 		case metadata.PDEWithdrawalRequestMeta:
-			newInst, err = blockchain.buildInstructionsForPDEWithdrawal(contentStr, shardID, metaType, currentPDEState, beaconHeight-1)
+			pdeWithdrawalInsts = append(pdeWithdrawalInsts, inst)
 
 		default:
 			continue
 		}
 
+		if err != nil {
+			Logger.log.Error(err)
+			continue
+		}
+		if len(newInst) > 0 {
+			instructions = append(instructions, newInst...)
+		}
+	}
+	pdeInsts, err := blockchain.handlePDEInsts(shardID, beaconHeight-1, currentPDEState, pdeContributionInsts, pdeTradeInsts, pdeWithdrawalInsts)
+	if err != nil {
+		Logger.log.Error(err)
+		return instructions, nil
+	}
+	if len(pdeInsts) > 0 {
+		instructions = append(instructions, pdeInsts...)
+	}
+	return instructions, nil
+}
+
+func sortPDETradeInstsByFee(
+	beaconHeight uint64,
+	currentPDEState *CurrentPDEState,
+	pdeTradeInsts [][]string,
+) [][]string {
+	sortedInsts := [][]string{}
+	wrongFormatInsts := [][]string{}
+	tradesByPairs := make(map[string][]metadata.PDETradeRequestAction)
+	for _, inst := range pdeTradeInsts {
+		contentStr := inst[1]
+		contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while decoding content string of pde trade action: %+v", err)
+			wrongFormatInsts = append(wrongFormatInsts, inst)
+			continue
+		}
+		var pdeTradeReqAction metadata.PDETradeRequestAction
+		err = json.Unmarshal(contentBytes, &pdeTradeReqAction)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while unmarshaling pde trade action: %+v", err)
+			wrongFormatInsts = append(wrongFormatInsts, inst)
+			continue
+		}
+		tradeMeta := pdeTradeReqAction.Meta
+		poolPairKey := string(lvdb.BuildPDEPoolForPairKey(beaconHeight, tradeMeta.TokenIDToBuyStr, tradeMeta.TokenIDToSellStr))
+		tradesByPair, found := tradesByPairs[poolPairKey]
+		if !found {
+			tradesByPairs[poolPairKey] = []metadata.PDETradeRequestAction{pdeTradeReqAction}
+		} else {
+			tradesByPairs[poolPairKey] = append(tradesByPair, pdeTradeReqAction)
+		}
+	}
+	sortedInsts = append(sortedInsts, wrongFormatInsts...)
+
+	notExistingPairTradeActions := []metadata.PDETradeRequestAction{}
+	sortedExistingPairTradeActions := []metadata.PDETradeRequestAction{}
+	for poolPairKey, tradeActions := range tradesByPairs {
+		poolPair, found := currentPDEState.PDEPoolPairs[poolPairKey]
+		if !found || poolPair == nil {
+			notExistingPairTradeActions = append(notExistingPairTradeActions, tradeActions...)
+			continue
+		}
+		if poolPair.Token1PoolValue == 0 || poolPair.Token2PoolValue == 0 {
+			notExistingPairTradeActions = append(notExistingPairTradeActions, tradeActions...)
+			continue
+		}
+
+		// sort trade actions by trading fee
+		sort.Slice(tradeActions, func(i, j int) bool {
+			// comparing a/b to c/d is equivalent comparing a*d to c*b
+			firstItemProportion := big.NewInt(0)
+			firstItemProportion.Mul(
+				big.NewInt(int64(tradeActions[i].Meta.TradingFee)),
+				big.NewInt(int64(tradeActions[j].Meta.SellAmount)),
+			)
+			secondItemProportion := big.NewInt(0)
+			secondItemProportion.Mul(
+				big.NewInt(int64(tradeActions[j].Meta.TradingFee)),
+				big.NewInt(int64(tradeActions[i].Meta.SellAmount)),
+			)
+			return firstItemProportion.Cmp(secondItemProportion) == 1
+		})
+		sortedExistingPairTradeActions = append(sortedExistingPairTradeActions, tradeActions...)
+	}
+	for _, action := range notExistingPairTradeActions {
+		actionContentBytes, _ := json.Marshal(action)
+		actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+		inst := []string{strconv.Itoa(metadata.PDETradeRequestMeta), actionContentBase64Str}
+		sortedInsts = append(sortedInsts, inst)
+	}
+	for _, action := range sortedExistingPairTradeActions {
+		actionContentBytes, _ := json.Marshal(action)
+		actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+		inst := []string{strconv.Itoa(metadata.PDETradeRequestMeta), actionContentBase64Str}
+		sortedInsts = append(sortedInsts, inst)
+	}
+	return sortedInsts
+}
+
+func (blockchain *BlockChain) handlePDEInsts(
+	shardID byte,
+	beaconHeight uint64,
+	currentPDEState *CurrentPDEState,
+	pdeContributionInsts [][]string,
+	pdeTradeInsts [][]string,
+	pdeWithdrawalInsts [][]string,
+) ([][]string, error) {
+	instructions := [][]string{}
+	sortedTradesInsts := sortPDETradeInstsByFee(
+		beaconHeight,
+		currentPDEState,
+		pdeTradeInsts,
+	)
+	for _, inst := range sortedTradesInsts {
+		contentStr := inst[1]
+		newInst, err := blockchain.buildInstructionsForPDETrade(contentStr, shardID, metadata.PDETradeRequestMeta, currentPDEState, beaconHeight)
+		if err != nil {
+			Logger.log.Error(err)
+			continue
+		}
+		if len(newInst) > 0 {
+			instructions = append(instructions, newInst...)
+		}
+	}
+	for _, inst := range pdeWithdrawalInsts {
+		contentStr := inst[1]
+		newInst, err := blockchain.buildInstructionsForPDEWithdrawal(contentStr, shardID, metadata.PDEWithdrawalRequestMeta, currentPDEState, beaconHeight)
+		if err != nil {
+			Logger.log.Error(err)
+			continue
+		}
+		if len(newInst) > 0 {
+			instructions = append(instructions, newInst...)
+		}
+	}
+	for _, inst := range pdeContributionInsts {
+		contentStr := inst[1]
+		newInst, err := blockchain.buildInstructionsForPDEContribution(contentStr, shardID, metadata.PDEContributionMeta, currentPDEState, beaconHeight)
 		if err != nil {
 			Logger.log.Error(err)
 			continue
