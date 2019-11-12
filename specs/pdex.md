@@ -1,4 +1,4 @@
-# pDEX: The world's first privacy-protecting decentralized exchange
+# pDEX: The first privacy-protecting decentralized exchange
 
 **Designers:** @0xankylosaurus, @0xgazeka, @hieu013, @duyhtq
 
@@ -6,7 +6,8 @@
 
 ## Introduction
 
-The first generation of exchanges is centralized exchanges like Binance and Coinbase. The second generation of exchanges is decentralized exchanges (DEX) like Bancor, Kyber, and Uniswap. pDEX is an upgraded version of DEX. Like DEX, it's trustless. And it provides additional features like privacy via zero-knowledge proofs, high throughput via sharding, and inter-blockchain trading via interoperable bridges.
+
+The first generation of exchanges includes centralized exchanges like Binance and Coinbase. The second generation of exchanges comprises of decentralized exchanges (DEX) like Bancor, Kyber, and Uniswap. pDEX is an upgraded DEX. Like decentralized exchanges, it is trustless. It also implements additional features such as privacy via zero-knowledge proofs, high throughput via sharding, low latency via automated market making, and inter-blockchain trading via interoperable bridges.
 
 |                   | DEX   | pDEX  |
 | ---------         | ------| --    |
@@ -17,7 +18,7 @@ The first generation of exchanges is centralized exchanges like Binance and Coin
 
 ## Trustless 
 
-pDEX is code ([beaconpdeproducer.go](https://github.com/incognitochain/incognito-chain/blob/dev/master/blockchain/beaconpdeproducer.go), [beaconpdeprocess.go](https://github.com/incognitochain/incognito-chain/blob/dev/master/blockchain/beaconpdeprocess.go)) deployed to thousands of Nodes that power the Incognito network. It runs entirely on-chain, completely decentralized.
+pDEX is code ([beaconpdeproducer.go](https://github.com/incognitochain/incognito-chain/blob/dev/master/blockchain/beaconpdeproducer.go), [beaconpdeprocess.go](https://github.com/incognitochain/incognito-chain/blob/dev/master/blockchain/beaconpdeprocess.go)) that is deployed to thousands of Nodes powering the Incognito network. It runs entirely on-chain and is completely decentralized.
 
 It takes some time to get used to the Automated Market Making mechanism of pDEX. But once you understand it, you'll see that it has some major advantages over traditional exchanges. pDEX borrows heavily from Nick Johnson's [reddit post](https://www.reddit.com/r/ethereum/comments/54l32y/euler_the_simplest_exchange_and_currency/) in 2016, Vitalik Buterin's [reddit post](https://www.reddit.com/r/ethereum/comments/55m04x/lets_run_onchain_decentralized_exchanges_the_way/) in 2016, Hayden Adam's [Uniswap implementation](https://github.com/Uniswap/contracts-vyper/blob/master/contracts/uniswap_exchange.vy) in 2018. 
 
@@ -75,23 +76,19 @@ Alice owns      : 1 pBTC / 11 pBTC = 9.09% of the pool
 
 ### Trading fees 
 
-All trading fees go directly to the liquidity providers. The trading fees do not go to the Incognito network or the founding team. 
+Here is how it works:
 
-The trading fee is calculated as follow:
+1. The users set their own trading fees.  
+ 
+2. Block producers sort orders by Trading FeeTrade Amount ratio, from highest to lowest, and process orders one by one.
 
-```
-F = min(B + P * V, C)
-```
+3. The trading fees go directly to liquidity providers.
 
-The core team sets the initial values of these parameters, but in the future, this parameter adjustment responsibility will gradually be transferred to the community.
+Unlike other exchanges which offer fixed trading fee structures, pDEX gives users complete control on how they want to set their trading fees.  It’s entirely market-driven.  The higher you set your trading fees, the more likely your orders will be processed first at the prices you want.  The lower you set your trading fees, you’ll pay less but your orders will be more likely to fail due to price movements.
 
-| Parameter | Description | 
-| --------- | ----------- | 
-| F       | the trading fee| 
-| B       | the base fee| 0 |
-| P       | the percentage on the value of the trade|
-| V       | the value of the trade|
-| C       | the capped amount on the trading fee |
+Unlike other exchanges which take all of the trading fees, on pDEX, the entirety of trading fees go directly to the liquidity providers.
+
+We think that it’s a fairer way to build a crypto exchange. 
 
 ## Inter-Blockchain Liquidity
 
