@@ -444,9 +444,14 @@ func (outputCoin *OutputCoin) Bytes() []byte {
 		outCoinBytes = append(outCoinBytes, byte(0))
 	}
 
-	// todo: len(coinDetailBytes) > 256
 	coinDetailBytes := outputCoin.CoinDetails.Bytes()
-	outCoinBytes = append(outCoinBytes, byte(len(coinDetailBytes)))
+	lenCoinDetailBytes := []byte{}
+	if len(coinDetailBytes) <= 255 {
+		lenCoinDetailBytes = []byte{byte(len(coinDetailBytes))}
+	} else {
+		lenCoinDetailBytes = common.IntToBytes(len(coinDetailBytes))
+	}
+	outCoinBytes = append(outCoinBytes, lenCoinDetailBytes...)
 	outCoinBytes = append(outCoinBytes, coinDetailBytes...)
 	return outCoinBytes
 }
@@ -471,8 +476,17 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 		offset += lenCoinDetailEncrypted
 	}
 
-	lenCoinDetail := int(bytes[offset])
-	offset += 1
+	tmp := len(bytes) - offset
+	lenCoinDetail := 0
+	if tmp <= 256 {
+		// using 1-byte for saving len of coin details
+		lenCoinDetail = int(bytes[offset])
+		offset += 1
+	} else if tmp > 256 && tmp < 2*256 {
+		// using 2-byte for saving len of coin details
+		lenCoinDetail = common.BytesToInt(bytes[offset: offset + 2])
+		offset += 2
+	}
 
 	if lenCoinDetail > 0 {
 		outputCoin.CoinDetails = new(Coin)
