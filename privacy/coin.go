@@ -249,7 +249,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	if lenField != 0 {
 		if offset+int(lenField) > len(coinBytes) {
 			// out of range
-			return errors.New("out of range Parse PublicKey")
+			return errors.New("out of range Parse CoinCommitment")
 		}
 		data := coinBytes[offset : offset+int(lenField)]
 		coin.coinCommitment, err = new(Point).FromBytesS(data)
@@ -265,7 +265,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	if lenField != 0 {
 		if offset+int(lenField) > len(coinBytes) {
 			// out of range
-			return errors.New("out of range Parse PublicKey")
+			return errors.New("out of range Parse SNDerivator")
 		}
 		data := coinBytes[offset : offset+int(lenField)]
 		coin.snDerivator = new(Scalar).FromBytesS(data)
@@ -279,7 +279,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	if lenField != 0 {
 		if offset+int(lenField) > len(coinBytes) {
 			// out of range
-			return errors.New("out of range Parse PublicKey")
+			return errors.New("out of range Parse sn")
 		}
 		data := coinBytes[offset : offset+int(lenField)]
 		coin.serialNumber, err = new(Point).FromBytesS(data)
@@ -295,7 +295,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	if lenField != 0 {
 		if offset+int(lenField) > len(coinBytes) {
 			// out of range
-			return errors.New("out of range Parse PublicKey")
+			return errors.New("out of range Parse Randomness")
 		}
 		data := coinBytes[offset : offset+int(lenField)]
 		coin.randomness = new(Scalar).FromBytesS(data)
@@ -320,7 +320,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	if lenField != 0 {
 		if offset+int(lenField) > len(coinBytes) {
 			// out of range
-			return errors.New("out of range Parse PublicKey")
+			return errors.New("out of range Parse Info")
 		}
 		coin.info = make([]byte, lenField)
 		copy(coin.info, coinBytes[offset:offset+int(lenField)])
