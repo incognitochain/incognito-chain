@@ -615,7 +615,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 	// get commitments list
 	proof.commitmentIndices = make([]uint64, len(proof.oneOfManyProof)*privacy.CommitmentRingSize)
 	for i := 0; i < len(proof.oneOfManyProof)*privacy.CommitmentRingSize; i++ {
-		if offset+common.Uint64Size >= len(proofbytes){
+		if offset+common.Uint64Size > len(proofbytes){
 			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range commitment indices"))
 		}
 		proof.commitmentIndices[i] = new(big.Int).SetBytes(proofbytes[offset : offset+common.Uint64Size]).Uint64()
