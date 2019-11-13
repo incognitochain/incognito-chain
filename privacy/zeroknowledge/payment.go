@@ -209,7 +209,13 @@ func (proof *PaymentProof) Bytes() []byte {
 	for i := 0; i < len(proof.outputCoins); i++ {
 		outputCoins := proof.outputCoins[i].Bytes()
 		lenOutputCoins := len(outputCoins)
-		lenOutputCoinsBytes := common.IntToBytes(lenOutputCoins)
+		lenOutputCoinsBytes := []byte{}
+		if lenOutputCoins < 256 {
+			lenOutputCoinsBytes = []byte{byte(lenOutputCoins)}
+		} else{
+			lenOutputCoinsBytes = common.IntToBytes(lenOutputCoins)
+		}
+
 		bytes = append(bytes, lenOutputCoinsBytes...)
 		bytes = append(bytes, outputCoins...)
 	}

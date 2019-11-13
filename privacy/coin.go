@@ -481,7 +481,14 @@ func (outputCoin *OutputCoin) Bytes() []byte {
 	}
 
 	coinDetailBytes := outputCoin.CoinDetails.Bytes()
-	lenCoinDetailBytes := common.IntToBytes(len(coinDetailBytes))
+
+	lenCoinDetailBytes := []byte{}
+	if len(coinDetailBytes) <= 255 {
+		lenCoinDetailBytes = []byte{byte(len(coinDetailBytes))}
+	} else {
+		lenCoinDetailBytes = common.IntToBytes(len(coinDetailBytes))
+	}
+
 	outCoinBytes = append(outCoinBytes, lenCoinDetailBytes...)
 	outCoinBytes = append(outCoinBytes, coinDetailBytes...)
 	return outCoinBytes
