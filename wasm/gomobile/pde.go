@@ -180,6 +180,16 @@ func InitPEDTradeRequestMetadataFromParam(metaDataParam map[string]interface{}) 
 		println("Invalid meta data sell amount param")
 		return nil, errors.New("Invalid meta data sell amount param")
 	}
+	minAcceptableAmount, ok := metaDataParam["MinAcceptableAmount"].(float64)
+	if !ok {
+		println("Invalid meta data min acceptable amount param")
+		return nil, errors.New("Invalid meta data min acceptable amount param")
+	}
+	tradingFee, ok := metaDataParam["TradingFee"].(float64)
+	if !ok {
+		println("Invalid meta data trading fee param")
+		return nil, errors.New("Invalid meta data trading fee param")
+	}
 	traderAddressStr, ok := metaDataParam["TraderAddressStr"].(string)
 	if !ok {
 		println("Invalid meta data trader address string param")
@@ -187,7 +197,7 @@ func InitPEDTradeRequestMetadataFromParam(metaDataParam map[string]interface{}) 
 	}
 
 	metaData, err := metadata.NewPDETradeRequest(
-		tokenIDToBuyStr, tokenIDToSellStr, uint64(sellAmount), traderAddressStr, int(metaDataType),
+		tokenIDToBuyStr, tokenIDToSellStr, uint64(sellAmount), uint64(minAcceptableAmount), uint64(tradingFee), traderAddressStr, int(metaDataType),
 	)
 	if err != nil {
 		return nil, err
@@ -342,25 +352,20 @@ func WithdrawDexTx(args string) (string, error) {
 		println("Invalid meta data withdrawalToken1IDStr param")
 		return "", errors.New("Invalid meta data withdrawalToken1IDStr param")
 	}
-	withdrawalShare1Amt, ok := metaDataParam["WithdrawalShare1Amt"].(float64)
-	if !ok {
-		println("Invalid meta data withdrawalShare1Amt param")
-		return "", errors.New("Invalid meta data withdrawalShare1Amt param")
-	}
 	withdrawalToken2IDStr, ok := metaDataParam["WithdrawalToken2IDStr"].(string)
 	if !ok {
 		println("Invalid meta data withdrawalToken2IDStr param")
 		return "", errors.New("Invalid meta data withdrawalToken2IDStr param")
 	}
-	withdrawalShare2Amt, ok := metaDataParam["WithdrawalShare2Amt"].(float64)
+	withdrawalShareAmt, ok := metaDataParam["WithdrawalShareAmt"].(float64)
 	if !ok {
-		println("Invalid meta data withdrawalShare2Amt param")
-		return "", errors.New("Invalid meta data withdrawalShare2Amt param")
+		println("Invalid meta data withdrawalShareAmt param")
+		return "", errors.New("Invalid meta data withdrawalShareAmt param")
 	}
 
 	metaData, err := metadata.NewPDEWithdrawalRequest(
-		withdrawerAddressStr, withdrawalToken1IDStr, uint64(withdrawalShare1Amt),
-		withdrawalToken2IDStr, uint64(withdrawalShare2Amt), int(metaDataType),
+		withdrawerAddressStr, withdrawalToken1IDStr,
+		withdrawalToken2IDStr, uint64(withdrawalShareAmt), int(metaDataType),
 	)
 	if err != nil {
 		return "", err
