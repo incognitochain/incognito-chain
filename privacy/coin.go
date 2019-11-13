@@ -200,9 +200,9 @@ func (coin *Coin) Bytes() []byte {
 
 	if len(coin.info) > 0 {
 		byteLengthInfo := byte(0)
-		if len(coin.info) > 255 {
+		if len(coin.info) > MaxSizeInfoCoin {
 			// only get 255 byte of info
-			byteLengthInfo = byte(255)
+			byteLengthInfo = byte(MaxSizeInfoCoin)
 		} else {
 			lengthInfo := len(coin.info)
 			byteLengthInfo = byte(lengthInfo)
