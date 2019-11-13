@@ -47,8 +47,17 @@ func (httpServer *HttpServer) handleGetLatestBeaconSwapProof(params interface{},
 // handleGetBeaconSwapProof returns a proof of a new beacon committee (for a given bridge block height)
 func (httpServer *HttpServer) handleGetBeaconSwapProof(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Infof("handleGetBeaconSwapProof params: %+v", params)
-	listParams := params.([]interface{})
-	height := uint64(listParams[0].(float64))
+	listParams, ok := params.([]interface{})
+	if !ok || len(listParams) < 1{
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+	}
+
+	heightParam, ok := listParams[0].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("height param is invalid"))
+	}
+	height := uint64(heightParam)
+
 	db := *httpServer.config.Database
 
 	// Get proof of instruction on beacon

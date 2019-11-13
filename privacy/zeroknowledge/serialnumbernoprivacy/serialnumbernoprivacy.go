@@ -1,26 +1,22 @@
 package serialnumbernoprivacy
 
 import (
-	"crypto/rand"
 	"errors"
-	"math/big"
-
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 )
 
 type SerialNumberNoPrivacyStatement struct {
-	output *privacy.EllipticPoint
-	vKey   *privacy.EllipticPoint
-	input  *big.Int
+	output *privacy.Point
+	vKey   *privacy.Point
+	input  *privacy.Scalar
 }
 
 // SNNoPrivacyWitness is a protocol for Zero-knowledge Proof of Knowledge of one out of many commitments containing 0
 // include Witness: CommitedValue, r []byte
 type SNNoPrivacyWitness struct {
 	stmt SerialNumberNoPrivacyStatement
-	seed *big.Int
+	seed *privacy.Scalar
 }
 
 // serialNumberNNoPrivacyProof contains Proof's value
@@ -28,30 +24,30 @@ type SNNoPrivacyProof struct {
 	// general info
 	stmt SerialNumberNoPrivacyStatement
 
-	tSeed   *privacy.EllipticPoint
-	tOutput *privacy.EllipticPoint
+	tSeed   *privacy.Point
+	tOutput *privacy.Point
 
-	zSeed *big.Int
+	zSeed *privacy.Scalar
 }
 
 func (proof SNNoPrivacyProof) ValidateSanity() bool {
-	if !proof.stmt.output.IsSafe() {
+	if !proof.stmt.output.PointValid() {
 		return false
 	}
-	if !proof.stmt.vKey.IsSafe() {
+	if !proof.stmt.vKey.PointValid() {
 		return false
 	}
-	if proof.stmt.input.BitLen() > 256 {
+	if !proof.stmt.input.ScalarValid() {
 		return false
 	}
 
-	if !proof.tSeed.IsSafe() {
+	if !proof.tSeed.PointValid() {
 		return false
 	}
-	if !proof.tOutput.IsSafe() {
+	if !proof.tOutput.PointValid() {
 		return false
 	}
-	return proof.zSeed.BitLen() <= 256
+	return proof.zSeed.ScalarValid()
 }
 
 func (pro SNNoPrivacyProof) isNil() bool {
@@ -77,24 +73,24 @@ func (pro SNNoPrivacyProof) isNil() bool {
 }
 
 func (pro *SNNoPrivacyProof) Init() *SNNoPrivacyProof {
-	pro.stmt.output = new(privacy.EllipticPoint)
-	pro.stmt.vKey = new(privacy.EllipticPoint)
-	pro.stmt.input = new(big.Int)
+	pro.stmt.output = new(privacy.Point)
+	pro.stmt.vKey = new(privacy.Point)
+	pro.stmt.input = new(privacy.Scalar)
 
-	pro.tSeed = new(privacy.EllipticPoint)
-	pro.tOutput = new(privacy.EllipticPoint)
+	pro.tSeed = new(privacy.Point)
+	pro.tOutput = new(privacy.Point)
 
-	pro.zSeed = new(big.Int)
+	pro.zSeed = new(privacy.Scalar)
 
 	return pro
 }
 
 // Set sets Witness
 func (wit *SNNoPrivacyWitness) Set(
-	output *privacy.EllipticPoint,
-	vKey *privacy.EllipticPoint,
-	input *big.Int,
-	seed *big.Int) {
+	output *privacy.Point,
+	vKey *privacy.Point,
+	input *privacy.Scalar,
+	seed *privacy.Scalar) {
 
 	if wit == nil {
 		wit = new(SNNoPrivacyWitness)
@@ -109,12 +105,12 @@ func (wit *SNNoPrivacyWitness) Set(
 
 // Set sets Proof
 func (pro *SNNoPrivacyProof) Set(
-	output *privacy.EllipticPoint,
-	vKey *privacy.EllipticPoint,
-	input *big.Int,
-	tSeed *privacy.EllipticPoint,
-	tOutput *privacy.EllipticPoint,
-	zSeed *big.Int) {
+	output *privacy.Point,
+	vKey *privacy.Point,
+	input *privacy.Scalar,
+	tSeed *privacy.Point,
+	tOutput *privacy.Point,
+	zSeed *privacy.Scalar) {
 
 	if pro == nil {
 		pro = new(SNNoPrivacyProof)
@@ -137,14 +133,14 @@ func (pro SNNoPrivacyProof) Bytes() []byte {
 	}
 
 	var bytes []byte
-	bytes = append(bytes, pro.stmt.output.Compress()...)
-	bytes = append(bytes, pro.stmt.vKey.Compress()...)
-	bytes = append(bytes, common.AddPaddingBigInt(pro.stmt.input, common.BigIntSize)...)
+	bytes = append(bytes, pro.stmt.output.ToBytesS()...)
+	bytes = append(bytes, pro.stmt.vKey.ToBytesS()...)
+	bytes = append(bytes, pro.stmt.input.ToBytesS()...)
 
-	bytes = append(bytes, pro.tSeed.Compress()...)
-	bytes = append(bytes, pro.tOutput.Compress()...)
+	bytes = append(bytes, pro.tSeed.ToBytesS()...)
+	bytes = append(bytes, pro.tOutput.ToBytesS()...)
 
-	bytes = append(bytes, common.AddPaddingBigInt(pro.zSeed, common.BigIntSize)...)
+	bytes = append(bytes, pro.zSeed.ToBytesS()...)
 
 	return bytes
 }
@@ -156,73 +152,60 @@ func (pro *SNNoPrivacyProof) SetBytes(bytes []byte) error {
 
 	offset := 0
 	var err error
-
-	pro.stmt.output = new(privacy.EllipticPoint)
-	err = pro.stmt.output.Decompress(bytes[offset : offset+privacy.CompressedEllipticPointSize])
+	pro.stmt.output, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
-	offset += privacy.CompressedEllipticPointSize
+	offset += privacy.Ed25519KeySize
 
-	pro.stmt.vKey = new(privacy.EllipticPoint)
-	err = pro.stmt.vKey.Decompress(bytes[offset : offset+privacy.CompressedEllipticPointSize])
+	pro.stmt.vKey, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
-	offset += privacy.CompressedEllipticPointSize
+	offset += privacy.Ed25519KeySize
 
-	pro.stmt.input.SetBytes(bytes[offset : offset+common.BigIntSize])
+	pro.stmt.input.FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
+	offset += privacy.Ed25519KeySize
+
+	pro.tSeed, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
-	offset += common.BigIntSize
+	offset += privacy.Ed25519KeySize
 
-	pro.tSeed = new(privacy.EllipticPoint)
-
-	err = pro.tSeed.Decompress(bytes[offset : offset+privacy.CompressedEllipticPointSize])
+	pro.tOutput, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
-	offset += privacy.CompressedEllipticPointSize
+	offset += privacy.Ed25519KeySize
 
-	pro.tOutput = new(privacy.EllipticPoint)
-	err = pro.tOutput.Decompress(bytes[offset : offset+privacy.CompressedEllipticPointSize])
-	if err != nil {
-		return err
-	}
-	offset += privacy.CompressedEllipticPointSize
-
-	pro.zSeed.SetBytes(bytes[offset : offset+common.BigIntSize])
-	if err != nil {
-		return err
-	}
+	pro.zSeed.FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
 
 	return nil
 }
 
 func (wit SNNoPrivacyWitness) Prove(mess []byte) (*SNNoPrivacyProof, error) {
-	var r = rand.Reader
 	// randomness
-	eSK := privacy.RandScalar(r)
+	eSK := privacy.RandomScalar()
 
 	// calculate tSeed = g_SK^eSK
-	tSK := privacy.PedCom.G[privacy.PedersenPrivateKeyIndex].ScalarMult(eSK)
+	tSK := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex], eSK)
 
 	// calculate tOutput = sn^eSK
-	tE := wit.stmt.output.ScalarMult(eSK)
+	tE := new(privacy.Point).ScalarMult(wit.stmt.output, eSK)
 
-	x := big.NewInt(0)
+	x := new(privacy.Scalar)
 	if mess == nil {
 		// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
-		x.Set(utils.GenerateChallenge([][]byte{tSK.Compress(), tE.Compress()}))
+		// recheck frombytes is valid scalar
+		x = utils.GenerateChallenge([][]byte{tSK.ToBytesS(), tE.ToBytesS()})
 	} else {
-		x.SetBytes(mess)
+		x.FromBytesS(mess)
 	}
 
 	// Calculate zSeed = SK * x + eSK
-	zSK := new(big.Int).Mul(wit.seed, x)
+	zSK := new(privacy.Scalar).Mul(wit.seed, x)
 	zSK.Add(zSK, eSK)
-	zSK.Mod(zSK, privacy.Curve.Params().N)
 
 	proof := new(SNNoPrivacyProof).Init()
 	proof.Set(wit.stmt.output, wit.stmt.vKey, wit.stmt.input, tSK, tE, zSK)
@@ -231,32 +214,33 @@ func (wit SNNoPrivacyWitness) Prove(mess []byte) (*SNNoPrivacyProof, error) {
 
 func (pro SNNoPrivacyProof) Verify(mess []byte) (bool, error) {
 	// re-calculate x = hash(tSeed || tOutput)
-	x := big.NewInt(0)
+	x := new(privacy.Scalar)
 	if mess == nil {
 		// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
-		x.Set(utils.GenerateChallenge([][]byte{pro.tSeed.Compress(), pro.tOutput.Compress()}))
+		x = utils.GenerateChallenge([][]byte{pro.tSeed.ToBytesS(), pro.tOutput.ToBytesS()})
 	} else {
-		x.SetBytes(mess)
+		x.FromBytesS(mess)
 	}
 
 	// Check gSK^zSeed = vKey^x * tSeed
-	leftPoint1 := privacy.PedCom.G[privacy.PedersenPrivateKeyIndex].ScalarMult(pro.zSeed)
+	leftPoint1 := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex], pro.zSeed)
 
-	rightPoint1 := pro.stmt.vKey.ScalarMult(x)
-	rightPoint1 = rightPoint1.Add(pro.tSeed)
+	rightPoint1 := new(privacy.Point).ScalarMult(pro.stmt.vKey, x)
+	rightPoint1 = rightPoint1.Add(rightPoint1, pro.tSeed)
 
-	if !leftPoint1.IsEqual(rightPoint1) {
+	if !privacy.IsPointEqual(leftPoint1, rightPoint1) {
 		privacy.Logger.Log.Errorf("verify serial number no privacy proof statement 1 failed")
 		return false, errors.New("verify serial number no privacy proof statement 1 failed")
 	}
 
 	// Check sn^(zSeed + x*input) = gSK^x * tOutput
-	leftPoint2 := pro.stmt.output.ScalarMult(new(big.Int).Add(pro.zSeed, new(big.Int).Mul(x, pro.stmt.input)))
+	tmp := new(privacy.Scalar).Add(pro.zSeed, new(privacy.Scalar).Mul(x, pro.stmt.input))
+	leftPoint2 := new(privacy.Point).ScalarMult(pro.stmt.output, tmp)
 
-	rightPoint2 := privacy.PedCom.G[privacy.PedersenPrivateKeyIndex].ScalarMult(x)
-	rightPoint2 = rightPoint2.Add(pro.tOutput)
+	rightPoint2 := new (privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex], x)
+	rightPoint2 = rightPoint2.Add(rightPoint2, pro.tOutput)
 
-	if !leftPoint2.IsEqual(rightPoint2) {
+	if !privacy.IsPointEqual(leftPoint2, rightPoint2) {
 		privacy.Logger.Log.Errorf("verify serial number no privacy proof statement 2 failed")
 		return false, errors.New("verify serial number no privacy proof statement 2 failed")
 	}
