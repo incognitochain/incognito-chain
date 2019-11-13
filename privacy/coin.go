@@ -244,6 +244,10 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	}
 
 	// Parse CoinCommitment
+	if offset > len(coinBytes) {
+		// out of range
+		return errors.New("out of range Parse CoinCommitment")
+	}
 	lenField = coinBytes[offset]
 	offset++
 	if lenField != 0 {
@@ -260,6 +264,10 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	}
 
 	// Parse SNDerivator
+	if offset > len(coinBytes) {
+		// out of range
+		return errors.New("out of range Parse SNDerivator")
+	}
 	lenField = coinBytes[offset]
 	offset++
 	if lenField != 0 {
@@ -274,6 +282,10 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	}
 
 	//Parse sn
+	if offset > len(coinBytes) {
+		// out of range
+		return errors.New("out of range Parse sn")
+	}
 	lenField = coinBytes[offset]
 	offset++
 	if lenField != 0 {
@@ -290,6 +302,10 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	}
 
 	// Parse Randomness
+	if offset > len(coinBytes) {
+		// out of range
+		return errors.New("out of range Parse Randomness")
+	}
 	lenField = coinBytes[offset]
 	offset++
 	if lenField != 0 {
@@ -303,6 +319,10 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	}
 
 	// Parse Value
+	if offset > len(coinBytes) {
+		// out of range
+		return errors.New("out of range Parse PublicKey")
+	}
 	lenField = coinBytes[offset]
 	offset++
 	if lenField != 0 {
@@ -315,6 +335,10 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	}
 
 	// Parse Info
+	if offset > len(coinBytes) {
+		// out of range
+		return errors.New("out of range Parse Info")
+	}
 	lenField = coinBytes[offset]
 	offset++
 	if lenField != 0 {
