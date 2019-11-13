@@ -95,6 +95,7 @@ const (
 	//==================================================
 
 	getShardBestState        = "getshardbeststate"
+	getShardBestStateDetail  = "getshardbeststatedetail"
 	getBeaconBestState       = "getbeaconbeststate"
 	getBeaconBestStateDetail = "getbeaconbeststatedetail"
 
@@ -121,6 +122,7 @@ const (
 
 	// utils
 	hashToIdenticon = "hashtoidenticon"
+	generateTokenID = "generatetokenid"
 
 	createIssuingRequest             = "createissuingrequest"
 	sendIssuingRequest               = "sendissuingrequest"

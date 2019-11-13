@@ -181,7 +181,7 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	if shardBlock.Header.BeaconHeight < 1 {
 		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block has Beacon Height greater or equal than 1"))
 	}
-	//if shardBlock.Header.BeaconHeight == 1 && !shardBlock.Header.BeaconHash.IsEqual(&common.Hash{}) {
+	//if shardBlock.Header.BeaconHeight == 1 && !shardBlock.Header.BeaconHash.IsPointEqual(&common.Hash{}) {
 	//	return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block with Beacon Height 1 have Zero Hash Value"))
 	//}
 	if shardBlock.Header.BeaconHeight > 1 && shardBlock.Header.BeaconHash.IsEqual(&common.Hash{}) {

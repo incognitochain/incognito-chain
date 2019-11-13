@@ -1,28 +1,26 @@
 package privacy
 
 import (
-	"crypto/rand"
+	"crypto/subtle"
 	"errors"
-	"math/big"
-
 	"github.com/incognitochain/incognito-chain/common"
 )
 
 // SchnorrPublicKey represents Schnorr Publickey
 // PK = G^SK + H^R
 type SchnorrPublicKey struct {
-	publicKey *EllipticPoint
-	g, h      *EllipticPoint
+	publicKey *Point
+	g, h      *Point
 }
 
-func (schnorrPubKey SchnorrPublicKey) GetPublicKey() *EllipticPoint {
+func (schnorrPubKey SchnorrPublicKey) GetPublicKey() *Point {
 	return schnorrPubKey.publicKey
 }
 
 // SchnorrPrivateKey represents Schnorr Privatekey
 type SchnorrPrivateKey struct {
-	privateKey *big.Int
-	randomness *big.Int
+	privateKey *Scalar
+	randomness *Scalar
 	publicKey  *SchnorrPublicKey
 }
 
@@ -32,32 +30,26 @@ func (schnPrivKey SchnorrPrivateKey) GetPublicKey() *SchnorrPublicKey {
 
 // SchnSignature represents Schnorr Signature
 type SchnSignature struct {
-	e, z1, z2 *big.Int
+	e, z1, z2 *Scalar
 }
 
 // Set sets Schnorr private key
-func (privateKey *SchnorrPrivateKey) Set(sk *big.Int, r *big.Int) {
+func (privateKey *SchnorrPrivateKey) Set(sk *Scalar, r *Scalar) {
 	privateKey.privateKey = sk
 	privateKey.randomness = r
 	privateKey.publicKey = new(SchnorrPublicKey)
-	privateKey.publicKey.g = new(EllipticPoint)
-	privateKey.publicKey.g.Set(PedCom.G[PedersenPrivateKeyIndex].x, PedCom.G[PedersenPrivateKeyIndex].y)
-
-	privateKey.publicKey.h = new(EllipticPoint)
-	privateKey.publicKey.h.Set(PedCom.G[PedersenRandomnessIndex].x, PedCom.G[PedersenRandomnessIndex].y)
-	privateKey.publicKey.publicKey = PedCom.G[PedersenPrivateKeyIndex].ScalarMult(sk).Add(PedCom.G[PedersenRandomnessIndex].ScalarMult(r))
+	privateKey.publicKey.g, _ = new(Point).SetKey(&PedCom.G[PedersenPrivateKeyIndex].key)
+	privateKey.publicKey.h, _ = new(Point).SetKey(&PedCom.G[PedersenRandomnessIndex].key)
+	privateKey.publicKey.publicKey = new(Point).ScalarMult(PedCom.G[PedersenPrivateKeyIndex], sk)
+	privateKey.publicKey.publicKey.Add(privateKey.publicKey.publicKey, new(Point).ScalarMult(PedCom.G[PedersenRandomnessIndex], r))
 }
 
 // Set sets Schnorr public key
-func (publicKey *SchnorrPublicKey) Set(pk *EllipticPoint) {
-	publicKey.publicKey = new(EllipticPoint)
-	publicKey.publicKey.Set(pk.x, pk.y)
+func (publicKey *SchnorrPublicKey) Set(pk *Point) {
+	publicKey.publicKey, _ = new(Point).SetKey(&pk.key)
 
-	publicKey.g = new(EllipticPoint)
-	publicKey.g.Set(PedCom.G[PedersenPrivateKeyIndex].x, PedCom.G[PedersenPrivateKeyIndex].y)
-
-	publicKey.h = new(EllipticPoint)
-	publicKey.h.Set(PedCom.G[PedersenRandomnessIndex].x, PedCom.G[PedersenRandomnessIndex].y)
+	publicKey.g, _ = new(Point).SetKey(&PedCom.G[PedersenPrivateKeyIndex].key)
+	publicKey.h, _ = new(Point).SetKey(&PedCom.G[PedersenRandomnessIndex].key)
 }
 
 //Sign is function which using for signing on hash array by private key
@@ -68,41 +60,46 @@ func (privateKey SchnorrPrivateKey) Sign(data []byte) (*SchnSignature, error) {
 
 	signature := new(SchnSignature)
 
-	var r = rand.Reader
 	// has privacy
-	if privateKey.randomness.Cmp(big.NewInt(0)) != 0 {
+	if !privateKey.randomness.IsZero() {
 		// generates random numbers s1, s2 in [0, Curve.Params().N - 1]
 
-		s1 := RandScalar(r)
-		s2 := RandScalar(r)
+		s1 := RandomScalar()
+		s2 := RandomScalar()
 
 		// t = s1*G + s2*H
-		t := privateKey.publicKey.g.ScalarMult(s1).Add(privateKey.publicKey.h.ScalarMult(s2))
+		t := new(Point).ScalarMult(privateKey.publicKey.g, s1)
+		t.Add(t, new(Point).ScalarMult(privateKey.publicKey.h, s2))
 
 		// E is the hash of elliptic point t and data need to be signed
-		signature.e = Hash(*t, data)
+		msg := append(t.ToBytesS(), data...)
 
-		signature.z1 = new(big.Int).Sub(s1, new(big.Int).Mul(privateKey.privateKey, signature.e))
-		signature.z1.Mod(signature.z1, Curve.Params().N)
+		signature.e = HashToScalar(msg)
 
-		signature.z2 = new(big.Int).Sub(s2, new(big.Int).Mul(privateKey.randomness, signature.e))
-		signature.z2.Mod(signature.z2, Curve.Params().N)
+		signature.z1 = new(Scalar).Mul(privateKey.privateKey, signature.e)
+		signature.z1 = new(Scalar).Sub(s1, signature.z1)
+
+		signature.z2 = new(Scalar).Mul(privateKey.randomness, signature.e)
+		signature.z2 = new(Scalar).Sub(s2, signature.z2)
 
 		return signature, nil
 	}
 
 	// generates random numbers s, k2 in [0, Curve.Params().N - 1]
-	s := RandScalar(r)
+	s := RandomScalar()
 
 	// t = s*G
-	t := privateKey.publicKey.g.ScalarMult(s)
+	t := new(Point).ScalarMult(privateKey.publicKey.g, s)
 
 	// E is the hash of elliptic point t and data need to be signed
-	signature.e = Hash(*t, data)
+	msg := append(t.ToBytesS(), data...)
+	signature.e = HashToScalar(msg)
 
 	// Z1 = s - e*sk
-	signature.z1 = new(big.Int).Sub(s, new(big.Int).Mul(privateKey.privateKey, signature.e))
-	signature.z1.Mod(signature.z1, Curve.Params().N)
+	signature.z1 = new(Scalar).Mul(privateKey.privateKey, signature.e)
+	signature.z1 = new(Scalar).Sub(s, signature.z1)
+
+	signature.z2 = nil
 
 	return signature, nil
 }
@@ -112,19 +109,22 @@ func (publicKey SchnorrPublicKey) Verify(signature *SchnSignature, data []byte) 
 	if signature == nil {
 		return false
 	}
+	rv := new(Point).ScalarMult(publicKey.publicKey, signature.e)
+	rv.Add(rv, new(Point).ScalarMult(publicKey.g, signature.z1))
+	if signature.z2 != nil {
+		rv.Add(rv, new(Point).ScalarMult(publicKey.h, signature.z2))
+	}
+	msg := append(rv.ToBytesS(), data...)
 
-	rv := publicKey.g.ScalarMult(signature.z1).Add(publicKey.h.ScalarMult(signature.z2))
-	rv = rv.Add(publicKey.publicKey.ScalarMult(signature.e))
-
-	ev := Hash(*rv, data)
-	return ev.Cmp(signature.e) == 0
+	ev := HashToScalar(msg)
+	return subtle.ConstantTimeCompare(ev.ToBytesS(), signature.e.ToBytesS()) == 1
 }
 
 func (sig SchnSignature) Bytes() []byte {
-	bytes := append(common.AddPaddingBigInt(sig.e, common.BigIntSize), common.AddPaddingBigInt(sig.z1, common.BigIntSize)...)
+	bytes := append(sig.e.ToBytesS(), sig.z1.ToBytesS()...)
 	// Z2 is nil when has no privacy
 	if sig.z2 != nil {
-		bytes = append(bytes, common.AddPaddingBigInt(sig.z2, common.BigIntSize)...)
+		bytes = append(bytes, sig.z2.ToBytesS()...)
 	}
 	return bytes
 }
@@ -133,17 +133,13 @@ func (sig *SchnSignature) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
 		return NewPrivacyErr(InvalidInputToSetBytesErr, nil)
 	}
+	sig.e = new(Scalar).FromBytesS(bytes[0:Ed25519KeySize])
+	sig.z1 = new(Scalar).FromBytesS(bytes[Ed25519KeySize : 2*Ed25519KeySize])
+	if len(bytes) == 3*Ed25519KeySize {
+		sig.z2 = new(Scalar).FromBytesS(bytes[2*Ed25519KeySize:])
+	} else {
+		sig.z2 = nil
+	}
 
-	sig.e = new(big.Int).SetBytes(bytes[0:common.BigIntSize])
-	sig.z1 = new(big.Int).SetBytes(bytes[common.BigIntSize : 2*common.BigIntSize])
-	sig.z2 = new(big.Int).SetBytes(bytes[2*common.BigIntSize:])
 	return nil
-}
-
-// Hash calculates a hash concatenating a given message bytes with a given EC Point. H(p||m)
-func Hash(p EllipticPoint, m []byte) *big.Int {
-	b := append(common.AddPaddingBigInt(p.x, common.BigIntSize), common.AddPaddingBigInt(p.y, common.BigIntSize)...)
-	b = append(b, m...)
-
-	return new(big.Int).SetBytes(common.HashB(b))
 }
