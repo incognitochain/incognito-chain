@@ -278,25 +278,6 @@ func TestCommonIndexOfStrInHashMap(t *testing.T) {
 }
 
 /*
-	Unit test for CheckDuplicateBigIntArray function
-*/
-
-func TestCommonCheckDuplicateBigIntArray(t *testing.T) {
-	data := []struct {
-		arr         []*big.Int
-		isDuplicate bool
-	}{
-		{[]*big.Int{big.NewInt(int64(100)), big.NewInt(int64(1000)), big.NewInt(int64(10000)), big.NewInt(int64(100000)), big.NewInt(int64(10000000))}, false},
-		{[]*big.Int{big.NewInt(int64(10000)), big.NewInt(int64(100)), big.NewInt(int64(1000)), big.NewInt(int64(1000)), big.NewInt(int64(100000)), big.NewInt(int64(10000000))}, true},
-	}
-
-	for _, dataItem := range data {
-		isDuplicate := CheckDuplicateBigIntArray(dataItem.arr)
-		assert.Equal(t, dataItem.isDuplicate, isDuplicate)
-	}
-}
-
-/*
 	Unit test for RandBigIntMaxRange function
 */
 
@@ -596,4 +577,14 @@ func TestCommonAppendSliceString(t *testing.T) {
 
 	finalArr := AppendSliceString(arr1, arr2, arr3)
 	assert.Equal(t, 6, len(finalArr))
+}
+
+func TestCommonHashToString(t *testing.T){
+	for i:=0; i< 1000; i++{
+		hash := new(Hash)
+		hash.SetBytes([]byte{1,2,3,4})
+
+		fmt.Printf("Hash string len: %v\n", len(hash.String()))
+	}
+
 }

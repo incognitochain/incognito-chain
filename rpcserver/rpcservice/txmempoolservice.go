@@ -20,7 +20,7 @@ func (txMemPoolService TxMemPoolService) FilterMemPoolOutcoinsToSpent(outCoins [
 	remainOutputCoins := make([]*privacy.OutputCoin, 0)
 
 	for _, outCoin := range outCoins {
-		if txMemPoolService.TxMemPool.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().Compress()) == nil {
+		if txMemPoolService.TxMemPool.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().ToBytesS()) == nil {
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}
 	}
@@ -51,7 +51,7 @@ func (txMemPoolService TxMemPoolService) MempoolEntry(txIDString string) (metada
 func (txMemPoolService * TxMemPoolService) RemoveTxInMempool(txIDString string) (bool, *RPCError) {
 	txID, err := common.Hash{}.NewHashFromStr(txIDString)
 	if err != nil {
-		Logger.log.Debugf("handleMempoolEntry result: nil %+v", err)
+		Logger.log.Debugf("RemoveTxInMempool result: nil %+v", err)
 		return false, NewRPCError(RPCInvalidParamsError, err)
 	}
 

@@ -56,7 +56,10 @@ func NewCreateRawTxParam(params interface{}) (*CreateRawTxParam, error) {
 	// param #2: list receivers
 	receivers := make(map[string]interface{})
 	if arrayParams[1] != nil {
-		receivers = arrayParams[1].(map[string]interface{})
+		receivers, ok = arrayParams[1].(map[string]interface{})
+		if !ok  {
+			return nil, errors.New("receivers param is invalid")
+		}
 	}
 	paymentInfos := make([]*privacy.PaymentInfo, 0)
 	for paymentAddressStr, amount := range receivers {
@@ -64,8 +67,13 @@ func NewCreateRawTxParam(params interface{}) (*CreateRawTxParam, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		amountParam, ok := amount.(float64)
+		if !ok {
+			return nil, errors.New("amount payment address is invalid")
+		}
 		paymentInfo := &privacy.PaymentInfo{
-			Amount:         uint64(amount.(float64)),
+			Amount:         uint64(amountParam),
 			PaymentAddress: keyWalletReceiver.KeySet.PaymentAddress,
 		}
 		paymentInfos = append(paymentInfos, paymentInfo)
