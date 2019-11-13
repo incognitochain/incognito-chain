@@ -69,6 +69,10 @@ func (ciphertext *HybridCipherText) SetBytes(bytes []byte) error {
 		return NewPrivacyErr(InvalidInputToSetBytesErr, nil)
 	}
 
+	if len(bytes) <  elGamalCiphertextSize {
+		// out of range
+		return errors.New("out of range Parse ciphertext")
+	}
 	ciphertext.symKeyEncrypted = bytes[0:elGamalCiphertextSize]
 	ciphertext.msgEncrypted = bytes[elGamalCiphertextSize:]
 	return nil
