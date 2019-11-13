@@ -58,6 +58,8 @@ github.com/dgryski/go-identicon v0.0.0-20140725220403-371855927d74 h1:C3DXwjh6mR
 github.com/dgryski/go-identicon v0.0.0-20140725220403-371855927d74/go.mod h1:inVQ0ymXK0tg2K8v+STW5Vums19wL0Ipt8vWbjaze7Q=
 github.com/dgryski/go-sip13 v0.0.0-20181026042036-e10d5fee7954/go.mod h1:vAd38F8PWV+bWy6jNmig1y/TA+kYO4g3RSRF0IAv0no=
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
+github.com/ebfe/keccak v0.0.0-20150115210727-5cc570678d1b h1:BMyjwV6Fal/Ffphi4dJfulSxMeDl0xFS2vs5QLr6rsI=
+github.com/ebfe/keccak v0.0.0-20150115210727-5cc570678d1b/go.mod h1:fnviDXB7GJWiSUI9thIXmk9QKM8Rhj1JV/LcMRzkiVA=
 github.com/edsrzf/mmap-go v1.0.0 h1:CEBF7HpRnUCSJgGUb5h1Gm7e3VkmVDrR8lvWVLtrOFw=
 github.com/edsrzf/mmap-go v1.0.0/go.mod h1:YO35OhQPt3KJa3ryjFM5Bs14WD66h8eGKpfaBNrHW5M=
 github.com/elastic/gosigar v0.10.4 h1:6jfw75dsoflhBMRdO6QPzQUgLqUYTsQQQRkkcsHsuPo=

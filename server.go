@@ -357,7 +357,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			if err == nil && len(feeEstimatorData) > 0 {
 				feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)
 				if err != nil {
-					Logger.log.Errorf("Failed to restore fee estimator %v", err)
+					Logger.log.Debugf("Failed to restore fee estimator %v", err)
 					Logger.log.Debug("Init NewFeeEstimator")
 					serverObj.feeEstimator[shardID] = mempool.NewFeeEstimator(
 						mempool.DefaultEstimateFeeMaxRollback,
@@ -367,7 +367,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 					serverObj.feeEstimator[shardID] = feeEstimator
 				}
 			} else {
-				Logger.log.Errorf("Failed to get fee estimator from DB %v", err)
+				Logger.log.Debugf("Failed to get fee estimator from DB %v", err)
 				Logger.log.Debug("Init NewFeeEstimator")
 				serverObj.feeEstimator[shardID] = mempool.NewFeeEstimator(
 					mempool.DefaultEstimateFeeMaxRollback,
@@ -549,10 +549,10 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	}
 
 	//Init Metric Tool
-	// if cfg.MetricUrl != "" {
-	// 	grafana := metrics.NewGrafana(cfg.MetricUrl, cfg.ExternalAddress)
-	// 	metrics.InitMetricTool(&grafana)
-	// }
+	//if cfg.MetricUrl != "" {
+	//	grafana := metrics.NewGrafana(cfg.MetricUrl, cfg.ExternalAddress)
+	//	metrics.InitMetricTool(&grafana)
+	//}
 	return nil
 }
 
@@ -603,13 +603,14 @@ func (serverObj *Server) Stop() error {
 
 	// Save fee estimator in the db
 	for shardID, feeEstimator := range serverObj.feeEstimator {
+		Logger.log.Infof("Fee estimator data when saving #%d", feeEstimator)
 		feeEstimatorData := feeEstimator.Save()
 		if len(feeEstimatorData) > 0 {
 			err := serverObj.dataBase.StoreFeeEstimator(feeEstimatorData, shardID)
 			if err != nil {
 				Logger.log.Errorf("Can't save fee estimator data on chain #%d: %v", shardID, err)
 			} else {
-				Logger.log.Debugf("Save fee estimator data on chain #%d", shardID)
+				Logger.log.Infof("Save fee estimator data on chain #%d", shardID)
 			}
 		}
 	}
@@ -682,7 +683,7 @@ func (serverObj Server) Start() {
 	if serverObj.chainParams.CheckForce {
 		serverObj.CheckForceUpdateSourceCode()
 	}
-	if cfg.TestNet {
+	if cfg.IsTestnet() {
 		Logger.log.Critical("************************" +
 			"* Testnet is active *" +
 			"************************")
@@ -750,7 +751,6 @@ func (serverObj *Server) GetActiveShardNumber() int {
 
 func (serverObj *Server) TransactionPoolBroadcastLoop() {
 	<-time.Tick(serverObj.memPool.ScanTime)
-	serverObj.memPool.LockPool()
 	txDescs := serverObj.memPool.GetPool()
 	for _, txDesc := range txDescs {
 		<-time.Tick(50 * time.Millisecond)
@@ -799,7 +799,6 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 			}
 		}
 	}
-	serverObj.memPool.UnlockPool()
 }
 
 // CheckForceUpdateSourceCode - loop to check current version with update version is equal

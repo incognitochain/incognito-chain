@@ -16,6 +16,6 @@ const (
 
 //
 const (
-	timeout             = 36 * time.Second       // must be at least twice the time of block creation
+	timeout             = 40 * time.Second       // must be at least twice the time of block interval
 	maxNetworkDelayTime = 150 * time.Millisecond // in ms
 )
