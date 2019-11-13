@@ -3,14 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"os"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"io/ioutil"
+	"os"
 )
 
 type Key struct {
@@ -218,7 +217,78 @@ func generateKeydotJson(numberOfShard, numberOfCandidate int) {
 	_ = ioutil.WriteFile("shardprivateseed.json", shardPriSeedJson, 0644)
 }
 
+func GenerateKey(numberOfCandidate int, numberOfShard int) {
+	keylist := KeyList{}
+	beaconPrivateKeyList := BeaconPrivateKey{}
+	shardPrivateKeyList := ShardPrivateKey{}
+
+	// generate for beacon
+	for i := 0; i < numberOfCandidate; i++ {
+		seed := privacy.RandomScalar().ToBytesS()
+		masterKey, _ := wallet.NewMasterKey(seed)
+
+		child, _ := masterKey.NewChildKey(uint32(i))
+		privKeyB58 := child.Base58CheckSerialize(wallet.PriKeyType)
+		paymentAddressB58 := child.Base58CheckSerialize(wallet.PaymentAddressType)
+		//viewingKeyB58 := child.Base58CheckSerialize(wallet.ReadonlyKeyType)
+		//publicKeyB58 := child.KeySet.GetPublicKeyInBase58CheckEncode()
+
+		committeeKey, _ := incognitokey.NewCommitteeKeyFromSeed(common.HashB(common.HashB(child.KeySet.PrivateKey)), child.KeySet.PaymentAddress.Pk)
+		committeeKeyB58, _ := committeeKey.ToBase58()
+
+		key := new(Key)
+		key.Payment = paymentAddressB58
+		key.CommitteePubKey = committeeKeyB58
+		keylist.Bc = append(keylist.Bc, *key)
+		beaconPrivateKeyList.Pri = append(beaconPrivateKeyList.Pri, privKeyB58)
+
+		//fmt.Println(privKeyB58)
+		//fmt.Println(publicKeyB58)
+		//fmt.Println(paymentAddressB58)
+		//fmt.Println(committeeKeyB58)
+		//
+		//fmt.Println()
+	}
+
+	// generate for shard
+	keylist.Sh = map[int][]Key{}
+	shardPrivateKeyList.Pri = map[int][]string{}
+
+	for j := 0; j < numberOfShard; j++ {
+		for i := 0; i < numberOfCandidate; i++ {
+			seed := privacy.RandomScalar().ToBytesS()
+			masterKey, _ := wallet.NewMasterKey(seed)
+
+			child, _ := masterKey.NewChildKey(uint32(i))
+			privKeyB58 := child.Base58CheckSerialize(wallet.PriKeyType)
+			paymentAddressB58 := child.Base58CheckSerialize(wallet.PaymentAddressType)
+			//publicKeyB58 := child.KeySet.GetPublicKeyInBase58CheckEncode()
+
+			committeeKey, _ := incognitokey.NewCommitteeKeyFromSeed(common.HashB(common.HashB(child.KeySet.PrivateKey)), child.KeySet.PaymentAddress.Pk)
+			committeeKeyB58, _ := committeeKey.ToBase58()
+
+			//beaconPrivateKeyList.Pri = append(beaconPrivateKeyList.Pri, privKeyB58)
+			//beaconPriSeed.Pri = append(beaconPriSeed.Pri, priSeed)
+			key := new(Key)
+			key.Payment = paymentAddressB58
+			key.CommitteePubKey = committeeKeyB58
+
+			shardPrivateKeyList.Pri[j] = append(shardPrivateKeyList.Pri[j], privKeyB58)
+			keylist.Sh[j] = append(keylist.Sh[j], *key)
+		}
+	}
+	keylistJson, _ := json.Marshal(keylist)
+	_ = ioutil.WriteFile("keylist.json", keylistJson, 0644)
+	// inc private key
+	beaconPriJson, _ := json.Marshal(beaconPrivateKeyList)
+	_ = ioutil.WriteFile("beaconprivatekeylist.json", beaconPriJson, 0644)
+	shardPriJson, _ := json.Marshal(shardPrivateKeyList)
+	_ = ioutil.WriteFile("shardprivatekeylist.json", shardPriJson, 0644)
+	// bls mining keys
+}
+
 func main() {
-	// generateKeydotJson(2, 256)
-	generateKeydotJsonFromGivenKeyList("private_key_testnet.json", 256, 100)
+	//generateKeydotJson(2, 4)
+	//generateKeydotJsonFromGivenKeyList("private_key_testnet.json", 256, 100)
+	GenerateKey(4, 2)
 }

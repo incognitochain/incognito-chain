@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"log"
 	"strconv"
 	"strings"
@@ -32,18 +33,25 @@ func processCmd() {
 				log.Println("Wrong param")
 				return
 			}
-			tokenID := common.Hash{}
 
-			hashPNetWork := common.HashH([]byte(cfg.PNetwork))
-			log.Printf("hashPNetWork: %+v\n", hashPNetWork.String())
-			copy(tokenID[:16], hashPNetWork[:16])
-			log.Printf("tokenID: %+v\n", tokenID.String())
+			//hashPNetWork := common.HashH([]byte(cfg.PNetwork))
+			//log.Printf("hashPNetWork: %+v\n", hashPNetWork.String())
+			//copy(tokenID[:16], hashPNetWork[:16])
+			//log.Printf("tokenID: %+v\n", tokenID.String())
+			//
+			//hashPToken := common.HashH([]byte(cfg.PToken))
+			//log.Printf("hashPToken: %+v\n", hashPToken.String())
+			//copy(tokenID[16:], hashPToken[:16])
 
-			hashPToken := common.HashH([]byte(cfg.PToken))
-			log.Printf("hashPToken: %+v\n", hashPToken.String())
-			copy(tokenID[16:], hashPToken[:16])
+			point := privacy.HashToPoint([]byte(cfg.PNetwork + "-" + cfg.PToken))
+			hash := new(common.Hash)
+			err := hash.SetBytes(point.ToBytesS())
+			if err != nil {
+				log.Println("Wrong param")
+				return
+			}
 
-			log.Printf("Result tokenID: %+v\n", tokenID.String())
+			log.Printf("Result tokenID: %+v\n", hash.String())
 		}
 	case createWalletCmd:
 		{

@@ -8,7 +8,6 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"log"
 )
 
 type CoinService struct {
@@ -30,21 +29,20 @@ func (coinService CoinService) ListUnspentOutputCoinsByKey(listKeyParams []inter
 		Outputs: make(map[string][]jsonresult.OutCoin),
 	}
 	for _, keyParam := range listKeyParams {
-		keys := keyParam.(map[string]interface{})
+		keys, ok := keyParam.(map[string]interface{})
+		if !ok {
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("key param is invalid"))
+		}
 
 		// get keyset only contain pri-key by deserializing
-		if _, ok := keys["PrivateKey"]; !ok {
-			return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid private key"))
+		priKeyStr, ok := keys["PrivateKey"].(string)
+		if !ok {
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("private key is invalid"))
 		}
-		priKeyStr := keys["PrivateKey"].(string)
 		keyWallet, err := wallet.Base58CheckDeserialize(priKeyStr)
-		if err != nil {
-			log.Println("Check Deserialize err", err)
-			continue
-		}
-		if keyWallet.KeySet.PrivateKey == nil {
-			log.Println("Private key empty")
-			continue
+		if err != nil || keyWallet.KeySet.PrivateKey == nil {
+			Logger.log.Error("Check Deserialize err", err)
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("private key is invalid"))
 		}
 
 		keySetTmp, shardID, err := GetKeySetFromPrivateKey(keyWallet.KeySet.PrivateKey)
@@ -75,16 +73,15 @@ func (coinService CoinService) ListOutputCoinsByKey(listKeyParams []interface{},
 		Outputs: make(map[string][]jsonresult.OutCoin),
 	}
 	for _, keyParam := range listKeyParams {
-		keys := keyParam.(map[string]interface{})
-
-		// get keyset only contain readonly-key by deserializing
-		if _, ok := keys["ReadonlyKey"]; !ok {
-			return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid readonly key"))
+		keys, ok := keyParam.(map[string]interface{})
+		if !ok {
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("key param is invalid"))
 		}
 
+		// get keyset only contain readonly-key by deserializing
 		readonlyKeyStr, ok := keys["ReadonlyKey"].(string)
 		if !ok {
-			return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid payment address"))
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid readonly key"))
 		}
 		readonlyKey, err := wallet.Base58CheckDeserialize(readonlyKeyStr)
 		if err != nil {
@@ -93,9 +90,6 @@ func (coinService CoinService) ListOutputCoinsByKey(listKeyParams []interface{},
 		}
 
 		// get keyset only contain pub-key by deserializing
-		if _, ok := keys["PaymentAddress"]; !ok {
-			return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid payment address"))
-		}
 		pubKeyStr, ok := keys["PaymentAddress"].(string)
 		if !ok {
 			return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid payment address"))

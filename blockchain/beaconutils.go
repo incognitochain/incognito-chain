@@ -46,52 +46,13 @@ func AssignValidator(candidates []incognitokey.CommitteePublicKey, rand int64, a
 	return pendingValidators, nil
 }
 
-// AssignValidatorShard, param for better convenice than AssignValidator
-func AssignValidatorShard(currentShardPendingValidator map[byte][]incognitokey.CommitteePublicKey, currentBeaconPendingValidator []incognitokey.CommitteePublicKey,
-	currentShardCommittee map[byte][]incognitokey.CommitteePublicKey, currentBeaconCommittee []incognitokey.CommitteePublicKey,
-	shardCandidates []incognitokey.CommitteePublicKey, rand int64, activeShards int) error {
-	// filter list candidate, it should not already exist in pending list
-	//filterShardCandidates := make([]incognitokey.CommitteePublicKey, len(shardCandidates))
-	//copy(filterShardCandidates, shardCandidates)
-	//for i, v := range filterShardCandidates {
-	//	for _, slice := range currentShardPendingValidator {
-	//		ok, _ := common.SliceExists(slice, v) // item in candidate list already exist in current pending validator
-	//		if ok {
-	//			filterShardCandidates = append(filterShardCandidates[:i], filterShardCandidates[i+1:]...)
-	//		}
-	//	}
-	//}
-	//for i, v := range filterShardCandidates {
-	//	for _, slice := range currentShardCommittee {
-	//		ok, _ := common.SliceExists(slice, v) // item in candidate list already exist in current pending validator
-	//		if ok {
-	//			filterShardCandidates = append(filterShardCandidates[:i], filterShardCandidates[i+1:]...)
-	//		}
-	//	}
-	//}
-	//for i, v := range filterShardCandidates {
-	//	ok, _ := common.SliceExists(currentBeaconPendingValidator, v) // item in candidate list already exist in current pending validator
-	//	if ok {
-	//		filterShardCandidates = append(filterShardCandidates[:i], filterShardCandidates[i+1:]...)
-	//	}
-	//}
-	//for i, v := range filterShardCandidates {
-	//	ok, _ := common.SliceExists(currentBeaconCommittee, v) // item in candidate list already exist in current pending validator
-	//	if ok {
-	//		filterShardCandidates = append(filterShardCandidates[:i], filterShardCandidates[i+1:]...)
-	//	}
-	//}
-	//if len(filterShardCandidates) < len(shardCandidates) {
-	//	shardCandidates = filterShardCandidates
-	//}
-	// end
-
+// AssignValidatorShard, param for better convenience than AssignValidator
+func AssignValidatorShard(currentShardPendingValidator map[byte][]incognitokey.CommitteePublicKey, shardCandidates []incognitokey.CommitteePublicKey, rand int64, activeShards int) {
 	for _, candidate := range shardCandidates {
 		candidateStr, _ := candidate.ToBase58()
 		shardID := calculateCandidateShardID(candidateStr, rand, activeShards)
 		currentShardPendingValidator[shardID] = append(currentShardPendingValidator[shardID], candidate)
 	}
-	return nil
 }
 
 func VerifyValidator(candidate string, rand int64, shardID byte, activeShards int) (bool, error) {
@@ -101,6 +62,58 @@ func VerifyValidator(candidate string, rand int64, shardID byte, activeShards in
 	} else {
 		return false, nil
 	}
+}
+
+/*
+	Assign Candidates Into Shard Pending Validator List
+	Each Shard Pending Validator List has a limit
+	If a candidate is assigned into shard which Pending Validator List has reach its limit then candidate will get back into candidate list
+	Otherwise, candidate will be converted to shard pending validator
+	- return param #1: remain shard candidate (not assign yet)
+	- return param #2: assigned candidate
+*/
+func assignShardCandidate(candidates []string, numberOfPendingValidator map[byte]int, rand int64, testnetAssignOffset int, activeShards int) ([]string, map[byte][]string) {
+	assignedCandidates := make(map[byte][]string)
+	remainShardCandidates := []string{}
+	shuffledCandidate := shuffleShardCandidate(candidates, rand)
+	for _, candidate := range shuffledCandidate {
+		shardID := calculateCandidateShardID(candidate, rand, activeShards)
+		if numberOfPendingValidator[shardID]+1 > testnetAssignOffset {
+			remainShardCandidates = append(remainShardCandidates, candidate)
+			continue
+		} else {
+			assignedCandidates[shardID] = append(assignedCandidates[shardID], candidate)
+			numberOfPendingValidator[shardID] += 1
+		}
+	}
+	return remainShardCandidates, assignedCandidates
+}
+
+/*
+	Shuffle Position Of Shard Candidates in List with Random Number
+*/
+func shuffleShardCandidate(candidates []string, rand int64) []string {
+	m := make(map[string]string)
+	temp := []string{}
+	shuffledCandidates := []string{}
+	for _, candidate := range candidates {
+		seed := strconv.Itoa(int(rand)) + candidate
+		hash := common.HashH([]byte(seed)).String()
+		m[hash] = candidate
+		temp = append(temp, hash)
+	}
+	if len(m) != len(temp) {
+		fmt.Println(candidates)
+		panic("Failed To Shuffle Shard Candidate Before Assign to Shard")
+	}
+	sort.Strings(temp)
+	for _, key := range temp {
+		shuffledCandidates = append(shuffledCandidates, m[key])
+	}
+	if len(shuffledCandidates) != len(candidates) {
+		panic("Failed To Shuffle Shard Candidate Before Assign to Shard")
+	}
+	return shuffledCandidates
 }
 
 // Formula ShardID: LSB[hash(candidatePubKey+randomNumber)]

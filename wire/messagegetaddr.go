@@ -10,10 +10,6 @@ import (
 	"github.com/libp2p/go-libp2p-peer"
 )
 
-const (
-	MaxGetAddrPayload = 1000 // 1 1Kb
-)
-
 type MessageGetAddr struct {
 	Timestamp time.Time
 }

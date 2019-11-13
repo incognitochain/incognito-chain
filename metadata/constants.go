@@ -18,7 +18,7 @@ const (
 	BeaconRewardRequestMeta      = 39
 	BeaconSalaryResponseMeta     = 40
 	ReturnStakingMeta            = 41
-	DevRewardRequestMeta         = 42
+	IncDAORewardRequestMeta      = 42
 	ShardBlockRewardRequestMeta  = 43
 	WithDrawRewardRequestMeta    = 44
 	WithDrawRewardResponseMeta   = 45
