@@ -5,7 +5,6 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/stretchr/testify/assert"
-	"math/big"
 	"testing"
 )
 
@@ -23,8 +22,11 @@ func TestTxCustomToken(t *testing.T) {
 	assert.Equal(t, true, valid)
 
 	in1 := ConvertOutputCoinToInputCoin(tx2.(*Tx).Proof.GetOutputCoins())
-	in1[0].CoinDetails.SetSerialNumber(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex].Derive(new(big.Int).SetBytes(key.KeySet.PrivateKey),
-		in1[0].CoinDetails.GetSNDerivator()))
+	serialNumber := new(privacy.Point).Derive(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex],
+		new(privacy.Scalar).FromBytesS(key.KeySet.PrivateKey),
+		in1[0].CoinDetails.GetSNDerivator())
+	in1[0].CoinDetails.SetSerialNumber(serialNumber)
+
 	tx := TxNormalToken{}
 	err = tx.Init(NewTxNormalTokenInitParam(&key.KeySet.PrivateKey,
 		[]*privacy.PaymentInfo{{Amount: 10, PaymentAddress: paymentAddress}},

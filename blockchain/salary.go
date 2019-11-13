@@ -3,8 +3,9 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/database"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/database"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -86,21 +87,21 @@ func (blockchain *BlockChain) getRewardAmount(blkHeight uint64) uint64 {
 	return reward
 }
 
-func (blockchain *BlockChain) BuildRewardInstructionByEpoch(epoch uint64) ([][]string, error) {
+func (blockchain *BlockChain) BuildRewardInstructionByEpoch(blkHeight, epoch uint64) ([][]string, error) {
 	var resInst [][]string
 	var instRewardForBeacons [][]string
-	var instRewardForDev [][]string
+	var instRewardForIncDAO [][]string
 	var instRewardForShards [][]string
 	numberOfActiveShards := blockchain.BestState.Beacon.ActiveShards
 	allCoinID, err := blockchain.GetAllCoinID()
 	if err != nil {
 		return nil, err
 	}
-	epochEndDevReward := DurationHalfLifeRewardForDev / blockchain.config.ChainParams.Epoch
-	forDev := epochEndDevReward >= epoch
+	blkPerYear := getNoBlkPerYear(uint64(blockchain.config.ChainParams.MaxBeaconBlockCreation.Seconds()))
+	percentForIncognitoDAO := getPercentForIncognitoDAO(blkHeight, blkPerYear)
 	totalRewards := make([]map[common.Hash]uint64, numberOfActiveShards)
 	totalRewardForBeacon := map[common.Hash]uint64{}
-	totalRewardForDev := map[common.Hash]uint64{}
+	totalRewardForIncDAO := map[common.Hash]uint64{}
 	for ID := 0; ID < numberOfActiveShards; ID++ {
 		if totalRewards[ID] == nil {
 			totalRewards[ID] = map[common.Hash]uint64{}
@@ -114,14 +115,12 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(epoch uint64) ([][]s
 				delete(totalRewards[ID], coinID)
 			}
 		}
-		rewardForBeacon, rewardForDev, err := splitReward(&totalRewards[ID], numberOfActiveShards, forDev)
+		rewardForBeacon, rewardForIncDAO, err := splitReward(&totalRewards[ID], numberOfActiveShards, percentForIncognitoDAO)
 		if err != nil {
-			return nil, err
+			Logger.log.Infof("\n------------------------------------\nNot enough reward in epoch %v\n------------------------------------\n")
 		}
 		mapPlusMap(rewardForBeacon, &totalRewardForBeacon)
-		if forDev {
-			mapPlusMap(rewardForDev, &totalRewardForDev)
-		}
+		mapPlusMap(rewardForIncDAO, &totalRewardForIncDAO)
 	}
 	if len(totalRewardForBeacon) > 0 {
 		instRewardForBeacons, err = blockchain.BuildInstRewardForBeacons(epoch, totalRewardForBeacon)
@@ -135,30 +134,13 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(epoch uint64) ([][]s
 		return nil, err
 	}
 
-	if forDev {
-		if len(totalRewardForDev) > 0 {
-			instRewardForDev, err = blockchain.BuildInstRewardForDev(epoch, totalRewardForDev)
-			if err != nil {
-				return nil, err
-			}
+	if len(totalRewardForIncDAO) > 0 {
+		instRewardForIncDAO, err = blockchain.BuildInstRewardForIncDAO(epoch, totalRewardForIncDAO)
+		if err != nil {
+			return nil, err
 		}
 	}
-	// for _, str := range instRewardForBeacons {
-	// 	fmt.Println("RewardLog", str)
-	// }
-
-	// for _, str := range instRewardForDev {
-	// 	fmt.Println("RewardLog", str)
-	// }
-
-	// for _, str := range instRewardForShards {
-	// 	fmt.Println("RewardLog", str)
-	// }
-
-	resInst = common.AppendSliceString(instRewardForBeacons, instRewardForDev, instRewardForShards)
-	// for _, inst := range resInst {
-	// 	fmt.Println(inst)
-	// }
+	resInst = common.AppendSliceString(instRewardForBeacons, instRewardForIncDAO, instRewardForShards)
 	return resInst, nil
 }
 
@@ -205,18 +187,18 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(beaconBlocks 
 					}
 					continue
 
-				case metadata.DevRewardRequestMeta:
-					//fmt.Printf("RewardLog Process Dev %v\n", l)
-					devRewardInfo, err := metadata.NewDevRewardInfoFromStr(l[3])
+				case metadata.IncDAORewardRequestMeta:
+					fmt.Printf("RewardLog Process Dev %v\n", l)
+					incDAORewardInfo, err := metadata.NewIncDAORewardInfoFromStr(l[3])
 					if err != nil {
 						return err
 					}
-					keyWalletDevAccount, err := wallet.Base58CheckDeserialize(blockchain.config.ChainParams.DevAddress)
+					keyWalletDevAccount, err := wallet.Base58CheckDeserialize(blockchain.config.ChainParams.IncognitoDAOAddress)
 					if err != nil {
 						return err
 					}
-					for key := range devRewardInfo.DevReward {
-						err = db.AddCommitteeReward(keyWalletDevAccount.KeySet.PaymentAddress.Pk, devRewardInfo.DevReward[key], key)
+					for key := range incDAORewardInfo.IncDAOReward {
+						err = db.AddCommitteeReward(keyWalletDevAccount.KeySet.PaymentAddress.Pk, incDAORewardInfo.IncDAOReward[key], key)
 						if err != nil {
 							return err
 						}
@@ -324,7 +306,7 @@ func (blockchain *BlockChain) buildWithDrawTransactionResponse(
 		blockchain.GetDatabase(),
 		responseMeta,
 		requestDetail.TokenID,
-		common.GetShardIDFromLastByte(requestDetail.PaymentAddress.Pk[32]))
+		common.GetShardIDFromLastByte(requestDetail.PaymentAddress.Pk[common.PublicKeySize-1]))
 }
 
 // mapPlusMap(src, dst): dst = dst + src
@@ -340,7 +322,7 @@ func mapPlusMap(src, dst *map[common.Hash]uint64) {
 func splitReward(
 	totalReward *map[common.Hash]uint64,
 	numberOfActiveShards int,
-	forDev bool,
+	devPercent int,
 ) (
 	*map[common.Hash]uint64,
 	*map[common.Hash]uint64,
@@ -348,38 +330,33 @@ func splitReward(
 ) {
 	hasValue := false
 	rewardForBeacon := map[common.Hash]uint64{}
-	rewardForDev := map[common.Hash]uint64{}
-	if forDev {
-		for key, value := range *totalReward {
-			rewardForBeacon[key] = uint64(18*value) / ((uint64(numberOfActiveShards) + 2) * 10)
-			rewardForDev[key] = value / uint64(10)
-			(*totalReward)[key] = value - (rewardForBeacon[key] + rewardForDev[key])
-			if !hasValue {
-				hasValue = true
-			}
-		}
+	rewardForIncDAO := map[common.Hash]uint64{}
+	for key, value := range *totalReward {
+		rewardForBeacon[key] = 2 * (uint64(100-devPercent) * value) / ((uint64(numberOfActiveShards) + 2) * 100)
+		rewardForIncDAO[key] = uint64(devPercent) * value / uint64(100)
+		(*totalReward)[key] = value - (rewardForBeacon[key] + rewardForIncDAO[key])
 		if !hasValue {
-			//fmt.Printf("[ndh] not enough reward\n")
-			return nil, nil, nil
+			hasValue = true
 		}
-		return &rewardForBeacon, &rewardForDev, nil
+	}
+	if !hasValue {
+		//fmt.Printf("[ndh] not enough reward\n")
+		return nil, nil, NewBlockChainError(NotEnoughRewardError, errors.New("Not enough reward"))
+	}
+	return &rewardForBeacon, &rewardForIncDAO, nil
+}
+
+func getNoBlkPerYear(blockCreationTimeSeconds uint64) uint64 {
+	//31536000 =
+	return (365 * 24 * 60 * 60) / blockCreationTimeSeconds
+}
+
+func getPercentForIncognitoDAO(blockHeight, blkPerYear uint64) int {
+	year := blockHeight / blkPerYear
+	if year > (UpperBoundPercentForIncDAO - LowerBoundPercentForIncDAO) {
+		return LowerBoundPercentForIncDAO
 	} else {
-		for key, value := range *totalReward {
-			amount := uint64(2*value) / (uint64(numberOfActiveShards) + 2)
-			if amount != 0 {
-				rewardForBeacon[key] = amount
-			}
-			(*totalReward)[key] = value - amount
-			//fmt.Printf("[ndh] TokenID %+v - - Beacon: %+v; noDev; Shard: %+v;\n", key, rewardForBeacon[key], (*totalReward)[key])
-			if !hasValue {
-				hasValue = true
-			}
-		}
-		if !hasValue {
-			//fmt.Printf("[ndh] not enough reward\n")
-			return nil, nil, nil
-		}
-		return &rewardForBeacon, nil, nil
+		return UpperBoundPercentForIncDAO - int(year)
 	}
 }
 
