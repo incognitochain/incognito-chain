@@ -396,6 +396,7 @@ func (tp *TxPool) checkFees(
 	shardID byte,
 	beaconHeight int64,
 ) bool {
+	Logger.log.Info("Beacon heigh for checkFees: ", beaconHeight, tx.Hash().String())
 	txType := tx.GetType()
 	if txType == common.TxCustomTokenPrivacyType {
 		limitFee := tp.config.FeeEstimator[shardID].GetLimitFeeForNativeToken()
