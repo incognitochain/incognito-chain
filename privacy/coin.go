@@ -510,7 +510,6 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 			// out of range
 			return errors.New("out of range Parse CoinDetailsEncrypted")
 		}
-
 		outputCoin.CoinDetailsEncrypted = new(HybridCipherText)
 		err := outputCoin.CoinDetailsEncrypted.SetBytes(bytes[offset : offset+lenCoinDetailEncrypted])
 		if err != nil {
@@ -520,6 +519,10 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 	}
 
 	// try get 1-byte for len
+	if offset > len(bytes) {
+		// out of range
+		return errors.New("out of range Parse CoinDetails")
+	}
 	lenOutputCoin := int(bytes[offset])
 	outputCoin.CoinDetails = new(Coin)
 	if lenOutputCoin != 0 {
@@ -532,6 +535,10 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 		if err != nil {
 			// 1-byte is wrong
 			// try get 2-byte for len
+			if offset+1 > len(bytes) {
+				// out of range
+				return errors.New("out of range Parse output coin details")
+			}
 			lenOutputCoin = common.BytesToInt(bytes[offset-1 : offset+1])
 			offset += 1
 			if offset+lenOutputCoin > len(bytes) {
@@ -544,6 +551,10 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 	} else {
 		// 1-byte is wrong
 		// try get 2-byte for len
+		if offset+2 > len(bytes) {
+			// out of range
+			return errors.New("out of range Parse output coin details")
+		}
 		lenOutputCoin = common.BytesToInt(bytes[offset : offset+2])
 		offset += 2
 		if offset+lenOutputCoin > len(bytes) {
