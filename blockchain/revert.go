@@ -224,16 +224,16 @@ func (blockchain *BlockChain) backupDatabaseFromBeaconInstruction(
 					}
 					continue
 
-				case metadata.DevRewardRequestMeta:
-					devRewardInfo, err := metadata.NewDevRewardInfoFromStr(l[3])
+				case metadata.IncDAORewardRequestMeta:
+					incDAORewardInfo, err := metadata.NewIncDAORewardInfoFromStr(l[3])
 					if err != nil {
 						return err
 					}
-					keyWalletDevAccount, err := wallet.Base58CheckDeserialize(blockchain.config.ChainParams.DevAddress)
+					keyWalletDevAccount, err := wallet.Base58CheckDeserialize(blockchain.config.ChainParams.IncognitoDAOAddress)
 					if err != nil {
 						return err
 					}
-					for key := range devRewardInfo.DevReward {
+					for key := range incDAORewardInfo.IncDAOReward {
 						err = db.BackupCommitteeReward(keyWalletDevAccount.KeySet.PaymentAddress.Pk, key)
 						if err != nil {
 							return err
@@ -439,16 +439,16 @@ func (blockchain *BlockChain) restoreDatabaseFromBeaconInstruction(beaconBlocks 
 					}
 					continue
 
-				case metadata.DevRewardRequestMeta:
-					devRewardInfo, err := metadata.NewDevRewardInfoFromStr(l[3])
+				case metadata.IncDAORewardRequestMeta:
+					incDAORewardInfo, err := metadata.NewIncDAORewardInfoFromStr(l[3])
 					if err != nil {
 						return err
 					}
-					keyWalletDevAccount, err := wallet.Base58CheckDeserialize(blockchain.config.ChainParams.DevAddress)
+					keyWalletDevAccount, err := wallet.Base58CheckDeserialize(blockchain.config.ChainParams.IncognitoDAOAddress)
 					if err != nil {
 						return err
 					}
-					for key := range devRewardInfo.DevReward {
+					for key := range incDAORewardInfo.IncDAOReward {
 						err = db.RestoreCommitteeReward(keyWalletDevAccount.KeySet.PaymentAddress.Pk, key)
 						if err != nil {
 							return err
