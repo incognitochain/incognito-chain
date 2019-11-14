@@ -167,6 +167,9 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendTxWithPRVTradeReq:        (*HttpServer).handleCreateAndSendTxWithPRVTradeReq,
 	createAndSendTxWithPTokenContribution: (*HttpServer).handleCreateAndSendTxWithPTokenContribution,
 	createAndSendTxWithPRVContribution:    (*HttpServer).handleCreateAndSendTxWithPRVContribution,
+	getPDEContributionStatus:              (*HttpServer).handleGetPDEContributionStatus,
+	getPDETradeStatus:                     (*HttpServer).handleGetPDETradeStatus,
+	getPDEWithdrawalStatus:                (*HttpServer).handleGetPDEWithdrawalStatus,
 }
 
 // Commands that are available to a limited user

@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -483,4 +484,54 @@ func (httpServer *HttpServer) handleConvertPrivacyTokenToNativeToken(params inte
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
 	return res, nil
+}
+
+func (httpServer *HttpServer) handleGetPDEContributionStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	data := arrayParams[0].(map[string]interface{})
+	contributionPairID, ok := data["ContributionPairID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload is invalid"))
+	}
+	status, err := httpServer.databaseService.GetPDEStatus(lvdb.PDEContributionStatusPrefix, []byte(contributionPairID))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+	}
+	return status, nil
+}
+
+func (httpServer *HttpServer) handleGetPDETradeStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	data := arrayParams[0].(map[string]interface{})
+	txRequestIDStr, ok := data["TxRequestIDStr"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload is invalid"))
+	}
+	txIDHash, err := common.Hash{}.NewHashFromStr(txRequestIDStr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+	}
+	status, err := httpServer.databaseService.GetPDEStatus(lvdb.PDETradeStatusPrefix, txIDHash[:])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+	}
+	return status, nil
+}
+
+func (httpServer *HttpServer) handleGetPDEWithdrawalStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	data := arrayParams[0].(map[string]interface{})
+	txRequestIDStr, ok := data["TxRequestIDStr"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload is invalid"))
+	}
+	txIDHash, err := common.Hash{}.NewHashFromStr(txRequestIDStr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+	}
+	status, err := httpServer.databaseService.GetPDEStatus(lvdb.PDEWithdrawalStatusPrefix, txIDHash[:])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+	}
+	return status, nil
 }

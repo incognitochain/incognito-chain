@@ -601,7 +601,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 	lenComInputShardID := int(proofbytes[offset])
 	offset += 1
 	if lenComInputShardID > 0 {
-		if offset+lenComInputShardID >= len(proofbytes) {
+		if offset+lenComInputShardID > len(proofbytes) {
 			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range commitment input coins shardid"))
 		}
 		proof.commitmentInputShardID, err = new(privacy.Point).FromBytesS(proofbytes[offset : offset+lenComInputShardID])
