@@ -33,6 +33,7 @@ type PaymentAddress struct {
 type PaymentInfo struct {
 	PaymentAddress PaymentAddress
 	Amount         uint64
+	Message        []byte // 512 bytes
 }
 
 // GeneratePrivateKey generates a random 32-byte spending key

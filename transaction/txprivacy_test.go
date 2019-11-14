@@ -89,19 +89,28 @@ func TestInitTx(t *testing.T) {
 		receiverPaymentAddress, _ := wallet.Base58CheckDeserialize(paymentAddressB58)
 
 		// transfer amount
-		transferAmount := -5
+		transferAmount := 5
 		hasPrivacy := false
 		fee := 1
+
+		// message to receiver
+		msg := "Incognito-chain"
+		receiverTK, _ := new(privacy.Point).FromBytesS(senderKey.KeySet.PaymentAddress.Tk)
+		msgCipherText, _ := privacy.HybridEncrypt([]byte(msg), receiverTK)
+
+		fmt.Printf("msgCipherText: %v - len : %v\n", msgCipherText.Bytes(), len(msgCipherText.Bytes()))
 		err = tx1.Init(
 			NewTxPrivacyInitParams(
 				&senderKey.KeySet.PrivateKey,
-				[]*privacy.PaymentInfo{{PaymentAddress: receiverPaymentAddress.KeySet.PaymentAddress, Amount: uint64(transferAmount)}},
+				[]*privacy.PaymentInfo{{PaymentAddress: receiverPaymentAddress.KeySet.PaymentAddress, Amount: uint64(transferAmount), Message: msgCipherText.Bytes()}},
 				coinBaseOutput, uint64(fee), hasPrivacy, db, nil, nil, []byte{},
 			),
 		)
 		if err != nil {
 			t.Error(err)
 		}
+
+		assert.Equal(t, len(msgCipherText.Bytes()), len(tx1.Proof.GetOutputCoins()[0].CoinDetails.GetInfo()))
 
 		actualSize := tx1.GetTxActualSize()
 		fmt.Printf("actualSize: %v\n", actualSize)
@@ -162,8 +171,8 @@ func TestInitTx(t *testing.T) {
 		copy(expectedSenderPublicKey, senderPublicKey[:])
 		assert.Equal(t, expectedSenderPublicKey, actualSenderPublicKey[:])
 
-		err = tx1.ValidateTxWithCurrentMempool(nil)
-		assert.Equal(t, nil, err)
+		//err = tx1.ValidateTxWithCurrentMempool(nil)
+		//	assert.Equal(t, nil, err)
 
 		err = tx1.ValidateDoubleSpendWithBlockchain(nil, shardID, db, nil)
 		assert.Equal(t, nil, err)
