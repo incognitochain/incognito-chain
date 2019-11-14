@@ -1283,6 +1283,7 @@ func (txService TxService) BuildRawDefragmentAccountTransaction(params interface
 	paymentInfo := &privacy.PaymentInfo{
 		Amount:         uint64(amount),
 		PaymentAddress: senderKeySet.PaymentAddress,
+		Message:        []byte{},
 	}
 	paymentInfos := []*privacy.PaymentInfo{paymentInfo}
 	// check real fee(nano PRV) per tx
