@@ -171,6 +171,9 @@ const (
 	createAndSendTxWithPRVContribution    = "createandsendtxwithprvcontribution"
 	convertNativeTokenToPrivacyToken      = "convertnativetokentoprivacytoken"
 	convertPrivacyTokenToNativeToken      = "convertprivacytokentonativetoken"
+	getPDEContributionStatus              = "getpdecontributionstatus"
+	getPDETradeStatus                     = "getpdetradestatus"
+	getPDEWithdrawalStatus                = "getpdewithdrawalstatus"
 )
 
 const (
