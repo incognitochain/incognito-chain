@@ -1,9 +1,10 @@
 package rpcservice
 
 import (
-	"github.com/pkg/errors"
 	"math/big"
 	"strconv"
+
+	"github.com/pkg/errors"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
@@ -142,4 +143,8 @@ func (dbService DatabaseService) ListRewardAmount() map[string]map[common.Hash]u
 
 func (dbService DatabaseService) GetProducersBlackList(beaconHeight uint64) (map[string]uint8, error) {
 	return (*dbService.DB).GetProducersBlackList(beaconHeight)
+}
+
+func (dbService DatabaseService) GetPDEStatus(pdePrefix []byte, pdeSuffix []byte) (byte, error) {
+	return (*dbService.DB).GetPDEStatus(pdePrefix, pdeSuffix)
 }
