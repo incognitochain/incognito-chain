@@ -74,6 +74,10 @@ The initial fee structure is simple - with a fixed deposit fee of 0.01% and a wi
 
 It could later allow users to set their fees so that we can have a market-driven pricing structure or a more complex fee structure as a combination of deposit, withdraw, and custodial time. 
 
+## Mobile app
+
+The Incognito Wallet plays a crucial role in making it as easy as possible for users to deposit and withdraw, as well as for custodian to add collaterals and generate custodian addresses.  We will detail the UI/UX in another post.
+
 ## Conclusion
 
 Once Portal ships in Q1 2020, anyone will be able to send more crypto privately. We cannot wait to see some cool use cases. Do drop us any questions, comments, and feedback — we are always glad to hear them.
