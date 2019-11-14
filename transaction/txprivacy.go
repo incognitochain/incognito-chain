@@ -17,7 +17,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -27,7 +27,7 @@ type Tx struct {
 	Type     string `json:"Type"` // Transaction type
 	LockTime int64  `json:"LockTime"`
 	Fee      uint64 `json:"Fee"` // Fee applies: always consant
-	Info     []byte // 512 bytes
+	Info     []byte              // 512 bytes
 
 	// Sign and Privacy proof, required
 	SigPubKey            []byte `json:"SigPubKey, omitempty"` // 33 bytes
@@ -74,9 +74,9 @@ type TxPrivacyInitParams struct {
 	fee         uint64
 	hasPrivacy  bool
 	db          database.DatabaseInterface
-	tokenID     *common.Hash // default is nil -> use for prv coin
+	tokenID     *common.Hash 				// default is nil -> use for prv coin
 	metaData    metadata.Metadata
-	info        []byte //512
+	info        []byte 						// 512 bytes
 }
 
 func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
@@ -148,7 +148,13 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 
 	// init info of tx
 	tx.Info = []byte{}
-	if len(params.info) > 0 {
+	lenTxInfo := len(params.info)
+
+	if lenTxInfo > 0 {
+		if lenTxInfo > MaxSizeInfo {
+			return NewTransactionErr(ExceedSizeInfoTxError, nil)
+		}
+
 		tx.Info = params.info
 	}
 
@@ -260,6 +266,12 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 		outputCoins[i] = new(privacy.OutputCoin)
 		outputCoins[i].CoinDetails = new(privacy.Coin)
 		outputCoins[i].CoinDetails.SetValue(pInfo.Amount)
+		if len(pInfo.Message) > 0 {
+			if len(pInfo.Message) > privacy.MaxSizeInfoCoin {
+				return NewTransactionErr(ExceedSizeInfoOutCoinError, nil)
+			}
+		}
+		outputCoins[i].CoinDetails.SetInfo(pInfo.Message)
 
 		PK, err := new(privacy.Point).FromBytesS(pInfo.PaymentAddress.Pk)
 		if err != nil {
@@ -1465,6 +1477,12 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 		outputCoins[i] = new(privacy.OutputCoin)
 		outputCoins[i].CoinDetails = new(privacy.Coin)
 		outputCoins[i].CoinDetails.SetValue(pInfo.Amount)
+		if len(pInfo.Message) > 0 {
+			if len(pInfo.Message) > privacy.MaxSizeInfoCoin {
+				return NewTransactionErr(ExceedSizeInfoOutCoinError, nil)
+			}
+			outputCoins[i].CoinDetails.SetInfo(pInfo.Message)
+		}
 
 		PK, err := new(privacy.Point).FromBytesS(pInfo.PaymentAddress.Pk)
 		if err != nil {
