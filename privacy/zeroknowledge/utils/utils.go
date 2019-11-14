@@ -31,7 +31,7 @@ func EstimateProofSize(nInput int, nOutput int, hasPrivacy bool) uint64 {
 		FlagSize := 14 + 2*nInput + nOutput
 		sizeSNNoPrivacyProof := nInput * SnNoPrivacyProofSize
 		sizeInputCoins := nInput * inputCoinsNoPrivacySize
-		sizeOutputCoins := nOutput * outputCoinsNoPrivacySize
+		sizeOutputCoins := nOutput * OutputCoinsNoPrivacySize
 
 		sizeProof := uint64(FlagSize + sizeSNNoPrivacyProof + sizeInputCoins + sizeOutputCoins)
 		return uint64(sizeProof)
