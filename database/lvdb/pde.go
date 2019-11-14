@@ -32,12 +32,9 @@ type PDEPoolForPair struct {
 
 func BuildPDEStatusKey(
 	prefix []byte,
-	beaconHeight uint64,
 	suffix []byte,
 ) []byte {
-	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
-	prefixByBeaconHeight := append(prefix, beaconHeightBytes...)
-	return append(prefixByBeaconHeight, suffix...)
+	return append(prefix, suffix...)
 }
 
 func BuildPDESharesKey(
@@ -506,11 +503,10 @@ func (db *db) GetAllRecordsByPrefix(beaconHeight uint64, prefix []byte) ([][]byt
 
 func (db *db) TrackPDEStatus(
 	prefix []byte,
-	beaconHeight uint64,
 	suffix []byte,
 	status byte,
 ) error {
-	key := BuildPDEStatusKey(prefix, beaconHeight, suffix)
+	key := BuildPDEStatusKey(prefix, suffix)
 	err := db.Put(key, []byte{status})
 	if err != nil {
 		return database.NewDatabaseError(database.TrackPDEStatusError, errors.Wrap(err, "db.lvdb.put"))
@@ -520,10 +516,9 @@ func (db *db) TrackPDEStatus(
 
 func (db *db) GetPDEStatus(
 	prefix []byte,
-	beaconHeight uint64,
 	suffix []byte,
 ) (byte, error) {
-	key := BuildPDEStatusKey(prefix, beaconHeight, suffix)
+	key := BuildPDEStatusKey(prefix, suffix)
 	pdeStatusBytes, dbErr := db.lvdb.Get(key, nil)
 	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
 		return common.PDENotFoundStatus, database.NewDatabaseError(database.GetPDEStatusError, dbErr)
