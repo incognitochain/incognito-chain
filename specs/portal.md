@@ -8,6 +8,8 @@ Current blockchain interoperability solutions are mostly building ad-hoc bridges
 
 Incognito Portal takes a different approach: **build once, work with any blockchain**. Portal is a *general bridge design* that connects Incognito with as many blockchains as possible if not all. 
 
+Portal is especially helpful for creating interoperability with blockchains that don't support smart contracts like Bitcoin and Binance Chain. Its design is public.  The code is open-source. We hope that the crypto community will find our work helpful and create more portals to connect more blockchains together.
+
 ## pTokens
 
 Privacy-protecting tokens (pTokens) - like pBTC and pDAI - are tokens on the Incognito blockchain that are backed 1:1 by cryptoassets on other blockchains. For example, pBTC is 1:1 backed by BTC, and pDAI is 1:1 backed by DAI. You can always redeem 1 pBTC for 1 BTC and vice versa.
