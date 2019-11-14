@@ -76,6 +76,15 @@ func initPrivacyTx(_ js.Value, args []js.Value) interface{} {
 	return result
 }
 
+func stopAutoStaking(_ js.Value, args []js.Value) interface{} {
+	result, err := gomobile.StopAutoStaking(args[0].String())
+	if err != nil {
+		return nil
+	}
+
+	return result
+}
+
 func staking(_ js.Value, args []js.Value) interface{} {
 	result, err := gomobile.Staking(args[0].String())
 	if err != nil {
@@ -183,6 +192,7 @@ func main() {
 
 	js.Global().Set("initPrivacyTx", js.FuncOf(initPrivacyTx))
 	js.Global().Set("staking", js.FuncOf(staking))
+	js.Global().Set("stopAutoStaking", js.FuncOf(stopAutoStaking))
 	js.Global().Set("initPrivacyTokenTx", js.FuncOf(initPrivacyTokenTx))
 	js.Global().Set("initBurningRequestTx", js.FuncOf(initBurningRequestTx))
 	js.Global().Set("initWithdrawRewardTx", js.FuncOf(initWithdrawRewardTx))
