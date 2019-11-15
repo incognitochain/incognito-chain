@@ -59,9 +59,9 @@ func (c *BlockRequester) Register(
 	pubkey string,
 	messages []string,
 	selfID peer.ID,
-) ([]*MessageTopicPair, error) {
+) ([]*MessageTopicPair, *UserRole, error) {
 	if !c.Ready() {
-		return nil, errors.New("requester not ready")
+		return nil, nil, errors.New("requester not ready")
 	}
 
 	client := NewHighwayServiceClient(c.conn)
@@ -75,9 +75,9 @@ func (c *BlockRequester) Register(
 	)
 	if err != nil {
 		log.Println(err)
-		return nil, err
+		return nil, nil, err
 	}
-	return reply.Pair, nil
+	return reply.Pair, reply.Role, nil
 }
 
 func (c *BlockRequester) GetBlockShardByHeight(
