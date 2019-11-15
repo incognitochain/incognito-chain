@@ -330,8 +330,13 @@ func (cm *ConnManager) subscribe(role userRole, topics m2t, forced bool) (userRo
 	// Registering
 	peerid, _ := peer.IDB58Decode(HighwayPeerID)
 	pubkey, _ := cm.IdentityKey.ToBase58()
-	newTopics, err := cm.registerToProxy(peerid, pubkey, newRole.layer, newRole.shardID)
+	newTopics, roleOfTopics, err := cm.registerToProxy(peerid, pubkey, newRole.layer, newRole.shardID)
 	if err != nil {
+		return role, topics
+	}
+
+	if newRole != roleOfTopics {
+		log.Printf("Role not matching with highway, local = %+v, highway = %+v", newRole, roleOfTopics)
 		return role, topics
 	}
 
@@ -444,16 +449,16 @@ func (cm *ConnManager) registerToProxy(
 	pubkey string,
 	layer string,
 	shardID int,
-) (m2t, error) {
+) (m2t, userRole, error) {
 	messagesWanted := getMessagesForLayer(layer, shardID)
-	pairs, err := cm.Requester.Register(
+	pairs, role, err := cm.Requester.Register(
 		context.Background(),
 		pubkey,
 		messagesWanted,
 		cm.LocalHost.Host.ID(),
 	)
 	if err != nil {
-		return nil, err
+		return nil, userRole{}, err
 	}
 
 	// Mapping from message to list of topics
@@ -466,7 +471,12 @@ func (cm *ConnManager) registerToProxy(
 			})
 		}
 	}
-	return topics, nil
+	r := userRole{
+		layer:   role.Layer,
+		role:    role.Role,
+		shardID: int(role.Shard),
+	}
+	return topics, r, nil
 }
 
 func getMessagesForLayer(layer string, shardID int) []string {
