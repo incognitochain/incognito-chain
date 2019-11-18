@@ -77,7 +77,15 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	pdeContributionActionsByShardID := map[byte][][]string{}
 	pdeTradeActionsByShardID := map[byte][][]string{}
 	pdeWithdrawalActionsByShardID := map[byte][][]string{}
-	for shardID, actions := range statefulActionsByShardID {
+
+	var keys []int
+	for k := range statefulActionsByShardID {
+		keys = append(keys, int(k))
+	}
+	sort.Ints(keys)
+	for _, value := range keys {
+		shardID := byte(value)
+		actions := statefulActionsByShardID[shardID]
 		for _, action := range actions {
 			metaType, err := strconv.Atoi(action[0])
 			if err != nil {
@@ -144,7 +152,15 @@ func sortPDETradeInstsByFee(
 	pdeTradeActionsByShardID map[byte][][]string,
 ) []metadata.PDETradeRequestAction {
 	tradesByPairs := make(map[string][]metadata.PDETradeRequestAction)
-	for _, actions := range pdeTradeActionsByShardID {
+
+	var keys []int
+	for k := range pdeTradeActionsByShardID {
+		keys = append(keys, int(k))
+	}
+	sort.Ints(keys)
+	for _, value := range keys {
+		shardID := byte(value)
+		actions := pdeTradeActionsByShardID[shardID]
 		for _, action := range actions {
 			contentStr := action[1]
 			contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
@@ -171,7 +187,14 @@ func sortPDETradeInstsByFee(
 
 	notExistingPairTradeActions := []metadata.PDETradeRequestAction{}
 	sortedExistingPairTradeActions := []metadata.PDETradeRequestAction{}
-	for poolPairKey, tradeActions := range tradesByPairs {
+
+	var ppKeys []string
+	for k := range tradesByPairs {
+		ppKeys = append(ppKeys, k)
+	}
+	sort.Strings(ppKeys)
+	for _, poolPairKey := range ppKeys {
+		tradeActions := tradesByPairs[poolPairKey]
 		poolPair, found := currentPDEState.PDEPoolPairs[poolPairKey]
 		if !found || poolPair == nil {
 			notExistingPairTradeActions = append(notExistingPairTradeActions, tradeActions...)
@@ -227,7 +250,16 @@ func (blockchain *BlockChain) handlePDEInsts(
 			instructions = append(instructions, newInst...)
 		}
 	}
-	for shardID, actions := range pdeWithdrawalActionsByShardID {
+
+	// handle withdrawal
+	var wrKeys []int
+	for k := range pdeWithdrawalActionsByShardID {
+		wrKeys = append(wrKeys, int(k))
+	}
+	sort.Ints(wrKeys)
+	for _, value := range wrKeys {
+		shardID := byte(value)
+		actions := pdeWithdrawalActionsByShardID[shardID]
 		for _, action := range actions {
 			contentStr := action[1]
 			newInst, err := blockchain.buildInstructionsForPDEWithdrawal(contentStr, shardID, metadata.PDEWithdrawalRequestMeta, currentPDEState, beaconHeight)
@@ -240,7 +272,16 @@ func (blockchain *BlockChain) handlePDEInsts(
 			}
 		}
 	}
-	for shardID, actions := range pdeContributionActionsByShardID {
+
+	// handle contribution
+	var ctKeys []int
+	for k := range pdeContributionActionsByShardID {
+		ctKeys = append(ctKeys, int(k))
+	}
+	sort.Ints(ctKeys)
+	for _, value := range ctKeys {
+		shardID := byte(value)
+		actions := pdeContributionActionsByShardID[shardID]
 		for _, action := range actions {
 			contentStr := action[1]
 			newInst, err := blockchain.buildInstructionsForPDEContribution(contentStr, shardID, metadata.PDEContributionMeta, currentPDEState, beaconHeight)
