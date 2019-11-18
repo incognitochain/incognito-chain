@@ -8,12 +8,12 @@ type Blocks struct {
 	Latest  uint64   `json:"Latest"`
 }
 
-func NewBlocksFromShardPool(shardPool mempool.ShardPool) *Blocks {
+func NewBlocksFromShardPool(shardPool *mempool.ShardPool) *Blocks {
 	temp := &Blocks{Valid: shardPool.GetValidBlockHeight(), Pending: shardPool.GetPendingBlockHeight(), Latest: shardPool.GetShardState()}
 	return temp
 }
 
-func NewBlocksFromBeaconPool(beaconPool mempool.BeaconPool) *Blocks {
+func NewBlocksFromBeaconPool(beaconPool *mempool.BeaconPool) *Blocks {
 	temp := &Blocks{Valid: beaconPool.GetValidBlockHeight(), Pending: beaconPool.GetPendingBlockHeight(), Latest: beaconPool.GetBeaconState()}
 	return temp
 }
