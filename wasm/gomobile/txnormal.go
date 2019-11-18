@@ -128,6 +128,74 @@ func Staking(args string) (string, error) {
 	return B64Res, nil
 }
 
+
+func StopAutoStaking(args string) (string, error) {
+	// parse meta data
+	bytes := []byte(args)
+	println("Bytes: %v\n", bytes)
+
+	paramMaps := make(map[string]interface{})
+
+	err := json.Unmarshal(bytes, &paramMaps)
+	if err != nil {
+		println("Error can not unmarshal data : %v\n", err)
+		return "", err
+	}
+
+	println("paramMaps:", paramMaps)
+
+	metaDataParam, ok := paramMaps["metaData"].(map[string]interface{})
+	if !ok {
+		return "", errors.New("Invalid meta data param")
+	}
+
+	metaDataType, ok := metaDataParam["Type"].(float64)
+	if !ok {
+		println("Invalid meta data type param")
+		return "", errors.New("Invalid meta data type param")
+	}
+
+	committeePublicKey, ok := metaDataParam["CommitteePublicKey"].(string)
+	if !ok {
+		println("Invalid meta data committee public key param")
+		return "", errors.New("Invalid meta data committee public key param")
+	}
+
+	metaData, err := metadata.NewStopAutoStakingMetadata(int(metaDataType), committeePublicKey)
+	if err != nil {
+		return "", err
+	}
+
+	paramCreateTx, err := InitParamCreatePrivacyTx(args)
+	if err != nil {
+		return "", err
+	}
+
+	paramCreateTx.SetMetaData(metaData)
+
+	tx := new(transaction.Tx)
+	err = tx.InitForASM(paramCreateTx)
+
+	if err != nil {
+		println("Can not create tx: ", err)
+		return "", err
+	}
+
+	// serialize tx json
+	txJson, err := json.Marshal(tx)
+	if err != nil {
+		println("Can not marshal tx: ", err)
+		return "", err
+	}
+
+	lockTimeBytes := common.AddPaddingBigInt(new(big.Int).SetInt64(tx.LockTime), 8)
+	resBytes := append(txJson, lockTimeBytes...)
+
+	B64Res := base64.StdEncoding.EncodeToString(resBytes)
+
+	return B64Res, nil
+}
+
 func InitWithdrawRewardTx(args string) (string, error) {
 	// parse meta data
 	bytes := []byte(args)
