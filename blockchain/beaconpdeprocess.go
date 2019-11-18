@@ -96,7 +96,6 @@ func (blockchain *BlockChain) processPDEContributionV2(
 		}
 		err = db.TrackPDEStatus(
 			lvdb.PDEContributionStatusPrefix,
-			beaconHeight+1,
 			[]byte(waitingContribution.PDEContributionPairID),
 			byte(common.PDEContributionWaitingStatus),
 		)
@@ -119,7 +118,6 @@ func (blockchain *BlockChain) processPDEContributionV2(
 		}
 		err = db.TrackPDEStatus(
 			lvdb.PDEContributionStatusPrefix,
-			beaconHeight+1,
 			[]byte(refundContribution.PDEContributionPairID),
 			byte(common.PDEContributionRefundStatus),
 		)
@@ -156,7 +154,6 @@ func (blockchain *BlockChain) processPDEContributionV2(
 		delete(currentPDEState.WaitingPDEContributions, waitingContribPairKey)
 		err = db.TrackPDEStatus(
 			lvdb.PDEContributionStatusPrefix,
-			beaconHeight+1,
 			[]byte(matchedContribution.PDEContributionPairID),
 			byte(common.PDEContributionAcceptedStatus),
 		)
@@ -191,7 +188,6 @@ func (blockchain *BlockChain) processPDETrade(
 		}
 		err = db.TrackPDEStatus(
 			lvdb.PDETradeStatusPrefix,
-			beaconHeight+1,
 			pdeTradeReqAction.TxReqID[:],
 			byte(common.PDETradeRefundStatus),
 		)
@@ -223,7 +219,6 @@ func (blockchain *BlockChain) processPDETrade(
 	}
 	err = db.TrackPDEStatus(
 		lvdb.PDETradeStatusPrefix,
-		beaconHeight+1,
 		pdeTradeAcceptedContent.RequestedTxID[:],
 		byte(common.PDETradeAcceptedStatus),
 	)
@@ -273,7 +268,6 @@ func (blockchain *BlockChain) processPDEWithdrawal(
 		}
 		err = db.TrackPDEStatus(
 			lvdb.PDEWithdrawalStatusPrefix,
-			beaconHeight+1,
 			pdeWithdrawalRequestAction.TxReqID[:],
 			byte(common.PDEWithdrawalRejectedStatus),
 		)
@@ -318,7 +312,6 @@ func (blockchain *BlockChain) processPDEWithdrawal(
 
 	err = db.TrackPDEStatus(
 		lvdb.PDEWithdrawalStatusPrefix,
-		beaconHeight+1,
 		wdAcceptedContent.TxReqID[:],
 		byte(common.PDEWithdrawalAcceptedStatus),
 	)
