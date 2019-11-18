@@ -1,5 +1,5 @@
 {
-  "Version": "1.19.0-beta",
-  "Note": "Apply new curve",
+  "Version": "1.20.0-beta",
+  "Note": "Clear DB for new testing",
   "RemoveData": true
 }
