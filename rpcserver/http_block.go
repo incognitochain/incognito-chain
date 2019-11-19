@@ -313,7 +313,7 @@ func (httpServer *HttpServer) handleGetCrossShardBlock(params interface{}, close
 	for _, tx := range shardBlock.Body.Transactions {
 		if tx.GetType() == common.TxCustomTokenType {
 			customTokenTx := tx.(*transaction.TxNormalToken)
-			if customTokenTx.TxTokenData.Type == transaction.CustomTokenCrossShard {
+			if customTokenTx.TxTokenData.Type == transaction.TokenCrossShard {
 				if !flag {
 					flag = true //has cross shard block
 				}

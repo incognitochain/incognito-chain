@@ -146,7 +146,7 @@ func (wsServer *WsServer) handleSubcribeCrossCustomTokenByPrivateKey(params inte
 							cResult <- RpcSubResult{Error: err}
 							return
 						}
-						if txCustomToken.TxTokenData.Type == transaction.CustomTokenCrossShard {
+						if txCustomToken.TxTokenData.Type == transaction.TokenCrossShard {
 							for _, vout := range txCustomToken.TxTokenData.Vouts {
 								if bytes.Compare(keyWallet.KeySet.PaymentAddress.Bytes(), vout.PaymentAddress.Bytes()) == 0 {
 									if value, ok := m[txCustomToken.TxTokenData.PropertyID]; ok {

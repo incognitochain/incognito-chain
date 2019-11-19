@@ -67,8 +67,6 @@ type TxPool struct {
 	candidateMtx              sync.RWMutex
 	poolRequestStopStaking    map[common.Hash]string //request stop staking list in mempool
 	requestStopStakingMtx     sync.RWMutex
-	poolTokenID               map[common.Hash]string //Token ID List in Mempool
-	tokenIDMtx                sync.RWMutex
 	CPendingTxs               chan<- metadata.Transaction // channel to deliver txs to block gen
 	CRemoveTxs                chan<- metadata.Transaction // channel to deliver txs to block gen
 	RoleInCommittees          int                         //Current Role of Node
@@ -91,7 +89,6 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.pool = make(map[common.Hash]*TxDesc)
 	tp.poolSerialNumbersHashList = make(map[common.Hash][]common.Hash)
 	tp.poolSerialNumberHash = make(map[common.Hash]common.Hash)
-	tp.poolTokenID = make(map[common.Hash]string)
 	tp.poolCandidate = make(map[common.Hash]string)
 	tp.poolRequestStopStaking = make(map[common.Hash]string)
 	tp.duplicateTxs = make(map[common.Hash]uint64)
@@ -189,7 +186,6 @@ func (tp *TxPool) MonitorPool() {
 			tp.TriggerCRemoveTxs(txDesc.Desc.Tx)
 			tp.removeCandidateByTxHash(txHash)
 			tp.removeRequestStopStakingByTxHash(txHash)
-			tp.removeTokenIDByTxHash(txHash)
 			err := tp.config.DataBaseMempool.RemoveTransaction(txDesc.Desc.Tx.Hash())
 			if err != nil {
 				Logger.log.Errorf("MonitorPool: RemoveTransaction tx hash=%+v with error %+v", txDesc.Desc.Tx.Hash().String(), err)
@@ -482,7 +478,7 @@ In Param#2: isStore: store transaction to persistence storage only work for tran
 5.1 Check for Replacement or Cancel transaction
 6. Validate data in tx: privacy proof, metadata,...
 7. Validate tx with blockchain: douple spend, ...
-8. CustomInitToken: Check Custom Init Token try to init exist token ID
+8. CustomInitToken: Check Custom Init Token try to init exist token ID => eliminate
 9. Staking Transaction: Check Duplicate stake public key in pool ONLY with staking transaction
 10. RequestStopAutoStaking
 */
@@ -611,28 +607,6 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int6
 	if err != nil {
 		return NewMempoolTxError(RejectDoubleSpendWithBlockchainTx, err)
 	}
-	// Condition 8: init exist custom token or not
-	now = time.Now()
-	foundTokenID := -1
-	tokenID := ""
-	if tx.GetType() == common.TxCustomTokenType {
-		customTokenTx := tx.(*transaction.TxNormalToken)
-		if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
-			tokenID = customTokenTx.TxTokenData.PropertyID.String()
-			tp.tokenIDMtx.RLock()
-			foundTokenID = common.IndexOfStrInHashMap(tokenID, tp.poolTokenID)
-			tp.tokenIDMtx.RUnlock()
-		}
-	}
-	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-		metrics.Measurement:      metrics.TxPoolValidationDetails,
-		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
-		metrics.TagValue:         metrics.Condition8,
-		metrics.Tag:              metrics.ValidateConditionTag,
-	})
-	if foundTokenID > 0 {
-		return NewMempoolTxError(RejectDuplicateInitTokenTx, fmt.Errorf("Init Transaction of this Token is in pool already %+v", tokenID))
-	}
 	// Condition 9: check duplicate stake public key ONLY with staking transaction
 	now = time.Now()
 	pubkey := ""
@@ -742,7 +716,6 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				tp.removeTx(txToBeReplaced)
 				tp.TriggerCRemoveTxs(txToBeReplaced)
 				tp.removeRequestStopStakingByTxHash(*txToBeReplaced.Hash())
-				tp.removeTokenIDByTxHash(*txToBeReplaced.Hash())
 				// send tx into channel of CRmoveTxs
 				tp.TriggerCRemoveTxs(tx)
 				return nil, true
@@ -838,13 +811,6 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) error {
 			{
 				Logger.log.Debug("Metadata Type:", metadataType)
 			}
-		}
-	}
-	if tx.GetType() == common.TxCustomTokenType {
-		customTokenTx := tx.(*transaction.TxNormalToken)
-		if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
-			tokenID := customTokenTx.TxTokenData.PropertyID.String()
-			tp.addTokenIDToList(*txHash, tokenID)
 		}
 	}
 	Logger.log.Infof("Add Transaction %+v Successs \n", txHash.String())
@@ -1051,36 +1017,6 @@ func (tp *TxPool) RemoveRequestStopStakingList(requestStopStakings []string) {
 		delete(tp.poolRequestStopStaking, txHash)
 	}
 }
-func (tp *TxPool) addTokenIDToList(txHash common.Hash, tokenID string) {
-	tp.tokenIDMtx.Lock()
-	defer tp.tokenIDMtx.Unlock()
-	tp.poolTokenID[txHash] = tokenID
-}
-
-func (tp *TxPool) removeTokenIDByTxHash(txHash common.Hash) {
-	tp.tokenIDMtx.Lock()
-	defer tp.tokenIDMtx.Unlock()
-	if _, exist := tp.poolTokenID[txHash]; exist {
-		delete(tp.poolTokenID, txHash)
-	}
-}
-
-func (tp *TxPool) RemoveTokenIDList(tokenID []string) {
-	tp.tokenIDMtx.Lock()
-	defer tp.tokenIDMtx.Unlock()
-	tokenToBeRemoved := []common.Hash{}
-	for _, value := range tokenID {
-		for txHash, currentToken := range tp.poolTokenID {
-			if strings.Compare(value, currentToken) == 0 {
-				tokenToBeRemoved = append(tokenToBeRemoved, txHash)
-				break
-			}
-		}
-	}
-	for _, txHash := range tokenToBeRemoved {
-		delete(tp.poolTokenID, txHash)
-	}
-}
 
 //=======================Service for other package
 // SendTransactionToBlockGen - push tx into channel and send to Block generate of consensus
@@ -1256,19 +1192,16 @@ func (tp *TxPool) ValidateSerialNumberHashH(serialNumber []byte) error {
 
 func (tp *TxPool) EmptyPool() bool {
 	tp.candidateMtx.Lock()
-	tp.tokenIDMtx.Lock()
 	defer tp.candidateMtx.Unlock()
-	defer tp.tokenIDMtx.Unlock()
-	if len(tp.pool) == 0 && len(tp.poolSerialNumbersHashList) == 0 && len(tp.poolCandidate) == 0 && len(tp.poolTokenID) == 0 {
+	if len(tp.pool) == 0 && len(tp.poolSerialNumbersHashList) == 0 && len(tp.poolCandidate) == 0 {
 		return true
 	}
 	tp.pool = make(map[common.Hash]*TxDesc)
 	tp.poolSerialNumbersHashList = make(map[common.Hash][]common.Hash)
 	tp.poolSerialNumberHash = make(map[common.Hash]common.Hash)
 	tp.poolCandidate = make(map[common.Hash]string)
-	tp.poolTokenID = make(map[common.Hash]string)
 	tp.poolRequestStopStaking = make(map[common.Hash]string)
-	if len(tp.pool) == 0 && len(tp.poolSerialNumbersHashList) == 0 && len(tp.poolSerialNumberHash) == 0 && len(tp.poolCandidate) == 0 && len(tp.poolTokenID) == 0 && len(tp.poolRequestStopStaking) == 0 {
+	if len(tp.pool) == 0 && len(tp.poolSerialNumbersHashList) == 0 && len(tp.poolSerialNumberHash) == 0 && len(tp.poolCandidate) == 0 && len(tp.poolRequestStopStaking) == 0 {
 		return true
 	}
 	return false

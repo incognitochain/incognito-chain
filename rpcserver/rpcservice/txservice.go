@@ -2,7 +2,6 @@ package rpcservice
 
 import (
 	"bytes"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -24,8 +23,6 @@ import (
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
-
-	error2 "github.com/pkg/errors"
 )
 
 type TxService struct {
@@ -104,7 +101,6 @@ func (txService TxService) chooseOutsCoinByKeyset(
 	unitFeeNativeToken int64, numBlock uint64, keySet *incognitokey.KeySet, shardIDSender byte,
 	hasPrivacy bool,
 	metadataParam metadata.Metadata,
-	customTokenParams *transaction.CustomTokenParamTx,
 	privacyCustomTokenParams *transaction.CustomTokenPrivacyParamTx,
 	isGetFeePToken bool,
 	unitFeePToken int64,
@@ -156,7 +152,7 @@ func (txService TxService) chooseOutsCoinByKeyset(
 	beaconHeight := beaconState.BeaconHeight
 	realFee, _, _, err := txService.EstimateFee(unitFeeNativeToken, false, candidateOutputCoins,
 		paymentInfos, shardIDSender, numBlock, hasPrivacy,
-		metadataParam, customTokenParams,
+		metadataParam,
 		privacyCustomTokenParams, db, int64(beaconHeight))
 	if err != nil {
 		return nil, 0, NewRPCError(RejectInvalidFeeError, err)
@@ -205,7 +201,6 @@ func (txService TxService) EstimateFee(
 	paymentInfos []*privacy.PaymentInfo, shardID byte,
 	numBlock uint64, hasPrivacy bool,
 	metadata metadata.Metadata,
-	customTokenParams *transaction.CustomTokenParamTx,
 	privacyCustomTokenParams *transaction.CustomTokenPrivacyParamTx,
 	db database.DatabaseInterface,
 	beaconHeight int64) (uint64, uint64, uint64, error) {
@@ -239,7 +234,7 @@ func (txService TxService) EstimateFee(
 	if feeEstimator, ok := txService.FeeEstimator[shardID]; ok {
 		limitFee = feeEstimator.GetLimitFeeForNativeToken()
 	}
-	estimateTxSizeInKb = transaction.EstimateTxSize(transaction.NewEstimateTxSizeParam(candidateOutputCoins, paymentInfos, hasPrivacy, metadata, customTokenParams, privacyCustomTokenParams, limitFee))
+	estimateTxSizeInKb = transaction.EstimateTxSize(transaction.NewEstimateTxSizeParam(candidateOutputCoins, paymentInfos, hasPrivacy, metadata, privacyCustomTokenParams, limitFee))
 
 	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 	return realFee, estimateFeeCoinPerKb, estimateTxSizeInKb, nil
@@ -305,7 +300,7 @@ func (txService TxService) BuildRawTransaction(params *bean.CreateRawTxParam, me
 	inputCoins, realFee, err1 := txService.chooseOutsCoinByKeyset(
 		params.PaymentInfos, params.EstimateFeeCoinPerKb, 0,
 		params.SenderKeySet, params.ShardIDSender, params.HasPrivacyCoin,
-		meta, nil, nil, false, int64(0), db)
+		meta, nil, false, int64(0), db)
 	if err1 != nil {
 		return nil, err1
 	}
@@ -396,200 +391,28 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 	return txMsg, tx.Hash(), tx.PubKeyLastByteSender, nil
 }
 
-func (txService TxService) BuildTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet, shardIDSender byte) (
-	*transaction.CustomTokenParamTx, *transaction.CustomTokenPrivacyParamTx, *RPCError) {
+func (txService TxService) BuildTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet, shardIDSender byte) (*transaction.CustomTokenPrivacyParamTx, *RPCError) {
 
-	var customTokenParams *transaction.CustomTokenParamTx
 	var privacyTokenParam *transaction.CustomTokenPrivacyParamTx
 	var err *RPCError
 
 	isPrivacy, ok := tokenParamsRaw["Privacy"].(bool)
 	if !ok {
-		return nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("is privacy param is invalid"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("is privacy param is invalid"))
 	}
 
 	if !isPrivacy {
 		// Check normal custom token param
-		customTokenParams, _, err = txService.BuildCustomTokenParam(tokenParamsRaw, senderKeySet)
-		if err != nil {
-			return nil, nil, err
-		}
 	} else {
 		// Check privacy custom token param
 		privacyTokenParam, _, _, err = txService.BuildPrivacyCustomTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 	}
 
-	return customTokenParams, privacyTokenParam, nil
+	return privacyTokenParam, nil
 
-}
-
-func (txService TxService) BuildCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet) (*transaction.CustomTokenParamTx, map[common.Hash]transaction.TxNormalToken, *RPCError) {
-	tokenIDParam, ok := tokenParamsRaw["TokenID"].(string)
-	if !ok {
-		return nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("token id param is invalid"))
-	}
-
-	tokenNameParam, ok := tokenParamsRaw["TokenName"].(string)
-	if !ok {
-		return nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("token name param is invalid"))
-	}
-
-	tokenSymbolParam, ok := tokenParamsRaw["TokenSymbol"].(string)
-	if !ok {
-		return nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("token symbol param is invalid"))
-	}
-
-	tokenTxTypeParam, ok := tokenParamsRaw["TokenTxType"].(float64)
-	if !ok {
-		return nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("token tx type param is invalid"))
-	}
-
-	tokenAmountParam, ok := tokenParamsRaw["TokenAmount"].(float64)
-	if !ok {
-		return nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("token amount param is invalid"))
-	}
-
-	tokenReceivers, ok := tokenParamsRaw["TokenReceivers"].(interface{})
-	if !ok {
-		return nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("token receivers param is invalid"))
-	}
-
-	tokenParams := &transaction.CustomTokenParamTx{
-		PropertyID:     tokenIDParam,
-		PropertyName:   tokenNameParam,
-		PropertySymbol: tokenSymbolParam,
-		TokenTxType:    int(tokenTxTypeParam),
-		Amount:         uint64(tokenAmountParam),
-	}
-	voutsAmount := int64(0)
-	var err error
-	tokenParams.Receiver, voutsAmount, err = transaction.CreateCustomTokenReceiverArray(tokenReceivers)
-	if err != nil {
-		return nil, nil, NewRPCError(RPCInvalidParamsError, err)
-	}
-
-	switch tokenParams.TokenTxType {
-	case transaction.CustomTokenTransfer:
-		{
-			tokenID, err := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
-			if err != nil {
-				return nil, nil, NewRPCError(RPCInvalidParamsError, error2.Wrap(err, "Token ID is invalid"))
-			}
-
-			//if _, ok := listCustomTokens[*tokenID]; !ok {
-			//	return nil, nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid Token ID"))
-			//}
-
-			existed := txService.BlockChain.CustomTokenIDExisted(tokenID)
-			if !existed {
-				return nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
-			}
-
-			unspentTxTokenOuts, err := txService.BlockChain.GetUnspentTxCustomTokenVout(*senderKeySet, tokenID)
-			Logger.log.Info("BuildRawCustomTokenTransaction ", unspentTxTokenOuts)
-			if err != nil {
-				return nil, nil, NewRPCError(GetOutputCoinError, errors.New("Token out invalid"))
-			}
-			if len(unspentTxTokenOuts) == 0 {
-				return nil, nil, NewRPCError(GetOutputCoinError, errors.New("Token out invalid"))
-			}
-			txTokenIns := []transaction.TxTokenVin{}
-			txTokenInsAmount := uint64(0)
-			for _, out := range unspentTxTokenOuts {
-				item := transaction.TxTokenVin{
-					PaymentAddress:  out.PaymentAddress,
-					TxCustomTokenID: out.GetTxCustomTokenID(),
-					VoutIndex:       out.GetIndex(),
-				}
-				// create signature by keyset -> base58check.encode of txtokenout double hash
-				signature, err := senderKeySet.Sign(out.Hash()[:])
-				if err != nil {
-					return nil, nil, NewRPCError(CanNotSignError, err)
-				}
-				// add signature to TxTokenVin to use token utxo
-				item.Signature = base58.Base58Check{}.Encode(signature, 0)
-				txTokenIns = append(txTokenIns, item)
-				txTokenInsAmount += out.Value
-				voutsAmount -= int64(out.Value)
-				if voutsAmount <= 0 {
-					break
-				}
-			}
-			tokenParams.SetVins(txTokenIns)
-			tokenParams.SetVinsAmount(txTokenInsAmount)
-		}
-	case transaction.CustomTokenInit:
-		{
-			if tokenParams.Receiver[0].Value != tokenParams.Amount { // Init with wrong max amount of custom token
-				return nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Init with wrong max amount of property"))
-			}
-		}
-	}
-	//return tokenParams, listCustomTokens, nil
-	return tokenParams, nil, nil
-}
-
-// BuildRawCustomTokenTransaction ...
-func (txService TxService) BuildRawCustomTokenTransaction(
-	params interface{},
-	metaData metadata.Metadata,
-	db database.DatabaseInterface,
-) (*transaction.TxNormalToken, *RPCError) {
-	// all params
-	arrayParams := common.InterfaceSlice(params)
-	if arrayParams == nil || len(arrayParams) < 5 {
-		Logger.log.Debugf("BuildRawCustomTokenTransaction result: %+v", nil)
-		return nil, NewRPCError(RPCInvalidParamsError, errors.New("param must be an array at least 5 elements"))
-	}
-
-	// create basic param tx
-	txparam, err := bean.NewCreateRawTxParam(params)
-	if err != nil {
-		return nil, NewRPCError(RPCInvalidParamsError, err)
-	}
-
-	// param #5: token params
-	tokenParamsRaw, ok := arrayParams[4].(map[string]interface{})
-	if !ok {
-		return nil, NewRPCError(RPCInvalidParamsError, errors.New("token param is invalid"))
-	}
-	tokenParams, _, err := txService.BuildTokenParam(tokenParamsRaw, txparam.SenderKeySet, txparam.ShardIDSender)
-
-	if err.(*RPCError) != nil {
-		return nil, err.(*RPCError)
-	}
-	/******* START choose output coins native coins(PRV), which is used to create tx *****/
-	inputCoins, realFee, err := txService.chooseOutsCoinByKeyset(txparam.PaymentInfos, txparam.EstimateFeeCoinPerKb, 0,
-		txparam.SenderKeySet, txparam.ShardIDSender, txparam.HasPrivacyCoin,
-		metaData, tokenParams, nil, false, int64(0), db)
-	if err.(*RPCError) != nil {
-		return nil, err.(*RPCError)
-	}
-	if len(txparam.PaymentInfos) == 0 && realFee == 0 {
-		txparam.HasPrivacyCoin = false
-	}
-	/******* END GET output coins native coins(PRV), which is used to create tx *****/
-
-	tx := &transaction.TxNormalToken{}
-	err = tx.Init(
-		transaction.NewTxNormalTokenInitParam(&txparam.SenderKeySet.PrivateKey,
-			nil,
-			inputCoins,
-			realFee,
-			tokenParams,
-			//listCustomTokens,
-			*txService.DB,
-			metaData,
-			txparam.HasPrivacyCoin,
-			txparam.ShardIDSender))
-	if err != nil {
-		return nil, NewRPCError(CreateTxDataError, err)
-	}
-
-	return tx, nil
 }
 
 func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet, shardIDSender byte) (*transaction.CustomTokenPrivacyParamTx, map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData, *RPCError) {
@@ -617,7 +440,7 @@ func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 	if !ok {
 		return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Token fee is invalid"))
 	}
-	if tokenTxType == transaction.CustomTokenInit {
+	if tokenTxType == transaction.TokenInit {
 		tokenFee = 0
 	}
 	tokenParams := &transaction.CustomTokenPrivacyParamTx{
@@ -635,7 +458,7 @@ func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 
 	// get list custom token
 	switch tokenParams.TokenTxType {
-	case transaction.CustomTokenTransfer:
+	case transaction.TokenTransfer:
 		{
 			tokenID, err := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
 			if err != nil {
@@ -661,7 +484,7 @@ func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 			intputToken := transaction.ConvertOutputCoinToInputCoin(candidateOutputTokens)
 			tokenParams.TokenInput = intputToken
 		}
-	case transaction.CustomTokenInit:
+	case transaction.TokenInit:
 		{
 			if tokenParams.Receiver[0].Amount != tokenParams.Amount { // Init with wrong max amount of custom token
 				return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Init with wrong max amount of property"))
@@ -689,7 +512,7 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransaction(
 	}
 	tokenParamsRaw := txParam.TokenParamsRaw
 	var err error
-	_, tokenParams, err := txService.BuildTokenParam(tokenParamsRaw, txParam.SenderKeySet, txParam.ShardIDSender)
+	tokenParams, err := txService.BuildTokenParam(tokenParamsRaw, txParam.SenderKeySet, txParam.ShardIDSender)
 
 	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)
@@ -700,8 +523,7 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransaction(
 	realFeePRV := uint64(0)
 	inputCoins, realFeePRV, err = txService.chooseOutsCoinByKeyset(txParam.PaymentInfos,
 		txParam.EstimateFeeCoinPerKb, 0, txParam.SenderKeySet,
-		txParam.ShardIDSender, txParam.HasPrivacyCoin, nil,
-		nil, tokenParams, txParam.IsGetPTokenFee, txParam.UnitPTokenFee, db)
+		txParam.ShardIDSender, txParam.HasPrivacyCoin, nil, tokenParams, txParam.IsGetPTokenFee, txParam.UnitPTokenFee, db)
 	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)
 	}
@@ -781,97 +603,6 @@ func (txService TxService) GetTransactionByHash(txHashStr string) (*jsonresult.T
 	}
 	result.IsInBlock = true
 	Logger.log.Debugf("handleGetTransactionByHash result: %+v", result)
-	return result, nil
-}
-
-func (txService TxService) SendRawCustomTokenTransaction(base58CheckData string) (wire.Message, *transaction.TxNormalToken, *RPCError) {
-	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
-	if err != nil {
-		Logger.log.Debugf("handleSendRawCustomTokenTransaction result: %+v, err: %+v", nil, err)
-		return nil, nil, NewRPCError(SendTxDataError, err)
-	}
-
-	tx := transaction.TxNormalToken{}
-	err = json.Unmarshal(rawTxBytes, &tx)
-	if err != nil {
-		Logger.log.Debugf("handleSendRawCustomTokenTransaction result: %+v, err: %+v", nil, err)
-		return nil, nil, NewRPCError(SendTxDataError, err)
-	}
-
-	beaconHeigh := int64(-1)
-	beaconBestState, err := txService.BlockChain.BestState.GetClonedBeaconBestState()
-	if err == nil {
-		beaconHeigh = int64(beaconBestState.BeaconHeight)
-	}
-	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx, beaconHeigh)
-	//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
-	if err != nil {
-		Logger.log.Debugf("handleSendRawCustomTokenTransaction result: %+v, err: %+v", nil, err)
-		return nil, nil, NewRPCError(SendTxDataError, err)
-	}
-
-	Logger.log.Debugf("New Custom Token Transaction: %s\n", hash.String())
-
-	// broadcast message
-	txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)
-	if err != nil {
-		Logger.log.Debugf("handleSendRawCustomTokenTransaction result: %+v, err: %+v", nil, err)
-		return nil, nil, NewRPCError(SendTxDataError, err)
-	}
-
-	txMsg.(*wire.MessageTxToken).Transaction = &tx
-
-	return txMsg, &tx, nil
-}
-
-func (txService TxService) GetListCustomTokenHolders(tokenIDString string) (map[string]uint64, *RPCError) {
-	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDString)
-	if err != nil {
-		return nil, NewRPCError(RPCInvalidParamsError, errors.New("TokenID is invalid"))
-	}
-	result, err := txService.BlockChain.GetListTokenHolders(tokenID)
-	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
-	}
-
-	return result, nil
-}
-
-func (txService TxService) GetListCustomTokenBalance(accountParam string) (jsonresult.ListCustomTokenBalance, error) {
-	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
-	account, err := wallet.Base58CheckDeserialize(accountParam)
-	if err != nil {
-		Logger.log.Debugf("handleGetListCustomTokenBalance result: %+v, err: %+v", nil, err)
-		return jsonresult.ListCustomTokenBalance{}, nil
-	}
-	result.PaymentAddress = accountParam
-	accountPaymentAddress := account.KeySet.PaymentAddress
-	temps, err := txService.BlockChain.ListCustomToken()
-	if err != nil {
-		Logger.log.Debugf("handleGetListCustomTokenBalance result: %+v, err: %+v", nil, err)
-		return jsonresult.ListCustomTokenBalance{}, err
-	}
-	for _, tx := range temps {
-		item := jsonresult.CustomTokenBalance{}
-		item.Name = tx.TxTokenData.PropertyName
-		item.Symbol = tx.TxTokenData.PropertySymbol
-		item.TokenID = tx.TxTokenData.PropertyID.String()
-		item.TokenImage = common.Render([]byte(item.TokenID))
-		tokenID := tx.TxTokenData.PropertyID
-		res, err := txService.BlockChain.GetListTokenHolders(&tokenID)
-		if err != nil {
-			return jsonresult.ListCustomTokenBalance{}, err
-		}
-		paymentAddressInStr := base58.Base58Check{}.Encode(accountPaymentAddress.Bytes(), 0x00)
-		item.Amount = res[paymentAddressInStr]
-		if item.Amount == 0 {
-			continue
-		}
-		result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
-		result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
-	}
-	Logger.log.Debugf("handleGetListCustomTokenBalance result: %+v", result)
-
 	return result, nil
 }
 
@@ -1019,17 +750,6 @@ func (txService TxService) GetBalancePrivacyCustomToken(privateKey string, token
 
 	return totalValue, nil
 }
-
-func (txService TxService) CustomTokenDetail(tokenIDStr string) ([]common.Hash, error) {
-	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
-	if err != nil {
-		Logger.log.Debugf("handleCustomTokenDetail result: %+v, err: %+v", nil, err)
-		return nil, err
-	}
-	txs, _ := txService.BlockChain.GetCustomTokenTxsHash(tokenID)
-	return txs, nil
-}
-
 func (txService TxService) PrivacyCustomTokenDetail(tokenIDStr string) ([]common.Hash, *transaction.TxPrivacyTokenData, error) {
 	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
 	if err != nil {
@@ -1044,84 +764,6 @@ func (txService TxService) PrivacyCustomTokenDetail(tokenIDStr string) ([]common
 
 	txs, _ := txService.BlockChain.GetPrivacyCustomTokenTxsHash(tokenID)
 	return txs, nil, nil
-}
-
-func (txService TxService) ListUnspentCustomToken(senderKeyParam string, tokenIDParam string) ([]transaction.TxTokenVout, error) {
-	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam)
-	if err != nil {
-		Logger.log.Debugf("handleListUnspentCustomToken result: %+v, err: %+v", nil, err)
-		return nil, err
-	}
-	senderKeyset := senderKey.KeySet
-
-	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDParam)
-	if err != nil {
-		Logger.log.Debugf("handleListUnspentCustomToken result: %+v, err: %+v", nil, err)
-		return nil, err
-	}
-
-	unspentTxTokenOuts, err := txService.BlockChain.GetUnspentTxCustomTokenVout(senderKeyset, tokenID)
-	if err != nil {
-		Logger.log.Debugf("handleListUnspentCustomToken result: %+v, err: %+v", nil, err)
-		return nil, err
-	}
-
-	return unspentTxTokenOuts, nil
-}
-
-func (txService TxService) GetBalanceCustomToken(senderKeyParam string, tokenIDParam string) (uint64, error) {
-	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam)
-	if err != nil {
-		Logger.log.Debugf("handleGetBalanceCustomToken result: %+v, err: %+v", nil, err)
-		return uint64(0), err
-	}
-	senderKeyset := senderKey.KeySet
-
-	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDParam)
-	if err != nil {
-		Logger.log.Debugf("handleGetBalanceCustomToken result: %+v, err: %+v", nil, err)
-		return uint64(0), err
-	}
-	unspentTxTokenOuts, err := txService.BlockChain.GetUnspentTxCustomTokenVout(senderKeyset, tokenID)
-
-	if err != nil {
-		Logger.log.Debugf("handleGetBalanceCustomToken result: %+v, err: %+v", nil, err)
-		return uint64(0), NewRPCError(UnexpectedError, err)
-	}
-	totalValue := uint64(0)
-	for _, temp := range unspentTxTokenOuts {
-		totalValue += temp.Value
-	}
-
-	return totalValue, nil
-}
-
-func (txService TxService) CreateSignatureOnCustomTokenTx(base58CheckDate string, senderKeyParam string) (string, error) {
-	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckDate)
-	if err != nil {
-		return "", err
-	}
-
-	tx := transaction.TxNormalToken{}
-	err = json.Unmarshal(rawTxBytes, &tx)
-	if err != nil {
-		return "", err
-	}
-
-	keySet, _, err := GetKeySetFromPrivateKeyParams(senderKeyParam)
-	if err != nil {
-		Logger.log.Debugf("handleCreateSignatureOnCustomTokenTx result: %+v, err: %+v", nil, err)
-		return "", err
-	}
-
-	jsSignByteArray, err := tx.GetTxCustomTokenSignature(*keySet)
-	if err != nil {
-		Logger.log.Debugf("handleCreateSignatureOnCustomTokenTx result: %+v, err: %+v", nil, err)
-		return "", errors.New("failed to sign the custom token")
-	}
-	result := hex.EncodeToString(jsSignByteArray)
-
-	return result, nil
 }
 
 func (txService TxService) RandomCommitments(paymentAddressStr string, outputs []interface{}, tokenID *common.Hash) ([]uint64, []uint64, [][]byte, *RPCError) {
@@ -1292,8 +934,7 @@ func (txService TxService) BuildRawDefragmentAccountTransaction(params interface
 	beaconState, err := txService.BlockChain.BestState.GetClonedBeaconBestState()
 	beaconHeight := beaconState.BeaconHeight
 	realFee, _, _, _ := txService.EstimateFee(
-		estimateFeeCoinPerKb, isGetPTokenFee, outCoins, paymentInfos, shardIDSender, 8, hasPrivacyCoin,
-		nil, nil, nil, db, int64(beaconHeight))
+		estimateFeeCoinPerKb, isGetPTokenFee, outCoins, paymentInfos, shardIDSender, 8, hasPrivacyCoin, nil, nil, db, int64(beaconHeight))
 	if len(outCoins) == 0 {
 		realFee = 0
 	}
@@ -1372,42 +1013,6 @@ func (txService TxService) SendRawTxWithMetadata(base58CheckDate string) (wire.M
 	}
 
 	txMsg.(*wire.MessageTx).Transaction = &tx
-
-	return txMsg, hash, nil
-}
-
-func (txService TxService) SendRawCustomTokenTxWithMetadata(base58CheckDate string) (wire.Message, *common.Hash, *RPCError) {
-	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckDate)
-	if err != nil {
-		return nil, nil, NewRPCError(RPCInvalidParamsError, err)
-	}
-
-	tx := transaction.TxNormalToken{}
-	err = json.Unmarshal(rawTxBytes, &tx)
-	fmt.Printf("%+v\n", tx)
-	if err != nil {
-		return nil, nil, NewRPCError(JsonError, err)
-	}
-
-	beaconHeigh := int64(-1)
-	beaconBestState, err := txService.BlockChain.BestState.GetClonedBeaconBestState()
-	if err == nil {
-		beaconHeigh = int64(beaconBestState.BeaconHeight)
-	}
-	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx, beaconHeigh)
-	if err != nil {
-		return nil, nil, NewRPCError(TxPoolRejectTxError, err)
-	}
-
-	Logger.log.Debugf("there is hash of transaction: %s\n", hash.String())
-
-	// broadcast message
-	txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)
-	if err != nil {
-		return nil, nil, NewRPCError(UnexpectedError, err)
-	}
-
-	txMsg.(*wire.MessageTxToken).Transaction = &tx
 
 	return txMsg, hash, nil
 }

@@ -55,7 +55,6 @@ type BlockchainRetriever interface {
 	GetTxChainHeight(tx Transaction) (uint64, error)
 	GetChainHeight(byte) uint64
 	GetBeaconHeight() uint64
-	GetCustomTokenTxs(*common.Hash) (map[common.Hash]Transaction, error)
 	GetTransactionByHash(common.Hash) (byte, common.Hash, int, Transaction, error)
 	GetCurrentBeaconBlockHeight(byte) uint64
 	GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error)
