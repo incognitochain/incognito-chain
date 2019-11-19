@@ -987,7 +987,6 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock 
 	go func() {
 		//Remove Candidate In pool
 		candidates := []string{}
-		tokenIDs := []string{}
 		for _, tx := range shardBlock.Body.Transactions {
 			if blockchain.config.IsBlockGenStarted {
 				blockchain.config.CRemovedTxs <- tx
@@ -1003,7 +1002,6 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock 
 			}
 		}
 		go blockchain.config.TxPool.RemoveCandidateList(candidates)
-		go blockchain.config.TxPool.RemoveTokenIDList(tokenIDs)
 
 		//Remove tx out of pool
 		go blockchain.config.TxPool.RemoveTx(shardBlock.Body.Transactions, true)

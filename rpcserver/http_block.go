@@ -4,11 +4,8 @@ import (
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
-	"github.com/incognitochain/incognito-chain/transaction"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"log"
 )
 
@@ -310,41 +307,6 @@ func (httpServer *HttpServer) handleGetCrossShardBlock(params interface{}, close
 
 	result := jsonresult.CrossShardDataResult{HasCrossShard: false}
 	flag := false
-	for _, tx := range shardBlock.Body.Transactions {
-		if tx.GetType() == common.TxCustomTokenType {
-			customTokenTx := tx.(*transaction.TxNormalToken)
-			if customTokenTx.TxTokenData.Type == transaction.TokenCrossShard {
-				if !flag {
-					flag = true //has cross shard block
-				}
-				crossShardCSTokenResult := jsonresult.CrossShardCSTokenResult{
-					Name:                               customTokenTx.TxTokenData.PropertyName,
-					Symbol:                             customTokenTx.TxTokenData.PropertySymbol,
-					TokenID:                            customTokenTx.TxTokenData.PropertyID.String(),
-					Amount:                             customTokenTx.TxTokenData.Amount,
-					IsPrivacy:                          false,
-					CrossShardCSTokenBalanceResultList: []jsonresult.CrossShardCSTokenBalanceResult{},
-					CrossShardPrivacyCSTokenResultList: []jsonresult.CrossShardPrivacyCSTokenResult{},
-				}
-				crossShardCSTokenBalanceResultList := []jsonresult.CrossShardCSTokenBalanceResult{}
-				for _, vout := range customTokenTx.TxTokenData.Vouts {
-					paymentAddressWallet := wallet.KeyWallet{
-						KeySet: incognitokey.KeySet{
-							PaymentAddress: vout.PaymentAddress,
-						},
-					}
-					paymentAddress := paymentAddressWallet.Base58CheckSerialize(wallet.PaymentAddressType)
-					crossShardCSTokenBalanceResult := jsonresult.CrossShardCSTokenBalanceResult{
-						PaymentAddress: paymentAddress,
-						Value:          vout.Value,
-					}
-					crossShardCSTokenBalanceResultList = append(crossShardCSTokenBalanceResultList, crossShardCSTokenBalanceResult)
-				}
-				crossShardCSTokenResult.CrossShardCSTokenBalanceResultList = crossShardCSTokenBalanceResultList
-				result.CrossShardCSTokenResultList = append(result.CrossShardCSTokenResultList, crossShardCSTokenResult)
-			}
-		}
-	}
 	for _, crossTransactions := range shardBlock.Body.CrossTransactions {
 		if !flag {
 			flag = true //has cross shard block
