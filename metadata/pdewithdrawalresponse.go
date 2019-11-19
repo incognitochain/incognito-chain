@@ -14,9 +14,11 @@ import (
 type PDEWithdrawalResponse struct {
 	MetadataBase
 	RequestedTxID common.Hash
+	TokenIDStr    string
 }
 
 func NewPDEWithdrawalResponse(
+	tokenIDStr string,
 	requestedTxID common.Hash,
 	metaType int,
 ) *PDEWithdrawalResponse {
@@ -25,6 +27,7 @@ func NewPDEWithdrawalResponse(
 	}
 	return &PDEWithdrawalResponse{
 		RequestedTxID: requestedTxID,
+		TokenIDStr:    tokenIDStr,
 		MetadataBase:  metadataBase,
 	}
 }
@@ -50,6 +53,7 @@ func (iRes PDEWithdrawalResponse) ValidateMetadataByItself() bool {
 
 func (iRes PDEWithdrawalResponse) Hash() *common.Hash {
 	record := iRes.RequestedTxID.String()
+	record += iRes.TokenIDStr
 	record += iRes.MetadataBase.Hash().String()
 
 	// final hash
