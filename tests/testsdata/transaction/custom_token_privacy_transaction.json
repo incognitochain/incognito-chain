@@ -5,18 +5,19 @@
       "command": "createandsendprivacycustomtokentransaction",
       "context": false,
       "params": [
-        "112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe",
+        "112t8rq19Uu7UGbTApZzZwCAvVszAgRNAzHzr3p8Cu75jPH3h5AUtRXMKiqF3hw8NbEfeLcjtbpeUvJfw4tGj7pbqwDYngc8wB13Gf77o33f",
         {},
         20,
         1,
         {
+          "Privacy": true,
           "TokenID": "",
-          "TokenName": "ABC17644",
-          "TokenSymbol": "ABC17644",
+          "TokenName": "ABC176445",
+          "TokenSymbol": "ABC176445",
           "TokenTxType": 0,
           "TokenAmount": 1000,
           "TokenReceivers": {
-            "1Uv4APZadR2kbpm4Uazwng2hwfqb2AtuV6Y6QVcypzQurzwE9YvUzTA8TWVndLJxtuAytWPey57YiU97abmSJ7nnPxnDdsjGcXUAiiE6t": 1000
+            "12S42qYc9pzsfWoxPZ21sVihEHJxYfNzEp1SXNnxvr7CGYMHNWX12ZaQkzcwvTYKAnhiVsDWwSqz5jFo6xuwzXZmz7QX1TnJaWnwEyX": 1000
           },
           "TokenFee": 0
         }
@@ -25,8 +26,8 @@
     "output": {
       "error": null,
       "response": {
-        "TokenID": "2b68be66946c1aac4a17e11b15221a0f1570e3f4bad7be23ba9686a77a8dfacb",
-        "TokenName": "ABC17644",
+        "TokenID": "f3f9b467be8869deaddb1485cde1631c96fcb948c7d6ef51ce0dde7bb2844fdb",
+        "TokenName": "ABC176445",
         "TokenAmount": 1000
       }
     },
@@ -53,7 +54,7 @@
     "input": {
       "command": "getbalanceprivacycustomtoken",
       "context": false,
-      "params": ["112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe","2b68be66946c1aac4a17e11b15221a0f1570e3f4bad7be23ba9686a77a8dfacb"]
+      "params": ["112t8rq19Uu7UGbTApZzZwCAvVszAgRNAzHzr3p8Cu75jPH3h5AUtRXMKiqF3hw8NbEfeLcjtbpeUvJfw4tGj7pbqwDYngc8wB13Gf77o33f","f3f9b467be8869deaddb1485cde1631c96fcb948c7d6ef51ce0dde7bb2844fdb"]
     },
     "output": {
       "error": null,
@@ -66,18 +67,19 @@
       "command": "createandsendprivacycustomtokentransaction",
       "context": false,
       "params": [
-        "112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe",
+        "112t8rq19Uu7UGbTApZzZwCAvVszAgRNAzHzr3p8Cu75jPH3h5AUtRXMKiqF3hw8NbEfeLcjtbpeUvJfw4tGj7pbqwDYngc8wB13Gf77o33f",
         {},
         20,
         1,
         {
-          "TokenID": "2b68be66946c1aac4a17e11b15221a0f1570e3f4bad7be23ba9686a77a8dfacb",
-          "TokenName": "ABC17644",
-          "TokenSymbol": "ABC17644",
-          "TokenTxType": 1,
+          "Privacy": true,
+          "TokenID": "f3f9b467be8869deaddb1485cde1631c96fcb948c7d6ef51ce0dde7bb2844fdb",
+          "TokenName": "ABC176445",
+          "TokenSymbol": "ABC176445",
+          "TokenTxType": 0,
           "TokenAmount": 1000,
           "TokenReceivers": {
-            "1Uv3aYQj3dgMYiVfQNBjHX1YrX4cZn4cNcNBdKbKa8jR3LQ2CDkV5yn9T5wxq7KoSGkLBALgFL7rqVPhy1jb6FCFJtAxigiKj3xCA7aEr": 500
+            "12RrjUWjyCNPXoCChrpEVLxucs3WEw9KyFxzP3UrdRzped2UouDzBM9gNugySqt4RpmgkqL1H7xxE8PfNmDwAatnSXPUVdNomBK1yYC": 300
           },
           "TokenFee": 0
         }
@@ -112,11 +114,11 @@
     "input": {
       "command": "getbalanceprivacycustomtoken",
       "context": false,
-      "params": ["112t8rrfnKmgLJ9htCg6Bn3QNfTZmQCBR5gsgoMJRhphK1vfHRrRemqKgu9fE9EAKdEYoJBgy4xhnyhDjccsHRmDY2bF5BmkK4kd2juCdVGk", "2b68be66946c1aac4a17e11b15221a0f1570e3f4bad7be23ba9686a77a8dfacb"]
+      "params": ["112t8rq19Uu7UGbTApZzZwCAvVszAgRNAzHzr3p8Cu75jPH3h5AUtRXMKiqF3hw8NbEfeLcjtbpeUvJfw4tGj7pbqwDYngc8wB13Gf77o33f", "f3f9b467be8869deaddb1485cde1631c96fcb948c7d6ef51ce0dde7bb2844fdb"]
     },
     "output": {
       "error": null,
-      "response": 500
+      "response": 700
     }
   },
   {
@@ -124,11 +126,11 @@
     "input": {
       "command": "getbalanceprivacycustomtoken",
       "context": false,
-      "params": ["112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe", "2b68be66946c1aac4a17e11b15221a0f1570e3f4bad7be23ba9686a77a8dfacb"]
+      "params": ["112t8rrEW3NPNgU8xzbeqE7cr4WTT8JvyaQqSZyczA5hBJVvpQMTBVqNfcCdzhvquWCHH11jHihZtgyJqbdWPhWYbmmsw5aV29WSXBEsgbVX", "f3f9b467be8869deaddb1485cde1631c96fcb948c7d6ef51ce0dde7bb2844fdb"]
     },
     "output": {
       "error": null,
-      "response": 500
+      "response": 300
     }
   }
 ]

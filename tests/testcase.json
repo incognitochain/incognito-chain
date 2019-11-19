@@ -7,12 +7,10 @@
   ],
   "transaction": [
     "TestCreateAndSendNormalTransaction",
-    "TestCreateAndSendCustomTokenTransaction",
     "TestCreateAndSendCustomTokenPrivacyTransaction"
   ],
   "crossshard": [
     "TestCreateAndSendCrossNormalTransaction",
-    "TestCreateAndSendCrossCustomTokenTransaction",
     "TestCreateAndSendCrossCustomTokenPrivacyTransaction"
   ],
   "stakeshard": [
