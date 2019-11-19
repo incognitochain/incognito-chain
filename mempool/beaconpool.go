@@ -119,6 +119,7 @@ func (beaconPool *BeaconPool) RevertBeconPool(latestValidHeight uint64) {
 func (beaconPool BeaconPool) GetBeaconState() uint64 {
 	return beaconPool.latestValidHeight
 }
+
 func (beaconPool *BeaconPool) addBeaconBlock(block *blockchain.BeaconBlock) error {
 	go beaconPool.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, block))
 	err := beaconPool.validateBeaconBlock(block, false)
@@ -130,6 +131,7 @@ func (beaconPool *BeaconPool) addBeaconBlock(block *blockchain.BeaconBlock) erro
 	beaconPool.promotePendingPool()
 	return nil
 }
+
 func (beaconPool *BeaconPool) AddBeaconBlock(block *blockchain.BeaconBlock) error {
 	beaconPool.mtx.Lock()
 	defer beaconPool.mtx.Unlock()

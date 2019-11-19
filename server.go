@@ -215,6 +215,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			panic("miningkeys can't be empty in this node mode")
 		}
 	}
+	//pusub???
 	serverObj.pusubManager = pubsubManager
 	serverObj.beaconPool = mempool.GetBeaconPool()
 	serverObj.shardToBeaconPool = mempool.GetShardToBeaconPool()
@@ -268,7 +269,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	if err != nil {
 		return err
 	}
-
+	// TODO hy
 	// Connect to highway
 	Logger.log.Debug("Listenner: ", cfg.Listener)
 	Logger.log.Debug("Bootnode: ", cfg.DiscoverPeersAddress)
@@ -308,6 +309,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		&pubkey,
 		serverObj.consensusEngine,
 		dispatcher,
+		&cfg.NodeMode,
+		&relayShards,
 	)
 
 	err = serverObj.blockChain.Init(&blockchain.Config{
@@ -680,10 +683,11 @@ func (serverObj Server) Start() {
 		return
 	}
 	Logger.log.Debug("Starting server")
+	/* --- Checkforce update code --- TODO uncomment this
 	if serverObj.chainParams.CheckForce {
 		serverObj.CheckForceUpdateSourceCode()
-	}
-	if cfg.IsTestnet() {
+	}*/
+	if cfg.TestNet == "testnet" {
 		Logger.log.Critical("************************" +
 			"* Testnet is active *" +
 			"************************")
@@ -765,6 +769,7 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 					}
 					normalTx := tx.(*transaction.Tx)
 					txMsg.(*wire.MessageTx).Transaction = normalTx
+					// Logger.log.Infof("[hy] Found", params ...interface{})
 					err = serverObj.PushMessageToAll(txMsg)
 					if err == nil {
 						serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
@@ -1539,6 +1544,7 @@ func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint6
 }
 
 func (serverObj *Server) PushMessageGetBlockBeaconBySpecificHeight(heights []uint64, getFromPool bool) error {
+	os.Exit(9)
 	msg, err := wire.MakeEmptyMessage(wire.CmdGetBlockBeacon)
 	if err != nil {
 		return err
@@ -1578,10 +1584,19 @@ func (serverObj *Server) PushMessageGetBlockShardByHeight(shardID byte, from uin
 }
 
 func (serverObj *Server) PushMessageGetBlockShardBySpecificHeight(shardID byte, heights []uint64, getFromPool bool) error {
-	msg, err := wire.MakeEmptyMessage(wire.CmdGetBlockShard)
+
+	msgs, err := serverObj.highway.Requester.GetBlockShardToBeaconByHeight(int32(shardID), 0, 0)
 	if err != nil {
+		Logger.log.Error(err)
 		return err
 	}
+
+	serverObj.putResponseMsgs(msgs)
+	return nil
+	// msg, err := wire.MakeEmptyMessage(wire.CmdGetBlockShard)
+	// if err != nil {
+	// 	return err
+	// }
 	// msg.(*wire.MessageGetBlockShard).BlkHeights = heights
 	// msg.(*wire.MessageGetBlockShard).BySpecificHeight = true
 	// msg.(*wire.MessageGetBlockShard).ShardID = shardID
@@ -1589,7 +1604,7 @@ func (serverObj *Server) PushMessageGetBlockShardBySpecificHeight(shardID byte, 
 	// if peerID == "" {
 	// 	return serverObj.PushMessageToShard(msg, shardID, map[libp2p.ID]bool{})
 	// }
-	return serverObj.PushMessageToAll(msg)
+	// return serverObj.PushMessageToAll(msg)
 
 }
 

@@ -18,6 +18,7 @@ import (
 	"github.com/multiformats/go-multiaddr"
 )
 
+// TODO REMOVE HARDCODE
 var HighwayPeerID = "QmSPa4gxx6PRmoNRu6P2iFwEwmayaoLdR5By3i3MgM9gMv"
 var MasterNodeID = "QmVsCnV9kRZ182MX11CpcHMyFAReyXV49a599AbqmwtNrV"
 
@@ -27,6 +28,8 @@ func NewConnManager(
 	ikey *incognitokey.CommitteePublicKey,
 	cd ConsensusData,
 	dispatcher *Dispatcher,
+	nodeMode *string,
+	relayShard *[]byte,
 ) *ConnManager {
 	master := peer.IDB58Encode(host.Host.ID()) == MasterNodeID
 	log.Println("IsMasterNode:", master)
@@ -38,12 +41,14 @@ func NewConnManager(
 		disp:                 dispatcher,
 		IsMasterNode:         master,
 		registerRequests:     make(chan int, 100),
+		relayShard:           relayShard,
+		nodeMode:             nodeMode,
 	}
 }
 
 func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 	var topic string
-	publishable := []string{wire.CmdBlockShard, wire.CmdBFT, wire.CmdBlockBeacon, wire.CmdPeerState, wire.CmdBlkShardToBeacon}
+	publishable := []string{wire.CmdBlockShard, wire.CmdBFT, wire.CmdBlockBeacon, wire.CmdTx, wire.CmdCustomToken, wire.CmdPeerState, wire.CmdBlkShardToBeacon}
 	// msgCrossShard := msg.(wire.MessageCrossShard)
 	msgType := msg.MessageType()
 	for _, p := range publishable {
@@ -173,6 +178,9 @@ type ConnManager struct {
 	subs             m2t                  // mapping from message to topic's subscription
 	messages         chan *pubsub.Message // queue messages from all topics
 	registerRequests chan int
+
+	nodeMode   *string
+	relayShard *[]byte
 
 	cd        ConsensusData
 	disp      *Dispatcher
@@ -330,7 +338,11 @@ func (cm *ConnManager) subscribe(role userRole, topics m2t, forced bool) (userRo
 	// Registering
 	peerid, _ := peer.IDB58Decode(HighwayPeerID)
 	pubkey, _ := cm.IdentityKey.ToBase58()
-	newTopics, err := cm.registerToProxy(peerid, pubkey, newRole.layer, newRole.shardID)
+	shardIDs := []byte{byte(newRole.shardID)}
+	if *cm.nodeMode == common.NodeModeRelay {
+		shardIDs = *cm.relayShard
+	}
+	newTopics, err := cm.registerToProxyv2(peerid, pubkey, newRole.layer, shardIDs)
 	if err != nil {
 		return role, topics
 	}
@@ -450,6 +462,40 @@ func (cm *ConnManager) registerToProxy(
 		context.Background(),
 		pubkey,
 		messagesWanted,
+		[]byte{byte(shardID)},
+		cm.LocalHost.Host.ID(),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Mapping from message to list of topics
+	topics := m2t{}
+	for _, p := range pairs {
+		for i, t := range p.Topic {
+			topics[p.Message] = append(topics[p.Message], Topic{
+				Name: t,
+				Act:  p.Act[i],
+			})
+		}
+	}
+	return topics, nil
+}
+
+func (cm *ConnManager) registerToProxyv2(
+	peerID peer.ID,
+	pubkey string,
+	layer string,
+	shardID []byte,
+) (m2t, error) {
+	messagesWanted := getMessagesForLayerv2(*cm.nodeMode, layer, shardID)
+	fmt.Printf("-%v-;;;-%v-;;;-%v-;;;\n", messagesWanted, *cm.nodeMode, shardID)
+	// os.Exit(9)
+	pairs, err := cm.Requester.Register(
+		context.Background(),
+		pubkey,
+		messagesWanted,
+		shardID,
 		cm.LocalHost.Host.ID(),
 	)
 	if err != nil {
@@ -485,6 +531,46 @@ func getMessagesForLayer(layer string, shardID int) []string {
 			wire.CmdBFT,
 			wire.CmdPeerState,
 			wire.CmdBlkShardToBeacon,
+		}
+	}
+	return []string{}
+}
+
+func getMessagesForLayerv2(mode, layer string, shardID []byte) []string {
+	switch mode {
+	case common.NodeModeAuto:
+		if layer == common.ShardRole {
+			return []string{
+				wire.CmdBlockShard,
+				wire.CmdBlockBeacon,
+				wire.CmdBFT,
+				wire.CmdPeerState,
+				wire.CmdCrossShard,
+				wire.CmdBlkShardToBeacon,
+				wire.CmdTx,
+				wire.CmdPrivacyCustomToken,
+				wire.CmdCustomToken,
+			}
+		} else if layer == common.BeaconRole {
+			return []string{
+				wire.CmdBlockBeacon,
+				wire.CmdBFT,
+				wire.CmdPeerState,
+				wire.CmdBlkShardToBeacon,
+				wire.CmdPrivacyCustomToken,
+				wire.CmdCustomToken,
+			}
+		}
+	case common.NodeModeRelay:
+		return []string{
+			wire.CmdTx,
+			wire.CmdBlockShard,
+			wire.CmdBlockBeacon,
+			wire.CmdPeerState,
+			wire.CmdCrossShard,
+			wire.CmdBlkShardToBeacon,
+			wire.CmdPrivacyCustomToken,
+			wire.CmdCustomToken,
 		}
 	}
 	return []string{}
