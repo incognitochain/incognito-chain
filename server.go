@@ -215,6 +215,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			panic("miningkeys can't be empty in this node mode")
 		}
 	}
+	//pusub???
 	serverObj.pusubManager = pubsubManager
 	serverObj.beaconPool = mempool.GetBeaconPool()
 	serverObj.shardToBeaconPool = mempool.GetShardToBeaconPool()
@@ -268,7 +269,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	if err != nil {
 		return err
 	}
-
+	// TODO hy
 	// Connect to highway
 	Logger.log.Debug("Listenner: ", cfg.Listener)
 	Logger.log.Debug("Bootnode: ", cfg.DiscoverPeersAddress)
@@ -308,6 +309,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		&pubkey,
 		serverObj.consensusEngine,
 		dispatcher,
+		&cfg.NodeMode,
+		&relayShards,
 	)
 
 	err = serverObj.blockChain.Init(&blockchain.Config{
@@ -357,7 +360,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			if err == nil && len(feeEstimatorData) > 0 {
 				feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)
 				if err != nil {
-					Logger.log.Errorf("Failed to restore fee estimator %v", err)
+					Logger.log.Debugf("Failed to restore fee estimator %v", err)
 					Logger.log.Debug("Init NewFeeEstimator")
 					serverObj.feeEstimator[shardID] = mempool.NewFeeEstimator(
 						mempool.DefaultEstimateFeeMaxRollback,
@@ -367,7 +370,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 					serverObj.feeEstimator[shardID] = feeEstimator
 				}
 			} else {
-				Logger.log.Errorf("Failed to get fee estimator from DB %v", err)
+				Logger.log.Debugf("Failed to get fee estimator from DB %v", err)
 				Logger.log.Debug("Init NewFeeEstimator")
 				serverObj.feeEstimator[shardID] = mempool.NewFeeEstimator(
 					mempool.DefaultEstimateFeeMaxRollback,
@@ -549,10 +552,10 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	}
 
 	//Init Metric Tool
-	// if cfg.MetricUrl != "" {
-	// 	grafana := metrics.NewGrafana(cfg.MetricUrl, cfg.ExternalAddress)
-	// 	metrics.InitMetricTool(&grafana)
-	// }
+	//if cfg.MetricUrl != "" {
+	//	grafana := metrics.NewGrafana(cfg.MetricUrl, cfg.ExternalAddress)
+	//	metrics.InitMetricTool(&grafana)
+	//}
 	return nil
 }
 
@@ -603,13 +606,14 @@ func (serverObj *Server) Stop() error {
 
 	// Save fee estimator in the db
 	for shardID, feeEstimator := range serverObj.feeEstimator {
+		Logger.log.Infof("Fee estimator data when saving #%d", feeEstimator)
 		feeEstimatorData := feeEstimator.Save()
 		if len(feeEstimatorData) > 0 {
 			err := serverObj.dataBase.StoreFeeEstimator(feeEstimatorData, shardID)
 			if err != nil {
 				Logger.log.Errorf("Can't save fee estimator data on chain #%d: %v", shardID, err)
 			} else {
-				Logger.log.Debugf("Save fee estimator data on chain #%d", shardID)
+				Logger.log.Infof("Save fee estimator data on chain #%d", shardID)
 			}
 		}
 	}
@@ -679,10 +683,11 @@ func (serverObj Server) Start() {
 		return
 	}
 	Logger.log.Debug("Starting server")
+	/* --- Checkforce update code --- TODO uncomment this
 	if serverObj.chainParams.CheckForce {
 		serverObj.CheckForceUpdateSourceCode()
-	}
-	if cfg.TestNet {
+	}*/
+	if cfg.TestNet == "testnet" {
 		Logger.log.Critical("************************" +
 			"* Testnet is active *" +
 			"************************")
@@ -750,7 +755,6 @@ func (serverObj *Server) GetActiveShardNumber() int {
 
 func (serverObj *Server) TransactionPoolBroadcastLoop() {
 	<-time.Tick(serverObj.memPool.ScanTime)
-	serverObj.memPool.LockPool()
 	txDescs := serverObj.memPool.GetPool()
 	for _, txDesc := range txDescs {
 		<-time.Tick(50 * time.Millisecond)
@@ -765,6 +769,7 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 					}
 					normalTx := tx.(*transaction.Tx)
 					txMsg.(*wire.MessageTx).Transaction = normalTx
+					// Logger.log.Infof("[hy] Found", params ...interface{})
 					err = serverObj.PushMessageToAll(txMsg)
 					if err == nil {
 						serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
@@ -799,7 +804,6 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 			}
 		}
 	}
-	serverObj.memPool.UnlockPool()
 }
 
 // CheckForceUpdateSourceCode - loop to check current version with update version is equal
@@ -1540,6 +1544,7 @@ func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint6
 }
 
 func (serverObj *Server) PushMessageGetBlockBeaconBySpecificHeight(heights []uint64, getFromPool bool) error {
+	os.Exit(9)
 	msg, err := wire.MakeEmptyMessage(wire.CmdGetBlockBeacon)
 	if err != nil {
 		return err
@@ -1579,10 +1584,19 @@ func (serverObj *Server) PushMessageGetBlockShardByHeight(shardID byte, from uin
 }
 
 func (serverObj *Server) PushMessageGetBlockShardBySpecificHeight(shardID byte, heights []uint64, getFromPool bool) error {
-	msg, err := wire.MakeEmptyMessage(wire.CmdGetBlockShard)
+
+	msgs, err := serverObj.highway.Requester.GetBlockShardToBeaconByHeight(int32(shardID), 0, 0)
 	if err != nil {
+		Logger.log.Error(err)
 		return err
 	}
+
+	serverObj.putResponseMsgs(msgs)
+	return nil
+	// msg, err := wire.MakeEmptyMessage(wire.CmdGetBlockShard)
+	// if err != nil {
+	// 	return err
+	// }
 	// msg.(*wire.MessageGetBlockShard).BlkHeights = heights
 	// msg.(*wire.MessageGetBlockShard).BySpecificHeight = true
 	// msg.(*wire.MessageGetBlockShard).ShardID = shardID
@@ -1590,7 +1604,7 @@ func (serverObj *Server) PushMessageGetBlockShardBySpecificHeight(shardID byte, 
 	// if peerID == "" {
 	// 	return serverObj.PushMessageToShard(msg, shardID, map[libp2p.ID]bool{})
 	// }
-	return serverObj.PushMessageToAll(msg)
+	// return serverObj.PushMessageToAll(msg)
 
 }
 
