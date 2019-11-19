@@ -135,7 +135,7 @@ func (tp *TxPool) loadDatabaseMP() ([]TxDesc, error) {
 			}
 		}
 		//if not validated by current blockchain db then remove
-		err = tp.validateTransaction(txDesc.Desc.Tx)
+		err = tp.validateTransaction(txDesc.Desc.Tx, -1)
 		if err != nil {
 			Logger.log.Error(err)
 			err1 := tp.removeTransactionFromDatabaseMP(txDesc.Desc.Tx.Hash())
