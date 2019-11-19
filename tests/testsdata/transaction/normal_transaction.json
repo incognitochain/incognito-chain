@@ -19,7 +19,7 @@
       "params": [
         "112t8rpnK9Hq2EqZbGJpoS2t7rB3z46sFeRwogUjvzMYHhfBvB3B2X1Mx9W1jCahUZ9aXnbcmrhLXQJsjKDzMvX8vbsA8wjKDArxXfknsVy9",
         {
-          "12RyXK1aHTuCmZQqoLX1r9RjjsK3ahfhSRcgeHTAdxMUTEqaFhWbSkJVLZe9j8bfPD8cbnMYm7c3RBNhYjDivVYCoRW5h9LHhCNefWM": 1000
+          "12RsFovpqaVaPggx7kFCNwczn5QXkUuuNWV6JLSDmz9Ec2xb5NmzSGdD9MW7Xzu5Fzu5kTQEay6nnHSdi2tp6znNrvWkbY6dhnobQ8D": 1000
         },
         10,
         0
@@ -52,7 +52,7 @@
     "input": {
       "command": "getbalancebyprivatekey",
       "context": false,
-      "params": ["112t8rnY15HgjpbJn1es84ysseB6q9UQ5SwB6Eb82yejEQ3yzhd1dm5ShEiezdfMoEzBgvkuKcFdP5TY3SuWNHXKa1Krprsfxnk5wy7wZ6Dg"]
+      "params": ["112t8rnXZYZ3h3LgWhqzwCu45o1aoHUWioJqD63yuxYmSbcKru6breCUHPrZafQ6FKvbctnonLNBegW7ppDLYLstjnnTjsXT14vBS8KXE7NM"]
     },
     "output": {
       "error": null,
