@@ -42,6 +42,7 @@ const (
 	FindBeaconHeightForCrossShardBlockError
 	ValidateAggSignatureForCrossShardBlockError
 	DuplicateSerialNumbersHashError
+	CouldNotGetExchangeRateError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -81,6 +82,7 @@ var ErrCodeMessage = map[int]struct {
 	ValidateAggSignatureForCrossShardBlockError: {-1029, "Validate Agg Signature For Cross Shard Block Error"},
 	RejectDuplicateRequestStopAutoStaking:       {-1030, "Reject Duplicate Request Stop Auto Staking"},
 	DuplicateSerialNumbersHashError:             {-1031, "Duplicate Serial Numbers Hash Error"},
+	CouldNotGetExchangeRateError:                {-1032, "Could not get the exchange rate error"},
 }
 
 type MempoolTxError struct {

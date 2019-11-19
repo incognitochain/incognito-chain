@@ -16,6 +16,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/libp2p/go-libp2p"
+	"github.com/libp2p/go-libp2p-core/protocol"
 	crypto "github.com/libp2p/go-libp2p-crypto"
 	host "github.com/libp2p/go-libp2p-host"
 	net "github.com/libp2p/go-libp2p-net"
@@ -53,6 +54,7 @@ type Peer struct {
 	publicKeyType    string
 	listeningAddress common.SimpleAddr
 	seed             int64
+	protocolID       protocol.ID
 
 	// public field
 	HandleConnected    func(peerConn *PeerConn)
@@ -224,7 +226,7 @@ func (peerObj *Peer) CheckHashPool(hash string) bool {
 /*
 Init - init a peer with go libp2p
 */
-func (peerObj *Peer) Init() error {
+func (peerObj *Peer) Init(protocolIDStr string) error {
 	// If the seed is zero, use real cryptographic randomness. Otherwise, use a
 	// deterministic randomness source to make generated keys stay the same
 	// across multiple runs
@@ -297,6 +299,11 @@ func (peerObj *Peer) Init() error {
 
 	peerObj.peerConnsMtx = &sync.Mutex{}
 	peerObj.pendingPeersMtx = &sync.Mutex{}
+
+	peerObj.protocolID = protocol.ID(protocolIDStr)
+	if peerObj.protocolID == "" {
+		return NewPeerError(GetPeerIdFromProtocolError, errors.New("Protocol of peer is empty"), peerObj)
+	}
 	return nil
 }
 
@@ -305,7 +312,7 @@ func (peerObj *Peer) Start() {
 	Logger.log.Info("RemotePeer start")
 	// ping to bootnode for test env
 	Logger.log.Debug("Set stream handler and wait for connection from other peer")
-	peerObj.host.SetStreamHandler(protocolID, peerObj.pushStream)
+	peerObj.host.SetStreamHandler(peerObj.protocolID, peerObj.pushStream)
 
 	go peerObj.processConn()
 
@@ -516,7 +523,7 @@ func (peerObj *Peer) handleNewConnectionOut(otherPeer *Peer, cConn chan *PeerCon
 		return nil, nil
 	}
 
-	stream, err := peerObj.host.NewStream(context.Background(), otherPeerID, protocolID)
+	stream, err := peerObj.host.NewStream(context.Background(), otherPeerID, peerObj.protocolID)
 	Logger.log.Debug(otherPeer, stream, err)
 	if err != nil {
 		if cConn != nil {

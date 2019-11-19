@@ -79,13 +79,24 @@ Committee key set: 121VhftSAygpEJZ6i9jGkPwHkhs51e63kTqfpfs7pSZTqfozwtHS8kdNK5Bjc
 ------------------------------------------------------------
 ```
 
-5. Generate genesis block data. Use the address of shard-0 that we created at step4, as the address to received the initial PRV
+5. Generate genesis block data. Use the address of shard-0 that we created at step4, as the address to received the initial PRV. Edit the file *utility/transaction/main.go*
 
-`go run utility/transaction/main.go "<initial_PRV_ammount_in_nanoPRV>" "<private_key_shard_0>"`
+- Comment the line `initThankTx`
+```
+// initThankTx(db)
+```
 
-- For eg.: 1mil PRV
+- Replace the privatekey and initial amount as you want
+```
+testUserkeyList := map[string]uint64{
+		"112t8rncBDbGaFrAE7MZz14d2NPVWprXQuHHXCD2TgSV8USaDFZY3MihVWSqKjwy47sTQ6XvBgNYgdKH2iDVZruKQpRSB5JqxDAX6sjMoUT6": uint64(5000000000000000),
+	}
+```
 
-`go run utility/transaction/main.go "1000000000000000" "112t8rncBDbGaFrAE7MZz14d2NPVWprXQuHHXCD2TgSV8USaDFZY3MihVWSqKjwy47sTQ6XvBgNYgdKH2iDVZruKQpRSB5JqxDAX6sjMoUT6"`
+- Run the script. For eg.: (5mil PRV)
+
+`go run utility/transaction/main.go` 
+
 ```
 [{
   "Version": 1,
@@ -99,22 +110,10 @@ Committee key set: 121VhftSAygpEJZ6i9jGkPwHkhs51e63kTqfpfs7pSZTqfozwtHS8kdNK5Bjc
   "PubKeyLastByteSender": 56,
   "Metadata": null
 }]
-[{
-  "Version": 1,
-  "Type": "s",
-  "LockTime": 1571901589,
-  "Fee": 0,
-  "Info": "QGFiYw==",
-  "SigPubKey": "au7tQYOeTVqLKkxlRnGo1zGJelpAr0aE0mUqhVtGvTg=",
-  "Sig": "BNNCAoyU9zW/kUEAQVE7PN/zxCM/VHDEvr1Wck0H8gYMLrra5eRWKKwfN8fpM/u99I6slpMRAQQRWGonaxhnAg==",
-  "Proof": "AAAAAAAAAakApyBq7u1Bg55NWosqTGVGcajXMYl6WkCvRoTSZSqFW0a9OCCbDr7HdHWxD+8aUv0Wp+bs/Y6PxFZWPOkD4FfavAcaOyCtQnuJLr6PguhAd3BbjiClUWLN0ZI20cHX1JcH6bDwAiABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBqoFvy1OQ53jQjOn7Y4Mx9PB6Uy3b3lzjIT+DD1xneCwAAAAAAAAAAAA==",
-  "PubKeyLastByteSender": 56,
-  "Metadata": null
-}]
 ```
 
 6. Copy genesis block data to *./incognito-chain/blockchain/constant.go*, 
-replace the output at step5 to the section TestnetInitPRV. (Get the block of node that has `Info: null`)
+replace the output at step5 to the section TestnetInitPRV. 
 ```
 var TestnetInitPRV = []string{
 	`{
@@ -326,7 +325,9 @@ curl --header "Content-Type: application/json" \
 
 #SECTION IV: WRITING GOLANG TEST SCRIPT:
 -----------------------------------
-- Check the file `./incognito-chain/chain_test.go` for sample test case template
+- Check the file `./incognito-chain/testexample/test-chain.go` for sample test case template
 - Execute the test script:
 
-`go test -run chain_test.go`
+`go run test-chain.go`
+
+- Modify it as you want

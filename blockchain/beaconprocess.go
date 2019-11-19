@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/database"
@@ -424,6 +425,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 	bridgeInstructions := [][]string{}
 	acceptedBlockRewardInstructions := [][]string{}
 	stopAutoStakingInstructions := [][]string{}
+	statefulActionsByShardID := map[byte][][]string{}
 	// Get Reward Instruction By Epoch
 	if beaconBlock.Header.Height%blockchain.config.ChainParams.Epoch == 1 {
 		rewardByEpochInstruction, err = blockchain.BuildRewardInstructionByEpoch(beaconBlock.Header.Height, beaconBlock.Header.Epoch-1)
@@ -472,7 +474,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 				}
 			}
 			for _, shardBlock := range shardBlocks {
-				tempShardState, stakeInstruction, tempValidStakePublicKeys, swapInstruction, bridgeInstruction, acceptedBlockRewardInstruction, stopAutoStakingInstruction := blockchain.GetShardStateFromBlock(beaconBlock.Header.Height, shardBlock, shardID, false, validStakePublicKeys)
+				tempShardState, stakeInstruction, tempValidStakePublicKeys, swapInstruction, bridgeInstruction, acceptedBlockRewardInstruction, stopAutoStakingInstruction, statefulActions := blockchain.GetShardStateFromBlock(beaconBlock.Header.Height, shardBlock, shardID, false, validStakePublicKeys)
 				tempShardStates[shardID] = append(tempShardStates[shardID], tempShardState[shardID])
 				stakeInstructions = append(stakeInstructions, stakeInstruction...)
 				swapInstructions[shardID] = append(swapInstructions[shardID], swapInstruction[shardID]...)
@@ -480,11 +482,27 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 				acceptedBlockRewardInstructions = append(acceptedBlockRewardInstructions, acceptedBlockRewardInstruction)
 				stopAutoStakingInstructions = append(stopAutoStakingInstructions, stopAutoStakingInstruction...)
 				validStakePublicKeys = append(validStakePublicKeys, tempValidStakePublicKeys...)
+
+				// group stateful actions by shardID
+				_, found := statefulActionsByShardID[shardID]
+				if !found {
+					statefulActionsByShardID[shardID] = statefulActions
+				} else {
+					statefulActionsByShardID[shardID] = append(statefulActionsByShardID[shardID], statefulActions...)
+				}
 			}
 		} else {
 			return NewBlockChainError(GetShardToBeaconBlocksError, fmt.Errorf("Expect to get more than %+v ShardToBeaconBlock but only get %+v (shard %v)", len(beaconBlock.Body.ShardState[shardID]), len(shardBlocks), shardID))
 		}
 	}
+	// build stateful instructions
+	statefulInsts := blockchain.buildStatefulInstructions(
+		statefulActionsByShardID,
+		beaconBlock.Header.Height,
+		blockchain.GetDatabase(),
+	)
+	bridgeInstructions = append(bridgeInstructions, statefulInsts...)
+
 	tempInstruction, err := blockchain.BestState.Beacon.GenerateInstruction(beaconBlock.Header.Height,
 		stakeInstructions, swapInstructions, stopAutoStakingInstructions,
 		blockchain.BestState.Beacon.CandidateShardWaitingForCurrentRandom,
@@ -677,13 +695,14 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 		instructions := beaconBlock.Body.Instructions
 		for _, l := range instructions {
 			if l[0] == "random" {
+				startTime := time.Now()
 				// ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
 				nonce, err := strconv.Atoi(l[1])
 				if err != nil {
 					Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 					return NewBlockChainError(UnExpectedError, err)
 				}
-				ok, err = randomClient.VerifyNonceWithTimestamp(beaconBestState.CurrentRandomTimeStamp, int64(nonce))
+				ok, err = randomClient.VerifyNonceWithTimestamp(startTime, beaconBestState.BlockMaxCreateTime, beaconBestState.CurrentRandomTimeStamp, int64(nonce))
 				Logger.log.Infof("Verify Random number %+v", ok)
 				if err != nil {
 					Logger.log.Error("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
@@ -1199,6 +1218,12 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	err = blockchain.processBridgeInstructions(beaconBlock, &batchPutData)
 	if err != nil {
 		return NewBlockChainError(ProcessBridgeInstructionError, err)
+	}
+
+	// execute, store
+	err = blockchain.processPDEInstructions(beaconBlock, &batchPutData)
+	if err != nil {
+		return NewBlockChainError(ProcessPDEInstructionError, err)
 	}
 
 	return blockchain.config.DataBase.PutBatch(batchPutData)

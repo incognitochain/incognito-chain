@@ -130,12 +130,12 @@ func (tp *TxPool) validateTxIndependentProperties(tx metadata.Transaction) error
 	}
 
 	// check fee of tx
-	limitFee := tp.config.FeeEstimator[shardID].limitFee
-	txFee := tx.GetTxFee()
-	ok = tx.CheckTransactionFee(limitFee)
-	if !ok {
-		return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", tx.Hash().String(), txFee, limitFee*tx.GetTxActualSize()))
-	}
+	// limitFee := tp.config.FeeEstimator[shardID].limitFee
+	// txFee := tx.GetTxFee()
+	// ok = tx.CheckTransactionFee(limitFee)
+	// if !ok {
+	// 	return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", tx.Hash().String(), txFee, limitFee*tx.GetTxActualSize()))
+	// }
 	// end check with policy
 
 	ok = tx.ValidateType()
