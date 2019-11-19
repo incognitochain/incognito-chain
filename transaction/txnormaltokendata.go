@@ -174,16 +174,26 @@ func (txObj *CustomTokenParamTx) SetVinsAmount(vinsAmount uint64) {
 func CreateCustomTokenReceiverArray(data interface{}) ([]TxTokenVout, int64, error) {
 	result := []TxTokenVout{}
 	voutsAmount := int64(0)
-	receivers := data.(map[string]interface{})
+	receivers, ok := data.(map[string]interface{})
+	if !ok {
+		return nil, 0, errors.New("Receivers param is invalid")
+	}
+
 	for key, value := range receivers {
 		keyWallet, err := wallet.Base58CheckDeserialize(key)
 		if err != nil {
 			return nil, 0, err
 		}
 		keySet := keyWallet.KeySet
+
+		valueTemp, ok := value.(float64)
+		if !ok {
+			return nil, 0, errors.New("Value param is invalid")
+		}
+
 		temp := TxTokenVout{
 			PaymentAddress: keySet.PaymentAddress,
-			Value:          uint64(value.(float64)),
+			Value:          uint64(valueTemp),
 		}
 		result = append(result, temp)
 		voutsAmount += int64(temp.Value)

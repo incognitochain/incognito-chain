@@ -8,14 +8,14 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-type DevRewardInfo struct {
-	DevReward map[common.Hash]uint64
+type IncDAORewardInfo struct {
+	IncDAOReward map[common.Hash]uint64
 }
 
-func BuildInstForDevReward(reward map[common.Hash]uint64, devAddress string) ([]string, error) {
+func BuildInstForIncDAOReward(reward map[common.Hash]uint64, incDAOAddress string) ([]string, error) {
 
-	devRewardInfo := DevRewardInfo{
-		DevReward: reward,
+	devRewardInfo := IncDAORewardInfo{
+		IncDAOReward: reward,
 	}
 
 	contentStr, err := json.Marshal(devRewardInfo)
@@ -23,10 +23,14 @@ func BuildInstForDevReward(reward map[common.Hash]uint64, devAddress string) ([]
 		return nil, err
 	}
 
-	keyWalletDevAccount, _ := wallet.Base58CheckDeserialize(devAddress)
+	keyWalletDevAccount, err := wallet.Base58CheckDeserialize(incDAOAddress)
+	if err != nil {
+		Logger.log.Error(NewMetadataTxError(WrongIncognitoDAOPaymentAddressError, err))
+		return nil, err
+	}
 	returnedInst := []string{
-		strconv.Itoa(DevRewardRequestMeta),
-		strconv.Itoa(int(common.GetShardIDFromLastByte(keyWalletDevAccount.KeySet.PaymentAddress.Pk[32]))),
+		strconv.Itoa(IncDAORewardRequestMeta),
+		strconv.Itoa(int(common.GetShardIDFromLastByte(keyWalletDevAccount.KeySet.PaymentAddress.Pk[len(keyWalletDevAccount.KeySet.PaymentAddress.Pk)-1]))),
 		"devRewardInst",
 		string(contentStr),
 	}
@@ -34,8 +38,8 @@ func BuildInstForDevReward(reward map[common.Hash]uint64, devAddress string) ([]
 	return returnedInst, nil
 }
 
-func NewDevRewardInfoFromStr(inst string) (*DevRewardInfo, error) {
-	Ins := &DevRewardInfo{}
+func NewIncDAORewardInfoFromStr(inst string) (*IncDAORewardInfo, error) {
+	Ins := &IncDAORewardInfo{}
 	err := json.Unmarshal([]byte(inst), Ins)
 	if err != nil {
 		return nil, err

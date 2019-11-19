@@ -4,7 +4,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
 )
 
@@ -21,66 +20,42 @@ type CreateRawPrivacyTokenTxParam struct {
 }
 
 func NewCreateRawPrivacyTokenTxParam(params interface{}) (*CreateRawPrivacyTokenTxParam, error) {
-	// all component
 	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 5 {
+		return nil, errors.New("not enough param")
+	}
 
-	/****** START FEtch data from component *********/
-	// param #1: private key of sender
-	senderKeyParam := arrayParams[0]
-	senderKeySet, shardIDSender, err := GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
+	// create basic param for tx
+	txparam, err := NewCreateRawTxParam(params)
 	if err != nil {
-		return nil, errors.New("invalid sender's key")
+		return nil, err
 	}
-
-	// param #2: list receiver
-	receiversPaymentAddressStrParam := make(map[string]interface{})
-	if arrayParams[1] != nil {
-		receiversPaymentAddressStrParam = arrayParams[1].(map[string]interface{})
-	}
-	paymentInfos := make([]*privacy.PaymentInfo, 0)
-	for paymentAddressStr, amount := range receiversPaymentAddressStrParam {
-		keyWalletReceiver, err := wallet.Base58CheckDeserialize(paymentAddressStr)
-		if err != nil {
-			return nil, errors.New("invalid receiver paymentaddress")
-		}
-		paymentInfo := &privacy.PaymentInfo{
-			Amount:         uint64(amount.(float64)),
-			PaymentAddress: keyWalletReceiver.KeySet.PaymentAddress,
-		}
-		paymentInfos = append(paymentInfos, paymentInfo)
-	}
-
-	// param #3: estimation fee coin per kb
-	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
-
-	// param #4: hasPrivacy flag for native coin
-	hasPrivacyCoin := int(arrayParams[3].(float64)) > 0
 
 	// param #5: token component
-	tokenParamsRaw := arrayParams[4].(map[string]interface{})
-
-	// param #6: hasPrivacyToken flag for token
-	hasPrivacyToken := true
-	if len(arrayParams) >= 6 {
-		hasPrivacyToken = int(arrayParams[5].(float64)) > 0
+	tokenParamsRaw, ok := arrayParams[4].(map[string]interface{})
+	if !ok  {
+		return nil, errors.New("token param is invalid")
 	}
 
-	// param#7: info (option)
-	info := []byte{}
+	// param #7: hasPrivacyToken flag for token
+	hasPrivacyToken := true
 	if len(arrayParams) >= 7 {
-		infoStr := arrayParams[6].(string)
-		info = []byte(infoStr)
+		hasPrivacyTokenParam, ok := arrayParams[6].(float64)
+		if !ok  {
+			return nil, errors.New("has privacy for token param is invalid")
+		}
+		hasPrivacyToken = int(hasPrivacyTokenParam) > 0
 	}
 
 	/****** END FEtch data from params *********/
 
 	return &CreateRawPrivacyTokenTxParam{
-		SenderKeySet:         senderKeySet,
-		ShardIDSender:        shardIDSender,
-		PaymentInfos:         paymentInfos,
-		EstimateFeeCoinPerKb: int64(estimateFeeCoinPerKb),
-		HasPrivacyCoin:       hasPrivacyCoin,
-		Info:                 info,
+		SenderKeySet:         txparam.SenderKeySet,
+		ShardIDSender:        txparam.ShardIDSender,
+		PaymentInfos:         txparam.PaymentInfos,
+		EstimateFeeCoinPerKb: int64(txparam.EstimateFeeCoinPerKb),
+		HasPrivacyCoin:       txparam.HasPrivacyCoin,
+		Info:                 txparam.Info,
 		HasPrivacyToken:      hasPrivacyToken,
 		TokenParamsRaw:       tokenParamsRaw,
 	}, nil

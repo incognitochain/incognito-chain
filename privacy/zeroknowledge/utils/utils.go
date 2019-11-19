@@ -1,8 +1,6 @@
 package utils
 
 import (
-	"math/big"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/aggregaterange"
@@ -11,21 +9,20 @@ import (
 // GenerateChallengeFromByte get hash of n points in G append with input values
 // return blake_2b(G[0]||G[1]||...||G[CM_CAPACITY-1]||<values>)
 // G[i] is list of all generator point of Curve
-func GenerateChallenge(values [][]byte) *big.Int {
-	bytes := privacy.PedCom.G[0].Compress()
-	for i := 1; i < len(privacy.PedCom.G); i++ {
-		bytes = append(bytes, privacy.PedCom.G[i].Compress()...)
+func GenerateChallenge(values [][]byte) *privacy.Scalar {
+	bytes := []byte{}
+	for i := 0; i < len(privacy.PedCom.G); i++ {
+		bytes = append(bytes, privacy.PedCom.G[i].ToBytesS()...)
 	}
 
 	for i := 0; i < len(values); i++ {
 		bytes = append(bytes, values[i]...)
 	}
 
-	hash := common.HashB(bytes)
-
-	res := new(big.Int).SetBytes(hash)
-	res.Mod(res, privacy.Curve.Params().N)
-	return res
+	hash := privacy.HashToScalar(bytes)
+	//res := new(big.Int).SetBytes(hash)
+	//res.Mod(res, privacy.Curve.Params().N)
+	return hash
 }
 
 // EstimateProofSize returns the estimated size of the proof in bytes
@@ -49,14 +46,14 @@ func EstimateProofSize(nInput int, nOutput int, hasPrivacy bool) uint64 {
 	sizeInputCoins := nInput * inputCoinsPrivacySize
 	sizeOutputCoins := nOutput * outputCoinsPrivacySize
 
-	sizeComOutputValue := nOutput * privacy.CompressedEllipticPointSize
-	sizeComOutputSND := nOutput * privacy.CompressedEllipticPointSize
-	sizeComOutputShardID := nOutput * privacy.CompressedEllipticPointSize
+	sizeComOutputValue := nOutput * privacy.Ed25519KeySize
+	sizeComOutputSND := nOutput * privacy.Ed25519KeySize
+	sizeComOutputShardID := nOutput * privacy.Ed25519KeySize
 
-	sizeComInputSK := privacy.CompressedEllipticPointSize
-	sizeComInputValue := nInput * privacy.CompressedEllipticPointSize
-	sizeComInputSND := nInput * privacy.CompressedEllipticPointSize
-	sizeComInputShardID := privacy.CompressedEllipticPointSize
+	sizeComInputSK := privacy.Ed25519KeySize
+	sizeComInputValue := nInput * privacy.Ed25519KeySize
+	sizeComInputSND := nInput * privacy.Ed25519KeySize
+	sizeComInputShardID := privacy.Ed25519KeySize
 
 	sizeCommitmentIndices := nInput * privacy.CommitmentRingSize * common.Uint64Size
 

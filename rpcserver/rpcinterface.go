@@ -84,6 +84,7 @@ var HttpHandler = map[string]httpHandler{
 	getCandidateList:              (*HttpServer).handleGetCandidateList,
 	getCommitteeList:              (*HttpServer).handleGetCommitteeList,
 	getShardBestState:             (*HttpServer).handleGetShardBestState,
+	getShardBestStateDetail:       (*HttpServer).handleGetShardBestStateDetail,
 	getBeaconBestState:            (*HttpServer).handleGetBeaconBestState,
 	getBeaconBestStateDetail:      (*HttpServer).handleGetBeaconBestStateDetail,
 	getBeaconPoolState:            (*HttpServer).handleGetBeaconPoolState,
@@ -121,6 +122,7 @@ var HttpHandler = map[string]httpHandler{
 	getAllBridgeTokens:              (*HttpServer).handleGetAllBridgeTokens,
 	getETHHeaderByHash:              (*HttpServer).handleGetETHHeaderByHash,
 	getBridgeReqWithStatus:          (*HttpServer).handleGetBridgeReqWithStatus,
+	generateTokenID:                 (*HttpServer).handleGenerateTokenID,
 
 	// wallet
 	getPublicKeyFromPaymentAddress:   (*HttpServer).handleGetPublicKeyFromPaymentAddress,
