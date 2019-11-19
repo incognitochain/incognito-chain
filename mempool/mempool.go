@@ -3,6 +3,7 @@ package mempool
 import (
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
 	"strings"
 	"sync"
@@ -173,11 +174,14 @@ func (tp *TxPool) MonitorPool() {
 		tp.mtx.Lock()
 		ttl := time.Duration(tp.config.TxLifeTime) * time.Second
 		txsToBeRemoved := []*TxDesc{}
+		Logger.log.Info("MonitorPool: Start to collect timeout ttl tx")
 		for _, txDesc := range tp.pool {
 			if time.Since(txDesc.StartTime) > ttl {
+				Logger.log.Infof("MonitorPool: Add to list removed tx with txHash=%+v", txDesc.Desc.Tx.Hash().String())
 				txsToBeRemoved = append(txsToBeRemoved, txDesc)
 			}
 		}
+		Logger.log.Infof("MonitorPool: End to collect timeout ttl tx - Count of txsToBeRemoved=%+v", len(txsToBeRemoved))
 		for _, txDesc := range txsToBeRemoved {
 			txHash := *txDesc.Desc.Tx.Hash()
 			startTime := txDesc.StartTime
@@ -188,6 +192,7 @@ func (tp *TxPool) MonitorPool() {
 			tp.removeTokenIDByTxHash(txHash)
 			err := tp.config.DataBaseMempool.RemoveTransaction(txDesc.Desc.Tx.Hash())
 			if err != nil {
+				Logger.log.Errorf("MonitorPool: RemoveTransaction tx hash=%+v with error %+v", txDesc.Desc.Tx.Hash().String(), err)
 				Logger.log.Error(err)
 			}
 			txSize := txDesc.Desc.Tx.GetTxActualSize()
@@ -219,7 +224,8 @@ func (tp *TxPool) MonitorPool() {
 // This function is safe for concurrent access.
 // #1: tx
 // #2: default nil, contain input coins hash, which are used for creating this tx
-func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash, *TxDesc, error) {
+func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight int64) (*common.Hash, *TxDesc, error) {
+	//tp.config.BlockChain.BestState.Beacon.BeaconHeight
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
 	if tp.IsTest {
@@ -254,7 +260,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 		return nil, nil, NewMempoolTxError(MaxPoolSizeError, errors.New("Pool reach max number of transaction"))
 	}
 	startAdd := time.Now()
-	hash, txDesc, err := tp.maybeAcceptTransaction(tx, tp.config.PersistMempool, true)
+	hash, txDesc, err := tp.maybeAcceptTransaction(tx, tp.config.PersistMempool, true, beaconHeight)
 	elapsed := float64(time.Since(startAdd).Seconds())
 	//==========
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
@@ -303,10 +309,10 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 }
 
 // This function is safe for concurrent access.
-func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transaction) (*metadata.TxDesc, error) {
+func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transaction, beaconHeight int64) (*metadata.TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
-	_, txDesc, err := tp.maybeAcceptTransaction(tx, false, false)
+	_, txDesc, err := tp.maybeAcceptTransaction(tx, false, false, beaconHeight)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
@@ -321,7 +327,7 @@ func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transactio
 // #2: store into db
 // #3: default nil, contain input coins hash, which are used for creating this tx
 */
-func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, isNewTransaction bool) (*common.Hash, *TxDesc, error) {
+func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, isNewTransaction bool, beaconHeight int64) (*common.Hash, *TxDesc, error) {
 	txType := tx.GetType()
 	if txType == common.TxNormalType {
 		if tx.IsPrivacy() {
@@ -333,7 +339,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 	txSize := fmt.Sprintf("%d", tx.GetTxActualSize())
 	startValidate := time.Now()
 	// validate tx
-	err := tp.validateTransaction(tx)
+	err := tp.validateTransaction(tx, beaconHeight)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -385,6 +391,84 @@ func createTxDescMempool(tx metadata.Transaction, height uint64, fee uint64, fee
 	return txDesc
 }
 
+func (tp *TxPool) checkFees(
+	tx metadata.Transaction,
+	shardID byte,
+	beaconHeight int64,
+) bool {
+	Logger.log.Info("Beacon heigh for checkFees: ", beaconHeight, tx.Hash().String())
+	txType := tx.GetType()
+	if txType == common.TxCustomTokenPrivacyType {
+		limitFee := tp.config.FeeEstimator[shardID].GetLimitFeeForNativeToken()
+
+		// check transaction fee for meta data
+		meta := tx.GetMetadata()
+		// verify at metadata level
+		if meta != nil {
+			ok := meta.CheckTransactionFee(tx, limitFee, beaconHeight, tp.config.DataBase)
+			if !ok {
+				Logger.log.Errorf("Error: %+v", NewMempoolTxError(RejectInvalidFee,
+					fmt.Errorf("transaction %+v: Invalid fee metadata",
+						tx.Hash().String())))
+			}
+			return ok
+		}
+		// verify at transaction level
+		tokenID := tx.GetTokenID()
+		feeNativeToken := tx.GetTxFee()
+		feePToken := tx.GetTxFeeToken()
+		//convert fee in Ptoken to fee in native token (if feePToken > 0)
+		if feePToken > 0 {
+			feePTokenToNativeTokenTmp, err := metadata.ConvertPrivacyTokenToNativeToken(feePToken, tokenID, beaconHeight, tp.config.DataBase)
+			if err != nil {
+				Logger.log.Errorf("ERROR: %+v", NewMempoolTxError(RejectInvalidFee,
+					fmt.Errorf("transaction %+v: %+v %v can not convert to native token",
+						tx.Hash().String(), feePToken, tokenID)))
+				return false
+			}
+
+			feePTokenToNativeToken := uint64(math.Ceil(feePTokenToNativeTokenTmp))
+			feeNativeToken += feePTokenToNativeToken
+		}
+		// get limit fee in native token
+		actualTxSize := tx.GetTxActualSize()
+		// check fee in native token
+		minFee := actualTxSize * limitFee
+		if feeNativeToken < minFee {
+			Logger.log.Errorf("ERROR: %+v", NewMempoolTxError(RejectInvalidFee,
+				fmt.Errorf("transaction %+v has %d fees PRV which is under the required amount of %d, tx size %d",
+					tx.Hash().String(), feeNativeToken, minFee, actualTxSize)))
+			return false
+		}
+	} else {
+		// This is a normal tx -> only check like normal tx with PRV
+		limitFee := tp.config.FeeEstimator[shardID].limitFee
+		txFee := tx.GetTxFee()
+		// txNormal := tx.(*transaction.Tx)
+		if limitFee > 0 {
+			meta := tx.GetMetadata()
+			if meta != nil {
+				ok := tx.GetMetadata().CheckTransactionFee(tx, limitFee, beaconHeight, tp.config.DataBase)
+				if !ok {
+					Logger.log.Errorf("ERROR: %+v", NewMempoolTxError(RejectInvalidFee,
+						fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
+							tx.Hash().String(), txFee, limitFee*tx.GetTxActualSize())))
+				}
+				return ok
+			}
+			fullFee := limitFee * tx.GetTxActualSize()
+			// ok := tx.CheckTransactionFee(limitFee)
+			if txFee < fullFee {
+				Logger.log.Errorf("ERROR: %+v", NewMempoolTxError(RejectInvalidFee,
+					fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
+						tx.Hash().String(), txFee, limitFee*tx.GetTxActualSize())))
+				return false
+			}
+		}
+	}
+	return true
+}
+
 /*
 // maybeAcceptTransaction is the internal function which implements the public
 // See the comment for MaybeAcceptTransaction for more details.
@@ -402,7 +486,7 @@ In Param#2: isStore: store transaction to persistence storage only work for tran
 9. Staking Transaction: Check Duplicate stake public key in pool ONLY with staking transaction
 10. RequestStopAutoStaking
 */
-func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
+func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int64) error {
 	var shardID byte
 	var err error
 	var now time.Time
@@ -460,97 +544,11 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	}
 	// Condition 4: check fee PRV of tx
 	now = time.Now()
-	switch tx.GetType() {
-	case common.TxCustomTokenPrivacyType:
-		{
-			txPrivacyToken := tx.(*transaction.TxCustomTokenPrivacy)
-			isPaidByPRV := false
-			isPaidPartiallyPRV := false
-			// check PRV element and pToken element
-			if txPrivacyToken.Tx.Proof != nil || txPrivacyToken.TxPrivacyTokenData.Type == transaction.CustomTokenInit {
-				// tx contain PRV data -> check with PRV fee
-				// @notice: check limit fee but apply for token fee
-				limitFee := tp.config.FeeEstimator[shardID].limitFee
-				if limitFee > 0 {
-					if txPrivacyToken.GetTxFeeToken() == 0 || // not paid with token -> use PRV for paying fee
-						txPrivacyToken.TxPrivacyTokenData.Type == transaction.CustomTokenInit { // or init token -> need to use PRV for paying fee
-						// paid all with PRV
-						ok := txPrivacyToken.CheckTransactionFee(limitFee)
-						if !ok {
-							return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees PRV which is under the required amount of %d",
-								txHash.String(),
-								txPrivacyToken.Tx.GetTxFee(),
-								limitFee*txPrivacyToken.GetTxActualSize()))
-						}
-						isPaidPartiallyPRV = false
-					} else {
-						// paid partial with PRV
-						ok := txPrivacyToken.Tx.CheckTransactionFee(limitFee)
-						if !ok {
-							return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees PRV which is under the required amount of %d",
-								txHash.String(),
-								txPrivacyToken.Tx.GetTxFee(),
-								limitFee*txPrivacyToken.Tx.GetTxActualSize()))
-						}
-						isPaidPartiallyPRV = true
-					}
-				}
-				isPaidByPRV = true
-			}
-			if txPrivacyToken.TxPrivacyTokenData.TxNormal.Proof != nil {
-				limitFeeToken := tp.config.FeeEstimator[shardID].limitFeeToken
-				if limitFeeToken > 0 {
-					if !isPaidByPRV {
-						// not paid anything by PRV
-						// -> check fee on total tx size(prv tx container + pToken tx) and use token as fee
-						ok := txPrivacyToken.CheckTransactionFeeByFeeToken(limitFeeToken)
-						if !ok {
-							return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
-								txHash.String(),
-								tx.GetTxFeeToken(),
-								limitFeeToken*txPrivacyToken.GetTxActualSize()))
-						}
-					} else {
-						// paid by PRV
-						if isPaidPartiallyPRV {
-							// paid partially -> check fee on pToken tx data size(only for pToken tx)
-							ok := txPrivacyToken.CheckTransactionFeeByFeeTokenForTokenData(limitFeeToken)
-							if !ok {
-								return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
-									txHash.String(),
-									tx.GetTxFeeToken(),
-									limitFeeToken*txPrivacyToken.GetTxPrivacyTokenActualSize()))
-							}
-						}
-					}
-				}
-			}
-		}
-	case common.TxCustomTokenType:
-		{
-			// Only check like normal tx with PRV
-			limitFee := tp.config.FeeEstimator[shardID].limitFee
-			txCustomToken := tx.(*transaction.TxNormalToken)
-			if limitFee > 0 {
-				ok := txCustomToken.CheckTransactionFee(limitFee)
-				if !ok {
-					return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", txHash.String(), txCustomToken.GetTxFee(), limitFee*tx.GetTxActualSize()))
-				}
-			}
-		}
-	default:
-		{
-			// This is a normal tx -> only check like normal tx with PRV
-			limitFee := tp.config.FeeEstimator[shardID].limitFee
-			txNormal := tx.(*transaction.Tx)
-			if limitFee > 0 {
-				txFee := txNormal.GetTxFee()
-				ok := tx.CheckTransactionFee(limitFee)
-				if !ok {
-					return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", txHash.String(), txFee, limitFee*tx.GetTxActualSize()))
-				}
-			}
-		}
+	validFee := tp.checkFees(tx, shardID, beaconHeight)
+	if !validFee {
+		return NewMempoolTxError(RejectInvalidFee,
+			fmt.Errorf("Transaction %+v has invalid fees.",
+				tx.Hash().String()))
 	}
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,

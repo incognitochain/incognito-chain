@@ -11,7 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -128,34 +128,34 @@ func (tx TxCustomTokenPrivacy) GetTxPrivacyTokenActualSize() uint64 {
 }
 
 // CheckTransactionFee - check fee for all tx by use PRV as fee
-func (tx TxCustomTokenPrivacy) CheckTransactionFee(minFeePerKbTx uint64) bool {
-	if tx.IsSalaryTx() {
-		return true
-	}
-	if tx.Metadata != nil {
-		return tx.Metadata.CheckTransactionFee(&tx, minFeePerKbTx)
-	}
-	fullFee := minFeePerKbTx * tx.GetTxActualSize()
-	return tx.GetTxFee() >= fullFee
-}
+// func (tx TxCustomTokenPrivacy) CheckTransactionFee(minFeePerKbTxInNativeToken uint64) bool {
+// 	if tx.IsSalaryTx() {
+// 		return true
+// 	}
+// 	if tx.Metadata != nil {
+// 		return tx.Metadata.CheckTransactionFee(&tx, minFeePerKbTxInNativeToken)
+// 	}
+// 	fullFee := minFeePerKbTxInNativeToken * tx.GetTxActualSize()
+// 	return tx.GetTxFee() >= fullFee
+// }
 
-// CheckTransactionFeeByFeeToken - check fee for all tx by use token as fee
-func (tx TxCustomTokenPrivacy) CheckTransactionFeeByFeeToken(minFeePerKbTx uint64) bool {
-	if tx.IsSalaryTx() {
-		return true
-	}
-	fullFee := minFeePerKbTx * tx.GetTxActualSize()
-	return tx.GetTxFeeToken() >= fullFee
-}
-
-// CheckTransactionFeeByFeeTokenForTokenData - check fee for token data info in tx by use token as fee
-func (tx TxCustomTokenPrivacy) CheckTransactionFeeByFeeTokenForTokenData(minFeePerKbTx uint64) bool {
-	if tx.IsSalaryTx() {
-		return true
-	}
-	fullFee := minFeePerKbTx * tx.GetTxPrivacyTokenActualSize()
-	return tx.GetTxFeeToken() >= fullFee
-}
+//// CheckTransactionFeeByFeeToken - check fee for all tx by use token as fee
+//func (tx TxCustomTokenPrivacy) CheckTransactionFeeByFeeToken(minFeePerKbTx uint64) bool {
+//	if tx.IsSalaryTx() {
+//		return true
+//	}
+//	fullFee := minFeePerKbTx * tx.GetTxActualSize()
+//	return tx.GetTxFeeToken() >= fullFee
+//}
+//
+//// CheckTransactionFeeByFeeTokenForTokenData - check fee for token data info in tx by use token as fee
+//func (tx TxCustomTokenPrivacy) CheckTransactionFeeByFeeTokenForTokenData(minFeePerKbTx uint64) bool {
+//	if tx.IsSalaryTx() {
+//		return true
+//	}
+//	fullFee := minFeePerKbTx * tx.GetTxPrivacyTokenActualSize()
+//	return tx.GetTxFeeToken() >= fullFee
+//}
 
 type TxPrivacyTokenInitParams struct {
 	senderKey       *privacy.PrivateKey
@@ -250,6 +250,14 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 			tempOutputCoin[0].CoinDetails.SetPublicKey(PK)
 			tempOutputCoin[0].CoinDetails.SetRandomness(privacy.RandomScalar())
 
+			// set info coin for output coin
+			if len(params.tokenParams.Receiver[0].Message) > 0 {
+				if len(params.tokenParams.Receiver[0].Message) > privacy.MaxSizeInfoCoin {
+					return NewTransactionErr(ExceedSizeInfoOutCoinError, nil)
+				}
+				tempOutputCoin[0].CoinDetails.SetInfo(params.tokenParams.Receiver[0].Message)
+			}
+
 			sndOut := privacy.RandomScalar()
 			tempOutputCoin[0].CoinDetails.SetSNDerivator(sndOut)
 			temp.Proof.SetOutputCoins(tempOutputCoin)
@@ -331,7 +339,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 				params.db,
 				propertyID,
 				nil,
-				params.info))
+				nil))
 			if err != nil {
 				return NewTransactionErr(PrivacyTokenInitTokenDataError, err)
 			}
@@ -796,6 +804,14 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 			}
 			tempOutputCoin[0].CoinDetails.SetPublicKey(PK)
 			tempOutputCoin[0].CoinDetails.SetRandomness(privacy.RandomScalar())
+
+			// set info coin for output coin
+			if len(params.txParam.tokenParams.Receiver[0].Message) > 0 {
+				if len(params.txParam.tokenParams.Receiver[0].Message) > privacy.MaxSizeInfoCoin {
+					return NewTransactionErr(ExceedSizeInfoOutCoinError, nil)
+				}
+				tempOutputCoin[0].CoinDetails.SetInfo(params.txParam.tokenParams.Receiver[0].Message)
+			}
 
 			sndOut := privacy.RandomScalar()
 			tempOutputCoin[0].CoinDetails.SetSNDerivator(sndOut)
