@@ -330,7 +330,7 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 		}
 		item := jsonresult.NewPrivacyForCrossShard(token)
 		if item.Name == "" {
-			txs, err := httpServer.txService.PrivacyCustomTokenDetail(item.ID)
+			txs, _, err := httpServer.txService.PrivacyCustomTokenDetail(item.ID)
 			if err != nil {
 				Logger.log.Error(err)
 			} else {
@@ -440,7 +440,7 @@ func (httpServer *HttpServer) handleDefragmentAccount(params interface{}, closeC
 */
 func (httpServer *HttpServer) createRawDefragmentAccountTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	var err error
-	tx, err := httpServer.txService.BuildRawDefragmentAccountTransaction(params, nil)
+	tx, err := httpServer.txService.BuildRawDefragmentAccountTransaction(params, nil, *httpServer.config.Database)
 	if err.(*rpcservice.RPCError) != nil {
 		Logger.log.Critical(err)
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)

@@ -54,6 +54,7 @@ priv.json
 bin/keylist.json
 bin/incognito
 bin/bootnode
+bin/sample-config.conf
 incognito
 config
 
