@@ -58,6 +58,7 @@ func (c *BlockRequester) Register(
 	ctx context.Context,
 	pubkey string,
 	messages []string,
+	committeeIDs []byte,
 	selfID peer.ID,
 ) ([]*MessageTopicPair, error) {
 	if !c.Ready() {
@@ -70,6 +71,7 @@ func (c *BlockRequester) Register(
 		&RegisterRequest{
 			CommitteePublicKey: pubkey,
 			WantedMessages:     messages,
+			CommitteeID:        committeeIDs,
 			PeerID:             peer.IDB58Encode(selfID),
 		},
 	)
