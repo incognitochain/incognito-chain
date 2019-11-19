@@ -43,9 +43,9 @@ const (
 	DefaultFastStartup            = true
 	DefaultNodeMode               = common.NodeModeRelay
 	DefaultEnableMining           = true
-	DefaultTxPoolTTL              = uint(12 * time.Hour) // 12 hours
+	DefaultTxPoolTTL              = uint(1 * time.Hour) // 1 hours
 	DefaultTxPoolMaxTx            = uint64(100000)
-	DefaultLimitFee               = uint64(0)
+	DefaultLimitFee               = uint64(1) // 1 nano PRV = 10^-9 PRV
 	DefaultLimitFeeToken          = uint64(0)
 	// For wallet
 	DefaultWalletName     = "wallet"
@@ -116,7 +116,7 @@ type config struct {
 	// Generate  bool   `long:"generate" description:"Generate (mine) coins using the CPU"`
 
 	// Net config
-	TestNet bool `long:"testnet" description:"Use the test network"`
+	TestNet string `long:"testnet" description:"Use the test network"`
 
 	NodeMode    string `long:"nodemode" description:"Role of this node (beacon/shard/wallet/relay | default role is 'relay' (relayshards must be set to run), 'auto' mode will switch between 'beacon' and 'shard')"`
 	RelayShards string `long:"relayshards" description:"set relay shards of this node when in 'relay' mode if noderole is auto then it only sync shard data when user is a shard producer/validator"`
@@ -149,6 +149,10 @@ type config struct {
 
 	// Highway
 	Libp2pPrivateKey string `long:"libp2pprivatekey" description:"Private key used to create node's PeerID, empty to generate random key each run"`
+}
+
+func (cfg config) IsTestnet() bool {
+	return cfg.TestNet == "" || cfg.TestNet == "true" || cfg.TestNet == "T" || cfg.TestNet == "t" || cfg.TestNet == "1"
 }
 
 // serviceOptions defines the configuration options for the daemon as a service on
@@ -317,7 +321,7 @@ func loadConfig() (*config, []string, error) {
 		DisableRPC:           false,
 		RPCDisableAuth:       false,
 		DiscoverPeers:        true,
-		TestNet:              true,
+		TestNet:              "true",
 		DiscoverPeersAddress: "127.0.0.1:9330", //"35.230.8.182:9339",
 		NodeMode:             DefaultNodeMode,
 		MiningKeys:           common.EmptyString,
@@ -424,7 +428,7 @@ func loadConfig() (*config, []string, error) {
 	numNets := 0
 	// Count number of network flags passed; assign active network component
 	// while we're at it
-	if cfg.TestNet {
+	if cfg.IsTestnet() {
 		numNets++
 		activeNetParams = &testNetParams
 	}

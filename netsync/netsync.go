@@ -305,6 +305,12 @@ func (netSync *NetSync) handleMessageTx(msg *wire.MessageTx) {
 			Logger.log.Error(err)
 		} else {
 			// Broadcast to network
+			/*go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+				metrics.Measurement:      metrics.TxEnterNetSyncSuccess,
+				metrics.MeasurementValue: float64(1),
+				metrics.Tag:              metrics.TxHashTag,
+				metrics.TagValue:         msg.Transaction.Hash().String(),
+			})*/
 			Logger.log.Debugf("there is hash of transaction %s", hash.String())
 			err := netSync.config.Server.PushMessageToAll(msg)
 			if err != nil {
@@ -396,7 +402,7 @@ func (netSync *NetSync) handleMessageShardBlock(msg *wire.MessageBlockShard) {
 }
 
 func (netSync *NetSync) handleMessageCrossShard(msg *wire.MessageCrossShard) {
-	Logger.log.Debug("Handling new message CrossShard")
+	Logger.log.Error("Handling new message CrossShard")
 	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 	// 	metrics.Measurement:      metrics.HandleMessageCrossShard,
 	// 	metrics.MeasurementValue: float64(1),

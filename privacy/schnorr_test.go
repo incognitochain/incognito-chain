@@ -1,50 +1,61 @@
 package privacy
 
 import (
-	"crypto/rand"
 	"testing"
 
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSchnorrSignature(t *testing.T) {
-	// generate Schnorr Private Key
-	var r = rand.Reader
-	privKey := new(SchnorrPrivateKey)
-	privKey.privateKey = RandScalar(r)
-	privKey.randomness = RandScalar(r)
+	for i := 0; i <100; i++ {
+		// generate Schnorr Private Key
 
-	// generate Schnorr Public Key
-	privKey.publicKey = new(SchnorrPublicKey)
+		privKey := new(SchnorrPrivateKey)
+		privKey.Set(RandomScalar(), RandomScalar())
 
-	// G is base generator on Curve
-	privKey.publicKey.g = new(EllipticPoint)
-	privKey.publicKey.g.Set(Curve.Params().Gx, Curve.Params().Gy)
+		// random message to sign
+		data := RandomScalar()
+		// sign on message
+		signature, err := privKey.Sign(data.ToBytesS())
+		assert.Equal(t, nil, err)
 
-	// H = alpha*G
-	privKey.publicKey.h = privKey.publicKey.g.ScalarMult(RandScalar(r))
+		// convert signature to bytes array
+		signatureBytes := signature.Bytes()
 
-	// PK = G^SK * H^R
-	privKey.publicKey.publicKey = privKey.publicKey.g.ScalarMult(privKey.privateKey).Add(privKey.publicKey.h.ScalarMult(privKey.randomness))
+		// revert bytes array to signature
+		signature2 := new(SchnSignature)
+		signature2.SetBytes(signatureBytes)
+		assert.Equal(t, signature, signature2)
 
-	// random message to sign
-	data := RandScalar(r)
+		// verify the signature with private key
+		res := privKey.publicKey.Verify(signature2, data.ToBytesS())
+		assert.Equal(t, true, res)
+	}
+}
 
-	// sign on message
-	signature, err := privKey.Sign(data.Bytes())
-	assert.Equal(t, nil, err)
+func TestSchnorrSignatureWithoutZ2(t *testing.T) {
+	for i := 0; i <100; i++ {
+		// generate Schnorr Private Key
 
-	// convert signature to bytes array
-	signatureBytes := signature.Bytes()
-	assert.Equal(t, common.SigPrivacySize, len(signatureBytes))
+		privKey := new(SchnorrPrivateKey)
+		privKey.Set(RandomScalar(), new(Scalar).FromUint64(0))
 
-	// revert bytes array to signature
-	signature2 := new(SchnSignature)
-	signature2.SetBytes(signatureBytes)
-	assert.Equal(t, signature, signature2)
+		// random message to sign
+		data := RandomScalar()
+		// sign on message
+		signature, err := privKey.Sign(data.ToBytesS())
+		assert.Equal(t, nil, err)
 
-	// verify the signature with private key
-	res := privKey.publicKey.Verify(signature2, data.Bytes())
-	assert.Equal(t, true, res)
+		// convert signature to bytes array
+		signatureBytes := signature.Bytes()
+
+		// revert bytes array to signature
+		signature2 := new(SchnSignature)
+		signature2.SetBytes(signatureBytes)
+		assert.Equal(t, signature, signature2)
+
+		// verify the signature with private key
+		res := privKey.publicKey.Verify(signature2, data.ToBytesS())
+		assert.Equal(t, true, res)
+	}
 }

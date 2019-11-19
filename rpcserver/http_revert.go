@@ -18,14 +18,16 @@ func (httpServer *HttpServer) handleRevertBeacon(params interface{}, closeChan <
 func (httpServer *HttpServer) handleRevertShard(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleRevertShard: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) < 1 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Shard ID empty"))
+	if arrayParams == nil || len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
 	}
+
 	shardIdParam, ok := arrayParams[0].(float64)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Shard ID component invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Shard ID param invalid"))
 	}
 	shardID := byte(shardIdParam)
+
 	err := httpServer.blockService.RevertShard(shardID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
