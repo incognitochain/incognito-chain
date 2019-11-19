@@ -21,6 +21,7 @@ import (
 // TODO REMOVE HARDCODE
 var HighwayPeerID = "QmSPa4gxx6PRmoNRu6P2iFwEwmayaoLdR5By3i3MgM9gMv"
 var MasterNodeID = "QmVsCnV9kRZ182MX11CpcHMyFAReyXV49a599AbqmwtNrV"
+var HighwayBeaconID = byte(255)
 
 func NewConnManager(
 	host *Host,
@@ -28,8 +29,8 @@ func NewConnManager(
 	ikey *incognitokey.CommitteePublicKey,
 	cd ConsensusData,
 	dispatcher *Dispatcher,
-	nodeMode *string,
-	relayShard *[]byte,
+	nodeMode string,
+	relayShard []byte,
 ) *ConnManager {
 	master := peer.IDB58Encode(host.Host.ID()) == MasterNodeID
 	log.Println("IsMasterNode:", master)
@@ -179,8 +180,8 @@ type ConnManager struct {
 	messages         chan *pubsub.Message // queue messages from all topics
 	registerRequests chan int
 
-	nodeMode   *string
-	relayShard *[]byte
+	nodeMode   string
+	relayShard []byte
 
 	cd        ConsensusData
 	disp      *Dispatcher
@@ -339,8 +340,8 @@ func (cm *ConnManager) subscribe(role userRole, topics m2t, forced bool) (userRo
 	peerid, _ := peer.IDB58Decode(HighwayPeerID)
 	pubkey, _ := cm.IdentityKey.ToBase58()
 	shardIDs := []byte{byte(newRole.shardID)}
-	if *cm.nodeMode == common.NodeModeRelay {
-		shardIDs = *cm.relayShard
+	if cm.nodeMode == common.NodeModeRelay {
+		shardIDs = append(cm.relayShard, HighwayBeaconID)
 	}
 	newTopics, err := cm.registerToProxyv2(peerid, pubkey, newRole.layer, shardIDs)
 	if err != nil {
@@ -488,8 +489,8 @@ func (cm *ConnManager) registerToProxyv2(
 	layer string,
 	shardID []byte,
 ) (m2t, error) {
-	messagesWanted := getMessagesForLayerv2(*cm.nodeMode, layer, shardID)
-	fmt.Printf("-%v-;;;-%v-;;;-%v-;;;\n", messagesWanted, *cm.nodeMode, shardID)
+	messagesWanted := getMessagesForLayerv2(cm.nodeMode, layer, shardID)
+	fmt.Printf("-%v-;;;-%v-;;;-%v-;;;\n", messagesWanted, cm.nodeMode, shardID)
 	// os.Exit(9)
 	pairs, err := cm.Requester.Register(
 		context.Background(),
@@ -557,8 +558,6 @@ func getMessagesForLayerv2(mode, layer string, shardID []byte) []string {
 				wire.CmdBFT,
 				wire.CmdPeerState,
 				wire.CmdBlkShardToBeacon,
-				wire.CmdPrivacyCustomToken,
-				wire.CmdCustomToken,
 			}
 		}
 	case common.NodeModeRelay:
@@ -567,8 +566,6 @@ func getMessagesForLayerv2(mode, layer string, shardID []byte) []string {
 			wire.CmdBlockShard,
 			wire.CmdBlockBeacon,
 			wire.CmdPeerState,
-			wire.CmdCrossShard,
-			wire.CmdBlkShardToBeacon,
 			wire.CmdPrivacyCustomToken,
 			wire.CmdCustomToken,
 		}
