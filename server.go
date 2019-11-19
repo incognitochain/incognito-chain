@@ -309,8 +309,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		&pubkey,
 		serverObj.consensusEngine,
 		dispatcher,
-		&cfg.NodeMode,
-		&relayShards,
+		cfg.NodeMode,
+		relayShards,
 	)
 
 	err = serverObj.blockChain.Init(&blockchain.Config{

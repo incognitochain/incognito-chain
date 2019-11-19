@@ -21,6 +21,7 @@ import (
 // TODO REMOVE HARDCODE
 var HighwayPeerID = "QmSPa4gxx6PRmoNRu6P2iFwEwmayaoLdR5By3i3MgM9gMv"
 var MasterNodeID = "QmVsCnV9kRZ182MX11CpcHMyFAReyXV49a599AbqmwtNrV"
+var HighwayBeaconID = byte(255)
 
 func NewConnManager(
 	host *Host,
@@ -28,8 +29,8 @@ func NewConnManager(
 	ikey *incognitokey.CommitteePublicKey,
 	cd ConsensusData,
 	dispatcher *Dispatcher,
-	nodeMode *string,
-	relayShard *[]byte,
+	nodeMode string,
+	relayShard []byte,
 ) *ConnManager {
 	master := peer.IDB58Encode(host.Host.ID()) == MasterNodeID
 	log.Println("IsMasterNode:", master)
@@ -179,8 +180,8 @@ type ConnManager struct {
 	messages         chan *pubsub.Message // queue messages from all topics
 	registerRequests chan int
 
-	nodeMode   *string
-	relayShard *[]byte
+	nodeMode   string
+	relayShard []byte
 
 	cd        ConsensusData
 	disp      *Dispatcher
@@ -338,8 +339,8 @@ func (cm *ConnManager) subscribe(role userRole, topics m2t, forced bool) (userRo
 	// Registering
 	pubkey, _ := cm.IdentityKey.ToBase58()
 	shardIDs := []byte{byte(newRole.shardID)}
-	if *cm.nodeMode == common.NodeModeRelay {
-		shardIDs = *cm.relayShard
+	if cm.nodeMode == common.NodeModeRelay {
+		shardIDs = append(cm.relayShard, HighwayBeaconID)
 	}
 	newTopics, roleOfTopics, err := cm.registerToProxy(pubkey, newRole.layer, shardIDs)
 	if err != nil {
@@ -460,8 +461,8 @@ func (cm *ConnManager) registerToProxy(
 	layer string,
 	shardID []byte,
 ) (m2t, userRole, error) {
-	messagesWanted := getMessagesForLayer(*cm.nodeMode, layer, shardID)
-	fmt.Printf("-%v-;;;-%v-;;;-%v-;;;\n", messagesWanted, *cm.nodeMode, shardID)
+	messagesWanted := getMessagesForLayer(cm.nodeMode, layer, shardID)
+	fmt.Printf("-%v-;;;-%v-;;;-%v-;;;\n", messagesWanted, cm.nodeMode, shardID)
 	// os.Exit(9)
 	pairs, role, err := cm.Requester.Register(
 		context.Background(),
