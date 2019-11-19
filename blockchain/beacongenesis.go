@@ -11,6 +11,8 @@ import (
 
 func CreateBeaconGenesisBlock(
 	version int,
+	net uint16,
+	genesisBlockTime string,
 	genesisParams GenesisParams,
 ) *BeaconBlock {
 	inst := [][]string{}
@@ -45,7 +47,7 @@ func CreateBeaconGenesisBlock(
 	inst = append(inst, []string{SetAction, "randomnumber", strconv.Itoa(int(0))})
 
 	layout := "2006-01-02T15:04:05.000Z"
-	str := GenesisBlockTime
+	str := genesisBlockTime
 	genesisTime, err := time.Parse(layout, str)
 
 	if err != nil {
@@ -54,10 +56,10 @@ func CreateBeaconGenesisBlock(
 	body := BeaconBody{ShardState: nil, Instructions: inst}
 	header := BeaconHeader{
 		Timestamp:                       genesisTime.Unix(),
-		Height:                          1,
-		Version:                         1,
-		Round:                           1,
+		Version:                         version,
 		Epoch:                           1,
+		Height:                          1,
+		Round:                           1,
 		PreviousBlockHash:               common.Hash{},
 		BeaconCommitteeAndValidatorRoot: common.Hash{},
 		BeaconCandidateRoot:             common.Hash{},

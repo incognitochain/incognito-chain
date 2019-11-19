@@ -2,13 +2,15 @@ package privacy
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/privacy/curve25519"
 	"math/big"
 	"math/rand"
 	"time"
 )
 
 // Data structure for a polynomial
-// Just an array in reverse
+// Just an array in Reverse
 // f(x) = 3x^3 + 2x + 1 => [1 2 0 3]
 type Poly []*big.Int
 
@@ -20,6 +22,25 @@ func newPoly(coeffs ...int) (p Poly) {
 	}
 	p.trim()
 	return
+}
+
+func ScalarToBigInt( sc *Scalar) *big.Int {
+	keyR := Reverse(sc.key)
+	keyRByte := keyR.ToBytes()
+	bi := new(big.Int).SetBytes(keyRByte[:])
+	return bi
+}
+
+func BigIntToScalar( bi *big.Int) *Scalar{
+	biByte := common.AddPaddingBigInt(bi, Ed25519KeySize)
+	var key curve25519.Key
+	key.FromBytes(SliceToArray(biByte))
+	keyR := Reverse(key)
+	sc, err := new(Scalar).SetKey(&keyR)
+	if err != nil {
+		return nil
+	}
+	return sc
 }
 
 // Returns a polynomial with random coefficients
@@ -217,7 +238,7 @@ func (p Poly) Mul(q Poly, m *big.Int) Poly {
 			a.Mul(p[i], q[j])
 			a.Add(a, r[i+j])
 			if m != nil {
-				a.Mod(a, m)
+				a = new(big.Int).Mod(a, m)
 			}
 			r[i+j] = a
 		}
