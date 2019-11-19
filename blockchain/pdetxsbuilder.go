@@ -270,15 +270,31 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 	var propertyID [common.HashSize]byte
 	copy(propertyID[:], tokenID[:])
 	propID := common.Hash(propertyID)
+
+	// try get token name and symbol
+	listTxInitPrivacyToken, listTxInitPrivacyTokenCrossShard, err := blockGenerator.chain.ListPrivacyCustomToken()
+	_ = listTxInitPrivacyTokenCrossShard
+	tokeName := ""
+	tokenSymbol := ""
+	if txInitToken, ok := listTxInitPrivacyToken[propID]; ok {
+		// case same shard
+		tokeName = txInitToken.TxPrivacyTokenData.PropertyName
+		tokenSymbol = txInitToken.TxPrivacyTokenData.PropertySymbol
+	} else if txInitToken, ok := listTxInitPrivacyTokenCrossShard[propID]; ok {
+		// case cross shard
+		tokeName = txInitToken.PropertyName
+		tokenSymbol = txInitToken.PropertySymbol
+	}
+
 	tokenParams := &transaction.CustomTokenPrivacyParamTx{
-		PropertyID: propID.String(),
-		// PropertyName:   issuingAcceptedInst.IncTokenName,
-		// PropertySymbol: issuingAcceptedInst.IncTokenName,
-		Amount:      wdAcceptedContent.DeductingPoolValue,
-		TokenTxType: transaction.CustomTokenInit,
-		Receiver:    []*privacy.PaymentInfo{receiver},
-		TokenInput:  []*privacy.InputCoin{},
-		Mintable:    true,
+		PropertyID:     propID.String(),
+		PropertyName:   tokeName,
+		PropertySymbol: tokenSymbol,
+		Amount:         wdAcceptedContent.DeductingPoolValue,
+		TokenTxType:    transaction.CustomTokenInit,
+		Receiver:       []*privacy.PaymentInfo{receiver},
+		TokenInput:     []*privacy.InputCoin{},
+		Mintable:       true,
 	}
 	resTx := &transaction.TxCustomTokenPrivacy{}
 	initErr := resTx.Init(
