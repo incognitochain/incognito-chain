@@ -83,7 +83,7 @@ type TxPool interface {
 
 	EmptyPool() bool
 
-	MaybeAcceptTransactionForBlockProducing(metadata.Transaction) (*metadata.TxDesc, error)
+	MaybeAcceptTransactionForBlockProducing(metadata.Transaction, int64) (*metadata.TxDesc, error)
 	ValidateTxList(txs []metadata.Transaction) error
 	//CheckTransactionFee
 	// CheckTransactionFee(tx metadata.Transaction) (uint64, error)
