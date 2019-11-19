@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Bitcoin Fullnode expose RPC api
@@ -27,7 +28,7 @@ func NewBTCClient(user string, password string, ip string, port string) *BTCClie
 		Port:     port,
 	}
 }
-func (btcClient *BTCClient) GetNonceByTimestamp(timestamp int64) (int, int64, int64, error) {
+func (btcClient *BTCClient) GetNonceByTimestamp(startTime time.Time, maxTime time.Duration, timestamp int64) (int, int64, int64, error) {
 	var (
 		chainHeight    int
 		chainTimestamp int64
@@ -38,7 +39,7 @@ func (btcClient *BTCClient) GetNonceByTimestamp(timestamp int64) (int, int64, in
 	if err != nil {
 		return 0, 0, -1, err
 	}
-	blockHeight, err := estimateBlockHeight(btcClient, timestamp, chainHeight, chainTimestamp)
+	blockHeight, err := estimateBlockHeight(btcClient, timestamp, chainHeight, chainTimestamp, startTime, maxTime)
 	if err != nil {
 		return 0, 0, -1, err
 	}
@@ -88,8 +89,8 @@ func (btcClient *BTCClient) GetNonceByTimestamp(timestamp int64) (int, int64, in
 	}
 	return blockHeight, timestamp, nonce, nil
 }
-func (btcClient *BTCClient) VerifyNonceWithTimestamp(timestamp int64, nonce int64) (bool, error) {
-	_, _, tempNonce, err := btcClient.GetNonceByTimestamp(timestamp)
+func (btcClient *BTCClient) VerifyNonceWithTimestamp(startTime time.Time, maxTime time.Duration, timestamp int64, nonce int64) (bool, error) {
+	_, _, tempNonce, err := btcClient.GetNonceByTimestamp(startTime, maxTime, timestamp)
 	if err != nil {
 		return false, err
 	}
