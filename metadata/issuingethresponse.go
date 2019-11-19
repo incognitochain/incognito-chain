@@ -6,10 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"strconv"
 )
 
 type IssuingETHResponse struct {
@@ -41,7 +42,7 @@ func NewIssuingETHResponse(
 	}
 }
 
-func (iRes IssuingETHResponse) CheckTransactionFee(tr Transaction, minFee uint64) bool {
+func (iRes IssuingETHResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db database.DatabaseInterface) bool {
 	// no need to have fee for this tx
 	return true
 }

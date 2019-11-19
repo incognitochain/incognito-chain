@@ -22,11 +22,6 @@ func (blockchain *BlockChain) buildBridgeInstructions(
 	beaconHeight uint64,
 	db database.DatabaseInterface,
 ) ([][]string, error) {
-	accumulatedValues := &metadata.AccumulatedValues{
-		UniqETHTxsUsed:   [][]byte{},
-		DBridgeTokenPair: map[string][]byte{},
-		CBridgeTokens:    []*common.Hash{},
-	}
 	instructions := [][]string{}
 	for _, inst := range shardBlockInstructions {
 		if len(inst) < 2 {
@@ -45,12 +40,6 @@ func (blockchain *BlockChain) buildBridgeInstructions(
 		switch metaType {
 		case metadata.ContractingRequestMeta:
 			newInst, err = blockchain.buildInstructionsForContractingReq(contentStr, shardID, metaType)
-
-		case metadata.IssuingRequestMeta:
-			newInst, err = blockchain.buildInstructionsForIssuingReq(contentStr, shardID, metaType, accumulatedValues)
-
-		case metadata.IssuingETHRequestMeta:
-			newInst, err = blockchain.buildInstructionsForIssuingETHReq(contentStr, shardID, metaType, accumulatedValues)
 
 		case metadata.BurningRequestMeta:
 			burningConfirm := []string{}
