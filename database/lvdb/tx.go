@@ -74,7 +74,7 @@ func (db *db) ListSerialNumber(tokenID common.Hash, shardID byte) (map[string]ui
 		if string(key1[len(key1)-3:]) == "len" {
 			continue
 		}
-		serialNumberInByte := key1[len(key1)-privacy.CompressedEllipticPointSize:]
+		serialNumberInByte := key1[len(key1)-privacy.Ed25519KeySize:]
 		value := make([]byte, len(iterator.Value()))
 		copy(value, iterator.Value())
 		index := big.Int{}
@@ -227,10 +227,10 @@ func (db *db) ListCommitment(tokenID common.Hash, shardID byte) (map[string]uint
 		if string(key1[len(key1)-3:]) == "len" {
 			continue
 		}
-		if len(key1) < len(key)+privacy.CompressedEllipticPointSize {
+		if len(key1) < len(key)+privacy.Ed25519KeySize {
 			continue
 		}
-		commitmentInByte := key1[len(key1)-privacy.CompressedEllipticPointSize:]
+		commitmentInByte := key1[len(key1)-privacy.Ed25519KeySize:]
 		value := make([]byte, len(iterator.Value()))
 		copy(value, iterator.Value())
 		index := big.Int{}
@@ -257,7 +257,7 @@ func (db *db) ListCommitmentIndices(tokenID common.Hash, shardID byte) (map[uint
 
 		commitmentInByte := make([]byte, len(iterator.Value()))
 		copy(commitmentInByte, iterator.Value())
-		if len(commitmentInByte) != privacy.CompressedEllipticPointSize {
+		if len(commitmentInByte) != privacy.Ed25519KeySize {
 			continue
 		}
 		indexInByte := key1[45:]

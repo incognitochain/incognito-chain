@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
 )
 
@@ -33,6 +34,8 @@ const (
 	StopAutoStakingRequestNoAutoStakingAvaiableError
 	StopAutoStakingRequestTypeAssertionError
 	StopAutoStakingRequestAlreadyStopError
+
+	WrongIncognitoDAOPaymentAddressError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -70,6 +73,9 @@ var ErrCodeMessage = map[int]struct {
 	StopAutoStakingRequestNoAutoStakingAvaiableError:      {-4003, "Stop Auto-Staking Request No Auto Staking Avaliable Error"},
 	StopAutoStakingRequestTypeAssertionError:              {-4004, "Stop Auto-Staking Request Type Assertion Error"},
 	StopAutoStakingRequestAlreadyStopError:                {-4005, "Stop Auto Staking Request Already Stop Error"},
+
+	// -5xxx dev reward error
+	WrongIncognitoDAOPaymentAddressError: {-5001, "Invalid dev account"},
 }
 
 type MetadataTxError struct {

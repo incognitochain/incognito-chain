@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus"
@@ -169,7 +170,6 @@ func validateSingleBriSig(
 	briSig []byte,
 	candidate []byte,
 ) error {
-	//fmt.Printf("data %v, sig %v, publicKey %v", dataHash.GetBytes(), briSig, string(candidate))
 	result, err := bridgesig.Verify(candidate, dataHash.GetBytes(), briSig)
 	if err != nil {
 		return consensus.NewConsensusError(consensus.UnExpectedError, err)

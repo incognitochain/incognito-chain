@@ -2,7 +2,6 @@ package privacy
 
 import (
 	"crypto/rand"
-	"io"
 	"math/big"
 )
 
@@ -11,22 +10,6 @@ func RandBytes(length int) []byte {
 	rbytes := make([]byte, length)
 	rand.Read(rbytes)
 	return rbytes
-}
-
-// RandScalar generates a big int with value less than order of group of elliptic points
-func RandScalar(r io.Reader) *big.Int {
-	var k *big.Int
-	var err error
-	for {
-		k, err = rand.Int(r, Curve.Params().N)
-		if err != nil {
-			continue
-		}
-		if k.Sign() > 0 {
-			break
-		}
-	}
-	return k
 }
 
 // ConvertIntToBinary represents a integer number in binary array with little endian with size n
@@ -42,33 +25,20 @@ func ConvertIntToBinary(inum int, n int) []byte {
 }
 
 // ConvertIntToBinary represents a integer number in binary
-func ConvertBigIntToBinary(number *big.Int, n int) []*big.Int {
-	if number.Cmp(big.NewInt(0)) == 0 {
-		res := make([]*big.Int, n)
+func ConvertUint64ToBinaryInBigInt(number uint64, n int) []*Scalar {
+	if number == 0 {
+		res := make([]*Scalar, n)
 		for i := 0; i < n; i++ {
-			res[i] = big.NewInt(0)
+			res[i] = new(Scalar).FromUint64(0)
 		}
 		return res
 	}
 
-	binary := make([]*big.Int, n)
-	numberClone := new(big.Int)
-	numberClone.Set(number)
-
-	zeroNumber := big.NewInt(0)
-	twoNumber := big.NewInt(2)
+	binary := make([]*Scalar, n)
 
 	for i := 0; i < n; i++ {
-		binary[i] = new(big.Int)
-		binary[i] = new(big.Int).Mod(numberClone, twoNumber)
-		numberClone.Div(numberClone, twoNumber)
-
-		if numberClone.Cmp(zeroNumber) == 0 && i != n-1 {
-			for j := i + 1; j < n; j++ {
-				binary[j] = zeroNumber
-			}
-			break
-		}
+		binary[i] = new(Scalar).FromUint64(number % 2)
+		number = number / 2
 	}
 	return binary
 }
@@ -93,4 +63,16 @@ func paddedAppend(size uint, dst, src []byte) []byte {
 		dst = append(dst, 0)
 	}
 	return append(dst, src...)
+}
+
+
+func ConvertScalarArrayToBigIntArray(scalarArr []*Scalar) []*big.Int{
+	res := make([]*big.Int, len(scalarArr))
+
+	for i:=0; i<len(res); i++{
+		tmp := Reverse(scalarArr[i].GetKey())
+		res[i] = new(big.Int).SetBytes(ArrayToSlice(tmp.ToBytes()))
+	}
+
+	return res
 }

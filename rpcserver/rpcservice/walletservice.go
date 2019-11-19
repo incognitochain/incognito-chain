@@ -2,6 +2,7 @@ package rpcservice
 
 import (
 	"encoding/hex"
+	"errors"
 	"log"
 	"math/rand"
 
@@ -44,10 +45,14 @@ func (walletService WalletService) ListAccounts() (jsonresult.ListAccounts, *RPC
 	return result, nil
 }
 
-func (walletService WalletService) GetAccount(param string) (string, error) {
+func (walletService WalletService) GetAccount(paymentAddrStr string) (string, error) {
+	if paymentAddrStr == ""{
+		return "", NewRPCError(RPCInvalidParamsError, errors.New("payment address is invalid"))
+	}
+
 	for _, account := range walletService.Wallet.MasterAccount.Child {
 		address := account.Key.Base58CheckSerialize(wallet.PaymentAddressType)
-		if address == param {
+		if address == paymentAddrStr {
 			return account.Name, nil
 		}
 	}
@@ -132,6 +137,9 @@ func (walletService WalletService) GetBalanceByPrivateKey(privateKey string) (ui
 
 func (walletService WalletService) GetBalanceByPaymentAddress(paymentAddress string) (uint64, *RPCError) {
 	keySet, shardIDSender, err := GetKeySetFromPaymentAddressParam(paymentAddress)
+	if err != nil{
+		return uint64(0), NewRPCError(RPCInvalidParamsError, errors.New("payment address is invalid"))
+	}
 
 	prvCoinID := &common.Hash{}
 	err1 := prvCoinID.SetBytes(common.PRVCoinID[:])
