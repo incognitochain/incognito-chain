@@ -312,7 +312,7 @@ func (cm *ConnManager) manageRoleSubscription() {
 	topics := m2t{}
 	for {
 		select {
-		case <-time.Tick(20 * time.Second):
+		case <-time.Tick(10 * time.Second):
 			forced := false // only subscribe when role changed
 			role, topics = cm.subscribe(role, topics, forced)
 
@@ -336,13 +336,12 @@ func (cm *ConnManager) subscribe(role userRole, topics m2t, forced bool) (userRo
 	}
 
 	// Registering
-	peerid, _ := peer.IDB58Decode(HighwayPeerID)
 	pubkey, _ := cm.IdentityKey.ToBase58()
 	shardIDs := []byte{byte(newRole.shardID)}
 	if *cm.nodeMode == common.NodeModeRelay {
 		shardIDs = *cm.relayShard
 	}
-	newTopics, roleOfTopics, err := cm.registerToProxy(peerid, pubkey, newRole.layer, shardIDs)
+	newTopics, roleOfTopics, err := cm.registerToProxy(pubkey, newRole.layer, shardIDs)
 	if err != nil {
 		return role, topics
 	}
@@ -457,7 +456,6 @@ func processSubscriptionMessage(inbox chan *pubsub.Message, sub *pubsub.Subscrip
 type m2t map[string][]Topic // Message to topics
 
 func (cm *ConnManager) registerToProxy(
-	peerID peer.ID,
 	pubkey string,
 	layer string,
 	shardID []byte,
