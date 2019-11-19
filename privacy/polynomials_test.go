@@ -6,6 +6,27 @@ import (
 	"testing"
 )
 
+func TestConvert(t *testing.T) {
+
+	L1 := RandomScalar()
+	L2 := RandomScalar()
+	L3 := RandomScalar()
+	LRes := new(Scalar).Sub(L1, L2)
+	LRes.Sub(LRes, L3)
+	fmt.Println(LRes)
+
+	I1 := ScalarToBigInt(L1)
+	I2 := ScalarToBigInt(L2)
+	I3 := ScalarToBigInt(L3)
+
+	tmp := new(big.Int).Sub(I1, I2)
+	tmp = tmp.Sub(tmp, I3)
+	IRes:= tmp.Mod(tmp, LInt)
+	LResPrime := BigIntToScalar(IRes)
+	fmt.Println(LResPrime)
+
+}
+
 func TestPrettyPrint(t *testing.T) {
 	cases := []struct {
 		p   Poly

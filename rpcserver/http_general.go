@@ -15,6 +15,10 @@ handleGetInOutPeerMessageCount - return all inbound/outbound message count by pe
 func (httpServer *HttpServer) handleGetInOutMessageCount(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleGetInOutMessageCount by Peer params: %+v", params)
 	paramsArray := common.InterfaceSlice(params)
+	if paramsArray == nil{
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, nil)
+	}
+
 	result, err := jsonresult.NewGetInOutMessageCountResult(paramsArray)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
@@ -27,8 +31,11 @@ handleGetInOutPeerMessages - return all inbound/outbound messages peer which thi
 */
 func (httpServer *HttpServer) handleGetInOutMessages(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleGetInOutPeerMessagess params: %+v", params)
-
 	paramsArray := common.InterfaceSlice(params)
+	if paramsArray == nil{
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, nil)
+	}
+
 	result, err := jsonresult.NewGetInOutMessageResult(paramsArray)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
@@ -71,7 +78,7 @@ func (httpServer *HttpServer) handleGetNetWorkInfo(params interface{}, closeChan
 func (httpServer *HttpServer) handleCheckHashValue(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleCheckHashValue params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) == 0 {
+	if arrayParams == nil || len(arrayParams) == 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Expected array component"))
 	}
 	hashParams, ok := arrayParams[0].(string)
@@ -124,11 +131,16 @@ func (httpServer *HttpServer) handleGetMaxShardsNumber(params interface{}, close
 func (httpServer *HttpServer) handleGetStakingAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleGetStakingAmount params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) <= 0 {
+	if arrayParams == nil || len(arrayParams) <= 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("ErrRPCInvalidParams"))
 	}
 
-	stakingType := int(arrayParams[0].(float64))
+	stakingTypeParam, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("staking type is invalid"))
+	}
+	stakingType := int(stakingTypeParam)
+
 	amount := rpcservice.GetStakingAmount(stakingType, httpServer.config.ChainParams.StakingAmountShard)
 	Logger.log.Debugf("handleGetStakingAmount result: %+v", amount)
 	return amount, nil
@@ -136,7 +148,9 @@ func (httpServer *HttpServer) handleGetStakingAmount(params interface{}, closeCh
 
 func (httpServer *HttpServer) handleHashToIdenticon(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	result := make([]string, 0)
+	if arrayParams == nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("ErrRPCInvalidParams"))
+	}
 
 	result, err := rpcservice.HashToIdenticon(arrayParams)
 	if err != nil {
@@ -148,9 +162,29 @@ func (httpServer *HttpServer) handleHashToIdenticon(params interface{}, closeCha
 // handleGetPublicKeyMining - return publickey mining which be used to verify block
 func (httpServer *HttpServer) handleGetPublicKeyMining(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	keys := httpServer.config.ConsensusEngine.GetAllMiningPublicKeys()
-	if len(keys) == 0 {
-		//return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("Can not find key"))
-		return keys, nil
-	}
 	return keys, nil
+}
+
+func (httpServer *HttpServer) handleGenerateTokenID(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 2 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 elements"))
+	}
+
+	network, ok := arrayParams[0].(string)
+	if !ok {
+		rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("network invalid"))
+	}
+
+	tokenName, ok := arrayParams[1].(string)
+	if !ok {
+		rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token name invalid"))
+	}
+
+	tokenID, err := rpcservice.GenerateTokenID(network, tokenName)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	} else {
+		return tokenID.String(), nil
+	}
 }

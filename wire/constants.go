@@ -9,4 +9,8 @@ const (
 
 	// size of cmd type in header message
 	MessageCmdTypeSize = 12
+
+	MaxBlockPayload = 2048000 // 2 Mb
+
+	MaxGetAddrPayload = 1000 // 1 1Kb
 )

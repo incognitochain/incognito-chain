@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"github.com/pkg/errors"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -15,8 +16,17 @@ import (
 // handleGetBurnProof returns a proof of a tx burning pETH
 func (httpServer *HttpServer) handleGetBurnProof(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Infof("handleGetBurnProof params: %+v", params)
-	listParams := params.([]interface{})
-	txID, err := common.Hash{}.NewHashFromStr(listParams[0].(string))
+	listParams, ok := params.([]interface{})
+	if !ok || len(listParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+	}
+
+	txIDParam, ok := listParams[0].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Tx id invalid"))
+	}
+
+	txID, err := common.Hash{}.NewHashFromStr(txIDParam)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}

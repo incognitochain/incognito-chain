@@ -197,12 +197,20 @@ func (shardToBeaconPool *ShardToBeaconPool) addShardToBeaconBlock(block *blockch
 	//update last valid pending ShardState
 	shardToBeaconPool.updateLatestShardState()
 	//@NOTICE: check logic again
+	// TODO Pls check this!
+	// Case:
+	// - beacon has shardToBeaconPool.latestValidHeight[shardID] == 2;
+	// - shardToBeaconPool.pool[shardID][0].Header.Height = 3
+	// - shardToBeaconPool.pool[shardID][1].Header.Height = 5
+	// - this function alway return from = 3, to = 3, and alway sync ShardToBeacon 3
+	// - it make beacon stuck because they can not see that they miss block 4
 	if shardToBeaconPool.pool[shardID][0].Header.Height > shardToBeaconPool.latestValidHeight[shardID] {
 		offset := shardToBeaconPool.pool[shardID][0].Header.Height - shardToBeaconPool.latestValidHeight[shardID]
 		if offset > maxValidShardToBeaconBlockInPool {
 			offset = maxValidShardToBeaconBlockInPool
 		}
-		return shardToBeaconPool.latestValidHeight[shardID] + 1, shardToBeaconPool.latestValidHeight[shardID] + offset, nil
+		//Just temp fix
+		return shardToBeaconPool.latestValidHeight[shardID] + 1, shardToBeaconPool.pool[shardID][0].Header.Height + 1, nil
 	}
 	return 0, 0, nil
 }
@@ -210,7 +218,7 @@ func (shardToBeaconPool *ShardToBeaconPool) addShardToBeaconBlock(block *blockch
 func (shardToBeaconPool *ShardToBeaconPool) AddShardToBeaconBlock(block *blockchain.ShardToBeaconBlock) (uint64, uint64, error) {
 	shardID := block.Header.ShardID
 	blockHeight := block.Header.Height
-	Logger.log.Infof("Add ShardToBeaconBlock from shard %+v, height %+v \n", shardID, blockHeight)
+	Logger.log.Infof("Add ShardToBeaconBlock from shard %+v, height %+v, hash %v \n", shardID, blockHeight, block.Hash().String())
 	shardToBeaconPool.mtx.Lock()
 	defer shardToBeaconPool.mtx.Unlock()
 	shardToBeaconPool.latestValidHeightMutex.Lock()
@@ -224,9 +232,13 @@ func (shardToBeaconPool *ShardToBeaconPool) updateLatestShardState() {
 		lastHeight := shardToBeaconPool.latestValidHeight[shardID]
 		for i, blk := range blks {
 			// if block height is not next expected
-			if blk.Header.Height != lastHeight+1 {
+			if blk.Header.Height < lastHeight+1 {
+				continue
+			}
+			if blk.Header.Height > lastHeight+1 {
 				break
 			}
+
 			if blk.Header.Height != 2 {
 				if i == (len(blks) - 1) {
 					break
@@ -289,7 +301,6 @@ func (shardToBeaconPool *ShardToBeaconPool) GetValidBlock(limit map[byte]uint64)
 	for shardID, blks := range shardToBeaconPool.pool {
 		shardToBeaconPool.checkLatestValidHeightValidity(shardID)
 		for i, blk := range blks {
-			Logger.log.Infof("In GetValidBlock blks[i]Height && latestValidHeight: %+v %+v", blks[i].Header.Height, shardToBeaconPool.latestValidHeight[shardID])
 			if blks[i].Header.Height > shardToBeaconPool.latestValidHeight[shardID] {
 				break
 			}
