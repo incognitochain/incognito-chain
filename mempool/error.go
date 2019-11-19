@@ -41,6 +41,7 @@ const (
 	UnmarshalBeaconBlockError
 	FindBeaconHeightForCrossShardBlockError
 	ValidateAggSignatureForCrossShardBlockError
+	DuplicateSerialNumbersHashError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -79,6 +80,7 @@ var ErrCodeMessage = map[int]struct {
 	FindBeaconHeightForCrossShardBlockError:     {-1028, "Find Beacon Height For Cross Shard Block Error"},
 	ValidateAggSignatureForCrossShardBlockError: {-1029, "Validate Agg Signature For Cross Shard Block Error"},
 	RejectDuplicateRequestStopAutoStaking:       {-1030, "Reject Duplicate Request Stop Auto Staking"},
+	DuplicateSerialNumbersHashError:             {-1031, "Duplicate Serial Numbers Hash Error"},
 }
 
 type MempoolTxError struct {

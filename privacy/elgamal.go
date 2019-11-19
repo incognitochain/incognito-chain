@@ -1,57 +1,52 @@
 package privacy
 
-import (
-	"crypto/rand"
-	"math/big"
-)
-
-// elGamalPublicKey represents to public key in ElGamal encryption
+// elGamalPublicKeyOld represents to public key in ElGamal encryption
 // H = G^X, X is private key
 type elGamalPublicKey struct {
-	h *EllipticPoint
+	h *Point
 }
 
-// elGamalPrivateKey represents to private key in ElGamal encryption
+// elGamalPrivateKeyOld represents to private key in ElGamal encryption
 type elGamalPrivateKey struct {
-	x *big.Int
+	x *Scalar
 }
 
-// elGamalCipherText represents to ciphertext in ElGamal encryption
+// elGamalCipherTextOld represents to ciphertext in ElGamal encryption
 // in which C1 = G^k and C2 = H^k * message
 // k is a random number (32 bytes), message is an elliptic point
 type elGamalCipherText struct {
-	c1, c2 *EllipticPoint
+	c1, c2 *Point
 }
 
-func (ciphertext *elGamalCipherText) set(c1, c2 *EllipticPoint) {
+func (ciphertext *elGamalCipherText) set(c1, c2 *Point) {
 	ciphertext.c1 = c1
 	ciphertext.c2 = c2
 }
 
-func (pub *elGamalPublicKey) set(H *EllipticPoint) {
+func (pub *elGamalPublicKey) set(H *Point) {
 	pub.h = H
 }
 
-func (pub elGamalPublicKey) GetH() *EllipticPoint {
+func (pub elGamalPublicKey) GetH() *Point {
 	return pub.h
 }
 
-func (priv *elGamalPrivateKey) set(x *big.Int) {
+func (priv *elGamalPrivateKey) set(x *Scalar) {
 	priv.x = x
 }
 
-func (priv elGamalPrivateKey) GetX() *big.Int {
+func (priv elGamalPrivateKey) GetX() *Scalar {
 	return priv.x
 }
 
 // Bytes converts ciphertext to 66-byte array
 func (ciphertext elGamalCipherText) Bytes() []byte {
-	zero := new(EllipticPoint)
-	zero.Zero()
-	if ciphertext.c1.IsEqual(zero) {
+	if ciphertext.c1.IsIdentity() {
 		return []byte{}
 	}
-	res := append(ciphertext.c1.Compress(), ciphertext.c2.Compress()...)
+	b1 := ciphertext.c1.ToBytes()
+	b2 := ciphertext.c2.ToBytes()
+	res := append(b1[:], b2[:] ...)
 	return res
 }
 
@@ -61,34 +56,38 @@ func (ciphertext *elGamalCipherText) SetBytes(bytes []byte) error {
 		return NewPrivacyErr(InvalidInputToSetBytesErr, nil)
 	}
 
-	ciphertext.c1 = new(EllipticPoint)
-	ciphertext.c2 = new(EllipticPoint)
+	if ciphertext == nil {
+		ciphertext = new(elGamalCipherText)
+	}
 
-	err := ciphertext.c1.Decompress(bytes[:CompressedEllipticPointSize])
-	if err != nil {
+	var err error
+
+	var tmp [Ed25519KeySize]byte
+	copy(tmp[:],bytes[:Ed25519KeySize])
+	ciphertext.c1, err = new(Point).FromBytes(tmp)
+	if err != nil{
 		return err
 	}
-	err = ciphertext.c2.Decompress(bytes[CompressedEllipticPointSize:])
-	if err != nil {
+	copy(tmp[:],bytes[Ed25519KeySize:])
+	ciphertext.c2, err = new(Point).FromBytes(tmp)
+	if err != nil{
 		return err
 	}
+
 	return nil
 }
 
 // encrypt encrypts plaintext (is an elliptic point) using public key ElGamal
 // returns ElGamal ciphertext
-func (pub elGamalPublicKey) encrypt(plaintext *EllipticPoint) *elGamalCipherText {
-	var r = rand.Reader
-	randomness := RandScalar(r)
+func (pub elGamalPublicKey) encrypt(plaintext *Point) *elGamalCipherText {
+	// r random, S:= h^r where h = g^x
+	r := RandomScalar()
+	S := new(Point).ScalarMult(pub.h, r)
 
+	//return ciphertext (c1, c2) = (g^r, m.s=m.h^r)
 	ciphertext := new(elGamalCipherText)
-
-	ciphertext.c1 = new(EllipticPoint)
-	ciphertext.c1.Zero()
-	ciphertext.c1.Set(Curve.Params().Gx, Curve.Params().Gy)
-	ciphertext.c1 = ciphertext.c1.ScalarMult(randomness)
-
-	ciphertext.c2 = plaintext.Add(pub.h.ScalarMult(randomness))
+	ciphertext.c1 = new(Point).ScalarMultBase(r)
+	ciphertext.c2 = new(Point).Add(plaintext, S)
 
 	return ciphertext
 }
@@ -96,6 +95,8 @@ func (pub elGamalPublicKey) encrypt(plaintext *EllipticPoint) *elGamalCipherText
 // decrypt receives a ciphertext and
 // decrypts it using private key ElGamal
 // and returns plain text in elliptic point
-func (priv elGamalPrivateKey) decrypt(ciphertext *elGamalCipherText) (*EllipticPoint, error) {
-	return ciphertext.c2.Sub(ciphertext.c1.ScalarMult(priv.x))
+func (priv elGamalPrivateKey) decrypt(ciphertext *elGamalCipherText) (*Point, error) {
+	S := new(Point).ScalarMult(ciphertext.c1, priv.x)
+	plaintext := new(Point).Sub(ciphertext.c2, S)
+	return plaintext, nil
 }
