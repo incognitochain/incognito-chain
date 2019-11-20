@@ -363,7 +363,7 @@ func (blockchain *BlockChain) backupCommitmentsFromTxViewPoint(view TxViewPoint)
 		lastByte := pubkeyBytes[len(pubkeyBytes)-1]
 		pubkeyShardID := common.GetShardIDFromLastByte(lastByte)
 		if pubkeyShardID == view.shardID {
-			err = rawdb.BackupCommitmentsOfPubkey(blockchain.GetDatabase(), *view.tokenID, view.shardID, pubkeyBytes)
+			err = rawdb.BackupCommitmentsOfPublicKey(blockchain.GetDatabase(), *view.tokenID, view.shardID, pubkeyBytes)
 			if err != nil {
 				return err
 			}

@@ -1626,7 +1626,7 @@ func (blockchain *BlockChain) GetActiveShardNumber() int {
 // 		lastByte := pubkeyBytes[len(pubkeyBytes)-1]
 // 		pubkeyShardID := common.GetShardIDFromLastByte(lastByte)
 // 		if pubkeyShardID == view.shardID {
-// 			err = rawdb.BackupCommitmentsOfPubkey(*view.tokenID, view.shardID, pubkeyBytes)
+// 			err = rawdb.BackupCommitmentsOfPublicKey(*view.tokenID, view.shardID, pubkeyBytes)
 // 			if err != nil {
 // 				return err
 // 			}

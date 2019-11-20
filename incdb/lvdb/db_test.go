@@ -488,7 +488,7 @@ func TestDb_StoreCommitments(t *testing.T) {
 		assert.Equal(t, err, nil)
 		assert.Equal(t, index.Uint64(), uint64(0))
 
-		err = rawdb.BackupCommitmentsOfPubkey(db, tokenID, 0, publicKey.GetBytes())
+		err = rawdb.BackupCommitmentsOfPublicKey(db, tokenID, 0, publicKey.GetBytes())
 		assert.Equal(t, err, nil)
 
 		err = rawdb.RestoreCommitmentsOfPubkey(db, tokenID, 0, publicKey.GetBytes(), committments)

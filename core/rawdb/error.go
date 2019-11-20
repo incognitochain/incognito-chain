@@ -7,14 +7,17 @@ import (
 )
 
 const (
-	DriverExistErr = iota
-	DriverNotRegisterErr
+	JsonMarshalError = iota
+	JsonUnMarshalError
 
 	// LevelDB
 	OpenDbErr
 	NotExistValue
 	LvdbNotFound
-	LvdbDeleteFailed
+	LvdbDeleteError
+	LvdbPutError
+	LvdbGetError
+	LvdbHasError
 
 	// BlockChain err
 	NotImplHashMethod
@@ -110,15 +113,18 @@ var ErrCodeMessage = map[int]struct {
 	Code    int
 	message string
 }{
-	// -1xxx driver
-	DriverExistErr:       {-1000, "Driver is already registered"},
-	DriverNotRegisterErr: {-1001, "Driver is not registered"},
+	// -1xxx marshal and unmarshal
+	JsonMarshalError:   {-1000, "Json Marshal Error"},
+	JsonUnMarshalError: {-1001, "Json UnMarshal Error"},
 
 	// -2xxx levelDb
-	OpenDbErr:        {-2000, "Open database error"},
-	NotExistValue:    {-2001, "H is not existed"},
-	LvdbNotFound:     {-2002, "lvdb not found"},
-	LvdbDeleteFailed: {-2003, "lvdb delete failed"},
+	OpenDbErr:       {-2000, "Open database error"},
+	NotExistValue:   {-2001, "H is not existed"},
+	LvdbNotFound:    {-2002, "lvdb not found"},
+	LvdbDeleteError: {-2003, "lvdb delete error"},
+	LvdbPutError:    {-2004, "lvdb put error"},
+	LvdbGetError:    {-2005, "lvdb get error"},
+	LvdbHasError:    {-2006, "lvdb has error"},
 
 	// -3xxx blockchain
 	NotImplHashMethod: {-3000, "Data does not implement Hash() method"},
