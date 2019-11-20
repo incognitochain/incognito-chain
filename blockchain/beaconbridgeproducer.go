@@ -3,14 +3,14 @@ package blockchain
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/core/rawdb"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"math/big"
 	"strconv"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/database"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/pkg/errors"
 )
@@ -20,7 +20,7 @@ func (blockchain *BlockChain) buildBridgeInstructions(
 	shardID byte,
 	shardBlockInstructions [][]string,
 	beaconHeight uint64,
-	db database.DatabaseInterface,
+	db incdb.Database,
 ) ([][]string, error) {
 	instructions := [][]string{}
 	for _, inst := range shardBlockInstructions {
@@ -62,7 +62,7 @@ func (blockchain *BlockChain) buildBridgeInstructions(
 }
 
 // buildBurningConfirmInst builds on beacon an instruction confirming a tx burning bridge-token
-func buildBurningConfirmInst(inst []string, height uint64, db database.DatabaseInterface) ([]string, error) {
+func buildBurningConfirmInst(inst []string, height uint64, db incdb.Database) ([]string, error) {
 	BLogger.log.Infof("Build BurningConfirmInst: %s", inst)
 	// Parse action and get metadata
 	var burningReqAction BurningReqAction
@@ -103,12 +103,12 @@ func buildBurningConfirmInst(inst []string, height uint64, db database.DatabaseI
 }
 
 // findExternalTokenID finds the external tokenID for a bridge token from database
-func findExternalTokenID(tokenID *common.Hash, db database.DatabaseInterface) ([]byte, error) {
-	allBridgeTokensBytes, err := db.GetAllBridgeTokens()
+func findExternalTokenID(tokenID *common.Hash, db incdb.Database) ([]byte, error) {
+	allBridgeTokensBytes, err := rawdb.GetAllBridgeTokens(db)
 	if err != nil {
 		return nil, err
 	}
-	var allBridgeTokens []*lvdb.BridgeTokenInfo
+	var allBridgeTokens []*rawdb.BridgeTokenInfo
 	err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
 	if err != nil {
 		return nil, errors.WithStack(err)

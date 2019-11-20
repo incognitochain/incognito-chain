@@ -43,7 +43,7 @@ type CrossShardPool struct {
 	pendingPool     map[byte][]*blockchain.CrossShardBlock // cross shard block from all other shard to this shard
 	crossShardState map[byte]uint64                        // cross shard state (marked the current state of cross shard block from all shard)
 	mtx             *sync.RWMutex
-	db              database.DatabaseInterface
+	db              incdb.DatabaseInterface
 	isTest          bool
 	// When beacon chain confirm new cross shard block, it will store these block height in database
 	// Cross Shard Pool using database to detect either is valid or pending
@@ -51,7 +51,7 @@ type CrossShardPool struct {
 
 var crossShardPoolMap = make(map[byte]*CrossShardPool)
 
-func InitCrossShardPool(pool map[byte]blockchain.CrossShardPool, db database.DatabaseInterface) {
+func InitCrossShardPool(pool map[byte]blockchain.CrossShardPool, db incdb.DatabaseInterface) {
 	for i := 0; i < 255; i++ {
 		crossShardPoolMap[byte(i)] = GetCrossShardPool(byte(i))
 		pool[byte(i)] = crossShardPoolMap[byte(i)]

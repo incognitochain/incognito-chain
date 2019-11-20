@@ -74,7 +74,7 @@ func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	b byte,
-	db database.DatabaseInterface,
+	db incdb.DatabaseInterface,
 ) (
 	bool,
 	error,
@@ -127,7 +127,7 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(
 		return false, false, errors.New("staking Transaction Should Have 1 Output Amount crossponding to 1 Receiver")
 	}
 	keyWalletBurningAdd, err := wallet.Base58CheckDeserialize(common.BurningAddress)
-	if err != nil{
+	if err != nil {
 		return false, false, errors.New("burning address is invalid")
 	}
 	if !bytes.Equal(pubkey, keyWalletBurningAdd.KeySet.PaymentAddress.Pk) {

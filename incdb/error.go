@@ -1,4 +1,4 @@
-package database
+package incdb
 
 import (
 	"fmt"
@@ -13,7 +13,8 @@ const (
 	// LevelDB
 	OpenDbErr
 	NotExistValue
-	LvDbNotFound
+	LvdbNotFound
+	LvdbDeleteFailed
 
 	// BlockChain err
 	NotImplHashMethod
@@ -114,9 +115,10 @@ var ErrCodeMessage = map[int]struct {
 	DriverNotRegisterErr: {-1001, "Driver is not registered"},
 
 	// -2xxx levelDb
-	OpenDbErr:     {-2000, "Open database error"},
-	NotExistValue: {-2001, "H is not existed"},
-	LvDbNotFound:  {-2002, "lvdb not found"},
+	OpenDbErr:        {-2000, "Open database error"},
+	NotExistValue:    {-2001, "H is not existed"},
+	LvdbNotFound:     {-2002, "lvdb not found"},
+	LvdbDeleteFailed: {-2003, "lvdb delete failed"},
 
 	// -3xxx blockchain
 	NotImplHashMethod: {-3000, "Data does not implement Hash() method"},

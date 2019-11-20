@@ -1,12 +1,12 @@
-package lvdb
+package rawdb
 
 import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/incdb"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
 	"github.com/pkg/errors"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 )
@@ -21,32 +21,32 @@ import (
 	- Key: b-{blockHash}
 	- Value: {block}
 */
-func (db *db) StoreShardBlock(v interface{}, hash common.Hash, shardID byte, bd *[]database.BatchData) error {
+func StoreShardBlock(db incdb.Database, v interface{}, hash common.Hash, shardID byte, bd *[]incdb.BatchData) error {
 	var (
 		// key: b-{blockhash}:block
 		keyBlockHash = addPrefixToKeyHash(string(blockKeyPrefix), hash)
 		// key: s-{shardID}b-{[blockhash]}:b-{blockhash}
 		keyShardBlock = append(append(shardIDPrefix, shardID), keyBlockHash...)
 	)
-	if ok, _ := db.HasValue(keyShardBlock); ok {
-		return database.NewDatabaseError(database.BlockExisted, errors.Errorf("block %s already exists", hash.String()))
+	if ok, _ := db.Has(keyShardBlock); ok {
+		return incdb.NewDatabaseError(incdb.BlockExisted, errors.Errorf("block %s already exists", hash.String()))
 	}
 	val, err := json.Marshal(v)
 	if err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
+		return incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "json.Marshal"))
 	}
 
 	if bd != nil {
-		*bd = append(*bd, database.BatchData{keyShardBlock, keyBlockHash})
-		*bd = append(*bd, database.BatchData{keyBlockHash, val})
+		*bd = append(*bd, incdb.BatchData{keyShardBlock, keyBlockHash})
+		*bd = append(*bd, incdb.BatchData{keyBlockHash, val})
 		return nil
 	}
 
 	if err := db.Put(keyShardBlock, keyBlockHash); err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
+		return incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "db.Put"))
 	}
 	if err := db.Put(keyBlockHash, val); err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
+		return incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "db.Put"))
 	}
 	return nil
 }
@@ -54,8 +54,8 @@ func (db *db) StoreShardBlock(v interface{}, hash common.Hash, shardID byte, bd 
 /*
 	Query a block existence by hash. Return true if block exist otherwise false
 */
-func (db *db) HasBlock(hash common.Hash) (bool, error) {
-	exists, err := db.HasValue(addPrefixToKeyHash(string(blockKeyPrefix), hash))
+func HasBlock(db incdb.Database, hash common.Hash) (bool, error) {
+	exists, err := db.Has(addPrefixToKeyHash(string(blockKeyPrefix), hash))
 	if err != nil {
 		return false, err
 	} else {
@@ -66,11 +66,11 @@ func (db *db) HasBlock(hash common.Hash) (bool, error) {
 /*
 	Query a block by hash. Return block if existence
 */
-func (db *db) FetchBlock(hash common.Hash) ([]byte, error) {
-	block, err := db.lvdb.Get(addPrefixToKeyHash(string(blockKeyPrefix), hash), nil)
+func FetchBlock(db incdb.Database, hash common.Hash) ([]byte, error) {
+	block, err := db.Get(addPrefixToKeyHash(string(blockKeyPrefix), hash))
 	if err != nil {
 		if err == lvdberr.ErrNotFound {
-			return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+			return nil, incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 		}
 		return []byte{}, nil
 	}
@@ -88,40 +88,40 @@ func (db *db) FetchBlock(hash common.Hash) ([]byte, error) {
 	+ key: {index-shardID}
 	+ value: {hash}
 */
-func (db *db) StoreShardBlockIndex(hash common.Hash, idx uint64, shardID byte, bd *[]database.BatchData) error {
+func StoreShardBlockIndex(db incdb.Database, hash common.Hash, idx uint64, shardID byte, bd *[]incdb.BatchData) error {
 	buf := make([]byte, 9)
 	binary.LittleEndian.PutUint64(buf, idx)
 	buf[8] = shardID
 
 	if bd != nil {
-		*bd = append(*bd, database.BatchData{addPrefixToKeyHash(string(blockKeyIdxPrefix), hash), buf})
-		*bd = append(*bd, database.BatchData{buf, hash[:]})
+		*bd = append(*bd, incdb.BatchData{addPrefixToKeyHash(string(blockKeyIdxPrefix), hash), buf})
+		*bd = append(*bd, incdb.BatchData{buf, hash[:]})
 		return nil
 	}
 	//{i-[hash]}:index-shardID
 	if err := db.Put(addPrefixToKeyHash(string(blockKeyIdxPrefix), hash), buf); err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
+		return incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
 	//{index-shardID}:[hash]
 	if err := db.Put(buf, hash[:]); err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
+		return incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
 	return nil
 }
 
-func (db *db) GetIndexOfBlock(hash common.Hash) (uint64, byte, error) {
+func GetIndexOfBlock(db incdb.Database, hash common.Hash) (uint64, byte, error) {
 	var idx uint64
 	var shardID byte
 	b, err := db.Get(addPrefixToKeyHash(string(blockKeyIdxPrefix), hash))
 	//{i-[hash]}:index-shardID
 	if err != nil {
-		return 0, 0, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.get"))
+		return 0, 0, incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "db.lvdb.get"))
 	}
 	if err := binary.Read(bytes.NewReader(b[:8]), binary.LittleEndian, &idx); err != nil {
-		return 0, 0, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "binary.Read"))
+		return 0, 0, incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "binary.Read"))
 	}
 	if err = binary.Read(bytes.NewReader(b[8:]), binary.LittleEndian, &shardID); err != nil {
-		return 0, 0, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "binary.Read"))
+		return 0, 0, incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "binary.Read"))
 	}
 	return idx, shardID, nil
 }
@@ -131,7 +131,7 @@ func (db *db) GetIndexOfBlock(hash common.Hash) (uint64, byte, error) {
 	This function ONLY work when stored whole shard block,
 	1. Delete record block by hash
 */
-func (db *db) DeleteBlock(hash common.Hash, idx uint64, shardID byte) error {
+func DeleteBlock(db incdb.Database, hash common.Hash, idx uint64, shardID byte) error {
 	var (
 		err error
 		// key: b-{blockhash}:block
@@ -148,81 +148,81 @@ func (db *db) DeleteBlock(hash common.Hash, idx uint64, shardID byte) error {
 	// Delete block
 	err = db.Delete(keyBlockHash)
 	if err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Delete"))
+		return incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "db.lvdb.Delete"))
 	}
 	err = db.Delete(keyShardBlock)
 	if err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Delete"))
+		return incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "db.lvdb.Delete"))
 	}
 
 	// Delete block index
 	err = db.Delete(keyBlockIndex)
 	if err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		return incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
 
 	err = db.Delete(buf)
 	if err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		return incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
 	return nil
 }
 
-func (db *db) StoreShardBestState(v interface{}, shardID byte, bd *[]database.BatchData) error {
+func StoreShardBestState(db incdb.Database, v interface{}, shardID byte, bd *[]incdb.BatchData) error {
 	val, err := json.Marshal(v)
 	if err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
+		return incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "json.Marshal"))
 	}
 	key := append(bestBlockKeyPrefix, shardID)
 
 	if bd != nil {
-		*bd = append(*bd, database.BatchData{key, val})
+		*bd = append(*bd, incdb.BatchData{key, val})
 		return nil
 	}
 	if err := db.Put(key, val); err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.put"))
+		return incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "db.put"))
 	}
 	return nil
 }
 
-func (db *db) FetchShardBestState(shardID byte) ([]byte, error) {
+func FetchShardBestState(db incdb.Database, shardID byte) ([]byte, error) {
 	key := append(bestBlockKeyPrefix, shardID)
 	block, err := db.Get(key)
 	if err != nil {
-		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.get"))
+		return nil, incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "db.get"))
 	}
 	return block, nil
 }
 
-func (db *db) CleanShardBestState() error {
+func CleanShardBestState(db incdb.Database) error {
 	for shardID := byte(0); shardID < common.MaxShardNumber; shardID++ {
 		key := append(bestBlockKeyPrefix, shardID)
 		err := db.Delete(key)
 		if err != nil {
-			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.delete"))
+			return incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "db.delete"))
 		}
 	}
 	return nil
 }
 
-func (db *db) GetBlockByIndex(idx uint64, shardID byte) (common.Hash, error) {
+func GetBlockByIndex(db incdb.Database, idx uint64, shardID byte) (common.Hash, error) {
 	buf := make([]byte, 9)
 	binary.LittleEndian.PutUint64(buf, idx)
 	buf[8] = shardID
 	// {index-shardID}: {blockhash}
 	b, err := db.Get(buf)
 	if err != nil {
-		return common.Hash{}, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.GetBlockByIndex"))
+		return common.Hash{}, incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "db.lvdb.GetBlockByIndex"))
 	}
 	hash := new(common.Hash)
 	err1 := hash.SetBytes(b[:])
 	if err1 != nil {
-		return common.Hash{}, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.GetBlockByIndex"))
+		return common.Hash{}, incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "db.lvdb.GetBlockByIndex"))
 	}
 	return *hash, nil
 }
 
-func (db *db) StoreCommitteeFromShardBestState(shardID byte, shardHeight uint64, v interface{}) error {
+func StoreCommitteeFromShardBestState(db incdb.Database, shardID byte, shardHeight uint64, v interface{}) error {
 	key := append(shardPrefix, shardID)
 	buf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(buf, shardHeight)
@@ -230,16 +230,16 @@ func (db *db) StoreCommitteeFromShardBestState(shardID byte, shardHeight uint64,
 
 	val, err := json.Marshal(v)
 	if err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
+		return incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "json.Marshal"))
 	}
 
 	if err := db.Put(key, val); err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
+		return incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
 	return nil
 }
 
-func (db *db) FetchCommitteeFromShardBestState(shardID byte, shardHeight uint64) ([]byte, error) {
+func FetchCommitteeFromShardBestState(db incdb.Database, shardID byte, shardHeight uint64) ([]byte, error) {
 	key := append(shardPrefix, shardID)
 	buf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(buf, shardHeight)
@@ -247,12 +247,12 @@ func (db *db) FetchCommitteeFromShardBestState(shardID byte, shardHeight uint64)
 
 	b, err := db.Get(key)
 	if err != nil {
-		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.get"))
+		return nil, incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "db.get"))
 	}
 	return b, nil
 }
 
-func (db *db) HasShardCommitteeByHeight(height uint64) (bool, error) {
+func HasShardCommitteeByHeight(db incdb.Database, height uint64) (bool, error) {
 	key := append(beaconPrefix, shardIDPrefix...)
 	key = append(key, committeePrefix...)
 	key = append(key, heightPrefix...)
@@ -260,9 +260,9 @@ func (db *db) HasShardCommitteeByHeight(height uint64) (bool, error) {
 	binary.LittleEndian.PutUint64(buf, height)
 	key = append(key, buf[:]...)
 
-	exist, err := db.HasValue(key)
+	exist, err := db.Has(key)
 	if err != nil {
-		return false, database.NewDatabaseError(database.HasShardCommitteeByHeightError, err)
+		return false, incdb.NewDatabaseError(incdb.HasShardCommitteeByHeightError, err)
 	}
 	return exist, nil
 }

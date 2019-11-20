@@ -1,4 +1,4 @@
-package database
+package incdb
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -9,7 +9,7 @@ import (
 func Test_RegisterDriver(t *testing.T) {
 	driver := Driver{
 		DbType: "leveldb",
-		Open: func(args ...interface{}) (databaseInterface DatabaseInterface, e error) {
+		Open: func(args ...interface{}) (databaseInterface Database, e error) {
 			return nil, nil
 		},
 	}

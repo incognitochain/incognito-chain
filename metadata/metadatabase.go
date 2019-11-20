@@ -53,7 +53,7 @@ func (mb MetadataBase) CheckTransactionFee(
 	tx Transaction,
 	minFeePerKbTx uint64,
 	beaconHeight int64,
-	db database.DatabaseInterface,
+	db incdb.DatabaseInterface,
 ) bool {
 	if tx.GetType() == common.TxCustomTokenPrivacyType {
 		feeNativeToken := tx.GetTxFee()

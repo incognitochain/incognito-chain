@@ -2,9 +2,10 @@ package blockchain
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/core/rawdb"
+	"github.com/incognitochain/incognito-chain/incdb"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -14,7 +15,7 @@ func (blockchain *BlockChain) GetStakingAmountShard() uint64 {
 	return blockchain.config.ChainParams.StakingAmountShard
 }
 
-func (blockchain *BlockChain) GetDatabase() database.DatabaseInterface {
+func (blockchain *BlockChain) GetDatabase() incdb.Database {
 	return blockchain.config.DataBase
 }
 
@@ -22,7 +23,7 @@ func (blockchain *BlockChain) GetShardIDFromTx(txid string) (byte, error) {
 	var txHash = &common.Hash{}
 	(&common.Hash{}).Decode(txHash, txid)
 
-	blockHash, _, err := blockchain.config.DataBase.GetTransactionIndexById(*txHash)
+	blockHash, _, err := rawdb.GetTransactionIndexById(blockchain.GetDatabase(), *txHash)
 	if err != nil {
 		return 0, NewBlockChainError(UnExpectedError, err)
 	}
@@ -38,7 +39,7 @@ func (blockchain *BlockChain) GetTxValue(txid string) (uint64, error) {
 	var txHash = &common.Hash{}
 	(&common.Hash{}).Decode(txHash, txid)
 
-	blockHash, index, err := blockchain.config.DataBase.GetTransactionIndexById(*txHash)
+	blockHash, index, err := rawdb.GetTransactionIndexById(blockchain.GetDatabase(), *txHash)
 	if err != nil {
 		return 0, NewBlockChainError(UnExpectedError, err)
 	}
@@ -78,7 +79,7 @@ func (blockchain *BlockChain) GetAllCommitteeValidatorCandidate() (map[byte][]in
 		return SC, SPV, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, nil
 	}
 	beaconBestState := BeaconBestState{}
-	temp, err := blockchain.config.DataBase.FetchBeaconBestState()
+	temp, err := rawdb.FetchBeaconBestState(blockchain.GetDatabase())
 	if err != nil {
 		return SC, SPV, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, nil
 	} else {
@@ -104,7 +105,7 @@ func (blockchain *BlockChain) GetAllCommitteeValidatorCandidate() (map[byte][]in
 
 func (blockchain *BlockChain) GetAllCommitteeValidatorCandidateFlattenListFromDatabase() ([]string, error) {
 	beaconBestState := BeaconBestState{}
-	temp, err := blockchain.config.DataBase.FetchBeaconBestState()
+	temp, err := rawdb.FetchBeaconBestState(blockchain.GetDatabase())
 	if err != nil {
 		return nil, err
 	} else {

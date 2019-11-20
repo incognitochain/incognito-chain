@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"math/rand"
 	"sort"
 	"strconv"
@@ -10,7 +11,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/core/rawdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -86,11 +87,11 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	if beaconHeight-shardBestState.BeaconHeight > MAX_BEACON_BLOCK {
 		beaconHeight = shardBestState.BeaconHeight + MAX_BEACON_BLOCK
 	}
-	beaconHash, err := blockGenerator.chain.config.DataBase.GetBeaconBlockHashByIndex(beaconHeight)
+	beaconHash, err := rawdb.GetBeaconBlockHashByIndex(blockGenerator.chain.GetDatabase(), beaconHeight)
 	if err != nil {
 		return nil, err
 	}
-	beaconBlockBytes, err := blockGenerator.chain.config.DataBase.FetchBeaconBlock(beaconHash)
+	beaconBlockBytes, err := rawdb.FetchBeaconBlock(blockGenerator.chain.GetDatabase(), beaconHash)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +103,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	epoch := beaconBlock.Header.Epoch
 	if epoch-shardBestState.Epoch >= 1 {
 		beaconHeight = shardBestState.Epoch * blockGenerator.chain.config.ChainParams.Epoch
-		newBeaconHash, err := blockGenerator.chain.config.DataBase.GetBeaconBlockHashByIndex(beaconHeight)
+		newBeaconHash, err := rawdb.GetBeaconBlockHashByIndex(blockGenerator.chain.GetDatabase(), beaconHeight)
 		if err != nil {
 			return nil, err
 		}
@@ -304,7 +305,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	4. Build response Transaction For Beacon
 	5. Return valid transaction from pending, response transactions from shard and beacon
 */
-func (blockGenerator *BlockGenerator) getTransactionForNewBlock(privatekey *privacy.PrivateKey, shardID byte, db database.DatabaseInterface, beaconBlocks []*BeaconBlock, blockCreation int64, beaconHeight uint64) ([]metadata.Transaction, error) {
+func (blockGenerator *BlockGenerator) getTransactionForNewBlock(privatekey *privacy.PrivateKey, shardID byte, db incdb.Database, beaconBlocks []*BeaconBlock, blockCreation int64, beaconHeight uint64) ([]metadata.Transaction, error) {
 	txsToAdd, txToRemove, _ := blockGenerator.getPendingTransaction(shardID, beaconBlocks, blockCreation, beaconHeight)
 	if len(txsToAdd) == 0 {
 		Logger.log.Info("Creating empty block...")
@@ -352,7 +353,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 	errorInstructions := [][]string{}   // capture error instruction -> which instruction can not create tx
 	for _, beaconBlock := range beaconBlocks {
 		autoStaking := make(map[string]bool)
-		autoStakingBytes, err := blockGenerator.chain.config.DataBase.FetchAutoStakingByHeight(beaconBlock.Header.Height)
+		autoStakingBytes, err := rawdb.FetchAutoStakingByHeight(blockGenerator.chain.GetDatabase(), beaconBlock.Header.Height)
 		if err != nil {
 			return []metadata.Transaction{}, errorInstructions, NewBlockChainError(FetchAutoStakingByHeightError, err)
 		}
@@ -622,7 +623,7 @@ func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeacon
 			if crossShardBlock.Header.Height <= startHeight {
 				break
 			}
-			nextHeight, err := blockGenerator.chain.config.DataBase.FetchCrossShardNextHeight(fromShard, toShard, startHeight)
+			nextHeight, err := rawdb.FetchCrossShardNextHeight(blockGenerator.chain.GetDatabase(), fromShard, toShard, startHeight)
 			if err != nil {
 				break
 			}
@@ -634,7 +635,7 @@ func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeacon
 			if err != nil {
 				break
 			}
-			temp, err := blockGenerator.chain.config.DataBase.FetchShardCommitteeByHeight(beaconHeight)
+			temp, err := rawdb.FetchShardCommitteeByHeight(blockGenerator.chain.GetDatabase(), beaconHeight)
 			if err != nil {
 				break
 			}

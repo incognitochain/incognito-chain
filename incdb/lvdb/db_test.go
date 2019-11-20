@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var db database.DatabaseInterface
+var db incdb.DatabaseInterface
 
 var _ = func() (_ struct{}) {
 	dbPath, err := ioutil.TempDir(os.TempDir(), "test_")
@@ -28,11 +28,11 @@ var _ = func() (_ struct{}) {
 		log.Fatalf("failed to create temp dir: %+v", err)
 	}
 	log.Println(dbPath)
-	db, err = database.Open("leveldb", dbPath)
+	db, err = incdb.Open("leveldb", dbPath)
 	if err != nil {
 		log.Fatalf("could not open db path: %s, %+v", dbPath, err)
 	}
-	database.Logger.Init(common.NewBackend(nil).Logger("test", true))
+	incdb.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return
 }()
 
@@ -42,7 +42,7 @@ func TestDb_Setup(t *testing.T) {
 		t.Fatalf("failed to create temp dir: %+v", err)
 	}
 	t.Log(dbPath)
-	db, err := database.Open("leveldb", dbPath)
+	db, err := incdb.Open("leveldb", dbPath)
 	if err != nil {
 		t.Fatalf("could not open db path: %s, %+v", dbPath, err)
 	}
@@ -74,12 +74,12 @@ func TestDb_Base(t *testing.T) {
 		assert.Equal(t, err, nil)
 		assert.Equal(t, has, false)
 
-		batchData := []database.BatchData{}
-		batchData = append(batchData, database.BatchData{
+		batchData := []incdb.BatchData{}
+		batchData = append(batchData, incdb.BatchData{
 			Key:   []byte("abc1"),
 			Value: []byte("abc1"),
 		})
-		batchData = append(batchData, database.BatchData{
+		batchData = append(batchData, incdb.BatchData{
 			Key:   []byte("abc2"),
 			Value: []byte("abc2"),
 		})
@@ -278,7 +278,7 @@ func TestDb_StoreTxIndex(t *testing.T) {
 		assert.Equal(t, err, nil)
 
 		blockHash, index, err := db.GetTransactionIndexById(*block.Body.Transactions[1].Hash())
-		if err != nil && err.(*database.DatabaseError) != nil {
+		if err != nil && err.(*incdb.DatabaseError) != nil {
 			t.Error(err)
 		}
 		assert.Equal(t, blockHash, *block.Hash())

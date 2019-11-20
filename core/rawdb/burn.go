@@ -1,22 +1,22 @@
-package lvdb
+package rawdb
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/incdb"
 )
 
-func (db *db) StoreBurningConfirm(txID common.Hash, height uint64, bd *[]database.BatchData) error {
+func StoreBurningConfirm(db incdb.Database, txID common.Hash, height uint64, bd *[]incdb.BatchData) error {
 	key := append(burnConfirmPrefix, txID[:]...)
 	value := common.Uint64ToBytes(height)
 
 	if bd != nil {
-		*bd = append(*bd, database.BatchData{key, value})
+		*bd = append(*bd, incdb.BatchData{key, value})
 		return nil
 	}
 	return db.Put(key, value)
 }
 
-func (db *db) GetBurningConfirm(txID common.Hash) (uint64, error) {
+func GetBurningConfirm(db incdb.Database, txID common.Hash) (uint64, error) {
 	key := append(burnConfirmPrefix, txID[:]...)
 	value, err := db.Get(key)
 	if err != nil {

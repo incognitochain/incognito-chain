@@ -69,7 +69,7 @@ func (httpServer *HttpServer) handleGetBurnProof(params interface{}, closeChan <
 func getBurnProofOnBridge(
 	txID *common.Hash,
 	bridgeBlock *blockchain.ShardBlock,
-	db database.DatabaseInterface,
+	db incdb.DatabaseInterface,
 	ce ConsensusEngine,
 ) (*swapProof, error) {
 	insts := bridgeBlock.Body.Instructions
@@ -90,7 +90,7 @@ func getBurnProofOnBridge(
 func getBurnProofOnBeacon(
 	inst []string,
 	beaconBlocks []*blockchain.BeaconBlock,
-	db database.DatabaseInterface,
+	db incdb.DatabaseInterface,
 	ce ConsensusEngine,
 ) (*swapProof, error) {
 	// Get beacon block and check if it contains beacon swap instruction

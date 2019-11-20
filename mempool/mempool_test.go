@@ -27,7 +27,7 @@ import (
 )
 
 var (
-	db               database.DatabaseInterface
+	db               incdb.DatabaseInterface
 	dbp              databasemp.DatabaseInterface
 	bc               *blockchain.BlockChain
 	pbMempool        = pubsub.NewPubSubManager()
@@ -97,7 +97,7 @@ var _ = func() (_ struct{}) {
 			DefaultEstimateFeeMinRegisteredBlocks,
 			1)
 	}
-	db, err = database.Open("leveldb", filepath.Join("./", "./testdatabase/mempool"))
+	db, err = incdb.Open("leveldb", filepath.Join("./", "./testdatabase/mempool"))
 	if err != nil {
 		log.Fatal("Could not open database connection", err)
 	}
@@ -150,7 +150,7 @@ var _ = func() (_ struct{}) {
 		Body: blockchain.ShardBody{
 			Transactions: transactions,
 		},
-	}, &[]database.BatchData{})
+	}, &[]incdb.BatchData{})
 	transactions = []metadata.Transaction{}
 	for _, privateKey := range privateKeyShard0 {
 		txs := initTx(strconv.Itoa(maxAmount), privateKey, db)
@@ -161,7 +161,7 @@ var _ = func() (_ struct{}) {
 		Body: blockchain.ShardBody{
 			Transactions: transactions,
 		},
-	}, &[]database.BatchData{})
+	}, &[]incdb.BatchData{})
 	if err != nil {
 		fmt.Println("Can not fetch transaction")
 		return
@@ -198,7 +198,7 @@ func ResetMempoolTest() {
 	tp.CRemoveTxs = cRemoveTxs
 	tp.config.DataBaseMempool.Reset()
 }
-func initTx(amount string, privateKey string, db database.DatabaseInterface) []metadata.Transaction {
+func initTx(amount string, privateKey string, db incdb.DatabaseInterface) []metadata.Transaction {
 	var initTxs []metadata.Transaction
 	var initAmount, _ = strconv.Atoi(amount) // amount init
 	testUserkeyList := []string{
@@ -1031,7 +1031,7 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 		Body: blockchain.ShardBody{
 			Transactions: []metadata.Transaction{tx1},
 		},
-	}, &[]database.BatchData{})
+	}, &[]incdb.BatchData{})
 	if err != nil {
 		t.Fatalf("Expect no error but get %+v", err)
 	}

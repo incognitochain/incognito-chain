@@ -50,7 +50,7 @@ func (bReq BurningRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,
-	db database.DatabaseInterface,
+	db incdb.DatabaseInterface,
 ) (bool, error) {
 	bridgeTokenExisted, err := db.IsBridgeTokenExistedByType(bReq.TokenID, false)
 	if err != nil {

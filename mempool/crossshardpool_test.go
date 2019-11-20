@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	dbCrossShard          database.DatabaseInterface
+	dbCrossShard          incdb.DatabaseInterface
 	bestShardStateShard1  *blockchain.ShardBestState
 	crossShardPoolMapTest = make(map[byte]*CrossShardPool)
 	crossShardBlock2      = &blockchain.CrossShardBlock{
@@ -101,7 +101,7 @@ var _ = func() (_ struct{}) {
 		pool.isTest = true
 		crossShardPoolMapTest[shardID] = pool
 	}
-	dbCrossShard, err = database.Open("leveldb", filepath.Join("./", "./testdatabase/crossshard"))
+	dbCrossShard, err = incdb.Open("leveldb", filepath.Join("./", "./testdatabase/crossshard"))
 	if err != nil {
 		panic("Could not open db connection")
 	}

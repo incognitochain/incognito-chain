@@ -3,14 +3,15 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/core/rawdb"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -31,14 +32,14 @@ func GetAssignInstructionFromBeaconBlock(beaconBlocks []*BeaconBlock, shardID by
 	return assignInstruction
 }
 
-func FetchBeaconBlockFromHeight(db database.DatabaseInterface, from uint64, to uint64) ([]*BeaconBlock, error) {
+func FetchBeaconBlockFromHeight(db incdb.Database, from uint64, to uint64) ([]*BeaconBlock, error) {
 	beaconBlocks := []*BeaconBlock{}
 	for i := from; i <= to; i++ {
-		hash, err := db.GetBeaconBlockHashByIndex(i)
+		hash, err := rawdb.GetBeaconBlockHashByIndex(db, i)
 		if err != nil {
 			return beaconBlocks, err
 		}
-		beaconBlockByte, err := db.FetchBeaconBlock(hash)
+		beaconBlockByte, err := rawdb.FetchBeaconBlock(db, hash)
 		if err != nil {
 			return beaconBlocks, err
 		}

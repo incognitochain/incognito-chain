@@ -74,7 +74,7 @@ func init() {
 	rpcservice.BLogger.Init(rpcServiceBridgeLogger)
 	netsync.Logger.Init(netsyncLogger)
 	peer.Logger.Init(peerLogger)
-	database.Logger.Init(dbLogger)
+	incdb.Logger.Init(dbLogger)
 	wallet.Logger.Init(walletLogger)
 	blockchain.Logger.Init(blockchainLogger)
 	consensus.Logger.Init(consensusLogger)

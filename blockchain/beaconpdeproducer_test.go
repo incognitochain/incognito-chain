@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/core/rawdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/stretchr/testify/suite"
 )
@@ -24,8 +24,8 @@ type PDEProducerSuite struct {
 
 func (suite *PDEProducerSuite) SetupTest() {
 	suite.currentPDEState = &CurrentPDEState{
-		WaitingPDEContributions: make(map[string]*lvdb.PDEContribution),
-		PDEPoolPairs:            make(map[string]*lvdb.PDEPoolForPair),
+		WaitingPDEContributions: make(map[string]*rawdb.PDEContribution),
+		PDEPoolPairs:            make(map[string]*rawdb.PDEPoolForPair),
 		PDEShares:               make(map[string]uint64),
 	}
 }
@@ -86,14 +86,14 @@ func (suite *PDEProducerSuite) TestTradeOnNoAnyExistedPair() {
 func (suite *PDEProducerSuite) TestTradeOnUnexistedPair() {
 	fmt.Println("Running testcase: TestTradeOnUnexistedPair")
 	beaconHeight := uint64(1001)
-	pair := lvdb.PDEPoolForPair{
+	pair := rawdb.PDEPoolForPair{
 		Token1IDStr:     "0000000000000000000000000000000000000000000000000000000000000005",
 		Token1PoolValue: 500000000000,
 		Token2IDStr:     "0000000000000000000000000000000000000000000000000000000000000007",
 		Token2PoolValue: 60000000000000,
 	}
-	pairKey := string(lvdb.BuildPDEPoolForPairKey(beaconHeight-1, pair.Token1IDStr, pair.Token2IDStr))
-	suite.currentPDEState.PDEPoolPairs = map[string]*lvdb.PDEPoolForPair{
+	pairKey := string(rawdb.BuildPDEPoolForPairKey(beaconHeight-1, pair.Token1IDStr, pair.Token2IDStr))
+	suite.currentPDEState.PDEPoolPairs = map[string]*rawdb.PDEPoolForPair{
 		pairKey: &pair,
 	}
 	reqAction := buildPDETradeReqAction(
@@ -124,14 +124,14 @@ func (suite *PDEProducerSuite) TestTradeOnUnexistedPair() {
 func (suite *PDEProducerSuite) TestBuyToken1OnExistedPair() {
 	fmt.Println("Running testcase: TestBuyToken1OnExistedPair")
 	beaconHeight := uint64(1001)
-	pair := lvdb.PDEPoolForPair{
+	pair := rawdb.PDEPoolForPair{
 		Token1IDStr:     "0000000000000000000000000000000000000000000000000000000000000005",
 		Token1PoolValue: 500000000000,
 		Token2IDStr:     "0000000000000000000000000000000000000000000000000000000000000007",
 		Token2PoolValue: 60000000000000,
 	}
-	pairKey := string(lvdb.BuildPDEPoolForPairKey(beaconHeight-1, pair.Token1IDStr, pair.Token2IDStr))
-	suite.currentPDEState.PDEPoolPairs = map[string]*lvdb.PDEPoolForPair{
+	pairKey := string(rawdb.BuildPDEPoolForPairKey(beaconHeight-1, pair.Token1IDStr, pair.Token2IDStr))
+	suite.currentPDEState.PDEPoolPairs = map[string]*rawdb.PDEPoolForPair{
 		pairKey: &pair,
 	}
 
@@ -183,14 +183,14 @@ func (suite *PDEProducerSuite) TestBuyToken1OnExistedPair() {
 func (suite *PDEProducerSuite) TestBuyToken2OnExistedPair() {
 	fmt.Println("Running testcase: TestBuyToken2OnExistedPair")
 	beaconHeight := uint64(1001)
-	pair := lvdb.PDEPoolForPair{
+	pair := rawdb.PDEPoolForPair{
 		Token1IDStr:     "0000000000000000000000000000000000000000000000000000000000000005",
 		Token1PoolValue: 500000000000,
 		Token2IDStr:     "0000000000000000000000000000000000000000000000000000000000000007",
 		Token2PoolValue: 60000000000000,
 	}
-	pairKey := string(lvdb.BuildPDEPoolForPairKey(beaconHeight-1, pair.Token1IDStr, pair.Token2IDStr))
-	suite.currentPDEState.PDEPoolPairs = map[string]*lvdb.PDEPoolForPair{
+	pairKey := string(rawdb.BuildPDEPoolForPairKey(beaconHeight-1, pair.Token1IDStr, pair.Token2IDStr))
+	suite.currentPDEState.PDEPoolPairs = map[string]*rawdb.PDEPoolForPair{
 		pairKey: &pair,
 	}
 
@@ -242,14 +242,14 @@ func (suite *PDEProducerSuite) TestBuyToken2OnExistedPair() {
 func (suite *PDEProducerSuite) TestSellVerySmallAmtOnExistedPair() {
 	fmt.Println("Running testcase: TestSellVerySmallAmtOnExistedPair")
 	beaconHeight := uint64(1001)
-	pair := lvdb.PDEPoolForPair{
+	pair := rawdb.PDEPoolForPair{
 		Token1IDStr:     "0000000000000000000000000000000000000000000000000000000000000005",
 		Token1PoolValue: 500000000000,
 		Token2IDStr:     "0000000000000000000000000000000000000000000000000000000000000007",
 		Token2PoolValue: 60000000000000,
 	}
-	pairKey := string(lvdb.BuildPDEPoolForPairKey(beaconHeight-1, pair.Token1IDStr, pair.Token2IDStr))
-	suite.currentPDEState.PDEPoolPairs = map[string]*lvdb.PDEPoolForPair{
+	pairKey := string(rawdb.BuildPDEPoolForPairKey(beaconHeight-1, pair.Token1IDStr, pair.Token2IDStr))
+	suite.currentPDEState.PDEPoolPairs = map[string]*rawdb.PDEPoolForPair{
 		pairKey: &pair,
 	}
 
@@ -311,25 +311,25 @@ func buildPDEWithdrawReqAction(
 func (suite *PDEProducerSuite) TestWithdrawOnExistedPair() {
 	fmt.Println("Running testcase: TestWithdrawOnExistedPair")
 	beaconHeight := uint64(1001)
-	pair := lvdb.PDEPoolForPair{
+	pair := rawdb.PDEPoolForPair{
 		Token1IDStr:     "0000000000000000000000000000000000000000000000000000000000000005",
 		Token1PoolValue: 500000000000,
 		Token2IDStr:     "0000000000000000000000000000000000000000000000000000000000000007",
 		Token2PoolValue: 60000000000000,
 	}
-	pairKey := string(lvdb.BuildPDEPoolForPairKey(beaconHeight-1, pair.Token1IDStr, pair.Token2IDStr))
-	suite.currentPDEState.PDEPoolPairs = map[string]*lvdb.PDEPoolForPair{
+	pairKey := string(rawdb.BuildPDEPoolForPairKey(beaconHeight-1, pair.Token1IDStr, pair.Token2IDStr))
+	suite.currentPDEState.PDEPoolPairs = map[string]*rawdb.PDEPoolForPair{
 		pairKey: &pair,
 	}
 
-	shareKey1 := string(lvdb.BuildPDESharesKey(
+	shareKey1 := string(rawdb.BuildPDESharesKey(
 		beaconHeight-1,
 		"0000000000000000000000000000000000000000000000000000000000000005",
 		"0000000000000000000000000000000000000000000000000000000000000007",
 		"0000000000000000000000000000000000000000000000000000000000000005",
 		"12S2jM1TBbX2V5TBTvpJkJmsdaYxbCspGNedQkvJpYcbnV4gad7FDEbzY9P3zbpZRJTsGD5vxJRia3UiiUwMUbXbjfgezewq6rtPNtj",
 	))
-	shareKey2 := string(lvdb.BuildPDESharesKey(
+	shareKey2 := string(rawdb.BuildPDESharesKey(
 		beaconHeight-1,
 		"0000000000000000000000000000000000000000000000000000000000000005",
 		"0000000000000000000000000000000000000000000000000000000000000007",
@@ -403,25 +403,25 @@ func (suite *PDEProducerSuite) TestWithdrawOnExistedPair() {
 func (suite *PDEProducerSuite) TestWithdrawOnToken1OfExistedPair() {
 	fmt.Println("Running testcase: TestWithdrawOnToken1OfExistedPair")
 	beaconHeight := uint64(1001)
-	pair := lvdb.PDEPoolForPair{
+	pair := rawdb.PDEPoolForPair{
 		Token1IDStr:     "0000000000000000000000000000000000000000000000000000000000000005",
 		Token1PoolValue: 500000000000,
 		Token2IDStr:     "0000000000000000000000000000000000000000000000000000000000000007",
 		Token2PoolValue: 60000000000000,
 	}
-	pairKey := string(lvdb.BuildPDEPoolForPairKey(beaconHeight-1, pair.Token1IDStr, pair.Token2IDStr))
-	suite.currentPDEState.PDEPoolPairs = map[string]*lvdb.PDEPoolForPair{
+	pairKey := string(rawdb.BuildPDEPoolForPairKey(beaconHeight-1, pair.Token1IDStr, pair.Token2IDStr))
+	suite.currentPDEState.PDEPoolPairs = map[string]*rawdb.PDEPoolForPair{
 		pairKey: &pair,
 	}
 
-	shareKey1 := string(lvdb.BuildPDESharesKey(
+	shareKey1 := string(rawdb.BuildPDESharesKey(
 		beaconHeight-1,
 		"0000000000000000000000000000000000000000000000000000000000000005",
 		"0000000000000000000000000000000000000000000000000000000000000007",
 		"0000000000000000000000000000000000000000000000000000000000000005",
 		"12S2jM1TBbX2V5TBTvpJkJmsdaYxbCspGNedQkvJpYcbnV4gad7FDEbzY9P3zbpZRJTsGD5vxJRia3UiiUwMUbXbjfgezewq6rtPNtj",
 	))
-	shareKey2 := string(lvdb.BuildPDESharesKey(
+	shareKey2 := string(rawdb.BuildPDESharesKey(
 		beaconHeight-1,
 		"0000000000000000000000000000000000000000000000000000000000000005",
 		"0000000000000000000000000000000000000000000000000000000000000007",
@@ -483,25 +483,25 @@ func (suite *PDEProducerSuite) TestWithdrawOnToken1OfExistedPair() {
 func (suite *PDEProducerSuite) TestWithdrawOnUnexistedPair() {
 	fmt.Println("Running testcase: TestWithdrawOnUnexistedPair")
 	beaconHeight := uint64(1001)
-	pair := lvdb.PDEPoolForPair{
+	pair := rawdb.PDEPoolForPair{
 		Token1IDStr:     "0000000000000000000000000000000000000000000000000000000000000005",
 		Token1PoolValue: 500000000000,
 		Token2IDStr:     "0000000000000000000000000000000000000000000000000000000000000007",
 		Token2PoolValue: 60000000000000,
 	}
-	pairKey := string(lvdb.BuildPDEPoolForPairKey(beaconHeight-1, pair.Token1IDStr, pair.Token2IDStr))
-	suite.currentPDEState.PDEPoolPairs = map[string]*lvdb.PDEPoolForPair{
+	pairKey := string(rawdb.BuildPDEPoolForPairKey(beaconHeight-1, pair.Token1IDStr, pair.Token2IDStr))
+	suite.currentPDEState.PDEPoolPairs = map[string]*rawdb.PDEPoolForPair{
 		pairKey: &pair,
 	}
 
-	shareKey1 := string(lvdb.BuildPDESharesKey(
+	shareKey1 := string(rawdb.BuildPDESharesKey(
 		beaconHeight-1,
 		"0000000000000000000000000000000000000000000000000000000000000005",
 		"0000000000000000000000000000000000000000000000000000000000000007",
 		"0000000000000000000000000000000000000000000000000000000000000005",
 		"12S2jM1TBbX2V5TBTvpJkJmsdaYxbCspGNedQkvJpYcbnV4gad7FDEbzY9P3zbpZRJTsGD5vxJRia3UiiUwMUbXbjfgezewq6rtPNtj",
 	))
-	shareKey2 := string(lvdb.BuildPDESharesKey(
+	shareKey2 := string(rawdb.BuildPDESharesKey(
 		beaconHeight-1,
 		"0000000000000000000000000000000000000000000000000000000000000005",
 		"0000000000000000000000000000000000000000000000000000000000000007",
@@ -547,32 +547,32 @@ func (suite *PDEProducerSuite) TestWithdrawOnUnexistedPair() {
 func (suite *PDEProducerSuite) TestWithdrawExceededSharesOnToken2OfExistedPair() {
 	fmt.Println("Running testcase: TestWithdrawExceededSharesOnToken2OfExistedPair")
 	beaconHeight := uint64(1001)
-	pair := lvdb.PDEPoolForPair{
+	pair := rawdb.PDEPoolForPair{
 		Token1IDStr:     "0000000000000000000000000000000000000000000000000000000000000005",
 		Token1PoolValue: 500000000000,
 		Token2IDStr:     "0000000000000000000000000000000000000000000000000000000000000007",
 		Token2PoolValue: 60000000000000,
 	}
-	pairKey := string(lvdb.BuildPDEPoolForPairKey(beaconHeight-1, pair.Token1IDStr, pair.Token2IDStr))
-	suite.currentPDEState.PDEPoolPairs = map[string]*lvdb.PDEPoolForPair{
+	pairKey := string(rawdb.BuildPDEPoolForPairKey(beaconHeight-1, pair.Token1IDStr, pair.Token2IDStr))
+	suite.currentPDEState.PDEPoolPairs = map[string]*rawdb.PDEPoolForPair{
 		pairKey: &pair,
 	}
 
-	shareKey1 := string(lvdb.BuildPDESharesKey(
+	shareKey1 := string(rawdb.BuildPDESharesKey(
 		beaconHeight-1,
 		"0000000000000000000000000000000000000000000000000000000000000005",
 		"0000000000000000000000000000000000000000000000000000000000000007",
 		"0000000000000000000000000000000000000000000000000000000000000005",
 		"12S2jM1TBbX2V5TBTvpJkJmsdaYxbCspGNedQkvJpYcbnV4gad7FDEbzY9P3zbpZRJTsGD5vxJRia3UiiUwMUbXbjfgezewq6rtPNtj",
 	))
-	shareKey2 := string(lvdb.BuildPDESharesKey(
+	shareKey2 := string(rawdb.BuildPDESharesKey(
 		beaconHeight-1,
 		"0000000000000000000000000000000000000000000000000000000000000005",
 		"0000000000000000000000000000000000000000000000000000000000000007",
 		"0000000000000000000000000000000000000000000000000000000000000007",
 		"12S2jM1TBbX2V5TBTvpJkJmsdaYxbCspGNedQkvJpYcbnV4gad7FDEbzY9P3zbpZRJTsGD5vxJRia3UiiUwMUbXbjfgezewq6rtPNtj",
 	))
-	shareKey3 := string(lvdb.BuildPDESharesKey(
+	shareKey3 := string(rawdb.BuildPDESharesKey(
 		beaconHeight-1,
 		"0000000000000000000000000000000000000000000000000000000000000005",
 		"0000000000000000000000000000000000000000000000000000000000000007",

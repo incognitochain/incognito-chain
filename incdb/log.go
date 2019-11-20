@@ -1,4 +1,4 @@
-package database
+package incdb
 
 import (
 	"github.com/incognitochain/incognito-chain/common"

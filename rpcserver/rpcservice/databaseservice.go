@@ -13,7 +13,7 @@ import (
 )
 
 type DatabaseService struct {
-	DB *database.DatabaseInterface
+	DB *incdb.DatabaseInterface
 }
 
 func (dbService DatabaseService) CheckETHHashIssued(data map[string]interface{}) (bool, error) {

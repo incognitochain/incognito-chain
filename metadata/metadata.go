@@ -14,8 +14,8 @@ import (
 type Metadata interface {
 	GetType() int
 	Hash() *common.Hash
-	CheckTransactionFee(Transaction, uint64, int64, database.DatabaseInterface) bool
-	ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error)
+	CheckTransactionFee(Transaction, uint64, int64, incdb.DatabaseInterface) bool
+	ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, b byte, db incdb.DatabaseInterface) (bool, error)
 	ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error)
 	ValidateMetadataByItself() bool
 	BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error)
@@ -61,7 +61,7 @@ type BlockchainRetriever interface {
 	GetAllCommitteeValidatorCandidateFlattenListFromDatabase() ([]string, error)
 	GetStakingTx(byte) map[string]string
 	GetAutoStakingList() map[string]bool
-	GetDatabase() database.DatabaseInterface
+	GetDatabase() incdb.DatabaseInterface
 	GetTxValue(txid string) (uint64, error)
 	GetShardIDFromTx(txid string) (byte, error)
 	GetCentralizedWebsitePaymentAddress() string
@@ -102,12 +102,12 @@ type Transaction interface {
 	CheckTxVersion(int8) bool
 	// CheckTransactionFee(minFeePerKbTx uint64) bool
 	ValidateTxWithCurrentMempool(MempoolRetriever) error
-	ValidateTxWithBlockChain(BlockchainRetriever, byte, database.DatabaseInterface) error
-	ValidateDoubleSpendWithBlockchain(BlockchainRetriever, byte, database.DatabaseInterface, *common.Hash) error
+	ValidateTxWithBlockChain(BlockchainRetriever, byte, incdb.DatabaseInterface) error
+	ValidateDoubleSpendWithBlockchain(BlockchainRetriever, byte, incdb.DatabaseInterface, *common.Hash) error
 	ValidateSanityData(BlockchainRetriever) (bool, error)
-	ValidateTxByItself(bool, database.DatabaseInterface, BlockchainRetriever, byte) (bool, error)
+	ValidateTxByItself(bool, incdb.DatabaseInterface, BlockchainRetriever, byte) (bool, error)
 	ValidateType() bool
-	ValidateTransaction(bool, database.DatabaseInterface, byte, *common.Hash) (bool, error)
+	ValidateTransaction(bool, incdb.DatabaseInterface, byte, *common.Hash) (bool, error)
 	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, BlockchainRetriever, *AccumulatedValues) (bool, error)
 
 	IsPrivacy() bool
@@ -119,7 +119,7 @@ type Transaction interface {
 func getPDEPoolPair(
 	prvIDStr, tokenIDStr string,
 	beaconHeight int64,
-	db database.DatabaseInterface,
+	db incdb.DatabaseInterface,
 ) (*lvdb.PDEPoolForPair, error) {
 	var pdePoolForPair lvdb.PDEPoolForPair
 	var err error
@@ -147,7 +147,7 @@ func convertValueBetweenCurrencies(
 	currentCurrencyIDStr string,
 	tokenID *common.Hash,
 	beaconHeight int64,
-	db database.DatabaseInterface,
+	db incdb.DatabaseInterface,
 ) (float64, error) {
 	prvIDStr := common.PRVCoinID.String()
 	tokenIDStr := tokenID.String()
@@ -180,7 +180,7 @@ func ConvertNativeTokenToPrivacyToken(
 	nativeTokenAmount uint64,
 	tokenID *common.Hash,
 	beaconHeight int64,
-	db database.DatabaseInterface,
+	db incdb.DatabaseInterface,
 ) (float64, error) {
 	return convertValueBetweenCurrencies(
 		nativeTokenAmount,
@@ -197,7 +197,7 @@ func ConvertPrivacyTokenToNativeToken(
 	privacyTokenAmount uint64,
 	tokenID *common.Hash,
 	beaconHeight int64,
-	db database.DatabaseInterface,
+	db incdb.DatabaseInterface,
 ) (float64, error) {
 	return convertValueBetweenCurrencies(
 		privacyTokenAmount,

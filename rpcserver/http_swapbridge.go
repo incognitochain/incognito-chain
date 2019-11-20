@@ -31,11 +31,11 @@ func (httpServer *HttpServer) handleGetLatestBridgeSwapProof(params interface{},
 func (httpServer *HttpServer) handleGetBridgeSwapProof(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Infof("handleGetBridgeSwapProof params: %+v", params)
 	listParams, ok := params.([]interface{})
-	if !ok || len(listParams) < 1{
+	if !ok || len(listParams) < 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
 	}
 
-	heightParam, ok :=listParams[0].(float64)
+	heightParam, ok := listParams[0].(float64)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("height param is invalid"))
 	}
@@ -70,7 +70,7 @@ func (httpServer *HttpServer) handleGetBridgeSwapProof(params interface{}, close
 func getBridgeSwapProofOnBridge(
 	beaconBlock *blockchain.BeaconBlock,
 	bc *blockchain.BlockChain,
-	db database.DatabaseInterface,
+	db incdb.DatabaseInterface,
 	ce ConsensusEngine,
 ) (*swapProof, error) {
 	// Get bridge block and check if it contains bridge swap instruction
@@ -87,7 +87,7 @@ func getBridgeSwapProofOnBridge(
 func findBridgeBlockWithInst(
 	beaconBlock *blockchain.BeaconBlock,
 	bc *blockchain.BlockChain,
-	db database.DatabaseInterface,
+	db incdb.DatabaseInterface,
 ) (*blockchain.ShardBlock, int, error) {
 	bridgeID := byte(common.BridgeShardID)
 	for _, state := range beaconBlock.Body.ShardState[bridgeID] {

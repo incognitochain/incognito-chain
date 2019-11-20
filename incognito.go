@@ -59,7 +59,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	if interruptRequested(interrupt) {
 		return nil
 	}
-	db, err := database.Open("leveldb", filepath.Join(cfg.DataDir, cfg.DatabaseDir))
+	db, err := incdb.Open("leveldb", filepath.Join(cfg.DataDir, cfg.DatabaseDir))
 	// Create db and use it.
 	if err != nil {
 		Logger.log.Error("could not open connection to leveldb")

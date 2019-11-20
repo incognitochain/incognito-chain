@@ -28,13 +28,13 @@ func ConvertOutputCoinToInputCoin(usableOutputsOfOld []*privacy.OutputCoin) []*p
 type RandomCommitmentsProcessParam struct {
 	usableInputCoins []*privacy.InputCoin
 	randNum          int
-	db               database.DatabaseInterface
+	db               incdb.DatabaseInterface
 	shardID          byte
 	tokenID          *common.Hash
 }
 
 func NewRandomCommitmentsProcessParam(usableInputCoins []*privacy.InputCoin, randNum int,
-	db database.DatabaseInterface, shardID byte, tokenID *common.Hash) *RandomCommitmentsProcessParam {
+	db incdb.DatabaseInterface, shardID byte, tokenID *common.Hash) *RandomCommitmentsProcessParam {
 	result := &RandomCommitmentsProcessParam{
 		tokenID:          tokenID,
 		shardID:          shardID,
@@ -132,7 +132,7 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 }
 
 // CheckSNDerivatorExistence return true if snd exists in snDerivators list
-func CheckSNDerivatorExistence(tokenID *common.Hash, snd *privacy.Scalar, db database.DatabaseInterface) (bool, error) {
+func CheckSNDerivatorExistence(tokenID *common.Hash, snd *privacy.Scalar, db incdb.DatabaseInterface) (bool, error) {
 	ok, err := db.HasSNDerivator(*tokenID, snd.ToBytesS())
 	if err != nil {
 		return false, err
@@ -245,7 +245,7 @@ type BuildCoinBaseTxByCoinIDParams struct {
 	payToAddress    *privacy.PaymentAddress
 	amount          uint64
 	payByPrivateKey *privacy.PrivateKey
-	db              database.DatabaseInterface
+	db              incdb.DatabaseInterface
 	meta            metadata.Metadata
 	coinID          common.Hash
 	txType          int
@@ -256,7 +256,7 @@ type BuildCoinBaseTxByCoinIDParams struct {
 func NewBuildCoinBaseTxByCoinIDParams(payToAddress *privacy.PaymentAddress,
 	amount uint64,
 	payByPrivateKey *privacy.PrivateKey,
-	db database.DatabaseInterface,
+	db incdb.DatabaseInterface,
 	meta metadata.Metadata,
 	coinID common.Hash,
 	txType int,

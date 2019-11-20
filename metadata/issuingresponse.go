@@ -30,12 +30,12 @@ func NewIssuingResponse(requestedTxID common.Hash, metaType int) *IssuingRespons
 	}
 }
 
-func (iRes IssuingResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db database.DatabaseInterface) bool {
+func (iRes IssuingResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db incdb.DatabaseInterface) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (iRes IssuingResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
+func (iRes IssuingResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db incdb.DatabaseInterface) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requested tx (via RequestedTxID) in current block
 	return false, nil
 }

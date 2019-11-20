@@ -75,7 +75,7 @@ func (pc PDETradeRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,
-	db database.DatabaseInterface,
+	db incdb.DatabaseInterface,
 ) (bool, error) {
 	// NOTE: verify supported tokens pair as needed
 	return true, nil

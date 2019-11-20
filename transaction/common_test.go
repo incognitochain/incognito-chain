@@ -109,7 +109,7 @@ func TestRandomCommitmentsProcess(t *testing.T) {
 	assert.Equal(t, 0, len(cmm1))
 }
 
-var db database.DatabaseInterface
+var db incdb.DatabaseInterface
 var bc *metadata.BlockchainRetriever
 var _ = func() (_ struct{}) {
 	dbPath, err := ioutil.TempDir(os.TempDir(), "test_")
@@ -117,11 +117,11 @@ var _ = func() (_ struct{}) {
 		log.Fatalf("failed to create temp dir: %+v", err)
 	}
 	log.Println(dbPath)
-	db, err = database.Open("leveldb", dbPath)
+	db, err = incdb.Open("leveldb", dbPath)
 	if err != nil {
 		log.Fatalf("could not open db path: %s, %+v", dbPath, err)
 	}
-	database.Logger.Init(common.NewBackend(nil).Logger("db", true))
+	incdb.Logger.Init(common.NewBackend(nil).Logger("db", true))
 	Logger.Init(common.NewBackend(nil).Logger("tx", true))
 	privacy.Logger.Init(common.NewBackend(nil).Logger("privacy", true))
 	return

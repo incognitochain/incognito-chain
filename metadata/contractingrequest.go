@@ -48,7 +48,7 @@ func (cReq ContractingRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,
-	db database.DatabaseInterface,
+	db incdb.DatabaseInterface,
 ) (bool, error) {
 	bridgeTokenExisted, err := db.IsBridgeTokenExistedByType(cReq.TokenID, true)
 	if err != nil {

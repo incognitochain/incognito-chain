@@ -627,7 +627,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 	return nil
 }
 
-func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
+func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, db incdb.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
 	var sumInputValue, sumOutputValue uint64
 	sumInputValue = 0
 	sumOutputValue = 0
@@ -716,7 +716,7 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 	return true, nil
 }
 
-func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
+func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64, db incdb.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
 	// verify for input coins
 	cmInputSum := make([]*privacy.Point, len(proof.oneOfManyProof))
 	for i := 0; i < len(proof.oneOfManyProof); i++ {
@@ -820,7 +820,7 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 	return true, nil
 }
 
-func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
+func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee uint64, db incdb.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
 	// has no privacy
 	if !hasPrivacy {
 		return proof.verifyNoPrivacy(pubKey, fee, db, shardID, tokenID)
@@ -828,4 +828,3 @@ func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee 
 
 	return proof.verifyHasPrivacy(pubKey, fee, db, shardID, tokenID)
 }
-

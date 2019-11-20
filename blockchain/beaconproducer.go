@@ -720,7 +720,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 		shardBlock.Instructions,
 		newBeaconHeight,
 		//beaconBestState,
-		blockchain.config.DataBase,
+		blockchain.GetDatabase(),
 	)
 	if err != nil {
 		BLogger.log.Errorf("Build bridge instructions failed: %s", err.Error())

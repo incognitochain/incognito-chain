@@ -31,12 +31,12 @@ func NewReturnStaking(
 	}
 }
 
-func (sbsRes ReturnStakingMetadata) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db database.DatabaseInterface) bool {
+func (sbsRes ReturnStakingMetadata) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db incdb.DatabaseInterface) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (sbsRes ReturnStakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
+func (sbsRes ReturnStakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db incdb.DatabaseInterface) (bool, error) {
 	stakingTx := bcr.GetStakingTx(shardID)
 	for key, value := range stakingTx {
 		committeePublicKey := incognitokey.CommitteePublicKey{}

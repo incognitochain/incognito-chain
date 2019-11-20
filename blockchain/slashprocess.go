@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/core/rawdb"
 	"sort"
 )
 
@@ -74,8 +75,7 @@ func (blockchain *BlockChain) getUpdatedProducersBlackList(
 	committee []string,
 	beaconHeight uint64,
 ) (map[string]uint8, error) {
-	db := blockchain.GetDatabase()
-	producersBlackList, err := db.GetProducersBlackList(beaconHeight)
+	producersBlackList, err := rawdb.GetProducersBlackList(blockchain.GetDatabase(), beaconHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -103,9 +103,8 @@ func (blockchain *BlockChain) getUpdatedProducersBlackList(
 
 func (blockchain *BlockChain) processForSlashing(block *BeaconBlock) error {
 	var err error
-	db := blockchain.GetDatabase()
 	beaconHeight := block.GetHeight()
-	producersBlackList, err := db.GetProducersBlackList(beaconHeight - 1)
+	producersBlackList, err := rawdb.GetProducersBlackList(blockchain.GetDatabase(), beaconHeight-1)
 	if err != nil {
 		return err
 	}
@@ -154,6 +153,6 @@ func (blockchain *BlockChain) processForSlashing(block *BeaconBlock) error {
 			}
 		}
 	}
-	err = db.StoreProducersBlackList(beaconHeight, producersBlackList)
+	err = rawdb.StoreProducersBlackList(blockchain.GetDatabase(), beaconHeight, producersBlackList)
 	return err
 }

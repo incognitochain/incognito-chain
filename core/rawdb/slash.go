@@ -1,22 +1,22 @@
-package lvdb
+package rawdb
 
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/incdb"
 
 	"github.com/pkg/errors"
 
-	"github.com/incognitochain/incognito-chain/database"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 )
 
-func (db *db) GetProducersBlackList(beaconHeight uint64) (map[string]uint8, error) {
+func GetProducersBlackList(db incdb.Database, beaconHeight uint64) (map[string]uint8, error) {
 	// key := producersBlackListPrefix
 	beaconHeightBytes := []byte(fmt.Sprintf("%d", beaconHeight))
 	key := append(producersBlackListPrefix, beaconHeightBytes...)
-	producersBlackListBytes, dbErr := db.lvdb.Get(key, nil)
+	producersBlackListBytes, dbErr := db.Get(key)
 	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
-		return nil, database.NewDatabaseError(database.GetProducersBlackListError, dbErr)
+		return nil, incdb.NewDatabaseError(incdb.GetProducersBlackListError, dbErr)
 	}
 	producersBlackList := make(map[string]uint8)
 	if len(producersBlackListBytes) == 0 {
@@ -26,7 +26,7 @@ func (db *db) GetProducersBlackList(beaconHeight uint64) (map[string]uint8, erro
 	return producersBlackList, err
 }
 
-func (db *db) StoreProducersBlackList(beaconHeight uint64, producersBlackList map[string]uint8) error {
+func StoreProducersBlackList(db incdb.Database, beaconHeight uint64, producersBlackList map[string]uint8) error {
 	producersBlackListBytes, err := json.Marshal(producersBlackList)
 	if err != nil {
 		return err
@@ -36,7 +36,7 @@ func (db *db) StoreProducersBlackList(beaconHeight uint64, producersBlackList ma
 	key := append(producersBlackListPrefix, beaconHeightBytes...)
 	dbErr := db.Put(key, producersBlackListBytes)
 	if dbErr != nil {
-		return database.NewDatabaseError(database.StoreProducersBlackListError, errors.Wrap(dbErr, "db.lvdb.put"))
+		return incdb.NewDatabaseError(incdb.StoreProducersBlackListError, errors.Wrap(dbErr, "db.lvdb.put"))
 	}
 	return nil
 }

@@ -1,7 +1,8 @@
-package lvdb
+package rawdb
 
 import (
 	"flag"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"io/ioutil"
 	"log"
 	"os"
@@ -9,14 +10,13 @@ import (
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
 var runScenarioTests = flag.Bool("scenario", false, "Run the integration tests (in addition to the unit tests)")
 
 var _ = func() (_ struct{}) {
-	database.Logger.Init(common.NewBackend(nil).Logger("test", true))
+	incdb.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return
 }()
 

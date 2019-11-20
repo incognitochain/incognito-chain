@@ -1,6 +1,7 @@
-package lvdb
+package rawdb
 
 import (
+	"github.com/incognitochain/incognito-chain/incdb"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -9,7 +10,6 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
 )
 
 func TestDbAddShardRewardRequest(t *testing.T) {
@@ -18,7 +18,7 @@ func TestDbAddShardRewardRequest(t *testing.T) {
 		t.Fatalf("failed to create temp dir: %+v", err)
 	}
 	t.Log(dbPath)
-	db, err := database.Open("leveldb", dbPath)
+	db, err := incdb.Open("leveldb", dbPath)
 	type args struct {
 		epoch        uint64
 		shardID      byte
@@ -57,7 +57,7 @@ func TestDbAddShardRewardRequest(t *testing.T) {
 			// db := &db{
 			// 	lvdb: tt.fields.lvdb,
 			// }
-			if err := db.AddShardRewardRequest(tt.args.epoch, tt.args.shardID, tt.args.rewardAmount, tt.args.tokenID); (err != nil) != tt.wantErr {
+			if err := AddShardRewardRequest(db, tt.args.epoch, tt.args.shardID, tt.args.rewardAmount, tt.args.tokenID, &[]incdb.BatchData{}); (err != nil) != tt.wantErr {
 				t.Errorf("db.AddShardRewardRequest() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -70,7 +70,7 @@ func TestDbGetRewardOfShardByEpoch(t *testing.T) {
 		t.Fatalf("failed to create temp dir: %+v", err)
 	}
 	t.Log(dbPath)
-	db, err := database.Open("leveldb", dbPath)
+	db, err := incdb.Open("leveldb", dbPath)
 
 	type args struct {
 		epoch   uint64
@@ -96,7 +96,7 @@ func TestDbGetRewardOfShardByEpoch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := db.GetRewardOfShardByEpoch(tt.args.epoch, tt.args.shardID, tt.args.tokenID)
+			got, err := GetRewardOfShardByEpoch(db, tt.args.epoch, tt.args.shardID, tt.args.tokenID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("db.GetRewardOfShardByEpoch() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -114,7 +114,7 @@ func TestDbAddCommitteeReward(t *testing.T) {
 		t.Fatalf("failed to create temp dir: %+v", err)
 	}
 	t.Log(dbPath)
-	db, err := database.Open("leveldb", dbPath)
+	db, err := incdb.Open("leveldb", dbPath)
 	type args struct {
 		committeeAddress []byte
 		amount           uint64
@@ -146,7 +146,7 @@ func TestDbAddCommitteeReward(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := db.AddCommitteeReward(tt.args.committeeAddress, tt.args.amount, tt.args.tokenID); (err != nil) != tt.wantErr {
+			if err := AddCommitteeReward(db, tt.args.committeeAddress, tt.args.amount, tt.args.tokenID); (err != nil) != tt.wantErr {
 				t.Errorf("db.AddCommitteeReward() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -159,7 +159,7 @@ func TestDbGetCommitteeReward(t *testing.T) {
 		t.Fatalf("failed to create temp dir: %+v", err)
 	}
 	t.Log(dbPath)
-	db, err := database.Open("leveldb", dbPath)
+	db, err := incdb.Open("leveldb", dbPath)
 	type args struct {
 		committeeAddress []byte
 		tokenID          common.Hash
@@ -182,7 +182,7 @@ func TestDbGetCommitteeReward(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := db.GetCommitteeReward(tt.args.committeeAddress, tt.args.tokenID)
+			got, err := GetCommitteeReward(db, tt.args.committeeAddress, tt.args.tokenID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("db.GetCommitteeReward() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -200,7 +200,7 @@ func TestDbRemoveCommitteeReward(t *testing.T) {
 		t.Fatalf("failed to create temp dir: %+v", err)
 	}
 	t.Log(dbPath)
-	db, err := database.Open("leveldb", dbPath)
+	db, err := incdb.Open("leveldb", dbPath)
 	type args struct {
 		committeeAddress []byte
 		amount           uint64
@@ -223,7 +223,7 @@ func TestDbRemoveCommitteeReward(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := db.RemoveCommitteeReward(tt.args.committeeAddress, tt.args.amount, tt.args.tokenID); (err != nil) != tt.wantErr {
+			if err := RemoveCommitteeReward(db, tt.args.committeeAddress, tt.args.amount, tt.args.tokenID, &[]incdb.BatchData{}); (err != nil) != tt.wantErr {
 				t.Errorf("db.RemoveCommitteeReward() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
