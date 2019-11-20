@@ -76,7 +76,7 @@
           "TokenID": "80cca14be325b0b762b484db716370126a7407b7debe11f1076032a59689e19d",
           "TokenName": "ABC17644",
           "TokenSymbol": "ABC17644",
-          "TokenTxType": 0,
+          "TokenTxType": 1,
           "TokenAmount": 1000,
           "TokenReceivers": {
             "12RyAEaUz4sErApu1f23PEydvotxDnC5gHoWDy5Th7JQuoT57oUowk8eSQN44ojPj3wZ5sEYFcLeFU5R8zgiXkSbAuY367Tek31gM1z": 300
