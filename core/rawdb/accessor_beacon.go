@@ -19,11 +19,11 @@ func StoreBeaconBlock(db incdb.Database, v interface{}, hash common.Hash, bd *[]
 		keyBeaconBlock = append(append(beaconPrefix, blockKeyPrefix...), hash[:]...)
 	)
 	if ok, _ := db.Has(keyBeaconBlock); ok {
-		return incdb.NewDatabaseError(incdb.BlockExisted, errors.Errorf("block %+v already exists", hash))
+		return NewRawdbError(BlockExisted, errors.Errorf("block %+v already exists", hash))
 	}
 	val, err := json.Marshal(v)
 	if err != nil {
-		return incdb.NewDatabaseError(incdb.StoreBeaconBlockError, err)
+		return NewRawdbError(StoreBeaconBlockError, err)
 	}
 
 	if bd != nil {
@@ -32,10 +32,10 @@ func StoreBeaconBlock(db incdb.Database, v interface{}, hash common.Hash, bd *[]
 		return nil
 	}
 	if err := db.Put(keyBeaconBlock, keyBlockHash); err != nil {
-		return incdb.NewDatabaseError(incdb.StoreBeaconBlockError, err)
+		return NewRawdbError(StoreBeaconBlockError, err)
 	}
 	if err := db.Put(keyBlockHash, val); err != nil {
-		return incdb.NewDatabaseError(incdb.StoreBeaconBlockError, err)
+		return NewRawdbError(StoreBeaconBlockError, err)
 	}
 	return nil
 }
@@ -44,12 +44,12 @@ func HasBeaconBlock(db incdb.Database, hash common.Hash) (bool, error) {
 	key := append(append(beaconPrefix, blockKeyPrefix...), hash[:]...)
 	_, err := db.Has(key)
 	if err != nil {
-		return false, incdb.NewDatabaseError(incdb.HasBeaconBlockError, err)
+		return false, NewRawdbError(HasBeaconBlockError, err)
 	} else {
 		keyB := append(blockKeyPrefix, hash[:]...)
 		existsB, err := db.Has(keyB)
 		if err != nil {
-			return false, incdb.NewDatabaseError(incdb.HasBeaconBlockError, err)
+			return false, NewRawdbError(HasBeaconBlockError, err)
 		} else {
 			return existsB, nil
 		}
@@ -58,13 +58,13 @@ func HasBeaconBlock(db incdb.Database, hash common.Hash) (bool, error) {
 
 func FetchBeaconBlock(db incdb.Database, hash common.Hash) ([]byte, error) {
 	if _, err := HasBeaconBlock(db, hash); err != nil {
-		return []byte{}, incdb.NewDatabaseError(incdb.FetchBeaconBlockError, err)
+		return []byte{}, NewRawdbError(FetchBeaconBlockError, err)
 	}
 	// b-{hash}
 	keyBlockHash := addPrefixToKeyHash(string(blockKeyPrefix), hash)
 	block, err := db.Get(keyBlockHash)
 	if err != nil {
-		return nil, incdb.NewDatabaseError(incdb.FetchBeaconBlockError, err)
+		return nil, NewRawdbError(FetchBeaconBlockError, err)
 	}
 	ret := make([]byte, len(block))
 	copy(ret, block)
@@ -77,12 +77,12 @@ func StoreBeaconBlockIndex(db incdb.Database, hash common.Hash, idx uint64) erro
 	//{bea-i-{hash}}:index
 	key := append(append(beaconPrefix, blockKeyIdxPrefix...), hash[:]...)
 	if err := db.Put(key, buf); err != nil {
-		return incdb.NewDatabaseError(incdb.StoreBeaconBlockIndexError, err)
+		return NewRawdbError(StoreBeaconBlockIndexError, err)
 	}
 	//bea-i-{index}:[hash]
 	beaconBuf := append(append(beaconPrefix, blockKeyIdxPrefix...), buf...)
 	if err := db.Put(beaconBuf, hash[:]); err != nil {
-		return incdb.NewDatabaseError(incdb.StoreBeaconBlockIndexError, err)
+		return NewRawdbError(StoreBeaconBlockIndexError, err)
 	}
 	return nil
 }
@@ -92,12 +92,12 @@ func GetIndexOfBeaconBlock(db incdb.Database, hash common.Hash) (uint64, error) 
 	b, err := db.Get(key)
 	//{bea-i-[hash]}:index
 	if err != nil {
-		return 0, incdb.NewDatabaseError(incdb.GetIndexOfBeaconBlockError, err, hash.String())
+		return 0, NewRawdbError(GetIndexOfBeaconBlockError, err, hash.String())
 	}
 
 	var idx uint64
 	if err := binary.Read(bytes.NewReader(b[:8]), binary.LittleEndian, &idx); err != nil {
-		return 0, incdb.NewDatabaseError(incdb.GetIndexOfBeaconBlockError, err, hash.String())
+		return 0, NewRawdbError(GetIndexOfBeaconBlockError, err, hash.String())
 	}
 	return idx, nil
 }
@@ -112,11 +112,11 @@ func DeleteBeaconBlock(db incdb.Database, hash common.Hash, idx uint64) error {
 	)
 	err := db.Delete(keyBeaconBlock)
 	if err != nil {
-		return incdb.NewDatabaseError(incdb.DeleteBeaconBlockError, err, hash.String(), idx)
+		return NewRawdbError(DeleteBeaconBlockError, err, hash.String(), idx)
 	}
 	err = db.Delete(keyBlockHash)
 	if err != nil {
-		return incdb.NewDatabaseError(incdb.DeleteBeaconBlockError, err, hash.String(), idx)
+		return NewRawdbError(DeleteBeaconBlockError, err, hash.String(), idx)
 	}
 
 	// delete by index
@@ -124,7 +124,7 @@ func DeleteBeaconBlock(db incdb.Database, hash common.Hash, idx uint64) error {
 	keyIndex := append(append(beaconPrefix, blockKeyIdxPrefix...), hash[:]...)
 	err = db.Delete(keyIndex)
 	if err != nil {
-		return incdb.NewDatabaseError(incdb.DeleteBeaconBlockError, err, hash.String(), idx)
+		return NewRawdbError(DeleteBeaconBlockError, err, hash.String(), idx)
 	}
 
 	// index -> {hash}
@@ -132,7 +132,7 @@ func DeleteBeaconBlock(db incdb.Database, hash common.Hash, idx uint64) error {
 	binary.LittleEndian.PutUint64(buf, idx)
 	err = db.Delete(buf)
 	if err != nil {
-		return incdb.NewDatabaseError(incdb.DeleteBeaconBlockError, err, hash.String(), idx)
+		return NewRawdbError(DeleteBeaconBlockError, err, hash.String(), idx)
 	}
 	return nil
 }
@@ -140,7 +140,7 @@ func DeleteBeaconBlock(db incdb.Database, hash common.Hash, idx uint64) error {
 func StoreBeaconBestState(db incdb.Database, v interface{}, bd *[]incdb.BatchData) error {
 	val, err := json.Marshal(v)
 	if err != nil {
-		return incdb.NewDatabaseError(incdb.StoreBeaconBestStateError, err)
+		return NewRawdbError(StoreBeaconBestStateError, err)
 	}
 	key := beaconBestBlockkeyPrefix
 
@@ -149,7 +149,7 @@ func StoreBeaconBestState(db incdb.Database, v interface{}, bd *[]incdb.BatchDat
 		return nil
 	}
 	if err := db.Put(key, val); err != nil {
-		return incdb.NewDatabaseError(incdb.StoreBeaconBestStateError, err)
+		return NewRawdbError(StoreBeaconBestStateError, err)
 	}
 	return nil
 }
@@ -157,7 +157,7 @@ func FetchBeaconBestState(db incdb.Database) ([]byte, error) {
 	key := beaconBestBlockkeyPrefix
 	block, err := db.Get(key)
 	if err != nil {
-		return nil, incdb.NewDatabaseError(incdb.FetchBeaconBestStateError, err)
+		return nil, NewRawdbError(FetchBeaconBestStateError, err)
 	}
 	return block, nil
 }
@@ -165,7 +165,7 @@ func CleanBeaconBestState(db incdb.Database) error {
 	key := beaconBestBlockkeyPrefix
 	err := db.Delete(key)
 	if err != nil {
-		return incdb.NewDatabaseError(incdb.CleanBeaconBestStateError, err)
+		return NewRawdbError(CleanBeaconBestStateError, err)
 	}
 	return nil
 }
@@ -177,12 +177,12 @@ func GetBeaconBlockHashByIndex(db incdb.Database, idx uint64) (common.Hash, erro
 	beaconBuf := append(append(beaconPrefix, blockKeyIdxPrefix...), buf...)
 	b, err := db.Get(beaconBuf)
 	if err != nil {
-		return common.Hash{}, incdb.NewDatabaseError(incdb.GetBeaconBlockHashByIndexError, err, idx)
+		return common.Hash{}, NewRawdbError(GetBeaconBlockHashByIndexError, err, idx)
 	}
 	h := new(common.Hash)
 	err = h.SetBytes(b[:])
 	if err != nil {
-		return common.Hash{}, incdb.NewDatabaseError(incdb.GetBeaconBlockHashByIndexError, err, idx)
+		return common.Hash{}, NewRawdbError(GetBeaconBlockHashByIndexError, err, idx)
 	}
 	return *h, nil
 }
@@ -195,7 +195,7 @@ func StoreAcceptedShardToBeacon(db incdb.Database, shardID byte, blkHeight uint6
 	// stb-ShardID-ShardBlockHash : BeaconBlockHeight
 	key := append(shardToBeaconKeyPrefix, prefix...)
 	if err := db.Put(key, buf); err != nil {
-		return incdb.NewDatabaseError(incdb.StoreAcceptedShardToBeaconError, err)
+		return NewRawdbError(StoreAcceptedShardToBeaconError, err)
 	}
 	return nil
 }
@@ -207,7 +207,7 @@ func HasAcceptedShardToBeacon(db incdb.Database, shardID byte, shardBlkHash comm
 	if ok, _ := db.Has(key); ok {
 		return nil
 	}
-	return incdb.NewDatabaseError(incdb.BlockExisted, errors.Errorf("Cross Shard Block doesn't exist"))
+	return NewRawdbError(BlockExisted, errors.Errorf("Cross Shard Block doesn't exist"))
 }
 
 func GetAcceptedShardToBeacon(db incdb.Database, shardID byte, shardBlkHash common.Hash) (uint64, error) {
@@ -216,11 +216,11 @@ func GetAcceptedShardToBeacon(db incdb.Database, shardID byte, shardBlkHash comm
 	key := append(shardToBeaconKeyPrefix, prefix...)
 	b, err := db.Get(key)
 	if err != nil {
-		return 0, incdb.NewDatabaseError(incdb.GetAcceptedShardToBeaconError, err)
+		return 0, NewRawdbError(GetAcceptedShardToBeaconError, err)
 	}
 	var idx uint64
 	if err := binary.Read(bytes.NewReader(b[:]), binary.LittleEndian, &idx); err != nil {
-		return 0, incdb.NewDatabaseError(incdb.GetAcceptedShardToBeaconError, err)
+		return 0, NewRawdbError(GetAcceptedShardToBeaconError, err)
 	}
 	return idx, nil
 }
@@ -237,11 +237,11 @@ func StoreBeaconCommitteeByHeight(db incdb.Database, height uint64, v interface{
 
 	val, err := json.Marshal(v)
 	if err != nil {
-		return incdb.NewDatabaseError(incdb.StoreBeaconCommitteeByHeightError, err)
+		return NewRawdbError(StoreBeaconCommitteeByHeightError, err)
 	}
 
 	if err := db.Put(key, val); err != nil {
-		return incdb.NewDatabaseError(incdb.StoreBeaconCommitteeByHeightError, err)
+		return NewRawdbError(StoreBeaconCommitteeByHeightError, err)
 	}
 	return nil
 }
@@ -257,10 +257,10 @@ func StoreRewardReceiverByHeight(db incdb.Database, height uint64, v interface{}
 	key = append(key, buf[:]...)
 	val, err := json.Marshal(v)
 	if err != nil {
-		return incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "json.Marshal"))
+		return NewRawdbError(UnexpectedError, errors.Wrap(err, "json.Marshal"))
 	}
 	if err := db.Put(key, val); err != nil {
-		return incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
+		return NewRawdbError(UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
 	return nil
 }
@@ -277,11 +277,11 @@ func StoreShardCommitteeByHeight(db incdb.Database, height uint64, v interface{}
 
 	val, err := json.Marshal(v)
 	if err != nil {
-		return incdb.NewDatabaseError(incdb.StoreShardCommitteeByHeightError, err)
+		return NewRawdbError(StoreShardCommitteeByHeightError, err)
 	}
 
 	if err := db.Put(key, val); err != nil {
-		return incdb.NewDatabaseError(incdb.StoreShardCommitteeByHeightError, err)
+		return NewRawdbError(StoreShardCommitteeByHeightError, err)
 	}
 	return nil
 }
@@ -296,7 +296,7 @@ func FetchShardCommitteeByHeight(db incdb.Database, height uint64) ([]byte, erro
 
 	b, err := db.Get(key)
 	if err != nil {
-		return nil, incdb.NewDatabaseError(incdb.FetchShardCommitteeByHeightError, err)
+		return nil, NewRawdbError(FetchShardCommitteeByHeightError, err)
 	}
 	return b, nil
 }
@@ -311,7 +311,7 @@ func FetchBeaconCommitteeByHeight(db incdb.Database, height uint64) ([]byte, err
 
 	b, err := db.Get(key)
 	if err != nil {
-		return nil, incdb.NewDatabaseError(incdb.FetchBeaconCommitteeByHeightError, err)
+		return nil, NewRawdbError(FetchBeaconCommitteeByHeightError, err)
 	}
 	return b, nil
 }
@@ -328,7 +328,7 @@ func FetchRewardReceiverByHeight(db incdb.Database, height uint64) ([]byte, erro
 
 	b, err := db.Get(key)
 	if err != nil {
-		return nil, incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "db.get"))
+		return nil, NewRawdbError(UnexpectedError, errors.Wrap(err, "db.get"))
 	}
 	return b, nil
 }
@@ -344,11 +344,11 @@ func StoreAutoStakingByHeight(db incdb.Database, height uint64, v interface{}) e
 
 	val, err := json.Marshal(v)
 	if err != nil {
-		return incdb.NewDatabaseError(incdb.StoreAutoStakingByHeightError, err)
+		return NewRawdbError(StoreAutoStakingByHeightError, err)
 	}
 
 	if err := db.Put(key, val); err != nil {
-		return incdb.NewDatabaseError(incdb.StoreAutoStakingByHeightError, err)
+		return NewRawdbError(StoreAutoStakingByHeightError, err)
 	}
 	return nil
 }
@@ -364,7 +364,7 @@ func FetchAutoStakingByHeight(db incdb.Database, height uint64) ([]byte, error) 
 
 	b, err := db.Get(key)
 	if err != nil {
-		return nil, incdb.NewDatabaseError(incdb.FetchAutoStakingByHeightError, err)
+		return nil, NewRawdbError(FetchAutoStakingByHeightError, err)
 	}
 	return b, nil
 }

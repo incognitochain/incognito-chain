@@ -55,7 +55,7 @@ func storePDEShares(
 		binary.LittleEndian.PutUint64(buf, shareAmt)
 		dbErr := db.Put([]byte(newKey), buf)
 		if dbErr != nil {
-			return incdb.NewDatabaseError(incdb.AddShareAmountUpError, errors.Wrap(dbErr, "db.lvdb.put"))
+			return rawdb.NewRawdbError(rawdb.AddShareAmountUpError, errors.Wrap(dbErr, "db.lvdb.put"))
 		}
 	}
 	return nil
@@ -74,7 +74,7 @@ func storeWaitingPDEContributions(
 		}
 		err = db.Put([]byte(newKey), contributionBytes)
 		if err != nil {
-			return incdb.NewDatabaseError(incdb.StoreWaitingPDEContributionError, errors.Wrap(err, "db.lvdb.put"))
+			return rawdb.NewRawdbError(rawdb.StoreWaitingPDEContributionError, errors.Wrap(err, "db.lvdb.put"))
 		}
 	}
 	return nil
@@ -93,7 +93,7 @@ func storePDEPoolPairs(
 		}
 		err = db.Put([]byte(newKey), poolPairBytes)
 		if err != nil {
-			return incdb.NewDatabaseError(incdb.StorePDEPoolForPairError, errors.Wrap(err, "db.lvdb.put"))
+			return rawdb.NewRawdbError(rawdb.StorePDEPoolForPairError, errors.Wrap(err, "db.lvdb.put"))
 		}
 	}
 	return nil

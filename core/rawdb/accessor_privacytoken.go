@@ -19,7 +19,7 @@ func StorePrivacyToken(db incdb.Database, tokenID common.Hash, txHash []byte) er
 	if !ok {
 		// not exist tx about init this token
 		if err := db.Put(key, txHash); err != nil {
-			return incdb.NewDatabaseError(incdb.UnexpectedError, err)
+			return NewRawdbError(UnexpectedError, err)
 		}
 	}
 	return nil
@@ -36,7 +36,7 @@ func StorePrivacyTokenTx(db incdb.Database, tokenID common.Hash, shardID byte, b
 	key = append(key, bs...)
 	log.Println(string(key))
 	if err := db.Put(key, txHash); err != nil {
-		return incdb.NewDatabaseError(incdb.UnexpectedError, err)
+		return NewRawdbError(UnexpectedError, err)
 	}
 	return nil
 }
@@ -103,7 +103,7 @@ func PrivacyTokenTxs(db incdb.Database, tokenID common.Hash) ([]common.Hash, err
 func StorePrivacyTokenCrossShard(db incdb.Database, tokenID common.Hash, tokenValue []byte) error {
 	key := addPrefixToKeyHash(string(privacyTokenCrossShardPrefix), tokenID)
 	if err := db.Put(key, tokenValue); err != nil {
-		return incdb.NewDatabaseError(incdb.UnexpectedError, err)
+		return NewRawdbError(UnexpectedError, err)
 	}
 	return nil
 }

@@ -1,13 +1,13 @@
 package rpcservice
 
 import (
-	"github.com/incognitochain/incognito-chain/core/rawdb"
 	"math/big"
 	"strconv"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/core/rawdb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/pkg/errors"
 )

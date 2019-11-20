@@ -20,7 +20,7 @@ func StoreSerialNumbers(db incdb.Database, tokenID common.Hash, serialNumbers []
 	var lenData int64
 	lenSerialNumber, err := GetSerialNumbersLength(db, tokenID, shardID)
 	if err != nil && lenSerialNumber == nil {
-		return incdb.NewDatabaseError(incdb.StoreSerialNumbersError, err)
+		return NewRawdbError(StoreSerialNumbersError, err)
 	}
 	if lenSerialNumber == nil {
 		lenData = 0
@@ -35,12 +35,12 @@ func StoreSerialNumbers(db incdb.Database, tokenID common.Hash, serialNumbers []
 		// keySpec1 store serialNumber and index
 		keySpec1 := append(key, s...)
 		if err := db.Put(keySpec1, newIndex); err != nil {
-			return incdb.NewDatabaseError(incdb.StoreSerialNumbersError, err)
+			return NewRawdbError(StoreSerialNumbersError, err)
 		}
 		// keyStoreLen store last index of array serialNumber
 		keyStoreLen := append(key, []byte("len")...)
 		if err := db.Put(keyStoreLen, newIndex); err != nil {
-			return incdb.NewDatabaseError(incdb.StoreSerialNumbersError, err)
+			return NewRawdbError(StoreSerialNumbersError, err)
 		}
 		lenData++
 	}
@@ -54,7 +54,7 @@ func HasSerialNumber(db incdb.Database, tokenID common.Hash, serialNumber []byte
 	keySpec := append(key, serialNumber...)
 	hasValue, err := db.Has(keySpec)
 	if err != nil {
-		return false, incdb.NewDatabaseError(incdb.HasSerialNumberError, err, serialNumber, shardID, tokenID)
+		return false, NewRawdbError(HasSerialNumberError, err, serialNumber, shardID, tokenID)
 	} else {
 		return hasValue, nil
 	}
@@ -91,7 +91,7 @@ func GetSerialNumbersLength(db incdb.Database, tokenID common.Hash, shardID byte
 	keyStoreLen := append(key, []byte("len")...)
 	hasValue, err := db.Has(keyStoreLen)
 	if err != nil {
-		return nil, incdb.NewDatabaseError(incdb.GetSerialNumbersLengthError, err)
+		return nil, NewRawdbError(GetSerialNumbersLengthError, err)
 	} else {
 		if !hasValue {
 			return nil, nil
@@ -114,12 +114,12 @@ func CleanSerialNumbers(db incdb.Database) error {
 	for iter.Next() {
 		err := db.Delete(iter.Key())
 		if err != nil {
-			return incdb.NewDatabaseError(incdb.CleanSerialNumbersError, err)
+			return NewRawdbError(CleanSerialNumbersError, err)
 		}
 	}
 	iter.Release()
 	if err := iter.Error(); err != nil {
-		return incdb.NewDatabaseError(incdb.CleanSerialNumbersError, err)
+		return NewRawdbError(CleanSerialNumbersError, err)
 	}
 	return nil
 }
@@ -146,7 +146,7 @@ func StoreOutputCoins(db incdb.Database, tokenID common.Hash, publicKey []byte, 
 	if len(batchData) > 0 {
 		err := db.PutBatch(batchData)
 		if err != nil {
-			return incdb.NewDatabaseError(incdb.StoreOutputCoinsError, err)
+			return NewRawdbError(StoreOutputCoinsError, err)
 		}
 	}
 
@@ -166,7 +166,7 @@ func StoreCommitments(db incdb.Database, tokenID common.Hash, pubkey []byte, com
 	var lenData uint64
 	lenCommitment, err := GetCommitmentLength(db, tokenID, shardID)
 	if err != nil && lenCommitment == nil {
-		return incdb.NewDatabaseError(incdb.StoreCommitmentsError, err)
+		return NewRawdbError(StoreCommitmentsError, err)
 	}
 	if lenCommitment == nil {
 		lenData = 0
@@ -182,17 +182,17 @@ func StoreCommitments(db incdb.Database, tokenID common.Hash, pubkey []byte, com
 		// keySpec1 use for create proof random
 		keySpec1 := append(key, newIndex...)
 		if err := db.Put(keySpec1, c); err != nil {
-			return incdb.NewDatabaseError(incdb.StoreCommitmentsError, err)
+			return NewRawdbError(StoreCommitmentsError, err)
 		}
 		// keySpec2 use for validate
 		keySpec2 := append(key, c...)
 		if err := db.Put(keySpec2, newIndex); err != nil {
-			return incdb.NewDatabaseError(incdb.StoreCommitmentsError, err)
+			return NewRawdbError(StoreCommitmentsError, err)
 		}
 
 		// len of commitment array
 		if err := db.Put(keySpec3, newIndex); err != nil {
-			return incdb.NewDatabaseError(incdb.StoreCommitmentsError, err)
+			return NewRawdbError(StoreCommitmentsError, err)
 		}
 		lenData++
 	}
@@ -207,7 +207,7 @@ func HasCommitment(db incdb.Database, tokenID common.Hash, commitment []byte, sh
 	keySpec := append(key, commitment...)
 	hasValue, err := db.Has(keySpec)
 	if err != nil {
-		return false, incdb.NewDatabaseError(incdb.HasCommitmentError, err, commitment, shardID, tokenID.String())
+		return false, NewRawdbError(HasCommitmentError, err, commitment, shardID, tokenID.String())
 	} else {
 		return hasValue, nil
 	}
@@ -279,7 +279,7 @@ func HasCommitmentIndex(db incdb.Database, tokenID common.Hash, commitmentIndex 
 	}
 	_, err := db.Get(keySpec)
 	if err != nil {
-		return false, incdb.NewDatabaseError(incdb.HasCommitmentInexError, err, commitmentIndex, shardID, tokenID)
+		return false, NewRawdbError(HasCommitmentInexError, err, commitmentIndex, shardID, tokenID)
 	} else {
 		return true, nil
 	}
@@ -296,7 +296,7 @@ func GetCommitmentByIndex(db incdb.Database, tokenID common.Hash, commitmentInde
 	}
 	data, err := db.Get(keySpec)
 	if err != nil {
-		return data, incdb.NewDatabaseError(incdb.GetCommitmentByIndexError, err, commitmentIndex, shardID, tokenID)
+		return data, NewRawdbError(GetCommitmentByIndexError, err, commitmentIndex, shardID, tokenID)
 	} else {
 		return data, nil
 	}
@@ -309,7 +309,7 @@ func GetCommitmentIndex(db incdb.Database, tokenID common.Hash, commitment []byt
 	keySpec := append(key, commitment...)
 	data, err := db.Get(keySpec)
 	if err != nil {
-		return nil, incdb.NewDatabaseError(incdb.GetCommitmentIndexError, err, commitment, shardID, tokenID)
+		return nil, NewRawdbError(GetCommitmentIndexError, err, commitment, shardID, tokenID)
 	} else {
 		return new(big.Int).SetBytes(data), nil
 	}
@@ -322,14 +322,14 @@ func GetCommitmentLength(db incdb.Database, tokenID common.Hash, shardID byte) (
 	keySpec := append(key, []byte("len")...)
 	hasValue, err := db.Has(keySpec)
 	if err != nil {
-		return nil, incdb.NewDatabaseError(incdb.GetCommitmentLengthError, err)
+		return nil, NewRawdbError(GetCommitmentLengthError, err)
 	} else {
 		if !hasValue {
 			return nil, nil
 		} else {
 			data, err := db.Get(keySpec)
 			if err != nil {
-				return nil, incdb.NewDatabaseError(incdb.GetCommitmentLengthError, err)
+				return nil, NewRawdbError(GetCommitmentLengthError, err)
 			} else {
 				lenArray := new(big.Int).SetBytes(data)
 				lenArray = lenArray.Add(lenArray, new(big.Int).SetInt64(1))
@@ -350,7 +350,7 @@ func GetOutcoinsByPubkey(db incdb.Database, tokenID common.Hash, pubkey []byte, 
 	arrDatabyPubkey := make([][]byte, 0)
 	iter := db.NewIteratorWithPrefix(key)
 	if iter.Error() != nil {
-		return nil, incdb.NewDatabaseError(incdb.GetOutputCoinByPublicKeyError, errors.Wrap(iter.Error(), "db.lvdb.NewIterator"))
+		return nil, NewRawdbError(GetOutputCoinByPublicKeyError, errors.Wrap(iter.Error(), "db.lvdb.NewIterator"))
 	}
 	for iter.Next() {
 		value := make([]byte, len(iter.Value()))
@@ -367,12 +367,12 @@ func CleanCommitments(db incdb.Database) error {
 	for iter.Next() {
 		err := db.Delete(iter.Key())
 		if err != nil {
-			return incdb.NewDatabaseError(incdb.CleanCommitmentError, err)
+			return NewRawdbError(CleanCommitmentError, err)
 		}
 	}
 	iter.Release()
 	if err := iter.Error(); err != nil {
-		return incdb.NewDatabaseError(incdb.CleanCommitmentError, err)
+		return NewRawdbError(CleanCommitmentError, err)
 	}
 	return nil
 }
@@ -383,7 +383,7 @@ func HasSNDerivator(db incdb.Database, tokenID common.Hash, data []byte) (bool, 
 	keySpec := append(key, data...)
 	hasValue, err := db.Has(keySpec)
 	if err != nil {
-		return false, incdb.NewDatabaseError(incdb.HasSNDerivatorError, err, data, -1, tokenID)
+		return false, NewRawdbError(HasSNDerivatorError, err, data, -1, tokenID)
 	} else {
 		return hasValue, nil
 	}
@@ -407,7 +407,7 @@ func StoreSNDerivators(db incdb.Database, tokenID common.Hash, sndArray [][]byte
 	if len(batchData) > 0 {
 		err := db.PutBatch(batchData)
 		if err != nil {
-			return incdb.NewDatabaseError(incdb.StoreSNDerivatorsError, err)
+			return NewRawdbError(StoreSNDerivatorsError, err)
 		}
 	}
 	return nil
@@ -434,12 +434,12 @@ func CleanSNDerivator(db incdb.Database) error {
 	for iter.Next() {
 		err := db.Delete(iter.Key())
 		if err != nil {
-			return incdb.NewDatabaseError(incdb.CleanSNDerivatorError, err)
+			return NewRawdbError(CleanSNDerivatorError, err)
 		}
 	}
 	iter.Release()
 	if err := iter.Error(); err != nil {
-		return incdb.NewDatabaseError(incdb.CleanSNDerivatorError, err)
+		return NewRawdbError(CleanSNDerivatorError, err)
 	}
 	return nil
 }
@@ -447,7 +447,7 @@ func CleanSNDerivator(db incdb.Database) error {
 // StoreFeeEstimator - Store data for FeeEstimator object
 func StoreFeeEstimator(db incdb.Database, val []byte, shardID byte) error {
 	if err := db.Put(append(feeEstimatorPrefix, shardID), val); err != nil {
-		return incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "StoreFeeEstimator"))
+		return NewRawdbError(UnexpectedError, errors.Wrap(err, "StoreFeeEstimator"))
 	}
 	return nil
 }
@@ -456,7 +456,7 @@ func StoreFeeEstimator(db incdb.Database, val []byte, shardID byte) error {
 func GetFeeEstimator(db incdb.Database, shardID byte) ([]byte, error) {
 	b, err := db.Get(append(feeEstimatorPrefix, shardID))
 	if err != nil {
-		return nil, incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "GetFeeEstimator"))
+		return nil, NewRawdbError(UnexpectedError, errors.Wrap(err, "GetFeeEstimator"))
 	}
 	return b, err
 }
@@ -467,12 +467,12 @@ func CleanFeeEstimator(db incdb.Database) error {
 	for iter.Next() {
 		err := db.Delete(iter.Key())
 		if err != nil {
-			return incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "CleanFeeEstimator"))
+			return NewRawdbError(UnexpectedError, errors.Wrap(err, "CleanFeeEstimator"))
 		}
 	}
 	iter.Release()
 	if err := iter.Error(); err != nil {
-		return incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "CleanFeeEstimator"))
+		return NewRawdbError(UnexpectedError, errors.Wrap(err, "CleanFeeEstimator"))
 	}
 	return nil
 }
@@ -492,7 +492,7 @@ func StoreTransactionIndex(db incdb.Database, txId common.Hash, blockHash common
 		return nil
 	}
 	if err := db.Put([]byte(key), []byte(value)); err != nil {
-		return incdb.NewDatabaseError(incdb.StoreTransactionIndexError, err, txId.String(), blockHash.String(), index)
+		return NewRawdbError(StoreTransactionIndexError, err, txId.String(), blockHash.String(), index)
 	}
 
 	return nil
@@ -506,21 +506,21 @@ func GetTransactionIndexById(db incdb.Database, txId common.Hash) (common.Hash, 
 	key := string(transactionKeyPrefix) + txId.String()
 	_, err := db.Has([]byte(key))
 	if err != nil {
-		return common.Hash{}, -1, incdb.NewDatabaseError(incdb.GetTransactionIndexByIdError, err, txId.String())
+		return common.Hash{}, -1, NewRawdbError(GetTransactionIndexByIdError, err, txId.String())
 	}
 
 	res, err := db.Get([]byte(key))
 	if err != nil {
-		return common.Hash{}, -1, incdb.NewDatabaseError(incdb.GetTransactionIndexByIdError, err, txId.String())
+		return common.Hash{}, -1, NewRawdbError(GetTransactionIndexByIdError, err, txId.String())
 	}
 	reses := strings.Split(string(res), (string(Splitter)))
 	hash, err := common.Hash{}.NewHashFromStr(reses[0])
 	if err != nil {
-		return common.Hash{}, -1, incdb.NewDatabaseError(incdb.GetTransactionIndexByIdError, err, txId.String())
+		return common.Hash{}, -1, NewRawdbError(GetTransactionIndexByIdError, err, txId.String())
 	}
 	index, err := strconv.Atoi(reses[1])
 	if err != nil {
-		return common.Hash{}, -1, incdb.NewDatabaseError(incdb.GetTransactionIndexByIdError, err, txId.String())
+		return common.Hash{}, -1, NewRawdbError(GetTransactionIndexByIdError, err, txId.String())
 	}
 	return *hash, index, nil
 }
@@ -535,7 +535,7 @@ func StoreTxByPublicKey(db incdb.Database, publicKey []byte, txID common.Hash, s
 
 	if err := db.Put(key, []byte{}); err != nil {
 		incdb.Logger.Log.Debug("StoreTxByPublicKey", err)
-		return incdb.NewDatabaseError(incdb.StoreTxByPublicKeyError, err, txID.String(), publicKey, shardID)
+		return NewRawdbError(StoreTxByPublicKeyError, err, txID.String(), publicKey, shardID)
 	}
 
 	return nil
@@ -557,7 +557,7 @@ func GetTxByPublicKey(db incdb.Database, publicKey []byte) (map[byte][]common.Ha
 		err := txID.SetBytes(key[common.PublicKeySize : common.PublicKeySize+common.HashSize])
 		if err != nil {
 			incdb.Logger.Log.Debugf("Err at GetTxByPublicKey", err)
-			return nil, incdb.NewDatabaseError(incdb.GetTxByPublicKeyError, err, publicKey)
+			return nil, NewRawdbError(GetTxByPublicKeyError, err, publicKey)
 		}
 		result[shardID] = append(result[shardID], txID)
 	}

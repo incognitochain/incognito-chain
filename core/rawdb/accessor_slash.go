@@ -15,7 +15,7 @@ func GetProducersBlackList(db incdb.Database, beaconHeight uint64) (map[string]u
 	key := append(producersBlackListPrefix, beaconHeightBytes...)
 	producersBlackListBytes, dbErr := db.Get(key)
 	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
-		return nil, incdb.NewDatabaseError(incdb.GetProducersBlackListError, dbErr)
+		return nil, NewRawdbError(GetProducersBlackListError, dbErr)
 	}
 	producersBlackList := make(map[string]uint8)
 	if len(producersBlackListBytes) == 0 {
@@ -35,7 +35,7 @@ func StoreProducersBlackList(db incdb.Database, beaconHeight uint64, producersBl
 	key := append(producersBlackListPrefix, beaconHeightBytes...)
 	dbErr := db.Put(key, producersBlackListBytes)
 	if dbErr != nil {
-		return incdb.NewDatabaseError(incdb.StoreProducersBlackListError, errors.Wrap(dbErr, "db.lvdb.put"))
+		return NewRawdbError(StoreProducersBlackListError, errors.Wrap(dbErr, "db.lvdb.put"))
 	}
 	return nil
 }

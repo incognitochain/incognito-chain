@@ -1,7 +1,6 @@
 package mempool
 
 import (
-	"github.com/incognitochain/incognito-chain/core/rawdb"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -9,6 +8,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/core/rawdb"
 	"github.com/incognitochain/incognito-chain/incdb"
 )
 

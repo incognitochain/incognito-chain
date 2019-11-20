@@ -1,4 +1,4 @@
-package incdb
+package rawdb
 
 import (
 	"fmt"
@@ -210,22 +210,28 @@ var ErrCodeMessage = map[int]struct {
 	GetPDEStatusError:                      {-13014, "Get pde status error"},
 }
 
-type DatabaseError struct {
+type RawdbError struct {
 	err     error
 	Code    int
 	Message string
 }
 
-func (e DatabaseError) GetErrorCode() int {
+func (e RawdbError) GetErrorCode() int {
 	return e.Code
 }
+func (e RawdbError) GetError() error {
+	return e.err
+}
+func (e RawdbError) GetMessage() string {
+	return e.Message
+}
 
-func (e DatabaseError) Error() string {
+func (e RawdbError) Error() string {
 	return fmt.Sprintf("%d: %+v", e.Code, e.err)
 }
 
-func NewDatabaseError(key int, err error, params ...interface{}) *DatabaseError {
-	return &DatabaseError{
+func NewRawdbError(key int, err error, params ...interface{}) *RawdbError {
+	return &RawdbError{
 		err:     errors.Wrap(err, ErrCodeMessage[key].message),
 		Code:    ErrCodeMessage[key].Code,
 		Message: fmt.Sprintf(ErrCodeMessage[key].message, params),

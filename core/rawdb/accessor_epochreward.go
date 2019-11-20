@@ -31,12 +31,12 @@ func AddShardRewardRequest(
 		}
 		err1 := db.Put(key, common.Uint64ToBytes(rewardAmount))
 		if err1 != nil {
-			return incdb.NewDatabaseError(incdb.UnexpectedError, err1)
+			return NewRawdbError(UnexpectedError, err1)
 		}
 	} else {
 		newValue, err := common.BytesToUint64(oldValue)
 		if err != nil {
-			return incdb.NewDatabaseError(incdb.UnexpectedError, err)
+			return NewRawdbError(UnexpectedError, err)
 		}
 		newValue += rewardAmount
 
@@ -46,7 +46,7 @@ func AddShardRewardRequest(
 		}
 		err = db.Put(key, common.Uint64ToBytes(newValue))
 		if err != nil {
-			return incdb.NewDatabaseError(incdb.UnexpectedError, err)
+			return NewRawdbError(UnexpectedError, err)
 		}
 	}
 	return nil
@@ -72,7 +72,7 @@ func GetRewardOfShardByEpoch(
 	}
 	value, err := common.BytesToUint64(rewardAmount)
 	if err != nil {
-		return 0, incdb.NewDatabaseError(incdb.UnexpectedError, err)
+		return 0, NewRawdbError(UnexpectedError, err)
 	}
 	return value, nil
 }
@@ -95,17 +95,17 @@ func AddCommitteeReward(
 	if isExist != nil {
 		err := db.Put(key, common.Uint64ToBytes(amount))
 		if err != nil {
-			return incdb.NewDatabaseError(incdb.UnexpectedError, err)
+			return NewRawdbError(UnexpectedError, err)
 		}
 	} else {
 		newValue, err := common.BytesToUint64(oldValue)
 		if err != nil {
-			return incdb.NewDatabaseError(incdb.UnexpectedError, err)
+			return NewRawdbError(UnexpectedError, err)
 		}
 		newValue += amount
 		err = db.Put(key, common.Uint64ToBytes(newValue))
 		if err != nil {
-			return incdb.NewDatabaseError(incdb.UnexpectedError, err)
+			return NewRawdbError(UnexpectedError, err)
 		}
 	}
 	return nil
@@ -152,7 +152,7 @@ func GetCommitteeReward(
 
 	val, err := common.BytesToUint64(value)
 	if err != nil {
-		return 0, incdb.NewDatabaseError(incdb.GetCommitteeRewardError, err)
+		return 0, NewRawdbError(GetCommitteeRewardError, err)
 	}
 	return val, nil
 }
@@ -176,7 +176,7 @@ func RemoveCommitteeReward(
 	if isExist == nil {
 		newValue, err := common.BytesToUint64(oldValue)
 		if err != nil {
-			return incdb.NewDatabaseError(incdb.RemoveCommitteeRewardError, err)
+			return NewRawdbError(RemoveCommitteeRewardError, err)
 		}
 		if amount < newValue {
 			newValue -= amount
@@ -190,7 +190,7 @@ func RemoveCommitteeReward(
 		}
 		err = db.Put(key, common.Uint64ToBytes(newValue))
 		if err != nil {
-			return incdb.NewDatabaseError(incdb.RemoveCommitteeRewardError, err)
+			return NewRawdbError(RemoveCommitteeRewardError, err)
 		}
 	}
 	return nil

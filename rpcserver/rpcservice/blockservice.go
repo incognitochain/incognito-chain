@@ -4,12 +4,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"github.com/incognitochain/incognito-chain/core/rawdb"
 	"log"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/core/rawdb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/mempool"

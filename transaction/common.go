@@ -2,13 +2,13 @@ package transaction
 
 import (
 	"errors"
-	"github.com/incognitochain/incognito-chain/core/rawdb"
 	"math"
 	"math/big"
 	"math/rand"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/core/rawdb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"

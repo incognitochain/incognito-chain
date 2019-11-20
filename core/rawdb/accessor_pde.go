@@ -23,7 +23,7 @@ func DeleteWaitingPDEContributionByPairID(
 	key := BuildWaitingPDEContributionKey(beaconHeight, pairID)
 	dbErr := db.Delete(key)
 	if dbErr != nil {
-		return incdb.NewDatabaseError(incdb.DeleteWaitingPDEContributionError, errors.Wrap(dbErr, "db.lvdb.del"))
+		return NewRawdbError(DeleteWaitingPDEContributionError, errors.Wrap(dbErr, "db.lvdb.del"))
 	}
 	return nil
 }
@@ -43,12 +43,12 @@ func storeWaitingPDEContribution(
 	}
 	waitingPDEContributionBytes, err := json.Marshal(waitingPDEContribution)
 	if err != nil {
-		return incdb.NewDatabaseError(incdb.StoreWaitingPDEContributionError, errors.Wrap(err, "marshal.to.bytes"))
+		return NewRawdbError(StoreWaitingPDEContributionError, errors.Wrap(err, "marshal.to.bytes"))
 	}
 	key := BuildWaitingPDEContributionKey(beaconHeight, pairID)
 	err = db.Put(key, waitingPDEContributionBytes)
 	if err != nil {
-		return incdb.NewDatabaseError(incdb.StoreWaitingPDEContributionError, errors.Wrap(err, "db.lvdb.put"))
+		return NewRawdbError(StoreWaitingPDEContributionError, errors.Wrap(err, "db.lvdb.put"))
 	}
 	return nil
 }
@@ -64,7 +64,7 @@ func ContributeToPDE(
 	waitingContributionPairKey := BuildWaitingPDEContributionKey(beaconHeight, pairID)
 	waitingContributionBytes, err := db.Get(waitingContributionPairKey)
 	if err != nil && err != lvdberr.ErrNotFound {
-		return incdb.NewDatabaseError(incdb.GetWaitingPDEContributionByPairIDError, err)
+		return NewRawdbError(GetWaitingPDEContributionByPairIDError, err)
 	}
 	if len(waitingContributionBytes) == 0 {
 		return storeWaitingPDEContribution(db, beaconHeight+1, pairID, contributorAddressStr, tokenIDStr, contributedAmount)
@@ -113,11 +113,11 @@ func storePDEPoolForPair(
 	}
 	pdePoolForPairBytes, err := json.Marshal(pdePoolForPair)
 	if err != nil {
-		return incdb.NewDatabaseError(incdb.StorePDEPoolForPairError, errors.Wrap(err, "marshal.to.bytes"))
+		return NewRawdbError(StorePDEPoolForPairError, errors.Wrap(err, "marshal.to.bytes"))
 	}
 	err = db.Put(pdePoolForPairKey, pdePoolForPairBytes)
 	if err != nil {
-		return incdb.NewDatabaseError(incdb.StorePDEPoolForPairError, errors.Wrap(err, "db.lvdb.put"))
+		return NewRawdbError(StorePDEPoolForPairError, errors.Wrap(err, "db.lvdb.put"))
 	}
 	return nil
 }
@@ -134,7 +134,7 @@ func addShareAmountUp(
 	pdeShareKey := BuildPDESharesKey(beaconHeight, token1IDStr, token2IDStr, contributedTokenIDStr, contributorAddrStr)
 	pdeShareBytes, err := db.Get(pdeShareKey)
 	if err != nil && err != lvdberr.ErrNotFound {
-		return incdb.NewDatabaseError(incdb.GetPDEShareError, err)
+		return NewRawdbError(GetPDEShareError, err)
 	}
 	addedUpAmt := amt
 	if len(pdeShareBytes) > 0 {
@@ -145,7 +145,7 @@ func addShareAmountUp(
 	binary.LittleEndian.PutUint64(buf, addedUpAmt)
 	dbErr := db.Put(pdeShareKey, buf)
 	if dbErr != nil {
-		return incdb.NewDatabaseError(incdb.AddShareAmountUpError, errors.Wrap(dbErr, "db.lvdb.put"))
+		return NewRawdbError(AddShareAmountUpError, errors.Wrap(dbErr, "db.lvdb.put"))
 	}
 	return nil
 }
@@ -162,7 +162,7 @@ func GetSharesOfContributorForTokenIDOnAPair(
 	pdeShareKey := append(PDESharePrefix, []byte(tokenIDStrs[0]+"-"+tokenIDStrs[1]+"-"+contributedTokenIDStr+"-"+contributorAddrStr)...)
 	pdeShareBytes, err := db.Get(pdeShareKey)
 	if err != nil && err != lvdberr.ErrNotFound {
-		return 0, incdb.NewDatabaseError(incdb.GetPDEShareError, err)
+		return 0, NewRawdbError(GetPDEShareError, err)
 	}
 	if len(pdeShareBytes) > 0 {
 		return uint64(binary.LittleEndian.Uint64(pdeShareBytes)), nil
@@ -191,7 +191,7 @@ func GetTotalSharesForTokenIDOnAPair(
 	iter.Release()
 	err := iter.Error()
 	if err != nil && err != lvdberr.ErrNotFound {
-		return 0, incdb.NewDatabaseError(incdb.GetPDEShareError, err)
+		return 0, NewRawdbError(GetPDEShareError, err)
 	}
 	return totalShares, nil
 }
@@ -234,7 +234,7 @@ func updateWaitingContributionPairToPool(
 	pdePoolForPairKey := BuildPDEPoolForPairKey(beaconHeight, waitingContributions[0].TokenIDStr, waitingContributions[1].TokenIDStr)
 	pdePoolForPairBytes, err := db.Get(pdePoolForPairKey)
 	if err != nil && err != lvdberr.ErrNotFound {
-		return incdb.NewDatabaseError(incdb.GetPDEPoolForPairKeyError, err)
+		return NewRawdbError(GetPDEPoolForPairKeyError, err)
 	}
 	if len(pdePoolForPairBytes) == 0 {
 		return storePDEPoolForPair(
@@ -270,7 +270,7 @@ func GetPDEPoolForPair(
 	pdePoolForPairKey := BuildPDEPoolForPairKey(beaconHeight, tokenIDToBuyStr, tokenIDToSellStr)
 	pdePoolForPairBytes, err := db.Get(pdePoolForPairKey)
 	if err != nil && err != lvdberr.ErrNotFound {
-		return []byte{}, incdb.NewDatabaseError(incdb.GetPDEPoolForPairKeyError, err)
+		return []byte{}, NewRawdbError(GetPDEPoolForPairKeyError, err)
 	}
 	return pdePoolForPairBytes, nil
 }
@@ -306,7 +306,7 @@ func GetLatestPDEPoolForPair(
 	pdePoolForPairKey := BuildPDEPoolForPairKey(beaconHeight, tokenIDToBuyStr, tokenIDToSellStr)
 	pdePoolForPairBytes, err := db.Get(pdePoolForPairKey)
 	if err != nil && err != lvdberr.ErrNotFound {
-		return []byte{}, incdb.NewDatabaseError(incdb.GetPDEPoolForPairKeyError, err)
+		return []byte{}, NewRawdbError(GetPDEPoolForPairKeyError, err)
 	}
 	return pdePoolForPairBytes, nil
 }
@@ -321,7 +321,7 @@ func UpdatePDEPoolForPair(
 	pdePoolForPairKey := BuildPDEPoolForPairKey(beaconHeight, token1IDStr, token2IDStr)
 	dbErr := db.Put(pdePoolForPairKey, pdePoolForPairBytes)
 	if dbErr != nil {
-		return incdb.NewDatabaseError(incdb.StoreWaitingPDEContributionError, errors.Wrap(dbErr, "db.lvdb.put"))
+		return NewRawdbError(StoreWaitingPDEContributionError, errors.Wrap(dbErr, "db.lvdb.put"))
 	}
 	return nil
 }
@@ -337,7 +337,7 @@ func AddTradeFeeUp(
 	pdeTradeFeeKey := BuildPDETradeFeesKey(beaconHeight, token1IDStr, token2IDStr, targetingTokenIDStr)
 	pdeTradeFeeBytes, err := db.Get(pdeTradeFeeKey)
 	if err != nil && err != lvdberr.ErrNotFound {
-		return incdb.NewDatabaseError(incdb.GetPDETradeFeeError, err)
+		return NewRawdbError(GetPDETradeFeeError, err)
 	}
 	addedAmt := amt
 	if len(pdeTradeFeeBytes) > 0 {
@@ -349,7 +349,7 @@ func AddTradeFeeUp(
 	binary.LittleEndian.PutUint64(buf, addedAmt)
 	dbErr := db.Put(pdeTradeFeeKey, buf)
 	if dbErr != nil {
-		return incdb.NewDatabaseError(incdb.AddTradeFeeUpError, errors.Wrap(dbErr, "db.lvdb.put"))
+		return NewRawdbError(AddTradeFeeUpError, errors.Wrap(dbErr, "db.lvdb.put"))
 	}
 	return nil
 }
@@ -365,7 +365,7 @@ func DeductTradeFee(
 	pdeTradeFeeKey := BuildPDETradeFeesKey(beaconHeight, token1IDStr, token2IDStr, targetingTokenIDStr)
 	pdeTradeFeeBytes, err := db.Get(pdeTradeFeeKey)
 	if err != nil && err != lvdberr.ErrNotFound {
-		return incdb.NewDatabaseError(incdb.GetPDETradeFeeError, err)
+		return NewRawdbError(GetPDETradeFeeError, err)
 	}
 	adjustingAmt := uint64(0)
 	if len(pdeTradeFeeBytes) > 0 {
@@ -378,7 +378,7 @@ func DeductTradeFee(
 	binary.LittleEndian.PutUint64(buf, adjustingAmt)
 	dbErr := db.Put(pdeTradeFeeKey, buf)
 	if dbErr != nil {
-		return incdb.NewDatabaseError(incdb.DeduceTradeFeeError, errors.Wrap(dbErr, "db.lvdb.put"))
+		return NewRawdbError(DeduceTradeFeeError, errors.Wrap(dbErr, "db.lvdb.put"))
 	}
 	return nil
 }
@@ -395,7 +395,7 @@ func DeductSharesForWithdrawal(
 	pdeShareKey := BuildPDESharesKey(beaconHeight, token1IDStr, token2IDStr, targetingTokenIDStr, withdrawerAddressStr)
 	pdeShareBytes, err := db.Get(pdeShareKey)
 	if err != nil && err != lvdberr.ErrNotFound {
-		return incdb.NewDatabaseError(incdb.GetPDEShareError, err)
+		return NewRawdbError(GetPDEShareError, err)
 	}
 	adjustingAmt := uint64(0)
 	if len(pdeShareBytes) > 0 {
@@ -408,7 +408,7 @@ func DeductSharesForWithdrawal(
 	binary.LittleEndian.PutUint64(buf, adjustingAmt)
 	dbErr := db.Put(pdeShareKey, buf)
 	if dbErr != nil {
-		return incdb.NewDatabaseError(incdb.DeduceShareError, errors.Wrap(dbErr, "db.lvdb.put"))
+		return NewRawdbError(DeduceShareError, errors.Wrap(dbErr, "db.lvdb.put"))
 	}
 	return nil
 }
@@ -432,7 +432,7 @@ func GetAllRecordsByPrefix(db incdb.Database, beaconHeight uint64, prefix []byte
 	iter.Release()
 	err := iter.Error()
 	if err != nil && err != lvdberr.ErrNotFound {
-		return keys, values, incdb.NewDatabaseError(incdb.GetAllRecordsByPrefixError, err)
+		return keys, values, NewRawdbError(GetAllRecordsByPrefixError, err)
 	}
 	return keys, values, nil
 }
@@ -446,7 +446,7 @@ func TrackPDEStatus(
 	key := BuildPDEStatusKey(prefix, suffix)
 	err := db.Put(key, []byte{status})
 	if err != nil {
-		return incdb.NewDatabaseError(incdb.TrackPDEStatusError, errors.Wrap(err, "db.lvdb.put"))
+		return NewRawdbError(TrackPDEStatusError, errors.Wrap(err, "db.lvdb.put"))
 	}
 	return nil
 }
@@ -459,7 +459,7 @@ func GetPDEStatus(
 	key := BuildPDEStatusKey(prefix, suffix)
 	pdeStatusBytes, dbErr := db.Get(key)
 	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
-		return common.PDENotFoundStatus, incdb.NewDatabaseError(incdb.GetPDEStatusError, dbErr)
+		return common.PDENotFoundStatus, NewRawdbError(GetPDEStatusError, dbErr)
 	}
 	if len(pdeStatusBytes) == 0 {
 		return common.PDENotFoundStatus, nil

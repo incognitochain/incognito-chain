@@ -50,7 +50,7 @@ func open(dbPath string) (incdb.Database, error) {
 		lvdb, err = leveldb.RecoverFile(dbPath, nil)
 	}
 	if err != nil {
-		return nil, incdb.NewDatabaseError(incdb.OpenDbErr, errors.Wrapf(err, "levelvdb.OpenFile %s", dbPath))
+		return nil, errors.Wrapf(err, "levelvdb.OpenFile %s", dbPath)
 	}
 	return &db{fn: dbPath, lvdb: lvdb}, nil
 }
@@ -64,7 +64,7 @@ func (db *db) Close() error {
 func (db *db) Has(key []byte) (bool, error) {
 	ret, err := db.lvdb.Has(key, nil)
 	if err != nil {
-		return false, incdb.NewDatabaseError(incdb.NotExistValue, err)
+		return false, err
 	}
 	return ret, nil
 }
@@ -72,14 +72,14 @@ func (db *db) Has(key []byte) (bool, error) {
 func (db *db) Get(key []byte) ([]byte, error) {
 	value, err := db.lvdb.Get(key, nil)
 	if err != nil {
-		return nil, incdb.NewDatabaseError(incdb.LvdbNotFound, errors.Wrap(err, "db.lvdb.Get"))
+		return nil, err
 	}
 	return value, nil
 }
 
 func (db *db) Put(key, value []byte) error {
 	if err := db.lvdb.Put(key, value, nil); err != nil {
-		return incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "db.lvdb.Put"))
+		return err
 	}
 	return nil
 }
@@ -87,7 +87,7 @@ func (db *db) Put(key, value []byte) error {
 func (db *db) Delete(key []byte) error {
 	err := db.lvdb.Delete(key, nil)
 	if err != nil {
-		return incdb.NewDatabaseError(incdb.LvdbDeleteFailed, errors.Wrap(err, "db.lvdb.Delete"))
+		return err
 	}
 	return nil
 }

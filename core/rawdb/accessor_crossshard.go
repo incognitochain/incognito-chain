@@ -22,7 +22,7 @@ func StoreCrossShardNextHeight(db incdb.Database, fromShard byte, toShard byte, 
 	binary.LittleEndian.PutUint64(buf, nextHeight)
 
 	if err := db.Put(key, buf); err != nil {
-		return incdb.NewDatabaseError(incdb.StoreCrossShardNextHeightError, err)
+		return NewRawdbError(StoreCrossShardNextHeightError, err)
 	}
 
 	return nil
@@ -31,7 +31,7 @@ func StoreCrossShardNextHeight(db incdb.Database, fromShard byte, toShard byte, 
 func HasCrossShardNextHeight(db incdb.Database, key []byte) (bool, error) {
 	exist, err := db.Has(key)
 	if err != nil {
-		return false, incdb.NewDatabaseError(incdb.HasCrossShardNextHeightError, err)
+		return false, NewRawdbError(HasCrossShardNextHeightError, err)
 	} else {
 		return exist, nil
 	}
@@ -48,11 +48,11 @@ func FetchCrossShardNextHeight(db incdb.Database, fromShard byte, toShard byte, 
 	key = append(key, curHeightBytes...)
 
 	if _, err := HasCrossShardNextHeight(db, key); err != nil {
-		return 0, incdb.NewDatabaseError(incdb.FetchCrossShardNextHeightError, err)
+		return 0, NewRawdbError(FetchCrossShardNextHeightError, err)
 	}
 	info, err := db.Get(key)
 	if err != nil {
-		return 0, incdb.NewDatabaseError(incdb.FetchCrossShardNextHeightError, err)
+		return 0, NewRawdbError(FetchCrossShardNextHeightError, err)
 	}
 	var nextHeight uint64
 	err = binary.Read(bytes.NewReader(info[:8]), binary.LittleEndian, &nextHeight)
@@ -67,7 +67,7 @@ func StoreIncomingCrossShard(db incdb.Database, shardID byte, crossShardID byte,
 	// csh-ShardID-CrossShardID-CrossShardBlockHash : ShardBlockHeight
 	key := append(crossShardKeyPrefix, prefix...)
 	if ok, _ := db.Has(key); ok {
-		return incdb.NewDatabaseError(incdb.BlockExisted, errors.Errorf("block %d already exists", blkHeight))
+		return NewRawdbError(BlockExisted, errors.Errorf("block %d already exists", blkHeight))
 	}
 
 	if bd != nil {
@@ -75,7 +75,7 @@ func StoreIncomingCrossShard(db incdb.Database, shardID byte, crossShardID byte,
 		return nil
 	}
 	if err := db.Put(key, buf); err != nil {
-		return incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
+		return NewRawdbError(UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
 	return nil
 }
@@ -87,7 +87,7 @@ func HasIncomingCrossShard(db incdb.Database, shardID byte, crossShardID byte, c
 	if ok, _ := db.Has(key); ok {
 		return nil
 	}
-	return incdb.NewDatabaseError(incdb.BlockExisted, errors.Errorf("Cross Shard Block doesn't exist"))
+	return NewRawdbError(BlockExisted, errors.Errorf("Cross Shard Block doesn't exist"))
 }
 
 func GetIncomingCrossShard(db incdb.Database, shardID byte, crossShardID byte, crossBlkHash common.Hash) (uint64, error) {
@@ -96,11 +96,11 @@ func GetIncomingCrossShard(db incdb.Database, shardID byte, crossShardID byte, c
 	key := append(crossShardKeyPrefix, prefix...)
 	b, err := db.Get(key)
 	if err != nil {
-		return 0, incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		return 0, NewRawdbError(UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
 	var idx uint64
 	if err := binary.Read(bytes.NewReader(b[:]), binary.LittleEndian, &idx); err != nil {
-		return 0, incdb.NewDatabaseError(incdb.UnexpectedError, errors.Wrap(err, "binary.Read"))
+		return 0, NewRawdbError(UnexpectedError, errors.Wrap(err, "binary.Read"))
 	}
 	return idx, nil
 }

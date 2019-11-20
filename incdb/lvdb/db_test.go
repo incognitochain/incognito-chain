@@ -276,7 +276,7 @@ func TestDb_StoreTxIndex(t *testing.T) {
 		assert.Equal(t, err, nil)
 
 		blockHash, index, err := rawdb.GetTransactionIndexById(db, *block.Body.Transactions[1].Hash())
-		if err != nil && err.(*incdb.DatabaseError) != nil {
+		if err != nil && err.(*rawdb.RawdbError) != nil {
 			t.Error(err)
 		}
 		assert.Equal(t, blockHash, *block.Hash())
