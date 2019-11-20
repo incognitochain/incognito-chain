@@ -338,7 +338,11 @@ func (cm *ConnManager) subscribe(role userRole, topics m2t, forced bool) (userRo
 
 	// Registering
 	pubkey, _ := cm.IdentityKey.ToBase58()
-	shardIDs := []byte{byte(newRole.shardID)}
+	roleSID := newRole.shardID
+	if roleSID == -2 { // normal node
+		roleSID = -1
+	}
+	shardIDs := []byte{byte(roleSID)}
 	if cm.nodeMode == common.NodeModeRelay {
 		shardIDs = append(cm.relayShard, HighwayBeaconID)
 	}
@@ -351,6 +355,8 @@ func (cm *ConnManager) subscribe(role userRole, topics m2t, forced bool) (userRo
 		log.Printf("Role not matching with highway, local = %+v, highway = %+v", newRole, roleOfTopics)
 		return role, topics
 	}
+
+	log.Printf("Received topics = %+v, oldTopics = %+v", newTopics, topics)
 
 	// Subscribing
 	if err := cm.subscribeNewTopics(newTopics, topics); err != nil {
@@ -514,6 +520,11 @@ func getMessagesForLayer(mode, layer string, shardID []byte) []string {
 				wire.CmdBFT,
 				wire.CmdPeerState,
 				wire.CmdBlkShardToBeacon,
+			}
+		} else {
+			return []string{
+				wire.CmdBlockBeacon,
+				wire.CmdPeerState,
 			}
 		}
 	case common.NodeModeRelay:
