@@ -13,6 +13,7 @@ type CustomToken struct {
 	Amount             uint64   `json:"Amount"`
 	IsPrivacy          bool     `json:"IsPrivacy"`
 	ListTxs            []string `json:"ListTxs"`
+	CountTxs           int      `json:"CountTxs"`
 	InitiatorPublicKey string   `json:"InitiatorPublicKey"`
 }
 

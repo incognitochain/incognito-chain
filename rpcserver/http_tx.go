@@ -238,7 +238,7 @@ func (httpServer *HttpServer) handlePrivacyCustomTokenDetail(params interface{},
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("tokenID is invalid"))
 	}
 
-	txs, _, err := httpServer.txService.PrivacyCustomTokenDetail(tokenIDTemp)
+	txs, tokenData, err := httpServer.txService.PrivacyCustomTokenDetail(tokenIDTemp)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -246,9 +246,9 @@ func (httpServer *HttpServer) handlePrivacyCustomTokenDetail(params interface{},
 	result := jsonresult.CustomToken{
 		ListTxs:            []string{},
 		ID:                 tokenIDTemp,
-		Name:               "",
+		Name:               tokenData.PropertyName,
 		IsPrivacy:          true,
-		Symbol:             "",
+		Symbol:             tokenData.PropertySymbol,
 		InitiatorPublicKey: "",
 	}
 
