@@ -13,14 +13,18 @@ func StoreBurningConfirm(db incdb.Database, txID common.Hash, height uint64, bd 
 		*bd = append(*bd, incdb.BatchData{key, value})
 		return nil
 	}
-	return db.Put(key, value)
+	err := db.Put(key, value)
+	if err != nil {
+		return NewRawdbError(LvdbPutError, err)
+	}
+	return nil
 }
 
 func GetBurningConfirm(db incdb.Database, txID common.Hash) (uint64, error) {
 	key := append(burnConfirmPrefix, txID[:]...)
 	value, err := db.Get(key)
 	if err != nil {
-		return 0, err
+		return 0, NewRawdbError(LvdbGetError, err)
 	}
 	height, _ := common.BytesToUint64(value)
 	return height, nil

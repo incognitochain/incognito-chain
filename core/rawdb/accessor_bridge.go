@@ -3,8 +3,7 @@ package rawdb
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
-	"github.com/pkg/errors"
+	"log"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -13,18 +12,18 @@ import (
 
 func InsertETHTxHashIssued(db incdb.Database, uniqETHTx []byte) error {
 	key := append(ethTxHashIssuedPrefix, uniqETHTx...)
-	dbErr := db.Put(key, []byte{1})
-	if dbErr != nil {
-		return NewRawdbError(InsertETHTxHashIssuedError, errors.Wrap(dbErr, "db.lvdb.put"))
+	err := db.Put(key, []byte{1})
+	if err != nil {
+		return NewRawdbError(InsertETHTxHashIssuedError, err)
 	}
 	return nil
 }
 
 func IsETHTxHashIssued(db incdb.Database, uniqETHTx []byte) (bool, error) {
 	key := append(ethTxHashIssuedPrefix, uniqETHTx...)
-	contentBytes, dbErr := db.Get(key)
-	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
-		return false, NewRawdbError(IsETHTxHashIssuedError, errors.Wrap(dbErr, "db.lvdb.Get"))
+	contentBytes, err := db.Get(key)
+	if err != nil && err != lvdberr.ErrNotFound {
+		return false, NewRawdbError(IsETHTxHashIssuedError, err)
 	}
 	if len(contentBytes) == 0 {
 		return false, nil
@@ -63,7 +62,7 @@ func CanProcessTokenPair(db incdb.Database, externalTokenID []byte, incTokenID c
 		return false, NewRawdbError(BridgeUnexpectedError, err)
 	}
 	if cBridgeTokenExisted {
-		fmt.Println("WARNING: inc token was existed in centralized token set")
+		log.Println("WARNING: inc token was existed in centralized token set")
 		return false, nil
 	}
 
@@ -71,11 +70,11 @@ func CanProcessTokenPair(db incdb.Database, externalTokenID []byte, incTokenID c
 	if err != nil {
 		return false, NewRawdbError(BridgeUnexpectedError, err)
 	}
-	fmt.Println("INFO: whether inc token was existed in decentralized token set: ", dBridgeTokenExisted)
+	log.Println("INFO: whether inc token was existed in decentralized token set: ", dBridgeTokenExisted)
 	privacyCustomTokenExisted := PrivacyTokenIDExisted(db, incTokenID)
 	privacyCustomTokenCrossShardExisted := PrivacyTokenIDCrossShardExisted(db, incTokenID)
 	if !dBridgeTokenExisted && (privacyCustomTokenExisted || privacyCustomTokenCrossShardExisted) {
-		fmt.Println("WARNING: failed at condition 1: ", dBridgeTokenExisted, privacyCustomTokenExisted, privacyCustomTokenCrossShardExisted)
+		log.Println("WARNING: failed at condition 1: ", dBridgeTokenExisted, privacyCustomTokenExisted, privacyCustomTokenCrossShardExisted)
 		return false, nil
 	}
 
@@ -93,7 +92,7 @@ func CanProcessTokenPair(db incdb.Database, externalTokenID []byte, incTokenID c
 		if bytes.Equal(bridgeTokenInfo.ExternalTokenID[:], externalTokenID[:]) {
 			return true, nil
 		}
-		fmt.Println("WARNING: failed at condition 2:", bridgeTokenInfo.ExternalTokenID[:], externalTokenID[:])
+		log.Println("WARNING: failed at condition 2:", bridgeTokenInfo.ExternalTokenID[:], externalTokenID[:])
 		return false, nil
 	}
 	// else: could not find incTokenID out
@@ -111,7 +110,7 @@ func CanProcessTokenPair(db incdb.Database, externalTokenID []byte, incTokenID c
 			continue
 		}
 
-		fmt.Println("WARNING: failed at condition 3:", bridgeTokenInfo.ExternalTokenID[:], externalTokenID[:])
+		log.Println("WARNING: failed at condition 3:", bridgeTokenInfo.ExternalTokenID[:], externalTokenID[:])
 		return false, nil
 	}
 
@@ -135,9 +134,9 @@ func UpdateBridgeTokenInfo(
 ) error {
 	prefix := getBridgePrefix(isCentralized)
 	key := append(prefix, incTokenID[:]...)
-	bridgeTokenInfoBytes, dbErr := db.Get(key)
-	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
-		return NewRawdbError(BridgeUnexpectedError, dbErr)
+	bridgeTokenInfoBytes, err := db.Get(key)
+	if err != nil && err != lvdberr.ErrNotFound {
+		return NewRawdbError(BridgeUnexpectedError, err)
 	}
 
 	var newBridgeTokenInfo BridgeTokenInfo
@@ -156,7 +155,7 @@ func UpdateBridgeTokenInfo(
 		var existingBridgeTokenInfo BridgeTokenInfo
 		unmarshalErr := json.Unmarshal(bridgeTokenInfoBytes, &existingBridgeTokenInfo)
 		if unmarshalErr != nil {
-			return unmarshalErr
+			return NewRawdbError(JsonUnMarshalError, unmarshalErr)
 		}
 		newBridgeTokenInfo = BridgeTokenInfo{
 			TokenID:         existingBridgeTokenInfo.TokenID,
@@ -174,16 +173,16 @@ func UpdateBridgeTokenInfo(
 
 	contentBytes, marshalErr := json.Marshal(newBridgeTokenInfo)
 	if marshalErr != nil {
-		return marshalErr
+		return NewRawdbError(JsonMarshalError, marshalErr)
 	}
 
 	if bd != nil {
 		*bd = append(*bd, incdb.BatchData{key, contentBytes})
 		return nil
 	}
-	dbErr = db.Put(key, contentBytes)
-	if dbErr != nil {
-		return NewRawdbError(BridgeUnexpectedError, dbErr)
+	err = db.Put(key, contentBytes)
+	if err != nil {
+		return NewRawdbError(BridgeUnexpectedError, err)
 	}
 	return nil
 }
@@ -212,7 +211,7 @@ func getBridgeTokensByType(db incdb.Database, isCentralized bool) ([]*BridgeToke
 		var bridgeTokenInfo BridgeTokenInfo
 		err := json.Unmarshal(itemBytes, &bridgeTokenInfo)
 		if err != nil {
-			return nil, err
+			return nil, NewRawdbError(JsonUnMarshalError, err)
 		}
 		bridgeTokenInfos = append(bridgeTokenInfos, &bridgeTokenInfo)
 	}
@@ -238,7 +237,7 @@ func GetAllBridgeTokens(db incdb.Database) ([]byte, error) {
 	allBridgeTokens := append(cBridgeTokenInfos, dBridgeTokenInfos...)
 	allBridgeTokensBytes, err := json.Marshal(allBridgeTokens)
 	if err != nil {
-		return nil, err
+		return nil, NewRawdbError(JsonMarshalError, err)
 	}
 	return allBridgeTokensBytes, nil
 }
@@ -255,9 +254,9 @@ func TrackBridgeReqWithStatus(db incdb.Database, txReqID common.Hash, status byt
 
 func GetBridgeReqWithStatus(db incdb.Database, txReqID common.Hash) (byte, error) {
 	key := append(bridgePrefix, txReqID[:]...)
-	bridgeRedStatusBytes, dbErr := db.Get(key)
-	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
-		return common.BridgeRequestNotFoundStatus, NewRawdbError(BridgeUnexpectedError, dbErr)
+	bridgeRedStatusBytes, err := db.Get(key)
+	if err != nil && err != lvdberr.ErrNotFound {
+		return common.BridgeRequestNotFoundStatus, NewRawdbError(BridgeUnexpectedError, err)
 	}
 	if len(bridgeRedStatusBytes) == 0 {
 		return common.BridgeRequestNotFoundStatus, nil

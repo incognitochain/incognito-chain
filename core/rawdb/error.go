@@ -7,8 +7,10 @@ import (
 )
 
 const (
+	// using builtin function error
 	JsonMarshalError = iota
 	JsonUnMarshalError
+	BinaryReaderError
 
 	// LevelDB
 	OpenDbErr
@@ -18,6 +20,7 @@ const (
 	LvdbPutError
 	LvdbGetError
 	LvdbHasError
+	LvdbIteratorError
 
 	// BlockChain err
 	NotImplHashMethod
@@ -116,16 +119,17 @@ var ErrCodeMessage = map[int]struct {
 	// -1xxx marshal and unmarshal
 	JsonMarshalError:   {-1000, "Json Marshal Error"},
 	JsonUnMarshalError: {-1001, "Json UnMarshal Error"},
+	BinaryReaderError:  {-1002, "Binary Reader Error"},
 
 	// -2xxx levelDb
-	OpenDbErr:       {-2000, "Open database error"},
-	NotExistValue:   {-2001, "H is not existed"},
-	LvdbNotFound:    {-2002, "lvdb not found"},
-	LvdbDeleteError: {-2003, "lvdb delete error"},
-	LvdbPutError:    {-2004, "lvdb put error"},
-	LvdbGetError:    {-2005, "lvdb get error"},
-	LvdbHasError:    {-2006, "lvdb has error"},
-
+	OpenDbErr:         {-2000, "Open database error"},
+	NotExistValue:     {-2001, "H is not existed"},
+	LvdbNotFound:      {-2002, "lvdb not found"},
+	LvdbDeleteError:   {-2003, "lvdb delete error"},
+	LvdbPutError:      {-2004, "lvdb put error"},
+	LvdbGetError:      {-2005, "lvdb get error"},
+	LvdbHasError:      {-2006, "lvdb has error"},
+	LvdbIteratorError: {-2007, "Iterator Error"},
 	// -3xxx blockchain
 	NotImplHashMethod: {-3000, "Data does not implement Hash() method"},
 	BlockExisted:      {-3001, "Block already existed"},

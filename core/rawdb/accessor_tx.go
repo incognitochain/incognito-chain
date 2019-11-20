@@ -1,6 +1,7 @@
 package rawdb
 
 import (
+	"log"
 	"math/big"
 	"strconv"
 	"strings"
@@ -9,7 +10,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/pkg/errors"
 )
 
 // StoreSerialNumbers - store list serialNumbers by shardID
@@ -350,7 +350,7 @@ func GetOutcoinsByPubkey(db incdb.Database, tokenID common.Hash, pubkey []byte, 
 	arrDatabyPubkey := make([][]byte, 0)
 	iter := db.NewIteratorWithPrefix(key)
 	if iter.Error() != nil {
-		return nil, NewRawdbError(GetOutputCoinByPublicKeyError, errors.Wrap(iter.Error(), "db.lvdb.NewIterator"))
+		return nil, NewRawdbError(GetOutputCoinByPublicKeyError, iter.Error())
 	}
 	for iter.Next() {
 		value := make([]byte, len(iter.Value()))
@@ -447,7 +447,7 @@ func CleanSNDerivator(db incdb.Database) error {
 // StoreFeeEstimator - Store data for FeeEstimator object
 func StoreFeeEstimator(db incdb.Database, val []byte, shardID byte) error {
 	if err := db.Put(append(feeEstimatorPrefix, shardID), val); err != nil {
-		return NewRawdbError(UnexpectedError, errors.Wrap(err, "StoreFeeEstimator"))
+		return NewRawdbError(LvdbPutError, err)
 	}
 	return nil
 }
@@ -456,7 +456,7 @@ func StoreFeeEstimator(db incdb.Database, val []byte, shardID byte) error {
 func GetFeeEstimator(db incdb.Database, shardID byte) ([]byte, error) {
 	b, err := db.Get(append(feeEstimatorPrefix, shardID))
 	if err != nil {
-		return nil, NewRawdbError(UnexpectedError, errors.Wrap(err, "GetFeeEstimator"))
+		return nil, NewRawdbError(LvdbGetError, err)
 	}
 	return b, err
 }
@@ -467,12 +467,12 @@ func CleanFeeEstimator(db incdb.Database) error {
 	for iter.Next() {
 		err := db.Delete(iter.Key())
 		if err != nil {
-			return NewRawdbError(UnexpectedError, errors.Wrap(err, "CleanFeeEstimator"))
+			return NewRawdbError(LvdbDeleteError, err)
 		}
 	}
 	iter.Release()
 	if err := iter.Error(); err != nil {
-		return NewRawdbError(UnexpectedError, errors.Wrap(err, "CleanFeeEstimator"))
+		return NewRawdbError(LvdbIteratorError, err)
 	}
 	return nil
 }
@@ -534,7 +534,7 @@ func StoreTxByPublicKey(db incdb.Database, publicKey []byte, txID common.Hash, s
 	key = append(key, shardID)            // 3nd 1 byte for shardID where sender send to receiver
 
 	if err := db.Put(key, []byte{}); err != nil {
-		incdb.Logger.Log.Debug("StoreTxByPublicKey", err)
+		log.Println("StoreTxByPublicKey", err)
 		return NewRawdbError(StoreTxByPublicKeyError, err, txID.String(), publicKey, shardID)
 	}
 
@@ -556,7 +556,7 @@ func GetTxByPublicKey(db incdb.Database, publicKey []byte) (map[byte][]common.Ha
 		txID := common.Hash{}
 		err := txID.SetBytes(key[common.PublicKeySize : common.PublicKeySize+common.HashSize])
 		if err != nil {
-			incdb.Logger.Log.Debugf("Err at GetTxByPublicKey", err)
+			log.Println("Err at GetTxByPublicKey", err)
 			return nil, NewRawdbError(GetTxByPublicKeyError, err, publicKey)
 		}
 		result[shardID] = append(result[shardID], txID)

@@ -33,9 +33,8 @@ func StoreShardBlock(db incdb.Database, v interface{}, hash common.Hash, shardID
 	}
 	val, err := json.Marshal(v)
 	if err != nil {
-		return NewRawdbError(UnexpectedError, errors.Wrap(err, "json.Marshal"))
+		return NewRawdbError(JsonMarshalError, err)
 	}
-
 	if bd != nil {
 		*bd = append(*bd, incdb.BatchData{keyShardBlock, keyBlockHash})
 		*bd = append(*bd, incdb.BatchData{keyBlockHash, val})
@@ -43,10 +42,10 @@ func StoreShardBlock(db incdb.Database, v interface{}, hash common.Hash, shardID
 	}
 
 	if err := db.Put(keyShardBlock, keyBlockHash); err != nil {
-		return NewRawdbError(UnexpectedError, errors.Wrap(err, "db.Put"))
+		return NewRawdbError(LvdbPutError, err)
 	}
 	if err := db.Put(keyBlockHash, val); err != nil {
-		return NewRawdbError(UnexpectedError, errors.Wrap(err, "db.Put"))
+		return NewRawdbError(LvdbPutError, err)
 	}
 	return nil
 }
@@ -57,7 +56,7 @@ func StoreShardBlock(db incdb.Database, v interface{}, hash common.Hash, shardID
 func HasBlock(db incdb.Database, hash common.Hash) (bool, error) {
 	exists, err := db.Has(addPrefixToKeyHash(string(blockKeyPrefix), hash))
 	if err != nil {
-		return false, err
+		return false, NewRawdbError(LvdbHasError, err)
 	} else {
 		return exists, nil
 	}
@@ -70,7 +69,7 @@ func FetchBlock(db incdb.Database, hash common.Hash) ([]byte, error) {
 	block, err := db.Get(addPrefixToKeyHash(string(blockKeyPrefix), hash))
 	if err != nil {
 		if err == lvdberr.ErrNotFound {
-			return nil, NewRawdbError(UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+			return nil, NewRawdbError(LvdbGetError, err)
 		}
 		return []byte{}, nil
 	}
@@ -100,11 +99,11 @@ func StoreShardBlockIndex(db incdb.Database, hash common.Hash, idx uint64, shard
 	}
 	//{i-[hash]}:index-shardID
 	if err := db.Put(addPrefixToKeyHash(string(blockKeyIdxPrefix), hash), buf); err != nil {
-		return NewRawdbError(UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
+		return NewRawdbError(LvdbPutError, err)
 	}
 	//{index-shardID}:[hash]
 	if err := db.Put(buf, hash[:]); err != nil {
-		return NewRawdbError(UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
+		return NewRawdbError(LvdbPutError, err)
 	}
 	return nil
 }
@@ -115,13 +114,13 @@ func GetIndexOfBlock(db incdb.Database, hash common.Hash) (uint64, byte, error) 
 	b, err := db.Get(addPrefixToKeyHash(string(blockKeyIdxPrefix), hash))
 	//{i-[hash]}:index-shardID
 	if err != nil {
-		return 0, 0, NewRawdbError(UnexpectedError, errors.Wrap(err, "db.lvdb.get"))
+		return 0, 0, NewRawdbError(LvdbGetError, err)
 	}
 	if err := binary.Read(bytes.NewReader(b[:8]), binary.LittleEndian, &idx); err != nil {
-		return 0, 0, NewRawdbError(UnexpectedError, errors.Wrap(err, "binary.Read"))
+		return 0, 0, NewRawdbError(BinaryReaderError, err)
 	}
 	if err = binary.Read(bytes.NewReader(b[8:]), binary.LittleEndian, &shardID); err != nil {
-		return 0, 0, NewRawdbError(UnexpectedError, errors.Wrap(err, "binary.Read"))
+		return 0, 0, NewRawdbError(BinaryReaderError, err)
 	}
 	return idx, shardID, nil
 }
@@ -148,22 +147,22 @@ func DeleteBlock(db incdb.Database, hash common.Hash, idx uint64, shardID byte) 
 	// Delete block
 	err = db.Delete(keyBlockHash)
 	if err != nil {
-		return NewRawdbError(UnexpectedError, errors.Wrap(err, "db.lvdb.Delete"))
+		return NewRawdbError(LvdbDeleteError, err)
 	}
 	err = db.Delete(keyShardBlock)
 	if err != nil {
-		return NewRawdbError(UnexpectedError, errors.Wrap(err, "db.lvdb.Delete"))
+		return NewRawdbError(LvdbDeleteError, err)
 	}
 
 	// Delete block index
 	err = db.Delete(keyBlockIndex)
 	if err != nil {
-		return NewRawdbError(UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		return NewRawdbError(LvdbDeleteError, err)
 	}
 
 	err = db.Delete(buf)
 	if err != nil {
-		return NewRawdbError(UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		return NewRawdbError(LvdbDeleteError, err)
 	}
 	return nil
 }
@@ -171,7 +170,7 @@ func DeleteBlock(db incdb.Database, hash common.Hash, idx uint64, shardID byte) 
 func StoreShardBestState(db incdb.Database, v interface{}, shardID byte, bd *[]incdb.BatchData) error {
 	val, err := json.Marshal(v)
 	if err != nil {
-		return NewRawdbError(UnexpectedError, errors.Wrap(err, "json.Marshal"))
+		return NewRawdbError(JsonMarshalError, err)
 	}
 	key := append(bestBlockKeyPrefix, shardID)
 
@@ -180,7 +179,7 @@ func StoreShardBestState(db incdb.Database, v interface{}, shardID byte, bd *[]i
 		return nil
 	}
 	if err := db.Put(key, val); err != nil {
-		return NewRawdbError(UnexpectedError, errors.Wrap(err, "db.put"))
+		return NewRawdbError(LvdbPutError, err)
 	}
 	return nil
 }
@@ -189,7 +188,7 @@ func FetchShardBestState(db incdb.Database, shardID byte) ([]byte, error) {
 	key := append(bestBlockKeyPrefix, shardID)
 	block, err := db.Get(key)
 	if err != nil {
-		return nil, NewRawdbError(UnexpectedError, errors.Wrap(err, "db.get"))
+		return nil, NewRawdbError(LvdbGetError, err)
 	}
 	return block, nil
 }
@@ -199,7 +198,7 @@ func CleanShardBestState(db incdb.Database) error {
 		key := append(bestBlockKeyPrefix, shardID)
 		err := db.Delete(key)
 		if err != nil {
-			return NewRawdbError(UnexpectedError, errors.Wrap(err, "db.delete"))
+			return NewRawdbError(LvdbDeleteError, err)
 		}
 	}
 	return nil
@@ -212,12 +211,12 @@ func GetBlockByIndex(db incdb.Database, idx uint64, shardID byte) (common.Hash, 
 	// {index-shardID}: {blockhash}
 	b, err := db.Get(buf)
 	if err != nil {
-		return common.Hash{}, NewRawdbError(UnexpectedError, errors.Wrap(err, "db.lvdb.GetBlockByIndex"))
+		return common.Hash{}, NewRawdbError(LvdbGetError, err)
 	}
 	hash := new(common.Hash)
-	err1 := hash.SetBytes(b[:])
-	if err1 != nil {
-		return common.Hash{}, NewRawdbError(UnexpectedError, errors.Wrap(err, "db.lvdb.GetBlockByIndex"))
+	err = hash.SetBytes(b[:])
+	if err != nil {
+		return common.Hash{}, NewRawdbError(UnexpectedError, err)
 	}
 	return *hash, nil
 }
@@ -230,11 +229,11 @@ func StoreCommitteeFromShardBestState(db incdb.Database, shardID byte, shardHeig
 
 	val, err := json.Marshal(v)
 	if err != nil {
-		return NewRawdbError(UnexpectedError, errors.Wrap(err, "json.Marshal"))
+		return NewRawdbError(JsonMarshalError, err)
 	}
 
 	if err := db.Put(key, val); err != nil {
-		return NewRawdbError(UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
+		return NewRawdbError(LvdbPutError, err)
 	}
 	return nil
 }
@@ -247,7 +246,7 @@ func FetchCommitteeFromShardBestState(db incdb.Database, shardID byte, shardHeig
 
 	b, err := db.Get(key)
 	if err != nil {
-		return nil, NewRawdbError(UnexpectedError, errors.Wrap(err, "db.get"))
+		return nil, NewRawdbError(LvdbGetError, err)
 	}
 	return b, nil
 }

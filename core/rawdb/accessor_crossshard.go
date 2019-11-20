@@ -17,14 +17,11 @@ func StoreCrossShardNextHeight(db incdb.Database, fromShard byte, toShard byte, 
 	curHeightBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(curHeightBytes, curHeight)
 	key = append(key, curHeightBytes...)
-
 	buf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(buf, nextHeight)
-
 	if err := db.Put(key, buf); err != nil {
 		return NewRawdbError(StoreCrossShardNextHeightError, err)
 	}
-
 	return nil
 }
 
@@ -46,7 +43,6 @@ func FetchCrossShardNextHeight(db incdb.Database, fromShard byte, toShard byte, 
 	curHeightBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(curHeightBytes, curHeight)
 	key = append(key, curHeightBytes...)
-
 	if _, err := HasCrossShardNextHeight(db, key); err != nil {
 		return 0, NewRawdbError(FetchCrossShardNextHeightError, err)
 	}
@@ -56,7 +52,10 @@ func FetchCrossShardNextHeight(db incdb.Database, fromShard byte, toShard byte, 
 	}
 	var nextHeight uint64
 	err = binary.Read(bytes.NewReader(info[:8]), binary.LittleEndian, &nextHeight)
-	return nextHeight, err
+	if err != nil {
+		return 0, NewRawdbError(BinaryReaderError, err)
+	}
+	return nextHeight, nil
 }
 
 //StoreIncomingCrossShard which store crossShardHash from which shard has been include in which block height
@@ -69,13 +68,12 @@ func StoreIncomingCrossShard(db incdb.Database, shardID byte, crossShardID byte,
 	if ok, _ := db.Has(key); ok {
 		return NewRawdbError(BlockExisted, errors.Errorf("block %d already exists", blkHeight))
 	}
-
 	if bd != nil {
 		*bd = append(*bd, incdb.BatchData{key, buf})
 		return nil
 	}
 	if err := db.Put(key, buf); err != nil {
-		return NewRawdbError(UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
+		return NewRawdbError(LvdbPutError, err)
 	}
 	return nil
 }
@@ -96,11 +94,11 @@ func GetIncomingCrossShard(db incdb.Database, shardID byte, crossShardID byte, c
 	key := append(crossShardKeyPrefix, prefix...)
 	b, err := db.Get(key)
 	if err != nil {
-		return 0, NewRawdbError(UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		return 0, NewRawdbError(LvdbGetError, err)
 	}
 	var idx uint64
 	if err := binary.Read(bytes.NewReader(b[:]), binary.LittleEndian, &idx); err != nil {
-		return 0, NewRawdbError(UnexpectedError, errors.Wrap(err, "binary.Read"))
+		return 0, NewRawdbError(BinaryReaderError, err)
 	}
 	return idx, nil
 }

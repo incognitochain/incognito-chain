@@ -6,8 +6,6 @@ import (
 	"log"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/databasemp"
-	"github.com/pkg/errors"
 )
 
 // StorePrivacyCustomToken - store data about privacy custom token when init
@@ -19,7 +17,7 @@ func StorePrivacyToken(db incdb.Database, tokenID common.Hash, txHash []byte) er
 	if !ok {
 		// not exist tx about init this token
 		if err := db.Put(key, txHash); err != nil {
-			return NewRawdbError(UnexpectedError, err)
+			return NewRawdbError(LvdbPutError, err)
 		}
 	}
 	return nil
@@ -36,7 +34,7 @@ func StorePrivacyTokenTx(db incdb.Database, tokenID common.Hash, shardID byte, b
 	key = append(key, bs...)
 	log.Println(string(key))
 	if err := db.Put(key, txHash); err != nil {
-		return NewRawdbError(UnexpectedError, err)
+		return NewRawdbError(LvdbPutError, err)
 	}
 	return nil
 }
@@ -78,7 +76,7 @@ func ListPrivacyToken(db incdb.Database) ([][]byte, error) {
 	}
 	iter.Release()
 	if err := iter.Error(); err != nil {
-		return nil, databasemp.NewDatabaseMempoolError(databasemp.UnexpectedError, errors.Wrap(err, "iter.Error"))
+		return nil, NewRawdbError(LvdbIteratorError, err)
 	}
 	return result, nil
 }
@@ -95,7 +93,7 @@ func PrivacyTokenTxs(db incdb.Database, tokenID common.Hash) ([]common.Hash, err
 	}
 	iter.Release()
 	if err := iter.Error(); err != nil {
-		return nil, databasemp.NewDatabaseMempoolError(databasemp.UnexpectedError, errors.Wrap(err, "iter.Error"))
+		return nil, NewRawdbError(LvdbIteratorError, err)
 	}
 	return result, nil
 }
@@ -103,7 +101,7 @@ func PrivacyTokenTxs(db incdb.Database, tokenID common.Hash) ([]common.Hash, err
 func StorePrivacyTokenCrossShard(db incdb.Database, tokenID common.Hash, tokenValue []byte) error {
 	key := addPrefixToKeyHash(string(privacyTokenCrossShardPrefix), tokenID)
 	if err := db.Put(key, tokenValue); err != nil {
-		return NewRawdbError(UnexpectedError, err)
+		return NewRawdbError(LvdbPutError, err)
 	}
 	return nil
 }
@@ -121,7 +119,7 @@ func ListPrivacyTokenCrossShard(db incdb.Database) ([][]byte, error) {
 	}
 	iter.Release()
 	if err := iter.Error(); err != nil {
-		return nil, databasemp.NewDatabaseMempoolError(databasemp.UnexpectedError, errors.Wrap(err, "iter.Error"))
+		return nil, NewRawdbError(LvdbIteratorError, err)
 	}
 	return result, nil
 }

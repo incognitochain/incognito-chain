@@ -257,10 +257,10 @@ func StoreRewardReceiverByHeight(db incdb.Database, height uint64, v interface{}
 	key = append(key, buf[:]...)
 	val, err := json.Marshal(v)
 	if err != nil {
-		return NewRawdbError(UnexpectedError, errors.Wrap(err, "json.Marshal"))
+		return NewRawdbError(JsonMarshalError, err)
 	}
 	if err := db.Put(key, val); err != nil {
-		return NewRawdbError(UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
+		return NewRawdbError(LvdbPutError, err)
 	}
 	return nil
 }
@@ -294,11 +294,11 @@ func FetchShardCommitteeByHeight(db incdb.Database, height uint64) ([]byte, erro
 	binary.LittleEndian.PutUint64(buf, height)
 	key = append(key, buf[:]...)
 
-	b, err := db.Get(key)
+	res, err := db.Get(key)
 	if err != nil {
 		return nil, NewRawdbError(FetchShardCommitteeByHeightError, err)
 	}
-	return b, nil
+	return res, nil
 }
 
 func FetchBeaconCommitteeByHeight(db incdb.Database, height uint64) ([]byte, error) {
@@ -309,11 +309,11 @@ func FetchBeaconCommitteeByHeight(db incdb.Database, height uint64) ([]byte, err
 	binary.LittleEndian.PutUint64(buf, height)
 	key = append(key, buf[:]...)
 
-	b, err := db.Get(key)
+	res, err := db.Get(key)
 	if err != nil {
 		return nil, NewRawdbError(FetchBeaconCommitteeByHeightError, err)
 	}
-	return b, nil
+	return res, nil
 }
 
 func FetchRewardReceiverByHeight(db incdb.Database, height uint64) ([]byte, error) {
@@ -326,11 +326,11 @@ func FetchRewardReceiverByHeight(db incdb.Database, height uint64) ([]byte, erro
 	binary.LittleEndian.PutUint64(buf, height)
 	key = append(key, buf[:]...)
 
-	b, err := db.Get(key)
+	res, err := db.Get(key)
 	if err != nil {
-		return nil, NewRawdbError(UnexpectedError, errors.Wrap(err, "db.get"))
+		return nil, NewRawdbError(LvdbGetError, err)
 	}
-	return b, nil
+	return res, nil
 }
 
 func StoreAutoStakingByHeight(db incdb.Database, height uint64, v interface{}) error {
@@ -361,10 +361,9 @@ func FetchAutoStakingByHeight(db incdb.Database, height uint64) ([]byte, error) 
 	buf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(buf, height)
 	key = append(key, buf[:]...)
-
-	b, err := db.Get(key)
+	res, err := db.Get(key)
 	if err != nil {
 		return nil, NewRawdbError(FetchAutoStakingByHeightError, err)
 	}
-	return b, nil
+	return res, nil
 }

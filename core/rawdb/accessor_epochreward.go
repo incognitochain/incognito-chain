@@ -29,9 +29,9 @@ func AddShardRewardRequest(
 			*bd = append(*bd, incdb.BatchData{key, common.Uint64ToBytes(rewardAmount)})
 			return nil
 		}
-		err1 := db.Put(key, common.Uint64ToBytes(rewardAmount))
-		if err1 != nil {
-			return NewRawdbError(UnexpectedError, err1)
+		err := db.Put(key, common.Uint64ToBytes(rewardAmount))
+		if err != nil {
+			return NewRawdbError(LvdbPutError, err)
 		}
 	} else {
 		newValue, err := common.BytesToUint64(oldValue)
@@ -95,7 +95,7 @@ func AddCommitteeReward(
 	if isExist != nil {
 		err := db.Put(key, common.Uint64ToBytes(amount))
 		if err != nil {
-			return NewRawdbError(UnexpectedError, err)
+			return NewRawdbError(LvdbPutError, err)
 		}
 	} else {
 		newValue, err := common.BytesToUint64(oldValue)
