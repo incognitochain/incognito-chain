@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -33,12 +33,12 @@ func NewPDETradeResponse(
 	}
 }
 
-func (iRes PDETradeResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db incdb.DatabaseInterface) bool {
+func (iRes PDETradeResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db incdb.Database) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (iRes PDETradeResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db incdb.DatabaseInterface) (bool, error) {
+func (iRes PDETradeResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db incdb.Database) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requested tx (via RequestedTxID)
 	return false, nil
 }

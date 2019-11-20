@@ -2,15 +2,17 @@ package transaction
 
 import (
 	"errors"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/database"
-	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
+	"github.com/incognitochain/incognito-chain/core/rawdb"
 	"math"
 	"math/big"
 	"math/rand"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 )
 
 // ConvertOutputCoinToInputCoin - convert output coin from old tx to input coin for new tx
@@ -28,13 +30,13 @@ func ConvertOutputCoinToInputCoin(usableOutputsOfOld []*privacy.OutputCoin) []*p
 type RandomCommitmentsProcessParam struct {
 	usableInputCoins []*privacy.InputCoin
 	randNum          int
-	db               incdb.DatabaseInterface
+	db               incdb.Database
 	shardID          byte
 	tokenID          *common.Hash
 }
 
 func NewRandomCommitmentsProcessParam(usableInputCoins []*privacy.InputCoin, randNum int,
-	db incdb.DatabaseInterface, shardID byte, tokenID *common.Hash) *RandomCommitmentsProcessParam {
+	db incdb.Database, shardID byte, tokenID *common.Hash) *RandomCommitmentsProcessParam {
 	result := &RandomCommitmentsProcessParam{
 		tokenID:          tokenID,
 		shardID:          shardID,
@@ -70,7 +72,7 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 		listUsableCommitments[commitmentInHash] = usableCommitment
 		listUsableCommitmentsIndices[i] = commitmentInHash
 
-		index, err := param.db.GetCommitmentIndex(*param.tokenID, usableCommitment, param.shardID)
+		index, err := rawdb.GetCommitmentIndex(param.db, *param.tokenID, usableCommitment, param.shardID)
 		if err != nil {
 			Logger.log.Error(err)
 			return
@@ -82,7 +84,7 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 	// loop to random commitmentIndexs
 	cpRandNum := (len(listUsableCommitments) * param.randNum) - len(listUsableCommitments)
 	//fmt.Printf("cpRandNum: %d\n", cpRandNum)
-	lenCommitment, err1 := param.db.GetCommitmentLength(*param.tokenID, param.shardID)
+	lenCommitment, err1 := rawdb.GetCommitmentLength(param.db, *param.tokenID, param.shardID)
 	if err1 != nil {
 		Logger.log.Error(err1)
 		return
@@ -98,11 +100,11 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 	} else {
 		for i := 0; i < cpRandNum; i++ {
 			for {
-				lenCommitment, _ = param.db.GetCommitmentLength(*param.tokenID, param.shardID)
+				lenCommitment, _ = rawdb.GetCommitmentLength(param.db, *param.tokenID, param.shardID)
 				index, _ := common.RandBigIntMaxRange(lenCommitment)
-				ok, err := param.db.HasCommitmentIndex(*param.tokenID, index.Uint64(), param.shardID)
+				ok, err := rawdb.HasCommitmentIndex(param.db, *param.tokenID, index.Uint64(), param.shardID)
 				if ok && err == nil {
-					temp, _ := param.db.GetCommitmentByIndex(*param.tokenID, index.Uint64(), param.shardID)
+					temp, _ := rawdb.GetCommitmentByIndex(param.db, *param.tokenID, index.Uint64(), param.shardID)
 					if _, found := listUsableCommitments[common.HashH(temp)]; !found {
 						// random commitment not in commitments of usableinputcoin
 						commitmentIndexs = append(commitmentIndexs, index.Uint64())
@@ -132,8 +134,8 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 }
 
 // CheckSNDerivatorExistence return true if snd exists in snDerivators list
-func CheckSNDerivatorExistence(tokenID *common.Hash, snd *privacy.Scalar, db incdb.DatabaseInterface) (bool, error) {
-	ok, err := db.HasSNDerivator(*tokenID, snd.ToBytesS())
+func CheckSNDerivatorExistence(tokenID *common.Hash, snd *privacy.Scalar, db incdb.Database) (bool, error) {
+	ok, err := rawdb.HasSNDerivator(db, *tokenID, snd.ToBytesS())
 	if err != nil {
 		return false, err
 	}
@@ -245,7 +247,7 @@ type BuildCoinBaseTxByCoinIDParams struct {
 	payToAddress    *privacy.PaymentAddress
 	amount          uint64
 	payByPrivateKey *privacy.PrivateKey
-	db              incdb.DatabaseInterface
+	db              incdb.Database
 	meta            metadata.Metadata
 	coinID          common.Hash
 	txType          int
@@ -256,7 +258,7 @@ type BuildCoinBaseTxByCoinIDParams struct {
 func NewBuildCoinBaseTxByCoinIDParams(payToAddress *privacy.PaymentAddress,
 	amount uint64,
 	payByPrivateKey *privacy.PrivateKey,
-	db incdb.DatabaseInterface,
+	db incdb.Database,
 	meta metadata.Metadata,
 	coinID common.Hash,
 	txType int,

@@ -3,19 +3,6 @@ package mempool
 import (
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/database"
-	"github.com/incognitochain/incognito-chain/databasemp"
-	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/memcache"
-	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/pubsub"
-	"github.com/incognitochain/incognito-chain/transaction"
-	"github.com/incognitochain/incognito-chain/wallet"
-	"github.com/stretchr/testify/assert"
 	"log"
 	"math"
 	"path/filepath"
@@ -24,10 +11,24 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/databasemp"
+	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/memcache"
+	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/pubsub"
+	"github.com/incognitochain/incognito-chain/transaction"
+	"github.com/incognitochain/incognito-chain/wallet"
+	"github.com/stretchr/testify/assert"
 )
 
 var (
-	db               incdb.DatabaseInterface
+	db               incdb.Database
 	dbp              databasemp.DatabaseInterface
 	bc               *blockchain.BlockChain
 	pbMempool        = pubsub.NewPubSubManager()
@@ -185,7 +186,6 @@ func ResetMempoolTest() {
 	tp.pool = make(map[common.Hash]*TxDesc)
 	tp.poolSerialNumbersHashList = make(map[common.Hash][]common.Hash)
 	tp.poolSerialNumberHash = make(map[common.Hash]common.Hash)
-	tp.poolTokenID = make(map[common.Hash]string)
 	tp.poolCandidate = make(map[common.Hash]string)
 	tp.duplicateTxs = make(map[common.Hash]uint64)
 	tp.RoleInCommittees = -1
@@ -198,7 +198,7 @@ func ResetMempoolTest() {
 	tp.CRemoveTxs = cRemoveTxs
 	tp.config.DataBaseMempool.Reset()
 }
-func initTx(amount string, privateKey string, db incdb.DatabaseInterface) []metadata.Transaction {
+func initTx(amount string, privateKey string, db incdb.Database) []metadata.Transaction {
 	var initTxs []metadata.Transaction
 	var initAmount, _ = strconv.Atoi(amount) // amount init
 	testUserkeyList := []string{

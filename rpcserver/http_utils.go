@@ -49,7 +49,7 @@ func (httpServer *HttpServer) createRawTxWithMetadata(params interface{}, closeC
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
 
-	tx, err := httpServer.txService.BuildRawTransaction(createRawTxParam, meta, *httpServer.config.Database)
+	tx, err := httpServer.txService.BuildRawTransaction(createRawTxParam, meta, httpServer.GetDatabase())
 	if err != nil {
 		Logger.log.Errorf("\n\n\n\n\n\n\n createRawTxWithMetadata Error 0 %+v \n\n\n\n\n\n", err)
 		return nil, err

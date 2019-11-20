@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/core/rawdb"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/metrics"
 	peer2 "github.com/libp2p/go-libp2p-core/peer"
 	//"github.com/incognitochain/incognito-chain/metrics"
@@ -36,7 +38,6 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/transaction"
 
-	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/databasemp"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/netsync"
@@ -56,7 +57,7 @@ type Server struct {
 	chainParams       *blockchain.Params
 	connManager       *connmanager.ConnManager
 	blockChain        *blockchain.BlockChain
-	dataBase          incdb.DatabaseInterface
+	dataBase          incdb.Database
 	memCache          *memcache.MemoryCache
 	rpcServer         *rpcserver.RpcServer
 	memPool           *mempool.TxPool
@@ -184,7 +185,7 @@ func (serverObj *Server) setupRPCWsListeners() ([]net.Listener, error) {
 /*
 NewServer - create server object which control all process of node
 */
-func (serverObj *Server) NewServer(listenAddrs string, db incdb.DatabaseInterface, dbmp databasemp.DatabaseInterface, chainParams *blockchain.Params, protocolVer string, interrupt <-chan struct{}) error {
+func (serverObj *Server) NewServer(listenAddrs string, db incdb.Database, dbmp databasemp.DatabaseInterface, chainParams *blockchain.Params, protocolVer string, interrupt <-chan struct{}) error {
 	// Init data for Server
 	serverObj.protocolVersion = protocolVer
 	serverObj.chainParams = chainParams
@@ -305,7 +306,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db incdb.DatabaseInterfac
 		serverObj.feeEstimator = make(map[byte]*mempool.FeeEstimator)
 		for shardID, bestState := range serverObj.blockChain.BestState.Shard {
 			_ = bestState
-			feeEstimatorData, err := serverObj.dataBase.GetFeeEstimator(shardID)
+			feeEstimatorData, err := rawdb.GetFeeEstimator(serverObj.dataBase, shardID)
 			if err == nil && len(feeEstimatorData) > 0 {
 				feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)
 				if err != nil {
@@ -328,17 +329,17 @@ func (serverObj *Server) NewServer(listenAddrs string, db incdb.DatabaseInterfac
 			}
 		}
 	} else {
-		err := serverObj.dataBase.CleanCommitments()
+		err := rawdb.CleanCommitments(serverObj.dataBase)
 		if err != nil {
 			Logger.log.Error(err)
 			return err
 		}
-		err = serverObj.dataBase.CleanSerialNumbers()
+		err = rawdb.CleanSerialNumbers(serverObj.dataBase)
 		if err != nil {
 			Logger.log.Error(err)
 			return err
 		}
-		err = serverObj.dataBase.CleanFeeEstimator()
+		err = rawdb.CleanFeeEstimator(serverObj.dataBase)
 		if err != nil {
 			Logger.log.Error(err)
 			return err
@@ -479,7 +480,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db incdb.DatabaseInterfac
 			NodeMode:        cfg.NodeMode,
 			FeeEstimator:    serverObj.feeEstimator,
 			ProtocolVersion: serverObj.protocolVersion,
-			Database:        &serverObj.dataBase,
+			Database:        serverObj.dataBase,
 			MiningKeys:      cfg.MiningKeys,
 			NetSync:         serverObj.netSync,
 			PubSubManager:   pubsubManager,
@@ -558,7 +559,7 @@ func (serverObj *Server) Stop() error {
 		Logger.log.Infof("Fee estimator data when saving #%d", feeEstimator)
 		feeEstimatorData := feeEstimator.Save()
 		if len(feeEstimatorData) > 0 {
-			err := serverObj.dataBase.StoreFeeEstimator(feeEstimatorData, shardID)
+			err := rawdb.StoreFeeEstimator(serverObj.dataBase, feeEstimatorData, shardID)
 			if err != nil {
 				Logger.log.Errorf("Can't save fee estimator data on chain #%d: %v", shardID, err)
 			} else {

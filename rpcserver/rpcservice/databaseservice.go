@@ -1,19 +1,19 @@
 package rpcservice
 
 import (
+	"github.com/incognitochain/incognito-chain/core/rawdb"
 	"math/big"
 	"strconv"
-
-	"github.com/pkg/errors"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/pkg/errors"
 )
 
 type DatabaseService struct {
-	DB *incdb.DatabaseInterface
+	DB incdb.Database
 }
 
 func (dbService DatabaseService) CheckETHHashIssued(data map[string]interface{}) (bool, error) {
@@ -30,12 +30,12 @@ func (dbService DatabaseService) CheckETHHashIssued(data map[string]interface{})
 	txIdx := uint(txIdxParam)
 	uniqETHTx := append(blockHash[:], []byte(strconv.Itoa(int(txIdx)))...)
 
-	issued, err := (*dbService.DB).IsETHTxHashIssued(uniqETHTx)
+	issued, err := rawdb.IsETHTxHashIssued(dbService.DB, uniqETHTx)
 	return issued, err
 }
 
 func (dbService DatabaseService) GetAllBridgeTokens() ([]byte, error) {
-	allBridgeTokensBytes, err := (*dbService.DB).GetAllBridgeTokens()
+	allBridgeTokensBytes, err := rawdb.GetAllBridgeTokens(dbService.DB)
 	return allBridgeTokensBytes, err
 }
 
@@ -45,20 +45,20 @@ func (dbService DatabaseService) GetBridgeReqWithStatus(txID string) (byte, erro
 		return byte(0), err
 	}
 
-	status, err := (*dbService.DB).GetBridgeReqWithStatus(*txIDHash)
+	status, err := rawdb.GetBridgeReqWithStatus(dbService.DB, *txIDHash)
 	return status, err
 }
 
 func (dbService DatabaseService) GetBurningConfirm(txID common.Hash) (uint64, error) {
-	return (*dbService.DB).GetBurningConfirm(txID)
+	return rawdb.GetBurningConfirm(dbService.DB, txID)
 }
 
 func (dbService DatabaseService) ListSerialNumbers(tokenID common.Hash, shardID byte) (map[string]uint64, error) {
-	return (*dbService.DB).ListSerialNumber(tokenID, shardID)
+	return rawdb.ListSerialNumber(dbService.DB, tokenID, shardID)
 }
 
 func (dbService DatabaseService) ListSNDerivator(tokenID common.Hash) ([]big.Int, error) {
-	resultInBytes, err := (*dbService.DB).ListSNDerivator(tokenID)
+	resultInBytes, err := rawdb.ListSNDerivator(dbService.DB, tokenID)
 	if err != nil {
 		return nil, err
 	}
@@ -72,11 +72,11 @@ func (dbService DatabaseService) ListSNDerivator(tokenID common.Hash) ([]big.Int
 }
 
 func (dbService DatabaseService) ListCommitments(tokenID common.Hash, shardID byte) (map[string]uint64, error) {
-	return (*dbService.DB).ListCommitment(tokenID, shardID)
+	return rawdb.ListCommitment(dbService.DB, tokenID, shardID)
 }
 
 func (dbService DatabaseService) ListCommitmentIndices(tokenID common.Hash, shardID byte) (map[uint64]string, error) {
-	return (*dbService.DB).ListCommitmentIndices(tokenID, shardID)
+	return rawdb.ListCommitmentIndices(dbService.DB, tokenID, shardID)
 }
 
 func (dbService DatabaseService) HasSerialNumbers(paymentAddressStr string, serialNumbersStr []interface{}, tokenID common.Hash) ([]bool, error) {
@@ -95,7 +95,7 @@ func (dbService DatabaseService) HasSerialNumbers(paymentAddressStr string, seri
 		if err != nil {
 			return nil, errors.New("Invalid serial number param")
 		}
-		ok, _ := (*dbService.DB).HasSerialNumber(tokenID, serialNumber, shardIDSender)
+		ok, _ := rawdb.HasSerialNumber(dbService.DB, tokenID, serialNumber, shardIDSender)
 		if ok {
 			// serial number in db
 			result = append(result, true)
@@ -125,7 +125,7 @@ func (dbService DatabaseService) HasSnDerivators(paymentAddressStr string, snDer
 			return nil, errors.New("Invalid serial number derivator param")
 		}
 
-		ok, err := (*dbService.DB).HasSNDerivator(tokenID, common.AddPaddingBigInt(new(big.Int).SetBytes(snderivator), common.BigIntSize))
+		ok, err := rawdb.HasSNDerivator(dbService.DB, tokenID, common.AddPaddingBigInt(new(big.Int).SetBytes(snderivator), common.BigIntSize))
 		if ok && err == nil {
 			// SnD in db
 			result = append(result, true)
@@ -138,13 +138,13 @@ func (dbService DatabaseService) HasSnDerivators(paymentAddressStr string, snDer
 }
 
 func (dbService DatabaseService) ListRewardAmount() map[string]map[common.Hash]uint64 {
-	return (*dbService.DB).ListCommitteeReward()
+	return rawdb.ListCommitteeReward(dbService.DB)
 }
 
 func (dbService DatabaseService) GetProducersBlackList(beaconHeight uint64) (map[string]uint8, error) {
-	return (*dbService.DB).GetProducersBlackList(beaconHeight)
+	return rawdb.GetProducersBlackList(dbService.DB, beaconHeight)
 }
 
 func (dbService DatabaseService) GetPDEStatus(pdePrefix []byte, pdeSuffix []byte) (byte, error) {
-	return (*dbService.DB).GetPDEStatus(pdePrefix, pdeSuffix)
+	return rawdb.GetPDEStatus(dbService.DB, pdePrefix, pdeSuffix)
 }

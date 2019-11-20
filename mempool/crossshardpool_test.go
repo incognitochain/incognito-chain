@@ -1,17 +1,19 @@
 package mempool
 
 import (
-	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/core/rawdb"
 	"path/filepath"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incdb"
 )
 
 var (
-	dbCrossShard          incdb.DatabaseInterface
+	dbCrossShard          incdb.Database
 	bestShardStateShard1  *blockchain.ShardBestState
 	crossShardPoolMapTest = make(map[byte]*CrossShardPool)
 	crossShardBlock2      = &blockchain.CrossShardBlock{
@@ -105,19 +107,19 @@ var _ = func() (_ struct{}) {
 	if err != nil {
 		panic("Could not open db connection")
 	}
-	err = dbCrossShard.StoreCrossShardNextHeight(byte(0), byte(1), 1, 3)
+	err = rawdb.StoreCrossShardNextHeight(dbCrossShard, byte(0), byte(1), 1, 3)
 	if err != nil {
 		panic("Could not store in db")
 	}
-	err = dbCrossShard.StoreCrossShardNextHeight(byte(0), byte(1), 3, 4)
+	err = rawdb.StoreCrossShardNextHeight(dbCrossShard, byte(0), byte(1), 3, 4)
 	if err != nil {
 		panic("Could not store in db")
 	}
-	err = dbCrossShard.StoreCrossShardNextHeight(byte(0), byte(1), 4, 5)
+	err = rawdb.StoreCrossShardNextHeight(dbCrossShard, byte(0), byte(1), 4, 5)
 	if err != nil {
 		panic("Could not store in db")
 	}
-	err = dbCrossShard.StoreCrossShardNextHeight(byte(0), byte(1), 5, 7)
+	err = rawdb.StoreCrossShardNextHeight(dbCrossShard, byte(0), byte(1), 5, 7)
 	if err != nil {
 		panic("Could not store in db")
 	}

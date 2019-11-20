@@ -4,11 +4,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/core/rawdb"
 	"github.com/pkg/errors"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/aggregaterange"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/oneoutofmany"
@@ -627,7 +628,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 	return nil
 }
 
-func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, db incdb.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
+func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, db incdb.Database, shardID byte, tokenID *common.Hash) (bool, error) {
 	var sumInputValue, sumOutputValue uint64
 	sumInputValue = 0
 	sumOutputValue = 0
@@ -716,7 +717,7 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 	return true, nil
 }
 
-func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64, db incdb.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
+func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64, db incdb.Database, shardID byte, tokenID *common.Hash) (bool, error) {
 	// verify for input coins
 	cmInputSum := make([]*privacy.Point, len(proof.oneOfManyProof))
 	for i := 0; i < len(proof.oneOfManyProof); i++ {
@@ -732,13 +733,13 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 		commitments := make([]*privacy.Point, privacy.CommitmentRingSize)
 		for j := 0; j < privacy.CommitmentRingSize; j++ {
 			index := proof.commitmentIndices[i*privacy.CommitmentRingSize+j]
-			commitmentBytes, err := db.GetCommitmentByIndex(*tokenID, index, shardID)
+			commitmentBytes, err := rawdb.GetCommitmentByIndex(db, *tokenID, index, shardID)
 			privacy.Logger.Log.Infof("[TEST] commitment at index %v: %v\n", index, commitmentBytes)
 			if err != nil {
 				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF 1: Error when get commitment by index from database", index, err)
 				return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, err)
 			}
-			recheckIndex, err := db.GetCommitmentIndex(*tokenID, commitmentBytes, shardID)
+			recheckIndex, err := rawdb.GetCommitmentIndex(db, *tokenID, commitmentBytes, shardID)
 			if err != nil || recheckIndex.Uint64() != index {
 				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF 2: Error when get commitment by index from database", index, err)
 				return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, err)
@@ -820,7 +821,7 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 	return true, nil
 }
 
-func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee uint64, db incdb.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
+func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee uint64, db incdb.Database, shardID byte, tokenID *common.Hash) (bool, error) {
 	// has no privacy
 	if !hasPrivacy {
 		return proof.verifyNoPrivacy(pubKey, fee, db, shardID, tokenID)

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/core/rawdb"
 	"math"
 	"math/big"
 	"sort"
@@ -13,7 +14,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -73,7 +74,7 @@ type TxPrivacyInitParams struct {
 	inputCoins  []*privacy.InputCoin
 	fee         uint64
 	hasPrivacy  bool
-	db          incdb.DatabaseInterface
+	db          incdb.Database
 	tokenID     *common.Hash // default is nil -> use for prv coin
 	metaData    metadata.Metadata
 	info        []byte // 512 bytes
@@ -84,7 +85,7 @@ func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
 	inputCoins []*privacy.InputCoin,
 	fee uint64,
 	hasPrivacy bool,
-	db incdb.DatabaseInterface,
+	db incdb.Database,
 	tokenID *common.Hash, // default is nil -> use for prv coin
 	metaData metadata.Metadata,
 	info []byte) *TxPrivacyInitParams {
@@ -291,7 +292,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 	// get list of commitments for proving one-out-of-many from commitmentIndexs
 	commitmentProving := make([]*privacy.Point, len(commitmentIndexs))
 	for i, cmIndex := range commitmentIndexs {
-		temp, err := params.db.GetCommitmentByIndex(*params.tokenID, cmIndex, shardID)
+		temp, err := rawdb.GetCommitmentByIndex(params.db, *params.tokenID, cmIndex, shardID)
 		if err != nil {
 			Logger.log.Error(errors.New(fmt.Sprintf("can not get commitment from index=%d shardID=%+v", cmIndex, shardID)))
 			return NewTransactionErr(CanNotGetCommitmentFromIndexError, err, cmIndex, shardID)
@@ -457,7 +458,7 @@ func (tx *Tx) verifySigTx() (bool, error) {
 // ValidateTransaction returns true if transaction is valid:
 // - Verify tx signature
 // - Verify the payment proof
-func (tx *Tx) ValidateTransaction(hasPrivacy bool, db incdb.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
+func (tx *Tx) ValidateTransaction(hasPrivacy bool, db incdb.Database, shardID byte, tokenID *common.Hash) (bool, error) {
 	//hasPrivacy = false
 	Logger.log.Debugf("VALIDATING TX........\n")
 	// start := time.Now()
@@ -646,8 +647,8 @@ func (tx Tx) ListSerialNumbersHashH() []common.Hash {
 }
 
 // CheckCMExistence returns true if cm exists in cm list
-func (tx Tx) CheckCMExistence(cm []byte, db incdb.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
-	ok, err := db.HasCommitment(*tokenID, cm, shardID)
+func (tx Tx) CheckCMExistence(cm []byte, db incdb.Database, shardID byte, tokenID *common.Hash) (bool, error) {
+	ok, err := rawdb.HasCommitment(db, *tokenID, cm, shardID)
 	return ok, err
 }
 
@@ -775,7 +776,7 @@ func (tx Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
 func (tx Tx) ValidateDoubleSpendWithBlockchain(
 	bcr metadata.BlockchainRetriever,
 	shardID byte,
-	db incdb.DatabaseInterface,
+	db incdb.Database,
 	tokenID *common.Hash,
 ) error {
 
@@ -792,7 +793,7 @@ func (tx Tx) ValidateDoubleSpendWithBlockchain(
 	}
 	for i := 0; tx.Proof != nil && i < len(tx.Proof.GetInputCoins()); i++ {
 		serialNumber := tx.Proof.GetInputCoins()[i].CoinDetails.GetSerialNumber().ToBytesS()
-		ok, err := db.HasSerialNumber(*prvCoinID, serialNumber, shardID)
+		ok, err := rawdb.HasSerialNumber(db, *prvCoinID, serialNumber, shardID)
 		if ok || err != nil {
 			return errors.New("double spend")
 		}
@@ -803,7 +804,7 @@ func (tx Tx) ValidateDoubleSpendWithBlockchain(
 func (tx Tx) ValidateTxWithBlockChain(
 	bcr metadata.BlockchainRetriever,
 	shardID byte,
-	db incdb.DatabaseInterface,
+	db incdb.Database,
 ) error {
 	if tx.GetType() == common.TxRewardType || tx.GetType() == common.TxReturnStakingType {
 		return nil
@@ -1024,7 +1025,7 @@ func (tx Tx) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error) 
 
 func (tx Tx) ValidateTxByItself(
 	hasPrivacy bool,
-	db incdb.DatabaseInterface,
+	db incdb.Database,
 	bcr metadata.BlockchainRetriever,
 	shardID byte,
 ) (bool, error) {
@@ -1157,7 +1158,7 @@ func (tx *Tx) InitTxSalary(
 	salary uint64,
 	receiverAddr *privacy.PaymentAddress,
 	privKey *privacy.PrivateKey,
-	db incdb.DatabaseInterface,
+	db incdb.Database,
 	metaData metadata.Metadata,
 ) error {
 	tx.Version = txVersion
@@ -1220,13 +1221,12 @@ func (tx *Tx) InitTxSalary(
 	return nil
 }
 
-func (tx Tx) ValidateTxReturnStaking(db incdb.DatabaseInterface,
-) bool {
+func (tx Tx) ValidateTxReturnStaking(db incdb.Database) bool {
 	return true
 }
 
 func (tx Tx) ValidateTxSalary(
-	db incdb.DatabaseInterface,
+	db incdb.Database,
 ) (bool, error) {
 	// verify signature
 	valid, err := tx.verifySigTx()

@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/incdb"
 )
 
 type MetadataBase struct {
@@ -53,7 +53,7 @@ func (mb MetadataBase) CheckTransactionFee(
 	tx Transaction,
 	minFeePerKbTx uint64,
 	beaconHeight int64,
-	db incdb.DatabaseInterface,
+	db incdb.Database,
 ) bool {
 	if tx.GetType() == common.TxCustomTokenPrivacyType {
 		feeNativeToken := tx.GetTxFee()

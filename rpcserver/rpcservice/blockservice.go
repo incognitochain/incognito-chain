@@ -19,7 +19,7 @@ import (
 
 type BlockService struct {
 	BlockChain *blockchain.BlockChain
-	DB         *incdb.Database
+	DB         incdb.Database
 	TxMemPool  *mempool.TxPool
 	MemCache   *memcache.MemoryCache
 }
@@ -537,7 +537,7 @@ func (blockService BlockService) GetMinerRewardFromMiningKey(incPublicKey []byte
 	rewardAmounts := make(map[common.Hash]uint64)
 
 	for _, coinID := range allCoinIDs {
-		amount, err := rawdb.GetCommitteeReward((*blockService.DB), incPublicKey, coinID)
+		amount, err := rawdb.GetCommitteeReward((blockService.DB), incPublicKey, coinID)
 		if err != nil {
 			return nil, err
 		}
@@ -595,7 +595,7 @@ func (blockService BlockService) GetRewardAmount(paymentAddress string) (map[str
 	}
 
 	for _, coinID := range allCoinIDs {
-		amount, err := rawdb.GetCommitteeReward((*blockService.DB), publicKey, coinID)
+		amount, err := rawdb.GetCommitteeReward((blockService.DB), publicKey, coinID)
 		if err != nil {
 			return nil, NewRPCError(UnexpectedError, err)
 		}

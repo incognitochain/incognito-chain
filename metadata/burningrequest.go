@@ -10,7 +10,8 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/core/rawdb"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
@@ -50,9 +51,9 @@ func (bReq BurningRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,
-	db incdb.DatabaseInterface,
+	db incdb.Database,
 ) (bool, error) {
-	bridgeTokenExisted, err := db.IsBridgeTokenExistedByType(bReq.TokenID, false)
+	bridgeTokenExisted, err := rawdb.IsBridgeTokenExistedByType(db, bReq.TokenID, false)
 	if err != nil {
 		return false, err
 	}

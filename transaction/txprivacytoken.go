@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/incognitochain/incognito-chain/core/rawdb"
 	"math"
 	"sort"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
@@ -163,7 +164,7 @@ type TxPrivacyTokenInitParams struct {
 	inputCoin       []*privacy.InputCoin
 	feeNativeCoin   uint64
 	tokenParams     *CustomTokenPrivacyParamTx
-	db              incdb.DatabaseInterface
+	db              incdb.Database
 	metaData        metadata.Metadata
 	hasPrivacyCoin  bool
 	hasPrivacyToken bool
@@ -176,7 +177,7 @@ func NewTxPrivacyTokenInitParams(senderKey *privacy.PrivateKey,
 	inputCoin []*privacy.InputCoin,
 	feeNativeCoin uint64,
 	tokenParams *CustomTokenPrivacyParamTx,
-	db incdb.DatabaseInterface,
+	db incdb.Database,
 	metaData metadata.Metadata,
 	hasPrivacyCoin bool,
 	hasPrivacyToken bool,
@@ -297,12 +298,12 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 				//NOTICE: @merman update PropertyID calculated from hash of tokendata and shardID
 				newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), params.shardID))
 				Logger.log.Debug("New Privacy Token %+v ", newHashInitToken)
-				existed := params.db.PrivacyTokenIDExisted(newHashInitToken)
+				existed := rawdb.PrivacyTokenIDExisted(params.db, newHashInitToken)
 				if existed {
 					Logger.log.Error("INIT Tx Custom Token Privacy is Existed", newHashInitToken)
 					return NewTransactionErr(TokenIDExistedError, errors.New("this token is existed in network"))
 				}
-				existed = params.db.PrivacyTokenIDCrossShardExisted(newHashInitToken)
+				existed = rawdb.PrivacyTokenIDCrossShardExisted(params.db, newHashInitToken)
 				if existed {
 					Logger.log.Error("INIT Tx Custom Token Privacy is Existed(crossshard)", newHashInitToken)
 					return NewTransactionErr(TokenIDExistedByCrossShardError, errors.New("this token is existed in network via cross shard"))
@@ -318,8 +319,8 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 			// fee always 0 and reuse function of normal tx for custom token ID
 			temp := Tx{}
 			propertyID, _ := common.Hash{}.NewHashFromStr(params.tokenParams.PropertyID)
-			existed := params.db.PrivacyTokenIDExisted(*propertyID)
-			existedCross := params.db.PrivacyTokenIDCrossShardExisted(*propertyID)
+			existed := rawdb.PrivacyTokenIDExisted(params.db, *propertyID)
+			existedCross := rawdb.PrivacyTokenIDCrossShardExisted(params.db, *propertyID)
 			if !existed && !existedCross {
 				return NewTransactionErr(TokenIDExistedError, errors.New("invalid Token ID"))
 			}
@@ -409,7 +410,7 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) validateDoubleSpendTxWithCurren
 func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxWithBlockChain(
 	bcr metadata.BlockchainRetriever,
 	shardID byte,
-	db incdb.DatabaseInterface,
+	db incdb.Database,
 ) error {
 	err := txCustomTokenPrivacy.ValidateDoubleSpendWithBlockchain(bcr, shardID, db, nil)
 	if err != nil {
@@ -451,7 +452,7 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateSanityData(bcr metadata
 // ValidateTxByItself - validate tx by itself, check signature, proof,... and metadata
 func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxByItself(
 	hasPrivacyCoin bool,
-	db incdb.DatabaseInterface,
+	db incdb.Database,
 	bcr metadata.BlockchainRetriever,
 	shardID byte,
 ) (bool, error) {
@@ -476,7 +477,7 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxByItself(
 }
 
 // ValidateTransaction - verify proof, signature, ... of PRV and pToken
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacyCoin bool, db incdb.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
+func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacyCoin bool, db incdb.Database, shardID byte, tokenID *common.Hash) (bool, error) {
 	// validate for PRV
 	ok, err := txCustomTokenPrivacy.Tx.ValidateTransaction(hasPrivacyCoin, db, shardID, nil)
 	if ok {

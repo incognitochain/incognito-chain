@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/core/rawdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -74,7 +74,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithContractingReq(params interfa
 		return nil, err
 	}
 
-	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta, *httpServer.config.Database)
+	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta, httpServer.GetDatabase())
 	if rpcErr != nil {
 		Logger.log.Error(rpcErr)
 		return nil, rpcErr
@@ -163,7 +163,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithBurningReq(params interface{}
 		return nil, err
 	}
 
-	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta, *httpServer.config.Database)
+	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta, httpServer.GetDatabase())
 	if rpcErr != nil {
 		Logger.log.Error(rpcErr)
 		return nil, rpcErr
@@ -224,7 +224,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithIssuingETHReq(params interfac
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
 
-	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta, *httpServer.config.Database)
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta, httpServer.GetDatabase())
 	if err1 != nil {
 		Logger.log.Error(err1)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
@@ -279,7 +279,7 @@ func (httpServer *HttpServer) handleGetAllBridgeTokens(params interface{}, close
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
-	var allBridgeTokens []*lvdb.BridgeTokenInfo
+	var allBridgeTokens []*rawdb.BridgeTokenInfo
 	err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
 	if err != nil {
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)

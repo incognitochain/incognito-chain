@@ -45,7 +45,7 @@ func (blockchain *BlockChain) ValidateBlockWithPrevShardBestState(block *ShardBl
 	// }
 	// Verify parent hash exist or not
 	prevBlockHash := block.Header.PreviousBlockHash
-	parentBlockData, err := rawdb.FetchBlock(prevBlockHash)
+	parentBlockData, err := rawdb.FetchBlock(blockchain.config.DataBase, prevBlockHash)
 	if err != nil {
 		return NewBlockChainError(DatabaseError, err)
 	}

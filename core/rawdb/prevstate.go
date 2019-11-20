@@ -188,31 +188,6 @@ func DeleteTransactionIndex(db incdb.Database, txId common.Hash) error {
 
 }
 
-func DeleteNormalToken(db incdb.Database, tokenID common.Hash) error {
-	key := addPrefixToKeyHash(string(tokenInitPrefix), tokenID)
-	err := db.Delete(key)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func DeleteNormalTokenTx(db incdb.Database, tokenID common.Hash, txIndex int32, shardID byte, blockHeight uint64) error {
-	key := addPrefixToKeyHash(string(tokenPrefix), tokenID)
-	key = append(key, shardID)
-	bs := make([]byte, 8)
-	binary.LittleEndian.PutUint64(bs, bigNumber-blockHeight)
-	key = append(key, bs...)
-	bs = make([]byte, 4)
-	binary.LittleEndian.PutUint32(bs, uint32(bigNumber-txIndex))
-	key = append(key, bs...)
-	err := db.Delete(key)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func DeletePrivacyToken(db incdb.Database, tokenID common.Hash) error {
 	key := addPrefixToKeyHash(string(privacyTokenInitPrefix), tokenID)
 	err := db.Delete(key)

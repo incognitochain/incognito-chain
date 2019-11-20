@@ -5,22 +5,20 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"strconv"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/database"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
-	_ "github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/core/rawdb"
+	"github.com/incognitochain/incognito-chain/incdb"
+	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/stretchr/testify/assert"
 )
 
-var db incdb.DatabaseInterface
+var db incdb.Database
 
 var _ = func() (_ struct{}) {
 	dbPath, err := ioutil.TempDir(os.TempDir(), "test_")
@@ -60,7 +58,7 @@ func TestDb_Base(t *testing.T) {
 			t.Error(err)
 		}
 		assert.Equal(t, result[0], []byte{1}[0])
-		has, err := db.HasValue([]byte("a"))
+		has, err := db.Has([]byte("a"))
 		if err != nil {
 			t.Error(err)
 		}
@@ -70,7 +68,7 @@ func TestDb_Base(t *testing.T) {
 		assert.Equal(t, nil, err)
 		err = db.Delete([]byte("b"))
 		assert.Equal(t, nil, err)
-		has, err = db.HasValue([]byte("a"))
+		has, err = db.Has([]byte("a"))
 		assert.Equal(t, err, nil)
 		assert.Equal(t, has, false)
 
@@ -104,14 +102,14 @@ func TestDb_StoreShardBlock(t *testing.T) {
 			},
 		}
 		// test store block
-		err := db.StoreShardBlock(block, *block.Hash(), block.Header.ShardID)
+		err := rawdb.StoreShardBlock(db, block, *block.Hash(), block.Header.ShardID, &[]incdb.BatchData{})
 		assert.Equal(t, err, nil)
 
 		// test Fetch block
-		fail, err := db.FetchBlock(common.Hash{})
+		fail, err := rawdb.FetchBlock(db, common.Hash{})
 		assert.NotEqual(t, nil, err)
 		assert.Equal(t, 0, len(fail))
-		_, err = db.FetchBlock(*block.Hash())
+		_, err = rawdb.FetchBlock(db, *block.Hash())
 		assert.Equal(t, err, nil)
 		// TODO
 		//blockNew := blockchain.ShardBlock{}
@@ -120,7 +118,7 @@ func TestDb_StoreShardBlock(t *testing.T) {
 		//assert.IsEqualCommitteeKey(t, blockNew.Hash(), block.Hash())
 
 		// has block
-		has, err := db.HasBlock(*block.Hash())
+		has, err := rawdb.HasBlock(db, *block.Hash())
 		assert.Equal(t, err, nil)
 		assert.Equal(t, has, true)
 
@@ -143,17 +141,17 @@ func TestDb_StoreShardBlockIndex(t *testing.T) {
 			},
 		}
 		// test store block
-		err := db.StoreShardBlockIndex(*block.Hash(), block.Header.Height, block.Header.ShardID)
+		err := rawdb.StoreShardBlockIndex(db, *block.Hash(), block.Header.Height, block.Header.ShardID, &[]incdb.BatchData{})
 		assert.Equal(t, err, nil)
 
 		// test GetIndexOfBlock
-		blockHeigh, shardID, err := db.GetIndexOfBlock(*block.Hash())
+		blockHeigh, shardID, err := rawdb.GetIndexOfBlock(db, *block.Hash())
 		assert.Equal(t, err, nil)
 		assert.Equal(t, blockHeigh, uint64(1))
 		assert.Equal(t, shardID, uint8(3))
 
 		// GetBlockByIndex
-		hash, err := db.GetBlockByIndex(1, 3)
+		hash, err := rawdb.GetBlockByIndex(db, 1, 3)
 		assert.Equal(t, hash.String(), block.Hash().String())
 
 	} else {
@@ -171,11 +169,11 @@ func TestDb_StoreBeaconBlock(t *testing.T) {
 			},
 		}
 		// test store block
-		err := db.StoreBeaconBlock(beaconBlock, *beaconBlock.Hash())
+		err := rawdb.StoreBeaconBlock(db, beaconBlock, *beaconBlock.Hash(), &[]incdb.BatchData{})
 		assert.Equal(t, err, nil)
 
 		// test Fetch block
-		blockInBytes, err := db.FetchBeaconBlock(*beaconBlock.Hash())
+		blockInBytes, err := rawdb.FetchBeaconBlock(db, *beaconBlock.Hash())
 		assert.Equal(t, err, nil)
 		blockNew := blockchain.BeaconBlock{}
 		err = json.Unmarshal(blockInBytes, &blockNew)
@@ -183,12 +181,12 @@ func TestDb_StoreBeaconBlock(t *testing.T) {
 		assert.Equal(t, blockNew.Hash(), beaconBlock.Hash())
 
 		// has block
-		has, err := db.HasBeaconBlock(*beaconBlock.Hash())
+		has, err := rawdb.HasBeaconBlock(db, *beaconBlock.Hash())
 		assert.Equal(t, err, nil)
 		assert.Equal(t, has, true)
 
 		// delete block
-		err = db.DeleteBeaconBlock(*blockNew.Hash(), blockNew.Header.Height)
+		err = rawdb.DeleteBeaconBlock(db, *blockNew.Hash(), blockNew.Header.Height)
 		assert.Equal(t, err, nil)
 	} else {
 		t.Error("DB is not open")
@@ -205,16 +203,16 @@ func TestDb_StoreShardBlockBeaconIndex(t *testing.T) {
 			},
 		}
 		// test store block
-		err := db.StoreBeaconBlockIndex(*beaconBlock.Hash(), beaconBlock.Header.Height)
+		err := rawdb.StoreBeaconBlockIndex(db, *beaconBlock.Hash(), beaconBlock.Header.Height)
 		assert.Equal(t, err, nil)
 
 		// test GetIndexOfBlock
-		blockHeigh, err := db.GetIndexOfBeaconBlock(*beaconBlock.Hash())
+		blockHeigh, err := rawdb.GetIndexOfBeaconBlock(db, *beaconBlock.Hash())
 		assert.Equal(t, err, nil)
 		assert.Equal(t, blockHeigh, uint64(1))
 
 		// GetBlockByIndex
-		hash, err := db.GetBeaconBlockHashByIndex(1)
+		hash, err := rawdb.GetBeaconBlockHashByIndex(db, 1)
 		assert.Equal(t, hash.String(), beaconBlock.Hash().String())
 
 	} else {
@@ -225,26 +223,26 @@ func TestDb_StoreShardBlockBeaconIndex(t *testing.T) {
 //Crossshard
 func TestDb_StoreCrossShardNextHeight(t *testing.T) {
 	if db != nil {
-		err := db.StoreCrossShardNextHeight(0, 1, 1, 2)
+		err := rawdb.StoreCrossShardNextHeight(db, 0, 1, 1, 2)
 		assert.Equal(t, err, nil)
 
-		err = db.StoreCrossShardNextHeight(0, 1, 2, 0)
+		err = rawdb.StoreCrossShardNextHeight(db, 0, 1, 2, 0)
 		assert.Equal(t, err, nil)
 
-		val, err := db.FetchCrossShardNextHeight(0, 1, 1)
+		val, err := rawdb.FetchCrossShardNextHeight(db, 0, 1, 1)
 		assert.Equal(t, err, nil)
 		assert.Equal(t, uint64(val), uint64(2))
 
-		err = db.StoreCrossShardNextHeight(0, 1, 2, 4)
+		err = rawdb.StoreCrossShardNextHeight(db, 0, 1, 2, 4)
 		assert.Equal(t, err, nil)
 
-		err = db.StoreCrossShardNextHeight(0, 1, 4, 0)
+		err = rawdb.StoreCrossShardNextHeight(db, 0, 1, 4, 0)
 		assert.Equal(t, err, nil)
 
-		err = db.RestoreCrossShardNextHeights(0, 1, 2)
+		err = rawdb.RestoreCrossShardNextHeights(db, 0, 1, 2)
 		assert.Equal(t, err, nil)
 
-		val, err = db.FetchCrossShardNextHeight(0, 1, 2)
+		val, err = rawdb.FetchCrossShardNextHeight(db, 0, 1, 2)
 		assert.Equal(t, err, nil)
 		assert.Equal(t, uint64(val), uint64(0))
 
@@ -274,17 +272,17 @@ func TestDb_StoreTxIndex(t *testing.T) {
 			Version: 1,
 			Info:    []byte("Test 2"),
 		})
-		err := db.StoreTransactionIndex(*block.Body.Transactions[1].Hash(), *block.Hash(), 1)
+		err := rawdb.StoreTransactionIndex(db, *block.Body.Transactions[1].Hash(), *block.Hash(), 1, &[]incdb.BatchData{})
 		assert.Equal(t, err, nil)
 
-		blockHash, index, err := db.GetTransactionIndexById(*block.Body.Transactions[1].Hash())
+		blockHash, index, err := rawdb.GetTransactionIndexById(db, *block.Body.Transactions[1].Hash())
 		if err != nil && err.(*incdb.DatabaseError) != nil {
 			t.Error(err)
 		}
 		assert.Equal(t, blockHash, *block.Hash())
 		assert.Equal(t, index, 1)
 
-		err = db.DeleteTransactionIndex(*block.Body.Transactions[1].Hash())
+		err = rawdb.DeleteTransactionIndex(db, *block.Body.Transactions[1].Hash())
 		assert.Equal(t, err, nil)
 
 	} else {
@@ -302,16 +300,16 @@ func TestDb_StorePrevBestState(t *testing.T) {
 		}
 		tempMarshal, err := json.Marshal(bestState.Beacon)
 		assert.Equal(t, err, nil)
-		err = db.StorePrevBestState(tempMarshal, true, 0)
+		err = rawdb.StorePrevBestState(db, tempMarshal, true, 0)
 		assert.Equal(t, err, nil)
 
-		beaconInBytes, err := db.FetchPrevBestState(true, 0)
+		beaconInBytes, err := rawdb.FetchPrevBestState(db, true, 0)
 		assert.Equal(t, err, nil)
 		temp := blockchain.BeaconBestState{}
 		json.Unmarshal(beaconInBytes, &temp)
 		assert.Equal(t, bestState.Beacon.Epoch, temp.Epoch)
-		err = db.CleanBackup(true, 0)
-		_, err = db.FetchPrevBestState(true, 0)
+		err = rawdb.CleanBackup(db, true, 0)
+		_, err = rawdb.FetchPrevBestState(db, true, 0)
 		assert.NotEqual(t, err, nil)
 	} else {
 		t.Error("DB is not open")
@@ -328,19 +326,19 @@ func TestDb_StoreShardBestState(t *testing.T) {
 			Epoch: 100,
 		}
 		besState.Shard[0] = &bestStateShard
-		err := db.StoreShardBestState(bestStateShard, 0)
+		err := rawdb.StoreShardBestState(db, bestStateShard, 0, &[]incdb.BatchData{})
 		assert.Equal(t, err, nil)
 
-		temp, err := db.FetchShardBestState(0)
+		temp, err := rawdb.FetchShardBestState(db, 0)
 		assert.Equal(t, err, nil)
 		tempObject := blockchain.ShardBestState{}
 		err = json.Unmarshal(temp, &tempObject)
 		assert.Equal(t, err, nil)
 		assert.Equal(t, tempObject.Epoch, bestStateShard.Epoch)
 
-		err = db.CleanShardBestState()
+		err = rawdb.CleanShardBestState(db)
 		assert.Equal(t, err, nil)
-		_, err = db.FetchShardBestState(0)
+		_, err = rawdb.FetchShardBestState(db, 0)
 		assert.NotEqual(t, err, nil)
 	} else {
 		t.Error("DB is not open")
@@ -355,18 +353,18 @@ func TestDb_StoreBeaconBestState(t *testing.T) {
 				Epoch: 100,
 			},
 		}
-		err := db.StoreBeaconBestState(bestState)
+		err := rawdb.StoreBeaconBestState(db, bestState, &[]incdb.BatchData{})
 		assert.Equal(t, err, nil)
-		temp, err := db.FetchBeaconBestState()
+		temp, err := rawdb.FetchBeaconBestState(db)
 		assert.Equal(t, err, nil)
 		tempObject := blockchain.BestState{}
 		err = json.Unmarshal(temp, &tempObject)
 		assert.Equal(t, err, nil)
 		assert.Equal(t, tempObject.Beacon.Epoch, bestState.Beacon.Epoch)
 
-		err = db.CleanBeaconBestState()
+		err = rawdb.CleanBeaconBestState(db)
 		assert.Equal(t, err, nil)
-		_, err = db.FetchBeaconBestState()
+		_, err = rawdb.FetchBeaconBestState(db)
 		assert.NotEqual(t, err, nil)
 	} else {
 		t.Error("DB is not open")
@@ -390,25 +388,25 @@ func TestDb_StoreCommitteeByHeight(t *testing.T) {
 		bestState.Beacon.ShardCommittee[0] = make([]incognitokey.CommitteePublicKey, 0)
 		bestState.Beacon.ShardCommittee[0] = append(bestState.Beacon.ShardCommittee[0], incognitokey.CommitteePublicKey{MiningPubKey: map[string][]byte{common.BlsConsensus: []byte("committee1")}})
 		bestState.Beacon.ShardCommittee[0] = append(bestState.Beacon.ShardCommittee[0], incognitokey.CommitteePublicKey{MiningPubKey: map[string][]byte{common.BlsConsensus: []byte("committee2")}})
-		err := db.StoreShardCommitteeByHeight(block.Header.Height, bestState.Beacon.GetShardCommittee())
+		err := rawdb.StoreShardCommitteeByHeight(db, block.Header.Height, bestState.Beacon.GetShardCommittee())
 		assert.Equal(t, err, nil)
 
 		shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
-		data, err := db.FetchShardCommitteeByHeight(block.Header.Height)
+		data, err := rawdb.FetchShardCommitteeByHeight(db, block.Header.Height)
 		assert.Equal(t, err, nil)
 		err = json.Unmarshal(data, &shardCommittee)
 		assert.Equal(t, err, nil)
 		assert.Equal(t, shardCommittee[0][0].MiningPubKey[common.BlsConsensus], []byte("committee1"))
 		assert.Equal(t, shardCommittee[0][1].MiningPubKey[common.BlsConsensus], []byte("committee2"))
 
-		has, err := db.HasShardCommitteeByHeight(block.Header.Height)
+		has, err := rawdb.HasShardCommitteeByHeight(db, block.Header.Height)
 		assert.Equal(t, has, true)
 		assert.Equal(t, err, nil)
 
-		err = db.DeleteCommitteeByHeight(block.Header.Height)
+		err = rawdb.DeleteCommitteeByHeight(db, block.Header.Height)
 		assert.Equal(t, err, nil)
 
-		has, err = db.HasShardCommitteeByHeight(block.Header.Height)
+		has, err = rawdb.HasShardCommitteeByHeight(db, block.Header.Height)
 		assert.Equal(t, has, false)
 		assert.Equal(t, err, nil)
 	} else {
@@ -424,31 +422,31 @@ func TestDb_StoreSerialNumbers(t *testing.T) {
 		serialNumber = append(serialNumber, ser1)
 		serialNumber = append(serialNumber, ser2)
 		tokenID := common.Hash{}
-		err := db.StoreSerialNumbers(tokenID, serialNumber, 0)
+		err := rawdb.StoreSerialNumbers(db, tokenID, serialNumber, 0)
 		assert.Equal(t, err, nil)
 
-		has, err := db.HasSerialNumber(tokenID, ser1, 0)
+		has, err := rawdb.HasSerialNumber(db, tokenID, ser1, 0)
 		assert.Equal(t, err, nil)
 		assert.Equal(t, has, true)
 
-		err = db.BackupSerialNumbersLen(tokenID, 0)
+		err = rawdb.BackupSerialNumbersLen(db, tokenID, 0)
 		assert.Equal(t, err, nil)
 
-		err = db.RestoreSerialNumber(tokenID, 0, serialNumber)
+		err = rawdb.RestoreSerialNumber(db, tokenID, 0, serialNumber)
 		assert.Equal(t, err, nil)
-		has, err = db.HasSerialNumber(tokenID, ser1, 0)
+		has, err = rawdb.HasSerialNumber(db, tokenID, ser1, 0)
 		assert.Equal(t, err, nil)
 		assert.Equal(t, has, false)
 
-		err = db.StoreSerialNumbers(tokenID, serialNumber, 0)
+		err = rawdb.StoreSerialNumbers(db, tokenID, serialNumber, 0)
 		assert.Equal(t, err, nil)
-		has, err = db.HasSerialNumber(tokenID, ser1, 0)
+		has, err = rawdb.HasSerialNumber(db, tokenID, ser1, 0)
 		assert.Equal(t, err, nil)
 		assert.Equal(t, has, true)
 
-		err = db.CleanSerialNumbers()
+		err = rawdb.CleanSerialNumbers(db)
 		assert.Equal(t, err, nil)
-		has, err = db.HasSerialNumber(tokenID, ser1, 0)
+		has, err = rawdb.HasSerialNumber(db, tokenID, ser1, 0)
 		assert.Equal(t, err, nil)
 		assert.Equal(t, has, false)
 
@@ -467,41 +465,41 @@ func TestDb_StoreCommitments(t *testing.T) {
 		tokenID := common.Hash{}
 		publicKey := common.Hash{}
 
-		err := db.StoreCommitments(tokenID, publicKey.GetBytes(), committments, 0)
+		err := rawdb.StoreCommitments(db, tokenID, publicKey.GetBytes(), committments, 0)
 		assert.Equal(t, err, nil)
 
-		has, err := db.HasCommitment(tokenID, cm1, 0)
-		assert.Equal(t, err, nil)
-		assert.Equal(t, has, true)
-
-		has, err = db.HasCommitmentIndex(tokenID, 0, 0)
+		has, err := rawdb.HasCommitment(db, tokenID, cm1, 0)
 		assert.Equal(t, err, nil)
 		assert.Equal(t, has, true)
 
-		len, err := db.GetCommitmentLength(tokenID, 0)
+		has, err = rawdb.HasCommitmentIndex(db, tokenID, 0, 0)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, has, true)
+
+		len, err := rawdb.GetCommitmentLength(db, tokenID, 0)
 		assert.Equal(t, err, nil)
 		assert.Equal(t, len.Int64(), int64(2))
 
-		temp, err := db.GetCommitmentByIndex(tokenID, 1, 0)
+		temp, err := rawdb.GetCommitmentByIndex(db, tokenID, 1, 0)
 		assert.Equal(t, err, nil)
 		assert.Equal(t, temp, cm2)
 
-		index, err := db.GetCommitmentIndex(tokenID, cm1, 0)
+		index, err := rawdb.GetCommitmentIndex(db, tokenID, cm1, 0)
 		assert.Equal(t, err, nil)
 		assert.Equal(t, index.Uint64(), uint64(0))
 
-		err = db.BackupCommitmentsOfPubkey(tokenID, 0, publicKey.GetBytes())
+		err = rawdb.BackupCommitmentsOfPubkey(db, tokenID, 0, publicKey.GetBytes())
 		assert.Equal(t, err, nil)
 
-		err = db.RestoreCommitmentsOfPubkey(tokenID, 0, publicKey.GetBytes(), committments)
+		err = rawdb.RestoreCommitmentsOfPubkey(db, tokenID, 0, publicKey.GetBytes(), committments)
 		assert.Equal(t, err, nil)
-		has, err = db.HasSerialNumber(tokenID, cm1, 0)
+		has, err = rawdb.HasSerialNumber(db, tokenID, cm1, 0)
 		assert.Equal(t, err, nil)
 		assert.Equal(t, has, false)
 
-		err = db.CleanCommitments()
+		err = rawdb.CleanCommitments(db)
 		assert.Equal(t, err, nil)
-		has, err = db.HasCommitment(tokenID, cm1, 0)
+		has, err = rawdb.HasCommitment(db, tokenID, cm1, 0)
 		assert.Equal(t, err, nil)
 		assert.Equal(t, has, false)
 	} else {
@@ -521,14 +519,14 @@ func TestDb_StoreOutputCoins(t *testing.T) {
 		outputCoins = append(outputCoins, cm3)
 		tokenID := common.Hash{}
 		publicKey := common.Hash{}
-		err := db.StoreOutputCoins(tokenID, publicKey.GetBytes(), outputCoins, 1)
+		err := rawdb.StoreOutputCoins(db, tokenID, publicKey.GetBytes(), outputCoins, 1)
 		assert.Equal(t, err, nil)
 
-		data, err := db.GetOutcoinsByPubkey(tokenID, publicKey.GetBytes(), 1)
+		data, err := rawdb.GetOutcoinsByPubkey(db, tokenID, publicKey.GetBytes(), 1)
 		assert.Equal(t, err, nil)
 		assert.NotEqual(t, 2, len(data))
 		assert.Equal(t, 3, len(data))
-		err = db.DeleteOutputCoin(tokenID, publicKey.GetBytes(), outputCoins, 1)
+		err = rawdb.DeleteOutputCoin(db, tokenID, publicKey.GetBytes(), outputCoins, 1)
 		assert.Equal(t, err, nil)
 
 	} else {
@@ -546,16 +544,16 @@ func TestDb_StoreSNDerivators(t *testing.T) {
 		snd = append(snd, snd2)
 		tokenID := common.Hash{}
 
-		err := db.StoreSNDerivators(tokenID, snd)
+		err := rawdb.StoreSNDerivators(db, tokenID, snd)
 		assert.Equal(t, err, nil)
 
-		has, err := db.HasSNDerivator(tokenID, snd1)
+		has, err := rawdb.HasSNDerivator(db, tokenID, snd1)
 		assert.Equal(t, nil, err)
 		assert.Equal(t, true, has)
 
-		err = db.CleanSNDerivator()
+		err = rawdb.CleanSNDerivator(db)
 		assert.Equal(t, err, nil)
-		has, err = db.HasSerialNumber(tokenID, snd2, 1)
+		has, err = rawdb.HasSerialNumber(db, tokenID, snd2, 1)
 		assert.Equal(t, err, nil)
 		assert.Equal(t, has, false)
 	} else {
@@ -567,13 +565,13 @@ func TestDb_StoreSNDerivators(t *testing.T) {
 func TestDb_StoreFeeEstimator(t *testing.T) {
 	if db != nil {
 		feeEstimatorData := []byte{1, 2, 3, 4, 5}
-		err := db.StoreFeeEstimator(feeEstimatorData, 1)
+		err := rawdb.StoreFeeEstimator(db, feeEstimatorData, 1)
 		assert.Equal(t, err, nil)
-		data, err := db.GetFeeEstimator(1)
+		data, err := rawdb.GetFeeEstimator(db, 1)
 		assert.Equal(t, data, feeEstimatorData)
 		assert.Equal(t, err, nil)
-		db.CleanFeeEstimator()
-		_, err = db.GetFeeEstimator(1)
+		rawdb.CleanFeeEstimator(db)
+		_, err = rawdb.GetFeeEstimator(db, 1)
 		assert.NotEqual(t, err, nil)
 	} else {
 		t.Error("DB is not open")
@@ -585,151 +583,93 @@ func TestDb_StoreCustomToken(t *testing.T) {
 	tokenID := common.Hash{}
 	data := []byte{1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8}
 
-	err := db.StoreNormalToken(tokenID, data)
+	err := rawdb.StorePrivacyToken(db, tokenID, data)
 	assert.Equal(t, err, nil)
 
-	err = db.StorePrivacyToken(tokenID, data)
-	assert.Equal(t, err, nil)
-
-	dataTemp, err := db.ListNormalToken()
+	dataTemp, err := rawdb.ListPrivacyToken(db)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, len(dataTemp), 1)
 
-	dataTemp, err = db.ListPrivacyToken()
-	assert.Equal(t, err, nil)
-	assert.Equal(t, len(dataTemp), 1)
-
-	err = db.DeleteNormalToken(tokenID)
+	err = rawdb.DeletePrivacyToken(db, tokenID)
 	assert.Equal(t, err, nil)
 
-	err = db.DeletePrivacyToken(tokenID)
-	assert.Equal(t, err, nil)
-
-	dataTemp, err = db.ListNormalToken()
+	dataTemp, err = rawdb.ListPrivacyToken(db)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, len(dataTemp), 0)
 
-	dataTemp, err = db.ListPrivacyToken()
-	assert.Equal(t, err, nil)
-	assert.Equal(t, len(dataTemp), 0)
-
-	err = db.StoreNormalToken(tokenID, data)
+	err = rawdb.StorePrivacyToken(db, tokenID, data)
 	assert.Equal(t, err, nil)
 
-	err = db.StorePrivacyToken(tokenID, data)
-	assert.Equal(t, err, nil)
-
-	has := db.NormalTokenIDExisted(tokenID)
+	has := rawdb.PrivacyTokenIDExisted(db, tokenID)
 	assert.Equal(t, true, has)
 
-	has = db.PrivacyTokenIDExisted(tokenID)
-	assert.Equal(t, true, has)
-
-	err = db.StoreNormalTokenTx(tokenID, 0, 1, 0, data)
+	err = rawdb.StorePrivacyTokenTx(db, tokenID, 0, 1, 0, data)
 	assert.Equal(t, err, nil)
 
-	temp, err := db.NormalTokenTxs(tokenID)
+	temp, err := rawdb.PrivacyTokenTxs(db, tokenID)
 	assert.Equal(t, 1, len(temp))
 
-	err = db.DeleteNormalTokenTx(tokenID, 0, 0, 1)
+	err = rawdb.DeletePrivacyTokenTx(db, tokenID, 0, 0, 1)
 	assert.Equal(t, err, nil)
 
-	temp, err = db.NormalTokenTxs(tokenID)
-	assert.Equal(t, 0, len(temp))
-
-	err = db.StorePrivacyTokenTx(tokenID, 0, 1, 0, data)
-	assert.Equal(t, err, nil)
-
-	temp, err = db.PrivacyTokenTxs(tokenID)
-	assert.Equal(t, 1, len(temp))
-
-	err = db.DeletePrivacyTokenTx(tokenID, 0, 0, 1)
-	assert.Equal(t, err, nil)
-
-	temp, err = db.PrivacyTokenTxs(tokenID)
+	temp, err = rawdb.PrivacyTokenTxs(db, tokenID)
 	assert.Equal(t, 0, len(temp))
 
 	// custom token payment address
-	tokenKey := lvdb.TokenPaymentAddressPrefix
-	tokenKey = append(tokenKey, lvdb.Splitter...)
-	tokenKey = append(tokenKey, tokenID.String()...)
-	utxoHash := []byte{0, 0, 1}
-	voutIndex := 0
-	value := 10
-	paymentAddressKey := tokenKey
-	paymentAddressKey = append(paymentAddressKey, lvdb.Splitter...)
-	paymentAddressKey = append(paymentAddressKey, []byte("1Uv2gqs6nSLdkwrhTGZmFZJBTLSUqjWHiqLjddzuqNRbtT1dYQbtmo29B7ceJsZRQNS1rrT8eRSRAkFuMWpxpnm8JXaZmnfky3pS6rCxL")...)
-	paymentAddressKey = append(paymentAddressKey, lvdb.Splitter...)
-	paymentAddressKey = append(paymentAddressKey, utxoHash[:]...)
-	paymentAddressKey = append(paymentAddressKey, lvdb.Splitter...)
-	paymentAddressKey = append(paymentAddressKey, common.Int32ToBytes(int32(voutIndex))...)
-	paymentAddressValue := strconv.Itoa(int(value)) + string(lvdb.Splitter) + string(lvdb.Unspent) + string(lvdb.Splitter)
-	err = db.Put(paymentAddressKey, []byte(paymentAddressValue))
-	assert.Equal(t, nil, err)
-	dataBalance, err := db.GetNormalTokenPaymentAddressesBalance(tokenID)
-	assert.Equal(t, nil, err)
-	balance, ok := dataBalance["1Uv2gqs6nSLdkwrhTGZmFZJBTLSUqjWHiqLjddzuqNRbtT1dYQbtmo29B7ceJsZRQNS1rrT8eRSRAkFuMWpxpnm8JXaZmnfky3pS6rCxL"]
-	assert.Equal(t, true, ok)
-	assert.Equal(t, uint64(10), uint64(balance))
-
-	p, _, _ := base58.Base58Check{}.Decode("1Uv2gqs6nSLdkwrhTGZmFZJBTLSUqjWHiqLjddzuqNRbtT1dYQbtmo29B7ceJsZRQNS1rrT8eRSRAkFuMWpxpnm8JXaZmnfky3pS6rCxL")
-	dataUTXO, err := db.GetNormalTokenPaymentAddressUTXO(tokenID, p)
-	assert.Equal(t, nil, err)
-	assert.Equal(t, 1, len(dataUTXO))
 }
 
 func TestDb_StorePrivacyCustomTokenCrossShard(t *testing.T) {
 	tokenID := common.Hash{}
 	data := []byte{1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8}
-	err := db.StorePrivacyTokenCrossShard(tokenID, data)
+	err := rawdb.StorePrivacyTokenCrossShard(db, tokenID, data)
 	assert.Equal(t, nil, err)
 
-	result, err := db.ListPrivacyTokenCrossShard()
+	result, err := rawdb.ListPrivacyTokenCrossShard(db)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, 1, len(result))
 	assert.Equal(t, data, result[0])
 
-	has := db.PrivacyTokenIDCrossShardExisted(tokenID)
+	has := rawdb.PrivacyTokenIDCrossShardExisted(db, tokenID)
 	assert.Equal(t, true, has)
 
-	err = db.DeletePrivacyTokenCrossShard(tokenID)
+	err = rawdb.DeletePrivacyTokenCrossShard(db, tokenID)
 	assert.Equal(t, nil, err)
 }
 
 func TestDb_StoreIncomingCrossShard(t *testing.T) {
-	err := db.StoreIncomingCrossShard(0, 1, 1000, common.Hash{})
+	err := rawdb.StoreIncomingCrossShard(db, 0, 1, 1000, common.Hash{}, &[]incdb.BatchData{})
 	assert.Equal(t, nil, err)
 
-	err = db.HasIncomingCrossShard(0, 1, common.Hash{})
+	err = rawdb.HasIncomingCrossShard(db, 0, 1, common.Hash{})
 	assert.Equal(t, nil, err)
 
-	height, err := db.GetIncomingCrossShard(0, 1, common.Hash{})
+	height, err := rawdb.GetIncomingCrossShard(db, 0, 1, common.Hash{})
 	assert.Equal(t, nil, err)
 	assert.Equal(t, uint64(1000), uint64(height))
 
-	err = db.DeleteIncomingCrossShard(0, 1, common.Hash{})
+	err = rawdb.DeleteIncomingCrossShard(db, 0, 1, common.Hash{})
 	assert.Equal(t, nil, err)
 }
 
 func TestDb_StoreAcceptedShardToBeacon(t *testing.T) {
-	err := db.StoreAcceptedShardToBeacon(0, 1000, common.Hash{})
+	err := rawdb.StoreAcceptedShardToBeacon(db, 0, 1000, common.Hash{})
 	assert.Equal(t, nil, err)
 
-	err = db.HasAcceptedShardToBeacon(0, common.Hash{})
+	err = rawdb.HasAcceptedShardToBeacon(db, 0, common.Hash{})
 	assert.Equal(t, nil, err)
 
-	err = db.HasAcceptedShardToBeacon(1, common.Hash{})
+	err = rawdb.HasAcceptedShardToBeacon(db, 1, common.Hash{})
 	assert.NotEqual(t, nil, err)
 
-	height, err := db.GetAcceptedShardToBeacon(0, common.Hash{})
+	height, err := rawdb.GetAcceptedShardToBeacon(db, 0, common.Hash{})
 	assert.Equal(t, nil, err)
 	assert.Equal(t, uint64(1000), uint64(height))
 
-	height, err = db.GetAcceptedShardToBeacon(1, common.Hash{})
+	height, err = rawdb.GetAcceptedShardToBeacon(db, 1, common.Hash{})
 	assert.NotEqual(t, nil, err)
 
-	err = db.DeleteAcceptedShardToBeacon(0, common.Hash{})
+	err = rawdb.DeleteAcceptedShardToBeacon(db, 0, common.Hash{})
 	assert.Equal(t, nil, err)
-	err = db.HasAcceptedShardToBeacon(0, common.Hash{})
+	err = rawdb.HasAcceptedShardToBeacon(db, 0, common.Hash{})
 	assert.NotEqual(t, nil, err)
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/core/rawdb"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -317,7 +318,7 @@ func (shardBlock *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToB
 	block.ValidationData = shardBlock.ValidationData
 	block.Header = shardBlock.Header
 	blockInstructions := shardBlock.Body.Instructions
-	previousShardBlockByte, err := bc.config.DataBase.FetchBlock(shardBlock.Header.PreviousBlockHash)
+	previousShardBlockByte, err := rawdb.FetchBlock(bc.config.DataBase, shardBlock.Header.PreviousBlockHash)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil

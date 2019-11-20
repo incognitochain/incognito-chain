@@ -3,11 +3,11 @@ package rpcserver
 import (
 	"encoding/json"
 	"errors"
+	"github.com/incognitochain/incognito-chain/core/rawdb"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -53,7 +53,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVContribution(params interf
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
 
-	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta, *httpServer.config.Database)
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta, httpServer.GetDatabase())
 	if err1 != nil {
 		Logger.log.Error(err1)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
@@ -124,7 +124,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenContribution(params int
 		metadata.PDEContributionMeta,
 	)
 
-	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta, *httpServer.config.Database)
+	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta, httpServer.GetDatabase())
 	if rpcErr != nil {
 		Logger.log.Error(rpcErr)
 		return nil, rpcErr
@@ -208,7 +208,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVTradeReq(params interface{
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
 
-	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta, *httpServer.config.Database)
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta, httpServer.GetDatabase())
 	if err1 != nil {
 		Logger.log.Error(err1)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
@@ -297,7 +297,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenTradeReq(params interfa
 		metadata.PDETradeRequestMeta,
 	)
 
-	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta, *httpServer.config.Database)
+	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta, httpServer.GetDatabase())
 	if rpcErr != nil {
 		Logger.log.Error(rpcErr)
 		return nil, rpcErr
@@ -378,7 +378,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithWithdrawalReq(params interfac
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
 
-	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta, *httpServer.config.Database)
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta, httpServer.GetDatabase())
 	if err1 != nil {
 		Logger.log.Error(err1)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
@@ -493,7 +493,7 @@ func (httpServer *HttpServer) handleGetPDEContributionStatus(params interface{},
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload is invalid"))
 	}
-	status, err := httpServer.databaseService.GetPDEStatus(lvdb.PDEContributionStatusPrefix, []byte(contributionPairID))
+	status, err := httpServer.databaseService.GetPDEStatus(rawdb.PDEContributionStatusPrefix, []byte(contributionPairID))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
@@ -511,7 +511,7 @@ func (httpServer *HttpServer) handleGetPDETradeStatus(params interface{}, closeC
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-	status, err := httpServer.databaseService.GetPDEStatus(lvdb.PDETradeStatusPrefix, txIDHash[:])
+	status, err := httpServer.databaseService.GetPDEStatus(rawdb.PDETradeStatusPrefix, txIDHash[:])
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
@@ -529,7 +529,7 @@ func (httpServer *HttpServer) handleGetPDEWithdrawalStatus(params interface{}, c
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-	status, err := httpServer.databaseService.GetPDEStatus(lvdb.PDEWithdrawalStatusPrefix, txIDHash[:])
+	status, err := httpServer.databaseService.GetPDEStatus(rawdb.PDEWithdrawalStatusPrefix, txIDHash[:])
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}

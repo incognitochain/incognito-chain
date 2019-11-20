@@ -161,7 +161,7 @@ func FetchBeaconBestState(db incdb.Database) ([]byte, error) {
 	}
 	return block, nil
 }
-func CleanBeaconBestStatedb(db incdb.Database) error {
+func CleanBeaconBestState(db incdb.Database) error {
 	key := beaconBestBlockkeyPrefix
 	err := db.Delete(key)
 	if err != nil {

@@ -3,9 +3,9 @@ package metadata
 import (
 	"bytes"
 	"errors"
+	"github.com/incognitochain/incognito-chain/incdb"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -74,7 +74,7 @@ func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	b byte,
-	db incdb.DatabaseInterface,
+	db incdb.Database,
 ) (
 	bool,
 	error,

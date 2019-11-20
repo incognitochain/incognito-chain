@@ -9,7 +9,7 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -75,7 +75,7 @@ func (pc PDETradeRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,
-	db incdb.DatabaseInterface,
+	db incdb.Database,
 ) (bool, error) {
 	// NOTE: verify supported tokens pair as needed
 	return true, nil

@@ -4,7 +4,7 @@ import (
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/pkg/errors"
@@ -31,12 +31,12 @@ func NewReturnStaking(
 	}
 }
 
-func (sbsRes ReturnStakingMetadata) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db incdb.DatabaseInterface) bool {
+func (sbsRes ReturnStakingMetadata) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db incdb.Database) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (sbsRes ReturnStakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db incdb.DatabaseInterface) (bool, error) {
+func (sbsRes ReturnStakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db incdb.Database) (bool, error) {
 	stakingTx := bcr.GetStakingTx(shardID)
 	for key, value := range stakingTx {
 		committeePublicKey := incognitokey.CommitteePublicKey{}
