@@ -3,12 +3,12 @@ package rawdb
 import (
 	"bytes"
 	"encoding/binary"
-	"github.com/opentracing/opentracing-go/log"
-	"github.com/pkg/errors"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/opentracing/opentracing-go/log"
+	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 )
 
 func StorePrevBestState(db incdb.Database, val []byte, isBeacon bool, shardID byte) error {
@@ -49,7 +49,7 @@ func BackupCommitmentsOfPublicKey(db incdb.Database, tokenID common.Hash, shardI
 	backupKeySpec3 := append(prevkey, keySpec3...)
 	res, err := db.Get(keySpec3)
 	if err != nil {
-		if err.(*RawdbError).GetErrorCode() != ErrCodeMessage[LvdbNotFound].Code {
+		if err != lvdberr.ErrNotFound {
 			return NewRawdbError(LvdbGetError, err)
 		}
 		return nil
@@ -101,7 +101,7 @@ func RestoreCommitmentsOfPubkey(db incdb.Database, tokenID common.Hash, shardID 
 	backupKeySpec3 := append(prevkey, keySpec3...)
 	res, err := db.Get(backupKeySpec3)
 	if err != nil {
-		if err.(*RawdbError).GetErrorCode() != ErrCodeMessage[LvdbNotFound].Code {
+		if err != lvdberr.ErrNotFound {
 			return NewRawdbError(LvdbGetError, err)
 		}
 		if err := db.Delete(keySpec3); err != nil {
@@ -137,8 +137,8 @@ func BackupSerialNumbersLen(db incdb.Database, tokenID common.Hash, shardID byte
 	current = append(current, []byte("len")...)
 	res, err := db.Get(current)
 	if err != nil {
-		if err.(*RawdbError).GetErrorCode() != ErrCodeMessage[LvdbNotFound].Code {
-			return NewRawdbError(LvdbNotFound, errors.Wrap(err, "db.lvdb.Get"))
+		if err != lvdberr.ErrNotFound {
+			return NewRawdbError(LvdbGetError, err)
 		}
 		return nil
 	}
@@ -158,7 +158,7 @@ func RestoreSerialNumber(db incdb.Database, tokenID common.Hash, shardID byte, s
 	prevLenKey = append(prevLenKey, currentLenKey...)
 
 	prevLen, err := db.Get(prevLenKey)
-	if err != nil && err.(*RawdbError).GetErrorCode() != ErrCodeMessage[LvdbNotFound].Code {
+	if err != nil && err != lvdberr.ErrNotFound {
 		return NewRawdbError(LvdbGetError, err)
 	}
 	if err := db.Put(currentLenKey, prevLen); err != nil {
@@ -229,7 +229,7 @@ func RestoreCrossShardNextHeights(db incdb.Database, fromShard byte, toShard byt
 	heightKey := append(key, curHeightBytes...)
 	for {
 		nextHeightBytes, err := db.Get(heightKey)
-		if err != nil && err.(*RawdbError).GetErrorCode() != ErrCodeMessage[LvdbNotFound].Code {
+		if err != nil && err != lvdberr.ErrNotFound {
 			return NewRawdbError(LvdbGetError, err)
 		}
 		err = db.Delete(heightKey)
@@ -293,8 +293,8 @@ func BackupBridgedTokenByTokenID(db incdb.Database, tokenID common.Hash) error {
 	key := append(centralizedBridgePrefix, tokenID[:]...)
 	backupKey := getPrevPrefix(true, 0)
 	backupKey = append(backupKey, key...)
-	tokenWithAmtBytes, dbErr := db.Get(key)
-	if dbErr != nil {
+	tokenWithAmtBytes, err := db.Get(key)
+	if err != nil {
 		if err := db.Put(backupKey, []byte{}); err != nil {
 			return NewRawdbError(LvdbPutError, err)
 		}
@@ -312,7 +312,7 @@ func RestoreBridgedTokenByTokenID(db incdb.Database, tokenID common.Hash) error 
 	backupKey = append(backupKey, key...)
 
 	tokenWithAmtBytes, err := db.Get(backupKey)
-	if err != nil && err.(*RawdbError).GetErrorCode() != ErrCodeMessage[LvdbNotFound].Code {
+	if err != nil && err != lvdberr.ErrNotFound {
 		return NewRawdbError(LvdbGetError, err)
 	}
 

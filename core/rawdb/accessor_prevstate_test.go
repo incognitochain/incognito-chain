@@ -171,7 +171,7 @@ func Test_db_BackupCommitmentsOfPubkey(t *testing.T) {
 				lvdb: tt.fields.lvdb,
 			}
 			if err := db.BackupCommitmentsOfPubkey(tt.args.tokenID, tt.args.shardID, tt.args.pubkey); (err != nil) != tt.wantErr {
-				t.Errorf("db.BackupCommitmentsOfPubkey() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("db.BackupCommitmentsOfPublicKey() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
