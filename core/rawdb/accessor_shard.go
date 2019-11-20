@@ -24,7 +24,7 @@ import (
 func StoreShardBlock(db incdb.Database, v interface{}, hash common.Hash, shardID byte, bd *[]incdb.BatchData) error {
 	var (
 		// key: b-{blockhash}:block
-		keyBlockHash = addPrefixToKeyHash(string(blockKeyPrefix), hash)
+		keyBlockHash = prefixWithHashKey(string(blockKeyPrefix), hash)
 		// key: s-{shardID}b-{[blockhash]}:b-{blockhash}
 		keyShardBlock = append(append(shardIDPrefix, shardID), keyBlockHash...)
 	)
@@ -54,7 +54,7 @@ func StoreShardBlock(db incdb.Database, v interface{}, hash common.Hash, shardID
 	Query a block existence by hash. Return true if block exist otherwise false
 */
 func HasBlock(db incdb.Database, hash common.Hash) (bool, error) {
-	exists, err := db.Has(addPrefixToKeyHash(string(blockKeyPrefix), hash))
+	exists, err := db.Has(prefixWithHashKey(string(blockKeyPrefix), hash))
 	if err != nil {
 		return false, NewRawdbError(LvdbHasError, err)
 	} else {
@@ -66,7 +66,7 @@ func HasBlock(db incdb.Database, hash common.Hash) (bool, error) {
 	Query a block by hash. Return block if existence
 */
 func FetchBlock(db incdb.Database, hash common.Hash) ([]byte, error) {
-	block, err := db.Get(addPrefixToKeyHash(string(blockKeyPrefix), hash))
+	block, err := db.Get(prefixWithHashKey(string(blockKeyPrefix), hash))
 	if err != nil {
 		if err == lvdberr.ErrNotFound {
 			return nil, NewRawdbError(LvdbGetError, err)
@@ -93,12 +93,12 @@ func StoreShardBlockIndex(db incdb.Database, hash common.Hash, idx uint64, shard
 	buf[8] = shardID
 
 	if bd != nil {
-		*bd = append(*bd, incdb.BatchData{addPrefixToKeyHash(string(blockKeyIdxPrefix), hash), buf})
+		*bd = append(*bd, incdb.BatchData{prefixWithHashKey(string(blockKeyIdxPrefix), hash), buf})
 		*bd = append(*bd, incdb.BatchData{buf, hash[:]})
 		return nil
 	}
 	//{i-[hash]}:index-shardID
-	if err := db.Put(addPrefixToKeyHash(string(blockKeyIdxPrefix), hash), buf); err != nil {
+	if err := db.Put(prefixWithHashKey(string(blockKeyIdxPrefix), hash), buf); err != nil {
 		return NewRawdbError(LvdbPutError, err)
 	}
 	//{index-shardID}:[hash]
@@ -111,7 +111,7 @@ func StoreShardBlockIndex(db incdb.Database, hash common.Hash, idx uint64, shard
 func GetIndexOfBlock(db incdb.Database, hash common.Hash) (uint64, byte, error) {
 	var idx uint64
 	var shardID byte
-	b, err := db.Get(addPrefixToKeyHash(string(blockKeyIdxPrefix), hash))
+	b, err := db.Get(prefixWithHashKey(string(blockKeyIdxPrefix), hash))
 	//{i-[hash]}:index-shardID
 	if err != nil {
 		return 0, 0, NewRawdbError(LvdbGetError, err)
@@ -134,11 +134,11 @@ func DeleteBlock(db incdb.Database, hash common.Hash, idx uint64, shardID byte) 
 	var (
 		err error
 		// key: b-{blockhash}:block
-		keyBlockHash = addPrefixToKeyHash(string(blockKeyPrefix), hash)
+		keyBlockHash = prefixWithHashKey(string(blockKeyPrefix), hash)
 		// key: s-{shardID}b-{[blockhash]}:b-{blockhash}
 		keyShardBlock = append(append(shardIDPrefix, shardID), keyBlockHash...)
 		//{i-[hash]}:index-shardID
-		keyBlockIndex = addPrefixToKeyHash(string(blockKeyIdxPrefix), hash)
+		keyBlockIndex = prefixWithHashKey(string(blockKeyIdxPrefix), hash)
 	)
 	//{index-shardID}: hash
 	var buf = make([]byte, 9)

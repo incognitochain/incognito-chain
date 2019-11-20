@@ -22,7 +22,7 @@ func AddShardRewardRequest(
 	tokenID common.Hash,
 	bd *[]incdb.BatchData,
 ) error {
-	key := newKeyAddShardRewardRequest(epoch, shardID, tokenID)
+	key := addShardRewardRequestKey(epoch, shardID, tokenID)
 	oldValue, err := db.Get(key)
 	if err != nil {
 		if bd != nil {
@@ -65,7 +65,7 @@ func GetRewardOfShardByEpoch(
 	shardID byte,
 	tokenID common.Hash,
 ) (uint64, error) {
-	key := newKeyAddShardRewardRequest(epoch, shardID, tokenID)
+	key := addShardRewardRequestKey(epoch, shardID, tokenID)
 	rewardAmount, err := db.Get(key)
 	if err != nil {
 		return 0, nil
@@ -90,7 +90,7 @@ func AddCommitteeReward(
 	amount uint64,
 	tokenID common.Hash,
 ) error {
-	key := newKeyAddCommitteeReward(committeeAddress, tokenID)
+	key := addCommitteeRewardKey(committeeAddress, tokenID)
 	oldValue, isExist := db.Get(key)
 	if isExist != nil {
 		err := db.Put(key, common.Uint64ToBytes(amount))
@@ -144,7 +144,7 @@ func GetCommitteeReward(
 	committeeAddress []byte,
 	tokenID common.Hash,
 ) (uint64, error) {
-	key := newKeyAddCommitteeReward(committeeAddress, tokenID)
+	key := addCommitteeRewardKey(committeeAddress, tokenID)
 	value, isExist := db.Get(key)
 	if isExist != nil {
 		return 0, nil
@@ -171,7 +171,7 @@ func RemoveCommitteeReward(
 	tokenID common.Hash,
 	bd *[]incdb.BatchData,
 ) error {
-	key := newKeyAddCommitteeReward(committeeAddress, tokenID)
+	key := addCommitteeRewardKey(committeeAddress, tokenID)
 	oldValue, isExist := db.Get(key)
 	if isExist == nil {
 		newValue, err := common.BytesToUint64(oldValue)

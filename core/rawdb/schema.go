@@ -8,22 +8,21 @@ import (
 
 // key prefix
 var (
-	prevShardPrefix          = []byte("prevShd-")
-	prevBeaconPrefix         = []byte("prevBea-")
-	beaconPrefix             = []byte("bea-")
-	beaconBestBlockkeyPrefix = []byte("bea-bestBlock")
-	committeePrefix          = []byte("com-")
-	rewardReceiverPrefix     = []byte("rewardreceiver-")
-	heightPrefix             = []byte("height-")
-	shardIDPrefix            = []byte("s-")
-	blockKeyPrefix           = []byte("b-")
-	blockHeaderKeyPrefix     = []byte("bh-")
-	blockKeyIdxPrefix        = []byte("i-")
-	crossShardKeyPrefix      = []byte("csh-")
-	nextCrossShardKeyPrefix  = []byte("ncsh-")
-	shardPrefix              = []byte("shd-")
-	autoStakingPrefix        = []byte("aust-")
-
+	prevShardPrefix              = []byte("prevShd-")
+	prevBeaconPrefix             = []byte("prevBea-")
+	beaconPrefix                 = []byte("bea-")
+	beaconBestBlockkeyPrefix     = []byte("bea-bestBlock")
+	committeePrefix              = []byte("com-")
+	rewardReceiverPrefix         = []byte("rewardreceiver-")
+	heightPrefix                 = []byte("height-")
+	shardIDPrefix                = []byte("s-")
+	blockKeyPrefix               = []byte("b-")
+	blockHeaderKeyPrefix         = []byte("bh-")
+	blockKeyIdxPrefix            = []byte("i-")
+	crossShardKeyPrefix          = []byte("csh-")
+	nextCrossShardKeyPrefix      = []byte("ncsh-")
+	shardPrefix                  = []byte("shd-")
+	autoStakingPrefix            = []byte("aust-")
 	shardToBeaconKeyPrefix       = []byte("stb-")
 	transactionKeyPrefix         = []byte("tx-")
 	privateKeyPrefix             = []byte("prk-")
@@ -38,30 +37,23 @@ var (
 	privacyTokenCrossShardPrefix = []byte("privacy-cross-token-")
 	tokenInitPrefix              = []byte("token-init-")
 	privacyTokenInitPrefix       = []byte("privacy-token-init-")
-
 	// multisigs
 	multisigsPrefix = []byte("multisigs")
-
 	// centralized bridge
 	bridgePrefix              = []byte("bridge-")
 	centralizedBridgePrefix   = []byte("centralizedbridge-")
 	decentralizedBridgePrefix = []byte("decentralizedbridge-")
 	ethTxHashIssuedPrefix     = []byte("ethtxhashissued-")
-
 	// Incognito -> Ethereum relayer
 	burnConfirmPrefix = []byte("burnConfirm-")
-
 	//epoch reward
 	shardRequestRewardPrefix = []byte("shardrequestreward-")
 	committeeRewardPrefix    = []byte("committee-reward-")
-
 	// public variable
 	TokenPaymentAddressPrefix = []byte("token-paymentaddress-")
 	Splitter                  = []byte("-[-]-")
-
 	// slash
 	producersBlackListPrefix = []byte("producersblacklist-")
-
 	// PDE
 	WaitingPDEContributionPrefix = []byte("waitingpdecontribution-")
 	PDEPoolPrefix                = []byte("pdepool-")
@@ -70,12 +62,6 @@ var (
 	PDEContributionStatusPrefix  = []byte("pdecontributionstatus-")
 	PDETradeStatusPrefix         = []byte("pdetradestatus-")
 	PDEWithdrawalStatusPrefix    = []byte("pdewithdrawalstatus-")
-)
-
-// value
-var (
-	Spent   = []byte("spent")
-	Unspent = []byte("unspent")
 )
 
 // TODO - change json to CamelCase
@@ -101,7 +87,7 @@ type PDEPoolForPair struct {
 	Token2PoolValue uint64
 }
 
-func addPrefixToKeyHash(keyType string, keyHash common.Hash) []byte {
+func prefixWithHashKey(keyType string, keyHash common.Hash) []byte {
 	var dbkey []byte
 	switch keyType {
 	case string(blockKeyPrefix):
@@ -137,6 +123,16 @@ func getBridgePrefix(isCentralized bool) []byte {
 	return decentralizedBridgePrefix
 }
 
+func getPrevPrefix(isBeacon bool, shardID byte) []byte {
+	key := []byte{}
+	if isBeacon {
+		key = append(key, prevBeaconPrefix...)
+	} else {
+		key = append(key, append(prevShardPrefix, append([]byte{shardID}, byte('-'))...)...)
+	}
+	return key
+}
+
 /**
  * NewKeyAddShardRewardRequest create a key for store reward of a shard X at epoch T in db.
  * @param epoch: epoch T
@@ -144,11 +140,7 @@ func getBridgePrefix(isCentralized bool) []byte {
  * @param tokenID: currency unit
  * @return ([]byte, error): Key, error of this process
  */
-func newKeyAddShardRewardRequest(
-	epoch uint64,
-	shardID byte,
-	tokenID common.Hash,
-) []byte {
+func addShardRewardRequestKey(epoch uint64, shardID byte, tokenID common.Hash) []byte {
 	res := []byte{}
 	res = append(res, shardRequestRewardPrefix...)
 	res = append(res, common.Uint64ToBytes(epoch)...)
@@ -163,10 +155,7 @@ func newKeyAddShardRewardRequest(
  * @param tokenID: currency unit
  * @return ([]byte, error): Key, error of this process
  */
-func newKeyAddCommitteeReward(
-	committeeAddress []byte,
-	tokenID common.Hash,
-) []byte {
+func addCommitteeRewardKey(committeeAddress []byte, tokenID common.Hash) []byte {
 	res := []byte{}
 	res = append(res, committeeRewardPrefix...)
 	res = append(res, committeeAddress...)
@@ -174,20 +163,7 @@ func newKeyAddCommitteeReward(
 	return res
 }
 
-func getPrevPrefix(isBeacon bool, shardID byte) []byte {
-	key := []byte{}
-	if isBeacon {
-		key = append(key, prevBeaconPrefix...)
-	} else {
-		key = append(key, append(prevShardPrefix, append([]byte{shardID}, byte('-'))...)...)
-	}
-	return key
-}
-
-func BuildPDEStatusKey(
-	prefix []byte,
-	suffix []byte,
-) []byte {
+func BuildPDEStatusKey(prefix []byte, suffix []byte) []byte {
 	return append(prefix, suffix...)
 }
 

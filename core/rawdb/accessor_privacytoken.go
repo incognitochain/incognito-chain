@@ -12,7 +12,7 @@ import (
 // Key: privacy-token-init-{tokenID}
 // Value: txHash
 func StorePrivacyToken(db incdb.Database, tokenID common.Hash, txHash []byte) error {
-	key := addPrefixToKeyHash(string(privacyTokenInitPrefix), tokenID) // token-init-{tokenID}
+	key := prefixWithHashKey(string(privacyTokenInitPrefix), tokenID) // token-init-{tokenID}
 	ok, _ := db.Has(key)
 	if !ok {
 		// not exist tx about init this token
@@ -24,7 +24,7 @@ func StorePrivacyToken(db incdb.Database, tokenID common.Hash, txHash []byte) er
 }
 
 func StorePrivacyTokenTx(db incdb.Database, tokenID common.Hash, shardID byte, blockHeight uint64, txIndex int32, txHash []byte) error {
-	key := addPrefixToKeyHash(string(privacyTokenPrefix), tokenID) // token-{tokenID}-shardID-(999999999-blockHeight)-(999999999-txIndex)
+	key := prefixWithHashKey(string(privacyTokenPrefix), tokenID) // token-{tokenID}-shardID-(999999999-blockHeight)-(999999999-txIndex)
 	key = append(key, shardID)
 	bs := make([]byte, 8)
 	binary.LittleEndian.PutUint64(bs, bigNumber-blockHeight)
@@ -40,7 +40,7 @@ func StorePrivacyTokenTx(db incdb.Database, tokenID common.Hash, shardID byte, b
 }
 
 func PrivacyTokenIDExisted(db incdb.Database, tokenID common.Hash) bool {
-	key := addPrefixToKeyHash(string(privacyTokenInitPrefix), tokenID) // token-init-{tokenID}
+	key := prefixWithHashKey(string(privacyTokenInitPrefix), tokenID) // token-init-{tokenID}
 	data, err := db.Get(key)
 	if err != nil {
 		return false
@@ -52,7 +52,7 @@ func PrivacyTokenIDExisted(db incdb.Database, tokenID common.Hash) bool {
 }
 
 func PrivacyTokenIDCrossShardExisted(db incdb.Database, tokenID common.Hash) bool {
-	key := addPrefixToKeyHash(string(privacyTokenCrossShardPrefix), tokenID)
+	key := prefixWithHashKey(string(privacyTokenCrossShardPrefix), tokenID)
 	data, err := db.Get(key)
 	if err != nil {
 		return false
@@ -83,7 +83,7 @@ func ListPrivacyToken(db incdb.Database) ([][]byte, error) {
 
 func PrivacyTokenTxs(db incdb.Database, tokenID common.Hash) ([]common.Hash, error) {
 	result := make([]common.Hash, 0)
-	key := addPrefixToKeyHash(string(privacyTokenPrefix), tokenID)
+	key := prefixWithHashKey(string(privacyTokenPrefix), tokenID)
 	// PubKey = token-{tokenID}
 	iter := db.NewIteratorWithPrefix(key)
 	for iter.Next() {
@@ -99,7 +99,7 @@ func PrivacyTokenTxs(db incdb.Database, tokenID common.Hash) ([]common.Hash, err
 }
 
 func StorePrivacyTokenCrossShard(db incdb.Database, tokenID common.Hash, tokenValue []byte) error {
-	key := addPrefixToKeyHash(string(privacyTokenCrossShardPrefix), tokenID)
+	key := prefixWithHashKey(string(privacyTokenCrossShardPrefix), tokenID)
 	if err := db.Put(key, tokenValue); err != nil {
 		return NewRawdbError(LvdbPutError, err)
 	}

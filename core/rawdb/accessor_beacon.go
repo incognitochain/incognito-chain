@@ -14,7 +14,7 @@ import (
 func StoreBeaconBlock(db incdb.Database, v interface{}, hash common.Hash, bd *[]incdb.BatchData) error {
 	var (
 		// b-{hash}
-		keyBlockHash = addPrefixToKeyHash(string(blockKeyPrefix), hash)
+		keyBlockHash = prefixWithHashKey(string(blockKeyPrefix), hash)
 		// bea-b-{hash}
 		keyBeaconBlock = append(append(beaconPrefix, blockKeyPrefix...), hash[:]...)
 	)
@@ -61,7 +61,7 @@ func FetchBeaconBlock(db incdb.Database, hash common.Hash) ([]byte, error) {
 		return []byte{}, NewRawdbError(FetchBeaconBlockError, err)
 	}
 	// b-{hash}
-	keyBlockHash := addPrefixToKeyHash(string(blockKeyPrefix), hash)
+	keyBlockHash := prefixWithHashKey(string(blockKeyPrefix), hash)
 	block, err := db.Get(keyBlockHash)
 	if err != nil {
 		return nil, NewRawdbError(FetchBeaconBlockError, err)
@@ -108,7 +108,7 @@ func DeleteBeaconBlock(db incdb.Database, hash common.Hash, idx uint64) error {
 		// bea-b-{hash}
 		keyBeaconBlock = append(append(beaconPrefix, blockKeyPrefix...), hash[:]...)
 		// b-{hash}
-		keyBlockHash = addPrefixToKeyHash(string(blockKeyPrefix), hash)
+		keyBlockHash = prefixWithHashKey(string(blockKeyPrefix), hash)
 	)
 	err := db.Delete(keyBeaconBlock)
 	if err != nil {

@@ -43,7 +43,7 @@ func CleanBackup(db incdb.Database, isBeacon bool, shardID byte) error {
 func BackupCommitmentsOfPublicKey(db incdb.Database, tokenID common.Hash, shardID byte, pubkey []byte) error {
 	//backup keySpec3 & keySpec4
 	prevkey := getPrevPrefix(false, shardID)
-	key := addPrefixToKeyHash(string(commitmentsPrefix), tokenID)
+	key := prefixWithHashKey(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)
 	keySpec3 := append(key, []byte("len")...)
 	backupKeySpec3 := append(prevkey, keySpec3...)
@@ -64,7 +64,7 @@ func RestoreCommitmentsOfPubkey(db incdb.Database, tokenID common.Hash, shardID 
 	// restore keySpec3 & keySpec4
 	// delete keySpec1 & keySpec2
 	prevkey := getPrevPrefix(false, shardID)
-	key := addPrefixToKeyHash(string(commitmentsPrefix), tokenID)
+	key := prefixWithHashKey(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)
 
 	var lenData uint64
@@ -117,7 +117,7 @@ func RestoreCommitmentsOfPubkey(db incdb.Database, tokenID common.Hash, shardID 
 }
 
 func DeleteOutputCoin(db incdb.Database, tokenID common.Hash, publicKey []byte, outputCoinArr [][]byte, shardID byte) error {
-	key := addPrefixToKeyHash(string(outcoinsPrefix), tokenID)
+	key := prefixWithHashKey(string(outcoinsPrefix), tokenID)
 	key = append(key, shardID)
 
 	key = append(key, publicKey...)
@@ -132,7 +132,7 @@ func DeleteOutputCoin(db incdb.Database, tokenID common.Hash, publicKey []byte, 
 }
 
 func BackupSerialNumbersLen(db incdb.Database, tokenID common.Hash, shardID byte) error {
-	current := addPrefixToKeyHash(string(serialNumbersPrefix), tokenID)
+	current := prefixWithHashKey(string(serialNumbersPrefix), tokenID)
 	current = append(current, shardID)
 	current = append(current, []byte("len")...)
 	res, err := db.Get(current)
@@ -151,7 +151,7 @@ func BackupSerialNumbersLen(db incdb.Database, tokenID common.Hash, shardID byte
 }
 
 func RestoreSerialNumber(db incdb.Database, tokenID common.Hash, shardID byte, serialNumbers [][]byte) error {
-	key := addPrefixToKeyHash(string(serialNumbersPrefix), tokenID)
+	key := prefixWithHashKey(string(serialNumbersPrefix), tokenID)
 	key = append(key, shardID)
 	currentLenKey := append(key, []byte("len")...)
 	prevLenKey := getPrevPrefix(false, shardID)
@@ -186,7 +186,7 @@ func DeleteTransactionIndex(db incdb.Database, txId common.Hash) error {
 }
 
 func DeletePrivacyToken(db incdb.Database, tokenID common.Hash) error {
-	key := addPrefixToKeyHash(string(privacyTokenInitPrefix), tokenID)
+	key := prefixWithHashKey(string(privacyTokenInitPrefix), tokenID)
 	err := db.Delete(key)
 	if err != nil {
 		return NewRawdbError(LvdbDeleteError, err)
@@ -195,7 +195,7 @@ func DeletePrivacyToken(db incdb.Database, tokenID common.Hash) error {
 }
 
 func DeletePrivacyTokenTx(db incdb.Database, tokenID common.Hash, txIndex int32, shardID byte, blockHeight uint64) error {
-	key := addPrefixToKeyHash(string(privacyTokenPrefix), tokenID)
+	key := prefixWithHashKey(string(privacyTokenPrefix), tokenID)
 	key = append(key, shardID)
 	bs := make([]byte, 8)
 	binary.LittleEndian.PutUint64(bs, bigNumber-blockHeight)
@@ -211,7 +211,7 @@ func DeletePrivacyTokenTx(db incdb.Database, tokenID common.Hash, txIndex int32,
 }
 
 func DeletePrivacyTokenCrossShard(db incdb.Database, tokenID common.Hash) error {
-	key := addPrefixToKeyHash(string(privacyTokenCrossShardPrefix), tokenID)
+	key := prefixWithHashKey(string(privacyTokenCrossShardPrefix), tokenID)
 	err := db.Delete(key)
 	if err != nil {
 		return NewRawdbError(LvdbDeleteError, err)
@@ -326,7 +326,7 @@ func RestoreBridgedTokenByTokenID(db incdb.Database, tokenID common.Hash) error 
 
 func BackupShardRewardRequest(db incdb.Database, epoch uint64, shardID byte, tokenID common.Hash) error {
 	backupKey := getPrevPrefix(true, 0)
-	key := newKeyAddShardRewardRequest(epoch, shardID, tokenID)
+	key := addShardRewardRequestKey(epoch, shardID, tokenID)
 	backupKey = append(backupKey, key...)
 	curValue, err := db.Get(key)
 	if err != nil {
@@ -345,7 +345,7 @@ func BackupShardRewardRequest(db incdb.Database, epoch uint64, shardID byte, tok
 }
 func BackupCommitteeReward(db incdb.Database, committeeAddress []byte, tokenID common.Hash) error {
 	backupKey := getPrevPrefix(true, 0)
-	key := newKeyAddCommitteeReward(committeeAddress, tokenID)
+	key := addCommitteeRewardKey(committeeAddress, tokenID)
 	backupKey = append(backupKey, key...)
 	curValue, err := db.Get(key)
 	if err != nil {
@@ -364,7 +364,7 @@ func BackupCommitteeReward(db incdb.Database, committeeAddress []byte, tokenID c
 }
 func RestoreShardRewardRequest(db incdb.Database, epoch uint64, shardID byte, tokenID common.Hash) error {
 	backupKey := getPrevPrefix(true, 0)
-	key := newKeyAddShardRewardRequest(epoch, shardID, tokenID)
+	key := addShardRewardRequestKey(epoch, shardID, tokenID)
 	backupKey = append(backupKey, key...)
 	bakValue, err := db.Get(backupKey)
 	if err != nil {
@@ -379,7 +379,7 @@ func RestoreShardRewardRequest(db incdb.Database, epoch uint64, shardID byte, to
 }
 func RestoreCommitteeReward(db incdb.Database, committeeAddress []byte, tokenID common.Hash) error {
 	backupKey := getPrevPrefix(true, 0)
-	key := newKeyAddCommitteeReward(committeeAddress, tokenID)
+	key := addCommitteeRewardKey(committeeAddress, tokenID)
 	backupKey = append(backupKey, key...)
 	bakValue, err := db.Get(backupKey)
 	if err != nil {
