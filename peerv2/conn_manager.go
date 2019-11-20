@@ -451,9 +451,9 @@ func processSubscriptionMessage(inbox chan *pubsub.Message, sub *pubsub.Subscrip
 	for {
 		// TODO(@0xbunyip): check if topic is unsubbed then return, otherwise just continue
 		msg, err := sub.Next(ctx)
-		if err != nil {
+		if err != nil { // Subscription might have been cancelled
 			log.Println(err)
-			continue
+			return
 		}
 
 		inbox <- msg
