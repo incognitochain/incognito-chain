@@ -868,8 +868,13 @@ if [ "$1" == "fullnode" ]; then
 ./incognito --discoverpeersaddress "0.0.0.0:9330" --relayshards "0 1" --datadir "data/relaynode" --listen "0.0.0.0:9463" --externaladdress "0.0.0.0:9463" --norpcauth --rpclisten "0.0.0.0:9363"
 fi
 
-# masternode: (using st2 miningkeys)
+# masternode: (using shard9 privatekey)
 if [ "$1" == "masternode" ]; then
 ./incognito --discoverpeersaddress "0.0.0.0:9330" --relayshards "all" --datadir "data/masternode" --listen "0.0.0.0:9998" --externaladdress "0.0.0.0:9998" --norpcauth --rpclisten "0.0.0.0:9999" --loglevel info --libp2pprivatekey "CAMSeTB3AgEBBCCGewUjqizjTjLNdHfij13yll2yRQGOAOF/NzOkGDSvPaAKBggqhkjOPQMBB6FEA0IABNRXIZhVbIPhkuEl2SlSrDo6MSMqerEd3dhi1EwGSASQvDs0oETOapH5xhzVcHUdRbLgU5KUgI9I1DrWjMy5Vjc="
+fi
+
+# staker: (using shard9 privatekey) 112t8rnXJv7SgaEk9pDUMQu9eL5ToPMruMN5yX3RjxqHSS7tN1CBxJoEXCevsAqdEyiwQcpwof8eH9PADpE5a6cE2JghbX1gkpVufRRSh6EC
+if [ "$1" == "st1" ]; then
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXJv7SgaEk9pDUMQu9eL5ToPMruMN5yX3RjxqHSS7tN1CBxJoEXCevsAqdEyiwQcpwof8eH9PADpE5a6cE2JghbX1gkpVufRRSh6EC" --nodemode "auto" --datadir "data/st1" --listen "0.0.0.0:9988" --externaladdress "0.0.0.0:9988" --norpcauth --rpclisten "0.0.0.0:9989" --loglevel info
 fi
 
