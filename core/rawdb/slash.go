@@ -3,10 +3,9 @@ package rawdb
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/incdb"
-
 	"github.com/pkg/errors"
-
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 )
 

@@ -52,9 +52,11 @@ func open(dbPath string) (incdb.Database, error) {
 	if err != nil {
 		return nil, incdb.NewDatabaseError(incdb.OpenDbErr, errors.Wrapf(err, "levelvdb.OpenFile %s", dbPath))
 	}
-	return &db{lvdb: lvdb}, nil
+	return &db{fn: dbPath, lvdb: lvdb}, nil
 }
-
+func (db *db) GetPath() string {
+	return db.fn
+}
 func (db *db) Close() error {
 	return errors.Wrap(db.lvdb.Close(), "db.lvdb.Close")
 }
