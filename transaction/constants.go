@@ -6,15 +6,14 @@ const (
 )
 
 const (
-	CustomTokenInit = iota
-	CustomTokenTransfer
-	CustomTokenCrossShard
+	TokenInit = iota
+	TokenTransfer
+	TokenCrossShard
 )
 
 const (
 	NormalCoinType = iota
-	CustomTokenType
-	CustomTokenPrivacyType
+	TokenPrivacyType
 )
 
 const MaxSizeInfo = 512

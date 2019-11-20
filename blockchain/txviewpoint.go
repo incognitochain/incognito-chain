@@ -27,16 +27,10 @@ type TxViewPoint struct {
 	// use to fetch output coin
 	mapOutputCoins map[string][]privacy.OutputCoin
 
-	// data of NORMAL custom token
-	customTokenTxs map[int32]*transaction.TxNormalToken
-
 	// data of PRIVACY custom token
 	privacyCustomTokenViewPoint map[int32]*TxViewPoint // sub tx viewpoint for token
 	privacyCustomTokenTxs       map[int32]*transaction.TxCustomTokenPrivacy
 	privacyCustomTokenMetadata  *CrossShardTokenPrivacyMetaData
-
-	//cross shard tx token
-	crossTxTokenData map[int32]*transaction.TxNormalTokenData
 
 	// use to fetch tx - pubkey
 	txByPubKey map[string]interface{} // map[base58check.encode{pubkey}+"_"+base58check.encode{txid})
@@ -181,38 +175,6 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 					}
 				}
 			}
-		case common.TxCustomTokenType:
-			{
-				tx := tx.(*transaction.TxNormalToken)
-				serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(block.Header.ShardID, db, tx.Proof, prvCoinID)
-				if err != nil {
-					return NewBlockChainError(UnExpectedError, err)
-				}
-				acceptedSerialNumbers = append(acceptedSerialNumbers, serialNumbers...)
-				for pubkey, data := range commitments {
-					if acceptedCommitments[pubkey] == nil {
-						acceptedCommitments[pubkey] = make([][]byte, 0)
-					}
-					acceptedCommitments[pubkey] = append(acceptedCommitments[pubkey], data...)
-					view.txByPubKey[pubkey+"_"+base58.Base58Check{}.Encode(tx.Hash().GetBytes(), 0x0)+"_"+strconv.Itoa(int(block.Header.ShardID))] = true
-				}
-				for pubkey, data := range outCoins {
-					if acceptedOutputcoins[pubkey] == nil {
-						acceptedOutputcoins[pubkey] = make([]privacy.OutputCoin, 0)
-					}
-					acceptedOutputcoins[pubkey] = append(acceptedOutputcoins[pubkey], data...)
-				}
-				for pubkey, data := range snDs {
-					if snDs[pubkey] == nil {
-						snDs[pubkey] = make([]privacy.Scalar, 0)
-					}
-					snDs[pubkey] = append(snDs[pubkey], data...)
-				}
-				// acceptedSnD = append(acceptedSnD, snDs...)
-
-				// indexTx is index of transaction in block
-				view.customTokenTxs[int32(indexTx)] = tx
-			}
 		case common.TxCustomTokenPrivacyType:
 			{
 				tx := tx.(*transaction.TxCustomTokenPrivacy)
@@ -315,14 +277,11 @@ func NewTxViewPoint(shardID byte) *TxViewPoint {
 		mapCommitments:              make(map[string][][]byte),
 		mapOutputCoins:              make(map[string][]privacy.OutputCoin),
 		mapSnD:                      make(map[string][][]byte),
-		customTokenTxs:              make(map[int32]*transaction.TxNormalToken),
 		tokenID:                     &common.Hash{},
 		privacyCustomTokenViewPoint: make(map[int32]*TxViewPoint),
 		privacyCustomTokenTxs:       make(map[int32]*transaction.TxCustomTokenPrivacy),
 		privacyCustomTokenMetadata:  &CrossShardTokenPrivacyMetaData{},
-		crossTxTokenData:            make(map[int32]*transaction.TxNormalTokenData),
-
-		txByPubKey: make(map[string]interface{}),
+		txByPubKey:                  make(map[string]interface{}),
 	}
 	result.tokenID.SetBytes(common.PRVCoinID[:])
 	return result

@@ -131,17 +131,6 @@ type DatabaseInterface interface {
 	GetFeeEstimator(shardID byte) ([]byte, error)
 	CleanFeeEstimator() error
 
-	// Normal token
-	StoreNormalToken(tokenID common.Hash, data []byte) error // store normal token. Param: tokenID, txInitToken-id, data tx
-	DeleteNormalToken(tokenID common.Hash) error
-	StoreNormalTokenTx(tokenID common.Hash, shardID byte, blockHeight uint64, txIndex int32, data []byte) error // store normal token tx. Param: tokenID, shardID, block height, tx-id, data tx
-	DeleteNormalTokenTx(tokenID common.Hash, txIndex int32, shardID byte, blockHeight uint64) error
-	ListNormalToken() ([][]byte, error)                                                                     // get list all normal token which issued in network, return init tx hash
-	NormalTokenIDExisted(tokenID common.Hash) bool                                                          // check tokenID existed in network, return init tx hash
-	NormalTokenTxs(tokenID common.Hash) ([]common.Hash, error)                                              // from token id get all normal txs
-	GetNormalTokenPaymentAddressUTXO(tokenID common.Hash, paymentAddress []byte) (map[string]string, error) // get list of utxo of an paymentaddress.pubkey of a token
-	GetNormalTokenPaymentAddressesBalance(tokenID common.Hash) (map[string]uint64, error)                   // get balance of all paymentaddress of a token (only return payment address with balance > 0)
-
 	// privacy token
 	StorePrivacyToken(tokenID common.Hash, data []byte) error // store privacy token. Param: tokenID, txInitToken-id, data tx
 	DeletePrivacyToken(tokenID common.Hash) error

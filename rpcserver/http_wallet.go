@@ -297,20 +297,6 @@ func (httpServer *HttpServer) handleSetTxFee(params interface{}, closeChan <-cha
 	return err == nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 }
 
-// handleListCustomToken - return list all custom token in network
-func (httpServer *HttpServer) handleListCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	temps, err := httpServer.blockService.ListCustomToken()
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	result := jsonresult.ListCustomToken{ListCustomToken: []jsonresult.CustomToken{}}
-	for _, token := range temps {
-		item := jsonresult.NewNormalToken(token)
-		result.ListCustomToken = append(result.ListCustomToken, *item)
-	}
-	return result, nil
-}
-
 func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	listPrivacyToken, listPrivacyTokenCrossShard, err := httpServer.blockService.ListPrivacyCustomTokenCached()
 	if err != nil {

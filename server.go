@@ -724,19 +724,6 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 							serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
 						}
 					}
-				case common.TxCustomTokenType:
-					{
-						txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)
-						if err != nil {
-							continue
-						}
-						customTokenTx := tx.(*transaction.TxNormalToken)
-						txMsg.(*wire.MessageTxToken).Transaction = customTokenTx
-						err = serverObj.PushMessageToAll(txMsg)
-						if err == nil {
-							serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
-						}
-					}
 				case common.TxCustomTokenPrivacyType:
 					{
 						txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
@@ -886,7 +873,6 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 			OnCrossShard:       serverObj.OnCrossShard,
 			OnShardToBeacon:    serverObj.OnShardToBeacon,
 			OnTx:               serverObj.OnTx,
-			OnTxToken:          serverObj.OnTxToken,
 			OnTxPrivacyToken:   serverObj.OnTxPrivacyToken,
 			OnVersion:          serverObj.OnVersion,
 			OnGetBlockBeacon:   serverObj.OnGetBlockBeacon,
@@ -1005,15 +991,6 @@ func (serverObj *Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
 	//<-txProcessed
 
 	Logger.log.Debug("Receive a new transaction END")
-}
-
-func (serverObj *Server) OnTxToken(peer *peer.PeerConn, msg *wire.MessageTxToken) {
-	Logger.log.Debug("Receive a new transaction(normal token) START")
-	var txProcessed chan struct{}
-	serverObj.netSync.QueueTxToken(nil, msg, txProcessed)
-	//<-txProcessed
-
-	Logger.log.Debug("Receive a new transaction(normal token) END")
 }
 
 func (serverObj *Server) OnTxPrivacyToken(peer *peer.PeerConn, msg *wire.MessageTxPrivacyToken) {

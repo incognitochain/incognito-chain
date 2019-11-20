@@ -46,23 +46,6 @@ func (tp *TxPool) addTransactionToDatabaseMempool(txHash *common.Hash, txDesc Tx
 				return err
 			}
 		}
-	//==================For PRV & TxNormalToken Transfer
-	case common.TxCustomTokenType:
-		{
-			customTokenTx := tx.(*transaction.TxNormalToken)
-			valueTx, err := json.Marshal(customTokenTx)
-			if err != nil {
-				return err
-			}
-			valueDesc, err := json.Marshal(tempDesc)
-			if err != nil {
-				return err
-			}
-			err = tp.config.DataBaseMempool.AddTransaction(txHash, common.TxCustomTokenType, valueTx, valueDesc)
-			if err != nil {
-				return err
-			}
-		}
 	case common.TxCustomTokenPrivacyType:
 		{
 			customTokenPrivacyTx := tx.(*transaction.TxCustomTokenPrivacy)
@@ -176,15 +159,6 @@ func unMarshallTxDescFromDatabase(txType string, valueTx []byte, valueDesc []byt
 			}
 
 			txDesc.Desc.Tx = &tx
-		}
-	case common.TxCustomTokenType:
-		{
-			customTokenTx := transaction.TxNormalToken{}
-			err := json.Unmarshal(valueTx, &customTokenTx)
-			if err != nil {
-				return nil, err
-			}
-			txDesc.Desc.Tx = &customTokenTx
 		}
 	case common.TxCustomTokenPrivacyType:
 		{

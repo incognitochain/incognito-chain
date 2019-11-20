@@ -27,7 +27,7 @@ type Tx struct {
 	Type     string `json:"Type"` // Transaction type
 	LockTime int64  `json:"LockTime"`
 	Fee      uint64 `json:"Fee"` // Fee applies: always consant
-	Info     []byte              // 512 bytes
+	Info     []byte // 512 bytes
 
 	// Sign and Privacy proof, required
 	SigPubKey            []byte `json:"SigPubKey, omitempty"` // 33 bytes
@@ -74,9 +74,9 @@ type TxPrivacyInitParams struct {
 	fee         uint64
 	hasPrivacy  bool
 	db          database.DatabaseInterface
-	tokenID     *common.Hash 				// default is nil -> use for prv coin
+	tokenID     *common.Hash // default is nil -> use for prv coin
 	metaData    metadata.Metadata
-	info        []byte 						// 512 bytes
+	info        []byte // 512 bytes
 }
 
 func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
@@ -848,7 +848,7 @@ func (tx Tx) validateNormalTxSanityData() (bool, error) {
 	}
 	// check Type is normal or salary tx
 	switch tx.Type {
-	case common.TxNormalType, common.TxRewardType, common.TxCustomTokenType, common.TxCustomTokenPrivacyType, common.TxReturnStakingType: //is valid
+	case common.TxNormalType, common.TxRewardType, common.TxCustomTokenPrivacyType, common.TxReturnStakingType: //is valid
 	default:
 		return false, errors.New("wrong tx type")
 	}
