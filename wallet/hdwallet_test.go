@@ -109,7 +109,7 @@ func TestHDWalletNewChildKeyWithSameChildIdx(t *testing.T) {
 */
 
 func TestHDWalletSerialize(t *testing.T) {
-	for i:= 0; i <20; i++ {
+	for i := 0; i < 20; i++ {
 		seed := privacy.RandomScalar().ToBytesS()
 		masterKey, _ := NewMasterKey(seed)
 
@@ -302,7 +302,7 @@ func TestHDWalletBase58CheckDeserializeWithInvalidData(t *testing.T) {
 	assert.NotEqual(t, nil, err)
 }
 
-func TestPrivateKeyToPaymentAddress(t *testing.T){
+func TestPrivateKeyToPaymentAddress(t *testing.T) {
 	//Todo: need to fill private key
 	privateKeyStr := ""
 

@@ -15,7 +15,7 @@ handleGetInOutPeerMessageCount - return all inbound/outbound message count by pe
 func (httpServer *HttpServer) handleGetInOutMessageCount(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleGetInOutMessageCount by Peer params: %+v", params)
 	paramsArray := common.InterfaceSlice(params)
-	if paramsArray == nil{
+	if paramsArray == nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, nil)
 	}
 
@@ -32,7 +32,7 @@ handleGetInOutPeerMessages - return all inbound/outbound messages peer which thi
 func (httpServer *HttpServer) handleGetInOutMessages(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleGetInOutPeerMessagess params: %+v", params)
 	paramsArray := common.InterfaceSlice(params)
-	if paramsArray == nil{
+	if paramsArray == nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, nil)
 	}
 

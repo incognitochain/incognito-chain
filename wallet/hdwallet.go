@@ -156,7 +156,7 @@ func deserialize(data []byte) (*KeyWallet, error) {
 	}
 	keyType := data[0]
 	if keyType == PriKeyType {
-		if len(data) != privKeySerializedBytesLen{
+		if len(data) != privKeySerializedBytesLen {
 			return nil, NewWalletError(InvalidSeserializedKey, nil)
 		}
 
@@ -167,12 +167,12 @@ func deserialize(data []byte) (*KeyWallet, error) {
 		key.KeySet.PrivateKey = make([]byte, keyLength)
 		copy(key.KeySet.PrivateKey[:], data[39:39+keyLength])
 	} else if keyType == PaymentAddressType {
-		bytesBurnAddress,_, err := base58.Base58Check{}.Decode(common.BurningAddress)
-		if err != nil{
+		bytesBurnAddress, _, err := base58.Base58Check{}.Decode(common.BurningAddress)
+		if err != nil {
 			return nil, NewWalletError(UnexpectedErr, nil)
 		}
-		if !bytes.Equal(bytesBurnAddress, data){
-			if len(data) != paymentAddrSerializedBytesLen{
+		if !bytes.Equal(bytesBurnAddress, data) {
+			if len(data) != paymentAddrSerializedBytesLen {
 				return nil, NewWalletError(InvalidSeserializedKey, nil)
 			}
 		}
@@ -183,7 +183,7 @@ func deserialize(data []byte) (*KeyWallet, error) {
 		copy(key.KeySet.PaymentAddress.Pk[:], data[2:2+apkKeyLength])
 		copy(key.KeySet.PaymentAddress.Tk[:], data[3+apkKeyLength:3+apkKeyLength+pkencKeyLength])
 	} else if keyType == ReadonlyKeyType {
-		if len(data) != readOnlyKeySerializedBytesLen{
+		if len(data) != readOnlyKeySerializedBytesLen {
 			return nil, NewWalletError(InvalidSeserializedKey, nil)
 		}
 

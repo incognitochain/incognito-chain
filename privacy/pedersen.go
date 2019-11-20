@@ -59,5 +59,3 @@ func (com PedersenCommitment) CommitAtIndex(value, rand *Scalar, index byte) *Po
 	//return commitment
 	return new(Point).AddPedersen(value, com.G[index], rand, com.G[PedersenRandomnessIndex])
 }
-
-

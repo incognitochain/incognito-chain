@@ -6,7 +6,7 @@ import (
 )
 
 func TestPedersenCommitAll(t *testing.T) {
-	for i:= 0; i < 100; i ++ {
+	for i := 0; i < 100; i++ {
 		openings := make([]*Scalar, len(PedCom.G))
 		for i := 0; i < len(openings); i++ {
 			openings[i] = RandomScalar()
@@ -22,7 +22,7 @@ func TestPedersenCommitAll(t *testing.T) {
 }
 
 func TestPedersenCommitAtIndex(t *testing.T) {
-	for i:= 0; i < 100; i++ {
+	for i := 0; i < 100; i++ {
 		data := []struct {
 			value *Scalar
 			rand  *Scalar

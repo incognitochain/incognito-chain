@@ -50,8 +50,8 @@ func TestInnerProduct(t *testing.T) {
 }
 
 func TestEncodeVectors(t *testing.T) {
-	for i:= 0; i<100; i++ {
-		var AggParam= newBulletproofParams(1)
+	for i := 0; i < 100; i++ {
+		var AggParam = newBulletproofParams(1)
 		n := 64
 		a := make([]*privacy.Scalar, n)
 		b := make([]*privacy.Scalar, n)
@@ -92,18 +92,18 @@ func BenchmarkInnerProductWitness_Prove(b *testing.B) {
 	numValue := NumValue
 	numValuePad := pad(numValue)
 	aggParam := new(bulletproofParams)
-	extraNumber := numValuePad - len(AggParam.g) / 64
+	extraNumber := numValuePad - len(AggParam.g)/64
 	if extraNumber > 0 {
 		aggParam = addBulletproofParams(extraNumber)
 	} else {
-		aggParam.g = AggParam.g[0:numValuePad*64]
-		aggParam.h = AggParam.h[0:numValuePad*64]
+		aggParam.g = AggParam.g[0 : numValuePad*64]
+		aggParam.h = AggParam.h[0 : numValuePad*64]
 		aggParam.u = AggParam.u
 
 	}
 
 	wit := new(InnerProductWitness)
-	n := maxExp*numValuePad
+	n := maxExp * numValuePad
 	wit.a = make([]*privacy.Scalar, n)
 	wit.b = make([]*privacy.Scalar, n)
 	for i := range wit.a {
@@ -127,7 +127,7 @@ func BenchmarkInnerProductWitness_Prove(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for i:= 0; i < b.N; i++ {
+	for i := 0; i < b.N; i++ {
 		wit.Prove(AggParam)
 	}
 }
@@ -136,18 +136,18 @@ func BenchmarkInnerProductProof_Verify(b *testing.B) {
 	numValue := NumValue
 	numValuePad := pad(numValue)
 	aggParam := new(bulletproofParams)
-	extraNumber := numValuePad - len(AggParam.g) / 64
+	extraNumber := numValuePad - len(AggParam.g)/64
 	if extraNumber > 0 {
 		aggParam = addBulletproofParams(extraNumber)
 	} else {
-		aggParam.g = AggParam.g[0:numValuePad*64]
-		aggParam.h = AggParam.h[0:numValuePad*64]
+		aggParam.g = AggParam.g[0 : numValuePad*64]
+		aggParam.h = AggParam.h[0 : numValuePad*64]
 		aggParam.u = AggParam.u
 
 	}
 
 	wit := new(InnerProductWitness)
-	n := maxExp*numValuePad
+	n := maxExp * numValuePad
 	wit.a = make([]*privacy.Scalar, n)
 	wit.b = make([]*privacy.Scalar, n)
 
@@ -174,35 +174,35 @@ func BenchmarkInnerProductProof_Verify(b *testing.B) {
 	proof, err := wit.Prove(aggParam)
 
 	b.ResetTimer()
-	for i:= 0; i < b.N; i++ {
+	for i := 0; i < b.N; i++ {
 		proof.Verify(aggParam)
 	}
 }
 
 func TestInnerProductProve(t *testing.T) {
-	for k :=0; k< 10; k++ {
+	for k := 0; k < 10; k++ {
 		numValue := 2
 		numValuePad := pad(numValue)
 		aggParam := new(bulletproofParams)
-		extraNumber := numValuePad - len(AggParam.g) / 64
+		extraNumber := numValuePad - len(AggParam.g)/64
 		if extraNumber > 0 {
 			aggParam = addBulletproofParams(extraNumber)
 		} else {
-			aggParam.g = AggParam.g[0:numValuePad*64]
-			aggParam.h = AggParam.h[0:numValuePad*64]
+			aggParam.g = AggParam.g[0 : numValuePad*64]
+			aggParam.h = AggParam.h[0 : numValuePad*64]
 			aggParam.u = AggParam.u
 
 		}
 
 		wit := new(InnerProductWitness)
-		n := maxExp*numValue
+		n := maxExp * numValue
 		wit.a = make([]*privacy.Scalar, n)
 		wit.b = make([]*privacy.Scalar, n)
 
 		for i := range wit.a {
 			wit.a[i] = privacy.RandomScalar()
 			wit.b[i] = privacy.RandomScalar()
- 		}
+		}
 
 		//wit.p = new(privacy.Point)
 		//wit.p.Zero()
@@ -237,6 +237,7 @@ func TestInnerProductProve(t *testing.T) {
 		assert.Equal(t, true, res)
 	}
 }
+
 var NumValue = 7
 
 func BenchmarkAggregatedRangeWitness_Prove(b *testing.B) {
@@ -253,7 +254,7 @@ func BenchmarkAggregatedRangeWitness_Prove(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i:=0; i< b.N; i++ {
+	for i := 0; i < b.N; i++ {
 		wit.Prove()
 	}
 }
@@ -273,13 +274,13 @@ func BenchmarkAggregatedRangeProof_Verify(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i:=0; i< b.N; i++ {
+	for i := 0; i < b.N; i++ {
 		proof.Verify()
 	}
 }
 
 func TestAggregatedRangeProve(t *testing.T) {
-	for i:= 0; i<10; i++{
+	for i := 0; i < 10; i++ {
 		//prepare witness for Aggregated range protocol
 		wit := new(AggregatedRangeWitness)
 		numValue := 12 //5. 10

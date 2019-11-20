@@ -99,7 +99,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 			Logger.log.Error(err)
 			return err
 		}
-		if err := blockchain.RevertShardState(shardBlock.Header.ShardID); err != nil {
+		if err := blockchain.revertShardState(shardBlock.Header.ShardID); err != nil {
 			panic(err)
 		}
 		Logger.log.Infof("REVERTED SHARDID %+v, Revert Current Block Height %+v, Block Hash %+v", shardBlock.Header.ShardID, currentShardHeight, currentShardHash)
@@ -496,8 +496,11 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 */
 func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock *ShardBlock, beaconBlocks []*BeaconBlock, txInstructions [][]string, shardID byte) error {
 	var err error
+	var isOldBeaconHeight = false
 	// Verify Transaction
-	if err := blockchain.verifyTransactionFromNewBlock(shardBlock.Body.Transactions); err != nil {
+	//get beacon height from shard block
+	beaconHeight := shardBlock.Header.BeaconHeight
+	if err := blockchain.verifyTransactionFromNewBlock(shardBlock.Body.Transactions, int64(beaconHeight)); err != nil {
 		return NewBlockChainError(TransactionFromNewBlockError, err)
 	}
 	// Verify Instruction
@@ -507,7 +510,10 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock
 		return err
 	}
 	shardPendingValidator, _ := blockchain.processInstructionFromBeacon(beaconBlocks, shardID)
-	instructions, shardPendingValidator, shardCommittee, err = blockchain.generateInstruction(shardID, shardBlock.Header.BeaconHeight, beaconBlocks, shardPendingValidator, shardCommittee)
+	if blockchain.BestState.Shard[shardID].BeaconHeight == shardBlock.Header.BeaconHeight {
+		isOldBeaconHeight = true
+	}
+	instructions, shardPendingValidator, shardCommittee, err = blockchain.generateInstruction(shardID, shardBlock.Header.BeaconHeight, isOldBeaconHeight, beaconBlocks, shardPendingValidator, shardCommittee)
 	if err != nil {
 		return NewBlockChainError(GenerateInstructionError, err)
 	}
@@ -621,7 +627,7 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(shardBlock *
 	Logger.log.Debugf("SHARD %+v | Begin VerifyBestStateWithShardBlock Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash())
 	//verify producer via index
 	producerPublicKey := shardBlock.Header.Producer
-	producerPosition := (shardBestState.ShardProposerIdx + shardBlock.Header.Round) % len(shardBestState.ShardCommittee)
+	producerPosition := shardBestState.GetProducerIndexFromBlock(shardBlock)
 
 	//verify producer
 	tempProducer, err := shardBestState.ShardCommittee[producerPosition].ToBase58() //.GetMiningKeyBase58(common.BridgeConsensus)
@@ -688,8 +694,8 @@ func (shardBestState *ShardBestState) updateShardBestState(blockchain *BlockChai
 	shardBestState.NumTxns = uint64(len(shardBlock.Body.Transactions))
 	if shardBlock.Header.Height == 1 {
 		shardBestState.ShardProposerIdx = 0
-	} else {
-		shardBestState.ShardProposerIdx = (shardBestState.ShardProposerIdx + shardBlock.Header.Round) % len(shardBestState.ShardCommittee)
+	} else { //TODO: 0xsirush revert this code
+		shardBestState.ShardProposerIdx = 0 // (shardBestState.ShardProposerIdx + shardBlock.Header.Round) % len(shardBestState.ShardCommittee)
 	}
 	//shardBestState.processBeaconBlocks(shardBlock, beaconBlocks)
 	shardPendingValidator, stakingTx := blockchain.processInstructionFromBeacon(beaconBlocks, shardBlock.Header.ShardID)
@@ -762,6 +768,10 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(blockchain *B
 	if err != nil {
 		return err
 	}
+	// TODO: 0xmerman
+	fixedProducerShardValidators := shardCommittee[:NumberOfFixedBlockValidators]
+	shardCommittee = shardCommittee[NumberOfFixedBlockValidators:]
+
 	shardSwappedCommittees := []string{}
 	shardNewCommittees := []string{}
 	if len(shardBlock.Body.Instructions) != 0 {
@@ -777,7 +787,14 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(blockchain *B
 	for _, l := range shardBlock.Body.Instructions {
 		if l[0] == SwapAction {
 			// #1 remaining pendingValidators, #2 new currentValidators #3 swapped out validator, #4 incoming validator
-			shardPendingValidator, shardCommittee, shardSwappedCommittees, shardNewCommittees, err = SwapValidator(shardPendingValidator, shardCommittee, shardBestState.MaxShardCommitteeSize, shardBestState.MinShardCommitteeSize, blockchain.config.ChainParams.Offset, producersBlackList, blockchain.config.ChainParams.SwapOffset)
+			maxShardCommitteeSize := shardBestState.MaxShardCommitteeSize - NumberOfFixedBlockValidators
+			var minShardCommitteeSize int
+			if blockchain.BestState.Shard[shardID].MinShardCommitteeSize-NumberOfFixedBlockValidators < 0 {
+				minShardCommitteeSize = 0
+			} else {
+				minShardCommitteeSize = blockchain.BestState.Shard[shardID].MinShardCommitteeSize - NumberOfFixedBlockValidators
+			}
+			shardPendingValidator, shardCommittee, shardSwappedCommittees, shardNewCommittees, err = SwapValidator(shardPendingValidator, shardCommittee, maxShardCommitteeSize, minShardCommitteeSize, blockchain.config.ChainParams.Offset, producersBlackList, blockchain.config.ChainParams.SwapOffset)
 			if err != nil {
 				Logger.log.Errorf("SHARD %+v | Blockchain Error %+v", err)
 				return NewBlockChainError(SwapValidatorError, err)
@@ -813,7 +830,8 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(blockchain *B
 	if err != nil {
 		return err
 	}
-	shardBestState.ShardCommittee, err = incognitokey.CommitteeBase58KeyListToStruct(shardCommittee)
+	//TODO: merman
+	shardBestState.ShardCommittee, err = incognitokey.CommitteeBase58KeyListToStruct(append(fixedProducerShardValidators, shardCommittee...))
 	if err != nil {
 		return err
 	}
@@ -868,7 +886,7 @@ func (shardBestState *ShardBestState) verifyPostProcessingShardBlock(shardBlock 
 	10. Check duplicate staker public key in block
 	11. Check duplicate Init Custom Token in block
 */
-func (blockchain *BlockChain) verifyTransactionFromNewBlock(txs []metadata.Transaction) error {
+func (blockchain *BlockChain) verifyTransactionFromNewBlock(txs []metadata.Transaction, beaconHeight int64) error {
 	if len(txs) == 0 {
 		return nil
 	}
@@ -893,7 +911,7 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(txs []metadata.Trans
 					continue
 				}
 			}
-			_, err := blockchain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx)
+			_, err := blockchain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx, beaconHeight)
 			if err != nil {
 				return NewBlockChainError(TransactionFromNewBlockError, fmt.Errorf("Transaction %+v, index %+v get %+v ", *tx.Hash(), index, err))
 			}

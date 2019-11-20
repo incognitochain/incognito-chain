@@ -101,7 +101,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, cl
 					continue
 				}
 				if !isSent {
-					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
 					if err != nil {
 						fail++
 						continue
@@ -110,7 +110,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, cl
 						continue
 					}
 				} else {
-					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
 					//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 					if err != nil {
 						fail++
@@ -142,7 +142,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, cl
 					continue
 				}
 				if !isSent {
-					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
 					if err != nil {
 						fail++
 						continue
@@ -151,7 +151,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, cl
 						continue
 					}
 				} else {
-					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
 					//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 					if err != nil {
 						fail++
@@ -182,7 +182,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, cl
 				continue
 			}
 			if !isSent {
-				_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+				_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
 				if err != nil {
 					fail++
 					continue
@@ -191,7 +191,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, cl
 					continue
 				}
 			} else {
-				_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+				_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
 				//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 				if err != nil {
 					fail++
@@ -276,7 +276,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, 
 					continue
 				}
 				if !isSent {
-					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
 					if err != nil {
 						fail++
 						continue
@@ -285,7 +285,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, 
 						continue
 					}
 				} else {
-					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
 					//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 					if err != nil {
 						fail++
@@ -317,7 +317,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, 
 					continue
 				}
 				if !isSent {
-					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
 					if err != nil {
 						fail++
 						continue
@@ -326,7 +326,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, 
 						continue
 					}
 				} else {
-					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
 					//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 					if err != nil {
 						fail++
@@ -357,7 +357,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, 
 				continue
 			}
 			if !isSent {
-				_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+				_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
 				if err != nil {
 					fail++
 					continue
@@ -366,7 +366,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, 
 					continue
 				}
 			} else {
-				_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+				_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
 				//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 				if err != nil {
 					fail++

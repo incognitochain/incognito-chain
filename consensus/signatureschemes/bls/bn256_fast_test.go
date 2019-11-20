@@ -11,7 +11,7 @@ import (
 
 func TestCompressG1(t *testing.T) {
 	fmt.Println(bn256.P)
-	for i:= 0; i < 2000; i++ {
+	for i := 0; i < 2000; i++ {
 		_, X, _ := bn256.RandomG1(rand.Reader)
 		tmp := CompressG1(X)
 		XPrime, _ := DecompressG1(tmp)
@@ -22,14 +22,14 @@ func TestCompressG1(t *testing.T) {
 }
 
 func TestMultiScalarMultG2(t *testing.T) {
-	for i:=0; i< 100; i++ {
+	for i := 0; i < 100; i++ {
 
 		len := 64
 
 		pointLs := make([]*bn256.G2, len)
 		scalarLs := make([]*big.Int, len)
 
-		for j:=0; j < len; j++ {
+		for j := 0; j < len; j++ {
 			x, X, _ := bn256.RandomG2(rand.Reader)
 			pointLs[j] = new(bn256.G2).Set(X)
 			scalarLs[j] = new(big.Int).Set(x)
@@ -39,9 +39,9 @@ func TestMultiScalarMultG2(t *testing.T) {
 		res := MultiScalarMultG2(pointLs, scalarLs)
 
 		// Add list of ScalarMult
-		resPrime := new(bn256.G2).ScalarMult(pointLs[0],scalarLs[0])
-		for j:= 1; j< len; j++ {
-			tmp:= new(bn256.G2).ScalarMult(pointLs[j], scalarLs[j])
+		resPrime := new(bn256.G2).ScalarMult(pointLs[0], scalarLs[0])
+		for j := 1; j < len; j++ {
+			tmp := new(bn256.G2).ScalarMult(pointLs[j], scalarLs[j])
 			resPrime.Add(resPrime, tmp)
 		}
 
@@ -51,14 +51,13 @@ func TestMultiScalarMultG2(t *testing.T) {
 	}
 }
 
-
 func BenchmarkG2_MultiScalarMulNormal(b *testing.B) {
 	len := 64
 
 	pointLs := make([]*bn256.G2, len)
 	scalarLs := make([]*big.Int, len)
 
-	for j:=0; j < len; j++ {
+	for j := 0; j < len; j++ {
 		x, X, _ := bn256.RandomG2(rand.Reader)
 		pointLs[j] = new(bn256.G2).Set(X)
 		scalarLs[j] = new(big.Int).Set(x)
@@ -66,11 +65,11 @@ func BenchmarkG2_MultiScalarMulNormal(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i:=0; i< b.N; i++ {
+	for i := 0; i < b.N; i++ {
 		// Add list of Multiscalar
-		resPrime := new(bn256.G2).ScalarMult(pointLs[0],scalarLs[0])
-		for j:= 1; j< len; j++ {
-			tmp:= new(bn256.G2).ScalarMult(pointLs[j], scalarLs[j])
+		resPrime := new(bn256.G2).ScalarMult(pointLs[0], scalarLs[0])
+		for j := 1; j < len; j++ {
+			tmp := new(bn256.G2).ScalarMult(pointLs[j], scalarLs[j])
 			resPrime.Add(resPrime, tmp)
 		}
 	}
@@ -82,7 +81,7 @@ func BenchmarkMultiScalarMultG2(b *testing.B) {
 	pointLs := make([]*bn256.G2, len)
 	scalarLs := make([]*big.Int, len)
 
-	for j:=0; j < len; j++ {
+	for j := 0; j < len; j++ {
 		x, X, _ := bn256.RandomG2(rand.Reader)
 		pointLs[j] = new(bn256.G2).Set(X)
 		scalarLs[j] = new(big.Int).Set(x)
@@ -90,7 +89,7 @@ func BenchmarkMultiScalarMultG2(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i:=0; i< b.N; i++ {
+	for i := 0; i < b.N; i++ {
 		MultiScalarMultG2(pointLs, scalarLs)
 	}
 }
@@ -101,7 +100,7 @@ func BenchmarkMultiScalarMultG1(b *testing.B) {
 	pointLs := make([]*bn256.G1, len)
 	scalarLs := make([]*big.Int, len)
 
-	for j:=0; j < len; j++ {
+	for j := 0; j < len; j++ {
 		x, X, _ := bn256.RandomG1(rand.Reader)
 		pointLs[j] = new(bn256.G1).Set(X)
 		scalarLs[j] = new(big.Int).Set(x)
@@ -109,7 +108,7 @@ func BenchmarkMultiScalarMultG1(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i:=0; i< b.N; i++ {
+	for i := 0; i < b.N; i++ {
 		MultiScalarMultG1(pointLs, scalarLs)
 	}
 }

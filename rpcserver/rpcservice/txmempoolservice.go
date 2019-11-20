@@ -8,13 +8,12 @@ import (
 )
 
 type TxMemPoolService struct {
-	TxMemPool * mempool.TxPool
+	TxMemPool *mempool.TxPool
 }
 
 func (txMemPoolService TxMemPoolService) GetPoolCandidate() map[common.Hash]string {
 	return txMemPoolService.TxMemPool.GetClonedPoolCandidate()
 }
-
 
 func (txMemPoolService TxMemPoolService) FilterMemPoolOutcoinsToSpent(outCoins []*privacy.OutputCoin) ([]*privacy.OutputCoin, error) {
 	remainOutputCoins := make([]*privacy.OutputCoin, 0)
@@ -48,7 +47,7 @@ func (txMemPoolService TxMemPoolService) MempoolEntry(txIDString string) (metada
 	return txInPool, shardIDTemp, nil
 }
 
-func (txMemPoolService * TxMemPoolService) RemoveTxInMempool(txIDString string) (bool, *RPCError) {
+func (txMemPoolService *TxMemPoolService) RemoveTxInMempool(txIDString string) (bool, *RPCError) {
 	txID, err := common.Hash{}.NewHashFromStr(txIDString)
 	if err != nil {
 		Logger.log.Debugf("RemoveTxInMempool result: nil %+v", err)
@@ -64,5 +63,3 @@ func (txMemPoolService * TxMemPoolService) RemoveTxInMempool(txIDString string) 
 
 	return true, nil
 }
-
-

@@ -17,6 +17,7 @@ require (
 	github.com/ethereum/go-ethereum v1.8.22-0.20190710074244-72029f0f88f6
 	github.com/fortytw2/leaktest v1.3.0 // indirect
 	github.com/golang/protobuf v1.3.2
+	github.com/google/uuid v1.1.1
 	github.com/gorilla/websocket v1.4.0
 	github.com/hashicorp/golang-lru v0.5.1
 	github.com/incognitochain/go-libp2p-grpc v0.0.0-20181024123959-d1f24bf49b50

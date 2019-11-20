@@ -26,7 +26,7 @@ func TestMain(m *testing.M) {
 */
 
 func TestCoinCommitAll(t *testing.T) {
-	for i:= 0; i<1000; i++{
+	for i := 0; i < 1000; i++ {
 		coin := new(Coin).Init()
 		seedKey := RandomScalar().ToBytesS()
 		privateKey := GeneratePrivateKey(seedKey)
@@ -56,7 +56,7 @@ func TestCoinCommitAll(t *testing.T) {
 
 func TestCoinMarshalJSON(t *testing.T) {
 
-	for i:= 0; i < 1000; i++ {
+	for i := 0; i < 1000; i++ {
 		coin := new(Coin).Init()
 		seedKey := RandomScalar().ToBytesS()
 		privateKey := GeneratePrivateKey(seedKey)
@@ -81,15 +81,13 @@ func TestCoinMarshalJSON(t *testing.T) {
 	}
 }
 
-
 /*
 	Unit test for Bytes/SetBytes Coin function
 */
 
-
 func TestCoinBytesSetBytes(t *testing.T) {
 
-	for i:= 0; i < 1000; i ++ {
+	for i := 0; i < 1000; i++ {
 		coin := new(Coin).Init()
 		seedKey := RandomScalar().ToBytesS()
 		privateKey := GeneratePrivateKey(seedKey)
@@ -118,9 +116,8 @@ func TestCoinBytesSetBytes(t *testing.T) {
 	}
 }
 
-
 func TestCoinBytesSetBytesWithMissingFields(t *testing.T) {
-	for i:=0 ; i< 1000; i++ {
+	for i := 0; i < 1000; i++ {
 		coin := new(Coin).Init()
 		seedKey := RandomScalar().ToBytesS()
 		privateKey := GeneratePrivateKey(seedKey)
@@ -194,7 +191,7 @@ func TestCoinBytesSetBytesWithEmptyBytes(t *testing.T) {
 */
 
 func TestInputCoinBytesSetBytes(t *testing.T) {
-	for i:= 0; i< 1000; i++ {
+	for i := 0; i < 1000; i++ {
 		coin := new(InputCoin).Init()
 		seedKey := RandomScalar().ToBytesS()
 		privateKey := GeneratePrivateKey(seedKey)
@@ -265,7 +262,6 @@ func TestInputCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
 	coin.CoinDetails.serialNumber = PedCom.G[0].Derive(PedCom.G[0], new(Scalar).FromBytesS(privateKey), coin.CoinDetails.snDerivator)
 	//coin.CoinDetails.CommitAll()
 	coin.CoinDetails.info = []byte("Incognito chain")
-
 
 	// convert coin object to bytes array
 	coinBytes := coin.Bytes()
@@ -340,7 +336,6 @@ func TestOutputCoinBytesSetBytesWithMissingFields(t *testing.T) {
 	//coin.CoinDetails.CommitAll()
 	coin.CoinDetails.info = []byte("Incognito chain")
 	coin.Encrypt(paymentAddr.Tk)
-
 
 	// convert coin object to bytes array
 	coinBytes := coin.Bytes()

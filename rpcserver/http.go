@@ -60,8 +60,8 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 	// init service
 	httpServer.blockService = &rpcservice.BlockService{
 		BlockChain: httpServer.config.BlockChain,
-		DB: httpServer.config.Database,
-		MemCache: httpServer.config.MemCache,
+		DB:         httpServer.config.Database,
+		MemCache:   httpServer.config.MemCache,
 	}
 	httpServer.outputCoinService = &rpcservice.CoinService{
 		BlockChain: httpServer.config.BlockChain,

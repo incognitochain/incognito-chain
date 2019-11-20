@@ -271,7 +271,6 @@ func CleanAndExpandPath(path string, defaultHomeDir string) string {
 	return filepath.Clean(os.ExpandEnv(path))
 }
 
-
 // RandBigIntMaxRange generates a big int with maximum value
 func RandBigIntMaxRange(max *big.Int) (*big.Int, error) {
 	return rand.Int(rand.Reader, max)

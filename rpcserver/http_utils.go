@@ -49,7 +49,7 @@ func (httpServer *HttpServer) createRawTxWithMetadata(params interface{}, closeC
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
 
-	tx, err := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
+	tx, err := httpServer.txService.BuildRawTransaction(createRawTxParam, meta, *httpServer.config.Database)
 	if err != nil {
 		Logger.log.Errorf("\n\n\n\n\n\n\n createRawTxWithMetadata Error 0 %+v \n\n\n\n\n\n", err)
 		return nil, err
@@ -107,7 +107,7 @@ func (httpServer *HttpServer) sendRawTxWithMetadata(params interface{}, closeCha
 	}
 
 	txMsg, txHash, err := httpServer.txService.SendRawTxWithMetadata(base58CheckData)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 
@@ -135,7 +135,7 @@ func (httpServer *HttpServer) sendRawCustomTokenTxWithMetadata(params interface{
 	}
 
 	txMsg, txHash, err := httpServer.txService.SendRawCustomTokenTxWithMetadata(base58CheckData)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 

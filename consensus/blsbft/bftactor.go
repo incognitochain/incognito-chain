@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics"
 	"sync"
 	"time"
 
@@ -28,6 +29,7 @@ type BLSBFT struct {
 	VoteMessageCh    chan BFTVote
 
 	RoundData struct {
+		TimeStart         time.Time
 		Block             common.BlockInterface
 		BlockHash         common.Hash
 		BlockValidateData ValidationData
@@ -179,10 +181,12 @@ func (e *BLSBFT) Start() error {
 				e.addEarlyVote(msg)
 
 			case <-ticker:
+
+				metrics.SetGlobalParam("RoundKey", getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), "Phase", e.RoundData.State)
+
 				pubKey := e.UserKeySet.GetPublicKey()
 				if common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList) == -1 {
 					e.enterNewRound()
-					//fmt.Println("CONSENSUS: ticker 0")
 					continue
 				}
 
@@ -206,6 +210,7 @@ func (e *BLSBFT) Start() error {
 					}
 					roundKey := getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)
 					if e.Blocks[roundKey] != nil {
+						metrics.SetGlobalParam("ReceiveBlockTime", time.Since(e.RoundData.TimeStart).Seconds())
 						//fmt.Println("CONSENSUS: listen phase 2")
 						if err := e.validatePreSignBlock(e.Blocks[roundKey]); err != nil {
 							delete(e.Blocks, roundKey)
@@ -278,6 +283,7 @@ func (e *BLSBFT) Start() error {
 							}
 							continue
 						}
+						metrics.SetGlobalParam("CommitTime", time.Since(time.Unix(e.Chain.GetLastBlockTimeStamp(), 0)).Seconds())
 						// e.Node.PushMessageToAll()
 						e.logger.Warn("Commit block! Wait for next round")
 						e.enterNewRound()
@@ -294,8 +300,9 @@ func (e *BLSBFT) enterProposePhase() {
 		return
 	}
 	e.setState(proposePhase)
-
 	block, err := e.createNewBlock()
+	metrics.SetGlobalParam("CreateTime", time.Since(e.RoundData.TimeStart).Seconds())
+
 	if err != nil {
 		e.logger.Error("can't create block", err)
 		return
@@ -343,20 +350,25 @@ func (e *BLSBFT) enterNewRound() {
 	// 	return
 	// }
 	//if already running a round for current timeframe
-	if e.isInTimeFrame() && e.RoundData.State != newround {
+	if e.isInTimeFrame() && (e.RoundData.State != newround && e.RoundData.State != "") {
+		fmt.Println("CONSENSUS", e.isInTimeFrame(), e.getCurrentRound(), e.getTimeSinceLastBlock().Seconds(), e.RoundData.State)
 		return
 	}
+
 	e.isOngoing = false
-	e.setState(newround)
+	e.setState("")
 	if e.waitForNextRound() {
 		return
 	}
+	e.setState(newround)
 	e.InitRoundData()
 	e.logger.Info("")
 	e.logger.Info("============================================")
 	e.logger.Info("")
 	pubKey := e.UserKeySet.GetPublicKey()
-	if e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(consensusName)) == (e.Chain.GetLastProposerIndex()+e.RoundData.Round)%e.Chain.GetCommitteeSize() {
+	//TODO: revert this
+	//if e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(consensusName)) == (e.Chain.GetLastProposerIndex()+e.RoundData.Round)%e.Chain.GetCommitteeSize() {
+	if e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(consensusName)) == (e.Chain.GetLastProposerIndex())%e.Chain.GetCommitteeSize() {
 		e.logger.Info("BFT: new round => PROPOSE", e.RoundData.NextHeight, e.RoundData.Round)
 		e.enterProposePhase()
 	} else {
@@ -387,37 +399,29 @@ func (e *BLSBFT) addEarlyVote(voteMsg BFTVote) {
 func (e *BLSBFT) createNewBlock() (common.BlockInterface, error) {
 
 	var errCh chan error
-	var timeoutCh chan struct{}
 	var block common.BlockInterface
 	errCh = make(chan error)
-	timeoutCh = make(chan struct{})
-	timeout := time.AfterFunc(e.Chain.GetMaxBlkCreateTime(), func() {
-		select {
-		case <-timeoutCh:
-			return
-		default:
-			timeoutCh <- struct{}{}
-		}
-	})
+	timeout := time.NewTimer(e.Chain.GetMaxBlkCreateTime()).C
 
 	go func() {
 		time1 := time.Now()
 		var err error
 		block, err = e.Chain.CreateNewBlock(int(e.RoundData.Round))
 		e.logger.Info("create block", time.Since(time1).Seconds())
-		errCh <- err
+		select {
+		case errCh <- err:
+		default:
+		}
 	}()
 
 	select {
 	case err := <-errCh:
-		timeout.Stop()
-		close(timeoutCh)
 		return block, err
-	case <-timeoutCh:
+	case <-timeout:
 		return nil, consensus.NewConsensusError(consensus.BlockCreationError, errors.New("block creation timeout"))
 	}
-
 }
+
 func (e BLSBFT) NewInstance(chain blockchain.ChainInterface, chainKey string, node consensus.NodeInterface, logger common.Logger) consensus.ConsensusInterface {
 	var newInstance BLSBFT
 	newInstance.Chain = chain

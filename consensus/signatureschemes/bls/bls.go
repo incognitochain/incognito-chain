@@ -42,7 +42,7 @@ func DefendRogueAttack(pubKeys []*PublicKey) []*big.Int {
 	}
 
 	var t []*big.Int
-	for i:= 0; i< len(pubKeys); i++ {
+	for i := 0; i < len(pubKeys); i++ {
 		t = append(t, HashToScalar(append(pubKeys[i].gx.Marshal(), bGroupPubKey...)))
 	}
 	return t
@@ -78,7 +78,7 @@ func VerifyCompressSig(key *PublicKey, message []byte, compressedSig []byte) boo
 func Aggregate(sigs []*Signature, pubKeys []*PublicKey) *Signature {
 	pointLs := make([]*bn256.G1, len(sigs))
 
-	for i:= 0; i< len(sigs) ;i ++ {
+	for i := 0; i < len(sigs); i++ {
 		pointLs[i] = new(bn256.G1).Set(sigs[i].s)
 	}
 	t := DefendRogueAttack(pubKeys)
@@ -92,12 +92,12 @@ func Aggregate(sigs []*Signature, pubKeys []*PublicKey) *Signature {
 func VerifyAgg(pubKeys []*PublicKey, message []byte, sig *Signature) bool {
 	pointLs := make([]*bn256.G2, len(pubKeys))
 
-	for i:= 0; i< len(pubKeys) ;i ++ {
+	for i := 0; i < len(pubKeys); i++ {
 		pointLs[i] = new(bn256.G2).Set(pubKeys[i].gx)
 	}
 	t := DefendRogueAttack(pubKeys)
 
-	apk :=  MultiScalarMultG2(pointLs, t)
+	apk := MultiScalarMultG2(pointLs, t)
 
 	h := HashToG1(message)
 	u := bn256.Pair(h, apk)
@@ -124,22 +124,22 @@ func BatchVerifyDistinct(pubKeys []*PublicKey, messages [][]byte, sigs []*Signat
 		return false
 	}
 	/*
-	aggSig := new(bn256.G1).Set(sigs[0].s)
-	aggPub := new(bn256.G2).Set(pubKeys[0].gx)
-	aggMsg := new(bn256.G1).Set(HashToG1(messages[0]))
+		aggSig := new(bn256.G1).Set(sigs[0].s)
+		aggPub := new(bn256.G2).Set(pubKeys[0].gx)
+		aggMsg := new(bn256.G1).Set(HashToG1(messages[0]))
 
-	for i:= 1; i< len(messages); i++ {
-		aggSig.Add(aggSig, sigs[i].s)
-		aggPub.Add(aggPub, pubKeys[i].gx)
-		aggMsg.Add(aggMsg, HashToG1(messages[i]))
-	}
-	u := bn256.Pair(aggMsg, aggPub)
-	v := bn256.Pair(aggSig, g2gen)
+		for i:= 1; i< len(messages); i++ {
+			aggSig.Add(aggSig, sigs[i].s)
+			aggPub.Add(aggPub, pubKeys[i].gx)
+			aggMsg.Add(aggMsg, HashToG1(messages[i]))
+		}
+		u := bn256.Pair(aggMsg, aggPub)
+		v := bn256.Pair(aggSig, g2gen)
 	*/
 
 	aggSig := new(bn256.G1).Set(sigs[0].s)
 	u := bn256.Pair(HashToG1(messages[0]), pubKeys[0].gx)
-	for i:=1 ; i < len(messages); i++ {
+	for i := 1; i < len(messages); i++ {
 		aggSig.Add(aggSig, sigs[i].s)
 		u.Add(u, bn256.Pair(HashToG1(messages[i]), pubKeys[i].gx))
 	}
@@ -147,7 +147,6 @@ func BatchVerifyDistinct(pubKeys []*PublicKey, messages [][]byte, sigs []*Signat
 
 	return subtle.ConstantTimeCompare(u.Marshal(), v.Marshal()) == 1
 }
-
 
 func distinct(msgs [][]byte) bool {
 	m := make(map[[32]byte]bool)

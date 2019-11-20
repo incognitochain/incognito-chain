@@ -7,8 +7,8 @@ import (
 /***** Bullet proof component *****/
 
 const (
-	maxExp = 64
-	numOutputParam = 32
+	maxExp          = 64
+	numOutputParam  = 32
 	maxOutputNumber = 256
 )
 
@@ -66,10 +66,10 @@ func newBulletproofParams(m int) *bulletproofParams {
 
 func addBulletproofParams(extraNumber int) *bulletproofParams {
 	currentCapacity := len(AggParam.g)
-	newCapacity := currentCapacity + maxExp * extraNumber
+	newCapacity := currentCapacity + maxExp*extraNumber
 
-	for i := 0; i < newCapacity - currentCapacity; i++ {
-		AggParam.g = append(AggParam.g, privacy.HashToPointFromIndex(int64(5 + i + currentCapacity)))
+	for i := 0; i < newCapacity-currentCapacity; i++ {
+		AggParam.g = append(AggParam.g, privacy.HashToPointFromIndex(int64(5+i+currentCapacity)))
 		//tmpKey := AggParam.g[i].GetKey()
 		//gE := new(C25519.ExtendedGroupElement)
 		//gE.FromBytes(&tmpKey)
@@ -78,7 +78,7 @@ func addBulletproofParams(extraNumber int) *bulletproofParams {
 		//AggParam.gPrecomputed = append(AggParam.gPrecomputed, gPre)
 		//AggParam.gPreMultiScalar = append(AggParam.gPreMultiScalar, C25519.PreComputeForMultiScalar(&tmpKey))
 
-		AggParam.h = append(AggParam.h, privacy.HashToPointFromIndex(int64(5 + i + currentCapacity + maxOutputNumber*maxExp)))
+		AggParam.h = append(AggParam.h, privacy.HashToPointFromIndex(int64(5+i+currentCapacity+maxOutputNumber*maxExp)))
 		//tmpKey = AggParam.h[i].GetKey()
 		//hE := new(C25519.ExtendedGroupElement)
 		//hE.FromBytes(&tmpKey)

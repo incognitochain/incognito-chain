@@ -69,7 +69,7 @@ func hadamardProduct(a []*privacy.Scalar, b []*privacy.Scalar) ([]*privacy.Scala
 func powerVector(base *privacy.Scalar, n int) []*privacy.Scalar {
 	res := make([]*privacy.Scalar, n)
 	res[0] = new(privacy.Scalar).FromUint64(1)
-	if n >1 {
+	if n > 1 {
 		res[1] = new(privacy.Scalar).Set(base)
 		for i := 2; i < n; i++ {
 			res[i] = new(privacy.Scalar).Mul(res[i-1], base)
@@ -135,7 +135,6 @@ func encodeCachedVectors(l []*privacy.Scalar, r []*privacy.Scalar, gPre [][8]C25
 	//res := new(privacy.Point).Add(tmp1, tmp2)
 	//return res, nil
 
-
 	//CacheAddPedersen Approach
 	if len(l) != len(r) || len(gPre) != len(l) || len(hPre) != len(hPre) {
 		return nil, errors.New("invalid input")
@@ -149,7 +148,6 @@ func encodeCachedVectors(l []*privacy.Scalar, r []*privacy.Scalar, gPre [][8]C25
 	}
 	return res, nil
 }
-
 
 // estimateMultiRangeProofSize estimate multi range proof size
 func EstimateMultiRangeProofSize(nOutput int) uint64 {

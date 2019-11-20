@@ -33,7 +33,6 @@ type Params struct {
 	GenesisBeaconBlock               *BeaconBlock // GenesisBlock defines the first block of the chain.
 	GenesisShardBlock                *ShardBlock  // GenesisBlock defines the first block of the chain.
 	BasicReward                      uint64
-	RewardHalflife                   uint64
 	Epoch                            uint64
 	RandomTime                       uint64
 	SlashLevels                      []SlashLevel
@@ -92,7 +91,6 @@ func init() {
 		MinBeaconBlockInterval:           TestNetMinBeaconBlkInterval,
 		MaxBeaconBlockCreation:           TestNetMaxBeaconBlkCreation,
 		BasicReward:                      TestnetBasicReward,
-		RewardHalflife:                   TestnetRewardHalflife,
 		Epoch:                            TestnetEpoch,
 		RandomTime:                       TestnetRandomTime,
 		Offset:                           TestnetOffset,
@@ -101,13 +99,13 @@ func init() {
 		EthContractAddressStr:            TestnetETHContractAddressStr,
 		IncognitoDAOAddress:              TestnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: TestnetCentralizedWebsitePaymentAddress,
-		SlashLevels: []SlashLevel{
+		SlashLevels:                      []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
-			SlashLevel{MinRange: 50, PunishedEpoches: 2},
-			SlashLevel{MinRange: 75, PunishedEpoches: 3},
+			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
+			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
 		},
 		CheckForce:   true,
-		ChainVersion: "version-chain.json",
+		ChainVersion: "version-chain-test.json",
 	}
 	// END TESTNET
 	// FOR MAINNET
@@ -137,7 +135,6 @@ func init() {
 		MinBeaconBlockInterval:           MainnetMinBeaconBlkInterval,
 		MaxBeaconBlockCreation:           MainnetMaxBeaconBlkCreation,
 		BasicReward:                      MainnetBasicReward,
-		RewardHalflife:                   MainnetRewardHalflife,
 		Epoch:                            MainnetEpoch,
 		RandomTime:                       MainnetRandomTime,
 		Offset:                           MainnetOffset,
@@ -146,10 +143,10 @@ func init() {
 		EthContractAddressStr:            MainETHContractAddressStr,
 		IncognitoDAOAddress:              MainnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: MainnetCentralizedWebsitePaymentAddress,
-		SlashLevels: []SlashLevel{
+		SlashLevels:                      []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
-			SlashLevel{MinRange: 50, PunishedEpoches: 2},
-			SlashLevel{MinRange: 75, PunishedEpoches: 3},
+			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
+			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
 		},
 		CheckForce:   false,
 		ChainVersion: "version-chain-main.json",

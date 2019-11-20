@@ -2,6 +2,7 @@ package connmanager
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics"
 	"math"
 	"net"
 	"net/rpc"
@@ -360,6 +361,7 @@ func (connManager *ConnManager) discoverPeers(discoverPeerAddress string) {
 func (connManager *ConnManager) processDiscoverPeers() error {
 	// startTime := time.Now()
 	discoverPeerAddress := connManager.discoverPeerAddress
+	metrics.SetGlobalParam("Bootnode", discoverPeerAddress)
 	fmt.Println("CONN: processDiscoverPeers")
 
 	if discoverPeerAddress == common.EmptyString {
@@ -389,6 +391,7 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 		var response []wire.RawPeer
 
 		externalAddress := connManager.config.ExternalAddress
+		metrics.SetGlobalParam("ExternalAddress", externalAddress)
 		Logger.log.Info("Start Process Discover Peers ExternalAddress", externalAddress)
 
 		// remove later

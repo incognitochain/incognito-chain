@@ -12,7 +12,6 @@ func randomMessage() []byte {
 	return msg
 }
 
-
 func TestSignVerify(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		msg := randomMessage()
@@ -42,7 +41,7 @@ func TestSignVerify(t *testing.T) {
 }
 
 func TestSignVerifyAgg(t *testing.T) {
-	for index :=0 ; index <100; index++ {
+	for index := 0; index < 100; index++ {
 
 		members := CCommiteeSize
 		pubLs := make([]*PublicKey, members)
@@ -56,9 +55,9 @@ func TestSignVerifyAgg(t *testing.T) {
 
 		var subset []int
 		for i := 0; i < int(members*2/3+1); i++ {
-			flag:= false
+			flag := false
 			tmp := mrand.Intn(members)
-			for j:=0; j<len(subset); j++ {
+			for j := 0; j < len(subset); j++ {
 				if subset[j] == tmp {
 					flag = true
 					break
@@ -101,7 +100,7 @@ func TestSignVerifyAgg(t *testing.T) {
 			t.Fatalf("expected aggregated signature to not verify")
 		}
 
-		aggSig = Aggregate(sigLs,pubLs)
+		aggSig = Aggregate(sigLs, pubLs)
 		ok = VerifyAgg(subsetPub, msg, aggSig)
 		if ok {
 			t.Fatalf("expected aggregated signature to not verify")
@@ -110,7 +109,7 @@ func TestSignVerifyAgg(t *testing.T) {
 }
 
 func TestBatchVerifyDistinct(t *testing.T) {
-	for index :=0 ; index < 50; index++ {
+	for index := 0; index < 50; index++ {
 		members := CCommiteeSize
 		msgLs := make([][]byte, members)
 		pubLs := make([]*PublicKey, members)
@@ -136,7 +135,6 @@ func TestBatchVerifyDistinct(t *testing.T) {
 			t.Fatalf("expected batching (pub, msg, sig) to not verify")
 		}
 		msgLs[0][10] = tmpMsg
-
 
 		tmpPub, tmpPriv, _ := GenerateKey(rand.Reader)
 		tmpSig := Sign(tmpPriv, msgLs[0])
@@ -176,7 +174,7 @@ func BenchmarkSign(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i:=0;i <b.N; i ++ {
+	for i := 0; i < b.N; i++ {
 		Sign(priv, msg)
 	}
 }
@@ -188,7 +186,7 @@ func BenchmarkVerify(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i:=0;i <b.N; i ++ {
+	for i := 0; i < b.N; i++ {
 		Verify(pub, msg, sig)
 	}
 }
@@ -206,7 +204,7 @@ func BenchmarkAggregate(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i:=0; i < b.N; i++ {
+	for i := 0; i < b.N; i++ {
 		Aggregate(sigLs, pubLs)
 	}
 }
@@ -225,7 +223,7 @@ func BenchmarkVerifyAgg(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i:=0; i < b.N; i++ {
+	for i := 0; i < b.N; i++ {
 		VerifyAgg(pubLs, msg, sig)
 	}
 }
@@ -245,7 +243,7 @@ func BenchmarkBatchVerifyDistinct(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i:=0; i< b.N; i++ {
+	for i := 0; i < b.N; i++ {
 		BatchVerifyDistinct(pubLs, msgLs, sigLs)
 	}
 }

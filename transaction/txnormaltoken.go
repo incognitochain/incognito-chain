@@ -1,4 +1,3 @@
-
 package transaction
 
 import (
@@ -720,7 +719,7 @@ func (txCustomToken TxNormalToken) IsCoinsBurning() bool {
 	}
 	senderPk := vins[0].PaymentAddress.Pk
 	keyWalletBurningAccount, err := wallet.Base58CheckDeserialize(common.BurningAddress)
-	if err != nil{
+	if err != nil {
 		return false
 	}
 	keysetBurningAccount := keyWalletBurningAccount.KeySet

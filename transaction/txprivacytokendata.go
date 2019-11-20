@@ -57,7 +57,7 @@ func (txTokenPrivacyData TxPrivacyTokenData) Hash() (*common.Hash, error) {
 	point := privacy.HashToPoint([]byte(txTokenPrivacyData.String()))
 	hash := new(common.Hash)
 	err := hash.SetBytes(point.ToBytesS())
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 	return hash, nil

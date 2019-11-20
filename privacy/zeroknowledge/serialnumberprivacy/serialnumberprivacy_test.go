@@ -11,7 +11,7 @@ import (
 )
 
 func TestPKSNPrivacy(t *testing.T) {
-	for i:= 0 ; i <1000; i++ {
+	for i := 0; i < 1000; i++ {
 		sk := privacy.GeneratePrivateKey(privacy.RandBytes(31))
 		skScalar := new(privacy.Scalar).FromBytesS(sk)
 		if skScalar.ScalarValid() == false {

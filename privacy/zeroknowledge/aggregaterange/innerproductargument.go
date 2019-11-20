@@ -78,7 +78,7 @@ func (proof *InnerProductProof) SetBytes(bytes []byte) error {
 	proof.l = make([]*privacy.Point, lenLArray)
 	for i := 0; i < lenLArray; i++ {
 		proof.l[i], err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
-		if err != nil{
+		if err != nil {
 			return err
 		}
 		offset += privacy.Ed25519KeySize
@@ -87,7 +87,7 @@ func (proof *InnerProductProof) SetBytes(bytes []byte) error {
 	proof.r = make([]*privacy.Point, lenLArray)
 	for i := 0; i < lenLArray; i++ {
 		proof.r[i], err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
-		if err != nil{
+		if err != nil {
 			return err
 		}
 		offset += privacy.Ed25519KeySize
@@ -100,7 +100,7 @@ func (proof *InnerProductProof) SetBytes(bytes []byte) error {
 	offset += privacy.Ed25519KeySize
 
 	proof.p, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
-	if err != nil{
+	if err != nil {
 		return err
 	}
 
@@ -197,7 +197,7 @@ func (wit InnerProductWitness) Prove(AggParam *bulletproofParams) (*InnerProduct
 			aPrime[i] = new(privacy.Scalar).MulAdd(a[i+nPrime], xInverse, aPrime[i])
 
 			bPrime[i] = new(privacy.Scalar).Mul(b[i], xInverse)
-			bPrime[i]= new(privacy.Scalar).MulAdd(b[i+nPrime], x, bPrime[i])
+			bPrime[i] = new(privacy.Scalar).MulAdd(b[i+nPrime], x, bPrime[i])
 		}
 
 		a = aPrime

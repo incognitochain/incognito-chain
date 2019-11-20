@@ -192,4 +192,19 @@ type DatabaseInterface interface {
 	// slash
 	GetProducersBlackList(beaconHeight uint64) (map[string]uint8, error)
 	StoreProducersBlackList(beaconHeight uint64, producersBlackList map[string]uint8) error
+
+	// pde
+	DeleteWaitingPDEContributionByPairID(beaconHeight uint64, pairID string) error
+	ContributeToPDE(beaconHeight uint64, pairID string, contributorAddressStr string, tokenIDStr string, contributedAmount uint64) error
+	GetPDEPoolForPair(beaconHeight uint64, tokenIDToBuyStr string, tokenIDToSellStr string) ([]byte, error)
+	UpdatePDEPoolForPair(beaconHeight uint64, token1IDStr string, token2IDStr string, pdePoolForPairBytes []byte) error
+	AddTradeFeeUp(beaconHeight uint64, token1IDStr string, token2IDStr string, tokenIDToBuyStr string, amt uint64) error
+	DeductTradeFee(beaconHeight uint64, token1IDStr string, token2IDStr string, tokenIDToBuyStr string, amt uint64) error
+	GetSharesOfContributorForTokenIDOnAPair(token1IDStr string, token2IDStr string, contributedTokenIDStr string, contributorAddrStr string) (uint64, error)
+	GetTotalSharesForTokenIDOnAPair(token1IDStr string, token2IDStr string, contributedTokenIDStr string) (uint64, error)
+	GetAllRecordsByPrefix(beaconHeight uint64, prefix []byte) ([][]byte, [][]byte, error)
+	DeductSharesForWithdrawal(beaconHeight uint64, token1IDStr string, token2IDStr string, targetingTokenIDStr string, withdrawerAddressStr string, amt uint64) error
+	GetLatestPDEPoolForPair(tokenIDToBuyStr string, tokenIDToSellStr string) ([]byte, error)
+	TrackPDEStatus(prefix []byte, suffix []byte, status byte) error
+	GetPDEStatus(prefix []byte, suffix []byte) (byte, error)
 }

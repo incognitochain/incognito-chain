@@ -106,11 +106,11 @@ func (httpServer *HttpServer) handleGetShardPoolState(params interface{}, closeC
 	shardID := byte(shardIDTemp)
 
 	shardPool, err := httpServer.poolStateService.GetShardPoolState(shardID)
-	if err != nil{
+	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("shard to Beacon Pool not init"))
 	}
 
-	result := jsonresult.NewBlocksFromShardPool(*shardPool)
+	result := jsonresult.NewBlocksFromShardPool(shardPool)
 	Logger.log.Debugf("handleGetShardPoolState result: %+v", result)
 	return result, nil
 }
@@ -132,7 +132,7 @@ func (httpServer *HttpServer) handleGetShardPoolLatestValidHeight(params interfa
 	shardID := byte(shardIDTemp)
 
 	result, err := httpServer.poolStateService.GetShardPoolLatestValidHeight(shardID)
-	if err != nil{
+	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("shard to Beacon Pool not init"))
 	}
 
@@ -153,7 +153,7 @@ func (httpServer *HttpServer) handleGetShardToBeaconPoolStateV2(params interface
 	}
 
 	allBlockHeight, allLatestBlockHeight, err := httpServer.poolStateService.GetShardToBeaconPoolStateV2()
-	if err != nil{
+	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
@@ -214,7 +214,7 @@ func (httpServer *HttpServer) handleGetShardPoolStateV2(params interface{}, clos
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
-	result := jsonresult.NewBlocksFromShardPool(*shardPool)
+	result := jsonresult.NewBlocksFromShardPool(shardPool)
 	Logger.log.Debugf("handleGetShardPoolStateV2 result: %+v", result)
 	return result, nil
 }
@@ -225,7 +225,7 @@ func (httpServer *HttpServer) handleGetBeaconPoolStateV2(params interface{}, clo
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
-	result := jsonresult.NewBlocksFromBeaconPool(*beaconPool)
+	result := jsonresult.NewBlocksFromBeaconPool(beaconPool)
 	Logger.log.Debugf("handleGetBeaconPoolStateV2 result: %+v", result)
 	return result, nil
 }

@@ -60,14 +60,15 @@ func (e BLSBFT) CreateValidationData(block common.BlockInterface) ValidationData
 
 func (e BLSBFT) validatePreSignBlock(block common.BlockInterface) error {
 	e.logger.Info("verifying block...")
-	e.logger.Info("ValidateProducerPosition...")
-	if err := e.ValidateProducerPosition(block, e.RoundData.LastProposerIndex, e.RoundData.Committee); err != nil {
-		return consensus.NewConsensusError(consensus.UnExpectedError, err)
-	}
-	e.logger.Info("ValidateProducerSig...")
-	if err := e.ValidateProducerSig(block); err != nil {
-		return consensus.NewConsensusError(consensus.ProducerSignatureError, err)
-	}
+	//TODO: 0xsirush revert this code
+	//e.logger.Info("ValidateProducerPosition...")
+	//if err := e.ValidateProducerPosition(block, e.RoundData.LastProposerIndex, e.RoundData.Committee); err != nil {
+	//	return consensus.NewConsensusError(consensus.UnExpectedError, err)
+	//}
+	//e.logger.Info("ValidateProducerSig...")
+	//if err := e.ValidateProducerSig(block); err != nil {
+	//	return consensus.NewConsensusError(consensus.ProducerSignatureError, err)
+	//}
 	e.logger.Info("ValidatePreSignBlock...")
 	if err := e.Chain.ValidatePreSignBlock(block); err != nil {
 		return consensus.NewConsensusError(consensus.UnExpectedError, err)
@@ -77,7 +78,9 @@ func (e BLSBFT) validatePreSignBlock(block common.BlockInterface) error {
 }
 
 func (e BLSBFT) ValidateProducerPosition(block common.BlockInterface, lastProposerIndex int, committee []incognitokey.CommitteePublicKey) error {
-	producerPosition := (lastProposerIndex + block.GetRound()) % len(committee)
+	//TODO: revert this
+	//producerPosition := (lastProposerIndex + block.GetRound()) % len(committee)
+	producerPosition := (lastProposerIndex) % len(committee)
 	tempProducer, err := committee[producerPosition].ToBase58()
 	if err != nil {
 		return err

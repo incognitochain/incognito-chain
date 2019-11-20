@@ -9,7 +9,7 @@ const (
 	CMaskByte = 0x80
 	// CNotMaskB 0b01111111
 	CNotMaskByte = 0x7F
-	
+
 	CCommiteeSize = 256
 )
 

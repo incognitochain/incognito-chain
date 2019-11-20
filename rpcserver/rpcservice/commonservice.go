@@ -71,7 +71,7 @@ func NewBurningRequestMetadata(senderPrivateKeyStr string, tokenReceivers interf
 		remoteAddress,
 		metadata.BurningRequestMeta,
 	)
-	if err != nil{
+	if err != nil {
 		return nil, NewRPCError(UnexpectedError, err)
 	}
 

@@ -7,7 +7,7 @@ import (
 	"math/big"
 )
 
-func HashToG1(m []byte) (*bn256.G1) {
+func HashToG1(m []byte) *bn256.G1 {
 	one := big.NewInt(1)
 
 	h := sha256.Sum256(m)
@@ -21,19 +21,19 @@ func HashToG1(m []byte) (*bn256.G1) {
 
 		y := new(big.Int).ModSqrt(t, bn256.P)
 		if y != nil {
-			return SetXYG1(x,y)
+			return SetXYG1(x, y)
 		}
 		x.Add(x, one)
 	}
 }
 
-func HashToScalar(m []byte) (*big.Int) {
+func HashToScalar(m []byte) *big.Int {
 	h := sha256.Sum256(m)
 	x := new(big.Int).SetBytes(h[:])
 	return x.Mod(x, bn256.Order)
 }
 
-func SetXYG1(x,y *big.Int) (*bn256.G1) {
+func SetXYG1(x, y *big.Int) *bn256.G1 {
 	xBytes := x.Bytes()
 	yBytes := y.Bytes()
 	pBytes := make([]byte, CBigIntSize*2)
@@ -80,45 +80,44 @@ func DecompressG1(data []byte) (*bn256.G1, error) {
 	smaller := y.Cmp(yPrime) < 0
 
 	if flag == 1 && smaller {
-		return SetXYG1(x,yPrime), nil
+		return SetXYG1(x, yPrime), nil
 	}
 	if flag == 0 && !smaller {
-		return SetXYG1(x,yPrime), nil
+		return SetXYG1(x, yPrime), nil
 	}
-	return  SetXYG1(x,y), nil
+	return SetXYG1(x, y), nil
 }
 
 func PairingCheck(a []*bn256.G1, b []*bn256.G2) bool {
 	return bn256.PairingCheck(a, b)
 }
 
-
-func MultiScalarMultG1(pointLs []*bn256.G1, scalarLs []*big.Int) (*bn256.G1) {
+func MultiScalarMultG1(pointLs []*bn256.G1, scalarLs []*big.Int) *bn256.G1 {
 	Zero := new(bn256.G1).ScalarBaseMult(big.NewInt(0))
 	if len(scalarLs) != len(pointLs) {
 		return nil
 	}
 
 	digitsLs := make([][64]int8, len(scalarLs))
-	for i:= range digitsLs {
+	for i := range digitsLs {
 		digitsLs[i] = signedRadix16(scalarLs[i])
 	}
 
-	PiLs := make ([][9]*bn256.G1, len(scalarLs))
-	for i:=0; i < len(scalarLs); i++ {
+	PiLs := make([][9]*bn256.G1, len(scalarLs))
+	for i := 0; i < len(scalarLs); i++ {
 		// 0P, 1P, 2P, ..., 8P
 		PiLs[i][0] = new(bn256.G1).Set(Zero)
 		PiLs[i][1] = new(bn256.G1).Set(pointLs[i])
-		for j:=2; j< 9; j++ {
-			PiLs[i][j] = new(bn256.G1).Add(pointLs[i],PiLs[i][j-1])
+		for j := 2; j < 9; j++ {
+			PiLs[i][j] = new(bn256.G1).Add(pointLs[i], PiLs[i][j-1])
 		}
 	}
 
 	res := new(bn256.G1).Set(Zero)
-	for i:=0; i< len(scalarLs); i++ {
+	for i := 0; i < len(scalarLs); i++ {
 		xmask := digitsLs[i][63] >> 7
 		xabs := uint8((digitsLs[i][63] + xmask) ^ xmask)
-		for j:=0; j < 9; j++ {
+		for j := 0; j < 9; j++ {
 			if int(xabs) == j {
 				if digitsLs[i][63] >= 0 {
 					res.Add(res, PiLs[i][j])
@@ -131,20 +130,20 @@ func MultiScalarMultG1(pointLs []*bn256.G1, scalarLs []*big.Int) (*bn256.G1) {
 	}
 
 	tmp := new(bn256.G1)
-	for k:=62 ; k >= 0; k-- {
-		tmp.Add(res,res)
+	for k := 62; k >= 0; k-- {
+		tmp.Add(res, res)
 		res.Set(tmp)
-		tmp.Add(res,res)
+		tmp.Add(res, res)
 		res.Set(tmp)
-		tmp.Add(res,res)
+		tmp.Add(res, res)
 		res.Set(tmp)
-		tmp.Add(res,res)
+		tmp.Add(res, res)
 		res.Set(tmp)
 
-		for i:=0; i < len(scalarLs); i++ {
+		for i := 0; i < len(scalarLs); i++ {
 			xmask := digitsLs[i][k] >> 7
 			xabs := uint8((digitsLs[i][k] + xmask) ^ xmask)
-			for j:=0; j < 16; j++ {
+			for j := 0; j < 16; j++ {
 				if int(xabs) == j {
 					if digitsLs[i][k] >= 0 {
 						res.Add(res, PiLs[i][j])
@@ -160,33 +159,32 @@ func MultiScalarMultG1(pointLs []*bn256.G1, scalarLs []*big.Int) (*bn256.G1) {
 	return res
 }
 
-
-func MultiScalarMultG2(pointLs []*bn256.G2, scalarLs []*big.Int) (*bn256.G2) {
+func MultiScalarMultG2(pointLs []*bn256.G2, scalarLs []*big.Int) *bn256.G2 {
 	Zero := new(bn256.G2).ScalarBaseMult(big.NewInt(0))
 	if len(scalarLs) != len(pointLs) {
 		return nil
 	}
 
 	digitsLs := make([][64]int8, len(scalarLs))
-	for i:= range digitsLs {
+	for i := range digitsLs {
 		digitsLs[i] = signedRadix16(scalarLs[i])
 	}
 
-	PiLs := make ([][9]*bn256.G2, len(scalarLs))
-	for i:=0; i < len(scalarLs); i++ {
+	PiLs := make([][9]*bn256.G2, len(scalarLs))
+	for i := 0; i < len(scalarLs); i++ {
 		// 0P, 1P, 2P, ..., 8P
 		PiLs[i][0] = new(bn256.G2).Set(Zero)
 		PiLs[i][1] = new(bn256.G2).Set(pointLs[i])
-		for j:=2; j< 9; j++ {
-			PiLs[i][j] = new(bn256.G2).Add(pointLs[i],PiLs[i][j-1])
+		for j := 2; j < 9; j++ {
+			PiLs[i][j] = new(bn256.G2).Add(pointLs[i], PiLs[i][j-1])
 		}
 	}
 
 	res := new(bn256.G2).Set(Zero)
-	for i:=0; i< len(scalarLs); i++ {
+	for i := 0; i < len(scalarLs); i++ {
 		xmask := digitsLs[i][63] >> 7
 		xabs := uint8((digitsLs[i][63] + xmask) ^ xmask)
-		for j:=0; j < 9; j++ {
+		for j := 0; j < 9; j++ {
 			if int(xabs) == j {
 				if digitsLs[i][63] >= 0 {
 					res.Add(res, PiLs[i][j])
@@ -199,20 +197,20 @@ func MultiScalarMultG2(pointLs []*bn256.G2, scalarLs []*big.Int) (*bn256.G2) {
 	}
 
 	tmp := new(bn256.G2)
-	for k:=62 ; k >= 0; k-- {
-		tmp.Add(res,res)
+	for k := 62; k >= 0; k-- {
+		tmp.Add(res, res)
 		res.Set(tmp)
-		tmp.Add(res,res)
+		tmp.Add(res, res)
 		res.Set(tmp)
-		tmp.Add(res,res)
+		tmp.Add(res, res)
 		res.Set(tmp)
-		tmp.Add(res,res)
+		tmp.Add(res, res)
 		res.Set(tmp)
 
-		for i:=0; i < len(scalarLs); i++ {
+		for i := 0; i < len(scalarLs); i++ {
 			xmask := digitsLs[i][k] >> 7
 			xabs := uint8((digitsLs[i][k] + xmask) ^ xmask)
-			for j:=0; j < 16; j++ {
+			for j := 0; j < 16; j++ {
 				if int(xabs) == j {
 					if digitsLs[i][k] >= 0 {
 						res.Add(res, PiLs[i][j])
@@ -228,18 +226,17 @@ func MultiScalarMultG2(pointLs []*bn256.G2, scalarLs []*big.Int) (*bn256.G2) {
 	return res
 }
 
-
 func ScalarMultRadix16(point *bn256.G2, scalar *big.Int) *bn256.G2 {
 	digits := signedRadix16(scalar)
 	var Pi [9]*bn256.G2
 	Pi[0] = new(bn256.G2).ScalarMult(point, big.NewInt(0))
 	Pi[1] = new(bn256.G2).Set(point)
-	for j:=2; j < 9; j++ {
-		Pi[j] = new(bn256.G2).Add(point,Pi[j-1])
+	for j := 2; j < 9; j++ {
+		Pi[j] = new(bn256.G2).Add(point, Pi[j-1])
 	}
 
 	res := new(bn256.G2)
-	for j:=0; j < 9; j++ {
+	for j := 0; j < 9; j++ {
 		xmask := digits[63] >> 7
 		xabs := uint8((digits[63] + xmask) ^ xmask)
 		if int(xabs) == j {
@@ -252,19 +249,19 @@ func ScalarMultRadix16(point *bn256.G2, scalar *big.Int) *bn256.G2 {
 		}
 	}
 	tmp := new(bn256.G2)
-	for k:=62 ; k >= 0; k-- {
-		tmp.Add(res,res)
+	for k := 62; k >= 0; k-- {
+		tmp.Add(res, res)
 		res.Set(tmp)
-		tmp.Add(res,res)
+		tmp.Add(res, res)
 		res.Set(tmp)
-		tmp.Add(res,res)
+		tmp.Add(res, res)
 		res.Set(tmp)
-		tmp.Add(res,res)
+		tmp.Add(res, res)
 		res.Set(tmp)
 
 		xmask := digits[k] >> 7
 		xabs := uint8((digits[k] + xmask) ^ xmask)
-		for j:=0; j < 9; j++ {
+		for j := 0; j < 9; j++ {
 			if int(xabs) == j {
 				if digits[k] >= 0 {
 					res.Add(res, Pi[j])
@@ -281,7 +278,7 @@ func ScalarMultRadix16(point *bn256.G2, scalar *big.Int) *bn256.G2 {
 func signedRadix16(digit *big.Int) [64]int8 {
 	// Compute unsigned radix-16 digits:
 	s := digit.Bytes()
-	var digits  [64]int8
+	var digits [64]int8
 
 	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
 		s[i], s[j] = s[j], s[i]
