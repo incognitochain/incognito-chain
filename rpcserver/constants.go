@@ -155,6 +155,7 @@ const (
 	getChainMiningStatus        = "getchainminingstatus"
 	getPublickeyMining          = "getpublickeymining"
 	getPublicKeyRole            = "getpublickeyrole"
+	getRoleByValidatorKey       = "getrolebyvalidatorkey"
 	getIncognitoPublicKeyRole   = "getincognitopublickeyrole"
 	getMinerRewardFromMiningKey = "getminerrewardfromminingkey"
 
