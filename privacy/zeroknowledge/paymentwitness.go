@@ -102,6 +102,7 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 	wit.myCommitmentIndices = myCommitmentIndices
 
 	numInputCoin := len(wit.inputCoins)
+	numOutputCoin := len(wit.outputCoins)
 
 	randInputSK := privacy.RandomScalar()
 	// set rand sk for Schnorr signature
@@ -142,8 +143,13 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 	preIndex := 0
 
 	for i, inputCoin := range wit.inputCoins {
+		// tx only has fee, no output, Rand_Value_Input = 0
+		if numOutputCoin == 0 {
+			randInputValue[i] = new(privacy.Scalar).FromUint64(0)
+		} else {
+			randInputValue[i] = privacy.RandomScalar()
+		}
 		// commit each component of coin commitment
-		randInputValue[i] = privacy.RandomScalar()
 		randInputSND[i] = privacy.RandomScalar()
 
 		wit.comInputValue[i] = privacy.PedCom.CommitAtIndex(new(privacy.Scalar).FromUint64(inputCoin.CoinDetails.GetValue()), randInputValue[i], privacy.PedersenValueIndex)
@@ -193,7 +199,7 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 		// ---------------------------------------------------
 	}
 
-	numOutputCoin := len(wit.outputCoins)
+
 
 	randOutputValue := make([]*privacy.Scalar, numOutputCoin)
 	randOutputSND := make([]*privacy.Scalar, numOutputCoin)
