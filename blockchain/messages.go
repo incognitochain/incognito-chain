@@ -218,7 +218,7 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block *ShardToBeaconB
 	if blockchain.IsTest {
 		return
 	}
-	Logger.log.Infof("[hy] OnShardToBeaconBlockReceived NodeMode: %+v", blockchain.config.NodeMode)
+	Logger.log.Infof("[sync] OnShardToBeaconBlockReceived NodeMode: %+v", blockchain.config.NodeMode)
 	if blockchain.config.NodeMode == common.NodeModeBeacon || blockchain.config.NodeMode == common.NodeModeAuto {
 		layer, role, _ := blockchain.config.ConsensusEngine.GetUserRole()
 		Logger.log.Infof("OnShardToBeaconBlockReceived layer && role: %+v %+v", layer, role)
@@ -229,11 +229,11 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block *ShardToBeaconB
 		return
 	}
 
-	Logger.log.Infof("[hy] OnShardToBeaconBlockReceived IsLatest: %+v", blockchain.Synker.IsLatest(false, 0))
+	Logger.log.Infof("[sync] OnShardToBeaconBlockReceived IsLatest: %+v", blockchain.Synker.IsLatest(false, 0))
 	if blockchain.Synker.IsLatest(false, 0) {
-		Logger.log.Info("[hy] OnShardToBeaconBlockReceived IsLatest!")
+		Logger.log.Info("[sync] OnShardToBeaconBlockReceived IsLatest!")
 		if block.Header.Version != SHARD_BLOCK_VERSION {
-			Logger.log.Debugf("[hy] Invalid Verion of block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID)
+			Logger.log.Debugf("[sync] Invalid Verion of block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID)
 			return
 		}
 
@@ -251,11 +251,11 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block *ShardToBeaconB
 			}
 		}
 		if from != 0 && to != 0 {
-			Logger.log.Infof("[hy] Message/SyncBlkShardToBeacon, from %+v to %+v \n", from, to)
+			Logger.log.Infof("[sync] Message/SyncBlkShardToBeacon, from %+v to %+v \n", from, to)
 			blockchain.Synker.SyncBlkShardToBeacon(block.Header.ShardID, false, false, false, nil, nil, from, to, "")
 		}
 	} else {
-		Logger.log.Info("[hy] OnShardToBeaconBlockReceived Is not Latest!")
+		Logger.log.Info("[sync] OnShardToBeaconBlockReceived Is not Latest!")
 	}
 }
 
