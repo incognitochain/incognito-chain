@@ -809,9 +809,7 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 // CheckForceUpdateSourceCode - loop to check current version with update version is equal
 // Force source code to be updated and remove data
 func (serverObject Server) CheckForceUpdateSourceCode() {
-	return
 	go func() {
-
 		ctx := context.Background()
 		myClient, err := storage.NewClient(ctx, option.WithoutAuthentication())
 		if err != nil {

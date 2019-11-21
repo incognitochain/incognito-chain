@@ -711,10 +711,6 @@ func (synker *Synker) UpdateStatev2() {
 	}
 	for _, peerStatev2 := range synker.States.PeersStatev2 {
 		// peerPublicKeyString, err := peerStatev2.PeerPublicKey.ToBase58()
-		//TODO @0xakk0r0kamui handle error here
-		if err != nil {
-			panic("Panic for test")
-		}
 		for shardID := range synker.Status.Shards {
 			if shardState, ok := peerStatev2.Shard[shardID]; ok {
 				if shardState.Height >= GetBeaconBestState().GetBestHeightOfShard(shardID) && shardState.Height > GetBestStateShard(shardID).ShardHeight {
