@@ -144,6 +144,7 @@ var HttpHandler = map[string]httpHandler{
 	getChainMiningStatus:        (*HttpServer).handleGetChainMiningStatus,
 	getPublickeyMining:          (*HttpServer).handleGetPublicKeyMining,
 	getPublicKeyRole:            (*HttpServer).handleGetPublicKeyRole,
+	getRoleByValidatorKey:       (*HttpServer).handleGetValidatorKeyRole,
 	getIncognitoPublicKeyRole:   (*HttpServer).handleGetIncognitoPublicKeyRole,
 	getMinerRewardFromMiningKey: (*HttpServer).handleGetMinerRewardFromMiningKey,
 	getProducersBlackList:       (*HttpServer).handleGetProducersBlackList,
