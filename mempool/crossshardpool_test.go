@@ -1,6 +1,9 @@
 package mempool
 
 import (
+	"io/ioutil"
+	"log"
+	"os"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -10,6 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/core/rawdb"
 	"github.com/incognitochain/incognito-chain/incdb"
+	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 )
 
 var (
@@ -103,7 +107,12 @@ var _ = func() (_ struct{}) {
 		pool.isTest = true
 		crossShardPoolMapTest[shardID] = pool
 	}
-	dbCrossShard, err = incdb.Open("leveldb", filepath.Join("./", "./testdatabase/crossshard"))
+	dbPath, err := ioutil.TempDir(os.TempDir(), "test_")
+	if err != nil {
+		log.Fatalf("failed to create temp dir: %+v", err)
+	}
+	log.Println(dbPath)
+	dbCrossShard, err = incdb.Open("leveldb", filepath.Join("./", dbPath))
 	if err != nil {
 		panic("Could not open db connection")
 	}
