@@ -3,7 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/core/rawdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"

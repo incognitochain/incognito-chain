@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/incognitochain/incognito-chain/core/rawdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/stretchr/testify/suite"

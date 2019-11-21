@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/core/rawdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/stretchr/testify/suite"
 )

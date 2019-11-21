@@ -3,7 +3,7 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/core/rawdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"math/big"
 	"sort"
