@@ -1090,7 +1090,7 @@ func (synker *Synker) SyncBlkShard(shardID byte, byHash bool, bySpecificHeights 
 func (synker *Synker) syncMissingBlockInPool(
 	shardID int,
 ) error {
-	Logger.log.Infof("[sync] syncMissingBlockInPool FUCK")
+	Logger.log.Infof("[sync] syncMissingBlockInPool")
 	listValidBlks := []uint64{}
 	listPendingBlks := []uint64{}
 	listBlkToSync := []uint64{}
