@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/metrics"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -338,10 +340,10 @@ func (e *BLSBFT) enterVotePhase() {
 
 func (e *BLSBFT) enterNewRound() {
 	//if chain is not ready,  return
-	// if !e.Chain.IsReady() {
-	// 	e.RoundData.State = ""
-	// 	return
-	// }
+	if !e.Chain.IsReady() {
+		e.RoundData.State = ""
+		return
+	}
 	//if already running a round for current timeframe
 	if e.isInTimeFrame() && e.RoundData.State != newround {
 		return
