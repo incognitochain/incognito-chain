@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/metrics"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -345,10 +346,10 @@ func (e *BLSBFT) enterVotePhase() {
 
 func (e *BLSBFT) enterNewRound() {
 	//if chain is not ready,  return
-	// if !e.Chain.IsReady() {
-	// 	e.RoundData.State = ""
-	// 	return
-	// }
+	if !e.Chain.IsReady() {
+		e.RoundData.State = ""
+		return
+	}
 	//if already running a round for current timeframe
 	if e.isInTimeFrame() && (e.RoundData.State != newround && e.RoundData.State != "") {
 		fmt.Println("CONSENSUS", e.isInTimeFrame(), e.getCurrentRound(), e.getTimeSinceLastBlock().Seconds(), e.RoundData.State)
