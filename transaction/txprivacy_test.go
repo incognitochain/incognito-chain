@@ -39,7 +39,7 @@ func TestUnmarshalJSON(t *testing.T) {
 }
 
 func TestInitTx(t *testing.T) {
-	for i:=0; i<1; i++ {
+	for i := 0; i < 1; i++ {
 		//Generate sender private key & receiver payment address
 		seed := privacy.RandomScalar().ToBytesS()
 		masterKey, _ := wallet.NewMasterKey(seed)
@@ -95,7 +95,7 @@ func TestInitTx(t *testing.T) {
 
 		// message to receiver
 		msg := "Incognito-chain"
-		receiverTK , _:= new(privacy.Point).FromBytesS(senderKey.KeySet.PaymentAddress.Tk)
+		receiverTK, _ := new(privacy.Point).FromBytesS(senderKey.KeySet.PaymentAddress.Tk)
 		msgCipherText, _ := privacy.HybridEncrypt([]byte(msg), receiverTK)
 
 		fmt.Printf("msgCipherText: %v - len : %v\n", msgCipherText.Bytes(), len(msgCipherText.Bytes()))
@@ -244,7 +244,7 @@ func TestInitTx(t *testing.T) {
 }
 
 func TestInitTxWithMultiScenario(t *testing.T) {
-	for i :=0; i < 50; i++ {
+	for i := 0; i < 50; i++ {
 		//Generate sender private key & receiver payment address
 		seed := privacy.RandomScalar().ToBytesS()
 		masterKey, _ := wallet.NewMasterKey(seed)
@@ -328,24 +328,24 @@ func TestInitTxWithMultiScenario(t *testing.T) {
 		assert.Equal(t, true, isValid)
 
 		// modify Sig
-		tx1.Sig[len(tx1.Sig)-1] = tx1.Sig[len(tx1.Sig)-1]^tx1.Sig[0]
-		tx1.Sig[len(tx1.Sig)-2] = tx1.Sig[len(tx1.Sig)-2]^tx1.Sig[1]
+		tx1.Sig[len(tx1.Sig)-1] = tx1.Sig[len(tx1.Sig)-1] ^ tx1.Sig[0]
+		tx1.Sig[len(tx1.Sig)-2] = tx1.Sig[len(tx1.Sig)-2] ^ tx1.Sig[1]
 		isValid, err = tx1.ValidateTransaction(hasPrivacy, db, shardID, nil)
 		assert.Equal(t, false, isValid)
 		assert.NotEqual(t, nil, err)
-		tx1.Sig[len(tx1.Sig)-1] = tx1.Sig[len(tx1.Sig)-1]^tx1.Sig[0]
-		tx1.Sig[len(tx1.Sig)-2] = tx1.Sig[len(tx1.Sig)-2]^tx1.Sig[1]
+		tx1.Sig[len(tx1.Sig)-1] = tx1.Sig[len(tx1.Sig)-1] ^ tx1.Sig[0]
+		tx1.Sig[len(tx1.Sig)-2] = tx1.Sig[len(tx1.Sig)-2] ^ tx1.Sig[1]
 
 		// modify verification key
-		tx1.SigPubKey[len(tx1.SigPubKey)-1] = tx1.SigPubKey[len(tx1.SigPubKey)-1]^tx1.SigPubKey[0]
-		tx1.SigPubKey[len(tx1.SigPubKey)-2] = tx1.SigPubKey[len(tx1.SigPubKey)-2]^tx1.SigPubKey[1]
+		tx1.SigPubKey[len(tx1.SigPubKey)-1] = tx1.SigPubKey[len(tx1.SigPubKey)-1] ^ tx1.SigPubKey[0]
+		tx1.SigPubKey[len(tx1.SigPubKey)-2] = tx1.SigPubKey[len(tx1.SigPubKey)-2] ^ tx1.SigPubKey[1]
 
 		isValid, err = tx1.ValidateTransaction(hasPrivacy, db, shardID, nil)
 		assert.Equal(t, false, isValid)
 		assert.NotEqual(t, nil, err)
 
-		tx1.SigPubKey[len(tx1.SigPubKey)-1] = tx1.SigPubKey[len(tx1.SigPubKey)-1]^tx1.SigPubKey[0]
-		tx1.SigPubKey[len(tx1.SigPubKey)-2] = tx1.SigPubKey[len(tx1.SigPubKey)-2]^tx1.SigPubKey[1]
+		tx1.SigPubKey[len(tx1.SigPubKey)-1] = tx1.SigPubKey[len(tx1.SigPubKey)-1] ^ tx1.SigPubKey[0]
+		tx1.SigPubKey[len(tx1.SigPubKey)-2] = tx1.SigPubKey[len(tx1.SigPubKey)-2] ^ tx1.SigPubKey[1]
 
 		// modify proof
 		originProof := tx1.Proof.Bytes()
@@ -395,20 +395,20 @@ func TestInitSalaryTx(t *testing.T) {
 }
 
 type CoinObject struct {
-	PublicKey string
+	PublicKey      string
 	CoinCommitment string
-	SNDerivator string
-	SerialNumber string
-	Randomness string
-	Value uint64
-	Info string
+	SNDerivator    string
+	SerialNumber   string
+	Randomness     string
+	Value          uint64
+	Info           string
 }
 
 func ParseCoinObjectToStruct(coinObjects []CoinObject) ([]*privacy.InputCoin, uint64) {
 	coins := make([]*privacy.InputCoin, len(coinObjects))
 	sumValue := uint64(0)
 
-	for i := 0; i<len(coins); i++{
+	for i := 0; i < len(coins); i++ {
 
 		publicKey, _, _ := base58.Base58Check{}.Decode(coinObjects[i].PublicKey)
 		publicKeyPoint := new(privacy.Point)

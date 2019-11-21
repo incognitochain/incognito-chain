@@ -45,7 +45,7 @@ func (proof AggregatedRangeProof) ValidateSanity() bool {
 	if !proof.tauX.ScalarValid() {
 		return false
 	}
-	if !proof.tHat.ScalarValid(){
+	if !proof.tHat.ScalarValid() {
 		return false
 	}
 	if !proof.mu.ScalarValid() {
@@ -208,12 +208,12 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	}
 
 	aggParam := new(bulletproofParams)
-	extraNumber := numValuePad - len(AggParam.g) / 64
+	extraNumber := numValuePad - len(AggParam.g)/64
 	if extraNumber > 0 {
 		aggParam = addBulletproofParams(extraNumber)
 	} else {
-		aggParam.g = AggParam.g[0:numValuePad*64]
-		aggParam.h = AggParam.h[0:numValuePad*64]
+		aggParam.g = AggParam.g[0 : numValuePad*64]
+		aggParam.h = AggParam.h[0 : numValuePad*64]
 		aggParam.u = AggParam.u
 		//aggParam.gPrecomputed = AggParam.gPrecomputed[0:numValuePad*64]
 		//aggParam.hPrecomputed = AggParam.hPrecomputed[0:numValuePad*64]
@@ -265,7 +265,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	}
 
 	// random rho
-	rho :=privacy.RandomScalar()
+	rho := privacy.RandomScalar()
 
 	// Commitment to sL, sR : S = h^rho * G^sL * H^sR
 	S, err := encodeVectors(sL, sR, aggParam.g, aggParam.h)
@@ -369,7 +369,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	// challenge x = hash(G || H || A || S || T1 || T2)
 	x := generateChallengeForAggRange(aggParam,
 		[][]byte{proof.a.ToBytesS(), proof.s.ToBytesS(), proof.t1.ToBytesS(), proof.t2.ToBytesS()})
-	xSquare := new(privacy.Scalar).Mul(x,x)
+	xSquare := new(privacy.Scalar).Mul(x, x)
 
 	// lVector = aL - z*1^n + sL*x
 	lVector, err := vectorAdd(vectorAddScalar(aL, zNeg), vectorMulScalar(sL, x))
@@ -452,12 +452,12 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	}
 
 	aggParam := new(bulletproofParams)
-	extraNumber := numValuePad - len(AggParam.g) / 64
+	extraNumber := numValuePad - len(AggParam.g)/64
 	if extraNumber > 0 {
 		aggParam = addBulletproofParams(extraNumber)
 	} else {
-		aggParam.g = AggParam.g[0:numValuePad*64]
-		aggParam.h = AggParam.h[0:numValuePad*64]
+		aggParam.g = AggParam.g[0 : numValuePad*64]
+		aggParam.h = AggParam.h[0 : numValuePad*64]
 		aggParam.u = AggParam.u
 		//aggParam.gPrecomputed = AggParam.gPrecomputed[0:numValuePad*64]
 		//aggParam.hPrecomputed = AggParam.hPrecomputed[0:numValuePad*64]
@@ -479,7 +479,7 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 
 	// challenge x = hash(G || H || A || S || T1 || T2)
 	//fmt.Printf("T2: %v\n", proof.t2)
-	x := generateChallengeForAggRange(aggParam,[][]byte{proof.a.ToBytesS(), proof.s.ToBytesS(),proof.t1.ToBytesS(), proof.t2.ToBytesS()})
+	x := generateChallengeForAggRange(aggParam, [][]byte{proof.a.ToBytesS(), proof.s.ToBytesS(), proof.t1.ToBytesS(), proof.t2.ToBytesS()})
 	xSquare := new(privacy.Scalar).Mul(x, x)
 
 	yVector := powerVector(y, n*numValuePad)
@@ -520,8 +520,8 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 
 	left1 := privacy.PedCom.CommitAtIndex(proof.tHat, proof.tauX, privacy.PedersenValueIndex)
 
-	right1 := new(privacy.Point).ScalarMult( proof.t2, xSquare)
-	right1.Add(right1, new(privacy.Point).AddPedersen(deltaYZ,privacy.PedCom.G[privacy.PedersenValueIndex], x, proof.t1))
+	right1 := new(privacy.Point).ScalarMult(proof.t2, xSquare)
+	right1.Add(right1, new(privacy.Point).AddPedersen(deltaYZ, privacy.PedCom.G[privacy.PedersenValueIndex], x, proof.t1))
 
 	expVector := vectorMulScalar(powerVector(z, numValuePad), zSquare)
 	right1.Add(right1, new(privacy.Point).MultiScalarMult(expVector, tmpcmsValue))

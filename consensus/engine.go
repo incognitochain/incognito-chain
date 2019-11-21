@@ -512,6 +512,7 @@ func (engine *Engine) updateUserState(keySet *incognitokey.CommitteePublicKey, l
 
 	if role == "" {
 		metrics.SetGlobalParam("Layer", "", "Role", "", "ShardID", -2)
+
 		engine.userCurrentState.UserLayer = ""
 		engine.userCurrentState.UserRole = ""
 		engine.userCurrentState.ShardID = 0

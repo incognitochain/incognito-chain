@@ -79,7 +79,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 			Logger.log.Error(err)
 			return err
 		}
-		if err := blockchain.RevertBeaconState(); err != nil {
+		if err := blockchain.revertBeaconState(); err != nil {
 			panic(err)
 		}
 		blockchain.BestState.Beacon.lock.Unlock()
@@ -547,7 +547,7 @@ func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(beaconBlo
 	defer beaconBestState.lock.RUnlock()
 	//verify producer via index
 	producerPublicKey := beaconBlock.Header.Producer
-	producerPosition := (beaconBestState.BeaconProposerIndex + beaconBlock.Header.Round) % len(beaconBestState.BeaconCommittee)
+	producerPosition := beaconBestState.GetProducerIndexFromBlock(beaconBlock)
 	tempProducer, err := beaconBestState.BeaconCommittee[producerPosition].ToBase58() //.GetMiningKeyBase58(common.BridgeConsensus)
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
@@ -741,7 +741,8 @@ func (beaconBestState *BeaconBestState) updateBeaconBestState(beaconBlock *Beaco
 	if beaconBlock.Header.Height == 1 {
 		beaconBestState.BeaconProposerIndex = 0
 	} else {
-		beaconBestState.BeaconProposerIndex = (beaconBestState.BeaconProposerIndex + beaconBlock.Header.Round) % len(beaconBestState.BeaconCommittee)
+		//TODO: 0xsirush revert this code
+		beaconBestState.BeaconProposerIndex = 0 //(beaconBestState.BeaconProposerIndex + beaconBlock.Header.Round) % len(beaconBestState.BeaconCommittee)
 	}
 	if beaconBestState.BestShardHash == nil {
 		beaconBestState.BestShardHash = make(map[byte]common.Hash)

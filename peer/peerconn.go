@@ -422,6 +422,8 @@ func (peerConn *PeerConn) outMessageHandler(rw *bufio.ReadWriter) {
 		select {
 		case outMsg := <-peerConn.sendMessageQueue:
 			{
+				//fmt.Println("SEND:", reflect.TypeOf(outMsg.message))
+
 				var sendString string
 				if outMsg.rawBytes != nil && len(*outMsg.rawBytes) > 0 {
 					Logger.log.Debugf("OutMessageHandler with raw bytes")
@@ -492,11 +494,8 @@ func (peerConn *PeerConn) outMessageHandler(rw *bufio.ReadWriter) {
 			}
 		case <-peerConn.cWrite:
 			Logger.log.Debugf("OutMessageHandler QUIT %s %s", peerConn.remotePeerID.Pretty(), peerConn.remotePeer.GetRawAddress())
-
 			peerConn.setIsConnected(false)
-
 			close(peerConn.cDisconnect)
-
 			if peerConn.HandleDisconnected != nil {
 				go peerConn.HandleDisconnected(peerConn)
 			}

@@ -21,7 +21,7 @@ func TestConvert(t *testing.T) {
 
 	tmp := new(big.Int).Sub(I1, I2)
 	tmp = tmp.Sub(tmp, I3)
-	IRes:= tmp.Mod(tmp, LInt)
+	IRes := tmp.Mod(tmp, LInt)
 	LResPrime := BigIntToScalar(IRes)
 	fmt.Println(LResPrime)
 

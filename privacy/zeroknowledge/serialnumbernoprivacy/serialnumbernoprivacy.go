@@ -237,7 +237,7 @@ func (pro SNNoPrivacyProof) Verify(mess []byte) (bool, error) {
 	tmp := new(privacy.Scalar).Add(pro.zSeed, new(privacy.Scalar).Mul(x, pro.stmt.input))
 	leftPoint2 := new(privacy.Point).ScalarMult(pro.stmt.output, tmp)
 
-	rightPoint2 := new (privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex], x)
+	rightPoint2 := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex], x)
 	rightPoint2 = rightPoint2.Add(rightPoint2, pro.tOutput)
 
 	if !privacy.IsPointEqual(leftPoint2, rightPoint2) {

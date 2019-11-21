@@ -23,15 +23,23 @@ func main() {
 		fmt.Print(err)
 		panic(err)
 	}
-	privateKeys := readTxsFromFile("private-keys-shard-1-1.json")
-	fmt.Println(len(privateKeys))
+	//privateKeys := readTxsFromFile("private-keys-shard-1-1.json")
+	//fmt.Println(len(privateKeys))
+	privateKeys := []string{
+		"112t8rpnK9Hq2EqZbGJpoS2t7rB3z46sFeRwogUjvzMYHhfBvB3B2X1Mx9W1jCahUZ9aXnbcmrhLXQJsjKDzMvX8vbsA8wjKDArxXfknsVy9",
+		"112t8rq19Uu7UGbTApZzZwCAvVszAgRNAzHzr3p8Cu75jPH3h5AUtRXMKiqF3hw8NbEfeLcjtbpeUvJfw4tGj7pbqwDYngc8wB13Gf77o33f",
+		"112t8rrEW3NPNgU8xzbeqE7cr4WTT8JvyaQqSZyczA5hBJVvpQMTBVqNfcCdzhvquWCHH11jHihZtgyJqbdWPhWYbmmsw5aV29WSXBEsgbVX",
+		"112t8roHikeAFyuBpdCU76kXurEqrC9VYWyRyfFb6PwX6nip9KGYbwpXL78H92mUoWK2GWkA2WysgXbHqwSxnC6XCkmtxBVb3zJeCXgfcYyL",
+		"112t8rr4sE2L8WzsVNEN9WsiGcMTDCmEH9TC1ZK8517cxURRFNoWoStYQTgqXpiAMU4gzmkmnWahHdGvQqFaY1JTVsn3nHfD5Ppgz8hQDiVC",
+		"112t8rtt9Kd5LUcfXNmd7aMnQehCnKabArVB3BUk2RHVjeh88x5MJnJY4okB8JdFm4JNm4A2WjSe58qWNVkJPEFjpLHNYfKHpWfRdqyfDD9f",
+	}
 	for _, privateKey := range privateKeys {
-		txs := initTx("1000", privateKey, db)
+		txs := initTx("1000000000000000", privateKey, db)
 		transactions = append(transactions, txs[0])
 	}
 	fmt.Println(len(transactions))
 	file, _ := json.MarshalIndent(transactions, "", " ")
-	_ = ioutil.WriteFile("shard1-1-init-txs.json", file, 0644)
+	_ = ioutil.WriteFile("shard0-0-init-txs.json", file, 0644)
 }
 func readTxsFromFile(filename string) []string {
 	// Open our jsonFile

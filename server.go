@@ -17,6 +17,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/metrics"
 	peer2 "github.com/libp2p/go-libp2p-core/peer"
 
 	"github.com/incognitochain/incognito-chain/metrics"
@@ -684,11 +685,11 @@ func (serverObj Server) Start() {
 		return
 	}
 	Logger.log.Debug("Starting server")
-	/* --- Checkforce update code --- TODO uncomment this
+	// --- Checkforce update code ---
 	if serverObj.chainParams.CheckForce {
 		serverObj.CheckForceUpdateSourceCode()
-	}*/
-	if cfg.TestNet == "testnet" {
+	}
+	if cfg.IsTestnet() {
 		Logger.log.Critical("************************" +
 			"* Testnet is active *" +
 			"************************")
@@ -812,9 +813,7 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 // CheckForceUpdateSourceCode - loop to check current version with update version is equal
 // Force source code to be updated and remove data
 func (serverObject Server) CheckForceUpdateSourceCode() {
-	return
 	go func() {
-
 		ctx := context.Background()
 		myClient, err := storage.NewClient(ctx, option.WithoutAuthentication())
 		if err != nil {
@@ -1195,7 +1194,7 @@ func (serverObj *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerA
 		//}
 		//listen.GetPeerConnsMtx().Unlock()
 	} else {
-		peerConn.SetVerValid(true)
+		peerConn.SetVerValid(false)
 	}
 
 	Logger.log.Debug("Receive verack message END")

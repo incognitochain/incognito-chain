@@ -134,6 +134,12 @@ func (beaconBestState *BeaconBestState) MarshalJSON() ([]byte, error) {
 	return b, err
 }
 
+func (beaconBestState *BeaconBestState) GetProducerIndexFromBlock(block *BeaconBlock) int {
+	//TODO: revert his
+	//return (beaconBestState.BeaconProposerIndex + block.Header.Round) % len(beaconBestState.BeaconCommittee)
+	return 0
+}
+
 func (beaconBestState *BeaconBestState) SetBestShardHeight(shardID byte, height uint64) {
 	beaconBestState.lock.RLock()
 	defer beaconBestState.lock.RUnlock()
@@ -508,7 +514,9 @@ func (beaconBestState *BeaconBestState) GetPubkeyRole(pubkey string, round int) 
 	// Logger.log.Infof("GetPubkeyRole BeaconCommittee && keylist && pubkey: %+v %+v %+v", beaconBestState.BeaconCommittee, keyList, pubkey)
 	found := common.IndexOfStr(pubkey, keyList)
 	if found > -1 {
-		tmpID := (beaconBestState.BeaconProposerIndex + round) % len(beaconBestState.BeaconCommittee)
+		//TODO: revert this
+		//tmpID := (beaconBestState.BeaconProposerIndex + round) % len(beaconBestState.BeaconCommittee)
+		tmpID := (beaconBestState.BeaconProposerIndex) % len(beaconBestState.BeaconCommittee)
 		if found == tmpID {
 			return common.ProposerRole, 0
 		}

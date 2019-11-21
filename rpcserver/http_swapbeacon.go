@@ -48,7 +48,7 @@ func (httpServer *HttpServer) handleGetLatestBeaconSwapProof(params interface{},
 func (httpServer *HttpServer) handleGetBeaconSwapProof(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Infof("handleGetBeaconSwapProof params: %+v", params)
 	listParams, ok := params.([]interface{})
-	if !ok || len(listParams) < 1{
+	if !ok || len(listParams) < 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
 	}
 

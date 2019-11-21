@@ -151,7 +151,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, cl
 						continue
 					}
 				} else {
-					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx,-1)
+					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
 					//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 					if err != nil {
 						fail++

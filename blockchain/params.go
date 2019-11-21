@@ -99,10 +99,10 @@ func init() {
 		EthContractAddressStr:            TestnetETHContractAddressStr,
 		IncognitoDAOAddress:              TestnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: TestnetCentralizedWebsitePaymentAddress,
-		SlashLevels: []SlashLevel{
+		SlashLevels:                      []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
-			SlashLevel{MinRange: 50, PunishedEpoches: 2},
-			SlashLevel{MinRange: 75, PunishedEpoches: 3},
+			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
+			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
 		},
 		CheckForce:   true,
 		ChainVersion: "version-chain-test.json",
@@ -143,10 +143,10 @@ func init() {
 		EthContractAddressStr:            MainETHContractAddressStr,
 		IncognitoDAOAddress:              MainnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: MainnetCentralizedWebsitePaymentAddress,
-		SlashLevels: []SlashLevel{
+		SlashLevels:                      []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
-			SlashLevel{MinRange: 50, PunishedEpoches: 2},
-			SlashLevel{MinRange: 75, PunishedEpoches: 3},
+			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
+			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
 		},
 		CheckForce:   false,
 		ChainVersion: "version-chain-main.json",

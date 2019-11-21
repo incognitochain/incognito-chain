@@ -128,7 +128,6 @@ func Staking(args string) (string, error) {
 	return B64Res, nil
 }
 
-
 func StopAutoStaking(args string) (string, error) {
 	// parse meta data
 	bytes := []byte(args)

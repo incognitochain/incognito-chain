@@ -81,7 +81,10 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLi
 		epoch = beaconBestState.Epoch
 	}
 	committee := blockGenerator.chain.BestState.Beacon.GetBeaconCommittee()
-	producerPosition := (blockGenerator.chain.BestState.Beacon.BeaconProposerIndex + round) % len(beaconBestState.BeaconCommittee)
+	//TODO: revert this
+	//producerPosition := (blockGenerator.chain.BestState.Beacon.BeaconProposerIndex + round) % len(beaconBestState.BeaconCommittee)
+	producerPosition := (blockGenerator.chain.BestState.Beacon.BeaconProposerIndex) % len(beaconBestState.BeaconCommittee)
+
 	beaconBlock.Header.ConsensusType = beaconBestState.ConsensusAlgorithm
 
 	beaconBlock.Header.Producer, err = committee[producerPosition].ToBase58() // .GetMiningKeyBase58(common.BridgeConsensus)

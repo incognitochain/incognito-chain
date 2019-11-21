@@ -361,8 +361,9 @@ func (connManager *ConnManager) discoverPeers(discoverPeerAddress string) {
 func (connManager *ConnManager) processDiscoverPeers() error {
 	// startTime := time.Now()
 	discoverPeerAddress := connManager.discoverPeerAddress
-	fmt.Println("CONN: processDiscoverPeers")
 	metrics.SetGlobalParam("Bootnode", discoverPeerAddress)
+	fmt.Println("CONN: processDiscoverPeers")
+
 	if discoverPeerAddress == common.EmptyString {
 		// we dont have config to make discover peer
 		// so we dont need to do anything here
@@ -390,8 +391,9 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 		var response []wire.RawPeer
 
 		externalAddress := connManager.config.ExternalAddress
-		Logger.log.Info("Start Process Discover Peers ExternalAddress", externalAddress)
 		metrics.SetGlobalParam("ExternalAddress", externalAddress)
+		Logger.log.Info("Start Process Discover Peers ExternalAddress", externalAddress)
+
 		// remove later
 		rawAddress := listener.GetRawAddress()
 		rawPort := listener.GetPort()

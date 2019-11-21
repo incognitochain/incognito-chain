@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/metrics"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -29,11 +30,11 @@ type BLSBFT struct {
 	VoteMessageCh    chan BFTVote
 
 	RoundData struct {
+		TimeStart         time.Time
 		Block             common.BlockInterface
 		BlockHash         common.Hash
 		BlockValidateData ValidationData
 		lockVotes         sync.Mutex
-		TimeStart         time.Time
 		Votes             map[string]vote
 		Round             int
 		NextHeight        uint64
@@ -284,8 +285,8 @@ func (e *BLSBFT) Start() error {
 							}
 							continue
 						}
-						// e.Node.PushMessageToAll()
 						metrics.SetGlobalParam("CommitTime", time.Since(time.Unix(e.Chain.GetLastBlockTimeStamp(), 0)).Seconds())
+						// e.Node.PushMessageToAll()
 						e.logger.Warn("Commit block! Wait for next round")
 						e.enterNewRound()
 					}
@@ -301,9 +302,9 @@ func (e *BLSBFT) enterProposePhase() {
 		return
 	}
 	e.setState(proposePhase)
-
 	block, err := e.createNewBlock()
 	metrics.SetGlobalParam("CreateTime", time.Since(e.RoundData.TimeStart).Seconds())
+
 	if err != nil {
 		e.logger.Error("can't create block", err)
 		return
@@ -346,25 +347,30 @@ func (e *BLSBFT) enterVotePhase() {
 
 func (e *BLSBFT) enterNewRound() {
 	//if chain is not ready,  return
-	// if !e.Chain.IsReady() {
-	// 	e.RoundData.State = ""
-	// 	return
-	// }
-	//if already running a round for current timeframe
-	if e.isInTimeFrame() && e.RoundData.State != newround {
+	if !e.Chain.IsReady() {
+		e.RoundData.State = ""
 		return
 	}
+	//if already running a round for current timeframe
+	if e.isInTimeFrame() && (e.RoundData.State != newround && e.RoundData.State != "") {
+		fmt.Println("CONSENSUS", e.isInTimeFrame(), e.getCurrentRound(), e.getTimeSinceLastBlock().Seconds(), e.RoundData.State)
+		return
+	}
+
 	e.isOngoing = false
-	e.setState(newround)
+	e.setState("")
 	if e.waitForNextRound() {
 		return
 	}
+	e.setState(newround)
 	e.InitRoundData()
 	e.logger.Info("")
 	e.logger.Info("============================================")
 	e.logger.Info("")
 	pubKey := e.UserKeySet.GetPublicKey()
-	if e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(consensusName)) == (e.Chain.GetLastProposerIndex()+e.RoundData.Round)%e.Chain.GetCommitteeSize() {
+	//TODO: revert this
+	//if e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(consensusName)) == (e.Chain.GetLastProposerIndex()+e.RoundData.Round)%e.Chain.GetCommitteeSize() {
+	if e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(consensusName)) == (e.Chain.GetLastProposerIndex())%e.Chain.GetCommitteeSize() {
 		e.logger.Info("BFT: new round => PROPOSE", e.RoundData.NextHeight, e.RoundData.Round)
 		e.enterProposePhase()
 	} else {
@@ -395,37 +401,29 @@ func (e *BLSBFT) addEarlyVote(voteMsg BFTVote) {
 func (e *BLSBFT) createNewBlock() (common.BlockInterface, error) {
 
 	var errCh chan error
-	var timeoutCh chan struct{}
 	var block common.BlockInterface
 	errCh = make(chan error)
-	timeoutCh = make(chan struct{})
-	timeout := time.AfterFunc(e.Chain.GetMaxBlkCreateTime(), func() {
-		select {
-		case <-timeoutCh:
-			return
-		default:
-			timeoutCh <- struct{}{}
-		}
-	})
+	timeout := time.NewTimer(e.Chain.GetMaxBlkCreateTime()).C
 
 	go func() {
 		time1 := time.Now()
 		var err error
 		block, err = e.Chain.CreateNewBlock(int(e.RoundData.Round))
 		e.logger.Info("create block", time.Since(time1).Seconds())
-		errCh <- err
+		select {
+		case errCh <- err:
+		default:
+		}
 	}()
 
 	select {
 	case err := <-errCh:
-		timeout.Stop()
-		close(timeoutCh)
 		return block, err
-	case <-timeoutCh:
-		return nil, consensus.NewConsensusError(consensus.BlockCreationError, errors.New("block crea185tion timeout"))
+	case <-timeout:
+		return nil, consensus.NewConsensusError(consensus.BlockCreationError, errors.New("block creation timeout"))
 	}
-
 }
+
 func (e BLSBFT) NewInstance(chain blockchain.ChainInterface, chainKey string, node consensus.NodeInterface, logger common.Logger) consensus.ConsensusInterface {
 	var newInstance BLSBFT
 	newInstance.Chain = chain

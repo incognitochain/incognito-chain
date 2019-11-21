@@ -106,7 +106,7 @@ func (httpServer *HttpServer) handleGetShardPoolState(params interface{}, closeC
 	shardID := byte(shardIDTemp)
 
 	shardPool, err := httpServer.poolStateService.GetShardPoolState(shardID)
-	if err != nil{
+	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("shard to Beacon Pool not init"))
 	}
 
@@ -132,7 +132,7 @@ func (httpServer *HttpServer) handleGetShardPoolLatestValidHeight(params interfa
 	shardID := byte(shardIDTemp)
 
 	result, err := httpServer.poolStateService.GetShardPoolLatestValidHeight(shardID)
-	if err != nil{
+	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("shard to Beacon Pool not init"))
 	}
 
@@ -153,7 +153,7 @@ func (httpServer *HttpServer) handleGetShardToBeaconPoolStateV2(params interface
 	}
 
 	allBlockHeight, allLatestBlockHeight, err := httpServer.poolStateService.GetShardToBeaconPoolStateV2()
-	if err != nil{
+	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 

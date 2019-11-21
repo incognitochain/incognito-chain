@@ -9,7 +9,7 @@ import (
 )
 
 func TestPKSNNoPrivacy(t *testing.T) {
-	for i:=0; i<1000; i++{
+	for i := 0; i < 1000; i++ {
 		// prepare witness for Serial number no privacy protocol
 		sk := privacy.GeneratePrivateKey(privacy.RandBytes(10))
 		skScalar := new(privacy.Scalar).FromBytesS(sk)

@@ -107,7 +107,7 @@ func (httpServer *HttpServer) sendRawTxWithMetadata(params interface{}, closeCha
 	}
 
 	txMsg, txHash, err := httpServer.txService.SendRawTxWithMetadata(base58CheckData)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 
@@ -135,7 +135,7 @@ func (httpServer *HttpServer) sendRawCustomTokenTxWithMetadata(params interface{
 	}
 
 	txMsg, txHash, err := httpServer.txService.SendRawCustomTokenTxWithMetadata(base58CheckData)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 

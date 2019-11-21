@@ -2,6 +2,7 @@ package bean
 
 import (
 	"errors"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -57,7 +58,7 @@ func NewCreateRawTxParam(params interface{}) (*CreateRawTxParam, error) {
 	receivers := make(map[string]interface{})
 	if arrayParams[1] != nil {
 		receivers, ok = arrayParams[1].(map[string]interface{})
-		if !ok  {
+		if !ok {
 			return nil, errors.New("receivers param is invalid")
 		}
 	}
@@ -102,14 +103,13 @@ func NewCreateRawTxParam(params interface{}) (*CreateRawTxParam, error) {
 	// param#6: info (optional)
 	info := []byte{}
 	if len(arrayParams) > 5 {
-		if arrayParams[5]  != nil{
+		if arrayParams[5] != nil {
 			infoStr, ok := arrayParams[5].(string)
 			if !ok {
 				return nil, errors.New("info is invalid")
 			}
 			info = []byte(infoStr)
 		}
-
 	}
 
 	return &CreateRawTxParam{

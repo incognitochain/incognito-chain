@@ -33,7 +33,7 @@ type PaymentAddress struct {
 type PaymentInfo struct {
 	PaymentAddress PaymentAddress
 	Amount         uint64
-	Message        []byte			// 512 bytes
+	Message        []byte // 512 bytes
 }
 
 // GeneratePrivateKey generates a random 32-byte spending key
@@ -101,11 +101,11 @@ func (addr PaymentAddress) String() string {
 
 func SliceToArray(slice []byte) [Ed25519KeySize]byte {
 	var array [Ed25519KeySize]byte
-	copy(array[:],slice)
+	copy(array[:], slice)
 	return array
 }
 
-func ArrayToSlice(array [Ed25519KeySize]byte) []byte{
+func ArrayToSlice(array [Ed25519KeySize]byte) []byte {
 	var slice []byte
 	slice = array[:]
 	return slice
