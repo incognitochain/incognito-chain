@@ -50,22 +50,32 @@ func NewConnManager(
 func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 	var topic string
 	publishable := []string{wire.CmdBlockShard, wire.CmdBFT, wire.CmdBlockBeacon, wire.CmdTx, wire.CmdCustomToken, wire.CmdPeerState, wire.CmdBlkShardToBeacon}
+
 	// msgCrossShard := msg.(wire.MessageCrossShard)
 	msgType := msg.MessageType()
 	for _, p := range publishable {
 		topic = ""
 		if msgType == p {
 			for _, availableTopic := range cm.subs[msgType] {
-				fmt.Println(availableTopic)
+				// fmt.Println("[hy]", availableTopic)
 				if (availableTopic.Act == MessageTopicPair_PUB) || (availableTopic.Act == MessageTopicPair_PUBSUB) {
 					topic = availableTopic.Name
+					// if p == wire.CmdTx {
+					// 	fmt.Printf("[hy] broadcast tx to topic %v\n", topic)
+					// }
+					err := broadcastMessage(msg, topic, cm.ps)
+					if err != nil {
+						fmt.Printf("Broadcast to topic %v error %v\n", topic, err)
+						return err
+					}
 				}
 
 			}
 			if topic == "" {
 				return errors.New("Can not find topic of this message type " + msgType + "for publish")
 			}
-			return broadcastMessage(msg, topic, cm.ps)
+
+			// return broadcastMessage(msg, topic, cm.ps)
 		}
 	}
 
@@ -303,7 +313,7 @@ func broadcastMessage(msg wire.Message, topic string, ps *pubsub.PubSub) error {
 	}
 
 	// Broadcast
-	fmt.Printf("[db] Publishing to topic %s\n", topic)
+	fmt.Printf("Publishing to topic %s\n", topic)
 	return ps.Publish(topic, []byte(messageHex))
 }
 
