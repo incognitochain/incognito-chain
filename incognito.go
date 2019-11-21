@@ -22,7 +22,7 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-//go:generate mockery -dir=database/ -name=Database
+//go:generate mockery -dir=incdb/ -name=Database
 var (
 	cfg *config
 )

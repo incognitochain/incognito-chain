@@ -1,15 +1,15 @@
 package rawdb
 
 import (
-	"github.com/incognitochain/incognito-chain/incdb"
 	"io/ioutil"
 	"os"
 	"reflect"
 	"testing"
 
-	"github.com/incognitochain/incognito-chain/privacy"
-
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incdb"
+	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 func TestDbAddShardRewardRequest(t *testing.T) {
@@ -280,7 +280,7 @@ func TestNewKeyAddCommitteeReward(t *testing.T) {
 				committeeAddress: privacy.GeneratePublicKey([]byte{0x01, 0x02, 0x03, 0x09}),
 				tokenID:          common.PRVCoinID,
 			},
-			[]byte{99, 111, 109, 109, 105, 116, 116, 101, 101, 45, 114, 101, 119, 97, 114, 100, 45, 3, 56, 13, 86, 127, 3, 39, 177, 103, 184, 120, 161, 45, 149, 151, 62, 170, 220, 161, 75, 142, 240, 5, 118, 84, 26, 240, 71, 179, 132, 127, 88, 63, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+			[]byte{99, 111, 109, 109, 105, 116, 116, 101, 101, 45, 114, 101, 119, 97, 114, 100, 45, 166, 153, 91, 180, 254, 53, 233, 223, 255, 0, 215, 187, 154, 52, 194, 202, 48, 199, 18, 218, 62, 172, 134, 13, 241, 196, 138, 180, 252, 250, 195, 104, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 			false,
 		},
 	}

@@ -133,6 +133,10 @@ func getPrevPrefix(isBeacon bool, shardID byte) []byte {
 	return key
 }
 
+func GetPrevPrefix(isBeacon bool, shardID byte) []byte {
+	return getPrevPrefix(isBeacon, shardID)
+}
+
 /**
  * NewKeyAddShardRewardRequest create a key for store reward of a shard X at epoch T in db.
  * @param epoch: epoch T
