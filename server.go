@@ -687,7 +687,7 @@ func (serverObj Server) Start() {
 	if serverObj.chainParams.CheckForce {
 		serverObj.CheckForceUpdateSourceCode()
 	}*/
-	if cfg.TestNet == "testnet" {
+	if cfg.IsTestnet() {
 		Logger.log.Critical("************************" +
 			"* Testnet is active *" +
 			"************************")
