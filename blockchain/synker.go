@@ -1148,7 +1148,7 @@ func (synker *Synker) SyncBlkBeaconByPublicKey(byHash bool, bySpecificHeights bo
 	prefix := getBlkPrefixSyncKey(false, BeaconBlk, 0, 0)
 	if bySpecificHeights {
 	} else {
-		blkBatchsNeedToGet := getBlkNeedToGetByHeightv2(prefix, from, to, cacheItems, synker.GetBeaconPoolStateByHeight())
+		blkBatchsNeedToGet := getBlkNeedToGetByHeight(prefix, from, to, cacheItems, synker.GetBeaconPoolStateByHeight())
 		if len(blkBatchsNeedToGet) > 0 {
 			for fromHeight, toHeight := range blkBatchsNeedToGet {
 				go synker.blockchain.config.Server.PushMessageGetBlockBeaconByHeight(fromHeight, toHeight)
@@ -1184,7 +1184,7 @@ func (synker *Synker) SyncBlkShardByPublicKey(shardID byte, byHash bool, bySpeci
 	//Sync by height
 	prefix := getBlkPrefixSyncKey(false, ShardBlk, shardID, 0)
 	if bySpecificHeights {
-		blksNeedToGet := getBlkNeedToGetBySpecificHeightv2(prefix, blkHeights, cacheItems, synker.GetShardPoolStateByHeight(shardID))
+		blksNeedToGet := getBlkNeedToGetBySpecificHeight(prefix, blkHeights, cacheItems, synker.GetShardPoolStateByHeight(shardID))
 		if len(blksNeedToGet) > 0 {
 			go synker.blockchain.config.Server.PushMessageGetBlockShardBySpecificHeight(shardID, blksNeedToGet, getFromPool)
 			for _, blkHeight := range blksNeedToGet {

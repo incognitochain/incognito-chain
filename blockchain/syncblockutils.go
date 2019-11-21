@@ -57,45 +57,6 @@ func getBlkNeedToGetBySpecificHeight(prefix string, blksHeight []uint64, cachedI
 	return blocksNeedToGet
 }
 
-func getBlkNeedToGetByHeightv2(prefix string, fromHeight uint64, toHeight uint64, cachedItems map[string]cache.Item, poolItems []uint64) map[uint64]uint64 {
-	blocksNeedToGet := make(map[uint64]uint64)
-
-	latestBatchBegin := uint64(0)
-	for blkHeight := fromHeight; blkHeight <= toHeight; blkHeight++ {
-		if exist, _ := common.SliceExists(poolItems, blkHeight); !exist {
-			if _, ok := cachedItems[fmt.Sprint(blkHeight)]; !ok {
-				if latestBatchEnd, ok := blocksNeedToGet[latestBatchBegin]; !ok {
-					blocksNeedToGet[blkHeight] = blkHeight
-					latestBatchBegin = blkHeight
-				} else {
-					if latestBatchEnd+1 == blkHeight {
-						blocksNeedToGet[latestBatchBegin] = blkHeight
-					} else {
-						latestBatchBegin = blkHeight
-					}
-				}
-			} else {
-				latestBatchBegin = blkHeight
-			}
-		} else {
-			latestBatchBegin = blkHeight
-		}
-	}
-	return blocksNeedToGet
-}
-
-func getBlkNeedToGetBySpecificHeightv2(prefix string, blksHeight []uint64, cachedItems map[string]cache.Item, poolItems []uint64) []uint64 {
-	var blocksNeedToGet []uint64
-	for _, blkHeight := range blksHeight {
-		if _, ok := cachedItems[fmt.Sprint(blkHeight)]; !ok {
-			if exist, _ := common.SliceExists(poolItems, blkHeight); !exist {
-				blocksNeedToGet = append(blocksNeedToGet, blkHeight)
-			}
-		}
-	}
-	return blocksNeedToGet
-}
-
 type blockType int
 
 const (
