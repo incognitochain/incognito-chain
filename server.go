@@ -684,10 +684,10 @@ func (serverObj Server) Start() {
 		return
 	}
 	Logger.log.Debug("Starting server")
-	/* --- Checkforce update code --- TODO uncomment this
+	// --- Checkforce update code ---
 	if serverObj.chainParams.CheckForce {
 		serverObj.CheckForceUpdateSourceCode()
-	}*/
+	}
 	if cfg.IsTestnet() {
 		Logger.log.Critical("************************" +
 			"* Testnet is active *" +
