@@ -18,13 +18,13 @@ import (
 	"github.com/patrickmn/go-cache"
 )
 
-type peerState struct {
-	Shard             map[byte]*ChainState
-	Beacon            *ChainState
-	ShardToBeaconPool *map[byte][]uint64
-	CrossShardPool    map[byte]*map[byte][]uint64
-	Peer              libp2p.ID
-}
+// type peerState struct {
+// 	Shard             map[byte]*ChainState
+// 	Beacon            *ChainState
+// 	ShardToBeaconPool *map[byte][]uint64
+// 	CrossShardPool    map[byte]*map[byte][]uint64
+// 	Peer              libp2p.ID
+// }
 
 type peerStatev2 struct {
 	Shard             map[byte]*ChainState
@@ -42,12 +42,12 @@ type ChainState struct {
 	BestStateHash common.Hash
 }
 
-type reportedChainState struct {
-	ClosestBeaconState ChainState
-	ClosestShardsState map[byte]ChainState
-	ShardToBeaconBlks  map[byte]map[libp2p.ID][]uint64
-	CrossShardBlks     map[byte]map[libp2p.ID][]uint64
-}
+// type reportedChainState struct {
+// 	ClosestBeaconState ChainState
+// 	ClosestShardsState map[byte]ChainState
+// 	ShardToBeaconBlks  map[byte]map[libp2p.ID][]uint64
+// 	CrossShardBlks     map[byte]map[libp2p.ID][]uint64
+// }
 
 type reportedChainStatev2 struct {
 	ClosestBeaconState ChainState
