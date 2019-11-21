@@ -61,6 +61,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 		totalTxsFee             = make(map[common.Hash]uint64)
 		newShardBlock           = NewShardBlock()
 		instructions            = [][]string{}
+		isOldBeaconHeight       = false
 		//stakingTx               = make(map[string]string)
 		tempPrivateKey = blockGenerator.createTempKeyset()
 		shardBestState = NewShardBestState()
@@ -116,6 +117,16 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	if err != nil {
 		return nil, err
 	}
+	// this  beacon height is already seen by shard best state
+	if beaconHeight == shardBestState.BeaconHeight {
+		isOldBeaconHeight = true
+	}
+	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
+	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
+	// 	metrics.Tag:              metrics.NewShardBlockProcessingStep,
+	// 	metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, metrics.FetchBeaconBlockStep),
+	// })
 	//==========Build block body============
 	// Get Transaction For new Block
 	// Get Cross output coin from other shard && produce cross shard transaction
@@ -137,8 +148,21 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	transactionsForNewBlock = append(transactionsForNewBlock, txsWithMetadata...)
 	// process instruction from beacon block
 	shardPendingValidator, _ = blockGenerator.chain.processInstructionFromBeacon(beaconBlocks, shardID)
-	// generate instruction
-	instructions, _, _, err = blockGenerator.chain.generateInstruction(shardID, beaconHeight, beaconBlocks, shardPendingValidator, currentCommitteePubKeys)
+	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
+	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
+	// 	metrics.Tag:              metrics.NewShardBlockProcessingStep,
+	// 	metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, metrics.ProcessInstructionFromBeaconStep),
+	// })
+	// Create Instruction
+	// startStep = time.Now()
+	instructions, _, _, err = blockGenerator.chain.generateInstruction(shardID, beaconHeight, isOldBeaconHeight, beaconBlocks, shardPendingValidator, currentCommitteePubKeys)
+	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
+	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
+	// 	metrics.Tag:              metrics.NewShardBlockProcessingStep,
+	// 	metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, metrics.GenerateInstructionStep),
+	// })
 	if err != nil {
 		return nil, NewBlockChainError(GenerateInstructionError, err)
 	}
@@ -525,14 +549,14 @@ func (blockchain *BlockChain) processInstructionFromBeacon(beaconBlocks []*Beaco
 	#3: shardcommittee
 	#4: error
 */
-func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uint64, beaconBlocks []*BeaconBlock, shardPendingValidator []string, shardCommittee []string) ([][]string, []string, []string, error) {
+func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uint64, isOldBeaconHeight bool, beaconBlocks []*BeaconBlock, shardPendingValidator []string, shardCommittee []string) ([][]string, []string, []string, error) {
 	var (
 		instructions          = [][]string{}
 		bridgeSwapConfirmInst = []string{}
 		swapInstruction       = []string{}
 		// err                   error
 	)
-	if beaconHeight%blockchain.config.ChainParams.Epoch == 0 {
+	if beaconHeight%blockchain.config.ChainParams.Epoch == 0 && isOldBeaconHeight == false {
 		// if len(shardPendingValidator) > 0 {
 		Logger.log.Info("ShardPendingValidator", shardPendingValidator)
 		Logger.log.Info("ShardCommittee", shardCommittee)
