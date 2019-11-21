@@ -69,8 +69,8 @@ func init() {
 		PreSelectShardNodeSerializedPubkey:          PreSelectShardNodeTestnetSerializedPubkey,
 		PreSelectShardNodeSerializedPaymentAddress:  PreSelectShardNodeTestnetSerializedPaymentAddress,
 		//@Notice: InitTxsForBenchmark is for testing and testparams only
-		InitialIncognito: IntegrationTestInitPRV,
-		//InitialIncognito:   TestnetInitPRV,
+		//InitialIncognito: IntegrationTestInitPRV,
+		InitialIncognito:   TestnetInitPRV,
 		ConsensusAlgorithm: common.BlsConsensus,
 	}
 	ChainTestParam = Params{
