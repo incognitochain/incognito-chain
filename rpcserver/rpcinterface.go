@@ -65,6 +65,7 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendTransaction:                (*HttpServer).handleCreateAndSendTx,
 	getTransactionByHash:                    (*HttpServer).handleGetTransactionByHash,
 	gettransactionhashbyreceiver:            (*HttpServer).handleGetTransactionHashByReceiver,
+	gettransactionbyreceiver:                (*HttpServer).handleGetTransactionByReceiver,
 	createAndSendStakingTransaction:         (*HttpServer).handleCreateAndSendStakingTx,
 	createAndSendStopAutoStakingTransaction: (*HttpServer).handleCreateAndSendStopAutoStakingTransaction,
 	randomCommitments:                       (*HttpServer).handleRandomCommitments,
@@ -154,28 +155,42 @@ var HttpHandler = map[string]httpHandler{
 	getChainMiningStatus:        (*HttpServer).handleGetChainMiningStatus,
 	getPublickeyMining:          (*HttpServer).handleGetPublicKeyMining,
 	getPublicKeyRole:            (*HttpServer).handleGetPublicKeyRole,
+	getRoleByValidatorKey:       (*HttpServer).handleGetValidatorKeyRole,
 	getIncognitoPublicKeyRole:   (*HttpServer).handleGetIncognitoPublicKeyRole,
 	getMinerRewardFromMiningKey: (*HttpServer).handleGetMinerRewardFromMiningKey,
 	getProducersBlackList:       (*HttpServer).handleGetProducersBlackList,
 	getProducersBlackListDetail: (*HttpServer).handleGetProducersBlackListDetail,
+
+	// pde
+	getPDEState:                           (*HttpServer).handleGetPDEState,
+	createAndSendTxWithWithdrawalReq:      (*HttpServer).handleCreateAndSendTxWithWithdrawalReq,
+	createAndSendTxWithPTokenTradeReq:     (*HttpServer).handleCreateAndSendTxWithPTokenTradeReq,
+	createAndSendTxWithPRVTradeReq:        (*HttpServer).handleCreateAndSendTxWithPRVTradeReq,
+	createAndSendTxWithPTokenContribution: (*HttpServer).handleCreateAndSendTxWithPTokenContribution,
+	createAndSendTxWithPRVContribution:    (*HttpServer).handleCreateAndSendTxWithPRVContribution,
+	getPDEContributionStatus:              (*HttpServer).handleGetPDEContributionStatus,
+	getPDETradeStatus:                     (*HttpServer).handleGetPDETradeStatus,
+	getPDEWithdrawalStatus:                (*HttpServer).handleGetPDEWithdrawalStatus,
 }
 
 // Commands that are available to a limited user
 var LimitedHttpHandler = map[string]httpHandler{
 	// local WALLET
-	listAccounts:               (*HttpServer).handleListAccounts,
-	getAccount:                 (*HttpServer).handleGetAccount,
-	getAddressesByAccount:      (*HttpServer).handleGetAddressesByAccount,
-	getAccountAddress:          (*HttpServer).handleGetAccountAddress,
-	dumpPrivkey:                (*HttpServer).handleDumpPrivkey,
-	importAccount:              (*HttpServer).handleImportAccount,
-	removeAccount:              (*HttpServer).handleRemoveAccount,
-	listUnspentOutputCoins:     (*HttpServer).handleListUnspentOutputCoins,
-	getBalance:                 (*HttpServer).handleGetBalance,
-	getBalanceByPrivatekey:     (*HttpServer).handleGetBalanceByPrivatekey,
-	getBalanceByPaymentAddress: (*HttpServer).handleGetBalanceByPaymentAddress,
-	getReceivedByAccount:       (*HttpServer).handleGetReceivedByAccount,
-	setTxFee:                   (*HttpServer).handleSetTxFee,
+	listAccounts:                     (*HttpServer).handleListAccounts,
+	getAccount:                       (*HttpServer).handleGetAccount,
+	getAddressesByAccount:            (*HttpServer).handleGetAddressesByAccount,
+	getAccountAddress:                (*HttpServer).handleGetAccountAddress,
+	dumpPrivkey:                      (*HttpServer).handleDumpPrivkey,
+	importAccount:                    (*HttpServer).handleImportAccount,
+	removeAccount:                    (*HttpServer).handleRemoveAccount,
+	listUnspentOutputCoins:           (*HttpServer).handleListUnspentOutputCoins,
+	getBalance:                       (*HttpServer).handleGetBalance,
+	getBalanceByPrivatekey:           (*HttpServer).handleGetBalanceByPrivatekey,
+	getBalanceByPaymentAddress:       (*HttpServer).handleGetBalanceByPaymentAddress,
+	getReceivedByAccount:             (*HttpServer).handleGetReceivedByAccount,
+	setTxFee:                         (*HttpServer).handleSetTxFee,
+	convertNativeTokenToPrivacyToken: (*HttpServer).handleConvertNativeTokenToPrivacyToken,
+	convertPrivacyTokenToNativeToken: (*HttpServer).handleConvertPrivacyTokenToNativeToken,
 }
 
 var WsHandler = map[string]wsHandler{

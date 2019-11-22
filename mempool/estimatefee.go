@@ -155,14 +155,13 @@ type FeeEstimator struct {
 	dropped []*registeredBlock
 
 	// min fee which be needed for payment on tx(per Kb data)
-	limitFee      uint64
-	limitFeeToken uint64
+	limitFee uint64
 }
 
 // NewFeeEstimator creates a feeEstimator for which at most maxRollback blocks
 // can be unregistered and which returns an error unless minRegisteredBlocks
 // have been registered with it.
-func NewFeeEstimator(maxRollback, minRegisteredBlocks uint32, limitFee uint64, limitFeeToken uint64) *FeeEstimator {
+func NewFeeEstimator(maxRollback, minRegisteredBlocks uint32, limitFee uint64) *FeeEstimator {
 	return &FeeEstimator{
 		maxRollback:         maxRollback,
 		minRegisteredBlocks: minRegisteredBlocks,
@@ -172,7 +171,6 @@ func NewFeeEstimator(maxRollback, minRegisteredBlocks uint32, limitFee uint64, l
 		observed:            make(map[common.Hash]*observedTransaction),
 		dropped:             make([]*registeredBlock, 0, maxRollback),
 		limitFee:            limitFee,
-		limitFeeToken:       limitFeeToken,
 	}
 }
 
@@ -603,7 +601,7 @@ func (ef *FeeEstimator) estimates(tokenID *common.Hash) []CoinPerKilobyte {
 
 // EstimateFee estimates the fee per byte to have a tx confirmed a given
 // number of blocks from now.
-func (ef *FeeEstimator) EstimateFee(numBlocks uint64, tokenID *common.Hash) (CoinPerKilobyte, error) {
+func (ef *FeeEstimator) EstimateFee(numBlocks uint64, tokenId *common.Hash) (CoinPerKilobyte, error) {
 	ef.mtx.Lock()
 	defer ef.mtx.Unlock()
 
@@ -625,7 +623,7 @@ func (ef *FeeEstimator) EstimateFee(numBlocks uint64, tokenID *common.Hash) (Coi
 
 	// If there are no cached results, generate them.
 	if ef.cached == nil {
-		ef.cached = ef.estimates(tokenID)
+		ef.cached = ef.estimates(tokenId)
 	}
 
 	result := ef.cached[int(numBlocks)-1]
@@ -807,6 +805,19 @@ func RestoreFeeEstimator(data FeeEstimatorState) (*FeeEstimator, error) {
 	return ef, nil
 }
 
-func (ef FeeEstimator) GetLimitFee() uint64 {
-	return ef.limitFee
+// returns the limit fee of tokenID
+// if there is no exchange rate between native token and privacy token, return limit fee of native token
+func (ef FeeEstimator) GetLimitFeeForNativeToken() uint64 {
+	limitFee := ef.limitFee
+	//isFeePToken := false
+
+	//if tokenID != nil {
+	//	limitFeePToken, err := ConvertNativeTokenToPrivacyToken(ef.limitFee, tokenID)
+	//	if err == nil {
+	//		limitFee = limitFeePToken
+	//		isFeePToken = true
+	//	}
+	//}
+
+	return limitFee
 }

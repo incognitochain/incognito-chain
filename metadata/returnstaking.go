@@ -31,7 +31,7 @@ func NewReturnStaking(
 	}
 }
 
-func (sbsRes ReturnStakingMetadata) CheckTransactionFee(tr Transaction, minFee uint64) bool {
+func (sbsRes ReturnStakingMetadata) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db database.DatabaseInterface) bool {
 	// no need to have fee for this tx
 	return true
 }
