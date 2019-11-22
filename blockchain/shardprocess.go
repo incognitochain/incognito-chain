@@ -496,8 +496,11 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 */
 func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock *ShardBlock, beaconBlocks []*BeaconBlock, txInstructions [][]string, shardID byte) error {
 	var err error
+	var isOldBeaconHeight = false
 	// Verify Transaction
-	if err := blockchain.verifyTransactionFromNewBlock(shardBlock.Body.Transactions); err != nil {
+	//get beacon height from shard block
+	beaconHeight := shardBlock.Header.BeaconHeight
+	if err := blockchain.verifyTransactionFromNewBlock(shardBlock.Body.Transactions, int64(beaconHeight)); err != nil {
 		return NewBlockChainError(TransactionFromNewBlockError, err)
 	}
 	// Verify Instruction
@@ -507,7 +510,10 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock
 		return err
 	}
 	shardPendingValidator, _ := blockchain.processInstructionFromBeacon(beaconBlocks, shardID)
-	instructions, shardPendingValidator, shardCommittee, err = blockchain.generateInstruction(shardID, shardBlock.Header.BeaconHeight, beaconBlocks, shardPendingValidator, shardCommittee)
+	if blockchain.BestState.Shard[shardID].BeaconHeight == shardBlock.Header.BeaconHeight {
+		isOldBeaconHeight = true
+	}
+	instructions, shardPendingValidator, shardCommittee, err = blockchain.generateInstruction(shardID, shardBlock.Header.BeaconHeight, isOldBeaconHeight, beaconBlocks, shardPendingValidator, shardCommittee)
 	if err != nil {
 		return NewBlockChainError(GenerateInstructionError, err)
 	}
@@ -868,7 +874,7 @@ func (shardBestState *ShardBestState) verifyPostProcessingShardBlock(shardBlock 
 	10. Check duplicate staker public key in block
 	11. Check duplicate Init Custom Token in block
 */
-func (blockchain *BlockChain) verifyTransactionFromNewBlock(txs []metadata.Transaction) error {
+func (blockchain *BlockChain) verifyTransactionFromNewBlock(txs []metadata.Transaction, beaconHeight int64) error {
 	if len(txs) == 0 {
 		return nil
 	}
@@ -893,7 +899,7 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(txs []metadata.Trans
 					continue
 				}
 			}
-			_, err := blockchain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx)
+			_, err := blockchain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx, beaconHeight)
 			if err != nil {
 				return NewBlockChainError(TransactionFromNewBlockError, fmt.Errorf("Transaction %+v, index %+v get %+v ", *tx.Hash(), index, err))
 			}
