@@ -1037,13 +1037,20 @@ func (txService TxService) PrivacyCustomTokenDetail(tokenIDStr string) ([]common
 		return nil, nil, err
 	}
 
-	_, _, _ = txService.BlockChain.ListPrivacyCustomToken()
-	/*tokenData := transaction.TxPrivacyTokenData{
-		listTxInitPrivacyToken[tokenID].
-	}*/
+	listTxInitPrivacyToken, listTxInitPrivacyTokenCrossShard, err := txService.BlockChain.ListPrivacyCustomToken()
+	tokenData := &transaction.TxPrivacyTokenData{}
+	if err == nil {
+		if token, ok := listTxInitPrivacyToken[*tokenID]; ok {
+			tokenData.PropertyName = token.TxPrivacyTokenData.PropertyName
+			tokenData.PropertySymbol = token.TxPrivacyTokenData.PropertySymbol
+		} else if token, ok := listTxInitPrivacyTokenCrossShard[*tokenID]; ok {
+			tokenData.PropertyName = token.PropertyName
+			tokenData.PropertySymbol = token.PropertySymbol
+		}
+	}
 
 	txs, _ := txService.BlockChain.GetPrivacyCustomTokenTxsHash(tokenID)
-	return txs, nil, nil
+	return txs, tokenData, nil
 }
 
 func (txService TxService) ListUnspentCustomToken(senderKeyParam string, tokenIDParam string) ([]transaction.TxTokenVout, error) {
