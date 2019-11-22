@@ -18,13 +18,13 @@ import (
 	"github.com/patrickmn/go-cache"
 )
 
-type peerState struct {
-	Shard             map[byte]*ChainState
-	Beacon            *ChainState
-	ShardToBeaconPool *map[byte][]uint64
-	CrossShardPool    map[byte]*map[byte][]uint64
-	Peer              libp2p.ID
-}
+// type peerState struct {
+// 	Shard             map[byte]*ChainState
+// 	Beacon            *ChainState
+// 	ShardToBeaconPool *map[byte][]uint64
+// 	CrossShardPool    map[byte]*map[byte][]uint64
+// 	Peer              libp2p.ID
+// }
 
 type peerStatev2 struct {
 	Shard             map[byte]*ChainState
@@ -42,12 +42,12 @@ type ChainState struct {
 	BestStateHash common.Hash
 }
 
-type reportedChainState struct {
-	ClosestBeaconState ChainState
-	ClosestShardsState map[byte]ChainState
-	ShardToBeaconBlks  map[byte]map[libp2p.ID][]uint64
-	CrossShardBlks     map[byte]map[libp2p.ID][]uint64
-}
+// type reportedChainState struct {
+// 	ClosestBeaconState ChainState
+// 	ClosestShardsState map[byte]ChainState
+// 	ShardToBeaconBlks  map[byte]map[libp2p.ID][]uint64
+// 	CrossShardBlks     map[byte]map[libp2p.ID][]uint64
+// }
 
 type reportedChainStatev2 struct {
 	ClosestBeaconState ChainState
@@ -711,10 +711,6 @@ func (synker *Synker) UpdateStatev2() {
 	}
 	for _, peerStatev2 := range synker.States.PeersStatev2 {
 		// peerPublicKeyString, err := peerStatev2.PeerPublicKey.ToBase58()
-		//TODO @0xakk0r0kamui handle error here
-		if err != nil {
-			panic("Panic for test")
-		}
 		for shardID := range synker.Status.Shards {
 			if shardState, ok := peerStatev2.Shard[shardID]; ok {
 				if shardState.Height >= GetBeaconBestState().GetBestHeightOfShard(shardID) && shardState.Height > GetBestStateShard(shardID).ShardHeight {
@@ -1148,7 +1144,7 @@ func (synker *Synker) SyncBlkBeaconByPublicKey(byHash bool, bySpecificHeights bo
 	prefix := getBlkPrefixSyncKey(false, BeaconBlk, 0, 0)
 	if bySpecificHeights {
 	} else {
-		blkBatchsNeedToGet := getBlkNeedToGetByHeightv2(prefix, from, to, cacheItems, synker.GetBeaconPoolStateByHeight())
+		blkBatchsNeedToGet := getBlkNeedToGetByHeight(prefix, from, to, cacheItems, synker.GetBeaconPoolStateByHeight())
 		if len(blkBatchsNeedToGet) > 0 {
 			for fromHeight, toHeight := range blkBatchsNeedToGet {
 				go synker.blockchain.config.Server.PushMessageGetBlockBeaconByHeight(fromHeight, toHeight)
@@ -1184,7 +1180,7 @@ func (synker *Synker) SyncBlkShardByPublicKey(shardID byte, byHash bool, bySpeci
 	//Sync by height
 	prefix := getBlkPrefixSyncKey(false, ShardBlk, shardID, 0)
 	if bySpecificHeights {
-		blksNeedToGet := getBlkNeedToGetBySpecificHeightv2(prefix, blkHeights, cacheItems, synker.GetShardPoolStateByHeight(shardID))
+		blksNeedToGet := getBlkNeedToGetBySpecificHeight(prefix, blkHeights, cacheItems, synker.GetShardPoolStateByHeight(shardID))
 		if len(blksNeedToGet) > 0 {
 			go synker.blockchain.config.Server.PushMessageGetBlockShardBySpecificHeight(shardID, blksNeedToGet, getFromPool)
 			for _, blkHeight := range blksNeedToGet {

@@ -409,7 +409,7 @@ func (netSync *NetSync) handleMessageShardBlock(msg *wire.MessageBlockShard) {
 }
 
 func (netSync *NetSync) handleMessageCrossShard(msg *wire.MessageCrossShard) {
-	Logger.log.Error("Handling new message CrossShard")
+	Logger.log.Debug("Handling new message CrossShard")
 	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 	// 	metrics.Measurement:      metrics.HandleMessageCrossShard,
 	// 	metrics.MeasurementValue: float64(1),
