@@ -7,8 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/metrics"
-
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
