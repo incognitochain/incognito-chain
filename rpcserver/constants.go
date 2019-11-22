@@ -67,6 +67,7 @@ const (
 	getBalanceCustomToken                      = "getbalancecustomtoken"
 	getTransactionByHash                       = "gettransactionbyhash"
 	gettransactionhashbyreceiver               = "gettransactionhashbyreceiver"
+	gettransactionbyreceiver                   = "gettransactionbyreceiver"
 	listCustomToken                            = "listcustomtoken"
 	listPrivacyCustomToken                     = "listprivacycustomtoken"
 	getBalancePrivacyCustomToken               = "getbalanceprivacycustomtoken"
@@ -154,12 +155,26 @@ const (
 	getChainMiningStatus        = "getchainminingstatus"
 	getPublickeyMining          = "getpublickeymining"
 	getPublicKeyRole            = "getpublickeyrole"
+	getRoleByValidatorKey       = "getrolebyvalidatorkey"
 	getIncognitoPublicKeyRole   = "getincognitopublickeyrole"
 	getMinerRewardFromMiningKey = "getminerrewardfromminingkey"
 
 	// slash
 	getProducersBlackList       = "getproducersblacklist"
 	getProducersBlackListDetail = "getproducersblacklistdetail"
+
+	// pde
+	getPDEState                           = "getpdestate"
+	createAndSendTxWithWithdrawalReq      = "createandsendtxwithwithdrawalreq"
+	createAndSendTxWithPTokenTradeReq     = "createandsendtxwithptokentradereq"
+	createAndSendTxWithPRVTradeReq        = "createandsendtxwithprvtradereq"
+	createAndSendTxWithPTokenContribution = "createandsendtxwithptokencontribution"
+	createAndSendTxWithPRVContribution    = "createandsendtxwithprvcontribution"
+	convertNativeTokenToPrivacyToken      = "convertnativetokentoprivacytoken"
+	convertPrivacyTokenToNativeToken      = "convertprivacytokentonativetoken"
+	getPDEContributionStatus              = "getpdecontributionstatus"
+	getPDETradeStatus                     = "getpdetradestatus"
+	getPDEWithdrawalStatus                = "getpdewithdrawalstatus"
 )
 
 const (

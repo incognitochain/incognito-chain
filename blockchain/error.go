@@ -162,6 +162,8 @@ const (
 	ConsensusIsOngoingError
 	RevertStateError
 	NotEnoughRewardError
+	InitPDETradeResponseTransactionError
+	ProcessPDEInstructionError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -309,6 +311,8 @@ var ErrCodeMessage = map[int]struct {
 	GetShardToBeaconBlocksError:                       {-1138, "Get Shard To Beacon Blocks Error"},
 	RevertStateError:                                  {-1139, "Revert State Error"},
 	NotEnoughRewardError:                              {-1140, "Not enough reward Error"},
+	InitPDETradeResponseTransactionError:              {-1141, "Init PDE trade response tx Error"},
+	ProcessPDEInstructionError:                        {-1142, "Process PDE instruction Error"},
 }
 
 type BlockChainError struct {

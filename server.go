@@ -17,6 +17,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/metrics"
 	peer2 "github.com/libp2p/go-libp2p-core/peer"
 
 	"github.com/incognitochain/incognito-chain/peerv2"
@@ -365,7 +366,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 					serverObj.feeEstimator[shardID] = mempool.NewFeeEstimator(
 						mempool.DefaultEstimateFeeMaxRollback,
 						mempool.DefaultEstimateFeeMinRegisteredBlocks,
-						cfg.LimitFee, cfg.LimitFeeToken)
+						cfg.LimitFee)
 				} else {
 					serverObj.feeEstimator[shardID] = feeEstimator
 				}
@@ -375,7 +376,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 				serverObj.feeEstimator[shardID] = mempool.NewFeeEstimator(
 					mempool.DefaultEstimateFeeMaxRollback,
 					mempool.DefaultEstimateFeeMinRegisteredBlocks,
-					cfg.LimitFee, cfg.LimitFeeToken)
+					cfg.LimitFee)
 			}
 		}
 	} else {
@@ -754,51 +755,53 @@ func (serverObj *Server) GetActiveShardNumber() int {
 // }
 
 func (serverObj *Server) TransactionPoolBroadcastLoop() {
-	<-time.Tick(serverObj.memPool.ScanTime)
-	txDescs := serverObj.memPool.GetPool()
-	for _, txDesc := range txDescs {
-		<-time.Tick(50 * time.Millisecond)
-		if !txDesc.IsFowardMessage {
-			tx := txDesc.Desc.Tx
-			switch tx.GetType() {
-			case common.TxNormalType:
-				{
-					txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
-					if err != nil {
-						continue
+	ticker := time.NewTicker(serverObj.memPool.ScanTime)
+	defer ticker.Stop()
+	for _ = range ticker.C {
+		txDescs := serverObj.memPool.GetPool()
+		for _, txDesc := range txDescs {
+			<-time.Tick(50 * time.Millisecond)
+			if !txDesc.IsFowardMessage {
+				tx := txDesc.Desc.Tx
+				switch tx.GetType() {
+				case common.TxNormalType:
+					{
+						txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
+						if err != nil {
+							continue
+						}
+						normalTx := tx.(*transaction.Tx)
+						txMsg.(*wire.MessageTx).Transaction = normalTx
+						err = serverObj.PushMessageToAll(txMsg)
+						if err == nil {
+							serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
+						}
 					}
-					normalTx := tx.(*transaction.Tx)
-					txMsg.(*wire.MessageTx).Transaction = normalTx
-					// Logger.log.Infof("[hy] Found", params ...interface{})
-					err = serverObj.PushMessageToAll(txMsg)
-					if err == nil {
-						serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
+				case common.TxCustomTokenType:
+					{
+						txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)
+						if err != nil {
+							continue
+						}
+						customTokenTx := tx.(*transaction.TxNormalToken)
+						txMsg.(*wire.MessageTxToken).Transaction = customTokenTx
+						err = serverObj.PushMessageToAll(txMsg)
+						if err == nil {
+							serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
+						}
 					}
-				}
-			case common.TxCustomTokenType:
-				{
-					txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)
-					if err != nil {
-						continue
-					}
-					customTokenTx := tx.(*transaction.TxNormalToken)
-					txMsg.(*wire.MessageTxToken).Transaction = customTokenTx
-					err = serverObj.PushMessageToAll(txMsg)
-					if err == nil {
-						serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
-					}
-				}
-			case common.TxCustomTokenPrivacyType:
-				{
-					txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
-					if err != nil {
-						continue
-					}
-					customPrivacyTokenTx := tx.(*transaction.TxCustomTokenPrivacy)
-					txMsg.(*wire.MessageTxPrivacyToken).Transaction = customPrivacyTokenTx
-					err = serverObj.PushMessageToAll(txMsg)
-					if err == nil {
-						serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
+				case common.TxCustomTokenPrivacyType:
+					{
+						txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
+						if err != nil {
+							continue
+						}
+						customPrivacyTokenTx := tx.(*transaction.TxCustomTokenPrivacy)
+						txMsg.(*wire.MessageTxPrivacyToken).Transaction = customPrivacyTokenTx
+						err = serverObj.PushMessageToAll(txMsg)
+						if err == nil {
+							serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
+						}
 					}
 				}
 			}
@@ -909,19 +912,19 @@ func (serverObj *Server) InitListenerPeer(amgr *addrmanager.AddrManager, listenA
 		seed = seedC
 	}
 
-	peer := peer.Peer{}
-	peer.SetSeed(seed)
-	peer.SetListeningAddress(*netAddr)
-	peer.SetPeerConns(nil)
-	peer.SetPendingPeers(nil)
-	peer.SetConfig(*serverObj.NewPeerConfig())
-	err = peer.Init()
+	peerObj := peer.Peer{}
+	peerObj.SetSeed(seed)
+	peerObj.SetListeningAddress(*netAddr)
+	peerObj.SetPeerConns(nil)
+	peerObj.SetPendingPeers(nil)
+	peerObj.SetConfig(*serverObj.NewPeerConfig())
+	err = peerObj.Init(peer.PrefixProtocolID + version()) // it should be /incognito/x.yy.zz-beta
 	if err != nil {
 		return nil, err
 	}
 
 	kc.Save()
-	return &peer, nil
+	return &peerObj, nil
 }
 
 /*
@@ -1798,6 +1801,7 @@ func (serverObj *Server) BoardcastNodeState() error {
 	}
 	userKey, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
 	if userKey != "" {
+		metrics.SetGlobalParam("MINING_PUBKEY", userKey)
 		userRole, shardID := serverObj.blockChain.BestState.Beacon.GetPubkeyRole(userKey, serverObj.blockChain.BestState.Beacon.BestBlock.Header.Round)
 		if (cfg.NodeMode == common.NodeModeAuto || cfg.NodeMode == common.NodeModeShard) && userRole == common.NodeModeShard {
 			userRole = serverObj.blockChain.BestState.Shard[shardID].GetPubkeyRole(userKey, serverObj.blockChain.BestState.Shard[shardID].BestBlock.Header.Round)
