@@ -317,6 +317,12 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
+	arrayParams := common.InterfaceSlice(params)
+	getCountTxs := false
+	if len(arrayParams) == 1 {
+		getCountTxs = true
+	}
+
 	result := jsonresult.ListCustomToken{ListCustomToken: []jsonresult.CustomToken{}}
 	tokenIDs := make(map[common.Hash]interface{})
 	for tokenID, token := range listPrivacyToken {
@@ -376,7 +382,11 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
-	for idx := range result.ListCustomToken {
+	for idx, token := range result.ListCustomToken {
+		if getCountTxs {
+			txs, _, _ := httpServer.txService.PrivacyCustomTokenDetail(token.ID)
+			result.ListCustomToken[idx].CountTxs = len(txs)
+		}
 		for _, bridgeToken := range allBridgeTokens {
 			if result.ListCustomToken[idx].ID == bridgeToken.TokenID.String() {
 				result.ListCustomToken[idx].Amount = bridgeToken.Amount
