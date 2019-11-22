@@ -53,7 +53,7 @@ func TestPeer_NewPeer(t *testing.T) {
 	peerObj := Peer{}
 	peerObj.SetSeed(seed)
 	peerObj.SetListeningAddress(*netAddr)
-	err = peerObj.Init()
+	err = peerObj.Init("")
 	if err != nil {
 		t.Error(err)
 	}
@@ -69,7 +69,7 @@ func TestPeer_Start(t *testing.T) {
 	peerObj := Peer{}
 	peerObj.SetSeed(seed)
 	peerObj.SetListeningAddress(*netAddr)
-	err = peerObj.Init()
+	err = peerObj.Init("")
 	close(peerObj.cStop)
 	peerObj.Start()
 }
@@ -83,7 +83,7 @@ func TestPeer_Stop(t *testing.T) {
 	peerObj := Peer{}
 	peerObj.SetSeed(seed)
 	peerObj.SetListeningAddress(*netAddr)
-	err = peerObj.Init()
+	err = peerObj.Init("")
 	// TODO
 	//go peerObj.Start()
 	//peerObj.Stop()
@@ -98,7 +98,7 @@ func TestPeer_PushConn(t *testing.T) {
 	peerObj := Peer{}
 	peerObj.SetSeed(seed)
 	peerObj.SetListeningAddress(*netAddr)
-	err = peerObj.Init()
+	err = peerObj.Init("")
 
 	p1 := &Peer{}
 	p1.SetPublicKey("abc1")
@@ -159,10 +159,10 @@ func TestPeer_RemovePeerConn(t *testing.T) {
 	peerObj.SetSeed(seed)
 	peerObj.SetPeerConns(nil)
 	peerObj.SetListeningAddress(*netAddr)
-	err = peerObj.Init()
+	err = peerObj.Init("")
 
 	p1 := &Peer{}
-	p1.SetPublicKey("abc1")
+	p1.SetPublicKey("abc1", "")
 	p2 := &Peer{}
 	p2.SetPublicKey("abc1")
 	peerConn := &PeerConn{
