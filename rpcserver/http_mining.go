@@ -5,6 +5,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -67,6 +68,7 @@ func (httpServer *HttpServer) handleGetChainMiningStatus(params interface{}, clo
 	return httpServer.config.Server.GetChainMiningStatus(int(chainIDParam)), nil
 }
 
+// handleGetPublicKeyRole - from bls consensus public key and get role in network
 func (httpServer *HttpServer) handleGetPublicKeyRole(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 1 {
@@ -99,6 +101,33 @@ func (httpServer *HttpServer) handleGetPublicKeyRole(params interface{}, closeCh
 	}
 
 	return result, nil
+}
+
+// handleGetValidatorKeyRole - get validator key, convert to bls consensus public key and get role in network
+func (httpServer *HttpServer) handleGetValidatorKeyRole(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+	}
+
+	keyParam, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("key param is invalid"))
+	}
+
+	privateSeedBytes, _, err := base58.Base58Check{}.Decode(keyParam)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
+	_, blsPubKey := blsmultisig.KeyGen(privateSeedBytes)
+	blsPubkey := blsmultisig.PKBytes(blsPubKey)
+	temp := common.BlsConsensus + ":" + base58.Base58Check{}.Encode(blsPubkey[:], common.ZeroByte)
+
+	newParams := []interface{}{}
+	newParams = append(newParams, temp)
+
+	return httpServer.handleGetPublicKeyRole(newParams, closeChan)
 }
 
 func (httpServer *HttpServer) handleGetIncognitoPublicKeyRole(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
