@@ -2,14 +2,16 @@ package rpcservice
 
 import (
 	"errors"
+	"log"
+
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"log"
 )
 
 func NewContractingRequestMetadata(senderPrivateKeyStr string, tokenReceivers interface{}, tokenID string) (*metadata.ContractingRequest, *RPCError) {
@@ -23,11 +25,7 @@ func NewContractingRequestMetadata(senderPrivateKeyStr string, tokenReceivers in
 	}
 	paymentAddr := senderKey.KeySet.PaymentAddress
 
-	//TODO: change to privacy token
-	//_, voutsAmount, err := transaction.CreateCustomTokenReceiverArray(tokenReceivers)
-	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
-	}
+	_, voutsAmount := transaction.CreateCustomTokenPrivacyReceiverArray(tokenReceivers)
 	tokenIDHash, err := common.Hash{}.NewHashFromStr(tokenID)
 	if err != nil {
 		return nil, NewRPCError(UnexpectedError, err)
@@ -35,8 +33,7 @@ func NewContractingRequestMetadata(senderPrivateKeyStr string, tokenReceivers in
 
 	meta, _ := metadata.NewContractingRequest(
 		paymentAddr,
-		//TODO: change to right amount number
-		uint64(0),
+		uint64(voutsAmount),
 		*tokenIDHash,
 		metadata.ContractingRequestMeta,
 	)
@@ -55,11 +52,7 @@ func NewBurningRequestMetadata(senderPrivateKeyStr string, tokenReceivers interf
 	}
 	paymentAddr := senderKey.KeySet.PaymentAddress
 
-	//TODO: change to privacy token
-	//_, voutsAmount, err := transaction.CreateCustomTokenReceiverArray(tokenReceivers)
-	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
-	}
+	_, voutsAmount := transaction.CreateCustomTokenPrivacyReceiverArray(tokenReceivers)
 	tokenIDHash, err := common.Hash{}.NewHashFromStr(tokenID)
 	if err != nil {
 		return nil, NewRPCError(UnexpectedError, err)
@@ -67,8 +60,7 @@ func NewBurningRequestMetadata(senderPrivateKeyStr string, tokenReceivers interf
 
 	meta, err := metadata.NewBurningRequest(
 		paymentAddr,
-		//TODO: change amount to right number
-		uint64(0),
+		uint64(voutsAmount),
 		*tokenIDHash,
 		tokenName,
 		remoteAddress,
