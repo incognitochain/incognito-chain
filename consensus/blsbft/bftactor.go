@@ -125,7 +125,7 @@ func (e *BLSBFT) Start() error {
 					continue
 				}
 			case msg := <-e.VoteMessageCh:
-				e.logger.Info("receive vote", msg.RoundKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
+				e.logger.Info("Receive vote", msg.RoundKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
 				validatorIdx := common.IndexOfStr(msg.Validator, e.RoundData.CommitteeBLS.StringList)
 				if validatorIdx == -1 {
 					continue
@@ -235,6 +235,7 @@ func (e *BLSBFT) Start() error {
 						}
 					}
 				case votePhase:
+					e.logger.Info("Case: In vote phase")
 					if e.RoundData.NotYetSendVote {
 						err := e.sendVote()
 						if err != nil {
@@ -262,15 +263,12 @@ func (e *BLSBFT) Start() error {
 						//TODO 0xakk0r0kamui trace who is malicious node if ValidateCommitteeSig return false
 						err = e.ValidateCommitteeSig(e.RoundData.Block, e.RoundData.Committee)
 						if err != nil {
-							fmt.Print("\n")
-							e.logger.Critical(e.RoundData.Block.GetValidationField())
-							fmt.Print("\n")
-							e.logger.Critical(e.RoundData.Committee)
-							fmt.Print("\n")
+							e.logger.Error(err)
+							e.logger.Errorf("e.RoundData.Block.GetValidationField()=%+v\n", e.RoundData.Block.GetValidationField())
+							e.logger.Errorf("e.RoundData.Committee=%+v\n", e.RoundData.Committee)
 							for _, member := range e.RoundData.Committee {
-								fmt.Println(base58.Base58Check{}.Encode(member.MiningPubKey[consensusName], common.Base58Version))
+								e.logger.Errorf("member.MiningPubKey[%+v] %+v\n", consensusName, base58.Base58Check{}.Encode(member.MiningPubKey[consensusName], common.Base58Version))
 							}
-							e.logger.Critical(err)
 							continue
 						}
 
@@ -283,9 +281,9 @@ func (e *BLSBFT) Start() error {
 							}
 							continue
 						}
-						// e.Node.PushMessageToAll()
 						metrics.SetGlobalParam("CommitTime", time.Since(time.Unix(e.Chain.GetLastBlockTimeStamp(), 0)).Seconds())
-						e.logger.Warn("Commit block! Wait for next round")
+						// e.Node.PushMessageToAll()
+						e.logger.Info("Commit block %+v hash=%+v \n Wait for next round", e.RoundData.Block.GetHeight(), e.RoundData.Block.Hash().String())
 						e.enterNewRound()
 					}
 				}
