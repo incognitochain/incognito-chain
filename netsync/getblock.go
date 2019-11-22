@@ -49,11 +49,10 @@ func (netSync *NetSync) getBlockBeaconByHashAndSend(peerID libp2p.ID, blkHashes 
 	}
 }
 
-func (netSync *NetSync) getBlockShardByHeightAndSend(peerID libp2p.ID, fromPool bool, blkType byte, specificHeight bool, shardID byte, blkHeights []uint64, crossShardID byte) {
-	//fmt.Println("GETCROSS: ", fromPool, blkType, specificHeight, shardID, crossShardID, blkHeights)
+func (netSync *NetSync) GetBlockShardByHeight(fromPool bool, blkType byte, specificHeight bool, shardID byte, blkHeights []uint64, crossShardID byte) []wire.Message {
 	if !specificHeight {
 		if len(blkHeights) != 2 || blkHeights[1] < blkHeights[0] {
-			return
+			return nil
 		}
 	}
 	sort.Slice(blkHeights, func(i, j int) bool { return blkHeights[i] < blkHeights[j] })
@@ -65,6 +64,7 @@ func (netSync *NetSync) getBlockShardByHeightAndSend(peerID libp2p.ID, fromPool 
 	if !specificHeight {
 		blkHeight = blkHeights[0] - 1
 	}
+	blkMsgs := []wire.Message{}
 	for blkHeight < blkHeights[len(blkHeights)-1] {
 		if specificHeight {
 			blkHeight = blkHeights[idx]
@@ -115,8 +115,19 @@ func (netSync *NetSync) getBlockShardByHeightAndSend(peerID libp2p.ID, fromPool 
 				continue
 			}
 		}
+		blkMsgs = append(blkMsgs, blkMsg)
+	}
 
-		err = netSync.config.Server.PushMessageToPeer(blkMsg, peerID)
+	return blkMsgs
+}
+
+func (netSync *NetSync) getBlockShardByHeightAndSend(peerID libp2p.ID, fromPool bool, blkType byte, specificHeight bool, shardID byte, blkHeights []uint64, crossShardID byte) {
+	//fmt.Println("GETCROSS: ", fromPool, blkType, specificHeight, shardID, crossShardID, blkHeights)
+
+	blkMsgs := netSync.GetBlockShardByHeight(fromPool, blkType, specificHeight, shardID, blkHeights, crossShardID)
+
+	for _, blkMsg := range blkMsgs {
+		err := netSync.config.Server.PushMessageToPeer(blkMsg, peerID)
 		// fmt.Println("CROSS:", blkHeights, err)
 		if err != nil {
 			Logger.log.Error(err)
@@ -124,10 +135,10 @@ func (netSync *NetSync) getBlockShardByHeightAndSend(peerID libp2p.ID, fromPool 
 	}
 }
 
-func (netSync *NetSync) getBlockBeaconByHeightAndSend(peerID libp2p.ID, fromPool bool, specificHeight bool, blkHeights []uint64) {
+func (netSync *NetSync) GetBlockBeaconByHeight(fromPool bool, specificHeight bool, blkHeights []uint64) []wire.Message {
 	if !specificHeight {
 		if len(blkHeights) != 2 || blkHeights[1] < blkHeights[0] {
-			return
+			return nil
 		}
 	}
 	sort.Slice(blkHeights, func(i, j int) bool { return blkHeights[i] < blkHeights[j] })
@@ -138,6 +149,7 @@ func (netSync *NetSync) getBlockBeaconByHeightAndSend(peerID libp2p.ID, fromPool
 	if !specificHeight {
 		blkHeight = blkHeights[0] - 1
 	}
+	blkMsgs := []wire.Message{}
 	for blkHeight < blkHeights[len(blkHeights)-1] {
 		if specificHeight {
 			blkHeight = blkHeights[idx]
@@ -158,7 +170,15 @@ func (netSync *NetSync) getBlockBeaconByHeightAndSend(peerID libp2p.ID, fromPool
 			continue
 		}
 		msgBeaconBlk.(*wire.MessageBlockBeacon).Block = blk
-		err = netSync.config.Server.PushMessageToPeer(msgBeaconBlk, peerID)
+		blkMsgs = append(blkMsgs, msgBeaconBlk)
+	}
+	return blkMsgs
+}
+
+func (netSync *NetSync) getBlockBeaconByHeightAndSend(peerID libp2p.ID, fromPool bool, specificHeight bool, blkHeights []uint64) {
+	blkMsgs := netSync.GetBlockBeaconByHeight(fromPool, specificHeight, blkHeights)
+	for _, blkMsg := range blkMsgs {
+		err := netSync.config.Server.PushMessageToPeer(blkMsg, peerID)
 		if err != nil {
 			Logger.log.Error(err)
 		}
