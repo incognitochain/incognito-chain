@@ -381,7 +381,8 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 	for i := 0; i < common.MaxShardNumber; i++ {
 		outputCoinHash[i] = calHashOutCoinCrossShard(outCoinEachShard[i])
 		txTokenPrivacyOutHash[i] = calHashTxTokenPrivacyDataHashFromMap(txTokenPrivacyDataMap[i])
-
+		// TODO: remove txTokenOutHash when clear database
+		txTokenOutHash[i] = fakeCalHashTxTokenDataHashFromMap()
 		tmpByte := append(append(outputCoinHash[i].GetBytes(), txTokenOutHash[i].GetBytes()...), txTokenPrivacyOutHash[i].GetBytes()...)
 		combinedHash[i] = common.HashH(tmpByte)
 	}
@@ -562,6 +563,11 @@ func VerifyMerkleCrossTransaction(crossTransactions map[byte][]CrossTransaction,
 		return false
 	}
 	return newHash.IsEqual(res)
+}
+
+// TODO: remove hash of normal token tx when clear db
+func fakeCalHashTxTokenDataHashFromMap() common.Hash {
+	return common.HashH([]byte(""))
 }
 
 //=======================================END CROSS SHARD UTIL
