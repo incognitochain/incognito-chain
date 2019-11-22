@@ -197,12 +197,20 @@ func (shardToBeaconPool *ShardToBeaconPool) addShardToBeaconBlock(block *blockch
 	//update last valid pending ShardState
 	shardToBeaconPool.updateLatestShardState()
 	//@NOTICE: check logic again
+	// TODO Pls check this!
+	// Case:
+	// - beacon has shardToBeaconPool.latestValidHeight[shardID] == 2;
+	// - shardToBeaconPool.pool[shardID][0].Header.Height = 3
+	// - shardToBeaconPool.pool[shardID][1].Header.Height = 5
+	// - this function alway return from = 3, to = 3, and alway sync ShardToBeacon 3
+	// - it make beacon stuck because they can not see that they miss block 4
 	if shardToBeaconPool.pool[shardID][0].Header.Height > shardToBeaconPool.latestValidHeight[shardID] {
 		offset := shardToBeaconPool.pool[shardID][0].Header.Height - shardToBeaconPool.latestValidHeight[shardID]
 		if offset > maxValidShardToBeaconBlockInPool {
 			offset = maxValidShardToBeaconBlockInPool
 		}
-		return shardToBeaconPool.latestValidHeight[shardID] + 1, shardToBeaconPool.latestValidHeight[shardID] + offset, nil
+		//Just temp fix
+		return shardToBeaconPool.latestValidHeight[shardID] + 1, shardToBeaconPool.pool[shardID][0].Header.Height + 1, nil
 	}
 	return 0, 0, nil
 }
@@ -289,6 +297,7 @@ func (shardToBeaconPool *ShardToBeaconPool) GetValidBlock(limit map[byte]uint64)
 	shardToBeaconPool.latestValidHeightMutex.Lock()
 	defer shardToBeaconPool.latestValidHeightMutex.Unlock()
 	finalBlocks := make(map[byte][]*blockchain.ShardToBeaconBlock)
+	Logger.log.Infof("In GetValidBlock pool: %+v", shardToBeaconPool.pool)
 	for shardID, blks := range shardToBeaconPool.pool {
 		shardToBeaconPool.checkLatestValidHeightValidity(shardID)
 		for i, blk := range blks {
