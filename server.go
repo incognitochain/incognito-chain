@@ -17,9 +17,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/metrics"
 	peer2 "github.com/libp2p/go-libp2p-core/peer"
 
+	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/peerv2"
 
 	"cloud.google.com/go/storage"
