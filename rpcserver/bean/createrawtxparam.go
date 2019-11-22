@@ -102,8 +102,14 @@ func NewCreateRawTxParam(params interface{}) (*CreateRawTxParam, error) {
 	// param#6: info (optional)
 	info := []byte{}
 	if len(arrayParams) > 5 {
-		infoStr := arrayParams[5].(string)
-		info = []byte(infoStr)
+		if arrayParams[5]  != nil{
+			infoStr, ok := arrayParams[5].(string)
+			if !ok {
+				return nil, errors.New("info is invalid")
+			}
+			info = []byte(infoStr)
+		}
+
 	}
 
 	return &CreateRawTxParam{

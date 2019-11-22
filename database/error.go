@@ -87,6 +87,22 @@ const (
 	// slash
 	GetProducersBlackListError
 	StoreProducersBlackListError
+
+	// pde
+	GetWaitingPDEContributionByPairIDError
+	GetPDEPoolForPairKeyError
+	StoreWaitingPDEContributionError
+	DeleteWaitingPDEContributionError
+	StorePDEPoolForPairError
+	GetPDEShareError
+	AddShareAmountUpError
+	GetPDETradeFeeError
+	AddTradeFeeUpError
+	DeduceTradeFeeError
+	GetAllRecordsByPrefixError
+	DeduceShareError
+	TrackPDEStatusError
+	GetPDEStatusError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -174,6 +190,22 @@ var ErrCodeMessage = map[int]struct {
 	// -12xxx Slash
 	GetProducersBlackListError:   {-12000, "Get producers black list error"},
 	StoreProducersBlackListError: {-12001, "Store producers black list error"},
+
+	// -13xxx PDE
+	GetWaitingPDEContributionByPairIDError: {-13001, "Get waiting pde contribution by pair id error"},
+	GetPDEPoolForPairKeyError:              {-13002, "Get pde pool for pair key error"},
+	StoreWaitingPDEContributionError:       {-13003, "Store waiting pde contribution error"},
+	DeleteWaitingPDEContributionError:      {-13004, "Delete waiting pde contribution error"},
+	StorePDEPoolForPairError:               {-13005, "Store pde pool for pair error"},
+	GetPDEShareError:                       {-13006, "Get pde share error"},
+	AddShareAmountUpError:                  {-13007, "Add share amount up error"},
+	GetPDETradeFeeError:                    {-13008, "Get pde trade fee error"},
+	AddTradeFeeUpError:                     {-13009, "Add trade fee up error"},
+	DeduceTradeFeeError:                    {-13010, "Deduce trade fee error"},
+	GetAllRecordsByPrefixError:             {-13011, "Get all records by prefix error"},
+	DeduceShareError:                       {-13012, "Deduce share error"},
+	TrackPDEStatusError:                    {-13013, "Track pde status error"},
+	GetPDEStatusError:                      {-13014, "Get pde status error"},
 }
 
 type DatabaseError struct {
