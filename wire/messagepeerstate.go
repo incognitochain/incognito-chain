@@ -6,8 +6,8 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	peer "github.com/libp2p/go-libp2p-peer"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 const (
@@ -15,12 +15,13 @@ const (
 )
 
 type MessagePeerState struct {
-	Beacon            blockchain.ChainState
-	Shards            map[byte]blockchain.ChainState
-	ShardToBeaconPool map[byte][]uint64
-	CrossShardPool    map[byte]map[byte][]uint64
-	Timestamp         int64
-	SenderID          string
+	Beacon                blockchain.ChainState
+	Shards                map[byte]blockchain.ChainState
+	ShardToBeaconPool     map[byte][]uint64
+	CrossShardPool        map[byte]map[byte][]uint64
+	Timestamp             int64
+	SenderID              string
+	SenderMiningPublicKey string
 }
 
 func (msg *MessagePeerState) Hash() string {
