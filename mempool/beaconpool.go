@@ -24,7 +24,7 @@ type BeaconPool struct {
 	pendingPool           map[uint64]*blockchain.BeaconBlock // not ready to insert into blockchain, there maybe many blocks exists at one height
 	conflictedPool        map[common.Hash]*blockchain.BeaconBlock
 	latestValidHeight     uint64
-	mtx                   sync.RWMutex
+	mtx                   *sync.RWMutex
 	config                BeaconPoolConfig
 	cache                 *lru.Cache
 	RoleInCommittees      bool //Current Role of Node
@@ -69,6 +69,7 @@ func GetBeaconPool() *BeaconPool {
 			CacheSize:       beaconCacheSize,
 		}
 		beaconPool.cache, _ = lru.New(beaconPool.config.CacheSize)
+		beaconPool.mtx = new(sync.RWMutex)
 	}
 	return beaconPool
 }

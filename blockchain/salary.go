@@ -78,11 +78,13 @@ func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(
 }
 
 func (blockchain *BlockChain) getRewardAmount(blkHeight uint64) uint64 {
-	n := blkHeight / blockchain.config.ChainParams.RewardHalflife
+	blockBeaconInterval := blockchain.config.ChainParams.MinBeaconBlockInterval.Seconds()
+	blockInYear := getNoBlkPerYear(uint64(blockBeaconInterval))
+	n := blkHeight / blockInYear
 	reward := uint64(blockchain.config.ChainParams.BasicReward)
 	for ; n > 0; n-- {
-		reward *= 9
-		reward /= 10
+		reward *= 91
+		reward /= 100
 	}
 	return reward
 }
@@ -117,7 +119,7 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(blkHeight, epoch uin
 		}
 		rewardForBeacon, rewardForIncDAO, err := splitReward(&totalRewards[ID], numberOfActiveShards, percentForIncognitoDAO)
 		if err != nil {
-			Logger.log.Infof("\n------------------------------------\nNot enough reward in epoch %v\n------------------------------------\n")
+			Logger.log.Infof("\n------------------------------------\nNot enough reward in epoch %v\n------------------------------------\n", err)
 		}
 		mapPlusMap(rewardForBeacon, &totalRewardForBeacon)
 		mapPlusMap(rewardForIncDAO, &totalRewardForIncDAO)
