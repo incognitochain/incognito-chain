@@ -1,8 +1,13 @@
 package rpcserver
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"math/big"
+	"sort"
+	"strconv"
+	"strings"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -13,6 +18,55 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
+
+type PDEWithdrawal struct {
+	WithdrawalTokenIDStr string
+	WithdrawerAddressStr string
+	DeductingPoolValue   uint64
+	DeductingShares      uint64
+	PairToken1IDStr      string
+	PairToken2IDStr      string
+	TxReqID              common.Hash
+	ShardID              byte
+	Status               string
+	BeaconHeight         uint64
+}
+
+type PDETrade struct {
+	TraderAddressStr    string
+	ReceivingTokenIDStr string
+	ReceiveAmount       uint64
+	Token1IDStr         string
+	Token2IDStr         string
+	ShardID             byte
+	RequestedTxID       common.Hash
+	Status              string
+	BeaconHeight        uint64
+}
+
+type PDEContribution struct {
+	PDEContributionPairID string
+	ContributorAddressStr string
+	ContributedAmount     uint64
+	TokenIDStr            string
+	TxReqID               common.Hash
+	ShardID               byte
+	Status                string
+	BeaconHeight          uint64
+}
+
+type PDEInfoFromBeaconBlock struct {
+	PDEContributions []*PDEContribution
+	PDETrades        []*PDETrade
+	PDEWithdrawals   []*PDEWithdrawal
+}
+
+type ConvertedPrice struct {
+	FromTokenIDStr string
+	ToTokenIDStr   string
+	Amount         uint64
+	Price          uint64
+}
 
 func (httpServer *HttpServer) handleCreateRawTxWithPRVContribution(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
@@ -415,9 +469,15 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithWithdrawalReq(params inte
 
 func (httpServer *HttpServer) handleGetPDEState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	data := arrayParams[0].(map[string]interface{})
-	beaconHeight := uint64(data["BeaconHeight"].(float64))
-	pdeState, err := blockchain.InitCurrentPDEStateFromDB(httpServer.config.BlockChain.GetDatabase(), beaconHeight)
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	beaconHeight, ok := data["BeaconHeight"].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Beacon height is invalid"))
+	}
+	pdeState, err := blockchain.InitCurrentPDEStateFromDB(httpServer.config.BlockChain.GetDatabase(), uint64(beaconHeight))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
@@ -534,4 +594,320 @@ func (httpServer *HttpServer) handleGetPDEWithdrawalStatus(params interface{}, c
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
 	return status, nil
+}
+
+func parsePDEContributionInst(inst []string, beaconHeight uint64) (*PDEContribution, error) {
+	status := inst[2]
+	shardID, err := strconv.Atoi(inst[1])
+	if err != nil {
+		return nil, err
+	}
+	if status == "matched" {
+		matchedContribContent := []byte(inst[3])
+		var matchedContrib metadata.PDEMatchedContribution
+		err := json.Unmarshal(matchedContribContent, &matchedContrib)
+		if err != nil {
+			return nil, err
+		}
+		return &PDEContribution{
+			PDEContributionPairID: matchedContrib.PDEContributionPairID,
+			ContributorAddressStr: matchedContrib.ContributorAddressStr,
+			ContributedAmount:     matchedContrib.ContributedAmount,
+			TokenIDStr:            matchedContrib.TokenIDStr,
+			TxReqID:               matchedContrib.TxReqID,
+			ShardID:               byte(shardID),
+			Status:                "matched",
+			BeaconHeight:          beaconHeight,
+		}, nil
+	}
+	if status == "refund" {
+		refundedContribContent := []byte(inst[3])
+		var refundedContrib metadata.PDERefundContribution
+		err := json.Unmarshal(refundedContribContent, &refundedContrib)
+		if err != nil {
+			return nil, err
+		}
+		return &PDEContribution{
+			PDEContributionPairID: refundedContrib.PDEContributionPairID,
+			ContributorAddressStr: refundedContrib.ContributorAddressStr,
+			ContributedAmount:     refundedContrib.ContributedAmount,
+			TokenIDStr:            refundedContrib.TokenIDStr,
+			TxReqID:               refundedContrib.TxReqID,
+			ShardID:               byte(shardID),
+			Status:                "refunded",
+			BeaconHeight:          beaconHeight,
+		}, nil
+	}
+	return nil, nil
+}
+
+func parsePDETradeInst(inst []string, beaconHeight uint64) (*PDETrade, error) {
+	status := inst[2]
+	shardID, err := strconv.Atoi(inst[1])
+	if err != nil {
+		return nil, err
+	}
+	if status == "refund" {
+		contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
+		if err != nil {
+			return nil, err
+		}
+		var pdeTradeReqAction metadata.PDETradeRequestAction
+		err = json.Unmarshal(contentBytes, &pdeTradeReqAction)
+		if err != nil {
+			return nil, err
+		}
+		tokenIDStrs := []string{pdeTradeReqAction.Meta.TokenIDToBuyStr, pdeTradeReqAction.Meta.TokenIDToSellStr}
+		sort.Slice(tokenIDStrs, func(i, j int) bool {
+			return tokenIDStrs[i] < tokenIDStrs[j]
+		})
+		return &PDETrade{
+			TraderAddressStr:    pdeTradeReqAction.Meta.TraderAddressStr,
+			ReceivingTokenIDStr: pdeTradeReqAction.Meta.TokenIDToSellStr,
+			ReceiveAmount:       pdeTradeReqAction.Meta.SellAmount + pdeTradeReqAction.Meta.TradingFee,
+			Token1IDStr:         tokenIDStrs[0],
+			Token2IDStr:         tokenIDStrs[1],
+			ShardID:             byte(shardID),
+			RequestedTxID:       pdeTradeReqAction.TxReqID,
+			Status:              "refunded",
+			BeaconHeight:        beaconHeight,
+		}, nil
+	}
+	if status == "accepted" {
+		tradeAcceptedContentBytes := []byte(inst[3])
+		var tradeAcceptedContent metadata.PDETradeAcceptedContent
+		err := json.Unmarshal(tradeAcceptedContentBytes, &tradeAcceptedContent)
+		if err != nil {
+			return nil, err
+		}
+		tokenIDStrs := []string{tradeAcceptedContent.Token1IDStr, tradeAcceptedContent.Token2IDStr}
+		sort.Slice(tokenIDStrs, func(i, j int) bool {
+			return tokenIDStrs[i] < tokenIDStrs[j]
+		})
+		return &PDETrade{
+			TraderAddressStr:    tradeAcceptedContent.TraderAddressStr,
+			ReceivingTokenIDStr: tradeAcceptedContent.TokenIDToBuyStr,
+			ReceiveAmount:       tradeAcceptedContent.ReceiveAmount,
+			Token1IDStr:         tokenIDStrs[0],
+			Token2IDStr:         tokenIDStrs[1],
+			ShardID:             byte(shardID),
+			RequestedTxID:       tradeAcceptedContent.RequestedTxID,
+			Status:              "accepted",
+			BeaconHeight:        beaconHeight,
+		}, nil
+	}
+	return nil, nil
+}
+
+func parsePDEWithdrawalInst(inst []string, beaconHeight uint64) (*PDEWithdrawal, error) {
+	status := inst[2]
+	shardID, err := strconv.Atoi(inst[1])
+	if err != nil {
+		return nil, err
+	}
+	if status == "accepted" {
+		withdrawalAcceptedContentBytes := []byte(inst[3])
+		var withdrawalAcceptedContent metadata.PDEWithdrawalAcceptedContent
+		err := json.Unmarshal(withdrawalAcceptedContentBytes, &withdrawalAcceptedContent)
+		if err != nil {
+			return nil, err
+		}
+		tokenIDStrs := []string{withdrawalAcceptedContent.PairToken1IDStr, withdrawalAcceptedContent.PairToken2IDStr}
+		sort.Slice(tokenIDStrs, func(i, j int) bool {
+			return tokenIDStrs[i] < tokenIDStrs[j]
+		})
+		return &PDEWithdrawal{
+			WithdrawalTokenIDStr: withdrawalAcceptedContent.WithdrawalTokenIDStr,
+			WithdrawerAddressStr: withdrawalAcceptedContent.WithdrawerAddressStr,
+			DeductingPoolValue:   withdrawalAcceptedContent.DeductingPoolValue,
+			DeductingShares:      withdrawalAcceptedContent.DeductingShares,
+			PairToken1IDStr:      tokenIDStrs[0],
+			PairToken2IDStr:      tokenIDStrs[1],
+			TxReqID:              withdrawalAcceptedContent.TxReqID,
+			ShardID:              byte(shardID),
+			Status:               "accepted",
+			BeaconHeight:         beaconHeight,
+		}, nil
+	}
+	return nil, nil
+}
+
+func (httpServer *HttpServer) handleExtractPDEInstsFromBeaconBlock(
+	params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError,
+) {
+	arrayParams := common.InterfaceSlice(params)
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	beaconHeight, ok := data["BeaconHeight"].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Beacon height is invalid"))
+	}
+
+	bcHeight := uint64(beaconHeight)
+	beaconBlocks, err := blockchain.FetchBeaconBlockFromHeight(
+		httpServer.config.BlockChain.GetDatabase(),
+		bcHeight,
+		bcHeight,
+	)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	if len(beaconBlocks) == 0 {
+		return nil, nil
+	}
+	bcBlk := beaconBlocks[0]
+	pdeInfoFromBeaconBlock := PDEInfoFromBeaconBlock{
+		PDEContributions: []*PDEContribution{},
+		PDETrades:        []*PDETrade{},
+		PDEWithdrawals:   []*PDEWithdrawal{},
+	}
+	insts := bcBlk.Body.Instructions
+	for _, inst := range insts {
+		if len(inst) < 2 {
+			continue // Not error, just not PDE instruction
+		}
+		switch inst[0] {
+		case strconv.Itoa(metadata.PDEContributionMeta):
+			pdeContrib, err := parsePDEContributionInst(inst, bcHeight)
+			if err != nil || pdeContrib == nil {
+				continue
+			}
+			pdeInfoFromBeaconBlock.PDEContributions = append(pdeInfoFromBeaconBlock.PDEContributions, pdeContrib)
+		case strconv.Itoa(metadata.PDETradeRequestMeta):
+			pdeTrade, err := parsePDETradeInst(inst, bcHeight)
+			if err != nil || pdeTrade == nil {
+				continue
+			}
+			pdeInfoFromBeaconBlock.PDETrades = append(pdeInfoFromBeaconBlock.PDETrades, pdeTrade)
+		case strconv.Itoa(metadata.PDEWithdrawalRequestMeta):
+			pdeWithdrawal, err := parsePDEWithdrawalInst(inst, bcHeight)
+			if err != nil || pdeWithdrawal == nil {
+				continue
+			}
+			pdeInfoFromBeaconBlock.PDEWithdrawals = append(pdeInfoFromBeaconBlock.PDEWithdrawals, pdeWithdrawal)
+		}
+	}
+	return pdeInfoFromBeaconBlock, nil
+}
+
+func convertPrice(
+	latestBcHeight uint64,
+	toTokenIDStr string,
+	fromTokenIDStr string,
+	convertingAmt uint64,
+	pdePoolPairs map[string]*lvdb.PDEPoolForPair,
+) *ConvertedPrice {
+	poolPairKey := lvdb.BuildPDEPoolForPairKey(
+		latestBcHeight,
+		toTokenIDStr,
+		fromTokenIDStr,
+	)
+	poolPair, found := pdePoolPairs[string(poolPairKey)]
+	if !found || poolPair == nil {
+		return nil
+	}
+	if poolPair.Token1PoolValue == 0 || poolPair.Token2PoolValue == 0 {
+		return nil
+	}
+
+	tokenPoolValueToBuy := poolPair.Token1PoolValue
+	tokenPoolValueToSell := poolPair.Token2PoolValue
+	if poolPair.Token1IDStr == fromTokenIDStr {
+		tokenPoolValueToBuy = poolPair.Token2PoolValue
+		tokenPoolValueToSell = poolPair.Token1PoolValue
+	}
+	invariant := big.NewInt(0)
+	invariant.Mul(big.NewInt(int64(tokenPoolValueToSell)), big.NewInt(int64(tokenPoolValueToBuy)))
+	newTokenPoolValueToSell := big.NewInt(0)
+	newTokenPoolValueToSell.Add(big.NewInt(int64(poolPair.Token1PoolValue)), big.NewInt(int64(convertingAmt)))
+	newTokenPoolValueToBuy := big.NewInt(0).Div(invariant, newTokenPoolValueToSell).Uint64()
+	modValue := big.NewInt(0).Mod(invariant, newTokenPoolValueToSell)
+	if modValue.Cmp(big.NewInt(0)) != 0 {
+		newTokenPoolValueToBuy++
+	}
+	if tokenPoolValueToBuy <= newTokenPoolValueToBuy {
+		return nil
+	}
+	return &ConvertedPrice{
+		FromTokenIDStr: fromTokenIDStr,
+		ToTokenIDStr:   toTokenIDStr,
+		Amount:         convertingAmt,
+		Price:          tokenPoolValueToBuy - newTokenPoolValueToBuy,
+	}
+}
+
+func (httpServer *HttpServer) handleConvertPDEPrices(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	latestBcHeight := httpServer.config.BlockChain.BestState.Beacon.BeaconHeight
+
+	arrayParams := common.InterfaceSlice(params)
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	fromTokenIDStr, ok := data["FromTokenIDStr"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("FromTokenIDStr is invalid"))
+	}
+	toTokenIDStr, ok := data["ToTokenIDStr"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("ToTokenIDStr is invalid"))
+	}
+	amount, ok := data["Amount"].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Amount is invalid"))
+	}
+	convertingAmt := uint64(amount)
+	if convertingAmt == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Amount is invalid"))
+	}
+	pdeState, err := blockchain.InitCurrentPDEStateFromDB(httpServer.config.BlockChain.GetDatabase(), latestBcHeight)
+	if err != nil || pdeState == nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+	}
+	pdePoolPairs := pdeState.PDEPoolPairs
+	results := []*ConvertedPrice{}
+	if toTokenIDStr != "all" {
+		convertedPrice := convertPrice(
+			latestBcHeight,
+			toTokenIDStr,
+			fromTokenIDStr,
+			convertingAmt,
+			pdePoolPairs,
+		)
+		if convertedPrice == nil {
+			return results, nil
+		}
+		return append(results, convertedPrice), nil
+	}
+	// compute price of "from" token against all tokens else
+	for poolPairKey, poolPair := range pdePoolPairs {
+		if !strings.Contains(poolPairKey, fromTokenIDStr) {
+			continue
+		}
+		var convertedPrice *ConvertedPrice
+		if poolPair.Token1IDStr == fromTokenIDStr {
+			convertedPrice = convertPrice(
+				latestBcHeight,
+				poolPair.Token2IDStr,
+				fromTokenIDStr,
+				convertingAmt,
+				pdePoolPairs,
+			)
+		} else if poolPair.Token2IDStr == fromTokenIDStr {
+			convertedPrice = convertPrice(
+				latestBcHeight,
+				poolPair.Token1IDStr,
+				fromTokenIDStr,
+				convertingAmt,
+				pdePoolPairs,
+			)
+		}
+		if convertedPrice == nil {
+			continue
+		}
+		results = append(results, convertedPrice)
+	}
+	return results, nil
 }
