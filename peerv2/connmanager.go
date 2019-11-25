@@ -3,7 +3,6 @@ package peerv2
 import (
 	"context"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"log"
 	"reflect"
@@ -16,6 +15,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/multiformats/go-multiaddr"
+	"github.com/pkg/errors"
 )
 
 // TODO REMOVE HARDCODE
@@ -321,29 +321,34 @@ func broadcastMessage(msg wire.Message, topic string, ps *pubsub.PubSub) error {
 func (cm *ConnManager) manageRoleSubscription() {
 	role := newUserRole("dummyLayer", "dummyRole", -1000)
 	topics := m2t{}
+	forced := false // only subscribe when role changed or last forced subscribe failed
+	var err error
 	for {
 		select {
 		case <-time.Tick(10 * time.Second):
-			forced := false // only subscribe when role changed
-			role, topics = cm.subscribe(role, topics, forced)
+			role, topics, err = cm.subscribe(role, topics, forced)
+			if err != nil {
+				log.Printf("subscribe failed: %v %+v", forced, err)
+			} else {
+				forced = false
+			}
 
 		case <-cm.registerRequests:
 			log.Println("Received request to register")
-			forced := true // register no matter if role changed or not
-			role, topics = cm.subscribe(role, topics, forced)
+			forced = true // register no matter if role changed or not
 		}
 	}
 }
 
-func (cm *ConnManager) subscribe(role userRole, topics m2t, forced bool) (userRole, m2t) {
+func (cm *ConnManager) subscribe(role userRole, topics m2t, forced bool) (userRole, m2t, error) {
 	newRole := newUserRole(cm.cd.GetUserRole())
 	if newRole == role && !forced { // Not forced => no need to subscribe when role stays the same
-		return newRole, topics
+		return newRole, topics, nil
 	}
 	log.Printf("Role changed: %v -> %v", role, newRole)
 
 	if newRole.role == common.WaitingRole && !forced { // Not forced => no need to subscribe when role is Waiting
-		return newRole, topics
+		return newRole, topics, nil
 	}
 
 	// Registering
@@ -358,22 +363,21 @@ func (cm *ConnManager) subscribe(role userRole, topics m2t, forced bool) (userRo
 	}
 	newTopics, roleOfTopics, err := cm.registerToProxy(pubkey, newRole.layer, shardIDs)
 	if err != nil {
-		return role, topics
+		return role, topics, err
 	}
 
 	if newRole != roleOfTopics {
-		log.Printf("Role not matching with highway, local = %+v, highway = %+v", newRole, roleOfTopics)
-		return role, topics
+		return role, topics, errors.Errorf("lole not matching with highway, local = %+v, highway = %+v", newRole, roleOfTopics)
 	}
 
 	log.Printf("Received topics = %+v, oldTopics = %+v", newTopics, topics)
 
 	// Subscribing
 	if err := cm.subscribeNewTopics(newTopics, topics); err != nil {
-		return role, topics
+		return role, topics, err
 	}
 
-	return newRole, newTopics
+	return newRole, newTopics, nil
 }
 
 type userRole struct {
@@ -424,7 +428,7 @@ func (cm *ConnManager) subscribeNewTopics(newTopics, subscribed m2t) error {
 
 			s, err := cm.ps.Subscribe(t.Name)
 			if err != nil {
-				return err
+				return errors.WithStack(err)
 			}
 			cm.subs[m] = append(cm.subs[m], Topic{Name: t.Name, Sub: s, Act: t.Act})
 			go processSubscriptionMessage(cm.messages, s)
