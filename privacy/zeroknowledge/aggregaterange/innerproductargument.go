@@ -4,12 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"math"
 )
 
 type InnerProductWitness struct {
 	a []*privacy.Scalar
 	b []*privacy.Scalar
-
 	p *privacy.Point
 }
 
@@ -18,7 +18,6 @@ type InnerProductProof struct {
 	r []*privacy.Point
 	a *privacy.Scalar
 	b *privacy.Scalar
-
 	p *privacy.Point
 }
 
@@ -28,19 +27,12 @@ func (proof InnerProductProof) ValidateSanity() bool {
 	}
 
 	for i := 0; i < len(proof.l); i++ {
-		if !proof.l[i].PointValid() {
-			return false
-		}
-
-		if !proof.r[i].PointValid() {
+		if !proof.l[i].PointValid() || !proof.r[i].PointValid() {
 			return false
 		}
 	}
 
-	if !proof.a.ScalarValid() {
-		return false
-	}
-	if !proof.b.ScalarValid() {
+	if !proof.a.ScalarValid() || !proof.b.ScalarValid() {
 		return false
 	}
 
@@ -78,7 +70,7 @@ func (proof *InnerProductProof) SetBytes(bytes []byte) error {
 	proof.l = make([]*privacy.Point, lenLArray)
 	for i := 0; i < lenLArray; i++ {
 		proof.l[i], err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
-		if err != nil{
+		if err != nil {
 			return err
 		}
 		offset += privacy.Ed25519KeySize
@@ -87,7 +79,7 @@ func (proof *InnerProductProof) SetBytes(bytes []byte) error {
 	proof.r = make([]*privacy.Point, lenLArray)
 	for i := 0; i < lenLArray; i++ {
 		proof.r[i], err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
-		if err != nil{
+		if err != nil {
 			return err
 		}
 		offset += privacy.Ed25519KeySize
@@ -100,15 +92,14 @@ func (proof *InnerProductProof) SetBytes(bytes []byte) error {
 	offset += privacy.Ed25519KeySize
 
 	proof.p, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
-	if err != nil{
+	if err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (wit InnerProductWitness) Prove(AggParam *bulletproofParams) (*InnerProductProof, error) {
-	//var AggParam = newBulletproofParams(1)
+func (wit InnerProductWitness) Prove(aggParam *bulletproofParams) (*InnerProductProof, error) {
 	if len(wit.a) != len(wit.b) {
 		return nil, errors.New("invalid inputs")
 	}
@@ -127,10 +118,11 @@ func (wit InnerProductWitness) Prove(AggParam *bulletproofParams) (*InnerProduct
 	G := make([]*privacy.Point, n)
 	H := make([]*privacy.Point, n)
 	for i := range G {
-		G[i] = new(privacy.Point).Set(AggParam.g[i])
-		H[i] = new(privacy.Point).Set(AggParam.h[i])
+		G[i] = new(privacy.Point).Set(aggParam.g[i])
+		H[i] = new(privacy.Point).Set(aggParam.h[i])
 	}
 
+	chalenge := new(privacy.Scalar).FromUint64(0)
 	proof := new(InnerProductProof)
 	proof.l = make([]*privacy.Point, 0)
 	proof.r = make([]*privacy.Point, 0)
@@ -153,18 +145,18 @@ func (wit InnerProductWitness) Prove(AggParam *bulletproofParams) (*InnerProduct
 		if err != nil {
 			return nil, err
 		}
-		L.Add(L, new(privacy.Point).ScalarMult(AggParam.u, cL))
+		L.Add(L, new(privacy.Point).ScalarMult(aggParam.u, cL))
 		proof.l = append(proof.l, L)
 
 		R, err := encodeVectors(a[nPrime:], b[:nPrime], G[:nPrime], H[nPrime:])
 		if err != nil {
 			return nil, err
 		}
-		R.Add(R, new(privacy.Point).ScalarMult(AggParam.u, cR))
+		R.Add(R, new(privacy.Point).ScalarMult(aggParam.u, cR))
 		proof.r = append(proof.r, R)
 
-		// calculate challenge x = hash(G || H || u || p ||  l || r)
-		x := generateChallengeForAggRange(AggParam, [][]byte{p.ToBytesS(), L.ToBytesS(), R.ToBytesS()})
+		// calculate challenge x = hash(G || H || u || p || x || l || r)
+		x := generateChallenge([][]byte{aggParam.cs.ToBytesS(), chalenge.ToBytesS(), L.ToBytesS(), R.ToBytesS()})
 		xInverse := new(privacy.Scalar).Invert(x)
 		xSquare := new(privacy.Scalar).Mul(x, x)
 		xSquareInverse := new(privacy.Scalar).Mul(xInverse, xInverse)
@@ -174,13 +166,7 @@ func (wit InnerProductWitness) Prove(AggParam *bulletproofParams) (*InnerProduct
 		HPrime := make([]*privacy.Point, nPrime)
 
 		for i := range GPrime {
-			//GPrime[i] = new(privacy.Point).ScalarMult(G[i], xInverse)
-			//GPrime[i].Add(GPrime[i], new(privacy.Point).ScalarMult(G[i+nPrime], x))
-			//GPrime[i] = new(privacy.Point).AddPedersen(xInverse, G[i], x, G[i+nPrime])
 			GPrime[i] = new(privacy.Point).AddPedersen(xInverse, G[i], x, G[i+nPrime])
-
-			//HPrime[i] = new(privacy.Point).ScalarMult(H[i], x)
-			//HPrime[i].Add(HPrime[i], new(privacy.Point).ScalarMult(H[i+nPrime], xInverse))
 			HPrime[i] = new(privacy.Point).AddPedersen(x, H[i], xInverse, H[i+nPrime])
 		}
 
@@ -197,12 +183,13 @@ func (wit InnerProductWitness) Prove(AggParam *bulletproofParams) (*InnerProduct
 			aPrime[i] = new(privacy.Scalar).MulAdd(a[i+nPrime], xInverse, aPrime[i])
 
 			bPrime[i] = new(privacy.Scalar).Mul(b[i], xInverse)
-			bPrime[i]= new(privacy.Scalar).MulAdd(b[i+nPrime], x, bPrime[i])
+			bPrime[i] = new(privacy.Scalar).MulAdd(b[i+nPrime], x, bPrime[i])
 		}
 
 		a = aPrime
 		b = bPrime
 		p.Set(PPrime)
+		chalenge.Set(x)
 		G = GPrime
 		H = HPrime
 		n = nPrime
@@ -213,14 +200,13 @@ func (wit InnerProductWitness) Prove(AggParam *bulletproofParams) (*InnerProduct
 
 	return proof, nil
 }
-
 func (proof InnerProductProof) Verify(AggParam *bulletproofParams) bool {
 	//var AggParam = newBulletproofParams(1)
 	p := new(privacy.Point)
 	p.Set(proof.p)
 
 	n := len(AggParam.g)
-
+	challenge := new(privacy.Scalar).FromUint64(0)
 	G := make([]*privacy.Point, n)
 	H := make([]*privacy.Point, n)
 	for i := range G {
@@ -230,8 +216,8 @@ func (proof InnerProductProof) Verify(AggParam *bulletproofParams) bool {
 
 	for i := range proof.l {
 		nPrime := n / 2
-		// calculate challenge x = hash(G || H || u || p ||  l || r)
-		x := generateChallengeForAggRange(AggParam, [][]byte{p.ToBytesS(), proof.l[i].ToBytesS(), proof.r[i].ToBytesS()})
+		// calculate challenge x = hash(G || H || u || p || x || l || r)
+		x := generateChallenge([][]byte{AggParam.cs.ToBytesS(), challenge.ToBytesS(), proof.l[i].ToBytesS(), proof.r[i].ToBytesS()})
 		xInverse := new(privacy.Scalar).Invert(x)
 		xSquare := new(privacy.Scalar).Mul(x, x)
 		xSquareInverse := new(privacy.Scalar).Mul(xInverse, xInverse)
@@ -241,38 +227,99 @@ func (proof InnerProductProof) Verify(AggParam *bulletproofParams) bool {
 		HPrime := make([]*privacy.Point, nPrime)
 
 		for j := 0; j < len(GPrime); j++ {
-			//GPrime[j] = new(privacy.Point).ScalarMult(G[j], xInverse)
-			//GPrime[j].Add(GPrime[j], new(privacy.Point).ScalarMult(G[j+nPrime], x))
 			GPrime[j] = new(privacy.Point).AddPedersen(xInverse, G[j], x, G[j+nPrime])
-
-			//HPrime[j] = new(privacy.Point).ScalarMult(H[j], x)
-			//HPrime[j].Add(HPrime[j], new(privacy.Point).ScalarMult(H[j+nPrime], xInverse))
 			HPrime[j] = new(privacy.Point).AddPedersen(x, H[j], xInverse, H[j+nPrime])
 		}
-
-		//PPrime := l.ScalarMul(xSquare).Add(p).Add(r.ScalarMul(xSquareInverse)) // x^2 * l + P + xInverse^2 * r
+		// calculate x^2 * l + P + xInverse^2 * r
 		PPrime := new(privacy.Point).AddPedersen(xSquare, proof.l[i], xSquareInverse, proof.r[i])
-		PPrime.Add(PPrime, p) // x^2 * l + P + xInverse^2 * r
+		PPrime.Add(PPrime, p)
 
 		p = PPrime
 		G = GPrime
 		H = HPrime
 		n = nPrime
+		challenge.Set(x)
 	}
 
 	c := new(privacy.Scalar).Mul(proof.a, proof.b)
-
 	rightPoint := new(privacy.Point).AddPedersen(proof.a, G[0], proof.b, H[0])
 	rightPoint.Add(rightPoint, new(privacy.Point).ScalarMult(AggParam.u, c))
-
 	res := privacy.IsPointEqual(rightPoint, p)
 	if !res {
 		privacy.Logger.Log.Error("Inner product argument failed:")
 		privacy.Logger.Log.Error("p: %v\n", p)
-		privacy.Logger.Log.Error("rightPoint: %v\n", rightPoint)
-		fmt.Printf("Inner product argument failed:")
-		fmt.Printf("p: %v\n", p)
-		fmt.Printf("rightPoint: %v\n", rightPoint)
+		privacy.Logger.Log.Error("RightPoint: %v\n", rightPoint)
+	}
+
+	return res
+}
+
+func (proof InnerProductProof) VerifyFaster(AggParam *bulletproofParams) bool {
+	//var AggParam = newBulletproofParams(1)
+	p := new(privacy.Point)
+	p.Set(proof.p)
+	challenge := new(privacy.Scalar).FromUint64(0)
+	n := len(AggParam.g)
+	G := make([]*privacy.Point, n)
+	H := make([]*privacy.Point, n)
+	s := make([]*privacy.Scalar, n)
+	sInverse := make([]*privacy.Scalar, n)
+
+	for i := range G {
+		G[i] = new(privacy.Point).Set(AggParam.g[i])
+		H[i] = new(privacy.Point).Set(AggParam.h[i])
+		s[i] = new(privacy.Scalar).FromUint64(1)
+		sInverse[i] = new(privacy.Scalar).FromUint64(1)
+	}
+	logN := int(math.Log2(float64(n)))
+	xList := make([]*privacy.Scalar, logN)
+	xInverseList := make([]*privacy.Scalar, logN)
+	xSquareList := make([]*privacy.Scalar, logN)
+	xInverseSquare_List := make([]*privacy.Scalar, logN)
+
+	//a*s ; b*s^-1
+
+	for i := range proof.l {
+		// calculate challenge x = hash(hash(G || H || u || p) || x || l || r)
+		xList[i] = generateChallenge([][]byte{AggParam.cs.ToBytesS(), challenge.ToBytesS(), proof.l[i].ToBytesS(), proof.r[i].ToBytesS()})
+		xInverseList[i] = new(privacy.Scalar).Invert(xList[i])
+		xSquareList[i] = new(privacy.Scalar).Mul(xList[i], xList[i])
+		xInverseSquare_List[i] = new(privacy.Scalar).Mul(xInverseList[i], xInverseList[i])
+
+		//Update s, s^-1
+		for j := 0; j < n; j++ {
+			if j&int(math.Pow(2, float64(logN-i-1))) != 0 {
+				s[j] = new(privacy.Scalar).Mul(s[j], xList[i])
+				sInverse[j] = new(privacy.Scalar).Mul(sInverse[j], xInverseList[i])
+			} else {
+				s[j] = new(privacy.Scalar).Mul(s[j], xInverseList[i])
+				sInverse[j] = new(privacy.Scalar).Mul(sInverse[j], xList[i])
+			}
+		}
+		challenge.Set(xList[i])
+	}
+	// Compute (g^s)^a (h^-s)^b u^(ab) = p l^(x^2) r^(-x^2)
+	c := new(privacy.Scalar).Mul(proof.a, proof.b)
+	rightHSPart1 := new(privacy.Point).MultiScalarMult(s, G)
+	rightHSPart1.ScalarMult(rightHSPart1, proof.a)
+	rightHSPart2 := new(privacy.Point).MultiScalarMult(sInverse, H)
+	rightHSPart2.ScalarMult(rightHSPart2, proof.b)
+
+	rightHS := new(privacy.Point).Add(rightHSPart1, rightHSPart2)
+	rightHS.Add(rightHS, new(privacy.Point).ScalarMult(AggParam.u, c))
+
+	leftHSPart1 := new(privacy.Point).MultiScalarMult(xSquareList, proof.l)
+	leftHSPart2 := new(privacy.Point).MultiScalarMult(xInverseSquare_List, proof.r)
+
+	leftHS := new(privacy.Point).Add(leftHSPart1, leftHSPart2)
+	leftHS.Add(leftHS, proof.p)
+
+	res := privacy.IsPointEqual(rightHS, leftHS)
+	if !res {
+		fmt.Println("Failed")
+		privacy.Logger.Log.Error("Inner product argument failed:")
+		privacy.Logger.Log.Error("LHS: %v\n", leftHS)
+		privacy.Logger.Log.Error("RHS: %v\n", rightHS)
 	}
 
 	return res
