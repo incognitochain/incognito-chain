@@ -212,6 +212,9 @@ func (shardToBeaconPool *ShardToBeaconPool) addShardToBeaconBlock(block *blockch
 			offset = maxValidShardToBeaconBlockInPool
 		}
 		//Just temp fix
+		if len(shardToBeaconPool.pool[shardID]) > 1 {
+			return shardToBeaconPool.latestValidHeight[shardID] + 1, shardToBeaconPool.pool[shardID][1].Header.Height + 1, nil
+		}
 		return shardToBeaconPool.latestValidHeight[shardID] + 1, shardToBeaconPool.pool[shardID][0].Header.Height + 1, nil
 	}
 	Logger.log.Infof("[sync] WTF? %v %v Shard %v", shardToBeaconPool.pool[shardID][0].Header.Height, shardToBeaconPool.latestValidHeight[shardID], shardID)
