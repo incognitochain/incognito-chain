@@ -233,17 +233,13 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block *ShardToBeaconB
 	if blockchain.Synker.IsLatest(false, 0) {
 		Logger.log.Info("[sync] OnShardToBeaconBlockReceived IsLatest!")
 		if block.Header.Version != SHARD_BLOCK_VERSION {
+			Logger.log.Info("[sync] Damn it, wrong block version!")
 			Logger.log.Debugf("[sync] Invalid Verion of block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID)
 			return
 		}
 
-		//err := blockchain.config.ConsensusEngine.ValidateProducerSig(block, block.Header.ConsensusType)
-		//if err != nil {
-		//	Logger.log.Error(err)
-		//	return
-		//}
-
 		from, to, err := blockchain.config.ShardToBeaconPool.AddShardToBeaconBlock(block)
+		Logger.log.Infof("[sync] AddShardToBeaconBlock return from:%v to:%v err:%v!", from, to, err)
 		if err != nil {
 			if err.Error() != "receive old block" && err.Error() != "receive duplicate block" {
 				Logger.log.Error(err)
