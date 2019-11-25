@@ -1525,7 +1525,7 @@ func (serverObj *Server) putResponseMsgs(msgs [][]byte) {
 	for _, msg := range msgs {
 		// Create dummy msg wrapping grpc response
 		psMsg := &p2ppubsub.Message{
-			&pb.Message{
+			Message: &pb.Message{
 				Data: msg,
 			},
 		}
