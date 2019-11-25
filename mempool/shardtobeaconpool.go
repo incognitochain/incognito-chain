@@ -137,6 +137,7 @@ func (shardToBeaconPool *ShardToBeaconPool) addShardToBeaconBlock(block *blockch
 	shardToBeaconPool.checkLatestValidHeightValidity(shardID)
 	//If receive old block, it will ignore
 	if blockHeight <= shardToBeaconPool.latestValidHeight[shardID] {
+		Logger.log.Infof("[sync] Received old block! Height %v Shard %v", blockHeight, shardID)
 		// if old block has round > current block in pool then swap
 		if _, ok := shardToBeaconPool.pool[shardID]; ok {
 			for index, existedBlock := range shardToBeaconPool.pool[shardID] {
@@ -153,6 +154,7 @@ func (shardToBeaconPool *ShardToBeaconPool) addShardToBeaconBlock(block *blockch
 	}
 	//If block already in pool, it will ignore
 	for i, blkItem := range shardToBeaconPool.pool[shardID] {
+		Logger.log.Infof("[sync] Block already in pool! Height %v Shard %v", blockHeight, shardID)
 		if blkItem.Header.Height == blockHeight {
 			if i+1 < len(shardToBeaconPool.pool[shardID]) {
 				if !reflect.DeepEqual(*blkItem.Hash(), shardToBeaconPool.pool[shardID][i+1].Header.PreviousBlockHash) {
@@ -212,6 +214,8 @@ func (shardToBeaconPool *ShardToBeaconPool) addShardToBeaconBlock(block *blockch
 		//Just temp fix
 		return shardToBeaconPool.latestValidHeight[shardID] + 1, shardToBeaconPool.pool[shardID][0].Header.Height + 1, nil
 	}
+	Logger.log.Infof("[sync] WTF? %v %v Shard %v", shardToBeaconPool.pool[shardID][0].Header.Height, shardToBeaconPool.latestValidHeight[shardID], shardID)
+
 	return 0, 0, nil
 }
 
