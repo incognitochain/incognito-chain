@@ -76,8 +76,7 @@ func (c *BlockRequester) Register(
 		},
 	)
 	if err != nil {
-		log.Println(err)
-		return nil, nil, err
+		return nil, nil, errors.WithStack(err)
 	}
 	return reply.Pair, reply.Role, nil
 }
