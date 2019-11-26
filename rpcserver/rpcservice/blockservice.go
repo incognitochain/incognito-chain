@@ -499,8 +499,8 @@ func (blockService BlockService) ListPrivacyCustomTokenCached() (map[common.Hash
 
 		for k, v := range listTxInitPrivacyToken {
 			temp := v
-			temp.Tx = transaction.Tx{}
-			temp.TxPrivacyTokenData.TxNormal = transaction.Tx{}
+			temp.Tx = transaction.Tx{Info: v.Info}
+			temp.TxPrivacyTokenData.TxNormal = transaction.Tx{Info: v.TxPrivacyTokenData.TxNormal.Info}
 			listTxInitPrivacyToken[k] = temp
 		}
 		cachedValuePrivacyToken, err = json.Marshal(listTxInitPrivacyToken)
