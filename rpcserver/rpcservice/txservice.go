@@ -663,6 +663,9 @@ func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 		}
 	case transaction.CustomTokenInit:
 		{
+			if len(tokenParams.Receiver) == 0 {
+				return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Init with wrong receiver"))
+			}
 			if tokenParams.Receiver[0].Amount != tokenParams.Amount { // Init with wrong max amount of custom token
 				return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Init with wrong max amount of property"))
 			}
