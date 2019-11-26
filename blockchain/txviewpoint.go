@@ -402,6 +402,7 @@ func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.Dat
 	}
 	sort.Ints(shardIDs)
 
+	indexOut := 0
 	for _, shardID := range shardIDs {
 		crossTransactions := allShardCrossTransactions[byte(shardID)]
 		for _, crossTransaction := range crossTransactions {
@@ -430,7 +431,7 @@ func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.Dat
 				}
 			}
 			if crossTransaction.TokenPrivacyData != nil && len(crossTransaction.TokenPrivacyData) > 0 {
-				for index, tokenPrivacyData := range crossTransaction.TokenPrivacyData {
+				for _, tokenPrivacyData := range crossTransaction.TokenPrivacyData {
 					subView := NewTxViewPoint(block.Header.ShardID)
 					temp, err := common.Hash{}.NewHash(tokenPrivacyData.PropertyID.GetBytes())
 					if err != nil {
@@ -467,7 +468,8 @@ func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.Dat
 							subView.mapSnD[pubkey] = append(subView.mapSnD[pubkey], temp)
 						}
 					}
-					view.privacyCustomTokenViewPoint[int32(index)] = subView
+					view.privacyCustomTokenViewPoint[int32(indexOut)] = subView
+					indexOut++
 				}
 			}
 		}
