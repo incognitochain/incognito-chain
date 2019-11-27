@@ -33,3 +33,16 @@ func generateRand() []byte {
 	}
 	return res
 }
+
+// GetCommitteeIDOfTopic handle error later TODO handle error pls
+func GetCommitteeIDOfTopic(topic string) int {
+	topicElements := strings.Split(topic, "-")
+	if len(topicElements) == 0 {
+		return -1
+	}
+	if topicElements[1] == "" {
+		return -1
+	}
+	cID, _ := strconv.Atoi(topicElements[1])
+	return cID
+}
