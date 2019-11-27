@@ -797,9 +797,9 @@ func convertPrice(
 	toTokenIDStr string,
 	fromTokenIDStr string,
 	convertingAmt uint64,
-	pdePoolPairs map[string]*lvdb.PDEPoolForPair,
+	pdePoolPairs map[string]*rawdb.PDEPoolForPair,
 ) *ConvertedPrice {
-	poolPairKey := lvdb.BuildPDEPoolForPairKey(
+	poolPairKey := rawdb.BuildPDEPoolForPairKey(
 		latestBcHeight,
 		toTokenIDStr,
 		fromTokenIDStr,
