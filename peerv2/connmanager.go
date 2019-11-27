@@ -49,7 +49,7 @@ func NewConnManager(
 
 func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 	var topic string
-	publishable := []string{wire.CmdBlockShard, wire.CmdBFT, wire.CmdBlockBeacon, wire.CmdTx, wire.CmdCustomToken, wire.CmdPeerState, wire.CmdBlkShardToBeacon}
+	publishable := []string{wire.CmdBlockShard, wire.CmdBFT, wire.CmdBlockBeacon, wire.CmdTx, wire.CmdCustomToken, wire.CmdPeerState, wire.CmdBlkShardToBeacon, wire.CmdCrossShard}
 
 	// msgCrossShard := msg.(wire.MessageCrossShard)
 	msgType := msg.MessageType()
@@ -79,7 +79,6 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 		}
 	}
 
-	log.Println("Cannot publish message", msgType)
 	return nil
 }
 
@@ -89,16 +88,11 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 	for _, p := range publishable {
 		if msgType == p {
 			// Get topic for mess
-			//TODO hy add more logic
-			if msgType == wire.CmdCrossShard {
-				// TODO(@0xakk0r0kamui): implicit order of subscriptions?
-				return broadcastMessage(msg, cm.subs[msgType][shardID].Name, cm.ps)
-			} else {
-				for _, availableTopic := range cm.subs[msgType] {
-					fmt.Println(availableTopic)
-					if (availableTopic.Act == MessageTopicPair_PUB) || (availableTopic.Act == MessageTopicPair_PUBSUB) {
-						return broadcastMessage(msg, availableTopic.Name, cm.ps)
-					}
+			for _, availableTopic := range cm.subs[msgType] {
+				fmt.Println(availableTopic)
+				cID := GetCommitteeIDOfTopic(availableTopic.Name)
+				if (byte(cID) == shardID) && ((availableTopic.Act == MessageTopicPair_PUB) || (availableTopic.Act == MessageTopicPair_PUBSUB)) {
+					return broadcastMessage(msg, availableTopic.Name, cm.ps)
 				}
 			}
 		}
