@@ -4,13 +4,12 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
-	"github.com/pkg/errors"
-
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"github.com/pkg/errors"
 )
 
 // handleGetLatestBridgeSwapProof returns the latest proof of a change in bridge's committee
@@ -31,27 +30,24 @@ func (httpServer *HttpServer) handleGetLatestBridgeSwapProof(params interface{},
 func (httpServer *HttpServer) handleGetBridgeSwapProof(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Infof("handleGetBridgeSwapProof params: %+v", params)
 	listParams, ok := params.([]interface{})
-	if !ok || len(listParams) < 1{
+	if !ok || len(listParams) < 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
 	}
 
-	heightParam, ok :=listParams[0].(float64)
+	heightParam, ok := listParams[0].(float64)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("height param is invalid"))
 	}
 	height := uint64(heightParam)
 
-	bc := httpServer.config.BlockChain
-	db := *httpServer.config.Database
-
 	// Get proof of instruction on beacon
-	beaconInstProof, beaconBlock, errProof := getSwapProofOnBeacon(height, db, httpServer.config.ConsensusEngine, metadata.BridgeSwapConfirmMeta)
+	beaconInstProof, beaconBlock, errProof := getSwapProofOnBeacon(height, httpServer.GetDatabase(), httpServer.config.ConsensusEngine, metadata.BridgeSwapConfirmMeta)
 	if errProof != nil {
 		return nil, errProof
 	}
 
 	// Get proof of instruction on bridge
-	bridgeInstProof, err := getBridgeSwapProofOnBridge(beaconBlock, bc, db, httpServer.config.ConsensusEngine)
+	bridgeInstProof, err := getBridgeSwapProofOnBridge(beaconBlock, httpServer.GetBlockchain(), httpServer.GetDatabase(), httpServer.config.ConsensusEngine)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -70,7 +66,7 @@ func (httpServer *HttpServer) handleGetBridgeSwapProof(params interface{}, close
 func getBridgeSwapProofOnBridge(
 	beaconBlock *blockchain.BeaconBlock,
 	bc *blockchain.BlockChain,
-	db database.DatabaseInterface,
+	db incdb.Database,
 	ce ConsensusEngine,
 ) (*swapProof, error) {
 	// Get bridge block and check if it contains bridge swap instruction
@@ -87,7 +83,7 @@ func getBridgeSwapProofOnBridge(
 func findBridgeBlockWithInst(
 	beaconBlock *blockchain.BeaconBlock,
 	bc *blockchain.BlockChain,
-	db database.DatabaseInterface,
+	db incdb.Database,
 ) (*blockchain.ShardBlock, int, error) {
 	bridgeID := byte(common.BridgeShardID)
 	for _, state := range beaconBlock.Body.ShardState[bridgeID] {

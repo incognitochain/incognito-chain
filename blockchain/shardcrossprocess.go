@@ -7,23 +7,12 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/transaction"
 )
 
 type CrossOutputCoin struct {
 	BlockHeight uint64
 	BlockHash   common.Hash
 	OutputCoin  []privacy.OutputCoin
-}
-type CrossTxTokenData struct {
-	BlockHeight uint64
-	BlockHash   common.Hash
-	TxTokenData []transaction.TxNormalTokenData
-}
-type CrossTokenPrivacyData struct {
-	BlockHeight      uint64
-	BlockHash        common.Hash
-	TokenPrivacyData []ContentCrossShardTokenPrivacyData
 }
 type CrossTransaction struct {
 	BlockHeight      uint64

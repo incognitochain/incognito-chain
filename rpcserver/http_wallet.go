@@ -7,7 +7,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
@@ -297,20 +297,6 @@ func (httpServer *HttpServer) handleSetTxFee(params interface{}, closeChan <-cha
 	return err == nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 }
 
-// handleListCustomToken - return list all custom token in network
-func (httpServer *HttpServer) handleListCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	temps, err := httpServer.blockService.ListCustomToken()
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	result := jsonresult.ListCustomToken{ListCustomToken: []jsonresult.CustomToken{}}
-	for _, token := range temps {
-		item := jsonresult.NewNormalToken(token)
-		result.ListCustomToken = append(result.ListCustomToken, *item)
-	}
-	return result, nil
-}
-
 func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	listPrivacyToken, listPrivacyTokenCrossShard, err := httpServer.blockService.ListPrivacyCustomTokenCached()
 	if err != nil {
@@ -376,7 +362,7 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 	if err != nil {
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
-	var allBridgeTokens []*lvdb.BridgeTokenInfo
+	var allBridgeTokens []*rawdb.BridgeTokenInfo
 	err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
 	if err != nil {
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
@@ -450,7 +436,7 @@ func (httpServer *HttpServer) handleDefragmentAccount(params interface{}, closeC
 */
 func (httpServer *HttpServer) createRawDefragmentAccountTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	var err error
-	tx, err := httpServer.txService.BuildRawDefragmentAccountTransaction(params, nil, *httpServer.config.Database)
+	tx, err := httpServer.txService.BuildRawDefragmentAccountTransaction(params, nil, httpServer.GetDatabase())
 	if err.(*rpcservice.RPCError) != nil {
 		Logger.log.Critical(err)
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)

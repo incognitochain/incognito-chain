@@ -2,6 +2,8 @@ package rpcservice
 
 import (
 	"errors"
+	"log"
+
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -10,7 +12,6 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"log"
 )
 
 func NewContractingRequestMetadata(senderPrivateKeyStr string, tokenReceivers interface{}, tokenID string) (*metadata.ContractingRequest, *RPCError) {
@@ -24,10 +25,7 @@ func NewContractingRequestMetadata(senderPrivateKeyStr string, tokenReceivers in
 	}
 	paymentAddr := senderKey.KeySet.PaymentAddress
 
-	_, voutsAmount, err := transaction.CreateCustomTokenReceiverArray(tokenReceivers)
-	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
-	}
+	_, voutsAmount := transaction.CreateCustomTokenPrivacyReceiverArray(tokenReceivers)
 	tokenIDHash, err := common.Hash{}.NewHashFromStr(tokenID)
 	if err != nil {
 		return nil, NewRPCError(UnexpectedError, err)
@@ -54,10 +52,7 @@ func NewBurningRequestMetadata(senderPrivateKeyStr string, tokenReceivers interf
 	}
 	paymentAddr := senderKey.KeySet.PaymentAddress
 
-	_, voutsAmount, err := transaction.CreateCustomTokenReceiverArray(tokenReceivers)
-	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
-	}
+	_, voutsAmount := transaction.CreateCustomTokenPrivacyReceiverArray(tokenReceivers)
 	tokenIDHash, err := common.Hash{}.NewHashFromStr(tokenID)
 	if err != nil {
 		return nil, NewRPCError(UnexpectedError, err)
@@ -71,7 +66,7 @@ func NewBurningRequestMetadata(senderPrivateKeyStr string, tokenReceivers interf
 		remoteAddress,
 		metadata.BurningRequestMeta,
 	)
-	if err != nil{
+	if err != nil {
 		return nil, NewRPCError(UnexpectedError, err)
 	}
 

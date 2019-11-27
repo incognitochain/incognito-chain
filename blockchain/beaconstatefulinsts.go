@@ -3,13 +3,13 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"math/big"
 	"sort"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
@@ -62,7 +62,7 @@ func groupPDEActionsByShardID(
 func (blockchain *BlockChain) buildStatefulInstructions(
 	statefulActionsByShardID map[byte][][]string,
 	beaconHeight uint64,
-	db database.DatabaseInterface,
+	db incdb.Database,
 ) [][]string {
 	currentPDEState, err := InitCurrentPDEStateFromDB(db, beaconHeight-1)
 	if err != nil {
@@ -175,7 +175,7 @@ func sortPDETradeInstsByFee(
 				continue
 			}
 			tradeMeta := pdeTradeReqAction.Meta
-			poolPairKey := string(lvdb.BuildPDEPoolForPairKey(beaconHeight, tradeMeta.TokenIDToBuyStr, tradeMeta.TokenIDToSellStr))
+			poolPairKey := string(rawdb.BuildPDEPoolForPairKey(beaconHeight, tradeMeta.TokenIDToBuyStr, tradeMeta.TokenIDToSellStr))
 			tradesByPair, found := tradesByPairs[poolPairKey]
 			if !found {
 				tradesByPairs[poolPairKey] = []metadata.PDETradeRequestAction{pdeTradeReqAction}

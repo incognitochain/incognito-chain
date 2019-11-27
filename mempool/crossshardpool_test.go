@@ -1,17 +1,23 @@
 package mempool
 
 import (
-	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"io/ioutil"
+	"log"
+	"os"
 	"path/filepath"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
+	"github.com/incognitochain/incognito-chain/incdb"
+	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 )
 
 var (
-	dbCrossShard          database.DatabaseInterface
+	dbCrossShard          incdb.Database
 	bestShardStateShard1  *blockchain.ShardBestState
 	crossShardPoolMapTest = make(map[byte]*CrossShardPool)
 	crossShardBlock2      = &blockchain.CrossShardBlock{
@@ -101,23 +107,28 @@ var _ = func() (_ struct{}) {
 		pool.isTest = true
 		crossShardPoolMapTest[shardID] = pool
 	}
-	dbCrossShard, err = database.Open("leveldb", filepath.Join("./", "./testdatabase/crossshard"))
+	dbPath, err := ioutil.TempDir(os.TempDir(), "test_")
+	if err != nil {
+		log.Fatalf("failed to create temp dir: %+v", err)
+	}
+	log.Println(dbPath)
+	dbCrossShard, err = incdb.Open("leveldb", filepath.Join("./", dbPath))
 	if err != nil {
 		panic("Could not open db connection")
 	}
-	err = dbCrossShard.StoreCrossShardNextHeight(byte(0), byte(1), 1, 3)
+	err = rawdb.StoreCrossShardNextHeight(dbCrossShard, byte(0), byte(1), 1, 3)
 	if err != nil {
 		panic("Could not store in db")
 	}
-	err = dbCrossShard.StoreCrossShardNextHeight(byte(0), byte(1), 3, 4)
+	err = rawdb.StoreCrossShardNextHeight(dbCrossShard, byte(0), byte(1), 3, 4)
 	if err != nil {
 		panic("Could not store in db")
 	}
-	err = dbCrossShard.StoreCrossShardNextHeight(byte(0), byte(1), 4, 5)
+	err = rawdb.StoreCrossShardNextHeight(dbCrossShard, byte(0), byte(1), 4, 5)
 	if err != nil {
 		panic("Could not store in db")
 	}
-	err = dbCrossShard.StoreCrossShardNextHeight(byte(0), byte(1), 5, 7)
+	err = rawdb.StoreCrossShardNextHeight(dbCrossShard, byte(0), byte(1), 5, 7)
 	if err != nil {
 		panic("Could not store in db")
 	}

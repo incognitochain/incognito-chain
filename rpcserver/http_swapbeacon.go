@@ -3,13 +3,13 @@ package rpcserver
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/pkg/errors"
@@ -48,7 +48,7 @@ func (httpServer *HttpServer) handleGetLatestBeaconSwapProof(params interface{},
 func (httpServer *HttpServer) handleGetBeaconSwapProof(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Infof("handleGetBeaconSwapProof params: %+v", params)
 	listParams, ok := params.([]interface{})
-	if !ok || len(listParams) < 1{
+	if !ok || len(listParams) < 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
 	}
 
@@ -58,10 +58,8 @@ func (httpServer *HttpServer) handleGetBeaconSwapProof(params interface{}, close
 	}
 	height := uint64(heightParam)
 
-	db := *httpServer.config.Database
-
 	// Get proof of instruction on beacon
-	beaconInstProof, _, errProof := getSwapProofOnBeacon(height, db, httpServer.config.ConsensusEngine, metadata.BeaconSwapConfirmMeta)
+	beaconInstProof, _, errProof := getSwapProofOnBeacon(height, httpServer.GetDatabase(), httpServer.config.ConsensusEngine, metadata.BeaconSwapConfirmMeta)
 	if errProof != nil {
 		return nil, errProof
 	}
@@ -81,7 +79,7 @@ func (httpServer *HttpServer) handleGetBeaconSwapProof(params interface{}, close
 // returns rpcservice.RPCError if proof not found
 func getSwapProofOnBeacon(
 	height uint64,
-	db database.DatabaseInterface,
+	db incdb.Database,
 	ce ConsensusEngine,
 	meta int,
 ) (*swapProof, *blockchain.BeaconBlock, *rpcservice.RPCError) {
@@ -112,7 +110,7 @@ func getSwapProofOnBeacon(
 func getShardAndBeaconBlocks(
 	height uint64,
 	bc *blockchain.BlockChain,
-	db database.DatabaseInterface,
+	db incdb.Database,
 ) (*blockchain.ShardBlock, []*blockchain.BeaconBlock, error) {
 	bridgeID := byte(common.BridgeShardID)
 	bridgeBlock, err := bc.GetShardBlockByHeight(height, bridgeID)
@@ -150,7 +148,7 @@ func buildProofForBlock(
 	blk block,
 	insts [][]string,
 	id int,
-	db database.DatabaseInterface,
+	db incdb.Database,
 	ce ConsensusEngine,
 ) (*swapProof, error) {
 	// Build merkle proof for instruction in bridge block
@@ -186,7 +184,7 @@ func buildProofForBlock(
 func getBeaconSwapProofOnBeacon(
 	inst []string,
 	beaconBlocks []*blockchain.BeaconBlock,
-	db database.DatabaseInterface,
+	db incdb.Database,
 	ce ConsensusEngine,
 ) (*swapProof, error) {
 	// Get beacon block and check if it contains beacon swap instruction
@@ -206,7 +204,7 @@ func getIncludedBeaconBlocks(
 	beaconHeight uint64,
 	shardID byte,
 	bc *blockchain.BlockChain,
-	db database.DatabaseInterface,
+	db incdb.Database,
 ) ([]*blockchain.BeaconBlock, error) {
 	prevShardBlock, err := bc.GetShardBlockByHeight(shardHeight-1, shardID)
 	if err != nil {

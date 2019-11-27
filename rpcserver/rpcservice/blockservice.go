@@ -9,7 +9,8 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -18,7 +19,7 @@ import (
 
 type BlockService struct {
 	BlockChain *blockchain.BlockChain
-	DB         *database.DatabaseInterface
+	DB         incdb.Database
 	TxMemPool  *mempool.TxPool
 	MemCache   *memcache.MemoryCache
 }
@@ -536,7 +537,7 @@ func (blockService BlockService) GetMinerRewardFromMiningKey(incPublicKey []byte
 	rewardAmounts := make(map[common.Hash]uint64)
 
 	for _, coinID := range allCoinIDs {
-		amount, err := (*blockService.DB).GetCommitteeReward(incPublicKey, coinID)
+		amount, err := rawdb.GetCommitteeReward((blockService.DB), incPublicKey, coinID)
 		if err != nil {
 			return nil, err
 		}
@@ -575,10 +576,6 @@ func (blockService BlockService) RevertShard(shardID byte) error {
 	return blockService.BlockChain.RevertShardState(shardID)
 }
 
-func (blockService BlockService) ListCustomToken() (map[common.Hash]transaction.TxNormalToken, error) {
-	return blockService.BlockChain.ListCustomToken()
-}
-
 func (blockService BlockService) GetRewardAmount(paymentAddress string) (map[string]uint64, *RPCError) {
 	rewardAmountResult := make(map[string]uint64)
 	rewardAmounts := make(map[common.Hash]uint64)
@@ -598,7 +595,7 @@ func (blockService BlockService) GetRewardAmount(paymentAddress string) (map[str
 	}
 
 	for _, coinID := range allCoinIDs {
-		amount, err := (*blockService.DB).GetCommitteeReward(publicKey, coinID)
+		amount, err := rawdb.GetCommitteeReward((blockService.DB), publicKey, coinID)
 		if err != nil {
 			return nil, NewRPCError(UnexpectedError, err)
 		}

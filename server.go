@@ -6,9 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics"
-	peer2 "github.com/libp2p/go-libp2p-core/peer"
-	//"github.com/incognitochain/incognito-chain/metrics"
 	"io/ioutil"
 	"log"
 	"net"
@@ -23,27 +20,28 @@ import (
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/option"
 
-	"github.com/incognitochain/incognito-chain/blockchain/btc"
-	"github.com/incognitochain/incognito-chain/consensus"
-	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/memcache"
-	"github.com/incognitochain/incognito-chain/pubsub"
-
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/connmanager"
-	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/transaction"
-
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/consensus"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"github.com/incognitochain/incognito-chain/databasemp"
+	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/mempool"
+	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/peer"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/rpcserver"
+	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
+	peer2 "github.com/libp2p/go-libp2p-core/peer"
 	libp2p "github.com/libp2p/go-libp2p-peer"
 )
 
@@ -56,7 +54,7 @@ type Server struct {
 	chainParams       *blockchain.Params
 	connManager       *connmanager.ConnManager
 	blockChain        *blockchain.BlockChain
-	dataBase          database.DatabaseInterface
+	dataBase          incdb.Database
 	memCache          *memcache.MemoryCache
 	rpcServer         *rpcserver.RpcServer
 	memPool           *mempool.TxPool
@@ -184,7 +182,7 @@ func (serverObj *Server) setupRPCWsListeners() ([]net.Listener, error) {
 /*
 NewServer - create server object which control all process of node
 */
-func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInterface, dbmp databasemp.DatabaseInterface, chainParams *blockchain.Params, protocolVer string, interrupt <-chan struct{}) error {
+func (serverObj *Server) NewServer(listenAddrs string, db incdb.Database, dbmp databasemp.DatabaseInterface, chainParams *blockchain.Params, protocolVer string, interrupt <-chan struct{}) error {
 	// Init data for Server
 	serverObj.protocolVersion = protocolVer
 	serverObj.chainParams = chainParams
@@ -305,7 +303,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		serverObj.feeEstimator = make(map[byte]*mempool.FeeEstimator)
 		for shardID, bestState := range serverObj.blockChain.BestState.Shard {
 			_ = bestState
-			feeEstimatorData, err := serverObj.dataBase.GetFeeEstimator(shardID)
+			feeEstimatorData, err := rawdb.GetFeeEstimator(serverObj.dataBase, shardID)
 			if err == nil && len(feeEstimatorData) > 0 {
 				feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)
 				if err != nil {
@@ -328,17 +326,17 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			}
 		}
 	} else {
-		err := serverObj.dataBase.CleanCommitments()
+		err := rawdb.CleanCommitments(serverObj.dataBase)
 		if err != nil {
 			Logger.log.Error(err)
 			return err
 		}
-		err = serverObj.dataBase.CleanSerialNumbers()
+		err = rawdb.CleanSerialNumbers(serverObj.dataBase)
 		if err != nil {
 			Logger.log.Error(err)
 			return err
 		}
-		err = serverObj.dataBase.CleanFeeEstimator()
+		err = rawdb.CleanFeeEstimator(serverObj.dataBase)
 		if err != nil {
 			Logger.log.Error(err)
 			return err
@@ -479,7 +477,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			NodeMode:        cfg.NodeMode,
 			FeeEstimator:    serverObj.feeEstimator,
 			ProtocolVersion: serverObj.protocolVersion,
-			Database:        &serverObj.dataBase,
+			Database:        serverObj.dataBase,
 			MiningKeys:      cfg.MiningKeys,
 			NetSync:         serverObj.netSync,
 			PubSubManager:   pubsubManager,
@@ -558,7 +556,7 @@ func (serverObj *Server) Stop() error {
 		Logger.log.Infof("Fee estimator data when saving #%d", feeEstimator)
 		feeEstimatorData := feeEstimator.Save()
 		if len(feeEstimatorData) > 0 {
-			err := serverObj.dataBase.StoreFeeEstimator(feeEstimatorData, shardID)
+			err := rawdb.StoreFeeEstimator(serverObj.dataBase, feeEstimatorData, shardID)
 			if err != nil {
 				Logger.log.Errorf("Can't save fee estimator data on chain #%d: %v", shardID, err)
 			} else {
@@ -724,19 +722,6 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 							serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
 						}
 					}
-				case common.TxCustomTokenType:
-					{
-						txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)
-						if err != nil {
-							continue
-						}
-						customTokenTx := tx.(*transaction.TxNormalToken)
-						txMsg.(*wire.MessageTxToken).Transaction = customTokenTx
-						err = serverObj.PushMessageToAll(txMsg)
-						if err == nil {
-							serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
-						}
-					}
 				case common.TxCustomTokenPrivacyType:
 					{
 						txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
@@ -886,7 +871,6 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 			OnCrossShard:       serverObj.OnCrossShard,
 			OnShardToBeacon:    serverObj.OnShardToBeacon,
 			OnTx:               serverObj.OnTx,
-			OnTxToken:          serverObj.OnTxToken,
 			OnTxPrivacyToken:   serverObj.OnTxPrivacyToken,
 			OnVersion:          serverObj.OnVersion,
 			OnGetBlockBeacon:   serverObj.OnGetBlockBeacon,
@@ -1005,15 +989,6 @@ func (serverObj *Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
 	//<-txProcessed
 
 	Logger.log.Debug("Receive a new transaction END")
-}
-
-func (serverObj *Server) OnTxToken(peer *peer.PeerConn, msg *wire.MessageTxToken) {
-	Logger.log.Debug("Receive a new transaction(normal token) START")
-	var txProcessed chan struct{}
-	serverObj.netSync.QueueTxToken(nil, msg, txProcessed)
-	//<-txProcessed
-
-	Logger.log.Debug("Receive a new transaction(normal token) END")
 }
 
 func (serverObj *Server) OnTxPrivacyToken(peer *peer.PeerConn, msg *wire.MessageTxPrivacyToken) {

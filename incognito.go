@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics"
 	"log"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -11,21 +12,17 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-
-	"net/http"
-	_ "net/http/pprof"
-
-	"github.com/incognitochain/incognito-chain/database"
-	_ "github.com/incognitochain/incognito-chain/database/lvdb"
+	_ "github.com/incognitochain/incognito-chain/consensus/blsbft"
 	"github.com/incognitochain/incognito-chain/databasemp"
 	_ "github.com/incognitochain/incognito-chain/databasemp/lvdb"
+	"github.com/incognitochain/incognito-chain/incdb"
+	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"github.com/incognitochain/incognito-chain/limits"
+	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/wallet"
-
-	_ "github.com/incognitochain/incognito-chain/consensus/blsbft"
 )
 
-//go:generate mockery -dir=database/ -name=DatabaseInterface
+//go:generate mockery -dir=incdb/ -name=Database
 var (
 	cfg *config
 )
@@ -59,7 +56,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	if interruptRequested(interrupt) {
 		return nil
 	}
-	db, err := database.Open("leveldb", filepath.Join(cfg.DataDir, cfg.DatabaseDir))
+	db, err := incdb.Open("leveldb", filepath.Join(cfg.DataDir, cfg.DatabaseDir))
 	// Create db and use it.
 	if err != nil {
 		Logger.log.Error("could not open connection to leveldb")

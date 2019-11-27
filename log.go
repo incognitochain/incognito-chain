@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"os"
 	"path/filepath"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/connmanager"
 	"github.com/incognitochain/incognito-chain/consensus"
-	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/databasemp"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -74,7 +74,7 @@ func init() {
 	rpcservice.BLogger.Init(rpcServiceBridgeLogger)
 	netsync.Logger.Init(netsyncLogger)
 	peer.Logger.Init(peerLogger)
-	database.Logger.Init(dbLogger)
+	incdb.Logger.Init(dbLogger)
 	wallet.Logger.Init(walletLogger)
 	blockchain.Logger.Init(blockchainLogger)
 	consensus.Logger.Init(consensusLogger)

@@ -5,13 +5,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/database"
 	"math/big"
 	"strconv"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/pkg/errors"
 )
@@ -31,7 +32,7 @@ type BurningReqAction struct {
 	RequestedTxID *common.Hash            `json:"RequestedTxID"`
 }
 
-func (blockchain *BlockChain) processBridgeInstructions(block *BeaconBlock, bd *[]database.BatchData) error {
+func (blockchain *BlockChain) processBridgeInstructions(block *BeaconBlock, bd *[]incdb.BatchData) error {
 	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
 	for _, inst := range block.Body.Instructions {
 		if len(inst) < 2 {
@@ -67,7 +68,8 @@ func (blockchain *BlockChain) processBridgeInstructions(block *BeaconBlock, bd *
 			updatingAmt = updatingInfo.deductAmt - updatingInfo.countUpAmt
 			updatingType = "-"
 		}
-		err := blockchain.GetDatabase().UpdateBridgeTokenInfo(
+		err := rawdb.UpdateBridgeTokenInfo(
+			blockchain.GetDatabase(),
 			updatingInfo.tokenID,
 			updatingInfo.externalTokenID,
 			updatingInfo.isCentralized,
@@ -165,14 +167,12 @@ func (blockchain *BlockChain) processIssuingETHReq(instruction []string, updatin
 			fmt.Println("WARNING: an error occured while building tx request id in bytes from string: ", err)
 			return nil, nil
 		}
-		err = blockchain.GetDatabase().TrackBridgeReqWithStatus(*txReqID, common.BridgeRequestRejectedStatus, nil)
+		err = rawdb.TrackBridgeReqWithStatus(blockchain.GetDatabase(), *txReqID, common.BridgeRequestRejectedStatus, nil)
 		if err != nil {
 			fmt.Println("WARNING: an error occured while tracking bridge request with rejected status to leveldb: ", err)
 		}
 		return nil, nil
 	}
-
-	db := blockchain.GetDatabase()
 	contentBytes, err := base64.StdEncoding.DecodeString(instruction[3])
 	if err != nil {
 		fmt.Println("WARNING: an error occured while decoding content string of accepted issuance instruction: ", err)
@@ -184,7 +184,7 @@ func (blockchain *BlockChain) processIssuingETHReq(instruction []string, updatin
 		fmt.Println("WARNING: an error occured while unmarshaling accepted issuance instruction: ", err)
 		return nil, nil
 	}
-	err = db.InsertETHTxHashIssued(issuingETHAcceptedInst.UniqETHTx)
+	err = rawdb.InsertETHTxHashIssued(blockchain.GetDatabase(), issuingETHAcceptedInst.UniqETHTx)
 	if err != nil {
 		fmt.Println("WARNING: an error occured while inserting ETH tx hash issued to leveldb: ", err)
 		return nil, nil
@@ -217,7 +217,7 @@ func (blockchain *BlockChain) processIssuingReq(instruction []string, updatingIn
 			fmt.Println("WARNING: an error occured while building tx request id in bytes from string: ", err)
 			return nil, nil
 		}
-		err = blockchain.GetDatabase().TrackBridgeReqWithStatus(*txReqID, common.BridgeRequestRejectedStatus, nil)
+		err = rawdb.TrackBridgeReqWithStatus(blockchain.GetDatabase(), *txReqID, common.BridgeRequestRejectedStatus, nil)
 		if err != nil {
 			fmt.Println("WARNING: an error occured while tracking bridge request with rejected status to leveldb: ", err)
 		}
@@ -259,7 +259,7 @@ func decodeContent(content string, action interface{}) error {
 	return json.Unmarshal(contentBytes, &action)
 }
 
-func (blockchain *BlockChain) storeBurningConfirm(block *ShardBlock, bd *[]database.BatchData) error {
+func (blockchain *BlockChain) storeBurningConfirm(block *ShardBlock, bd *[]incdb.BatchData) error {
 	for _, inst := range block.Body.Instructions {
 		if inst[0] != strconv.Itoa(metadata.BurningConfirmMeta) {
 			continue
@@ -270,15 +270,14 @@ func (blockchain *BlockChain) storeBurningConfirm(block *ShardBlock, bd *[]datab
 		if err != nil {
 			return errors.Wrap(err, "txid invalid")
 		}
-		if err := blockchain.config.DataBase.StoreBurningConfirm(*txID, block.Header.Height, bd); err != nil {
+		if err := rawdb.StoreBurningConfirm(blockchain.GetDatabase(), *txID, block.Header.Height, bd); err != nil {
 			return errors.Wrapf(err, "store failed, txID: %x", txID)
 		}
 	}
 	return nil
 }
 
-func (blockchain *BlockChain) updateBridgeIssuanceStatus(block *ShardBlock, bd *[]database.BatchData) error {
-	db := blockchain.config.DataBase
+func (blockchain *BlockChain) updateBridgeIssuanceStatus(block *ShardBlock, bd *[]incdb.BatchData) error {
 	for _, tx := range block.Body.Transactions {
 		metaType := tx.GetMetadataType()
 		var reqTxID common.Hash
@@ -290,7 +289,7 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(block *ShardBlock, bd *
 			reqTxID = meta.RequestedTxID
 		}
 		var err error
-		err = db.TrackBridgeReqWithStatus(reqTxID, common.BridgeRequestAcceptedStatus, bd)
+		err = rawdb.TrackBridgeReqWithStatus(blockchain.GetDatabase(), reqTxID, common.BridgeRequestAcceptedStatus, bd)
 		if err != nil {
 			return err
 		}

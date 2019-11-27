@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -50,7 +50,7 @@ func buildTradeResTx(
 	requestedTxID common.Hash,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
-	db database.DatabaseInterface,
+	db incdb.Database,
 ) (metadata.Transaction, error) {
 	meta := metadata.NewPDETradeResponse(
 		instStatus,
@@ -99,7 +99,7 @@ func buildTradeResTx(
 		// PropertyName:   issuingAcceptedInst.IncTokenName,
 		// PropertySymbol: issuingAcceptedInst.IncTokenName,
 		Amount:      receiveAmt,
-		TokenTxType: transaction.CustomTokenInit,
+		TokenTxType: transaction.TokenInit,
 		Receiver:    []*privacy.PaymentInfo{receiver},
 		TokenInput:  []*privacy.InputCoin{},
 		Mintable:    true,
@@ -278,7 +278,7 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 		// PropertyName:   tokeName,
 		// PropertySymbol: tokenSymbol,
 		Amount:      wdAcceptedContent.DeductingPoolValue,
-		TokenTxType: transaction.CustomTokenInit,
+		TokenTxType: transaction.TokenInit,
 		Receiver:    []*privacy.PaymentInfo{receiver},
 		TokenInput:  []*privacy.InputCoin{},
 		Mintable:    true,
@@ -372,7 +372,7 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
 		// PropertyName:   issuingAcceptedInst.IncTokenName,
 		// PropertySymbol: issuingAcceptedInst.IncTokenName,
 		Amount:      refundContribution.ContributedAmount,
-		TokenTxType: transaction.CustomTokenInit,
+		TokenTxType: transaction.TokenInit,
 		Receiver:    []*privacy.PaymentInfo{receiver},
 		TokenInput:  []*privacy.InputCoin{},
 		Mintable:    true,

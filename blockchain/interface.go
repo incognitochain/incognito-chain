@@ -76,8 +76,6 @@ type TxPool interface {
 
 	RemoveCandidateList([]string)
 
-	RemoveTokenIDList([]string)
-
 	EmptyPool() bool
 
 	MaybeAcceptTransactionForBlockProducing(metadata.Transaction, int64) (*metadata.TxDesc, error)

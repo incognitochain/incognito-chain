@@ -7,7 +7,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/transaction"
 )
 
 /*
@@ -26,13 +25,6 @@ func (tp *TxPool) ValidateTxList(txs []metadata.Transaction) error {
 	//validate individual tx
 	for _, tx := range txs {
 		go func(tx metadata.Transaction) {
-			if tx.GetType() == common.TxCustomTokenType {
-				customTokenTx := tx.(*transaction.TxNormalToken)
-				if customTokenTx.TxTokenData.Type == transaction.CustomTokenCrossShard {
-					errCh <- nil
-					return
-				}
-			}
 			err := tp.validateTxIndependentProperties(tx)
 			errCh <- err
 		}(tx)
@@ -61,26 +53,14 @@ func (tp *TxPool) ValidateTxList(txs []metadata.Transaction) error {
 		if err != nil {
 			return err
 		}
-		if tx.GetType() == common.TxCustomTokenType {
-			customTokenTx := tx.(*transaction.TxNormalToken)
-			if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
-				tokenID := customTokenTx.TxTokenData.PropertyID.String()
-				tp.tokenIDMtx.Lock()
-				found := common.IndexOfStrInHashMap(tokenID, tp.poolTokenID)
-				tp.tokenIDMtx.Unlock()
-				if found > 0 {
-					return NewMempoolTxError(RejectDuplicateInitTokenTx, fmt.Errorf("Init Transaction of this Token is in pool already %+v", tokenID))
-				}
-			}
-		}
 
 		// check duplicate stake public key ONLY with staking transaction
 		if tx.GetMetadata() != nil {
 			if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
 				pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), common.ZeroByte)
-				tp.tokenIDMtx.Lock()
+				tp.candidateMtx.Lock()
 				found := common.IndexOfStrInHashMap(pubkey, tp.poolCandidate)
-				tp.tokenIDMtx.Unlock()
+				tp.candidateMtx.Unlock()
 				if found > 0 {
 					return NewMempoolTxError(RejectDuplicateStakePubkey, fmt.Errorf("This public key already stake and still in pool %+v", pubkey))
 				}

@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"io"
 	"io/ioutil"
 	"net"
@@ -60,8 +62,8 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 	// init service
 	httpServer.blockService = &rpcservice.BlockService{
 		BlockChain: httpServer.config.BlockChain,
-		DB: httpServer.config.Database,
-		MemCache: httpServer.config.MemCache,
+		DB:         httpServer.config.Database,
+		MemCache:   httpServer.config.MemCache,
 	}
 	httpServer.outputCoinService = &rpcservice.CoinService{
 		BlockChain: httpServer.config.BlockChain,
@@ -458,4 +460,10 @@ func (httpServer *HttpServer) DecrementClients() {
 // This function is safe for concurrent access.
 func (httpServer *HttpServer) IncrementClients() {
 	atomic.AddInt32(&httpServer.numClients, 1)
+}
+func (httpServer *HttpServer) GetDatabase() incdb.Database {
+	return httpServer.config.Database
+}
+func (httpServer *HttpServer) GetBlockchain() *blockchain.BlockChain {
+	return httpServer.config.BlockChain
 }

@@ -2,15 +2,17 @@ package transaction
 
 import (
 	"errors"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/database"
-	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 	"math"
 	"math/big"
 	"math/rand"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
+	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 )
 
 // ConvertOutputCoinToInputCoin - convert output coin from old tx to input coin for new tx
@@ -28,13 +30,13 @@ func ConvertOutputCoinToInputCoin(usableOutputsOfOld []*privacy.OutputCoin) []*p
 type RandomCommitmentsProcessParam struct {
 	usableInputCoins []*privacy.InputCoin
 	randNum          int
-	db               database.DatabaseInterface
+	db               incdb.Database
 	shardID          byte
 	tokenID          *common.Hash
 }
 
 func NewRandomCommitmentsProcessParam(usableInputCoins []*privacy.InputCoin, randNum int,
-	db database.DatabaseInterface, shardID byte, tokenID *common.Hash) *RandomCommitmentsProcessParam {
+	db incdb.Database, shardID byte, tokenID *common.Hash) *RandomCommitmentsProcessParam {
 	result := &RandomCommitmentsProcessParam{
 		tokenID:          tokenID,
 		shardID:          shardID,
@@ -70,7 +72,7 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 		listUsableCommitments[commitmentInHash] = usableCommitment
 		listUsableCommitmentsIndices[i] = commitmentInHash
 
-		index, err := param.db.GetCommitmentIndex(*param.tokenID, usableCommitment, param.shardID)
+		index, err := rawdb.GetCommitmentIndex(param.db, *param.tokenID, usableCommitment, param.shardID)
 		if err != nil {
 			Logger.log.Error(err)
 			return
@@ -82,7 +84,7 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 	// loop to random commitmentIndexs
 	cpRandNum := (len(listUsableCommitments) * param.randNum) - len(listUsableCommitments)
 	//fmt.Printf("cpRandNum: %d\n", cpRandNum)
-	lenCommitment, err1 := param.db.GetCommitmentLength(*param.tokenID, param.shardID)
+	lenCommitment, err1 := rawdb.GetCommitmentLength(param.db, *param.tokenID, param.shardID)
 	if err1 != nil {
 		Logger.log.Error(err1)
 		return
@@ -98,11 +100,11 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 	} else {
 		for i := 0; i < cpRandNum; i++ {
 			for {
-				lenCommitment, _ = param.db.GetCommitmentLength(*param.tokenID, param.shardID)
+				lenCommitment, _ = rawdb.GetCommitmentLength(param.db, *param.tokenID, param.shardID)
 				index, _ := common.RandBigIntMaxRange(lenCommitment)
-				ok, err := param.db.HasCommitmentIndex(*param.tokenID, index.Uint64(), param.shardID)
+				ok, err := rawdb.HasCommitmentIndex(param.db, *param.tokenID, index.Uint64(), param.shardID)
 				if ok && err == nil {
-					temp, _ := param.db.GetCommitmentByIndex(*param.tokenID, index.Uint64(), param.shardID)
+					temp, _ := rawdb.GetCommitmentByIndex(param.db, *param.tokenID, index.Uint64(), param.shardID)
 					if _, found := listUsableCommitments[common.HashH(temp)]; !found {
 						// random commitment not in commitments of usableinputcoin
 						commitmentIndexs = append(commitmentIndexs, index.Uint64())
@@ -132,8 +134,8 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 }
 
 // CheckSNDerivatorExistence return true if snd exists in snDerivators list
-func CheckSNDerivatorExistence(tokenID *common.Hash, snd *privacy.Scalar, db database.DatabaseInterface) (bool, error) {
-	ok, err := db.HasSNDerivator(*tokenID, snd.ToBytesS())
+func CheckSNDerivatorExistence(tokenID *common.Hash, snd *privacy.Scalar, db incdb.Database) (bool, error) {
+	ok, err := rawdb.HasSNDerivator(db, *tokenID, snd.ToBytesS())
 	if err != nil {
 		return false, err
 	}
@@ -145,21 +147,18 @@ type EstimateTxSizeParam struct {
 	payments                 []*privacy.PaymentInfo
 	hasPrivacy               bool
 	metadata                 metadata.Metadata
-	customTokenParams        *CustomTokenParamTx
 	privacyCustomTokenParams *CustomTokenPrivacyParamTx
 	limitFee                 uint64
 }
 
 func NewEstimateTxSizeParam(inputCoins []*privacy.OutputCoin, payments []*privacy.PaymentInfo,
 	hasPrivacy bool, metadata metadata.Metadata,
-	customTokenParams *CustomTokenParamTx,
 	privacyCustomTokenParams *CustomTokenPrivacyParamTx,
 	limitFee uint64) *EstimateTxSizeParam {
 	estimateTxSizeParam := &EstimateTxSizeParam{
 		inputCoins:               inputCoins,
 		hasPrivacy:               hasPrivacy,
 		limitFee:                 limitFee,
-		customTokenParams:        customTokenParams,
 		metadata:                 metadata,
 		payments:                 payments,
 		privacyCustomTokenParams: privacyCustomTokenParams,
@@ -200,31 +199,6 @@ func EstimateTxSize(estimateTxSizeParam *EstimateTxSizeParam) uint64 {
 	}
 
 	sizeTx := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeInfo + sizeSigPubKey + sizeSig + sizeProof + sizePubKeyLastByte + sizeMetadata
-
-	// size of custom token data
-	if estimateTxSizeParam.customTokenParams != nil {
-		customTokenDataSize := uint64(0)
-
-		customTokenDataSize += uint64(len(estimateTxSizeParam.customTokenParams.PropertyID))
-		customTokenDataSize += uint64(len(estimateTxSizeParam.customTokenParams.PropertySymbol))
-		customTokenDataSize += uint64(len(estimateTxSizeParam.customTokenParams.PropertyName))
-
-		customTokenDataSize += 8 // for amount
-		customTokenDataSize += 4 // for TokenTxType
-
-		for _, out := range estimateTxSizeParam.customTokenParams.Receiver {
-			customTokenDataSize += uint64(len(out.PaymentAddress.Bytes()))
-			customTokenDataSize += 8 //out.Value
-		}
-
-		for _, in := range estimateTxSizeParam.customTokenParams.vins {
-			customTokenDataSize += uint64(len(in.PaymentAddress.Bytes()))
-			customTokenDataSize += uint64(len(in.TxCustomTokenID[:]))
-			customTokenDataSize += uint64(len(in.Signature))
-			customTokenDataSize += uint64(4) //in.VoutIndex
-		}
-		sizeTx += customTokenDataSize
-	}
 
 	// size of privacy custom token  data
 	if estimateTxSizeParam.privacyCustomTokenParams != nil {
@@ -273,7 +247,7 @@ type BuildCoinBaseTxByCoinIDParams struct {
 	payToAddress    *privacy.PaymentAddress
 	amount          uint64
 	payByPrivateKey *privacy.PrivateKey
-	db              database.DatabaseInterface
+	db              incdb.Database
 	meta            metadata.Metadata
 	coinID          common.Hash
 	txType          int
@@ -284,7 +258,7 @@ type BuildCoinBaseTxByCoinIDParams struct {
 func NewBuildCoinBaseTxByCoinIDParams(payToAddress *privacy.PaymentAddress,
 	amount uint64,
 	payByPrivateKey *privacy.PrivateKey,
-	db database.DatabaseInterface,
+	db incdb.Database,
 	meta metadata.Metadata,
 	coinID common.Hash,
 	txType int,
@@ -310,37 +284,7 @@ func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Tr
 		tx := &Tx{}
 		err := tx.InitTxSalary(params.amount, params.payToAddress, params.payByPrivateKey, params.db, params.meta)
 		return tx, err
-	case CustomTokenType:
-		tx := &TxNormalToken{}
-		receiver := &TxTokenVout{
-			PaymentAddress: *params.payToAddress,
-			Value:          params.amount,
-		}
-		tokenParams := &CustomTokenParamTx{
-			PropertyID:     params.coinID.String(),
-			PropertyName:   params.coinName,
-			PropertySymbol: params.coinName,
-			Amount:         params.amount,
-			TokenTxType:    CustomTokenInit,
-			Receiver:       []TxTokenVout{*receiver},
-			Mintable:       true,
-		}
-		err := tx.Init(
-			NewTxNormalTokenInitParam(params.payByPrivateKey,
-				nil,
-				nil,
-				0,
-				tokenParams,
-				//listCustomTokens,
-				params.db,
-				params.meta,
-				false,
-				params.shardID))
-		if err != nil {
-			return nil, errors.New(err.Error())
-		}
-		return tx, nil
-	case CustomTokenPrivacyType:
+	case TokenPrivacyType:
 		var propertyID [common.HashSize]byte
 		copy(propertyID[:], params.coinID[:])
 		receiver := &privacy.PaymentInfo{
@@ -353,7 +297,7 @@ func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Tr
 			PropertyName:   params.coinName,
 			PropertySymbol: params.coinName,
 			Amount:         params.amount,
-			TokenTxType:    CustomTokenInit,
+			TokenTxType:    TokenInit,
 			Receiver:       []*privacy.PaymentInfo{receiver},
 			TokenInput:     []*privacy.InputCoin{},
 			Mintable:       true,

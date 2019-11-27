@@ -3,11 +3,11 @@ package metadata
 import (
 	"encoding/json"
 	"errors"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
@@ -66,12 +66,12 @@ type BeaconBlockSalaryInfo struct {
 	InfoHash          *common.Hash
 }
 
-func (sbsRes BeaconBlockSalaryRes) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db database.DatabaseInterface) bool {
+func (sbsRes BeaconBlockSalaryRes) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db incdb.Database) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (sbsRes BeaconBlockSalaryRes) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
+func (sbsRes BeaconBlockSalaryRes) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db incdb.Database) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with request tx (via RequestedTxID) in current block
 	return false, nil
 }

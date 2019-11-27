@@ -3,12 +3,12 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"strconv"
-
-	"github.com/incognitochain/incognito-chain/database"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -36,7 +36,7 @@ func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(
 	if err != nil {
 		return nil, NewBlockChainError(DecodeHashError, err)
 	}
-	blockHash, index, err := blockGenerator.chain.config.DataBase.GetTransactionIndexById(*txHash)
+	blockHash, index, err := rawdb.GetTransactionIndexById(blockGenerator.chain.config.DataBase, *txHash)
 	if err != nil {
 		return nil, NewBlockChainError(GetTransactionFromDatabaseError, err)
 	}
@@ -109,7 +109,7 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(blkHeight, epoch uin
 			totalRewards[ID] = map[common.Hash]uint64{}
 		}
 		for _, coinID := range allCoinID {
-			totalRewards[ID][coinID], err = blockchain.GetDatabase().GetRewardOfShardByEpoch(epoch, byte(ID), coinID)
+			totalRewards[ID][coinID], err = rawdb.GetRewardOfShardByEpoch(blockchain.GetDatabase(), epoch, byte(ID), coinID)
 			if err != nil {
 				return nil, err
 			}
@@ -151,7 +151,6 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(beaconBlocks 
 	committee := make(map[byte][]incognitokey.CommitteePublicKey)
 	isInit := false
 	epoch := uint64(0)
-	db := blockchain.config.DataBase
 	for _, beaconBlock := range beaconBlocks {
 		//fmt.Printf("RewardLog Process BeaconBlock %v\n", beaconBlock.GetHeight())
 		for _, l := range beaconBlock.Body.Instructions {
@@ -182,7 +181,7 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(beaconBlocks 
 						return err
 					}
 					for key := range beaconBlkRewardInfo.BeaconReward {
-						err = db.AddCommitteeReward(publicKeyCommittee, beaconBlkRewardInfo.BeaconReward[key], key)
+						err = rawdb.AddCommitteeReward(blockchain.GetDatabase(), publicKeyCommittee, beaconBlkRewardInfo.BeaconReward[key], key)
 						if err != nil {
 							return err
 						}
@@ -200,7 +199,7 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(beaconBlocks 
 						return err
 					}
 					for key := range incDAORewardInfo.IncDAOReward {
-						err = db.AddCommitteeReward(keyWalletDevAccount.KeySet.PaymentAddress.Pk, incDAORewardInfo.IncDAOReward[key], key)
+						err = rawdb.AddCommitteeReward(blockchain.GetDatabase(), keyWalletDevAccount.KeySet.PaymentAddress.Pk, incDAORewardInfo.IncDAOReward[key], key)
 						if err != nil {
 							return err
 						}
@@ -218,12 +217,12 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(beaconBlocks 
 				if (!isInit) || (epoch != shardRewardInfo.Epoch) {
 					isInit = true
 					epoch = shardRewardInfo.Epoch
-					rewardReceiverBytes, err := blockchain.config.DataBase.FetchRewardReceiverByHeight(epoch * blockchain.config.ChainParams.Epoch)
+					rewardReceiverBytes, err := rawdb.FetchRewardReceiverByHeight(blockchain.GetDatabase(), epoch*blockchain.config.ChainParams.Epoch)
 					if err != nil {
 						return err
 					}
 					json.Unmarshal(rewardReceiverBytes, &rewardReceivers)
-					committeeBytes, err := blockchain.config.DataBase.FetchShardCommitteeByHeight(epoch * blockchain.config.ChainParams.Epoch)
+					committeeBytes, err := rawdb.FetchShardCommitteeByHeight(blockchain.GetDatabase(), epoch*blockchain.config.ChainParams.Epoch)
 					if err != nil {
 						return err
 					}
@@ -241,8 +240,7 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(beaconBlocks 
 	return nil
 }
 
-func (blockchain *BlockChain) updateDatabaseWithBlockRewardInfo(beaconBlock *BeaconBlock, bd *[]database.BatchData) error {
-	db := blockchain.config.DataBase
+func (blockchain *BlockChain) updateDatabaseWithBlockRewardInfo(beaconBlock *BeaconBlock, bd *[]incdb.BatchData) error {
 	for _, inst := range beaconBlock.Body.Instructions {
 		if len(inst) <= 2 {
 			continue
@@ -270,7 +268,7 @@ func (blockchain *BlockChain) updateDatabaseWithBlockRewardInfo(beaconBlock *Bea
 			}
 			for key, value := range acceptedBlkRewardInfo.TxsFee {
 				if value != 0 {
-					err = db.AddShardRewardRequest(beaconBlock.Header.Epoch, acceptedBlkRewardInfo.ShardID, value, key, bd)
+					err = rawdb.AddShardRewardRequest(blockchain.GetDatabase(), beaconBlock.Header.Epoch, acceptedBlkRewardInfo.ShardID, value, key, bd)
 					if err != nil {
 						return err
 					}
@@ -293,7 +291,7 @@ func (blockchain *BlockChain) buildWithDrawTransactionResponse(
 		return nil, errors.New("Can not understand this request!")
 	}
 	requestDetail := (*txRequest).GetMetadata().(*metadata.WithDrawRewardRequest)
-	amount, err := blockchain.config.DataBase.GetCommitteeReward(requestDetail.PaymentAddress.Pk, requestDetail.TokenID)
+	amount, err := rawdb.GetCommitteeReward(blockchain.GetDatabase(), requestDetail.PaymentAddress.Pk, requestDetail.TokenID)
 	if (amount == 0) || (err != nil) {
 		return nil, errors.New("Not enough reward")
 	}
@@ -387,9 +385,9 @@ func (blockchain *BlockChain) getRewardAmountForUserOfShard(
 		if common.GetShardIDFromLastByte(wl.KeySet.PaymentAddress.Pk[common.PublicKeySize-1]) == selfShardID {
 			for key, value := range rewardInfoShardToProcess.ShardReward {
 				if forBackup {
-					err = blockchain.GetDatabase().BackupCommitteeReward(wl.KeySet.PaymentAddress.Pk, key)
+					err = rawdb.BackupCommitteeReward(blockchain.GetDatabase(), wl.KeySet.PaymentAddress.Pk, key)
 				} else {
-					err = blockchain.GetDatabase().AddCommitteeReward(wl.KeySet.PaymentAddress.Pk, value/uint64(committeeSize), key)
+					err = rawdb.AddCommitteeReward(blockchain.GetDatabase(), wl.KeySet.PaymentAddress.Pk, value/uint64(committeeSize), key)
 				}
 				if err != nil {
 					// errChan <- err

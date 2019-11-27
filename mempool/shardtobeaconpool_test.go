@@ -158,8 +158,8 @@ func TestShardToBeaconPoolUpdateLatestShardState(t *testing.T) {
 		shardToBeaconPoolTest.pool[0] = pool
 		shardToBeaconPoolTest.updateLatestShardState()
 		if latestValidHeight, isOk := shardToBeaconPoolTest.latestValidHeight[0]; isOk {
-			if latestValidHeight != 4 {
-				t.Fatalf("Expect latestvalidheight is 4 but get %+v", latestValidHeight)
+			if latestValidHeight != 3 {
+				t.Fatalf("Expect latestvalidheight is 3 but get %+v", latestValidHeight)
 			}
 		} else {
 			t.Fatalf("Fail to init shard to beacon pool")
@@ -214,8 +214,8 @@ func TestShardToBeaconPoolSetShardState(t *testing.T) {
 		lastHeight[0] = 5
 		lastHeight[1] = 0
 		shardToBeaconPoolTest.SetShardState(lastHeight)
-		if shardToBeaconPoolTest.latestValidHeight[0] != 7 {
-			t.Fatalf("Expect latest valid height from shard 0 is 7 but get %+v ", shardToBeaconPoolTest.latestValidHeight[0])
+		if shardToBeaconPoolTest.latestValidHeight[0] != 6 {
+			t.Fatalf("Expect latest valid height from shard 0 is 6 but get %+v ", shardToBeaconPoolTest.latestValidHeight[0])
 		}
 		if len(shardToBeaconPoolTest.pool[0]) != 2 {
 			t.Fatalf("Expect block in pool from shard 0 is 2 but get %+v ", len(shardToBeaconPoolTest.pool[0]))
@@ -388,8 +388,8 @@ func TestShardToBeaconPoolGetValidBlock(t *testing.T) {
 	limit := make(map[byte]uint64)
 	limit[0] = 7
 	blocks := shardToBeaconPoolTest.GetValidBlock(limit)
-	if len(blocks[0]) != 4 {
-		t.Fatalf("Expect pool to have 4 block but get %+v", len(blocks[0]))
+	if len(blocks[0]) != 3 {
+		t.Fatalf("Expect pool to have 3 block but get %+v", len(blocks[0]))
 	}
 	for index, block := range blocks[0] {
 		switch index {

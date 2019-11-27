@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/transaction"
 )
 
 type ShardBlock struct {
@@ -47,8 +47,6 @@ type CrossShardBlock struct {
 	// Cross Shard data for PRV
 	CrossOutputCoin []privacy.OutputCoin
 	// Cross Shard Data for Custom Token Tx
-	CrossTxTokenData []transaction.TxNormalTokenData
-	// Cross Shard For Custom token privacy
 	CrossTxTokenPrivacyData []ContentCrossShardTokenPrivacyData
 }
 
@@ -320,7 +318,7 @@ func (shardBlock *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToB
 	block.ValidationData = shardBlock.ValidationData
 	block.Header = shardBlock.Header
 	blockInstructions := shardBlock.Body.Instructions
-	previousShardBlockByte, err := bc.config.DataBase.FetchBlock(shardBlock.Header.PreviousBlockHash)
+	previousShardBlockByte, err := rawdb.FetchBlock(bc.config.DataBase, shardBlock.Header.PreviousBlockHash)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil
@@ -363,9 +361,9 @@ func (shardBlock *ShardBlock) CreateAllCrossShardBlock(activeShards int) map[byt
 
 func (shardBlock *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, error) {
 	crossShard := &CrossShardBlock{}
-	crossOutputCoin, crossTxTokenData, crossCustomTokenPrivacyData := getCrossShardData(shardBlock.Body.Transactions, shardID)
+	crossOutputCoin, crossCustomTokenPrivacyData := getCrossShardData(shardBlock.Body.Transactions, shardID)
 	// Return nothing if nothing to cross
-	if len(crossOutputCoin) == 0 && len(crossTxTokenData) == 0 && len(crossCustomTokenPrivacyData) == 0 {
+	if len(crossOutputCoin) == 0 && len(crossCustomTokenPrivacyData) == 0 {
 		return nil, NewBlockChainError(CreateCrossShardBlockError, errors.New("No cross Outputcoin, Cross Custom Token, Cross Custom Token Privacy"))
 	}
 	merklePathShard, merkleShardRoot := GetMerklePathCrossShard2(shardBlock.Body.Transactions, shardID)
@@ -384,7 +382,6 @@ func (shardBlock *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBl
 	crossShard.Header = shardBlock.Header
 	crossShard.MerklePathShard = merklePathShard
 	crossShard.CrossOutputCoin = crossOutputCoin
-	crossShard.CrossTxTokenData = crossTxTokenData
 	crossShard.CrossTxTokenPrivacyData = crossCustomTokenPrivacyData
 	crossShard.ToShardID = shardID
 	return crossShard, nil

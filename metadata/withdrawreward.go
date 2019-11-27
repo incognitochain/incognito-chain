@@ -2,7 +2,8 @@ package metadata
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
@@ -61,17 +62,17 @@ func (withDrawRewardResponse WithDrawRewardResponse) Hash() *common.Hash {
 	return withDrawRewardResponse.TxRequest
 }
 
-func (withDrawRewardRequest WithDrawRewardRequest) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db database.DatabaseInterface) bool {
+func (withDrawRewardRequest WithDrawRewardRequest) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db incdb.Database) bool {
 	//this transaction can be a zero-fee transaction, but in fact, user can set nonzero-fee for this tx
 	return true
 }
 
-func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
+func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db incdb.Database) (bool, error) {
 	if txr.IsPrivacy() {
 		return false, errors.New("This transaction is not private")
 	}
 	isPositive := false
-	value, err := db.GetCommitteeReward(withDrawRewardRequest.PaymentAddress.Pk, withDrawRewardRequest.TokenID)
+	value, err := rawdb.GetCommitteeReward(db, withDrawRewardRequest.PaymentAddress.Pk, withDrawRewardRequest.TokenID)
 	if err != nil {
 		return false, err
 	}
@@ -98,12 +99,12 @@ func (withDrawRewardRequest WithDrawRewardRequest) ValidateMetadataByItself() bo
 	return true
 }
 
-func (withDrawRewardResponse *WithDrawRewardResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db database.DatabaseInterface) bool {
+func (withDrawRewardResponse *WithDrawRewardResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db incdb.Database) bool {
 	//this transaction can be a zero-fee transaction, but in fact, user can set nonzero-fee for this tx
 	return true
 }
 
-func (withDrawRewardResponse *WithDrawRewardResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
+func (withDrawRewardResponse *WithDrawRewardResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db incdb.Database) (bool, error) {
 	if txr.IsPrivacy() {
 		return false, errors.New("This transaction is not private")
 	}
@@ -111,7 +112,7 @@ func (withDrawRewardResponse *WithDrawRewardResponse) ValidateTxWithBlockChain(t
 	if !unique {
 		return false, errors.New("Just one receiver")
 	}
-	value, err := db.GetCommitteeReward(requesterRes, *coinID)
+	value, err := rawdb.GetCommitteeReward(db, requesterRes, *coinID)
 	if (err != nil) || (value == 0) {
 		return false, errors.New("Not enough reward")
 	}

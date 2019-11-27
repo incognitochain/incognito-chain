@@ -11,7 +11,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/mocks"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -433,7 +433,7 @@ func TestInvalidTokenInfo(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			tokenID := &common.Hash{}
-			db := &mocks.DatabaseInterface{}
+			db := &mocks.Database{}
 			db.On("GetAllBridgeTokens").Return(tc.info, tc.err)
 
 			_, err := findExternalTokenID(tokenID, db)
@@ -444,15 +444,15 @@ func TestInvalidTokenInfo(t *testing.T) {
 	}
 }
 
-func setupDB(t *testing.T) *mocks.DatabaseInterface {
+func setupDB(t *testing.T) *mocks.Database {
 	tokenInfo := setupTokenInfos(t)
-	db := &mocks.DatabaseInterface{}
+	db := &mocks.Database{}
 	db.On("GetAllBridgeTokens").Return(tokenInfo, nil)
 	return db
 }
 
 func setupTokenInfos(t *testing.T) []byte {
-	tokens := []*lvdb.BridgeTokenInfo{
+	tokens := []*rawdb.BridgeTokenInfo{
 		newToken(1),
 		newToken(2),
 		newToken(3),
@@ -465,8 +465,8 @@ func setupTokenInfos(t *testing.T) []byte {
 	return tokenInfo
 }
 
-func newToken(b byte) *lvdb.BridgeTokenInfo {
-	return &lvdb.BridgeTokenInfo{
+func newToken(b byte) *rawdb.BridgeTokenInfo {
+	return &rawdb.BridgeTokenInfo{
 		TokenID:         &common.Hash{b},
 		ExternalTokenID: getExternalID(b),
 	}

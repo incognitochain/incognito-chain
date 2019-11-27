@@ -92,47 +92,6 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, cl
 			continue
 		}
 		switch txType {
-		case "cstoken":
-			{
-				var tx transaction.TxNormalToken
-				err = json.Unmarshal(rawTxBytes, &tx)
-				if err != nil {
-					fail++
-					continue
-				}
-				if !isSent {
-					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
-					if err != nil {
-						fail++
-						continue
-					} else {
-						success++
-						continue
-					}
-				} else {
-					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
-					//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
-					if err != nil {
-						fail++
-						continue
-					}
-					txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)
-					if err != nil {
-						fail++
-						continue
-					}
-					txMsg.(*wire.MessageTxToken).Transaction = &tx
-					err = httpServer.config.Server.PushMessageToAll(txMsg)
-					if err != nil {
-						fail++
-						continue
-					}
-				}
-				if err == nil {
-					count++
-					success++
-				}
-			}
 		case "cstokenprivacy":
 			{
 				var tx transaction.TxCustomTokenPrivacy
@@ -151,7 +110,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, cl
 						continue
 					}
 				} else {
-					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx,-1)
+					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
 					//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 					if err != nil {
 						fail++
@@ -267,47 +226,6 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, 
 			continue
 		}
 		switch txType {
-		case "cstoken":
-			{
-				var tx transaction.TxNormalToken
-				err = json.Unmarshal(rawTxBytes, &tx)
-				if err != nil {
-					fail++
-					continue
-				}
-				if !isSent {
-					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
-					if err != nil {
-						fail++
-						continue
-					} else {
-						success++
-						continue
-					}
-				} else {
-					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx, -1)
-					//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
-					if err != nil {
-						fail++
-						continue
-					}
-					txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)
-					if err != nil {
-						fail++
-						continue
-					}
-					txMsg.(*wire.MessageTxToken).Transaction = &tx
-					err = httpServer.config.Server.PushMessageToAll(txMsg)
-					if err != nil {
-						fail++
-						continue
-					}
-				}
-				if err == nil {
-					count++
-					success++
-				}
-			}
 		case "cstokenprivacy":
 			{
 				var tx transaction.TxCustomTokenPrivacy

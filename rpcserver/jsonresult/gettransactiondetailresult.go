@@ -84,37 +84,6 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 				result.ProofDetail.ConvertFromProof(result.Proof)
 			}
 		}
-	case common.TxCustomTokenType:
-		{
-			tempTx := tx.(*transaction.TxNormalToken)
-			result = &TransactionDetail{
-				BlockHash:   blockHashStr,
-				BlockHeight: blockHeight,
-				Index:       uint64(index),
-				ShardID:     shardID,
-				Hash:        tx.Hash().String(),
-				Version:     tempTx.Version,
-				Type:        tempTx.Type,
-				LockTime:    time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
-				Fee:         tempTx.Fee,
-				Proof:       tempTx.Proof,
-				SigPubKey:   base58.Base58Check{}.Encode(tempTx.SigPubKey, 0x0),
-				Sig:         base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
-				Info:        string(tempTx.Info),
-			}
-			txCustomData, _ := json.MarshalIndent(tempTx.TxTokenData, "", "\t")
-			result.CustomTokenData = string(txCustomData)
-			if result.Proof != nil && len(result.Proof.GetInputCoins()) > 0 && result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey() != nil {
-				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte)
-			}
-			if tempTx.Metadata != nil {
-				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
-				result.Metadata = string(metaData)
-			}
-			if result.Proof != nil {
-				result.ProofDetail.ConvertFromProof(result.Proof)
-			}
-		}
 	case common.TxCustomTokenPrivacyType:
 		{
 			tempTx := tx.(*transaction.TxCustomTokenPrivacy)

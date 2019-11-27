@@ -9,7 +9,8 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
@@ -48,9 +49,9 @@ func (cReq ContractingRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,
-	db database.DatabaseInterface,
+	db incdb.Database,
 ) (bool, error) {
-	bridgeTokenExisted, err := db.IsBridgeTokenExistedByType(cReq.TokenID, true)
+	bridgeTokenExisted, err := rawdb.IsBridgeTokenExistedByType(db, cReq.TokenID, true)
 	if err != nil {
 		return false, err
 	}

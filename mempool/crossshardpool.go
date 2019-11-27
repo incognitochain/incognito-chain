@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"sort"
 	"strconv"
 	"sync"
 
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -43,7 +44,7 @@ type CrossShardPool struct {
 	pendingPool     map[byte][]*blockchain.CrossShardBlock // cross shard block from all other shard to this shard
 	crossShardState map[byte]uint64                        // cross shard state (marked the current state of cross shard block from all shard)
 	mtx             *sync.RWMutex
-	db              database.DatabaseInterface
+	db              incdb.Database
 	isTest          bool
 	// When beacon chain confirm new cross shard block, it will store these block height in database
 	// Cross Shard Pool using database to detect either is valid or pending
@@ -51,7 +52,7 @@ type CrossShardPool struct {
 
 var crossShardPoolMap = make(map[byte]*CrossShardPool)
 
-func InitCrossShardPool(pool map[byte]blockchain.CrossShardPool, db database.DatabaseInterface) {
+func InitCrossShardPool(pool map[byte]blockchain.CrossShardPool, db incdb.Database) {
 	for i := 0; i < 255; i++ {
 		crossShardPoolMap[byte(i)] = GetCrossShardPool(byte(i))
 		pool[byte(i)] = crossShardPoolMap[byte(i)]
@@ -84,7 +85,7 @@ func (crossShardPool *CrossShardPool) UpdatePool() map[byte]uint64 {
 }
 
 func (crossShardPool *CrossShardPool) GetNextCrossShardHeight(fromShard, toShard byte, startHeight uint64) uint64 {
-	nextHeight, err := crossShardPool.db.FetchCrossShardNextHeight(fromShard, toShard, startHeight)
+	nextHeight, err := rawdb.FetchCrossShardNextHeight(crossShardPool.db, fromShard, toShard, startHeight)
 	if err != nil {
 		return 0
 	}
@@ -191,7 +192,7 @@ func (crossShardPool *CrossShardPool) validateCrossShardBlockSignature(crossShar
 		return NewBlockPoolError(FindBeaconHeightForCrossShardBlockError, fmt.Errorf("No Beacon Block For Cross Shard Block %+v from Shard %+v", crossShardBlock.Header.Height, crossShardBlock.Header.ShardID))
 	}
 	// get shard committee from database
-	shardCommitteeByte, err := crossShardPool.db.FetchShardCommitteeByHeight(beaconHeight)
+	shardCommitteeByte, err := rawdb.FetchShardCommitteeByHeight(crossShardPool.db, beaconHeight)
 	if err != nil {
 		return NewBlockPoolError(DatabaseError, fmt.Errorf("No Committee For Cross Shard Block %+v from ShardID %+v", crossShardBlock.Header.Height, crossShardBlock.Header.ShardID))
 	}
@@ -419,11 +420,11 @@ func (crossShardPool *CrossShardPool) GetBlockByHeight(_shardID byte, height uin
 
 func (crossShardPool *CrossShardPool) FindBeaconHeightForCrossShardBlock(beaconHeight uint64, fromShardID byte, crossShardBlockHeight uint64) (uint64, error) {
 	for {
-		beaconBlockHash, err := crossShardPool.db.GetBeaconBlockHashByIndex(beaconHeight)
+		beaconBlockHash, err := rawdb.GetBeaconBlockHashByIndex(crossShardPool.db, beaconHeight)
 		if err != nil {
 			return 0, NewBlockPoolError(GetBeaconBlockHashFromDatabaseError, err)
 		}
-		beaconBlockBytes, err := crossShardPool.db.FetchBeaconBlock(beaconBlockHash)
+		beaconBlockBytes, err := rawdb.FetchBeaconBlock(crossShardPool.db, beaconBlockHash)
 		if err != nil {
 			return 0, NewBlockPoolError(FetchBeaconBlockFromDatabaseError, err)
 		}

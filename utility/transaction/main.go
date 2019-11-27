@@ -3,15 +3,15 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/database"
-	_ "github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/incdb"
+	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"path/filepath"
 )
 
 func main() {
-	db, err := database.Open("leveldb", filepath.Join("./", "./"))
+	db, err := incdb.Open("leveldb", filepath.Join("./", "./"))
 	if err != nil {
 		fmt.Print("could not open connection to leveldb")
 		fmt.Print(err)
@@ -25,7 +25,7 @@ func main() {
 	initThankTx(db)
 }
 
-func initGenesisTx(db database.DatabaseInterface) {
+func initGenesisTx(db incdb.Database) {
 	var initTxs []string
 	testUserkeyList := map[string]uint64{
 		"112t8rnXBS7jJ4iqFon5rM66ex1Fc7sstNrJA9iMKgNURMUf3rywYfJ4c5Kpxw1BgL1frj9Nu5uL5vpemn9mLUW25CD1w7khX88WdauTVyKa": uint64(5000000000000000),
@@ -43,7 +43,7 @@ func initGenesisTx(db database.DatabaseInterface) {
 	fmt.Println(initTxs)
 }
 
-func initThankTx(db database.DatabaseInterface) {
+func initThankTx(db incdb.Database) {
 	var initTxs []string
 	testUserkeyList := map[string]string{
 		"112t8rnXBS7jJ4iqFon5rM66ex1Fc7sstNrJA9iMKgNURMUf3rywYfJ4c5Kpxw1BgL1frj9Nu5uL5vpemn9mLUW25CD1w7khX88WdauTVyKa": "@abc",

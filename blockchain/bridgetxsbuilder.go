@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"math/big"
 	"strconv"
 
@@ -49,7 +50,6 @@ func (blockchain *BlockChain) buildInstructionsForIssuingReq(
 ) ([][]string, error) {
 	fmt.Println("[Centralized bridge token issuance] Starting...")
 	instructions := [][]string{}
-	db := blockchain.GetDatabase()
 	issuingReqAction, err := metadata.ParseIssuingInstContent(contentStr)
 	if err != nil {
 		fmt.Println("WARNING: an issue occured while parsing issuing action content: ", err)
@@ -66,7 +66,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingReq(
 		return append(instructions, rejectedInst), nil
 	}
 
-	ok, err := db.CanProcessCIncToken(issuingTokenID)
+	ok, err := rawdb.CanProcessCIncToken(blockchain.GetDatabase(), issuingTokenID)
 	if err != nil {
 		fmt.Println("WARNING: an issue occured while checking it can process for the incognito token or not: ", err)
 		return append(instructions, rejectedInst), nil
@@ -103,7 +103,6 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(
 ) ([][]string, error) {
 	fmt.Println("[Decentralized bridge token issuance] Starting...")
 	instructions := [][]string{}
-	db := blockchain.GetDatabase()
 	issuingETHReqAction, err := metadata.ParseETHIssuingInstContent(contentStr)
 	if err != nil {
 		fmt.Println("WARNING: an issue occured while parsing issuing action content: ", err)
@@ -126,7 +125,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(
 		fmt.Println("WARNING: already issued for the hash in current block: ", uniqETHTx)
 		return append(instructions, rejectedInst), nil
 	}
-	isIssued, err := db.IsETHTxHashIssued(uniqETHTx)
+	isIssued, err := rawdb.IsETHTxHashIssued(blockchain.GetDatabase(), uniqETHTx)
 	if err != nil {
 		fmt.Println("WARNING: an issue occured while checking the eth tx hash is issued or not: ", err)
 		return append(instructions, rejectedInst), nil
@@ -166,7 +165,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(
 		return append(instructions, rejectedInst), nil
 	}
 
-	isValid, err := db.CanProcessTokenPair(ethereumToken, md.IncTokenID)
+	isValid, err := rawdb.CanProcessTokenPair(blockchain.GetDatabase(), ethereumToken, md.IncTokenID)
 	if err != nil {
 		fmt.Println("WARNING: an error occured while checking it can process for token pair on the previous blocks or not: ", err)
 		return append(instructions, rejectedInst), nil
@@ -254,7 +253,7 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(
 		PropertyName:   issuingAcceptedInst.IncTokenName,
 		PropertySymbol: issuingAcceptedInst.IncTokenName,
 		Amount:         issuingAcceptedInst.DepositedAmount,
-		TokenTxType:    transaction.CustomTokenInit,
+		TokenTxType:    transaction.TokenInit,
 		Receiver:       []*privacy.PaymentInfo{receiver},
 		TokenInput:     []*privacy.InputCoin{},
 		Mintable:       true,
@@ -267,7 +266,7 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(
 			nil,
 			0,
 			tokenParams,
-			blockGenerator.chain.config.DataBase,
+			blockGenerator.chain.GetDatabase(),
 			issuingRes,
 			false,
 			false,
@@ -323,7 +322,7 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(
 		// PropertyName:   common.PETHTokenName,
 		// PropertySymbol: common.PETHTokenName,
 		Amount:      issuingETHAcceptedInst.IssuingAmount,
-		TokenTxType: transaction.CustomTokenInit,
+		TokenTxType: transaction.TokenInit,
 		Receiver:    []*privacy.PaymentInfo{receiver},
 		TokenInput:  []*privacy.InputCoin{},
 		Mintable:    true,
@@ -342,7 +341,7 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(
 			nil,
 			0,
 			tokenParams,
-			blockGenerator.chain.config.DataBase,
+			blockGenerator.chain.GetDatabase(),
 			issuingETHRes,
 			false,
 			false,
