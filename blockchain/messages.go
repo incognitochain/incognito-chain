@@ -259,7 +259,7 @@ func (blockchain *BlockChain) OnCrossShardBlockReceived(block *CrossShardBlock) 
 	if blockchain.IsTest {
 		return
 	}
-	Logger.log.Errorf("\n\n\n\nReceived CrossShardBlock blk Height %v shardID %v \n\n\n\n", block.Header.Height, block.Header.ShardID)
+	Logger.log.Infof("[sync] Received CrossShardBlock blk Height %v shardID %v", block.Header.Height, block.Header.ShardID)
 	if blockchain.IsTest {
 		return
 	}
