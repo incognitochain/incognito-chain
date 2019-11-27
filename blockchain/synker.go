@@ -1256,9 +1256,11 @@ func (synker *Synker) SyncBlkShardToBeacon(shardID byte, byHash bool, bySpecific
 	To  Shard: shard receive cross shard block
 */
 func (synker *Synker) SyncBlkCrossShard(getFromPool bool, byHash bool, blksHash []common.Hash, blksHeight []uint64, fromShard byte, toShard byte, peerID libp2p.ID) {
-	Logger.log.Criticalf("Shard %+v request CrossShardBlock with Height %+v from shard %+v \n", fromShard, blksHeight, toShard)
+	Logger.log.Infof("[sync] START Shard %+v request CrossShardBlock with Height %+v from shard %+v \n", fromShard, blksHeight, toShard)
+	defer Logger.log.Infof("[sync] END   Shard %+v request CrossShardBlock with Height %+v from shard %+v \n", fromShard, blksHeight, toShard)
 	cacheItems := synker.Status.CurrentlySyncBlks.Items()
 	if byHash {
+		Logger.log.Infof("[sync] NOOOOOOOOOOOOOOOOO Request by hash!!!!!!!!!!!!!!!!!")
 		prefix := getBlkPrefixSyncKey(true, CrossShardBlk, toShard, fromShard)
 		blksNeedToGet := getBlkNeedToGetByHash(prefix, blksHash, cacheItems, peerID)
 		if len(blksNeedToGet) > 0 {
@@ -1281,6 +1283,7 @@ func (synker *Synker) SyncBlkCrossShard(getFromPool bool, byHash bool, blksHash 
 			return
 		}
 		blksNeedToGet := getBlkNeedToGetBySpecificHeight(prefix, blksHeight, cacheItems, synker.GetCrossShardPoolStateByHeight(fromShard))
+		Logger.log.Infof("[sync] Oke, request block %v", blksNeedToGet)
 		if len(blksNeedToGet) > 0 {
 			go synker.blockchain.config.Server.PushMessageGetBlockCrossShardBySpecificHeight(fromShard, toShard, blksNeedToGet, getFromPool, peerID)
 			for _, blkHeight := range blksNeedToGet {
