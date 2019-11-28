@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
-	"log"
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -36,15 +34,13 @@ func (d *Dispatcher) processInMessageString(msgStr string) error {
 	// hashMsgRaw := common.HashH(jsonDecodeBytesRaw).String()
 	// if peerConn.listenerPeer != nil {
 	// 	if err := peerConn.listenerPeer.HashToPool(hashMsgRaw); err != nil {
-	// 		fmt.Println(err)
+	// 		Logger.Error(err)
 	// 		return NewPeerError(HashToPoolError, err, nil)
 	// 	}
 	// }
 	// unzip data before process
 	jsonDecodeBytes, err := common.GZipToBytes(jsonDecodeBytesRaw)
 	if err != nil {
-		fmt.Println("Can not unzip from message")
-		fmt.Println(err)
 		return errors.WithStack(err)
 	}
 
@@ -61,13 +57,10 @@ func (d *Dispatcher) processInMessageString(msgStr string) error {
 	// convert to particular message from message cmd type
 	message, err := wire.MakeEmptyMessage(string(commandType))
 	if err != nil {
-		fmt.Println("Can not find particular message for message cmd type")
-		fmt.Println(err)
 		return errors.WithStack(err)
 	}
 
 	if len(jsonDecodeBytes) > message.MaxPayloadLength(wire.Version) {
-		fmt.Printf("Msg size exceed MsgType %s max size, size %+v | max allow is %+v \n", commandType, len(jsonDecodeBytes), message.MaxPayloadLength(1))
 		return errors.WithStack(err)
 	}
 	// check forward TODO
@@ -81,7 +74,7 @@ func (d *Dispatcher) processInMessageString(msgStr string) error {
 					if peerConn.config.MessageListeners.PushRawBytesToShard != nil {
 						err1 := peerConn.config.MessageListeners.PushRawBytesToShard(peerConn, &jsonDecodeBytesRaw, *cShard)
 						if err1 != nil {
-							fmt.Println(err1)
+							Logger.Error(err1)
 						}
 					}
 					return NewPeerError(CheckForwardError, err, nil)
@@ -94,7 +87,7 @@ func (d *Dispatcher) processInMessageString(msgStr string) error {
 				if peerConn.config.MessageListeners.PushRawBytesToBeacon != nil {
 					err1 := peerConn.config.MessageListeners.PushRawBytesToBeacon(peerConn, &jsonDecodeBytesRaw)
 					if err1 != nil {
-						fmt.Println(err1)
+						Logger.Error(err1)
 					}
 				}
 				return NewPeerError(CheckForwardError, err, nil)
@@ -104,8 +97,6 @@ func (d *Dispatcher) processInMessageString(msgStr string) error {
 
 	err = json.Unmarshal(messageBody, &message)
 	if err != nil {
-		fmt.Println("Can not parse struct from json message")
-		fmt.Println(err)
 		return errors.WithStack(err)
 	}
 	realType := reflect.TypeOf(message)
@@ -115,7 +106,7 @@ func (d *Dispatcher) processInMessageString(msgStr string) error {
 	// if peerConn.listenerPeer != nil {
 	// 	hashMsg := message.Hash()
 	// 	if err := peerConn.listenerPeer.HashToPool(hashMsg); err != nil {
-	// 		fmt.Println(err)
+	// 		Logger.Error(err)
 	// 		return NewPeerError(CacheMessageHashError, err, nil)
 	// 	}
 	// }
@@ -123,7 +114,6 @@ func (d *Dispatcher) processInMessageString(msgStr string) error {
 	// process message for each of message type
 	errProcessMessage := d.processMessageForEachType(realType, message)
 	if errProcessMessage != nil {
-		fmt.Println(errProcessMessage)
 		return errors.WithStack(errProcessMessage)
 	}
 
@@ -135,7 +125,7 @@ func (d *Dispatcher) processInMessageString(msgStr string) error {
 // process message for each of message type
 func (d *Dispatcher) processMessageForEachType(messageType reflect.Type, message wire.Message) error {
 	// NOTE: copy from peerConn.processInMessageString
-	log.Printf("Processing msgType %s", message.MessageType())
+	Logger.Infof("Processing msgType %s", message.MessageType())
 	var peerConn *peer.PeerConn
 	switch messageType {
 	case reflect.TypeOf(&wire.MessageTx{}):
@@ -151,22 +141,22 @@ func (d *Dispatcher) processMessageForEachType(messageType reflect.Type, message
 			d.MessageListeners.OnTxPrivacyToken(peerConn, message.(*wire.MessageTxPrivacyToken))
 		}
 	case reflect.TypeOf(&wire.MessageBlockShard{}):
-		log.Printf("Processing msgContent %+v", message.(*wire.MessageBlockShard).Block)
+		// Logger.Infof("Processing msgContent %+v", message.(*wire.MessageBlockShard).Block)
 		if d.MessageListeners.OnBlockShard != nil {
 			d.MessageListeners.OnBlockShard(peerConn, message.(*wire.MessageBlockShard))
 		}
 	case reflect.TypeOf(&wire.MessageBlockBeacon{}):
-		log.Printf("Processing msgContent %+v", message.(*wire.MessageBlockBeacon).Block)
+		// Logger.Infof("Processing msgContent %+v", message.(*wire.MessageBlockBeacon).Block)
 		if d.MessageListeners.OnBlockBeacon != nil {
 			d.MessageListeners.OnBlockBeacon(peerConn, message.(*wire.MessageBlockBeacon))
 		}
 	case reflect.TypeOf(&wire.MessageCrossShard{}):
-		log.Printf("Processing msgContent %+v", message.(*wire.MessageCrossShard).Block)
+		// Logger.Infof("Processing msgContent %+v", message.(*wire.MessageCrossShard).Block)
 		if d.MessageListeners.OnCrossShard != nil {
 			d.MessageListeners.OnCrossShard(peerConn, message.(*wire.MessageCrossShard))
 		}
 	case reflect.TypeOf(&wire.MessageShardToBeacon{}):
-		log.Printf("Processing msgContent %+v", message.(*wire.MessageShardToBeacon).Block)
+		// Logger.Infof("Processing msgContent %+v", message.(*wire.MessageShardToBeacon).Block)
 		if d.MessageListeners.OnShardToBeacon != nil {
 			d.MessageListeners.OnShardToBeacon(peerConn, message.(*wire.MessageShardToBeacon))
 		}
@@ -216,17 +206,15 @@ func (d *Dispatcher) processMessageForEachType(messageType reflect.Type, message
 	// case reflect.TypeOf(&wire.MessageMsgCheck{}):
 	// 	err1 := peerConn.handleMsgCheck(message.(*wire.MessageMsgCheck))
 	// 	if err1 != nil {
-	// 		fmt.Println(err1)
+	// 		Logger.Error(err1)
 	// 	}
 	// case reflect.TypeOf(&wire.MessageMsgCheckResp{}):
 	// 	err1 := peerConn.handleMsgCheckResp(message.(*wire.MessageMsgCheckResp))
 	// 	if err1 != nil {
-	// 		fmt.Println(err1)
+	// 		Logger.Error(err1)
 	// 	}
 	default:
-		errorMessage := fmt.Errorf("InMessageHandler Received unhandled message of type % from %v", messageType, peerConn)
-		fmt.Println(errorMessage)
-		return errorMessage
+		return errors.Errorf("InMessageHandler Received unhandled message of type % from %v", messageType, peerConn)
 	}
 	return nil
 }
