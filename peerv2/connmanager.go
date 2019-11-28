@@ -333,10 +333,6 @@ func (cm *ConnManager) subscribe(role userRole, topics m2t, forced bool) (userRo
 	}
 	Logger.Infof("Role changed: %v -> %v", role, newRole)
 
-	if newRole.role == common.WaitingRole && !forced { // Not forced => no need to subscribe when role is Waiting
-		return newRole, topics, nil
-	}
-
 	// Registering
 	pubkey, _ := cm.IdentityKey.ToBase58()
 	roleSID := newRole.shardID
@@ -350,14 +346,16 @@ func (cm *ConnManager) subscribe(role userRole, topics m2t, forced bool) (userRo
 	} else {
 		shardIDs = append(shardIDs, byte(roleSID))
 	}
-	newTopics, roleOfTopics, err := cm.registerToProxy(pubkey, newRole.layer, shardIDs)
+	newTopics, roleOfTopics, err := cm.registerToProxy(pubkey, newRole.layer, newRole.role, shardIDs)
 	if err != nil {
 		return role, topics, err
 	}
 
-	if newRole != roleOfTopics {
-		return role, topics, errors.Errorf("lole not matching with highway, local = %+v, highway = %+v", newRole, roleOfTopics)
-	}
+	// NOTE: disabled, highway always return the same role
+	_ = roleOfTopics
+	// if newRole != roleOfTopics {
+	// 	return role, topics, errors.Errorf("lole not matching with highway, local = %+v, highway = %+v", newRole, roleOfTopics)
+	// }
 
 	Logger.Infof("Received topics = %+v, oldTopics = %+v", newTopics, topics)
 
@@ -468,17 +466,18 @@ type m2t map[string][]Topic // Message to topics
 func (cm *ConnManager) registerToProxy(
 	pubkey string,
 	layer string,
+	role string,
 	shardID []byte,
 ) (m2t, userRole, error) {
 	messagesWanted := getMessagesForLayer(cm.nodeMode, layer, shardID)
-	Logger.Infof("-%v-;;;-%v-;;;-%v-;;;", messagesWanted, cm.nodeMode, shardID)
-	// os.Exit(9)
-	pairs, role, err := cm.Requester.Register(
+	Logger.Infof("Registering: %v %v %v %v %v", messagesWanted, cm.nodeMode, layer, role, shardID)
+	pairs, topicRole, err := cm.Requester.Register(
 		context.Background(),
 		pubkey,
 		messagesWanted,
 		shardID,
 		cm.LocalHost.Host.ID(),
+		role,
 	)
 	if err != nil {
 		return nil, userRole{}, err
@@ -495,9 +494,9 @@ func (cm *ConnManager) registerToProxy(
 		}
 	}
 	r := userRole{
-		layer:   role.Layer,
-		role:    role.Role,
-		shardID: int(role.Shard),
+		layer:   topicRole.Layer,
+		role:    topicRole.Role,
+		shardID: int(topicRole.Shard),
 	}
 	return topics, r, nil
 }

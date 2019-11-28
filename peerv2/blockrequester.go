@@ -59,6 +59,7 @@ func (c *BlockRequester) Register(
 	messages []string,
 	committeeIDs []byte,
 	selfID peer.ID,
+	role string,
 ) ([]*MessageTopicPair, *UserRole, error) {
 	if !c.Ready() {
 		return nil, nil, errors.New("requester not ready")
@@ -72,6 +73,7 @@ func (c *BlockRequester) Register(
 			WantedMessages:     messages,
 			CommitteeID:        committeeIDs,
 			PeerID:             peer.IDB58Encode(selfID),
+			Role:               role,
 		},
 	)
 	if err != nil {
