@@ -160,9 +160,44 @@ func (c *BlockRequester) GetBlockShardToBeaconByHeight(
 		},
 	)
 	if err != nil {
+		Logger.Infof("[sync] Received err by heights: %v from = %v to = %v;", err, from, to)
 		return nil, err
 	} else if reply != nil {
-		Logger.Infof("Received block s2b data len: %v", len(reply.Data))
+		Logger.Infof("[sync] Received block s2b data len by heights: %v from = %v to = %v", len(reply.Data), from, to)
+		// Logger.Infof("Received block s2b data len: %v", len(reply.Data))
+	}
+	return reply.Data, nil
+}
+
+func (c *BlockRequester) GetBlkShardToBeaconByHeight(
+	shardID int32,
+	bySpecific bool,
+	from uint64,
+	heights []uint64,
+	to uint64,
+) ([][]byte, error) {
+	if !c.Ready() {
+		return nil, errors.New("requester not ready")
+	}
+
+	Logger.Infof("[sync] Requesting blkshdtobcn by specific height %v: from = %v to = %v; Heights: %v", bySpecific, from, to, heights)
+	client := NewHighwayServiceClient(c.conn)
+	reply, err := client.GetBlockShardToBeaconByHeight(
+		context.Background(),
+		&GetBlockShardToBeaconByHeightRequest{
+			FromShard:  shardID,
+			Specific:   bySpecific,
+			FromHeight: from,
+			ToHeight:   to,
+			Heights:    heights,
+			FromPool:   false,
+		},
+	)
+	if err != nil {
+		Logger.Infof("[sync] Received err: %v from = %v to = %v; Heights: %v", err, from, to, heights)
+		return nil, err
+	} else if reply != nil {
+		Logger.Infof("[sync] Received block s2b data len: %v from = %v to = %v; Heights: %v ", len(reply.Data), from, to, heights)
 	}
 	return reply.Data, nil
 }
