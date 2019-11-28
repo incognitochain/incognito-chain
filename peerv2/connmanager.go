@@ -19,7 +19,6 @@ import (
 
 // TODO REMOVE HARDCODE
 var HighwayPeerID = "QmSPa4gxx6PRmoNRu6P2iFwEwmayaoLdR5By3i3MgM9gMv"
-var MasterNodeID = "QmVsCnV9kRZ182MX11CpcHMyFAReyXV49a599AbqmwtNrV"
 var HighwayBeaconID = byte(255)
 
 func NewConnManager(
@@ -31,15 +30,13 @@ func NewConnManager(
 	nodeMode string,
 	relayShard []byte,
 ) *ConnManager {
-	master := peer.IDB58Encode(host.Host.ID()) == MasterNodeID
-	Logger.Info("IsMasterNode:", master)
 	return &ConnManager{
 		LocalHost:            host,
 		DiscoverPeersAddress: dpa,
 		IdentityKey:          ikey,
 		cd:                   cd,
 		disp:                 dispatcher,
-		IsMasterNode:         master,
+		IsMasterNode:         false,
 		registerRequests:     make(chan int, 100),
 		relayShard:           relayShard,
 		nodeMode:             nodeMode,
@@ -138,6 +135,7 @@ func (cm *ConnManager) BroadcastCommittee(
 	newAllShardCommittee map[byte][]incognitokey.CommitteePublicKey,
 	newAllShardPending map[byte][]incognitokey.CommitteePublicKey,
 ) {
+	// NOTE: disabled feature, always return for now
 	if !cm.IsMasterNode {
 		return
 	}
@@ -345,9 +343,12 @@ func (cm *ConnManager) subscribe(role userRole, topics m2t, forced bool) (userRo
 	if roleSID == -2 { // normal node
 		roleSID = -1
 	}
-	shardIDs := []byte{byte(roleSID)}
+	shardIDs := []byte{}
 	if cm.nodeMode == common.NodeModeRelay {
-		shardIDs = append(cm.relayShard, HighwayBeaconID)
+		shardIDs = cm.relayShard
+		shardIDs = append(shardIDs, HighwayBeaconID)
+	} else {
+		shardIDs = append(shardIDs, byte(roleSID))
 	}
 	newTopics, roleOfTopics, err := cm.registerToProxy(pubkey, newRole.layer, shardIDs)
 	if err != nil {
