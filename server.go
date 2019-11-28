@@ -1721,7 +1721,6 @@ func (serverObj *Server) PushMessageGetBlockCrossShardBySpecificHeight(fromShard
 }
 
 func (serverObj *Server) PublishNodeState() error {
-	listener := serverObj.connManager.GetConfig().ListenerPeer
 	userKey, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
 	var userRole string
 	var shardID byte
@@ -1763,12 +1762,10 @@ func (serverObj *Server) PublishNodeState() error {
 	if err != nil {
 		return err
 	}
-	msg.SetSenderID(listener.GetPeerID())
-	fmt.Printf("PeerID send to Proxy when publish node state %v \n", listener.GetPeerID())
 	if err != nil {
 		return err
 	}
-	Logger.log.Debugf("Publish peerstate from %s", listener.GetRawAddress())
+	Logger.log.Debugf("Publish peerstate")
 	serverObj.PushMessageToAll(msg)
 	return nil
 }
