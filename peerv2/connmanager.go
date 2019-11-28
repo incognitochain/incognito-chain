@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"log"
 	"reflect"
 	"time"
 
@@ -33,7 +32,7 @@ func NewConnManager(
 	relayShard []byte,
 ) *ConnManager {
 	master := peer.IDB58Encode(host.Host.ID()) == MasterNodeID
-	log.Println("IsMasterNode:", master)
+	Logger.Info("IsMasterNode:", master)
 	return &ConnManager{
 		LocalHost:            host,
 		DiscoverPeersAddress: dpa,
@@ -57,15 +56,15 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 		topic = ""
 		if msgType == p {
 			for _, availableTopic := range cm.subs[msgType] {
-				// fmt.Println("[hy]", availableTopic)
+				// Logger.Info("[hy]", availableTopic)
 				if (availableTopic.Act == MessageTopicPair_PUB) || (availableTopic.Act == MessageTopicPair_PUBSUB) {
 					topic = availableTopic.Name
 					// if p == wire.CmdTx {
-					// 	fmt.Printf("[hy] broadcast tx to topic %v\n", topic)
+					// 	Logger.Errorf("[hy] broadcast tx to topic %v", topic)
 					// }
 					err := broadcastMessage(msg, topic, cm.ps)
 					if err != nil {
-						fmt.Printf("Broadcast to topic %v error %v\n", topic, err)
+						Logger.Errorf("Broadcast to topic %v error %v", topic, err)
 						return err
 					}
 				}
@@ -89,7 +88,7 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 		if msgType == p {
 			// Get topic for mess
 			for _, availableTopic := range cm.subs[msgType] {
-				fmt.Println(availableTopic)
+				Logger.Info(availableTopic)
 				cID := GetCommitteeIDOfTopic(availableTopic.Name)
 				if (byte(cID) == shardID) && ((availableTopic.Act == MessageTopicPair_PUB) || (availableTopic.Act == MessageTopicPair_PUBSUB)) {
 					return broadcastMessage(msg, availableTopic.Name, cm.ps)
@@ -98,7 +97,7 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 		}
 	}
 
-	log.Println("Cannot publish message", msgType)
+	Logger.Warn("Cannot publish message", msgType)
 	return nil
 }
 
@@ -143,7 +142,7 @@ func (cm *ConnManager) BroadcastCommittee(
 		return
 	}
 
-	log.Println("Broadcasting committee to highways!!!")
+	Logger.Info("Broadcasting committee to highways!!!")
 	cc := &incognitokey.ChainCommittee{
 		Epoch:             epoch,
 		BeaconCommittee:   newBeaconCommittee,
@@ -152,14 +151,14 @@ func (cm *ConnManager) BroadcastCommittee(
 	}
 	data, err := cc.ToByte()
 	if err != nil {
-		log.Println(err)
+		Logger.Error(err)
 		return
 	}
 
 	topic := "chain_committee"
 	err = cm.ps.Publish(topic, data)
 	if err != nil {
-		log.Println(err)
+		Logger.Error(err)
 	}
 }
 
@@ -201,11 +200,9 @@ func (cm *ConnManager) process() {
 	for {
 		select {
 		case msg := <-cm.messages:
-			// fmt.Println("[db] go cm.disp.processInMessageString(string(msg.Data))")
-			// go cm.disp.processInMessageString(string(msg.Data))
 			err := cm.disp.processInMessageString(string(msg.Data))
 			if err != nil {
-				log.Println(err)
+				Logger.Warn(err)
 			}
 		}
 	}
@@ -235,16 +232,16 @@ func (cm *ConnManager) keepHighwayConnection(connectedOnce chan error) {
 		var err error
 		if net.Connectedness(pid) != network.Connected {
 			disconnected = true
-			log.Println("Not connected to highway, connecting")
+			Logger.Info("Not connected to highway, connecting")
 			ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
 			if err = cm.LocalHost.Host.Connect(ctx, peerInfo); err != nil {
-				log.Println("Could not connect to highway:", err, peerInfo)
+				Logger.Errorf("Could not connect to highway: %v %v", err, peerInfo)
 			}
 		}
 
 		if disconnected && net.Connectedness(pid) == network.Connected {
 			// Register again since this might be a new highway
-			log.Println("Connected to highway, sending register request")
+			Logger.Info("Connected to highway, sending register request")
 			cm.registerRequests <- 1
 			disconnected = false
 		}
@@ -262,8 +259,7 @@ func encodeMessage(msg wire.Message) (string, error) {
 	// Create messageHex
 	messageBytes, err := msg.JsonSerialize()
 	if err != nil {
-		fmt.Println("Can not serialize json format for messageHex:" + msg.MessageType())
-		fmt.Println(err)
+		Logger.Error("Can not serialize json format for messageHex:"+msg.MessageType(), err)
 		return "", err
 	}
 
@@ -272,8 +268,7 @@ func encodeMessage(msg wire.Message) (string, error) {
 	// add command type of message
 	cmdType, messageErr := wire.GetCmdType(reflect.TypeOf(msg))
 	if messageErr != nil {
-		fmt.Println("Can not get cmd type for " + msg.MessageType())
-		fmt.Println(messageErr)
+		Logger.Error("Can not get cmd type for "+msg.MessageType(), messageErr)
 		return "", err
 	}
 	copy(headerBytes[:], []byte(cmdType))
@@ -283,13 +278,12 @@ func encodeMessage(msg wire.Message) (string, error) {
 	copy(headerBytes[wire.MessageCmdTypeSize:], []byte{forwardType})
 	copy(headerBytes[wire.MessageCmdTypeSize+1:], []byte{forwardValue})
 	messageBytes = append(messageBytes, headerBytes...)
-	log.Printf("Encoded message TYPE %s CONTENT %s", cmdType, string(messageBytes))
+	// Logger.Infof("Encoded message TYPE %s CONTENT %s", cmdType, string(messageBytes))
 
 	// zip data before send
 	messageBytes, err = common.GZipFromBytes(messageBytes)
 	if err != nil {
-		fmt.Println("Can not gzip for messageHex:" + msg.MessageType())
-		fmt.Println(err)
+		Logger.Error("Can not gzip for messageHex:"+msg.MessageType(), err)
 		return "", err
 	}
 	messageHex := hex.EncodeToString(messageBytes)
@@ -307,7 +301,7 @@ func broadcastMessage(msg wire.Message, topic string, ps *pubsub.PubSub) error {
 	}
 
 	// Broadcast
-	fmt.Printf("Publishing to topic %s\n", topic)
+	Logger.Infof("Publishing to topic %s", topic)
 	return ps.Publish(topic, []byte(messageHex))
 }
 
@@ -322,13 +316,13 @@ func (cm *ConnManager) manageRoleSubscription() {
 		case <-time.Tick(10 * time.Second):
 			role, topics, err = cm.subscribe(role, topics, forced)
 			if err != nil {
-				log.Printf("subscribe failed: %v %+v", forced, err)
+				Logger.Errorf("subscribe failed: %v %+v", forced, err)
 			} else {
 				forced = false
 			}
 
 		case <-cm.registerRequests:
-			log.Println("Received request to register")
+			Logger.Info("Received request to register")
 			forced = true // register no matter if role changed or not
 		}
 	}
@@ -339,7 +333,7 @@ func (cm *ConnManager) subscribe(role userRole, topics m2t, forced bool) (userRo
 	if newRole == role && !forced { // Not forced => no need to subscribe when role stays the same
 		return newRole, topics, nil
 	}
-	log.Printf("Role changed: %v -> %v", role, newRole)
+	Logger.Infof("Role changed: %v -> %v", role, newRole)
 
 	if newRole.role == common.WaitingRole && !forced { // Not forced => no need to subscribe when role is Waiting
 		return newRole, topics, nil
@@ -364,7 +358,7 @@ func (cm *ConnManager) subscribe(role userRole, topics m2t, forced bool) (userRo
 		return role, topics, errors.Errorf("lole not matching with highway, local = %+v, highway = %+v", newRole, roleOfTopics)
 	}
 
-	log.Printf("Received topics = %+v, oldTopics = %+v", newTopics, topics)
+	Logger.Infof("Received topics = %+v, oldTopics = %+v", newTopics, topics)
 
 	// Subscribing
 	if err := cm.subscribeNewTopics(newTopics, topics); err != nil {
@@ -403,22 +397,22 @@ func (cm *ConnManager) subscribeNewTopics(newTopics, subscribed m2t) error {
 
 	// Subscribe to new topics
 	for m, topicList := range newTopics {
-		fmt.Printf("Process message %v and topic %v\n", m, topicList)
+		Logger.Infof("Process message %v and topic %v", m, topicList)
 		for _, t := range topicList {
 
 			if found(t.Name, subscribed) {
-				fmt.Printf("Countinue 1 %v %v\n", t.Name, subscribed)
+				Logger.Infof("Countinue 1 %v %v", t.Name, subscribed)
 				continue
 			}
 
 			// TODO(@0xakk0r0kamui): check here
 			if t.Act == MessageTopicPair_PUB {
 				cm.subs[m] = append(cm.subs[m], Topic{Name: t.Name, Sub: nil, Act: t.Act})
-				fmt.Printf("Countinue 2 %v %v\n", t.Name, subscribed)
+				Logger.Infof("Countinue 2 %v %v", t.Name, subscribed)
 				continue
 			}
 
-			fmt.Println("[db] subscribing", m, t.Name)
+			Logger.Info("subscribing", m, t.Name)
 
 			s, err := cm.ps.Subscribe(t.Name)
 			if err != nil {
@@ -441,7 +435,7 @@ func (cm *ConnManager) subscribeNewTopics(newTopics, subscribed m2t) error {
 				continue
 			}
 
-			fmt.Println("[db] unsubscribing", m, t.Name)
+			Logger.Info("unsubscribing", m, t.Name)
 			for _, s := range cm.subs[m] {
 				if s.Name == t.Name {
 					s.Sub.Cancel() // TODO(@0xbunyip): lock
@@ -460,7 +454,7 @@ func processSubscriptionMessage(inbox chan *pubsub.Message, sub *pubsub.Subscrip
 		// TODO(@0xbunyip): check if topic is unsubbed then return, otherwise just continue
 		msg, err := sub.Next(ctx)
 		if err != nil { // Subscription might have been cancelled
-			log.Println(err)
+			Logger.Warn(err)
 			return
 		}
 
@@ -476,7 +470,7 @@ func (cm *ConnManager) registerToProxy(
 	shardID []byte,
 ) (m2t, userRole, error) {
 	messagesWanted := getMessagesForLayer(cm.nodeMode, layer, shardID)
-	fmt.Printf("-%v-;;;-%v-;;;-%v-;;;\n", messagesWanted, cm.nodeMode, shardID)
+	Logger.Infof("-%v-;;;-%v-;;;-%v-;;;", messagesWanted, cm.nodeMode, shardID)
 	// os.Exit(9)
 	pairs, role, err := cm.Requester.Register(
 		context.Background(),
