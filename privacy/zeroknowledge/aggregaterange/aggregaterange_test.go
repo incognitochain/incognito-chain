@@ -65,8 +65,8 @@ func TestInnerProduct(t *testing.T) {
 }
 
 func TestEncodeVectors(t *testing.T) {
-	for i:= 0; i<100; i++ {
-		var AggParam= newBulletproofParams(1)
+	for i := 0; i < 100; i++ {
+		var AggParam = newBulletproofParams(1)
 		n := maxExp
 		a := make([]*privacy.Scalar, n)
 		b := make([]*privacy.Scalar, n)
@@ -95,9 +95,8 @@ func TestEncodeVectors(t *testing.T) {
 	}
 }
 
-
 func TestAggregatedRangeProveVerify(t *testing.T) {
-	for i:= 0; i<50; i++{
+	for i := 0; i < 10; i++ {
 		//prepare witness for Aggregated range protocol
 		wit := new(AggregatedRangeWitness)
 		numValue := rand.Intn(maxOutputNumber)
@@ -151,7 +150,7 @@ func TestAggregatedRangeProveVerify(t *testing.T) {
 }
 
 func TestInnerProductProveVerify(t *testing.T) {
-	for k :=0; k< 100; k++ {
+	for k := 0; k < 10; k++ {
 		numValue := rand.Intn(maxOutputNumber)
 		numValuePad := pad(numValue)
 		aggParam := new(bulletproofParams)
@@ -161,7 +160,7 @@ func TestInnerProductProveVerify(t *testing.T) {
 		aggParam.cs = AggParam.cs
 
 		wit := new(InnerProductWitness)
-		n := maxExp*numValuePad
+		n := maxExp * numValuePad
 		wit.a = make([]*privacy.Scalar, n)
 		wit.b = make([]*privacy.Scalar, n)
 
@@ -217,7 +216,7 @@ func benchmarkAggRangeProof_Proof(numberofOutput int, b *testing.B) {
 
 	b.ResetTimer()
 
-	for i:=0; i< b.N; i++ {
+	for i := 0; i < b.N; i++ {
 		wit.Prove()
 	}
 }
@@ -236,7 +235,7 @@ func benchmarkAggRangeProof_Verify(numberofOutput int, b *testing.B) {
 
 	b.ResetTimer()
 
-	for i:=0; i< b.N; i++ {
+	for i := 0; i < b.N; i++ {
 		proof.Verify()
 	}
 }
@@ -255,27 +254,37 @@ func benchmarkAggRangeProof_VerifyFaster(numberofOutput int, b *testing.B) {
 
 	b.ResetTimer()
 
-	for i:=0; i< b.N; i++ {
+	for i := 0; i < b.N; i++ {
 		proof.VerifyFaster()
 	}
 }
 
-func BenchmarkAggregatedRangeWitness_Prove1(b *testing.B) {benchmarkAggRangeProof_Proof(1,b)}
-func BenchmarkAggregatedRangeProof_Verify1(b *testing.B) {benchmarkAggRangeProof_Verify(1,b)}
-func BenchmarkAggregatedRangeProof_VerifyFaster1(b *testing.B) {benchmarkAggRangeProof_VerifyFaster(1,b)}
+func BenchmarkAggregatedRangeWitness_Prove1(b *testing.B) { benchmarkAggRangeProof_Proof(1, b) }
+func BenchmarkAggregatedRangeProof_Verify1(b *testing.B)  { benchmarkAggRangeProof_Verify(1, b) }
+func BenchmarkAggregatedRangeProof_VerifyFaster1(b *testing.B) {
+	benchmarkAggRangeProof_VerifyFaster(1, b)
+}
 
-func BenchmarkAggregatedRangeWitness_Prove2(b *testing.B) {benchmarkAggRangeProof_Proof(2,b)}
-func BenchmarkAggregatedRangeProof_Verify2(b *testing.B) {benchmarkAggRangeProof_Verify(2,b)}
-func BenchmarkAggregatedRangeProof_VerifyFaster2(b *testing.B) {benchmarkAggRangeProof_VerifyFaster(2,b)}
+func BenchmarkAggregatedRangeWitness_Prove2(b *testing.B) { benchmarkAggRangeProof_Proof(2, b) }
+func BenchmarkAggregatedRangeProof_Verify2(b *testing.B)  { benchmarkAggRangeProof_Verify(2, b) }
+func BenchmarkAggregatedRangeProof_VerifyFaster2(b *testing.B) {
+	benchmarkAggRangeProof_VerifyFaster(2, b)
+}
 
-func BenchmarkAggregatedRangeWitness_Prove4(b *testing.B) {benchmarkAggRangeProof_Proof(4,b)}
-func BenchmarkAggregatedRangeProof_Verify4(b *testing.B) {benchmarkAggRangeProof_Verify(4,b)}
-func BenchmarkAggregatedRangeProof_VerifyFaster4(b *testing.B) {benchmarkAggRangeProof_VerifyFaster(4,b)}
+func BenchmarkAggregatedRangeWitness_Prove4(b *testing.B) { benchmarkAggRangeProof_Proof(4, b) }
+func BenchmarkAggregatedRangeProof_Verify4(b *testing.B)  { benchmarkAggRangeProof_Verify(4, b) }
+func BenchmarkAggregatedRangeProof_VerifyFaster4(b *testing.B) {
+	benchmarkAggRangeProof_VerifyFaster(4, b)
+}
 
-func BenchmarkAggregatedRangeWitness_Prove8(b *testing.B) {benchmarkAggRangeProof_Proof(8,b)}
-func BenchmarkAggregatedRangeProof_Verify8(b *testing.B) {benchmarkAggRangeProof_Verify(8,b)}
-func BenchmarkAggregatedRangeProof_VerifyFaster8(b *testing.B) {benchmarkAggRangeProof_VerifyFaster(8,b)}
+func BenchmarkAggregatedRangeWitness_Prove8(b *testing.B) { benchmarkAggRangeProof_Proof(8, b) }
+func BenchmarkAggregatedRangeProof_Verify8(b *testing.B)  { benchmarkAggRangeProof_Verify(8, b) }
+func BenchmarkAggregatedRangeProof_VerifyFaster8(b *testing.B) {
+	benchmarkAggRangeProof_VerifyFaster(8, b)
+}
 
-func BenchmarkAggregatedRangeWitness_Prove16(b *testing.B) {benchmarkAggRangeProof_Proof(16,b)}
-func BenchmarkAggregatedRangeProof_Verify16(b *testing.B) {benchmarkAggRangeProof_Verify(16,b)}
-func BenchmarkAggregatedRangeProof_VerifyFaster16(b *testing.B) {benchmarkAggRangeProof_VerifyFaster(16,b)}
+func BenchmarkAggregatedRangeWitness_Prove16(b *testing.B) { benchmarkAggRangeProof_Proof(16, b) }
+func BenchmarkAggregatedRangeProof_Verify16(b *testing.B)  { benchmarkAggRangeProof_Verify(16, b) }
+func BenchmarkAggregatedRangeProof_VerifyFaster16(b *testing.B) {
+	benchmarkAggRangeProof_VerifyFaster(16, b)
+}

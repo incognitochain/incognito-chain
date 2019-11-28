@@ -18,29 +18,32 @@ type bulletproofParams struct {
 	g []*privacy.Point
 	h []*privacy.Point
 	u *privacy.Point
-	cs *privacy.Scalar
+	cs []byte
 }
 
 var AggParam = newBulletproofParams(numOutputParam)
 
 func newBulletproofParams(m int) *bulletproofParams {
 	gen := new(bulletproofParams)
+	gen.cs = []byte{}
 	capacity := maxExp * m // fixed value
 	gen.g = make([]*privacy.Point, capacity)
 	gen.h = make([]*privacy.Point, capacity)
-	csByte := []byte{}
+	csByteH := []byte{}
+	csByteG := []byte{}
 	for i := 0; i < capacity; i++ {
 		gen.g[i] = privacy.HashToPointFromIndex(int64(numCommitValue + i))
 		gen.h[i] = privacy.HashToPointFromIndex(int64(numCommitValue + i + maxOutputNumber*maxExp))
-		csByte = append(csByte, gen.g[i].ToBytesS()...)
-		csByte = append(csByte, gen.h[i].ToBytesS()...)
+		csByteG = append(csByteG, gen.g[i].ToBytesS()...)
+		csByteH = append(csByteH, gen.h[i].ToBytesS()...)
 	}
 
 	gen.u = new(privacy.Point)
 	gen.u = privacy.HashToPointFromIndex(int64(numCommitValue + 2*maxOutputNumber*maxExp))
 
-	csByte = append(csByte, gen.u.ToBytesS()...)
-	gen.cs = privacy.HashToScalar(csByte)
+	gen.cs = append(gen.cs, csByteG...)
+	gen.cs = append(gen.cs, csByteH...)
+	gen.cs = append(gen.cs, gen.u.ToBytesS()...)
 
 	return gen
 }
