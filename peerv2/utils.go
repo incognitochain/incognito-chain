@@ -1,7 +1,6 @@
 package peerv2
 
 import (
-	"fmt"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -25,7 +24,7 @@ func ParseListenner(s, defaultIP string, defaultPort int) (string, int) {
 
 func generateRand() []byte {
 	res := make([]byte, 40)
-	fmt.Println(time.Now().UnixNano())
+	Logger.Info(time.Now().UnixNano())
 	rand.Seed(int64(time.Now().Nanosecond()))
 	for i := 0; i < 40; i++ {
 		rand := byte(rand.Intn(256))
