@@ -476,13 +476,20 @@ func (cm *ConnManager) registerToProxy(
 	shardID []byte,
 ) (m2t, userRole, error) {
 	messagesWanted := getMessagesForLayer(cm.nodeMode, layer, shardID)
-	Logger.Infof("Registering: %v %v %v %v %v", messagesWanted, cm.nodeMode, layer, role, shardID)
+	pid := cm.LocalHost.Host.ID()
+	Logger.Infof("Registering: message: %v", messagesWanted)
+	Logger.Infof("Registering: nodeMode: %v", cm.nodeMode)
+	Logger.Infof("Registering: layer: %v", layer)
+	Logger.Infof("Registering: role: %v", role)
+	Logger.Infof("Registering: shardID: %v", shardID)
+	Logger.Infof("Registering: peerID: %v", pid.String())
+	Logger.Infof("Registering: pubkey: %v", pubkey)
 	pairs, topicRole, err := cm.Requester.Register(
 		context.Background(),
 		pubkey,
 		messagesWanted,
 		shardID,
-		cm.LocalHost.Host.ID(),
+		pid,
 		role,
 	)
 	if err != nil {
