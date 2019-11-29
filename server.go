@@ -1586,7 +1586,7 @@ func (serverObj *Server) PushMessageGetBlockShardByHeight(shardID byte, from uin
 
 func (serverObj *Server) PushMessageGetBlockShardBySpecificHeight(shardID byte, heights []uint64, getFromPool bool) error {
 
-	msgs, err := serverObj.highway.Requester.GetBlockShardToBeaconByHeight(int32(shardID), 0, 0)
+	msgs, err := serverObj.highway.Requester.GetBlockShardByHeight(int32(shardID), 0, 0)
 	if err != nil {
 		Logger.log.Error(err)
 		return err
@@ -1628,7 +1628,13 @@ func (serverObj *Server) PushMessageGetBlockShardByHash(shardID byte, blksHash [
 }
 
 func (serverObj *Server) PushMessageGetBlockShardToBeaconByHeight(shardID byte, from uint64, to uint64) error {
-	msgs, err := serverObj.highway.Requester.GetBlockShardToBeaconByHeight(int32(shardID), from, to)
+	msgs, err := serverObj.highway.Requester.GetBlkShardToBeaconByHeight(
+		int32(shardID),
+		false, // by Specific
+		from,  // sfrom
+		nil,   // nil because request via [from:to]
+		to,    // to
+	)
 	if err != nil {
 		Logger.log.Error(err)
 		return err
