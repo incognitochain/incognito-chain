@@ -22,7 +22,6 @@ func (bp *BlockProvider) Register(ctx context.Context, req *RegisterRequest) (*R
 
 func (bp *BlockProvider) GetBlockShardByHeight(ctx context.Context, req *GetBlockShardByHeightRequest) (*GetBlockShardByHeightResponse, error) {
 	Logger.Info("Receive GetBlockShardByHeight request")
-	// blkType := byte(0) // TODO(@0xbunyip): define in common file
 	blkMsgs := bp.NetSync.GetBlockShardByHeight(
 		req.FromPool,
 		blockShard,
@@ -75,7 +74,6 @@ func (bp *BlockProvider) GetBlockBeaconByHash(ctx context.Context, req *GetBlock
 
 func (bp *BlockProvider) GetBlockCrossShardByHeight(ctx context.Context, req *GetBlockCrossShardByHeightRequest) (*GetBlockCrossShardByHeightResponse, error) {
 	Logger.Info("Receive GetBlockCrossShardByHeight request:", req.Heights)
-	// blkType := byte(1) // TODO(@0xbunyip): define in common file
 	blkMsgs := bp.NetSync.GetBlockShardByHeight(
 		req.FromPool,
 		crossShard,
@@ -108,7 +106,6 @@ func (bp *BlockProvider) GetBlockShardToBeaconByHeight(ctx context.Context, req 
 	if req.Specific {
 		reqHeights = req.Heights
 	}
-	// blkType := byte(2) // TODO(@0xbunyip): define in common file
 	blkMsgs := bp.NetSync.GetBlockShardByHeight(
 		req.FromPool,
 		shardToBeacon,
