@@ -217,7 +217,6 @@ func (shardToBeaconPool *ShardToBeaconPool) addShardToBeaconBlock(block *blockch
 		}
 		return shardToBeaconPool.latestValidHeight[shardID] + 1, shardToBeaconPool.pool[shardID][0].Header.Height + 1, nil
 	}
-	Logger.log.Infof("[sync] WTF? %v %v Shard %v", shardToBeaconPool.pool[shardID][0].Header.Height, shardToBeaconPool.latestValidHeight[shardID], shardID)
 
 	return 0, 0, nil
 }
@@ -304,7 +303,6 @@ func (shardToBeaconPool *ShardToBeaconPool) GetValidBlock(limit map[byte]uint64)
 	shardToBeaconPool.latestValidHeightMutex.Lock()
 	defer shardToBeaconPool.latestValidHeightMutex.Unlock()
 	finalBlocks := make(map[byte][]*blockchain.ShardToBeaconBlock)
-	Logger.log.Infof("In GetValidBlock pool: %+v", shardToBeaconPool.pool)
 	for shardID, blks := range shardToBeaconPool.pool {
 		shardToBeaconPool.checkLatestValidHeightValidity(shardID)
 		for i, blk := range blks {
