@@ -77,7 +77,7 @@ const (
 	Testnet                 = 0x16
 	TestnetName             = "testnet"
 	TestnetDefaultPort      = "9444"
-	TestnetGenesisBlockTime = "2019-10-21T00:00:20.000Z"
+	TestnetGenesisBlockTime = "2019-11-29T00:00:00.000Z"
 	TestnetEpoch            = 100
 	TestnetRandomTime       = 50
 	TestnetOffset           = 1
