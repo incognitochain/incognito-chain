@@ -137,38 +137,6 @@ func (c *BlockRequester) GetBlockBeaconByHeight(
 	return reply.Data, nil
 }
 
-func (c *BlockRequester) GetBlockShardToBeaconByHeight(
-	shardID int32,
-	from uint64,
-	to uint64,
-) ([][]byte, error) {
-	if !c.Ready() {
-		return nil, errors.New("requester not ready")
-	}
-
-	Logger.Infof("Requesting blkshdtobcn by height: from = %v to = %v", from, to)
-	client := NewHighwayServiceClient(c.conn)
-	reply, err := client.GetBlockShardToBeaconByHeight(
-		context.Background(),
-		&GetBlockShardToBeaconByHeightRequest{
-			FromShard:  shardID,
-			Specific:   false,
-			FromHeight: from,
-			ToHeight:   to,
-			Heights:    nil,
-			FromPool:   false,
-		},
-	)
-	if err != nil {
-		Logger.Infof("[sync] Received err by heights: %v from = %v to = %v;", err, from, to)
-		return nil, err
-	} else if reply != nil {
-		Logger.Infof("[sync] Received block s2b data len by heights: %v from = %v to = %v", len(reply.Data), from, to)
-		// Logger.Infof("Received block s2b data len: %v", len(reply.Data))
-	}
-	return reply.Data, nil
-}
-
 func (c *BlockRequester) GetBlkShardToBeaconByHeight(
 	shardID int32,
 	bySpecific bool,
