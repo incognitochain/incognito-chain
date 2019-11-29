@@ -137,7 +137,7 @@ func (c *BlockRequester) GetBlockBeaconByHeight(
 	return reply.Data, nil
 }
 
-func (c *BlockRequester) GetBlkShardToBeaconByHeight(
+func (c *BlockRequester) GetBlockShardToBeaconByHeight(
 	shardID int32,
 	bySpecific bool,
 	from uint64,
