@@ -156,7 +156,8 @@ func (wit InnerProductWitness) Prove(aggParam *bulletproofParams) (*InnerProduct
 		proof.r = append(proof.r, R)
 
 		// calculate challenge x = hash(G || H || u || x || l || r)
-		x := generateChallenge([][]byte{aggParam.cs, p.ToBytesS(), L.ToBytesS(), R.ToBytesS()})
+		//x := generateChallenge([][]byte{aggParam.cs, p.ToBytesS(), L.ToBytesS(), R.ToBytesS()})
+		x := generateChallengeOld(AggParam, [][]byte{p.ToBytesS(), L.ToBytesS(), R.ToBytesS()})
 		xInverse := new(privacy.Scalar).Invert(x)
 		xSquare := new(privacy.Scalar).Mul(x, x)
 		xSquareInverse := new(privacy.Scalar).Mul(xInverse, xInverse)
