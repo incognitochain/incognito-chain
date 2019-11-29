@@ -59,9 +59,6 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 				// Logger.Info("[hy]", availableTopic)
 				if (availableTopic.Act == MessageTopicPair_PUB) || (availableTopic.Act == MessageTopicPair_PUBSUB) {
 					topic = availableTopic.Name
-					// if p == wire.CmdTx {
-					// 	Logger.Errorf("[hy] broadcast tx to topic %v", topic)
-					// }
 					err := broadcastMessage(msg, topic, cm.ps)
 					if err != nil {
 						Logger.Errorf("Broadcast to topic %v error %v", topic, err)
