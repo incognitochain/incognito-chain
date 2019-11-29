@@ -22,11 +22,10 @@ func (bp *BlockProvider) Register(ctx context.Context, req *RegisterRequest) (*R
 
 func (bp *BlockProvider) GetBlockShardByHeight(ctx context.Context, req *GetBlockShardByHeightRequest) (*GetBlockShardByHeightResponse, error) {
 	Logger.Info("Receive GetBlockShardByHeight request")
-	blkType := byte(0) // TODO(@0xbunyip): define in common file
 	blkMsgs := bp.NetSync.GetBlockShardByHeight(
 		req.FromPool,
-		blkType,
-		false,
+		blockShard,
+		req.Specific,
 		byte(req.Shard),
 		[]uint64{req.FromHeight, req.ToHeight},
 		0,
@@ -75,11 +74,10 @@ func (bp *BlockProvider) GetBlockBeaconByHash(ctx context.Context, req *GetBlock
 
 func (bp *BlockProvider) GetBlockCrossShardByHeight(ctx context.Context, req *GetBlockCrossShardByHeightRequest) (*GetBlockCrossShardByHeightResponse, error) {
 	Logger.Info("Receive GetBlockCrossShardByHeight request:", req.Heights)
-	blkType := byte(1) // TODO(@0xbunyip): define in common file
 	blkMsgs := bp.NetSync.GetBlockShardByHeight(
 		req.FromPool,
-		blkType,
-		true,
+		crossShard,
+		req.Specific,
 		byte(req.FromShard),
 		req.Heights,
 		byte(req.ToShard),
@@ -103,14 +101,17 @@ func (bp *BlockProvider) GetBlockCrossShardByHash(ctx context.Context, req *GetB
 }
 
 func (bp *BlockProvider) GetBlockShardToBeaconByHeight(ctx context.Context, req *GetBlockShardToBeaconByHeightRequest) (*GetBlockShardToBeaconByHeightResponse, error) {
-	Logger.Info("Receive GetBlockShardToBeaconByHeight request:", req.FromHeight, req.ToHeight)
-	blkType := byte(2) // TODO(@0xbunyip): define in common file
+	Logger.Info("[sync] Receive GetBlockShardToBeaconByHeight request:", req.FromHeight, req.ToHeight)
+	reqHeights := []uint64{req.FromHeight, req.ToHeight}
+	if req.Specific {
+		reqHeights = req.Heights
+	}
 	blkMsgs := bp.NetSync.GetBlockShardByHeight(
 		req.FromPool,
-		blkType,
-		false,
+		shardToBeacon,
+		req.Specific,
 		byte(req.FromShard),
-		[]uint64{req.FromHeight, req.ToHeight},
+		reqHeights,
 		0,
 	)
 	Logger.Info("BlockS2B received from netsync:", blkMsgs)
@@ -131,6 +132,7 @@ type BlockProvider struct {
 }
 
 type NetSync interface {
+	//GetBlockShardByHeight fromPool bool, blkType byte, specificHeight bool, shardID byte, blkHeights []uint64, crossShardID byte
 	GetBlockShardByHeight(bool, byte, bool, byte, []uint64, byte) []wire.Message
 	GetBlockBeaconByHeight(bool, bool, []uint64) []wire.Message
 }
