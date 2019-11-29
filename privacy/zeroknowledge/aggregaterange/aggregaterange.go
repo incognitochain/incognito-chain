@@ -198,7 +198,15 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	aggParam.g = AggParam.g[0 : numValuePad*maxExp]
 	aggParam.h = AggParam.h[0 : numValuePad*maxExp]
 	aggParam.u = AggParam.u
-	aggParam.cs = AggParam.cs
+	csByteH := []byte{}
+	csByteG := []byte{}
+	for i := 0; i < len(aggParam.g); i++ {
+		csByteG = append(csByteG, aggParam.g[i].ToBytesS()...)
+		csByteH = append(csByteH, aggParam.h[i].ToBytesS()...)
+	}
+	aggParam.cs = append(aggParam.cs, csByteG...)
+	aggParam.cs = append(aggParam.cs, csByteH...)
+	aggParam.cs = append(aggParam.cs, aggParam.u.ToBytesS()...)
 
 	values := make([]uint64, numValuePad)
 	rands := make([]*privacy.Scalar, numValuePad)
