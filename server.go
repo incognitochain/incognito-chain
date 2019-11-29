@@ -1628,7 +1628,7 @@ func (serverObj *Server) PushMessageGetBlockShardByHash(shardID byte, blksHash [
 }
 
 func (serverObj *Server) PushMessageGetBlockShardToBeaconByHeight(shardID byte, from uint64, to uint64) error {
-	msgs, err := serverObj.highway.Requester.GetBlkShardToBeaconByHeight(
+	msgs, err := serverObj.highway.Requester.GetBlockShardToBeaconByHeight(
 		int32(shardID),
 		false, // by Specific
 		from,  // sfrom
@@ -1670,7 +1670,7 @@ func (serverObj *Server) PushMessageGetBlockShardToBeaconBySpecificHeight(
 	getFromPool bool,
 	peerID libp2p.ID,
 ) error {
-	msgs, err := serverObj.highway.Requester.GetBlkShardToBeaconByHeight(
+	msgs, err := serverObj.highway.Requester.GetBlockShardToBeaconByHeight(
 		int32(shardID),
 		true,       //by Specific
 		0,          //from 0 to 0 because request via blkheights
