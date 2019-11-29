@@ -1062,37 +1062,35 @@ func (synker *Synker) syncMissingBlockInPool(
 	shardID int,
 ) error {
 	Logger.log.Infof("[sync] syncMissingBlockInPool")
-	listValidBlks := []uint64{}
 	listPendingBlks := []uint64{}
 	listBlkToSync := []uint64{}
 	start := uint64(1)
 	end := uint64(1)
-	if len(listValidBlks) != 0 {
-		start = listValidBlks[len(listValidBlks)-1]
-	}
 	if shardID == -1 {
-		listValidBlks = synker.blockchain.config.BeaconPool.GetAllBlockHeight()
 		start = synker.blockchain.config.BeaconPool.GetBeaconState()
 		listPendingBlks = synker.blockchain.config.BeaconPool.GetPendingBlockHeight()
 	} else {
-		listValidBlks = synker.blockchain.config.ShardPool[byte(shardID)].GetAllBlockHeight()
 		start = synker.blockchain.config.ShardPool[byte(shardID)].GetLatestValidBlockHeight()
 		listPendingBlks = synker.blockchain.config.ShardPool[byte(shardID)].GetPendingBlockHeight()
 	}
-	Logger.log.Infof("[sync] List valid %v %v %v ", start, listValidBlks, shardID)
+
 	// TODO Update this logic @0xakk0r0kamui
 
 	if len(listPendingBlks) != 0 {
+		if listPendingBlks[0] == start {
+			Logger.log.Infof("[sync] %v Don't have missing blocks", shardID)
+			return nil
+		}
 		end = listPendingBlks[0] + 1
 	}
 	for i := start; i <= end; i++ {
 		listBlkToSync = append(listBlkToSync, i)
 	}
-	Logger.log.Infof("[sync] %v Dont have blocks", shardID)
+	Logger.log.Infof("[sync] %v Don't have missing blocks", shardID)
 	if len(listBlkToSync) == 0 {
 		return nil
 	}
-	Logger.log.Infof("[sync] %v Sync missing block valid %v pending %v start %v list sync %v ", shardID, listValidBlks, listPendingBlks, start, listBlkToSync)
+	Logger.log.Infof("[sync] %v Sync missing block pending %v start %v list sync %v ", shardID, listPendingBlks, start, listBlkToSync)
 	if shardID == -1 {
 		// (false, false, false, nil, nil, currentBcnReqHeight, currentBcnReqHeight+DefaultMaxBlkReqPerPeer-1, libp2p.ID(""))
 		synker.SyncBlkBeacon(false, false, false, nil, listBlkToSync, listBlkToSync[0], listBlkToSync[len(listBlkToSync)-1], libp2p.ID("s"))
