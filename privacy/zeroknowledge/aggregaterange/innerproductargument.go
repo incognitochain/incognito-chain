@@ -157,7 +157,7 @@ func (wit InnerProductWitness) Prove(aggParam *bulletproofParams) (*InnerProduct
 
 		// calculate challenge x = hash(G || H || u || x || l || r)
 		//x := generateChallenge([][]byte{aggParam.cs, p.ToBytesS(), L.ToBytesS(), R.ToBytesS()})
-		x := generateChallengeOld(AggParam, [][]byte{p.ToBytesS(), L.ToBytesS(), R.ToBytesS()})
+		x := generateChallengeOld(aggParam, [][]byte{p.ToBytesS(), L.ToBytesS(), R.ToBytesS()})
 		xInverse := new(privacy.Scalar).Invert(x)
 		xSquare := new(privacy.Scalar).Mul(x, x)
 		xSquareInverse := new(privacy.Scalar).Mul(xInverse, xInverse)
@@ -201,23 +201,23 @@ func (wit InnerProductWitness) Prove(aggParam *bulletproofParams) (*InnerProduct
 
 	return proof, nil
 }
-func (proof InnerProductProof) Verify(AggParam *bulletproofParams) bool {
-	//var AggParam = newBulletproofParams(1)
+func (proof InnerProductProof) Verify(aggParam *bulletproofParams) bool {
+	//var aggParam = newBulletproofParams(1)
 	p := new(privacy.Point)
 	p.Set(proof.p)
 
-	n := len(AggParam.g)
+	n := len(aggParam.g)
 	G := make([]*privacy.Point, n)
 	H := make([]*privacy.Point, n)
 	for i := range G {
-		G[i] = new(privacy.Point).Set(AggParam.g[i])
-		H[i] = new(privacy.Point).Set(AggParam.h[i])
+		G[i] = new(privacy.Point).Set(aggParam.g[i])
+		H[i] = new(privacy.Point).Set(aggParam.h[i])
 	}
 
 	for i := range proof.l {
 		nPrime := n / 2
 		// calculate challenge x = hash(G || H || u || p || x || l || r)
-		x := generateChallenge([][]byte{AggParam.cs, p.ToBytesS(), proof.l[i].ToBytesS(), proof.r[i].ToBytesS()})
+		x := generateChallenge([][]byte{aggParam.cs, p.ToBytesS(), proof.l[i].ToBytesS(), proof.r[i].ToBytesS()})
 		xInverse := new(privacy.Scalar).Invert(x)
 		xSquare := new(privacy.Scalar).Mul(x, x)
 		xSquareInverse := new(privacy.Scalar).Mul(xInverse, xInverse)
@@ -242,7 +242,7 @@ func (proof InnerProductProof) Verify(AggParam *bulletproofParams) bool {
 
 	c := new(privacy.Scalar).Mul(proof.a, proof.b)
 	rightPoint := new(privacy.Point).AddPedersen(proof.a, G[0], proof.b, H[0])
-	rightPoint.Add(rightPoint, new(privacy.Point).ScalarMult(AggParam.u, c))
+	rightPoint.Add(rightPoint, new(privacy.Point).ScalarMult(aggParam.u, c))
 	res := privacy.IsPointEqual(rightPoint, p)
 	if !res {
 		privacy.Logger.Log.Error("Inner product argument failed:")
@@ -253,19 +253,19 @@ func (proof InnerProductProof) Verify(AggParam *bulletproofParams) bool {
 	return res
 }
 
-func (proof InnerProductProof) VerifyFaster(AggParam *bulletproofParams) bool {
-	//var AggParam = newBulletproofParams(1)
+func (proof InnerProductProof) VerifyFaster(aggParam *bulletproofParams) bool {
+	//var aggParam = newBulletproofParams(1)
 	p := new(privacy.Point)
 	p.Set(proof.p)
-	n := len(AggParam.g)
+	n := len(aggParam.g)
 	G := make([]*privacy.Point, n)
 	H := make([]*privacy.Point, n)
 	s := make([]*privacy.Scalar, n)
 	sInverse := make([]*privacy.Scalar, n)
 
 	for i := range G {
-		G[i] = new(privacy.Point).Set(AggParam.g[i])
-		H[i] = new(privacy.Point).Set(AggParam.h[i])
+		G[i] = new(privacy.Point).Set(aggParam.g[i])
+		H[i] = new(privacy.Point).Set(aggParam.h[i])
 		s[i] = new(privacy.Scalar).FromUint64(1)
 		sInverse[i] = new(privacy.Scalar).FromUint64(1)
 	}
@@ -279,7 +279,7 @@ func (proof InnerProductProof) VerifyFaster(AggParam *bulletproofParams) bool {
 
 	for i := range proof.l {
 		// calculate challenge x = hash(hash(G || H || u || p) || x || l || r)
-		xList[i] = generateChallenge([][]byte{AggParam.cs, p.ToBytesS(), proof.l[i].ToBytesS(), proof.r[i].ToBytesS()})
+		xList[i] = generateChallenge([][]byte{aggParam.cs, p.ToBytesS(), proof.l[i].ToBytesS(), proof.r[i].ToBytesS()})
 		xInverseList[i] = new(privacy.Scalar).Invert(xList[i])
 		xSquareList[i] = new(privacy.Scalar).Mul(xList[i], xList[i])
 		xInverseSquare_List[i] = new(privacy.Scalar).Mul(xInverseList[i], xInverseList[i])
@@ -307,7 +307,7 @@ func (proof InnerProductProof) VerifyFaster(AggParam *bulletproofParams) bool {
 	rightHSPart2.ScalarMult(rightHSPart2, proof.b)
 
 	rightHS := new(privacy.Point).Add(rightHSPart1, rightHSPart2)
-	rightHS.Add(rightHS, new(privacy.Point).ScalarMult(AggParam.u, c))
+	rightHS.Add(rightHS, new(privacy.Point).ScalarMult(aggParam.u, c))
 
 	leftHSPart1 := new(privacy.Point).MultiScalarMult(xSquareList, proof.l)
 	leftHSPart2 := new(privacy.Point).MultiScalarMult(xInverseSquare_List, proof.r)
