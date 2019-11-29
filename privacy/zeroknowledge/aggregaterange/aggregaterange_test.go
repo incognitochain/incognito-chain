@@ -96,7 +96,7 @@ func TestEncodeVectors(t *testing.T) {
 }
 
 func TestAggregatedRangeProveVerify(t *testing.T) {
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 1; i++ {
 		//prepare witness for Aggregated range protocol
 		wit := new(AggregatedRangeWitness)
 		numValue := rand.Intn(maxOutputNumber)
