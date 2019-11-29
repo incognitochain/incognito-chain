@@ -57,6 +57,26 @@ func generateChallenge(values [][]byte) *privacy.Scalar {
 	return hash
 }
 
+func generateChallengeOld(AggParam *bulletproofParams, values [][]byte) *privacy.Scalar {
+	bytes := []byte{}
+	for i := 0; i < len(AggParam.g); i++ {
+		bytes = append(bytes, AggParam.g[i].ToBytesS()...)
+	}
+
+	for i := 0; i < len(AggParam.h); i++ {
+		bytes = append(bytes, AggParam.h[i].ToBytesS()...)
+	}
+
+	bytes = append(bytes, AggParam.u.ToBytesS()...)
+
+	for i := 0; i < len(values); i++ {
+		bytes = append(bytes, values[i]...)
+	}
+
+	hash := privacy.HashToScalar(bytes)
+	return hash
+}
+
 // pad returns number has format 2^k that it is the nearest number to num
 func pad(num int) int {
 	if num == 1 || num == 2 {
