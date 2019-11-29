@@ -1082,14 +1082,19 @@ func (synker *Synker) syncMissingBlockInPool(
 			return nil
 		}
 		end = listPendingBlks[0] + 1
+	} else {
+		Logger.log.Infof("[sync] %v Don't have missing blocks", shardID)
+		return nil
 	}
+
 	for i := start; i <= end; i++ {
 		listBlkToSync = append(listBlkToSync, i)
 	}
-	Logger.log.Infof("[sync] %v Don't have missing blocks", shardID)
 	if len(listBlkToSync) == 0 {
+		Logger.log.Infof("[sync] %v Don't have missing blocks", shardID)
 		return nil
 	}
+
 	Logger.log.Infof("[sync] %v Sync missing block pending %v start %v list sync %v ", shardID, listPendingBlks, start, listBlkToSync)
 	if shardID == -1 {
 		// (false, false, false, nil, nil, currentBcnReqHeight, currentBcnReqHeight+DefaultMaxBlkReqPerPeer-1, libp2p.ID(""))
