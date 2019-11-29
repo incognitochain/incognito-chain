@@ -1586,7 +1586,7 @@ func (serverObj *Server) PushMessageGetBlockShardByHeight(shardID byte, from uin
 
 func (serverObj *Server) PushMessageGetBlockShardBySpecificHeight(shardID byte, heights []uint64, getFromPool bool) error {
 
-	msgs, err := serverObj.highway.Requester.GetBlockShardToBeaconByHeight(int32(shardID), 0, 0)
+	msgs, err := serverObj.highway.Requester.GetBlockShardByHeight(int32(shardID), 0, 0)
 	if err != nil {
 		Logger.log.Error(err)
 		return err
@@ -1628,7 +1628,13 @@ func (serverObj *Server) PushMessageGetBlockShardByHash(shardID byte, blksHash [
 }
 
 func (serverObj *Server) PushMessageGetBlockShardToBeaconByHeight(shardID byte, from uint64, to uint64) error {
-	msgs, err := serverObj.highway.Requester.GetBlockShardToBeaconByHeight(int32(shardID), from, to)
+	msgs, err := serverObj.highway.Requester.GetBlockShardToBeaconByHeight(
+		int32(shardID),
+		false, // by Specific
+		from,  // sfrom
+		nil,   // nil because request via [from:to]
+		to,    // to
+	)
 	if err != nil {
 		Logger.log.Error(err)
 		return err
@@ -1658,24 +1664,27 @@ func (serverObj *Server) PushMessageGetBlockShardToBeaconByHash(shardID byte, bl
 	return serverObj.PushMessageToPeer(msg, peerID)
 }
 
-func (serverObj *Server) PushMessageGetBlockShardToBeaconBySpecificHeight(shardID byte, blkHeights []uint64, getFromPool bool, peerID libp2p.ID) error {
-	Logger.log.Debugf("Send a GetShardToBeacon")
-	listener := serverObj.connManager.GetConfig().ListenerPeer
-	msg, err := wire.MakeEmptyMessage(wire.CmdGetShardToBeacon)
+func (serverObj *Server) PushMessageGetBlockShardToBeaconBySpecificHeight(
+	shardID byte,
+	blkHeights []uint64,
+	getFromPool bool,
+	peerID libp2p.ID,
+) error {
+	msgs, err := serverObj.highway.Requester.GetBlockShardToBeaconByHeight(
+		int32(shardID),
+		true,       //by Specific
+		0,          //from 0 to 0 because request via blkheights
+		blkHeights, //
+		0,          // to 0
+	)
 	if err != nil {
+		Logger.log.Error(err)
 		return err
 	}
-	msg.(*wire.MessageGetShardToBeacon).BySpecificHeight = true
-	msg.(*wire.MessageGetShardToBeacon).FromPool = getFromPool
-	msg.(*wire.MessageGetShardToBeacon).ShardID = shardID
-	msg.(*wire.MessageGetShardToBeacon).BlkHeights = blkHeights
-	msg.(*wire.MessageGetShardToBeacon).Timestamp = time.Now().Unix()
-	msg.SetSenderID(listener.GetPeerID())
-	Logger.log.Debugf("Send a GetShardToBeacon from %s", listener.GetRawAddress())
-	if peerID == "" {
-		return serverObj.PushMessageToShard(msg, shardID, map[libp2p.ID]bool{})
-	}
-	return serverObj.PushMessageToPeer(msg, peerID)
+
+	serverObj.putResponseMsgs(msgs)
+	return nil
+
 }
 
 func (serverObj *Server) PushMessageGetBlockCrossShardByHash(fromShard byte, toShard byte, blkHashes []common.Hash, getFromPool bool, peerID libp2p.ID) error {
@@ -1717,15 +1726,21 @@ func (serverObj *Server) PushMessageGetBlockCrossShardBySpecificHeight(fromShard
 }
 
 func (serverObj *Server) PublishNodeState() error {
+	Logger.log.Infof("[peerstate] Start Publish SelfPeerState")
 	listener := serverObj.connManager.GetConfig().ListenerPeer
 	userKey, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
-	var userRole string
-	var shardID byte
+	var (
+		userRole  string
+		shardID   int
+		userLayer string
+	)
 	if userKey != "" {
-		userRole, shardID = serverObj.blockChain.BestState.Beacon.GetPubkeyRole(userKey, serverObj.blockChain.BestState.Beacon.BestBlock.Header.Round)
+		// userRole, shardID = serverObj.blockChain.BestState.Beacon.GetPubkeyRole(userKey, serverObj.blockChain.BestState.Beacon.BestBlock.Header.Round)
+		userLayer, userRole, shardID = serverObj.consensusEngine.GetUserRole()
 	} else {
 		return errors.New("Can not load current mining key")
 	}
+	serverObj.GetNodeRole()
 	msg, err := wire.MakeEmptyMessage(wire.CmdPeerState)
 	if err != nil {
 		return err
@@ -1736,23 +1751,23 @@ func (serverObj *Server) PublishNodeState() error {
 		serverObj.blockChain.BestState.Beacon.BestBlockHash,
 		serverObj.blockChain.BestState.Beacon.Hash(),
 	}
-	if userRole != common.BeaconRole {
-		msg.(*wire.MessagePeerState).Shards[shardID] = blockchain.ChainState{
-			serverObj.blockChain.BestState.Shard[shardID].BestBlock.Header.Timestamp,
-			serverObj.blockChain.BestState.Shard[shardID].ShardHeight,
-			serverObj.blockChain.BestState.Shard[shardID].BestBlockHash,
-			serverObj.blockChain.BestState.Shard[shardID].Hash(),
+	Logger.log.Infof("[peerstate] %v %v", userLayer, userRole)
+	if userLayer != common.BeaconRole {
+		msg.(*wire.MessagePeerState).Shards[byte(shardID)] = blockchain.ChainState{
+			serverObj.blockChain.BestState.Shard[byte(shardID)].BestBlock.Header.Timestamp,
+			serverObj.blockChain.BestState.Shard[byte(shardID)].ShardHeight,
+			serverObj.blockChain.BestState.Shard[byte(shardID)].BestBlockHash,
+			serverObj.blockChain.BestState.Shard[byte(shardID)].Hash(),
 		}
 	} else {
 		msg.(*wire.MessagePeerState).ShardToBeaconPool = serverObj.shardToBeaconPool.GetValidBlockHeight()
+		Logger.log.Infof("[peerstate] %v", msg.(*wire.MessagePeerState).ShardToBeaconPool)
 	}
-	publicKeyInBase58CheckEncode, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
-	if publicKeyInBase58CheckEncode != "" {
-		_, _, shardID := serverObj.consensusEngine.GetUserRole()
-		if (cfg.NodeMode == common.NodeModeAuto || cfg.NodeMode == common.NodeModeShard) && shardID >= 0 {
-			msg.(*wire.MessagePeerState).CrossShardPool[byte(shardID)] = serverObj.crossShardPool[byte(shardID)].GetValidBlockHeight()
-		}
+
+	if (cfg.NodeMode == common.NodeModeAuto || cfg.NodeMode == common.NodeModeShard) && shardID >= 0 {
+		msg.(*wire.MessagePeerState).CrossShardPool[byte(shardID)] = serverObj.crossShardPool[byte(shardID)].GetValidBlockHeight()
 	}
+
 	//
 	currentMiningKey := serverObj.consensusEngine.GetMiningPublicKeys()[serverObj.blockChain.BestState.Beacon.ConsensusAlgorithm]
 	msg.(*wire.MessagePeerState).SenderMiningPublicKey, err = currentMiningKey.ToBase58()
@@ -1760,7 +1775,7 @@ func (serverObj *Server) PublishNodeState() error {
 		return err
 	}
 	msg.SetSenderID(listener.GetPeerID())
-	fmt.Printf("PeerID send to Proxy when publish node state %v \n", listener.GetPeerID())
+	Logger.log.Infof("[peerstate] PeerID send to Proxy when publish node state %v \n", listener.GetPeerID())
 	if err != nil {
 		return err
 	}
