@@ -101,6 +101,7 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 				SigPubKey:   base58.Base58Check{}.Encode(tempTx.SigPubKey, 0x0),
 				Sig:         base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
 				Info:        string(tempTx.Info),
+				IsPrivacy:   tempTx.IsPrivacy(),
 			}
 			if result.Proof != nil && len(result.Proof.GetInputCoins()) > 0 && result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey() != nil {
 				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte)
