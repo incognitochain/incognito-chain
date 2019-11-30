@@ -219,7 +219,7 @@ func (synker *Synker) checkStateAndPublishState() error {
 		return errors.New("Can not load current mining key")
 	}
 	userLayer, userRole, shardID := engine.GetUserRole()
-	if (userRole == common.CommitteeRole) || (userRole != common.ValidatorRole) || (userRole != common.ProposerRole) {
+	if userRole == common.CommitteeRole {
 		err := synker.blockchain.config.Server.PublishNodeState(userLayer, shardID)
 		if err != nil {
 			return err
