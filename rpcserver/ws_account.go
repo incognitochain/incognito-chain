@@ -64,6 +64,10 @@ func (wsServer *WsServer) handleSubcribeCrossOutputCoinByPrivateKey(params inter
 					for _, crossTransaction := range crossTransactions {
 						for _, crossOutputCoin := range crossTransaction.OutputCoin {
 							processedOutputCoin := wsServer.config.BlockChain.DecryptOutputCoinByKey(&crossOutputCoin, &keyWallet.KeySet, senderShardID, &common.PRVCoinID)
+							if processedOutputCoin == nil {
+								Logger.log.Errorf("processedOutputCoin is nil!")
+								continue
+							}
 							if value, ok := m[senderShardID]; ok {
 								value += processedOutputCoin.CoinDetails.GetValue()
 								m[senderShardID] = value
