@@ -155,7 +155,10 @@ func (synker *Synker) Start() {
 		case <-insertPoolTicker.C:
 			synker.InsertBlockFromPool()
 		case <-broadcastTicker.C:
-			synker.blockchain.config.Server.PublishNodeState()
+			err := synker.checkStateAndPublishState()
+			if err != nil {
+				Logger.log.Debugf("Check state and publish node state error: %v", err)
+			}
 		case <-updateStatesTicker.C:
 			synker.UpdateStatev2()
 		case msg := <-synker.Event.requestSyncShardBlockByHashEvent:
@@ -206,6 +209,23 @@ func (synker *Synker) Start() {
 			synker.SyncBlkBeacon(false, true, true, []common.Hash{}, []uint64{uint64(height)}, uint64(height), uint64(height), "")
 		}
 	}
+}
+
+func (synker *Synker) checkStateAndPublishState() error {
+	// serverObj := synker.blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
+	engine := synker.blockchain.config.ConsensusEngine
+	userKey, _ := engine.GetCurrentMiningPublicKey()
+	if userKey == "" {
+		return errors.New("Can not load current mining key")
+	}
+	userLayer, userRole, shardID := engine.GetUserRole()
+	if userRole == common.CommitteeRole {
+		err := synker.blockchain.config.Server.PublishNodeState(userLayer, shardID)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (synker *Synker) SyncShard(shardID byte) error {
