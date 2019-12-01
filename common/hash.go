@@ -194,3 +194,14 @@ func HashArrayOfHashArray(target []Hash) Hash {
 	}
 	return HashH(temp)
 }
+
+func BytesToHash(b []byte) Hash {
+	var h Hash
+	err := h.SetBytes(b)
+	if err != nil {
+		panic(err)
+	}
+	return h
+}
+
+func (h Hash) Bytes() []byte { return h[:] }
