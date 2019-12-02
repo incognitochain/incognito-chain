@@ -7,6 +7,78 @@ import (
 	"math"
 )
 
+const (
+	maxExp               = 64
+	numOutputParam       = 32
+	maxOutputNumber      = 32
+	numCommitValue       = 5
+	maxOutputNumberParam = 256
+)
+
+// bulletproofParams includes all generator for aggregated range proof
+type bulletproofParams struct {
+	g  []*privacy.Point
+	h  []*privacy.Point
+	u  *privacy.Point
+	cs []byte
+}
+
+var AggParam = newBulletproofParams(numOutputParam)
+
+func newBulletproofParams(m int) *bulletproofParams {
+	gen := new(bulletproofParams)
+	gen.cs = []byte{}
+	capacity := maxExp * m // fixed value
+	gen.g = make([]*privacy.Point, capacity)
+	gen.h = make([]*privacy.Point, capacity)
+	csByteH := []byte{}
+	csByteG := []byte{}
+	for i := 0; i < capacity; i++ {
+		gen.g[i] = privacy.HashToPointFromIndex(int64(numCommitValue + i))
+		gen.h[i] = privacy.HashToPointFromIndex(int64(numCommitValue + i + maxOutputNumberParam*maxExp))
+		csByteG = append(csByteG, gen.g[i].ToBytesS()...)
+		csByteH = append(csByteH, gen.h[i].ToBytesS()...)
+	}
+
+	gen.u = new(privacy.Point)
+	gen.u = privacy.HashToPointFromIndex(int64(numCommitValue + 2*maxOutputNumberParam*maxExp))
+
+	gen.cs = append(gen.cs, csByteG...)
+	gen.cs = append(gen.cs, csByteH...)
+	gen.cs = append(gen.cs, gen.u.ToBytesS()...)
+
+	return gen
+}
+
+func generateChallenge(values [][]byte) *privacy.Scalar {
+	bytes := []byte{}
+	for i := 0; i < len(values); i++ {
+		bytes = append(bytes, values[i]...)
+	}
+	hash := privacy.HashToScalar(bytes)
+	return hash
+}
+
+func generateChallengeOld(AggParam *bulletproofParams, values [][]byte) *privacy.Scalar {
+	bytes := []byte{}
+	for i := 0; i < len(AggParam.g); i++ {
+		bytes = append(bytes, AggParam.g[i].ToBytesS()...)
+	}
+
+	for i := 0; i < len(AggParam.h); i++ {
+		bytes = append(bytes, AggParam.h[i].ToBytesS()...)
+	}
+
+	bytes = append(bytes, AggParam.u.ToBytesS()...)
+
+	for i := 0; i < len(values); i++ {
+		bytes = append(bytes, values[i]...)
+	}
+
+	hash := privacy.HashToScalar(bytes)
+	return hash
+}
+
 // pad returns number has format 2^k that it is the nearest number to num
 func pad(num int) int {
 	if num == 1 || num == 2 {

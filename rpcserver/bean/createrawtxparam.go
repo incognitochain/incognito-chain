@@ -2,6 +2,7 @@ package bean
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -29,6 +30,10 @@ func GetKeySetFromPrivateKeyParams(privateKeyWalletStr string) (*incognitokey.Ke
 	err = keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	if err != nil {
 		return nil, byte(0), err
+	}
+
+	if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
+		return nil, byte(0), errors.New("private key is not valid")
 	}
 
 	// calculate shard ID
@@ -67,6 +72,9 @@ func NewCreateRawTxParam(params interface{}) (*CreateRawTxParam, error) {
 		keyWalletReceiver, err := wallet.Base58CheckDeserialize(paymentAddressStr)
 		if err != nil {
 			return nil, err
+		}
+		if len(keyWalletReceiver.KeySet.PaymentAddress.Pk) == 0 {
+			return nil, fmt.Errorf("payment info %+v is invalid", paymentAddressStr)
 		}
 
 		amountParam, ok := amount.(float64)

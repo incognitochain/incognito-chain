@@ -25,7 +25,7 @@ func ConvertIntToBinary(inum int, n int) []byte {
 }
 
 // ConvertIntToBinary represents a integer number in binary
-func ConvertUint64ToBinaryInBigInt(number uint64, n int) []*Scalar {
+func ConvertUint64ToBinary(number uint64, n int) []*Scalar {
 	if number == 0 {
 		res := make([]*Scalar, n)
 		for i := 0; i < n; i++ {
