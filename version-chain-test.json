@@ -1,5 +1,5 @@
 {
-  "Version": "1.20.0-beta",
-  "Note": "Clear DB for new testing",
+  "Version": "1.21.0-beta",
+  "Note": "Fix bug fetch data",
   "RemoveData": true
 }
