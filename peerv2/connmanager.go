@@ -17,9 +17,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// TODO REMOVE HARDCODE
-var HighwayPeerID = "QmSPa4gxx6PRmoNRu6P2iFwEwmayaoLdR5By3i3MgM9gMv"
-var MasterNodeID = "QmVsCnV9kRZ182MX11CpcHMyFAReyXV49a599AbqmwtNrV"
 var HighwayBeaconID = byte(255)
 
 func NewConnManager(
@@ -31,15 +28,13 @@ func NewConnManager(
 	nodeMode string,
 	relayShard []byte,
 ) *ConnManager {
-	master := peer.IDB58Encode(host.Host.ID()) == MasterNodeID
-	Logger.Info("IsMasterNode:", master)
 	return &ConnManager{
 		LocalHost:            host,
 		DiscoverPeersAddress: dpa,
 		IdentityKey:          ikey,
 		cd:                   cd,
 		disp:                 dispatcher,
-		IsMasterNode:         master,
+		IsMasterNode:         false,
 		registerRequests:     make(chan int, 100),
 		relayShard:           relayShard,
 		nodeMode:             nodeMode,
@@ -99,8 +94,16 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 }
 
 func (cm *ConnManager) Start(ns NetSync) {
-	// connect to proxy node
-	peerid, err := peer.IDB58Decode(HighwayPeerID)
+	// connect to highway
+	addr, err := multiaddr.NewMultiaddr(cm.DiscoverPeersAddress)
+	if err != nil {
+		panic(err)
+	}
+
+	addrInfo, err := peer.AddrInfoFromP2pAddr(addr)
+	if err != nil {
+		panic(err)
+	}
 
 	// Pubsub
 	// TODO(@0xbunyip): handle error
@@ -114,7 +117,7 @@ func (cm *ConnManager) Start(ns NetSync) {
 	go cm.keepHighwayConnection(connected)
 	<-connected
 
-	req, err := NewRequester(cm.LocalHost.GRPC, peerid)
+	req, err := NewRequester(cm.LocalHost.GRPC, addrInfo.ID)
 	if err != nil {
 		panic(err)
 	}
@@ -135,6 +138,7 @@ func (cm *ConnManager) BroadcastCommittee(
 	newAllShardCommittee map[byte][]incognitokey.CommitteePublicKey,
 	newAllShardPending map[byte][]incognitokey.CommitteePublicKey,
 ) {
+	// NOTE: disabled feature, always return for now
 	if !cm.IsMasterNode {
 		return
 	}
@@ -210,16 +214,16 @@ func (cm *ConnManager) process() {
 // The method push data to the given channel to signal that the first attempt had finished.
 // Constructor can use this info to initialize other objects.
 func (cm *ConnManager) keepHighwayConnection(connectedOnce chan error) {
-	pid, _ := peer.IDB58Decode(HighwayPeerID)
-	ip, port := ParseListenner(cm.DiscoverPeersAddress, "127.0.0.1", 9330)
-	ipfsaddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", ip, port))
+	addr, err := multiaddr.NewMultiaddr(cm.DiscoverPeersAddress)
 	if err != nil {
-		panic(fmt.Sprintf("invalid highway config:", err, pid, ip, port))
+		panic(fmt.Sprintf("invalid discover peers address: %v", cm.DiscoverPeersAddress))
 	}
-	peerInfo := peer.AddrInfo{
-		ID:    pid,
-		Addrs: append([]multiaddr.Multiaddr{}, ipfsaddr),
+
+	hwPeerInfo, err := peer.AddrInfoFromP2pAddr(addr)
+	if err != nil {
+		panic(err)
 	}
+	hwPID := hwPeerInfo.ID
 
 	first := true
 	net := cm.LocalHost.Host.Network()
@@ -227,16 +231,16 @@ func (cm *ConnManager) keepHighwayConnection(connectedOnce chan error) {
 	for ; true; <-time.Tick(10 * time.Second) {
 		// Reconnect if not connected
 		var err error
-		if net.Connectedness(pid) != network.Connected {
+		if net.Connectedness(hwPID) != network.Connected {
 			disconnected = true
 			Logger.Info("Not connected to highway, connecting")
 			ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
-			if err = cm.LocalHost.Host.Connect(ctx, peerInfo); err != nil {
-				Logger.Errorf("Could not connect to highway: %v %v", err, peerInfo)
+			if err = cm.LocalHost.Host.Connect(ctx, *hwPeerInfo); err != nil {
+				Logger.Errorf("Could not connect to highway: %v %v", err, hwPeerInfo)
 			}
 		}
 
-		if disconnected && net.Connectedness(pid) == network.Connected {
+		if disconnected && net.Connectedness(hwPID) == network.Connected {
 			// Register again since this might be a new highway
 			Logger.Info("Connected to highway, sending register request")
 			cm.registerRequests <- 1
@@ -332,28 +336,29 @@ func (cm *ConnManager) subscribe(role userRole, topics m2t, forced bool) (userRo
 	}
 	Logger.Infof("Role changed: %v -> %v", role, newRole)
 
-	if newRole.role == common.WaitingRole && !forced { // Not forced => no need to subscribe when role is Waiting
-		return newRole, topics, nil
-	}
-
 	// Registering
 	pubkey, _ := cm.IdentityKey.ToBase58()
 	roleSID := newRole.shardID
 	if roleSID == -2 { // normal node
 		roleSID = -1
 	}
-	shardIDs := []byte{byte(roleSID)}
+	shardIDs := []byte{}
 	if cm.nodeMode == common.NodeModeRelay {
-		shardIDs = append(cm.relayShard, HighwayBeaconID)
+		shardIDs = cm.relayShard
+		shardIDs = append(shardIDs, HighwayBeaconID)
+	} else {
+		shardIDs = append(shardIDs, byte(roleSID))
 	}
-	newTopics, roleOfTopics, err := cm.registerToProxy(pubkey, newRole.layer, shardIDs)
+	newTopics, roleOfTopics, err := cm.registerToProxy(pubkey, newRole.layer, newRole.role, shardIDs)
 	if err != nil {
 		return role, topics, err
 	}
 
-	if newRole != roleOfTopics {
-		return role, topics, errors.Errorf("lole not matching with highway, local = %+v, highway = %+v", newRole, roleOfTopics)
-	}
+	// NOTE: disabled, highway always return the same role
+	_ = roleOfTopics
+	// if newRole != roleOfTopics {
+	// 	return role, topics, errors.Errorf("lole not matching with highway, local = %+v, highway = %+v", newRole, roleOfTopics)
+	// }
 
 	Logger.Infof("Received topics = %+v, oldTopics = %+v", newTopics, topics)
 
@@ -464,17 +469,25 @@ type m2t map[string][]Topic // Message to topics
 func (cm *ConnManager) registerToProxy(
 	pubkey string,
 	layer string,
+	role string,
 	shardID []byte,
 ) (m2t, userRole, error) {
 	messagesWanted := getMessagesForLayer(cm.nodeMode, layer, shardID)
-	Logger.Infof("-%v-;;;-%v-;;;-%v-;;;", messagesWanted, cm.nodeMode, shardID)
-	// os.Exit(9)
-	pairs, role, err := cm.Requester.Register(
+	pid := cm.LocalHost.Host.ID()
+	Logger.Infof("Registering: message: %v", messagesWanted)
+	Logger.Infof("Registering: nodeMode: %v", cm.nodeMode)
+	Logger.Infof("Registering: layer: %v", layer)
+	Logger.Infof("Registering: role: %v", role)
+	Logger.Infof("Registering: shardID: %v", shardID)
+	Logger.Infof("Registering: peerID: %v", pid.String())
+	Logger.Infof("Registering: pubkey: %v", pubkey)
+	pairs, topicRole, err := cm.Requester.Register(
 		context.Background(),
 		pubkey,
 		messagesWanted,
 		shardID,
-		cm.LocalHost.Host.ID(),
+		pid,
+		role,
 	)
 	if err != nil {
 		return nil, userRole{}, err
@@ -491,9 +504,9 @@ func (cm *ConnManager) registerToProxy(
 		}
 	}
 	r := userRole{
-		layer:   role.Layer,
-		role:    role.Role,
-		shardID: int(role.Shard),
+		layer:   topicRole.Layer,
+		role:    topicRole.Role,
+		shardID: int(topicRole.Shard),
 	}
 	return topics, r, nil
 }
