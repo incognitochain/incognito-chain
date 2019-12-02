@@ -11,7 +11,7 @@ import (
 func getBlkNeedToGetByHash(prefix string, blksHash []common.Hash, cachedItems map[string]cache.Item, peerID libp2p.ID) []common.Hash {
 	var blocksNeedToGet []common.Hash
 	for _, blkHash := range blksHash {
-		if _, ok := cachedItems[blkHash.String()]; !ok {
+		if _, ok := cachedItems[fmt.Sprintf("%v%v", prefix, blkHash.String())]; !ok {
 			blocksNeedToGet = append(blocksNeedToGet, blkHash)
 		}
 	}
@@ -24,7 +24,7 @@ func getBlkNeedToGetByHeight(prefix string, fromHeight uint64, toHeight uint64, 
 	latestBatchBegin := uint64(0)
 	for blkHeight := fromHeight; blkHeight <= toHeight; blkHeight++ {
 		if exist, _ := common.SliceExists(poolItems, blkHeight); !exist {
-			if _, ok := cachedItems[fmt.Sprint(blkHeight)]; !ok {
+			if _, ok := cachedItems[fmt.Sprintf("%v%v", prefix, blkHeight)]; !ok {
 				if latestBatchEnd, ok := blocksNeedToGet[latestBatchBegin]; !ok {
 					blocksNeedToGet[blkHeight] = blkHeight
 					latestBatchBegin = blkHeight
@@ -48,7 +48,7 @@ func getBlkNeedToGetByHeight(prefix string, fromHeight uint64, toHeight uint64, 
 func getBlkNeedToGetBySpecificHeight(prefix string, blksHeight []uint64, cachedItems map[string]cache.Item, poolItems []uint64) []uint64 {
 	var blocksNeedToGet []uint64
 	for _, blkHeight := range blksHeight {
-		if _, ok := cachedItems[fmt.Sprint(blkHeight)]; !ok {
+		if _, ok := cachedItems[fmt.Sprintf("%v%v", prefix, blkHeight)]; !ok {
 			if exist, _ := common.SliceExists(poolItems, blkHeight); !exist {
 				blocksNeedToGet = append(blocksNeedToGet, blkHeight)
 			}
