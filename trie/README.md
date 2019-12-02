@@ -16,7 +16,11 @@ implemented tree nodes in patricia merkle tree, node is purely place to hold dat
 ## hasher
 hash node and return hashNode (hash of that node)
 
-## Next is Intermediate Writer
+## intermediate Writer
 - manage node and raw full node
 - get raw node from db
 - commit all nodes in trie from one root node (traverse all nodes from root node then put to batch then write batch to db)
+
+
+## trie and secure trie
+- get, update, insert, hash by trie rule from intermediate writer
