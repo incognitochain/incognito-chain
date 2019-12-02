@@ -38,9 +38,7 @@ Reward of beacon = 2* reward of a single shard
 Let ![equation](https://latex.codecogs.com/gif.latex?x) be the reward percentage of IncognitoDAO at the current year
 
 ![equation](https://latex.codecogs.com/gif.latex?\text{Incognito&space;DAO&space;earn:&space;}&space;x*T)
-
 ![equation](https://latex.codecogs.com/gif.latex?\text{Beacon&space;chain&space;earn:&space;}(1-x)*T&space;*\frac{2}{s&plus;2})
-
 ![equation](https://latex.codecogs.com/gif.latex?\text{Shard&space;i&space;earn:&space;}(1-x)*R_i&space;*\frac{s}{s&plus;2})
 
 The reward of beacon/shard is splitted to each validator equally at the beginning of the next epoch. Slashing will be applied in the future version.
