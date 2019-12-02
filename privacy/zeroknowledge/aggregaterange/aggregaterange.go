@@ -478,13 +478,17 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	twoVectorN := powerVector(twoNumber, n)
 
 	// recalculate challenge y, z
-	y := generateChallenge([][]byte{aggParam.cs, proof.a.ToBytesS(), proof.s.ToBytesS()})
-	z := generateChallenge([][]byte{aggParam.cs, proof.a.ToBytesS(), proof.s.ToBytesS(), y.ToBytesS()})
+	//y := generateChallenge([][]byte{aggParam.cs, proof.a.ToBytesS(), proof.s.ToBytesS()})
+	//z := generateChallenge([][]byte{aggParam.cs, proof.a.ToBytesS(), proof.s.ToBytesS(), y.ToBytesS()})
+	y := generateChallengeOld(aggParam, [][]byte{proof.a.ToBytesS(), proof.s.ToBytesS()})
+	z := generateChallengeOld(aggParam, [][]byte{proof.a.ToBytesS(), proof.s.ToBytesS(), y.ToBytesS()})
 	zSquare := new(privacy.Scalar).Mul(z, z)
 
 	// challenge x = hash(G || H || A || S || T1 || T2)
 	//fmt.Printf("T2: %v\n", proof.t2)
-	x := generateChallenge([][]byte{aggParam.cs, proof.a.ToBytesS(), proof.s.ToBytesS(), proof.t1.ToBytesS(), proof.t2.ToBytesS()})
+	//x := generateChallenge([][]byte{aggParam.cs, proof.a.ToBytesS(), proof.s.ToBytesS(), proof.t1.ToBytesS(), proof.t2.ToBytesS()})
+	x := generateChallengeOld(aggParam,
+		[][]byte{proof.a.ToBytesS(), proof.s.ToBytesS(), proof.t1.ToBytesS(), proof.t2.ToBytesS()})
 
 	xSquare := new(privacy.Scalar).Mul(x, x)
 
