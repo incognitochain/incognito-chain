@@ -11,6 +11,8 @@ const (
 	numOutputParam = 32
 	maxOutputNumber = 32
 	numCommitValue = 5
+	maxOutputNumberParam = 256
+
 )
 
 // bulletproofParams includes all generator for aggregated range proof
@@ -33,13 +35,13 @@ func newBulletproofParams(m int) *bulletproofParams {
 	csByteG := []byte{}
 	for i := 0; i < capacity; i++ {
 		gen.g[i] = privacy.HashToPointFromIndex(int64(numCommitValue + i))
-		gen.h[i] = privacy.HashToPointFromIndex(int64(numCommitValue + i + maxOutputNumber*maxExp))
+		gen.h[i] = privacy.HashToPointFromIndex(int64(numCommitValue + i + maxOutputNumberParam*maxExp))
 		csByteG = append(csByteG, gen.g[i].ToBytesS()...)
 		csByteH = append(csByteH, gen.h[i].ToBytesS()...)
 	}
 
 	gen.u = new(privacy.Point)
-	gen.u = privacy.HashToPointFromIndex(int64(numCommitValue + 2*maxOutputNumber*maxExp))
+	gen.u = privacy.HashToPointFromIndex(int64(numCommitValue + 2*maxOutputNumberParam*maxExp))
 
 	gen.cs = append(gen.cs, csByteG...)
 	gen.cs = append(gen.cs, csByteH...)
