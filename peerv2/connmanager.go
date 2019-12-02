@@ -43,7 +43,7 @@ func NewConnManager(
 
 func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 	var topic string
-	publishable := []string{wire.CmdBlockShard, wire.CmdBFT, wire.CmdBlockBeacon, wire.CmdTx, wire.CmdCustomToken, wire.CmdPeerState, wire.CmdBlkShardToBeacon, wire.CmdCrossShard}
+	publishable := []string{wire.CmdBlockShard, wire.CmdBFT, wire.CmdBlockBeacon, wire.CmdTx, wire.CmdCustomToken, wire.CmdPrivacyCustomToken, wire.CmdPeerState, wire.CmdBlkShardToBeacon, wire.CmdCrossShard}
 
 	// msgCrossShard := msg.(wire.MessageCrossShard)
 	msgType := msg.MessageType()
@@ -54,9 +54,6 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 				// Logger.Info("[hy]", availableTopic)
 				if (availableTopic.Act == MessageTopicPair_PUB) || (availableTopic.Act == MessageTopicPair_PUBSUB) {
 					topic = availableTopic.Name
-					// if p == wire.CmdTx {
-					// 	Logger.Errorf("[hy] broadcast tx to topic %v", topic)
-					// }
 					err := broadcastMessage(msg, topic, cm.ps)
 					if err != nil {
 						Logger.Errorf("Broadcast to topic %v error %v", topic, err)
@@ -540,6 +537,9 @@ func getMessagesForLayer(mode, layer string, shardID []byte) []string {
 			return []string{
 				wire.CmdBlockBeacon,
 				wire.CmdPeerState,
+				wire.CmdTx,
+				wire.CmdPrivacyCustomToken,
+				wire.CmdCustomToken,
 			}
 		}
 	case common.NodeModeRelay:
