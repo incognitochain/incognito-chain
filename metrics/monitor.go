@@ -73,38 +73,38 @@ func init() {
 			bheight := blockchain.GetBeaconBestState().BeaconHeight
 			bhash := blockchain.GetBeaconBestState().BestBlockHash
 
-			beaconValidator := []string{}
-			for _, v := range blockchain.GetBeaconBestState().GetBeaconCommittee() {
-				beaconValidator = append(beaconValidator, v.GetMiningKeyBase58("bls"))
-			}
-			l.Add("beaconValidator", beaconValidator)
-
-			waitingCandidateCurrentNumber := make([]string, len(blockchain.GetBeaconBestState().CandidateShardWaitingForCurrentRandom))
-			for _, v := range blockchain.GetBeaconBestState().CandidateShardWaitingForCurrentRandom {
-				waitingCandidateCurrentNumber = append(waitingCandidateCurrentNumber, v.GetMiningKeyBase58("bls"))
-			}
-			l.Add("waitingShardCandidateCurrentNumber  ", waitingCandidateCurrentNumber)
-
-			waitingCandidateNextNumber := make([]string, len(blockchain.GetBeaconBestState().CandidateShardWaitingForNextRandom))
-			for _, v := range blockchain.GetBeaconBestState().CandidateShardWaitingForNextRandom {
-				waitingCandidateNextNumber = append(waitingCandidateNextNumber, v.GetMiningKeyBase58("bls"))
-			}
-			l.Add("waitingShardCandidateNextNumber", waitingCandidateNextNumber)
-
-			pendingShardValidator := map[byte][]string{}
-			shardValidator := map[byte][]string{}
+			//beaconValidator := []string{}
+			//for _, v := range blockchain.GetBeaconBestState().GetBeaconCommittee() {
+			//	beaconValidator = append(beaconValidator, v.GetMiningKeyBase58("bls"))
+			//}
+			//l.Add("beaconValidator", beaconValidator)
+			//
+			//waitingCandidateCurrentNumber := make([]string, len(blockchain.GetBeaconBestState().CandidateShardWaitingForCurrentRandom))
+			//for _, v := range blockchain.GetBeaconBestState().CandidateShardWaitingForCurrentRandom {
+			//	waitingCandidateCurrentNumber = append(waitingCandidateCurrentNumber, v.GetMiningKeyBase58("bls"))
+			//}
+			//l.Add("waitingShardCandidateCurrentNumber  ", waitingCandidateCurrentNumber)
+			//
+			//waitingCandidateNextNumber := make([]string, len(blockchain.GetBeaconBestState().CandidateShardWaitingForNextRandom))
+			//for _, v := range blockchain.GetBeaconBestState().CandidateShardWaitingForNextRandom {
+			//	waitingCandidateNextNumber = append(waitingCandidateNextNumber, v.GetMiningKeyBase58("bls"))
+			//}
+			//l.Add("waitingShardCandidateNextNumber", waitingCandidateNextNumber)
+			//
+			//pendingShardValidator := map[byte][]string{}
+			//shardValidator := map[byte][]string{}
 
 			for i := 0; i < blockchain.GetBeaconBestState().ActiveShards; i++ {
-				for _, v := range blockchain.GetBestStateShard(byte(i)).ShardCommittee {
-					shardValidator[byte(i)] = append(shardValidator[byte(i)], v.GetMiningKeyBase58("bls"))
-				}
-				l.Add("shardValidator", shardValidator)
-
-				for _, v := range blockchain.GetBestStateShard(byte(i)).ShardPendingValidator {
-					pendingShardValidator[byte(i)] = append(pendingShardValidator[byte(i)], v.GetMiningKeyBase58("bls"))
-
-				}
-				l.Add("pendingShardValidator", pendingShardValidator)
+				//for _, v := range blockchain.GetBestStateShard(byte(i)).ShardCommittee {
+				//	shardValidator[byte(i)] = append(shardValidator[byte(i)], v.GetMiningKeyBase58("bls"))
+				//}
+				//l.Add("shardValidator", shardValidator)
+				//
+				//for _, v := range blockchain.GetBestStateShard(byte(i)).ShardPendingValidator {
+				//	pendingShardValidator[byte(i)] = append(pendingShardValidator[byte(i)], v.GetMiningKeyBase58("bls"))
+				//
+				//}
+				//l.Add("pendingShardValidator", pendingShardValidator)
 
 				shash := blockchain.GetBestStateShard(byte(i)).BestBlockHash
 				sheight := blockchain.GetBestStateShard(byte(i)).ShardHeight
