@@ -25,7 +25,7 @@ func ConvertIntToBinary(inum int, n int) []byte {
 }
 
 // ConvertIntToBinary represents a integer number in binary
-func ConvertUint64ToBinaryInBigInt(number uint64, n int) []*Scalar {
+func ConvertUint64ToBinary(number uint64, n int) []*Scalar {
 	if number == 0 {
 		res := make([]*Scalar, n)
 		for i := 0; i < n; i++ {
@@ -65,11 +65,10 @@ func paddedAppend(size uint, dst, src []byte) []byte {
 	return append(dst, src...)
 }
 
-
-func ConvertScalarArrayToBigIntArray(scalarArr []*Scalar) []*big.Int{
+func ConvertScalarArrayToBigIntArray(scalarArr []*Scalar) []*big.Int {
 	res := make([]*big.Int, len(scalarArr))
 
-	for i:=0; i<len(res); i++{
+	for i := 0; i < len(res); i++ {
 		tmp := Reverse(scalarArr[i].GetKey())
 		res[i] = new(big.Int).SetBytes(ArrayToSlice(tmp.ToBytes()))
 	}
