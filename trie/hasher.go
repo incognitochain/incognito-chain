@@ -4,8 +4,8 @@ import (
 	"hash"
 	"sync"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/incognitochain/incognito-chain/common"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -34,7 +34,7 @@ func (b *sliceBuffer) Reset() {
 	*b = (*b)[:0]
 }
 
-// hashers live in a global db.
+// hashers live in a global iw.
 var hasherPool = sync.Pool{
 	New: func() interface{} {
 		return &hasher{
