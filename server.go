@@ -304,10 +304,6 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			OnPeerState: serverObj.OnPeerState,
 		},
 	}
-
-	metrics.SetGlobalParam("Bootnode", cfg.DiscoverPeersAddress)
-	metrics.SetGlobalParam("ExternalAddress", cfg.ExternalAddress)
-
 	serverObj.highway = peerv2.NewConnManager(
 		host,
 		cfg.DiscoverPeersAddress,
@@ -1773,7 +1769,7 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 	if err != nil {
 		return err
 	}
-	Logger.log.Debugf("Publish peerstate")
+	Logger.log.Debugf("Publish peerstate from %s", listener.GetRawAddress())
 	serverObj.PushMessageToAll(msg)
 	return nil
 }
