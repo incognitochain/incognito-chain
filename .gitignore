@@ -67,3 +67,4 @@ blockchain/testparams/*
 *.swo
 *~
 tags
+.txt
