@@ -154,7 +154,7 @@ func (shardToBeaconPool *ShardToBeaconPool) addShardToBeaconBlock(block *blockch
 	}
 	//If block already in pool, it will ignore
 	for i, blkItem := range shardToBeaconPool.pool[shardID] {
-		// Logger.log.Infof("[sync] Block already in pool! Height %v Shard %v", blockHeight, shardID)
+		Logger.log.Infof("[sync] Block already in pool! Height %v Shard %v", blockHeight, shardID)
 		if blkItem.Header.Height == blockHeight {
 			if i+1 < len(shardToBeaconPool.pool[shardID]) {
 				if !reflect.DeepEqual(*blkItem.Hash(), shardToBeaconPool.pool[shardID][i+1].Header.PreviousBlockHash) {
