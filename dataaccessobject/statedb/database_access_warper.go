@@ -66,6 +66,10 @@ type accessorWarper struct {
 	iw *trie.IntermediateWriter
 }
 
+func NewDatabaseAccessWarper(database incdb.Database) DatabaseAccessWarper {
+	return &accessorWarper{iw: trie.NewIntermediateWriter(database)}
+}
+
 // OpenTrie opens the main account trie at a specific root hash.
 func (aw *accessorWarper) OpenTrie(root common.Hash) (Trie, error) {
 	return trie.NewSecure(root, aw.iw)

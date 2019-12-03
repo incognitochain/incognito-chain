@@ -90,7 +90,7 @@ func (s *Sync) AddSubTrie(root common.Hash, depth int, parent common.Hash, callb
 			return
 		}
 		// False positive, bump fault meter
-		bloomFaultMeter.Mark(1)
+		//bloomFaultMeter.Mark(1)
 	}
 	// Assemble the new sub-trie sync request
 	req := &request{
@@ -128,7 +128,7 @@ func (s *Sync) AddRawEntry(hash common.Hash, depth int, parent common.Hash) {
 			return
 		}
 		// False positive, bump fault meter
-		bloomFaultMeter.Mark(1)
+		//bloomFaultMeter.Mark(1)
 	}
 	// Assemble the new sub-trie sync request
 	req := &request{
@@ -290,7 +290,7 @@ func (s *Sync) children(req *request, object node) ([]*request, error) {
 					continue
 				}
 				// False positive, bump fault meter
-				bloomFaultMeter.Mark(1)
+				//bloomFaultMeter.Mark(1)
 			}
 			// Locally unknown node, schedule for retrieval
 			requests = append(requests, &request{

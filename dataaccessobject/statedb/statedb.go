@@ -14,7 +14,7 @@ type StateDB struct {
 	trie Trie
 
 	// This map holds 'live' objects, which will get modified while processing a state transition.
-	stateObjects        map[common.Hash]*StateObject
+	stateObjects        map[common.Hash]StateObject
 	stateObjectsPending map[common.Hash]struct{} // State objects finalized but not yet written to the trie
 	stateObjectsDirty   map[common.Hash]struct{} // State objects modified in the current execution
 
@@ -24,4 +24,18 @@ type StateDB struct {
 	// during a database read is memoized here and will eventually be returned
 	// by StateDB.Commit.
 	dbErr error
+}
+
+func New(root common.Hash, db DatabaseAccessWarper) (*StateDB, error) {
+	tr, err := db.OpenTrie(root)
+	if err != nil {
+		return nil, err
+	}
+	return &StateDB{
+		db:                  db,
+		trie:                tr,
+		stateObjects:        make(map[common.Hash]StateObject),
+		stateObjectsPending: make(map[common.Hash]struct{}),
+		stateObjectsDirty:   make(map[common.Hash]struct{}),
+	}, nil
 }
