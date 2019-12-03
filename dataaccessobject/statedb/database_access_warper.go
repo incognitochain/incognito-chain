@@ -1,6 +1,7 @@
 package statedb
 
 import (
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/trie"
@@ -59,4 +60,28 @@ type Trie interface {
 	// nodes of the longest existing prefix of the key (at least the root), ending
 	// with the node that proves the absence of the key.
 	Prove(key []byte, fromLevel uint, proofDb incdb.Database) error
+}
+
+type accessorWarper struct {
+	iw *trie.IntermediateWriter
+}
+
+// OpenTrie opens the main account trie at a specific root hash.
+func (aw *accessorWarper) OpenTrie(root common.Hash) (Trie, error) {
+	return trie.NewSecure(root, aw.iw)
+}
+
+// CopyTrie returns an independent copy of the given trie.
+func (aw *accessorWarper) CopyTrie(t Trie) Trie {
+	switch t := t.(type) {
+	case *trie.SecureTrie:
+		return t.Copy()
+	default:
+		panic(fmt.Errorf("unknown trie type %T", t))
+	}
+}
+
+// TrieDB retrieves any intermediate trie-node caching layer.
+func (aw *accessorWarper) TrieDB() *trie.IntermediateWriter {
+	return aw.iw
 }
