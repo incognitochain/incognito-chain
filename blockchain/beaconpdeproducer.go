@@ -3,7 +3,6 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"math/big"
 	"strconv"
 	"strings"
@@ -131,20 +130,16 @@ func isNewlyCreatedPairValid(
 	prvIDStr := common.PRVCoinID.String()
 	if waitingContribution1.TokenIDStr != prvIDStr &&
 		waitingContribution2.TokenIDStr != prvIDStr {
-		fmt.Println("hahaha come 1")
 		return true
 	}
 	if waitingContribution1.TokenIDStr == prvIDStr &&
 		waitingContribution1.Amount < uint64(common.MinInitialAddingLiquidity) {
-		fmt.Println("hahaha come 2")
 		return false
 	}
 	if waitingContribution2.TokenIDStr == prvIDStr &&
 		waitingContribution2.Amount < uint64(common.MinInitialAddingLiquidity) {
-		fmt.Println("hahaha come 3")
 		return false
 	}
-	fmt.Println("hahaha passed me het")
 	return true
 }
 
