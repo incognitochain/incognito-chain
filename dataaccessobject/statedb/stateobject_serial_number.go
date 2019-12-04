@@ -20,10 +20,12 @@ type SerialNumberObject struct {
 	trie Trie // storage trie, which becomes non-nil on first access
 }
 
-func newSerialNumberObject(db *StateDB) *SerialNumberObject {
+func newSerialNumberObject(db *StateDB, hash common.Hash) *SerialNumberObject {
 	return &SerialNumberObject{
-		db:         db,
-		objectType: SerialNumberObjectType,
+		db:               db,
+		serialNumberHash: hash,
+		serialNumber:     []byte{},
+		objectType:       SerialNumberObjectType,
 	}
 }
 func newSerialNumberObjectWithValue(db *StateDB, key common.Hash, data interface{}) *SerialNumberObject {
@@ -67,7 +69,7 @@ func (s *SerialNumberObject) GetValueBytes() []byte {
 	return data.(SerialNumber)[:]
 }
 
-func (s *SerialNumberObject) GetKey() common.Hash {
+func (s *SerialNumberObject) GetHash() common.Hash {
 	return s.serialNumberHash
 }
 
@@ -75,14 +77,22 @@ func (s *SerialNumberObject) GetType() int {
 	return s.objectType
 }
 
+//TODO: implement
 func (s *SerialNumberObject) Delete() error {
 	return nil
 }
 
+//TODO: implement
 func (s *SerialNumberObject) Exist() bool {
 	return false
 }
 
+//TODO: implement
 func (s *SerialNumberObject) Reset() bool {
+	return false
+}
+
+//TODO": implement
+func (s *SerialNumberObject) IsDeleted() bool {
 	return false
 }
