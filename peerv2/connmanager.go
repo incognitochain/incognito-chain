@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"net/rpc"
 	"reflect"
 	"time"
 
@@ -18,6 +19,53 @@ import (
 )
 
 var HighwayBeaconID = byte(255)
+
+func DiscoverHighWay(
+	discoverPeerAddress string,
+	shardsStr []string,
+) (
+	map[string][]string,
+	error,
+) {
+	if discoverPeerAddress == common.EmptyString {
+		return nil, errors.Errorf("Not config discovery peer")
+	}
+	client := new(rpc.Client)
+	var err error
+	for {
+		client, err = rpc.Dial("tcp", discoverPeerAddress)
+		Logger.Info("Dialing...")
+		if err != nil {
+			// can not create connection to rpc server with
+			// provided "discover peer address" in config
+			Logger.Errorf("Connect to discover peer %v return error %v:", discoverPeerAddress, err)
+			time.Sleep(2 * time.Second)
+		} else {
+			Logger.Info("Connected to %v", discoverPeerAddress)
+			break
+		}
+	}
+	if client != nil {
+		defer client.Close()
+
+		req := Request{
+			Shard: shardsStr,
+		}
+		var res Response
+		Logger.Infof("Start dialing RPC server with param %v\n", req)
+
+		err = client.Call("Handler.GetPeers", req, &res)
+
+		if err != nil {
+			Logger.Errorf("Call Handler.GetPeers return error %v", err)
+			return nil, err
+		} else {
+			Logger.Infof("Bootnode return %v\n", res.PeerPerShard)
+			return res.PeerPerShard, nil
+		}
+	}
+	return nil, errors.Errorf("Can not get any from bootnode")
+}
 
 func NewConnManager(
 	host *Host,
@@ -94,8 +142,20 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 }
 
 func (cm *ConnManager) Start(ns NetSync) {
+	mapHWPerShard, err := DiscoverHighWay(cm.DiscoverPeersAddress, []string{"all"})
+
+	if err != nil {
+		Logger.Errorf("%v", err)
+		return
+	}
+	Logger.Infof("Got %v from bootnode", mapHWPerShard)
+
+	// TODO remove hardcode here
+	hwPeerIDForAllShard := mapHWPerShard["all"][0]
+	cm.HighwayAddress = hwPeerIDForAllShard
+
 	// connect to highway
-	addr, err := multiaddr.NewMultiaddr(cm.DiscoverPeersAddress)
+	addr, err := multiaddr.NewMultiaddr(cm.HighwayAddress)
 	if err != nil {
 		panic(err)
 	}
@@ -176,6 +236,7 @@ type Topic struct {
 type ConnManager struct {
 	LocalHost            *Host
 	DiscoverPeersAddress string
+	HighwayAddress       string
 	IdentityKey          *incognitokey.CommitteePublicKey
 	IsMasterNode         bool
 
@@ -214,9 +275,9 @@ func (cm *ConnManager) process() {
 // The method push data to the given channel to signal that the first attempt had finished.
 // Constructor can use this info to initialize other objects.
 func (cm *ConnManager) keepHighwayConnection(connectedOnce chan error) {
-	addr, err := multiaddr.NewMultiaddr(cm.DiscoverPeersAddress)
+	addr, err := multiaddr.NewMultiaddr(cm.HighwayAddress)
 	if err != nil {
-		panic(fmt.Sprintf("invalid discover peers address: %v", cm.DiscoverPeersAddress))
+		panic(fmt.Sprintf("invalid discover peers address: %v", cm.HighwayAddress))
 	}
 
 	hwPeerInfo, err := peer.AddrInfoFromP2pAddr(addr)
