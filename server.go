@@ -17,8 +17,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	peer2 "github.com/libp2p/go-libp2p-core/peer"
-
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/peerv2"
 
@@ -1563,17 +1561,15 @@ func (serverObj *Server) PushMessageGetBlockBeaconBySpecificHeight(heights []uin
 }
 
 func (serverObj *Server) PushMessageGetBlockBeaconByHash(blkHashes []common.Hash, getFromPool bool, peerID libp2p.ID) error {
-	msg, err := wire.MakeEmptyMessage(wire.CmdGetBlockBeacon)
+	msgs, err := serverObj.highway.Requester.GetBlockBeaconByHash(
+		blkHashes, // by blockHashes
+	)
 	if err != nil {
+		Logger.log.Error(err)
 		return err
 	}
-	msg.(*wire.MessageGetBlockBeacon).ByHash = true
-	msg.(*wire.MessageGetBlockBeacon).FromPool = getFromPool
-	msg.(*wire.MessageGetBlockBeacon).BlkHashes = blkHashes
-	if peerID != "" {
-		return serverObj.PushMessageToPeer(msg, peerID)
-	}
-	return serverObj.PushMessageToBeacon(msg, map[peer2.ID]bool{})
+	serverObj.putResponseMsgs(msgs)
+	return nil
 }
 
 func (serverObj *Server) PushMessageGetBlockShardByHeight(shardID byte, from uint64, to uint64) error {
@@ -1612,22 +1608,18 @@ func (serverObj *Server) PushMessageGetBlockShardBySpecificHeight(shardID byte, 
 
 }
 
-func (serverObj *Server) PushMessageGetBlockShardByHash(shardID byte, blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error {
-	msg, err := wire.MakeEmptyMessage(wire.CmdGetBlockShard)
+func (serverObj *Server) PushMessageGetBlockShardByHash(shardID byte, blkHashes []common.Hash, getFromPool bool, peerID libp2p.ID) error {
+	msgs, err := serverObj.highway.Requester.GetBlockShardByHash(
+		int32(shardID),
+		blkHashes, // by blockHashes
+	)
 	if err != nil {
+		Logger.log.Error(err)
 		return err
 	}
-	msg.(*wire.MessageGetBlockShard).ByHash = true
-	msg.(*wire.MessageGetBlockShard).FromPool = getFromPool
-	msg.(*wire.MessageGetBlockShard).BlkHashes = blksHash
-	msg.(*wire.MessageGetBlockShard).ShardID = shardID
-	Logger.log.Critical("SEND REQUEST FOR BLOCK HASH peerID=empty shard=%+v blksHash[0]", peerID, shardID, blksHash[0].String())
-	if peerID == "" {
-		exclusivePeerIDs := map[libp2p.ID]bool{}
-		return serverObj.PushMessageToShard(msg, shardID, exclusivePeerIDs)
-	}
-	return serverObj.PushMessageToPeer(msg, peerID)
 
+	serverObj.putResponseMsgs(msgs)
+	return nil
 }
 
 func (serverObj *Server) PushMessageGetBlockShardToBeaconByHeight(shardID byte, from uint64, to uint64) error {

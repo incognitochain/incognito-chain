@@ -142,13 +142,19 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 }
 
 func (cm *ConnManager) Start(ns NetSync) {
-	mapHWPerShard, err := DiscoverHighWay(cm.DiscoverPeersAddress, []string{"all"})
-
-	if err != nil {
-		Logger.Errorf("%v", err)
-		return
+	mapHWPerShard := map[string][]string{}
+	var err error
+	for {
+		mapHWPerShard, err = DiscoverHighWay(cm.DiscoverPeersAddress, []string{"all"})
+		if err != nil {
+			Logger.Errorf("DiscoverHighWay return erro: %v", err)
+			time.Sleep(5 * time.Second)
+			Logger.Infof("Re connect to bootnode!")
+		} else {
+			Logger.Infof("Got %v from bootnode", mapHWPerShard)
+			break
+		}
 	}
-	Logger.Infof("Got %v from bootnode", mapHWPerShard)
 
 	// TODO remove hardcode here
 	hwPeerIDForAllShard := mapHWPerShard["all"][0]
