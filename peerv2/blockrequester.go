@@ -5,6 +5,7 @@ import (
 	"time"
 
 	p2pgrpc "github.com/incognitochain/go-libp2p-grpc"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -111,6 +112,33 @@ func (c *BlockRequester) GetBlockShardByHeight(
 	return reply.Data, nil
 }
 
+func (c *BlockRequester) GetBlockShardByHash(
+	shardID int32,
+	hashes []common.Hash,
+) ([][]byte, error) {
+	if !c.Ready() {
+		return nil, errors.New("requester not ready")
+	}
+	blkHashBytes := [][]byte{}
+	for _, hash := range hashes {
+		blkHashBytes = append(blkHashBytes, hash.GetBytes())
+	}
+	Logger.Infof("Requesting shard block by hash: %v", hashes)
+	client := NewHighwayServiceClient(c.conn)
+	reply, err := client.GetBlockShardByHash(
+		context.Background(),
+		&GetBlockShardByHashRequest{
+			Shard:  shardID,
+			Hashes: blkHashBytes,
+		},
+	)
+	Logger.Infof("Received block shard data %v", reply)
+	if err != nil {
+		return nil, err
+	}
+	return reply.Data, nil
+}
+
 func (c *BlockRequester) GetBlockBeaconByHeight(
 	from uint64,
 	to uint64,
@@ -135,6 +163,31 @@ func (c *BlockRequester) GetBlockBeaconByHeight(
 		return nil, err
 	} else if reply != nil {
 		Logger.Infof("Received block beacon data len: %v", len(reply.Data))
+	}
+	return reply.Data, nil
+}
+
+func (c *BlockRequester) GetBlockBeaconByHash(
+	hashes []common.Hash,
+) ([][]byte, error) {
+	if !c.Ready() {
+		return nil, errors.New("requester not ready")
+	}
+	blkHashBytes := [][]byte{}
+	for _, hash := range hashes {
+		blkHashBytes = append(blkHashBytes, hash.GetBytes())
+	}
+	Logger.Infof("Requesting beacon block by hash: %v", hashes)
+	client := NewHighwayServiceClient(c.conn)
+	reply, err := client.GetBlockBeaconByHash(
+		context.Background(),
+		&GetBlockBeaconByHashRequest{
+			Hashes: blkHashBytes,
+		},
+	)
+	Logger.Infof("Received block beacon data %v", reply)
+	if err != nil {
+		return nil, err
 	}
 	return reply.Data, nil
 }
