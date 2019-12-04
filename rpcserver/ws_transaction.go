@@ -23,10 +23,12 @@ func (wsServer *WsServer) handleSubscribePendingTransaction(params interface{}, 
 	if !ok || txHashTemp == "" {
 		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Invalid Tx Hash"))
 		cResult <- RpcSubResult{Error: err}
+		return
 	}
 	txHash, err := common.Hash{}.NewHashFromStr(txHashTemp)
 	if err != nil {
-		Logger.log.Error(err)
+		err1 := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+		cResult <- RpcSubResult{Error: err1}
 		return
 	}
 	// try to get transaction in database
