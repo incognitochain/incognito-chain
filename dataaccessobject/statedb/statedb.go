@@ -76,48 +76,56 @@ func (stateDB *StateDB) Reset(root common.Hash) error {
 // IntermediateRoot computes the current root hash of the state trie.
 // It is called in between transactions to get the root hash that
 // goes into transaction receipts.
-func (s *StateDB) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
-	for addr := range s.stateObjectsPending {
-		obj := s.stateObjects[addr]
+func (stateDB *StateDB) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
+	for addr := range stateDB.stateObjectsPending {
+		obj := stateDB.stateObjects[addr]
 		if obj.IsDeleted() {
-			s.deleteStateObject(obj)
+			stateDB.deleteStateObject(obj)
 		} else {
-			s.updateStateObject(obj)
+			stateDB.updateStateObject(obj)
 		}
 	}
-	if len(s.stateObjectsPending) > 0 {
-		s.stateObjectsPending = make(map[common.Hash]struct{})
+	if len(stateDB.stateObjectsPending) > 0 {
+		stateDB.stateObjectsPending = make(map[common.Hash]struct{})
 	}
 	// Track the amount of time wasted on hashing the account trie
 	if metrics.EnabledExpensive {
-		defer func(start time.Time) { s.StateObjectHashes += time.Since(start) }(time.Now())
+		defer func(start time.Time) { stateDB.StateObjectHashes += time.Since(start) }(time.Now())
 	}
-	return s.trie.Hash()
+	return stateDB.trie.Hash()
 }
 
 // Commit writes the state to the underlying in-memory trie database.
-func (s *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, error) {
+func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, error) {
 	// Finalize any pending changes and merge everything into the tries
-	s.IntermediateRoot(deleteEmptyObjects)
+	stateDB.IntermediateRoot(deleteEmptyObjects)
 
-	if len(s.stateObjectsDirty) > 0 {
-		s.stateObjectsDirty = make(map[common.Hash]struct{})
+	if len(stateDB.stateObjectsDirty) > 0 {
+		stateDB.stateObjectsDirty = make(map[common.Hash]struct{})
 	}
 	// Write the account trie changes, measuing the amount of wasted time
 	if metrics.EnabledExpensive {
-		defer func(start time.Time) { s.StateObjectCommits += time.Since(start) }(time.Now())
+		defer func(start time.Time) { stateDB.StateObjectCommits += time.Since(start) }(time.Now())
 	}
-	return s.trie.Commit(func(leaf []byte, parent common.Hash) error {
+	return stateDB.trie.Commit(func(leaf []byte, parent common.Hash) error {
 		return nil
 	})
 }
+func (stateDB *StateDB) copy() *StateDB {
+	return &StateDB{}
+}
 
 // ================================= STATE OBJECT =======================================
+func (stateDB *StateDB) SetStateObject(objectType int, key common.Hash, value interface{}) {
+	obj := stateDB.getOrNewStateObject(objectType, key)
+	obj.SetValue(value)
+}
+
 // Retrieve a state object or create a new state object if nil.
-func (self *StateDB) GetOrNewStateObject(objectType int, hash common.Hash) StateObject {
-	stateObject := self.getStateObject(objectType, hash)
+func (stateDB *StateDB) getOrNewStateObject(objectType int, hash common.Hash) StateObject {
+	stateObject := stateDB.getStateObject(objectType, hash)
 	if stateObject == nil {
-		stateObject, _ = self.createObject(objectType, hash)
+		stateObject, _ = stateDB.createObject(objectType, hash)
 	}
 	return stateObject
 }
@@ -127,6 +135,7 @@ func (self *StateDB) GetOrNewStateObject(objectType int, hash common.Hash) State
 func (stateDB *StateDB) createObject(objectType int, hash common.Hash) (newobj, prev StateObject) {
 	prev = stateDB.getDeletedStateObject(objectType, hash) // Note, prev might have been deleted, we need that!
 	newobj = newStateObject(stateDB, objectType, hash)
+	stateDB.stateObjectsPending[hash] = struct{}{}
 	stateDB.setStateObject(newobj)
 	return newobj, prev
 }
@@ -140,8 +149,8 @@ func (stateDB *StateDB) setStateObject(object StateObject) {
 // getStateObject retrieves a state object given by the address, returning nil if
 // the object is not found or was deleted in this execution context. If you need
 // to differentiate between non-existent/just-deleted, use getDeletedStateObject.
-func (s *StateDB) getStateObject(objectType int, addr common.Hash) StateObject {
-	if obj := s.getDeletedStateObject(objectType, addr); obj != nil && !obj.IsDeleted() {
+func (stateDB *StateDB) getStateObject(objectType int, addr common.Hash) StateObject {
+	if obj := stateDB.getDeletedStateObject(objectType, addr); obj != nil && !obj.IsDeleted() {
 		return obj
 	}
 	return nil
@@ -175,24 +184,33 @@ func (stateDB *StateDB) getDeletedStateObject(objectType int, hash common.Hash) 
 }
 
 // deleteStateObject removes the given object from the state trie.
-func (s *StateDB) deleteStateObject(obj StateObject) {
+func (stateDB *StateDB) deleteStateObject(obj StateObject) {
 	// Track the amount of time wasted on deleting the account from the trie
 	if metrics.EnabledExpensive {
-		defer func(start time.Time) { s.StateObjectUpdates += time.Since(start) }(time.Now())
+		defer func(start time.Time) { stateDB.StateObjectUpdates += time.Since(start) }(time.Now())
 	}
 	// Delete the account from the trie
 	addr := obj.GetHash()
-	s.setError(s.trie.TryDelete(addr[:]))
+	stateDB.setError(stateDB.trie.TryDelete(addr[:]))
 }
 
 // updateStateObject writes the given object to the trie.
-func (s *StateDB) updateStateObject(obj StateObject) {
+func (stateDB *StateDB) updateStateObject(obj StateObject) {
 	// Track the amount of time wasted on updating the account from the trie
 	if metrics.EnabledExpensive {
-		defer func(start time.Time) { s.StateObjectUpdates += time.Since(start) }(time.Now())
+		defer func(start time.Time) { stateDB.StateObjectUpdates += time.Since(start) }(time.Now())
 	}
 	// Encode the account and update the account trie
 	addr := obj.GetHash()
 	data := obj.GetValueBytes()
-	s.setError(s.trie.TryUpdate(addr[:], data))
+	stateDB.setError(stateDB.trie.TryUpdate(addr[:], data))
+}
+
+// ================================= Serial Number OBJECT =======================================
+func (stateDB *StateDB) GetSerialNumber(key common.Hash) []byte {
+	serialNumberObject := stateDB.getStateObject(SerialNumberObjectType, key)
+	if serialNumberObject != nil {
+		return serialNumberObject.GetValueBytes()
+	}
+	return []byte{}
 }
