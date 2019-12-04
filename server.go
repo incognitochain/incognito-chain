@@ -1609,14 +1609,17 @@ func (serverObj *Server) PushMessageGetBlockShardBySpecificHeight(shardID byte, 
 }
 
 func (serverObj *Server) PushMessageGetBlockShardByHash(shardID byte, blkHashes []common.Hash, getFromPool bool, peerID libp2p.ID) error {
+	Logger.log.Infof("[blkbyhash] Get blk shard by hash %v", blkHashes)
 	msgs, err := serverObj.highway.Requester.GetBlockShardByHash(
 		int32(shardID),
 		blkHashes, // by blockHashes
 	)
 	if err != nil {
+		Logger.log.Infof("[blkbyhash] Get blk shard by hash error %v ", err)
 		Logger.log.Error(err)
 		return err
 	}
+	Logger.log.Infof("[blkbyhash] Get blk shard by hash get %v ", msgs)
 
 	serverObj.putResponseMsgs(msgs)
 	return nil
