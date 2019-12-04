@@ -269,6 +269,15 @@ func (cm *ConnManager) process() {
 		select {
 		case msg := <-cm.messages:
 			err := cm.disp.processInMessageString(string(msg.Data))
+			if len(msg.Data) > 0 {
+				if msg.Data[0] == 49 {
+					if err != nil {
+						Logger.Infof("[blkbyhash] Return error %v ", err)
+					} else {
+						Logger.Infof("[blkbyhash] Return error nil")
+					}
+				}
+			}
 			if err != nil {
 				Logger.Warn(err)
 			}
