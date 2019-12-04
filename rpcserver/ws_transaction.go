@@ -20,11 +20,15 @@ func (wsServer *WsServer) handleSubscribePendingTransaction(params interface{}, 
 		return
 	}
 	txHashTemp, ok := arrayParams[0].(string)
-	if !ok {
+	if !ok || txHashTemp == "" {
 		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Invalid Tx Hash"))
 		cResult <- RpcSubResult{Error: err}
 	}
-	txHash, _ := common.Hash{}.NewHashFromStr(txHashTemp)
+	txHash, err := common.Hash{}.NewHashFromStr(txHashTemp)
+	if err != nil {
+		Logger.log.Error(err)
+		return
+	}
 	// try to get transaction in database
 	_, blockHash, index, tx, err := wsServer.config.BlockChain.GetTransactionByHash(*txHash)
 	if err == nil {
