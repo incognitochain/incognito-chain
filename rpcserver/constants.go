@@ -175,6 +175,8 @@ const (
 	getPDEContributionStatus              = "getpdecontributionstatus"
 	getPDETradeStatus                     = "getpdetradestatus"
 	getPDEWithdrawalStatus                = "getpdewithdrawalstatus"
+	convertPDEPrices                      = "convertpdeprices"
+	extractPDEInstsFromBeaconBlock        = "extractpdeinstsfrombeaconblock"
 )
 
 const (
