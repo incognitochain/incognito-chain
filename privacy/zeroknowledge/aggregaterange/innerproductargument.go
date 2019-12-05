@@ -2,7 +2,6 @@ package aggregaterange
 
 import (
 	"errors"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"math"
 )
@@ -122,7 +121,6 @@ func (wit InnerProductWitness) Prove(aggParam *bulletproofParams) (*InnerProduct
 		H[i] = new(privacy.Point).Set(aggParam.h[i])
 	}
 
-	chalenge := new(privacy.Scalar).FromUint64(0)
 	proof := new(InnerProductProof)
 	proof.l = make([]*privacy.Point, 0)
 	proof.r = make([]*privacy.Point, 0)
@@ -190,7 +188,6 @@ func (wit InnerProductWitness) Prove(aggParam *bulletproofParams) (*InnerProduct
 		a = aPrime
 		b = bPrime
 		p.Set(PPrime)
-		chalenge.Set(x)
 		G = GPrime
 		H = HPrime
 		n = nPrime
@@ -317,7 +314,6 @@ func (proof InnerProductProof) VerifyFaster(aggParam *bulletproofParams) bool {
 
 	res := privacy.IsPointEqual(rightHS, leftHS)
 	if !res {
-		fmt.Println("Failed")
 		privacy.Logger.Log.Error("Inner product argument failed:")
 		privacy.Logger.Log.Error("LHS: %v\n", leftHS)
 		privacy.Logger.Log.Error("RHS: %v\n", rightHS)
