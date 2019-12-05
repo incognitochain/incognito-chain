@@ -71,7 +71,7 @@ func NewBurningRequestMetadata(senderPrivateKeyStr string, tokenReceivers interf
 		remoteAddress,
 		metadata.BurningRequestMeta,
 	)
-	if err != nil{
+	if err != nil {
 		return nil, NewRPCError(UnexpectedError, err)
 	}
 
@@ -119,6 +119,9 @@ func GetKeySetFromPaymentAddressParam(paymentAddressStr string) (*incognitokey.K
 	keyWallet, err := wallet.Base58CheckDeserialize(paymentAddressStr)
 	if err != nil {
 		return nil, byte(0), err
+	}
+	if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
+		return nil, byte(0), errors.New("invalid payment address string")
 	}
 
 	// calculate shard ID
