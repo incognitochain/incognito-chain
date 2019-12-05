@@ -278,8 +278,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	// challenge y, z
 	y := generateChallenge([][]byte{aggParam.cs, A.ToBytesS(), S.ToBytesS()})
 	z := generateChallenge([][]byte{aggParam.cs, A.ToBytesS(), S.ToBytesS(), y.ToBytesS()})
-	//y := generateChallengeOld(aggParam, [][]byte{A.ToBytesS(), S.ToBytesS()})
-	//z := generateChallengeOld(aggParam, [][]byte{A.ToBytesS(), S.ToBytesS(), y.ToBytesS()})
+
 	zNeg := new(privacy.Scalar).Sub(new(privacy.Scalar).FromUint64(0), z)
 	zSquare := new(privacy.Scalar).Mul(z, z)
 
@@ -370,8 +369,6 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 
 	// challenge x = hash(G || H || A || S || T1 || T2)
 	x := generateChallenge([][]byte{aggParam.cs, proof.a.ToBytesS(), proof.s.ToBytesS(), proof.t1.ToBytesS(), proof.t2.ToBytesS()})
-	//x := generateChallengeOld(aggParam,
-	//	[][]byte{proof.a.ToBytesS(), proof.s.ToBytesS(), proof.t1.ToBytesS(), proof.t2.ToBytesS()})
 
 	xSquare := new(privacy.Scalar).Mul(x, x)
 
@@ -478,10 +475,9 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	twoVectorN := powerVector(twoNumber, n)
 
 	// recalculate challenge y, z
-	//y := generateChallenge([][]byte{aggParam.cs, proof.a.ToBytesS(), proof.s.ToBytesS()})
-	//z := generateChallenge([][]byte{aggParam.cs, proof.a.ToBytesS(), proof.s.ToBytesS(), y.ToBytesS()})
-	y := generateChallengeOld(aggParam, [][]byte{proof.a.ToBytesS(), proof.s.ToBytesS()})
-	z := generateChallengeOld(aggParam, [][]byte{proof.a.ToBytesS(), proof.s.ToBytesS(), y.ToBytesS()})
+	y := generateChallenge([][]byte{aggParam.cs, proof.a.ToBytesS(), proof.s.ToBytesS()})
+	z := generateChallenge([][]byte{aggParam.cs, proof.a.ToBytesS(), proof.s.ToBytesS(), y.ToBytesS()})
+
 	zSquare := new(privacy.Scalar).Mul(z, z)
 
 	// challenge x = hash(G || H || A || S || T1 || T2)
