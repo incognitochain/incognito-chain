@@ -122,7 +122,7 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 }
 
 func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) error {
-	publishable := []string{wire.CmdCrossShard, wire.CmdBFT}
+	publishable := []string{wire.CmdBlockShard, wire.CmdCrossShard, wire.CmdBFT}
 	msgType := msg.MessageType()
 	for _, p := range publishable {
 		if msgType == p {
