@@ -3,24 +3,22 @@ package aggregaterange
 import (
 	"errors"
 	"github.com/incognitochain/incognito-chain/privacy"
-	C25519 "github.com/incognitochain/incognito-chain/privacy/curve25519"
 	"math"
 )
 
 const (
-	maxExp = 64
-	numOutputParam = 32
-	maxOutputNumber = 32
-	numCommitValue = 5
+	maxExp               = 64
+	numOutputParam       = 32
+	maxOutputNumber      = 32
+	numCommitValue       = 5
 	maxOutputNumberParam = 256
-
 )
 
 // bulletproofParams includes all generator for aggregated range proof
 type bulletproofParams struct {
-	g []*privacy.Point
-	h []*privacy.Point
-	u *privacy.Point
+	g  []*privacy.Point
+	h  []*privacy.Point
+	u  *privacy.Point
 	cs []byte
 }
 
@@ -142,7 +140,7 @@ func hadamardProduct(a []*privacy.Scalar, b []*privacy.Scalar) ([]*privacy.Scala
 func powerVector(base *privacy.Scalar, n int) []*privacy.Scalar {
 	res := make([]*privacy.Scalar, n)
 	res[0] = new(privacy.Scalar).FromUint64(1)
-	if n >1 {
+	if n > 1 {
 		res[1] = new(privacy.Scalar).Set(base)
 		for i := 2; i < n; i++ {
 			res[i] = new(privacy.Scalar).Mul(res[i-1], base)
@@ -173,7 +171,6 @@ func vectorMulScalar(v []*privacy.Scalar, s *privacy.Scalar) []*privacy.Scalar {
 
 // CommitAll commits a list of PCM_CAPACITY value(s)
 func encodeVectors(l []*privacy.Scalar, r []*privacy.Scalar, g []*privacy.Point, h []*privacy.Point) (*privacy.Point, error) {
-	// MultiscalarMul Approach
 	if len(l) != len(r) || len(g) != len(l) || len(h) != len(g) {
 		return nil, errors.New("invalid input")
 	}
@@ -182,47 +179,7 @@ func encodeVectors(l []*privacy.Scalar, r []*privacy.Scalar, g []*privacy.Point,
 
 	res := new(privacy.Point).Add(tmp1, tmp2)
 	return res, nil
-
-	////AddPedersen Approach
-	//if len(l) != len(r) || len(g) != len(l) || len(h) != len(g) {
-	//	return nil, errors.New("invalid input")
-	//}
-	//
-	//res := new(privacy.Point).Identity()
-	//
-	//for i := 0; i < len(l); i++ {
-	//	tmp := new(privacy.Point).AddPedersen(l[i], g[i], r[i], h[i])
-	//	res.Add(res, tmp)
-	//}
-	//return res, nil
 }
-
-func encodeCachedVectors(l []*privacy.Scalar, r []*privacy.Scalar, gPre [][8]C25519.CachedGroupElement, hPre [][8]C25519.CachedGroupElement) (*privacy.Point, error) {
-	// MultiscalarMul Approach
-	//if len(l) != len(r) || len(gPre) != len(l) || len(hPre) != len(gPre) {
-	//	return nil, errors.New("invalid input")
-	//}
-	//tmp1 := new(privacy.Point).MultiScalarMultCached(l, gPre)
-	//tmp2 := new(privacy.Point).MultiScalarMultCached(r, hPre)
-	//
-	//res := new(privacy.Point).Add(tmp1, tmp2)
-	//return res, nil
-
-
-	//CacheAddPedersen Approach
-	if len(l) != len(r) || len(gPre) != len(l) || len(hPre) != len(hPre) {
-		return nil, errors.New("invalid input")
-	}
-
-	res := new(privacy.Point).Identity()
-
-	for i := 0; i < len(l); i++ {
-		tmp := new(privacy.Point).AddPedersenCached(l[i], gPre[i], r[i], hPre[i])
-		res.Add(res, tmp)
-	}
-	return res, nil
-}
-
 
 // estimateMultiRangeProofSize estimate multi range proof size
 func EstimateMultiRangeProofSize(nOutput int) uint64 {
