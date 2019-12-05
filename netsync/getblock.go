@@ -9,6 +9,25 @@ import (
 	libp2p "github.com/libp2p/go-libp2p-peer"
 )
 
+func (netSync *NetSync) GetBlockShardByHash(blkHashes []common.Hash) []wire.Message {
+	blkMsgs := []wire.Message{}
+	for _, blkHash := range blkHashes {
+		blk, _, err := netSync.config.BlockChain.GetShardBlockByHash(blkHash)
+		if err != nil {
+			Logger.log.Error(err)
+			continue
+		}
+		newMsg, err := wire.MakeEmptyMessage(wire.CmdBlockShard)
+		if err != nil {
+			Logger.log.Error(err)
+			continue
+		}
+		newMsg.(*wire.MessageBlockShard).Block = blk
+		blkMsgs = append(blkMsgs, newMsg)
+	}
+	return blkMsgs
+}
+
 func (netSync *NetSync) getBlockShardByHashAndSend(peerID libp2p.ID, blkType byte, blkHashes []common.Hash, crossShardID byte) {
 	for _, blkHash := range blkHashes {
 		blk, _, err := netSync.config.BlockChain.GetShardBlockByHash(blkHash)
@@ -26,6 +45,25 @@ func (netSync *NetSync) getBlockShardByHashAndSend(peerID libp2p.ID, blkType byt
 			Logger.log.Error(err)
 		}
 	}
+}
+
+func (netSync *NetSync) GetBlockBeaconByHash(blkHashes []common.Hash) []wire.Message {
+	blkMsgs := []wire.Message{}
+	for _, blkHash := range blkHashes {
+		blk, _, err := netSync.config.BlockChain.GetBeaconBlockByHash(blkHash)
+		if err != nil {
+			Logger.log.Error(err)
+			continue
+		}
+		newMsg, err := wire.MakeEmptyMessage(wire.CmdBlockBeacon)
+		if err != nil {
+			Logger.log.Error(err)
+			continue
+		}
+		newMsg.(*wire.MessageBlockBeacon).Block = blk
+		blkMsgs = append(blkMsgs, newMsg)
+	}
+	return blkMsgs
 }
 
 func (netSync *NetSync) getBlockBeaconByHashAndSend(peerID libp2p.ID, blkHashes []common.Hash) {
