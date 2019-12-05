@@ -730,7 +730,7 @@ func (synker *Synker) SyncBlkShardToBeacon(shardID byte, byHash bool, bySpecific
 	To  Shard: shard receive cross shard block
 */
 func (synker *Synker) SyncBlkCrossShard(getFromPool bool, byHash bool, blksHash []common.Hash, blksHeight []uint64, fromShard byte, toShard byte, peerID libp2p.ID) {
-	Logger.log.Criticalf("Shard %+v request CrossShardBlock with Height %+v from shard %+v \n", fromShard, blksHeight, toShard)
+	Logger.log.Criticalf("Receiver Shard %+v request CrossShardBlock with Height %+v from sender shard %+v \n", toShard, blksHeight, fromShard)
 	cacheItems := synker.Status.CurrentlySyncBlks.Items()
 	if byHash {
 		prefix := getBlkPrefixSyncKey(true, CrossShardBlk, toShard, fromShard)
