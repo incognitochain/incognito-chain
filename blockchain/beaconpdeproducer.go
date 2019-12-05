@@ -93,9 +93,6 @@ func isRightRatio(
 	waitingContribution2 *rawdb.PDEContribution,
 	poolPair *rawdb.PDEPoolForPair,
 ) bool {
-	if poolPair == nil { // first contribution on the pair
-		return true
-	}
 	if poolPair.Token1PoolValue == 0 || poolPair.Token2PoolValue == 0 {
 		return true
 	}
@@ -124,6 +121,26 @@ func isRightRatio(
 		return expectedContribAmt.Uint64() == waitingContribution2.Amount
 	}
 	return false
+}
+
+func isNewlyCreatedPairValid(
+	waitingContribution1 *rawdb.PDEContribution,
+	waitingContribution2 *rawdb.PDEContribution,
+) bool {
+	prvIDStr := common.PRVCoinID.String()
+	if waitingContribution1.TokenIDStr != prvIDStr &&
+		waitingContribution2.TokenIDStr != prvIDStr {
+		return true
+	}
+	if waitingContribution1.TokenIDStr == prvIDStr &&
+		waitingContribution1.Amount < uint64(common.MinInitialAddingLiquidity) {
+		return false
+	}
+	if waitingContribution2.TokenIDStr == prvIDStr &&
+		waitingContribution2.Amount < uint64(common.MinInitialAddingLiquidity) {
+		return false
+	}
+	return true
 }
 
 func (blockchain *BlockChain) buildInstructionsForPDEContribution(
@@ -209,8 +226,8 @@ func (blockchain *BlockChain) buildInstructionsForPDEContribution(
 		TxReqID:               pdeContributionAction.TxReqID,
 	}
 
-	if !found || poolPair == nil ||
-		isRightRatio(waitingContribution, incomingWaitingContribution, poolPair) {
+	if ((!found || poolPair == nil) && isNewlyCreatedPairValid(waitingContribution, incomingWaitingContribution)) ||
+		(poolPair != nil && isRightRatio(waitingContribution, incomingWaitingContribution, poolPair)) {
 		delete(currentPDEState.WaitingPDEContributions, waitingContribPairKey)
 		updateWaitingContributionPairToPoolV2(
 			beaconHeight,

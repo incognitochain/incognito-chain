@@ -115,6 +115,9 @@ func GetKeySetFromPaymentAddressParam(paymentAddressStr string) (*incognitokey.K
 	if err != nil {
 		return nil, byte(0), err
 	}
+	if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
+		return nil, byte(0), errors.New("invalid payment address string")
+	}
 
 	// calculate shard ID
 	lastByte := keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1]

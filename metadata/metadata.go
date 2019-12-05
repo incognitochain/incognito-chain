@@ -2,13 +2,14 @@ package metadata
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 )
 
 // Interface for all types of metadata in tx
@@ -143,6 +144,19 @@ func getPDEPoolPair(
 	return &pdePoolForPair, nil
 }
 
+func isPairValid(poolPair *rawdb.PDEPoolForPair) bool {
+	prvIDStr := common.PRVCoinID.String()
+	if poolPair.Token1IDStr == prvIDStr &&
+		poolPair.Token1PoolValue < uint64(common.MinInitialAddingLiquidity) {
+		return false
+	}
+	if poolPair.Token2IDStr == prvIDStr &&
+		poolPair.Token2PoolValue < uint64(common.MinInitialAddingLiquidity) {
+		return false
+	}
+	return true
+}
+
 func convertValueBetweenCurrencies(
 	amount uint64,
 	currentCurrencyIDStr string,
@@ -155,6 +169,9 @@ func convertValueBetweenCurrencies(
 	pdePoolForPair, err := getPDEPoolPair(prvIDStr, tokenIDStr, beaconHeight, db)
 	if err != nil {
 		return 0, NewMetadataTxError(CouldNotGetExchangeRateError, err)
+	}
+	if !isPairValid(pdePoolForPair) {
+		return 0, NewMetadataTxError(CouldNotGetExchangeRateError, errors.New("PRV pool size on pdex is smaller minimum initial adding liquidity amount"))
 	}
 	invariant := float64(0)
 	invariant = float64(pdePoolForPair.Token1PoolValue) * float64(pdePoolForPair.Token2PoolValue)
