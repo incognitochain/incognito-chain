@@ -1092,7 +1092,7 @@ func (synker *Synker) syncMissingBlockInPool(
 		return nil
 	}
 
-	Logger.log.Infof("[sync] %v Sync missing block pending %v start %v list sync %v ", shardID, listPendingBlks, start, listBlkToSync)
+	Logger.log.Infof("[sync] %v Sync missing block pending %v start %v list sync [%v..%v]", shardID, listPendingBlks, start, listBlkToSync[0], listBlkToSync[len(listBlkToSync)-1])
 	if shardID == -1 {
 		// (false, false, false, nil, nil, currentBcnReqHeight, currentBcnReqHeight+DefaultMaxBlkReqPerPeer-1, libp2p.ID(""))
 		synker.SyncBlkBeacon(false, false, false, nil, listBlkToSync, listBlkToSync[0], listBlkToSync[len(listBlkToSync)-1], libp2p.ID("s"))
