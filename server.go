@@ -1730,6 +1730,9 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 	// if (userRole != common.CommitteeRole) && (userRole != common.ValidatorRole) && (userRole != common.ProposerRole) {
 	// 	return errors.New("Not in committee, don't need to publish node state!")
 	// }
+
+	userKey, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
+	metrics.SetGlobalParam("MINING_PUBKEY", userKey)
 	msg, err := wire.MakeEmptyMessage(wire.CmdPeerState)
 	if err != nil {
 		return err
