@@ -5,10 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/incognitochain/incognito-chain/blockchain"
 	"os"
 	"syscall"
+
+	"github.com/google/uuid"
+	"github.com/incognitochain/incognito-chain/blockchain"
 
 	"io/ioutil"
 	"net/http"
@@ -90,7 +91,6 @@ func init() {
 			//	waitingCandidateNextNumber = append(waitingCandidateNextNumber, v.GetMiningKeyBase58("bls"))
 			//}
 			//l.Add("waitingShardCandidateNextNumber", waitingCandidateNextNumber)
-			//
 			//pendingShardValidator := map[byte][]string{}
 			//shardValidator := map[byte][]string{}
 
