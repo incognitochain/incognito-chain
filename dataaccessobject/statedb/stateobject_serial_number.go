@@ -6,18 +6,21 @@ import (
 
 type SerialNumber []byte
 type SerialNumberObject struct {
+	db *StateDB
+	// Write caches.
+	trie Trie // storage trie, which becomes non-nil on first access
+
 	serialNumberHash common.Hash
 	serialNumber     SerialNumber
-	db               *StateDB
 	objectType       int
+	deleted          bool
+
 	// DB error.
 	// State objects are used by the consensus core and VM which are
 	// unable to deal with database-level errors. Any error that occurs
 	// during a database read is memoized here and will eventually be returned
 	// by StateDB.Commit.
 	dbErr error
-	// Write caches.
-	trie Trie // storage trie, which becomes non-nil on first access
 }
 
 func newSerialNumberObject(db *StateDB, hash common.Hash) *SerialNumberObject {
@@ -26,6 +29,7 @@ func newSerialNumberObject(db *StateDB, hash common.Hash) *SerialNumberObject {
 		serialNumberHash: hash,
 		serialNumber:     []byte{},
 		objectType:       SerialNumberObjectType,
+		deleted:          false,
 	}
 }
 func newSerialNumberObjectWithValue(db *StateDB, key common.Hash, data interface{}) *SerialNumberObject {
@@ -38,6 +42,7 @@ func newSerialNumberObjectWithValue(db *StateDB, key common.Hash, data interface
 		serialNumber:     newSerialNumber,
 		db:               db,
 		objectType:       SerialNumberObjectType,
+		deleted:          false,
 	}
 }
 
@@ -77,9 +82,9 @@ func (s *SerialNumberObject) GetType() int {
 	return s.objectType
 }
 
-//TODO: implement
-func (s *SerialNumberObject) Delete() error {
-	return nil
+// MarkDelete will delete an object in trie
+func (s *SerialNumberObject) MarkDelete() {
+	s.deleted = true
 }
 
 //TODO: implement
@@ -92,7 +97,11 @@ func (s *SerialNumberObject) Reset() bool {
 	return false
 }
 
-//TODO": implement
+//TODO: implement
 func (s *SerialNumberObject) IsDeleted() bool {
-	return false
+	return s.deleted
+}
+
+func (s *SerialNumberObject) Empty() bool {
+	return len(s.serialNumber[:]) == 0
 }

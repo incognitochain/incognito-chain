@@ -12,10 +12,11 @@ type StateObject interface {
 	SetValue(interface{})
 	GetTrie(DatabaseAccessWarper) Trie
 	SetError(error)
-	Delete() error
+	MarkDelete()
 	Exist() bool
 	Reset() bool
 	IsDeleted() bool
+	Empty() bool
 }
 
 func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, value interface{}) StateObject {

@@ -6,11 +6,10 @@ import (
 	"time"
 )
 
-// StateDBs within the ethereum protocol are used to store anything
+// StateDBs within the incognito protocol are used to store anything
 // within the merkle trie. StateDBs take care of caching and storing
 // nested states. It's the general query interface to retrieve:
-// * Contracts
-// * Accounts
+// * State Object
 type StateDB struct {
 	db   DatabaseAccessWarper
 	trie Trie
@@ -21,7 +20,7 @@ type StateDB struct {
 	stateObjectsDirty   map[common.Hash]struct{} // State objects modified in the current execution
 
 	// DB error.
-	// State objects are used by the consensus core and VM which are
+	// State objects are used by the consensus core which are
 	// unable to deal with database-level errors. Any error that occurs
 	// during a database read is memoized here and will eventually be returned
 	// by StateDB.Commit.
@@ -34,6 +33,7 @@ type StateDB struct {
 	StateObjectCommits time.Duration
 }
 
+// New return a new statedb attach with a state root
 func New(root common.Hash, db DatabaseAccessWarper) (*StateDB, error) {
 	tr, err := db.OpenTrie(root)
 	if err != nil {
@@ -55,6 +55,7 @@ func (stateDB *StateDB) setError(err error) {
 	}
 }
 
+// Error return statedb error
 func (stateDB *StateDB) Error() error {
 	return stateDB.dbErr
 }
@@ -77,6 +78,7 @@ func (stateDB *StateDB) Reset(root common.Hash) error {
 // It is called in between transactions to get the root hash that
 // goes into transaction receipts.
 func (stateDB *StateDB) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
+	stateDB.markDeleteEmptyObject(deleteEmptyObjects)
 	for addr := range stateDB.stateObjectsPending {
 		obj := stateDB.stateObjects[addr]
 		if obj.IsDeleted() {
@@ -93,6 +95,13 @@ func (stateDB *StateDB) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
 		defer func(start time.Time) { stateDB.StateObjectHashes += time.Since(start) }(time.Now())
 	}
 	return stateDB.trie.Hash()
+}
+func (stateDB *StateDB) markDeleteEmptyObject(deleteEmptyObjects bool) {
+	for _, object := range stateDB.stateObjects {
+		if object.Empty() {
+			object.MarkDelete()
+		}
+	}
 }
 
 // Commit writes the state to the underlying in-memory trie database.
@@ -111,51 +120,30 @@ func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, error) {
 		return nil
 	})
 }
-func (stateDB *StateDB) copy() *StateDB {
+
+// Database return current database access warper
+func (stateDB *StateDB) Database() DatabaseAccessWarper {
+	return stateDB.db
+}
+
+// TODO: implement duplicate current statedb
+// Copy duplicate statedb and return new statedb instance
+func (stateDB *StateDB) Copy() *StateDB {
 	return &StateDB{}
 }
 
+// Exist check existence of a state object in statedb
+func (stateDB *StateDB) Exist(objectType int, stateObjectHash common.Hash) bool {
+	return stateDB.getStateObject(objectType, stateObjectHash) != nil
+}
+
+// Empty check a state object in statedb is empty or not
+func (stateDB *StateDB) Empty(objectType int, stateObjectHash common.Hash) bool {
+	stateObject := stateDB.getStateObject(objectType, stateObjectHash)
+	return stateObject == nil || stateObject.Empty()
+}
+
 // ================================= STATE OBJECT =======================================
-func (stateDB *StateDB) SetStateObject(objectType int, key common.Hash, value interface{}) {
-	obj := stateDB.getOrNewStateObject(objectType, key)
-	obj.SetValue(value)
-}
-
-// Retrieve a state object or create a new state object if nil.
-func (stateDB *StateDB) getOrNewStateObject(objectType int, hash common.Hash) StateObject {
-	stateObject := stateDB.getStateObject(objectType, hash)
-	if stateObject == nil {
-		stateObject, _ = stateDB.createObject(objectType, hash)
-	}
-	return stateObject
-}
-
-// createObject creates a new state object. If there is an existing account with
-// the given hash, it is overwritten and returned as the second return value.
-func (stateDB *StateDB) createObject(objectType int, hash common.Hash) (newobj, prev StateObject) {
-	prev = stateDB.getDeletedStateObject(objectType, hash) // Note, prev might have been deleted, we need that!
-	newobj = newStateObject(stateDB, objectType, hash)
-	stateDB.stateObjectsPending[hash] = struct{}{}
-	stateDB.setStateObject(newobj)
-	return newobj, prev
-}
-
-// add state object into statedb struct
-func (stateDB *StateDB) setStateObject(object StateObject) {
-	key := object.GetHash()
-	stateDB.stateObjects[key] = object
-}
-
-// getStateObject retrieves a state object given by the address, returning nil if
-// the object is not found or was deleted in this execution context. If you need
-// to differentiate between non-existent/just-deleted, use getDeletedStateObject.
-func (stateDB *StateDB) getStateObject(objectType int, addr common.Hash) StateObject {
-	if obj := stateDB.getDeletedStateObject(objectType, addr); obj != nil && !obj.IsDeleted() {
-		return obj
-	}
-	return nil
-}
-
 // getDeletedStateObject is similar to getStateObject, but instead of returning
 // nil for a deleted state object, it returns the actual object with the deleted
 // flag set. This is needed by the state journal to revert to the correct self-
@@ -183,6 +171,18 @@ func (stateDB *StateDB) getDeletedStateObject(objectType int, hash common.Hash) 
 	return obj
 }
 
+// updateStateObject writes the given object to the trie.
+func (stateDB *StateDB) updateStateObject(obj StateObject) {
+	// Track the amount of time wasted on updating the account from the trie
+	if metrics.EnabledExpensive {
+		defer func(start time.Time) { stateDB.StateObjectUpdates += time.Since(start) }(time.Now())
+	}
+	// Encode the account and update the account trie
+	addr := obj.GetHash()
+	data := obj.GetValueBytes()
+	stateDB.setError(stateDB.trie.TryUpdate(addr[:], data))
+}
+
 // deleteStateObject removes the given object from the state trie.
 func (stateDB *StateDB) deleteStateObject(obj StateObject) {
 	// Track the amount of time wasted on deleting the account from the trie
@@ -194,16 +194,46 @@ func (stateDB *StateDB) deleteStateObject(obj StateObject) {
 	stateDB.setError(stateDB.trie.TryDelete(addr[:]))
 }
 
-// updateStateObject writes the given object to the trie.
-func (stateDB *StateDB) updateStateObject(obj StateObject) {
-	// Track the amount of time wasted on updating the account from the trie
-	if metrics.EnabledExpensive {
-		defer func(start time.Time) { stateDB.StateObjectUpdates += time.Since(start) }(time.Now())
+// createObject creates a new state object. If there is an existing account with
+// the given hash, it is overwritten and returned as the second return value.
+func (stateDB *StateDB) createObject(objectType int, hash common.Hash) (newobj, prev StateObject) {
+	prev = stateDB.getDeletedStateObject(objectType, hash) // Note, prev might have been deleted, we need that!
+	newobj = newStateObject(stateDB, objectType, hash)
+	stateDB.stateObjectsPending[hash] = struct{}{}
+	stateDB.setStateObject(newobj)
+	return newobj, prev
+}
+
+// SetStateObject add new stateobject into statedb
+func (stateDB *StateDB) SetStateObject(objectType int, key common.Hash, value interface{}) {
+	obj := stateDB.getOrNewStateObject(objectType, key)
+	obj.SetValue(value)
+	stateDB.stateObjectsPending[key] = struct{}{}
+}
+
+// Retrieve a state object or create a new state object if nil.
+func (stateDB *StateDB) getOrNewStateObject(objectType int, hash common.Hash) StateObject {
+	stateObject := stateDB.getStateObject(objectType, hash)
+	if stateObject == nil {
+		stateObject, _ = stateDB.createObject(objectType, hash)
 	}
-	// Encode the account and update the account trie
-	addr := obj.GetHash()
-	data := obj.GetValueBytes()
-	stateDB.setError(stateDB.trie.TryUpdate(addr[:], data))
+	return stateObject
+}
+
+// add state object into statedb struct
+func (stateDB *StateDB) setStateObject(object StateObject) {
+	key := object.GetHash()
+	stateDB.stateObjects[key] = object
+}
+
+// getStateObject retrieves a state object given by the address, returning nil if
+// the object is not found or was deleted in this execution context. If you need
+// to differentiate between non-existent/just-deleted, use getDeletedStateObject.
+func (stateDB *StateDB) getStateObject(objectType int, addr common.Hash) StateObject {
+	if obj := stateDB.getDeletedStateObject(objectType, addr); obj != nil && !obj.IsDeleted() {
+		return obj
+	}
+	return nil
 }
 
 // ================================= Serial Number OBJECT =======================================
