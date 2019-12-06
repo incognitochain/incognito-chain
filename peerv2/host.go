@@ -66,6 +66,10 @@ func NewHost(version string, pubIP string, port int, privateKey string) *Host {
 	}
 
 	p2pHost, err := libp2p.New(ctx, opts...)
+	if err != nil {
+		Logger.Criticalf("Couldn't create libp2p host, err: %+v", err)
+		catchError(err)
+	}
 
 	selfPeer := &Peer{
 		PeerID:        p2pHost.ID(),
