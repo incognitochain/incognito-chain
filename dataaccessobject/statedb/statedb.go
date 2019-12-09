@@ -78,7 +78,7 @@ func (stateDB *StateDB) Reset(root common.Hash) error {
 // It is called in between transactions to get the root hash that
 // goes into transaction receipts.
 func (stateDB *StateDB) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
-	stateDB.markDeleteEmptyObject(deleteEmptyObjects)
+	stateDB.markDeleteEmptyStateObject(deleteEmptyObjects)
 	for addr := range stateDB.stateObjectsPending {
 		obj := stateDB.stateObjects[addr]
 		if obj.IsDeleted() {
@@ -96,7 +96,7 @@ func (stateDB *StateDB) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
 	}
 	return stateDB.trie.Hash()
 }
-func (stateDB *StateDB) markDeleteEmptyObject(deleteEmptyObjects bool) {
+func (stateDB *StateDB) markDeleteEmptyStateObject(deleteEmptyObjects bool) {
 	for _, object := range stateDB.stateObjects {
 		if object.Empty() {
 			object.MarkDelete()
@@ -208,6 +208,16 @@ func (stateDB *StateDB) createObject(objectType int, hash common.Hash) (newobj, 
 func (stateDB *StateDB) SetStateObject(objectType int, key common.Hash, value interface{}) {
 	obj := stateDB.getOrNewStateObject(objectType, key)
 	obj.SetValue(value)
+	stateDB.stateObjectsPending[key] = struct{}{}
+}
+
+// MarkDeleteStateObject add new stateobject into statedb
+func (stateDB *StateDB) MarkDeleteStateObject(key common.Hash) {
+	obj, ok := stateDB.stateObjects[key]
+	if !ok {
+		return
+	}
+	obj.MarkDelete()
 	stateDB.stateObjectsPending[key] = struct{}{}
 }
 

@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -192,7 +193,7 @@ func TestDeleteSerialNumberObject(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	sDB.SetStateObject(statedb.SerialNumberObjectType, serialNumber3Hash, []byte{})
+	sDB.MarkDeleteStateObject(serialNumber3Hash)
 	rootHash2, err := sDB.Commit(true)
 	if err != nil {
 		t.Fatal(err)
@@ -238,4 +239,8 @@ func TestDeleteSerialNumberObject(t *testing.T) {
 	if bytes.Compare(sn3, []byte{}) != 0 {
 		t.Fatalf("Serial number 3 expect %+v but get %+v", serialNumber3, sn3)
 	}
+}
+
+func TestZeroValue(t *testing.T) {
+	log.Println(reflect.ValueOf(statedb.StateDB{}))
 }
