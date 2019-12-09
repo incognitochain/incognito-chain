@@ -179,9 +179,7 @@ func (cm *ConnManager) Start(ns NetSync) {
 
 	// Wait until connection to highway is established to make sure gRPC won't fail
 	// NOTE: must Connect after creating FloodSub
-	connected := make(chan error)
-	go cm.keepHighwayConnection(connected)
-	<-connected
+	go cm.keepHighwayConnection()
 
 	req, err := NewRequester(cm.LocalHost.GRPC, addrInfo.ID)
 	if err != nil {
@@ -278,9 +276,7 @@ func (cm *ConnManager) process() {
 
 // keepHighwayConnection periodically checks liveliness of connection to highway
 // and try to connect if it's not available.
-// The method push data to the given channel to signal that the first attempt had finished.
-// Constructor can use this info to initialize other objects.
-func (cm *ConnManager) keepHighwayConnection(connectedOnce chan error) {
+func (cm *ConnManager) keepHighwayConnection() {
 	addr, err := multiaddr.NewMultiaddr(cm.HighwayAddress)
 	if err != nil {
 		panic(fmt.Sprintf("invalid discover peers address: %v", cm.HighwayAddress))
@@ -292,10 +288,9 @@ func (cm *ConnManager) keepHighwayConnection(connectedOnce chan error) {
 	}
 	hwPID := hwPeerInfo.ID
 
-	first := true
 	net := cm.LocalHost.Host.Network()
 	disconnected := true
-	for ; true; <-time.Tick(10 * time.Second) {
+	for ; true; <-time.Tick(1 * time.Second) {
 		// Reconnect if not connected
 		var err error
 		if net.Connectedness(hwPID) != network.Connected {
@@ -312,12 +307,6 @@ func (cm *ConnManager) keepHighwayConnection(connectedOnce chan error) {
 			Logger.Info("Connected to highway, sending register request")
 			cm.registerRequests <- 1
 			disconnected = false
-		}
-
-		// Notify that first attempt had finished
-		if first {
-			connectedOnce <- err
-			first = false
 		}
 	}
 }
