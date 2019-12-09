@@ -1541,7 +1541,6 @@ func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint6
 		Logger.log.Error(err)
 		return err
 	}
-	// TODO(@0xbunyip): instead of putting response to queue, use it immediately in synker
 	serverObj.putResponseMsgs(msgs)
 	return nil
 }

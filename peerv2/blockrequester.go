@@ -12,8 +12,6 @@ import (
 	"google.golang.org/grpc/connectivity"
 )
 
-// TODO(@0xbunyip): cache all requests to prevent querying the same height multiple times
-
 type BlockRequester struct {
 	conn       *grpc.ClientConn
 	highwayPID peer.ID

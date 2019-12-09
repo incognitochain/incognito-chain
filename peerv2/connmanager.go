@@ -474,7 +474,6 @@ func (cm *ConnManager) subscribeNewTopics(newTopics, subscribed m2t) error {
 				continue
 			}
 
-			// TODO(@0xakk0r0kamui): check here
 			if t.Act == MessageTopicPair_PUB {
 				cm.subs[m] = append(cm.subs[m], Topic{Name: t.Name, Sub: nil, Act: t.Act})
 				Logger.Infof("Countinue 2 %v %v", t.Name, subscribed)
@@ -499,7 +498,6 @@ func (cm *ConnManager) subscribeNewTopics(newTopics, subscribed m2t) error {
 				continue
 			}
 
-			// TODO(@0xakk0r0kamui): check here
 			if t.Act == MessageTopicPair_PUB {
 				continue
 			}
