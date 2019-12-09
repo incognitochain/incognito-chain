@@ -86,6 +86,7 @@ func NewConnManager(
 		registerRequests:     make(chan int, 100),
 		relayShard:           relayShard,
 		nodeMode:             nodeMode,
+		stop:                 make(chan int),
 	}
 }
 
@@ -256,6 +257,8 @@ type ConnManager struct {
 	disp      *Dispatcher
 	Requester *BlockRequester
 	Provider  *BlockProvider
+
+	stop chan int
 }
 
 func (cm *ConnManager) PutMessage(msg *pubsub.Message) {
@@ -307,6 +310,14 @@ func (cm *ConnManager) keepHighwayConnection() {
 			Logger.Info("Connected to highway, sending register request")
 			cm.registerRequests <- 1
 			disconnected = false
+		}
+
+		select {
+		case <-cm.stop:
+			Logger.Info("Stop keeping connection to highway")
+			break
+
+		default:
 		}
 	}
 }
