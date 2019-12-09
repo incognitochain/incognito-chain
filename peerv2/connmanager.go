@@ -392,6 +392,10 @@ func (cm *ConnManager) manageRoleSubscription() {
 		case <-cm.registerRequests:
 			Logger.Info("Received request to register")
 			forced = true // register no matter if role changed or not
+
+		case <-cm.stop:
+			Logger.Info("Stop managing role subscription")
+			break
 		}
 	}
 }

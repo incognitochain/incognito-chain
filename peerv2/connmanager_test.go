@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/mocks"
+	"github.com/incognitochain/incognito-chain/peerv2/mocks"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/stretchr/testify/assert"
@@ -91,6 +91,21 @@ func TestReconnect(t *testing.T) {
 	close(cm.stop)
 
 	assert.Equal(t, 2, len(cm.registerRequests), "not reconnect")
+}
+
+func TestPeriodicManageSub(t *testing.T) {
+	cd := &mocks.ConsensusData{}
+	cd.On("GetUserRole").Return("dummyLayer", "dummyRole", -1000) // Same role as dummy
+	cm := &ConnManager{
+		cd:               cd,
+		stop:             make(chan int),
+		registerRequests: make(chan int, 10),
+	}
+	go cm.manageRoleSubscription()
+	time.Sleep(12 * time.Second)
+	close(cm.stop)
+
+	cd.AssertNumberOfCalls(t, "GetUserRole", 1)
 }
 
 func setupHost() (*mocks.Host, *mocks.Network) {
