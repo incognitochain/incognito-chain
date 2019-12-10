@@ -47,7 +47,9 @@ func (netSync *NetSync) getBlockShardByHashAndSend(peerID libp2p.ID, blkType byt
 	}
 }
 
-func (netSync *NetSync) GetBlockBeaconByHash(blkHashes []common.Hash) []wire.Message {
+func (netSync *NetSync) GetBlockBeaconByHash(
+	blkHashes []common.Hash,
+) []wire.Message {
 	blkMsgs := []wire.Message{}
 	for _, blkHash := range blkHashes {
 		blk, _, err := netSync.config.BlockChain.GetBeaconBlockByHash(blkHash)
