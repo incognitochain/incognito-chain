@@ -283,7 +283,7 @@ func (e *BLSBFT) Start() error {
 						}
 						metrics.SetGlobalParam("CommitTime", time.Since(time.Unix(e.Chain.GetLastBlockTimeStamp(), 0)).Seconds())
 						// e.Node.PushMessageToAll()
-						e.logger.Infof("Commit block %+v hash=%+v \n Wait for next round", e.RoundData.Block.GetHeight(), e.RoundData.Block.Hash().String())
+						e.logger.Infof("Commit block (%d votes) %+v hash=%+v \n Wait for next round", len(e.RoundData.Votes), e.RoundData.Block.GetHeight(), e.RoundData.Block.Hash().String())
 						e.enterNewRound()
 					}
 				}
