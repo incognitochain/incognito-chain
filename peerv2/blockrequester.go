@@ -106,6 +106,7 @@ func (c *BlockRequester) GetBlockShardByHeight(
 			Heights:    heights,
 			FromPool:   false,
 		},
+		grpc.MaxCallRecvMsgSize(MaxCallRecvMsgSize),
 	)
 	Logger.Infof("[blkbyheight] Received block shard data %v", reply)
 	if err != nil {
@@ -133,6 +134,7 @@ func (c *BlockRequester) GetBlockShardByHash(
 			Shard:  shardID,
 			Hashes: blkHashBytes,
 		},
+		grpc.MaxCallRecvMsgSize(MaxCallRecvMsgSize),
 	)
 	Logger.Infof("[blkbyhash] Received block shard data %v", reply)
 	if err != nil {
@@ -161,6 +163,7 @@ func (c *BlockRequester) GetBlockBeaconByHeight(
 			Heights:    heights,
 			FromPool:   false,
 		},
+		grpc.MaxCallRecvMsgSize(MaxCallRecvMsgSize),
 	)
 	if err != nil {
 		return nil, err
@@ -187,6 +190,7 @@ func (c *BlockRequester) GetBlockBeaconByHash(
 		&GetBlockBeaconByHashRequest{
 			Hashes: blkHashBytes,
 		},
+		grpc.MaxCallRecvMsgSize(MaxCallRecvMsgSize),
 	)
 	Logger.Infof("Received block beacon data %v", reply)
 	if err != nil {
@@ -218,6 +222,7 @@ func (c *BlockRequester) GetBlockShardToBeaconByHeight(
 			Heights:    heights,
 			FromPool:   false,
 		},
+		grpc.MaxCallRecvMsgSize(MaxCallRecvMsgSize),
 	)
 	if err != nil {
 		Logger.Infof("[sync] Received err: %v from = %v to = %v; Heights: %v", err, from, to, heights)
@@ -251,6 +256,7 @@ func (c *BlockRequester) GetBlockCrossShardByHeight(
 			Heights:    heights,
 			FromPool:   getFromPool,
 		},
+		grpc.MaxCallRecvMsgSize(MaxCallRecvMsgSize),
 	)
 	if err != nil {
 		return nil, err
