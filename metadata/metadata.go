@@ -146,13 +146,16 @@ func getPDEPoolPair(
 }
 
 func isPairValid(poolPair *lvdb.PDEPoolForPair) bool {
+	if poolPair == nil {
+		return false
+	}
 	prvIDStr := common.PRVCoinID.String()
 	if poolPair.Token1IDStr == prvIDStr &&
-		poolPair.Token1PoolValue < uint64(common.MinInitialAddingLiquidity) {
+		poolPair.Token1PoolValue < uint64(common.MinTxFeesOnTokenRequirement) {
 		return false
 	}
 	if poolPair.Token2IDStr == prvIDStr &&
-		poolPair.Token2PoolValue < uint64(common.MinInitialAddingLiquidity) {
+		poolPair.Token2PoolValue < uint64(common.MinTxFeesOnTokenRequirement) {
 		return false
 	}
 	return true
