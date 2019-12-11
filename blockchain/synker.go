@@ -513,7 +513,7 @@ func (synker *Synker) UpdateState() {
 	// sync missing block in pool
 	Logger.log.Infof("[syncmissing] sync missing block in beacon")
 	heights := synker.getMissingBlockInPool(true, 0)
-	Logger.log.Infof("[syncmissing] List block beacon needed to get %v", heights)
+	Logger.log.Debugf("[syncmissing] List block beacon needed to get %v", heights)
 	synker.SyncBlkBeacon(
 		false,   //byHash
 		true,    // bySpecificHeights
@@ -555,7 +555,7 @@ func (synker *Synker) UpdateState() {
 
 		Logger.log.Infof("[syncmissing] sync missing block in shard %v", shardID)
 		heights := synker.getMissingBlockInPool(false, int(shardID))
-		Logger.log.Infof("[syncmissing] List block shard %v needed to get %v", shardID, heights)
+		Logger.log.Debugf("[syncmissing] List block shard %v needed to get %v", shardID, heights)
 		synker.SyncBlkShard(
 			shardID, // shardID
 			false,   // byHash
