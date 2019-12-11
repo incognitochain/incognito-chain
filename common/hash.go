@@ -198,10 +198,10 @@ func HashArrayOfHashArray(target []Hash) Hash {
 
 func BytesToHash(b []byte) Hash {
 	var h Hash
-	err := h.SetBytes(b)
-	if err != nil {
-		panic(err)
-	}
+	_ = h.SetBytes(b)
+	//if err != nil {
+	//	panic(err)
+	//}
 	return h
 }
 
