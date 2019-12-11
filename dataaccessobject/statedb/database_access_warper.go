@@ -12,6 +12,8 @@ type DatabaseAccessWarper interface {
 	// OpenTrie opens the main account trie.
 	OpenTrie(root common.Hash) (Trie, error)
 
+	OpenPrefixTrie(root common.Hash) (Trie, error)
+
 	// CopyTrie returns an independent copy of the given trie.
 	CopyTrie(Trie) Trie
 
@@ -73,6 +75,11 @@ func NewDatabaseAccessWarper(database incdb.Database) DatabaseAccessWarper {
 // OpenTrie opens the main account trie at a specific root hash.
 func (aw *accessorWarper) OpenTrie(root common.Hash) (Trie, error) {
 	return trie.NewSecure(root, aw.iw)
+}
+
+// OpenTrie opens the main account trie at a specific root hash.
+func (aw *accessorWarper) OpenPrefixTrie(root common.Hash) (Trie, error) {
+	return trie.NewPrefixTrie(root, aw.iw)
 }
 
 // CopyTrie returns an independent copy of the given trie.

@@ -3,6 +3,8 @@ package statedb
 import (
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/trie"
+	"log"
 	"time"
 )
 
@@ -36,6 +38,21 @@ type StateDB struct {
 // New return a new statedb attach with a state root
 func New(root common.Hash, db DatabaseAccessWarper) (*StateDB, error) {
 	tr, err := db.OpenTrie(root)
+	if err != nil {
+		return nil, err
+	}
+	return &StateDB{
+		db:                  db,
+		trie:                tr,
+		stateObjects:        make(map[common.Hash]StateObject),
+		stateObjectsPending: make(map[common.Hash]struct{}),
+		stateObjectsDirty:   make(map[common.Hash]struct{}),
+	}, nil
+}
+
+// New return a new statedb attach with a state root
+func NewWithPrefixTrie(root common.Hash, db DatabaseAccessWarper) (*StateDB, error) {
+	tr, err := db.OpenPrefixTrie(root)
 	if err != nil {
 		return nil, err
 	}
@@ -253,4 +270,40 @@ func (stateDB *StateDB) GetSerialNumber(key common.Hash) []byte {
 		return serialNumberObject.GetValueBytes()
 	}
 	return []byte{}
+}
+func (stateDB *StateDB) GetSerialNumberAllList() ([][]byte, [][]byte) {
+	temp := stateDB.trie.NodeIterator(nil)
+	it := trie.NewIterator(temp)
+	keys := [][]byte{}
+	values := [][]byte{}
+	for it.Next() {
+		key := stateDB.trie.GetKey(it.Key)
+		log.Println(key)
+		newKey := make([]byte, len(key))
+		copy(newKey, key)
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		keys = append(keys, key)
+		values = append(values, value)
+	}
+	return keys, values
+}
+func (stateDB *StateDB) GetSerialNumberListByPrefix(prefix []byte) ([][]byte, [][]byte) {
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	keys := [][]byte{}
+	values := [][]byte{}
+	for it.Next() {
+		key := stateDB.trie.GetKey(it.Key)
+		log.Println(key)
+		newKey := make([]byte, len(key))
+		copy(newKey, key)
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		keys = append(keys, key)
+		values = append(values, value)
+	}
+	return keys, values
 }
