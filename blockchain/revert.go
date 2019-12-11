@@ -81,6 +81,10 @@ func (blockchain *BlockChain) revertShardBestState(shardID byte) error {
 		return err
 	}
 
+	if shardBestState.ShardHeight == blockchain.BestState.Shard[shardID].ShardHeight {
+		return NewBlockChainError(RevertStateError, errors.New("can't revert same beststate"))
+	}
+
 	SetBestStateShard(shardID, &shardBestState)
 
 	blockchain.config.ShardPool[shardID].RevertShardPool(shardBestState.ShardHeight)
@@ -101,10 +105,6 @@ func (blockchain *BlockChain) revertShardState(shardID byte) error {
 	var currentBestState ShardBestState
 	currentBestState.cloneShardBestStateFrom(blockchain.BestState.Shard[shardID])
 	currentBestStateBlk := currentBestState.BestBlock
-
-	if currentBestState.ShardHeight == blockchain.BestState.Shard[shardID].ShardHeight {
-		return NewBlockChainError(RevertStateError, errors.New("can't revert same beststate"))
-	}
 
 	err := blockchain.revertShardBestState(shardID)
 	if err != nil {
@@ -714,6 +714,9 @@ func (blockchain *BlockChain) revertBeaconBestState() error {
 	beaconBestState := BeaconBestState{}
 	if err := json.Unmarshal(prevBST, &beaconBestState); err != nil {
 		return NewBlockChainError(RevertStateError, err)
+	}
+	if beaconBestState.BeaconHeight == blockchain.BestState.Beacon.BeaconHeight {
+		return NewBlockChainError(RevertStateError, errors.New("can't revert same beststate"))
 	}
 	SetBeaconBestState(&beaconBestState)
 
