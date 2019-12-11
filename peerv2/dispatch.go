@@ -125,7 +125,7 @@ func (d *Dispatcher) processInMessageString(msgStr string) error {
 // process message for each of message type
 func (d *Dispatcher) processMessageForEachType(messageType reflect.Type, message wire.Message) error {
 	// NOTE: copy from peerConn.processInMessageString
-	Logger.Infof("Processing msgType %s", message.MessageType())
+	Logger.Debugf("Processing msgType %s", message.MessageType())
 	var peerConn *peer.PeerConn
 	switch messageType {
 	case reflect.TypeOf(&wire.MessageTx{}):
