@@ -175,7 +175,6 @@ func (cm *ConnManager) Start(ns NetSync) {
 	// Pubsub
 	// TODO(@0xbunyip): handle error
 	cm.ps, _ = pubsub.NewFloodSub(context.Background(), cm.LocalHost.Host)
-	cm.subs = m2t{}
 	cm.messages = make(chan *pubsub.Message, 1000)
 
 	// Wait until connection to highway is established to make sure gRPC won't fail
@@ -235,7 +234,7 @@ type Topic struct {
 }
 
 type Subscriber interface {
-	Subscribe(forced bool)
+	Subscribe(forced bool) error
 }
 
 type ConnManager struct {
@@ -248,7 +247,6 @@ type ConnManager struct {
 	IsMasterNode         bool
 
 	ps               *pubsub.PubSub
-	subs             m2t                  // mapping from message to topic's subscription
 	messages         chan *pubsub.Message // queue messages from all topics
 	registerRequests chan int
 
@@ -377,14 +375,12 @@ func broadcastMessage(msg wire.Message, topic string, ps *pubsub.PubSub) error {
 
 // manageRoleSubscription: polling current role every minute and subscribe to relevant topics
 func (cm *ConnManager) manageRoleSubscription() {
-	role := newUserRole("dummyLayer", "dummyRole", -1000)
-	topics := m2t{}
 	forced := false // only subscribe when role changed or last forced subscribe failed
 	var err error
 	for {
 		select {
 		case <-time.Tick(10 * time.Second):
-			role, topics, err = cm.subscribe(role, topics, forced)
+			err = cm.Subscriber.Subscribe(forced)
 			if err != nil {
 				Logger.Errorf("subscribe failed: %v %+v", forced, err)
 			} else {

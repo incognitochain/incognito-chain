@@ -23,6 +23,7 @@ type SubManager struct {
 
 	role   userRole
 	topics msgToTopics
+	subs   msgToTopics // mapping from message to topic's subscription
 }
 
 func NewSubManager(
@@ -36,13 +37,17 @@ func NewSubManager(
 		nodeMode:      nodeMode,
 		pubkey:        pubkey,
 		relayShard:    relayShard,
+		role:          newUserRole("dummyLayer", "dummyRole", -1000),
+		topics:        msgToTopics{},
 	}
 }
 
-func (sub *SubManager) Subscribe(forced bool) (userRole, msgToTopics, error) {
+// Subscribe registers to proxy and save the list of new topics if needed
+func (sub *SubManager) Subscribe(forced bool) error {
 	newRole := newUserRole(sub.consensusData.GetUserRole())
 	if newRole == sub.role && !forced { // Not forced => no need to subscribe when role stays the same
-		return newRole, sub.topics, nil
+		sub.role = newRole // Save new role and return
+		return nil
 	}
 	Logger.Infof("Role changed: %v -> %v", sub.role, newRole)
 
@@ -60,7 +65,7 @@ func (sub *SubManager) Subscribe(forced bool) (userRole, msgToTopics, error) {
 	}
 	newTopics, roleOfTopics, err := sub.registerToProxy(sub.pubkey, newRole.layer, newRole.role, shardIDs)
 	if err != nil {
-		return sub.role, topics, err
+		return err // Don't save new role and topics since we need to retry later
 	}
 
 	// NOTE: disabled, highway always return the same role
@@ -69,14 +74,16 @@ func (sub *SubManager) Subscribe(forced bool) (userRole, msgToTopics, error) {
 	// 	return role, topics, errors.Errorf("lole not matching with highway, local = %+v, highway = %+v", newRole, roleOfTopics)
 	// }
 
-	Logger.Infof("Received topics = %+v, oldTopics = %+v", newTopics, topics)
+	Logger.Infof("Received topics = %+v, oldTopics = %+v", newTopics, sub.topics)
 
 	// Subscribing
-	if err := sub.subscribeNewTopics(newTopics, topics); err != nil {
-		return sub.role, topics, err
+	if err := sub.subscribeNewTopics(newTopics, sub.topics); err != nil {
+		return err
 	}
 
-	return newRole, newTopics, nil
+	sub.role = newRole
+	sub.topics = newTopics
+	return nil
 }
 
 type userRole struct {
