@@ -107,10 +107,10 @@ func (c *BlockRequester) GetBlockShardByHeight(
 			FromPool:   false,
 		},
 	)
-	Logger.Infof("[blkbyheight] Received block shard data %v", len(reply.Data))
 	if err != nil {
 		return nil, err
 	}
+	Logger.Infof("[blkbyheight] Received block shard data %v", len(reply.Data))
 	return reply.Data, nil
 }
 
@@ -134,10 +134,10 @@ func (c *BlockRequester) GetBlockShardByHash(
 			Hashes: blkHashBytes,
 		},
 	)
-	Logger.Infof("[blkbyhash] Received block shard data %v", len(reply.Data))
 	if err != nil {
 		return nil, err
 	}
+	Logger.Infof("[blkbyhash] Received block shard data %v", len(reply.Data))
 	return reply.Data, nil
 }
 
@@ -188,10 +188,10 @@ func (c *BlockRequester) GetBlockBeaconByHash(
 			Hashes: blkHashBytes,
 		},
 	)
-	Logger.Infof("Received block beacon data %v", len(reply.Data))
 	if err != nil {
 		return nil, err
 	}
+	Logger.Infof("Received block beacon data %v", len(reply.Data))
 	return reply.Data, nil
 }
 
