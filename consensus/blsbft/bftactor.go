@@ -400,7 +400,12 @@ func (e *BLSBFT) createNewBlock() (common.BlockInterface, error) {
 		time1 := time.Now()
 		var err error
 		block, err = e.Chain.CreateNewBlock(int(e.RoundData.Round))
-		e.logger.Info("create block", block.GetHeight(), time.Since(time1).Seconds())
+		if block != nil {
+			e.logger.Info("create block", block.GetHeight(), time.Since(time1).Seconds())
+		}else {
+			e.logger.Info("create block", time.Since(time1).Seconds())
+		}
+
 		time.AfterFunc(100*time.Millisecond, func() {
 			select {
 			case <-errCh:
