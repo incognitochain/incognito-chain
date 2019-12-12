@@ -17,6 +17,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/peer"
+	"github.com/incognitochain/incognito-chain/peerv2"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -50,6 +51,7 @@ var (
 	randomLogger           = backendLog.Logger("RandomAPI log", false)
 	bridgeLogger           = backendLog.Logger("DeBridge log", false)
 	metadataLogger         = backendLog.Logger("Metadata log", false)
+	peerv2Logger           = backendLog.Logger("Peerv2 log", false)
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -86,6 +88,7 @@ func init() {
 	blockchain.BLogger.Init(bridgeLogger)
 	rpcserver.BLogger.Init(bridgeLogger)
 	metadata.Logger.Init(metadataLogger)
+	peerv2.Logger.Init(peerv2Logger)
 
 }
 
@@ -111,6 +114,7 @@ var subsystemLoggers = map[string]common.Logger{
 	"DBMP":              dbmpLogger,
 	"DEBR":              bridgeLogger,
 	"META":              metadataLogger,
+	"PEERV2":            peerv2Logger,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and
