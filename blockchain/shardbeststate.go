@@ -218,7 +218,6 @@ func (shardBestState *ShardBestState) GetProducerIndexFromBlock(block *ShardBloc
 
 func (shardBestState *ShardBestState) GetPubkeyRole(pubkey string, round int) string {
 	keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(shardBestState.ShardCommittee, shardBestState.ConsensusAlgorithm)
-	// fmt.Printf("pubkey %v key list %v\n\n\n\n", pubkey, keyList)
 	found := common.IndexOfStr(pubkey, keyList)
 	if found > -1 {
 		//TODO: revert this

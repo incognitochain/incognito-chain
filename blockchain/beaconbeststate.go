@@ -511,6 +511,7 @@ func (beaconBestState *BeaconBestState) GetPubkeyRole(pubkey string, round int) 
 	}
 
 	keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.BeaconCommittee, beaconBestState.ConsensusAlgorithm)
+	// Logger.log.Infof("GetPubkeyRole BeaconCommittee && keylist && pubkey: %+v %+v %+v", beaconBestState.BeaconCommittee, keyList, pubkey)
 	found := common.IndexOfStr(pubkey, keyList)
 	if found > -1 {
 		//TODO: revert this

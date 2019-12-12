@@ -45,6 +45,7 @@ type ShardPool interface {
 	SetShardState(height uint64)
 	RevertShardPool(uint64)
 	GetAllBlockHeight() []uint64
+	GetPendingBlockHeight() []uint64
 	Start(chan struct{})
 }
 
@@ -54,9 +55,11 @@ type BeaconPool interface {
 	GetValidBlock() []*BeaconBlock
 	GetValidBlockHeight() []uint64
 	SetBeaconState(height uint64)
+	GetBeaconState() uint64
 	RevertBeconPool(height uint64)
 	GetAllBlockHeight() []uint64
 	Start(chan struct{})
+	GetPendingBlockHeight() []uint64
 }
 type TxPool interface {
 	// LastUpdated returns the last time a transaction was added to or

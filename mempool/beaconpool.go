@@ -125,6 +125,7 @@ func (beaconPool *BeaconPool) addBeaconBlock(block *blockchain.BeaconBlock) erro
 	go beaconPool.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, block))
 	err := beaconPool.validateBeaconBlock(block, false)
 	if err != nil {
+		Logger.log.Infof("addBeaconBlock err: %+v", err)
 		return err
 	}
 	beaconPool.insertNewBeaconBlockToPool(block)
@@ -182,17 +183,20 @@ func (beaconPool *BeaconPool) validateBeaconBlock(block *blockchain.BeaconBlock,
 	4. and next block has previous hash == this block hash
 */
 func (beaconPool *BeaconPool) insertNewBeaconBlockToPool(block *blockchain.BeaconBlock) bool {
+	Logger.log.Infof("insertNewBeaconBlockToPool blk.Height latestValid: %+v %+v", block.Header.Height, beaconPool.latestValidHeight+1)
 	// Condition 1: check height
 	if block.Header.Height == beaconPool.latestValidHeight+1 {
 		// Condition 2: check pool capacity
 		if len(beaconPool.validPool) < beaconPool.config.MaxValidBlock {
 			nextHeight := block.Header.Height + 1
 			// Condition 3: check next block
+			Logger.log.Infof("insertNewBeaconBlockToPool nextHeight: %+v", nextHeight)
 			if nextBlock, ok := beaconPool.pendingPool[nextHeight]; ok {
 				preHash := &nextBlock.Header.PreviousBlockHash
 				blockHeader := block.Header.Hash()
 				// Condition 4: next block should point to this block
 				if preHash.IsEqual(&blockHeader) {
+					Logger.log.Infof("Condition 4: next block should point to this block")
 					beaconPool.validPool = append(beaconPool.validPool, block)
 					beaconPool.updateLatestBeaconState()
 					return true
@@ -203,6 +207,7 @@ func (beaconPool *BeaconPool) insertNewBeaconBlockToPool(block *blockchain.Beaco
 					beaconPool.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.RequestBeaconBlockByHashTopic, preHash))
 				}
 			} else {
+				Logger.log.Infof("no next block found then push to pending pool")
 				// no next block found then push to pending pool
 				beaconPool.pendingPool[block.Header.Height] = block
 			}
