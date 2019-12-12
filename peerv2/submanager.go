@@ -75,17 +75,7 @@ func (sub *SubManager) Subscribe(forced bool) error {
 	Logger.Infof("Role changed: %v -> %v", sub.role, newRole)
 
 	// Registering
-	roleSID := newRole.shardID
-	if roleSID == -2 { // normal node
-		roleSID = -1
-	}
-	shardIDs := []byte{}
-	if sub.nodeMode == common.NodeModeRelay {
-		shardIDs = sub.relayShard
-		shardIDs = append(shardIDs, HighwayBeaconID)
-	} else {
-		shardIDs = append(shardIDs, byte(roleSID))
-	}
+	shardIDs := getWantedShardIDs(newRole, sub.nodeMode, sub.relayShard)
 	newTopics, roleOfTopics, err := sub.registerToProxy(sub.pubkey, newRole.layer, newRole.role, shardIDs)
 	if err != nil {
 		return err // Don't save new role and topics since we need to retry later
@@ -107,6 +97,20 @@ func (sub *SubManager) Subscribe(forced bool) error {
 	sub.role = newRole
 	sub.topics = newTopics
 	return nil
+}
+
+func getWantedShardIDs(role userRole, nodeMode string, relayShard []byte) []byte {
+	roleSID := role.shardID
+	if roleSID == -2 { // not waiting/pending/validator right now
+		roleSID = -1 // wanted only beacon chain (shardID == -1 == byte(255))
+	}
+	shardIDs := []byte{}
+	if nodeMode == common.NodeModeRelay {
+		shardIDs = append(relayShard, HighwayBeaconID)
+	} else {
+		shardIDs = append(shardIDs, byte(roleSID))
+	}
+	return shardIDs
 }
 
 type userRole struct {
