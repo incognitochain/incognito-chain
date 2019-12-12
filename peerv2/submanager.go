@@ -5,6 +5,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/wire"
+	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/pkg/errors"
 )
@@ -15,31 +16,53 @@ type ConsensusData interface {
 
 // SubManager manages pubsub subscription of highway's topics
 type SubManager struct {
-	consensusData ConsensusData
+	info
+	messages chan *pubsub.Message // channel to put subscribed messages to
 
-	pubkey     string
-	nodeMode   string
-	relayShard []byte
+	registerer Registerer
+	subscriber Subscriber
 
 	role   userRole
 	topics msgToTopics
 	subs   msgToTopics // mapping from message to topic's subscription
 }
 
+type info struct {
+	consensusData ConsensusData
+
+	pubkey     string
+	nodeMode   string
+	relayShard []byte
+	peerID     peer.ID
+}
+
+type Subscriber interface {
+	Subscribe(topic string, opts ...pubsub.SubOpt) (*pubsub.Subscription, error)
+}
+
+type Registerer interface {
+	Register(context.Context, string, []string, []byte, peer.ID, string) ([]*MessageTopicPair, *UserRole, error)
+}
+
 func NewSubManager(
-	consensusData ConsensusData,
-	nodeMode string,
-	pubkey string,
-	relayShard []byte,
+	info info,
+	subscriber Subscriber,
+	registerer Registerer,
+	messages chan *pubsub.Message,
 ) *SubManager {
 	return &SubManager{
-		consensusData: consensusData,
-		nodeMode:      nodeMode,
-		pubkey:        pubkey,
-		relayShard:    relayShard,
-		role:          newUserRole("dummyLayer", "dummyRole", -1000),
-		topics:        msgToTopics{},
+		info:       info,
+		subscriber: subscriber,
+		registerer: registerer,
+		messages:   messages,
+		role:       newUserRole("dummyLayer", "dummyRole", -1000),
+		topics:     msgToTopics{},
+		subs:       msgToTopics{},
 	}
+}
+
+func (sub *SubManager) GetMsgToTopics() msgToTopics {
+	return sub.subs // no need to make a copy since topics rarely changed (when role changed)
 }
 
 // Subscribe registers to proxy and save the list of new topics if needed
@@ -119,19 +142,19 @@ func (sub *SubManager) subscribeNewTopics(newTopics, subscribed msgToTopics) err
 		for _, t := range topicList {
 
 			if found(t.Name, subscribed) {
-				Logger.Infof("Countinue 1 %v %v", t.Name, subscribed)
+				Logger.Infof("Continue 1 %v %v", t.Name, subscribed)
 				continue
 			}
 
 			if t.Act == MessageTopicPair_PUB {
 				sub.subs[m] = append(sub.subs[m], Topic{Name: t.Name, Sub: nil, Act: t.Act})
-				Logger.Infof("Countinue 2 %v %v", t.Name, subscribed)
+				Logger.Infof("Continue 2 %v %v", t.Name, subscribed)
 				continue
 			}
 
 			Logger.Info("subscribing", m, t.Name)
 
-			s, err := sub.ps.Subscribe(t.Name)
+			s, err := sub.subscriber.Subscribe(t.Name)
 			if err != nil {
 				return errors.WithStack(err)
 			}
@@ -169,6 +192,7 @@ func processSubscriptionMessage(inbox chan *pubsub.Message, sub *pubsub.Subscrip
 	for {
 		// TODO(@0xbunyip): check if topic is unsubbed then return, otherwise just continue
 		msg, err := sub.Next(ctx)
+		Logger.Debugf("Received msg: %s", msg)
 		if err != nil { // Subscription might have been cancelled
 			Logger.Warn(err)
 			return
@@ -176,6 +200,12 @@ func processSubscriptionMessage(inbox chan *pubsub.Message, sub *pubsub.Subscrip
 
 		inbox <- msg
 	}
+}
+
+type Topic struct {
+	Name string
+	Sub  *pubsub.Subscription
+	Act  MessageTopicPair_Action
 }
 
 type msgToTopics map[string][]Topic // Message to topics
@@ -187,20 +217,19 @@ func (sub *SubManager) registerToProxy(
 	shardID []byte,
 ) (msgToTopics, userRole, error) {
 	messagesWanted := getMessagesForLayer(sub.nodeMode, layer, shardID)
-	pid := sub.LocalHost.Host.ID()
 	Logger.Infof("Registering: message: %v", messagesWanted)
 	Logger.Infof("Registering: nodeMode: %v", sub.nodeMode)
 	Logger.Infof("Registering: layer: %v", layer)
 	Logger.Infof("Registering: role: %v", role)
 	Logger.Infof("Registering: shardID: %v", shardID)
-	Logger.Infof("Registering: peerID: %v", pid.String())
+	Logger.Infof("Registering: peerID: %v", sub.peerID.String())
 	Logger.Infof("Registering: pubkey: %v", pubkey)
-	pairs, topicRole, err := sub.Requester.Register(
+	pairs, topicRole, err := sub.registerer.Register(
 		context.Background(),
 		pubkey,
 		messagesWanted,
 		shardID,
-		pid,
+		sub.peerID,
 		role,
 	)
 	if err != nil {

@@ -76,16 +76,20 @@ func NewConnManager(
 	nodeMode string,
 	relayShard []byte,
 ) *ConnManager {
+	pubkey, _ := ikey.ToBase58()
 	return &ConnManager{
+		info: info{
+			consensusData: cd,
+			pubkey:        pubkey,
+			relayShard:    relayShard,
+			nodeMode:      nodeMode,
+			peerID:        host.Host.ID(),
+		},
 		LocalHost:            host,
 		DiscoverPeersAddress: dpa,
-		IdentityKey:          ikey,
-		cd:                   cd,
 		disp:                 dispatcher,
 		IsMasterNode:         false,
 		registerRequests:     make(chan int, 100),
-		relayShard:           relayShard,
-		nodeMode:             nodeMode,
 		stop:                 make(chan int),
 	}
 }
@@ -96,10 +100,11 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 
 	// msgCrossShard := msg.(wire.MessageCrossShard)
 	msgType := msg.MessageType()
+	subs := cm.subscriber.GetMsgToTopics()
 	for _, p := range publishable {
 		topic = ""
 		if msgType == p {
-			for _, availableTopic := range cm.subs[msgType] {
+			for _, availableTopic := range subs[msgType] {
 				// Logger.Info("[hy]", availableTopic)
 				if (availableTopic.Act == MessageTopicPair_PUB) || (availableTopic.Act == MessageTopicPair_PUBSUB) {
 					topic = availableTopic.Name
@@ -125,10 +130,11 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) error {
 	publishable := []string{wire.CmdBlockShard, wire.CmdCrossShard, wire.CmdBFT}
 	msgType := msg.MessageType()
+	subs := cm.subscriber.GetMsgToTopics()
 	for _, p := range publishable {
 		if msgType == p {
 			// Get topic for mess
-			for _, availableTopic := range cm.subs[msgType] {
+			for _, availableTopic := range subs[msgType] {
 				Logger.Info(availableTopic)
 				cID := GetCommitteeIDOfTopic(availableTopic.Name)
 				if (byte(cID) == shardID) && ((availableTopic.Act == MessageTopicPair_PUB) || (availableTopic.Act == MessageTopicPair_PUBSUB)) {
@@ -173,24 +179,24 @@ func (cm *ConnManager) Start(ns NetSync) {
 	}
 
 	// Pubsub
-	// TODO(@0xbunyip): handle error
-	cm.ps, _ = pubsub.NewFloodSub(context.Background(), cm.LocalHost.Host)
+	cm.ps, err = pubsub.NewFloodSub(context.Background(), cm.LocalHost.Host)
+	if err != nil {
+		panic(err)
+	}
 	cm.messages = make(chan *pubsub.Message, 1000)
 
 	// Wait until connection to highway is established to make sure gRPC won't fail
 	// NOTE: must Connect after creating FloodSub
 	go cm.keepHighwayConnection()
 
-	req, err := NewRequester(cm.LocalHost.GRPC, addrInfo.ID)
+	cm.Requester, err = NewRequester(cm.LocalHost.GRPC, addrInfo.ID)
 	if err != nil {
 		panic(err)
 	}
-	cm.Requester = req
 
+	cm.subscriber = NewSubManager(cm.info, cm.ps, cm.Requester, cm.messages)
 	cm.Provider = NewBlockProvider(cm.LocalHost.GRPC, ns)
-
 	go cm.manageRoleSubscription()
-
 	cm.process()
 }
 
@@ -227,33 +233,24 @@ func (cm *ConnManager) BroadcastCommittee(
 	}
 }
 
-type Topic struct {
-	Name string
-	Sub  *pubsub.Subscription
-	Act  MessageTopicPair_Action
-}
-
-type Subscriber interface {
+type ForcedSubscriber interface {
 	Subscribe(forced bool) error
+	GetMsgToTopics() msgToTopics
 }
 
 type ConnManager struct {
+	info       // info of running node
 	LocalHost  *Host
-	Subscriber Subscriber
+	subscriber ForcedSubscriber
 
 	DiscoverPeersAddress string
 	HighwayAddress       string
-	IdentityKey          *incognitokey.CommitteePublicKey
 	IsMasterNode         bool
 
 	ps               *pubsub.PubSub
 	messages         chan *pubsub.Message // queue messages from all topics
 	registerRequests chan int
 
-	nodeMode   string
-	relayShard []byte
-
-	cd        ConsensusData
 	disp      *Dispatcher
 	Requester *BlockRequester
 	Provider  *BlockProvider
@@ -380,7 +377,7 @@ func (cm *ConnManager) manageRoleSubscription() {
 	for {
 		select {
 		case <-time.Tick(10 * time.Second):
-			err = cm.Subscriber.Subscribe(forced)
+			err = cm.subscriber.Subscribe(forced)
 			if err != nil {
 				Logger.Errorf("subscribe failed: %v %+v", forced, err)
 			} else {
