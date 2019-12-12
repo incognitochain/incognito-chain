@@ -94,18 +94,28 @@ func TestReconnect(t *testing.T) {
 }
 
 func TestPeriodicManageSub(t *testing.T) {
-	cd := &mocks.ConsensusData{}
-	cd.On("GetUserRole").Return("dummyLayer", "dummyRole", -1000) // Same role as dummy
+	sc := new(subscribeCounter)
 	cm := &ConnManager{
-		cd:               cd,
 		stop:             make(chan int),
 		registerRequests: make(chan int, 10),
+		subscriber:       sc,
 	}
 	go cm.manageRoleSubscription()
 	time.Sleep(12 * time.Second)
 	close(cm.stop)
 
-	cd.AssertNumberOfCalls(t, "GetUserRole", 1)
+	assert.Equal(t, int(*sc), 1, "not subbed")
+}
+
+type subscribeCounter int
+
+func (subCounter *subscribeCounter) Subscribe(_ bool) error {
+	*subCounter++
+	return nil
+}
+
+func (subCounter *subscribeCounter) GetMsgToTopics() msgToTopics {
+	return msgToTopics{}
 }
 
 func setupHost() (*mocks.Host, *mocks.Network) {
