@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"sort"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -514,22 +516,15 @@ func (blockchain *BlockChain) restoreFromTxViewPoint(block *ShardBlock) error {
 	// check normal custom token
 	for indexTx, customTokenTx := range view.customTokenTxs {
 		switch customTokenTx.TxTokenData.Type {
-		case transaction.CustomTokenInit:
+		case transaction.CustomTokenInit, transaction.CustomTokenCrossShard:
 			{
-				err = blockchain.config.DataBase.DeletePrivacyToken(customTokenTx.TxTokenData.PropertyID)
-				if err != nil {
-					return err
-				}
-			}
-		case transaction.CustomTokenCrossShard:
-			{
-				err = blockchain.config.DataBase.DeletePrivacyToken(customTokenTx.TxTokenData.PropertyID)
+				err = blockchain.config.DataBase.DeleteNormalToken(customTokenTx.TxTokenData.PropertyID)
 				if err != nil {
 					return err
 				}
 			}
 		}
-		err = blockchain.config.DataBase.DeletePrivacyTokenTx(customTokenTx.TxTokenData.PropertyID, indexTx, block.Header.ShardID, block.Header.Height)
+		err = blockchain.config.DataBase.DeleteNormalTokenTx(customTokenTx.TxTokenData.PropertyID, indexTx, block.Header.ShardID, block.Header.Height)
 		if err != nil {
 			return err
 		}
@@ -539,12 +534,29 @@ func (blockchain *BlockChain) restoreFromTxViewPoint(block *ShardBlock) error {
 	// check privacy custom token
 	for indexTx, privacyCustomTokenSubView := range view.privacyCustomTokenViewPoint {
 		privacyCustomTokenTx := view.privacyCustomTokenTxs[indexTx]
+		// check is bridge token
+		isBridgeToken := false
+		allBridgeTokensBytes, err := blockchain.config.DataBase.GetAllBridgeTokens()
+		if err != nil {
+			return err
+		}
+		if len(allBridgeTokensBytes) > 0 {
+			var allBridgeTokens []*lvdb.BridgeTokenInfo
+			err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
+			for _, bridgeToken := range allBridgeTokens {
+				if bridgeToken.TokenID != nil && bytes.Equal(privacyCustomTokenTx.TxPrivacyTokenData.PropertyID[:], bridgeToken.TokenID[:]) {
+					isBridgeToken = true
+				}
+			}
+		}
 		switch privacyCustomTokenTx.TxPrivacyTokenData.Type {
-		case transaction.CustomTokenInit:
+		case transaction.CustomTokenInit, transaction.CustomTokenCrossShard:
 			{
-				err = blockchain.config.DataBase.DeletePrivacyToken(privacyCustomTokenTx.TxPrivacyTokenData.PropertyID)
-				if err != nil {
-					return err
+				if !isBridgeToken && !privacyCustomTokenTx.TxPrivacyTokenData.Mintable {
+					err = blockchain.config.DataBase.DeletePrivacyToken(privacyCustomTokenTx.TxPrivacyTokenData.PropertyID)
+					if err != nil {
+						return err
+					}
 				}
 			}
 		}
