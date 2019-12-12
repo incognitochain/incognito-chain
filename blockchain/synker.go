@@ -422,7 +422,7 @@ func (synker *Synker) UpdateState() {
 
 						if len(blkHeights) > 0 && len(blkHeights) <= len(synker.States.PoolsState.CrossShardPool[shardID]) {
 							commonHeights := arrayCommonElements(blkHeights, synker.States.PoolsState.CrossShardPool[shardID])
-							sort.Slice(commonHeights, func(i, j int) bool { return blkHeights[i] < blkHeights[j] })
+							sort.Slice(commonHeights, func(i, j int) bool { return commonHeights[i] < commonHeights[j] })
 							if len(commonHeights) > 0 {
 								height, _ := synker.States.ClosestState.CrossShardPool.Load(shardID)
 								h := commonHeights[len(commonHeights)-1]
