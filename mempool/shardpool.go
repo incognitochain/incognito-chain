@@ -433,11 +433,7 @@ func (shardPool *ShardPool) GetValidBlockHeight() []uint64 {
 }
 
 func (shardPool *ShardPool) GetLatestValidBlockHeight() uint64 {
-	blocks := shardPool.GetValidBlock()
-	if len(blocks) < 1 {
-		return 0
-	}
-	return blocks[len(blocks)-1].Header.Height
+	return shardPool.latestValidHeight
 }
 
 func (shardPool *ShardPool) GetAllBlockHeight() []uint64 {
