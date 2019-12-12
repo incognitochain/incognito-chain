@@ -392,34 +392,31 @@ func (e *BLSBFT) addEarlyVote(voteMsg BFTVote) {
 func (e *BLSBFT) createNewBlock() (common.BlockInterface, error) {
 
 	var errCh chan error
-	var timeoutCh chan struct{}
-	var block common.BlockInterface
+	var block common.BlockInterface = nil
 	errCh = make(chan error)
-	timeoutCh = make(chan struct{})
-	timeout := time.AfterFunc(e.Chain.GetMaxBlkCreateTime(), func() {
-		select {
-		case <-timeoutCh:
-			return
-		default:
-			timeoutCh <- struct{}{}
-		}
-	})
+	timeout := time.NewTimer(e.Chain.GetMaxBlkCreateTime()).C
 
 	go func() {
 		time1 := time.Now()
 		var err error
 		block, err = e.Chain.CreateNewBlock(int(e.RoundData.Round))
-		e.logger.Info("create block", time.Since(time1).Seconds())
+		e.logger.Info("create block", block.GetHeight(), time.Since(time1).Seconds())
+		time.AfterFunc(100*time.Millisecond, func() {
+			select {
+			case <-errCh:
+			default:
+			}
+		})
 		errCh <- err
 	}()
-
 	select {
 	case err := <-errCh:
-		timeout.Stop()
-		close(timeoutCh)
 		return block, err
-	case <-timeoutCh:
-		return nil, consensus.NewConsensusError(consensus.BlockCreationError, errors.New("block crea185tion timeout"))
+	case <-timeout:
+		if block != nil {
+			e.logger.Info("Create block has something wrong ", block.GetHeight())
+		}
+		return nil, consensus.NewConsensusError(consensus.BlockCreationError, errors.New("block creation timeout"))
 	}
 
 }
