@@ -104,13 +104,35 @@ func TestPeriodicManageSub(t *testing.T) {
 	time.Sleep(12 * time.Second)
 	close(cm.stop)
 
-	assert.Equal(t, int(*sc), 1, "not subbed")
+	assert.Equal(t, sc.normal, 1, "not subbed")
 }
 
-type subscribeCounter int
+func TestForcedSub(t *testing.T) {
+	sc := new(subscribeCounter)
+	cm := &ConnManager{
+		stop:             make(chan int),
+		registerRequests: make(chan int, 10),
+		subscriber:       sc,
+	}
+	cm.registerRequests <- 1 // Sent forced, must sub with forced = True next time
+	go cm.manageRoleSubscription()
+	time.Sleep(12 * time.Second)
+	close(cm.stop)
 
-func (subCounter *subscribeCounter) Subscribe(_ bool) error {
-	*subCounter++
+	assert.Equal(t, sc.forced, 1, "not subbed")
+}
+
+type subscribeCounter struct {
+	normal int
+	forced int
+}
+
+func (subCounter *subscribeCounter) Subscribe(forced bool) error {
+	if forced {
+		subCounter.forced++
+	} else {
+		subCounter.normal++
+	}
 	return nil
 }
 
