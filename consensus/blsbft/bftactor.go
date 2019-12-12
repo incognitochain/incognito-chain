@@ -167,7 +167,8 @@ func (e *BLSBFT) Start() error {
 									msg.(*wire.MessageBFT).ChainKey = e.ChainKey
 									msg.(*wire.MessageBFT).Content = voteCtnBytes
 									msg.(*wire.MessageBFT).Type = MSG_VOTE
-									e.Node.PushMessageToChain(msg, e.Chain)
+									// TODO uncomment here when switch to non-highway mode
+									// e.Node.PushMessageToChain(msg, e.Chain)
 								}()
 								e.addVote(voteMsg)
 							}(msg, e.RoundData.BlockHash, append([]incognitokey.CommitteePublicKey{}, e.RoundData.Committee...))
@@ -219,9 +220,9 @@ func (e *BLSBFT) Start() error {
 						}
 
 						if e.RoundData.Block == nil {
-							blockData, _ := json.Marshal(e.Blocks[roundKey])
-							msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
-							go e.Node.PushMessageToChain(msg, e.Chain)
+							// blockData, _ := json.Marshal(e.Blocks[roundKey])
+							// msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
+							// go e.Node.PushMessageToChain(msg, e.Chain)
 
 							e.RoundData.Block = e.Blocks[roundKey]
 							e.RoundData.BlockHash = *e.RoundData.Block.Hash()
