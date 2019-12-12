@@ -296,7 +296,6 @@ func (stateDB *StateDB) GetSerialNumberListByPrefix(prefix []byte) ([][]byte, []
 	values := [][]byte{}
 	for it.Next() {
 		key := stateDB.trie.GetKey(it.Key)
-		log.Println(key)
 		newKey := make([]byte, len(key))
 		copy(newKey, key)
 		value := it.Value

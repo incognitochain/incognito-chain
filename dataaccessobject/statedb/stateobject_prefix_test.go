@@ -20,7 +20,7 @@ var (
 	serialNumber2HashPrefix = common.BytesToHash(append(prefix, serialNumber2Hash[:][len(prefix):]...))
 )
 var _ = func() (_ struct{}) {
-	dbPath, err := ioutil.TempDir(os.TempDir(), "test_")
+	dbPath, err := ioutil.TempDir(os.TempDir(), "testIT_")
 	if err != nil {
 		panic(err)
 	}
@@ -31,7 +31,7 @@ var _ = func() (_ struct{}) {
 }()
 
 func TestStoreAndGetStateObjectByPrefix(t *testing.T) {
-	sDB, err := statedb.New(emptyRoot, warperDB)
+	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDB)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,14 +60,8 @@ func TestStoreAndGetStateObjectByPrefix(t *testing.T) {
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
-	sn1 := sDB.GetSerialNumber(serialNumber1HashPrefix)
-	sn2 := sDB.GetSerialNumber(serialNumber2HashPrefix)
-	sn3 := sDB.GetSerialNumber(serialNumber3Hash)
-	log.Println(sn1)
-	log.Println(sn2)
-	log.Println(sn3)
-	//keys, values := tempStateDB.GetSerialNumberListByPrefix(nil)
-	keys, values := tempStateDB.GetSerialNumberAllList()
+	keys, values := tempStateDB.GetSerialNumberListByPrefix(prefix)
+	//keys, values := tempStateDB.GetSerialNumberAllList()
 	log.Println(keys)
 	log.Println(values)
 }
