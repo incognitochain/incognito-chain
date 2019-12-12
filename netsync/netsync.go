@@ -395,6 +395,8 @@ func (netSync *NetSync) handleMessageShardToBeacon(msg *wire.MessageShardToBeaco
 	if block != nil {
 		if isAdded := netSync.handleCacheBlock("s2b" + block.Header.Hash().String()); !isAdded {
 			netSync.config.BlockChain.OnShardToBeaconBlockReceived(block)
+		} else {
+			Logger.log.Infof("handleMessageShardToBeacon blkHash && isAdded: %+v %+v", msg.Block.Header.Hash(), isAdded)
 		}
 	}
 }
@@ -430,12 +432,13 @@ func (netSync *NetSync) handleMessagePeerState(msg *wire.MessagePeerState) {
 	// 	metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees),
 	// })
 	// startTime := time.Now()
-	peerID, err := libp2p.IDB58Decode(msg.SenderID)
-	if err != nil {
-		Logger.log.Error(err)
-		return
-	}
-	netSync.config.BlockChain.OnPeerStateReceived(&msg.Beacon, &msg.Shards, &msg.ShardToBeaconPool, &msg.CrossShardPool, peerID)
+	// peerID, err := libp2p.IDB58Decode(msg.SenderID)
+	// msg.
+	// if err != nil {
+	// 	Logger.log.Error(err)
+	// 	return
+	// }
+	netSync.config.BlockChain.OnPeerStateV2Received(&msg.Beacon, &msg.Shards, &msg.ShardToBeaconPool, &msg.CrossShardPool, msg.SenderMiningPublicKey)
 	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 	// 	metrics.Measurement:      metrics.HandleMessagePeerStateTime,
 	// 	metrics.MeasurementValue: float64(time.Since(startTime).Seconds()),

@@ -16,20 +16,23 @@ require (
 	github.com/elastic/gosigar v0.10.4 // indirect
 	github.com/ethereum/go-ethereum v1.8.22-0.20190710074244-72029f0f88f6
 	github.com/fortytw2/leaktest v1.3.0 // indirect
-	github.com/golang/protobuf v1.3.2 // indirect
+	github.com/golang/protobuf v1.3.2
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/websocket v1.4.0
 	github.com/hashicorp/golang-lru v0.5.1
+	github.com/incognitochain/go-libp2p-grpc v0.0.0-20181024123959-d1f24bf49b50
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/jrick/logrotate v1.0.0
-	github.com/libp2p/go-libp2p v0.2.0
-	github.com/libp2p/go-libp2p-core v0.0.6
+	github.com/libp2p/go-libp2p v0.3.1
+	github.com/libp2p/go-libp2p-core v0.2.2
 	github.com/libp2p/go-libp2p-crypto v0.1.0
 	github.com/libp2p/go-libp2p-host v0.1.0
 	github.com/libp2p/go-libp2p-net v0.1.0
 	github.com/libp2p/go-libp2p-peer v0.2.0
-	github.com/libp2p/go-libp2p-peerstore v0.1.1
-	github.com/libp2p/go-libp2p-swarm v0.1.0
+	github.com/libp2p/go-libp2p-peerstore v0.1.3
+	github.com/libp2p/go-libp2p-protocol v0.1.0 // indirect
+	github.com/libp2p/go-libp2p-pubsub v0.1.1
+	github.com/libp2p/go-libp2p-swarm v0.2.1
 	github.com/mailru/easyjson v0.0.0-20190626092158-b2ccc519800e // indirect
 	github.com/mattn/go-runewidth v0.0.4 // indirect
 	github.com/multiformats/go-multiaddr v0.0.4
@@ -47,14 +50,10 @@ require (
 	github.com/stretchr/testify v1.4.0
 	github.com/syndtr/goleveldb v1.0.0
 	go.opencensus.io v0.22.0 // indirect
-	golang.org/x/crypto v0.0.0-20191119213627-4f8c1d86b1ba
-	golang.org/x/net v0.0.0-20191119073136-fc4aabc6c914 // indirect
-	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
-	golang.org/x/sys v0.0.0-20191119195528-f068ffe820e4 // indirect
-	golang.org/x/tools v0.0.0-20191120001058-ad01d5993d97 // indirect
-	golang.org/x/xerrors v0.0.0-20191011141410-1b5146add898 // indirect
+	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
+	golang.org/x/net v0.0.0-20190628185345-da137c7871d7 // indirect
 	google.golang.org/api v0.10.0
-	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
+	google.golang.org/grpc v1.20.1
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/yaml.v2 v2.2.7 // indirect
 )

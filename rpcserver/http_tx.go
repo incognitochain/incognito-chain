@@ -254,6 +254,17 @@ func (httpServer *HttpServer) handlePrivacyCustomTokenDetail(params interface{},
 
 	for _, tx := range txs {
 		result.ListTxs = append(result.ListTxs, tx.String())
+		if result.Name == "" {
+			tx, err2 := httpServer.txService.GetTransactionByHash(tx.String())
+			if err2 != nil {
+				Logger.log.Error(err)
+			} else {
+				if tx.PrivacyCustomTokenName != "" {
+					result.Name = tx.PrivacyCustomTokenName
+					result.Symbol = tx.PrivacyCustomTokenSymbol
+				}
+			}
+		}
 	}
 
 	Logger.log.Debugf("handlePrivacyCustomTokenDetail result: %+v", result)

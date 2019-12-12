@@ -137,6 +137,7 @@ func (shardToBeaconPool *ShardToBeaconPool) addShardToBeaconBlock(block *blockch
 	shardToBeaconPool.checkLatestValidHeightValidity(shardID)
 	//If receive old block, it will ignore
 	if blockHeight <= shardToBeaconPool.latestValidHeight[shardID] {
+		Logger.log.Infof("[sync] Received old block! Height %v Shard %v", blockHeight, shardID)
 		// if old block has round > current block in pool then swap
 		if _, ok := shardToBeaconPool.pool[shardID]; ok {
 			for index, existedBlock := range shardToBeaconPool.pool[shardID] {
@@ -153,6 +154,7 @@ func (shardToBeaconPool *ShardToBeaconPool) addShardToBeaconBlock(block *blockch
 	}
 	//If block already in pool, it will ignore
 	for i, blkItem := range shardToBeaconPool.pool[shardID] {
+		// Logger.log.Infof("[sync] Block already in pool! Height %v Shard %v", blockHeight, shardID)
 		if blkItem.Header.Height == blockHeight {
 			if i+1 < len(shardToBeaconPool.pool[shardID]) {
 				if !reflect.DeepEqual(*blkItem.Hash(), shardToBeaconPool.pool[shardID][i+1].Header.PreviousBlockHash) {
@@ -197,13 +199,25 @@ func (shardToBeaconPool *ShardToBeaconPool) addShardToBeaconBlock(block *blockch
 	//update last valid pending ShardState
 	shardToBeaconPool.updateLatestShardState()
 	//@NOTICE: check logic again
+	// TODO Pls check this!
+	// Case:
+	// - beacon has shardToBeaconPool.latestValidHeight[shardID] == 2;
+	// - shardToBeaconPool.pool[shardID][0].Header.Height = 3
+	// - shardToBeaconPool.pool[shardID][1].Header.Height = 5
+	// - this function alway return from = 3, to = 3, and alway sync ShardToBeacon 3
+	// - it make beacon stuck because they can not see that they miss block 4
 	if shardToBeaconPool.pool[shardID][0].Header.Height > shardToBeaconPool.latestValidHeight[shardID] {
 		offset := shardToBeaconPool.pool[shardID][0].Header.Height - shardToBeaconPool.latestValidHeight[shardID]
 		if offset > maxValidShardToBeaconBlockInPool {
 			offset = maxValidShardToBeaconBlockInPool
 		}
-		return shardToBeaconPool.latestValidHeight[shardID] + 1, shardToBeaconPool.latestValidHeight[shardID] + offset, nil
+		//Just temp fix
+		if len(shardToBeaconPool.pool[shardID]) > 1 {
+			return shardToBeaconPool.latestValidHeight[shardID] + 1, shardToBeaconPool.pool[shardID][1].Header.Height + 1, nil
+		}
+		return shardToBeaconPool.latestValidHeight[shardID] + 1, shardToBeaconPool.pool[shardID][0].Header.Height + 1, nil
 	}
+
 	return 0, 0, nil
 }
 

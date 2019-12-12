@@ -17,6 +17,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/peer"
+	"github.com/incognitochain/incognito-chain/peerv2"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -52,6 +53,7 @@ var (
 	bridgeLogger           = backendLog.Logger("DeBridge log", false)
 	metadataLogger         = backendLog.Logger("Metadata log", false)
 	trieLogger             = backendLog.Logger("Trie log", false)
+	peerv2Logger           = backendLog.Logger("Peerv2 log", false)
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -89,6 +91,7 @@ func init() {
 	rpcserver.BLogger.Init(bridgeLogger)
 	metadata.Logger.Init(metadataLogger)
 	trie.Logger.Init(trieLogger)
+	peerv2.Logger.Init(peerv2Logger)
 
 }
 
@@ -115,6 +118,7 @@ var subsystemLoggers = map[string]common.Logger{
 	"DEBR":              bridgeLogger,
 	"META":              metadataLogger,
 	"TRIE":              trieLogger,
+	"PEERV2":            peerv2Logger,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and

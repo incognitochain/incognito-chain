@@ -170,12 +170,17 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 		return NewBlockChainError(SnapshotCommitteeError, err)
 	}
 
+	// Notify highway when there's a change (beacon/shard committee or beacon/shard pending members); for masternode only
+	// TODO(@0xbunyip): check case changing pending beacon validators
+	notifyHighway := false
+
 	newShardWaiting := append([]incognitokey.CommitteePublicKey{}, blockchain.BestState.Beacon.CandidateShardWaitingForNextRandom...)
 	newShardWaiting = append(newShardWaiting, blockchain.BestState.Beacon.CandidateBeaconWaitingForCurrentRandom...)
 
 	isChanged := !reflect.DeepEqual(snapshotBeaconCommittee, newBeaconCommittee)
 	if isChanged {
 		go blockchain.config.ConsensusEngine.CommitteeChange(common.BeaconChainKey)
+		notifyHighway = true
 	}
 
 	isChanged = !reflect.DeepEqual(snapshotShardWaiting, newShardWaiting)
@@ -189,9 +194,11 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 			isChanged := !reflect.DeepEqual(snapshotAllShardPending[shardID], committee)
 			if isChanged {
 				go blockchain.config.ConsensusEngine.CommitteeChange(common.BeaconChainKey)
+				notifyHighway = true
 			}
 		} else {
 			go blockchain.config.ConsensusEngine.CommitteeChange(common.BeaconChainKey)
+			notifyHighway = true
 		}
 	}
 	//Check shard-committee
@@ -200,9 +207,11 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 			isChanged := !reflect.DeepEqual(snapshotAllShardCommittee[shardID], committee)
 			if isChanged {
 				go blockchain.config.ConsensusEngine.CommitteeChange(common.BeaconChainKey)
+				notifyHighway = true
 			}
 		} else {
 			go blockchain.config.ConsensusEngine.CommitteeChange(common.BeaconChainKey)
+			notifyHighway = true
 		}
 	}
 
@@ -246,6 +255,16 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	}
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, beaconBlock))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.BeaconBeststateTopic, blockchain.BestState.Beacon))
+
+	// For masternode: broadcast new committee to highways
+	if notifyHighway {
+		go blockchain.config.Highway.BroadcastCommittee(
+			blockchain.config.ChainParams.Epoch,
+			newBeaconCommittee,
+			newAllShardCommittee,
+			newAllShardPending,
+		)
+	}
 	return nil
 }
 

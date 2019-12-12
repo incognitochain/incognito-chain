@@ -313,6 +313,28 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 	tokenIDs := make(map[common.Hash]interface{})
 	for tokenID, token := range listPrivacyToken {
 		item := jsonresult.NewPrivacyToken(token)
+		if item.Name == "" {
+			txs, _, err := httpServer.txService.PrivacyCustomTokenDetail(tokenID.String())
+			if err != nil {
+				Logger.log.Error(err)
+			} else {
+				if len(txs) > 1 {
+					for _, initTx := range txs {
+						var err2 *rpcservice.RPCError
+						tx, err2 := httpServer.txService.GetTransactionByHash(initTx.String())
+						if err2 != nil {
+							Logger.log.Error(err)
+						} else {
+							if tx.PrivacyCustomTokenName != "" {
+								item.Name = tx.PrivacyCustomTokenName
+								item.Symbol = tx.PrivacyCustomTokenSymbol
+								break
+							}
+						}
+					}
+				}
+			}
+		}
 		tokenIDs[tokenID] = 0
 		result.ListCustomToken = append(result.ListCustomToken, *item)
 	}

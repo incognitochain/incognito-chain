@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"sort"
@@ -82,6 +83,10 @@ func (blockchain *BlockChain) revertShardBestState(shardID byte) error {
 		return err
 	}
 
+	if shardBestState.ShardHeight == blockchain.BestState.Shard[shardID].ShardHeight {
+		return NewBlockChainError(RevertStateError, errors.New("can't revert same beststate"))
+	}
+
 	SetBestStateShard(shardID, &shardBestState)
 
 	blockchain.config.ShardPool[shardID].RevertShardPool(shardBestState.ShardHeight)
@@ -102,10 +107,6 @@ func (blockchain *BlockChain) revertShardState(shardID byte) error {
 	var currentBestState ShardBestState
 	currentBestState.cloneShardBestStateFrom(blockchain.BestState.Shard[shardID])
 	currentBestStateBlk := currentBestState.BestBlock
-
-	if currentBestState.ShardHeight == blockchain.BestState.Shard[shardID].ShardHeight {
-		return NewBlockChainError(RevertStateError, errors.New("can't revert same beststate"))
-	}
 
 	err := blockchain.revertShardBestState(shardID)
 	if err != nil {
@@ -513,12 +514,29 @@ func (blockchain *BlockChain) restoreFromTxViewPoint(block *ShardBlock) error {
 	// check privacy custom token
 	for indexTx, privacyCustomTokenSubView := range view.privacyCustomTokenViewPoint {
 		privacyCustomTokenTx := view.privacyCustomTokenTxs[indexTx]
+		// check is bridge token
+		isBridgeToken := false
+		allBridgeTokensBytes, err := rawdb.GetAllBridgeTokens(blockchain.GetDatabase())
+		if err != nil {
+			return err
+		}
+		if len(allBridgeTokensBytes) > 0 {
+			var allBridgeTokens []*rawdb.BridgeTokenInfo
+			err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
+			for _, bridgeToken := range allBridgeTokens {
+				if bridgeToken.TokenID != nil && bytes.Equal(privacyCustomTokenTx.TxPrivacyTokenData.PropertyID[:], bridgeToken.TokenID[:]) {
+					isBridgeToken = true
+				}
+			}
+		}
 		switch privacyCustomTokenTx.TxPrivacyTokenData.Type {
-		case transaction.TokenInit:
+		case transaction.TokenInit, transaction.TokenCrossShard:
 			{
-				err = rawdb.DeletePrivacyToken(blockchain.GetDatabase(), privacyCustomTokenTx.TxPrivacyTokenData.PropertyID)
-				if err != nil {
-					return err
+				if !isBridgeToken && !privacyCustomTokenTx.TxPrivacyTokenData.Mintable {
+					err = rawdb.DeletePrivacyToken(blockchain.GetDatabase(), privacyCustomTokenTx.TxPrivacyTokenData.PropertyID)
+					if err != nil {
+						return err
+					}
 				}
 			}
 		}
@@ -688,6 +706,9 @@ func (blockchain *BlockChain) revertBeaconBestState() error {
 	beaconBestState := BeaconBestState{}
 	if err := json.Unmarshal(prevBST, &beaconBestState); err != nil {
 		return NewBlockChainError(RevertStateError, err)
+	}
+	if beaconBestState.BeaconHeight == blockchain.BestState.Beacon.BeaconHeight {
+		return NewBlockChainError(RevertStateError, errors.New("can't revert same beststate"))
 	}
 	SetBeaconBestState(&beaconBestState)
 

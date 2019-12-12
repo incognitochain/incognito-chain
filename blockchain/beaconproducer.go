@@ -108,6 +108,7 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLi
 		}
 	}
 	tempShardState, stakeInstructions, swapInstructions, bridgeInstructions, acceptedRewardInstructions, stopAutoStakingInstructions := blockGenerator.GetShardState(beaconBestState, shardsToBeaconLimit)
+	Logger.log.Infof("In NewBlockBeacon tempShardState: %+v", tempShardState)
 	tempInstruction, err := beaconBestState.GenerateInstruction(
 		beaconBlock.Header.Height, stakeInstructions, swapInstructions, stopAutoStakingInstructions,
 		beaconBestState.CandidateShardWaitingForCurrentRandom, bridgeInstructions, acceptedRewardInstructions, blockGenerator.chain.config.ChainParams.Epoch,
@@ -277,7 +278,9 @@ func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestS
 	validStopAutoStakingInstructions := [][]string{}
 	validSwapInstructions := make(map[byte][][]string)
 	//Get shard to beacon block from pool
+	Logger.log.Infof("In GetShardState shardsToBeacon limit: %+v", shardsToBeacon)
 	allShardBlocks := blockGenerator.shardToBeaconPool.GetValidBlock(shardsToBeacon)
+	Logger.log.Infof("In GetShardState allShardBlocks: %+v", allShardBlocks)
 	//Shard block is a map ShardId -> array of shard block
 	bridgeInstructions := [][]string{}
 	acceptedRewardInstructions := [][]string{}
@@ -287,6 +290,7 @@ func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestS
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
+	Logger.log.Infof("In GetShardState keys: %+v", keys)
 	for _, value := range keys {
 		shardID := byte(value)
 		shardBlocks := allShardBlocks[shardID]

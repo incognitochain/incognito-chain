@@ -88,20 +88,24 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 		{
 			tempTx := tx.(*transaction.TxCustomTokenPrivacy)
 			result = &TransactionDetail{
-				BlockHash:   blockHashStr,
-				BlockHeight: blockHeight,
-				Index:       uint64(index),
-				ShardID:     shardID,
-				Hash:        tx.Hash().String(),
-				Version:     tempTx.Version,
-				Type:        tempTx.Type,
-				LockTime:    time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
-				Fee:         tempTx.Fee,
-				Proof:       tempTx.Proof,
-				SigPubKey:   base58.Base58Check{}.Encode(tempTx.SigPubKey, 0x0),
-				Sig:         base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
-				Info:        string(tempTx.Info),
-				IsPrivacy:   tempTx.IsPrivacy(),
+				BlockHash:                blockHashStr,
+				BlockHeight:              blockHeight,
+				Index:                    uint64(index),
+				ShardID:                  shardID,
+				Hash:                     tx.Hash().String(),
+				Version:                  tempTx.Version,
+				Type:                     tempTx.Type,
+				LockTime:                 time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
+				Fee:                      tempTx.Fee,
+				Proof:                    tempTx.Proof,
+				SigPubKey:                base58.Base58Check{}.Encode(tempTx.SigPubKey, 0x0),
+				Sig:                      base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
+				Info:                     string(tempTx.Info),
+				IsPrivacy:                tempTx.IsPrivacy(),
+				PrivacyCustomTokenSymbol: tempTx.TxPrivacyTokenData.PropertySymbol,
+				PrivacyCustomTokenName:   tempTx.TxPrivacyTokenData.PropertyName,
+				PrivacyCustomTokenID:     tempTx.TxPrivacyTokenData.PropertyID.String(),
+				PrivacyCustomTokenFee:    tempTx.TxPrivacyTokenData.TxNormal.Fee,
 			}
 			if result.Proof != nil && len(result.Proof.GetInputCoins()) > 0 && result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey() != nil {
 				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte)
