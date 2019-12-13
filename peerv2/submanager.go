@@ -38,7 +38,7 @@ type info struct {
 }
 
 type Subscriber interface {
-	Subscribe(topic string, opts ...pubsub.SubOpt) (*pubsub.Subscription, error)
+	Subscribe(topic string, opts ...pubsub.SubOpt) (SubscriptionStream, error)
 }
 
 type Registerer interface {
@@ -144,7 +144,6 @@ func (sub *SubManager) subscribeNewTopics(newTopics, subscribed msgToTopics) err
 	for m, topicList := range newTopics {
 		Logger.Infof("Process message %v and topic %v", m, topicList)
 		for _, t := range topicList {
-
 			if found(t.Name, subscribed) {
 				Logger.Infof("Continue 1 %v %v", t.Name, subscribed)
 				continue
@@ -191,7 +190,7 @@ func (sub *SubManager) subscribeNewTopics(newTopics, subscribed msgToTopics) err
 }
 
 // processSubscriptionMessage listens to a topic and pushes all messages to a queue to be processed later
-func processSubscriptionMessage(inbox chan *pubsub.Message, sub *pubsub.Subscription) {
+func processSubscriptionMessage(inbox chan *pubsub.Message, sub SubscriptionStream) {
 	ctx := context.Background()
 	for {
 		// TODO(@0xbunyip): check if topic is unsubbed then return, otherwise just continue
@@ -206,9 +205,16 @@ func processSubscriptionMessage(inbox chan *pubsub.Message, sub *pubsub.Subscrip
 	}
 }
 
+var _ SubscriptionStream = (*pubsub.Subscription)(nil)
+
+type SubscriptionStream interface {
+	Next(context.Context) (*pubsub.Message, error)
+	Cancel()
+}
+
 type Topic struct {
 	Name string
-	Sub  *pubsub.Subscription
+	Sub  SubscriptionStream
 	Act  proto.MessageTopicPair_Action
 }
 

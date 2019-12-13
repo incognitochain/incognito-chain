@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/peerv2/mocks"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
 	"github.com/incognitochain/incognito-chain/wire"
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -181,5 +182,57 @@ func compareMsgs(t *testing.T, exp, msgs []string) {
 			}
 		}
 		assert.True(t, ok, "msg %s not found", e)
+	}
+}
+
+func TestSubscribeNewTopics(t *testing.T) {
+	testCases := []struct {
+		desc       string
+		newTopics  msgToTopics
+		subscribed msgToTopics
+		subCalled  int
+		subsLen    int
+	}{
+		{
+			desc: "Already subscribed all topics",
+			newTopics: msgToTopics{
+				wire.CmdBlockBeacon: []Topic{Topic{Name: "abc"}},
+				wire.CmdTx:          []Topic{Topic{Name: "xyz"}, Topic{Name: "ijk"}},
+			},
+			subscribed: msgToTopics{
+				wire.CmdBlockBeacon: []Topic{Topic{Name: "abc"}},
+				wire.CmdTx:          []Topic{Topic{Name: "xyz"}, Topic{Name: "ijk"}},
+			},
+			subCalled: 0,
+			subsLen:   2,
+		},
+		{
+			desc: "Subscribe to new topics",
+			newTopics: msgToTopics{
+				wire.CmdBlockBeacon: []Topic{Topic{Name: "abc"}},
+				wire.CmdTx:          []Topic{Topic{Name: "xyz"}, Topic{Name: "ijk"}},
+			},
+			subscribed: msgToTopics{},
+			subCalled:  2,
+			subsLen:    2,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			subStream := &mocks.SubscriptionStream{}
+			var msg *pubsub.Message
+			subStream.On("Next", mock.Anything).Return(msg, fmt.Errorf("error preventing further advance"))
+
+			subscriber := &mocks.Subscriber{}
+			var err error
+			subscriber.On("Subscribe", mock.Anything).Return(subStream, err)
+			sub := &SubManager{subs: tc.subscribed, subscriber: subscriber}
+
+			err = sub.subscribeNewTopics(tc.newTopics, tc.subscribed)
+			assert.Nil(t, err)
+			subscriber.AssertNumberOfCalls(t, "Subscribe", tc.subCalled)
+			assert.Equal(t, tc.subsLen, len(sub.subs))
+		})
 	}
 }
