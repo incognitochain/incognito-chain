@@ -91,3 +91,29 @@ func TestSubscribeRoleChanged(t *testing.T) {
 	sub.Subscribe(forced)
 	consensusData.AssertNumberOfCalls(t, "GetUserRole", 1)
 }
+
+func TestSubscribeForced(t *testing.T) {
+	role := userRole{
+		layer:   "",
+		role:    "",
+		shardID: -2,
+	}
+	registerer := &mocks.Registerer{}
+	var pairs []*proto.MessageTopicPair
+	err := fmt.Errorf("error preventing further advance")
+	registerer.On("Register", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(pairs, &proto.UserRole{}, err)
+	consensusData := &mocks.ConsensusData{}
+	consensusData.On("GetUserRole").Return(role.layer, role.role, role.shardID)
+	sub := &SubManager{
+		info: info{
+			consensusData: consensusData,
+			nodeMode:      common.NodeModeAuto,
+			relayShard:    []byte{},
+		},
+		role:       role,
+		registerer: registerer,
+	}
+	forced := true
+	sub.Subscribe(forced)
+	consensusData.AssertNumberOfCalls(t, "GetUserRole", 1)
+}
