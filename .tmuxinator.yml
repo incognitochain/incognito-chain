@@ -1,0 +1,97 @@
+#
+
+name: incognito
+root: ./
+
+# Optional tmux socket
+# socket_name: foo
+
+# Runs before everything. Use it to start daemons etc.
+# pre: sudo /etc/rc.d/mysqld start
+
+# Project hooks
+# Runs on project start, always
+# on_project_start: command
+# Run on project start, the first time
+# on_project_first_start: command
+# Run on project start, after the first time
+# on_project_restart: command
+# Run on project exit ( detaching from tmux session )
+# on_project_exit: command
+# Run on project stop
+# on_project_stop: command
+
+# Runs in each window and pane before window/pane specific commands. Useful for setting up interpreter versions.
+# pre_window: rbenv shell 2.0.0-p247
+
+# Pass command line options to tmux. Useful for specifying a different tmux.conf.
+# tmux_options: -f ~/.tmux.mac.conf
+
+# Change the command to call tmux.  This can be used by derivatives/wrappers like byobu.
+# tmux_command: byobu
+
+# Specifies (by name or index) which window will be selected on project startup. If not set, the first window is used.
+# startup_window: editor
+
+# Specifies (by index) which pane of the specified window will be selected on project startup. If not set, the first pane is used.
+# startup_pane: 1
+
+# Controls whether the tmux session should be attached to automatically. Defaults to true.
+# attach: false
+
+# Runs after everything. Use it to attach to tmux with custom options etc.
+# post: tmux -CC attach -t const
+
+windows:
+  - b:
+      root: ./
+      # layout: ef8e,161x35,0,0{40x35,0,0[40x17,0,0,0,40x17,0,18,5],39x35,41,0[39x17,41,0,3,39x17,41,18,4],40x35,81,0[40x17,81,0,1,40x17,81,18,7],39x35,122,0[39x17,122,0,2,39x17,122,18,6]}
+      panes:
+        - ./run_new.sh "b0" 2>&1 | tee b0.log
+        - sleep 1; ./run_new.sh "b1" 2>&1 | tee b1.log
+        - sleep 1; ./run_new.sh "b2" 2>&1 | tee b2.log
+        - sleep 1; ./run_new.sh "b3" 2>&1 | tee b3.log
+  # - s0:
+  #     root: ./
+  #     layout: ef8e,161x35,0,0{40x35,0,0[40x17,0,0,0,40x17,0,18,5],39x35,41,0[39x17,41,0,3,39x17,41,18,4],40x35,81,0[40x17,81,0,1,40x17,81,18,7],39x35,122,0[39x17,122,0,2,39x17,122,18,6]}
+  #     panes:
+  #       - ./run_new.sh "s01" > "s01.log"
+  #       - touch "s01.log" && tail -f "s01.log" | grep -a --line-buffered "\[db\]"
+  #       - ./run_new.sh "s02" > "s02.log"
+  #       - touch "s02.log" && tail -f "s02.log" | grep -a --line-buffered "\[db\]"
+  #       - ./run_new.sh "s03" > "s03.log"
+  #       - touch "s03.log" && tail -f "s03.log" | grep -a --line-buffered "\[db\]"
+  #       - ./run_new.sh "s04" > "s04.log"
+  #       - touch "s04.log" && tail -f "s04.log" | grep -a --line-buffered "\[db\]"
+  - s0:
+      root: ./
+      # layout: ef8e,161x35,0,0{40x35,0,0[40x17,0,0,0,40x17,0,18,5],39x35,41,0[39x17,41,0,3,39x17,41,18,4],40x35,81,0[40x17,81,0,1,40x17,81,18,7],39x35,122,0[39x17,122,0,2,39x17,122,18,6]}
+      panes:
+        - ./run_new.sh "s0n0" 2>&1 | tee s0n0.log
+        - sleep 1; ./run_new.sh "s0n1" 2>&1 | tee s0n1.log
+        - sleep 1; ./run_new.sh "s0n2" 2>&1 | tee s0n2.log
+        - sleep 1; ./run_new.sh "s0n3" 2>&1 | tee s0n3.log
+        # - ./run_new.sh "s01"
+        # - ./run_new.sh "s02"
+        # - ./run_new.sh "s03"
+        # - ./run_new.sh "s04"
+        # - echo "./run_new.sh \"s04\""
+  - s1:
+      root: ./
+      # layout: ef8e,161x35,0,0{40x35,0,0[40x17,0,0,0,40x17,0,18,5],39x35,41,0[39x17,41,0,3,39x17,41,18,4],40x35,81,0[40x17,81,0,1,40x17,81,18,7],39x35,122,0[39x17,122,0,2,39x17,122,18,6]}
+      panes:
+        - ./run_new.sh "s1n0" 2>&1 | tee s1n0.log
+        - sleep 1; ./run_new.sh "s1n1" 2>&1 | tee s1n1.log
+        - sleep 1; ./run_new.sh "s1n2" 2>&1 | tee s1n2.log
+        - sleep 1; ./run_new.sh "s1n3" 2>&1 | tee s1n3.log
+  # - fullnode:
+  #     root: ./
+  #     layout: tiled
+  #     panes:
+  #       - ./run_new.sh "full_node" > "full_node.log"
+  #       - touch "full_node.log" && tail -f "full_node.log" | grep -a --line-buffered "DeBridge log"
+  - staker:
+      root: ./
+      layout: tiled
+      panes:
+        - sleep 2; ./run_new.sh "st1" 2>&1 | tee st1.log
