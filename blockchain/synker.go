@@ -387,7 +387,7 @@ func (synker *Synker) UpdateState() {
 								if len(commonHeights) > 0 {
 									sort.Slice(commonHeights, func(i, j int) bool { return commonHeights[i] < commonHeights[j] })
 									height, ok := synker.States.ClosestState.ShardToBeaconPool.Load(shardID)
-									if !ok {
+									if (!ok) || (height == nil) {
 										continue
 									}
 									h := commonHeights[len(commonHeights)-1]
@@ -428,7 +428,7 @@ func (synker *Synker) UpdateState() {
 							sort.Slice(commonHeights, func(i, j int) bool { return commonHeights[i] < commonHeights[j] })
 							if len(commonHeights) > 0 {
 								height, ok := synker.States.ClosestState.CrossShardPool.Load(shardID)
-								if !ok {
+								if (!ok) || (height == nil) {
 									continue
 								}
 								h := commonHeights[len(commonHeights)-1]
