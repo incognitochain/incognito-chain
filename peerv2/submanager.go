@@ -290,14 +290,24 @@ func getMessagesForLayer(mode, layer string, shardID []byte) []string {
 			}
 		}
 	case common.NodeModeRelay:
-		return []string{
+		containShard := false
+		for _, s := range shardID {
+			if s != HighwayBeaconID {
+				containShard = true
+			}
+		}
+
+		msgs := []string{
 			wire.CmdTx,
-			wire.CmdBlockShard,
 			wire.CmdBlockBeacon,
 			wire.CmdPeerState,
 			wire.CmdPrivacyCustomToken,
 			wire.CmdCustomToken,
 		}
+		if containShard {
+			msgs = append(msgs, wire.CmdBlockShard)
+		}
+		return msgs
 	}
 	return []string{}
 }

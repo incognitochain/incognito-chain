@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/peerv2/mocks"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
+	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -116,4 +117,69 @@ func TestSubscribeForced(t *testing.T) {
 	forced := true
 	sub.Subscribe(forced)
 	consensusData.AssertNumberOfCalls(t, "GetUserRole", 1)
+}
+
+func TestGetMessage(t *testing.T) {
+	testCases := []struct {
+		desc    string
+		mode    string
+		layer   string
+		shardID []byte
+		out     []string
+	}{
+		{
+			desc:  "Nodemode auto, shard role",
+			mode:  common.NodeModeAuto,
+			layer: common.ShardRole,
+			out:   []string{wire.CmdBlockBeacon, wire.CmdBlockShard, wire.CmdBlkShardToBeacon, wire.CmdCrossShard, wire.CmdTx, wire.CmdCustomToken, wire.CmdPrivacyCustomToken, wire.CmdBFT, wire.CmdPeerState},
+		},
+		{
+			desc:  "Nodemode auto, beacon role",
+			mode:  common.NodeModeAuto,
+			layer: common.BeaconRole,
+			out:   []string{wire.CmdBlockBeacon, wire.CmdBlkShardToBeacon, wire.CmdBFT, wire.CmdPeerState},
+		},
+		{
+			desc:  "Nodemode auto, normal role",
+			mode:  common.NodeModeAuto,
+			layer: "",
+			out:   []string{wire.CmdBlockBeacon, wire.CmdTx, wire.CmdCustomToken, wire.CmdPrivacyCustomToken, wire.CmdPeerState},
+		},
+		{
+			desc:    "Nodemode relay beacon",
+			mode:    common.NodeModeRelay,
+			layer:   "",
+			shardID: []byte{255},
+			out:     []string{wire.CmdBlockBeacon, wire.CmdTx, wire.CmdCustomToken, wire.CmdPrivacyCustomToken, wire.CmdPeerState},
+		},
+		{
+			desc:    "Nodemode relay shards",
+			mode:    common.NodeModeRelay,
+			layer:   "",
+			shardID: []byte{1, 2, 3},
+			out:     []string{wire.CmdBlockBeacon, wire.CmdBlockShard, wire.CmdTx, wire.CmdCustomToken, wire.CmdPrivacyCustomToken, wire.CmdPeerState},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			msgs := getMessagesForLayer(tc.mode, tc.layer, tc.shardID)
+			compareMsgs(t, tc.out, msgs)
+		})
+	}
+}
+
+func compareMsgs(t *testing.T, exp, msgs []string) {
+	assert.Equal(t, len(exp), len(msgs))
+	fmt.Println(exp, msgs)
+	for _, e := range exp {
+		ok := false
+		for _, m := range msgs {
+			if e == m {
+				ok = true
+				break
+			}
+		}
+		assert.True(t, ok, "msg %s not found", e)
+	}
 }
