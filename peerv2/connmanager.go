@@ -10,6 +10,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/peerv2/proto"
 	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -100,7 +101,7 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 		if msgType == p {
 			for _, availableTopic := range cm.subs[msgType] {
 				// Logger.Info("[hy]", availableTopic)
-				if (availableTopic.Act == MessageTopicPair_PUB) || (availableTopic.Act == MessageTopicPair_PUBSUB) {
+				if (availableTopic.Act == proto.MessageTopicPair_PUB) || (availableTopic.Act == proto.MessageTopicPair_PUBSUB) {
 					topic = availableTopic.Name
 					err := broadcastMessage(msg, topic, cm.ps)
 					if err != nil {
@@ -130,7 +131,7 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 			for _, availableTopic := range cm.subs[msgType] {
 				Logger.Info(availableTopic)
 				cID := GetCommitteeIDOfTopic(availableTopic.Name)
-				if (byte(cID) == shardID) && ((availableTopic.Act == MessageTopicPair_PUB) || (availableTopic.Act == MessageTopicPair_PUBSUB)) {
+				if (byte(cID) == shardID) && ((availableTopic.Act == proto.MessageTopicPair_PUB) || (availableTopic.Act == proto.MessageTopicPair_PUBSUB)) {
 					return broadcastMessage(msg, availableTopic.Name, cm.ps)
 				}
 			}
@@ -236,7 +237,7 @@ type ConsensusData interface {
 type Topic struct {
 	Name string
 	Sub  *pubsub.Subscription
-	Act  MessageTopicPair_Action
+	Act  proto.MessageTopicPair_Action
 }
 
 type ConnManager struct {
@@ -475,7 +476,7 @@ func (cm *ConnManager) subscribeNewTopics(newTopics, subscribed m2t) error {
 			}
 
 			// TODO(@0xakk0r0kamui): check here
-			if t.Act == MessageTopicPair_PUB {
+			if t.Act == proto.MessageTopicPair_PUB {
 				cm.subs[m] = append(cm.subs[m], Topic{Name: t.Name, Sub: nil, Act: t.Act})
 				Logger.Infof("Countinue 2 %v %v", t.Name, subscribed)
 				continue
@@ -500,7 +501,7 @@ func (cm *ConnManager) subscribeNewTopics(newTopics, subscribed m2t) error {
 			}
 
 			// TODO(@0xakk0r0kamui): check here
-			if t.Act == MessageTopicPair_PUB {
+			if t.Act == proto.MessageTopicPair_PUB {
 				continue
 			}
 
