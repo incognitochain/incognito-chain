@@ -95,7 +95,7 @@ func (blockchain *BlockChain) OnPeerStateV2Received(beacon *ChainState, shard *m
 	// if miningKey != "" {
 	// 	userRole, userShardID = blockchain.BestState.Beacon.GetPubkeyRole(miningKey, blockchain.BestState.Beacon.BestBlock.Header.Round)
 	// }
-	pState := &peerStatev2{
+	pState := &peerState{
 		Shard:               make(map[byte]*ChainState),
 		Beacon:              beacon,
 		PeerMiningPublicKey: peerMiningKey,
@@ -133,8 +133,8 @@ func (blockchain *BlockChain) OnPeerStateV2Received(beacon *ChainState, shard *m
 	}
 	blockchain.Synker.Status.Unlock()
 	blockchain.Synker.States.Lock()
-	if blockchain.Synker.States.PeersStatev2 != nil {
-		blockchain.Synker.States.PeersStatev2[peerMiningKey] = pState
+	if blockchain.Synker.States.PeersState != nil {
+		blockchain.Synker.States.PeersState[peerMiningKey] = pState
 	}
 	blockchain.Synker.States.Unlock()
 }

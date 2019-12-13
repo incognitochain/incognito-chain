@@ -84,30 +84,33 @@ func (c *BlockRequester) Register(
 
 func (c *BlockRequester) GetBlockShardByHeight(
 	shardID int32,
+	bySpecific bool,
 	from uint64,
+	heights []uint64,
 	to uint64,
 ) ([][]byte, error) {
 	if !c.Ready() {
 		return nil, errors.New("requester not ready")
 	}
+	Logger.Infof("[blkbyheight] Requesting block shard %v (by specific %v): from = %v to = %v; height: %v", shardID, bySpecific, from, to, heights)
 
-	Logger.Infof("Requesting shard block by height: shard = %v from = %v to = %v", shardID, from, to)
 	client := proto.NewHighwayServiceClient(c.conn)
 	reply, err := client.GetBlockShardByHeight(
 		context.Background(),
 		&proto.GetBlockShardByHeightRequest{
 			Shard:      shardID,
-			Specific:   false,
+			Specific:   bySpecific,
 			FromHeight: from,
 			ToHeight:   to,
-			Heights:    nil,
+			Heights:    heights,
 			FromPool:   false,
 		},
+		grpc.MaxCallRecvMsgSize(MaxCallRecvMsgSize),
 	)
-	Logger.Infof("Received block shard data %v", reply)
 	if err != nil {
 		return nil, err
 	}
+	Logger.Infof("[blkbyheight] Received block shard data %v", len(reply.Data))
 	return reply.Data, nil
 }
 
@@ -122,7 +125,6 @@ func (c *BlockRequester) GetBlockShardByHash(
 	for _, hash := range hashes {
 		blkHashBytes = append(blkHashBytes, hash.GetBytes())
 	}
-	Logger.Infof("Requesting shard block by hash: %v", hashes)
 	client := proto.NewHighwayServiceClient(c.conn)
 	reply, err := client.GetBlockShardByHash(
 		context.Background(),
@@ -130,38 +132,41 @@ func (c *BlockRequester) GetBlockShardByHash(
 			Shard:  shardID,
 			Hashes: blkHashBytes,
 		},
+		grpc.MaxCallRecvMsgSize(MaxCallRecvMsgSize),
 	)
-	Logger.Infof("Received block shard data %v", reply)
 	if err != nil {
 		return nil, err
 	}
+	Logger.Infof("[blkbyhash] Received block shard data %v", len(reply.Data))
 	return reply.Data, nil
 }
 
 func (c *BlockRequester) GetBlockBeaconByHeight(
+	bySpecific bool,
 	from uint64,
+	heights []uint64,
 	to uint64,
 ) ([][]byte, error) {
 	if !c.Ready() {
 		return nil, errors.New("requester not ready")
 	}
-
-	Logger.Infof("Requesting beaconblock by height: from = %v to = %v", from, to)
+	Logger.Infof("[blkbyheight] Requesting beaconblock (by specific %v): from = %v to = %v; height: %v", bySpecific, from, to, heights)
 	client := proto.NewHighwayServiceClient(c.conn)
 	reply, err := client.GetBlockBeaconByHeight(
 		context.Background(),
 		&proto.GetBlockBeaconByHeightRequest{
-			Specific:   false,
+			Specific:   bySpecific,
 			FromHeight: from,
 			ToHeight:   to,
-			Heights:    nil,
+			Heights:    heights,
 			FromPool:   false,
 		},
+		grpc.MaxCallRecvMsgSize(MaxCallRecvMsgSize),
 	)
 	if err != nil {
 		return nil, err
 	} else if reply != nil {
-		Logger.Infof("Received block beacon data len: %v", len(reply.Data))
+		Logger.Infof("[blkbyheight] Received block beacon data len: %v", len(reply.Data))
 	}
 	return reply.Data, nil
 }
@@ -183,11 +188,12 @@ func (c *BlockRequester) GetBlockBeaconByHash(
 		&proto.GetBlockBeaconByHashRequest{
 			Hashes: blkHashBytes,
 		},
+		grpc.MaxCallRecvMsgSize(MaxCallRecvMsgSize),
 	)
-	Logger.Infof("Received block beacon data %v", reply)
 	if err != nil {
 		return nil, err
 	}
+	Logger.Infof("Received block beacon data %v", len(reply.Data))
 	return reply.Data, nil
 }
 
@@ -214,6 +220,7 @@ func (c *BlockRequester) GetBlockShardToBeaconByHeight(
 			Heights:    heights,
 			FromPool:   false,
 		},
+		grpc.MaxCallRecvMsgSize(MaxCallRecvMsgSize),
 	)
 	if err != nil {
 		Logger.Infof("[sync] Received err: %v from = %v to = %v; Heights: %v", err, from, to, heights)
@@ -247,6 +254,7 @@ func (c *BlockRequester) GetBlockCrossShardByHeight(
 			Heights:    heights,
 			FromPool:   getFromPool,
 		},
+		grpc.MaxCallRecvMsgSize(MaxCallRecvMsgSize),
 	)
 	if err != nil {
 		return nil, err
