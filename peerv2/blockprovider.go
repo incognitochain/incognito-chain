@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/peerv2/proto"
 	"github.com/incognitochain/incognito-chain/wire"
 
 	p2pgrpc "github.com/incognitochain/go-libp2p-grpc"
@@ -11,17 +12,17 @@ import (
 
 func NewBlockProvider(p *p2pgrpc.GRPCProtocol, ns NetSync) *BlockProvider {
 	bp := &BlockProvider{NetSync: ns}
-	RegisterHighwayServiceServer(p.GetGRPCServer(), bp)
+	proto.RegisterHighwayServiceServer(p.GetGRPCServer(), bp)
 	go p.Serve() // NOTE: must serve after registering all services
 	return bp
 }
 
-func (bp *BlockProvider) Register(ctx context.Context, req *RegisterRequest) (*RegisterResponse, error) {
+func (bp *BlockProvider) Register(ctx context.Context, req *proto.RegisterRequest) (*proto.RegisterResponse, error) {
 	Logger.Infof("Receive new request from %v via gRPC", req.GetCommitteePublicKey())
 	return nil, nil
 }
 
-func (bp *BlockProvider) GetBlockShardByHeight(ctx context.Context, req *GetBlockShardByHeightRequest) (*GetBlockShardByHeightResponse, error) {
+func (bp *BlockProvider) GetBlockShardByHeight(ctx context.Context, req *proto.GetBlockShardByHeightRequest) (*proto.GetBlockShardByHeightResponse, error) {
 	Logger.Info("Receive GetBlockShardByHeight request")
 	blkMsgs := bp.NetSync.GetBlockShardByHeight(
 		req.FromPool,
@@ -32,7 +33,7 @@ func (bp *BlockProvider) GetBlockShardByHeight(ctx context.Context, req *GetBloc
 		0,
 	)
 	Logger.Info("Blockshard received from netsync:", blkMsgs)
-	resp := &GetBlockShardByHeightResponse{}
+	resp := &proto.GetBlockShardByHeightResponse{}
 	for _, msg := range blkMsgs {
 		encoded, err := encodeMessage(msg)
 		if err != nil {
@@ -44,7 +45,7 @@ func (bp *BlockProvider) GetBlockShardByHeight(ctx context.Context, req *GetBloc
 	return resp, nil
 }
 
-func (bp *BlockProvider) GetBlockShardByHash(ctx context.Context, req *GetBlockShardByHashRequest) (*GetBlockShardByHashResponse, error) {
+func (bp *BlockProvider) GetBlockShardByHash(ctx context.Context, req *proto.GetBlockShardByHashRequest) (*proto.GetBlockShardByHashResponse, error) {
 	Logger.Info("Receive GetBlockShardByHash request")
 	hashes := []common.Hash{}
 	for _, blkHashBytes := range req.Hashes {
@@ -59,7 +60,7 @@ func (bp *BlockProvider) GetBlockShardByHash(ctx context.Context, req *GetBlockS
 		hashes,
 	)
 	Logger.Info("Blockshard received from netsync:", blkMsgs)
-	resp := &GetBlockShardByHashResponse{}
+	resp := &proto.GetBlockShardByHashResponse{}
 	for _, msg := range blkMsgs {
 		encoded, err := encodeMessage(msg)
 		if err != nil {
@@ -71,14 +72,14 @@ func (bp *BlockProvider) GetBlockShardByHash(ctx context.Context, req *GetBlockS
 	return resp, nil
 }
 
-func (bp *BlockProvider) GetBlockBeaconByHeight(ctx context.Context, req *GetBlockBeaconByHeightRequest) (*GetBlockBeaconByHeightResponse, error) {
+func (bp *BlockProvider) GetBlockBeaconByHeight(ctx context.Context, req *proto.GetBlockBeaconByHeightRequest) (*proto.GetBlockBeaconByHeightResponse, error) {
 	Logger.Info("Receive GetBlockBeaconByHeight request")
 	blkMsgs := bp.NetSync.GetBlockBeaconByHeight(
 		req.FromPool,
 		false,
 		[]uint64{req.FromHeight, req.ToHeight},
 	)
-	resp := &GetBlockBeaconByHeightResponse{}
+	resp := &proto.GetBlockBeaconByHeightResponse{}
 	for _, msg := range blkMsgs {
 		encoded, err := encodeMessage(msg)
 		if err != nil {
@@ -90,7 +91,7 @@ func (bp *BlockProvider) GetBlockBeaconByHeight(ctx context.Context, req *GetBlo
 	return resp, nil
 }
 
-func (bp *BlockProvider) GetBlockBeaconByHash(ctx context.Context, req *GetBlockBeaconByHashRequest) (*GetBlockBeaconByHashResponse, error) {
+func (bp *BlockProvider) GetBlockBeaconByHash(ctx context.Context, req *proto.GetBlockBeaconByHashRequest) (*proto.GetBlockBeaconByHashResponse, error) {
 	Logger.Info("Receive GetBlockBeaconByHash request")
 	hashes := []common.Hash{}
 	for _, blkHashBytes := range req.Hashes {
@@ -105,7 +106,7 @@ func (bp *BlockProvider) GetBlockBeaconByHash(ctx context.Context, req *GetBlock
 		hashes,
 	)
 	Logger.Info("Block beacon received from netsync:", blkMsgs)
-	resp := &GetBlockBeaconByHashResponse{}
+	resp := &proto.GetBlockBeaconByHashResponse{}
 	for _, msg := range blkMsgs {
 		encoded, err := encodeMessage(msg)
 		if err != nil {
@@ -117,7 +118,7 @@ func (bp *BlockProvider) GetBlockBeaconByHash(ctx context.Context, req *GetBlock
 	return resp, nil
 }
 
-func (bp *BlockProvider) GetBlockCrossShardByHeight(ctx context.Context, req *GetBlockCrossShardByHeightRequest) (*GetBlockCrossShardByHeightResponse, error) {
+func (bp *BlockProvider) GetBlockCrossShardByHeight(ctx context.Context, req *proto.GetBlockCrossShardByHeightRequest) (*proto.GetBlockCrossShardByHeightResponse, error) {
 	Logger.Info("Receive GetBlockCrossShardByHeight request:", req.Heights)
 	blkMsgs := bp.NetSync.GetBlockShardByHeight(
 		req.FromPool,
@@ -128,7 +129,7 @@ func (bp *BlockProvider) GetBlockCrossShardByHeight(ctx context.Context, req *Ge
 		byte(req.ToShard),
 	)
 	Logger.Info("BlockCS received from netsync:", blkMsgs)
-	resp := &GetBlockCrossShardByHeightResponse{}
+	resp := &proto.GetBlockCrossShardByHeightResponse{}
 	for _, msg := range blkMsgs {
 		encoded, err := encodeMessage(msg)
 		if err != nil {
@@ -140,12 +141,12 @@ func (bp *BlockProvider) GetBlockCrossShardByHeight(ctx context.Context, req *Ge
 	return resp, nil
 }
 
-func (bp *BlockProvider) GetBlockCrossShardByHash(ctx context.Context, req *GetBlockCrossShardByHashRequest) (*GetBlockCrossShardByHashResponse, error) {
+func (bp *BlockProvider) GetBlockCrossShardByHash(ctx context.Context, req *proto.GetBlockCrossShardByHashRequest) (*proto.GetBlockCrossShardByHashResponse, error) {
 	Logger.Info("Receive GetBlockCrossShardByHash request")
 	return nil, nil
 }
 
-func (bp *BlockProvider) GetBlockShardToBeaconByHeight(ctx context.Context, req *GetBlockShardToBeaconByHeightRequest) (*GetBlockShardToBeaconByHeightResponse, error) {
+func (bp *BlockProvider) GetBlockShardToBeaconByHeight(ctx context.Context, req *proto.GetBlockShardToBeaconByHeightRequest) (*proto.GetBlockShardToBeaconByHeightResponse, error) {
 	Logger.Info("[sync] Receive GetBlockShardToBeaconByHeight request:", req.FromHeight, req.ToHeight)
 	reqHeights := []uint64{req.FromHeight, req.ToHeight}
 	if req.Specific {
@@ -160,7 +161,7 @@ func (bp *BlockProvider) GetBlockShardToBeaconByHeight(ctx context.Context, req 
 		0,
 	)
 	Logger.Info("BlockS2B received from netsync:", blkMsgs)
-	resp := &GetBlockShardToBeaconByHeightResponse{}
+	resp := &proto.GetBlockShardToBeaconByHeightResponse{}
 	for _, msg := range blkMsgs {
 		encoded, err := encodeMessage(msg)
 		if err != nil {

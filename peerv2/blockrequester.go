@@ -6,6 +6,7 @@ import (
 
 	p2pgrpc "github.com/incognitochain/go-libp2p-grpc"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/peerv2/proto"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -59,15 +60,15 @@ func (c *BlockRequester) Register(
 	committeeIDs []byte,
 	selfID peer.ID,
 	role string,
-) ([]*MessageTopicPair, *UserRole, error) {
+) ([]*proto.MessageTopicPair, *proto.UserRole, error) {
 	if !c.Ready() {
 		return nil, nil, errors.New("requester not ready")
 	}
 
-	client := NewHighwayServiceClient(c.conn)
+	client := proto.NewHighwayServiceClient(c.conn)
 	reply, err := client.Register(
 		ctx,
-		&RegisterRequest{
+		&proto.RegisterRequest{
 			CommitteePublicKey: pubkey,
 			WantedMessages:     messages,
 			CommitteeID:        committeeIDs,
@@ -91,10 +92,10 @@ func (c *BlockRequester) GetBlockShardByHeight(
 	}
 
 	Logger.Infof("Requesting shard block by height: shard = %v from = %v to = %v", shardID, from, to)
-	client := NewHighwayServiceClient(c.conn)
+	client := proto.NewHighwayServiceClient(c.conn)
 	reply, err := client.GetBlockShardByHeight(
 		context.Background(),
-		&GetBlockShardByHeightRequest{
+		&proto.GetBlockShardByHeightRequest{
 			Shard:      shardID,
 			Specific:   false,
 			FromHeight: from,
@@ -122,10 +123,10 @@ func (c *BlockRequester) GetBlockShardByHash(
 		blkHashBytes = append(blkHashBytes, hash.GetBytes())
 	}
 	Logger.Infof("Requesting shard block by hash: %v", hashes)
-	client := NewHighwayServiceClient(c.conn)
+	client := proto.NewHighwayServiceClient(c.conn)
 	reply, err := client.GetBlockShardByHash(
 		context.Background(),
-		&GetBlockShardByHashRequest{
+		&proto.GetBlockShardByHashRequest{
 			Shard:  shardID,
 			Hashes: blkHashBytes,
 		},
@@ -146,10 +147,10 @@ func (c *BlockRequester) GetBlockBeaconByHeight(
 	}
 
 	Logger.Infof("Requesting beaconblock by height: from = %v to = %v", from, to)
-	client := NewHighwayServiceClient(c.conn)
+	client := proto.NewHighwayServiceClient(c.conn)
 	reply, err := client.GetBlockBeaconByHeight(
 		context.Background(),
-		&GetBlockBeaconByHeightRequest{
+		&proto.GetBlockBeaconByHeightRequest{
 			Specific:   false,
 			FromHeight: from,
 			ToHeight:   to,
@@ -176,10 +177,10 @@ func (c *BlockRequester) GetBlockBeaconByHash(
 		blkHashBytes = append(blkHashBytes, hash.GetBytes())
 	}
 	Logger.Infof("Requesting beacon block by hash: %v", hashes)
-	client := NewHighwayServiceClient(c.conn)
+	client := proto.NewHighwayServiceClient(c.conn)
 	reply, err := client.GetBlockBeaconByHash(
 		context.Background(),
-		&GetBlockBeaconByHashRequest{
+		&proto.GetBlockBeaconByHashRequest{
 			Hashes: blkHashBytes,
 		},
 	)
@@ -202,10 +203,10 @@ func (c *BlockRequester) GetBlockShardToBeaconByHeight(
 	}
 
 	Logger.Infof("[sync] Requesting blkshdtobcn by specific height %v: from = %v to = %v; Heights: %v", bySpecific, from, to, heights)
-	client := NewHighwayServiceClient(c.conn)
+	client := proto.NewHighwayServiceClient(c.conn)
 	reply, err := client.GetBlockShardToBeaconByHeight(
 		context.Background(),
-		&GetBlockShardToBeaconByHeightRequest{
+		&proto.GetBlockShardToBeaconByHeightRequest{
 			FromShard:  shardID,
 			Specific:   bySpecific,
 			FromHeight: from,
@@ -234,10 +235,10 @@ func (c *BlockRequester) GetBlockCrossShardByHeight(
 	}
 
 	Logger.Infof("Requesting block crossshard by height: shard %v to %v, height %v", fromShard, toShard, heights)
-	client := NewHighwayServiceClient(c.conn)
+	client := proto.NewHighwayServiceClient(c.conn)
 	reply, err := client.GetBlockCrossShardByHeight(
 		context.Background(),
-		&GetBlockCrossShardByHeightRequest{
+		&proto.GetBlockCrossShardByHeightRequest{
 			FromShard:  fromShard,
 			ToShard:    toShard,
 			Specific:   true,

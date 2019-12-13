@@ -10,6 +10,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/peerv2/proto"
 	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -106,7 +107,7 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 		if msgType == p {
 			for _, availableTopic := range subs[msgType] {
 				// Logger.Info("[hy]", availableTopic)
-				if (availableTopic.Act == MessageTopicPair_PUB) || (availableTopic.Act == MessageTopicPair_PUBSUB) {
+				if (availableTopic.Act == proto.MessageTopicPair_PUB) || (availableTopic.Act == proto.MessageTopicPair_PUBSUB) {
 					topic = availableTopic.Name
 					err := broadcastMessage(msg, topic, cm.ps)
 					if err != nil {
@@ -137,7 +138,7 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 			for _, availableTopic := range subs[msgType] {
 				Logger.Info(availableTopic)
 				cID := GetCommitteeIDOfTopic(availableTopic.Name)
-				if (byte(cID) == shardID) && ((availableTopic.Act == MessageTopicPair_PUB) || (availableTopic.Act == MessageTopicPair_PUBSUB)) {
+				if (byte(cID) == shardID) && ((availableTopic.Act == proto.MessageTopicPair_PUB) || (availableTopic.Act == proto.MessageTopicPair_PUBSUB)) {
 					return broadcastMessage(msg, availableTopic.Name, cm.ps)
 				}
 			}
@@ -370,13 +371,13 @@ func broadcastMessage(msg wire.Message, topic string, ps *pubsub.PubSub) error {
 	return ps.Publish(topic, []byte(messageHex))
 }
 
-// manageRoleSubscription: polling current role every minute and subscribe to relevant topics
+// manageRoleSubscription: polling current role periodically and subscribe to relevant topics
 func (cm *ConnManager) manageRoleSubscription() {
 	forced := false // only subscribe when role changed or last forced subscribe failed
 	var err error
 	for {
 		select {
-		case <-time.Tick(10 * time.Second):
+		case <-time.Tick(1 * time.Second):
 			err = cm.subscriber.Subscribe(forced)
 			if err != nil {
 				Logger.Errorf("subscribe failed: %v %+v", forced, err)

@@ -1,10 +1,13 @@
 package peerv2
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/peerv2/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestGetShardIDsNormalAutoMode(t *testing.T) {
@@ -43,4 +46,45 @@ func TestGetShardIDsRelayShards(t *testing.T) {
 	shardIDs := getWantedShardIDs(role, nodeMode, relayShard)
 
 	assert.Equal(t, []byte{1, 2, 5, 7, 255}, shardIDs, "incorrect shardIDs")
+}
+
+func TestSubscribeNoChange(t *testing.T) {
+	role := userRole{
+		layer:   "",
+		role:    "",
+		shardID: -2,
+	}
+	consensusData := &mocks.ConsensusData{}
+	consensusData.On("GetUserRole").Return(role.layer, role.role, role.shardID)
+	sub := &SubManager{
+		info: info{consensusData: consensusData},
+		role: role,
+	}
+	forced := false
+	err := sub.Subscribe(forced)
+	assert.Nil(t, err)
+}
+
+func TestSubscribeRoleChanged(t *testing.T) {
+	role := userRole{
+		layer:   "",
+		role:    "",
+		shardID: -2,
+	}
+	registerer := &mocks.Registerer{}
+	var pairs []*MessageTopicPair
+	err := fmt.Errorf("error preventing further advance")
+	registerer.On("Register", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(pairs, &UserRole{}, err)
+	consensusData := &mocks.ConsensusData{}
+	consensusData.On("GetUserRole").Return(common.ShardRole, common.PendingRole, 1)
+	sub := &SubManager{
+		info:       info{consensusData: consensusData},
+		role:       role,
+		nodeMode:   common.NodeModeAuto,
+		relayShard: []byte{},
+		registerer: registerer,
+	}
+	forced := false
+	err := sub.Subscribe(forced)
+	assert.Nil(t, err)
 }

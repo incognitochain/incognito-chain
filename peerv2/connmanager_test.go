@@ -101,7 +101,7 @@ func TestPeriodicManageSub(t *testing.T) {
 		subscriber:       sc,
 	}
 	go cm.manageRoleSubscription()
-	time.Sleep(12 * time.Second)
+	time.Sleep(2 * time.Second)
 	close(cm.stop)
 
 	assert.Equal(t, sc.normal, 1, "not subbed")
@@ -116,7 +116,7 @@ func TestForcedSub(t *testing.T) {
 	}
 	cm.registerRequests <- 1 // Sent forced, must sub with forced = True next time
 	go cm.manageRoleSubscription()
-	time.Sleep(12 * time.Second)
+	time.Sleep(2 * time.Second)
 	close(cm.stop)
 
 	assert.Equal(t, sc.forced, 1, "not subbed")

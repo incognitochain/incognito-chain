@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/peerv2/proto"
 	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -41,7 +42,7 @@ type Subscriber interface {
 }
 
 type Registerer interface {
-	Register(context.Context, string, []string, []byte, peer.ID, string) ([]*MessageTopicPair, *UserRole, error)
+	Register(context.Context, string, []string, []byte, peer.ID, string) ([]*proto.MessageTopicPair, *proto.UserRole, error)
 }
 
 func NewSubManager(
@@ -69,7 +70,6 @@ func (sub *SubManager) GetMsgToTopics() msgToTopics {
 func (sub *SubManager) Subscribe(forced bool) error {
 	newRole := newUserRole(sub.consensusData.GetUserRole())
 	if newRole == sub.role && !forced { // Not forced => no need to subscribe when role stays the same
-		sub.role = newRole // Save new role and return
 		return nil
 	}
 	Logger.Infof("Role changed: %v -> %v", sub.role, newRole)
@@ -150,7 +150,7 @@ func (sub *SubManager) subscribeNewTopics(newTopics, subscribed msgToTopics) err
 				continue
 			}
 
-			if t.Act == MessageTopicPair_PUB {
+			if t.Act == proto.MessageTopicPair_PUB {
 				sub.subs[m] = append(sub.subs[m], Topic{Name: t.Name, Sub: nil, Act: t.Act})
 				Logger.Infof("Continue 2 %v %v", t.Name, subscribed)
 				continue
@@ -174,7 +174,7 @@ func (sub *SubManager) subscribeNewTopics(newTopics, subscribed msgToTopics) err
 				continue
 			}
 
-			if t.Act == MessageTopicPair_PUB {
+			if t.Act == proto.MessageTopicPair_PUB {
 				continue
 			}
 
@@ -209,7 +209,7 @@ func processSubscriptionMessage(inbox chan *pubsub.Message, sub *pubsub.Subscrip
 type Topic struct {
 	Name string
 	Sub  *pubsub.Subscription
-	Act  MessageTopicPair_Action
+	Act  proto.MessageTopicPair_Action
 }
 
 type msgToTopics map[string][]Topic // Message to topics
