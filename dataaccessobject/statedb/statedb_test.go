@@ -3,6 +3,7 @@ package statedb_test
 import (
 	"bytes"
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"os"
 	"testing"
@@ -31,6 +32,8 @@ var (
 	valuesC             = [][]byte{}
 	valuesD             = [][]byte{}
 	valuesE             = [][]byte{}
+
+	limit = 10000
 )
 var _ = func() (_ struct{}) {
 	dbPath, err := ioutil.TempDir(os.TempDir(), "test_statedb_")
@@ -39,7 +42,6 @@ var _ = func() (_ struct{}) {
 	}
 	diskBD, _ := incdb.Open("leveldb", dbPath)
 	warperDBStatedbTest = statedb.NewDatabaseAccessWarper(diskBD)
-
 	trie.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return
 }()
@@ -115,11 +117,11 @@ func TestStateDB_GetSerialNumberListByPrefix(t *testing.T) {
 			wantValue: make(map[string]bool),
 		},
 	}
-	keysA, valuesA = generateKeyValuePairWithPrefix(10000, []byte(prefixA))
-	keysB, valuesB = generateKeyValuePairWithPrefix(10000, []byte(prefixB))
-	keysC, valuesC = generateKeyValuePairWithPrefix(10000, []byte(prefixC))
-	keysD, valuesD = generateKeyValuePairWithPrefix(10000, []byte(prefixD))
-	keysE, valuesE = generateKeyValuePairWithPrefix(10000, []byte(prefixE))
+	keysA, valuesA = generateKeyValuePairWithPrefix(limit, []byte(prefixA))
+	keysB, valuesB = generateKeyValuePairWithPrefix(limit, []byte(prefixB))
+	keysC, valuesC = generateKeyValuePairWithPrefix(limit, []byte(prefixC))
+	keysD, valuesD = generateKeyValuePairWithPrefix(limit, []byte(prefixD))
+	keysE, valuesE = generateKeyValuePairWithPrefix(limit, []byte(prefixE))
 	for i := 0; i < len(keysA); i++ {
 		sDB.SetStateObject(statedb.SerialNumberObjectType, keysA[i], valuesA[i])
 	}
@@ -134,17 +136,6 @@ func TestStateDB_GetSerialNumberListByPrefix(t *testing.T) {
 	}
 	for i := 0; i < len(keysE); i++ {
 		sDB.SetStateObject(statedb.SerialNumberObjectType, keysE[i], valuesE[i])
-	}
-	rootHash, err := sDB.Commit(true)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if bytes.Compare(rootHash.Bytes(), emptyRoot.Bytes()) == 0 {
-		t.Fatal("root hash is empty")
-	}
-	err = sDB.Database().TrieDB().Commit(rootHash, false)
-	if err != nil {
-		t.Fatal(err)
 	}
 	for _, tt := range tests {
 		if tt.name == prefixA {
@@ -212,14 +203,32 @@ func TestStateDB_GetSerialNumberListByPrefix(t *testing.T) {
 			}
 		}
 	}
-
+	rootHash, err := sDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	log.Println(rootHash)
+	if bytes.Compare(rootHash.Bytes(), emptyRoot.Bytes()) == 0 {
+		t.Fatal("root hash is empty")
+	}
+	err = warperDBStatedbTest.TrieDB().Commit(rootHash, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+	if err != nil || tempStateDB == nil {
+		t.Fatal(err, tempStateDB)
+	}
+	keys, values := tempStateDB.GetSerialNumberAllList()
+	if len(keys) != limit*5 {
+		t.Fatalf("number of all keys want = %+v but got = %+v", limit*5, len(keys))
+	}
+	if len(values) != limit*5 {
+		t.Fatalf("number of all values want = %+v but got = %+v", limit*5, len(values))
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			//tempSDB, err := statedb.New(rootHash, warperDB)
-			//if err != nil {
-			//	t.Fatal(err)
-			//}
-			gotKeys, gotValues := sDB.GetSerialNumberListByPrefix(tt.args.prefix)
+			gotKeys, gotValues := tempStateDB.GetSerialNumberListByPrefix(tt.args.prefix)
 			if len(gotKeys) != len(tt.wantKey) {
 
 				t.Errorf("GetSerialNumberListByPrefix() gotKey length = %v, wantKey length = %v", len(gotKeys), len(tt.wantKey))

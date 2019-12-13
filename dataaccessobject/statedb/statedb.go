@@ -4,7 +4,6 @@ import (
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/trie"
-	"log"
 	"time"
 )
 
@@ -271,20 +270,19 @@ func (stateDB *StateDB) GetSerialNumber(key common.Hash) []byte {
 	}
 	return []byte{}
 }
-func (stateDB *StateDB) GetSerialNumberAllList() ([][]byte, [][]byte) {
+func (stateDB *StateDB) GetSerialNumberAllList() ([]common.Hash, [][]byte) {
 	temp := stateDB.trie.NodeIterator(nil)
 	it := trie.NewIterator(temp)
-	keys := [][]byte{}
+	keys := []common.Hash{}
 	values := [][]byte{}
 	for it.Next() {
 		key := stateDB.trie.GetKey(it.Key)
-		log.Println(key)
 		newKey := make([]byte, len(key))
 		copy(newKey, key)
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
-		keys = append(keys, key)
+		keys = append(keys, common.BytesToHash(key))
 		values = append(values, value)
 	}
 	return keys, values

@@ -385,7 +385,7 @@ func TestStoreAndGetSerialNumberObjectByPrefix(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tempStateDB, err := statedb.New(rootHash1, warperDB)
+	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash1, warperDB)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
