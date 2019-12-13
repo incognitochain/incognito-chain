@@ -125,6 +125,7 @@ func (c *BlockRequester) GetBlockShardByHash(
 	for _, hash := range hashes {
 		blkHashBytes = append(blkHashBytes, hash.GetBytes())
 	}
+	Logger.Infof("[blkbyhash] Requesting shard block by hash: %v", hashes)
 	client := proto.NewHighwayServiceClient(c.conn)
 	reply, err := client.GetBlockShardByHash(
 		context.Background(),
