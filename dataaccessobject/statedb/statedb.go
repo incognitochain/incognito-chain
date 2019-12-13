@@ -289,10 +289,10 @@ func (stateDB *StateDB) GetSerialNumberAllList() ([][]byte, [][]byte) {
 	}
 	return keys, values
 }
-func (stateDB *StateDB) GetSerialNumberListByPrefix(prefix []byte) ([][]byte, [][]byte) {
+func (stateDB *StateDB) GetSerialNumberListByPrefix(prefix []byte) ([]common.Hash, [][]byte) {
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
-	keys := [][]byte{}
+	keys := []common.Hash{}
 	values := [][]byte{}
 	for it.Next() {
 		key := stateDB.trie.GetKey(it.Key)
@@ -301,7 +301,7 @@ func (stateDB *StateDB) GetSerialNumberListByPrefix(prefix []byte) ([][]byte, []
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
-		keys = append(keys, key)
+		keys = append(keys, common.BytesToHash(key))
 		values = append(values, value)
 	}
 	return keys, values

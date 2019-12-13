@@ -99,10 +99,11 @@ type nodeIteratorState struct {
 }
 
 type nodeIterator struct {
-	trie  *Trie                // Trie being iterated
-	stack []*nodeIteratorState // Hierarchy of trie nodes persisting the iteration state
-	path  []byte               // Path to the current node
-	err   error                // Failure set in case of an internal error in the iterator
+	trie   *Trie                // Trie being iterated
+	stack  []*nodeIteratorState // Hierarchy of trie nodes persisting the iteration state
+	path   []byte               // Path to the current node
+	err    error                // Failure set in case of an internal error in the iterator
+	prefix []byte
 }
 
 // errIteratorEnd is stored in nodeIterator.err when iteration is done.
@@ -122,7 +123,9 @@ func newNodeIterator(trie *Trie, start []byte) NodeIterator {
 	if trie.Hash() == emptyState {
 		return new(nodeIterator)
 	}
-	it := &nodeIterator{trie: trie}
+	key := keybytesToHex(start)
+	key = key[:len(key)-1]
+	it := &nodeIterator{trie: trie, prefix: key}
 	it.err = it.seek(start)
 	return it
 }
@@ -219,7 +222,11 @@ func (it *nodeIterator) Next(descend bool) bool {
 	if it.err != nil {
 		return false
 	}
-	it.push(state, parentIndex, path)
+	if bytes.HasPrefix(path, it.prefix) {
+		it.push(state, parentIndex, path)
+	} else {
+		return false
+	}
 	return true
 }
 

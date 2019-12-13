@@ -24,3 +24,6 @@ hash node and return hashNode (hash of that node)
 
 ## trie and secure trie
 - get, update, insert, hash by trie rule from intermediate writer
+
+## iterator
+- iterate trie using depth first search (stack)
