@@ -522,6 +522,10 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransaction(
 		return nil, err.(*RPCError)
 	}
 
+	if tokenParams == nil {
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("can not build token params for request"))
+	}
+
 	/******* START choose output native coins(PRV), which is used to create tx *****/
 	var inputCoins []*privacy.InputCoin
 	realFeePRV := uint64(0)
