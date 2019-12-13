@@ -6,6 +6,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/peerv2/mocks"
+	"github.com/incognitochain/incognito-chain/peerv2/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -72,19 +73,21 @@ func TestSubscribeRoleChanged(t *testing.T) {
 		shardID: -2,
 	}
 	registerer := &mocks.Registerer{}
-	var pairs []*MessageTopicPair
+	var pairs []*proto.MessageTopicPair
 	err := fmt.Errorf("error preventing further advance")
-	registerer.On("Register", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(pairs, &UserRole{}, err)
+	registerer.On("Register", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(pairs, &proto.UserRole{}, err)
 	consensusData := &mocks.ConsensusData{}
-	consensusData.On("GetUserRole").Return(common.ShardRole, common.PendingRole, 1)
+	consensusData.On("GetUserRole").Once().Return(common.ShardRole, common.PendingRole, 1)
 	sub := &SubManager{
-		info:       info{consensusData: consensusData},
+		info: info{
+			consensusData: consensusData,
+			nodeMode:      common.NodeModeAuto,
+			relayShard:    []byte{},
+		},
 		role:       role,
-		nodeMode:   common.NodeModeAuto,
-		relayShard: []byte{},
 		registerer: registerer,
 	}
 	forced := false
-	err := sub.Subscribe(forced)
-	assert.Nil(t, err)
+	sub.Subscribe(forced)
+	consensusData.AssertNumberOfCalls(t, "GetUserRole", 1)
 }
