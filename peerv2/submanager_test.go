@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/peerv2/mocks"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
 	"github.com/incognitochain/incognito-chain/wire"
+	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -268,5 +269,50 @@ func TestSubscribeNewTopics(t *testing.T) {
 			subscriber.AssertNumberOfCalls(t, "Subscribe", tc.subCalled)
 			assert.Equal(t, tc.subsLen, len(sub.subs))
 		})
+	}
+}
+
+func TestRegisterToProxy(t *testing.T) {
+	registerer := &mocks.Registerer{}
+	pairs := []*proto.MessageTopicPair{
+		&proto.MessageTopicPair{
+			Message: "msg",
+			Topic:   []string{"t1", "t2"},
+			Act:     []proto.MessageTopicPair_Action{proto.MessageTopicPair_PUB, proto.MessageTopicPair_SUB},
+		},
+	}
+	pRole := &proto.UserRole{
+		Layer: "abc",
+		Role:  "xyz",
+		Shard: int32(123),
+	}
+	var err error
+	registerer.On("Register", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(pairs, pRole, err)
+
+	sub := &SubManager{
+		info: info{
+			nodeMode: common.NodeModeAuto,
+			peerID:   peer.ID(""),
+		},
+		registerer: registerer,
+	}
+
+	topics, role, err := sub.registerToProxy("", "", "", []byte{1})
+	assert.Nil(t, err)
+
+	expRole := userRole{
+		layer:   "abc",
+		role:    "xyz",
+		shardID: 123,
+	}
+	assert.Equal(t, expRole, role)
+
+	if assert.Len(t, topics, 1) {
+		if tp, ok := topics[pairs[0].Message]; assert.True(t, ok) {
+			assert.Equal(t, pairs[0].Topic[0], tp[0].Name)
+			assert.Equal(t, pairs[0].Topic[1], tp[1].Name)
+			assert.Equal(t, pairs[0].Act[0], tp[0].Act)
+			assert.Equal(t, pairs[0].Act[1], tp[1].Act)
+		}
 	}
 }
