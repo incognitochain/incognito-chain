@@ -320,6 +320,31 @@ func (cm *ConnManager) keepHighwayConnection() {
 	}
 }
 
+// manageRoleSubscription: polling current role periodically and subscribe to relevant topics
+func (cm *ConnManager) manageRoleSubscription() {
+	forced := false // only subscribe when role changed or last forced subscribe failed
+	var err error
+	for {
+		select {
+		case <-time.Tick(1 * time.Second):
+			err = cm.subscriber.Subscribe(forced)
+			if err != nil {
+				Logger.Errorf("subscribe failed: %v %+v", forced, err)
+			} else {
+				forced = false
+			}
+
+		case <-cm.registerRequests:
+			Logger.Info("Received request to register")
+			forced = true // register no matter if role changed or not
+
+		case <-cm.stop:
+			Logger.Info("Stop managing role subscription")
+			break
+		}
+	}
+}
+
 func encodeMessage(msg wire.Message) (string, error) {
 	// NOTE: copy from peerConn.outMessageHandler
 	// Create messageHex
@@ -369,29 +394,4 @@ func broadcastMessage(msg wire.Message, topic string, ps *pubsub.PubSub) error {
 	// Broadcast
 	Logger.Infof("Publishing to topic %s", topic)
 	return ps.Publish(topic, []byte(messageHex))
-}
-
-// manageRoleSubscription: polling current role periodically and subscribe to relevant topics
-func (cm *ConnManager) manageRoleSubscription() {
-	forced := false // only subscribe when role changed or last forced subscribe failed
-	var err error
-	for {
-		select {
-		case <-time.Tick(1 * time.Second):
-			err = cm.subscriber.Subscribe(forced)
-			if err != nil {
-				Logger.Errorf("subscribe failed: %v %+v", forced, err)
-			} else {
-				forced = false
-			}
-
-		case <-cm.registerRequests:
-			Logger.Info("Received request to register")
-			forced = true // register no matter if role changed or not
-
-		case <-cm.stop:
-			Logger.Info("Stop managing role subscription")
-			break
-		}
-	}
 }
