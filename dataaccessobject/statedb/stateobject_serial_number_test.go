@@ -16,8 +16,7 @@ import (
 )
 
 var (
-	emptyRoot = common.HexToHash("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
-	warperDB  statedb.DatabaseAccessWarper
+	warperDBSerialNumberTest statedb.DatabaseAccessWarper
 
 	serialNumber1   = []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 	serialNumber2   = []byte{10, 20, 30, 40, 50, 60, 70, 80, 90, 100}
@@ -36,7 +35,7 @@ var _ = func() (_ struct{}) {
 		panic(err)
 	}
 	diskBD, _ := incdb.Open("leveldb", dbPath)
-	warperDB = statedb.NewDatabaseAccessWarper(diskBD)
+	warperDBSerialNumberTest = statedb.NewDatabaseAccessWarper(diskBD)
 	trie.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return
 }()
@@ -48,7 +47,7 @@ func TestStateDB(t *testing.T) {
 }
 
 func TestStoreAndGetSerialNumberObject(t *testing.T) {
-	sDB, err := statedb.New(emptyRoot, warperDB)
+	sDB, err := statedb.New(emptyRoot, warperDBSerialNumberTest)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,12 +67,12 @@ func TestStoreAndGetSerialNumberObject(t *testing.T) {
 	if bytes.Compare(rootHash1.Bytes(), emptyRoot.Bytes()) == 0 {
 		t.Fatal("root hash is empty")
 	}
-	err = warperDB.TrieDB().Commit(rootHash1, false)
+	err = warperDBSerialNumberTest.TrieDB().Commit(rootHash1, false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	tempStateDB, err := statedb.New(rootHash1, warperDB)
+	tempStateDB, err := statedb.New(rootHash1, warperDBSerialNumberTest)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
@@ -92,7 +91,7 @@ func TestStoreAndGetSerialNumberObject(t *testing.T) {
 }
 
 func TestStoreAndGetSerialNumberObjectSameKeyDifferentValue(t *testing.T) {
-	sDB, err := statedb.New(emptyRoot, warperDB)
+	sDB, err := statedb.New(emptyRoot, warperDBSerialNumberTest)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +108,7 @@ func TestStoreAndGetSerialNumberObjectSameKeyDifferentValue(t *testing.T) {
 	if bytes.Compare(rootHash1.Bytes(), emptyRoot.Bytes()) == 0 {
 		t.Fatal("root hash is empty")
 	}
-	err = warperDB.TrieDB().Commit(rootHash1, false)
+	err = warperDBSerialNumberTest.TrieDB().Commit(rootHash1, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,12 +126,12 @@ func TestStoreAndGetSerialNumberObjectSameKeyDifferentValue(t *testing.T) {
 	if bytes.Compare(rootHash2.Bytes(), emptyRoot.Bytes()) == 0 {
 		t.Fatal("root hash is empty")
 	}
-	err = warperDB.TrieDB().Commit(rootHash2, false)
+	err = warperDBSerialNumberTest.TrieDB().Commit(rootHash2, false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	tempStateDB, err := statedb.New(rootHash1, warperDB)
+	tempStateDB, err := statedb.New(rootHash1, warperDBSerialNumberTest)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
@@ -148,7 +147,7 @@ func TestStoreAndGetSerialNumberObjectSameKeyDifferentValue(t *testing.T) {
 	if bytes.Compare(sn3, []byte{}) != 0 {
 		t.Fatalf("Serial number 3 expect %+v but get %+v", serialNumber3, sn3)
 	}
-	tempStateDB2, err := statedb.New(rootHash2, warperDB)
+	tempStateDB2, err := statedb.New(rootHash2, warperDBSerialNumberTest)
 	if err != nil || tempStateDB2 == nil {
 		t.Fatal(err, tempStateDB2)
 	}
@@ -166,7 +165,7 @@ func TestStoreAndGetSerialNumberObjectSameKeyDifferentValue(t *testing.T) {
 	}
 }
 func TestStoreAndGetDifferentSerialNumberObject(t *testing.T) {
-	sDB, err := statedb.New(emptyRoot, warperDB)
+	sDB, err := statedb.New(emptyRoot, warperDBSerialNumberTest)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -185,7 +184,7 @@ func TestStoreAndGetDifferentSerialNumberObject(t *testing.T) {
 	if bytes.Compare(rootHash1.Bytes(), emptyRoot.Bytes()) == 0 {
 		t.Fatal("root hash is empty")
 	}
-	err = warperDB.TrieDB().Commit(rootHash1, false)
+	err = warperDBSerialNumberTest.TrieDB().Commit(rootHash1, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -203,12 +202,12 @@ func TestStoreAndGetDifferentSerialNumberObject(t *testing.T) {
 	if bytes.Compare(rootHash2.Bytes(), emptyRoot.Bytes()) == 0 {
 		t.Fatal("root hash is empty")
 	}
-	err = warperDB.TrieDB().Commit(rootHash2, false)
+	err = warperDBSerialNumberTest.TrieDB().Commit(rootHash2, false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	tempStateDB1, err := statedb.New(rootHash1, warperDB)
+	tempStateDB1, err := statedb.New(rootHash1, warperDBSerialNumberTest)
 	if err != nil || tempStateDB1 == nil {
 		t.Fatal(err, tempStateDB1)
 	}
@@ -224,7 +223,7 @@ func TestStoreAndGetDifferentSerialNumberObject(t *testing.T) {
 	if bytes.Compare(sn3, []byte{}) != 0 {
 		t.Fatalf("Serial number 3 expect %+v but get %+v", serialNumber3, sn3)
 	}
-	tempStateDB2, err := statedb.New(rootHash2, warperDB)
+	tempStateDB2, err := statedb.New(rootHash2, warperDBSerialNumberTest)
 	if err != nil || tempStateDB2 == nil {
 		t.Fatal(err, tempStateDB2)
 	}
@@ -243,7 +242,7 @@ func TestStoreAndGetDifferentSerialNumberObject(t *testing.T) {
 }
 
 func TestDeleteSerialNumberObject(t *testing.T) {
-	sDB, err := statedb.New(emptyRoot, warperDB)
+	sDB, err := statedb.New(emptyRoot, warperDBSerialNumberTest)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -262,7 +261,7 @@ func TestDeleteSerialNumberObject(t *testing.T) {
 	if bytes.Compare(rootHash1.Bytes(), emptyRoot.Bytes()) == 0 {
 		t.Fatal("root hash is empty")
 	}
-	err = warperDB.TrieDB().Commit(rootHash1, false)
+	err = warperDBSerialNumberTest.TrieDB().Commit(rootHash1, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -276,12 +275,12 @@ func TestDeleteSerialNumberObject(t *testing.T) {
 	if bytes.Compare(rootHash2.Bytes(), emptyRoot.Bytes()) == 0 {
 		t.Fatal("root hash is empty")
 	}
-	err = warperDB.TrieDB().Commit(rootHash2, false)
+	err = warperDBSerialNumberTest.TrieDB().Commit(rootHash2, false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	tempStateDB1, err := statedb.New(rootHash1, warperDB)
+	tempStateDB1, err := statedb.New(rootHash1, warperDBSerialNumberTest)
 	if err != nil || tempStateDB1 == nil {
 		t.Fatal(err, tempStateDB1)
 	}
@@ -297,7 +296,7 @@ func TestDeleteSerialNumberObject(t *testing.T) {
 	if bytes.Compare(sn3, serialNumber3) != 0 {
 		t.Fatalf("Serial number 3 expect %+v but get %+v", serialNumber3, sn3)
 	}
-	tempStateDB2, err := statedb.New(rootHash2, warperDB)
+	tempStateDB2, err := statedb.New(rootHash2, warperDBSerialNumberTest)
 	if err != nil || tempStateDB2 == nil {
 		t.Fatal(err, tempStateDB2)
 	}

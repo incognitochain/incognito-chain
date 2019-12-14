@@ -63,9 +63,19 @@ func newCommitteeObject(db *StateDB, hash common.Hash) *CommitteeObject {
 	}
 }
 func newCommitteeObjectWithValue(db *StateDB, key common.Hash, data interface{}) *CommitteeObject {
-	newCommitteeState, ok := data.(*CommitteeState)
-	if !ok {
-		panic("Wrong expected value")
+	var newCommitteeState = NewCommitteeState()
+	var ok bool
+	var dataBytes []byte
+	if dataBytes, ok = data.([]byte); ok {
+		err := json.Unmarshal(dataBytes, newCommitteeState)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		newCommitteeState, ok = data.(*CommitteeState)
+		if !ok {
+			panic("Wrong expected value")
+		}
 	}
 	return &CommitteeObject{
 		committeePublicKeyHash: key,

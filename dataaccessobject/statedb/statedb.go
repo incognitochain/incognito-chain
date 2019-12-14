@@ -372,17 +372,17 @@ func (stateDB *StateDB) GetAllSerialNumberValueList() [][]byte {
 }
 
 // ================================= Committee OBJECT =======================================
-func (stateDB *StateDB) GetCommitteeState(key common.Hash) *CommitteeState {
-	committeeStateObject := stateDB.getStateObject(SerialNumberObjectType, key)
+func (stateDB *StateDB) GetCommitteeState(key common.Hash) (*CommitteeState, bool) {
+	committeeStateObject := stateDB.getStateObject(CommitteeObjectType, key)
 	if committeeStateObject != nil {
-		return committeeStateObject.GetValue().(*CommitteeState)
+		return committeeStateObject.GetValue().(*CommitteeState), true
 	}
-	return NewCommitteeState()
+	return NewCommitteeState(), false
 }
-func (stateDB *StateDB) GetAllCommitteeState(maxShardNumber int) map[int][]incognitokey.CommitteePublicKey {
+func (stateDB *StateDB) GetAllCommitteeState(ids []int) map[int][]incognitokey.CommitteePublicKey {
 	m := make(map[int][]incognitokey.CommitteePublicKey)
-	for i := -1; i < maxShardNumber; i++ {
-		prefix := GetShardCommitteePrefixByID(i)
+	for _, id := range ids {
+		prefix := GetShardCommitteePrefixByID(id)
 		temp := stateDB.trie.NodeIterator(prefix)
 		it := trie.NewIterator(temp)
 		for it.Next() {

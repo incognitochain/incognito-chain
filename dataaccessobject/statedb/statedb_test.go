@@ -10,6 +10,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	_ "github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"github.com/incognitochain/incognito-chain/trie"
@@ -17,6 +18,7 @@ import (
 
 var (
 	warperDBStatedbTest statedb.DatabaseAccessWarper
+	emptyRoot           = common.HexToHash("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
 	prefixA             = "serialnumber"
 	prefixB             = "serialnumberderivator"
 	prefixC             = "serial"
@@ -113,7 +115,7 @@ func generateKeyValuePairWithPrefix(limit int, prefix []byte) ([]common.Hash, []
 }
 
 func TestStoreAndGetTestObjectByPrefix(t *testing.T) {
-	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDB)
+	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDBSerialNumberTest)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -138,12 +140,12 @@ func TestStoreAndGetTestObjectByPrefix(t *testing.T) {
 	if bytes.Compare(rootHash1.Bytes(), emptyRoot.Bytes()) == 0 {
 		t.Fatal("root hash is empty")
 	}
-	err = warperDB.TrieDB().Commit(rootHash1, false)
+	err = warperDBSerialNumberTest.TrieDB().Commit(rootHash1, false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash1, warperDB)
+	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash1, warperDBSerialNumberTest)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
