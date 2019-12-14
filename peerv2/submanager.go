@@ -173,17 +173,27 @@ func (sub *SubManager) subscribeNewTopics(newTopics, subscribed msgToTopics) err
 				continue
 			}
 
-			if t.Act == proto.MessageTopicPair_PUB {
+			idx := -1
+			for i, s := range sub.subs[m] {
+				if s.Name == t.Name {
+					if t.Act != proto.MessageTopicPair_PUB {
+						Logger.Info("unsubscribing", m, t.Name)
+						go s.Sub.Cancel()
+					}
+					idx = i
+					break
+				}
+			}
+
+			if idx < 0 {
 				continue
 			}
 
-			Logger.Info("unsubscribing", m, t.Name)
-			for _, s := range sub.subs[m] {
-				if s.Name == t.Name {
-					s.Sub.Cancel() // TODO(@0xbunyip): lock
-				}
+			if len(sub.subs[m]) == 1 {
+				delete(sub.subs, m)
+			} else {
+				sub.subs[m] = append(sub.subs[m][:idx], sub.subs[m][idx+1:]...)
 			}
-			delete(sub.subs, m)
 		}
 	}
 	return nil

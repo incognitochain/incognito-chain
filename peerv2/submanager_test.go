@@ -186,6 +186,7 @@ func compareMsgs(t *testing.T, exp, msgs []string) {
 }
 
 func TestSubscribeNewTopics(t *testing.T) {
+	subscription := &pubsub.Subscription{}
 	testCases := []struct {
 		desc       string
 		newTopics  msgToTopics
@@ -215,6 +216,42 @@ func TestSubscribeNewTopics(t *testing.T) {
 			subscribed: msgToTopics{},
 			subCalled:  3,
 			subsLen:    2,
+		},
+		{
+			desc: "Subscribe ignore PUB topics",
+			newTopics: msgToTopics{
+				wire.CmdBlockBeacon: []Topic{Topic{Name: "abc"}},
+				wire.CmdTx:          []Topic{Topic{Name: "xyz", Act: proto.MessageTopicPair_PUB}, Topic{Name: "ijk"}},
+			},
+			subscribed: msgToTopics{},
+			subCalled:  2,
+			subsLen:    2,
+		},
+		{
+			desc: "Unsubscribe old topics",
+			newTopics: msgToTopics{
+				wire.CmdBlockBeacon: []Topic{},
+				wire.CmdTx:          []Topic{Topic{Name: "xyz"}},
+			},
+			subscribed: msgToTopics{
+				wire.CmdBlockBeacon: []Topic{Topic{Name: "abc", Sub: subscription}},
+				wire.CmdTx:          []Topic{Topic{Name: "ijk", Sub: subscription}},
+			},
+			subCalled: 1,
+			subsLen:   1,
+		},
+		{
+			desc: "Unsubscribe ignore PUB topics",
+			newTopics: msgToTopics{
+				wire.CmdBlockBeacon: []Topic{},
+				wire.CmdTx:          []Topic{},
+			},
+			subscribed: msgToTopics{
+				wire.CmdBlockBeacon: []Topic{Topic{Name: "abc", Act: proto.MessageTopicPair_PUB, Sub: nil}}, // Sub == nil => panic if trying to unsub
+				wire.CmdTx:          []Topic{Topic{Name: "ijk", Act: proto.MessageTopicPair_PUB, Sub: nil}},
+			},
+			subCalled: 0,
+			subsLen:   0,
 		},
 	}
 
