@@ -173,7 +173,6 @@ func TestGetMessage(t *testing.T) {
 
 func compareMsgs(t *testing.T, exp, msgs []string) {
 	assert.Equal(t, len(exp), len(msgs))
-	fmt.Println(exp, msgs)
 	for _, e := range exp {
 		ok := false
 		for _, m := range msgs {
