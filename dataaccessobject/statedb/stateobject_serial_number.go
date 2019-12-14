@@ -4,14 +4,13 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-type SerialNumber []byte
 type SerialNumberObject struct {
 	db *StateDB
 	// Write caches.
 	trie Trie // storage trie, which becomes non-nil on first access
 
 	serialNumberHash common.Hash
-	serialNumber     SerialNumber
+	serialNumber     []byte
 	objectType       int
 	deleted          bool
 
@@ -70,8 +69,7 @@ func (s *SerialNumberObject) GetValue() interface{} {
 }
 
 func (s *SerialNumberObject) GetValueBytes() []byte {
-	data := s.GetValue()
-	return data.(SerialNumber)[:]
+	return s.GetValue().([]byte)
 }
 
 func (s *SerialNumberObject) GetHash() common.Hash {
@@ -87,21 +85,17 @@ func (s *SerialNumberObject) MarkDelete() {
 	s.deleted = true
 }
 
-//TODO: implement
-func (s *SerialNumberObject) Exist() bool {
-	return false
-}
-
-//TODO: implement
+// Reset serial number into default
 func (s *SerialNumberObject) Reset() bool {
-	return false
+	s.serialNumber = []byte{}
+	return true
 }
 
-//TODO: implement
 func (s *SerialNumberObject) IsDeleted() bool {
 	return s.deleted
 }
 
-func (s *SerialNumberObject) Empty() bool {
+// empty value or not
+func (s *SerialNumberObject) IsEmpty() bool {
 	return len(s.serialNumber[:]) == 0
 }

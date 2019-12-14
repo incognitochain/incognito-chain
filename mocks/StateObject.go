@@ -14,8 +14,8 @@ type StateObject struct {
 	mock.Mock
 }
 
-// Empty provides a mock function with given fields:
-func (_m *StateObject) Empty() bool {
+// IsEmpty provides a mock function with given fields:
+func (_m *StateObject) IsEmpty() bool {
 	ret := _m.Called()
 
 	var r0 bool

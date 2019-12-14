@@ -29,41 +29,6 @@ var (
 	serialNumber1Hash = common.HashH(serialNumber1)
 	serialNumber2Hash = common.HashH(serialNumber2)
 	serialNumber3Hash = common.HashH(serialNumber3)
-
-	prefixSerial = []byte("serial")
-	prefixSer    = []byte("ser")
-	prefixCommit = []byte("commit")
-	prefixCom    = []byte("com")
-
-	valueIT1 = []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
-	valueIT2 = []byte{10, 20, 30, 40, 50, 60, 70, 80, 90, 100}
-	valueIT3 = []byte{11, 21, 31, 41, 51, 61, 71, 81, 91, 101}
-	valueIT4 = []byte{20, 21, 22, 23, 24, 25, 26, 27, 28, 29}
-	valueIT5 = []byte{30, 31, 32, 33, 34, 35, 36, 37, 38, 39}
-	valueIT6 = []byte{40, 41, 42, 43, 44, 45, 46, 47, 48, 49}
-	valueIT7 = []byte{50, 51, 52, 53, 54, 55, 56, 57, 58, 59}
-	valueIT8 = []byte{60, 61, 62, 63, 64, 65, 66, 67, 68, 49}
-
-	keyIT1 = common.HashH(valueIT1)
-	keyIT2 = common.HashH(valueIT2)
-	keyIT3 = common.HashH(valueIT3)
-	keyIT4 = common.HashH(valueIT4)
-	keyIT5 = common.HashH(valueIT5)
-	keyIT6 = common.HashH(valueIT6)
-	keyIT7 = common.HashH(valueIT7)
-	keyIT8 = common.HashH(valueIT8)
-
-	prefixSerial1 = common.BytesToHash(append(prefixSerial, keyIT1[:][len(prefixSerial):]...))
-	prefixSerial2 = common.BytesToHash(append(prefixSerial, keyIT2[:][len(prefixSerial):]...))
-
-	prefixSer1 = common.BytesToHash(append(prefixSer, keyIT3[:][len(prefixSer):]...))
-	prefixSer2 = common.BytesToHash(append(prefixSer, keyIT4[:][len(prefixSer):]...))
-
-	prefixCommit1 = common.BytesToHash(append(prefixCommit, keyIT5[:][len(prefixCommit):]...))
-	prefixCommit2 = common.BytesToHash(append(prefixCommit, keyIT6[:][len(prefixCommit):]...))
-
-	prefixCom1 = common.BytesToHash(append(prefixCom, keyIT7[:][len(prefixCom):]...))
-	prefixCom2 = common.BytesToHash(append(prefixCom, keyIT8[:][len(prefixCom):]...))
 )
 var _ = func() (_ struct{}) {
 	dbPath, err := ioutil.TempDir(os.TempDir(), "test_")
@@ -352,56 +317,4 @@ func TestDeleteSerialNumberObject(t *testing.T) {
 
 func TestZeroValue(t *testing.T) {
 	log.Println(reflect.ValueOf(statedb.StateDB{}))
-}
-
-func TestStoreAndGetSerialNumberObjectByPrefix(t *testing.T) {
-	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDB)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if sDB == nil {
-		t.Fatal("statedb is nil")
-	}
-
-	sDB.SetStateObject(statedb.SerialNumberObjectType, prefixSerial1, valueIT1)
-	sDB.SetStateObject(statedb.SerialNumberObjectType, prefixSerial2, valueIT2)
-	sDB.SetStateObject(statedb.SerialNumberObjectType, prefixSer1, valueIT3)
-	sDB.SetStateObject(statedb.SerialNumberObjectType, prefixSer2, valueIT4)
-	sDB.SetStateObject(statedb.SerialNumberObjectType, prefixCommit1, valueIT5)
-	sDB.SetStateObject(statedb.SerialNumberObjectType, prefixCommit2, valueIT6)
-	sDB.SetStateObject(statedb.SerialNumberObjectType, prefixCom1, valueIT7)
-	sDB.SetStateObject(statedb.SerialNumberObjectType, prefixCom2, valueIT8)
-
-	rootHash1, err := sDB.Commit(true)
-	if err != nil {
-		t.Fatal(err)
-	}
-	log.Println(rootHash1)
-	if bytes.Compare(rootHash1.Bytes(), emptyRoot.Bytes()) == 0 {
-		t.Fatal("root hash is empty")
-	}
-	err = warperDB.TrieDB().Commit(rootHash1, false)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash1, warperDB)
-	if err != nil || tempStateDB == nil {
-		t.Fatal(err, tempStateDB)
-	}
-	keys, values := tempStateDB.GetSerialNumberListByPrefix(prefixSer)
-	log.Println(keys)
-	log.Println(values)
-
-	keys, values = tempStateDB.GetSerialNumberListByPrefix(prefixSerial)
-	log.Println(keys)
-	log.Println(values)
-
-	keys, values = tempStateDB.GetSerialNumberListByPrefix(prefixCom)
-	log.Println(keys)
-	log.Println(values)
-
-	keys, values = tempStateDB.GetSerialNumberListByPrefix(prefixCommit)
-	log.Println(keys)
-	log.Println(values)
 }

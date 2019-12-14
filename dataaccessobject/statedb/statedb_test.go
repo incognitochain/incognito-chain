@@ -33,7 +33,46 @@ var (
 	valuesD             = [][]byte{}
 	valuesE             = [][]byte{}
 
-	limit = 10000
+	prefixSerial = []byte("serial")
+	prefixSer    = []byte("ser")
+	prefixCommit = []byte("commit")
+	prefixCom    = []byte("com")
+
+	valueIT1 = []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+	valueIT2 = []byte{10, 20, 30, 40, 50, 60, 70, 80, 90, 100}
+	valueIT3 = []byte{11, 21, 31, 41, 51, 61, 71, 81, 91, 101}
+	valueIT4 = []byte{20, 21, 22, 23, 24, 25, 26, 27, 28, 29}
+	valueIT5 = []byte{30, 31, 32, 33, 34, 35, 36, 37, 38, 39}
+	valueIT6 = []byte{40, 41, 42, 43, 44, 45, 46, 47, 48, 49}
+	valueIT7 = []byte{50, 51, 52, 53, 54, 55, 56, 57, 58, 59}
+	valueIT8 = []byte{60, 61, 62, 63, 64, 65, 66, 67, 68, 49}
+
+	keyIT1 = common.HashH(valueIT1)
+	keyIT2 = common.HashH(valueIT2)
+	keyIT3 = common.HashH(valueIT3)
+	keyIT4 = common.HashH(valueIT4)
+	keyIT5 = common.HashH(valueIT5)
+	keyIT6 = common.HashH(valueIT6)
+	keyIT7 = common.HashH(valueIT7)
+	keyIT8 = common.HashH(valueIT8)
+
+	prefixSerial1 = common.BytesToHash(append(prefixSerial, keyIT1[:][len(prefixSerial):]...))
+	prefixSerial2 = common.BytesToHash(append(prefixSerial, keyIT2[:][len(prefixSerial):]...))
+
+	prefixSer1 = common.BytesToHash(append(prefixSer, keyIT3[:][len(prefixSer):]...))
+	prefixSer2 = common.BytesToHash(append(prefixSer, keyIT4[:][len(prefixSer):]...))
+
+	prefixCommit1 = common.BytesToHash(append(prefixCommit, keyIT5[:][len(prefixCommit):]...))
+	prefixCommit2 = common.BytesToHash(append(prefixCommit, keyIT6[:][len(prefixCommit):]...))
+
+	prefixCom1 = common.BytesToHash(append(prefixCom, keyIT7[:][len(prefixCom):]...))
+	prefixCom2 = common.BytesToHash(append(prefixCom, keyIT8[:][len(prefixCom):]...))
+
+	limit100000 = 100000
+	limit10000  = 10000
+	limit1000   = 1000
+	limit100    = 100
+	limit1      = 1
 )
 var _ = func() (_ struct{}) {
 	dbPath, err := ioutil.TempDir(os.TempDir(), "test_statedb_")
@@ -45,6 +84,16 @@ var _ = func() (_ struct{}) {
 	trie.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return
 }()
+
+type args struct {
+	prefix []byte
+}
+type test struct {
+	name      string
+	args      args
+	wantKey   map[common.Hash]bool
+	wantValue map[string]bool
+}
 
 func generateKeyValuePairWithPrefix(limit int, prefix []byte) ([]common.Hash, [][]byte) {
 	keys := []common.Hash{}
@@ -62,20 +111,187 @@ func generateKeyValuePairWithPrefix(limit int, prefix []byte) ([]common.Hash, []
 	}
 	return keys, values
 }
-func TestStateDB_GetSerialNumberListByPrefix(t *testing.T) {
-	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
+
+func TestStoreAndGetTestObjectByPrefix(t *testing.T) {
+	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDB)
 	if err != nil {
 		t.Fatal(err)
 	}
-	type args struct {
-		prefix []byte
+	if sDB == nil {
+		t.Fatal("statedb is nil")
 	}
-	tests := []struct {
-		name      string
-		args      args
-		wantKey   map[common.Hash]bool
-		wantValue map[string]bool
-	}{
+
+	sDB.SetStateObject(statedb.SerialNumberObjectType, prefixSerial1, valueIT1)
+	sDB.SetStateObject(statedb.SerialNumberObjectType, prefixSerial2, valueIT2)
+	sDB.SetStateObject(statedb.SerialNumberObjectType, prefixSer1, valueIT3)
+	sDB.SetStateObject(statedb.SerialNumberObjectType, prefixSer2, valueIT4)
+	sDB.SetStateObject(statedb.SerialNumberObjectType, prefixCommit1, valueIT5)
+	sDB.SetStateObject(statedb.SerialNumberObjectType, prefixCommit2, valueIT6)
+	sDB.SetStateObject(statedb.SerialNumberObjectType, prefixCom1, valueIT7)
+	sDB.SetStateObject(statedb.SerialNumberObjectType, prefixCom2, valueIT8)
+
+	rootHash1, err := sDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	log.Println(rootHash1)
+	if bytes.Compare(rootHash1.Bytes(), emptyRoot.Bytes()) == 0 {
+		t.Fatal("root hash is empty")
+	}
+	err = warperDB.TrieDB().Commit(rootHash1, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash1, warperDB)
+	if err != nil || tempStateDB == nil {
+		t.Fatal(err, tempStateDB)
+	}
+	keys, values := tempStateDB.GetByPrefixTestObjectList(prefixSer)
+	log.Println(keys)
+	log.Println(values)
+
+	keys, values = tempStateDB.GetByPrefixTestObjectList(prefixSerial)
+	log.Println(keys)
+	log.Println(values)
+
+	keys, values = tempStateDB.GetByPrefixTestObjectList(prefixCom)
+	log.Println(keys)
+	log.Println(values)
+
+	keys, values = tempStateDB.GetByPrefixTestObjectList(prefixCommit)
+	log.Println(keys)
+	log.Println(values)
+}
+
+func BenchmarkStateDB_GetAllTestObjectList500000(b *testing.B) {
+	rootHash, _ := createAndStoreDataForTesting(limit100000)
+	for n := 0; n < b.N; n++ {
+		tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+		if err != nil || tempStateDB == nil {
+			panic(err)
+		}
+		tempStateDB.GetAllTestObjectList()
+	}
+}
+func BenchmarkStateDB_GetAllTestObjectList50000(b *testing.B) {
+	rootHash, _ := createAndStoreDataForTesting(limit10000)
+	for n := 0; n < b.N; n++ {
+		tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+		if err != nil || tempStateDB == nil {
+			panic(err)
+		}
+		tempStateDB.GetAllTestObjectList()
+	}
+}
+func BenchmarkStateDB_GetAllTestObjectList5000(b *testing.B) {
+	rootHash, _ := createAndStoreDataForTesting(limit1000)
+	for n := 0; n < b.N; n++ {
+		tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+		if err != nil || tempStateDB == nil {
+			panic(err)
+		}
+		tempStateDB.GetAllTestObjectList()
+	}
+}
+func BenchmarkStateDB_GetAllTestObjectList500(b *testing.B) {
+	rootHash, _ := createAndStoreDataForTesting(limit100)
+	for n := 0; n < b.N; n++ {
+		tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+		if err != nil || tempStateDB == nil {
+			panic(err)
+		}
+		tempStateDB.GetAllTestObjectList()
+	}
+}
+func BenchmarkStateDB_GetAllTestObjectList5(b *testing.B) {
+	rootHash, _ := createAndStoreDataForTesting(limit1)
+	for n := 0; n < b.N; n++ {
+		tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+		if err != nil || tempStateDB == nil {
+			panic(err)
+		}
+		tempStateDB.GetAllTestObjectList()
+	}
+}
+
+func BenchmarkStateDB_GetByPrefixTestObjectList50000(b *testing.B) {
+	rootHash, tests := createAndStoreDataForTesting(limit10000)
+	for n := 0; n < b.N; n++ {
+		tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+		if err != nil || tempStateDB == nil {
+			panic(err)
+		}
+		tempStateDB.GetByPrefixTestObjectList(tests[0].args.prefix)
+	}
+}
+
+func BenchmarkStateDB_GetByPrefixTestObjectList5000(b *testing.B) {
+	rootHash, tests := createAndStoreDataForTesting(limit1000)
+	for n := 0; n < b.N; n++ {
+		tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+		if err != nil || tempStateDB == nil {
+			panic(err)
+		}
+		tempStateDB.GetByPrefixTestObjectList(tests[0].args.prefix)
+	}
+}
+
+func BenchmarkStateDB_GetByPrefixTestObjectList500(b *testing.B) {
+	rootHash, tests := createAndStoreDataForTesting(limit100)
+	for n := 0; n < b.N; n++ {
+		tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+		if err != nil || tempStateDB == nil {
+			panic(err)
+		}
+		tempStateDB.GetByPrefixTestObjectList(tests[0].args.prefix)
+	}
+}
+
+func TestStateDB_GetTestObjectByPrefix50000(t *testing.T) {
+	rootHash, tests := createAndStoreDataForTesting(limit10000)
+	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+	if err != nil || tempStateDB == nil {
+		panic(err)
+	}
+	keys, values := tempStateDB.GetAllTestObjectList()
+	if len(keys) != limit10000*5 {
+		t.Fatalf("number of all keys want = %+v but got = %+v", limit10000*5, len(keys))
+	}
+	if len(values) != limit10000*5 {
+		t.Fatalf("number of all values want = %+v but got = %+v", limit10000*5, len(values))
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotKeys, gotValues := tempStateDB.GetByPrefixTestObjectList(tt.args.prefix)
+			if len(gotKeys) != len(tt.wantKey) {
+
+				t.Errorf("GetByPrefixSerialNumberList() gotKey length = %v, wantKey length = %v", len(gotKeys), len(tt.wantKey))
+			}
+			for _, gotKey := range gotKeys {
+				if _, ok := tt.wantKey[gotKey]; !ok {
+					t.Logf("Got Key to Bytes %+v \n with prefix %+v", keybytesToHex(gotKey[:]), keybytesToHex(tt.args.prefix))
+					t.Errorf("GetByPrefixSerialNumberList() gotKey = %v but not wanted", gotKey)
+				}
+			}
+			if len(gotValues) != len(tt.wantValue) {
+				t.Errorf("GetByPrefixSerialNumberList() gotValue length = %v, wantValues length = %v", len(gotValues), len(tt.wantValue))
+			}
+			for _, gotValue := range gotValues {
+				if _, ok := tt.wantValue[string(gotValue)]; !ok {
+					t.Errorf("GetByPrefixSerialNumberList() gotValue = %v but not wanted", gotValue)
+				}
+			}
+
+		})
+	}
+}
+func createAndStoreDataForTesting(limit int) (common.Hash, []test) {
+	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
+	if err != nil {
+		panic(err)
+	}
+	tests := []test{
 		{
 			name: prefixA,
 			args: args{
@@ -123,19 +339,19 @@ func TestStateDB_GetSerialNumberListByPrefix(t *testing.T) {
 	keysD, valuesD = generateKeyValuePairWithPrefix(limit, []byte(prefixD))
 	keysE, valuesE = generateKeyValuePairWithPrefix(limit, []byte(prefixE))
 	for i := 0; i < len(keysA); i++ {
-		sDB.SetStateObject(statedb.SerialNumberObjectType, keysA[i], valuesA[i])
+		sDB.SetStateObject(statedb.TestObjectType, keysA[i], valuesA[i])
 	}
 	for i := 0; i < len(keysB); i++ {
-		sDB.SetStateObject(statedb.SerialNumberObjectType, keysB[i], valuesB[i])
+		sDB.SetStateObject(statedb.TestObjectType, keysB[i], valuesB[i])
 	}
 	for i := 0; i < len(keysC); i++ {
-		sDB.SetStateObject(statedb.SerialNumberObjectType, keysC[i], valuesC[i])
+		sDB.SetStateObject(statedb.TestObjectType, keysC[i], valuesC[i])
 	}
 	for i := 0; i < len(keysD); i++ {
-		sDB.SetStateObject(statedb.SerialNumberObjectType, keysD[i], valuesD[i])
+		sDB.SetStateObject(statedb.TestObjectType, keysD[i], valuesD[i])
 	}
 	for i := 0; i < len(keysE); i++ {
-		sDB.SetStateObject(statedb.SerialNumberObjectType, keysE[i], valuesE[i])
+		sDB.SetStateObject(statedb.TestObjectType, keysE[i], valuesE[i])
 	}
 	for _, tt := range tests {
 		if tt.name == prefixA {
@@ -205,53 +421,18 @@ func TestStateDB_GetSerialNumberListByPrefix(t *testing.T) {
 	}
 	rootHash, err := sDB.Commit(true)
 	if err != nil {
-		t.Fatal(err)
+		panic(err)
 	}
-	log.Println(rootHash)
 	if bytes.Compare(rootHash.Bytes(), emptyRoot.Bytes()) == 0 {
-		t.Fatal("root hash is empty")
+		panic("root hash is empty")
 	}
 	err = warperDBStatedbTest.TrieDB().Commit(rootHash, false)
 	if err != nil {
-		t.Fatal(err)
+		panic(err)
 	}
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
-	if err != nil || tempStateDB == nil {
-		t.Fatal(err, tempStateDB)
-	}
-	keys, values := tempStateDB.GetSerialNumberAllList()
-	if len(keys) != limit*5 {
-		t.Fatalf("number of all keys want = %+v but got = %+v", limit*5, len(keys))
-	}
-	if len(values) != limit*5 {
-		t.Fatalf("number of all values want = %+v but got = %+v", limit*5, len(values))
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gotKeys, gotValues := tempStateDB.GetSerialNumberListByPrefix(tt.args.prefix)
-			if len(gotKeys) != len(tt.wantKey) {
 
-				t.Errorf("GetSerialNumberListByPrefix() gotKey length = %v, wantKey length = %v", len(gotKeys), len(tt.wantKey))
-			}
-			for _, gotKey := range gotKeys {
-				if _, ok := tt.wantKey[gotKey]; !ok {
-					t.Logf("Got Key to Bytes %+v \n with prefix %+v", keybytesToHex(gotKey[:]), keybytesToHex(tt.args.prefix))
-					t.Errorf("GetSerialNumberListByPrefix() gotKey = %v but not wanted", gotKey)
-				}
-			}
-			if len(gotValues) != len(tt.wantValue) {
-				t.Errorf("GetSerialNumberListByPrefix() gotValue length = %v, wantValues length = %v", len(gotValues), len(tt.wantValue))
-			}
-			for _, gotValue := range gotValues {
-				if _, ok := tt.wantValue[string(gotValue)]; !ok {
-					t.Errorf("GetSerialNumberListByPrefix() gotValue = %v but not wanted", gotValue)
-				}
-			}
-
-		})
-	}
+	return rootHash, tests
 }
-
 func keybytesToHex(str []byte) []byte {
 	l := len(str)*2 + 1
 	var nibbles = make([]byte, l)

@@ -17,6 +17,12 @@ type CommitteePublicKey struct {
 	MiningPubKey map[string][]byte
 }
 
+func NewCommitteePublicKey() *CommitteePublicKey {
+	return &CommitteePublicKey{
+		IncPubKey:    privacy.PublicKey{},
+		MiningPubKey: make(map[string][]byte),
+	}
+}
 func (pubKey *CommitteePublicKey) CheckSanityData() bool {
 	if (len(pubKey.IncPubKey) != common.PublicKeySize) ||
 		(len(pubKey.MiningPubKey[common.BlsConsensus]) != common.BLSPublicKeySize) ||

@@ -1,5 +1,15 @@
 package statedb
 
+// Object type
 const (
-	SerialNumberObjectType = iota
+	TestObjectType = iota
+	SerialNumberObjectType
+	AllShardCommitteeObjectType
+	CommitteeObjectType
+)
+
+// Prefix length
+const (
+	prefixHashKeyLength = 12
+	prefixKeyLength     = 20
 )

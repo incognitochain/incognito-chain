@@ -1,8 +1,11 @@
 package statedb
 
 import (
+	"encoding/json"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/trie"
 	"time"
 )
@@ -12,9 +15,9 @@ import (
 // nested states. It's the general query interface to retrieve:
 // * State Object
 type StateDB struct {
-	db   DatabaseAccessWarper
-	trie Trie
-
+	db    DatabaseAccessWarper
+	trie  Trie
+	rawdb incdb.Database
 	// This map holds 'live' objects, which will get modified while processing a state transition.
 	stateObjects        map[common.Hash]StateObject
 	stateObjectsPending map[common.Hash]struct{} // State objects finalized but not yet written to the trie
@@ -43,6 +46,22 @@ func New(root common.Hash, db DatabaseAccessWarper) (*StateDB, error) {
 	return &StateDB{
 		db:                  db,
 		trie:                tr,
+		stateObjects:        make(map[common.Hash]StateObject),
+		stateObjectsPending: make(map[common.Hash]struct{}),
+		stateObjectsDirty:   make(map[common.Hash]struct{}),
+	}, nil
+}
+
+// New return a new statedb attach with a state root
+func NewWithRawDB(root common.Hash, db DatabaseAccessWarper, rawdb incdb.Database) (*StateDB, error) {
+	tr, err := db.OpenTrie(root)
+	if err != nil {
+		return nil, err
+	}
+	return &StateDB{
+		db:                  db,
+		trie:                tr,
+		rawdb:               rawdb,
 		stateObjects:        make(map[common.Hash]StateObject),
 		stateObjectsPending: make(map[common.Hash]struct{}),
 		stateObjectsDirty:   make(map[common.Hash]struct{}),
@@ -114,7 +133,7 @@ func (stateDB *StateDB) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
 }
 func (stateDB *StateDB) markDeleteEmptyStateObject(deleteEmptyObjects bool) {
 	for _, object := range stateDB.stateObjects {
-		if object.Empty() {
+		if object.IsEmpty() {
 			object.MarkDelete()
 		}
 	}
@@ -156,7 +175,7 @@ func (stateDB *StateDB) Exist(objectType int, stateObjectHash common.Hash) bool 
 // Empty check a state object in statedb is empty or not
 func (stateDB *StateDB) Empty(objectType int, stateObjectHash common.Hash) bool {
 	stateObject := stateDB.getStateObject(objectType, stateObjectHash)
-	return stateObject == nil || stateObject.Empty()
+	return stateObject == nil || stateObject.IsEmpty()
 }
 
 // ================================= STATE OBJECT =======================================
@@ -262,15 +281,8 @@ func (stateDB *StateDB) getStateObject(objectType int, addr common.Hash) StateOb
 	return nil
 }
 
-// ================================= Serial Number OBJECT =======================================
-func (stateDB *StateDB) GetSerialNumber(key common.Hash) []byte {
-	serialNumberObject := stateDB.getStateObject(SerialNumberObjectType, key)
-	if serialNumberObject != nil {
-		return serialNumberObject.GetValueBytes()
-	}
-	return []byte{}
-}
-func (stateDB *StateDB) GetSerialNumberAllList() ([]common.Hash, [][]byte) {
+// =================================     Test Object     ========================================
+func (stateDB *StateDB) GetAllTestObjectList() ([]common.Hash, [][]byte) {
 	temp := stateDB.trie.NodeIterator(nil)
 	it := trie.NewIterator(temp)
 	keys := []common.Hash{}
@@ -287,7 +299,22 @@ func (stateDB *StateDB) GetSerialNumberAllList() ([]common.Hash, [][]byte) {
 	}
 	return keys, values
 }
-func (stateDB *StateDB) GetSerialNumberListByPrefix(prefix []byte) ([]common.Hash, [][]byte) {
+func (stateDB *StateDB) GetAllTestObjectMap() map[common.Hash][]byte {
+	temp := stateDB.trie.NodeIterator(nil)
+	it := trie.NewIterator(temp)
+	m := make(map[common.Hash][]byte)
+	for it.Next() {
+		key := stateDB.trie.GetKey(it.Key)
+		newKey := make([]byte, len(key))
+		copy(newKey, key)
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		m[common.BytesToHash(key)] = newValue
+	}
+	return m
+}
+func (stateDB *StateDB) GetByPrefixTestObjectList(prefix []byte) ([]common.Hash, [][]byte) {
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
 	keys := []common.Hash{}
@@ -303,4 +330,93 @@ func (stateDB *StateDB) GetSerialNumberListByPrefix(prefix []byte) ([]common.Has
 		values = append(values, value)
 	}
 	return keys, values
+}
+
+// ================================= Serial Number OBJECT =======================================
+func (stateDB *StateDB) GetSerialNumber(key common.Hash) []byte {
+	serialNumberObject := stateDB.getStateObject(SerialNumberObjectType, key)
+	if serialNumberObject != nil {
+		return serialNumberObject.GetValueBytes()
+	}
+	return []byte{}
+}
+
+func (stateDB *StateDB) GetAllSerialNumberKeyValueList() ([]common.Hash, [][]byte) {
+	temp := stateDB.trie.NodeIterator(GetSerialNumberPrefix())
+	it := trie.NewIterator(temp)
+	keys := []common.Hash{}
+	values := [][]byte{}
+	for it.Next() {
+		key := stateDB.trie.GetKey(it.Key)
+		newKey := make([]byte, len(key))
+		copy(newKey, key)
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		keys = append(keys, common.BytesToHash(key))
+		values = append(values, value)
+	}
+	return keys, values
+}
+func (stateDB *StateDB) GetAllSerialNumberValueList() [][]byte {
+	temp := stateDB.trie.NodeIterator(GetSerialNumberPrefix())
+	it := trie.NewIterator(temp)
+	values := [][]byte{}
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		values = append(values, value)
+	}
+	return values
+}
+
+// ================================= Committee OBJECT =======================================
+func (stateDB *StateDB) GetCommitteeState(key common.Hash) *CommitteeState {
+	committeeStateObject := stateDB.getStateObject(SerialNumberObjectType, key)
+	if committeeStateObject != nil {
+		return committeeStateObject.GetValue().(*CommitteeState)
+	}
+	return NewCommitteeState()
+}
+func (stateDB *StateDB) GetAllCommitteeState(maxShardNumber int) map[int][]incognitokey.CommitteePublicKey {
+	m := make(map[int][]incognitokey.CommitteePublicKey)
+	for i := -1; i < maxShardNumber; i++ {
+		prefix := GetShardCommitteePrefixByID(i)
+		temp := stateDB.trie.NodeIterator(prefix)
+		it := trie.NewIterator(temp)
+		for it.Next() {
+			value := it.Value
+			newValue := make([]byte, len(value))
+			copy(newValue, value)
+			committeeState := NewCommitteeState()
+			err := json.Unmarshal(newValue, committeeState)
+			if err != nil {
+				panic("wrong value type")
+			}
+			m[committeeState.ShardID] = append(m[committeeState.ShardID], committeeState.CommitteePublicKey)
+		}
+	}
+	return m
+}
+func (stateDB *StateDB) GetByShardIDCommitteeState(shardID int) []incognitokey.CommitteePublicKey {
+	committees := []incognitokey.CommitteePublicKey{}
+	prefix := GetShardCommitteePrefixByID(shardID)
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		committeeState := NewCommitteeState()
+		err := json.Unmarshal(newValue, committeeState)
+		if err != nil {
+			panic("wrong value type")
+		}
+		if committeeState.ShardID != shardID {
+			panic("wrong expected shard id")
+		}
+		committees = append(committees, committeeState.CommitteePublicKey)
+	}
+	return committees
 }
