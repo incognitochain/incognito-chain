@@ -213,20 +213,17 @@ func TestSubscribeNewTopics(t *testing.T) {
 				wire.CmdTx:          []Topic{Topic{Name: "xyz"}, Topic{Name: "ijk"}},
 			},
 			subscribed: msgToTopics{},
-			subCalled:  2,
+			subCalled:  3,
 			subsLen:    2,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			subStream := &mocks.SubscriptionStream{}
-			var msg *pubsub.Message
-			subStream.On("Next", mock.Anything).Return(msg, fmt.Errorf("error preventing further advance"))
-
+			subscription := &pubsub.Subscription{}
 			subscriber := &mocks.Subscriber{}
 			var err error
-			subscriber.On("Subscribe", mock.Anything).Return(subStream, err)
+			subscriber.On("Subscribe", mock.Anything).Return(subscription, err)
 			sub := &SubManager{subs: tc.subscribed, subscriber: subscriber}
 
 			err = sub.subscribeNewTopics(tc.newTopics, tc.subscribed)

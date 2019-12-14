@@ -38,7 +38,7 @@ type info struct {
 }
 
 type Subscriber interface {
-	Subscribe(topic string, opts ...pubsub.SubOpt) (SubscriptionStream, error)
+	Subscribe(topic string, opts ...pubsub.SubOpt) (*pubsub.Subscription, error)
 }
 
 type Registerer interface {
@@ -190,7 +190,7 @@ func (sub *SubManager) subscribeNewTopics(newTopics, subscribed msgToTopics) err
 }
 
 // processSubscriptionMessage listens to a topic and pushes all messages to a queue to be processed later
-func processSubscriptionMessage(inbox chan *pubsub.Message, sub SubscriptionStream) {
+func processSubscriptionMessage(inbox chan *pubsub.Message, sub *pubsub.Subscription) {
 	ctx := context.Background()
 	for {
 		// TODO(@0xbunyip): check if topic is unsubbed then return, otherwise just continue
@@ -205,16 +205,9 @@ func processSubscriptionMessage(inbox chan *pubsub.Message, sub SubscriptionStre
 	}
 }
 
-var _ SubscriptionStream = (*pubsub.Subscription)(nil)
-
-type SubscriptionStream interface {
-	Next(context.Context) (*pubsub.Message, error)
-	Cancel()
-}
-
 type Topic struct {
 	Name string
-	Sub  SubscriptionStream
+	Sub  *pubsub.Subscription
 	Act  proto.MessageTopicPair_Action
 }
 
