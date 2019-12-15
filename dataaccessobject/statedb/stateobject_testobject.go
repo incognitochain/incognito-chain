@@ -1,7 +1,9 @@
 package statedb
 
 import (
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"reflect"
 )
 
 type TestObject struct {
@@ -31,10 +33,10 @@ func newTestObject(db *StateDB, hash common.Hash) *TestObject {
 		deleted:    false,
 	}
 }
-func newTestObjectWithValue(db *StateDB, key common.Hash, data interface{}) *TestObject {
+func newTestObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*TestObject, error) {
 	newSerialNumber, ok := data.([]byte)
 	if !ok {
-		panic("Wrong expected value")
+		return nil, NewStatedbError(InvalidByteArrayTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
 	}
 	return &TestObject{
 		key:        key,
@@ -42,7 +44,7 @@ func newTestObjectWithValue(db *StateDB, key common.Hash, data interface{}) *Tes
 		db:         db,
 		objectType: TestObjectType,
 		deleted:    false,
-	}
+	}, nil
 }
 
 // setError remembers the first non-nil error it is called with.
@@ -56,12 +58,13 @@ func (s *TestObject) GetTrie(db DatabaseAccessWarper) Trie {
 	return s.trie
 }
 
-func (s *TestObject) SetValue(data interface{}) {
+func (s *TestObject) SetValue(data interface{}) error {
 	newSerialNumber, ok := data.([]byte)
 	if !ok {
-		panic("Wrong expected value")
+		return NewStatedbError(InvalidByteArrayTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
 	}
 	s.value = newSerialNumber
+	return nil
 }
 
 func (s *TestObject) GetValue() interface{} {

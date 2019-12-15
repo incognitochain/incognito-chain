@@ -2,6 +2,7 @@ package statedb
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -62,19 +63,19 @@ func newCommitteeObject(db *StateDB, hash common.Hash) *CommitteeObject {
 		deleted:                false,
 	}
 }
-func newCommitteeObjectWithValue(db *StateDB, key common.Hash, data interface{}) *CommitteeObject {
+func newCommitteeObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*CommitteeObject, error) {
 	var newCommitteeState = NewCommitteeState()
 	var ok bool
 	var dataBytes []byte
 	if dataBytes, ok = data.([]byte); ok {
 		err := json.Unmarshal(dataBytes, newCommitteeState)
 		if err != nil {
-			panic(err)
+			return nil, NewStatedbError(InvalidCommitteeStateTypeError, err)
 		}
 	} else {
 		newCommitteeState, ok = data.(*CommitteeState)
 		if !ok {
-			panic("Wrong expected value")
+			return nil, NewStatedbError(InvalidCommitteeStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
 		}
 	}
 	return &CommitteeObject{
@@ -83,7 +84,7 @@ func newCommitteeObjectWithValue(db *StateDB, key common.Hash, data interface{})
 		db:                     db,
 		objectType:             CommitteeObjectType,
 		deleted:                false,
-	}
+	}, nil
 }
 
 // setError remembers the first non-nil error it is called with.
@@ -97,12 +98,13 @@ func (c *CommitteeObject) GetTrie(db DatabaseAccessWarper) Trie {
 	return c.trie
 }
 
-func (c *CommitteeObject) SetValue(data interface{}) {
+func (c *CommitteeObject) SetValue(data interface{}) error {
 	newCommitteeState, ok := data.(*CommitteeState)
 	if !ok {
-		panic("Wrong expected value")
+		return NewStatedbError(InvalidCommitteeStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
 	}
 	c.committeeState = newCommitteeState
+	return nil
 }
 
 func (c *CommitteeObject) GetValue() interface{} {

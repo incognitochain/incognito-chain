@@ -5,7 +5,7 @@ go 1.12
 require (
 	cloud.google.com/go v0.38.0
 	github.com/0xsirrush/color v1.7.0
-	github.com/allegro/bigcache v1.2.1 // indirect
+	github.com/allegro/bigcache v1.2.1
 	github.com/aristanetworks/goarista v0.0.0-20190704150520-f44d68189fd7 // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dchest/siphash v1.2.1 // indirect
@@ -45,7 +45,7 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/tsdb v0.9.1 // indirect
 	github.com/rs/cors v1.6.0 // indirect
-	github.com/steakknife/bloomfilter v0.0.0-20180922174646-6819c0d2a570 // indirect
+	github.com/steakknife/bloomfilter v0.0.0-20180922174646-6819c0d2a570
 	github.com/steakknife/hamming v0.0.0-20180906055917-c99c65617cd3 // indirect
 	github.com/stretchr/testify v1.4.0
 	github.com/syndtr/goleveldb v1.0.0

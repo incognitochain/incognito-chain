@@ -3,7 +3,6 @@ package statedb_test
 import (
 	"bytes"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"os"
 	"testing"
@@ -136,7 +135,6 @@ func TestStoreAndGetTestObjectByPrefix(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	log.Println(rootHash1)
 	if bytes.Compare(rootHash1.Bytes(), emptyRoot.Bytes()) == 0 {
 		t.Fatal("root hash is empty")
 	}
@@ -149,21 +147,52 @@ func TestStoreAndGetTestObjectByPrefix(t *testing.T) {
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
-	keys, values := tempStateDB.GetByPrefixTestObjectList(prefixSer)
-	log.Println(keys)
-	log.Println(values)
+	tempStateDB.GetByPrefixTestObjectList(prefixSer)
 
-	keys, values = tempStateDB.GetByPrefixTestObjectList(prefixSerial)
-	log.Println(keys)
-	log.Println(values)
+	tempStateDB.GetByPrefixTestObjectList(prefixSerial)
 
-	keys, values = tempStateDB.GetByPrefixTestObjectList(prefixCom)
-	log.Println(keys)
-	log.Println(values)
+	tempStateDB.GetByPrefixTestObjectList(prefixCom)
 
-	keys, values = tempStateDB.GetByPrefixTestObjectList(prefixCommit)
-	log.Println(keys)
-	log.Println(values)
+	tempStateDB.GetByPrefixTestObjectList(prefixCommit)
+}
+
+func TestStateDB_GetTestObjectByPrefix50000(t *testing.T) {
+	rootHash, tests := createAndStoreDataForTesting(limit10000)
+	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+	if err != nil || tempStateDB == nil {
+		panic(err)
+	}
+	keys, values := tempStateDB.GetAllTestObjectList()
+	if len(keys) != limit10000*5 {
+		t.Fatalf("number of all keys want = %+v but got = %+v", limit10000*5, len(keys))
+	}
+	if len(values) != limit10000*5 {
+		t.Fatalf("number of all values want = %+v but got = %+v", limit10000*5, len(values))
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotKeys, gotValues := tempStateDB.GetByPrefixTestObjectList(tt.args.prefix)
+			if len(gotKeys) != len(tt.wantKey) {
+
+				t.Errorf("GetByPrefixSerialNumberList() gotKey length = %v, wantKey length = %v", len(gotKeys), len(tt.wantKey))
+			}
+			for _, gotKey := range gotKeys {
+				if _, ok := tt.wantKey[gotKey]; !ok {
+					t.Logf("Got Key to Bytes %+v \n with prefix %+v", keybytesToHex(gotKey[:]), keybytesToHex(tt.args.prefix))
+					t.Errorf("GetByPrefixSerialNumberList() gotKey = %v but not wanted", gotKey)
+				}
+			}
+			if len(gotValues) != len(tt.wantValue) {
+				t.Errorf("GetByPrefixSerialNumberList() gotValue length = %v, wantValues length = %v", len(gotValues), len(tt.wantValue))
+			}
+			for _, gotValue := range gotValues {
+				if _, ok := tt.wantValue[string(gotValue)]; !ok {
+					t.Errorf("GetByPrefixSerialNumberList() gotValue = %v but not wanted", gotValue)
+				}
+			}
+
+		})
+	}
 }
 
 func BenchmarkStateDB_GetAllTestObjectList500000(b *testing.B) {
@@ -217,6 +246,52 @@ func BenchmarkStateDB_GetAllTestObjectList5(b *testing.B) {
 	}
 }
 
+func BenchmarkStateDB_GetTestObject500000(b *testing.B) {
+	var sampleKey common.Hash
+	rootHash, m := createAndStoreDataForTesting(limit100000)
+	for key, _ := range m[0].wantKey {
+		sampleKey = key
+		break
+	}
+	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+	if err != nil || tempStateDB == nil {
+		panic(err)
+	}
+	for n := 0; n < b.N; n++ {
+		tempStateDB.GetTestObject(sampleKey)
+	}
+}
+func BenchmarkStateDB_GetTestObject50000(b *testing.B) {
+	var sampleKey common.Hash
+	rootHash, m := createAndStoreDataForTesting(limit10000)
+	for key, _ := range m[0].wantKey {
+		sampleKey = key
+		break
+	}
+	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+	if err != nil || tempStateDB == nil {
+		panic(err)
+	}
+	for n := 0; n < b.N; n++ {
+		tempStateDB.GetTestObject(sampleKey)
+	}
+}
+func BenchmarkStateDB_GetTestObject5000(b *testing.B) {
+	var sampleKey common.Hash
+	rootHash, m := createAndStoreDataForTesting(limit1000)
+	for key, _ := range m[0].wantKey {
+		sampleKey = key
+		break
+	}
+	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+	if err != nil || tempStateDB == nil {
+		panic(err)
+	}
+	for n := 0; n < b.N; n++ {
+		tempStateDB.GetTestObject(sampleKey)
+	}
+}
+
 func BenchmarkStateDB_GetByPrefixTestObjectList50000(b *testing.B) {
 	rootHash, tests := createAndStoreDataForTesting(limit10000)
 	for n := 0; n < b.N; n++ {
@@ -250,44 +325,6 @@ func BenchmarkStateDB_GetByPrefixTestObjectList500(b *testing.B) {
 	}
 }
 
-func TestStateDB_GetTestObjectByPrefix50000(t *testing.T) {
-	rootHash, tests := createAndStoreDataForTesting(limit10000)
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
-	if err != nil || tempStateDB == nil {
-		panic(err)
-	}
-	keys, values := tempStateDB.GetAllTestObjectList()
-	if len(keys) != limit10000*5 {
-		t.Fatalf("number of all keys want = %+v but got = %+v", limit10000*5, len(keys))
-	}
-	if len(values) != limit10000*5 {
-		t.Fatalf("number of all values want = %+v but got = %+v", limit10000*5, len(values))
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gotKeys, gotValues := tempStateDB.GetByPrefixTestObjectList(tt.args.prefix)
-			if len(gotKeys) != len(tt.wantKey) {
-
-				t.Errorf("GetByPrefixSerialNumberList() gotKey length = %v, wantKey length = %v", len(gotKeys), len(tt.wantKey))
-			}
-			for _, gotKey := range gotKeys {
-				if _, ok := tt.wantKey[gotKey]; !ok {
-					t.Logf("Got Key to Bytes %+v \n with prefix %+v", keybytesToHex(gotKey[:]), keybytesToHex(tt.args.prefix))
-					t.Errorf("GetByPrefixSerialNumberList() gotKey = %v but not wanted", gotKey)
-				}
-			}
-			if len(gotValues) != len(tt.wantValue) {
-				t.Errorf("GetByPrefixSerialNumberList() gotValue length = %v, wantValues length = %v", len(gotValues), len(tt.wantValue))
-			}
-			for _, gotValue := range gotValues {
-				if _, ok := tt.wantValue[string(gotValue)]; !ok {
-					t.Errorf("GetByPrefixSerialNumberList() gotValue = %v but not wanted", gotValue)
-				}
-			}
-
-		})
-	}
-}
 func createAndStoreDataForTesting(limit int) (common.Hash, []test) {
 	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
 	if err != nil {

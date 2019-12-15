@@ -1,7 +1,9 @@
 package statedb
 
 import (
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"reflect"
 )
 
 type SerialNumberObject struct {
@@ -31,10 +33,10 @@ func newSerialNumberObject(db *StateDB, hash common.Hash) *SerialNumberObject {
 		deleted:          false,
 	}
 }
-func newSerialNumberObjectWithValue(db *StateDB, key common.Hash, data interface{}) *SerialNumberObject {
+func newSerialNumberObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*SerialNumberObject, error) {
 	newSerialNumber, ok := data.([]byte)
 	if !ok {
-		panic("Wrong expected value")
+		return nil, NewStatedbError(InvalidByteArrayTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
 	}
 	return &SerialNumberObject{
 		serialNumberHash: key,
@@ -42,7 +44,7 @@ func newSerialNumberObjectWithValue(db *StateDB, key common.Hash, data interface
 		db:               db,
 		objectType:       SerialNumberObjectType,
 		deleted:          false,
-	}
+	}, nil
 }
 
 // setError remembers the first non-nil error it is called with.
@@ -56,12 +58,13 @@ func (s *SerialNumberObject) GetTrie(db DatabaseAccessWarper) Trie {
 	return s.trie
 }
 
-func (s *SerialNumberObject) SetValue(data interface{}) {
+func (s *SerialNumberObject) SetValue(data interface{}) error {
 	newSerialNumber, ok := data.([]byte)
 	if !ok {
-		panic("Wrong expected value")
+		return NewStatedbError(InvalidByteArrayTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
 	}
 	s.serialNumber = newSerialNumber
+	return nil
 }
 
 func (s *SerialNumberObject) GetValue() interface{} {

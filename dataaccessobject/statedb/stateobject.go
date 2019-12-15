@@ -9,7 +9,7 @@ type StateObject interface {
 	GetValueBytes() []byte
 	GetHash() common.Hash
 	GetType() int
-	SetValue(interface{})
+	SetValue(interface{}) error
 	GetTrie(DatabaseAccessWarper) Trie
 	SetError(error)
 	MarkDelete()
@@ -18,14 +18,12 @@ type StateObject interface {
 	Reset() bool
 }
 
-func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, value interface{}) StateObject {
+func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, value interface{}) (StateObject, error) {
 	switch objectType {
 	case TestObjectType:
 		return newTestObjectWithValue(db, hash, value)
 	case SerialNumberObjectType:
 		return newSerialNumberObjectWithValue(db, hash, value)
-	case AllShardCommitteeObjectType:
-		return newAllShardCommitteeObjectWithValue(db, hash, value)
 	case CommitteeObjectType:
 		return newCommitteeObjectWithValue(db, hash, value)
 	default:
@@ -39,8 +37,6 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newTestObject(db, hash)
 	case SerialNumberObjectType:
 		return newSerialNumberObject(db, hash)
-	case AllShardCommitteeObjectType:
-		return newAllShardCommitteeObject(db, hash)
 	case CommitteeObjectType:
 		return newCommitteeObject(db, hash)
 	default:

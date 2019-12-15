@@ -168,14 +168,18 @@ func (stateDB *StateDB) Copy() *StateDB {
 }
 
 // Exist check existence of a state object in statedb
-func (stateDB *StateDB) Exist(objectType int, stateObjectHash common.Hash) bool {
-	return stateDB.getStateObject(objectType, stateObjectHash) != nil
+func (stateDB *StateDB) Exist(objectType int, stateObjectHash common.Hash) (bool, error) {
+	value, err := stateDB.getStateObject(objectType, stateObjectHash)
+	if err != nil {
+		return false, err
+	}
+	return value != nil, nil
 }
 
 // Empty check a state object in statedb is empty or not
 func (stateDB *StateDB) Empty(objectType int, stateObjectHash common.Hash) bool {
-	stateObject := stateDB.getStateObject(objectType, stateObjectHash)
-	return stateObject == nil || stateObject.IsEmpty()
+	stateObject, err := stateDB.getStateObject(objectType, stateObjectHash)
+	return stateObject == nil || stateObject.IsEmpty() || err != nil
 }
 
 // ================================= STATE OBJECT =======================================
@@ -183,10 +187,10 @@ func (stateDB *StateDB) Empty(objectType int, stateObjectHash common.Hash) bool 
 // nil for a deleted state object, it returns the actual object with the deleted
 // flag set. This is needed by the state journal to revert to the correct self-
 // destructed object instead of wiping all knowledge about the state object.
-func (stateDB *StateDB) getDeletedStateObject(objectType int, hash common.Hash) StateObject {
+func (stateDB *StateDB) getDeletedStateObject(objectType int, hash common.Hash) (StateObject, error) {
 	// Prefer live objects if any is available
 	if obj := stateDB.stateObjects[hash]; obj != nil {
-		return obj
+		return obj, nil
 	}
 	// Track the amount of time wasted on loading the object from the database
 	if metrics.EnabledExpensive {
@@ -196,14 +200,17 @@ func (stateDB *StateDB) getDeletedStateObject(objectType int, hash common.Hash) 
 	enc, err := stateDB.trie.TryGet(hash[:])
 	if len(enc) == 0 {
 		stateDB.setError(err)
-		return nil
+		return nil, nil
 	}
 	newValue := make([]byte, len(enc))
 	copy(newValue, enc)
 	// Insert into the live set
-	obj := newStateObjectWithValue(stateDB, objectType, hash, newValue)
+	obj, err := newStateObjectWithValue(stateDB, objectType, hash, newValue)
+	if err != nil {
+		return nil, err
+	}
 	stateDB.setStateObject(obj)
-	return obj
+	return obj, nil
 }
 
 // updateStateObject writes the given object to the trie.
@@ -229,21 +236,41 @@ func (stateDB *StateDB) deleteStateObject(obj StateObject) {
 	stateDB.setError(stateDB.trie.TryDelete(addr[:]))
 }
 
-// createObject creates a new state object. If there is an existing account with
+// createStateObject creates a new state object. If there is an existing account with
 // the given hash, it is overwritten and returned as the second return value.
-func (stateDB *StateDB) createObject(objectType int, hash common.Hash) (newobj, prev StateObject) {
-	prev = stateDB.getDeletedStateObject(objectType, hash) // Note, prev might have been deleted, we need that!
+func (stateDB *StateDB) createStateObject(objectType int, hash common.Hash) (newobj, prev StateObject, err error) {
+	prev, err = stateDB.getDeletedStateObject(objectType, hash) // Note, prev might have been deleted, we need that!
+	if err != nil {
+		return nil, nil, err
+	}
 	newobj = newStateObject(stateDB, objectType, hash)
 	stateDB.stateObjectsPending[hash] = struct{}{}
 	stateDB.setStateObject(newobj)
-	return newobj, prev
+	return newobj, prev, err
+}
+
+func (stateDB *StateDB) createStateObjectWithValue(objectType int, hash common.Hash, value interface{}) (newobj, prev StateObject, err error) {
+	newobj, err = newStateObjectWithValue(stateDB, objectType, hash, value)
+	if err != nil {
+		return nil, nil, err
+	}
+	stateDB.stateObjectsPending[hash] = struct{}{}
+	stateDB.setStateObject(newobj)
+	return newobj, prev, err
 }
 
 // SetStateObject add new stateobject into statedb
-func (stateDB *StateDB) SetStateObject(objectType int, key common.Hash, value interface{}) {
-	obj := stateDB.getOrNewStateObject(objectType, key)
-	obj.SetValue(value)
+func (stateDB *StateDB) SetStateObject(objectType int, key common.Hash, value interface{}) error {
+	obj, err := stateDB.getOrNewStateObjectWithValue(objectType, key, value)
+	if err != nil {
+		return err
+	}
+	err = obj.SetValue(value)
+	if err != nil {
+		return err
+	}
 	stateDB.stateObjectsPending[key] = struct{}{}
+	return nil
 }
 
 // MarkDeleteStateObject add new stateobject into statedb
@@ -257,12 +284,32 @@ func (stateDB *StateDB) MarkDeleteStateObject(key common.Hash) {
 }
 
 // Retrieve a state object or create a new state object if nil.
-func (stateDB *StateDB) getOrNewStateObject(objectType int, hash common.Hash) StateObject {
-	stateObject := stateDB.getStateObject(objectType, hash)
-	if stateObject == nil {
-		stateObject, _ = stateDB.createObject(objectType, hash)
+func (stateDB *StateDB) getOrNewStateObject(objectType int, hash common.Hash) (StateObject, error) {
+	stateObject, err := stateDB.getStateObject(objectType, hash)
+	if err != nil {
+		return nil, err
 	}
-	return stateObject
+	if stateObject == nil {
+		stateObject, _, err = stateDB.createStateObject(objectType, hash)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return stateObject, nil
+}
+
+func (stateDB *StateDB) getOrNewStateObjectWithValue(objectType int, hash common.Hash, value interface{}) (StateObject, error) {
+	stateObject, err := stateDB.getStateObject(objectType, hash)
+	if err != nil {
+		return nil, err
+	}
+	if stateObject == nil {
+		stateObject, _, err = stateDB.createStateObjectWithValue(objectType, hash, value)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return stateObject, nil
 }
 
 // add state object into statedb struct
@@ -274,14 +321,35 @@ func (stateDB *StateDB) setStateObject(object StateObject) {
 // getStateObject retrieves a state object given by the address, returning nil if
 // the object is not found or was deleted in this execution context. If you need
 // to differentiate between non-existent/just-deleted, use getDeletedStateObject.
-func (stateDB *StateDB) getStateObject(objectType int, addr common.Hash) StateObject {
-	if obj := stateDB.getDeletedStateObject(objectType, addr); obj != nil && !obj.IsDeleted() {
-		return obj
+func (stateDB *StateDB) getStateObject(objectType int, addr common.Hash) (StateObject, error) {
+	if obj, err := stateDB.getDeletedStateObject(objectType, addr); obj != nil && !obj.IsDeleted() {
+		return obj, nil
+	} else if err != nil {
+		return nil, err
 	}
-	return nil
+	return nil, nil
+}
+
+// FOR TEST ONLY
+// do not use this function for build feature
+func (stateDB *StateDB) GetStateObjectMapForTestOnly() map[common.Hash]StateObject {
+	return stateDB.stateObjects
+}
+func (stateDB *StateDB) GetStateObjectPendingMapForTestOnly() map[common.Hash]struct{} {
+	return stateDB.stateObjectsPending
 }
 
 // =================================     Test Object     ========================================
+func (stateDB *StateDB) GetTestObject(key common.Hash) ([]byte, error) {
+	testObject, err := stateDB.getStateObject(TestObjectType, key)
+	if err != nil {
+		return []byte{}, err
+	}
+	if testObject != nil {
+		return testObject.GetValueBytes(), nil
+	}
+	return []byte{}, nil
+}
 func (stateDB *StateDB) GetAllTestObjectList() ([]common.Hash, [][]byte) {
 	temp := stateDB.trie.NodeIterator(nil)
 	it := trie.NewIterator(temp)
@@ -333,12 +401,15 @@ func (stateDB *StateDB) GetByPrefixTestObjectList(prefix []byte) ([]common.Hash,
 }
 
 // ================================= Serial Number OBJECT =======================================
-func (stateDB *StateDB) GetSerialNumber(key common.Hash) []byte {
-	serialNumberObject := stateDB.getStateObject(SerialNumberObjectType, key)
-	if serialNumberObject != nil {
-		return serialNumberObject.GetValueBytes()
+func (stateDB *StateDB) GetSerialNumber(key common.Hash) ([]byte, error) {
+	serialNumberObject, err := stateDB.getStateObject(SerialNumberObjectType, key)
+	if err != nil {
+		return []byte{}, err
 	}
-	return []byte{}
+	if serialNumberObject != nil {
+		return serialNumberObject.GetValueBytes(), nil
+	}
+	return []byte{}, nil
 }
 
 func (stateDB *StateDB) GetAllSerialNumberKeyValueList() ([]common.Hash, [][]byte) {
@@ -372,12 +443,15 @@ func (stateDB *StateDB) GetAllSerialNumberValueList() [][]byte {
 }
 
 // ================================= Committee OBJECT =======================================
-func (stateDB *StateDB) GetCommitteeState(key common.Hash) (*CommitteeState, bool) {
-	committeeStateObject := stateDB.getStateObject(CommitteeObjectType, key)
-	if committeeStateObject != nil {
-		return committeeStateObject.GetValue().(*CommitteeState), true
+func (stateDB *StateDB) GetCommitteeState(key common.Hash) (*CommitteeState, bool, error) {
+	committeeStateObject, err := stateDB.getStateObject(CommitteeObjectType, key)
+	if err != nil {
+		return nil, false, err
 	}
-	return NewCommitteeState(), false
+	if committeeStateObject != nil {
+		return committeeStateObject.GetValue().(*CommitteeState), true, nil
+	}
+	return NewCommitteeState(), false, nil
 }
 func (stateDB *StateDB) GetAllCommitteeState(ids []int) map[int][]incognitokey.CommitteePublicKey {
 	m := make(map[int][]incognitokey.CommitteePublicKey)

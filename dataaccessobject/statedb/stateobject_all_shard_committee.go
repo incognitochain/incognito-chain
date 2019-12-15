@@ -35,10 +35,10 @@ func newAllShardCommitteeObject(db *StateDB, hash common.Hash) *AllShardCommitte
 		deleted:               false,
 	}
 }
-func newAllShardCommitteeObjectWithValue(db *StateDB, key common.Hash, data interface{}) *AllShardCommitteeObject {
+func newAllShardCommitteeObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*AllShardCommitteeObject, error) {
 	newAllShardCommittee, ok := data.(map[byte][]incognitokey.CommitteePublicKey)
 	if !ok {
-		panic("Wrong expected value")
+		return nil, ErrInvalidCommitteeStateType
 	}
 	return &AllShardCommitteeObject{
 		allShardCommitteeHash: key,
@@ -46,7 +46,7 @@ func newAllShardCommitteeObjectWithValue(db *StateDB, key common.Hash, data inte
 		db:                    db,
 		objectType:            AllShardCommitteeObjectType,
 		deleted:               false,
-	}
+	}, nil
 }
 
 // setError remembers the first non-nil error it is called with.

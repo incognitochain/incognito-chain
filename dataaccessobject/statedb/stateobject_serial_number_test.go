@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"github.com/incognitochain/incognito-chain/trie"
 	"io/ioutil"
-	"log"
 	"os"
-	"reflect"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -40,12 +38,6 @@ var _ = func() (_ struct{}) {
 	return
 }()
 
-func TestStateDB(t *testing.T) {
-	log.Println(serialNumber1Hash)
-	log.Println(serialNumber2Hash)
-	log.Println(serialNumber3Hash)
-}
-
 func TestStoreAndGetSerialNumberObject(t *testing.T) {
 	sDB, err := statedb.New(emptyRoot, warperDBSerialNumberTest)
 	if err != nil {
@@ -63,7 +55,6 @@ func TestStoreAndGetSerialNumberObject(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	log.Println(rootHash1)
 	if bytes.Compare(rootHash1.Bytes(), emptyRoot.Bytes()) == 0 {
 		t.Fatal("root hash is empty")
 	}
@@ -76,15 +67,15 @@ func TestStoreAndGetSerialNumberObject(t *testing.T) {
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
-	sn1 := tempStateDB.GetSerialNumber(serialNumber1Hash)
+	sn1, _ := tempStateDB.GetSerialNumber(serialNumber1Hash)
 	if bytes.Compare(sn1, serialNumber1) != 0 {
 		t.Fatalf("Serial number 1 expect %+v but get %+v", serialNumber1, sn1)
 	}
-	sn2 := tempStateDB.GetSerialNumber(serialNumber2Hash)
+	sn2, _ := tempStateDB.GetSerialNumber(serialNumber2Hash)
 	if bytes.Compare(sn2, serialNumber2) != 0 {
 		t.Fatalf("Serial number 2 expect %+v but get %+v", serialNumber2, sn2)
 	}
-	sn3 := tempStateDB.GetSerialNumber(serialNumber3Hash)
+	sn3, _ := tempStateDB.GetSerialNumber(serialNumber3Hash)
 	if bytes.Compare(sn3, serialNumber3) != 0 {
 		t.Fatalf("Serial number 3 expect %+v but get %+v", serialNumber3, sn3)
 	}
@@ -104,7 +95,6 @@ func TestStoreAndGetSerialNumberObjectSameKeyDifferentValue(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	log.Println(rootHash1)
 	if bytes.Compare(rootHash1.Bytes(), emptyRoot.Bytes()) == 0 {
 		t.Fatal("root hash is empty")
 	}
@@ -122,7 +112,6 @@ func TestStoreAndGetSerialNumberObjectSameKeyDifferentValue(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	log.Println(rootHash2)
 	if bytes.Compare(rootHash2.Bytes(), emptyRoot.Bytes()) == 0 {
 		t.Fatal("root hash is empty")
 	}
@@ -135,15 +124,15 @@ func TestStoreAndGetSerialNumberObjectSameKeyDifferentValue(t *testing.T) {
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
-	sn1 := tempStateDB.GetSerialNumber(serialNumber1Hash)
+	sn1, _ := tempStateDB.GetSerialNumber(serialNumber1Hash)
 	if bytes.Compare(sn1, serialNumber1) != 0 {
 		t.Fatalf("Serial number 1 expect %+v but get %+v", serialNumber1, sn1)
 	}
-	sn2 := tempStateDB.GetSerialNumber(serialNumber2Hash)
+	sn2, _ := tempStateDB.GetSerialNumber(serialNumber2Hash)
 	if bytes.Compare(sn2, serialNumber2) != 0 {
 		t.Fatalf("Serial number 2 expect %+v but get %+v", serialNumber2, sn2)
 	}
-	sn3 := tempStateDB.GetSerialNumber(serialNumber3Hash)
+	sn3, _ := tempStateDB.GetSerialNumber(serialNumber3Hash)
 	if bytes.Compare(sn3, []byte{}) != 0 {
 		t.Fatalf("Serial number 3 expect %+v but get %+v", serialNumber3, sn3)
 	}
@@ -151,15 +140,15 @@ func TestStoreAndGetSerialNumberObjectSameKeyDifferentValue(t *testing.T) {
 	if err != nil || tempStateDB2 == nil {
 		t.Fatal(err, tempStateDB2)
 	}
-	sn1 = tempStateDB2.GetSerialNumber(serialNumber1Hash)
+	sn1, _ = tempStateDB2.GetSerialNumber(serialNumber1Hash)
 	if bytes.Compare(sn1, serialNumber1) != 0 {
 		t.Fatalf("Serial number 1 expect %+v but get %+v", serialNumber1, sn1)
 	}
-	sn2 = tempStateDB2.GetSerialNumber(serialNumber2Hash)
+	sn2, _ = tempStateDB2.GetSerialNumber(serialNumber2Hash)
 	if bytes.Compare(sn2, serialNumber3) != 0 {
 		t.Fatalf("Serial number 2 expect %+v but get %+v", serialNumber2, sn2)
 	}
-	sn3 = tempStateDB2.GetSerialNumber(serialNumber3Hash)
+	sn3, _ = tempStateDB2.GetSerialNumber(serialNumber3Hash)
 	if bytes.Compare(sn3, []byte{}) != 0 {
 		t.Fatalf("Serial number 3 expect %+v but get %+v", serialNumber3, sn3)
 	}
@@ -180,7 +169,6 @@ func TestStoreAndGetDifferentSerialNumberObject(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	log.Println(rootHash1)
 	if bytes.Compare(rootHash1.Bytes(), emptyRoot.Bytes()) == 0 {
 		t.Fatal("root hash is empty")
 	}
@@ -198,7 +186,6 @@ func TestStoreAndGetDifferentSerialNumberObject(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	log.Println(rootHash2)
 	if bytes.Compare(rootHash2.Bytes(), emptyRoot.Bytes()) == 0 {
 		t.Fatal("root hash is empty")
 	}
@@ -211,15 +198,15 @@ func TestStoreAndGetDifferentSerialNumberObject(t *testing.T) {
 	if err != nil || tempStateDB1 == nil {
 		t.Fatal(err, tempStateDB1)
 	}
-	sn1 := tempStateDB1.GetSerialNumber(serialNumber1Hash)
+	sn1, _ := tempStateDB1.GetSerialNumber(serialNumber1Hash)
 	if bytes.Compare(sn1, serialNumber1) != 0 {
 		t.Fatalf("Serial number 1 expect %+v but get %+v", serialNumber1, sn1)
 	}
-	sn2 := tempStateDB1.GetSerialNumber(serialNumber2Hash)
+	sn2, _ := tempStateDB1.GetSerialNumber(serialNumber2Hash)
 	if bytes.Compare(sn2, serialNumber2) != 0 {
 		t.Fatalf("Serial number 2 expect %+v but get %+v", serialNumber2, sn2)
 	}
-	sn3 := tempStateDB1.GetSerialNumber(serialNumber3Hash)
+	sn3, _ := tempStateDB1.GetSerialNumber(serialNumber3Hash)
 	if bytes.Compare(sn3, []byte{}) != 0 {
 		t.Fatalf("Serial number 3 expect %+v but get %+v", serialNumber3, sn3)
 	}
@@ -227,15 +214,15 @@ func TestStoreAndGetDifferentSerialNumberObject(t *testing.T) {
 	if err != nil || tempStateDB2 == nil {
 		t.Fatal(err, tempStateDB2)
 	}
-	sn1 = tempStateDB2.GetSerialNumber(serialNumber1Hash)
+	sn1, _ = tempStateDB2.GetSerialNumber(serialNumber1Hash)
 	if bytes.Compare(sn1, serialNumber1) != 0 {
 		t.Fatalf("Serial number 1 expect %+v but get %+v", serialNumber1, sn1)
 	}
-	sn3 = tempStateDB2.GetSerialNumber(serialNumber3Hash)
+	sn3, _ = tempStateDB2.GetSerialNumber(serialNumber3Hash)
 	if bytes.Compare(sn3, serialNumber3) != 0 {
 		t.Fatalf("Serial number 3 expect %+v but get %+v", serialNumber3, sn3)
 	}
-	sn2 = tempStateDB2.GetSerialNumber(serialNumber2Hash)
+	sn2, _ = tempStateDB2.GetSerialNumber(serialNumber2Hash)
 	if bytes.Compare(sn2, []byte{}) != 0 {
 		t.Fatalf("Serial number 2 expect %+v but get %+v", serialNumber2, sn2)
 	}
@@ -257,7 +244,6 @@ func TestDeleteSerialNumberObject(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	log.Println(rootHash1)
 	if bytes.Compare(rootHash1.Bytes(), emptyRoot.Bytes()) == 0 {
 		t.Fatal("root hash is empty")
 	}
@@ -271,7 +257,6 @@ func TestDeleteSerialNumberObject(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	log.Println(rootHash2)
 	if bytes.Compare(rootHash2.Bytes(), emptyRoot.Bytes()) == 0 {
 		t.Fatal("root hash is empty")
 	}
@@ -284,15 +269,15 @@ func TestDeleteSerialNumberObject(t *testing.T) {
 	if err != nil || tempStateDB1 == nil {
 		t.Fatal(err, tempStateDB1)
 	}
-	sn1 := tempStateDB1.GetSerialNumber(serialNumber1Hash)
+	sn1, _ := tempStateDB1.GetSerialNumber(serialNumber1Hash)
 	if bytes.Compare(sn1, serialNumber1) != 0 {
 		t.Fatalf("Serial number 1 expect %+v but get %+v", serialNumber1, sn1)
 	}
-	sn2 := tempStateDB1.GetSerialNumber(serialNumber2Hash)
+	sn2, _ := tempStateDB1.GetSerialNumber(serialNumber2Hash)
 	if bytes.Compare(sn2, serialNumber2) != 0 {
 		t.Fatalf("Serial number 2 expect %+v but get %+v", serialNumber2, sn2)
 	}
-	sn3 := tempStateDB1.GetSerialNumber(serialNumber3Hash)
+	sn3, _ := tempStateDB1.GetSerialNumber(serialNumber3Hash)
 	if bytes.Compare(sn3, serialNumber3) != 0 {
 		t.Fatalf("Serial number 3 expect %+v but get %+v", serialNumber3, sn3)
 	}
@@ -300,20 +285,16 @@ func TestDeleteSerialNumberObject(t *testing.T) {
 	if err != nil || tempStateDB2 == nil {
 		t.Fatal(err, tempStateDB2)
 	}
-	sn1 = tempStateDB2.GetSerialNumber(serialNumber1Hash)
+	sn1, _ = tempStateDB2.GetSerialNumber(serialNumber1Hash)
 	if bytes.Compare(sn1, serialNumber1) != 0 {
 		t.Fatalf("Serial number 1 expect %+v but get %+v", serialNumber1, sn1)
 	}
-	sn2 = tempStateDB2.GetSerialNumber(serialNumber2Hash)
+	sn2, _ = tempStateDB2.GetSerialNumber(serialNumber2Hash)
 	if bytes.Compare(sn2, serialNumber2) != 0 {
 		t.Fatalf("Serial number 2 expect %+v but get %+v", serialNumber2, sn2)
 	}
-	sn3 = tempStateDB2.GetSerialNumber(serialNumber3Hash)
+	sn3, _ = tempStateDB2.GetSerialNumber(serialNumber3Hash)
 	if bytes.Compare(sn3, []byte{}) != 0 {
 		t.Fatalf("Serial number 3 expect %+v but get %+v", serialNumber3, sn3)
 	}
-}
-
-func TestZeroValue(t *testing.T) {
-	log.Println(reflect.ValueOf(statedb.StateDB{}))
 }

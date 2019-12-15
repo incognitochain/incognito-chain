@@ -11,9 +11,13 @@ value is depend on type of state object
 
 ## State Object
 - Assume that hash(something) return 32 bytes value
-1. All Shard Committee
+1. All Shard Committee (deprecate)
 - key: first 12 bytes of `hash(shard-committee-prefix)` with first 20 bytes of `hash(beaconheight)`
 - value: 
     * temporary value: 32 bytes random ID
     * real value: all shard committee
 - key -> temporary value -> real value. Beacause shard committee not change so frequently
+
+2. Committee
+- key: first 12 bytes of `hash(committee-shardID-prefix)` with first 20 bytes of `hash(committee-key-bytes)`
+- value: committee state( shardID and Committee Key)

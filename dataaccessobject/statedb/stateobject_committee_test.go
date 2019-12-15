@@ -576,6 +576,84 @@ func storeCommitteeObjectOneShard(initRoot common.Hash, shardID, from, to int) (
 	}
 	return rootHash, m
 }
+
+func TestStateDB_SetStateObjectCommitteeState(t *testing.T) {
+	var shardID = 0
+	var err error = nil
+	tempCommitteePublicKey, err := incognitokey.CommitteeBase58KeyListToStruct(committeePublicKeys)
+	if err != nil {
+		panic(err)
+	}
+	sampleCommittee := tempCommitteePublicKey[0]
+	sampleCommittee2 := tempCommitteePublicKey[1]
+	key := statedb.GenerateCommitteeObjectKey(shardID, sampleCommittee)
+	key2 := statedb.GenerateCommitteeObjectKey(shardID, sampleCommittee2)
+	committeeState := statedb.NewCommitteeStateWithValue(shardID, sampleCommittee)
+	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDBCommitteeTest)
+	if err != nil {
+		panic(err)
+	}
+	err = sDB.SetStateObject(statedb.CommitteeObjectType, key, committeeState)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = sDB.SetStateObject(statedb.CommitteeObjectType, key, "committeeState")
+	if err == nil {
+		if err.(*statedb.StatedbError).Code != statedb.ErrCodeMessage[statedb.InvalidCommitteeStateTypeError].Code {
+			t.Fatal("expect wrong value type")
+		}
+	}
+	err = sDB.SetStateObject(statedb.CommitteeObjectType, key, []byte("committee state"))
+	if err == nil {
+		if err.(*statedb.StatedbError).Code != statedb.ErrCodeMessage[statedb.InvalidCommitteeStateTypeError].Code {
+			t.Fatal("expect wrong value type")
+		}
+	}
+	err = sDB.SetStateObject(statedb.CommitteeObjectType, key2, []byte("committee state"))
+	if err == nil {
+		if err.(*statedb.StatedbError).Code != statedb.ErrCodeMessage[statedb.InvalidCommitteeStateTypeError].Code {
+			t.Fatal("expect wrong value type")
+		}
+	}
+	stateObjects := sDB.GetStateObjectMapForTestOnly()
+	if _, ok := stateObjects[key2]; ok {
+		t.Fatalf("want nothing but got %+v", key2)
+	}
+	rootHash, err := sDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = sDB.Database().TrieDB().Commit(rootHash, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBCommitteeTest)
+	if err != nil || tempStateDB == nil {
+		t.Fatal(err)
+	}
+	got, has, err := tempStateDB.GetCommitteeState(key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !has {
+		t.Fatal(has)
+	}
+	if !reflect.DeepEqual(got, committeeState) {
+		t.Fatalf("want value %+v but got %+v", committeeState, got)
+	}
+
+	got2, has2, err := tempStateDB.GetCommitteeState(key2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if has2 {
+		t.Fatal(has2)
+	}
+	if !reflect.DeepEqual(got2, statedb.NewCommitteeState()) {
+		t.Fatalf("want value %+v but got %+v", statedb.NewCommitteeState(), got2)
+	}
+}
+
 func TestStateDB_GetCommitteeState(t *testing.T) {
 	rootHash, m := storeCommitteeObjectOneShard(emptyRoot, 0, 0, len(committeePublicKeys))
 	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBCommitteeTest)
@@ -583,7 +661,10 @@ func TestStateDB_GetCommitteeState(t *testing.T) {
 		t.Fatal(err, tempStateDB)
 	}
 	for key, want := range m {
-		got, has := tempStateDB.GetCommitteeState(key)
+		got, has, err := tempStateDB.GetCommitteeState(key)
+		if err != nil {
+			t.Fatal(err)
+		}
 		if !has {
 			t.Fatalf("GetCommitteeState want key %+v, value %+v but didn't get anything", key, want)
 		}
@@ -773,7 +854,10 @@ func BenchmarkStateDB_GetCommitteeStateGet512OneShard(b *testing.B) {
 	}
 	for n := 0; n < b.N; n++ {
 		for key, want := range m {
-			got, has := tempStateDB.GetCommitteeState(key)
+			got, has, err := tempStateDB.GetCommitteeState(key)
+			if err != nil {
+				panic(err)
+			}
 			if !has {
 				panic(key)
 			}
@@ -792,7 +876,10 @@ func BenchmarkStateDB_GetCommitteeStateGet256OneShard(b *testing.B) {
 	}
 	for n := 0; n < b.N; n++ {
 		for key, want := range m {
-			got, has := tempStateDB.GetCommitteeState(key)
+			got, has, err := tempStateDB.GetCommitteeState(key)
+			if err != nil {
+				panic(err)
+			}
 			if !has {
 				panic(key)
 			}
