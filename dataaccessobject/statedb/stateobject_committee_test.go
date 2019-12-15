@@ -748,6 +748,159 @@ func TestStateDB_GetAllCommitteeStateCommitteeObject512EightShard(t *testing.T) 
 	}
 }
 
+func TestStateDB_GetAllCommitteeStateCommitteeObject512EightShardMultipleRootHash(t *testing.T) {
+	from, to := 0, 32
+	maxHeight := 8
+	ids := []int{0, 1, 2, 3, 4, 5, 6, 7}
+	wantM := make(map[int][]incognitokey.CommitteePublicKey)
+	wantMs := []map[int][]incognitokey.CommitteePublicKey{}
+	rootHashesByHeight := []common.Hash{}
+	rootHashes := []common.Hash{emptyRoot}
+	committeePublicKey, err := incognitokey.CommitteeBase58KeyListToStruct(committeePublicKeys)
+	if err != nil {
+		t.Fatal(err)
+	}
+	committeePublicKey = committeePublicKey[0:512]
+	for index, id := range ids {
+		tempRootHash, tempM := storeCommitteeObjectOneShard(rootHashes[index], id, from, to)
+		from += 32
+		to += 32
+		rootHashes = append(rootHashes, tempRootHash)
+		for _, v := range tempM {
+			wantM[id] = append(wantM[id], v.CommitteePublicKey)
+		}
+	}
+	tempStateDB, err := statedb.NewWithPrefixTrie(rootHashes[8], warperDBCommitteeTest)
+	if err != nil || tempStateDB == nil {
+		t.Fatal(err, tempStateDB)
+	}
+	gotM := tempStateDB.GetAllCommitteeState(ids)
+	for _, id := range ids {
+		temp, ok := gotM[id]
+		if !ok {
+			t.Fatalf("GetAllCommitteeState want shard %+v", id)
+		}
+		if len(temp) != 32 {
+			t.Fatalf("GetAllCommitteeState want key length %+v but got %+v", 32, len(temp))
+		}
+	}
+	for id, wants := range wantM {
+		flag := false
+		for _, want := range wants {
+			for _, got := range gotM[id] {
+				if reflect.DeepEqual(got, want) {
+					flag = true
+					break
+				}
+			}
+			if !flag {
+				t.Fatalf("GetAllCommitteeState shard %+v want %+v but didn't get anything", id, want)
+			}
+		}
+	}
+	wantMs = append(wantMs, wantM)
+	rootHashesByHeight = append(rootHashesByHeight, rootHashes[8])
+	from = 256
+	to = 260
+	for i := 1; i < maxHeight; i++ {
+		sDB, err := statedb.NewWithPrefixTrie(rootHashesByHeight[i-1], warperDBCommitteeTest)
+		if err != nil {
+			t.Fatalf("height %+v, err %+v", i, err)
+		}
+		prevWantM := wantMs[i-1]
+		newWantMState := make(map[common.Hash]*statedb.CommitteeState)
+		for shardID, publicKeys := range prevWantM {
+			for _, publicKey := range publicKeys {
+				key := statedb.GenerateCommitteeObjectKey(shardID, publicKey)
+				committeeState := statedb.NewCommitteeStateWithValue(shardID, publicKey)
+				newWantMState[key] = committeeState
+			}
+		}
+		newWantM := make(map[int][]incognitokey.CommitteePublicKey)
+		newAddedMState := make(map[common.Hash]*statedb.CommitteeState)
+		for _, shardID := range ids {
+			tempCommitteePublicKey := committeePublicKey[from:to]
+			for _, value := range tempCommitteePublicKey {
+				key := statedb.GenerateCommitteeObjectKey(shardID, value)
+				committeeState := statedb.NewCommitteeStateWithValue(shardID, value)
+				newAddedMState[key] = committeeState
+			}
+			from += 4
+			to += 4
+			prevWantMStateByShardID := make(map[common.Hash]*statedb.CommitteeState)
+			for _, publicKey := range prevWantM[shardID] {
+				key := statedb.GenerateCommitteeObjectKey(shardID, publicKey)
+				committeeState := statedb.NewCommitteeStateWithValue(shardID, publicKey)
+				prevWantMStateByShardID[key] = committeeState
+			}
+			count := 0
+			for key, _ := range prevWantMStateByShardID {
+				ok := sDB.MarkDeleteStateObject(statedb.CommitteeObjectType, key)
+				if !ok {
+					panic("can't mark delete state object")
+				}
+				delete(newWantMState, key)
+				count++
+				if count == 4 {
+					break
+				}
+			}
+			for k, v := range newAddedMState {
+				err := sDB.SetStateObject(statedb.CommitteeObjectType, k, v)
+				if err != nil {
+					t.Fatal(err)
+				}
+				newWantMState[k] = v
+			}
+			newCommitteePublicKeyList := []incognitokey.CommitteePublicKey{}
+			for _, v := range newWantMState {
+				newCommitteePublicKeyList = append(newCommitteePublicKeyList, v.CommitteePublicKey)
+			}
+			newWantM[shardID] = newCommitteePublicKeyList
+		}
+		rootHash, err := sDB.Commit(true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = sDB.Database().TrieDB().Commit(rootHash, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		rootHashesByHeight = append(rootHashesByHeight, rootHash)
+		wantMs = append(wantMs, newWantM)
+	}
+	for index, rootHash := range rootHashesByHeight {
+		tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBCommitteeTest)
+		if err != nil {
+			t.Fatal(err)
+		}
+		gotM := tempStateDB.GetAllCommitteeState(ids)
+		for _, id := range ids {
+			temp, ok := gotM[id]
+			if !ok {
+				t.Fatalf("GetAllCommitteeState want shard %+v", id)
+			}
+			if len(temp) != 32 {
+				t.Fatalf("GetAllCommitteeState want key length %+v but got %+v", 32, len(temp))
+			}
+		}
+		for id, wants := range wantMs[index] {
+			flag := false
+			for _, want := range wants {
+				for _, got := range gotM[id] {
+					if reflect.DeepEqual(got, want) {
+						flag = true
+						break
+					}
+				}
+				if !flag {
+					t.Fatalf("GetAllCommitteeState shard %+v want %+v but didn't get anything", id, want)
+				}
+			}
+		}
+	}
+}
+
 func TestStateDB_GetByShardIDCommitteeState512EightShard(t *testing.T) {
 	from, to := 0, 64
 	ids := []int{0, 1, 2, 3, 4, 5, 6, 7}

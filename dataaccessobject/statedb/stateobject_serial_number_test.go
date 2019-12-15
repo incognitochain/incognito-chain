@@ -252,7 +252,7 @@ func TestDeleteSerialNumberObject(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	sDB.MarkDeleteStateObject(serialNumber3Hash)
+	sDB.MarkDeleteStateObject(statedb.SerialNumberObjectType, serialNumber3Hash)
 	rootHash2, err := sDB.Commit(true)
 	if err != nil {
 		t.Fatal(err)

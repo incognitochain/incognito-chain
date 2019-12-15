@@ -19,5 +19,11 @@ value is depend on type of state object
 - key -> temporary value -> real value. Beacause shard committee not change so frequently
 
 2. Committee
+Used for beacon and all shards, distinguish between shards and beacon by prefix. Each shard or beacon has different prefix value
 - key: first 12 bytes of `hash(committee-shardID-prefix)` with first 20 bytes of `hash(committee-key-bytes)`
 - value: committee state( shardID and Committee Key)
+
+3. Reward Receiver
+Used for reward receiver in beacon only
+- key: first 12 bytes of `hash(reward-receiver-prefix)` with first 20 bytes of `hash(incognito-key-bytes)`
+- value: reward receiver state( incognito public key and reward receiver payment address)

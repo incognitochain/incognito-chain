@@ -274,13 +274,14 @@ func (stateDB *StateDB) SetStateObject(objectType int, key common.Hash, value in
 }
 
 // MarkDeleteStateObject add new stateobject into statedb
-func (stateDB *StateDB) MarkDeleteStateObject(key common.Hash) {
-	obj, ok := stateDB.stateObjects[key]
-	if !ok {
-		return
+func (stateDB *StateDB) MarkDeleteStateObject(objectType int, key common.Hash) bool {
+	stateObject, err := stateDB.getStateObject(objectType, key)
+	if err == nil && stateObject != nil {
+		stateObject.MarkDelete()
+		stateDB.stateObjectsPending[key] = struct{}{}
+		return true
 	}
-	obj.MarkDelete()
-	stateDB.stateObjectsPending[key] = struct{}{}
+	return false
 }
 
 // Retrieve a state object or create a new state object if nil.
