@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
+	"strconv"
 	"testing"
 )
 
@@ -836,8 +837,11 @@ func TestStateDB_GetAllCommitteeStateCommitteeObject512EightShardMultipleRootHas
 			count := 0
 			for key, _ := range prevWantMStateByShardID {
 				ok := sDB.MarkDeleteStateObject(statedb.CommitteeObjectType, key)
+				if sDB.Error() != nil {
+					t.Fatal(sDB.Error())
+				}
 				if !ok {
-					panic("can't mark delete state object")
+					t.Fatal("can't mark delete state object " + strconv.Itoa(i) + " " + strconv.Itoa(count))
 				}
 				delete(newWantMState, key)
 				count++
@@ -852,11 +856,9 @@ func TestStateDB_GetAllCommitteeStateCommitteeObject512EightShardMultipleRootHas
 				}
 				newWantMState[k] = v
 			}
-			newCommitteePublicKeyList := []incognitokey.CommitteePublicKey{}
-			for _, v := range newWantMState {
-				newCommitteePublicKeyList = append(newCommitteePublicKeyList, v.CommitteePublicKey)
-			}
-			newWantM[shardID] = newCommitteePublicKeyList
+		}
+		for _, v := range newWantMState {
+			newWantM[v.ShardID] = append(newWantM[v.ShardID], v.CommitteePublicKey)
 		}
 		rootHash, err := sDB.Commit(true)
 		if err != nil {
