@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/trie"
+	"strconv"
 	"time"
 )
 
@@ -454,10 +455,13 @@ func (stateDB *StateDB) GetCommitteeState(key common.Hash) (*CommitteeState, boo
 	}
 	return NewCommitteeState(), false, nil
 }
-func (stateDB *StateDB) GetAllCommitteeState(ids []int) map[int][]incognitokey.CommitteePublicKey {
+func (stateDB *StateDB) GetAllValidatorCommitteePublicKey(role int, ids []int) map[int][]incognitokey.CommitteePublicKey {
+	if role != CurrentValidator && role != SubstituteValidator {
+		panic("wrong expected role " + strconv.Itoa(role))
+	}
 	m := make(map[int][]incognitokey.CommitteePublicKey)
 	for _, id := range ids {
-		prefix := GetCommitteePrefixByShardID(id)
+		prefix := GetCommitteePrefixWithRole(role, id)
 		temp := stateDB.trie.NodeIterator(prefix)
 		it := trie.NewIterator(temp)
 		for it.Next() {
@@ -469,14 +473,37 @@ func (stateDB *StateDB) GetAllCommitteeState(ids []int) map[int][]incognitokey.C
 			if err != nil {
 				panic("wrong value type")
 			}
-			m[committeeState.ShardID] = append(m[committeeState.ShardID], committeeState.CommitteePublicKey)
+			m[committeeState.shardID] = append(m[committeeState.shardID], committeeState.committeePublicKey)
 		}
 	}
 	return m
 }
-func (stateDB *StateDB) GetByShardIDCommitteeState(shardID int) []incognitokey.CommitteePublicKey {
+
+func (stateDB *StateDB) GetAllCandidateCommitteePublicKey(role int) []incognitokey.CommitteePublicKey {
+	if role != CurrentEpochCandidate && role != NextEpochCandidate {
+		panic("wrong expected role " + strconv.Itoa(role))
+	}
+	list := []incognitokey.CommitteePublicKey{}
+	prefix := GetCommitteePrefixWithRole(role, CandidateShardID)
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		committeeState := NewCommitteeState()
+		err := committeeState.UnmarshalJSON(newValue)
+		if err != nil {
+			panic("wrong value type")
+		}
+		list = append(list, committeeState.committeePublicKey)
+	}
+	return list
+}
+
+func (stateDB *StateDB) GetByShardIDCurrentValidatorState(shardID int) []incognitokey.CommitteePublicKey {
 	committees := []incognitokey.CommitteePublicKey{}
-	prefix := GetCommitteePrefixByShardID(shardID)
+	prefix := GetCommitteePrefixWithRole(CurrentValidator, shardID)
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
 	for it.Next() {
@@ -488,12 +515,122 @@ func (stateDB *StateDB) GetByShardIDCommitteeState(shardID int) []incognitokey.C
 		if err != nil {
 			panic("wrong value type")
 		}
-		if committeeState.ShardID != shardID {
+		if committeeState.ShardID() != shardID {
 			panic("wrong expected shard id")
 		}
-		committees = append(committees, committeeState.CommitteePublicKey)
+		committees = append(committees, committeeState.CommitteePublicKey())
 	}
 	return committees
+}
+
+func (stateDB *StateDB) GetByShardIDSubstituteValidatorState(shardID int) []incognitokey.CommitteePublicKey {
+	committees := []incognitokey.CommitteePublicKey{}
+	prefix := GetCommitteePrefixWithRole(SubstituteValidator, shardID)
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		committeeState := NewCommitteeState()
+		err := json.Unmarshal(newValue, committeeState)
+		if err != nil {
+			panic("wrong value type")
+		}
+		if committeeState.ShardID() != shardID {
+			panic("wrong expected shard id")
+		}
+		committees = append(committees, committeeState.CommitteePublicKey())
+	}
+	return committees
+}
+
+// GetAllCommitteeState return all data related to all committee roles
+// return params #1: current validator
+// return params #2: substitute validator
+// return params #3: next epoch candidate
+// return params #4: current epoch candidate
+// return params #5: reward receiver map
+// return params #6: auto staking map
+func (stateDB *StateDB) GetAllCommitteeState(ids []int) (map[int][]incognitokey.CommitteePublicKey, map[int][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, map[string]string, map[string]bool) {
+	currentValidator := make(map[int][]incognitokey.CommitteePublicKey)
+	substituteValidator := make(map[int][]incognitokey.CommitteePublicKey)
+	nextEpochCandidate := []incognitokey.CommitteePublicKey{}
+	currentEpochCandidate := []incognitokey.CommitteePublicKey{}
+	rewardReceivers := make(map[string]string)
+	autoStaking := make(map[string]bool)
+	for _, shardID := range ids {
+		// Current Validator
+		prefixCurrentValidator := GetCommitteePrefixWithRole(CurrentValidator, shardID)
+		resCurrentValidator := stateDB.iterateWithCommitteeState(prefixCurrentValidator)
+		tempCurrentValidator := []incognitokey.CommitteePublicKey{}
+		for _, v := range resCurrentValidator {
+			tempCurrentValidator = append(tempCurrentValidator, v.committeePublicKey)
+			tempCurrentValidatorString, err := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{v.committeePublicKey})
+			if err != nil {
+				panic(err)
+			}
+			rewardReceivers[tempCurrentValidatorString[0]] = v.rewardReceiver
+			autoStaking[tempCurrentValidatorString[0]] = v.autoStaking
+		}
+		currentValidator[shardID] = tempCurrentValidator
+		// Substitute Validator
+		prefixSubstituteValidator := GetCommitteePrefixWithRole(SubstituteValidator, shardID)
+		resSubstituteValidator := stateDB.iterateWithCommitteeState(prefixSubstituteValidator)
+		tempSubstituteValidator := []incognitokey.CommitteePublicKey{}
+		for _, v := range resSubstituteValidator {
+			tempSubstituteValidator = append(tempSubstituteValidator, v.committeePublicKey)
+			tempSubstituteValidatorString, err := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{v.committeePublicKey})
+			if err != nil {
+				panic(err)
+			}
+			rewardReceivers[tempSubstituteValidatorString[0]] = v.rewardReceiver
+			autoStaking[tempSubstituteValidatorString[0]] = v.autoStaking
+		}
+		substituteValidator[shardID] = tempSubstituteValidator
+	}
+	// next epoch candidate
+	prefixNextEpochCandidate := GetCommitteePrefixWithRole(NextEpochCandidate, -2)
+	resNextEpochCandidate := stateDB.iterateWithCommitteeState(prefixNextEpochCandidate)
+	for _, v := range resNextEpochCandidate {
+		nextEpochCandidate = append(nextEpochCandidate, v.committeePublicKey)
+		tempNextEpochCandidateString, err := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{v.committeePublicKey})
+		if err != nil {
+			panic(err)
+		}
+		rewardReceivers[tempNextEpochCandidateString[0]] = v.rewardReceiver
+		autoStaking[tempNextEpochCandidateString[0]] = v.autoStaking
+	}
+	// current epoch candidate
+	prefixCurrentEpochCandidate := GetCommitteePrefixWithRole(CurrentEpochCandidate, -2)
+	resCurrentEpochCandidate := stateDB.iterateWithCommitteeState(prefixCurrentEpochCandidate)
+	for _, v := range resCurrentEpochCandidate {
+		currentEpochCandidate = append(currentEpochCandidate, v.committeePublicKey)
+		tempCurrentEpochCandidateString, err := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{v.committeePublicKey})
+		if err != nil {
+			panic(err)
+		}
+		rewardReceivers[tempCurrentEpochCandidateString[0]] = v.rewardReceiver
+		autoStaking[tempCurrentEpochCandidateString[0]] = v.autoStaking
+	}
+	return currentValidator, substituteValidator, nextEpochCandidate, currentEpochCandidate, rewardReceivers, autoStaking
+}
+func (stateDB *StateDB) iterateWithCommitteeState(prefix []byte) []*CommitteeState {
+	m := []*CommitteeState{}
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		committeeState := NewCommitteeState()
+		err := json.Unmarshal(newValue, committeeState)
+		if err != nil {
+			panic("wrong value type")
+		}
+		m = append(m, committeeState)
+	}
+	return m
 }
 
 // ================================= Reward Receiver OBJECT =======================================

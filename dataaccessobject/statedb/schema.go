@@ -10,14 +10,34 @@ import (
 var (
 	serialNumberPrefix      = []byte("serial-number-")
 	allShardCommitteePrefix = []byte("all-shard-committee-")
+	nextCandidatePrefix     = []byte("next-cand-")
+	currentCandidatePrefix  = []byte("cur-cand-")
+	substitutePrefix        = []byte("shard-sub-")
 	committeePrefix         = []byte("shard-com-")
 	rewardReceiverPrefix    = []byte("reward-receiver-")
 )
 
-func GetCommitteePrefixByShardID(shardID int) []byte {
-	temp := []byte(string(committeePrefix) + strconv.Itoa(shardID))
-	h := common.HashH(temp)
-	return h[:][:prefixHashKeyLength]
+func GetCommitteePrefixWithRole(role int, shardID int) []byte {
+	switch role {
+	case NextEpochCandidate:
+		temp := []byte(string(nextCandidatePrefix))
+		h := common.HashH(temp)
+		return h[:][:prefixHashKeyLength]
+	case CurrentEpochCandidate:
+		temp := []byte(string(currentCandidatePrefix))
+		h := common.HashH(temp)
+		return h[:][:prefixHashKeyLength]
+	case SubstituteValidator:
+		temp := []byte(string(substitutePrefix) + strconv.Itoa(shardID))
+		h := common.HashH(temp)
+		return h[:][:prefixHashKeyLength]
+	case CurrentValidator:
+		temp := []byte(string(committeePrefix) + strconv.Itoa(shardID))
+		h := common.HashH(temp)
+		return h[:][:prefixHashKeyLength]
+	default:
+		panic("no role exist")
+	}
 }
 func GetRewardReceiverPrefix() []byte {
 	temp := []byte(rewardReceiverPrefix)
@@ -32,14 +52,38 @@ func GetSerialNumberPrefix() []byte {
 var _ = func() (_ struct{}) {
 	m := make(map[string]string)
 	prefixs := [][]byte{}
+	// Current validator
 	for i := -1; i < 256; i++ {
-		temp := GetCommitteePrefixByShardID(i)
+		temp := GetCommitteePrefixWithRole(CurrentValidator, i)
 		prefixs = append(prefixs, temp)
 		if v, ok := m[string(temp)]; ok {
 			panic("shard-com-" + strconv.Itoa(i) + " same prefix " + v)
 		}
 		m[string(temp)] = "shard-com-" + strconv.Itoa(i)
 	}
+	// Substitute validator
+	for i := -1; i < 256; i++ {
+		temp := GetCommitteePrefixWithRole(SubstituteValidator, i)
+		prefixs = append(prefixs, temp)
+		if v, ok := m[string(temp)]; ok {
+			panic("shard-sub-" + strconv.Itoa(i) + " same prefix " + v)
+		}
+		m[string(temp)] = "shard-sub-" + strconv.Itoa(i)
+	}
+	// Current Candidate
+	tempCurrentCandidate := GetCommitteePrefixWithRole(CurrentEpochCandidate, -2)
+	prefixs = append(prefixs, tempCurrentCandidate)
+	if v, ok := m[string(tempCurrentCandidate)]; ok {
+		panic("cur-cand-" + " same prefix " + v)
+	}
+	m[string(tempCurrentCandidate)] = "cur-cand-"
+	// Next candidate
+	tempNextCandidate := GetCommitteePrefixWithRole(NextEpochCandidate, -2)
+	prefixs = append(prefixs, tempNextCandidate)
+	if v, ok := m[string(tempNextCandidate)]; ok {
+		panic("next-cand-" + " same prefix " + v)
+	}
+	m[string(tempNextCandidate)] = "next-cand-"
 	// serial number
 	tempSerialNumber := GetSerialNumberPrefix()
 	prefixs = append(prefixs, tempSerialNumber)

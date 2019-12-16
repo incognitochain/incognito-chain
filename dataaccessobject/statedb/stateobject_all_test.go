@@ -45,9 +45,9 @@ func TestStateDB_GetAllStateObject(t *testing.T) {
 			panic(err)
 		}
 		tempCommitteePublicKey = tempCommitteePublicKey[from:to]
-		for _, value := range tempCommitteePublicKey {
-			key, _ := statedb.GenerateCommitteeObjectKey(shardID, value)
-			committeeState := statedb.NewCommitteeStateWithValue(shardID, value)
+		for index, value := range tempCommitteePublicKey {
+			key, _ := statedb.GenerateCommitteeObjectKeyWithRole(statedb.CurrentValidator, shardID, value)
+			committeeState := statedb.NewCommitteeStateWithValue(shardID, statedb.CurrentValidator, value, receiverPaymentAddress[index], true)
 			mCommittee[key] = committeeState
 			wantMCommittee[shardID] = append(wantMCommittee[shardID], value)
 		}
@@ -86,7 +86,7 @@ func TestStateDB_GetAllStateObject(t *testing.T) {
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err)
 	}
-	gotMCommittee := tempStateDB.GetAllCommitteeState(ids)
+	gotMCommittee := tempStateDB.GetAllValidatorCommitteePublicKey(statedb.CurrentValidator, ids)
 	for _, id := range ids {
 		temp, ok := gotMCommittee[id]
 		if !ok {
@@ -143,7 +143,7 @@ func BenchmarkStateDB_GetAllCommitteeInFullData(b *testing.B) {
 		panic(err)
 	}
 	for n := 0; n < b.N; n++ {
-		tempStateDB.GetAllCommitteeState(ids)
+		tempStateDB.GetAllValidatorCommitteePublicKey(statedb.CurrentValidator, ids)
 	}
 }
 
@@ -164,9 +164,9 @@ func storeAllStateObjectForTesting(initRoot common.Hash) common.Hash {
 			panic(err)
 		}
 		tempCommitteePublicKey = tempCommitteePublicKey[from:to]
-		for _, value := range tempCommitteePublicKey {
-			key, _ := statedb.GenerateCommitteeObjectKey(shardID, value)
-			committeeState := statedb.NewCommitteeStateWithValue(shardID, value)
+		for index, value := range tempCommitteePublicKey {
+			key, _ := statedb.GenerateCommitteeObjectKeyWithRole(statedb.CurrentValidator, shardID, value)
+			committeeState := statedb.NewCommitteeStateWithValue(shardID, statedb.CurrentValidator, value, receiverPaymentAddress[index], true)
 			mCommittee[key] = committeeState
 			wantMCommittee[shardID] = append(wantMCommittee[shardID], value)
 		}

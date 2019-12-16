@@ -27,3 +27,8 @@ Used for beacon and all shards, distinguish between shards and beacon by prefix.
 Used for reward receiver in beacon only
 - key: first 12 bytes of `hash(reward-receiver-prefix)` with first 20 bytes of `hash(incognito-key-bytes)`
 - value: reward receiver state( incognito public key and reward receiver payment address)
+
+4. Stop Auto Staking
+Used for reward receiver in beacon only
+- key: first 12 bytes of `hash(stop-auto-staking-prefix)` with first 20 bytes of `hash(incognito-key-bytes)`
+- value: reward receiver state( incognito public key and reward receiver payment address)
