@@ -121,3 +121,83 @@ func TestStateDB_GetAllStateObject(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkStateDB_GetAllRewardReceiverInFullData(b *testing.B) {
+	rootHash := storeAllStateObjectForTesting(emptyRoot)
+	// GOT to verify
+	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBAllTest)
+	if err != nil || tempStateDB == nil {
+		panic(err)
+	}
+	for n := 0; n < b.N; n++ {
+		tempStateDB.GetAllRewardReceiverState()
+	}
+}
+
+func BenchmarkStateDB_GetAllCommitteeInFullData(b *testing.B) {
+	ids := []int{0, 1, 2, 3, 4, 5, 6, 7}
+	rootHash := storeAllStateObjectForTesting(emptyRoot)
+	// GOT to verify
+	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBAllTest)
+	if err != nil || tempStateDB == nil {
+		panic(err)
+	}
+	for n := 0; n < b.N; n++ {
+		tempStateDB.GetAllCommitteeState(ids)
+	}
+}
+
+func storeAllStateObjectForTesting(initRoot common.Hash) common.Hash {
+	ids := []int{0, 1, 2, 3, 4, 5, 6, 7}
+	sDB, err := statedb.NewWithPrefixTrie(initRoot, warperDBAllTest)
+	if err != nil {
+		panic(err)
+	}
+	wantMCommittee := make(map[int][]incognitokey.CommitteePublicKey)
+	wantMRewardReceiver := make(map[string]string)
+	// Committee
+	from, to := 0, 64
+	for _, shardID := range ids {
+		mCommittee := make(map[common.Hash]*statedb.CommitteeState)
+		tempCommitteePublicKey, err := incognitokey.CommitteeBase58KeyListToStruct(committeePublicKeys)
+		if err != nil {
+			panic(err)
+		}
+		tempCommitteePublicKey = tempCommitteePublicKey[from:to]
+		for _, value := range tempCommitteePublicKey {
+			key, _ := statedb.GenerateCommitteeObjectKey(shardID, value)
+			committeeState := statedb.NewCommitteeStateWithValue(shardID, value)
+			mCommittee[key] = committeeState
+			wantMCommittee[shardID] = append(wantMCommittee[shardID], value)
+		}
+		for key, value := range mCommittee {
+			sDB.SetStateObject(statedb.CommitteeObjectType, key, value)
+		}
+		from += 64
+		to += 64
+	}
+
+	// Reward Receiver
+	mRewardReceiverStates := make(map[common.Hash]*statedb.RewardReceiverState)
+	for index, value := range incognitoPublicKey {
+		key, _ := statedb.GenerateRewardReceiverObjectKey(value)
+		rewardReceiverState := statedb.NewRewardReceiverStateWithValue(value, receiverPaymentAddress[index])
+		mRewardReceiverStates[key] = rewardReceiverState
+		wantMRewardReceiver[value] = receiverPaymentAddress[index]
+	}
+
+	for key, value := range mRewardReceiverStates {
+		sDB.SetStateObject(statedb.RewardReceiverObjectType, key, value)
+	}
+
+	// COMMIT
+	rootHash, err := sDB.Commit(true)
+	if err != nil {
+		panic(err)
+	}
+	err = sDB.Database().TrieDB().Commit(rootHash, false)
+	if err != nil {
+		panic(err)
+	}
+	return rootHash
+}
