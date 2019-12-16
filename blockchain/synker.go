@@ -503,6 +503,7 @@ func (synker *Synker) UpdateState() {
 		for peerPK := range synker.States.PeersState {
 			if shardState, ok := synker.States.PeersState[peerPK].Shard[shardID]; ok {
 				if shardState.Height == GetBestStateShard(shardID).ShardHeight && !shardState.BlockHash.IsEqual(&GetBestStateShard(shardID).BestBlockHash) {
+					Logger.log.Criticalf("Syncing possible FORK BLOCK shardID %v height %v hash %v", shardID, shardState.Height, shardState.BlockHash.String())
 					synker.SyncBlkShard(shardID, true, false, false, []common.Hash{shardState.BlockHash}, nil, 0, 0, libp2p.ID(""))
 				}
 
