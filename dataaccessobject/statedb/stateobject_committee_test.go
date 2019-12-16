@@ -745,7 +745,6 @@ func TestStateDB_GetAllCommitteeStateCommitteeObject512EightShard(t *testing.T) 
 				t.Fatalf("GetAllCommitteeState shard %+v want %+v but didn't get anything", id, want)
 			}
 		}
-
 	}
 }
 
