@@ -507,7 +507,7 @@ func (stateDB *StateDB) GetRewardReceiverState(key common.Hash) (*RewardReceiver
 	}
 	return NewRewardReceiverState(), false, nil
 }
-func (stateDB *StateDB) GetAllRewardReceiverState(ids []int) map[string]string {
+func (stateDB *StateDB) GetAllRewardReceiverState() map[string]string {
 	m := make(map[string]string)
 	prefix := GetRewardReceiverPrefix()
 	temp := stateDB.trie.NodeIterator(prefix)

@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
+	"sort"
+	"strings"
 	"testing"
 )
 
@@ -1134,7 +1136,7 @@ var (
 	}
 
 	warperDBrrTest statedb.DatabaseAccessWarper
-	m              = make(map[string]string)
+	initM          = make(map[string]string)
 )
 
 var _ = func() (_ struct{}) {
@@ -1147,7 +1149,7 @@ var _ = func() (_ struct{}) {
 	trie.Logger.Init(common.NewBackend(nil).Logger("test", true))
 
 	for index, value := range incognitoPublicKey {
-		m[value] = receiverPaymentAddress[index]
+		initM[value] = receiverPaymentAddress[index]
 	}
 	return
 }()
@@ -1177,6 +1179,90 @@ func storeRewardReceiver(initRoot common.Hash) (common.Hash, map[common.Hash]*st
 	return rootHash, mState
 }
 
+func TestStateDB_GetAllRewardReceiverState(t *testing.T) {
+	rootHash, _ := storeRewardReceiver(emptyRoot)
+	wantM := initM
+	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBrrTest)
+	if err != nil || tempStateDB == nil {
+		t.Fatal(err)
+	}
+	gotM := tempStateDB.GetAllRewardReceiverState()
+	for k, v1 := range gotM {
+		if v2, ok := wantM[k]; !ok {
+			t.Fatalf("want %+v but get nothing", k)
+		} else {
+			if strings.Compare(v2, v1) != 0 {
+				t.Fatalf("want %+v but got %+v", v2, v1)
+			}
+		}
+	}
+}
+
+func TestStateDB_GetAllRewardReceiverStateMultipleRootHash(t *testing.T) {
+	offset := 9
+	maxHeight := int(len(initM) / offset)
+	keys := []string{}
+	for k, _ := range initM {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return strings.Compare(keys[i], keys[j]) > 0
+	})
+	rootHashes := []common.Hash{emptyRoot}
+	wantMs := []map[string]string{}
+	for i := 0; i < maxHeight; i++ {
+		sDB, err := statedb.NewWithPrefixTrie(rootHashes[i], warperDBrrTest)
+		if err != nil || sDB == nil {
+			t.Fatal(err)
+		}
+		tempKeys := keys[i*9 : (i+1)*9]
+		tempM := make(map[string]string)
+		prevWantM := make(map[string]string)
+		if i != 0 {
+			prevWantM = wantMs[i-1]
+		}
+		for k, v := range prevWantM {
+			tempM[k] = v
+		}
+		for _, publicKey := range tempKeys {
+			paymentAddress := initM[publicKey]
+			key, _ := statedb.GenerateRewardReceiverObjectKey(paymentAddress)
+			rewardReceiverState := statedb.NewRewardReceiverStateWithValue(publicKey, paymentAddress)
+			err := sDB.SetStateObject(statedb.RewardReceiverObjectType, key, rewardReceiverState)
+			if err != nil {
+				t.Fatal(err)
+			}
+			tempM[publicKey] = paymentAddress
+		}
+		rootHash, err := sDB.Commit(true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = sDB.Database().TrieDB().Commit(rootHash, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		wantMs = append(wantMs, tempM)
+		rootHashes = append(rootHashes, rootHash)
+	}
+	for index, rootHash := range rootHashes[1:] {
+		wantM := wantMs[index]
+		tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBrrTest)
+		if err != nil || tempStateDB == nil {
+			t.Fatal(err)
+		}
+		gotM := tempStateDB.GetAllRewardReceiverState()
+		for k, v1 := range gotM {
+			if v2, ok := wantM[k]; !ok {
+				t.Fatalf("want %+v but get nothing", k)
+			} else {
+				if strings.Compare(v2, v1) != 0 {
+					t.Fatalf("want %+v but got %+v", v2, v1)
+				}
+			}
+		}
+	}
+}
 func TestStateDB_StoreAndGetRewardReceiver(t *testing.T) {
 	var err error = nil
 	key, _ := statedb.GenerateRewardReceiverObjectKey(incognitoPublicKey[0])
@@ -1247,7 +1333,7 @@ func TestStateDB_StoreAndGetRewardReceiver(t *testing.T) {
 	}
 }
 
-func BenchmarkStateDB_GetRewardReceiverState1In550(b *testing.B) {
+func BenchmarkStateDB_GetRewardReceiverState1In558(b *testing.B) {
 	var err error = nil
 	key, _ := statedb.GenerateRewardReceiverObjectKey(incognitoPublicKey[0])
 	rewardReceiverState := statedb.NewRewardReceiverStateWithValue(incognitoPublicKey[0], receiverPaymentAddress[0])
@@ -1305,7 +1391,7 @@ func BenchmarkStateDB_GetRewardReceiverState1In1(b *testing.B) {
 	}
 }
 
-func BenchmarkStateDB_StoreRewardReceiverState556(b *testing.B) {
+func BenchmarkStateDB_StoreRewardReceiverState558(b *testing.B) {
 	var err error = nil
 	mState := make(map[common.Hash]*statedb.RewardReceiverState)
 	for index, value := range incognitoPublicKey {
