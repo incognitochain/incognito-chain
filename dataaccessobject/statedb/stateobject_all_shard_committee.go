@@ -38,7 +38,7 @@ func newAllShardCommitteeObject(db *StateDB, hash common.Hash) *AllShardCommitte
 func newAllShardCommitteeObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*AllShardCommitteeObject, error) {
 	newAllShardCommittee, ok := data.(map[byte][]incognitokey.CommitteePublicKey)
 	if !ok {
-		return nil, ErrInvalidCommitteeStateType
+		return nil, nil
 	}
 	return &AllShardCommitteeObject{
 		allShardCommitteeHash: key,

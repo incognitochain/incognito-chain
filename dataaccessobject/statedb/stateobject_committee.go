@@ -87,6 +87,16 @@ func newCommitteeObjectWithValue(db *StateDB, key common.Hash, data interface{})
 	}, nil
 }
 
+func GenerateCommitteeObjectKey(shardID int, committee incognitokey.CommitteePublicKey) (common.Hash, error) {
+	committeeBytes, err := committee.Bytes()
+	if err != nil {
+		return common.Hash{}, NewStatedbError(InvalidCommitteeStateTypeError, err)
+	}
+	prefixHash := GetCommitteePrefixByShardID(shardID)
+	valueHash := common.HashH(committeeBytes)
+	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...)), nil
+}
+
 // setError remembers the first non-nil error it is called with.
 func (c *CommitteeObject) SetError(err error) {
 	if c.dbErr == nil {

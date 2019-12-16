@@ -1,23 +1,52 @@
 package statedb
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/wallet"
 )
+
+type RewardReceiverState struct {
+	PublicKey      string
+	PaymentAddress string
+}
+
+func (rrs *RewardReceiverState) GetPublicKey() string {
+	return rrs.PublicKey
+}
+
+func (rrs *RewardReceiverState) SetPublicKey(publicKey string) {
+	rrs.PublicKey = publicKey
+}
+
+func (rrs *RewardReceiverState) GetPaymentAddress() string {
+	return rrs.PublicKey
+}
+
+func (rrs *RewardReceiverState) SetPaymentAddress(publicKey string) {
+	rrs.PublicKey = publicKey
+}
+
+func NewRewardReceiverState() *RewardReceiverState {
+	return &RewardReceiverState{}
+}
+
+func NewRewardReceiverStateWithValue(publicKey string, paymentAddress string) *RewardReceiverState {
+	return &RewardReceiverState{PublicKey: publicKey, PaymentAddress: paymentAddress}
+}
 
 type RewardReceiverObject struct {
 	db *StateDB
 	// Write caches.
 	trie Trie // storage trie, which becomes non-nil on first access
 
-	publicKeyHash                common.Hash
-	publicKey                    string
-	rewardReceiverPaymentAddress string
-	objectType                   int
-	deleted                      bool
+	publicKeyHash       common.Hash
+	rewardReceiverState *RewardReceiverState
+	objectType          int
+	deleted             bool
 
 	// DB error.
 	// State objects are used by the consensus core and VM which are
@@ -29,32 +58,52 @@ type RewardReceiverObject struct {
 
 func newRewardReceiverObject(db *StateDB, hash common.Hash) *RewardReceiverObject {
 	return &RewardReceiverObject{
-		db:                           db,
-		publicKeyHash:                hash,
-		rewardReceiverPaymentAddress: "",
-		objectType:                   RewardReceiverObjectType,
-		deleted:                      false,
+		db:                  db,
+		publicKeyHash:       hash,
+		rewardReceiverState: NewRewardReceiverState(),
+		objectType:          RewardReceiverObjectType,
+		deleted:             false,
 	}
 }
-func newRewardReceiverObjectWithValue(db *StateDB, key common.Hash, data interface{}) *RewardReceiverObject {
-	var newRewardReceiverPaymentAddress string
+func newRewardReceiverObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*RewardReceiverObject, error) {
+	var newRewardReceiverState = NewRewardReceiverState()
 	var ok bool
 	var dataBytes []byte
 	if dataBytes, ok = data.([]byte); ok {
-		newRewardReceiverPaymentAddress = string(dataBytes)
+		err := json.Unmarshal(dataBytes, newRewardReceiverState)
+		if err != nil {
+			return nil, NewStatedbError(InvalidCommitteeStateTypeError, err)
+		}
 	} else {
-		newRewardReceiverPaymentAddress, ok = data.(string)
+		newRewardReceiverState, ok = data.(*RewardReceiverState)
 		if !ok {
-			panic("Wrong expected value")
+			return nil, NewStatedbError(InvalidCommitteeStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
 		}
 	}
-	return &RewardReceiverObject{
-		publicKeyHash:                key,
-		rewardReceiverPaymentAddress: newRewardReceiverPaymentAddress,
-		db:                           db,
-		objectType:                   RewardReceiverObjectType,
-		deleted:                      false,
+	if err := validatePaymentAddressSanity(newRewardReceiverState.PaymentAddress); err != nil {
+		return nil, NewStatedbError(InvalidPaymentAddressTypeError, err)
 	}
+	if err := validateIncognitoPublicKeySanity(newRewardReceiverState.PublicKey); err != nil {
+		return nil, NewStatedbError(InvalidIncognitoPublicKeyTypeError, err)
+	}
+	return &RewardReceiverObject{
+		publicKeyHash:       key,
+		rewardReceiverState: newRewardReceiverState,
+		db:                  db,
+		objectType:          RewardReceiverObjectType,
+		deleted:             false,
+	}, nil
+}
+
+func GenerateRewardReceiverObjectKey(publicKey string) (common.Hash, error) {
+	err := validateIncognitoPublicKeySanity(publicKey)
+	if err != nil {
+		return common.Hash{}, NewStatedbError(InvalidIncognitoPublicKeyTypeError, err)
+	}
+	publicKeyBytes, _, _ := base58.Base58Check{}.Decode(publicKey)
+	prefixHash := GetRewardReceiverPrefix()
+	valueHash := common.HashH(publicKeyBytes)
+	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...)), nil
 }
 
 // setError remembers the first non-nil error it is called with.
@@ -69,23 +118,39 @@ func (rr *RewardReceiverObject) GetTrie(db DatabaseAccessWarper) Trie {
 }
 
 func (rr *RewardReceiverObject) SetValue(data interface{}) error {
-	newRewardReceiverPaymentAddress, ok := data.(string)
-	if !ok {
-		return NewStatedbError(InvalidPaymentAddressTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
+	var newRewardReceiverState = NewRewardReceiverState()
+	var ok bool
+	var dataBytes []byte
+	if dataBytes, ok = data.([]byte); ok {
+		err := json.Unmarshal(dataBytes, newRewardReceiverState)
+		if err != nil {
+			return NewStatedbError(InvalidCommitteeStateTypeError, err)
+		}
+	} else {
+		newRewardReceiverState, ok = data.(*RewardReceiverState)
+		if !ok {
+			return NewStatedbError(InvalidCommitteeStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
+		}
 	}
-	rr.rewardReceiverPaymentAddress = newRewardReceiverPaymentAddress
+	if err := validatePaymentAddressSanity(newRewardReceiverState.PaymentAddress); err != nil {
+		return NewStatedbError(InvalidPaymentAddressTypeError, err)
+	}
+	if err := validateIncognitoPublicKeySanity(newRewardReceiverState.PublicKey); err != nil {
+		return NewStatedbError(InvalidIncognitoPublicKeyTypeError, err)
+	}
+	rr.rewardReceiverState = newRewardReceiverState
 	return nil
 }
 
 func (rr *RewardReceiverObject) GetValue() interface{} {
-	return rr.rewardReceiverPaymentAddress
+	return rr.rewardReceiverState
 }
 
 func (rr *RewardReceiverObject) GetValueBytes() []byte {
 	data := rr.GetValue()
-	value, ok := data.(string)
-	if !ok {
-		panic("Wrong expected value")
+	value, err := json.Marshal(data)
+	if err != nil {
+		panic("failed to marshal reward receiver state")
 	}
 	return []byte(value)
 }
@@ -105,7 +170,7 @@ func (rr *RewardReceiverObject) MarkDelete() {
 
 // reset all shard committee value into default value
 func (rr *RewardReceiverObject) Reset() bool {
-	rr.rewardReceiverPaymentAddress = ""
+	rr.rewardReceiverState = NewRewardReceiverState()
 	return true
 }
 
@@ -115,16 +180,6 @@ func (rr *RewardReceiverObject) IsDeleted() bool {
 
 // value is either default or nil
 func (rr *RewardReceiverObject) IsEmpty() bool {
-	return rr.rewardReceiverPaymentAddress == ""
-}
-
-func validateValueSanity(v string) error {
-	keyWalletReceiver, err := wallet.Base58CheckDeserialize(v)
-	if err != nil {
-		return err
-	}
-	if len(keyWalletReceiver.KeySet.PaymentAddress.Pk) == 0 || len(keyWalletReceiver.KeySet.PaymentAddress.Tk) == 0 {
-		return fmt.Errorf("length public key %+v, length transmission key %+v", len(keyWalletReceiver.KeySet.PaymentAddress.Pk), len(keyWalletReceiver.KeySet.PaymentAddress.Tk))
-	}
-	return nil
+	temp := NewRewardReceiverState()
+	return reflect.DeepEqual(temp, rr.rewardReceiverState) || rr.rewardReceiverState == nil
 }

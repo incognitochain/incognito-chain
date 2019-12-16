@@ -457,7 +457,7 @@ func (stateDB *StateDB) GetCommitteeState(key common.Hash) (*CommitteeState, boo
 func (stateDB *StateDB) GetAllCommitteeState(ids []int) map[int][]incognitokey.CommitteePublicKey {
 	m := make(map[int][]incognitokey.CommitteePublicKey)
 	for _, id := range ids {
-		prefix := GetShardCommitteePrefixByID(id)
+		prefix := GetCommitteePrefixByShardID(id)
 		temp := stateDB.trie.NodeIterator(prefix)
 		it := trie.NewIterator(temp)
 		for it.Next() {
@@ -476,7 +476,7 @@ func (stateDB *StateDB) GetAllCommitteeState(ids []int) map[int][]incognitokey.C
 }
 func (stateDB *StateDB) GetByShardIDCommitteeState(shardID int) []incognitokey.CommitteePublicKey {
 	committees := []incognitokey.CommitteePublicKey{}
-	prefix := GetShardCommitteePrefixByID(shardID)
+	prefix := GetCommitteePrefixByShardID(shardID)
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
 	for it.Next() {
@@ -494,4 +494,34 @@ func (stateDB *StateDB) GetByShardIDCommitteeState(shardID int) []incognitokey.C
 		committees = append(committees, committeeState.CommitteePublicKey)
 	}
 	return committees
+}
+
+// ================================= Reward Receiver OBJECT =======================================
+func (stateDB *StateDB) GetRewardReceiverState(key common.Hash) (*RewardReceiverState, bool, error) {
+	rewardReceiverObject, err := stateDB.getStateObject(RewardReceiverObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if rewardReceiverObject != nil {
+		return rewardReceiverObject.GetValue().(*RewardReceiverState), true, nil
+	}
+	return NewRewardReceiverState(), false, nil
+}
+func (stateDB *StateDB) GetAllRewardReceiverState(ids []int) map[string]string {
+	m := make(map[string]string)
+	prefix := GetRewardReceiverPrefix()
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		rewardReceiverState := NewRewardReceiverState()
+		err := json.Unmarshal(newValue, rewardReceiverState)
+		if err != nil {
+			panic("wrong value type")
+		}
+		m[rewardReceiverState.PublicKey] = rewardReceiverState.PaymentAddress
+	}
+	return m
 }

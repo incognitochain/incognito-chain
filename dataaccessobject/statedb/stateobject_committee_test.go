@@ -556,7 +556,7 @@ func storeCommitteeObjectOneShard(initRoot common.Hash, shardID, from, to int) (
 	}
 	tempCommitteePublicKey = tempCommitteePublicKey[from:to]
 	for _, value := range tempCommitteePublicKey {
-		key := statedb.GenerateCommitteeObjectKey(shardID, value)
+		key, _ := statedb.GenerateCommitteeObjectKey(shardID, value)
 		committeeState := statedb.NewCommitteeStateWithValue(shardID, value)
 		m[key] = committeeState
 	}
@@ -587,8 +587,8 @@ func TestStateDB_SetStateObjectCommitteeState(t *testing.T) {
 	}
 	sampleCommittee := tempCommitteePublicKey[0]
 	sampleCommittee2 := tempCommitteePublicKey[1]
-	key := statedb.GenerateCommitteeObjectKey(shardID, sampleCommittee)
-	key2 := statedb.GenerateCommitteeObjectKey(shardID, sampleCommittee2)
+	key, _ := statedb.GenerateCommitteeObjectKey(shardID, sampleCommittee)
+	key2, _ := statedb.GenerateCommitteeObjectKey(shardID, sampleCommittee2)
 	committeeState := statedb.NewCommitteeStateWithValue(shardID, sampleCommittee)
 	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDBCommitteeTest)
 	if err != nil {
@@ -812,7 +812,7 @@ func TestStateDB_GetAllCommitteeStateCommitteeObject512EightShardMultipleRootHas
 		newWantMState := make(map[common.Hash]*statedb.CommitteeState)
 		for shardID, publicKeys := range prevWantM {
 			for _, publicKey := range publicKeys {
-				key := statedb.GenerateCommitteeObjectKey(shardID, publicKey)
+				key, _ := statedb.GenerateCommitteeObjectKey(shardID, publicKey)
 				committeeState := statedb.NewCommitteeStateWithValue(shardID, publicKey)
 				newWantMState[key] = committeeState
 			}
@@ -822,7 +822,7 @@ func TestStateDB_GetAllCommitteeStateCommitteeObject512EightShardMultipleRootHas
 		for _, shardID := range ids {
 			tempCommitteePublicKey := committeePublicKey[from:to]
 			for _, value := range tempCommitteePublicKey {
-				key := statedb.GenerateCommitteeObjectKey(shardID, value)
+				key, _ := statedb.GenerateCommitteeObjectKey(shardID, value)
 				committeeState := statedb.NewCommitteeStateWithValue(shardID, value)
 				newAddedMState[key] = committeeState
 			}
@@ -830,7 +830,7 @@ func TestStateDB_GetAllCommitteeStateCommitteeObject512EightShardMultipleRootHas
 			to += 4
 			prevWantMStateByShardID := make(map[common.Hash]*statedb.CommitteeState)
 			for _, publicKey := range prevWantM[shardID] {
-				key := statedb.GenerateCommitteeObjectKey(shardID, publicKey)
+				key, _ := statedb.GenerateCommitteeObjectKey(shardID, publicKey)
 				committeeState := statedb.NewCommitteeStateWithValue(shardID, publicKey)
 				prevWantMStateByShardID[key] = committeeState
 			}
@@ -1053,7 +1053,7 @@ func BenchmarkStateDB_GetCommitteeStateGet1In1(b *testing.B) {
 		panic(err)
 	}
 	sampleCommitteePublicKey := tempCommitteePublicKey[0]
-	key = statedb.GenerateCommitteeObjectKey(shardID, sampleCommitteePublicKey)
+	key, _ = statedb.GenerateCommitteeObjectKey(shardID, sampleCommitteePublicKey)
 	committeeState := statedb.NewCommitteeStateWithValue(shardID, sampleCommitteePublicKey)
 	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDBCommitteeTest)
 	if err != nil {
@@ -1084,7 +1084,7 @@ func BenchmarkStateDB_GetCommitteeStateGet1In64(b *testing.B) {
 		panic(err)
 	}
 	sampleCommitteePublicKey := tempCommitteePublicKey[0]
-	key = statedb.GenerateCommitteeObjectKey(shardID, sampleCommitteePublicKey)
+	key, _ = statedb.GenerateCommitteeObjectKey(shardID, sampleCommitteePublicKey)
 	rootHash, _ := storeCommitteeObjectOneShard(emptyRoot, 0, 0, 64)
 	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBCommitteeTest)
 	if err != nil || tempStateDB == nil {
@@ -1102,7 +1102,7 @@ func BenchmarkStateDB_GetCommitteeStateGet1In256(b *testing.B) {
 		panic(err)
 	}
 	sampleCommitteePublicKey := tempCommitteePublicKey[0]
-	key = statedb.GenerateCommitteeObjectKey(shardID, sampleCommitteePublicKey)
+	key, _ = statedb.GenerateCommitteeObjectKey(shardID, sampleCommitteePublicKey)
 	rootHash, _ := storeCommitteeObjectOneShard(emptyRoot, 0, 0, 256)
 	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBCommitteeTest)
 	if err != nil || tempStateDB == nil {
