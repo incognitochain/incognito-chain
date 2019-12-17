@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -382,17 +381,6 @@ func (synker *Synker) UpdateState() {
 								RCS.ShardToBeaconBlks[shardID] = make(map[string][]uint64)
 							}
 							RCS.ShardToBeaconBlks[shardID][peerState.PeerMiningPublicKey] = blkHeights
-							if len(blkHeights) > 0 && len(blkHeights) <= len(synker.States.PoolsState.ShardToBeaconPool[shardID]) {
-								commonHeights := arrayCommonElements(blkHeights, synker.States.PoolsState.ShardToBeaconPool[shardID])
-								if len(commonHeights) > 0 {
-									sort.Slice(commonHeights, func(i, j int) bool { return commonHeights[i] < commonHeights[j] })
-									height, _ := synker.States.ClosestState.ShardToBeaconPool.Load(shardID)
-									h := commonHeights[len(commonHeights)-1]
-									if height.(uint64) > h {
-										synker.States.ClosestState.ShardToBeaconPool.Store(shardID, h)
-									}
-								}
-							}
 						}
 					}
 				}
@@ -419,18 +407,6 @@ func (synker *Synker) UpdateState() {
 							RCS.CrossShardBlks[shardID] = make(map[string][]uint64)
 						}
 						RCS.CrossShardBlks[shardID][peerState.PeerMiningPublicKey] = blkHeights
-
-						if len(blkHeights) > 0 && len(blkHeights) <= len(synker.States.PoolsState.CrossShardPool[shardID]) {
-							commonHeights := arrayCommonElements(blkHeights, synker.States.PoolsState.CrossShardPool[shardID])
-							sort.Slice(commonHeights, func(i, j int) bool { return blkHeights[i] < blkHeights[j] })
-							if len(commonHeights) > 0 {
-								height, _ := synker.States.ClosestState.CrossShardPool.Load(shardID)
-								h := commonHeights[len(commonHeights)-1]
-								if height.(uint64) > h {
-									synker.States.ClosestState.CrossShardPool.Store(shardID, h)
-								}
-							}
-						}
 					}
 				}
 			}
