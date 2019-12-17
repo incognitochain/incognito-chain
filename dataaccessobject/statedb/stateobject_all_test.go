@@ -59,7 +59,7 @@ func storeAllStateObjectForTesting(initRoot common.Hash) (common.Hash, map[int][
 
 	// Committee Reward
 	mRewardReceiverStates := make(map[common.Hash]*statedb.CommitteeRewardState)
-	for _, value := range incognitoPublicKey {
+	for _, value := range incognitoPublicKeys {
 		key, _ := statedb.GenerateCommitteeRewardObjectKey(value)
 		reward := generateTokenMapWithAmount()
 		rewardReceiverState := statedb.NewCommitteeRewardStateWithValue(reward, value)

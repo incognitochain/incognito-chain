@@ -31,6 +31,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newCommitteeRewardObjectWithValue(db, hash, value)
 	case RewardRequestObjectType:
 		return newRewardRequestObjectWithValue(db, hash, value)
+	case BlackListProducerObjectType:
+		return newBlackListProducerObjectWithValue(db, hash, value)
 	default:
 		panic("state object type not exist")
 	}
@@ -48,6 +50,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newCommitteeRewardObject(db, hash)
 	case RewardRequestObjectType:
 		return newRewardRequestObject(db, hash)
+	case BlackListProducerObjectType:
+		return newBlackListProducerObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}

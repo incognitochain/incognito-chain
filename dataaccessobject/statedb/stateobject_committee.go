@@ -25,7 +25,7 @@ func NewCommitteeStateWithValue(shardID int, role int, committeePublicKey incogn
 	return &CommitteeState{shardID: shardID, role: role, committeePublicKey: committeePublicKey, rewardReceiver: rewardReceiver, autoStaking: autoStaking}
 }
 
-func (c *CommitteeState) AutoStaking() bool {
+func (c CommitteeState) AutoStaking() bool {
 	return c.autoStaking
 }
 
@@ -33,7 +33,7 @@ func (c *CommitteeState) SetAutoStaking(autoStaking bool) {
 	c.autoStaking = autoStaking
 }
 
-func (c *CommitteeState) RewardReceiver() string {
+func (c CommitteeState) RewardReceiver() string {
 	return c.rewardReceiver
 }
 
@@ -41,7 +41,7 @@ func (c *CommitteeState) SetRewardReceiver(rewardReceiver string) {
 	c.rewardReceiver = rewardReceiver
 }
 
-func (c *CommitteeState) CommitteePublicKey() incognitokey.CommitteePublicKey {
+func (c CommitteeState) CommitteePublicKey() incognitokey.CommitteePublicKey {
 	return c.committeePublicKey
 }
 
@@ -49,7 +49,7 @@ func (c *CommitteeState) SetCommitteePublicKey(committeePublicKey incognitokey.C
 	c.committeePublicKey = committeePublicKey
 }
 
-func (c *CommitteeState) Role() int {
+func (c CommitteeState) Role() int {
 	return c.role
 }
 
@@ -57,7 +57,7 @@ func (c *CommitteeState) SetRole(role int) {
 	c.role = role
 }
 
-func (c *CommitteeState) ShardID() int {
+func (c CommitteeState) ShardID() int {
 	return c.shardID
 }
 
@@ -172,7 +172,7 @@ func GenerateCommitteeObjectKeyWithRole(role int, shardID int, committee incogni
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...)), nil
 }
 
-func (c *CommitteeObject) GetVersion() int {
+func (c CommitteeObject) GetVersion() int {
 	return c.version
 }
 
@@ -183,7 +183,7 @@ func (c *CommitteeObject) SetError(err error) {
 	}
 }
 
-func (c *CommitteeObject) GetTrie(db DatabaseAccessWarper) Trie {
+func (c CommitteeObject) GetTrie(db DatabaseAccessWarper) Trie {
 	return c.trie
 }
 
@@ -199,11 +199,11 @@ func (c *CommitteeObject) SetValue(data interface{}) error {
 	return nil
 }
 
-func (c *CommitteeObject) GetValue() interface{} {
+func (c CommitteeObject) GetValue() interface{} {
 	return c.committeeState
 }
 
-func (c *CommitteeObject) GetValueBytes() []byte {
+func (c CommitteeObject) GetValueBytes() []byte {
 	data := c.GetValue()
 	value, err := json.Marshal(data)
 	if err != nil {
@@ -212,11 +212,11 @@ func (c *CommitteeObject) GetValueBytes() []byte {
 	return value
 }
 
-func (c *CommitteeObject) GetHash() common.Hash {
+func (c CommitteeObject) GetHash() common.Hash {
 	return c.committeePublicKeyHash
 }
 
-func (c *CommitteeObject) GetType() int {
+func (c CommitteeObject) GetType() int {
 	return c.objectType
 }
 
@@ -231,12 +231,12 @@ func (c *CommitteeObject) Reset() bool {
 	return true
 }
 
-func (c *CommitteeObject) IsDeleted() bool {
+func (c CommitteeObject) IsDeleted() bool {
 	return c.deleted
 }
 
 // value is either default or nil
-func (c *CommitteeObject) IsEmpty() bool {
+func (c CommitteeObject) IsEmpty() bool {
 	temp := NewCommitteeState()
 	return reflect.DeepEqual(temp, c.committeeState) || c.committeeState == nil
 }

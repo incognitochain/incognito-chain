@@ -692,12 +692,12 @@ func (stateDB *StateDB) GetRewardRequestState(key common.Hash) (*RewardRequestSt
 
 func (stateDB *StateDB) GetRewardRequestAmount(key common.Hash) (uint64, bool, error) {
 	amount := uint64(0)
-	committeeRewardObject, err := stateDB.getStateObject(RewardRequestObjectType, key)
+	rewardRequestObject, err := stateDB.getStateObject(RewardRequestObjectType, key)
 	if err != nil {
 		return amount, false, err
 	}
-	if committeeRewardObject != nil {
-		temp := committeeRewardObject.GetValue().(*RewardRequestState)
+	if rewardRequestObject != nil {
+		temp := rewardRequestObject.GetValue().(*RewardRequestState)
 		amount = temp.amount
 		return amount, true, nil
 	}
@@ -719,6 +719,70 @@ func (stateDB *StateDB) GetAllRewardRequestState() []*RewardRequestState {
 			panic("wrong value type")
 		}
 		m = append(m, rewardRequestState)
+	}
+	return m
+}
+
+// ================================= Black List Producer OBJECT =======================================
+func (stateDB *StateDB) GetBlackListProducerState(key common.Hash) (*BlackListProducerState, bool, error) {
+	blackListProducerObject, err := stateDB.getStateObject(BlackListProducerObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if blackListProducerObject != nil {
+		return blackListProducerObject.GetValue().(*BlackListProducerState), true, nil
+	}
+	return NewBlackListProducerState(), false, nil
+}
+
+func (stateDB *StateDB) GetBlackListProducerPunishedEpoch(key common.Hash) (uint8, bool, error) {
+	duration := uint8(0)
+	blackListProducerObject, err := stateDB.getStateObject(BlackListProducerObjectType, key)
+	if err != nil {
+		return duration, false, err
+	}
+	if blackListProducerObject != nil {
+		temp := blackListProducerObject.GetValue().(*BlackListProducerState)
+		duration = temp.punishedEpoches
+		return duration, true, nil
+	}
+	return duration, false, nil
+}
+
+func (stateDB *StateDB) GetAllBlackListProducerState() []*BlackListProducerState {
+	blackListProducerStates := []*BlackListProducerState{}
+	prefix := GetRewardRequestPrefix()
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		blackListProducerState := NewBlackListProducerState()
+		err := json.Unmarshal(newValue, blackListProducerState)
+		if err != nil {
+			panic("wrong value type")
+		}
+		blackListProducerStates = append(blackListProducerStates, blackListProducerState)
+	}
+	return blackListProducerStates
+}
+
+func (stateDB *StateDB) GetAllProducerBlackList() map[string]uint8 {
+	m := make(map[string]uint8)
+	prefix := GetBlackListProducerPrefix()
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		blackListProducerState := NewBlackListProducerState()
+		err := json.Unmarshal(newValue, blackListProducerState)
+		if err != nil {
+			panic("wrong value type")
+		}
+		m[blackListProducerState.producerCommitteePublicKey] = blackListProducerState.punishedEpoches
 	}
 	return m
 }

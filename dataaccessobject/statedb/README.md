@@ -50,8 +50,14 @@ Used for beacon and all shards, distinguish between shards and beacon by prefix.
     * incognito public key: 33 bytes public key encoded as base 58 string
 7. Reward Request
 - key: first 12 bytes of `hash(committee-shardID-prefix)` with first 20 bytes of `hash(epoch + shardID + tokenID)`
-- value: request request state:
+- value: reward request state:
     * epoch
     * shardID
     * tokenID
     * amount
+8. Black List Producer:
+- key: first 12 bytes of `hash(committee-shardID-prefix)` with first 20 bytes of `hash(committee-publickey-base58-string)`
+- value: black list producer state:
+    * committee public key base58 string 
+    * punished epoch (punished duration left)
+    * beacon height at which this state is calculated

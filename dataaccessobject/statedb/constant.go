@@ -13,6 +13,7 @@ const (
 	CommitteeObjectType
 	CommitteeRewardObjectType
 	RewardRequestObjectType
+	BlackListProducerObjectType
 )
 
 // Prefix length

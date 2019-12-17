@@ -11,8 +11,8 @@ import (
 
 type CommitteeRewardState struct {
 	// tokenid => amount
-	reward             map[common.Hash]int
 	incognitoPublicKey string
+	reward             map[common.Hash]int
 }
 
 func NewCommitteeRewardState() *CommitteeRewardState {
@@ -23,7 +23,7 @@ func NewCommitteeRewardStateWithValue(reward map[common.Hash]int, incognitoPubli
 	return &CommitteeRewardState{reward: reward, incognitoPublicKey: incognitoPublicKey}
 }
 
-func (cr *CommitteeRewardState) Reward() map[common.Hash]int {
+func (cr CommitteeRewardState) Reward() map[common.Hash]int {
 	return cr.reward
 }
 
@@ -31,7 +31,7 @@ func (cr *CommitteeRewardState) SetReward(reward map[common.Hash]int) {
 	cr.reward = reward
 }
 
-func (cr *CommitteeRewardState) IncognitoPublicKey() string {
+func (cr CommitteeRewardState) IncognitoPublicKey() string {
 	return cr.incognitoPublicKey
 }
 
@@ -72,11 +72,11 @@ type CommitteeRewardObject struct {
 	// Write caches.
 	trie Trie // storage trie, which becomes non-nil on first access
 
-	version             int
-	publicKeyHash       common.Hash
-	rewardReceiverState *CommitteeRewardState
-	objectType          int
-	deleted             bool
+	version                int
+	committeePublicKeyHash common.Hash
+	rewardReceiverState    *CommitteeRewardState
+	objectType             int
+	deleted                bool
 
 	// DB error.
 	// State objects are used by the consensus core and VM which are
@@ -88,12 +88,12 @@ type CommitteeRewardObject struct {
 
 func newCommitteeRewardObject(db *StateDB, hash common.Hash) *CommitteeRewardObject {
 	return &CommitteeRewardObject{
-		version:             defaultVersion,
-		db:                  db,
-		publicKeyHash:       hash,
-		rewardReceiverState: NewCommitteeRewardState(),
-		objectType:          CommitteeRewardObjectType,
-		deleted:             false,
+		version:                defaultVersion,
+		db:                     db,
+		committeePublicKeyHash: hash,
+		rewardReceiverState:    NewCommitteeRewardState(),
+		objectType:             CommitteeRewardObjectType,
+		deleted:                false,
 	}
 }
 func newCommitteeRewardObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*CommitteeRewardObject, error) {
@@ -103,24 +103,24 @@ func newCommitteeRewardObjectWithValue(db *StateDB, key common.Hash, data interf
 	if dataBytes, ok = data.([]byte); ok {
 		err := json.Unmarshal(dataBytes, newCommitteeRewardState)
 		if err != nil {
-			return nil, NewStatedbError(InvalidCommitteeStateTypeError, err)
+			return nil, NewStatedbError(InvalidCommitteeRewardStateTypeError, err)
 		}
 	} else {
 		newCommitteeRewardState, ok = data.(*CommitteeRewardState)
 		if !ok {
-			return nil, NewStatedbError(InvalidCommitteeStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
+			return nil, NewStatedbError(InvalidCommitteeRewardStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
 		}
 	}
 	if err := ValidateIncognitoPublicKeySanity(newCommitteeRewardState.incognitoPublicKey); err != nil {
 		return nil, NewStatedbError(InvalidIncognitoPublicKeyTypeError, err)
 	}
 	return &CommitteeRewardObject{
-		version:             defaultVersion,
-		publicKeyHash:       key,
-		rewardReceiverState: newCommitteeRewardState,
-		db:                  db,
-		objectType:          CommitteeRewardObjectType,
-		deleted:             false,
+		version:                defaultVersion,
+		committeePublicKeyHash: key,
+		rewardReceiverState:    newCommitteeRewardState,
+		db:                     db,
+		objectType:             CommitteeRewardObjectType,
+		deleted:                false,
 	}, nil
 }
 
@@ -135,7 +135,7 @@ func GenerateCommitteeRewardObjectKey(publicKey string) (common.Hash, error) {
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...)), nil
 }
 
-func (rr *CommitteeRewardObject) GetVersion() int {
+func (rr CommitteeRewardObject) GetVersion() int {
 	return rr.version
 }
 
@@ -146,7 +146,7 @@ func (rr *CommitteeRewardObject) SetError(err error) {
 	}
 }
 
-func (rr *CommitteeRewardObject) GetTrie(db DatabaseAccessWarper) Trie {
+func (rr CommitteeRewardObject) GetTrie(db DatabaseAccessWarper) Trie {
 	return rr.trie
 }
 
@@ -157,12 +157,12 @@ func (rr *CommitteeRewardObject) SetValue(data interface{}) error {
 	if dataBytes, ok = data.([]byte); ok {
 		err := json.Unmarshal(dataBytes, newCommitteeRewardState)
 		if err != nil {
-			return NewStatedbError(InvalidCommitteeStateTypeError, err)
+			return NewStatedbError(InvalidCommitteeRewardStateTypeError, err)
 		}
 	} else {
 		newCommitteeRewardState, ok = data.(*CommitteeRewardState)
 		if !ok {
-			return NewStatedbError(InvalidCommitteeStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
+			return NewStatedbError(InvalidCommitteeRewardStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
 		}
 	}
 	if err := ValidateIncognitoPublicKeySanity(newCommitteeRewardState.incognitoPublicKey); err != nil {
@@ -172,11 +172,11 @@ func (rr *CommitteeRewardObject) SetValue(data interface{}) error {
 	return nil
 }
 
-func (rr *CommitteeRewardObject) GetValue() interface{} {
+func (rr CommitteeRewardObject) GetValue() interface{} {
 	return rr.rewardReceiverState
 }
 
-func (rr *CommitteeRewardObject) GetValueBytes() []byte {
+func (rr CommitteeRewardObject) GetValueBytes() []byte {
 	data := rr.GetValue()
 	value, err := json.Marshal(data)
 	if err != nil {
@@ -185,11 +185,11 @@ func (rr *CommitteeRewardObject) GetValueBytes() []byte {
 	return []byte(value)
 }
 
-func (rr *CommitteeRewardObject) GetHash() common.Hash {
-	return rr.publicKeyHash
+func (rr CommitteeRewardObject) GetHash() common.Hash {
+	return rr.committeePublicKeyHash
 }
 
-func (rr *CommitteeRewardObject) GetType() int {
+func (rr CommitteeRewardObject) GetType() int {
 	return rr.objectType
 }
 
@@ -203,12 +203,12 @@ func (rr *CommitteeRewardObject) Reset() bool {
 	return true
 }
 
-func (rr *CommitteeRewardObject) IsDeleted() bool {
+func (rr CommitteeRewardObject) IsDeleted() bool {
 	return rr.deleted
 }
 
 // value is either default or nil
-func (rr *CommitteeRewardObject) IsEmpty() bool {
+func (rr CommitteeRewardObject) IsEmpty() bool {
 	temp := NewCommitteeRewardState()
 	return reflect.DeepEqual(temp, rr.rewardReceiverState) || rr.rewardReceiverState == nil
 }

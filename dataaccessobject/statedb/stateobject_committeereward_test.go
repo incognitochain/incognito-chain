@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	incognitoPublicKey = []string{
+	incognitoPublicKeys = []string{
 		"116MM3ii2VJigSizK4NzRFE9V3qPFKaeHdv2TZSss9RrqZxv3g",
 		"11DgxrvZJrRfzLGA7cauH7q2chwEBXZSPTZg3RhxGyDjXuFKw2",
 		"11H2zSkF6pVEBn42oMnHZskp86HRLufBbQj442sdmFm3u1sDrF",
@@ -604,13 +604,14 @@ func generateTokenMapWithAmount() map[common.Hash]int {
 	}
 	return reward
 }
+
 func storeRewardReceiver(initRoot common.Hash) (common.Hash, map[common.Hash]*statedb.CommitteeRewardState, map[string]map[common.Hash]int) {
 	mState := make(map[common.Hash]*statedb.CommitteeRewardState)
 	wantM := make(map[string]map[common.Hash]int)
-	for index, value := range incognitoPublicKey {
+	for index, value := range incognitoPublicKeys {
 		key, _ := statedb.GenerateCommitteeRewardObjectKey(value)
 		reward := generateTokenMapWithAmount()
-		rewardReceiverState := statedb.NewCommitteeRewardStateWithValue(reward, incognitoPublicKey[index])
+		rewardReceiverState := statedb.NewCommitteeRewardStateWithValue(reward, incognitoPublicKeys[index])
 		mState[key] = rewardReceiverState
 		wantM[value] = reward
 	}
@@ -654,9 +655,9 @@ func TestStateDB_GetAllCommitteeRewardState(t *testing.T) {
 
 func TestStateDB_StoreAndGetRewardReceiver(t *testing.T) {
 	var err error = nil
-	key, _ := statedb.GenerateCommitteeRewardObjectKey(incognitoPublicKey[0])
-	key2, _ := statedb.GenerateCommitteeRewardObjectKey(incognitoPublicKey[1])
-	rewardReceiverState := statedb.NewCommitteeRewardStateWithValue(generateTokenMapWithAmount(), incognitoPublicKey[0])
+	key, _ := statedb.GenerateCommitteeRewardObjectKey(incognitoPublicKeys[0])
+	key2, _ := statedb.GenerateCommitteeRewardObjectKey(incognitoPublicKeys[1])
+	rewardReceiverState := statedb.NewCommitteeRewardStateWithValue(generateTokenMapWithAmount(), incognitoPublicKeys[0])
 	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDBrewardTest)
 	if err != nil {
 		panic(err)
@@ -667,19 +668,19 @@ func TestStateDB_StoreAndGetRewardReceiver(t *testing.T) {
 	}
 	err = sDB.SetStateObject(statedb.CommitteeRewardObjectType, key, "committee reward")
 	if err == nil {
-		if err.(*statedb.StatedbError).Code != statedb.ErrCodeMessage[statedb.InvalidRewardReceiverStateTypeError].Code {
+		if err.(*statedb.StatedbError).Code != statedb.ErrCodeMessage[statedb.InvalidCommitteeRewardStateTypeError].Code {
 			t.Fatal("expect wrong value type")
 		}
 	}
 	err = sDB.SetStateObject(statedb.CommitteeRewardObjectType, key, []byte("committee reward"))
 	if err == nil {
-		if err.(*statedb.StatedbError).Code != statedb.ErrCodeMessage[statedb.InvalidRewardReceiverStateTypeError].Code {
+		if err.(*statedb.StatedbError).Code != statedb.ErrCodeMessage[statedb.InvalidCommitteeRewardStateTypeError].Code {
 			t.Fatal("expect wrong value type")
 		}
 	}
 	err = sDB.SetStateObject(statedb.CommitteeRewardObjectType, key2, []byte("committee reward"))
 	if err == nil {
-		if err.(*statedb.StatedbError).Code != statedb.ErrCodeMessage[statedb.InvalidRewardReceiverStateTypeError].Code {
+		if err.(*statedb.StatedbError).Code != statedb.ErrCodeMessage[statedb.InvalidCommitteeRewardStateTypeError].Code {
 			t.Fatal("expect wrong value type")
 		}
 	}
@@ -724,7 +725,7 @@ func TestStateDB_StoreAndGetRewardReceiver(t *testing.T) {
 
 func TestStateDB_GetAllRewardReceiverStateMultipleRootHash(t *testing.T) {
 	offset := 9
-	maxHeight := int(len(incognitoPublicKey) / offset)
+	maxHeight := int(len(incognitoPublicKeys) / offset)
 	rootHashes := []common.Hash{emptyRoot}
 	wantMs := []map[string]map[common.Hash]int{}
 	for i := 0; i < maxHeight; i++ {
@@ -732,7 +733,7 @@ func TestStateDB_GetAllRewardReceiverStateMultipleRootHash(t *testing.T) {
 		if err != nil || sDB == nil {
 			t.Fatal(err)
 		}
-		tempKeys := incognitoPublicKey[i*9 : (i+1)*9]
+		tempKeys := incognitoPublicKeys[i*9 : (i+1)*9]
 		tempM := make(map[string]map[common.Hash]int)
 		prevWantM := make(map[string]map[common.Hash]int)
 		if i != 0 {

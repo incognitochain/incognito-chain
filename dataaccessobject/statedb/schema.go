@@ -16,6 +16,7 @@ var (
 	committeePrefix         = []byte("shard-com-")
 	committeeRewardPrefix   = []byte("committee-reward-")
 	rewardRequestPrefix     = []byte("reward-request-")
+	blackListProducerPrefix = []byte("black-list-")
 )
 
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
@@ -49,6 +50,11 @@ func GetCommitteeRewardPrefix() []byte {
 func GetRewardRequestPrefix() []byte {
 	temp := []byte(rewardRequestPrefix)
 	h := common.HashH(temp)
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetBlackListProducerPrefix() []byte {
+	h := common.HashH(blackListProducerPrefix)
 	return h[:][:prefixHashKeyLength]
 }
 
@@ -113,6 +119,13 @@ var _ = func() (_ struct{}) {
 		panic("reward-request-" + " same prefix " + v)
 	}
 	m[string(tempRewardRequest)] = "reward-request-"
+	// black list producer
+	tempBlackListProducer := GetBlackListProducerPrefix()
+	prefixs = append(prefixs, tempBlackListProducer)
+	if v, ok := m[string(tempBlackListProducer)]; ok {
+		panic("black-list-" + " same prefix " + v)
+	}
+	m[string(tempBlackListProducer)] = "black-list-"
 	for i, v1 := range prefixs {
 		for j, v2 := range prefixs {
 			if i == j {

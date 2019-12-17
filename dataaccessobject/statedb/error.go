@@ -11,18 +11,22 @@ const (
 	InvalidCommitteeStateTypeError
 	InvalidPaymentAddressTypeError
 	InvalidIncognitoPublicKeyTypeError
-	InvalidRewardReceiverStateTypeError
+	InvalidCommitteeRewardStateTypeError
+	InvalidRewardRequestStateTypeError
+	InvalidBlackListProducerStateTypeError
 )
 
 var ErrCodeMessage = map[int]struct {
 	Code    int
 	message string
 }{
-	InvalidByteArrayTypeError:           {-1000, "invalid byte array type"},
-	InvalidCommitteeStateTypeError:      {-1001, "invalid committee state type"},
-	InvalidPaymentAddressTypeError:      {-1002, "invalid payment address type"},
-	InvalidIncognitoPublicKeyTypeError:  {-1003, "invalid incognito public key type"},
-	InvalidRewardReceiverStateTypeError: {-1004, "invalid reward receiver state type "},
+	InvalidByteArrayTypeError:              {-1000, "invalid byte array type"},
+	InvalidCommitteeStateTypeError:         {-1001, "invalid committee state type"},
+	InvalidPaymentAddressTypeError:         {-1002, "invalid payment address type"},
+	InvalidIncognitoPublicKeyTypeError:     {-1003, "invalid incognito public key type"},
+	InvalidCommitteeRewardStateTypeError:   {-1004, "invalid reward receiver state type "},
+	InvalidRewardRequestStateTypeError:     {-1005, "invalid reward request state type"},
+	InvalidBlackListProducerStateTypeError: {-1006, "invalid black list producer state type"},
 }
 
 type StatedbError struct {

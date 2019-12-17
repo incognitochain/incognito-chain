@@ -16,7 +16,7 @@ type RewardRequestState struct {
 	amount  uint64
 }
 
-func (rr *RewardRequestState) Amount() uint64 {
+func (rr RewardRequestState) Amount() uint64 {
 	return rr.amount
 }
 
@@ -24,7 +24,7 @@ func (rr *RewardRequestState) SetAmount(amount uint64) {
 	rr.amount = amount
 }
 
-func (rr *RewardRequestState) TokenID() common.Hash {
+func (rr RewardRequestState) TokenID() common.Hash {
 	return rr.tokenID
 }
 
@@ -32,7 +32,7 @@ func (rr *RewardRequestState) SetTokenID(tokenID common.Hash) {
 	rr.tokenID = tokenID
 }
 
-func (rr *RewardRequestState) ShardID() byte {
+func (rr RewardRequestState) ShardID() byte {
 	return rr.shardID
 }
 
@@ -40,7 +40,7 @@ func (rr *RewardRequestState) SetShardID(shardID byte) {
 	rr.shardID = shardID
 }
 
-func (rr *RewardRequestState) Epoch() uint64 {
+func (rr RewardRequestState) Epoch() uint64 {
 	return rr.epoch
 }
 
@@ -98,7 +98,7 @@ type RewardRequestObject struct {
 	trie Trie // storage trie, which becomes non-nil on first access
 
 	version             int
-	publicKeyHash       common.Hash
+	rewardRequestHash   common.Hash
 	rewardReceiverState *RewardRequestState
 	objectType          int
 	deleted             bool
@@ -115,7 +115,7 @@ func newRewardRequestObject(db *StateDB, hash common.Hash) *RewardRequestObject 
 	return &RewardRequestObject{
 		version:             defaultVersion,
 		db:                  db,
-		publicKeyHash:       hash,
+		rewardRequestHash:   hash,
 		rewardReceiverState: NewRewardRequestState(),
 		objectType:          RewardRequestObjectType,
 		deleted:             false,
@@ -128,17 +128,17 @@ func newRewardRequestObjectWithValue(db *StateDB, key common.Hash, data interfac
 	if dataBytes, ok = data.([]byte); ok {
 		err := json.Unmarshal(dataBytes, newRewardRequestState)
 		if err != nil {
-			return nil, NewStatedbError(InvalidCommitteeStateTypeError, err)
+			return nil, NewStatedbError(InvalidRewardRequestStateTypeError, err)
 		}
 	} else {
 		newRewardRequestState, ok = data.(*RewardRequestState)
 		if !ok {
-			return nil, NewStatedbError(InvalidCommitteeStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
+			return nil, NewStatedbError(InvalidRewardRequestStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
 		}
 	}
 	return &RewardRequestObject{
 		version:             defaultVersion,
-		publicKeyHash:       key,
+		rewardRequestHash:   key,
 		rewardReceiverState: newRewardRequestState,
 		db:                  db,
 		objectType:          RewardRequestObjectType,
@@ -152,7 +152,7 @@ func GenerateRewardRequestObjectKey(epoch uint64, shardID byte, tokenID common.H
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...)), nil
 }
 
-func (rr *RewardRequestObject) GetVersion() int {
+func (rr RewardRequestObject) GetVersion() int {
 	return rr.version
 }
 
@@ -163,7 +163,7 @@ func (rr *RewardRequestObject) SetError(err error) {
 	}
 }
 
-func (rr *RewardRequestObject) GetTrie(db DatabaseAccessWarper) Trie {
+func (rr RewardRequestObject) GetTrie(db DatabaseAccessWarper) Trie {
 	return rr.trie
 }
 
@@ -174,23 +174,23 @@ func (rr *RewardRequestObject) SetValue(data interface{}) error {
 	if dataBytes, ok = data.([]byte); ok {
 		err := json.Unmarshal(dataBytes, newRewardRequestState)
 		if err != nil {
-			return NewStatedbError(InvalidCommitteeStateTypeError, err)
+			return NewStatedbError(InvalidRewardRequestStateTypeError, err)
 		}
 	} else {
 		newRewardRequestState, ok = data.(*RewardRequestState)
 		if !ok {
-			return NewStatedbError(InvalidCommitteeStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
+			return NewStatedbError(InvalidRewardRequestStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
 		}
 	}
 	rr.rewardReceiverState = newRewardRequestState
 	return nil
 }
 
-func (rr *RewardRequestObject) GetValue() interface{} {
+func (rr RewardRequestObject) GetValue() interface{} {
 	return rr.rewardReceiverState
 }
 
-func (rr *RewardRequestObject) GetValueBytes() []byte {
+func (rr RewardRequestObject) GetValueBytes() []byte {
 	data := rr.GetValue()
 	value, err := json.Marshal(data)
 	if err != nil {
@@ -199,11 +199,11 @@ func (rr *RewardRequestObject) GetValueBytes() []byte {
 	return []byte(value)
 }
 
-func (rr *RewardRequestObject) GetHash() common.Hash {
-	return rr.publicKeyHash
+func (rr RewardRequestObject) GetHash() common.Hash {
+	return rr.rewardRequestHash
 }
 
-func (rr *RewardRequestObject) GetType() int {
+func (rr RewardRequestObject) GetType() int {
 	return rr.objectType
 }
 
@@ -217,12 +217,12 @@ func (rr *RewardRequestObject) Reset() bool {
 	return true
 }
 
-func (rr *RewardRequestObject) IsDeleted() bool {
+func (rr RewardRequestObject) IsDeleted() bool {
 	return rr.deleted
 }
 
 // value is either default or nil
-func (rr *RewardRequestObject) IsEmpty() bool {
+func (rr RewardRequestObject) IsEmpty() bool {
 	temp := NewRewardRequestState()
 	return reflect.DeepEqual(temp, rr.rewardReceiverState) || rr.rewardReceiverState == nil
 }

@@ -40,7 +40,7 @@ func TestValidation_ValidatePaymentAddressSanity(t *testing.T) {
 }
 
 func TestValidation_ValidateIncognitoPublicKeySanity(t *testing.T) {
-	str1 := incognitoPublicKey[0]
+	str1 := incognitoPublicKeys[0]
 	str2 := str1[1:]
 	str3 := str1[2:]
 	str4 := str1[:len(str1)-1]
@@ -49,7 +49,7 @@ func TestValidation_ValidateIncognitoPublicKeySanity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, v := range incognitoPublicKey[1:] {
+	for _, v := range incognitoPublicKeys[1:] {
 		err := statedb.ValidateIncognitoPublicKeySanity(v)
 		if err != nil {
 			t.Fatal(err)
