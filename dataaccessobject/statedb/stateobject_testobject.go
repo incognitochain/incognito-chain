@@ -11,6 +11,7 @@ type TestObject struct {
 	// Write caches.
 	trie Trie // storage trie, which becomes non-nil on first access
 
+	version    int
 	key        common.Hash
 	value      []byte
 	objectType int
@@ -26,6 +27,7 @@ type TestObject struct {
 
 func newTestObject(db *StateDB, hash common.Hash) *TestObject {
 	return &TestObject{
+		version:    defaultVersion,
 		db:         db,
 		key:        hash,
 		value:      []byte{},
@@ -39,12 +41,17 @@ func newTestObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*Te
 		return nil, NewStatedbError(InvalidByteArrayTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
 	}
 	return &TestObject{
+		version:    defaultVersion,
 		key:        key,
 		value:      newSerialNumber,
 		db:         db,
 		objectType: TestObjectType,
 		deleted:    false,
 	}, nil
+}
+
+func (s *TestObject) GetVersion() int {
+	return s.version
 }
 
 // setError remembers the first non-nil error it is called with.

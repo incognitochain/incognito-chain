@@ -5,6 +5,7 @@ import (
 )
 
 type StateObject interface {
+	GetVersion() int
 	GetValue() interface{}
 	GetValueBytes() []byte
 	GetHash() common.Hash

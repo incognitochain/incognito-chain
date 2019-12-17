@@ -97,6 +97,7 @@ type RewardRequestObject struct {
 	// Write caches.
 	trie Trie // storage trie, which becomes non-nil on first access
 
+	version             int
 	publicKeyHash       common.Hash
 	rewardReceiverState *RewardRequestState
 	objectType          int
@@ -112,6 +113,7 @@ type RewardRequestObject struct {
 
 func newRewardRequestObject(db *StateDB, hash common.Hash) *RewardRequestObject {
 	return &RewardRequestObject{
+		version:             defaultVersion,
 		db:                  db,
 		publicKeyHash:       hash,
 		rewardReceiverState: NewRewardRequestState(),
@@ -135,6 +137,7 @@ func newRewardRequestObjectWithValue(db *StateDB, key common.Hash, data interfac
 		}
 	}
 	return &RewardRequestObject{
+		version:             defaultVersion,
 		publicKeyHash:       key,
 		rewardReceiverState: newRewardRequestState,
 		db:                  db,
@@ -147,6 +150,10 @@ func GenerateRewardRequestObjectKey(epoch uint64, shardID byte, tokenID common.H
 	prefixHash := GetCommitteeRewardPrefix()
 	valueHash := common.HashH([]byte(fmt.Sprintf("%d%d%+v", epoch, shardID, tokenID)))
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...)), nil
+}
+
+func (rr *RewardRequestObject) GetVersion() int {
+	return rr.version
 }
 
 // setError remembers the first non-nil error it is called with.

@@ -72,6 +72,7 @@ type CommitteeRewardObject struct {
 	// Write caches.
 	trie Trie // storage trie, which becomes non-nil on first access
 
+	version             int
 	publicKeyHash       common.Hash
 	rewardReceiverState *CommitteeRewardState
 	objectType          int
@@ -87,6 +88,7 @@ type CommitteeRewardObject struct {
 
 func newCommitteeRewardObject(db *StateDB, hash common.Hash) *CommitteeRewardObject {
 	return &CommitteeRewardObject{
+		version:             defaultVersion,
 		db:                  db,
 		publicKeyHash:       hash,
 		rewardReceiverState: NewCommitteeRewardState(),
@@ -113,6 +115,7 @@ func newCommitteeRewardObjectWithValue(db *StateDB, key common.Hash, data interf
 		return nil, NewStatedbError(InvalidIncognitoPublicKeyTypeError, err)
 	}
 	return &CommitteeRewardObject{
+		version:             defaultVersion,
 		publicKeyHash:       key,
 		rewardReceiverState: newCommitteeRewardState,
 		db:                  db,
@@ -130,6 +133,10 @@ func GenerateCommitteeRewardObjectKey(publicKey string) (common.Hash, error) {
 	prefixHash := GetCommitteeRewardPrefix()
 	valueHash := common.HashH(publicKeyBytes)
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...)), nil
+}
+
+func (rr *CommitteeRewardObject) GetVersion() int {
+	return rr.version
 }
 
 // setError remembers the first non-nil error it is called with.

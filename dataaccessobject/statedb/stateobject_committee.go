@@ -110,6 +110,7 @@ type CommitteeObject struct {
 	// Write caches.
 	trie Trie // storage trie, which becomes non-nil on first access
 
+	version                int
 	committeePublicKeyHash common.Hash
 	committeeState         *CommitteeState
 	objectType             int
@@ -125,6 +126,7 @@ type CommitteeObject struct {
 
 func newCommitteeObject(db *StateDB, hash common.Hash) *CommitteeObject {
 	return &CommitteeObject{
+		version:                defaultVersion,
 		db:                     db,
 		committeePublicKeyHash: hash,
 		committeeState:         NewCommitteeState(),
@@ -151,6 +153,7 @@ func newCommitteeObjectWithValue(db *StateDB, key common.Hash, data interface{})
 		return nil, NewStatedbError(InvalidPaymentAddressTypeError, err)
 	}
 	return &CommitteeObject{
+		version:                defaultVersion,
 		committeePublicKeyHash: key,
 		committeeState:         newCommitteeState,
 		db:                     db,
@@ -167,6 +170,10 @@ func GenerateCommitteeObjectKeyWithRole(role int, shardID int, committee incogni
 	prefixHash := GetCommitteePrefixWithRole(role, shardID)
 	valueHash := common.HashH(committeeBytes)
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...)), nil
+}
+
+func (c *CommitteeObject) GetVersion() int {
+	return c.version
 }
 
 // setError remembers the first non-nil error it is called with.

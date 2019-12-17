@@ -11,6 +11,7 @@ type SerialNumberObject struct {
 	// Write caches.
 	trie Trie // storage trie, which becomes non-nil on first access
 
+	version          int
 	serialNumberHash common.Hash
 	serialNumber     []byte
 	objectType       int
@@ -26,6 +27,7 @@ type SerialNumberObject struct {
 
 func newSerialNumberObject(db *StateDB, hash common.Hash) *SerialNumberObject {
 	return &SerialNumberObject{
+		version:          defaultVersion,
 		db:               db,
 		serialNumberHash: hash,
 		serialNumber:     []byte{},
@@ -39,12 +41,17 @@ func newSerialNumberObjectWithValue(db *StateDB, key common.Hash, data interface
 		return nil, NewStatedbError(InvalidByteArrayTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
 	}
 	return &SerialNumberObject{
+		version:          defaultVersion,
 		serialNumberHash: key,
 		serialNumber:     newSerialNumber,
 		db:               db,
 		objectType:       SerialNumberObjectType,
 		deleted:          false,
 	}, nil
+}
+
+func (s *SerialNumberObject) GetVersion() int {
+	return s.version
 }
 
 // setError remembers the first non-nil error it is called with.

@@ -1,5 +1,10 @@
 package statedb
 
+// version
+const (
+	defaultVersion = 0
+)
+
 // Object type
 const (
 	TestObjectType = iota
