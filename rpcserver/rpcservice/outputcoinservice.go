@@ -122,9 +122,9 @@ func (coinService CoinService) ListOutputCoinsByKey(listKeyParams []interface{},
 		item := make([]jsonresult.OutCoin, 0)
 
 		for _, outCoin := range outputCoins {
-			if outCoin.CoinDetails.GetValue() == 0 {
-				continue
-			}
+			//if outCoin.CoinDetails.GetValue() == 0 {
+			//	continue
+			//}
 			item = append(item, jsonresult.NewOutCoin(outCoin))
 		}
 		result.Outputs[paymentAddressStr] = item
