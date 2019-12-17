@@ -560,6 +560,20 @@ func (httpServer *HttpServer) handleGetPDEContributionStatus(params interface{},
 	return status, nil
 }
 
+func (httpServer *HttpServer) handleGetPDEContributionStatusV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	data := arrayParams[0].(map[string]interface{})
+	contributionPairID, ok := data["ContributionPairID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload is invalid"))
+	}
+	contributionStatus, err := httpServer.databaseService.GetPDEContributionStatus(lvdb.PDEContributionStatusPrefix, []byte(contributionPairID))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+	}
+	return contributionStatus, nil
+}
+
 func (httpServer *HttpServer) handleGetPDETradeStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	data := arrayParams[0].(map[string]interface{})
@@ -602,7 +616,7 @@ func parsePDEContributionInst(inst []string, beaconHeight uint64) (*PDEContribut
 	if err != nil {
 		return nil, err
 	}
-	if status == "matched" {
+	if status == common.PDEContributionMatchedChainStatus {
 		matchedContribContent := []byte(inst[3])
 		var matchedContrib metadata.PDEMatchedContribution
 		err := json.Unmarshal(matchedContribContent, &matchedContrib)
@@ -616,11 +630,11 @@ func parsePDEContributionInst(inst []string, beaconHeight uint64) (*PDEContribut
 			TokenIDStr:            matchedContrib.TokenIDStr,
 			TxReqID:               matchedContrib.TxReqID,
 			ShardID:               byte(shardID),
-			Status:                "matched",
+			Status:                common.PDEContributionMatchedChainStatus,
 			BeaconHeight:          beaconHeight,
 		}, nil
 	}
-	if status == "refund" {
+	if status == common.PDEContributionRefundChainStatus {
 		refundedContribContent := []byte(inst[3])
 		var refundedContrib metadata.PDERefundContribution
 		err := json.Unmarshal(refundedContribContent, &refundedContrib)
@@ -634,7 +648,7 @@ func parsePDEContributionInst(inst []string, beaconHeight uint64) (*PDEContribut
 			TokenIDStr:            refundedContrib.TokenIDStr,
 			TxReqID:               refundedContrib.TxReqID,
 			ShardID:               byte(shardID),
-			Status:                "refunded",
+			Status:                common.PDEContributionRefundChainStatus,
 			BeaconHeight:          beaconHeight,
 		}, nil
 	}
@@ -647,7 +661,7 @@ func parsePDETradeInst(inst []string, beaconHeight uint64) (*PDETrade, error) {
 	if err != nil {
 		return nil, err
 	}
-	if status == "refund" {
+	if status == common.PDETradeRefundChainStatus {
 		contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
 		if err != nil {
 			return nil, err
@@ -673,7 +687,7 @@ func parsePDETradeInst(inst []string, beaconHeight uint64) (*PDETrade, error) {
 			BeaconHeight:        beaconHeight,
 		}, nil
 	}
-	if status == "accepted" {
+	if status == common.PDETradeAcceptedChainStatus {
 		tradeAcceptedContentBytes := []byte(inst[3])
 		var tradeAcceptedContent metadata.PDETradeAcceptedContent
 		err := json.Unmarshal(tradeAcceptedContentBytes, &tradeAcceptedContent)
@@ -705,7 +719,7 @@ func parsePDEWithdrawalInst(inst []string, beaconHeight uint64) (*PDEWithdrawal,
 	if err != nil {
 		return nil, err
 	}
-	if status == "accepted" {
+	if status == common.PDEWithdrawalAcceptedChainStatus {
 		withdrawalAcceptedContentBytes := []byte(inst[3])
 		var withdrawalAcceptedContent metadata.PDEWithdrawalAcceptedContent
 		err := json.Unmarshal(withdrawalAcceptedContentBytes, &withdrawalAcceptedContent)

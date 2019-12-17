@@ -87,7 +87,7 @@ func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			continue
 		}
 		instTradeStatus := inst[2]
-		if instTradeStatus != iRes.TradeStatus || (instTradeStatus != "refund" && instTradeStatus != "accepted") {
+		if instTradeStatus != iRes.TradeStatus || (instTradeStatus != common.PDETradeRefundChainStatus && instTradeStatus != common.PDETradeAcceptedChainStatus) {
 			continue
 		}
 
@@ -96,7 +96,7 @@ func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		var receiverAddrStrFromInst string
 		var receivingAmtFromInst uint64
 		var receivingTokenIDStr string
-		if instTradeStatus == "refund" {
+		if instTradeStatus == common.PDETradeRefundChainStatus {
 			contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
 			if err != nil {
 				Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
