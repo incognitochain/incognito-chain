@@ -14,7 +14,7 @@ var (
 	currentCandidatePrefix  = []byte("cur-cand-")
 	substitutePrefix        = []byte("shard-sub-")
 	committeePrefix         = []byte("shard-com-")
-	rewardReceiverPrefix    = []byte("reward-receiver-")
+	committeeRewardPrefix   = []byte("committee-reward-")
 )
 
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
@@ -39,8 +39,8 @@ func GetCommitteePrefixWithRole(role int, shardID int) []byte {
 		panic("no role exist")
 	}
 }
-func GetRewardReceiverPrefix() []byte {
-	temp := []byte(rewardReceiverPrefix)
+func GetCommitteeRewardPrefix() []byte {
+	temp := []byte(committeeRewardPrefix)
 	h := common.HashH(temp)
 	return h[:][:prefixHashKeyLength]
 }
@@ -92,12 +92,12 @@ var _ = func() (_ struct{}) {
 	}
 	m[string(tempSerialNumber)] = "serial-number-"
 	// reward receiver
-	tempRewardReceiver := GetRewardReceiverPrefix()
+	tempRewardReceiver := GetCommitteeRewardPrefix()
 	prefixs = append(prefixs, tempRewardReceiver)
 	if v, ok := m[string(tempRewardReceiver)]; ok {
-		panic("reward-receiver-" + " same prefix " + v)
+		panic("committee-reward-" + " same prefix " + v)
 	}
-	m[string(tempRewardReceiver)] = "reward-receiver-"
+	m[string(tempRewardReceiver)] = "committee-reward-"
 	for i, v1 := range prefixs {
 		for j, v2 := range prefixs {
 			if i == j {

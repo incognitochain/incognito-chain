@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
-	"strings"
 	"testing"
 )
 
@@ -18,7 +17,7 @@ var (
 )
 
 var _ = func() (_ struct{}) {
-	dbPath, err := ioutil.TempDir(os.TempDir(), "test_committee")
+	dbPath, err := ioutil.TempDir(os.TempDir(), "test_all")
 	if err != nil {
 		panic(err)
 	}
@@ -28,14 +27,14 @@ var _ = func() (_ struct{}) {
 	return
 }()
 
-func TestStateDB_GetAllStateObject(t *testing.T) {
+func storeAllStateObjectForTesting(initRoot common.Hash) (common.Hash, map[int][]incognitokey.CommitteePublicKey, map[string]map[common.Hash]int) {
 	ids := []int{0, 1, 2, 3, 4, 5, 6, 7}
-	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDBAllTest)
+	sDB, err := statedb.NewWithPrefixTrie(initRoot, warperDBAllTest)
 	if err != nil {
 		panic(err)
 	}
 	wantMCommittee := make(map[int][]incognitokey.CommitteePublicKey)
-	wantMRewardReceiver := make(map[string]string)
+	wantMReward := make(map[string]map[common.Hash]int)
 	// Committee
 	from, to := 0, 64
 	for _, shardID := range ids {
@@ -58,29 +57,35 @@ func TestStateDB_GetAllStateObject(t *testing.T) {
 		to += 64
 	}
 
-	// Reward Receiver
-	mRewardReceiverStates := make(map[common.Hash]*statedb.RewardReceiverState)
-	for index, value := range incognitoPublicKey {
-		key, _ := statedb.GenerateRewardReceiverObjectKey(value)
-		rewardReceiverState := statedb.NewRewardReceiverStateWithValue(value, receiverPaymentAddress[index])
+	// Committee Reward
+	mRewardReceiverStates := make(map[common.Hash]*statedb.CommitteeRewardState)
+	for _, value := range incognitoPublicKey {
+		key, _ := statedb.GenerateCommitteeRewardObjectKey(value)
+		reward := generateTokenMapWithAmount()
+		rewardReceiverState := statedb.NewCommitteeRewardStateWithValue(reward, value)
 		mRewardReceiverStates[key] = rewardReceiverState
-		wantMRewardReceiver[value] = receiverPaymentAddress[index]
+		wantMReward[value] = reward
 	}
 
 	for key, value := range mRewardReceiverStates {
-		sDB.SetStateObject(statedb.RewardReceiverObjectType, key, value)
+		sDB.SetStateObject(statedb.CommitteeRewardObjectType, key, value)
 	}
 
 	// COMMIT
 	rootHash, err := sDB.Commit(true)
 	if err != nil {
-		t.Fatal(err)
+		panic(err)
 	}
 	err = sDB.Database().TrieDB().Commit(rootHash, false)
 	if err != nil {
-		t.Fatal(err)
+		panic(err)
 	}
+	return rootHash, wantMCommittee, wantMReward
+}
 
+func TestStateDB_GetAllStateObject(t *testing.T) {
+	ids := []int{0, 1, 2, 3, 4, 5, 6, 7}
+	rootHash, wantMCommittee, wantMReward := storeAllStateObjectForTesting(emptyRoot)
 	// GOT to verify
 	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBAllTest)
 	if err != nil || tempStateDB == nil {
@@ -110,12 +115,12 @@ func TestStateDB_GetAllStateObject(t *testing.T) {
 			}
 		}
 	}
-	gotMRewardReceiver := tempStateDB.GetAllRewardReceiverState()
+	gotMRewardReceiver := tempStateDB.GetAllCommitteeReward()
 	for k, v1 := range gotMRewardReceiver {
-		if v2, ok := wantMRewardReceiver[k]; !ok {
+		if v2, ok := wantMReward[k]; !ok {
 			t.Fatalf("want %+v but get nothing", k)
 		} else {
-			if strings.Compare(v2, v1) != 0 {
+			if !reflect.DeepEqual(v2, v1) {
 				t.Fatalf("want %+v but got %+v", v2, v1)
 			}
 		}
@@ -123,20 +128,20 @@ func TestStateDB_GetAllStateObject(t *testing.T) {
 }
 
 func BenchmarkStateDB_GetAllRewardReceiverInFullData(b *testing.B) {
-	rootHash := storeAllStateObjectForTesting(emptyRoot)
+	rootHash, _, _ := storeAllStateObjectForTesting(emptyRoot)
 	// GOT to verify
 	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBAllTest)
 	if err != nil || tempStateDB == nil {
 		panic(err)
 	}
 	for n := 0; n < b.N; n++ {
-		tempStateDB.GetAllRewardReceiverState()
+		tempStateDB.GetAllCommitteeReward()
 	}
 }
 
 func BenchmarkStateDB_GetAllCommitteeInFullData(b *testing.B) {
 	ids := []int{0, 1, 2, 3, 4, 5, 6, 7}
-	rootHash := storeAllStateObjectForTesting(emptyRoot)
+	rootHash, _, _ := storeAllStateObjectForTesting(emptyRoot)
 	// GOT to verify
 	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBAllTest)
 	if err != nil || tempStateDB == nil {
@@ -145,59 +150,4 @@ func BenchmarkStateDB_GetAllCommitteeInFullData(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		tempStateDB.GetAllValidatorCommitteePublicKey(statedb.CurrentValidator, ids)
 	}
-}
-
-func storeAllStateObjectForTesting(initRoot common.Hash) common.Hash {
-	ids := []int{0, 1, 2, 3, 4, 5, 6, 7}
-	sDB, err := statedb.NewWithPrefixTrie(initRoot, warperDBAllTest)
-	if err != nil {
-		panic(err)
-	}
-	wantMCommittee := make(map[int][]incognitokey.CommitteePublicKey)
-	wantMRewardReceiver := make(map[string]string)
-	// Committee
-	from, to := 0, 64
-	for _, shardID := range ids {
-		mCommittee := make(map[common.Hash]*statedb.CommitteeState)
-		tempCommitteePublicKey, err := incognitokey.CommitteeBase58KeyListToStruct(committeePublicKeys)
-		if err != nil {
-			panic(err)
-		}
-		tempCommitteePublicKey = tempCommitteePublicKey[from:to]
-		for index, value := range tempCommitteePublicKey {
-			key, _ := statedb.GenerateCommitteeObjectKeyWithRole(statedb.CurrentValidator, shardID, value)
-			committeeState := statedb.NewCommitteeStateWithValue(shardID, statedb.CurrentValidator, value, receiverPaymentAddress[index], true)
-			mCommittee[key] = committeeState
-			wantMCommittee[shardID] = append(wantMCommittee[shardID], value)
-		}
-		for key, value := range mCommittee {
-			sDB.SetStateObject(statedb.CommitteeObjectType, key, value)
-		}
-		from += 64
-		to += 64
-	}
-
-	// Reward Receiver
-	mRewardReceiverStates := make(map[common.Hash]*statedb.RewardReceiverState)
-	for index, value := range incognitoPublicKey {
-		key, _ := statedb.GenerateRewardReceiverObjectKey(value)
-		rewardReceiverState := statedb.NewRewardReceiverStateWithValue(value, receiverPaymentAddress[index])
-		mRewardReceiverStates[key] = rewardReceiverState
-		wantMRewardReceiver[value] = receiverPaymentAddress[index]
-	}
-
-	for key, value := range mRewardReceiverStates {
-		sDB.SetStateObject(statedb.RewardReceiverObjectType, key, value)
-	}
-
-	// COMMIT
-	rootHash, err := sDB.Commit(true)
-	if err != nil {
-		panic(err)
-	}
-	err = sDB.Database().TrieDB().Commit(rootHash, false)
-	if err != nil {
-		panic(err)
-	}
-	return rootHash
 }

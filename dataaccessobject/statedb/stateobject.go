@@ -26,8 +26,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newSerialNumberObjectWithValue(db, hash, value)
 	case CommitteeObjectType:
 		return newCommitteeObjectWithValue(db, hash, value)
-	case RewardReceiverObjectType:
-		return newRewardReceiverObjectWithValue(db, hash, value)
+	case CommitteeRewardObjectType:
+		return newCommitteeRewardObjectWithValue(db, hash, value)
 	default:
 		panic("state object type not exist")
 	}
@@ -41,8 +41,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newSerialNumberObject(db, hash)
 	case CommitteeObjectType:
 		return newCommitteeObject(db, hash)
-	case RewardReceiverObjectType:
-		return newRewardReceiverObject(db, hash)
+	case CommitteeRewardObjectType:
+		return newCommitteeRewardObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}

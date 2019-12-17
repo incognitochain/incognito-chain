@@ -6,8 +6,7 @@ const (
 	SerialNumberObjectType
 	AllShardCommitteeObjectType
 	CommitteeObjectType
-	RewardReceiverObjectType
-	AutoStakingObjectType
+	CommitteeRewardObjectType
 )
 
 // Prefix length

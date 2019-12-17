@@ -42,3 +42,9 @@ Used for beacon and all shards, distinguish between shards and beacon by prefix.
     * committee public key: base 58 of incognitokey.CommitteePublicKey struct
     * reward receiver payment address: base 58 string of reward receiver
     * auto staking: yes or no
+    
+6. Committee Reward
+- key: first 12 bytes of `hash(committee-shardID-prefix)` with first 20 bytes of `hash(incognito-public-key-bytes)`
+- value: committee state:
+    * reward: map token id => reward amount
+    * incognito public key: 33 bytes public key encoded as base 58 string

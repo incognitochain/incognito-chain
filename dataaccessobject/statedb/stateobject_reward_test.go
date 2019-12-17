@@ -1,16 +1,16 @@
 package statedb_test
 
 import (
+	"io/ioutil"
+	"math/rand"
+	"os"
+	"reflect"
+	"testing"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/trie"
-	"io/ioutil"
-	"os"
-	"reflect"
-	"sort"
-	"strings"
-	"testing"
 )
 
 var (
@@ -574,39 +574,52 @@ var (
 		"1yzcSLrpmDe7nY6Qa32edjj8RXgwT6hoXVwu64gP6RqQChzfSP",
 		"1za9uf1atg7GaGHU2syWKFNm7yZMGwYPNsCMRaCFAzb4TssmZn",
 	}
-
-	warperDBrrTest statedb.DatabaseAccessWarper
-	initM          = make(map[string]string)
+	tokenIDs = []string{
+		"11111111111111111111111",
+		"22222222222222222222222",
+		"33333333333333333333333",
+		"44444444444444444444444",
+		"55555555555555555555555",
+		"66666666666666666666666",
+	}
+	warperDBrewardTest statedb.DatabaseAccessWarper
 )
 
 var _ = func() (_ struct{}) {
-	dbPath, err := ioutil.TempDir(os.TempDir(), "test_rewardreceiver")
+	dbPath, err := ioutil.TempDir(os.TempDir(), "test_reward")
 	if err != nil {
 		panic(err)
 	}
 	diskBD, _ := incdb.Open("leveldb", dbPath)
-	warperDBrrTest = statedb.NewDatabaseAccessWarper(diskBD)
+	warperDBrewardTest = statedb.NewDatabaseAccessWarper(diskBD)
 	trie.Logger.Init(common.NewBackend(nil).Logger("test", true))
-
-	for index, value := range incognitoPublicKey {
-		initM[value] = receiverPaymentAddress[index]
-	}
 	return
 }()
 
-func storeRewardReceiver(initRoot common.Hash) (common.Hash, map[common.Hash]*statedb.RewardReceiverState) {
-	mState := make(map[common.Hash]*statedb.RewardReceiverState)
-	for index, value := range incognitoPublicKey {
-		key, _ := statedb.GenerateRewardReceiverObjectKey(value)
-		rewardReceiverState := statedb.NewRewardReceiverStateWithValue(value, receiverPaymentAddress[index])
-		mState[key] = rewardReceiverState
+func generateTokenMapWithAmount() map[common.Hash]int {
+	reward := make(map[common.Hash]int)
+	for _, temp := range tokenIDs {
+		tokenID := common.BytesToHash([]byte(temp))
+		reward[tokenID] = rand.Int() % 1000000000
 	}
-	sDB, err := statedb.NewWithPrefixTrie(initRoot, warperDBrrTest)
+	return reward
+}
+func storeRewardReceiver(initRoot common.Hash) (common.Hash, map[common.Hash]*statedb.CommitteeRewardState, map[string]map[common.Hash]int) {
+	mState := make(map[common.Hash]*statedb.CommitteeRewardState)
+	wantM := make(map[string]map[common.Hash]int)
+	for index, value := range incognitoPublicKey {
+		key, _ := statedb.GenerateCommitteeRewardObjectKey(value)
+		reward := generateTokenMapWithAmount()
+		rewardReceiverState := statedb.NewCommitteeRewardStateWithValue(reward, incognitoPublicKey[index])
+		mState[key] = rewardReceiverState
+		wantM[value] = reward
+	}
+	sDB, err := statedb.NewWithPrefixTrie(initRoot, warperDBrewardTest)
 	if err != nil {
 		panic(err)
 	}
 	for key, value := range mState {
-		sDB.SetStateObject(statedb.RewardReceiverObjectType, key, value)
+		sDB.SetStateObject(statedb.CommitteeRewardObjectType, key, value)
 	}
 	rootHash, err := sDB.Commit(true)
 	if err != nil {
@@ -616,119 +629,55 @@ func storeRewardReceiver(initRoot common.Hash) (common.Hash, map[common.Hash]*st
 	if err != nil {
 		panic(err)
 	}
-	return rootHash, mState
+	return rootHash, mState, wantM
 }
 
-func TestStateDB_GetAllRewardReceiverState(t *testing.T) {
-	rootHash, _ := storeRewardReceiver(emptyRoot)
-	wantM := initM
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBrrTest)
+func TestStateDB_GetAllCommitteeRewardState(t *testing.T) {
+	rootHash, wantM, _ := storeRewardReceiver(emptyRoot)
+	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBrewardTest)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err)
 	}
-	gotM := tempStateDB.GetAllRewardReceiverState()
-	for k, v1 := range gotM {
-		if v2, ok := wantM[k]; !ok {
-			t.Fatalf("want %+v but get nothing", k)
-		} else {
-			if strings.Compare(v2, v1) != 0 {
-				t.Fatalf("want %+v but got %+v", v2, v1)
-			}
+	for k, v := range wantM {
+		gotM, has, err := tempStateDB.GetCommitteeRewardState(k)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !has {
+			t.Fatal(has)
+		}
+		if !reflect.DeepEqual(v, gotM) {
+			t.Fatalf("want %+v but got %+v", v, gotM)
 		}
 	}
 }
 
-func TestStateDB_GetAllRewardReceiverStateMultipleRootHash(t *testing.T) {
-	offset := 9
-	maxHeight := int(len(initM) / offset)
-	keys := []string{}
-	for k, _ := range initM {
-		keys = append(keys, k)
-	}
-	sort.Slice(keys, func(i, j int) bool {
-		return strings.Compare(keys[i], keys[j]) > 0
-	})
-	rootHashes := []common.Hash{emptyRoot}
-	wantMs := []map[string]string{}
-	for i := 0; i < maxHeight; i++ {
-		sDB, err := statedb.NewWithPrefixTrie(rootHashes[i], warperDBrrTest)
-		if err != nil || sDB == nil {
-			t.Fatal(err)
-		}
-		tempKeys := keys[i*9 : (i+1)*9]
-		tempM := make(map[string]string)
-		prevWantM := make(map[string]string)
-		if i != 0 {
-			prevWantM = wantMs[i-1]
-		}
-		for k, v := range prevWantM {
-			tempM[k] = v
-		}
-		for _, publicKey := range tempKeys {
-			paymentAddress := initM[publicKey]
-			key, _ := statedb.GenerateRewardReceiverObjectKey(paymentAddress)
-			rewardReceiverState := statedb.NewRewardReceiverStateWithValue(publicKey, paymentAddress)
-			err := sDB.SetStateObject(statedb.RewardReceiverObjectType, key, rewardReceiverState)
-			if err != nil {
-				t.Fatal(err)
-			}
-			tempM[publicKey] = paymentAddress
-		}
-		rootHash, err := sDB.Commit(true)
-		if err != nil {
-			t.Fatal(err)
-		}
-		err = sDB.Database().TrieDB().Commit(rootHash, false)
-		if err != nil {
-			t.Fatal(err)
-		}
-		wantMs = append(wantMs, tempM)
-		rootHashes = append(rootHashes, rootHash)
-	}
-	for index, rootHash := range rootHashes[1:] {
-		wantM := wantMs[index]
-		tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBrrTest)
-		if err != nil || tempStateDB == nil {
-			t.Fatal(err)
-		}
-		gotM := tempStateDB.GetAllRewardReceiverState()
-		for k, v1 := range gotM {
-			if v2, ok := wantM[k]; !ok {
-				t.Fatalf("want %+v but get nothing", k)
-			} else {
-				if strings.Compare(v2, v1) != 0 {
-					t.Fatalf("want %+v but got %+v", v2, v1)
-				}
-			}
-		}
-	}
-}
 func TestStateDB_StoreAndGetRewardReceiver(t *testing.T) {
 	var err error = nil
-	key, _ := statedb.GenerateRewardReceiverObjectKey(incognitoPublicKey[0])
-	key2, _ := statedb.GenerateRewardReceiverObjectKey(incognitoPublicKey[1])
-	rewardReceiverState := statedb.NewRewardReceiverStateWithValue(incognitoPublicKey[0], receiverPaymentAddress[0])
-	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDBrrTest)
+	key, _ := statedb.GenerateCommitteeRewardObjectKey(incognitoPublicKey[0])
+	key2, _ := statedb.GenerateCommitteeRewardObjectKey(incognitoPublicKey[1])
+	rewardReceiverState := statedb.NewCommitteeRewardStateWithValue(generateTokenMapWithAmount(), incognitoPublicKey[0])
+	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDBrewardTest)
 	if err != nil {
 		panic(err)
 	}
-	err = sDB.SetStateObject(statedb.RewardReceiverObjectType, key, rewardReceiverState)
+	err = sDB.SetStateObject(statedb.CommitteeRewardObjectType, key, rewardReceiverState)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = sDB.SetStateObject(statedb.RewardReceiverObjectType, key, "committeeState")
+	err = sDB.SetStateObject(statedb.CommitteeRewardObjectType, key, "committee reward")
 	if err == nil {
 		if err.(*statedb.StatedbError).Code != statedb.ErrCodeMessage[statedb.InvalidRewardReceiverStateTypeError].Code {
 			t.Fatal("expect wrong value type")
 		}
 	}
-	err = sDB.SetStateObject(statedb.RewardReceiverObjectType, key, []byte("committee state"))
+	err = sDB.SetStateObject(statedb.CommitteeRewardObjectType, key, []byte("committee reward"))
 	if err == nil {
 		if err.(*statedb.StatedbError).Code != statedb.ErrCodeMessage[statedb.InvalidRewardReceiverStateTypeError].Code {
 			t.Fatal("expect wrong value type")
 		}
 	}
-	err = sDB.SetStateObject(statedb.RewardReceiverObjectType, key2, []byte("committee state"))
+	err = sDB.SetStateObject(statedb.CommitteeRewardObjectType, key2, []byte("committee reward"))
 	if err == nil {
 		if err.(*statedb.StatedbError).Code != statedb.ErrCodeMessage[statedb.InvalidRewardReceiverStateTypeError].Code {
 			t.Fatal("expect wrong value type")
@@ -746,11 +695,11 @@ func TestStateDB_StoreAndGetRewardReceiver(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBrrTest)
+	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBrewardTest)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err)
 	}
-	got, has, err := tempStateDB.GetRewardReceiverState(key)
+	got, has, err := tempStateDB.GetCommitteeRewardState(key)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -773,98 +722,61 @@ func TestStateDB_StoreAndGetRewardReceiver(t *testing.T) {
 	}
 }
 
-func BenchmarkStateDB_GetRewardReceiverState1In558(b *testing.B) {
-	var err error = nil
-	key, _ := statedb.GenerateRewardReceiverObjectKey(incognitoPublicKey[0])
-	rewardReceiverState := statedb.NewRewardReceiverStateWithValue(incognitoPublicKey[0], receiverPaymentAddress[0])
-	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDBrrTest)
-	if err != nil {
-		panic(err)
+func TestStateDB_GetAllRewardReceiverStateMultipleRootHash(t *testing.T) {
+	offset := 9
+	maxHeight := int(len(incognitoPublicKey) / offset)
+	rootHashes := []common.Hash{emptyRoot}
+	wantMs := []map[string]map[common.Hash]int{}
+	for i := 0; i < maxHeight; i++ {
+		sDB, err := statedb.NewWithPrefixTrie(rootHashes[i], warperDBrewardTest)
+		if err != nil || sDB == nil {
+			t.Fatal(err)
+		}
+		tempKeys := incognitoPublicKey[i*9 : (i+1)*9]
+		tempM := make(map[string]map[common.Hash]int)
+		prevWantM := make(map[string]map[common.Hash]int)
+		if i != 0 {
+			prevWantM = wantMs[i-1]
+		}
+		for k, v := range prevWantM {
+			tempM[k] = v
+		}
+		for _, value := range tempKeys {
+			key, _ := statedb.GenerateCommitteeRewardObjectKey(value)
+			reward := generateTokenMapWithAmount()
+			rewardReceiverState := statedb.NewCommitteeRewardStateWithValue(reward, value)
+			err := sDB.SetStateObject(statedb.CommitteeRewardObjectType, key, rewardReceiverState)
+			if err != nil {
+				t.Fatal(err)
+			}
+			tempM[value] = reward
+		}
+		rootHash, err := sDB.Commit(true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = sDB.Database().TrieDB().Commit(rootHash, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		wantMs = append(wantMs, tempM)
+		rootHashes = append(rootHashes, rootHash)
 	}
-	err = sDB.SetStateObject(statedb.RewardReceiverObjectType, key, rewardReceiverState)
-	if err != nil {
-		panic(err)
-	}
-	rootHash, err := sDB.Commit(true)
-	if err != nil {
-		panic(err)
-	}
-	err = sDB.Database().TrieDB().Commit(rootHash, false)
-	if err != nil {
-		panic(err)
-	}
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBrrTest)
-	if err != nil || tempStateDB == nil {
-		panic(err)
-	}
-	for n := 0; n < b.N; n++ {
-		tempStateDB.GetRewardReceiverState(key)
-	}
-}
-
-func BenchmarkStateDB_GetRewardReceiverState1In1(b *testing.B) {
-	var err error = nil
-	key, _ := statedb.GenerateRewardReceiverObjectKey(incognitoPublicKey[0])
-	rewardReceiverState := statedb.NewRewardReceiverStateWithValue(incognitoPublicKey[0], receiverPaymentAddress[0])
-	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDBrrTest)
-	if err != nil {
-		panic(err)
-	}
-	err = sDB.SetStateObject(statedb.RewardReceiverObjectType, key, rewardReceiverState)
-	if err != nil {
-		panic(err)
-	}
-	rootHash, err := sDB.Commit(true)
-	if err != nil {
-		panic(err)
-	}
-	err = sDB.Database().TrieDB().Commit(rootHash, false)
-	if err != nil {
-		panic(err)
-	}
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBrrTest)
-	if err != nil || tempStateDB == nil {
-		panic(err)
-	}
-	for n := 0; n < b.N; n++ {
-		tempStateDB.GetRewardReceiverState(key)
-	}
-}
-
-func BenchmarkStateDB_StoreRewardReceiverState558(b *testing.B) {
-	var err error = nil
-	mState := make(map[common.Hash]*statedb.RewardReceiverState)
-	for index, value := range incognitoPublicKey {
-		key, _ := statedb.GenerateRewardReceiverObjectKey(value)
-		rewardReceiverState := statedb.NewRewardReceiverStateWithValue(value, receiverPaymentAddress[index])
-		mState[key] = rewardReceiverState
-	}
-	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDBrrTest)
-	if err != nil {
-		panic(err)
-	}
-	for key, value := range mState {
-		sDB.SetStateObject(statedb.RewardReceiverObjectType, key, value)
-	}
-	for n := 0; n < b.N; n++ {
-		rootHash, _ := sDB.Commit(true)
-		sDB.Database().TrieDB().Commit(rootHash, false)
-
-	}
-}
-
-func BenchmarkStateDB_StoreRewardReceiverState1(b *testing.B) {
-	var err error = nil
-	key, _ := statedb.GenerateRewardReceiverObjectKey(incognitoPublicKey[0])
-	rewardReceiverState := statedb.NewRewardReceiverStateWithValue(incognitoPublicKey[0], receiverPaymentAddress[0])
-	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDBrrTest)
-	if err != nil {
-		panic(err)
-	}
-	sDB.SetStateObject(statedb.RewardReceiverObjectType, key, rewardReceiverState)
-	for n := 0; n < b.N; n++ {
-		rootHash, _ := sDB.Commit(true)
-		sDB.Database().TrieDB().Commit(rootHash, false)
-
+	for index, rootHash := range rootHashes[1:] {
+		wantM := wantMs[index]
+		tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBrewardTest)
+		if err != nil || tempStateDB == nil {
+			t.Fatal(err)
+		}
+		gotM := tempStateDB.GetAllCommitteeReward()
+		for k, v1 := range gotM {
+			if v2, ok := wantM[k]; !ok {
+				t.Fatalf("want %+v but get nothing", k)
+			} else {
+				if !reflect.DeepEqual(v2, v1) {
+					t.Fatalf("want %+v but got %+v", v2, v1)
+				}
+			}
+		}
 	}
 }
