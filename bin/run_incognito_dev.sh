@@ -9,7 +9,7 @@ if [ -z "$NAME" ]; then
 fi
 
 if [ -z $BOOTNODE_IP ]; then
-    BOOTNODE_IP="157.245.128.19:9330";
+    BOOTNODE_IP="devnet-bootnode.incognito.org:9330";
 fi
 
 if [ -z "$NODE_PORT" ]; then
