@@ -15,13 +15,14 @@ type ListOutputCoins struct {
 }
 
 type OutCoin struct {
-	PublicKey      string `json:"PublicKey"`
-	CoinCommitment string `json:"CoinCommitment"`
-	SNDerivator    string `json:"SNDerivator"`
-	SerialNumber   string `json:"SerialNumber"`
-	Randomness     string `json:"Randomness"`
-	Value          string `json:"Value"`
-	Info           string `json:"Info"`
+	PublicKey            string `json:"PublicKey"`
+	CoinCommitment       string `json:"CoinCommitment"`
+	SNDerivator          string `json:"SNDerivator"`
+	SerialNumber         string `json:"SerialNumber"`
+	Randomness           string `json:"Randomness"`
+	Value                string `json:"Value"`
+	Info                 string `json:"Info"`
+	CoinDetailsEncrypted string `json:"CoinDetailsEncrypted"`
 }
 
 func NewOutcoinFromInterface(data interface{}) (*OutCoin, error) {
@@ -55,6 +56,11 @@ func NewOutCoin(outCoin *privacy.OutputCoin) OutCoin {
 		Randomness:     base58.Base58Check{}.Encode(outCoin.CoinDetails.GetRandomness().ToBytesS(), common.ZeroByte),
 		SNDerivator:    base58.Base58Check{}.Encode(outCoin.CoinDetails.GetSNDerivator().ToBytesS(), common.ZeroByte),
 		SerialNumber:   serialNumber,
+	}
+
+	// return more data of CoinDetailsEncrypted
+	if outCoin.CoinDetailsEncrypted != nil {
+		result.CoinDetailsEncrypted = base58.Base58Check{}.Encode(outCoin.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
 	}
 
 	return result
