@@ -48,3 +48,10 @@ Used for beacon and all shards, distinguish between shards and beacon by prefix.
 - value: committee state:
     * reward: map token id => reward amount
     * incognito public key: 33 bytes public key encoded as base 58 string
+7. Reward Request
+- key: first 12 bytes of `hash(committee-shardID-prefix)` with first 20 bytes of `hash(epoch + shardID + tokenID)`
+- value: request request state:
+    * epoch
+    * shardID
+    * tokenID
+    * amount

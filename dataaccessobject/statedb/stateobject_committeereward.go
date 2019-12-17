@@ -109,7 +109,7 @@ func newCommitteeRewardObjectWithValue(db *StateDB, key common.Hash, data interf
 			return nil, NewStatedbError(InvalidCommitteeStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
 		}
 	}
-	if err := validateIncognitoPublicKeySanity(newCommitteeRewardState.incognitoPublicKey); err != nil {
+	if err := ValidateIncognitoPublicKeySanity(newCommitteeRewardState.incognitoPublicKey); err != nil {
 		return nil, NewStatedbError(InvalidIncognitoPublicKeyTypeError, err)
 	}
 	return &CommitteeRewardObject{
@@ -122,7 +122,7 @@ func newCommitteeRewardObjectWithValue(db *StateDB, key common.Hash, data interf
 }
 
 func GenerateCommitteeRewardObjectKey(publicKey string) (common.Hash, error) {
-	err := validateIncognitoPublicKeySanity(publicKey)
+	err := ValidateIncognitoPublicKeySanity(publicKey)
 	if err != nil {
 		return common.Hash{}, NewStatedbError(InvalidIncognitoPublicKeyTypeError, err)
 	}
@@ -158,7 +158,7 @@ func (rr *CommitteeRewardObject) SetValue(data interface{}) error {
 			return NewStatedbError(InvalidCommitteeStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
 		}
 	}
-	if err := validateIncognitoPublicKeySanity(newCommitteeRewardState.incognitoPublicKey); err != nil {
+	if err := ValidateIncognitoPublicKeySanity(newCommitteeRewardState.incognitoPublicKey); err != nil {
 		return NewStatedbError(InvalidIncognitoPublicKeyTypeError, err)
 	}
 	rr.rewardReceiverState = newCommitteeRewardState
@@ -191,7 +191,6 @@ func (rr *CommitteeRewardObject) MarkDelete() {
 	rr.deleted = true
 }
 
-// reset all shard committee value into default value
 func (rr *CommitteeRewardObject) Reset() bool {
 	rr.rewardReceiverState = NewCommitteeRewardState()
 	return true

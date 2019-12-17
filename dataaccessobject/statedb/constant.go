@@ -7,6 +7,7 @@ const (
 	AllShardCommitteeObjectType
 	CommitteeObjectType
 	CommitteeRewardObjectType
+	RewardRequestObjectType
 )
 
 // Prefix length
