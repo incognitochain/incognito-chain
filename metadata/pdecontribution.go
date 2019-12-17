@@ -53,6 +53,27 @@ type PDEMatchedContribution struct {
 	TxReqID               common.Hash
 }
 
+type PDEMatchedNReturnedContribution struct {
+	PDEContributionPairID      string
+	ContributorAddressStr      string
+	ActualContributedAmount    uint64
+	ReturnedContributedAmount  uint64
+	TokenIDStr                 string
+	ShardID                    byte
+	TxReqID                    common.Hash
+	ActualWaitingContribAmount uint64
+}
+
+type PDEContributionStatus struct {
+	Status             byte
+	TokenID1Str        string
+	Contributed1Amount uint64
+	Returned1Amount    uint64
+	TokenID2Str        string
+	Contributed2Amount uint64
+	Returned2Amount    uint64
+}
+
 func NewPDEContribution(
 	pdeContributionPairID string,
 	contributorAddressStr string,
