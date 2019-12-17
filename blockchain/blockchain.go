@@ -1053,7 +1053,7 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.Ke
 	if keyset == nil {
 		return nil, NewBlockChainError(UnExpectedError, errors.New("Invalid keyset"))
 	}
-	if blockchain.config.MemCache != nil && false {
+	if blockchain.config.MemCache != nil {
 		// get from cache
 		cachedKey := memcache.GetListOutputcoinCachedKey(keyset.PaymentAddress.Pk[:], tokenID, shardID)
 		cachedData, _ := blockchain.config.MemCache.Get(cachedKey)
