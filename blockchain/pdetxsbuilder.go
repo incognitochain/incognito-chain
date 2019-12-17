@@ -196,7 +196,7 @@ func (blockGenerator *BlockGenerator) buildPDETradeIssuanceTx(
 	shardID byte,
 ) (metadata.Transaction, error) {
 	Logger.log.Info("[PDE Trade] Starting...")
-	if instStatus == "refund" {
+	if instStatus == common.PDETradeRefundChainStatus {
 		return blockGenerator.buildPDETradeRefundTx(
 			instStatus,
 			contentStr,
@@ -326,6 +326,7 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
 	meta := metadata.NewPDEContributionResponse(
 		"refund",
 		refundContribution.TxReqID,
+		refundContribution.TokenIDStr,
 		metadata.PDEContributionResponseMeta,
 	)
 	refundTokenIDStr := refundContribution.TokenIDStr
@@ -395,6 +396,102 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
 	)
 	if initErr != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing refund contribution response (privacy custom token) tx: %+v", initErr)
+		return nil, nil
+	}
+	return resTx, nil
+}
+
+func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
+	contentStr string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+) (metadata.Transaction, error) {
+	Logger.log.Info("[PDE Matched and Returned contribution] Starting...")
+	contentBytes := []byte(contentStr)
+	var matchedNReturnedContribution metadata.PDEMatchedNReturnedContribution
+	err := json.Unmarshal(contentBytes, &matchedNReturnedContribution)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while unmarshaling pde matched and  returned contribution content: %+v", err)
+		return nil, nil
+	}
+	if matchedNReturnedContribution.ShardID != shardID {
+		return nil, nil
+	}
+	if matchedNReturnedContribution.ReturnedContributedAmount == 0 {
+		return nil, nil
+	}
+
+	meta := metadata.NewPDEContributionResponse(
+		common.PDEContributionMatchedNReturnedChainStatus,
+		matchedNReturnedContribution.TxReqID,
+		matchedNReturnedContribution.TokenIDStr,
+		metadata.PDEContributionResponseMeta,
+	)
+	tokenIDStr := matchedNReturnedContribution.TokenIDStr
+	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while converting tokenid to hash: %+v", err)
+		return nil, nil
+	}
+	keyWallet, err := wallet.Base58CheckDeserialize(matchedNReturnedContribution.ContributorAddressStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while deserializing contributor address string: %+v", err)
+		return nil, nil
+	}
+	receiverAddr := keyWallet.KeySet.PaymentAddress
+	// the returned currency is PRV
+	if tokenIDStr == common.PRVCoinID.String() {
+		resTx := new(transaction.Tx)
+		err = resTx.InitTxSalary(
+			matchedNReturnedContribution.ReturnedContributedAmount,
+			&receiverAddr,
+			producerPrivateKey,
+			blockGenerator.chain.config.DataBase,
+			meta,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while initializing refund contribution (normal) tx: %+v", err)
+			return nil, nil
+		}
+		return resTx, nil
+	}
+
+	// in case the returned currency is privacy custom token
+	receiver := &privacy.PaymentInfo{
+		Amount:         matchedNReturnedContribution.ReturnedContributedAmount,
+		PaymentAddress: receiverAddr,
+	}
+	var propertyID [common.HashSize]byte
+	copy(propertyID[:], tokenID[:])
+	propID := common.Hash(propertyID)
+	tokenParams := &transaction.CustomTokenPrivacyParamTx{
+		PropertyID: propID.String(),
+		// PropertyName:   issuingAcceptedInst.IncTokenName,
+		// PropertySymbol: issuingAcceptedInst.IncTokenName,
+		Amount:      matchedNReturnedContribution.ReturnedContributedAmount,
+		TokenTxType: transaction.CustomTokenInit,
+		Receiver:    []*privacy.PaymentInfo{receiver},
+		TokenInput:  []*privacy.InputCoin{},
+		Mintable:    true,
+	}
+	resTx := &transaction.TxCustomTokenPrivacy{}
+	initErr := resTx.Init(
+		transaction.NewTxPrivacyTokenInitParams(
+			producerPrivateKey,
+			[]*privacy.PaymentInfo{},
+			nil,
+			0,
+			tokenParams,
+			blockGenerator.chain.config.DataBase,
+			meta,
+			false,
+			false,
+			shardID,
+			nil,
+		),
+	)
+	if initErr != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing matched and returned contribution response (privacy custom token) tx: %+v", initErr)
 		return nil, nil
 	}
 	return resTx, nil
