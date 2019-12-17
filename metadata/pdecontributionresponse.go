@@ -15,11 +15,13 @@ type PDEContributionResponse struct {
 	MetadataBase
 	ContributionStatus string
 	RequestedTxID      common.Hash
+	TokenIDStr         string
 }
 
 func NewPDEContributionResponse(
 	contributionStatus string,
 	requestedTxID common.Hash,
+	tokenIDStr string,
 	metaType int,
 ) *PDEContributionResponse {
 	metadataBase := MetadataBase{
@@ -28,6 +30,7 @@ func NewPDEContributionResponse(
 	return &PDEContributionResponse{
 		ContributionStatus: contributionStatus,
 		RequestedTxID:      requestedTxID,
+		TokenIDStr:         tokenIDStr,
 		MetadataBase:       metadataBase,
 	}
 }
@@ -53,6 +56,7 @@ func (iRes PDEContributionResponse) ValidateMetadataByItself() bool {
 
 func (iRes PDEContributionResponse) Hash() *common.Hash {
 	record := iRes.RequestedTxID.String()
+	record += iRes.TokenIDStr
 	record += iRes.ContributionStatus
 	record += iRes.MetadataBase.Hash().String()
 
@@ -86,22 +90,44 @@ func (iRes PDEContributionResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			continue
 		}
 		instContributionStatus := inst[2]
-		if instContributionStatus != iRes.ContributionStatus || instContributionStatus != "refund" {
+		if instContributionStatus != iRes.ContributionStatus || (instContributionStatus != common.PDEContributionRefundChainStatus && instContributionStatus != common.PDEContributionMatchedNReturnedChainStatus) {
 			continue
 		}
 
-		contentBytes := []byte(inst[3])
-		var refundContribution PDERefundContribution
-		err := json.Unmarshal(contentBytes, &refundContribution)
-		if err != nil {
-			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing refund contribution content: ", err)
-			continue
+		var shardIDFromInst byte
+		var txReqIDFromInst common.Hash
+		var receiverAddrStrFromInst string
+		var receivingAmtFromInst uint64
+		var receivingTokenIDStr string
+
+		if instContributionStatus == common.PDEContributionRefundChainStatus {
+			contentBytes := []byte(inst[3])
+			var refundContribution PDERefundContribution
+			err := json.Unmarshal(contentBytes, &refundContribution)
+			if err != nil {
+				Logger.log.Error("WARNING - VALIDATION: an error occured while parsing refund contribution content: ", err)
+				continue
+			}
+			shardIDFromInst = refundContribution.ShardID
+			txReqIDFromInst = refundContribution.TxReqID
+			receiverAddrStrFromInst = refundContribution.ContributorAddressStr
+			receivingTokenIDStr = refundContribution.TokenIDStr
+			receivingAmtFromInst = refundContribution.ContributedAmount
+
+		} else { // matched and returned
+			contentBytes := []byte(inst[3])
+			var matchedNReturnedContrib PDEMatchedNReturnedContribution
+			err := json.Unmarshal(contentBytes, &matchedNReturnedContrib)
+			if err != nil {
+				Logger.log.Error("WARNING - VALIDATION: an error occured while parsing matched and returned contribution content: ", err)
+				continue
+			}
+			shardIDFromInst = matchedNReturnedContrib.ShardID
+			txReqIDFromInst = matchedNReturnedContrib.TxReqID
+			receiverAddrStrFromInst = matchedNReturnedContrib.ContributorAddressStr
+			receivingTokenIDStr = matchedNReturnedContrib.TokenIDStr
+			receivingAmtFromInst = matchedNReturnedContrib.ReturnedContributedAmount
 		}
-		shardIDFromInst := refundContribution.ShardID
-		txReqIDFromInst := refundContribution.TxReqID
-		receiverAddrStrFromInst := refundContribution.ContributorAddressStr
-		receivingTokenIDStr := refundContribution.TokenIDStr
-		receivingAmtFromInst := refundContribution.ContributedAmount
 
 		if !bytes.Equal(iRes.RequestedTxID[:], txReqIDFromInst[:]) ||
 			shardID != shardIDFromInst {
