@@ -79,7 +79,7 @@ func (blockchain *BlockChain) processPDEContributionV2(
 		return nil // skip the instruction
 	}
 	contributionStatus := instruction[2]
-	if contributionStatus == "waiting" {
+	if contributionStatus == common.PDEContributionWaitingChainStatus {
 		var waitingContribution metadata.PDEWaitingContribution
 		err := json.Unmarshal([]byte(instruction[3]), &waitingContribution)
 		if err != nil {
@@ -93,18 +93,22 @@ func (blockchain *BlockChain) processPDEContributionV2(
 			Amount:                waitingContribution.ContributedAmount,
 			TxReqID:               waitingContribution.TxReqID,
 		}
-		err = rawdb.TrackPDEStatus(
-			blockchain.config.DataBase,
+		contribStatus := metadata.PDEContributionStatus{
+			Status: byte(common.PDEContributionWaitingStatus),
+		}
+		contribStatusBytes, _ := json.Marshal(contribStatus)
+		err = rawdb.TrackPDEContributionStatus(
+			blockchain.GetDatabase(),
 			rawdb.PDEContributionStatusPrefix,
 			[]byte(waitingContribution.PDEContributionPairID),
-			byte(common.PDEContributionWaitingStatus),
+			contribStatusBytes,
 		)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while tracking pde waiting contribution status: %+v", err)
 			return nil
 		}
 
-	} else if contributionStatus == "refund" {
+	} else if contributionStatus == common.PDEContributionRefundChainStatus {
 		var refundContribution metadata.PDERefundContribution
 		err := json.Unmarshal([]byte(instruction[3]), &refundContribution)
 		if err != nil {
@@ -116,18 +120,23 @@ func (blockchain *BlockChain) processPDEContributionV2(
 		if found {
 			delete(currentPDEState.WaitingPDEContributions, waitingContribPairKey)
 		}
-		err = rawdb.TrackPDEStatus(
-			blockchain.config.DataBase,
+
+		contribStatus := metadata.PDEContributionStatus{
+			Status: byte(common.PDEContributionRefundStatus),
+		}
+		contribStatusBytes, _ := json.Marshal(contribStatus)
+		err = rawdb.TrackPDEContributionStatus(
+			blockchain.GetDatabase(),
 			rawdb.PDEContributionStatusPrefix,
 			[]byte(refundContribution.PDEContributionPairID),
-			byte(common.PDEContributionRefundStatus),
+			contribStatusBytes,
 		)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while tracking pde refund contribution status: %+v", err)
 			return nil
 		}
 
-	} else if contributionStatus == "matched" {
+	} else if contributionStatus == common.PDEContributionMatchedChainStatus {
 		var matchedContribution metadata.PDEMatchedContribution
 		err := json.Unmarshal([]byte(instruction[3]), &matchedContribution)
 		if err != nil {
@@ -153,15 +162,110 @@ func (blockchain *BlockChain) processPDEContributionV2(
 			currentPDEState,
 		)
 		delete(currentPDEState.WaitingPDEContributions, waitingContribPairKey)
-		err = rawdb.TrackPDEStatus(
-			blockchain.config.DataBase,
+		contribStatus := metadata.PDEContributionStatus{
+			Status: byte(common.PDEContributionAcceptedStatus),
+		}
+		contribStatusBytes, _ := json.Marshal(contribStatus)
+		err = rawdb.TrackPDEContributionStatus(
+			blockchain.GetDatabase(),
 			rawdb.PDEContributionStatusPrefix,
 			[]byte(matchedContribution.PDEContributionPairID),
-			byte(common.PDEContributionAcceptedStatus),
+			contribStatusBytes,
 		)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while tracking pde accepted contribution status: %+v", err)
 			return nil
+		}
+
+	} else if contributionStatus == common.PDEContributionMatchedNReturnedChainStatus {
+		var matchedNReturnedContrib metadata.PDEMatchedNReturnedContribution
+		err := json.Unmarshal([]byte(instruction[3]), &matchedNReturnedContrib)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while unmarshaling content string of pde matched and returned contribution instruction: %+v", err)
+			return nil
+		}
+		waitingContribPairKey := string(rawdb.BuildWaitingPDEContributionKey(beaconHeight, matchedNReturnedContrib.PDEContributionPairID))
+		waitingContribution, found := currentPDEState.WaitingPDEContributions[waitingContribPairKey]
+		if found && waitingContribution != nil {
+			incomingWaitingContribution := &rawdb.PDEContribution{
+				ContributorAddressStr: matchedNReturnedContrib.ContributorAddressStr,
+				TokenIDStr:            matchedNReturnedContrib.TokenIDStr,
+				Amount:                matchedNReturnedContrib.ActualContributedAmount,
+				TxReqID:               matchedNReturnedContrib.TxReqID,
+			}
+			existingWaitingContribution := &rawdb.PDEContribution{
+				ContributorAddressStr: waitingContribution.ContributorAddressStr,
+				TokenIDStr:            waitingContribution.TokenIDStr,
+				Amount:                matchedNReturnedContrib.ActualWaitingContribAmount,
+				TxReqID:               waitingContribution.TxReqID,
+			}
+			updateWaitingContributionPairToPoolV2(
+				beaconHeight,
+				existingWaitingContribution,
+				incomingWaitingContribution,
+				currentPDEState,
+			)
+			delete(currentPDEState.WaitingPDEContributions, waitingContribPairKey)
+		}
+		pdeStatusContentBytes, err := rawdb.GetPDEContributionStatus(
+			blockchain.GetDatabase(),
+			rawdb.PDEContributionStatusPrefix,
+			[]byte(matchedNReturnedContrib.PDEContributionPairID),
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while getting pde contribution status: %+v", err)
+			return nil
+		}
+		if len(pdeStatusContentBytes) == 0 {
+			return nil
+		}
+
+		var contribStatus metadata.PDEContributionStatus
+		err = json.Unmarshal(pdeStatusContentBytes, &contribStatus)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while unmarshaling pde contribution status: %+v", err)
+			return nil
+		}
+
+		if contribStatus.Status != byte(common.PDEContributionMatchedNReturnedStatus) {
+			contribStatus := metadata.PDEContributionStatus{
+				Status:             byte(common.PDEContributionMatchedNReturnedStatus),
+				TokenID1Str:        matchedNReturnedContrib.TokenIDStr,
+				Contributed1Amount: matchedNReturnedContrib.ActualContributedAmount,
+				Returned1Amount:    matchedNReturnedContrib.ReturnedContributedAmount,
+			}
+			contribStatusBytes, _ := json.Marshal(contribStatus)
+			err := rawdb.TrackPDEContributionStatus(
+				blockchain.GetDatabase(),
+				rawdb.PDEContributionStatusPrefix,
+				[]byte(matchedNReturnedContrib.PDEContributionPairID),
+				contribStatusBytes,
+			)
+			if err != nil {
+				Logger.log.Errorf("ERROR: an error occured while tracking pde contribution status: %+v", err)
+				return nil
+			}
+		} else {
+			var contribStatus metadata.PDEContributionStatus
+			err := json.Unmarshal(pdeStatusContentBytes, &contribStatus)
+			if err != nil {
+				Logger.log.Errorf("ERROR: an error occured while unmarshaling pde contribution status: %+v", err)
+				return nil
+			}
+			contribStatus.TokenID2Str = matchedNReturnedContrib.TokenIDStr
+			contribStatus.Contributed2Amount = matchedNReturnedContrib.ActualContributedAmount
+			contribStatus.Returned2Amount = matchedNReturnedContrib.ReturnedContributedAmount
+			contribStatusBytes, _ := json.Marshal(contribStatus)
+			err = rawdb.TrackPDEContributionStatus(
+				blockchain.GetDatabase(),
+				rawdb.PDEContributionStatusPrefix,
+				[]byte(matchedNReturnedContrib.PDEContributionPairID),
+				contribStatusBytes,
+			)
+			if err != nil {
+				Logger.log.Errorf("ERROR: an error occured while tracking pde contribution status: %+v", err)
+				return nil
+			}
 		}
 	}
 	return nil
@@ -175,7 +279,7 @@ func (blockchain *BlockChain) processPDETrade(
 	if len(instruction) != 4 {
 		return nil // skip the instruction
 	}
-	if instruction[2] == "refund" {
+	if instruction[2] == common.PDETradeRefundChainStatus {
 		contentBytes, err := base64.StdEncoding.DecodeString(instruction[3])
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while decoding content string of pde trade instruction: %+v", err)
@@ -256,7 +360,7 @@ func (blockchain *BlockChain) processPDEWithdrawal(
 	if len(instruction) != 4 {
 		return nil // skip the instruction
 	}
-	if instruction[2] == "rejected" {
+	if instruction[2] == common.PDEWithdrawalRejectedChainStatus {
 		contentBytes, err := base64.StdEncoding.DecodeString(instruction[3])
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while decoding content string of pde withdrawal action: %+v", err)

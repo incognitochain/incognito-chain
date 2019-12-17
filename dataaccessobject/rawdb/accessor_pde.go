@@ -464,3 +464,30 @@ func GetPDEStatus(
 	}
 	return pdeStatusBytes[0], nil
 }
+
+func TrackPDEContributionStatus(
+	db incdb.Database,
+	prefix []byte,
+	suffix []byte,
+	statusContent []byte,
+) error {
+	key := BuildPDEStatusKey(prefix, suffix)
+	err := db.Put(key, statusContent)
+	if err != nil {
+		return NewRawdbError(LvdbPutError, err)
+	}
+	return nil
+}
+
+func GetPDEContributionStatus(
+	db incdb.Database,
+	prefix []byte,
+	suffix []byte,
+) ([]byte, error) {
+	key := BuildPDEStatusKey(prefix, suffix)
+	pdeStatusContentBytes, dbErr := db.Get(key)
+	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
+		return []byte{}, NewRawdbError(GetPDEStatusError, dbErr)
+	}
+	return pdeStatusContentBytes, nil
+}

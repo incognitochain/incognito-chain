@@ -1,6 +1,8 @@
 package rpcservice
 
 import (
+	"encoding/json"
+	"errors"
 	"math/big"
 	"strconv"
 
@@ -9,7 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"github.com/incognitochain/incognito-chain/incdb"
-	"github.com/pkg/errors"
+	"github.com/incognitochain/incognito-chain/metadata"
 )
 
 type DatabaseService struct {
@@ -147,4 +149,20 @@ func (dbService DatabaseService) GetProducersBlackList(beaconHeight uint64) (map
 
 func (dbService DatabaseService) GetPDEStatus(pdePrefix []byte, pdeSuffix []byte) (byte, error) {
 	return rawdb.GetPDEStatus(dbService.DB, pdePrefix, pdeSuffix)
+}
+
+func (dbService DatabaseService) GetPDEContributionStatus(pdePrefix []byte, pdeSuffix []byte) (*metadata.PDEContributionStatus, error) {
+	pdeStatusContentBytes, err := rawdb.GetPDEContributionStatus(dbService.DB, pdePrefix, pdeSuffix)
+	if err != nil {
+		return nil, err
+	}
+	if len(pdeStatusContentBytes) == 0 {
+		return nil, nil
+	}
+	var contributionStatus metadata.PDEContributionStatus
+	err = json.Unmarshal(pdeStatusContentBytes, &contributionStatus)
+	if err != nil {
+		return nil, err
+	}
+	return &contributionStatus, nil
 }
