@@ -82,7 +82,7 @@ func (coinService CoinService) ListOutputCoinsByKey(listKeyParams []interface{},
 		var readonlyKey *wallet.KeyWallet
 		var err error
 		readonlyKeyStr, ok := keys["ReadonlyKey"].(string)
-		if !ok {
+		if !ok || readonlyKeyStr == "" {
 			//return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid readonly key"))
 			Logger.log.Info("ReadonlyKey is optional")
 		} else {
