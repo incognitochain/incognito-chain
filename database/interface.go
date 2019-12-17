@@ -207,4 +207,6 @@ type DatabaseInterface interface {
 	GetLatestPDEPoolForPair(tokenIDToBuyStr string, tokenIDToSellStr string) ([]byte, error)
 	TrackPDEStatus(prefix []byte, suffix []byte, status byte) error
 	GetPDEStatus(prefix []byte, suffix []byte) (byte, error)
+	TrackPDEContributionStatus(prefix []byte, suffix []byte, statusContent []byte) error
+	GetPDEContributionStatus(prefix []byte, suffix []byte) ([]byte, error)
 }
