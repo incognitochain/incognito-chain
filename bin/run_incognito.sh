@@ -25,7 +25,7 @@ if [ -z "$TESTNET" ]; then
 fi
 
 if [ -z $BOOTNODE_IP ]; then
-    BOOTNODE_IP="172.105.115.134:9330";
+    BOOTNODE_IP="testnet-bootnode.incognito.org:9330";
 fi
 
 if [ -z "$NODE_PORT" ]; then
