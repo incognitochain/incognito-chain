@@ -478,12 +478,16 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 					newTx, err = blockGenerator.buildPDETradeIssuanceTx(l[2], l[3], producerPrivateKey, shardID)
 				}
 			case metadata.PDEWithdrawalRequestMeta:
-				if len(l) >= 4 && l[2] == "accepted" {
+				if len(l) >= 4 && l[2] == common.PDEWithdrawalAcceptedChainStatus {
 					newTx, err = blockGenerator.buildPDEWithdrawalTx(l[3], producerPrivateKey, shardID)
 				}
 			case metadata.PDEContributionMeta:
-				if len(l) >= 4 && l[2] == "refund" {
-					newTx, err = blockGenerator.buildPDERefundContributionTx(l[3], producerPrivateKey, shardID)
+				if len(l) >= 4 {
+					if l[2] == common.PDEContributionRefundChainStatus {
+						newTx, err = blockGenerator.buildPDERefundContributionTx(l[3], producerPrivateKey, shardID)
+					} else if l[2] == common.PDEContributionMatchedNReturnedChainStatus {
+						newTx, err = blockGenerator.buildPDEMatchedNReturnedContributionTx(l[3], producerPrivateKey, shardID)
+					}
 				}
 
 			default:
