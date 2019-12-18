@@ -7,8 +7,13 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-/*
-func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map[byte]ChainState, shardToBeaconPool *map[byte][]uint64, crossShardPool *map[byte]map[byte][]uint64, peerID libp2p.ID) {
+func (blockchain *BlockChain) OnPeerStateReceived(
+	beacon *ChainState,
+	shard *map[byte]ChainState,
+	shardToBeaconPool *map[byte][]uint64,
+	crossShardPool *map[byte]map[byte][]uint64,
+	peerMiningKey string,
+) {
 	if blockchain.IsTest {
 		return
 	}
@@ -25,77 +30,8 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 	if userRole == common.ShardRole {
 		userShardID = byte(userShardIDInt)
 	}
-	// miningKey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
-	// if miningKey != "" {
-	// 	userRole, userShardID = blockchain.BestState.Beacon.GetPubkeyRole(miningKey, blockchain.BestState.Beacon.BestBlock.Header.Round)
-	// }
-	pState := &peerState{
-		Shard:  make(map[byte]*ChainState),
-		Beacon: beacon,
-		Peer:   peerID,
-	}
-	nodeMode := blockchain.config.NodeMode
-	if userRole == common.BeaconRole {
-		pState.ShardToBeaconPool = shardToBeaconPool
-		for shardID := byte(0); shardID < byte(common.MaxShardNumber); shardID++ {
-			if shardState, ok := (*shard)[shardID]; ok {
-				if shardState.Height > GetBeaconBestState().GetBestHeightOfShard(shardID) {
-					pState.Shard[shardID] = &shardState
-				}
-			}
-		}
-	}
-	if userRole == common.ShardRole && (nodeMode == common.NodeModeAuto || nodeMode == common.NodeModeBeacon) {
-		// userShardRole = blockchain.BestState.Shard[userShardID].GetPubkeyRole(miningKey, blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
-		// if userShardRole == common.ProposerRole || userShardRole == common.ValidatorRole {
-		if shardState, ok := (*shard)[userShardID]; ok && shardState.Height >= blockchain.BestState.Shard[userShardID].ShardHeight {
-			pState.Shard[userShardID] = &shardState
-			if pool, ok := (*crossShardPool)[userShardID]; ok {
-				pState.CrossShardPool = make(map[byte]*map[byte][]uint64)
-				pState.CrossShardPool[userShardID] = &pool
-			}
-		}
-		// }
-	}
-	blockchain.Synker.Status.Lock()
-	for shardID := 0; shardID < blockchain.BestState.Beacon.ActiveShards; shardID++ {
-		if shardState, ok := (*shard)[byte(shardID)]; ok {
-			if shardState.Height > GetBestStateShard(byte(shardID)).ShardHeight && (*shard)[byte(shardID)].Timestamp > GetBestStateShard(byte(shardID)).BestBlock.Header.Timestamp {
-				pState.Shard[byte(shardID)] = &shardState
-			}
-		}
-	}
-	blockchain.Synker.Status.Unlock()
-	//TODO hy
-	blockchain.Synker.States.Lock()
-	if blockchain.Synker.States.PeersState != nil {
-		blockchain.Synker.States.PeersState[pState.Peer] = pState
-	}
-	blockchain.Synker.States.Unlock()
-}*/
 
-func (blockchain *BlockChain) OnPeerStateV2Received(beacon *ChainState, shard *map[byte]ChainState, shardToBeaconPool *map[byte][]uint64, crossShardPool *map[byte]map[byte][]uint64, peerMiningKey string) {
-	if blockchain.IsTest {
-		return
-	}
-	if beacon.Timestamp < GetBeaconBestState().BestBlock.Header.Timestamp && beacon.Height > GetBeaconBestState().BestBlock.Header.Height {
-		return
-	}
-
-	var (
-		userRole    string
-		userShardID byte
-	)
-
-	userRole, userShardIDInt := blockchain.config.ConsensusEngine.GetUserLayer()
-	if userRole == common.ShardRole {
-		userShardID = byte(userShardIDInt)
-	}
-	// miningKey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
-	// if miningKey != "" {
-	// 	userRole, userShardID = blockchain.BestState.Beacon.GetPubkeyRole(miningKey, blockchain.BestState.Beacon.BestBlock.Header.Round)
-	// }
-	pState := &peerState{
+	pState := &PeerState{
 		Shard:               make(map[byte]*ChainState),
 		Beacon:              beacon,
 		PeerMiningPublicKey: peerMiningKey,
@@ -268,24 +204,11 @@ func (blockchain *BlockChain) OnCrossShardBlockReceived(block *CrossShardBlock) 
 		return
 	}
 	expectedHeight, toShardID, err := blockchain.config.CrossShardPool[block.ToShardID].AddCrossShardBlock(block)
-	Logger.log.Infof("[sync] Shard %+v After insert cross shard block: expectedHeight %v, toShardID %v \n", block.ToShardID, expectedHeight, toShardID)
-	for fromShardID, height := range expectedHeight {
-		Logger.log.Infof("[sync] Shard %+v request CrossShardBlock with Height %+v from shard %+v \n", toShardID, height, fromShardID)
-		blockchain.Synker.SyncBlkCrossShard(
-			false,
-			false,
-			[]common.Hash{},
-			[]uint64{height},
-			fromShardID,
-			toShardID,
-			"",
-		)
-	}
 	if err != nil {
 		if err.Error() != "receive old block" && err.Error() != "receive duplicate block" {
 			Logger.log.Error(err)
 			return
 		}
 	}
-
+	Logger.log.Infof("[sync] Shard %+v After insert cross shard block %v: expectedHeight %v, toShardID %v \n", block.ToShardID, block.GetHeight(), expectedHeight, toShardID)
 }
