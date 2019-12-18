@@ -762,10 +762,28 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 		switch privacyCustomTokenTx.TxPrivacyTokenData.Type {
 		case transaction.CustomTokenInit:
 			{
-				Logger.log.Info("Store custom token when it is issued", privacyCustomTokenTx.TxPrivacyTokenData.PropertyID, privacyCustomTokenTx.TxPrivacyTokenData.PropertySymbol, privacyCustomTokenTx.TxPrivacyTokenData.PropertyName)
-				err = blockchain.config.DataBase.StorePrivacyToken(privacyCustomTokenTx.TxPrivacyTokenData.PropertyID, privacyCustomTokenTx.Hash()[:])
+				// check is bridge token
+				isBridgeToken := false
+				allBridgeTokensBytes, err := blockchain.config.DataBase.GetAllBridgeTokens()
 				if err != nil {
 					return err
+				}
+				if len(allBridgeTokensBytes) > 0 {
+					var allBridgeTokens []*lvdb.BridgeTokenInfo
+					err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
+					for _, bridgeToken := range allBridgeTokens {
+						if bridgeToken.TokenID != nil && bytes.Equal(privacyCustomTokenTx.TxPrivacyTokenData.PropertyID[:], bridgeToken.TokenID[:]) {
+							isBridgeToken = true
+						}
+					}
+				}
+				// not mintable tx
+				if !isBridgeToken && !privacyCustomTokenTx.TxPrivacyTokenData.Mintable {
+					Logger.log.Info("Store custom token when it is issued", privacyCustomTokenTx.TxPrivacyTokenData.PropertyID, privacyCustomTokenTx.TxPrivacyTokenData.PropertySymbol, privacyCustomTokenTx.TxPrivacyTokenData.PropertyName)
+					err = blockchain.config.DataBase.StorePrivacyToken(privacyCustomTokenTx.TxPrivacyTokenData.PropertyID, privacyCustomTokenTx.Hash()[:])
+					if err != nil {
+						return err
+					}
 				}
 			}
 		case transaction.CustomTokenTransfer:
