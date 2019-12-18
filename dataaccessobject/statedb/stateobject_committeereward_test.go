@@ -605,7 +605,7 @@ func generateTokenMapWithAmount() map[common.Hash]int {
 	return reward
 }
 
-func storeRewardReceiver(initRoot common.Hash) (common.Hash, map[common.Hash]*statedb.CommitteeRewardState, map[string]map[common.Hash]int) {
+func storeCommitteeReward(initRoot common.Hash, warperDB statedb.DatabaseAccessWarper) (common.Hash, map[common.Hash]*statedb.CommitteeRewardState, map[string]map[common.Hash]int) {
 	mState := make(map[common.Hash]*statedb.CommitteeRewardState)
 	wantM := make(map[string]map[common.Hash]int)
 	for index, value := range incognitoPublicKeys {
@@ -615,7 +615,7 @@ func storeRewardReceiver(initRoot common.Hash) (common.Hash, map[common.Hash]*st
 		mState[key] = rewardReceiverState
 		wantM[value] = reward
 	}
-	sDB, err := statedb.NewWithPrefixTrie(initRoot, warperDBrewardTest)
+	sDB, err := statedb.NewWithPrefixTrie(initRoot, warperDB)
 	if err != nil {
 		panic(err)
 	}
@@ -634,7 +634,7 @@ func storeRewardReceiver(initRoot common.Hash) (common.Hash, map[common.Hash]*st
 }
 
 func TestStateDB_GetAllCommitteeRewardState(t *testing.T) {
-	rootHash, wantM, _ := storeRewardReceiver(emptyRoot)
+	rootHash, wantM, _ := storeCommitteeReward(emptyRoot, warperDBrewardTest)
 	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBrewardTest)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err)

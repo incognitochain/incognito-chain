@@ -40,7 +40,7 @@ func generateTokenIDs(max int) []common.Hash {
 	}
 	return hashes
 }
-func storeRewardRequest(initRoot common.Hash, epoch uint64, shardIDs []byte) (common.Hash, map[common.Hash]*statedb.RewardRequestState) {
+func storeRewardRequest(initRoot common.Hash, warperDB statedb.DatabaseAccessWarper, epoch uint64, shardIDs []byte) (common.Hash, map[common.Hash]*statedb.RewardRequestState) {
 	mState := make(map[common.Hash]*statedb.RewardRequestState)
 	tokenIDs := generateTokenIDs(maxTokenID)
 	for i := uint64(1); i < epoch; i++ {
@@ -53,7 +53,7 @@ func storeRewardRequest(initRoot common.Hash, epoch uint64, shardIDs []byte) (co
 			}
 		}
 	}
-	sDB, err := statedb.NewWithPrefixTrie(initRoot, warperDBrrTest)
+	sDB, err := statedb.NewWithPrefixTrie(initRoot, warperDB)
 	if err != nil {
 		panic(err)
 	}
@@ -72,7 +72,7 @@ func storeRewardRequest(initRoot common.Hash, epoch uint64, shardIDs []byte) (co
 }
 
 func TestStateDB_GetAllCommitteeRewardStateByKey(t *testing.T) {
-	rootHash, wantM := storeRewardRequest(emptyRoot, defaultMaxEpoch, shardIDs)
+	rootHash, wantM := storeRewardRequest(emptyRoot, warperDBrrTest, defaultMaxEpoch, shardIDs)
 	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBrrTest)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err)
@@ -92,7 +92,7 @@ func TestStateDB_GetAllCommitteeRewardStateByKey(t *testing.T) {
 }
 
 func TestStateDB_UpdateAndGetAllCommitteeRewardStateByKey(t *testing.T) {
-	rootHash1, wantM := storeRewardRequest(emptyRoot, defaultMaxEpoch, shardIDs)
+	rootHash1, wantM := storeRewardRequest(emptyRoot, warperDBrrTest, defaultMaxEpoch, shardIDs)
 	sDB, err := statedb.NewWithPrefixTrie(rootHash1, warperDBrrTest)
 	if err != nil || sDB == nil {
 		t.Fatal(err)

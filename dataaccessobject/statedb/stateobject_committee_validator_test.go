@@ -4,6 +4,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"math/rand"
 	"reflect"
 	"strconv"
 	"testing"
@@ -18,7 +19,11 @@ func storeCommitteeObjectOneShard(role int, initRoot common.Hash, shardID, from,
 	tempCommitteePublicKey = tempCommitteePublicKey[from:to]
 	for index, value := range tempCommitteePublicKey {
 		key, _ := statedb.GenerateCommitteeObjectKeyWithRole(role, shardID, value)
-		committeeState := statedb.NewCommitteeStateWithValue(shardID, role, value, receiverPaymentAddress[index], true)
+		autoStaking := false
+		if rand.Int()%2 == 0 {
+			autoStaking = true
+		}
+		committeeState := statedb.NewCommitteeStateWithValue(shardID, role, value, receiverPaymentAddress[index], autoStaking)
 		m[key] = committeeState
 	}
 	sDB, err := statedb.NewWithPrefixTrie(initRoot, warperDBCommitteeTest)
