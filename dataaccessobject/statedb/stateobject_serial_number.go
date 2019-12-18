@@ -1,21 +1,60 @@
 package statedb
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"reflect"
 )
+
+type SerialNumberState struct {
+	tokenID      common.Hash
+	shardID      byte
+	serialNumber []byte
+}
+
+func (s SerialNumberState) SerialNumber() []byte {
+	return s.serialNumber
+}
+
+func (s *SerialNumberState) SetSerialNumber(serialNumber []byte) {
+	s.serialNumber = serialNumber
+}
+
+func (s SerialNumberState) ShardID() byte {
+	return s.shardID
+}
+
+func (s *SerialNumberState) SetShardID(shardID byte) {
+	s.shardID = shardID
+}
+
+func (s SerialNumberState) TokenID() common.Hash {
+	return s.tokenID
+}
+
+func (s *SerialNumberState) SetTokenID(tokenID common.Hash) {
+	s.tokenID = tokenID
+}
+
+func NewSerialNumberState() *SerialNumberState {
+	return &SerialNumberState{}
+}
+
+func NewSerialNumberStateWithValue(tokenID common.Hash, shardID byte, serialNumber []byte) *SerialNumberState {
+	return &SerialNumberState{tokenID: tokenID, shardID: shardID, serialNumber: serialNumber}
+}
 
 type SerialNumberObject struct {
 	db *StateDB
 	// Write caches.
 	trie Trie // storage trie, which becomes non-nil on first access
 
-	version          int
-	serialNumberHash common.Hash
-	serialNumber     []byte
-	objectType       int
-	deleted          bool
+	version           int
+	serialNumberHash  common.Hash
+	serialNumberState *SerialNumberState
+	objectType        int
+	deleted           bool
 
 	// DB error.
 	// State objects are used by the consensus core and VM which are
@@ -27,30 +66,46 @@ type SerialNumberObject struct {
 
 func newSerialNumberObject(db *StateDB, hash common.Hash) *SerialNumberObject {
 	return &SerialNumberObject{
-		version:          defaultVersion,
-		db:               db,
-		serialNumberHash: hash,
-		serialNumber:     []byte{},
-		objectType:       SerialNumberObjectType,
-		deleted:          false,
+		version:           defaultVersion,
+		db:                db,
+		serialNumberHash:  hash,
+		serialNumberState: NewSerialNumberState(),
+		objectType:        SerialNumberObjectType,
+		deleted:           false,
 	}
 }
 func newSerialNumberObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*SerialNumberObject, error) {
-	newSerialNumber, ok := data.([]byte)
-	if !ok {
-		return nil, NewStatedbError(InvalidByteArrayTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
+	var newSerialNumberState = NewSerialNumberState()
+	var ok bool
+	var dataBytes []byte
+	if dataBytes, ok = data.([]byte); ok {
+		err := json.Unmarshal(dataBytes, newSerialNumberState)
+		if err != nil {
+			return nil, NewStatedbError(InvalidSerialNumberStateTypeError, err)
+		}
+	} else {
+		newSerialNumberState, ok = data.(*SerialNumberState)
+		if !ok {
+			return nil, NewStatedbError(InvalidSerialNumberStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
+		}
 	}
 	return &SerialNumberObject{
-		version:          defaultVersion,
-		serialNumberHash: key,
-		serialNumber:     newSerialNumber,
-		db:               db,
-		objectType:       SerialNumberObjectType,
-		deleted:          false,
+		version:           defaultVersion,
+		serialNumberHash:  key,
+		serialNumberState: newSerialNumberState,
+		db:                db,
+		objectType:        SerialNumberObjectType,
+		deleted:           false,
 	}, nil
 }
 
-func (s *SerialNumberObject) GetVersion() int {
+func GenerateSerialNumberObject(tokenID common.Hash, shardID byte, serialNumber []byte) (common.Hash, error) {
+	prefixHash := GetSerialNumberPrefix(tokenID, shardID)
+	valueHash := common.HashH(serialNumber)
+	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...)), nil
+}
+
+func (s SerialNumberObject) GetVersion() int {
 	return s.version
 }
 
@@ -61,32 +116,32 @@ func (s *SerialNumberObject) SetError(err error) {
 	}
 }
 
-func (s *SerialNumberObject) GetTrie(db DatabaseAccessWarper) Trie {
+func (s SerialNumberObject) GetTrie(db DatabaseAccessWarper) Trie {
 	return s.trie
 }
 
 func (s *SerialNumberObject) SetValue(data interface{}) error {
-	newSerialNumber, ok := data.([]byte)
+	newSerialNumberState, ok := data.(*SerialNumberState)
 	if !ok {
-		return NewStatedbError(InvalidByteArrayTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
+		return NewStatedbError(InvalidSerialNumberStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
 	}
-	s.serialNumber = newSerialNumber
+	s.serialNumberState = newSerialNumberState
 	return nil
 }
 
-func (s *SerialNumberObject) GetValue() interface{} {
-	return s.serialNumber
+func (s SerialNumberObject) GetValue() interface{} {
+	return s.serialNumberState
 }
 
-func (s *SerialNumberObject) GetValueBytes() []byte {
+func (s SerialNumberObject) GetValueBytes() []byte {
 	return s.GetValue().([]byte)
 }
 
-func (s *SerialNumberObject) GetHash() common.Hash {
+func (s SerialNumberObject) GetHash() common.Hash {
 	return s.serialNumberHash
 }
 
-func (s *SerialNumberObject) GetType() int {
+func (s SerialNumberObject) GetType() int {
 	return s.objectType
 }
 
@@ -97,15 +152,16 @@ func (s *SerialNumberObject) MarkDelete() {
 
 // Reset serial number into default
 func (s *SerialNumberObject) Reset() bool {
-	s.serialNumber = []byte{}
+	s.serialNumberState = NewSerialNumberState()
 	return true
 }
 
-func (s *SerialNumberObject) IsDeleted() bool {
+func (s SerialNumberObject) IsDeleted() bool {
 	return s.deleted
 }
 
 // empty value or not
-func (s *SerialNumberObject) IsEmpty() bool {
-	return len(s.serialNumber[:]) == 0
+func (s SerialNumberObject) IsEmpty() bool {
+	temp := NewSerialNumberState()
+	return reflect.DeepEqual(temp, s.serialNumberState) || s.serialNumberState == nil
 }

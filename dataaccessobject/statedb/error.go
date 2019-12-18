@@ -14,6 +14,7 @@ const (
 	InvalidCommitteeRewardStateTypeError
 	InvalidRewardRequestStateTypeError
 	InvalidBlackListProducerStateTypeError
+	InvalidSerialNumberStateTypeError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -27,6 +28,7 @@ var ErrCodeMessage = map[int]struct {
 	InvalidCommitteeRewardStateTypeError:   {-1004, "invalid reward receiver state type "},
 	InvalidRewardRequestStateTypeError:     {-1005, "invalid reward request state type"},
 	InvalidBlackListProducerStateTypeError: {-1006, "invalid black list producer state type"},
+	InvalidSerialNumberStateTypeError:      {-1007, "invalid serial number state type"},
 }
 
 type StatedbError struct {

@@ -751,7 +751,7 @@ func (stateDB *StateDB) GetBlackListProducerPunishedEpoch(key common.Hash) (uint
 
 func (stateDB *StateDB) GetAllBlackListProducerState() []*BlackListProducerState {
 	blackListProducerStates := []*BlackListProducerState{}
-	prefix := GetRewardRequestPrefix()
+	prefix := GetBlackListProducerPrefix()
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
 	for it.Next() {
@@ -786,3 +786,35 @@ func (stateDB *StateDB) GetAllProducerBlackList() map[string]uint8 {
 	}
 	return m
 }
+
+// ================================= Serial Number OBJECT =======================================
+func (stateDB *StateDB) GetSerialNumberState(key common.Hash) (*SerialNumberState, bool, error) {
+	serialNumberObject, err := stateDB.getStateObject(SerialNumberObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if serialNumberObject != nil {
+		return serialNumberObject.GetValue().(*SerialNumberState), true, nil
+	}
+	return NewSerialNumberState(), false, nil
+}
+
+func (stateDB *StateDB) GetAllSerialNumberByPrefix(tokenID common.Hash, shardID byte) [][]byte {
+	serialNumberList := [][]byte{}
+	prefix := GetRewardRequestPrefix()
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		serialNumberState := NewSerialNumberState()
+		err := json.Unmarshal(newValue, serialNumberState)
+		if err != nil {
+			panic("wrong value type")
+		}
+		serialNumberList = append(serialNumberList, serialNumberState.serialNumber)
+	}
+	return serialNumberList
+}
+

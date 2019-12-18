@@ -58,8 +58,8 @@ func GetBlackListProducerPrefix() []byte {
 	return h[:][:prefixHashKeyLength]
 }
 
-func GetSerialNumberPrefix() []byte {
-	h := common.HashH(serialNumberPrefix)
+func GetSerialNumberPrefix(tokenID common.Hash, shardID byte) []byte {
+	h := common.HashH(append(append(serialNumberPrefix, tokenID[:]...), shardID))
 	return h[:][:prefixHashKeyLength]
 }
 
@@ -99,12 +99,12 @@ var _ = func() (_ struct{}) {
 	}
 	m[string(tempNextCandidate)] = "next-cand-"
 	// serial number
-	tempSerialNumber := GetSerialNumberPrefix()
-	prefixs = append(prefixs, tempSerialNumber)
-	if v, ok := m[string(tempSerialNumber)]; ok {
-		panic("serial-number-" + " same prefix " + v)
-	}
-	m[string(tempSerialNumber)] = "serial-number-"
+	//tempSerialNumber := GetSerialNumberPrefix()
+	//prefixs = append(prefixs, tempSerialNumber)
+	//if v, ok := m[string(tempSerialNumber)]; ok {
+	//	panic("serial-number-" + " same prefix " + v)
+	//}
+	//m[string(tempSerialNumber)] = "serial-number-"
 	// reward receiver
 	tempRewardReceiver := GetCommitteeRewardPrefix()
 	prefixs = append(prefixs, tempRewardReceiver)
