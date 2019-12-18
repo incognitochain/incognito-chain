@@ -238,8 +238,8 @@ func (shardBestState *ShardBestState) GetPubkeyRole(pubkey string, round int) st
 	return common.EmptyString
 }
 
+//MarshalJSON - remember to use lock
 func (shardBestState *ShardBestState) MarshalJSON() ([]byte, error) {
-	//TODO: Add Mutex Lock Later
 	type Alias ShardBestState
 	b, err := json.Marshal(&struct {
 		*Alias
@@ -260,6 +260,7 @@ func (shardBestState ShardBestState) GetBeaconHeight() uint64 {
 	return shardBestState.BeaconHeight
 }
 
+//cloneShardBestStateFrom - remember to use lock
 func (shardBestState *ShardBestState) cloneShardBestStateFrom(target *ShardBestState) error {
 	tempMarshal, err := json.Marshal(target)
 	if err != nil {

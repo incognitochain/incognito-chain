@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/metrics"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -299,14 +300,19 @@ func (e *BLSBFT) enterProposePhase() {
 		return
 	}
 	e.setState(proposePhase)
+	e.isOngoing = true
 	block, err := e.createNewBlock()
 	metrics.SetGlobalParam("CreateTime", time.Since(e.RoundData.TimeStart).Seconds())
 
 	if err != nil {
+		e.isOngoing = false
 		e.logger.Error("can't create block", err)
 		return
 	}
 
+	if e.Chain.CurrentHeight()+1 != block.GetHeight() {
+		return
+	}
 	validationData := e.CreateValidationData(block)
 	validationDataString, _ := EncodeValidationData(validationData)
 	block.(blockValidation).AddValidationField(validationDataString)
@@ -408,7 +414,7 @@ func (e *BLSBFT) createNewBlock() (common.BlockInterface, error) {
 		block, err = e.Chain.CreateNewBlock(int(e.RoundData.Round))
 		if block != nil {
 			e.logger.Info("create block", block.GetHeight(), time.Since(time1).Seconds())
-		}else {
+		} else {
 			e.logger.Info("create block", time.Since(time1).Seconds())
 		}
 

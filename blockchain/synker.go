@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -270,17 +269,9 @@ func (synker *Synker) UpdateState() {
 	synker.Status.CurrentlySyncBlks.DeleteExpired()
 	var shardsStateClone map[byte]ShardBestState
 	shardsStateClone = make(map[byte]ShardBestState)
-	beaconStateCloneBytes, err := synker.blockchain.BestState.Beacon.MarshalJSON()
-	if err != nil {
-		synker.Status.Unlock()
-		synker.States.Unlock()
-		panic(err)
-	}
 	var beaconStateClone BeaconBestState
-	err = json.Unmarshal(beaconStateCloneBytes, &beaconStateClone)
+	err := beaconStateClone.cloneBeaconBestStateFrom(synker.blockchain.BestState.Beacon)
 	if err != nil {
-		synker.Status.Unlock()
-		synker.States.Unlock()
 		panic(err)
 	}
 	var (
@@ -331,14 +322,13 @@ func (synker *Synker) UpdateState() {
 	}
 	for shardID := range synker.Status.Shards {
 		cloneState := ShardBestState{}
-		shardStateCloneBytes, err := synker.blockchain.BestState.Shard[shardID].MarshalJSON()
+		synker.blockchain.BestState.Shard[shardID].lock.RLock()
+		err := cloneState.cloneShardBestStateFrom(synker.blockchain.BestState.Shard[shardID])
 		if err != nil {
 			panic(err)
 		}
-		err = json.Unmarshal(shardStateCloneBytes, &cloneState)
-		if err != nil {
-			panic(err)
-		}
+		synker.blockchain.BestState.Shard[shardID].lock.RUnlock()
+
 		shardsStateClone[shardID] = cloneState
 		RCS.ClosestShardsState[shardID] = ChainState{
 			Height: shardsStateClone[shardID].ShardHeight,
@@ -513,6 +503,7 @@ func (synker *Synker) UpdateState() {
 		for peerPK := range synker.States.PeersState {
 			if shardState, ok := synker.States.PeersState[peerPK].Shard[shardID]; ok {
 				if shardState.Height == GetBestStateShard(shardID).ShardHeight && !shardState.BlockHash.IsEqual(&GetBestStateShard(shardID).BestBlockHash) {
+					Logger.log.Criticalf("Syncing possible FORK BLOCK shardID %v height %v hash %v", shardID, shardState.Height, shardState.BlockHash.String())
 					synker.SyncBlkShard(shardID, true, false, false, []common.Hash{shardState.BlockHash}, nil, 0, 0, libp2p.ID(""))
 				}
 
