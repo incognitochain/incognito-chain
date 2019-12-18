@@ -1,10 +1,8 @@
 package blockchain
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -271,17 +269,9 @@ func (synker *Synker) UpdateState() {
 	synker.Status.CurrentlySyncBlks.DeleteExpired()
 	var shardsStateClone map[byte]ShardBestState
 	shardsStateClone = make(map[byte]ShardBestState)
-	beaconStateCloneBytes, err := synker.blockchain.BestState.Beacon.MarshalJSON()
-	if err != nil {
-		synker.Status.Unlock()
-		synker.States.Unlock()
-		panic(err)
-	}
 	var beaconStateClone BeaconBestState
-	err = json.Unmarshal(beaconStateCloneBytes, &beaconStateClone)
+	err := beaconStateClone.cloneBeaconBestStateFrom(synker.blockchain.BestState.Beacon)
 	if err != nil {
-		synker.Status.Unlock()
-		synker.States.Unlock()
 		panic(err)
 	}
 	var (
@@ -332,14 +322,13 @@ func (synker *Synker) UpdateState() {
 	}
 	for shardID := range synker.Status.Shards {
 		cloneState := ShardBestState{}
-		shardStateCloneBytes, err := synker.blockchain.BestState.Shard[shardID].MarshalJSON()
+		synker.blockchain.BestState.Shard[shardID].lock.RLock()
+		err := cloneState.cloneShardBestStateFrom(synker.blockchain.BestState.Shard[shardID])
 		if err != nil {
 			panic(err)
 		}
-		err = json.Unmarshal(shardStateCloneBytes, &cloneState)
-		if err != nil {
-			panic(err)
-		}
+		synker.blockchain.BestState.Shard[shardID].lock.RUnlock()
+
 		shardsStateClone[shardID] = cloneState
 		RCS.ClosestShardsState[shardID] = ChainState{
 			Height: shardsStateClone[shardID].ShardHeight,
@@ -382,17 +371,6 @@ func (synker *Synker) UpdateState() {
 								RCS.ShardToBeaconBlks[shardID] = make(map[string][]uint64)
 							}
 							RCS.ShardToBeaconBlks[shardID][peerState.PeerMiningPublicKey] = blkHeights
-							if len(blkHeights) > 0 && len(blkHeights) <= len(synker.States.PoolsState.ShardToBeaconPool[shardID]) {
-								commonHeights := arrayCommonElements(blkHeights, synker.States.PoolsState.ShardToBeaconPool[shardID])
-								if len(commonHeights) > 0 {
-									sort.Slice(commonHeights, func(i, j int) bool { return commonHeights[i] < commonHeights[j] })
-									height, _ := synker.States.ClosestState.ShardToBeaconPool.Load(shardID)
-									h := commonHeights[len(commonHeights)-1]
-									if height.(uint64) > h {
-										synker.States.ClosestState.ShardToBeaconPool.Store(shardID, h)
-									}
-								}
-							}
 						}
 					}
 				}
@@ -419,18 +397,6 @@ func (synker *Synker) UpdateState() {
 							RCS.CrossShardBlks[shardID] = make(map[string][]uint64)
 						}
 						RCS.CrossShardBlks[shardID][peerState.PeerMiningPublicKey] = blkHeights
-
-						if len(blkHeights) > 0 && len(blkHeights) <= len(synker.States.PoolsState.CrossShardPool[shardID]) {
-							commonHeights := arrayCommonElements(blkHeights, synker.States.PoolsState.CrossShardPool[shardID])
-							sort.Slice(commonHeights, func(i, j int) bool { return blkHeights[i] < blkHeights[j] })
-							if len(commonHeights) > 0 {
-								height, _ := synker.States.ClosestState.CrossShardPool.Load(shardID)
-								h := commonHeights[len(commonHeights)-1]
-								if height.(uint64) > h {
-									synker.States.ClosestState.CrossShardPool.Store(shardID, h)
-								}
-							}
-						}
 					}
 				}
 			}
@@ -537,6 +503,7 @@ func (synker *Synker) UpdateState() {
 		for peerPK := range synker.States.PeersState {
 			if shardState, ok := synker.States.PeersState[peerPK].Shard[shardID]; ok {
 				if shardState.Height == GetBestStateShard(shardID).ShardHeight && !shardState.BlockHash.IsEqual(&GetBestStateShard(shardID).BestBlockHash) {
+					Logger.log.Criticalf("Syncing possible FORK BLOCK shardID %v height %v hash %v", shardID, shardState.Height, shardState.BlockHash.String())
 					synker.SyncBlkShard(shardID, true, false, false, []common.Hash{shardState.BlockHash}, nil, 0, 0, libp2p.ID(""))
 				}
 

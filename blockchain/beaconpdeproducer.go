@@ -32,7 +32,7 @@ func buildWaitingContributionInst(
 	return []string{
 		strconv.Itoa(metaType),
 		strconv.Itoa(int(shardID)),
-		"waiting",
+		common.PDEContributionWaitingChainStatus,
 		string(waitingContributionBytes),
 	}
 }
@@ -58,7 +58,7 @@ func buildRefundContributionInst(
 	return []string{
 		strconv.Itoa(metaType),
 		strconv.Itoa(int(shardID)),
-		"refund",
+		common.PDEContributionRefundChainStatus,
 		string(refundContributionBytes),
 	}
 }
@@ -83,8 +83,38 @@ func buildMatchedContributionInst(
 	return []string{
 		strconv.Itoa(metaType),
 		strconv.Itoa(int(shardID)),
-		"matched",
+		common.PDEContributionMatchedChainStatus,
 		string(matchedContributionBytes),
+	}
+}
+
+func buildMatchedNReturnedContributionInst(
+	pdeContributionPairID string,
+	contributorAddressStr string,
+	actualContributedAmount uint64,
+	returnedContributedAmount uint64,
+	tokenIDStr string,
+	metaType int,
+	shardID byte,
+	txReqID common.Hash,
+	actualWaitingContribAmount uint64,
+) []string {
+	matchedNReturnedContribution := metadata.PDEMatchedNReturnedContribution{
+		PDEContributionPairID:      pdeContributionPairID,
+		ContributorAddressStr:      contributorAddressStr,
+		ActualContributedAmount:    actualContributedAmount,
+		ReturnedContributedAmount:  returnedContributedAmount,
+		TokenIDStr:                 tokenIDStr,
+		ShardID:                    shardID,
+		TxReqID:                    txReqID,
+		ActualWaitingContribAmount: actualWaitingContribAmount,
+	}
+	matchedNReturnedContribBytes, _ := json.Marshal(matchedNReturnedContribution)
+	return []string{
+		strconv.Itoa(metaType),
+		strconv.Itoa(int(shardID)),
+		common.PDEContributionMatchedNReturnedChainStatus,
+		string(matchedNReturnedContribBytes),
 	}
 }
 
@@ -126,6 +156,77 @@ func isRightRatio(
 	return false
 }
 
+func computeActualContributedAmounts(
+	waitingContribution1 *lvdb.PDEContribution,
+	waitingContribution2 *lvdb.PDEContribution,
+	poolPair *lvdb.PDEPoolForPair,
+) (uint64, uint64, uint64, uint64) {
+	if poolPair.Token1PoolValue == 0 || poolPair.Token2PoolValue == 0 {
+		return waitingContribution1.Amount, 0, waitingContribution2.Amount, 0
+	}
+	if poolPair.Token1IDStr == waitingContribution1.TokenIDStr {
+		// waitingAmtTemp = waitingContribution2.Amount * poolPair.Token1PoolValue / poolPair.Token2PoolValue
+		contribution1Amt := big.NewInt(0)
+		tempAmt := big.NewInt(0)
+		tempAmt.Mul(
+			big.NewInt(int64(waitingContribution2.Amount)),
+			big.NewInt(int64(poolPair.Token1PoolValue)),
+		)
+		tempAmt.Div(
+			tempAmt,
+			big.NewInt(int64(poolPair.Token2PoolValue)),
+		)
+		if tempAmt.Uint64() > waitingContribution1.Amount {
+			contribution1Amt = big.NewInt(int64(waitingContribution1.Amount))
+		} else {
+			contribution1Amt = tempAmt
+		}
+		contribution2Amt := big.NewInt(0)
+		contribution2Amt.Mul(
+			contribution1Amt,
+			big.NewInt(int64(poolPair.Token2PoolValue)),
+		)
+		contribution2Amt.Div(
+			contribution2Amt,
+			big.NewInt(int64(poolPair.Token1PoolValue)),
+		)
+		actualContribution1Amt := contribution1Amt.Uint64()
+		actualContribution2Amt := contribution2Amt.Uint64()
+		return actualContribution1Amt, waitingContribution1.Amount - actualContribution1Amt, actualContribution2Amt, waitingContribution2.Amount - actualContribution2Amt
+	}
+	if poolPair.Token1IDStr == waitingContribution2.TokenIDStr {
+		// tempAmt = waitingContribution2.Amount * poolPair.Token1PoolValue / poolPair.Token2PoolValue
+		contribution2Amt := big.NewInt(0)
+		tempAmt := big.NewInt(0)
+		tempAmt.Mul(
+			big.NewInt(int64(waitingContribution1.Amount)),
+			big.NewInt(int64(poolPair.Token1PoolValue)),
+		)
+		tempAmt.Div(
+			tempAmt,
+			big.NewInt(int64(poolPair.Token2PoolValue)),
+		)
+		if tempAmt.Uint64() > waitingContribution2.Amount {
+			contribution2Amt = big.NewInt(int64(waitingContribution2.Amount))
+		} else {
+			contribution2Amt = tempAmt
+		}
+		contribution1Amt := big.NewInt(0)
+		contribution1Amt.Mul(
+			contribution2Amt,
+			big.NewInt(int64(poolPair.Token2PoolValue)),
+		)
+		contribution1Amt.Div(
+			contribution1Amt,
+			big.NewInt(int64(poolPair.Token1PoolValue)),
+		)
+		actualContribution1Amt := contribution1Amt.Uint64()
+		actualContribution2Amt := contribution2Amt.Uint64()
+		return actualContribution1Amt, waitingContribution1.Amount - actualContribution1Amt, actualContribution2Amt, waitingContribution2.Amount - actualContribution2Amt
+	}
+	return 0, 0, 0, 0
+}
+
 func (blockchain *BlockChain) buildInstructionsForPDEContribution(
 	contentStr string,
 	shardID byte,
@@ -138,7 +239,7 @@ func (blockchain *BlockChain) buildInstructionsForPDEContribution(
 		inst := []string{
 			strconv.Itoa(metaType),
 			strconv.Itoa(int(shardID)),
-			"refund",
+			common.PDEContributionRefundChainStatus,
 			contentStr,
 		}
 		return [][]string{inst}, nil
@@ -209,8 +310,7 @@ func (blockchain *BlockChain) buildInstructionsForPDEContribution(
 		TxReqID:               pdeContributionAction.TxReqID,
 	}
 
-	if !found || poolPair == nil ||
-		isRightRatio(waitingContribution, incomingWaitingContribution, poolPair) {
+	if !found || poolPair == nil {
 		delete(currentPDEState.WaitingPDEContributions, waitingContribPairKey)
 		updateWaitingContributionPairToPoolV2(
 			beaconHeight,
@@ -230,27 +330,77 @@ func (blockchain *BlockChain) buildInstructionsForPDEContribution(
 		return [][]string{matchedInst}, nil
 	}
 
-	// the contribution was not right with the current ratio of the pair
+	// isRightRatio(waitingContribution, incomingWaitingContribution, poolPair)
+	actualWaitingContribAmt, returnedWaitingContribAmt, actualIncomingWaitingContribAmt, returnedIncomingWaitingContribAmt := computeActualContributedAmounts(
+		waitingContribution,
+		incomingWaitingContribution,
+		poolPair,
+	)
+	if actualWaitingContribAmt == 0 || actualIncomingWaitingContribAmt == 0 {
+		delete(currentPDEState.WaitingPDEContributions, waitingContribPairKey)
+		refundInst1 := buildRefundContributionInst(
+			meta.PDEContributionPairID,
+			meta.ContributorAddressStr,
+			meta.ContributedAmount,
+			meta.TokenIDStr,
+			metaType,
+			shardID,
+			pdeContributionAction.TxReqID,
+		)
+		refundInst2 := buildRefundContributionInst(
+			meta.PDEContributionPairID,
+			waitingContribution.ContributorAddressStr,
+			waitingContribution.Amount,
+			waitingContribution.TokenIDStr,
+			metaType,
+			shardID,
+			waitingContribution.TxReqID,
+		)
+		return [][]string{refundInst1, refundInst2}, nil
+	}
+
 	delete(currentPDEState.WaitingPDEContributions, waitingContribPairKey)
-	refundInst1 := buildRefundContributionInst(
+	actualWaitingContrib := &lvdb.PDEContribution{
+		ContributorAddressStr: waitingContribution.ContributorAddressStr,
+		TokenIDStr:            waitingContribution.TokenIDStr,
+		Amount:                actualWaitingContribAmt,
+		TxReqID:               waitingContribution.TxReqID,
+	}
+	actualIncomingWaitingContrib := &lvdb.PDEContribution{
+		ContributorAddressStr: meta.ContributorAddressStr,
+		TokenIDStr:            meta.TokenIDStr,
+		Amount:                actualIncomingWaitingContribAmt,
+		TxReqID:               pdeContributionAction.TxReqID,
+	}
+	updateWaitingContributionPairToPoolV2(
+		beaconHeight,
+		actualWaitingContrib,
+		actualIncomingWaitingContrib,
+		currentPDEState,
+	)
+	matchedNReturnedInst1 := buildMatchedNReturnedContributionInst(
 		meta.PDEContributionPairID,
 		meta.ContributorAddressStr,
-		meta.ContributedAmount,
+		actualIncomingWaitingContribAmt,
+		returnedIncomingWaitingContribAmt,
 		meta.TokenIDStr,
 		metaType,
 		shardID,
 		pdeContributionAction.TxReqID,
+		actualWaitingContribAmt,
 	)
-	refundInst2 := buildRefundContributionInst(
+	matchedNReturnedInst2 := buildMatchedNReturnedContributionInst(
 		meta.PDEContributionPairID,
 		waitingContribution.ContributorAddressStr,
-		waitingContribution.Amount,
+		actualWaitingContribAmt,
+		returnedWaitingContribAmt,
 		waitingContribution.TokenIDStr,
 		metaType,
 		shardID,
 		waitingContribution.TxReqID,
+		0,
 	)
-	return [][]string{refundInst1, refundInst2}, nil
+	return [][]string{matchedNReturnedInst1, matchedNReturnedInst2}, nil
 }
 
 func (blockchain *BlockChain) buildInstructionsForPDETrade(
@@ -265,7 +415,7 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 		inst := []string{
 			strconv.Itoa(metaType),
 			strconv.Itoa(int(shardID)),
-			"refund",
+			common.PDETradeRefundChainStatus,
 			contentStr,
 		}
 		return [][]string{inst}, nil
@@ -288,7 +438,7 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 		inst := []string{
 			strconv.Itoa(metaType),
 			strconv.Itoa(int(shardID)),
-			"refund",
+			common.PDETradeRefundChainStatus,
 			contentStr,
 		}
 		return [][]string{inst}, nil
@@ -315,7 +465,7 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 		inst := []string{
 			strconv.Itoa(metaType),
 			strconv.Itoa(int(shardID)),
-			"refund",
+			common.PDETradeRefundChainStatus,
 			contentStr,
 		}
 		return [][]string{inst}, nil
@@ -326,7 +476,7 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 		inst := []string{
 			strconv.Itoa(metaType),
 			strconv.Itoa(int(shardID)),
-			"refund",
+			common.PDETradeRefundChainStatus,
 			contentStr,
 		}
 		return [][]string{inst}, nil
@@ -376,7 +526,7 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 	inst := []string{
 		strconv.Itoa(metaType),
 		strconv.Itoa(int(shardID)),
-		"accepted",
+		common.PDETradeAcceptedChainStatus,
 		string(pdeTradeAcceptedContentBytes),
 	}
 	return [][]string{inst}, nil
@@ -409,7 +559,7 @@ func buildPDEWithdrawalAcceptedInst(
 	return []string{
 		strconv.Itoa(metaType),
 		strconv.Itoa(int(shardID)),
-		"accepted",
+		common.PDEWithdrawalAcceptedChainStatus,
 		string(wdAcceptedContentBytes),
 	}, nil
 }
@@ -523,7 +673,7 @@ func (blockchain *BlockChain) buildInstructionsForPDEWithdrawal(
 		inst := []string{
 			strconv.Itoa(metaType),
 			strconv.Itoa(int(shardID)),
-			"rejected",
+			common.PDEWithdrawalRejectedChainStatus,
 			contentStr,
 		}
 		return [][]string{inst}, nil
