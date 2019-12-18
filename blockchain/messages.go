@@ -144,10 +144,6 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 		return
 	}
 	fmt.Println("Shard block received from shard", newBlk.Header.ShardID, newBlk.Header.Height)
-	if newBlk.Header.Timestamp < GetBestStateShard(newBlk.Header.ShardID).BestBlock.Header.Timestamp { // not receive block older than current latest block
-		//fmt.Println("Shard block received 0")
-		//return
-	}
 
 	if _, ok := blockchain.Synker.Status.Shards[newBlk.Header.ShardID]; ok {
 		if _, ok := currentInsert.Shards[newBlk.Header.ShardID]; !ok {
