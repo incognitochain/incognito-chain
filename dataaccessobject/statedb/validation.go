@@ -7,7 +7,25 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-func ValidatePaymentAddressSanity(v string) error {
+type StateObjectValidation struct {
+	version int
+}
+
+func (v StateObjectValidation) Version() int {
+	return v.version
+}
+
+func (v *StateObjectValidation) SetVersion(version int) {
+	v.version = version
+}
+
+var SoValidation *StateObjectValidation
+var _ = func() (_ struct{}) {
+	SoValidation = &StateObjectValidation{version: defaultVersion}
+	return
+}
+
+func (s StateObjectValidation) ValidatePaymentAddressSanity(v string) error {
 	keyWalletReceiver, err := wallet.Base58CheckDeserialize(v)
 	if err != nil {
 		return err
@@ -18,7 +36,7 @@ func ValidatePaymentAddressSanity(v string) error {
 	return nil
 }
 
-func ValidateIncognitoPublicKeySanity(v string) error {
+func (s StateObjectValidation) ValidateIncognitoPublicKeySanity(v string) error {
 	res, ver, err := base58.Base58Check{}.Decode(v)
 	if err != nil {
 		return err

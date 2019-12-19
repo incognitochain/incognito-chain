@@ -19,6 +19,8 @@ var (
 	commitmentPrefix        = []byte("com-value-")
 	commitmentIndexPrefix   = []byte("com-index-")
 	commitmentLengthPrefix  = []byte("com-length-")
+	snDerivatorPrefix       = []byte("sn-derivator-")
+	outputCoinPrefix        = []byte("output-coin-")
 )
 
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
@@ -61,23 +63,33 @@ func GetBlackListProducerPrefix() []byte {
 }
 
 func GetSerialNumberPrefix(tokenID common.Hash, shardID byte) []byte {
-	h := common.HashH(append(append(serialNumberPrefix, tokenID[:]...), shardID))
+	h := common.HashH(append(serialNumberPrefix, append(tokenID[:], shardID)...))
 	return h[:][:prefixHashKeyLength]
 }
 
 func GetCommitmentPrefix(tokenID common.Hash, shardID byte) []byte {
-	h := common.HashH(append(append(commitmentPrefix, tokenID[:]...), shardID))
+	h := common.HashH(append(commitmentPrefix, append(tokenID[:], shardID)...))
 	return h[:][:prefixHashKeyLength]
 }
 
 func GetCommitmentIndexPrefix(tokenID common.Hash, shardID byte) []byte {
-	h := common.HashH(append(append(commitmentIndexPrefix, tokenID[:]...), shardID))
+	h := common.HashH(append(commitmentIndexPrefix, append(tokenID[:], shardID)...))
 	return h[:][:prefixHashKeyLength]
 }
 
-func GetCommitmentLengthKey(tokenID common.Hash, shardID byte) []byte {
-	h := common.HashH(append(append(commitmentLengthPrefix, tokenID[:]...), shardID))
-	return h[:]
+func GetCommitmentLengthPrefix() []byte {
+	h := common.HashH(commitmentLengthPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetSNDerivatorPrefix(tokenID common.Hash) []byte {
+	h := common.HashH(append(snDerivatorPrefix, tokenID[:]...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetOutputCoinPrefix(tokenID common.Hash, shardID byte) []byte {
+	h := common.HashH(append(outputCoinPrefix, append(tokenID[:], shardID)...))
+	return h[:][:prefixHashKeyLength]
 }
 
 var _ = func() (_ struct{}) {

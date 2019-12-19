@@ -18,6 +18,8 @@ const (
 	InvalidBlackListProducerStateTypeError
 	InvalidSerialNumberStateTypeError
 	InvalidCommitmentStateTypeError
+	InvalidSNDerivatorStateTypeError
+	InvalidOutputCoinStateTypeError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -35,6 +37,8 @@ var ErrCodeMessage = map[int]struct {
 	InvalidBlackListProducerStateTypeError: {-1008, "invalid black list producer state type"},
 	InvalidSerialNumberStateTypeError:      {-1009, "invalid serial number state type"},
 	InvalidCommitmentStateTypeError:        {-1010, "invalid commitment state type"},
+	InvalidSNDerivatorStateTypeError:       {-1011, "invalid snderivator state type"},
+	InvalidOutputCoinStateTypeError:        {-1011, "invalid output coin state type"},
 }
 
 type StatedbError struct {

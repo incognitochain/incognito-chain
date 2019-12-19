@@ -23,16 +23,22 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 	switch objectType {
 	case TestObjectType:
 		return newTestObjectWithValue(db, hash, value)
-	case SerialNumberObjectType:
-		return newSerialNumberObjectWithValue(db, hash, value)
 	case CommitteeObjectType:
 		return newCommitteeObjectWithValue(db, hash, value)
 	case CommitteeRewardObjectType:
 		return newCommitteeRewardObjectWithValue(db, hash, value)
 	case RewardRequestObjectType:
 		return newRewardRequestObjectWithValue(db, hash, value)
-	case BlackListProducerObjectType:
-		return newBlackListProducerObjectWithValue(db, hash, value)
+	case SerialNumberObjectType:
+		return newSerialNumberObjectWithValue(db, hash, value)
+	case CommitmentObjectType:
+		return newCommitteeObjectWithValue(db, hash, value)
+	case CommitmentIndexObjectType:
+		return newCommitmentIndexObjectWithValue(db, hash, value)
+	case CommitmentLengthObjectType:
+		return newCommitmentLengthObjectWithValue(db, hash, value)
+	case SNDerivatorObjectType:
+		return newSNDerivatorObjectWithValue(db, hash, value)
 	default:
 		panic("state object type not exist")
 	}
@@ -42,8 +48,6 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 	switch objectType {
 	case TestObjectType:
 		return newTestObject(db, hash)
-	case SerialNumberObjectType:
-		return newSerialNumberObject(db, hash)
 	case CommitteeObjectType:
 		return newCommitteeObject(db, hash)
 	case CommitteeRewardObjectType:
@@ -52,6 +56,16 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newRewardRequestObject(db, hash)
 	case BlackListProducerObjectType:
 		return newBlackListProducerObject(db, hash)
+	case SerialNumberObjectType:
+		return newSerialNumberObject(db, hash)
+	case CommitmentObjectType:
+		return newCommitteeObject(db, hash)
+	case CommitmentIndexObjectType:
+		return newCommitmentIndexObject(db, hash)
+	case CommitmentLengthObjectType:
+		return newCommitmentLengthObject(db, hash)
+	case SNDerivatorObjectType:
+		return newSNDerivatorObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}

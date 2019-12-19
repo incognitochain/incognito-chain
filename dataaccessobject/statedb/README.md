@@ -62,8 +62,35 @@ Used for beacon and all shards, distinguish between shards and beacon by prefix.
     * punished epoch (punished duration left)
     * beacon height at which this state is calculated
 9. Serial Number:
-- key: first 12 bytes of `hash(serial-number-prefix)` with first 20 bytes of `hash(tokenID + shardID + serial-number-bytes)`
+- key: first 12 bytes of `hash(serial-number-prefix + tokenID + shardID)` with first 20 bytes of `hash(serial-number-bytes)`
 - value: serial number state:
     * tokenID
     * shardID
     * serial number value
+10. Commitment:
+3 type of object: commitment, commitment index, commitment length
+a. Commitment: store commitment value
+- key: first 12 bytes of `hash(commitment-prefix + tokenID + shardID)` with first 20 bytes of `hash(commitment-bytes)`
+- value: commitment state:
+    * tokenID
+    * shardID
+    * serial number value   
+b. Commitment index: store key to commitment value
+- key: first 12 bytes of `hash(commitment-index-prefix + tokenID + shardID)` with first 20 bytes of `hash(commitment-index-bytes)`
+- value: key of commitment (a)
+c. Commitment Length: Number of commitment in one of shard of a token
+- key: first 12 bytes of `hash(commitment-length-prefix)` with first 20 bytes of `hash(tokenID + shardID)`
+- value: current number of commitment in this shard of a token
+11. Output Coin:
+- key: first 12 bytes of `hash(output-coin-prefix + tokenID + shardID)` with first 20 bytes of `hash(incognito-public-key-bytes)`
+- value: output coin state:
+    * tokenID
+    * shardID
+    * publicKey
+    * outputCoins: list of output coin
+12. SNDerivator:
+- key: first 12 bytes of `hash(output-coin-prefix + tokenID)` with first 20 bytes of `hash(snd-bytes)`
+- value: snderivator state:
+    * tokenID
+    * snd
+   

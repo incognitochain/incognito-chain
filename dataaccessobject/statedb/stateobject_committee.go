@@ -149,7 +149,7 @@ func newCommitteeObjectWithValue(db *StateDB, key common.Hash, data interface{})
 			return nil, NewStatedbError(InvalidCommitteeStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
 		}
 	}
-	if err := ValidatePaymentAddressSanity(newCommitteeState.rewardReceiver); err != nil {
+	if err := SoValidation.ValidatePaymentAddressSanity(newCommitteeState.rewardReceiver); err != nil {
 		return nil, NewStatedbError(InvalidPaymentAddressTypeError, err)
 	}
 	return &CommitteeObject{
@@ -192,7 +192,7 @@ func (c *CommitteeObject) SetValue(data interface{}) error {
 	if !ok {
 		return NewStatedbError(InvalidCommitteeStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
 	}
-	if err := ValidatePaymentAddressSanity(newCommitteeState.rewardReceiver); err != nil {
+	if err := SoValidation.ValidatePaymentAddressSanity(newCommitteeState.rewardReceiver); err != nil {
 		return NewStatedbError(InvalidPaymentAddressTypeError, err)
 	}
 	c.committeeState = newCommitteeState

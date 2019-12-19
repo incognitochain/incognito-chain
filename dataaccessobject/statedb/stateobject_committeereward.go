@@ -111,7 +111,7 @@ func newCommitteeRewardObjectWithValue(db *StateDB, key common.Hash, data interf
 			return nil, NewStatedbError(InvalidCommitteeRewardStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
 		}
 	}
-	if err := ValidateIncognitoPublicKeySanity(newCommitteeRewardState.incognitoPublicKey); err != nil {
+	if err := SoValidation.ValidateIncognitoPublicKeySanity(newCommitteeRewardState.incognitoPublicKey); err != nil {
 		return nil, NewStatedbError(InvalidIncognitoPublicKeyTypeError, err)
 	}
 	return &CommitteeRewardObject{
@@ -125,7 +125,7 @@ func newCommitteeRewardObjectWithValue(db *StateDB, key common.Hash, data interf
 }
 
 func GenerateCommitteeRewardObjectKey(publicKey string) (common.Hash, error) {
-	err := ValidateIncognitoPublicKeySanity(publicKey)
+	err := SoValidation.ValidateIncognitoPublicKeySanity(publicKey)
 	if err != nil {
 		return common.Hash{}, NewStatedbError(InvalidIncognitoPublicKeyTypeError, err)
 	}
@@ -165,7 +165,7 @@ func (rr *CommitteeRewardObject) SetValue(data interface{}) error {
 			return NewStatedbError(InvalidCommitteeRewardStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
 		}
 	}
-	if err := ValidateIncognitoPublicKeySanity(newCommitteeRewardState.incognitoPublicKey); err != nil {
+	if err := SoValidation.ValidateIncognitoPublicKeySanity(newCommitteeRewardState.incognitoPublicKey); err != nil {
 		return NewStatedbError(InvalidIncognitoPublicKeyTypeError, err)
 	}
 	rr.rewardReceiverState = newCommitteeRewardState

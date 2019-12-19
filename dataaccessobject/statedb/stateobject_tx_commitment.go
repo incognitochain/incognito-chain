@@ -265,9 +265,9 @@ func newCommitmentIndexObjectWithValue(db *StateDB, key common.Hash, data interf
 	}, nil
 }
 
-func GenerateCommitmentIndexObjectKey(tokenID common.Hash, shardID byte, commitment []byte) (common.Hash, error) {
+func GenerateCommitmentIndexObjectKey(tokenID common.Hash, shardID byte, index *big.Int) (common.Hash, error) {
 	prefixHash := GetCommitmentIndexPrefix(tokenID, shardID)
-	valueHash := common.HashH(commitment)
+	valueHash := common.HashH(index.Bytes())
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...)), nil
 }
 
@@ -385,8 +385,9 @@ func newCommitmentLengthObjectWithValue(db *StateDB, key common.Hash, data inter
 }
 
 func GenerateCommitmentLengthObjectKey(tokenID common.Hash, shardID byte, commitment []byte) (common.Hash, error) {
-	key := GetCommitmentLengthKey(tokenID, shardID)
-	return common.BytesToHash(key), nil
+	prefixHash := GetCommitmentLengthPrefix()
+	valueHash := common.HashH(append(tokenID[:], shardID))
+	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...)), nil
 }
 
 func (s CommitmentLengthObject) GetVersion() int {
@@ -405,16 +406,9 @@ func (s CommitmentLengthObject) GetTrie(db DatabaseAccessWarper) Trie {
 }
 
 func (s *CommitmentLengthObject) SetValue(data interface{}) error {
-	var newCommitmentLengthValue = new(big.Int)
-	var ok bool
-	var dataBytes []byte
-	if dataBytes, ok = data.([]byte); ok {
-		newCommitmentLengthValue.SetBytes(dataBytes)
-	} else {
-		newCommitmentLengthValue, ok = data.(*big.Int)
-		if !ok {
-			return NewStatedbError(InvalidBigIntTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
-		}
+	newCommitmentLengthValue, ok := data.(*big.Int)
+	if !ok {
+		return NewStatedbError(InvalidBigIntTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
 	}
 	s.commitmentLength = newCommitmentLengthValue
 	return nil

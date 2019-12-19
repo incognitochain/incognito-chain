@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/trie"
+	"math/big"
 	"strconv"
 	"time"
 )
@@ -402,48 +404,6 @@ func (stateDB *StateDB) GetByPrefixTestObjectList(prefix []byte) ([]common.Hash,
 	return keys, values
 }
 
-// ================================= Serial Number OBJECT =======================================
-func (stateDB *StateDB) GetSerialNumber(key common.Hash) ([]byte, error) {
-	serialNumberObject, err := stateDB.getStateObject(SerialNumberObjectType, key)
-	if err != nil {
-		return []byte{}, err
-	}
-	if serialNumberObject != nil {
-		return serialNumberObject.GetValueBytes(), nil
-	}
-	return []byte{}, nil
-}
-
-func (stateDB *StateDB) GetAllSerialNumberKeyValueList() ([]common.Hash, [][]byte) {
-	temp := stateDB.trie.NodeIterator(GetSerialNumberPrefix())
-	it := trie.NewIterator(temp)
-	keys := []common.Hash{}
-	values := [][]byte{}
-	for it.Next() {
-		key := stateDB.trie.GetKey(it.Key)
-		newKey := make([]byte, len(key))
-		copy(newKey, key)
-		value := it.Value
-		newValue := make([]byte, len(value))
-		copy(newValue, value)
-		keys = append(keys, common.BytesToHash(key))
-		values = append(values, value)
-	}
-	return keys, values
-}
-func (stateDB *StateDB) GetAllSerialNumberValueList() [][]byte {
-	temp := stateDB.trie.NodeIterator(GetSerialNumberPrefix())
-	it := trie.NewIterator(temp)
-	values := [][]byte{}
-	for it.Next() {
-		value := it.Value
-		newValue := make([]byte, len(value))
-		copy(newValue, value)
-		values = append(values, value)
-	}
-	return values
-}
-
 // ================================= Committee OBJECT =======================================
 func (stateDB *StateDB) GetCommitteeState(key common.Hash) (*CommitteeState, bool, error) {
 	committeeStateObject, err := stateDB.getStateObject(CommitteeObjectType, key)
@@ -680,12 +640,12 @@ func (stateDB *StateDB) GetAllCommitteeReward() map[string]map[common.Hash]int {
 
 // ================================= Reward Request OBJECT =======================================
 func (stateDB *StateDB) GetRewardRequestState(key common.Hash) (*RewardRequestState, bool, error) {
-	rewardRequestObject, err := stateDB.getStateObject(RewardRequestObjectType, key)
+	rewardRequestState, err := stateDB.getStateObject(RewardRequestObjectType, key)
 	if err != nil {
 		return nil, false, err
 	}
-	if rewardRequestObject != nil {
-		return rewardRequestObject.GetValue().(*RewardRequestState), true, nil
+	if rewardRequestState != nil {
+		return rewardRequestState.GetValue().(*RewardRequestState), true, nil
 	}
 	return NewRewardRequestState(), false, nil
 }
@@ -725,12 +685,12 @@ func (stateDB *StateDB) GetAllRewardRequestState() []*RewardRequestState {
 
 // ================================= Black List Producer OBJECT =======================================
 func (stateDB *StateDB) GetBlackListProducerState(key common.Hash) (*BlackListProducerState, bool, error) {
-	blackListProducerObject, err := stateDB.getStateObject(BlackListProducerObjectType, key)
+	blackListProducerState, err := stateDB.getStateObject(BlackListProducerObjectType, key)
 	if err != nil {
 		return nil, false, err
 	}
-	if blackListProducerObject != nil {
-		return blackListProducerObject.GetValue().(*BlackListProducerState), true, nil
+	if blackListProducerState != nil {
+		return blackListProducerState.GetValue().(*BlackListProducerState), true, nil
 	}
 	return NewBlackListProducerState(), false, nil
 }
@@ -789,12 +749,12 @@ func (stateDB *StateDB) GetAllProducerBlackList() map[string]uint8 {
 
 // ================================= Serial Number OBJECT =======================================
 func (stateDB *StateDB) GetSerialNumberState(key common.Hash) (*SerialNumberState, bool, error) {
-	serialNumberObject, err := stateDB.getStateObject(SerialNumberObjectType, key)
+	serialNumberState, err := stateDB.getStateObject(SerialNumberObjectType, key)
 	if err != nil {
 		return nil, false, err
 	}
-	if serialNumberObject != nil {
-		return serialNumberObject.GetValue().(*SerialNumberState), true, nil
+	if serialNumberState != nil {
+		return serialNumberState.GetValue().(*SerialNumberState), true, nil
 	}
 	return NewSerialNumberState(), false, nil
 }
@@ -818,3 +778,62 @@ func (stateDB *StateDB) GetAllSerialNumberByPrefix(tokenID common.Hash, shardID 
 	return serialNumberList
 }
 
+// ================================= Commitment OBJECT =======================================
+func (stateDB *StateDB) GetCommitmentState(key common.Hash) (*CommitmentState, bool, error) {
+	commitmentState, err := stateDB.getStateObject(CommitmentObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if commitmentState != nil {
+		return commitmentState.GetValue().(*CommitmentState), true, nil
+	}
+	return NewCommitmentState(), false, nil
+}
+
+func (stateDB *StateDB) GetAllCommitmentState(tokenID common.Hash, shardID byte) map[string]uint64 {
+	temp := stateDB.trie.NodeIterator(GetCommitmentPrefix(tokenID, shardID))
+	it := trie.NewIterator(temp)
+	m := make(map[string]uint64)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		newCommitmentState := NewCommitmentState()
+		err := json.Unmarshal(newValue, newCommitmentState)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		commitmentString := base58.Base58Check{}.Encode(newCommitmentState.commitment, common.Base58Version)
+		m[commitmentString] = newCommitmentState.index.Uint64()
+	}
+	return m
+}
+func (stateDB *StateDB) GetCommitmentIndexState(key common.Hash) (*CommitmentState, bool, error) {
+	commitmentIndexState, err := stateDB.getStateObject(CommitmentIndexObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if commitmentIndexState != nil {
+		tempKey, ok := commitmentIndexState.GetValue().(common.Hash)
+		if !ok {
+			panic("wrong expected type")
+		}
+		commitmentState, err := stateDB.getDeletedStateObject(CommitmentObjectType, tempKey)
+		if err != nil || commitmentState == nil {
+			return NewCommitmentState(), false, nil
+		}
+		return commitmentState.GetValue().(*CommitmentState), true, nil
+	}
+	return NewCommitmentState(), false, nil
+}
+
+func (stateDB *StateDB) GetCommitmentLengthState(key common.Hash) (*big.Int, bool, error) {
+	commitmentLengthState, err := stateDB.getStateObject(CommitmentLengthObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if commitmentLengthState != nil {
+		return commitmentLengthState.GetValue().(*big.Int), true, nil
+	}
+	return new(big.Int), false, nil
+}
