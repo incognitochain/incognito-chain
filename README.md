@@ -25,7 +25,7 @@ go build -o incognito
 Then, run an Incognito Node
 
 ```shell
-./incognito --enablewallet --wallet "wallet" --walletpassphrase "12345678" --testnet --norpcauth --walletautoinit
+./incognito --enablewallet --wallet "wallet" --walletpassphrase "12345678" --testnet true --norpcauth --walletautoinit
 ```
 
 ## Read the code
