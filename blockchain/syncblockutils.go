@@ -122,16 +122,6 @@ func GetMissingBlockInPool(
 	return listBlkToSync
 }
 
-func CopyMap(
-	srcMap map[byte][]uint64,
-) map[byte][]uint64 {
-	newMap := map[byte][]uint64{}
-	for k, v := range srcMap {
-		newMap[k] = v
-	}
-	return newMap
-}
-
 func GetReportChainState(
 	peersState map[string]*PeerState,
 	report *ReportedChainState,
@@ -140,11 +130,14 @@ func GetReportChainState(
 	beaconBestState := GetBeaconBestState()
 	shardBestState := new(ShardBestState)
 	// Get common report, for all of node, committee, fullnode,...
-	for _, PeerState := range peersState {
+	beaconBestState.lock.RLock()
+	defer beaconBestState.lock.RUnlock()
+	for _, peerState := range peersState {
 		for shardID := range shards {
 			shardBestState = GetBestStateShard(shardID)
-			if shardState, ok := PeerState.Shard[shardID]; ok {
-				if shardState.Height >= GetBeaconBestState().GetBestHeightOfShard(shardID) && shardState.Height > GetBestStateShard(shardID).ShardHeight {
+			shardBestState.lock.RLock()
+			if shardState, ok := peerState.Shard[shardID]; ok {
+				if shardState.Height >= beaconBestState.GetBestHeightOfShard(shardID) && shardState.Height > shardBestState.ShardHeight {
 					// report.ClosestShardsState[shardID].Height == shardBestState.ShardHeight
 					// => this is default value => set report.ClosestShardsState[shardID].Height = *shardState
 					if report.ClosestShardsState[shardID].Height == shardBestState.ShardHeight {
@@ -156,13 +149,14 @@ func GetReportChainState(
 					}
 				}
 			}
+			shardBestState.lock.RUnlock()
 		}
-		if PeerState.Beacon.Height > beaconBestState.BeaconHeight {
+		if peerState.Beacon.Height > beaconBestState.BeaconHeight {
 			if report.ClosestBeaconState.Height == beaconBestState.BeaconHeight {
-				report.ClosestBeaconState = *PeerState.Beacon
+				report.ClosestBeaconState = *peerState.Beacon
 			} else {
-				if PeerState.Beacon.Height < report.ClosestBeaconState.Height {
-					report.ClosestBeaconState = *PeerState.Beacon
+				if peerState.Beacon.Height < report.ClosestBeaconState.Height {
+					report.ClosestBeaconState = *peerState.Beacon
 				}
 			}
 		}
