@@ -8,15 +8,17 @@ import (
 )
 
 var (
-	serialNumberPrefix      = []byte("serial-number-")
-	allShardCommitteePrefix = []byte("all-shard-committee-")
+	committeePrefix         = []byte("shard-com-")
+	substitutePrefix        = []byte("shard-sub-")
 	nextCandidatePrefix     = []byte("next-cand-")
 	currentCandidatePrefix  = []byte("cur-cand-")
-	substitutePrefix        = []byte("shard-sub-")
-	committeePrefix         = []byte("shard-com-")
 	committeeRewardPrefix   = []byte("committee-reward-")
 	rewardRequestPrefix     = []byte("reward-request-")
 	blackListProducerPrefix = []byte("black-list-")
+	serialNumberPrefix      = []byte("serial-number-")
+	commitmentPrefix        = []byte("com-value-")
+	commitmentIndexPrefix   = []byte("com-index-")
+	commitmentLengthPrefix  = []byte("com-length-")
 )
 
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
@@ -61,6 +63,21 @@ func GetBlackListProducerPrefix() []byte {
 func GetSerialNumberPrefix(tokenID common.Hash, shardID byte) []byte {
 	h := common.HashH(append(append(serialNumberPrefix, tokenID[:]...), shardID))
 	return h[:][:prefixHashKeyLength]
+}
+
+func GetCommitmentPrefix(tokenID common.Hash, shardID byte) []byte {
+	h := common.HashH(append(append(commitmentPrefix, tokenID[:]...), shardID))
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetCommitmentIndexPrefix(tokenID common.Hash, shardID byte) []byte {
+	h := common.HashH(append(append(commitmentIndexPrefix, tokenID[:]...), shardID))
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetCommitmentLengthKey(tokenID common.Hash, shardID byte) []byte {
+	h := common.HashH(append(append(commitmentLengthPrefix, tokenID[:]...), shardID))
+	return h[:]
 }
 
 var _ = func() (_ struct{}) {

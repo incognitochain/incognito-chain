@@ -8,12 +8,14 @@ const (
 // Object type
 const (
 	TestObjectType = iota
-	SerialNumberObjectType
-	AllShardCommitteeObjectType
 	CommitteeObjectType
 	CommitteeRewardObjectType
 	RewardRequestObjectType
 	BlackListProducerObjectType
+	SerialNumberObjectType
+	CommitmentObjectType
+	CommitmentIndexObjectType
+	CommitmentLengthObjectType
 )
 
 // Prefix length

@@ -45,6 +45,38 @@ func NewSerialNumberStateWithValue(tokenID common.Hash, shardID byte, serialNumb
 	return &SerialNumberState{tokenID: tokenID, shardID: shardID, serialNumber: serialNumber}
 }
 
+func (s SerialNumberState) MarshalJSON() ([]byte, error) {
+	data, err := json.Marshal(struct {
+		TokenID      common.Hash
+		ShardID      byte
+		SerialNumber []byte
+	}{
+		TokenID:      s.tokenID,
+		ShardID:      s.shardID,
+		SerialNumber: s.serialNumber,
+	})
+	if err != nil {
+		return []byte{}, err
+	}
+	return data, nil
+}
+
+func (s *SerialNumberState) UnmarshalJSON(data []byte) error {
+	temp := struct {
+		TokenID      common.Hash
+		ShardID      byte
+		SerialNumber []byte
+	}{}
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
+		return err
+	}
+	s.tokenID = temp.TokenID
+	s.shardID = temp.ShardID
+	s.serialNumber = temp.SerialNumber
+	return nil
+}
+
 type SerialNumberObject struct {
 	db *StateDB
 	// Write caches.
@@ -99,7 +131,7 @@ func newSerialNumberObjectWithValue(db *StateDB, key common.Hash, data interface
 	}, nil
 }
 
-func GenerateSerialNumberObject(tokenID common.Hash, shardID byte, serialNumber []byte) (common.Hash, error) {
+func GenerateSerialNumberObjectKey(tokenID common.Hash, shardID byte, serialNumber []byte) (common.Hash, error) {
 	prefixHash := GetSerialNumberPrefix(tokenID, shardID)
 	valueHash := common.HashH(serialNumber)
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...)), nil

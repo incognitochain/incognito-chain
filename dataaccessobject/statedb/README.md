@@ -44,20 +44,26 @@ Used for beacon and all shards, distinguish between shards and beacon by prefix.
     * auto staking: yes or no
     
 6. Committee Reward
-- key: first 12 bytes of `hash(committee-shardID-prefix)` with first 20 bytes of `hash(incognito-public-key-bytes)`
+- key: first 12 bytes of `hash(committee-reward-prefix)` with first 20 bytes of `hash(incognito-public-key-bytes)`
 - value: committee state:
     * reward: map token id => reward amount
     * incognito public key: 33 bytes public key encoded as base 58 string
 7. Reward Request
-- key: first 12 bytes of `hash(committee-shardID-prefix)` with first 20 bytes of `hash(epoch + shardID + tokenID)`
+- key: first 12 bytes of `hash(reward-request-prefix)` with first 20 bytes of `hash(epoch + shardID + tokenID)`
 - value: reward request state:
     * epoch
     * shardID
     * tokenID
     * amount
 8. Black List Producer:
-- key: first 12 bytes of `hash(committee-shardID-prefix)` with first 20 bytes of `hash(committee-publickey-base58-string)`
+- key: first 12 bytes of `hash(black-list-producer-prefix)` with first 20 bytes of `hash(committee-publickey-base58-string)`
 - value: black list producer state:
     * committee public key base58 string 
     * punished epoch (punished duration left)
     * beacon height at which this state is calculated
+9. Serial Number:
+- key: first 12 bytes of `hash(serial-number-prefix)` with first 20 bytes of `hash(tokenID + shardID + serial-number-bytes)`
+- value: serial number state:
+    * tokenID
+    * shardID
+    * serial number value
