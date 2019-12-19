@@ -56,9 +56,10 @@ type PDEContribution struct {
 }
 
 type PDEInfoFromBeaconBlock struct {
-	PDEContributions []*PDEContribution
-	PDETrades        []*PDETrade
-	PDEWithdrawals   []*PDEWithdrawal
+	PDEContributions []*PDEContribution `json:"PDEContributions"`
+	PDETrades        []*PDETrade        `json:"PDETrades"`
+	PDEWithdrawals   []*PDEWithdrawal   `json:"PDEWithdrawals"`
+	BeaconTimeStamp  int64              `json:"BeaconTimeStamp"`
 }
 
 type ConvertedPrice struct {
@@ -789,6 +790,7 @@ func (httpServer *HttpServer) handleExtractPDEInstsFromBeaconBlock(
 		PDEContributions: []*PDEContribution{},
 		PDETrades:        []*PDETrade{},
 		PDEWithdrawals:   []*PDEWithdrawal{},
+		BeaconTimeStamp:  bcBlk.Header.Timestamp,
 	}
 	insts := bcBlk.Body.Instructions
 	for _, inst := range insts {
