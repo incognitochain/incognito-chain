@@ -478,10 +478,23 @@ func (httpServer *HttpServer) handleGetPDEState(params interface{}, closeChan <-
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Beacon height is invalid"))
 	}
 	pdeState, err := blockchain.InitCurrentPDEStateFromDB(httpServer.config.BlockChain.GetDatabase(), uint64(beaconHeight))
+	beaconBlock, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
+	type CurrentPDEState struct {
+		WaitingPDEContributions map[string]*lvdb.PDEContribution `json:"WaitingPDEContributions"`
+		PDEPoolPairs            map[string]*lvdb.PDEPoolForPair  `json:"PDEPoolPairs"`
+		PDEShares               map[string]uint64                `json:"PDEShares"`
+		BeaconTimeStamp         int64                            `json:"BeaconTimeStamp"`
+	}
+	result := CurrentPDEState{
+		BeaconTimeStamp:         beaconBlock.Header.Timestamp,
+		PDEPoolPairs:            pdeState.PDEPoolPairs,
+		PDEShares:               pdeState.PDEShares,
+		WaitingPDEContributions: pdeState.WaitingPDEContributions,
+	}
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-	return pdeState, nil
+	return result, nil
 }
 
 func (httpServer *HttpServer) handleConvertNativeTokenToPrivacyToken(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
