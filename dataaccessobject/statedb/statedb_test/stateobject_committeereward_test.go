@@ -668,21 +668,15 @@ func TestStateDB_StoreAndGetRewardReceiver(t *testing.T) {
 	}
 	err = sDB.SetStateObject(statedb.CommitteeRewardObjectType, key, "committee reward")
 	if err == nil {
-		if err.(*statedb.StatedbError).Code != statedb.ErrCodeMessage[statedb.InvalidCommitteeRewardStateTypeError].Code {
-			t.Fatal("expect wrong value type")
-		}
+		t.Fatal("expect error")
 	}
 	err = sDB.SetStateObject(statedb.CommitteeRewardObjectType, key, []byte("committee reward"))
 	if err == nil {
-		if err.(*statedb.StatedbError).Code != statedb.ErrCodeMessage[statedb.InvalidCommitteeRewardStateTypeError].Code {
-			t.Fatal("expect wrong value type")
-		}
+		t.Fatal("expect error")
 	}
 	err = sDB.SetStateObject(statedb.CommitteeRewardObjectType, key2, []byte("committee reward"))
 	if err == nil {
-		if err.(*statedb.StatedbError).Code != statedb.ErrCodeMessage[statedb.InvalidCommitteeRewardStateTypeError].Code {
-			t.Fatal("expect wrong value type")
-		}
+		t.Fatal("expect error")
 	}
 	stateObjects := sDB.GetStateObjectMapForTestOnly()
 	if _, ok := stateObjects[key2]; ok {

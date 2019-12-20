@@ -46,7 +46,7 @@ func storeRewardRequest(initRoot common.Hash, warperDB statedb.DatabaseAccessWar
 	for i := uint64(1); i < epoch; i++ {
 		for _, shardID := range shardIDs {
 			for _, tokenID := range tokenIDs {
-				key, _ := statedb.GenerateRewardRequestObjectKey(i, shardID, tokenID)
+				key := statedb.GenerateRewardRequestObjectKey(i, shardID, tokenID)
 				amount := uint64(rand.Int() % 100000000000)
 				rewardRequestState := statedb.NewRewardRequestStateWithValue(i, shardID, tokenID, amount)
 				mState[key] = rewardRequestState

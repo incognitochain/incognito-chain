@@ -72,12 +72,12 @@ func newSNDerivatorObjectWithValue(db *StateDB, key common.Hash, data interface{
 	if dataBytes, ok = data.([]byte); ok {
 		err := json.Unmarshal(dataBytes, newSNDerivatorState)
 		if err != nil {
-			return nil, NewStatedbError(InvalidSNDerivatorStateTypeError, err)
+			return nil, err
 		}
 	} else {
 		newSNDerivatorState, ok = data.(*SNDerivatorState)
 		if !ok {
-			return nil, NewStatedbError(InvalidSNDerivatorStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
+			return nil, fmt.Errorf("%+v, got type %+v", ErrInvalidSNDerivatorStateType, reflect.TypeOf(data))
 		}
 	}
 	return &SNDerivatorObject{
@@ -90,10 +90,10 @@ func newSNDerivatorObjectWithValue(db *StateDB, key common.Hash, data interface{
 	}, nil
 }
 
-func GenerateSNDerivatorObjectKey(tokenID common.Hash, snd []byte) (common.Hash, error) {
+func GenerateSNDerivatorObjectKey(tokenID common.Hash, snd []byte) common.Hash {
 	prefixHash := GetSNDerivatorPrefix(tokenID)
 	valueHash := common.HashH(snd)
-	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...)), nil
+	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 
 func (s SNDerivatorObject) GetVersion() int {
@@ -114,7 +114,7 @@ func (s SNDerivatorObject) GetTrie(db DatabaseAccessWarper) Trie {
 func (s *SNDerivatorObject) SetValue(data interface{}) error {
 	newSNDerivatorState, ok := data.(*SNDerivatorState)
 	if !ok {
-		return NewStatedbError(InvalidSNDerivatorStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
+		return fmt.Errorf("%+v, got type %+v", ErrInvalidSNDerivatorStateType, reflect.TypeOf(data))
 	}
 	s.snDerivatorState = newSNDerivatorState
 	return nil

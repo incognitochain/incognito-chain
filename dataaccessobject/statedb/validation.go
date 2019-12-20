@@ -20,7 +20,8 @@ func (v *StateObjectValidation) SetVersion(version int) {
 }
 
 var SoValidation *StateObjectValidation
-var _ = func() (_ struct{}) {
+
+func init() {
 	SoValidation = &StateObjectValidation{version: defaultVersion}
 	return
 }

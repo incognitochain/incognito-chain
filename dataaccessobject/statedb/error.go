@@ -7,6 +7,21 @@ import (
 )
 
 const (
+	ErrInvalidByteArrayType              = "invalid byte array type"
+	ErrInvalidHashType                   = "invalid hash type"
+	ErrInvalidBigIntType                 = "invalid big int type"
+	ErrInvalidCommitteeStateType         = "invalid committee state type"
+	ErrInvalidPaymentAddressType         = "invalid payment address type"
+	ErrInvalidIncognitoPublicKeyType     = "invalid incognito public key type"
+	ErrInvalidCommitteeRewardStateType   = "invalid reward receiver state type "
+	ErrInvalidRewardRequestStateType     = "invalid reward request state type"
+	ErrInvalidBlackListProducerStateType = "invalid black list producer state type"
+	ErrInvalidSerialNumberStateType      = "invalid serial number state type"
+	ErrInvalidCommitmentStateType        = "invalid commitment state type"
+	ErrInvalidSNDerivatorStateType       = "invalid snderivator state type"
+	ErrInvalidOutputCoinStateType        = "invalid output coin state type"
+)
+const (
 	InvalidByteArrayTypeError = iota
 	InvalidHashTypeError
 	InvalidBigIntTypeError
@@ -20,12 +35,24 @@ const (
 	InvalidCommitmentStateTypeError
 	InvalidSNDerivatorStateTypeError
 	InvalidOutputCoinStateTypeError
+
+	StoreSerialNumberError
+	GetSerialNumberError
+	StoreCommitmentError
+	GetCommitmentError
+	StoreCommitmentIndexError
+	GetCommitmentIndexError
+	StoreCommitmentLengthError
+	GetCommitmentLengthError
+	StoreOutputCoinError
+	GetOutputCoinError
 )
 
 var ErrCodeMessage = map[int]struct {
 	Code    int
 	message string
 }{
+	// -1xxx reposistory level
 	InvalidByteArrayTypeError:              {-1000, "invalid byte array type"},
 	InvalidHashTypeError:                   {-1001, "invalid hash type"},
 	InvalidBigIntTypeError:                 {-1002, "invalid big int type"},
@@ -39,6 +66,10 @@ var ErrCodeMessage = map[int]struct {
 	InvalidCommitmentStateTypeError:        {-1010, "invalid commitment state type"},
 	InvalidSNDerivatorStateTypeError:       {-1011, "invalid snderivator state type"},
 	InvalidOutputCoinStateTypeError:        {-1011, "invalid output coin state type"},
+
+	// -2xxx store, get, update, delete at usecase level
+	StoreSerialNumberError: {-2000, "Store Serial Number Error"},
+	GetSerialNumberError:   {-2001, "Get Serial Number Error"},
 }
 
 type StatedbError struct {

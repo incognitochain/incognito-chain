@@ -113,12 +113,12 @@ func newSerialNumberObjectWithValue(db *StateDB, key common.Hash, data interface
 	if dataBytes, ok = data.([]byte); ok {
 		err := json.Unmarshal(dataBytes, newSerialNumberState)
 		if err != nil {
-			return nil, NewStatedbError(InvalidSerialNumberStateTypeError, err)
+			return nil, err
 		}
 	} else {
 		newSerialNumberState, ok = data.(*SerialNumberState)
 		if !ok {
-			return nil, NewStatedbError(InvalidSerialNumberStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
+			return nil, fmt.Errorf("%+v, got type %+v", ErrInvalidSerialNumberStateType, reflect.TypeOf(data))
 		}
 	}
 	return &SerialNumberObject{
@@ -131,10 +131,10 @@ func newSerialNumberObjectWithValue(db *StateDB, key common.Hash, data interface
 	}, nil
 }
 
-func GenerateSerialNumberObjectKey(tokenID common.Hash, shardID byte, serialNumber []byte) (common.Hash, error) {
+func GenerateSerialNumberObjectKey(tokenID common.Hash, shardID byte, serialNumber []byte) common.Hash {
 	prefixHash := GetSerialNumberPrefix(tokenID, shardID)
 	valueHash := common.HashH(serialNumber)
-	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...)), nil
+	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 
 func (s SerialNumberObject) GetVersion() int {
@@ -155,7 +155,7 @@ func (s SerialNumberObject) GetTrie(db DatabaseAccessWarper) Trie {
 func (s *SerialNumberObject) SetValue(data interface{}) error {
 	newSerialNumberState, ok := data.(*SerialNumberState)
 	if !ok {
-		return NewStatedbError(InvalidSerialNumberStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
+		return fmt.Errorf("%+v, got type %+v", ErrInvalidSerialNumberStateType, reflect.TypeOf(data))
 	}
 	s.serialNumberState = newSerialNumberState
 	return nil

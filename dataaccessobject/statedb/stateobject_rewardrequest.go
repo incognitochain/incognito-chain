@@ -128,12 +128,12 @@ func newRewardRequestObjectWithValue(db *StateDB, key common.Hash, data interfac
 	if dataBytes, ok = data.([]byte); ok {
 		err := json.Unmarshal(dataBytes, newRewardRequestState)
 		if err != nil {
-			return nil, NewStatedbError(InvalidRewardRequestStateTypeError, err)
+			return nil, err
 		}
 	} else {
 		newRewardRequestState, ok = data.(*RewardRequestState)
 		if !ok {
-			return nil, NewStatedbError(InvalidRewardRequestStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
+			return nil, fmt.Errorf("%+v, got type %+v", ErrInvalidRewardRequestStateType, reflect.TypeOf(data))
 		}
 	}
 	return &RewardRequestObject{
@@ -146,10 +146,10 @@ func newRewardRequestObjectWithValue(db *StateDB, key common.Hash, data interfac
 	}, nil
 }
 
-func GenerateRewardRequestObjectKey(epoch uint64, shardID byte, tokenID common.Hash) (common.Hash, error) {
+func GenerateRewardRequestObjectKey(epoch uint64, shardID byte, tokenID common.Hash) common.Hash {
 	prefixHash := GetCommitteeRewardPrefix()
 	valueHash := common.HashH([]byte(fmt.Sprintf("%d%d%+v", epoch, shardID, tokenID)))
-	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...)), nil
+	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 
 func (rr RewardRequestObject) GetVersion() int {
@@ -174,12 +174,12 @@ func (rr *RewardRequestObject) SetValue(data interface{}) error {
 	if dataBytes, ok = data.([]byte); ok {
 		err := json.Unmarshal(dataBytes, newRewardRequestState)
 		if err != nil {
-			return NewStatedbError(InvalidRewardRequestStateTypeError, err)
+			return err
 		}
 	} else {
 		newRewardRequestState, ok = data.(*RewardRequestState)
 		if !ok {
-			return NewStatedbError(InvalidRewardRequestStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
+			return fmt.Errorf("%+v, got type %+v", ErrInvalidRewardRequestStateType, reflect.TypeOf(data))
 		}
 	}
 	rr.rewardReceiverState = newRewardRequestState

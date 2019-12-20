@@ -115,12 +115,12 @@ func newBlackListProducerObjectWithValue(db *StateDB, key common.Hash, data inte
 	if dataBytes, ok = data.([]byte); ok {
 		err := json.Unmarshal(dataBytes, newBlackListProducerState)
 		if err != nil {
-			return nil, NewStatedbError(InvalidBlackListProducerStateTypeError, err)
+			return nil, err
 		}
 	} else {
 		newBlackListProducerState, ok = data.(*BlackListProducerState)
 		if !ok {
-			return nil, NewStatedbError(InvalidBlackListProducerStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
+			return nil, fmt.Errorf("%+v, got type %+v", ErrInvalidBlackListProducerStateType, reflect.TypeOf(data))
 		}
 	}
 	return &BlackListProducerObject{
@@ -133,10 +133,10 @@ func newBlackListProducerObjectWithValue(db *StateDB, key common.Hash, data inte
 	}, nil
 }
 
-func GenerateBlackListProducerObjectKey(committeePublicKey string) (common.Hash, error) {
+func GenerateBlackListProducerObjectKey(committeePublicKey string) common.Hash {
 	prefixHash := GetBlackListProducerPrefix()
 	valueHash := common.HashH([]byte(committeePublicKey))
-	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...)), nil
+	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 
 func (bl BlackListProducerObject) GetVersion() int {
@@ -161,12 +161,12 @@ func (bl *BlackListProducerObject) SetValue(data interface{}) error {
 	if dataBytes, ok = data.([]byte); ok {
 		err := json.Unmarshal(dataBytes, newBlackListProducerState)
 		if err != nil {
-			return NewStatedbError(InvalidBlackListProducerStateTypeError, err)
+			return err
 		}
 	} else {
 		newBlackListProducerState, ok = data.(*BlackListProducerState)
 		if !ok {
-			return NewStatedbError(InvalidBlackListProducerStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
+			return fmt.Errorf("%+v, got type %+v", ErrInvalidBlackListProducerStateType, reflect.TypeOf(data))
 		}
 	}
 	bl.blackListProducerState = newBlackListProducerState

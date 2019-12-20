@@ -1,13 +1,15 @@
 package statedb_test
 
 import (
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"math/rand"
 	"reflect"
 	"strconv"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	_ "github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 func storeCommitteeObjectOneShard(role int, initRoot common.Hash, shardID, from, to int) (common.Hash, map[common.Hash]*statedb.CommitteeState) {
@@ -66,21 +68,15 @@ func TestStateDB_SetStateObjectCommitteeState(t *testing.T) {
 	}
 	err = sDB.SetStateObject(statedb.CommitteeObjectType, key, "committeeState")
 	if err == nil {
-		if err.(*statedb.StatedbError).Code != statedb.ErrCodeMessage[statedb.InvalidCommitteeStateTypeError].Code {
-			t.Fatal("expect wrong value type")
-		}
+		t.Fatal("expect error")
 	}
 	err = sDB.SetStateObject(statedb.CommitteeObjectType, key, []byte("committee state"))
 	if err == nil {
-		if err.(*statedb.StatedbError).Code != statedb.ErrCodeMessage[statedb.InvalidCommitteeStateTypeError].Code {
-			t.Fatal("expect wrong value type")
-		}
+		t.Fatal("expect error")
 	}
 	err = sDB.SetStateObject(statedb.CommitteeObjectType, key2, []byte("committee state"))
 	if err == nil {
-		if err.(*statedb.StatedbError).Code != statedb.ErrCodeMessage[statedb.InvalidCommitteeStateTypeError].Code {
-			t.Fatal("expect wrong value type")
-		}
+		t.Fatal("expect error")
 	}
 	stateObjects := sDB.GetStateObjectMapForTestOnly()
 	if _, ok := stateObjects[key2]; ok {

@@ -773,7 +773,7 @@ func (stateDB *StateDB) GetAllSerialNumberByPrefix(tokenID common.Hash, shardID 
 		if err != nil {
 			panic("wrong value type")
 		}
-		serialNumberList = append(serialNumberList, serialNumberState.serialNumber)
+		serialNumberList = append(serialNumberList, serialNumberState.SerialNumber())
 	}
 	return serialNumberList
 }
@@ -803,8 +803,8 @@ func (stateDB *StateDB) GetAllCommitmentState(tokenID common.Hash, shardID byte)
 		if err != nil {
 			panic("wrong expect type")
 		}
-		commitmentString := base58.Base58Check{}.Encode(newCommitmentState.commitment, common.Base58Version)
-		m[commitmentString] = newCommitmentState.index.Uint64()
+		commitmentString := base58.Base58Check{}.Encode(newCommitmentState.Commitment(), common.Base58Version)
+		m[commitmentString] = newCommitmentState.Index().Uint64()
 	}
 	return m
 }
@@ -836,4 +836,16 @@ func (stateDB *StateDB) GetCommitmentLengthState(key common.Hash) (*big.Int, boo
 		return commitmentLengthState.GetValue().(*big.Int), true, nil
 	}
 	return new(big.Int), false, nil
+}
+
+// ================================= Output Coin OBJECT =======================================
+func (stateDB *StateDB) GetOutputCoinState(key common.Hash) (*OutputCoinState, bool, error) {
+	outputCoinState, err := stateDB.getStateObject(OutputCoinObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if outputCoinState != nil {
+		return outputCoinState.GetValue().(*OutputCoinState), true, nil
+	}
+	return NewOutputCoinState(), false, nil
 }

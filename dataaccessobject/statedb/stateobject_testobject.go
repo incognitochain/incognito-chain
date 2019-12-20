@@ -38,7 +38,7 @@ func newTestObject(db *StateDB, hash common.Hash) *TestObject {
 func newTestObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*TestObject, error) {
 	newSerialNumber, ok := data.([]byte)
 	if !ok {
-		return nil, NewStatedbError(InvalidByteArrayTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
+		return nil, fmt.Errorf("%+v, got type %+v", ErrInvalidByteArrayType, reflect.TypeOf(data))
 	}
 	return &TestObject{
 		version:    defaultVersion,
@@ -68,7 +68,7 @@ func (s *TestObject) GetTrie(db DatabaseAccessWarper) Trie {
 func (s *TestObject) SetValue(data interface{}) error {
 	newSerialNumber, ok := data.([]byte)
 	if !ok {
-		return NewStatedbError(InvalidByteArrayTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
+		return fmt.Errorf("%+v, got type %+v", ErrInvalidByteArrayType, reflect.TypeOf(data))
 	}
 	s.value = newSerialNumber
 	return nil

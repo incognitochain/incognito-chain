@@ -141,16 +141,16 @@ func newCommitteeObjectWithValue(db *StateDB, key common.Hash, data interface{})
 	if dataBytes, ok = data.([]byte); ok {
 		err := json.Unmarshal(dataBytes, newCommitteeState)
 		if err != nil {
-			return nil, NewStatedbError(InvalidCommitteeStateTypeError, err)
+			return nil, err
 		}
 	} else {
 		newCommitteeState, ok = data.(*CommitteeState)
 		if !ok {
-			return nil, NewStatedbError(InvalidCommitteeStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
+			return nil, fmt.Errorf("%+v, got type %+v", ErrInvalidCommitteeStateType, reflect.TypeOf(data))
 		}
 	}
 	if err := SoValidation.ValidatePaymentAddressSanity(newCommitteeState.rewardReceiver); err != nil {
-		return nil, NewStatedbError(InvalidPaymentAddressTypeError, err)
+		return nil, fmt.Errorf("%+v, got err %+v", ErrInvalidPaymentAddressType, err)
 	}
 	return &CommitteeObject{
 		version:                defaultVersion,
@@ -165,7 +165,7 @@ func newCommitteeObjectWithValue(db *StateDB, key common.Hash, data interface{})
 func GenerateCommitteeObjectKeyWithRole(role int, shardID int, committee incognitokey.CommitteePublicKey) (common.Hash, error) {
 	committeeBytes, err := committee.Bytes()
 	if err != nil {
-		return common.Hash{}, NewStatedbError(InvalidCommitteeStateTypeError, err)
+		return common.Hash{}, err
 	}
 	prefixHash := GetCommitteePrefixWithRole(role, shardID)
 	valueHash := common.HashH(committeeBytes)
@@ -190,10 +190,10 @@ func (c CommitteeObject) GetTrie(db DatabaseAccessWarper) Trie {
 func (c *CommitteeObject) SetValue(data interface{}) error {
 	newCommitteeState, ok := data.(*CommitteeState)
 	if !ok {
-		return NewStatedbError(InvalidCommitteeStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
+		return fmt.Errorf("%+v, got type %+v", ErrInvalidCommitteeStateType, reflect.TypeOf(data))
 	}
 	if err := SoValidation.ValidatePaymentAddressSanity(newCommitteeState.rewardReceiver); err != nil {
-		return NewStatedbError(InvalidPaymentAddressTypeError, err)
+		return fmt.Errorf("%+v, got err %+v", ErrInvalidPaymentAddressType, err)
 	}
 	c.committeeState = newCommitteeState
 	return nil

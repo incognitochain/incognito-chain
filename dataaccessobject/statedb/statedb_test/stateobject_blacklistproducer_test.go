@@ -36,7 +36,7 @@ func storeBlackListProducer(initRoot common.Hash, warperDB statedb.DatabaseAcces
 	mState := make(map[common.Hash]*statedb.BlackListProducerState)
 	wantM := make(map[string]uint8)
 	for _, value := range committeePublicKeys[from:to] {
-		key, _ := statedb.GenerateBlackListProducerObjectKey(value)
+		key := statedb.GenerateBlackListProducerObjectKey(value)
 		duration := generatePunishedDuration()
 		blackListProducerState := statedb.NewBlackListProducerStateWithValue(value, duration, beaconHeight)
 		mState[key] = blackListProducerState
@@ -85,7 +85,7 @@ func TestStateDB_GetBlackListProducerPunishedEpoch(t *testing.T) {
 		t.Fatal(err)
 	}
 	for k, v := range wantM {
-		key, _ := statedb.GenerateBlackListProducerObjectKey(k)
+		key := statedb.GenerateBlackListProducerObjectKey(k)
 		gotM, has, err := tempStateDB.GetBlackListProducerPunishedEpoch(key)
 		if err != nil {
 			t.Fatal(err)

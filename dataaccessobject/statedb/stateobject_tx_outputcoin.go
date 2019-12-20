@@ -125,12 +125,12 @@ func newOutputCoinObjectWithValue(db *StateDB, key common.Hash, data interface{}
 	if dataBytes, ok = data.([]byte); ok {
 		err := json.Unmarshal(dataBytes, newOutputCoinState)
 		if err != nil {
-			return nil, NewStatedbError(InvalidOutputCoinStateTypeError, err)
+			return nil, err
 		}
 	} else {
 		newOutputCoinState, ok = data.(*OutputCoinState)
 		if !ok {
-			return nil, NewStatedbError(InvalidOutputCoinStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
+			return nil, fmt.Errorf("%+v, got type %+v", ErrInvalidOutputCoinStateType, reflect.TypeOf(data))
 		}
 	}
 	return &OutputCoinObject{
@@ -143,10 +143,10 @@ func newOutputCoinObjectWithValue(db *StateDB, key common.Hash, data interface{}
 	}, nil
 }
 
-func GenerateOutputCoinObjectKey(tokenID common.Hash, shardID byte, publicKey []byte) (common.Hash, error) {
+func GenerateOutputCoinObjectKey(tokenID common.Hash, shardID byte, publicKey []byte) common.Hash {
 	prefixHash := GetOutputCoinPrefix(tokenID, shardID)
 	valueHash := common.HashH(publicKey)
-	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...)), nil
+	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 
 func (s OutputCoinObject) GetVersion() int {
@@ -167,7 +167,7 @@ func (s OutputCoinObject) GetTrie(db DatabaseAccessWarper) Trie {
 func (s *OutputCoinObject) SetValue(data interface{}) error {
 	newOutputCoinState, ok := data.(*OutputCoinState)
 	if !ok {
-		return NewStatedbError(InvalidOutputCoinStateTypeError, fmt.Errorf("%+v", reflect.TypeOf(data)))
+		return fmt.Errorf("%+v, got type %+v", ErrInvalidOutputCoinStateType, reflect.TypeOf(data))
 	}
 	s.snDerivatorState = newOutputCoinState
 	return nil
