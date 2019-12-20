@@ -173,6 +173,7 @@ const (
 	convertNativeTokenToPrivacyToken      = "convertnativetokentoprivacytoken"
 	convertPrivacyTokenToNativeToken      = "convertprivacytokentonativetoken"
 	getPDEContributionStatus              = "getpdecontributionstatus"
+	getPDEContributionStatusV2            = "getpdecontributionstatusv2"
 	getPDETradeStatus                     = "getpdetradestatus"
 	getPDEWithdrawalStatus                = "getpdewithdrawalstatus"
 	convertPDEPrices                      = "convertpdeprices"

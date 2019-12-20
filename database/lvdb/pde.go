@@ -528,3 +528,28 @@ func (db *db) GetPDEStatus(
 	}
 	return pdeStatusBytes[0], nil
 }
+
+func (db *db) TrackPDEContributionStatus(
+	prefix []byte,
+	suffix []byte,
+	statusContent []byte,
+) error {
+	key := BuildPDEStatusKey(prefix, suffix)
+	err := db.Put(key, statusContent)
+	if err != nil {
+		return database.NewDatabaseError(database.TrackPDEStatusError, errors.Wrap(err, "db.lvdb.put"))
+	}
+	return nil
+}
+
+func (db *db) GetPDEContributionStatus(
+	prefix []byte,
+	suffix []byte,
+) ([]byte, error) {
+	key := BuildPDEStatusKey(prefix, suffix)
+	pdeStatusContentBytes, dbErr := db.lvdb.Get(key, nil)
+	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
+		return []byte{}, database.NewDatabaseError(database.GetPDEStatusError, dbErr)
+	}
+	return pdeStatusContentBytes, nil
+}
