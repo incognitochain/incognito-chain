@@ -20,8 +20,8 @@ const (
 	MinCommitteeSize           = 3                // min size to run bft
 	DefaultBroadcastStateTime  = 6 * time.Second  // in second
 	DefaultStateUpdateTime     = 8 * time.Second  // in second
-	DefaultMaxBlockSyncTime    = 1 * time.Second  // in second
-	DefaultCacheCleanupTime    = 30 * time.Second // in second
+	DefaultMaxBlockSyncTime    = 10 * time.Second // in second
+	DefaultCacheCleanupTime    = 40 * time.Second // in second
 	WorkerNumber               = 5
 	MAX_S2B_BLOCK              = 30
 	MAX_BEACON_BLOCK           = 5
