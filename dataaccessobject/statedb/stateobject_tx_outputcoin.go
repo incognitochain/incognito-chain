@@ -178,7 +178,15 @@ func (s OutputCoinObject) GetValue() interface{} {
 }
 
 func (s OutputCoinObject) GetValueBytes() []byte {
-	return s.GetValue().([]byte)
+	outputCoinState, ok := s.GetValue().(*OutputCoinState)
+	if !ok {
+		panic("wrong expected value type")
+	}
+	outputCoinStateBytes, err := json.Marshal(outputCoinState)
+	if err != nil {
+		panic(err.Error())
+	}
+	return outputCoinStateBytes
 }
 
 func (s OutputCoinObject) GetHash() common.Hash {

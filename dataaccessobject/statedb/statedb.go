@@ -819,7 +819,7 @@ func (stateDB *StateDB) GetCommitmentLengthState(key common.Hash) (*big.Int, boo
 	return new(big.Int), false, nil
 }
 
-func (stateDB *StateDB) GetAllCommitmentState(tokenID common.Hash, shardID byte) map[string]uint64 {
+func (stateDB *StateDB) GetAllCommitmentStateByPrefix(tokenID common.Hash, shardID byte) map[string]uint64 {
 	temp := stateDB.trie.NodeIterator(GetCommitmentPrefix(tokenID, shardID))
 	it := trie.NewIterator(temp)
 	m := make(map[string]uint64)
@@ -848,4 +848,34 @@ func (stateDB *StateDB) GetOutputCoinState(key common.Hash) (*OutputCoinState, b
 		return outputCoinState.GetValue().(*OutputCoinState), true, nil
 	}
 	return NewOutputCoinState(), false, nil
+}
+
+// ================================= SNDerivator OBJECT =======================================
+func (stateDB *StateDB) GetSNDerivatorState(key common.Hash) (*SNDerivatorState, bool, error) {
+	sndState, err := stateDB.getStateObject(SNDerivatorObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if sndState != nil {
+		return sndState.GetValue().(*SNDerivatorState), true, nil
+	}
+	return NewSNDerivatorState(), false, nil
+}
+
+func (stateDB *StateDB) GetAllSNDerivatorStateByPrefix(tokenID common.Hash) [][]byte {
+	temp := stateDB.trie.NodeIterator(GetSNDerivatorPrefix(tokenID))
+	it := trie.NewIterator(temp)
+	list := [][]byte{}
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		newSNDerivatorState := NewSNDerivatorState()
+		err := json.Unmarshal(newValue, newSNDerivatorState)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		list = append(list, newSNDerivatorState.Snd())
+	}
+	return list
 }

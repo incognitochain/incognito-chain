@@ -9,11 +9,11 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 )
 
-func StoreSerialNumbers(statedb StateDB, tokenID common.Hash, serialNumbers [][]byte, shardID byte) error {
+func StoreSerialNumbers(stateDB StateDB, tokenID common.Hash, serialNumbers [][]byte, shardID byte) error {
 	for _, serialNumber := range serialNumbers {
 		key := GenerateSerialNumberObjectKey(tokenID, shardID, serialNumber)
 		value := NewSerialNumberStateWithValue(tokenID, shardID, serialNumber)
-		err := statedb.SetStateObject(SerialNumberObjectType, key, value)
+		err := stateDB.SetStateObject(SerialNumberObjectType, key, value)
 		if err != nil {
 			return NewStatedbError(StoreSerialNumberError, err)
 		}
@@ -21,9 +21,9 @@ func StoreSerialNumbers(statedb StateDB, tokenID common.Hash, serialNumbers [][]
 	return nil
 }
 
-func HasSerialNumber(statedb StateDB, tokenID common.Hash, serialNumber []byte, shardID byte) (bool, error) {
+func HasSerialNumber(stateDB StateDB, tokenID common.Hash, serialNumber []byte, shardID byte) (bool, error) {
 	key := GenerateSerialNumberObjectKey(tokenID, shardID, serialNumber)
-	s, has, err := statedb.GetSerialNumberState(key)
+	s, has, err := stateDB.GetSerialNumberState(key)
 	if err != nil {
 		return false, NewStatedbError(GetSerialNumberError, err)
 	}
@@ -33,8 +33,8 @@ func HasSerialNumber(statedb StateDB, tokenID common.Hash, serialNumber []byte, 
 	}
 	return has, nil
 }
-func ListSerialNumber(statedb StateDB, tokenID common.Hash, shardID byte) (map[string]struct{}, error) {
-	tempSerialNumbers := statedb.GetAllSerialNumberByPrefix(tokenID, shardID)
+func ListSerialNumber(stateDB StateDB, tokenID common.Hash, shardID byte) (map[string]struct{}, error) {
+	tempSerialNumbers := stateDB.GetAllSerialNumberByPrefix(tokenID, shardID)
 	m := make(map[string]struct{})
 	for _, tempSerialNumber := range tempSerialNumbers {
 		serialNumber := base58.Base58Check{}.Encode(tempSerialNumber, common.Base58Version)
@@ -43,9 +43,9 @@ func ListSerialNumber(statedb StateDB, tokenID common.Hash, shardID byte) (map[s
 	return m, nil
 }
 
-func StoreCommitments(statedb StateDB, tokenID common.Hash, pubkey []byte, commitments [][]byte, shardID byte) error {
+func StoreCommitments(stateDB StateDB, tokenID common.Hash, pubkey []byte, commitments [][]byte, shardID byte) error {
 	commitmentLengthKey := GenerateCommitmentLengthObjectKey(tokenID, shardID)
-	commitmentLength, has, err := statedb.GetCommitmentLengthState(commitmentLengthKey)
+	commitmentLength, has, err := stateDB.GetCommitmentLengthState(commitmentLengthKey)
 	if err != nil {
 		return NewStatedbError(GetCommitmentLengthError, err)
 	}
@@ -56,21 +56,21 @@ func StoreCommitments(statedb StateDB, tokenID common.Hash, pubkey []byte, commi
 		// store commitment
 		keyCommitment := GenerateCommitmentObjectKey(tokenID, shardID, commitment)
 		valueCommitment := NewCommitmentStateWithValue(tokenID, shardID, commitment, commitmentLength)
-		err := statedb.SetStateObject(CommitmentObjectType, keyCommitment, valueCommitment)
+		err := stateDB.SetStateObject(CommitmentObjectType, keyCommitment, valueCommitment)
 		if err != nil {
 			return NewStatedbError(StoreCommitmentError, err)
 		}
 		// store commitment index
 		keyCommitmentIndex := GenerateCommitmentIndexObjectKey(tokenID, shardID, commitmentLength)
 		valueCommitmentIndex := keyCommitment
-		err = statedb.SetStateObject(CommitmentIndexObjectType, keyCommitmentIndex, valueCommitmentIndex)
+		err = stateDB.SetStateObject(CommitmentIndexObjectType, keyCommitmentIndex, valueCommitmentIndex)
 		if err != nil {
 			return NewStatedbError(StoreCommitmentIndexError, err)
 		}
 		// store commitment length
 		keyCommitmentLength := GenerateCommitmentLengthObjectKey(tokenID, shardID)
 		valueCommitmentLength := commitmentLength
-		err = statedb.SetStateObject(CommitmentLengthObjectType, keyCommitmentLength, valueCommitmentLength)
+		err = stateDB.SetStateObject(CommitmentLengthObjectType, keyCommitmentLength, valueCommitmentLength)
 		if err != nil {
 			return NewStatedbError(StoreCommitmentLengthError, err)
 		}
@@ -80,9 +80,9 @@ func StoreCommitments(statedb StateDB, tokenID common.Hash, pubkey []byte, commi
 	return nil
 }
 
-func HasCommitment(statedb StateDB, tokenID common.Hash, commitment []byte, shardID byte) (bool, error) {
+func HasCommitment(stateDB StateDB, tokenID common.Hash, commitment []byte, shardID byte) (bool, error) {
 	key := GenerateCommitmentObjectKey(tokenID, shardID, commitment)
-	c, has, err := statedb.GetCommitmentState(key)
+	c, has, err := stateDB.GetCommitmentState(key)
 	if err != nil {
 		return false, NewStatedbError(GetCommitmentError, err)
 	}
@@ -93,10 +93,10 @@ func HasCommitment(statedb StateDB, tokenID common.Hash, commitment []byte, shar
 	return has, nil
 }
 
-func HasCommitmentIndex(statedb StateDB, tokenID common.Hash, commitmentIndex uint64, shardID byte) (bool, error) {
+func HasCommitmentIndex(stateDB StateDB, tokenID common.Hash, commitmentIndex uint64, shardID byte) (bool, error) {
 	commitmentIndexTemp := new(big.Int).SetUint64(commitmentIndex)
 	key := GenerateCommitmentIndexObjectKey(tokenID, shardID, commitmentIndexTemp)
-	c, has, err := statedb.GetCommitmentIndexState(key)
+	c, has, err := stateDB.GetCommitmentIndexState(key)
 	if err != nil {
 		return false, NewStatedbError(GetCommitmentIndexError, err)
 	}
@@ -107,10 +107,10 @@ func HasCommitmentIndex(statedb StateDB, tokenID common.Hash, commitmentIndex ui
 	return has, nil
 }
 
-func GetCommitmentByIndex(statedb StateDB, tokenID common.Hash, commitmentIndex uint64, shardID byte) ([]byte, error) {
+func GetCommitmentByIndex(stateDB StateDB, tokenID common.Hash, commitmentIndex uint64, shardID byte) ([]byte, error) {
 	commitmentIndexTemp := new(big.Int).SetUint64(commitmentIndex)
 	key := GenerateCommitmentIndexObjectKey(tokenID, shardID, commitmentIndexTemp)
-	c, has, err := statedb.GetCommitmentIndexState(key)
+	c, has, err := stateDB.GetCommitmentIndexState(key)
 	if err != nil {
 		return []byte{}, NewStatedbError(GetCommitmentIndexError, err)
 	}
@@ -126,9 +126,9 @@ func GetCommitmentByIndex(statedb StateDB, tokenID common.Hash, commitmentIndex 
 }
 
 // GetCommitmentIndex - return index of commitment in db list
-func GetCommitmentIndex(statedb StateDB, tokenID common.Hash, commitment []byte, shardID byte) (*big.Int, error) {
+func GetCommitmentIndex(stateDB StateDB, tokenID common.Hash, commitment []byte, shardID byte) (*big.Int, error) {
 	key := GenerateCommitmentObjectKey(tokenID, shardID, commitment)
-	c, has, err := statedb.GetCommitmentState(key)
+	c, has, err := stateDB.GetCommitmentState(key)
 	if err != nil {
 		return nil, NewStatedbError(GetCommitmentError, err)
 	}
@@ -143,9 +143,9 @@ func GetCommitmentIndex(statedb StateDB, tokenID common.Hash, commitment []byte,
 }
 
 // GetCommitmentIndex - return index of commitment in db list
-func GetCommitmentLength(statedb StateDB, tokenID common.Hash, shardID byte) (*big.Int, error) {
+func GetCommitmentLength(stateDB StateDB, tokenID common.Hash, shardID byte) (*big.Int, error) {
 	key := GenerateCommitmentLengthObjectKey(tokenID, shardID)
-	length, has, err := statedb.GetCommitmentLengthState(key)
+	length, has, err := stateDB.GetCommitmentLengthState(key)
 	if err != nil {
 		return nil, NewStatedbError(GetCommitmentLengthError, err)
 	}
@@ -154,14 +154,14 @@ func GetCommitmentLength(statedb StateDB, tokenID common.Hash, shardID byte) (*b
 	}
 	return length, nil
 }
-func ListCommitment(statedb StateDB, tokenID common.Hash, shardID byte) (map[string]uint64, error) {
-	m := statedb.GetAllCommitmentState(tokenID, shardID)
+func ListCommitment(stateDB StateDB, tokenID common.Hash, shardID byte) (map[string]uint64, error) {
+	m := stateDB.GetAllCommitmentStateByPrefix(tokenID, shardID)
 	return m, nil
 }
 
 // ListCommitmentIndices -  return all commitment index and its value
-func ListCommitmentIndices(statedb StateDB, tokenID common.Hash, shardID byte) (map[uint64]string, error) {
-	m := statedb.GetAllCommitmentState(tokenID, shardID)
+func ListCommitmentIndices(stateDB StateDB, tokenID common.Hash, shardID byte) (map[uint64]string, error) {
+	m := stateDB.GetAllCommitmentStateByPrefix(tokenID, shardID)
 	reverseM := make(map[uint64]string)
 	for k, v := range m {
 		reverseM[v] = k
@@ -169,9 +169,9 @@ func ListCommitmentIndices(statedb StateDB, tokenID common.Hash, shardID byte) (
 	return reverseM, nil
 }
 
-func StoreOutputCoins(statedb StateDB, tokenID common.Hash, publicKey []byte, outputCoins [][]byte, shardID byte) error {
+func StoreOutputCoins(stateDB StateDB, tokenID common.Hash, publicKey []byte, outputCoins [][]byte, shardID byte) error {
 	key := GenerateOutputCoinObjectKey(tokenID, shardID, publicKey)
-	currentValue, has, err := statedb.GetOutputCoinState(key)
+	currentValue, has, err := stateDB.GetOutputCoinState(key)
 	if err != nil {
 		return NewStatedbError(StoreOutputCoinError, err)
 	}
@@ -179,15 +179,15 @@ func StoreOutputCoins(statedb StateDB, tokenID common.Hash, publicKey []byte, ou
 		outputCoins = append(currentValue.OutputCoins(), outputCoins...)
 	}
 	value := NewOutputCoinStateWithValue(tokenID, shardID, publicKey, outputCoins)
-	err = statedb.SetStateObject(OutputCoinObjectType, key, value)
+	err = stateDB.SetStateObject(OutputCoinObjectType, key, value)
 	if err != nil {
 		return NewStatedbError(StoreOutputCoinError, err)
 	}
 	return nil
 }
-func GetOutcoinsByPubkey(statedb StateDB, tokenID common.Hash, publicKey []byte, shardID byte) ([][]byte, error) {
+func GetOutcoinsByPubkey(stateDB StateDB, tokenID common.Hash, publicKey []byte, shardID byte) ([][]byte, error) {
 	key := GenerateOutputCoinObjectKey(tokenID, shardID, publicKey)
-	o, has, err := statedb.GetOutputCoinState(key)
+	o, has, err := stateDB.GetOutputCoinState(key)
 	if err != nil {
 		return [][]byte{}, NewStatedbError(GetOutputCoinError, err)
 	}
@@ -195,4 +195,34 @@ func GetOutcoinsByPubkey(statedb StateDB, tokenID common.Hash, publicKey []byte,
 		return [][]byte{}, NewStatedbError(GetOutputCoinError, errors.New("no value exist"))
 	}
 	return o.OutputCoins(), nil
+}
+
+// StoreSNDerivators - store list serialNumbers by shardID
+func StoreSNDerivators(stateDB StateDB, tokenID common.Hash, snds [][]byte) error {
+	for _, snd := range snds {
+		key := GenerateSNDerivatorObjectKey(tokenID, snd)
+		value := NewSNDerivatorStateWithValue(tokenID, snd)
+		err := stateDB.SetStateObject(SNDerivatorObjectType, key, value)
+		if err != nil {
+			return NewStatedbError(StoreSNDerivatorError, err)
+		}
+	}
+	return nil
+}
+
+// HasSNDerivator - Check SnDerivator in list SnDerivators by shardID
+func HasSNDerivator(stateDB StateDB, tokenID common.Hash, snd []byte) (bool, error) {
+	key := GenerateSNDerivatorObjectKey(tokenID, snd)
+	sndState, has, err := stateDB.GetSNDerivatorState(key)
+	if err != nil {
+		return false, NewStatedbError(GetSNDerivatorError, err)
+	}
+	if bytes.Compare(sndState.Snd(), snd) != 0 {
+		panic("same key wrong value")
+	}
+	return has, nil
+}
+
+func ListSNDerivator(stateDB StateDB, tokenID common.Hash) ([][]byte, error) {
+	return stateDB.GetAllSNDerivatorStateByPrefix(tokenID), nil
 }

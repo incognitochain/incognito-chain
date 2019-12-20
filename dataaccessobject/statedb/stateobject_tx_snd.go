@@ -12,22 +12,49 @@ type SNDerivatorState struct {
 	snd     []byte
 }
 
-func (S SNDerivatorState) Snd() []byte {
-	return S.snd
+func (s SNDerivatorState) Snd() []byte {
+	return s.snd
 }
 
-func (S *SNDerivatorState) SetSnd(snd []byte) {
-	S.snd = snd
+func (s *SNDerivatorState) SetSnd(snd []byte) {
+	s.snd = snd
 }
 
-func (S SNDerivatorState) TokenID() common.Hash {
-	return S.tokenID
+func (s SNDerivatorState) TokenID() common.Hash {
+	return s.tokenID
 }
 
-func (S *SNDerivatorState) SetTokenID(tokenID common.Hash) {
-	S.tokenID = tokenID
+func (s *SNDerivatorState) SetTokenID(tokenID common.Hash) {
+	s.tokenID = tokenID
 }
 
+func (s SNDerivatorState) MarshalJSON() ([]byte, error) {
+	data, err := json.Marshal(struct {
+		TokenID common.Hash
+		SND     []byte
+	}{
+		TokenID: s.tokenID,
+		SND:     s.snd,
+	})
+	if err != nil {
+		return []byte{}, err
+	}
+	return data, nil
+}
+
+func (s *SNDerivatorState) UnmarshalJSON(data []byte) error {
+	temp := struct {
+		TokenID common.Hash
+		SND     []byte
+	}{}
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
+		return err
+	}
+	s.tokenID = temp.TokenID
+	s.snd = temp.SND
+	return nil
+}
 func NewSNDerivatorState() *SNDerivatorState {
 	return &SNDerivatorState{}
 }
@@ -125,7 +152,15 @@ func (s SNDerivatorObject) GetValue() interface{} {
 }
 
 func (s SNDerivatorObject) GetValueBytes() []byte {
-	return s.GetValue().([]byte)
+	sndState, ok := s.GetValue().(*SNDerivatorState)
+	if !ok {
+		panic("wrong expected value type")
+	}
+	sndStateBytes, err := json.Marshal(sndState)
+	if err != nil {
+		panic(err.Error())
+	}
+	return sndStateBytes
 }
 
 func (s SNDerivatorObject) GetHash() common.Hash {

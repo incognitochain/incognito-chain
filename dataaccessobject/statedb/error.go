@@ -46,6 +46,8 @@ const (
 	GetCommitmentLengthError
 	StoreOutputCoinError
 	GetOutputCoinError
+	StoreSNDerivatorError
+	GetSNDerivatorError
 )
 
 var ErrCodeMessage = map[int]struct {

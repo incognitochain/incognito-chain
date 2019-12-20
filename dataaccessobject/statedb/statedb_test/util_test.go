@@ -28,11 +28,50 @@ func generateSerialNumberList(max int) [][]byte {
 	return list
 }
 
+func generateSNDList(max int) [][]byte {
+	list := [][]byte{}
+	for i := 0; i < max; i++ {
+		temp := []byte{}
+		for j := 0; j < 32; j++ {
+			v := byte(rand.Int() % 256)
+			temp = append(temp, v)
+		}
+		list = append(list, temp)
+	}
+	return list
+}
+
 func generateCommitmentList(max int) [][]byte {
 	list := [][]byte{}
 	for i := 0; i < max; i++ {
 		temp := []byte{}
 		for j := 0; j < 32; j++ {
+			v := byte(rand.Int() % 256)
+			temp = append(temp, v)
+		}
+		list = append(list, temp)
+	}
+	return list
+}
+
+func generatePublicKeyList(max int) [][]byte {
+	list := [][]byte{}
+	for i := 0; i < max; i++ {
+		temp := []byte{}
+		for j := 0; j < 32; j++ {
+			v := byte(rand.Int() % 256)
+			temp = append(temp, v)
+		}
+		list = append(list, temp)
+	}
+	return list
+}
+
+func generateOutputCoinList(max int) [][]byte {
+	list := [][]byte{}
+	for i := 0; i < max; i++ {
+		temp := []byte{}
+		for j := 0; j < 100; j++ {
 			v := byte(rand.Int() % 256)
 			temp = append(temp, v)
 		}
