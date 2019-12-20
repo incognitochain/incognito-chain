@@ -2,7 +2,6 @@ package statedb_test
 
 import (
 	"io/ioutil"
-	"math/rand"
 	"os"
 	"reflect"
 	"testing"
@@ -27,10 +26,6 @@ var _ = func() (_ struct{}) {
 	trie.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return
 }()
-
-func generatePunishedDuration() uint8 {
-	return uint8(rand.Int() % 256)
-}
 
 func storeBlackListProducer(initRoot common.Hash, warperDB statedb.DatabaseAccessWarper, beaconHeight uint64, from, to int) (common.Hash, map[common.Hash]*statedb.BlackListProducerState, map[string]uint8) {
 	mState := make(map[common.Hash]*statedb.BlackListProducerState)

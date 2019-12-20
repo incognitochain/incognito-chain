@@ -5,7 +5,6 @@ import (
 	"math/rand"
 	"os"
 	"reflect"
-	"strconv"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -15,10 +14,7 @@ import (
 )
 
 var (
-	warperDBrrTest  statedb.DatabaseAccessWarper
-	shardIDs               = []byte{0, 1, 2, 3, 4, 5, 6, 7}
-	defaultMaxEpoch uint64 = 10
-	maxTokenID             = 10
+	warperDBrrTest statedb.DatabaseAccessWarper
 )
 
 var _ = func() (_ struct{}) {
@@ -32,14 +28,6 @@ var _ = func() (_ struct{}) {
 	return
 }()
 
-func generateTokenIDs(max int) []common.Hash {
-	hashes := []common.Hash{}
-	for i := 0; i < max; i++ {
-		temp := []byte(strconv.Itoa(i))
-		hashes = append(hashes, common.HashH(temp))
-	}
-	return hashes
-}
 func storeRewardRequest(initRoot common.Hash, warperDB statedb.DatabaseAccessWarper, epoch uint64, shardIDs []byte) (common.Hash, map[common.Hash]*statedb.RewardRequestState) {
 	mState := make(map[common.Hash]*statedb.RewardRequestState)
 	tokenIDs := generateTokenIDs(maxTokenID)

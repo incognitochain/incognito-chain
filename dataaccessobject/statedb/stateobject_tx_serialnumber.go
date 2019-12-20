@@ -166,7 +166,15 @@ func (s SerialNumberObject) GetValue() interface{} {
 }
 
 func (s SerialNumberObject) GetValueBytes() []byte {
-	return s.GetValue().([]byte)
+	serialNumberState, ok := s.GetValue().(*SerialNumberState)
+	if !ok {
+		panic("wrong expected value type")
+	}
+	serialNumberStateBytes, err := json.Marshal(serialNumberState)
+	if err != nil {
+		panic(err.Error())
+	}
+	return serialNumberStateBytes
 }
 
 func (s SerialNumberObject) GetHash() common.Hash {

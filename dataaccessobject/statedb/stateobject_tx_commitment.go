@@ -179,7 +179,15 @@ func (s CommitmentObject) GetValue() interface{} {
 }
 
 func (s CommitmentObject) GetValueBytes() []byte {
-	return s.GetValue().([]byte)
+	commitmentState, ok := s.GetValue().(*CommitmentState)
+	if !ok {
+		panic("wrong expected value type")
+	}
+	commitmentStateBytes, err := json.Marshal(commitmentState)
+	if err != nil {
+		panic(err.Error())
+	}
+	return commitmentStateBytes
 }
 
 func (s CommitmentObject) GetHash() common.Hash {

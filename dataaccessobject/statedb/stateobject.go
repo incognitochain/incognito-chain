@@ -34,7 +34,7 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 	case SerialNumberObjectType:
 		return newSerialNumberObjectWithValue(db, hash, value)
 	case CommitmentObjectType:
-		return newCommitteeObjectWithValue(db, hash, value)
+		return newCommitmentObjectWithValue(db, hash, value)
 	case CommitmentIndexObjectType:
 		return newCommitmentIndexObjectWithValue(db, hash, value)
 	case CommitmentLengthObjectType:

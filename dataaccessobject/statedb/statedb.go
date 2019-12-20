@@ -761,7 +761,7 @@ func (stateDB *StateDB) GetSerialNumberState(key common.Hash) (*SerialNumberStat
 
 func (stateDB *StateDB) GetAllSerialNumberByPrefix(tokenID common.Hash, shardID byte) [][]byte {
 	serialNumberList := [][]byte{}
-	prefix := GetRewardRequestPrefix()
+	prefix := GetSerialNumberPrefix(tokenID, shardID)
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
 	for it.Next() {
@@ -788,25 +788,6 @@ func (stateDB *StateDB) GetCommitmentState(key common.Hash) (*CommitmentState, b
 		return commitmentState.GetValue().(*CommitmentState), true, nil
 	}
 	return NewCommitmentState(), false, nil
-}
-
-func (stateDB *StateDB) GetAllCommitmentState(tokenID common.Hash, shardID byte) map[string]uint64 {
-	temp := stateDB.trie.NodeIterator(GetCommitmentPrefix(tokenID, shardID))
-	it := trie.NewIterator(temp)
-	m := make(map[string]uint64)
-	for it.Next() {
-		value := it.Value
-		newValue := make([]byte, len(value))
-		copy(newValue, value)
-		newCommitmentState := NewCommitmentState()
-		err := json.Unmarshal(newValue, newCommitmentState)
-		if err != nil {
-			panic("wrong expect type")
-		}
-		commitmentString := base58.Base58Check{}.Encode(newCommitmentState.Commitment(), common.Base58Version)
-		m[commitmentString] = newCommitmentState.Index().Uint64()
-	}
-	return m
 }
 func (stateDB *StateDB) GetCommitmentIndexState(key common.Hash) (*CommitmentState, bool, error) {
 	commitmentIndexState, err := stateDB.getStateObject(CommitmentIndexObjectType, key)
@@ -836,6 +817,25 @@ func (stateDB *StateDB) GetCommitmentLengthState(key common.Hash) (*big.Int, boo
 		return commitmentLengthState.GetValue().(*big.Int), true, nil
 	}
 	return new(big.Int), false, nil
+}
+
+func (stateDB *StateDB) GetAllCommitmentState(tokenID common.Hash, shardID byte) map[string]uint64 {
+	temp := stateDB.trie.NodeIterator(GetCommitmentPrefix(tokenID, shardID))
+	it := trie.NewIterator(temp)
+	m := make(map[string]uint64)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		newCommitmentState := NewCommitmentState()
+		err := json.Unmarshal(newValue, newCommitmentState)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		commitmentString := base58.Base58Check{}.Encode(newCommitmentState.Commitment(), common.Base58Version)
+		m[commitmentString] = newCommitmentState.Index().Uint64()
+	}
+	return m
 }
 
 // ================================= Output Coin OBJECT =======================================
