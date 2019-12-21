@@ -31,10 +31,10 @@ func (s *SNDerivatorState) SetTokenID(tokenID common.Hash) {
 func (s SNDerivatorState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		TokenID common.Hash
-		SND     []byte
+		Snd     []byte
 	}{
 		TokenID: s.tokenID,
-		SND:     s.snd,
+		Snd:     s.snd,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -45,14 +45,14 @@ func (s SNDerivatorState) MarshalJSON() ([]byte, error) {
 func (s *SNDerivatorState) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		TokenID common.Hash
-		SND     []byte
+		Snd     []byte
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
 	s.tokenID = temp.TokenID
-	s.snd = temp.SND
+	s.snd = temp.Snd
 	return nil
 }
 func NewSNDerivatorState() *SNDerivatorState {

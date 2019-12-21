@@ -2,15 +2,16 @@ package statedb
 
 import (
 	"encoding/json"
+	"math/big"
+	"strconv"
+	"time"
+
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/trie"
-	"math/big"
-	"strconv"
-	"time"
 )
 
 // StateDBs within the incognito protocol are used to store anything
