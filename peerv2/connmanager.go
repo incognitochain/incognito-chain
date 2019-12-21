@@ -43,7 +43,7 @@ func NewConnManager(
 		DiscoverPeersAddress: dpa,
 		disp:                 dispatcher,
 		IsMasterNode:         false,
-		registerRequests:     make(chan int, 100),
+		registerRequests:     make(chan peer.ID, 100),
 		stop:                 make(chan int),
 	}
 }
@@ -115,11 +115,7 @@ func (cm *ConnManager) Start(ns NetSync) {
 	// NOTE: must Connect after creating FloodSub
 	go cm.keepHighwayConnection()
 
-	cm.Requester, err = NewRequester(cm.LocalHost.GRPC, peer.ID(""))
-	if err != nil {
-		panic(err)
-	}
-
+	cm.Requester = NewRequester(cm.LocalHost.GRPC)
 	cm.subscriber = NewSubManager(cm.info, cm.ps, cm.Requester, cm.messages)
 	cm.Provider = NewBlockProvider(cm.LocalHost.GRPC, ns)
 	go cm.manageRoleSubscription()
@@ -160,7 +156,7 @@ func (cm *ConnManager) BroadcastCommittee(
 }
 
 type ForcedSubscriber interface {
-	Subscribe(forced bool) error
+	Subscribe(forced bool, hwID peer.ID) error
 	GetMsgToTopics() msgToTopics
 }
 
@@ -175,7 +171,7 @@ type ConnManager struct {
 
 	ps               *pubsub.PubSub
 	messages         chan *pubsub.Message // queue messages from all topics
-	registerRequests chan int
+	registerRequests chan peer.ID
 
 	disp      *Dispatcher
 	Requester *BlockRequester
@@ -249,14 +245,7 @@ func (cm *ConnManager) keepHighwayConnection() {
 				Logger.Errorf("Fail choosing highway: %v", err)
 				continue
 			}
-
-			if newHighway.ID != currentHighway.ID {
-				err := cm.LocalHost.Host.Network().ClosePeer(currentHighway.ID) // Close connection to current highway
-				if err != nil {
-					Logger.Errorf("Failed closing connection to highway: %v %v %+v", currentHighway.ID, newHighway.ID, err)
-				}
-				currentHighway = newHighway
-			}
+			currentHighway = newHighway
 
 		case <-cm.stop:
 			Logger.Info("Stop keeping connection to highway")
@@ -280,7 +269,7 @@ func (cm *ConnManager) checkConnection(addrInfo *peer.AddrInfo) {
 	if cm.disconnected && net.Connectedness(addrInfo.ID) == network.Connected {
 		// Register again since this might be a new highway
 		Logger.Info("Connected to highway, sending register request")
-		cm.registerRequests <- 1
+		cm.registerRequests <- addrInfo.ID
 		cm.disconnected = false
 	}
 }
@@ -358,18 +347,19 @@ func getAddressInfo(libp2pAddr string) (*peer.AddrInfo, error) {
 // manageRoleSubscription: polling current role periodically and subscribe to relevant topics
 func (cm *ConnManager) manageRoleSubscription() {
 	forced := false // only subscribe when role changed or last forced subscribe failed
+	hwID := peer.ID("")
 	var err error
 	for {
 		select {
 		case <-time.Tick(1 * time.Second):
-			err = cm.subscriber.Subscribe(forced)
+			err = cm.subscriber.Subscribe(forced, hwID)
 			if err != nil {
-				Logger.Errorf("subscribe failed: %v %+v", forced, err)
+				Logger.Errorf("subscribe failed: %v %s %+v", forced, hwID.String(), err)
 			} else {
 				forced = false
 			}
 
-		case <-cm.registerRequests:
+		case hwID = <-cm.registerRequests:
 			Logger.Info("Received request to register")
 			forced = true // register no matter if role changed or not
 
