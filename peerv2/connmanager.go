@@ -3,8 +3,7 @@ package peerv2
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
-	"net/rpc"
+	"math/rand"
 	"reflect"
 	"time"
 
@@ -17,56 +16,10 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/pkg/errors"
+	"github.com/stathat/consistent"
 )
 
 var HighwayBeaconID = byte(255)
-
-func DiscoverHighWay(
-	discoverPeerAddress string,
-	shardsStr []string,
-) (
-	map[string][]string,
-	error,
-) {
-	if discoverPeerAddress == common.EmptyString {
-		return nil, errors.Errorf("Not config discovery peer")
-	}
-	client := new(rpc.Client)
-	var err error
-	for {
-		client, err = rpc.Dial("tcp", discoverPeerAddress)
-		Logger.Info("Dialing...")
-		if err != nil {
-			// can not create connection to rpc server with
-			// provided "discover peer address" in config
-			Logger.Errorf("Connect to discover peer %v return error %v:", discoverPeerAddress, err)
-			time.Sleep(2 * time.Second)
-		} else {
-			Logger.Info("Connected to %v", discoverPeerAddress)
-			break
-		}
-	}
-	if client != nil {
-		defer client.Close()
-
-		req := Request{
-			Shard: shardsStr,
-		}
-		var res Response
-		Logger.Infof("Start dialing RPC server with param %v\n", req)
-
-		err = client.Call("Handler.GetPeers", req, &res)
-
-		if err != nil {
-			Logger.Errorf("Call Handler.GetPeers return error %v", err)
-			return nil, err
-		} else {
-			Logger.Infof("Bootnode return %v\n", res.PeerPerShard)
-			return res.PeerPerShard, nil
-		}
-	}
-	return nil, errors.Errorf("Can not get any from bootnode")
-}
 
 func NewConnManager(
 	host *Host,
@@ -150,36 +103,8 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 }
 
 func (cm *ConnManager) Start(ns NetSync) {
-	mapHWPerShard := map[string][]string{}
-	var err error
-	for {
-		mapHWPerShard, err = DiscoverHighWay(cm.DiscoverPeersAddress, []string{"all"})
-		if err != nil {
-			Logger.Errorf("DiscoverHighWay return erro: %v", err)
-			time.Sleep(5 * time.Second)
-			Logger.Infof("Re connect to bootnode!")
-		} else {
-			Logger.Infof("Got %v from bootnode", mapHWPerShard)
-			break
-		}
-	}
-
-	// TODO remove hardcode here
-	hwPeerIDForAllShard := mapHWPerShard["all"][0]
-	cm.HighwayAddress = hwPeerIDForAllShard
-
-	// connect to highway
-	addr, err := multiaddr.NewMultiaddr(cm.HighwayAddress)
-	if err != nil {
-		panic(err)
-	}
-
-	addrInfo, err := peer.AddrInfoFromP2pAddr(addr)
-	if err != nil {
-		panic(err)
-	}
-
 	// Pubsub
+	var err error
 	cm.ps, err = pubsub.NewFloodSub(context.Background(), cm.LocalHost.Host)
 	if err != nil {
 		panic(err)
@@ -190,7 +115,7 @@ func (cm *ConnManager) Start(ns NetSync) {
 	// NOTE: must Connect after creating FloodSub
 	go cm.keepHighwayConnection()
 
-	cm.Requester, err = NewRequester(cm.LocalHost.GRPC, addrInfo.ID)
+	cm.Requester, err = NewRequester(cm.LocalHost.GRPC, peer.ID(""))
 	if err != nil {
 		panic(err)
 	}
@@ -240,12 +165,12 @@ type ForcedSubscriber interface {
 }
 
 type ConnManager struct {
-	info       // info of running node
-	LocalHost  *Host
-	subscriber ForcedSubscriber
+	info         // info of running node
+	LocalHost    *Host
+	subscriber   ForcedSubscriber
+	disconnected bool
 
 	DiscoverPeersAddress string
-	HighwayAddress       string
 	IsMasterNode         bool
 
 	ps               *pubsub.PubSub
@@ -278,46 +203,156 @@ func (cm *ConnManager) process() {
 // keepHighwayConnection periodically checks liveliness of connection to highway
 // and try to connect if it's not available.
 func (cm *ConnManager) keepHighwayConnection() {
-	addr, err := multiaddr.NewMultiaddr(cm.HighwayAddress)
-	if err != nil {
-		panic(fmt.Sprintf("invalid discover peers address: %v", cm.HighwayAddress))
+	// Init list of highways
+	var currentHighway *peer.AddrInfo
+	hwAddrs := []HighwayAddr{
+		HighwayAddr{
+			Libp2pAddr: "",
+			RPCUrl:     cm.DiscoverPeersAddress,
+		},
 	}
 
-	hwPeerInfo, err := peer.AddrInfoFromP2pAddr(addr)
-	if err != nil {
-		panic(err)
-	}
-	hwPID := hwPeerInfo.ID
-
-	net := cm.LocalHost.Host.Network()
-	disconnected := true
-	for ; true; <-time.Tick(1 * time.Second) {
-		// Reconnect if not connected
-		var err error
-		if net.Connectedness(hwPID) != network.Connected {
-			disconnected = true
-			Logger.Info("Not connected to highway, connecting")
-			ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
-			if err = cm.LocalHost.Host.Connect(ctx, *hwPeerInfo); err != nil {
-				Logger.Errorf("Could not connect to highway: %v %v", err, hwPeerInfo)
-			}
-		}
-
-		if disconnected && net.Connectedness(hwPID) == network.Connected {
-			// Register again since this might be a new highway
-			Logger.Info("Connected to highway, sending register request")
-			cm.registerRequests <- 1
-			disconnected = false
-		}
-
+	watchTimestep := time.Tick(10 * time.Second)   // Check connection every 10s
+	refreshTimestep := time.Tick(30 * time.Minute) // RPC to update list of highways every 30 mins
+	cm.disconnected = true                         // Init, to make first connection to highway
+	pid := cm.LocalHost.Host.ID()
+	for {
 		select {
+		case <-watchTimestep:
+			if currentHighway == nil {
+				var err error
+				hwAddrs, err = updateHighwayAddrs(hwAddrs)
+				if err != nil {
+					Logger.Errorf("Fail updating highway addresses: %v", err)
+					continue
+				}
+
+				currentHighway, err = chooseHighway(hwAddrs, pid)
+				if err != nil {
+					Logger.Errorf("Fail choosing highway: %v", err)
+					continue
+				}
+			}
+
+			cm.checkConnection(currentHighway)
+
+		case <-refreshTimestep:
+			var err error
+			hwAddrs, err = updateHighwayAddrs(hwAddrs)
+			if err != nil {
+				Logger.Errorf("Fail updating highway addresses: %v", err)
+				continue
+			}
+
+			newHighway, err := chooseHighway(hwAddrs, pid)
+			if err != nil {
+				Logger.Errorf("Fail choosing highway: %v", err)
+				continue
+			}
+
+			if newHighway.ID != currentHighway.ID {
+				err := cm.LocalHost.Host.Network().ClosePeer(currentHighway.ID) // Close connection to current highway
+				if err != nil {
+					Logger.Errorf("Failed closing connection to highway: %v %v %+v", currentHighway.ID, newHighway.ID, err)
+				}
+				currentHighway = newHighway
+			}
+
 		case <-cm.stop:
 			Logger.Info("Stop keeping connection to highway")
 			break
-
-		default:
 		}
 	}
+}
+
+func (cm *ConnManager) checkConnection(addrInfo *peer.AddrInfo) {
+	net := cm.LocalHost.Host.Network()
+	// Reconnect if not connected
+	if net.Connectedness(addrInfo.ID) != network.Connected {
+		cm.disconnected = true
+		Logger.Info("Not connected to highway, connecting")
+		ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+		if err := cm.LocalHost.Host.Connect(ctx, *addrInfo); err != nil {
+			Logger.Errorf("Could not connect to highway: %v %v", err, addrInfo)
+		}
+	}
+
+	if cm.disconnected && net.Connectedness(addrInfo.ID) == network.Connected {
+		// Register again since this might be a new highway
+		Logger.Info("Connected to highway, sending register request")
+		cm.registerRequests <- 1
+		cm.disconnected = false
+	}
+}
+
+func chooseHighway(hwAddrs []HighwayAddr, pid peer.ID) (*peer.AddrInfo, error) {
+	if len(hwAddrs) == 0 {
+		return nil, errors.New("cannot choose highway from empty list")
+	}
+
+	// Filter out bootnode addresss (only rpcUrl, no libp2p address)
+	filterAddrs := []HighwayAddr{}
+	for _, addr := range hwAddrs {
+		if len(addr.Libp2pAddr) != 0 {
+			filterAddrs = append(filterAddrs, addr)
+		}
+	}
+
+	addr, err := choosePeer(filterAddrs, pid)
+	if err != nil {
+		return nil, err
+	}
+	return getAddressInfo(addr.Libp2pAddr)
+}
+
+// choosePeer picks a peer from a list using consistent hashing
+func choosePeer(peers []HighwayAddr, id peer.ID) (HighwayAddr, error) {
+	cst := consistent.New()
+	for _, p := range peers {
+		cst.Add(p.Libp2pAddr)
+	}
+
+	closest, err := cst.Get(string(id))
+	if err != nil {
+		return HighwayAddr{}, errors.Errorf("could not get consistent-hashing peer %v %v", peers, id)
+	}
+
+	for _, p := range peers {
+		if p.Libp2pAddr == closest {
+			return p, nil
+		}
+	}
+	return HighwayAddr{}, errors.Errorf("could not find closest peer %v %v %v", peers, id, closest)
+}
+
+func updateHighwayAddrs(hwAddrs []HighwayAddr) ([]HighwayAddr, error) {
+	// Pick random peer to get new list of highways
+	if len(hwAddrs) == 0 {
+		return nil, errors.New("No peer to get list of highways")
+	}
+	addr := hwAddrs[rand.Intn(len(hwAddrs))]
+	return getHighwayAddrs(addr.RPCUrl)
+}
+
+func getHighwayAddrs(rpcUrl string) ([]HighwayAddr, error) {
+	mapHWPerShard, err := DiscoverHighWay(rpcUrl, []string{"all"})
+	if err != nil {
+		return nil, err
+	}
+	Logger.Infof("Got %v from bootnode", mapHWPerShard)
+	return mapHWPerShard["all"], nil
+}
+
+func getAddressInfo(libp2pAddr string) (*peer.AddrInfo, error) {
+	addr, err := multiaddr.NewMultiaddr(libp2pAddr)
+	if err != nil {
+		return nil, errors.WithMessagef(err, "invalid libp2p address: %s", libp2pAddr)
+	}
+	hwPeerInfo, err := peer.AddrInfoFromP2pAddr(addr)
+	if err != nil {
+		return nil, errors.WithMessagef(err, "invalid multi address: %s", addr)
+	}
+	return hwPeerInfo, nil
 }
 
 // manageRoleSubscription: polling current role periodically and subscribe to relevant topics
