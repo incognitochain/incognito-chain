@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"math/rand"
 	"reflect"
+	"sort"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -164,7 +165,7 @@ type ConnManager struct {
 	info         // info of running node
 	LocalHost    *Host
 	subscriber   ForcedSubscriber
-	disconnected bool
+	disconnected int
 
 	DiscoverPeersAddress string
 	IsMasterNode         bool
@@ -210,7 +211,7 @@ func (cm *ConnManager) keepHighwayConnection() {
 
 	watchTimestep := time.Tick(10 * time.Second)   // Check connection every 10s
 	refreshTimestep := time.Tick(30 * time.Minute) // RPC to update list of highways every 30 mins
-	cm.disconnected = true                         // Init, to make first connection to highway
+	cm.disconnected = 1                            // Init, to make first connection to highway
 	pid := cm.LocalHost.Host.ID()
 	for {
 		select {
@@ -222,15 +223,19 @@ func (cm *ConnManager) keepHighwayConnection() {
 					Logger.Errorf("Fail updating highway addresses: %v", err)
 					continue
 				}
+				Logger.Infof("Updated highway addresses: %+v", hwAddrs)
 
 				currentHighway, err = chooseHighway(hwAddrs, pid)
 				if err != nil {
 					Logger.Errorf("Fail choosing highway: %v", err)
 					continue
 				}
+				Logger.Infof("Chose new highway: %+v", currentHighway)
 			}
 
-			cm.checkConnection(currentHighway)
+			if cm.checkConnection(currentHighway) {
+				currentHighway = nil // Failed retries, connect to new highway next iteration
+			}
 
 		case <-refreshTimestep:
 			var err error
@@ -239,6 +244,7 @@ func (cm *ConnManager) keepHighwayConnection() {
 				Logger.Errorf("Fail updating highway addresses: %v", err)
 				continue
 			}
+			Logger.Infof("Updated highway addresses: %+v", hwAddrs)
 
 			newHighway, err := chooseHighway(hwAddrs, pid)
 			if err != nil {
@@ -246,6 +252,7 @@ func (cm *ConnManager) keepHighwayConnection() {
 				continue
 			}
 			currentHighway = newHighway
+			Logger.Infof("Chose new highway: %+v", currentHighway)
 
 		case <-cm.stop:
 			Logger.Info("Stop keeping connection to highway")
@@ -254,24 +261,29 @@ func (cm *ConnManager) keepHighwayConnection() {
 	}
 }
 
-func (cm *ConnManager) checkConnection(addrInfo *peer.AddrInfo) {
+func (cm *ConnManager) checkConnection(addrInfo *peer.AddrInfo) bool {
 	net := cm.LocalHost.Host.Network()
 	// Reconnect if not connected
 	if net.Connectedness(addrInfo.ID) != network.Connected {
-		cm.disconnected = true
+		cm.disconnected++
 		Logger.Info("Not connected to highway, connecting")
 		ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
 		if err := cm.LocalHost.Host.Connect(ctx, *addrInfo); err != nil {
 			Logger.Errorf("Could not connect to highway: %v %v", err, addrInfo)
 		}
+		if cm.disconnected > MaxConnectionRetry {
+			Logger.Error("Retry maxed out")
+			return true
+		}
 	}
 
-	if cm.disconnected && net.Connectedness(addrInfo.ID) == network.Connected {
+	if cm.disconnected > 0 && net.Connectedness(addrInfo.ID) == network.Connected {
 		// Register again since this might be a new highway
 		Logger.Info("Connected to highway, sending register request")
 		cm.registerRequests <- addrInfo.ID
-		cm.disconnected = false
+		cm.disconnected = 0
 	}
+	return false
 }
 
 func chooseHighway(hwAddrs []HighwayAddr, pid peer.ID) (*peer.AddrInfo, error) {
@@ -286,6 +298,12 @@ func chooseHighway(hwAddrs []HighwayAddr, pid peer.ID) (*peer.AddrInfo, error) {
 			filterAddrs = append(filterAddrs, addr)
 		}
 	}
+
+	// Sort first to make sure always choosing the same highway
+	// if the list doesn't change
+	sort.SliceStable(filterAddrs, func(i, j int) bool {
+		return filterAddrs[i].Libp2pAddr < filterAddrs[j].Libp2pAddr
+	})
 
 	addr, err := choosePeer(filterAddrs, pid)
 	if err != nil {
@@ -354,7 +372,7 @@ func (cm *ConnManager) manageRoleSubscription() {
 		case <-time.Tick(1 * time.Second):
 			err = cm.subscriber.Subscribe(forced, hwID)
 			if err != nil {
-				Logger.Errorf("subscribe failed: %v %s %+v", forced, hwID.String(), err)
+				Logger.Errorf("subscribe failed: forced = %v hwID = %s err = %+v", forced, hwID.String(), err)
 			} else {
 				forced = false
 			}

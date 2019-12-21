@@ -252,7 +252,7 @@ func (sub *SubManager) registerToProxy(
 	target := sub.registerer.Target()
 	if hwID.Pretty() != target {
 		sub.registerer.UpdateTarget(hwID)
-		return nil, userRole{}, errors.Errorf("waiting to establish connection to highway: %v", hwID.Pretty(), target)
+		return nil, userRole{}, errors.Errorf("waiting to establish connection to highway: new highway = %v, current = %v", hwID.Pretty(), target)
 	}
 
 	pairs, topicRole, err := sub.registerer.Register(

@@ -55,6 +55,7 @@ func (c *BlockRequester) keepConnection() {
 			cancel()
 
 		case hwID := <-c.peerIDs:
+			Logger.Infof("Received new highway peerID, old = %s, new = %s", currentHWID.String(), hwID.String())
 			if hwID != currentHWID && c.conn != nil {
 				if err := c.conn.Close(); err != nil {
 					Logger.Errorf("Failed closing connection to highway: %v %v %+v", hwID, currentHWID, err)
