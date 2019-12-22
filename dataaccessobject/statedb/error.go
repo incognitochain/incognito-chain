@@ -20,6 +20,7 @@ const (
 	ErrInvalidCommitmentStateType        = "invalid commitment state type"
 	ErrInvalidSNDerivatorStateType       = "invalid snderivator state type"
 	ErrInvalidOutputCoinStateType        = "invalid output coin state type"
+	ErrInvalidTokenStateType             = "invalid token state type"
 )
 const (
 	InvalidByteArrayTypeError = iota
@@ -48,6 +49,14 @@ const (
 	GetOutputCoinError
 	StoreSNDerivatorError
 	GetSNDerivatorError
+	StorePrivacyTokenError
+	GetPrivacyTokenError
+	GetPrivacyTokenTxsError
+	StoreBeaconCommitteeError
+	GetBeaconCommitteeError
+	StoreShardCommitteeError
+	GetShardCommitteeError
+	StoreAllShardCommitteeError
 )
 
 var ErrCodeMessage = map[int]struct {

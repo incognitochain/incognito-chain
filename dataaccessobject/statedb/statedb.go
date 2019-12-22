@@ -880,3 +880,44 @@ func (stateDB *StateDB) GetAllSNDerivatorStateByPrefix(tokenID common.Hash) [][]
 	}
 	return list
 }
+
+// ================================= Token OBJECT =======================================
+func (stateDB *StateDB) GetTokenState(key common.Hash) (*TokenState, bool, error) {
+	tokenState, err := stateDB.getStateObject(TokenObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if tokenState != nil {
+		return tokenState.GetValue().(*TokenState), true, nil
+	}
+	return NewTokenState(), false, nil
+}
+
+func (stateDB *StateDB) GetTokenTxs(tokenID common.Hash) ([]common.Hash, bool, error) {
+	t, has, err := stateDB.GetTokenState(tokenID)
+	if err != nil {
+		return []common.Hash{}, false, err
+	}
+	if !has {
+		return []common.Hash{}, has, nil
+	}
+	return t.txs, true, nil
+}
+
+func (stateDB *StateDB) GetAllToken() []common.Hash {
+	temp := stateDB.trie.NodeIterator(GetTokenPrefix())
+	it := trie.NewIterator(temp)
+	list := []common.Hash{}
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		tokenState := NewTokenState()
+		err := json.Unmarshal(newValue, tokenState)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		list = append(list, tokenState.TokenID())
+	}
+	return list
+}

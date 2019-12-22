@@ -18,6 +18,7 @@ const (
 	CommitmentLengthObjectType
 	SNDerivatorObjectType
 	OutputCoinObjectType
+	TokenObjectType
 )
 
 // Prefix length

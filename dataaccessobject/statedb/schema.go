@@ -21,6 +21,7 @@ var (
 	commitmentLengthPrefix  = []byte("com-length-")
 	snDerivatorPrefix       = []byte("sn-derivator-")
 	outputCoinPrefix        = []byte("output-coin-")
+	tokenPrefix             = []byte("token-")
 )
 
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
@@ -89,6 +90,11 @@ func GetSNDerivatorPrefix(tokenID common.Hash) []byte {
 
 func GetOutputCoinPrefix(tokenID common.Hash, shardID byte) []byte {
 	h := common.HashH(append(outputCoinPrefix, append(tokenID[:], shardID)...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetTokenPrefix() []byte {
+	h := common.HashH(tokenPrefix)
 	return h[:][:prefixHashKeyLength]
 }
 
