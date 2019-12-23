@@ -98,6 +98,37 @@ func (httpServer *HttpServer) handleRetrieveBlock(params interface{}, closeChan 
 	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 elements"))
 }
 
+func (httpServer *HttpServer) handleRetrieveBlockByHeight(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	Logger.log.Debugf("handleRetrieveBlock params: %+v", params)
+	paramArray, ok := params.([]interface{})
+	if ok && len(paramArray) >= 3 {
+		blockHeight, ok := paramArray[0].(float64)
+		if !ok {
+			Logger.log.Debugf("handleRetrieveBlock result: %+v", nil)
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("hashString is invalid"))
+		}
+		shardID, ok := paramArray[1].(float64)
+		if !ok {
+			Logger.log.Debugf("handleRetrieveBlock result: %+v", nil)
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("shardID is invalid"))
+		}
+		verbosity, ok := paramArray[2].(string)
+		if !ok {
+			Logger.log.Debugf("handleRetrieveBlock result: %+v", nil)
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("verbosity is invalid"))
+		}
+
+		result, err := httpServer.blockService.RetrieveShardBlockByHeight(uint64(blockHeight), int(shardID), verbosity)
+		if err != nil {
+			return nil, err
+		}
+		Logger.log.Debugf("handleRetrieveBlock result: %+v", result)
+		return result, nil
+	}
+	Logger.log.Debugf("handleRetrieveBlock result: %+v", nil)
+	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 elements"))
+}
+
 /*
 handleRetrieveBlock RPC return information for block
 */
