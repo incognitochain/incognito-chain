@@ -58,6 +58,7 @@ func AddCommitteeReward(stateDB *StateDB, incognitoPublicKey string, committeeRe
 	}
 	return nil
 }
+
 func GetCommitteeReward(stateDB *StateDB, incognitoPublicKey string, tokenID common.Hash) (uint64, error) {
 	key, err := GenerateCommitteeRewardObjectKey(incognitoPublicKey)
 	if err != nil {
@@ -76,6 +77,37 @@ func GetCommitteeReward(stateDB *StateDB, incognitoPublicKey string, tokenID com
 		return amount, nil
 	}
 }
+
 func ListCommitteeReward(stateDB *StateDB) map[string]map[common.Hash]uint64 {
 	return stateDB.GetAllCommitteeReward()
+}
+
+func RemoveCommitteeReward(stateDB *StateDB, incognitoPublicKey string, committeeReward uint64, tokenID common.Hash) error {
+	key, err := GenerateCommitteeRewardObjectKey(incognitoPublicKey)
+	if err != nil {
+		return NewStatedbError(RemoveCommitteeRewardError, err)
+	}
+	c, has, err := stateDB.GetCommitteeRewardState(key)
+	if err != nil {
+		return NewStatedbError(RemoveCommitteeRewardError, err)
+	}
+	if !has {
+		return nil
+	}
+
+	committeeRewardM := make(map[common.Hash]uint64)
+	if has {
+		committeeRewardM = c.Reward()
+	}
+	amount, ok := committeeRewardM[tokenID]
+	if ok {
+		committeeReward += amount
+	}
+	committeeRewardM[tokenID] = committeeReward
+	value := NewCommitteeRewardStateWithValue(committeeRewardM, incognitoPublicKey)
+	err = stateDB.SetStateObject(CommitteeRewardObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(StoreCommitteeRewardError, err)
+	}
+	return nil
 }

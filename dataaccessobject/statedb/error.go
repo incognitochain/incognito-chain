@@ -64,6 +64,7 @@ const (
 	StoreCommitteeRewardError
 	GetCommitteeRewardError
 	ListCommitteeRewardError
+	RemoveCommitteeRewardError
 )
 
 var ErrCodeMessage = map[int]struct {
