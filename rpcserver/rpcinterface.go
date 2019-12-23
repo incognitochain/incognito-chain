@@ -49,6 +49,7 @@ var HttpHandler = map[string]httpHandler{
 	getBestBlock:                (*HttpServer).handleGetBestBlock,
 	getBestBlockHash:            (*HttpServer).handleGetBestBlockHash,
 	retrieveBlock:               (*HttpServer).handleRetrieveBlock,
+	retrieveBlockByHeight:       (*HttpServer).handleRetrieveBlockByHeight,
 	retrieveBeaconBlock:         (*HttpServer).handleRetrieveBeaconBlock,
 	retrieveBeaconBlockByHeight: (*HttpServer).handleRetrieveBeaconBlockByHeight,
 	getBlocks:                   (*HttpServer).handleGetBlocks,
