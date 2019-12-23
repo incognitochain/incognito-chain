@@ -295,6 +295,33 @@ func (blockService BlockService) RetrieveBeaconBlock(hashString string) (*jsonre
 	return result, nil
 }
 
+func (blockService BlockService) RetrieveBeaconBlockByHeigh(blockHeight uint64) (*jsonresult.GetBlocksBeaconResult, *RPCError) {
+	block, errD := blockService.BlockChain.GetBeaconBlockByHeight(blockHeight)
+	if errD != nil {
+		Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", nil, errD)
+		return nil, NewRPCError(GetBeaconBlockByHashError, errD)
+	}
+
+	best := blockService.BlockChain.BestState.Beacon.BestBlock
+	// Get next block hash unless there are none.
+	var nextHashString string
+	// if blockHeight < best.Header.GetHeight() {
+	if blockHeight < best.Header.Height {
+		nextHash, err := blockService.BlockChain.GetBeaconBlockByHeight(blockHeight + 1)
+		if err != nil {
+			Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", nil, err)
+			return nil, NewRPCError(GetBeaconBlockByHeightError, err)
+		}
+		nextHashString = nextHash.Hash().String()
+	}
+	blockBytes, errS := json.Marshal(block)
+	if errS != nil {
+		return nil, NewRPCError(UnexpectedError, errS)
+	}
+	result := jsonresult.NewGetBlocksBeaconResult(block, uint64(len(blockBytes)), nextHashString)
+	return result, nil
+}
+
 func (blockService BlockService) GetBlocks(shardIDParam int, numBlock int) (interface{}, *RPCError) {
 	result := make([]jsonresult.GetBlockResult, 0)
 	resultBeacon := make([]jsonresult.GetBlocksBeaconResult, 0)
