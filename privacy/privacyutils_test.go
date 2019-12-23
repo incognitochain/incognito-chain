@@ -185,6 +185,5 @@ func TestEncryptByXorOperator(t *testing.T) {
 		randSliceUint64 := new(big.Int).SetBytes(randSlice).Uint64()
 		plaintext = plaintext ^ randSliceUint64
 	}
-
 	fmt.Printf("plaintext %v\n", plaintext)
 }
