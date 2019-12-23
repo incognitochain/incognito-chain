@@ -33,6 +33,49 @@ func GetRewardOfShardByEpoch(stateDB *StateDB, epoch uint64, shardID byte, token
 	return amount, nil
 }
 
-//func AddCommitteeReward(stateDB *StateDB, paymentAddress string, amount uint64, tokenID common.Hash) error {
-//
-//}
+func AddCommitteeReward(stateDB *StateDB, incognitoPublicKey string, committeeReward uint64, tokenID common.Hash) error {
+	key, err := GenerateCommitteeRewardObjectKey(incognitoPublicKey)
+	if err != nil {
+		return NewStatedbError(StoreCommitteeRewardError, err)
+	}
+	c, has, err := stateDB.GetCommitteeRewardState(key)
+	if err != nil {
+		return NewStatedbError(StoreCommitteeRewardError, err)
+	}
+	committeeRewardM := make(map[common.Hash]uint64)
+	if has {
+		committeeRewardM = c.Reward()
+	}
+	amount, ok := committeeRewardM[tokenID]
+	if ok {
+		committeeReward += amount
+	}
+	committeeRewardM[tokenID] = committeeReward
+	value := NewCommitteeRewardStateWithValue(committeeRewardM, incognitoPublicKey)
+	err = stateDB.SetStateObject(CommitteeRewardObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(StoreCommitteeRewardError, err)
+	}
+	return nil
+}
+func GetCommitteeReward(stateDB *StateDB, incognitoPublicKey string, tokenID common.Hash) (uint64, error) {
+	key, err := GenerateCommitteeRewardObjectKey(incognitoPublicKey)
+	if err != nil {
+		return 0, NewStatedbError(GetCommitteeRewardError, err)
+	}
+	r, has, err := stateDB.GetCommitteeRewardAmount(key)
+	if err != nil {
+		return 0, NewStatedbError(GetCommitteeRewardError, err)
+	}
+	if !has {
+		return 0, NewStatedbError(GetCommitteeRewardError, fmt.Errorf("token %+v reward not exist", tokenID))
+	}
+	if amount, ok := r[tokenID]; !ok {
+		return 0, nil
+	} else {
+		return amount, nil
+	}
+}
+func ListCommitteeReward(stateDB *StateDB) map[string]map[common.Hash]uint64 {
+	return stateDB.GetAllCommitteeReward()
+}

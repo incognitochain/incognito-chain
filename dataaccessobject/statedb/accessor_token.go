@@ -3,6 +3,7 @@ package statedb
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"strings"
 )
 
 func StorePrivacyToken(stateDB *StateDB, tokenID common.Hash, name string, symbol string, tokenType int, mintable bool, amount uint64, txHash common.Hash) error {
@@ -38,7 +39,7 @@ func HasPrivacyTokenID(stateDB *StateDB, tokenID common.Hash) (bool, error) {
 	if err != nil {
 		return false, NewStatedbError(GetPrivacyTokenError, err)
 	}
-	if !t.TokenID().IsEqual(&tokenID) {
+	if strings.Compare(t.TokenID().String(), tokenID.String()) != 0 {
 		panic("same key wrong value")
 	}
 	return has, nil

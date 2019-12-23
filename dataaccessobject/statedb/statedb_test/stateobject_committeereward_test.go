@@ -27,9 +27,9 @@ var _ = func() (_ struct{}) {
 	return
 }()
 
-func storeCommitteeReward(initRoot common.Hash, warperDB statedb.DatabaseAccessWarper) (common.Hash, map[common.Hash]*statedb.CommitteeRewardState, map[string]map[common.Hash]int) {
+func storeCommitteeReward(initRoot common.Hash, warperDB statedb.DatabaseAccessWarper) (common.Hash, map[common.Hash]*statedb.CommitteeRewardState, map[string]map[common.Hash]uint64) {
 	mState := make(map[common.Hash]*statedb.CommitteeRewardState)
-	wantM := make(map[string]map[common.Hash]int)
+	wantM := make(map[string]map[common.Hash]uint64)
 	for index, value := range incognitoPublicKeys {
 		key, _ := statedb.GenerateCommitteeRewardObjectKey(value)
 		reward := generateTokenMapWithAmount()
@@ -143,15 +143,15 @@ func TestStateDB_GetAllRewardReceiverStateMultipleRootHash(t *testing.T) {
 	offset := 9
 	maxHeight := int(len(incognitoPublicKeys) / offset)
 	rootHashes := []common.Hash{emptyRoot}
-	wantMs := []map[string]map[common.Hash]int{}
+	wantMs := []map[string]map[common.Hash]uint64{}
 	for i := 0; i < maxHeight; i++ {
 		sDB, err := statedb.NewWithPrefixTrie(rootHashes[i], warperDBrewardTest)
 		if err != nil || sDB == nil {
 			t.Fatal(err)
 		}
 		tempKeys := incognitoPublicKeys[i*9 : (i+1)*9]
-		tempM := make(map[string]map[common.Hash]int)
-		prevWantM := make(map[string]map[common.Hash]int)
+		tempM := make(map[string]map[common.Hash]uint64)
+		prevWantM := make(map[string]map[common.Hash]uint64)
 		if i != 0 {
 			prevWantM = wantMs[i-1]
 		}

@@ -70,7 +70,7 @@ func storeAllConsensusStateObjectForTesting(initRoot common.Hash) (
 	[]incognitokey.CommitteePublicKey,
 	map[string]string,
 	map[string]bool,
-	map[string]map[common.Hash]int,
+	map[string]map[common.Hash]uint64,
 	map[common.Hash]*statedb.RewardRequestState,
 	map[string]uint8,
 ) {
@@ -82,7 +82,7 @@ func storeAllConsensusStateObjectForTesting(initRoot common.Hash) (
 	wantCurrentEpochCandidate := []incognitokey.CommitteePublicKey{}
 	wantMRewardReceiver := make(map[string]string)
 	wantMAutoStaking := make(map[string]bool)
-	wantMCommitteeReward := make(map[string]map[common.Hash]int)
+	wantMCommitteeReward := make(map[string]map[common.Hash]uint64)
 	wantMRewardRequest := make(map[common.Hash]*statedb.RewardRequestState)
 	wantMBlackListProducer := make(map[string]uint8)
 	// Committee

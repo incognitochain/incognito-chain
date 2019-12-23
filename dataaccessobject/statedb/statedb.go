@@ -606,8 +606,8 @@ func (stateDB *StateDB) GetCommitteeRewardState(key common.Hash) (*CommitteeRewa
 	return NewCommitteeRewardState(), false, nil
 }
 
-func (stateDB *StateDB) GetCommitteeRewardAmount(key common.Hash) (map[common.Hash]int, bool, error) {
-	m := make(map[common.Hash]int)
+func (stateDB *StateDB) GetCommitteeRewardAmount(key common.Hash) (map[common.Hash]uint64, bool, error) {
+	m := make(map[common.Hash]uint64)
 	committeeRewardObject, err := stateDB.getStateObject(CommitteeRewardObjectType, key)
 	if err != nil {
 		return nil, false, err
@@ -620,8 +620,8 @@ func (stateDB *StateDB) GetCommitteeRewardAmount(key common.Hash) (map[common.Ha
 	return m, false, nil
 }
 
-func (stateDB *StateDB) GetAllCommitteeReward() map[string]map[common.Hash]int {
-	m := make(map[string]map[common.Hash]int)
+func (stateDB *StateDB) GetAllCommitteeReward() map[string]map[common.Hash]uint64 {
+	m := make(map[string]map[common.Hash]uint64)
 	prefix := GetCommitteeRewardPrefix()
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)

@@ -80,11 +80,11 @@ func generateOutputCoinList(max int) [][]byte {
 	return list
 }
 
-func generateTokenMapWithAmount() map[common.Hash]int {
-	reward := make(map[common.Hash]int)
+func generateTokenMapWithAmount() map[common.Hash]uint64 {
+	reward := make(map[common.Hash]uint64)
 	for _, temp := range tokenIDs {
 		tokenID := common.BytesToHash([]byte(temp))
-		reward[tokenID] = rand.Int() % 1000000000
+		reward[tokenID] = uint64(rand.Int() % 1000000000)
 	}
 	return reward
 }
