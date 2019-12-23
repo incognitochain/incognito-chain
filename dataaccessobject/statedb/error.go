@@ -59,6 +59,8 @@ const (
 	StoreAllShardCommitteeError
 	StoreNextEpochCandidateError
 	StoreCurrentEpochCandidateError
+	StoreRewardRequestError
+	GetRewardRequestError
 )
 
 var ErrCodeMessage = map[int]struct {
