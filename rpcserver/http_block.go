@@ -120,6 +120,28 @@ func (httpServer *HttpServer) handleRetrieveBeaconBlock(params interface{}, clos
 	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
 }
 
+/*
+handleRetrieveBlock RPC return information for block
+*/
+func (httpServer *HttpServer) handleRetrieveBeaconBlockByHeight(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	Logger.log.Debugf("handleRetrieveBeaconBlock params: %+v", params)
+	paramArray, ok := params.([]interface{})
+	if ok && len(paramArray) >= 1 {
+		beaconHeight, ok := paramArray[0].(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("hashString is invalid"))
+		}
+		result, err := httpServer.blockService.RetrieveBeaconBlockByHeigh(uint64(beaconHeight))
+		Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", result, err)
+		if err != nil {
+			return result, err
+		}
+		return result, nil
+	}
+	Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", nil, nil)
+	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+}
+
 // handleGetBlocks - get n top blocks from chain ID
 func (httpServer *HttpServer) handleGetBlocks(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleGetBlocks params: %+v", params)
