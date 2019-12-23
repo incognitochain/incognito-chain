@@ -338,7 +338,11 @@ func updateHighwayAddrs(hwAddrs []HighwayAddr) ([]HighwayAddr, error) {
 		return nil, errors.New("No peer to get list of highways")
 	}
 	addr := hwAddrs[rand.Intn(len(hwAddrs))]
-	return getHighwayAddrs(addr.RPCUrl)
+	newAddrs, err := getHighwayAddrs(addr.RPCUrl)
+	if err != nil {
+		return hwAddrs, err // Keep the old list
+	}
+	return newAddrs, nil
 }
 
 func getHighwayAddrs(rpcUrl string) ([]HighwayAddr, error) {
