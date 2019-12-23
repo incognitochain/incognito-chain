@@ -33,7 +33,7 @@ func NewRequester(prtc *p2pgrpc.GRPCProtocol) *BlockRequester {
 // keepConnection dials highway to establish gRPC connection if it isn't available
 func (c *BlockRequester) keepConnection() {
 	currentHWID := peer.ID("")
-	watchTimestep := time.Tick(10 * time.Second)
+	watchTimestep := time.Tick(RequesterDialTimestep)
 	for {
 		select {
 		case <-watchTimestep:
@@ -42,7 +42,7 @@ func (c *BlockRequester) keepConnection() {
 			}
 
 			Logger.Warn("BlockRequester is not ready, dialing")
-			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), DialTimeout)
 			if conn, err := c.prtc.Dial(
 				ctx,
 				currentHWID,

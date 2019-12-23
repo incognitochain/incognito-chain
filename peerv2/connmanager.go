@@ -209,9 +209,9 @@ func (cm *ConnManager) keepHighwayConnection() {
 		},
 	}
 
-	watchTimestep := time.Tick(10 * time.Second)  // Check connection every 10s
-	refreshTimestep := time.Tick(3 * time.Minute) // RPC to update list of highways every 30 mins
-	cm.disconnected = 1                           // Init, to make first connection to highway
+	watchTimestep := time.Tick(ReconnectHighwayTimestep)
+	refreshTimestep := time.Tick(UpdateHighwayListTimestep)
+	cm.disconnected = 1 // Init, to make first connection to highway
 	pid := cm.LocalHost.Host.ID()
 	for {
 		select {
@@ -267,7 +267,7 @@ func (cm *ConnManager) checkConnection(addrInfo *peer.AddrInfo) bool {
 	if net.Connectedness(addrInfo.ID) != network.Connected {
 		cm.disconnected++
 		Logger.Info("Not connected to highway, connecting")
-		ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+		ctx, _ := context.WithTimeout(context.Background(), DialTimeout)
 		if err := cm.LocalHost.Host.Connect(ctx, *addrInfo); err != nil {
 			Logger.Errorf("Could not connect to highway: %v %v", err, addrInfo)
 		}
@@ -373,7 +373,7 @@ func (cm *ConnManager) manageRoleSubscription() {
 	var err error
 	for {
 		select {
-		case <-time.Tick(1 * time.Second):
+		case <-time.Tick(RegisterTimestep):
 			// Check if we are connecting to the target of registration (correct highway peerID)
 			target := cm.Requester.Target()
 			if hwID.Pretty() != target {
