@@ -69,7 +69,7 @@ func (sub *SubManager) GetMsgToTopics() msgToTopics {
 }
 
 // Subscribe registers to proxy and save the list of new topics if needed
-func (sub *SubManager) Subscribe(forced bool, hwID peer.ID) error {
+func (sub *SubManager) Subscribe(forced bool) error {
 	newRole := newUserRole(sub.consensusData.GetUserRole())
 	if newRole == sub.role && !forced { // Not forced => no need to subscribe when role stays the same
 		return nil
@@ -83,7 +83,6 @@ func (sub *SubManager) Subscribe(forced bool, hwID peer.ID) error {
 		newRole.layer,
 		newRole.role,
 		shardIDs,
-		hwID,
 	)
 	if err != nil {
 		return err // Don't save new role and topics since we need to retry later
@@ -236,7 +235,6 @@ func (sub *SubManager) registerToProxy(
 	layer string,
 	role string,
 	shardID []byte,
-	hwID peer.ID,
 ) (msgToTopics, userRole, error) {
 	messagesWanted := getMessagesForLayer(sub.nodeMode, layer, shardID)
 	Logger.Infof("Registering: message: %v", messagesWanted)
@@ -246,14 +244,6 @@ func (sub *SubManager) registerToProxy(
 	Logger.Infof("Registering: shardID: %v", shardID)
 	Logger.Infof("Registering: peerID: %v", sub.peerID.String())
 	Logger.Infof("Registering: pubkey: %v", pubkey)
-	Logger.Infof("Registering: hwID: %s", hwID.Pretty())
-
-	// Check if we are connecting to the target of registration (correct highway peerID)
-	target := sub.registerer.Target()
-	if hwID.Pretty() != target {
-		sub.registerer.UpdateTarget(hwID)
-		return nil, userRole{}, errors.Errorf("waiting to establish connection to highway: new highway = %v, current = %v", hwID.Pretty(), target)
-	}
 
 	pairs, topicRole, err := sub.registerer.Register(
 		context.Background(),

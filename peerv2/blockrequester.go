@@ -57,10 +57,9 @@ func (c *BlockRequester) keepConnection() {
 		case hwID := <-c.peerIDs:
 			Logger.Infof("Received new highway peerID, old = %s, new = %s", currentHWID.String(), hwID.String())
 			if hwID != currentHWID && c.conn != nil {
-				if err := c.conn.Close(); err != nil {
+				if err := c.conn.Close(); err != nil { // Close gRPC connection
 					Logger.Errorf("Failed closing connection to highway: %v %v %+v", hwID, currentHWID, err)
 				}
-				// err := cm.LocalHost.Host.Network().ClosePeer(currentHighway.ID) // Close connection to current highway
 			}
 			currentHWID = hwID
 		}

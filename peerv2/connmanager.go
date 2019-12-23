@@ -157,7 +157,7 @@ func (cm *ConnManager) BroadcastCommittee(
 }
 
 type ForcedSubscriber interface {
-	Subscribe(forced bool, hwID peer.ID) error
+	Subscribe(forced bool) error
 	GetMsgToTopics() msgToTopics
 }
 
@@ -209,9 +209,9 @@ func (cm *ConnManager) keepHighwayConnection() {
 		},
 	}
 
-	watchTimestep := time.Tick(10 * time.Second)   // Check connection every 10s
-	refreshTimestep := time.Tick(30 * time.Minute) // RPC to update list of highways every 30 mins
-	cm.disconnected = 1                            // Init, to make first connection to highway
+	watchTimestep := time.Tick(10 * time.Second)  // Check connection every 10s
+	refreshTimestep := time.Tick(3 * time.Minute) // RPC to update list of highways every 30 mins
+	cm.disconnected = 1                           // Init, to make first connection to highway
 	pid := cm.LocalHost.Host.ID()
 	for {
 		select {
@@ -374,16 +374,32 @@ func (cm *ConnManager) manageRoleSubscription() {
 	for {
 		select {
 		case <-time.Tick(1 * time.Second):
-			err = cm.subscriber.Subscribe(forced, hwID)
+			// Check if we are connecting to the target of registration (correct highway peerID)
+			target := cm.Requester.Target()
+			if hwID.Pretty() != target {
+				cm.Requester.UpdateTarget(hwID)
+				Logger.Errorf("Waiting to establish connection to highway: new highway = %v, current = %v", hwID.Pretty(), target)
+				continue
+			}
+
+			err = cm.subscriber.Subscribe(forced)
 			if err != nil {
-				Logger.Errorf("subscribe failed: forced = %v hwID = %s err = %+v", forced, hwID.String(), err)
+				Logger.Errorf("Subscribe failed: forced = %v hwID = %s err = %+v", forced, hwID.String(), err)
 			} else {
 				forced = false
 			}
 
-		case hwID = <-cm.registerRequests:
+		case newID := <-cm.registerRequests:
 			Logger.Info("Received request to register")
 			forced = true // register no matter if role changed or not
+
+			// Close libp2p connection to old highway if we are connecting to new one
+			if hwID != peer.ID("") && newID != hwID {
+				if err := cm.LocalHost.Host.Network().ClosePeer(hwID); err != nil {
+					Logger.Errorf("Failed closing connection to old highway: hwID = %s err = %v", hwID.String(), err)
+				}
+			}
+			hwID = newID
 
 		case <-cm.stop:
 			Logger.Info("Stop managing role subscription")
