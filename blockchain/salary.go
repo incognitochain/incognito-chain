@@ -95,7 +95,7 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(blkHeight, epoch uin
 	var instRewardForIncDAO [][]string
 	var instRewardForShards [][]string
 	numberOfActiveShards := blockchain.BestState.Beacon.ActiveShards
-	allCoinID, err := blockchain.GetAllCoinID()
+	allCoinID, err := blockchain.config.DataBase.GetAllTokenIDForReward(epoch)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(blkHeight, epoch uin
 		if totalRewards[ID] == nil {
 			totalRewards[ID] = map[common.Hash]uint64{}
 		}
-		for _, coinID := range allCoinID {
+		for coinID, _ := range allCoinID {
 			totalRewards[ID][coinID], err = blockchain.GetDatabase().GetRewardOfShardByEpoch(epoch, byte(ID), coinID)
 			if err != nil {
 				return nil, err
