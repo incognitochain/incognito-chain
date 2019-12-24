@@ -34,7 +34,7 @@ func StoreBeaconBlock(db incdb.Database, index uint64, hash common.Hash, v inter
 func HasBeaconBlock(db incdb.Database, hash common.Hash) (bool, error) {
 	keyHash := GetBeaconBlockHashKey(hash)
 	if ok, err := db.Has(keyHash); err != nil {
-		return false, NewRawdbError(LvdbHasError, fmt.Errorf("has key %+v failed", keyHash))
+		return false, NewRawdbError(HasBeaconBlockError, fmt.Errorf("has key %+v failed", keyHash))
 	} else if ok {
 		return true, nil
 	}
@@ -44,7 +44,7 @@ func HasBeaconBlock(db incdb.Database, hash common.Hash) (bool, error) {
 func GetBeaconBlockByHash(db incdb.Database, hash common.Hash) ([]byte, error) {
 	keyHash := GetBeaconBlockHashKey(hash)
 	if ok, err := db.Has(keyHash); err != nil {
-		return []byte{}, NewRawdbError(LvdbHasError, fmt.Errorf("has key %+v failed", keyHash))
+		return []byte{}, NewRawdbError(GetBeaconBlockByHashError, fmt.Errorf("has key %+v failed", keyHash))
 	} else if !ok {
 		return []byte{}, NewRawdbError(GetBeaconBlockByHashError, fmt.Errorf("block %+v not exist", hash))
 	}
