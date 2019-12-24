@@ -40,6 +40,7 @@ func NewPrivacyForCrossShard(obj blockchain.CrossShardTokenPrivacyMetaData) *Cus
 	customToken.Amount = obj.Amount
 	//customToken.Image = common.Render(obj.TokenID[:])
 	customToken.IsPrivacy = true
+	customToken.TxInfo = base58.Base58Check{}.Encode([]byte{}, common.ZeroByte)
 	return customToken
 }
 
