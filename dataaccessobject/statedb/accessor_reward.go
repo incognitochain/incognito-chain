@@ -82,7 +82,7 @@ func ListCommitteeReward(stateDB *StateDB) map[string]map[common.Hash]uint64 {
 	return stateDB.GetAllCommitteeReward()
 }
 
-func RemoveCommitteeReward(stateDB *StateDB, incognitoPublicKey string, committeeReward uint64, tokenID common.Hash) error {
+func RemoveCommitteeReward(stateDB *StateDB, incognitoPublicKey string, committeeWithdraw uint64, tokenID common.Hash) error {
 	key, err := GenerateCommitteeRewardObjectKey(incognitoPublicKey)
 	if err != nil {
 		return NewStatedbError(RemoveCommitteeRewardError, err)
@@ -94,16 +94,13 @@ func RemoveCommitteeReward(stateDB *StateDB, incognitoPublicKey string, committe
 	if !has {
 		return nil
 	}
-
-	committeeRewardM := make(map[common.Hash]uint64)
-	if has {
-		committeeRewardM = c.Reward()
+	committeeRewardM := c.reward
+	currentReward := committeeRewardM[tokenID]
+	if committeeWithdraw > currentReward {
+		return NewStatedbError(RemoveCommitteeRewardError, fmt.Errorf("Current Reward %+v but got withdraw %+v", currentReward, committeeWithdraw))
 	}
-	amount, ok := committeeRewardM[tokenID]
-	if ok {
-		committeeReward += amount
-	}
-	committeeRewardM[tokenID] = committeeReward
+	remain := currentReward - committeeWithdraw
+	committeeRewardM[tokenID] = remain
 	value := NewCommitteeRewardStateWithValue(committeeRewardM, incognitoPublicKey)
 	err = stateDB.SetStateObject(CommitteeRewardObjectType, key, value)
 	if err != nil {

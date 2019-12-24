@@ -748,6 +748,26 @@ func (stateDB *StateDB) GetAllProducerBlackList() map[string]uint8 {
 	return m
 }
 
+func (stateDB *StateDB) GetAllProducerBlackListState() map[common.Hash]uint8 {
+	m := make(map[common.Hash]uint8)
+	prefix := GetBlackListProducerPrefix()
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		key := it.Key
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		blackListProducerState := NewBlackListProducerState()
+		err := json.Unmarshal(newValue, blackListProducerState)
+		if err != nil {
+			panic("wrong value type")
+		}
+		m[common.BytesToHash(key)] = blackListProducerState.punishedEpoches
+	}
+	return m
+}
+
 // ================================= Serial Number OBJECT =======================================
 func (stateDB *StateDB) GetSerialNumberState(key common.Hash) (*SerialNumberState, bool, error) {
 	serialNumberState, err := stateDB.getStateObject(SerialNumberObjectType, key)

@@ -65,6 +65,7 @@ const (
 	GetCommitteeRewardError
 	ListCommitteeRewardError
 	RemoveCommitteeRewardError
+	StoreBlackListProducersError
 )
 
 var ErrCodeMessage = map[int]struct {
