@@ -113,6 +113,33 @@ func (db *db) GetRewardOfShardByEpoch(
 	return value, nil
 }
 
+func (db *db) GetAllTokenIDForReward(
+	epoch uint64,
+) (
+	map[common.Hash]struct{},
+	error,
+) {
+	keyForSearch := []byte{}
+	keyForSearch = append(keyForSearch, shardRequestRewardPrefix...)
+	keyForSearch = append(keyForSearch, common.Uint64ToBytes(epoch)...)
+	result := map[common.Hash]struct{}{}
+	iterator := db.lvdb.NewIterator(util.BytesPrefix(keyForSearch), nil)
+	for iterator.Next() {
+		key := make([]byte, len(iterator.Key()))
+		copy(key, iterator.Key())
+		value := make([]byte, len(iterator.Value()))
+		copy(value, iterator.Value())
+		tokenIDBytes := key[len(key)-32:]
+		tokenID, err := common.Hash{}.NewHash(tokenIDBytes)
+		if err != nil {
+			database.Logger.Log.Errorf("Pasre token ID %v return error %v", tokenIDBytes, err)
+			continue
+		}
+		result[*tokenID] = struct{}{}
+	}
+	return result, nil
+}
+
 /**
  * AddCommitteeReward increase the amount of rewards for a person in committee P.
  * @param committeeAddress: Public key of person P
