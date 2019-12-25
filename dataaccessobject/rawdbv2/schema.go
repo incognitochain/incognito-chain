@@ -7,20 +7,21 @@ import (
 
 // Header key will be used for light mode in the future
 var (
-	lastShardBlockKey       = []byte("LastShardBlock")
-	lastShardHeaderKey      = []byte("LastShardHeader")
-	lastBeaconBlockKey      = []byte("LastBeaconBlock")
-	lastBeaconHeaderKey     = []byte("LastBeaconHeader")
-	shardBlockHashPrefix    = []byte("s-b-h")
-	shardBlockIndexPrefix   = []byte("s-b-i")
-	shardHeaderHashPrefix   = []byte("s-h-h")
-	shardHeaderIndexPrefix  = []byte("s-h-i")
-	beaconBlockHashPrefix   = []byte("b-b-h")
-	beaconBlockIndexPrefix  = []byte("b-b-i")
-	beaconHeaderHashPrefix  = []byte("b-h-h")
-	beaconHeaderIndexPrefix = []byte("b-h-i")
-	txHashPrefix            = []byte("tx-h")
-	splitter                = []byte("-[-]-")
+	lastShardBlockKey          = []byte("LastShardBlock")
+	lastShardHeaderKey         = []byte("LastShardHeader")
+	lastBeaconBlockKey         = []byte("LastBeaconBlock")
+	lastBeaconHeaderKey        = []byte("LastBeaconHeader")
+	shardBlockHashPrefix       = []byte("s-b-h")
+	shardBlockIndexPrefix      = []byte("s-b-i")
+	shardHeaderHashPrefix      = []byte("s-h-h")
+	shardHeaderIndexPrefix     = []byte("s-h-i")
+	beaconBlockHashPrefix      = []byte("b-b-h")
+	beaconBlockIndexPrefix     = []byte("b-b-i")
+	beaconHeaderHashPrefix     = []byte("b-h-h")
+	beaconHeaderIndexPrefix    = []byte("b-h-i")
+	txHashPrefix               = []byte("tx-h")
+	crossShardNextHeightPrefix = []byte("c-s-n-h")
+	splitter                   = []byte("-[-]-")
 )
 
 func GetLastShardBlockKey() []byte {
@@ -125,4 +126,15 @@ func GetBeaconBlockIndexPrefix(index uint64) []byte {
 
 func GetTransactionHashKey(hash common.Hash) []byte {
 	return append(txHashPrefix, hash[:]...)
+}
+
+func GetCrossShardNextHeightKey(fromShard byte, toShard byte, height uint64) []byte {
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, height)
+	key := append(crossShardNextHeightPrefix, fromShard)
+	key = append(key, []byte("-")...)
+	key = append(key, toShard)
+	key = append(key, []byte("-")...)
+	key = append(key, buf...)
+	return key
 }

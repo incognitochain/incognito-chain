@@ -20,7 +20,9 @@ const (
 	GetShardBlockByHashError
 	GetShardBlockByIndexError
 	DeleteShardBlockError
-
+	StoreCrossShardNextHeightError
+	HasCrossShardNextHeightError
+	FetchCrossShardNextHeightError
 	// tx
 	StoreTransactionIndexError
 	GetTransactionByHashError
