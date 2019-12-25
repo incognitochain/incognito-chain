@@ -33,6 +33,14 @@ func GetRewardOfShardByEpoch(stateDB *StateDB, epoch uint64, shardID byte, token
 	return amount, nil
 }
 
+func GetAllTokenIDForReward(stateDB *StateDB, epoch uint64) []common.Hash {
+	rewardRequestStates := stateDB.GetAllRewardRequestState()
+	tokenIDs := []common.Hash{}
+	for _, rewardRequestState := range rewardRequestStates {
+		tokenIDs = append(tokenIDs, rewardRequestState.tokenID)
+	}
+	return tokenIDs
+}
 func AddCommitteeReward(stateDB *StateDB, incognitoPublicKey string, committeeReward uint64, tokenID common.Hash) error {
 	key, err := GenerateCommitteeRewardObjectKey(incognitoPublicKey)
 	if err != nil {

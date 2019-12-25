@@ -1,6 +1,7 @@
 package rawdb
 
 import (
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -77,7 +78,8 @@ func GetRewardOfShardByEpoch(
 	return value, nil
 }
 
-func (db *db) GetAllTokenIDForReward(
+func GetAllTokenIDForReward(
+	db incdb.Database,
 	epoch uint64,
 ) (
 	[]common.Hash,
@@ -87,7 +89,7 @@ func (db *db) GetAllTokenIDForReward(
 	keyForSearch = append(keyForSearch, shardRequestRewardPrefix...)
 	keyForSearch = append(keyForSearch, common.Uint64ToBytes(epoch)...)
 	result := map[common.Hash]struct{}{}
-	iterator := db.lvdb.NewIterator(util.BytesPrefix(keyForSearch), nil)
+	iterator := db.NewIteratorWithPrefix(keyForSearch)
 	for iterator.Next() {
 		key := make([]byte, len(iterator.Key()))
 		copy(key, iterator.Key())
@@ -96,7 +98,7 @@ func (db *db) GetAllTokenIDForReward(
 		tokenIDBytes := key[len(key)-32:]
 		tokenID, err := common.Hash{}.NewHash(tokenIDBytes)
 		if err != nil {
-			database.Logger.Log.Errorf("Pasre token ID %v return error %v", tokenIDBytes, err)
+			fmt.Printf("Pasre token ID %v return error %v", tokenIDBytes, err)
 			continue
 		}
 		result[*tokenID] = struct{}{}
