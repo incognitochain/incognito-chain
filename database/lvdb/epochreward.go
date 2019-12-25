@@ -116,7 +116,7 @@ func (db *db) GetRewardOfShardByEpoch(
 func (db *db) GetAllTokenIDForReward(
 	epoch uint64,
 ) (
-	map[common.Hash]struct{},
+	[]common.Hash,
 	error,
 ) {
 	keyForSearch := []byte{}
@@ -137,7 +137,11 @@ func (db *db) GetAllTokenIDForReward(
 		}
 		result[*tokenID] = struct{}{}
 	}
-	return result, nil
+	resultSlice := []common.Hash{}
+	for key, _ := range result {
+		resultSlice = append(resultSlice, key)
+	}
+	return resultSlice, nil
 }
 
 /**
