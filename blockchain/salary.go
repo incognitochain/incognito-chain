@@ -146,7 +146,7 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(blkHeight, epoch uin
 	var instRewardForIncDAO [][]string
 	var instRewardForShards [][]string
 	numberOfActiveShards := blockchain.BestState.Beacon.ActiveShards
-	allCoinID, err := blockchain.config.DataBase.GetAllTokenIDForReward(epoch)
+	allCoinID, err := rawdb.GetAllTokenIDForReward(blockchain.GetDatabase(), epoch)
 
 	if blockchain.config.ChainParams.Net == Testnet {
 		// istestnet

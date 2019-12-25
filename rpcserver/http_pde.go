@@ -481,10 +481,10 @@ func (httpServer *HttpServer) handleGetPDEState(params interface{}, closeChan <-
 	pdeState, err := blockchain.InitCurrentPDEStateFromDB(httpServer.config.BlockChain.GetDatabase(), uint64(beaconHeight))
 	beaconBlock, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
 	type CurrentPDEState struct {
-		WaitingPDEContributions map[string]*lvdb.PDEContribution `json:"WaitingPDEContributions"`
-		PDEPoolPairs            map[string]*lvdb.PDEPoolForPair  `json:"PDEPoolPairs"`
-		PDEShares               map[string]uint64                `json:"PDEShares"`
-		BeaconTimeStamp         int64                            `json:"BeaconTimeStamp"`
+		WaitingPDEContributions map[string]*rawdb.PDEContribution `json:"WaitingPDEContributions"`
+		PDEPoolPairs            map[string]*rawdb.PDEPoolForPair  `json:"PDEPoolPairs"`
+		PDEShares               map[string]uint64                 `json:"PDEShares"`
+		BeaconTimeStamp         int64                             `json:"BeaconTimeStamp"`
 	}
 	result := CurrentPDEState{
 		BeaconTimeStamp:         beaconBlock.Header.Timestamp,
