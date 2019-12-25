@@ -71,6 +71,21 @@ func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(txr 
 	if txr.IsPrivacy() {
 		return false, errors.New("This transaction is not private")
 	}
+	allTokenID, err := bcr.GetAllCoinID()
+	if err != nil {
+		return false, err
+	}
+	isValid := false
+	for _, availableCoinID := range allTokenID {
+		cmp, err := withDrawRewardRequest.TokenID.Cmp(&availableCoinID)
+		if (cmp == 0) && (err == nil) {
+			isValid = true
+			break
+		}
+	}
+	if !isValid {
+		return false, errors.New("Invalid TokenID, maybe this coin not available at current shard")
+	}
 	isPositive := false
 	value, err := rawdb.GetCommitteeReward(db, withDrawRewardRequest.PaymentAddress.Pk, withDrawRewardRequest.TokenID)
 	if err != nil {

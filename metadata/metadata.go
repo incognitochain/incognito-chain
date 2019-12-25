@@ -67,6 +67,7 @@ type BlockchainRetriever interface {
 	GetTxValue(txid string) (uint64, error)
 	GetShardIDFromTx(txid string) (byte, error)
 	GetCentralizedWebsitePaymentAddress() string
+	GetAllCoinID() ([]common.Hash, error)
 }
 
 // Interface for all type of transaction
