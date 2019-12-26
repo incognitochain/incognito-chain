@@ -157,3 +157,22 @@ func splitAndDecodeInst(bridgeInst, beaconInst []string) (string, string, string
 	decodedInst := hex.EncodeToString(bridgeInstFlat[:len(bridgeInstFlat)-32])
 	return decodedInst, bridgeHeight, beaconHeight
 }
+
+// handleGetBurnProof returns a proof of a tx burning pETH
+func (httpServer *HttpServer) handleGetBurningAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	Logger.log.Infof("handleGetBurningAddress params: %+v", params)
+	listParams, ok := params.([]interface{})
+	if !ok || len(listParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+	}
+
+	beaconHeightParam, ok := listParams[0].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("beacon height is invalid"))
+	}
+
+	beaconHeight := uint64(beaconHeightParam)
+	burningAddress := rpcservice.GetBurningAddress(beaconHeight)
+
+	return burningAddress, nil
+}

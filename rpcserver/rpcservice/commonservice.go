@@ -184,3 +184,8 @@ func GenerateTokenID(network string, name string) (common.Hash, error) {
 	}
 	return *hash, nil
 }
+
+func GetBurningAddress(beaconHeight uint64) string {
+	burningAddress := common.GetBurningAddress(beaconHeight)
+	return burningAddress
+}
