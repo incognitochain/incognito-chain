@@ -49,6 +49,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newPDEPoolPairObjectWithValue(db, hash, value)
 	case PDEShareObjectType:
 		return newPDEShareObjectWithValue(db, hash, value)
+	case PDEStatusObjectType:
+		return newPDEStatusObjectWithValue(db, hash, value)
 	default:
 		panic("state object type not exist")
 	}
@@ -82,6 +84,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newPDEPoolPairObject(db, hash)
 	case PDEShareObjectType:
 		return newPDEShareObject(db, hash)
+	case PDEStatusObjectType:
+		return newPDEStatusObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}
