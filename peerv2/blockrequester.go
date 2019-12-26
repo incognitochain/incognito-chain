@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
+	"google.golang.org/grpc/keepalive"
 )
 
 // TODO(@0xbunyip): cache all requests to prevent querying the same height multiple times
@@ -38,15 +39,30 @@ func (c *BlockRequester) keepConnection() {
 		}
 
 		Logger.Warn("BlockRequester is not ready, dialing")
+		if c.conn != nil {
+			Logger.Info("Closing old requester connection")
+			err := c.conn.Close()
+			if err != nil {
+				Logger.Errorf("Failed closing old requester connection: %+v", err)
+			}
+			c.conn = nil
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		if conn, err := c.prtc.Dial(
-			context.Background(),
+			ctx,
 			c.highwayPID,
 			grpc.WithInsecure(),
+			grpc.WithBlock(),
+			grpc.WithKeepaliveParams(keepalive.ClientParameters{
+				Time:    RequesterKeepaliveTime,
+				Timeout: RequesterKeepaliveTimeout,
+			}),
 		); err != nil {
 			Logger.Error("Could not dial to highway grpc server:", err, c.highwayPID)
 		} else {
 			c.conn = conn
 		}
+		cancel()
 	}
 }
 
