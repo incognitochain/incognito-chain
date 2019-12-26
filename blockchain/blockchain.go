@@ -1564,12 +1564,17 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 		}
 	}
 	if txType == -1 {
-		mapPrivacyCustomToken, _, err := blockchain.ListPrivacyCustomToken()
+		mapPrivacyCustomToken, mapCrossShardCustomToken, err := blockchain.ListPrivacyCustomToken()
 		if err != nil {
 			return nil, err
 		}
 		if mapPrivacyCustomToken != nil {
 			if _, ok := mapPrivacyCustomToken[coinID]; ok {
+				txType = transaction.CustomTokenPrivacyType
+			}
+		}
+		if mapCrossShardCustomToken != nil {
+			if _, ok := mapCrossShardCustomToken[coinID]; ok {
 				txType = transaction.CustomTokenPrivacyType
 			}
 		}
