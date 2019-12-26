@@ -22,6 +22,7 @@ const (
 	WaitingPDEContributionObjectType
 	PDEPoolPairObjectType
 	PDEShareObjectType
+	PDEStatusObjectType
 )
 
 // Prefix length
@@ -40,4 +41,11 @@ const (
 const (
 	BeaconShardID    = -1
 	CandidateShardID = -2
+)
+
+// PDE Track Status type
+const (
+	WaitingContributionStatus = iota
+	TradeStatus
+	WithdrawStatus
 )

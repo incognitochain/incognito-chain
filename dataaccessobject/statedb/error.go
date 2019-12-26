@@ -24,6 +24,7 @@ const (
 	ErrInvalidWaitingPDEContributionStateType = "invalid waiting pde contribution state type"
 	ErrInvalidPDEPoolPairStateType            = "invalid pde pool pair state type"
 	ErrInvalidPDEShareStateType               = "invalid pde shard state type"
+	ErrInvalidPDEStatusStateType              = "invalid pde status state type"
 )
 const (
 	InvalidByteArrayTypeError = iota

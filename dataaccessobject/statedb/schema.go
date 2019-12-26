@@ -25,6 +25,7 @@ var (
 	waitingPDEContributionPrefix = []byte("wait-pde-con")
 	pdePoolPairPrefix            = []byte("pde-pool-pair")
 	pdeSharePrefix               = []byte("pde-share")
+	pdeStatusPrefix              = []byte("pde-status")
 )
 
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
@@ -113,6 +114,11 @@ func GetPDEPoolPairPrefix() []byte {
 
 func GetPDESharePrefix() []byte {
 	h := common.HashH(pdeSharePrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetPDEStatusPrefix() []byte {
+	h := common.HashH(pdeStatusPrefix)
 	return h[:][:prefixHashKeyLength]
 }
 
