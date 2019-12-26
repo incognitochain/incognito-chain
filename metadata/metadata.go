@@ -115,7 +115,7 @@ type Transaction interface {
 	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, BlockchainRetriever, *AccumulatedValues) (bool, error)
 
 	IsPrivacy() bool
-	IsCoinsBurning() bool
+	IsCoinsBurning(beaconHeight uint64) bool
 	CalculateTxValue() uint64
 	IsSalaryTx() bool
 }
