@@ -712,7 +712,7 @@ func (txCustomToken TxNormalToken) CalculateTxValue() uint64 {
 	return txValue
 }
 
-func (txCustomToken TxNormalToken) IsCoinsBurning(beaconHeight uint64) bool {
+func (txCustomToken TxNormalToken) IsCoinsBurning(bcr metadata.BlockchainRetriever) bool {
 	vins := txCustomToken.TxTokenData.Vins
 	vouts := txCustomToken.TxTokenData.Vouts
 	if len(vins) == 0 || len(vouts) == 0 {
@@ -721,7 +721,7 @@ func (txCustomToken TxNormalToken) IsCoinsBurning(beaconHeight uint64) bool {
 	senderPk := vins[0].PaymentAddress.Pk
 
 	//get burning address
-	burningAddress := common.GetBurningAddress(beaconHeight)
+	burningAddress := bcr.GetBurningAddress()
 	keyWalletBurningAccount, err := wallet.Base58CheckDeserialize(burningAddress)
 	if err != nil{
 		return false

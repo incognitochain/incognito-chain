@@ -580,7 +580,7 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetTransferData() (bool, []byte
 }
 
 // IsCoinsBurning - checking this is a burning pToken
-func (txCustomTokenPrivacy TxCustomTokenPrivacy) IsCoinsBurning(beaconHeight uint64) bool {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) IsCoinsBurning(bcr metadata.BlockchainRetriever) bool {
 	// get proof of pToken
 	proof := txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.Proof
 	if proof == nil || len(proof.GetOutputCoins()) == 0 {
@@ -593,7 +593,7 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) IsCoinsBurning(beaconHeight uin
 	}
 
 	//get burning address
-	burningAddress := common.GetBurningAddress(beaconHeight)
+	burningAddress := bcr.GetBurningAddress()
 	keyWalletBurningAccount, err := wallet.Base58CheckDeserialize(burningAddress)
 	if err != nil {
 		Logger.log.Errorf("Can not deserialize burn address: %v\n", burningAddress)

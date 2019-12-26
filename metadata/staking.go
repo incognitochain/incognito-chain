@@ -128,7 +128,7 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(
 	}
 
 	// get burning address
-	burningAddress := common.GetBurningAddress(bcr.GetBeaconHeight())
+	burningAddress := bcr.GetBurningAddress()
 	keyWalletBurningAdd, err := wallet.Base58CheckDeserialize(burningAddress)
 	if err != nil{
 		return false, false, errors.New("burning address is invalid")
