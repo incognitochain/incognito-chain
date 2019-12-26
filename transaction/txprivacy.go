@@ -1097,7 +1097,7 @@ func (tx Tx) ValidateType() bool {
 	return tx.Type == common.TxNormalType || tx.Type == common.TxRewardType || tx.Type == common.TxReturnStakingType
 }
 
-func (tx Tx) IsCoinsBurning(beaconHeight uint64) bool {
+func (tx Tx) IsCoinsBurning(bcr metadata.BlockchainRetriever) bool {
 	if tx.Proof == nil || len(tx.Proof.GetOutputCoins()) == 0 {
 		return false
 	}
@@ -1106,7 +1106,7 @@ func (tx Tx) IsCoinsBurning(beaconHeight uint64) bool {
 		senderPKBytes = tx.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().ToBytesS()
 	}
 	//get burning address
-	burningAddress := common.GetBurningAddress(beaconHeight)
+	burningAddress := bcr.GetBurningAddress()
 	keyWalletBurningAccount, err := wallet.Base58CheckDeserialize(burningAddress)
 	if err != nil {
 		return false

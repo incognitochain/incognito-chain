@@ -459,12 +459,3 @@ func GetValidStaker(committees []string, stakers []string) []string {
 func GetShardChainKey(shardID byte) string {
 	return ShardChainKey + "-" + strconv.Itoa(int(shardID))
 }
-
-
-func GetBurningAddress (beaconHeight uint64) string {
-	if beaconHeight <= BeaconHeightBreakPoint {
-		return BurningAddress
-	}
-
-	return BurningAddress2
-}

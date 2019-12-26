@@ -176,3 +176,17 @@ func (blockchain *BlockChain) GetAutoStakingList() map[string]bool {
 func (blockchain *BlockChain) GetCentralizedWebsitePaymentAddress() string {
 	return blockchain.config.ChainParams.CentralizedWebsitePaymentAddress
 }
+
+func (blockchain *BlockChain) GetBeaconHeightBreakPointBurnAddr() uint64 {
+	return blockchain.config.ChainParams.BeaconHeightBreakPointBurnAddr
+}
+
+func (blockchain *BlockChain) GetBurningAddress() string {
+	breakPoint := blockchain.GetBeaconHeightBreakPointBurnAddr()
+	beaconHeight := blockchain.GetBeaconHeight()
+	if beaconHeight <= breakPoint {
+		return common.BurningAddress
+	}
+
+	return common.BurningAddress2
+}
