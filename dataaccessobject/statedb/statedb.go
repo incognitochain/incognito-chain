@@ -996,3 +996,32 @@ func (stateDB *StateDB) GetAllPDEShareState() []*PDEShareState {
 	}
 	return pdeShareStates
 }
+
+func (stateDB *StateDB) GetAllPDEStatus() []*PDEStatusState {
+	pdeStatusStates := []*PDEStatusState{}
+	temp := stateDB.trie.NodeIterator(GetPDEStatusPrefix())
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		s := NewPDEStatusState()
+		err := json.Unmarshal(newValue, s)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		pdeStatusStates = append(pdeStatusStates, s)
+	}
+	return pdeStatusStates
+}
+
+func (stateDB *StateDB) GetPDEStatusByKey(key common.Hash) (*PDEStatusState, bool, error) {
+	pdeStatusState, err := stateDB.getStateObject(PDEStatusObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if pdeStatusState != nil {
+		return pdeStatusState.GetValue().(*PDEStatusState), true, nil
+	}
+	return NewPDEStatusState(), false, nil
+}
