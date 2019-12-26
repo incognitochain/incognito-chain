@@ -89,8 +89,17 @@ c. Commitment Length: Number of commitment in one of shard of a token
     * publicKey
     * outputCoins: list of output coin
 12. SNDerivator:
-- key: first 12 bytes of `hash(output-coin-prefix + tokenID)` with first 20 bytes of `hash(snd-bytes)`
+- key: first 12 bytes of `hash(SNDerivator-prefix + tokenID)` with first 20 bytes of `hash(snd-bytes)`
 - value: snderivator state:
     * tokenID
     * snd
-   
+13. PDE:
+- key: first 12 bytes of `hash(waiting-pde-contribution-prefix)` with 20 bytes of `hash(beacon-height-bytes)`
+- value: waiting pde contribution
+    * beacon height 
+    * pairID
+    * contributor address
+    * tokenID
+    * amount
+    * transaction request id
+    

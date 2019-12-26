@@ -8,20 +8,23 @@ import (
 )
 
 var (
-	committeePrefix         = []byte("shard-com-")
-	substitutePrefix        = []byte("shard-sub-")
-	nextCandidatePrefix     = []byte("next-cand-")
-	currentCandidatePrefix  = []byte("cur-cand-")
-	committeeRewardPrefix   = []byte("committee-reward-")
-	rewardRequestPrefix     = []byte("reward-request-")
-	blackListProducerPrefix = []byte("black-list-")
-	serialNumberPrefix      = []byte("serial-number-")
-	commitmentPrefix        = []byte("com-value-")
-	commitmentIndexPrefix   = []byte("com-index-")
-	commitmentLengthPrefix  = []byte("com-length-")
-	snDerivatorPrefix       = []byte("sn-derivator-")
-	outputCoinPrefix        = []byte("output-coin-")
-	tokenPrefix             = []byte("token-")
+	committeePrefix              = []byte("shard-com-")
+	substitutePrefix             = []byte("shard-sub-")
+	nextCandidatePrefix          = []byte("next-cand-")
+	currentCandidatePrefix       = []byte("cur-cand-")
+	committeeRewardPrefix        = []byte("committee-reward-")
+	rewardRequestPrefix          = []byte("reward-request-")
+	blackListProducerPrefix      = []byte("black-list-")
+	serialNumberPrefix           = []byte("serial-number-")
+	commitmentPrefix             = []byte("com-value-")
+	commitmentIndexPrefix        = []byte("com-index-")
+	commitmentLengthPrefix       = []byte("com-length-")
+	snDerivatorPrefix            = []byte("sn-derivator-")
+	outputCoinPrefix             = []byte("output-coin-")
+	tokenPrefix                  = []byte("token-")
+	waitingPDEContributionPrefix = []byte("wait-pde-con")
+	pdePoolPairPrefix            = []byte("pde-pool-pair")
+	pdeSharePrefix               = []byte("pde-share")
 )
 
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
@@ -95,6 +98,21 @@ func GetOutputCoinPrefix(tokenID common.Hash, shardID byte) []byte {
 
 func GetTokenPrefix() []byte {
 	h := common.HashH(tokenPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetWaitingPDEContributionPrefix() []byte {
+	h := common.HashH(waitingPDEContributionPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetPDEPoolPairPrefix() []byte {
+	h := common.HashH(pdePoolPairPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetPDESharePrefix() []byte {
+	h := common.HashH(pdeSharePrefix)
 	return h[:][:prefixHashKeyLength]
 }
 

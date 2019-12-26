@@ -22,6 +22,8 @@ const (
 	ErrInvalidOutputCoinStateType             = "invalid output coin state type"
 	ErrInvalidTokenStateType                  = "invalid token state type"
 	ErrInvalidWaitingPDEContributionStateType = "invalid waiting pde contribution state type"
+	ErrInvalidPDEPoolPairStateType            = "invalid pde pool pair state type"
+	ErrInvalidPDEShareStateType               = "invalid pde shard state type"
 )
 const (
 	InvalidByteArrayTypeError = iota

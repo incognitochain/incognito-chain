@@ -1,6 +1,7 @@
 package statedb
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
@@ -14,6 +15,54 @@ type WaitingPDEContributionState struct {
 	tokenID            string
 	amount             uint64
 	txReqID            string
+}
+
+func (wc WaitingPDEContributionState) TxReqID() string {
+	return wc.txReqID
+}
+
+func (wc *WaitingPDEContributionState) SetTxReqID(txReqID string) {
+	wc.txReqID = txReqID
+}
+
+func (wc WaitingPDEContributionState) Amount() uint64 {
+	return wc.amount
+}
+
+func (wc *WaitingPDEContributionState) SetAmount(amount uint64) {
+	wc.amount = amount
+}
+
+func (wc WaitingPDEContributionState) TokenID() string {
+	return wc.tokenID
+}
+
+func (wc *WaitingPDEContributionState) SetTokenID(tokenID string) {
+	wc.tokenID = tokenID
+}
+
+func (wc WaitingPDEContributionState) ContributorAddress() string {
+	return wc.contributorAddress
+}
+
+func (wc *WaitingPDEContributionState) SetContributorAddress(contributorAddress string) {
+	wc.contributorAddress = contributorAddress
+}
+
+func (wc WaitingPDEContributionState) PairID() string {
+	return wc.pairID
+}
+
+func (wc *WaitingPDEContributionState) SetPairID(pairID string) {
+	wc.pairID = pairID
+}
+
+func (wc WaitingPDEContributionState) BeaconHeight() uint64 {
+	return wc.beaconHeight
+}
+
+func (wc *WaitingPDEContributionState) SetBeaconHeight(beaconHeight uint64) {
+	wc.beaconHeight = beaconHeight
 }
 
 func (wc WaitingPDEContributionState) MarshalJSON() ([]byte, error) {
@@ -86,7 +135,7 @@ type WaitingPDEContributionObject struct {
 	dbErr error
 }
 
-func newPDEObject(db *StateDB, hash common.Hash) *WaitingPDEContributionObject {
+func newWaitingPDEContributionObject(db *StateDB, hash common.Hash) *WaitingPDEContributionObject {
 	return &WaitingPDEContributionObject{
 		version:                     defaultVersion,
 		db:                          db,
@@ -96,7 +145,7 @@ func newPDEObject(db *StateDB, hash common.Hash) *WaitingPDEContributionObject {
 		deleted:                     false,
 	}
 }
-func newPDEObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*WaitingPDEContributionObject, error) {
+func newWaitingPDEContributionObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*WaitingPDEContributionObject, error) {
 	var newWaitingPDEContributionState = NewWaitingPDEContributionState()
 	var ok bool
 	var dataBytes []byte
@@ -121,9 +170,11 @@ func newPDEObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*Wai
 	}, nil
 }
 
-func GeneratePDEObjectKey(tokenID common.Hash) common.Hash {
-	prefixHash := GetTokenPrefix()
-	valueHash := common.HashH(tokenID[:])
+func GenerateWaitingPDEContributionObjectKey(beaconHeight uint64) common.Hash {
+	prefixHash := GetWaitingPDEContributionPrefix()
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, beaconHeight)
+	valueHash := common.HashH(buf)
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 
@@ -156,11 +207,11 @@ func (t WaitingPDEContributionObject) GetValue() interface{} {
 }
 
 func (t WaitingPDEContributionObject) GetValueBytes() []byte {
-	tokenState, ok := t.GetValue().(*WaitingPDEContributionState)
+	waitingPDEcontributionState, ok := t.GetValue().(*WaitingPDEContributionState)
 	if !ok {
 		panic("wrong expected value type")
 	}
-	value, err := json.Marshal(tokenState)
+	value, err := json.Marshal(waitingPDEcontributionState)
 	if err != nil {
 		panic("failed to marshal token state")
 	}

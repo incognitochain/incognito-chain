@@ -43,6 +43,12 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newOutputCoinObjectWithValue(db, hash, value)
 	case SNDerivatorObjectType:
 		return newSNDerivatorObjectWithValue(db, hash, value)
+	case WaitingPDEContributionObjectType:
+		return newWaitingPDEContributionObjectWithValue(db, hash, value)
+	case PDEPoolPairObjectType:
+		return newPDEPoolPairObjectWithValue(db, hash, value)
+	case PDEShareObjectType:
+		return newPDEShareObjectWithValue(db, hash, value)
 	default:
 		panic("state object type not exist")
 	}
@@ -70,6 +76,12 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newCommitmentLengthObject(db, hash)
 	case SNDerivatorObjectType:
 		return newSNDerivatorObject(db, hash)
+	case WaitingPDEContributionObjectType:
+		return newWaitingPDEContributionObject(db, hash)
+	case PDEPoolPairObjectType:
+		return newPDEPoolPairObject(db, hash)
+	case PDEShareObjectType:
+		return newPDEShareObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}

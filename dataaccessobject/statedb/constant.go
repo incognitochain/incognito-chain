@@ -20,6 +20,8 @@ const (
 	OutputCoinObjectType
 	TokenObjectType
 	WaitingPDEContributionObjectType
+	PDEPoolPairObjectType
+	PDEShareObjectType
 )
 
 // Prefix length
