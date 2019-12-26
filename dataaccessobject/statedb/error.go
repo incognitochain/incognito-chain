@@ -7,20 +7,21 @@ import (
 )
 
 const (
-	ErrInvalidByteArrayType              = "invalid byte array type"
-	ErrInvalidHashType                   = "invalid hash type"
-	ErrInvalidBigIntType                 = "invalid big int type"
-	ErrInvalidCommitteeStateType         = "invalid committee state type"
-	ErrInvalidPaymentAddressType         = "invalid payment address type"
-	ErrInvalidIncognitoPublicKeyType     = "invalid incognito public key type"
-	ErrInvalidCommitteeRewardStateType   = "invalid reward receiver state type "
-	ErrInvalidRewardRequestStateType     = "invalid reward request state type"
-	ErrInvalidBlackListProducerStateType = "invalid black list producer state type"
-	ErrInvalidSerialNumberStateType      = "invalid serial number state type"
-	ErrInvalidCommitmentStateType        = "invalid commitment state type"
-	ErrInvalidSNDerivatorStateType       = "invalid snderivator state type"
-	ErrInvalidOutputCoinStateType        = "invalid output coin state type"
-	ErrInvalidTokenStateType             = "invalid token state type"
+	ErrInvalidByteArrayType                   = "invalid byte array type"
+	ErrInvalidHashType                        = "invalid hash type"
+	ErrInvalidBigIntType                      = "invalid big int type"
+	ErrInvalidCommitteeStateType              = "invalid committee state type"
+	ErrInvalidPaymentAddressType              = "invalid payment address type"
+	ErrInvalidIncognitoPublicKeyType          = "invalid incognito public key type"
+	ErrInvalidCommitteeRewardStateType        = "invalid reward receiver state type "
+	ErrInvalidRewardRequestStateType          = "invalid reward request state type"
+	ErrInvalidBlackListProducerStateType      = "invalid black list producer state type"
+	ErrInvalidSerialNumberStateType           = "invalid serial number state type"
+	ErrInvalidCommitmentStateType             = "invalid commitment state type"
+	ErrInvalidSNDerivatorStateType            = "invalid snderivator state type"
+	ErrInvalidOutputCoinStateType             = "invalid output coin state type"
+	ErrInvalidTokenStateType                  = "invalid token state type"
+	ErrInvalidWaitingPDEContributionStateType = "invalid waiting pde contribution state type"
 )
 const (
 	InvalidByteArrayTypeError = iota

@@ -19,6 +19,7 @@ const (
 	SNDerivatorObjectType
 	OutputCoinObjectType
 	TokenObjectType
+	WaitingPDEContributionObjectType
 )
 
 // Prefix length
