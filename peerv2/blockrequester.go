@@ -54,8 +54,8 @@ func (c *BlockRequester) keepConnection() {
 			grpc.WithInsecure(),
 			grpc.WithBlock(),
 			grpc.WithKeepaliveParams(keepalive.ClientParameters{
-				Time:    2 * time.Minute,
-				Timeout: 2 * time.Second,
+				Time:    RequesterKeepaliveTime,
+				Timeout: RequesterKeepaliveTimeout,
 			}),
 		); err != nil {
 			Logger.Error("Could not dial to highway grpc server:", err, c.highwayPID)
