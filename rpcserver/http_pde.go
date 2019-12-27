@@ -480,6 +480,9 @@ func (httpServer *HttpServer) handleGetPDEState(params interface{}, closeChan <-
 	}
 	pdeState, err := blockchain.InitCurrentPDEStateFromDB(httpServer.config.BlockChain.GetDatabase(), uint64(beaconHeight))
 	beaconBlock, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+	}
 	type CurrentPDEState struct {
 		WaitingPDEContributions map[string]*lvdb.PDEContribution `json:"WaitingPDEContributions"`
 		PDEPoolPairs            map[string]*lvdb.PDEPoolForPair  `json:"PDEPoolPairs"`
@@ -491,9 +494,6 @@ func (httpServer *HttpServer) handleGetPDEState(params interface{}, closeChan <-
 		PDEPoolPairs:            pdeState.PDEPoolPairs,
 		PDEShares:               pdeState.PDEShares,
 		WaitingPDEContributions: pdeState.WaitingPDEContributions,
-	}
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
 	return result, nil
 }
