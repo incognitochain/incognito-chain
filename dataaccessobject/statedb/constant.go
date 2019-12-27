@@ -23,6 +23,10 @@ const (
 	PDEPoolPairObjectType
 	PDEShareObjectType
 	PDEStatusObjectType
+	BridgeEthTxObjectType
+	BridgeTokenInfoObjectType
+	BridgeStatusObjectType
+	BurningConfirmObjectType
 )
 
 // Prefix length

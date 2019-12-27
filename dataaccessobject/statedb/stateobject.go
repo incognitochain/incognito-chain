@@ -51,6 +51,14 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newPDEShareObjectWithValue(db, hash, value)
 	case PDEStatusObjectType:
 		return newPDEStatusObjectWithValue(db, hash, value)
+	case BridgeEthTxObjectType:
+		return newBridgeEthTxObjectWithValue(db, hash, value)
+	case BridgeTokenInfoObjectType:
+		return newBridgeTokenInfoObjectWithValue(db, hash, value)
+	case BridgeStatusObjectType:
+		return newBridgeStatusObjectWithValue(db, hash, value)
+	case BurningConfirmObjectType:
+		return newBurningConfirmObjectWithValue(db, hash, value)
 	default:
 		panic("state object type not exist")
 	}
@@ -86,6 +94,14 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newPDEShareObject(db, hash)
 	case PDEStatusObjectType:
 		return newPDEStatusObject(db, hash)
+	case BridgeEthTxObjectType:
+		return newBridgeEthTxObject(db, hash)
+	case BridgeTokenInfoObjectType:
+		return newBridgeTokenInfoObject(db, hash)
+	case BridgeStatusObjectType:
+		return newBridgeStatusObject(db, hash)
+	case BurningConfirmObjectType:
+		return newBurningConfirmObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}

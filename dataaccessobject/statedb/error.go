@@ -25,6 +25,10 @@ const (
 	ErrInvalidPDEPoolPairStateType            = "invalid pde pool pair state type"
 	ErrInvalidPDEShareStateType               = "invalid pde shard state type"
 	ErrInvalidPDEStatusStateType              = "invalid pde status state type"
+	ErrInvalidBridgeEthTxStateType            = "invalid bridge eth tx state type"
+	ErrInvalidBridgeTokenInfoStateType        = "invalid bridge token info state type"
+	ErrInvalidBridgeStatusStateType           = "invalid bridge status state type"
+	ErrInvalidBurningConfirmStateType         = "invald burning confirm state type"
 )
 const (
 	InvalidByteArrayTypeError = iota

@@ -8,24 +8,29 @@ import (
 )
 
 var (
-	committeePrefix              = []byte("shard-com-")
-	substitutePrefix             = []byte("shard-sub-")
-	nextCandidatePrefix          = []byte("next-cand-")
-	currentCandidatePrefix       = []byte("cur-cand-")
-	committeeRewardPrefix        = []byte("committee-reward-")
-	rewardRequestPrefix          = []byte("reward-request-")
-	blackListProducerPrefix      = []byte("black-list-")
-	serialNumberPrefix           = []byte("serial-number-")
-	commitmentPrefix             = []byte("com-value-")
-	commitmentIndexPrefix        = []byte("com-index-")
-	commitmentLengthPrefix       = []byte("com-length-")
-	snDerivatorPrefix            = []byte("sn-derivator-")
-	outputCoinPrefix             = []byte("output-coin-")
-	tokenPrefix                  = []byte("token-")
-	waitingPDEContributionPrefix = []byte("wait-pde-con")
-	pdePoolPairPrefix            = []byte("pde-pool-pair")
-	pdeSharePrefix               = []byte("pde-share")
-	pdeStatusPrefix              = []byte("pde-status")
+	committeePrefix                    = []byte("shard-com-")
+	substitutePrefix                   = []byte("shard-sub-")
+	nextCandidatePrefix                = []byte("next-cand-")
+	currentCandidatePrefix             = []byte("cur-cand-")
+	committeeRewardPrefix              = []byte("committee-reward-")
+	rewardRequestPrefix                = []byte("reward-request-")
+	blackListProducerPrefix            = []byte("black-list-")
+	serialNumberPrefix                 = []byte("serial-number-")
+	commitmentPrefix                   = []byte("com-value-")
+	commitmentIndexPrefix              = []byte("com-index-")
+	commitmentLengthPrefix             = []byte("com-length-")
+	snDerivatorPrefix                  = []byte("sn-derivator-")
+	outputCoinPrefix                   = []byte("output-coin-")
+	tokenPrefix                        = []byte("token-")
+	waitingPDEContributionPrefix       = []byte("wait-pde-con-")
+	pdePoolPairPrefix                  = []byte("pde-pool-pair-")
+	pdeSharePrefix                     = []byte("pde-share-")
+	pdeStatusPrefix                    = []byte("pde-status-")
+	bridgeEthTxPrefix                  = []byte("bri-eth-tx-")
+	bridgeCentralizedTokenInfoPrefix   = []byte("bri-cen-token-info-")
+	bridgeDecentralizedTokenInfoPrefix = []byte("bri-de-token-info-")
+	bridgeStatusPrefix                 = []byte("bri-status-")
+	burnPrefix                         = []byte("burn-")
 )
 
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
@@ -119,6 +124,31 @@ func GetPDESharePrefix() []byte {
 
 func GetPDEStatusPrefix() []byte {
 	h := common.HashH(pdeStatusPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetBridgeEthTxPrefix() []byte {
+	h := common.HashH(bridgeEthTxPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetBridgeTokenInfoPrefix(isCentralized bool) []byte {
+	if isCentralized {
+		h := common.HashH(bridgeCentralizedTokenInfoPrefix)
+		return h[:][:prefixHashKeyLength]
+	} else {
+		h := common.HashH(bridgeDecentralizedTokenInfoPrefix)
+		return h[:][:prefixHashKeyLength]
+	}
+}
+
+func GetBridgeStatusPrefix() []byte {
+	h := common.HashH(bridgeStatusPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetBurnPrefix() []byte {
+	h := common.HashH(burnPrefix)
 	return h[:][:prefixHashKeyLength]
 }
 
