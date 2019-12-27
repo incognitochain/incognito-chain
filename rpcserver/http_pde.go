@@ -479,6 +479,9 @@ func (httpServer *HttpServer) handleGetPDEState(params interface{}, closeChan <-
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Beacon height is invalid"))
 	}
 	pdeState, err := blockchain.InitCurrentPDEStateFromDB(httpServer.config.BlockChain.GetDatabase(), uint64(beaconHeight))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+	}
 	beaconBlock, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
