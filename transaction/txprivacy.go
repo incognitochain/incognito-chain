@@ -1106,7 +1106,7 @@ func (tx Tx) IsCoinsBurning(bcr metadata.BlockchainRetriever) bool {
 		senderPKBytes = tx.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().ToBytesS()
 	}
 	//get burning address
-	burningAddress := bcr.GetBurningAddress()
+	burningAddress := bcr.GetBurningAddress(0)
 	keyWalletBurningAccount, err := wallet.Base58CheckDeserialize(burningAddress)
 	if err != nil {
 		return false

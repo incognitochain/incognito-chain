@@ -70,7 +70,7 @@ type BlockchainRetriever interface {
 	GetCentralizedWebsitePaymentAddress() string
 	GetAllCoinID() ([]common.Hash, error)
 	GetBeaconHeightBreakPointBurnAddr() uint64
-	GetBurningAddress() string
+	GetBurningAddress(blockHeight uint64) string
 }
 
 // Interface for all type of transaction
