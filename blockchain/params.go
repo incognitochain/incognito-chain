@@ -107,7 +107,7 @@ func init() {
 		},
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test.json",
-		BeaconHeightBreakPointBurnAddr: 1000,
+		BeaconHeightBreakPointBurnAddr: 243500,
 	}
 	// END TESTNET
 	// FOR MAINNET
