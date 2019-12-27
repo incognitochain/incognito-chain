@@ -106,7 +106,12 @@ func (wsServer *WsServer) handleSubcribeCrossCustomTokenPrivacyByPrivateKey(para
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
-	privateKey := arrayParams[0].(string)
+	privateKey, ok := arrayParams[0].(string)
+	if !ok {
+		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Params is invalid"))
+		cResult <- RpcSubResult{Error: err}
+		return
+	}
 	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
 		err := rpcservice.NewRPCError(rpcservice.SubcribeError, err)

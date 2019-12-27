@@ -1207,7 +1207,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 			}
 			requestMeta := txRequestTable[requester].GetMetadata().(*metadata.WithDrawRewardRequest)
 			if res, err := coinID.Cmp(&requestMeta.TokenID); err == nil && res != 0 {
-				return errors.New("Invalid token ID")
+				return errors.Errorf("Invalid token ID when check metadata of tx response. Got %v, want %v", coinID, requestMeta.TokenID)
 			}
 			amount, err := rawdb.GetCommitteeReward(blockchain.config.DataBase, requesterRes, requestMeta.TokenID)
 			if (amount == 0) || (err != nil) {
@@ -1283,8 +1283,7 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 			// }
 
 			if res, err := coinID.Cmp(bridgeTokenIDs.TokenID); err == nil && res == 0 {
-				txType = transaction.TokenPrivacyType
-				fmt.Printf("[ndh] eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee %+v \n", bridgeTokenIDs.TokenID)
+				txType = transaction.CustomTokenPrivacyType
 				break
 			}
 		}
@@ -1296,12 +1295,12 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 		}
 		if mapPrivacyCustomToken != nil {
 			if _, ok := mapPrivacyCustomToken[coinID]; ok {
-				txType = transaction.TokenPrivacyType
+				txType = transaction.CustomTokenPrivacyType
 			}
 		}
 	}
 	if txType == -1 {
-		return nil, errors.New("Invalid token ID")
+		return nil, errors.Errorf("Invalid token ID when InitTxSalaryByCoinID. Got %v", coinID)
 	}
 	buildCoinBaseParams := transaction.NewBuildCoinBaseTxByCoinIDParams(payToAddress,
 		amount,

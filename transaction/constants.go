@@ -13,7 +13,7 @@ const (
 
 const (
 	NormalCoinType = iota
-	TokenPrivacyType
+	CustomTokenPrivacyType
 )
 
 const MaxSizeInfo = 512

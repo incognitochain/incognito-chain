@@ -284,7 +284,7 @@ func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Tr
 		tx := &Tx{}
 		err := tx.InitTxSalary(params.amount, params.payToAddress, params.payByPrivateKey, params.db, params.meta)
 		return tx, err
-	case TokenPrivacyType:
+	case CustomTokenPrivacyType:
 		var propertyID [common.HashSize]byte
 		copy(propertyID[:], params.coinID[:])
 		receiver := &privacy.PaymentInfo{
