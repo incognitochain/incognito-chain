@@ -89,57 +89,6 @@ func (blockchain *BlockChain) getRewardAmount(blkHeight uint64) uint64 {
 	return reward
 }
 
-func isTestnetWrongToken(tokenID common.Hash) bool {
-	testnetWrongToken := []string{
-		"045b42b8a4f0e500f66d54aa327f9bd43fcb4fe3e3f2a31c519b5a7705e1d9bf",
-		"058598884a6301ca4b7a36698e1d2bb40703ff41794c102a31178863310edc68",
-		"0e349240130047bc844488f30855f0439148b4e6b0c5cd27cc9392de61833e4c",
-		"0e990e48cc02a2fecffe8dd6b1bc12cd3d8a5c2ae493dc4b6bfb4331e08ad3fc",
-		"15ffa7bc0bf626de2772977065421903de7d5e5fedddf279d791915f02c46426",
-		"18b365667ec9e7f9bb7974c62f8370e20bba7e21f79adc7e5f5396b08f85f0c2",
-		"18e820c5a799ce4fb369b6243bb6cd1f14a6f08279041cc6d0bfc18687602ad1",
-		"3c966cbd4498d4ed5419a0613a0404e0ae326558afd3035a49c0ae37d9895538",
-		"3cfb98d364f3bf715124c94e2f5856c5406b22fbe7ba7e1b4200e9f395bbb185",
-		"3ea38346d39e7e1c73fb37336b6bede668639400d1e62ec1abad6fb64c438e37",
-		"41b9c3dccedc241e52654dc674bd6879391935d86175a73b75256d8dbec10a9a",
-		"4cf0a2fe3d12f8e25cd824a4e9e0bf83bbb3e18cb662920e24b14fbab8cf59b8",
-		"4e0237fc0e1d8638aad45e8adcc2f1a24be24d765fdfa3e657394c6f9305584a",
-		"683d8673f8e3b5a90ae89b269e6b286cd6729b5086563093e2525a70bbe5f1e7",
-		"68aa8e11a4751ec9318042b7f7864b547f39d9e1f4cecb5769db94d082f84676",
-		"69c0892139b83a29509cdafe9ec6a064a8f11fcb5045f543a1bfa467612da4a7",
-		"6dee6fa8d29dc2d1c286b86a9ba99ff70a183ddf7a7339ed7dd9f471b8ce91a6",
-		"71462e0981f383858ca72f759bcc07fdc48d21c9c1a4c4e415458904a1cfd99a",
-		"91ec8decb876fbfd75fa5f5fbccb8e6720b5ae764160ebd8cc2d6010c7e23a4e",
-		"996a0076f9ea2c74f0dc8c46a9e619a58f8709cf65ffef63bb3a85b711386d76",
-		"a658b737fc82cf2d8c1e038f1a6681cb2ac5b8dc53675b4d8eee651f686eb093",
-		"af0e4b1fbe7dd3c252df6b00279dfed02aa8537eaa62abaab7b3a442ce1bef38",
-		"af7ecb9bfb261ce33b85f457599ff9cb2b86540e0c966fade27dbed68672466d",
-		"cf0d4e267de468fe9f74f8c575fcce234d4f0e00b3f55df25e78379cfe21dcd3",
-		"d8c5cc41572728355d725ec7c3078519e7a7937e7f9a81cad3fff3b221556abf",
-		"e2d8849b37924167c7fb828e364c5761e2a81099b457d64df43671276f23a23e",
-		"e49f4c4c33dfb78eca41d3f423f5eb39c9a9130fcb00a7c40d255badd7b40784",
-		"f08312d24a12225d02b50031451818ed4c100b71977d7d8a10c2816a587f1a83",
-	}
-	for _, tokenString := range testnetWrongToken {
-		if tokenID.String() == tokenString {
-			return true
-		}
-	}
-	return false
-}
-
-func removeTestnetWrongToken(sliceToken []common.Hash) []common.Hash {
-	i := 0
-	for _, tokenID := range sliceToken {
-		if isTestnetWrongToken(tokenID) {
-			continue
-		}
-		sliceToken[i] = tokenID
-		i++
-	}
-	return sliceToken[:i]
-}
-
 func (blockchain *BlockChain) BuildRewardInstructionByEpoch(blkHeight, epoch uint64) ([][]string, error) {
 	var resInst [][]string
 	var instRewardForBeacons [][]string
@@ -147,11 +96,6 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(blkHeight, epoch uin
 	var instRewardForShards [][]string
 	numberOfActiveShards := blockchain.BestState.Beacon.ActiveShards
 	allCoinID, err := blockchain.config.DataBase.GetAllTokenIDForReward(epoch)
-
-	if blockchain.config.ChainParams.Net == Testnet {
-		// istestnet
-		allCoinID = removeTestnetWrongToken(allCoinID)
-	}
 
 	if err != nil {
 		return nil, err
