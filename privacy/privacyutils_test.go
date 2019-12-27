@@ -30,7 +30,6 @@ func TestUtilsRandBytes(t *testing.T) {
 	}
 }
 
-
 func TestUtilsConvertIntToBinary(t *testing.T) {
 	data := []struct {
 		number int
@@ -100,7 +99,7 @@ func TestUtilsIntToByteArr(t *testing.T) {
 }
 
 func TestInterface(t *testing.T) {
-	a:= make(map[string]interface{})
+	a := make(map[string]interface{})
 	a["x"] = "10"
 
 	value, ok := a["y"].(string)
@@ -123,8 +122,7 @@ func TestInterface(t *testing.T) {
 	fmt.Printf("Value2: %v\n", value3)
 }
 
-
-func TestFee(t *testing.T){
+func TestFee(t *testing.T) {
 	inValue := uint64(50000)
 	outValue1 := uint64(23000)
 	fee := -1
@@ -134,12 +132,12 @@ func TestFee(t *testing.T){
 	fmt.Printf("Fee uint64: %v\n", uint64(fee))
 	fmt.Printf("outValue2: %v\n", outValue2)
 
-	comInputValueSum := new (Point).ScalarMult(PedCom.G[PedersenValueIndex], new(Scalar).FromUint64(uint64(inValue)))
-	comOutputValue1 := new (Point).ScalarMult(PedCom.G[PedersenValueIndex], new(Scalar).FromUint64(uint64(outValue1)))
-	comOutputValue2 := new (Point).ScalarMult(PedCom.G[PedersenValueIndex], new(Scalar).FromUint64(uint64(outValue2)))
+	comInputValueSum := new(Point).ScalarMult(PedCom.G[PedersenValueIndex], new(Scalar).FromUint64(uint64(inValue)))
+	comOutputValue1 := new(Point).ScalarMult(PedCom.G[PedersenValueIndex], new(Scalar).FromUint64(uint64(outValue1)))
+	comOutputValue2 := new(Point).ScalarMult(PedCom.G[PedersenValueIndex], new(Scalar).FromUint64(uint64(outValue2)))
 	comOutputValueSum := new(Point).Add(comOutputValue1, comOutputValue2)
 
-	comFee := new (Point)
+	comFee := new(Point)
 	if fee2 > 0 {
 		fmt.Printf("fee2 > 0\n")
 		comFee = comFee.ScalarMult(PedCom.G[PedersenValueIndex], new(Scalar).FromUint64(uint64(fee2)))
@@ -149,7 +147,7 @@ func TestFee(t *testing.T){
 
 	if IsPointEqual(tmp1, comInputValueSum) {
 		fmt.Printf("Equal\n")
-	} else{
+	} else {
 		fmt.Printf(" Not Equal\n")
 	}
 
@@ -161,9 +159,31 @@ func TestFee(t *testing.T){
 	//fmt.Printf("aUint64: %v\n", aUint64)
 	//fmt.Printf("bUint64: %v\n", bUint64)
 
-
 	//comOutputValueSum.Add(comOutputValueSum, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenValueIndex], new(privacy.Scalar).FromUint64(uint64(fee))))
 }
 
+func TestEncryptByXorOperator(t *testing.T) {
+	v := new(big.Int).SetUint64(100)
 
+	randomness := RandomScalar()
+	randomnessBytes := randomness.ToBytesS()
 
+	// encrypt
+	ciphertext := v.Uint64()
+
+	for i := 0; i < 4; i++ {
+		randSlice := randomnessBytes[i*8 : i*8+8]
+		randSliceUint64 := new(big.Int).SetBytes(randSlice).Uint64()
+		ciphertext = ciphertext ^ randSliceUint64
+	}
+	fmt.Printf("ciphertext %v\n", ciphertext)
+
+	// decrypt
+	plaintext := ciphertext
+	for i := 0; i < 4; i++ {
+		randSlice := randomnessBytes[i*8 : i*8+8]
+		randSliceUint64 := new(big.Int).SetBytes(randSlice).Uint64()
+		plaintext = plaintext ^ randSliceUint64
+	}
+	fmt.Printf("plaintext %v\n", plaintext)
+}
