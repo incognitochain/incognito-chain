@@ -1,7 +1,10 @@
 package statedb
 
 import (
+	"encoding/binary"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
@@ -61,11 +64,7 @@ func GetPDEPoolPair(stateDB *StateDB, beaconHeight uint64) (map[string]*rawdb.PD
 	return pdePoolPairs, nil
 }
 
-func StorePDEShares(
-	stateDB *StateDB,
-	beaconHeight uint64,
-	pdeShares map[string]uint64,
-) error {
+func StorePDEShares(stateDB *StateDB, beaconHeight uint64, pdeShares map[string]uint64) error {
 	for tempKey, shareAmount := range pdeShares {
 		strs := strings.Split(tempKey, "-")
 		token1ID := strs[2]
@@ -77,6 +76,53 @@ func StorePDEShares(
 		if err != nil {
 			return NewStatedbError(StorePDEShareError, err)
 		}
+	}
+	return nil
+}
+
+func GetPDEShares(stateDB *StateDB, beaconHeight uint64) (map[string]uint64, error) {
+	pdeShares := make(map[string]uint64)
+	pdeShareStates := stateDB.GetAllPDEShareState(beaconHeight)
+	for _, sState := range pdeShareStates {
+		key := string(PDESharePrefix()) + fmt.Sprintf("%d-", beaconHeight) + sState.Token1ID() + "-" + sState.Token2ID() + "-" + sState.ContributorAddress()
+		value := sState.Amount()
+		pdeShares[key] = value
+	}
+	return pdeShares, nil
+}
+
+func InitCurrentPDEStateFromDB(stateDB *StateDB, beaconHeight uint64) (*CurrentPDEState, error) {
+	waitingPDEContributions, err := GetWaitingPDEContributions(stateDB, beaconHeight)
+	if err != nil {
+		return nil, err
+	}
+	pdePoolPairs, err := GetPDEPoolPair(stateDB, beaconHeight)
+	if err != nil {
+		return nil, err
+	}
+	pdeShares, err := GetPDEShares(stateDB, beaconHeight)
+	if err != nil {
+		return nil, err
+	}
+	return &CurrentPDEState{
+		WaitingPDEContributions: waitingPDEContributions,
+		PDEPoolPairs:            pdePoolPairs,
+		PDEShares:               pdeShares,
+	}, nil
+}
+
+func StorePDEStateToDB(stateDB *StateDB, beaconHeight uint64, currentPDEState *CurrentPDEState) error {
+	err := StoreWaitingPDEContributions(stateDB, beaconHeight, currentPDEState.WaitingPDEContributions)
+	if err != nil {
+		return err
+	}
+	err = StorePDEPoolPairs(stateDB, beaconHeight, currentPDEState.PDEPoolPairs)
+	if err != nil {
+		return err
+	}
+	err = StorePDEShares(stateDB, beaconHeight, currentPDEState.PDEShares)
+	if err != nil {
+		return err
 	}
 	return nil
 }

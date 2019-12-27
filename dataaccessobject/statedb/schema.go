@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"strconv"
 )
 
@@ -36,6 +37,12 @@ var (
 	bridgeStatusPrefix                 = []byte("bri-status-")
 	burnPrefix                         = []byte("burn-")
 )
+
+type CurrentPDEState struct {
+	WaitingPDEContributions map[string]*rawdb.PDEContribution
+	PDEPoolPairs            map[string]*rawdb.PDEPoolForPair
+	PDEShares               map[string]uint64
+}
 
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
 	switch role {
