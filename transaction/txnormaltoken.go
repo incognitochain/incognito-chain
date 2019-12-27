@@ -721,7 +721,7 @@ func (txCustomToken TxNormalToken) IsCoinsBurning(bcr metadata.BlockchainRetriev
 	senderPk := vins[0].PaymentAddress.Pk
 
 	//get burning address
-	burningAddress := bcr.GetBurningAddress()
+	burningAddress := bcr.GetBurningAddress(0)
 	keyWalletBurningAccount, err := wallet.Base58CheckDeserialize(burningAddress)
 	if err != nil{
 		return false

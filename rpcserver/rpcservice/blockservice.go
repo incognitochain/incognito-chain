@@ -887,6 +887,6 @@ func (blockService BlockService) GetBlockHeader(getBy string, blockParam string,
 	}
 }
 
-func (blockService BlockService) GetBurningAddress() (string) {
-	return blockService.BlockChain.GetBurningAddress()
+func (blockService BlockService) GetBurningAddress(beaconHeight uint64) (string) {
+	return blockService.BlockChain.GetBurningAddress(beaconHeight)
 }

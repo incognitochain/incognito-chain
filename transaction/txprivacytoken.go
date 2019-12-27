@@ -593,7 +593,7 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) IsCoinsBurning(bcr metadata.Blo
 	}
 
 	//get burning address
-	burningAddress := bcr.GetBurningAddress()
+	burningAddress := bcr.GetBurningAddress(0)
 	keyWalletBurningAccount, err := wallet.Base58CheckDeserialize(burningAddress)
 	if err != nil {
 		Logger.log.Errorf("Can not deserialize burn address: %v\n", burningAddress)

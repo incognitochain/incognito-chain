@@ -181,9 +181,11 @@ func (blockchain *BlockChain) GetBeaconHeightBreakPointBurnAddr() uint64 {
 	return blockchain.config.ChainParams.BeaconHeightBreakPointBurnAddr
 }
 
-func (blockchain *BlockChain) GetBurningAddress() string {
+func (blockchain *BlockChain) GetBurningAddress(beaconHeight uint64) string {
 	breakPoint := blockchain.GetBeaconHeightBreakPointBurnAddr()
-	beaconHeight := blockchain.GetBeaconHeight()
+	if beaconHeight == 0 {
+		beaconHeight = blockchain.GetBeaconHeight()
+	}
 	if beaconHeight <= breakPoint {
 		return common.BurningAddress
 	}
