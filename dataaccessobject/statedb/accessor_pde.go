@@ -1,11 +1,13 @@
 package statedb
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 )
 
+// tempkey: WaitingPDEContributionPrefix - beacon height - pairid
 func StoreWaitingPDEContributions(stateDB *StateDB, beaconHeight uint64, waitingPDEContributions map[string]*rawdb.PDEContribution) error {
 	for tempKey, contribution := range waitingPDEContributions {
 		strs := strings.Split(tempKey, "-")
@@ -20,6 +22,18 @@ func StoreWaitingPDEContributions(stateDB *StateDB, beaconHeight uint64, waiting
 	return nil
 }
 
+func GetWaitingPDEContributions(stateDB *StateDB, beaconHeight uint64) (map[string]*rawdb.PDEContribution, error) {
+	waitingPDEContributions := make(map[string]*rawdb.PDEContribution)
+	waitingPDEContributionStates := stateDB.GetAllWaitingPDEContributionState(beaconHeight)
+	for _, wcState := range waitingPDEContributionStates {
+		key := string(WaitingPDEContributionPrefix()) + fmt.Sprintf("%d-", beaconHeight) + wcState.PairID()
+		value := rawdb.NewPDEContribution(wcState.ContributorAddress(), wcState.TokenID(), wcState.Amount(), wcState.TxReqID())
+		waitingPDEContributions[key] = value
+	}
+	return waitingPDEContributions, nil
+}
+
+// tempkey: PDEPoolPrefix - beacon height - token1ID - token2ID
 func StorePDEPoolPairs(
 	stateDB *StateDB,
 	beaconHeight uint64,
@@ -34,6 +48,17 @@ func StorePDEPoolPairs(
 		}
 	}
 	return nil
+}
+
+func GetPDEPoolPair(stateDB *StateDB, beaconHeight uint64) (map[string]*rawdb.PDEPoolForPair, error) {
+	pdePoolPairs := make(map[string]*rawdb.PDEPoolForPair)
+	pdePoolPairStates := stateDB.GetAllPDEPoolPairState(beaconHeight)
+	for _, ppState := range pdePoolPairStates {
+		key := string(PDEPoolPrefix()) + fmt.Sprintf("%d-", beaconHeight) + ppState.Token1ID() + "-" + ppState.Token2ID()
+		value := rawdb.NewPDEPoolForPair(ppState.Token1ID(), ppState.Token1PoolValue(), ppState.Token2ID(), ppState.Token2PoolValue())
+		pdePoolPairs[key] = value
+	}
+	return pdePoolPairs, nil
 }
 
 func StorePDEShares(

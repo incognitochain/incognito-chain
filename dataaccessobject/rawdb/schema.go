@@ -75,6 +75,10 @@ type BridgeTokenInfo struct {
 	IsCentralized   bool         `json:"isCentralized"`
 }
 
+func NewBridgeTokenInfo(tokenID *common.Hash, amount uint64, externalTokenID []byte, network string, isCentralized bool) *BridgeTokenInfo {
+	return &BridgeTokenInfo{TokenID: tokenID, Amount: amount, ExternalTokenID: externalTokenID, Network: network, IsCentralized: isCentralized}
+}
+
 type PDEContribution struct {
 	ContributorAddressStr string
 	TokenIDStr            string
@@ -82,11 +86,19 @@ type PDEContribution struct {
 	TxReqID               common.Hash
 }
 
+func NewPDEContribution(contributorAddressStr string, tokenIDStr string, amount uint64, txReqID common.Hash) *PDEContribution {
+	return &PDEContribution{ContributorAddressStr: contributorAddressStr, TokenIDStr: tokenIDStr, Amount: amount, TxReqID: txReqID}
+}
+
 type PDEPoolForPair struct {
 	Token1IDStr     string
 	Token1PoolValue uint64
 	Token2IDStr     string
 	Token2PoolValue uint64
+}
+
+func NewPDEPoolForPair(token1IDStr string, token1PoolValue uint64, token2IDStr string, token2PoolValue uint64) *PDEPoolForPair {
+	return &PDEPoolForPair{Token1IDStr: token1IDStr, Token1PoolValue: token1PoolValue, Token2IDStr: token2IDStr, Token2PoolValue: token2PoolValue}
 }
 
 func prefixWithHashKey(keyType string, keyHash common.Hash) []byte {

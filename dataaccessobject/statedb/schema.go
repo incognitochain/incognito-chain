@@ -22,10 +22,14 @@ var (
 	snDerivatorPrefix                  = []byte("sn-derivator-")
 	outputCoinPrefix                   = []byte("output-coin-")
 	tokenPrefix                        = []byte("token-")
-	waitingPDEContributionPrefix       = []byte("wait-pde-con-")
-	pdePoolPairPrefix                  = []byte("pde-pool-pair-")
-	pdeSharePrefix                     = []byte("pde-share-")
-	pdeStatusPrefix                    = []byte("pde-status-")
+	waitingPDEContributionPrefix       = []byte("waitingpdecontribution-")
+	pdePoolPrefix                      = []byte("pdepool-")
+	pdeSharePrefix                     = []byte("pdeshare-")
+	pdeTradeFeePrefix                  = []byte("pdetradefee-")
+	pdeContributionStatusPrefix        = []byte("pdecontributionstatus-")
+	pdeTradeStatusPrefix               = []byte("pdetradestatus-")
+	pdeWithdrawalStatusPrefix          = []byte("pdewithdrawalstatus-")
+	pdeStatusPrefix                    = []byte("pdestatus-")
 	bridgeEthTxPrefix                  = []byte("bri-eth-tx-")
 	bridgeCentralizedTokenInfoPrefix   = []byte("bri-cen-token-info-")
 	bridgeDecentralizedTokenInfoPrefix = []byte("bri-de-token-info-")
@@ -115,7 +119,7 @@ func GetWaitingPDEContributionPrefix(beaconHeight uint64) []byte {
 
 func GetPDEPoolPairPrefix(beaconHeight uint64) []byte {
 	buf := common.Uint64ToBytes(beaconHeight)
-	h := common.HashH(append(pdePoolPairPrefix, buf...))
+	h := common.HashH(append(pdePoolPrefix, buf...))
 	return h[:][:prefixHashKeyLength]
 }
 
@@ -153,6 +157,27 @@ func GetBridgeStatusPrefix() []byte {
 func GetBurnPrefix() []byte {
 	h := common.HashH(burnPrefix)
 	return h[:][:prefixHashKeyLength]
+}
+func WaitingPDEContributionPrefix() []byte {
+	return waitingPDEContributionPrefix
+}
+func PDEPoolPrefix() []byte {
+	return pdePoolPrefix
+}
+func PDESharePrefix() []byte {
+	return pdeSharePrefix
+}
+func PDETradeFeePrefix() []byte {
+	return pdeTradeFeePrefix
+}
+func PDEContributionStatusPrefix() []byte {
+	return pdeContributionStatusPrefix
+}
+func PDETradeStatusPrefix() []byte {
+	return pdeTradeStatusPrefix
+}
+func PDEWithdrawalStatusPrefix() []byte {
+	return pdeWithdrawalStatusPrefix
 }
 
 var _ = func() (_ struct{}) {
