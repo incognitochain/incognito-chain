@@ -107,18 +107,21 @@ func GetTokenPrefix() []byte {
 	return h[:][:prefixHashKeyLength]
 }
 
-func GetWaitingPDEContributionPrefix() []byte {
-	h := common.HashH(waitingPDEContributionPrefix)
+func GetWaitingPDEContributionPrefix(beaconHeight uint64) []byte {
+	buf := common.Uint64ToBytes(beaconHeight)
+	h := common.HashH(append(waitingPDEContributionPrefix, buf...))
 	return h[:][:prefixHashKeyLength]
 }
 
-func GetPDEPoolPairPrefix() []byte {
-	h := common.HashH(pdePoolPairPrefix)
+func GetPDEPoolPairPrefix(beaconHeight uint64) []byte {
+	buf := common.Uint64ToBytes(beaconHeight)
+	h := common.HashH(append(pdePoolPairPrefix, buf...))
 	return h[:][:prefixHashKeyLength]
 }
 
-func GetPDESharePrefix() []byte {
-	h := common.HashH(pdeSharePrefix)
+func GetPDESharePrefix(beaconHeight uint64) []byte {
+	buf := common.Uint64ToBytes(beaconHeight)
+	h := common.HashH(append(pdeSharePrefix, buf...))
 	return h[:][:prefixHashKeyLength]
 }
 

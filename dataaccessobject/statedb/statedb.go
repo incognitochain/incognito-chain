@@ -943,9 +943,9 @@ func (stateDB *StateDB) GetAllToken() []common.Hash {
 }
 
 // ================================= PDE OBJECT =======================================
-func (stateDB *StateDB) GetAllWaitingPDEContributionState() []*WaitingPDEContributionState {
+func (stateDB *StateDB) GetAllWaitingPDEContributionState(beaconHeight uint64) []*WaitingPDEContributionState {
 	waitingPDEContributionStates := []*WaitingPDEContributionState{}
-	temp := stateDB.trie.NodeIterator(GetWaitingPDEContributionPrefix())
+	temp := stateDB.trie.NodeIterator(GetWaitingPDEContributionPrefix(beaconHeight))
 	it := trie.NewIterator(temp)
 	for it.Next() {
 		value := it.Value
@@ -961,9 +961,9 @@ func (stateDB *StateDB) GetAllWaitingPDEContributionState() []*WaitingPDEContrib
 	return waitingPDEContributionStates
 }
 
-func (stateDB *StateDB) GetAllPDEPoolPairState() []*PDEPoolPairState {
+func (stateDB *StateDB) GetAllPDEPoolPairState(beaconHeight uint64) []*PDEPoolPairState {
 	pdePoolPairStates := []*PDEPoolPairState{}
-	temp := stateDB.trie.NodeIterator(GetPDEPoolPairPrefix())
+	temp := stateDB.trie.NodeIterator(GetPDEPoolPairPrefix(beaconHeight))
 	it := trie.NewIterator(temp)
 	for it.Next() {
 		value := it.Value
@@ -979,9 +979,9 @@ func (stateDB *StateDB) GetAllPDEPoolPairState() []*PDEPoolPairState {
 	return pdePoolPairStates
 }
 
-func (stateDB *StateDB) GetAllPDEShareState() []*PDEShareState {
+func (stateDB *StateDB) GetAllPDEShareState(beaconHeight uint64) []*PDEShareState {
 	pdeShareStates := []*PDEShareState{}
-	temp := stateDB.trie.NodeIterator(GetPDESharePrefix())
+	temp := stateDB.trie.NodeIterator(GetPDESharePrefix(beaconHeight))
 	it := trie.NewIterator(temp)
 	for it.Next() {
 		value := it.Value

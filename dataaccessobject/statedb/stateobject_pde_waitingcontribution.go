@@ -1,7 +1,6 @@
 package statedb
 
 import (
-	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
@@ -14,14 +13,14 @@ type WaitingPDEContributionState struct {
 	contributorAddress string
 	tokenID            string
 	amount             uint64
-	txReqID            string
+	txReqID            common.Hash
 }
 
-func (wc WaitingPDEContributionState) TxReqID() string {
+func (wc WaitingPDEContributionState) TxReqID() common.Hash {
 	return wc.txReqID
 }
 
-func (wc *WaitingPDEContributionState) SetTxReqID(txReqID string) {
+func (wc *WaitingPDEContributionState) SetTxReqID(txReqID common.Hash) {
 	wc.txReqID = txReqID
 }
 
@@ -72,7 +71,7 @@ func (wc WaitingPDEContributionState) MarshalJSON() ([]byte, error) {
 		ContributorAddress string
 		TokenID            string
 		Amount             uint64
-		TxReqID            string
+		TxReqID            common.Hash
 	}{
 		BeaconHeight:       wc.beaconHeight,
 		PairID:             wc.pairID,
@@ -94,7 +93,7 @@ func (wc *WaitingPDEContributionState) UnmarshalJSON(data []byte) error {
 		ContributorAddress string
 		TokenID            string
 		Amount             uint64
-		TxReqID            string
+		TxReqID            common.Hash
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -112,7 +111,7 @@ func (wc *WaitingPDEContributionState) UnmarshalJSON(data []byte) error {
 func NewWaitingPDEContributionState() *WaitingPDEContributionState {
 	return &WaitingPDEContributionState{}
 }
-func NewWaitingPDEContributionStateWithValue(beaconHeight uint64, pairID string, contributorAddress string, tokenID string, amount uint64, txReqID string) *WaitingPDEContributionState {
+func NewWaitingPDEContributionStateWithValue(beaconHeight uint64, pairID string, contributorAddress string, tokenID string, amount uint64, txReqID common.Hash) *WaitingPDEContributionState {
 	return &WaitingPDEContributionState{beaconHeight: beaconHeight, pairID: pairID, contributorAddress: contributorAddress, tokenID: tokenID, amount: amount, txReqID: txReqID}
 }
 
@@ -170,11 +169,9 @@ func newWaitingPDEContributionObjectWithValue(db *StateDB, key common.Hash, data
 	}, nil
 }
 
-func GenerateWaitingPDEContributionObjectKey(beaconHeight uint64) common.Hash {
-	prefixHash := GetWaitingPDEContributionPrefix()
-	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, beaconHeight)
-	valueHash := common.HashH(buf)
+func GenerateWaitingPDEContributionObjectKey(beaconHeight uint64, pairID string) common.Hash {
+	prefixHash := GetWaitingPDEContributionPrefix(beaconHeight)
+	valueHash := common.HashH([]byte(pairID))
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 

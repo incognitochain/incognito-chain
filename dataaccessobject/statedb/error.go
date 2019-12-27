@@ -74,6 +74,9 @@ const (
 	ListCommitteeRewardError
 	RemoveCommitteeRewardError
 	StoreBlackListProducersError
+	StoreWaitingPDEContributionError
+	StorePDEPoolPairError
+	StorePDEShareError
 )
 
 var ErrCodeMessage = map[int]struct {
