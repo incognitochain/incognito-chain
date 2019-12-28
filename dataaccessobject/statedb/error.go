@@ -62,6 +62,7 @@ const (
 	StorePrivacyTokenError
 	GetPrivacyTokenError
 	GetPrivacyTokenTxsError
+
 	StoreBeaconCommitteeError
 	GetBeaconCommitteeError
 	StoreShardCommitteeError
@@ -75,13 +76,26 @@ const (
 	GetCommitteeRewardError
 	ListCommitteeRewardError
 	RemoveCommitteeRewardError
+
 	StoreBlackListProducersError
+
 	StoreWaitingPDEContributionError
 	StorePDEPoolPairError
 	StorePDEShareError
 	GetPDEPoolForPairError
 	TrackPDEStatusError
 	GetPDEStatusError
+
+	BridgeInsertETHTxHashIssuedError
+	IsETHTxHashIssuedError
+	IsBridgeTokenExistedByTypeError
+	CanProcessCIncTokenError
+	PrivacyTokenIDExistedError
+	CanProcessTokenPairError
+	UpdateBridgeTokenInfoError
+	GetAllBridgeTokensError
+	TrackBridgeReqWithStatusError
+	GetBridgeReqWithStatusError
 )
 
 var ErrCodeMessage = map[int]struct {

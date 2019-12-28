@@ -1036,3 +1036,55 @@ func (stateDB *StateDB) GetPDEStatusByKey(key common.Hash) (*PDEStatusState, boo
 	}
 	return NewPDEStatusState(), false, nil
 }
+
+// ================================= Bridge OBJECT =======================================
+func (stateDB *StateDB) GetBridgeEthTxState(key common.Hash) (*BridgeEthTxState, bool, error) {
+	ethTxState, err := stateDB.getStateObject(BridgeEthTxObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if ethTxState != nil {
+		return ethTxState.GetValue().(*BridgeEthTxState), true, nil
+	}
+	return NewBridgeEthTxState(), false, nil
+}
+
+func (stateDB *StateDB) GetBridgeTokenInfoState(key common.Hash) (*BridgeTokenInfoState, bool, error) {
+	tokenInfoState, err := stateDB.getStateObject(BridgeTokenInfoObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if tokenInfoState != nil {
+		return tokenInfoState.GetValue().(*BridgeTokenInfoState), true, nil
+	}
+	return NewBridgeTokenInfoState(), false, nil
+}
+
+func (stateDB *StateDB) GetAllBridgeTokenInfoState(isCentralized bool) []*BridgeTokenInfoState {
+	bridgeTokenInfoStates := []*BridgeTokenInfoState{}
+	temp := stateDB.trie.NodeIterator(GetBridgeTokenInfoPrefix(isCentralized))
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		s := NewBridgeTokenInfoState()
+		err := json.Unmarshal(newValue, s)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		bridgeTokenInfoStates = append(bridgeTokenInfoStates, s)
+	}
+	return bridgeTokenInfoStates
+}
+
+func (stateDB *StateDB) GetBridgeStatusState(key common.Hash) (*BridgeStatusState, bool, error) {
+	statusState, err := stateDB.getStateObject(BridgeStatusObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if statusState != nil {
+		return statusState.GetValue().(*BridgeStatusState), true, nil
+	}
+	return NewBridgeStatusState(), false, nil
+}

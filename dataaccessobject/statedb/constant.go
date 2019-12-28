@@ -53,3 +53,9 @@ const (
 	TradeStatus
 	WithdrawStatus
 )
+
+// bridge
+const (
+	BridgeMinorOperator = "-"
+	BridgePlusOperator  = "-"
+)

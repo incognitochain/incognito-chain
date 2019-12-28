@@ -59,3 +59,15 @@ func GetPrivacyTokenTxs(stateDB *StateDB, tokenID common.Hash) ([]common.Hash, e
 	}
 	return txs, nil
 }
+
+func PrivacyTokenIDExisted(stateDB *StateDB, tokenID common.Hash) bool {
+	key := GenerateTokenObjectKey(tokenID)
+	tokenState, has, err := stateDB.GetTokenState(key)
+	if err != nil {
+		return false
+	}
+	if !tokenState.TokenID().IsEqual(&tokenID) {
+		panic("same key wrong value")
+	}
+	return has
+}
