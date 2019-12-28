@@ -13,15 +13,13 @@ const (
 	GetBeaconBlockByHashError
 	GetBeaconBlockByIndexError
 	DeleteBeaconBlockError
-
 	// Shard
-	StoreShardBlockError = iota
+	StoreShardBlockError
 	HasShardBlockError
 	GetShardBlockByHashError
 	GetShardBlockByIndexError
 	DeleteShardBlockError
 	StoreCrossShardNextHeightError
-	HasCrossShardNextHeightError
 	FetchCrossShardNextHeightError
 	// tx
 	StoreTransactionIndexError
@@ -33,7 +31,25 @@ const (
 var ErrCodeMessage = map[int]struct {
 	Code    int
 	message string
-}{}
+}{
+	HasBeaconBlockError:        {-1000, "Has Beacon Block Error"},
+	GetBeaconBlockByHashError:  {-1001, "Get Beacon Block By Hash Error"},
+	GetBeaconBlockByIndexError: {-1002, "Get Beacon Block By Index Error"},
+	DeleteBeaconBlockError:     {-1003, "Delete Beacon Block Error"},
+
+	StoreShardBlockError:           {-2000, "Store Shard Block Error"},
+	HasShardBlockError:             {-2001, "Has Shard Block Error"},
+	GetShardBlockByHashError:       {-2002, "Get Shard Block By Hash Error"},
+	GetShardBlockByIndexError:      {-2003, "Get Shard Block By Index Error"},
+	DeleteShardBlockError:          {-2004, "Delete Shard Block Error"},
+	StoreCrossShardNextHeightError: {-2005, "Store Cross Shard Next Height Error"},
+	FetchCrossShardNextHeightError: {-2006, "Fetch Cross Shard Next Height Error"},
+
+	StoreTransactionIndexError: {-3000, "Store Transaction Index Error"},
+	GetTransactionByHashError:  {-3001, "Get Transaction By Hash Error"},
+	StoreTxByPublicKeyError:    {-3002, "Store Tx By PublicKey Error"},
+	GetTxByPublicKeyError:      {-3003, "Get Tx By Public Key Error"},
+}
 
 type RawdbError struct {
 	err     error
