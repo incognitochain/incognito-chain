@@ -77,16 +77,21 @@ func NewConnManager(
 	nodeMode string,
 	relayShard []byte,
 ) *ConnManager {
+	pubkey, _ := ikey.ToBase58()
 	return &ConnManager{
+		info: info{
+			consensusData: cd,
+			pubkey:        pubkey,
+			relayShard:    relayShard,
+			nodeMode:      nodeMode,
+			peerID:        host.Host.ID(),
+		},
 		LocalHost:            host,
 		DiscoverPeersAddress: dpa,
-		IdentityKey:          ikey,
-		cd:                   cd,
 		disp:                 dispatcher,
 		IsMasterNode:         false,
 		registerRequests:     make(chan int, 100),
-		relayShard:           relayShard,
-		nodeMode:             nodeMode,
+		stop:                 make(chan int),
 	}
 }
 
@@ -96,10 +101,11 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 
 	// msgCrossShard := msg.(wire.MessageCrossShard)
 	msgType := msg.MessageType()
+	subs := cm.subscriber.GetMsgToTopics()
 	for _, p := range publishable {
 		topic = ""
 		if msgType == p {
-			for _, availableTopic := range cm.subs[msgType] {
+			for _, availableTopic := range subs[msgType] {
 				// Logger.Info("[hy]", availableTopic)
 				if (availableTopic.Act == proto.MessageTopicPair_PUB) || (availableTopic.Act == proto.MessageTopicPair_PUBSUB) {
 					topic = availableTopic.Name
@@ -125,10 +131,11 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) error {
 	publishable := []string{wire.CmdBlockShard, wire.CmdCrossShard, wire.CmdBFT}
 	msgType := msg.MessageType()
+	subs := cm.subscriber.GetMsgToTopics()
 	for _, p := range publishable {
 		if msgType == p {
 			// Get topic for mess
-			for _, availableTopic := range cm.subs[msgType] {
+			for _, availableTopic := range subs[msgType] {
 				Logger.Info(availableTopic)
 				cID := GetCommitteeIDOfTopic(availableTopic.Name)
 				if (byte(cID) == shardID) && ((availableTopic.Act == proto.MessageTopicPair_PUB) || (availableTopic.Act == proto.MessageTopicPair_PUBSUB)) {
@@ -173,27 +180,24 @@ func (cm *ConnManager) Start(ns NetSync) {
 	}
 
 	// Pubsub
-	// TODO(@0xbunyip): handle error
-	cm.ps, _ = pubsub.NewFloodSub(context.Background(), cm.LocalHost.Host)
-	cm.subs = m2t{}
+	cm.ps, err = pubsub.NewFloodSub(context.Background(), cm.LocalHost.Host)
+	if err != nil {
+		panic(err)
+	}
 	cm.messages = make(chan *pubsub.Message, 1000)
 
 	// Wait until connection to highway is established to make sure gRPC won't fail
 	// NOTE: must Connect after creating FloodSub
-	connected := make(chan error)
-	go cm.keepHighwayConnection(connected)
-	<-connected
+	go cm.keepHighwayConnection()
 
-	req, err := NewRequester(cm.LocalHost.GRPC, addrInfo.ID)
+	cm.Requester, err = NewRequester(cm.LocalHost.GRPC, addrInfo.ID)
 	if err != nil {
 		panic(err)
 	}
-	cm.Requester = req
 
+	cm.subscriber = NewSubManager(cm.info, cm.ps, cm.Requester, cm.messages)
 	cm.Provider = NewBlockProvider(cm.LocalHost.GRPC, ns)
-
 	go cm.manageRoleSubscription()
-
 	cm.process()
 }
 
@@ -230,35 +234,29 @@ func (cm *ConnManager) BroadcastCommittee(
 	}
 }
 
-type ConsensusData interface {
-	GetUserRole() (string, string, int)
-}
-
-type Topic struct {
-	Name string
-	Sub  *pubsub.Subscription
-	Act  proto.MessageTopicPair_Action
+type ForcedSubscriber interface {
+	Subscribe(forced bool) error
+	GetMsgToTopics() msgToTopics
 }
 
 type ConnManager struct {
-	LocalHost            *Host
+	info       // info of running node
+	LocalHost  *Host
+	subscriber ForcedSubscriber
+
 	DiscoverPeersAddress string
 	HighwayAddress       string
-	IdentityKey          *incognitokey.CommitteePublicKey
 	IsMasterNode         bool
 
 	ps               *pubsub.PubSub
-	subs             m2t                  // mapping from message to topic's subscription
 	messages         chan *pubsub.Message // queue messages from all topics
 	registerRequests chan int
 
-	nodeMode   string
-	relayShard []byte
-
-	cd        ConsensusData
 	disp      *Dispatcher
 	Requester *BlockRequester
 	Provider  *BlockProvider
+
+	stop chan int
 }
 
 func (cm *ConnManager) PutMessage(msg *pubsub.Message) {
@@ -279,9 +277,7 @@ func (cm *ConnManager) process() {
 
 // keepHighwayConnection periodically checks liveliness of connection to highway
 // and try to connect if it's not available.
-// The method push data to the given channel to signal that the first attempt had finished.
-// Constructor can use this info to initialize other objects.
-func (cm *ConnManager) keepHighwayConnection(connectedOnce chan error) {
+func (cm *ConnManager) keepHighwayConnection() {
 	addr, err := multiaddr.NewMultiaddr(cm.HighwayAddress)
 	if err != nil {
 		panic(fmt.Sprintf("invalid discover peers address: %v", cm.HighwayAddress))
@@ -293,10 +289,9 @@ func (cm *ConnManager) keepHighwayConnection(connectedOnce chan error) {
 	}
 	hwPID := hwPeerInfo.ID
 
-	first := true
 	net := cm.LocalHost.Host.Network()
 	disconnected := true
-	for ; true; <-time.Tick(10 * time.Second) {
+	for ; true; <-time.Tick(1 * time.Second) {
 		// Reconnect if not connected
 		var err error
 		if net.Connectedness(hwPID) != network.Connected {
@@ -315,10 +310,37 @@ func (cm *ConnManager) keepHighwayConnection(connectedOnce chan error) {
 			disconnected = false
 		}
 
-		// Notify that first attempt had finished
-		if first {
-			connectedOnce <- err
-			first = false
+		select {
+		case <-cm.stop:
+			Logger.Info("Stop keeping connection to highway")
+			break
+
+		default:
+		}
+	}
+}
+
+// manageRoleSubscription: polling current role periodically and subscribe to relevant topics
+func (cm *ConnManager) manageRoleSubscription() {
+	forced := false // only subscribe when role changed or last forced subscribe failed
+	var err error
+	for {
+		select {
+		case <-time.Tick(1 * time.Second):
+			err = cm.subscriber.Subscribe(forced)
+			if err != nil {
+				Logger.Errorf("subscribe failed: %v %+v", forced, err)
+			} else {
+				forced = false
+			}
+
+		case <-cm.registerRequests:
+			Logger.Info("Received request to register")
+			forced = true // register no matter if role changed or not
+
+		case <-cm.stop:
+			Logger.Info("Stop managing role subscription")
+			break
 		}
 	}
 }
@@ -373,254 +395,3 @@ func broadcastMessage(msg wire.Message, topic string, ps *pubsub.PubSub) error {
 	Logger.Infof("Publishing to topic %s", topic)
 	return ps.Publish(topic, []byte(messageHex))
 }
-
-// manageRoleSubscription: polling current role every minute and subscribe to relevant topics
-func (cm *ConnManager) manageRoleSubscription() {
-	role := newUserRole("dummyLayer", "dummyRole", -1000)
-	topics := m2t{}
-	forced := false // only subscribe when role changed or last forced subscribe failed
-	var err error
-	for {
-		select {
-		case <-time.Tick(10 * time.Second):
-			role, topics, err = cm.subscribe(role, topics, forced)
-			if err != nil {
-				Logger.Errorf("subscribe failed: %v %+v", forced, err)
-			} else {
-				forced = false
-			}
-
-		case <-cm.registerRequests:
-			Logger.Info("Received request to register")
-			forced = true // register no matter if role changed or not
-		}
-	}
-}
-
-func (cm *ConnManager) subscribe(role userRole, topics m2t, forced bool) (userRole, m2t, error) {
-	newRole := newUserRole(cm.cd.GetUserRole())
-	if newRole == role && !forced { // Not forced => no need to subscribe when role stays the same
-		return newRole, topics, nil
-	}
-	Logger.Infof("Role changed: %v -> %v", role, newRole)
-
-	// Registering
-	pubkey, _ := cm.IdentityKey.ToBase58()
-	roleSID := newRole.shardID
-	if roleSID == -2 { // normal node
-		roleSID = -1
-	}
-	shardIDs := []byte{}
-	if cm.nodeMode == common.NodeModeRelay {
-		shardIDs = cm.relayShard
-		shardIDs = append(shardIDs, HighwayBeaconID)
-	} else {
-		shardIDs = append(shardIDs, byte(roleSID))
-	}
-	newTopics, roleOfTopics, err := cm.registerToProxy(pubkey, newRole.layer, newRole.role, shardIDs)
-	if err != nil {
-		return role, topics, err
-	}
-
-	// NOTE: disabled, highway always return the same role
-	_ = roleOfTopics
-	// if newRole != roleOfTopics {
-	// 	return role, topics, errors.Errorf("lole not matching with highway, local = %+v, highway = %+v", newRole, roleOfTopics)
-	// }
-
-	Logger.Infof("Received topics = %+v, oldTopics = %+v", newTopics, topics)
-
-	// Subscribing
-	if err := cm.subscribeNewTopics(newTopics, topics); err != nil {
-		return role, topics, err
-	}
-
-	return newRole, newTopics, nil
-}
-
-type userRole struct {
-	layer   string
-	role    string
-	shardID int
-}
-
-func newUserRole(layer, role string, shardID int) userRole {
-	return userRole{
-		layer:   layer,
-		role:    role,
-		shardID: shardID,
-	}
-}
-
-// subscribeNewTopics subscribes to new topics and unsubcribes any topics that aren't needed anymore
-func (cm *ConnManager) subscribeNewTopics(newTopics, subscribed m2t) error {
-	found := func(tName string, tmap m2t) bool {
-		for _, topicList := range tmap {
-			for _, t := range topicList {
-				if tName == t.Name {
-					return true
-				}
-			}
-		}
-		return false
-	}
-
-	// Subscribe to new topics
-	for m, topicList := range newTopics {
-		Logger.Infof("Process message %v and topic %v", m, topicList)
-		for _, t := range topicList {
-
-			if found(t.Name, subscribed) {
-				Logger.Infof("Countinue 1 %v %v", t.Name, subscribed)
-				continue
-			}
-
-			// TODO(@0xakk0r0kamui): check here
-			if t.Act == proto.MessageTopicPair_PUB {
-				cm.subs[m] = append(cm.subs[m], Topic{Name: t.Name, Sub: nil, Act: t.Act})
-				Logger.Infof("Countinue 2 %v %v", t.Name, subscribed)
-				continue
-			}
-
-			Logger.Info("subscribing", m, t.Name)
-
-			s, err := cm.ps.Subscribe(t.Name)
-			if err != nil {
-				return errors.WithStack(err)
-			}
-			cm.subs[m] = append(cm.subs[m], Topic{Name: t.Name, Sub: s, Act: t.Act})
-			go processSubscriptionMessage(cm.messages, s)
-		}
-	}
-
-	// Unsubscribe to old ones
-	for m, topicList := range subscribed {
-		for _, t := range topicList {
-			if found(t.Name, newTopics) {
-				continue
-			}
-
-			// TODO(@0xakk0r0kamui): check here
-			if t.Act == proto.MessageTopicPair_PUB {
-				continue
-			}
-
-			Logger.Info("unsubscribing", m, t.Name)
-			for _, s := range cm.subs[m] {
-				if s.Name == t.Name {
-					s.Sub.Cancel() // TODO(@0xbunyip): lock
-				}
-			}
-			delete(cm.subs, m)
-		}
-	}
-	return nil
-}
-
-// processSubscriptionMessage listens to a topic and pushes all messages to a queue to be processed later
-func processSubscriptionMessage(inbox chan *pubsub.Message, sub *pubsub.Subscription) {
-	ctx := context.Background()
-	for {
-		// TODO(@0xbunyip): check if topic is unsubbed then return, otherwise just continue
-		msg, err := sub.Next(ctx)
-		if err != nil { // Subscription might have been cancelled
-			Logger.Warn(err)
-			return
-		}
-
-		inbox <- msg
-	}
-}
-
-type m2t map[string][]Topic // Message to topics
-
-func (cm *ConnManager) registerToProxy(
-	pubkey string,
-	layer string,
-	role string,
-	shardID []byte,
-) (m2t, userRole, error) {
-	messagesWanted := getMessagesForLayer(cm.nodeMode, layer, shardID)
-	pid := cm.LocalHost.Host.ID()
-	Logger.Infof("Registering: message: %v", messagesWanted)
-	Logger.Infof("Registering: nodeMode: %v", cm.nodeMode)
-	Logger.Infof("Registering: layer: %v", layer)
-	Logger.Infof("Registering: role: %v", role)
-	Logger.Infof("Registering: shardID: %v", shardID)
-	Logger.Infof("Registering: peerID: %v", pid.String())
-	Logger.Infof("Registering: pubkey: %v", pubkey)
-	pairs, topicRole, err := cm.Requester.Register(
-		context.Background(),
-		pubkey,
-		messagesWanted,
-		shardID,
-		pid,
-		role,
-	)
-	if err != nil {
-		return nil, userRole{}, err
-	}
-
-	// Mapping from message to list of topics
-	topics := m2t{}
-	for _, p := range pairs {
-		for i, t := range p.Topic {
-			topics[p.Message] = append(topics[p.Message], Topic{
-				Name: t,
-				Act:  p.Act[i],
-			})
-		}
-	}
-	r := userRole{
-		layer:   topicRole.Layer,
-		role:    topicRole.Role,
-		shardID: int(topicRole.Shard),
-	}
-	return topics, r, nil
-}
-
-func getMessagesForLayer(mode, layer string, shardID []byte) []string {
-	switch mode {
-	case common.NodeModeAuto:
-		if layer == common.ShardRole {
-			return []string{
-				wire.CmdBlockShard,
-				wire.CmdBlockBeacon,
-				wire.CmdBFT,
-				wire.CmdPeerState,
-				wire.CmdCrossShard,
-				wire.CmdBlkShardToBeacon,
-				wire.CmdTx,
-				wire.CmdPrivacyCustomToken,
-				wire.CmdCustomToken,
-			}
-		} else if layer == common.BeaconRole {
-			return []string{
-				wire.CmdBlockBeacon,
-				wire.CmdBFT,
-				wire.CmdPeerState,
-				wire.CmdBlkShardToBeacon,
-			}
-		} else {
-			return []string{
-				wire.CmdBlockBeacon,
-				wire.CmdPeerState,
-				wire.CmdTx,
-				wire.CmdPrivacyCustomToken,
-				wire.CmdCustomToken,
-			}
-		}
-	case common.NodeModeRelay:
-		return []string{
-			wire.CmdTx,
-			wire.CmdBlockShard,
-			wire.CmdBlockBeacon,
-			wire.CmdPeerState,
-			wire.CmdPrivacyCustomToken,
-			wire.CmdCustomToken,
-		}
-	}
-	return []string{}
-}
-
-//go run *.go --listen "127.0.0.1:9433" --externaladdress "127.0.0.1:9433" --datadir "/data/fullnode" --discoverpeersaddress "127.0.0.1:9330" --loglevel debug
