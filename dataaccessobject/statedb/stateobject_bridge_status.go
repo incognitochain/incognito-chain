@@ -167,7 +167,7 @@ func (s BridgeStatusObject) GetValueBytes() []byte {
 	data := s.GetValue()
 	value, err := json.Marshal(data)
 	if err != nil {
-		panic("failed to marshal reward receiver state")
+		panic("failed to marshal bridge status state")
 	}
 	return []byte(value)
 }

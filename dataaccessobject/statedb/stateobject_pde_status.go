@@ -165,13 +165,13 @@ func (t PDEStatusObject) GetValue() interface{} {
 }
 
 func (t PDEStatusObject) GetValueBytes() []byte {
-	waitingPDEcontributionState, ok := t.GetValue().(*PDEStatusState)
+	pdeStatusState, ok := t.GetValue().(*PDEStatusState)
 	if !ok {
 		panic("wrong expected value type")
 	}
-	value, err := json.Marshal(waitingPDEcontributionState)
+	value, err := json.Marshal(pdeStatusState)
 	if err != nil {
-		panic("failed to marshal token state")
+		panic("failed to marshal pdeStatusState")
 	}
 	return value
 }

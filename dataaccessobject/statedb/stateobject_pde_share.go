@@ -198,7 +198,7 @@ func (t PDEShareObject) GetValueBytes() []byte {
 	}
 	value, err := json.Marshal(pdeShareState)
 	if err != nil {
-		panic("failed to marshal token state")
+		panic("failed to marshal pde share state")
 	}
 	return value
 }

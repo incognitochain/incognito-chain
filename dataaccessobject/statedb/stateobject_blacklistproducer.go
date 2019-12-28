@@ -181,7 +181,7 @@ func (bl BlackListProducerObject) GetValueBytes() []byte {
 	data := bl.GetValue()
 	value, err := json.Marshal(data)
 	if err != nil {
-		panic("failed to marshal reward receiver state")
+		panic("failed to marshal blas list producer state")
 	}
 	return []byte(value)
 }

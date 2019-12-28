@@ -155,7 +155,7 @@ func GetBridgeStatusPrefix() []byte {
 	return h[:][:prefixHashKeyLength]
 }
 
-func GetBurnPrefix() []byte {
+func GetBurningConfirmPrefix() []byte {
 	h := common.HashH(burnPrefix)
 	return h[:][:prefixHashKeyLength]
 }

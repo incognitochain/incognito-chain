@@ -119,9 +119,9 @@ func newBurningConfirmObjectWithValue(db *StateDB, key common.Hash, data interfa
 	}, nil
 }
 
-func GenerateBurningConfirmObjectKey(uniqueEthTx []byte) common.Hash {
-	prefixHash := GetBridgeEthTxPrefix()
-	valueHash := common.HashH(uniqueEthTx)
+func GenerateBurningConfirmObjectKey(txID common.Hash) common.Hash {
+	prefixHash := GetBurningConfirmPrefix()
+	valueHash := common.HashH(txID[:])
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 
@@ -167,7 +167,7 @@ func (ethtx BurningConfirmObject) GetValueBytes() []byte {
 	data := ethtx.GetValue()
 	value, err := json.Marshal(data)
 	if err != nil {
-		panic("failed to marshal reward receiver state")
+		panic("failed to marshal burning confirm state")
 	}
 	return []byte(value)
 }

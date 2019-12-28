@@ -206,7 +206,7 @@ func (ethtx BridgeTokenInfoObject) GetValueBytes() []byte {
 	data := ethtx.GetValue()
 	value, err := json.Marshal(data)
 	if err != nil {
-		panic("failed to marshal reward receiver state")
+		panic("failed to marshal bridge token info state")
 	}
 	return []byte(value)
 }

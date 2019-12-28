@@ -210,7 +210,7 @@ func (t WaitingPDEContributionObject) GetValueBytes() []byte {
 	}
 	value, err := json.Marshal(waitingPDEcontributionState)
 	if err != nil {
-		panic("failed to marshal token state")
+		panic("failed to marshal waiting pde contribution state")
 	}
 	return value
 }

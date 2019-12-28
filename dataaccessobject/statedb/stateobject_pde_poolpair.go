@@ -198,7 +198,7 @@ func (t PDEPoolPairObject) GetValueBytes() []byte {
 	}
 	value, err := json.Marshal(pdePoolPairState)
 	if err != nil {
-		panic("failed to marshal token state")
+		panic("failed to marshal pde pool pair state")
 	}
 	return value
 }

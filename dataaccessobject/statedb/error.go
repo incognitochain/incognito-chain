@@ -96,6 +96,8 @@ const (
 	GetAllBridgeTokensError
 	TrackBridgeReqWithStatusError
 	GetBridgeReqWithStatusError
+	StoreBurningConfirmError
+	GetBurningConfirmError
 )
 
 var ErrCodeMessage = map[int]struct {

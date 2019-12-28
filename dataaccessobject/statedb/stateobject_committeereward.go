@@ -183,7 +183,7 @@ func (rr CommitteeRewardObject) GetValueBytes() []byte {
 	data := rr.GetValue()
 	value, err := json.Marshal(data)
 	if err != nil {
-		panic("failed to marshal reward receiver state")
+		panic("failed to marshal committee reward state")
 	}
 	return []byte(value)
 }

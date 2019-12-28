@@ -1088,3 +1088,15 @@ func (stateDB *StateDB) GetBridgeStatusState(key common.Hash) (*BridgeStatusStat
 	}
 	return NewBridgeStatusState(), false, nil
 }
+
+// ================================= Burn OBJECT =======================================
+func (stateDB *StateDB) GetBurningConfirmState(key common.Hash) (*BurningConfirmState, bool, error) {
+	burningConfirmState, err := stateDB.getStateObject(BridgeStatusObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if burningConfirmState != nil {
+		return burningConfirmState.GetValue().(*BurningConfirmState), true, nil
+	}
+	return NewBurningConfirmState(), false, nil
+}
