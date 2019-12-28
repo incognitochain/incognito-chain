@@ -1,13 +1,14 @@
 package statedb
 
 import (
+	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 )
 
-// tempkey: WaitingPDEContributionPrefix - beacon height - pairid
 func StoreWaitingPDEContributions(stateDB *StateDB, beaconHeight uint64, waitingPDEContributions map[string]*rawdb.PDEContribution) error {
 	for tempKey, contribution := range waitingPDEContributions {
 		strs := strings.Split(tempKey, "-")
@@ -26,19 +27,14 @@ func GetWaitingPDEContributions(stateDB *StateDB, beaconHeight uint64) (map[stri
 	waitingPDEContributions := make(map[string]*rawdb.PDEContribution)
 	waitingPDEContributionStates := stateDB.GetAllWaitingPDEContributionState(beaconHeight)
 	for _, wcState := range waitingPDEContributionStates {
-		key := string(WaitingPDEContributionPrefix()) + fmt.Sprintf("%d-", beaconHeight) + wcState.PairID()
+		key := string(GetWaitingPDEContributionKey(beaconHeight, wcState.PairID()))
 		value := rawdb.NewPDEContribution(wcState.ContributorAddress(), wcState.TokenID(), wcState.Amount(), wcState.TxReqID())
 		waitingPDEContributions[key] = value
 	}
 	return waitingPDEContributions, nil
 }
 
-// tempkey: PDEPoolPrefix - beacon height - token1ID - token2ID
-func StorePDEPoolPairs(
-	stateDB *StateDB,
-	beaconHeight uint64,
-	pdePoolPairs map[string]*rawdb.PDEPoolForPair,
-) error {
+func StorePDEPoolPairs(stateDB *StateDB, beaconHeight uint64, pdePoolPairs map[string]*rawdb.PDEPoolForPair) error {
 	for _, pdePoolPair := range pdePoolPairs {
 		key := GeneratePDEPoolPairObjectKey(beaconHeight, pdePoolPair.Token1IDStr, pdePoolPair.Token2IDStr)
 		value := NewPDEPoolPairStateWithValue(beaconHeight, pdePoolPair.Token1IDStr, pdePoolPair.Token1PoolValue, pdePoolPair.Token2IDStr, pdePoolPair.Token2PoolValue)
@@ -54,7 +50,7 @@ func GetPDEPoolPair(stateDB *StateDB, beaconHeight uint64) (map[string]*rawdb.PD
 	pdePoolPairs := make(map[string]*rawdb.PDEPoolForPair)
 	pdePoolPairStates := stateDB.GetAllPDEPoolPairState(beaconHeight)
 	for _, ppState := range pdePoolPairStates {
-		key := string(PDEPoolPrefix()) + fmt.Sprintf("%d-", beaconHeight) + ppState.Token1ID() + "-" + ppState.Token2ID()
+		key := string(GetPDEPoolForPairKey(beaconHeight, ppState.Token1ID(), ppState.Token2ID()))
 		value := rawdb.NewPDEPoolForPair(ppState.Token1ID(), ppState.Token1PoolValue(), ppState.Token2ID(), ppState.Token2PoolValue())
 		pdePoolPairs[key] = value
 	}
@@ -81,9 +77,75 @@ func GetPDEShares(stateDB *StateDB, beaconHeight uint64) (map[string]uint64, err
 	pdeShares := make(map[string]uint64)
 	pdeShareStates := stateDB.GetAllPDEShareState(beaconHeight)
 	for _, sState := range pdeShareStates {
-		key := string(PDESharePrefix()) + fmt.Sprintf("%d-", beaconHeight) + sState.Token1ID() + "-" + sState.Token2ID() + "-" + sState.ContributorAddress()
+		key := string(GetPDEShareKey(beaconHeight, sState.Token1ID(), sState.Token2ID(), sState.ContributorAddress()))
 		value := sState.Amount()
 		pdeShares[key] = value
 	}
 	return pdeShares, nil
+}
+
+func GetPDEPoolForPair(stateDB *StateDB, beaconHeight uint64, tokenIDToBuy string, tokenIDToSell string) ([]byte, error) {
+	tokenIDs := []string{tokenIDToBuy, tokenIDToSell}
+	sort.Strings(tokenIDs)
+	key := GeneratePDEPoolPairObjectKey(beaconHeight, tokenIDs[0], tokenIDs[0])
+	ppState, has, err := stateDB.GetPDEPoolPairState(key)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetPDEPoolForPairError, err)
+	}
+	if !has {
+		return []byte{}, NewStatedbError(GetPDEPoolForPairError, fmt.Errorf("key with beacon height %+v, token1ID %+v, token2ID %+v not found", beaconHeight, tokenIDToBuy, tokenIDToSell))
+	}
+	res, err := json.Marshal(rawdb.NewPDEPoolForPair(ppState.Token1ID(), ppState.Token1PoolValue(), ppState.Token2ID(), ppState.Token2PoolValue()))
+	if err != nil {
+		return []byte{}, NewStatedbError(GetPDEPoolForPairError, err)
+	}
+	return res, nil
+}
+
+func GetLatestPDEPoolForPair(stateDB *StateDB, tokenIDToBuy string, tokenIDToSell string) ([]byte, error) {
+	return []byte{}, NewStatedbError(MethodNotSupportError, fmt.Errorf("Use method GetPDEPoolForPair instead"))
+}
+
+func TrackPDEStatus(stateDB *StateDB, statusType []byte, statusSuffix []byte, statusContent byte) error {
+	key := GeneratePDEStatusObjectKey(statusType, statusSuffix)
+	value := NewPDEStatusStateWithValue(statusType, statusSuffix, []byte{statusContent})
+	err := stateDB.SetStateObject(PDEStatusObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(TrackPDEStatusError, err)
+	}
+	return nil
+}
+
+func GetPDEStatus(stateDB *StateDB, statusType []byte, statusSuffix []byte) (byte, error) {
+	key := GeneratePDEStatusObjectKey(statusType, statusSuffix)
+	s, has, err := stateDB.GetPDEStatusByKey(key)
+	if err != nil {
+		return 0, NewStatedbError(GetPDEStatusError, err)
+	}
+	if !has {
+		return 0, NewStatedbError(GetPDEStatusError, fmt.Errorf("status %+v with prefix %+v not found", string(statusType), string(statusSuffix)))
+	}
+	return s.statusContent[0], nil
+}
+
+func TrackPDEContributionStatus(stateDB *StateDB, statusType []byte, statusSuffix []byte, statusContent []byte) error {
+	key := GeneratePDEStatusObjectKey(statusType, statusSuffix)
+	value := NewPDEStatusStateWithValue(statusType, statusSuffix, statusContent)
+	err := stateDB.SetStateObject(PDEStatusObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(TrackPDEStatusError, err)
+	}
+	return nil
+}
+
+func GetPDEContributionStatus(stateDB *StateDB, statusType []byte, statusSuffix []byte) ([]byte, error) {
+	key := GeneratePDEStatusObjectKey(statusType, statusSuffix)
+	s, has, err := stateDB.GetPDEStatusByKey(key)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetPDEStatusError, err)
+	}
+	if !has {
+		return []byte{}, NewStatedbError(GetPDEStatusError, fmt.Errorf("status %+v with prefix %+v not found", string(statusType), string(statusSuffix)))
+	}
+	return s.statusContent, nil
 }

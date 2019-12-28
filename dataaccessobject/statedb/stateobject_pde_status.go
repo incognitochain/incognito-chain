@@ -1,7 +1,6 @@
 package statedb
 
 import (
-	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
@@ -9,44 +8,44 @@ import (
 )
 
 type PDEStatusState struct {
-	statusType int
-	status     int
-	refundData []byte
+	statusType    []byte
+	statusSuffix  []byte
+	statusContent []byte
 }
 
-func (s PDEStatusState) StatusType() int {
+func (s PDEStatusState) StatusType() []byte {
 	return s.statusType
 }
 
-func (s *PDEStatusState) SetStatusType(statusType int) {
+func (s *PDEStatusState) SetStatusType(statusType []byte) {
 	s.statusType = statusType
 }
 
-func (s PDEStatusState) Status() int {
-	return s.status
+func (s PDEStatusState) StatusSuffix() []byte {
+	return s.statusSuffix
 }
 
-func (s *PDEStatusState) SetStatus(status int) {
-	s.status = status
+func (s *PDEStatusState) SetStatusSuffix(statusSuffix []byte) {
+	s.statusSuffix = statusSuffix
 }
 
-func (s PDEStatusState) RefundData() []byte {
-	return s.refundData
+func (s PDEStatusState) StatusContent() []byte {
+	return s.statusContent
 }
 
-func (s *PDEStatusState) SetRefundData(refundData []byte) {
-	s.refundData = refundData
+func (s *PDEStatusState) SetStatusContent(statusContent []byte) {
+	s.statusContent = statusContent
 }
 
 func (s PDEStatusState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		StatusType int
-		Status     int
-		RefundData []byte
+		StatusType    []byte
+		StatusSuffix  []byte
+		StatusContent []byte
 	}{
-		StatusType: s.statusType,
-		Status:     s.status,
-		RefundData: s.refundData,
+		StatusType:    s.statusType,
+		StatusSuffix:  s.statusSuffix,
+		StatusContent: s.statusContent,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -56,17 +55,16 @@ func (s PDEStatusState) MarshalJSON() ([]byte, error) {
 
 func (s *PDEStatusState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		StatusType int
-		Status     int
-		RefundData []byte
+		StatusType    []byte
+		StatusSuffix  []byte
+		StatusContent []byte
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
 		return err
 	}
 	s.statusType = temp.StatusType
-	s.status = temp.Status
-	s.refundData = temp.RefundData
+	s.statusContent = temp.StatusContent
 	return nil
 }
 
@@ -74,8 +72,8 @@ func NewPDEStatusState() *PDEStatusState {
 	return &PDEStatusState{}
 }
 
-func NewPDEStatusStateWithValue(statusType int, status int, refundData []byte) *PDEStatusState {
-	return &PDEStatusState{statusType: statusType, status: status, refundData: refundData}
+func NewPDEStatusStateWithValue(statusType []byte, statusSuffix []byte, statusContent []byte) *PDEStatusState {
+	return &PDEStatusState{statusType: statusType, statusSuffix: statusSuffix, statusContent: statusContent}
 }
 
 type PDEStatusObject struct {
@@ -132,11 +130,9 @@ func newPDEStatusObjectWithValue(db *StateDB, key common.Hash, data interface{})
 	}, nil
 }
 
-func GeneratePDEStatusObjectKey(statusType int, key []byte) common.Hash {
+func GeneratePDEStatusObjectKey(statusType []byte, statusSuffix []byte) common.Hash {
 	prefixHash := GetPDEStatusPrefix()
-	buf := make([]byte, 2)
-	binary.LittleEndian.PutUint16(buf, uint16(statusType))
-	valueHash := common.HashH(append(buf, key...))
+	valueHash := common.HashH(append(statusType, statusSuffix...))
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 

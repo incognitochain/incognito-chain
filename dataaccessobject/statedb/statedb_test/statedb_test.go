@@ -117,13 +117,20 @@ func TestStateDB_GetTestObjectByPrefix50000(t *testing.T) {
 	}
 }
 
+func BenchmarkStateDB_NewWithPrefixTrie20000(b *testing.B) {
+	rootHash, _ := createAndStoreDataForTesting(4000)
+	for n := 0; n < b.N; n++ {
+		statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+	}
+}
+
 func BenchmarkStateDB_GetAllTestObjectList500000(b *testing.B) {
 	rootHash, _ := createAndStoreDataForTesting(limit100000)
+	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+	if err != nil || tempStateDB == nil {
+		panic(err)
+	}
 	for n := 0; n < b.N; n++ {
-		tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
-		if err != nil || tempStateDB == nil {
-			panic(err)
-		}
 		tempStateDB.GetAllTestObjectList()
 	}
 }

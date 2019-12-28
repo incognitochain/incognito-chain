@@ -45,6 +45,8 @@ const (
 	InvalidSNDerivatorStateTypeError
 	InvalidOutputCoinStateTypeError
 
+	MethodNotSupportError
+
 	StoreSerialNumberError
 	GetSerialNumberError
 	StoreCommitmentError
@@ -77,12 +79,16 @@ const (
 	StoreWaitingPDEContributionError
 	StorePDEPoolPairError
 	StorePDEShareError
+	GetPDEPoolForPairError
+	TrackPDEStatusError
+	GetPDEStatusError
 )
 
 var ErrCodeMessage = map[int]struct {
 	Code    int
 	message string
 }{
+	MethodNotSupportError: {-1, "Method Not Support"},
 	// -1xxx reposistory level
 	InvalidByteArrayTypeError:              {-1000, "invalid byte array type"},
 	InvalidHashTypeError:                   {-1001, "invalid hash type"},

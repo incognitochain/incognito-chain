@@ -979,6 +979,17 @@ func (stateDB *StateDB) GetAllPDEPoolPairState(beaconHeight uint64) []*PDEPoolPa
 	return pdePoolPairStates
 }
 
+func (stateDB *StateDB) GetPDEPoolPairState(key common.Hash) (*PDEPoolPairState, bool, error) {
+	ppState, err := stateDB.getStateObject(PDEPoolPairObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if ppState != nil {
+		return ppState.GetValue().(*PDEPoolPairState), true, nil
+	}
+	return NewPDEPoolPairState(), false, nil
+}
+
 func (stateDB *StateDB) GetAllPDEShareState(beaconHeight uint64) []*PDEShareState {
 	pdeShareStates := []*PDEShareState{}
 	temp := stateDB.trie.NodeIterator(GetPDESharePrefix(beaconHeight))
