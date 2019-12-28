@@ -1,10 +1,7 @@
 package statedb
 
 import (
-	"encoding/binary"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
@@ -89,40 +86,4 @@ func GetPDEShares(stateDB *StateDB, beaconHeight uint64) (map[string]uint64, err
 		pdeShares[key] = value
 	}
 	return pdeShares, nil
-}
-
-func InitCurrentPDEStateFromDB(stateDB *StateDB, beaconHeight uint64) (*CurrentPDEState, error) {
-	waitingPDEContributions, err := GetWaitingPDEContributions(stateDB, beaconHeight)
-	if err != nil {
-		return nil, err
-	}
-	pdePoolPairs, err := GetPDEPoolPair(stateDB, beaconHeight)
-	if err != nil {
-		return nil, err
-	}
-	pdeShares, err := GetPDEShares(stateDB, beaconHeight)
-	if err != nil {
-		return nil, err
-	}
-	return &CurrentPDEState{
-		WaitingPDEContributions: waitingPDEContributions,
-		PDEPoolPairs:            pdePoolPairs,
-		PDEShares:               pdeShares,
-	}, nil
-}
-
-func StorePDEStateToDB(stateDB *StateDB, beaconHeight uint64, currentPDEState *CurrentPDEState) error {
-	err := StoreWaitingPDEContributions(stateDB, beaconHeight, currentPDEState.WaitingPDEContributions)
-	if err != nil {
-		return err
-	}
-	err = StorePDEPoolPairs(stateDB, beaconHeight, currentPDEState.PDEPoolPairs)
-	if err != nil {
-		return err
-	}
-	err = StorePDEShares(stateDB, beaconHeight, currentPDEState.PDEShares)
-	if err != nil {
-		return err
-	}
-	return nil
 }
