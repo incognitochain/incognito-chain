@@ -26,6 +26,8 @@ const (
 	// tx
 	StoreTransactionIndexError
 	GetTransactionByHashError
+	StoreTxByPublicKeyError
+	GetTxByPublicKeyError
 )
 
 var ErrCodeMessage = map[int]struct {

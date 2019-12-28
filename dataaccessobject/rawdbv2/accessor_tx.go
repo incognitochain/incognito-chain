@@ -39,3 +39,43 @@ func GetTransactionByHash(db incdb.Database, txHash common.Hash) (common.Hash, i
 	}
 	return *blockHash, index, nil
 }
+
+// StoreTxByPublicKey - store txID by public key of receiver,
+// use this data to get tx which send to receiver
+// key format:
+// 1st 33b bytes for pubkey
+// 2nd 32 bytes fir txID which receiver get from
+// 3nd 1 byte for shardID where sender send to receiver
+func StoreTxByPublicKey(db incdb.Database, publicKey []byte, txID common.Hash, shardID byte) error {
+	key := make([]byte, 0)
+	key = append(key, publicKey...)
+	key = append(key, txID.GetBytes()...)
+	key = append(key, shardID)
+	value := []byte{}
+	if err := db.Put(key, value); err != nil {
+		return NewRawdbError(StoreTxByPublicKeyError, err, txID.String(), publicKey, shardID)
+	}
+	return nil
+}
+
+// GetTxByPublicKey -  from public key, use this function to get list all txID which someone send use by txID from any shardID
+func GetTxByPublicKey(db incdb.Database, publicKey []byte) (map[byte][]common.Hash, error) {
+	iterator := db.NewIteratorWithPrefix(publicKey)
+	result := make(map[byte][]common.Hash)
+	for iterator.Next() {
+		key := iterator.Key()
+		tempKey := make([]byte, len(key))
+		copy(tempKey, key)
+		shardID := tempKey[len(tempKey)-1]
+		if result[shardID] == nil {
+			result[shardID] = make([]common.Hash, 0)
+		}
+		txID := common.Hash{}
+		err := txID.SetBytes(tempKey[common.PublicKeySize : common.PublicKeySize+common.HashSize])
+		if err != nil {
+			return nil, NewRawdbError(GetTxByPublicKeyError, err, publicKey)
+		}
+		result[shardID] = append(result[shardID], txID)
+	}
+	return result, nil
+}
