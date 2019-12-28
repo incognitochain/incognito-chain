@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
+	"sort"
 	"strconv"
 )
 
@@ -37,12 +37,6 @@ var (
 	bridgeStatusPrefix                 = []byte("bri-status-")
 	burnPrefix                         = []byte("burn-")
 )
-
-type CurrentPDEState struct {
-	WaitingPDEContributions map[string]*rawdb.PDEContribution
-	PDEPoolPairs            map[string]*rawdb.PDEPoolForPair
-	PDEShares               map[string]uint64
-}
 
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
 	switch role {
@@ -186,6 +180,36 @@ func PDETradeStatusPrefix() []byte {
 func PDEWithdrawalStatusPrefix() []byte {
 	return pdeWithdrawalStatusPrefix
 }
+
+// key: WaitingPDEContributionPrefix - beacon height - pairid
+func GetWaitingPDEContributionKey(beaconHeight uint64, pairID string) []byte {
+	prefix := append(waitingPDEContributionPrefix, []byte(fmt.Sprintf("%d-", beaconHeight))...)
+	return append(prefix, []byte(pairID)...)
+}
+
+// key: PDEPoolPrefix - beacon height - token1ID - token2ID
+func GetPDEPoolForPairKey(beaconHeight uint64, token1ID string, token2ID string) []byte {
+	prefix := append(pdePoolPrefix, []byte(fmt.Sprintf("%d-", beaconHeight))...)
+	tokenIDs := []string{token1ID, token2ID}
+	sort.Strings(tokenIDs)
+	return append(prefix, []byte(tokenIDs[0]+"-"+tokenIDs[1])...)
+}
+
+// key: PDESharePrefix + beacon height + token1ID + token2ID + contributor address
+func GetPDEShareKey(beaconHeight uint64, token1ID string, token2ID string, contributorAddress string) []byte {
+	prefix := append(pdeSharePrefix, []byte(fmt.Sprintf("%d-", beaconHeight))...)
+	tokenIDs := []string{token1ID, token2ID}
+	sort.Strings(tokenIDs)
+	return append(prefix, []byte(tokenIDs[0]+"-"+tokenIDs[1]+"-"+contributorAddress)...)
+}
+
+//func GetPDETradeFeesKey(beaconHeight uint64, token1IDStr string, token2IDStr string, tokenForFeeIDStr string) []byte {
+//	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+//	pdeTradeFeesByBCHeightPrefix := append(PDETradeFeePrefix, beaconHeightBytes...)
+//	tokenIDStrs := []string{token1IDStr, token2IDStr}
+//	sort.Strings(tokenIDStrs)
+//	return append(pdeTradeFeesByBCHeightPrefix, []byte(tokenIDStrs[0]+"-"+tokenIDStrs[1]+"-"+tokenForFeeIDStr)...)
+//}
 
 var _ = func() (_ struct{}) {
 	m := make(map[string]string)
