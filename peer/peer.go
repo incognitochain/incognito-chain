@@ -89,7 +89,6 @@ type Config struct {
 */
 type MessageListeners struct {
 	OnTx               func(p *PeerConn, msg *wire.MessageTx)
-	OnTxToken          func(p *PeerConn, msg *wire.MessageTxToken)
 	OnTxPrivacyToken   func(p *PeerConn, msg *wire.MessageTxPrivacyToken)
 	OnBlockShard       func(p *PeerConn, msg *wire.MessageBlockShard)
 	OnBlockBeacon      func(p *PeerConn, msg *wire.MessageBlockBeacon)

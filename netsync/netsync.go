@@ -149,7 +149,7 @@ out:
 					// 	metrics.Tag:              metrics.ShardIDTag,
 					// 	metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees)})
 					switch msg := msgC.(type) {
-					case *wire.MessageTx, *wire.MessageTxToken, *wire.MessageTxPrivacyToken:
+					case *wire.MessageTx, *wire.MessageTxPrivacyToken:
 						{
 							beaconHeight := int64(-1)
 							beaconBestState, err := netSync.config.BlockChain.BestState.GetClonedBeaconBestState()
@@ -162,10 +162,6 @@ out:
 							case *wire.MessageTx:
 								{
 									netSync.handleMessageTx(msg, beaconHeight)
-								}
-							case *wire.MessageTxToken:
-								{
-									netSync.handleMessageTxToken(msg, beaconHeight)
 								}
 							case *wire.MessageTxPrivacyToken:
 								{
@@ -241,16 +237,6 @@ func (netSync *NetSync) QueueTx(peer *peer.Peer, msg *wire.MessageTx, done chan 
 	return nil
 }
 
-func (netSync *NetSync) QueueTxToken(peer *peer.Peer, msg *wire.MessageTxToken, done chan struct{}) error {
-	// Don't accept more transactions if we're shutting down.
-	if atomic.LoadInt32(&netSync.shutdown) != 0 {
-		done <- struct{}{}
-		return NewNetSyncError(AlreadyShutdownError, errors.New("we're shutting down"))
-	}
-	netSync.cMessage <- msg
-	return nil
-}
-
 func (netSync *NetSync) QueueTxPrivacyToken(peer *peer.Peer, msg *wire.MessageTxPrivacyToken, done chan struct{}) error {
 	// Don't accept more transactions if we're shutting down.
 	if atomic.LoadInt32(&netSync.shutdown) != 0 {
@@ -319,31 +305,6 @@ func (netSync *NetSync) handleMessageTx(msg *wire.MessageTx, beaconHeight int64)
 				metrics.TagValue:         msg.Transaction.Hash().String(),
 			})*/
 			Logger.log.Debugf("there is hash of transaction %s", hash.String())
-			err := netSync.config.Server.PushMessageToAll(msg)
-			if err != nil {
-				Logger.log.Error(err)
-			} else {
-				netSync.config.TxMemPool.MarkForwardedTransaction(*msg.Transaction.Hash())
-			}
-		}
-	}
-	Logger.log.Debug("Transaction %+v found in cache", *msg.Transaction.Hash())
-}
-
-// handleTxMsg handles transaction messages from all peers.
-func (netSync *NetSync) handleMessageTxToken(msg *wire.MessageTxToken, beaconHeight int64) {
-	Logger.log.Debug("Handling new message tx")
-	if !netSync.handleTxWithRole(msg.Transaction) {
-		return
-	}
-	if isAdded := netSync.handleCacheTx(*msg.Transaction.Hash()); !isAdded {
-		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction, beaconHeight)
-
-		if err != nil {
-			Logger.log.Error(err)
-		} else {
-			Logger.log.Debugf("there is hash of transaction %s", hash.String())
-			// Broadcast to network
 			err := netSync.config.Server.PushMessageToAll(msg)
 			if err != nil {
 				Logger.log.Error(err)
