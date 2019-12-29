@@ -288,6 +288,7 @@ func VerifyCrossShardBlockUTXO(block *CrossShardBlock, merklePathShard []common.
 	var txTokenPrivacyDataHash common.Hash
 	outCoins := block.CrossOutputCoin
 	outputCoinHash = calHashOutCoinCrossShard(outCoins)
+	txTokenDataHash = calHashTxTokenDataHashList()
 	txTokenPrivacyDataList := block.CrossTxTokenPrivacyData
 	txTokenPrivacyDataHash = calHashTxTokenPrivacyDataHashList(txTokenPrivacyDataList)
 	tmpByte := append(append(outputCoinHash.GetBytes(), txTokenDataHash.GetBytes()...), txTokenPrivacyDataHash.GetBytes()...)
@@ -381,8 +382,7 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 	for i := 0; i < common.MaxShardNumber; i++ {
 		outputCoinHash[i] = calHashOutCoinCrossShard(outCoinEachShard[i])
 		txTokenPrivacyOutHash[i] = calHashTxTokenPrivacyDataHashFromMap(txTokenPrivacyDataMap[i])
-		// TODO: remove txTokenOutHash when clear database
-		txTokenOutHash[i] = fakeCalHashTxTokenDataHashFromMap()
+		txTokenOutHash[i] = calHashTxTokenDataHashFromMap()
 		tmpByte := append(append(outputCoinHash[i].GetBytes(), txTokenOutHash[i].GetBytes()...), txTokenPrivacyOutHash[i].GetBytes()...)
 		combinedHash[i] = common.HashH(tmpByte)
 	}
@@ -448,6 +448,14 @@ func calHashOutCoinCrossShard(outCoins []privacy.OutputCoin) common.Hash {
 		outputCoinHash = common.HashH([]byte(""))
 	}
 	return outputCoinHash
+}
+
+func calHashTxTokenDataHashFromMap() common.Hash {
+	return common.HashH([]byte(""))
+}
+
+func calHashTxTokenDataHashList() common.Hash {
+	return common.HashH([]byte(""))
 }
 
 func calHashTxTokenPrivacyDataHashFromMap(txTokenPrivacyDataMap map[common.Hash]*ContentCrossShardTokenPrivacyData) common.Hash {
@@ -563,11 +571,6 @@ func VerifyMerkleCrossTransaction(crossTransactions map[byte][]CrossTransaction,
 		return false
 	}
 	return newHash.IsEqual(res)
-}
-
-// TODO: remove hash of normal token tx when clear db
-func fakeCalHashTxTokenDataHashFromMap() common.Hash {
-	return common.HashH([]byte(""))
 }
 
 //=======================================END CROSS SHARD UTIL
