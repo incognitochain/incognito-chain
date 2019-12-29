@@ -7,21 +7,21 @@ import (
 
 // Header key will be used for light mode in the future
 var (
-	lastShardBlockKey          = []byte("LastShardBlock")
-	lastShardHeaderKey         = []byte("LastShardHeader")
-	lastBeaconBlockKey         = []byte("LastBeaconBlock")
-	lastBeaconHeaderKey        = []byte("LastBeaconHeader")
-	shardBlockHashPrefix       = []byte("s-b-h")
-	shardBlockIndexPrefix      = []byte("s-b-i")
-	shardHeaderHashPrefix      = []byte("s-h-h")
-	shardHeaderIndexPrefix     = []byte("s-h-i")
-	beaconBlockHashPrefix      = []byte("b-b-h")
-	beaconBlockIndexPrefix     = []byte("b-b-i")
-	beaconHeaderHashPrefix     = []byte("b-h-h")
-	beaconHeaderIndexPrefix    = []byte("b-h-i")
-	txHashPrefix               = []byte("tx-h")
-	crossShardNextHeightPrefix = []byte("c-s-n-h")
-	splitter                   = []byte("-[-]-")
+	lastShardBlockKey            = []byte("LastShardBlock")
+	lastShardHeaderKey           = []byte("LastShardHeader")
+	lastBeaconBlockKey           = []byte("LastBeaconBlock")
+	lastBeaconHeaderKey          = []byte("LastBeaconHeader")
+	shardHashToBlockPrefix       = []byte("s-b-h" + string(splitter))
+	shardIndexToBlockHashPrefix  = []byte("s-b-i" + string(splitter))
+	shardBlockHashToIndexPrefix  = []byte("s-b-H" + string(splitter))
+	shardHeaderHashPrefix        = []byte("s-h-h" + string(splitter))
+	shardHeaderIndexPrefix       = []byte("s-h-i" + string(splitter))
+	beaconHashToBlockPrefix      = []byte("b-b-h" + string(splitter))
+	beaconIndexToBlockHashPrefix = []byte("b-b-i" + string(splitter))
+	beaconBlockHashToIndexPrefix = []byte("b-b-H" + string(splitter))
+	txHashPrefix                 = []byte("tx-h" + string(splitter))
+	crossShardNextHeightPrefix   = []byte("c-s-n-h" + string(splitter))
+	splitter                     = []byte("-[-]-")
 )
 
 func GetLastShardBlockKey() []byte {
@@ -40,94 +40,79 @@ func GetLastBeaconHeaderKey() []byte {
 	return lastBeaconHeaderKey
 }
 
-func GetShardHeaderHashKey(shardID byte, hash common.Hash) []byte {
+// ============================= Shard =======================================
+func GetShardHashToHeaderKey(shardID byte, hash common.Hash) []byte {
 	return append(append(shardHeaderHashPrefix, shardID), hash[:]...)
 }
 
-func GetShardBlockHashKey(shardID byte, hash common.Hash) []byte {
-	return append(append(shardBlockHashPrefix, shardID), hash[:]...)
-}
-
-func GetShardBlockPrefixByShardID(shardID byte) []byte {
-	return append(shardBlockHashPrefix, shardID)
+func GetShardHashToBlockKey(hash common.Hash) []byte {
+	return append(shardHashToBlockPrefix, hash[:]...)
 }
 
 func GetShardHeaderIndexKey(shardID byte, index uint64, hash common.Hash) []byte {
-	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, index)
+	buf := common.Uint64ToBytes(index)
 	key := append(shardHeaderIndexPrefix, shardID)
-	key = append(key, buf...)
 	key = append(key, splitter...)
-	return append(key, hash[:]...)
-}
-
-func GetShardBlockIndexKey(shardID byte, index uint64, hash common.Hash) []byte {
-	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, index)
-	key := append(shardBlockIndexPrefix, shardID)
 	key = append(key, buf...)
 	key = append(key, splitter...)
 	return append(key, hash[:]...)
 }
 
 func GetShardHeaderIndexPrefix(shardID byte, index uint64) []byte {
-	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, index)
+	buf := common.Uint64ToBytes(index)
 	key := append(shardHeaderIndexPrefix, shardID)
 	key = append(key, buf...)
 	return key
 }
 
-func GetShardBlockIndexPrefix(shardID byte, index uint64) []byte {
-	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, index)
-	key := append(shardBlockIndexPrefix, shardID)
+func GetShardIndexToBlockHashKey(shardID byte, index uint64, hash common.Hash) []byte {
+	buf := common.Uint64ToBytes(index)
+	key := append(shardIndexToBlockHashPrefix, shardID)
+	key = append(key, splitter...)
+	key = append(key, buf...)
+	key = append(key, splitter...)
+	return append(key, hash[:]...)
+}
+
+func GetShardIndexToBlockHashPrefix(shardID byte, index uint64) []byte {
+	buf := common.Uint64ToBytes(index)
+	key := append(shardIndexToBlockHashPrefix, shardID)
 	key = append(key, buf...)
 	return key
 }
 
-func GetBeaconHeaderHashKey(hash common.Hash) []byte {
-	return append(beaconHeaderHashPrefix, hash[:]...)
+func GetShardBlockHashToIndexKey(hash common.Hash) []byte {
+	return append(shardBlockHashToIndexPrefix, hash[:]...)
 }
 
-func GetBeaconBlockHashKey(hash common.Hash) []byte {
-	return append(beaconBlockHashPrefix, hash[:]...)
+// ============================= BEACON =======================================
+func GetBeaconHashToBlockKey(hash common.Hash) []byte {
+	return append(beaconHashToBlockPrefix, hash[:]...)
 }
 
-func GetBeaconHeaderIndexKey(index uint64, hash common.Hash) []byte {
-	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, index)
-	key := append(beaconHeaderIndexPrefix, buf...)
+func GetBeaconIndexToBlockHashKey(index uint64, hash common.Hash) []byte {
+	buf := common.Uint64ToBytes(index)
+	key := append(beaconIndexToBlockHashPrefix, buf...)
 	key = append(key, splitter...)
 	return append(key, hash[:]...)
 }
 
-func GetBeaconBlockIndexKey(index uint64, hash common.Hash) []byte {
-	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, index)
-	key := append(beaconBlockIndexPrefix, buf...)
-	key = append(key, splitter...)
-	return append(key, hash[:]...)
-}
-
-func GetBeaconHeaderIndexPrefix(index uint64) []byte {
-	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, index)
-	key := append(beaconHeaderIndexPrefix, buf...)
+func GetBeaconIndexToBlockHashPrefix(index uint64) []byte {
+	buf := common.Uint64ToBytes(index)
+	key := append(beaconIndexToBlockHashPrefix, buf...)
 	return key
 }
 
-func GetBeaconBlockIndexPrefix(index uint64) []byte {
-	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, index)
-	key := append(beaconBlockIndexPrefix, buf...)
-	return key
+func GetBeaconBlockHashToIndexKey(hash common.Hash) []byte {
+	return append(beaconBlockHashToIndexPrefix, hash[:]...)
 }
 
+// ============================= Transaction =======================================
 func GetTransactionHashKey(hash common.Hash) []byte {
 	return append(txHashPrefix, hash[:]...)
 }
 
+// ============================= Cross Shard =======================================
 func GetCrossShardNextHeightKey(fromShard byte, toShard byte, height uint64) []byte {
 	buf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(buf, height)

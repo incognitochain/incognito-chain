@@ -1,6 +1,8 @@
 package rawdbv2
 
 import (
+	"bytes"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -9,12 +11,15 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 )
 
+// StoreBeaconBlock store block hash => block value and block index => block hash
+// record1: prefix-index-hash => empty
+// record2: prefix-hash => block value
 func StoreBeaconBlock(db incdb.Database, index uint64, hash common.Hash, v interface{}) error {
-	keyHash := GetBeaconBlockHashKey(hash)
+	keyHash := GetBeaconHashToBlockKey(hash)
 	if ok, _ := db.Has(keyHash); ok {
 		return NewRawdbError(StoreBeaconBlockError, fmt.Errorf("key %+v already exists", keyHash))
 	}
-	keyIndex := GetBeaconBlockIndexKey(index, hash)
+	keyIndex := GetBeaconIndexToBlockHashKey(index, hash)
 	if ok, _ := db.Has(keyIndex); ok {
 		return NewRawdbError(StoreBeaconBlockError, fmt.Errorf("key %+v already exists", keyIndex))
 	}
@@ -22,7 +27,7 @@ func StoreBeaconBlock(db incdb.Database, index uint64, hash common.Hash, v inter
 	if err != nil {
 		return NewRawdbError(StoreBeaconBlockError, err)
 	}
-	if err := db.Put(keyIndex, []byte{}); err != nil {
+	if err := db.Put(keyIndex, keyHash); err != nil {
 		return NewRawdbError(StoreBeaconBlockError, err)
 	}
 	if err := db.Put(keyHash, val); err != nil {
@@ -31,8 +36,21 @@ func StoreBeaconBlock(db incdb.Database, index uint64, hash common.Hash, v inter
 	return nil
 }
 
+// StoreBeaconBlockIndex store block hash => block index
+// key: i-{hash}
+// value: {index-shardID}
+func StoreBeaconBlockIndex(db incdb.Database, hash common.Hash, index uint64) error {
+	key := GetBeaconBlockHashToIndexKey(hash)
+	buf := common.Uint64ToBytes(index)
+	err := db.Put(key, buf)
+	if err != nil {
+		return NewRawdbError(StoreBeaconBlockIndexError, err)
+	}
+	return nil
+}
+
 func HasBeaconBlock(db incdb.Database, hash common.Hash) (bool, error) {
-	keyHash := GetBeaconBlockHashKey(hash)
+	keyHash := GetBeaconHashToBlockKey(hash)
 	if ok, err := db.Has(keyHash); err != nil {
 		return false, NewRawdbError(HasBeaconBlockError, fmt.Errorf("has key %+v failed", keyHash))
 	} else if ok {
@@ -42,7 +60,7 @@ func HasBeaconBlock(db incdb.Database, hash common.Hash) (bool, error) {
 }
 
 func GetBeaconBlockByHash(db incdb.Database, hash common.Hash) ([]byte, error) {
-	keyHash := GetBeaconBlockHashKey(hash)
+	keyHash := GetBeaconHashToBlockKey(hash)
 	if ok, err := db.Has(keyHash); err != nil {
 		return []byte{}, NewRawdbError(GetBeaconBlockByHashError, fmt.Errorf("has key %+v failed", keyHash))
 	} else if !ok {
@@ -59,14 +77,14 @@ func GetBeaconBlockByHash(db incdb.Database, hash common.Hash) ([]byte, error) {
 
 func GetBeaconBlockByIndex(db incdb.Database, index uint64) (map[common.Hash][]byte, error) {
 	m := make(map[common.Hash][]byte)
-	indexPrefix := GetBeaconBlockIndexPrefix(index)
+	indexPrefix := GetBeaconIndexToBlockHashPrefix(index)
 	iterator := db.NewIteratorWithPrefix(indexPrefix)
 	for iterator.Next() {
 		key := iterator.Key()
 		strs := strings.Split(string(key), string(splitter))
 		tempHash := []byte(strs[len(strs)-1])
 		hash := common.BytesToHash(tempHash)
-		keyHash := GetBeaconBlockHashKey(hash)
+		keyHash := GetBeaconHashToBlockKey(hash)
 		if ok, err := db.Has(keyHash); err != nil {
 			return nil, NewRawdbError(GetBeaconBlockByIndexError, fmt.Errorf("has key %+v failed", keyHash))
 		} else if !ok {
@@ -83,9 +101,22 @@ func GetBeaconBlockByIndex(db incdb.Database, index uint64) (map[common.Hash][]b
 	return m, nil
 }
 
+func GetIndexOfBeaconBlock(db incdb.Database, hash common.Hash) (uint64, error) {
+	key := GetBeaconBlockHashToIndexKey(hash)
+	buf, err := db.Get(key)
+	if err != nil {
+		return 0, NewRawdbError(GetIndexOfBeaconBlockError, err)
+	}
+	index, err := common.BytesToUint64(buf)
+	if err != nil {
+		return 0, NewRawdbError(GetIndexOfBeaconBlockError, err)
+	}
+	return index, nil
+}
+
 func DeleteBeaconBlock(db incdb.Database, index uint64, hash common.Hash) error {
-	keyHash := GetBeaconBlockHashKey(hash)
-	keyIndex := GetBeaconBlockIndexKey(index, hash)
+	keyHash := GetBeaconHashToBlockKey(hash)
+	keyIndex := GetBeaconIndexToBlockHashKey(index, hash)
 	if err := db.Delete(keyHash); err != nil {
 		return NewRawdbError(DeleteBeaconBlockError, err)
 	}
@@ -93,4 +124,18 @@ func DeleteBeaconBlock(db incdb.Database, index uint64, hash common.Hash) error 
 		return NewRawdbError(DeleteBeaconBlockError, err)
 	}
 	return nil
+}
+
+func GetBeaconBlockHashByIndex(db incdb.Database, index uint64) ([]common.Hash, error) {
+	beaconBlockHashes := []common.Hash{}
+	indexPrefix := GetBeaconIndexToBlockHashPrefix(index)
+	iterator := db.NewIteratorWithPrefix(indexPrefix)
+	for iterator.Next() {
+		key := iterator.Key()
+		strs := strings.Split(string(key), string(splitter))
+		tempHash := []byte(strs[len(strs)-1])
+		hash := common.BytesToHash(tempHash)
+		beaconBlockHashes = append(beaconBlockHashes, hash)
+	}
+	return beaconBlockHashes, nil
 }

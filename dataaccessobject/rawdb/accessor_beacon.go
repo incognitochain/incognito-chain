@@ -71,22 +71,6 @@ func FetchBeaconBlock(db incdb.Database, hash common.Hash) ([]byte, error) {
 	return ret, nil
 }
 
-func StoreBeaconBlockIndex(db incdb.Database, hash common.Hash, idx uint64) error {
-	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, idx)
-	//{bea-i-{hash}}:index
-	key := append(append(beaconPrefix, blockKeyIdxPrefix...), hash[:]...)
-	if err := db.Put(key, buf); err != nil {
-		return NewRawdbError(StoreBeaconBlockIndexError, err)
-	}
-	//bea-i-{index}:[hash]
-	beaconBuf := append(append(beaconPrefix, blockKeyIdxPrefix...), buf...)
-	if err := db.Put(beaconBuf, hash[:]); err != nil {
-		return NewRawdbError(StoreBeaconBlockIndexError, err)
-	}
-	return nil
-}
-
 func GetIndexOfBeaconBlock(db incdb.Database, hash common.Hash) (uint64, error) {
 	key := append(append(beaconPrefix, blockKeyIdxPrefix...), hash[:]...)
 	b, err := db.Get(key)

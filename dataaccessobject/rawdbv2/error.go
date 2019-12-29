@@ -9,18 +9,22 @@ import (
 const (
 	// Beacon
 	StoreBeaconBlockError = iota
+	StoreBeaconBlockIndexError
+	GetIndexOfBeaconBlockError
 	HasBeaconBlockError
 	GetBeaconBlockByHashError
 	GetBeaconBlockByIndexError
 	DeleteBeaconBlockError
 	// Shard
 	StoreShardBlockError
+	StoreShardBlockIndexError
 	HasShardBlockError
 	GetShardBlockByHashError
 	GetShardBlockByIndexError
 	DeleteShardBlockError
 	StoreCrossShardNextHeightError
 	FetchCrossShardNextHeightError
+	GetIndexOfBlockError
 	// tx
 	StoreTransactionIndexError
 	GetTransactionByHashError
@@ -36,6 +40,8 @@ var ErrCodeMessage = map[int]struct {
 	GetBeaconBlockByHashError:  {-1001, "Get Beacon Block By Hash Error"},
 	GetBeaconBlockByIndexError: {-1002, "Get Beacon Block By Index Error"},
 	DeleteBeaconBlockError:     {-1003, "Delete Beacon Block Error"},
+	StoreBeaconBlockIndexError: {-1004, "Store Beacon Block Index Error"},
+	GetIndexOfBeaconBlockError: {-1005, "Get Index Of Beacon Block Error"},
 
 	StoreShardBlockError:           {-2000, "Store Shard Block Error"},
 	HasShardBlockError:             {-2001, "Has Shard Block Error"},
@@ -44,6 +50,8 @@ var ErrCodeMessage = map[int]struct {
 	DeleteShardBlockError:          {-2004, "Delete Shard Block Error"},
 	StoreCrossShardNextHeightError: {-2005, "Store Cross Shard Next Height Error"},
 	FetchCrossShardNextHeightError: {-2006, "Fetch Cross Shard Next Height Error"},
+	StoreShardBlockIndexError:      {-2007, "Store Shard Block Index Error"},
+	GetIndexOfBlockError:           {-2008, "Get Index Of Shard Block Error"},
 
 	StoreTransactionIndexError: {-3000, "Store Transaction Index Error"},
 	GetTransactionByHashError:  {-3001, "Get Transaction By Hash Error"},
