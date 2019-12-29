@@ -485,7 +485,7 @@ func cloneTxTokenPrivacyDataForCrossShard(txTokenPrivacyData transaction.TxPriva
 		PropertySymbol: txTokenPrivacyData.PropertySymbol,
 		Mintable:       txTokenPrivacyData.Mintable,
 		Amount:         txTokenPrivacyData.Amount,
-		Type:           transaction.TokenCrossShard,
+		Type:           transaction.CustomTokenCrossShard,
 	}
 	newContentCrossTokenPrivacyData.OutputCoin = []privacy.OutputCoin{}
 	return newContentCrossTokenPrivacyData

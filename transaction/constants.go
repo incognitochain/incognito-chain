@@ -6,9 +6,9 @@ const (
 )
 
 const (
-	TokenInit = iota
-	TokenTransfer
-	TokenCrossShard
+	CustomTokenInit = iota
+	CustomTokenTransfer
+	CustomTokenCrossShard
 )
 
 const (

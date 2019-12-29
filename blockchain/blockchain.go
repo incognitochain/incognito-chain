@@ -686,7 +686,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 		privacyCustomTokenSubView := view.privacyCustomTokenViewPoint[int32(indexTx)]
 		privacyCustomTokenTx := view.privacyCustomTokenTxs[int32(indexTx)]
 		switch privacyCustomTokenTx.TxPrivacyTokenData.Type {
-		case transaction.TokenInit:
+		case transaction.CustomTokenInit:
 			{
 				// check is bridge token
 				isBridgeToken := false
@@ -712,7 +712,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 					}
 				}
 			}
-		case transaction.TokenTransfer:
+		case transaction.CustomTokenTransfer:
 			{
 				Logger.log.Info("Transfer custom token %+v", privacyCustomTokenTx)
 			}
@@ -1799,14 +1799,14 @@ func (blockchain *BlockChain) GetActiveShardNumber() int {
 // 	// check normal custom token
 // 	for indexTx, customTokenTx := range view.customTokenTxs {
 // 		switch customTokenTx.TxTokenData.Type {
-// 		case transaction.TokenInit:
+// 		case transaction.CustomTokenInit:
 // 			{
 // 				err = rawdb.DeleteNormalToken(customTokenTx.TxTokenData.PropertyID)
 // 				if err != nil {
 // 					return err
 // 				}
 // 			}
-// 		case transaction.TokenCrossShard:
+// 		case transaction.CustomTokenCrossShard:
 // 			{
 // 				err = rawdb.DeleteNormalToken(customTokenTx.TxTokenData.PropertyID)
 // 				if err != nil {
@@ -1825,7 +1825,7 @@ func (blockchain *BlockChain) GetActiveShardNumber() int {
 // 	for indexTx, privacyCustomTokenSubView := range view.privacyCustomTokenViewPoint {
 // 		privacyCustomTokenTx := view.privacyCustomTokenTxs[indexTx]
 // 		switch privacyCustomTokenTx.TxPrivacyTokenData.Type {
-// 		case transaction.TokenInit:
+// 		case transaction.CustomTokenInit:
 // 			{
 // 				err = rawdb.DeletePrivacyToken(privacyCustomTokenTx.TxPrivacyTokenData.PropertyID)
 // 				if err != nil {

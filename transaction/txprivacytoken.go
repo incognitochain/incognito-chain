@@ -225,7 +225,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 	var handled = false
 	// Add token data component
 	switch params.tokenParams.TokenTxType {
-	case TokenInit:
+	case CustomTokenInit:
 		// case init a new privacy custom token
 		{
 			handled = true
@@ -312,7 +312,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 				Logger.log.Debugf("A new token privacy wil be issued with ID: %+v", txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID.String())
 			}
 		}
-	case TokenTransfer:
+	case CustomTokenTransfer:
 		{
 			handled = true
 			// make a transfering for privacy custom token
@@ -457,7 +457,7 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxByItself(
 	shardID byte,
 ) (bool, error) {
 	// no need to check for tx init token
-	if txCustomTokenPrivacy.TxPrivacyTokenData.Type == TokenInit {
+	if txCustomTokenPrivacy.TxPrivacyTokenData.Type == CustomTokenInit {
 		return txCustomTokenPrivacy.Tx.ValidateTransaction(hasPrivacyCoin, db, shardID, nil)
 	}
 	// check for proof, signature ...
@@ -483,7 +483,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacy
 	if ok {
 		// validate for pToken
 		tokenID := txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID
-		if txCustomTokenPrivacy.TxPrivacyTokenData.Type == TokenInit {
+		if txCustomTokenPrivacy.TxPrivacyTokenData.Type == CustomTokenInit {
 			return true, nil
 		} else {
 			return txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.ValidateTransaction(txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.IsPrivacy(), db, shardID, &tokenID)
@@ -780,7 +780,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 	var handled = false
 	// Add token data component
 	switch params.txParam.tokenParams.TokenTxType {
-	case TokenInit:
+	case CustomTokenInit:
 		// case init a new privacy custom token
 		{
 			handled = true
@@ -855,7 +855,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 				txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID = newHashInitToken
 			}
 		}
-	case TokenTransfer:
+	case CustomTokenTransfer:
 		{
 			handled = true
 			// make a transfering for privacy custom token

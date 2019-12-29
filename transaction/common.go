@@ -297,7 +297,7 @@ func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Tr
 			PropertyName:   params.coinName,
 			PropertySymbol: params.coinName,
 			Amount:         params.amount,
-			TokenTxType:    TokenInit,
+			TokenTxType:    CustomTokenInit,
 			Receiver:       []*privacy.PaymentInfo{receiver},
 			TokenInput:     []*privacy.InputCoin{},
 			Mintable:       true,

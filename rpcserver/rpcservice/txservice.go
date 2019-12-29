@@ -441,7 +441,7 @@ func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 	if !ok {
 		return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Token fee is invalid"))
 	}
-	if tokenTxType == transaction.TokenInit {
+	if tokenTxType == transaction.CustomTokenInit {
 		tokenFee = 0
 	}
 	tokenParams := &transaction.CustomTokenPrivacyParamTx{
@@ -459,7 +459,7 @@ func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 
 	// get list custom token
 	switch tokenParams.TokenTxType {
-	case transaction.TokenTransfer:
+	case transaction.CustomTokenTransfer:
 		{
 			tokenID, err := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
 			if err != nil {
@@ -485,7 +485,7 @@ func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 			intputToken := transaction.ConvertOutputCoinToInputCoin(candidateOutputTokens)
 			tokenParams.TokenInput = intputToken
 		}
-	case transaction.TokenInit:
+	case transaction.CustomTokenInit:
 		{
 			if len(tokenParams.Receiver) == 0 {
 				return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Init with wrong receiver"))

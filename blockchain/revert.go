@@ -530,7 +530,7 @@ func (blockchain *BlockChain) restoreFromTxViewPoint(block *ShardBlock) error {
 			}
 		}
 		switch privacyCustomTokenTx.TxPrivacyTokenData.Type {
-		case transaction.TokenInit, transaction.TokenCrossShard:
+		case transaction.CustomTokenInit, transaction.CustomTokenCrossShard:
 			{
 				if !isBridgeToken && !privacyCustomTokenTx.TxPrivacyTokenData.Mintable {
 					err = rawdb.DeletePrivacyToken(blockchain.GetDatabase(), privacyCustomTokenTx.TxPrivacyTokenData.PropertyID)
