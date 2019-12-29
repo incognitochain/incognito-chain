@@ -176,24 +176,6 @@ func (blockchain *BlockChain) InitChannelBlockchain(cRemovedTxs chan metadata.Tr
 	blockchain.config.CRemovedTxs = cRemovedTxs
 }
 
-// -------------- Blockchain retriever's implementation --------------
-// GetCustomTokenTxsHash - return list of tx which relate to custom token
-func (blockchain *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash]metadata.Transaction, error) {
-	txHashesInByte, err := blockchain.config.DataBase.NormalTokenTxs(*tokenID)
-	if err != nil {
-		return nil, err
-	}
-	result := make(map[common.Hash]metadata.Transaction)
-	for _, temp := range txHashesInByte {
-		_, _, _, tx, err := blockchain.GetTransactionByHash(temp)
-		if err != nil {
-			return nil, err
-		}
-		result[*tx.Hash()] = tx
-	}
-	return result, nil
-}
-
 // -------------- End of Blockchain retriever's implementation --------------
 
 /*
@@ -1008,11 +990,6 @@ func (blockchain *BlockChain) GetTransactionHashByReceiver(keySet *incognitokey.
 	return result, nil
 }
 
-// Check Custom token ID is existed
-func (blockchain *BlockChain) CustomTokenIDExisted(tokenID *common.Hash) bool {
-	return blockchain.config.DataBase.NormalTokenIDExisted(*tokenID)
-}
-
 // Check Privacy Custom token ID is existed
 func (blockchain *BlockChain) PrivacyCustomTokenIDExisted(tokenID *common.Hash) bool {
 	return blockchain.config.DataBase.PrivacyTokenIDExisted(*tokenID)
@@ -1057,19 +1034,6 @@ func (blockchain *BlockChain) ListPrivacyCustomToken() (map[common.Hash]transact
 	return result, resultCrossShard, nil
 }
 
-// GetCustomTokenTxsHash - return list hash of tx which relate to custom token
-func (blockchain *BlockChain) GetCustomTokenTxsHash(tokenID *common.Hash) ([]common.Hash, error) {
-	txHashesInByte, err := blockchain.config.DataBase.NormalTokenTxs(*tokenID)
-	if err != nil {
-		return nil, err
-	}
-	result := []common.Hash{}
-	for _, temp := range txHashesInByte {
-		result = append(result, temp)
-	}
-	return result, nil
-}
-
 // GetPrivacyCustomTokenTxsHash - return list hash of tx which relate to custom token
 func (blockchain *BlockChain) GetPrivacyCustomTokenTxsHash(tokenID *common.Hash) ([]common.Hash, error) {
 	txHashesInByte, err := blockchain.config.DataBase.PrivacyTokenTxs(*tokenID)
@@ -1079,15 +1043,6 @@ func (blockchain *BlockChain) GetPrivacyCustomTokenTxsHash(tokenID *common.Hash)
 	result := []common.Hash{}
 	for _, temp := range txHashesInByte {
 		result = append(result, temp)
-	}
-	return result, nil
-}
-
-// GetListTokenHolders - return list paymentaddress (in hexstring) of someone who hold custom token in network
-func (blockchain *BlockChain) GetListTokenHolders(tokenID *common.Hash) (map[string]uint64, error) {
-	result, err := blockchain.config.DataBase.GetNormalTokenPaymentAddressesBalance(*tokenID)
-	if err != nil {
-		return nil, err
 	}
 	return result, nil
 }

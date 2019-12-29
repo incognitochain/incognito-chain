@@ -613,19 +613,6 @@ func (txService TxService) GetTransactionByHash(txHashStr string) (*jsonresult.T
 	return result, nil
 }
 
-func (txService TxService) GetListCustomTokenHolders(tokenIDString string) (map[string]uint64, *RPCError) {
-	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDString)
-	if err != nil {
-		return nil, NewRPCError(RPCInvalidParamsError, errors.New("TokenID is invalid"))
-	}
-	result, err := txService.BlockChain.GetListTokenHolders(tokenID)
-	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
-	}
-
-	return result, nil
-}
-
 func (txService TxService) GetListPrivacyCustomTokenBalance(privateKey string) (jsonresult.ListCustomTokenBalance, *RPCError) {
 	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
 	account, err := wallet.Base58CheckDeserialize(privateKey)
@@ -773,16 +760,6 @@ func (txService TxService) GetBalancePrivacyCustomToken(privateKey string, token
 	}
 
 	return totalValue, nil
-}
-
-func (txService TxService) CustomTokenDetail(tokenIDStr string) ([]common.Hash, error) {
-	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
-	if err != nil {
-		Logger.log.Debugf("handleCustomTokenDetail result: %+v, err: %+v", nil, err)
-		return nil, err
-	}
-	txs, _ := txService.BlockChain.GetCustomTokenTxsHash(tokenID)
-	return txs, nil
 }
 
 func (txService TxService) PrivacyCustomTokenDetail(tokenIDStr string) ([]common.Hash, *transaction.TxPrivacyTokenData, error) {
