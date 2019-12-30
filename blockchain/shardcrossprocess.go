@@ -14,6 +14,12 @@ type CrossOutputCoin struct {
 	BlockHash   common.Hash
 	OutputCoin  []privacy.OutputCoin
 }
+
+type CrossTokenPrivacyData struct {
+	BlockHeight      uint64
+	BlockHash        common.Hash
+	TokenPrivacyData []ContentCrossShardTokenPrivacyData
+}
 type CrossTransaction struct {
 	BlockHeight      uint64
 	BlockHash        common.Hash

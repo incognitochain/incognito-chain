@@ -454,6 +454,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 			for index, shardState := range shardStates {
 				if shardBlocks[index].Header.Height != shardState.Height {
 					return NewBlockChainError(ShardStateHeightError, fmt.Errorf("Expect shard state height to be %+v but get %+v from pool", shardState.Height, shardBlocks[index].Header.Height))
+					return NewBlockChainError(ShardStateHeightError, fmt.Errorf("Expect shard state height to be %+v but get %+v from pool(shard %v)", shardState.Height, shardBlocks[index].Header.Height, shardID))
 				}
 				blockHash := shardBlocks[index].Header.Hash()
 				if !blockHash.IsEqual(&shardState.Hash) {

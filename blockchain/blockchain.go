@@ -176,6 +176,8 @@ func (blockchain *BlockChain) InitChannelBlockchain(cRemovedTxs chan metadata.Tr
 	blockchain.config.CRemovedTxs = cRemovedTxs
 }
 
+// -------------- End of Blockchain retriever's implementation --------------
+
 /*
 // initChainState attempts to load and initialize the chain state from the
 // database.  When the db does not yet contain any chain state, both it and the
@@ -1289,12 +1291,17 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 		}
 	}
 	if txType == -1 {
-		mapPrivacyCustomToken, _, err := blockchain.ListPrivacyCustomToken()
+		mapPrivacyCustomToken, mapCrossShardCustomToken, err := blockchain.ListPrivacyCustomToken()
 		if err != nil {
 			return nil, err
 		}
 		if mapPrivacyCustomToken != nil {
 			if _, ok := mapPrivacyCustomToken[coinID]; ok {
+				txType = transaction.CustomTokenPrivacyType
+			}
+		}
+		if mapCrossShardCustomToken != nil {
+			if _, ok := mapCrossShardCustomToken[coinID]; ok {
 				txType = transaction.CustomTokenPrivacyType
 			}
 		}

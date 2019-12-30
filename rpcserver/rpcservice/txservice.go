@@ -393,7 +393,6 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 }
 
 func (txService TxService) BuildTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet, shardIDSender byte) (*transaction.CustomTokenPrivacyParamTx, *RPCError) {
-
 	var privacyTokenParam *transaction.CustomTokenPrivacyParamTx
 	var err *RPCError
 
@@ -762,6 +761,7 @@ func (txService TxService) GetBalancePrivacyCustomToken(privateKey string, token
 
 	return totalValue, nil
 }
+
 func (txService TxService) PrivacyCustomTokenDetail(tokenIDStr string) ([]common.Hash, *transaction.TxPrivacyTokenData, error) {
 	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
 	if err != nil {

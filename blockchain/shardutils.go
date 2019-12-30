@@ -381,8 +381,9 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 	combinedHash := make([]common.Hash, common.MaxShardNumber)
 	for i := 0; i < common.MaxShardNumber; i++ {
 		outputCoinHash[i] = calHashOutCoinCrossShard(outCoinEachShard[i])
-		txTokenPrivacyOutHash[i] = calHashTxTokenPrivacyDataHashFromMap(txTokenPrivacyDataMap[i])
 		txTokenOutHash[i] = calHashTxTokenDataHashFromMap()
+		txTokenPrivacyOutHash[i] = calHashTxTokenPrivacyDataHashFromMap(txTokenPrivacyDataMap[i])
+
 		tmpByte := append(append(outputCoinHash[i].GetBytes(), txTokenOutHash[i].GetBytes()...), txTokenPrivacyOutHash[i].GetBytes()...)
 		combinedHash[i] = common.HashH(tmpByte)
 	}

@@ -65,27 +65,20 @@ type TxPool interface {
 	// LastUpdated returns the last time a transaction was added to or
 	// removed from the source pool.
 	LastUpdated() time.Time
-
 	// MiningDescs returns a slice of mining descriptors for all the
 	// transactions in the source pool.
 	MiningDescs() []*metadata.TxDesc
-
 	// HaveTransaction returns whether or not the passed transaction hash
 	// exists in the source pool.
 	HaveTransaction(hash *common.Hash) bool
-
 	// RemoveTx remove tx from tx resource
 	RemoveTx(txs []metadata.Transaction, isInBlock bool)
-
 	RemoveCandidateList([]string)
-
 	EmptyPool() bool
-
 	MaybeAcceptTransactionForBlockProducing(metadata.Transaction, int64) (*metadata.TxDesc, error)
 	ValidateTxList(txs []metadata.Transaction) error
 	//CheckTransactionFee
 	// CheckTransactionFee(tx metadata.Transaction) (uint64, error)
-
 	// Check tx validate by it self
 	// ValidateTxByItSelf(tx metadata.Transaction) bool
 }

@@ -130,10 +130,24 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	//==========Build block body============
 	// Get Transaction For new Block
 	// Get Cross output coin from other shard && produce cross shard transaction
+	// // startStep = time.Now()
 	crossTransactions := blockGenerator.getCrossShardData(shardID, shardBestState.BeaconHeight, beaconHeight, crossShards)
-	if err != nil {
-		return nil, err
-	}
+	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
+	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
+	// 	metrics.Tag:              metrics.NewShardBlockProcessingStep,
+	// 	metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, metrics.GetCrossShardDataStep),
+	// })
+	// Create Cross Token Transaction
+	// // startStep = time.Now()
+	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
+	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
+	// 	metrics.Tag:              metrics.NewShardBlockProcessingStep,
+	// 	metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, metrics.CreateNormalTokenTxFromCrossShardStep),
+	// })
+	// Get Transaction for new block
+	// // startStep = time.Now()
 	blockCreationLeftOver := blockGenerator.chain.BestState.Shard[shardID].BlockMaxCreateTime.Nanoseconds() - time.Since(start).Nanoseconds()
 	txsToAddFromBlock, err := blockGenerator.getTransactionForNewBlock(&tempPrivateKey, shardID, blockGenerator.chain.config.DataBase, beaconBlocks, blockCreationLeftOver, beaconHeight)
 	if err != nil {
@@ -681,12 +695,12 @@ func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeacon
 		for _, index := range indexs {
 			tempCrossShardBlock := crossShardBlock[index]
 			crossTransaction := CrossTransaction{
-				OutputCoin:       tempCrossShardBlock.CrossOutputCoin,
-				TokenPrivacyData: tempCrossShardBlock.CrossTxTokenPrivacyData,
-				BlockHash:        *tempCrossShardBlock.Hash(),
-				BlockHeight:      tempCrossShardBlock.Header.Height,
+				OutputCoin:       blk.CrossOutputCoin,
+				TokenPrivacyData: blk.CrossTxTokenPrivacyData,
+				BlockHash:        *blk.Hash(),
+				BlockHeight:      blk.Header.Height,
 			}
-			crossTransactions[tempCrossShardBlock.Header.ShardID] = append(crossTransactions[tempCrossShardBlock.Header.ShardID], crossTransaction)
+			crossTransactions[blk.Header.ShardID] = append(crossTransactions[blk.Header.ShardID], crossTransaction)
 		}
 	}
 	for _, crossTransaction := range crossTransactions {

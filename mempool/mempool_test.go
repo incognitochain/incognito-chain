@@ -698,6 +698,11 @@ func TestTxPoolAddTx(t *testing.T) {
 		candidate.FromString(v)
 		_ = candidate
 	}
+	for _, v := range tp.poolCandidate {
+		candidate := incognitokey.CommitteePublicKey{}
+		candidate.FromString(v)
+		_ = candidate
+	}
 	if common.IndexOfStrInHashMap(stakingPublicKey, tp.poolCandidate) < 0 {
 		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.poolCandidate)
 	}

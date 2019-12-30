@@ -478,7 +478,6 @@ In Param#2: isStore: store transaction to persistence storage only work for tran
 5.1 Check for Replacement or Cancel transaction
 6. Validate data in tx: privacy proof, metadata,...
 7. Validate tx with blockchain: douple spend, ...
-8. CustomInitToken: Check Custom Init Token try to init exist token ID => eliminate
 9. Staking Transaction: Check Duplicate stake public key in pool ONLY with staking transaction
 10. RequestStopAutoStaking
 */

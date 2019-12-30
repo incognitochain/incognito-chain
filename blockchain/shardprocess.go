@@ -370,7 +370,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 			totalInstructions = append(totalInstructions, value...)
 		}
 		if hash, ok := verifyHashFromStringArray(totalInstructions, shardBlock.Header.InstructionsRoot); !ok {
-			return NewBlockChainError(InstructionsHashError, fmt.Errorf("Expect instruction hash to be %+v but get %+v", shardBlock.Header.InstructionsRoot, hash))
+			return NewBlockChainError(InstructionsHashError, fmt.Errorf("Expect instruction hash to be %+v but get %+v at block %+v hash %+v", shardBlock.Header.InstructionsRoot, hash, shardBlock.Header.Height, shardBlock.Hash().String()))
 		}
 	}
 	totalTxsFee := make(map[common.Hash]uint64)
@@ -962,7 +962,7 @@ func (blockchain *BlockChain) processStoreShardBlockAndUpdateDatabase(shardBlock
 	if feeEstimator, ok := blockchain.config.FeeEstimator[shardBlock.Header.ShardID]; ok {
 		err := feeEstimator.RegisterBlock(shardBlock)
 		if err != nil {
-			Logger.log.Error(NewBlockChainError(RegisterEstimatorFeeError, err))
+			Logger.log.Warn(NewBlockChainError(RegisterEstimatorFeeError, err))
 		}
 	}
 	Logger.log.Infof("SHARD %+v | 🔎 %d transactions in block height %+v \n", shardBlock.Header.ShardID, len(shardBlock.Body.Transactions), shardBlock.Header.Height)

@@ -58,6 +58,8 @@ func (httpServer *HttpServer) handleGetBeaconSwapProof(params interface{}, close
 	}
 	height := uint64(heightParam)
 
+	db := *httpServer.config.Database
+
 	// Get proof of instruction on beacon
 	beaconInstProof, _, errProof := getSwapProofOnBeacon(height, httpServer.GetDatabase(), httpServer.config.ConsensusEngine, metadata.BeaconSwapConfirmMeta)
 	if errProof != nil {

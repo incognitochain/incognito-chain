@@ -179,6 +179,15 @@ func verifyHashFromShardState(allShardState map[byte][]ShardState, hash common.H
 	return bytes.Equal(res.GetBytes(), hash.GetBytes())
 }
 
+// NOTICE: this function is deprecate, just return empty data
+func calHashFromTxTokenDataList() (common.Hash, error) {
+	hashes := []common.Hash{}
+	hash, err := generateHashFromHashArray(hashes)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	return hash, nil
+}
 func verifyLastCrossShardStateHash(lastCrossShardState map[byte]map[byte]uint64, targetHash common.Hash) (common.Hash, bool) {
 	hash := generateLastCrossShardStateHash(lastCrossShardState)
 	return hash, hash.IsEqual(&targetHash)

@@ -46,7 +46,7 @@ type CrossShardBlock struct {
 	MerklePathShard []common.Hash
 	// Cross Shard data for PRV
 	CrossOutputCoin []privacy.OutputCoin
-	// Cross Shard Data for Custom Token Tx
+	// Cross Shard For Custom token privacy
 	CrossTxTokenPrivacyData []ContentCrossShardTokenPrivacyData
 }
 

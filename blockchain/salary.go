@@ -6,6 +6,8 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"strconv"
 
+	"github.com/incognitochain/incognito-chain/database"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incdb"

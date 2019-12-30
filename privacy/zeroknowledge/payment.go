@@ -829,3 +829,4 @@ func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee 
 
 	return proof.verifyHasPrivacy(pubKey, fee, db, shardID, tokenID)
 }
+
