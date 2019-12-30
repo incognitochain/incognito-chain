@@ -44,10 +44,10 @@ const (
 
 // For all Transaction information
 const (
-	TxNormalType             = "n"  // normal tx(send and receive coin)
-	TxRewardType             = "s"  // reward tx
-	TxReturnStakingType      = "rs" //
-	TxCustomTokenType        = "t"  // token  tx with no supporting privacy
+	TxNormalType        = "n"  // normal tx(send and receive coin)
+	TxRewardType        = "s"  // reward tx
+	TxReturnStakingType = "rs" //
+	//TxCustomTokenType        = "t"  // token  tx with no supporting privacy
 	TxCustomTokenPrivacyType = "tp" // token  tx with supporting privacy
 )
 
@@ -63,7 +63,7 @@ var (
 
 // burning addresses
 const (
-	BurningAddress = "15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs"
+	BurningAddress  = "15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs"
 	BurningAddress2 = "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA"
 )
 

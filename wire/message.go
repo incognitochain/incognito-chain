@@ -77,11 +77,6 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdBlkShardToBeacon:
 		msg = &MessageShardToBeacon{}
 		break
-	case CmdCustomToken:
-		msg = &MessageTxToken{
-			Transaction: &transaction.TxNormalToken{},
-		}
-		break
 	case CmdPrivacyCustomToken:
 		msg = &MessageTxPrivacyToken{
 			Transaction: &transaction.TxCustomTokenPrivacy{},
@@ -197,8 +192,6 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdGetBlockShard, nil
 	case reflect.TypeOf(&MessageTx{}):
 		return CmdTx, nil
-	case reflect.TypeOf(&MessageTxToken{}):
-		return CmdCustomToken, nil
 	case reflect.TypeOf(&MessageTxPrivacyToken{}):
 		return CmdPrivacyCustomToken, nil
 	case reflect.TypeOf(&MessageVersion{}):
