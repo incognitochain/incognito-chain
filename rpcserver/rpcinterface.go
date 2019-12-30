@@ -46,17 +46,19 @@ var HttpHandler = map[string]httpHandler{
 	getNextCrossShard: (*HttpServer).handleGetNextCrossShard,
 
 	// block
-	getBestBlock:        (*HttpServer).handleGetBestBlock,
-	getBestBlockHash:    (*HttpServer).handleGetBestBlockHash,
-	retrieveBlock:       (*HttpServer).handleRetrieveBlock,
-	retrieveBeaconBlock: (*HttpServer).handleRetrieveBeaconBlock,
-	getBlocks:           (*HttpServer).handleGetBlocks,
-	getBlockChainInfo:   (*HttpServer).handleGetBlockChainInfo,
-	getBlockCount:       (*HttpServer).handleGetBlockCount,
-	getBlockHash:        (*HttpServer).handleGetBlockHash,
-	checkHashValue:      (*HttpServer).handleCheckHashValue, // get data in blockchain from hash value
-	getBlockHeader:      (*HttpServer).handleGetBlockHeader, // Current committee, next block committee and candidate is included in block header
-	getCrossShardBlock:  (*HttpServer).handleGetCrossShardBlock,
+	getBestBlock:                (*HttpServer).handleGetBestBlock,
+	getBestBlockHash:            (*HttpServer).handleGetBestBlockHash,
+	retrieveBlock:               (*HttpServer).handleRetrieveBlock,
+	retrieveBlockByHeight:       (*HttpServer).handleRetrieveBlockByHeight,
+	retrieveBeaconBlock:         (*HttpServer).handleRetrieveBeaconBlock,
+	retrieveBeaconBlockByHeight: (*HttpServer).handleRetrieveBeaconBlockByHeight,
+	getBlocks:                   (*HttpServer).handleGetBlocks,
+	getBlockChainInfo:           (*HttpServer).handleGetBlockChainInfo,
+	getBlockCount:               (*HttpServer).handleGetBlockCount,
+	getBlockHash:                (*HttpServer).handleGetBlockHash,
+	checkHashValue:              (*HttpServer).handleCheckHashValue, // get data in blockchain from hash value
+	getBlockHeader:              (*HttpServer).handleGetBlockHeader, // Current committee, next block committee and candidate is included in block header
+	getCrossShardBlock:          (*HttpServer).handleGetCrossShardBlock,
 
 	// transaction
 	listOutputCoins:                         (*HttpServer).handleListOutputCoins,
@@ -93,17 +95,6 @@ var HttpHandler = map[string]httpHandler{
 	getShardPoolLatestValidHeight: (*HttpServer).handleGetShardPoolLatestValidHeight,
 	canPubkeyStake:                (*HttpServer).handleCanPubkeyStake,
 	getTotalTransaction:           (*HttpServer).handleGetTotalTransaction,
-
-	// custom token
-	createRawCustomTokenTransaction:     (*HttpServer).handleCreateRawCustomTokenTransaction,
-	sendRawCustomTokenTransaction:       (*HttpServer).handleSendRawCustomTokenTransaction,
-	createAndSendCustomTokenTransaction: (*HttpServer).handleCreateAndSendCustomTokenTransaction,
-	listUnspentCustomToken:              (*HttpServer).handleListUnspentCustomToken,
-	getBalanceCustomToken:               (*HttpServer).handleGetBalanceCustomToken,
-	listCustomToken:                     (*HttpServer).handleListCustomToken,
-	customTokenTxs:                      (*HttpServer).handleCustomTokenDetail,
-	listCustomTokenHolders:              (*HttpServer).handleGetListCustomTokenHolders,
-	getListCustomTokenBalance:           (*HttpServer).handleGetListCustomTokenBalance,
 
 	// custom token which support privacy
 	createRawPrivacyCustomTokenTransaction:     (*HttpServer).handleCreateRawPrivacyCustomTokenTransaction,
@@ -209,7 +200,6 @@ var WsHandler = map[string]wsHandler{
 	subcribeBeaconCommitteeByPublickey:          (*WsServer).handleSubcribeBeaconCommitteeByPublickey,
 	subcribeMempoolInfo:                         (*WsServer).handleSubcribeMempoolInfo,
 	subcribeCrossOutputCoinByPrivateKey:         (*WsServer).handleSubcribeCrossOutputCoinByPrivateKey,
-	subcribeCrossCustomTokenByPrivateKey:        (*WsServer).handleSubcribeCrossCustomTokenByPrivateKey,
 	subcribeCrossCustomTokenPrivacyByPrivateKey: (*WsServer).handleSubcribeCrossCustomTokenPrivacyByPrivateKey,
 	subcribeShardBestState:                      (*WsServer).handleSubscribeShardBestState,
 	subcribeBeaconBestState:                     (*WsServer).handleSubscribeBeaconBestState,

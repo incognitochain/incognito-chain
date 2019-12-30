@@ -17,6 +17,9 @@ func ParseListenner(s, defaultIP string, defaultPort int) (string, int) {
 		if e != nil {
 			panic(e)
 		}
+		if splitStr[0] == "" {
+			return defaultIP, p
+		}
 		return splitStr[0], p
 	}
 	return splitStr[0], 0

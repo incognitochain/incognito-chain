@@ -20,16 +20,6 @@ type CustomToken struct {
 	TxInfo             string   `json:"TxInfo"`
 }
 
-func NewNormalToken(obj transaction.TxNormalToken) *CustomToken {
-	customToken := &CustomToken{}
-	customToken.ID = obj.TxTokenData.PropertyID.String()
-	customToken.Symbol = obj.TxTokenData.PropertySymbol
-	customToken.Name = obj.TxTokenData.PropertyName
-	customToken.Amount = obj.TxTokenData.Amount
-	customToken.Image = common.Render(obj.TxTokenData.PropertyID[:])
-	return customToken
-}
-
 func NewPrivacyToken(obj transaction.TxCustomTokenPrivacy) *CustomToken {
 	customToken := &CustomToken{}
 	customToken.ID = obj.TxPrivacyTokenData.PropertyID.String()
@@ -50,6 +40,7 @@ func NewPrivacyForCrossShard(obj blockchain.CrossShardTokenPrivacyMetaData) *Cus
 	customToken.Amount = obj.Amount
 	//customToken.Image = common.Render(obj.TokenID[:])
 	customToken.IsPrivacy = true
+	customToken.TxInfo = base58.Base58Check{}.Encode([]byte{}, common.ZeroByte)
 	return customToken
 }
 

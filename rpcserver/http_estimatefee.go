@@ -72,7 +72,6 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 		}
 
 		// Check custom token param
-		var customTokenParams *transaction.CustomTokenParamTx
 		var customPrivacyTokenParam *transaction.CustomTokenPrivacyParamTx
 		isGetPTokenFee := false
 		if len(arrayParams) > 4 {
@@ -82,7 +81,7 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 				return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token param is invalid"))
 			}
 
-			customTokenParams, customPrivacyTokenParam, err = httpServer.txService.BuildTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
+			customPrivacyTokenParam, err = httpServer.txService.BuildTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
 			if err.(*rpcservice.RPCError) != nil {
 				return nil, err.(*rpcservice.RPCError)
 			}
@@ -94,8 +93,8 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 		var err2 error
 		_, estimateFeeCoinPerKb, estimateTxSizeInKb, err2 = httpServer.txService.EstimateFee(
 			defaultFeeCoinPerKb, isGetPTokenFee, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy, nil,
-			customTokenParams, customPrivacyTokenParam, *httpServer.config.Database, int64(beaconHeight))
-		if err2 != nil{
+			customPrivacyTokenParam, *httpServer.config.Database, int64(beaconHeight))
+		if err2 != nil {
 			return nil, rpcservice.NewRPCError(rpcservice.RejectInvalidFeeError, err2)
 		}
 	}
@@ -158,7 +157,7 @@ func (httpServer *HttpServer) handleEstimateFeeWithEstimator(params interface{},
 	beaconHeight := beaconState.BeaconHeight
 
 	estimateFeeCoinPerKb, err := httpServer.txService.EstimateFeeWithEstimator(defaultFeeCoinPerKb, shardIDSender, numblock, tokenId, int64(beaconHeight), *httpServer.config.Database)
-	if err != nil{
+	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 

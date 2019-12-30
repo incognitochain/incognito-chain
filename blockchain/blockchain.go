@@ -176,24 +176,6 @@ func (blockchain *BlockChain) InitChannelBlockchain(cRemovedTxs chan metadata.Tr
 	blockchain.config.CRemovedTxs = cRemovedTxs
 }
 
-// -------------- Blockchain retriever's implementation --------------
-// GetCustomTokenTxsHash - return list of tx which relate to custom token
-func (blockchain *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash]metadata.Transaction, error) {
-	txHashesInByte, err := blockchain.config.DataBase.NormalTokenTxs(*tokenID)
-	if err != nil {
-		return nil, err
-	}
-	result := make(map[common.Hash]metadata.Transaction)
-	for _, temp := range txHashesInByte {
-		_, _, _, tx, err := blockchain.GetTransactionByHash(temp)
-		if err != nil {
-			return nil, err
-		}
-		result[*tx.Hash()] = tx
-	}
-	return result, nil
-}
-
 // -------------- End of Blockchain retriever's implementation --------------
 
 /*
@@ -696,59 +678,6 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 		return err
 	}
 
-	// check normal custom token
-	for indexTx, customTokenTx := range view.customTokenTxs {
-		switch customTokenTx.TxTokenData.Type {
-		case transaction.CustomTokenInit:
-			{
-				Logger.log.Info("Store custom token when it is issued", customTokenTx.TxTokenData.PropertyID, customTokenTx.TxTokenData.PropertySymbol, customTokenTx.TxTokenData.PropertyName)
-				err = blockchain.config.DataBase.StoreNormalToken(customTokenTx.TxTokenData.PropertyID, customTokenTx.Hash()[:])
-				if err != nil {
-					return err
-				}
-			}
-		case transaction.CustomTokenCrossShard:
-			{
-				// 0xsirrush updated: check existed token ID
-				existedToken := blockchain.CustomTokenIDExisted(&customTokenTx.TxTokenData.PropertyID)
-				//If don't exist then create
-				if !existedToken {
-					Logger.log.Info("Store Cross Shard Custom if It's not existed in DB", customTokenTx.TxTokenData.PropertyID, customTokenTx.TxTokenData.PropertySymbol, customTokenTx.TxTokenData.PropertyName)
-					err = blockchain.config.DataBase.StoreNormalToken(customTokenTx.TxTokenData.PropertyID, customTokenTx.Hash()[:])
-					if err != nil {
-						Logger.log.Error("CreateAndSaveTxViewPointFromBlock", err)
-					}
-				}
-				/*listCustomToken, err := blockchain.ListCustomToken()
-				if err != nil {
-					panic(err)
-				}
-				//If don't exist then create
-				if _, ok := listCustomToken[customTokenTx.TxNormalTokenData.PropertyID]; !ok {
-					Logger.log.Info("Store Cross Shard Custom if It's not existed in DB", customTokenTx.TxNormalTokenData.PropertyID, customTokenTx.TxNormalTokenData.PropertySymbol, customTokenTx.TxNormalTokenData.PropertyName)
-					err = blockchain.config.DataBase.StoreCustomToken(&customTokenTx.TxNormalTokenData.PropertyID, customTokenTx.Hash()[:])
-				}*/
-			}
-		case transaction.CustomTokenTransfer:
-			{
-				Logger.log.Info("Transfer custom token %+v", customTokenTx)
-			}
-		}
-		// save tx which relate to custom token
-		// Reject Double spend UTXO before enter this state
-		//fmt.Printf("StoreCustomTokenPaymentAddresstHistory/CustomTokenTx: \n VIN %+v VOUT %+v \n", customTokenTx.TxNormalTokenData.Vins, customTokenTx.TxNormalTokenData.Vouts)
-		Logger.log.Info("Store Custom Token History")
-		err = blockchain.StoreCustomTokenPaymentAddresstHistory(customTokenTx, block.Header.ShardID)
-		if err != nil {
-			// Skip double spend
-			return err
-		}
-		err = blockchain.config.DataBase.StoreNormalTokenTx(customTokenTx.TxTokenData.PropertyID, block.Header.ShardID, block.Header.Height, indexTx, customTokenTx.Hash()[:])
-		if err != nil {
-			return err
-		}
-	}
-
 	// check privacy custom token
 	// sort by index
 	indices := []int{}
@@ -925,93 +854,6 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBloc
 	return nil
 }
 
-/*
-// 	KeyWallet: token-paymentAddress  -[-]-  {tokenId}  -[-]-  {paymentAddress}  -[-]-  {txHash}  -[-]-  {voutIndex}
-//   H: value-spent/unspent
-*/
-func (blockchain *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *transaction.TxNormalToken, shardID byte) error {
-	Splitter := lvdb.Splitter
-	TokenPaymentAddressPrefix := lvdb.TokenPaymentAddressPrefix
-	unspent := lvdb.Unspent
-	spent := lvdb.Spent
-
-	tokenKey := TokenPaymentAddressPrefix
-	tokenKey = append(tokenKey, Splitter...)
-	tokenKey = append(tokenKey, []byte((customTokenTx.TxTokenData.PropertyID).String())...)
-	for _, vin := range customTokenTx.TxTokenData.Vins {
-		paymentAddressBytes := base58.Base58Check{}.Encode(vin.PaymentAddress.Bytes(), 0x00)
-		utxoHash := []byte(vin.TxCustomTokenID.String())
-		voutIndex := vin.VoutIndex
-		paymentAddressKey := tokenKey
-		paymentAddressKey = append(paymentAddressKey, Splitter...)
-		paymentAddressKey = append(paymentAddressKey, paymentAddressBytes...)
-		paymentAddressKey = append(paymentAddressKey, Splitter...)
-		paymentAddressKey = append(paymentAddressKey, utxoHash[:]...)
-		paymentAddressKey = append(paymentAddressKey, Splitter...)
-		paymentAddressKey = append(paymentAddressKey, common.Int32ToBytes(int32(voutIndex))...)
-		_, err := blockchain.config.DataBase.HasValue(paymentAddressKey)
-		if err != nil {
-			return err
-		}
-		value, err := blockchain.config.DataBase.Get(paymentAddressKey)
-		if err != nil {
-			return err
-		}
-		// old value: {value}-unspent
-		values := strings.Split(string(value), string(Splitter))
-		if strings.Compare(values[1], string(unspent)) != 0 {
-			return errors.New("Double Spend Detected")
-		}
-		// new value: {value}-spent
-		newValues := values[0] + string(Splitter) + string(spent)
-		if err := blockchain.config.DataBase.Put(paymentAddressKey, []byte(newValues)); err != nil {
-			return err
-		}
-	}
-	for index, vout := range customTokenTx.TxTokenData.Vouts {
-		// check vout by type and receiver
-		txCustomTokenType := customTokenTx.TxTokenData.Type
-		if txCustomTokenType == transaction.CustomTokenInit || txCustomTokenType == transaction.CustomTokenTransfer {
-			// check receiver's shard and current shard ID
-			shardIDOfReceiver := common.GetShardIDFromLastByte(vout.PaymentAddress.Pk[len(vout.PaymentAddress.Pk)-1])
-			if shardIDOfReceiver != shardID {
-				continue
-			}
-		} else if txCustomTokenType == transaction.CustomTokenCrossShard {
-			shardIDOfReceiver := common.GetShardIDFromLastByte(vout.PaymentAddress.Pk[len(vout.PaymentAddress.Pk)-1])
-			if shardIDOfReceiver != shardID {
-				continue
-			}
-		}
-		paymentAddressBytes := base58.Base58Check{}.Encode(vout.PaymentAddress.Bytes(), 0x00)
-		utxoHash := []byte(customTokenTx.Hash().String())
-		voutIndex := index
-		value := vout.Value
-		paymentAddressKey := tokenKey
-		paymentAddressKey = append(paymentAddressKey, Splitter...)
-		paymentAddressKey = append(paymentAddressKey, paymentAddressBytes...)
-		paymentAddressKey = append(paymentAddressKey, Splitter...)
-		paymentAddressKey = append(paymentAddressKey, utxoHash[:]...)
-		paymentAddressKey = append(paymentAddressKey, Splitter...)
-		paymentAddressKey = append(paymentAddressKey, common.Int32ToBytes(int32(voutIndex))...)
-		ok, err := blockchain.config.DataBase.HasValue(paymentAddressKey)
-		// Vout already exist
-		if ok {
-			return errors.New("UTXO already exist")
-		}
-		if err != nil {
-			return err
-		}
-		// init value: {value}-unspent
-		paymentAddressValue := strconv.Itoa(int(value)) + string(Splitter) + string(unspent) + string(Splitter)
-		if err := blockchain.config.DataBase.Put(paymentAddressKey, []byte(paymentAddressValue)); err != nil {
-			return err
-		}
-		Logger.log.Infof("STORE UTXO FOR CUSTOM TOKEN: tokenID %+v \n paymentAddress %+v \n txHash %+v, voutIndex %+v, value %+v \n", (customTokenTx.TxTokenData.PropertyID).String(), vout.PaymentAddress, customTokenTx.Hash(), voutIndex, value)
-	}
-	return nil
-}
-
 // DecryptTxByKey - process outputcoin to get outputcoin data which relate to keyset
 func (blockchain *BlockChain) DecryptOutputCoinByKey(outCoinTemp *privacy.OutputCoin, keySet *incognitokey.KeySet, shardID byte, tokenID *common.Hash) *privacy.OutputCoin {
 	/*
@@ -1121,48 +963,6 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.Ke
 	return results, nil
 }
 
-// GetUnspentTxCustomTokenVout - return all unspent tx custom token out of sender
-func (blockchain *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset incognitokey.KeySet, tokenID *common.Hash) ([]transaction.TxTokenVout, error) {
-	data, err := blockchain.config.DataBase.GetNormalTokenPaymentAddressUTXO(*tokenID, receiverKeyset.PaymentAddress.Bytes())
-	if err != nil {
-		return nil, err
-	}
-	voutList := []transaction.TxTokenVout{}
-	if len(data) > 0 {
-		splitter := []byte("-[-]-")
-		unspent := []byte("unspent")
-		for key, value := range data {
-			keys := strings.Split(key, string(splitter))
-			values := strings.Split(value, string(splitter))
-			// values: [amount-value, spent/unspent]
-			// get unspent transaction output
-			if strings.Compare(values[1], string(unspent)) == 0 {
-				vout := transaction.TxTokenVout{}
-				vout.PaymentAddress = receiverKeyset.PaymentAddress
-				txHash, err := common.Hash{}.NewHashFromStr(string(keys[3]))
-				if err != nil {
-					return nil, err
-				}
-				vout.SetTxCustomTokenID(*txHash)
-				voutIndexByte := []byte(keys[4])
-				voutIndex, err := common.BytesToInt32(voutIndexByte)
-				if err != nil {
-					return nil, err
-				}
-				vout.SetIndex(int(voutIndex))
-				value, err := strconv.Atoi(values[0])
-				if err != nil {
-					return nil, err
-				}
-				vout.Value = uint64(value)
-				Logger.log.Info("GetCustomTokenPaymentAddressUTXO VOUT", vout)
-				voutList = append(voutList, vout)
-			}
-		}
-	}
-	return voutList, nil
-}
-
 // GetTransactionByHash - retrieve tx from txId(txHash)
 func (blockchain *BlockChain) GetTransactionByHash(txHash common.Hash) (byte, common.Hash, int, metadata.Transaction, error) {
 	blockHash, index, err := blockchain.config.DataBase.GetTransactionIndexById(txHash)
@@ -1190,11 +990,6 @@ func (blockchain *BlockChain) GetTransactionHashByReceiver(keySet *incognitokey.
 	return result, nil
 }
 
-// Check Custom token ID is existed
-func (blockchain *BlockChain) CustomTokenIDExisted(tokenID *common.Hash) bool {
-	return blockchain.config.DataBase.NormalTokenIDExisted(*tokenID)
-}
-
 // Check Privacy Custom token ID is existed
 func (blockchain *BlockChain) PrivacyCustomTokenIDExisted(tokenID *common.Hash) bool {
 	return blockchain.config.DataBase.PrivacyTokenIDExisted(*tokenID)
@@ -1202,28 +997,6 @@ func (blockchain *BlockChain) PrivacyCustomTokenIDExisted(tokenID *common.Hash) 
 
 func (blockchain *BlockChain) PrivacyCustomTokenIDCrossShardExisted(tokenID *common.Hash) bool {
 	return blockchain.config.DataBase.PrivacyTokenIDCrossShardExisted(*tokenID)
-}
-
-// ListCustomToken - return all custom token which existed in network
-func (blockchain *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxNormalToken, error) {
-	data, err := blockchain.config.DataBase.ListNormalToken()
-	if err != nil {
-		return nil, err
-	}
-	result := make(map[common.Hash]transaction.TxNormalToken)
-	for _, txData := range data {
-		hash := common.Hash{}
-		hash.SetBytes(txData)
-		_, blockHash, index, tx, err := blockchain.GetTransactionByHash(hash)
-		_ = blockHash
-		_ = index
-		if err != nil {
-			return nil, NewBlockChainError(UnExpectedError, err)
-		}
-		txCustomToken := tx.(*transaction.TxNormalToken)
-		result[txCustomToken.TxTokenData.PropertyID] = *txCustomToken
-	}
-	return result, nil
 }
 
 // ListCustomToken - return all custom token which existed in network
@@ -1261,19 +1034,6 @@ func (blockchain *BlockChain) ListPrivacyCustomToken() (map[common.Hash]transact
 	return result, resultCrossShard, nil
 }
 
-// GetCustomTokenTxsHash - return list hash of tx which relate to custom token
-func (blockchain *BlockChain) GetCustomTokenTxsHash(tokenID *common.Hash) ([]common.Hash, error) {
-	txHashesInByte, err := blockchain.config.DataBase.NormalTokenTxs(*tokenID)
-	if err != nil {
-		return nil, err
-	}
-	result := []common.Hash{}
-	for _, temp := range txHashesInByte {
-		result = append(result, temp)
-	}
-	return result, nil
-}
-
 // GetPrivacyCustomTokenTxsHash - return list hash of tx which relate to custom token
 func (blockchain *BlockChain) GetPrivacyCustomTokenTxsHash(tokenID *common.Hash) ([]common.Hash, error) {
 	txHashesInByte, err := blockchain.config.DataBase.PrivacyTokenTxs(*tokenID)
@@ -1283,15 +1043,6 @@ func (blockchain *BlockChain) GetPrivacyCustomTokenTxsHash(tokenID *common.Hash)
 	result := []common.Hash{}
 	for _, temp := range txHashesInByte {
 		result = append(result, temp)
-	}
-	return result, nil
-}
-
-// GetListTokenHolders - return list paymentaddress (in hexstring) of someone who hold custom token in network
-func (blockchain *BlockChain) GetListTokenHolders(tokenID *common.Hash) (map[string]uint64, error) {
-	result, err := blockchain.config.DataBase.GetNormalTokenPaymentAddressesBalance(*tokenID)
-	if err != nil {
-		return nil, err
 	}
 	return result, nil
 }
@@ -1351,10 +1102,6 @@ func (blockchain *BlockChain) BuildInstRewardForBeacons(epoch uint64, totalRewar
 }
 
 func (blockchain *BlockChain) GetAllCoinID() ([]common.Hash, error) {
-	mapCustomToken, err := blockchain.ListCustomToken()
-	if err != nil {
-		return nil, err
-	}
 	mapPrivacyCustomToken, mapCrossShardCustomToken, err := blockchain.ListPrivacyCustomToken()
 	if err != nil {
 		return nil, err
@@ -1370,13 +1117,9 @@ func (blockchain *BlockChain) GetAllCoinID() ([]common.Hash, error) {
 	if err != nil {
 		return nil, err
 	}
-	allCoinID := make([]common.Hash, len(mapCustomToken)+len(mapPrivacyCustomToken)+len(mapCrossShardCustomToken)+len(allBridgeTokens)+1)
+	allCoinID := make([]common.Hash, len(mapPrivacyCustomToken)+len(mapCrossShardCustomToken)+len(allBridgeTokens)+1)
 	allCoinID[0] = common.PRVCoinID
 	index := 1
-	for key := range mapCustomToken {
-		allCoinID[index] = key
-		index++
-	}
 	for key := range mapPrivacyCustomToken {
 		allCoinID[index] = key
 		index++
@@ -1469,7 +1212,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 			}
 			requestMeta := txRequestTable[requester].GetMetadata().(*metadata.WithDrawRewardRequest)
 			if res, err := coinID.Cmp(&requestMeta.TokenID); err == nil && res != 0 {
-				return errors.New("Invalid token ID")
+				return errors.Errorf("Invalid token ID when check metadata of tx response. Got %v, want %v", coinID, requestMeta.TokenID)
 			}
 			amount, err := db.GetCommitteeReward(requesterRes, requestMeta.TokenID)
 			if (amount == 0) || (err != nil) {
@@ -1548,24 +1291,12 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 
 			if res, err := coinID.Cmp(bridgeTokenIDs.TokenID); err == nil && res == 0 {
 				txType = transaction.CustomTokenPrivacyType
-				fmt.Printf("[ndh] eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee %+v \n", bridgeTokenIDs.TokenID)
 				break
 			}
 		}
 	}
 	if txType == -1 {
-		mapCustomToken, err := blockchain.ListCustomToken()
-		if err != nil {
-			return nil, err
-		}
-		if mapCustomToken != nil {
-			if _, ok := mapCustomToken[coinID]; ok {
-				txType = transaction.CustomTokenType
-			}
-		}
-	}
-	if txType == -1 {
-		mapPrivacyCustomToken, _, err := blockchain.ListPrivacyCustomToken()
+		mapPrivacyCustomToken, mapCrossShardCustomToken, err := blockchain.ListPrivacyCustomToken()
 		if err != nil {
 			return nil, err
 		}
@@ -1574,9 +1305,14 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 				txType = transaction.CustomTokenPrivacyType
 			}
 		}
+		if mapCrossShardCustomToken != nil {
+			if _, ok := mapCrossShardCustomToken[coinID]; ok {
+				txType = transaction.CustomTokenPrivacyType
+			}
+		}
 	}
 	if txType == -1 {
-		return nil, errors.New("Invalid token ID")
+		return nil, errors.Errorf("Invalid token ID when InitTxSalaryByCoinID. Got %v", coinID)
 	}
 	buildCoinBaseParams := transaction.NewBuildCoinBaseTxByCoinIDParams(payToAddress,
 		amount,

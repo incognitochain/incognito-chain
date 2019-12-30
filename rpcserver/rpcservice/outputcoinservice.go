@@ -127,7 +127,11 @@ func (coinService CoinService) ListOutputCoinsByKey(listKeyParams []interface{},
 			//}
 			item = append(item, jsonresult.NewOutCoin(outCoin))
 		}
-		result.Outputs[paymentAddressStr] = item
+		if readonlyKey != nil && len(readonlyKey.KeySet.ReadonlyKey.Rk) > 0 {
+			result.Outputs[readonlyKeyStr] = item
+		} else {
+			result.Outputs[paymentAddressStr] = item
+		}
 	}
 	return result, nil
 }

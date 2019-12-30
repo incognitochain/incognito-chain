@@ -132,10 +132,6 @@ func (d *Dispatcher) processMessageForEachType(messageType reflect.Type, message
 		if d.MessageListeners.OnTx != nil {
 			d.MessageListeners.OnTx(peerConn, message.(*wire.MessageTx))
 		}
-	case reflect.TypeOf(&wire.MessageTxToken{}):
-		if d.MessageListeners.OnTxToken != nil {
-			d.MessageListeners.OnTxToken(peerConn, message.(*wire.MessageTxToken))
-		}
 	case reflect.TypeOf(&wire.MessageTxPrivacyToken{}):
 		if d.MessageListeners.OnTxPrivacyToken != nil {
 			d.MessageListeners.OnTxPrivacyToken(peerConn, message.(*wire.MessageTxPrivacyToken))
@@ -220,7 +216,6 @@ func (d *Dispatcher) processMessageForEachType(messageType reflect.Type, message
 
 type MessageListeners struct {
 	OnTx               func(p *peer.PeerConn, msg *wire.MessageTx)
-	OnTxToken          func(p *peer.PeerConn, msg *wire.MessageTxToken)
 	OnTxPrivacyToken   func(p *peer.PeerConn, msg *wire.MessageTxPrivacyToken)
 	OnBlockShard       func(p *peer.PeerConn, msg *wire.MessageBlockShard)
 	OnBlockBeacon      func(p *peer.PeerConn, msg *wire.MessageBlockBeacon)

@@ -24,10 +24,7 @@ func NewContractingRequestMetadata(senderPrivateKeyStr string, tokenReceivers in
 	}
 	paymentAddr := senderKey.KeySet.PaymentAddress
 
-	_, voutsAmount, err := transaction.CreateCustomTokenReceiverArray(tokenReceivers)
-	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
-	}
+	_, voutsAmount := transaction.CreateCustomTokenPrivacyReceiverArray(tokenReceivers)
 	tokenIDHash, err := common.Hash{}.NewHashFromStr(tokenID)
 	if err != nil {
 		return nil, NewRPCError(UnexpectedError, err)
@@ -54,10 +51,7 @@ func NewBurningRequestMetadata(senderPrivateKeyStr string, tokenReceivers interf
 	}
 	paymentAddr := senderKey.KeySet.PaymentAddress
 
-	_, voutsAmount, err := transaction.CreateCustomTokenReceiverArray(tokenReceivers)
-	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
-	}
+	_, voutsAmount := transaction.CreateCustomTokenPrivacyReceiverArray(tokenReceivers)
 	tokenIDHash, err := common.Hash{}.NewHashFromStr(tokenID)
 	if err != nil {
 		return nil, NewRPCError(UnexpectedError, err)

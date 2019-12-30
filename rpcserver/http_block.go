@@ -4,11 +4,8 @@ import (
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
-	"github.com/incognitochain/incognito-chain/transaction"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"log"
 )
 
@@ -98,6 +95,37 @@ func (httpServer *HttpServer) handleRetrieveBlock(params interface{}, closeChan 
 	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 elements"))
 }
 
+func (httpServer *HttpServer) handleRetrieveBlockByHeight(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	Logger.log.Debugf("handleRetrieveBlock params: %+v", params)
+	paramArray, ok := params.([]interface{})
+	if ok && len(paramArray) >= 3 {
+		blockHeight, ok := paramArray[0].(float64)
+		if !ok {
+			Logger.log.Debugf("handleRetrieveBlock result: %+v", nil)
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("hashString is invalid"))
+		}
+		shardID, ok := paramArray[1].(float64)
+		if !ok {
+			Logger.log.Debugf("handleRetrieveBlock result: %+v", nil)
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("shardID is invalid"))
+		}
+		verbosity, ok := paramArray[2].(string)
+		if !ok {
+			Logger.log.Debugf("handleRetrieveBlock result: %+v", nil)
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("verbosity is invalid"))
+		}
+
+		result, err := httpServer.blockService.RetrieveShardBlockByHeight(uint64(blockHeight), int(shardID), verbosity)
+		if err != nil {
+			return nil, err
+		}
+		Logger.log.Debugf("handleRetrieveBlock result: %+v", result)
+		return result, nil
+	}
+	Logger.log.Debugf("handleRetrieveBlock result: %+v", nil)
+	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 elements"))
+}
+
 /*
 handleRetrieveBlock RPC return information for block
 */
@@ -110,6 +138,28 @@ func (httpServer *HttpServer) handleRetrieveBeaconBlock(params interface{}, clos
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("hashString is invalid"))
 		}
 		result, err := httpServer.blockService.RetrieveBeaconBlock(hashString)
+		Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", result, err)
+		if err != nil {
+			return result, err
+		}
+		return result, nil
+	}
+	Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", nil, nil)
+	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+}
+
+/*
+handleRetrieveBlock RPC return information for block
+*/
+func (httpServer *HttpServer) handleRetrieveBeaconBlockByHeight(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	Logger.log.Debugf("handleRetrieveBeaconBlock params: %+v", params)
+	paramArray, ok := params.([]interface{})
+	if ok && len(paramArray) >= 1 {
+		beaconHeight, ok := paramArray[0].(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("hashString is invalid"))
+		}
+		result, err := httpServer.blockService.RetrieveBeaconBlockByHeigh(uint64(beaconHeight))
 		Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", result, err)
 		if err != nil {
 			return result, err
@@ -310,41 +360,6 @@ func (httpServer *HttpServer) handleGetCrossShardBlock(params interface{}, close
 
 	result := jsonresult.CrossShardDataResult{HasCrossShard: false}
 	flag := false
-	for _, tx := range shardBlock.Body.Transactions {
-		if tx.GetType() == common.TxCustomTokenType {
-			customTokenTx := tx.(*transaction.TxNormalToken)
-			if customTokenTx.TxTokenData.Type == transaction.CustomTokenCrossShard {
-				if !flag {
-					flag = true //has cross shard block
-				}
-				crossShardCSTokenResult := jsonresult.CrossShardCSTokenResult{
-					Name:                               customTokenTx.TxTokenData.PropertyName,
-					Symbol:                             customTokenTx.TxTokenData.PropertySymbol,
-					TokenID:                            customTokenTx.TxTokenData.PropertyID.String(),
-					Amount:                             customTokenTx.TxTokenData.Amount,
-					IsPrivacy:                          false,
-					CrossShardCSTokenBalanceResultList: []jsonresult.CrossShardCSTokenBalanceResult{},
-					CrossShardPrivacyCSTokenResultList: []jsonresult.CrossShardPrivacyCSTokenResult{},
-				}
-				crossShardCSTokenBalanceResultList := []jsonresult.CrossShardCSTokenBalanceResult{}
-				for _, vout := range customTokenTx.TxTokenData.Vouts {
-					paymentAddressWallet := wallet.KeyWallet{
-						KeySet: incognitokey.KeySet{
-							PaymentAddress: vout.PaymentAddress,
-						},
-					}
-					paymentAddress := paymentAddressWallet.Base58CheckSerialize(wallet.PaymentAddressType)
-					crossShardCSTokenBalanceResult := jsonresult.CrossShardCSTokenBalanceResult{
-						PaymentAddress: paymentAddress,
-						Value:          vout.Value,
-					}
-					crossShardCSTokenBalanceResultList = append(crossShardCSTokenBalanceResultList, crossShardCSTokenBalanceResult)
-				}
-				crossShardCSTokenResult.CrossShardCSTokenBalanceResultList = crossShardCSTokenBalanceResultList
-				result.CrossShardCSTokenResultList = append(result.CrossShardCSTokenResultList, crossShardCSTokenResult)
-			}
-		}
-	}
 	for _, crossTransactions := range shardBlock.Body.CrossTransactions {
 		if !flag {
 			flag = true //has cross shard block
