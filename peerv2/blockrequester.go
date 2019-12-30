@@ -14,43 +14,71 @@ import (
 )
 
 type BlockRequester struct {
-	conn       *grpc.ClientConn
-	highwayPID peer.ID
-	prtc       *p2pgrpc.GRPCProtocol
+	conn *grpc.ClientConn
+
+	peerIDs chan peer.ID
+	prtc    *p2pgrpc.GRPCProtocol
 }
 
-func NewRequester(prtc *p2pgrpc.GRPCProtocol, peerID peer.ID) (*BlockRequester, error) {
+func NewRequester(prtc *p2pgrpc.GRPCProtocol) *BlockRequester {
 	req := &BlockRequester{
-		prtc:       prtc,
-		conn:       nil,
-		highwayPID: peerID,
+		prtc:    prtc,
+		peerIDs: make(chan peer.ID, 100),
+		conn:    nil,
 	}
 	go req.keepConnection()
-	return req, nil
+	return req
 }
 
 // keepConnection dials highway to establish gRPC connection if it isn't available
 func (c *BlockRequester) keepConnection() {
-	for ; true; <-time.Tick(10 * time.Second) {
-		if c.Ready() {
-			continue
-		}
+	currentHWID := peer.ID("")
+	watchTimestep := time.Tick(RequesterDialTimestep)
+	for {
+		select {
+		case <-watchTimestep:
+			if c.Ready() {
+				continue
+			}
 
-		Logger.Warn("BlockRequester is not ready, dialing")
-		if conn, err := c.prtc.Dial(
-			context.Background(),
-			c.highwayPID,
-			grpc.WithInsecure(),
-		); err != nil {
-			Logger.Error("Could not dial to highway grpc server:", err, c.highwayPID)
-		} else {
-			c.conn = conn
+			Logger.Warn("BlockRequester is not ready, dialing")
+			ctx, cancel := context.WithTimeout(context.Background(), DialTimeout)
+			if conn, err := c.prtc.Dial(
+				ctx,
+				currentHWID,
+				grpc.WithInsecure(),
+			); err != nil {
+				Logger.Error("Could not dial to highway grpc server:", err, currentHWID)
+			} else {
+				c.conn = conn
+			}
+			cancel()
+
+		case hwID := <-c.peerIDs:
+			Logger.Infof("Received new highway peerID, old = %s, new = %s", currentHWID.String(), hwID.String())
+			if hwID != currentHWID && c.conn != nil {
+				if err := c.conn.Close(); err != nil { // Close gRPC connection
+					Logger.Errorf("Failed closing connection to highway: %v %v %+v", hwID, currentHWID, err)
+				}
+			}
+			currentHWID = hwID
 		}
 	}
 }
 
 func (c *BlockRequester) Ready() bool {
 	return c.conn != nil && c.conn.GetState() == connectivity.Ready
+}
+
+func (c *BlockRequester) UpdateTarget(p peer.ID) {
+	c.peerIDs <- p
+}
+
+func (c *BlockRequester) Target() string {
+	if c.conn == nil {
+		return ""
+	}
+	return c.conn.Target()
 }
 
 func (c *BlockRequester) Register(

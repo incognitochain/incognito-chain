@@ -43,6 +43,8 @@ type Subscriber interface {
 
 type Registerer interface {
 	Register(context.Context, string, []string, []byte, peer.ID, string) ([]*proto.MessageTopicPair, *proto.UserRole, error)
+	Target() string
+	UpdateTarget(peer.ID)
 }
 
 func NewSubManager(
@@ -76,7 +78,12 @@ func (sub *SubManager) Subscribe(forced bool) error {
 
 	// Registering
 	shardIDs := getWantedShardIDs(newRole, sub.nodeMode, sub.relayShard)
-	newTopics, roleOfTopics, err := sub.registerToProxy(sub.pubkey, newRole.layer, newRole.role, shardIDs)
+	newTopics, roleOfTopics, err := sub.registerToProxy(
+		sub.pubkey,
+		newRole.layer,
+		newRole.role,
+		shardIDs,
+	)
 	if err != nil {
 		return err // Don't save new role and topics since we need to retry later
 	}
@@ -237,6 +244,7 @@ func (sub *SubManager) registerToProxy(
 	Logger.Infof("Registering: shardID: %v", shardID)
 	Logger.Infof("Registering: peerID: %v", sub.peerID.String())
 	Logger.Infof("Registering: pubkey: %v", pubkey)
+
 	pairs, topicRole, err := sub.registerer.Register(
 		context.Background(),
 		pubkey,
