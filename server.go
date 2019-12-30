@@ -1771,7 +1771,7 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 	if err != nil {
 		return err
 	}
-	msg.SetSenderID(listener.GetPeerID())
+	msg.SetSenderID(serverObj.highway.LocalHost.Host.ID())
 	Logger.log.Infof("[peerstate] PeerID send to Proxy when publish node state %v \n", listener.GetPeerID())
 	if err != nil {
 		return err
