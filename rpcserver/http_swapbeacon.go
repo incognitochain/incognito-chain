@@ -51,28 +51,22 @@ func (httpServer *HttpServer) handleGetBeaconSwapProof(params interface{}, close
 	if !ok || len(listParams) < 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
 	}
-
 	heightParam, ok := listParams[0].(float64)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("height param is invalid"))
 	}
 	height := uint64(heightParam)
-
-	db := *httpServer.config.Database
-
 	// Get proof of instruction on beacon
 	beaconInstProof, _, errProof := getSwapProofOnBeacon(height, httpServer.GetDatabase(), httpServer.config.ConsensusEngine, metadata.BeaconSwapConfirmMeta)
 	if errProof != nil {
 		return nil, errProof
 	}
-
 	// Decode instruction to send to Ethereum without having to decode on client
 	decodedInst, err := blockchain.DecodeInstruction(beaconInstProof.inst)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 	inst := hex.EncodeToString(decodedInst)
-
 	bridgeInstProof := &swapProof{}
 	return buildProofResult(inst, beaconInstProof, bridgeInstProof, "", ""), nil
 }

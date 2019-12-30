@@ -39,10 +39,6 @@ func (httpServer *HttpServer) handleGetBridgeSwapProof(params interface{}, close
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("height param is invalid"))
 	}
 	height := uint64(heightParam)
-
-	bc := httpServer.config.BlockChain
-	db := *httpServer.config.Database
-
 	// Get proof of instruction on beacon
 	beaconInstProof, beaconBlock, errProof := getSwapProofOnBeacon(height, httpServer.GetDatabase(), httpServer.config.ConsensusEngine, metadata.BridgeSwapConfirmMeta)
 	if errProof != nil {
