@@ -61,12 +61,6 @@ var (
 	PRVCoinID = Hash{4} // To send PRV in custom token
 )
 
-// burning addresses
-const (
-	BurningAddress = "15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs"
-	BurningAddress2 = "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA"
-)
-
 // CONSENSUS
 const (
 	NodeModeRelay  = "relay"
