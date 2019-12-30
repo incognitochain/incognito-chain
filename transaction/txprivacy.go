@@ -848,7 +848,7 @@ func (tx Tx) validateNormalTxSanityData() (bool, error) {
 	}
 	// check Type is normal or salary tx
 	switch tx.Type {
-	case common.TxNormalType, common.TxRewardType, common.TxCustomTokenType, common.TxCustomTokenPrivacyType, common.TxReturnStakingType: //is valid
+	case common.TxNormalType, common.TxRewardType, common.TxCustomTokenPrivacyType, common.TxReturnStakingType: //is valid
 	default:
 		return false, errors.New("wrong tx type")
 	}

@@ -122,34 +122,6 @@ func (httpServer *HttpServer) sendRawTxWithMetadata(params interface{}, closeCha
 	return result, nil
 }
 
-func (httpServer *HttpServer) sendRawCustomTokenTxWithMetadata(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Info(params)
-	arrayParams := common.InterfaceSlice(params)
-	if arrayParams == nil || len(arrayParams) < 1 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
-	}
-
-	base58CheckData, ok := arrayParams[0].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("base58CheckData param is invalid"))
-	}
-
-	txMsg, txHash, err := httpServer.txService.SendRawCustomTokenTxWithMetadata(base58CheckData)
-	if err != nil {
-		return nil, err
-	}
-
-	err2 := httpServer.config.Server.PushMessageToAll(txMsg)
-	if err2 == nil {
-		httpServer.config.TxMemPool.MarkForwardedTransaction(*txHash)
-	}
-	httpServer.config.TxMemPool.MarkForwardedTransaction(*txHash)
-	result := jsonresult.CreateTransactionResult{
-		TxID: txHash.String(),
-	}
-	return result, nil
-}
-
 func (httpServer *HttpServer) createAndSendTxWithMetadata(params interface{}, closeChan <-chan struct{}, createHandler, sendHandler httpHandler) (interface{}, *rpcservice.RPCError) {
 	data, err := createHandler(httpServer, params, closeChan)
 	Logger.log.Errorf("err create handler: %v\n", err)
