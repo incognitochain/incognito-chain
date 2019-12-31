@@ -129,6 +129,16 @@ func TestForcedSub(t *testing.T) {
 	assert.Equal(t, sc.forced, 1, "not subbed")
 }
 
+func TestChooseHighwayFiltered(t *testing.T) {
+	hwAddrs := []rpcclient.HighwayAddr{
+		rpcclient.HighwayAddr{Libp2pAddr: testHighwayAddress},
+		rpcclient.HighwayAddr{Libp2pAddr: ""},
+	}
+	pid := peer.ID("")
+	_, err := chooseHighway(hwAddrs, pid)
+	assert.Nil(t, err)
+}
+
 type subscribeCounter struct {
 	normal int
 	forced int
