@@ -14,6 +14,7 @@ const (
 	ReconnectHighwayTimestep  = 10 * time.Second // Check libp2p connection
 	UpdateHighwayListTimestep = 30 * time.Minute // RPC to update list of highways every
 	RequesterDialTimestep     = 10 * time.Second // Check gRPC connection
+	MaxTimePerRequest         = 10 * time.Second // Time per request
 	DialTimeout               = 2 * time.Second  // Timeout for dialing's context
 	RequesterKeepaliveTime    = 10 * time.Minute
 	RequesterKeepaliveTimeout = 20 * time.Second

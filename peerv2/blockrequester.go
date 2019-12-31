@@ -137,8 +137,10 @@ func (c *BlockRequester) GetBlockShardByHeight(
 	Logger.Infof("[blkbyheight] Requesting block shard %v (by specific %v): from = %v to = %v; height: %v", shardID, bySpecific, from, to, heights)
 
 	client := proto.NewHighwayServiceClient(c.conn)
+	ctx, cancel := context.WithTimeout(context.Background(), MaxTimePerRequest)
+	defer cancel()
 	reply, err := client.GetBlockShardByHeight(
-		context.Background(),
+		ctx,
 		&proto.GetBlockShardByHeightRequest{
 			Shard:      shardID,
 			Specific:   bySpecific,
@@ -169,8 +171,11 @@ func (c *BlockRequester) GetBlockShardByHash(
 	}
 	Logger.Infof("[blkbyhash] Requesting shard block by hash: %v", hashes)
 	client := proto.NewHighwayServiceClient(c.conn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), MaxTimePerRequest)
+	defer cancel()
 	reply, err := client.GetBlockShardByHash(
-		context.Background(),
+		ctx,
 		&proto.GetBlockShardByHashRequest{
 			Shard:  shardID,
 			Hashes: blkHashBytes,
@@ -195,8 +200,11 @@ func (c *BlockRequester) GetBlockBeaconByHeight(
 	}
 	Logger.Infof("[blkbyheight] Requesting beaconblock (by specific %v): from = %v to = %v; height: %v", bySpecific, from, to, heights)
 	client := proto.NewHighwayServiceClient(c.conn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), MaxTimePerRequest)
+	defer cancel()
 	reply, err := client.GetBlockBeaconByHeight(
-		context.Background(),
+		ctx,
 		&proto.GetBlockBeaconByHeightRequest{
 			Specific:   bySpecific,
 			FromHeight: from,
@@ -226,8 +234,11 @@ func (c *BlockRequester) GetBlockBeaconByHash(
 	}
 	Logger.Infof("Requesting beacon block by hash: %v", hashes)
 	client := proto.NewHighwayServiceClient(c.conn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), MaxTimePerRequest)
+	defer cancel()
 	reply, err := client.GetBlockBeaconByHash(
-		context.Background(),
+		ctx,
 		&proto.GetBlockBeaconByHashRequest{
 			Hashes: blkHashBytes,
 		},
@@ -253,8 +264,11 @@ func (c *BlockRequester) GetBlockShardToBeaconByHeight(
 
 	Logger.Infof("[sync] Requesting blkshdtobcn by specific height %v: from = %v to = %v; Heights: %v", bySpecific, from, to, heights)
 	client := proto.NewHighwayServiceClient(c.conn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), MaxTimePerRequest)
+	defer cancel()
 	reply, err := client.GetBlockShardToBeaconByHeight(
-		context.Background(),
+		ctx,
 		&proto.GetBlockShardToBeaconByHeightRequest{
 			FromShard:  shardID,
 			Specific:   bySpecific,
@@ -286,8 +300,11 @@ func (c *BlockRequester) GetBlockCrossShardByHeight(
 
 	Logger.Infof("Requesting block crossshard by height: shard %v to %v, height %v", fromShard, toShard, heights)
 	client := proto.NewHighwayServiceClient(c.conn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), MaxTimePerRequest)
+	defer cancel()
 	reply, err := client.GetBlockCrossShardByHeight(
-		context.Background(),
+		ctx,
 		&proto.GetBlockCrossShardByHeightRequest{
 			FromShard:  fromShard,
 			ToShard:    toShard,
