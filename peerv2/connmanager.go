@@ -258,7 +258,8 @@ func (cm *ConnManager) checkConnection(addrInfo *peer.AddrInfo) bool {
 	if net.Connectedness(addrInfo.ID) != network.Connected {
 		cm.disconnected++
 		Logger.Info("Not connected to highway, connecting")
-		ctx, _ := context.WithTimeout(context.Background(), DialTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), DialTimeout)
+		defer cancel()
 		if err := cm.LocalHost.Host.Connect(ctx, *addrInfo); err != nil {
 			Logger.Errorf("Could not connect to highway: %v %v", err, addrInfo)
 		}
