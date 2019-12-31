@@ -1,8 +1,6 @@
 package rawdbv2
 
 import (
-	"bytes"
-	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -27,7 +25,7 @@ func StoreBeaconBlock(db incdb.Database, index uint64, hash common.Hash, v inter
 	if err != nil {
 		return NewRawdbError(StoreBeaconBlockError, err)
 	}
-	if err := db.Put(keyIndex, keyHash); err != nil {
+	if err := db.Put(keyIndex, []byte{}); err != nil {
 		return NewRawdbError(StoreBeaconBlockError, err)
 	}
 	if err := db.Put(keyHash, val); err != nil {

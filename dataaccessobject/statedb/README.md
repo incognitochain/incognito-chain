@@ -94,7 +94,8 @@ c. Commitment Length: Number of commitment in one of shard of a token
     * tokenID
     * snd
 13. PDE:
-- key: first 12 bytes of `hash(waiting-pde-contribution-prefix)` with 20 bytes of `hash(beacon-height-bytes)`
+a. Waiting Contribution
+- key: first 12 bytes of `hash(waiting-pde-contribution-prefix + beacon-height-bytes)` with 20 bytes of `hash(pairID)`
 - value: waiting pde contribution
     * beacon height 
     * pairID
@@ -102,4 +103,48 @@ c. Commitment Length: Number of commitment in one of shard of a token
     * tokenID
     * amount
     * transaction request id
-    
+b. Pool Pair
+- key: first 12 bytes of `hash(pool-pari-prefix + beacon-height-bytes)` with 20 bytes of `hash(token1ID + token2ID)`
+- value: pool pair state
+    * beaconHeight
+    * token1ID
+    * token1PoolValue
+    * token2ID
+    * token2PoolValue
+c. Share
+- key: first 12 bytes of `hash(share-prefix + beacon-height-bytes)` with 20 bytes of `hash(token1ID + token2ID + contributor-address)`
+- value: share state
+    * beaconHeight
+    * token1ID
+    * token2ID
+    * contributor address
+    * amount
+d. Share
+- key: first 12 bytes of `hash(pde-status-prefix)` with 20 bytes of `hash(statusType + statusSuffix)`
+- value: status state
+    * statusType
+    * statusSuffix
+    * statusContent
+14. Bridge
+a. Eth tx
+- key: first 12 bytes of `hash(bridge-ethtx-prefix)` with 20 bytes of `hash(unique-eth-tx-id)`
+- value: bridge eth state
+    * unique eth tx
+b. Status 
+- key: first 12 bytes of `hash(bridge-status-prefix)` with 20 bytes of `hash(tx-request-id)`
+- value: bridge status state
+    * tx request id
+    * status
+c. Token Info 
+- key: first 12 bytes of `hash(bridge-token-info-prefix + centralized-or-decentralized-prefix)` with 20 bytes of `hash(incoginto-token-id)`
+- value: bridge token info state
+    * incTokenID
+    * externalTokenID
+    * amount
+    * network
+    * isCentralized
+15. Burning Confirm
+- key: first 12 bytes of `hash(burning-confirm-prefix)` with 20 bytes of `hash(txid)`
+- value: burning confirm state
+    * txID
+    * height

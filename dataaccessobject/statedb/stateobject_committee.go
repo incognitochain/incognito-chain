@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -15,6 +16,7 @@ type CommitteeState struct {
 	committeePublicKey incognitokey.CommitteePublicKey
 	rewardReceiver     string
 	autoStaking        bool
+	enterTime          int64 // unix time
 }
 
 func NewCommitteeState() *CommitteeState {
@@ -22,7 +24,19 @@ func NewCommitteeState() *CommitteeState {
 }
 
 func NewCommitteeStateWithValue(shardID int, role int, committeePublicKey incognitokey.CommitteePublicKey, rewardReceiver string, autoStaking bool) *CommitteeState {
-	return &CommitteeState{shardID: shardID, role: role, committeePublicKey: committeePublicKey, rewardReceiver: rewardReceiver, autoStaking: autoStaking}
+	return &CommitteeState{shardID: shardID, role: role, committeePublicKey: committeePublicKey, rewardReceiver: rewardReceiver, autoStaking: autoStaking, enterTime: time.Now().UnixNano()}
+}
+
+func NewCommitteeStateWithValueAndTime(shardID int, role int, committeePublicKey incognitokey.CommitteePublicKey, rewardReceiver string, autoStaking bool, enterTime int64) *CommitteeState {
+	return &CommitteeState{shardID: shardID, role: role, committeePublicKey: committeePublicKey, rewardReceiver: rewardReceiver, autoStaking: autoStaking, enterTime: enterTime}
+}
+
+func (c CommitteeState) EnterTime() int64 {
+	return c.enterTime
+}
+
+func (c *CommitteeState) SetEnterTime(enterTime int64) {
+	c.enterTime = enterTime
 }
 
 func (c CommitteeState) AutoStaking() bool {
@@ -72,12 +86,14 @@ func (c CommitteeState) MarshalJSON() ([]byte, error) {
 		CommitteePublicKey incognitokey.CommitteePublicKey
 		RewardReceiver     string
 		AutoStaking        bool
+		EnterTime          int64
 	}{
 		ShardID:            c.shardID,
 		Role:               c.role,
 		CommitteePublicKey: c.committeePublicKey,
 		RewardReceiver:     c.rewardReceiver,
 		AutoStaking:        c.autoStaking,
+		EnterTime:          c.enterTime,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -92,6 +108,7 @@ func (c *CommitteeState) UnmarshalJSON(data []byte) error {
 		CommitteePublicKey incognitokey.CommitteePublicKey
 		RewardReceiver     string
 		AutoStaking        bool
+		EnterTime          int64
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -102,6 +119,7 @@ func (c *CommitteeState) UnmarshalJSON(data []byte) error {
 	c.committeePublicKey = temp.CommitteePublicKey
 	c.rewardReceiver = temp.RewardReceiver
 	c.autoStaking = temp.AutoStaking
+	c.enterTime = temp.EnterTime
 	return nil
 }
 
