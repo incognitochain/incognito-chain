@@ -69,63 +69,65 @@ func TestConnectAtStart(t *testing.T) {
 	assert.Equal(t, 1, len(cm.registerRequests), "not connect at startup")
 }
 
-// // TestReconnect checks if connection is re-established after being disconnected
-// func TestReconnect(t *testing.T) {
-// 	h, net := setupHost()
-// 	// Not -> Con -> Not -> Con
-// 	setupConnectedness(
-// 		net,
-// 		[]network.Connectedness{
-// 			network.NotConnected,
-// 			network.Connected,
-// 			network.NotConnected,
-// 			network.Connected,
-// 		},
-// 	)
-// 	var err error
-// 	h.On("Connect", mock.Anything, mock.Anything).Return(err)
+// TestReconnect checks if connection is re-established after being disconnected
+func TestReconnect(t *testing.T) {
+	h, net := setupHost()
+	// Not -> Con -> Not -> Con
+	setupConnectedness(
+		net,
+		[]network.Connectedness{
+			network.NotConnected,
+			network.Connected,
+			network.NotConnected,
+			network.Connected,
+		},
+	)
+	var err error
+	h.On("Connect", mock.Anything, mock.Anything).Return(err)
 
-// 	cm := ConnManager{
-// 		HighwayAddress:   testHighwayAddress,
-// 		LocalHost:        &peerv2.Host{Host: h},
-// 		stop:             make(chan int),
-// 		registerRequests: make(chan int, 10),
-// 	}
-// 	go cm.keepHighwayConnection()
-// 	time.Sleep(4 * time.Second)
-// 	close(cm.stop)
+	cm := ConnManager{
+		DiscoverPeersAddress: testHighwayAddress,
+		LocalHost:            &Host{Host: h},
+		registerRequests:     make(chan peer.ID, 5),
+	}
+	for i := 0; i < 4; i++ {
+		maxed := cm.checkConnection(&peer.AddrInfo{})
+		assert.False(t, maxed)
+	}
 
-// 	assert.Equal(t, 2, len(cm.registerRequests), "not reconnect")
-// }
+	assert.Equal(t, 2, len(cm.registerRequests), "not reconnect")
+}
 
-// func TestPeriodicManageSub(t *testing.T) {
-// 	sc := new(subscribeCounter)
-// 	cm := ConnManager{
-// 		stop:             make(chan int),
-// 		registerRequests: make(chan int, 10),
-// 		subscriber:       sc,
-// 	}
-// 	go cm.manageRoleSubscription()
-// 	time.Sleep(2 * time.Second)
-// 	close(cm.stop)
+func TestPeriodicManageSub(t *testing.T) {
+	sc := new(subscribeCounter)
+	cm := ConnManager{
+		Requester:        &BlockRequester{},
+		stop:             make(chan int),
+		registerRequests: make(chan peer.ID, 10),
+		subscriber:       sc,
+	}
+	go cm.manageRoleSubscription()
+	time.Sleep(2 * time.Second)
+	close(cm.stop)
 
-// 	assert.Equal(t, sc.normal, 1, "not subbed")
-// }
+	assert.Equal(t, sc.normal, 1, "not subbed")
+}
 
-// func TestForcedSub(t *testing.T) {
-// 	sc := new(subscribeCounter)
-// 	cm := ConnManager{
-// 		stop:             make(chan int),
-// 		registerRequests: make(chan int, 10),
-// 		subscriber:       sc,
-// 	}
-// 	cm.registerRequests <- 1 // Sent forced, must sub with forced = True next time
-// 	go cm.manageRoleSubscription()
-// 	time.Sleep(2 * time.Second)
-// 	close(cm.stop)
+func TestForcedSub(t *testing.T) {
+	sc := new(subscribeCounter)
+	cm := ConnManager{
+		Requester:        &BlockRequester{},
+		stop:             make(chan int),
+		registerRequests: make(chan peer.ID, 10),
+		subscriber:       sc,
+	}
+	cm.registerRequests <- peer.ID("") // Sent forced, must sub with forced = True next time
+	go cm.manageRoleSubscription()
+	time.Sleep(2 * time.Second)
+	close(cm.stop)
 
-// 	assert.Equal(t, sc.forced, 1, "not subbed")
-// }
+	assert.Equal(t, sc.forced, 1, "not subbed")
+}
 
 type subscribeCounter struct {
 	normal int
