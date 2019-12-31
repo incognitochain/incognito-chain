@@ -6,7 +6,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-func DiscoverHighWay(
+type RPCClient struct{}
+
+func (rpcClient *RPCClient) DiscoverHighway(
 	discoverPeerAddress string,
 	shardsStr []string,
 ) (
