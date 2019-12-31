@@ -1733,7 +1733,7 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 			serverObj.blockChain.BestState.Shard[byte(shardID)].Hash(),
 		}
 	} else {
-		msg.(*wire.MessagePeerState).ShardToBeaconPool = serverObj.shardToBeaconPool.GetValidBlockHeight()
+		msg.(*wire.MessagePeerState).ShardToBeaconPool = serverObj.shardToBeaconPool.GetAllBlockHeight()
 		Logger.log.Infof("[peerstate] %v", msg.(*wire.MessagePeerState).ShardToBeaconPool)
 	}
 
