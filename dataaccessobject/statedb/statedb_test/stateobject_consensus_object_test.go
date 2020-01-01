@@ -119,7 +119,7 @@ func storeAllConsensusStateObjectForTesting(initRoot common.Hash) (
 	}
 	to = from + 80
 	tempRootHash = rootHashes[8]
-	tempRootHash, tempM := storeCommitteeObjectOneShardForTestConsensus(statedb.NextEpochCandidate, tempRootHash, statedb.CandidateShardID, from, to)
+	tempRootHash, tempM := storeCommitteeObjectOneShardForTestConsensus(statedb.NextEpochShardCandidate, tempRootHash, statedb.CandidateShardID, from, to)
 	for _, v := range tempM {
 		wantNextEpochCandidate = append(wantNextEpochCandidate, v.CommitteePublicKey())
 		tempString, _ := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{v.CommitteePublicKey()})
@@ -129,7 +129,7 @@ func storeAllConsensusStateObjectForTesting(initRoot common.Hash) (
 
 	from += 80
 	to += 80
-	tempRootHash, tempM = storeCommitteeObjectOneShardForTestConsensus(statedb.CurrentEpochCandidate, tempRootHash, statedb.CandidateShardID, from, to)
+	tempRootHash, tempM = storeCommitteeObjectOneShardForTestConsensus(statedb.CurrentEpochShardCandidate, tempRootHash, statedb.CandidateShardID, from, to)
 	for _, v := range tempM {
 		wantCurrentEpochCandidate = append(wantCurrentEpochCandidate, v.CommitteePublicKey())
 		tempString, _ := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{v.CommitteePublicKey()})
@@ -204,7 +204,7 @@ func TestStateDB_GetAllConsensusStateObject(t *testing.T) {
 		}
 	}
 
-	gotNextEpochCandidate := tempStateDB.GetAllCandidateCommitteePublicKey(statedb.NextEpochCandidate)
+	gotNextEpochCandidate := tempStateDB.GetAllCandidateCommitteePublicKey(statedb.NextEpochShardCandidate)
 	if len(gotNextEpochCandidate) != 80 {
 		t.Fatalf("GetAllCandidateCommitteePublicKey want key length %+v but got %+v", 80, len(gotNextEpochCandidate))
 	}
@@ -221,7 +221,7 @@ func TestStateDB_GetAllConsensusStateObject(t *testing.T) {
 		}
 	}
 
-	gotCurrentEpochCandidate := tempStateDB.GetAllCandidateCommitteePublicKey(statedb.CurrentEpochCandidate)
+	gotCurrentEpochCandidate := tempStateDB.GetAllCandidateCommitteePublicKey(statedb.CurrentEpochShardCandidate)
 	if len(gotCurrentEpochCandidate) != 80 {
 		t.Fatalf("GetAllCandidateCommitteePublicKey want key length %+v but got %+v", 80, len(gotCurrentEpochCandidate))
 	}

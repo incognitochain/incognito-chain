@@ -37,8 +37,10 @@ const (
 
 // Committee Role
 const (
-	NextEpochCandidate = iota
-	CurrentEpochCandidate
+	NextEpochShardCandidate = iota
+	NextEpochBeaconCandidate
+	CurrentEpochShardCandidate
+	CurrentEpochBeaconCandidate
 	SubstituteValidator
 	CurrentValidator
 )

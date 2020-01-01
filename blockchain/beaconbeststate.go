@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
-
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 // BestState houses information about the current best block and other info
@@ -61,13 +61,18 @@ type BeaconBestState struct {
 	// e.g 1 -> 3 -> 2 // shard 1 send cross shard to shard 3 at  height 2
 	LastCrossShardState map[byte]map[byte]uint64 `json:"LastCrossShardState"`
 	ShardHandle         map[byte]bool            `json:"ShardHandle"` // lock sync.RWMutex
-
 	// Number of blocks produced by producers in epoch
 	NumOfBlocksByProducers map[string]uint64 `json:"NumOfBlocksByProducers"`
+	BlockInterval          time.Duration
+	BlockMaxCreateTime     time.Duration
 
-	lock               sync.RWMutex
-	BlockInterval      time.Duration
-	BlockMaxCreateTime time.Duration
+	//================================ StateDB Method
+	ConsensusStateRootHash map[uint64]common.Hash
+	consensusStateDB       *statedb.StateDB
+	FeatureStateRootHash   map[uint64]common.Hash
+	featureStateDB         *statedb.StateDB
+
+	lock sync.RWMutex
 }
 
 var beaconBestState *BeaconBestState
@@ -104,6 +109,8 @@ func NewBeaconBestStateWithConfig(netparam *Params) *BeaconBestState {
 	beaconBestState.LastCrossShardState = make(map[byte]map[byte]uint64)
 	beaconBestState.BlockInterval = netparam.MinBeaconBlockInterval
 	beaconBestState.BlockMaxCreateTime = netparam.MaxBeaconBlockCreation
+	beaconBestState.ConsensusStateRootHash = make(map[uint64]common.Hash)
+	beaconBestState.FeatureStateRootHash = make(map[uint64]common.Hash)
 	return beaconBestState
 }
 func SetBeaconBestState(beacon *BeaconBestState) {

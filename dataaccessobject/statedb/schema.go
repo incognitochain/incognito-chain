@@ -40,11 +40,11 @@ var (
 
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
 	switch role {
-	case NextEpochCandidate:
+	case NextEpochShardCandidate:
 		temp := []byte(string(nextCandidatePrefix))
 		h := common.HashH(temp)
 		return h[:][:prefixHashKeyLength]
-	case CurrentEpochCandidate:
+	case CurrentEpochShardCandidate:
 		temp := []byte(string(currentCandidatePrefix))
 		h := common.HashH(temp)
 		return h[:][:prefixHashKeyLength]
@@ -237,14 +237,14 @@ var _ = func() (_ struct{}) {
 		m[string(temp)] = "shard-sub-" + strconv.Itoa(i)
 	}
 	// Current Candidate
-	tempCurrentCandidate := GetCommitteePrefixWithRole(CurrentEpochCandidate, -2)
+	tempCurrentCandidate := GetCommitteePrefixWithRole(CurrentEpochShardCandidate, -2)
 	prefixs = append(prefixs, tempCurrentCandidate)
 	if v, ok := m[string(tempCurrentCandidate)]; ok {
 		panic("cur-cand-" + " same prefix " + v)
 	}
 	m[string(tempCurrentCandidate)] = "cur-cand-"
 	// Next candidate
-	tempNextCandidate := GetCommitteePrefixWithRole(NextEpochCandidate, -2)
+	tempNextCandidate := GetCommitteePrefixWithRole(NextEpochShardCandidate, -2)
 	prefixs = append(prefixs, tempNextCandidate)
 	if v, ok := m[string(tempNextCandidate)]; ok {
 		panic("next-cand-" + " same prefix " + v)

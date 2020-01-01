@@ -8,7 +8,7 @@ import (
 )
 
 func TestStateDB_GetNextEpochCandidateCommitteeState(t *testing.T) {
-	rootHash, m := storeCommitteeObjectOneShard(statedb.NextEpochCandidate, emptyRoot, 0, 0, len(committeePublicKeys))
+	rootHash, m := storeCommitteeObjectOneShard(statedb.NextEpochShardCandidate, emptyRoot, 0, 0, len(committeePublicKeys))
 	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBCommitteeTest)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
@@ -28,7 +28,7 @@ func TestStateDB_GetNextEpochCandidateCommitteeState(t *testing.T) {
 }
 
 func TestStateDB_GetCurrentEpochCandidateCommitteeState(t *testing.T) {
-	rootHash, m := storeCommitteeObjectOneShard(statedb.CurrentEpochCandidate, emptyRoot, 0, 0, len(committeePublicKeys))
+	rootHash, m := storeCommitteeObjectOneShard(statedb.CurrentEpochShardCandidate, emptyRoot, 0, 0, len(committeePublicKeys))
 	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBCommitteeTest)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
@@ -50,7 +50,7 @@ func TestStateDB_GetCurrentEpochCandidateCommitteeState(t *testing.T) {
 func TestStateDB_GetAllCurrentEpochCandidateCommitteeKey512EightShard(t *testing.T) {
 	from, to := 0, 512
 	wantM := []incognitokey.CommitteePublicKey{}
-	tempRootHash, tempM := storeCommitteeObjectOneShard(statedb.CurrentEpochCandidate, emptyRoot, statedb.CandidateShardID, from, to)
+	tempRootHash, tempM := storeCommitteeObjectOneShard(statedb.CurrentEpochShardCandidate, emptyRoot, statedb.CandidateShardID, from, to)
 	for _, v := range tempM {
 		wantM = append(wantM, v.CommitteePublicKey())
 	}
@@ -58,7 +58,7 @@ func TestStateDB_GetAllCurrentEpochCandidateCommitteeKey512EightShard(t *testing
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
-	gotM := tempStateDB.GetAllCandidateCommitteePublicKey(statedb.CurrentEpochCandidate)
+	gotM := tempStateDB.GetAllCandidateCommitteePublicKey(statedb.CurrentEpochShardCandidate)
 
 	if len(gotM) != to-from {
 		t.Fatalf("GetAllCandidateCommitteePublicKey want key length %+v but got %+v", to-from, len(gotM))
@@ -78,12 +78,12 @@ func TestStateDB_GetAllCurrentEpochCandidateCommitteeKey512EightShard(t *testing
 }
 func TestStateDB_GetAllNextEpochCandidateCommitteeKey(t *testing.T) {
 	from, to := 0, 512
-	rootHash, m := storeCommitteeObjectOneShard(statedb.NextEpochCandidate, emptyRoot, 0, from, to)
+	rootHash, m := storeCommitteeObjectOneShard(statedb.NextEpochShardCandidate, emptyRoot, 0, from, to)
 	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBCommitteeTest)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
-	gotM := tempStateDB.GetAllCandidateCommitteePublicKey(statedb.NextEpochCandidate)
+	gotM := tempStateDB.GetAllCandidateCommitteePublicKey(statedb.NextEpochShardCandidate)
 	if len(gotM) != to-from {
 		t.Fatalf("GetAllCommitteeState want key length %+v but got %+v", to-from, len(gotM))
 	}
@@ -103,12 +103,12 @@ func TestStateDB_GetAllNextEpochCandidateCommitteeKey(t *testing.T) {
 
 func TestStateDB_GetAllCurrentEpochCandidateCommitteeKey(t *testing.T) {
 	from, to := 0, 512
-	rootHash, m := storeCommitteeObjectOneShard(statedb.CurrentEpochCandidate, emptyRoot, 0, from, to)
+	rootHash, m := storeCommitteeObjectOneShard(statedb.CurrentEpochShardCandidate, emptyRoot, 0, from, to)
 	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBCommitteeTest)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
-	gotM := tempStateDB.GetAllCandidateCommitteePublicKey(statedb.CurrentEpochCandidate)
+	gotM := tempStateDB.GetAllCandidateCommitteePublicKey(statedb.CurrentEpochShardCandidate)
 	if len(gotM) != to-from {
 		t.Fatalf("GetAllCommitteeState want key length %+v but got %+v", to-from, len(gotM))
 	}
@@ -129,7 +129,7 @@ func TestStateDB_GetAllCurrentEpochCandidateCommitteeKey(t *testing.T) {
 func TestStateDB_GetAllNextEpochCandidateCommitteeKey512EightShard(t *testing.T) {
 	from, to := 0, 512
 	wantM := []incognitokey.CommitteePublicKey{}
-	tempRootHash, tempM := storeCommitteeObjectOneShard(statedb.NextEpochCandidate, emptyRoot, statedb.CandidateShardID, from, to)
+	tempRootHash, tempM := storeCommitteeObjectOneShard(statedb.NextEpochShardCandidate, emptyRoot, statedb.CandidateShardID, from, to)
 	for _, v := range tempM {
 		wantM = append(wantM, v.CommitteePublicKey())
 	}
@@ -137,7 +137,7 @@ func TestStateDB_GetAllNextEpochCandidateCommitteeKey512EightShard(t *testing.T)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
-	gotM := tempStateDB.GetAllCandidateCommitteePublicKey(statedb.NextEpochCandidate)
+	gotM := tempStateDB.GetAllCandidateCommitteePublicKey(statedb.NextEpochShardCandidate)
 
 	if len(gotM) != to-from {
 		t.Fatalf("GetAllCandidateCommitteePublicKey want key length %+v but got %+v", to-from, len(gotM))

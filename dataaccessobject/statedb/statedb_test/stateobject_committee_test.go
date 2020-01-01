@@ -57,7 +57,7 @@ func TestStateDB_GetMixCommitteePublicKey(t *testing.T) {
 	to = from + 80
 	tempRootHash = rootHashes[8]
 	wantNextEpochCandidateM := []incognitokey.CommitteePublicKey{}
-	tempRootHash, tempM := storeCommitteeObjectOneShard(statedb.NextEpochCandidate, tempRootHash, statedb.CandidateShardID, from, to)
+	tempRootHash, tempM := storeCommitteeObjectOneShard(statedb.NextEpochShardCandidate, tempRootHash, statedb.CandidateShardID, from, to)
 	for _, v := range tempM {
 		wantNextEpochCandidateM = append(wantNextEpochCandidateM, v.CommitteePublicKey())
 	}
@@ -65,7 +65,7 @@ func TestStateDB_GetMixCommitteePublicKey(t *testing.T) {
 	from += 80
 	to += 80
 	wantCurrentEpochCandidateM := []incognitokey.CommitteePublicKey{}
-	tempRootHash, tempM = storeCommitteeObjectOneShard(statedb.CurrentEpochCandidate, tempRootHash, statedb.CandidateShardID, from, to)
+	tempRootHash, tempM = storeCommitteeObjectOneShard(statedb.CurrentEpochShardCandidate, tempRootHash, statedb.CandidateShardID, from, to)
 	for _, v := range tempM {
 		wantCurrentEpochCandidateM = append(wantCurrentEpochCandidateM, v.CommitteePublicKey())
 	}
@@ -125,7 +125,7 @@ func TestStateDB_GetMixCommitteePublicKey(t *testing.T) {
 		}
 	}
 
-	gotNextEpochCandidateM := tempStateDB.GetAllCandidateCommitteePublicKey(statedb.NextEpochCandidate)
+	gotNextEpochCandidateM := tempStateDB.GetAllCandidateCommitteePublicKey(statedb.NextEpochShardCandidate)
 	if len(gotNextEpochCandidateM) != 80 {
 		t.Fatalf("GetAllCandidateCommitteePublicKey want key length %+v but got %+v", to-from, len(gotNextEpochCandidateM))
 	}
@@ -142,7 +142,7 @@ func TestStateDB_GetMixCommitteePublicKey(t *testing.T) {
 		}
 	}
 
-	gotCurrentEpochCandidateM := tempStateDB.GetAllCandidateCommitteePublicKey(statedb.CurrentEpochCandidate)
+	gotCurrentEpochCandidateM := tempStateDB.GetAllCandidateCommitteePublicKey(statedb.CurrentEpochShardCandidate)
 	if len(gotNextEpochCandidateM) != 80 {
 		t.Fatalf("GetAllCandidateCommitteePublicKey want key length %+v but got %+v", to-from, len(gotCurrentEpochCandidateM))
 	}
@@ -205,7 +205,7 @@ func TestStateDB_GetMixCommitteeState(t *testing.T) {
 	}
 	to = from + 80
 	tempRootHash = rootHashes[8]
-	tempRootHash, tempM := storeCommitteeObjectOneShard(statedb.NextEpochCandidate, tempRootHash, statedb.CandidateShardID, from, to)
+	tempRootHash, tempM := storeCommitteeObjectOneShard(statedb.NextEpochShardCandidate, tempRootHash, statedb.CandidateShardID, from, to)
 	for _, v := range tempM {
 		wantNextEpochCandidateM = append(wantNextEpochCandidateM, v.CommitteePublicKey())
 		tempCurrentValidatorString, err := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{v.CommitteePublicKey()})
@@ -218,7 +218,7 @@ func TestStateDB_GetMixCommitteeState(t *testing.T) {
 
 	from += 80
 	to += 80
-	tempRootHash, tempM = storeCommitteeObjectOneShard(statedb.CurrentEpochCandidate, tempRootHash, statedb.CandidateShardID, from, to)
+	tempRootHash, tempM = storeCommitteeObjectOneShard(statedb.CurrentEpochShardCandidate, tempRootHash, statedb.CandidateShardID, from, to)
 	for _, v := range tempM {
 		wantCurrentEpochCandidateM = append(wantCurrentEpochCandidateM, v.CommitteePublicKey())
 		tempCurrentValidatorString, err := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{v.CommitteePublicKey()})
