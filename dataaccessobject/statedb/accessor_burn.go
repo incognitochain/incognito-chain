@@ -24,7 +24,8 @@ func GetBurningConfirm(stateDB *StateDB, txID common.Hash) (uint64, error) {
 	if !has {
 		return 0, NewStatedbError(GetBurningConfirmError, fmt.Errorf("burning confirm with txID %+v not found", txID))
 	}
-	if !burningConfrimState.TxID().IsEqual(&txID) {
+	tempTxID := burningConfrimState.TxID()
+	if !tempTxID.IsEqual(&txID) {
 		panic("burning confirm state")
 	}
 	return burningConfrimState.Height(), nil

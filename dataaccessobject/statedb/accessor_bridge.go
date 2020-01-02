@@ -56,7 +56,8 @@ func IsBridgeTokenExistedByType(stateDB *StateDB, incTokenID common.Hash, isCent
 	if err != nil {
 		return false, NewStatedbError(IsBridgeTokenExistedByTypeError, err)
 	}
-	if !tokenInfoState.IncTokenID().IsEqual(&incTokenID) || tokenInfoState.IsCentralized() != isCentralized {
+	tempIncoTokenID := tokenInfoState.IncTokenID()
+	if !tempIncoTokenID.IsEqual(&incTokenID) || tokenInfoState.IsCentralized() != isCentralized {
 		panic("same key wrong value")
 	}
 	return has, nil
@@ -68,7 +69,8 @@ func getBridgeTokenByType(stateDB *StateDB, incTokenID common.Hash, isCentralize
 	if err != nil {
 		return nil, false, err
 	}
-	if !tokenInfoState.IncTokenID().IsEqual(&incTokenID) || tokenInfoState.IsCentralized() != isCentralized {
+	tempIncoTokenID := tokenInfoState.IncTokenID()
+	if !tempIncoTokenID.IsEqual(&incTokenID) || tokenInfoState.IsCentralized() != isCentralized {
 		panic("same key wrong value")
 	}
 	return tokenInfoState, has, nil
@@ -187,7 +189,8 @@ func GetBridgeReqWithStatus(stateDB *StateDB, txReqID common.Hash) (byte, error)
 	if !has {
 		return 0, NewStatedbError(GetBridgeReqWithStatusError, fmt.Errorf("txReqID %+v status not found", txReqID))
 	}
-	if !bridgeStatusState.TxReqID().IsEqual(&txReqID) {
+	tempTxReqID := bridgeStatusState.TxReqID()
+	if !tempTxReqID.IsEqual(&txReqID) {
 		panic("same key wrong value")
 	}
 	return bridgeStatusState.Status(), nil

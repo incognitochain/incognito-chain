@@ -90,9 +90,6 @@ const (
 	IsETHTxHashIssuedError
 	IsBridgeTokenExistedByTypeError
 	CanProcessCIncTokenError
-	PrivacyTokenIDExistedError
-	PrivacyTokenIDExistedError
-	PrivacyTokenIDExistedError
 	CanProcessTokenPairError
 	UpdateBridgeTokenInfoError
 	GetAllBridgeTokensError
@@ -155,12 +152,12 @@ var ErrCodeMessage = map[int]struct {
 	RemoveCommitteeRewardError:      {-3012, "Remove Committee Reward Error"},
 	StoreBlackListProducersError:    {-3013, "Store Black List Producers Error"},
 	// -4xxx: pdex error
-	StoreWaitingPDEContributionError: {-4000: "Store Waiting PDEX Contribution Error"},
-	StorePDEPoolPairError:            {-4001: "Store PDEX Pool Pair Error"},
-	StorePDEShareError:               {-4002: "Store PDEX Share Error"},
-	GetPDEPoolForPairError:           {-4003: "Get PDEX Pool Pair Error"},
-	TrackPDEStatusError:              {-4004: "Track PDEX Status Error"},
-	GetPDEStatusError:                {-4005: "Get PDEX Status Error"},
+	StoreWaitingPDEContributionError: {-4000, "Store Waiting PDEX Contribution Error"},
+	StorePDEPoolPairError:            {-4001, "Store PDEX Pool Pair Error"},
+	StorePDEShareError:               {-4002, "Store PDEX Share Error"},
+	GetPDEPoolForPairError:           {-4003, "Get PDEX Pool Pair Error"},
+	TrackPDEStatusError:              {-4004, "Track PDEX Status Error"},
+	GetPDEStatusError:                {-4005, "Get PDEX Status Error"},
 	// -5xxx: bridge error
 	BridgeInsertETHTxHashIssuedError: {-5000, "Bridge Insert ETH Tx Hash Issued Error"},
 	IsETHTxHashIssuedError:           {-5001, "Is ETH Tx Hash Issued Error"},
@@ -172,8 +169,8 @@ var ErrCodeMessage = map[int]struct {
 	TrackBridgeReqWithStatusError:    {-5007, "Track Bridge Request With Status Error"},
 	GetBridgeReqWithStatusError:      {-5008, "Get Bridge Request With Status Error"},
 	// -6xxx: burning confirm
-	StoreBurningConfirmError: {-6000: "Store Burning Confirm Error"},
-	GetBurningConfirmError:   {-6001: "Get Burning Confirm Error"},
+	StoreBurningConfirmError: {-6000, "Store Burning Confirm Error"},
+	GetBurningConfirmError:   {-6001, "Get Burning Confirm Error"},
 }
 
 type StatedbError struct {

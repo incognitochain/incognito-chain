@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics"
 	"log"
 	"net/http"
 	_ "net/http/pprof"

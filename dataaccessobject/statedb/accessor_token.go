@@ -66,7 +66,8 @@ func PrivacyTokenIDExisted(stateDB *StateDB, tokenID common.Hash) bool {
 	if err != nil {
 		return false
 	}
-	if !tokenState.TokenID().IsEqual(&tokenID) {
+	tempTokenID := tokenState.TokenID()
+	if !tempTokenID.IsEqual(&tokenID) {
 		panic("same key wrong value")
 	}
 	return has
