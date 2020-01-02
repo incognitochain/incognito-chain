@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	p2pgrpc "github.com/incognitochain/go-libp2p-grpc"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -18,14 +17,20 @@ type BlockRequester struct {
 	conn *grpc.ClientConn
 
 	peerIDs chan peer.ID
-	prtc    *p2pgrpc.GRPCProtocol
+	prtc    GRPCDialer
+	stop    chan int
 }
 
-func NewRequester(prtc *p2pgrpc.GRPCProtocol) *BlockRequester {
+type GRPCDialer interface {
+	Dial(ctx context.Context, peerID peer.ID, dialOpts ...grpc.DialOption) (*grpc.ClientConn, error)
+}
+
+func NewRequester(prtc GRPCDialer) *BlockRequester {
 	req := &BlockRequester{
 		prtc:    prtc,
 		peerIDs: make(chan peer.ID, 100),
 		conn:    nil,
+		stop:    make(chan int, 1),
 	}
 	go req.keepConnection()
 	return req
@@ -35,23 +40,30 @@ func NewRequester(prtc *p2pgrpc.GRPCProtocol) *BlockRequester {
 func (c *BlockRequester) keepConnection() {
 	currentHWID := peer.ID("")
 	watchTimestep := time.Tick(RequesterDialTimestep)
+
+	closeConnection := func() {
+		if c.conn == nil {
+			return
+		}
+
+		Logger.Info("Closing old requester connection")
+		err := c.conn.Close()
+		if err != nil {
+			Logger.Errorf("Failed closing old requester connection: %+v", err)
+		}
+		c.conn = nil
+	}
+
 	for {
 		select {
 		case <-watchTimestep:
 			if c.Ready() {
 				continue
 			}
-
 			Logger.Warn("BlockRequester is not ready, dialing")
-			if c.conn != nil {
-				Logger.Info("Closing old requester connection")
-				err := c.conn.Close()
-				if err != nil {
-					Logger.Errorf("Failed closing old requester connection: %+v", err)
-				}
-				c.conn = nil
-			}
-			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+
+			closeConnection()
+			ctx, cancel := context.WithTimeout(context.Background(), DialTimeout)
 			if conn, err := c.prtc.Dial(
 				ctx,
 				currentHWID,
@@ -71,11 +83,14 @@ func (c *BlockRequester) keepConnection() {
 		case hwID := <-c.peerIDs:
 			Logger.Infof("Received new highway peerID, old = %s, new = %s", currentHWID.String(), hwID.String())
 			if hwID != currentHWID && c.conn != nil {
-				if err := c.conn.Close(); err != nil { // Close gRPC connection
-					Logger.Errorf("Failed closing connection to highway: %v %v %+v", hwID, currentHWID, err)
-				}
+				closeConnection()
 			}
 			currentHWID = hwID
+
+		case <-c.stop:
+			Logger.Info("Stop keeping blockrequester connection to highway")
+			closeConnection()
+			return
 		}
 	}
 }
