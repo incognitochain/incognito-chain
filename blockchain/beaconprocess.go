@@ -36,6 +36,9 @@ import (
 	- Error: invalid new block
 */
 func (blockchain *BlockChain) VerifyPreSignBeaconBlock(beaconBlock *BeaconBlock, isPreSign bool) error {
+	if DATABASE_VERSION == 2 {
+		return blockchain.VerifyPreSignBeaconBlockV2(beaconBlock, isPreSign)
+	}
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
 	// Verify block only
@@ -68,6 +71,9 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(beaconBlock *BeaconBlock,
 }
 
 func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isValidated bool) error {
+	if DATABASE_VERSION == 2 {
+		return blockchain.InsertBeaconBlockV2(beaconBlock, isValidated)
+	}
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
 

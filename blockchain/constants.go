@@ -29,6 +29,7 @@ const (
 	UpperBoundPercentForIncDAO = 10
 	GetValidBlock              = 20
 	TestRandom                 = true
+	DATABASE_VERSION           = 1
 )
 
 // CONSTANT for network MAINNET
