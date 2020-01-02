@@ -265,6 +265,7 @@ func (cm *ConnManager) checkConnection(addrInfo *peer.AddrInfo) bool {
 		}
 		if cm.disconnected > MaxConnectionRetry {
 			Logger.Error("Retry maxed out")
+			cm.disconnected = 0
 			return true
 		}
 	}

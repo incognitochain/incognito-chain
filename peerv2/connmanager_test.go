@@ -69,6 +69,29 @@ func TestConnectAtStart(t *testing.T) {
 	assert.Equal(t, 1, len(cm.registerRequests), "not connect at startup")
 }
 
+// TestConnectWhenMaxedRetry checks if new highway is picked when failing to connect to old highway for some number of times
+func TestConnectWhenMaxedRetry(t *testing.T) {
+	h, net := setupHost()
+	setupConnectedness(net, []network.Connectedness{network.NotConnected, network.Connected, network.NotConnected, network.NotConnected, network.NotConnected, network.NotConnected, network.NotConnected, network.NotConnected, network.NotConnected, network.NotConnected, network.NotConnected, network.NotConnected, network.NotConnected, network.NotConnected, network.NotConnected, network.NotConnected})
+	var err error
+	h.On("Connect", mock.Anything, mock.Anything).Return(err)
+
+	hwAddrs := map[string][]rpcclient.HighwayAddr{"all": []rpcclient.HighwayAddr{rpcclient.HighwayAddr{Libp2pAddr: testHighwayAddress}}}
+	discoverer := &mocks.HighwayDiscoverer{}
+	discoverer.On("DiscoverHighway", mock.Anything, mock.Anything).Return(hwAddrs, nil).Times(2)
+	cm := &ConnManager{
+		LocalHost:        &Host{Host: h},
+		discoverer:       discoverer,
+		stop:             make(chan int),
+		registerRequests: make(chan peer.ID, 1),
+	}
+	go cm.keepHighwayConnection()
+	time.Sleep(10 * ReconnectHighwayTimestep)
+	close(cm.stop)
+
+	discoverer.AssertNumberOfCalls(t, "DiscoverHighway", 2)
+}
+
 // TestReconnect checks if connection is re-established after being disconnected
 func TestReconnect(t *testing.T) {
 	h, net := setupHost()
