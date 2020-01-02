@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/trie"
 )
@@ -19,9 +18,9 @@ import (
 // nested states. It's the general query interface to retrieve:
 // * State Object
 type StateDB struct {
-	db    DatabaseAccessWarper
-	trie  Trie
-	rawdb incdb.Database
+	db   DatabaseAccessWarper
+	trie Trie
+	//rawdb incdb.Database
 	// This map holds 'live' objects, which will get modified while processing a state transition.
 	stateObjects        map[common.Hash]StateObject
 	stateObjectsPending map[common.Hash]struct{} // State objects finalized but not yet written to the trie
@@ -41,36 +40,37 @@ type StateDB struct {
 	StateObjectCommits time.Duration
 }
 
-// New return a new statedb attach with a state root
-func New(root common.Hash, db DatabaseAccessWarper) (*StateDB, error) {
-	tr, err := db.OpenTrie(root)
-	if err != nil {
-		return nil, err
-	}
-	return &StateDB{
-		db:                  db,
-		trie:                tr,
-		stateObjects:        make(map[common.Hash]StateObject),
-		stateObjectsPending: make(map[common.Hash]struct{}),
-		stateObjectsDirty:   make(map[common.Hash]struct{}),
-	}, nil
-}
-
-// New return a new statedb attach with a state root
-func NewWithRawDB(root common.Hash, db DatabaseAccessWarper, rawdb incdb.Database) (*StateDB, error) {
-	tr, err := db.OpenTrie(root)
-	if err != nil {
-		return nil, err
-	}
-	return &StateDB{
-		db:                  db,
-		trie:                tr,
-		rawdb:               rawdb,
-		stateObjects:        make(map[common.Hash]StateObject),
-		stateObjectsPending: make(map[common.Hash]struct{}),
-		stateObjectsDirty:   make(map[common.Hash]struct{}),
-	}, nil
-}
+//
+//// New return a new statedb attach with a state root
+//func New(root common.Hash, db DatabaseAccessWarper) (*StateDB, error) {
+//	tr, err := db.OpenTrie(root)
+//	if err != nil {
+//		return nil, err
+//	}
+//	return &StateDB{
+//		db:                  db,
+//		trie:                tr,
+//		stateObjects:        make(map[common.Hash]StateObject),
+//		stateObjectsPending: make(map[common.Hash]struct{}),
+//		stateObjectsDirty:   make(map[common.Hash]struct{}),
+//	}, nil
+//}
+//
+//// New return a new statedb attach with a state root
+//func NewWithRawDB(root common.Hash, db DatabaseAccessWarper, rawdb incdb.Database) (*StateDB, error) {
+//	tr, err := db.OpenTrie(root)
+//	if err != nil {
+//		return nil, err
+//	}
+//	return &StateDB{
+//		db:                  db,
+//		trie:                tr,
+//		rawdb:               rawdb,
+//		stateObjects:        make(map[common.Hash]StateObject),
+//		stateObjectsPending: make(map[common.Hash]struct{}),
+//		stateObjectsDirty:   make(map[common.Hash]struct{}),
+//	}, nil
+//}
 
 // New return a new statedb attach with a state root
 func NewWithPrefixTrie(root common.Hash, db DatabaseAccessWarper) (*StateDB, error) {
@@ -102,7 +102,7 @@ func (stateDB *StateDB) Error() error {
 // Reset clears out all ephemeral state objects from the state db, but keeps
 // the underlying state trie to avoid reloading data for the next operations.
 func (stateDB *StateDB) Reset(root common.Hash) error {
-	tr, err := stateDB.db.OpenTrie(root)
+	tr, err := stateDB.db.OpenPrefixTrie(root)
 	if err != nil {
 		return err
 	}
@@ -165,10 +165,15 @@ func (stateDB *StateDB) Database() DatabaseAccessWarper {
 	return stateDB.db
 }
 
-// TODO: implement duplicate current statedb
 // Copy duplicate statedb and return new statedb instance
 func (stateDB *StateDB) Copy() *StateDB {
-	return &StateDB{}
+	return &StateDB{
+		db:                  stateDB.db,
+		trie:                stateDB.db.CopyTrie(stateDB.trie),
+		stateObjects:        make(map[common.Hash]StateObject),
+		stateObjectsPending: make(map[common.Hash]struct{}),
+		stateObjectsDirty:   make(map[common.Hash]struct{}),
+	}
 }
 
 // Exist check existence of a state object in statedb

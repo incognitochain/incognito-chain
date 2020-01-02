@@ -35,7 +35,7 @@ func (blockchain *BlockChain) updateDatabaseWithBlockRewardInfoV2(beaconBlock *B
 			}
 			for key, value := range acceptedBlkRewardInfo.TxsFee {
 				if value != 0 {
-					err = statedb.AddShardRewardRequest(blockchain.BestState.Beacon.consensusStateDB, beaconBlock.Header.Epoch, acceptedBlkRewardInfo.ShardID, key, value)
+					err = statedb.AddShardRewardRequest(blockchain.BestState.Beacon.rewardStateDB, beaconBlock.Header.Epoch, acceptedBlkRewardInfo.ShardID, key, value)
 					if err != nil {
 						return err
 					}

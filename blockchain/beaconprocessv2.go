@@ -203,27 +203,54 @@ func (blockchain *BlockChain) processStoreBeaconBlockV2(beaconBlock *BeaconBlock
 		return NewBlockChainError(UpdateDatabaseWithBlockRewardInfoError, err)
 	}
 	// execute, store
-	err = blockchain.processBridgeInstructionsV2(beaconBestState.consensusStateDB, beaconBlock)
+	err = blockchain.processBridgeInstructionsV2(beaconBestState.featureStateDB, beaconBlock)
 	if err != nil {
 		return NewBlockChainError(ProcessBridgeInstructionError, err)
 	}
 	// execute, store
-	err = blockchain.processPDEInstructionsV2(beaconBestState.consensusStateDB, beaconBlock)
+	err = blockchain.processPDEInstructionsV2(beaconBestState.featureStateDB, beaconBlock)
 	if err != nil {
 		return NewBlockChainError(ProcessPDEInstructionError, err)
 	}
-	rootHash, err := beaconBestState.consensusStateDB.Commit(true)
+	consensusRootHash, err := beaconBestState.consensusStateDB.Commit(true)
 	if err != nil {
 		return err
 	}
-	err = beaconBestState.consensusStateDB.Database().TrieDB().Commit(rootHash, false)
+	err = beaconBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false)
 	if err != nil {
 		return err
 	}
-	err = beaconBestState.consensusStateDB.Reset(rootHash)
+	err = beaconBestState.consensusStateDB.Reset(consensusRootHash)
 	if err != nil {
 		return err
 	}
+	featureRootHash, err := beaconBestState.featureStateDB.Commit(true)
+	if err != nil {
+		return err
+	}
+	err = beaconBestState.featureStateDB.Database().TrieDB().Commit(featureRootHash, false)
+	if err != nil {
+		return err
+	}
+	err = beaconBestState.featureStateDB.Reset(featureRootHash)
+	if err != nil {
+		return err
+	}
+	rewardRootHash, err := beaconBestState.rewardStateDB.Commit(true)
+	if err != nil {
+		return err
+	}
+	err = beaconBestState.rewardStateDB.Database().TrieDB().Commit(rewardRootHash, false)
+	if err != nil {
+		return err
+	}
+	err = beaconBestState.rewardStateDB.Reset(rewardRootHash)
+	if err != nil {
+		return err
+	}
+	beaconBestState.ConsensusStateRootHash[beaconBlock.Header.Height] = consensusRootHash
+	beaconBestState.FeatureStateRootHash[beaconBlock.Header.Height] = featureRootHash
+	beaconBestState.RewardStateRootHash[beaconBlock.Header.Height] = rewardRootHash
 	//statedb===========================START
 	return nil
 }

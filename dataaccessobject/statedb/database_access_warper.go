@@ -10,7 +10,7 @@ import (
 // Database wraps access to tries and contract code.
 type DatabaseAccessWarper interface {
 	// OpenTrie opens the main account trie.
-	OpenTrie(root common.Hash) (Trie, error)
+	//OpenTrie(root common.Hash) (Trie, error)
 
 	OpenPrefixTrie(root common.Hash) (Trie, error)
 
@@ -86,6 +86,8 @@ func (aw *accessorWarper) OpenPrefixTrie(root common.Hash) (Trie, error) {
 func (aw *accessorWarper) CopyTrie(t Trie) Trie {
 	switch t := t.(type) {
 	case *trie.SecureTrie:
+		return t.Copy()
+	case *trie.PrefixTrie:
 		return t.Copy()
 	default:
 		panic(fmt.Errorf("unknown trie type %T", t))
