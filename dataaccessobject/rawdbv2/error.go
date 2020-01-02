@@ -15,6 +15,8 @@ const (
 	GetBeaconBlockByHashError
 	GetBeaconBlockByIndexError
 	DeleteBeaconBlockError
+	StoreBeaconBestStateError
+	FetchBeaconBestStateError
 	// Shard
 	StoreShardBlockError
 	StoreShardBlockIndexError
@@ -42,6 +44,8 @@ var ErrCodeMessage = map[int]struct {
 	DeleteBeaconBlockError:     {-1003, "Delete Beacon Block Error"},
 	StoreBeaconBlockIndexError: {-1004, "Store Beacon Block Index Error"},
 	GetIndexOfBeaconBlockError: {-1005, "Get Index Of Beacon Block Error"},
+	StoreBeaconBestStateError:  {-1006, "Store Beacon Best State Error"},
+	FetchBeaconBestStateError:  {-1007, "Fetch Beacon Best State Error"},
 
 	StoreShardBlockError:           {-2000, "Store Shard Block Error"},
 	HasShardBlockError:             {-2001, "Has Shard Block Error"},

@@ -67,8 +67,11 @@ type BeaconBestState struct {
 	BlockMaxCreateTime     time.Duration
 
 	//================================ StateDB Method
+	// block height => root hash
 	ConsensusStateRootHash map[uint64]common.Hash
 	consensusStateDB       *statedb.StateDB
+	RewardStateRootHash    map[uint64]common.Hash
+	rewardStateDB          *statedb.StateDB
 	FeatureStateRootHash   map[uint64]common.Hash
 	featureStateDB         *statedb.StateDB
 
@@ -110,6 +113,7 @@ func NewBeaconBestStateWithConfig(netparam *Params) *BeaconBestState {
 	beaconBestState.BlockInterval = netparam.MinBeaconBlockInterval
 	beaconBestState.BlockMaxCreateTime = netparam.MaxBeaconBlockCreation
 	beaconBestState.ConsensusStateRootHash = make(map[uint64]common.Hash)
+	beaconBestState.RewardStateRootHash = make(map[uint64]common.Hash)
 	beaconBestState.FeatureStateRootHash = make(map[uint64]common.Hash)
 	return beaconBestState
 }

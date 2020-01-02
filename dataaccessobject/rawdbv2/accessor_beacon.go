@@ -137,3 +137,24 @@ func GetBeaconBlockHashByIndex(db incdb.Database, index uint64) ([]common.Hash, 
 	}
 	return beaconBlockHashes, nil
 }
+
+func StoreBeaconBestState(db incdb.Database, v interface{}) error {
+	val, err := json.Marshal(v)
+	if err != nil {
+		return NewRawdbError(StoreBeaconBestStateError, err)
+	}
+	key := GetBeaconBestStateKey()
+	if err := db.Put(key, val); err != nil {
+		return NewRawdbError(StoreBeaconBestStateError, err)
+	}
+	return nil
+}
+
+func FetchBeaconBestState(db incdb.Database) ([]byte, error) {
+	key := GetBeaconBestStateKey()
+	block, err := db.Get(key)
+	if err != nil {
+		return nil, NewRawdbError(FetchBeaconBestStateError, err)
+	}
+	return block, nil
+}

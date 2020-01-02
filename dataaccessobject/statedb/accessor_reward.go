@@ -5,7 +5,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-func AddShardRewardRequest(stateDB *StateDB, epoch uint64, shardID byte, rewardAmount uint64, tokenID common.Hash) error {
+func AddShardRewardRequest(stateDB *StateDB, epoch uint64, shardID byte, tokenID common.Hash, rewardAmount uint64) error {
 	key := GenerateRewardRequestObjectKey(epoch, shardID, tokenID)
 	r, has, err := stateDB.GetRewardRequestState(key)
 	if err != nil {
