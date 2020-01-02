@@ -305,6 +305,8 @@ func chooseHighway(hwAddrs []rpcclient.HighwayAddr, pid peer.ID) (*peer.AddrInfo
 
 	// Sort first to make sure always choosing the same highway
 	// if the list doesn't change
+	// NOTE: this is redundant since hash key doesn't contain indexes
+	// But we still keep it anyway to support other consistent hashing library
 	sort.SliceStable(filterAddrs, func(i, j int) bool {
 		return filterAddrs[i].Libp2pAddr < filterAddrs[j].Libp2pAddr
 	})
