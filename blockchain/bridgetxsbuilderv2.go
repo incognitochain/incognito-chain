@@ -5,39 +5,17 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"math/big"
 	"strconv"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/transaction"
-	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-// NOTE: for whole bridge's deposit process, anytime an error occurs it will be logged for debugging and the request will be skipped for retry later. No error will be returned so that the network can still continue to process others.
-
-func buildInstruction(metaType int, shardID byte, instStatus string, contentStr string) []string {
-	return []string{
-		strconv.Itoa(metaType),
-		strconv.Itoa(int(shardID)),
-		instStatus,
-		contentStr,
-	}
-}
-
-func (blockchain *BlockChain) buildInstructionsForContractingReq(
-	contentStr string,
-	shardID byte,
-	metaType int,
-) ([][]string, error) {
-	inst := buildInstruction(metaType, shardID, "accepted", contentStr)
-	return [][]string{inst}, nil
-}
-
-func (blockchain *BlockChain) buildInstructionsForIssuingReq(
+func (blockchain *BlockChain) buildInstructionsForIssuingReqV2(
+	stateDB *statedb.StateDB,
 	contentStr string,
 	shardID byte,
 	metaType int,
@@ -61,7 +39,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingReq(
 		return append(instructions, rejectedInst), nil
 	}
 
-	ok, err := rawdb.CanProcessCIncToken(blockchain.GetDatabase(), issuingTokenID)
+	ok, err := statedb.CanProcessCIncToken(stateDB, issuingTokenID)
 	if err != nil {
 		fmt.Println("WARNING: an issue occured while checking it can process for the incognito token or not: ", err)
 		return append(instructions, rejectedInst), nil
@@ -90,12 +68,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingReq(
 	return append(instructions, returnedInst), nil
 }
 
-func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(
-	contentStr string,
-	shardID byte,
-	metaType int,
-	ac *metadata.AccumulatedValues,
-) ([][]string, error) {
+func (blockchain *BlockChain) buildInstructionsForIssuingETHReqV2(stateDB *statedb.StateDB, contentStr string, shardID byte, metaType int, ac *metadata.AccumulatedValues) ([][]string, error) {
 	fmt.Println("[Decentralized bridge token issuance] Starting...")
 	instructions := [][]string{}
 	issuingETHReqAction, err := metadata.ParseETHIssuingInstContent(contentStr)
@@ -120,7 +93,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(
 		fmt.Println("WARNING: already issued for the hash in current block: ", uniqETHTx)
 		return append(instructions, rejectedInst), nil
 	}
-	isIssued, err := rawdb.IsETHTxHashIssued(blockchain.GetDatabase(), uniqETHTx)
+	isIssued, err := statedb.IsETHTxHashIssued(stateDB, uniqETHTx)
 	if err != nil {
 		fmt.Println("WARNING: an issue occured while checking the eth tx hash is issued or not: ", err)
 		return append(instructions, rejectedInst), nil
@@ -160,7 +133,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(
 		return append(instructions, rejectedInst), nil
 	}
 
-	isValid, err := rawdb.CanProcessTokenPair(blockchain.GetDatabase(), ethereumToken, md.IncTokenID)
+	isValid, err := statedb.CanProcessTokenPair(stateDB, ethereumToken, md.IncTokenID)
 	if err != nil {
 		fmt.Println("WARNING: an error occured while checking it can process for token pair on the previous blocks or not: ", err)
 		return append(instructions, rejectedInst), nil
@@ -207,146 +180,4 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(
 
 	acceptedInst := buildInstruction(metaType, shardID, "accepted", base64.StdEncoding.EncodeToString(issuingETHAcceptedInstBytes))
 	return append(instructions, acceptedInst), nil
-}
-
-func (blockGenerator *BlockGenerator) buildIssuanceTx(
-	contentStr string,
-	producerPrivateKey *privacy.PrivateKey,
-	shardID byte,
-) (metadata.Transaction, error) {
-	fmt.Println("[Centralized bridge token issuance] Starting...")
-	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
-	if err != nil {
-		fmt.Println("WARNING: an error occured while decoding content string of accepted issuance instruction: ", err)
-		return nil, nil
-	}
-	var issuingAcceptedInst metadata.IssuingAcceptedInst
-	err = json.Unmarshal(contentBytes, &issuingAcceptedInst)
-	if err != nil {
-		fmt.Println("WARNING: an error occured while unmarshaling accepted issuance instruction: ", err)
-		return nil, nil
-	}
-
-	if shardID != issuingAcceptedInst.ShardID {
-		return nil, nil
-	}
-
-	issuingRes := metadata.NewIssuingResponse(
-		issuingAcceptedInst.TxReqID,
-		metadata.IssuingResponseMeta,
-	)
-
-	receiver := &privacy.PaymentInfo{
-		Amount:         issuingAcceptedInst.DepositedAmount,
-		PaymentAddress: issuingAcceptedInst.ReceiverAddr,
-	}
-	var propertyID [common.HashSize]byte
-	copy(propertyID[:], issuingAcceptedInst.IncTokenID[:])
-	propID := common.Hash(propertyID)
-	tokenParams := &transaction.CustomTokenPrivacyParamTx{
-		PropertyID:     propID.String(),
-		PropertyName:   issuingAcceptedInst.IncTokenName,
-		PropertySymbol: issuingAcceptedInst.IncTokenName,
-		Amount:         issuingAcceptedInst.DepositedAmount,
-		TokenTxType:    transaction.CustomTokenInit,
-		Receiver:       []*privacy.PaymentInfo{receiver},
-		TokenInput:     []*privacy.InputCoin{},
-		Mintable:       true,
-	}
-
-	resTx := &transaction.TxCustomTokenPrivacy{}
-	initErr := resTx.Init(
-		transaction.NewTxPrivacyTokenInitParams(producerPrivateKey,
-			[]*privacy.PaymentInfo{},
-			nil,
-			0,
-			tokenParams,
-			blockGenerator.chain.GetDatabase(),
-			issuingRes,
-			false,
-			false,
-			shardID,
-			nil))
-
-	if initErr != nil {
-		fmt.Println("WARNING: an error occured while initializing response tx: ", initErr)
-		return nil, nil
-	}
-
-	fmt.Println("[Centralized token issuance] Create tx ok.")
-	return resTx, nil
-}
-
-func (blockGenerator *BlockGenerator) buildETHIssuanceTx(
-	contentStr string,
-	producerPrivateKey *privacy.PrivateKey,
-	shardID byte,
-) (metadata.Transaction, error) {
-	fmt.Println("[Decentralized bridge token issuance] Starting...")
-	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
-	if err != nil {
-		fmt.Println("WARNING: an error occured while decoding content string of ETH accepted issuance instruction: ", err)
-		return nil, nil
-	}
-	var issuingETHAcceptedInst metadata.IssuingETHAcceptedInst
-	err = json.Unmarshal(contentBytes, &issuingETHAcceptedInst)
-	if err != nil {
-		fmt.Println("WARNING: an error occured while unmarshaling ETH accepted issuance instruction: ", err)
-		return nil, nil
-	}
-
-	if shardID != issuingETHAcceptedInst.ShardID {
-		return nil, nil
-	}
-
-	key, err := wallet.Base58CheckDeserialize(issuingETHAcceptedInst.ReceiverAddrStr)
-	if err != nil {
-		fmt.Println("WARNING: an error occured while deserializing receiver address string: ", err)
-		return nil, nil
-	}
-
-	receiver := &privacy.PaymentInfo{
-		Amount:         issuingETHAcceptedInst.IssuingAmount,
-		PaymentAddress: key.KeySet.PaymentAddress,
-	}
-	var propertyID [common.HashSize]byte
-	copy(propertyID[:], issuingETHAcceptedInst.IncTokenID[:])
-	propID := common.Hash(propertyID)
-	tokenParams := &transaction.CustomTokenPrivacyParamTx{
-		PropertyID: propID.String(),
-		// PropertyName:   common.PETHTokenName,
-		// PropertySymbol: common.PETHTokenName,
-		Amount:      issuingETHAcceptedInst.IssuingAmount,
-		TokenTxType: transaction.CustomTokenInit,
-		Receiver:    []*privacy.PaymentInfo{receiver},
-		TokenInput:  []*privacy.InputCoin{},
-		Mintable:    true,
-	}
-
-	issuingETHRes := metadata.NewIssuingETHResponse(
-		issuingETHAcceptedInst.TxReqID,
-		issuingETHAcceptedInst.UniqETHTx,
-		issuingETHAcceptedInst.ExternalTokenID,
-		metadata.IssuingETHResponseMeta,
-	)
-	resTx := &transaction.TxCustomTokenPrivacy{}
-	initErr := resTx.Init(
-		transaction.NewTxPrivacyTokenInitParams(producerPrivateKey,
-			[]*privacy.PaymentInfo{},
-			nil,
-			0,
-			tokenParams,
-			blockGenerator.chain.GetDatabase(),
-			issuingETHRes,
-			false,
-			false,
-			shardID, nil))
-
-	if initErr != nil {
-		fmt.Println("WARNING: an error occured while initializing response tx: ", initErr)
-		return nil, nil
-	}
-
-	fmt.Println("[Decentralized bridge token issuance] Create tx ok.")
-	return resTx, nil
 }
