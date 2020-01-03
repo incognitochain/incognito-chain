@@ -513,24 +513,6 @@ func (blockchain *BlockChain) restoreFromTxViewPoint(block *ShardBlock) error {
 		return err
 	}
 
-	// check normal custom token
-	for indexTx, customTokenTx := range view.customTokenTxs {
-		switch customTokenTx.TxTokenData.Type {
-		case transaction.CustomTokenInit, transaction.CustomTokenCrossShard:
-			{
-				err = blockchain.config.DataBase.DeleteNormalToken(customTokenTx.TxTokenData.PropertyID)
-				if err != nil {
-					return err
-				}
-			}
-		}
-		err = blockchain.config.DataBase.DeleteNormalTokenTx(customTokenTx.TxTokenData.PropertyID, indexTx, block.Header.ShardID, block.Header.Height)
-		if err != nil {
-			return err
-		}
-
-	}
-
 	// check privacy custom token
 	for indexTx, privacyCustomTokenSubView := range view.privacyCustomTokenViewPoint {
 		privacyCustomTokenTx := view.privacyCustomTokenTxs[indexTx]

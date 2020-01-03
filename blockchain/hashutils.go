@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/transaction"
 )
 
 //=========================HASH util==================================
@@ -179,18 +178,10 @@ func verifyHashFromShardState(allShardState map[byte][]ShardState, hash common.H
 	}
 	return bytes.Equal(res.GetBytes(), hash.GetBytes())
 }
-func calHashFromTxTokenDataList(txTokenDataList []transaction.TxNormalTokenData) (common.Hash, error) {
+
+// NOTICE: this function is deprecate, just return empty data
+func calHashFromTxTokenDataList() (common.Hash, error) {
 	hashes := []common.Hash{}
-	sort.SliceStable(txTokenDataList[:], func(i, j int) bool {
-		return txTokenDataList[i].PropertyID.String() < txTokenDataList[j].PropertyID.String()
-	})
-	for _, txTokenData := range txTokenDataList {
-		hash, err := txTokenData.Hash()
-		if err != nil {
-			return common.Hash{}, err
-		}
-		hashes = append(hashes, *hash)
-	}
 	hash, err := generateHashFromHashArray(hashes)
 	if err != nil {
 		return common.Hash{}, err

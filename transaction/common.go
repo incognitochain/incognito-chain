@@ -145,21 +145,18 @@ type EstimateTxSizeParam struct {
 	payments                 []*privacy.PaymentInfo
 	hasPrivacy               bool
 	metadata                 metadata.Metadata
-	customTokenParams        *CustomTokenParamTx
 	privacyCustomTokenParams *CustomTokenPrivacyParamTx
 	limitFee                 uint64
 }
 
 func NewEstimateTxSizeParam(inputCoins []*privacy.OutputCoin, payments []*privacy.PaymentInfo,
 	hasPrivacy bool, metadata metadata.Metadata,
-	customTokenParams *CustomTokenParamTx,
 	privacyCustomTokenParams *CustomTokenPrivacyParamTx,
 	limitFee uint64) *EstimateTxSizeParam {
 	estimateTxSizeParam := &EstimateTxSizeParam{
 		inputCoins:               inputCoins,
 		hasPrivacy:               hasPrivacy,
 		limitFee:                 limitFee,
-		customTokenParams:        customTokenParams,
 		metadata:                 metadata,
 		payments:                 payments,
 		privacyCustomTokenParams: privacyCustomTokenParams,
@@ -200,31 +197,6 @@ func EstimateTxSize(estimateTxSizeParam *EstimateTxSizeParam) uint64 {
 	}
 
 	sizeTx := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeInfo + sizeSigPubKey + sizeSig + sizeProof + sizePubKeyLastByte + sizeMetadata
-
-	// size of custom token data
-	if estimateTxSizeParam.customTokenParams != nil {
-		customTokenDataSize := uint64(0)
-
-		customTokenDataSize += uint64(len(estimateTxSizeParam.customTokenParams.PropertyID))
-		customTokenDataSize += uint64(len(estimateTxSizeParam.customTokenParams.PropertySymbol))
-		customTokenDataSize += uint64(len(estimateTxSizeParam.customTokenParams.PropertyName))
-
-		customTokenDataSize += 8 // for amount
-		customTokenDataSize += 4 // for TokenTxType
-
-		for _, out := range estimateTxSizeParam.customTokenParams.Receiver {
-			customTokenDataSize += uint64(len(out.PaymentAddress.Bytes()))
-			customTokenDataSize += 8 //out.Value
-		}
-
-		for _, in := range estimateTxSizeParam.customTokenParams.vins {
-			customTokenDataSize += uint64(len(in.PaymentAddress.Bytes()))
-			customTokenDataSize += uint64(len(in.TxCustomTokenID[:]))
-			customTokenDataSize += uint64(len(in.Signature))
-			customTokenDataSize += uint64(4) //in.VoutIndex
-		}
-		sizeTx += customTokenDataSize
-	}
 
 	// size of privacy custom token  data
 	if estimateTxSizeParam.privacyCustomTokenParams != nil {
@@ -310,36 +282,6 @@ func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Tr
 		tx := &Tx{}
 		err := tx.InitTxSalary(params.amount, params.payToAddress, params.payByPrivateKey, params.db, params.meta)
 		return tx, err
-	case CustomTokenType:
-		tx := &TxNormalToken{}
-		receiver := &TxTokenVout{
-			PaymentAddress: *params.payToAddress,
-			Value:          params.amount,
-		}
-		tokenParams := &CustomTokenParamTx{
-			PropertyID:     params.coinID.String(),
-			PropertyName:   params.coinName,
-			PropertySymbol: params.coinName,
-			Amount:         params.amount,
-			TokenTxType:    CustomTokenInit,
-			Receiver:       []TxTokenVout{*receiver},
-			Mintable:       true,
-		}
-		err := tx.Init(
-			NewTxNormalTokenInitParam(params.payByPrivateKey,
-				nil,
-				nil,
-				0,
-				tokenParams,
-				//listCustomTokens,
-				params.db,
-				params.meta,
-				false,
-				params.shardID))
-		if err != nil {
-			return nil, errors.New(err.Error())
-		}
-		return tx, nil
 	case CustomTokenPrivacyType:
 		var propertyID [common.HashSize]byte
 		copy(propertyID[:], params.coinID[:])

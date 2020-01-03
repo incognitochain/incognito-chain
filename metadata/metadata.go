@@ -57,7 +57,6 @@ type BlockchainRetriever interface {
 	GetTxChainHeight(tx Transaction) (uint64, error)
 	GetChainHeight(byte) uint64
 	GetBeaconHeight() uint64
-	GetCustomTokenTxs(*common.Hash) (map[common.Hash]Transaction, error)
 	GetTransactionByHash(common.Hash) (byte, common.Hash, int, Transaction, error)
 	GetCurrentBeaconBlockHeight(byte) uint64
 	GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error)
@@ -69,6 +68,8 @@ type BlockchainRetriever interface {
 	GetShardIDFromTx(txid string) (byte, error)
 	GetCentralizedWebsitePaymentAddress() string
 	GetAllCoinID() ([]common.Hash, error)
+	GetBeaconHeightBreakPointBurnAddr() uint64
+	GetBurningAddress(blockHeight uint64) string
 }
 
 // Interface for all type of transaction
@@ -115,7 +116,7 @@ type Transaction interface {
 	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, BlockchainRetriever, *AccumulatedValues) (bool, error)
 
 	IsPrivacy() bool
-	IsCoinsBurning() bool
+	IsCoinsBurning(BlockchainRetriever) bool
 	CalculateTxValue() uint64
 	IsSalaryTx() bool
 }

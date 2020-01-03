@@ -13,7 +13,6 @@ const (
 
 const (
 	NormalCoinType = iota
-	CustomTokenType
 	CustomTokenPrivacyType
 )
 

@@ -44,10 +44,10 @@ const (
 
 // For all Transaction information
 const (
-	TxNormalType             = "n"  // normal tx(send and receive coin)
-	TxRewardType             = "s"  // reward tx
-	TxReturnStakingType      = "rs" //
-	TxCustomTokenType        = "t"  // token  tx with no supporting privacy
+	TxNormalType        = "n"  // normal tx(send and receive coin)
+	TxRewardType        = "s"  // reward tx
+	TxReturnStakingType = "rs" //
+	//TxCustomTokenType        = "t"  // token  tx with no supporting privacy
 	TxCustomTokenPrivacyType = "tp" // token  tx with supporting privacy
 )
 
@@ -59,11 +59,6 @@ var (
 // special token ids (aka. PropertyID in custom token)
 var (
 	PRVCoinID = Hash{4} // To send PRV in custom token
-)
-
-// burning addresses
-const (
-	BurningAddress = "15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs"
 )
 
 // CONSENSUS

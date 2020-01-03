@@ -731,10 +731,6 @@ func (blockService BlockService) RevertShard(shardID byte) error {
 	return blockService.BlockChain.RevertShardState(shardID)
 }
 
-func (blockService BlockService) ListCustomToken() (map[common.Hash]transaction.TxNormalToken, error) {
-	return blockService.BlockChain.ListCustomToken()
-}
-
 func (blockService BlockService) GetRewardAmount(paymentAddress string) (map[string]uint64, *RPCError) {
 	rewardAmountResult := make(map[string]uint64)
 	rewardAmounts := make(map[common.Hash]uint64)
@@ -885,4 +881,8 @@ func (blockService BlockService) GetBlockHeader(getBy string, blockParam string,
 		Logger.log.Debugf("handleGetBlockHeader result: %+v", nil)
 		return nil, 0, "", NewRPCError(RPCInvalidParamsError, errors.New("wrong request format"))
 	}
+}
+
+func (blockService BlockService) GetBurningAddress(beaconHeight uint64) string {
+	return blockService.BlockChain.GetBurningAddress(beaconHeight)
 }

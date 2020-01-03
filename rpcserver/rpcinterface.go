@@ -96,17 +96,6 @@ var HttpHandler = map[string]httpHandler{
 	canPubkeyStake:                (*HttpServer).handleCanPubkeyStake,
 	getTotalTransaction:           (*HttpServer).handleGetTotalTransaction,
 
-	// custom token
-	createRawCustomTokenTransaction:     (*HttpServer).handleCreateRawCustomTokenTransaction,
-	sendRawCustomTokenTransaction:       (*HttpServer).handleSendRawCustomTokenTransaction,
-	createAndSendCustomTokenTransaction: (*HttpServer).handleCreateAndSendCustomTokenTransaction,
-	listUnspentCustomToken:              (*HttpServer).handleListUnspentCustomToken,
-	getBalanceCustomToken:               (*HttpServer).handleGetBalanceCustomToken,
-	listCustomToken:                     (*HttpServer).handleListCustomToken,
-	customTokenTxs:                      (*HttpServer).handleCustomTokenDetail,
-	listCustomTokenHolders:              (*HttpServer).handleGetListCustomTokenHolders,
-	getListCustomTokenBalance:           (*HttpServer).handleGetListCustomTokenBalance,
-
 	// custom token which support privacy
 	createRawPrivacyCustomTokenTransaction:     (*HttpServer).handleCreateRawPrivacyCustomTokenTransaction,
 	sendRawPrivacyCustomTokenTransaction:       (*HttpServer).handleSendRawPrivacyCustomTokenTransaction,
@@ -176,6 +165,8 @@ var HttpHandler = map[string]httpHandler{
 	getPDEWithdrawalStatus:                (*HttpServer).handleGetPDEWithdrawalStatus,
 	convertPDEPrices:                      (*HttpServer).handleConvertPDEPrices,
 	extractPDEInstsFromBeaconBlock:        (*HttpServer).handleExtractPDEInstsFromBeaconBlock,
+
+	getBurningAddress: (*HttpServer).handleGetBurningAddress,
 }
 
 // Commands that are available to a limited user
@@ -211,7 +202,6 @@ var WsHandler = map[string]wsHandler{
 	subcribeBeaconCommitteeByPublickey:          (*WsServer).handleSubcribeBeaconCommitteeByPublickey,
 	subcribeMempoolInfo:                         (*WsServer).handleSubcribeMempoolInfo,
 	subcribeCrossOutputCoinByPrivateKey:         (*WsServer).handleSubcribeCrossOutputCoinByPrivateKey,
-	subcribeCrossCustomTokenByPrivateKey:        (*WsServer).handleSubcribeCrossCustomTokenByPrivateKey,
 	subcribeCrossCustomTokenPrivacyByPrivateKey: (*WsServer).handleSubcribeCrossCustomTokenPrivacyByPrivateKey,
 	subcribeShardBestState:                      (*WsServer).handleSubscribeShardBestState,
 	subcribeBeaconBestState:                     (*WsServer).handleSubscribeBeaconBestState,

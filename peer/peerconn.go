@@ -285,10 +285,6 @@ func (peerConn *PeerConn) processMessageForEachType(messageType reflect.Type, me
 		if peerConn.config.MessageListeners.OnTx != nil {
 			peerConn.config.MessageListeners.OnTx(peerConn, message.(*wire.MessageTx))
 		}
-	case reflect.TypeOf(&wire.MessageTxToken{}):
-		if peerConn.config.MessageListeners.OnTxToken != nil {
-			peerConn.config.MessageListeners.OnTxToken(peerConn, message.(*wire.MessageTxToken))
-		}
 	case reflect.TypeOf(&wire.MessageTxPrivacyToken{}):
 		if peerConn.config.MessageListeners.OnTxPrivacyToken != nil {
 			peerConn.config.MessageListeners.OnTxPrivacyToken(peerConn, message.(*wire.MessageTxPrivacyToken))
