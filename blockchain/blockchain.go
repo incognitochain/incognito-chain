@@ -768,11 +768,6 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 	if err != nil {
 		return err
 	}
-	//endtime := time.Now()
-	//runTime := endtime.Sub(startTime)
-	//go common.AnalyzeFuncCreateAndSaveTxViewPointFromBlock(runTime.Seconds())
-	//Logger.log.Critical("*** CreateAndSaveTxViewPointFromBlock  ***", block.Header.Height, runTime)
-
 	return nil
 }
 

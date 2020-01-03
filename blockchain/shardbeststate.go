@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"reflect"
 	"sort"
 	"sync"
@@ -43,15 +45,20 @@ type ShardBestState struct {
 	TotalTxnsExcludeSalary uint64                            `json:"TotalTxnsExcludeSalary"` // for testing and benchmark
 	ActiveShards           int                               `json:"ActiveShards"`
 	ConsensusAlgorithm     string                            `json:"ConsensusAlgorithm"`
-
 	// Number of blocks produced by producers in epoch
 	NumOfBlocksByProducers map[string]uint64 `json:"NumOfBlocksByProducers"`
-
-	BlockInterval      time.Duration
-	BlockMaxCreateTime time.Duration
-
-	MetricBlockHeight uint64
-	lock              sync.RWMutex
+	BlockInterval          time.Duration
+	BlockMaxCreateTime     time.Duration
+	MetricBlockHeight      uint64
+	//================================ StateDB Method
+	// block height => root hash
+	ConsensusStateRootHash   map[uint64]common.Hash `json:"ConsensusStateRootHash"`
+	consensusStateDB         *statedb.StateDB
+	TransactionStateRootHash map[uint64]common.Hash `json:"TransactionStateRootHash"`
+	transactionStateDB       *statedb.StateDB
+	FeatureStateRootHash     map[uint64]common.Hash `json:"FeatureStateRootHash"`
+	featureStateDB           *statedb.StateDB
+	lock                     sync.RWMutex
 }
 
 var bestStateShardMap = make(map[byte]*ShardBestState)
@@ -84,6 +91,9 @@ func NewBestStateShardWithConfig(shardID byte, netparam *Params) *ShardBestState
 	bestStateShard.BeaconHeight = 1
 	bestStateShard.BlockInterval = netparam.MinShardBlockInterval
 	bestStateShard.BlockMaxCreateTime = netparam.MaxShardBlockCreation
+	bestStateShard.ConsensusStateRootHash = make(map[uint64]common.Hash)
+	bestStateShard.TransactionStateRootHash = make(map[uint64]common.Hash)
+	bestStateShard.FeatureStateRootHash = make(map[uint64]common.Hash)
 	return bestStateShard
 }
 
@@ -100,6 +110,35 @@ func GetBestStateShard(shardID byte) *ShardBestState {
 func SetBestStateShard(shardID byte, beststateShard *ShardBestState) {
 	beststateShard.lock = GetBestStateShard(shardID).lock
 	*GetBestStateShard(shardID) = *beststateShard
+}
+func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database) error {
+	var err error
+	var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
+	if rootHash, ok := shardBestState.ConsensusStateRootHash[shardBestState.BeaconHeight]; ok {
+		shardBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
+		if err != nil {
+			return err
+		}
+	} else {
+		shardBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+	}
+	if rootHash, ok := shardBestState.TransactionStateRootHash[shardBestState.BeaconHeight]; ok {
+		shardBestState.transactionStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
+		if err != nil {
+			return err
+		}
+	} else {
+		shardBestState.transactionStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+	}
+	if rootHash, ok := shardBestState.FeatureStateRootHash[shardBestState.BeaconHeight]; ok {
+		shardBestState.featureStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
+		if err != nil {
+			return err
+		}
+	} else {
+		shardBestState.featureStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+	}
+	return nil
 }
 
 // Get role of a public key base on best state shard
@@ -265,8 +304,12 @@ func (shardBestState *ShardBestState) cloneShardBestStateFrom(target *ShardBestS
 	if reflect.DeepEqual(*shardBestState, ShardBestState{}) {
 		return NewBlockChainError(CloneShardBestStateError, fmt.Errorf("Shard Best State %+v clone failed", target.ShardHeight))
 	}
+	shardBestState.consensusStateDB = target.consensusStateDB.Copy()
+	shardBestState.transactionStateDB = target.transactionStateDB.Copy()
+	shardBestState.featureStateDB = target.featureStateDB.Copy()
 	return nil
 }
+
 func (shardBestState *ShardBestState) GetStakingTx() map[string]string {
 	shardBestState.lock.RLock()
 	defer shardBestState.lock.RUnlock()

@@ -620,6 +620,7 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 func (beaconBestState *BeaconBestState) CloneBeaconBestStateFrom(target *BeaconBestState) error {
 	return beaconBestState.cloneBeaconBestStateFrom(target)
 }
+
 func (beaconBestState *BeaconBestState) updateLastCrossShardState(shardStates map[byte][]ShardState) {
 	lastCrossShardState := beaconBestState.LastCrossShardState
 	for fromShard, shardBlocks := range shardStates {
@@ -652,11 +653,13 @@ func (beaconBestState *BeaconBestState) GetAutoStakingList() map[string]bool {
 	}
 	return m
 }
+
 func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidateFlattenList() []string {
 	beaconBestState.lock.RLock()
 	defer beaconBestState.lock.RUnlock()
 	return beaconBestState.getAllCommitteeValidatorCandidateFlattenList()
 }
+
 func (beaconBestState *BeaconBestState) getAllCommitteeValidatorCandidateFlattenList() []string {
 	res := []string{}
 	for _, committee := range beaconBestState.ShardCommittee {

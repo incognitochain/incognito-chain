@@ -39,7 +39,7 @@ func StoreShardBlock(db incdb.Database, shardID byte, index uint64, hash common.
 // StoreShardBlockIndex store block hash => block index
 // key: i-{hash}
 // value: {index-shardID}
-func StoreShardBlockIndex(db incdb.Database, hash common.Hash, index uint64, shardID byte) error {
+func StoreShardBlockIndex(db incdb.Database, shardID byte, index uint64, hash common.Hash) error {
 	key := GetShardBlockHashToIndexKey(hash)
 	buf := make([]byte, 9)
 	tempBuf := common.Uint64ToBytes(index)
@@ -134,12 +134,12 @@ func DeleteBlock(db incdb.Database, shardID byte, index uint64, hash common.Hash
 	return nil
 }
 
-func StoreShardBestState(db incdb.Database, v interface{}, shardID byte, bd *[]incdb.BatchData) error {
+func StoreShardBestState(db incdb.Database, shardID byte, v interface{}) error {
+	key := GetShardBestStateKey(shardID)
 	val, err := json.Marshal(v)
 	if err != nil {
 		return NewRawdbError(StoreShardBestStateError, err)
 	}
-	key := GetShardBestStateKey(shardID)
 	if err := db.Put(key, val); err != nil {
 		return NewRawdbError(StoreShardBestStateError, err)
 	}
