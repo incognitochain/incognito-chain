@@ -146,8 +146,14 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	// Initialize the chain state from the passed database.  When the db
 	// does not yet contain any chain state, both it and the chain state
 	// will be initialized to contain only the genesis block.
-	if err := blockchain.initChainState(); err != nil {
-		return err
+	if DATABASE_VERSION == 2 {
+		if err := blockchain.initChainStateV2(); err != nil {
+			return err
+		}
+	} else {
+		if err := blockchain.initChainState(); err != nil {
+			return err
+		}
 	}
 	blockchain.cQuitSync = make(chan struct{})
 	blockchain.Synker = newSyncker(blockchain.cQuitSync, blockchain, blockchain.config.PubSubManager)
