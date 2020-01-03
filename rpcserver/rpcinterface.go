@@ -165,6 +165,8 @@ var HttpHandler = map[string]httpHandler{
 	getPDEWithdrawalStatus:                (*HttpServer).handleGetPDEWithdrawalStatus,
 	convertPDEPrices:                      (*HttpServer).handleConvertPDEPrices,
 	extractPDEInstsFromBeaconBlock:        (*HttpServer).handleExtractPDEInstsFromBeaconBlock,
+
+	getBurningAddress: (*HttpServer).handleGetBurningAddress,
 }
 
 // Commands that are available to a limited user

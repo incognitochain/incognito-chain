@@ -96,7 +96,7 @@ func (pc PDETradeRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transa
 	if len(traderAddr.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's trader address")
 	}
-	if !txr.IsCoinsBurning() {
+	if !txr.IsCoinsBurning(bcr) {
 		return false, false, errors.New("Must send coin to burning address")
 	}
 	if (pc.SellAmount + pc.TradingFee) != txr.CalculateTxValue() {

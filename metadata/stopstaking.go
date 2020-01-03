@@ -103,7 +103,10 @@ func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateSanityData(bcr Bl
 	if !onlyOne {
 		return false, false, errors.New("staking Transaction Should Have 1 Output Amount crossponding to 1 Receiver")
 	}
-	keyWalletBurningAdd, err := wallet.Base58CheckDeserialize(common.BurningAddress)
+
+	// get burning address
+	burningAddress := bcr.GetBurningAddress(0)
+	keyWalletBurningAdd, err := wallet.Base58CheckDeserialize(burningAddress)
 	if err != nil {
 		return false, false, err
 	}

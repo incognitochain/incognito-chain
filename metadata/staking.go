@@ -126,8 +126,11 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(
 	if !onlyOne {
 		return false, false, errors.New("staking Transaction Should Have 1 Output Amount crossponding to 1 Receiver")
 	}
-	keyWalletBurningAdd, err := wallet.Base58CheckDeserialize(common.BurningAddress)
-	if err != nil {
+
+	// get burning address
+	burningAddress := bcr.GetBurningAddress(0)
+	keyWalletBurningAdd, err := wallet.Base58CheckDeserialize(burningAddress)
+	if err != nil{
 		return false, false, errors.New("burning address is invalid")
 	}
 	if !bytes.Equal(pubkey, keyWalletBurningAdd.KeySet.PaymentAddress.Pk) {

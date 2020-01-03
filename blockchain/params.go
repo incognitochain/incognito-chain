@@ -44,6 +44,7 @@ type Params struct {
 	CheckForce                       bool   // true on testnet and false on mainnet
 	ChainVersion                     string
 	AssignOffset                     int
+	BeaconHeightBreakPointBurnAddr   uint64
 }
 
 type GenesisParams struct {
@@ -104,8 +105,9 @@ func init() {
 			SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			SlashLevel{MinRange: 75, PunishedEpoches: 3},
 		},
-		CheckForce:   false,
-		ChainVersion: "version-chain-test.json",
+		CheckForce:                     false,
+		ChainVersion:                   "version-chain-test.json",
+		BeaconHeightBreakPointBurnAddr: 250000,
 	}
 	// END TESTNET
 	// FOR MAINNET
@@ -148,7 +150,8 @@ func init() {
 			SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			SlashLevel{MinRange: 75, PunishedEpoches: 3},
 		},
-		CheckForce:   false,
-		ChainVersion: "version-chain-main.json",
+		CheckForce:                     false,
+		ChainVersion:                   "version-chain-main.json",
+		BeaconHeightBreakPointBurnAddr: 150500,
 	}
 }
