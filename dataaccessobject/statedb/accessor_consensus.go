@@ -5,18 +5,20 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
-func storeCommittee(stateDB *StateDB, role int, shardID int, committees []incognitokey.CommitteePublicKey, rewardReceiver map[string]string, autoStaking map[string]bool) error {
+func storeCommittee(stateDB *StateDB, shardID int, role int, committees []incognitokey.CommitteePublicKey, rewardReceiver map[string]string, autoStaking map[string]bool) error {
 	for _, committee := range committees {
 		key, err := GenerateCommitteeObjectKeyWithRole(role, shardID, committee)
 		if err != nil {
 			return err
 		}
+		incPublicKey := incognitokey.CommitteeKeyListToMapString([]incognitokey.CommitteePublicKey{committee})
 		temp, err := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{committee})
 		if err != nil {
 			return err
 		}
 		committeeString := temp[0]
-		rewardReceiverPaymentAddress, ok := rewardReceiver[committeeString]
+		//TODO: Change to committee public key string in the future, now is incognito public key string
+		rewardReceiverPaymentAddress, ok := rewardReceiver[incPublicKey[0].IncPubKey]
 		if !ok {
 			return fmt.Errorf("reward receiver of %+v not found", committeeString)
 		}

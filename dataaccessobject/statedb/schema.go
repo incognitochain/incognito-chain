@@ -11,8 +11,10 @@ import (
 var (
 	committeePrefix                    = []byte("shard-com-")
 	substitutePrefix                   = []byte("shard-sub-")
-	nextCandidatePrefix                = []byte("next-cand-")
-	currentCandidatePrefix             = []byte("cur-cand-")
+	nextShardCandidatePrefix           = []byte("next-sha-cand-")
+	currentShardCandidatePrefix        = []byte("cur-sha-cand-")
+	nextBeaconCandidatePrefix          = []byte("next-bea-cand-")
+	currentBeaconCandidatePrefix       = []byte("cur-bea-cand-")
 	committeeRewardPrefix              = []byte("committee-reward-")
 	rewardRequestPrefix                = []byte("reward-request-")
 	blackListProducerPrefix            = []byte("black-list-")
@@ -41,11 +43,19 @@ var (
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
 	switch role {
 	case NextEpochShardCandidate:
-		temp := []byte(string(nextCandidatePrefix))
+		temp := []byte(string(nextShardCandidatePrefix))
 		h := common.HashH(temp)
 		return h[:][:prefixHashKeyLength]
 	case CurrentEpochShardCandidate:
-		temp := []byte(string(currentCandidatePrefix))
+		temp := []byte(string(currentShardCandidatePrefix))
+		h := common.HashH(temp)
+		return h[:][:prefixHashKeyLength]
+	case NextEpochBeaconCandidate:
+		temp := []byte(string(nextBeaconCandidatePrefix))
+		h := common.HashH(temp)
+		return h[:][:prefixHashKeyLength]
+	case CurrentEpochBeaconCandidate:
+		temp := []byte(string(currentBeaconCandidatePrefix))
 		h := common.HashH(temp)
 		return h[:][:prefixHashKeyLength]
 	case SubstituteValidator:
@@ -57,7 +67,7 @@ func GetCommitteePrefixWithRole(role int, shardID int) []byte {
 		h := common.HashH(temp)
 		return h[:][:prefixHashKeyLength]
 	default:
-		panic("no role exist")
+		panic("role not exist: " + strconv.Itoa(role))
 	}
 }
 func GetCommitteeRewardPrefix() []byte {

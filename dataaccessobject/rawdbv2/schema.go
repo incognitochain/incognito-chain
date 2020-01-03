@@ -11,7 +11,8 @@ var (
 	lastShardHeaderKey           = []byte("LastShardHeader")
 	lastBeaconBlockKey           = []byte("LastBeaconBlock")
 	lastBeaconHeaderKey          = []byte("LastBeaconHeader")
-	beaconBestBlockPrefix        = []byte("BeaconBestState")
+	beaconBestStatePrefix        = []byte("BeaconBestState")
+	shardBestStatePrefix         = []byte("ShardBestState" + string(splitter))
 	shardHashToBlockPrefix       = []byte("s-b-h" + string(splitter))
 	shardIndexToBlockHashPrefix  = []byte("s-b-i" + string(splitter))
 	shardBlockHashToIndexPrefix  = []byte("s-b-H" + string(splitter))
@@ -86,6 +87,10 @@ func GetShardBlockHashToIndexKey(hash common.Hash) []byte {
 	return append(shardBlockHashToIndexPrefix, hash[:]...)
 }
 
+func GetShardBestStateKey(shardID byte) []byte {
+	return append(shardBestStatePrefix, shardID)
+}
+
 // ============================= BEACON =======================================
 func GetBeaconHashToBlockKey(hash common.Hash) []byte {
 	return append(beaconHashToBlockPrefix, hash[:]...)
@@ -109,7 +114,7 @@ func GetBeaconBlockHashToIndexKey(hash common.Hash) []byte {
 }
 
 func GetBeaconBestStateKey() []byte {
-	return beaconBestBlockPrefix
+	return beaconBestStatePrefix
 }
 
 // ============================= Transaction =======================================

@@ -133,3 +133,24 @@ func DeleteBlock(db incdb.Database, shardID byte, index uint64, hash common.Hash
 	}
 	return nil
 }
+
+func StoreShardBestState(db incdb.Database, v interface{}, shardID byte, bd *[]incdb.BatchData) error {
+	val, err := json.Marshal(v)
+	if err != nil {
+		return NewRawdbError(StoreShardBestStateError, err)
+	}
+	key := GetShardBestStateKey(shardID)
+	if err := db.Put(key, val); err != nil {
+		return NewRawdbError(StoreShardBestStateError, err)
+	}
+	return nil
+}
+
+func FetchShardBestState(db incdb.Database, shardID byte) ([]byte, error) {
+	key := GetShardBestStateKey(shardID)
+	shardBestStateBytes, err := db.Get(key)
+	if err != nil {
+		return nil, NewRawdbError(StoreShardBestStateError, err)
+	}
+	return shardBestStateBytes, nil
+}
