@@ -1,4 +1,4 @@
-package peerv2
+package rpcclient
 
 import (
 	"net/rpc"
@@ -6,7 +6,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-func DiscoverHighWay(
+type RPCClient struct{}
+
+func (rpcClient *RPCClient) DiscoverHighway(
 	discoverPeerAddress string,
 	shardsStr []string,
 ) (
@@ -19,22 +21,22 @@ func DiscoverHighWay(
 	client := new(rpc.Client)
 	var err error
 	client, err = rpc.Dial("tcp", discoverPeerAddress)
-	Logger.Info("Dialing...")
+	// Logger.Info("Dialing...")
 	if err != nil {
 		return nil, errors.Errorf("Connect to discover peer %v return error %v:", discoverPeerAddress, err)
 	}
 	defer client.Close()
 
-	Logger.Infof("Connected to %v", discoverPeerAddress)
+	// Logger.Infof("Connected to %v", discoverPeerAddress)
 	req := Request{Shard: shardsStr}
 	var res Response
-	Logger.Infof("Start dialing RPC server with param %v", req)
+	// Logger.Infof("Start dialing RPC server with param %v", req)
 
 	err = client.Call("Handler.GetPeers", req, &res)
 
 	if err != nil {
 		return nil, errors.Errorf("Call Handler.GetPeers return error %v", err)
 	}
-	Logger.Infof("Bootnode return %v", res.PeerPerShard)
+	// Logger.Infof("Bootnode return %v", res.PeerPerShard)
 	return res.PeerPerShard, nil
 }

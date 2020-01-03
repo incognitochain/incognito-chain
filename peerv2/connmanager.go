@@ -11,6 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
+	"github.com/incognitochain/incognito-chain/peerv2/rpcclient"
 	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -42,6 +43,7 @@ func NewConnManager(
 		},
 		LocalHost:            host,
 		DiscoverPeersAddress: dpa,
+		discoverer:           new(rpcclient.RPCClient),
 		disp:                 dispatcher,
 		IsMasterNode:         false,
 		registerRequests:     make(chan peer.ID, 100),
@@ -174,9 +176,10 @@ type ConnManager struct {
 	messages         chan *pubsub.Message // queue messages from all topics
 	registerRequests chan peer.ID
 
-	disp      *Dispatcher
-	Requester *BlockRequester
-	Provider  *BlockProvider
+	discoverer HighwayDiscoverer
+	disp       *Dispatcher
+	Requester  *BlockRequester
+	Provider   *BlockProvider
 
 	stop chan int
 }
@@ -202,8 +205,8 @@ func (cm *ConnManager) process() {
 func (cm *ConnManager) keepHighwayConnection() {
 	// Init list of highways
 	var currentHighway *peer.AddrInfo
-	hwAddrs := []HighwayAddr{
-		HighwayAddr{
+	hwAddrs := []rpcclient.HighwayAddr{
+		rpcclient.HighwayAddr{
 			Libp2pAddr: "",
 			RPCUrl:     cm.DiscoverPeersAddress,
 		},
@@ -213,24 +216,26 @@ func (cm *ConnManager) keepHighwayConnection() {
 	refreshTimestep := time.Tick(UpdateHighwayListTimestep)
 	cm.disconnected = 1 // Init, to make first connection to highway
 	pid := cm.LocalHost.Host.ID()
+
+	refreshHighway := func() (*peer.AddrInfo, []rpcclient.HighwayAddr, error) {
+		newHighway, newAddrs, err := chooseNewHighway(cm.discoverer, hwAddrs, pid)
+		if err != nil {
+			Logger.Errorf("Failed refreshing highway: %v", err)
+			return currentHighway, hwAddrs, err
+		}
+		Logger.Infof("Updated highway addresses: %+v", newAddrs)
+		Logger.Infof("Chose new highway: %+v", newHighway)
+		return newHighway, newAddrs, nil
+	}
+
 	for {
 		select {
 		case <-watchTimestep:
 			if currentHighway == nil {
 				var err error
-				hwAddrs, err = updateHighwayAddrs(hwAddrs)
-				if err != nil {
-					Logger.Errorf("Fail updating highway addresses: %v", err)
+				if currentHighway, hwAddrs, err = refreshHighway(); err != nil {
 					continue
 				}
-				Logger.Infof("Updated highway addresses: %+v", hwAddrs)
-
-				currentHighway, err = chooseHighway(hwAddrs, pid)
-				if err != nil {
-					Logger.Errorf("Fail choosing highway: %v", err)
-					continue
-				}
-				Logger.Infof("Chose new highway: %+v", currentHighway)
 			}
 
 			if cm.checkConnection(currentHighway) {
@@ -238,21 +243,7 @@ func (cm *ConnManager) keepHighwayConnection() {
 			}
 
 		case <-refreshTimestep:
-			var err error
-			hwAddrs, err = updateHighwayAddrs(hwAddrs)
-			if err != nil {
-				Logger.Errorf("Fail updating highway addresses: %v", err)
-				continue
-			}
-			Logger.Infof("Updated highway addresses: %+v", hwAddrs)
-
-			newHighway, err := chooseHighway(hwAddrs, pid)
-			if err != nil {
-				Logger.Errorf("Fail choosing highway: %v", err)
-				continue
-			}
-			currentHighway = newHighway
-			Logger.Infof("Chose new highway: %+v", currentHighway)
+			currentHighway, hwAddrs, _ = refreshHighway()
 
 		case <-cm.stop:
 			Logger.Info("Stop keeping connection to highway")
@@ -267,12 +258,14 @@ func (cm *ConnManager) checkConnection(addrInfo *peer.AddrInfo) bool {
 	if net.Connectedness(addrInfo.ID) != network.Connected {
 		cm.disconnected++
 		Logger.Info("Not connected to highway, connecting")
-		ctx, _ := context.WithTimeout(context.Background(), DialTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), DialTimeout)
+		defer cancel()
 		if err := cm.LocalHost.Host.Connect(ctx, *addrInfo); err != nil {
 			Logger.Errorf("Could not connect to highway: %v %v", err, addrInfo)
 		}
 		if cm.disconnected > MaxConnectionRetry {
 			Logger.Error("Retry maxed out")
+			cm.disconnected = 0
 			return true
 		}
 	}
@@ -286,13 +279,25 @@ func (cm *ConnManager) checkConnection(addrInfo *peer.AddrInfo) bool {
 	return false
 }
 
-func chooseHighway(hwAddrs []HighwayAddr, pid peer.ID) (*peer.AddrInfo, error) {
+func chooseNewHighway(discoverer HighwayDiscoverer, hwAddrs []rpcclient.HighwayAddr, pid peer.ID) (*peer.AddrInfo, []rpcclient.HighwayAddr, error) {
+	newAddrs, err := getHighwayAddrs(discoverer, hwAddrs)
+	if err != nil {
+		return nil, nil, err
+	}
+	chosePID, err := chooseHighway(newAddrs, pid)
+	if err != nil {
+		return nil, nil, err
+	}
+	return chosePID, newAddrs, nil
+}
+
+func chooseHighway(hwAddrs []rpcclient.HighwayAddr, pid peer.ID) (*peer.AddrInfo, error) {
 	if len(hwAddrs) == 0 {
 		return nil, errors.New("cannot choose highway from empty list")
 	}
 
 	// Filter out bootnode addresss (only rpcUrl, no libp2p address)
-	filterAddrs := []HighwayAddr{}
+	filterAddrs := []rpcclient.HighwayAddr{}
 	for _, addr := range hwAddrs {
 		if len(addr.Libp2pAddr) != 0 {
 			filterAddrs = append(filterAddrs, addr)
@@ -301,6 +306,8 @@ func chooseHighway(hwAddrs []HighwayAddr, pid peer.ID) (*peer.AddrInfo, error) {
 
 	// Sort first to make sure always choosing the same highway
 	// if the list doesn't change
+	// NOTE: this is redundant since hash key doesn't contain indexes
+	// But we still keep it anyway to support other consistent hashing library
 	sort.SliceStable(filterAddrs, func(i, j int) bool {
 		return filterAddrs[i].Libp2pAddr < filterAddrs[j].Libp2pAddr
 	})
@@ -313,7 +320,7 @@ func chooseHighway(hwAddrs []HighwayAddr, pid peer.ID) (*peer.AddrInfo, error) {
 }
 
 // choosePeer picks a peer from a list using consistent hashing
-func choosePeer(peers []HighwayAddr, id peer.ID) (HighwayAddr, error) {
+func choosePeer(peers []rpcclient.HighwayAddr, id peer.ID) (rpcclient.HighwayAddr, error) {
 	cst := consistent.New()
 	for _, p := range peers {
 		cst.Add(p.Libp2pAddr)
@@ -321,7 +328,7 @@ func choosePeer(peers []HighwayAddr, id peer.ID) (HighwayAddr, error) {
 
 	closest, err := cst.Get(string(id))
 	if err != nil {
-		return HighwayAddr{}, errors.Errorf("could not get consistent-hashing peer %v %v", peers, id)
+		return rpcclient.HighwayAddr{}, errors.Errorf("could not get consistent-hashing peer %v %v", peers, id)
 	}
 
 	for _, p := range peers {
@@ -329,24 +336,24 @@ func choosePeer(peers []HighwayAddr, id peer.ID) (HighwayAddr, error) {
 			return p, nil
 		}
 	}
-	return HighwayAddr{}, errors.Errorf("could not find closest peer %v %v %v", peers, id, closest)
+	return rpcclient.HighwayAddr{}, errors.Errorf("could not find closest peer %v %v %v", peers, id, closest)
 }
 
-func updateHighwayAddrs(hwAddrs []HighwayAddr) ([]HighwayAddr, error) {
+func getHighwayAddrs(discoverer HighwayDiscoverer, hwAddrs []rpcclient.HighwayAddr) ([]rpcclient.HighwayAddr, error) {
 	// Pick random peer to get new list of highways
 	if len(hwAddrs) == 0 {
 		return nil, errors.New("No peer to get list of highways")
 	}
 	addr := hwAddrs[rand.Intn(len(hwAddrs))]
-	newAddrs, err := getHighwayAddrs(addr.RPCUrl)
+	newAddrs, err := getAllHighways(discoverer, addr.RPCUrl)
 	if err != nil {
 		return hwAddrs, err // Keep the old list
 	}
 	return newAddrs, nil
 }
 
-func getHighwayAddrs(rpcUrl string) ([]HighwayAddr, error) {
-	mapHWPerShard, err := DiscoverHighWay(rpcUrl, []string{"all"})
+func getAllHighways(discoverer HighwayDiscoverer, rpcUrl string) ([]rpcclient.HighwayAddr, error) {
+	mapHWPerShard, err := discoverer.DiscoverHighway(rpcUrl, []string{"all"})
 	if err != nil {
 		return nil, err
 	}
@@ -457,4 +464,8 @@ func broadcastMessage(msg wire.Message, topic string, ps *pubsub.PubSub) error {
 	// Broadcast
 	Logger.Infof("Publishing to topic %s", topic)
 	return ps.Publish(topic, []byte(messageHex))
+}
+
+type HighwayDiscoverer interface {
+	DiscoverHighway(discoverPeerAddress string, shardsStr []string) (map[string][]rpcclient.HighwayAddr, error)
 }

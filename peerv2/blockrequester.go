@@ -2,9 +2,9 @@ package peerv2
 
 import (
 	"context"
+	"sync"
 	"time"
 
-	p2pgrpc "github.com/incognitochain/go-libp2p-grpc"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -18,14 +18,22 @@ type BlockRequester struct {
 	conn *grpc.ClientConn
 
 	peerIDs chan peer.ID
-	prtc    *p2pgrpc.GRPCProtocol
+	prtc    GRPCDialer
+	stop    chan int
+	sync.RWMutex
 }
 
-func NewRequester(prtc *p2pgrpc.GRPCProtocol) *BlockRequester {
+type GRPCDialer interface {
+	Dial(ctx context.Context, peerID peer.ID, dialOpts ...grpc.DialOption) (*grpc.ClientConn, error)
+}
+
+func NewRequester(prtc GRPCDialer) *BlockRequester {
 	req := &BlockRequester{
 		prtc:    prtc,
 		peerIDs: make(chan peer.ID, 100),
 		conn:    nil,
+		stop:    make(chan int, 1),
+		RWMutex: sync.RWMutex{},
 	}
 	go req.keepConnection()
 	return req
@@ -35,23 +43,34 @@ func NewRequester(prtc *p2pgrpc.GRPCProtocol) *BlockRequester {
 func (c *BlockRequester) keepConnection() {
 	currentHWID := peer.ID("")
 	watchTimestep := time.Tick(RequesterDialTimestep)
+
+	closeConnection := func() {
+		c.Lock()
+		defer c.Unlock()
+		if c.conn == nil {
+			return
+		}
+
+		Logger.Info("Closing old requester connection")
+		err := c.conn.Close()
+		if err != nil {
+			Logger.Errorf("Failed closing old requester connection: %+v", err)
+		}
+		c.conn = nil
+	}
+
 	for {
 		select {
 		case <-watchTimestep:
-			if c.Ready() {
+			c.RLock()
+			if c.ready() {
 				continue
 			}
+			c.RUnlock()
 
 			Logger.Warn("BlockRequester is not ready, dialing")
-			if c.conn != nil {
-				Logger.Info("Closing old requester connection")
-				err := c.conn.Close()
-				if err != nil {
-					Logger.Errorf("Failed closing old requester connection: %+v", err)
-				}
-				c.conn = nil
-			}
-			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			closeConnection()
+			ctx, cancel := context.WithTimeout(context.Background(), DialTimeout)
 			if conn, err := c.prtc.Dial(
 				ctx,
 				currentHWID,
@@ -64,23 +83,28 @@ func (c *BlockRequester) keepConnection() {
 			); err != nil {
 				Logger.Error("Could not dial to highway grpc server:", err, currentHWID)
 			} else {
+				c.Lock()
 				c.conn = conn
+				c.Unlock()
 			}
 			cancel()
 
 		case hwID := <-c.peerIDs:
 			Logger.Infof("Received new highway peerID, old = %s, new = %s", currentHWID.String(), hwID.String())
 			if hwID != currentHWID && c.conn != nil {
-				if err := c.conn.Close(); err != nil { // Close gRPC connection
-					Logger.Errorf("Failed closing connection to highway: %v %v %+v", hwID, currentHWID, err)
-				}
+				closeConnection()
 			}
 			currentHWID = hwID
+
+		case <-c.stop:
+			Logger.Info("Stop keeping blockrequester connection to highway")
+			closeConnection()
+			return
 		}
 	}
 }
 
-func (c *BlockRequester) Ready() bool {
+func (c *BlockRequester) ready() bool {
 	return c.conn != nil && c.conn.GetState() == connectivity.Ready
 }
 
@@ -103,7 +127,9 @@ func (c *BlockRequester) Register(
 	selfID peer.ID,
 	role string,
 ) ([]*proto.MessageTopicPair, *proto.UserRole, error) {
-	if !c.Ready() {
+	c.RLock()
+	defer c.RUnlock()
+	if !c.ready() {
 		return nil, nil, errors.New("requester not ready")
 	}
 
@@ -131,7 +157,9 @@ func (c *BlockRequester) GetBlockShardByHeight(
 	heights []uint64,
 	to uint64,
 ) ([][]byte, error) {
-	if !c.Ready() {
+	c.RLock()
+	defer c.RUnlock()
+	if !c.ready() {
 		return nil, errors.New("requester not ready")
 	}
 	Logger.Infof("[blkbyheight] Requesting block shard %v (by specific %v): from = %v to = %v; height: %v", shardID, bySpecific, from, to, heights)
@@ -162,7 +190,9 @@ func (c *BlockRequester) GetBlockShardByHash(
 	shardID int32,
 	hashes []common.Hash,
 ) ([][]byte, error) {
-	if !c.Ready() {
+	c.RLock()
+	defer c.RUnlock()
+	if !c.ready() {
 		return nil, errors.New("requester not ready")
 	}
 	blkHashBytes := [][]byte{}
@@ -195,7 +225,9 @@ func (c *BlockRequester) GetBlockBeaconByHeight(
 	heights []uint64,
 	to uint64,
 ) ([][]byte, error) {
-	if !c.Ready() {
+	c.RLock()
+	defer c.RUnlock()
+	if !c.ready() {
 		return nil, errors.New("requester not ready")
 	}
 	Logger.Infof("[blkbyheight] Requesting beaconblock (by specific %v): from = %v to = %v; height: %v", bySpecific, from, to, heights)
@@ -225,7 +257,9 @@ func (c *BlockRequester) GetBlockBeaconByHeight(
 func (c *BlockRequester) GetBlockBeaconByHash(
 	hashes []common.Hash,
 ) ([][]byte, error) {
-	if !c.Ready() {
+	c.RLock()
+	defer c.RUnlock()
+	if !c.ready() {
 		return nil, errors.New("requester not ready")
 	}
 	blkHashBytes := [][]byte{}
@@ -258,7 +292,9 @@ func (c *BlockRequester) GetBlockShardToBeaconByHeight(
 	heights []uint64,
 	to uint64,
 ) ([][]byte, error) {
-	if !c.Ready() {
+	c.RLock()
+	defer c.RUnlock()
+	if !c.ready() {
 		return nil, errors.New("requester not ready")
 	}
 
@@ -294,7 +330,9 @@ func (c *BlockRequester) GetBlockCrossShardByHeight(
 	heights []uint64,
 	getFromPool bool,
 ) ([][]byte, error) {
-	if !c.Ready() {
+	c.RLock()
+	defer c.RUnlock()
+	if !c.ready() {
 		return nil, errors.New("requester not ready")
 	}
 

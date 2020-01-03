@@ -1,4 +1,4 @@
-package peerv2
+package rpcclient
 
 type HighwayAddr struct {
 	Libp2pAddr string
