@@ -63,10 +63,11 @@ func (c *BlockRequester) keepConnection() {
 		select {
 		case <-watchTimestep:
 			c.RLock()
-			if c.ready() {
+			ready := c.ready()
+			c.RUnlock()
+			if ready {
 				continue
 			}
-			c.RUnlock()
 
 			Logger.Warn("BlockRequester is not ready, dialing")
 			closeConnection()
