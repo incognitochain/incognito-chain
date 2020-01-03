@@ -319,3 +319,15 @@ func (shardBestState *ShardBestState) GetStakingTx() map[string]string {
 	}
 	return m
 }
+
+func (shardBestState *ShardBestState) GetShardCommittee() []incognitokey.CommitteePublicKey {
+	shardBestState.lock.RLock()
+	defer shardBestState.lock.RUnlock()
+	return shardBestState.ShardCommittee
+}
+
+func (shardBestState *ShardBestState) GetShardPendingValidator() []incognitokey.CommitteePublicKey {
+	shardBestState.lock.RLock()
+	defer shardBestState.lock.RUnlock()
+	return shardBestState.ShardPendingValidator
+}

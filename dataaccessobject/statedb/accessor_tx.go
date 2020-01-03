@@ -27,7 +27,7 @@ func HasSerialNumber(stateDB *StateDB, tokenID common.Hash, serialNumber []byte,
 	if err != nil {
 		return false, NewStatedbError(GetSerialNumberError, err)
 	}
-	if bytes.Compare(s.SerialNumber(), serialNumber) != 0 {
+	if has && bytes.Compare(s.SerialNumber(), serialNumber) != 0 {
 		panic("same key wrong value")
 		return false, nil
 	}
@@ -86,7 +86,7 @@ func HasCommitment(stateDB *StateDB, tokenID common.Hash, commitment []byte, sha
 	if err != nil {
 		return false, NewStatedbError(GetCommitmentError, err)
 	}
-	if bytes.Compare(c.Commitment(), commitment) != 0 {
+	if has && bytes.Compare(c.Commitment(), commitment) != 0 {
 		panic("same key wrong value")
 		return false, nil
 	}
@@ -217,7 +217,7 @@ func HasSNDerivator(stateDB *StateDB, tokenID common.Hash, snd []byte) (bool, er
 	if err != nil {
 		return false, NewStatedbError(GetSNDerivatorError, err)
 	}
-	if bytes.Compare(sndState.Snd(), snd) != 0 {
+	if has && bytes.Compare(sndState.Snd(), snd) != 0 {
 		panic("same key wrong value")
 	}
 	return has, nil

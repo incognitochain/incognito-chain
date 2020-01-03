@@ -159,10 +159,10 @@ func (blockchain *BlockChain) initBeaconStateV2() error {
 func (blockchain *BlockChain) initShardStateV2(shardID byte) error {
 	blockchain.BestState.Shard[shardID] = NewBestStateShardWithConfig(shardID, blockchain.config.ChainParams)
 	// Create a new block from genesis block and set it as best block of chain
-	initBlock := ShardBlock{}
-	initBlock = *blockchain.config.ChainParams.GenesisShardBlock
-	initBlock.Header.ShardID = shardID
-
+	initShardBlock := ShardBlock{}
+	initShardBlock = *blockchain.config.ChainParams.GenesisShardBlock
+	initShardBlock.Header.ShardID = shardID
+	initShardBlockHeight := initShardBlock.Header.Height
 	_, newShardCandidate := GetStakingCandidate(*blockchain.config.ChainParams.GenesisBeaconBlock)
 	newShardCandidateStructs := []incognitokey.CommitteePublicKey{}
 	for _, candidate := range newShardCandidate {
@@ -173,22 +173,38 @@ func (blockchain *BlockChain) initShardStateV2(shardID byte) error {
 		}
 		newShardCandidateStructs = append(newShardCandidateStructs, key)
 	}
-
 	blockchain.BestState.Shard[shardID].ShardCommittee = append(blockchain.BestState.Shard[shardID].ShardCommittee, newShardCandidateStructs[int(shardID)*blockchain.config.ChainParams.MinShardCommitteeSize:(int(shardID)*blockchain.config.ChainParams.MinShardCommitteeSize)+blockchain.config.ChainParams.MinShardCommitteeSize]...)
-
-	beaconBlocks, err := blockchain.GetBeaconBlockByHeightV2(1)
+	tempShardBestState := blockchain.BestState.Shard[shardID]
+	tempBeaconBestState := blockchain.BestState.Beacon
+	beaconBlocks, err := blockchain.GetBeaconBlockByHeightV2(initShardBlockHeight)
 	genesisBeaconBlock := beaconBlocks[0]
 	if err != nil {
 		return NewBlockChainError(FetchBeaconBlockError, err)
 	}
-	err = blockchain.BestState.Shard[shardID].initShardBestState(blockchain, blockchain.GetDatabase(), &initBlock, genesisBeaconBlock)
+	err = blockchain.BestState.Shard[shardID].initShardBestState(blockchain, blockchain.GetDatabase(), &initShardBlock, genesisBeaconBlock)
 	if err != nil {
 		return err
 	}
-	err = blockchain.processStoreShardBlockAndUpdateDatabase(&initBlock)
+	err = blockchain.processStoreShardBlockV2(&initShardBlock)
 	if err != nil {
 		return err
 	}
+	if err := statedb.StoreOneShardCommittee(tempShardBestState.consensusStateDB, shardID, tempShardBestState.GetShardCommittee(), tempBeaconBestState.GetRewardReceiver(), tempBeaconBestState.GetAutoStaking()); err != nil {
+		return err
+	}
+	consensusRootHash, err := tempShardBestState.consensusStateDB.Commit(true)
+	if err != nil {
+		return err
+	}
+	err = tempShardBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false)
+	if err != nil {
+		return err
+	}
+	err = tempShardBestState.consensusStateDB.Reset(consensusRootHash)
+	if err != nil {
+		return err
+	}
+	tempShardBestState.ConsensusStateRootHash[initShardBlockHeight] = consensusRootHash
 	return nil
 }
 
