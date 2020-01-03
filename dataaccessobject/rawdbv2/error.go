@@ -29,6 +29,8 @@ const (
 	FetchCrossShardNextHeightError
 	GetIndexOfBlockError
 	StoreShardBestStateError
+	StoreFeeEstimatorError
+	GetFeeEstimatorError
 	// tx
 	StoreTransactionIndexError
 	GetTransactionByHashError
@@ -59,6 +61,8 @@ var ErrCodeMessage = map[int]struct {
 	StoreShardBlockIndexError:      {-2007, "Store Shard Block Index Error"},
 	GetIndexOfBlockError:           {-2008, "Get Index Of Shard Block Error"},
 	StoreShardBestStateError:       {-2009, "Store Shard Best State Error"},
+	StoreFeeEstimatorError:         {-2010, "Store Fee Estimator Error"},
+	GetFeeEstimatorError:           {-2011, "Get Fee Estimator Error"},
 
 	StoreTransactionIndexError: {-3000, "Store Transaction Index Error"},
 	GetTransactionByHashError:  {-3001, "Get Transaction By Hash Error"},

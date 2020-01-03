@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"io/ioutil"
 	"log"
 	"net"
@@ -357,7 +358,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db incdb.Database, dbmp d
 		serverObj.feeEstimator = make(map[byte]*mempool.FeeEstimator)
 		for shardID, bestState := range serverObj.blockChain.BestState.Shard {
 			_ = bestState
-			feeEstimatorData, err := rawdb.GetFeeEstimator(serverObj.dataBase, shardID)
+			feeEstimatorData, err := rawdbv2.GetFeeEstimator(serverObj.dataBase, shardID)
 			if err == nil && len(feeEstimatorData) > 0 {
 				feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)
 				if err != nil {
@@ -610,7 +611,7 @@ func (serverObj *Server) Stop() error {
 		Logger.log.Infof("Fee estimator data when saving #%d", feeEstimator)
 		feeEstimatorData := feeEstimator.Save()
 		if len(feeEstimatorData) > 0 {
-			err := rawdb.StoreFeeEstimator(serverObj.dataBase, feeEstimatorData, shardID)
+			err := rawdbv2.StoreFeeEstimator(serverObj.dataBase, feeEstimatorData, shardID)
 			if err != nil {
 				Logger.log.Errorf("Can't save fee estimator data on chain #%d: %v", shardID, err)
 			} else {

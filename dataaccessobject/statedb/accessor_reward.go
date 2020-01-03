@@ -3,6 +3,7 @@ package statedb
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 )
 
 func AddShardRewardRequest(stateDB *StateDB, epoch uint64, shardID byte, tokenID common.Hash, rewardAmount uint64) error {
@@ -90,7 +91,8 @@ func ListCommitteeReward(stateDB *StateDB) map[string]map[common.Hash]uint64 {
 	return stateDB.GetAllCommitteeReward()
 }
 
-func RemoveCommitteeReward(stateDB *StateDB, incognitoPublicKey string, committeeWithdraw uint64, tokenID common.Hash) error {
+func RemoveCommitteeReward(stateDB *StateDB, incognitoPublicKeyBytes []byte, withdrawAmount uint64, tokenID common.Hash) error {
+	incognitoPublicKey := base58.Base58Check{}.Encode(incognitoPublicKeyBytes, common.Base58Version)
 	key, err := GenerateCommitteeRewardObjectKey(incognitoPublicKey)
 	if err != nil {
 		return NewStatedbError(RemoveCommitteeRewardError, err)
@@ -104,10 +106,10 @@ func RemoveCommitteeReward(stateDB *StateDB, incognitoPublicKey string, committe
 	}
 	committeeRewardM := c.reward
 	currentReward := committeeRewardM[tokenID]
-	if committeeWithdraw > currentReward {
-		return NewStatedbError(RemoveCommitteeRewardError, fmt.Errorf("Current Reward %+v but got withdraw %+v", currentReward, committeeWithdraw))
+	if withdrawAmount > currentReward {
+		return NewStatedbError(RemoveCommitteeRewardError, fmt.Errorf("Current Reward %+v but got withdraw %+v", currentReward, withdrawAmount))
 	}
-	remain := currentReward - committeeWithdraw
+	remain := currentReward - withdrawAmount
 	committeeRewardM[tokenID] = remain
 	value := NewCommitteeRewardStateWithValue(committeeRewardM, incognitoPublicKey)
 	err = stateDB.SetStateObject(CommitteeRewardObjectType, key, value)

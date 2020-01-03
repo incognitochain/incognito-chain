@@ -1,9 +1,8 @@
 package blockchain
 
 import (
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
@@ -12,6 +11,7 @@ func (blockchain *BlockChain) processStoreShardBlockV2(shardBlock *ShardBlock) e
 	blockHeight := shardBlock.Header.Height
 	blockHash := shardBlock.Header.Hash()
 	tempShardBestState := blockchain.BestState.Shard[shardID]
+	tempBeaconBestState := blockchain.BestState.Beacon
 	Logger.log.Infof("SHARD %+v | Process store block height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, *shardBlock.Hash())
 	if err := rawdbv2.StoreShardBlock(blockchain.GetDatabase(), shardID, blockHeight, blockHash, shardBlock); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
@@ -25,20 +25,19 @@ func (blockchain *BlockChain) processStoreShardBlockV2(shardBlock *ShardBlock) e
 	if len(shardBlock.Body.CrossTransactions) != 0 {
 		Logger.log.Critical("processStoreShardBlockAndUpdateDatabase/CrossTransactions	", shardBlock.Body.CrossTransactions)
 	}
-	if err := blockchain.CreateAndSaveTxViewPointFromBlock(shardBlock, &batchPutData); err != nil {
+	if err := blockchain.CreateAndSaveTxViewPointFromBlockV2(shardBlock, tempShardBestState.transactionStateDB, tempBeaconBestState.featureStateDB); err != nil {
 		return NewBlockChainError(FetchAndStoreTransactionError, err)
 	}
 
 	for index, tx := range shardBlock.Body.Transactions {
-		if err := blockchain.StoreTransactionIndex(tx.Hash(), shardBlock.Header.Hash(), index, &batchPutData); err != nil {
-			Logger.log.Errorf("Transaction in block with hash %+v and index %+v: %+v, err %+v", blockHash, index, tx, err)
+		if err := rawdbv2.StoreTransactionIndex(blockchain.GetDatabase(), *tx.Hash(), shardBlock.Header.Hash(), index); err != nil {
 			return NewBlockChainError(FetchAndStoreTransactionError, err)
 		}
 		// Process Transaction Metadata
 		metaType := tx.GetMetadataType()
 		if metaType == metadata.WithDrawRewardResponseMeta {
-			_, requesterRes, amountRes, coinID := tx.GetTransferData()
-			err := rawdb.RemoveCommitteeReward(blockchain.GetDatabase(), requesterRes, amountRes, *coinID, &batchPutData)
+			_, publicKey, amountRes, coinID := tx.GetTransferData()
+			err := statedb.RemoveCommitteeReward(tempBeaconBestState.rewardStateDB, publicKey, amountRes, *coinID)
 			if err != nil {
 				return NewBlockChainError(RemoveCommitteeRewardError, err)
 			}
@@ -46,25 +45,19 @@ func (blockchain *BlockChain) processStoreShardBlockV2(shardBlock *ShardBlock) e
 		Logger.log.Debugf("Transaction in block with hash", blockHash, "and index", index)
 	}
 	// Store Incomming Cross Shard
-	if err := blockchain.CreateAndSaveCrossTransactionCoinViewPointFromBlock(shardBlock, &batchPutData); err != nil {
+	if err := blockchain.CreateAndSaveCrossTransactionCoinViewPointFromBlockV2(shardBlock, tempShardBestState.transactionStateDB); err != nil {
 		return NewBlockChainError(FetchAndStoreCrossTransactionError, err)
 	}
-	err := blockchain.StoreIncomingCrossShard(shardBlock, &batchPutData)
-	if err != nil {
-		return NewBlockChainError(StoreIncomingCrossShardError, err)
-	}
 	// Save result of BurningConfirm instruction to get proof later
-	err = blockchain.storeBurningConfirm(shardBlock, &batchPutData)
+	err := blockchain.storeBurningConfirmV2(tempShardBestState.featureStateDB, shardBlock)
 	if err != nil {
 		return NewBlockChainError(StoreBurningConfirmError, err)
 	}
-
 	// Update bridge issuance request status
-	err = blockchain.updateBridgeIssuanceStatus(shardBlock, &batchPutData)
+	err = blockchain.updateBridgeIssuanceStatusV2(tempShardBestState.featureStateDB, shardBlock)
 	if err != nil {
 		return NewBlockChainError(UpdateBridgeIssuanceStatusError, err)
 	}
-
 	// call FeeEstimator for processing
 	if feeEstimator, ok := blockchain.config.FeeEstimator[shardBlock.Header.ShardID]; ok {
 		err := feeEstimator.RegisterBlock(shardBlock)
@@ -73,6 +66,5 @@ func (blockchain *BlockChain) processStoreShardBlockV2(shardBlock *ShardBlock) e
 		}
 	}
 	Logger.log.Infof("SHARD %+v | 🔎 %d transactions in block height %+v \n", shardBlock.Header.ShardID, len(shardBlock.Body.Transactions), shardBlock.Header.Height)
-	return blockchain.config.DataBase.PutBatch(batchPutData)
-	//return nil
+	return nil
 }

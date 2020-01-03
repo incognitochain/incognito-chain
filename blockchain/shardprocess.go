@@ -715,7 +715,7 @@ func (shardBestState *ShardBestState) updateShardBestState(blockchain *BlockChai
 	return nil
 }
 
-func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain, genesisShardBlock *ShardBlock, genesisBeaconBlock *BeaconBlock, db incdb.Database) error {
+func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain, db incdb.Database, genesisShardBlock *ShardBlock, genesisBeaconBlock *BeaconBlock) error {
 	shardBestState.BestBeaconHash = *ChainTestParam.GenesisBeaconBlock.Hash()
 	shardBestState.BestBlock = genesisShardBlock
 	shardBestState.BestBlockHash = *genesisShardBlock.Hash()

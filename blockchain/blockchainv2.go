@@ -181,7 +181,7 @@ func (blockchain *BlockChain) initShardStateV2(shardID byte) error {
 	if err != nil {
 		return NewBlockChainError(FetchBeaconBlockError, err)
 	}
-	err = blockchain.BestState.Shard[shardID].initShardBestState(blockchain, &initBlock, genesisBeaconBlock)
+	err = blockchain.BestState.Shard[shardID].initShardBestState(blockchain, blockchain.GetDatabase(), &initBlock, genesisBeaconBlock)
 	if err != nil {
 		return err
 	}
@@ -199,7 +199,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlockV2(block *ShardBl
 	//startTime := time.Now()
 	// Fetch data from block into tx View point
 	view := NewTxViewPoint(block.Header.ShardID)
-	err := view.fetchTxViewPointFromBlock(blockchain.config.DataBase, block)
+	err := view.fetchTxViewPointFromBlockV2(transactionStateRoot, block)
 	if err != nil {
 		return err
 	}
@@ -394,5 +394,62 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPointV2(stateDB *statedb
 			}
 		}
 	}
+	return nil
+}
+
+func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBlockV2(shardBlock *ShardBlock, transactionStateRoot *statedb.StateDB) error {
+	// Fetch data from block into tx View point
+	view := NewTxViewPoint(shardBlock.Header.ShardID)
+	err := view.fetchCrossTransactionViewPointFromBlockV2(transactionStateRoot, shardBlock)
+	if err != nil {
+		Logger.log.Error("CreateAndSaveCrossTransactionCoinViewPointFromBlock", err)
+		return err
+	}
+
+	// sort by index
+	indices := []int{}
+	for index := range view.privacyCustomTokenViewPoint {
+		indices = append(indices, int(index))
+	}
+	sort.Ints(indices)
+
+	for _, index := range indices {
+		privacyCustomTokenSubView := view.privacyCustomTokenViewPoint[int32(index)]
+		// 0xsirrush updated: check existed tokenID
+		tokenID := *privacyCustomTokenSubView.tokenID
+		existed := statedb.PrivacyTokenIDExisted(transactionStateRoot, tokenID)
+		if !existed {
+			Logger.log.Info("Store custom token when it is issued ", tokenID, privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertyName, privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertySymbol, privacyCustomTokenSubView.privacyCustomTokenMetadata.Amount, privacyCustomTokenSubView.privacyCustomTokenMetadata.Mintable)
+			name := privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertyName
+			symbol := privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertySymbol
+			tokenType := privacyCustomTokenSubView.privacyCustomTokenMetadata.Type
+			mintable := privacyCustomTokenSubView.privacyCustomTokenMetadata.Mintable
+			amount := privacyCustomTokenSubView.privacyCustomTokenMetadata.Amount
+			if err := statedb.StorePrivacyToken(transactionStateRoot, tokenID, name, symbol, tokenType, mintable, amount, common.Hash{}); err != nil {
+				return err
+			}
+		}
+		// Store both commitment and outcoin
+		err = blockchain.StoreCommitmentsFromTxViewPointV2(transactionStateRoot, *privacyCustomTokenSubView, shardBlock.Header.ShardID)
+		if err != nil {
+			return err
+		}
+		// store snd
+		err = blockchain.StoreSNDerivatorsFromTxViewPointV2(transactionStateRoot, *privacyCustomTokenSubView)
+		if err != nil {
+			return err
+		}
+	}
+	// store commitment
+	err = blockchain.StoreCommitmentsFromTxViewPointV2(transactionStateRoot, *view, shardBlock.Header.ShardID)
+	if err != nil {
+		return err
+	}
+	// store snd
+	err = blockchain.StoreSNDerivatorsFromTxViewPointV2(transactionStateRoot, *view)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

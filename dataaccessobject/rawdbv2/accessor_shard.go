@@ -154,3 +154,23 @@ func FetchShardBestState(db incdb.Database, shardID byte) ([]byte, error) {
 	}
 	return shardBestStateBytes, nil
 }
+
+// StoreFeeEstimator - Store data for FeeEstimator object
+func StoreFeeEstimator(db incdb.Database, val []byte, shardID byte) error {
+	key := GetFeeEstimatorPrefix(shardID)
+	err := db.Put(key, val)
+	if err != nil {
+		return NewRawdbError(StoreFeeEstimatorError, err)
+	}
+	return nil
+}
+
+// GetFeeEstimator - Get data for FeeEstimator object as a json in byte format
+func GetFeeEstimator(db incdb.Database, shardID byte) ([]byte, error) {
+	key := GetFeeEstimatorPrefix(shardID)
+	res, err := db.Get(key)
+	if err != nil {
+		return nil, NewRawdbError(GetFeeEstimatorError, err)
+	}
+	return res, err
+}

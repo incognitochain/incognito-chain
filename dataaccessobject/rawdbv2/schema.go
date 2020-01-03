@@ -23,6 +23,7 @@ var (
 	beaconBlockHashToIndexPrefix = []byte("b-b-H" + string(splitter))
 	txHashPrefix                 = []byte("tx-h" + string(splitter))
 	crossShardNextHeightPrefix   = []byte("c-s-n-h" + string(splitter))
+	feeEstimatorPrefix           = []byte("fee-est" + string(splitter))
 	splitter                     = []byte("-[-]-")
 )
 
@@ -120,6 +121,9 @@ func GetBeaconBestStateKey() []byte {
 // ============================= Transaction =======================================
 func GetTransactionHashKey(hash common.Hash) []byte {
 	return append(txHashPrefix, hash[:]...)
+}
+func GetFeeEstimatorPrefix(shardID byte) []byte {
+	return append(feeEstimatorPrefix, shardID)
 }
 
 // ============================= Cross Shard =======================================
