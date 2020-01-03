@@ -29,7 +29,7 @@ func newPedersenParams() PedersenCommitment {
 	pcm.G[0] = new(Point).ScalarMultBase(new(Scalar).FromUint64(1))
 
 	for i := 1; i < len(pcm.G); i++ {
-		pcm.G[i] = HashToPointFromIndex(int64(i))
+		pcm.G[i] = HashToPointFromIndex(int64(i), CStringBulletProof)
 	}
 	return pcm
 }

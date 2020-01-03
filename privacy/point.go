@@ -256,10 +256,10 @@ func IsPointEqual(pa *Point, pb *Point) bool {
 	return subtle.ConstantTimeCompare(tmpa, tmpb) == 1
 }
 
-func HashToPointFromIndex(index int64) *Point {
+func HashToPointFromIndex(index int64, padStr string) *Point {
 	array := C25519.GBASE.ToBytes()
 	msg := array[:]
-	msg = append(msg, []byte(CStringBulletProof)...)
+	msg = append(msg, []byte(padStr)...)
 	msg = append(msg, []byte(string(index))...)
 
 	keyHash := C25519.Key(C25519.Keccak256(msg))

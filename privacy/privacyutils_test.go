@@ -161,3 +161,29 @@ func TestFee(t *testing.T) {
 
 	//comOutputValueSum.Add(comOutputValueSum, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenValueIndex], new(privacy.Scalar).FromUint64(uint64(fee))))
 }
+
+func TestEncryptByXorOperator(t *testing.T) {
+	v := new(big.Int).SetUint64(100)
+
+	randomness := RandomScalar()
+	randomnessBytes := randomness.ToBytesS()
+
+	// encrypt
+	ciphertext := v.Uint64()
+
+	for i := 0; i < 4; i++ {
+		randSlice := randomnessBytes[i*8 : i*8+8]
+		randSliceUint64 := new(big.Int).SetBytes(randSlice).Uint64()
+		ciphertext = ciphertext ^ randSliceUint64
+	}
+	fmt.Printf("ciphertext %v\n", ciphertext)
+
+	// decrypt
+	plaintext := ciphertext
+	for i := 0; i < 4; i++ {
+		randSlice := randomnessBytes[i*8 : i*8+8]
+		randSliceUint64 := new(big.Int).SetBytes(randSlice).Uint64()
+		plaintext = plaintext ^ randSliceUint64
+	}
+	fmt.Printf("plaintext %v\n", plaintext)
+}

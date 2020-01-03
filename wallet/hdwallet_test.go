@@ -277,6 +277,10 @@ func TestHDWalletBase58CheckDeserialize(t *testing.T) {
 	assert.Equal(t, nil, err)
 	assert.Equal(t, masterKey.KeySet.ReadonlyKey.Pk, keyWallet.KeySet.ReadonlyKey.Pk)
 	assert.Equal(t, masterKey.KeySet.ReadonlyKey.Rk, keyWallet.KeySet.ReadonlyKey.Rk)
+
+	keyWallet, err = Base58CheckDeserialize("15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs")
+	assert.Equal(t, nil, err)
+	fmt.Printf("keyWallet: %v\n", keyWallet.KeySet.PaymentAddress.Pk)
 }
 
 func TestHDWalletBase58CheckDeserializeWithInvalidData(t *testing.T) {

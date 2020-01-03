@@ -216,7 +216,7 @@ func TestPoint_InvertScalarMultBase(t *testing.T) {
 func TestHashToPoint(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		for j := 0; j < 6; j++ {
-			p := HashToPointFromIndex(int64(j))
+			p := HashToPointFromIndex(int64(j), CStringBulletProof)
 			fmt.Println(p.key)
 		}
 		fmt.Println()

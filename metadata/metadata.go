@@ -68,6 +68,8 @@ type BlockchainRetriever interface {
 	GetShardIDFromTx(txid string) (byte, error)
 	GetCentralizedWebsitePaymentAddress() string
 	GetAllCoinID() ([]common.Hash, error)
+	GetBeaconHeightBreakPointBurnAddr() uint64
+	GetBurningAddress(blockHeight uint64) string
 }
 
 // Interface for all type of transaction
@@ -114,7 +116,7 @@ type Transaction interface {
 	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, BlockchainRetriever, *AccumulatedValues) (bool, error)
 
 	IsPrivacy() bool
-	IsCoinsBurning() bool
+	IsCoinsBurning(BlockchainRetriever) bool
 	CalculateTxValue() uint64
 	IsSalaryTx() bool
 }

@@ -180,6 +180,9 @@ const (
 	getPDEWithdrawalStatus                = "getpdewithdrawalstatus"
 	convertPDEPrices                      = "convertpdeprices"
 	extractPDEInstsFromBeaconBlock        = "extractpdeinstsfrombeaconblock"
+
+	// get burning address
+	getBurningAddress = "getburningaddress"
 )
 
 const (
