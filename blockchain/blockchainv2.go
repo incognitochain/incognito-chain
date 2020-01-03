@@ -138,6 +138,7 @@ func (blockchain *BlockChain) initBeaconStateV2() error {
 	if err != nil {
 		return err
 	}
+	tempBeaconBestState.ConsensusStateRootHash[initBlockHeight] = consensusRootHash
 	return nil
 }
 
