@@ -882,3 +882,7 @@ func (blockService BlockService) GetBlockHeader(getBy string, blockParam string,
 		return nil, 0, "", NewRPCError(RPCInvalidParamsError, errors.New("wrong request format"))
 	}
 }
+
+func (blockService BlockService) GetBurningAddress(beaconHeight uint64) string {
+	return blockService.BlockChain.GetBurningAddress(beaconHeight)
+}

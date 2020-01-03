@@ -80,7 +80,7 @@ func (bReq BurningRequest) ValidateSanityData(bcr BlockchainRetriever, txr Trans
 	if bReq.BurningAmount == 0 {
 		return false, false, errors.New("Wrong request info's burned amount")
 	}
-	if !txr.IsCoinsBurning() {
+	if !txr.IsCoinsBurning(bcr) {
 		return false, false, errors.New("Must send coin to burning address")
 	}
 	if bReq.BurningAmount != txr.CalculateTxValue() {
