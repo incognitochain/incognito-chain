@@ -17,6 +17,7 @@ const (
 	DeleteBeaconBlockError
 	StoreBeaconBestStateError
 	FetchBeaconBestStateError
+
 	// Shard
 	StoreShardBlockError
 	StoreShardBlockIndexError

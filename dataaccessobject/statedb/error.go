@@ -78,6 +78,16 @@ const (
 	ListCommitteeRewardError
 	RemoveCommitteeRewardError
 	StoreBlackListProducersError
+
+	DeleteBeaconCommitteeError
+	DeleteOneShardCommitteeError
+	DeleteAllShardCommitteeError
+	DeleteNextEpochShardCandidateError
+	DeleteCurrentEpochShardCandidateError
+	DeleteNextEpochBeaconCandidateError
+	DeleteCurrentEpochBeaconCandidateError
+	DeleteAllShardSubstitutesValidatorError
+	DeleteBeaconSubstituteValidatorError
 	// pdex error
 	StoreWaitingPDEContributionError
 	StorePDEPoolPairError
