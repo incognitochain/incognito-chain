@@ -53,7 +53,7 @@ func StoreShardBlockIndex(db incdb.Database, shardID byte, index uint64, hash co
 	return nil
 }
 
-func HasBlock(db incdb.Database, shardID byte, hash common.Hash) (bool, error) {
+func HasShardBlock(db incdb.Database, hash common.Hash) (bool, error) {
 	keyHash := GetShardHashToBlockKey(hash)
 	if ok, err := db.Has(keyHash); err != nil {
 		return false, NewRawdbError(HasShardBlockError, fmt.Errorf("has key %+v failed", keyHash))
@@ -63,7 +63,7 @@ func HasBlock(db incdb.Database, shardID byte, hash common.Hash) (bool, error) {
 	return false, nil
 }
 
-func FetchBlock(db incdb.Database, hash common.Hash) ([]byte, error) {
+func GetShardBlockByHash(db incdb.Database, hash common.Hash) ([]byte, error) {
 	keyHash := GetShardHashToBlockKey(hash)
 	if ok, err := db.Has(keyHash); err != nil {
 		return []byte{}, NewRawdbError(GetShardBlockByHashError, fmt.Errorf("has key %+v failed", keyHash))

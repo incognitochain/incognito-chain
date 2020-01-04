@@ -25,12 +25,20 @@ type committeeChange struct {
 }
 
 func newCommitteeChange() *committeeChange {
-	return &committeeChange{
+	committeeChange := &committeeChange{
 		shardSubstituteAdded:   make(map[byte][]incognitokey.CommitteePublicKey),
 		shardSubstituteRemoved: make(map[byte][]incognitokey.CommitteePublicKey),
 		shardCommitteeAdded:    make(map[byte][]incognitokey.CommitteePublicKey),
 		shardCommitteeRemoved:  make(map[byte][]incognitokey.CommitteePublicKey),
 	}
+	for i := 0; i < common.MaxShardNumber; i++ {
+		shardID := byte(i)
+		committeeChange.shardSubstituteAdded[shardID] = []incognitokey.CommitteePublicKey{}
+		committeeChange.shardSubstituteRemoved[shardID] = []incognitokey.CommitteePublicKey{}
+		committeeChange.shardCommitteeAdded[shardID] = []incognitokey.CommitteePublicKey{}
+		committeeChange.shardCommitteeRemoved[shardID] = []incognitokey.CommitteePublicKey{}
+	}
+	return committeeChange
 }
 
 func (beaconBestState *BeaconBestState) GetConsensusStateRootHash(height uint64) common.Hash {

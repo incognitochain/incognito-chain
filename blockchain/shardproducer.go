@@ -161,7 +161,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	}
 	transactionsForNewBlock = append(transactionsForNewBlock, txsWithMetadata...)
 	// process instruction from beacon block
-	shardPendingValidator, _ = blockGenerator.chain.processInstructionFromBeacon(beaconBlocks, shardID)
+	shardPendingValidator, _, _ = blockGenerator.chain.processInstructionFromBeacon(beaconBlocks, shardID)
 	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
 	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
@@ -490,7 +490,8 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 	+ ["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." flag]
 	+ ["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." flag]
 */
-func (blockchain *BlockChain) processInstructionFromBeacon(beaconBlocks []*BeaconBlock, shardID byte) ([]string, map[string]string) {
+func (blockchain *BlockChain) processInstructionFromBeacon(beaconBlocks []*BeaconBlock, shardID byte) ([]string, []string, map[string]string) {
+	newShardPendingValidator := []string{}
 	shardPendingValidator, err := incognitokey.CommitteeKeyListToString(blockchain.BestState.Shard[shardID].ShardPendingValidator)
 	if err != nil {
 		panic(err)
@@ -502,7 +503,9 @@ func (blockchain *BlockChain) processInstructionFromBeacon(beaconBlocks []*Beaco
 			// Process Assign Instruction
 			if l[0] == AssignAction && l[2] == "shard" {
 				if strings.Compare(l[3], strconv.Itoa(int(shardID))) == 0 {
-					shardPendingValidator = append(shardPendingValidator, strings.Split(l[1], ",")...)
+					tempNewShardPendingValidator := strings.Split(l[1], ",")
+					shardPendingValidator = append(shardPendingValidator, tempNewShardPendingValidator...)
+					newShardPendingValidator = append(newShardPendingValidator, tempNewShardPendingValidator...)
 					assignInstructions = append(assignInstructions, l)
 				}
 			}
@@ -554,7 +557,7 @@ func (blockchain *BlockChain) processInstructionFromBeacon(beaconBlocks []*Beaco
 			}
 		}
 	}
-	return shardPendingValidator, stakingTx
+	return shardPendingValidator, newShardPendingValidator, stakingTx
 }
 
 /*

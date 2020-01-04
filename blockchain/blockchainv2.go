@@ -185,26 +185,15 @@ func (blockchain *BlockChain) initShardStateV2(shardID byte) error {
 	if err != nil {
 		return err
 	}
-	err = blockchain.processStoreShardBlockV2(&initShardBlock)
+	committeeChange := newCommitteeChange()
+	committeeChange.shardCommitteeAdded[shardID] = tempShardBestState.GetShardCommittee()
+	err = blockchain.processStoreShardBlockV2(&initShardBlock, committeeChange)
 	if err != nil {
 		return err
 	}
 	if err := statedb.StoreOneShardCommittee(tempShardBestState.consensusStateDB, shardID, tempShardBestState.GetShardCommittee(), tempBeaconBestState.GetRewardReceiver(), tempBeaconBestState.GetAutoStaking()); err != nil {
 		return err
 	}
-	consensusRootHash, err := tempShardBestState.consensusStateDB.Commit(true)
-	if err != nil {
-		return err
-	}
-	err = tempShardBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false)
-	if err != nil {
-		return err
-	}
-	err = tempShardBestState.consensusStateDB.Reset(consensusRootHash)
-	if err != nil {
-		return err
-	}
-	tempShardBestState.ConsensusStateRootHash[initShardBlockHeight] = consensusRootHash
 	return nil
 }
 

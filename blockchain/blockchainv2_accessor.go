@@ -89,7 +89,7 @@ func (blockchain *BlockChain) GetShardBlockByHashV2(hash common.Hash) (*ShardBlo
 	if blockchain.IsTest {
 		return &ShardBlock{}, 2, nil
 	}
-	shardBlockBytes, err := rawdbv2.FetchBlock(blockchain.config.DataBase, hash)
+	shardBlockBytes, err := rawdbv2.GetShardBlockByHash(blockchain.config.DataBase, hash)
 	if err != nil {
 		return nil, 0, err
 	}
