@@ -2,13 +2,15 @@
 
 ## Introduction
 
-Incognito is a privacy-protecting blockchain. It's interoperable with other blockchains, allowing for secure two-way transfers of crypto whenever privacy is needed. So you can privately send, receive, and store your crypto - like BTC, ETH, BNB, and more.
+Portal focuses on two main attributes:
 
-Current blockchain interoperability solutions are mostly building ad-hoc bridges ([Cosmos](https://cosmos.network/), [Polkadot](https://polkadot.network/)). As the number of blockchains is increasing, doing it ad-hoc is no longer an option. We just can't build N<sup>2</sup> bridges.
+Privacy: Incognito is a privacy-protecting blockchain. It's interoperable with other blockchains, allowing for secure two-way transfers of crypto whenever privacy is needed. So you can privately send, receive, and store your crypto - like BTC, ETH, BNB, and more.
 
-Incognito Portal takes a different approach: **build once, work with any blockchain**. Portal is a *general bridge design* that connects Incognito with as many blockchains as possible if not all.
+Scale-out: The total amount of private tokens (pTokens for short) available for circulation increases with the total amount of collaterals which are locked up in two supporting custodial vaults (Incognito and Ethereum smart contract). In other words, Portal can leverage both security and user set (along with huge market cap) of each platform.
 
-Portal is especially helpful for creating interoperability with blockchains that don't support smart contracts like Bitcoin and Binance Chain. Its design is public.  The code is open-source. We hope that the crypto community will find our work helpful and create more portals to connect more blockchains together.
+Compatibility: Portal does not rely on a single cryptocurrency implementation with a set of specific features so it is especially helpful for creating interoperability with blockchains that don't support smart contracts like Bitcoin and Binance Chain.
+
+Its design is public.  The code is open-source. We hope that the crypto community will find our work helpful and create more portals to connect more blockchains together.
 
 ## pTokens
 
@@ -38,15 +40,13 @@ Portal's custodians are entirely trustless. Here is a comparison between Portal 
 |  Setup fees               |           Zero              |          Expensive            |
 
 
-## Becoming a custodian
+## Custodial vaults & custodian.
 
-Anyone can become a custodian just by supplying some collaterals. The collaterals could be either in PRV or any pTokens such as pBTC, pETH, and pDAI.
+Like mention earlier, Portal is a practical and secure system to construct cryptocurrency-backed assets without trusted intermediaries but it still needs to store the deposited cryto-assets somewhere in a decentralized manner. We're introducing two options: Incognito itself and Ethereum smart contract as custodial vaults.
 
-In addition to miners/validators, the custodians have a crucial role in the Incognito network as they make cross-chain communication between the two blockchains possible and enable the choice of “incognito mode” for transfers of crypto assets. In return, custodians will “earn” porting fees and PRVs reward just similar to what miners/validators are receiving (of course, in different formula/amount).
+Anyone can become a custodian just by supplying some collaterals. The collaterals could be either in PRV (for Incognito vault) or Ether/ERC20 (for Ethereum smart contract vault).
 
-## Custodial vaults
-
-Portal, a practical and secure system to construct cryptocurrency-backed assets without trusted intermediaries but it still needs to store the deposited cryto-assets somewhere in a decentralized manner. We're introducing 2 options: Incognito itself and Ethereum smart contract as custodial vaults in order to be able to leverage both the security and users (along with huge market cap) of each platform
+In addition to miners/validators, the custodians have a crucial role in the Incognito network as they make cross-chain communication between the two blockchains possible and enable the choice of “incognito mode” for transfers of crypto assets. In return, custodians will “earn” porting fees and PRVs reward just similar to what miners/validators are receiving (of course, in a different formula/amount).
 
 
 ## Proof verification
@@ -71,11 +71,11 @@ The verification process is illustrated in the following figure:
 
 [![image.png](https://i.postimg.cc/1Xh56L7t/proof-verf.png)](https://postimg.cc/Hczg1PgD)
 
-## Custodial vaults
 
-### Incognito as custodial vault
 
-## Porting public tokens into pTokens
+## Incognito as custodial vault
+
+### Porting public tokens into pTokens
 
 To port public tokens (BTC/BNB/ETH/etc) on mainstream public blockchains out there to private tokens (pBTC/pBNB/pETH/etc) on Incognito, users simply submit a porting registration to Incognito along with the needed info (Unique registration id, Incognito address, private token id and amount). Incognito chain will use this info in order to mint ptokens a 1:1 ratio and send them to the users. Besides, the info will also be used to prevent front-running attacks that can occur during the process.
 
@@ -88,7 +88,7 @@ The whole process of porting public tokens into pTokens with Incognito vault is 
 [![image.png](https://i.postimg.cc/XJyYrV8m/porting.png)](https://postimg.cc/tZpjfG8N)
 
 
-## Redeeming pTokens for public tokens
+### Redeeming pTokens for public tokens
 
 Redeeming a pToken is pretty straightforward. The user inits a redeem transaction, which burns the pToken and instructs the custodian to send the public token back to the user by a deadline. The deadline is initially set within 12 hours.
 
@@ -98,9 +98,9 @@ The redeem process with Incognito vault is illustrated as the following figure:
 
 [![image.png](https://i.postimg.cc/gjVcKN1K/redeeming.png)](https://postimg.cc/jnjrxQxW)
 
-### Ethereum Smart Contract as custodial vault
+## Ethereum Smart Contract as custodial vault
 
-## Porting public tokens into pTokens
+### Porting public tokens into pTokens
 
 Quite similar to Incognito vault's above, users will need submit a porting registration to a provided smart contract along with the needed info (Unique registration ID, Incognito address, private token ID and amount)
 
@@ -112,7 +112,7 @@ The whole process of porting public tokens into pTokens with Ethereum Smart Cont
 
 [![image.png](https://i.postimg.cc/QFNgBsr6/eth-deposit.png)](https://postimg.cc/QFNgBsr6)
 
-## Redeeming pTokens for public tokens
+### Redeeming pTokens for public tokens
 
 Redeeming a pToken with Smart Contract vault is slightly diffrent from Incognito vault's. The user inits a redeem transaction on Incognito, which burns the pToken. Then he/she can extract redeem proof and submit it to a provided smart contract that verifies and instructs the custodians to send the public token back to the user by a deadline. The deadline is initially set within 12 hours.
 
