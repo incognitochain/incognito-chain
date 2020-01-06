@@ -40,7 +40,7 @@ Portal's custodians are entirely trustless. Here is a comparison between Portal 
 |  Setup fees               |           Zero              |          Expensive            |
 
 
-## Custodial vaults & custodian.
+## Custodial vaults & custodian
 
 Like mention earlier, Portal is a practical and secure system to construct cryptocurrency-backed assets without trusted intermediaries but it still needs to store the deposited cryto-assets somewhere in a decentralized manner. We're introducing two options: Incognito itself and Ethereum smart contract as custodial vaults.
 
@@ -98,6 +98,8 @@ The redeem process with Incognito vault is illustrated as the following figure:
 
 [![image.png](https://i.postimg.cc/gjVcKN1K/redeeming.png)](https://postimg.cc/jnjrxQxW)
 
+
+
 ## Ethereum Smart Contract as custodial vault
 
 ### Porting public tokens into pTokens
@@ -121,6 +123,8 @@ Once the custodian finishes sending public tokens (BTC/BNB/ETH/etc) to the userâ
 The redeem process with Ethereum Smart Contract vault is illustrated as the following figure:
 
 [![image.png](https://i.postimg.cc/Bv3m99RP/eth-redeem.png)](https://postimg.cc/Wd9GgKNs)
+
+
 
 ## Over-collateralization
 
