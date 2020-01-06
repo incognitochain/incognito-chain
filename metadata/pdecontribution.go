@@ -122,7 +122,7 @@ func (pc PDEContribution) ValidateSanityData(bcr BlockchainRetriever, txr Transa
 	if len(contributorAddr.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's contributed address")
 	}
-	if !txr.IsCoinsBurning() {
+	if !txr.IsCoinsBurning(bcr) {
 		return false, false, errors.New("Must send coin to burning address")
 	}
 	if pc.ContributedAmount == 0 {
