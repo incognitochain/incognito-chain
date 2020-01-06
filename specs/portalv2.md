@@ -2,13 +2,13 @@
 
 ## Introduction
 
-Portal focuses on two main attributes:
+Portal focuses on three main properties:
 
-Privacy: Incognito is a privacy-protecting blockchain. It's interoperable with other blockchains, allowing for secure two-way transfers of crypto whenever privacy is needed. So you can privately send, receive, and store your crypto - like BTC, ETH, BNB, and more.
+**Privacy**: Incognito is a privacy-protecting blockchain. It's interoperable with other blockchains, allowing for secure two-way transfers of crypto whenever privacy is needed. So you can privately send, receive, and store your crypto - like BTC, ETH, BNB, and more.
 
-Scale-out: The total amount of private tokens (pTokens for short) available for circulation increases with the total amount of collaterals which are locked up in two supporting custodial vaults (Incognito and Ethereum smart contract). In other words, Portal can leverage both security and user set (along with huge market cap) of each platform.
+**Scale-out**: The total amount of private tokens (pTokens for short) available for circulation increases with the total amount of collaterals which are locked up in two supporting custodial vaults (Incognito and Ethereum smart contract). In other words, Portal can leverage both security and user set (along with huge market cap) of each platform.
 
-Compatibility: Portal does not rely on a single cryptocurrency implementation with a set of specific features so it is especially helpful for creating interoperability with blockchains that don't support smart contracts like Bitcoin and Binance Chain.
+**Compatibility**: Portal does not rely on a single cryptocurrency implementation with a set of specific features so it is especially helpful for creating interoperability with blockchains that don't support smart contracts like Bitcoin and Binance Chain.
 
 Its design is public.  The code is open-source. We hope that the crypto community will find our work helpful and create more portals to connect more blockchains together.
 
@@ -110,7 +110,7 @@ Once the porting registration and collaterals deposit are matched together by un
 
 The whole process of porting public tokens into pTokens with Ethereum Smart Contract vault is illustrated in the following figure:
 
-[![image.png](https://i.postimg.cc/QFNgBsr6/eth-deposit.png)](https://postimg.cc/QFNgBsr6)
+[![image.png](https://i.postimg.cc/g28gTktP/eth-deposit.png)](https://postimg.cc/QFNgBsr6)
 
 ### Redeeming pTokens for public tokens
 
@@ -120,7 +120,7 @@ Once the custodian finishes sending public tokens (BTC/BNB/ETH/etc) to the userâ
 
 The redeem process with Ethereum Smart Contract vault is illustrated as the following figure:
 
-[![image.png](https://i.postimg.cc/Wd9GgKNs/eth-redeem.png)](https://postimg.cc/Wd9GgKNs)
+[![image.png](https://i.postimg.cc/Bv3m99RP/eth-redeem.png)](https://postimg.cc/Wd9GgKNs)
 
 ## Over-collateralization
 
