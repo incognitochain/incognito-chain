@@ -747,7 +747,7 @@ func (blockchain *BlockChain) processStoreBeaconBlockV2(beaconBlock *BeaconBlock
 	var err error
 	//statedb===========================START
 	// Added
-	//TODO: filter duplicate candidate, substitute, committee
+	//TODO DBV2: filter duplicate candidate, substitute, committee
 	err = statedb.StoreCurrentEpochShardCandidate(beaconBestState.consensusStateDB, committeeChange.currentEpochShardCandidateAdded, beaconBestState.RewardReceiver, beaconBestState.AutoStaking)
 	if err != nil {
 		return err

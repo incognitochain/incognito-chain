@@ -51,7 +51,7 @@ func (blockchain *BlockChain) updateDatabaseWithBlockRewardInfoV2(beaconBlock *B
 	return nil
 }
 
-func (blockchain *BlockChain) updateDatabaseFromBeaconInstructionsV2(beaconBlocks []*BeaconBlock, shardID byte, rewardStateDB *statedb.StateDB) error {
+func (blockchain *BlockChain) processSalaryInstructionsV2(rewardStateDB *statedb.StateDB, beaconBlocks []*BeaconBlock, shardID byte) error {
 	rewardReceivers := make(map[string]string)
 	committees := make(map[int][]incognitokey.CommitteePublicKey)
 	isInit := false
@@ -123,7 +123,7 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructionsV2(beaconBlock
 					committees, _, _, _, rewardReceivers, _ = statedb.GetAllCommitteeSubstituteCandidateState(consensusStateDB, blockchain.GetShardIDs())
 
 				}
-				err = blockchain.getRewardAmountForUserOfShardV2(rewardStateDB, shardID, shardRewardInfo, committees[int(shardID)], rewardReceivers)
+				err = blockchain.addShardCommitteeRewardV2(rewardStateDB, shardID, shardRewardInfo, committees[int(shardID)], rewardReceivers)
 				if err != nil {
 					return err
 				}
@@ -135,7 +135,7 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructionsV2(beaconBlock
 	return nil
 }
 
-func (blockchain *BlockChain) getRewardAmountForUserOfShardV2(rewardStateDB *statedb.StateDB, shardID byte, rewardInfoShardToProcess *metadata.ShardBlockRewardInfo, committeeOfShardToProcess []incognitokey.CommitteePublicKey, rewardReceiver map[string]string) (err error) {
+func (blockchain *BlockChain) addShardCommitteeRewardV2(rewardStateDB *statedb.StateDB, shardID byte, rewardInfoShardToProcess *metadata.ShardBlockRewardInfo, committeeOfShardToProcess []incognitokey.CommitteePublicKey, rewardReceiver map[string]string) (err error) {
 	committeeSize := len(committeeOfShardToProcess)
 	for _, candidate := range committeeOfShardToProcess {
 		wl, err := wallet.Base58CheckDeserialize((rewardReceiver)[candidate.GetIncKeyBase58()])

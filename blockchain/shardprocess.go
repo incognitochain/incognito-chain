@@ -615,7 +615,6 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(shardBlock *
 	//verify producer via index
 	producerPublicKey := shardBlock.Header.Producer
 	producerPosition := (shardBestState.ShardProposerIdx + shardBlock.Header.Round) % len(shardBestState.ShardCommittee)
-
 	//verify producer
 	tempProducer, err := shardBestState.ShardCommittee[producerPosition].ToBase58() //.GetMiningKeyBase58(common.BridgeConsensus)
 	if err != nil {
@@ -1033,7 +1032,6 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock 
 			}
 		}
 		go blockchain.config.TxPool.RemoveCandidateList(candidates)
-
 		//Remove tx out of pool
 		go blockchain.config.TxPool.RemoveTx(shardBlock.Body.Transactions, true)
 	}()
