@@ -47,13 +47,14 @@ type WithDrawRewardResponse struct {
 	TokenID   common.Hash
 }
 
-func NewWithDrawRewardResponse(txRequestID *common.Hash) (Metadata, error) {
+func NewWithDrawRewardResponse(txRequest *WithDrawRewardRequest, reqID *common.Hash) (Metadata, error) {
 	metadataBase := MetadataBase{
 		Type: WithDrawRewardResponseMeta,
 	}
 	return &WithDrawRewardResponse{
 		MetadataBase: metadataBase,
-		TxRequest:    txRequestID,
+		TxRequest:    reqID,
+		TokenID:      txRequest.TokenID,
 	}, nil
 }
 
@@ -125,6 +126,10 @@ func (withDrawRewardResponse *WithDrawRewardResponse) ValidateTxWithBlockChain(t
 	unique, requesterRes, amountRes, coinID := txr.GetTransferData()
 	if !unique {
 		return false, errors.New("Just one receiver")
+	}
+	cmp, err := withDrawRewardResponse.TokenID.Cmp(coinID)
+	if (cmp != 0) || (err != nil) {
+		return false, errors.Errorf("WithdrawResponse metadata want tokenID %v, got %v, error %v", withDrawRewardResponse.TokenID.String(), coinID.String(), err)
 	}
 	value, err := db.GetCommitteeReward(requesterRes, *coinID)
 	if (err != nil) || (value == 0) {
