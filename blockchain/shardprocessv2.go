@@ -496,8 +496,7 @@ func (shardBestState *ShardBestState) processShardBlockInstructionV2(blockchain 
 	if len(shardBlock.Body.Instructions) != 0 {
 		Logger.log.Info("Shard Process/updateShardBestState: Shard Instruction", shardBlock.Body.Instructions)
 	}
-
-	producersBlackList, err := blockchain.getUpdatedProducersBlackList(false, int(shardID), shardCommittee, shardBlock.Header.BeaconHeight)
+	producersBlackList, err := blockchain.getUpdatedProducersBlackListV2(shardBestState.slashStateDB, false, int(shardID), shardCommittee, shardBlock.Header.BeaconHeight)
 	if err != nil {
 		return err
 	}
@@ -514,7 +513,6 @@ func (shardBestState *ShardBestState) processShardBlockInstructionV2(blockchain 
 			if len(l[2]) != 0 && l[2] != "" {
 				swapedCommittees = strings.Split(l[2], ",")
 			}
-
 			for _, v := range swapedCommittees {
 				if txId, ok := shardBestState.StakingTx[v]; ok {
 					if checkReturnStakingTxExistence(txId, shardBlock) {
@@ -525,7 +523,6 @@ func (shardBestState *ShardBestState) processShardBlockInstructionV2(blockchain 
 			if !reflect.DeepEqual(swapedCommittees, shardSwappedCommittees) {
 				return NewBlockChainError(SwapValidatorError, fmt.Errorf("Expect swapped committees to be %+v but get %+v", swapedCommittees, shardSwappedCommittees))
 			}
-
 			newCommittees := []string{}
 			if len(l[1]) > 0 {
 				newCommittees = strings.Split(l[1], ",")
@@ -626,6 +623,7 @@ func (blockchain *BlockChain) processStoreShardBlockV2(shardBlock *ShardBlock, c
 	if err != nil {
 		return err
 	}
+	// consensus root hash
 	consensusRootHash, err := tempShardBestState.consensusStateDB.Commit(true)
 	if err != nil {
 		return err
@@ -638,6 +636,7 @@ func (blockchain *BlockChain) processStoreShardBlockV2(shardBlock *ShardBlock, c
 	if err != nil {
 		return err
 	}
+	// transaction root hash
 	transactionRootHash, err := tempShardBestState.transactionStateDB.Commit(true)
 	if err != nil {
 		return err
@@ -650,6 +649,7 @@ func (blockchain *BlockChain) processStoreShardBlockV2(shardBlock *ShardBlock, c
 	if err != nil {
 		return err
 	}
+	// feature root hash
 	featureRootHash, err := tempShardBestState.featureStateDB.Commit(true)
 	if err != nil {
 		return err
@@ -662,9 +662,37 @@ func (blockchain *BlockChain) processStoreShardBlockV2(shardBlock *ShardBlock, c
 	if err != nil {
 		return err
 	}
+	// reward root hash
+	rewardRootHash, err := tempShardBestState.rewardStateDB.Commit(true)
+	if err != nil {
+		return err
+	}
+	err = tempShardBestState.rewardStateDB.Database().TrieDB().Commit(rewardRootHash, false)
+	if err != nil {
+		return err
+	}
+	err = tempShardBestState.rewardStateDB.Reset(rewardRootHash)
+	if err != nil {
+		return err
+	}
+	// slash root hash
+	slashRootHash, err := tempShardBestState.slashStateDB.Commit(true)
+	if err != nil {
+		return err
+	}
+	err = tempShardBestState.slashStateDB.Database().TrieDB().Commit(slashRootHash, false)
+	if err != nil {
+		return err
+	}
+	err = tempShardBestState.slashStateDB.Reset(slashRootHash)
+	if err != nil {
+		return err
+	}
 	tempShardBestState.ConsensusStateRootHash[blockHeight] = consensusRootHash
 	tempShardBestState.TransactionStateRootHash[blockHeight] = transactionRootHash
 	tempShardBestState.FeatureStateRootHash[blockHeight] = featureRootHash
+	tempShardBestState.RewardStateRootHash[blockHeight] = rewardRootHash
+	tempShardBestState.SlashStateRootHash[blockHeight] = slashRootHash
 	//statedb===========================END
 	if err := rawdbv2.StoreShardBlock(blockchain.GetDatabase(), shardID, blockHeight, blockHash, shardBlock); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)

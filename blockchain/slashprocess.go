@@ -46,7 +46,6 @@ func (blockchain *BlockChain) buildBadProducersWithPunishment(
 	if expectedNumBlkByEachProducer == 0 {
 		return badProducersWithPunishment
 	}
-	// for producer, numBlk := range numOfBlocksByProducers {
 	for _, producer := range committee {
 		numBlk, found := numOfBlocksByProducers[producer]
 		if !found {

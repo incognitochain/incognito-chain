@@ -1,7 +1,7 @@
 package statedb
 
-func GetProducersBlackList(stateDB *StateDB, beaconHeight uint64) (map[string]uint8, error) {
-	return stateDB.GetAllProducerBlackList(), nil
+func GetProducersBlackList(stateDB *StateDB, beaconHeight uint64) map[string]uint8 {
+	return stateDB.GetAllProducerBlackList()
 }
 
 func StoreProducersBlackList(stateDB *StateDB, beaconHeight uint64, producersBlackList map[string]uint8) error {
@@ -16,9 +16,11 @@ func StoreProducersBlackList(stateDB *StateDB, beaconHeight uint64, producersBla
 	return nil
 }
 
-func RemoveProducerBlackList(stateDB *StateDB, blackListProducerKey string) {
-	key := GenerateBlackListProducerObjectKey(blackListProducerKey)
-	stateDB.MarkDeleteStateObject(BlackListProducerObjectType, key)
+func RemoveProducerBlackList(stateDB *StateDB, blackListProducerKeyList []string) {
+	for _, blackListProducerKey := range blackListProducerKeyList {
+		key := GenerateBlackListProducerObjectKey(blackListProducerKey)
+		stateDB.MarkDeleteStateObject(BlackListProducerObjectType, key)
+	}
 }
 
 func RemoveAllEmptyProducerBlackList(stateDB *StateDB, blackListProducerKey string) {

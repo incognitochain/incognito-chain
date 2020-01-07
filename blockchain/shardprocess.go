@@ -759,6 +759,16 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 		return err
 	}
 	shardBestState.FeatureStateRootHash[0] = common.EmptyRoot
+	shardBestState.rewardStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	shardBestState.RewardStateRootHash[0] = common.EmptyRoot
+	shardBestState.slashStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	shardBestState.SlashStateRootHash[0] = common.EmptyRoot
 	//statedb===========================END
 	return nil
 }

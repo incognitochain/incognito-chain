@@ -154,7 +154,7 @@ func GetCurrentEpochCandidate(stateDB *StateDB) []incognitokey.CommitteePublicKe
 	return stateDB.GetAllCandidateCommitteePublicKey(CurrentEpochShardCandidate)
 }
 
-func GetAllCandidateSubstituteCommitteeState(stateDB *StateDB, shardIDs []int) (map[int][]incognitokey.CommitteePublicKey, map[int][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, map[string]string, map[string]bool) {
+func GetAllCommitteeSubstituteCandidateState(stateDB *StateDB, shardIDs []int) (map[int][]incognitokey.CommitteePublicKey, map[int][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, map[string]string, map[string]bool) {
 	return stateDB.GetAllCommitteeState(shardIDs)
 }
 

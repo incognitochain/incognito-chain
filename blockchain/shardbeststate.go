@@ -58,6 +58,10 @@ type ShardBestState struct {
 	transactionStateDB       *statedb.StateDB
 	FeatureStateRootHash     map[uint64]common.Hash `json:"FeatureStateRootHash"`
 	featureStateDB           *statedb.StateDB
+	RewardStateRootHash      map[uint64]common.Hash `json:"RewardStateRootHash"`
+	rewardStateDB            *statedb.StateDB
+	SlashStateRootHash       map[uint64]common.Hash `json:"SlashStateRootHash"`
+	slashStateDB             *statedb.StateDB
 	lock                     sync.RWMutex
 }
 
@@ -137,6 +141,22 @@ func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database) error
 		}
 	} else {
 		shardBestState.featureStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+	}
+	if rootHash, ok := shardBestState.RewardStateRootHash[shardBestState.BeaconHeight]; ok {
+		shardBestState.rewardStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
+		if err != nil {
+			return err
+		}
+	} else {
+		shardBestState.rewardStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+	}
+	if rootHash, ok := shardBestState.SlashStateRootHash[shardBestState.BeaconHeight]; ok {
+		shardBestState.slashStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
+		if err != nil {
+			return err
+		}
+	} else {
+		shardBestState.slashStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
 	}
 	return nil
 }
@@ -307,6 +327,8 @@ func (shardBestState *ShardBestState) cloneShardBestStateFrom(target *ShardBestS
 	shardBestState.consensusStateDB = target.consensusStateDB.Copy()
 	shardBestState.transactionStateDB = target.transactionStateDB.Copy()
 	shardBestState.featureStateDB = target.featureStateDB.Copy()
+	shardBestState.rewardStateDB = target.rewardStateDB.Copy()
+	shardBestState.slashStateDB = target.slashStateDB.Copy()
 	return nil
 }
 
