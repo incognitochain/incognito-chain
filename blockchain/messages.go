@@ -59,7 +59,6 @@ func (blockchain *BlockChain) OnPeerStateReceived(
 		}
 		// }
 	}
-	blockchain.Synker.Status.Lock()
 	for shardID := 0; shardID < blockchain.BestState.Beacon.ActiveShards; shardID++ {
 		if shardState, ok := (*shard)[byte(shardID)]; ok {
 			if shardState.Height > GetBestStateShard(byte(shardID)).ShardHeight && (*shard)[byte(shardID)].Timestamp > GetBestStateShard(byte(shardID)).BestBlock.Header.Timestamp {
@@ -67,7 +66,6 @@ func (blockchain *BlockChain) OnPeerStateReceived(
 			}
 		}
 	}
-	blockchain.Synker.Status.Unlock()
 	blockchain.Synker.States.Lock()
 	if blockchain.Synker.States.PeersState != nil {
 		blockchain.Synker.States.PeersState[peerMiningKey] = pState
