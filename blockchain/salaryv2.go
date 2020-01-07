@@ -1,15 +1,74 @@
 package blockchain
 
 import (
+	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
+
+func (blockGenerator *BlockGenerator) buildReturnStakingAmountTxV2(swapPublicKey string, blkProducerPrivateKey *privacy.PrivateKey) (metadata.Transaction, error) {
+	publicKey, _ := blockGenerator.chain.config.ConsensusEngine.GetCurrentMiningPublicKey()
+	_, committeeShardID := blockGenerator.chain.BestState.Beacon.GetPubkeyRole(publicKey, 0)
+	Logger.log.Infof("Return Staking Amount public key %+v, staking transaction hash %+v, shardID %+v", swapPublicKey, GetBestStateShard(committeeShardID).StakingTx, committeeShardID)
+	tx, ok := GetBestStateShard(committeeShardID).StakingTx[swapPublicKey]
+	if !ok {
+		return nil, NewBlockChainError(GetStakingTransactionError, errors.New("No staking tx in best state"))
+	}
+	var txHash = &common.Hash{}
+	err := (&common.Hash{}).Decode(txHash, tx)
+	if err != nil {
+		return nil, NewBlockChainError(DecodeHashError, err)
+	}
+	blockHash, index, err := rawdbv2.GetTransactionByHash(blockGenerator.chain.config.DataBase, *txHash)
+	if err != nil {
+		return nil, NewBlockChainError(GetTransactionFromDatabaseError, err)
+	}
+	shardBlock, _, err := blockGenerator.chain.GetShardBlockByHash(blockHash)
+	if err != nil || shardBlock == nil {
+		Logger.log.Error("ERROR", err, "NO Transaction in block with hash", blockHash, "and index", index, "contains", shardBlock.Body.Transactions[index])
+		return nil, NewBlockChainError(FetchShardBlockError, err)
+	}
+	txData := shardBlock.Body.Transactions[index]
+	keyWallet, err := wallet.Base58CheckDeserialize(txData.GetMetadata().(*metadata.StakingMetadata).FunderPaymentAddress)
+	if err != nil {
+		Logger.log.Error("SA: cannot get payment address", txData.GetMetadata().(*metadata.StakingMetadata), committeeShardID)
+		return nil, NewBlockChainError(WalletKeySerializedError, err)
+	}
+	Logger.log.Info("SA: build salary tx", txData.GetMetadata().(*metadata.StakingMetadata).FunderPaymentAddress, committeeShardID)
+	paymentShardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1])
+	if paymentShardID != committeeShardID {
+		return nil, NewBlockChainError(WrongShardIDError, fmt.Errorf("Staking Payment Address ShardID %+v, Not From Current Shard %+v", paymentShardID, committeeShardID))
+	}
+	returnStakingMeta := metadata.NewReturnStaking(
+		tx,
+		keyWallet.KeySet.PaymentAddress,
+		metadata.ReturnStakingMeta,
+	)
+	returnStakingTx := new(transaction.Tx)
+	err = returnStakingTx.InitTxSalary(
+		txData.CalculateTxValue(),
+		&keyWallet.KeySet.PaymentAddress,
+		blkProducerPrivateKey,
+		blockGenerator.chain.config.DataBase,
+		returnStakingMeta,
+	)
+	//modify the type of the salary transaction
+	returnStakingTx.Type = common.TxReturnStakingType
+	if err != nil {
+		return nil, NewBlockChainError(InitSalaryTransactionError, err)
+	}
+	return returnStakingTx, nil
+}
 
 func (blockchain *BlockChain) updateDatabaseWithBlockRewardInfoV2(beaconBlock *BeaconBlock) error {
 	for _, inst := range beaconBlock.Body.Instructions {

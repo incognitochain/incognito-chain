@@ -349,21 +349,13 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(privatekey *priv
 		Logger.log.Info("Creating empty block...")
 	}
 	go blockGenerator.txPool.RemoveTx(txToRemove, false)
-	// remove Pending Tx in Blockgen via Pool
-	//go func() {
-	//	for _, tx := range txToRemove {
-	//		go func() {
-	//			blockGenerator.chain.config.CRemovedTxs <- tx
-	//		}()
-	//	}
-	//}()
-	var responsedTxsBeacon []metadata.Transaction
+	var responseTxsBeacon []metadata.Transaction
 	var errInstructions [][]string
 	var cError chan error
 	cError = make(chan error)
 	go func() {
 		var err error
-		responsedTxsBeacon, errInstructions, err = blockGenerator.buildResponseTxsFromBeaconInstructions(beaconBlocks, privatekey, shardID)
+		responseTxsBeacon, errInstructions, err = blockGenerator.buildResponseTxsFromBeaconInstructions(beaconBlocks, privatekey, shardID)
 		cError <- err
 	}()
 	nilCount := 0
@@ -377,7 +369,7 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(privatekey *priv
 			break
 		}
 	}
-	txsToAdd = append(txsToAdd, responsedTxsBeacon...)
+	txsToAdd = append(txsToAdd, responseTxsBeacon...)
 	if len(errInstructions) > 0 {
 		Logger.log.Error("List error instructions, which can not create tx", errInstructions)
 	}
@@ -589,7 +581,6 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 			Logger.log.Error(err)
 			return instructions, shardPendingValidator, shardCommittee, err
 		}
-
 		maxShardCommitteeSize := blockchain.BestState.Shard[shardID].MaxShardCommitteeSize
 		minShardCommitteeSize := blockchain.BestState.Shard[shardID].MinShardCommitteeSize
 		badProducersWithPunishment := blockchain.buildBadProducersWithPunishment(false, int(shardID), shardCommittee)

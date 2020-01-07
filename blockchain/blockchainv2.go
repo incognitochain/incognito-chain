@@ -67,7 +67,6 @@ func (blockchain *BlockChain) initChainStateV2() error {
 		Blockchain: blockchain,
 	}
 	blockchain.Chains[common.BeaconChainKey] = &beaconChain
-	//TODO: change from dbv1 => dbv2 for shard
 	for shard := 1; shard <= blockchain.BestState.Beacon.ActiveShards; shard++ {
 		shardID := byte(shard - 1)
 		bestStateBytes, err := rawdbv2.FetchShardBestState(blockchain.config.DataBase, shardID)
