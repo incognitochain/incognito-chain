@@ -47,7 +47,7 @@ type Synker struct {
 		IsLatest          struct {
 			Beacon bool
 			Shards map[byte]bool
-			sync.Mutex
+			sync.RWMutex
 		}
 	}
 	States struct {
@@ -263,8 +263,10 @@ func (synker *Synker) stopSyncShard(shardID byte) error {
 }
 
 func (synker *Synker) UpdateState() {
+	Logger.log.Info("[updatestate] START update state")
 	synker.Status.Lock()
 	synker.States.Lock()
+	Logger.log.Info("[updatestate] Locked Status and States")
 	synker.GetPoolsState()
 	synker.Status.CurrentlySyncBlks.DeleteExpired()
 	var shardsStateClone map[byte]ShardBestState
@@ -565,8 +567,10 @@ func (synker *Synker) UpdateState() {
 		synker.blockchain.config.Server.UpdateConsensusState(userLayer, userMiningKey, nil, beaconCommittee, shardCommittee)
 	}
 	synker.States.PeersState = make(map[string]*PeerState)
+	Logger.log.Info("[updatestate] END update state")
 	synker.Status.Unlock()
 	synker.States.Unlock()
+	Logger.log.Info("[updatestate] Unlocked Status and States")
 }
 
 //SyncBlkBeacon Send a req to sync beacon block
@@ -812,8 +816,8 @@ func (synker *Synker) SetChainState(shard bool, shardID byte, ready bool) {
 }
 
 func (synker *Synker) IsLatest(shard bool, shardID byte) bool {
-	synker.Status.IsLatest.Lock()
-	defer synker.Status.IsLatest.Unlock()
+	synker.Status.IsLatest.RLock()
+	defer synker.Status.IsLatest.RUnlock()
 	if shard {
 		if _, ok := synker.Status.IsLatest.Shards[shardID]; !ok {
 			return false
