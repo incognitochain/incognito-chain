@@ -263,8 +263,10 @@ func (synker *Synker) stopSyncShard(shardID byte) error {
 }
 
 func (synker *Synker) UpdateState() {
+	Logger.log.Info("[updatestate] START update state")
 	synker.Status.Lock()
 	synker.States.Lock()
+	Logger.log.Info("[updatestate] Locked Status and States")
 	synker.GetPoolsState()
 	synker.Status.CurrentlySyncBlks.DeleteExpired()
 	var shardsStateClone map[byte]ShardBestState
@@ -565,8 +567,10 @@ func (synker *Synker) UpdateState() {
 		synker.blockchain.config.Server.UpdateConsensusState(userLayer, userMiningKey, nil, beaconCommittee, shardCommittee)
 	}
 	synker.States.PeersState = make(map[string]*PeerState)
+	Logger.log.Info("[updatestate] END update state")
 	synker.Status.Unlock()
 	synker.States.Unlock()
+	Logger.log.Info("[updatestate] Unlocked Status and States")
 }
 
 //SyncBlkBeacon Send a req to sync beacon block
