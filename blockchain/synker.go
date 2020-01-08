@@ -47,7 +47,7 @@ type Synker struct {
 		IsLatest          struct {
 			Beacon bool
 			Shards map[byte]bool
-			sync.Mutex
+			sync.RWMutex
 		}
 	}
 	States struct {
@@ -812,8 +812,8 @@ func (synker *Synker) SetChainState(shard bool, shardID byte, ready bool) {
 }
 
 func (synker *Synker) IsLatest(shard bool, shardID byte) bool {
-	synker.Status.IsLatest.Lock()
-	defer synker.Status.IsLatest.Unlock()
+	synker.Status.IsLatest.RLock()
+	defer synker.Status.IsLatest.RUnlock()
 	if shard {
 		if _, ok := synker.Status.IsLatest.Shards[shardID]; !ok {
 			return false
