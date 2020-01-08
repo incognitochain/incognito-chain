@@ -532,7 +532,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 				Logger.log.Error(err)
 			}
 			Logger.log.Error("FAILED VERIFICATION PAYMENT PROOF")
-			return false, NewTransactionErr(TxProofVerifyFailError, err)
+			return false, NewTransactionErr(TxProofVerifyFailError, err, tx.Hash().String())
 		} else {
 			Logger.log.Debugf("SUCCESSED VERIFICATION PAYMENT PROOF ")
 		}
