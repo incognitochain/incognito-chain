@@ -77,6 +77,10 @@ func (blockchain *BlockChain) initChainStateV2() error {
 			SetBestStateShard(shardID, shardBestState)
 			//update Shard field in blockchain Beststate
 			blockchain.BestState.Shard[shardID] = GetBestStateShard(shardID)
+			errStateDB := blockchain.BestState.Shard[shardID].InitStateRootHash(blockchain.GetDatabase())
+			if errStateDB != nil {
+				return errStateDB
+			}
 			if err != nil {
 				initialized = false
 			} else {

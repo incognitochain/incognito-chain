@@ -98,6 +98,8 @@ func NewBestStateShardWithConfig(shardID byte, netparam *Params) *ShardBestState
 	bestStateShard.ConsensusStateRootHash = make(map[uint64]common.Hash)
 	bestStateShard.TransactionStateRootHash = make(map[uint64]common.Hash)
 	bestStateShard.FeatureStateRootHash = make(map[uint64]common.Hash)
+	bestStateShard.RewardStateRootHash = make(map[uint64]common.Hash)
+	bestStateShard.SlashStateRootHash = make(map[uint64]common.Hash)
 	return bestStateShard
 }
 
@@ -118,7 +120,7 @@ func SetBestStateShard(shardID byte, beststateShard *ShardBestState) {
 func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database) error {
 	var err error
 	var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
-	if rootHash, ok := shardBestState.ConsensusStateRootHash[shardBestState.BeaconHeight]; ok {
+	if rootHash, ok := shardBestState.ConsensusStateRootHash[shardBestState.ShardHeight]; ok {
 		shardBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
 		if err != nil {
 			return err
@@ -126,7 +128,7 @@ func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database) error
 	} else {
 		shardBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
 	}
-	if rootHash, ok := shardBestState.TransactionStateRootHash[shardBestState.BeaconHeight]; ok {
+	if rootHash, ok := shardBestState.TransactionStateRootHash[shardBestState.ShardHeight]; ok {
 		shardBestState.transactionStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
 		if err != nil {
 			return err
@@ -134,7 +136,7 @@ func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database) error
 	} else {
 		shardBestState.transactionStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
 	}
-	if rootHash, ok := shardBestState.FeatureStateRootHash[shardBestState.BeaconHeight]; ok {
+	if rootHash, ok := shardBestState.FeatureStateRootHash[shardBestState.ShardHeight]; ok {
 		shardBestState.featureStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
 		if err != nil {
 			return err
@@ -142,7 +144,7 @@ func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database) error
 	} else {
 		shardBestState.featureStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
 	}
-	if rootHash, ok := shardBestState.RewardStateRootHash[shardBestState.BeaconHeight]; ok {
+	if rootHash, ok := shardBestState.RewardStateRootHash[shardBestState.ShardHeight]; ok {
 		shardBestState.rewardStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
 		if err != nil {
 			return err
@@ -150,7 +152,7 @@ func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database) error
 	} else {
 		shardBestState.rewardStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
 	}
-	if rootHash, ok := shardBestState.SlashStateRootHash[shardBestState.BeaconHeight]; ok {
+	if rootHash, ok := shardBestState.SlashStateRootHash[shardBestState.ShardHeight]; ok {
 		shardBestState.slashStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
 		if err != nil {
 			return err

@@ -26,6 +26,9 @@ import (
 	@Notice: this block doesn't have full information (incomplete block)
 */
 func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, shardID byte) error {
+	if DATABASE_VERSION == 2 {
+		return blockchain.VerifyPreSignShardBlockV2(shardBlock, shardID)
+	}
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
 	Logger.log.Infof("SHARD %+v | Verify ShardBlock for signing process %d, with hash %+v", shardID, shardBlock.Header.Height, *shardBlock.Hash())
@@ -73,6 +76,9 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 	@Notice: this block must have full information (complete block)
 */
 func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidated bool) error {
+	if DATABASE_VERSION == 2 {
+		return blockchain.InsertShardBlockV2(shardBlock, isValidated)
+	}
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
 	shardID := shardBlock.Header.ShardID

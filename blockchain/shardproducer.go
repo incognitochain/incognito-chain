@@ -56,6 +56,9 @@ import (
 	5. Create Root Hash from New Shard Block and updated Clone Shard Beststate Data
 */
 func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, crossShards map[byte]uint64, beaconHeight uint64, start time.Time) (*ShardBlock, error) {
+	if DATABASE_VERSION == 2 {
+		return blockGenerator.NewBlockShardV2(shardID, round, crossShards, beaconHeight, start)
+	}
 	var (
 		transactionsForNewBlock = make([]metadata.Transaction, 0)
 		totalTxsFee             = make(map[common.Hash]uint64)
