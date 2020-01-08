@@ -1,5 +1,5 @@
 # Design Spec
-link: https://drive.google.com/file/d/1gI_dwf2h8irzAGefHfuX_79ASWItdqch/view?usp=sharing
+https://drive.google.com/file/d/1gI_dwf2h8irzAGefHfuX_79ASWItdqch/view?usp=sharing
 
 ## Key
 key is 32 bytes length with:
@@ -10,7 +10,7 @@ key is 32 bytes length with:
 value is depend on type of state object
 
 ## State Object
-5. Committee 
+1. Committee 
 Used for beacon and all shards, distinguish between shards and beacon by prefix. Each shard or beacon has different prefix value
 - key: first 12 bytes of `hash(committee-shardID-prefix)` with first 20 bytes of `hash(committee-key-bytes)`
 - value: committee state:
@@ -20,31 +20,31 @@ Used for beacon and all shards, distinguish between shards and beacon by prefix.
     * reward receiver payment address: base 58 string of reward receiver
     * auto staking: yes or no
     
-6. Committee Reward
+2. Committee Reward
 - key: first 12 bytes of `hash(committee-reward-prefix)` with first 20 bytes of `hash(incognito-public-key-bytes)`
 - value: committee state:
     * reward: map token id => reward amount
     * incognito public key: 33 bytes public key encoded as base 58 string
-7. Reward Request
+3. Reward Request
 - key: first 12 bytes of `hash(reward-request-prefix)` with first 20 bytes of `hash(epoch + shardID + tokenID)`
 - value: reward request state:
     * epoch
     * shardID
     * tokenID
     * amount
-8. Black List Producer:
+4. Black List Producer:
 - key: first 12 bytes of `hash(black-list-producer-prefix)` with first 20 bytes of `hash(committee-publickey-base58-string)`
 - value: black list producer state:
     * committee public key base58 string 
     * punished epoch (punished duration left)
     * beacon height at which this state is calculated
-9. Serial Number:
+5. Serial Number:
 - key: first 12 bytes of `hash(serial-number-prefix + tokenID + shardID)` with first 20 bytes of `hash(serial-number-bytes)`
 - value: serial number state:
     * tokenID
     * shardID
     * serial number value
-10. Commitment:
+6. Commitment:
 3 type of object: commitment, commitment index, commitment length
 a. Commitment: store commitment value
 - key: first 12 bytes of `hash(commitment-prefix + tokenID + shardID)` with first 20 bytes of `hash(commitment-bytes)`
@@ -58,19 +58,19 @@ b. Commitment index: store key to commitment value
 c. Commitment Length: Number of commitment in one of shard of a token
 - key: first 12 bytes of `hash(commitment-length-prefix)` with first 20 bytes of `hash(tokenID + shardID)`
 - value: current number of commitment in this shard of a token
-11. Output Coin:
+7. Output Coin:
 - key: first 12 bytes of `hash(output-coin-prefix + tokenID + shardID)` with first 20 bytes of `hash(incognito-public-key-bytes)`
 - value: output coin state:
     * tokenID
     * shardID
     * publicKey
     * outputCoins: list of output coin
-12. SNDerivator:
+8. SNDerivator:
 - key: first 12 bytes of `hash(SNDerivator-prefix + tokenID)` with first 20 bytes of `hash(snd-bytes)`
 - value: snderivator state:
     * tokenID
     * snd
-13. PDE:
+9. PDE:
 a. Waiting Contribution
 - key: first 12 bytes of `hash(waiting-pde-contribution-prefix + beacon-height-bytes)` with 20 bytes of `hash(pairID)`
 - value: waiting pde contribution
@@ -102,7 +102,7 @@ d. Share
     * statusType
     * statusSuffix
     * statusContent
-14. Bridge
+10. Bridge
 a. Eth tx
 - key: first 12 bytes of `hash(bridge-ethtx-prefix)` with 20 bytes of `hash(unique-eth-tx-id)`
 - value: bridge eth state
@@ -120,7 +120,7 @@ c. Token Info
     * amount
     * network
     * isCentralized
-15. Burning Confirm
+11. Burning Confirm
 - key: first 12 bytes of `hash(burning-confirm-prefix)` with 20 bytes of `hash(txid)`
 - value: burning confirm state
     * txID
