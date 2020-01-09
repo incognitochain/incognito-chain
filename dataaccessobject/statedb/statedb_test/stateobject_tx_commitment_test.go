@@ -1,12 +1,12 @@
 package statedb_test
 
 import (
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"math/big"
 	"reflect"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
@@ -80,7 +80,7 @@ func storeCommitment(initRoot common.Hash, db statedb.DatabaseAccessWarper, limi
 func TestStateDB_StoreAndGetCommitmentState(t *testing.T) {
 	tokenID := generateTokenIDs(1)[0]
 	shardID := byte(0)
-	commitmentIndex := new(big.Int).SetUint64(1)
+	commitmentIndex := new(big.Int).SetUint64(0)
 	commitment := generateCommitmentList(1)[0]
 
 	key := statedb.GenerateCommitmentObjectKey(tokenID, shardID, commitment)
@@ -153,7 +153,6 @@ func TestStateDB_StoreAndGetCommitmentState(t *testing.T) {
 	if gotCLength.Uint64() != commitmentLengthState.Uint64() {
 		t.Fatalf("GetCommitmentState want %+v but got %+v", commitmentLengthState.Uint64(), gotCLength.Uint64())
 	}
-
 }
 
 func TestStateDB_GetGetAllCommitmentStateByPrefix(t *testing.T) {

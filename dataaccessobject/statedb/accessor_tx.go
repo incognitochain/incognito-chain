@@ -50,22 +50,21 @@ func StoreCommitments(stateDB *StateDB, tokenID common.Hash, pubkey []byte, comm
 		return NewStatedbError(GetCommitmentLengthError, err)
 	}
 	if !has {
-		commitmentLength.SetUint64(0)
+		commitmentLength.SetBytes([]byte{0})
 	} else {
 		temp := commitmentLength.Uint64() + 1
 		commitmentLength = new(big.Int).SetUint64(temp)
 	}
 	for _, commitment := range commitments {
 		// store commitment
-		temp := commitmentLength.Uint64()
 		keyCommitment := GenerateCommitmentObjectKey(tokenID, shardID, commitment)
-		valueCommitment := NewCommitmentStateWithValue(tokenID, shardID, commitment, new(big.Int).SetUint64(temp))
+		valueCommitment := NewCommitmentStateWithValue(tokenID, shardID, commitment, commitmentLength)
 		err = stateDB.SetStateObject(CommitmentObjectType, keyCommitment, valueCommitment)
 		if err != nil {
 			return NewStatedbError(StoreCommitmentError, err)
 		}
 		// store commitment index
-		keyCommitmentIndex := GenerateCommitmentIndexObjectKey(tokenID, shardID, new(big.Int).SetUint64(temp))
+		keyCommitmentIndex := GenerateCommitmentIndexObjectKey(tokenID, shardID, commitmentLength)
 		valueCommitmentIndex := keyCommitment
 		err = stateDB.SetStateObject(CommitmentIndexObjectType, keyCommitmentIndex, valueCommitmentIndex)
 		if err != nil {
@@ -73,7 +72,7 @@ func StoreCommitments(stateDB *StateDB, tokenID common.Hash, pubkey []byte, comm
 		}
 		// store commitment length
 		keyCommitmentLength := GenerateCommitmentLengthObjectKey(tokenID, shardID)
-		valueCommitmentLength := new(big.Int).SetUint64(temp)
+		valueCommitmentLength := commitmentLength
 		err = stateDB.SetStateObject(CommitmentLengthObjectType, keyCommitmentLength, valueCommitmentLength)
 		if err != nil {
 			return NewStatedbError(StoreCommitmentLengthError, err)

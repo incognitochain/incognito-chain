@@ -3,9 +3,10 @@ package statedb
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
 	"math/big"
 	"reflect"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 type CommitmentState struct {
@@ -375,7 +376,11 @@ func newCommitmentLengthObjectWithValue(db *StateDB, key common.Hash, data inter
 	var ok bool
 	var dataBytes []byte
 	if dataBytes, ok = data.([]byte); ok {
+		// if bytes.Compare(dataBytes, zeroBigInt) == 0 {
+		// 	newCommitmentLengthValue.SetUint64(0)
+		// } else {
 		newCommitmentLengthValue.SetBytes(dataBytes)
+		// }
 	} else {
 		newCommitmentLengthValue, ok = data.(*big.Int)
 		if !ok {
@@ -427,6 +432,9 @@ func (s CommitmentLengthObject) GetValue() interface{} {
 }
 
 func (s CommitmentLengthObject) GetValueBytes() []byte {
+	if s.GetValue().(*big.Int).Uint64() == 0 {
+		return []byte{0}
+	}
 	return s.GetValue().(*big.Int).Bytes()
 }
 

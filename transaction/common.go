@@ -80,14 +80,14 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 	//fmt.Printf("cpRandNum: %d\n", cpRandNum)
 	lenCommitment, err1 := statedb.GetCommitmentLength(param.stateDB, *param.tokenID, param.shardID)
 	if err1 != nil {
-		//Logger.log.Error(err1)
+		Logger.log.Error(err1)
 		return
 	}
 	if lenCommitment == nil {
-		//Logger.log.Error(errors.New("Commitments is empty"))
+		Logger.log.Error(errors.New("Commitments is empty"))
 		return
 	}
-	if lenCommitment.Uint64() == 1 {
+	if lenCommitment.Uint64() == 0 {
 		commitmentIndexs = []uint64{0, 0, 0, 0, 0, 0, 0}
 		temp := param.usableInputCoins[0].CoinDetails.GetCoinCommitment().ToBytesS()
 		commitments = [][]byte{temp, temp, temp, temp, temp, temp, temp}

@@ -61,3 +61,8 @@ const (
 	BridgeMinorOperator = "-"
 	BridgePlusOperator  = "-"
 )
+
+// commitment
+var (
+	zeroBigInt = []byte("zero")
+)
