@@ -403,13 +403,13 @@ func (httpServer *HttpServer) handleListCommitments(params interface{}, closeCha
 	if len(arrayParams) > 0 {
 		tokenIDTemp, ok := arrayParams[0].(string)
 		if !ok {
-			Logger.log.Debugf("handleHasSerialNumbers result: %+v", nil)
+			Logger.log.Debugf("handleListCommitments result: %+v", nil)
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("serialNumbers is invalid"))
 		}
 		if len(tokenIDTemp) > 0 {
 			tokenID, err = (common.Hash{}).NewHashFromStr(tokenIDTemp)
 			if err != nil {
-				Logger.log.Debugf("handleHasSerialNumbers result: %+v, err: %+v", err)
+				Logger.log.Debugf("handleListCommitments result: %+v, err: %+v", err)
 				return nil, rpcservice.NewRPCError(rpcservice.ListCustomTokenNotFoundError, err)
 			}
 		}
@@ -422,7 +422,7 @@ func (httpServer *HttpServer) handleListCommitments(params interface{}, closeCha
 		}
 	}
 
-	result, err := httpServer.databaseService.ListCommitments(*tokenID, byte(shardID))
+	result, err := httpServer.databaseService.ListCommitmentsV2(*tokenID, byte(shardID), httpServer.config.BlockChain.GetTransactionStateDB(byte(shardID)))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.ListCustomTokenNotFoundError, err)
 	}
@@ -441,13 +441,13 @@ func (httpServer *HttpServer) handleListCommitmentIndices(params interface{}, cl
 	if len(arrayParams) > 0 {
 		tokenIDTemp, ok := arrayParams[0].(string)
 		if !ok {
-			Logger.log.Debugf("handleHasSerialNumbers result: %+v", nil)
+			Logger.log.Debugf("handleListCommitmentIndices result: %+v", nil)
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("serialNumbers is invalid"))
 		}
 		if len(tokenIDTemp) > 0 {
 			tokenID, err = (common.Hash{}).NewHashFromStr(tokenIDTemp)
 			if err != nil {
-				Logger.log.Debugf("handleHasSerialNumbers result: %+v, err: %+v", err)
+				Logger.log.Debugf("handleListCommitmentIndices result: %+v, err: %+v", err)
 				return nil, rpcservice.NewRPCError(rpcservice.ListCustomTokenNotFoundError, err)
 			}
 		}
@@ -460,7 +460,7 @@ func (httpServer *HttpServer) handleListCommitmentIndices(params interface{}, cl
 		}
 	}
 
-	result, err := httpServer.databaseService.ListCommitmentIndices(*tokenID, shardID)
+	result, err := httpServer.databaseService.ListCommitmentIndicesV2(*tokenID, shardID, httpServer.config.BlockChain.GetTransactionStateDB(byte(shardID)))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.ListCustomTokenNotFoundError, err)
 	}

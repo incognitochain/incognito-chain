@@ -3,6 +3,7 @@ package rpcservice
 import (
 	"encoding/json"
 	"errors"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"math/big"
 	"strconv"
 
@@ -79,6 +80,14 @@ func (dbService DatabaseService) ListCommitments(tokenID common.Hash, shardID by
 
 func (dbService DatabaseService) ListCommitmentIndices(tokenID common.Hash, shardID byte) (map[uint64]string, error) {
 	return rawdb.ListCommitmentIndices(dbService.DB, tokenID, shardID)
+}
+
+func (dbService DatabaseService) ListCommitmentsV2(tokenID common.Hash, shardID byte, stateDB *statedb.StateDB) (map[string]uint64, error) {
+	return statedb.ListCommitment(stateDB, tokenID, shardID)
+}
+
+func (dbService DatabaseService) ListCommitmentIndicesV2(tokenID common.Hash, shardID byte, stateDB *statedb.StateDB) (map[uint64]string, error) {
+	return statedb.ListCommitmentIndices(stateDB, tokenID, shardID)
 }
 
 func (dbService DatabaseService) HasSerialNumbers(paymentAddressStr string, serialNumbersStr []interface{}, tokenID common.Hash) ([]bool, error) {
