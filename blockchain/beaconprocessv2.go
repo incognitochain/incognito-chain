@@ -443,7 +443,7 @@ func (beaconBestState *BeaconBestState) updateBeaconBestStateV2(beaconBlock *Bea
 		beaconBestState.IsGetRandomNumber = false
 		// Before get random from bitcoin
 	} else if beaconBestState.BeaconHeight%chainParamEpoch >= randomTime {
-		// After get random from bitcoin
+		// snap shot candidate list, prepare to get random number (beaconHeight == random time)
 		if beaconBestState.BeaconHeight%chainParamEpoch == randomTime {
 			// snapshot candidate list
 			committeeChange.currentEpochShardCandidateAdded = beaconBestState.CandidateShardWaitingForNextRandom
@@ -460,7 +460,7 @@ func (beaconBestState *BeaconBestState) updateBeaconBestStateV2(beaconBlock *Bea
 			// assign random timestamp
 			beaconBestState.CurrentRandomTimeStamp = beaconBlock.Header.Timestamp
 		}
-		// if get new random number
+		// if get new random number (beaconHeight > random time)
 		// Assign candidate to shard
 		// assign CandidateShardWaitingForCurrentRandom to ShardPendingValidator with CurrentRandom
 		if randomFlag {
@@ -747,7 +747,6 @@ func (blockchain *BlockChain) processStoreBeaconBlockV2(beaconBlock *BeaconBlock
 	var err error
 	//statedb===========================START
 	// Added
-	//TODO DBV2: filter duplicate candidate, substitute, committee
 	err = statedb.StoreCurrentEpochShardCandidate(beaconBestState.consensusStateDB, committeeChange.currentEpochShardCandidateAdded, beaconBestState.RewardReceiver, beaconBestState.AutoStaking)
 	if err != nil {
 		return err
@@ -835,19 +834,11 @@ func (blockchain *BlockChain) processStoreBeaconBlockV2(beaconBlock *BeaconBlock
 	if err != nil {
 		return err
 	}
-	err = beaconBestState.consensusStateDB.Reset(consensusRootHash)
-	if err != nil {
-		return err
-	}
 	featureRootHash, err := beaconBestState.featureStateDB.Commit(true)
 	if err != nil {
 		return err
 	}
 	err = beaconBestState.featureStateDB.Database().TrieDB().Commit(featureRootHash, false)
-	if err != nil {
-		return err
-	}
-	err = beaconBestState.featureStateDB.Reset(featureRootHash)
 	if err != nil {
 		return err
 	}
@@ -859,10 +850,9 @@ func (blockchain *BlockChain) processStoreBeaconBlockV2(beaconBlock *BeaconBlock
 	if err != nil {
 		return err
 	}
-	err = beaconBestState.rewardStateDB.Reset(rewardRootHash)
-	if err != nil {
-		return err
-	}
+	beaconBestState.consensusStateDB.ClearObjects()
+	beaconBestState.rewardStateDB.ClearObjects()
+	beaconBestState.featureStateDB.ClearObjects()
 	beaconBestState.ConsensusStateRootHash[blockHeight] = consensusRootHash
 	beaconBestState.FeatureStateRootHash[blockHeight] = featureRootHash
 	beaconBestState.RewardStateRootHash[blockHeight] = rewardRootHash

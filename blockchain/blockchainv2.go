@@ -146,10 +146,7 @@ func (blockchain *BlockChain) initBeaconStateV2() error {
 	if err != nil {
 		return err
 	}
-	err = beaconBestState.consensusStateDB.Reset(consensusRootHash)
-	if err != nil {
-		return err
-	}
+	beaconBestState.consensusStateDB.ClearObjects()
 	tempBeaconBestState.ConsensusStateRootHash[initBlockHeight] = consensusRootHash
 	return nil
 }

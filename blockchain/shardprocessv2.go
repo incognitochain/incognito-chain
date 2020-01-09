@@ -689,20 +689,12 @@ func (blockchain *BlockChain) processStoreShardBlockV2(shardBlock *ShardBlock, c
 	if err != nil {
 		return err
 	}
-	err = tempShardBestState.consensusStateDB.Reset(consensusRootHash)
-	if err != nil {
-		return err
-	}
 	// transaction root hash
 	transactionRootHash, err := tempShardBestState.transactionStateDB.Commit(true)
 	if err != nil {
 		return err
 	}
 	err = tempShardBestState.transactionStateDB.Database().TrieDB().Commit(transactionRootHash, false)
-	if err != nil {
-		return err
-	}
-	err = tempShardBestState.transactionStateDB.Reset(transactionRootHash)
 	if err != nil {
 		return err
 	}
@@ -715,20 +707,12 @@ func (blockchain *BlockChain) processStoreShardBlockV2(shardBlock *ShardBlock, c
 	if err != nil {
 		return err
 	}
-	err = tempShardBestState.featureStateDB.Reset(featureRootHash)
-	if err != nil {
-		return err
-	}
 	// reward root hash
 	rewardRootHash, err := tempShardBestState.rewardStateDB.Commit(true)
 	if err != nil {
 		return err
 	}
 	err = tempShardBestState.rewardStateDB.Database().TrieDB().Commit(rewardRootHash, false)
-	if err != nil {
-		return err
-	}
-	err = tempShardBestState.rewardStateDB.Reset(rewardRootHash)
 	if err != nil {
 		return err
 	}
@@ -741,10 +725,11 @@ func (blockchain *BlockChain) processStoreShardBlockV2(shardBlock *ShardBlock, c
 	if err != nil {
 		return err
 	}
-	err = tempShardBestState.slashStateDB.Reset(slashRootHash)
-	if err != nil {
-		return err
-	}
+	tempShardBestState.consensusStateDB.ClearObjects()
+	tempShardBestState.transactionStateDB.ClearObjects()
+	tempShardBestState.featureStateDB.ClearObjects()
+	tempShardBestState.rewardStateDB.ClearObjects()
+	tempShardBestState.slashStateDB.ClearObjects()
 	tempShardBestState.ConsensusStateRootHash[blockHeight] = consensusRootHash
 	tempShardBestState.TransactionStateRootHash[blockHeight] = transactionRootHash
 	tempShardBestState.FeatureStateRootHash[blockHeight] = featureRootHash

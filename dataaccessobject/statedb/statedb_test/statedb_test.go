@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -78,6 +79,84 @@ func generateKeyValuePairWithPrefix(limit int, prefix []byte) ([]common.Hash, []
 	return keys, values
 }
 
+func TestStateDB_DeleteNotExistObject(t *testing.T) {
+	keys, values := generateKeyValuePairWithPrefix(5, []byte("abc"))
+	stateDB, _ := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
+	stateDB.SetStateObject(statedb.TestObjectType, keys[0], values[0])
+	stateDB.SetStateObject(statedb.TestObjectType, keys[1], values[1])
+	stateDB.SetStateObject(statedb.TestObjectType, keys[2], values[2])
+	rootHash, _ := stateDB.Commit(true)
+	stateDB.Database().TrieDB().Commit(rootHash, false)
+
+	v0, err := stateDB.GetTestObject(keys[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(v0, values[0]) {
+		t.Fatalf("want values 0 %+v, got %+v", values[0], v0)
+	}
+	v1, err := stateDB.GetTestObject(keys[1])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(v1, values[1]) {
+		t.Fatalf("want values 0 %+v, got %+v", values[1], v1)
+	}
+	v2, err := stateDB.GetTestObject(keys[2])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(v2, values[2]) {
+		t.Fatalf("want values 0 %+v, got %+v", values[2], v2)
+	}
+	v3, err := stateDB.GetTestObject(keys[3])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(v3, []byte{}) {
+		t.Fatalf("want values 0 %+v, got %+v", []byte{}, v3)
+	}
+	v4, err := stateDB.GetTestObject(keys[4])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(v4, []byte{}) {
+		t.Fatalf("want values 0 %+v, got %+v", []byte{}, v4)
+	}
+
+	stateDB.SetStateObject(statedb.TestObjectType, keys[3], values[3])
+	stateDB.SetStateObject(statedb.TestObjectType, keys[4], values[4])
+	stateDB.MarkDeleteStateObject(statedb.TestObjectType, keys[0])
+	stateDB.MarkDeleteStateObject(statedb.TestObjectType, keys[1])
+	stateDB.MarkDeleteStateObject(statedb.TestObjectType, keys[2])
+	stateDB.MarkDeleteStateObject(statedb.TestObjectType, keys[3])
+	stateDB.MarkDeleteStateObject(statedb.TestObjectType, keys[4])
+
+	rootHash2, _ := stateDB.Commit(true)
+	stateDB.Database().TrieDB().Commit(rootHash2, false)
+
+	v0, err = stateDB.GetTestObject(keys[0])
+	v1, err = stateDB.GetTestObject(keys[1])
+	v2, err = stateDB.GetTestObject(keys[2])
+	v3, err = stateDB.GetTestObject(keys[3])
+	v4, err = stateDB.GetTestObject(keys[4])
+	if !reflect.DeepEqual(v0, []byte{}) {
+		t.Fatalf("want values 0 %+v, got %+v", []byte{}, v0)
+	}
+	if !reflect.DeepEqual(v1, []byte{}) {
+		t.Fatalf("want values 0 %+v, got %+v", []byte{}, v1)
+	}
+	if !reflect.DeepEqual(v2, []byte{}) {
+		t.Fatalf("want values 0 %+v, got %+v", []byte{}, v2)
+	}
+	if !reflect.DeepEqual(v3, []byte{}) {
+		t.Fatalf("want values 0 %+v, got %+v", []byte{}, v3)
+	}
+	if !reflect.DeepEqual(v4, []byte{}) {
+		t.Fatalf("want values 0 %+v, got %+v", []byte{}, v4)
+	}
+}
+
 func TestStateDB_GetTestObjectByPrefix50000(t *testing.T) {
 	rootHash, tests := createAndStoreDataForTesting(limit10000)
 	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
@@ -118,9 +197,10 @@ func TestStateDB_GetTestObjectByPrefix50000(t *testing.T) {
 }
 
 func BenchmarkStateDB_NewWithPrefixTrie20000(b *testing.B) {
-	rootHash, _ := createAndStoreDataForTesting(4000)
+	rootHash, _ := createAndStoreDataForTesting(limit100000)
+	sDB, _ := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
 	for n := 0; n < b.N; n++ {
-		statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+		sDB.Reset(rootHash)
 	}
 }
 

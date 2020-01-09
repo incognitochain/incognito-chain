@@ -113,6 +113,12 @@ func (stateDB *StateDB) Reset(root common.Hash) error {
 	return nil
 }
 
+func (stateDB *StateDB) ClearObjects() {
+	stateDB.stateObjects = make(map[common.Hash]StateObject)
+	stateDB.stateObjectsPending = make(map[common.Hash]struct{})
+	stateDB.stateObjectsDirty = make(map[common.Hash]struct{})
+}
+
 // IntermediateRoot computes the current root hash of the state trie.
 // It is called in between transactions to get the root hash that
 // goes into transaction receipts.

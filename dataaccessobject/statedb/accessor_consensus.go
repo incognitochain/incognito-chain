@@ -3,9 +3,11 @@ package statedb
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"time"
 )
 
 func storeCommittee(stateDB *StateDB, shardID int, role int, committees []incognitokey.CommitteePublicKey, rewardReceiver map[string]string, autoStaking map[string]bool) error {
+	enterTime := time.Now().UnixNano()
 	for _, committee := range committees {
 		key, err := GenerateCommitteeObjectKeyWithRole(role, shardID, committee)
 		if err != nil {
@@ -26,11 +28,12 @@ func storeCommittee(stateDB *StateDB, shardID int, role int, committees []incogn
 		if !ok {
 			return fmt.Errorf("auto staking of %+v not found", committeeString)
 		}
-		value := NewCommitteeStateWithValue(shardID, role, committee, rewardReceiverPaymentAddress, autoStakingValue)
+		value := NewCommitteeStateWithValueAndTime(shardID, role, committee, rewardReceiverPaymentAddress, autoStakingValue, enterTime)
 		err = stateDB.SetStateObject(CommitteeObjectType, key, value)
 		if err != nil {
 			return err
 		}
+		enterTime++
 	}
 	return nil
 }
