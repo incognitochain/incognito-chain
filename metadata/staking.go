@@ -3,9 +3,8 @@ package metadata
 import (
 	"bytes"
 	"errors"
-	"github.com/incognitochain/incognito-chain/incdb"
-
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -70,15 +69,7 @@ func (sm *StakingMetadata) ValidateMetadataByItself() bool {
 	return sm.Type == ShardStakingMeta
 }
 
-func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(
-	txr Transaction,
-	bcr BlockchainRetriever,
-	b byte,
-	db incdb.Database,
-) (
-	bool,
-	error,
-) {
+func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, b byte, stateDB *statedb.StateDB) (bool, error) {
 	SC, SPV, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR, err := bcr.GetAllCommitteeValidatorCandidate()
 	if err != nil {
 		return false, err
@@ -111,14 +102,7 @@ func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(
 	// Receiver Is Burning Address
 	//
 */
-func (stakingMetadata StakingMetadata) ValidateSanityData(
-	bcr BlockchainRetriever,
-	txr Transaction,
-) (
-	bool,
-	bool,
-	error,
-) {
+func (stakingMetadata StakingMetadata) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	if txr.IsPrivacy() {
 		return false, false, errors.New("staking Transaction Is No Privacy Transaction")
 	}
@@ -130,7 +114,7 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(
 	// get burning address
 	burningAddress := bcr.GetBurningAddress(0)
 	keyWalletBurningAdd, err := wallet.Base58CheckDeserialize(burningAddress)
-	if err != nil{
+	if err != nil {
 		return false, false, errors.New("burning address is invalid")
 	}
 	if !bytes.Equal(pubkey, keyWalletBurningAdd.KeySet.PaymentAddress.Pk) {

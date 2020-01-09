@@ -42,7 +42,6 @@ func GetLatestPDEPoolForPair(
 	if err != nil {
 		return []byte{}, NewRawdbError(LvdbIteratorError, err)
 	}
-
 	parts := strings.Split(string(keyBytes), "-")
 	if len(parts) <= 1 {
 		return []byte{}, nil
@@ -51,7 +50,6 @@ func GetLatestPDEPoolForPair(
 	if err != nil {
 		return []byte{}, NewRawdbError(UnexpectedError, err)
 	}
-
 	pdePoolForPairKey := BuildPDEPoolForPairKey(beaconHeight, tokenIDToBuyStr, tokenIDToSellStr)
 	pdePoolForPairBytes, err := db.Get(pdePoolForPairKey)
 	if err != nil && err != lvdberr.ErrNotFound {

@@ -6,10 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -42,12 +42,12 @@ func NewIssuingETHResponse(
 	}
 }
 
-func (iRes IssuingETHResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db incdb.Database) bool {
+func (iRes IssuingETHResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (iRes IssuingETHResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db incdb.Database) (bool, error) {
+func (iRes IssuingETHResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db *statedb.StateDB) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requested tx (via RequestedTxID) in current block
 	return false, nil
 }

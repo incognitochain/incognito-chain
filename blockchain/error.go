@@ -164,6 +164,8 @@ const (
 	NotEnoughRewardError
 	InitPDETradeResponseTransactionError
 	ProcessPDEInstructionError
+
+	GetListOutputCoinsByKeysetError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -313,6 +315,8 @@ var ErrCodeMessage = map[int]struct {
 	NotEnoughRewardError:                              {-1140, "Not enough reward Error"},
 	InitPDETradeResponseTransactionError:              {-1141, "Init PDE trade response tx Error"},
 	ProcessPDEInstructionError:                        {-1142, "Process PDE instruction Error"},
+
+	GetListOutputCoinsByKeysetError: {-2000, "Get List Output Coins By Keyset Error"},
 }
 
 type BlockChainError struct {

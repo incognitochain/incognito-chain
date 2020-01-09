@@ -15,8 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
-	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	"github.com/pkg/errors"
 )
@@ -113,7 +112,7 @@ func (iReq IssuingETHRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,
-	db incdb.Database,
+	db *statedb.StateDB,
 ) (bool, error) {
 	ethReceipt, err := iReq.verifyProofAndParseReceipt()
 	if err != nil {
@@ -176,7 +175,7 @@ func (iReq *IssuingETHRequest) BuildReqActions(tx Transaction, bcr BlockchainRet
 	action := []string{strconv.Itoa(IssuingETHRequestMeta), actionContentBase64Str}
 
 	Logger.log.Debug("hahaha txreqid: ", txReqID)
-	err = rawdb.TrackBridgeReqWithStatus(bcr.GetDatabase(), txReqID, byte(common.BridgeRequestProcessingStatus), nil)
+	err = statedb.TrackBridgeReqWithStatus(bcr.GetBeaconFeatureStateDB(), txReqID, byte(common.BridgeRequestProcessingStatus))
 	if err != nil {
 		return [][]string{}, NewMetadataTxError(IssuingEthRequestBuildReqActionsError, err)
 	}

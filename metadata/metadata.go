@@ -7,7 +7,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
-	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 )
@@ -16,8 +16,8 @@ import (
 type Metadata interface {
 	GetType() int
 	Hash() *common.Hash
-	CheckTransactionFee(Transaction, uint64, int64, incdb.Database) bool
-	ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, b byte, db incdb.Database) (bool, error)
+	CheckTransactionFee(Transaction, uint64, int64, *statedb.StateDB) bool
+	ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, b byte, db *statedb.StateDB) (bool, error)
 	ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error)
 	ValidateMetadataByItself() bool
 	BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error)
@@ -63,13 +63,18 @@ type BlockchainRetriever interface {
 	GetAllCommitteeValidatorCandidateFlattenListFromDatabase() ([]string, error)
 	GetStakingTx(byte) map[string]string
 	GetAutoStakingList() map[string]bool
-	GetDatabase() incdb.Database
+	//GetDatabase() *statedb.StateDB
 	GetTxValue(txid string) (uint64, error)
 	GetShardIDFromTx(txid string) (byte, error)
 	GetCentralizedWebsitePaymentAddress() string
 	GetAllCoinID() ([]common.Hash, error)
 	GetBeaconHeightBreakPointBurnAddr() uint64
 	GetBurningAddress(blockHeight uint64) string
+	GetShardRewardStateDB(shardID byte) *statedb.StateDB
+	GetShardFeatureStateDB(shardID byte) *statedb.StateDB
+	GetBeaconFeatureStateDB() *statedb.StateDB
+	GetBeaconRewardStateDB() *statedb.StateDB
+	GetBeaconSlashStateDB() *statedb.StateDB
 }
 
 // Interface for all type of transaction
@@ -92,29 +97,24 @@ type Transaction interface {
 	GetReceivers() ([][]byte, []uint64)
 	GetUniqueReceiver() (bool, []byte, uint64)
 	GetTransferData() (bool, []byte, uint64, *common.Hash)
-
 	// Get receivers' data for custom token tx (nil for normal tx)
 	GetTokenReceivers() ([][]byte, []uint64)
 	GetTokenUniqueReceiver() (bool, []byte, uint64)
-
 	GetMetadataFromVinsTx(BlockchainRetriever) (Metadata, error)
 	GetTokenID() *common.Hash
-
 	ListSerialNumbersHashH() []common.Hash
 	Hash() *common.Hash
-
 	// VALIDATE FUNC
 	CheckTxVersion(int8) bool
 	// CheckTransactionFee(minFeePerKbTx uint64) bool
 	ValidateTxWithCurrentMempool(MempoolRetriever) error
-	ValidateTxWithBlockChain(BlockchainRetriever, byte, incdb.Database) error
-	ValidateDoubleSpendWithBlockchain(BlockchainRetriever, byte, incdb.Database, *common.Hash) error
+	ValidateTxWithBlockChain(BlockchainRetriever, byte, *statedb.StateDB) error
+	ValidateDoubleSpendWithBlockchain(BlockchainRetriever, byte, *statedb.StateDB, *common.Hash) error
 	ValidateSanityData(BlockchainRetriever) (bool, error)
-	ValidateTxByItself(bool, incdb.Database, BlockchainRetriever, byte) (bool, error)
+	ValidateTxByItself(bool, *statedb.StateDB, BlockchainRetriever, byte) (bool, error)
 	ValidateType() bool
-	ValidateTransaction(bool, incdb.Database, byte, *common.Hash) (bool, error)
+	ValidateTransaction(bool, *statedb.StateDB, byte, *common.Hash) (bool, error)
 	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, BlockchainRetriever, *AccumulatedValues) (bool, error)
-
 	IsPrivacy() bool
 	IsCoinsBurning(BlockchainRetriever) bool
 	CalculateTxValue() uint64
@@ -124,15 +124,15 @@ type Transaction interface {
 func getPDEPoolPair(
 	prvIDStr, tokenIDStr string,
 	beaconHeight int64,
-	db incdb.Database,
+	stateDB *statedb.StateDB,
 ) (*rawdb.PDEPoolForPair, error) {
 	var pdePoolForPair rawdb.PDEPoolForPair
 	var err error
 	poolPairBytes := []byte{}
 	if beaconHeight == -1 {
-		poolPairBytes, err = rawdb.GetLatestPDEPoolForPair(db, prvIDStr, tokenIDStr)
+		poolPairBytes, err = statedb.GetLatestPDEPoolForPair(stateDB, prvIDStr, tokenIDStr)
 	} else {
-		poolPairBytes, err = rawdb.GetPDEPoolForPair(db, uint64(beaconHeight), prvIDStr, tokenIDStr)
+		poolPairBytes, err = statedb.GetPDEPoolForPair(stateDB, uint64(beaconHeight), prvIDStr, tokenIDStr)
 	}
 	if err != nil {
 		return nil, err
@@ -168,11 +168,11 @@ func convertValueBetweenCurrencies(
 	currentCurrencyIDStr string,
 	tokenID *common.Hash,
 	beaconHeight int64,
-	db incdb.Database,
+	statedb *statedb.StateDB,
 ) (float64, error) {
 	prvIDStr := common.PRVCoinID.String()
 	tokenIDStr := tokenID.String()
-	pdePoolForPair, err := getPDEPoolPair(prvIDStr, tokenIDStr, beaconHeight, db)
+	pdePoolForPair, err := getPDEPoolPair(prvIDStr, tokenIDStr, beaconHeight, statedb)
 	if err != nil {
 		return 0, NewMetadataTxError(CouldNotGetExchangeRateError, err)
 	}
@@ -204,14 +204,14 @@ func ConvertNativeTokenToPrivacyToken(
 	nativeTokenAmount uint64,
 	tokenID *common.Hash,
 	beaconHeight int64,
-	db incdb.Database,
+	stateDB *statedb.StateDB,
 ) (float64, error) {
 	return convertValueBetweenCurrencies(
 		nativeTokenAmount,
 		common.PRVCoinID.String(),
 		tokenID,
 		beaconHeight,
-		db,
+		stateDB,
 	)
 }
 
@@ -221,13 +221,13 @@ func ConvertPrivacyTokenToNativeToken(
 	privacyTokenAmount uint64,
 	tokenID *common.Hash,
 	beaconHeight int64,
-	db incdb.Database,
+	stateDB *statedb.StateDB,
 ) (float64, error) {
 	return convertValueBetweenCurrencies(
 		privacyTokenAmount,
 		tokenID.String(),
 		tokenID,
 		beaconHeight,
-		db,
+		stateDB,
 	)
 }

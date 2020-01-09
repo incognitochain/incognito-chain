@@ -8,8 +8,7 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
-	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -108,7 +107,7 @@ func (iReq IssuingRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,
-	db incdb.Database,
+	db *statedb.StateDB,
 ) (bool, error) {
 	keySet, err := wallet.Base58CheckDeserialize(bcr.GetCentralizedWebsitePaymentAddress())
 	if err != nil || !bytes.Equal(txr.GetSigPubKey(), keySet.KeySet.PaymentAddress.Pk) {
@@ -162,7 +161,7 @@ func (iReq *IssuingRequest) BuildReqActions(tx Transaction, bcr BlockchainRetrie
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
 	action := []string{strconv.Itoa(IssuingRequestMeta), actionContentBase64Str}
 	// track the request status to leveldb
-	err = rawdb.TrackBridgeReqWithStatus(bcr.GetDatabase(), txReqID, byte(common.BridgeRequestProcessingStatus), nil)
+	err = statedb.TrackBridgeReqWithStatus(bcr.GetBeaconFeatureStateDB(), txReqID, byte(common.BridgeRequestProcessingStatus))
 	if err != nil {
 		return [][]string{}, NewMetadataTxError(IssuingRequestBuildReqActionsError, err)
 	}

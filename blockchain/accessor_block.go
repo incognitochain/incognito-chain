@@ -7,7 +7,6 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 )
 
-// Database Accessor, package, which import blockchain package, should invoke database via these accessor
 func (blockchain *BlockChain) GetBlockHeightByBlockHashV2(hash common.Hash) (uint64, byte, error) {
 	return rawdbv2.GetIndexOfBlock(blockchain.GetDatabase(), hash)
 }

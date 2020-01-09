@@ -2,7 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
+
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/incdb"
 )
@@ -10,10 +10,11 @@ import (
 func FetchBeaconBlockFromHeightV2(db incdb.Database, from uint64, to uint64) ([]*BeaconBlock, error) {
 	beaconBlocks := []*BeaconBlock{}
 	for i := from; i <= to; i++ {
-		hash, err := rawdb.GetBeaconBlockHashByIndex(db, i)
+		hashes, err := rawdbv2.GetBeaconBlockHashByIndex(db, i)
 		if err != nil {
 			return beaconBlocks, err
 		}
+		hash := hashes[0]
 		beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(db, hash)
 		if err != nil {
 			return beaconBlocks, err
