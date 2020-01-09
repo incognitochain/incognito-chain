@@ -108,7 +108,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVContribution(params interf
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
 
-	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta, httpServer.GetDatabase())
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
 	if err1 != nil {
 		Logger.log.Error(err1)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
@@ -179,7 +179,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenContribution(params int
 		metadata.PDEContributionMeta,
 	)
 
-	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta, httpServer.GetDatabase())
+	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
 	if rpcErr != nil {
 		Logger.log.Error(rpcErr)
 		return nil, rpcErr
@@ -263,7 +263,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVTradeReq(params interface{
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
 
-	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta, httpServer.GetDatabase())
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
 	if err1 != nil {
 		Logger.log.Error(err1)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
@@ -352,7 +352,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenTradeReq(params interfa
 		metadata.PDETradeRequestMeta,
 	)
 
-	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta, httpServer.GetDatabase())
+	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
 	if rpcErr != nil {
 		Logger.log.Error(rpcErr)
 		return nil, rpcErr
@@ -433,7 +433,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithWithdrawalReq(params interfac
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
 
-	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta, httpServer.GetDatabase())
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
 	if err1 != nil {
 		Logger.log.Error(err1)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)

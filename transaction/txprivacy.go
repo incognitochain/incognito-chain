@@ -289,7 +289,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 	for i, cmIndex := range commitmentIndexs {
 		temp, err := statedb.GetCommitmentByIndex(params.stateDB, *params.tokenID, cmIndex, shardID)
 		if err != nil {
-			Logger.log.Error(errors.New(fmt.Sprintf("can not get commitment from index=%d shardID=%+v", cmIndex, shardID)))
+			Logger.log.Error(fmt.Errorf("can not get commitment from index=%d shardID=%+v", cmIndex, shardID))
 			return NewTransactionErr(CanNotGetCommitmentFromIndexError, err, cmIndex, shardID)
 		}
 		commitmentProving[i] = new(privacy.Point)

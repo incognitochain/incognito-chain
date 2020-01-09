@@ -572,7 +572,7 @@ func (httpServer *HttpServer) handleHasSnDerivators(params interface{}, closeCha
 func (httpServer *HttpServer) handleCreateRawPrivacyCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleCreateRawPrivacyCustomTokenTransaction params: %+v", params)
 	var err error
-	tx, err := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, nil, httpServer.GetDatabase())
+	tx, err := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, nil)
 	if err.(*rpcservice.RPCError) != nil {
 		Logger.log.Error(err)
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
