@@ -2,9 +2,11 @@ package blockchain
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
@@ -188,12 +190,24 @@ func (blockchain *BlockChain) GetShardRewardStateDB(shardID byte) *statedb.State
 	return blockchain.BestState.Shard[shardID].rewardStateDB
 }
 
+func (blockchain *BlockChain) GetTransactionStateDB(shardID byte) *statedb.StateDB {
+	return blockchain.BestState.Shard[shardID].transactionStateDB
+}
+
 func (blockchain *BlockChain) GetShardFeatureStateDB(shardID byte) *statedb.StateDB {
 	return blockchain.BestState.Shard[shardID].featureStateDB
 }
 
 func (blockchain *BlockChain) GetBeaconFeatureStateDB() *statedb.StateDB {
 	return blockchain.BestState.Beacon.featureStateDB
+}
+
+func (blockchain *BlockChain) GetBeaconFeatureStateDBByHeight(height uint64, db incdb.Database) (*statedb.StateDB, error) {
+	rootHash, ok := blockchain.BestState.Beacon.FeatureStateRootHash[height]
+	if !ok {
+		return nil, fmt.Errorf("Beacon Feature State DB not found, height %+v", height)
+	}
+	return statedb.NewWithPrefixTrie(rootHash, statedb.NewDatabaseAccessWarper(db))
 }
 
 func (blockchain *BlockChain) GetBeaconSlashStateDB() *statedb.StateDB {

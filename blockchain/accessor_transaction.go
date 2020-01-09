@@ -12,13 +12,100 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/memcache"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
+	"github.com/pkg/errors"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 )
+
+func (blockchain *BlockChain) InitTxSalaryByCoinID(
+	payToAddress *privacy.PaymentAddress,
+	amount uint64,
+	payByPrivateKey *privacy.PrivateKey,
+	stateDB *statedb.StateDB,
+	meta metadata.Metadata,
+	coinID common.Hash,
+	shardID byte,
+) (metadata.Transaction, error) {
+	txType := -1
+	if res, err := coinID.Cmp(&common.PRVCoinID); err == nil && res == 0 {
+		txType = transaction.NormalCoinType
+	}
+	if txType == -1 {
+		allBridgeTokensBytes, err := rawdb.GetAllBridgeTokens(blockchain.config.DataBase)
+		if err != nil {
+			return nil, err
+		}
+		var allBridgeTokens []*rawdb.BridgeTokenInfo
+		err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
+
+		if err != nil {
+			return nil, err
+		}
+		for _, bridgeTokenIDs := range allBridgeTokens {
+			if res, err := coinID.Cmp(bridgeTokenIDs.TokenID); err == nil && res == 0 {
+				txType = transaction.CustomTokenPrivacyType
+				break
+			}
+		}
+	}
+	if txType == -1 {
+		mapPrivacyCustomToken, mapCrossShardCustomToken, err := blockchain.ListPrivacyCustomToken()
+		if err != nil {
+			return nil, err
+		}
+		if mapPrivacyCustomToken != nil {
+			if _, ok := mapPrivacyCustomToken[coinID]; ok {
+				txType = transaction.CustomTokenPrivacyType
+			}
+		}
+		if mapCrossShardCustomToken != nil {
+			if _, ok := mapCrossShardCustomToken[coinID]; ok {
+				txType = transaction.CustomTokenPrivacyType
+			}
+		}
+	}
+	if txType == -1 {
+		return nil, errors.Errorf("Invalid token ID when InitTxSalaryByCoinID. Got %v", coinID)
+	}
+	buildCoinBaseParams := transaction.NewBuildCoinBaseTxByCoinIDParams(payToAddress,
+		amount,
+		payByPrivateKey,
+		stateDB,
+		meta,
+		coinID,
+		txType,
+		coinID.String(),
+		shardID)
+	return transaction.BuildCoinBaseTxByCoinID(buildCoinBaseParams)
+}
+
+// @Notice: change from body.Transaction -> transactions
+func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadataV2(transactions []metadata.Transaction, blkProducerPrivateKey *privacy.PrivateKey, shardID byte) ([]metadata.Transaction, error) {
+	txRequestTable := map[string]metadata.Transaction{}
+	txsRes := []metadata.Transaction{}
+	for _, tx := range transactions {
+		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
+			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
+			requester := base58.Base58Check{}.Encode(requestMeta.PaymentAddress.Pk, common.Base58Version)
+			txRequestTable[requester] = tx
+		}
+	}
+	for _, value := range txRequestTable {
+		txRes, err := blockchain.buildWithDrawTransactionResponseV2(&value, blkProducerPrivateKey, shardID)
+		if err != nil {
+			return txsRes, err
+		} else {
+			Logger.log.Infof("[Reward] - BuildWithDrawTransactionResponse for tx %+v, ok: %+v\n", value, txRes)
+		}
+		txsRes = append(txsRes, txRes)
+	}
+	return txsRes, nil
+}
 
 //GetListOutputCoinsByKeysetV2 - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key.
 //With private-key, we can check unspent tx by check serialNumber from database

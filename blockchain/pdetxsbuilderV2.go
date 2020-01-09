@@ -1,48 +1,17 @@
 package blockchain
 
 import (
-	"encoding/base64"
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-func parseTradeRefundContent(
-	contentStr string,
-) (*metadata.PDETradeRequestAction, error) {
-	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while decoding content string of pde trade refund instruction: %+v", err)
-		return nil, err
-	}
-	var pdeTradeRequestAction metadata.PDETradeRequestAction
-	err = json.Unmarshal(contentBytes, &pdeTradeRequestAction)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while unmarshaling pde trade refund content: %+v", err)
-		return nil, err
-	}
-	return &pdeTradeRequestAction, nil
-}
-
-func parseTradeAcceptedContent(
-	contentStr string,
-) (*metadata.PDETradeAcceptedContent, error) {
-	contentBytes := []byte(contentStr)
-	var pdeTradeAcceptedContent metadata.PDETradeAcceptedContent
-	err := json.Unmarshal(contentBytes, &pdeTradeAcceptedContent)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while unmarshaling pde trade accepted content: %+v", err)
-		return nil, err
-	}
-	return &pdeTradeAcceptedContent, nil
-}
-
-func buildTradeResTx(
+func buildTradeResTxV2(
 	instStatus string,
 	receiverAddressStr string,
 	receiveAmt uint64,
@@ -50,7 +19,7 @@ func buildTradeResTx(
 	requestedTxID common.Hash,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
-	db incdb.Database,
+	stateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
 	meta := metadata.NewPDETradeResponse(
 		instStatus,
@@ -75,18 +44,14 @@ func buildTradeResTx(
 			receiveAmt,
 			&receiverAddr,
 			producerPrivateKey,
-			//db,
-			nil,
+			stateDB,
 			meta,
 		)
 		if err != nil {
 			return nil, NewBlockChainError(InitPDETradeResponseTransactionError, err)
 		}
-		//modify the type of the salary transaction
-		// resTx.Type = common.TxBlockProducerCreatedType
 		return resTx, nil
 	}
-
 	// in case the returned currency is privacy custom token
 	receiver := &privacy.PaymentInfo{
 		Amount:         receiveAmt,
@@ -113,8 +78,7 @@ func buildTradeResTx(
 			nil,
 			0,
 			tokenParams,
-			//db,
-			nil,
+			stateDB,
 			meta,
 			false,
 			false,
@@ -129,7 +93,7 @@ func buildTradeResTx(
 	return resTx, nil
 }
 
-func (blockGenerator *BlockGenerator) buildPDETradeRefundTx(
+func (blockGenerator *BlockGenerator) buildPDETradeRefundTxV2(
 	instStatus string,
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
@@ -142,7 +106,7 @@ func (blockGenerator *BlockGenerator) buildPDETradeRefundTx(
 	if shardID != pdeTradeRequestAction.ShardID {
 		return nil, nil
 	}
-	resTx, err := buildTradeResTx(
+	resTx, err := buildTradeResTxV2(
 		instStatus,
 		pdeTradeRequestAction.Meta.TraderAddressStr,
 		pdeTradeRequestAction.Meta.SellAmount+pdeTradeRequestAction.Meta.TradingFee,
@@ -150,7 +114,7 @@ func (blockGenerator *BlockGenerator) buildPDETradeRefundTx(
 		pdeTradeRequestAction.TxReqID,
 		producerPrivateKey,
 		shardID,
-		blockGenerator.chain.config.DataBase,
+		blockGenerator.chain.GetTransactionStateDB(shardID),
 	)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing refunded trading response tx: %+v", err)
@@ -160,7 +124,7 @@ func (blockGenerator *BlockGenerator) buildPDETradeRefundTx(
 	return resTx, nil
 }
 
-func (blockGenerator *BlockGenerator) buildPDETradeAcceptedTx(
+func (blockGenerator *BlockGenerator) buildPDETradeAcceptedTxV2(
 	instStatus string,
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
@@ -173,7 +137,7 @@ func (blockGenerator *BlockGenerator) buildPDETradeAcceptedTx(
 	if shardID != pdeTradeAcceptedContent.ShardID {
 		return nil, nil
 	}
-	resTx, err := buildTradeResTx(
+	resTx, err := buildTradeResTxV2(
 		instStatus,
 		pdeTradeAcceptedContent.TraderAddressStr,
 		pdeTradeAcceptedContent.ReceiveAmount,
@@ -181,7 +145,7 @@ func (blockGenerator *BlockGenerator) buildPDETradeAcceptedTx(
 		pdeTradeAcceptedContent.RequestedTxID,
 		producerPrivateKey,
 		shardID,
-		blockGenerator.chain.config.DataBase,
+		blockGenerator.chain.GetTransactionStateDB(shardID),
 	)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)
@@ -191,7 +155,7 @@ func (blockGenerator *BlockGenerator) buildPDETradeAcceptedTx(
 	return resTx, nil
 }
 
-func (blockGenerator *BlockGenerator) buildPDETradeIssuanceTx(
+func (blockGenerator *BlockGenerator) buildPDETradeIssuanceTxV2(
 	instStatus string,
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
@@ -206,7 +170,7 @@ func (blockGenerator *BlockGenerator) buildPDETradeIssuanceTx(
 			shardID,
 		)
 	}
-	return blockGenerator.buildPDETradeAcceptedTx(
+	return blockGenerator.buildPDETradeAcceptedTxV2(
 		instStatus,
 		contentStr,
 		producerPrivateKey,
@@ -214,7 +178,7 @@ func (blockGenerator *BlockGenerator) buildPDETradeIssuanceTx(
 	)
 }
 
-func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
+func (blockGenerator *BlockGenerator) buildPDEWithdrawalTxV2(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
@@ -255,8 +219,7 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 			wdAcceptedContent.DeductingPoolValue,
 			&receiverAddr,
 			producerPrivateKey,
-			//db,
-			nil,
+			blockGenerator.chain.GetTransactionStateDB(shardID),
 			meta,
 		)
 		if err != nil {
@@ -267,7 +230,6 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 		// resTx.Type = common.TxBlockProducerCreatedType
 		return resTx, nil
 	}
-
 	// in case the returned currency is privacy custom token
 	receiver := &privacy.PaymentInfo{
 		Amount:         wdAcceptedContent.DeductingPoolValue,
@@ -294,8 +256,7 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 			nil,
 			0,
 			tokenParams,
-			//db,
-			nil,
+			blockGenerator.chain.GetTransactionStateDB(shardID),
 			meta,
 			false,
 			false,
@@ -310,7 +271,7 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 	return resTx, nil
 }
 
-func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
+func (blockGenerator *BlockGenerator) buildPDERefundContributionTxV2(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
@@ -352,8 +313,7 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
 			refundContribution.ContributedAmount,
 			&receiverAddr,
 			producerPrivateKey,
-			//db,
-			nil,
+			blockGenerator.chain.GetTransactionStateDB(shardID),
 			meta,
 		)
 		if err != nil {
@@ -391,8 +351,7 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
 			nil,
 			0,
 			tokenParams,
-			//db,
-			nil,
+			blockGenerator.chain.GetTransactionStateDB(shardID),
 			meta,
 			false,
 			false,
@@ -407,7 +366,7 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
 	return resTx, nil
 }
 
-func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
+func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTxV2(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
@@ -452,8 +411,7 @@ func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
 			matchedNReturnedContribution.ReturnedContributedAmount,
 			&receiverAddr,
 			producerPrivateKey,
-			//db,
-			nil,
+			blockGenerator.chain.GetTransactionStateDB(shardID),
 			meta,
 		)
 		if err != nil {
@@ -489,8 +447,7 @@ func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
 			nil,
 			0,
 			tokenParams,
-			//db,
-			nil,
+			blockGenerator.chain.GetTransactionStateDB(shardID),
 			meta,
 			false,
 			false,

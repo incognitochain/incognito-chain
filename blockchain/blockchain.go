@@ -1052,7 +1052,7 @@ func (blockchain *BlockChain) GetCurrentBeaconBlockHeight(shardID byte) uint64 {
 }
 
 func (blockchain BlockChain) RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, shardID byte, tokenID *common.Hash) (commitmentIndexs []uint64, myCommitmentIndexs []uint64, commitments [][]byte) {
-	param := transaction.NewRandomCommitmentsProcessParam(usableInputCoins, randNum, blockchain.config.DataBase, shardID, tokenID)
+	param := transaction.NewRandomCommitmentsProcessParam(usableInputCoins, randNum, blockchain.GetTransactionStateDB(shardID), shardID, tokenID)
 	return transaction.RandomCommitmentsProcess(param)
 }
 
@@ -1181,7 +1181,6 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(transa
 		}
 		txsRes = append(txsRes, txRes)
 	}
-	//blkBody.Transactions = append(blkBody.Transactions, txsRes...)
 	return txsRes, nil
 }
 
@@ -1252,75 +1251,6 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 func (blockchain *BlockChain) SetRPCClientChain(rpcClient *rpccaller.RPCClient) {
 	blockchain.RPCClient = rpcClient
 }*/
-
-func (blockchain *BlockChain) InitTxSalaryByCoinID(
-	payToAddress *privacy.PaymentAddress,
-	amount uint64,
-	payByPrivateKey *privacy.PrivateKey,
-	db incdb.Database,
-	meta metadata.Metadata,
-	coinID common.Hash,
-	shardID byte,
-) (metadata.Transaction, error) {
-	txType := -1
-	if res, err := coinID.Cmp(&common.PRVCoinID); err == nil && res == 0 {
-		txType = transaction.NormalCoinType
-	}
-	if txType == -1 {
-		allBridgeTokensBytes, err := rawdb.GetAllBridgeTokens(blockchain.config.DataBase)
-		if err != nil {
-			return nil, err
-		}
-		var allBridgeTokens []*rawdb.BridgeTokenInfo
-		err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
-
-		if err != nil {
-			return nil, err
-		}
-
-		for _, bridgeTokenIDs := range allBridgeTokens {
-			// var tokenWithAmount lvdb.TokenWithAmount
-			// err := json.Unmarshal(bridgeTokenIDBytes, &tokenWithAmount)
-			// if err != nil {
-			// 	return nil, err
-			// }
-
-			if res, err := coinID.Cmp(bridgeTokenIDs.TokenID); err == nil && res == 0 {
-				txType = transaction.CustomTokenPrivacyType
-				break
-			}
-		}
-	}
-	if txType == -1 {
-		mapPrivacyCustomToken, mapCrossShardCustomToken, err := blockchain.ListPrivacyCustomToken()
-		if err != nil {
-			return nil, err
-		}
-		if mapPrivacyCustomToken != nil {
-			if _, ok := mapPrivacyCustomToken[coinID]; ok {
-				txType = transaction.CustomTokenPrivacyType
-			}
-		}
-		if mapCrossShardCustomToken != nil {
-			if _, ok := mapCrossShardCustomToken[coinID]; ok {
-				txType = transaction.CustomTokenPrivacyType
-			}
-		}
-	}
-	if txType == -1 {
-		return nil, errors.Errorf("Invalid token ID when InitTxSalaryByCoinID. Got %v", coinID)
-	}
-	buildCoinBaseParams := transaction.NewBuildCoinBaseTxByCoinIDParams(payToAddress,
-		amount,
-		payByPrivateKey,
-		db,
-		meta,
-		coinID,
-		txType,
-		coinID.String(),
-		shardID)
-	return transaction.BuildCoinBaseTxByCoinID(buildCoinBaseParams)
-}
 
 func CalculateNumberOfByteToRead(amountBytes int) []byte {
 	var result = make([]byte, 8)

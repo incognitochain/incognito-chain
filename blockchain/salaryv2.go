@@ -16,7 +16,7 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-func (blockGenerator *BlockGenerator) buildReturnStakingAmountTxV2(swapPublicKey string, blkProducerPrivateKey *privacy.PrivateKey) (metadata.Transaction, error) {
+func (blockGenerator *BlockGenerator) buildReturnStakingAmountTxV2(swapPublicKey string, blkProducerPrivateKey *privacy.PrivateKey, shardID byte) (metadata.Transaction, error) {
 	publicKey, _ := blockGenerator.chain.config.ConsensusEngine.GetCurrentMiningPublicKey()
 	_, committeeShardID := blockGenerator.chain.BestState.Beacon.GetPubkeyRole(publicKey, 0)
 	Logger.log.Infof("Return Staking Amount public key %+v, staking transaction hash %+v, shardID %+v", swapPublicKey, GetBestStateShard(committeeShardID).StakingTx, committeeShardID)
@@ -59,7 +59,7 @@ func (blockGenerator *BlockGenerator) buildReturnStakingAmountTxV2(swapPublicKey
 		txData.CalculateTxValue(),
 		&keyWallet.KeySet.PaymentAddress,
 		blkProducerPrivateKey,
-		blockGenerator.chain.config.DataBase,
+		blockGenerator.chain.GetTransactionStateDB(shardID),
 		returnStakingMeta,
 	)
 	//modify the type of the salary transaction
@@ -212,4 +212,28 @@ func (blockchain *BlockChain) addShardCommitteeRewardV2(rewardStateDB *statedb.S
 		}
 	}
 	return nil
+}
+
+func (blockchain *BlockChain) buildWithDrawTransactionResponseV2(txRequest *metadata.Transaction, blkProducerPrivateKey *privacy.PrivateKey, shardID byte) (metadata.Transaction, error) {
+	if (*txRequest).GetMetadataType() != metadata.WithDrawRewardRequestMeta {
+		return nil, errors.New("Can not understand this request!")
+	}
+	requestDetail := (*txRequest).GetMetadata().(*metadata.WithDrawRewardRequest)
+	tempPublicKey := base58.Base58Check{}.Encode(requestDetail.PaymentAddress.Pk, common.Base58Version)
+	amount, err := statedb.GetCommitteeReward(blockchain.GetShardRewardStateDB(shardID), tempPublicKey, requestDetail.TokenID)
+	if (amount == 0) || (err != nil) {
+		return nil, errors.New("Not enough reward")
+	}
+	responseMeta, err := metadata.NewWithDrawRewardResponse((*txRequest).Hash())
+	if err != nil {
+		return nil, err
+	}
+	return blockchain.InitTxSalaryByCoinID(
+		&requestDetail.PaymentAddress,
+		amount,
+		blkProducerPrivateKey,
+		blockchain.GetTransactionStateDB(shardID),
+		responseMeta,
+		requestDetail.TokenID,
+		common.GetShardIDFromLastByte(requestDetail.PaymentAddress.Pk[common.PublicKeySize-1]))
 }
