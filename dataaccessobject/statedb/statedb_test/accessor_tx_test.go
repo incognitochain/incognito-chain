@@ -216,7 +216,7 @@ func TestStoreAndHasCommitment(t *testing.T) {
 				tokenID:           generateTokenIDs(1)[0],
 				commitments:       generateCommitmentList(10),
 				shardID:           0,
-				commitmentsLength: 10,
+				commitmentsLength: 9,
 			},
 			wantErr: false,
 			wantHas: true,
@@ -228,7 +228,7 @@ func TestStoreAndHasCommitment(t *testing.T) {
 				tokenID:           generateTokenIDs(1)[0],
 				commitments:       generateCommitmentList(10),
 				shardID:           1,
-				commitmentsLength: 10,
+				commitmentsLength: 9,
 			},
 			wantErr: false,
 			wantHas: true,
@@ -240,7 +240,7 @@ func TestStoreAndHasCommitment(t *testing.T) {
 				tokenID:           generateTokenIDs(1)[0],
 				commitments:       generateCommitmentList(10),
 				shardID:           2,
-				commitmentsLength: 10,
+				commitmentsLength: 9,
 			},
 			wantErr: false,
 			wantHas: true,
@@ -252,7 +252,7 @@ func TestStoreAndHasCommitment(t *testing.T) {
 				tokenID:           generateTokenIDs(1)[0],
 				commitments:       generateCommitmentList(10),
 				shardID:           3,
-				commitmentsLength: 10,
+				commitmentsLength: 9,
 			},
 			wantErr: false,
 			wantHas: true,
@@ -287,7 +287,7 @@ func TestStoreAndHasCommitment(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, tt := range tests {
-		count := 1
+		count := 0
 		t.Run(tt.name, func(t *testing.T) {
 			for _, commitment := range tt.args.commitments {
 				has, err := statedb.HasCommitment(tt.args.stateDB, tt.args.tokenID, commitment, tt.args.shardID)
