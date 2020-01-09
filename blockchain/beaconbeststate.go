@@ -75,6 +75,8 @@ type BeaconBestState struct {
 	rewardStateDB          *statedb.StateDB
 	FeatureStateRootHash   map[uint64]common.Hash `json:"FeatureStateRootHash"`
 	featureStateDB         *statedb.StateDB
+	SlashStateRootHash     map[uint64]common.Hash `json:"SlashStateRootHash"`
+	slashStateDB           *statedb.StateDB
 
 	lock sync.RWMutex
 }
@@ -116,6 +118,7 @@ func NewBeaconBestStateWithConfig(netparam *Params) *BeaconBestState {
 	beaconBestState.ConsensusStateRootHash = make(map[uint64]common.Hash)
 	beaconBestState.RewardStateRootHash = make(map[uint64]common.Hash)
 	beaconBestState.FeatureStateRootHash = make(map[uint64]common.Hash)
+	beaconBestState.SlashStateRootHash = make(map[uint64]common.Hash)
 	return beaconBestState
 }
 func SetBeaconBestState(beacon *BeaconBestState) {
@@ -156,6 +159,14 @@ func (beaconBestState *BeaconBestState) InitStateRootHash(db incdb.Database) err
 		}
 	} else {
 		beaconBestState.rewardStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+	}
+	if rootHash, ok := beaconBestState.SlashStateRootHash[beaconBestState.BeaconHeight]; ok {
+		beaconBestState.slashStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
+		if err != nil {
+			return err
+		}
+	} else {
+		beaconBestState.slashStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
 	}
 	return nil
 }
@@ -612,6 +623,7 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	beaconBestState.consensusStateDB = target.consensusStateDB.Copy()
 	beaconBestState.featureStateDB = target.featureStateDB.Copy()
 	beaconBestState.rewardStateDB = target.rewardStateDB.Copy()
+	beaconBestState.slashStateDB = target.slashStateDB.Copy()
 	return nil
 }
 

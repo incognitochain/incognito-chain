@@ -71,7 +71,7 @@ func (blockchain *BlockChain) InsertBeaconBlockV2(beaconBlock *BeaconBlock, isVa
 	Logger.log.Infof("BEACON | Begin Insert new Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	if !isValidated {
 		Logger.log.Infof("BEACON | Verify Pre Processing, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-		if err := blockchain.verifyPreProcessingBeaconBlock(beaconBlock, false); err != nil {
+		if err := blockchain.verifyPreProcessingBeaconBlockV2(beaconBlock, false); err != nil {
 			return err
 		}
 	} else {
@@ -89,7 +89,7 @@ func (blockchain *BlockChain) InsertBeaconBlockV2(beaconBlock *BeaconBlock, isVa
 	}
 	// process for slashing, make sure this one is called before update best state
 	// since we'd like to process with old committee, not updated committee
-	slashErr := blockchain.processForSlashing(beaconBlock)
+	slashErr := blockchain.processForSlashingV2(blockchain.BestState.Beacon.slashStateDB, beaconBlock)
 	if slashErr != nil {
 		Logger.log.Errorf("Failed to process slashing with error: %+v", NewBlockChainError(ProcessSlashingError, slashErr))
 	}
@@ -812,7 +812,7 @@ func (blockchain *BlockChain) processStoreBeaconBlockV2(beaconBlock *BeaconBlock
 	if err != nil {
 		return err
 	}
-	err = blockchain.addShardRewardRequestToBeacon(beaconBlock, beaconBestState.rewardStateDB)
+	err = blockchain.addShardRewardRequestToBeaconV2(beaconBlock, beaconBestState.rewardStateDB)
 	if err != nil {
 		return NewBlockChainError(UpdateDatabaseWithBlockRewardInfoError, err)
 	}
@@ -850,12 +850,22 @@ func (blockchain *BlockChain) processStoreBeaconBlockV2(beaconBlock *BeaconBlock
 	if err != nil {
 		return err
 	}
+	slashRootHash, err := beaconBestState.slashStateDB.Commit(true)
+	if err != nil {
+		return err
+	}
+	err = beaconBestState.slashStateDB.Database().TrieDB().Commit(slashRootHash, false)
+	if err != nil {
+		return err
+	}
 	beaconBestState.consensusStateDB.ClearObjects()
 	beaconBestState.rewardStateDB.ClearObjects()
 	beaconBestState.featureStateDB.ClearObjects()
+	beaconBestState.slashStateDB.ClearObjects()
 	beaconBestState.ConsensusStateRootHash[blockHeight] = consensusRootHash
 	beaconBestState.FeatureStateRootHash[blockHeight] = featureRootHash
 	beaconBestState.RewardStateRootHash[blockHeight] = rewardRootHash
+	beaconBestState.SlashStateRootHash[blockHeight] = slashRootHash
 	//statedb===========================END
 	//================================Store cross shard state ==================================
 	if beaconBlock.Body.ShardState != nil {

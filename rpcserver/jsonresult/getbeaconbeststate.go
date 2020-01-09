@@ -37,6 +37,7 @@ type GetBeaconBestState struct {
 	ConsensusStateRootHash                 map[uint64]common.Hash   `json:"ConsensusStateRootHash"`
 	RewardStateRootHash                    map[uint64]common.Hash   `json:"RewardStateRootHash"`
 	FeatureStateRootHash                   map[uint64]common.Hash   `json:"FeatureStateRootHash"`
+	SlashStateRootHash                     map[uint64]common.Hash   `json:"SlashStateRootHash"`
 }
 
 func NewGetBeaconBestState(data *blockchain.BeaconBestState) *GetBeaconBestState {
@@ -57,6 +58,7 @@ func NewGetBeaconBestState(data *blockchain.BeaconBestState) *GetBeaconBestState
 		ConsensusStateRootHash: data.ConsensusStateRootHash,
 		FeatureStateRootHash:   data.FeatureStateRootHash,
 		RewardStateRootHash:    data.RewardStateRootHash,
+		SlashStateRootHash:     data.SlashStateRootHash,
 	}
 	result.BestShardHash = make(map[byte]common.Hash)
 	for k, v := range data.BestShardHash {

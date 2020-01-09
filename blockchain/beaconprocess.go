@@ -898,6 +898,11 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 		return err
 	}
 	beaconBestState.RewardStateRootHash[0] = common.EmptyRoot
+	beaconBestState.slashStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	beaconBestState.SlashStateRootHash[0] = common.EmptyRoot
 	//statedb===========================END
 	return nil
 }
