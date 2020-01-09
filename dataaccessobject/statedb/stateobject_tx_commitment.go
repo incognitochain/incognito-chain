@@ -455,6 +455,5 @@ func (s CommitmentLengthObject) IsDeleted() bool {
 
 // empty value or not
 func (s CommitmentLengthObject) IsEmpty() bool {
-	temp := new(big.Int).SetUint64(0)
-	return reflect.DeepEqual(temp, s.commitmentLength) || s.commitmentLength == nil || s.commitmentLength.Uint64() == 0
+	return s.commitmentLength == nil
 }

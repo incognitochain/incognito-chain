@@ -391,12 +391,10 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 func (txService TxService) BuildTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet, shardIDSender byte) (*transaction.CustomTokenPrivacyParamTx, *RPCError) {
 	var privacyTokenParam *transaction.CustomTokenPrivacyParamTx
 	var err *RPCError
-
 	isPrivacy, ok := tokenParamsRaw["Privacy"].(bool)
 	if !ok {
 		return nil, NewRPCError(RPCInvalidParamsError, errors.New("is privacy param is invalid"))
 	}
-
 	if !isPrivacy {
 		// Check normal custom token param
 	} else {
@@ -464,12 +462,11 @@ func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 			if err != nil {
 				return nil, nil, nil, NewRPCError(RPCInvalidParamsError, err)
 			}
-			existed := txService.BlockChain.PrivacyCustomTokenIDExisted(tokenID)
-			existedCrossShard := txService.BlockChain.PrivacyCustomTokenIDCrossShardExisted(tokenID)
-			if !existed && !existedCrossShard {
+			existed := txService.BlockChain.PrivacyCustomTokenIDExistedV2(tokenID, shardIDSender)
+			if !existed {
 				return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
 			}
-			outputTokens, err := txService.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, shardIDSender, tokenID)
+			outputTokens, err := txService.BlockChain.GetListOutputCoinsByKeysetV2(senderKeySet, shardIDSender, tokenID)
 			if err != nil {
 				return nil, nil, nil, NewRPCError(GetOutputCoinError, err)
 			}
@@ -705,6 +702,7 @@ func (txService TxService) GetListPrivacyCustomTokenBalance(privateKey string) (
 }
 
 func (txService TxService) GetBalancePrivacyCustomToken(privateKey string, tokenID string) (uint64, *RPCError) {
+	var totalValue uint64 = 0
 	account, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
 		Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
@@ -715,19 +713,18 @@ func (txService TxService) GetBalancePrivacyCustomToken(privateKey string, token
 		Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
 		return uint64(0), NewRPCError(UnexpectedError, err)
 	}
-
-	temps, listCustomTokenCrossShard, err := txService.BlockChain.ListPrivacyCustomToken()
+	lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
+	shardID := common.GetShardIDFromLastByte(lastByte)
+	tokenIDs, err := txService.BlockChain.ListPrivacyCustomTokenV2(shardID)
 	if err != nil {
 		Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
 		return uint64(0), NewRPCError(UnexpectedError, err)
 	}
-	totalValue := uint64(0)
-	flagNeedCrossShard := true
-	for tempTokenID := range temps {
+	for tempTokenID := range tokenIDs {
 		if tokenID == tempTokenID.String() {
 			lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
 			shardIDSender := common.GetShardIDFromLastByte(lastByte)
-			outcoints, err := txService.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, shardIDSender, &tempTokenID)
+			outcoints, err := txService.BlockChain.GetListOutputCoinsByKeysetV2(&account.KeySet, shardIDSender, &tempTokenID)
 			if err != nil {
 				Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
 				return uint64(0), NewRPCError(UnexpectedError, err)
@@ -735,26 +732,8 @@ func (txService TxService) GetBalancePrivacyCustomToken(privateKey string, token
 			for _, out := range outcoints {
 				totalValue += out.CoinDetails.GetValue()
 			}
-			flagNeedCrossShard = false
 		}
 	}
-	if flagNeedCrossShard {
-		for tempTokenID := range listCustomTokenCrossShard {
-			if tokenID == tempTokenID.String() {
-				lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
-				shardIDSender := common.GetShardIDFromLastByte(lastByte)
-				outcoints, err := txService.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, shardIDSender, &tempTokenID)
-				if err != nil {
-					Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
-					return uint64(0), NewRPCError(UnexpectedError, err)
-				}
-				for _, out := range outcoints {
-					totalValue += out.CoinDetails.GetValue()
-				}
-			}
-		}
-	}
-
 	return totalValue, nil
 }
 

@@ -935,10 +935,10 @@ func (stateDB *StateDB) GetTokenTxs(tokenID common.Hash) ([]common.Hash, bool, e
 	return t.txs, true, nil
 }
 
-func (stateDB *StateDB) GetAllToken() []common.Hash {
+func (stateDB *StateDB) GetAllToken() map[common.Hash]*TokenState {
 	temp := stateDB.trie.NodeIterator(GetTokenPrefix())
 	it := trie.NewIterator(temp)
-	tokenIDs := []common.Hash{}
+	tokenIDs := make(map[common.Hash]*TokenState)
 	for it.Next() {
 		value := it.Value
 		newValue := make([]byte, len(value))
@@ -948,7 +948,7 @@ func (stateDB *StateDB) GetAllToken() []common.Hash {
 		if err != nil {
 			panic("wrong expect type")
 		}
-		tokenIDs = append(tokenIDs, tokenState.TokenID())
+		tokenIDs[tokenState.TokenID()] = tokenState
 	}
 	return tokenIDs
 }

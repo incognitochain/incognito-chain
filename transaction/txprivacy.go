@@ -103,19 +103,15 @@ func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
 // if not want to create a privacy tx proof, set hashPrivacy = false
 // database is used like an interface which use to query info from stateDB in building tx
 func (tx *Tx) Init(params *TxPrivacyInitParams) error {
-
 	Logger.log.Debugf("CREATING TX........\n")
 	tx.Version = txVersion
 	var err error
-
 	if len(params.inputCoins) > 255 {
 		return NewTransactionErr(InputCoinIsVeryLargeError, nil, strconv.Itoa(len(params.inputCoins)))
 	}
-
 	if len(params.paymentInfo) > 254 {
 		return NewTransactionErr(PaymentInfoIsVeryLargeError, nil, strconv.Itoa(len(params.paymentInfo)))
 	}
-
 	if params.tokenID == nil {
 		// using default PRV
 		params.tokenID = &common.Hash{}

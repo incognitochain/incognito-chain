@@ -31,6 +31,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newRewardRequestObjectWithValue(db, hash, value)
 	case BlackListProducerObjectType:
 		return newBlackListProducerObjectWithValue(db, hash, value)
+	case TokenObjectType:
+		return newTokenObjectWithValue(db, hash, value)
 	case SerialNumberObjectType:
 		return newSerialNumberObjectWithValue(db, hash, value)
 	case CommitmentObjectType:

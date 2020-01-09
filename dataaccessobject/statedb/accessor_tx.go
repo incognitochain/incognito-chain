@@ -104,7 +104,7 @@ func HasCommitmentIndex(stateDB *StateDB, tokenID common.Hash, commitmentIndex u
 	if err != nil {
 		return false, NewStatedbError(GetCommitmentIndexError, err)
 	}
-	if c.Index().Uint64() != commitmentIndex {
+	if has && c.Index().Uint64() != commitmentIndex {
 		panic("same key wrong value")
 		return false, nil
 	}
