@@ -812,7 +812,7 @@ func (blockchain *BlockChain) processStoreBeaconBlockV2(beaconBlock *BeaconBlock
 	if err != nil {
 		return err
 	}
-	err = blockchain.updateDatabaseWithBlockRewardInfoV2(beaconBlock)
+	err = blockchain.addShardRewardRequestToBeacon(beaconBlock, beaconBestState.rewardStateDB)
 	if err != nil {
 		return NewBlockChainError(UpdateDatabaseWithBlockRewardInfoError, err)
 	}

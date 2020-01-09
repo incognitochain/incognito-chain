@@ -398,7 +398,7 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPointV2(stateDB *statedb
 	return nil
 }
 
-func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBlockV2(shardBlock *ShardBlock, transactionStateRoot *statedb.StateDB) error {
+func (blockchain *BlockChain) CreateAndSaveCrossTransactionViewPointFromBlockV2(shardBlock *ShardBlock, transactionStateRoot *statedb.StateDB) error {
 	// Fetch data from block into tx View point
 	view := NewTxViewPoint(shardBlock.Header.ShardID)
 	err := view.fetchCrossTransactionViewPointFromBlockV2(transactionStateRoot, shardBlock)

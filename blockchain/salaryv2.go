@@ -70,7 +70,7 @@ func (blockGenerator *BlockGenerator) buildReturnStakingAmountTxV2(swapPublicKey
 	return returnStakingTx, nil
 }
 
-func (blockchain *BlockChain) updateDatabaseWithBlockRewardInfoV2(beaconBlock *BeaconBlock) error {
+func (blockchain *BlockChain) addShardRewardRequestToBeaconV2(beaconBlock *BeaconBlock, rewardStateDB *statedb.StateDB) error {
 	for _, inst := range beaconBlock.Body.Instructions {
 		if len(inst) <= 2 {
 			continue
@@ -98,7 +98,7 @@ func (blockchain *BlockChain) updateDatabaseWithBlockRewardInfoV2(beaconBlock *B
 			}
 			for key, value := range acceptedBlkRewardInfo.TxsFee {
 				if value != 0 {
-					err = statedb.AddShardRewardRequest(blockchain.BestState.Beacon.rewardStateDB, beaconBlock.Header.Epoch, acceptedBlkRewardInfo.ShardID, key, value)
+					err = statedb.AddShardRewardRequest(rewardStateDB, beaconBlock.Header.Epoch, acceptedBlkRewardInfo.ShardID, key, value)
 					if err != nil {
 						return err
 					}
