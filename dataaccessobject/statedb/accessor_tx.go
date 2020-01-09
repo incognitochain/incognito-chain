@@ -51,6 +51,9 @@ func StoreCommitments(stateDB *StateDB, tokenID common.Hash, pubkey []byte, comm
 	}
 	if !has {
 		commitmentLength.SetUint64(0)
+	} else {
+		temp := commitmentLength.Uint64() + 1
+		commitmentLength = new(big.Int).SetUint64(temp)
 	}
 	for _, commitment := range commitments {
 		// store commitment
