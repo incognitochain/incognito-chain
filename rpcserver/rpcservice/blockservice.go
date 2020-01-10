@@ -397,7 +397,7 @@ func (blockService BlockService) RetrieveBeaconBlock(hashString string) (*jsonre
 		Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", nil, errH)
 		return nil, NewRPCError(RPCInvalidParamsError, errH)
 	}
-	block, _, errD := blockService.BlockChain.GetBeaconBlockByHash(*hash)
+	block, _, errD := blockService.BlockChain.GetBeaconBlockByHashV2(*hash)
 	if errD != nil {
 		Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", nil, errD)
 		return nil, NewRPCError(GetBeaconBlockByHashError, errD)
@@ -409,11 +409,12 @@ func (blockService BlockService) RetrieveBeaconBlock(hashString string) (*jsonre
 	var nextHashString string
 	// if blockHeight < best.Header.GetHeight() {
 	if blockHeight < best.Header.Height {
-		nextHash, err := blockService.BlockChain.GetBeaconBlockByHeight(blockHeight + 1)
+		nextHashes, err := blockService.BlockChain.GetBeaconBlockByHeightV2(blockHeight + 1)
 		if err != nil {
 			Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", nil, err)
 			return nil, NewRPCError(GetBeaconBlockByHeightError, err)
 		}
+		nextHash := nextHashes[0]
 		nextHashString = nextHash.Hash().String()
 	}
 	blockBytes, errS := json.Marshal(block)

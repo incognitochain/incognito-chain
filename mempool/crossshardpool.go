@@ -4,16 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"sort"
 	"strconv"
 	"sync"
 
-	"github.com/incognitochain/incognito-chain/incdb"
-	"github.com/incognitochain/incognito-chain/incognitokey"
-
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/incdb"
 )
 
 /*
@@ -85,7 +83,7 @@ func (crossShardPool *CrossShardPool) UpdatePool() map[byte]uint64 {
 }
 
 func (crossShardPool *CrossShardPool) GetNextCrossShardHeight(fromShard, toShard byte, startHeight uint64) uint64 {
-	nextHeight, err := rawdb.FetchCrossShardNextHeight(crossShardPool.db, fromShard, toShard, startHeight)
+	nextHeight, err := rawdbv2.GetCrossShardNextHeight(crossShardPool.db, fromShard, toShard, startHeight)
 	if err != nil {
 		return 0
 	}
@@ -186,20 +184,12 @@ func (crossShardPool *CrossShardPool) validateCrossShardBlockSignature(crossShar
 	if crossShardPool.isTest {
 		return nil
 	}
+	//TODO: DBV2 validate latter
 	// find beacon block height to get shard committee
-	beaconHeight, err := crossShardPool.FindBeaconHeightForCrossShardBlock(crossShardBlock.Header.BeaconHeight, crossShardBlock.Header.ShardID, crossShardBlock.Header.Height)
-	if err != nil {
-		return NewBlockPoolError(FindBeaconHeightForCrossShardBlockError, fmt.Errorf("No Beacon Block For Cross Shard Block %+v from Shard %+v", crossShardBlock.Header.Height, crossShardBlock.Header.ShardID))
-	}
-	// get shard committee from database
-	shardCommitteeByte, err := rawdb.FetchShardCommitteeByHeight(crossShardPool.db, beaconHeight)
-	if err != nil {
-		return NewBlockPoolError(DatabaseError, fmt.Errorf("No Committee For Cross Shard Block %+v from ShardID %+v", crossShardBlock.Header.Height, crossShardBlock.Header.ShardID))
-	}
-	shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
-	if err := json.Unmarshal(shardCommitteeByte, &shardCommittee); err != nil {
-		return NewBlockPoolError(UnmarshalShardCommitteeError, errors.New("Fail to unmarshal shard committee"))
-	}
+	//beaconHeight, err := crossShardPool.FindBeaconHeightForCrossShardBlock(crossShardBlock.Header.BeaconHeight, crossShardBlock.Header.ShardID, crossShardBlock.Header.Height)
+	//if err != nil {
+	//	return NewBlockPoolError(FindBeaconHeightForCrossShardBlockError, fmt.Errorf("No Beacon Block For Cross Shard Block %+v from Shard %+v", crossShardBlock.Header.Height, crossShardBlock.Header.ShardID))
+	//}
 	// validate agg signature
 	// if err := blockchain.ValidateAggSignature(crossShardBlock.ValidatorsIndex, shardCommittee[crossShardBlock.Header.ShardID], crossShardBlock.AggregatedSig, crossShardBlock.R, crossShardBlock.Hash()); err != nil {
 	// 	return NewBlockPoolError(ValidateAggSignatureForCrossShardBlockError, err)
@@ -420,11 +410,12 @@ func (crossShardPool *CrossShardPool) GetBlockByHeight(_shardID byte, height uin
 
 func (crossShardPool *CrossShardPool) FindBeaconHeightForCrossShardBlock(beaconHeight uint64, fromShardID byte, crossShardBlockHeight uint64) (uint64, error) {
 	for {
-		beaconBlockHash, err := rawdb.GetBeaconBlockHashByIndex(crossShardPool.db, beaconHeight)
+		beaconBlockHashes, err := rawdbv2.GetBeaconBlockHashByIndex(crossShardPool.db, beaconHeight)
 		if err != nil {
 			return 0, NewBlockPoolError(GetBeaconBlockHashFromDatabaseError, err)
 		}
-		beaconBlockBytes, err := rawdb.FetchBeaconBlock(crossShardPool.db, beaconBlockHash)
+		beaconBlockHash := beaconBlockHashes[0]
+		beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(crossShardPool.db, beaconBlockHash)
 		if err != nil {
 			return 0, NewBlockPoolError(FetchBeaconBlockFromDatabaseError, err)
 		}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
+	"log"
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -54,6 +55,9 @@ func (d *Dispatcher) processInMessageString(msgStr string) error {
 	// get cmd type in header message
 	commandInHeader := bytes.Trim(messageHeader[:wire.MessageCmdTypeSize], "\x00")
 	commandType := string(messageHeader[:len(commandInHeader)])
+	if commandType == "getshdtobcn" {
+		log.Println("")
+	}
 	// convert to particular message from message cmd type
 	message, err := wire.MakeEmptyMessage(string(commandType))
 	if err != nil {

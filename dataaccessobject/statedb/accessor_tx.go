@@ -195,7 +195,7 @@ func GetOutcoinsByPubkey(stateDB *StateDB, tokenID common.Hash, publicKey []byte
 		return [][]byte{}, NewStatedbError(GetOutputCoinError, err)
 	}
 	if !has {
-		return [][]byte{}, NewStatedbError(GetOutputCoinError, errors.New("no value exist"))
+		return [][]byte{}, nil
 	}
 	return o.OutputCoins(), nil
 }

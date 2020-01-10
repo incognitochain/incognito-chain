@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"log"
 	"net/rpc"
 	"reflect"
 	"time"
@@ -363,6 +364,9 @@ func encodeMessage(msg wire.Message) (string, error) {
 
 func broadcastMessage(msg wire.Message, topic string, ps *pubsub.PubSub) error {
 	// Encode message to string first
+	if topic == "blkshdtobcn--aaaaa-nodepub" {
+		log.Println("")
+	}
 	messageHex, err := encodeMessage(msg)
 	if err != nil {
 		return err

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -318,7 +318,7 @@ func (shardBlock *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToB
 	block.ValidationData = shardBlock.ValidationData
 	block.Header = shardBlock.Header
 	blockInstructions := shardBlock.Body.Instructions
-	previousShardBlockByte, err := rawdb.FetchBlock(bc.config.DataBase, shardBlock.Header.PreviousBlockHash)
+	previousShardBlockByte, err := rawdbv2.GetShardBlockByHash(bc.config.DataBase, shardBlock.Header.PreviousBlockHash)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil
@@ -349,7 +349,7 @@ func (shardBlock *ShardBlock) CreateAllCrossShardBlock(activeShards int) map[byt
 		if shardID != shardBlock.Header.ShardID {
 			crossShard, err := shardBlock.CreateCrossShardBlock(shardID)
 			if crossShard != nil {
-				Logger.log.Infof("Create CrossShardBlock from Shard %+v to Shard %+v: %+v \n", shardBlock.Header.ShardID, shardID, crossShard)
+				Logger.log.Critical("Create CrossShardBlock from Shard %+v to Shard %+v: %+v \n", shardBlock.Header.ShardID, shardID, crossShard)
 			}
 			if crossShard != nil && err == nil {
 				allCrossShard[byte(i)] = crossShard
