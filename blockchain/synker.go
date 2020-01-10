@@ -341,6 +341,8 @@ func (synker *Synker) UpdateState() {
 		synker.States.PeersState,
 		&RCS,
 		synker.Status.Shards,
+		&beaconStateClone,
+		shardsStateClone,
 	)
 
 	for _, peerState := range synker.States.PeersState {
