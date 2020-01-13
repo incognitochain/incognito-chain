@@ -404,34 +404,6 @@ func (_m *DatabaseInterface) DeleteIncomingCrossShard(shardID byte, crossShardID
 	return r0
 }
 
-// DeleteNormalToken provides a mock function with given fields: tokenID
-func (_m *DatabaseInterface) DeleteNormalToken(tokenID common.Hash) error {
-	ret := _m.Called(tokenID)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(common.Hash) error); ok {
-		r0 = rf(tokenID)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// DeleteNormalTokenTx provides a mock function with given fields: tokenID, txIndex, shardID, blockHeight
-func (_m *DatabaseInterface) DeleteNormalTokenTx(tokenID common.Hash, txIndex int32, shardID byte, blockHeight uint64) error {
-	ret := _m.Called(tokenID, txIndex, shardID, blockHeight)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(common.Hash, int32, byte, uint64) error); ok {
-		r0 = rf(tokenID, txIndex, shardID, blockHeight)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
 // DeleteOutputCoin provides a mock function with given fields: tokenID, publicKey, outputCoinArr, shardID
 func (_m *DatabaseInterface) DeleteOutputCoin(tokenID common.Hash, publicKey []byte, outputCoinArr [][]byte, shardID byte) error {
 	ret := _m.Called(tokenID, publicKey, outputCoinArr, shardID)
@@ -843,6 +815,29 @@ func (_m *DatabaseInterface) GetAllRecordsByPrefix(beaconHeight uint64, prefix [
 	return r0, r1, r2
 }
 
+// GetAllTokenIDForReward provides a mock function with given fields: epoch
+func (_m *DatabaseInterface) GetAllTokenIDForReward(epoch uint64) ([]common.Hash, error) {
+	ret := _m.Called(epoch)
+
+	var r0 []common.Hash
+	if rf, ok := ret.Get(0).(func(uint64) []common.Hash); ok {
+		r0 = rf(epoch)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]common.Hash)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(uint64) error); ok {
+		r1 = rf(epoch)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetBeaconBlockHashByIndex provides a mock function with given fields: idx
 func (_m *DatabaseInterface) GetBeaconBlockHashByIndex(idx uint64) (common.Hash, error) {
 	ret := _m.Called(idx)
@@ -1130,52 +1125,6 @@ func (_m *DatabaseInterface) GetLatestPDEPoolForPair(tokenIDToBuyStr string, tok
 	var r1 error
 	if rf, ok := ret.Get(1).(func(string, string) error); ok {
 		r1 = rf(tokenIDToBuyStr, tokenIDToSellStr)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// GetNormalTokenPaymentAddressUTXO provides a mock function with given fields: tokenID, paymentAddress
-func (_m *DatabaseInterface) GetNormalTokenPaymentAddressUTXO(tokenID common.Hash, paymentAddress []byte) (map[string]string, error) {
-	ret := _m.Called(tokenID, paymentAddress)
-
-	var r0 map[string]string
-	if rf, ok := ret.Get(0).(func(common.Hash, []byte) map[string]string); ok {
-		r0 = rf(tokenID, paymentAddress)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(map[string]string)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(common.Hash, []byte) error); ok {
-		r1 = rf(tokenID, paymentAddress)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// GetNormalTokenPaymentAddressesBalance provides a mock function with given fields: tokenID
-func (_m *DatabaseInterface) GetNormalTokenPaymentAddressesBalance(tokenID common.Hash) (map[string]uint64, error) {
-	ret := _m.Called(tokenID)
-
-	var r0 map[string]uint64
-	if rf, ok := ret.Get(0).(func(common.Hash) map[string]uint64); ok {
-		r0 = rf(tokenID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(map[string]uint64)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(common.Hash) error); ok {
-		r1 = rf(tokenID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1726,29 +1675,6 @@ func (_m *DatabaseInterface) ListCommitteeReward() map[string]map[common.Hash]ui
 	return r0
 }
 
-// ListNormalToken provides a mock function with given fields:
-func (_m *DatabaseInterface) ListNormalToken() ([][]byte, error) {
-	ret := _m.Called()
-
-	var r0 [][]byte
-	if rf, ok := ret.Get(0).(func() [][]byte); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([][]byte)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func() error); ok {
-		r1 = rf()
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // ListPrivacyToken provides a mock function with given fields:
 func (_m *DatabaseInterface) ListPrivacyToken() ([][]byte, error) {
 	ret := _m.Called()
@@ -1834,43 +1760,6 @@ func (_m *DatabaseInterface) ListSerialNumber(tokenID common.Hash, shardID byte)
 	var r1 error
 	if rf, ok := ret.Get(1).(func(common.Hash, byte) error); ok {
 		r1 = rf(tokenID, shardID)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// NormalTokenIDExisted provides a mock function with given fields: tokenID
-func (_m *DatabaseInterface) NormalTokenIDExisted(tokenID common.Hash) bool {
-	ret := _m.Called(tokenID)
-
-	var r0 bool
-	if rf, ok := ret.Get(0).(func(common.Hash) bool); ok {
-		r0 = rf(tokenID)
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-
-	return r0
-}
-
-// NormalTokenTxs provides a mock function with given fields: tokenID
-func (_m *DatabaseInterface) NormalTokenTxs(tokenID common.Hash) ([]common.Hash, error) {
-	ret := _m.Called(tokenID)
-
-	var r0 []common.Hash
-	if rf, ok := ret.Get(0).(func(common.Hash) []common.Hash); ok {
-		r0 = rf(tokenID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]common.Hash)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(common.Hash) error); ok {
-		r1 = rf(tokenID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -2202,34 +2091,6 @@ func (_m *DatabaseInterface) StoreIncomingCrossShard(shardID byte, crossShardID 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(byte, byte, uint64, common.Hash, *[]database.BatchData) error); ok {
 		r0 = rf(shardID, crossShardID, blkHeight, crossBlkHash, bd)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// StoreNormalToken provides a mock function with given fields: tokenID, data
-func (_m *DatabaseInterface) StoreNormalToken(tokenID common.Hash, data []byte) error {
-	ret := _m.Called(tokenID, data)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(common.Hash, []byte) error); ok {
-		r0 = rf(tokenID, data)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// StoreNormalTokenTx provides a mock function with given fields: tokenID, shardID, blockHeight, txIndex, data
-func (_m *DatabaseInterface) StoreNormalTokenTx(tokenID common.Hash, shardID byte, blockHeight uint64, txIndex int32, data []byte) error {
-	ret := _m.Called(tokenID, shardID, blockHeight, txIndex, data)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(common.Hash, byte, uint64, int32, []byte) error); ok {
-		r0 = rf(tokenID, shardID, blockHeight, txIndex, data)
 	} else {
 		r0 = ret.Error(0)
 	}
