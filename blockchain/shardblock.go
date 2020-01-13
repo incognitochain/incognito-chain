@@ -285,7 +285,7 @@ func (shardBlock *ShardBlock) CreateAllCrossShardBlock(activeShards int) map[byt
 		if shardID != shardBlock.Header.ShardID {
 			crossShard, err := shardBlock.CreateCrossShardBlock(shardID)
 			if crossShard != nil {
-				Logger.log.Critical("Create CrossShardBlock from Shard %+v to Shard %+v: %+v \n", shardBlock.Header.ShardID, shardID, crossShard)
+				Logger.log.Criticalf("Create CrossShardBlock from Shard %+v to Shard %+v: %+v \n", shardBlock.Header.ShardID, shardID, crossShard)
 			}
 			if crossShard != nil && err == nil {
 				allCrossShard[byte(i)] = crossShard
@@ -295,7 +295,7 @@ func (shardBlock *ShardBlock) CreateAllCrossShardBlock(activeShards int) map[byt
 	return allCrossShard
 }
 
-func (shardBlock *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, error) {
+func (shardBlock ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, error) {
 	crossShard := &CrossShardBlock{}
 	crossOutputCoin, crossCustomTokenPrivacyData := getCrossShardData(shardBlock.Body.Transactions, shardID)
 	// Return nothing if nothing to cross

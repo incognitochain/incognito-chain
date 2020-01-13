@@ -427,11 +427,11 @@ func (stateDB *StateDB) GetCommitteeState(key common.Hash) (*CommitteeState, boo
 	}
 	return NewCommitteeState(), false, nil
 }
-func (stateDB *StateDB) GetAllValidatorCommitteePublicKey(role int, ids []int) map[int][]incognitokey.CommitteePublicKey {
+func (stateDB *StateDB) GetAllValidatorCommitteePublicKey(role int, ids []int) map[int][]*CommitteeState {
 	if role != CurrentValidator && role != SubstituteValidator {
 		panic("wrong expected role " + strconv.Itoa(role))
 	}
-	m := make(map[int][]incognitokey.CommitteePublicKey)
+	m := make(map[int][]*CommitteeState)
 	for _, id := range ids {
 		prefix := GetCommitteePrefixWithRole(role, id)
 		temp := stateDB.trie.NodeIterator(prefix)
@@ -445,17 +445,17 @@ func (stateDB *StateDB) GetAllValidatorCommitteePublicKey(role int, ids []int) m
 			if err != nil {
 				panic("wrong value type")
 			}
-			m[committeeState.shardID] = append(m[committeeState.shardID], committeeState.committeePublicKey)
+			m[committeeState.shardID] = append(m[committeeState.shardID], committeeState)
 		}
 	}
 	return m
 }
 
-func (stateDB *StateDB) GetAllCandidateCommitteePublicKey(role int) []incognitokey.CommitteePublicKey {
+func (stateDB *StateDB) GetAllCandidateCommitteePublicKey(role int) []*CommitteeState {
 	if role != CurrentEpochShardCandidate && role != NextEpochShardCandidate {
 		panic("wrong expected role " + strconv.Itoa(role))
 	}
-	list := []incognitokey.CommitteePublicKey{}
+	list := []*CommitteeState{}
 	prefix := GetCommitteePrefixWithRole(role, CandidateShardID)
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
@@ -468,13 +468,13 @@ func (stateDB *StateDB) GetAllCandidateCommitteePublicKey(role int) []incognitok
 		if err != nil {
 			panic("wrong value type")
 		}
-		list = append(list, committeeState.committeePublicKey)
+		list = append(list, committeeState)
 	}
 	return list
 }
 
-func (stateDB *StateDB) GetByShardIDCurrentValidatorState(shardID int) []incognitokey.CommitteePublicKey {
-	committees := []incognitokey.CommitteePublicKey{}
+func (stateDB *StateDB) GetByShardIDCurrentValidatorState(shardID int) []*CommitteeState {
+	committees := []*CommitteeState{}
 	prefix := GetCommitteePrefixWithRole(CurrentValidator, shardID)
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
@@ -490,13 +490,13 @@ func (stateDB *StateDB) GetByShardIDCurrentValidatorState(shardID int) []incogni
 		if committeeState.ShardID() != shardID {
 			panic("wrong expected shard id")
 		}
-		committees = append(committees, committeeState.CommitteePublicKey())
+		committees = append(committees, committeeState)
 	}
 	return committees
 }
 
-func (stateDB *StateDB) GetByShardIDSubstituteValidatorState(shardID int) []incognitokey.CommitteePublicKey {
-	committees := []incognitokey.CommitteePublicKey{}
+func (stateDB *StateDB) GetByShardIDSubstituteValidatorState(shardID int) []*CommitteeState {
+	committees := []*CommitteeState{}
 	prefix := GetCommitteePrefixWithRole(SubstituteValidator, shardID)
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
@@ -512,7 +512,7 @@ func (stateDB *StateDB) GetByShardIDSubstituteValidatorState(shardID int) []inco
 		if committeeState.ShardID() != shardID {
 			panic("wrong expected shard id")
 		}
-		committees = append(committees, committeeState.CommitteePublicKey())
+		committees = append(committees, committeeState)
 	}
 	return committees
 }
@@ -524,21 +524,23 @@ func (stateDB *StateDB) GetByShardIDSubstituteValidatorState(shardID int) []inco
 // return params #4: current epoch candidate
 // return params #5: reward receiver map
 // return params #6: auto staking map
-func (stateDB *StateDB) GetAllCommitteeState(ids []int) (map[int][]incognitokey.CommitteePublicKey, map[int][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, map[string]string, map[string]bool) {
-	currentValidator := make(map[int][]incognitokey.CommitteePublicKey)
-	substituteValidator := make(map[int][]incognitokey.CommitteePublicKey)
-	nextEpochCandidate := []incognitokey.CommitteePublicKey{}
-	currentEpochCandidate := []incognitokey.CommitteePublicKey{}
+func (stateDB *StateDB) GetAllCommitteeState(ids []int) (map[int][]*CommitteeState, map[int][]*CommitteeState, []*CommitteeState, []*CommitteeState, []*CommitteeState, []*CommitteeState, map[string]string, map[string]bool) {
+	currentValidator := make(map[int][]*CommitteeState)
+	substituteValidator := make(map[int][]*CommitteeState)
+	nextEpochShardCandidate := []*CommitteeState{}
+	currentEpochShardCandidate := []*CommitteeState{}
+	nextEpochBeaconCandidate := []*CommitteeState{}
+	currentEpochBeaconCandidate := []*CommitteeState{}
 	rewardReceivers := make(map[string]string)
 	autoStaking := make(map[string]bool)
 	for _, shardID := range ids {
 		// Current Validator
 		prefixCurrentValidator := GetCommitteePrefixWithRole(CurrentValidator, shardID)
 		resCurrentValidator := stateDB.iterateWithCommitteeState(prefixCurrentValidator)
-		tempCurrentValidator := []incognitokey.CommitteePublicKey{}
+		tempCurrentValidator := []*CommitteeState{}
 		for _, v := range resCurrentValidator {
-			tempCurrentValidator = append(tempCurrentValidator, v.committeePublicKey)
-			tempCurrentValidatorString, err := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{v.committeePublicKey})
+			tempCurrentValidator = append(tempCurrentValidator, v)
+			tempCurrentValidatorString, err := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{v.CommitteePublicKey()})
 			if err != nil {
 				panic(err)
 			}
@@ -549,10 +551,10 @@ func (stateDB *StateDB) GetAllCommitteeState(ids []int) (map[int][]incognitokey.
 		// Substitute Validator
 		prefixSubstituteValidator := GetCommitteePrefixWithRole(SubstituteValidator, shardID)
 		resSubstituteValidator := stateDB.iterateWithCommitteeState(prefixSubstituteValidator)
-		tempSubstituteValidator := []incognitokey.CommitteePublicKey{}
+		tempSubstituteValidator := []*CommitteeState{}
 		for _, v := range resSubstituteValidator {
-			tempSubstituteValidator = append(tempSubstituteValidator, v.committeePublicKey)
-			tempSubstituteValidatorString, err := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{v.committeePublicKey})
+			tempSubstituteValidator = append(tempSubstituteValidator, v)
+			tempSubstituteValidatorString, err := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{v.CommitteePublicKey()})
 			if err != nil {
 				panic(err)
 			}
@@ -565,8 +567,8 @@ func (stateDB *StateDB) GetAllCommitteeState(ids []int) (map[int][]incognitokey.
 	prefixNextEpochCandidate := GetCommitteePrefixWithRole(NextEpochShardCandidate, -2)
 	resNextEpochCandidate := stateDB.iterateWithCommitteeState(prefixNextEpochCandidate)
 	for _, v := range resNextEpochCandidate {
-		nextEpochCandidate = append(nextEpochCandidate, v.committeePublicKey)
-		tempNextEpochCandidateString, err := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{v.committeePublicKey})
+		nextEpochShardCandidate = append(nextEpochShardCandidate, v)
+		tempNextEpochCandidateString, err := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{v.CommitteePublicKey()})
 		if err != nil {
 			panic(err)
 		}
@@ -577,16 +579,42 @@ func (stateDB *StateDB) GetAllCommitteeState(ids []int) (map[int][]incognitokey.
 	prefixCurrentEpochCandidate := GetCommitteePrefixWithRole(CurrentEpochShardCandidate, -2)
 	resCurrentEpochCandidate := stateDB.iterateWithCommitteeState(prefixCurrentEpochCandidate)
 	for _, v := range resCurrentEpochCandidate {
-		currentEpochCandidate = append(currentEpochCandidate, v.committeePublicKey)
-		tempCurrentEpochCandidateString, err := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{v.committeePublicKey})
+		currentEpochShardCandidate = append(currentEpochShardCandidate, v)
+		tempCurrentEpochCandidateString, err := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{v.CommitteePublicKey()})
 		if err != nil {
 			panic(err)
 		}
 		rewardReceivers[tempCurrentEpochCandidateString[0]] = v.rewardReceiver
 		autoStaking[tempCurrentEpochCandidateString[0]] = v.autoStaking
 	}
-	return currentValidator, substituteValidator, nextEpochCandidate, currentEpochCandidate, rewardReceivers, autoStaking
+
+	// next epoch candidate
+	prefixNextEpochBeaconCandidate := GetCommitteePrefixWithRole(NextEpochBeaconCandidate, -2)
+	resNextEpochBeaconCandidate := stateDB.iterateWithCommitteeState(prefixNextEpochBeaconCandidate)
+	for _, v := range resNextEpochBeaconCandidate {
+		nextEpochBeaconCandidate = append(nextEpochBeaconCandidate, v)
+		tempNextEpochCandidateString, err := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{v.CommitteePublicKey()})
+		if err != nil {
+			panic(err)
+		}
+		rewardReceivers[tempNextEpochCandidateString[0]] = v.rewardReceiver
+		autoStaking[tempNextEpochCandidateString[0]] = v.autoStaking
+	}
+	// current epoch candidate
+	prefixCurrentEpochBeaconCandidate := GetCommitteePrefixWithRole(CurrentEpochBeaconCandidate, -2)
+	resCurrentEpochBeaconCandidate := stateDB.iterateWithCommitteeState(prefixCurrentEpochBeaconCandidate)
+	for _, v := range resCurrentEpochBeaconCandidate {
+		currentEpochBeaconCandidate = append(currentEpochBeaconCandidate, v)
+		tempCurrentEpochCandidateString, err := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{v.CommitteePublicKey()})
+		if err != nil {
+			panic(err)
+		}
+		rewardReceivers[tempCurrentEpochCandidateString[0]] = v.rewardReceiver
+		autoStaking[tempCurrentEpochCandidateString[0]] = v.autoStaking
+	}
+	return currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, rewardReceivers, autoStaking
 }
+
 func (stateDB *StateDB) iterateWithCommitteeState(prefix []byte) []*CommitteeState {
 	m := []*CommitteeState{}
 	temp := stateDB.trie.NodeIterator(prefix)

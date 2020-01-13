@@ -3,6 +3,7 @@ package statedb
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"sort"
 	"time"
 )
 
@@ -123,42 +124,129 @@ func StoreBeaconSubstituteValidator(stateDB *StateDB, beaconSubstitute []incogni
 
 func GetBeaconCommittee(stateDB *StateDB) []incognitokey.CommitteePublicKey {
 	m := stateDB.GetAllValidatorCommitteePublicKey(CurrentValidator, []int{BeaconShardID})
-	return m[BeaconShardID]
+	tempBeaconCommitteeStates := m[BeaconShardID]
+	sort.Slice(tempBeaconCommitteeStates, func(i, j int) bool {
+		return tempBeaconCommitteeStates[i].EnterTime() < tempBeaconCommitteeStates[j].EnterTime()
+	})
+	list := []incognitokey.CommitteePublicKey{}
+	for _, tempBeaconCommitteeState := range tempBeaconCommitteeStates {
+		list = append(list, tempBeaconCommitteeState.CommitteePublicKey())
+	}
+	return list
 }
 
 func GetBeaconSubstituteValidator(stateDB *StateDB) []incognitokey.CommitteePublicKey {
 	m := stateDB.GetAllValidatorCommitteePublicKey(SubstituteValidator, []int{BeaconShardID})
-	return m[BeaconShardID]
+	tempBeaconCommitteeStates := m[BeaconShardID]
+	sort.Slice(tempBeaconCommitteeStates, func(i, j int) bool {
+		return tempBeaconCommitteeStates[i].EnterTime() < tempBeaconCommitteeStates[j].EnterTime()
+	})
+	list := []incognitokey.CommitteePublicKey{}
+	for _, tempBeaconCommitteeState := range tempBeaconCommitteeStates {
+		list = append(list, tempBeaconCommitteeState.CommitteePublicKey())
+	}
+	return list
 }
 
 func GetOneShardCommittee(stateDB *StateDB, shardID byte) []incognitokey.CommitteePublicKey {
-	return stateDB.GetByShardIDCurrentValidatorState(int(shardID))
+	tempShardCommitteeStates := stateDB.GetByShardIDCurrentValidatorState(int(shardID))
+	sort.Slice(tempShardCommitteeStates, func(i, j int) bool {
+		return tempShardCommitteeStates[i].EnterTime() < tempShardCommitteeStates[j].EnterTime()
+	})
+	list := []incognitokey.CommitteePublicKey{}
+	for _, tempShardCommitteeState := range tempShardCommitteeStates {
+		list = append(list, tempShardCommitteeState.CommitteePublicKey())
+	}
+	return list
 }
 
 func GetOneShardSubstituteValidator(stateDB *StateDB, shardID byte) []incognitokey.CommitteePublicKey {
-	return stateDB.GetByShardIDSubstituteValidatorState(int(shardID))
+	tempShardCommitteeStates := stateDB.GetByShardIDSubstituteValidatorState(int(shardID))
+	sort.Slice(tempShardCommitteeStates, func(i, j int) bool {
+		return tempShardCommitteeStates[i].EnterTime() < tempShardCommitteeStates[j].EnterTime()
+	})
+	list := []incognitokey.CommitteePublicKey{}
+	for _, tempShardCommitteeState := range tempShardCommitteeStates {
+		list = append(list, tempShardCommitteeState.CommitteePublicKey())
+	}
+	return list
 }
 
 func GetAllShardCommittee(stateDB *StateDB, shardIDs []int) map[int][]incognitokey.CommitteePublicKey {
-	m := stateDB.GetAllValidatorCommitteePublicKey(CurrentValidator, shardIDs)
+	tempM := stateDB.GetAllValidatorCommitteePublicKey(CurrentValidator, shardIDs)
+	m := make(map[int][]incognitokey.CommitteePublicKey)
+	for shardID, tempShardCommitteeStates := range tempM {
+		sort.Slice(tempShardCommitteeStates, func(i, j int) bool {
+			return tempShardCommitteeStates[i].EnterTime() < tempShardCommitteeStates[j].EnterTime()
+		})
+		list := []incognitokey.CommitteePublicKey{}
+		for _, tempShardCommitteeState := range tempShardCommitteeStates {
+			list = append(list, tempShardCommitteeState.CommitteePublicKey())
+		}
+		m[shardID] = list
+	}
 	return m
 }
 
 func GetAllShardSubstituteValidator(stateDB *StateDB, shardIDs []int) map[int][]incognitokey.CommitteePublicKey {
-	m := stateDB.GetAllValidatorCommitteePublicKey(SubstituteValidator, shardIDs)
+	tempM := stateDB.GetAllValidatorCommitteePublicKey(SubstituteValidator, shardIDs)
+	m := make(map[int][]incognitokey.CommitteePublicKey)
+	for shardID, tempShardCommitteeStates := range tempM {
+		sort.Slice(tempShardCommitteeStates, func(i, j int) bool {
+			return tempShardCommitteeStates[i].EnterTime() < tempShardCommitteeStates[j].EnterTime()
+		})
+		list := []incognitokey.CommitteePublicKey{}
+		for _, tempShardCommitteeState := range tempShardCommitteeStates {
+			list = append(list, tempShardCommitteeState.CommitteePublicKey())
+		}
+		m[shardID] = list
+	}
 	return m
 }
 
 func GetNextEpochCandidate(stateDB *StateDB) []incognitokey.CommitteePublicKey {
-	return stateDB.GetAllCandidateCommitteePublicKey(NextEpochShardCandidate)
+	tempNextEpochShardCandidateStates := stateDB.GetAllCandidateCommitteePublicKey(NextEpochShardCandidate)
+	sort.Slice(tempNextEpochShardCandidateStates, func(i, j int) bool {
+		return tempNextEpochShardCandidateStates[i].EnterTime() < tempNextEpochShardCandidateStates[j].EnterTime()
+	})
+	list := []incognitokey.CommitteePublicKey{}
+	for _, tempNextEpochShardCandidateStates := range tempNextEpochShardCandidateStates {
+		list = append(list, tempNextEpochShardCandidateStates.CommitteePublicKey())
+	}
+	return list
 }
 
 func GetCurrentEpochCandidate(stateDB *StateDB) []incognitokey.CommitteePublicKey {
-	return stateDB.GetAllCandidateCommitteePublicKey(CurrentEpochShardCandidate)
+	tempCurrentEpochShardCandidateStates := stateDB.GetAllCandidateCommitteePublicKey(CurrentEpochShardCandidate)
+	sort.Slice(tempCurrentEpochShardCandidateStates, func(i, j int) bool {
+		return tempCurrentEpochShardCandidateStates[i].EnterTime() < tempCurrentEpochShardCandidateStates[j].EnterTime()
+	})
+	list := []incognitokey.CommitteePublicKey{}
+	for _, tempCurrentEpochShardCandidateState := range tempCurrentEpochShardCandidateStates {
+		list = append(list, tempCurrentEpochShardCandidateState.CommitteePublicKey())
+	}
+	return list
 }
 
-func GetAllCommitteeSubstituteCandidateState(stateDB *StateDB, shardIDs []int) (map[int][]incognitokey.CommitteePublicKey, map[int][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, map[string]string, map[string]bool) {
-	return stateDB.GetAllCommitteeState(shardIDs)
+func GetAllCommitteeStateWithRewardReceiver(stateDB *StateDB, shardIDs []int) (map[int][]incognitokey.CommitteePublicKey, map[string]string) {
+	allShardCommitteeState, _, _, _, _, _, rewardReceivers, _ := stateDB.GetAllCommitteeState(shardIDs)
+	m := make(map[int][]incognitokey.CommitteePublicKey)
+	for shardID, tempShardCommitteeStates := range allShardCommitteeState {
+		sort.Slice(tempShardCommitteeStates, func(i, j int) bool {
+			return tempShardCommitteeStates[i].EnterTime() < tempShardCommitteeStates[j].EnterTime()
+		})
+		list := []incognitokey.CommitteePublicKey{}
+		for _, tempShardCommitteeState := range tempShardCommitteeStates {
+			list = append(list, tempShardCommitteeState.CommitteePublicKey())
+		}
+		m[shardID] = list
+	}
+	return m, rewardReceivers
+}
+
+func GetRewardReceiverAndAutoStaking(stateDB *StateDB, shardIDs []int) (map[string]string, map[string]bool) {
+	_, _, _, _, _, _, rewardReceivers, autoStakings := stateDB.GetAllCommitteeState(shardIDs)
+	return rewardReceivers, autoStakings
 }
 
 func deleteCommittee(stateDB *StateDB, shardID int, role int, committees []incognitokey.CommitteePublicKey) error {

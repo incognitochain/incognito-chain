@@ -179,8 +179,7 @@ func (blockchain *BlockChain) processSalaryInstructionsV2(rewardStateDB *statedb
 					if err != nil {
 						return err
 					}
-					committees, _, _, _, rewardReceivers, _ = statedb.GetAllCommitteeSubstituteCandidateState(consensusStateDB, blockchain.GetShardIDs())
-
+					committees, rewardReceivers = statedb.GetAllCommitteeStateWithRewardReceiver(consensusStateDB, blockchain.GetShardIDs())
 				}
 				err = blockchain.addShardCommitteeRewardV2(rewardStateDB, shardID, shardRewardInfo, committees[int(shardID)], rewardReceivers)
 				if err != nil {

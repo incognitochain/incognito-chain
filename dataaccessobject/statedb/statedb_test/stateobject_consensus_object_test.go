@@ -238,7 +238,7 @@ func TestStateDB_GetAllConsensusStateObject(t *testing.T) {
 		}
 	}
 
-	_, _, _, _, gotMRewardReceiver, gotMAutoStaking := tempStateDB.GetAllCommitteeState(ids)
+	_, _, _, _, _, _, gotMRewardReceiver, gotMAutoStaking := tempStateDB.GetAllCommitteeState(ids)
 	for k, v1 := range gotMRewardReceiver {
 		if v2, ok := wantMRewardReceiver[k]; !ok {
 			t.Fatalf("want %+v but get nothing", k)

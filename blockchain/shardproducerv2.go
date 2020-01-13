@@ -226,7 +226,6 @@ func (blockGenerator *BlockGenerator) getCrossShardDataV2(toShard byte, lastBeac
 	crossTransactions := make(map[byte][]CrossTransaction)
 	// get cross shard block
 	allCrossShardBlock := blockGenerator.crossShardPool[toShard].GetValidBlock(crossShards)
-	Logger.log.Critical("All Cross Shard Block", allCrossShardBlock)
 	// Get Cross Shard Block
 	for fromShard, crossShardBlock := range allCrossShardBlock {
 		sort.SliceStable(crossShardBlock[:], func(i, j int) bool {
@@ -263,11 +262,6 @@ func (blockGenerator *BlockGenerator) getCrossShardDataV2(toShard byte, lastBeac
 				break
 			}
 			shardCommittee := statedb.GetOneShardCommittee(consensusStateDB, crossShardBlock.Header.ShardID)
-			Logger.log.Criticalf("One Shard Committee %+v, shardID %+v", shardCommittee, crossShardBlock.Header.ShardID)
-			tempShardCommittee, err := incognitokey.CommitteeKeyListToString(shardCommittee)
-			Logger.log.Criticalf("One Shard Committee %+v, shardID %+v", tempShardCommittee, crossShardBlock.Header.ShardID)
-			shardCommittees := statedb.GetAllShardCommittee(consensusStateDB, blockGenerator.chain.GetShardIDs())
-			Logger.log.Critical("All Shard Committee", shardCommittees)
 			err = crossShardBlock.VerifyCrossShardBlock(blockGenerator.chain, shardCommittee)
 			if err != nil {
 				Logger.log.Error(err)
@@ -439,7 +433,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructionsV2(b
 			if err != nil {
 				return []metadata.Transaction{}, errorInstructions, NewBlockChainError(FetchAutoStakingByHeightError, err)
 			}
-			_, _, _, _, _, newAutoStaking := statedb.GetAllCommitteeSubstituteCandidateState(consensusStateDB, blockGenerator.chain.GetShardIDs())
+			_, newAutoStaking := statedb.GetRewardReceiverAndAutoStaking(consensusStateDB, blockGenerator.chain.GetShardIDs())
 			tempAutoStakingM[beaconBlock.Header.Height] = newAutoStaking
 			autoStaking = newAutoStaking
 		}
