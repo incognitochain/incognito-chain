@@ -208,7 +208,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockV2(shardBlock *ShardB
 		return NewBlockChainError(TransactionRootHashError, fmt.Errorf("Expect transaction root hash %+v but get %+v", shardBlock.Header.TxRoot, txRoot))
 	}
 	// Verify ShardTx Root
-	_, shardTxMerkleData := CreateShardTxRoot2(shardBlock.Body.Transactions)
+	_, shardTxMerkleData := CreateShardTxRoot(shardBlock.Body.Transactions)
 	shardTxRoot := shardTxMerkleData[len(shardTxMerkleData)-1]
 	if !bytes.Equal(shardBlock.Header.ShardTxRoot.GetBytes(), shardTxRoot.GetBytes()) {
 		return NewBlockChainError(ShardTransactionRootHashError, fmt.Errorf("Expect shard transaction root hash %+v but get %+v", shardBlock.Header.ShardTxRoot, shardTxRoot))
@@ -361,7 +361,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigningV2(shardBlo
 	if err != nil {
 		return err
 	}
-	shardPendingValidator, _, _ := blockchain.processInstructionFromBeacon(beaconBlocks, shardID)
+	shardPendingValidator, _, _ := blockchain.processInstructionFromBeaconV2(beaconBlocks, shardID, newCommitteeChange())
 	if blockchain.BestState.Shard[shardID].BeaconHeight == shardBlock.Header.BeaconHeight {
 		isOldBeaconHeight = true
 	}
@@ -409,16 +409,19 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigningV2(shardBlo
 						return NewBlockChainError(NextCrossShardBlockError, fmt.Errorf("Next Cross Shard Block Height %+v is Not Expected, Expect Next block Height %+v from shard %+v ", toShardCrossShardBlock.Header.Height, nextHeight, fromShard))
 					}
 					startHeight = nextHeight
-					beaconHeight, err := blockchain.FindBeaconHeightForCrossShardBlock(toShardCrossShardBlock.Header.BeaconHeight, toShardCrossShardBlock.Header.ShardID, toShardCrossShardBlock.Header.Height)
+					beaconHeight, err := blockchain.FindBeaconHeightForCrossShardBlockV2(toShardCrossShardBlock.Header.BeaconHeight, toShardCrossShardBlock.Header.ShardID, toShardCrossShardBlock.Header.Height)
 					if err != nil {
+						Logger.log.Errorf("%+v", err)
 						break
 					}
 					consensusRootHash, ok := blockchain.BestState.Beacon.ConsensusStateRootHash[beaconHeight]
 					if !ok {
+						Logger.log.Errorf("Can't found ConsensusStateRootHash of beacon height %+v ", beaconHeight)
 						break
 					}
 					stateDB, err := statedb.NewWithPrefixTrie(consensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetDatabase()))
 					if err != nil {
+						Logger.log.Errorf("Init trie err", err)
 						break
 					}
 					shardCommittee := statedb.GetOneShardCommittee(stateDB, toShardCrossShardBlock.Header.ShardID)

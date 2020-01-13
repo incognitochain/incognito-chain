@@ -416,11 +416,12 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPointV2(stateDB *statedb
 }
 
 func (blockchain *BlockChain) CreateAndSaveCrossTransactionViewPointFromBlockV2(shardBlock *ShardBlock, transactionStateRoot *statedb.StateDB) error {
+	Logger.log.Critical("Fetch Cross transaction", shardBlock.Body.CrossTransactions)
 	// Fetch data from block into tx View point
 	view := NewTxViewPoint(shardBlock.Header.ShardID)
 	err := view.fetchCrossTransactionViewPointFromBlockV2(transactionStateRoot, shardBlock)
 	if err != nil {
-		Logger.log.Error("CreateAndSaveCrossTransactionCoinViewPointFromBlock", err)
+		Logger.log.Error("CreateAndSaveCrossTransactionCoinViewPointFromBlock ", err)
 		return err
 	}
 

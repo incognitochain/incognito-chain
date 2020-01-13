@@ -253,7 +253,7 @@ func checkReturnStakingTxExistence(txId string, shardBlock *ShardBlock) bool {
 
 //=======================================END SHARD BLOCK UTIL
 //====================New Merkle Tree================
-func CreateShardTxRoot2(txList []metadata.Transaction) ([]common.Hash, []common.Hash) {
+func CreateShardTxRoot(txList []metadata.Transaction) ([]common.Hash, []common.Hash) {
 	//calculate output coin hash for each shard
 	crossShardDataHash := getCrossShardDataHash(txList)
 	// calculate merkel path for a shardID
@@ -269,8 +269,8 @@ func CreateShardTxRoot2(txList []metadata.Transaction) ([]common.Hash, []common.
 	merkleData := merkleTree.BuildMerkleTreeOfHashes2(crossShardDataHash, common.MaxShardNumber)
 	return crossShardDataHash, merkleData
 }
-func GetMerklePathCrossShard2(txList []metadata.Transaction, shardID byte) (merklePathShard []common.Hash, merkleShardRoot common.Hash) {
-	_, merkleTree := CreateShardTxRoot2(txList)
+func GetMerklePathCrossShard(txList []metadata.Transaction, shardID byte) (merklePathShard []common.Hash, merkleShardRoot common.Hash) {
+	_, merkleTree := CreateShardTxRoot(txList)
 	merklePathShard, merkleShardRoot = Merkle{}.GetMerklePathForCrossShard(common.MaxShardNumber, merkleTree, shardID)
 	return merklePathShard, merkleShardRoot
 }
@@ -403,7 +403,6 @@ func getCrossShardData(txList []metadata.Transaction, shardID byte) ([]privacy.O
 			for _, outCoin := range tx.GetProof().GetOutputCoins() {
 				lastByte := common.GetShardIDFromLastByte(outCoin.CoinDetails.GetPubKeyLastByte())
 				if lastByte == shardID {
-					//fmt.Println("CS: outputcoin has output coin to shard", lastByte)
 					coinList = append(coinList, *outCoin)
 				}
 			}

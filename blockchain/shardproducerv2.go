@@ -87,6 +87,7 @@ func (blockGenerator *BlockGenerator) NewBlockShardV2(shardID byte, round int, c
 	// Get Transaction For new Block
 	// Get Cross output coin from other shard && produce cross shard transaction
 	crossTransactions := blockGenerator.getCrossShardDataV2(shardID, shardBestState.BeaconHeight, beaconHeight, crossShards)
+	Logger.log.Critical(crossTransactions)
 	// Get Transaction for new block
 	blockCreationLeftOver := blockGenerator.chain.BestState.Shard[shardID].BlockMaxCreateTime.Nanoseconds() - time.Since(start).Nanoseconds()
 	txsToAddFromBlock, err := blockGenerator.getTransactionForNewBlockV2(&tempPrivateKey, shardID, blockGenerator.chain.GetDatabase(), beaconBlocks, blockCreationLeftOver, beaconHeight)
@@ -207,7 +208,7 @@ func (blockGenerator *BlockGenerator) NewBlockShardV2(shardID byte, round int, c
 	insts := append(flattenTxInsts, flattenInsts...) // Order of instructions must be preserved in shardprocess
 	instMerkleRoot := GetKeccak256MerkleRoot(insts)
 	// shard tx root
-	_, shardTxMerkleData := CreateShardTxRoot2(newShardBlock.Body.Transactions)
+	_, shardTxMerkleData := CreateShardTxRoot(newShardBlock.Body.Transactions)
 	// Add Root Hash To Header
 	newShardBlock.Header.TxRoot = *merkleRoot
 	newShardBlock.Header.ShardTxRoot = shardTxMerkleData[len(shardTxMerkleData)-1]
@@ -225,6 +226,7 @@ func (blockGenerator *BlockGenerator) getCrossShardDataV2(toShard byte, lastBeac
 	crossTransactions := make(map[byte][]CrossTransaction)
 	// get cross shard block
 	allCrossShardBlock := blockGenerator.crossShardPool[toShard].GetValidBlock(crossShards)
+	Logger.log.Critical("All Cross Shard Block", allCrossShardBlock)
 	// Get Cross Shard Block
 	for fromShard, crossShardBlock := range allCrossShardBlock {
 		sort.SliceStable(crossShardBlock[:], func(i, j int) bool {
@@ -233,6 +235,7 @@ func (blockGenerator *BlockGenerator) getCrossShardDataV2(toShard byte, lastBeac
 		indexs := []int{}
 		startHeight := blockGenerator.chain.BestState.Shard[toShard].BestCrossShard[fromShard]
 		for index, crossShardBlock := range crossShardBlock {
+			Logger.log.Critical("index cross shard block", index, crossShardBlock)
 			if crossShardBlock.Header.Height <= startHeight {
 				break
 			}
@@ -246,6 +249,7 @@ func (blockGenerator *BlockGenerator) getCrossShardDataV2(toShard byte, lastBeac
 			startHeight = nextHeight
 			beaconHeight, err := blockGenerator.chain.FindBeaconHeightForCrossShardBlockV2(crossShardBlock.Header.BeaconHeight, crossShardBlock.Header.ShardID, crossShardBlock.Header.Height)
 			if err != nil {
+				Logger.log.Errorf("%+v", err)
 				break
 			}
 			consensusStateRootHash, ok := blockGenerator.chain.BestState.Beacon.ConsensusStateRootHash[beaconHeight]
@@ -259,8 +263,14 @@ func (blockGenerator *BlockGenerator) getCrossShardDataV2(toShard byte, lastBeac
 				break
 			}
 			shardCommittee := statedb.GetOneShardCommittee(consensusStateDB, crossShardBlock.Header.ShardID)
+			Logger.log.Criticalf("One Shard Committee %+v, shardID %+v", shardCommittee, crossShardBlock.Header.ShardID)
+			tempShardCommittee, err := incognitokey.CommitteeKeyListToString(shardCommittee)
+			Logger.log.Criticalf("One Shard Committee %+v, shardID %+v", tempShardCommittee, crossShardBlock.Header.ShardID)
+			shardCommittees := statedb.GetAllShardCommittee(consensusStateDB, blockGenerator.chain.GetShardIDs())
+			Logger.log.Critical("All Shard Committee", shardCommittees)
 			err = crossShardBlock.VerifyCrossShardBlock(blockGenerator.chain, shardCommittee)
 			if err != nil {
+				Logger.log.Error(err)
 				break
 			}
 			indexs = append(indexs, index)

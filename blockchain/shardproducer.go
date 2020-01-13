@@ -298,7 +298,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	insts := append(flattenTxInsts, flattenInsts...) // Order of instructions must be preserved in shardprocess
 	instMerkleRoot := GetKeccak256MerkleRoot(insts)
 	// shard tx root
-	_, shardTxMerkleData := CreateShardTxRoot2(newShardBlock.Body.Transactions)
+	_, shardTxMerkleData := CreateShardTxRoot(newShardBlock.Body.Transactions)
 	// Add Root Hash To Header
 	newShardBlock.Header.TxRoot = *merkleRoot
 	newShardBlock.Header.ShardTxRoot = shardTxMerkleData[len(shardTxMerkleData)-1]

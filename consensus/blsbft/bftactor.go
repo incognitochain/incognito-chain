@@ -313,7 +313,10 @@ func (e *BLSBFT) enterProposePhase() {
 		return
 	}
 	validationData := e.CreateValidationData(block)
-	validationDataString, _ := EncodeValidationData(validationData)
+	validationDataString, err := EncodeValidationData(validationData)
+	if err != nil {
+		consensus.Logger.Log.Errorf("Encode validation data failed %+v", err)
+	}
 	block.(blockValidation).AddValidationField(validationDataString)
 
 	e.RoundData.Block = block
