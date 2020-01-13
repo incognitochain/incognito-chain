@@ -424,7 +424,7 @@ func (synker *Synker) UpdateState() {
 			if (synker.blockchain.config.NodeMode == common.NodeModeAuto || synker.blockchain.config.NodeMode == common.NodeModeBeacon) && userRole == common.CommitteeRole {
 				for shardID, shardState := range RCS.ShardToBeaconBlks {
 					for _, blks := range shardState {
-						synker.SyncBlkShardToBeacon(shardID, false, true, true, nil, blks, 0, 0, libp2p.ID(""))
+						synker.SyncBlkShardToBeacon(shardID, false, true, false, nil, blks, 0, 0, libp2p.ID(""))
 					}
 				}
 			}
@@ -433,7 +433,7 @@ func (synker *Synker) UpdateState() {
 				if synker.IsLatest(true, byte(userShardIDInt)) {
 					for shardID, shardState := range RCS.CrossShardBlks {
 						for _, blks := range shardState {
-							synker.SyncBlkCrossShard(true, false, nil, blks, shardID, byte(userShardIDInt), libp2p.ID(""))
+							synker.SyncBlkCrossShard(false, false, nil, blks, shardID, byte(userShardIDInt), libp2p.ID(""))
 						}
 					}
 					blkMissing := GetMissingCrossShardBlock(
@@ -443,7 +443,7 @@ func (synker *Synker) UpdateState() {
 						byte(userShardIDInt),
 					)
 					for shardID, blks := range blkMissing {
-						synker.SyncBlkCrossShard(true, false, nil, blks, shardID, byte(userShardIDInt), libp2p.ID(""))
+						synker.SyncBlkCrossShard(false, false, nil, blks, shardID, byte(userShardIDInt), libp2p.ID(""))
 					}
 				}
 			}
@@ -464,7 +464,7 @@ func (synker *Synker) UpdateState() {
 			synker.SyncBlkBeacon(
 				true,     // byHash
 				false,    // bySpecific
-				true,     // getFromPool
+				false,    // getFromPool
 				listBlks, // []Hash
 				nil,      // []heights
 				0,        // from
@@ -476,7 +476,7 @@ func (synker *Synker) UpdateState() {
 				byte(cID), // shardID
 				true,      // byHash
 				false,     // bySpecific
-				true,      // getFromPool
+				false,     // getFromPool
 				listBlks,  // []Hash
 				nil,       // []heights
 				0,         // from
