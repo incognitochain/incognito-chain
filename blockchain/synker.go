@@ -3,6 +3,7 @@ package blockchain
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -498,9 +499,13 @@ func (synker *Synker) UpdateState() {
 		RCS.ClosestBeaconState.Height,   // to
 		libp2p.ID(""),
 	)
+	bcPool := synker.States.PoolsState.BeaconPool
+	sort.Slice(bcPool, func(i, j int) bool {
+		return bcPool[i] < bcPool[j]
+	})
 	heights := GetMissingBlockInPool(
 		synker.blockchain.config.BeaconPool.GetBeaconState()+1,
-		synker.blockchain.config.BeaconPool.GetPendingBlockHeight(),
+		bcPool,
 	)
 	Logger.log.Debugf("[syncmissing] List block beacon needed to get %v", heights)
 	synker.SyncBlkBeacon(
@@ -533,9 +538,13 @@ func (synker *Synker) UpdateState() {
 			RCS.ClosestShardsState[shardID].Height, // to
 			libp2p.ID(""),
 		)
+		shPool := synker.States.PoolsState.ShardsPool[shardID]
+		sort.Slice(shPool, func(i, j int) bool {
+			return shPool[i] < shPool[j]
+		})
 		heights := GetMissingBlockInPool(
 			synker.blockchain.config.ShardPool[shardID].GetLatestValidBlockHeight()+1,
-			synker.blockchain.config.ShardPool[shardID].GetPendingBlockHeight(),
+			shPool,
 		)
 		Logger.log.Debugf("[syncmissing] List block shard %v needed to get %v", shardID, heights)
 		synker.SyncBlkShard(
