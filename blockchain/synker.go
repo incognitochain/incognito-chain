@@ -294,6 +294,7 @@ func (synker *Synker) UpdateState() {
 	}
 	synker.stopSyncUnnecessaryShard()
 
+	Logger.log.Infof("setting ClosestBeaconState to %v", beaconStateClone.BeaconHeight)
 	synker.States.ClosestState.ClosestBeaconState = beaconStateClone.BeaconHeight
 	for shardID, beststate := range synker.blockchain.BestState.Shard {
 		synker.States.ClosestState.ClosestShardsState.Store(shardID, beststate.ShardHeight)
@@ -391,6 +392,7 @@ func (synker *Synker) UpdateState() {
 		}
 	}
 
+	Logger.log.Infof("setting ClosestBeaconState to %v", RCS.ClosestBeaconState.Height)
 	synker.States.ClosestState.ClosestBeaconState = RCS.ClosestBeaconState.Height
 	for shardID, state := range RCS.ClosestShardsState {
 		synker.States.ClosestState.ClosestShardsState.Store(shardID, state.Height)
