@@ -100,8 +100,10 @@ func (crossShardBlock *CrossShardBlock) VerifyCrossShardBlock(blockchain *BlockC
 	if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(crossShardBlock, committees, crossShardBlock.Header.ConsensusType); err != nil {
 		return NewBlockChainError(SignatureError, err)
 	}
+	Logger.log.Infof("Done ValidateBlockCommitteSig")
 	if ok := VerifyCrossShardBlockUTXO(crossShardBlock, crossShardBlock.MerklePathShard); !ok {
 		return NewBlockChainError(HashError, errors.New("Fail to verify Merkle Path Shard"))
 	}
+	Logger.log.Infof("Done VerifyCrossShardBlockUTXO")
 	return nil
 }
