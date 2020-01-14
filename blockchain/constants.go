@@ -15,8 +15,8 @@ const (
 	RANDOM_NUMBER              = 3
 	SHARD_BLOCK_VERSION        = 1
 	BEACON_BLOCK_VERSION       = 1
-	DefaultMaxBlkReqPerPeer    = 600
-	DefaultMaxBlkReqPerTime    = 1200
+	DefaultMaxBlkReqPerPeer    = 100
+	DefaultMaxBlkReqPerTime    = 100
 	MinCommitteeSize           = 3                // min size to run bft
 	DefaultBroadcastStateTime  = 6 * time.Second  // in second
 	DefaultStateUpdateTime     = 8 * time.Second  // in second
