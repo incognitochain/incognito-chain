@@ -12,7 +12,7 @@ import (
 func (netSync *NetSync) GetBlockShardByHash(blkHashes []common.Hash) []wire.Message {
 	blkMsgs := []wire.Message{}
 	for _, blkHash := range blkHashes {
-		blk, _, err := netSync.config.BlockChain.GetShardBlockByHash(blkHash)
+		blk, _, err := netSync.config.BlockChain.GetShardBlockByHashV2(blkHash)
 		if err != nil {
 			Logger.log.Error(err)
 			continue
@@ -30,7 +30,7 @@ func (netSync *NetSync) GetBlockShardByHash(blkHashes []common.Hash) []wire.Mess
 
 func (netSync *NetSync) getBlockShardByHashAndSend(peerID libp2p.ID, blkType byte, blkHashes []common.Hash, crossShardID byte) {
 	for _, blkHash := range blkHashes {
-		blk, _, err := netSync.config.BlockChain.GetShardBlockByHash(blkHash)
+		blk, _, err := netSync.config.BlockChain.GetShardBlockByHashV2(blkHash)
 		if err != nil {
 			Logger.log.Error(err)
 			continue
@@ -52,7 +52,7 @@ func (netSync *NetSync) GetBlockBeaconByHash(
 ) []wire.Message {
 	blkMsgs := []wire.Message{}
 	for _, blkHash := range blkHashes {
-		blk, _, err := netSync.config.BlockChain.GetBeaconBlockByHash(blkHash)
+		blk, _, err := netSync.config.BlockChain.GetBeaconBlockByHashV2(blkHash)
 		if err != nil {
 			Logger.log.Error(err)
 			continue
@@ -70,7 +70,7 @@ func (netSync *NetSync) GetBlockBeaconByHash(
 
 func (netSync *NetSync) getBlockBeaconByHashAndSend(peerID libp2p.ID, blkHashes []common.Hash) {
 	for _, blkHash := range blkHashes {
-		blk, _, err := netSync.config.BlockChain.GetBeaconBlockByHash(blkHash)
+		blk, _, err := netSync.config.BlockChain.GetBeaconBlockByHashV2(blkHash)
 		if err != nil {
 			Logger.log.Error(err)
 			continue
@@ -144,20 +144,21 @@ func (netSync *NetSync) GetBlockShardByHeight(fromPool bool, blkType byte, speci
 				blkMsg.(*wire.MessageShardToBeacon).Block = blkToSend
 			}
 		} else {
-			blk, err := netSync.config.BlockChain.GetShardBlockByHeight(blkHeight, shardID)
+			blks, err := netSync.config.BlockChain.GetShardBlockByHeightV2(blkHeight, shardID)
 			if err != nil {
 				Logger.log.Error(err)
 				continue
 			}
-			blkMsg, err = netSync.createBlockShardMsgByType(blk, blkType, crossShardID)
-			if err != nil {
-				Logger.log.Error(err)
-				continue
+			for _, blk := range blks {
+				blkMsg, err = netSync.createBlockShardMsgByType(blk, blkType, crossShardID)
+				if err != nil {
+					Logger.log.Error(err)
+					continue
+				}
+				blkMsgs = append(blkMsgs, blkMsg)
 			}
 		}
-		blkMsgs = append(blkMsgs, blkMsg)
 	}
-
 	return blkMsgs
 }
 
@@ -200,17 +201,19 @@ func (netSync *NetSync) GetBlockBeaconByHeight(fromPool bool, specificHeight boo
 		if blkHeight <= 1 {
 			continue
 		}
-		blk, err := netSync.config.BlockChain.GetBeaconBlockByHeight(blkHeight)
+		blks, err := netSync.config.BlockChain.GetBeaconBlockByHeightV2(blkHeight)
 		if err != nil {
 			continue
 		}
-		msgBeaconBlk, err := wire.MakeEmptyMessage(wire.CmdBlockBeacon)
-		if err != nil {
-			Logger.log.Error(err)
-			continue
+		for _, blk := range blks {
+			msgBeaconBlk, err := wire.MakeEmptyMessage(wire.CmdBlockBeacon)
+			if err != nil {
+				Logger.log.Error(err)
+				continue
+			}
+			msgBeaconBlk.(*wire.MessageBlockBeacon).Block = blk
+			blkMsgs = append(blkMsgs, msgBeaconBlk)
 		}
-		msgBeaconBlk.(*wire.MessageBlockBeacon).Block = blk
-		blkMsgs = append(blkMsgs, msgBeaconBlk)
 	}
 	return blkMsgs
 }
