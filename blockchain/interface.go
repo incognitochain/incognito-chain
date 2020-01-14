@@ -33,6 +33,7 @@ type CrossShardPool interface {
 	UpdatePool() map[byte]uint64
 	GetAllBlockHeight() map[byte][]uint64
 	RevertCrossShardPool(uint64)
+	FindBeaconHeightForCrossShardBlock(beaconHeight uint64, fromShardID byte, crossShardBlockHeight uint64) (uint64, error)
 }
 
 type ShardPool interface {
