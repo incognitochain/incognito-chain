@@ -196,7 +196,7 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 
 	if httpServer.config.RPCLimitRequestPerDay > 0 {
 		// check limit request per day
-		if httpServer.checkLimitRequest(r) {
+		if httpServer.checkLimitRequestPerDay(r) {
 			errMsg := "Reach limit request per day"
 			Logger.log.Error(errMsg)
 			errCode := http.StatusTooManyRequests
@@ -253,7 +253,7 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 		}
 
 		if httpServer.config.RPCLimitRequestErrorPerHour > 0 {
-			if httpServer.checkBlackListClientRequest(r, request.Method) {
+			if httpServer.checkBlackListClientRequestErrorPerHour(r, request.Method) {
 				errMsg := "Reach limit request error for method " + request.Method
 				Logger.log.Error(errMsg)
 				errCode := http.StatusTooManyRequests
@@ -302,7 +302,7 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 		if jsonErr.(*rpcservice.RPCError).Code == rpcservice.ErrCodeMessage[rpcservice.RPCParseError].Code {
 			Logger.log.Errorf("RPC function process with err \n %+v", jsonErr)
 			httpServer.writeHTTPResponseHeaders(r, w.Header(), http.StatusBadRequest, buf)
-			httpServer.addBlackListClientRequest(r, request.Method)
+			httpServer.addBlackListClientRequestErrorPerHour(r, request.Method)
 			return
 		}
 
@@ -314,7 +314,7 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 	}
 
 	if jsonErr != nil && jsonErr.(*rpcservice.RPCError) != nil {
-		httpServer.addBlackListClientRequest(r, request.Method)
+		httpServer.addBlackListClientRequestErrorPerHour(r, request.Method)
 	}
 
 	// Marshal the response.
@@ -378,7 +378,10 @@ func lookupAddress(ip string) string {
 	}
 }
 
-func (httpServer *HttpServer) checkBlackListClientRequest(r *http.Request, method string) bool {
+func (httpServer *HttpServer) checkBlackListClientRequestErrorPerHour(r *http.Request, method string) bool {
+	if httpServer.config.RPCLimitRequestErrorPerHour == 0 {
+		return false
+	}
 	inBlackList := false
 	remoteAddress := getIP(r)
 	remoteAddressKey := append([]byte("rpc-blacklist-"), []byte(remoteAddress)...)
@@ -399,8 +402,10 @@ func (httpServer *HttpServer) checkBlackListClientRequest(r *http.Request, metho
 	return inBlackList
 }
 
-func (httpServer *HttpServer) addBlackListClientRequest(r *http.Request, method string) {
-
+func (httpServer *HttpServer) addBlackListClientRequestErrorPerHour(r *http.Request, method string) {
+	if httpServer.config.RPCLimitRequestErrorPerHour == 0 {
+		return
+	}
 	// pink list method
 	switch method {
 	case getBeaconSwapProof, getLatestBeaconSwapProof, getLatestBridgeSwapProof, getBurnProof, getTransactionByHash, getBridgeReqWithStatus:
@@ -432,7 +437,10 @@ func (httpServer *HttpServer) addBlackListClientRequest(r *http.Request, method 
 	}
 }
 
-func (httpServer *HttpServer) checkLimitRequest(r *http.Request) bool {
+func (httpServer *HttpServer) checkLimitRequestPerDay(r *http.Request) bool {
+	if httpServer.config.RPCLimitRequestPerDay == 0 {
+		return false
+	}
 	remoteAddress := getIP(r)
 	remoteAddressKey := []byte(remoteAddress)
 	requestCountInByte, _ := httpServer.config.MemCache.Get(remoteAddressKey)
