@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	_ "github.com/incognitochain/incognito-chain/database/lvdb"
@@ -48,22 +49,24 @@ func TestEstimateTxSize(t *testing.T) {
 		Amount:         5,
 	}}
 
-	size := EstimateTxSize(NewEstimateTxSizeParam(tx.Proof.GetOutputCoins(), payments, true, nil, nil, nil, 1))
+	size := EstimateTxSize(NewEstimateTxSizeParam(len(tx.Proof.GetOutputCoins()), len(payments), true, nil, nil, 1))
+	fmt.Println(size)
 	assert.Greater(t, size, uint64(0))
 
-	customTokenParams := CustomTokenParamTx{
-		Receiver: []TxTokenVout{{PaymentAddress: paymentAddress, Value: 5}},
-		vins:     []TxTokenVin{{PaymentAddress: paymentAddress, VoutIndex: 1}},
-	}
-	size1 := EstimateTxSize(NewEstimateTxSizeParam(tx.Proof.GetOutputCoins(), payments, true, nil, &customTokenParams, nil, 1))
-	assert.Greater(t, size1, uint64(0))
+	//customTokenParams := CustomTokenParamTx{
+	//	Receiver: []TxTokenVout{{PaymentAddress: paymentAddress, Value: 5}},
+	//	vins:     []TxTokenVin{{PaymentAddress: paymentAddress, VoutIndex: 1}},
+	//}
+	//size1 := EstimateTxSize(NewEstimateTxSizeParam(tx.Proof.GetOutputCoins(), payments, true, nil, &customTokenParams, nil, 1))
+	//assert.Greater(t, size1, uint64(0))
 
 	privacyCustomTokenParams := CustomTokenPrivacyParamTx{
 		Receiver: []*privacy.PaymentInfo{{
 			PaymentAddress: paymentAddress, Amount: 5,
 		}},
 	}
-	size2 := EstimateTxSize(NewEstimateTxSizeParam(tx.Proof.GetOutputCoins(), payments, true, nil, nil, &privacyCustomTokenParams, 1))
+	size2 := EstimateTxSize(NewEstimateTxSizeParam(len(tx.Proof.GetOutputCoins()), len(payments), true,  nil, &privacyCustomTokenParams, 1))
+	fmt.Println(size2)
 	assert.Greater(t, size2, uint64(0))
 }
 
@@ -140,11 +143,11 @@ func TestBuildCoinbaseTxByCoinID(t *testing.T) {
 	assert.Equal(t, uint64(10), tx.(*Tx).Proof.GetOutputCoins()[0].CoinDetails.GetValue())
 	assert.Equal(t, common.PRVCoinID.String(), tx.GetTokenID().String())
 
-	txCustomToken, err := BuildCoinBaseTxByCoinID(NewBuildCoinBaseTxByCoinIDParams(&paymentAddress, 10, &key.KeySet.PrivateKey, db, nil, common.Hash{1}, CustomTokenType, "Custom Token", 0))
-	assert.Equal(t, nil, err)
-	assert.NotEqual(t, nil, tx)
-	assert.Equal(t, uint64(10), txCustomToken.(*TxNormalToken).TxTokenData.Vouts[0].Value)
-	assert.Equal(t, common.Hash{1}.String(), txCustomToken.GetTokenID().String())
+	//txCustomToken, err := BuildCoinBaseTxByCoinID(NewBuildCoinBaseTxByCoinIDParams(&paymentAddress, 10, &key.KeySet.PrivateKey, db, nil, common.Hash{1}, CustomTokenType, "Custom Token", 0))
+	//assert.Equal(t, nil, err)
+	//assert.NotEqual(t, nil, tx)
+	//assert.Equal(t, uint64(10), txCustomToken.(*TxNormalToken).TxTokenData.Vouts[0].Value)
+	//assert.Equal(t, common.Hash{1}.String(), txCustomToken.GetTokenID().String())
 
 	txCustomTokenPrivacy, err := BuildCoinBaseTxByCoinID(NewBuildCoinBaseTxByCoinIDParams(&paymentAddress, 10, &key.KeySet.PrivateKey, db, nil, common.Hash{2}, CustomTokenPrivacyType, "Custom Token", 0))
 	assert.Equal(t, nil, err)
