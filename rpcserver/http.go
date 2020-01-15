@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -60,8 +61,8 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 	// init service
 	httpServer.blockService = &rpcservice.BlockService{
 		BlockChain: httpServer.config.BlockChain,
-		DB: httpServer.config.Database,
-		MemCache: httpServer.config.MemCache,
+		DB:         httpServer.config.Database,
+		MemCache:   httpServer.config.MemCache,
 	}
 	httpServer.outputCoinService = &rpcservice.CoinService{
 		BlockChain: httpServer.config.BlockChain,
@@ -192,6 +193,28 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 	if atomic.LoadInt32(&httpServer.shutdown) != 0 {
 		return
 	}
+
+	if httpServer.config.RPCLimitRequestPerDay > 0 {
+		// check limit request per day
+		if httpServer.checkLimitRequest(r) {
+			errMsg := "Reach limit request per day"
+			Logger.log.Error(errMsg)
+			errCode := http.StatusTooManyRequests
+			http.Error(w, strconv.Itoa(errCode)+" "+errMsg, errCode)
+			return
+		}
+	}
+
+	if httpServer.config.RPCLimitRequestErrorPerHour > 0 {
+		if httpServer.checkBlackListClientRequest(r) {
+			errMsg := "Reach limit request error"
+			Logger.log.Error(errMsg)
+			errCode := http.StatusTooManyRequests
+			http.Error(w, strconv.Itoa(errCode)+" "+errMsg, errCode)
+			return
+		}
+	}
+
 	// Read and close the JSON-RPC request body from the caller.
 	body, err := ioutil.ReadAll(r.Body)
 	r.Body.Close()
@@ -278,6 +301,7 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 		if jsonErr.(*rpcservice.RPCError).Code == rpcservice.ErrCodeMessage[rpcservice.RPCParseError].Code {
 			Logger.log.Errorf("RPC function process with err \n %+v", jsonErr)
 			httpServer.writeHTTPResponseHeaders(r, w.Header(), http.StatusBadRequest, buf)
+			httpServer.addBlackListClientRequest(r)
 			return
 		}
 
@@ -287,6 +311,11 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 			Logger.log.Errorf("RPC function process with err \n %+v", jsonErr)
 		}
 	}
+
+	if jsonErr != nil {
+		httpServer.addBlackListClientRequest(r)
+	}
+
 	// Marshal the response.
 	msg, err := createMarshalledResponse(request, result, jsonErr)
 	if err != nil {
@@ -313,6 +342,109 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 		Logger.log.Errorf("Failed to append terminating newline to reply: %s", err.Error())
 		Logger.log.Error(err)
 	}
+}
+
+func getIP(r *http.Request) string {
+	forwarded := r.Header.Get("X-FORWARDED-FOR")
+	temp := ""
+	if forwarded != "" {
+		temp = forwarded
+	} else {
+		temp = r.RemoteAddr
+	}
+	if strings.Contains(temp, ":") {
+		return strings.Split(temp, ":")[0]
+	} else {
+		return temp
+	}
+}
+
+func lookupIp(host string) string {
+	addr, err := net.LookupIP(host)
+	if err != nil {
+		return ""
+	} else {
+		return addr[0].String()
+	}
+}
+
+func lookupAddress(ip string) string {
+	host, err := net.LookupAddr(ip)
+	if err != nil {
+		return ""
+	} else {
+		return host[0]
+	}
+}
+
+func (httpServer *HttpServer) checkBlackListClientRequest(r *http.Request) bool {
+	inBlackList := false
+	remoteAddress := getIP(r)
+	remoteAddressKey := append([]byte("rpc-blacklist-"), []byte(remoteAddress)...)
+
+	requestCountInByte, err1 := httpServer.config.MemCache.Get(remoteAddressKey)
+	if err1 != nil {
+		Logger.log.Info("Can not get limit request per day for %s err:%+v", remoteAddress)
+	}
+	if requestCountInByte != nil {
+		requestCount := common.BytesToInt(requestCountInByte)
+		if requestCount > httpServer.config.RPCLimitRequestErrorPerHour {
+			// only accept RPCLimitRequestErrorPerHour error request in 1 hour
+			inBlackList = true
+		}
+	}
+
+	return inBlackList
+}
+
+func (httpServer *HttpServer) addBlackListClientRequest(r *http.Request) {
+	remoteAddress := getIP(r)
+	remoteAddressKey := append([]byte("rpc-blacklist-"), []byte(remoteAddress)...)
+
+	requestCountInByte, err1 := httpServer.config.MemCache.Get(remoteAddressKey)
+	if err1 != nil {
+		Logger.log.Info("Can not get limit request per day for %s err:%+v", remoteAddress)
+	}
+	if requestCountInByte != nil {
+		requestCount := common.BytesToInt(requestCountInByte)
+		requestCount += 1
+		requestCountInByte = common.IntToBytes(requestCount)
+		httpServer.config.MemCache.Put(remoteAddressKey, requestCountInByte)
+	} else {
+		requestCount := 1
+		requestCountInByte = common.IntToBytes(requestCount)
+		err := httpServer.config.MemCache.PutExpired(remoteAddressKey, requestCountInByte, 1*60*60*1000) // cache in 1 hour
+		if err != nil {
+			Logger.log.Error("Can not update limit request per day for %s err:%+v", remoteAddress, err)
+		}
+	}
+}
+
+func (httpServer *HttpServer) checkLimitRequest(r *http.Request) bool {
+	remoteAddress := getIP(r)
+	remoteAddressKey := []byte(remoteAddress)
+	requestCountInByte, err := httpServer.config.MemCache.Get(remoteAddressKey)
+	if err != nil {
+		Logger.log.Info("Can not get limit request per day for %s err:%+v", remoteAddress, err)
+	}
+	reachLimit := false
+	if requestCountInByte != nil {
+		requestCount := common.BytesToInt(requestCountInByte)
+		requestCount += 1
+		if requestCount > httpServer.config.RPCLimitRequestPerDay {
+			reachLimit = true
+		}
+		requestCountInByte = common.IntToBytes(requestCount)
+		httpServer.config.MemCache.Put(remoteAddressKey, requestCountInByte)
+	} else {
+		requestCount := 1
+		requestCountInByte = common.IntToBytes(requestCount)
+		err := httpServer.config.MemCache.PutExpired(remoteAddressKey, requestCountInByte, 24*60*60*1000) // cache 1 day
+		if err != nil {
+			Logger.log.Error("Can not update limit request per day for %s err:%+v", remoteAddress, err)
+		}
+	}
+	return reachLimit
 }
 
 // checkAuth checks the HTTP Basic authentication supplied by a wallet
