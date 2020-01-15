@@ -9,6 +9,7 @@ run()
   current_tag=$2
   data_dir="data"
   eth_data_dir="eth-mainnet-data"
+  eth_data_dir_geth="eth-mainnet-data-geth"
   logshipper_data_dir="logshipper-mainnet-data"
 
 
@@ -37,7 +38,11 @@ run()
   docker pull incognitochain/incognito-mainnet:${latest_tag}
   docker network create --driver bridge inc_net || true
 
+  # eth with parity
   docker run -ti --restart=always --net inc_net -d -p 8545:8545  -p 30303:30303 -p 30303:30303/udp -v $PWD/${eth_data_dir}:/home/parity/.local/share/io.parity.ethereum/ --name eth_mainnet  parity/parity:stable --light --jsonrpc-interface all --jsonrpc-hosts all  --jsonrpc-apis all --mode last --base-path=/home/parity/.local/share/io.parity.ethereum/
+
+  # OR eth with geth
+  # docker run --restart=always --net inc_net -d --name eth_mainnet -p 8545:8545 -p 30303:30303 -v $PWD/${eth_data_dir_geth}:/geth -it ethereum/client-go --syncmode light --datadir /geth --rpcaddr 0.0.0.0 --rpcport 8545 --rpc --rpccorsdomain "*"
 
   docker run --restart=always --net inc_net -p $node_port:$node_port -p $rpc_port:$rpc_port -e NODE_PORT=$node_port -e RPC_PORT=$rpc_port -e BOOTNODE_IP=$bootnode -e GETH_NAME=eth_mainnet -e MININGKEY=${validator_key} -e TESTNET=false -v $PWD/${data_dir}:/data -d --name inc_mainnet incognitochain/incognito-mainnet:${latest_tag}
 

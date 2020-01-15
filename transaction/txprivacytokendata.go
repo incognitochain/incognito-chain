@@ -57,7 +57,7 @@ func (txTokenPrivacyData TxPrivacyTokenData) Hash() (*common.Hash, error) {
 	point := privacy.HashToPoint([]byte(txTokenPrivacyData.String()))
 	hash := new(common.Hash)
 	err := hash.SetBytes(point.ToBytesS())
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 	return hash, nil
@@ -78,12 +78,16 @@ type CustomTokenPrivacyParamTx struct {
 
 // CreateCustomTokenReceiverArray - parse data frm rpc request to create a list vout for preparing to create a custom token tx
 // data interface is a map[paymentt-address]{transferring-amount}
-func CreateCustomTokenPrivacyReceiverArray(data interface{}) ([]*privacy.PaymentInfo, int64) {
+func CreateCustomTokenPrivacyReceiverArray(data interface{}) ([]*privacy.PaymentInfo, int64, error) {
 	result := []*privacy.PaymentInfo{}
 	voutsAmount := int64(0)
 	receivers := data.(map[string]interface{})
 	for key, value := range receivers {
-		keyWallet, _ := wallet.Base58CheckDeserialize(key)
+		keyWallet, err := wallet.Base58CheckDeserialize(key)
+		if err != nil {
+			Logger.log.Errorf("Invalid key in CreateCustomTokenPrivacyReceiverArray %+v", key)
+			return nil, 0, err
+		}
 		keySet := keyWallet.KeySet
 		temp := &privacy.PaymentInfo{
 			PaymentAddress: keySet.PaymentAddress,
@@ -92,5 +96,5 @@ func CreateCustomTokenPrivacyReceiverArray(data interface{}) ([]*privacy.Payment
 		result = append(result, temp)
 		voutsAmount += int64(temp.Amount)
 	}
-	return result, voutsAmount
+	return result, voutsAmount, nil
 }

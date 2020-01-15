@@ -452,7 +452,11 @@ func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 		Fee:            uint64(tokenFee),
 	}
 	voutsAmount := int64(0)
-	tokenParams.Receiver, voutsAmount = transaction.CreateCustomTokenPrivacyReceiverArray(tokenParamsRaw["TokenReceivers"])
+	var err1 error
+	tokenParams.Receiver, voutsAmount, err1 = transaction.CreateCustomTokenPrivacyReceiverArray(tokenParamsRaw["TokenReceivers"])
+	if err1 != nil {
+		return nil, nil, nil, NewRPCError(RPCInvalidParamsError, err1)
+	}
 	voutsAmount += int64(tokenFee)
 
 	// get list custom token

@@ -14,6 +14,7 @@ const (
 	CommitmentRingSize    = 8
 	CommitmentRingSizeExp = 3
 	CStringBulletProof = "bulletproof"
+	CStringBurnAddress = "burningaddress"
 )
 
 const (
