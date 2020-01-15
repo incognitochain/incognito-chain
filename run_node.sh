@@ -68,7 +68,10 @@ if [ "$1" == "beacon-3" ]; then
 fi
 # FullNode testnet
 if [ "$1" == "fullnode-testnet" ]; then
-./incognito --testnet true --nodemode "relay" --relayshards "[0]" --externaladdress "127.0.0.1:9433" --enablewallet --wallet "wallet" --walletpassphrase "12345678" --walletautoinit --norpcauth --datadir "/Users/hungautonomous/go/src/github.com/incognitochain/testnet/fullnode" --discoverpeersaddress "testnet-bootnode.incognito.org:9330"
+./incognito --testnet true --nodemode "relay" --externaladdress "127.0.0.1:9433" --enablewallet --wallet "wallet" --walletpassphrase "12345678" --walletautoinit --norpcauth --datadir "/Users/hungautonomous/go/src/github.com/incognitochain/testnet/fullnode" --discoverpeersaddress "testnet-bootnode.incognito.org:9330"
+fi
+if [ "$1" == "fullnode-mainnet" ]; then
+./incognito --testnet true --nodemode "relay" --externaladdress "127.0.0.1:9433" --enablewallet --wallet "wallet" --walletpassphrase "12345678" --walletautoinit --norpcauth --datadir "/Users/hungautonomous/go/src/github.com/incognitochain/mainnet/fullnode" --discoverpeersaddress "mainnet-bootnode.incognito.org:9330"
 fi
 ######
 if [ "$1" == "shard-candidate0-1" ]; then

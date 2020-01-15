@@ -77,7 +77,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 */
 func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidated bool) error {
 	if DATABASE_VERSION == 2 {
-		return blockchain.InsertShardBlockV2(shardBlock, isValidated)
+		return blockchain.InsertShardBlockV2(shardBlock, false)
 	}
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()

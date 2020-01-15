@@ -1,6 +1,8 @@
 package blockchain
 
 import (
+	"github.com/btcsuite/btcd/database"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -8,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/incdb"
 )
 
 // TODO add more test case
@@ -18,21 +20,21 @@ func setupTestGetMissingCrossShardBlock(
 	toShard byte,
 	start uint64,
 	listWantedBlock []uint64,
-	db database.DatabaseInterface,
+	db incdb.Database,
 ) {
 	if len(listWantedBlock) == 0 {
 		return
 	}
-	db.StoreCrossShardNextHeight(fromShard, toShard, start, listWantedBlock[0])
+	rawdb.StoreCrossShardNextHeight(db, fromShard, toShard, start, listWantedBlock[0])
 	for i := 0; i < len(listWantedBlock)-1; i++ {
-		db.StoreCrossShardNextHeight(fromShard, toShard, listWantedBlock[i], listWantedBlock[i+1])
+		rawdb.StoreCrossShardNextHeight(db, fromShard, toShard, listWantedBlock[i], listWantedBlock[i+1])
 	}
 	return
 }
 
 func TestGetMissingCrossShardBlock(t *testing.T) {
 	type args struct {
-		db                  database.DatabaseInterface
+		db                  incdb.Database
 		bestCrossShardState map[byte]map[byte]uint64
 		latestValidHeight   map[byte]uint64
 		userShardID         byte

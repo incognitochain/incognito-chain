@@ -288,7 +288,6 @@ func getMessagesForLayer(mode, layer string, shardID []byte) []string {
 				wire.CmdBlkShardToBeacon,
 				wire.CmdTx,
 				wire.CmdPrivacyCustomToken,
-				wire.CmdCustomToken,
 			}
 		} else if layer == common.BeaconRole {
 			return []string{
@@ -303,7 +302,6 @@ func getMessagesForLayer(mode, layer string, shardID []byte) []string {
 				wire.CmdPeerState,
 				wire.CmdTx,
 				wire.CmdPrivacyCustomToken,
-				wire.CmdCustomToken,
 			}
 		}
 	case common.NodeModeRelay:
@@ -319,7 +317,6 @@ func getMessagesForLayer(mode, layer string, shardID []byte) []string {
 			wire.CmdBlockBeacon,
 			wire.CmdPeerState,
 			wire.CmdPrivacyCustomToken,
-			wire.CmdCustomToken,
 		}
 		if containShard {
 			msgs = append(msgs, wire.CmdBlockShard)
