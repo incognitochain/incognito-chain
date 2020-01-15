@@ -205,16 +205,6 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 		}
 	}
 
-	if httpServer.config.RPCLimitRequestErrorPerHour > 0 {
-		if httpServer.checkBlackListClientRequest(r) {
-			errMsg := "Reach limit request error"
-			Logger.log.Error(errMsg)
-			errCode := http.StatusTooManyRequests
-			http.Error(w, strconv.Itoa(errCode)+" "+errMsg, errCode)
-			return
-		}
-	}
-
 	// Read and close the JSON-RPC request body from the caller.
 	body, err := ioutil.ReadAll(r.Body)
 	r.Body.Close()
@@ -261,6 +251,17 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 		if request.Id == nil && !(httpServer.config.RPCQuirks && request.Jsonrpc == "") {
 			return
 		}
+
+		if httpServer.config.RPCLimitRequestErrorPerHour > 0 {
+			if httpServer.checkBlackListClientRequest(r, request.Method) {
+				errMsg := "Reach limit request error for method " + request.Method
+				Logger.log.Error(errMsg)
+				errCode := http.StatusTooManyRequests
+				http.Error(w, strconv.Itoa(errCode)+" "+errMsg, errCode)
+				return
+			}
+		}
+
 		// Setup a close notifier.  Since the connection is hijacked,
 		// the CloseNotifer on the ResponseWriter is not available.
 		closeChan := make(chan struct{}, 1)
@@ -301,7 +302,7 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 		if jsonErr.(*rpcservice.RPCError).Code == rpcservice.ErrCodeMessage[rpcservice.RPCParseError].Code {
 			Logger.log.Errorf("RPC function process with err \n %+v", jsonErr)
 			httpServer.writeHTTPResponseHeaders(r, w.Header(), http.StatusBadRequest, buf)
-			httpServer.addBlackListClientRequest(r)
+			httpServer.addBlackListClientRequest(r, request.Method)
 			return
 		}
 
@@ -313,7 +314,7 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 	}
 
 	if jsonErr != nil {
-		httpServer.addBlackListClientRequest(r)
+		httpServer.addBlackListClientRequest(r, request.Method)
 	}
 
 	// Marshal the response.
@@ -377,10 +378,11 @@ func lookupAddress(ip string) string {
 	}
 }
 
-func (httpServer *HttpServer) checkBlackListClientRequest(r *http.Request) bool {
+func (httpServer *HttpServer) checkBlackListClientRequest(r *http.Request, method string) bool {
 	inBlackList := false
 	remoteAddress := getIP(r)
 	remoteAddressKey := append([]byte("rpc-blacklist-"), []byte(remoteAddress)...)
+	remoteAddressKey = append(remoteAddressKey, []byte(method)...)
 
 	requestCountInByte, err1 := httpServer.config.MemCache.Get(remoteAddressKey)
 	if err1 != nil {
@@ -397,9 +399,10 @@ func (httpServer *HttpServer) checkBlackListClientRequest(r *http.Request) bool 
 	return inBlackList
 }
 
-func (httpServer *HttpServer) addBlackListClientRequest(r *http.Request) {
+func (httpServer *HttpServer) addBlackListClientRequest(r *http.Request, method string) {
 	remoteAddress := getIP(r)
 	remoteAddressKey := append([]byte("rpc-blacklist-"), []byte(remoteAddress)...)
+	remoteAddressKey = append(remoteAddressKey, []byte(method)...)
 
 	requestCountInByte, err1 := httpServer.config.MemCache.Get(remoteAddressKey)
 	if err1 != nil {
