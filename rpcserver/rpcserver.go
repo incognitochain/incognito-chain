@@ -90,12 +90,14 @@ type RpcServerConfig struct {
 		GetAllMiningPublicKeys() []string
 		ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error)
 	}
-	TxMemPool         *mempool.TxPool
-	ShardToBeaconPool *mempool.ShardToBeaconPool
-	CrossShardPool    *mempool.CrossShardPool
-	RPCMaxClients     int
-	RPCMaxWSClients   int
-	RPCQuirks         bool
+	TxMemPool                   *mempool.TxPool
+	ShardToBeaconPool           *mempool.ShardToBeaconPool
+	CrossShardPool              *mempool.CrossShardPool
+	RPCMaxClients               int
+	RPCMaxWSClients             int
+	RPCLimitRequestPerDay       int
+	RPCLimitRequestErrorPerHour int
+	RPCQuirks                   bool
 	// Authentication
 	RPCUser      string
 	RPCPass      string
