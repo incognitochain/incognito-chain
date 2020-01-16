@@ -83,19 +83,11 @@ func BatchingBlkForSync(
 		return res
 	} else {
 		rawBatches := BatchingRangeBlkForSync(uint64(batchlen), info.from, info.to)
-		res = append(res, syncBlkInfo{
-			byHash:        info.byHash,
-			bySpecHeights: info.bySpecHeights,
-			from:          info.from,
-			to:            rawBatches[0],
-			heights:       info.heights,
-			hashes:        info.hashes,
-		})
 		for i := 0; i < len(rawBatches)-1; i++ {
 			res = append(res, syncBlkInfo{
 				byHash:        info.byHash,
 				bySpecHeights: info.bySpecHeights,
-				from:          rawBatches[i] + 1,
+				from:          rawBatches[i],
 				to:            rawBatches[i+1],
 				heights:       info.heights,
 				hashes:        info.hashes,
@@ -110,12 +102,12 @@ func BatchingBlkHeightsForSync(
 	height []uint64,
 ) [][]uint64 {
 	res := [][]uint64{}
-	i := 1
-	for ; i <= len(height)/batchlen; i++ {
-		res = append(res, height[(i-1)*batchlen:i*batchlen])
+	i := 0
+	for ; i+batchlen < len(height); i += batchlen {
+		res = append(res, height[i:i+batchlen])
 	}
-	if len(height)%batchlen != 0 {
-		res = append(res, height[(i-1)*batchlen:])
+	if i < len(height) {
+		res = append(res, height[i:])
 	}
 	return res
 }
@@ -125,12 +117,12 @@ func BatchingBlkHashesForSync(
 	hashesBytes [][]byte,
 ) [][][]byte {
 	res := [][][]byte{}
-	i := 1
-	for ; i <= len(hashesBytes)/batchlen; i++ {
-		res = append(res, hashesBytes[(i-1)*batchlen:i*batchlen])
+	i := 0
+	for ; i+batchlen < len(hashesBytes); i += batchlen {
+		res = append(res, hashesBytes[i:i+batchlen])
 	}
-	if len(hashesBytes)%batchlen != 0 {
-		res = append(res, hashesBytes[(i-1)*batchlen:])
+	if i < len(hashesBytes) {
+		res = append(res, hashesBytes[i:])
 	}
 	return res
 }
@@ -141,12 +133,12 @@ func BatchingRangeBlkForSync(
 	to uint64,
 ) []uint64 {
 	res := []uint64{}
-	i := uint64(1)
-	for ; i <= (to-from+1)/batchlen; i++ {
-		res = append(res, from+i*batchlen-1)
+	if from == to {
+		res = append(res, from)
 	}
-	if ((from + (i-1)*batchlen - 1) < to) || (from == to) {
-		res = append(res, to)
+	for i := from; i < to; i += batchlen {
+		res = append(res, i)
 	}
+	res = append(res, to)
 	return res
 }
