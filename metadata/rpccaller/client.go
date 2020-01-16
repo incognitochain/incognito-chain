@@ -3,10 +3,8 @@ package rpccaller
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 	"time"
 )
 
@@ -24,11 +22,22 @@ func NewRPCClient() *RPCClient {
 	}
 }
 
-func buildRPCServerAddress(protocol string, host string, port int) string {
+/*func buildRPCServerAddress(protocol string, host string, port int) string {
 	if protocol == "" {
 		return fmt.Sprintf("%s:%d", host, port)
 	}
 	return fmt.Sprintf("%s://%s:%d", protocol, host, port)
+}*/
+
+func buildRPCServerAddress(protocol string, host string, port string) string {
+	url := host
+	if protocol != "" {
+		url = protocol + "://" + url
+	}
+	if port != "" {
+		url = url + ":" + port
+	}
+	return url
 }
 
 func (client *RPCClient) RPCCall(
@@ -39,8 +48,7 @@ func (client *RPCClient) RPCCall(
 	params interface{},
 	rpcResponse interface{},
 ) (err error) {
-	rpcPort, _ := strconv.Atoi(rpcPortStr)
-	rpcEndpoint := buildRPCServerAddress(rpcProtocol, rpcHost, rpcPort)
+	rpcEndpoint := buildRPCServerAddress(rpcProtocol, rpcHost, rpcPortStr)
 
 	payload := map[string]interface{}{
 		"jsonrpc": "2.0",
