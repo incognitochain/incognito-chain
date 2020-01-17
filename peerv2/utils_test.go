@@ -51,7 +51,7 @@ func TestBatchingBlkHeightsForSync(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := BatchingBlkHeightsForSync(tt.args.batchlen, tt.args.height); !reflect.DeepEqual(got, tt.want) {
+			if got := batchingBlkHeightsForSync(tt.args.batchlen, tt.args.height); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("BatchingBlkHeightsForSync() = %v, want %v", got, tt.want)
 			}
 		})
@@ -123,7 +123,7 @@ func TestBatchingRangeBlkForSync(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := BatchingRangeBlkForSync(tt.args.batchlen, tt.args.from, tt.args.to); !reflect.DeepEqual(got, tt.want) {
+			if got := batchingRangeBlkForSync(tt.args.batchlen, tt.args.from, tt.args.to); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("BatchingRangeBlkForSync() = %v, want %v", got, tt.want)
 			}
 		})
@@ -215,7 +215,7 @@ func TestBatchingBlkForSync(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := BatchingBlkForSync(tt.args.batchlen, tt.args.info); !reflect.DeepEqual(got, tt.want) {
+			if got := batchingBlkForSync(tt.args.batchlen, tt.args.info); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("BatchingBlkForSync() = %v, want %v", got, tt.want)
 			}
 		})

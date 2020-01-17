@@ -163,7 +163,7 @@ func (c *BlockRequester) GetBlockShardByHeight(
 	if !c.ready() {
 		return nil, errors.New("requester not ready")
 	}
-	rangeBlks := BatchingBlkForSync(DefaultMaxBlkReqPerTime, syncBlkInfo{
+	rangeBlks := batchingBlkForSync(DefaultMaxBlkReqPerTime, syncBlkInfo{
 		bySpecHeights: bySpecific,
 		byHash:        false,
 		from:          from,
@@ -215,7 +215,7 @@ func (c *BlockRequester) GetBlockShardByHash(
 		blkHashBytes = append(blkHashBytes, hash.GetBytes())
 	}
 	Logger.Infof("[blkbyhash] Requesting shard block %v by hash: %v", shardID, hashes)
-	rangeBlks := BatchingBlkForSync(DefaultMaxBlkReqPerTime, syncBlkInfo{
+	rangeBlks := batchingBlkForSync(DefaultMaxBlkReqPerTime, syncBlkInfo{
 		bySpecHeights: false,
 		byHash:        true,
 		from:          0,
@@ -259,7 +259,7 @@ func (c *BlockRequester) GetBlockBeaconByHeight(
 	Logger.Infof("[blkbyheight] Requesting beaconblock (by specific %v): from = %v to = %v; height: %v", bySpecific, from, to, heights)
 	client := proto.NewHighwayServiceClient(c.conn)
 	res := [][]byte{}
-	rangeBlks := BatchingBlkForSync(DefaultMaxBlkReqPerTime, syncBlkInfo{
+	rangeBlks := batchingBlkForSync(DefaultMaxBlkReqPerTime, syncBlkInfo{
 		bySpecHeights: bySpecific,
 		byHash:        false,
 		from:          from,
@@ -306,7 +306,7 @@ func (c *BlockRequester) GetBlockBeaconByHash(
 		blkHashBytes = append(blkHashBytes, hash.GetBytes())
 	}
 	Logger.Infof("Requesting beacon block by hash: %v", hashes)
-	rangeBlks := BatchingBlkForSync(DefaultMaxBlkReqPerTime, syncBlkInfo{
+	rangeBlks := batchingBlkForSync(DefaultMaxBlkReqPerTime, syncBlkInfo{
 		bySpecHeights: false,
 		byHash:        true,
 		from:          0,
@@ -350,7 +350,7 @@ func (c *BlockRequester) GetBlockShardToBeaconByHeight(
 	res := [][]byte{}
 	Logger.Infof("[sync] Requesting blkshdtobcn shard %v by specific height %v: from = %v to = %v; Heights: %v", shardID, bySpecific, from, to, heights)
 	client := proto.NewHighwayServiceClient(c.conn)
-	rangeBlks := BatchingBlkForSync(DefaultMaxBlkReqPerTime, syncBlkInfo{
+	rangeBlks := batchingBlkForSync(DefaultMaxBlkReqPerTime, syncBlkInfo{
 		bySpecHeights: bySpecific,
 		byHash:        false,
 		from:          from,
@@ -400,7 +400,7 @@ func (c *BlockRequester) GetBlockCrossShardByHeight(
 	res := [][]byte{}
 	Logger.Infof("Requesting block crossshard by height: shard %v to %v, height %v", fromShard, toShard, heights)
 	client := proto.NewHighwayServiceClient(c.conn)
-	rangeBlks := BatchingBlkForSync(DefaultMaxBlkReqPerTime, syncBlkInfo{
+	rangeBlks := batchingBlkForSync(DefaultMaxBlkReqPerTime, syncBlkInfo{
 		bySpecHeights: true,
 		byHash:        false,
 		from:          0,

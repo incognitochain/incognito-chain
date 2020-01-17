@@ -49,13 +49,13 @@ func GetCommitteeIDOfTopic(topic string) int {
 	return cID
 }
 
-func BatchingBlkForSync(
+func batchingBlkForSync(
 	batchlen int,
 	info syncBlkInfo,
 ) []syncBlkInfo {
 	res := []syncBlkInfo{}
 	if info.byHash {
-		rawBatches := BatchingBlkHashesForSync(batchlen, info.hashes)
+		rawBatches := batchingBlkHashesForSync(batchlen, info.hashes)
 		for _, rawBatch := range rawBatches {
 			res = append(res, syncBlkInfo{
 				byHash:        info.byHash,
@@ -69,7 +69,7 @@ func BatchingBlkForSync(
 		return res
 	}
 	if info.bySpecHeights {
-		rawBatches := BatchingBlkHeightsForSync(batchlen, info.heights)
+		rawBatches := batchingBlkHeightsForSync(batchlen, info.heights)
 		for _, rawBatch := range rawBatches {
 			res = append(res, syncBlkInfo{
 				byHash:        info.byHash,
@@ -82,7 +82,7 @@ func BatchingBlkForSync(
 		}
 		return res
 	} else {
-		rawBatches := BatchingRangeBlkForSync(uint64(batchlen), info.from, info.to)
+		rawBatches := batchingRangeBlkForSync(uint64(batchlen), info.from, info.to)
 		for i := 0; i < len(rawBatches)-1; i++ {
 			res = append(res, syncBlkInfo{
 				byHash:        info.byHash,
@@ -97,7 +97,7 @@ func BatchingBlkForSync(
 	}
 }
 
-func BatchingBlkHeightsForSync(
+func batchingBlkHeightsForSync(
 	batchlen int,
 	height []uint64,
 ) [][]uint64 {
@@ -112,7 +112,7 @@ func BatchingBlkHeightsForSync(
 	return res
 }
 
-func BatchingBlkHashesForSync(
+func batchingBlkHashesForSync(
 	batchlen int,
 	hashesBytes [][]byte,
 ) [][][]byte {
@@ -127,7 +127,7 @@ func BatchingBlkHashesForSync(
 	return res
 }
 
-func BatchingRangeBlkForSync(
+func batchingRangeBlkForSync(
 	batchlen uint64,
 	from uint64,
 	to uint64,
