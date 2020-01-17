@@ -119,6 +119,12 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 	if len(params.paymentInfo) > 254 {
 		return NewTransactionErr(PaymentInfoIsVeryLargeError, nil, strconv.Itoa(len(params.paymentInfo)))
 	}
+	limitFee := uint64(0)
+	estimateTxSizeParam := NewEstimateTxSizeParam(len(params.inputCoins), len(params.paymentInfo),
+		params.hasPrivacy, nil, nil, limitFee)
+	if txSize := EstimateTxSize(estimateTxSizeParam); txSize > common.MaxTxSize {
+		return NewTransactionErr(ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
+	}
 
 	if params.tokenID == nil {
 		// using default PRV

@@ -52,6 +52,7 @@ const (
 	PrivacyTokenJsonError
 	PrivacyTokenTxTypeNotHandleError
 
+	ExceedSizeTx
 	ExceedSizeInfoTxError
 	ExceedSizeInfoOutCoinError
 )
