@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -30,6 +31,44 @@ func TestConvertOutputCoinToInputCoin(t *testing.T) {
 	in := ConvertOutputCoinToInputCoin(tx.Proof.GetOutputCoins())
 	assert.Equal(t, 1, len(in))
 	assert.Equal(t, tx.Proof.GetOutputCoins()[0].CoinDetails.GetValue(), in[0].CoinDetails.GetValue())
+}
+
+func TestEstimateTxSize(t *testing.T) {
+	key, err := wallet.Base58CheckDeserialize("112t8rnXCqbbNYBquntyd6EvDT4WiDDQw84ZSRDKmazkqrzi6w8rWyCVt7QEZgAiYAV4vhJiX7V9MCfuj4hGLoDN7wdU1LoWGEFpLs59X7K3")
+	assert.Equal(t, nil, err)
+	err = key.KeySet.InitFromPrivateKey(&key.KeySet.PrivateKey)
+	assert.Equal(t, nil, err)
+	paymentAddress := key.KeySet.PaymentAddress
+	tx := &Tx{}
+	err = tx.InitTxSalary(10, &paymentAddress, &key.KeySet.PrivateKey, db, nil)
+	if err != nil {
+		t.Error(err)
+	}
+
+	payments := []*privacy.PaymentInfo{&privacy.PaymentInfo{
+		PaymentAddress: paymentAddress,
+		Amount:         5,
+	}}
+
+	size := EstimateTxSize(NewEstimateTxSizeParam(len(tx.Proof.GetOutputCoins()), len(payments), true, nil, nil, 1))
+	fmt.Println(size)
+	assert.Greater(t, size, uint64(0))
+
+	//customTokenParams := CustomTokenParamTx{
+	//	Receiver: []TxTokenVout{{PaymentAddress: paymentAddress, Value: 5}},
+	//	vins:     []TxTokenVin{{PaymentAddress: paymentAddress, VoutIndex: 1}},
+	//}
+	//size1 := EstimateTxSize(NewEstimateTxSizeParam(tx.Proof.GetOutputCoins(), payments, true, nil, &customTokenParams, nil, 1))
+	//assert.Greater(t, size1, uint64(0))
+
+	privacyCustomTokenParams := CustomTokenPrivacyParamTx{
+		Receiver: []*privacy.PaymentInfo{{
+			PaymentAddress: paymentAddress, Amount: 5,
+		}},
+	}
+	size2 := EstimateTxSize(NewEstimateTxSizeParam(len(tx.Proof.GetOutputCoins()), len(payments), true,  nil, &privacyCustomTokenParams, 1))
+	fmt.Println(size2)
+	assert.Greater(t, size2, uint64(0))
 }
 
 func TestRandomCommitmentsProcess(t *testing.T) {

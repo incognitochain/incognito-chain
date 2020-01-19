@@ -432,8 +432,8 @@ func CheckError(errs ...error) error {
 
 // GetENV to get environment variable by key
 func GetENV(key, fallback string) string {
-	value := os.Getenv(key)
-	if len(value) == 0 {
+	value, ok := os.LookupEnv(key)
+	if !ok {
 		return fallback
 	}
 	return value
