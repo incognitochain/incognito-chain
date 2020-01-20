@@ -349,7 +349,7 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 	// Decode base58check data of tx
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(txB58Check)
 	if err != nil {
-		Logger.log.Errorf("handleSendRawTransaction failt with err: %+v", err)
+		Logger.log.Errorf("txService.SendRawTransaction failt with err: %+v", err)
 		return nil, nil, byte(0), NewRPCError(Base58ChedkDataOfTxInvalid, err)
 	}
 
@@ -357,7 +357,7 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 	var tx transaction.Tx
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
-		Logger.log.Errorf("handleSendRawTransaction fail with err: %+v", err)
+		Logger.log.Errorf("txService.SendRawTransaction fail with err: %+v", err)
 		return nil, nil, byte(0), NewRPCError(JsonDataOfTxInvalid, err)
 	}
 
@@ -371,11 +371,10 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 
 	// Try add tx in to mempool of node
 	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx, beaconHeigh)
-	//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 	if err != nil {
+		Logger.log.Errorf("txService.SendRawTransaction Try add tx into mempool of node with err: %+v", err)
 		mempoolErr, ok := err.(*mempool.MempoolTxError)
 		if ok {
-			Logger.log.Errorf("txService.SendRawTransaction Try add tx in to mempool of node with err: %+v", err)
 			switch mempoolErr.Code {
 			case mempool.ErrCodeMessage[mempool.RejectInvalidFee].Code:
 				{
@@ -407,7 +406,6 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 				}
 			}
 		}
-		Logger.log.Errorf("txService.SendRawTransaction Try add tx in to mempool of node with err: %+v", err)
 		return nil, nil, byte(0), NewRPCError(TxPoolRejectTxError, err)
 	}
 	Logger.log.Debugf("New transaction hash: %+v \n", *hash)
@@ -421,7 +419,7 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 
 	txMsg.(*wire.MessageTx).Transaction = &tx
 
-	return txMsg, tx.Hash(), tx.PubKeyLastByteSender, nil
+	return txMsg, hash, tx.PubKeyLastByteSender, nil
 }
 
 func (txService TxService) BuildTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet, shardIDSender byte) (*transaction.CustomTokenPrivacyParamTx, *RPCError) {
@@ -1039,40 +1037,83 @@ func (txService TxService) calculateOutputCoinsByMinValue(outCoins []*privacy.Ou
 	return outCoinsTmp, amount
 }
 
-func (txService TxService) SendRawTxWithMetadata(base58CheckDate string) (wire.Message, *common.Hash, *RPCError) {
-	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckDate)
+/*func (txService TxService) SendRawTxWithMetadata(txBase58CheckData string) (wire.Message, *common.Hash, byte, *RPCError) {
+	// Decode base58check data of tx
+	rawTxBytes, _, err := base58.Base58Check{}.Decode(txBase58CheckData)
 	if err != nil {
-		return nil, nil, NewRPCError(RPCInvalidParamsError, err)
+		Logger.log.Errorf("txService.SendRawTxWithMetadata fail with err: %+v", err)
+		return nil, nil, byte(0), NewRPCError(Base58ChedkDataOfTxInvalid, err)
 	}
 
+	// Unmarshal from json data to object tx
 	tx := transaction.Tx{}
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
-		return nil, nil, NewRPCError(JsonError, err)
+		Logger.log.Errorf("txService.SendRawTxWithMetadata fail with err: %+v", err)
+		return nil, nil, byte(0), NewRPCError(JsonDataOfTxInvalid, err)
 	}
 
 	beaconHeigh := int64(-1)
 	beaconBestState, err := txService.BlockChain.BestState.GetClonedBeaconBestState()
 	if err == nil {
 		beaconHeigh = int64(beaconBestState.BeaconHeight)
+	} else {
+		Logger.log.Errorf("txService.SendRawTransaction can not get beacon best state with error %+v", err)
 	}
+
+	// Try add tx in to mempool of node
 	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx, beaconHeigh)
 	if err != nil {
-		return nil, nil, NewRPCError(TxPoolRejectTxError, err)
+		Logger.log.Errorf("txService.SendRawTxWithMetadata Try add tx into mempool of node with err: %+v", err)
+		mempoolErr, ok := err.(*mempool.MempoolTxError)
+		if ok {
+			switch mempoolErr.Code {
+			case mempool.ErrCodeMessage[mempool.RejectInvalidFee].Code:
+				{
+					return nil, nil, byte(0), NewRPCError(RejectInvalidTxFeeError, mempoolErr)
+				}
+			case mempool.ErrCodeMessage[mempool.RejectInvalidSize].Code:
+				{
+					return nil, nil, byte(0), NewRPCError(RejectInvalidTxSizeError, mempoolErr)
+				}
+			case mempool.ErrCodeMessage[mempool.RejectInvalidTxType].Code:
+				{
+					return nil, nil, byte(0), NewRPCError(RejectInvalidTxTypeError, mempoolErr)
+				}
+			case mempool.ErrCodeMessage[mempool.RejectInvalidTx].Code:
+				{
+					return nil, nil, byte(0), NewRPCError(RejectInvalidTxError, mempoolErr)
+				}
+			case mempool.ErrCodeMessage[mempool.RejectDoubleSpendWithBlockchainTx].Code, mempool.ErrCodeMessage[mempool.RejectDoubleSpendWithMempoolTx].Code:
+				{
+					return nil, nil, byte(0), NewRPCError(RejectDoubleSpendTxError, mempoolErr)
+				}
+			case mempool.ErrCodeMessage[mempool.RejectDuplicateTx].Code:
+				{
+					return nil, nil, byte(0), NewRPCError(RejectDuplicateTxInPoolError, mempoolErr)
+				}
+			case mempool.ErrCodeMessage[mempool.RejectVersion].Code:
+				{
+					return nil, nil, byte(0), NewRPCError(RejectDuplicateTxInPoolError, mempoolErr)
+				}
+			}
+		}
+		return nil, nil, byte(0), NewRPCError(TxPoolRejectTxError, err)
 	}
 
 	Logger.log.Debugf("there is hash of transaction: %s\n", hash.String())
 
-	// broadcast message
+	// Create tx message for broadcasting
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
 	if err != nil {
-		return nil, nil, NewRPCError(UnexpectedError, err)
+		Logger.log.Errorf("txService.SendRawTxWithMetadata Create tx message for broadcasting with err: %+v", err)
+		return nil, nil, byte(0), NewRPCError(SendTxDataError, err)
 	}
 
 	txMsg.(*wire.MessageTx).Transaction = &tx
 
-	return txMsg, hash, nil
-}
+	return txMsg, hash, tx.PubKeyLastByteSender, nil
+}*/
 
 // GetTransactionByReceiver - from keyset of receiver, we can get list tx hash which be sent to receiver
 // if this keyset contain payment-addr, we can detect tx hash

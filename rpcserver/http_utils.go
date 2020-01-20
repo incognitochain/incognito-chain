@@ -94,7 +94,7 @@ func (httpServer *HttpServer) createRawTxWithMetadata(params interface{}, closeC
 //	return result, nil
 //}
 
-func (httpServer *HttpServer) sendRawTxWithMetadata(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+/*func (httpServer *HttpServer) sendRawTxWithMetadata(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 1 {
@@ -106,7 +106,7 @@ func (httpServer *HttpServer) sendRawTxWithMetadata(params interface{}, closeCha
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("base58CheckData param is invalid"))
 	}
 
-	txMsg, txHash, err := httpServer.txService.SendRawTxWithMetadata(base58CheckData)
+	txMsg, txHash, _, err := httpServer.txService.SendRawTransaction(base58CheckData)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func (httpServer *HttpServer) sendRawTxWithMetadata(params interface{}, closeCha
 		TxID: txHash.String(),
 	}
 	return result, nil
-}
+}*/
 
 func (httpServer *HttpServer) createAndSendTxWithMetadata(params interface{}, closeChan <-chan struct{}, createHandler, sendHandler httpHandler) (interface{}, *rpcservice.RPCError) {
 	data, err := createHandler(httpServer, params, closeChan)
