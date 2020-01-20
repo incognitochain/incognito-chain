@@ -14,9 +14,7 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-/*
 // handleCreateTransaction handles createtransaction commands.
-*/
 func (httpServer *HttpServer) handleCreateRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleCreateRawTransaction params: %+v", params)
 
@@ -37,12 +35,10 @@ func (httpServer *HttpServer) handleCreateRawTransaction(params interface{}, clo
 	return result, nil
 }
 
-/*
 // handleSendTransaction implements the sendtransaction command.
-Parameter #1—a serialized transaction to broadcast
-Parameter #2–whether to allow high fees
-Result—a TXID or error Message
-*/
+// Parameter #1—a serialized transaction to broadcast
+// Parameter #2–whether to allow high fees
+// Result—a TXID or error Message
 func (httpServer *HttpServer) handleSendRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleSendRawTransaction params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
@@ -73,9 +69,7 @@ func (httpServer *HttpServer) handleSendRawTransaction(params interface{}, close
 	return result, nil
 }
 
-/*
-handleCreateAndSendTx - RPC creates transaction and send to network
-*/
+// handleCreateAndSendTx - RPC creates transaction and send to network
 func (httpServer *HttpServer) handleCreateAndSendTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleCreateAndSendTx params: %+v", params)
 	var err error
@@ -652,9 +646,7 @@ func (httpServer *HttpServer) handleCreateAndSendPrivacyCustomTokenTransaction(p
 	return tx, nil
 }
 
-/*
 // handleCreateRawStakingTransaction handles create staking
-*/
 func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	// get component
 	Logger.log.Debugf("handleCreateRawStakingTransaction params: %+v", params)
@@ -754,9 +746,7 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 	return result, nil
 }
 
-/*
-handleCreateAndSendStakingTx - RPC creates staking transaction and send to network
-*/
+// handleCreateAndSendStakingTx - RPC creates staking transaction and send to network
 func (httpServer *HttpServer) handleCreateAndSendStakingTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Infof("handleCreateAndSendStakingTx params: %+v", params)
 
@@ -780,6 +770,7 @@ func (httpServer *HttpServer) handleCreateAndSendStakingTx(params interface{}, c
 	return result, nil
 }
 
+// handleCreateRawStopAutoStakingTransaction - RPC create stop auto stake tx
 func (httpServer *HttpServer) handleCreateRawStopAutoStakingTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	// get component
 	Logger.log.Debugf("handleCreateRawStopAutoStakingTransaction params: %+v", params)
@@ -861,6 +852,7 @@ func (httpServer *HttpServer) handleCreateRawStopAutoStakingTransaction(params i
 	return result, nil
 }
 
+// handleCreateRawStopAutoStakingTransaction - RPC create and send stop auto stake tx to network
 func (httpServer *HttpServer) handleCreateAndSendStopAutoStakingTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleCreateAndSendStopAutoStakingTransaction params: %+v", params)
 	var err error
