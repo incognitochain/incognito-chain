@@ -62,8 +62,10 @@ func (httpServer *HttpServer) handleSendRawTransaction(params interface{}, close
 
 	err2 := httpServer.config.Server.PushMessageToAll(txMsg)
 	if err2 == nil {
-		Logger.log.Infof("handleSendRawTransaction result: %+v, err: %+v", nil, err2)
+		Logger.log.Info("handleSendRawTransaction broadcast message to all successfully")
 		httpServer.config.TxMemPool.MarkForwardedTransaction(*txHash)
+	} else {
+		Logger.log.Errorf("handleSendRawTransaction broadcast message to all with error %+v", err2)
 	}
 
 	result := jsonresult.NewCreateTransactionResult(txHash, common.EmptyString, nil, common.GetShardIDFromLastByte(LastBytePubKeySender))

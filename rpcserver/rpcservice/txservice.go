@@ -155,7 +155,7 @@ func (txService TxService) chooseOutsCoinByKeyset(
 		metadataParam,
 		privacyCustomTokenParams, db, int64(beaconHeight))
 	if err != nil {
-		return nil, 0, NewRPCError(RejectInvalidFeeError, err)
+		return nil, 0, NewRPCError(RejectInvalidTxFeeError, err)
 	}
 
 	if totalAmmount == 0 && realFee == 0 {
@@ -167,7 +167,7 @@ func (txService TxService) chooseOutsCoinByKeyset(
 					return nil, realFee, nil
 				}
 			}
-			return nil, realFee, NewRPCError(RejectInvalidFeeError, errors.New(fmt.Sprintf("totalAmmount: %+v, realFee: %+v", totalAmmount, realFee)))
+			return nil, realFee, NewRPCError(RejectInvalidTxFeeError, errors.New(fmt.Sprintf("totalAmmount: %+v, realFee: %+v", totalAmmount, realFee)))
 		}
 		if privacyCustomTokenParams != nil {
 			// for privacy token
@@ -346,43 +346,76 @@ func (txService TxService) CreateRawTransaction(params *bean.CreateRawTxParam, m
 }
 
 func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, *common.Hash, byte, *RPCError) {
+	// Decode base58check data of tx
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(txB58Check)
 	if err != nil {
-		Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
-		return nil, nil, byte(0), NewRPCError(SendTxDataError, err)
+		Logger.log.Errorf("handleSendRawTransaction failt with err: %+v", err)
+		return nil, nil, byte(0), NewRPCError(Base58ChedkDataOfTxInvalid, err)
 	}
+
+	// Unmarshal from json data to object tx
 	var tx transaction.Tx
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
-		Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
-		return nil, nil, byte(0), NewRPCError(SendTxDataError, err)
+		Logger.log.Errorf("handleSendRawTransaction fail with err: %+v", err)
+		return nil, nil, byte(0), NewRPCError(JsonDataOfTxInvalid, err)
 	}
 
 	beaconHeigh := int64(-1)
 	beaconBestState, err := txService.BlockChain.BestState.GetClonedBeaconBestState()
 	if err == nil {
 		beaconHeigh = int64(beaconBestState.BeaconHeight)
+	} else {
+		Logger.log.Errorf("txService.SendRawTransaction can not get beacon best state with error %+v", err)
 	}
+
+	// Try add tx in to mempool of node
 	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx, beaconHeigh)
 	//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 	if err != nil {
 		mempoolErr, ok := err.(*mempool.MempoolTxError)
 		if ok {
-			if mempoolErr.Code == mempool.ErrCodeMessage[mempool.RejectInvalidFee].Code {
-				Logger.log.Errorf("handleSendRawTransaction result: s%+v, err: %+v", nil, err)
-				return nil, nil, byte(0), NewRPCError(RejectInvalidFeeError, mempoolErr)
+			Logger.log.Errorf("txService.SendRawTransaction Try add tx in to mempool of node with err: %+v", err)
+			switch mempoolErr.Code {
+			case mempool.ErrCodeMessage[mempool.RejectInvalidFee].Code:
+				{
+					return nil, nil, byte(0), NewRPCError(RejectInvalidTxFeeError, mempoolErr)
+				}
+			case mempool.ErrCodeMessage[mempool.RejectInvalidSize].Code:
+				{
+					return nil, nil, byte(0), NewRPCError(RejectInvalidTxSizeError, mempoolErr)
+				}
+			case mempool.ErrCodeMessage[mempool.RejectInvalidTxType].Code:
+				{
+					return nil, nil, byte(0), NewRPCError(RejectInvalidTxTypeError, mempoolErr)
+				}
+			case mempool.ErrCodeMessage[mempool.RejectInvalidTx].Code:
+				{
+					return nil, nil, byte(0), NewRPCError(RejectInvalidTxError, mempoolErr)
+				}
+			case mempool.ErrCodeMessage[mempool.RejectDoubleSpendWithBlockchainTx].Code, mempool.ErrCodeMessage[mempool.RejectDoubleSpendWithMempoolTx].Code:
+				{
+					return nil, nil, byte(0), NewRPCError(RejectDoubleSpendTxError, mempoolErr)
+				}
+			case mempool.ErrCodeMessage[mempool.RejectDuplicateTx].Code:
+				{
+					return nil, nil, byte(0), NewRPCError(RejectDuplicateTxInPoolError, mempoolErr)
+				}
+			case mempool.ErrCodeMessage[mempool.RejectVersion].Code:
+				{
+					return nil, nil, byte(0), NewRPCError(RejectDuplicateTxInPoolError, mempoolErr)
+				}
 			}
 		}
-		Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
-		return nil, nil, byte(0), NewRPCError(SendTxDataError, err)
+		Logger.log.Errorf("txService.SendRawTransaction Try add tx in to mempool of node with err: %+v", err)
+		return nil, nil, byte(0), NewRPCError(TxPoolRejectTxError, err)
 	}
-
 	Logger.log.Debugf("New transaction hash: %+v \n", *hash)
 
-	// broadcast Message
+	// Create tx message for broadcasting
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
 	if err != nil {
-		Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
+		Logger.log.Errorf("txService.SendRawTransaction Create tx message for broadcasting with err: %+v", err)
 		return nil, nil, byte(0), NewRPCError(SendTxDataError, err)
 	}
 
