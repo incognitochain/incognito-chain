@@ -52,6 +52,7 @@ const (
 	PrivacyTokenJsonError
 	PrivacyTokenTxTypeNotHandleError
 
+	ExceedSizeTx
 	ExceedSizeInfoTxError
 	ExceedSizeInfoOutCoinError
 )
@@ -86,13 +87,14 @@ var ErrCodeMessage = map[int]struct {
 	DuplicatedOutputSndError:                      {-1022, "Duplicate output"},
 	SndExistedError:                               {-1023, "Snd existed: %s"},
 	InputCommitmentIsNotExistedError:              {-1024, "Input's commitment is not existed"},
-	TxProofVerifyFailError:                        {-1025, "Can not verify proof of tx"},
+	TxProofVerifyFailError:                        {-1025, "Can not verify proof of tx %s"},
 	VerifyMinerCreatedTxBeforeGettingInBlockError: {-1026, "Verify Miner Created Tx Before Getting In Block error"},
 	CommitOutputCoinError:                         {-1027, "Commit all output error"},
 	TokenIDExistedError:                           {-1028, "This token is existed in network"},
 	TokenIDExistedByCrossShardError:               {-1029, "This token is existed in network by cross shard"},
 	ExceedSizeInfoTxError:                         {-1030, "Size of tx info exceed max size info"},
 	ExceedSizeInfoOutCoinError:                    {-1031, "Size of output coin's info exceed max size info"},
+	ExceedSizeTx:                                  {-1032, "Size of tx info exceed max size of tx"},
 
 	// for PRV
 	InvalidSanityDataPRVError:  {-2000, "Invalid sanity data for PRV"},
@@ -123,9 +125,14 @@ func (e TransactionError) Error() string {
 }
 
 func NewTransactionErr(key int, err error, params ...interface{}) *TransactionError {
-	return &TransactionError{
-		err:     errors.Wrap(err, common.EmptyString),
-		Code:    ErrCodeMessage[key].Code,
-		Message: fmt.Sprintf(ErrCodeMessage[key].Message, params),
+	e := &TransactionError{
+		err:  errors.Wrap(err, common.EmptyString),
+		Code: ErrCodeMessage[key].Code,
+		//Message: fmt.Sprintf(ErrCodeMessage[key].Message, params),
 	}
+	e.Message = ErrCodeMessage[key].Message
+	if len(params) > 0 {
+		e.Message = fmt.Sprintf(ErrCodeMessage[key].Message, params)
+	}
+	return e
 }

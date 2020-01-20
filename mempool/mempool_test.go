@@ -313,7 +313,7 @@ func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacy
 		return nil
 	}
 
-	estimateTxSizeInKb := transaction.EstimateTxSize(transaction.NewEstimateTxSizeParam(candidateOutputCoins, paymentInfos, hasPrivacyCoin, nil, nil, nil, 1))
+	estimateTxSizeInKb := transaction.EstimateTxSize(transaction.NewEstimateTxSizeParam(len(candidateOutputCoins), len(paymentInfos), hasPrivacyCoin, nil, nil, 0))
 	realFee := uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 	needToPayFee := int64((totalAmmount + realFee) - candidateOutputCoinAmount)
 	// if not enough to pay fee
@@ -416,7 +416,7 @@ func CreateAndSaveTestStakingTransaction(privateKey string, privateSeed string, 
 	} else {
 		stakingMetadata, _ = metadata.NewStakingMetadata(63, base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), tp.config.ChainParams.StakingAmountShard, committeePKBase58, true)
 	}
-	estimateTxSizeInKb := transaction.EstimateTxSize(transaction.NewEstimateTxSizeParam(candidateOutputCoins, paymentInfos, hasPrivacyCoin, stakingMetadata, nil, nil, 1))
+	estimateTxSizeInKb := transaction.EstimateTxSize(transaction.NewEstimateTxSizeParam(len(candidateOutputCoins), len(paymentInfos), hasPrivacyCoin, stakingMetadata, nil, 0))
 	realFee := uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 	needToPayFee := int64((totalAmmount + realFee) - candidateOutputCoinAmount)
 	// if not enough to pay fee
@@ -448,92 +448,92 @@ func CreateAndSaveTestStakingTransaction(privateKey string, privateSeed string, 
 	}
 	return &tx
 }
-func CreateAndSaveTestInitCustomTokenTransaction(privateKey string, fee int64, tokenParamsRaw map[string]interface{}, hasPrivacyCoin bool) metadata.Transaction {
-	// get sender key set from private key
-	senderKeySet, _ := wallet.Base58CheckDeserialize(privateKey)
-	senderKeySet.KeySet.InitFromPrivateKey(&senderKeySet.KeySet.PrivateKey)
-	lastByte := senderKeySet.KeySet.PaymentAddress.Pk[len(senderKeySet.KeySet.PaymentAddress.Pk)-1]
-	shardIDSender := common.GetShardIDFromLastByte(lastByte)
-
-	receiversPaymentAddressStrParam := make(map[string]interface{})
-	receiversPaymentAddressStrParam[receiverPaymentAddress2] = 50
-	paymentInfos := make([]*privacy.PaymentInfo, 0)
-	for paymentAddressStr, amount := range receiversPaymentAddressStrParam {
-		keyWalletReceiver, _ := wallet.Base58CheckDeserialize(paymentAddressStr)
-		paymentInfo := &privacy.PaymentInfo{
-			Amount:         uint64(amount.(int)),
-			PaymentAddress: keyWalletReceiver.KeySet.PaymentAddress,
-		}
-		paymentInfos = append(paymentInfos, paymentInfo)
-	}
-	estimateFeeCoinPerKb := fee
-	totalAmmount := uint64(0)
-	for _, receiver := range paymentInfos {
-		totalAmmount += receiver.Amount
-	}
-	prvCoinID := &common.Hash{}
-	prvCoinID.SetBytes(common.PRVCoinID[:])
-	outCoins, err := tp.config.BlockChain.GetListOutputCoinsByKeyset(&senderKeySet.KeySet, shardIDSender, prvCoinID)
-	if err != nil {
-		fmt.Println("Can't create transaction", err)
-		return nil
-	}
-	remainOutputCoins := make([]*privacy.OutputCoin, 0)
-	for _, outCoin := range outCoins {
-		if tp.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().ToBytesS()) == nil {
-			remainOutputCoins = append(remainOutputCoins, outCoin)
-		}
-	}
-	if len(outCoins) == 0 && totalAmmount > 0 {
-		fmt.Println("Can't create transaction")
-		return nil
-	}
-	candidateOutputCoins, outCoins, candidateOutputCoinAmount, err := chooseBestOutCoinsToSpent(outCoins, totalAmmount)
-	if err != nil {
-		fmt.Println("Can't create transaction", err)
-		return nil
-	}
-	tokenParams := &transaction.CustomTokenParamTx{
-		PropertyID:     tokenParamsRaw["TokenID"].(string),
-		PropertyName:   tokenParamsRaw["TokenName"].(string),
-		PropertySymbol: tokenParamsRaw["TokenSymbol"].(string),
-		TokenTxType:    int(tokenParamsRaw["TokenTxType"].(float64)),
-		Amount:         uint64(tokenParamsRaw["TokenAmount"].(float64)),
-	}
-	tokenParams.Receiver, _, _ = transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
-	estimateTxSizeInKb := transaction.EstimateTxSize(transaction.NewEstimateTxSizeParam(candidateOutputCoins, paymentInfos, hasPrivacyCoin, nil, tokenParams, nil, 1))
-	realFee := uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
-	needToPayFee := int64((totalAmmount + realFee) - candidateOutputCoinAmount)
-	// if not enough to pay fee
-	if needToPayFee > 0 {
-		if len(outCoins) > 0 {
-			candidateOutputCoinsForFee, _, _, err := chooseBestOutCoinsToSpent(outCoins, uint64(needToPayFee))
-			if err != nil {
-				fmt.Println("Can't create transaction", err)
-				return nil
-			}
-			candidateOutputCoins = append(candidateOutputCoins, candidateOutputCoinsForFee...)
-		}
-	}
-	// convert to inputcoins
-	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateOutputCoins)
-	tx := &transaction.TxNormalToken{}
-	err1 := tx.Init(
-		transaction.NewTxNormalTokenInitParam(&senderKeySet.KeySet.PrivateKey,
-			nil,
-			inputCoins,
-			realFee,
-			tokenParams,
-			db,
-			nil,
-			hasPrivacyCoin,
-			shardIDSender))
-	fmt.Println(tx.TxTokenData.PropertyID.String())
-	if err1 != nil {
-		panic("no tx found")
-	}
-	return tx
-}
+//func CreateAndSaveTestInitCustomTokenTransaction(privateKey string, fee int64, tokenParamsRaw map[string]interface{}, hasPrivacyCoin bool) metadata.Transaction {
+//	// get sender key set from private key
+//	senderKeySet, _ := wallet.Base58CheckDeserialize(privateKey)
+//	senderKeySet.KeySet.InitFromPrivateKey(&senderKeySet.KeySet.PrivateKey)
+//	lastByte := senderKeySet.KeySet.PaymentAddress.Pk[len(senderKeySet.KeySet.PaymentAddress.Pk)-1]
+//	shardIDSender := common.GetShardIDFromLastByte(lastByte)
+//
+//	receiversPaymentAddressStrParam := make(map[string]interface{})
+//	receiversPaymentAddressStrParam[receiverPaymentAddress2] = 50
+//	paymentInfos := make([]*privacy.PaymentInfo, 0)
+//	for paymentAddressStr, amount := range receiversPaymentAddressStrParam {
+//		keyWalletReceiver, _ := wallet.Base58CheckDeserialize(paymentAddressStr)
+//		paymentInfo := &privacy.PaymentInfo{
+//			Amount:         uint64(amount.(int)),
+//			PaymentAddress: keyWalletReceiver.KeySet.PaymentAddress,
+//		}
+//		paymentInfos = append(paymentInfos, paymentInfo)
+//	}
+//	estimateFeeCoinPerKb := fee
+//	totalAmmount := uint64(0)
+//	for _, receiver := range paymentInfos {
+//		totalAmmount += receiver.Amount
+//	}
+//	prvCoinID := &common.Hash{}
+//	prvCoinID.SetBytes(common.PRVCoinID[:])
+//	outCoins, err := tp.config.BlockChain.GetListOutputCoinsByKeyset(&senderKeySet.KeySet, shardIDSender, prvCoinID)
+//	if err != nil {
+//		fmt.Println("Can't create transaction", err)
+//		return nil
+//	}
+//	remainOutputCoins := make([]*privacy.OutputCoin, 0)
+//	for _, outCoin := range outCoins {
+//		if tp.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().ToBytesS()) == nil {
+//			remainOutputCoins = append(remainOutputCoins, outCoin)
+//		}
+//	}
+//	if len(outCoins) == 0 && totalAmmount > 0 {
+//		fmt.Println("Can't create transaction")
+//		return nil
+//	}
+//	candidateOutputCoins, outCoins, candidateOutputCoinAmount, err := chooseBestOutCoinsToSpent(outCoins, totalAmmount)
+//	if err != nil {
+//		fmt.Println("Can't create transaction", err)
+//		return nil
+//	}
+//	tokenParams := &transaction.CustomTokenParamTx{
+//		PropertyID:     tokenParamsRaw["TokenID"].(string),
+//		PropertyName:   tokenParamsRaw["TokenName"].(string),
+//		PropertySymbol: tokenParamsRaw["TokenSymbol"].(string),
+//		TokenTxType:    int(tokenParamsRaw["TokenTxType"].(float64)),
+//		Amount:         uint64(tokenParamsRaw["TokenAmount"].(float64)),
+//	}
+//	tokenParams.Receiver, _, _ = transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
+//	estimateTxSizeInKb := transaction.EstimateTxSize(transaction.NewEstimateTxSizeParam(candidateOutputCoins, paymentInfos, hasPrivacyCoin, nil, tokenParams, nil, 1))
+//	realFee := uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
+//	needToPayFee := int64((totalAmmount + realFee) - candidateOutputCoinAmount)
+//	// if not enough to pay fee
+//	if needToPayFee > 0 {
+//		if len(outCoins) > 0 {
+//			candidateOutputCoinsForFee, _, _, err := chooseBestOutCoinsToSpent(outCoins, uint64(needToPayFee))
+//			if err != nil {
+//				fmt.Println("Can't create transaction", err)
+//				return nil
+//			}
+//			candidateOutputCoins = append(candidateOutputCoins, candidateOutputCoinsForFee...)
+//		}
+//	}
+//	// convert to inputcoins
+//	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateOutputCoins)
+//	tx := &transaction.TxNormalToken{}
+//	err1 := tx.Init(
+//		transaction.NewTxNormalTokenInitParam(&senderKeySet.KeySet.PrivateKey,
+//			nil,
+//			inputCoins,
+//			realFee,
+//			tokenParams,
+//			db,
+//			nil,
+//			hasPrivacyCoin,
+//			shardIDSender))
+//	fmt.Println(tx.TxTokenData.PropertyID.String())
+//	if err1 != nil {
+//		panic("no tx found")
+//	}
+//	return tx
+//}
 func CreateAndSaveTestInitCustomTokenTransactionPrivacy(privateKey string, fee int64, tokenParamsRaw map[string]interface{}, hasPrivacyCoin bool) metadata.Transaction {
 	// get sender key set from private key
 	senderKeySet, _ := wallet.Base58CheckDeserialize(privateKey)
@@ -588,8 +588,8 @@ func CreateAndSaveTestInitCustomTokenTransactionPrivacy(privateKey string, fee i
 		TokenInput:     nil,
 		Fee:            uint64(tokenParamsRaw["TokenFee"].(float64)),
 	}
-	tokenParams.Receiver, _ = transaction.CreateCustomTokenPrivacyReceiverArray(tokenParamsRaw["TokenReceivers"])
-	estimateTxSizeInKb := transaction.EstimateTxSize(transaction.NewEstimateTxSizeParam(candidateOutputCoins, paymentInfos, hasPrivacyCoin, nil, nil, tokenParams, 1))
+	tokenParams.Receiver, _, _ = transaction.CreateCustomTokenPrivacyReceiverArray(tokenParamsRaw["TokenReceivers"])
+	estimateTxSizeInKb := transaction.EstimateTxSize(transaction.NewEstimateTxSizeParam(len(candidateOutputCoins), len(paymentInfos), hasPrivacyCoin, nil, tokenParams, 0))
 	realFee := uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 	needToPayFee := int64((totalAmmount + realFee) - candidateOutputCoinAmount)
 	// if not enough to pay fee

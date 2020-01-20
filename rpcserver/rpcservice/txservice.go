@@ -234,7 +234,7 @@ func (txService TxService) EstimateFee(
 	if feeEstimator, ok := txService.FeeEstimator[shardID]; ok {
 		limitFee = feeEstimator.GetLimitFeeForNativeToken()
 	}
-	estimateTxSizeInKb = transaction.EstimateTxSize(transaction.NewEstimateTxSizeParam(candidateOutputCoins, paymentInfos, hasPrivacy, metadata, privacyCustomTokenParams, limitFee))
+	estimateTxSizeInKb = transaction.EstimateTxSize(transaction.NewEstimateTxSizeParam(len(candidateOutputCoins), len(paymentInfos), hasPrivacy, metadata, privacyCustomTokenParams, limitFee))
 
 	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 	return realFee, estimateFeeCoinPerKb, estimateTxSizeInKb, nil

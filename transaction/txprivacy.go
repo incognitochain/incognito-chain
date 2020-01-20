@@ -119,6 +119,12 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 	if len(params.paymentInfo) > 254 {
 		return NewTransactionErr(PaymentInfoIsVeryLargeError, nil, strconv.Itoa(len(params.paymentInfo)))
 	}
+	limitFee := uint64(0)
+	estimateTxSizeParam := NewEstimateTxSizeParam(len(params.inputCoins), len(params.paymentInfo),
+		params.hasPrivacy, nil, nil, limitFee)
+	if txSize := EstimateTxSize(estimateTxSizeParam); txSize > common.MaxTxSize {
+		return NewTransactionErr(ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
+	}
 
 	if params.tokenID == nil {
 		// using default PRV
@@ -474,11 +480,11 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	valid, err = tx.verifySigTx()
 	if !valid {
 		if err != nil {
-			Logger.log.Errorf("Error verifying signature of tx: %+v \n", err)
+			Logger.log.Errorf("Error verifying signature with tx hash %s: %+v \n", tx.Hash().String(), err)
 			return false, NewTransactionErr(VerifyTxSigFailError, err)
 		}
-		Logger.log.Error("FAILED VERIFICATION SIGNATURE")
-		return false, NewTransactionErr(VerifyTxSigFailError, errors.New("FAILED VERIFICATION SIGNATURE"))
+		Logger.log.Errorf("FAILED VERIFICATION SIGNATURE with tx hash %s", tx.Hash().String())
+		return false, NewTransactionErr(VerifyTxSigFailError, fmt.Errorf("FAILED VERIFICATION SIGNATURE with tx hash %s", tx.Hash().String()))
 	}
 
 	if tx.Proof != nil {
@@ -532,7 +538,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 				Logger.log.Error(err)
 			}
 			Logger.log.Error("FAILED VERIFICATION PAYMENT PROOF")
-			return false, NewTransactionErr(TxProofVerifyFailError, err)
+			return false, NewTransactionErr(TxProofVerifyFailError, err, tx.Hash().String())
 		} else {
 			Logger.log.Debugf("SUCCESSED VERIFICATION PAYMENT PROOF ")
 		}

@@ -591,7 +591,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int6
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
 	if !validated {
-		return NewMempoolTxError(RejectInvalidTx, fmt.Errorf("Invalid tx - %+v", errValidateTxByItself))
+		return NewMempoolTxError(RejectInvalidTx, errValidateTxByItself)
 	}
 
 	// Condition 7: validate tx with data of blockchain

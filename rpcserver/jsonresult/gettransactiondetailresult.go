@@ -15,6 +15,7 @@ import (
 type TransactionDetail struct {
 	BlockHash   string `json:"BlockHash"`
 	BlockHeight uint64 `json:"BlockHeight"`
+	TxSize      uint64 `json:"TxSize"`
 	Index       uint64 `json:"Index"`
 	ShardID     byte   `json:"ShardID"`
 	Hash        string `json:"Hash"`
@@ -61,6 +62,7 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 				BlockHash:   blockHashStr,
 				BlockHeight: blockHeight,
 				Index:       uint64(index),
+				TxSize:      tx.GetTxActualSize(),
 				ShardID:     shardID,
 				Hash:        tx.Hash().String(),
 				Version:     tempTx.Version,
@@ -91,6 +93,7 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 				BlockHash:                blockHashStr,
 				BlockHeight:              blockHeight,
 				Index:                    uint64(index),
+				TxSize:                   tempTx.GetTxActualSize(),
 				ShardID:                  shardID,
 				Hash:                     tx.Hash().String(),
 				Version:                  tempTx.Version,
