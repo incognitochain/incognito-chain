@@ -1,5 +1,11 @@
 # Portal: Bring incognito mode to every token
 
+**Designers:** @duyhtq, @0xankylosaurus, @0xkraken
+
+**Developers:** @0xankylosaurus, @0xkraken
+
+Also thanks to @corollari for really useful review & feedback.
+
 ## Introduction
 
 Portal focuses on three main properties:
