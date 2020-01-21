@@ -4,7 +4,7 @@
 
 **Developers:** @0xankylosaurus, @0xkraken
 
-Also thanks to @corollari for really useful review & feedback.
+Also thanks to @corollari for really useful feedback.
 
 ## Introduction
 
@@ -88,9 +88,11 @@ The whole process of porting public tokens into pTokens with Incognito vault is 
 
 ### Redeeming pTokens for public tokens
 
-Redeeming a pToken is pretty straightforward. A user inits a redeem transaction, which burns the pToken and instructs the custodian(s) to send public tokens back to the user by a deadline. The deadline is initially set within 12 hours. Incognito will also provide a client tool in order for custodians to make the process execute automatically.
+Redeeming a pToken is pretty straightforward. A user inits a redeem transaction, which burns the pToken.
 
-Once the custodian finishes sending public tokens (BTC/BNB/ETH/etc) to the user’s address that is included in a redeem instruction, he can get a BTC/BNB/etc proof from those “public” blockchains and submit it to Incognito. The Incognito chain verifies that proof’s validity with the aforementioned process and then unlocks collaterals that will be available for either withdrawal or serving incoming porting requests.
+The system chooses custodians in the custodian list and asks them to send public tokens back to the user (Incognito will also provide a client tool in order for custodians to make the process execute automatically). Once the custodian finishes sending public tokens (BTC/BNB/ETH/etc) to the user’s address that is included in a redeem instruction, he can get a BTC/BNB/etc proof from those “public” blockchains and submit it to Incognito. The Incognito chain verifies that proof’s validity with the aforementioned process and then unlocks collaterals that will be available for either withdrawal or serving incoming porting requests.
+
+In case the user doesn't still receive enough his original assets, the collaterals of custodians, who didn't return public tokens to the user, will be liquidated.
 
 The redeem process with Incognito vault is illustrated as the following figure:
 
@@ -114,9 +116,11 @@ The whole process of porting public tokens into pTokens with Ethereum Smart Cont
 
 ### Redeeming pTokens for public tokens
 
-Redeeming a pToken with Smart Contract vault is slightly different from Incognito vault's. A user inits a redeem transaction on Incognito, which burns the pToken. Then he/she can extract redeem proof and submit it to a provided smart contract that verifies and instructs the custodians to send the public token back to the user by a deadline. The deadline is initially set within 12 hours.
+Redeeming a pToken with Smart Contract vault is slightly different from Incognito vault's. A user inits a redeem transaction on Incognito, which burns the pToken. Then he can extract redeem proof and submit it to a provided smart contract.
 
-Once the custodian finishes sending public tokens (BTC/BNB/ETH/etc) to the user’s address that is included in redeem instruction, he can extract BTC/BNB/etc proof from those “public” blockchains and submit it to the smart contract. The smart contract verifies that proof’s validity with the aforementioned process and then unlocks collaterals that will be available for either withdrawal or serving incoming porting requests.
+The system chooses custodians in the custodian list and asks them to return public tokens to the user (Incognito will also provide a client tool in order for custodians to make the process execute automatically). Once the custodians finish sending public tokens (BTC/BNB/ETH/etc) to the user’s address that is included in redeem instruction, he can extract BTC/BNB/etc proof from those “public” blockchains and submit it to the smart contract. The smart contract verifies that proof’s validity with the aforementioned process and then unlocks collaterals that will be available for either withdrawal or serving incoming porting requests.
+
+In case the user doesn't still receive enough his original assets, the collaterals of custodians, who didn't return public tokens to the user, will be liquidated.
 
 The redeem process with Ethereum Smart Contract vault is illustrated as the following figure:
 
@@ -132,7 +136,7 @@ We also introduce another variable &alpha;, which is initially set as 150%. &alp
 
 ## Auto-liquidation
 
-What if the custodian doesn't send the public token back by the deadline or doesn't send it back at all? If that happens, their collaterals are automatically liquidated to pay the users back.
+What if the custodian doesn't send the public tokens back? If that happens, their collaterals are automatically liquidated to pay the users back.
 
 Auto-liquidation also kicks in if the collaterals value drop significantly below &alpha x &sum;Deposit<sub>i</sub>. The custodian must add more collaterals to avoid auto-liquidation.
 
