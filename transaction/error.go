@@ -57,6 +57,11 @@ const (
 	ExceedSizeInfoOutCoinError
 
 	RejectInvalidLockTime
+	RejectTxSize
+	RejectTxVersion
+	RejectTxPublickeySigSize
+	RejectTxType
+	RejectTxInfoSize
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -98,6 +103,11 @@ var ErrCodeMessage = map[int]struct {
 	ExceedSizeInfoOutCoinError:                    {-1031, "Size of output coin's info exceed max size info"},
 	ExceedSizeTx:                                  {-1032, "Size of tx info exceed max size of tx"},
 	RejectInvalidLockTime:                         {-1033, "Wrong tx locktime"},
+	RejectTxSize:                                  {-1034, "Tx size is too large"},
+	RejectTxVersion:                               {-1035, "Wrong version tx"},
+	RejectTxPublickeySigSize:                      {-1036, "Wrong tx Sig PK"},
+	RejectTxType:                                  {-1037, "Wrong tx type"},
+	RejectTxInfoSize:                              {-1038, "Wrong tx info length"},
 
 	// for PRV
 	InvalidSanityDataPRVError:  {-2000, "Invalid sanity data for PRV"},
