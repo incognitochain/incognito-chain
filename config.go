@@ -35,8 +35,8 @@ const (
 	DefaultMaxPeersNoShard             = 200
 	DefaultMaxPeersBeacon              = 500
 	DefaultMaxRPCClients               = 200
-	DefaultRPCLimitRequestPerDay       = 1000000000 // 0: unlimited
-	DefaultRPCLimitErrorRequestPerHour = 10         // 0: unlimited
+	DefaultRPCLimitRequestPerDay       = 0 // 0: unlimited
+	DefaultRPCLimitErrorRequestPerHour = 0 // 0: unlimited
 	DefaultMaxRPCWsClients             = 200
 	DefaultMetricUrl                   = ""
 	SampleConfigFilename               = "sample-config.conf"
