@@ -505,7 +505,17 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int6
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
 	if !validated {
-		return NewMempoolTxError(RejectSansityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), err))
+		// try parse to TransactionError
+		sanityError, ok := err.(*transaction.TransactionError)
+		if ok {
+			switch sanityError.Code {
+			case transaction.RejectInvalidLockTime:
+				{
+					return NewMempoolTxError(RejectSanityTxLocktime, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), sanityError))
+				}
+			}
+		}
+		return NewMempoolTxError(RejectSanityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), err))
 	}
 
 	// Condition 2: Don't accept the transaction if it already exists in the pool.

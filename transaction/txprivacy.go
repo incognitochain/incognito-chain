@@ -834,7 +834,7 @@ func (tx Tx) validateNormalTxSanityData() (bool, error) {
 	}
 	// check LockTime before now
 	if int64(tx.LockTime) > time.Now().Unix() {
-		return false, errors.New("wrong tx locktime")
+		return false, NewTransactionErr(RejectInvalidLockTime, errors.New("wrong tx locktime"))
 	}
 
 	// check tx size
