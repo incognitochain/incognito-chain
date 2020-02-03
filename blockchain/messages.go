@@ -185,11 +185,11 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block *ShardToBeaconB
 	}
 }
 
-func (blockchain *BlockChain) OnCrossShardBlockReceived(block *CrossShardBlock) {
+func (blockchain *BlockChain) OnCrossShardBlockReceived(crossShardBlock *CrossShardBlock) {
 	if blockchain.IsTest {
 		return
 	}
-	Logger.log.Infof("[sync] Received CrossShardBlock blk Height %v shardID %v", block.Header.Height, block.Header.ShardID)
+	Logger.log.Infof("[sync] Received CrossShardBlock blk Height %v shardID %v", crossShardBlock.Header.Height, crossShardBlock.Header.ShardID)
 	if blockchain.IsTest {
 		return
 	}
@@ -201,12 +201,12 @@ func (blockchain *BlockChain) OnCrossShardBlockReceived(block *CrossShardBlock) 
 	} else {
 		return
 	}
-	expectedHeight, toShardID, err := blockchain.config.CrossShardPool[block.ToShardID].AddCrossShardBlock(block)
+	expectedHeight, toShardID, err := blockchain.config.CrossShardPool[crossShardBlock.ToShardID].AddCrossShardBlock(crossShardBlock)
 	if err != nil {
-		if err.Error() != "receive old block" && err.Error() != "receive duplicate block" {
+		if err.Error() != "receive old crossShardBlock" && err.Error() != "receive duplicate crossShardBlock" {
 			Logger.log.Error(err)
 			return
 		}
 	}
-	Logger.log.Infof("[sync] Shard %+v After insert cross shard block %v: expectedHeight %v, toShardID %v \n", block.ToShardID, block.GetHeight(), expectedHeight, toShardID)
+	Logger.log.Infof("[sync] Shard %+v After insert cross shard block %v: expectedHeight %v, toShardID %v \n", crossShardBlock.ToShardID, crossShardBlock.GetHeight(), expectedHeight, toShardID)
 }

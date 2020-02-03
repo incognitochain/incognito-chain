@@ -425,6 +425,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigningV2(shardBlo
 						break
 					}
 					shardCommittee := statedb.GetOneShardCommittee(stateDB, toShardCrossShardBlock.Header.ShardID)
+					Logger.log.Criticalf("Shard %+v, committee %+v", toShardCrossShardBlock.Header.ShardID, shardCommittee)
 					err = toShardCrossShardBlock.VerifyCrossShardBlock(blockchain, shardCommittee)
 					if err != nil {
 						return NewBlockChainError(VerifyCrossShardBlockError, err)

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"sort"
 	"strconv"
 	"sync"
@@ -45,6 +46,7 @@ type CrossShardPool struct {
 	// When beacon chain confirm new cross shard block, it will store these block height in database
 	// Cross Shard Pool using database to detect either is valid or pending
 	db     incdb.Database
+	bc     *blockchain.BlockChain
 	isTest bool
 	// Store shard blocks from a particular shard confirmed in a beacon block
 	//(mapping from (shardID, beaconHeight) ==> confirmed shard height via shard state/beacon body)
@@ -58,11 +60,12 @@ type heightPair struct {
 
 var crossShardPoolMap = make(map[byte]*CrossShardPool)
 
-func InitCrossShardPool(pool map[byte]blockchain.CrossShardPool, db incdb.Database) {
+func InitCrossShardPool(pool map[byte]blockchain.CrossShardPool, db incdb.Database, bc *blockchain.BlockChain) {
 	for i := 0; i < 255; i++ {
 		crossShardPoolMap[byte(i)] = GetCrossShardPool(byte(i))
 		pool[byte(i)] = crossShardPoolMap[byte(i)]
 		crossShardPoolMap[byte(i)].db = db
+		crossShardPoolMap[byte(i)].bc = bc
 	}
 }
 
@@ -189,20 +192,28 @@ func (crossShardPool *CrossShardPool) validateCrossShardBlockBeforeSignatureVali
 }
 
 // Validate Agg Signature of Cross Shard Block
-func (crossShardPool *CrossShardPool) validateCrossShardBlockSignature(crossShardBlock *blockchain.CrossShardBlock) error {
+func (crossShardPool *CrossShardPool) validateCrossShardBlock(crossShardBlock *blockchain.CrossShardBlock) error {
 	if crossShardPool.isTest {
 		return nil
 	}
-	//TODO: DBV2 validate latter
-	// find beacon block height to get shard committee
-	//beaconHeight, err := crossShardPool.FindBeaconHeightForCrossShardBlock(crossShardBlock.Header.BeaconHeight, crossShardBlock.Header.ShardID, crossShardBlock.Header.Height)
-	//if err != nil {
-	//	return NewBlockPoolError(FindBeaconHeightForCrossShardBlockError, fmt.Errorf("No Beacon Block For Cross Shard Block %+v from Shard %+v", crossShardBlock.Header.Height, crossShardBlock.Header.ShardID))
-	//}
-	// validate agg signature
-	// if err := blockchain.ValidateAggSignature(crossShardBlock.ValidatorsIndex, shardCommittee[crossShardBlock.Header.ShardID], crossShardBlock.AggregatedSig, crossShardBlock.R, crossShardBlock.Hash()); err != nil {
-	// 	return NewBlockPoolError(ValidateAggSignatureForCrossShardBlockError, err)
-	// }
+	Logger.log.Infof("Begin Verify Cross Shard Block from shard %+v, height %+v", crossShardBlock.Header.ShardID, crossShardBlock.Header.Height)
+	beaconHeight, err := crossShardPool.findBeaconHeightForCrossShardBlock(crossShardBlock.Header.BeaconHeight, crossShardBlock.Header.ShardID, crossShardBlock.Header.Height)
+	if err != nil {
+		return NewBlockPoolError(ValidateAggSignatureForCrossShardBlockError, err)
+	}
+	consensusStateRootHash, ok := crossShardPool.bc.BestState.Beacon.GetConsensusStateRootHashWithNoLock(beaconHeight)
+	if !ok {
+		return NewBlockPoolError(ValidateAggSignatureForCrossShardBlockError, fmt.Errorf("Can't found ConsensusStateRootHash of beacon height %+v ", beaconHeight))
+	}
+	consensusStateDB, err := statedb.NewWithPrefixTrie(consensusStateRootHash, statedb.NewDatabaseAccessWarper(crossShardPool.bc.GetDatabase()))
+	if err != nil {
+		return NewBlockPoolError(ValidateAggSignatureForCrossShardBlockError, err)
+	}
+	shardCommittee := statedb.GetOneShardCommittee(consensusStateDB, crossShardBlock.Header.ShardID)
+	if err := crossShardBlock.VerifyCrossShardBlock(crossShardPool.bc, shardCommittee); err != nil {
+		return NewBlockPoolError(ValidateAggSignatureForCrossShardBlockError, err)
+	}
+	Logger.log.Infof("Finish Verify Successfully Cross Shard Block from shard %+v, height %+v", crossShardBlock.Header.ShardID, crossShardBlock.Header.Height)
 	return nil
 }
 
@@ -226,7 +237,8 @@ func (crossShardPool *CrossShardPool) updatePool() map[byte]uint64 {
 		removeIndex := 0
 		for _, crossShardBlock := range crossShardBlocks {
 			// verify cross shard block signature
-			if err := crossShardPool.validateCrossShardBlockSignature(crossShardBlock); err != nil {
+			if err := crossShardPool.validateCrossShardBlock(crossShardBlock); err != nil {
+				Logger.log.Error(err)
 				break
 			}
 			//only when beacon confirm (save next cross shard height), we make cross shard block valid
@@ -460,10 +472,10 @@ func (crossShardPool *CrossShardPool) findBeaconHeightForCrossShardBlock(beaconH
 func (crossShardPool *CrossShardPool) FindBeaconHeightForCrossShardBlock(beaconHeight uint64, fromShardID byte, crossShardBlockHeight uint64) (uint64, error) {
 	Logger.log.Infof("FindBeaconHeightForCrossShardBlock %d lock", crossShardPool.shardID)
 	crossShardPool.mtx.Lock()
+	defer crossShardPool.mtx.Unlock()
 	Logger.log.Infof("FindBeaconHeightForCrossShardBlock %d locked", crossShardPool.shardID)
 	defer func() {
 		Logger.log.Infof("FindBeaconHeightForCrossShardBlock %d unlocked", crossShardPool.shardID)
 	}()
-	defer crossShardPool.mtx.Unlock()
 	return crossShardPool.findBeaconHeightForCrossShardBlock(beaconHeight, fromShardID, crossShardBlockHeight)
 }

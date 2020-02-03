@@ -348,7 +348,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db incdb.Database, dbmp d
 	//init shard pool
 	mempool.InitShardPool(serverObj.shardPool, serverObj.pusubManager)
 	//init cross shard pool
-	mempool.InitCrossShardPool(serverObj.crossShardPool, db)
+	mempool.InitCrossShardPool(serverObj.crossShardPool, db, serverObj.blockChain)
 
 	//init shard to beacon bool
 	mempool.InitShardToBeaconPool()

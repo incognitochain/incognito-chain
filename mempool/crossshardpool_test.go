@@ -152,7 +152,7 @@ func ResetCrossShardPoolTest() {
 	}
 }
 func TestCrossShardPoolv2InitCrossShardPool(t *testing.T) {
-	InitCrossShardPool(make(map[byte]blockchain.CrossShardPool), dbCrossShard)
+	InitCrossShardPool(make(map[byte]blockchain.CrossShardPool), dbCrossShard, &blockchain.BlockChain{})
 	if len(crossShardPoolMap) != 255 {
 		t.Fatal("Fail to init")
 	}
