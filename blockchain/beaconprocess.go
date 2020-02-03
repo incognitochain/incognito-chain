@@ -1188,9 +1188,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 	//================================Store cross shard state ==================================
 	if beaconBlock.Body.ShardState != nil {
-		Logger.log.Infof("processStoreBeaconBlock: locking GetBeaconBestState()")
 		GetBeaconBestState().lock.Lock()
-		Logger.log.Infof("processStoreBeaconBlock: done locking GetBeaconBestState()")
 		lastCrossShardState := GetBeaconBestState().LastCrossShardState
 		for fromShard, shardBlocks := range beaconBlock.Body.ShardState {
 			for _, shardBlock := range shardBlocks {
@@ -1205,7 +1203,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 					waitHeight := shardBlock.Height
 					err := rawdb.StoreCrossShardNextHeight(blockchain.GetDatabase(), fromShard, toShard, lastHeight, waitHeight)
 					if err != nil {
-						Logger.log.Infof("processStoreBeaconBlock: unlocking GetBeaconBestState() 1")
 						GetBeaconBestState().lock.Unlock()
 						return NewBlockChainError(StoreCrossShardNextHeightError, err)
 					}
@@ -1213,7 +1210,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 					//dont care overwrite this value
 					err = rawdb.StoreCrossShardNextHeight(blockchain.GetDatabase(), fromShard, toShard, waitHeight, 0)
 					if err != nil {
-						Logger.log.Infof("processStoreBeaconBlock: unlocking GetBeaconBestState() 2")
 						GetBeaconBestState().lock.Unlock()
 						return NewBlockChainError(StoreCrossShardNextHeightError, err)
 					}
@@ -1223,11 +1219,8 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 					lastCrossShardState[fromShard][toShard] = waitHeight //update lastHeight to waitHeight
 				}
 			}
-			Logger.log.Infof("processStoreBeaconBlock: start UpdatePool()")
 			blockchain.config.CrossShardPool[fromShard].UpdatePool()
-			Logger.log.Infof("processStoreBeaconBlock: done UpdatePool()")
 		}
-		Logger.log.Infof("processStoreBeaconBlock: unlocking GetBeaconBestState() 3")
 		GetBeaconBestState().lock.Unlock()
 	}
 	//=============================END Store cross shard state ==================================

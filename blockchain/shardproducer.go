@@ -117,7 +117,6 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	Logger.log.Infof("Get Beacon Block With Height %+v, Shard BestState %+v", beaconHeight, shardBestState.BeaconHeight)
 	//Fetch beacon block from height
 	beaconBlocks, err := FetchBeaconBlockFromHeight(blockGenerator.chain.config.DataBase, shardBestState.BeaconHeight+1, beaconHeight)
-	Logger.log.Infof("Done FetchBeaconBlockFromHeight")
 	if err != nil {
 		return nil, err
 	}
@@ -135,9 +134,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	// Get Transaction For new Block
 	// Get Cross output coin from other shard && produce cross shard transaction
 	// // startStep = time.Now()
-	Logger.log.Infof("Start getCrossShardData")
 	crossTransactions := blockGenerator.getCrossShardData(shardID, shardBestState.BeaconHeight, beaconHeight, crossShards)
-	Logger.log.Infof("Done getCrossShardData")
 	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
 	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
@@ -653,9 +650,7 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeaconHeight uint64, currentBeaconHeight uint64, crossShards map[byte]uint64) map[byte][]CrossTransaction {
 	crossTransactions := make(map[byte][]CrossTransaction)
 	// get cross shard block
-	Logger.log.Infof("Start GetValidBlock shard %d", toShard)
 	allCrossShardBlock := blockGenerator.crossShardPool[toShard].GetValidBlock(crossShards)
-	Logger.log.Infof("Done GetValidBlock")
 	// Get Cross Shard Block
 	for fromShard, crossShardBlock := range allCrossShardBlock {
 		sort.SliceStable(crossShardBlock[:], func(i, j int) bool {
@@ -675,9 +670,7 @@ func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeacon
 				continue
 			}
 			startHeight = nextHeight
-			Logger.log.Infof("Start FindBeaconHeightForCrossShardBlock")
 			beaconHeight, err := blockGenerator.chain.FindBeaconHeightForCrossShardBlock(crossShardBlock.Header.BeaconHeight, crossShardBlock.Header.ShardID, crossShardBlock.Header.Height)
-			Logger.log.Infof("Done FindBeaconHeightForCrossShardBlock")
 			if err != nil {
 				break
 			}
@@ -690,9 +683,7 @@ func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeacon
 			if err != nil {
 				break
 			}
-			Logger.log.Infof("Start VerifyCrossShardBlock")
 			err = crossShardBlock.VerifyCrossShardBlock(blockGenerator.chain, shardCommittee[crossShardBlock.Header.ShardID])
-			Logger.log.Infof("Done VerifyCrossShardBlock")
 			if err != nil {
 				break
 			}

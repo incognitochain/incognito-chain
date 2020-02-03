@@ -290,12 +290,14 @@ func buildPDEWithdrawReqAction(
 	metadataBase := metadata.MetadataBase{
 		Type: metadata.PDEWithdrawalRequestMeta,
 	}
+	// PLEASE UPDATE THIS TEST
 	pdeWithdrawalRequest := metadata.PDEWithdrawalRequest{
 		WithdrawerAddressStr:  withdrawerAddressStr,
 		WithdrawalToken1IDStr: withdrawalToken1IDStr,
-		WithdrawalShare1Amt:   withdrawalShare1Amt,
+		WithdrawalShareAmt:    withdrawalShare1Amt,
 		WithdrawalToken2IDStr: withdrawalToken2IDStr,
-		WithdrawalShare2Amt:   withdrawalShare2Amt,
+		// TMP FIX FOR TEST
+		// WithdrawalShare2Amt:   withdrawalShare2Amt,
 	}
 	pdeWithdrawalRequest.MetadataBase = metadataBase
 	actionContent := metadata.PDEWithdrawalRequestAction{
