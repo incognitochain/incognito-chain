@@ -13,7 +13,7 @@ type HeaderChain struct {
 }
 
 // ReceiveNewHeader receives new header and last commit for the previous header block
-func (hc *HeaderChain) ReceiveNewHeader(h *BNBHeader, lastCommit *types.Commit) (bool, error) {
+func (hc *HeaderChain) ReceiveNewHeader(h *BNBHeader, lastCommit *types.Commit) (bool, *BNBRelayingError) {
 	// h is the first header block
 	if len(hc.HeaderChain) == 0 && len(hc.prevHeader) == 0 && lastCommit == nil {
 		// just append into hc.prevHeader
@@ -48,7 +48,7 @@ func (hc *HeaderChain) ReceiveNewHeader(h *BNBHeader, lastCommit *types.Commit) 
 			sh := new(BNBSignedHeader)
 			newSignedHeader, err := sh.Init(latestHeader, lastCommit)
 			if err != nil{
-				return false, err
+				return false, NewBNBRelayingError(InvalidNewHeaderErr, err)
 			}
 			isValid, err := newSignedHeader.Verify()
 			if isValid && err == nil{
@@ -56,21 +56,21 @@ func (hc *HeaderChain) ReceiveNewHeader(h *BNBHeader, lastCommit *types.Commit) 
 				return true, nil
 			}
 
-			return false, err
+			return false, NewBNBRelayingError(InvalidNewHeaderErr, err)
 		}
 	}
 
 	// case2 : h is the next block header of one of block headers in prevHeader
 	if len(hc.prevHeader) > 0 {
 		for _, ph := range hc.prevHeader{
-			if bytes.Equal(h.LastBlockID.Hash.Bytes(), ph.Hash())  && h.Height == ph.Height + 1{
+			if bytes.Equal(h.LastBlockID.Hash.Bytes(), ph.Hash())  && h.Height == ph.Height + 1 {
 				// create new signed header and verify
 				// append ph to hc.HeaderChain,
 				// clear all prevHeader => append h to prevHeader
 				sh := new(BNBSignedHeader)
 				newSignedHeader, err := sh.Init(ph, lastCommit)
 				if err != nil{
-					return false, err
+					return false, NewBNBRelayingError(InvalidNewHeaderErr, err)
 				}
 				isValid, err := newSignedHeader.Verify()
 				if isValid && err == nil{
@@ -78,7 +78,7 @@ func (hc *HeaderChain) ReceiveNewHeader(h *BNBHeader, lastCommit *types.Commit) 
 					hc.prevHeader = []*BNBHeader{h}
 					return true, nil
 				}
-				return false, err
+				return false, NewBNBRelayingError(InvalidNewHeaderErr, err)
 			}
 		}
 	}
