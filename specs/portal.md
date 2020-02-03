@@ -108,9 +108,9 @@ Quite similar to Incognito vault's above, custodians supply collaterals (eg., Et
 
 A user, who wants to port public tokens to private tokens on Incognito, needs to send a porting registration to a provided smart contract along with the needed info (Unique registration ID, Incognito address, private token ID and amount). The Bond smart contract selects trustless custodians for the public coins and provides the user the custodians’ deposit addresses.
 
-Once the deposit is confirmed on the cryptonetwork of the public coins, the contract verifies and produces an <em>accepted proof<em> if the submitted <em>deposit proof<em> by the user is valid and the user then can initiates a transaction on Incognito along with the <em>accepted proof<em> to request minting pTokens.
+Once the deposit is confirmed on the cryptonetwork of the public coins, the contract verifies and produces an <em>accepted proof</em> if the submitted <em>deposit proof</em> by the user is valid and the user then can initiates a transaction on Incognito along with the <em>accepted proof</em> to request minting pTokens.
 
-Incognito validators verify the transaction and the <em>accepted proof<em> inside it in particular by using the aforementioned process and new privacy coins are minted at a 1:1 ratio the predefined user’s Incognito address.
+Incognito validators verify the transaction and the <em>accepted proof</em> inside it in particular by using the aforementioned process and new privacy coins are minted at a 1:1 ratio the predefined user’s Incognito address.
 
 The whole process of porting public tokens into pTokens with Ethereum Smart Contract vault is illustrated in the following figure:
 
