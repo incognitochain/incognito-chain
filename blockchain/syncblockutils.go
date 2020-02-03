@@ -166,7 +166,6 @@ func GetMissingBlockHashesFromPeersState(
 	beaconBestStateGetter func() *BeaconBestState,
 	shardBestStateGetter func(shardID byte) *ShardBestState,
 ) map[int][]common.Hash {
-	BEACON_ID := -1
 	res := map[int][]common.Hash{}
 	for _, peerState := range peersState {
 		if peerState.Beacon.Height == beaconBestStateGetter().BeaconHeight && !peerState.Beacon.BlockHash.IsEqual(&beaconBestStateGetter().BestBlockHash) {
