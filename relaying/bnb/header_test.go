@@ -1,16 +1,18 @@
 package relaying
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/ed25519"
+	"github.com/tendermint/tendermint/crypto/merkle"
 	"github.com/tendermint/tendermint/crypto/tmhash"
 	"github.com/tendermint/tendermint/types"
 	"math"
-
 	"testing"
 	"time"
 )
@@ -751,3 +753,20 @@ func TestVoteSignVerify(t *testing.T) {
 //null
 //]
 //
+
+
+func TestValidatorHash(t *testing.T){
+	validatorHash, _ := hex.DecodeString("43C53A50D8653EF8CF1E5716DA68120FB51B636DC6D111EC3277B098ECD42D49")
+
+	validatorBytes := make([][]byte, 11)
+	for i, v := range ValidatorAddresses{
+		validatorBytes[i] = validatorMap[v].Bytes()
+	}
+
+	hash := merkle.SimpleHashFromByteSlices(validatorBytes)
+	fmt.Printf("validatorHash: %v\n", validatorHash)
+	fmt.Printf("hash: %v\n", hash)
+	fmt.Printf("Result: %v\n", bytes.Equal(validatorHash, hash))
+
+	//sortedValidator
+}

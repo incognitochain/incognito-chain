@@ -57,13 +57,10 @@ func (sh *BNBSignedHeader) ValidateBasic(chainID string) error {
 	return nil
 }
 
-func (sh *BNBSignedHeader) VerifySignature(chainID string) (error){
-	fmt.Printf("Validator map : \n")
-	for i, v := range validatorMap {
-		fmt.Printf("address %v - key  %v\n", i, v.publicKey.Bytes())
-	}
+func (sh *BNBSignedHeader) VerifySignature(chainID string) error {
+	signedValidator := map[string]bool{}
 	sigs := sh.Commit.Signatures
-	totalVotingPower := uint64(0)
+	totalVotingPower := int64(0)
 	// get vote from commit sig
 	for i, sig := range sigs {
 		if len(sig.Signature) == 0 {
@@ -72,16 +69,20 @@ func (sh *BNBSignedHeader) VerifySignature(chainID string) (error){
 		vote := sh.Commit.GetVote(i)
 		if vote != nil {
 			validateAddressStr := strings.ToUpper(hex.EncodeToString(vote.ValidatorAddress))
-			err := vote.Verify(chainID, validatorMap[validateAddressStr].publicKey)
-			if err != nil {
-				return err
+			// check duplicate vote
+			if !signedValidator[validateAddressStr] {
+				signedValidator[validateAddressStr] = true
+				err := vote.Verify(chainID, validatorMap[validateAddressStr].PubKey)
+				if err != nil {
+					return err
+				}
+				totalVotingPower += ValidatorVotingPowers[i]
 			}
-			totalVotingPower += ValidatorVotingPowers[i]
 		}
 	}
 
 	// not enough 2/3 voting power
-	if totalVotingPower < 11000000000000 *2 /3 {
+	if totalVotingPower < 11000000000000 * 2 / 3 {
 		return errors.New("not enough 2/3 voting power")
 	}
 

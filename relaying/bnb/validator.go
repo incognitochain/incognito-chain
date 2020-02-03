@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/ed25519"
+	"github.com/tendermint/tendermint/types"
 	"strings"
 )
 
@@ -76,7 +77,7 @@ var ValidatorPubKeyBytes = [][]byte{
 
 var ValidatorPubKeys = []crypto.PubKey{}
 
-var ValidatorVotingPowers = []uint64{
+var ValidatorVotingPowers = []int64{
 	1000000000000,
 	1000000000000,
 	1000000000000,
@@ -130,17 +131,17 @@ func DecodePublicKeyValidator() error {
 	return nil
 }
 
-func NewFixedValidators() (map[string]Validator, error) {
+func NewFixedValidators() (map[string]*types.Validator, error) {
 	if len(ValidatorAddresses) != len(ValidatorPubKeyBytes) || len(ValidatorAddresses) != len(ValidatorVotingPowers) {
 		return nil, errors.New("invalid validator set data")
 	}
-	validators := make(map[string]Validator, len(ValidatorAddresses))
+	validators := make(map[string]*types.Validator, len(ValidatorAddresses))
 	for i, addressStr := range ValidatorAddresses {
 		var pubKey ed25519.PubKeyEd25519
 		copy(pubKey[:], ValidatorPubKeyBytes[i])
-		validators[addressStr] = Validator{
-			publicKey: pubKey,
-			votingPower: ValidatorVotingPowers[i],
+		validators[addressStr] = &types.Validator{
+			PubKey: pubKey,
+			VotingPower: ValidatorVotingPowers[i],
 		}
 	}
 	return validators, nil

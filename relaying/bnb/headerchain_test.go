@@ -85,7 +85,6 @@ func TestHeaderChain_ReceiveNewHeader(t *testing.T) {
 			validatorAddressBytes, _ = hex.DecodeString(sigs[i].ValidatorAddress)
 			signatureBytes, _ = base64.StdEncoding.DecodeString(sigs[i].Signature)
 			time, _ := time.Parse(time.RFC3339Nano, sigs[i].Time)
-			fmt.Printf("validatorAddressBytes : %v\n", len(validatorAddressBytes))
 			lastCommit1.Signatures[i] = types.CommitSig{
 				BlockIDFlag:      types.BlockIDFlagCommit,
 				ValidatorAddress: validatorAddressBytes,
@@ -232,7 +231,7 @@ func TestHeaderChain_ReceiveNewHeader(t *testing.T) {
 	assert.Equal(t, nil, err)
 
 	fmt.Printf("Header chain after receive header 1: %v\n", headerChain.HeaderChain)
-	fmt.Printf("Header chain after receive header 1: %v\n", headerChain.prevHeader)
+	fmt.Printf("Prev header after receive header 1: %v\n", headerChain.prevHeader)
 
 	// receive header 2
 	isResult2, err := headerChain.ReceiveNewHeader(header2, lastCommit1)
@@ -240,7 +239,7 @@ func TestHeaderChain_ReceiveNewHeader(t *testing.T) {
 	assert.Equal(t, nil, err)
 
 	fmt.Printf("Header chain after receive header 2: %v\n", headerChain.HeaderChain)
-	fmt.Printf("Header chain after receive header 2: %v\n", headerChain.prevHeader)
+	fmt.Printf("Prev header after receive header 2: %v\n", headerChain.prevHeader)
 
 	// receive header 3
 	isResult3, err := headerChain.ReceiveNewHeader(header3, lastCommit2)
@@ -248,7 +247,7 @@ func TestHeaderChain_ReceiveNewHeader(t *testing.T) {
 	assert.Equal(t, nil, err)
 
 	fmt.Printf("Header chain after receive header 3: %v\n", headerChain.HeaderChain)
-	fmt.Printf("Header chain after receive header 3: %v\n", headerChain.prevHeader)
+	fmt.Printf("Prev header after receive header 3: %v\n", headerChain.prevHeader)
 	//_ = header3
 }
 
@@ -290,30 +289,32 @@ func TestCommitHash(t*testing.T){
 		{"B7707D9F593C62E85BB9E1A2366D12A97CD5DFF2", "", ""},
 	}
 
-	lastCommit1.Signatures = make([]types.CommitSig, len(sigs))
+	lastCommit1.Signatures = make([]types.CommitSig, 0)
 	for i := 0; i < len(sigs); i++ {
 		validatorAddressBytes := []byte{}
 		signatureBytes := []byte{}
 
+		validatorAddressBytes, _ = hex.DecodeString(sigs[i].ValidatorAddress)
 		if sigs[i].Signature != "" {
-			validatorAddressBytes, _ = hex.DecodeString(sigs[i].ValidatorAddress)
 			signatureBytes, _ = base64.StdEncoding.DecodeString(sigs[i].Signature)
 			time, _ := time.Parse(time.RFC3339Nano, sigs[i].Time)
 			//fmt.Printf("validatorAddressBytes : %v\n", len(validatorAddressBytes))
-			lastCommit1.Signatures[i] = types.CommitSig{
+			lastCommit1.Signatures = append(lastCommit1.Signatures, types.CommitSig{
 				BlockIDFlag:      types.BlockIDFlagCommit,
 				ValidatorAddress: validatorAddressBytes,
 				Timestamp:        time,
 				Signature:        signatureBytes,
-			}
-		//}
-		}else{
-			lastCommit1.Signatures[i] = types.CommitSig{
-				BlockIDFlag:      types.BlockIDFlagAbsent,
-				//ValidatorAddress: validatorAddressBytes,
-				//Timestamp:        ,
-				//Signature:        signatureBytes,
-			}
+			})
+			//}
+			//} else{
+			//	//lastCommit1.Signatures[i] = types.CommitSig{
+			//	//	BlockIDFlag:      types.BlockIDFlagAbsent,
+			//	//	//ValidatorAddress: validatorAddressBytes,
+			//	//	//Timestamp:        ,
+			//	//	//Signature:        signatureBytes,
+			//	//}
+			//	lastCommit1.Signatures[i] = types.NewCommitSigAbsent()
+			//}
 		}
 	}
 
@@ -321,6 +322,10 @@ func TestCommitHash(t*testing.T){
 	fmt.Printf("commit: %v\n", lastCommit1.Signatures[0].ValidatorAddress)
 	fmt.Printf("commit: %v\n", lastCommit1.Signatures[0].BlockIDFlag)
 	fmt.Printf("commit: %v\n", lastCommit1.Signatures[0].Timestamp)
+	fmt.Printf("commit: %v\n", lastCommit1.Signatures[1].Signature)
+	fmt.Printf("commit: %v\n", lastCommit1.Signatures[1].ValidatorAddress)
+	fmt.Printf("commit: %v\n", lastCommit1.Signatures[1].BlockIDFlag)
+	fmt.Printf("commit: %v\n", lastCommit1.Signatures[1].Timestamp)
 
 	lastCommitHash, _ := hex.DecodeString("DBDCD4FB32B47D560A7FB045D254C997EDB456FB98F49495B9C1808981DB57AE")
 	lastCommitHash1 := lastCommit1.Hash().Bytes()
@@ -330,5 +335,4 @@ func TestCommitHash(t*testing.T){
 
 	isEqual := bytes.Equal(lastCommitHash, lastCommitHash1)
 	fmt.Println(isEqual)
-
 }
