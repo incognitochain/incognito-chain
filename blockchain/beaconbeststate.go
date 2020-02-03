@@ -134,6 +134,8 @@ func GetBeaconBestState() *BeaconBestState {
 	return beaconBestState
 }
 func (beaconBestState *BeaconBestState) InitStateRootHash(db incdb.Database) error {
+	beaconBestState.lock.Lock()
+	defer beaconBestState.lock.Unlock()
 	var err error
 	var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
 	if rootHash, ok := beaconBestState.ConsensusStateRootHash[beaconBestState.BeaconHeight]; ok {
@@ -725,14 +727,16 @@ func (beaconBestState *BeaconBestState) getAllCommitteeValidatorCandidateFlatten
 	return res
 }
 
-func (beaconBestState *BeaconBestState) GetConsensusStateRootHash(height uint64) common.Hash {
+func (beaconBestState *BeaconBestState) GetConsensusStateRootHash(height uint64) (common.Hash, bool) {
 	beaconBestState.lock.RLock()
 	defer beaconBestState.lock.RUnlock()
-	return beaconBestState.ConsensusStateRootHash[height]
+	res, ok := beaconBestState.ConsensusStateRootHash[height]
+	return res, ok
 }
 
-func (beaconBestState *BeaconBestState) GetFeatureStateRootHash(height uint64) common.Hash {
+func (beaconBestState *BeaconBestState) GetFeatureStateRootHash(height uint64) (common.Hash, bool) {
 	beaconBestState.lock.RLock()
 	defer beaconBestState.lock.RUnlock()
-	return beaconBestState.FeatureStateRootHash[height]
+	res, ok := beaconBestState.FeatureStateRootHash[height]
+	return res, ok
 }

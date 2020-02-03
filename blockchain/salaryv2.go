@@ -174,7 +174,10 @@ func (blockchain *BlockChain) processSalaryInstructionsV2(rewardStateDB *statedb
 				if (!isInit) || (epoch != shardRewardInfo.Epoch) {
 					isInit = true
 					height := shardRewardInfo.Epoch * blockchain.config.ChainParams.Epoch
-					consensusRootHash := blockchain.BestState.Beacon.ConsensusStateRootHash[height]
+					consensusRootHash, ok := blockchain.BestState.Beacon.GetConsensusStateRootHash(height)
+					if !ok {
+						return fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found", height)
+					}
 					consensusStateDB, err := statedb.NewWithPrefixTrie(consensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetDatabase()))
 					if err != nil {
 						return err
