@@ -3,7 +3,6 @@ package peerv2
 import (
 	"context"
 	"encoding/hex"
-	"log"
 	"math/rand"
 	"reflect"
 	"sort"
