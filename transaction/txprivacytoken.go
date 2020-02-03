@@ -4,15 +4,15 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"math"
-	"sort"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"math"
+	"sort"
+	"strconv"
 )
 
 // TxCustomTokenPrivacy is class tx which is inherited from P tx(supporting privacy) for fee
@@ -185,6 +185,14 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 	// override TxCustomTokenPrivacyType type
 	normalTx.Type = common.TxCustomTokenPrivacyType
 	txCustomTokenPrivacy.Tx = normalTx
+
+	// check tx size
+	limitFee := uint64(0)
+	estimateTxSizeParam := NewEstimateTxSizeParam(len(params.inputCoin), len(params.paymentInfo),
+		params.hasPrivacyCoin, nil, params.tokenParams, limitFee)
+	if txSize := EstimateTxSize(estimateTxSizeParam); txSize > common.MaxTxSize {
+		return NewTransactionErr(ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
+	}
 
 	// check action type and create privacy custom toke data
 	var handled = false
