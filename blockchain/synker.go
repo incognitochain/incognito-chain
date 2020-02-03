@@ -458,7 +458,6 @@ func (synker *Synker) UpdateState() {
 		GetBestStateShard,
 	)
 	//remove hardcode later
-	BEACON_ID := -1
 	for cID, listBlks := range missingBestState {
 		if cID == BEACON_ID {
 			synker.SyncBlkBeacon(
