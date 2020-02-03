@@ -29,11 +29,12 @@ const (
 	UpperBoundPercentForIncDAO = 10
 	GetValidBlock              = 20
 	TestRandom                 = true
+	BEACON_ID                  = -1 // CommitteeID of beacon chain, used for highway
 )
 
 // burning addresses
 const (
-	burningAddress = "15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs"
+	burningAddress  = "15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs"
 	burningAddress2 = "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA"
 )
 
