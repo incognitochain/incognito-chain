@@ -87,7 +87,7 @@ func (blockGenerator *BlockGenerator) NewBlockShardV2(shardID byte, round int, c
 	// Get Transaction For new Block
 	// Get Cross output coin from other shard && produce cross shard transaction
 	crossTransactions := blockGenerator.getCrossShardDataV2(shardID, shardBestState.BeaconHeight, beaconHeight, crossShards)
-	Logger.log.Critical(crossTransactions)
+	Logger.log.Critical("Cross Transaction: ", crossTransactions)
 	// Get Transaction for new block
 	blockCreationLeftOver := blockGenerator.chain.BestState.Shard[shardID].BlockMaxCreateTime.Nanoseconds() - time.Since(start).Nanoseconds()
 	txsToAddFromBlock, err := blockGenerator.getTransactionForNewBlockV2(&tempPrivateKey, shardID, blockGenerator.chain.GetDatabase(), beaconBlocks, blockCreationLeftOver, beaconHeight)
