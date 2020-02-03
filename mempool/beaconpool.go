@@ -201,7 +201,7 @@ func (beaconPool *BeaconPool) insertNewBeaconBlockToPool(block *blockchain.Beaco
 					beaconPool.updateLatestBeaconState()
 					return true
 				} else {
-					fmt.Println("BPool: block is fork at height %v with hash %v (block hash should be %v)", block.Header.Height, blockHeader, preHash)
+					fmt.Printf("BPool: block is fork at height %v with hash %v (block hash should be %v)", block.Header.Height, blockHeader, preHash)
 					delete(beaconPool.pendingPool, block.Header.Height)
 					beaconPool.cache.Add(block.Header.Hash(), block) // mark as wrong block for validating later
 					beaconPool.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.RequestBeaconBlockByHashTopic, preHash))
