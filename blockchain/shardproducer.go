@@ -808,20 +808,7 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	Find Beacon Block with compatible shard states of cross shard block
 */
 func (blockchain *BlockChain) FindBeaconHeightForCrossShardBlock(beaconHeight uint64, fromShardID byte, crossShardBlockHeight uint64) (uint64, error) {
-	for {
-		beaconBlock, err := blockchain.GetBeaconBlockByHeight(beaconHeight)
-		if err != nil {
-			return 0, NewBlockChainError(FetchBeaconBlockError, err)
-		}
-		if shardStates, ok := beaconBlock.Body.ShardState[fromShardID]; ok {
-			for _, shardState := range shardStates {
-				if shardState.Height == crossShardBlockHeight {
-					return beaconBlock.Header.Height, nil
-				}
-			}
-		}
-		beaconHeight += 1
-	}
+	return blockchain.config.CrossShardPool[fromShardID].FindBeaconHeightForCrossShardBlock(beaconHeight, fromShardID, crossShardBlockHeight)
 }
 
 func (blockGenerator *BlockGenerator) createTempKeyset() privacy.PrivateKey {

@@ -47,6 +47,13 @@ type CrossShardPool struct {
 	isTest          bool
 	// When beacon chain confirm new cross shard block, it will store these block height in database
 	// Cross Shard Pool using database to detect either is valid or pending
+
+	confirmedHeight map[heightPair][]uint64 // heights of shard blocks confirmed by a beacon block (mapping from (shardID, beaconHeight) ==> shardHeight)
+}
+
+type heightPair struct {
+	Height  uint64
+	ShardID byte
 }
 
 var crossShardPoolMap = make(map[byte]*CrossShardPool)
@@ -69,6 +76,7 @@ func GetCrossShardPool(shardID byte) *CrossShardPool {
 		p.mtx = new(sync.RWMutex)
 		crossShardPoolMap[shardID] = p
 		p.isTest = false
+		p.confirmedHeight = make(map[heightPair][]uint64)
 	}
 	return p
 }
@@ -186,12 +194,13 @@ func (crossShardPool *CrossShardPool) validateCrossShardBlockSignature(crossShar
 		return nil
 	}
 	// find beacon block height to get shard committee
-	beaconHeight, err := crossShardPool.FindBeaconHeightForCrossShardBlock(crossShardBlock.Header.BeaconHeight, crossShardBlock.Header.ShardID, crossShardBlock.Header.Height)
+	beaconHeight, err := crossShardPool.findBeaconHeightForCrossShardBlock(crossShardBlock.Header.BeaconHeight, crossShardBlock.Header.ShardID, crossShardBlock.Header.Height)
 	if err != nil {
 		return NewBlockPoolError(FindBeaconHeightForCrossShardBlockError, fmt.Errorf("No Beacon Block For Cross Shard Block %+v from Shard %+v", crossShardBlock.Header.Height, crossShardBlock.Header.ShardID))
 	}
 	// get shard committee from database
 	shardCommitteeByte, err := crossShardPool.db.FetchShardCommitteeByHeight(beaconHeight)
+	Logger.log.Infof("validateCrossShardBlockSignature %d done FetchShardCommitteeByHeight", crossShardPool.shardID)
 	if err != nil {
 		return NewBlockPoolError(DatabaseError, fmt.Errorf("No Committee For Cross Shard Block %+v from ShardID %+v", crossShardBlock.Header.Height, crossShardBlock.Header.ShardID))
 	}
@@ -417,28 +426,57 @@ func (crossShardPool *CrossShardPool) GetBlockByHeight(_shardID byte, height uin
 	return nil
 }
 
-func (crossShardPool *CrossShardPool) FindBeaconHeightForCrossShardBlock(beaconHeight uint64, fromShardID byte, crossShardBlockHeight uint64) (uint64, error) {
+func (crossShardPool *CrossShardPool) findBeaconHeightForCrossShardBlock(beaconHeight uint64, fromShardID byte, crossShardBlockHeight uint64) (uint64, error) {
 	for {
-		beaconBlockHash, err := crossShardPool.db.GetBeaconBlockHashByIndex(beaconHeight)
-		if err != nil {
-			return 0, NewBlockPoolError(GetBeaconBlockHashFromDatabaseError, err)
+		p := heightPair{
+			Height:  beaconHeight,
+			ShardID: fromShardID,
 		}
-		beaconBlockBytes, err := crossShardPool.db.FetchBeaconBlock(beaconBlockHash)
-		if err != nil {
-			return 0, NewBlockPoolError(FetchBeaconBlockFromDatabaseError, err)
-		}
-		beaconBlock := blockchain.NewBeaconBlock()
-		err = json.Unmarshal(beaconBlockBytes, beaconBlock)
-		if err != nil {
-			return 0, NewBlockPoolError(UnmarshalBeaconBlockError, err)
-		}
-		if shardStates, ok := beaconBlock.Body.ShardState[fromShardID]; ok {
-			for _, shardState := range shardStates {
-				if shardState.Height == crossShardBlockHeight {
-					return beaconBlock.Header.Height, nil
+		if _, ok := crossShardPool.confirmedHeight[p]; !ok {
+			beaconBlockHash, err := crossShardPool.db.GetBeaconBlockHashByIndex(beaconHeight)
+			Logger.log.Infof("findBeaconHeightForCrossShardBlock %d done GetBeaconBlockHashByIndex %v %v", crossShardPool.shardID, beaconHeight, err)
+			if err != nil {
+				return 0, NewBlockPoolError(GetBeaconBlockHashFromDatabaseError, err)
+			}
+			beaconBlockBytes, err := crossShardPool.db.FetchBeaconBlock(beaconBlockHash)
+			Logger.log.Infof("findBeaconHeightForCrossShardBlock %d done FetchBeaconBlock %v", crossShardPool.shardID, err)
+			if err != nil {
+				return 0, NewBlockPoolError(FetchBeaconBlockFromDatabaseError, err)
+			}
+			beaconBlock := blockchain.NewBeaconBlock()
+			err = json.Unmarshal(beaconBlockBytes, beaconBlock)
+			if err != nil {
+				return 0, NewBlockPoolError(UnmarshalBeaconBlockError, err)
+			}
+
+			heights := []uint64{}
+			if shardStates, ok := beaconBlock.Body.ShardState[fromShardID]; ok {
+				for _, shardState := range shardStates {
+					heights = append(heights, shardState.Height)
 				}
+			}
+
+			// Cache confirmed heights
+			crossShardPool.confirmedHeight[p] = heights
+		}
+		heights := crossShardPool.confirmedHeight[p]
+
+		for _, h := range heights {
+			if h == crossShardBlockHeight {
+				return beaconHeight, nil
 			}
 		}
 		beaconHeight += 1
 	}
+}
+
+func (crossShardPool *CrossShardPool) FindBeaconHeightForCrossShardBlock(beaconHeight uint64, fromShardID byte, crossShardBlockHeight uint64) (uint64, error) {
+	Logger.log.Infof("FindBeaconHeightForCrossShardBlock %d lock", crossShardPool.shardID)
+	crossShardPool.mtx.Lock()
+	Logger.log.Infof("FindBeaconHeightForCrossShardBlock %d locked", crossShardPool.shardID)
+	defer func() {
+		Logger.log.Infof("FindBeaconHeightForCrossShardBlock %d unlocked", crossShardPool.shardID)
+	}()
+	defer crossShardPool.mtx.Unlock()
+	return crossShardPool.findBeaconHeightForCrossShardBlock(beaconHeight, fromShardID, crossShardBlockHeight)
 }

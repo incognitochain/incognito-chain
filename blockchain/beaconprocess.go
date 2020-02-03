@@ -172,7 +172,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	}
 
 	// Notify highway when there's a change (beacon/shard committee or beacon/shard pending members); for masternode only
-	// TODO(@0xbunyip): check case changing pending beacon validators
 	notifyHighway := false
 
 	newShardWaiting := append([]incognitokey.CommitteePublicKey{}, blockchain.BestState.Beacon.CandidateShardWaitingForNextRandom...)

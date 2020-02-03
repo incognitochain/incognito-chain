@@ -30,6 +30,7 @@ const (
 	GetValidBlock                = 20
 	TestRandom                   = true
 	NumberOfFixedBlockValidators = 4
+	BEACON_ID                    = -1 // CommitteeID of beacon chain, used for highway
 )
 
 // burning addresses
