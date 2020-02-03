@@ -425,6 +425,9 @@ func (crossShardPool *CrossShardPool) findBeaconHeightForCrossShardBlock(beaconH
 		}
 		if _, ok := crossShardPool.confirmedHeight[p]; !ok {
 			beaconBlockHashes, err := rawdbv2.GetBeaconBlockHashByIndex(crossShardPool.db, beaconHeight)
+			if err != nil {
+				return 0, NewBlockPoolError(FindBeaconHeightForCrossShardBlockError, err)
+			}
 			beaconBlockHash := beaconBlockHashes[0]
 			beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(crossShardPool.db, beaconBlockHash)
 			if err != nil {
@@ -433,7 +436,7 @@ func (crossShardPool *CrossShardPool) findBeaconHeightForCrossShardBlock(beaconH
 			beaconBlock := blockchain.NewBeaconBlock()
 			err = json.Unmarshal(beaconBlockBytes, beaconBlock)
 			if err != nil {
-				return 0, NewBlockPoolError(UnmarshalBeaconBlockError, err)
+				return 0, NewBlockPoolError(FindBeaconHeightForCrossShardBlockError, err)
 			}
 			heights := []uint64{}
 			if shardStates, ok := beaconBlock.Body.ShardState[shardID]; ok {
