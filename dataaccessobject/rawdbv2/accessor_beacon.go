@@ -2,6 +2,7 @@ package rawdbv2
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -134,6 +135,9 @@ func GetBeaconBlockHashByIndex(db incdb.Database, index uint64) ([]common.Hash, 
 		tempHash := []byte(strs[len(strs)-1])
 		hash := common.BytesToHash(tempHash)
 		beaconBlockHashes = append(beaconBlockHashes, hash)
+	}
+	if len(beaconBlockHashes) == 0 {
+		return beaconBlockHashes, errors.New("beacon block hash not found")
 	}
 	return beaconBlockHashes, nil
 }

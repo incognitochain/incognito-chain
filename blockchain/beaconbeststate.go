@@ -734,6 +734,11 @@ func (beaconBestState *BeaconBestState) GetConsensusStateRootHash(height uint64)
 	return res, ok
 }
 
+func (beaconBestState *BeaconBestState) GetConsensusStateRootHashWithNoLock(height uint64) (common.Hash, bool) {
+	res, ok := beaconBestState.ConsensusStateRootHash[height]
+	return res, ok
+}
+
 func (beaconBestState *BeaconBestState) GetFeatureStateRootHash(height uint64) (common.Hash, bool) {
 	beaconBestState.lock.RLock()
 	defer beaconBestState.lock.RUnlock()
