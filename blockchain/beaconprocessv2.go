@@ -4,16 +4,17 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"sort"
+	"strconv"
+	"strings"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/pkg/errors"
-	"reflect"
-	"sort"
-	"strconv"
-	"strings"
 )
 
 func (blockchain *BlockChain) VerifyPreSignBeaconBlockV2(beaconBlock *BeaconBlock, isPreSign bool) error {
@@ -185,7 +186,7 @@ func (blockchain *BlockChain) InsertBeaconBlockV2(beaconBlock *BeaconBlock, isVa
 		return err
 	}
 	blockchain.removeOldDataAfterProcessingBeaconBlock()
-	Logger.log.Infof("Finish Insert new Beacon Block %+v, with hash %+v \n", beaconBlock.Header.Height, *beaconBlock.Hash())
+	Logger.log.Infof("🔗 Finish Insert new Beacon Block %+v, with hash %+v \n", beaconBlock.Header.Height, *beaconBlock.Hash())
 	if beaconBlock.Header.Height%50 == 0 {
 		BLogger.log.Debugf("Inserted beacon height: %d", beaconBlock.Header.Height)
 	}
@@ -745,8 +746,12 @@ func (blockchain *BlockChain) processStoreBeaconBlockV2(beaconBlock *BeaconBlock
 	blockHash := beaconBlock.Header.Hash()
 	blockHeight := beaconBlock.Header.Height
 	tempBeaconBestState := blockchain.BestState.Beacon
-	tempBeaconBestState.lock.Lock()
-	defer tempBeaconBestState.lock.Unlock()
+	beaconBestStateBytes, err := json.Marshal(tempBeaconBestState)
+	if err != nil {
+		return NewBlockChainError(StoreBeaconBestStateError, err)
+	}
+	blockchain.BestState.Beacon.lock.Lock()
+	defer blockchain.BestState.Beacon.lock.Unlock()
 	//statedb===========================START
 	// Added
 	err = statedb.StoreCurrentEpochShardCandidate(tempBeaconBestState.consensusStateDB, committeeChange.currentEpochShardCandidateAdded, tempBeaconBestState.RewardReceiver, tempBeaconBestState.AutoStaking)
@@ -871,8 +876,8 @@ func (blockchain *BlockChain) processStoreBeaconBlockV2(beaconBlock *BeaconBlock
 	//statedb===========================END
 	//================================Store cross shard state ==================================
 	if beaconBlock.Body.ShardState != nil {
-		GetBeaconBestState().lock.Lock()
-		lastCrossShardState := GetBeaconBestState().LastCrossShardState
+		//GetBeaconBestState().lock.Lock()
+		lastCrossShardState := tempBeaconBestState.LastCrossShardState
 		for fromShard, shardBlocks := range beaconBlock.Body.ShardState {
 			for _, shardBlock := range shardBlocks {
 				for _, toShard := range shardBlock.CrossShard {
@@ -886,14 +891,14 @@ func (blockchain *BlockChain) processStoreBeaconBlockV2(beaconBlock *BeaconBlock
 					waitHeight := shardBlock.Height
 					err := rawdbv2.StoreCrossShardNextHeight(blockchain.GetDatabase(), fromShard, toShard, lastHeight, waitHeight)
 					if err != nil {
-						GetBeaconBestState().lock.Unlock()
+						//GetBeaconBestState().lock.Unlock()
 						return NewBlockChainError(StoreCrossShardNextHeightError, err)
 					}
 					//beacon process shard_to_beacon in order so cross shard next height also will be saved in order
 					//dont care overwrite this value
 					err = rawdbv2.StoreCrossShardNextHeight(blockchain.GetDatabase(), fromShard, toShard, waitHeight, 0)
 					if err != nil {
-						GetBeaconBestState().lock.Unlock()
+						//GetBeaconBestState().lock.Unlock()
 						return NewBlockChainError(StoreCrossShardNextHeightError, err)
 					}
 					if lastCrossShardState[fromShard] == nil {
@@ -904,14 +909,14 @@ func (blockchain *BlockChain) processStoreBeaconBlockV2(beaconBlock *BeaconBlock
 			}
 			blockchain.config.CrossShardPool[fromShard].UpdatePool()
 		}
-		GetBeaconBestState().lock.Unlock()
+		//GetBeaconBestState().lock.Unlock()
 	}
 	//=============================END Store cross shard state ==================================
 	if err := rawdbv2.StoreBeaconBlockIndex(blockchain.GetDatabase(), blockHash, blockHeight); err != nil {
 		return NewBlockChainError(StoreBeaconBlockIndexError, err)
 	}
 	Logger.log.Debugf("Store Beacon BestState Height %+v", blockHeight)
-	if err := rawdbv2.StoreBeaconBestState(blockchain.GetDatabase(), tempBeaconBestState); err != nil {
+	if err := rawdbv2.StoreBeaconBestState(blockchain.GetDatabase(), beaconBestStateBytes); err != nil {
 		return NewBlockChainError(StoreBeaconBestStateError, err)
 	}
 	Logger.log.Debugf("Store Beacon Block Height %+v with Hash %+v ", blockHeight, blockHash)

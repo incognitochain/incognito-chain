@@ -138,11 +138,7 @@ func GetBeaconBlockHashByIndex(db incdb.Database, index uint64) ([]common.Hash, 
 	return beaconBlockHashes, nil
 }
 
-func StoreBeaconBestState(db incdb.Database, v interface{}) error {
-	val, err := json.Marshal(v)
-	if err != nil {
-		return NewRawdbError(StoreBeaconBestStateError, err)
-	}
+func StoreBeaconBestState(db incdb.Database, val []byte) error {
 	key := GetBeaconBestStateKey()
 	if err := db.Put(key, val); err != nil {
 		return NewRawdbError(StoreBeaconBestStateError, err)

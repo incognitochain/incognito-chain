@@ -111,24 +111,19 @@ func (blockchain *BlockChain) initBeaconStateV2() error {
 		return err
 	}
 	tempBeaconBestState := blockchain.BestState.Beacon
+	beaconBestStateBytes, err := json.Marshal(tempBeaconBestState)
+	if err != nil {
+		return NewBlockChainError(InitBeaconStateError, err)
+	}
+	blockchain.BestState.Beacon.lock.Lock()
+	defer blockchain.BestState.Beacon.lock.Unlock()
 	initBlockHash := tempBeaconBestState.BestBlock.Header.Hash()
 	initBlockHeight := tempBeaconBestState.BestBlock.Header.Height
 	// Insert new block into beacon chain
-	if err := rawdbv2.StoreBeaconBestState(blockchain.GetDatabase(), tempBeaconBestState); err != nil {
-		Logger.log.Error("Error Store best state for block", blockchain.BestState.Beacon.BestBlockHash, "in beacon chain")
-		return NewBlockChainError(UnExpectedError, err)
-	}
-	if err := rawdbv2.StoreBeaconBlock(blockchain.GetDatabase(), initBlockHeight, initBlockHash, &tempBeaconBestState.BestBlock); err != nil {
-		Logger.log.Error("Error store beacon block", tempBeaconBestState.BestBlockHash, "in beacon chain")
+	if err := statedb.StoreAllShardCommittee(tempBeaconBestState.consensusStateDB, tempBeaconBestState.ShardCommittee, tempBeaconBestState.RewardReceiver, tempBeaconBestState.AutoStaking); err != nil {
 		return err
 	}
-	if err := rawdbv2.StoreBeaconBlockIndex(blockchain.GetDatabase(), initBlockHash, initBlockHeight); err != nil {
-		return err
-	}
-	if err := statedb.StoreAllShardCommittee(tempBeaconBestState.consensusStateDB, tempBeaconBestState.GetShardCommittee(), tempBeaconBestState.GetRewardReceiver(), tempBeaconBestState.GetAutoStaking()); err != nil {
-		return err
-	}
-	if err := statedb.StoreBeaconCommittee(tempBeaconBestState.consensusStateDB, tempBeaconBestState.GetBeaconCommittee(), tempBeaconBestState.GetRewardReceiver(), tempBeaconBestState.GetAutoStaking()); err != nil {
+	if err := statedb.StoreBeaconCommittee(tempBeaconBestState.consensusStateDB, tempBeaconBestState.BeaconCommittee, tempBeaconBestState.RewardReceiver, tempBeaconBestState.AutoStaking); err != nil {
 		return err
 	}
 	consensusRootHash, err := beaconBestState.consensusStateDB.Commit(true)
@@ -141,6 +136,17 @@ func (blockchain *BlockChain) initBeaconStateV2() error {
 	}
 	beaconBestState.consensusStateDB.ClearObjects()
 	tempBeaconBestState.ConsensusStateRootHash[initBlockHeight] = consensusRootHash
+	if err := rawdbv2.StoreBeaconBestState(blockchain.GetDatabase(), beaconBestStateBytes); err != nil {
+		Logger.log.Error("Error Store best state for block", blockchain.BestState.Beacon.BestBlockHash, "in beacon chain")
+		return NewBlockChainError(InitBeaconStateError, err)
+	}
+	if err := rawdbv2.StoreBeaconBlock(blockchain.GetDatabase(), initBlockHeight, initBlockHash, &tempBeaconBestState.BestBlock); err != nil {
+		Logger.log.Error("Error store beacon block", tempBeaconBestState.BestBlockHash, "in beacon chain")
+		return err
+	}
+	if err := rawdbv2.StoreBeaconBlockIndex(blockchain.GetDatabase(), initBlockHash, initBlockHeight); err != nil {
+		return err
+	}
 	return nil
 }
 
