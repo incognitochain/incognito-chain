@@ -1524,7 +1524,6 @@ func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint6
 		Logger.log.Error(err)
 		return err
 	}
-	// TODO(@0xbunyip): instead of putting response to queue, use it immediately in synker
 	serverObj.putResponseMsgs(msgs)
 	return nil
 }
@@ -1736,7 +1735,7 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 			serverObj.blockChain.BestState.Shard[byte(shardID)].Hash(),
 		}
 	} else {
-		msg.(*wire.MessagePeerState).ShardToBeaconPool = serverObj.shardToBeaconPool.GetValidBlockHeight()
+		msg.(*wire.MessagePeerState).ShardToBeaconPool = serverObj.shardToBeaconPool.GetAllBlockHeight()
 		Logger.log.Infof("[peerstate] %v", msg.(*wire.MessagePeerState).ShardToBeaconPool)
 	}
 
@@ -1750,7 +1749,7 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 	if err != nil {
 		return err
 	}
-	msg.SetSenderID(listener.GetPeerID())
+	msg.SetSenderID(serverObj.highway.LocalHost.Host.ID())
 	Logger.log.Infof("[peerstate] PeerID send to Proxy when publish node state %v \n", listener.GetPeerID())
 	if err != nil {
 		return err
