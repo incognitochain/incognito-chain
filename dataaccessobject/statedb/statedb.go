@@ -2,6 +2,7 @@ package statedb
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/dataaccessobject"
 	"math/big"
 	"strconv"
 	"time"
@@ -159,7 +160,11 @@ func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, error) {
 	}
 	// Write the account trie changes, measuing the amount of wasted time
 	if metrics.EnabledExpensive {
-		defer func(start time.Time) { stateDB.StateObjectCommits += time.Since(start) }(time.Now())
+		defer func(start time.Time) {
+			elapsed := time.Since(start)
+			stateDB.StateObjectCommits += elapsed
+			dataaccessobject.Logger.Log.Infof("StateDB commit and return root hash time %+v", elapsed)
+		}(time.Now())
 	}
 	return stateDB.trie.Commit(func(leaf []byte, parent common.Hash) error {
 		return nil
