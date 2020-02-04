@@ -69,6 +69,9 @@ func getBridgeTokenByType(stateDB *StateDB, incTokenID common.Hash, isCentralize
 	if err != nil {
 		return nil, false, err
 	}
+	if !has {
+		return nil, false, nil
+	}
 	tempIncoTokenID := tokenInfoState.IncTokenID()
 	if !tempIncoTokenID.IsEqual(&incTokenID) || tokenInfoState.IsCentralized() != isCentralized {
 		panic("same key wrong value")
