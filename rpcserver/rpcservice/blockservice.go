@@ -833,6 +833,37 @@ func (blockService BlockService) GetBlockHashByHeight(shardID int, height uint64
 	return result, nil
 }
 
+func (blockService BlockService) GetBlockHashByHeightV2(shardID int, height uint64) ([]common.Hash, error) {
+	var hash *common.Hash
+	var err error
+	var beaconBlocks []*blockchain.BeaconBlock
+	var shardBlocks map[common.Hash]*blockchain.ShardBlock
+	res := []common.Hash{}
+	isGetBeacon := shardID == -1
+	if isGetBeacon {
+		beaconBlocks, err = blockService.BlockChain.GetBeaconBlockByHeightV2(height)
+	} else {
+		shardBlocks, err = blockService.BlockChain.GetShardBlockByHeightV2(height, byte(shardID))
+	}
+	if err != nil {
+		Logger.log.Debugf("handleGetBlockHash result: %+v", nil)
+		return res, err
+	}
+
+	if isGetBeacon {
+		for _, beaconBlock := range beaconBlocks {
+			hash = beaconBlock.Hash()
+			res = append(res, *hash)
+		}
+	} else {
+		for _, shardBlock := range shardBlocks {
+			hash = shardBlock.Hash()
+			res = append(res, *hash)
+		}
+	}
+	return res, nil
+}
+
 func (blockService BlockService) GetBlockHeader(getBy string, blockParam string, shardID float64) (
 	*blockchain.ShardHeader, int, string, *RPCError) {
 	switch getBy {
