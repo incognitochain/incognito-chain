@@ -25,6 +25,9 @@ func IsETHTxHashIssued(stateDB *StateDB, uniqueEthTx []byte) (bool, error) {
 	if err != nil {
 		return false, NewStatedbError(IsETHTxHashIssuedError, err)
 	}
+	if !has {
+		return false, nil
+	}
 	if bytes.Compare(ethTxState.UniqueEthTx(), uniqueEthTx) != 0 {
 		panic("same key wrong value")
 	}
@@ -55,6 +58,9 @@ func IsBridgeTokenExistedByType(stateDB *StateDB, incTokenID common.Hash, isCent
 	tokenInfoState, has, err := stateDB.GetBridgeTokenInfoState(key)
 	if err != nil {
 		return false, NewStatedbError(IsBridgeTokenExistedByTypeError, err)
+	}
+	if !has {
+		return false, nil
 	}
 	tempIncoTokenID := tokenInfoState.IncTokenID()
 	if !tempIncoTokenID.IsEqual(&incTokenID) || tokenInfoState.IsCentralized() != isCentralized {
