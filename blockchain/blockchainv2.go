@@ -25,7 +25,7 @@ func (blockchain *BlockChain) initChainStateV2() error {
 		Shard:  make(map[byte]*ShardBestState),
 	}
 
-	bestStateBeaconBytes, err := rawdbv2.FetchBeaconBestState(blockchain.GetDatabase())
+	bestStateBeaconBytes, err := rawdbv2.GetBeaconBestState(blockchain.GetDatabase())
 	if err == nil {
 		beacon := &BeaconBestState{}
 		err = json.Unmarshal(bestStateBeaconBytes, beacon)
@@ -33,7 +33,7 @@ func (blockchain *BlockChain) initChainStateV2() error {
 		SetBeaconBestState(beacon)
 		//update beacon field in blockchain Beststate
 		blockchain.BestState.Beacon = GetBeaconBestState()
-		errStateDB := blockchain.BestState.Beacon.InitStateRootHash(blockchain.GetDatabase())
+		errStateDB := blockchain.BestState.Beacon.InitStateRootHash(blockchain)
 		if errStateDB != nil {
 			return errStateDB
 		}
@@ -106,7 +106,7 @@ func (blockchain *BlockChain) initChainStateV2() error {
 func (blockchain *BlockChain) initBeaconStateV2() error {
 	blockchain.BestState.Beacon = NewBeaconBestStateWithConfig(blockchain.config.ChainParams)
 	initBlock := blockchain.config.ChainParams.GenesisBeaconBlock
-	err := blockchain.BestState.Beacon.initBeaconBestState(initBlock, blockchain.GetDatabase())
+	err := blockchain.BestState.Beacon.initBeaconBestStateV2(initBlock, blockchain.GetDatabase())
 	if err != nil {
 		return err
 	}
@@ -135,7 +135,6 @@ func (blockchain *BlockChain) initBeaconStateV2() error {
 		return err
 	}
 	beaconBestState.consensusStateDB.ClearObjects()
-	tempBeaconBestState.ConsensusStateRootHash[initBlockHeight] = consensusRootHash
 	if err := rawdbv2.StoreBeaconBestState(blockchain.GetDatabase(), beaconBestStateBytes); err != nil {
 		Logger.log.Error("Error Store best state for block", blockchain.BestState.Beacon.BestBlockHash, "in beacon chain")
 		return NewBlockChainError(InitBeaconStateError, err)
@@ -145,6 +144,19 @@ func (blockchain *BlockChain) initBeaconStateV2() error {
 		return err
 	}
 	if err := rawdbv2.StoreBeaconBlockIndex(blockchain.GetDatabase(), initBlockHash, initBlockHeight); err != nil {
+		return err
+	}
+	// State Root Hash
+	if err := rawdbv2.StoreConsensusStateRootHash(blockchain.GetDatabase(), initBlockHeight, consensusRootHash); err != nil {
+		return err
+	}
+	if err := rawdbv2.StoreRewardStateRootHash(blockchain.GetDatabase(), initBlockHeight, common.EmptyRoot); err != nil {
+		return err
+	}
+	if err := rawdbv2.StoreFeatureStateRootHash(blockchain.GetDatabase(), initBlockHeight, common.EmptyRoot); err != nil {
+		return err
+	}
+	if err := rawdbv2.StoreSlashStateRootHash(blockchain.GetDatabase(), initBlockHeight, common.EmptyRoot); err != nil {
 		return err
 	}
 	return nil
@@ -209,9 +221,9 @@ func (blockchain *BlockChain) GetBeaconFeatureStateDB() *statedb.StateDB {
 }
 
 func (blockchain *BlockChain) GetBeaconFeatureStateDBByHeight(height uint64, db incdb.Database) (*statedb.StateDB, error) {
-	rootHash, ok := blockchain.BestState.Beacon.GetFeatureStateRootHash(height)
-	if !ok {
-		return nil, fmt.Errorf("Beacon Feature State DB not found, height %+v", height)
+	rootHash, err := blockchain.GetFeatureStateRootHash(blockchain.GetDatabase(), height)
+	if err != nil {
+		return nil, fmt.Errorf("Beacon Feature State DB not found, height %+v, error %+v", height, err)
 	}
 	return statedb.NewWithPrefixTrie(rootHash, statedb.NewDatabaseAccessWarper(db))
 }

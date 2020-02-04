@@ -251,9 +251,9 @@ func (blockGenerator *BlockGenerator) getCrossShardDataV2(toShard byte, lastBeac
 				Logger.log.Errorf("%+v", err)
 				break
 			}
-			consensusStateRootHash, ok := blockGenerator.chain.BestState.Beacon.GetConsensusStateRootHash(beaconHeight)
-			if !ok {
-				Logger.log.Errorf("Can't found ConsensusStateRootHash of beacon height %+v ", beaconHeight)
+			consensusStateRootHash, err := blockGenerator.chain.GetConsensusStateRootHash(blockGenerator.chain.GetDatabase(), beaconHeight)
+			if err != nil {
+				Logger.log.Errorf("Can't found ConsensusStateRootHash of beacon height %+v, error %+v", beaconHeight, err)
 				break
 			}
 			consensusStateDB, err := statedb.NewWithPrefixTrie(consensusStateRootHash, statedb.NewDatabaseAccessWarper(blockGenerator.chain.GetDatabase()))
@@ -425,9 +425,9 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructionsV2(b
 	for _, beaconBlock := range beaconBlocks {
 		autoStaking, ok := tempAutoStakingM[beaconBlock.Header.Height]
 		if !ok {
-			consensusStateRootHash, ok := blockGenerator.chain.BestState.Beacon.GetConsensusStateRootHash(beaconBlock.Header.Height)
-			if !ok {
-				return []metadata.Transaction{}, errorInstructions, NewBlockChainError(FetchAutoStakingByHeightError, fmt.Errorf("can't get ConsensusStateRootHash of height %+v", beaconBlock.Header.Height))
+			consensusStateRootHash, err := blockGenerator.chain.GetConsensusStateRootHash(blockGenerator.chain.GetDatabase(), beaconBlock.Header.Height)
+			if err != nil {
+				return []metadata.Transaction{}, errorInstructions, NewBlockChainError(FetchAutoStakingByHeightError, fmt.Errorf("can't get ConsensusStateRootHash of height %+v ,error %+v", beaconBlock.Header.Height, err))
 			}
 			consensusStateDB, err := statedb.NewWithPrefixTrie(consensusStateRootHash, statedb.NewDatabaseAccessWarper(blockGenerator.chain.GetDatabase()))
 			if err != nil {

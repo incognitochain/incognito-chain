@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"reflect"
 	"sort"
 	"strconv"
@@ -380,6 +381,68 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigningV2(beaconB
 	if !tempInstructionHash.IsEqual(&beaconBlock.Header.InstructionHash) {
 		return NewBlockChainError(InstructionHashError, fmt.Errorf("Expect Instruction Hash in Beacon Header to be %+v, but get %+v, validator instructions: %+v", beaconBlock.Header.InstructionHash, tempInstructionHash, tempInstruction))
 	}
+	return nil
+}
+
+func (beaconBestState *BeaconBestState) initBeaconBestStateV2(genesisBeaconBlock *BeaconBlock, db incdb.Database) error {
+	var (
+		newBeaconCandidate = []incognitokey.CommitteePublicKey{}
+		newShardCandidate  = []incognitokey.CommitteePublicKey{}
+	)
+	Logger.log.Info("Process Update Beacon Best State With Beacon Genesis Block")
+	beaconBestState.lock.Lock()
+	defer beaconBestState.lock.Unlock()
+	beaconBestState.PreviousBestBlockHash = beaconBestState.BestBlockHash
+	beaconBestState.BestBlockHash = *genesisBeaconBlock.Hash()
+	beaconBestState.BestBlock = *genesisBeaconBlock
+	beaconBestState.Epoch = genesisBeaconBlock.Header.Epoch
+	beaconBestState.BeaconHeight = genesisBeaconBlock.Header.Height
+	beaconBestState.BeaconProposerIndex = 0
+	beaconBestState.BestShardHash = make(map[byte]common.Hash)
+	beaconBestState.BestShardHeight = make(map[byte]uint64)
+	// Update new best new block hash
+	for shardID, shardStates := range genesisBeaconBlock.Body.ShardState {
+		beaconBestState.BestShardHash[shardID] = shardStates[len(shardStates)-1].Hash
+		beaconBestState.BestShardHeight[shardID] = shardStates[len(shardStates)-1].Height
+	}
+	// update param
+	for _, instruction := range genesisBeaconBlock.Body.Instructions {
+		err, _, tempNewBeaconCandidate, tempNewShardCandidate := beaconBestState.processInstruction(instruction)
+		if err != nil {
+			return err
+		}
+		newBeaconCandidate = append(newBeaconCandidate, tempNewBeaconCandidate...)
+		newShardCandidate = append(newShardCandidate, tempNewShardCandidate...)
+	}
+	beaconBestState.BeaconCommittee = append(beaconBestState.BeaconCommittee, newBeaconCandidate...)
+	beaconBestState.ConsensusAlgorithm = common.BlsConsensus
+	beaconBestState.ShardConsensusAlgorithm = make(map[byte]string)
+	for shardID := 0; shardID < beaconBestState.ActiveShards; shardID++ {
+		beaconBestState.ShardCommittee[byte(shardID)] = append(beaconBestState.ShardCommittee[byte(shardID)], newShardCandidate[shardID*beaconBestState.MinShardCommitteeSize:(shardID+1)*beaconBestState.MinShardCommitteeSize]...)
+		beaconBestState.ShardConsensusAlgorithm[byte(shardID)] = common.BlsConsensus
+	}
+	beaconBestState.Epoch = 1
+	beaconBestState.NumOfBlocksByProducers = make(map[string]uint64)
+	//statedb===========================START
+	var err error
+	dbAccessWarper := statedb.NewDatabaseAccessWarper(db)
+	beaconBestState.featureStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	beaconBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	beaconBestState.rewardStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	beaconBestState.slashStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	//statedb===========================END
 	return nil
 }
 
@@ -869,10 +932,6 @@ func (blockchain *BlockChain) processStoreBeaconBlockV2(beaconBlock *BeaconBlock
 	tempBeaconBestState.rewardStateDB.ClearObjects()
 	tempBeaconBestState.featureStateDB.ClearObjects()
 	tempBeaconBestState.slashStateDB.ClearObjects()
-	tempBeaconBestState.ConsensusStateRootHash[blockHeight] = consensusRootHash
-	tempBeaconBestState.FeatureStateRootHash[blockHeight] = featureRootHash
-	tempBeaconBestState.RewardStateRootHash[blockHeight] = rewardRootHash
-	tempBeaconBestState.SlashStateRootHash[blockHeight] = slashRootHash
 	//statedb===========================END
 	//================================Store cross shard state ==================================
 	if beaconBlock.Body.ShardState != nil {
@@ -921,6 +980,19 @@ func (blockchain *BlockChain) processStoreBeaconBlockV2(beaconBlock *BeaconBlock
 	}
 	Logger.log.Debugf("Store Beacon Block Height %+v with Hash %+v ", blockHeight, blockHash)
 	if err := rawdbv2.StoreBeaconBlock(blockchain.GetDatabase(), blockHeight, blockHash, beaconBlock); err != nil {
+		return NewBlockChainError(StoreBeaconBlockError, err)
+	}
+	//State Root Hash
+	if err := rawdbv2.StoreConsensusStateRootHash(blockchain.GetDatabase(), blockHeight, consensusRootHash); err != nil {
+		return NewBlockChainError(StoreBeaconBlockError, err)
+	}
+	if err := rawdbv2.StoreRewardStateRootHash(blockchain.GetDatabase(), blockHeight, rewardRootHash); err != nil {
+		return NewBlockChainError(StoreBeaconBlockError, err)
+	}
+	if err := rawdbv2.StoreFeatureStateRootHash(blockchain.GetDatabase(), blockHeight, featureRootHash); err != nil {
+		return NewBlockChainError(StoreBeaconBlockError, err)
+	}
+	if err := rawdbv2.StoreSlashStateRootHash(blockchain.GetDatabase(), blockHeight, slashRootHash); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 	return nil

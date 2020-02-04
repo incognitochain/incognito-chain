@@ -414,9 +414,9 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigningV2(shardBlo
 						Logger.log.Errorf("%+v", err)
 						break
 					}
-					consensusRootHash, ok := blockchain.BestState.Beacon.GetConsensusStateRootHash(beaconHeight)
-					if !ok {
-						Logger.log.Errorf("Can't found ConsensusStateRootHash of beacon height %+v ", beaconHeight)
+					consensusRootHash, err := blockchain.GetConsensusStateRootHash(blockchain.GetDatabase(), beaconHeight)
+					if err != nil {
+						Logger.log.Errorf("Can't found ConsensusStateRootHash of beacon height %+v, error %+v", beaconHeight, err)
 						break
 					}
 					stateDB, err := statedb.NewWithPrefixTrie(consensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetDatabase()))

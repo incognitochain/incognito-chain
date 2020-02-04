@@ -150,11 +150,83 @@ func StoreBeaconBestState(db incdb.Database, val []byte) error {
 	return nil
 }
 
-func FetchBeaconBestState(db incdb.Database) ([]byte, error) {
+func GetBeaconBestState(db incdb.Database) ([]byte, error) {
 	key := GetBeaconBestStateKey()
 	block, err := db.Get(key)
 	if err != nil {
-		return nil, NewRawdbError(FetchBeaconBestStateError, err)
+		return nil, NewRawdbError(GetBeaconBestStateError, err)
 	}
 	return block, nil
+}
+
+func StoreConsensusStateRootHash(db incdb.Database, height uint64, rootHash common.Hash) error {
+	key := GetConsensusStateRootHashKey(height)
+	err := db.Put(key, rootHash[:])
+	if err != nil {
+		return NewRawdbError(StoreConsensusStateRootHashError, err)
+	}
+	return nil
+}
+
+func GetConsensusStateRootHash(db incdb.Database, height uint64) (common.Hash, error) {
+	key := GetConsensusStateRootHashKey(height)
+	res, err := db.Get(key)
+	if err != nil {
+		return common.Hash{}, NewRawdbError(GetConsensusStateRootHashError, err)
+	}
+	return common.BytesToHash(res), nil
+}
+
+func StoreRewardStateRootHash(db incdb.Database, height uint64, rootHash common.Hash) error {
+	key := GetRewardStateRootHashKey(height)
+	err := db.Put(key, rootHash[:])
+	if err != nil {
+		return NewRawdbError(StoreRewardStateRootHashError, err)
+	}
+	return nil
+}
+
+func GetRewardStateRootHash(db incdb.Database, height uint64) (common.Hash, error) {
+	key := GetRewardStateRootHashKey(height)
+	res, err := db.Get(key)
+	if err != nil {
+		return common.Hash{}, NewRawdbError(GetRewardStateRootHashError, err)
+	}
+	return common.BytesToHash(res), nil
+}
+
+func StoreFeatureStateRootHash(db incdb.Database, height uint64, rootHash common.Hash) error {
+	key := GetFeatureStateRootHashKey(height)
+	err := db.Put(key, rootHash[:])
+	if err != nil {
+		return NewRawdbError(StoreFeatureStateRootHashError, err)
+	}
+	return nil
+}
+
+func GetFeatureStateRootHash(db incdb.Database, height uint64) (common.Hash, error) {
+	key := GetFeatureStateRootHashKey(height)
+	res, err := db.Get(key)
+	if err != nil {
+		return common.Hash{}, NewRawdbError(GetFeatureStateRootHashError, err)
+	}
+	return common.BytesToHash(res), nil
+}
+
+func StoreSlashStateRootHash(db incdb.Database, height uint64, rootHash common.Hash) error {
+	key := GetSlashStateRootHashKey(height)
+	err := db.Put(key, rootHash[:])
+	if err != nil {
+		return NewRawdbError(StoreSlashStateRootHashError, err)
+	}
+	return nil
+}
+
+func GetSlashStateRootHash(db incdb.Database, height uint64) (common.Hash, error) {
+	key := GetSlashStateRootHashKey(height)
+	res, err := db.Get(key)
+	if err != nil {
+		return common.Hash{}, NewRawdbError(GetSlashStateRootHashError, err)
+	}
+	return common.BytesToHash(res), nil
 }
