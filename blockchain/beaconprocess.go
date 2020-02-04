@@ -886,22 +886,18 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	if err != nil {
 		return err
 	}
-	beaconBestState.FeatureStateRootHash[0] = common.EmptyRoot
 	beaconBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
 	if err != nil {
 		return err
 	}
-	beaconBestState.ConsensusStateRootHash[0] = common.EmptyRoot
 	beaconBestState.rewardStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
 	if err != nil {
 		return err
 	}
-	beaconBestState.RewardStateRootHash[0] = common.EmptyRoot
 	beaconBestState.slashStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
 	if err != nil {
 		return err
 	}
-	beaconBestState.SlashStateRootHash[0] = common.EmptyRoot
 	//statedb===========================END
 	return nil
 }

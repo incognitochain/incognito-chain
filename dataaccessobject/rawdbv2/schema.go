@@ -1,7 +1,6 @@
 package rawdbv2
 
 import (
-	"encoding/binary"
 	"github.com/incognitochain/incognito-chain/common"
 )
 
@@ -24,6 +23,11 @@ var (
 	txHashPrefix                 = []byte("tx-h" + string(splitter))
 	crossShardNextHeightPrefix   = []byte("c-s-n-h" + string(splitter))
 	feeEstimatorPrefix           = []byte("fee-est" + string(splitter))
+	rootHashPrefix               = []byte("R-H-")
+	consensusStateRoot           = []byte("co" + string(splitter))
+	rewardStateRoot              = []byte("re" + string(splitter))
+	featureStateRoot             = []byte("fe" + string(splitter))
+	slashStateRoot               = []byte("sl" + string(splitter))
 	splitter                     = []byte("-[-]-")
 )
 
@@ -128,12 +132,40 @@ func GetFeeEstimatorPrefix(shardID byte) []byte {
 
 // ============================= Cross Shard =======================================
 func GetCrossShardNextHeightKey(fromShard byte, toShard byte, height uint64) []byte {
-	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, height)
+	buf := common.Uint64ToBytes(height)
 	key := append(crossShardNextHeightPrefix, fromShard)
 	key = append(key, []byte("-")...)
 	key = append(key, toShard)
 	key = append(key, []byte("-")...)
+	key = append(key, buf...)
+	return key
+}
+
+// ============================= State Root =======================================
+func GetConsensusStateRootHashKey(height uint64) []byte {
+	buf := common.Uint64ToBytes(height)
+	key := append(rootHashPrefix, consensusStateRoot...)
+	key = append(key, buf...)
+	return key
+}
+
+func GetRewardStateRootHashKey(height uint64) []byte {
+	buf := common.Uint64ToBytes(height)
+	key := append(rootHashPrefix, rewardStateRoot...)
+	key = append(key, buf...)
+	return key
+}
+
+func GetFeatureStateRootHashKey(height uint64) []byte {
+	buf := common.Uint64ToBytes(height)
+	key := append(rootHashPrefix, featureStateRoot...)
+	key = append(key, buf...)
+	return key
+}
+
+func GetSlashStateRootHashKey(height uint64) []byte {
+	buf := common.Uint64ToBytes(height)
+	key := append(rootHashPrefix, slashStateRoot...)
 	key = append(key, buf...)
 	return key
 }

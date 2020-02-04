@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"reflect"
 	"sort"
@@ -69,14 +70,10 @@ type BeaconBestState struct {
 
 	//================================ StateDB Method
 	// block height => root hash
-	ConsensusStateRootHash map[uint64]common.Hash `json:"ConsensusStateRootHash"`
-	consensusStateDB       *statedb.StateDB
-	RewardStateRootHash    map[uint64]common.Hash `json:"RewardStateRootHash"`
-	rewardStateDB          *statedb.StateDB
-	FeatureStateRootHash   map[uint64]common.Hash `json:"FeatureStateRootHash"`
-	featureStateDB         *statedb.StateDB
-	SlashStateRootHash     map[uint64]common.Hash `json:"SlashStateRootHash"`
-	slashStateDB           *statedb.StateDB
+	consensusStateDB *statedb.StateDB
+	rewardStateDB    *statedb.StateDB
+	featureStateDB   *statedb.StateDB
+	slashStateDB     *statedb.StateDB
 
 	lock sync.RWMutex
 }
@@ -115,10 +112,6 @@ func NewBeaconBestStateWithConfig(netparam *Params) *BeaconBestState {
 	beaconBestState.LastCrossShardState = make(map[byte]map[byte]uint64)
 	beaconBestState.BlockInterval = netparam.MinBeaconBlockInterval
 	beaconBestState.BlockMaxCreateTime = netparam.MaxBeaconBlockCreation
-	beaconBestState.ConsensusStateRootHash = make(map[uint64]common.Hash)
-	beaconBestState.RewardStateRootHash = make(map[uint64]common.Hash)
-	beaconBestState.FeatureStateRootHash = make(map[uint64]common.Hash)
-	beaconBestState.SlashStateRootHash = make(map[uint64]common.Hash)
 	return beaconBestState
 }
 func SetBeaconBestState(beacon *BeaconBestState) {
@@ -133,42 +126,42 @@ func GetBeaconBestState() *BeaconBestState {
 	beaconBestState = NewBeaconBestState()
 	return beaconBestState
 }
-func (beaconBestState *BeaconBestState) InitStateRootHash(db incdb.Database) error {
+func (beaconBestState *BeaconBestState) InitStateRootHash(bc *BlockChain) error {
 	beaconBestState.lock.Lock()
 	defer beaconBestState.lock.Unlock()
-	var err error
+	db := bc.GetDatabase()
 	var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
-	if rootHash, ok := beaconBestState.ConsensusStateRootHash[beaconBestState.BeaconHeight]; ok {
+	if rootHash, err := bc.GetConsensusStateRootHash(db, beaconBestState.BeaconHeight); err == nil {
 		beaconBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
 		if err != nil {
 			return err
 		}
 	} else {
-		beaconBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+		return err
 	}
-	if rootHash, ok := beaconBestState.FeatureStateRootHash[beaconBestState.BeaconHeight]; ok {
+	if rootHash, err := bc.GetFeatureStateRootHash(db, beaconBestState.BeaconHeight); err == nil {
 		beaconBestState.featureStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
 		if err != nil {
 			return err
 		}
 	} else {
-		beaconBestState.featureStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+		return err
 	}
-	if rootHash, ok := beaconBestState.RewardStateRootHash[beaconBestState.BeaconHeight]; ok {
+	if rootHash, err := bc.GetRewardStateRootHash(db, beaconBestState.BeaconHeight); err == nil {
 		beaconBestState.rewardStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
 		if err != nil {
 			return err
 		}
 	} else {
-		beaconBestState.rewardStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+		return err
 	}
-	if rootHash, ok := beaconBestState.SlashStateRootHash[beaconBestState.BeaconHeight]; ok {
+	if rootHash, err := bc.GetSlashStateRootHash(db, beaconBestState.BeaconHeight); err == nil {
 		beaconBestState.slashStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
 		if err != nil {
 			return err
 		}
 	} else {
-		beaconBestState.slashStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+		return err
 	}
 	return nil
 }
@@ -727,21 +720,18 @@ func (beaconBestState *BeaconBestState) getAllCommitteeValidatorCandidateFlatten
 	return res
 }
 
-func (beaconBestState *BeaconBestState) GetConsensusStateRootHash(height uint64) (common.Hash, bool) {
-	beaconBestState.lock.RLock()
-	defer beaconBestState.lock.RUnlock()
-	res, ok := beaconBestState.ConsensusStateRootHash[height]
-	return res, ok
+func (blockchain *BlockChain) GetConsensusStateRootHash(db incdb.Database, height uint64) (common.Hash, error) {
+	return rawdbv2.GetConsensusStateRootHash(db, height)
 }
 
-func (beaconBestState *BeaconBestState) GetConsensusStateRootHashWithNoLock(height uint64) (common.Hash, bool) {
-	res, ok := beaconBestState.ConsensusStateRootHash[height]
-	return res, ok
+func (blockchain *BlockChain) GetRewardStateRootHash(db incdb.Database, height uint64) (common.Hash, error) {
+	return rawdbv2.GetRewardStateRootHash(db, height)
 }
 
-func (beaconBestState *BeaconBestState) GetFeatureStateRootHash(height uint64) (common.Hash, bool) {
-	beaconBestState.lock.RLock()
-	defer beaconBestState.lock.RUnlock()
-	res, ok := beaconBestState.FeatureStateRootHash[height]
-	return res, ok
+func (blockchain *BlockChain) GetFeatureStateRootHash(db incdb.Database, height uint64) (common.Hash, error) {
+	return rawdbv2.GetFeatureStateRootHash(db, height)
+}
+
+func (blockchain *BlockChain) GetSlashStateRootHash(db incdb.Database, height uint64) (common.Hash, error) {
+	return rawdbv2.GetSlashStateRootHash(db, height)
 }
