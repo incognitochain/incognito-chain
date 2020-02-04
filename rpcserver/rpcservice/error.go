@@ -58,6 +58,7 @@ const (
 	RejectDoubleSpendTxError
 	RejectDuplicateTxInPoolError
 	RejectInvalidTxVersionError
+	RejectSanityTxLocktime
 	TxPoolRejectTxError
 )
 
@@ -125,6 +126,7 @@ var ErrCodeMessage = map[int]struct {
 	RejectDoubleSpendTxError:     {-6005, "Pool reject double spend tx, double spend with blockchain or mempool"},
 	RejectDuplicateTxInPoolError: {-6006, "Tx already exist in pool"},
 	RejectInvalidTxVersionError:  {-6007, "Reject tx by invalid version"},
+	RejectSanityTxLocktime:       {-6008, "Reject wrong tx by locktime"},
 
 	// decentralized bridge
 	NoSwapConfirmInst: {-7000, "No swap confirm instruction found in block"},

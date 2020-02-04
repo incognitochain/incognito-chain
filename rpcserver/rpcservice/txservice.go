@@ -404,6 +404,10 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 				{
 					return nil, nil, byte(0), NewRPCError(RejectDuplicateTxInPoolError, mempoolErr)
 				}
+			case mempool.ErrCodeMessage[mempool.RejectSanityTxLocktime].Code:
+				{
+					return nil, nil, byte(0), NewRPCError(RejectSanityTxLocktime, mempoolErr)
+				}
 			}
 		}
 		return nil, nil, byte(0), NewRPCError(TxPoolRejectTxError, err)

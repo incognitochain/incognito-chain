@@ -513,6 +513,14 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int6
 				{
 					return NewMempoolTxError(RejectSanityTxLocktime, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), sanityError))
 				}
+			case transaction.RejectTxType:
+				{
+					return NewMempoolTxError(RejectInvalidTxType, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), sanityError))
+				}
+			case transaction.RejectTxVersion:
+				{
+					return NewMempoolTxError(RejectVersion, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), sanityError))
+				}
 			}
 		}
 		return NewMempoolTxError(RejectSanityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), err))
