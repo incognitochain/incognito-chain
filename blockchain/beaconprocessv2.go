@@ -4,9 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/incdb"
-	"io/ioutil"
-	"log"
 	"reflect"
 	"sort"
 	"strconv"
@@ -16,6 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/pkg/errors"
@@ -994,10 +992,6 @@ func (blockchain *BlockChain) processStoreBeaconBlockV2(beaconBlock *BeaconBlock
 		return NewBlockChainError(StoreBeaconBestStateError, err)
 	}
 	Logger.log.Infof("Proccess Store Beacon Block | Store Beststate time %+v", time.Since(startTimeStoreBestState))
-	err = ioutil.WriteFile("./tmp/beststate", beaconBestStateBytes, 0644)
-	if err != nil {
-		log.Println("Store beststate error ", err)
-	}
 	Logger.log.Debugf("Store Beacon Block Height %+v with Hash %+v ", blockHeight, blockHash)
 	startTimeStoreBlock := time.Now()
 	if err := rawdbv2.StoreBeaconBlock(blockchain.GetDatabase(), blockHeight, blockHash, beaconBlock); err != nil {
