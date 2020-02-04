@@ -122,7 +122,7 @@ func (synker *Synker) Start() {
 	synker.Status.Unlock()
 
 	broadcastTicker := time.NewTicker(DefaultBroadcastStateTime)
-	insertPoolTicker := time.NewTicker(1 * time.Second)
+	insertPoolTicker := time.NewTicker(10 * time.Millisecond)
 	updateStatesTicker := time.NewTicker(DefaultStateUpdateTime)
 	defer func() {
 		broadcastTicker.Stop()

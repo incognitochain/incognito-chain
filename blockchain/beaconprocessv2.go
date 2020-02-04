@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -53,6 +54,7 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlockV2(beaconBlock *BeaconBloc
 func (blockchain *BlockChain) InsertBeaconBlockV2(beaconBlock *BeaconBlock, isValidated bool) error {
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
+	startTime := time.Now()
 	currentBeaconBestState := GetBeaconBestState()
 	blockHash := beaconBlock.Header.Hash()
 	committeeChange := newCommitteeChange()
@@ -186,7 +188,7 @@ func (blockchain *BlockChain) InsertBeaconBlockV2(beaconBlock *BeaconBlock, isVa
 		return err
 	}
 	blockchain.removeOldDataAfterProcessingBeaconBlock()
-	Logger.log.Infof("🔗 Finish Insert new Beacon Block %+v, with hash %+v \n", beaconBlock.Header.Height, *beaconBlock.Hash())
+	Logger.log.Infof("🔗 Finish Insert new Beacon Block %+v, with hash %+v \n, time %+v", beaconBlock.Header.Height, *beaconBlock.Hash(), time.Since(startTime))
 	if beaconBlock.Header.Height%50 == 0 {
 		BLogger.log.Debugf("Inserted beacon height: %d", beaconBlock.Header.Height)
 	}
@@ -741,7 +743,6 @@ func (beaconBestState *BeaconBestState) processInstructionV2(instruction []strin
 }
 
 func (blockchain *BlockChain) processStoreBeaconBlockV2(beaconBlock *BeaconBlock, snapshotBeaconCommittees []incognitokey.CommitteePublicKey, snapshotAllShardCommittees map[byte][]incognitokey.CommitteePublicKey, snapshotRewardReceivers map[string]string, committeeChange *committeeChange) error {
-	Logger.log.Infof("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, beaconBlock.Header.Hash())
 	var err error
 	blockHash := beaconBlock.Header.Hash()
 	blockHeight := beaconBlock.Header.Height
