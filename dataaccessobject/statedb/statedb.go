@@ -79,6 +79,7 @@ func NewWithPrefixTrie(root common.Hash, db DatabaseAccessWarper) (*StateDB, err
 	if err != nil {
 		return nil, err
 	}
+	metrics.EnabledExpensive = true
 	return &StateDB{
 		db:                  db,
 		trie:                tr,
@@ -153,12 +154,6 @@ func (stateDB *StateDB) markDeleteEmptyStateObject(deleteEmptyObjects bool) {
 // Commit writes the state to the underlying in-memory trie database.
 func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, error) {
 	// Finalize any pending changes and merge everything into the tries
-	stateDB.IntermediateRoot(deleteEmptyObjects)
-
-	if len(stateDB.stateObjectsDirty) > 0 {
-		stateDB.stateObjectsDirty = make(map[common.Hash]struct{})
-	}
-	// Write the account trie changes, measuing the amount of wasted time
 	if metrics.EnabledExpensive {
 		defer func(start time.Time) {
 			elapsed := time.Since(start)
@@ -166,6 +161,12 @@ func (stateDB *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, error) {
 			dataaccessobject.Logger.Log.Infof("StateDB commit and return root hash time %+v", elapsed)
 		}(time.Now())
 	}
+	stateDB.IntermediateRoot(deleteEmptyObjects)
+
+	if len(stateDB.stateObjectsDirty) > 0 {
+		stateDB.stateObjectsDirty = make(map[common.Hash]struct{})
+	}
+	// Write the account trie changes, measuing the amount of wasted time
 	return stateDB.trie.Commit(func(leaf []byte, parent common.Hash) error {
 		return nil
 	})

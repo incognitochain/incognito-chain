@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"reflect"
 	"sort"
 	"strconv"
@@ -184,9 +186,11 @@ func (blockchain *BlockChain) InsertBeaconBlockV2(beaconBlock *BeaconBlock, isVa
 		Logger.log.Infof("BEACON | SKIP Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	}
 	Logger.log.Infof("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
+	startTimeStore := time.Now()
 	if err := blockchain.processStoreBeaconBlockV2(beaconBlock, snapshotBeaconCommittee, snapshotAllShardCommittee, snapshotRewardReceiver, committeeChange); err != nil {
 		return err
 	}
+	Logger.log.Infof("BEACON | FINISH Process Store Beacon Block time %+v", time.Since(startTimeStore))
 	blockchain.removeOldDataAfterProcessingBeaconBlock()
 	Logger.log.Infof("🔗 Finish Insert new Beacon Block %+v, with hash %+v \n, time %+v", beaconBlock.Header.Height, *beaconBlock.Hash(), time.Since(startTime))
 	if beaconBlock.Header.Height%50 == 0 {
@@ -747,14 +751,19 @@ func (blockchain *BlockChain) processStoreBeaconBlockV2(beaconBlock *BeaconBlock
 	blockHash := beaconBlock.Header.Hash()
 	blockHeight := beaconBlock.Header.Height
 	tempBeaconBestState := blockchain.BestState.Beacon
+	startTimeMarshal := time.Now()
 	beaconBestStateBytes, err := json.Marshal(tempBeaconBestState)
 	if err != nil {
 		return NewBlockChainError(StoreBeaconBestStateError, err)
 	}
+	Logger.log.Infof("Proccess Store Beacon Block | marshal beststate size %+v time %+v", len(beaconBestStateBytes), time.Since(startTimeMarshal))
+	startTimeClaimLock := time.Now()
 	blockchain.BestState.Beacon.lock.Lock()
 	defer blockchain.BestState.Beacon.lock.Unlock()
+	Logger.log.Infof("Proccess Store Beacon Block | claim beststate lock time %+v", time.Since(startTimeClaimLock))
 	//statedb===========================START
 	// Added
+	startTimeStateDB := time.Now()
 	err = statedb.StoreCurrentEpochShardCandidate(tempBeaconBestState.consensusStateDB, committeeChange.currentEpochShardCandidateAdded, tempBeaconBestState.RewardReceiver, tempBeaconBestState.AutoStaking)
 	if err != nil {
 		return err
@@ -834,6 +843,8 @@ func (blockchain *BlockChain) processStoreBeaconBlockV2(beaconBlock *BeaconBlock
 	if err != nil {
 		return NewBlockChainError(ProcessPDEInstructionError, err)
 	}
+	Logger.log.Infof("Proccess Store Beacon Block | add object to statedb time %+v", time.Since(startTimeStateDB))
+	startTimeCommit := time.Now()
 	consensusRootHash, err := tempBeaconBestState.consensusStateDB.Commit(true)
 	if err != nil {
 		return err
@@ -874,10 +885,11 @@ func (blockchain *BlockChain) processStoreBeaconBlockV2(beaconBlock *BeaconBlock
 	tempBeaconBestState.FeatureStateRootHash[blockHeight] = featureRootHash
 	tempBeaconBestState.RewardStateRootHash[blockHeight] = rewardRootHash
 	tempBeaconBestState.SlashStateRootHash[blockHeight] = slashRootHash
+	Logger.log.Infof("Proccess Store Beacon Block | commit object to db time %+v", time.Since(startTimeCommit))
 	//statedb===========================END
 	//================================Store cross shard state ==================================
+	startTimeCrossShard := time.Now()
 	if beaconBlock.Body.ShardState != nil {
-		//GetBeaconBestState().lock.Lock()
 		lastCrossShardState := tempBeaconBestState.LastCrossShardState
 		for fromShard, shardBlocks := range beaconBlock.Body.ShardState {
 			for _, shardBlock := range shardBlocks {
@@ -892,14 +904,12 @@ func (blockchain *BlockChain) processStoreBeaconBlockV2(beaconBlock *BeaconBlock
 					waitHeight := shardBlock.Height
 					err := rawdbv2.StoreCrossShardNextHeight(blockchain.GetDatabase(), fromShard, toShard, lastHeight, waitHeight)
 					if err != nil {
-						//GetBeaconBestState().lock.Unlock()
 						return NewBlockChainError(StoreCrossShardNextHeightError, err)
 					}
 					//beacon process shard_to_beacon in order so cross shard next height also will be saved in order
 					//dont care overwrite this value
 					err = rawdbv2.StoreCrossShardNextHeight(blockchain.GetDatabase(), fromShard, toShard, waitHeight, 0)
 					if err != nil {
-						//GetBeaconBestState().lock.Unlock()
 						return NewBlockChainError(StoreCrossShardNextHeightError, err)
 					}
 					if lastCrossShardState[fromShard] == nil {
@@ -910,19 +920,31 @@ func (blockchain *BlockChain) processStoreBeaconBlockV2(beaconBlock *BeaconBlock
 			}
 			blockchain.config.CrossShardPool[fromShard].UpdatePool()
 		}
-		//GetBeaconBestState().lock.Unlock()
 	}
+	Logger.log.Infof("Proccess Store Beacon Block | cross shard time %+v", time.Since(startTimeCrossShard))
 	//=============================END Store cross shard state ==================================
+	startTimeRawDB := time.Now()
+	startTimeStoreIndex := time.Now()
 	if err := rawdbv2.StoreBeaconBlockIndex(blockchain.GetDatabase(), blockHash, blockHeight); err != nil {
 		return NewBlockChainError(StoreBeaconBlockIndexError, err)
 	}
+	Logger.log.Infof("Proccess Store Beacon Block | Store Index time %+v", time.Since(startTimeStoreIndex))
 	Logger.log.Debugf("Store Beacon BestState Height %+v", blockHeight)
+	startTimeStoreBestState := time.Now()
 	if err := rawdbv2.StoreBeaconBestState(blockchain.GetDatabase(), beaconBestStateBytes); err != nil {
 		return NewBlockChainError(StoreBeaconBestStateError, err)
 	}
+	Logger.log.Infof("Proccess Store Beacon Block | Store Beststate time %+v", time.Since(startTimeStoreBestState))
+	err = ioutil.WriteFile("./tmp/beststate", beaconBestStateBytes, 0644)
+	if err != nil {
+		log.Println("Store beststate error ", err)
+	}
 	Logger.log.Debugf("Store Beacon Block Height %+v with Hash %+v ", blockHeight, blockHash)
+	startTimeStoreBlock := time.Now()
 	if err := rawdbv2.StoreBeaconBlock(blockchain.GetDatabase(), blockHeight, blockHash, beaconBlock); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
+	Logger.log.Infof("Proccess Store Beacon Block | Store Block time %+v", time.Since(startTimeStoreBlock))
+	Logger.log.Infof("Proccess Store Beacon Block | rawdb time %+v", time.Since(startTimeRawDB))
 	return nil
 }
