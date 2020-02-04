@@ -70,7 +70,7 @@ func getBridgeTokenByType(stateDB *StateDB, incTokenID common.Hash, isCentralize
 		return nil, false, err
 	}
 	if !has {
-		return nil, false, nil
+		return tokenInfoState, false, nil
 	}
 	tempIncoTokenID := tokenInfoState.IncTokenID()
 	if !tempIncoTokenID.IsEqual(&incTokenID) || tokenInfoState.IsCentralized() != isCentralized {
