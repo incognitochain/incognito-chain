@@ -106,13 +106,15 @@ The redeem process with Incognito vault is illustrated as the following figure:
 
 Quite similar to Incognito vault's above, custodians supply collaterals (eg., Ether/ERC20) to a smart contract. Each custodian has its own set of custodian addresses, such as BTC address and BNB address, for receiving deposits. The collateral deposit also encloses these addresses as its metadata.
 
-A user, who wants to port public tokens to private tokens on Incognito, needs to submit a porting registration to a provided smart contract along with the needed info (Unique registration ID, Incognito address, private token ID and amount). After this step is finished, a "registration proof" will be existed in order for the user to request pTokens on Incognito (step 4).
+A user, who wants to port public tokens to private tokens on Incognito, needs to send a porting registration to a provided smart contract along with the needed info (Unique registration ID, Incognito address, private token ID and amount). The Bond smart contract selects trustless custodians for the public coins and provides the user the custodians’ deposit addresses.
 
-Once the porting registration and custodians are matched together on provided smart contract, the process will start over: user needs to send public tokens (BTC/BNB/ETH/etc) to the provided custodians’ addresses then he/she can extract and submit 2 proofs (registration proof from step 2 and deposit BTC/BNB/etc proof from step 3) to Incognito. The Incognito chain verifies these proofs with the aforementioned process and mints private tokens to the predefined user’s Incognito address.
+Once the deposit is confirmed on the cryptonetwork of the public coins, the contract verifies and produces an <em>accepted proof</em> if the submitted <em>deposit proof</em> by the user is valid and the user then can initiates a transaction on Incognito along with the <em>accepted proof</em> to request minting pTokens.
+
+Incognito validators verify the transaction and the <em>accepted proof</em> inside it in particular by using the aforementioned process and new privacy coins are minted at a 1:1 ratio the predefined user’s Incognito address.
 
 The whole process of porting public tokens into pTokens with Ethereum Smart Contract vault is illustrated in the following figure:
 
-[![image.png](https://i.postimg.cc/3NfZDtmV/eth-porting.png)](https://postimg.cc/XBF5Rc2k)
+[![image.png](https://i.postimg.cc/hPW73jLS/eth-porting2.png)](https://postimg.cc/Btp6jJ7y)
 
 ### Redeeming pTokens for public tokens
 
