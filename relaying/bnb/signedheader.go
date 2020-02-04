@@ -95,9 +95,9 @@ func (sh *BNBSignedHeader) VerifySignature(chainID string) *BNBRelayingError {
 		}
 	}
 
-	// not enough 2/3 voting power
-	if totalVotingPower < TotalVotingPowers * 2 / 3 {
-		return NewBNBRelayingError(InvalidSignatureSignedHeaderErr, errors.New("not enough 2/3 voting power"))
+	// not greater than 2/3 voting power
+	if totalVotingPower <= TotalVotingPowers * 2 / 3 {
+		return NewBNBRelayingError(InvalidSignatureSignedHeaderErr, errors.New("not greater than 2/3 voting power"))
 	}
 
 	return nil
