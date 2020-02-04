@@ -3,11 +3,10 @@ package peerv2
 import (
 	"context"
 
+	p2pgrpc "github.com/incognitochain/go-libp2p-grpc"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
 	"github.com/incognitochain/incognito-chain/wire"
-
-	p2pgrpc "github.com/incognitochain/go-libp2p-grpc"
 )
 
 func NewBlockProvider(p *p2pgrpc.GRPCProtocol, ns NetSync) *BlockProvider {

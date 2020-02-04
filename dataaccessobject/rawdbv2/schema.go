@@ -84,6 +84,7 @@ func GetShardIndexToBlockHashKey(shardID byte, index uint64, hash common.Hash) [
 func GetShardIndexToBlockHashPrefix(shardID byte, index uint64) []byte {
 	buf := common.Uint64ToBytes(index)
 	key := append(shardIndexToBlockHashPrefix, shardID)
+	key = append(key, splitter...)
 	key = append(key, buf...)
 	return key
 }

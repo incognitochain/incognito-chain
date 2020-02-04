@@ -288,7 +288,7 @@ func (httpServer *HttpServer) handleGetBlockHash(params interface{}, closeChan <
 	}
 	height := uint64(heightParam)
 
-	result, err := httpServer.blockService.GetBlockHashByHeight(shardID, height)
+	result, err := httpServer.blockService.GetBlockHashByHeightV2(shardID, height)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetShardBlockByHeightError, err)
 	}
