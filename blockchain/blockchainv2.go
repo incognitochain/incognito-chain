@@ -143,7 +143,7 @@ func (blockchain *BlockChain) initBeaconStateV2() error {
 		Logger.log.Error("Error store beacon block", tempBeaconBestState.BestBlockHash, "in beacon chain")
 		return err
 	}
-	if err := rawdbv2.StoreBeaconBlockIndex(blockchain.GetDatabase(), initBlockHash, initBlockHeight); err != nil {
+	if err := rawdbv2.StoreBeaconBlockIndex(blockchain.GetDatabase(), initBlockHeight, initBlockHash); err != nil {
 		return err
 	}
 	// State Root Hash

@@ -79,7 +79,7 @@ func GetShardBlockByHash(db incdb.Database, hash common.Hash) ([]byte, error) {
 	return ret, nil
 }
 
-func GetBlockByIndex(db incdb.Database, shardID byte, index uint64) (map[common.Hash][]byte, error) {
+func GetShardBlockByIndex(db incdb.Database, shardID byte, index uint64) (map[common.Hash][]byte, error) {
 	m := make(map[common.Hash][]byte)
 	indexPrefix := GetShardIndexToBlockHashPrefix(shardID, index)
 	iterator := db.NewIteratorWithPrefix(indexPrefix)

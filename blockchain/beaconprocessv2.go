@@ -971,7 +971,7 @@ func (blockchain *BlockChain) processStoreBeaconBlockV2(beaconBlock *BeaconBlock
 		//GetBeaconBestState().lock.Unlock()
 	}
 	//=============================END Store cross shard state ==================================
-	if err := rawdbv2.StoreBeaconBlockIndex(blockchain.GetDatabase(), blockHash, blockHeight); err != nil {
+	if err := rawdbv2.StoreBeaconBlockIndex(blockchain.GetDatabase(), blockHeight, blockHash); err != nil {
 		return NewBlockChainError(StoreBeaconBlockIndexError, err)
 	}
 	Logger.log.Debugf("Store Beacon BestState Height %+v", blockHeight)
