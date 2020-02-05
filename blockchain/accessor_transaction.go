@@ -135,25 +135,25 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 
 // @Notice: change from body.Transaction -> transactions
 func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadataV2(transactions []metadata.Transaction, blkProducerPrivateKey *privacy.PrivateKey, shardID byte) ([]metadata.Transaction, error) {
-	txRequestTable := map[string]metadata.Transaction{}
-	txsRes := []metadata.Transaction{}
-	for _, tx := range transactions {
-		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
-			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
-			requester := base58.Base58Check{}.Encode(requestMeta.PaymentAddress.Pk, common.Base58Version)
-			txRequestTable[requester] = tx
-		}
-	}
+	txRequestTable := reqTableFromReqTxs(transactions)
+	txsSpamRemoved := filterReqTxs(transactions, txRequestTable)
+	txsResponse := []metadata.Transaction{}
 	for _, value := range txRequestTable {
 		txRes, err := blockchain.buildWithDrawTransactionResponseV2(&value, blkProducerPrivateKey, shardID)
 		if err != nil {
-			return txsRes, err
+			return txsResponse, err
 		} else {
 			Logger.log.Infof("[Reward] - BuildWithDrawTransactionResponse for tx %+v, ok: %+v\n", value, txRes)
 		}
-		txsRes = append(txsRes, txRes)
+		txsResponse = append(txsResponse, txRes)
 	}
-	return txsRes, nil
+	Logger.log.Infof("Number of metadata txs: %v; number of tx request %v; number of tx spam %v; number of tx response %v",
+		len(transactions),
+		len(txRequestTable),
+		len(transactions)-len(txsSpamRemoved),
+		len(txsResponse))
+	txsSpamRemoved = append(txsSpamRemoved, txsResponse...)
+	return txsSpamRemoved, nil
 }
 
 //GetListOutputCoinsByKeysetV2 - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key.
