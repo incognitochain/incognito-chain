@@ -141,24 +141,24 @@ func CheckSNDerivatorExistence(tokenID *common.Hash, snd *privacy.Scalar, db dat
 }
 
 type EstimateTxSizeParam struct {
-	inputCoins               []*privacy.OutputCoin
-	payments                 []*privacy.PaymentInfo
+	numInputCoins            int
+	numPayments              int
 	hasPrivacy               bool
 	metadata                 metadata.Metadata
 	privacyCustomTokenParams *CustomTokenPrivacyParamTx
 	limitFee                 uint64
 }
 
-func NewEstimateTxSizeParam(inputCoins []*privacy.OutputCoin, payments []*privacy.PaymentInfo,
+func NewEstimateTxSizeParam(numInputCoins, numPayments int,
 	hasPrivacy bool, metadata metadata.Metadata,
 	privacyCustomTokenParams *CustomTokenPrivacyParamTx,
 	limitFee uint64) *EstimateTxSizeParam {
 	estimateTxSizeParam := &EstimateTxSizeParam{
-		inputCoins:               inputCoins,
-		hasPrivacy:               hasPrivacy,
+		numInputCoins:            numInputCoins,
+		numPayments:              numPayments,
+		hasPrivacy:				  hasPrivacy,
 		limitFee:                 limitFee,
 		metadata:                 metadata,
-		payments:                 payments,
 		privacyCustomTokenParams: privacyCustomTokenParams,
 	}
 	return estimateTxSizeParam
@@ -181,8 +181,8 @@ func EstimateTxSize(estimateTxSizeParam *EstimateTxSizeParam) uint64 {
 	}
 
 	sizeProof := uint64(0)
-	if len(estimateTxSizeParam.inputCoins) != 0 || len(estimateTxSizeParam.payments) != 0 {
-		sizeProof = utils.EstimateProofSize(len(estimateTxSizeParam.inputCoins), len(estimateTxSizeParam.payments), estimateTxSizeParam.hasPrivacy)
+	if estimateTxSizeParam.numInputCoins != 0 || estimateTxSizeParam.numPayments != 0 {
+		sizeProof = utils.EstimateProofSize(estimateTxSizeParam.numInputCoins, estimateTxSizeParam.numPayments, estimateTxSizeParam.hasPrivacy)
 	} else {
 		if estimateTxSizeParam.limitFee > 0 {
 			sizeProof = utils.EstimateProofSize(1, 1, estimateTxSizeParam.hasPrivacy)

@@ -511,33 +511,35 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		}
 
 		rpcConfig := rpcserver.RpcServerConfig{
-			HttpListenters:  httpListeners,
-			WsListenters:    wsListeners,
-			RPCQuirks:       cfg.RPCQuirks,
-			RPCMaxClients:   cfg.RPCMaxClients,
-			RPCMaxWSClients: cfg.RPCMaxWSClients,
-			ChainParams:     chainParams,
-			BlockChain:      serverObj.blockChain,
-			Blockgen:        serverObj.blockgen,
-			TxMemPool:       serverObj.memPool,
-			Server:          serverObj,
-			Wallet:          serverObj.wallet,
-			ConnMgr:         serverObj.connManager,
-			AddrMgr:         serverObj.addrManager,
-			RPCUser:         cfg.RPCUser,
-			RPCPass:         cfg.RPCPass,
-			RPCLimitUser:    cfg.RPCLimitUser,
-			RPCLimitPass:    cfg.RPCLimitPass,
-			DisableAuth:     cfg.RPCDisableAuth,
-			NodeMode:        cfg.NodeMode,
-			FeeEstimator:    serverObj.feeEstimator,
-			ProtocolVersion: serverObj.protocolVersion,
-			Database:        &serverObj.dataBase,
-			MiningKeys:      cfg.MiningKeys,
-			NetSync:         serverObj.netSync,
-			PubSubManager:   pubsubManager,
-			ConsensusEngine: serverObj.consensusEngine,
-			MemCache:        serverObj.memCache,
+			HttpListenters:              httpListeners,
+			WsListenters:                wsListeners,
+			RPCQuirks:                   cfg.RPCQuirks,
+			RPCMaxClients:               cfg.RPCMaxClients,
+			RPCMaxWSClients:             cfg.RPCMaxWSClients,
+			RPCLimitRequestPerDay:       cfg.RPCLimitRequestPerDay,
+			RPCLimitRequestErrorPerHour: cfg.RPCLimitRequestErrorPerHour,
+			ChainParams:                 chainParams,
+			BlockChain:                  serverObj.blockChain,
+			Blockgen:                    serverObj.blockgen,
+			TxMemPool:                   serverObj.memPool,
+			Server:                      serverObj,
+			Wallet:                      serverObj.wallet,
+			ConnMgr:                     serverObj.connManager,
+			AddrMgr:                     serverObj.addrManager,
+			RPCUser:                     cfg.RPCUser,
+			RPCPass:                     cfg.RPCPass,
+			RPCLimitUser:                cfg.RPCLimitUser,
+			RPCLimitPass:                cfg.RPCLimitPass,
+			DisableAuth:                 cfg.RPCDisableAuth,
+			NodeMode:                    cfg.NodeMode,
+			FeeEstimator:                serverObj.feeEstimator,
+			ProtocolVersion:             serverObj.protocolVersion,
+			Database:                    &serverObj.dataBase,
+			MiningKeys:                  cfg.MiningKeys,
+			NetSync:                     serverObj.netSync,
+			PubSubManager:               pubsubManager,
+			ConsensusEngine:             serverObj.consensusEngine,
+			MemCache:                    serverObj.memCache,
 		}
 		serverObj.rpcServer = &rpcserver.RpcServer{}
 		serverObj.rpcServer.Init(&rpcConfig)
@@ -1522,7 +1524,6 @@ func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint6
 		Logger.log.Error(err)
 		return err
 	}
-	// TODO(@0xbunyip): instead of putting response to queue, use it immediately in synker
 	serverObj.putResponseMsgs(msgs)
 	return nil
 }
@@ -1734,7 +1735,7 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 			serverObj.blockChain.BestState.Shard[byte(shardID)].Hash(),
 		}
 	} else {
-		msg.(*wire.MessagePeerState).ShardToBeaconPool = serverObj.shardToBeaconPool.GetValidBlockHeight()
+		msg.(*wire.MessagePeerState).ShardToBeaconPool = serverObj.shardToBeaconPool.GetAllBlockHeight()
 		Logger.log.Infof("[peerstate] %v", msg.(*wire.MessagePeerState).ShardToBeaconPool)
 	}
 
@@ -1748,7 +1749,7 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 	if err != nil {
 		return err
 	}
-	msg.SetSenderID(listener.GetPeerID())
+	msg.SetSenderID(serverObj.highway.LocalHost.Host.ID())
 	Logger.log.Infof("[peerstate] PeerID send to Proxy when publish node state %v \n", listener.GetPeerID())
 	if err != nil {
 		return err

@@ -1,12 +1,18 @@
 # Portal: Bring incognito mode to every token
 
+**Designers:** @duyhtq, @0xankylosaurus, @0xkraken
+
+**Developers:** @0xankylosaurus, @0xkraken
+
+Also thanks to @corollari for really useful feedback.
+
 ## Introduction
 
 Portal focuses on three main properties:
 
 **Privacy**: Incognito is a privacy-protecting blockchain. It's interoperable with other blockchains, allowing for secure two-way transfers of crypto whenever privacy is needed. So you can privately send, receive, and store your crypto - like BTC, ETH, BNB, and more.
 
-**Scale-out**: The total amount of private tokens (pTokens for short) available for circulation increases with the total amount of collaterals which are locked up in two supporting custodial vaults (Incognito and Ethereum smart contract). In other words, Portal can leverage both security and user set (along with huge market cap) of each platform.
+**Scale-out**: The total amount of private tokens (pTokens for short) available for circulation increases with the total amount of collaterals which are locked up in two supporting custodial vaults (Incognito and Ethereum smart contract). In other words, Portal can leverage both security and user set (along with a huge market cap) of each platform.
 
 **Compatibility**: Portal does not rely on a single cryptocurrency implementation with a set of specific features so it is especially helpful for creating interoperability with blockchains that don't support smart contracts like Bitcoin and Binance Chain.
 
@@ -14,7 +20,7 @@ Its design is public.  The code is open-source. We hope that the crypto communit
 
 ## pTokens
 
-Privacy-protecting tokens (pTokens) - like pBTC and pDAI - are tokens on the Incognito blockchain that are backed 1:1 by cryptoassets on other blockchains. For example, pBTC is 1:1 backed by BTC, and pDAI is 1:1 backed by DAI. You can always redeem 1 pBTC for 1 BTC and vice versa.
+Privacy-protecting tokens (pTokens) - like pBTC and pDAI - are tokens on the Incognito blockchain that are backed 1:1 by crypto-assets on other blockchains. For example, pBTC is 1:1 backed by BTC, and pDAI is 1:1 backed by DAI. You can always redeem 1 pBTC for 1 BTC and vice versa.
 
 pTokens have the best of both worlds: the value of the original tokens and privacy. You can send, receive, and store them with total privacy.
 
@@ -42,30 +48,22 @@ Portal's custodians are entirely trustless. Here is a comparison between Portal 
 
 ## Custodial vaults & custodian
 
-Like mention earlier, Portal is a practical and secure system to construct cryptocurrency-backed assets without trusted intermediaries but it still needs to store the deposited cryto-assets somewhere in a decentralized manner. We're introducing two options: Incognito itself and Ethereum smart contract as custodial vaults.
+Like mention earlier, Portal is a practical and secure system to construct cryptocurrency-backed assets without trusted intermediaries but it still needs to store the deposited cryptoassets somewhere in a decentralized manner. We're introducing two options: Incognito itself and Ethereum smart contract as custodial vaults.
 
-Anyone can become a custodian just by supplying some collaterals. The collaterals could be either in PRV (for Incognito vault) or Ether/ERC20 (for Ethereum smart contract vault).
+Anyone can become a custodian just by supplying collaterals. The collaterals can be either in PRV (for Incognito vault) or Ether/ERC20 (for Ethereum smart contract vault).
 
-In addition to miners/validators, the custodians have a crucial role in the Incognito network as they make cross-chain communication between the two blockchains possible and enable the choice of “incognito mode” for transfers of crypto assets. In return, custodians will “earn” porting fees and PRVs reward just similar to what miners/validators are receiving (of course, in a different formula/amount).
+In addition to miners/validators, the custodians have a crucial role in the Incognito network as they make cross-chain communication between the two blockchains possible and enable the choice of “incognito mode” for transfers of crypto assets. In return, custodians will “earn” porting fees and PRVs reward just similar to what miners/validators are receiving. The PRVs reward for custodians is a proportion of Community fund that has been estimated about 10% of total PRV supply.
 
 
 ## Proof verification
 
-In either Porting or Redeeming processes, there will be needs to verify a transaction has been confirmed on “public” blockchains (Bitcoin/Binance/Ethereum/etc). Fortunately, almost popular blockchains have supported Simplified Payment Verification (SPV for short) regardless of differences between those blockchains as Bitcoin’s using Merkel tree, Ethereum’s using Merkle Patricia tree, Binance’s using IAVL+ tree and so on.
+In either Porting or Redeeming processes, there will be needs to verify a transaction has been confirmed on “public” blockchains (Bitcoin/Binance/Ethereum/etc). Fortunately, most of the popular blockchains have supported Simplified Payment Verification (SPV for short) regardless of slight differences between those blockchains as Bitcoin’s using Merkel tree, Ethereum’s using Merkle Patricia tree, Binance’s using IAVL+ tree and so on.
 
 In order to verify the validity of proof on Incognito, we need to:
 
-(1) Make sure that each Incognito node maintains a valid “public” blockchains’ header chain.
+(1) Make sure that each Incognito node maintains a validated “public” blockchains’ header chain. In our approach, anyone can continuously relay public blockchain’s headers into Incognito and Incognito itself verifies the header validity before extending the header chain.
 
 (2) Verify the validity of the proof (Merkle branches) with the “public” blockchain header’s Merkle root. This is made possible via a Merkle tree from all transactions in a block.
-
-Here are a few ways to achieve (1):
-
-(a) Someone continuously relays public blockchain’s headers into Incognito and Incognito itself verifies the header validity.
-
-(b) Each Incognito validator node keeps a popular public blockchain light client. That light client also continuously syncs, verifies the validity of block headers in a similar way to (1a)
-
-In either (1a) or (1b), Incognito must obtain a valid header in order to support the verification in (2). The team opted for (1b) for now, a solution sufficient for moving forward based on the following assumption: as long as at least ⅓ of the number of validators in the Incognito committee run honest light clients, all is well. A transaction may only be comprised when a malicious light client is run by at least (⅔ + 1) of the number of validators. (Note: Incognito’s consensus is Proof of Stake)
 
 The verification process is illustrated in the following figure:
 
@@ -73,56 +71,62 @@ The verification process is illustrated in the following figure:
 
 
 
-## Incognito as custodial vault
+## Incognito as a custodial vault
 
 ### Porting public tokens into pTokens
 
-To port public tokens (BTC/BNB/ETH/etc) on mainstream public blockchains out there to private tokens (pBTC/pBNB/pETH/etc) on Incognito, users simply submit a porting registration to Incognito along with the needed info (Unique registration id, Incognito address, private token id and amount). Incognito chain will use this info in order to mint ptokens a 1:1 ratio and send them to the users. Besides, the info will also be used to prevent front-running attacks that can occur during the process.
+Any custodian, who wants to take advantage of the porting (fees and PRVs reward), supplies collaterals (eg., PRVs) to a pool on Incognito. Each custodian has its own set of custodian addresses, such as BTC address and BNB address, for receiving deposits. The collateral deposit also encloses these addresses as its metadata.
 
-Any custodian, who wants to take advantage of the porting (fees and PRVs reward), picks an existing porting registration and deposits collaterals (eg., PRV for now) corresponding with the amount in the registered info. Each custodian has its own set of custodian addresses, such as BTC address and BNB address, for receiving deposits. The collateral deposit also encloses these addresses as its metadata.
+To port public tokens (BTC/BNB/ETH/etc) on mainstream public blockchains out there to private tokens (pBTC/pBNB/pETH/etc) on Incognito, users simply submit a porting registration to Incognito along with the needed info (Unique registration id, Incognito address, private token id and amount). Incognito chain will use this info in order to mint pTokens a 1:1 ratio and send them to the users. Besides, the info will also be used to prevent front-running attacks that can occur during the process.
 
-Once the porting registration and collaterals deposit are matched together by unique registration id on Incognito, the process will start over: users need to send public tokens (BTC/BNB/ETH/etc) to the provided custodian’s address then extract and submit the proof of that transaction to Incognito. The Incognito chain verifies the proof validity with the aforementioned process and mints private tokens to the predefined users’ Incognito address.
+Once the porting registration and custodians are matched together on Incognito, the process will start over: a user needs to send public tokens (BTC/BNB/ETH/etc) to the provided custodians’ addresses then extracts and submits proof of that transaction to Incognito. The Incognito chain verifies the proof validity with the aforementioned process and mints private tokens to the predefined user’s Incognito address.
 
 The whole process of porting public tokens into pTokens with Incognito vault is illustrated in the following figure:
 
-[![image.png](https://i.postimg.cc/XJyYrV8m/porting.png)](https://postimg.cc/tZpjfG8N)
+[![image.png](https://i.postimg.cc/SsJKZjC3/prv-porting.png)](https://postimg.cc/vgwMTYPt)
 
 
 ### Redeeming pTokens for public tokens
 
-Redeeming a pToken is pretty straightforward. The user inits a redeem transaction, which burns the pToken and instructs the custodian to send the public token back to the user by a deadline. The deadline is initially set within 12 hours.
+Redeeming a pToken is pretty straightforward. A user inits a redeem transaction, which burns the pToken.
 
-Once the custodian finishes sending public tokens (BTC/BNB/ETH/etc) to the user’s address that is included in redeem instruction, he can get BTC/BNB/etc proof from those “public” blockchains and submit it to Incognito as Request collateral back transaction. The Incognito chain will verify that proof’s validity with the aforementioned process and then release collaterals to the custodian.
+The system chooses custodians in the custodian list and asks them to send public tokens back to the user (Incognito will also provide a client tool in order for custodians to make the process execute automatically). Once the custodian finishes sending public tokens (BTC/BNB/ETH/etc) to the user’s address that is included in a redeem instruction, he can get a BTC/BNB/etc proof from those “public” blockchains and submit it to Incognito. The Incognito chain verifies that proof’s validity with the aforementioned process and then unlocks collaterals that will be available for either withdrawal or serving incoming porting requests.
+
+In case the user doesn't still receive enough his original assets, the collaterals of custodians, who didn't return public tokens to the user, will be liquidated.
 
 The redeem process with Incognito vault is illustrated as the following figure:
 
-[![image.png](https://i.postimg.cc/gjVcKN1K/redeeming.png)](https://postimg.cc/jnjrxQxW)
+[![image.png](https://i.postimg.cc/pdB00LRf/prv-redeeming.png)](https://postimg.cc/bGsHr8Gr)
 
 
 
-## Ethereum Smart Contract as custodial vault
+## Ethereum Smart Contract as a custodial vault
 
 ### Porting public tokens into pTokens
 
-Quite similar to Incognito vault's above, users will need submit a porting registration to a provided smart contract along with the needed info (Unique registration ID, Incognito address, private token ID and amount)
+Quite similar to Incognito vault's above, custodians supply collaterals (eg., Ether/ERC20) to a smart contract. Each custodian has its own set of custodian addresses, such as BTC address and BNB address, for receiving deposits. The collateral deposit also encloses these addresses as its metadata.
 
-And then a custodian picks an existing porting registration and deposits collaterals (eg., Ether/ERC20) corresponding with the amount in the registered info to a the smart contract. Each custodian has its own set of custodian addresses, such as BTC address and BNB address, for receiving deposits. The collateral deposit also encloses these addresses as its metadata. After this step is finished, a "collateral proof" will be existed in order for user to request pTokens on Incognito (step 4)
+A user, who wants to port public tokens to private tokens on Incognito, needs to send a porting registration to a provided smart contract along with the needed info (Unique registration ID, Incognito address, private token ID and amount). The Bond smart contract selects trustless custodians for the public coins and provides the user the custodians’ deposit addresses.
 
-Once the porting registration and collaterals deposit are matched together by unique registration id on Incognito, the process will start over: users need to send public tokens (BTC/BNB/ETH/etc) to the provided custodian’s address then he/she can extract and submit 2 proofs (collateral proof from step 2 and deposit BTC/BNB/etc proof from step 3) to Incognito. The Incognito chain verifies these proofs with the aforementioned process and mints private tokens to the predefined users’ Incognito address.
+Once the deposit is confirmed on the cryptonetwork of the public coins, the contract verifies and produces an <em>accepted proof</em> if the submitted <em>deposit proof</em> by the user is valid and the user then can initiates a transaction on Incognito along with the <em>accepted proof</em> to request minting pTokens.
+
+Incognito validators verify the transaction and the <em>accepted proof</em> inside it in particular by using the aforementioned process and new privacy coins are minted at a 1:1 ratio the predefined user’s Incognito address.
 
 The whole process of porting public tokens into pTokens with Ethereum Smart Contract vault is illustrated in the following figure:
 
-[![image.png](https://i.postimg.cc/g28gTktP/eth-deposit.png)](https://postimg.cc/QFNgBsr6)
+[![image.png](https://i.postimg.cc/hPW73jLS/eth-porting2.png)](https://postimg.cc/Btp6jJ7y)
 
 ### Redeeming pTokens for public tokens
 
-Redeeming a pToken with Smart Contract vault is slightly diffrent from Incognito vault's. The user inits a redeem transaction on Incognito, which burns the pToken. Then he/she can extract redeem proof and submit it to a provided smart contract that verifies and instructs the custodians to send the public token back to the user by a deadline. The deadline is initially set within 12 hours.
+Redeeming a pToken with Smart Contract vault is slightly different from Incognito vault's. A user inits a redeem transaction on Incognito, which burns the pToken. Then he can extract redeem proof and submit it to a provided smart contract.
 
-Once the custodian finishes sending public tokens (BTC/BNB/ETH/etc) to the user’s address that is included in redeem instruction, he can extract BTC/BNB/etc proof from those “public” blockchains and submit it to the smart contract as Request collateral back transaction. The smart contract will verify that proof’s validity with the aforementioned process and then release collaterals to the custodian.
+The system chooses custodians in the custodian list and asks them to return public tokens to the user (Incognito will also provide a client tool in order for custodians to make the process execute automatically). Once the custodians finish sending public tokens (BTC/BNB/ETH/etc) to the user’s address that is included in redeem instruction, he can extract BTC/BNB/etc proof from those “public” blockchains and submit it to the smart contract. The smart contract verifies that proof’s validity with the aforementioned process and then unlocks collaterals that will be available for either withdrawal or serving incoming porting requests.
+
+In case the user doesn't still receive enough his original assets, the collaterals of custodians, who didn't return public tokens to the user, will be liquidated.
 
 The redeem process with Ethereum Smart Contract vault is illustrated as the following figure:
 
-[![image.png](https://i.postimg.cc/Bv3m99RP/eth-redeem.png)](https://postimg.cc/Wd9GgKNs)
+[![image.png](https://i.postimg.cc/C5vRN1h6/eth-redeeming.png)](https://postimg.cc/vxV88G6W)
 
 
 
@@ -134,7 +138,7 @@ We also introduce another variable &alpha;, which is initially set as 150%. &alp
 
 ## Auto-liquidation
 
-What if the custodian doesn't send the public token back by the deadline or doesn't send it back at all? If that happens, their collaterals are automatically liquidated to pay the users back.
+What if the custodian doesn't send the public tokens back? If that happens, their collaterals are automatically liquidated to pay the users back.
 
 Auto-liquidation also kicks in if the collaterals value drop significantly below &alpha x &sum;Deposit<sub>i</sub>. The custodian must add more collaterals to avoid auto-liquidation.
 
@@ -142,7 +146,7 @@ Auto-liquidation also kicks in if the collaterals value drop significantly below
 
 The initial fee structure is simple - with a fixed deposit fee of 0.01% and a withdrawal fee of 0.01%.
 
-It could later allow users to set their fees so that we can have a market-driven pricing structure or a more complex fee structure as a combination of deposit, withdraw, and custodial time.
+It could later allow users to set their fees so that we can have a market-driven pricing structure or a more complex fee structure as a combination of deposit, withdrawal, and custodial time.
 
 ## Mobile app
 
@@ -151,3 +155,5 @@ The Incognito Wallet plays a crucial role in making it as easy as possible for u
 ## Conclusion
 
 Once Portal ships in Q1 2020, anyone will be able to send more crypto privately. We cannot wait to see some cool use cases. Do drop us any questions, comments, and feedback — we are always glad to hear them.
+
+

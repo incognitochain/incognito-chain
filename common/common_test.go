@@ -290,7 +290,7 @@ func TestCommonRandBigIntMaxRange(t *testing.T) {
 
 	for _, item := range data {
 		number, err := RandBigIntMaxRange(item)
-		fmt.Printf("number: %v\n", number)
+		//fmt.Printf("number: %v\n", number)
 		cmp := number.Cmp(item)
 
 		assert.Equal(t, nil, err)
@@ -395,7 +395,7 @@ func TestCommonBytesToUint32(t *testing.T) {
 
 	for _, item := range data {
 		number, err := BytesToUint32(item.bytes)
-		fmt.Printf("number: %v\n", number)
+		//fmt.Printf("number: %v\n", number)
 
 		assert.Equal(t, nil, err)
 		assert.Equal(t, item.number, number)
@@ -454,7 +454,7 @@ func TestCommonBytesToUint64(t *testing.T) {
 
 	for _, item := range data {
 		number, err := BytesToUint64(item.bytes)
-		fmt.Printf("number: %v\n", number)
+		//fmt.Printf("number: %v\n", number)
 
 		assert.Equal(t, nil, err)
 		assert.Equal(t, item.number, number)
@@ -579,12 +579,10 @@ func TestCommonAppendSliceString(t *testing.T) {
 	assert.Equal(t, 6, len(finalArr))
 }
 
-func TestCommonHashToString(t *testing.T){
-	for i:=0; i< 1000; i++{
-		hash := new(Hash)
-		hash.SetBytes([]byte{1,2,3,4})
-
-		fmt.Printf("Hash string len: %v\n", len(hash.String()))
-	}
-
-}
+//func TestCommonHashToString(t *testing.T){
+//	for i:=0; i< 1000; i++{
+//		hash := new(Hash)
+//		hash.SetBytes([]byte{1,2,3,4})
+//		fmt.Printf("Hash string len: %v\n", len(hash.String()))
+//	}
+//}

@@ -119,6 +119,12 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 	if len(params.paymentInfo) > 254 {
 		return NewTransactionErr(PaymentInfoIsVeryLargeError, nil, strconv.Itoa(len(params.paymentInfo)))
 	}
+	limitFee := uint64(0)
+	estimateTxSizeParam := NewEstimateTxSizeParam(len(params.inputCoins), len(params.paymentInfo),
+		params.hasPrivacy, nil, nil, limitFee)
+	if txSize := EstimateTxSize(estimateTxSizeParam); txSize > common.MaxTxSize {
+		return NewTransactionErr(ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
+	}
 
 	if params.tokenID == nil {
 		// using default PRV
@@ -532,7 +538,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 				Logger.log.Error(err)
 			}
 			Logger.log.Error("FAILED VERIFICATION PAYMENT PROOF")
-			return false, NewTransactionErr(TxProofVerifyFailError, err)
+			return false, NewTransactionErr(TxProofVerifyFailError, err, tx.Hash().String())
 		} else {
 			Logger.log.Debugf("SUCCESSED VERIFICATION PAYMENT PROOF ")
 		}
@@ -824,17 +830,18 @@ func (tx Tx) ValidateTxWithBlockChain(
 func (tx Tx) validateNormalTxSanityData() (bool, error) {
 	//check version
 	if tx.Version > txVersion {
-		return false, errors.New(fmt.Sprintf("tx version is %d. Wrong version tx. Only support for version >= %d", tx.Version, txVersion))
+		return false, NewTransactionErr(RejectTxVersion, fmt.Errorf("tx version is %d. Wrong version tx. Only support for version >= %d", tx.Version, txVersion))
 	}
 	// check LockTime before now
 	if int64(tx.LockTime) > time.Now().Unix() {
-		return false, errors.New("wrong tx locktime")
+		return false, NewTransactionErr(RejectInvalidLockTime, fmt.Errorf("wrong tx locktime %d", tx.LockTime))
 	}
 
 	// check tx size
-	if tx.GetTxActualSize() > common.MaxTxSize {
-		fmt.Print(tx.GetTxActualSize(), common.MaxTxSize)
-		return false, errors.New("tx size is too large")
+	actualTxSize := tx.GetTxActualSize()
+	if actualTxSize > common.MaxTxSize {
+		//fmt.Print(actualTxSize, common.MaxTxSize)
+		return false, NewTransactionErr(RejectTxSize, fmt.Errorf("tx size %d kB is too large", actualTxSize))
 	}
 
 	// check sanity of Proof
@@ -844,13 +851,13 @@ func (tx Tx) validateNormalTxSanityData() (bool, error) {
 	}
 
 	if len(tx.SigPubKey) != common.SigPubKeySize {
-		return false, errors.New("wrong tx Sig PK")
+		return false, NewTransactionErr(RejectTxPublickeySigSize, fmt.Errorf("wrong tx Sig PK size %d", len(tx.SigPubKey)))
 	}
 	// check Type is normal or salary tx
 	switch tx.Type {
 	case common.TxNormalType, common.TxRewardType, common.TxCustomTokenPrivacyType, common.TxReturnStakingType: //is valid
 	default:
-		return false, errors.New("wrong tx type")
+		return false, NewTransactionErr(RejectTxType, fmt.Errorf("wrong tx type with %s", tx.Type))
 	}
 
 	//if txN.Type != common.TxNormalType && txN.Type != common.TxRewardType && txN.Type != common.TxCustomTokenType && txN.Type != common.TxCustomTokenPrivacyType { // only 1 byte
@@ -859,7 +866,7 @@ func (tx Tx) validateNormalTxSanityData() (bool, error) {
 
 	// check info field
 	if len(tx.Info) > 512 {
-		return false, errors.New("wrong tx info length")
+		return false, NewTransactionErr(RejectTxInfoSize, fmt.Errorf("wrong tx info length %d bytes, only support info with max length <= %d bytes", len(tx.Info), 512))
 	}
 
 	return true, nil

@@ -123,7 +123,7 @@ func (tp *TxPool) validateTxIndependentProperties(tx metadata.Transaction) error
 
 	// sanity data
 	if validated, errS := tx.ValidateSanityData(tp.config.BlockChain); !validated {
-		return NewMempoolTxError(RejectSansityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), errS.Error()))
+		return NewMempoolTxError(RejectSanityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), errS.Error()))
 	}
 
 	// ValidateTransaction tx by it self
