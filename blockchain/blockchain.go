@@ -1162,74 +1162,67 @@ func (blockchain *BlockChain) BuildInstRewardForShards(epoch uint64, totalReward
 	return resInst, nil
 }
 
-// @Notice: change from body.Transaction -> transactions
-func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(transactions []metadata.Transaction, blkProducerPrivateKey *privacy.PrivateKey) ([]metadata.Transaction, error) {
-	txRequestTable := map[string]metadata.Transaction{}
-	txsRes := []metadata.Transaction{}
-	for _, tx := range transactions {
-		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
-			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
-			requester := base58.Base58Check{}.Encode(requestMeta.PaymentAddress.Pk, common.Base58Version)
-			txRequestTable[requester] = tx
-		}
-	}
+func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(
+	transactions []metadata.Transaction,
+	blkProducerPrivateKey *privacy.PrivateKey,
+) (
+	[]metadata.Transaction,
+	error,
+) {
+	txRequestTable := reqTableFromReqTxs(transactions)
+	txsSpamRemoved := filterReqTxs(transactions, txRequestTable)
+	txsResponse := []metadata.Transaction{}
 	for _, value := range txRequestTable {
 		txRes, err := blockchain.buildWithDrawTransactionResponse(&value, blkProducerPrivateKey)
 		if err != nil {
-			return txsRes, err
+			return txsResponse, err
 		} else {
 			Logger.log.Infof("[Reward] - BuildWithDrawTransactionResponse for tx %+v, ok: %+v\n", value, txRes)
 		}
-		txsRes = append(txsRes, txRes)
+		txsResponse = append(txsResponse, txRes)
 	}
-	//blkBody.Transactions = append(blkBody.Transactions, txsRes...)
-	return txsRes, nil
+	Logger.log.Infof("Number of metadata txs: %v; number of tx request %v; number of tx spam %v; number of tx response %v",
+		len(transactions),
+		len(txRequestTable),
+		len(transactions)-len(txsSpamRemoved),
+		len(txsResponse))
+	txsSpamRemoved = append(txsSpamRemoved, txsResponse...)
+	return txsSpamRemoved, nil
 }
 
 func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blkBody *ShardBody) error {
-	txRequestTable := map[string]metadata.Transaction{}
-	txReturnTable := map[string]bool{}
-	for _, tx := range blkBody.Transactions {
-		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
-			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
-			requester := base58.Base58Check{}.Encode(requestMeta.PaymentAddress.Pk, common.Base58Version)
-			txRequestTable[requester] = tx
-		}
+	txRequestTable := reqTableFromReqTxs(blkBody.Transactions)
+	txsSpamRemoved := filterReqTxs(blkBody.Transactions, txRequestTable)
+	if len(blkBody.Transactions) != len(txsSpamRemoved) {
+		return errors.Errorf("This block contains txs spam request reward. Number of spam: %v", len(blkBody.Transactions)-len(txsSpamRemoved))
 	}
-	numberOfTxRequest := len(txRequestTable)
+	txReturnTable := map[string]bool{}
 	db := blockchain.config.DataBase
-	numberOfTxResponse := 0
 	for _, tx := range blkBody.Transactions {
 		switch tx.GetMetadataType() {
 		case metadata.WithDrawRewardResponseMeta:
 			_, requesterRes, amountRes, coinID := tx.GetTransferData()
-			//fmt.Printf("[ndh] -  %+v\n", tx)
-			//TODO: check why using encode version with block version value
-			requester := base58.Base58Check{}.Encode(requesterRes, common.Base58Version)
-			if txRequestTable[requester] == nil {
-				//fmt.Printf("[ndh] - - [error] This response dont match with any request %+v \n", requester)
+			requester := getRequesterFromPKnCoinID(requesterRes, *coinID)
+			txReq, isExist := txRequestTable[requester]
+			if !isExist {
 				return errors.New("This response dont match with any request")
 			}
-			requestMeta := txRequestTable[requester].GetMetadata().(*metadata.WithDrawRewardRequest)
-			if res, err := coinID.Cmp(&requestMeta.TokenID); err == nil && res != 0 {
-				return errors.Errorf("Invalid token ID when check metadata of tx response. Got %v, want %v", coinID, requestMeta.TokenID)
+			requestMeta := txReq.GetMetadata().(*metadata.WithDrawRewardRequest)
+			responseMeta := tx.GetMetadata().(*metadata.WithDrawRewardResponse)
+			if res, err := coinID.Cmp(&requestMeta.TokenID); err != nil || res != 0 {
+				return errors.Errorf("Invalid token ID when check metadata of tx response. Got %v, want %v, error %v", coinID, requestMeta.TokenID, err)
+			}
+			if cmp, err := responseMeta.TxRequest.Cmp(txReq.Hash()); (cmp != 0) || (err != nil) {
+				Logger.log.Errorf("Response does not match with request, response link to txID %v, request txID %v, error %v", responseMeta.TxRequest.String(), txReq.Hash().String(), err)
 			}
 			amount, err := db.GetCommitteeReward(requesterRes, requestMeta.TokenID)
 			if (amount == 0) || (err != nil) {
-				//fmt.Printf("[ndh] - - [error] Not enough reward %+v %+v\n", amount, err)
-				return errors.New("Not enough reward")
+				return errors.Errorf("Invalid request %v, amount from db %v, error %v", requester, amount, err)
 			}
 			if amount != amountRes {
-				//fmt.Printf("[ndh] - - [error] Wrong amount %+v %+v\n", amount, amountRes)
-				return errors.Errorf("Wrong amount %v %v", amount, amountRes)
+				return errors.Errorf("Wrong amount for token %v, get from db %v, response amount %v", requestMeta.TokenID, amount, amountRes)
 			}
-
-			if res, err := txRequestTable[requester].Hash().Cmp(tx.GetMetadata().Hash()); err == nil && res != 0 {
-				//fmt.Printf("[ndh] - - [error] This response dont match with any request %+v %+v\n", amount, amountRes)
-				return errors.New("This response dont match with any request")
-			}
-			txRequestTable[requester] = nil
-			numberOfTxResponse++
+			delete(txRequestTable, requester)
 			continue
 		case metadata.ReturnStakingMeta:
 			returnMeta := tx.GetMetadata().(*metadata.ReturnStakingMetadata)
@@ -1240,9 +1233,8 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 			}
 		}
 	}
-	if numberOfTxRequest != numberOfTxResponse {
-		//fmt.Printf("[ndh] - - [error] Not match request and response %+v %+v\n", numberOfTxRequest, numberOfTxResponse)
-		return errors.New("Not match request and response")
+	if len(txRequestTable) > 0 {
+		return errors.Errorf("Not match request and response, num of unresponse request: %v", len(txRequestTable))
 	}
 	return nil
 }
@@ -1283,12 +1275,6 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 		}
 
 		for _, bridgeTokenIDs := range allBridgeTokens {
-			// var tokenWithAmount lvdb.TokenWithAmount
-			// err := json.Unmarshal(bridgeTokenIDBytes, &tokenWithAmount)
-			// if err != nil {
-			// 	return nil, err
-			// }
-
 			if res, err := coinID.Cmp(bridgeTokenIDs.TokenID); err == nil && res == 0 {
 				txType = transaction.CustomTokenPrivacyType
 				break
@@ -1324,6 +1310,48 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 		coinID.String(),
 		shardID)
 	return transaction.BuildCoinBaseTxByCoinID(buildCoinBaseParams)
+}
+
+func getRequesterFromPKnCoinID(pk privacy.PublicKey, coinID common.Hash) string {
+	requester := base58.Base58Check{}.Encode(pk, common.Base58Version)
+	return fmt.Sprintf("%s-%s", requester, coinID.String())
+}
+
+func reqTableFromReqTxs(
+	transactions []metadata.Transaction,
+) map[string]metadata.Transaction {
+	txRequestTable := map[string]metadata.Transaction{}
+	for _, tx := range transactions {
+		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
+			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
+			key := getRequesterFromPKnCoinID(requestMeta.PaymentAddress.Pk, requestMeta.TokenID)
+			txRequestTable[key] = tx
+		}
+	}
+	return txRequestTable
+}
+
+func filterReqTxs(
+	transactions []metadata.Transaction,
+	txRequestTable map[string]metadata.Transaction,
+) []metadata.Transaction {
+	res := []metadata.Transaction{}
+	for _, tx := range transactions {
+		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
+			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
+			key := getRequesterFromPKnCoinID(requestMeta.PaymentAddress.Pk, requestMeta.TokenID)
+			txReq, ok := txRequestTable[key]
+			if !ok {
+				continue
+			}
+			cmp, err := txReq.Hash().Cmp(tx.Hash())
+			if (err != nil) || (cmp != 0) {
+				continue
+			}
+		}
+		res = append(res, tx)
+	}
+	return res
 }
 
 func CalculateNumberOfByteToRead(amountBytes int) []byte {
