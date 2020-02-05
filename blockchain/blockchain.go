@@ -1312,48 +1312,6 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 	return transaction.BuildCoinBaseTxByCoinID(buildCoinBaseParams)
 }
 
-func getRequesterFromPKnCoinID(pk privacy.PublicKey, coinID common.Hash) string {
-	requester := base58.Base58Check{}.Encode(pk, common.Base58Version)
-	return fmt.Sprintf("%s-%s", requester, coinID.String())
-}
-
-func reqTableFromReqTxs(
-	transactions []metadata.Transaction,
-) map[string]metadata.Transaction {
-	txRequestTable := map[string]metadata.Transaction{}
-	for _, tx := range transactions {
-		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
-			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
-			key := getRequesterFromPKnCoinID(requestMeta.PaymentAddress.Pk, requestMeta.TokenID)
-			txRequestTable[key] = tx
-		}
-	}
-	return txRequestTable
-}
-
-func filterReqTxs(
-	transactions []metadata.Transaction,
-	txRequestTable map[string]metadata.Transaction,
-) []metadata.Transaction {
-	res := []metadata.Transaction{}
-	for _, tx := range transactions {
-		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
-			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
-			key := getRequesterFromPKnCoinID(requestMeta.PaymentAddress.Pk, requestMeta.TokenID)
-			txReq, ok := txRequestTable[key]
-			if !ok {
-				continue
-			}
-			cmp, err := txReq.Hash().Cmp(tx.Hash())
-			if (err != nil) || (cmp != 0) {
-				continue
-			}
-		}
-		res = append(res, tx)
-	}
-	return res
-}
-
 func CalculateNumberOfByteToRead(amountBytes int) []byte {
 	var result = make([]byte, 8)
 	binary.LittleEndian.PutUint32(result, uint32(amountBytes))
