@@ -96,14 +96,6 @@ func (blockGenerator *BlockGenerator) NewBlockShardV2(shardID byte, round int, c
 	}
 	transactionsForNewBlock = append(transactionsForNewBlock, txsToAddFromBlock...)
 	// build txs with metadata
-	//TODO: 0xmerman check logic again
-	/**
-	txsWithMetadata, err := blockGenerator.chain.BuildResponseTransactionFromTxsWithMetadataV2(transactionsForNewBlock, &tempPrivateKey, shardID)
-	if err != nil {
-		return nil, err
-	}
-	transactionsForNewBlock = append(transactionsForNewBlock, txsWithMetadata...)
-	*/
 	transactionsForNewBlock, err = blockGenerator.chain.BuildResponseTransactionFromTxsWithMetadataV2(transactionsForNewBlock, &tempPrivateKey, shardID)
 	// process instruction from beacon block
 	shardPendingValidator, _, _ = blockGenerator.chain.processInstructionFromBeaconV2(beaconBlocks, shardID, newCommitteeChange())
