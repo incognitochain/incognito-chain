@@ -1,55 +1,73 @@
 package relaying
 
 import (
+	"encoding/hex"
+	"fmt"
 	"github.com/stretchr/testify/assert"
-	"github.com/tendermint/tendermint/types"
 	"testing"
 )
 
-func TestValidTxProof(t *testing.T) {
-	cases := []struct {
-		txs types.Txs
-	}{
-		{types.Txs{{1, 4, 34, 87, 163, 1}}},
-		{types.Txs{{5, 56, 165, 2}, {4, 77}}},
-		{types.Txs{types.Tx("foo"), types.Tx("bar"), types.Tx("baz")}},
-		//{makeTxs(20, 5)},
-		//{makeTxs(7, 81)},
-		//{makeTxs(61, 15)},
-	}
-	blockHeight := int64(5)
-
-	for h, tc := range cases {
-		txs := tc.txs
-		root := txs.Hash()
-		// make sure valid proof for every tx
-		for i := range txs {
-			tx := []byte(txs[i])
-			//proof := txs.Proof(i)
-			proof, _ := buildProof(blockHeight, i)
-			assert.Equal(t, i, proof.Proof.Index, "%d: %d", h, i)
-			assert.Equal(t, len(txs), proof.Proof.Total, "%d: %d", h, i)
-			assert.EqualValues(t, root, proof.RootHash, "%d: %d", h, i)
-			assert.EqualValues(t, tx, proof.Data, "%d: %d", h, i)
-			assert.EqualValues(t, txs[i].Hash(), proof.Leaf(), "%d: %d", h, i)
-			isValid , err := verifyProof(proof, blockHeight, root)
-			assert.Equal(t, true, isValid)
-			assert.Nil(t, err, "%d: %d", h, i)
-			//assert.NotNil(t, proof.Validate([]byte("foobar")), "%d: %d", h, i)
-
-			// read-write must also work
-			//var p2 types.TxProof
-			//bin, err := types.cdc.MarshalBinaryLengthPrefixed(proof)
-			//assert.Nil(t, err)
-			//err = cdc.UnmarshalBinaryLengthPrefixed(bin, &p2)
-			//if assert.Nil(t, err, "%d: %d: %+v", h, i, err) {
-			//	assert.Nil(t, p2.Validate(root), "%d: %d", h, i)
-			//}
-		}
-	}
-}
-
-
 func TestGetTxByHash(t *testing.T){
-	getTxByHash("24B93E8B6C5817B159870E5C617597EBD0BDAE100430DB8242BFBA5DA37D70CE")
+	getProofFromTxHash("24B93E8B6C5817B159870E5C617597EBD0BDAE100430DB8242BFBA5DA37D70CE")
 }
+
+func TestGetTxsInBlockHeight(t *testing.T){
+	txs, _ := getTxsInBlockHeight(66239775)
+	fmt.Printf("Len txs: %v\n", txs)
+}
+
+func TestGetBlock(t *testing.T){
+	getBlock(66239775)
+}
+
+func TestBuildProof1_VerifyProof(t *testing.T){
+	//txIndex := 0
+	txHash := "24B93E8B6C5817B159870E5C617597EBD0BDAE100430DB8242BFBA5DA37D70CE"
+	blockHeight := int64(60479432)
+	dataHash, _ := hex.DecodeString("D81AD27D7C1D8114EB339158897C02337820BC17E10AB6405143EFE8E52AB526")
+	proof, err := BuildProof1(txHash)
+	assert.Nil(t, err)
+
+	isValid, err := VerifyProof(proof, blockHeight, dataHash)
+	fmt.Printf("err: %+v\n", err)
+	assert.Nil(t, err)
+	assert.Equal(t, true, isValid)
+}
+
+func TestBuildProof2_VerifyProof(t *testing.T){
+	txIndex := 0
+	//txHash := "24B93E8B6C5817B159870E5C617597EBD0BDAE100430DB8242BFBA5DA37D70CE"
+	blockHeight := int64(60479432)
+	dataHash, _ := hex.DecodeString("D81AD27D7C1D8114EB339158897C02337820BC17E10AB6405143EFE8E52AB526")
+	proof, err := BuildProof2(txIndex, blockHeight)
+	assert.Nil(t, err)
+	//fmt.Printf("Proof1: %+v\n", proof)
+
+	isValid, err := VerifyProof(proof, blockHeight, dataHash)
+	assert.Nil(t, err)
+	assert.Equal(t, true, isValid)
+}
+
+func TestBuildProof1_BuildProof2(t *testing.T){
+	txIndex := 0
+	txHash := "24B93E8B6C5817B159870E5C617597EBD0BDAE100430DB8242BFBA5DA37D70CE"
+	blockHeight := int64(60479432)
+	dataHash, _ := hex.DecodeString("D81AD27D7C1D8114EB339158897C02337820BC17E10AB6405143EFE8E52AB526")
+	proof1, err := BuildProof1(txHash)
+	assert.Nil(t, err)
+
+	proof2, err := BuildProof2(txIndex, blockHeight)
+	assert.Nil(t, err)
+
+	assert.Equal(t, proof1, proof2)
+
+	isValid1, err := VerifyProof(proof1, blockHeight, dataHash)
+	assert.Nil(t, err)
+	assert.Equal(t, true, isValid1)
+
+	isValid2, err := VerifyProof(proof2, blockHeight, dataHash)
+	assert.Nil(t, err)
+	assert.Equal(t, true, isValid2)
+}
+
+
