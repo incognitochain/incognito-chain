@@ -1314,7 +1314,7 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 
 func getRequesterFromPKnCoinID(pk privacy.PublicKey, coinID common.Hash) string {
 	requester := base58.Base58Check{}.Encode(pk, common.Base58Version)
-	return fmt.Sprintf("%v-%v", requester, coinID)
+	return fmt.Sprintf("%s-%s", requester, coinID.String())
 }
 
 func reqTableFromReqTxs(
