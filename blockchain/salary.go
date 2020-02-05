@@ -297,7 +297,7 @@ func (blockchain *BlockChain) buildWithDrawTransactionResponse(
 	if (amount == 0) || (err != nil) {
 		return nil, errors.New("Not enough reward")
 	}
-	responseMeta, err := metadata.NewWithDrawRewardResponse((*txRequest).Hash())
+	responseMeta, err := metadata.NewWithDrawRewardResponse(requestDetail, (*txRequest).Hash())
 	if err != nil {
 		return nil, err
 	}

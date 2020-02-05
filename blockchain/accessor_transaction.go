@@ -22,6 +22,55 @@ import (
 	"time"
 )
 
+func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadataV2(shardBody *ShardBody, shardID byte) error {
+	txRequestTable := reqTableFromReqTxs(shardBody.Transactions)
+	txsSpamRemoved := filterReqTxs(shardBody.Transactions, txRequestTable)
+	if len(shardBody.Transactions) != len(txsSpamRemoved) {
+		return errors.Errorf("This block contains txs spam request reward. Number of spam: %v", len(shardBody.Transactions)-len(txsSpamRemoved))
+	}
+	txReturnTable := map[string]bool{}
+	for _, tx := range shardBody.Transactions {
+		switch tx.GetMetadataType() {
+		case metadata.WithDrawRewardResponseMeta:
+			_, requesterRes, amountRes, coinID := tx.GetTransferData()
+			requester := getRequesterFromPKnCoinID(requesterRes, *coinID)
+			txReq, isExist := txRequestTable[requester]
+			if !isExist {
+				return errors.New("This response dont match with any request")
+			}
+			requestMeta := txReq.GetMetadata().(*metadata.WithDrawRewardRequest)
+			responseMeta := tx.GetMetadata().(*metadata.WithDrawRewardResponse)
+			if res, err := coinID.Cmp(&requestMeta.TokenID); err != nil || res != 0 {
+				return errors.Errorf("Invalid token ID when check metadata of tx response. Got %v, want %v, error %v", coinID, requestMeta.TokenID, err)
+			}
+			if cmp, err := responseMeta.TxRequest.Cmp(txReq.Hash()); (cmp != 0) || (err != nil) {
+				Logger.log.Errorf("Response does not match with request, response link to txID %v, request txID %v, error %v", responseMeta.TxRequest.String(), txReq.Hash().String(), err)
+			}
+			tempPublicKey := base58.Base58Check{}.Encode(requesterRes, common.Base58Version)
+			amount, err := statedb.GetCommitteeReward(blockchain.GetShardRewardStateDB(shardID), tempPublicKey, requestMeta.TokenID)
+			if (amount == 0) || (err != nil) {
+				return errors.Errorf("Invalid request %v, amount from db %v, error %v", requester, amount, err)
+			}
+			if amount != amountRes {
+				return errors.Errorf("Wrong amount for token %v, get from db %v, response amount %v", requestMeta.TokenID, amount, amountRes)
+			}
+			delete(txRequestTable, requester)
+			continue
+		case metadata.ReturnStakingMeta:
+			returnMeta := tx.GetMetadata().(*metadata.ReturnStakingMetadata)
+			if _, ok := txReturnTable[returnMeta.StakerAddress.String()]; !ok {
+				txReturnTable[returnMeta.StakerAddress.String()] = true
+			} else {
+				return errors.New("Double spent transaction return staking for a candidate.")
+			}
+		}
+	}
+	if len(txRequestTable) > 0 {
+		return errors.Errorf("Not match request and response, num of unresponse request: %v", len(txRequestTable))
+	}
+	return nil
+}
+
 func (blockchain *BlockChain) InitTxSalaryByCoinID(
 	payToAddress *privacy.PaymentAddress,
 	amount uint64,
@@ -86,25 +135,25 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 
 // @Notice: change from body.Transaction -> transactions
 func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadataV2(transactions []metadata.Transaction, blkProducerPrivateKey *privacy.PrivateKey, shardID byte) ([]metadata.Transaction, error) {
-	txRequestTable := map[string]metadata.Transaction{}
-	txsRes := []metadata.Transaction{}
-	for _, tx := range transactions {
-		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
-			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
-			requester := base58.Base58Check{}.Encode(requestMeta.PaymentAddress.Pk, common.Base58Version)
-			txRequestTable[requester] = tx
-		}
-	}
+	txRequestTable := reqTableFromReqTxs(transactions)
+	txsSpamRemoved := filterReqTxs(transactions, txRequestTable)
+	txsResponse := []metadata.Transaction{}
 	for _, value := range txRequestTable {
 		txRes, err := blockchain.buildWithDrawTransactionResponseV2(&value, blkProducerPrivateKey, shardID)
 		if err != nil {
-			return txsRes, err
+			return txsResponse, err
 		} else {
 			Logger.log.Infof("[Reward] - BuildWithDrawTransactionResponse for tx %+v, ok: %+v\n", value, txRes)
 		}
-		txsRes = append(txsRes, txRes)
+		txsResponse = append(txsResponse, txRes)
 	}
-	return txsRes, nil
+	Logger.log.Infof("Number of metadata txs: %v; number of tx request %v; number of tx spam %v; number of tx response %v",
+		len(transactions),
+		len(txRequestTable),
+		len(transactions)-len(txsSpamRemoved),
+		len(txsResponse))
+	txsSpamRemoved = append(txsSpamRemoved, txsResponse...)
+	return txsSpamRemoved, nil
 }
 
 //GetListOutputCoinsByKeysetV2 - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key.
@@ -469,6 +518,5 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionViewPointFromBlockV2(
 	if err != nil {
 		return err
 	}
-
 	return nil
 }

@@ -793,8 +793,8 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	if err1 == nil {
 		t.Fatal("Expect max version error error but no error")
 	} else {
-		if err1.(*MempoolTxError).Code != ErrCodeMessage[RejectSansityTx].Code {
-			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSansityTx], err1)
+		if err1.(*MempoolTxError).Code != ErrCodeMessage[RejectSanityTx].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSanityTx], err1)
 		}
 	}
 	tx1.(*transaction.Tx).Version = 1
@@ -806,8 +806,8 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	if err2 == nil {
 		t.Fatal("Expect size error error but no error")
 	} else {
-		if err2.(*MempoolTxError).Code != ErrCodeMessage[RejectSansityTx].Code {
-			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSansityTx], err2)
+		if err2.(*MempoolTxError).Code != ErrCodeMessage[RejectSanityTx].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSanityTx], err2)
 		}
 	}
 	common.MaxTxSize = 100
@@ -819,8 +819,8 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	if err3 == nil {
 		t.Fatal("Expect type error error but no error")
 	} else {
-		if err3.(*MempoolTxError).Code != ErrCodeMessage[RejectSansityTx].Code {
-			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSansityTx], err3)
+		if err3.(*MempoolTxError).Code != ErrCodeMessage[RejectSanityTx].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSanityTx], err3)
 		}
 	}
 	tx3.(*transaction.Tx).Type = common.TxNormalType
@@ -832,8 +832,8 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	if err4 == nil {
 		t.Fatal("Expect type error error but no error")
 	} else {
-		if err4.(*MempoolTxError).Code != ErrCodeMessage[RejectSansityTx].Code {
-			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSansityTx], err4)
+		if err4.(*MempoolTxError).Code != ErrCodeMessage[RejectSanityTx].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSanityTx], err4)
 		}
 	}
 	tx4.(*transaction.Tx).LockTime = tempLockTime
@@ -848,8 +848,8 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	if err5 == nil {
 		t.Fatal("Expect type error error but no error")
 	} else {
-		if err5.(*MempoolTxError).Code != ErrCodeMessage[RejectSansityTx].Code {
-			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSansityTx], err5)
+		if err5.(*MempoolTxError).Code != ErrCodeMessage[RejectSanityTx].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSanityTx], err5)
 		}
 	}
 	tx4.(*transaction.Tx).Info = []byte{}
@@ -1213,7 +1213,7 @@ func TestTxPoolMaybeAcceptTransaction(t *testing.T) {
 		t.Fatal("Expect unexpected transaction error error but no error")
 	} else {
 		if err1.(*MempoolTxError).Code != ErrCodeMessage[UnexpectedTransactionError].Code {
-			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSansityTx], err)
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSanityTx], err)
 		}
 	}
 	// test size of mempool
@@ -1223,7 +1223,7 @@ func TestTxPoolMaybeAcceptTransaction(t *testing.T) {
 		t.Fatal("Expect max pool size error error but no error")
 	} else {
 		if err2.(*MempoolTxError).Code != ErrCodeMessage[MaxPoolSizeError].Code {
-			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSansityTx], err)
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSanityTx], err)
 		}
 	}
 	tp.RoleInCommittees = 0
@@ -1232,7 +1232,7 @@ func TestTxPoolMaybeAcceptTransaction(t *testing.T) {
 		t.Fatal("Expect max pool size error error but no error")
 	} else {
 		if err3.(*MempoolTxError).Code != ErrCodeMessage[MaxPoolSizeError].Code {
-			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSansityTx], err)
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSanityTx], err)
 		}
 	}
 	tp.config.MaxTx = 1
