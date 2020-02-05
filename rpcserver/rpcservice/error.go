@@ -17,6 +17,7 @@ const (
 	RPCInvalidMethodPermissionError
 	RPCInternalError
 	RPCParseError
+
 	InvalidTypeError
 	AuthFailError
 	InvalidSenderPrivateKeyError
@@ -27,8 +28,9 @@ const (
 	GetOutputCoinError
 	CreateTxDataError
 	SendTxDataError
+	Base58ChedkDataOfTxInvalid
+	JsonDataOfTxInvalid
 	TxTypeInvalidError
-	RejectInvalidFeeError
 	TxNotExistedInMemAndBLockError
 	UnsubcribeError
 	SubcribeError
@@ -44,10 +46,21 @@ const (
 	GetBeaconBlockByHashError
 	GetBeaconBlockByHeightError
 	GeTxFromPoolError
-	TxPoolRejectTxError
 	NoSwapConfirmInst
 	GetKeySetFromPrivateKeyError
 	GetPDEStateError
+
+	// reject tx
+	RejectInvalidTxFeeError
+	RejectInvalidTxSizeError
+	RejectInvalidTxTypeError
+	RejectInvalidTxError
+	RejectDoubleSpendTxError
+	RejectDuplicateTxInPoolError
+	RejectInvalidTxVersionError
+	RejectSanityTxLocktime
+	TxPoolRejectTxError
+	RejectInvalidFeeError
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -77,7 +90,7 @@ var ErrCodeMessage = map[int]struct {
 	GetOutputCoinError:                 {-1013, "Can not get output coin"},
 	TxTypeInvalidError:                 {-1014, "Invalid tx type"},
 	InvalidSenderViewingKeyError:       {-1015, "Invalid viewing key"},
-	RejectInvalidFeeError:              {-1016, "Reject invalid fee"},
+	RejectInvalidTxFeeError:            {-1016, "Reject invalid fee"},
 	TxNotExistedInMemAndBLockError:     {-1017, "Tx is not existed in mem and block"},
 	TokenIsInvalidError:                {-1018, "Token is invalid"},
 	GetKeySetFromPrivateKeyError:       {-1019, "Get KeySet From Private Key Error"},
@@ -95,18 +108,27 @@ var ErrCodeMessage = map[int]struct {
 	GetClonedBeaconBestStateError: {-3000, "Get Cloned Beacon Best State Error"},
 	GetClonedShardBestStateError:  {-3001, "Get Cloned Shard Best State Error"},
 
-	// processing -4xxx
-	CreateTxDataError: {-4001, "Can not create tx"},
-	SendTxDataError:   {-4002, "Can not send tx"},
+	// tx -4xxx
+	CreateTxDataError:          {-4001, "Can not create tx"},
+	SendTxDataError:            {-4002, "Can not send tx"},
+	Base58ChedkDataOfTxInvalid: {-4003, "Base58Check encode data of tx is invalid, can not decode"},
+	JsonDataOfTxInvalid:        {-4004, "Json string data of tx is invalid, can not unmarshal"},
 
 	// socket/subcribe -5xxx
 	SubcribeError:   {-5000, "Failed to subcribe"},
 	UnsubcribeError: {-5001, "Failed to unsubcribe"},
 
 	// tx pool -6xxx
-	GeTxFromPoolError:   {-6000, "Get tx from mempool error"},
-	TxPoolRejectTxError: {-6001, "Can not insert tx into tx mempool"},
-
+	GeTxFromPoolError:            {-6000, "Get tx from mempool error"},
+	TxPoolRejectTxError:          {-6001, "Pool reject tx by unexpected error"},
+	RejectInvalidTxSizeError:     {-6002, "Pool reject tx by invalid size"},
+	RejectInvalidTxTypeError:     {-6003, "Pool reject tx by invalid type"},
+	RejectInvalidTxError:         {-6004, "Pool reject invalid tx: signature, or proof or verify by itself fail"},
+	RejectDoubleSpendTxError:     {-6005, "Pool reject double spend tx, double spend with blockchain or mempool"},
+	RejectDuplicateTxInPoolError: {-6006, "Tx already exist in pool"},
+	RejectInvalidTxVersionError:  {-6007, "Reject tx by invalid version"},
+	RejectSanityTxLocktime:       {-6008, "Reject wrong tx by locktime"},
+	RejectInvalidFeeError:        {-6009, "Reject Invalid Fee Error"},
 	// decentralized bridge
 	NoSwapConfirmInst: {-7000, "No swap confirm instruction found in block"},
 
