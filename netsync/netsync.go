@@ -438,7 +438,7 @@ func (netSync *NetSync) handleMessagePeerState(msg *wire.MessagePeerState) {
 	// 	Logger.log.Error(err)
 	// 	return
 	// }
-	netSync.config.BlockChain.OnPeerStateV2Received(&msg.Beacon, &msg.Shards, &msg.ShardToBeaconPool, &msg.CrossShardPool, msg.SenderMiningPublicKey)
+	netSync.config.BlockChain.OnPeerStateReceived(&msg.Beacon, &msg.Shards, &msg.ShardToBeaconPool, &msg.CrossShardPool, msg.SenderMiningPublicKey)
 	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 	// 	metrics.Measurement:      metrics.HandleMessagePeerStateTime,
 	// 	metrics.MeasurementValue: float64(time.Since(startTime).Seconds()),

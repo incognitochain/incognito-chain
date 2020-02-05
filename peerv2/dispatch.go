@@ -198,7 +198,6 @@ func (d *Dispatcher) processMessageForEachType(messageType reflect.Type, message
 			d.MessageListeners.OnPeerState(peerConn, message.(*wire.MessagePeerState))
 		}
 
-	// TODO(@0xbunyip): test message Check and CheckResp
 	// case reflect.TypeOf(&wire.MessageMsgCheck{}):
 	// 	err1 := peerConn.handleMsgCheck(message.(*wire.MessageMsgCheck))
 	// 	if err1 != nil {
