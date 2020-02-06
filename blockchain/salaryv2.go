@@ -239,3 +239,57 @@ func (blockchain *BlockChain) buildWithDrawTransactionResponseV2(txRequest *meta
 		requestDetail.TokenID,
 		common.GetShardIDFromLastByte(requestDetail.PaymentAddress.Pk[common.PublicKeySize-1]))
 }
+
+func (blockchain *BlockChain) BuildRewardInstructionByEpochV2(blkHeight, epoch uint64) ([][]string, error) {
+	var resInst [][]string
+	var err error
+	var instRewardForBeacons [][]string
+	var instRewardForIncDAO [][]string
+	var instRewardForShards [][]string
+	numberOfActiveShards := blockchain.BestState.Beacon.ActiveShards
+	tempRewardStateDB := blockchain.BestState.Beacon.rewardStateDB.Copy()
+	allCoinID := statedb.GetAllTokenIDForReward(tempRewardStateDB, epoch)
+	blkPerYear := getNoBlkPerYear(uint64(blockchain.config.ChainParams.MaxBeaconBlockCreation.Seconds()))
+	percentForIncognitoDAO := getPercentForIncognitoDAO(blkHeight, blkPerYear)
+	totalRewards := make([]map[common.Hash]uint64, numberOfActiveShards)
+	totalRewardForBeacon := map[common.Hash]uint64{}
+	totalRewardForIncDAO := map[common.Hash]uint64{}
+	for ID := 0; ID < numberOfActiveShards; ID++ {
+		if totalRewards[ID] == nil {
+			totalRewards[ID] = map[common.Hash]uint64{}
+		}
+		for _, coinID := range allCoinID {
+			totalRewards[ID][coinID], err = statedb.GetRewardOfShardByEpoch(tempRewardStateDB, epoch, byte(ID), coinID)
+			if err != nil {
+				return nil, err
+			}
+			if totalRewards[ID][coinID] == 0 {
+				delete(totalRewards[ID], coinID)
+			}
+		}
+		rewardForBeacon, rewardForIncDAO, err := splitReward(&totalRewards[ID], numberOfActiveShards, percentForIncognitoDAO)
+		if err != nil {
+			Logger.log.Infof("\n------------------------------------\nNot enough reward in epoch %v\n------------------------------------\n", err)
+		}
+		mapPlusMap(rewardForBeacon, &totalRewardForBeacon)
+		mapPlusMap(rewardForIncDAO, &totalRewardForIncDAO)
+	}
+	if len(totalRewardForBeacon) > 0 {
+		instRewardForBeacons, err = blockchain.BuildInstRewardForBeacons(epoch, totalRewardForBeacon)
+		if err != nil {
+			return nil, err
+		}
+	}
+	instRewardForShards, err = blockchain.BuildInstRewardForShards(epoch, totalRewards)
+	if err != nil {
+		return nil, err
+	}
+	if len(totalRewardForIncDAO) > 0 {
+		instRewardForIncDAO, err = blockchain.BuildInstRewardForIncDAO(epoch, totalRewardForIncDAO)
+		if err != nil {
+			return nil, err
+		}
+	}
+	resInst = common.AppendSliceString(instRewardForBeacons, instRewardForIncDAO, instRewardForShards)
+	return resInst, nil
+}
