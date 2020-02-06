@@ -16,11 +16,8 @@ type WithDrawRewardRequest struct {
 
 func (withDrawRewardRequest WithDrawRewardRequest) Hash() *common.Hash {
 	bArr := append(withDrawRewardRequest.PaymentAddress.Bytes(), withDrawRewardRequest.TokenID.GetBytes()...)
-	txReqHash, err := common.Hash{}.NewHash(bArr)
-	if err != nil {
-		return nil
-	}
-	return txReqHash
+	txReqHash := common.HashH(bArr)
+	return &txReqHash
 }
 
 func NewWithDrawRewardRequestFromRPC(data map[string]interface{}) (Metadata, error) {
@@ -69,14 +66,11 @@ func NewWithDrawRewardResponse(txRequest *WithDrawRewardRequest, reqID *common.H
 
 func (withDrawRewardResponse WithDrawRewardResponse) Hash() *common.Hash {
 	if withDrawRewardResponse.TxRequest == nil {
-		return nil
+		return &common.Hash{}
 	}
 	bArr := append(withDrawRewardResponse.TxRequest.GetBytes(), withDrawRewardResponse.TokenID.GetBytes()...)
-	txResHash, err := common.Hash{}.NewHash(bArr)
-	if err != nil {
-		return nil
-	}
-	return txResHash
+	txResHash := common.HashH(bArr)
+	return &txResHash
 }
 
 func (withDrawRewardRequest WithDrawRewardRequest) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db database.DatabaseInterface) bool {
