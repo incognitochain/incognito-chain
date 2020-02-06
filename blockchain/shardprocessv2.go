@@ -54,7 +54,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlockV2(shardBlock *ShardBlock, 
 		return err
 	}
 	//========updateShardBestState best state with new shardBlock
-	if err := shardBestState.updateShardBestState(blockchain, shardBlock, beaconBlocks); err != nil {
+	if err := shardBestState.updateShardBestStateV2(blockchain, shardBlock, beaconBlocks, newCommitteeChange()); err != nil {
 		return err
 	}
 	//========Post verififcation: verify new beaconstate with corresponding shardBlock
