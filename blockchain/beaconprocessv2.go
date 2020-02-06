@@ -303,7 +303,6 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigningV2(beaconB
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
-
 	for _, value := range keys {
 		shardID := byte(value)
 		shardBlocks, ok := allShardBlocks[shardID]
@@ -343,7 +342,6 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigningV2(beaconB
 				acceptedBlockRewardInstructions = append(acceptedBlockRewardInstructions, acceptedBlockRewardInstruction)
 				stopAutoStakingInstructions = append(stopAutoStakingInstructions, stopAutoStakingInstruction...)
 				validStakePublicKeys = append(validStakePublicKeys, tempValidStakePublicKeys...)
-
 				// group stateful actions by shardID
 				_, found := statefulActionsByShardID[shardID]
 				if !found {
@@ -359,7 +357,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigningV2(beaconB
 	// build stateful instructions
 	statefulInsts := blockchain.buildStatefulInstructionsV2(blockchain.BestState.Beacon.featureStateDB, statefulActionsByShardID, beaconBlock.Header.Height)
 	bridgeInstructions = append(bridgeInstructions, statefulInsts...)
-	tempInstruction, err := blockchain.BestState.Beacon.GenerateInstruction(beaconBlock.Header.Height,
+	tempInstruction, err := blockchain.BestState.Beacon.GenerateInstructionV2(beaconBlock.Header.Height,
 		stakeInstructions, swapInstructions, stopAutoStakingInstructions,
 		blockchain.BestState.Beacon.CandidateShardWaitingForCurrentRandom,
 		bridgeInstructions, acceptedBlockRewardInstructions,
