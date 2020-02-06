@@ -100,7 +100,7 @@ func (blockGenerator *BlockGenerator) NewBlockShardV2(shardID byte, round int, c
 	// process instruction from beacon block
 	shardPendingValidator, _, _ = blockGenerator.chain.processInstructionFromBeaconV2(beaconBlocks, shardID, newCommitteeChange())
 	// Create Instruction
-	instructions, _, _, err = blockGenerator.chain.generateInstruction(shardID, beaconHeight, isOldBeaconHeight, beaconBlocks, shardPendingValidator, currentCommitteePubKeys)
+	instructions, _, _, err = blockGenerator.chain.generateInstructionV2(shardID, beaconHeight, isOldBeaconHeight, beaconBlocks, shardPendingValidator, currentCommitteePubKeys)
 	if err != nil {
 		return nil, NewBlockChainError(GenerateInstructionError, err)
 	}
@@ -514,4 +514,86 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructionsV2(b
 		}
 	}
 	return responsedTxs, errorInstructions, nil
+}
+
+/*
+	Generate Instruction:
+	- Swap: at the end of beacon epoch
+	- Brigde: at the end of beacon epoch
+	Return params:
+	#1: instruction list
+	#2: shardpendingvalidator
+	#3: shardcommittee
+	#4: error
+*/
+func (blockchain *BlockChain) generateInstructionV2(shardID byte, beaconHeight uint64, isOldBeaconHeight bool, beaconBlocks []*BeaconBlock, shardPendingValidator []string, shardCommittee []string) ([][]string, []string, []string, error) {
+	var (
+		instructions          = [][]string{}
+		bridgeSwapConfirmInst = []string{}
+		swapInstruction       = []string{}
+		// err                   error
+	)
+	if beaconHeight%blockchain.config.ChainParams.Epoch == 0 && isOldBeaconHeight == false {
+		// if len(shardPendingValidator) > 0 {
+		Logger.log.Info("ShardPendingValidator", shardPendingValidator)
+		Logger.log.Info("ShardCommittee", shardCommittee)
+		Logger.log.Info("MaxShardCommitteeSize", blockchain.BestState.Shard[shardID].MaxShardCommitteeSize)
+		Logger.log.Info("ShardID", shardID)
+		rootHash, err := blockchain.GetSlashStateRootHash(blockchain.GetDatabase(), beaconHeight)
+		if err != nil {
+			return instructions, shardPendingValidator, shardCommittee, err
+		}
+		slashStateDB, err := statedb.NewWithPrefixTrie(rootHash, statedb.NewDatabaseAccessWarper(blockchain.GetDatabase()))
+		if err != nil {
+			return instructions, shardPendingValidator, shardCommittee, err
+		}
+		producersBlackList, err := blockchain.getUpdatedProducersBlackListV2(slashStateDB, false, int(shardID), shardCommittee, beaconHeight)
+		if err != nil {
+			Logger.log.Error(err)
+			return instructions, shardPendingValidator, shardCommittee, err
+		}
+		maxShardCommitteeSize := blockchain.BestState.Shard[shardID].MaxShardCommitteeSize
+		minShardCommitteeSize := blockchain.BestState.Shard[shardID].MinShardCommitteeSize
+		badProducersWithPunishment := blockchain.buildBadProducersWithPunishment(false, int(shardID), shardCommittee)
+		swapInstruction, shardPendingValidator, shardCommittee, err = CreateSwapAction(shardPendingValidator, shardCommittee, maxShardCommitteeSize, minShardCommitteeSize, shardID, producersBlackList, badProducersWithPunishment, blockchain.config.ChainParams.Offset, blockchain.config.ChainParams.SwapOffset)
+		if err != nil {
+			Logger.log.Error(err)
+			return instructions, shardPendingValidator, shardCommittee, err
+		}
+		// Generate instruction storing merkle root of validators pubkey and send to beacon
+		bridgeID := byte(common.BridgeShardID)
+		if shardID == bridgeID {
+			blockHeight := blockchain.BestState.Shard[shardID].ShardHeight + 1
+			bridgeSwapConfirmInst, err = buildBridgeSwapConfirmInstruction(shardCommittee, blockHeight)
+			if err != nil {
+				BLogger.log.Error(err)
+				return instructions, shardPendingValidator, shardCommittee, err
+			}
+			BLogger.log.Infof("Add Bridge swap inst in ShardID %+v block %d", shardID, blockHeight)
+		}
+		// }
+	}
+	if len(swapInstruction) > 0 {
+		instructions = append(instructions, swapInstruction)
+	}
+	if len(bridgeSwapConfirmInst) > 0 {
+		instructions = append(instructions, bridgeSwapConfirmInst)
+		Logger.log.Infof("Build bridge swap confirm inst: %s \n", bridgeSwapConfirmInst)
+	}
+	// Pick BurningConfirm inst and save to bridge block
+	bridgeID := byte(common.BridgeShardID)
+	if shardID == bridgeID {
+		prevBlock := blockchain.BestState.Shard[shardID].BestBlock
+		height := blockchain.BestState.Shard[shardID].ShardHeight + 1
+		confirmInsts := pickBurningConfirmInstruction(beaconBlocks, height)
+		if len(confirmInsts) > 0 {
+			bid := []uint64{}
+			for _, b := range beaconBlocks {
+				bid = append(bid, b.Header.Height)
+			}
+			Logger.log.Infof("Picked burning confirm inst: %s %d %v\n", confirmInsts, prevBlock.Header.Height+1, bid)
+			instructions = append(instructions, confirmInsts...)
+		}
+	}
+	return instructions, shardPendingValidator, shardCommittee, nil
 }
