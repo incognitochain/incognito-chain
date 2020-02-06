@@ -62,6 +62,7 @@ const (
 	RejectTxPublickeySigSize
 	RejectTxType
 	RejectTxInfoSize
+	RejectTxMedataWithBlockChain
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -108,6 +109,7 @@ var ErrCodeMessage = map[int]struct {
 	RejectTxPublickeySigSize:                      {-1036, "Wrong tx Sig PK"},
 	RejectTxType:                                  {-1037, "Wrong tx type"},
 	RejectTxInfoSize:                              {-1038, "Wrong tx info length"},
+	RejectTxMedataWithBlockChain:                  {-1039, "Reject invalid metadata with blockchain"},
 
 	// for PRV
 	InvalidSanityDataPRVError:  {-2000, "Invalid sanity data for PRV"},
