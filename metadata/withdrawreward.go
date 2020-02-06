@@ -59,7 +59,15 @@ func NewWithDrawRewardResponse(txRequest *WithDrawRewardRequest, reqID *common.H
 }
 
 func (withDrawRewardResponse WithDrawRewardResponse) Hash() *common.Hash {
-	return withDrawRewardResponse.TxRequest
+	if withDrawRewardResponse.TxRequest == nil {
+		return nil
+	}
+	bArr := append(withDrawRewardResponse.TxRequest.GetBytes(), withDrawRewardResponse.TokenID.GetBytes()...)
+	txResHash, err := common.Hash{}.NewHash(bArr)
+	if err != nil {
+		return nil
+	}
+	return txResHash
 }
 
 func (withDrawRewardRequest WithDrawRewardRequest) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db database.DatabaseInterface) bool {
