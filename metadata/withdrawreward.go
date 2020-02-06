@@ -14,6 +14,15 @@ type WithDrawRewardRequest struct {
 	TokenID common.Hash
 }
 
+func (withDrawRewardRequest WithDrawRewardRequest) Hash() *common.Hash {
+	bArr := append(withDrawRewardRequest.PaymentAddress.Bytes(), withDrawRewardRequest.TokenID.GetBytes()...)
+	txReqHash, err := common.Hash{}.NewHash(bArr)
+	if err != nil {
+		return nil
+	}
+	return txReqHash
+}
+
 func NewWithDrawRewardRequestFromRPC(data map[string]interface{}) (Metadata, error) {
 	metadataBase := MetadataBase{
 		Type: WithDrawRewardRequestMeta,
