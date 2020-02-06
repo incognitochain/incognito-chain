@@ -99,9 +99,6 @@ func VerifySignature(sh *types.SignedHeader, chainID string) *BNBRelayingError {
 		if sig == nil {
 			continue
 		}
-		//if len(sig.Signature) == 0 {
-		//
-		//}
 		vote := sh.Commit.GetVote(i)
 		if vote != nil {
 			validateAddressStr := strings.ToUpper(hex.EncodeToString(vote.ValidatorAddress))

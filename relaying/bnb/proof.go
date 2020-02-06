@@ -4,9 +4,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/binance-chain/go-sdk/client/rpc"
+	bnbtx "github.com/binance-chain/go-sdk/types/tx"
 	"github.com/tendermint/tendermint/rpc/client"
 	"github.com/tendermint/tendermint/types"
 )
+
 // there are 2 ways to build proof
 // 1. Call API get tx by hash with param prove = true,
 // It returns the transaction and the proof for that transaction
@@ -32,7 +35,7 @@ func BuildProof2(indexTx int, blockHeight int64) (*types.TxProof, *BNBRelayingEr
 	return &proof, nil
 }
 
-func VerifyProof(txProof *types.TxProof, blockHeight int64, dataHash []byte) (bool, *BNBRelayingError){
+func VerifyProof(txProof *types.TxProof, blockHeight int64, dataHash []byte) (bool, *BNBRelayingError) {
 	// todo: get dataHash in blockHeight from db
 	// if there is no blockheight in db, return error
 	//dataHash := []byte{}
@@ -43,13 +46,13 @@ func VerifyProof(txProof *types.TxProof, blockHeight int64, dataHash []byte) (bo
 	return true, nil
 }
 
-func getProofFromTxHash(txHashStr string) (*types.TxProof, *BNBRelayingError){
+func getProofFromTxHash(txHashStr string) (*types.TxProof, *BNBRelayingError) {
 	txHash, err := hex.DecodeString(txHashStr)
 	if err != nil {
 		return nil, NewBNBRelayingError(UnexpectedErr, err)
 	}
 
-	client := client.NewHTTP( URLRemote, "/websocket")
+	client := client.NewHTTP(URLRemote, "/websocket")
 	err = client.Start()
 	if err != nil {
 		// handle error
@@ -71,7 +74,7 @@ func getTxsInBlockHeight(blockHeight int64) (*types.Txs, *BNBRelayingError) {
 }
 
 func getBlock(blockHeight int64) (*types.Block, *BNBRelayingError) {
-	client := client.NewHTTP( URLRemote, "/websocket")
+	client := client.NewHTTP(URLRemote, "/websocket")
 	err := client.Start()
 	if err != nil {
 		// handle error
@@ -83,7 +86,6 @@ func getBlock(blockHeight int64) (*types.Block, *BNBRelayingError) {
 	return block.Block, nil
 }
 
-
 func ParseProofFromJson(object string) (*types.TxProof, *BNBRelayingError) {
 	proof := types.TxProof{}
 	err := json.Unmarshal([]byte(object), &proof)
@@ -92,6 +94,15 @@ func ParseProofFromJson(object string) (*types.TxProof, *BNBRelayingError) {
 	}
 
 	return &proof, nil
+}
+
+func ParseDataToTx(data []byte) (*bnbtx.StdTx, *BNBRelayingError) {
+	tx, err := rpc.ParseTx(bnbtx.Cdc, data)
+	if err != nil {
+		return nil, NewBNBRelayingError(UnexpectedErr, err)
+	}
+	stdTx := tx.(bnbtx.StdTx)
+	return &stdTx, nil
 }
 
 

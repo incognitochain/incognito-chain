@@ -11,6 +11,7 @@ require (
 	github.com/Workiva/go-datastructures v1.0.50 // indirect
 	github.com/allegro/bigcache v1.2.1 // indirect
 	github.com/aristanetworks/goarista v0.0.0-20191206003309-5d8d36c240c9 // indirect
+	github.com/binance-chain/go-sdk v1.2.2
 	github.com/btcsuite/btcutil v0.0.0-20191219182022-e17c9730c422 // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dchest/siphash v1.2.1 // indirect
@@ -84,6 +85,7 @@ require (
 	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/stretchr/testify v1.4.0
 	github.com/syndtr/goleveldb v1.0.1-0.20190923125748-758128399b1d
+	github.com/tendermint/go-amino v0.14.1
 	github.com/tendermint/tendermint v0.32.3
 	github.com/whyrusleeping/go-notifier v0.0.0-20170827234753-097c5d47330f // indirect
 	github.com/whyrusleeping/go-smux-multiplex v3.0.16+incompatible // indirect
@@ -105,3 +107,5 @@ require (
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/yaml.v2 v2.2.7 // indirect
 )
+
+replace github.com/tendermint/go-amino => github.com/binance-chain/bnc-go-amino v0.14.1-binance.1
