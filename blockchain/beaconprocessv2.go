@@ -982,7 +982,7 @@ func (blockchain *BlockChain) processStoreBeaconBlockV2(beaconBlock *BeaconBlock
 	//=============================END Store cross shard state ==================================
 	startTimeRawDB := time.Now()
 	startTimeStoreIndex := time.Now()
-	if err := rawdbv2.StoreBeaconBlockIndex(blockchain.GetDatabase(), blockHash, blockHeight); err != nil {
+	if err := rawdbv2.StoreBeaconBlockIndex(blockchain.GetDatabase(), blockHeight, blockHash); err != nil {
 		return NewBlockChainError(StoreBeaconBlockIndexError, err)
 	}
 	Logger.log.Infof("Proccess Store Beacon Block | Store Index time %+v", time.Since(startTimeStoreIndex))

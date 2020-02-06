@@ -38,7 +38,7 @@ func StoreBeaconBlock(db incdb.Database, index uint64, hash common.Hash, v inter
 // StoreBeaconBlockIndex store block hash => block index
 // key: i-{hash}
 // value: {index-shardID}
-func StoreBeaconBlockIndex(db incdb.Database, hash common.Hash, index uint64) error {
+func StoreBeaconBlockIndex(db incdb.Database, index uint64, hash common.Hash) error {
 	key := GetBeaconBlockHashToIndexKey(hash)
 	buf := common.Uint64ToBytes(index)
 	err := db.Put(key, buf)

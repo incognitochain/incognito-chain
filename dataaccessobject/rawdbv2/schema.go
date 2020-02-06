@@ -23,6 +23,7 @@ var (
 	txHashPrefix                 = []byte("tx-h" + string(splitter))
 	crossShardNextHeightPrefix   = []byte("c-s-n-h" + string(splitter))
 	feeEstimatorPrefix           = []byte("fee-est" + string(splitter))
+	txByPublicKeyPrefix          = []byte("tx-pb")
 	rootHashPrefix               = []byte("R-H-")
 	consensusStateRoot           = []byte("co" + string(splitter))
 	rewardStateRoot              = []byte("re" + string(splitter))
@@ -129,6 +130,17 @@ func GetTransactionHashKey(hash common.Hash) []byte {
 }
 func GetFeeEstimatorPrefix(shardID byte) []byte {
 	return append(feeEstimatorPrefix, shardID)
+}
+
+func GetStoreTxByPublicKey(publicKey []byte, txID common.Hash, shardID byte) []byte {
+	key := append(txByPublicKeyPrefix, publicKey...)
+	key = append(key, txID.GetBytes()...)
+	key = append(key, shardID)
+	return key
+}
+
+func GetStoreTxByPublicPrefix(publicKey []byte) []byte {
+	return append(txByPublicKeyPrefix, publicKey...)
 }
 
 // ============================= Cross Shard =======================================
