@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"reflect"
 	"sort"
 	"strconv"
@@ -414,7 +415,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigningV2(shardBlo
 						Logger.log.Errorf("%+v", err)
 						break
 					}
-					consensusRootHash, err := blockchain.GetConsensusStateRootHash(blockchain.GetDatabase(), beaconHeight)
+					consensusRootHash, err := blockchain.GetBeaconConsensusStateRootHash(blockchain.GetDatabase(), beaconHeight)
 					if err != nil {
 						Logger.log.Errorf("Can't found ConsensusStateRootHash of beacon height %+v, error %+v", beaconHeight, err)
 						break
@@ -453,6 +454,61 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigningV2(shardBlo
 			return NewBlockChainError(CrossShardBlockError, fmt.Errorf("Can't not verify all cross shard block from shard %+v", fromShard))
 		}
 	}
+	return nil
+}
+func (shardBestState *ShardBestState) initShardBestStateV2(blockchain *BlockChain, db incdb.Database, genesisShardBlock *ShardBlock, genesisBeaconBlock *BeaconBlock) error {
+	shardBestState.BestBeaconHash = *ChainTestParam.GenesisBeaconBlock.Hash()
+	shardBestState.BestBlock = genesisShardBlock
+	shardBestState.BestBlockHash = *genesisShardBlock.Hash()
+	shardBestState.ShardHeight = genesisShardBlock.Header.Height
+	shardBestState.Epoch = genesisShardBlock.Header.Epoch
+	shardBestState.BeaconHeight = genesisShardBlock.Header.BeaconHeight
+	shardBestState.TotalTxns += uint64(len(genesisShardBlock.Body.Transactions))
+	shardBestState.NumTxns = uint64(len(genesisShardBlock.Body.Transactions))
+	shardBestState.ShardProposerIdx = 0
+	//shardBestState.processBeaconBlocks(genesisShardBlock, []*BeaconBlock{genesisBeaconBlock})
+	shardPendingValidator, _, stakingTx := blockchain.processInstructionFromBeacon([]*BeaconBlock{genesisBeaconBlock}, genesisShardBlock.Header.ShardID)
+
+	shardPendingValidatorStr, err := incognitokey.CommitteeBase58KeyListToStruct(shardPendingValidator)
+	if err != nil {
+		return err
+	}
+	shardBestState.ShardPendingValidator = append(shardBestState.ShardPendingValidator, shardPendingValidatorStr...)
+	for stakePublicKey, txHash := range stakingTx {
+		shardBestState.StakingTx[stakePublicKey] = txHash
+	}
+	err = shardBestState.processShardBlockInstruction(blockchain, genesisShardBlock)
+	if err != nil {
+		return err
+	}
+	shardBestState.ConsensusAlgorithm = common.BlsConsensus
+	shardBestState.NumOfBlocksByProducers = make(map[string]uint64)
+	//statedb===========================START
+	dbAccessWarper := statedb.NewDatabaseAccessWarper(db)
+	shardBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	shardBestState.ConsensusStateRootHash[0] = common.EmptyRoot
+	shardBestState.transactionStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	shardBestState.TransactionStateRootHash[0] = common.EmptyRoot
+	shardBestState.featureStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	shardBestState.rewardStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	shardBestState.slashStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	shardBestState.SlashStateRootHash[0] = common.EmptyRoot
+	//statedb===========================END
 	return nil
 }
 
@@ -569,8 +625,6 @@ func (shardBestState *ShardBestState) processShardBlockInstructionV2(blockchain 
 			if err != nil {
 				return err
 			}
-			//TODO DBV2: seperate this logic into standalone function
-			// filter committee and substitute for statedb
 			beforeFilterShardSubstituteAdded := committeeChange.shardSubstituteAdded[shardID]
 			filteredShardSubstituteAdded := []incognitokey.CommitteePublicKey{}
 			filteredShardSubstituteRemoved := []incognitokey.CommitteePublicKey{}
@@ -670,64 +724,64 @@ func (blockchain *BlockChain) processStoreShardBlockV2(shardBlock *ShardBlock, c
 	//statedb===========================START
 	err = statedb.StoreOneShardCommittee(tempShardBestState.consensusStateDB, shardID, committeeChange.shardCommitteeAdded[shardID], tempBeaconBestState.RewardReceiver, tempBeaconBestState.AutoStaking)
 	if err != nil {
-		return err
+		return NewBlockChainError(StoreShardBlockError, err)
 	}
 	err = statedb.StoreOneShardSubstitutesValidator(tempShardBestState.consensusStateDB, shardID, committeeChange.shardSubstituteAdded[shardID], tempBeaconBestState.RewardReceiver, tempBeaconBestState.AutoStaking)
 	if err != nil {
-		return err
+		return NewBlockChainError(StoreShardBlockError, err)
 	}
 	err = statedb.DeleteOneShardCommittee(tempShardBestState.consensusStateDB, shardID, committeeChange.shardCommitteeAdded[shardID])
 	if err != nil {
-		return err
+		return NewBlockChainError(StoreShardBlockError, err)
 	}
 	err = statedb.DeleteOneShardSubstitutesValidator(tempShardBestState.consensusStateDB, shardID, committeeChange.shardSubstituteAdded[shardID])
 	if err != nil {
-		return err
+		return NewBlockChainError(StoreShardBlockError, err)
 	}
 	// consensus root hash
 	consensusRootHash, err := tempShardBestState.consensusStateDB.Commit(true)
 	if err != nil {
-		return err
+		return NewBlockChainError(StoreShardBlockError, err)
 	}
 	err = tempShardBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false)
 	if err != nil {
-		return err
+		return NewBlockChainError(StoreShardBlockError, err)
 	}
 	// transaction root hash
 	transactionRootHash, err := tempShardBestState.transactionStateDB.Commit(true)
 	if err != nil {
-		return err
+		return NewBlockChainError(StoreShardBlockError, err)
 	}
 	err = tempShardBestState.transactionStateDB.Database().TrieDB().Commit(transactionRootHash, false)
 	if err != nil {
-		return err
+		return NewBlockChainError(StoreShardBlockError, err)
 	}
 	// feature root hash
 	featureRootHash, err := tempShardBestState.featureStateDB.Commit(true)
 	if err != nil {
-		return err
+		return NewBlockChainError(StoreShardBlockError, err)
 	}
 	err = tempShardBestState.featureStateDB.Database().TrieDB().Commit(featureRootHash, false)
 	if err != nil {
-		return err
+		return NewBlockChainError(StoreShardBlockError, err)
 	}
 	// reward root hash
 	rewardRootHash, err := tempShardBestState.rewardStateDB.Commit(true)
 	if err != nil {
-		return err
+		return NewBlockChainError(StoreShardBlockError, err)
 	}
 	err = tempShardBestState.rewardStateDB.Database().TrieDB().Commit(rewardRootHash, false)
 	if err != nil {
-		return err
+		return NewBlockChainError(StoreShardBlockError, err)
 	}
 	// slash root hash
 	slashRootHash, err := tempShardBestState.slashStateDB.Commit(true)
 	if err != nil {
-		return err
+		return NewBlockChainError(StoreShardBlockError, err)
 	}
 	err = tempShardBestState.slashStateDB.Database().TrieDB().Commit(slashRootHash, false)
 	if err != nil {
-		return err
+		return NewBlockChainError(StoreShardBlockError, err)
 	}
 	tempShardBestState.consensusStateDB.ClearObjects()
 	tempShardBestState.transactionStateDB.ClearObjects()
@@ -737,8 +791,10 @@ func (blockchain *BlockChain) processStoreShardBlockV2(shardBlock *ShardBlock, c
 	tempShardBestState.ConsensusStateRootHash[blockHeight] = consensusRootHash
 	tempShardBestState.TransactionStateRootHash[blockHeight] = transactionRootHash
 	tempShardBestState.FeatureStateRootHash[blockHeight] = featureRootHash
-	tempShardBestState.RewardStateRootHash[blockHeight] = rewardRootHash
 	tempShardBestState.SlashStateRootHash[blockHeight] = slashRootHash
+	if err := rawdbv2.StoreCommitteeRewardRootHash(blockchain.GetDatabase(), shardID, blockHeight, rewardRootHash); err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
+	}
 	//statedb===========================END
 	if err := rawdbv2.StoreShardBlock(blockchain.GetDatabase(), shardID, blockHeight, blockHash, shardBlock); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)

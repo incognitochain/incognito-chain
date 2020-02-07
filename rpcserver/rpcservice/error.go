@@ -49,7 +49,8 @@ const (
 	NoSwapConfirmInst
 	GetKeySetFromPrivateKeyError
 	GetPDEStateError
-
+	ListCommitteeRewardError
+	GetRewardAmountError
 	// reject tx
 	RejectInvalidTxFeeError
 	RejectInvalidTxSizeError

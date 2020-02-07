@@ -15,11 +15,10 @@ func storeCommittee(stateDB *StateDB, shardID int, role int, committees []incogn
 			return err
 		}
 		incPublicKey := incognitokey.CommitteeKeyListToMapString([]incognitokey.CommitteePublicKey{committee})
-		temp, err := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{committee})
+		committeeString, err := committee.ToBase58()
 		if err != nil {
 			return err
 		}
-		committeeString := temp[0]
 		//TODO: Change to committee public key string in the future, now is incognito public key string
 		rewardReceiverPaymentAddress, ok := rewardReceiver[incPublicKey[0].IncPubKey]
 		if !ok {

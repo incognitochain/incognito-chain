@@ -3,7 +3,6 @@ package rpcservice
 import (
 	"encoding/json"
 	"errors"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"math/big"
 	"strconv"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
@@ -146,10 +146,6 @@ func (dbService DatabaseService) HasSnDerivators(paymentAddressStr string, snDer
 		}
 	}
 	return result, nil
-}
-
-func (dbService DatabaseService) ListRewardAmount() map[string]map[common.Hash]uint64 {
-	return rawdb.ListCommitteeReward(dbService.DB)
 }
 
 func (dbService DatabaseService) GetProducersBlackList(beaconHeight uint64) (map[string]uint8, error) {

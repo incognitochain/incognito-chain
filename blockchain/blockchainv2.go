@@ -62,7 +62,7 @@ func (blockchain *BlockChain) initChainStateV2() error {
 	blockchain.Chains[common.BeaconChainKey] = &beaconChain
 	for shard := 1; shard <= blockchain.BestState.Beacon.ActiveShards; shard++ {
 		shardID := byte(shard - 1)
-		bestStateBytes, err := rawdbv2.FetchShardBestState(blockchain.config.DataBase, shardID)
+		bestStateBytes, err := rawdbv2.GetShardBestState(blockchain.config.DataBase, shardID)
 		if err == nil {
 			shardBestState := &ShardBestState{}
 			err = json.Unmarshal(bestStateBytes, shardBestState)
@@ -70,7 +70,7 @@ func (blockchain *BlockChain) initChainStateV2() error {
 			SetBestStateShard(shardID, shardBestState)
 			//update Shard field in blockchain Beststate
 			blockchain.BestState.Shard[shardID] = GetBestStateShard(shardID)
-			errStateDB := blockchain.BestState.Shard[shardID].InitStateRootHash(blockchain.GetDatabase())
+			errStateDB := blockchain.BestState.Shard[shardID].InitStateRootHash(blockchain.GetDatabase(), blockchain)
 			if errStateDB != nil {
 				return errStateDB
 			}
@@ -191,7 +191,7 @@ func (blockchain *BlockChain) initShardStateV2(shardID byte) error {
 	if err != nil {
 		return NewBlockChainError(FetchBeaconBlockError, err)
 	}
-	err = blockchain.BestState.Shard[shardID].initShardBestState(blockchain, blockchain.GetDatabase(), &initShardBlock, genesisBeaconBlock)
+	err = blockchain.BestState.Shard[shardID].initShardBestStateV2(blockchain, blockchain.GetDatabase(), &initShardBlock, genesisBeaconBlock)
 	if err != nil {
 		return err
 	}
@@ -221,7 +221,7 @@ func (blockchain *BlockChain) GetBeaconFeatureStateDB() *statedb.StateDB {
 }
 
 func (blockchain *BlockChain) GetBeaconFeatureStateDBByHeight(height uint64, db incdb.Database) (*statedb.StateDB, error) {
-	rootHash, err := blockchain.GetFeatureStateRootHash(blockchain.GetDatabase(), height)
+	rootHash, err := blockchain.GetBeaconFeatureStateRootHash(blockchain.GetDatabase(), height)
 	if err != nil {
 		return nil, fmt.Errorf("Beacon Feature State DB not found, height %+v, error %+v", height, err)
 	}

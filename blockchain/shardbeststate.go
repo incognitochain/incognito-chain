@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"reflect"
@@ -58,7 +59,6 @@ type ShardBestState struct {
 	transactionStateDB       *statedb.StateDB
 	FeatureStateRootHash     map[uint64]common.Hash `json:"FeatureStateRootHash"`
 	featureStateDB           *statedb.StateDB
-	RewardStateRootHash      map[uint64]common.Hash `json:"RewardStateRootHash"`
 	rewardStateDB            *statedb.StateDB
 	SlashStateRootHash       map[uint64]common.Hash `json:"SlashStateRootHash"`
 	slashStateDB             *statedb.StateDB
@@ -98,7 +98,6 @@ func NewBestStateShardWithConfig(shardID byte, netparam *Params) *ShardBestState
 	bestStateShard.ConsensusStateRootHash = make(map[uint64]common.Hash)
 	bestStateShard.TransactionStateRootHash = make(map[uint64]common.Hash)
 	bestStateShard.FeatureStateRootHash = make(map[uint64]common.Hash)
-	bestStateShard.RewardStateRootHash = make(map[uint64]common.Hash)
 	bestStateShard.SlashStateRootHash = make(map[uint64]common.Hash)
 	return bestStateShard
 }
@@ -117,7 +116,7 @@ func SetBestStateShard(shardID byte, beststateShard *ShardBestState) {
 	beststateShard.lock = GetBestStateShard(shardID).lock
 	*GetBestStateShard(shardID) = *beststateShard
 }
-func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database) error {
+func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, bc *BlockChain) error {
 	var err error
 	var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
 	if rootHash, ok := shardBestState.ConsensusStateRootHash[shardBestState.ShardHeight]; ok {
@@ -144,13 +143,13 @@ func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database) error
 	} else {
 		shardBestState.featureStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
 	}
-	if rootHash, ok := shardBestState.RewardStateRootHash[shardBestState.ShardHeight]; ok {
+	if rootHash, err := bc.GetCommitteeRewardRootHash(db, shardBestState.ShardID, shardBestState.ShardHeight); err == nil {
 		shardBestState.rewardStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
 		if err != nil {
 			return err
 		}
 	} else {
-		shardBestState.rewardStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+		return err
 	}
 	if rootHash, ok := shardBestState.SlashStateRootHash[shardBestState.ShardHeight]; ok {
 		shardBestState.slashStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)
@@ -354,4 +353,8 @@ func (shardBestState *ShardBestState) GetShardPendingValidator() []incognitokey.
 	shardBestState.lock.RLock()
 	defer shardBestState.lock.RUnlock()
 	return shardBestState.ShardPendingValidator
+}
+
+func (blockchain *BlockChain) GetCommitteeRewardRootHash(db incdb.Database, shardID byte, height uint64) (common.Hash, error) {
+	return rawdbv2.GetCommitteeRewardRootHash(db, shardID, height)
 }

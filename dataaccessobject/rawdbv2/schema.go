@@ -27,6 +27,7 @@ var (
 	rootHashPrefix               = []byte("R-H-")
 	consensusStateRoot           = []byte("co" + string(splitter))
 	rewardStateRoot              = []byte("re" + string(splitter))
+	committeeRewardStateRoot     = []byte("core" + string(splitter))
 	featureStateRoot             = []byte("fe" + string(splitter))
 	slashStateRoot               = []byte("sl" + string(splitter))
 	splitter                     = []byte("-[-]-")
@@ -179,6 +180,15 @@ func GetFeatureStateRootHashKey(height uint64) []byte {
 func GetSlashStateRootHashKey(height uint64) []byte {
 	buf := common.Uint64ToBytes(height)
 	key := append(rootHashPrefix, slashStateRoot...)
+	key = append(key, buf...)
+	return key
+}
+
+func GetCommitteeRewardRootHashKey(shardID byte, height uint64) []byte {
+	buf := common.Uint64ToBytes(height)
+	key := append(rootHashPrefix, committeeRewardStateRoot...)
+	key = append(key, shardID)
+	key = append(key, splitter...)
 	key = append(key, buf...)
 	return key
 }
