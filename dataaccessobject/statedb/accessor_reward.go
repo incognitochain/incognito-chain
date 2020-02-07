@@ -121,7 +121,15 @@ func RemoveCommitteeReward(stateDB *StateDB, incognitoPublicKeyBytes []byte, wit
 		return NewStatedbError(RemoveCommitteeRewardError, fmt.Errorf("Current Reward %+v but got withdraw %+v", currentReward, withdrawAmount))
 	}
 	remain := currentReward - withdrawAmount
-	committeeRewardM[tokenID] = remain
+	if remain == 0 {
+		delete(committeeRewardM, tokenID)
+	} else {
+		committeeRewardM[tokenID] = remain
+	}
+	if len(committeeRewardM) == 0 {
+		stateDB.MarkDeleteStateObject(CommitteeRewardObjectType, key)
+		return nil
+	}
 	value := NewCommitteeRewardStateWithValue(committeeRewardM, incognitoPublicKey)
 	err = stateDB.SetStateObject(CommitteeRewardObjectType, key, value)
 	if err != nil {
