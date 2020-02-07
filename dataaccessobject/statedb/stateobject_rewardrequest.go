@@ -147,8 +147,8 @@ func newRewardRequestObjectWithValue(db *StateDB, key common.Hash, data interfac
 }
 
 func GenerateRewardRequestObjectKey(epoch uint64, shardID byte, tokenID common.Hash) common.Hash {
-	prefixHash := GetCommitteeRewardPrefix()
-	valueHash := common.HashH([]byte(fmt.Sprintf("%d%d%+v", epoch, shardID, tokenID)))
+	prefixHash := GetRewardRequestPrefix(epoch)
+	valueHash := common.HashH(append([]byte{shardID}, tokenID[:]...))
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 
