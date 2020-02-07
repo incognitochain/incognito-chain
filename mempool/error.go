@@ -9,7 +9,8 @@ import (
 const (
 	RejectDuplicateTx = iota
 	RejectInvalidTx
-	RejectSansityTx
+	RejectSanityTx
+	RejectSanityTxLocktime
 	RejectSalaryTx
 	RejectDuplicateStakePubkey
 	RejectDuplicateRequestStopAutoStaking
@@ -18,6 +19,7 @@ const (
 	RejectInvalidTxType
 	RejectDoubleSpendWithMempoolTx
 	RejectDoubleSpendWithBlockchainTx
+	RejectMetadataWithBlockchainTx
 	RejectInvalidFee
 	RejectInvalidSize
 	CanNotCheckDoubleSpend
@@ -51,7 +53,7 @@ var ErrCodeMessage = map[int]struct {
 }{
 	RejectDuplicateTx:                           {-1000, "Reject duplicate tx"},
 	RejectInvalidTx:                             {-1001, "Reject invalid tx"},
-	RejectSansityTx:                             {-1002, "Reject not sansity tx"},
+	RejectSanityTx:                              {-1002, "Reject not sansity tx"},
 	RejectSalaryTx:                              {-1003, "Reject salary tx"},
 	RejectInvalidFee:                            {-1004, "Reject invalid fee"},
 	RejectVersion:                               {-1005, "Reject invalid version"},
@@ -83,6 +85,8 @@ var ErrCodeMessage = map[int]struct {
 	RejectDuplicateRequestStopAutoStaking:       {-1030, "Reject Duplicate Request Stop Auto Staking"},
 	DuplicateSerialNumbersHashError:             {-1031, "Duplicate Serial Numbers Hash Error"},
 	CouldNotGetExchangeRateError:                {-1032, "Could not get the exchange rate error"},
+	RejectSanityTxLocktime:                      {-1033, "Wrong tx locktime"},
+	RejectMetadataWithBlockchainTx:              {-1034, "Reject invalid metadata with blockchain"},
 }
 
 type MempoolTxError struct {

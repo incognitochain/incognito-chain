@@ -505,7 +505,25 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int6
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
 	if !validated {
-		return NewMempoolTxError(RejectSansityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), err))
+		// try parse to TransactionError
+		sanityError, ok := err.(*transaction.TransactionError)
+		if ok {
+			switch sanityError.Code {
+			case transaction.RejectInvalidLockTime:
+				{
+					return NewMempoolTxError(RejectSanityTxLocktime, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), sanityError))
+				}
+			case transaction.RejectTxType:
+				{
+					return NewMempoolTxError(RejectInvalidTxType, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), sanityError))
+				}
+			case transaction.RejectTxVersion:
+				{
+					return NewMempoolTxError(RejectVersion, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), sanityError))
+				}
+			}
+		}
+		return NewMempoolTxError(RejectSanityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), err))
 	}
 
 	// Condition 2: Don't accept the transaction if it already exists in the pool.
@@ -604,6 +622,16 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int6
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
 	if err != nil {
+		// parse error
+		e1, ok := err.(*transaction.TransactionError)
+		if ok {
+			switch e1.Code {
+			case transaction.RejectTxMedataWithBlockChain:
+				{
+					return NewMempoolTxError(RejectMetadataWithBlockchainTx, err)
+				}
+			}
+		}
 		return NewMempoolTxError(RejectDoubleSpendWithBlockchainTx, err)
 	}
 	// Condition 9: check duplicate stake public key ONLY with staking transaction

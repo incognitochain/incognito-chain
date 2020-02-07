@@ -95,7 +95,7 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 			defaultFeeCoinPerKb, isGetPTokenFee, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy, nil,
 			customPrivacyTokenParam, *httpServer.config.Database, int64(beaconHeight))
 		if err2 != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.RejectInvalidFeeError, err2)
+			return nil, rpcservice.NewRPCError(rpcservice.RejectInvalidTxFeeError, err2)
 		}
 	}
 	result := jsonresult.NewEstimateFeeResult(estimateFeeCoinPerKb, estimateTxSizeInKb)
