@@ -29,7 +29,7 @@ func GetRewardOfShardByEpoch(stateDB *StateDB, epoch uint64, shardID byte, token
 		return 0, NewStatedbError(GetRewardRequestError, err)
 	}
 	if !has {
-		return 0, NewStatedbError(GetRewardRequestError, fmt.Errorf("token %+v amount not found", tokenID))
+		return 0, nil
 	}
 	return amount, nil
 }

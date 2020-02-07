@@ -19,6 +19,7 @@ const (
 	RejectInvalidTxType
 	RejectDoubleSpendWithMempoolTx
 	RejectDoubleSpendWithBlockchainTx
+	RejectMetadataWithBlockchainTx
 	RejectInvalidFee
 	RejectInvalidSize
 	CanNotCheckDoubleSpend
@@ -85,6 +86,7 @@ var ErrCodeMessage = map[int]struct {
 	DuplicateSerialNumbersHashError:             {-1031, "Duplicate Serial Numbers Hash Error"},
 	CouldNotGetExchangeRateError:                {-1032, "Could not get the exchange rate error"},
 	RejectSanityTxLocktime:                      {-1033, "Wrong tx locktime"},
+	RejectMetadataWithBlockchainTx:              {-1034, "Reject invalid metadata with blockchain"},
 }
 
 type MempoolTxError struct {

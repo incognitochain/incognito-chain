@@ -807,7 +807,8 @@ func (tx Tx) ValidateTxWithBlockChain(
 		isContinued, err := tx.Metadata.ValidateTxWithBlockChain(&tx, bcr, shardID, stateDB)
 		fmt.Printf("[stateDB] validate metadata with blockchain: %d %h %t %v\n", tx.GetMetadataType(), tx.Hash(), isContinued, err)
 		if err != nil {
-			return err
+			Logger.log.Errorf("[db] validate metadata with blockchain: %d %s %t %v\n", tx.GetMetadataType(), tx.Hash().String(), isContinued, err)
+			return NewTransactionErr(RejectTxMedataWithBlockChain, fmt.Errorf("validate metadata of tx %s with blockchain error %+v", tx.Hash().String(), err))
 		}
 		if !isContinued {
 			return nil

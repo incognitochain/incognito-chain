@@ -54,7 +54,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlockV2(shardBlock *ShardBlock, 
 		return err
 	}
 	//========updateShardBestState best state with new shardBlock
-	if err := shardBestState.updateShardBestState(blockchain, shardBlock, beaconBlocks); err != nil {
+	if err := shardBestState.updateShardBestStateV2(blockchain, shardBlock, beaconBlocks, newCommitteeChange()); err != nil {
 		return err
 	}
 	//========Post verififcation: verify new beaconstate with corresponding shardBlock
@@ -365,7 +365,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigningV2(shardBlo
 	if blockchain.BestState.Shard[shardID].BeaconHeight == shardBlock.Header.BeaconHeight {
 		isOldBeaconHeight = true
 	}
-	instructions, shardPendingValidator, shardCommittee, err = blockchain.generateInstruction(shardID, shardBlock.Header.BeaconHeight, isOldBeaconHeight, beaconBlocks, shardPendingValidator, shardCommittee)
+	instructions, shardPendingValidator, shardCommittee, err = blockchain.generateInstructionV2(shardID, shardBlock.Header.BeaconHeight, isOldBeaconHeight, beaconBlocks, shardPendingValidator, shardCommittee)
 	if err != nil {
 		return NewBlockChainError(GenerateInstructionError, err)
 	}
