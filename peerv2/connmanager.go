@@ -212,8 +212,10 @@ func (cm *ConnManager) keepHighwayConnection() {
 		},
 	}
 
-	watchTimestep := time.Tick(ReconnectHighwayTimestep)
-	refreshTimestep := time.Tick(UpdateHighwayListTimestep)
+	watchTimestep := time.NewTicker(ReconnectHighwayTimestep)
+	refreshTimestep := time.NewTicker(UpdateHighwayListTimestep)
+	defer watchTimestep.Stop()
+	defer refreshTimestep.Stop()
 	cm.disconnected = 1 // Init, to make first connection to highway
 	pid := cm.LocalHost.Host.ID()
 
@@ -230,7 +232,7 @@ func (cm *ConnManager) keepHighwayConnection() {
 
 	for {
 		select {
-		case <-watchTimestep:
+		case <-watchTimestep.C:
 			if currentHighway == nil {
 				var err error
 				if currentHighway, hwAddrs, err = refreshHighway(); err != nil {
@@ -242,7 +244,7 @@ func (cm *ConnManager) keepHighwayConnection() {
 				currentHighway = nil // Failed retries, connect to new highway next iteration
 			}
 
-		case <-refreshTimestep:
+		case <-refreshTimestep.C:
 			currentHighway, hwAddrs, _ = refreshHighway()
 
 		case <-cm.stop:
@@ -378,9 +380,11 @@ func (cm *ConnManager) manageRoleSubscription() {
 	forced := false // only subscribe when role changed or last forced subscribe failed
 	hwID := peer.ID("")
 	var err error
+	registerTimestep := time.NewTicker(RegisterTimestep)
+	defer registerTimestep.Stop()
 	for {
 		select {
-		case <-time.Tick(RegisterTimestep):
+		case <-registerTimestep.C:
 			// Check if we are connecting to the target of registration (correct highway peerID)
 			target := cm.Requester.Target()
 			if hwID.Pretty() != target {
