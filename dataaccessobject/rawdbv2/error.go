@@ -25,6 +25,8 @@ const (
 	GetFeatureStateRootHashError
 	StoreSlashStateRootHashError
 	GetSlashStateRootHashError
+	StoreCommitteeRewardRootHashError
+	GetCommitteeRewardRootHashError
 	// Shard
 	StoreShardBlockError
 	StoreShardBlockIndexError

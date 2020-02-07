@@ -129,19 +129,20 @@ func (blockchain *BlockChain) processSalaryInstructionsV2(rewardStateDB *statedb
 			}
 			metaType, err := strconv.Atoi(l[0])
 			if err != nil {
-				return err
+				return NewBlockChainError(ProcessSalaryInstructionsError, err)
 			}
 			if shardToProcess == int(shardID) {
 				switch metaType {
 				case metadata.BeaconRewardRequestMeta:
 					beaconBlkRewardInfo, err := metadata.NewBeaconBlockRewardInfoFromStr(l[3])
 					if err != nil {
-						return err
+						return NewBlockChainError(ProcessSalaryInstructionsError, err)
 					}
 					for key := range beaconBlkRewardInfo.BeaconReward {
+						Logger.log.Criticalf("Add Committee Reward BeaconReward, Public Key %+v, reward %+v, token %+v", beaconBlkRewardInfo.PayToPublicKey, beaconBlkRewardInfo.BeaconReward[key], key)
 						err = statedb.AddCommitteeReward(rewardStateDB, beaconBlkRewardInfo.PayToPublicKey, beaconBlkRewardInfo.BeaconReward[key], key)
 						if err != nil {
-							return err
+							return NewBlockChainError(ProcessSalaryInstructionsError, err)
 						}
 					}
 					continue
@@ -149,17 +150,18 @@ func (blockchain *BlockChain) processSalaryInstructionsV2(rewardStateDB *statedb
 				case metadata.IncDAORewardRequestMeta:
 					incDAORewardInfo, err := metadata.NewIncDAORewardInfoFromStr(l[3])
 					if err != nil {
-						return err
+						return NewBlockChainError(ProcessSalaryInstructionsError, err)
 					}
 					keyWalletDevAccount, err := wallet.Base58CheckDeserialize(blockchain.config.ChainParams.IncognitoDAOAddress)
 					if err != nil {
-						return err
+						return NewBlockChainError(ProcessSalaryInstructionsError, err)
 					}
 					for key := range incDAORewardInfo.IncDAOReward {
 						tempPublicKey := base58.Base58Check{}.Encode(keyWalletDevAccount.KeySet.PaymentAddress.Pk, common.Base58Version)
+						Logger.log.Criticalf("Add Committee Reward IncDAOReward, Public Key %+v, reward %+v, token %+v", tempPublicKey, incDAORewardInfo.IncDAOReward[key], key)
 						err = statedb.AddCommitteeReward(rewardStateDB, tempPublicKey, incDAORewardInfo.IncDAOReward[key], key)
 						if err != nil {
-							return err
+							return NewBlockChainError(ProcessSalaryInstructionsError, err)
 						}
 					}
 					continue
@@ -169,18 +171,18 @@ func (blockchain *BlockChain) processSalaryInstructionsV2(rewardStateDB *statedb
 			case metadata.ShardBlockRewardRequestMeta:
 				shardRewardInfo, err := metadata.NewShardBlockRewardInfoFromString(l[3])
 				if err != nil {
-					return err
+					return NewBlockChainError(ProcessSalaryInstructionsError, err)
 				}
 				if (!isInit) || (epoch != shardRewardInfo.Epoch) {
 					isInit = true
 					height := shardRewardInfo.Epoch * blockchain.config.ChainParams.Epoch
-					consensusRootHash, err := blockchain.GetConsensusStateRootHash(blockchain.GetDatabase(), height)
+					consensusRootHash, err := blockchain.GetBeaconConsensusStateRootHash(blockchain.GetDatabase(), height)
 					if err != nil {
-						return fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found ,error %+v", height, err)
+						return NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found ,error %+v", height, err))
 					}
 					consensusStateDB, err := statedb.NewWithPrefixTrie(consensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetDatabase()))
 					if err != nil {
-						return err
+						return NewBlockChainError(ProcessSalaryInstructionsError, err)
 					}
 					committees, rewardReceivers = statedb.GetAllCommitteeStateWithRewardReceiver(consensusStateDB, blockchain.GetShardIDs())
 				}
@@ -199,16 +201,17 @@ func (blockchain *BlockChain) processSalaryInstructionsV2(rewardStateDB *statedb
 func (blockchain *BlockChain) addShardCommitteeRewardV2(rewardStateDB *statedb.StateDB, shardID byte, rewardInfoShardToProcess *metadata.ShardBlockRewardInfo, committeeOfShardToProcess []incognitokey.CommitteePublicKey, rewardReceiver map[string]string) (err error) {
 	committeeSize := len(committeeOfShardToProcess)
 	for _, candidate := range committeeOfShardToProcess {
-		wl, err := wallet.Base58CheckDeserialize((rewardReceiver)[candidate.GetIncKeyBase58()])
+		wl, err := wallet.Base58CheckDeserialize(rewardReceiver[candidate.GetIncKeyBase58()])
 		if err != nil {
-			return err
+			return NewBlockChainError(ProcessSalaryInstructionsError, err)
 		}
 		if common.GetShardIDFromLastByte(wl.KeySet.PaymentAddress.Pk[common.PublicKeySize-1]) == shardID {
 			for key, value := range rewardInfoShardToProcess.ShardReward {
 				tempPK := base58.Base58Check{}.Encode(wl.KeySet.PaymentAddress.Pk, common.Base58Version)
+				Logger.log.Criticalf("Add Committee Reward ShardCommitteeReward, Public Key %+v, reward %+v, token %+v", tempPK, value/uint64(committeeSize), key)
 				err = statedb.AddCommitteeReward(rewardStateDB, tempPK, value/uint64(committeeSize), key)
 				if err != nil {
-					return err
+					return NewBlockChainError(ProcessSalaryInstructionsError, err)
 				}
 			}
 		}

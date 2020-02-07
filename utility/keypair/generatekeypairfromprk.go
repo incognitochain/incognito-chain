@@ -22,5 +22,8 @@ func main() {
 	fmt.Println("Payment Address", paymentAddressB58)
 	fmt.Println("Mining Seed", miningSeed)
 	fmt.Println(res)
-
+	fmt.Println("-----------------------")
+	str := base58.Base58Check{}.Encode([]byte{}, common.Base58Version)
+	fmt.Println(str)
+	fmt.Println(base58.Base58Check{}.Decode(str))
 }

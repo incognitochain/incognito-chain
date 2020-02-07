@@ -4,6 +4,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"log"
 	"strconv"
 
@@ -733,28 +736,66 @@ func (blockService BlockService) RevertShard(shardID byte) error {
 	return blockService.BlockChain.RevertShardState(shardID)
 }
 
-func (blockService BlockService) GetRewardAmount(paymentAddress string) (map[string]uint64, *RPCError) {
+func (blockService BlockService) ListRewardAmount() (map[string]map[common.Hash]uint64, error) {
+	m := make(map[string]map[common.Hash]uint64)
+	beaconBestState := blockchain.NewBeaconBestState()
+	data, err := rawdbv2.GetBeaconBestState(blockService.DB)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(data, beaconBestState)
+	if err != nil {
+		return nil, err
+	}
+	for i := 0; i < beaconBestState.ActiveShards; i++ {
+		shardID := byte(i)
+		rootHash, err := blockService.BlockChain.GetCommitteeRewardRootHash(blockService.DB, shardID, blockService.BlockChain.BestState.Shard[shardID].ShardHeight)
+		if err != nil {
+			return nil, err
+		}
+		Logger.log.Infof("List Committee Reward Root Hash %+v", rootHash)
+		stateDB, err := statedb.NewWithPrefixTrie(rootHash, statedb.NewDatabaseAccessWarper(blockService.DB))
+		if err != nil {
+			return nil, err
+		}
+		committeeReward := statedb.ListCommitteeReward(stateDB)
+		for k, v := range committeeReward {
+			m[k] = v
+		}
+	}
+	return m, nil
+}
+
+func (blockService BlockService) GetRewardAmount(paymentAddress string) (map[string]uint64, error) {
 	rewardAmountResult := make(map[string]uint64)
 	rewardAmounts := make(map[common.Hash]uint64)
-
 	keySet, _, err := GetKeySetFromPaymentAddressParam(paymentAddress)
 	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
+		return nil, err
 	}
 	publicKey := keySet.PaymentAddress.Pk
 	if publicKey == nil {
 		return rewardAmountResult, nil
 	}
-
-	allCoinIDs, err := blockService.BlockChain.GetAllCoinID()
+	shardID := common.GetShardIDFromLastByte(publicKey[len(publicKey)-1])
+	allCoinIDs, err := blockService.BlockChain.GetAllCoinIDV2(shardID)
 	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
+		return nil, err
 	}
-
 	for _, coinID := range allCoinIDs {
-		amount, err := rawdb.GetCommitteeReward((blockService.DB), publicKey, coinID)
+		rootHash, err := blockService.BlockChain.GetCommitteeRewardRootHash(blockService.DB, shardID, blockService.BlockChain.BestState.Shard[shardID].ShardHeight)
 		if err != nil {
-			return nil, NewRPCError(UnexpectedError, err)
+			return nil, err
+		}
+		Logger.log.Infof("List Committee Reward Root Hash %+v", rootHash)
+		stateDB, err := statedb.NewWithPrefixTrie(rootHash, statedb.NewDatabaseAccessWarper(blockService.DB))
+		if err != nil {
+			return nil, err
+		}
+		tempPK := base58.Base58Check{}.Encode(publicKey, common.Base58Version)
+		amount, err := statedb.GetCommitteeReward(stateDB, tempPK, coinID)
+		if err != nil {
+			return nil, err
 		}
 		if coinID == common.PRVCoinID {
 			rewardAmountResult["PRV"] = amount
@@ -762,25 +803,15 @@ func (blockService BlockService) GetRewardAmount(paymentAddress string) (map[str
 			rewardAmounts[coinID] = amount
 		}
 	}
-
-	cusPrivTok, crossPrivToken, err := blockService.BlockChain.ListPrivacyCustomToken()
-
+	privateTokenState, err := blockService.BlockChain.ListPrivacyCustomTokenV2(shardID)
 	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
+		return nil, err
 	}
-
-	for _, token := range cusPrivTok {
-		if rewardAmounts[token.TxPrivacyTokenData.PropertyID] > 0 {
-			rewardAmountResult[token.TxPrivacyTokenData.PropertyID.String()] = rewardAmounts[token.TxPrivacyTokenData.PropertyID]
+	for _, token := range privateTokenState {
+		if rewardAmounts[token.TokenID()] > 0 {
+			rewardAmountResult[token.PropertyName()] = rewardAmounts[token.TokenID()]
 		}
 	}
-
-	for _, token := range crossPrivToken {
-		if rewardAmounts[token.TokenID] > 0 {
-			rewardAmountResult[token.TokenID.String()] = rewardAmounts[token.TokenID]
-		}
-	}
-
 	return rewardAmountResult, nil
 }
 

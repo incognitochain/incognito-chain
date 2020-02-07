@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"reflect"
 	"sort"
 	"strconv"
@@ -747,34 +746,6 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 	}
 	shardBestState.ConsensusAlgorithm = common.BlsConsensus
 	shardBestState.NumOfBlocksByProducers = make(map[string]uint64)
-	//statedb===========================START
-	dbAccessWarper := statedb.NewDatabaseAccessWarper(db)
-	shardBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
-	if err != nil {
-		return err
-	}
-	shardBestState.ConsensusStateRootHash[0] = common.EmptyRoot
-	shardBestState.transactionStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
-	if err != nil {
-		return err
-	}
-	shardBestState.TransactionStateRootHash[0] = common.EmptyRoot
-	shardBestState.featureStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
-	if err != nil {
-		return err
-	}
-	shardBestState.FeatureStateRootHash[0] = common.EmptyRoot
-	shardBestState.rewardStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
-	if err != nil {
-		return err
-	}
-	shardBestState.RewardStateRootHash[0] = common.EmptyRoot
-	shardBestState.slashStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
-	if err != nil {
-		return err
-	}
-	shardBestState.SlashStateRootHash[0] = common.EmptyRoot
-	//statedb===========================END
 	return nil
 }
 

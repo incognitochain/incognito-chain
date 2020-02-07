@@ -166,6 +166,7 @@ const (
 	ProcessPDEInstructionError
 	InitBeaconStateError
 	GetListOutputCoinsByKeysetError
+	ProcessSalaryInstructionsError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -316,6 +317,7 @@ var ErrCodeMessage = map[int]struct {
 	InitPDETradeResponseTransactionError:              {-1141, "Init PDE trade response tx Error"},
 	ProcessPDEInstructionError:                        {-1142, "Process PDE instruction Error"},
 	InitBeaconStateError:                              {-1143, "Init Beacon State Error"},
+	ProcessSalaryInstructionsError:                    {-1144, "Proccess Salary Instruction Error"},
 	GetListOutputCoinsByKeysetError:                   {-2000, "Get List Output Coins By Keyset Error"},
 }
 

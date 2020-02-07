@@ -125,10 +125,10 @@ func newCommitteeRewardObjectWithValue(db *StateDB, key common.Hash, data interf
 }
 
 func GenerateCommitteeRewardObjectKey(publicKey string) (common.Hash, error) {
-	err := SoValidation.ValidateIncognitoPublicKeySanity(publicKey)
-	if err != nil {
-		return common.Hash{}, fmt.Errorf("%+v, got err %+v", ErrInvalidIncognitoPublicKeyType, err)
-	}
+	//err := SoValidation.ValidateIncognitoPublicKeySanity(publicKey)
+	//if err != nil {
+	//	return common.Hash{}, fmt.Errorf("%+v, got err %+v", ErrInvalidIncognitoPublicKeyType, err)
+	//}
 	publicKeyBytes, _, err := base58.Base58Check{}.Decode(publicKey)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("%+v, got err %+v", ErrInvalidIncognitoPublicKeyType, err)

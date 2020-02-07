@@ -146,7 +146,7 @@ func StoreShardBestState(db incdb.Database, shardID byte, v interface{}) error {
 	return nil
 }
 
-func FetchShardBestState(db incdb.Database, shardID byte) ([]byte, error) {
+func GetShardBestState(db incdb.Database, shardID byte) ([]byte, error) {
 	key := GetShardBestStateKey(shardID)
 	shardBestStateBytes, err := db.Get(key)
 	if err != nil {
@@ -173,4 +173,22 @@ func GetFeeEstimator(db incdb.Database, shardID byte) ([]byte, error) {
 		return nil, NewRawdbError(GetFeeEstimatorError, err)
 	}
 	return res, err
+}
+
+func StoreCommitteeRewardRootHash(db incdb.Database, shardID byte, height uint64, rootHash common.Hash) error {
+	key := GetCommitteeRewardRootHashKey(shardID, height)
+	err := db.Put(key, rootHash[:])
+	if err != nil {
+		return NewRawdbError(StoreCommitteeRewardRootHashError, err)
+	}
+	return nil
+}
+
+func GetCommitteeRewardRootHash(db incdb.Database, shardID byte, height uint64) (common.Hash, error) {
+	key := GetCommitteeRewardRootHashKey(shardID, height)
+	res, err := db.Get(key)
+	if err != nil {
+		return common.Hash{}, NewRawdbError(GetCommitteeRewardRootHashError, err)
+	}
+	return common.BytesToHash(res), nil
 }
