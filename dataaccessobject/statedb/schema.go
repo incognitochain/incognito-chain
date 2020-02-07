@@ -71,13 +71,13 @@ func GetCommitteePrefixWithRole(role int, shardID int) []byte {
 	}
 }
 func GetCommitteeRewardPrefix() []byte {
-	temp := []byte(committeeRewardPrefix)
-	h := common.HashH(temp)
+	h := common.HashH(committeeRewardPrefix)
 	return h[:][:prefixHashKeyLength]
 }
 
-func GetRewardRequestPrefix() []byte {
-	temp := []byte(rewardRequestPrefix)
+func GetRewardRequestPrefix(epoch uint64) []byte {
+	buf := common.Uint64ToBytes(epoch)
+	temp := append(rewardRequestPrefix, buf...)
 	h := common.HashH(temp)
 	return h[:][:prefixHashKeyLength]
 }
@@ -274,13 +274,6 @@ var _ = func() (_ struct{}) {
 		panic("committee-reward-" + " same prefix " + v)
 	}
 	m[string(tempRewardReceiver)] = "committee-reward-"
-	// reward request
-	tempRewardRequest := GetRewardRequestPrefix()
-	prefixs = append(prefixs, tempRewardRequest)
-	if v, ok := m[string(tempRewardRequest)]; ok {
-		panic("reward-request-" + " same prefix " + v)
-	}
-	m[string(tempRewardRequest)] = "reward-request-"
 	// black list producer
 	tempBlackListProducer := GetBlackListProducerPrefix()
 	prefixs = append(prefixs, tempBlackListProducer)

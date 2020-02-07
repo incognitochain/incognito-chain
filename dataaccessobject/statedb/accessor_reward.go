@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 )
 
+// Reward in Beacon
 func AddShardRewardRequest(stateDB *StateDB, epoch uint64, shardID byte, tokenID common.Hash, rewardAmount uint64) error {
 	key := GenerateRewardRequestObjectKey(epoch, shardID, tokenID)
 	r, has, err := stateDB.GetRewardRequestState(key)
@@ -22,6 +23,7 @@ func AddShardRewardRequest(stateDB *StateDB, epoch uint64, shardID byte, tokenID
 	}
 	return nil
 }
+
 func GetRewardOfShardByEpoch(stateDB *StateDB, epoch uint64, shardID byte, tokenID common.Hash) (uint64, error) {
 	key := GenerateRewardRequestObjectKey(epoch, shardID, tokenID)
 	amount, has, err := stateDB.GetRewardRequestAmount(key)
@@ -35,13 +37,22 @@ func GetRewardOfShardByEpoch(stateDB *StateDB, epoch uint64, shardID byte, token
 }
 
 func GetAllTokenIDForReward(stateDB *StateDB, epoch uint64) []common.Hash {
-	rewardRequestStates := stateDB.GetAllRewardRequestState()
+	_, rewardRequestStates := stateDB.GetAllRewardRequestState(epoch)
 	tokenIDs := []common.Hash{}
 	for _, rewardRequestState := range rewardRequestStates {
-		tokenIDs = append(tokenIDs, rewardRequestState.tokenID)
+		tokenIDs = append(tokenIDs, rewardRequestState.TokenID())
 	}
 	return tokenIDs
 }
+
+func RemoveRewardOfShardByEpoch(stateDB *StateDB, epoch uint64) {
+	rewardRequestKeys, _ := stateDB.GetAllRewardRequestState(epoch)
+	for _, k := range rewardRequestKeys {
+		stateDB.MarkDeleteStateObject(RewardRequestObjectType, k)
+	}
+}
+
+// Reward in Shard
 func AddCommitteeReward(stateDB *StateDB, incognitoPublicKey string, committeeReward uint64, tokenID common.Hash) error {
 	key, err := GenerateCommitteeRewardObjectKey(incognitoPublicKey)
 	if err != nil {

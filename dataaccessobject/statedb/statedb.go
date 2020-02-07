@@ -709,12 +709,17 @@ func (stateDB *StateDB) GetRewardRequestAmount(key common.Hash) (uint64, bool, e
 	return amount, false, nil
 }
 
-func (stateDB *StateDB) GetAllRewardRequestState() []*RewardRequestState {
+func (stateDB *StateDB) GetAllRewardRequestState(epoch uint64) ([]common.Hash, []*RewardRequestState) {
 	m := []*RewardRequestState{}
-	prefix := GetRewardRequestPrefix()
+	keys := []common.Hash{}
+	prefix := GetRewardRequestPrefix(epoch)
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
 	for it.Next() {
+		key := it.Key
+		newKey := make([]byte, len(key))
+		copy(newKey, key)
+		keys = append(keys, common.BytesToHash(newKey))
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -725,7 +730,7 @@ func (stateDB *StateDB) GetAllRewardRequestState() []*RewardRequestState {
 		}
 		m = append(m, rewardRequestState)
 	}
-	return m
+	return keys, m
 }
 
 // ================================= Black List Producer OBJECT =======================================

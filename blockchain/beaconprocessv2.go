@@ -880,6 +880,9 @@ func (blockchain *BlockChain) processStoreBeaconBlockV2(beaconBlock *BeaconBlock
 	if err != nil {
 		return err
 	}
+	if beaconBlock.Header.Height%blockchain.config.ChainParams.Epoch == 1 {
+		statedb.RemoveRewardOfShardByEpoch(tempBeaconBestState.rewardStateDB, beaconBlock.Header.Epoch-1)
+	}
 	err = blockchain.addShardRewardRequestToBeaconV2(beaconBlock, tempBeaconBestState.rewardStateDB)
 	if err != nil {
 		return NewBlockChainError(UpdateDatabaseWithBlockRewardInfoError, err)
