@@ -26,7 +26,7 @@ Used for beacon and all shards, distinguish between shards and beacon by prefix.
     * reward: map token id => reward amount
     * incognito public key: 33 bytes public key encoded as base 58 string
 3. Reward Request
-- key: first 12 bytes of `hash(reward-request-prefix)` with first 20 bytes of `hash(epoch + shardID + tokenID)`
+- key: first 12 bytes of `hash(reward-request-prefix + epoch)` with first 20 bytes of `hash(shardID + tokenID)`
 - value: reward request state:
     * epoch
     * shardID
