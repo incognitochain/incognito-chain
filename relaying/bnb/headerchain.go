@@ -24,7 +24,6 @@ func (hc *HeaderChain) ReceiveNewHeader(h *types.Header, lastCommit *types.Commi
 		return true, nil
 	}
 
-	// todo:
 	// verify lastCommit
 	if lastCommit != nil {
 		if !bytes.Equal(h.LastCommitHash , lastCommit.Hash()){
@@ -42,11 +41,7 @@ func (hc *HeaderChain) ReceiveNewHeader(h *types.Header, lastCommit *types.Commi
 		if bytes.Equal(h.LastBlockID.Hash.Bytes(), latestHeaderBlockID) && h.Height == latestHeader.Height + 1{
 			// create new signed header and verify
 			// add to unconfirmedHeaders list
-			//sh := new(types.SignedHeader)
 			newSignedHeader := NewSignedHeader(latestHeader, lastCommit)
-			//if err != nil{
-			//	return false, NewBNBRelayingError(InvalidNewHeaderErr, err)
-			//}
 			isValid, err := VerifySignedHeader(newSignedHeader)
 			if isValid && err == nil{
 				hc.unconfirmedHeaders = append(hc.unconfirmedHeaders, h)
@@ -65,9 +60,6 @@ func (hc *HeaderChain) ReceiveNewHeader(h *types.Header, lastCommit *types.Commi
 				// append ph to hc.HeaderChain,
 				// clear all unconfirmedHeaders => append h to unconfirmedHeaders
 				newSignedHeader := NewSignedHeader(ph, lastCommit)
-				//if err != nil{
-				//	return false, NewBNBRelayingError(InvalidNewHeaderErr, err)
-				//}
 				isValid, err := VerifySignedHeader(newSignedHeader)
 				if isValid && err == nil{
 					hc.HeaderChain = append(hc.HeaderChain, ph)

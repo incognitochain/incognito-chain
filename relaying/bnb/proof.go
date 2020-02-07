@@ -96,7 +96,7 @@ func ParseProofFromJson(object string) (*types.TxProof, *BNBRelayingError) {
 	return &proof, nil
 }
 
-func ParseDataToTx(data []byte) (*bnbtx.StdTx, *BNBRelayingError) {
+func ParseTxFromData(data []byte) (*bnbtx.StdTx, *BNBRelayingError) {
 	tx, err := rpc.ParseTx(bnbtx.Cdc, data)
 	if err != nil {
 		return nil, NewBNBRelayingError(UnexpectedErr, err)
