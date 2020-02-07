@@ -622,6 +622,16 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int6
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
 	if err != nil {
+		// parse error
+		e1, ok := err.(*transaction.TransactionError)
+		if ok {
+			switch e1.Code {
+			case transaction.RejectTxMedataWithBlockChain:
+				{
+					return NewMempoolTxError(RejectMetadataWithBlockchainTx, err)
+				}
+			}
+		}
 		return NewMempoolTxError(RejectDoubleSpendWithBlockchainTx, err)
 	}
 	// Condition 9: check duplicate stake public key ONLY with staking transaction
