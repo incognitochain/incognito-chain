@@ -72,7 +72,7 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(beaconBlock *BeaconBlock,
 
 func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isValidated bool) error {
 	if DATABASE_VERSION == 2 {
-		return blockchain.InsertBeaconBlockV2(beaconBlock, isValidated)
+		return blockchain.InsertBeaconBlockV2(beaconBlock, false)
 	}
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
