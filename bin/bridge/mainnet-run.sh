@@ -4,7 +4,7 @@ run()
 {
   validator_key=xxx
   bootnode="mainnet-bootnode.incognito.org:9330"
-  is_shipping_logs=1
+  is_shipping_logs=0
   latest_tag=$1
   current_tag=$2
   data_dir="data"
