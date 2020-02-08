@@ -37,21 +37,6 @@ func (dbService DatabaseService) CheckETHHashIssued(data map[string]interface{})
 	return issued, err
 }
 
-func (dbService DatabaseService) GetAllBridgeTokens() ([]byte, error) {
-	allBridgeTokensBytes, err := rawdb.GetAllBridgeTokens(dbService.DB)
-	return allBridgeTokensBytes, err
-}
-
-func (dbService DatabaseService) GetBridgeReqWithStatus(txID string) (byte, error) {
-	txIDHash, err := common.Hash{}.NewHashFromStr(txID)
-	if err != nil {
-		return byte(0), err
-	}
-
-	status, err := rawdb.GetBridgeReqWithStatus(dbService.DB, *txIDHash)
-	return status, err
-}
-
 func (dbService DatabaseService) GetBurningConfirm(txID common.Hash) (uint64, error) {
 	return rawdb.GetBurningConfirm(dbService.DB, txID)
 }

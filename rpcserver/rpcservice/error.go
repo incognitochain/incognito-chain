@@ -23,7 +23,7 @@ const (
 	InvalidSenderPrivateKeyError
 	InvalidSenderViewingKeyError
 	InvalidReceiverPaymentAddressError
-	ListCustomTokenNotFoundError
+	ListTokenNotFoundError
 	CanNotSignError
 	GetOutputCoinError
 	CreateTxDataError
@@ -85,7 +85,7 @@ var ErrCodeMessage = map[int]struct {
 	AuthFailError:                      {-1007, "Auth failure"},
 	RPCInvalidMethodPermissionError:    {-1008, "Invalid method permission"},
 	InvalidReceiverPaymentAddressError: {-1009, "Invalid receiver paymentaddress"},
-	ListCustomTokenNotFoundError:       {-1010, "Can not find any custom token"},
+	ListTokenNotFoundError:             {-1010, "Can not find any token"},
 	CanNotSignError:                    {-1011, "Can not sign with key"},
 	InvalidSenderPrivateKeyError:       {-1012, "Invalid sender's key"},
 	GetOutputCoinError:                 {-1013, "Can not get output coin"},

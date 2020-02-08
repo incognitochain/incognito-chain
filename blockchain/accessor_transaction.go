@@ -219,14 +219,12 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeysetV2(keyset *incognitokey.
 	return results, nil
 }
 
-// DecryptTxByKey - process outputcoin to get outputcoin data which relate to keyset
+// DecryptOutputCoinByKeyV2 process outputcoin to get outputcoin data which relate to keyset
+// Param keyset: (private key, payment address, read only key)
+// in case private key: return unspent outputcoin tx
+// in case read only key: return all outputcoin tx with amount value
+// in case payment address: return all outputcoin tx with no amount value
 func DecryptOutputCoinByKeyV2(transactionStateDB *statedb.StateDB, outCoinTemp *privacy.OutputCoin, keySet *incognitokey.KeySet, tokenID *common.Hash, shardID byte) *privacy.OutputCoin {
-	/*
-		- Param keyset - (priv-key, payment-address, readonlykey)
-		in case priv-key: return unspent outputcoin tx
-		in case readonly-key: return all outputcoin tx with amount value
-		in case payment-address: return all outputcoin tx with no amount value
-	*/
 	pubkeyCompress := outCoinTemp.CoinDetails.GetPublicKey().ToBytesS()
 	if bytes.Equal(pubkeyCompress, keySet.PaymentAddress.Pk[:]) {
 		result := &privacy.OutputCoin{
@@ -243,7 +241,7 @@ func DecryptOutputCoinByKeyV2(transactionStateDB *statedb.StateDB, outCoinTemp *
 			}
 		}
 		if len(keySet.PrivateKey) > 0 {
-			// check spent with private-key
+			// check spent with private key
 			result.CoinDetails.SetSerialNumber(
 				new(privacy.Point).Derive(
 					privacy.PedCom.G[privacy.PedersenPrivateKeyIndex],
@@ -259,14 +257,35 @@ func DecryptOutputCoinByKeyV2(transactionStateDB *statedb.StateDB, outCoinTemp *
 	return nil
 }
 
+func storePRV(transactionStateRoot *statedb.StateDB) error {
+	tokenID := common.PRVCoinID
+	name := common.PRVCoinName
+	symbol := common.PRVCoinName
+	tokenType := 0
+	mintable := false
+	amount := uint64(1000000000000000)
+	info := []byte{}
+	txHash := common.Hash{}
+	err := statedb.StorePrivacyToken(transactionStateRoot, tokenID, name, symbol, tokenType, mintable, amount, info, txHash)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // CreateAndSaveTxViewPointFromBlock - fetch data from block, put into txviewpoint variable and save into db
-// @note: still storage full data of commitments, serialnumbersm snderivator to check double spend
-// @note: this function only work for transaction transfer token/prv within shard
-func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlockV2(block *ShardBlock, transactionStateRoot *statedb.StateDB, beaconFeatureStateRoot *statedb.StateDB) error {
-	//startTime := time.Now()
-	// Fetch data from block into tx View point
-	view := NewTxViewPoint(block.Header.ShardID)
-	err := view.fetchTxViewPointFromBlockV2(transactionStateRoot, block)
+// still storage full data of commitments, serial number, snderivator to check double spend
+// this function only work for transaction transfer token/prv within shard
+func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlockV2(shardBlock *ShardBlock, transactionStateRoot *statedb.StateDB, beaconFeatureStateRoot *statedb.StateDB) error {
+	// Fetch data from shardBlock into tx View point
+	if shardBlock.Header.Height == 1 {
+		err := storePRV(transactionStateRoot)
+		if err != nil {
+			return err
+		}
+	}
+	view := NewTxViewPoint(shardBlock.Header.ShardID)
+	err := view.fetchTxViewPointFromBlockV2(transactionStateRoot, shardBlock)
 	if err != nil {
 		return err
 	}
@@ -306,9 +325,10 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlockV2(block *ShardBl
 					tokenType := privacyCustomTokenTx.TxPrivacyTokenData.Type
 					mintable := privacyCustomTokenTx.TxPrivacyTokenData.Mintable
 					amount := privacyCustomTokenTx.TxPrivacyTokenData.Amount
+					info := privacyCustomTokenTx.Tx.Info
 					txHash := *privacyCustomTokenTx.Hash()
 					Logger.log.Info("Store custom token when it is issued", privacyCustomTokenTx.TxPrivacyTokenData.PropertyID, privacyCustomTokenTx.TxPrivacyTokenData.PropertySymbol, privacyCustomTokenTx.TxPrivacyTokenData.PropertyName)
-					err = statedb.StorePrivacyToken(transactionStateRoot, tokenID, name, symbol, tokenType, mintable, amount, txHash)
+					err = statedb.StorePrivacyToken(transactionStateRoot, tokenID, name, symbol, tokenType, mintable, amount, info, txHash)
 					if err != nil {
 						return err
 					}
@@ -329,7 +349,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlockV2(block *ShardBl
 			return err
 		}
 
-		err = blockchain.StoreCommitmentsFromTxViewPointV2(transactionStateRoot, *privacyCustomTokenSubView, block.Header.ShardID)
+		err = blockchain.StoreCommitmentsFromTxViewPointV2(transactionStateRoot, *privacyCustomTokenSubView, shardBlock.Header.ShardID)
 		if err != nil {
 			return err
 		}
@@ -342,13 +362,13 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlockV2(block *ShardBl
 
 	// updateShardBestState the list serialNumber and commitment, snd set using the state of the used tx view point. This
 	// entails adding the new
-	// ones created by the block.
+	// ones created by the shardBlock.
 	err = blockchain.StoreSerialNumbersFromTxViewPointV2(transactionStateRoot, *view)
 	if err != nil {
 		return err
 	}
 
-	err = blockchain.StoreCommitmentsFromTxViewPointV2(transactionStateRoot, *view, block.Header.ShardID)
+	err = blockchain.StoreCommitmentsFromTxViewPointV2(transactionStateRoot, *view, shardBlock.Header.ShardID)
 	if err != nil {
 		return err
 	}
@@ -493,7 +513,8 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionViewPointFromBlockV2(
 			tokenType := privacyCustomTokenSubView.privacyCustomTokenMetadata.Type
 			mintable := privacyCustomTokenSubView.privacyCustomTokenMetadata.Mintable
 			amount := privacyCustomTokenSubView.privacyCustomTokenMetadata.Amount
-			if err := statedb.StorePrivacyToken(transactionStateRoot, tokenID, name, symbol, tokenType, mintable, amount, common.Hash{}); err != nil {
+			info := []byte{}
+			if err := statedb.StorePrivacyToken(transactionStateRoot, tokenID, name, symbol, tokenType, mintable, amount, info, common.Hash{}); err != nil {
 				return err
 			}
 		}

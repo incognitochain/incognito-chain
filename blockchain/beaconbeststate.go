@@ -78,6 +78,22 @@ type BeaconBestState struct {
 	lock sync.RWMutex
 }
 
+func (beaconBestState *BeaconBestState) GetCopiedSlashStateDB() *statedb.StateDB {
+	return beaconBestState.slashStateDB.Copy()
+}
+
+func (beaconBestState *BeaconBestState) GetCopiedFeatureStateDB() *statedb.StateDB {
+	return beaconBestState.featureStateDB.Copy()
+}
+
+func (beaconBestState *BeaconBestState) GetCopiedRewardStateDB() *statedb.StateDB {
+	return beaconBestState.rewardStateDB.Copy()
+}
+
+func (beaconBestState *BeaconBestState) GetCopiedConsensusStateDB() *statedb.StateDB {
+	return beaconBestState.consensusStateDB.Copy()
+}
+
 var beaconBestState *BeaconBestState
 
 func NewBeaconBestState() *BeaconBestState {

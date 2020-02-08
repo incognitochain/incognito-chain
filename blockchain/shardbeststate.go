@@ -61,6 +61,10 @@ type ShardBestState struct {
 	lock               sync.RWMutex
 }
 
+func (shardBestState *ShardBestState) GetCopiedRewardStateDB() *statedb.StateDB {
+	return shardBestState.rewardStateDB.Copy()
+}
+
 var bestStateShardMap = make(map[byte]*ShardBestState)
 
 func NewShardBestState() *ShardBestState {

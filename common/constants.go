@@ -58,7 +58,8 @@ var (
 
 // special token ids (aka. PropertyID in custom token)
 var (
-	PRVCoinID = Hash{4} // To send PRV in custom token
+	PRVCoinID   = Hash{4} // To send PRV in custom token
+	PRVCoinName = "PRV"   // To send PRV in custom token
 )
 
 // CONSENSUS
