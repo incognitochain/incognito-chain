@@ -489,12 +489,10 @@ func (shardBestState *ShardBestState) initShardBestStateV2(blockchain *BlockChai
 	if err != nil {
 		return err
 	}
-	shardBestState.ConsensusStateRootHash[0] = common.EmptyRoot
 	shardBestState.transactionStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
 	if err != nil {
 		return err
 	}
-	shardBestState.TransactionStateRootHash[0] = common.EmptyRoot
 	shardBestState.featureStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
 	if err != nil {
 		return err
@@ -507,7 +505,6 @@ func (shardBestState *ShardBestState) initShardBestStateV2(blockchain *BlockChai
 	if err != nil {
 		return err
 	}
-	shardBestState.SlashStateRootHash[0] = common.EmptyRoot
 	//statedb===========================END
 	return nil
 }
@@ -788,11 +785,16 @@ func (blockchain *BlockChain) processStoreShardBlockV2(shardBlock *ShardBlock, c
 	tempShardBestState.featureStateDB.ClearObjects()
 	tempShardBestState.rewardStateDB.ClearObjects()
 	tempShardBestState.slashStateDB.ClearObjects()
-	tempShardBestState.ConsensusStateRootHash[blockHeight] = consensusRootHash
-	tempShardBestState.TransactionStateRootHash[blockHeight] = transactionRootHash
-	tempShardBestState.FeatureStateRootHash[blockHeight] = featureRootHash
-	tempShardBestState.SlashStateRootHash[blockHeight] = slashRootHash
-	if err := rawdbv2.StoreCommitteeRewardRootHash(blockchain.GetDatabase(), shardID, blockHeight, rewardRootHash); err != nil {
+	if err := rawdbv2.StoreShardConsensusRootHash(blockchain.GetDatabase(), shardID, blockHeight, consensusRootHash); err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
+	}
+	if err := rawdbv2.StoreShardTransactionRootHash(blockchain.GetDatabase(), shardID, blockHeight, transactionRootHash); err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
+	}
+	if err := rawdbv2.StoreShardFeatureRootHash(blockchain.GetDatabase(), shardID, blockHeight, featureRootHash); err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
+	}
+	if err := rawdbv2.StoreShardCommitteeRewardRootHash(blockchain.GetDatabase(), shardID, blockHeight, rewardRootHash); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 	//statedb===========================END
