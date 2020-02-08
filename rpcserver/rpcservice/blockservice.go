@@ -749,7 +749,7 @@ func (blockService BlockService) ListRewardAmount() (map[string]map[common.Hash]
 	}
 	for i := 0; i < beaconBestState.ActiveShards; i++ {
 		shardID := byte(i)
-		rootHash, err := blockService.BlockChain.GetCommitteeRewardRootHash(blockService.DB, shardID, blockService.BlockChain.BestState.Shard[shardID].ShardHeight)
+		rootHash, err := blockService.BlockChain.GetShardCommitteeRewardRootHash(blockService.DB, shardID, blockService.BlockChain.BestState.Shard[shardID].ShardHeight)
 		if err != nil {
 			return nil, err
 		}
@@ -783,7 +783,7 @@ func (blockService BlockService) GetRewardAmount(paymentAddress string) (map[str
 		return nil, err
 	}
 	for _, coinID := range allCoinIDs {
-		rootHash, err := blockService.BlockChain.GetCommitteeRewardRootHash(blockService.DB, shardID, blockService.BlockChain.BestState.Shard[shardID].ShardHeight)
+		rootHash, err := blockService.BlockChain.GetShardCommitteeRewardRootHash(blockService.DB, shardID, blockService.BlockChain.BestState.Shard[shardID].ShardHeight)
 		if err != nil {
 			return nil, err
 		}

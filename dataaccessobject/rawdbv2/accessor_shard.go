@@ -175,20 +175,92 @@ func GetFeeEstimator(db incdb.Database, shardID byte) ([]byte, error) {
 	return res, err
 }
 
-func StoreCommitteeRewardRootHash(db incdb.Database, shardID byte, height uint64, rootHash common.Hash) error {
-	key := GetCommitteeRewardRootHashKey(shardID, height)
+func StoreShardCommitteeRewardRootHash(db incdb.Database, shardID byte, height uint64, rootHash common.Hash) error {
+	key := GetShardCommitteeRewardRootHashKey(shardID, height)
 	err := db.Put(key, rootHash[:])
 	if err != nil {
-		return NewRawdbError(StoreCommitteeRewardRootHashError, err)
+		return NewRawdbError(StoreShardCommitteeRewardRootHashError, err)
 	}
 	return nil
 }
 
-func GetCommitteeRewardRootHash(db incdb.Database, shardID byte, height uint64) (common.Hash, error) {
-	key := GetCommitteeRewardRootHashKey(shardID, height)
+func GetShardCommitteeRewardRootHash(db incdb.Database, shardID byte, height uint64) (common.Hash, error) {
+	key := GetShardCommitteeRewardRootHashKey(shardID, height)
 	res, err := db.Get(key)
 	if err != nil {
-		return common.Hash{}, NewRawdbError(GetCommitteeRewardRootHashError, err)
+		return common.Hash{}, NewRawdbError(GetShardCommitteeRewardRootHashError, err)
+	}
+	return common.BytesToHash(res), nil
+}
+
+func StoreShardConsensusRootHash(db incdb.Database, shardID byte, height uint64, rootHash common.Hash) error {
+	key := GetShardConsensusRootHashKey(shardID, height)
+	err := db.Put(key, rootHash[:])
+	if err != nil {
+		return NewRawdbError(StoreShardConsensusRootHashError, err)
+	}
+	return nil
+}
+
+func GetShardConsensusRootHash(db incdb.Database, shardID byte, height uint64) (common.Hash, error) {
+	key := GetShardConsensusRootHashKey(shardID, height)
+	res, err := db.Get(key)
+	if err != nil {
+		return common.Hash{}, NewRawdbError(GetShardConsensusRootHashError, err)
+	}
+	return common.BytesToHash(res), nil
+}
+
+func StoreShardFeatureRootHash(db incdb.Database, shardID byte, height uint64, rootHash common.Hash) error {
+	key := GetShardFeatureRootHashKey(shardID, height)
+	err := db.Put(key, rootHash[:])
+	if err != nil {
+		return NewRawdbError(StoreShardFeatureRootHashError, err)
+	}
+	return nil
+}
+
+func GetShardFeatureRootHash(db incdb.Database, shardID byte, height uint64) (common.Hash, error) {
+	key := GetShardFeatureRootHashKey(shardID, height)
+	res, err := db.Get(key)
+	if err != nil {
+		return common.Hash{}, NewRawdbError(GetShardFeatureRootHashError, err)
+	}
+	return common.BytesToHash(res), nil
+}
+
+func StoreShardTransactionRootHash(db incdb.Database, shardID byte, height uint64, rootHash common.Hash) error {
+	key := GetShardTransactionRootHashKey(shardID, height)
+	err := db.Put(key, rootHash[:])
+	if err != nil {
+		return NewRawdbError(StoreShardTransactionRootHashError, err)
+	}
+	return nil
+}
+
+func GetShardTransactionRootHash(db incdb.Database, shardID byte, height uint64) (common.Hash, error) {
+	key := GetShardTransactionRootHashKey(shardID, height)
+	res, err := db.Get(key)
+	if err != nil {
+		return common.Hash{}, NewRawdbError(GetShardTransactionRootHashError, err)
+	}
+	return common.BytesToHash(res), nil
+}
+
+func StoreShardSlashRootHash(db incdb.Database, shardID byte, height uint64, rootHash common.Hash) error {
+	key := GetShardSlashRootHashKey(shardID, height)
+	err := db.Put(key, rootHash[:])
+	if err != nil {
+		return NewRawdbError(StoreShardSlashRootHashError, err)
+	}
+	return nil
+}
+
+func GetShardSlashRootHash(db incdb.Database, shardID byte, height uint64) (common.Hash, error) {
+	key := GetShardSlashRootHashKey(shardID, height)
+	res, err := db.Get(key)
+	if err != nil {
+		return common.Hash{}, NewRawdbError(GetShardSlashRootHashError, err)
 	}
 	return common.BytesToHash(res), nil
 }

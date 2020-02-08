@@ -160,73 +160,73 @@ func GetBeaconBestState(db incdb.Database) ([]byte, error) {
 }
 
 func StoreConsensusStateRootHash(db incdb.Database, height uint64, rootHash common.Hash) error {
-	key := GetConsensusStateRootHashKey(height)
+	key := GetBeaconConsensusRootHashKey(height)
 	err := db.Put(key, rootHash[:])
 	if err != nil {
-		return NewRawdbError(StoreConsensusStateRootHashError, err)
+		return NewRawdbError(StoreBeaconConsensusRootHashError, err)
 	}
 	return nil
 }
 
 func GetConsensusStateRootHash(db incdb.Database, height uint64) (common.Hash, error) {
-	key := GetConsensusStateRootHashKey(height)
+	key := GetBeaconConsensusRootHashKey(height)
 	res, err := db.Get(key)
 	if err != nil {
-		return common.Hash{}, NewRawdbError(GetConsensusStateRootHashError, err)
+		return common.Hash{}, NewRawdbError(GetBeaconConsensusRootHashError, err)
 	}
 	return common.BytesToHash(res), nil
 }
 
 func StoreRewardStateRootHash(db incdb.Database, height uint64, rootHash common.Hash) error {
-	key := GetRewardStateRootHashKey(height)
+	key := GetBeaconRewardRootHashKey(height)
 	err := db.Put(key, rootHash[:])
 	if err != nil {
-		return NewRawdbError(StoreRewardStateRootHashError, err)
+		return NewRawdbError(StoreBeaconRewardRootHashError, err)
 	}
 	return nil
 }
 
 func GetRewardStateRootHash(db incdb.Database, height uint64) (common.Hash, error) {
-	key := GetRewardStateRootHashKey(height)
+	key := GetBeaconRewardRootHashKey(height)
 	res, err := db.Get(key)
 	if err != nil {
-		return common.Hash{}, NewRawdbError(GetRewardStateRootHashError, err)
+		return common.Hash{}, NewRawdbError(GetBeaconRewardRootHashError, err)
 	}
 	return common.BytesToHash(res), nil
 }
 
 func StoreFeatureStateRootHash(db incdb.Database, height uint64, rootHash common.Hash) error {
-	key := GetFeatureStateRootHashKey(height)
+	key := GetBeaconFeatureRootHashKey(height)
 	err := db.Put(key, rootHash[:])
 	if err != nil {
-		return NewRawdbError(StoreFeatureStateRootHashError, err)
+		return NewRawdbError(StoreBeaconFeatureRootHashError, err)
 	}
 	return nil
 }
 
 func GetFeatureStateRootHash(db incdb.Database, height uint64) (common.Hash, error) {
-	key := GetFeatureStateRootHashKey(height)
+	key := GetBeaconFeatureRootHashKey(height)
 	res, err := db.Get(key)
 	if err != nil {
-		return common.Hash{}, NewRawdbError(GetFeatureStateRootHashError, err)
+		return common.Hash{}, NewRawdbError(GetBeaconFeatureRootHashError, err)
 	}
 	return common.BytesToHash(res), nil
 }
 
 func StoreSlashStateRootHash(db incdb.Database, height uint64, rootHash common.Hash) error {
-	key := GetSlashStateRootHashKey(height)
+	key := GetBeaconSlashRootHashKey(height)
 	err := db.Put(key, rootHash[:])
 	if err != nil {
-		return NewRawdbError(StoreSlashStateRootHashError, err)
+		return NewRawdbError(StoreBeaconSlashRootHashError, err)
 	}
 	return nil
 }
 
 func GetSlashStateRootHash(db incdb.Database, height uint64) (common.Hash, error) {
-	key := GetSlashStateRootHashKey(height)
+	key := GetBeaconSlashRootHashKey(height)
 	res, err := db.Get(key)
 	if err != nil {
-		return common.Hash{}, NewRawdbError(GetSlashStateRootHashError, err)
+		return common.Hash{}, NewRawdbError(GetBeaconSlashRootHashError, err)
 	}
 	return common.BytesToHash(res), nil
 }
