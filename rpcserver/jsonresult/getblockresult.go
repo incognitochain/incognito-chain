@@ -5,7 +5,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
-type GetBlocksBeaconResult struct {
+type GetBeaconBlockResult struct {
 	Hash              string      `json:"Hash"`
 	Height            uint64      `json:"Height"`
 	BlockProducer     string      `json:"BlockProducer"`
@@ -22,7 +22,7 @@ type GetBlocksBeaconResult struct {
 	ShardStates       interface{} `json:"ShardStates"`
 }
 
-type GetBlockResult struct {
+type GetShardBlockResult struct {
 	Hash              string             `json:"Hash"`
 	ShardID           byte               `json:"ShardID"`
 	Height            uint64             `json:"Height"`
@@ -56,8 +56,8 @@ type GetBlockTxResult struct {
 	HexData  string `json:"HexData"`
 }
 
-func NewGetBlocksBeaconResult(block *blockchain.BeaconBlock, size uint64, nextBlockHash string) *GetBlocksBeaconResult {
-	getBlockResult := &GetBlocksBeaconResult{}
+func NewGetBlocksBeaconResult(block *blockchain.BeaconBlock, size uint64, nextBlockHash string) *GetBeaconBlockResult {
+	getBlockResult := &GetBeaconBlockResult{}
 	getBlockResult.Version = block.Header.Version
 	getBlockResult.Hash = block.Hash().String()
 	getBlockResult.Height = block.Header.Height
@@ -75,8 +75,8 @@ func NewGetBlocksBeaconResult(block *blockchain.BeaconBlock, size uint64, nextBl
 	return getBlockResult
 }
 
-func NewGetBlockResult(block *blockchain.ShardBlock, size uint64, nextBlockHash string) *GetBlockResult {
-	getBlockResult := &GetBlockResult{}
+func NewGetBlockResult(block *blockchain.ShardBlock, size uint64, nextBlockHash string) *GetShardBlockResult {
+	getBlockResult := &GetShardBlockResult{}
 	getBlockResult.BlockProducer = block.Header.Producer
 	getBlockResult.ValidationData = block.ValidationData
 	getBlockResult.Hash = block.Hash().String()

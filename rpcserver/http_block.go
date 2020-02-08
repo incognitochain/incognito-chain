@@ -159,7 +159,7 @@ func (httpServer *HttpServer) handleRetrieveBeaconBlockByHeight(params interface
 		if !ok {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("hashString is invalid"))
 		}
-		result, err := httpServer.blockService.RetrieveBeaconBlockByHeigh(uint64(beaconHeight))
+		result, err := httpServer.blockService.RetrieveBeaconBlockByHeight(uint64(beaconHeight))
 		Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", result, err)
 		if err != nil {
 			return result, err

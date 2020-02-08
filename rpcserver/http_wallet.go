@@ -298,88 +298,23 @@ func (httpServer *HttpServer) handleSetTxFee(params interface{}, closeChan <-cha
 }
 
 func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	listPrivacyToken, listPrivacyTokenCrossShard, err := httpServer.blockService.ListPrivacyCustomTokenCached()
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-
+	//listPrivacyToken, listPrivacyTokenCrossShard, err := httpServer.blockService.ListPrivacyCustomTokenCached()
+	//if err != nil {
+	//	return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	//}
 	arrayParams := common.InterfaceSlice(params)
-	getCountTxs := false
-	if len(arrayParams) == 1 {
-		getCountTxs = true
+	tempShardID := arrayParams[0].(float64)
+	shardID := byte(tempShardID)
+	listPrivacyToken, err := httpServer.blockService.ListPrivacyCustomToken(shardID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
 	}
-
 	result := jsonresult.ListCustomToken{ListCustomToken: []jsonresult.CustomToken{}}
-	tokenIDs := make(map[common.Hash]interface{})
-	for tokenID, token := range listPrivacyToken {
-		item := jsonresult.NewPrivacyToken(token)
-		if item.Name == "" {
-			txs, _, err := httpServer.txService.PrivacyCustomTokenDetail(tokenID.String())
-			if err != nil {
-				Logger.log.Error(err)
-			} else {
-				if len(txs) > 1 {
-					for _, initTx := range txs {
-						var err2 *rpcservice.RPCError
-						tx, err2 := httpServer.txService.GetTransactionByHash(initTx.String())
-						if err2 != nil {
-							Logger.log.Error(err)
-						} else {
-							if tx.PrivacyCustomTokenName != "" {
-								item.Name = tx.PrivacyCustomTokenName
-								item.Symbol = tx.PrivacyCustomTokenSymbol
-								break
-							}
-						}
-					}
-				}
-			}
-		}
-		tokenIDs[tokenID] = 0
+	for _, tokenState := range listPrivacyToken {
+		item := jsonresult.NewPrivacyToken(tokenState)
 		result.ListCustomToken = append(result.ListCustomToken, *item)
 	}
-	for tokenID, token := range listPrivacyTokenCrossShard {
-		if _, ok := tokenIDs[tokenID]; ok {
-			continue
-		}
-		item := jsonresult.NewPrivacyForCrossShard(token)
-		if item.Name == "" {
-			txs, _, err := httpServer.txService.PrivacyCustomTokenDetail(item.ID)
-			if err != nil {
-				Logger.log.Error(err)
-			} else {
-				if len(txs) > 1 {
-					initTx := txs[len(txs)-1]
-					var err2 *rpcservice.RPCError
-					tx, err2 := httpServer.txService.GetTransactionByHash(initTx.String())
-					if err2 != nil {
-						Logger.log.Error(err)
-					} else {
-						metaData := make(map[string]interface{})
-						err1 := json.Unmarshal([]byte(tx.Metadata), &metaData)
-						if err1 != nil {
-							Logger.log.Error(err)
-						} else {
-							var ok bool
-							item.Name, ok = metaData["TokenName"].(string)
-							if !ok {
-								Logger.log.Error("Not found token name")
-							}
-							item.Symbol, ok = metaData["TokenSymbol"].(string)
-							if !ok {
-								Logger.log.Error("Not found token symbol")
-							} else {
-								item.Symbol = item.Name
-							}
-						}
-					}
-				}
-			}
-		}
-		result.ListCustomToken = append(result.ListCustomToken, *item)
-	}
-
-	// overwrite amounts with bridge tokens'
+	// overwrite amounts with bridge tokens
 	allBridgeTokensBytes, err := httpServer.blockService.GetAllBridgeTokens()
 	if err != nil {
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
@@ -389,15 +324,10 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 	if err != nil {
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
-
-	for idx, token := range result.ListCustomToken {
-		if getCountTxs {
-			txs, _, _ := httpServer.txService.PrivacyCustomTokenDetail(token.ID)
-			result.ListCustomToken[idx].CountTxs = len(txs)
-		}
+	for index, _ := range result.ListCustomToken {
 		for _, bridgeToken := range allBridgeTokens {
-			if result.ListCustomToken[idx].ID == bridgeToken.TokenID.String() {
-				result.ListCustomToken[idx].Amount = bridgeToken.Amount
+			if result.ListCustomToken[index].ID == bridgeToken.TokenID.String() {
+				result.ListCustomToken[index].Amount = bridgeToken.Amount
 				break
 			}
 		}

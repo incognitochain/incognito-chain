@@ -797,6 +797,9 @@ func (blockchain *BlockChain) processStoreShardBlockV2(shardBlock *ShardBlock, c
 	if err := rawdbv2.StoreShardCommitteeRewardRootHash(blockchain.GetDatabase(), shardID, blockHeight, rewardRootHash); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
+	if err := rawdbv2.StoreShardSlashRootHash(blockchain.GetDatabase(), shardID, blockHeight, slashRootHash); err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
+	}
 	//statedb===========================END
 	if err := rawdbv2.StoreShardBlock(blockchain.GetDatabase(), shardID, blockHeight, blockHash, shardBlock); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)

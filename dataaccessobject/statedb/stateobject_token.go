@@ -14,8 +14,17 @@ type TokenState struct {
 	tokenType      int    // action type
 	mintable       bool   // default false
 	amount         uint64 // init amount
+	info           []byte
 	initTx         common.Hash
 	txs            []common.Hash
+}
+
+func (t *TokenState) Info() []byte {
+	return t.info
+}
+
+func (t *TokenState) SetInfo(info []byte) {
+	t.info = info
 }
 
 func (t TokenState) TokenID() common.Hash {
@@ -94,6 +103,7 @@ func (t TokenState) MarshalJSON() ([]byte, error) {
 		TokenType      int
 		Mintable       bool
 		Amount         uint64
+		Info           []byte
 		InitTx         common.Hash
 		Txs            []common.Hash
 	}{
@@ -103,6 +113,7 @@ func (t TokenState) MarshalJSON() ([]byte, error) {
 		TokenType:      t.tokenType,
 		Mintable:       t.mintable,
 		Amount:         t.amount,
+		Info:           t.info,
 		InitTx:         t.initTx,
 		Txs:            t.txs,
 	})
@@ -120,6 +131,7 @@ func (t *TokenState) UnmarshalJSON(data []byte) error {
 		TokenType      int
 		Mintable       bool
 		Amount         uint64
+		Info           []byte
 		InitTx         common.Hash
 		Txs            []common.Hash
 	}{}
@@ -133,6 +145,7 @@ func (t *TokenState) UnmarshalJSON(data []byte) error {
 	t.tokenType = temp.TokenType
 	t.mintable = temp.Mintable
 	t.amount = temp.Amount
+	t.info = temp.Info
 	t.initTx = temp.InitTx
 	t.txs = temp.Txs
 	return nil
@@ -146,8 +159,8 @@ func NewTokenStateForInitToken(tokenID common.Hash, initTx common.Hash) *TokenSt
 	return &TokenState{tokenID: tokenID, initTx: initTx}
 }
 
-func NewTokenStateWithValue(tokenID common.Hash, propertyName string, propertySymbol string, tokenType int, mintable bool, amount uint64, initTx common.Hash, txs []common.Hash) *TokenState {
-	return &TokenState{tokenID: tokenID, propertyName: propertyName, propertySymbol: propertySymbol, tokenType: tokenType, mintable: mintable, amount: amount, initTx: initTx, txs: txs}
+func NewTokenStateWithValue(tokenID common.Hash, propertyName string, propertySymbol string, tokenType int, mintable bool, amount uint64, info []byte, initTx common.Hash, txs []common.Hash) *TokenState {
+	return &TokenState{tokenID: tokenID, propertyName: propertyName, propertySymbol: propertySymbol, tokenType: tokenType, mintable: mintable, amount: amount, info: info, initTx: initTx, txs: txs}
 }
 
 type TokenObject struct {

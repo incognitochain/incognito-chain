@@ -6,9 +6,9 @@ import (
 	"strings"
 )
 
-func StorePrivacyToken(stateDB *StateDB, tokenID common.Hash, name string, symbol string, tokenType int, mintable bool, amount uint64, txHash common.Hash) error {
+func StorePrivacyToken(stateDB *StateDB, tokenID common.Hash, name string, symbol string, tokenType int, mintable bool, amount uint64, info []byte, txHash common.Hash) error {
 	key := GenerateTokenObjectKey(tokenID)
-	value := NewTokenStateWithValue(tokenID, name, symbol, tokenType, mintable, amount, txHash, []common.Hash{})
+	value := NewTokenStateWithValue(tokenID, name, symbol, tokenType, mintable, amount, info, txHash, []common.Hash{})
 	err := stateDB.SetStateObject(TokenObjectType, key, value)
 	if err != nil {
 		return NewStatedbError(StorePrivacyTokenError, err)

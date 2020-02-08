@@ -304,7 +304,7 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 		tokenID, err = common.Hash{}.NewHashFromStr(tokenIDTemp)
 		if err != nil {
 			Logger.log.Debugf("handleRandomCommitments result: %+v, err: %+v", nil, err)
-			return nil, rpcservice.NewRPCError(rpcservice.ListCustomTokenNotFoundError, err)
+			return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
 		}
 	}
 
@@ -337,7 +337,7 @@ func (httpServer *HttpServer) handleListSerialNumbers(params interface{}, closeC
 			tokenID, err = (common.Hash{}).NewHashFromStr(tokenIDTemp)
 			if err != nil {
 				Logger.log.Debugf("handleHasSerialNumbers result: %+v, err: %+v", err)
-				return nil, rpcservice.NewRPCError(rpcservice.ListCustomTokenNotFoundError, err)
+				return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
 			}
 		}
 	}
@@ -351,7 +351,7 @@ func (httpServer *HttpServer) handleListSerialNumbers(params interface{}, closeC
 
 	result, err := httpServer.databaseService.ListSerialNumbers(*tokenID, byte(shardID))
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.ListCustomTokenNotFoundError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
 	}
 	return result, nil
 }
@@ -375,14 +375,14 @@ func (httpServer *HttpServer) handleListSNDerivator(params interface{}, closeCha
 			tokenID, err = (common.Hash{}).NewHashFromStr(tokenIDTemp)
 			if err != nil {
 				Logger.log.Debugf("handleListSNDerivator result: %+v, err: %+v", err)
-				return nil, rpcservice.NewRPCError(rpcservice.ListCustomTokenNotFoundError, err)
+				return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
 			}
 		}
 	}
 
 	result, err := httpServer.databaseService.ListSNDerivator(*tokenID)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.ListCustomTokenNotFoundError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
 	}
 	return result, nil
 }
@@ -406,7 +406,7 @@ func (httpServer *HttpServer) handleListCommitments(params interface{}, closeCha
 			tokenID, err = (common.Hash{}).NewHashFromStr(tokenIDTemp)
 			if err != nil {
 				Logger.log.Debugf("handleListCommitments result: %+v, err: %+v", err)
-				return nil, rpcservice.NewRPCError(rpcservice.ListCustomTokenNotFoundError, err)
+				return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
 			}
 		}
 	}
@@ -420,7 +420,7 @@ func (httpServer *HttpServer) handleListCommitments(params interface{}, closeCha
 
 	result, err := httpServer.databaseService.ListCommitmentsV2(*tokenID, byte(shardID), httpServer.config.BlockChain.GetTransactionStateDB(byte(shardID)))
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.ListCustomTokenNotFoundError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
 	}
 	return result, nil
 }
@@ -444,7 +444,7 @@ func (httpServer *HttpServer) handleListCommitmentIndices(params interface{}, cl
 			tokenID, err = (common.Hash{}).NewHashFromStr(tokenIDTemp)
 			if err != nil {
 				Logger.log.Debugf("handleListCommitmentIndices result: %+v, err: %+v", err)
-				return nil, rpcservice.NewRPCError(rpcservice.ListCustomTokenNotFoundError, err)
+				return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
 			}
 		}
 	}
@@ -458,7 +458,7 @@ func (httpServer *HttpServer) handleListCommitmentIndices(params interface{}, cl
 
 	result, err := httpServer.databaseService.ListCommitmentIndicesV2(*tokenID, shardID, httpServer.config.BlockChain.GetTransactionStateDB(byte(shardID)))
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.ListCustomTokenNotFoundError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
 	}
 	return result, nil
 }
@@ -500,14 +500,14 @@ func (httpServer *HttpServer) handleHasSerialNumbers(params interface{}, closeCh
 		tokenID, err = (common.Hash{}).NewHashFromStr(tokenIDTemp)
 		if err != nil {
 			Logger.log.Debugf("handleHasSerialNumbers result: %+v, err: %+v", err)
-			return nil, rpcservice.NewRPCError(rpcservice.ListCustomTokenNotFoundError, err)
+			return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
 		}
 	}
 
 	result, err := httpServer.databaseService.HasSerialNumbers(paymentAddressStr, serialNumbersStr, *tokenID)
 	if err != nil {
 		Logger.log.Debugf("handleHasSerialNumbers result: %+v, err: %+v", err)
-		return nil, rpcservice.NewRPCError(rpcservice.ListCustomTokenNotFoundError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
 	}
 
 	Logger.log.Debugf("handleHasSerialNumbers result: %+v", result)
