@@ -274,7 +274,7 @@ func (httpServer *HttpServer) handleCheckETHHashIssued(params interface{}, close
 }
 
 func (httpServer *HttpServer) handleGetAllBridgeTokens(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	allBridgeTokensBytes, err := httpServer.databaseService.GetAllBridgeTokens()
+	allBridgeTokensBytes, err := httpServer.blockService.GetAllBridgeTokens()
 	if err != nil {
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -308,7 +308,7 @@ func (httpServer *HttpServer) handleGetBridgeReqWithStatus(params interface{}, c
 	}
 	data := arrayParams[0].(map[string]interface{})
 
-	status, err := httpServer.databaseService.GetBridgeReqWithStatus(data["TxReqID"].(string))
+	status, err := httpServer.blockService.GetBridgeReqWithStatus(data["TxReqID"].(string))
 	if err != nil {
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}

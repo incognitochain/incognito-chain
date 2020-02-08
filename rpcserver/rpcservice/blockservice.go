@@ -560,10 +560,6 @@ func (blockService BlockService) GetBeaconBlockByHeight(height uint64) (*blockch
 	return blockService.BlockChain.GetBeaconBlockByHeight(height)
 }
 
-func (blockService BlockService) GetShardBlockByHeight(height uint64, shardID byte) (*blockchain.ShardBlock, error) {
-	return blockService.BlockChain.GetShardBlockByHeight(height, shardID)
-}
-
 func (blockService BlockService) IsBeaconBestStateNil() bool {
 	return blockService.BlockChain.BestState == nil || blockService.BlockChain.BestState.Beacon == nil
 }
@@ -684,7 +680,22 @@ func (blockService BlockService) ListPrivacyCustomTokenCached() (map[common.Hash
 }
 
 func (blockService BlockService) GetAllCoinID() ([]common.Hash, error) {
-	return blockService.BlockChain.GetAllCoinID()
+	m := make(map[common.Hash]struct{})
+	tokenIDs := []common.Hash{}
+	for i := 0; i < blockService.BlockChain.BestState.Beacon.ActiveShards; i++ {
+		shardID := byte(i)
+		tempTokenIDs, err := blockService.BlockChain.GetAllCoinIDV2(shardID)
+		if err != nil {
+			return []common.Hash{}, err
+		}
+		for _, tokenID := range tempTokenIDs {
+			m[tokenID] = struct{}{}
+		}
+	}
+	for k, _ := range m {
+		tokenIDs = append(tokenIDs, k)
+	}
+	return tokenIDs, nil
 }
 
 func (blockService BlockService) GetMinerRewardFromMiningKey(incPublicKey []byte) (map[string]uint64, error) {
@@ -835,35 +846,6 @@ func (blockService BlockService) CanPubkeyStake(publicKey string) (bool, error) 
 	return canStake, nil
 }
 
-func (blockService BlockService) GetBlockHashByHeight(shardID int, height uint64) (string, error) {
-	var hash *common.Hash
-	var err error
-	var beaconBlock *blockchain.BeaconBlock
-	var shardBlock *blockchain.ShardBlock
-
-	isGetBeacon := shardID == -1
-
-	if isGetBeacon {
-		beaconBlock, err = blockService.GetBeaconBlockByHeight(height)
-	} else {
-		shardBlock, err = blockService.GetShardBlockByHeight(height, byte(shardID))
-	}
-
-	if err != nil {
-		Logger.log.Debugf("handleGetBlockHash result: %+v", nil)
-		return "", err
-	}
-
-	if isGetBeacon {
-		hash = beaconBlock.Hash()
-	} else {
-		hash = shardBlock.Hash()
-	}
-
-	result := hash.String()
-	return result, nil
-}
-
 func (blockService BlockService) GetBlockHashByHeightV2(shardID int, height uint64) ([]common.Hash, error) {
 	var hash *common.Hash
 	var err error
@@ -895,8 +877,7 @@ func (blockService BlockService) GetBlockHashByHeightV2(shardID int, height uint
 	return res, nil
 }
 
-func (blockService BlockService) GetBlockHeader(getBy string, blockParam string, shardID float64) (
-	*blockchain.ShardHeader, int, string, *RPCError) {
+func (blockService BlockService) GetShardBlockHeader(getBy string, blockParam string, shardID float64) ([]*blockchain.ShardHeader, int, []string, *RPCError) {
 	switch getBy {
 	case "blockhash":
 		hash := common.Hash{}
@@ -904,49 +885,60 @@ func (blockService BlockService) GetBlockHeader(getBy string, blockParam string,
 		log.Printf("%+v", hash)
 		if err != nil {
 			Logger.log.Debugf("handleGetBlockHeader result: %+v", nil)
-			return nil, 0, "", NewRPCError(RPCInvalidParamsError, errors.New("invalid blockhash format"))
+			return nil, 0, []string{}, NewRPCError(RPCInvalidParamsError, errors.New("invalid blockhash format"))
 		}
-		// block, err := httpServer.config.BlockChain.GetBlockByHash(&bhash)
-		block, _, err := blockService.BlockChain.GetShardBlockByHash(hash)
+		shardBlock, _, err := blockService.BlockChain.GetShardBlockByHashV2(hash)
 		if err != nil {
 			Logger.log.Debugf("handleGetBlockHeader result: %+v", nil)
-			return nil, 0, "", NewRPCError(GetShardBlockByHashError, errors.New("blockParam not exist"))
+			return nil, 0, []string{}, NewRPCError(GetShardBlockByHashError, errors.New("blockParam not exist"))
 		}
-
-		blockNum := int(block.Header.Height) + 1
-
-		return &block.Header, blockNum, hash.String(), nil
+		blockNumber := int(shardBlock.Header.Height) + 1
+		return []*blockchain.ShardHeader{&shardBlock.Header}, blockNumber, []string{hash.String()}, nil
 	case "blocknum":
-		blockNum, err := strconv.Atoi(blockParam)
+		blockNumber, err := strconv.Atoi(blockParam)
 		if err != nil {
 			Logger.log.Debugf("handleGetBlockHeader result: %+v", nil)
-			return nil, 0, "", NewRPCError(RPCInvalidParamsError, errors.New("invalid blocknum format"))
+			return nil, 0, []string{}, NewRPCError(RPCInvalidParamsError, errors.New("invalid blocknum format"))
 		}
-
 		shard, err := blockService.GetShardBestStateByShardID(byte(shardID))
 		if err != nil {
-			return nil, 0, "", NewRPCError(GetClonedShardBestStateError, err)
+			return nil, 0, []string{}, NewRPCError(GetClonedShardBestStateError, err)
 		}
-
-		var blockHeader = blockchain.ShardHeader{}
-		var blockHash = ""
-		if uint64(blockNum-1) > shard.BestBlock.Header.Height || blockNum <= 0 {
+		if uint64(blockNumber-1) > shard.BestBlock.Header.Height || blockNumber <= 0 {
 			Logger.log.Debugf("handleGetBlockHeader result: %+v", nil)
-			return nil, 0, "", NewRPCError(GetShardBestBlockError, errors.New("Block not exist"))
+			return nil, 0, []string{}, NewRPCError(GetShardBestBlockError, errors.New("Block not exist"))
 		}
-		block, _ := blockService.GetShardBlockByHeight(uint64(blockNum-1), uint8(shardID))
-		if block != nil {
-			blockHeader = block.Header
-			blockHash = block.Hash().String()
+		shardBlocks, _ := blockService.BlockChain.GetShardBlockByHeightV2(uint64(blockNumber-1), uint8(shardID))
+		shardHeaders := []*blockchain.ShardHeader{}
+		hashes := []string{}
+		for _, shardBlock := range shardBlocks {
+			shardHeaders = append(shardHeaders, &shardBlock.Header)
+			hashes = append(hashes, shardBlock.Hash().String())
 		}
-
-		return &blockHeader, blockNum, blockHash, nil
+		return shardHeaders, blockNumber, hashes, nil
 	default:
 		Logger.log.Debugf("handleGetBlockHeader result: %+v", nil)
-		return nil, 0, "", NewRPCError(RPCInvalidParamsError, errors.New("wrong request format"))
+		return nil, 0, []string{}, NewRPCError(RPCInvalidParamsError, errors.New("wrong request format"))
 	}
 }
 
 func (blockService BlockService) GetBurningAddress(beaconHeight uint64) string {
 	return blockService.BlockChain.GetBurningAddress(beaconHeight)
+}
+
+//============================= Bridge ===============================
+func (blockService BlockService) GetBridgeReqWithStatus(txID string) (byte, error) {
+	txIDHash, err := common.Hash{}.NewHashFromStr(txID)
+	if err != nil {
+		return byte(0), err
+	}
+	bridgeStateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	status, err := statedb.GetBridgeReqWithStatus(bridgeStateDB, *txIDHash)
+	return status, err
+}
+
+func (blockService BlockService) GetAllBridgeTokens() ([]byte, error) {
+	bridgeStateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	allBridgeTokensBytes, err := statedb.GetAllBridgeTokens(bridgeStateDB)
+	return allBridgeTokensBytes, err
 }
