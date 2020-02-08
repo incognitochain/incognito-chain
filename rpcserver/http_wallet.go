@@ -380,7 +380,7 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 	}
 
 	// overwrite amounts with bridge tokens'
-	allBridgeTokensBytes, err := httpServer.databaseService.GetAllBridgeTokens()
+	allBridgeTokensBytes, err := httpServer.blockService.GetAllBridgeTokens()
 	if err != nil {
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
