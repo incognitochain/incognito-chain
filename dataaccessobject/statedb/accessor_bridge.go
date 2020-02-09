@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"log"
 )
@@ -144,6 +145,7 @@ func UpdateBridgeTokenInfo(stateDB *StateDB, incTokenID common.Hash, externalTok
 		} else {
 			bridgeTokenInfoState.SetAmount(updatingAmount)
 		}
+		dataaccessobject.Logger.Log.Infof("Store Privacy Bridge Token %+v", incTokenID)
 	} else {
 		if updateType == BridgePlusOperator {
 			bridgeTokenInfoState.SetAmount(bridgeTokenInfoState.Amount() + updatingAmount)
