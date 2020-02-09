@@ -3,10 +3,12 @@ package statedb
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject"
 	"strings"
 )
 
 func StorePrivacyToken(stateDB *StateDB, tokenID common.Hash, name string, symbol string, tokenType int, mintable bool, amount uint64, info []byte, txHash common.Hash) error {
+	dataaccessobject.Logger.Log.Infof("Store Privacy Token %+v", tokenID)
 	key := GenerateTokenObjectKey(tokenID)
 	value := NewTokenStateWithValue(tokenID, name, symbol, tokenType, mintable, amount, info, txHash, []common.Hash{})
 	err := stateDB.SetStateObject(TokenObjectType, key, value)
