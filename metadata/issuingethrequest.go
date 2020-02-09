@@ -261,7 +261,7 @@ func GetETHHeader(
 		return nil, err
 	}
 	if getBlockByNumberRes.RPCError != nil {
-		Logger.log.Debugf("WARNING: an error occured during calling eth_getBlockByHash: %s", getBlockByNumberRes.RPCError.Message)
+		Logger.log.Infof("WARNING: an error occured during calling eth_getBlockByHash: %s", getBlockByNumberRes.RPCError.Message)
 		return nil, nil
 	}
 	return getBlockByNumberRes.Result, nil
