@@ -141,16 +141,18 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 	stakeBeaconAutoStaking := []string{}
 	stopAutoStaking := []string{}
 	// @Notice: move build action from metadata into one loop
-	instructions, err = buildActionsFromMetadata(transactions, bc, shardID)
-	if err != nil {
-		return nil, err
-	}
+	//instructions, err = buildActionsFromMetadata(transactions, bc, shardID)
+	//if err != nil {
+	//	return nil, err
+	//}
 	for _, tx := range transactions {
 		metadataValue := tx.GetMetadata()
 		if metadataValue != nil {
 			actionPairs, err := metadataValue.BuildReqActions(tx, bc, shardID)
 			if err == nil {
 				instructions = append(instructions, actionPairs...)
+			} else {
+				Logger.log.Infof("Build Request Action Error", err)
 			}
 		}
 		switch tx.GetMetadataType() {
