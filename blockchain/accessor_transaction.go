@@ -339,7 +339,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlockV2(shardBlock *Sh
 				Logger.log.Info("Transfer custom token %+v", privacyCustomTokenTx)
 			}
 		}
-		err = statedb.StorePrivacyTokenTx(transactionStateRoot, privacyCustomTokenTx.TxPrivacyTokenData.PropertyID, *privacyCustomTokenTx.Hash())
+		err = statedb.StorePrivacyTokenTx(transactionStateRoot, privacyCustomTokenTx.TxPrivacyTokenData.PropertyID, *privacyCustomTokenTx.Hash(), privacyCustomTokenTx.TxPrivacyTokenData.Mintable)
 		if err != nil {
 			return err
 		}
