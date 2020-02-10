@@ -13,7 +13,7 @@ type ShardPeerState struct {
 }
 type CrossShardPeerState struct {
 	PeerID string
-	Height uint64
+	Height map[byte]uint64 //fromShardID -> hieght
 }
 
 type ShardSyncProcess struct {
@@ -33,7 +33,6 @@ func NewShardSyncProcess(shardID byte, server Server, chain Chain) *ShardSyncPro
 		Chain:   chain,
 	}
 
-	go s.broadcastPeerStateProcess()
 	go s.syncShardProcess()
 	go s.syncCrossShardPoolProcess()
 	return s
@@ -45,11 +44,6 @@ func (s *ShardSyncProcess) Start() {
 
 func (s *ShardSyncProcess) Stop() {
 	s.Status = STOP_SYNC
-}
-
-func (s *ShardSyncProcess) broadcastPeerStateProcess() {
-	defer time.AfterFunc(time.Millisecond*500, s.broadcastPeerStateProcess)
-	//TODO: create peerstate info and broadcast
 }
 
 func (s *ShardSyncProcess) syncShardProcess() {
@@ -89,24 +83,26 @@ func (s *ShardSyncProcess) syncCrossShardPoolProcess() {
 		return
 	}
 	for _, pState := range s.CrossShardPeerState {
-		if pState.Height <= s.Server.GetCrossShardPool(s.ShardID).GetLatestFinalHeight() {
-			continue
-		}
-
-		ch, stop := s.Server.RequestCrossShardBlockPool(pState.PeerID, int(s.ShardID), s.Server.GetCrossShardPool(s.ShardID).GetLatestFinalHeight())
-		for {
-			shouldBreak := false
-			select {
-			case block := <-ch:
-				if err := s.Server.GetCrossShardPool(s.ShardID).AddBlock(block); err != nil {
-					shouldBreak = true
+		for fromSID, height := range pState.Height {
+			if height <= s.Server.GetCrossShardPool(s.ShardID).GetLatestCrossShardFinalHeight(fromSID) {
+				continue
+			}
+			ch, stop := s.Server.RequestCrossShardBlockPool(pState.PeerID, int(s.ShardID), s.Server.GetCrossShardPool(s.ShardID).GetLatestCrossShardFinalHeight(fromSID))
+			for {
+				shouldBreak := false
+				select {
+				case block := <-ch:
+					if err := s.Server.GetCrossShardPool(s.ShardID).AddBlock(block); err != nil {
+						shouldBreak = true
+					}
+				}
+				if shouldBreak {
+					stop <- 1
+					break
 				}
 			}
-			if shouldBreak {
-				stop <- 1
-				break
-			}
 		}
+
 	}
 
 }

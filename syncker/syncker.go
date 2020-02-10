@@ -1,6 +1,9 @@
 package syncker
 
-import "github.com/incognitochain/incognito-chain/incognitokey"
+import (
+	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/wire"
+)
 
 type Server interface {
 	//Request block from "peerID" of shard "fromSID" with param currentFinalHeight and currentBestHash
@@ -20,6 +23,7 @@ type Server interface {
 }
 
 type Pool interface {
+	GetLatestCrossShardFinalHeight(byte) uint64
 	GetLatestFinalHeight() uint64
 	AddBlock(block interface{}) error
 }
@@ -33,7 +37,6 @@ type Chain interface {
 	GetBestView() ViewInterface
 	GetFinalView() ViewInterface
 	InsertBlock(block interface{}) error
-	InsertToPool(block interface{}) error
 }
 
 type PeerStateMsg struct {
@@ -41,11 +44,32 @@ type PeerStateMsg struct {
 }
 
 type Syncker struct {
-	PeerStateCh chan PeerStateMsg
-	UserPk      chan incognitokey.CommitteePublicKey
+	PeerStateCh         chan wire.MessagePeerState
+	UserPk              incognitokey.CommitteePublicKey
+	BeaconPeerState     map[string]BeaconPeerState         //sender -> state
+	ShardPeerState      map[byte]map[string]ShardPeerState //sid -> sender -> state
+	S2BPeerState        map[byte]map[string]ShardPeerState //sid -> sender -> state
+	CrossShardPeerState map[byte]map[string]ShardPeerState //sid -> sender -> state
 }
 
 // Everytime block is created, we update the committee list so that Syncker know if it is in Committee or not
 func UpdateCommittee(chain string, committees []incognitokey.CommitteePublicKey) {
 
+}
+
+func NewSyncker(userPk incognitokey.CommitteePublicKey) *Syncker {
+	s := &Syncker{
+		PeerStateCh: make(chan wire.MessagePeerState),
+		UserPk:      userPk,
+	}
+	go func() {
+		for {
+			select {
+			case PeerState := <-s.PeerStateCh:
+
+			}
+		}
+
+	}()
+	return s
 }
