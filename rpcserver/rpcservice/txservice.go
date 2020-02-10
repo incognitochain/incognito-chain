@@ -72,11 +72,11 @@ func (txService TxService) HasSerialNumbers(paymentAddressStr string, serialNumb
 	for _, item := range serialNumbersStr {
 		itemStr, okParam := item.(string)
 		if !okParam {
-			return nil, errors.New("Invalid serial number param")
+			return nil, fmt.Errorf("Invalid serial number param, %+v", item)
 		}
 		serialNumber, _, err := base58.Base58Check{}.Decode(itemStr)
 		if err != nil {
-			return nil, errors.New("Invalid serial number param")
+			return nil, fmt.Errorf("Decode serial number failed, %+v", itemStr)
 		}
 		transactionStateDB := txService.BlockChain.BestState.Shard[shardIDSender].GetCopiedTransactionStateDB()
 		ok, err := statedb.HasSerialNumber(transactionStateDB, tokenID, serialNumber, shardIDSender)

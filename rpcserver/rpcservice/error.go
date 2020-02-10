@@ -51,6 +51,8 @@ const (
 	GetPDEStateError
 	ListCommitteeRewardError
 	GetRewardAmountError
+	ListOutputCoinsByKeyError
+	ListUnspentOutputCoinsByKeyError
 	// reject tx
 	RejectInvalidTxFeeError
 	RejectInvalidTxSizeError
@@ -111,11 +113,12 @@ var ErrCodeMessage = map[int]struct {
 	GetClonedShardBestStateError:  {-3001, "Get Cloned Shard Best State Error"},
 
 	// tx -4xxx
-	CreateTxDataError:          {-4001, "Can not create tx"},
-	SendTxDataError:            {-4002, "Can not send tx"},
-	Base58ChedkDataOfTxInvalid: {-4003, "Base58Check encode data of tx is invalid, can not decode"},
-	JsonDataOfTxInvalid:        {-4004, "Json string data of tx is invalid, can not unmarshal"},
-
+	CreateTxDataError:                {-4001, "Can not create tx"},
+	SendTxDataError:                  {-4002, "Can not send tx"},
+	Base58ChedkDataOfTxInvalid:       {-4003, "Base58Check encode data of tx is invalid, can not decode"},
+	JsonDataOfTxInvalid:              {-4004, "Json string data of tx is invalid, can not unmarshal"},
+	ListOutputCoinsByKeyError:        {-4005, "List Output Coins By Key Error"},
+	ListUnspentOutputCoinsByKeyError: {-4006, "List Unspent Output Coins By Key Error"},
 	// socket/subcribe -5xxx
 	SubcribeError:   {-5000, "Failed to subcribe"},
 	UnsubcribeError: {-5001, "Failed to unsubcribe"},
