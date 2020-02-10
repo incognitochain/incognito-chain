@@ -13,11 +13,11 @@ type ShardPeerState struct {
 }
 type CrossShardPeerState struct {
 	PeerID string
-	Height string
+	Height uint64
 }
 
 type ShardSyncProcess struct {
-	ShardID             int
+	ShardID             byte
 	Status              string //stop, running
 	ShardPeerState      []ShardPeerState
 	CrossShardPeerState []CrossShardPeerState
@@ -27,7 +27,7 @@ type ShardSyncProcess struct {
 
 func NewShardSyncProcess(shardID byte, server Server, chain Chain) *ShardSyncProcess {
 	s := &ShardSyncProcess{
-		ShardID: int(shardID),
+		ShardID: shardID,
 		Status:  STOP_SYNC,
 		Server:  server,
 		Chain:   chain,
@@ -35,7 +35,7 @@ func NewShardSyncProcess(shardID byte, server Server, chain Chain) *ShardSyncPro
 
 	go s.broadcastPeerStateProcess()
 	go s.syncShardProcess()
-	go s.syncCrossShardProcess()
+	go s.syncCrossShardPoolProcess()
 	return s
 }
 
@@ -58,26 +58,55 @@ func (s *ShardSyncProcess) syncShardProcess() {
 		return
 	}
 	for _, pState := range s.ShardPeerState {
-		if pState.BestViewHeight < s.Chain.GetShardBestView().GetHeight() {
+		if pState.BestViewHeight < s.Chain.GetBestView().GetHeight() {
 			continue
 		}
-		if pState.BestViewHeight == s.Chain.GetShardBestView().GetHeight() && pState.BestViewHash == s.Chain.GetShardBestView().GetHash() {
+		if pState.BestViewHeight == s.Chain.GetBestView().GetHeight() && pState.BestViewHash == s.Chain.GetBestView().GetHash() {
 			continue
 		}
 
-		ch := s.Server.RequestBlock(pState.PeerID, s.ShardID, s.Chain.GetShardFinalView().GetHeight(), s.Chain.GetShardBestView().GetHash(), -1)
-		select {
-		case block := <-ch:
-			s.Chain.InsertBlock(block)
+		ch, stop := s.Server.RequestBlock(pState.PeerID, int(s.ShardID), s.Chain.GetFinalView().GetHeight(), s.Chain.GetBestView().GetHash())
+		for {
+			shouldBreak := false
+			select {
+			case block := <-ch:
+				if err := s.Chain.InsertBlock(block); err != nil {
+					shouldBreak = true
+				}
+			}
+			if shouldBreak {
+				stop <- 1
+				break
+			}
 		}
+
 	}
 }
 
-func (s *ShardSyncProcess) syncCrossShardProcess() {
-	defer time.AfterFunc(time.Millisecond*500, s.syncCrossShardProcess)
+func (s *ShardSyncProcess) syncCrossShardPoolProcess() {
+	defer time.AfterFunc(time.Millisecond*500, s.syncCrossShardPoolProcess)
 	if s.Status != RUNNING_SYNC {
 		return
 	}
-	//TODO: Sync Cross Shard Block from PeerState
+	for _, pState := range s.CrossShardPeerState {
+		if pState.Height <= s.Server.GetCrossShardPool(s.ShardID).GetLatestFinalHeight() {
+			continue
+		}
+
+		ch, stop := s.Server.RequestCrossShardBlockPool(pState.PeerID, int(s.ShardID), s.Server.GetCrossShardPool(s.ShardID).GetLatestFinalHeight())
+		for {
+			shouldBreak := false
+			select {
+			case block := <-ch:
+				if err := s.Server.GetCrossShardPool(s.ShardID).AddBlock(block); err != nil {
+					shouldBreak = true
+				}
+			}
+			if shouldBreak {
+				stop <- 1
+				break
+			}
+		}
+	}
 
 }
