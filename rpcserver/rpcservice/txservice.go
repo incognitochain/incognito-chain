@@ -389,6 +389,10 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 				{
 					return nil, nil, byte(0), NewRPCError(RejectInvalidTxError, mempoolErr)
 				}
+			case mempool.ErrCodeMessage[mempool.RejectReplacementTxError].Code:
+				{
+					return nil, nil, byte(0), NewRPCError(RejectReplacementTx, mempoolErr)
+				}
 			case mempool.ErrCodeMessage[mempool.RejectDoubleSpendWithBlockchainTx].Code, mempool.ErrCodeMessage[mempool.RejectDoubleSpendWithMempoolTx].Code:
 				{
 					return nil, nil, byte(0), NewRPCError(RejectDoubleSpendTxError, mempoolErr)
