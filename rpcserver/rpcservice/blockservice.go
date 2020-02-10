@@ -543,7 +543,7 @@ func (blockService BlockService) CheckHashValue(hashStr string) (isTransaction b
 			isBeaconBlock = true
 			return
 		} else {
-			_, _, _, _, err = blockService.BlockChain.GetTransactionByHash(*hash)
+			_, _, _, _, err = blockService.BlockChain.GetTransactionByHashV2(*hash)
 			if err == nil {
 				isTransaction = true
 			} else {
