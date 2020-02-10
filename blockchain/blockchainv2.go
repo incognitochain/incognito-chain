@@ -248,3 +248,15 @@ func (blockchain *BlockChain) GetTransactionByHashV2(txHash common.Hash) (byte, 
 	}
 	return shardBlock.Header.ShardID, blockHash, index, shardBlock.Body.Transactions[index], nil
 }
+
+// GetTransactionHashByReceiver - return list tx id which receiver get from any sender
+// this feature only apply on full node, because full node get all data from all shard
+func (blockchain *BlockChain) GetTransactionHashByReceiverV2(keySet *incognitokey.KeySet) (map[byte][]common.Hash, error) {
+	result := make(map[byte][]common.Hash)
+	var err error
+	result, err = rawdbv2.GetTxByPublicKey(blockchain.config.DataBase, keySet.PaymentAddress.Pk)
+	if err != nil {
+		return nil, NewBlockChainError(UnExpectedError, err)
+	}
+	return result, nil
+}
