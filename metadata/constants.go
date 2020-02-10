@@ -40,6 +40,9 @@ const (
 	PDEWithdrawalRequestMeta    = 93
 	PDEWithdrawalResponseMeta   = 94
 	PDEContributionResponseMeta = 95
+
+	// portal
+	PortalCustodianDepositMeta = 100
 )
 
 var minerCreatedMetaTypes = []int{
