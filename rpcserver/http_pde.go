@@ -592,7 +592,7 @@ func (httpServer *HttpServer) handleGetPDEContributionStatusV2(params interface{
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload is invalid"))
 	}
-	contributionStatus, err := httpServer.databaseService.GetPDEContributionStatus(rawdb.PDEContributionStatusPrefix, []byte(contributionPairID))
+	contributionStatus, err := httpServer.blockService.GetPDEContributionStatus(rawdb.PDEContributionStatusPrefix, []byte(contributionPairID))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
