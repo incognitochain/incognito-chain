@@ -167,6 +167,9 @@ var HttpHandler = map[string]httpHandler{
 	extractPDEInstsFromBeaconBlock:        (*HttpServer).handleExtractPDEInstsFromBeaconBlock,
 
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,
+
+	// portal
+	createAndSendTxWithCustodianDeposit:      (*HttpServer).handleCreateAndSendTxWithCustodianDeposit,
 }
 
 // Commands that are available to a limited user

@@ -3,7 +3,7 @@ package blockchain
 import "github.com/incognitochain/incognito-chain/database"
 
 type CustodianState struct {
-	IncognitoAddress string
+	//IncognitoAddress string
 	TotalCollateral  uint64
 	FreeCollateral   uint64
 	HoldingPubTokens map[string]uint64
@@ -29,9 +29,17 @@ type RedeemRequest struct {
 }
 
 type CurrentPortalState struct {
-	CustodianPoolState []*CustodianState // custodian_address: CustodianState
+	CustodianPoolState map[string]*CustodianState // custodian_address: CustodianState
 	PortingRequests    []*PortingRequest
 	RedeemRequests     []*RedeemRequest
+}
+
+func NewCustodianState(totalColl uint64, freeColl uint64, holdingPubTokens map[string]uint64) (*CustodianState, error) {
+	return &CustodianState{
+		TotalCollateral:  totalColl,
+		FreeCollateral:   freeColl,
+		HoldingPubTokens: holdingPubTokens,
+	}, nil
 }
 
 // todo
