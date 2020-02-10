@@ -509,15 +509,15 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int6
 		sanityError, ok := err.(*transaction.TransactionError)
 		if ok {
 			switch sanityError.Code {
-			case transaction.RejectInvalidLockTime:
+			case transaction.ErrCodeMessage[transaction.RejectInvalidLockTime].Code:
 				{
 					return NewMempoolTxError(RejectSanityTxLocktime, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), sanityError))
 				}
-			case transaction.RejectTxType:
+			case transaction.ErrCodeMessage[transaction.RejectTxType].Code:
 				{
 					return NewMempoolTxError(RejectInvalidTxType, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), sanityError))
 				}
-			case transaction.RejectTxVersion:
+			case transaction.ErrCodeMessage[transaction.RejectTxVersion].Code:
 				{
 					return NewMempoolTxError(RejectVersion, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), sanityError))
 				}
