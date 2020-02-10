@@ -114,7 +114,7 @@ func (blockGenerator *BlockGenerator) buildPDETradeRefundTxV2(
 		pdeTradeRequestAction.TxReqID,
 		producerPrivateKey,
 		shardID,
-		blockGenerator.chain.GetTransactionStateDB(shardID),
+		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
 	)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing refunded trading response tx: %+v", err)
@@ -145,7 +145,7 @@ func (blockGenerator *BlockGenerator) buildPDETradeAcceptedTxV2(
 		pdeTradeAcceptedContent.RequestedTxID,
 		producerPrivateKey,
 		shardID,
-		blockGenerator.chain.GetTransactionStateDB(shardID),
+		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
 	)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)
@@ -219,7 +219,7 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTxV2(
 			wdAcceptedContent.DeductingPoolValue,
 			&receiverAddr,
 			producerPrivateKey,
-			blockGenerator.chain.GetTransactionStateDB(shardID),
+			blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
 			meta,
 		)
 		if err != nil {
@@ -256,7 +256,7 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTxV2(
 			nil,
 			0,
 			tokenParams,
-			blockGenerator.chain.GetTransactionStateDB(shardID),
+			blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
 			meta,
 			false,
 			false,
@@ -313,7 +313,7 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTxV2(
 			refundContribution.ContributedAmount,
 			&receiverAddr,
 			producerPrivateKey,
-			blockGenerator.chain.GetTransactionStateDB(shardID),
+			blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
 			meta,
 		)
 		if err != nil {
@@ -351,7 +351,7 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTxV2(
 			nil,
 			0,
 			tokenParams,
-			blockGenerator.chain.GetTransactionStateDB(shardID),
+			blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
 			meta,
 			false,
 			false,
@@ -411,7 +411,7 @@ func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTxV2(
 			matchedNReturnedContribution.ReturnedContributedAmount,
 			&receiverAddr,
 			producerPrivateKey,
-			blockGenerator.chain.GetTransactionStateDB(shardID),
+			blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
 			meta,
 		)
 		if err != nil {
@@ -447,7 +447,7 @@ func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTxV2(
 			nil,
 			0,
 			tokenParams,
-			blockGenerator.chain.GetTransactionStateDB(shardID),
+			blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
 			meta,
 			false,
 			false,

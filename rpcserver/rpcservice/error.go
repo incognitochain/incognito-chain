@@ -53,6 +53,9 @@ const (
 	GetRewardAmountError
 	ListOutputCoinsByKeyError
 	ListUnspentOutputCoinsByKeyError
+	SendRawTransactionError
+	BuildTokenParamError
+	BuildPrivacyTokenParamError
 	// reject tx
 	RejectInvalidTxFeeError
 	RejectInvalidTxSizeError
@@ -119,6 +122,9 @@ var ErrCodeMessage = map[int]struct {
 	JsonDataOfTxInvalid:              {-4004, "Json string data of tx is invalid, can not unmarshal"},
 	ListOutputCoinsByKeyError:        {-4005, "List Output Coins By Key Error"},
 	ListUnspentOutputCoinsByKeyError: {-4006, "List Unspent Output Coins By Key Error"},
+	SendRawTransactionError:          {-4007, "Send Raw Transaction Error"},
+	BuildTokenParamError:             {-4008, "Build Token Param Error"},
+	BuildPrivacyTokenParamError:      {-4009, "Build Privacy Token Param Error"},
 	// socket/subcribe -5xxx
 	SubcribeError:   {-5000, "Failed to subcribe"},
 	UnsubcribeError: {-5001, "Failed to unsubcribe"},

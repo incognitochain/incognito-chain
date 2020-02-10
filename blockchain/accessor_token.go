@@ -7,7 +7,7 @@ import (
 
 // ListCustomToken - return all custom token which existed in network
 func (blockchain *BlockChain) ListPrivacyCustomTokenV2(shardID byte) (map[common.Hash]*statedb.TokenState, error) {
-	tokenStates, err := statedb.ListPrivacyToken(blockchain.GetTransactionStateDB(shardID))
+	tokenStates, err := statedb.ListPrivacyToken(blockchain.BestState.Shard[shardID].GetCopiedTransactionStateDB())
 	if err != nil {
 		return nil, err
 	}
@@ -27,5 +27,5 @@ func (blockchain *BlockChain) GetAllCoinIDV2(shardID byte) ([]common.Hash, error
 
 // Check Privacy Custom token ID is existed
 func (blockchain *BlockChain) PrivacyCustomTokenIDExistedV2(tokenID *common.Hash, shardID byte) bool {
-	return statedb.PrivacyTokenIDExisted(blockchain.GetTransactionStateDB(shardID), *tokenID)
+	return statedb.PrivacyTokenIDExisted(blockchain.BestState.Shard[shardID].GetCopiedTransactionStateDB(), *tokenID)
 }
