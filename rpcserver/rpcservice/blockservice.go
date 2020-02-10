@@ -109,16 +109,16 @@ func (blockService BlockService) RetrieveShardBlock(hashString string, verbosity
 		Logger.log.Debugf("handleRetrieveBlock result: %+v, err: %+v", nil, errH)
 		return nil, NewRPCError(RPCInvalidParamsError, errH)
 	}
-	block, _, errD := blockService.BlockChain.GetShardBlockByHashV2(*hash)
+	shardBlock, _, errD := blockService.BlockChain.GetShardBlockByHashV2(*hash)
 	if errD != nil {
 		Logger.log.Debugf("handleRetrieveBlock result: %+v, err: %+v", nil, errD)
 		return nil, NewRPCError(GetShardBlockByHashError, errD)
 	}
 	result := jsonresult.GetShardBlockResult{}
 
-	shardID := block.Header.ShardID
+	shardID := shardBlock.Header.ShardID
 	if verbosity == "0" {
-		data, err := json.Marshal(block)
+		data, err := json.Marshal(shardBlock)
 		if err != nil {
 			Logger.log.Debugf("handleRetrieveBlock result: %+v, err: %+v", nil, err)
 			return nil, NewRPCError(JsonError, err)
@@ -126,83 +126,94 @@ func (blockService BlockService) RetrieveShardBlock(hashString string, verbosity
 		result.Data = hex.EncodeToString(data)
 	} else if verbosity == "1" {
 		best := blockService.BlockChain.BestState.Shard[shardID].BestBlock
-		blockHeight := block.Header.Height
+		blockHeight := shardBlock.Header.Height
 		// Get next block hash unless there are none.
 		var nextHashString string
 		// if blockHeight < best.Header.GetHeight() {
 		if blockHeight < best.Header.Height {
-			nextHash, err := blockService.BlockChain.GetShardBlockByHeight(blockHeight+1, shardID)
+			nextShardBlocks, err := blockService.BlockChain.GetShardBlockByHeightV2(blockHeight+1, shardID)
 			if err != nil {
 				return nil, NewRPCError(GetShardBlockByHeightError, err)
 			}
-			nextHashString = nextHash.Hash().String()
+			for _, nextShardBlock := range nextShardBlocks {
+				h := shardBlock.Hash()
+				if nextShardBlock.Header.PreviousBlockHash.IsEqual(h) {
+					nextHashString = nextShardBlock.Hash().String()
+					break
+				}
+			}
 		}
-		result.Hash = block.Hash().String()
+		result.Hash = shardBlock.Hash().String()
 		result.Confirmations = int64(1 + best.Header.Height - blockHeight)
-		result.Height = block.Header.Height
-		result.Version = block.Header.Version
-		result.TxRoot = block.Header.TxRoot.String()
-		result.Time = block.Header.Timestamp
-		result.ShardID = block.Header.ShardID
-		result.PreviousBlockHash = block.Header.PreviousBlockHash.String()
+		result.Height = shardBlock.Header.Height
+		result.Version = shardBlock.Header.Version
+		result.TxRoot = shardBlock.Header.TxRoot.String()
+		result.Time = shardBlock.Header.Timestamp
+		result.ShardID = shardBlock.Header.ShardID
+		result.PreviousBlockHash = shardBlock.Header.PreviousBlockHash.String()
 		result.NextBlockHash = nextHashString
-		result.BeaconHeight = block.Header.BeaconHeight
-		result.BeaconBlockHash = block.Header.BeaconHash.String()
-		result.ValidationData = block.ValidationData
-		result.Round = block.Header.Round
+		result.BeaconHeight = shardBlock.Header.BeaconHeight
+		result.BeaconBlockHash = shardBlock.Header.BeaconHash.String()
+		result.ValidationData = shardBlock.ValidationData
+		result.Round = shardBlock.Header.Round
 		result.CrossShardBitMap = []int{}
-		result.Instruction = block.Body.Instructions
-		if len(block.Header.CrossShardBitMap) > 0 {
-			for _, shardID := range block.Header.CrossShardBitMap {
+		result.Instruction = shardBlock.Body.Instructions
+		if len(shardBlock.Header.CrossShardBitMap) > 0 {
+			for _, shardID := range shardBlock.Header.CrossShardBitMap {
 				result.CrossShardBitMap = append(result.CrossShardBitMap, int(shardID))
 			}
 		}
-		result.Epoch = block.Header.Epoch
+		result.Epoch = shardBlock.Header.Epoch
 		result.TxHashes = []string{}
-		for _, tx := range block.Body.Transactions {
+		for _, tx := range shardBlock.Body.Transactions {
 			result.TxHashes = append(result.TxHashes, tx.Hash().String())
 		}
 	} else if verbosity == "2" {
 		best := blockService.BlockChain.BestState.Shard[shardID].BestBlock
 
-		blockHeight := block.Header.Height
+		blockHeight := shardBlock.Header.Height
 		// Get next block hash unless there are none.
 		var nextHashString string
 		if blockHeight < best.Header.Height {
-			nextHash, err := blockService.BlockChain.GetShardBlockByHeight(blockHeight+1, shardID)
+			nextShardBlocks, err := blockService.BlockChain.GetShardBlockByHeightV2(blockHeight+1, shardID)
 			if err != nil {
-				Logger.log.Debugf("handleRetrieveBlock result: %+v, err: %+v", nil, err)
 				return nil, NewRPCError(GetShardBlockByHeightError, err)
 			}
-			nextHashString = nextHash.Hash().String()
+			for _, nextShardBlock := range nextShardBlocks {
+				h := shardBlock.Hash()
+				if nextShardBlock.Header.PreviousBlockHash.IsEqual(h) {
+					nextHashString = nextShardBlock.Hash().String()
+					break
+				}
+			}
 		}
-		result.Hash = block.Hash().String()
+		result.Hash = shardBlock.Hash().String()
 		result.Confirmations = int64(1 + best.Header.Height - blockHeight)
-		result.Height = block.Header.Height
-		result.Version = block.Header.Version
-		result.TxRoot = block.Header.TxRoot.String()
-		result.Time = block.Header.Timestamp
-		result.ShardID = block.Header.ShardID
-		result.PreviousBlockHash = block.Header.PreviousBlockHash.String()
+		result.Height = shardBlock.Header.Height
+		result.Version = shardBlock.Header.Version
+		result.TxRoot = shardBlock.Header.TxRoot.String()
+		result.Time = shardBlock.Header.Timestamp
+		result.ShardID = shardBlock.Header.ShardID
+		result.PreviousBlockHash = shardBlock.Header.PreviousBlockHash.String()
 		result.NextBlockHash = nextHashString
-		result.BeaconHeight = block.Header.BeaconHeight
-		result.BeaconBlockHash = block.Header.BeaconHash.String()
-		result.ValidationData = block.ValidationData
-		result.Round = block.Header.Round
+		result.BeaconHeight = shardBlock.Header.BeaconHeight
+		result.BeaconBlockHash = shardBlock.Header.BeaconHash.String()
+		result.ValidationData = shardBlock.ValidationData
+		result.Round = shardBlock.Header.Round
 		result.CrossShardBitMap = []int{}
-		result.Instruction = block.Body.Instructions
-		instructions, err := blockchain.CreateShardInstructionsFromTransactionAndInstruction(block.Body.Transactions, blockService.BlockChain, block.Header.ShardID)
+		result.Instruction = shardBlock.Body.Instructions
+		instructions, err := blockchain.CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, blockService.BlockChain, shardBlock.Header.ShardID)
 		if err == nil {
 			result.Instruction = append(result.Instruction, instructions...)
 		}
-		if len(block.Header.CrossShardBitMap) > 0 {
-			for _, shardID := range block.Header.CrossShardBitMap {
+		if len(shardBlock.Header.CrossShardBitMap) > 0 {
+			for _, shardID := range shardBlock.Header.CrossShardBitMap {
 				result.CrossShardBitMap = append(result.CrossShardBitMap, int(shardID))
 			}
 		}
-		result.Epoch = block.Header.Epoch
+		result.Epoch = shardBlock.Header.Epoch
 		result.Txs = make([]jsonresult.GetBlockTxResult, 0)
-		for _, tx := range block.Body.Transactions {
+		for _, tx := range shardBlock.Body.Transactions {
 			transactionResult := jsonresult.GetBlockTxResult{}
 			transactionResult.Hash = tx.Hash().String()
 			switch tx.GetType() {
