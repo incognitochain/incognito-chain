@@ -33,7 +33,7 @@ func (blockGenerator *BlockGenerator) buildReturnStakingAmountTxV2(swapPublicKey
 	if err != nil {
 		return nil, NewBlockChainError(GetTransactionFromDatabaseError, err)
 	}
-	shardBlock, _, err := blockGenerator.chain.GetShardBlockByHash(blockHash)
+	shardBlock, _, err := blockGenerator.chain.GetShardBlockByHashV2(blockHash)
 	if err != nil || shardBlock == nil {
 		Logger.log.Error("ERROR", err, "NO Transaction in block with hash", blockHash, "and index", index, "contains", shardBlock.Body.Transactions[index])
 		return nil, NewBlockChainError(FetchShardBlockError, err)

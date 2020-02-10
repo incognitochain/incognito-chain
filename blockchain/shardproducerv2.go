@@ -334,7 +334,7 @@ func (blockchain *BlockChain) processInstructionFromBeaconV2(beaconBlocks []*Bea
 						if err != nil {
 							continue
 						}
-						txShardID, _, _, _, err := blockchain.GetTransactionByHash(*txHash)
+						txShardID, _, _, _, err := blockchain.GetTransactionByHashV2(*txHash)
 						if err != nil {
 							continue
 						}
@@ -356,7 +356,7 @@ func (blockchain *BlockChain) processInstructionFromBeaconV2(beaconBlocks []*Bea
 						if err != nil {
 							continue
 						}
-						txShardID, _, _, _, err := blockchain.GetTransactionByHash(*txHash)
+						txShardID, _, _, _, err := blockchain.GetTransactionByHashV2(*txHash)
 						if err != nil {
 							continue
 						}

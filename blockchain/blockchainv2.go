@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/metadata"
 )
 
 /*
@@ -234,4 +235,16 @@ func (blockchain *BlockChain) GetBeaconSlashStateDB() *statedb.StateDB {
 
 func (blockchain *BlockChain) GetBeaconRewardStateDB() *statedb.StateDB {
 	return blockchain.BestState.Beacon.rewardStateDB
+}
+
+func (blockchain *BlockChain) GetTransactionByHashV2(txHash common.Hash) (byte, common.Hash, int, metadata.Transaction, error) {
+	blockHash, index, err := rawdbv2.GetTransactionByHash(blockchain.config.DataBase, txHash)
+	if err != nil {
+		return byte(255), common.Hash{}, -1, nil, NewBlockChainError(GetTransactionFromDatabaseError, err)
+	}
+	shardBlock, _, err := blockchain.GetShardBlockByHashV2(blockHash)
+	if err != nil {
+		return byte(255), common.Hash{}, -1, nil, NewBlockChainError(GetTransactionFromDatabaseError, err)
+	}
+	return shardBlock.Header.ShardID, blockHash, index, shardBlock.Body.Transactions[index], nil
 }
