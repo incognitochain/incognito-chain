@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"math/big"
 	"sort"
 	"strconv"
@@ -478,14 +480,23 @@ func (httpServer *HttpServer) handleGetPDEState(params interface{}, closeChan <-
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Beacon height is invalid"))
 	}
-	pdeState, err := blockchain.InitCurrentPDEStateFromDB(httpServer.config.BlockChain.GetDatabase(), uint64(beaconHeight))
+	featureStateRootHash, err := httpServer.config.BlockChain.GetBeaconFeatureStateRootHash(httpServer.config.BlockChain.GetDatabase(), uint64(beaconHeight))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, fmt.Errorf("Can't found ConsensusStateRootHash of beacon height %+v, error %+v", beaconHeight, err))
+	}
+	featureStateDB, err := statedb.NewWithPrefixTrie(featureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetDatabase()))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-	beaconBlock, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
+	pdeState, err := blockchain.InitCurrentPDEStateFromDBV2(featureStateDB, uint64(beaconHeight))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
+	beaconBlocks, err := httpServer.config.BlockChain.GetBeaconBlockByHeightV2(uint64(beaconHeight))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+	}
+	beaconBlock := beaconBlocks[0]
 	type CurrentPDEState struct {
 		WaitingPDEContributions map[string]*rawdb.PDEContribution `json:"WaitingPDEContributions"`
 		PDEPoolPairs            map[string]*rawdb.PDEPoolForPair  `json:"PDEPoolPairs"`
@@ -881,7 +892,7 @@ func convertPrice(
 }
 
 func (httpServer *HttpServer) handleConvertPDEPrices(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	latestBcHeight := httpServer.config.BlockChain.BestState.Beacon.BeaconHeight
+	latestBeaconHeight := httpServer.config.BlockChain.BestState.Beacon.BeaconHeight
 
 	arrayParams := common.InterfaceSlice(params)
 	data, ok := arrayParams[0].(map[string]interface{})
@@ -904,7 +915,15 @@ func (httpServer *HttpServer) handleConvertPDEPrices(params interface{}, closeCh
 	if convertingAmt == 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Amount is invalid"))
 	}
-	pdeState, err := blockchain.InitCurrentPDEStateFromDB(httpServer.config.BlockChain.GetDatabase(), latestBcHeight)
+	featureStateRootHash, err := httpServer.config.BlockChain.GetBeaconFeatureStateRootHash(httpServer.config.BlockChain.GetDatabase(), uint64(latestBeaconHeight))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, fmt.Errorf("Can't found ConsensusStateRootHash of beacon height %+v, error %+v", latestBeaconHeight, err))
+	}
+	featureStateDB, err := statedb.NewWithPrefixTrie(featureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetDatabase()))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+	}
+	pdeState, err := blockchain.InitCurrentPDEStateFromDBV2(featureStateDB, latestBeaconHeight)
 	if err != nil || pdeState == nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
@@ -912,7 +931,7 @@ func (httpServer *HttpServer) handleConvertPDEPrices(params interface{}, closeCh
 	results := []*ConvertedPrice{}
 	if toTokenIDStr != "all" {
 		convertedPrice := convertPrice(
-			latestBcHeight,
+			latestBeaconHeight,
 			toTokenIDStr,
 			fromTokenIDStr,
 			convertingAmt,
@@ -931,7 +950,7 @@ func (httpServer *HttpServer) handleConvertPDEPrices(params interface{}, closeCh
 		var convertedPrice *ConvertedPrice
 		if poolPair.Token1IDStr == fromTokenIDStr {
 			convertedPrice = convertPrice(
-				latestBcHeight,
+				latestBeaconHeight,
 				poolPair.Token2IDStr,
 				fromTokenIDStr,
 				convertingAmt,
@@ -939,7 +958,7 @@ func (httpServer *HttpServer) handleConvertPDEPrices(params interface{}, closeCh
 			)
 		} else if poolPair.Token2IDStr == fromTokenIDStr {
 			convertedPrice = convertPrice(
-				latestBcHeight,
+				latestBeaconHeight,
 				poolPair.Token1IDStr,
 				fromTokenIDStr,
 				convertingAmt,

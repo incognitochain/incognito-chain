@@ -1153,7 +1153,7 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 	if len(keySet.PaymentAddress.Pk) == 0 {
 		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Missing payment address"))
 	}
-	listTxsHash, err := txService.BlockChain.GetTransactionHashByReceiver(&keySet)
+	listTxsHash, err := txService.BlockChain.GetTransactionHashByReceiverV2(&keySet)
 	if err != nil {
 		return nil, NewRPCError(UnexpectedError, errors.New("Can not find any tx"))
 	}
