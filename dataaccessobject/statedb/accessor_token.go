@@ -18,14 +18,14 @@ func StorePrivacyToken(stateDB *StateDB, tokenID common.Hash, name string, symbo
 	return nil
 }
 
-func StorePrivacyTokenTx(stateDB *StateDB, tokenID common.Hash, txHash common.Hash, mintable bool) error {
+func StorePrivacyTokenTx(stateDB *StateDB, tokenID common.Hash, txHash common.Hash, isStore bool) error {
 	key := GenerateTokenObjectKey(tokenID)
 	t, has, err := stateDB.GetTokenState(key)
 	if err != nil {
 		return NewStatedbError(GetPrivacyTokenError, err)
 	}
 	if !has {
-		if mintable {
+		if isStore {
 			return nil
 		}
 		return NewStatedbError(GetPrivacyTokenError, fmt.Errorf("tokenID %+v not exist", tokenID))

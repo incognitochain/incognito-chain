@@ -284,8 +284,17 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlockV2(shardBlock *Sh
 			return err
 		}
 	}
+	var allBridgeTokens []*rawdb.BridgeTokenInfo
+	var err error
+	allBridgeTokensBytes, err := statedb.GetAllBridgeTokens(beaconFeatureStateRoot)
+	if err != nil {
+		return err
+	}
+	if len(allBridgeTokensBytes) > 0 {
+		err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
+	}
 	view := NewTxViewPoint(shardBlock.Header.ShardID)
-	err := view.fetchTxViewPointFromBlockV2(transactionStateRoot, shardBlock)
+	err = view.fetchTxViewPointFromBlockV2(transactionStateRoot, shardBlock)
 	if err != nil {
 		return err
 	}
@@ -299,24 +308,16 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlockV2(shardBlock *Sh
 	for _, indexTx := range indices {
 		privacyCustomTokenSubView := view.privacyCustomTokenViewPoint[int32(indexTx)]
 		privacyCustomTokenTx := view.privacyCustomTokenTxs[int32(indexTx)]
+		isBridgeToken := false
+		for _, bridgeToken := range allBridgeTokens {
+			if bridgeToken.TokenID != nil && bytes.Equal(privacyCustomTokenTx.TxPrivacyTokenData.PropertyID[:], bridgeToken.TokenID[:]) {
+				isBridgeToken = true
+			}
+		}
 		switch privacyCustomTokenTx.TxPrivacyTokenData.Type {
 		case transaction.CustomTokenInit:
 			{
 				// check is bridge token
-				isBridgeToken := false
-				allBridgeTokensBytes, err := statedb.GetAllBridgeTokens(beaconFeatureStateRoot)
-				if err != nil {
-					return err
-				}
-				if len(allBridgeTokensBytes) > 0 {
-					var allBridgeTokens []*rawdb.BridgeTokenInfo
-					err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
-					for _, bridgeToken := range allBridgeTokens {
-						if bridgeToken.TokenID != nil && bytes.Equal(privacyCustomTokenTx.TxPrivacyTokenData.PropertyID[:], bridgeToken.TokenID[:]) {
-							isBridgeToken = true
-						}
-					}
-				}
 				// not mintable tx
 				if !isBridgeToken && !privacyCustomTokenTx.TxPrivacyTokenData.Mintable {
 					tokenID := privacyCustomTokenTx.TxPrivacyTokenData.PropertyID
@@ -339,7 +340,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlockV2(shardBlock *Sh
 				Logger.log.Info("Transfer custom token %+v", privacyCustomTokenTx)
 			}
 		}
-		err = statedb.StorePrivacyTokenTx(transactionStateRoot, privacyCustomTokenTx.TxPrivacyTokenData.PropertyID, *privacyCustomTokenTx.Hash(), privacyCustomTokenTx.TxPrivacyTokenData.Mintable)
+		err = statedb.StorePrivacyTokenTx(transactionStateRoot, privacyCustomTokenTx.TxPrivacyTokenData.PropertyID, *privacyCustomTokenTx.Hash(), privacyCustomTokenTx.TxPrivacyTokenData.Mintable || isBridgeToken)
 		if err != nil {
 			return err
 		}

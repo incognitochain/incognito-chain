@@ -348,8 +348,7 @@ func (httpServer *HttpServer) handleListSerialNumbers(params interface{}, closeC
 			shardID = int(shardIDParam)
 		}
 	}
-
-	result, err := httpServer.databaseService.ListSerialNumbers(*tokenID, byte(shardID))
+	result, err := httpServer.txService.ListSerialNumbers(*tokenID, byte(shardID))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
 	}
@@ -379,8 +378,14 @@ func (httpServer *HttpServer) handleListSNDerivator(params interface{}, closeCha
 			}
 		}
 	}
-
-	result, err := httpServer.databaseService.ListSNDerivator(*tokenID)
+	shardID := 0
+	if len(arrayParams) > 1 {
+		shardIDParam, ok := arrayParams[1].(float64)
+		if ok {
+			shardID = int(shardIDParam)
+		}
+	}
+	result, err := httpServer.txService.ListSNDerivator(*tokenID, byte(shardID))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
 	}
@@ -417,8 +422,7 @@ func (httpServer *HttpServer) handleListCommitments(params interface{}, closeCha
 			shardID = int(shardIDParam)
 		}
 	}
-
-	result, err := httpServer.databaseService.ListCommitmentsV2(*tokenID, byte(shardID), httpServer.config.BlockChain.GetTransactionStateDB(byte(shardID)))
+	result, err := httpServer.txService.ListCommitments(*tokenID, byte(shardID))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
 	}

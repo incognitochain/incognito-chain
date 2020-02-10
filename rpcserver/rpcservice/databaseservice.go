@@ -3,47 +3,44 @@ package rpcservice
 import (
 	"encoding/json"
 	"errors"
-	"math/big"
-	"strconv"
-
-	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"math/big"
 )
 
 type DatabaseService struct {
 	DB incdb.Database
 }
 
-func (dbService DatabaseService) CheckETHHashIssued(data map[string]interface{}) (bool, error) {
-	blockHashParam, ok := data["BlockHash"].(string)
-	if !ok {
-		return false, errors.New("Block hash param is invalid")
-	}
-	blockHash := rCommon.HexToHash(blockHashParam)
+//func (dbService DatabaseService) CheckETHHashIssued(data map[string]interface{}) (bool, error) {
+//	blockHashParam, ok := data["BlockHash"].(string)
+//	if !ok {
+//		return false, errors.New("Block hash param is invalid")
+//	}
+//	blockHash := rCommon.HexToHash(blockHashParam)
+//
+//	txIdxParam, ok := data["TxIndex"].(float64)
+//	if !ok {
+//		return false, errors.New("Tx index param is invalid")
+//	}
+//	txIdx := uint(txIdxParam)
+//	uniqETHTx := append(blockHash[:], []byte(strconv.Itoa(int(txIdx)))...)
+//
+//	issued, err := rawdb.IsETHTxHashIssued(dbService.DB, uniqETHTx)
+//	return issued, err
+//}
 
-	txIdxParam, ok := data["TxIndex"].(float64)
-	if !ok {
-		return false, errors.New("Tx index param is invalid")
-	}
-	txIdx := uint(txIdxParam)
-	uniqETHTx := append(blockHash[:], []byte(strconv.Itoa(int(txIdx)))...)
+//func (dbService DatabaseService) GetBurningConfirm(txID common.Hash) (uint64, error) {
+//	return rawdb.GetBurningConfirm(dbService.DB, txID)
+//}
 
-	issued, err := rawdb.IsETHTxHashIssued(dbService.DB, uniqETHTx)
-	return issued, err
-}
-
-func (dbService DatabaseService) GetBurningConfirm(txID common.Hash) (uint64, error) {
-	return rawdb.GetBurningConfirm(dbService.DB, txID)
-}
-
-func (dbService DatabaseService) ListSerialNumbers(tokenID common.Hash, shardID byte) (map[string]uint64, error) {
-	return rawdb.ListSerialNumber(dbService.DB, tokenID, shardID)
-}
+//func (dbService DatabaseService) ListSerialNumbers(tokenID common.Hash, shardID byte) (map[string]uint64, error) {
+//	return rawdb.ListSerialNumber(dbService.DB, tokenID, shardID)
+//}
 
 func (dbService DatabaseService) ListSNDerivator(tokenID common.Hash) ([]big.Int, error) {
 	resultInBytes, err := rawdb.ListSNDerivator(dbService.DB, tokenID)

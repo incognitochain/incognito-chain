@@ -154,18 +154,18 @@ func (blockchain *BlockChain) processIssuingReqV2(bridgeStateDB *statedb.StateDB
 	return updatingInfoByTokenID, nil
 }
 
-func (blockchain *BlockChain) storeBurningConfirmV2(bridgeStateDB *statedb.StateDB, block *ShardBlock) error {
-	for _, inst := range block.Body.Instructions {
+func (blockchain *BlockChain) storeBurningConfirmV2(bridgeStateDB *statedb.StateDB, shardBlock *ShardBlock) error {
+	for _, inst := range shardBlock.Body.Instructions {
 		if inst[0] != strconv.Itoa(metadata.BurningConfirmMeta) {
 			continue
 		}
-		BLogger.log.Infof("storeBurningConfirm for block %d, inst %v", block.Header.Height, inst)
+		BLogger.log.Infof("storeBurningConfirm for shard block %d, inst %v", shardBlock.Header.Height, inst)
 
 		txID, err := common.Hash{}.NewHashFromStr(inst[5])
 		if err != nil {
 			return errors.Wrap(err, "txid invalid")
 		}
-		if err := statedb.StoreBurningConfirm(bridgeStateDB, *txID, block.Header.Height); err != nil {
+		if err := statedb.StoreBurningConfirm(bridgeStateDB, *txID, shardBlock.Header.Height); err != nil {
 			return errors.Wrapf(err, "store failed, txID: %x", txID)
 		}
 	}
