@@ -168,7 +168,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	transactionsForNewBlock = append(transactionsForNewBlock, txsToAddFromBlock...)
 	// build txs with metadata
 	// // startStep = time.Now()
-	txsWithMetadata, err := blockGenerator.chain.BuildResponseTransactionFromTxsWithMetadata(transactionsForNewBlock, &tempPrivateKey)
+	transactionsForNewBlock, err = blockGenerator.chain.BuildResponseTransactionFromTxsWithMetadata(transactionsForNewBlock, &tempPrivateKey)
 	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
 	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
@@ -178,7 +178,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	if err != nil {
 		return nil, err
 	}
-	transactionsForNewBlock = append(transactionsForNewBlock, txsWithMetadata...)
+
 	// process instruction from beacon
 	// startStep = time.Now()
 	shardPendingValidator, _ = blockGenerator.chain.processInstructionFromBeacon(beaconBlocks, shardID)
@@ -793,20 +793,7 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	Find Beacon Block with compatible shard states of cross shard block
 */
 func (blockchain *BlockChain) FindBeaconHeightForCrossShardBlock(beaconHeight uint64, fromShardID byte, crossShardBlockHeight uint64) (uint64, error) {
-	for {
-		beaconBlock, err := blockchain.GetBeaconBlockByHeight(beaconHeight)
-		if err != nil {
-			return 0, NewBlockChainError(FetchBeaconBlockError, err)
-		}
-		if shardStates, ok := beaconBlock.Body.ShardState[fromShardID]; ok {
-			for _, shardState := range shardStates {
-				if shardState.Height == crossShardBlockHeight {
-					return beaconBlock.Header.Height, nil
-				}
-			}
-		}
-		beaconHeight += 1
-	}
+	return blockchain.config.CrossShardPool[fromShardID].FindBeaconHeightForCrossShardBlock(beaconHeight, fromShardID, crossShardBlockHeight)
 }
 
 func (blockGenerator *BlockGenerator) createTempKeyset() privacy.PrivateKey {

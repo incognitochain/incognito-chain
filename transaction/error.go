@@ -52,8 +52,17 @@ const (
 	PrivacyTokenJsonError
 	PrivacyTokenTxTypeNotHandleError
 
+	ExceedSizeTx
 	ExceedSizeInfoTxError
 	ExceedSizeInfoOutCoinError
+
+	RejectInvalidLockTime
+	RejectTxSize
+	RejectTxVersion
+	RejectTxPublickeySigSize
+	RejectTxType
+	RejectTxInfoSize
+	RejectTxMedataWithBlockChain
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -93,6 +102,14 @@ var ErrCodeMessage = map[int]struct {
 	TokenIDExistedByCrossShardError:               {-1029, "This token is existed in network by cross shard"},
 	ExceedSizeInfoTxError:                         {-1030, "Size of tx info exceed max size info"},
 	ExceedSizeInfoOutCoinError:                    {-1031, "Size of output coin's info exceed max size info"},
+	ExceedSizeTx:                                  {-1032, "Size of tx info exceed max size of tx"},
+	RejectInvalidLockTime:                         {-1033, "Wrong tx locktime"},
+	RejectTxSize:                                  {-1034, "Tx size is too large"},
+	RejectTxVersion:                               {-1035, "Wrong version tx"},
+	RejectTxPublickeySigSize:                      {-1036, "Wrong tx Sig PK"},
+	RejectTxType:                                  {-1037, "Wrong tx type"},
+	RejectTxInfoSize:                              {-1038, "Wrong tx info length"},
+	RejectTxMedataWithBlockChain:                  {-1039, "Reject invalid metadata with blockchain"},
 
 	// for PRV
 	InvalidSanityDataPRVError:  {-2000, "Invalid sanity data for PRV"},

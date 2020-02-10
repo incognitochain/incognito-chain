@@ -3,6 +3,7 @@ package jsonresult
 import (
 	"net"
 	"os"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/connmanager"
@@ -20,6 +21,8 @@ type GetNetworkInfoResult struct {
 	LocalAddresses  []string                 `json:"LocalAddresses"`
 	IncrementalFee  uint64                   `json:"IncrementalFee"`
 	Warnings        string                   `json:"Warnings"`
+	NodeTimeUnix    int64                    `json:"NodeTime"`
+	NodeTimeString  string                   `json:"NodeTimeString"`
 }
 
 func NewGetNetworkInfoResult(protocolVerion string, connMgr connmanager.ConnManager, wallet *wallet.Wallet) (*GetNetworkInfoResult, error) {
@@ -67,5 +70,8 @@ func NewGetNetworkInfoResult(protocolVerion string, connMgr connmanager.ConnMana
 		result.IncrementalFee = wallet.GetConfig().IncrementalFee
 	}
 	result.Warnings = common.EmptyString
+	timeNow := time.Now()
+	result.NodeTimeUnix = timeNow.Unix()
+	result.NodeTimeString = timeNow.Format(common.DateOutputFormat)
 	return result, nil
 }

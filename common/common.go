@@ -271,7 +271,6 @@ func CleanAndExpandPath(path string, defaultHomeDir string) string {
 	return filepath.Clean(os.ExpandEnv(path))
 }
 
-
 // RandBigIntMaxRange generates a big int with maximum value
 func RandBigIntMaxRange(max *big.Int) (*big.Int, error) {
 	return rand.Int(rand.Reader, max)
@@ -432,8 +431,8 @@ func CheckError(errs ...error) error {
 
 // GetENV to get environment variable by key
 func GetENV(key, fallback string) string {
-	value := os.Getenv(key)
-	if len(value) == 0 {
+	value, ok := os.LookupEnv(key)
+	if !ok {
 		return fallback
 	}
 	return value
