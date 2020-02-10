@@ -34,7 +34,7 @@ func (wsServer *WsServer) handleSubscribePendingTransaction(params interface{}, 
 	// try to get transaction in database
 	_, blockHash, index, tx, err := wsServer.config.BlockChain.GetTransactionByHash(*txHash)
 	if err == nil {
-		shardBlock, _, err := wsServer.config.BlockChain.GetShardBlockByHash(blockHash)
+		shardBlock, _, err := wsServer.config.BlockChain.GetShardBlockByHashV2(blockHash)
 		if err == nil {
 			res, err := jsonresult.NewTransactionDetail(tx, shardBlock.Hash(), shardBlock.Header.Height, index, shardBlock.Header.ShardID)
 			cResult <- RpcSubResult{Result: res, Error: rpcservice.NewRPCError(rpcservice.UnexpectedError, err)}
