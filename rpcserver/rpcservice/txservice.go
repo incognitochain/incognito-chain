@@ -1016,22 +1016,21 @@ func (txService TxService) BuildRawDefragmentAccountTransaction(params interface
 	paymentInfos := []*privacy.PaymentInfo{paymentInfo}
 	// check real fee(nano PRV) per tx
 	isGetPTokenFee := false
-
 	beaconState, err := txService.BlockChain.BestState.GetClonedBeaconBestState()
+	if err != nil {
+		return nil, NewRPCError(GetOutputCoinError, err)
+	}
 	beaconHeight := beaconState.BeaconHeight
 	realFee, _, _, _ := txService.EstimateFee(
 		estimateFeeCoinPerKb, isGetPTokenFee, outCoins, paymentInfos, shardIDSender, 8, hasPrivacyCoin, nil, nil, int64(beaconHeight))
 	if len(outCoins) == 0 {
 		realFee = 0
 	}
-
 	if uint64(amount) < realFee {
 		return nil, NewRPCError(GetOutputCoinError, err)
 	}
 	paymentInfo.Amount = uint64(amount) - realFee
-
 	inputCoins := transaction.ConvertOutputCoinToInputCoin(outCoins)
-
 	/******* END GET output native coins(PRV), which is used to create tx *****/
 	// START create tx
 	// missing flag for privacy
