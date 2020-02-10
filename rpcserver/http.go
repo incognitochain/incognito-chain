@@ -39,7 +39,6 @@ type HttpServer struct {
 	blockService      *rpcservice.BlockService
 	outputCoinService *rpcservice.CoinService
 	txMemPoolService  *rpcservice.TxMemPoolService
-	databaseService   *rpcservice.DatabaseService
 	networkService    *rpcservice.NetworkService
 	poolStateService  *rpcservice.PoolStateService
 	txService         *rpcservice.TxService
@@ -71,9 +70,6 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 	}
 	httpServer.txMemPoolService = &rpcservice.TxMemPoolService{
 		TxMemPool: httpServer.config.TxMemPool,
-	}
-	httpServer.databaseService = &rpcservice.DatabaseService{
-		DB: httpServer.config.Database,
 	}
 	httpServer.networkService = &rpcservice.NetworkService{
 		ConnMgr: httpServer.config.ConnMgr,
