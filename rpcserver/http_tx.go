@@ -415,14 +415,14 @@ func (httpServer *HttpServer) handleListCommitments(params interface{}, closeCha
 			}
 		}
 	}
-	shardID := 0
+	shardID := byte(0)
 	if len(arrayParams) > 1 {
 		shardIDParam, ok := arrayParams[1].(float64)
 		if ok {
-			shardID = int(shardIDParam)
+			shardID = byte(shardIDParam)
 		}
 	}
-	result, err := httpServer.txService.ListCommitments(*tokenID, byte(shardID))
+	result, err := httpServer.txService.ListCommitments(*tokenID, shardID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
 	}
@@ -460,7 +460,7 @@ func (httpServer *HttpServer) handleListCommitmentIndices(params interface{}, cl
 		}
 	}
 
-	result, err := httpServer.databaseService.ListCommitmentIndicesV2(*tokenID, shardID, httpServer.config.BlockChain.GetTransactionStateDB(byte(shardID)))
+	result, err := httpServer.txService.ListCommitmentIndices(*tokenID, shardID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
 	}
@@ -508,7 +508,7 @@ func (httpServer *HttpServer) handleHasSerialNumbers(params interface{}, closeCh
 		}
 	}
 
-	result, err := httpServer.databaseService.HasSerialNumbers(paymentAddressStr, serialNumbersStr, *tokenID)
+	result, err := httpServer.txService.HasSerialNumbers(paymentAddressStr, serialNumbersStr, *tokenID)
 	if err != nil {
 		Logger.log.Debugf("handleHasSerialNumbers result: %+v, err: %+v", err)
 		return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
@@ -558,7 +558,7 @@ func (httpServer *HttpServer) handleHasSnDerivators(params interface{}, closeCha
 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 		}
 	}
-	result, err := httpServer.databaseService.HasSnDerivators(paymentAddressStr, snDerivatorStr, *tokenID)
+	result, err := httpServer.txService.HasSnDerivators(paymentAddressStr, snDerivatorStr, *tokenID)
 	if err != nil {
 		Logger.log.Debugf("handleHasSnDerivators result: %+v, err: %+v", nil, err)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)

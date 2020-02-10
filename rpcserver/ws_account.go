@@ -60,7 +60,7 @@ func (wsServer *WsServer) handleSubcribeCrossOutputCoinByPrivateKey(params inter
 				for senderShardID, crossTransactions := range shardBlock.Body.CrossTransactions {
 					for _, crossTransaction := range crossTransactions {
 						for _, crossOutputCoin := range crossTransaction.OutputCoin {
-							processedOutputCoin := blockchain.DecryptOutputCoinByKeyV2(wsServer.config.BlockChain.GetTransactionStateDB(shardBlock.Header.ShardID), &crossOutputCoin, &keyWallet.KeySet, &common.PRVCoinID, senderShardID)
+							processedOutputCoin := blockchain.DecryptOutputCoinByKeyV2(wsServer.config.BlockChain.BestState.Shard[shardBlock.Header.ShardID].GetCopiedTransactionStateDB(), &crossOutputCoin, &keyWallet.KeySet, &common.PRVCoinID, senderShardID)
 							if processedOutputCoin == nil {
 								Logger.log.Errorf("processedOutputCoin is nil!")
 								continue
