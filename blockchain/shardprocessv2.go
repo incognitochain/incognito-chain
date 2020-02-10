@@ -206,7 +206,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockV2(shardBlock *ShardB
 		txRoot = txMerkleTree[len(txMerkleTree)-1]
 	}
 	if !bytes.Equal(shardBlock.Header.TxRoot.GetBytes(), txRoot.GetBytes()) {
-		return NewBlockChainError(TransactionRootHashError, fmt.Errorf("Expect transaction root hash %+v but get %+v", shardBlock.Header.TxRoot, txRoot))
+		return NewBlockChainError(TransactionRootHashError, fmt.Errorf("Expect transaction root hash %+v but get %+v", shardBlock.Header.TxRoot, *txRoot))
 	}
 	// Verify ShardTx Root
 	_, shardTxMerkleData := CreateShardTxRoot(shardBlock.Body.Transactions)
