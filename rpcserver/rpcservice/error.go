@@ -59,6 +59,7 @@ const (
 	RejectDuplicateTxInPoolError
 	RejectInvalidTxVersionError
 	RejectSanityTxLocktime
+	RejectReplacementTx
 	TxPoolRejectTxError
 )
 
@@ -127,6 +128,7 @@ var ErrCodeMessage = map[int]struct {
 	RejectDuplicateTxInPoolError: {-6006, "Tx already exist in pool"},
 	RejectInvalidTxVersionError:  {-6007, "Reject tx by invalid version"},
 	RejectSanityTxLocktime:       {-6008, "Reject wrong tx by locktime"},
+	RejectReplacementTx:          {-6009, "Reject error replacement or cancel transaction"},
 
 	// decentralized bridge
 	NoSwapConfirmInst: {-7000, "No swap confirm instruction found in block"},
