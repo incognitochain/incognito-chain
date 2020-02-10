@@ -17,6 +17,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/mempool"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/transaction"
 )
@@ -868,4 +869,36 @@ func (blockService BlockService) GetBurningConfirm(txID common.Hash) (uint64, er
 		}
 	}
 	return 0, fmt.Errorf("Get Burning Confirm of TxID %+v not found", txID)
+}
+
+func (blockService BlockService) GetPDEContributionStatus(pdePrefix []byte, pdeSuffix []byte) (*metadata.PDEContributionStatus, error) {
+	pdexStateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	pdeStatusContentBytes, err := statedb.GetPDEContributionStatus(pdexStateDB, pdePrefix, pdeSuffix)
+	if err != nil {
+		return nil, err
+	}
+	if len(pdeStatusContentBytes) == 0 {
+		return nil, nil
+	}
+	var contributionStatus metadata.PDEContributionStatus
+	err = json.Unmarshal(pdeStatusContentBytes, &contributionStatus)
+	if err != nil {
+		return nil, err
+	}
+	return &contributionStatus, nil
+}
+
+func (blockService BlockService) GetPDEStatus(pdePrefix []byte, pdeSuffix []byte) (byte, error) {
+	pdexStateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	return statedb.GetPDEStatus(pdexStateDB, pdePrefix, pdeSuffix)
+}
+
+//============================= Slash ===============================
+func (blockService BlockService) GetProducersBlackList(beaconHeight uint64) (map[string]uint8, error) {
+	slashRootHash, err := blockService.BlockChain.GetBeaconSlashStateRootHash(blockService.BlockChain.GetDatabase(), beaconHeight)
+	if err != nil {
+		return nil, fmt.Errorf("Beacon Slash Root Hash of Height %+v not found ,error %+v", beaconHeight, err)
+	}
+	slashStateDB, err := statedb.NewWithPrefixTrie(slashRootHash, statedb.NewDatabaseAccessWarper(blockService.BlockChain.GetDatabase()))
+	return statedb.GetProducersBlackList(slashStateDB, beaconHeight), nil
 }

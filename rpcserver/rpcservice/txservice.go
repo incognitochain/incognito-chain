@@ -63,6 +63,63 @@ func (txService TxService) ListCommitmentIndices(tokenID common.Hash, shardID by
 	return statedb.ListCommitmentIndices(transactionStateDB, tokenID, shardID)
 }
 
+func (txService TxService) HasSerialNumbers(paymentAddressStr string, serialNumbersStr []interface{}, tokenID common.Hash) ([]bool, error) {
+	_, shardIDSender, err := GetKeySetFromPaymentAddressParam(paymentAddressStr)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]bool, 0)
+	for _, item := range serialNumbersStr {
+		itemStr, okParam := item.(string)
+		if !okParam {
+			return nil, errors.New("Invalid serial number param")
+		}
+		serialNumber, _, err := base58.Base58Check{}.Decode(itemStr)
+		if err != nil {
+			return nil, errors.New("Invalid serial number param")
+		}
+		transactionStateDB := txService.BlockChain.BestState.Shard[shardIDSender].GetCopiedTransactionStateDB()
+		ok, err := statedb.HasSerialNumber(transactionStateDB, tokenID, serialNumber, shardIDSender)
+		if ok && err == nil {
+			// serial number in db
+			result = append(result, true)
+		} else {
+			// serial number not in db
+			result = append(result, false)
+		}
+	}
+
+	return result, nil
+}
+
+func (txService TxService) HasSnDerivators(paymentAddressStr string, snDerivatorStr []interface{}, tokenID common.Hash) ([]bool, error) {
+	_, shardIDSender, err := GetKeySetFromPaymentAddressParam(paymentAddressStr)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]bool, 0)
+	for _, item := range snDerivatorStr {
+		itemStr, okParam := item.(string)
+		if !okParam {
+			return nil, errors.New("Invalid serial number derivator param")
+		}
+		snderivator, _, err := base58.Base58Check{}.Decode(itemStr)
+		if err != nil {
+			return nil, errors.New("Invalid serial number derivator param")
+		}
+		transactionStateDB := txService.BlockChain.BestState.Shard[shardIDSender].GetCopiedTransactionStateDB()
+		ok, err := statedb.HasSNDerivator(transactionStateDB, tokenID, common.AddPaddingBigInt(new(big.Int).SetBytes(snderivator), common.BigIntSize))
+		if ok && err == nil {
+			// SnD in db
+			result = append(result, true)
+		} else {
+			// SnD not in db
+			result = append(result, false)
+		}
+	}
+	return result, nil
+}
+
 // chooseBestOutCoinsToSpent returns list of unspent coins for spending with amount
 func (txService TxService) chooseBestOutCoinsToSpent(outCoins []*privacy.OutputCoin, amount uint64) (resultOutputCoins []*privacy.OutputCoin, remainOutputCoins []*privacy.OutputCoin, totalResultOutputCoinAmount uint64, err error) {
 	resultOutputCoins = make([]*privacy.OutputCoin, 0)

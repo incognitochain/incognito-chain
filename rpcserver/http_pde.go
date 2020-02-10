@@ -578,7 +578,7 @@ func (httpServer *HttpServer) handleGetPDEContributionStatus(params interface{},
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload is invalid"))
 	}
-	status, err := httpServer.databaseService.GetPDEStatus(rawdb.PDEContributionStatusPrefix, []byte(contributionPairID))
+	status, err := httpServer.blockService.GetPDEStatus(rawdb.PDEContributionStatusPrefix, []byte(contributionPairID))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
@@ -610,7 +610,7 @@ func (httpServer *HttpServer) handleGetPDETradeStatus(params interface{}, closeC
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-	status, err := httpServer.databaseService.GetPDEStatus(rawdb.PDETradeStatusPrefix, txIDHash[:])
+	status, err := httpServer.blockService.GetPDEStatus(rawdb.PDETradeStatusPrefix, txIDHash[:])
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
@@ -628,7 +628,7 @@ func (httpServer *HttpServer) handleGetPDEWithdrawalStatus(params interface{}, c
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-	status, err := httpServer.databaseService.GetPDEStatus(rawdb.PDEWithdrawalStatusPrefix, txIDHash[:])
+	status, err := httpServer.blockService.GetPDEStatus(rawdb.PDEWithdrawalStatusPrefix, txIDHash[:])
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
