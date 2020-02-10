@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"math"
 	"math/big"
 	"sort"
@@ -32,6 +33,34 @@ type TxService struct {
 	Wallet       *wallet.Wallet
 	FeeEstimator map[byte]*mempool.FeeEstimator
 	TxMemPool    *mempool.TxPool
+}
+
+func (txService TxService) ListSerialNumbers(tokenID common.Hash, shardID byte) (map[string]struct{}, error) {
+	transactionStateDB := txService.BlockChain.BestState.Shard[shardID].GetCopiedTransactionStateDB()
+	return statedb.ListSerialNumber(transactionStateDB, tokenID, shardID)
+}
+
+func (txService TxService) ListSNDerivator(tokenID common.Hash, shardID byte) ([]big.Int, error) {
+	transactionStateDB := txService.BlockChain.BestState.Shard[shardID].GetCopiedTransactionStateDB()
+	resultInBytes, err := statedb.ListSNDerivator(transactionStateDB, tokenID)
+	if err != nil {
+		return nil, err
+	}
+	result := []big.Int{}
+	for _, v := range resultInBytes {
+		result = append(result, *(new(big.Int).SetBytes(v)))
+	}
+	return result, nil
+}
+
+func (txService TxService) ListCommitments(tokenID common.Hash, shardID byte) (map[string]uint64, error) {
+	transactionStateDB := txService.BlockChain.BestState.Shard[shardID].GetCopiedTransactionStateDB()
+	return statedb.ListCommitment(transactionStateDB, tokenID, shardID)
+}
+
+func (txService TxService) ListCommitmentIndices(tokenID common.Hash, shardID byte) (map[uint64]string, error) {
+	transactionStateDB := txService.BlockChain.BestState.Shard[shardID].GetCopiedTransactionStateDB()
+	return statedb.ListCommitmentIndices(transactionStateDB, tokenID, shardID)
 }
 
 // chooseBestOutCoinsToSpent returns list of unspent coins for spending with amount

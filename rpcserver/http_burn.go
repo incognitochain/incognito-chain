@@ -32,7 +32,7 @@ func (httpServer *HttpServer) handleGetBurnProof(params interface{}, closeChan <
 	}
 
 	// Get block height from txID
-	height, err := httpServer.databaseService.GetBurningConfirm(*txID)
+	height, err := httpServer.blockService.GetBurningConfirm(*txID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, fmt.Errorf("proof of tx not found"))
 	}
@@ -164,7 +164,7 @@ func (httpServer *HttpServer) handleGetBurningAddress(params interface{}, closeC
 	}
 
 	beaconHeightParam := float64(0)
-	if len(listParams) >= 1{
+	if len(listParams) >= 1 {
 		beaconHeightParam, ok = listParams[0].(float64)
 		if !ok {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("beacon height is invalid"))

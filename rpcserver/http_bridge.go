@@ -266,7 +266,7 @@ func (httpServer *HttpServer) handleCheckETHHashIssued(params interface{}, close
 	}
 	data := arrayParams[0].(map[string]interface{})
 
-	issued, err := httpServer.databaseService.CheckETHHashIssued(data)
+	issued, err := httpServer.blockService.CheckETHHashIssued(data)
 	if err != nil {
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}

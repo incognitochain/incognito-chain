@@ -4,14 +4,16 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"fmt"
 	"log"
 	"strconv"
 
+	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/mempool"
@@ -836,4 +838,34 @@ func (blockService BlockService) GetAllBridgeTokens() ([]byte, error) {
 	bridgeStateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
 	allBridgeTokensBytes, err := statedb.GetAllBridgeTokens(bridgeStateDB)
 	return allBridgeTokensBytes, err
+}
+
+func (blockService BlockService) CheckETHHashIssued(data map[string]interface{}) (bool, error) {
+	blockHashParam, ok := data["BlockHash"].(string)
+	if !ok {
+		return false, errors.New("Block hash param is invalid")
+	}
+	blockHash := rCommon.HexToHash(blockHashParam)
+
+	txIdxParam, ok := data["TxIndex"].(float64)
+	if !ok {
+		return false, errors.New("Tx index param is invalid")
+	}
+	txIdx := uint(txIdxParam)
+	uniqETHTx := append(blockHash[:], []byte(strconv.Itoa(int(txIdx)))...)
+	bridgeStateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	issued, err := statedb.IsETHTxHashIssued(bridgeStateDB, uniqETHTx)
+	return issued, err
+}
+
+func (blockService BlockService) GetBurningConfirm(txID common.Hash) (uint64, error) {
+	for i := 0; i < blockService.BlockChain.BestState.Beacon.ActiveShards; i++ {
+		shardID := byte(i)
+		burningConfirmStateDB := blockService.BlockChain.BestState.Shard[shardID].GetFeatureCopiedStateDB()
+		res, err := statedb.GetBurningConfirm(burningConfirmStateDB, txID)
+		if err == nil {
+			return res, nil
+		}
+	}
+	return 0, fmt.Errorf("Get Burning Confirm of TxID %+v not found", txID)
 }
