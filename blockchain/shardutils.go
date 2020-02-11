@@ -149,7 +149,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 		metadataValue := tx.GetMetadata()
 		if metadataValue != nil {
 			actionPairs, err := metadataValue.BuildReqActions(tx, bc, shardID)
-			Logger.log.Infof("Build Request Action Pairs %+v, metadata type %+v", actionPairs, metadataValue)
+			Logger.log.Infof("Build Request Action Pairs %+v, metadata value %+v", actionPairs, metadataValue)
 			if err == nil {
 				instructions = append(instructions, actionPairs...)
 			} else {

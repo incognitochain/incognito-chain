@@ -206,10 +206,10 @@ func (blockchain *BlockChain) addShardCommitteeRewardV2(rewardStateDB *statedb.S
 			return NewBlockChainError(ProcessSalaryInstructionsError, err)
 		}
 		if common.GetShardIDFromLastByte(wl.KeySet.PaymentAddress.Pk[common.PublicKeySize-1]) == shardID {
-			for key, value := range rewardInfoShardToProcess.ShardReward {
+			for tokenID, amount := range rewardInfoShardToProcess.ShardReward {
 				tempPK := base58.Base58Check{}.Encode(wl.KeySet.PaymentAddress.Pk, common.Base58Version)
-				Logger.log.Criticalf("Add Committee Reward ShardCommitteeReward, Public Key %+v, reward %+v, token %+v", tempPK, value/uint64(committeeSize), key)
-				err = statedb.AddCommitteeReward(rewardStateDB, tempPK, value/uint64(committeeSize), key)
+				Logger.log.Criticalf("Add Committee Reward ShardCommitteeReward, Public Key %+v, reward %+v, token %+v", tempPK, amount/uint64(committeeSize), tokenID)
+				err = statedb.AddCommitteeReward(rewardStateDB, tempPK, amount/uint64(committeeSize), tokenID)
 				if err != nil {
 					return NewBlockChainError(ProcessSalaryInstructionsError, err)
 				}

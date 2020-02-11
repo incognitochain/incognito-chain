@@ -47,7 +47,10 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadataV2(s
 				Logger.log.Errorf("Response does not match with request, response link to txID %v, request txID %v, error %v", responseMeta.TxRequest.String(), txReq.Hash().String(), err)
 			}
 			tempPublicKey := base58.Base58Check{}.Encode(requesterRes, common.Base58Version)
-			amount, err := statedb.GetCommitteeReward(blockchain.GetShardRewardStateDB(shardID), tempPublicKey, requestMeta.TokenID)
+			Logger.log.Infof("Token ID %+v", requestMeta.TokenID)
+			Logger.log.Infof("Coin ID %+v", *coinID)
+			Logger.log.Infof("Temp Public Key %+v", tempPublicKey)
+			amount, err := statedb.GetCommitteeReward(blockchain.BestState.Shard[shardID].GetCopiedRewardStateDB(), tempPublicKey, requestMeta.TokenID)
 			if (amount == 0) || (err != nil) {
 				return errors.Errorf("Invalid request %v, amount from db %v, error %v", requester, amount, err)
 			}
