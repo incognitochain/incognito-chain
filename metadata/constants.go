@@ -42,8 +42,9 @@ const (
 	PDEContributionResponseMeta = 95
 
 	// portal
-	PortalCustodianDepositMeta = 100
-	PortalUserRegisterMeta     = 101
+	PortalCustodianDepositMeta  = 100
+	PortalUserRegisterMeta      = 101
+	PortalUserRequestPTokenMeta = 102
 )
 
 var minerCreatedMetaTypes = []int{
@@ -91,4 +92,3 @@ var PortalSupportedTokenSymbols = []string{
 	"BTC", // pBTC
 	"BNB", // pBNB
 }
-

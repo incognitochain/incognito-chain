@@ -8,7 +8,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"reflect"
 	"strconv"
 )
 
@@ -16,7 +15,7 @@ import (
 type PortalCustodianDeposit struct {
 	MetadataBase
 	IncogAddressStr string
-	RemoteAddresses map[string]string // need to be reviewed
+	RemoteAddresses map[string]string
 	DepositedAmount uint64
 }
 
@@ -52,9 +51,9 @@ func (custodianDeposit PortalCustodianDeposit) ValidateTxWithBlockChain(
 
 func (custodianDeposit PortalCustodianDeposit) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
-	if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
-		return true, true, nil
-	}
+	//if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
+	//	return true, true, nil
+	//}
 
 	// validate IncogAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(custodianDeposit.IncogAddressStr)

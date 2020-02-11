@@ -41,6 +41,9 @@ const (
 	PDEWithdrawalRequestFromMapError
 	CouldNotGetExchangeRateError
 	RejectInvalidFee
+
+	// portal
+	PortalRequestPTokenParamError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -86,6 +89,9 @@ var ErrCodeMessage = map[int]struct {
 	PDEWithdrawalRequestFromMapError: {-6001, "PDE withdrawal request Error"},
 	CouldNotGetExchangeRateError:     {-6002, "Could not get the exchange rate error"},
 	RejectInvalidFee:                 {-6003, "Reject invalid fee"},
+
+	// portal
+	PortalRequestPTokenParamError:                 {-7001, "Portal request ptoken param error"},
 }
 
 type MetadataTxError struct {
