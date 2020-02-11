@@ -23,6 +23,9 @@ func (blockchain *BlockChain) processPortalInstructions(block *BeaconBlock, bd *
 		case strconv.Itoa(metadata.PortalCustodianDepositMeta):
 			err = blockchain.processPortalCustodianDeposit(beaconHeight, inst, currentPortalState)
 		}
+		//case //
+		//todo:
+
 		if err != nil {
 			Logger.log.Error(err)
 			return nil
@@ -35,6 +38,32 @@ func (blockchain *BlockChain) processPortalInstructions(block *BeaconBlock, bd *
 	}
 	return nil
 }
+
+func InitCurrentPortalStateFromDB(
+	db database.DatabaseInterface,
+	beaconHeight uint64,
+) (*CurrentPortalState, error) {
+	/*waitingPDEContributions, err := getWaitingPortalContributions(db, beaconHeight)
+	if err != nil {
+		return nil, err
+	}
+	pdePoolPairs, err := getPortalPoolPair(db, beaconHeight)
+	if err != nil {
+		return nil, err
+	}
+	pdeShares, err := getPortalShares(db, beaconHeight)
+	if err != nil {
+		return nil, err
+	}*/
+
+	return &CurrentPortalState{
+		CustodianPoolState: waitingPDEContributions,
+		PortingRequests:            pdePoolPairs,
+		RedeemRequests:               pdeShares,
+	}, nil
+}
+
+
 
 // todo
 func (blockchain *BlockChain) processPortalCustodianDeposit(
