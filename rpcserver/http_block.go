@@ -219,6 +219,7 @@ func (httpServer *HttpServer) handleGetBlockChainInfo(params interface{}, closeC
 	}
 	bestBlockBeaconItem := jsonresult.NewGetBestBlockItemFromBeacon(beaconBestState)
 	bestBlockBeaconItem.RemainingBlockEpoch = (httpServer.config.ChainParams.Epoch * bestBlockBeaconItem.Epoch) - bestBlockBeaconItem.Height
+	bestBlockBeaconItem.EpochBlock = httpServer.config.ChainParams.Epoch
 	result.BestBlocks[-1] = *bestBlockBeaconItem
 
 	Logger.log.Debugf("handleGetBlockChainInfo result: %+v", result)

@@ -128,7 +128,6 @@ func Staking(args string) (string, error) {
 	return B64Res, nil
 }
 
-
 func StopAutoStaking(args string) (string, error) {
 	// parse meta data
 	bytes := []byte(args)
@@ -246,7 +245,7 @@ func InitWithdrawRewardTx(args string) (string, error) {
 
 	tmp := &metadata.WithDrawRewardRequest{
 		PaymentAddress: paymentAddress,
-		MetadataBase:   *metadata.NewMetadataBase(int(metaDataType)),
+		MetadataBase:   *metadata.NewMetadataBaseWithVersion(int(metaDataType), int(1)),
 		TokenID:        *tokenId,
 	}
 
