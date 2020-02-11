@@ -13,6 +13,7 @@ type WithDrawRewardRequest struct {
 	privacy.PaymentAddress
 	MetadataBase
 	TokenID common.Hash
+	Version int
 }
 
 func (withDrawRewardRequest WithDrawRewardRequest) Hash() *common.Hash {
@@ -69,6 +70,7 @@ type WithDrawRewardResponse struct {
 	MetadataBase
 	TxRequest *common.Hash
 	TokenID   common.Hash
+	Version   int
 }
 
 func NewWithDrawRewardResponse(txRequest *WithDrawRewardRequest, reqID *common.Hash) (Metadata, error) {
