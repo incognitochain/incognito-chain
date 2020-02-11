@@ -66,6 +66,9 @@ var (
 	PDEContributionStatusPrefix  = []byte("pdecontributionstatus-")
 	PDETradeStatusPrefix         = []byte("pdetradestatus-")
 	PDEWithdrawalStatusPrefix    = []byte("pdewithdrawalstatus-")
+
+	// Portal
+	CustodianStatePrefix = []byte("custodianstate-")
 )
 
 // value

@@ -1,44 +1,29 @@
 package blockchain
 
-import "github.com/incognitochain/incognito-chain/database"
-
-type CustodianState struct {
-	//IncognitoAddress string
-	TotalCollateral  uint64
-	FreeCollateral   uint64
-	HoldingPubTokens map[string]uint64
-}
-
-type PortingRequest struct {
-	UniquePortingID string
-	TxReqID         string
-	TokenID         string
-	PorterAddress   string
-	Amount          uint64
-	Custodians      map[string]uint64
-}
-
-type RedeemRequest struct {
-	UniqueRedeemID        string
-	TxReqID               string
-	TokenID               string
-	RedeemerAddress       string
-	RedeemerRemoteAddress string
-	Amount                uint64
-	Custodians            map[string]uint64
-}
+import (
+	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/database/lvdb"
+)
 
 type CurrentPortalState struct {
-	CustodianPoolState map[string]*CustodianState // custodian_address: CustodianState
-	PortingRequests    []*PortingRequest
-	RedeemRequests     []*RedeemRequest
+	CustodianPoolState map[string]*lvdb.CustodianState // key : beaconHeight || custodian_address
+	PortingRequests    map[string]*lvdb.PortingRequest // key : beaconHeight || UniquePortingID
+	RedeemRequests     map[string]*lvdb.RedeemRequest  // key : beaconHeight || UniqueRedeemID
 }
 
-func NewCustodianState(totalColl uint64, freeColl uint64, holdingPubTokens map[string]uint64) (*CustodianState, error) {
-	return &CustodianState{
+func NewCustodianState(
+	incognitoAddress string,
+	totalColl uint64,
+	freeColl uint64,
+	holdingPubTokens map[string]uint64,
+	remoteAddresses map[string]string,
+) (*lvdb.CustodianState, error) {
+	return &lvdb.CustodianState{
+		IncognitoAddress: incognitoAddress,
 		TotalCollateral:  totalColl,
 		FreeCollateral:   freeColl,
 		HoldingPubTokens: holdingPubTokens,
+		RemoteAddresses:  remoteAddresses,
 	}, nil
 }
 

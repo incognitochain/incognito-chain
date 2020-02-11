@@ -102,8 +102,10 @@ func (custodianDeposit PortalCustodianDeposit) ValidateMetadataByItself() bool {
 func (custodianDeposit PortalCustodianDeposit) Hash() *common.Hash {
 	record := custodianDeposit.MetadataBase.Hash().String()
 	record += custodianDeposit.IncogAddressStr
-	//todo:
-	//record += custodianDeposit.RemoteAddresses
+	for tokenID, rAddress := range custodianDeposit.RemoteAddresses {
+		record += tokenID
+		record += rAddress
+	}
 	record += strconv.FormatUint(custodianDeposit.DepositedAmount, 10)
 	// final hash
 	hash := common.HashH([]byte(record))
