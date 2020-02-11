@@ -55,6 +55,7 @@ func (mb MetadataBase) Hash() *common.Hash {
 		version := strconv.Itoa(mb.Version)
 		data = append(data, []byte(version)...)
 	}
+	Logger.log.Infof("MetadataBase Version", mb.Version)
 	hash := common.HashH(data)
 	return &hash
 }
