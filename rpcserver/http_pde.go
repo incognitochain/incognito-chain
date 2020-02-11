@@ -796,7 +796,7 @@ func (httpServer *HttpServer) handleExtractPDEInstsFromBeaconBlock(
 	}
 
 	bcHeight := uint64(beaconHeight)
-	beaconBlocks, err := blockchain.FetchBeaconBlockFromHeight(
+	beaconBlocks, err := blockchain.FetchBeaconBlockFromHeightV2(
 		httpServer.config.BlockChain.GetDatabase(),
 		bcHeight,
 		bcHeight,
