@@ -1,6 +1,7 @@
 package statedb_test
 
 import (
+	"github.com/incognitochain/incognito-chain/dataaccessobject"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -24,6 +25,7 @@ var _ = func() (_ struct{}) {
 	diskBD, _ := incdb.Open("leveldb", dbPath)
 	warperDBrewardTest = statedb.NewDatabaseAccessWarper(diskBD)
 	trie.Logger.Init(common.NewBackend(nil).Logger("test", true))
+	dataaccessobject.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return
 }()
 
@@ -195,5 +197,52 @@ func TestStateDB_GetAllRewardReceiverStateMultipleRootHash(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+func TestStateDB_AddCommitteeReward(t *testing.T) {
+	stateDB, err := statedb.NewWithPrefixTrie(common.EmptyRoot, warperDBrewardTest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	incognitoPublicKey := incognitoPublicKeys[0]
+	amount := uint64(10000)
+	err = statedb.AddCommitteeReward(stateDB, incognitoPublicKey, amount, common.PRVCoinID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rootHash, err := stateDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = stateDB.Database().TrieDB().Commit(rootHash, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotAmount0, err := statedb.GetCommitteeReward(stateDB, incognitoPublicKey, common.PRVCoinID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotAmount0 != amount {
+		t.Fatalf("want %+v but got %+v", amount, gotAmount0)
+	}
+	err = statedb.AddCommitteeReward(stateDB, incognitoPublicKey, amount, common.PRVCoinID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rootHash, err = stateDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = stateDB.Database().TrieDB().Commit(rootHash, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotAmount1, err := statedb.GetCommitteeReward(stateDB, incognitoPublicKey, common.PRVCoinID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotAmount1 != amount*2 {
+		t.Fatalf("want %+v but got %+v", amount*2, gotAmount0)
 	}
 }
