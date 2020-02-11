@@ -220,6 +220,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockV2(shardBlock *ShardB
 	}
 	// Verify Action
 	txInstructions, err := CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, blockchain, shardID)
+	Logger.log.Infof("Shard Proccess Instruction from Transaction %+v", txInstructions)
 	if err != nil {
 		Logger.log.Error(err)
 		return NewBlockChainError(ShardIntructionFromTransactionAndInstructionError, err)
