@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"encoding/json"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 )
@@ -32,8 +33,24 @@ func InitCurrentPortalStateFromDB(
 	db database.DatabaseInterface,
 	beaconHeight uint64,
 ) (*CurrentPortalState, error) {
+	custodianPoolState, err := getCustodianPoolState(db, beaconHeight)
+	if err != nil {
+		return nil, err
+	}
+	portingRequestsState, err := getPortingRequestsState(db, beaconHeight)
+	if err != nil {
+		return nil, err
+	}
+	redeemRequestsState, err := getRedeemRequestsState(db, beaconHeight)
+	if err != nil {
+		return nil, err
+	}
 
-	return &CurrentPortalState{}, nil
+	return &CurrentPortalState{
+		CustodianPoolState: custodianPoolState,
+		PortingRequests:    portingRequestsState,
+		RedeemRequests:     redeemRequestsState,
+	}, nil
 }
 
 // todo
@@ -44,3 +61,67 @@ func storePortalStateToDB(
 ) error {
 	return nil
 }
+
+
+func getCustodianPoolState(
+	db database.DatabaseInterface,
+	beaconHeight uint64,
+) (map[string]*lvdb.CustodianState, error) {
+		custodianPoolState := make(map[string]*lvdb.CustodianState)
+		custodianPoolStateKeysBytes, custodianPoolStateValuesBytes, err := db.GetAllRecordsPortalByPrefix(beaconHeight, lvdb.CustodianStatePrefix)
+		if err != nil {
+			return nil, err
+		}
+		for idx, custodianPoolStateKeyBytes := range custodianPoolStateKeysBytes {
+			var custodianState lvdb.CustodianState
+			err = json.Unmarshal(custodianPoolStateValuesBytes[idx], &custodianState)
+			if err != nil {
+				return nil, err
+			}
+			custodianPoolState[string(custodianPoolStateKeyBytes)] = &custodianState
+		}
+		return custodianPoolState, nil
+	}
+
+func getPortingRequestsState(
+	db database.DatabaseInterface,
+	beaconHeight uint64,
+) (map[string]*lvdb.PortingRequest, error) {
+	portingRequestState := make(map[string]*lvdb.PortingRequest)
+	portingRequestStateKeysBytes, portingRequestStateValuesBytes, err := db.GetAllRecordsPortalByPrefix(beaconHeight, lvdb.PortalPortingRequestsPrefix)
+	if err != nil {
+		return nil, err
+	}
+	for idx, portingRequestStateKeyBytes := range portingRequestStateKeysBytes {
+		var portingRequest lvdb.PortingRequest
+		err = json.Unmarshal(portingRequestStateValuesBytes[idx], &portingRequest)
+		if err != nil {
+			return nil, err
+		}
+
+		portingRequestState[string(portingRequestStateKeyBytes)] = &portingRequest
+	}
+	return portingRequestState, nil
+}
+
+func getRedeemRequestsState(
+	db database.DatabaseInterface,
+	beaconHeight uint64,
+) (map[string]*lvdb.RedeemRequest, error) {
+	redeemRequestState := make(map[string]*lvdb.RedeemRequest)
+	redeemRequestStateKeysBytes, redeemRequestStateValuesBytes, err := db.GetAllRecordsPortalByPrefix(beaconHeight, lvdb.PortalRedeemRequestsPrefix)
+	if err != nil {
+		return nil, err
+	}
+	for idx, portingRequestStateKeyBytes := range redeemRequestStateKeysBytes {
+		var redeemRequest lvdb.RedeemRequest
+		err = json.Unmarshal(redeemRequestStateValuesBytes[idx], &redeemRequest)
+		if err != nil {
+			return nil, err
+		}
+
+		redeemRequestState[string(portingRequestStateKeyBytes)] = &redeemRequest
+	}
+	return redeemRequestState, nil
+}
+

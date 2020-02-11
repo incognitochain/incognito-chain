@@ -26,6 +26,9 @@ func (blockchain *BlockChain) processPortalInstructions(block *BeaconBlock, bd *
 		case strconv.Itoa(metadata.PortalCustodianDepositMeta):
 			err = blockchain.processPortalCustodianDeposit(beaconHeight, inst, currentPortalState)
 		}
+		//case //
+		//todo:
+
 		if err != nil {
 			Logger.log.Error(err)
 			return nil

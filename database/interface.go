@@ -199,4 +199,7 @@ type DatabaseInterface interface {
 	GetPDEStatus(prefix []byte, suffix []byte) (byte, error)
 	TrackPDEContributionStatus(prefix []byte, suffix []byte, statusContent []byte) error
 	GetPDEContributionStatus(prefix []byte, suffix []byte) ([]byte, error)
+
+	//portal
+	GetAllRecordsPortalByPrefix(beaconHeight uint64, prefix []byte) ([][]byte, [][]byte, error)
 }
