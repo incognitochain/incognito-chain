@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 )
 
+//TODO: 0xmerman modify function when update to consensus v2
 func FetchBeaconBlockFromHeightV2(db incdb.Database, from uint64, to uint64) ([]*BeaconBlock, error) {
 	beaconBlocks := []*BeaconBlock{}
 	for i := from; i <= to; i++ {
