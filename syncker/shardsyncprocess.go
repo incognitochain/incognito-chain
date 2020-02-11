@@ -6,21 +6,20 @@ const RUNNING_SYNC = "running_sync"
 const STOP_SYNC = "stop_sync"
 
 type ShardPeerState struct {
-	PeerID          string
-	FinalViewHeight uint64
-	BestViewHash    string
-	BestViewHeight  uint64
+	Timestamp      int64
+	BestViewHash   string
+	BestViewHeight uint64
 }
 type CrossShardPeerState struct {
-	PeerID string
-	Height map[byte]uint64 //fromShardID -> hieght
+	Timestamp int64
+	Height    map[byte]uint64 //fromShardID -> hieght
 }
 
 type ShardSyncProcess struct {
 	ShardID             byte
-	Status              string //stop, running
-	ShardPeerState      []ShardPeerState
-	CrossShardPeerState []CrossShardPeerState
+	Status              string                         //stop, running
+	ShardPeerState      map[string]ShardPeerState      //peerid -> state
+	CrossShardPeerState map[string]CrossShardPeerState //peerID -> state
 	Server              Server
 	Chain               Chain
 }
@@ -51,7 +50,7 @@ func (s *ShardSyncProcess) syncShardProcess() {
 	if s.Status != RUNNING_SYNC {
 		return
 	}
-	for _, pState := range s.ShardPeerState {
+	for PeerID, pState := range s.ShardPeerState {
 		if pState.BestViewHeight < s.Chain.GetBestView().GetHeight() {
 			continue
 		}
@@ -59,7 +58,7 @@ func (s *ShardSyncProcess) syncShardProcess() {
 			continue
 		}
 
-		ch, stop := s.Server.RequestBlock(pState.PeerID, int(s.ShardID), s.Chain.GetFinalView().GetHeight(), s.Chain.GetBestView().GetHash())
+		ch, stop := s.Server.RequestBlock(PeerID, int(s.ShardID), s.Chain.GetFinalView().GetHeight(), s.Chain.GetBestView().GetHash())
 		for {
 			shouldBreak := false
 			select {
@@ -82,12 +81,12 @@ func (s *ShardSyncProcess) syncCrossShardPoolProcess() {
 	if s.Status != RUNNING_SYNC {
 		return
 	}
-	for _, pState := range s.CrossShardPeerState {
+	for peerID, pState := range s.CrossShardPeerState {
 		for fromSID, height := range pState.Height {
 			if height <= s.Server.GetCrossShardPool(s.ShardID).GetLatestCrossShardFinalHeight(fromSID) {
 				continue
 			}
-			ch, stop := s.Server.RequestCrossShardBlockPool(pState.PeerID, int(s.ShardID), s.Server.GetCrossShardPool(s.ShardID).GetLatestCrossShardFinalHeight(fromSID))
+			ch, stop := s.Server.RequestCrossShardBlockPool(peerID, int(s.ShardID), s.Server.GetCrossShardPool(s.ShardID).GetLatestCrossShardFinalHeight(fromSID))
 			for {
 				shouldBreak := false
 				select {

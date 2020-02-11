@@ -3,25 +3,24 @@ package syncker
 import "time"
 
 type BeaconPeerState struct {
-	PeerID          string
-	FinalViewHeight uint64
-	BestViewHash    string
-	BestViewHeight  uint64
+	Timestamp      int64
+	BestViewHash   string
+	BestViewHeight uint64
 }
 type S2BPeerState struct {
-	PeerID string
-	Height map[byte]uint64
+	Timestamp int64
+	Height    map[byte]uint64 //shardid -> height
 }
 
 type BeaconSyncProcess struct {
-	Status         string //stop, running
-	ShardPeerState []BeaconPeerState
-	S2BPeerState   []S2BPeerState
-	Server         Server
-	Chain          Chain
+	Status           string                     //stop, running
+	BeaconPeerStates map[string]BeaconPeerState //sender -> state
+	S2BPeerState     map[string]S2BPeerState    //sender -> state
+	Server           Server
+	Chain            Chain
 }
 
-func NewBeaconSyncProcess(shardID byte, server Server, chain Chain) *BeaconSyncProcess {
+func NewBeaconSyncProcess(server Server, chain Chain) *BeaconSyncProcess {
 	s := &BeaconSyncProcess{
 		Status: STOP_SYNC,
 		Server: server,
@@ -46,7 +45,7 @@ func (s *BeaconSyncProcess) syncBeaconProcess() {
 	if s.Status != RUNNING_SYNC {
 		return
 	}
-	for _, pState := range s.ShardPeerState {
+	for peerID, pState := range s.BeaconPeerStates {
 		if pState.BestViewHeight < s.Chain.GetBestView().GetHeight() {
 			continue
 		}
@@ -54,7 +53,7 @@ func (s *BeaconSyncProcess) syncBeaconProcess() {
 			continue
 		}
 
-		ch, stop := s.Server.RequestBlock(pState.PeerID, -1, s.Chain.GetFinalView().GetHeight(), s.Chain.GetBestView().GetHash())
+		ch, stop := s.Server.RequestBlock(peerID, -1, s.Chain.GetFinalView().GetHeight(), s.Chain.GetBestView().GetHash())
 		for {
 			shouldBreak := false
 			select {
@@ -77,12 +76,12 @@ func (s *BeaconSyncProcess) syncS2BPoolProcess() {
 	if s.Status != RUNNING_SYNC {
 		return
 	}
-	for _, pState := range s.S2BPeerState {
+	for peerID, pState := range s.S2BPeerState {
 		for fromSID, height := range pState.Height {
 			if height <= s.Server.GetS2BPool(fromSID).GetLatestFinalHeight() {
 				continue
 			}
-			ch, stop := s.Server.RequestS2BBlockPool(pState.PeerID, int(fromSID), s.Server.GetS2BPool(fromSID).GetLatestFinalHeight())
+			ch, stop := s.Server.RequestS2BBlockPool(peerID, int(fromSID), s.Server.GetS2BPool(fromSID).GetLatestFinalHeight())
 			for {
 				shouldBreak := false
 				select {
