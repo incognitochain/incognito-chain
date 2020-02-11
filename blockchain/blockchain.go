@@ -1170,17 +1170,19 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(
 	error,
 ) {
 	txRequestTable := reqTableFromReqTxs(transactions)
-	txsSpamRemoved := filterReqTxs(transactions, txRequestTable)
 	txsResponse := []metadata.Transaction{}
-	for _, value := range txRequestTable {
+	for key, value := range txRequestTable {
 		txRes, err := blockchain.buildWithDrawTransactionResponse(&value, blkProducerPrivateKey)
 		if err != nil {
-			return txsResponse, err
+			Logger.log.Errorf("Build Withdraw transactions response for tx %v return errors %v", value, err)
+			delete(txRequestTable, key)
+			continue
 		} else {
 			Logger.log.Infof("[Reward] - BuildWithDrawTransactionResponse for tx %+v, ok: %+v\n", value, txRes)
 		}
 		txsResponse = append(txsResponse, txRes)
 	}
+	txsSpamRemoved := filterReqTxs(transactions, txRequestTable)
 	Logger.log.Infof("Number of metadata txs: %v; number of tx request %v; number of tx spam %v; number of tx response %v",
 		len(transactions),
 		len(txRequestTable),
