@@ -245,7 +245,7 @@ func InitWithdrawRewardTx(args string) (string, error) {
 
 	tmp := &metadata.WithDrawRewardRequest{
 		PaymentAddress: paymentAddress,
-		MetadataBase:   *metadata.NewMetadataBase(int(metaDataType)),
+		MetadataBase:   *metadata.NewMetadataBaseWithVersion(int(metaDataType), int(1)),
 		TokenID:        *tokenId,
 	}
 
