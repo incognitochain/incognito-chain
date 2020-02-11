@@ -43,6 +43,7 @@ const (
 
 	// portal
 	PortalCustodianDepositMeta = 100
+	PortalUserRegisterMeta = 101
 )
 
 var minerCreatedMetaTypes = []int{
@@ -76,4 +77,9 @@ const (
 )
 const (
 	StopAutoStakingAmount = 0
+)
+
+const (
+	PNormalTokenId = 1
+	PPrimaryTokenId = 2
 )
