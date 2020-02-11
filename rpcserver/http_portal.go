@@ -31,12 +31,16 @@ func (httpServer *HttpServer) handleCreateRawTxWithCustodianDeposit(params inter
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata RemoteAddresses must be at least one"))
 	}
 	remoteAddresses := make(map[string]string)
-	for ptokenID, remoteAddress := range remoteAddressesMap {
+	for ptokenSymbol, remoteAddress := range remoteAddressesMap {
 		addr, ok := remoteAddress.(string)
 		if !ok {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata RemoteAddresses is invalid"))
 		}
-		remoteAddresses[ptokenID] = addr
+		isSupported, err := common.SliceExists(metadata.PortalSupportedTokenSymbols, ptokenSymbol)
+		if err != nil || !isSupported {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
+		}
+		remoteAddresses[ptokenSymbol] = addr
 	}
 	depositedAmountData, ok := data["DepositedAmount"].(float64)
 	if !ok {
