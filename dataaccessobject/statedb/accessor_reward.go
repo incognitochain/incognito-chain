@@ -89,7 +89,7 @@ func GetCommitteeReward(stateDB *StateDB, incognitoPublicKey string, tokenID com
 		return 0, NewStatedbError(GetCommitteeRewardError, err)
 	}
 	if !has {
-		return 0, NewStatedbError(GetCommitteeRewardError, fmt.Errorf("token %+v reward not exist", tokenID))
+		return 0, nil
 	}
 	if amount, ok := r[tokenID]; !ok {
 		return 0, nil
