@@ -15,6 +15,7 @@ type GetBestBlockItem struct {
 	Epoch               uint64 `json:"Epoch"`
 	Time                int64  `json:"Time"`
 	RemainingBlockEpoch uint64 `json:"RemainingBlockEpoch"`
+	EpochBlock          uint64 `json:"EpochBlock"`
 }
 
 func NewGetBestBlockItemFromShard(bestState *blockchain.ShardBestState) *GetBestBlockItem {
