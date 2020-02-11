@@ -46,7 +46,6 @@ func (custodianDeposit PortalCustodianDeposit) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
-	// NOTE: verify supported tokens pair as needed
 	return true, nil
 }
 

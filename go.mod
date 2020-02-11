@@ -1,6 +1,6 @@
 module github.com/incognitochain/incognito-chain
 
-go 1.12
+go 1.13
 
 require (
 	cloud.google.com/go v0.38.0
@@ -21,6 +21,7 @@ require (
 	github.com/gorilla/websocket v1.4.1
 	github.com/hashicorp/golang-lru v0.5.1
 	github.com/incognitochain/go-libp2p-grpc v0.0.0-20181024123959-d1f24bf49b50
+	github.com/jbenet/goprocess v0.1.3
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/jrick/logrotate v1.0.0
 	github.com/libp2p/go-libp2p v0.5.1
@@ -41,7 +42,7 @@ require (
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/tsdb v0.9.1 // indirect
-	github.com/stathat/consistent v1.0.0 // indirect
+	github.com/stathat/consistent v1.0.0
 	github.com/steakknife/bloomfilter v0.0.0-20180922174646-6819c0d2a570 // indirect
 	github.com/steakknife/hamming v0.0.0-20180906055917-c99c65617cd3 // indirect
 	github.com/stretchr/testify v1.4.0

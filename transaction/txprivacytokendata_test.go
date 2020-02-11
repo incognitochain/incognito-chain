@@ -35,7 +35,7 @@ func TestCreateCustomTokenPrivacyReceiverArray(t *testing.T) {
 	data := make(map[string]interface{})
 	data["1Uv3BkYiWy9Mjt1yBa4dXBYKo3az22TeCVEpeXN93ieJ8qhrTDuUZBzsPZWjjP2AeRQnjw1y18iFPHTRuAqqufwVC1vNUAWs4wHFbbWC2"] = 10.0
 	data["1Uv2oZbQ2Zs1qGtNBfWmLUm862wJyxw8Br7r1CysKmC4MMyv9ySR7urcaEjABH9NK2zfei8s8iGepP7ZAmyh4ew9JT9mQy7RpGF8W9w6C"] = 20.0
-	result, voutsAmount := CreateCustomTokenPrivacyReceiverArray(data)
+	result, voutsAmount, _ := CreateCustomTokenPrivacyReceiverArray(data)
 	assert.Equal(t, uint64(30), uint64(voutsAmount))
 	assert.Equal(t, 2, len(result))
 }

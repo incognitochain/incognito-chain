@@ -43,8 +43,5 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 			Logger.log.Errorf("current portal state is nil")
 			return nil
 		}
-
-
 		return nil
-
 }

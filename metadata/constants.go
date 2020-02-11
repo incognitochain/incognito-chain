@@ -68,13 +68,15 @@ var (
 	// if the blockchain is running in Docker container
 	// then using GETH_NAME env's value (aka geth container name)
 	// otherwise using localhost
-	EthereumLightNodeHost = common.GetENV("GETH_NAME", "127.0.0.1")
+	EthereumLightNodeHost     = common.GetENV("GETH_NAME", "127.0.0.1")
+	EthereumLightNodeProtocol = common.GetENV("GETH_PROTOCOL", "http")
+	EthereumLightNodePort     = common.GetENV("GETH_PORT", "8545")
 )
 
-const (
-	EthereumLightNodeProtocol = "http"
-	EthereumLightNodePort     = "8545"
-)
+//const (
+//	EthereumLightNodeProtocol = "http"
+//	EthereumLightNodePort     = "8545"
+//)
 const (
 	StopAutoStakingAmount = 0
 )

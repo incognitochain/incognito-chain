@@ -183,6 +183,9 @@ const (
 
 	// get burning address
 	getBurningAddress = "getburningaddress"
+
+	// portal
+	createAndSendTxWithCustodianDeposit = "createandsendtxwithcustodiandeposit"
 )
 
 const (
