@@ -69,6 +69,8 @@ var (
 
 	// Portal
 	CustodianStatePrefix = []byte("custodianstate-")
+	PortalPortingRequestsPrefix = []byte("portalportingrequest-")
+	PortalRedeemRequestsPrefix = []byte("portalredeemrequest-")
 )
 
 // value

@@ -42,32 +42,6 @@ func (blockchain *BlockChain) processPortalInstructions(block *BeaconBlock, bd *
 	return nil
 }
 
-func InitCurrentPortalStateFromDB(
-	db database.DatabaseInterface,
-	beaconHeight uint64,
-) (*CurrentPortalState, error) {
-	/*waitingPDEContributions, err := getWaitingPortalContributions(db, beaconHeight)
-	if err != nil {
-		return nil, err
-	}
-	pdePoolPairs, err := getPortalPoolPair(db, beaconHeight)
-	if err != nil {
-		return nil, err
-	}
-	pdeShares, err := getPortalShares(db, beaconHeight)
-	if err != nil {
-		return nil, err
-	}*/
-
-	return &CurrentPortalState{
-		CustodianPoolState: waitingPDEContributions,
-		PortingRequests:            pdePoolPairs,
-		RedeemRequests:               pdeShares,
-	}, nil
-}
-
-
-
 // todo
 func (blockchain *BlockChain) processPortalCustodianDeposit(
 	beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
