@@ -24,25 +24,24 @@ type Server interface {
 	PublishNodeState(userLayer string, shardID int) bool
 }
 
+type BlockChain interface {
+	GetBeaconBestState() Chain
+	GetAllShardBestState() map[byte]Chain
+}
 type Pool interface {
 	GetLatestCrossShardFinalHeight(byte) uint64
 	GetLatestFinalHeight() uint64
 	AddBlock(block interface{}) error
 }
 
-type ViewInterface interface {
-	GetHeight() uint64
-	GetHash() string
-}
-
 type Chain interface {
-	GetBestView() ViewInterface
-	GetFinalView() ViewInterface
-	InsertBlock(block interface{}) error
-}
+	GetBestViewHeight() uint64
+	GetFinalViewHeight() uint64
 
-type PeerStateMsg struct {
-	PeerID string
+	GetBestViewHash() string
+	GetFinalViewHash() string
+
+	InsertBlock(block interface{}) error
 }
 
 type Syncker struct {
@@ -52,8 +51,8 @@ type Syncker struct {
 	BeaconSyncProcess *BeaconSyncProcess
 	ShardSyncProcess  map[byte]*ShardSyncProcess
 
-	BeaconPeerState map[string]BeaconPeerState         //sender -> state
-	ShardPeerState  map[byte]map[string]ShardPeerState //sid -> sender -> state
+	BeaconPeerStates map[string]BeaconPeerState         //sender -> state
+	ShardPeerState   map[byte]map[string]ShardPeerState //sid -> sender -> state
 
 	S2BPeerState map[string]S2BPeerState //sender -> state
 
@@ -63,7 +62,6 @@ type Syncker struct {
 // Everytime beacon block is inserted after sync finish, we update shard committee (from beacon view)
 func (s *Syncker) UpdateCurrentCommittee(shardCommittee map[byte][]incognitokey.CommitteePublicKey, shardPendingCommittee map[byte][]incognitokey.CommitteePublicKey) {
 	userBlsPubKey := s.UserPk.GetMiningKeyBase58("bls")
-
 	{ //check shard
 		shardID := byte(0)
 		for sid, committees := range shardCommittee {
@@ -96,7 +94,7 @@ func (s *Syncker) UpdatePeerState() {
 		case peerState := <-s.PeerStateCh:
 			//beacon
 			if peerState.Beacon.Height != 0 {
-				s.BeaconPeerState[peerState.SenderID] = BeaconPeerState{
+				s.BeaconPeerStates[peerState.SenderID] = BeaconPeerState{
 					Timestamp:      peerState.Timestamp,
 					BestViewHash:   peerState.Beacon.BlockHash.String(),
 					BestViewHeight: peerState.Beacon.Height,
@@ -138,18 +136,29 @@ func (s *Syncker) UpdatePeerState() {
 	}
 }
 
-func NewSyncker(userPk incognitokey.CommitteePublicKey, server Server, beaconChain Chain, shardChain map[byte]Chain) *Syncker {
+func NewSyncker(userPk incognitokey.CommitteePublicKey, server Server, bc BlockChain) *Syncker {
 	s := &Syncker{
 		PeerStateCh:      make(chan wire.MessagePeerState),
 		UserPk:           userPk,
 		ShardSyncProcess: make(map[byte]*ShardSyncProcess),
+
+		BeaconPeerStates:    make(map[string]BeaconPeerState),
+		ShardPeerState:      make(map[byte]map[string]ShardPeerState),
+		S2BPeerState:        make(map[string]S2BPeerState),
+		CrossShardPeerState: make(map[byte]map[string]CrossShardPeerState),
 	}
 	go s.UpdatePeerState()
-	s.BeaconSyncProcess = NewBeaconSyncProcess(server, beaconChain)
+	//init beacon sync process
+	s.BeaconSyncProcess = NewBeaconSyncProcess(server, bc.GetBeaconBestState())
+	s.BeaconSyncProcess.BeaconPeerStates = s.BeaconPeerStates
+	s.BeaconSyncProcess.S2BPeerState = s.S2BPeerState
 	s.BeaconSyncProcess.Start()
 
-	for i, v := range shardChain {
-		s.ShardSyncProcess[i] = NewShardSyncProcess(i, server, v)
+	//init shard sync process
+	for sid, chain := range bc.GetAllShardBestState() {
+		s.ShardSyncProcess[sid] = NewShardSyncProcess(sid, server, chain)
+		s.ShardSyncProcess[sid].ShardPeerState = s.ShardPeerState[sid]
+		s.ShardSyncProcess[sid].CrossShardPeerState = s.CrossShardPeerState[sid]
 	}
 
 	//TODO: broadcast node state

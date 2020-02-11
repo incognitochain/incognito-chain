@@ -87,6 +87,10 @@ func NewBestStateShardWithConfig(shardID byte, netparam *Params) *ShardBestState
 	return bestStateShard
 }
 
+func GetAllShardBestState() map[byte]*ShardBestState {
+	return bestStateShardMap
+}
+
 func GetBestStateShard(shardID byte) *ShardBestState {
 	if bestStateShard, ok := bestStateShardMap[shardID]; !ok {
 		bestStateShardMap[shardID] = &ShardBestState{}

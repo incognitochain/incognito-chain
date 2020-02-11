@@ -51,14 +51,14 @@ func (s *ShardSyncProcess) syncShardProcess() {
 		return
 	}
 	for PeerID, pState := range s.ShardPeerState {
-		if pState.BestViewHeight < s.Chain.GetBestView().GetHeight() {
+		if pState.BestViewHeight < s.Chain.GetBestViewHeight() {
 			continue
 		}
-		if pState.BestViewHeight == s.Chain.GetBestView().GetHeight() && pState.BestViewHash == s.Chain.GetBestView().GetHash() {
+		if pState.BestViewHeight == s.Chain.GetBestViewHeight() && pState.BestViewHash == s.Chain.GetBestViewHash() {
 			continue
 		}
 
-		ch, stop := s.Server.RequestBlock(PeerID, int(s.ShardID), s.Chain.GetFinalView().GetHeight(), s.Chain.GetBestView().GetHash())
+		ch, stop := s.Server.RequestBlock(PeerID, int(s.ShardID), s.Chain.GetFinalViewHeight(), s.Chain.GetBestViewHash())
 		for {
 			shouldBreak := false
 			select {

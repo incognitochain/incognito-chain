@@ -46,14 +46,14 @@ func (s *BeaconSyncProcess) syncBeaconProcess() {
 		return
 	}
 	for peerID, pState := range s.BeaconPeerStates {
-		if pState.BestViewHeight < s.Chain.GetBestView().GetHeight() {
+		if pState.BestViewHeight < s.Chain.GetBestViewHeight() {
 			continue
 		}
-		if pState.BestViewHeight == s.Chain.GetBestView().GetHeight() && pState.BestViewHash == s.Chain.GetBestView().GetHash() {
+		if pState.BestViewHeight == s.Chain.GetBestViewHeight() && pState.BestViewHash == s.Chain.GetBestViewHash() {
 			continue
 		}
 
-		ch, stop := s.Server.RequestBlock(peerID, -1, s.Chain.GetFinalView().GetHeight(), s.Chain.GetBestView().GetHash())
+		ch, stop := s.Server.RequestBlock(peerID, -1, s.Chain.GetFinalViewHeight(), s.Chain.GetBestViewHash())
 		for {
 			shouldBreak := false
 			select {
