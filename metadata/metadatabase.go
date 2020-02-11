@@ -10,16 +10,11 @@ import (
 )
 
 type MetadataBase struct {
-	Type    int
-	Version int
+	Type int
 }
 
 func NewMetadataBase(thisType int) *MetadataBase {
 	return &MetadataBase{Type: thisType}
-}
-
-func NewMetadataBaseWithVersion(thisType int, version int) *MetadataBase {
-	return &MetadataBase{Type: thisType, Version: version}
 }
 
 func (mb MetadataBase) IsMinerCreatedMetaType() bool {
@@ -51,11 +46,6 @@ func (mb MetadataBase) GetType() int {
 func (mb MetadataBase) Hash() *common.Hash {
 	record := strconv.Itoa(mb.Type)
 	data := []byte(record)
-	if mb.Version == 1 {
-		version := strconv.Itoa(mb.Version)
-		data = append(data, []byte(version)...)
-	}
-	Logger.log.Infof("MetadataBase Version", mb.Version)
 	hash := common.HashH(data)
 	return &hash
 }
