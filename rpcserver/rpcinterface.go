@@ -136,6 +136,7 @@ var HttpHandler = map[string]httpHandler{
 	getRewardAmount:              (*HttpServer).handleGetRewardAmount,
 	getRewardAmountByPublicKey:   (*HttpServer).handleGetRewardAmountByPublicKey,
 	listRewardAmount:             (*HttpServer).handleListRewardAmount,
+	listRewardAmountByHeight:     (*HttpServer).handleListRewardAmountByHeight,
 
 	// revert
 	revertbeaconchain: (*HttpServer).handleRevertBeacon,

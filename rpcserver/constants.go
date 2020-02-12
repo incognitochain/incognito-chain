@@ -148,8 +148,10 @@ const (
 	// reward
 	CreateRawWithDrawTransaction = "withdrawreward"
 	getRewardAmount              = "getrewardamount"
-	getRewardAmountByPublicKey              = "getrewardamountbypublickey"
+	getRewardAmountByPublicKey   = "getrewardamountbypublickey"
 	listRewardAmount             = "listrewardamount"
+
+	listRewardAmountByHeight = "listrewardamountbyheight"
 
 	revertbeaconchain = "revertbeaconchain"
 	revertshardchain  = "revertshardchain"

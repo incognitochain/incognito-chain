@@ -1,6 +1,7 @@
 package statedb_test
 
 import (
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject"
 	"io/ioutil"
 	"os"
@@ -15,6 +16,7 @@ import (
 
 var (
 	warperDBrewardTest statedb.DatabaseAccessWarper
+	diskBD             incdb.Database
 )
 
 var _ = func() (_ struct{}) {
@@ -22,7 +24,7 @@ var _ = func() (_ struct{}) {
 	if err != nil {
 		panic(err)
 	}
-	diskBD, _ := incdb.Open("leveldb", dbPath)
+	diskBD, _ = incdb.Open("leveldb", dbPath)
 	warperDBrewardTest = statedb.NewDatabaseAccessWarper(diskBD)
 	trie.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	dataaccessobject.Logger.Init(common.NewBackend(nil).Logger("test", true))
@@ -207,7 +209,13 @@ func TestStateDB_AddCommitteeReward(t *testing.T) {
 	}
 	incognitoPublicKey := incognitoPublicKeys[0]
 	amount := uint64(10000)
-	err = statedb.AddCommitteeReward(stateDB, incognitoPublicKey, amount, common.PRVCoinID)
+	withdraw := uint64(5000)
+	tokenID := common.Hash{5}
+	err = statedb.AddCommitteeReward(stateDB, incognitoPublicKey, amount, common.PRVCoinID, diskBD, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = statedb.AddCommitteeReward(stateDB, incognitoPublicKey, amount, tokenID, diskBD, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -226,7 +234,7 @@ func TestStateDB_AddCommitteeReward(t *testing.T) {
 	if gotAmount0 != amount {
 		t.Fatalf("want %+v but got %+v", amount, gotAmount0)
 	}
-	err = statedb.AddCommitteeReward(stateDB, incognitoPublicKey, amount, common.PRVCoinID)
+	err = statedb.AddCommitteeReward(stateDB, incognitoPublicKey, amount, common.PRVCoinID, diskBD, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -244,5 +252,36 @@ func TestStateDB_AddCommitteeReward(t *testing.T) {
 	}
 	if gotAmount1 != amount*2 {
 		t.Fatalf("want %+v but got %+v", amount*2, gotAmount1)
+	}
+	incognitoPublicKeyBytes, _, _ := base58.Base58Check{}.Decode(incognitoPublicKey)
+	err = statedb.RemoveCommitteeReward(stateDB, incognitoPublicKeyBytes, withdraw, common.PRVCoinID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = statedb.RemoveCommitteeReward(stateDB, incognitoPublicKeyBytes, withdraw, tokenID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rootHash, err = stateDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = stateDB.Database().TrieDB().Commit(rootHash, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotAmount2, err := statedb.GetCommitteeReward(stateDB, incognitoPublicKey, common.PRVCoinID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotAmount2 != amount*2-withdraw {
+		t.Fatalf("want %+v but got %+v", amount*2-withdraw, gotAmount1)
+	}
+	gotAmount3, err := statedb.GetCommitteeReward(stateDB, incognitoPublicKey, tokenID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotAmount3 != amount-withdraw {
+		t.Fatalf("want %+v but got %+v", amount-withdraw, gotAmount1)
 	}
 }
