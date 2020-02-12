@@ -3,6 +3,7 @@ package statedb_test
 import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"reflect"
 	"testing"
@@ -243,6 +244,92 @@ func TestStateDB_AddCommitteeReward(t *testing.T) {
 		t.Fatal(err)
 	}
 	if gotAmount1 != amount*2 {
-		t.Fatalf("want %+v but got %+v", amount*2, gotAmount0)
+		t.Fatalf("want %+v but got %+v", amount*2, gotAmount1)
+	}
+}
+
+func TestStateDB_AddShardRewardRequest(t *testing.T) {
+	stateDB, err := statedb.NewWithPrefixTrie(common.EmptyRoot, warperDBrewardTest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	amount := uint64(10000)
+	epoch1 := uint64(1)
+	shardID0 := byte(0)
+	//shardID1 := byte(1)
+	err = statedb.AddShardRewardRequest(stateDB, epoch1, shardID0, common.PRVCoinID, amount)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rootHash, err := stateDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = stateDB.Database().TrieDB().Commit(rootHash, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotAmount0, err := statedb.GetRewardOfShardByEpoch(stateDB, epoch1, shardID0, common.PRVCoinID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotAmount0 != amount {
+		t.Fatalf("want %+v but got %+v", amount, gotAmount0)
+	}
+	err = statedb.AddShardRewardRequest(stateDB, epoch1, shardID0, common.PRVCoinID, amount*3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rootHash, err = stateDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = stateDB.Database().TrieDB().Commit(rootHash, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotAmount1, err := statedb.GetRewardOfShardByEpoch(stateDB, epoch1, shardID0, common.PRVCoinID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotAmount1 != amount*4 {
+		t.Fatalf("want %+v but got %+v", amount*4, gotAmount1)
+	}
+}
+
+func TestStateDB_AddShardRewardRequest5000(t *testing.T) {
+	stateDB, err := statedb.NewWithPrefixTrie(common.EmptyRoot, warperDBrewardTest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	maxEpoch := 5000
+	wantReward := make(map[uint64]uint64)
+	shardID0 := byte(0)
+	for i := 0; i < maxEpoch; i++ {
+		epoch := uint64(i)
+		amount := rand.Uint64()
+		err = statedb.AddShardRewardRequest(stateDB, epoch, shardID0, common.PRVCoinID, amount)
+		if err != nil {
+			t.Fatal(err)
+		}
+		rootHash, err := stateDB.Commit(true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = stateDB.Database().TrieDB().Commit(rootHash, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		wantReward[epoch] = amount
+	}
+	for i := 0; i < maxEpoch; i++ {
+		epoch := uint64(i)
+		gotAmount0, err := statedb.GetRewardOfShardByEpoch(stateDB, epoch, shardID0, common.PRVCoinID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if gotAmount0 != wantReward[epoch] {
+			t.Fatalf("Epoch %+v, want reward %+v, got %+v", epoch, wantReward[epoch], gotAmount0)
+		}
 	}
 }
