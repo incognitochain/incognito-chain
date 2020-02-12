@@ -1,6 +1,7 @@
 package relaying
 
 import (
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -86,11 +87,16 @@ func getBlock(blockHeight int64) (*types.Block, *BNBRelayingError) {
 	return block.Block, nil
 }
 
-func ParseProofFromJson(object string) (*types.TxProof, *BNBRelayingError) {
-	proof := types.TxProof{}
-	err := json.Unmarshal([]byte(object), &proof)
+func ParseProofFromB64EncodeJsonStr(b64EncodedJsonStr string) (*types.TxProof, *BNBRelayingError) {
+	jsonBytes, err := base64.StdEncoding.DecodeString(b64EncodedJsonStr)
 	if err != nil {
-		fmt.Printf("err unmarshal: %+v\n", err)
+		return nil, NewBNBRelayingError(UnexpectedErr, err)
+	}
+
+	proof := types.TxProof{}
+	err = json.Unmarshal(jsonBytes, &proof)
+	if err != nil {
+		return nil, NewBNBRelayingError(UnexpectedErr, err)
 	}
 
 	return &proof, nil

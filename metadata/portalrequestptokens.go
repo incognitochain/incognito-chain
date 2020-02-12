@@ -7,6 +7,7 @@ import (
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
+	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"strconv"
 )
@@ -62,12 +63,6 @@ func (reqPToken PortalRequestPTokens) ValidateSanityData(bcr BlockchainRetriever
 	//	return true, true, nil
 	//}
 
-	// validate tokenID
-	isSupportedTokenID, err := common.SliceExists(PortalSupportedTokenIDs, reqPToken.TokenID)
-	if err != nil || !isSupportedTokenID {
-		return false, false, NewMetadataTxError(PortalRequestPTokenParamError, errors.New("TokenID is not supported currently on Portal"))
-	}
-
 	// validate IncogAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(reqPToken.IncogAddressStr)
 	if err != nil {
@@ -86,16 +81,44 @@ func (reqPToken PortalRequestPTokens) ValidateSanityData(bcr BlockchainRetriever
 		return false, false, errors.New("tx custodian deposit must be TxNormalType")
 	}
 
-	// check burning tx
-	//if !txr.IsCoinsBurning(bcr) {
-	//	return false, false, errors.New("must send coin to burning address")
-	//}
-
 	// validate amount deposit
 	if reqPToken.PortingAmount == 0 {
 		return false, false, errors.New("porting amount should be larger than 0")
 	}
 
+	// validate tokenID and porting proof
+	if reqPToken.TokenID == PortalSupportedTokenMap["BTC"] {
+		// token BTC
+		// convert porting proof to BTC proof
+		// todo:
+	} else if reqPToken.TokenID == PortalSupportedTokenMap["BNB"] {
+		// token BNB
+		// convert porting proof to BNB proof
+
+		_, err := relaying.ParseProofFromB64EncodeJsonStr(reqPToken.PortingProof)
+		if err != nil {
+			return false, false, NewMetadataTxError(PortalRequestPTokenParamError, err)
+		}
+
+		//// parse Tx from Data in txProofBNB
+		//txBNB, err := relaying.ParseTxFromData(txProofBNB.Data)
+		//if err != nil {
+		//	return false, false, NewMetadataTxError(PortalRequestPTokenParamError, err)
+		//}
+		//
+		//// check whether amount transfer in txBNB is equal porting amount or not
+		//amount := int64(0)
+		//for _, output := range txBNB.Msgs[0].(msg.SendMsg).Outputs[0].Coins {
+		//	amount  += output.Amount
+		//}
+		//
+		//if amount != int64(reqPToken.PortingAmount) {
+		//	return false, false, NewMetadataTxError(PortalRequestPTokenParamError, errors.New("Porting amount is not equal to amount transfer in tx bnb"))
+		//}
+
+	} else {
+		return false, false, NewMetadataTxError(PortalRequestPTokenParamError, errors.New("TokenID is not supported currently on Portal"))
+	}
 	return true, true, nil
 }
 

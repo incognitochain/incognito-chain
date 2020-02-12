@@ -12,6 +12,8 @@ const (
 	InvalidNewHeaderErr
 	InvalidBasicHeaderErr
 	InvalidTxProofErr
+
+	ParseProofErr
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -24,7 +26,9 @@ var ErrCodeMessage = map[int]struct {
 	InvalidSignatureSignedHeaderErr: {-14002, "Invalid signature signed header error"},
 	InvalidNewHeaderErr:             {-14003, "Invalid new header"},
 	InvalidBasicHeaderErr:           {-14004, "Invalid basic header error"},
-	InvalidTxProofErr:           {-14004, "Invalid tx proof error"},
+	InvalidTxProofErr:           {-14005, "Invalid tx proof error"},
+
+	ParseProofErr:           {-14006, "Parse proof from json string error"},
 }
 
 type BNBRelayingError struct {

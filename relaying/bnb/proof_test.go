@@ -10,7 +10,13 @@ import (
 )
 
 func TestGetTxByHash(t *testing.T){
-	getProofFromTxHash("24B93E8B6C5817B159870E5C617597EBD0BDAE100430DB8242BFBA5DA37D70CE")
+	txProof, err := getProofFromTxHash("421B68266AC570DEC49A12B1DDA0518D59205F4A874A24DB0F9448D4E03720A3")
+	assert.Nil(t, err)
+	fmt.Printf("txProof %v\n", txProof.Data)
+
+	tx, err := ParseTxFromData(txProof.Data)
+	assert.Nil(t, err)
+	fmt.Printf("tx %+v\n", tx)
 }
 
 func TestGetTxsInBlockHeight(t *testing.T){

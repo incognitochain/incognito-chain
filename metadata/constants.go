@@ -92,3 +92,8 @@ var PortalSupportedTokenSymbols = []string{
 	"BTC", // pBTC
 	"BNB", // pBNB
 }
+
+var PortalSupportedTokenMap = map[string]string{
+	"BTC" : "b832e5d3b1f01a4f0623f7fe91d6673461e1f5d37d91fe78c5c2e6183ff39696",
+	"BNB" : "b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b",
+}
