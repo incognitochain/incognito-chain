@@ -14,7 +14,7 @@ func AddShardRewardRequest(stateDB *StateDB, epoch uint64, shardID byte, tokenID
 		return NewStatedbError(StoreRewardRequestError, err)
 	}
 	if has {
-		rewardAmount += r.amount
+		rewardAmount += r.Amount()
 	}
 	value := NewRewardRequestStateWithValue(epoch, shardID, tokenID, rewardAmount)
 	err = stateDB.SetStateObject(RewardRequestObjectType, key, value)
