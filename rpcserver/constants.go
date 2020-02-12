@@ -148,6 +148,7 @@ const (
 	// reward
 	CreateRawWithDrawTransaction = "withdrawreward"
 	getRewardAmount              = "getrewardamount"
+	getRewardAmountByPublicKey              = "getrewardamountbypublickey"
 	listRewardAmount             = "listrewardamount"
 
 	revertbeaconchain = "revertbeaconchain"
