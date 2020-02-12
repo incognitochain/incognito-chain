@@ -696,6 +696,10 @@ func (blockService BlockService) ListRewardAmount() (map[string]map[common.Hash]
 	return m, nil
 }
 
+func (blockService BlockService) ListRewardAmountByHeight() (map[string]map[uint64]map[common.Hash]uint64, error) {
+	return statedb.ListTestCommitteeReward(blockService.DB), nil
+}
+
 func (blockService BlockService) GetRewardAmount(paymentAddress string) (map[string]uint64, error) {
 	rewardAmountResult := make(map[string]uint64)
 	rewardAmounts := make(map[common.Hash]uint64)

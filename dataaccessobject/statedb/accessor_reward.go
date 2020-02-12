@@ -122,7 +122,7 @@ func RemoveCommitteeReward(stateDB *StateDB, incognitoPublicKeyBytes []byte, wit
 	if !has {
 		return nil
 	}
-	committeeRewardM := c.reward
+	committeeRewardM := c.Reward()
 	currentReward := committeeRewardM[tokenID]
 	if withdrawAmount > currentReward {
 		return NewStatedbError(RemoveCommitteeRewardError, fmt.Errorf("Current Reward %+v but got withdraw %+v", currentReward, withdrawAmount))
