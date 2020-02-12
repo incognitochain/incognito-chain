@@ -510,7 +510,29 @@ func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 			existed := txService.BlockChain.PrivacyCustomTokenIDExisted(tokenID)
 			existedCrossShard := txService.BlockChain.PrivacyCustomTokenIDCrossShardExisted(tokenID)
 			if !existed && !existedCrossShard {
-				return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
+				// check bridge token
+				allBridgeTokensBytes, err := (*txService.DB).GetAllBridgeTokens()
+				if err != nil {
+					return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
+				}
+				isBridgeToken := false
+				if len(allBridgeTokensBytes) > 0 {
+					var allBridgeTokens []*lvdb.BridgeTokenInfo
+					err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
+					if err != nil {
+						return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
+					}
+					if len(allBridgeTokens) > 0 {
+						for _, bridgeToken := range allBridgeTokens {
+							if bridgeToken.TokenID.IsEqual(tokenID) {
+								isBridgeToken = true
+							}
+						}
+					}
+				}
+				if !isBridgeToken {
+					return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
+				}
 			}
 			outputTokens, err := txService.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, shardIDSender, tokenID)
 			if err != nil {
