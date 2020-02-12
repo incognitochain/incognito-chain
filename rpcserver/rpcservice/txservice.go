@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"math"
 	"math/big"
 	"sort"
@@ -744,6 +745,54 @@ func (txService TxService) GetListPrivacyCustomTokenBalance(privateKey string) (
 			continue
 		}
 		item.IsPrivacy = true
+		result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
+		result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
+	}
+
+	// bridge token
+	allBridgeTokensBytes, err := (*txService.DB).GetAllBridgeTokens()
+	if err != nil {
+		return jsonresult.ListCustomTokenBalance{}, NewRPCError(UnexpectedError, err)
+	}
+	var allBridgeTokens []*lvdb.BridgeTokenInfo
+	err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
+	if err != nil {
+		return jsonresult.ListCustomTokenBalance{}, NewRPCError(UnexpectedError, err)
+	}
+	for _, bridgeToken := range allBridgeTokens {
+		if _, ok := tokenIDs[*bridgeToken.TokenID]; ok {
+			continue
+		}
+		item := jsonresult.CustomTokenBalance{}
+		item.Name = ""
+		item.Symbol = ""
+		item.TokenID = bridgeToken.TokenID.String()
+		item.TokenImage = common.Render([]byte(item.TokenID))
+		tokenID := bridgeToken.TokenID
+
+		balance := uint64(0)
+		// get balance for accountName in wallet
+		lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
+		shardIDSender := common.GetShardIDFromLastByte(lastByte)
+		prvCoinID := &common.Hash{}
+		err := prvCoinID.SetBytes(common.PRVCoinID[:])
+		if err != nil {
+			return jsonresult.ListCustomTokenBalance{}, NewRPCError(TokenIsInvalidError, err)
+		}
+		outcoints, err := txService.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, shardIDSender, tokenID)
+		if err != nil {
+			return jsonresult.ListCustomTokenBalance{}, NewRPCError(UnexpectedError, err)
+		}
+		for _, out := range outcoints {
+			balance += out.CoinDetails.GetValue()
+		}
+
+		item.Amount = balance
+		if item.Amount == 0 {
+			continue
+		}
+		item.IsPrivacy = true
+		item.IsBridgeToken = true
 		result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
 		result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
 	}
