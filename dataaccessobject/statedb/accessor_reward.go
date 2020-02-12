@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/incdb"
 )
 
 // Reward in Beacon
@@ -136,4 +137,71 @@ func RemoveCommitteeReward(stateDB *StateDB, incognitoPublicKeyBytes []byte, wit
 		return NewStatedbError(StoreCommitteeRewardError, err)
 	}
 	return nil
+}
+
+//================================= Testing ======================================
+func GetRewardRequestInfoByEpoch(stateDB *StateDB, epoch uint64) []*RewardRequestState {
+	_, rewardRequestStates := stateDB.GetAllRewardRequestState(epoch)
+	return rewardRequestStates
+}
+
+var testCommitteeRewardPrefix = []byte("test-committee-reward-")
+
+func addTestCommitteeRewardKey(height uint64, committeeAddress []byte, tokenID common.Hash) []byte {
+	res := []byte{}
+	res = append(res, testCommitteeRewardPrefix...)
+	res = append(res, common.Uint64ToBytes(height)...)
+	res = append(res, committeeAddress...)
+	res = append(res, tokenID.GetBytes()...)
+	return res
+}
+
+func AddTestCommitteeReward(
+	db incdb.Database,
+	height uint64,
+	committeeAddress []byte,
+	amount uint64,
+	tokenID common.Hash,
+) error {
+	key := addTestCommitteeRewardKey(height, committeeAddress, tokenID)
+	oldValue, isExist := db.Get(key)
+	if isExist != nil {
+		err := db.Put(key, common.Uint64ToBytes(amount))
+		if err != nil {
+			return err
+		}
+	} else {
+		newValue, err := common.BytesToUint64(oldValue)
+		if err != nil {
+			return err
+		}
+		newValue += amount
+		err = db.Put(key, common.Uint64ToBytes(newValue))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ListCommitteeReward - get reward on tokenID of all committee
+func ListTestCommitteeReward(db incdb.Database) map[string]map[common.Hash]uint64 {
+	result := make(map[string]map[common.Hash]uint64)
+	iterator := db.NewIteratorWithPrefix(testCommitteeRewardPrefix)
+	for iterator.Next() {
+		key := make([]byte, len(iterator.Key()))
+		copy(key, iterator.Key())
+		value := make([]byte, len(iterator.Value()))
+		copy(value, iterator.Value())
+		reward, _ := common.BytesToUint64(value)
+		publicKeyInByte := key[len(committeeRewardPrefix)+8 : len(committeeRewardPrefix)+8+common.PublicKeySize]
+		publicKeyInBase58Check := base58.Base58Check{}.Encode(publicKeyInByte, 0x0)
+		tokenIDBytes := key[len(key)-32:]
+		tokenID, _ := common.Hash{}.NewHash(tokenIDBytes)
+		if result[publicKeyInBase58Check] == nil {
+			result[publicKeyInBase58Check] = make(map[common.Hash]uint64)
+		}
+		result[publicKeyInBase58Check][*tokenID] = reward
+	}
+	return result
 }
