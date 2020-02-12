@@ -19,6 +19,7 @@ type PortalUserRegister struct {
 	IncogAddressStr string
 	PTokenId string
 	RegisterAmount uint64
+	PortingFee uint64
 }
 
 type PortalUserRegisterAction struct {
@@ -27,7 +28,7 @@ type PortalUserRegisterAction struct {
 	ShardID byte
 }
 
-func NewPortalUserRegister(uniqueRegisterId string , incogAddressStr string, pTokenId string, registerAmount uint64, metaType int) (*PortalUserRegister, error){
+func NewPortalUserRegister(uniqueRegisterId string , incogAddressStr string, pTokenId string, registerAmount uint64, portingFee uint64, metaType int) (*PortalUserRegister, error){
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
@@ -37,6 +38,7 @@ func NewPortalUserRegister(uniqueRegisterId string , incogAddressStr string, pTo
 		IncogAddressStr: incogAddressStr,
 		PTokenId: pTokenId,
 		RegisterAmount: registerAmount,
+		PortingFee: portingFee,
 	}
 
 	portalUserRegisterMeta.MetadataBase = metadataBase
@@ -44,17 +46,6 @@ func NewPortalUserRegister(uniqueRegisterId string , incogAddressStr string, pTo
 	return portalUserRegisterMeta, nil
 }
 
-
-func find(slice []string, val string) (int, bool) {
-	for i, item := range slice {
-		if item == val {
-			return i, true
-		}
-	}
-	return -1, false
-}
-
-//todo
 func (portalUserRegister PortalUserRegister) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
@@ -95,8 +86,6 @@ func (portalUserRegister PortalUserRegister) ValidateSanityData(bcr BlockchainRe
 		return false, false, errors.New("must send coin to burning address")
 	}
 
-	//todo: verify porting fees
-
 	// validate amount register
 	if portalUserRegister.RegisterAmount == 0 {
 		return false, false, errors.New("register amount should be larger than 0")
@@ -106,9 +95,14 @@ func (portalUserRegister PortalUserRegister) ValidateSanityData(bcr BlockchainRe
 		return false, false, errors.New("register amount should be equal to the tx value")
 	}
 
-	_, pTokenStatus := find(PortalSupportedTokenIDs, portalUserRegister.PTokenId)
-	if !pTokenStatus {
-		return false, false, errors.New("PToken do not support, Type must be pBTC or pBNB")
+	//todo: verify porting fees
+	//validation porting fee
+	if portalUserRegister.PortingFee == 0 {
+		return false, false, errors.New("porting fee should be larger than 0")
+	}
+
+	if (portalUserRegister.RegisterAmount + portalUserRegister.PortingFee) != txr.CalculateTxValue() {
+		return false, false, errors.New("Total of register amount and porting fee should be equal to the tx value")
 	}
 
 	return true, true, nil
@@ -120,10 +114,12 @@ func (portalUserRegister PortalUserRegister) ValidateMetadataByItself() bool {
 
 func (portalUserRegister PortalUserRegister) Hash() *common.Hash {
 	record := portalUserRegister.MetadataBase.Hash().String()
+	record += portalUserRegister.UniqueRegisterId
+	record += portalUserRegister.PTokenId
 	record += portalUserRegister.IncogAddressStr
-	//todo:
-	//record += custodianDeposit.RemoteAddresses
 	record += strconv.FormatUint(portalUserRegister.RegisterAmount, 10)
+	record += strconv.FormatUint(portalUserRegister.PortingFee, 10)
+
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash

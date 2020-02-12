@@ -3,9 +3,11 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"sort"
 	"strconv"
 )
 
@@ -102,18 +104,99 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 
 func (blockchain *BlockChain) processPortalUserRegister(
 	beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
-	//todo
+	if currentPortalState == nil {
+		Logger.log.Errorf("current portal state is nil")
+		return nil
+	}
 
-	//check unique id
-	//check porting fee
+	// parse instruction
+	actionContentB64Str := instructions[1]
+	actionContentBytes, err := base64.StdEncoding.DecodeString(actionContentB64Str)
+	if err != nil {
+		return err
+	}
+	var actionData metadata.PortalUserRegisterAction
+	err = json.Unmarshal(actionContentBytes, &actionData)
+	if err != nil {
+		return err
+	}
 
-	//get custodian //pick : coin * 150%, remote address,
 
-	//
-	//lock custodian: update free collateral, holding
-	//unholding //
+	meta := actionData.Meta
+	keyPortingRequestState := lvdb.NewPortingRequestKey(beaconHeight, meta.UniqueRegisterId)
 
-	//create new state
+	if currentPortalState.PortingRequests[keyPortingRequestState] != nil {
+		Logger.log.Errorf("Unique porting id is duplicated")
+		return nil
+	}
+
+	//find custodian
+	//todo: get exchangeRate via tokenid
+	custodian, err := pickCustodian(meta.RegisterAmount, 1, meta.PTokenId, currentPortalState.CustodianPoolState)
+
+	if err != nil {
+		return err
+	}
+
+	uniquePortingID := meta.UniqueRegisterId
+	txReqID := actionData.TxReqID
+	tokenID := meta.PTokenId
+
+	porterAddress := meta.IncogAddressStr
+	amount := meta.RegisterAmount
+
+	custodians := custodian
+	portingFee := meta.PortingFee
+
+	// new request
+	newPortingRequestState, err := NewPortingRequestState(
+		uniquePortingID,
+		txReqID,
+		tokenID,
+		porterAddress,
+		amount,
+		custodians,
+		portingFee,
+		)
+
+	if err != nil {
+		return err
+	}
+
+	currentPortalState.PortingRequests[keyPortingRequestState] = newPortingRequestState
+	//todo: lock custodian
 
 	return nil
+}
+
+func pickCustodian(amount uint64, exchangeRate uint64, tokenId string, custodianState map[string]*lvdb.CustodianState) (*lvdb.CustodianState, error) {
+
+	type custodianStateSlice struct {
+		Key   string
+		Value *lvdb.CustodianState
+	}
+
+	var sortCustodianStateByFreeCollateral []custodianStateSlice
+	for k, v := range custodianState {
+		_ ,tokenIdExist := v.RemoteAddresses[tokenId]
+        if !tokenIdExist {
+        	continue
+		}
+
+		sortCustodianStateByFreeCollateral = append(sortCustodianStateByFreeCollateral, custodianStateSlice{k, v})
+	}
+
+	sort.Slice(sortCustodianStateByFreeCollateral, func(i, j int) bool {
+		return sortCustodianStateByFreeCollateral[i].Value.FreeCollateral <= sortCustodianStateByFreeCollateral[j].Value.FreeCollateral
+	})
+
+
+	//pick custodian
+	for _, kv := range sortCustodianStateByFreeCollateral {
+		if kv.Value.FreeCollateral >= (amount * exchangeRate) + (amount * 150 / 100) {
+			return kv.Value, nil
+		}
+	}
+
+	return &lvdb.CustodianState{}, errors.New("Can not pickup custodian")
 }

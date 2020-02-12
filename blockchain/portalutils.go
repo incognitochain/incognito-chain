@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 )
@@ -25,6 +26,26 @@ func NewCustodianState(
 		FreeCollateral:   freeColl,
 		HoldingPubTokens: holdingPubTokens,
 		RemoteAddresses:  remoteAddresses,
+	}, nil
+}
+
+func NewPortingRequestState(
+	uniquePortingID string,
+	txReqID common.Hash,
+	tokenID string,
+	porterAddress string,
+	amount uint64,
+	custodians map[string]uint64,
+	portingFee uint64,
+) (*lvdb.PortingRequest, error) {
+	return &lvdb.PortingRequest{
+		UniquePortingID: uniquePortingID,
+		TxReqID:         txReqID,
+		TokenID:         tokenID,
+		PorterAddress:   porterAddress,
+		Amount:          amount,
+		Custodians:      custodians,
+		PortingFee:      portingFee,
 	}, nil
 }
 

@@ -34,7 +34,17 @@ func (httpServer *HttpServer) handleRegisterPortingPublicTokens(params interface
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
 
+	isSupported, err := common.SliceExists(metadata.PortalSupportedTokenSymbols, pTokenId)
+	if err != nil || !isSupported {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
+	}
+
 	registerAmount, ok := data["RegisterAmount"].(uint64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+	}
+
+	portingFee, ok := data["PortingFee"].(uint64)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
@@ -44,6 +54,7 @@ func (httpServer *HttpServer) handleRegisterPortingPublicTokens(params interface
 		incogAddressStr,
 		pTokenId,
 		registerAmount,
+		portingFee,
 		metadata.PortalUserRegisterMeta,
 	)
 

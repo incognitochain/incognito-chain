@@ -2,6 +2,7 @@ package lvdb
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
@@ -17,7 +18,7 @@ type CustodianState struct {
 
 type PortingRequest struct {
 	UniquePortingID string
-	TxReqID         string
+	TxReqID         common.Hash
 	TokenID         string
 	PorterAddress   string
 	Amount          uint64
@@ -36,10 +37,23 @@ type RedeemRequest struct {
 	RedeemFee             uint64
 }
 
+type ExchangeRate struct {
+	UniqueExchangeRateID  string
+	TokenID               string
+	Value       		  int64
+}
+
 func NewCustodianStateKey (beaconHeight uint64, custodianAddress string) string {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 	key := append(CustodianStatePrefix, beaconHeightBytes...)
 	key = append(key, []byte(custodianAddress)...)
+	return string(key)
+}
+
+func NewPortingRequestKey (beaconHeight uint64, uniquePortingID string) string {
+	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+	key := append(PortalPortingRequestsPrefix, beaconHeightBytes...)
+	key = append(key, []byte(uniquePortingID)...)
 	return string(key)
 }
 
