@@ -737,6 +737,42 @@ func (blockService BlockService) GetRewardAmount(paymentAddress string) (map[str
 	return rewardAmountResult, nil
 }
 
+func (blockService BlockService) GetRewardAmountByPublicKey(publicKey string) (map[string]uint64, error) {
+	rewardAmountResult := make(map[string]uint64)
+	rewardAmounts := make(map[common.Hash]uint64)
+	tempPK, _, err := base58.Base58Check{}.Decode(publicKey)
+	if err != nil {
+		return nil, err
+	}
+	shardID := common.GetShardIDFromLastByte(publicKey[len(tempPK)-1])
+	allCoinIDs, err := blockService.BlockChain.GetAllCoinIDV2(shardID)
+	if err != nil {
+		return nil, err
+	}
+	for _, coinID := range allCoinIDs {
+		committeeRewardStateDB := blockService.BlockChain.BestState.Shard[shardID].GetCopiedRewardStateDB()
+		amount, err := statedb.GetCommitteeReward(committeeRewardStateDB, publicKey, coinID)
+		if err != nil {
+			return nil, err
+		}
+		if coinID == common.PRVCoinID {
+			rewardAmountResult["PRV"] = amount
+		} else {
+			rewardAmounts[coinID] = amount
+		}
+	}
+	privateTokenState, err := blockService.ListPrivacyCustomToken(shardID)
+	if err != nil {
+		return nil, err
+	}
+	for _, token := range privateTokenState {
+		if rewardAmounts[token.TokenID()] > 0 {
+			rewardAmountResult[token.PropertyName()] = rewardAmounts[token.TokenID()]
+		}
+	}
+	return rewardAmountResult, nil
+}
+
 func (blockService BlockService) CanPubkeyStake(publicKey string) (bool, error) {
 	canStake := true
 	validStakers, err := blockService.GetValidStakers([]string{publicKey})
