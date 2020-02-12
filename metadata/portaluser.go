@@ -44,6 +44,16 @@ func NewPortalUserRegister(uniqueRegisterId string , incogAddressStr string, pTo
 	return portalUserRegisterMeta, nil
 }
 
+
+func find(slice []string, val string) (int, bool) {
+	for i, item := range slice {
+		if item == val {
+			return i, true
+		}
+	}
+	return -1, false
+}
+
 //todo
 func (portalUserRegister PortalUserRegister) ValidateTxWithBlockChain(
 	txr Transaction,
@@ -94,6 +104,11 @@ func (portalUserRegister PortalUserRegister) ValidateSanityData(bcr BlockchainRe
 
 	if portalUserRegister.RegisterAmount != txr.CalculateTxValue() {
 		return false, false, errors.New("register amount should be equal to the tx value")
+	}
+
+	_, pTokenStatus := find(PortalSupportedTokenIDs, portalUserRegister.PTokenId)
+	if !pTokenStatus {
+		return false, false, errors.New("PToken do not support, Type must be pBTC or pBNB")
 	}
 
 	return true, true, nil
