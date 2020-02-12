@@ -35,7 +35,10 @@ func (blockchain *BlockChain) collectStatefulActions(
 		switch metaType {
 		case metadata.IssuingRequestMeta, metadata.IssuingETHRequestMeta,
 			metadata.PDEContributionMeta, metadata.PDETradeRequestMeta,
-			metadata.PDEWithdrawalRequestMeta:
+			metadata.PDEWithdrawalRequestMeta,
+			metadata.PortalCustodianDepositMeta,
+			metadata.PortalUserRegisterMeta,
+			metadata.PortalUserRequestPTokenMeta:
 			statefulInsts = append(statefulInsts, inst)
 
 		default:
@@ -68,15 +71,28 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	if err != nil {
 		Logger.log.Error(err)
 	}
+
+	currentPortalState, err := InitCurrentPortalStateFromDB(db, beaconHeight-1)
+	if err != nil {
+		Logger.log.Error(err)
+	}
+
 	accumulatedValues := &metadata.AccumulatedValues{
 		UniqETHTxsUsed:   [][]byte{},
 		DBridgeTokenPair: map[string][]byte{},
 		CBridgeTokens:    []*common.Hash{},
 	}
 	instructions := [][]string{}
+
+	// pde instructions
 	pdeContributionActionsByShardID := map[byte][][]string{}
 	pdeTradeActionsByShardID := map[byte][][]string{}
 	pdeWithdrawalActionsByShardID := map[byte][][]string{}
+
+	//portal instructions
+	portalCustodianDepositActionsByShardID := map[byte][][]string{}
+	portalUserReqPortingActionsByShardID := map[byte][][]string{}
+	portalUserReqPTokenActionsByShardID := map[byte][][]string{}
 
 	var keys []int
 	for k := range statefulActionsByShardID {
@@ -118,6 +134,24 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					action,
 					shardID,
 				)
+			case metadata.PortalCustodianDepositMeta:
+				portalCustodianDepositActionsByShardID = groupPortalActionsByShardID(
+					portalCustodianDepositActionsByShardID,
+					action,
+					shardID,
+				)
+			case metadata.PortalUserRegisterMeta:
+				portalUserReqPortingActionsByShardID = groupPortalActionsByShardID(
+					portalUserReqPortingActionsByShardID,
+					action,
+					shardID,
+				)
+			case metadata.PortalUserRequestPTokenMeta:
+				portalUserReqPTokenActionsByShardID = groupPortalActionsByShardID(
+					portalUserReqPTokenActionsByShardID,
+					action,
+					shardID,
+				)
 			default:
 				continue
 			}
@@ -143,6 +177,20 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	if len(pdeInsts) > 0 {
 		instructions = append(instructions, pdeInsts...)
 	}
+
+	portalInsts, err := blockchain.handlePortalInsts(
+		beaconHeight-1, currentPortalState,
+		portalCustodianDepositActionsByShardID,
+		portalUserReqPortingActionsByShardID,
+		portalUserReqPTokenActionsByShardID)
+	if err != nil {
+		Logger.log.Error(err)
+		return instructions
+	}
+	if len(portalInsts) > 0 {
+		instructions = append(instructions, portalInsts...)
+	}
+
 	return instructions
 }
 
@@ -225,6 +273,20 @@ func sortPDETradeInstsByFee(
 	return append(sortedExistingPairTradeActions, notExistingPairTradeActions...)
 }
 
+func groupPortalActionsByShardID(
+	portalActionsByShardID map[byte][][]string,
+	action []string,
+	shardID byte,
+) map[byte][][]string {
+	_, found := portalActionsByShardID[shardID]
+	if !found {
+		portalActionsByShardID[shardID] = [][]string{action}
+	} else {
+		portalActionsByShardID[shardID] = append(portalActionsByShardID[shardID], action)
+	}
+	return portalActionsByShardID
+}
+
 func (blockchain *BlockChain) handlePDEInsts(
 	beaconHeight uint64,
 	currentPDEState *CurrentPDEState,
@@ -296,3 +358,26 @@ func (blockchain *BlockChain) handlePDEInsts(
 	}
 	return instructions, nil
 }
+
+
+// todo
+func (blockchain *BlockChain) handlePortalInsts(
+	beaconHeight uint64,
+	currentPortalState *CurrentPortalState,
+	portalCustodianDepositActionsByShardID map[byte][][]string,
+	portalUserRequestPortingActionsByShardID map[byte][][]string,
+	portalUserRequestPTokenActionsByShardID map[byte][][]string,
+) ([][]string, error) {
+	instructions := [][]string{}
+
+	// handle portal custodian deposit inst
+
+	// handle portal user request porting inst
+
+	// handle portal user request ptoken inst
+
+	// ...
+
+	return instructions, nil
+}
+
