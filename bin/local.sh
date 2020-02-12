@@ -9,7 +9,6 @@ fi
 echo "!23"
 
 env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags '-w' -o incognito ../*.go
-env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags '-w' -o bootnode ../bootnode/*.go
 cp ../keylist.json .
 cp ../sample-config.conf .
 

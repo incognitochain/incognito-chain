@@ -1,6 +1,7 @@
 package syncker
 
 import (
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
 )
@@ -60,7 +61,7 @@ type Syncker struct {
 }
 
 // Everytime beacon block is inserted after sync finish, we update shard committee (from beacon view)
-func (s *Syncker) UpdateCurrentCommittee(shardCommittee map[byte][]incognitokey.CommitteePublicKey, shardPendingCommittee map[byte][]incognitokey.CommitteePublicKey) {
+func (s *Syncker) UpdateCurrentCommittee(relayShards []byte, shardCommittee map[byte][]incognitokey.CommitteePublicKey, shardPendingCommittee map[byte][]incognitokey.CommitteePublicKey) {
 	userBlsPubKey := s.UserPk.GetMiningKeyBase58("bls")
 	{ //check shard
 		shardID := byte(0)
@@ -79,7 +80,7 @@ func (s *Syncker) UpdateCurrentCommittee(shardCommittee map[byte][]incognitokey.
 					break
 				}
 			}
-			if syncShard {
+			if syncShard || common.IndexOfByte(shardID, relayShards) > -1 {
 				s.ShardSyncProcess[shardID].Start()
 			} else {
 				s.ShardSyncProcess[shardID].Stop()
