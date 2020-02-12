@@ -56,6 +56,11 @@ func RemoveRewardOfShardByEpoch(stateDB *StateDB, epoch uint64) {
 
 // Reward in Shard
 func AddCommitteeReward(stateDB *StateDB, incognitoPublicKey string, committeeReward uint64, tokenID common.Hash, db incdb.Database, height uint64) error {
+	publicKeyBytes, _, _ := base58.Base58Check{}.Decode(incognitoPublicKey)
+	err := AddTestCommitteeReward(db, height, publicKeyBytes, committeeReward, tokenID)
+	if err != nil {
+		return NewStatedbError(StoreCommitteeRewardError, err)
+	}
 	key, err := GenerateCommitteeRewardObjectKey(incognitoPublicKey)
 	if err != nil {
 		return NewStatedbError(StoreCommitteeRewardError, err)
@@ -75,11 +80,6 @@ func AddCommitteeReward(stateDB *StateDB, incognitoPublicKey string, committeeRe
 	committeeRewardM[tokenID] = committeeReward
 	value := NewCommitteeRewardStateWithValue(committeeRewardM, incognitoPublicKey)
 	err = stateDB.SetStateObject(CommitteeRewardObjectType, key, value)
-	if err != nil {
-		return NewStatedbError(StoreCommitteeRewardError, err)
-	}
-	publicKeyBytes, _, _ := base58.Base58Check{}.Decode(incognitoPublicKey)
-	err = AddTestCommitteeReward(db, height, publicKeyBytes, committeeReward, tokenID)
 	if err != nil {
 		return NewStatedbError(StoreCommitteeRewardError, err)
 	}
