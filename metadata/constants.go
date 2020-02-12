@@ -88,6 +88,11 @@ var PortalSupportedTokenIDs = []string{
 	"b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b", // pBNB
 }
 
+const (
+	PortalTokenBTC = "BTC"
+	PortalTokenBNB = "BNB"
+)
+
 var PortalSupportedTokenSymbols = []string{
 	"BTC", // pBTC
 	"BNB", // pBNB
