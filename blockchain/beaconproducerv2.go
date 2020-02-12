@@ -93,7 +93,7 @@ func (blockGenerator *BlockGenerator) NewBlockBeaconV2(round int, shardsToBeacon
 	//=====END Build Header Essential Data=====
 	//============Build body===================
 	if (beaconBestState.BeaconHeight+1)%blockGenerator.chain.config.ChainParams.Epoch == 1 {
-		rewardByEpochInstruction, err = blockGenerator.chain.BuildRewardInstructionByEpochV2(beaconBlock.Header.Height, beaconBestState.Epoch)
+		rewardByEpochInstruction, err = blockGenerator.chain.BuildRewardInstructionByEpochV2(beaconBlock.Header.Height, beaconBestState.Epoch, blockGenerator.chain.BestState.Beacon.GetCopiedRewardStateDB())
 		if err != nil {
 			return nil, NewBlockChainError(BuildRewardInstructionError, err)
 		}

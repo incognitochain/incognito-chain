@@ -290,7 +290,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigningV2(beaconB
 	statefulActionsByShardID := map[byte][][]string{}
 	// Get Reward Instruction By Epoch
 	if beaconBlock.Header.Height%blockchain.config.ChainParams.Epoch == 1 {
-		rewardByEpochInstruction, err = blockchain.BuildRewardInstructionByEpochV2(beaconBlock.Header.Height, beaconBlock.Header.Epoch-1)
+		rewardByEpochInstruction, err = blockchain.BuildRewardInstructionByEpochV2(beaconBlock.Header.Height, beaconBlock.Header.Epoch-1, blockchain.BestState.Beacon.GetCopiedRewardStateDB())
 		if err != nil {
 			return NewBlockChainError(BuildRewardInstructionError, err)
 		}

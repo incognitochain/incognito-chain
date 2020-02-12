@@ -243,15 +243,14 @@ func (blockchain *BlockChain) buildWithDrawTransactionResponseV2(txRequest *meta
 		common.GetShardIDFromLastByte(requestDetail.PaymentAddress.Pk[common.PublicKeySize-1]))
 }
 
-func (blockchain *BlockChain) BuildRewardInstructionByEpochV2(blkHeight, epoch uint64) ([][]string, error) {
+func (blockchain *BlockChain) BuildRewardInstructionByEpochV2(blkHeight, epoch uint64, rewardStateDB *statedb.StateDB) ([][]string, error) {
 	var resInst [][]string
 	var err error
 	var instRewardForBeacons [][]string
 	var instRewardForIncDAO [][]string
 	var instRewardForShards [][]string
 	numberOfActiveShards := blockchain.BestState.Beacon.ActiveShards
-	tempRewardStateDB := blockchain.BestState.Beacon.rewardStateDB.Copy()
-	allCoinID := statedb.GetAllTokenIDForReward(tempRewardStateDB, epoch)
+	allCoinID := statedb.GetAllTokenIDForReward(rewardStateDB, epoch)
 	blkPerYear := getNoBlkPerYear(uint64(blockchain.config.ChainParams.MaxBeaconBlockCreation.Seconds()))
 	percentForIncognitoDAO := getPercentForIncognitoDAO(blkHeight, blkPerYear)
 	totalRewards := make([]map[common.Hash]uint64, numberOfActiveShards)
@@ -262,7 +261,7 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpochV2(blkHeight, epoch u
 			totalRewards[ID] = map[common.Hash]uint64{}
 		}
 		for _, coinID := range allCoinID {
-			totalRewards[ID][coinID], err = statedb.GetRewardOfShardByEpoch(tempRewardStateDB, epoch, byte(ID), coinID)
+			totalRewards[ID][coinID], err = statedb.GetRewardOfShardByEpoch(rewardStateDB, epoch, byte(ID), coinID)
 			if err != nil {
 				return nil, err
 			}
