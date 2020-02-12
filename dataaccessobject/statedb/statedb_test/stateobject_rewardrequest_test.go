@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"os"
 	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -153,6 +154,153 @@ func TestStateDB_UpdateAndGetAllCommitteeRewardStateByKey(t *testing.T) {
 		} else {
 			if v2.Amount() != v.Amount()/2 {
 				t.Fatalf("expect %+v but got %+v", v.Amount()/2, v2.Amount())
+			}
+		}
+	}
+}
+
+func TestStateDB_AddShardRewardRequest(t *testing.T) {
+	stateDB, err := statedb.NewWithPrefixTrie(common.EmptyRoot, warperDBrewardTest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	amount := uint64(10000)
+	epoch1 := uint64(1)
+	shardID0 := byte(0)
+	//shardID1 := byte(1)
+	err = statedb.AddShardRewardRequest(stateDB, epoch1, shardID0, common.PRVCoinID, amount)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rootHash, err := stateDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = stateDB.Database().TrieDB().Commit(rootHash, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotAmount0, err := statedb.GetRewardOfShardByEpoch(stateDB, epoch1, shardID0, common.PRVCoinID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotAmount0 != amount {
+		t.Fatalf("want %+v but got %+v", amount, gotAmount0)
+	}
+	err = statedb.AddShardRewardRequest(stateDB, epoch1, shardID0, common.PRVCoinID, amount*3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rootHash, err = stateDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = stateDB.Database().TrieDB().Commit(rootHash, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotAmount1, err := statedb.GetRewardOfShardByEpoch(stateDB, epoch1, shardID0, common.PRVCoinID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotAmount1 != amount*4 {
+		t.Fatalf("want %+v but got %+v", amount*4, gotAmount1)
+	}
+}
+
+func TestStateDB_AddShardRewardRequest5000(t *testing.T) {
+	stateDB, err := statedb.NewWithPrefixTrie(common.EmptyRoot, warperDBrewardTest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	maxEpoch := 5000
+	wantReward := make(map[uint64]uint64)
+	shardID0 := byte(0)
+	for i := 0; i < maxEpoch; i++ {
+		epoch := uint64(i)
+		amount := rand.Uint64()
+		err = statedb.AddShardRewardRequest(stateDB, epoch, shardID0, common.PRVCoinID, amount)
+		if err != nil {
+			t.Fatal(err)
+		}
+		rootHash, err := stateDB.Commit(true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = stateDB.Database().TrieDB().Commit(rootHash, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		wantReward[epoch] = amount
+	}
+	for i := 0; i < maxEpoch; i++ {
+		epoch := uint64(i)
+		gotAmount0, err := statedb.GetRewardOfShardByEpoch(stateDB, epoch, shardID0, common.PRVCoinID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if gotAmount0 != wantReward[epoch] {
+			t.Fatalf("Epoch %+v, want reward %+v, got %+v", epoch, wantReward[epoch], gotAmount0)
+		}
+	}
+}
+
+func TestStateDB_GetAllTokenIDForReward(t *testing.T) {
+	wantMTokenIDs := make(map[uint64][]common.Hash)
+	maxEpoch := 100
+	amount := uint64(1000)
+	shardID := byte(0)
+	stateDB, err := statedb.NewWithPrefixTrie(common.EmptyRoot, warperDBrewardTest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < maxEpoch; i++ {
+		epoch := uint64(i)
+		tokenIDs := generateTokenIDs(10)
+		for _, tokenID := range tokenIDs {
+			err := statedb.AddShardRewardRequest(stateDB, epoch, shardID, tokenID, amount)
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+		rootHash, err := stateDB.Commit(true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = stateDB.Database().TrieDB().Commit(rootHash, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		wantMTokenIDs[epoch] = tokenIDs
+	}
+	tempStateDB := stateDB.Copy()
+	for i := 0; i < maxEpoch; i++ {
+		epoch := uint64(i)
+		gotTokenIDs := statedb.GetAllTokenIDForReward(tempStateDB, epoch)
+		wantTokenIDs := wantMTokenIDs[epoch]
+		for _, wantTokenID := range wantTokenIDs {
+			flag := false
+			for _, gotTokenID := range gotTokenIDs {
+				if wantTokenID.IsEqual(&gotTokenID) {
+					flag = true
+					break
+				}
+			}
+			if !flag {
+				t.Fatalf("epoch %+v, want %+v tokenID, got nothing", epoch, wantTokenID)
+			}
+		}
+		sort.Slice(wantTokenIDs, func(i, j int) bool {
+			return wantTokenIDs[i].String() < wantTokenIDs[j].String()
+		})
+
+		sort.Slice(gotTokenIDs, func(i, j int) bool {
+			return gotTokenIDs[i].String() < gotTokenIDs[j].String()
+		})
+
+		for index, _ := range wantTokenIDs {
+			if !wantTokenIDs[index].IsEqual(&gotTokenIDs[index]) {
+				t.Fatalf("want %+v, but got %+v", wantTokenIDs[index], gotTokenIDs[index])
 			}
 		}
 	}
