@@ -243,6 +243,6 @@ func TestStateDB_AddCommitteeReward(t *testing.T) {
 		t.Fatal(err)
 	}
 	if gotAmount1 != amount*2 {
-		t.Fatalf("want %+v but got %+v", amount*2, gotAmount0)
+		t.Fatalf("want %+v but got %+v", amount*2, gotAmount1)
 	}
 }
