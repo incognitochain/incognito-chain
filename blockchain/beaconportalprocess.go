@@ -25,15 +25,19 @@ func (blockchain *BlockChain) processPortalInstructions(block *BeaconBlock, bd *
 		switch inst[0] {
 		case strconv.Itoa(metadata.PortalCustodianDepositMeta):
 			err = blockchain.processPortalCustodianDeposit(beaconHeight, inst, currentPortalState)
+		case strconv.Itoa(metadata.PortalUserRegisterMeta):
+			err = blockchain.processPortalUserRegister(beaconHeight, inst, currentPortalState)
 		}
-		//case //
-		//todo:
 
 		if err != nil {
 			Logger.log.Error(err)
 			return nil
 		}
 	}
+
+	//todo: check timeout register porting via beacon height
+	// all request timeout ? unhold
+
 	// store updated currentPortalState to leveldb with new beacon height
 	err = storePortalStateToDB(db, beaconHeight+1, currentPortalState)
 	if err != nil {
@@ -92,6 +96,24 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 		}
 		currentPortalState.CustodianPoolState[keyCustodianState] = newCustodian
 	}
+
+	return nil
+}
+
+func (blockchain *BlockChain) processPortalUserRegister(
+	beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
+	//todo
+
+	//check unique id
+	//check porting fee
+
+	//get custodian //pick : coin * 150%, remote address,
+
+	//
+	//lock custodian: update free collateral, holding
+	//unholding //
+
+	//create new state
 
 	return nil
 }

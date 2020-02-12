@@ -1225,5 +1225,8 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(ProcessPDEInstructionError, err)
 	}
 
+	//portal
+	//todo:
+
 	return blockchain.config.DataBase.PutBatch(batchPutData)
 }
