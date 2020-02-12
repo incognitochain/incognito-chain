@@ -49,6 +49,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadataV2(s
 			tempPublicKey := base58.Base58Check{}.Encode(requesterRes, common.Base58Version)
 			Logger.log.Infof("Token ID %+v", requestMeta.TokenID)
 			Logger.log.Infof("Coin ID %+v", *coinID)
+			Logger.log.Infof("Amount Request %+v", amountRes)
 			Logger.log.Infof("Temp Public Key %+v", tempPublicKey)
 			amount, err := statedb.GetCommitteeReward(blockchain.BestState.Shard[shardID].GetCopiedRewardStateDB(), tempPublicKey, requestMeta.TokenID)
 			if (amount == 0) || (err != nil) {
