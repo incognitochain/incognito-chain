@@ -5,6 +5,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"strings"
 )
 
 // Reward in Beacon
@@ -54,7 +55,7 @@ func RemoveRewardOfShardByEpoch(stateDB *StateDB, epoch uint64) {
 }
 
 // Reward in Shard
-func AddCommitteeReward(stateDB *StateDB, incognitoPublicKey string, committeeReward uint64, tokenID common.Hash) error {
+func AddCommitteeReward(stateDB *StateDB, incognitoPublicKey string, committeeReward uint64, tokenID common.Hash, db incdb.Database, height uint64) error {
 	key, err := GenerateCommitteeRewardObjectKey(incognitoPublicKey)
 	if err != nil {
 		return NewStatedbError(StoreCommitteeRewardError, err)
@@ -74,6 +75,11 @@ func AddCommitteeReward(stateDB *StateDB, incognitoPublicKey string, committeeRe
 	committeeRewardM[tokenID] = committeeReward
 	value := NewCommitteeRewardStateWithValue(committeeRewardM, incognitoPublicKey)
 	err = stateDB.SetStateObject(CommitteeRewardObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(StoreCommitteeRewardError, err)
+	}
+	publicKeyBytes, _, _ := base58.Base58Check{}.Decode(incognitoPublicKey)
+	err = AddTestCommitteeReward(db, height, publicKeyBytes, committeeReward, tokenID)
 	if err != nil {
 		return NewStatedbError(StoreCommitteeRewardError, err)
 	}
@@ -145,13 +151,18 @@ func GetRewardRequestInfoByEpoch(stateDB *StateDB, epoch uint64) []*RewardReques
 	return rewardRequestStates
 }
 
-var testCommitteeRewardPrefix = []byte("test-committee-reward-")
+// ======================================================== TESTING
+var testCommitteeRewardPrefix = []byte("test-committee-reward")
+var Splitter = []byte("-[-]-")
 
 func addTestCommitteeRewardKey(height uint64, committeeAddress []byte, tokenID common.Hash) []byte {
 	res := []byte{}
 	res = append(res, testCommitteeRewardPrefix...)
+	res = append(res, Splitter...)
 	res = append(res, common.Uint64ToBytes(height)...)
+	res = append(res, Splitter...)
 	res = append(res, committeeAddress...)
+	res = append(res, Splitter...)
 	res = append(res, tokenID.GetBytes()...)
 	return res
 }
@@ -185,23 +196,33 @@ func AddTestCommitteeReward(
 }
 
 // ListCommitteeReward - get reward on tokenID of all committee
-func ListTestCommitteeReward(db incdb.Database) map[string]map[common.Hash]uint64 {
-	result := make(map[string]map[common.Hash]uint64)
+func ListTestCommitteeReward(db incdb.Database) map[string]map[uint64]map[common.Hash]uint64 {
+	result := make(map[string]map[uint64]map[common.Hash]uint64)
 	iterator := db.NewIteratorWithPrefix(testCommitteeRewardPrefix)
 	for iterator.Next() {
 		key := make([]byte, len(iterator.Key()))
 		copy(key, iterator.Key())
 		value := make([]byte, len(iterator.Value()))
 		copy(value, iterator.Value())
+		reses := strings.Split(string(key), string(Splitter))
 		reward, _ := common.BytesToUint64(value)
-		publicKeyInByte := key[len(committeeRewardPrefix)+8 : len(committeeRewardPrefix)+8+common.PublicKeySize]
+		publicKeyInByte := []byte(reses[2])
 		publicKeyInBase58Check := base58.Base58Check{}.Encode(publicKeyInByte, 0x0)
-		tokenIDBytes := key[len(key)-32:]
+		heightBytes := []byte(reses[1])
+		height, _ := common.BytesToUint64(heightBytes)
+		tokenIDBytes := []byte(reses[3])
 		tokenID, _ := common.Hash{}.NewHash(tokenIDBytes)
-		if result[publicKeyInBase58Check] == nil {
-			result[publicKeyInBase58Check] = make(map[common.Hash]uint64)
+		rewardByHeight, ok := result[publicKeyInBase58Check]
+		if !ok {
+			rewardByHeight = make(map[uint64]map[common.Hash]uint64)
 		}
-		result[publicKeyInBase58Check][*tokenID] = reward
+		rewards, ok := rewardByHeight[height]
+		if !ok {
+			rewards = make(map[common.Hash]uint64)
+		}
+		rewards[*tokenID] = reward
+		rewardByHeight[height] = rewards
+		result[publicKeyInBase58Check] = rewardByHeight
 	}
 	return result
 }
