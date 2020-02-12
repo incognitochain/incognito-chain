@@ -99,23 +99,6 @@ func (reqPToken PortalRequestPTokens) ValidateSanityData(bcr BlockchainRetriever
 		if err != nil {
 			return false, false, NewMetadataTxError(PortalRequestPTokenParamError, err)
 		}
-
-		//// parse Tx from Data in txProofBNB
-		//txBNB, err := relaying.ParseTxFromData(txProofBNB.Data)
-		//if err != nil {
-		//	return false, false, NewMetadataTxError(PortalRequestPTokenParamError, err)
-		//}
-		//
-		//// check whether amount transfer in txBNB is equal porting amount or not
-		//amount := int64(0)
-		//for _, output := range txBNB.Msgs[0].(msg.SendMsg).Outputs[0].Coins {
-		//	amount  += output.Amount
-		//}
-		//
-		//if amount != int64(reqPToken.PortingAmount) {
-		//	return false, false, NewMetadataTxError(PortalRequestPTokenParamError, errors.New("Porting amount is not equal to amount transfer in tx bnb"))
-		//}
-
 	} else {
 		return false, false, NewMetadataTxError(PortalRequestPTokenParamError, errors.New("TokenID is not supported currently on Portal"))
 	}

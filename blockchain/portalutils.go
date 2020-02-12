@@ -35,7 +35,7 @@ func NewPortingRequestState(
 	tokenID string,
 	porterAddress string,
 	amount uint64,
-	custodians map[string]uint64,
+	custodians map[string]lvdb.MatchingCustodianDetail,
 	portingFee uint64,
 ) (*lvdb.PortingRequest, error) {
 	return &lvdb.PortingRequest{

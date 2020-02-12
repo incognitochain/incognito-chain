@@ -10,10 +10,15 @@ import (
 
 type CustodianState struct {
 	IncognitoAddress string
-	TotalCollateral  uint64
-	FreeCollateral   uint64
-	HoldingPubTokens map[string]uint64
-	RemoteAddresses  map[string]string
+	TotalCollateral  uint64			// prv
+	FreeCollateral   uint64			// prv
+	HoldingPubTokens map[string]uint64   	// tokenSymbol : amount
+	RemoteAddresses  map[string]string  	// tokenSymbol : address
+}
+
+type MatchingCustodianDetail struct {
+	RemoteAddress string
+	Amount uint64
 }
 
 type PortingRequest struct {
@@ -22,7 +27,7 @@ type PortingRequest struct {
 	TokenID         string
 	PorterAddress   string
 	Amount          uint64
-	Custodians      map[string]uint64
+	Custodians      map[string]MatchingCustodianDetail			// key : incogAddress
 	PortingFee      uint64
 }
 
@@ -54,6 +59,20 @@ func NewPortingRequestKey (beaconHeight uint64, uniquePortingID string) string {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 	key := append(PortalPortingRequestsPrefix, beaconHeightBytes...)
 	key = append(key, []byte(uniquePortingID)...)
+	return string(key)
+}
+
+func NewPortingReqKey (beaconHeight uint64, portingID string) string {
+	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+	key := append(PortalPortingRequestsPrefix, beaconHeightBytes...)
+	key = append(key, []byte(portingID)...)
+	return string(key)
+}
+
+func NewRedeemReqKey (beaconHeight uint64, redeemID string) string {
+	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+	key := append(PortalRedeemRequestsPrefix, beaconHeightBytes...)
+	key = append(key, []byte(redeemID)...)
 	return string(key)
 }
 

@@ -68,9 +68,9 @@ var (
 	PDEWithdrawalStatusPrefix    = []byte("pdewithdrawalstatus-")
 
 	// Portal
-	CustodianStatePrefix = []byte("custodianstate-")
+	CustodianStatePrefix        = []byte("custodianstate-")
 	PortalPortingRequestsPrefix = []byte("portalportingrequest-")
-	PortalRedeemRequestsPrefix = []byte("portalredeemrequest-")
+	PortalRedeemRequestsPrefix  = []byte("portalredeemrequest-")
 )
 
 // value
