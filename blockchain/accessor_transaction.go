@@ -22,14 +22,16 @@ import (
 	"time"
 )
 
-func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadataV2(shardBody *ShardBody, shardID byte) error {
-	txRequestTable := reqTableFromReqTxs(shardBody.Transactions)
-	txsSpamRemoved := filterReqTxs(shardBody.Transactions, txRequestTable)
-	if len(shardBody.Transactions) != len(txsSpamRemoved) {
-		return errors.Errorf("This block contains txs spam request reward. Number of spam: %v", len(shardBody.Transactions)-len(txsSpamRemoved))
+func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadataV2(shardBlock *ShardBlock) error {
+	txRequestTable := reqTableFromReqTxs(shardBlock.Body.Transactions)
+	if shardBlock.Header.Timestamp > ValidateTimeForSpamRequestTxs {
+		txsSpamRemoved := filterReqTxs(shardBlock.Body.Transactions, txRequestTable)
+		if len(shardBlock.Body.Transactions) != len(txsSpamRemoved) {
+			return errors.Errorf("This block contains txs spam request reward. Number of spam: %v", len(shardBlock.Body.Transactions)-len(txsSpamRemoved))
+		}
 	}
 	txReturnTable := map[string]bool{}
-	for _, tx := range shardBody.Transactions {
+	for _, tx := range shardBlock.Body.Transactions {
 		switch tx.GetMetadataType() {
 		case metadata.WithDrawRewardResponseMeta:
 			_, requesterRes, amountRes, coinID := tx.GetTransferData()
@@ -69,8 +71,10 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadataV2(s
 			}
 		}
 	}
-	if len(txRequestTable) > 0 {
-		return errors.Errorf("Not match request and response, num of unresponse request: %v", len(txRequestTable))
+	if shardBlock.Header.Timestamp > ValidateTimeForSpamRequestTxs {
+		if len(txRequestTable) > 0 {
+			return errors.Errorf("Not match request and response, num of unresponse request: %v", len(txRequestTable))
+		}
 	}
 	return nil
 }
