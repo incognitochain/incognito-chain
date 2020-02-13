@@ -1195,8 +1195,8 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(
 func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk *ShardBlock) error {
 	blkBody := blk.Body
 	txRequestTable := reqTableFromReqTxs(blkBody.Transactions)
-	const ValidateTime = 1581565837
-	if blk.Header.Timestamp > ValidateTime {
+	// validate more than with spam request tx
+	if blk.Header.Timestamp > ValidateTimeForSpamRequestTxs {
 		txsSpamRemoved := filterReqTxs(blkBody.Transactions, txRequestTable)
 		if len(blkBody.Transactions) != len(txsSpamRemoved) {
 			return errors.Errorf("This block contains txs spam request reward. Number of spam: %v", len(blkBody.Transactions)-len(txsSpamRemoved))
@@ -1239,7 +1239,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 			}
 		}
 	}
-	if blk.Header.Timestamp > ValidateTime {
+	if blk.Header.Timestamp > ValidateTimeForSpamRequestTxs {
 		if len(txRequestTable) > 0 {
 			return errors.Errorf("Not match request and response, num of unresponse request: %v", len(txRequestTable))
 		}
