@@ -22,14 +22,16 @@ import (
 	"time"
 )
 
-func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadataV2(shardBody *ShardBody, shardID byte) error {
-	txRequestTable := reqTableFromReqTxs(shardBody.Transactions)
-	txsSpamRemoved := filterReqTxs(shardBody.Transactions, txRequestTable)
-	if len(shardBody.Transactions) != len(txsSpamRemoved) {
-		return errors.Errorf("This block contains txs spam request reward. Number of spam: %v", len(shardBody.Transactions)-len(txsSpamRemoved))
+func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadataV2(shardBlock *ShardBlock) error {
+	txRequestTable := reqTableFromReqTxs(shardBlock.Body.Transactions)
+	if shardBlock.Header.Timestamp > ValidateTimeForSpamRequestTxs {
+		txsSpamRemoved := filterReqTxs(shardBlock.Body.Transactions, txRequestTable)
+		if len(shardBlock.Body.Transactions) != len(txsSpamRemoved) {
+			return errors.Errorf("This block contains txs spam request reward. Number of spam: %v", len(shardBlock.Body.Transactions)-len(txsSpamRemoved))
+		}
 	}
 	txReturnTable := map[string]bool{}
-	for _, tx := range shardBody.Transactions {
+	for _, tx := range shardBlock.Body.Transactions {
 		switch tx.GetMetadataType() {
 		case metadata.WithDrawRewardResponseMeta:
 			_, requesterRes, amountRes, coinID := tx.GetTransferData()
@@ -47,7 +49,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadataV2(s
 				Logger.log.Errorf("Response does not match with request, response link to txID %v, request txID %v, error %v", responseMeta.TxRequest.String(), txReq.Hash().String(), err)
 			}
 			tempPublicKey := base58.Base58Check{}.Encode(requesterRes, common.Base58Version)
-			amount, err := statedb.GetCommitteeReward(blockchain.GetShardRewardStateDB(shardID), tempPublicKey, requestMeta.TokenID)
+			amount, err := statedb.GetCommitteeReward(blockchain.GetShardRewardStateDB(shardBlock.Header.ShardID), tempPublicKey, requestMeta.TokenID)
 			if (amount == 0) || (err != nil) {
 				return errors.Errorf("Invalid request %v, amount from db %v, error %v", requester, amount, err)
 			}
@@ -65,8 +67,10 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadataV2(s
 			}
 		}
 	}
-	if len(txRequestTable) > 0 {
-		return errors.Errorf("Not match request and response, num of unresponse request: %v", len(txRequestTable))
+	if shardBlock.Header.Timestamp > ValidateTimeForSpamRequestTxs {
+		if len(txRequestTable) > 0 {
+			return errors.Errorf("Not match request and response, num of unresponse request: %v", len(txRequestTable))
+		}
 	}
 	return nil
 }
