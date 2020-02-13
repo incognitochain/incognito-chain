@@ -2,11 +2,8 @@ package blockchain
 
 import (
 	"bytes"
-	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"io"
-	"log"
 	"sort"
 	"strconv"
 	"strings"
