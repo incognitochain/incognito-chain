@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/syncker"
 	"io/ioutil"
 	"log"
 	"net"
@@ -60,6 +61,7 @@ type Server struct {
 	chainParams       *blockchain.Params
 	connManager       *connmanager.ConnManager
 	blockChain        *blockchain.BlockChain
+	syncker           *syncker.Syncker
 	dataBase          database.DatabaseInterface
 	memCache          *memcache.MemoryCache
 	rpcServer         *rpcserver.RpcServer
@@ -86,6 +88,38 @@ type Server struct {
 
 	cQuit     chan struct{}
 	cNewPeers chan *peer.Peer
+}
+
+func (serverObj *Server) RequestBlock(peerID string, fromSID int, currentFinalHeight uint64, currentBestHash string) (blockCh chan interface{}, stopCh chan int) {
+	panic("implement me")
+}
+
+func (serverObj *Server) RequestCrossShardBlockPool(peerID string, toShardID int, latestCrossShardBlockHeight uint64) (blockCh chan interface{}, stopCh chan int) {
+	panic("implement me")
+}
+
+func (serverObj *Server) RequestS2BBlockPool(peerID string, fromSID int, latestS2BHeight uint64) (blockCh chan interface{}, stopCh chan int) {
+	panic("implement me")
+}
+
+func (serverObj *Server) GetCrossShardPool(sid byte) syncker.Pool {
+	panic("implement me")
+}
+
+func (serverObj *Server) GetS2BPool(sid byte) syncker.Pool {
+	panic("implement me")
+}
+
+func (serverObj *Server) GetBeaconBestState() syncker.Chain {
+	return blockchain.GetBeaconBestState()
+}
+
+func (serverObj *Server) GetAllShardBestState() map[byte]syncker.Chain {
+	res := make(map[byte]syncker.Chain)
+	for k, v := range blockchain.GetAllShardBestState() {
+		res[k] = v
+	}
+	return res
 }
 
 // setupRPCListeners returns a slice of listeners that are configured for use
@@ -487,6 +521,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	})
 	serverObj.connManager = connManager
 
+	serverObj.syncker = syncker.NewSyncker(incognitokey.CommitteePublicKey{}, serverObj)
 	// Start up persistent peers.
 	permanentPeers := cfg.ConnectPeers
 	if len(permanentPeers) == 0 {
@@ -1249,8 +1284,9 @@ func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 
 func (serverObj *Server) OnPeerState(_ *peer.PeerConn, msg *wire.MessagePeerState) {
 	Logger.log.Debug("Receive a peerstate START")
-	var txProcessed chan struct{}
-	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
+	//var txProcessed chan struct{}
+	//serverObj.netSync.QueueMessage(nil, msg, txProcessed)
+	serverObj.syncker.PeerStateCh <- msg
 	Logger.log.Debug("Receive a peerstate END")
 }
 

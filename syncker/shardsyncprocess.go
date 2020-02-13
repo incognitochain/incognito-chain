@@ -16,6 +16,7 @@ type CrossShardPeerState struct {
 }
 
 type ShardSyncProcess struct {
+	IsCommittee         bool
 	ShardID             byte
 	Status              string                         //stop, running
 	ShardPeerState      map[string]ShardPeerState      //peerid -> state
@@ -62,10 +63,10 @@ func (s *ShardSyncProcess) syncShardProcess() {
 		for {
 			shouldBreak := false
 			select {
-			case block := <-ch:
-				if err := s.Chain.InsertBlock(block); err != nil {
-					shouldBreak = true
-				}
+			case _ = <-ch:
+				//if err := s.Chain.InsertBlock(block); err != nil {
+				//	shouldBreak = true
+				//}
 			}
 			if shouldBreak {
 				stop <- 1
@@ -78,7 +79,7 @@ func (s *ShardSyncProcess) syncShardProcess() {
 
 func (s *ShardSyncProcess) syncCrossShardPoolProcess() {
 	defer time.AfterFunc(time.Millisecond*500, s.syncCrossShardPoolProcess)
-	if s.Status != RUNNING_SYNC {
+	if s.Status != RUNNING_SYNC || !s.IsCommittee {
 		return
 	}
 	for peerID, pState := range s.CrossShardPeerState {

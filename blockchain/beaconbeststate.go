@@ -70,6 +70,22 @@ type BeaconBestState struct {
 	BlockMaxCreateTime time.Duration
 }
 
+func (beaconBestState *BeaconBestState) GetBestViewHeight() uint64 {
+	return beaconBestState.BeaconHeight
+}
+
+func (beaconBestState *BeaconBestState) GetFinalViewHeight() uint64 {
+	return beaconBestState.BeaconHeight
+}
+
+func (beaconBestState *BeaconBestState) GetBestViewHash() string {
+	return beaconBestState.BestBlockHash.String()
+}
+
+func (beaconBestState *BeaconBestState) GetFinalViewHash() string {
+	return beaconBestState.BestBlockHash.String()
+}
+
 var beaconBestState *BeaconBestState
 
 func NewBeaconBestState() *BeaconBestState {

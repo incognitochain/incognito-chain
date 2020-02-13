@@ -13,7 +13,8 @@ type S2BPeerState struct {
 }
 
 type BeaconSyncProcess struct {
-	Status           string                     //stop, running
+	Status           string //stop, running
+	IsCommittee      bool
 	BeaconPeerStates map[string]BeaconPeerState //sender -> state
 	S2BPeerState     map[string]S2BPeerState    //sender -> state
 	Server           Server
@@ -57,10 +58,10 @@ func (s *BeaconSyncProcess) syncBeaconProcess() {
 		for {
 			shouldBreak := false
 			select {
-			case block := <-ch:
-				if err := s.Chain.InsertBlock(block); err != nil {
-					shouldBreak = true
-				}
+			case _ = <-ch:
+				//if err := s.Chain.InsertBlock(block); err != nil {
+				//	shouldBreak = true
+				//}
 			}
 			if shouldBreak {
 				stop <- 1
@@ -73,7 +74,7 @@ func (s *BeaconSyncProcess) syncBeaconProcess() {
 
 func (s *BeaconSyncProcess) syncS2BPoolProcess() {
 	defer time.AfterFunc(time.Millisecond*500, s.syncS2BPoolProcess)
-	if s.Status != RUNNING_SYNC {
+	if s.Status != RUNNING_SYNC || !s.IsCommittee {
 		return
 	}
 	for peerID, pState := range s.S2BPeerState {
