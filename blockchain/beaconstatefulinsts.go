@@ -371,6 +371,18 @@ func (blockchain *BlockChain) handlePortalInsts(
 	instructions := [][]string{}
 
 	// handle portal custodian deposit inst
+	for shardID, tradeAction := range portalCustodianDepositActionsByShardID {
+		actionContentBytes, _ := json.Marshal(tradeAction)
+		actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+		newInst, err := blockchain.buildInstructionsForCustodianDeposit(actionContentBase64Str, shardID, metadata.PDETradeRequestMeta, currentPortalState, beaconHeight)
+		if err != nil {
+			Logger.log.Error(err)
+			continue
+		}
+		if len(newInst) > 0 {
+			instructions = append(instructions, newInst...)
+		}
+	}
 
 	// handle portal user request porting inst
 

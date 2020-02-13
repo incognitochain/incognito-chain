@@ -130,3 +130,10 @@ const (
 	PDEWithdrawalAcceptedChainStatus = "accepted"
 	PDEWithdrawalRejectedChainStatus = "rejected"
 )
+
+
+// Portal status for chain
+const (
+	PortalCustodianDepositAcceptedChainStatus = "accepted"
+	PortalCustodianDepositRejectedChainStatus = "rejected"
+)
