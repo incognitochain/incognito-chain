@@ -1235,9 +1235,9 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 			}
 		}
 	}
-	if len(txRequestTable) > 0 {
-		return errors.Errorf("Not match request and response, num of unresponse request: %v", len(txRequestTable))
-	}
+	//if len(txRequestTable) > 0 {
+	//	return errors.Errorf("Not match request and response, num of unresponse request: %v", len(txRequestTable))
+	//}
 	return nil
 }
 
