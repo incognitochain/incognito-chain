@@ -12,7 +12,7 @@ func StorePrivacyToken(stateDB *StateDB, tokenID common.Hash, name string, symbo
 	if err != nil {
 		return NewStatedbError(StorePrivacyTokenError, err)
 	}
-	if has && mintable {
+	if has {
 		amount += t.Amount()
 	}
 	value := NewTokenStateWithValue(tokenID, name, symbol, tokenType, mintable, amount, info, txHash, []common.Hash{})
