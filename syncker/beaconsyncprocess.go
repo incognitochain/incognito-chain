@@ -1,6 +1,9 @@
 package syncker
 
-import "time"
+import (
+	"log"
+	"time"
+)
 
 type BeaconPeerState struct {
 	Timestamp      int64
@@ -46,29 +49,30 @@ func (s *BeaconSyncProcess) syncBeaconProcess() {
 	if s.Status != RUNNING_SYNC {
 		return
 	}
+
 	for peerID, pState := range s.BeaconPeerStates {
+
 		if pState.BestViewHeight < s.Chain.GetBestViewHeight() {
 			continue
 		}
 		if pState.BestViewHeight == s.Chain.GetBestViewHeight() && pState.BestViewHash == s.Chain.GetBestViewHash() {
 			continue
 		}
-
-		ch, stop := s.Server.RequestBlock(peerID, -1, s.Chain.GetFinalViewHeight(), s.Chain.GetBestViewHash())
-		for {
-			shouldBreak := false
-			select {
-			case _ = <-ch:
-				//if err := s.Chain.InsertBlock(block); err != nil {
-				//	shouldBreak = true
-				//}
-			}
-			if shouldBreak {
-				stop <- 1
-				break
-			}
-		}
-
+		log.Printf("SYNCKER Request Block from %s height %d hash %s", peerID, s.Chain.GetFinalViewHeight(), s.Chain.GetBestViewHash())
+		//ch, stop := s.Server.RequestBlock(peerID, -1, s.Chain.GetFinalViewHash(), s.Chain.GetBestViewHash(), pState.BestViewHash)
+		//for {
+		//	shouldBreak := false
+		//	select {
+		//	case _ = <-ch:
+		//		//if err := s.Chain.InsertBlock(block); err != nil {
+		//		//	shouldBreak = true
+		//		//}
+		//	}
+		//	if shouldBreak {
+		//		stop <- 1
+		//		break
+		//	}
+		//}
 	}
 }
 

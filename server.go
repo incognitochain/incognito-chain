@@ -90,7 +90,7 @@ type Server struct {
 	cNewPeers chan *peer.Peer
 }
 
-func (serverObj *Server) RequestBlock(peerID string, fromSID int, currentFinalHeight uint64, currentBestHash string) (blockCh chan interface{}, stopCh chan int) {
+func (serverObj *Server) RequestBlock(peerID string, fromSID int, currentFinalHash string, currentBestHash string, toBlockHash string) (blockCh chan interface{}, stopCh chan int) {
 	panic("implement me")
 }
 
@@ -766,7 +766,8 @@ func (serverObj Server) Start() {
 		go serverObj.beaconPool.Start(serverObj.cQuit)
 	}
 
-	go serverObj.blockChain.Synker.Start()
+	//go serverObj.blockChain.Synker.Start()
+
 	if serverObj.memPool != nil {
 		err := serverObj.memPool.LoadOrResetDatabaseMempool()
 		if err != nil {
@@ -2153,4 +2154,72 @@ func (serverObj *Server) GetMinerIncognitoPublickey(publicKey string, keyType st
 	}
 
 	return nil
+}
+
+func (serverObj *Server) GetBlocksViaChannel(sID int, fromBlockHash string, toBlockHashString string, stopCh chan int) chan interface{} {
+	blockCh := make(chan interface{})
+
+	type BlockInterface interface {
+		Hash() *common.Hash
+	}
+
+	nextBlockFromHash := func(sID int, fromHash string) (BlockInterface, error) {
+		h, _ := common.Hash{}.NewHashFromStr(fromHash)
+		if sID == -1 {
+			id, err := serverObj.dataBase.GetIndexOfBeaconBlock(*h)
+			if err != nil {
+				return nil, err
+			}
+			bh, err := serverObj.dataBase.GetBeaconBlockHashByIndex(id + 1)
+			if err != nil {
+				return nil, err
+			}
+			b, err := serverObj.dataBase.FetchBeaconBlock(bh)
+			if err != nil {
+				return nil, err
+			}
+			beaconBlock := &blockchain.BeaconBlock{}
+			err = json.Unmarshal(b, &beaconBlock)
+			if err != nil {
+				return nil, err
+			}
+			return beaconBlock, nil
+		} else {
+			id, sID, err := serverObj.dataBase.GetIndexOfBlock(*h)
+			if err != nil {
+				return nil, err
+			}
+			bh, err := serverObj.dataBase.GetBlockByIndex(id+1, sID)
+			if err != nil {
+				return nil, err
+			}
+			b, err := serverObj.dataBase.FetchBlock(bh)
+			if err != nil {
+				return nil, err
+			}
+			shardBlock := &blockchain.ShardBlock{}
+			err = json.Unmarshal(b, &shardBlock)
+			return shardBlock, nil
+		}
+	}
+
+	go func(blockCh chan interface{}) {
+		for {
+			select {
+			case <-stopCh:
+				close(stopCh)
+				break
+			default:
+				block, err := nextBlockFromHash(sID, fromBlockHash)
+				if err != nil {
+					stopCh <- 1
+				}
+				fromBlockHash = block.Hash().String()
+				blockCh <- block
+			}
+		}
+
+	}(blockCh)
+
+	return blockCh
 }
