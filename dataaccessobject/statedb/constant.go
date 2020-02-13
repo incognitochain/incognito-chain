@@ -66,3 +66,10 @@ const (
 var (
 	zeroBigInt = []byte("zero")
 )
+
+// token type
+const (
+	InitToken = iota
+	CrossShardToken
+	BridgeToken
+)

@@ -329,17 +329,16 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlockV2(shardBlock *Sh
 			{
 				// check is bridge token
 				// not mintable tx
-				if !isBridgeToken && !privacyCustomTokenTx.TxPrivacyTokenData.Mintable {
+				if !isBridgeToken {
 					tokenID := privacyCustomTokenTx.TxPrivacyTokenData.PropertyID
 					name := privacyCustomTokenTx.TxPrivacyTokenData.PropertyName
 					symbol := privacyCustomTokenTx.TxPrivacyTokenData.PropertySymbol
-					tokenType := privacyCustomTokenTx.TxPrivacyTokenData.Type
 					mintable := privacyCustomTokenTx.TxPrivacyTokenData.Mintable
 					amount := privacyCustomTokenTx.TxPrivacyTokenData.Amount
 					info := privacyCustomTokenTx.Tx.Info
 					txHash := *privacyCustomTokenTx.Hash()
 					Logger.log.Info("Store custom token when it is issued", privacyCustomTokenTx.TxPrivacyTokenData.PropertyID, privacyCustomTokenTx.TxPrivacyTokenData.PropertySymbol, privacyCustomTokenTx.TxPrivacyTokenData.PropertyName)
-					err = statedb.StorePrivacyToken(transactionStateRoot, tokenID, name, symbol, tokenType, mintable, amount, info, txHash)
+					err = statedb.StorePrivacyToken(transactionStateRoot, tokenID, name, symbol, statedb.InitToken, mintable, amount, info, txHash)
 					if err != nil {
 						return err
 					}
@@ -350,7 +349,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlockV2(shardBlock *Sh
 				Logger.log.Info("Transfer custom token %+v", privacyCustomTokenTx)
 			}
 		}
-		err = statedb.StorePrivacyTokenTx(transactionStateRoot, privacyCustomTokenTx.TxPrivacyTokenData.PropertyID, *privacyCustomTokenTx.Hash(), privacyCustomTokenTx.TxPrivacyTokenData.Mintable || isBridgeToken)
+		err = statedb.StorePrivacyTokenTx(transactionStateRoot, privacyCustomTokenTx.TxPrivacyTokenData.PropertyID, *privacyCustomTokenTx.Hash(), isBridgeToken)
 		if err != nil {
 			return err
 		}
@@ -521,11 +520,10 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionViewPointFromBlockV2(
 			Logger.log.Info("Store custom token when it is issued ", tokenID, privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertyName, privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertySymbol, privacyCustomTokenSubView.privacyCustomTokenMetadata.Amount, privacyCustomTokenSubView.privacyCustomTokenMetadata.Mintable)
 			name := privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertyName
 			symbol := privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertySymbol
-			tokenType := privacyCustomTokenSubView.privacyCustomTokenMetadata.Type
 			mintable := privacyCustomTokenSubView.privacyCustomTokenMetadata.Mintable
 			amount := privacyCustomTokenSubView.privacyCustomTokenMetadata.Amount
 			info := []byte{}
-			if err := statedb.StorePrivacyToken(transactionStateRoot, tokenID, name, symbol, tokenType, mintable, amount, info, common.Hash{}); err != nil {
+			if err := statedb.StorePrivacyToken(transactionStateRoot, tokenID, name, symbol, statedb.CrossShardToken, mintable, amount, info, common.Hash{}); err != nil {
 				return err
 			}
 		}
