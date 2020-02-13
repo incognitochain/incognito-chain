@@ -56,6 +56,7 @@ const (
 	SendRawTransactionError
 	BuildTokenParamError
 	BuildPrivacyTokenParamError
+	GetListPrivacyCustomTokenBalanceError
 	// reject tx
 	RejectInvalidTxFeeError
 	RejectInvalidTxSizeError
@@ -82,26 +83,26 @@ var ErrCodeMessage = map[int]struct {
 	JsonError:           {-4, "Json error"},
 
 	// validate component -1xxx
-	RPCInvalidRequestError:             {-1001, "Invalid request"},
-	RPCMethodNotFoundError:             {-1002, "Method not found"},
-	RPCInvalidParamsError:              {-1003, "Invalid parameters"},
-	RPCInternalError:                   {-1004, "Internal error"},
-	RPCParseError:                      {-1005, "Parse error"},
-	InvalidTypeError:                   {-1006, "Invalid type"},
-	AuthFailError:                      {-1007, "Auth failure"},
-	RPCInvalidMethodPermissionError:    {-1008, "Invalid method permission"},
-	InvalidReceiverPaymentAddressError: {-1009, "Invalid receiver paymentaddress"},
-	ListTokenNotFoundError:             {-1010, "Can not find any token"},
-	CanNotSignError:                    {-1011, "Can not sign with key"},
-	InvalidSenderPrivateKeyError:       {-1012, "Invalid sender's key"},
-	GetOutputCoinError:                 {-1013, "Can not get output coin"},
-	TxTypeInvalidError:                 {-1014, "Invalid tx type"},
-	InvalidSenderViewingKeyError:       {-1015, "Invalid viewing key"},
-	RejectInvalidTxFeeError:            {-1016, "Reject invalid fee"},
-	TxNotExistedInMemAndBLockError:     {-1017, "Tx is not existed in mem and block"},
-	TokenIsInvalidError:                {-1018, "Token is invalid"},
-	GetKeySetFromPrivateKeyError:       {-1019, "Get KeySet From Private Key Error"},
-
+	RPCInvalidRequestError:                {-1001, "Invalid request"},
+	RPCMethodNotFoundError:                {-1002, "Method not found"},
+	RPCInvalidParamsError:                 {-1003, "Invalid parameters"},
+	RPCInternalError:                      {-1004, "Internal error"},
+	RPCParseError:                         {-1005, "Parse error"},
+	InvalidTypeError:                      {-1006, "Invalid type"},
+	AuthFailError:                         {-1007, "Auth failure"},
+	RPCInvalidMethodPermissionError:       {-1008, "Invalid method permission"},
+	InvalidReceiverPaymentAddressError:    {-1009, "Invalid receiver paymentaddress"},
+	ListTokenNotFoundError:                {-1010, "Can not find any token"},
+	CanNotSignError:                       {-1011, "Can not sign with key"},
+	InvalidSenderPrivateKeyError:          {-1012, "Invalid sender's key"},
+	GetOutputCoinError:                    {-1013, "Can not get output coin"},
+	TxTypeInvalidError:                    {-1014, "Invalid tx type"},
+	InvalidSenderViewingKeyError:          {-1015, "Invalid viewing key"},
+	RejectInvalidTxFeeError:               {-1016, "Reject invalid fee"},
+	TxNotExistedInMemAndBLockError:        {-1017, "Tx is not existed in mem and block"},
+	TokenIsInvalidError:                   {-1018, "Token is invalid"},
+	GetKeySetFromPrivateKeyError:          {-1019, "Get KeySet From Private Key Error"},
+	GetListPrivacyCustomTokenBalanceError: {-1020, "Get List Privacy Custom Token Balance Error"},
 	// for block -2xxx
 	GetShardBlockByHeightError:  {-2000, "Get shard block by height error"},
 	GetShardBlockByHashError:    {-2001, "Get shard block by hash error"},

@@ -1191,11 +1191,15 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(
 	return txsSpamRemoved, nil
 }
 
-func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blkBody *ShardBody) error {
+func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk *ShardBlock) error {
+	blkBody := blk.Body
 	txRequestTable := reqTableFromReqTxs(blkBody.Transactions)
-	txsSpamRemoved := filterReqTxs(blkBody.Transactions, txRequestTable)
-	if len(blkBody.Transactions) != len(txsSpamRemoved) {
-		return errors.Errorf("This block contains txs spam request reward. Number of spam: %v", len(blkBody.Transactions)-len(txsSpamRemoved))
+	// validate more than with spam request tx
+	if blk.Header.Timestamp > ValidateTimeForSpamRequestTxs {
+		txsSpamRemoved := filterReqTxs(blkBody.Transactions, txRequestTable)
+		if len(blkBody.Transactions) != len(txsSpamRemoved) {
+			return errors.Errorf("This block contains txs spam request reward. Number of spam: %v", len(blkBody.Transactions)-len(txsSpamRemoved))
+		}
 	}
 	txReturnTable := map[string]bool{}
 	db := blockchain.config.DataBase
@@ -1234,8 +1238,10 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 			}
 		}
 	}
-	if len(txRequestTable) > 0 {
-		return errors.Errorf("Not match request and response, num of unresponse request: %v", len(txRequestTable))
+	if blk.Header.Timestamp > ValidateTimeForSpamRequestTxs {
+		if len(txRequestTable) > 0 {
+			return errors.Errorf("Not match request and response, num of unresponse request: %v", len(txRequestTable))
+		}
 	}
 	return nil
 }
