@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/binance-chain/go-sdk/types/msg"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -59,49 +60,52 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 		Logger.log.Errorf("current portal state is nil")
 		return nil
 	}
-
-	// parse instruction
-	actionContentB64Str := instructions[1]
-	actionContentBytes, err := base64.StdEncoding.DecodeString(actionContentB64Str)
-	if err != nil {
-		return err
-	}
-	var actionData metadata.PortalCustodianDepositAction
-	err = json.Unmarshal(actionContentBytes, &actionData)
-	if err != nil {
-		return err
+	if len(instructions) !=  4 {
+		return nil  // skip the instruction
 	}
 
-	meta := actionData.Meta
-	keyCustodianState := lvdb.NewCustodianStateKey(beaconHeight, meta.IncogAddressStr)
-
-	if currentPortalState.CustodianPoolState[keyCustodianState] == nil {
-		// new custodian
-		newCustodian, err := NewCustodianState(meta.IncogAddressStr, meta.DepositedAmount, meta.DepositedAmount, nil, nil, meta.RemoteAddresses)
+	depositStatus := instructions[2]
+	if depositStatus ==common.PortalCustodianDepositAcceptedChainStatus {
+		// unmarshal instructions content
+		var actionData metadata.PortalCustodianDepositAction
+		err := json.Unmarshal([]byte(instructions[3]), &actionData)
 		if err != nil {
 			return err
 		}
-		currentPortalState.CustodianPoolState[keyCustodianState] = newCustodian
-	} else {
-		// custodian deposited before
-		// update state of the custodian
-		custodian := currentPortalState.CustodianPoolState[meta.IncogAddressStr]
-		totalCollateral := custodian.TotalCollateral + meta.DepositedAmount
-		freeCollateral := custodian.FreeCollateral + meta.DepositedAmount
-		holdingPubTokens := custodian.HoldingPubTokens
-		lockedAmountCollateral := custodian.LockedAmountCollateral
-		remoteAddresses := custodian.RemoteAddresses
-		for tokenSymbol, address := range meta.RemoteAddresses {
-			if remoteAddresses[tokenSymbol] == "" {
-				remoteAddresses[tokenSymbol] = address
+
+		meta := actionData.Meta
+		keyCustodianState := lvdb.NewCustodianStateKey(beaconHeight, meta.IncogAddressStr)
+
+		if currentPortalState.CustodianPoolState[keyCustodianState] == nil {
+			// new custodian
+			newCustodian, err := NewCustodianState(meta.IncogAddressStr, meta.DepositedAmount, meta.DepositedAmount, nil, nil, meta.RemoteAddresses)
+			if err != nil {
+				return err
 			}
-		}
+			currentPortalState.CustodianPoolState[keyCustodianState] = newCustodian
+		} else {
+			// custodian deposited before
+			// update state of the custodian
+			custodian := currentPortalState.CustodianPoolState[meta.IncogAddressStr]
+			totalCollateral := custodian.TotalCollateral + meta.DepositedAmount
+			freeCollateral := custodian.FreeCollateral + meta.DepositedAmount
+			holdingPubTokens := custodian.HoldingPubTokens
+			lockedAmountCollateral := custodian.LockedAmountCollateral
+			remoteAddresses := custodian.RemoteAddresses
+			for tokenSymbol, address := range meta.RemoteAddresses {
+				if remoteAddresses[tokenSymbol] == "" {
+					remoteAddresses[tokenSymbol] = address
+				}
+			}
 
-		newCustodian, err := NewCustodianState(meta.IncogAddressStr, totalCollateral, freeCollateral, holdingPubTokens, lockedAmountCollateral, remoteAddresses)
-		if err != nil {
-			return err
+			newCustodian, err := NewCustodianState(meta.IncogAddressStr, totalCollateral, freeCollateral, holdingPubTokens, lockedAmountCollateral, remoteAddresses)
+			if err != nil {
+				return err
+			}
+			currentPortalState.CustodianPoolState[keyCustodianState] = newCustodian
 		}
-		currentPortalState.CustodianPoolState[keyCustodianState] = newCustodian
+	} else if depositStatus == common.PortalCustodianDepositRefundChainStatus {
+		//todo
 	}
 
 	return nil

@@ -135,5 +135,5 @@ const (
 // Portal status for chain
 const (
 	PortalCustodianDepositAcceptedChainStatus = "accepted"
-	PortalCustodianDepositRejectedChainStatus = "rejected"
+	PortalCustodianDepositRefundChainStatus = "refund"
 )
