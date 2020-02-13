@@ -1,7 +1,9 @@
 package main
 
 import (
+	"github.com/incognitochain/incognito-chain/consensus"
 	"github.com/incognitochain/incognito-chain/dataaccessobject"
+	"github.com/incognitochain/incognito-chain/peerv2"
 	"github.com/incognitochain/incognito-chain/trie"
 	"io"
 	"log"
@@ -61,6 +63,8 @@ func makeBlockChain(databaseDir string, testNet bool) (*blockchain.BlockChain, e
 		CrossShardPool:    crossShardPoolMap,
 		ShardPool:         shardPoolMap,
 		TxPool:            txPool,
+		ConsensusEngine:   &consensus.Engine{},
+		Highway:           &peerv2.ConnManager{},
 	})
 	if err != nil {
 		return nil, err
