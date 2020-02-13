@@ -510,27 +510,13 @@ func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 			existed := txService.BlockChain.PrivacyCustomTokenIDExisted(tokenID)
 			existedCrossShard := txService.BlockChain.PrivacyCustomTokenIDCrossShardExisted(tokenID)
 			if !existed && !existedCrossShard {
-				// check bridge token
-				allBridgeTokensBytes, err := (*txService.DB).GetAllBridgeTokens()
-				if err != nil {
-					return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
-				}
-				isBridgeToken := false
-				if len(allBridgeTokensBytes) > 0 {
-					var allBridgeTokens []*lvdb.BridgeTokenInfo
-					err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
-					if err != nil {
-						return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
-					}
-					if len(allBridgeTokens) > 0 {
-						for _, bridgeToken := range allBridgeTokens {
-							if bridgeToken.TokenID.IsEqual(tokenID) {
-								isBridgeToken = true
-							}
-						}
-					}
+				// try to check bridge token
+				isBridgeToken, err1 := transaction.IsBridgeTokenID(*tokenID, *txService.DB)
+				if err1 != nil {
+					Logger.log.Error(err1)
 				}
 				if !isBridgeToken {
+					// totally invalid token
 					return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
 				}
 			}

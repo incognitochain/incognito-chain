@@ -1,10 +1,12 @@
 package transaction
 
 import (
+	"encoding/json"
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
@@ -319,4 +321,23 @@ func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Tr
 		return tx, nil
 	}
 	return nil, nil
+}
+
+// IsBridgeTokenID finds the external tokenID for a bridge token from database
+func IsBridgeTokenID(tokenID common.Hash, db database.DatabaseInterface) (bool, error) {
+	allBridgeTokensBytes, err := db.GetAllBridgeTokens()
+	if err != nil {
+		return false, err
+	}
+	var allBridgeTokens []*lvdb.BridgeTokenInfo
+	err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
+	if err != nil {
+		return false, err
+	}
+	for _, token := range allBridgeTokens {
+		if token.TokenID.IsEqual(&tokenID) {
+			return true, nil
+		}
+	}
+	return false, errors.New("invalid bridge tokenID")
 }
