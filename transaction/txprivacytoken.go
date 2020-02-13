@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
@@ -329,7 +330,32 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 			existed := params.db.PrivacyTokenIDExisted(*propertyID)
 			existedCross := params.db.PrivacyTokenIDCrossShardExisted(*propertyID)
 			if !existed && !existedCross {
-				return NewTransactionErr(TokenIDExistedError, errors.New("invalid Token ID"))
+				// try to check bridge token
+				allBridgeTokensBytes, err1 := params.db.GetAllBridgeTokens()
+				if err1 != nil {
+					Logger.log.Error("Can not get list bridge token")
+					return NewTransactionErr(UnexpectedError, errors.New("Can not get list bridge token"))
+				}
+				isBridgeToken := false
+				if len(allBridgeTokensBytes) > 0 {
+					var allBridgeTokens []*lvdb.BridgeTokenInfo
+					err2 := json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
+					if err2 != nil {
+						Logger.log.Error("Can not get list bridge token")
+						return NewTransactionErr(UnexpectedError, errors.New("Can not get list bridge token"))
+					}
+					if len(allBridgeTokens) > 0 {
+						for _, bridgeToken := range allBridgeTokens {
+							if bridgeToken.TokenID.IsEqual(propertyID) {
+								isBridgeToken = true
+							}
+						}
+					}
+				}
+				if !isBridgeToken {
+					// totally invalid token
+					return NewTransactionErr(TokenIDExistedError, errors.New("invalid Token ID"))
+				}
 			}
 			Logger.log.Debugf("Token %+v wil be transfered with", propertyID)
 			txCustomTokenPrivacy.TxPrivacyTokenData = TxPrivacyTokenData{
