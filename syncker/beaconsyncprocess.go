@@ -10,6 +10,7 @@ type BeaconPeerState struct {
 	BestViewHash   string
 	BestViewHeight uint64
 }
+
 type S2BPeerState struct {
 	Timestamp int64
 	Height    map[byte]uint64 //shardid -> height

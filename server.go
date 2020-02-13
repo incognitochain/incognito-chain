@@ -90,10 +90,6 @@ type Server struct {
 	cNewPeers chan *peer.Peer
 }
 
-func (serverObj *Server) RequestBlock(peerID string, fromSID int, currentFinalHash string, currentBestHash string, toBlockHash string) (blockCh chan interface{}, stopCh chan int) {
-	panic("implement me")
-}
-
 func (serverObj *Server) RequestCrossShardBlockPool(peerID string, toShardID int, latestCrossShardBlockHeight uint64) (blockCh chan interface{}, stopCh chan int) {
 	panic("implement me")
 }
@@ -2154,6 +2150,10 @@ func (serverObj *Server) GetMinerIncognitoPublickey(publicKey string, keyType st
 	}
 
 	return nil
+}
+
+func (serverObj *Server) RequestBlocksViaChannel(peerID string, fromSID int, currentFinalHash string, currentBestHash string, toBlockHash string) (blockCh chan interface{}, stopCh chan int) {
+	panic("implement me")
 }
 
 func (serverObj *Server) GetBlocksViaChannel(sID int, fromBlockHash string, toBlockHashString string, stopCh chan int) chan interface{} {

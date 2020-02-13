@@ -9,7 +9,7 @@ import (
 type Server interface {
 	//Request block from "peerID" of shard "fromSID" with param currentFinalHeight and currentBestHash
 	//Function return channel of each block, and a stop channel to tell sender side to stop send block
-	RequestBlock(peerID string, fromSID int, currentFinalHash string, currentBestHash string, toBlockHash string) (blockCh chan interface{}, stopCh chan int)
+	RequestBlocksViaChannel(peerID string, fromSID int, currentFinalHash string, currentBestHash string, toBlockHash string) (blockCh chan interface{}, stopCh chan int)
 
 	//Request cross block from "peerID" for shard "toShardID" with param latestCrossShardBlockHeight in current pool
 	//Function return channel of each block, and a stop channel to tell sender side to stop send block
