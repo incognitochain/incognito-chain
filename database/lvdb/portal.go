@@ -21,6 +21,12 @@ type MatchingCustodianDetail struct {
 	Amount uint64
 }
 
+type MatchingRedeemCustodianDetail struct {
+	RemoteAddress string
+	Amount uint64
+	UnLockedAmountCollateral uint64
+}
+
 type PortingRequest struct {
 	UniquePortingID string
 	TxReqID         common.Hash
@@ -37,8 +43,8 @@ type RedeemRequest struct {
 	TokenID               string
 	RedeemerAddress       string
 	RedeemerRemoteAddress string
-	Amount                uint64
-	Custodians            map[string]uint64
+	RedeemAmount          uint64
+	Custodians            map[string]MatchingRedeemCustodianDetail 	// key : incogAddress
 	RedeemFee             uint64
 }
 
