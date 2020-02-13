@@ -8,7 +8,9 @@ import (
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/incdb"
+	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 )
 
 // TODO add more test case
@@ -18,21 +20,21 @@ func setupTestGetMissingCrossShardBlock(
 	toShard byte,
 	start uint64,
 	listWantedBlock []uint64,
-	db database.DatabaseInterface,
+	db incdb.Database,
 ) {
 	if len(listWantedBlock) == 0 {
 		return
 	}
-	db.StoreCrossShardNextHeight(fromShard, toShard, start, listWantedBlock[0])
+	rawdbv2.StoreCrossShardNextHeight(db, fromShard, toShard, start, listWantedBlock[0])
 	for i := 0; i < len(listWantedBlock)-1; i++ {
-		db.StoreCrossShardNextHeight(fromShard, toShard, listWantedBlock[i], listWantedBlock[i+1])
+		rawdbv2.StoreCrossShardNextHeight(db, fromShard, toShard, listWantedBlock[i], listWantedBlock[i+1])
 	}
 	return
 }
 
 func TestGetMissingCrossShardBlock(t *testing.T) {
 	type args struct {
-		db                  database.DatabaseInterface
+		db                  incdb.Database
 		bestCrossShardState map[byte]map[byte]uint64
 		latestValidHeight   map[byte]uint64
 		userShardID         byte
@@ -42,7 +44,7 @@ func TestGetMissingCrossShardBlock(t *testing.T) {
 		t.Errorf("failed to create temp dir: %+v", err)
 	}
 	t.Log(dbPath)
-	db, err := database.Open("leveldb", dbPath)
+	db, err := incdb.Open("leveldb", dbPath)
 
 	tests := []struct {
 		name string

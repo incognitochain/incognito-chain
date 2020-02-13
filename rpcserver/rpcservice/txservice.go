@@ -13,6 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -554,11 +555,29 @@ func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 		{
 			tokenID, err := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
 			if err != nil {
-				return nil, nil, nil, NewRPCError(BuildPrivacyTokenParamError, err)
-			}
-			existed := txService.BlockChain.PrivacyCustomTokenIDExistedV2(tokenID, shardIDSender)
-			if !existed {
-				return nil, nil, nil, NewRPCError(BuildPrivacyTokenParamError, fmt.Errorf("Token %+v not existed", tokenID))
+				allBridgeTokensBytes, err := statedb.GetAllBridgeTokens(txService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB())
+				if err != nil {
+					return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
+				}
+				isBridgeToken := false
+				if len(allBridgeTokensBytes) > 0 {
+					var allBridgeTokens []*rawdb.BridgeTokenInfo
+					err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
+					if err != nil {
+						return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
+					}
+					if len(allBridgeTokens) > 0 {
+						for _, bridgeToken := range allBridgeTokens {
+							isBridgeToken = true
+							if bridgeToken.TokenID.IsEqual(tokenID) {
+							}
+						}
+					}
+				}
+				if !isBridgeToken {
+					return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
+				}
+				//return nil, nil, nil, NewRPCError(BuildPrivacyTokenParamError, err)
 			}
 			outputTokens, err := txService.BlockChain.GetListOutputCoinsByKeysetV2(senderKeySet, shardIDSender, tokenID)
 			if err != nil {
@@ -703,48 +722,44 @@ func (txService TxService) GetListPrivacyCustomTokenBalance(privateKey string) (
 	account, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
 		Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
-		return jsonresult.ListCustomTokenBalance{}, NewRPCError(UnexpectedError, err)
+		return jsonresult.ListCustomTokenBalance{}, NewRPCError(GetListPrivacyCustomTokenBalanceError, err)
 	}
 	err = account.KeySet.InitFromPrivateKey(&account.KeySet.PrivateKey)
 	if err != nil {
 		Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
-		return jsonresult.ListCustomTokenBalance{}, NewRPCError(UnexpectedError, err)
+		return jsonresult.ListCustomTokenBalance{}, NewRPCError(GetListPrivacyCustomTokenBalanceError, err)
 	}
-
 	result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
-	temps, listCustomTokenCrossShard, err := txService.BlockChain.ListPrivacyCustomToken()
+	lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
+	shardIDSender := common.GetShardIDFromLastByte(lastByte)
+	tokenStates, err := txService.BlockChain.ListPrivacyCustomTokenV2(shardIDSender)
 	if err != nil {
 		Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
-		return jsonresult.ListCustomTokenBalance{}, NewRPCError(UnexpectedError, err)
+		return jsonresult.ListCustomTokenBalance{}, NewRPCError(GetListPrivacyCustomTokenBalanceError, err)
 	}
 	tokenIDs := make(map[common.Hash]interface{})
-	for tokenID, tx := range temps {
+	for tokenID, tokenState := range tokenStates {
 		tokenIDs[tokenID] = 0
 		item := jsonresult.CustomTokenBalance{}
-		item.Name = tx.TxPrivacyTokenData.PropertyName
-		item.Symbol = tx.TxPrivacyTokenData.PropertySymbol
-		item.TokenID = tx.TxPrivacyTokenData.PropertyID.String()
+		item.Name = tokenState.PropertyName()
+		item.Symbol = tokenState.PropertySymbol()
+		item.TokenID = tokenState.TokenID().String()
 		item.TokenImage = common.Render([]byte(item.TokenID))
-		tokenID := tx.TxPrivacyTokenData.PropertyID
-
 		balance := uint64(0)
 		// get balance for accountName in wallet
-		lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
-		shardIDSender := common.GetShardIDFromLastByte(lastByte)
 		prvCoinID := &common.Hash{}
 		err := prvCoinID.SetBytes(common.PRVCoinID[:])
 		if err != nil {
 			return jsonresult.ListCustomTokenBalance{}, NewRPCError(TokenIsInvalidError, err)
 		}
-		outcoints, err := txService.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, shardIDSender, &tokenID)
+		outcoints, err := txService.BlockChain.GetListOutputCoinsByKeysetV2(&account.KeySet, shardIDSender, &tokenID)
 		if err != nil {
 			Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
-			return jsonresult.ListCustomTokenBalance{}, NewRPCError(UnexpectedError, err)
+			return jsonresult.ListCustomTokenBalance{}, NewRPCError(GetListPrivacyCustomTokenBalanceError, err)
 		}
 		for _, out := range outcoints {
 			balance += out.CoinDetails.GetValue()
 		}
-
 		item.Amount = balance
 		if item.Amount == 0 {
 			continue
@@ -753,41 +768,56 @@ func (txService TxService) GetListPrivacyCustomTokenBalance(privateKey string) (
 		result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
 		result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
 	}
-	for tokenID, customTokenCrossShard := range listCustomTokenCrossShard {
-		if _, ok := tokenIDs[tokenID]; ok {
-			continue
-		}
-		item := jsonresult.CustomTokenBalance{}
-		item.Name = customTokenCrossShard.PropertyName
-		item.Symbol = customTokenCrossShard.PropertySymbol
-		item.TokenID = customTokenCrossShard.TokenID.String()
-		item.TokenImage = common.Render([]byte(item.TokenID))
-		tokenID := customTokenCrossShard.TokenID
-
-		balance := uint64(0)
-		// get balance for accountName in wallet
-		lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
-		shardIDSender := common.GetShardIDFromLastByte(lastByte)
-		prvCoinID := &common.Hash{}
-		err := prvCoinID.SetBytes(common.PRVCoinID[:])
+	// bridge token
+	allBridgeTokensBytes, err := statedb.GetAllBridgeTokens(txService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB())
+	if err != nil {
+		return jsonresult.ListCustomTokenBalance{}, NewRPCError(GetListPrivacyCustomTokenBalanceError, err)
+	}
+	if len(allBridgeTokensBytes) > 0 {
+		var allBridgeTokens []*rawdb.BridgeTokenInfo
+		err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
 		if err != nil {
-			return jsonresult.ListCustomTokenBalance{}, NewRPCError(TokenIsInvalidError, err)
+			return jsonresult.ListCustomTokenBalance{}, NewRPCError(GetListPrivacyCustomTokenBalanceError, err)
 		}
-		outcoints, err := txService.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, shardIDSender, &tokenID)
-		if err != nil {
-			return jsonresult.ListCustomTokenBalance{}, NewRPCError(UnexpectedError, err)
-		}
-		for _, out := range outcoints {
-			balance += out.CoinDetails.GetValue()
-		}
+		if len(allBridgeTokens) > 0 {
+			for _, bridgeToken := range allBridgeTokens {
+				if _, ok := tokenIDs[*bridgeToken.TokenID]; ok {
+					continue
+				}
+				item := jsonresult.CustomTokenBalance{}
+				item.Name = ""
+				item.Symbol = ""
+				item.TokenID = bridgeToken.TokenID.String()
+				item.TokenImage = common.Render([]byte(item.TokenID))
+				tokenID := bridgeToken.TokenID
 
-		item.Amount = balance
-		if item.Amount == 0 {
-			continue
+				balance := uint64(0)
+				// get balance for accountName in wallet
+				lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
+				shardIDSender := common.GetShardIDFromLastByte(lastByte)
+				prvCoinID := &common.Hash{}
+				err := prvCoinID.SetBytes(common.PRVCoinID[:])
+				if err != nil {
+					return jsonresult.ListCustomTokenBalance{}, NewRPCError(TokenIsInvalidError, err)
+				}
+				outcoints, err := txService.BlockChain.GetListOutputCoinsByKeysetV2(&account.KeySet, shardIDSender, tokenID)
+				if err != nil {
+					return jsonresult.ListCustomTokenBalance{}, NewRPCError(UnexpectedError, err)
+				}
+				for _, out := range outcoints {
+					balance += out.CoinDetails.GetValue()
+				}
+
+				item.Amount = balance
+				if item.Amount == 0 {
+					continue
+				}
+				item.IsPrivacy = true
+				item.IsBridgeToken = true
+				result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
+				result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
+			}
 		}
-		item.IsPrivacy = true
-		result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
-		result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
 	}
 
 	return result, nil
@@ -826,6 +856,38 @@ func (txService TxService) GetBalancePrivacyCustomToken(privateKey string, token
 			}
 		}
 	}
+	if totalValue == 0 {
+		// bridge token
+		allBridgeTokensBytes, err := statedb.GetAllBridgeTokens(txService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB())
+		if err != nil {
+			return 0, NewRPCError(UnexpectedError, err)
+		}
+		if len(allBridgeTokensBytes) > 0 {
+			var allBridgeTokens []*rawdb.BridgeTokenInfo
+			err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
+			if err != nil {
+				return 0, NewRPCError(UnexpectedError, err)
+			}
+			if len(allBridgeTokens) > 0 {
+				for _, bridgeToken := range allBridgeTokens {
+					tempTokenID := bridgeToken.TokenID
+					if tokenID == tempTokenID.String() {
+						lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
+						shardIDSender := common.GetShardIDFromLastByte(lastByte)
+						outcoints, err := txService.BlockChain.GetListOutputCoinsByKeysetV2(&account.KeySet, shardIDSender, tempTokenID)
+						if err != nil {
+							Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
+							return uint64(0), NewRPCError(UnexpectedError, err)
+						}
+						for _, out := range outcoints {
+							totalValue += out.CoinDetails.GetValue()
+						}
+					}
+				}
+			}
+		}
+	}
+
 	return totalValue, nil
 }
 
