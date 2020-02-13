@@ -273,20 +273,6 @@ func sortPDETradeInstsByFee(
 	return append(sortedExistingPairTradeActions, notExistingPairTradeActions...)
 }
 
-func groupPortalActionsByShardID(
-	portalActionsByShardID map[byte][][]string,
-	action []string,
-	shardID byte,
-) map[byte][][]string {
-	_, found := portalActionsByShardID[shardID]
-	if !found {
-		portalActionsByShardID[shardID] = [][]string{action}
-	} else {
-		portalActionsByShardID[shardID] = append(portalActionsByShardID[shardID], action)
-	}
-	return portalActionsByShardID
-}
-
 func (blockchain *BlockChain) handlePDEInsts(
 	beaconHeight uint64,
 	currentPDEState *CurrentPDEState,
@@ -359,6 +345,20 @@ func (blockchain *BlockChain) handlePDEInsts(
 	return instructions, nil
 }
 
+// Portal
+func groupPortalActionsByShardID(
+	portalActionsByShardID map[byte][][]string,
+	action []string,
+	shardID byte,
+) map[byte][][]string {
+	_, found := portalActionsByShardID[shardID]
+	if !found {
+		portalActionsByShardID[shardID] = [][]string{action}
+	} else {
+		portalActionsByShardID[shardID] = append(portalActionsByShardID[shardID], action)
+	}
+	return portalActionsByShardID
+}
 
 // todo
 func (blockchain *BlockChain) handlePortalInsts(
@@ -371,16 +371,24 @@ func (blockchain *BlockChain) handlePortalInsts(
 	instructions := [][]string{}
 
 	// handle portal custodian deposit inst
-	for shardID, tradeAction := range portalCustodianDepositActionsByShardID {
-		actionContentBytes, _ := json.Marshal(tradeAction)
-		actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-		newInst, err := blockchain.buildInstructionsForCustodianDeposit(actionContentBase64Str, shardID, metadata.PDETradeRequestMeta, currentPortalState, beaconHeight)
-		if err != nil {
-			Logger.log.Error(err)
-			continue
-		}
-		if len(newInst) > 0 {
-			instructions = append(instructions, newInst...)
+	var shardIDKeys []int
+	for k := range portalCustodianDepositActionsByShardID {
+		shardIDKeys = append(shardIDKeys, int(k))
+	}
+	sort.Ints(shardIDKeys)
+	for _, value := range shardIDKeys {
+		shardID := byte(value)
+		actions := portalCustodianDepositActionsByShardID[shardID]
+		for _, action := range actions {
+			contentStr := action[1]
+			newInst, err := blockchain.buildInstructionsForCustodianDeposit(contentStr, shardID, metadata.PortalCustodianDepositMeta, currentPortalState, beaconHeight)
+			if err != nil {
+				Logger.log.Error(err)
+				continue
+			}
+			if len(newInst) > 0 {
+				instructions = append(instructions, newInst...)
+			}
 		}
 	}
 
