@@ -1,6 +1,8 @@
 package blockchain
 
 import (
+	"bytes"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
@@ -9,6 +11,8 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"io"
+	"log"
 )
 
 /*
@@ -259,4 +263,94 @@ func (blockchain *BlockChain) GetTransactionHashByReceiverV2(keySet *incognitoke
 		return nil, NewBlockChainError(UnExpectedError, err)
 	}
 	return result, nil
+}
+
+func CalculateNumberOfByteToRead(amountBytes int) []byte {
+	var result = make([]byte, 8)
+	binary.LittleEndian.PutUint32(result, uint32(amountBytes))
+	return result
+}
+func GetNumberOfByteToRead(value []byte) (int, error) {
+	var result uint32
+	err := binary.Read(bytes.NewBuffer(value), binary.LittleEndian, &result)
+	if err != nil {
+		return -1, err
+	}
+	return int(result), nil
+}
+func (blockchain *BlockChain) BackupShardChain(writer io.Writer, shardID byte) error {
+	bestStateBytes, err := rawdbv2.GetShardBestState(blockchain.config.DataBase, shardID)
+	if err != nil {
+		return err
+	}
+	shardBestState := &ShardBestState{}
+	err = json.Unmarshal(bestStateBytes, shardBestState)
+	bestShardHeight := shardBestState.ShardHeight
+	var i uint64
+	for i = 1; i < bestShardHeight; i++ {
+		shardBlocks, err := blockchain.GetShardBlockByHeightV2(i, shardID)
+		if err != nil {
+			return err
+		}
+		var shardBlock *ShardBlock
+		for _, v := range shardBlocks {
+			shardBlock = v
+		}
+		data, err := json.Marshal(shardBlocks)
+		if err != nil {
+			return err
+		}
+		_, err = writer.Write(CalculateNumberOfByteToRead(len(data)))
+		if err != nil {
+			return err
+		}
+		_, err = writer.Write(data)
+		if err != nil {
+			return err
+		}
+		if i%100 == 0 {
+			log.Printf("Backup Shard %+v Block %+v", shardBlock.Header.ShardID, i)
+		}
+		if i == bestShardHeight-1 {
+			log.Printf("Finish Backup Shard %+v with Block %+v", shardBlock.Header.ShardID, i)
+		}
+	}
+	return nil
+}
+func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
+	bestStateBytes, err := rawdbv2.GetBeaconBestState(blockchain.GetDatabase())
+	if err != nil {
+		return err
+	}
+	beaconBestState := &BeaconBestState{}
+	err = json.Unmarshal(bestStateBytes, beaconBestState)
+	bestBeaconHeight := beaconBestState.BeaconHeight
+	var i uint64
+	for i = 1; i < bestBeaconHeight; i++ {
+		beaconBlocks, err := blockchain.GetBeaconBlockByHeightV2(i)
+		if err != nil {
+			return err
+		}
+		beaconBlock := beaconBlocks[0]
+		data, err := json.Marshal(beaconBlock)
+		if err != nil {
+			return err
+		}
+		numOfByteToRead := CalculateNumberOfByteToRead(len(data))
+		_, err = writer.Write(numOfByteToRead)
+		if err != nil {
+			return err
+		}
+		_, err = writer.Write(data)
+		if err != nil {
+			return err
+		}
+		if i%100 == 0 {
+			log.Printf("Backup Beacon Block %+v", i)
+		}
+		if i == bestBeaconHeight-1 {
+			log.Printf("Finish Backup Beacon with Block %+v", i)
+		}
+	}
+	return nil
 }

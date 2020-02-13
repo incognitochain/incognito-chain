@@ -405,7 +405,7 @@ func (beaconBestState *BeaconBestState) initBeaconBestStateV2(genesisBeaconBlock
 	}
 	// update param
 	for _, instruction := range genesisBeaconBlock.Body.Instructions {
-		err, _, tempNewBeaconCandidate, tempNewShardCandidate := beaconBestState.processInstruction(instruction)
+		err, _, tempNewBeaconCandidate, tempNewShardCandidate := beaconBestState.processInstructionV2(instruction, newCommitteeChange())
 		if err != nil {
 			return err
 		}
