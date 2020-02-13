@@ -4,13 +4,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/binance-chain/go-sdk/types/msg"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"sort"
-	"fmt"
-	"github.com/binance-chain/go-sdk/types/msg"
 	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"
+	"sort"
 	"strconv"
 )
 
@@ -53,7 +53,6 @@ func (blockchain *BlockChain) processPortalInstructions(block *BeaconBlock, bd *
 	return nil
 }
 
-// todo
 func (blockchain *BlockChain) processPortalCustodianDeposit(
 	beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
 	if currentPortalState == nil {
@@ -78,7 +77,7 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 
 	if currentPortalState.CustodianPoolState[keyCustodianState] == nil {
 		// new custodian
-		newCustodian, err := NewCustodianState(meta.IncogAddressStr, meta.DepositedAmount, meta.DepositedAmount, nil, meta.RemoteAddresses)
+		newCustodian, err := NewCustodianState(meta.IncogAddressStr, meta.DepositedAmount, meta.DepositedAmount, nil, nil, meta.RemoteAddresses)
 		if err != nil {
 			return err
 		}
@@ -90,6 +89,7 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 		totalCollateral := custodian.TotalCollateral + meta.DepositedAmount
 		freeCollateral := custodian.FreeCollateral + meta.DepositedAmount
 		holdingPubTokens := custodian.HoldingPubTokens
+		lockedAmountCollateral := custodian.LockedAmountCollateral
 		remoteAddresses := custodian.RemoteAddresses
 		for tokenSymbol, address := range meta.RemoteAddresses {
 			if remoteAddresses[tokenSymbol] == "" {
@@ -97,7 +97,7 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 			}
 		}
 
-		newCustodian, err := NewCustodianState(meta.IncogAddressStr, totalCollateral, freeCollateral, holdingPubTokens, remoteAddresses)
+		newCustodian, err := NewCustodianState(meta.IncogAddressStr, totalCollateral, freeCollateral, holdingPubTokens, lockedAmountCollateral, remoteAddresses)
 		if err != nil {
 			return err
 		}
@@ -137,7 +137,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 
 	//find custodian
 	//todo: get exchangeRate via tokenid
-	pickCustodian, err := pickCustodian(meta.RegisterAmount, 1, meta.PTokenId, currentPortalState.CustodianPoolState)
+	pickCustodian, err := pickCustodian(meta, 1, currentPortalState.CustodianPoolState)
 
 	if err != nil {
 		return err
@@ -169,40 +169,32 @@ func (blockchain *BlockChain) processPortalUserRegister(
 	}
 
 	currentPortalState.PortingRequests[keyPortingRequestState] = newPortingRequestState
-	//todo: lock custodian
-/*
-	currentPortalState.CustodianPoolState[pickCustodian.] == nil {
-		// new custodian
-		newCustodian, err := NewCustodianState(meta.IncogAddressStr, meta.DepositedAmount, meta.DepositedAmount, nil, meta.RemoteAddresses)
-		if err != nil {
-			return err
-		}
-		currentPortalState.CustodianPoolState[keyCustodianState] = newCustodian
-	} else {
-		// custodian deposited before
-		// update state of the custodian
-		custodian := currentPortalState.CustodianPoolState[meta.IncogAddressStr]
-		totalCollateral := custodian.TotalCollateral + meta.DepositedAmount
-		freeCollateral := custodian.FreeCollateral + meta.DepositedAmount
-		holdingPubTokens := custodian.HoldingPubTokens
-		remoteAddresses := custodian.RemoteAddresses
-		for tokenSymbol, address := range meta.RemoteAddresses {
-			if remoteAddresses[tokenSymbol] == "" {
-				remoteAddresses[tokenSymbol] = address
-			}
-		}
 
-		newCustodian, err := NewCustodianState(meta.IncogAddressStr, totalCollateral, freeCollateral, holdingPubTokens, remoteAddresses)
+	for address, itemCustodian := range custodians {
+		custodian := currentPortalState.CustodianPoolState[address]
+		totalCollateral := custodian.TotalCollateral
+		freeCollateral := custodian.FreeCollateral - itemCustodian.LockedAmountCollateral
+
+		holdingPubTokensMapping := make(map[string]uint64)
+		holdingPubTokensMapping[tokenID] = amount
+		lockedAmountCollateralMapping := make(map[string]uint64)
+		lockedAmountCollateralMapping[tokenID] = itemCustodian.LockedAmountCollateral
+
+		lockedAmountCollateral := lockedAmountCollateralMapping
+		holdingPubTokens := holdingPubTokensMapping
+		remoteAddresses := custodian.RemoteAddresses
+
+		newCustodian, err := NewCustodianState(meta.IncogAddressStr, totalCollateral, freeCollateral, holdingPubTokens, lockedAmountCollateral, remoteAddresses)
 		if err != nil {
 			return err
 		}
-		currentPortalState.CustodianPoolState[keyCustodianState] = newCustodian
+		currentPortalState.CustodianPoolState[address] = newCustodian
 	}
-*/
+
 	return nil
 }
 
-func pickCustodian(amount uint64, exchangeRate uint64, tokenId string, custodianState map[string]*lvdb.CustodianState) (map[string]lvdb.MatchingCustodianDetail, error) {
+func pickCustodian(metadata metadata.PortalUserRegister, exchangeRate uint64, custodianState map[string]*lvdb.CustodianState) (map[string]lvdb.MatchingPortingCustodianDetail, error) {
 
 	type custodianStateSlice struct {
 		Key   string
@@ -211,7 +203,7 @@ func pickCustodian(amount uint64, exchangeRate uint64, tokenId string, custodian
 
 	var sortCustodianStateByFreeCollateral []custodianStateSlice
 	for k, v := range custodianState {
-		_, tokenIdExist := v.RemoteAddresses[tokenId]
+		_, tokenIdExist := v.RemoteAddresses[metadata.PTokenId]
 		if !tokenIdExist {
 			continue
 		}
@@ -223,20 +215,74 @@ func pickCustodian(amount uint64, exchangeRate uint64, tokenId string, custodian
 		return sortCustodianStateByFreeCollateral[i].Value.FreeCollateral <= sortCustodianStateByFreeCollateral[j].Value.FreeCollateral
 	})
 
+
+	if len(sortCustodianStateByFreeCollateral) == 0 {
+		return map[string]lvdb.MatchingPortingCustodianDetail{}, errors.New("Custodian not found")
+	}
+
 	//pick custodian
+	amountAdaptable, _ := getAmountAdaptable(metadata.RegisterAmount, exchangeRate)
+
+	//get only a custodian
 	for _, kv := range sortCustodianStateByFreeCollateral {
-		if kv.Value.FreeCollateral >= (amount * 1.5) * exchangeRate {
-			result := make(map[string]lvdb.MatchingCustodianDetail)
-			result[kv.Key] = lvdb.MatchingCustodianDetail{
-				RemoteAddress: tokenId,
-				Amount: amount*exchangeRate,
+		if kv.Value.FreeCollateral >= amountAdaptable {
+			result := make(map[string]lvdb.MatchingPortingCustodianDetail)
+			result[kv.Key] = lvdb.MatchingPortingCustodianDetail{
+				RemoteAddress: metadata.PTokenAddress,
+				Amount: metadata.RegisterAmount,
+				LockedAmountCollateral: amountAdaptable,
 			}
 
 			return result, nil
 		}
 	}
 
-	return map[string]lvdb.MatchingCustodianDetail{}, errors.New("Can not pickup custodian")
+	if len(sortCustodianStateByFreeCollateral) == 1 {
+		return map[string]lvdb.MatchingPortingCustodianDetail{}, errors.New("Custodian not found")
+	}
+
+	//get multiple custodian
+	var totalPubTokenAfterPick uint64
+
+	multipleCustodian := make(map[string]lvdb.MatchingPortingCustodianDetail)
+	for i := len(sortCustodianStateByFreeCollateral)-1; i >= 0; i-- {
+		custodianItem := sortCustodianStateByFreeCollateral[i]
+		if totalPubTokenAfterPick >= metadata.RegisterAmount {
+			break
+		}
+
+		pricePubToken, _ := getPubTokenByTotalCollateral(custodianItem.Value.FreeCollateral, exchangeRate)
+		collateral, _ := getAmountAdaptable(pricePubToken, exchangeRate)
+
+		amountAdaptableEachCustodian, _ := getAmountAdaptable(pricePubToken, exchangeRate)
+		//verify collateral
+		if custodianItem.Value.FreeCollateral >= amountAdaptableEachCustodian {
+			multipleCustodian[custodianItem.Key] = lvdb.MatchingPortingCustodianDetail{
+				RemoteAddress: metadata.PTokenAddress,
+				Amount: pricePubToken,
+				LockedAmountCollateral: collateral,
+			}
+
+			totalPubTokenAfterPick = totalPubTokenAfterPick + pricePubToken
+
+			continue
+		}
+
+		Logger.log.Errorf("current portal state is nil")
+		return map[string]lvdb.MatchingPortingCustodianDetail{}, errors.New("Pick mulitple custodian is fail")
+	}
+
+	//verify total amount group custodian
+	var verifyTotalPubTokenAfterPick uint64
+	for _, eachCustodian := range multipleCustodian {
+		verifyTotalPubTokenAfterPick = verifyTotalPubTokenAfterPick + eachCustodian.Amount
+	}
+
+	if verifyTotalPubTokenAfterPick != metadata.RegisterAmount {
+		return map[string]lvdb.MatchingPortingCustodianDetail{}, errors.New("Total public token do not match")
+	}
+
+	return multipleCustodian, nil
 }
 
 func (blockchain *BlockChain) processPortalUserReqPToken(

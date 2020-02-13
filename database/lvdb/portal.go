@@ -13,12 +13,14 @@ type CustodianState struct {
 	TotalCollateral  uint64			// prv
 	FreeCollateral   uint64			// prv
 	HoldingPubTokens map[string]uint64   	// tokenSymbol : amount
+	LockedAmountCollateral map[string]uint64
 	RemoteAddresses  map[string]string  	// tokenSymbol : address
 }
 
-type MatchingCustodianDetail struct {
+type MatchingPortingCustodianDetail struct {
 	RemoteAddress string
 	Amount uint64
+	LockedAmountCollateral uint64
 }
 
 type PortingRequest struct {
@@ -27,7 +29,7 @@ type PortingRequest struct {
 	TokenID         string
 	PorterAddress   string
 	Amount          uint64
-	Custodians      map[string]MatchingCustodianDetail			// key : incogAddress
+	Custodians      map[string]MatchingPortingCustodianDetail			// key : incogAddress
 	PortingFee      uint64
 }
 

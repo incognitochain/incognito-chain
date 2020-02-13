@@ -18,6 +18,7 @@ func NewCustodianState(
 	totalColl uint64,
 	freeColl uint64,
 	holdingPubTokens map[string]uint64,
+	lockedAmountCollateral map[string]uint64,
 	remoteAddresses map[string]string,
 ) (*lvdb.CustodianState, error) {
 	return &lvdb.CustodianState{
@@ -25,6 +26,7 @@ func NewCustodianState(
 		TotalCollateral:  totalColl,
 		FreeCollateral:   freeColl,
 		HoldingPubTokens: holdingPubTokens,
+		LockedAmountCollateral: lockedAmountCollateral,
 		RemoteAddresses:  remoteAddresses,
 	}, nil
 }
@@ -35,7 +37,7 @@ func NewPortingRequestState(
 	tokenID string,
 	porterAddress string,
 	amount uint64,
-	custodians map[string]lvdb.MatchingCustodianDetail,
+	custodians map[string]lvdb.MatchingPortingCustodianDetail,
 	portingFee uint64,
 ) (*lvdb.PortingRequest, error) {
 	return &lvdb.PortingRequest{
@@ -146,3 +148,16 @@ func getRedeemRequestsState(
 	return redeemRequestState, nil
 }
 
+func getAmountAdaptable(amount uint64, exchangeRate uint64) (uint64, error)  {
+	convertPubTokenToPRVFloat64 := (float64(amount) * 1.5) * float64(exchangeRate)
+	convertPubTokenToPRVInt64 := uint64(convertPubTokenToPRVFloat64) // 2.2 -> 2
+
+	return convertPubTokenToPRVInt64, nil
+}
+
+func getPubTokenByTotalCollateral(total uint64, exchangeRate uint64) (uint64, error)  {
+	pubToken := float64(total) / float64(exchangeRate) / 1.5
+	pubTokenByCollateral := uint64(pubToken) // 2.2 -> 2
+
+	return pubTokenByCollateral, nil
+}
