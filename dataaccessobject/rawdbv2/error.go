@@ -27,14 +27,22 @@ const (
 	GetBeaconSlashRootHashError
 	StoreShardCommitteeRewardRootHashError
 	GetShardCommitteeRewardRootHashError
+	DeleteShardCommitteeRewardRootHashError
 	StoreShardConsensusRootHashError
 	GetShardConsensusRootHashError
+	DeleteShardConsensusRootHashError
 	StoreShardTransactionRootHashError
 	GetShardTransactionRootHashError
+	DeleteShardTransactionRootHashError
 	StoreShardFeatureRootHashError
 	GetShardFeatureRootHashError
+	DeleteShardFeatureRootHashError
 	StoreShardSlashRootHashError
 	GetShardSlashRootHashError
+	DeleteShardSlashRootHashError
+	StorePreviousBeaconBestStateError
+	GetPreviousBeaconBestStateError
+	CleanUpPreviousBeaconBestStateError
 	// Shard
 	StoreShardBlockError
 	StoreShardBlockIndexError
@@ -48,9 +56,13 @@ const (
 	StoreShardBestStateError
 	StoreFeeEstimatorError
 	GetFeeEstimatorError
+	StorePreviousShardBestStateError
+	GetPreviousShardBestStateError
+	CleanUpPreviousShardBestStateError
 	// tx
 	StoreTransactionIndexError
 	GetTransactionByHashError
+	DeleteTransactionByHashError
 	StoreTxByPublicKeyError
 	GetTxByPublicKeyError
 )
@@ -81,29 +93,41 @@ var ErrCodeMessage = map[int]struct {
 	StoreFeeEstimatorError:         {-2010, "Store Fee Estimator Error"},
 	GetFeeEstimatorError:           {-2011, "Get Fee Estimator Error"},
 
-	StoreTransactionIndexError: {-3000, "Store Transaction Index Error"},
-	GetTransactionByHashError:  {-3001, "Get Transaction By Hash Error"},
-	StoreTxByPublicKeyError:    {-3002, "Store Tx By PublicKey Error"},
-	GetTxByPublicKeyError:      {-3003, "Get Tx By Public Key Error"},
+	StoreTransactionIndexError:   {-3000, "Store Transaction Index Error"},
+	GetTransactionByHashError:    {-3001, "Get Transaction By Hash Error"},
+	StoreTxByPublicKeyError:      {-3002, "Store Tx By PublicKey Error"},
+	GetTxByPublicKeyError:        {-3003, "Get Tx By Public Key Error"},
+	DeleteTransactionByHashError: {-3004, "Delete Transaction By Hash Error"},
 
-	StoreBeaconConsensusRootHashError:      {-4000, "Store Beacon Consensus Root Hash Error"},
-	GetBeaconConsensusRootHashError:        {-4001, "Get Beacon Consensus Root Hash Error"},
-	StoreBeaconRewardRootHashError:         {-4002, "Store Beacon Reward Root Hash Error"},
-	GetBeaconRewardRootHashError:           {-4003, "Get Beacon Reward Root Hash Error"},
-	StoreBeaconFeatureRootHashError:        {-4004, "Store Beacon Feature Root Hash Error"},
-	GetBeaconFeatureRootHashError:          {-4005, "Get Beacon Feature Root Hash Error"},
-	StoreBeaconSlashRootHashError:          {-4006, "Store Beacon Slash Root Hash Error"},
-	GetBeaconSlashRootHashError:            {-4007, "Get Beacon Slash Root Hash Error"},
-	StoreShardCommitteeRewardRootHashError: {-4008, "Store Shard Committee Reward Root Hash Error"},
-	GetShardCommitteeRewardRootHashError:   {-4009, "Get Shard Committee Reward Root Hash Error"},
-	StoreShardConsensusRootHashError:       {-4010, "Store Shard Consensus Root Hash Error"},
-	GetShardConsensusRootHashError:         {-4011, "Get Shard Consensus Root Hash Error"},
-	StoreShardTransactionRootHashError:     {-4012, "Store Shard Transaction Root Hash Error"},
-	GetShardTransactionRootHashError:       {-4013, "Get Shard Transaction Root Hash Error"},
-	StoreShardFeatureRootHashError:         {-4014, "Store Shard Feature Root Hash Error"},
-	GetShardFeatureRootHashError:           {-4015, "Get Shard Feature Root Hash Error"},
-	StoreShardSlashRootHashError:           {-4016, "Store Shard Slash Root Hash Error"},
-	GetShardSlashRootHashError:             {-4017, "Get Shard Slash Root Hash Error"},
+	StoreBeaconConsensusRootHashError:       {-4000, "Store Beacon Consensus Root Hash Error"},
+	GetBeaconConsensusRootHashError:         {-4001, "Get Beacon Consensus Root Hash Error"},
+	StoreBeaconRewardRootHashError:          {-4002, "Store Beacon Reward Root Hash Error"},
+	GetBeaconRewardRootHashError:            {-4003, "Get Beacon Reward Root Hash Error"},
+	StoreBeaconFeatureRootHashError:         {-4004, "Store Beacon Feature Root Hash Error"},
+	GetBeaconFeatureRootHashError:           {-4005, "Get Beacon Feature Root Hash Error"},
+	StoreBeaconSlashRootHashError:           {-4006, "Store Beacon Slash Root Hash Error"},
+	GetBeaconSlashRootHashError:             {-4007, "Get Beacon Slash Root Hash Error"},
+	StoreShardCommitteeRewardRootHashError:  {-4008, "Store Shard Committee Reward Root Hash Error"},
+	GetShardCommitteeRewardRootHashError:    {-4009, "Get Shard Committee Reward Root Hash Error"},
+	StoreShardConsensusRootHashError:        {-4010, "Store Shard Consensus Root Hash Error"},
+	GetShardConsensusRootHashError:          {-4011, "Get Shard Consensus Root Hash Error"},
+	StoreShardTransactionRootHashError:      {-4012, "Store Shard Transaction Root Hash Error"},
+	GetShardTransactionRootHashError:        {-4013, "Get Shard Transaction Root Hash Error"},
+	StoreShardFeatureRootHashError:          {-4014, "Store Shard Feature Root Hash Error"},
+	GetShardFeatureRootHashError:            {-4015, "Get Shard Feature Root Hash Error"},
+	StoreShardSlashRootHashError:            {-4016, "Store Shard Slash Root Hash Error"},
+	GetShardSlashRootHashError:              {-4017, "Get Shard Slash Root Hash Error"},
+	StorePreviousBeaconBestStateError:       {-4018, "Store Previous Beacon Best State Error"},
+	GetPreviousBeaconBestStateError:         {-4019, "Get Previous Beacon Best State Error"},
+	CleanUpPreviousBeaconBestStateError:     {-4020, "Clean Previous Beacon Best State Error"},
+	StorePreviousShardBestStateError:        {-4021, "Store Previous Shard Best State Error"},
+	GetPreviousShardBestStateError:          {-4022, "Get Previous Shard Best State Error"},
+	CleanUpPreviousShardBestStateError:      {-4023, "Clean Previous Shard Best State Error"},
+	DeleteShardCommitteeRewardRootHashError: {-4024, "Delete Shard Committee Reward Root Hash Error"},
+	DeleteShardConsensusRootHashError:       {-4025, "Delete Shard Consensus Root Hash Error"},
+	DeleteShardTransactionRootHashError:     {-4026, "Delete Shard Transaction Root Hash Error"},
+	DeleteShardFeatureRootHashError:         {-4027, "Delete Shard Feature Root Hash Error"},
+	DeleteShardSlashRootHashError:           {-4028, "Delete Shard Slash Root Hash Error"},
 }
 
 type RawdbError struct {

@@ -169,6 +169,7 @@ const (
 	ProcessSalaryInstructionsError
 	GetShardIDFromTxError
 	GetValueFromTxError
+	ValidateBlockWithPreviousShardBestStateError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -322,6 +323,7 @@ var ErrCodeMessage = map[int]struct {
 	ProcessSalaryInstructionsError:                    {-1144, "Proccess Salary Instruction Error"},
 	GetShardIDFromTxError:                             {-1145, "Get ShardID From Tx Error"},
 	GetValueFromTxError:                               {-1146, "Get Value From Tx Error"},
+	ValidateBlockWithPreviousShardBestStateError:      {-1147, "Validate Block With Previous Shard Best State Error"},
 	GetListOutputCoinsByKeysetError:                   {-2000, "Get List Output Coins By Keyset Error"},
 }
 

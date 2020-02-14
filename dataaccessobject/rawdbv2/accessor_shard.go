@@ -63,6 +63,22 @@ func HasShardBlock(db incdb.Database, hash common.Hash) (bool, error) {
 	return false, nil
 }
 
+func DeleteShardBlock(db incdb.Database, shardID byte, index uint64, hash common.Hash) error {
+	keyHash := GetShardHashToBlockKey(hash)
+	keyIndexToHash := GetShardIndexToBlockHashKey(shardID, index, hash)
+	keyIndex := GetShardBlockHashToIndexKey(hash)
+	if err := db.Delete(keyHash); err != nil {
+		return NewRawdbError(DeleteShardBlockError, err)
+	}
+	if err := db.Delete(keyIndexToHash); err != nil {
+		return NewRawdbError(DeleteShardBlockError, err)
+	}
+	if err := db.Delete(keyIndex); err != nil {
+		return NewRawdbError(DeleteShardBlockError, err)
+	}
+	return nil
+}
+
 func GetShardBlockByHash(db incdb.Database, hash common.Hash) ([]byte, error) {
 	keyHash := GetShardHashToBlockKey(hash)
 	if ok, err := db.Has(keyHash); err != nil {
@@ -120,18 +136,6 @@ func GetIndexOfBlock(db incdb.Database, hash common.Hash) (uint64, byte, error) 
 		return 0, 0, NewRawdbError(GetIndexOfBlockError, err)
 	}
 	return index, shardID, nil
-}
-
-func DeleteBlock(db incdb.Database, shardID byte, index uint64, hash common.Hash) error {
-	keyHash := GetShardHashToBlockKey(hash)
-	keyIndex := GetShardIndexToBlockHashKey(shardID, index, hash)
-	if err := db.Delete(keyHash); err != nil {
-		return NewRawdbError(DeleteShardBlockError, err)
-	}
-	if err := db.Delete(keyIndex); err != nil {
-		return NewRawdbError(DeleteShardBlockError, err)
-	}
-	return nil
 }
 
 func StoreShardBestState(db incdb.Database, shardID byte, v interface{}) error {
@@ -193,6 +197,15 @@ func GetShardCommitteeRewardRootHash(db incdb.Database, shardID byte, height uin
 	return common.BytesToHash(res), nil
 }
 
+func DeleteShardCommitteeRewardRootHash(db incdb.Database, shardID byte, height uint64) error {
+	key := GetShardCommitteeRewardRootHashKey(shardID, height)
+	err := db.Delete(key)
+	if err != nil {
+		return NewRawdbError(StoreShardCommitteeRewardRootHashError, err)
+	}
+	return nil
+}
+
 func StoreShardConsensusRootHash(db incdb.Database, shardID byte, height uint64, rootHash common.Hash) error {
 	key := GetShardConsensusRootHashKey(shardID, height)
 	err := db.Put(key, rootHash[:])
@@ -209,6 +222,15 @@ func GetShardConsensusRootHash(db incdb.Database, shardID byte, height uint64) (
 		return common.Hash{}, NewRawdbError(GetShardConsensusRootHashError, err)
 	}
 	return common.BytesToHash(res), nil
+}
+
+func DeleteShardConsensusRootHash(db incdb.Database, shardID byte, height uint64) error {
+	key := GetShardConsensusRootHashKey(shardID, height)
+	err := db.Delete(key)
+	if err != nil {
+		return NewRawdbError(DeleteShardConsensusRootHashError, err)
+	}
+	return nil
 }
 
 func StoreShardFeatureRootHash(db incdb.Database, shardID byte, height uint64, rootHash common.Hash) error {
@@ -229,6 +251,15 @@ func GetShardFeatureRootHash(db incdb.Database, shardID byte, height uint64) (co
 	return common.BytesToHash(res), nil
 }
 
+func DeleteShardFeatureRootHash(db incdb.Database, shardID byte, height uint64) error {
+	key := GetShardFeatureRootHashKey(shardID, height)
+	err := db.Delete(key)
+	if err != nil {
+		return NewRawdbError(DeleteShardFeatureRootHashError, err)
+	}
+	return nil
+}
+
 func StoreShardTransactionRootHash(db incdb.Database, shardID byte, height uint64, rootHash common.Hash) error {
 	key := GetShardTransactionRootHashKey(shardID, height)
 	err := db.Put(key, rootHash[:])
@@ -247,6 +278,15 @@ func GetShardTransactionRootHash(db incdb.Database, shardID byte, height uint64)
 	return common.BytesToHash(res), nil
 }
 
+func DeleteShardTransactionRootHash(db incdb.Database, shardID byte, height uint64) error {
+	key := GetShardTransactionRootHashKey(shardID, height)
+	err := db.Delete(key)
+	if err != nil {
+		return NewRawdbError(DeleteShardTransactionRootHashError, err)
+	}
+	return nil
+}
+
 func StoreShardSlashRootHash(db incdb.Database, shardID byte, height uint64, rootHash common.Hash) error {
 	key := GetShardSlashRootHashKey(shardID, height)
 	err := db.Put(key, rootHash[:])
@@ -263,4 +303,13 @@ func GetShardSlashRootHash(db incdb.Database, shardID byte, height uint64) (comm
 		return common.Hash{}, NewRawdbError(GetShardSlashRootHashError, err)
 	}
 	return common.BytesToHash(res), nil
+}
+
+func DeleteShardSlashRootHash(db incdb.Database, shardID byte, height uint64) error {
+	key := GetShardSlashRootHashKey(shardID, height)
+	err := db.Delete(key)
+	if err != nil {
+		return NewRawdbError(StoreShardSlashRootHashError, err)
+	}
+	return nil
 }

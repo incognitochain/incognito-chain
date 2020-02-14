@@ -265,6 +265,10 @@ func (blockchain *BlockChain) GetTransactionHashByReceiverV2(keySet *incognitoke
 	return result, nil
 }
 
+func (blockchain *BlockChain) StoreShardBestStateV2(shardID byte, bd *[]incdb.BatchData) error {
+	return rawdbv2.StoreShardBestState(blockchain.GetDatabase(), shardID, blockchain.BestState.Shard[shardID])
+}
+
 func CalculateNumberOfByteToRead(amountBytes int) []byte {
 	var result = make([]byte, 8)
 	binary.LittleEndian.PutUint32(result, uint32(amountBytes))
