@@ -16,10 +16,6 @@ type Mlsag struct {
 	privateKeys []privacy.Scalar
 }
 
-func (this *Mlsag) IsEmpty() bool {
-	return this.K.IsEmpty() || len(this.privateKeys) == 0
-}
-
 func (this *Mlsag) createRandomChallenges() (alpha []privacy.Scalar, r [][]privacy.Scalar) {
 	m := len(this.privateKeys)
 	n := len(this.K.keys)
@@ -191,7 +187,7 @@ func (this *Mlsag) Sign(message string) (*Signature, error) {
 		return nil, err
 	}
 	return &Signature{
-		c[0], r, this.keyImages,
+		*c[0], this.keyImages, r,
 	}, nil
 }
 
@@ -207,22 +203,21 @@ func verifyKeyImages(keyImages []privacy.Point) bool {
 
 func verifyRing(sig *Signature, K *Ring, message string) (bool, error) {
 	digest := hashToNum([]byte(message))
-
 	c := sig.c
 	cBefore := sig.c
 	for i := 0; i < len(sig.r); i += 1 {
 		nextC, err := calculateNextC(
 			digest,
-			sig.r[i], c,
+			sig.r[i], &c,
 			K.keys[i],
 			sig.keyImages,
 		)
 		if err != nil {
 			return false, err
 		}
-		c = nextC
+		c = *nextC
 	}
-	return privacy.Compare(c, cBefore) == 0, nil
+	return c == cBefore, nil
 }
 
 func Verify(sig *Signature, K *Ring, message string) (bool, error) {
