@@ -51,7 +51,6 @@ func NewPortingRequestState(
 	}, nil
 }
 
-// todo
 func InitCurrentPortalStateFromDB(
 	db database.DatabaseInterface,
 	beaconHeight uint64,

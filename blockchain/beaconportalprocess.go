@@ -18,6 +18,7 @@ import (
 func (blockchain *BlockChain) processPortalInstructions(block *BeaconBlock, bd *[]database.BatchData) error {
 	beaconHeight := block.Header.Height - 1
 	db := blockchain.GetDatabase()
+
 	currentPortalState, err := InitCurrentPortalStateFromDB(db, beaconHeight)
 	if err != nil {
 		Logger.log.Error(err)
@@ -119,20 +120,14 @@ func (blockchain *BlockChain) processPortalUserRegister(
 	}
 
 	// parse instruction
-	actionContentB64Str := instructions[1]
-	actionContentBytes, err := base64.StdEncoding.DecodeString(actionContentB64Str)
+	var portingRequestContent metadata.PortalPortingRequestContent
+	err := json.Unmarshal([]byte(instructions[3]), &portingRequestContent)
 	if err != nil {
-		return err
-	}
-	var actionData metadata.PortalUserRegisterAction
-	err = json.Unmarshal(actionContentBytes, &actionData)
-	if err != nil {
-		return err
+		Logger.log.Errorf("ERROR: an error occurred while unmarshaling content string of porting request contribution instruction: %+v", err)
+		return nil
 	}
 
-
-	meta := actionData.Meta
-	keyPortingRequestState := lvdb.NewPortingRequestKey(beaconHeight, meta.UniqueRegisterId)
+	keyPortingRequestState := lvdb.NewPortingRequestKey(beaconHeight, portingRequestContent.UniqueRegisterId)
 
 	if currentPortalState.PortingRequests[keyPortingRequestState] != nil {
 		Logger.log.Errorf("Unique porting id is duplicated")
@@ -141,21 +136,21 @@ func (blockchain *BlockChain) processPortalUserRegister(
 
 	//find custodian
 	//todo: get exchangeRate via tokenid
-	pickCustodian, err := pickCustodian(meta, 1, currentPortalState.CustodianPoolState)
+	pickCustodian, err := pickCustodian(portingRequestContent, 1, currentPortalState.CustodianPoolState)
 
 	if err != nil {
 		return err
 	}
 
-	uniquePortingID := meta.UniqueRegisterId
-	txReqID := actionData.TxReqID
-	tokenID := meta.PTokenId
+	uniquePortingID := portingRequestContent.UniqueRegisterId
+	txReqID := portingRequestContent.TxReqID
+	tokenID := portingRequestContent.PTokenId
 
-	porterAddress := meta.IncogAddressStr
-	amount := meta.RegisterAmount
+	porterAddress := portingRequestContent.IncogAddressStr
+	amount := portingRequestContent.RegisterAmount
 
 	custodians := pickCustodian
-	portingFee := meta.PortingFee
+	portingFee := portingRequestContent.PortingFee
 
 	// new request
 	newPortingRequestState, err := NewPortingRequestState(
@@ -188,7 +183,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		holdingPubTokens := holdingPubTokensMapping
 		remoteAddresses := custodian.RemoteAddresses
 
-		newCustodian, err := NewCustodianState(meta.IncogAddressStr, totalCollateral, freeCollateral, holdingPubTokens, lockedAmountCollateral, remoteAddresses)
+		newCustodian, err := NewCustodianState(portingRequestContent.IncogAddressStr, totalCollateral, freeCollateral, holdingPubTokens, lockedAmountCollateral, remoteAddresses)
 		if err != nil {
 			return err
 		}
@@ -198,7 +193,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 	return nil
 }
 
-func pickCustodian(metadata metadata.PortalUserRegister, exchangeRate uint64, custodianState map[string]*lvdb.CustodianState) (map[string]lvdb.MatchingPortingCustodianDetail, error) {
+func pickCustodian(metadata metadata.PortalPortingRequestContent, exchangeRate uint64, custodianState map[string]*lvdb.CustodianState) (map[string]lvdb.MatchingPortingCustodianDetail, error) {
 
 	type custodianStateSlice struct {
 		Key   string

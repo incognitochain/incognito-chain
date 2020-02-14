@@ -179,7 +179,8 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	}
 
 	portalInsts, err := blockchain.handlePortalInsts(
-		beaconHeight-1, currentPortalState,
+		beaconHeight-1,
+		currentPortalState,
 		portalCustodianDepositActionsByShardID,
 		portalUserReqPortingActionsByShardID,
 		portalUserReqPTokenActionsByShardID)
@@ -371,17 +372,25 @@ func (blockchain *BlockChain) handlePortalInsts(
 	instructions := [][]string{}
 
 	// handle portal custodian deposit inst
-	var shardIDKeys []int
+	var custodianShardIDKeys []int
 	for k := range portalCustodianDepositActionsByShardID {
-		shardIDKeys = append(shardIDKeys, int(k))
+		custodianShardIDKeys = append(custodianShardIDKeys, int(k))
 	}
-	sort.Ints(shardIDKeys)
-	for _, value := range shardIDKeys {
+
+	sort.Ints(custodianShardIDKeys)
+	for _, value := range custodianShardIDKeys {
 		shardID := byte(value)
 		actions := portalCustodianDepositActionsByShardID[shardID]
 		for _, action := range actions {
 			contentStr := action[1]
-			newInst, err := blockchain.buildInstructionsForCustodianDeposit(contentStr, shardID, metadata.PortalCustodianDepositMeta, currentPortalState, beaconHeight)
+			newInst, err := blockchain.buildInstructionsForCustodianDeposit(
+				contentStr,
+				shardID,
+				metadata.PortalCustodianDepositMeta,
+				currentPortalState,
+				beaconHeight,
+				)
+
 			if err != nil {
 				Logger.log.Error(err)
 				continue
@@ -393,7 +402,34 @@ func (blockchain *BlockChain) handlePortalInsts(
 	}
 
 	// handle portal user request porting inst
+	var requestPortingShardIDKeys []int
+	for k := range portalUserRequestPortingActionsByShardID {
+		requestPortingShardIDKeys = append(requestPortingShardIDKeys, int(k))
+	}
 
+	sort.Ints(requestPortingShardIDKeys)
+	for _, value := range requestPortingShardIDKeys {
+		shardID := byte(value)
+		actions := portalUserRequestPortingActionsByShardID[shardID]
+		for _, action := range actions {
+			contentStr := action[1]
+			newInst, err := blockchain.buildInstructionsForPortingRequest(
+				contentStr,
+				shardID,
+				metadata.PortalUserRegisterMeta,
+				currentPortalState,
+				beaconHeight,
+			)
+
+			if err != nil {
+				Logger.log.Error(err)
+				continue
+			}
+			if len(newInst) > 0 {
+				instructions = append(instructions, newInst...)
+			}
+		}
+	}
 	// handle portal user request ptoken inst
 
 	// ...

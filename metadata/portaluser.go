@@ -29,6 +29,16 @@ type PortalUserRegisterAction struct {
 	ShardID byte
 }
 
+type PortalPortingRequestContent struct {
+	UniqueRegisterId string
+	IncogAddressStr string
+	PTokenId string
+	PTokenAddress string
+	RegisterAmount uint64
+	PortingFee uint64
+	TxReqID common.Hash
+}
+
 func NewPortalUserRegister(uniqueRegisterId string , incogAddressStr string, pTokenId string, registerAmount uint64, portingFee uint64, metaType int) (*PortalUserRegister, error){
 	metadataBase := MetadataBase{
 		Type: metaType,

@@ -88,15 +88,18 @@ func (blockchain *BlockChain) processPDEContributionV2(
 			return nil
 		}
 		waitingContribPairKey := string(lvdb.BuildWaitingPDEContributionKey(beaconHeight, waitingContribution.PDEContributionPairID))
+
 		currentPDEState.WaitingPDEContributions[waitingContribPairKey] = &lvdb.PDEContribution{
 			ContributorAddressStr: waitingContribution.ContributorAddressStr,
 			TokenIDStr:            waitingContribution.TokenIDStr,
 			Amount:                waitingContribution.ContributedAmount,
 			TxReqID:               waitingContribution.TxReqID,
 		}
+
 		contribStatus := metadata.PDEContributionStatus{
 			Status: byte(common.PDEContributionWaitingStatus),
 		}
+
 		contribStatusBytes, _ := json.Marshal(contribStatus)
 		err = db.TrackPDEContributionStatus(
 			lvdb.PDEContributionStatusPrefix,
