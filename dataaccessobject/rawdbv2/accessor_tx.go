@@ -16,6 +16,7 @@ func StoreTransactionIndex(db incdb.Database, txHash common.Hash, blockHash comm
 	}
 	return nil
 }
+
 func GetTransactionByHash(db incdb.Database, txHash common.Hash) (common.Hash, int, error) {
 	key := GetTransactionHashKey(txHash)
 	if has, err := db.Has(key); err != nil {
@@ -38,6 +39,15 @@ func GetTransactionByHash(db incdb.Database, txHash common.Hash) (common.Hash, i
 		return common.Hash{}, 0, NewRawdbError(GetTransactionByHashError, err)
 	}
 	return *blockHash, index, nil
+}
+
+func DeleteTransactionIndex(db incdb.Database, txHash common.Hash) error {
+	key := GetTransactionHashKey(txHash)
+	err := db.Delete(key)
+	if err != nil {
+		return NewRawdbError(DeleteTransactionByHashError, err)
+	}
+	return nil
 }
 
 // StoreTxByPublicKey - store txID by public key of receiver,

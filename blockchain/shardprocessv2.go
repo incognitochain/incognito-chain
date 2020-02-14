@@ -86,6 +86,14 @@ func (blockchain *BlockChain) InsertShardBlockV2(shardBlock *ShardBlock, isValid
 	tempShardBestState := blockchain.BestState.Shard[shardID]
 	if tempShardBestState.ShardHeight == blockHeight && tempShardBestState.BestBlock.Header.Timestamp < shardBlock.Header.Timestamp && tempShardBestState.BestBlock.Header.Round < shardBlock.Header.Round {
 		Logger.log.Infof("FORK SHARDID %+v, Current Block Height %+v, Block Hash %+v | Try To Insert New Shard Block Height %+v, Hash %+v", shardID, tempShardBestState.ShardHeight, tempShardBestState.BestBlockHash, blockHeight, blockHash)
+		if err := blockchain.ValidateBlockWithPreviousShardBestStateV2(shardBlock); err != nil {
+			Logger.log.Error(err)
+			return err
+		}
+		if err := blockchain.RevertShardStateV2(shardBlock.Header.ShardID); err != nil {
+			Logger.log.Error(err)
+			return err
+		}
 	}
 	if blockHeight != GetBestStateShard(shardID).ShardHeight+1 {
 		return errors.New("Not expected height")
@@ -113,6 +121,15 @@ func (blockchain *BlockChain) InsertShardBlockV2(shardBlock *ShardBlock, isValid
 		return err
 	}
 	Logger.log.Infof("SHARD %+v | BackupCurrentShardState, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
+	// Backup beststate
+	err = rawdbv2.CleanUpPreviousShardBestState(blockchain.GetDatabase(), shardID)
+	if err != nil {
+		return NewBlockChainError(CleanBackUpError, err)
+	}
+	err = blockchain.BackupCurrentShardStateV2(shardBlock)
+	if err != nil {
+		return NewBlockChainError(BackUpBestStateError, err)
+	}
 	oldCommittee, err := incognitokey.CommitteeKeyListToString(tempShardBestState.ShardCommittee)
 	if err != nil {
 		return err
@@ -151,6 +168,10 @@ func (blockchain *BlockChain) InsertShardBlockV2(shardBlock *ShardBlock, isValid
 	//========Store new  Shard block and new shard bestState
 	err = blockchain.processStoreShardBlockV2(shardBlock, committeeChange)
 	if err != nil {
+		revertErr := blockchain.revertShardStateV2(shardID)
+		if revertErr != nil {
+			return revertErr
+		}
 		return err
 	}
 	blockchain.removeOldDataAfterProcessingShardBlock(shardBlock, shardID)
@@ -416,7 +437,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigningV2(shardBlo
 						Logger.log.Errorf("%+v", err)
 						break
 					}
-					consensusRootHash, err := blockchain.GetBeaconConsensusStateRootHash(blockchain.GetDatabase(), beaconHeight)
+					consensusRootHash, err := blockchain.GetBeaconConsensusRootHash(blockchain.GetDatabase(), beaconHeight)
 					if err != nil {
 						Logger.log.Errorf("Can't found ConsensusStateRootHash of beacon height %+v, error %+v", beaconHeight, err)
 						break

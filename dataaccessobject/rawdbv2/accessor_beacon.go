@@ -115,8 +115,12 @@ func GetIndexOfBeaconBlock(db incdb.Database, hash common.Hash) (uint64, error) 
 
 func DeleteBeaconBlock(db incdb.Database, index uint64, hash common.Hash) error {
 	keyHash := GetBeaconHashToBlockKey(hash)
-	keyIndex := GetBeaconIndexToBlockHashKey(index, hash)
+	keyIndexToHash := GetBeaconIndexToBlockHashKey(index, hash)
+	keyIndex := GetBeaconBlockHashToIndexKey(hash)
 	if err := db.Delete(keyHash); err != nil {
+		return NewRawdbError(DeleteBeaconBlockError, err)
+	}
+	if err := db.Delete(keyIndexToHash); err != nil {
 		return NewRawdbError(DeleteBeaconBlockError, err)
 	}
 	if err := db.Delete(keyIndex); err != nil {
