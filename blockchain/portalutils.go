@@ -2,9 +2,12 @@ package blockchain
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/pkg/errors"
+	"strings"
 )
 
 type CurrentPortalState struct {
@@ -75,13 +78,92 @@ func InitCurrentPortalStateFromDB(
 	}, nil
 }
 
-// todo
 func storePortalStateToDB(
 	db database.DatabaseInterface,
 	beaconHeight uint64,
 	currentPortalState *CurrentPortalState,
 ) error {
+	err := storeCustodianState(db, beaconHeight, currentPortalState.CustodianPoolState)
+	if err != nil {
+		return err
+	}
+	err = storePortingRequestsState(db, beaconHeight, currentPortalState.PortingRequests)
+	if err != nil {
+		return err
+	}
+	err = storeRedeemRequestsState(db, beaconHeight, currentPortalState.RedeemRequests)
+	if err != nil {
+		return err
+	}
 	return nil
+}
+
+func storePortingRequestsState(db database.DatabaseInterface,
+	beaconHeight uint64,
+	portingRequestState map[string]*lvdb.PortingRequest) error  {
+	for contribKey, contribution := range portingRequestState {
+		newKey := replaceKeyByBeaconHeight(contribKey, beaconHeight)
+		contributionBytes, err := json.Marshal(contribution)
+		if err != nil {
+			return err
+		}
+		err = db.Put([]byte(newKey), contributionBytes)
+		if err != nil {
+			return database.NewDatabaseError(database.StorePortingRequestStateError, errors.Wrap(err, "db.lvdb.put"))
+		}
+	}
+	return nil
+}
+
+func storeRedeemRequestsState(db database.DatabaseInterface,
+	beaconHeight uint64,
+	redeemRequestState map[string]*lvdb.RedeemRequest) error  {
+	for contribKey, contribution := range redeemRequestState {
+		newKey := replaceKeyByBeaconHeight(contribKey, beaconHeight)
+		contributionBytes, err := json.Marshal(contribution)
+		if err != nil {
+			return err
+		}
+		err = db.Put([]byte(newKey), contributionBytes)
+		if err != nil {
+			return database.NewDatabaseError(database.StoreRedeemRequestStateError, errors.Wrap(err, "db.lvdb.put"))
+		}
+	}
+	return nil
+}
+
+func storeCustodianState(db database.DatabaseInterface,
+	beaconHeight uint64,
+	custodianState map[string]*lvdb.CustodianState) error  {
+	for contribKey, contribution := range custodianState {
+		newKey := replaceKeyByBeaconHeight(contribKey, beaconHeight)
+		contributionBytes, err := json.Marshal(contribution)
+		if err != nil {
+			return err
+		}
+		err = db.Put([]byte(newKey), contributionBytes)
+		if err != nil {
+			return database.NewDatabaseError(database.StoreCustodianDepositStateError, errors.Wrap(err, "db.lvdb.put"))
+		}
+	}
+	return nil
+}
+
+func replaceKeyByBeaconHeight(key string, newBeaconHeight uint64) string {
+	parts := strings.Split(key, "-")
+	if len(parts) <= 1 {
+		return key
+	}
+	parts[1] = fmt.Sprintf("%d", newBeaconHeight)
+	newKey := ""
+	for idx, part := range parts {
+		if idx == len(parts)-1 {
+			newKey += part
+			continue
+		}
+		newKey += (part + "-")
+	}
+	return newKey
 }
 
 

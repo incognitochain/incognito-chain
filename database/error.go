@@ -103,6 +103,11 @@ const (
 	DeduceShareError
 	TrackPDEStatusError
 	GetPDEStatusError
+
+	//portal
+	StoreCustodianDepositStateError
+	StorePortingRequestStateError
+	StoreRedeemRequestStateError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -206,6 +211,11 @@ var ErrCodeMessage = map[int]struct {
 	DeduceShareError:                       {-13012, "Deduce share error"},
 	TrackPDEStatusError:                    {-13013, "Track pde status error"},
 	GetPDEStatusError:                      {-13014, "Get pde status error"},
+
+	//portal
+	StoreCustodianDepositStateError:		{-14001, "Store custodian deposit error"},
+	StorePortingRequestStateError:			{-14002, "Store porting request error"},
+	StoreRedeemRequestStateError:			{-14003, "Store redeem request error"},
 }
 
 type DatabaseError struct {
