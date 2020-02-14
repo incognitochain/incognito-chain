@@ -182,6 +182,9 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 	var myCommitmentIndexs []uint64 // index in array index random of commitment in stateDB
 
 	if params.hasPrivacy {
+		if len(params.inputCoins) == 0 {
+			return NewTransactionErr(RandomCommitmentError, fmt.Errorf("input is empty"))
+		}
 		randomParams := NewRandomCommitmentsProcessParam(params.inputCoins, privacy.CommitmentRingSize, params.stateDB, shardID, params.tokenID)
 		commitmentIndexs, myCommitmentIndexs, _ = RandomCommitmentsProcess(randomParams)
 
