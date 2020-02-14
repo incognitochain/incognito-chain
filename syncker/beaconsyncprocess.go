@@ -19,6 +19,7 @@ type S2BPeerState struct {
 type BeaconSyncProcess struct {
 	Status           string //stop, running
 	IsCommittee      bool
+	RemainOneBlock   bool
 	BeaconPeerStates map[string]BeaconPeerState //sender -> state
 	S2BPeerState     map[string]S2BPeerState    //sender -> state
 	Server           Server
@@ -60,7 +61,8 @@ func (s *BeaconSyncProcess) syncBeaconProcess() {
 			continue
 		}
 		log.Printf("SYNCKER Request Block from %s height %d hash %s", peerID, s.Chain.GetFinalViewHeight(), s.Chain.GetBestViewHash())
-		//ch, stop := s.Server.RequestBlock(peerID, -1, s.Chain.GetFinalViewHash(), s.Chain.GetBestViewHash(), pState.BestViewHash)
+
+		//ch, stop := s.Server.RequestBlocksViaChannel(peerID, -1, s.Chain.GetFinalViewHash(), s.Chain.GetBestViewHash(), pState.BestViewHash)
 		//for {
 		//	shouldBreak := false
 		//	select {
@@ -79,29 +81,33 @@ func (s *BeaconSyncProcess) syncBeaconProcess() {
 
 func (s *BeaconSyncProcess) syncS2BPoolProcess() {
 	defer time.AfterFunc(time.Millisecond*500, s.syncS2BPoolProcess)
-	if s.Status != RUNNING_SYNC || !s.IsCommittee {
+	if s.Status != RUNNING_SYNC || !s.IsCommittee || !s.RemainOneBlock {
 		return
 	}
-	for peerID, pState := range s.S2BPeerState {
-		for fromSID, height := range pState.Height {
-			if height <= s.Server.GetS2BPool(fromSID).GetLatestFinalHeight() {
-				continue
-			}
-			ch, stop := s.Server.RequestS2BBlockPool(peerID, int(fromSID), s.Server.GetS2BPool(fromSID).GetLatestFinalHeight())
-			for {
-				shouldBreak := false
-				select {
-				case block := <-ch:
-					if err := s.Server.GetS2BPool(fromSID).AddBlock(block); err != nil {
-						shouldBreak = true
-					}
-				}
-				if shouldBreak {
-					stop <- 1
-					break
-				}
-			}
-		}
-	}
+	//sync when status is enable and in committee and remain only one syncing beacon block
+	//TODO : sync S2B direct from shard node
+
+	//TODO optional later : sync S2B from other validator pool
+	//for peerID, pState := range s.S2BPeerState {
+	//	for fromSID, height := range pState.Height {
+	//		if height <= s.Server.GetS2BPool(fromSID).GetLatestFinalHeight() {
+	//			continue
+	//		}
+	//		ch, stop := s.Server.RequestS2BBlock(peerID, int(fromSID), s.Server.GetS2BPool(fromSID).GetLatestFinalHeight())
+	//		for {
+	//			shouldBreak := false
+	//			select {
+	//			case block := <-ch:
+	//				if err := s.Server.GetS2BPool(fromSID).AddBlock(block); err != nil {
+	//					shouldBreak = true
+	//				}
+	//			}
+	//			if shouldBreak {
+	//				stop <- 1
+	//				break
+	//			}
+	//		}
+	//	}
+	//}
 
 }

@@ -13,11 +13,11 @@ type Server interface {
 
 	//Request cross block from "peerID" for shard "toShardID" with param latestCrossShardBlockHeight in current pool
 	//Function return channel of each block, and a stop channel to tell sender side to stop send block
-	RequestCrossShardBlockPool(peerID string, toShardID int, latestCrossShardBlockHeight uint64) (blockCh chan interface{}, stopCh chan int)
+	RequestCrossShardBlock(peerID string, toShardID int, latestCrossShardBlockHeight uint64) (blockCh chan interface{}, stopCh chan int)
 
 	//Request s2b block from "peerID" of shard "fromSID" with param latestS2BHeight in current pool
 	//Function return channel of each block, and a stop channel to tell sender side to stop send block
-	RequestS2BBlockPool(peerID string, fromSID int, latestS2BHeight uint64) (blockCh chan interface{}, stopCh chan int)
+	RequestS2BBlock(peerID string, fromSID int, latestS2BHeight uint64) (blockCh chan interface{}, stopCh chan int)
 
 	GetCrossShardPool(sid byte) Pool
 	GetS2BPool(sid byte) Pool

@@ -17,6 +17,7 @@ type CrossShardPeerState struct {
 
 type ShardSyncProcess struct {
 	IsCommittee         bool
+	RemainOneBlock      bool
 	ShardID             byte
 	Status              string                         //stop, running
 	ShardPeerState      map[string]ShardPeerState      //peerid -> state
@@ -59,7 +60,7 @@ func (s *ShardSyncProcess) syncShardProcess() {
 			continue
 		}
 
-		ch, stop := s.Server.RequestBlock(PeerID, int(s.ShardID), s.Chain.GetFinalViewHash(), s.Chain.GetBestViewHash(), pState.BestViewHash)
+		ch, stop := s.Server.RequestBlocksViaChannel(PeerID, int(s.ShardID), s.Chain.GetFinalViewHash(), s.Chain.GetBestViewHash(), pState.BestViewHash)
 		for {
 			shouldBreak := false
 			select {
@@ -79,30 +80,32 @@ func (s *ShardSyncProcess) syncShardProcess() {
 
 func (s *ShardSyncProcess) syncCrossShardPoolProcess() {
 	defer time.AfterFunc(time.Millisecond*500, s.syncCrossShardPoolProcess)
-	if s.Status != RUNNING_SYNC || !s.IsCommittee {
+	if s.Status != RUNNING_SYNC || !s.IsCommittee || !s.RemainOneBlock {
 		return
 	}
-	for peerID, pState := range s.CrossShardPeerState {
-		for fromSID, height := range pState.Height {
-			if height <= s.Server.GetCrossShardPool(s.ShardID).GetLatestCrossShardFinalHeight(fromSID) {
-				continue
-			}
-			ch, stop := s.Server.RequestCrossShardBlockPool(peerID, int(s.ShardID), s.Server.GetCrossShardPool(s.ShardID).GetLatestCrossShardFinalHeight(fromSID))
-			for {
-				shouldBreak := false
-				select {
-				case block := <-ch:
-					if err := s.Server.GetCrossShardPool(s.ShardID).AddBlock(block); err != nil {
-						shouldBreak = true
-					}
-				}
-				if shouldBreak {
-					stop <- 1
-					break
-				}
-			}
-		}
+	//TODO : sync CrossShard direct from shard node
 
-	}
+	//TODO optional later: sync CrossShard  from other validator pool
+	//for peerID, pState := range s.CrossShardPeerState {
+	//	for fromSID, height := range pState.Height {
+	//		if height <= s.Server.GetCrossShardPool(s.ShardID).GetLatestCrossShardFinalHeight(fromSID) {
+	//			continue
+	//		}
+	//		ch, stop := s.Server.RequestCrossShardBlock(peerID, int(s.ShardID), s.Server.GetCrossShardPool(s.ShardID).GetLatestCrossShardFinalHeight(fromSID))
+	//		for {
+	//			shouldBreak := false
+	//			select {
+	//			case block := <-ch:
+	//				if err := s.Server.GetCrossShardPool(s.ShardID).AddBlock(block); err != nil {
+	//					shouldBreak = true
+	//				}
+	//			}
+	//			if shouldBreak {
+	//				stop <- 1
+	//				break
+	//			}
+	//		}
+	//	}
+	//}
 
 }

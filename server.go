@@ -91,11 +91,11 @@ type Server struct {
 	cNewPeers chan *peer.Peer
 }
 
-func (serverObj *Server) RequestCrossShardBlockPool(peerID string, toShardID int, latestCrossShardBlockHeight uint64) (blockCh chan interface{}, stopCh chan int) {
+func (serverObj *Server) RequestCrossShardBlock(peerID string, toShardID int, latestCrossShardBlockHeight uint64) (blockCh chan interface{}, stopCh chan int) {
 	panic("implement me")
 }
 
-func (serverObj *Server) RequestS2BBlockPool(peerID string, fromSID int, latestS2BHeight uint64) (blockCh chan interface{}, stopCh chan int) {
+func (serverObj *Server) RequestS2BBlock(peerID string, fromSID int, latestS2BHeight uint64) (blockCh chan interface{}, stopCh chan int) {
 	panic("implement me")
 }
 
@@ -2157,7 +2157,7 @@ func (serverObj *Server) RequestBlocksViaChannel(peerID string, fromSID int, cur
 	panic("implement me")
 }
 
-func (serverObj *Server) GetCrossShardBlocksViaChannel(toShardID int, fromBlockHeight uint64, toBlockHashString string, stopCh chan int) chan interface{} {
+func (serverObj *Server) GetCrossShardBlocksFromDBViaChannel(toShardID int, fromBlockHeight uint64, toBlockHashString string, stopCh chan int) chan interface{} {
 	blockCh := make(chan interface{})
 
 	nextBlkByHeight := func(sID int, fromBlockHeight uint64) (common.BlockInterface, error) {
@@ -2211,7 +2211,7 @@ func (serverObj *Server) GetCrossShardBlocksViaChannel(toShardID int, fromBlockH
 	return blockCh
 }
 
-func (serverObj *Server) GetS2BBlocksViaChannel(sID int, fromBlockHeight uint64, toBlockHashString string, stopCh chan int) chan interface{} {
+func (serverObj *Server) GetS2BBlocksFromDBViaChannel(sID int, fromBlockHeight uint64, toBlockHashString string, stopCh chan int) chan interface{} {
 	blockCh := make(chan interface{})
 
 	nextBlkByHeight := func(sID int, fromBlockHeight uint64) (common.BlockInterface, error) {
