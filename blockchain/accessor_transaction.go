@@ -324,7 +324,6 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlockV2(shardBlock *Sh
 		case transaction.CustomTokenInit:
 			{
 				// check is bridge token
-				// not mintable tx
 				if !isBridgeToken {
 					tokenID := privacyCustomTokenTx.TxPrivacyTokenData.PropertyID
 					name := privacyCustomTokenTx.TxPrivacyTokenData.PropertyName
@@ -342,7 +341,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlockV2(shardBlock *Sh
 			}
 		case transaction.CustomTokenTransfer:
 			{
-				Logger.log.Info("Transfer custom token %+v", privacyCustomTokenTx)
+				Logger.log.Infof("Transfer custom token %+v", privacyCustomTokenTx)
 			}
 		}
 		err = statedb.StorePrivacyTokenTx(transactionStateRoot, privacyCustomTokenTx.TxPrivacyTokenData.PropertyID, *privacyCustomTokenTx.Hash(), isBridgeToken)
