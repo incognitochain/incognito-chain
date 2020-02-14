@@ -942,7 +942,7 @@ func (blockService BlockService) GetPDEStatus(pdePrefix []byte, pdeSuffix []byte
 
 //============================= Slash ===============================
 func (blockService BlockService) GetProducersBlackList(beaconHeight uint64) (map[string]uint8, error) {
-	slashRootHash, err := blockService.BlockChain.GetBeaconSlashStateRootHash(blockService.BlockChain.GetDatabase(), beaconHeight)
+	slashRootHash, err := blockService.BlockChain.GetBeaconSlashRootHash(blockService.BlockChain.GetDatabase(), beaconHeight)
 	if err != nil {
 		return nil, fmt.Errorf("Beacon Slash Root Hash of Height %+v not found ,error %+v", beaconHeight, err)
 	}

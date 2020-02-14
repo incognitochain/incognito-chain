@@ -170,7 +170,7 @@ func (blockchain *BlockChain) InsertShardBlockV2(shardBlock *ShardBlock, isValid
 	if err != nil {
 		revertErr := blockchain.revertShardStateV2(shardID)
 		if revertErr != nil {
-			return errors.WithStack(revertErr)
+			return revertErr
 		}
 		return err
 	}
@@ -436,7 +436,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigningV2(shardBlo
 						Logger.log.Errorf("%+v", err)
 						break
 					}
-					consensusRootHash, err := blockchain.GetBeaconConsensusStateRootHash(blockchain.GetDatabase(), beaconHeight)
+					consensusRootHash, err := blockchain.GetBeaconConsensusRootHash(blockchain.GetDatabase(), beaconHeight)
 					if err != nil {
 						Logger.log.Errorf("Can't found ConsensusStateRootHash of beacon height %+v, error %+v", beaconHeight, err)
 						break

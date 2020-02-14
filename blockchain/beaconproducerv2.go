@@ -346,7 +346,7 @@ func (beaconBestState *BeaconBestState) GenerateInstructionV2(
 		if err != nil {
 			return [][]string{}, err
 		}
-		rootHash, err := blockchain.GetBeaconSlashStateRootHash(blockchain.GetDatabase(), newBeaconHeight-1)
+		rootHash, err := blockchain.GetBeaconSlashRootHash(blockchain.GetDatabase(), newBeaconHeight-1)
 		if err != nil {
 			return [][]string{}, err
 		}

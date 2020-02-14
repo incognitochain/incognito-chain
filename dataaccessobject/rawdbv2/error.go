@@ -59,6 +59,7 @@ const (
 	StorePreviousShardBestStateError
 	GetPreviousShardBestStateError
 	CleanUpPreviousShardBestStateError
+	RestoreCrossShardNextHeightsError
 	// tx
 	StoreTransactionIndexError
 	GetTransactionByHashError
@@ -128,6 +129,7 @@ var ErrCodeMessage = map[int]struct {
 	DeleteShardTransactionRootHashError:     {-4026, "Delete Shard Transaction Root Hash Error"},
 	DeleteShardFeatureRootHashError:         {-4027, "Delete Shard Feature Root Hash Error"},
 	DeleteShardSlashRootHashError:           {-4028, "Delete Shard Slash Root Hash Error"},
+	RestoreCrossShardNextHeightsError:       {-4029, "Restore Cross Shard Next Heights Error"},
 }
 
 type RawdbError struct {

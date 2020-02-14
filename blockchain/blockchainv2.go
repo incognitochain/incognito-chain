@@ -226,7 +226,7 @@ func (blockchain *BlockChain) GetBeaconFeatureStateDB() *statedb.StateDB {
 }
 
 func (blockchain *BlockChain) GetBeaconFeatureStateDBByHeight(height uint64, db incdb.Database) (*statedb.StateDB, error) {
-	rootHash, err := blockchain.GetBeaconFeatureStateRootHash(blockchain.GetDatabase(), height)
+	rootHash, err := blockchain.GetBeaconFeatureRootHash(blockchain.GetDatabase(), height)
 	if err != nil {
 		return nil, fmt.Errorf("Beacon Feature State DB not found, height %+v, error %+v", height, err)
 	}
@@ -265,8 +265,16 @@ func (blockchain *BlockChain) GetTransactionHashByReceiverV2(keySet *incognitoke
 	return result, nil
 }
 
-func (blockchain *BlockChain) StoreShardBestStateV2(shardID byte, bd *[]incdb.BatchData) error {
+func (blockchain *BlockChain) StoreShardBestStateV2(shardID byte) error {
 	return rawdbv2.StoreShardBestState(blockchain.GetDatabase(), shardID, blockchain.BestState.Shard[shardID])
+}
+
+func (blockchain *BlockChain) StoreBeaconBestStateV2() error {
+	beaconBestStateBytes, err := json.Marshal(blockchain.BestState.Beacon)
+	if err != nil {
+		return err
+	}
+	return rawdbv2.StoreBeaconBestState(blockchain.config.DataBase, beaconBestStateBytes)
 }
 
 func CalculateNumberOfByteToRead(amountBytes int) []byte {

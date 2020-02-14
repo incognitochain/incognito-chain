@@ -160,6 +160,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 
 	if err := blockchain.BestState.Beacon.updateBeaconBestState(beaconBlock, blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.AssignOffset, blockchain.config.ChainParams.RandomTime); err != nil {
 		errRevert := blockchain.revertBeaconBestState()
+
 		if errRevert != nil {
 			return errors.WithStack(errRevert)
 		}

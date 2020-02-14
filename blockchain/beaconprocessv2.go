@@ -58,7 +58,18 @@ func (blockchain *BlockChain) InsertBeaconBlockV2(beaconBlock *BeaconBlock, isVa
 	blockHash := beaconBlock.Header.Hash()
 	committeeChange := newCommitteeChange()
 	if currentBeaconBestState.BeaconHeight == beaconBlock.Header.Height && currentBeaconBestState.BestBlock.Header.Timestamp < beaconBlock.Header.Timestamp && currentBeaconBestState.BestBlock.Header.Round < beaconBlock.Header.Round {
-		Logger.log.Infof("FORK BEACON, Current Beacon Block Height %+v, Hash %+v | Try to Insert New Beacon Block Height %+v, Hash %+v", currentBeaconBestState.BeaconHeight, currentBeaconBestState.BestBlockHash, beaconBlock.Header.Height, beaconBlock.Header.Hash())
+		currentBeaconHeight := currentBeaconBestState.BeaconHeight
+		currentBeaconHash := currentBeaconBestState.BestBlockHash
+		Logger.log.Infof("FORK BEACON, Current Beacon Block Height %+v, Hash %+v | Try to Insert New Beacon Block Height %+v, Hash %+v", currentBeaconHeight, currentBeaconHash, beaconBlock.Header.Height, beaconBlock.Header.Hash())
+		if err := blockchain.ValidateBlockWithPreviousBeaconBestStateV2(beaconBlock); err != nil {
+			Logger.log.Error(err)
+			return err
+		}
+		if err := blockchain.revertBeaconStateV2(); err != nil {
+			Logger.log.Error(err)
+			return err
+		}
+		Logger.log.Infof("REVERTED BEACON, Revert Beacon Block Height %+v, Hash %+v", currentBeaconHeight, currentBeaconHash)
 	}
 
 	if beaconBlock.Header.Height != GetBeaconBestState().BeaconHeight+1 {
@@ -89,13 +100,21 @@ func (blockchain *BlockChain) InsertBeaconBlockV2(beaconBlock *BeaconBlock, isVa
 	} else {
 		Logger.log.Infof("BEACON | SKIP Verify Best State With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	}
+	// Backup beststate
+	err := rawdbv2.CleanUpPreviousBeaconBestState(blockchain.GetDatabase())
+	if err != nil {
+		return NewBlockChainError(CleanBackUpError, err)
+	}
+	err = blockchain.BackupCurrentBeaconStateV2(beaconBlock)
+	if err != nil {
+		return NewBlockChainError(BackUpBestStateError, err)
+	}
 	// process for slashing, make sure this one is called before update best state
 	// since we'd like to process with old committee, not updated committee
 	slashErr := blockchain.processForSlashingV2(blockchain.BestState.Beacon.slashStateDB, beaconBlock)
 	if slashErr != nil {
 		Logger.log.Errorf("Failed to process slashing with error: %+v", NewBlockChainError(ProcessSlashingError, slashErr))
 	}
-
 	// snapshot current beacon committee and shard committee
 	snapshotBeaconCommittee, snapshotAllShardCommittee, err := snapshotCommittee(blockchain.BestState.Beacon.BeaconCommittee, blockchain.BestState.Beacon.ShardCommittee)
 	if err != nil {
@@ -145,7 +164,6 @@ func (blockchain *BlockChain) InsertBeaconBlockV2(beaconBlock *BeaconBlock, isVa
 	if isChanged {
 		go blockchain.config.ConsensusEngine.CommitteeChange(common.BeaconChainKey)
 	}
-
 	//Check shard-pending
 	for shardID, committee := range newAllShardPending {
 		if _, ok := snapshotAllShardPending[shardID]; ok {
@@ -184,6 +202,10 @@ func (blockchain *BlockChain) InsertBeaconBlockV2(beaconBlock *BeaconBlock, isVa
 	}
 	Logger.log.Infof("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	if err := blockchain.processStoreBeaconBlockV2(beaconBlock, snapshotBeaconCommittee, snapshotAllShardCommittee, snapshotRewardReceiver, committeeChange); err != nil {
+		errRevert := blockchain.revertBeaconStateV2()
+		if errRevert != nil {
+			return errRevert
+		}
 		return err
 	}
 	blockchain.removeOldDataAfterProcessingBeaconBlock()
