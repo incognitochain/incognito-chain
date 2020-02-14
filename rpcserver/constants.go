@@ -151,8 +151,6 @@ const (
 	getRewardAmountByPublicKey   = "getrewardamountbypublickey"
 	listRewardAmount             = "listrewardamount"
 
-	listRewardAmountByHeight = "listrewardamountbyheight"
-
 	revertbeaconchain = "revertbeaconchain"
 	revertshardchain  = "revertshardchain"
 

@@ -2,8 +2,6 @@ package rpcserver
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -99,11 +97,5 @@ func (httpServer *HttpServer) handleListRewardAmount(params interface{}, closeCh
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.ListCommitteeRewardError, err)
 	}
-	return result, nil
-}
-
-// handleListRewardAmount - Get the reward amount of all committee with all existed token
-func (httpServer *HttpServer) handleListRewardAmountByHeight(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	result := statedb.ListTestCommitteeReward(httpServer.GetDatabase())
 	return result, nil
 }
