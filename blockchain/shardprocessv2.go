@@ -143,7 +143,7 @@ func (blockchain *BlockChain) InsertShardBlockV2(shardBlock *ShardBlock, isValid
 	}
 	Logger.log.Infof("SHARD %+v | Remove Data After Processed, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
 	Logger.log.Infof("SHARD %+v | Update Beacon Instruction, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
-	err = blockchain.processSalaryInstructionsV2(tempShardBestState.rewardStateDB, beaconBlocks, shardID, blockHeight)
+	err = blockchain.processSalaryInstructionsV2(tempShardBestState.rewardStateDB, beaconBlocks, shardID)
 	if err != nil {
 		return err
 	}
