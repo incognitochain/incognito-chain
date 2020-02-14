@@ -302,10 +302,7 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 	//if err != nil {
 	//	return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	//}
-	arrayParams := common.InterfaceSlice(params)
-	tempShardID := arrayParams[0].(float64)
-	shardID := byte(tempShardID)
-	listPrivacyToken, err := httpServer.blockService.ListPrivacyCustomToken(shardID)
+	listPrivacyToken, err := httpServer.blockService.ListPrivacyCustomToken()
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
 	}

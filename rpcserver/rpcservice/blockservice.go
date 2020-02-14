@@ -570,7 +570,22 @@ func (blockService BlockService) GetActiveShards() int {
 	return blockService.BlockChain.BestState.Beacon.ActiveShards
 }
 
-func (blockService BlockService) ListPrivacyCustomToken(shardID byte) (map[common.Hash]*statedb.TokenState, error) {
+func (blockService BlockService) ListPrivacyCustomToken() (map[common.Hash]*statedb.TokenState, error) {
+	tokenStates := make(map[common.Hash]*statedb.TokenState)
+	for i := 0; i < blockService.BlockChain.BestState.Beacon.ActiveShards; i++ {
+		shardID := byte(i)
+		m, err := blockService.BlockChain.ListPrivacyCustomTokenV2(shardID)
+		if err != nil {
+			return nil, err
+		}
+		for k, v := range m {
+			tokenStates[k] = v
+		}
+	}
+	return tokenStates, nil
+}
+
+func (blockService BlockService) ListPrivacyCustomTokenByShardID(shardID byte) (map[common.Hash]*statedb.TokenState, error) {
 	return blockService.BlockChain.ListPrivacyCustomTokenV2(shardID)
 }
 
@@ -654,7 +669,7 @@ func (blockService BlockService) GetMinerRewardFromMiningKey(incPublicKey []byte
 			rewardAmounts[coinID] = amount
 		}
 	}
-	tokenStates, err := blockService.ListPrivacyCustomToken(shardID)
+	tokenStates, err := blockService.ListPrivacyCustomTokenByShardID(shardID)
 	if err != nil {
 		return nil, err
 	}
@@ -725,7 +740,7 @@ func (blockService BlockService) GetRewardAmount(paymentAddress string) (map[str
 			rewardAmounts[coinID] = amount
 		}
 	}
-	privateTokenState, err := blockService.ListPrivacyCustomToken(shardID)
+	privateTokenState, err := blockService.ListPrivacyCustomTokenByShardID(shardID)
 	if err != nil {
 		return nil, err
 	}
@@ -761,7 +776,7 @@ func (blockService BlockService) GetRewardAmountByPublicKey(publicKey string) (m
 			rewardAmounts[coinID] = amount
 		}
 	}
-	privateTokenState, err := blockService.ListPrivacyCustomToken(shardID)
+	privateTokenState, err := blockService.ListPrivacyCustomTokenByShardID(shardID)
 	if err != nil {
 		return nil, err
 	}
