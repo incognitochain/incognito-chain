@@ -77,6 +77,15 @@ func (sc *Scalar) FromBytesS(b []byte) (*Scalar) {
 	return sc
 }
 
+// Should not use this if you don't know what you are doing
+func (p *Scalar) SetKeyUnsafe(a *C25519.Key) *Scalar {
+       if p == nil {
+               p = new(Scalar)
+       }
+       p.key = *a
+       return p
+}
+
 func (sc *Scalar) SetKey(a *C25519.Key) (*Scalar, error) {
 	if sc == nil {
 		sc = new(Scalar)

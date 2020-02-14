@@ -5,33 +5,26 @@ package mlsag
 import (
 	"crypto/sha256"
 
-	C25519 "github.com/incognitochain/incognito-chain/privacy/curve25519"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
-
-func hashToPoint(b []byte) *C25519.Key {
-	keyHash := C25519.Key(C25519.Keccak256(b))
-	return keyHash.HashToPoint()
-}
 
 func hashToNum(b []byte) [sha256.Size]byte {
 	return sha256.Sum256(b)
 }
 
-// Parse public key from private key of C25519
-func parsePublicKey(privateKey C25519.Key) [C25519.KeyLength]byte {
-	publicKey := C25519.ScalarmultBase(&privateKey)
-	return publicKey.ToBytes()
+// Parse public key from private key
+func parsePublicKey(privateKey privacy.Scalar) *privacy.Point {
+	return new(privacy.Point).ScalarMultBase(&privateKey)
 }
 
-func parseKeyImages(privateKey []C25519.Key) (result []C25519.Key) {
+func parseKeyImages(privateKey []privacy.Scalar) (result []privacy.Point) {
 	var m int = len(privateKey)
 
-	result = make([]C25519.Key, m)
+	result = make([]privacy.Point, m)
 	for i := 0; i < m; i += 1 {
 		publicKey := parsePublicKey(privateKey[i])
-		hashPoint := hashToPoint(publicKey[:])
-		image := C25519.ScalarMultKey(&privateKey[i], hashPoint)
-		result[i] = *image
+		hashPoint := privacy.HashToPoint(publicKey.ToBytesS())
+		result[i] = *new(privacy.Point).ScalarMult(hashPoint, &privateKey[i])
 	}
 	return
 }
