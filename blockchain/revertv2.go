@@ -4,10 +4,22 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"strings"
 )
+
+func (blockchain *BlockChain) BackupCurrentShardStateV2(shardBlock *ShardBlock) error {
+	shardBestStateBytes, err := json.Marshal(blockchain.BestState.Shard[shardBlock.Header.ShardID])
+	if err != nil {
+		return NewBlockChainError(BackUpShardStateError, err)
+	}
+	if err := rawdbv2.StorePreviousShardBestState(blockchain.GetDatabase(), shardBlock.Header.ShardID, shardBestStateBytes); err != nil {
+		return NewBlockChainError(BackUpShardStateError, err)
+	}
+	return nil
+}
 
 func (blockchain *BlockChain) ValidateBlockWithPreviousShardBestStateV2(shardBlock *ShardBlock) error {
 	prevBST, err := rawdbv2.GetPreviousShardBestState(blockchain.GetDatabase(), shardBlock.Header.ShardID)
@@ -19,7 +31,7 @@ func (blockchain *BlockChain) ValidateBlockWithPreviousShardBestStateV2(shardBlo
 		return err
 	}
 	producerPk := shardBlock.Header.Producer
-	producerPosition := (shardBestState.ShardProposerIdx) % len(shardBestState.ShardCommittee)
+	producerPosition := (shardBestState.ShardProposerIdx + shardBlock.Header.Round) % len(shardBestState.ShardCommittee)
 	tempProducer := shardBestState.ShardCommittee[producerPosition].GetMiningKeyBase58(shardBestState.ConsensusAlgorithm)
 	if strings.Compare(tempProducer, producerPk) != 0 {
 		return NewBlockChainError(ValidateBlockWithPreviousShardBestStateError, errors.New("Producer should be should be :"+tempProducer))
@@ -42,40 +54,41 @@ func (blockchain *BlockChain) ValidateBlockWithPreviousShardBestStateV2(shardBlo
 	return nil
 }
 
-//This only happen if user is a shard committee member.
+// RevertShardStateV2 only happen if user is a shard committee member.
 func (blockchain *BlockChain) RevertShardStateV2(shardID byte) error {
-	//Steps:
-	// 1. Restore current beststate to previous beststate
-	// 2. Set pool shardstate
-	// 3. Delete newly inserted block
-	// 4. Remove incoming crossShardBlks
-	// 5. Delete txs and its related stuff (ex: txview) belong to block
-
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
 	return blockchain.revertShardStateV2(shardID)
 }
 
+// revertShardStateV2 steps
+// 1. Delete transaction
+// 2. Delete reverted shard block
+// 3. Delete root hash of reverted shard block
+// 4. Revert Shard Best State to previous shard best state
+// 5. Update Cross Shard Pool and Shard Pool
 func (blockchain *BlockChain) revertShardStateV2(shardID byte) error {
-	//Steps:
-	// 1. Restore current beststate to previous beststate
-	// 2. Set pool shardstate
-	// 3. Delete newly inserted block
-	// 4. Remove incoming crossShardBlks
-	// 5. Delete txs and its related stuff (ex: txview) belong to block
-	var currentBestState ShardBestState
-	err := currentBestState.cloneShardBestStateFrom(blockchain.BestState.Shard[shardID])
+
+	var revertedBestState ShardBestState
+	err := revertedBestState.cloneShardBestStateFrom(blockchain.BestState.Shard[shardID])
 	if err != nil {
 		return NewBlockChainError(RevertStateError, err)
 	}
-	revertedBestShardBlock := currentBestState.BestBlock
+	revertedBestShardBlock := revertedBestState.BestBlock
+	// Revert current shard best state to previous shard best state
+	err = blockchain.revertShardBestStateV2(shardID)
+	if err != nil {
+		return NewBlockChainError(RevertStateError, err)
+	}
+	if err := blockchain.StoreShardBestStateV2(shardID, nil); err != nil {
+		return NewBlockChainError(RevertStateError, err)
+	}
 	for _, tx := range revertedBestShardBlock.Body.Transactions {
 		if err := rawdbv2.DeleteTransactionIndex(blockchain.GetDatabase(), *tx.Hash()); err != nil {
 			return NewBlockChainError(RevertStateError, err)
 		}
 	}
-	err = rawdbv2.DeleteShardBlock(blockchain.GetDatabase(), shardID, revertedBestShardBlock.Header.Height, revertedBestShardBlock.Header.Hash())
-	if err != nil {
+	if err = rawdbv2.DeleteShardBlock(blockchain.GetDatabase(), shardID, revertedBestShardBlock.Header.Height, revertedBestShardBlock.Header.Hash()); err != nil {
 		return NewBlockChainError(RevertStateError, err)
 	}
 	if err := rawdbv2.DeleteShardConsensusRootHash(blockchain.GetDatabase(), shardID, revertedBestShardBlock.Header.Height); err != nil {
@@ -91,14 +104,6 @@ func (blockchain *BlockChain) revertShardStateV2(shardID byte) error {
 		return NewBlockChainError(RevertStateError, err)
 	}
 	if err := rawdbv2.DeleteShardSlashRootHash(blockchain.GetDatabase(), shardID, revertedBestShardBlock.Header.Height); err != nil {
-		return NewBlockChainError(RevertStateError, err)
-	}
-	// Revert current shard best state to previous shard best state
-	err = blockchain.revertShardBestStateV2(shardID)
-	if err != nil {
-		return NewBlockChainError(RevertStateError, err)
-	}
-	if err := blockchain.StoreShardBestStateV2(shardID, nil); err != nil {
 		return NewBlockChainError(RevertStateError, err)
 	}
 	blockchain.config.ShardPool[shardID].RevertShardPool(blockchain.BestState.Shard[shardID].ShardHeight)
