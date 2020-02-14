@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -2156,21 +2157,111 @@ func (serverObj *Server) RequestBlocksViaChannel(peerID string, fromSID int, cur
 	panic("implement me")
 }
 
-func (serverObj *Server) GetBlocksViaChannel(sID int, fromBlockHash string, toBlockHashString string, stopCh chan int) chan interface{} {
+func (serverObj *Server) GetCrossShardBlocksViaChannel(toShardID int, fromBlockHeight uint64, toBlockHashString string, stopCh chan int) chan interface{} {
 	blockCh := make(chan interface{})
 
-	type BlockInterface interface {
-		Hash() *common.Hash
+	nextBlkByHeight := func(sID int, fromBlockHeight uint64) (common.BlockInterface, error) {
+
+		bh, err := serverObj.dataBase.GetBlockByIndex(fromBlockHeight+1, byte(sID))
+		if err != nil {
+			return nil, err
+		}
+		b, err := serverObj.dataBase.FetchBlock(bh)
+		if err != nil {
+			return nil, err
+		}
+		shardBlock := &blockchain.ShardBlock{}
+		err = json.Unmarshal(b, &shardBlock)
+		if err != nil {
+			return nil, err
+		}
+		crossShard, err := shardBlock.CreateCrossShardBlock(byte(sID))
+		if err != nil {
+			return nil, err
+		}
+		return crossShard, nil
 	}
 
-	nextBlockFromHash := func(sID int, fromHash string) (BlockInterface, error) {
-		h, _ := common.Hash{}.NewHashFromStr(fromHash)
-		if sID == -1 {
-			id, err := serverObj.dataBase.GetIndexOfBeaconBlock(*h)
-			if err != nil {
-				return nil, err
+	go func(blockCh chan interface{}) {
+		for {
+			select {
+			case <-stopCh:
+				close(stopCh)
+				break
+			default:
+				block, err := nextBlkByHeight(toShardID, fromBlockHeight)
+				fromBlockHeight++
+				if err != nil {
+					stopCh <- 1
+					if strings.Index(err.Error(), "No cross Outputcoin, Cross Custom Token, Cross Custom Token Privacy") == -1 {
+						go func() {
+							stopCh <- 1
+						}()
+						break
+					} else {
+						continue
+					}
+				}
+				blockCh <- block
 			}
-			bh, err := serverObj.dataBase.GetBeaconBlockHashByIndex(id + 1)
+		}
+
+	}(blockCh)
+
+	return blockCh
+}
+
+func (serverObj *Server) GetS2BBlocksViaChannel(sID int, fromBlockHeight uint64, toBlockHashString string, stopCh chan int) chan interface{} {
+	blockCh := make(chan interface{})
+
+	nextBlkByHeight := func(sID int, fromBlockHeight uint64) (common.BlockInterface, error) {
+
+		bh, err := serverObj.dataBase.GetBlockByIndex(fromBlockHeight+1, byte(sID))
+		if err != nil {
+			return nil, err
+		}
+		b, err := serverObj.dataBase.FetchBlock(bh)
+		if err != nil {
+			return nil, err
+		}
+		shardBlock := &blockchain.ShardBlock{}
+		err = json.Unmarshal(b, &shardBlock)
+		if err != nil {
+			return nil, err
+		}
+		s2b := shardBlock.CreateShardToBeaconBlock(serverObj.blockChain)
+		return s2b, nil
+	}
+	go func(blockCh chan interface{}) {
+		for {
+			select {
+			case <-stopCh:
+				close(stopCh)
+				break
+			default:
+				block, err := nextBlkByHeight(sID, fromBlockHeight)
+				fromBlockHeight++
+				if err != nil {
+					go func() {
+						stopCh <- 1
+					}()
+					break
+				}
+				blockCh <- block
+			}
+		}
+
+	}(blockCh)
+
+	return blockCh
+}
+
+func (serverObj *Server) GetBlocksViaChannel(sID int, fromBlockHeight uint64, toBlockHashString string, stopCh chan int) chan interface{} {
+	blockCh := make(chan interface{})
+
+	nextBlkByHeight := func(sID int, fromBlockHeight uint64) (common.BlockInterface, error) {
+		if sID == -1 {
+			bh, err := serverObj.dataBase.GetBeaconBlockHashByIndex(fromBlockHeight + 1)
 			if err != nil {
 				return nil, err
 			}
@@ -2185,11 +2276,7 @@ func (serverObj *Server) GetBlocksViaChannel(sID int, fromBlockHash string, toBl
 			}
 			return beaconBlock, nil
 		} else {
-			id, sID, err := serverObj.dataBase.GetIndexOfBlock(*h)
-			if err != nil {
-				return nil, err
-			}
-			bh, err := serverObj.dataBase.GetBlockByIndex(id+1, sID)
+			bh, err := serverObj.dataBase.GetBlockByIndex(fromBlockHeight+1, byte(sID))
 			if err != nil {
 				return nil, err
 			}
@@ -2210,11 +2297,14 @@ func (serverObj *Server) GetBlocksViaChannel(sID int, fromBlockHash string, toBl
 				close(stopCh)
 				break
 			default:
-				block, err := nextBlockFromHash(sID, fromBlockHash)
+				block, err := nextBlkByHeight(sID, fromBlockHeight)
+				fromBlockHeight++
 				if err != nil {
-					stopCh <- 1
+					go func() {
+						stopCh <- 1
+					}()
+					break
 				}
-				fromBlockHash = block.Hash().String()
 				blockCh <- block
 			}
 		}
