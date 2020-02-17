@@ -14,6 +14,7 @@ type CustomToken struct {
 	Image              string   `json:"Image"`
 	Amount             uint64   `json:"Amount"`
 	IsPrivacy          bool     `json:"IsPrivacy"`
+	IsBridgeToken      bool     `json:"IsBridgeToken"`
 	ListTxs            []string `json:"ListTxs"`
 	CountTxs           int      `json:"CountTxs"`
 	InitiatorPublicKey string   `json:"InitiatorPublicKey"`
