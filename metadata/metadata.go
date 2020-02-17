@@ -168,11 +168,11 @@ func convertValueBetweenCurrencies(
 	currentCurrencyIDStr string,
 	tokenID *common.Hash,
 	beaconHeight int64,
-	statedb *statedb.StateDB,
+	stateDB *statedb.StateDB,
 ) (float64, error) {
 	prvIDStr := common.PRVCoinID.String()
 	tokenIDStr := tokenID.String()
-	pdePoolForPair, err := getPDEPoolPair(prvIDStr, tokenIDStr, beaconHeight, statedb)
+	pdePoolForPair, err := getPDEPoolPair(prvIDStr, tokenIDStr, beaconHeight, stateDB)
 	if err != nil {
 		return 0, NewMetadataTxError(CouldNotGetExchangeRateError, err)
 	}

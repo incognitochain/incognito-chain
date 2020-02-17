@@ -87,7 +87,7 @@ func GetPDEShares(stateDB *StateDB, beaconHeight uint64) (map[string]uint64, err
 func GetPDEPoolForPair(stateDB *StateDB, beaconHeight uint64, tokenIDToBuy string, tokenIDToSell string) ([]byte, error) {
 	tokenIDs := []string{tokenIDToBuy, tokenIDToSell}
 	sort.Strings(tokenIDs)
-	key := GeneratePDEPoolPairObjectKey(beaconHeight, tokenIDs[0], tokenIDs[0])
+	key := GeneratePDEPoolPairObjectKey(beaconHeight, tokenIDs[0], tokenIDs[1])
 	ppState, has, err := stateDB.GetPDEPoolPairState(key)
 	if err != nil {
 		return []byte{}, NewStatedbError(GetPDEPoolForPairError, err)
