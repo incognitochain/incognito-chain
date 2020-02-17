@@ -16,7 +16,7 @@ type Signature struct {
 func (this *Signature) ToHex() (string, error) {
 	b, err := this.ToBytes()
 	if err != nil {
-		return "", err
+		return "", errors.New("Error in MLSAG Signature ToHex: the signature is broken (size of keyImages and r differ")
 	}
 	return hex.EncodeToString(b), nil
 }
@@ -54,14 +54,14 @@ func (this *Signature) FromHex(s string) (*Signature, error) {
 // Get from byte and store to signature
 func (this *Signature) FromBytes(b []byte) (*Signature, error) {
 	if len(b)%32 != 1 {
-		return nil, errors.New("Error in MLSAG Signature FromBytes: the signature byte is broken")
+		return nil, errors.New("Error in MLSAG Signature FromBytes: the signature byte is broken (missing byte)")
 	}
 	var m int = int(b[0])
 	lenArr := len(b) - 33 - m*32
 	n := lenArr / 32 / m
 
 	if len(b) != 1+(1+m+m*n)*32 {
-		return nil, errors.New("Error in MLSAG Signature FromBytes: the signature byte is broken")
+		return nil, errors.New("Error in MLSAG Signature FromBytes: the signature byte is broken (some scalar is missing)")
 	}
 
 	c := new(privacy.Scalar).FromBytesS(b[1:33])
@@ -71,7 +71,7 @@ func (this *Signature) FromBytes(b []byte) (*Signature, error) {
 	for i := 0; i < m; i += 1 {
 		val, err := new(privacy.Point).FromBytesS(b[index : index+32])
 		if err != nil {
-			return nil, errors.New("Error in MLSAG Signature FromBytes: the signature byte is broken")
+			return nil, errors.New("Error in MLSAG Signature FromBytes: the signature byte is broken (keyImages is broken)")
 		}
 		keyImages[i] = *val
 		index += 32

@@ -8,10 +8,6 @@ type Ring struct {
 	keys [][]privacy.Point
 }
 
-func (this *Ring) IsEmpty() bool {
-	return len(this.keys) == 0
-}
-
 func createFakePublicKeyArray(length int) (K []privacy.Point) {
 	K = make([]privacy.Point, length)
 	for i := 0; i < length; i += 1 {
