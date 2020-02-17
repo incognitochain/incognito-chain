@@ -401,7 +401,7 @@ func (tp *TxPool) checkFees(
 		meta := tx.GetMetadata()
 		// verify at metadata level
 		if meta != nil {
-			ok := meta.CheckTransactionFee(tx, limitFee, beaconHeight, tp.config.BlockChain.BestState.Shard[shardID].GetCopiedTransactionStateDB())
+			ok := meta.CheckTransactionFee(tx, limitFee, beaconHeight, tp.config.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB())
 			if !ok {
 				Logger.log.Errorf("Error: %+v", NewMempoolTxError(RejectInvalidFee,
 					fmt.Errorf("transaction %+v: Invalid fee metadata",
@@ -415,7 +415,7 @@ func (tp *TxPool) checkFees(
 		feePToken := tx.GetTxFeeToken()
 		//convert fee in Ptoken to fee in native token (if feePToken > 0)
 		if feePToken > 0 {
-			feePTokenToNativeTokenTmp, err := metadata.ConvertPrivacyTokenToNativeToken(feePToken, tokenID, beaconHeight, tp.config.BlockChain.BestState.Shard[shardID].GetCopiedTransactionStateDB())
+			feePTokenToNativeTokenTmp, err := metadata.ConvertPrivacyTokenToNativeToken(feePToken, tokenID, beaconHeight, tp.config.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB())
 			if err != nil {
 				Logger.log.Errorf("ERROR: %+v", NewMempoolTxError(RejectInvalidFee,
 					fmt.Errorf("transaction %+v: %+v %v can not convert to native token",
@@ -444,7 +444,7 @@ func (tp *TxPool) checkFees(
 		if limitFee > 0 {
 			meta := tx.GetMetadata()
 			if meta != nil {
-				ok := tx.GetMetadata().CheckTransactionFee(tx, limitFee, beaconHeight, tp.config.BlockChain.BestState.Shard[shardID].GetCopiedTransactionStateDB())
+				ok := tx.GetMetadata().CheckTransactionFee(tx, limitFee, beaconHeight, tp.config.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB())
 				if !ok {
 					Logger.log.Errorf("ERROR: %+v", NewMempoolTxError(RejectInvalidFee,
 						fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
