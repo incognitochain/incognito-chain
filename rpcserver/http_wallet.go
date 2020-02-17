@@ -376,6 +376,7 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 				}
 			}
 		}
+		tokenIDs[tokenID] = 0
 		result.ListCustomToken = append(result.ListCustomToken, *item)
 	}
 
