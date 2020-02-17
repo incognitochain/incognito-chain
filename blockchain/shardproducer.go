@@ -484,6 +484,10 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 						newTx, err = blockGenerator.buildPDEMatchedNReturnedContributionTx(l[3], producerPrivateKey, shardID)
 					}
 				}
+			case metadata.PortalCustodianDepositMeta:
+				if len(l) >= 4 && l[2] == common.PDEContributionRefundChainStatus {
+					newTx, err = blockGenerator.buildPortalRefundCustodianDepositTx(l[3], producerPrivateKey, shardID)
+				}
 
 			default:
 				continue

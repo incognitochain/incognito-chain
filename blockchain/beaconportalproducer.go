@@ -23,6 +23,7 @@ func buildCustodianDepositInst(
 		RemoteAddresses: remoteAddresses,
 		DepositedAmount: depositedAmount,
 		TxReqID:         txReqID,
+		ShardID: shardID,
 	}
 	custodianDepositContentBytes, _ := json.Marshal(custodianDepositContent)
 	return []string{

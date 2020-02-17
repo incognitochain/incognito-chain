@@ -27,13 +27,16 @@ type PortalCustodianDepositAction struct {
 
 // PortalCustodianDepositContent - Beacon builds a new instruction with this content after receiving a instruction from shard
 // It will be appended to beaconBlock
+// both accepted and refund status
 type PortalCustodianDepositContent struct {
 	IncogAddressStr string
 	RemoteAddresses map[string]string
 	DepositedAmount uint64
 	TxReqID         common.Hash
+	ShardID byte
 }
 
+// PortalCustodianDepositStatus - Beacon tracks status of custodian deposit tx into db
 type PortalCustodianDepositStatus struct {
 	Status byte
 	IncogAddressStr string
