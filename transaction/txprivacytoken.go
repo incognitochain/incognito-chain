@@ -329,7 +329,15 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 			existed := params.db.PrivacyTokenIDExisted(*propertyID)
 			existedCross := params.db.PrivacyTokenIDCrossShardExisted(*propertyID)
 			if !existed && !existedCross {
-				return NewTransactionErr(TokenIDExistedError, errors.New("invalid Token ID"))
+				// try to check bridge token
+				isBridgeToken, err1 := IsBridgeTokenID(*propertyID, params.db)
+				if err1 != nil {
+					Logger.log.Error(err1)
+				}
+				if !isBridgeToken {
+					// totally invalid token
+					return NewTransactionErr(TokenIDExistedError, errors.New("invalid Token ID"))
+				}
 			}
 			Logger.log.Debugf("Token %+v wil be transfered with", propertyID)
 			txCustomTokenPrivacy.TxPrivacyTokenData = TxPrivacyTokenData{
