@@ -186,6 +186,7 @@ const (
 
 	// portal
 	createAndSendTxWithCustodianDeposit = "createandsendtxwithcustodiandeposit"
+	createAndSendTxWithReqPToken        = "createandsendtxwithreqptoken"
 )
 
 const (

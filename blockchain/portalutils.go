@@ -54,6 +54,7 @@ func NewPortingRequestState(
 	}, nil
 }
 
+//todo: need to be updated, get all porting/redeem requests from DB
 func InitCurrentPortalStateFromDB(
 	db database.DatabaseInterface,
 	beaconHeight uint64,
