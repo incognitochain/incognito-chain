@@ -246,7 +246,7 @@ func TestStateDB_StoreCommitments(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if res.Uint64() != 19 {
-		t.Fatalf("want 19 but got %+v", res.Uint64())
+	if res.Uint64() != 20 {
+		t.Fatalf("want 20 but got %+v", res.Uint64())
 	}
 }

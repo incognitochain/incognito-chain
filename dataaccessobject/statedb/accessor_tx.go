@@ -155,7 +155,7 @@ func GetCommitmentLength(stateDB *StateDB, tokenID common.Hash, shardID byte) (*
 	if !has {
 		return new(big.Int).SetUint64(0), NewStatedbError(GetCommitmentLengthError, errors.New("no value exist"))
 	}
-	return length, nil
+	return new(big.Int).SetUint64(length.Uint64() + 1), nil
 }
 func ListCommitment(stateDB *StateDB, tokenID common.Hash, shardID byte) (map[string]uint64, error) {
 	m := stateDB.GetAllCommitmentStateByPrefix(tokenID, shardID)
