@@ -173,7 +173,7 @@ func getCustodianPoolState(
 	beaconHeight uint64,
 ) (map[string]*lvdb.CustodianState, error) {
 		custodianPoolState := make(map[string]*lvdb.CustodianState)
-		custodianPoolStateKeysBytes, custodianPoolStateValuesBytes, err := db.GetAllRecordsPortalByPrefix(beaconHeight, lvdb.CustodianStatePrefix)
+		custodianPoolStateKeysBytes, custodianPoolStateValuesBytes, err := db.GetAllRecordsPortalByPrefix(beaconHeight, lvdb.PortalCustodianStatePrefix)
 		if err != nil {
 			return nil, err
 		}
@@ -243,3 +243,4 @@ func getPubTokenByTotalCollateral(total uint64, exchangeRate uint64) (uint64, er
 
 	return pubTokenByCollateral, nil
 }
+

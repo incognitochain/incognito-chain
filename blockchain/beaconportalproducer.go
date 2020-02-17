@@ -9,13 +9,14 @@ import (
 )
 
 // beacon build new instruction from instruction received from ShardToBeaconBlock
-func buildCustodianDepositAcceptedInst(
+func buildCustodianDepositInst(
 	custodianAddressStr string,
 	depositedAmount uint64,
 	remoteAddresses map[string]string,
 	metaType int,
 	shardID byte,
 	txReqID common.Hash,
+	status string,
 ) []string {
 	custodianDepositContent := metadata.PortalCustodianDepositContent{
 		IncogAddressStr: custodianAddressStr,
@@ -27,7 +28,7 @@ func buildCustodianDepositAcceptedInst(
 	return []string{
 		strconv.Itoa(metaType),
 		strconv.Itoa(int(shardID)),
-		common.PortalCustodianDepositAcceptedChainStatus,
+		status,
 		string(custodianDepositContentBytes),
 	}
 }
@@ -71,18 +72,8 @@ func (blockchain *BlockChain) buildInstructionsForCustodianDeposit(
 	currentPortalState *CurrentPortalState,
 	beaconHeight uint64,
 ) ([][]string, error) {
-	// todo: validate instruction (should update currentPortalState ?)
-	if currentPortalState == nil {
-		Logger.log.Warn("WARN - [buildInstructionsForCustodianDeposit]: Current Portal state is null.")
-		// need to refund collateral to custodian
-		inst := []string{
-			strconv.Itoa(metaType),
-			strconv.Itoa(int(shardID)),
-			common.PortalCustodianDepositRefundChainStatus,
-			contentStr,		//todo:recheck
-		}
-		return [][]string{inst}, nil
-	}
+
+	// todo: need to validate instruction ? (should update currentPortalState ?)
 
 	// parse instruction
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
@@ -97,13 +88,29 @@ func (blockchain *BlockChain) buildInstructionsForCustodianDeposit(
 		return [][]string{}, nil
 	}
 
-	inst := buildCustodianDepositAcceptedInst(
+	if currentPortalState == nil {
+		Logger.log.Warn("WARN - [buildInstructionsForCustodianDeposit]: Current Portal state is null.")
+		// need to refund collateral to custodian
+		inst := buildCustodianDepositInst(
+			actionData.Meta.IncogAddressStr,
+			actionData.Meta.DepositedAmount,
+			actionData.Meta.RemoteAddresses,
+			actionData.Meta.Type,
+			shardID,
+			actionData.TxReqID,
+			common.PortalCustodianDepositRefundChainStatus,
+		)
+		return [][]string{inst}, nil
+	}
+
+	inst := buildCustodianDepositInst(
 		actionData.Meta.IncogAddressStr,
 		actionData.Meta.DepositedAmount,
 		actionData.Meta.RemoteAddresses,
 		actionData.Meta.Type,
 		shardID,
 		actionData.TxReqID,
+		common.PortalCustodianDepositAcceptedChainStatus,
 		)
 	return [][]string{inst}, nil
 }

@@ -15,28 +15,38 @@ import (
 type PortalCustodianDeposit struct {
 	MetadataBase
 	IncogAddressStr string
-	RemoteAddresses map[string]string
+	RemoteAddresses map[string]string		// token symbol: remote address
 	DepositedAmount uint64
 }
 
 type PortalCustodianDepositAction struct {
-	Meta PortalCustodianDeposit
+	Meta    PortalCustodianDeposit
 	TxReqID common.Hash
 	ShardID byte
 }
 
+// PortalCustodianDepositContent - Beacon builds a new instruction with this content after receiving a instruction from shard
+// It will be appended to beaconBlock
 type PortalCustodianDepositContent struct {
 	IncogAddressStr string
 	RemoteAddresses map[string]string
 	DepositedAmount uint64
-	TxReqID common.Hash
+	TxReqID         common.Hash
 }
 
-func NewPortalCustodianDeposit(metaType int, incognitoAddrStr string, remoteAddrs map[string]string, amount uint64) (*PortalCustodianDeposit, error){
+type PortalCustodianDepositStatus struct {
+	Status byte
+	IncogAddressStr string
+	RemoteAddresses map[string]string
+	DepositedAmount uint64
+	TxReqID         common.Hash
+}
+
+func NewPortalCustodianDeposit(metaType int, incognitoAddrStr string, remoteAddrs map[string]string, amount uint64) (*PortalCustodianDeposit, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
-	custodianDepositMeta := &PortalCustodianDeposit {
+	custodianDepositMeta := &PortalCustodianDeposit{
 		IncogAddressStr: incognitoAddrStr,
 		RemoteAddresses: remoteAddrs,
 		DepositedAmount: amount,
@@ -54,7 +64,6 @@ func (custodianDeposit PortalCustodianDeposit) ValidateTxWithBlockChain(
 ) (bool, error) {
 	return true, nil
 }
-
 
 func (custodianDeposit PortalCustodianDeposit) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
@@ -97,6 +106,12 @@ func (custodianDeposit PortalCustodianDeposit) ValidateSanityData(bcr Blockchain
 	if len(custodianDeposit.RemoteAddresses) == 0 {
 		return false, false, errors.New("remote addresses should be at least one")
 	}
+	for tokenSymbol, _ := range custodianDeposit.RemoteAddresses {
+		isSupportedToken, err := common.SliceExists(PortalSupportedTokenSymbols, tokenSymbol)
+		if err != nil || !isSupportedToken {
+			return false, false, errors.New("remote address is invalid")
+		}
+	}
 
 	return true, true, nil
 }
@@ -108,8 +123,8 @@ func (custodianDeposit PortalCustodianDeposit) ValidateMetadataByItself() bool {
 func (custodianDeposit PortalCustodianDeposit) Hash() *common.Hash {
 	record := custodianDeposit.MetadataBase.Hash().String()
 	record += custodianDeposit.IncogAddressStr
-	for tokenID, rAddress := range custodianDeposit.RemoteAddresses {
-		record += tokenID
+	for tokenSymbol, rAddress := range custodianDeposit.RemoteAddresses {
+		record += tokenSymbol
 		record += rAddress
 	}
 	record += strconv.FormatUint(custodianDeposit.DepositedAmount, 10)
@@ -136,4 +151,3 @@ func (custodianDeposit *PortalCustodianDeposit) BuildReqActions(tx Transaction, 
 func (custodianDeposit *PortalCustodianDeposit) CalculateSize() uint64 {
 	return calculateSize(custodianDeposit)
 }
-

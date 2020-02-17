@@ -108,6 +108,7 @@ const (
 	StoreCustodianDepositStateError
 	StorePortingRequestStateError
 	StoreRedeemRequestStateError
+	TrackCustodianDepositError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -213,9 +214,10 @@ var ErrCodeMessage = map[int]struct {
 	GetPDEStatusError:                      {-13014, "Get pde status error"},
 
 	//portal
-	StoreCustodianDepositStateError:		{-14001, "Store custodian deposit error"},
-	StorePortingRequestStateError:			{-14002, "Store porting request error"},
-	StoreRedeemRequestStateError:			{-14003, "Store redeem request error"},
+	StoreCustodianDepositStateError: {-14001, "Store custodian deposit error"},
+	StorePortingRequestStateError:   {-14002, "Store porting request error"},
+	StoreRedeemRequestStateError:    {-14003, "Store redeem request error"},
+	TrackCustodianDepositError:      {-14004, "Track custodian deposit error"},
 }
 
 type DatabaseError struct {
