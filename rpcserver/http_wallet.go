@@ -435,6 +435,7 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 				}
 			}
 		}
+		result.ListCustomToken = append(result.ListCustomToken, item)
 	}
 
 	// overwrite amounts with
