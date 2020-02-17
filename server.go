@@ -2256,7 +2256,7 @@ func (serverObj *Server) GetS2BBlocksFromDBViaChannel(sID int, fromBlockHeight u
 	return blockCh
 }
 
-func (serverObj *Server) GetBlocksViaChannel(sID int, fromBlockHeight uint64, toBlockHashString string, stopCh chan int) chan interface{} {
+func (serverObj *Server) GetBlocksViaChannel(sID int, fromBlockHeight, finalBlockHeight uint64, toBlockHashString string, stopCh chan int) chan interface{} {
 	blockCh := make(chan interface{})
 
 	nextBlkByHeight := func(sID int, fromBlockHeight uint64) (common.BlockInterface, error) {
@@ -2308,7 +2308,6 @@ func (serverObj *Server) GetBlocksViaChannel(sID int, fromBlockHeight uint64, to
 				blockCh <- block
 			}
 		}
-
 	}(blockCh)
 
 	return blockCh

@@ -1,6 +1,7 @@
 package syncker
 
 import (
+	"github.com/incognitochain/incognito-chain/common"
 	"log"
 	"time"
 )
@@ -53,29 +54,42 @@ func (s *BeaconSyncProcess) syncBeaconProcess() {
 	}
 
 	for peerID, pState := range s.BeaconPeerStates {
-
 		if pState.BestViewHeight < s.Chain.GetBestViewHeight() {
 			continue
 		}
 		if pState.BestViewHeight == s.Chain.GetBestViewHeight() && pState.BestViewHash == s.Chain.GetBestViewHash() {
 			continue
 		}
-		log.Printf("SYNCKER Request Block from %s height %d hash %s", peerID, s.Chain.GetFinalViewHeight(), s.Chain.GetBestViewHash())
+		log.Printf("SYNCKER Request Block from %s height %d hash %s from peer", peerID, s.Chain.GetFinalViewHeight(), s.Chain.GetBestViewHash())
+		blockBuffer := make([]common.BlockInterface, 1000) //using buffer
+		ch, stop := s.Server.RequestBlocksViaChannel(peerID, -1, s.Chain.GetBestViewHeight(), s.Chain.GetFinalViewHeight(), pState.BestViewHash)
+		go func() {
+			for {
+				select {
+				case blk := <-ch:
+					blockBuffer = append(blockBuffer, blk)
+				}
+				for len(blockBuffer) > 350 {
+					stop <- 1
+				}
+				stop <- 0
+			}
+		}()
 
-		//ch, stop := s.Server.RequestBlocksViaChannel(peerID, -1, s.Chain.GetFinalViewHash(), s.Chain.GetBestViewHash(), pState.BestViewHash)
-		//for {
-		//	shouldBreak := false
-		//	select {
-		//	case _ = <-ch:
-		//		//if err := s.Chain.InsertBlock(block); err != nil {
-		//		//	shouldBreak = true
-		//		//}
-		//	}
-		//	if shouldBreak {
-		//		stop <- 1
-		//		break
-		//	}
-		//}
+		for {
+			if len(blockBuffer) > 0 {
+				retrieveBlock := blockBuffer[:]
+				blockBuffer = blockBuffer[len(retrieveBlock):]
+
+				//TODO: Process insert batch block
+				if err := s.Chain.InsertBatchBlock(retrieveBlock); err != nil {
+					break
+				}
+			} else {
+				time.Sleep(100 * time.Millisecond)
+			}
+		}
+
 	}
 }
 
