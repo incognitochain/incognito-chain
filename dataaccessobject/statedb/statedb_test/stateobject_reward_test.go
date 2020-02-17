@@ -211,11 +211,11 @@ func TestStateDB_AddCommitteeReward(t *testing.T) {
 	amount := uint64(10000)
 	withdraw := uint64(5000)
 	tokenID := common.Hash{5}
-	err = statedb.AddCommitteeReward(stateDB, incognitoPublicKey, amount, common.PRVCoinID, diskBD, 0)
+	err = statedb.AddCommitteeReward(stateDB, incognitoPublicKey, amount, common.PRVCoinID)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = statedb.AddCommitteeReward(stateDB, incognitoPublicKey, amount, tokenID, diskBD, 0)
+	err = statedb.AddCommitteeReward(stateDB, incognitoPublicKey, amount, tokenID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -234,7 +234,7 @@ func TestStateDB_AddCommitteeReward(t *testing.T) {
 	if gotAmount0 != amount {
 		t.Fatalf("want %+v but got %+v", amount, gotAmount0)
 	}
-	err = statedb.AddCommitteeReward(stateDB, incognitoPublicKey, amount, common.PRVCoinID, diskBD, 0)
+	err = statedb.AddCommitteeReward(stateDB, incognitoPublicKey, amount, common.PRVCoinID)
 	if err != nil {
 		t.Fatal(err)
 	}

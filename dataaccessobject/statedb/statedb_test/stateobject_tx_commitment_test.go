@@ -11,7 +11,7 @@ import (
 )
 
 func storeCommitment(initRoot common.Hash, db statedb.DatabaseAccessWarper, limit int, shardID byte) (common.Hash, map[common.Hash]*statedb.CommitmentState, map[common.Hash][][]byte, map[common.Hash][]uint64, map[common.Hash]uint64) {
-	commitmentPerToken := 5
+	commitmentPerToken := 20
 	commitmentList := generateCommitmentList(commitmentPerToken * limit)
 	tokenIDs := generateTokenIDs(limit)
 	wantM := make(map[common.Hash]*statedb.CommitmentState)
@@ -214,5 +214,39 @@ func TestStateDB_GetGetAllCommitmentStateByPrefix(t *testing.T) {
 				t.Fatalf("GetAllSerialNumberByPrefix shard %+v want %+v but got %+v", shardID, wantLengthMByTokens[shardID][tokenID], gotCLength.Uint64())
 			}
 		}
+	}
+}
+
+func TestStateDB_StoreCommitments(t *testing.T) {
+	tokenID := common.PRVCoinID
+	shardID := byte(0)
+	commitments := generateCommitmentList(20)
+	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDBTxTest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = statedb.StoreCommitments(sDB, tokenID, []byte{}, commitments, shardID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rootHash, err := sDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = sDB.Database().TrieDB().Commit(rootHash, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBTxTest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := statedb.GetCommitmentLength(tempStateDB, tokenID, shardID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Uint64() != 19 {
+		t.Fatalf("want 19 but got %+v", res.Uint64())
 	}
 }
