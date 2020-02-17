@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	wl, _ := wallet.Base58CheckDeserialize("112t8rnXB47RhSdyVRU41TEf78nxbtWGtmjutwSp9YqsNaCpFxQGXcnwcXTtBkCGDk1KLBRBeWMvb2aXG5SeDUJRHtFV8jTB3weHEkbMJ1AL")
+	wl, _ := wallet.Base58CheckDeserialize("112t8rngNKpZHv6WsKqaYqKPi8JvfEVY9oqob3QiSKmbHbfDrDFXZZtmqLAacnmfqTJKKR9P2UJ1kYvkmdHAHU4zPRHpv38kHRRjLtHNv4yN")
 	//privKeyB58 := wl.Base58CheckSerialize(wallet.PriKeyType)
 	wl.KeySet.InitFromPrivateKey(&wl.KeySet.PrivateKey)
 	//readOnlyKeyB58 := wl.Base58CheckSerialize(wallet.ReadonlyKeyType)
