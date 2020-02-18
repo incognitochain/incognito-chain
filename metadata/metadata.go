@@ -67,7 +67,7 @@ type BlockchainRetriever interface {
 	GetTxValue(txid string) (uint64, error)
 	GetShardIDFromTx(txid string) (byte, error)
 	GetCentralizedWebsitePaymentAddress() string
-	GetAllCoinID() ([]common.Hash, error)
+	GetAllCoinIDV2(byte) ([]common.Hash, error)
 	GetBeaconHeightBreakPointBurnAddr() uint64
 	GetBurningAddress(blockHeight uint64) string
 	GetShardRewardStateDB(shardID byte) *statedb.StateDB

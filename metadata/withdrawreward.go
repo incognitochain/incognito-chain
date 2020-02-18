@@ -115,7 +115,7 @@ func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(txr 
 	if txr.IsPrivacy() {
 		return false, errors.New("This transaction is not private")
 	}
-	allTokenID, err := bcr.GetAllCoinID()
+	allTokenID, err := bcr.GetAllCoinIDV2(common.GetShardIDFromLastByte(txr.GetSenderAddrLastByte()))
 	if err != nil {
 		return false, err
 	}

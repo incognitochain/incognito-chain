@@ -1,16 +1,13 @@
 package blockchain
 
 import (
-	"encoding/binary"
-	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"math/big"
 	"sort"
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
-	"github.com/incognitochain/incognito-chain/incdb"
-	"github.com/pkg/errors"
 )
 
 type CurrentPDEState struct {
@@ -25,6 +22,49 @@ type DeductingAmountsByWithdrawal struct {
 	Token2IDStr string
 	PoolValue2  uint64
 	Shares      uint64
+}
+
+func InitCurrentPDEStateFromDB(
+	stateDB *statedb.StateDB,
+	beaconHeight uint64,
+) (*CurrentPDEState, error) {
+	waitingPDEContributions, err := statedb.GetWaitingPDEContributions(stateDB, beaconHeight)
+	if err != nil {
+		return nil, err
+	}
+	pdePoolPairs, err := statedb.GetPDEPoolPair(stateDB, beaconHeight)
+	if err != nil {
+		return nil, err
+	}
+	pdeShares, err := statedb.GetPDEShares(stateDB, beaconHeight)
+	if err != nil {
+		return nil, err
+	}
+	return &CurrentPDEState{
+		WaitingPDEContributions: waitingPDEContributions,
+		PDEPoolPairs:            pdePoolPairs,
+		PDEShares:               pdeShares,
+	}, nil
+}
+
+func storePDEStateToDBV2(
+	stateDB *statedb.StateDB,
+	beaconHeight uint64,
+	currentPDEState *CurrentPDEState,
+) error {
+	err := statedb.StoreWaitingPDEContributions(stateDB, beaconHeight, currentPDEState.WaitingPDEContributions)
+	if err != nil {
+		return err
+	}
+	err = statedb.StorePDEPoolPairs(stateDB, beaconHeight, currentPDEState.PDEPoolPairs)
+	if err != nil {
+		return err
+	}
+	err = statedb.StorePDEShares(stateDB, beaconHeight, currentPDEState.PDEShares)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func replaceNewBCHeightInKeyStr(key string, newBeaconHeight uint64) string {
@@ -42,160 +82,6 @@ func replaceNewBCHeightInKeyStr(key string, newBeaconHeight uint64) string {
 		newKey += (part + "-")
 	}
 	return newKey
-}
-
-func storePDEShares(
-	db incdb.Database,
-	beaconHeight uint64,
-	pdeShares map[string]uint64,
-) error {
-	for shareKey, shareAmt := range pdeShares {
-		newKey := replaceNewBCHeightInKeyStr(shareKey, beaconHeight)
-		buf := make([]byte, binary.MaxVarintLen64)
-		binary.LittleEndian.PutUint64(buf, shareAmt)
-		dbErr := db.Put([]byte(newKey), buf)
-		if dbErr != nil {
-			return rawdb.NewRawdbError(rawdb.AddShareAmountUpError, errors.Wrap(dbErr, "db.lvdb.put"))
-		}
-	}
-	return nil
-}
-
-func storeWaitingPDEContributions(
-	db incdb.Database,
-	beaconHeight uint64,
-	waitingPDEContributions map[string]*rawdb.PDEContribution,
-) error {
-	for contribKey, contribution := range waitingPDEContributions {
-		newKey := replaceNewBCHeightInKeyStr(contribKey, beaconHeight)
-		contributionBytes, err := json.Marshal(contribution)
-		if err != nil {
-			return err
-		}
-		err = db.Put([]byte(newKey), contributionBytes)
-		if err != nil {
-			return rawdb.NewRawdbError(rawdb.StoreWaitingPDEContributionError, errors.Wrap(err, "db.lvdb.put"))
-		}
-	}
-	return nil
-}
-
-func storePDEPoolPairs(
-	db incdb.Database,
-	beaconHeight uint64,
-	pdePoolPairs map[string]*rawdb.PDEPoolForPair,
-) error {
-	for poolPairKey, poolPair := range pdePoolPairs {
-		newKey := replaceNewBCHeightInKeyStr(poolPairKey, beaconHeight)
-		poolPairBytes, err := json.Marshal(poolPair)
-		if err != nil {
-			return err
-		}
-		err = db.Put([]byte(newKey), poolPairBytes)
-		if err != nil {
-			return rawdb.NewRawdbError(rawdb.StorePDEPoolForPairError, errors.Wrap(err, "db.lvdb.put"))
-		}
-	}
-	return nil
-}
-
-func getWaitingPDEContributions(
-	db incdb.Database,
-	beaconHeight uint64,
-) (map[string]*rawdb.PDEContribution, error) {
-	waitingPDEContributions := make(map[string]*rawdb.PDEContribution)
-	waitingContribKeysBytes, waitingContribValuesBytes, err := rawdb.GetAllRecordsByPrefix(db, beaconHeight, rawdb.WaitingPDEContributionPrefix)
-	if err != nil {
-		return nil, err
-	}
-	for idx, waitingContribKeyBytes := range waitingContribKeysBytes {
-		var waitingContrib rawdb.PDEContribution
-		err = json.Unmarshal(waitingContribValuesBytes[idx], &waitingContrib)
-		if err != nil {
-			return nil, err
-		}
-		waitingPDEContributions[string(waitingContribKeyBytes)] = &waitingContrib
-	}
-	return waitingPDEContributions, nil
-}
-
-func getPDEPoolPair(
-	db incdb.Database,
-	beaconHeight uint64,
-) (map[string]*rawdb.PDEPoolForPair, error) {
-	pdePoolPairs := make(map[string]*rawdb.PDEPoolForPair)
-	poolPairsKeysBytes, poolPairsValuesBytes, err := rawdb.GetAllRecordsByPrefix(db, beaconHeight, rawdb.PDEPoolPrefix)
-	if err != nil {
-		return nil, err
-	}
-	for idx, poolPairsKeyBytes := range poolPairsKeysBytes {
-		var padePoolPair rawdb.PDEPoolForPair
-		err = json.Unmarshal(poolPairsValuesBytes[idx], &padePoolPair)
-		if err != nil {
-			return nil, err
-		}
-		pdePoolPairs[string(poolPairsKeyBytes)] = &padePoolPair
-	}
-	return pdePoolPairs, nil
-}
-
-func getPDEShares(
-	db incdb.Database,
-	beaconHeight uint64,
-) (map[string]uint64, error) {
-	pdeShares := make(map[string]uint64)
-	sharesKeysBytes, sharesValuesBytes, err := rawdb.GetAllRecordsByPrefix(db, beaconHeight, rawdb.PDESharePrefix)
-	if err != nil {
-		return nil, err
-	}
-	for idx, sharesKeyBytes := range sharesKeysBytes {
-		shareAmt := uint64(binary.LittleEndian.Uint64(sharesValuesBytes[idx]))
-		pdeShares[string(sharesKeyBytes)] = shareAmt
-	}
-	return pdeShares, nil
-}
-
-func InitCurrentPDEStateFromDB(
-	db incdb.Database,
-	beaconHeight uint64,
-) (*CurrentPDEState, error) {
-	waitingPDEContributions, err := getWaitingPDEContributions(db, beaconHeight)
-	if err != nil {
-		return nil, err
-	}
-	pdePoolPairs, err := getPDEPoolPair(db, beaconHeight)
-	if err != nil {
-		return nil, err
-	}
-	pdeShares, err := getPDEShares(db, beaconHeight)
-	if err != nil {
-		return nil, err
-	}
-	return &CurrentPDEState{
-		WaitingPDEContributions: waitingPDEContributions,
-		PDEPoolPairs:            pdePoolPairs,
-		PDEShares:               pdeShares,
-	}, nil
-}
-
-func storePDEStateToDB(
-	db incdb.Database,
-	beaconHeight uint64,
-	currentPDEState *CurrentPDEState,
-) error {
-	err := storeWaitingPDEContributions(db, beaconHeight, currentPDEState.WaitingPDEContributions)
-	if err != nil {
-		return err
-	}
-	err = storePDEPoolPairs(db, beaconHeight, currentPDEState.PDEPoolPairs)
-	if err != nil {
-		return err
-	}
-	err = storePDEShares(db, beaconHeight, currentPDEState.PDEShares)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func addShareAmountUpV2(

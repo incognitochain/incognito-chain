@@ -7,30 +7,29 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
-	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
-func (blockchain *BlockChain) processPDEInstructions(block *BeaconBlock, bd *[]incdb.BatchData) error {
-	beaconHeight := block.Header.Height - 1
-	db := blockchain.GetDatabase()
-	currentPDEState, err := InitCurrentPDEStateFromDB(db, beaconHeight)
+func (blockchain *BlockChain) processPDEInstructions(pdexStateDB *statedb.StateDB, beaconBlock *BeaconBlock) error {
+	beaconHeight := beaconBlock.Header.Height - 1
+	currentPDEState, err := InitCurrentPDEStateFromDB(pdexStateDB, beaconHeight)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil
 	}
-	for _, inst := range block.Body.Instructions {
+	for _, inst := range beaconBlock.Body.Instructions {
 		if len(inst) < 2 {
 			continue // Not error, just not PDE instruction
 		}
 		var err error
 		switch inst[0] {
 		case strconv.Itoa(metadata.PDEContributionMeta):
-			err = blockchain.processPDEContributionV2(beaconHeight, inst, currentPDEState)
+			err = blockchain.processPDEContributionV2(pdexStateDB, beaconHeight, inst, currentPDEState)
 		case strconv.Itoa(metadata.PDETradeRequestMeta):
-			err = blockchain.processPDETrade(beaconHeight, inst, currentPDEState)
+			err = blockchain.processPDETrade(pdexStateDB, beaconHeight, inst, currentPDEState)
 		case strconv.Itoa(metadata.PDEWithdrawalRequestMeta):
-			err = blockchain.processPDEWithdrawal(beaconHeight, inst, currentPDEState)
+			err = blockchain.processPDEWithdrawal(pdexStateDB, beaconHeight, inst, currentPDEState)
 		}
 		if err != nil {
 			Logger.log.Error(err)
@@ -38,39 +37,14 @@ func (blockchain *BlockChain) processPDEInstructions(block *BeaconBlock, bd *[]i
 		}
 	}
 	// store updated currentPDEState to leveldb with new beacon height
-	err = storePDEStateToDB(
-		db,
-		beaconHeight+1,
-		currentPDEState,
-	)
+	err = storePDEStateToDBV2(pdexStateDB, beaconHeight+1, currentPDEState)
 	if err != nil {
 		Logger.log.Error(err)
 	}
 	return nil
 }
 
-func storePDEPoolForPair(
-	pdePoolForPairKey string,
-	token1IDStr string,
-	token1PoolValue uint64,
-	token2IDStr string,
-	token2PoolValue uint64,
-	currentPDEState *CurrentPDEState,
-) {
-	pdePoolForPair := &rawdb.PDEPoolForPair{
-		Token1IDStr:     token1IDStr,
-		Token1PoolValue: token1PoolValue,
-		Token2IDStr:     token2IDStr,
-		Token2PoolValue: token2PoolValue,
-	}
-	currentPDEState.PDEPoolPairs[pdePoolForPairKey] = pdePoolForPair
-}
-
-func (blockchain *BlockChain) processPDEContributionV2(
-	beaconHeight uint64,
-	instruction []string,
-	currentPDEState *CurrentPDEState,
-) error {
+func (blockchain *BlockChain) processPDEContributionV2(pdexStateDB *statedb.StateDB, beaconHeight uint64, instruction []string, currentPDEState *CurrentPDEState) error {
 	if currentPDEState == nil {
 		Logger.log.Warn("WARN - [processPDEContribution]: Current PDE state is null.")
 		return nil
@@ -97,8 +71,8 @@ func (blockchain *BlockChain) processPDEContributionV2(
 			Status: byte(common.PDEContributionWaitingStatus),
 		}
 		contribStatusBytes, _ := json.Marshal(contribStatus)
-		err = rawdb.TrackPDEContributionStatus(
-			blockchain.GetDatabase(),
+		err = statedb.TrackPDEContributionStatus(
+			pdexStateDB,
 			rawdb.PDEContributionStatusPrefix,
 			[]byte(waitingContribution.PDEContributionPairID),
 			contribStatusBytes,
@@ -120,13 +94,12 @@ func (blockchain *BlockChain) processPDEContributionV2(
 		if found {
 			delete(currentPDEState.WaitingPDEContributions, waitingContribPairKey)
 		}
-
 		contribStatus := metadata.PDEContributionStatus{
 			Status: byte(common.PDEContributionRefundStatus),
 		}
 		contribStatusBytes, _ := json.Marshal(contribStatus)
-		err = rawdb.TrackPDEContributionStatus(
-			blockchain.GetDatabase(),
+		err = statedb.TrackPDEContributionStatus(
+			pdexStateDB,
 			rawdb.PDEContributionStatusPrefix,
 			[]byte(refundContribution.PDEContributionPairID),
 			contribStatusBytes,
@@ -166,8 +139,8 @@ func (blockchain *BlockChain) processPDEContributionV2(
 			Status: byte(common.PDEContributionAcceptedStatus),
 		}
 		contribStatusBytes, _ := json.Marshal(contribStatus)
-		err = rawdb.TrackPDEContributionStatus(
-			blockchain.GetDatabase(),
+		err = statedb.TrackPDEContributionStatus(
+			pdexStateDB,
 			rawdb.PDEContributionStatusPrefix,
 			[]byte(matchedContribution.PDEContributionPairID),
 			contribStatusBytes,
@@ -207,8 +180,8 @@ func (blockchain *BlockChain) processPDEContributionV2(
 			)
 			delete(currentPDEState.WaitingPDEContributions, waitingContribPairKey)
 		}
-		pdeStatusContentBytes, err := rawdb.GetPDEContributionStatus(
-			blockchain.GetDatabase(),
+		pdeStatusContentBytes, err := statedb.GetPDEContributionStatus(
+			pdexStateDB,
 			rawdb.PDEContributionStatusPrefix,
 			[]byte(matchedNReturnedContrib.PDEContributionPairID),
 		)
@@ -235,8 +208,8 @@ func (blockchain *BlockChain) processPDEContributionV2(
 				Returned1Amount:    matchedNReturnedContrib.ReturnedContributedAmount,
 			}
 			contribStatusBytes, _ := json.Marshal(contribStatus)
-			err := rawdb.TrackPDEContributionStatus(
-				blockchain.GetDatabase(),
+			err := statedb.TrackPDEContributionStatus(
+				pdexStateDB,
 				rawdb.PDEContributionStatusPrefix,
 				[]byte(matchedNReturnedContrib.PDEContributionPairID),
 				contribStatusBytes,
@@ -256,8 +229,8 @@ func (blockchain *BlockChain) processPDEContributionV2(
 			contribStatus.Contributed2Amount = matchedNReturnedContrib.ActualContributedAmount
 			contribStatus.Returned2Amount = matchedNReturnedContrib.ReturnedContributedAmount
 			contribStatusBytes, _ := json.Marshal(contribStatus)
-			err = rawdb.TrackPDEContributionStatus(
-				blockchain.GetDatabase(),
+			err = statedb.TrackPDEContributionStatus(
+				pdexStateDB,
 				rawdb.PDEContributionStatusPrefix,
 				[]byte(matchedNReturnedContrib.PDEContributionPairID),
 				contribStatusBytes,
@@ -271,11 +244,7 @@ func (blockchain *BlockChain) processPDEContributionV2(
 	return nil
 }
 
-func (blockchain *BlockChain) processPDETrade(
-	beaconHeight uint64,
-	instruction []string,
-	currentPDEState *CurrentPDEState,
-) error {
+func (blockchain *BlockChain) processPDETrade(pdexStateDB *statedb.StateDB, beaconHeight uint64, instruction []string, currentPDEState *CurrentPDEState) error {
 	if len(instruction) != 4 {
 		return nil // skip the instruction
 	}
@@ -291,8 +260,8 @@ func (blockchain *BlockChain) processPDETrade(
 			Logger.log.Errorf("ERROR: an error occured while unmarshaling pde trade instruction: %+v", err)
 			return nil
 		}
-		err = rawdb.TrackPDEStatus(
-			blockchain.config.DataBase,
+		err = statedb.TrackPDEStatus(
+			pdexStateDB,
 			rawdb.PDETradeStatusPrefix,
 			pdeTradeReqAction.TxReqID[:],
 			byte(common.PDETradeRefundStatus),
@@ -323,8 +292,8 @@ func (blockchain *BlockChain) processPDETrade(
 		pdePoolForPair.Token1PoolValue -= pdeTradeAcceptedContent.Token1PoolValueOperation.Value
 		pdePoolForPair.Token2PoolValue += pdeTradeAcceptedContent.Token2PoolValueOperation.Value
 	}
-	err = rawdb.TrackPDEStatus(
-		blockchain.config.DataBase,
+	err = statedb.TrackPDEStatus(
+		pdexStateDB,
 		rawdb.PDETradeStatusPrefix,
 		pdeTradeAcceptedContent.RequestedTxID[:],
 		byte(common.PDETradeAcceptedStatus),
@@ -335,28 +304,7 @@ func (blockchain *BlockChain) processPDETrade(
 	return nil
 }
 
-func deductSharesForWithdrawal(
-	beaconHeight uint64,
-	token1IDStr string,
-	token2IDStr string,
-	withdrawerAddressStr string,
-	amt uint64,
-	currentPDEState *CurrentPDEState,
-) {
-	pdeShareKey := string(rawdb.BuildPDESharesKeyV2(beaconHeight, token1IDStr, token2IDStr, withdrawerAddressStr))
-	adjustingAmt := uint64(0)
-	currentAmt, found := currentPDEState.PDEShares[pdeShareKey]
-	if found && amt <= currentAmt {
-		adjustingAmt = currentAmt - amt
-	}
-	currentPDEState.PDEShares[pdeShareKey] = adjustingAmt
-}
-
-func (blockchain *BlockChain) processPDEWithdrawal(
-	beaconHeight uint64,
-	instruction []string,
-	currentPDEState *CurrentPDEState,
-) error {
+func (blockchain *BlockChain) processPDEWithdrawal(pdexStateDB *statedb.StateDB, beaconHeight uint64, instruction []string, currentPDEState *CurrentPDEState) error {
 	if len(instruction) != 4 {
 		return nil // skip the instruction
 	}
@@ -372,8 +320,8 @@ func (blockchain *BlockChain) processPDEWithdrawal(
 			Logger.log.Errorf("ERROR: an error occured while unmarshaling pde withdrawal request action: %+v", err)
 			return nil
 		}
-		err = rawdb.TrackPDEStatus(
-			blockchain.GetDatabase(),
+		err = statedb.TrackPDEStatus(
+			pdexStateDB,
 			rawdb.PDEWithdrawalStatusPrefix,
 			pdeWithdrawalRequestAction.TxReqID[:],
 			byte(common.PDEWithdrawalRejectedStatus),
@@ -417,8 +365,8 @@ func (blockchain *BlockChain) processPDEWithdrawal(
 		currentPDEState,
 	)
 
-	err = rawdb.TrackPDEStatus(
-		blockchain.GetDatabase(),
+	err = statedb.TrackPDEStatus(
+		pdexStateDB,
 		rawdb.PDEWithdrawalStatusPrefix,
 		wdAcceptedContent.TxReqID[:],
 		byte(common.PDEWithdrawalAcceptedStatus),
@@ -427,4 +375,38 @@ func (blockchain *BlockChain) processPDEWithdrawal(
 		Logger.log.Errorf("ERROR: an error occured while tracking pde accepted withdrawal status: %+v", err)
 	}
 	return nil
+}
+
+func storePDEPoolForPair(
+	pdePoolForPairKey string,
+	token1IDStr string,
+	token1PoolValue uint64,
+	token2IDStr string,
+	token2PoolValue uint64,
+	currentPDEState *CurrentPDEState,
+) {
+	pdePoolForPair := &rawdb.PDEPoolForPair{
+		Token1IDStr:     token1IDStr,
+		Token1PoolValue: token1PoolValue,
+		Token2IDStr:     token2IDStr,
+		Token2PoolValue: token2PoolValue,
+	}
+	currentPDEState.PDEPoolPairs[pdePoolForPairKey] = pdePoolForPair
+}
+
+func deductSharesForWithdrawal(
+	beaconHeight uint64,
+	token1IDStr string,
+	token2IDStr string,
+	withdrawerAddressStr string,
+	amt uint64,
+	currentPDEState *CurrentPDEState,
+) {
+	pdeShareKey := string(rawdb.BuildPDESharesKeyV2(beaconHeight, token1IDStr, token2IDStr, withdrawerAddressStr))
+	adjustingAmt := uint64(0)
+	currentAmt, found := currentPDEState.PDEShares[pdeShareKey]
+	if found && amt <= currentAmt {
+		adjustingAmt = currentAmt - amt
+	}
+	currentPDEState.PDEShares[pdeShareKey] = adjustingAmt
 }
