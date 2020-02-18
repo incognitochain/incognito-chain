@@ -195,7 +195,7 @@ func (this *Mlsag) Sign(message string) (*Signature, error) {
 func verifyKeyImages(keyImages []privacy.Point) bool {
 	var check bool = true
 	for i := 0; i < len(keyImages); i += 1 {
-		lKI := new(privacy.Point).ScalarMult(&keyImages[i], getLEdward())
+		lKI := new(privacy.Point).ScalarMult(&keyImages[i], CurveOrder)
 		check = check && lKI.IsIdentity()
 	}
 	return check
