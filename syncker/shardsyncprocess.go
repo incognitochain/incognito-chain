@@ -52,7 +52,7 @@ func (s *ShardSyncProcess) syncShardProcess() {
 	if s.Status != RUNNING_SYNC {
 		return
 	}
-	for PeerID, pState := range s.ShardPeerState {
+	for _, pState := range s.ShardPeerState {
 		if pState.BestViewHeight < s.Chain.GetBestViewHeight() {
 			continue
 		}
@@ -60,20 +60,20 @@ func (s *ShardSyncProcess) syncShardProcess() {
 			continue
 		}
 
-		ch, stop := s.Server.RequestBlocksViaChannel(PeerID, int(s.ShardID), s.Chain.GetFinalViewHash(), s.Chain.GetBestViewHash(), pState.BestViewHash)
-		for {
-			shouldBreak := false
-			select {
-			case _ = <-ch:
-				//if err := s.Chain.InsertBlock(block); err != nil {
-				//	shouldBreak = true
-				//}
-			}
-			if shouldBreak {
-				stop <- 1
-				break
-			}
-		}
+		//ch, stop := s.Server.RequestBlocksViaChannel(PeerID, int(s.ShardID), s.Chain.GetFinalViewHash(), s.Chain.GetBestViewHash(), pState.BestViewHash)
+		//for {
+		//	shouldBreak := false
+		//	select {
+		//	case _ = <-ch:
+		//		//if err := s.Chain.InsertBlock(block); err != nil {
+		//		//	shouldBreak = true
+		//		//}
+		//	}
+		//	if shouldBreak {
+		//		stop <- 1
+		//		break
+		//	}
+		//}
 
 	}
 }

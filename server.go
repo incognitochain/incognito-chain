@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/consensus/blsbft"
 	"github.com/incognitochain/incognito-chain/syncker"
 	"io/ioutil"
 	"log"
@@ -26,7 +27,6 @@ import (
 	"google.golang.org/api/option"
 
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
-	"github.com/incognitochain/incognito-chain/consensus"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/pubsub"
@@ -79,7 +79,7 @@ type Server struct {
 	miningKeys      string
 	privateKey      string
 	wallet          *wallet.Wallet
-	consensusEngine *consensus.Engine
+	consensusEngine *blsbft.Engine
 	blockgen        *blockchain.BlockGenerator
 	pusubManager    *pubsub.PubSubManager
 	// The fee estimator keeps track of how long transactions are left in
@@ -228,7 +228,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.cNewPeers = make(chan *peer.Peer)
 	serverObj.dataBase = db
 	serverObj.memCache = memcache.New()
-	serverObj.consensusEngine = consensus.New()
+	serverObj.consensusEngine = blsbft.NewConsensusEngine(&blsbft.EngineConfig{Node: serverObj, Blockchain: serverObj.blockChain, BlockGen: serverObj.blockgen, PubSubManager: serverObj.pusubManager})
 
 	//Init channel
 	cPendingTxs := make(chan metadata.Transaction, 500)
@@ -289,16 +289,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	if err != nil {
 		return err
 	}
-	// Init consensus engine
-	err = serverObj.consensusEngine.Init(&consensus.EngineConfig{
-		Blockchain:    serverObj.blockChain,
-		Node:          serverObj,
-		BlockGen:      serverObj.blockgen,
-		PubSubManager: serverObj.pusubManager,
-	})
-	if err != nil {
-		return err
-	}
+
 	// TODO hy
 	// Connect to highway
 	Logger.log.Debug("Listenner: ", cfg.Listener)
@@ -308,8 +299,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	ip, port := peerv2.ParseListenner(cfg.Listener, "127.0.0.1", 9433)
 	host := peerv2.NewHost(version(), ip, port, cfg.Libp2pPrivateKey)
 
-	miningKeys := serverObj.consensusEngine.GetMiningPublicKeys()
-	pubkey := miningKeys[common.BlsConsensus]
+	pubkey := serverObj.consensusEngine.GetMiningPublicKeys()
 	dispatcher := &peerv2.Dispatcher{
 		MessageListeners: &peerv2.MessageListeners{
 			OnBlockShard:       serverObj.OnBlockShard,
@@ -654,7 +644,7 @@ func (serverObj *Server) Stop() error {
 		}
 	}
 
-	err := serverObj.consensusEngine.Stop("all")
+	err := serverObj.consensusEngine.Stop()
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -1778,7 +1768,7 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 	}
 
 	//
-	currentMiningKey := serverObj.consensusEngine.GetMiningPublicKeys()[serverObj.blockChain.BestState.Beacon.ConsensusAlgorithm]
+	currentMiningKey := serverObj.consensusEngine.GetMiningPublicKeys()
 	msg.(*wire.MessagePeerState).SenderMiningPublicKey, err = currentMiningKey.ToBase58()
 	if err != nil {
 		return err
@@ -2311,4 +2301,8 @@ func (serverObj *Server) GetBlocksViaChannel(sID int, fromBlockHeight, finalBloc
 	}(blockCh)
 
 	return blockCh
+}
+
+func (s *Server) GetUserMiningState() (role string, chainID int) {
+	return "", 0
 }

@@ -70,6 +70,10 @@ type BeaconBestState struct {
 	BlockMaxCreateTime time.Duration
 }
 
+func (beaconBestState *BeaconBestState) InsertBatchBlock([]common.BlockInterface) error {
+	panic("implement me")
+}
+
 func (beaconBestState *BeaconBestState) GetBestViewHeight() uint64 {
 	return beaconBestState.BeaconHeight
 }

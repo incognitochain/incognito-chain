@@ -57,12 +57,15 @@ func (s *BeaconSyncProcess) syncBeaconProcess() {
 		if pState.BestViewHeight < s.Chain.GetBestViewHeight() {
 			continue
 		}
+
 		if pState.BestViewHeight == s.Chain.GetBestViewHeight() && pState.BestViewHash == s.Chain.GetBestViewHash() {
 			continue
 		}
+
 		log.Printf("SYNCKER Request Block from %s height %d hash %s from peer", peerID, s.Chain.GetFinalViewHeight(), s.Chain.GetBestViewHash())
 		blockBuffer := make([]common.BlockInterface, 1000) //using buffer
 		ch, stop := s.Server.RequestBlocksViaChannel(peerID, -1, s.Chain.GetBestViewHeight(), s.Chain.GetFinalViewHeight(), pState.BestViewHash)
+
 		go func() {
 			for {
 				select {
