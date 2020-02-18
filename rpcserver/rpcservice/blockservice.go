@@ -713,7 +713,6 @@ func (blockService BlockService) ListRewardAmount() (map[string]map[common.Hash]
 
 func (blockService BlockService) GetRewardAmount(paymentAddress string) (map[string]uint64, error) {
 	rewardAmountResult := make(map[string]uint64)
-	rewardAmounts := make(map[common.Hash]uint64)
 	keySet, _, err := GetKeySetFromPaymentAddressParam(paymentAddress)
 	if err != nil {
 		return nil, err
@@ -737,16 +736,7 @@ func (blockService BlockService) GetRewardAmount(paymentAddress string) (map[str
 		if coinID == common.PRVCoinID {
 			rewardAmountResult["PRV"] = amount
 		} else {
-			rewardAmounts[coinID] = amount
-		}
-	}
-	privateTokenState, err := blockService.ListPrivacyCustomTokenByShardID(shardID)
-	if err != nil {
-		return nil, err
-	}
-	for _, token := range privateTokenState {
-		if rewardAmounts[token.TokenID()] > 0 {
-			rewardAmountResult[token.TokenID().String()] = rewardAmounts[token.TokenID()]
+			rewardAmountResult[coinID.String()] = amount
 		}
 	}
 	return rewardAmountResult, nil
@@ -754,7 +744,6 @@ func (blockService BlockService) GetRewardAmount(paymentAddress string) (map[str
 
 func (blockService BlockService) GetRewardAmountByPublicKey(publicKey string) (map[string]uint64, error) {
 	rewardAmountResult := make(map[string]uint64)
-	rewardAmounts := make(map[common.Hash]uint64)
 	tempPK, _, err := base58.Base58Check{}.Decode(publicKey)
 	if err != nil {
 		return nil, err
@@ -773,16 +762,7 @@ func (blockService BlockService) GetRewardAmountByPublicKey(publicKey string) (m
 		if coinID == common.PRVCoinID {
 			rewardAmountResult["PRV"] = amount
 		} else {
-			rewardAmounts[coinID] = amount
-		}
-	}
-	privateTokenState, err := blockService.ListPrivacyCustomTokenByShardID(shardID)
-	if err != nil {
-		return nil, err
-	}
-	for _, token := range privateTokenState {
-		if rewardAmounts[token.TokenID()] > 0 {
-			rewardAmountResult[token.PropertyName()] = rewardAmounts[token.TokenID()]
+			rewardAmountResult[coinID.String()] = amount
 		}
 	}
 	return rewardAmountResult, nil
