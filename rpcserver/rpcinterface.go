@@ -169,7 +169,8 @@ var HttpHandler = map[string]httpHandler{
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,
 
 	// portal
-	createAndSendTxWithCustodianDeposit:      (*HttpServer).handleCreateAndSendTxWithCustodianDeposit,
+	createAndSendTxWithCustodianDeposit: (*HttpServer).handleCreateAndSendTxWithCustodianDeposit,
+	createAndSendTxWithReqPToken:        (*HttpServer).handleCreateAndSendTxWithReqPToken,
 }
 
 // Commands that are available to a limited user

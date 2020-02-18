@@ -94,7 +94,7 @@ const (
 	EthAddrStr    = "0x0000000000000000000000000000000000000000"
 )
 
-// Bridge & PDE statuses for RPCs
+// Bridge, PDE & Portal statuses for RPCs
 const (
 	BridgeRequestNotFoundStatus   = 0
 	BridgeRequestProcessingStatus = 1
@@ -115,6 +115,9 @@ const (
 	PDEWithdrawalRejectedStatus = 2
 
 	MinTxFeesOnTokenRequirement = 10000000000000 // 10000 prv
+
+	PortalCustodianDepositAcceptedStatus = 1
+	PortalCustodianDepositRefundStatus   = 2
 )
 
 // PDE statuses for chain
@@ -130,7 +133,6 @@ const (
 	PDEWithdrawalAcceptedChainStatus = "accepted"
 	PDEWithdrawalRejectedChainStatus = "rejected"
 )
-
 
 // Portal status for chain
 const (

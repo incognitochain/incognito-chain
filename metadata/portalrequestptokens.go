@@ -28,7 +28,9 @@ type PortalRequestPTokensAction struct {
 	ShardID byte
 }
 
-func NewPortalRequestPTokens(metaType int, uniquePortingID string,
+func NewPortalRequestPTokens(
+	metaType int,
+	uniquePortingID string,
 	tokenID string,
 	incogAddressStr string,
 	portingAmount uint64,

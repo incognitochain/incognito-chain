@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/pkg/errors"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
@@ -69,7 +70,7 @@ type FinalExchangeRates struct {
 
 func NewCustodianStateKey (beaconHeight uint64, custodianAddress string) string {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
-	key := append(CustodianStatePrefix, beaconHeightBytes...)
+	key := append(PortalCustodianStatePrefix, beaconHeightBytes...)
 	key = append(key, []byte(custodianAddress)...)
 	return string(key)
 }
@@ -108,6 +109,20 @@ func NewExchangeRatesRequestKey (beaconHeight uint64, txId string, lockTime stri
 	return string(key)
 }
 
+func NewCustodianDepositKey (beaconHeight uint64, custodianAddress string) string {
+	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+	key := append(PortalCustodianDepositPrefix, beaconHeightBytes...)
+	key = append(key, []byte(custodianAddress)...)
+	return string(key)
+}
+
+func BuildCustodianDepositKey(
+	prefix []byte,
+	suffix []byte,
+) []byte {
+	return append(prefix, suffix...)
+}
+
 func (db *db) GetAllRecordsPortalByPrefix(beaconHeight uint64, prefix []byte) ([][]byte, [][]byte, error) {
 	keys := [][]byte{}
 	values := [][]byte{}
@@ -130,4 +145,14 @@ func (db *db) GetAllRecordsPortalByPrefix(beaconHeight uint64, prefix []byte) ([
 		return keys, values, database.NewDatabaseError(database.GetAllRecordsByPrefixError, err)
 	}
 	return keys, values, nil
+}
+
+func (db *db) TrackCustodianDepositCollateral(prefix []byte, suffix []byte, content []byte) error {
+	key := BuildCustodianDepositKey(prefix, suffix)
+	err := db.Put(key, content)
+	if err != nil {
+		return database.NewDatabaseError(database.TrackCustodianDepositError, errors.Wrap(err, "db.lvdb.put"))
+	}
+	return nil
+
 }

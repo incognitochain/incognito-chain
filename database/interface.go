@@ -202,4 +202,5 @@ type DatabaseInterface interface {
 
 	//portal
 	GetAllRecordsPortalByPrefix(beaconHeight uint64, prefix []byte) ([][]byte, [][]byte, error)
+	TrackCustodianDepositCollateral(key []byte, value []byte) error
 }

@@ -80,22 +80,22 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 	if len(instructions) !=  4 {
 		return nil  // skip the instruction
 	}
+	db := blockchain.GetDatabase()
+
+	// unmarshal instructions content
+	var actionData metadata.PortalCustodianDepositContent
+	err := json.Unmarshal([]byte(instructions[3]), &actionData)
+	if err != nil {
+		return err
+	}
 
 	depositStatus := instructions[2]
-	if depositStatus ==common.PortalCustodianDepositAcceptedChainStatus {
-		// unmarshal instructions content
-		var actionData metadata.PortalCustodianDepositAction
-		err := json.Unmarshal([]byte(instructions[3]), &actionData)
-		if err != nil {
-			return err
-		}
-
-		meta := actionData.Meta
-		keyCustodianState := lvdb.NewCustodianStateKey(beaconHeight, meta.IncogAddressStr)
-
+	if depositStatus == common.PortalCustodianDepositAcceptedChainStatus {
+		keyCustodianState := lvdb.NewCustodianStateKey(beaconHeight, actionData.IncogAddressStr)
+		// update custodian state
 		if currentPortalState.CustodianPoolState[keyCustodianState] == nil {
 			// new custodian
-			newCustodian, err := NewCustodianState(meta.IncogAddressStr, meta.DepositedAmount, meta.DepositedAmount, nil, nil, meta.RemoteAddresses)
+			newCustodian, err := NewCustodianState(actionData.IncogAddressStr, actionData.DepositedAmount, actionData.DepositedAmount, nil, nil, actionData.RemoteAddresses)
 			if err != nil {
 				return err
 			}
@@ -103,26 +103,60 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 		} else {
 			// custodian deposited before
 			// update state of the custodian
-			custodian := currentPortalState.CustodianPoolState[meta.IncogAddressStr]
-			totalCollateral := custodian.TotalCollateral + meta.DepositedAmount
-			freeCollateral := custodian.FreeCollateral + meta.DepositedAmount
+			custodian := currentPortalState.CustodianPoolState[keyCustodianState]
+			totalCollateral := custodian.TotalCollateral + actionData.DepositedAmount
+			freeCollateral := custodian.FreeCollateral + actionData.DepositedAmount
 			holdingPubTokens := custodian.HoldingPubTokens
 			lockedAmountCollateral := custodian.LockedAmountCollateral
 			remoteAddresses := custodian.RemoteAddresses
-			for tokenSymbol, address := range meta.RemoteAddresses {
+			for tokenSymbol, address := range actionData.RemoteAddresses {
 				if remoteAddresses[tokenSymbol] == "" {
 					remoteAddresses[tokenSymbol] = address
 				}
 			}
 
-			newCustodian, err := NewCustodianState(meta.IncogAddressStr, totalCollateral, freeCollateral, holdingPubTokens, lockedAmountCollateral, remoteAddresses)
+			newCustodian, err := NewCustodianState(actionData.IncogAddressStr, totalCollateral, freeCollateral, holdingPubTokens, lockedAmountCollateral, remoteAddresses)
 			if err != nil {
 				return err
 			}
 			currentPortalState.CustodianPoolState[keyCustodianState] = newCustodian
 		}
+
+		// track custodian deposit at beaconHeight + 1 into DB
+		custodianDepositTrackKey := lvdb.NewCustodianDepositKey(beaconHeight + 1, actionData.IncogAddressStr)
+		custodianDepositTrackData := metadata.PortalCustodianDepositStatus{
+			Status: common.PortalCustodianDepositAcceptedStatus,
+			DepositedAmount : actionData.DepositedAmount,
+			TxReqID: actionData.TxReqID,
+		}
+
+		custodianDepositDataBytes, _ := json.Marshal(custodianDepositTrackData)
+		err = db.TrackCustodianDepositCollateral(
+			[]byte(custodianDepositTrackKey),
+			custodianDepositDataBytes,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while tracking custodian deposit collateral: %+v", err)
+			return nil
+		}
 	} else if depositStatus == common.PortalCustodianDepositRefundChainStatus {
-		//todo
+		// track custodian deposit at beaconHeight + 1 into DB
+		custodianDepositTrackKey := lvdb.NewCustodianDepositKey(beaconHeight + 1, actionData.IncogAddressStr)
+		custodianDepositTrackData := metadata.PortalCustodianDepositStatus{
+			Status: common.PortalCustodianDepositRefundStatus,
+			DepositedAmount : actionData.DepositedAmount,
+			TxReqID: actionData.TxReqID,
+		}
+
+		custodianDepositDataBytes, _ := json.Marshal(custodianDepositTrackData)
+		err = db.TrackCustodianDepositCollateral(
+			[]byte(custodianDepositTrackKey),
+			custodianDepositDataBytes,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while tracking custodian deposit collateral: %+v", err)
+			return nil
+		}
 	}
 
 	return nil

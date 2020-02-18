@@ -66,6 +66,7 @@ func NewExchangeRatesState(
 	}, nil
 }
 
+//todo: need to be updated, get all porting/redeem requests from DB
 func InitCurrentPortalStateFromDB(
 	db database.DatabaseInterface,
 	beaconHeight uint64,
@@ -234,7 +235,7 @@ func getCustodianPoolState(
 	beaconHeight uint64,
 ) (map[string]*lvdb.CustodianState, error) {
 		custodianPoolState := make(map[string]*lvdb.CustodianState)
-		custodianPoolStateKeysBytes, custodianPoolStateValuesBytes, err := db.GetAllRecordsPortalByPrefix(beaconHeight, lvdb.CustodianStatePrefix)
+		custodianPoolStateKeysBytes, custodianPoolStateValuesBytes, err := db.GetAllRecordsPortalByPrefix(beaconHeight, lvdb.PortalCustodianStatePrefix)
 		if err != nil {
 			return nil, err
 		}
@@ -333,3 +334,4 @@ func getPubTokenByTotalCollateral(total uint64, exchangeRate uint64) (uint64, er
 
 	return pubTokenByCollateral, nil
 }
+
