@@ -111,7 +111,7 @@ func (blockchain *BlockChain) initChainStateV2() error {
 func (blockchain *BlockChain) initBeaconStateV2() error {
 	blockchain.BestState.Beacon = NewBeaconBestStateWithConfig(blockchain.config.ChainParams)
 	initBlock := blockchain.config.ChainParams.GenesisBeaconBlock
-	err := blockchain.BestState.Beacon.initBeaconBestStateV2(initBlock, blockchain.GetDatabase())
+	err := blockchain.BestState.Beacon.initBeaconBestState(initBlock, blockchain.GetDatabase())
 	if err != nil {
 		return err
 	}
@@ -196,13 +196,13 @@ func (blockchain *BlockChain) initShardStateV2(shardID byte) error {
 	if err != nil {
 		return NewBlockChainError(FetchBeaconBlockError, err)
 	}
-	err = blockchain.BestState.Shard[shardID].initShardBestStateV2(blockchain, blockchain.GetDatabase(), &initShardBlock, genesisBeaconBlock)
+	err = blockchain.BestState.Shard[shardID].initShardBestState(blockchain, blockchain.GetDatabase(), &initShardBlock, genesisBeaconBlock)
 	if err != nil {
 		return err
 	}
 	committeeChange := newCommitteeChange()
 	committeeChange.shardCommitteeAdded[shardID] = tempShardBestState.GetShardCommittee()
-	err = blockchain.processStoreShardBlockV2(&initShardBlock, committeeChange)
+	err = blockchain.processStoreShardBlock(&initShardBlock, committeeChange)
 	if err != nil {
 		return err
 	}
