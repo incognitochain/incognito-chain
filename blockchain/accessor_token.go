@@ -13,6 +13,7 @@ func (blockchain *BlockChain) ListPrivacyCustomTokenV2(shardID byte) (map[common
 	if err != nil {
 		return nil, err
 	}
+	delete(tokenStates, common.PRVCoinID)
 	return tokenStates, nil
 }
 func (blockchain *BlockChain) GetAllCoinIDV2(shardID byte) ([]common.Hash, error) {

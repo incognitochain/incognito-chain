@@ -72,4 +72,5 @@ const (
 	InitToken = iota
 	CrossShardToken
 	BridgeToken
+	UnknownToken
 )

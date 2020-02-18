@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"log"
 	"strconv"
 
@@ -578,8 +579,20 @@ func (blockService BlockService) ListPrivacyCustomToken() (map[common.Hash]*stat
 		if err != nil {
 			return nil, err
 		}
-		for k, v := range m {
-			tokenStates[k] = v
+		for newK, newV := range m {
+			if v, ok := tokenStates[newK]; !ok {
+				tokenStates[newK] = newV
+			} else {
+				if v.PropertyName() == "" && newV.PropertyName() != "" {
+					v.SetPropertyName(newV.PropertyName())
+					tokenStates[newK] = v
+				}
+				v = tokenStates[newK]
+				if v.PropertySymbol() == "" && newV.PropertySymbol() != "" {
+					v.SetPropertySymbol(newV.PropertySymbol())
+					tokenStates[newK] = v
+				}
+			}
 		}
 	}
 	return tokenStates, nil
@@ -881,10 +894,9 @@ func (blockService BlockService) GetBridgeReqWithStatus(txID string) (byte, erro
 	return status, err
 }
 
-func (blockService BlockService) GetAllBridgeTokens() ([]byte, error) {
-	bridgeStateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
-	allBridgeTokensBytes, err := statedb.GetAllBridgeTokens(bridgeStateDB)
-	return allBridgeTokensBytes, err
+func (blockService BlockService) GetAllBridgeTokens() ([]*rawdb.BridgeTokenInfo, error) {
+	_, bridgeTokenInfos, err := blockService.BlockChain.GetAllBridgeTokens()
+	return bridgeTokenInfos, err
 }
 
 func (blockService BlockService) CheckETHHashIssued(data map[string]interface{}) (bool, error) {
