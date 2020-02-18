@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -274,13 +273,7 @@ func (httpServer *HttpServer) handleCheckETHHashIssued(params interface{}, close
 }
 
 func (httpServer *HttpServer) handleGetAllBridgeTokens(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	allBridgeTokensBytes, err := httpServer.blockService.GetAllBridgeTokens()
-	if err != nil {
-		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-
-	var allBridgeTokens []*rawdb.BridgeTokenInfo
-	err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
+	allBridgeTokens, err := httpServer.blockService.GetAllBridgeTokens()
 	if err != nil {
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}

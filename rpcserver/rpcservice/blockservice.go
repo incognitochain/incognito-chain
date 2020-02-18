@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"log"
 	"strconv"
 
@@ -881,10 +882,9 @@ func (blockService BlockService) GetBridgeReqWithStatus(txID string) (byte, erro
 	return status, err
 }
 
-func (blockService BlockService) GetAllBridgeTokens() ([]byte, error) {
-	bridgeStateDB := blockService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
-	allBridgeTokensBytes, err := statedb.GetAllBridgeTokens(bridgeStateDB)
-	return allBridgeTokensBytes, err
+func (blockService BlockService) GetAllBridgeTokens() ([]*rawdb.BridgeTokenInfo, error) {
+	_, bridgeTokenInfos, err := blockService.BlockChain.GetAllBridgeTokens()
+	return bridgeTokenInfos, err
 }
 
 func (blockService BlockService) CheckETHHashIssued(data map[string]interface{}) (bool, error) {

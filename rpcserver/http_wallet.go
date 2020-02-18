@@ -7,7 +7,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
@@ -312,12 +311,7 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 		result.ListCustomToken = append(result.ListCustomToken, *item)
 	}
 	// overwrite amounts with bridge tokens
-	allBridgeTokensBytes, err := httpServer.blockService.GetAllBridgeTokens()
-	if err != nil {
-		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	var allBridgeTokens []*rawdb.BridgeTokenInfo
-	err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
+	allBridgeTokens, err := httpServer.blockService.GetAllBridgeTokens()
 	if err != nil {
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
