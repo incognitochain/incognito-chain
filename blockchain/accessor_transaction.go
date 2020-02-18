@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -83,7 +82,7 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 	payToAddress *privacy.PaymentAddress,
 	amount uint64,
 	payByPrivateKey *privacy.PrivateKey,
-	stateDB *statedb.StateDB,
+	transactionStateDB *statedb.StateDB,
 	meta metadata.Metadata,
 	coinID common.Hash,
 	shardID byte,
@@ -93,36 +92,15 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 		txType = transaction.NormalCoinType
 	}
 	if txType == -1 {
-		allBridgeTokensBytes, err := rawdb.GetAllBridgeTokens(blockchain.config.DataBase)
+		tokenIDs, err := blockchain.GetAllCoinIDV2(shardID)
 		if err != nil {
 			return nil, err
 		}
-		var allBridgeTokens []*rawdb.BridgeTokenInfo
-		err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
-
-		if err != nil {
-			return nil, err
-		}
-		for _, bridgeTokenIDs := range allBridgeTokens {
-			if res, err := coinID.Cmp(bridgeTokenIDs.TokenID); err == nil && res == 0 {
+		// coinID must not equal to PRVCoinID
+		for _, tokenID := range tokenIDs {
+			if res, err := coinID.Cmp(&tokenID); err == nil && res == 0 {
 				txType = transaction.CustomTokenPrivacyType
 				break
-			}
-		}
-	}
-	if txType == -1 {
-		mapPrivacyCustomToken, mapCrossShardCustomToken, err := blockchain.ListPrivacyCustomToken()
-		if err != nil {
-			return nil, err
-		}
-		if mapPrivacyCustomToken != nil {
-			if _, ok := mapPrivacyCustomToken[coinID]; ok {
-				txType = transaction.CustomTokenPrivacyType
-			}
-		}
-		if mapCrossShardCustomToken != nil {
-			if _, ok := mapCrossShardCustomToken[coinID]; ok {
-				txType = transaction.CustomTokenPrivacyType
 			}
 		}
 	}
@@ -132,7 +110,7 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 	buildCoinBaseParams := transaction.NewBuildCoinBaseTxByCoinIDParams(payToAddress,
 		amount,
 		payByPrivateKey,
-		stateDB,
+		transactionStateDB,
 		meta,
 		coinID,
 		txType,
@@ -294,14 +272,9 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlockV2(shardBlock *Sh
 			return err
 		}
 	}
-	var allBridgeTokens []*rawdb.BridgeTokenInfo
-	var err error
-	allBridgeTokensBytes, err := statedb.GetAllBridgeTokens(beaconFeatureStateRoot)
+	_, allBridgeTokens, err := blockchain.GetAllBridgeTokens()
 	if err != nil {
 		return err
-	}
-	if len(allBridgeTokensBytes) > 0 {
-		err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
 	}
 	view := NewTxViewPoint(shardBlock.Header.ShardID)
 	err = view.fetchTxViewPointFromBlockV2(transactionStateRoot, shardBlock)
