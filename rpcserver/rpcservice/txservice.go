@@ -567,6 +567,7 @@ func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 				for _, bridgeToken := range allBridgeTokens {
 					if bridgeToken.TokenID.IsEqual(tokenID) {
 						isBridgeToken = true
+						break
 					}
 				}
 				if !isBridgeToken {
