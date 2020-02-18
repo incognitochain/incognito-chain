@@ -451,7 +451,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 		}
 	}
 	// build stateful instructions
-	statefulInsts := blockchain.buildStatefulInstructionsV2(blockchain.BestState.Beacon.featureStateDB, statefulActionsByShardID, beaconBlock.Header.Height)
+	statefulInsts := blockchain.buildStatefulInstructions(blockchain.BestState.Beacon.featureStateDB, statefulActionsByShardID, beaconBlock.Header.Height)
 	bridgeInstructions = append(bridgeInstructions, statefulInsts...)
 	tempInstruction, err := blockchain.BestState.Beacon.GenerateInstruction(beaconBlock.Header.Height,
 		stakeInstructions, swapInstructions, stopAutoStakingInstructions,
@@ -1197,7 +1197,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(beaconBlock *BeaconBlock, 
 		return NewBlockChainError(ProcessBridgeInstructionError, err)
 	}
 	// execute, store
-	err = blockchain.processPDEInstructionsV2(tempBeaconBestState.featureStateDB, beaconBlock)
+	err = blockchain.processPDEInstructions(tempBeaconBestState.featureStateDB, beaconBlock)
 	if err != nil {
 		return NewBlockChainError(ProcessPDEInstructionError, err)
 	}

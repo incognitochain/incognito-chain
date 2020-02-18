@@ -488,7 +488,7 @@ func (httpServer *HttpServer) handleGetPDEState(params interface{}, closeChan <-
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-	pdeState, err := blockchain.InitCurrentPDEStateFromDBV2(featureStateDB, uint64(beaconHeight))
+	pdeState, err := blockchain.InitCurrentPDEStateFromDB(featureStateDB, uint64(beaconHeight))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
@@ -923,7 +923,7 @@ func (httpServer *HttpServer) handleConvertPDEPrices(params interface{}, closeCh
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-	pdeState, err := blockchain.InitCurrentPDEStateFromDBV2(featureStateDB, latestBeaconHeight)
+	pdeState, err := blockchain.InitCurrentPDEStateFromDB(featureStateDB, latestBeaconHeight)
 	if err != nil || pdeState == nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}

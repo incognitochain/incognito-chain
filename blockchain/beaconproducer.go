@@ -311,7 +311,7 @@ func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestS
 		}
 	}
 	// build stateful instructions
-	statefulInsts := blockGenerator.chain.buildStatefulInstructionsV2(beaconBestState.featureStateDB, statefulActionsByShardID, beaconBestState.BeaconHeight+1)
+	statefulInsts := blockGenerator.chain.buildStatefulInstructions(beaconBestState.featureStateDB, statefulActionsByShardID, beaconBestState.BeaconHeight+1)
 	bridgeInstructions = append(bridgeInstructions, statefulInsts...)
 	return shardStates, validStakeInstructions, validSwapInstructions, bridgeInstructions, acceptedRewardInstructions, validStopAutoStakingInstructions
 }

@@ -3,13 +3,13 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"math/big"
 	"sort"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
@@ -59,12 +59,8 @@ func groupPDEActionsByShardID(
 	return pdeActionsByShardID
 }
 
-func (blockchain *BlockChain) buildStatefulInstructions(
-	statefulActionsByShardID map[byte][][]string,
-	beaconHeight uint64,
-	db incdb.Database,
-) [][]string {
-	currentPDEState, err := InitCurrentPDEStateFromDB(db, beaconHeight-1)
+func (blockchain *BlockChain) buildStatefulInstructions(stateDB *statedb.StateDB, statefulActionsByShardID map[byte][][]string, beaconHeight uint64) [][]string {
+	currentPDEState, err := InitCurrentPDEStateFromDB(stateDB, beaconHeight-1)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -95,10 +91,10 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			newInst := [][]string{}
 			switch metaType {
 			case metadata.IssuingRequestMeta:
-				newInst, err = blockchain.buildInstructionsForIssuingReq(contentStr, shardID, metaType, accumulatedValues)
+				newInst, err = blockchain.buildInstructionsForIssuingReqV2(stateDB, contentStr, shardID, metaType, accumulatedValues)
 
 			case metadata.IssuingETHRequestMeta:
-				newInst, err = blockchain.buildInstructionsForIssuingETHReq(contentStr, shardID, metaType, accumulatedValues)
+				newInst, err = blockchain.buildInstructionsForIssuingETHReqV2(stateDB, contentStr, shardID, metaType, accumulatedValues)
 
 			case metadata.PDEContributionMeta:
 				pdeContributionActionsByShardID = groupPDEActionsByShardID(
