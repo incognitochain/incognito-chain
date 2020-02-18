@@ -575,6 +575,7 @@ func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 					}
 				}
 				if !isBridgeToken {
+					// totally invalid token
 					return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
 				}
 				//return nil, nil, nil, NewRPCError(BuildPrivacyTokenParamError, err)
