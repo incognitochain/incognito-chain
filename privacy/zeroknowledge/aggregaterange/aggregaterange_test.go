@@ -9,6 +9,7 @@ import (
 	"log"
 	"math/rand"
 	"testing"
+	"time"
 )
 
 func TestMain(m *testing.M) {
@@ -146,11 +147,77 @@ func TestAggregatedRangeProveVerify(t *testing.T) {
 		assert.Equal(t, true, res)
 		assert.Equal(t, nil, err)
 	}
+}
 
+func TestAggregatedRangeProveVerifyUltraFast(t *testing.T) {
+	count := 10
+	proofs := make([]*AggregatedRangeProof, 0)
+
+	for i := 0; i < count; i++ {
+		//prepare witness for Aggregated range protocol
+		wit := new(AggregatedRangeWitness)
+		numValue := rand.Intn(maxOutputNumber)
+		values := make([]uint64, numValue)
+		rands := make([]*privacy.Scalar, numValue)
+
+		for i := range values {
+			values[i] = uint64(rand.Uint64())
+			rands[i] = privacy.RandomScalar()
+		}
+		wit.Set(values, rands)
+
+		// proving
+		proof, err := wit.Prove()
+		assert.Equal(t, nil, err)
+
+		proofs = append(proofs, proof)
+	}
+	// verify the proof faster
+	res, err := BPVerifyUltraFast(proofs)
+	assert.Equal(t, true, res)
+	assert.Equal(t, nil, err)
+}
+
+func TestBenchamrkAggregatedRangeProveVerifyUltraFast(t *testing.T) {
+	count := 50
+	proofs := make([]*AggregatedRangeProof, 0)
+	start := time.Now()
+	t1 := time.Now().Sub(start)
+	for i := 0; i < count; i++ {
+		//prepare witness for Aggregated range protocol
+		wit := new(AggregatedRangeWitness)
+		numValue := rand.Intn(maxOutputNumber)
+		//numValue := 2
+		values := make([]uint64, numValue)
+		rands := make([]*privacy.Scalar, numValue)
+
+		for i := range values {
+			values[i] = uint64(rand.Uint64())
+			rands[i] = privacy.RandomScalar()
+		}
+		wit.Set(values, rands)
+
+		// proving
+		proof, err := wit.Prove()
+		assert.Equal(t, nil, err)
+		start := time.Now()
+		proof.VerifyFaster()
+		t1 += time.Now().Sub(start)
+
+		proofs = append(proofs, proof)
+	}
+	// verify the proof faster
+	fmt.Println("Verify Faster:", t1)
+	start = time.Now()
+	res, err := BPVerifyUltraFast(proofs)
+	fmt.Println("Ultra Farst:", time.Now().Sub(start))
+
+	assert.Equal(t, true, res)
+	assert.Equal(t, nil, err)
 }
 
 func TestInnerProductProveVerify(t *testing.T) {
-	for k := 0; k < 10; k++ {
+	for k := 0; k < 1; k++ {
 		numValue := rand.Intn(maxOutputNumber)
 		numValuePad := pad(numValue)
 		aggParam := new(bulletproofParams)
@@ -165,10 +232,8 @@ func TestInnerProductProveVerify(t *testing.T) {
 		wit.b = make([]*privacy.Scalar, n)
 
 		for i := range wit.a {
-			//wit.a[i] = privacy.RandomScalar()
-			//wit.b[i] = privacy.RandomScalar()
-			wit.a[i] = new(privacy.Scalar).FromUint64(uint64(rand.Intn(100000)))
-			wit.b[i] = new(privacy.Scalar).FromUint64(uint64(rand.Intn(100000)))
+			wit.a[i] = new(privacy.Scalar).FromUint64(uint64(rand.Intn(1000000)))
+			wit.b[i] = new(privacy.Scalar).FromUint64(uint64(rand.Intn(1000000)))
 		}
 
 		c, err := innerProduct(wit.a, wit.b)
@@ -200,9 +265,70 @@ func TestInnerProductProveVerify(t *testing.T) {
 		assert.Equal(t, true, res3)
 		res3prime := proof2.Verify(aggParam)
 		assert.Equal(t, true, res3prime)
+
 	}
 }
 
+func TestInnerProductProveVerifyUltraFast(t *testing.T) {
+	proofs := make([]*InnerProductProof, 0)
+	csList := make([][]byte, 0)
+	count := 15
+	for k := 0; k < count; k++ {
+		numValue := rand.Intn(maxOutputNumber)
+		numValuePad := pad(numValue)
+		aggParam := new(bulletproofParams)
+		aggParam.g = AggParam.g[0 : numValuePad*maxExp]
+		aggParam.h = AggParam.h[0 : numValuePad*maxExp]
+		aggParam.u = AggParam.u
+		aggParam.cs = AggParam.cs
+
+		wit := new(InnerProductWitness)
+		n := maxExp * numValuePad
+		wit.a = make([]*privacy.Scalar, n)
+		wit.b = make([]*privacy.Scalar, n)
+
+		for i := range wit.a {
+			wit.a[i] = new(privacy.Scalar).FromUint64(uint64(rand.Intn(1000000)))
+			wit.b[i] = new(privacy.Scalar).FromUint64(uint64(rand.Intn(1000000)))
+		}
+
+		c, err := innerProduct(wit.a, wit.b)
+		if err != nil {
+			privacy.Logger.Log.Info("Err: %v\n", err)
+		}
+		if k == 0 {
+			wit.p = new(privacy.Point).ScalarMult(aggParam.u, c.Add(c, new(privacy.Scalar).FromUint64(1)))
+		} else {
+			wit.p = new(privacy.Point).ScalarMult(aggParam.u, c)
+		}
+
+
+		for i := range wit.a {
+			wit.p.Add(wit.p, new(privacy.Point).ScalarMult(aggParam.g[i], wit.a[i]))
+			if k == count -1 {
+				wit.p.Add(wit.p, new(privacy.Point).ScalarMult(aggParam.h[i], wit.a[i]))
+			} else {
+				wit.p.Add(wit.p, new(privacy.Point).ScalarMult(aggParam.h[i], wit.b[i]))
+			}
+		}
+
+		proof, err := wit.Prove(aggParam)
+		if err != nil {
+			fmt.Printf("Err: %v\n", err)
+			return
+		}
+		proofs = append(proofs, proof)
+		csList = append(csList, aggParam.cs)
+	}
+	res := VerifyUltraFast(proofs, csList)
+	assert.Equal(t, false, res)
+	res = VerifyUltraFast(proofs[1:], csList[1:])
+	assert.Equal(t, false, res)
+	res = VerifyUltraFast(proofs[:len(proofs)-1], csList[:len(proofs)-1])
+	assert.Equal(t, false, res)
+	res = VerifyUltraFast(proofs[1:len(proofs)-1], csList[1:len(proofs)-1])
+	assert.Equal(t, true	, res)
+}
 func benchmarkAggRangeProof_Proof(numberofOutput int, b *testing.B) {
 	wit := new(AggregatedRangeWitness)
 	values := make([]uint64, numberofOutput)

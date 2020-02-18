@@ -1058,6 +1058,34 @@ func (tx Tx) ValidateTxByItself(
 	return true, nil
 }
 
+func ValidateTxBatchByItself(txList []*Tx, db database.DatabaseInterface, bcr metadata.BlockchainRetriever) (bool, error) {
+	prvCoinID := &common.Hash{}
+	err := prvCoinID.SetBytes(common.PRVCoinID[:])
+	if err != nil {
+		return false, err
+	}
+	for _, tx := range txList {
+		if tx.Metadata != nil {
+			if tx.IsPrivacy() {
+				return false, errors.New("Metadata can not exist in not privacy tx")
+			}
+			validateMetadata := tx.Metadata.ValidateMetadataByItself()
+			if validateMetadata {
+				return validateMetadata, nil
+			} else {
+				return validateMetadata, NewTransactionErr(UnexpectedError, errors.New("Metadata is invalid"))
+			}
+		}
+
+		ok, err := ValidateBatchTx(txList, db, prvCoinID)
+		if !ok {
+			return false, err
+		}
+	}
+
+	return true, nil
+}
+
 // GetMetadataType returns the type of underlying metadata if is existed
 func (tx Tx) GetMetadataType() int {
 	if tx.Metadata != nil {
