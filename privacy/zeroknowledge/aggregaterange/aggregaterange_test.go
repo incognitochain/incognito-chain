@@ -139,7 +139,7 @@ func TestAggregatedRangeProveVerify(t *testing.T) {
 	}
 }
 
-func TestAggregatedRangeProveVerifyUltraFast(t *testing.T) {
+func TestAggregatedRangeProveVerifyBatching(t *testing.T) {
 	count := 10
 	proofs := make([]*AggregatedRangeProof, 0)
 
@@ -168,7 +168,7 @@ func TestAggregatedRangeProveVerifyUltraFast(t *testing.T) {
 	assert.Equal(t, nil, err)
 }
 
-func TestBenchmarkAggregatedRangeProveVerifyUltraFast(t *testing.T) {
+func TestBenchmarkAggregatedRangeProveVerifyBatching(t *testing.T) {
 	count := 50
 	proofs := make([]*AggregatedRangeProof, 0)
 	start := time.Now()
@@ -250,7 +250,7 @@ func TestInnerProductProveVerify(t *testing.T) {
 	}
 }
 
-func TestInnerProductProveVerifyUltraFast(t *testing.T) {
+func TestInnerProductProveVerifyBatching(t *testing.T) {
 	proofs := make([]*InnerProductProof, 0)
 	csList := make([][]byte, 0)
 	count := 15
@@ -327,7 +327,7 @@ func benchmarkAggRangeProof_Proof(numberofOutput int, b *testing.B) {
 	}
 }
 
-func TestAnStrictInnerProductProveVerifyUltraFast(t *testing.T) {
+func TestAnStrictInnerProductProveVerifyBatching(t *testing.T) {
 	proofs := make([]*InnerProductProof, 0)
 	csList := make([][]byte, 0)
 	count := 5
