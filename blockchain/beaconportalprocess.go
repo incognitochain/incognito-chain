@@ -24,11 +24,14 @@ func (blockchain *BlockChain) processPortalInstructions(block *BeaconBlock, bd *
 		Logger.log.Error(err)
 		return nil
 	}
+
 	for _, inst := range block.Body.Instructions {
 		if len(inst) < 2 {
 			continue // Not error, just not Portal instruction
 		}
+
 		var err error
+
 		switch inst[0] {
 		case strconv.Itoa(metadata.PortalCustodianDepositMeta):
 			err = blockchain.processPortalCustodianDeposit(beaconHeight, inst, currentPortalState)
@@ -36,6 +39,8 @@ func (blockchain *BlockChain) processPortalInstructions(block *BeaconBlock, bd *
 			err = blockchain.processPortalUserRegister(beaconHeight, inst, currentPortalState)
 		case strconv.Itoa(metadata.PortalUserRequestPTokenMeta):
 			err = blockchain.processPortalUserReqPToken(beaconHeight, inst, currentPortalState)
+		case strconv.Itoa(metadata.PortalExchangeRatesMeta):
+			err = blockchain.processPortalExchangeRates(beaconHeight, inst, currentPortalState)
 		}
 
 		if err != nil {
@@ -47,11 +52,22 @@ func (blockchain *BlockChain) processPortalInstructions(block *BeaconBlock, bd *
 	//todo: check timeout register porting via beacon height
 	// all request timeout ? unhold
 
+	//save exchangeRates
+	if len(currentPortalState.ExchangeRatesRequests) > 0 {
+		err = blockchain.pickExchangesRatesFinal(db, beaconHeight, currentPortalState)
+
+		if err != nil {
+			Logger.log.Error(err)
+			return nil
+		}
+	}
+
 	// store updated currentPortalState to leveldb with new beacon height
 	err = storePortalStateToDB(db, beaconHeight+1, currentPortalState)
 	if err != nil {
 		Logger.log.Error(err)
 	}
+
 	return nil
 }
 
@@ -234,6 +250,7 @@ func pickCustodian(metadata metadata.PortalPortingRequestContent, exchangeRate u
 		Value *lvdb.CustodianState
 	}
 
+	//convert to slice
 	var sortCustodianStateByFreeCollateral []custodianStateSlice
 	for k, v := range custodianState {
 		_, tokenIdExist := v.RemoteAddresses[metadata.PTokenId]
@@ -412,4 +429,140 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 
 
 	return nil
+}
+
+func (blockchain *BlockChain) processPortalExchangeRates(beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
+
+	// parse instruction
+	var portingExchangeRatesContent metadata.PortalExchangeRatesContent
+	err := json.Unmarshal([]byte(instructions[3]), &portingExchangeRatesContent)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while unmarshaling content string of portal exchange rates instruction: %+v", err)
+		return nil
+	}
+
+	exchangeRatesKey := lvdb.NewExchangeRatesRequestKey(
+		beaconHeight, portingExchangeRatesContent.TxReqID.String(),
+		strconv.FormatInt(portingExchangeRatesContent.LockTime, 10),
+		)
+
+    //todo: check exist key
+    exchangeRatesDetail := make(map[string]lvdb.ExchangeRatesDetail)
+    for pTokenId, rates := range portingExchangeRatesContent.Rates {
+		exchangeRatesDetail[pTokenId] = lvdb.ExchangeRatesDetail {
+			Amount: rates.Amount,
+		}
+	}
+
+	if currentPortalState.ExchangeRatesRequests[exchangeRatesKey] == nil {
+		// new custodian
+		// new request
+		newExchangeRates, err := NewExchangeRatesState(
+			portingExchangeRatesContent.SenderAddress,
+			exchangeRatesDetail,
+		)
+
+		if err != nil {
+			return err
+		}
+
+		currentPortalState.ExchangeRatesRequests[exchangeRatesKey] = newExchangeRates
+		return nil
+	}
+
+	Logger.log.Errorf("ERROR: exchange rates request id is duplicate")
+	return nil
+}
+
+func (blockchain *BlockChain) pickExchangesRatesFinal(db database.DatabaseInterface, beaconHeight uint64, currentPortalState *CurrentPortalState) error  {
+
+	//convert to slice
+	var btcExchangeRatesSlice []uint64
+	var bnbExchangeRatesSlice []uint64
+	var prvExchangeRatesSlice []uint64
+	for _, v := range currentPortalState.ExchangeRatesRequests {
+		for key, rates := range v.Rates {
+			switch key {
+			case "BTC":
+				btcExchangeRatesSlice = append(btcExchangeRatesSlice, rates.Amount)
+				break
+			case "BNB":
+				bnbExchangeRatesSlice = append(bnbExchangeRatesSlice, rates.Amount)
+				break
+			case "PRV":
+				prvExchangeRatesSlice = append(prvExchangeRatesSlice, rates.Amount)
+				break
+			}
+		}
+	}
+
+	exchangeRatesPreState, err := getFinalExchangeRatesPreState(db, beaconHeight - 1)
+
+	if err != nil {
+		return  err
+	}
+
+	//sort
+	sort.SliceStable(btcExchangeRatesSlice, func(i, j int) bool {
+		return btcExchangeRatesSlice[i] < btcExchangeRatesSlice[j]
+	})
+
+	exchangeRatesList := make(map[string]lvdb.FinalExchangeRatesDetail)
+	if len(btcExchangeRatesSlice) > 0 {
+		exchangeRatesList["BTC"] = lvdb.FinalExchangeRatesDetail{
+			Amount: calcMedian(btcExchangeRatesSlice),
+		}
+	} else {
+		preExchangeRates := exchangeRatesPreState[string(beaconHeight - 1)].Rates["BTC"]
+		exchangeRatesList["BTC"] = lvdb.FinalExchangeRatesDetail{
+			Amount: preExchangeRates.Amount,
+		}
+	}
+
+	sort.SliceStable(bnbExchangeRatesSlice, func(i, j int) bool {
+		return bnbExchangeRatesSlice[i] < bnbExchangeRatesSlice[j]
+	})
+
+	if len(bnbExchangeRatesSlice) > 0 {
+		exchangeRatesList["BNB"] = lvdb.FinalExchangeRatesDetail{
+			Amount: calcMedian(bnbExchangeRatesSlice),
+		}
+	} else {
+		preExchangeRates := exchangeRatesPreState[string(beaconHeight - 1)].Rates["BNB"]
+		exchangeRatesList["BNB"] = lvdb.FinalExchangeRatesDetail{
+			Amount: preExchangeRates.Amount,
+		}
+	}
+
+	sort.SliceStable(prvExchangeRatesSlice, func(i, j int) bool {
+		return prvExchangeRatesSlice[i] < prvExchangeRatesSlice[j]
+	})
+
+	if len(prvExchangeRatesSlice) > 0 {
+		exchangeRatesList["PRV"] = lvdb.FinalExchangeRatesDetail{
+			Amount: calcMedian(prvExchangeRatesSlice),
+		}
+	} else {
+		preExchangeRates := exchangeRatesPreState[string(beaconHeight - 1)].Rates["PRV"]
+		exchangeRatesList["PRV"] = lvdb.FinalExchangeRatesDetail{
+			Amount: preExchangeRates.Amount,
+		}
+	}
+
+	newFinalExchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
+	currentPortalState.FinalExchangeRates[newFinalExchangeRatesKey] = &lvdb.FinalExchangeRates{
+		Rates: exchangeRatesList,
+	}
+
+	return nil
+}
+
+func calcMedian(ratesList []uint64) uint64 {
+	mNumber := len(ratesList) / 2
+
+	if len(ratesList) % 2 == 0 {
+		return (ratesList[mNumber-1] + ratesList[mNumber]) / 2
+	}
+
+	return ratesList[mNumber]
 }

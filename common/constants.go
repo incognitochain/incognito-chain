@@ -144,4 +144,5 @@ const (
 
 	PortalPortingRequestSuccessStatus  = "success"
 	PortalPortingRequestCanceledStatus = "canceled"
+	PortalExchangeRatesStatus = "canceled"
 )

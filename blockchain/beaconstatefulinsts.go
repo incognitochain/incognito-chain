@@ -33,12 +33,15 @@ func (blockchain *BlockChain) collectStatefulActions(
 			continue
 		}
 		switch metaType {
-		case metadata.IssuingRequestMeta, metadata.IssuingETHRequestMeta,
-			metadata.PDEContributionMeta, metadata.PDETradeRequestMeta,
+		case metadata.IssuingRequestMeta,
+			metadata.IssuingETHRequestMeta,
+			metadata.PDEContributionMeta,
+			metadata.PDETradeRequestMeta,
 			metadata.PDEWithdrawalRequestMeta,
 			metadata.PortalCustodianDepositMeta,
 			metadata.PortalUserRegisterMeta,
-			metadata.PortalUserRequestPTokenMeta:
+			metadata.PortalUserRequestPTokenMeta,
+			metadata.PortalExchangeRatesMeta:
 			statefulInsts = append(statefulInsts, inst)
 
 		default:
@@ -93,6 +96,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	portalCustodianDepositActionsByShardID := map[byte][][]string{}
 	portalUserReqPortingActionsByShardID := map[byte][][]string{}
 	portalUserReqPTokenActionsByShardID := map[byte][][]string{}
+	portalExchangeRatesActionsByShardID := map[byte][][]string{}
 
 	var keys []int
 	for k := range statefulActionsByShardID {
@@ -152,6 +156,12 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					action,
 					shardID,
 				)
+			case metadata.PortalExchangeRatesMeta:
+				portalExchangeRatesActionsByShardID = groupPortalActionsByShardID(
+					portalExchangeRatesActionsByShardID,
+					action,
+					shardID,
+				)
 			default:
 				continue
 			}
@@ -164,12 +174,14 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			}
 		}
 	}
+
 	pdeInsts, err := blockchain.handlePDEInsts(
 		beaconHeight-1, currentPDEState,
 		pdeContributionActionsByShardID,
 		pdeTradeActionsByShardID,
 		pdeWithdrawalActionsByShardID,
 	)
+
 	if err != nil {
 		Logger.log.Error(err)
 		return instructions
@@ -183,7 +195,10 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		currentPortalState,
 		portalCustodianDepositActionsByShardID,
 		portalUserReqPortingActionsByShardID,
-		portalUserReqPTokenActionsByShardID)
+		portalUserReqPTokenActionsByShardID,
+		portalExchangeRatesActionsByShardID,
+		)
+
 	if err != nil {
 		Logger.log.Error(err)
 		return instructions
@@ -368,6 +383,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 	portalCustodianDepositActionsByShardID map[byte][][]string,
 	portalUserRequestPortingActionsByShardID map[byte][][]string,
 	portalUserRequestPTokenActionsByShardID map[byte][][]string,
+	portalExchangeRatesActionsByShardID map[byte][][]string,
 ) ([][]string, error) {
 	instructions := [][]string{}
 
@@ -461,6 +477,37 @@ func (blockchain *BlockChain) handlePortalInsts(
 	}
 
 	// ...
+
+
+	//handle portal exchange rates
+	var exchangeRatesShardIDKeys []int
+	for k := range portalExchangeRatesActionsByShardID {
+		exchangeRatesShardIDKeys = append(exchangeRatesShardIDKeys, int(k))
+	}
+
+	sort.Ints(exchangeRatesShardIDKeys)
+	for _, value := range exchangeRatesShardIDKeys {
+		shardID := byte(value)
+		actions := portalExchangeRatesActionsByShardID[shardID]
+		for _, action := range actions {
+			contentStr := action[1]
+			newInst, err := blockchain.buildInstructionsForExchangeRates(
+				contentStr,
+				shardID,
+				metadata.PortalExchangeRatesMeta,
+				currentPortalState,
+				beaconHeight,
+			)
+
+			if err != nil {
+				Logger.log.Error(err)
+				continue
+			}
+			if len(newInst) > 0 {
+				instructions = append(instructions, newInst...)
+			}
+		}
+	}
 
 	return instructions, nil
 }
