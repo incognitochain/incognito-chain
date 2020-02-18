@@ -18,6 +18,7 @@ func (blockchain *BlockChain) ListAllPrivacyCustomToken() (map[common.Hash]*stat
 		for newK, newV := range m {
 			if v, ok := tokenStates[newK]; !ok {
 				tokenStates[newK] = newV
+				tokenStates[newK].AddTxs([]common.Hash{newV.InitTx()})
 			} else {
 				if v.PropertyName() == "" && newV.PropertyName() != "" {
 					v.SetPropertyName(newV.PropertyName())
@@ -25,6 +26,7 @@ func (blockchain *BlockChain) ListAllPrivacyCustomToken() (map[common.Hash]*stat
 				if v.PropertySymbol() == "" && newV.PropertySymbol() != "" {
 					v.SetPropertySymbol(newV.PropertySymbol())
 				}
+				v.AddTxs([]common.Hash{newV.InitTx()})
 				v.AddTxs(newV.Txs())
 			}
 		}
