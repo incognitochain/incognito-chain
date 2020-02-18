@@ -50,10 +50,21 @@ type RedeemRequest struct {
 	RedeemFee             uint64
 }
 
-type ExchangeRate struct {
-	UniqueExchangeRateID  string
-	TokenID               string
-	Value       		  int64
+type ExchangeRatesDetail struct {
+	Amount uint64
+}
+
+type ExchangeRatesRequest struct {
+	SenderAddress string
+	Rates map[string]ExchangeRatesDetail
+}
+
+type FinalExchangeRatesDetail struct {
+	Amount uint64
+}
+
+type FinalExchangeRates struct {
+	Rates map[string]FinalExchangeRatesDetail
 }
 
 func NewCustodianStateKey (beaconHeight uint64, custodianAddress string) string {
@@ -77,10 +88,23 @@ func NewPortingReqKey (beaconHeight uint64, portingID string) string {
 	return string(key)
 }
 
+func NewFinalExchangeRatesKey (beaconHeight uint64) string {
+	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+	key := append(PortalFinalExchangeRatesPrefix, beaconHeightBytes...)
+	return string(key)
+}
+
 func NewRedeemReqKey (beaconHeight uint64, redeemID string) string {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 	key := append(PortalRedeemRequestsPrefix, beaconHeightBytes...)
 	key = append(key, []byte(redeemID)...)
+	return string(key)
+}
+
+func NewExchangeRatesRequestKey (beaconHeight uint64, txId string, lockTime string) string {
+	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+	key := append(PortalExchangeRatesPrefix, beaconHeightBytes...)
+	key = append(key, []byte(lockTime)...)
 	return string(key)
 }
 

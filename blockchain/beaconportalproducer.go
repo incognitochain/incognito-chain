@@ -152,3 +152,40 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 	)
 	return [][]string{inst}, nil
 }
+
+func (blockchain *BlockChain) buildInstructionsForExchangeRates(
+	contentStr string,
+	shardID byte,
+	metaType int,
+	currentPortalState *CurrentPortalState,
+	beaconHeight uint64,
+) ([][]string, error) {
+	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while decoding content string of portal exchange rates action: %+v", err)
+		return [][]string{}, nil
+	}
+	var actionData metadata.PortalExchangeRatesAction
+	err = json.Unmarshal(actionContentBytes, &actionData)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while unmarshal portal exchange rates action: %+v", err)
+		return [][]string{}, nil
+	}
+
+	portalExchangeRatesContent := metadata.PortalExchangeRatesContent{
+		SenderAddress: 	actionData.Meta.SenderAddress,
+		Rates: 	actionData.Meta.Rates,
+		TxReqID:    actionData.TxReqID,
+		LockTime:    actionData.LockTime,
+	}
+
+	portalExchangeRatesContentBytes, _ := json.Marshal(portalExchangeRatesContent)
+	inst := []string{
+		strconv.Itoa(metaType),
+		strconv.Itoa(int(shardID)),
+		common.PortalExchangeRatesStatus,
+		string(portalExchangeRatesContentBytes),
+	}
+
+	return [][]string{inst}, nil
+}

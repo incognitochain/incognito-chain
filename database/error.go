@@ -108,6 +108,8 @@ const (
 	StoreCustodianDepositStateError
 	StorePortingRequestStateError
 	StoreRedeemRequestStateError
+	StoreExchangeRatesRequestStateError
+	StoreFinalExchangeRatesStateError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -216,6 +218,8 @@ var ErrCodeMessage = map[int]struct {
 	StoreCustodianDepositStateError:		{-14001, "Store custodian deposit error"},
 	StorePortingRequestStateError:			{-14002, "Store porting request error"},
 	StoreRedeemRequestStateError:			{-14003, "Store redeem request error"},
+	StoreExchangeRatesRequestStateError:	{-14004, "Store exchange rates request error"},
+	StoreFinalExchangeRatesStateError:		{-14005, "Store final exchange rates request error"},
 }
 
 type DatabaseError struct {

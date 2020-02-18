@@ -138,4 +138,5 @@ const (
 	PortalCustodianDepositRefundChainStatus = "refund"
 	PortalPortingRequestSuccessStatus = "success"
 	PortalPortingRequestCanceledStatus = "canceled"
+	PortalExchangeRatesStatus = "canceled"
 )

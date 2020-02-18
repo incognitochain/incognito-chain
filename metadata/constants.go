@@ -45,6 +45,7 @@ const (
 	PortalCustodianDepositMeta  = 100
 	PortalUserRegisterMeta      = 101
 	PortalUserRequestPTokenMeta = 102
+	PortalExchangeRatesMeta     = 103
 )
 
 var minerCreatedMetaTypes = []int{
@@ -96,6 +97,12 @@ const (
 var PortalSupportedTokenSymbols = []string{
 	"BTC", // pBTC
 	"BNB", // pBNB
+}
+
+var PortalSupportedExchangeRatesSymbols = []string{
+	"BTC",
+	"BNB",
+	"PRV",
 }
 
 var PortalSupportedTokenMap = map[string]string{
