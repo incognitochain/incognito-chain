@@ -8,12 +8,20 @@ import (
 
 func StorePrivacyToken(stateDB *StateDB, tokenID common.Hash, name string, symbol string, tokenType int, mintable bool, amount uint64, info []byte, txHash common.Hash) error {
 	key := GenerateTokenObjectKey(tokenID)
-	_, has, err := stateDB.GetTokenState(key)
+	t, has, err := stateDB.GetTokenState(key)
 	if err != nil {
 		return NewStatedbError(StorePrivacyTokenError, err)
 	}
 	if has {
-		return nil
+		// if already has name and symbol then move on
+		if t.PropertyName() != "" && t.PropertySymbol() != "" {
+			return nil
+		} else {
+			// if don't have name and symbol then check new name and symbol
+			if name == "" && symbol == "" {
+				return nil
+			}
+		}
 	}
 	value := NewTokenStateWithValue(tokenID, name, symbol, tokenType, mintable, amount, info, txHash, []common.Hash{})
 	err = stateDB.SetStateObject(TokenObjectType, key, value)
