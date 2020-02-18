@@ -473,10 +473,10 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxByItself(
 ) (bool, error) {
 	// no need to check for tx init token
 	if txCustomTokenPrivacy.TxPrivacyTokenData.Type == CustomTokenInit {
-		return txCustomTokenPrivacy.Tx.ValidateTransaction(hasPrivacyCoin, db, shardID, nil)
+		return txCustomTokenPrivacy.Tx.ValidateTransaction(hasPrivacyCoin, db, shardID, nil, false)
 	}
 	// check for proof, signature ...
-	if ok, err := txCustomTokenPrivacy.ValidateTransaction(hasPrivacyCoin, db, shardID, nil); !ok {
+	if ok, err := txCustomTokenPrivacy.ValidateTransaction(hasPrivacyCoin, db, shardID, nil, false); !ok {
 		return false, err
 	}
 
@@ -492,16 +492,16 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxByItself(
 }
 
 // ValidateTransaction - verify proof, signature, ... of PRV and pToken
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacyCoin bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
+func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacyCoin bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash, isBatch bool) (bool, error) {
 	// validate for PRV
-	ok, err := txCustomTokenPrivacy.Tx.ValidateTransaction(hasPrivacyCoin, db, shardID, nil)
+	ok, err := txCustomTokenPrivacy.Tx.ValidateTransaction(hasPrivacyCoin, db, shardID, nil, isBatch)
 	if ok {
 		// validate for pToken
 		tokenID := txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID
 		if txCustomTokenPrivacy.TxPrivacyTokenData.Type == CustomTokenInit {
 			return true, nil
 		} else {
-			return txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.ValidateTransaction(txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.IsPrivacy(), db, shardID, &tokenID)
+			return txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.ValidateTransaction(txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.IsPrivacy(), db, shardID, &tokenID, isBatch)
 		}
 	}
 	return false, err

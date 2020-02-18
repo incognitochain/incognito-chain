@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/aggregaterange"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 	"math"
 	"math/big"
@@ -340,4 +341,47 @@ func IsBridgeTokenID(tokenID common.Hash, db database.DatabaseInterface) (bool, 
 		}
 	}
 	return false, errors.New("invalid bridge tokenID")
+}
+
+func ValidateBatchTxsByItself(
+	txList []*Tx,
+	db database.DatabaseInterface,
+	bcr metadata.BlockchainRetriever) (bool, error) {
+	prvCoinID := &common.Hash{}
+	err := prvCoinID.SetBytes(common.PRVCoinID[:])
+	if err != nil {
+		return false, err
+	}
+
+	bulletProofList := make([]*aggregaterange.AggregatedRangeProof, 0)
+	for _, tx := range txList {
+		shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+		hasPrivacy := tx.IsPrivacy()
+		ok, err := tx.ValidateTransaction(hasPrivacy, db, shardID, prvCoinID, true)
+		if !ok {
+			return false, err
+		}
+		if tx.Metadata != nil {
+			if hasPrivacy {
+				return false, errors.New("Metadata can not exist in not privacy tx")
+			}
+			validateMetadata := tx.Metadata.ValidateMetadataByItself()
+			if validateMetadata {
+				return validateMetadata, nil
+			} else {
+				return validateMetadata, NewTransactionErr(UnexpectedError, errors.New("Metadata is invalid"))
+			}
+		}
+		bulletProofList = append(bulletProofList, tx.Proof.GetAggregatedRangeProof())
+	}
+	ok, error := aggregaterange.BPVerifyUltraFast(bulletProofList)
+	if !ok {
+		if error != nil {
+			Logger.log.Error(error)
+		}
+		Logger.log.Error("FAILED VERIFICATION BATCH PAYMENT PROOF")
+		return false, NewTransactionErr(TxProofVerifyFailError, error)
+	}
+
+	return true, nil
 }
