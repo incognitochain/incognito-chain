@@ -57,5 +57,4 @@ func (blockGenerator *BlockGenerator) buildPortalRefundCustodianDepositTx(
 	//modify the type of the salary transaction
 	// resTx.Type = common.TxBlockProducerCreatedType
 	return resTx, nil
-
 }

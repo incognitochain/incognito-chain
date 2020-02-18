@@ -12,6 +12,7 @@ import (
 )
 
 // PortalCustodianDeposit - portal custodian deposit collateral (PRV)
+// metadata - custodian deposit - create normal tx with this metadata
 type PortalCustodianDeposit struct {
 	MetadataBase
 	IncogAddressStr string
@@ -19,6 +20,8 @@ type PortalCustodianDeposit struct {
 	DepositedAmount uint64
 }
 
+// PortalCustodianDepositAction - shard validator creates instruction that contain this action content
+// it will be append to ShardToBeaconBlock
 type PortalCustodianDepositAction struct {
 	Meta    PortalCustodianDeposit
 	TxReqID common.Hash
