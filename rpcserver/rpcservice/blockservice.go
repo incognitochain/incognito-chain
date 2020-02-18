@@ -746,7 +746,7 @@ func (blockService BlockService) GetRewardAmount(paymentAddress string) (map[str
 	}
 	for _, token := range privateTokenState {
 		if rewardAmounts[token.TokenID()] > 0 {
-			rewardAmountResult[token.PropertyName()] = rewardAmounts[token.TokenID()]
+			rewardAmountResult[token.TokenID().String()] = rewardAmounts[token.TokenID()]
 		}
 	}
 	return rewardAmountResult, nil
