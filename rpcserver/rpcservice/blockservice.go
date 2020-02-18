@@ -585,13 +585,11 @@ func (blockService BlockService) ListPrivacyCustomToken() (map[common.Hash]*stat
 			} else {
 				if v.PropertyName() == "" && newV.PropertyName() != "" {
 					v.SetPropertyName(newV.PropertyName())
-					tokenStates[newK] = v
 				}
-				v = tokenStates[newK]
 				if v.PropertySymbol() == "" && newV.PropertySymbol() != "" {
 					v.SetPropertySymbol(newV.PropertySymbol())
-					tokenStates[newK] = v
 				}
+				//TODO: append all txs
 			}
 		}
 	}
