@@ -346,30 +346,30 @@ func IsBridgeTokenID(tokenID common.Hash, db database.DatabaseInterface) (bool, 
 func ValidateBatchTxsByItself(
 	txList []*Tx,
 	db database.DatabaseInterface,
-	bcr metadata.BlockchainRetriever) (bool, error) {
+	bcr metadata.BlockchainRetriever) (bool, error, int) {
 	prvCoinID := &common.Hash{}
 	err := prvCoinID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
-		return false, err
+		return false, err, -1
 	}
 
 	bulletProofList := make([]*aggregaterange.AggregatedRangeProof, 0)
-	for _, tx := range txList {
+	for i, tx := range txList {
 		shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		hasPrivacy := tx.IsPrivacy()
 		ok, err := tx.ValidateTransaction(hasPrivacy, db, shardID, prvCoinID, true)
 		if !ok {
-			return false, err
+			return false, err, i
 		}
 		if tx.Metadata != nil {
 			if hasPrivacy {
-				return false, errors.New("Metadata can not exist in not privacy tx")
+				return false, errors.New("Metadata can not exist in not privacy tx"), i
 			}
 			validateMetadata := tx.Metadata.ValidateMetadataByItself()
 			if validateMetadata {
-				return validateMetadata, nil
+				return validateMetadata, nil, i
 			} else {
-				return validateMetadata, NewTransactionErr(UnexpectedError, errors.New("Metadata is invalid"))
+				return validateMetadata, NewTransactionErr(UnexpectedError, errors.New("Metadata is invalid")), i
 			}
 		}
 		bulletProofList = append(bulletProofList, tx.Proof.GetAggregatedRangeProof())
@@ -380,8 +380,8 @@ func ValidateBatchTxsByItself(
 			Logger.log.Error(error)
 		}
 		Logger.log.Error("FAILED VERIFICATION BATCH PAYMENT PROOF")
-		return false, NewTransactionErr(TxProofVerifyFailError, error)
+		return false, NewTransactionErr(TxProofVerifyFailError, error), -1
 	}
 
-	return true, nil
+	return true, nil, -1
 }
