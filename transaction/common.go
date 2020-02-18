@@ -374,12 +374,12 @@ func ValidateBatchTxsByItself(
 		}
 		bulletProofList = append(bulletProofList, tx.Proof.GetAggregatedRangeProof())
 	}
-	ok, error := aggregaterange.VerifyBatchingAggregatedRangeProofs(bulletProofList)
+	ok, error, i := aggregaterange.VerifyBatchingAggregatedRangeProofs(bulletProofList)
 	if !ok {
 		if error != nil {
 			Logger.log.Error(error)
 		}
-		Logger.log.Error("FAILED VERIFICATION BATCH PAYMENT PROOF")
+		Logger.log.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF %d", i)
 		return false, NewTransactionErr(TxProofVerifyFailError, error), -1
 	}
 

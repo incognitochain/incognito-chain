@@ -543,14 +543,14 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	return true, nil
 }
 
-func VerifyBatchingAggregatedRangeProofs(proofs []*AggregatedRangeProof) (bool, error) {
+func VerifyBatchingAggregatedRangeProofs(proofs []*AggregatedRangeProof) (bool, error, int) {
 	innerProductProofs := make([]*InnerProductProof, 0)
 	csList := make([][]byte, 0)
 	for k := range proofs {
 		proof := proofs[k]
 		numValue := len(proof.cmsValue)
 		if numValue > maxOutputNumber {
-			return false, errors.New("Must less than maxOutputNumber")
+			return false, errors.New("Must less than maxOutputNumber"), k
 		}
 		numValuePad := pad(numValue)
 		aggParam := new(bulletproofParams)
@@ -607,7 +607,7 @@ func VerifyBatchingAggregatedRangeProofs(proofs []*AggregatedRangeProof) (bool, 
 		// innerProduct1 = <1^(n*m), y^(n*m)>
 		innerProduct1, err := innerProduct(oneVector, yVector)
 		if err != nil {
-			return false, privacy.NewPrivacyErr(privacy.CalInnerProductErr, err)
+			return false, privacy.NewPrivacyErr(privacy.CalInnerProductErr, err), k
 		}
 
 		deltaYZ.Mul(deltaYZ, innerProduct1)
@@ -615,7 +615,7 @@ func VerifyBatchingAggregatedRangeProofs(proofs []*AggregatedRangeProof) (bool, 
 		// innerProduct2 = <1^n, 2^n>
 		innerProduct2, err := innerProduct(oneVectorN, twoVectorN)
 		if err != nil {
-			return false, privacy.NewPrivacyErr(privacy.CalInnerProductErr, err)
+			return false, privacy.NewPrivacyErr(privacy.CalInnerProductErr, err), k
 		}
 
 		sum := new(privacy.Scalar).FromUint64(0)
@@ -636,8 +636,8 @@ func VerifyBatchingAggregatedRangeProofs(proofs []*AggregatedRangeProof) (bool, 
 		right1.Add(right1, new(privacy.Point).MultiScalarMult(expVector, tmpcmsValue))
 
 		if !privacy.IsPointEqual(left1, right1) {
-			privacy.Logger.Log.Errorf("verify aggregated range proof statement 1 failed")
-			return false, errors.New("verify aggregated range proof statement 1 failed")
+			privacy.Logger.Log.Errorf("verify aggregated range proof statement 1 failed index %d", k)
+			return false, errors.New("verify aggregated range proof statement 1 failed"), k
 		}
 
 		innerProductProofs = append(innerProductProofs, proof.innerProductProof)
@@ -647,8 +647,8 @@ func VerifyBatchingAggregatedRangeProofs(proofs []*AggregatedRangeProof) (bool, 
 	innerProductArgsValid := VerifyBatchingInnerProductProofs(innerProductProofs, csList)
 	if !innerProductArgsValid {
 		privacy.Logger.Log.Errorf("verify batch aggregated range proofs statement 2 failed")
-		return false, errors.New("verify batch aggregated range proofs statement 2 failed")
+		return false, errors.New("verify batch aggregated range proofs statement 2 failed"), -1
 	}
 
-	return true, nil
+	return true, nil, -1
 }
