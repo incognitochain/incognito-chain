@@ -8,12 +8,12 @@ import (
 
 func StorePrivacyToken(stateDB *StateDB, tokenID common.Hash, name string, symbol string, tokenType int, mintable bool, amount uint64, info []byte, txHash common.Hash) error {
 	key := GenerateTokenObjectKey(tokenID)
-	t, has, err := stateDB.GetTokenState(key)
+	_, has, err := stateDB.GetTokenState(key)
 	if err != nil {
 		return NewStatedbError(StorePrivacyTokenError, err)
 	}
-	if has && mintable {
-		amount += t.Amount()
+	if has {
+		return nil
 	}
 	value := NewTokenStateWithValue(tokenID, name, symbol, tokenType, mintable, amount, info, txHash, []common.Hash{})
 	err = stateDB.SetStateObject(TokenObjectType, key, value)
@@ -23,17 +23,18 @@ func StorePrivacyToken(stateDB *StateDB, tokenID common.Hash, name string, symbo
 	return nil
 }
 
-func StorePrivacyTokenTx(stateDB *StateDB, tokenID common.Hash, txHash common.Hash, isStore bool) error {
+func StorePrivacyTokenTx(stateDB *StateDB, tokenID common.Hash, txHash common.Hash) error {
 	key := GenerateTokenObjectKey(tokenID)
 	t, has, err := stateDB.GetTokenState(key)
 	if err != nil {
 		return NewStatedbError(GetPrivacyTokenError, err)
 	}
 	if !has {
-		if isStore {
-			return nil
+		err := StorePrivacyToken(stateDB, tokenID, "", "", UnknownToken, false, 0, []byte{}, txHash)
+		if err != nil {
+			return err
 		}
-		return NewStatedbError(GetPrivacyTokenError, fmt.Errorf("tokenID %+v not exist", tokenID))
+		return nil
 	}
 	t.AddTxs([]common.Hash{txHash})
 	err = stateDB.SetStateObject(TokenObjectType, key, t)

@@ -268,6 +268,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlockV2(shardBlock *Sh
 			return err
 		}
 	}
+	var err error
 	_, allBridgeTokens, err := blockchain.GetAllBridgeTokens()
 	if err != nil {
 		return err
@@ -288,16 +289,18 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlockV2(shardBlock *Sh
 		privacyCustomTokenSubView := view.privacyCustomTokenViewPoint[int32(indexTx)]
 		privacyCustomTokenTx := view.privacyCustomTokenTxs[int32(indexTx)]
 		isBridgeToken := false
-		for _, bridgeToken := range allBridgeTokens {
-			if bridgeToken.TokenID != nil && bytes.Equal(privacyCustomTokenTx.TxPrivacyTokenData.PropertyID[:], bridgeToken.TokenID[:]) {
+		for _, tempBridgeToken := range allBridgeTokens {
+			if tempBridgeToken.TokenID != nil && bytes.Equal(privacyCustomTokenTx.TxPrivacyTokenData.PropertyID[:], tempBridgeToken.TokenID[:]) {
 				isBridgeToken = true
 			}
 		}
 		switch privacyCustomTokenTx.TxPrivacyTokenData.Type {
 		case transaction.CustomTokenInit:
 			{
-				// check is bridge token
-				if !isBridgeToken {
+				tokenID := privacyCustomTokenTx.TxPrivacyTokenData.PropertyID
+				existed := statedb.PrivacyTokenIDExisted(transactionStateRoot, tokenID)
+				if !existed {
+					// check is bridge token
 					tokenID := privacyCustomTokenTx.TxPrivacyTokenData.PropertyID
 					name := privacyCustomTokenTx.TxPrivacyTokenData.PropertyName
 					symbol := privacyCustomTokenTx.TxPrivacyTokenData.PropertySymbol
@@ -305,8 +308,12 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlockV2(shardBlock *Sh
 					amount := privacyCustomTokenTx.TxPrivacyTokenData.Amount
 					info := privacyCustomTokenTx.Tx.Info
 					txHash := *privacyCustomTokenTx.Hash()
+					tokenType := statedb.InitToken
+					if isBridgeToken {
+						tokenType = statedb.BridgeToken
+					}
 					Logger.log.Info("Store custom token when it is issued", privacyCustomTokenTx.TxPrivacyTokenData.PropertyID, privacyCustomTokenTx.TxPrivacyTokenData.PropertySymbol, privacyCustomTokenTx.TxPrivacyTokenData.PropertyName)
-					err = statedb.StorePrivacyToken(transactionStateRoot, tokenID, name, symbol, statedb.InitToken, mintable, amount, info, txHash)
+					err := statedb.StorePrivacyToken(transactionStateRoot, tokenID, name, symbol, tokenType, mintable, amount, info, txHash)
 					if err != nil {
 						return err
 					}
@@ -317,7 +324,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlockV2(shardBlock *Sh
 				Logger.log.Infof("Transfer custom token %+v", privacyCustomTokenTx)
 			}
 		}
-		err = statedb.StorePrivacyTokenTx(transactionStateRoot, privacyCustomTokenTx.TxPrivacyTokenData.PropertyID, *privacyCustomTokenTx.Hash(), isBridgeToken)
+		err = statedb.StorePrivacyTokenTx(transactionStateRoot, privacyCustomTokenTx.TxPrivacyTokenData.PropertyID, *privacyCustomTokenTx.Hash())
 		if err != nil {
 			return err
 		}
