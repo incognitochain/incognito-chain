@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/binance-chain/go-sdk/client/rpc"
 	bnbtx "github.com/binance-chain/go-sdk/types/tx"
+	"github.com/incognitochain/incognito-chain/database"
 	"github.com/tendermint/tendermint/rpc/client"
 	"github.com/tendermint/tendermint/types"
 )
@@ -36,7 +37,7 @@ func BuildProof2(indexTx int, blockHeight int64) (*types.TxProof, *BNBRelayingEr
 	return &proof, nil
 }
 
-func VerifyProof(txProof *types.TxProof, blockHeight int64, dataHash []byte) (bool, *BNBRelayingError) {
+func VerifyProof(txProof *types.TxProof, dataHash []byte) (bool, *BNBRelayingError) {
 	// todo: get dataHash in blockHeight from db
 	// if there is no blockheight in db, return error
 	//dataHash := []byte{}
@@ -110,5 +111,49 @@ func ParseTxFromData(data []byte) (*bnbtx.StdTx, *BNBRelayingError) {
 	stdTx := tx.(bnbtx.StdTx)
 	return &stdTx, nil
 }
+
+type BNBProof struct {
+	Proof *types.TxProof
+	BlockHeight int64
+}
+
+// buildProof creates a proof for tx at indexTx in block height
+func (p *BNBProof) Build(indexTx int, blockHeight int64) (*BNBRelayingError) {
+	txs, err := getTxsInBlockHeight(blockHeight)
+	if err != nil {
+		return err
+	}
+
+	proof := txs.Proof(indexTx)
+
+	p.BlockHeight = blockHeight
+	p.Proof = &proof
+
+	return nil
+}
+
+func (p *BNBProof) Verify(db database.DatabaseInterface) (bool, *BNBRelayingError){
+	// get dataHash from db with p.BlockHeight
+	//dataHash := []byte{}
+	dataHash, _ := hex.DecodeString("D81AD27D7C1D8114EB339158897C02337820BC17E10AB6405143EFE8E52AB526")
+	return VerifyProof(p.Proof, dataHash)
+}
+
+func ParseBNBProofFromB64EncodeJsonStr(b64EncodedJsonStr string) (*BNBProof, *BNBRelayingError) {
+	jsonBytes, err := base64.StdEncoding.DecodeString(b64EncodedJsonStr)
+	if err != nil {
+		return nil, NewBNBRelayingError(UnexpectedErr, err)
+	}
+
+	proof := BNBProof{}
+	err = json.Unmarshal(jsonBytes, &proof)
+	if err != nil {
+		return nil, NewBNBRelayingError(UnexpectedErr, err)
+	}
+
+	return &proof, nil
+}
+
+
 
 

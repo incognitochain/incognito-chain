@@ -3,6 +3,7 @@ package relaying
 import (
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"github.com/binance-chain/go-sdk/types/msg"
 	"github.com/stretchr/testify/assert"
@@ -31,12 +32,12 @@ func TestGetBlock(t *testing.T){
 func TestBuildProof1_VerifyProof(t *testing.T){
 	//txIndex := 0
 	txHash := "24B93E8B6C5817B159870E5C617597EBD0BDAE100430DB8242BFBA5DA37D70CE"
-	blockHeight := int64(60479432)
+	//blockHeight := int64(60479432)
 	dataHash, _ := hex.DecodeString("D81AD27D7C1D8114EB339158897C02337820BC17E10AB6405143EFE8E52AB526")
 	proof, err := BuildProof1(txHash)
 	assert.Nil(t, err)
 
-	isValid, err := VerifyProof(proof, blockHeight, dataHash)
+	isValid, err := VerifyProof(proof, dataHash)
 	fmt.Printf("err: %+v\n", err)
 	assert.Nil(t, err)
 	assert.Equal(t, true, isValid)
@@ -51,7 +52,7 @@ func TestBuildProof2_VerifyProof(t *testing.T){
 	assert.Nil(t, err)
 	//fmt.Printf("Proof1: %+v\n", proof)
 
-	isValid, err := VerifyProof(proof, blockHeight, dataHash)
+	isValid, err := VerifyProof(proof, dataHash)
 	assert.Nil(t, err)
 	assert.Equal(t, true, isValid)
 }
@@ -69,11 +70,11 @@ func TestBuildProof1_BuildProof2(t *testing.T){
 
 	assert.Equal(t, proof1, proof2)
 
-	isValid1, err := VerifyProof(proof1, blockHeight, dataHash)
+	isValid1, err := VerifyProof(proof1, dataHash)
 	assert.Nil(t, err)
 	assert.Equal(t, true, isValid1)
 
-	isValid2, err := VerifyProof(proof2, blockHeight, dataHash)
+	isValid2, err := VerifyProof(proof2, dataHash)
 	assert.Nil(t, err)
 	assert.Equal(t, true, isValid2)
 }
@@ -104,6 +105,34 @@ func TestParseDataToTx(t *testing.T) {
 		actualAmount += coin.Amount
 	}
 	assert.Equal(t, amount, actualAmount)
+}
+
+
+func TestBNBProof(t *testing.T) {
+	txIndex := 0
+	//txHash := "24B93E8B6C5817B159870E5C617597EBD0BDAE100430DB8242BFBA5DA37D70CE"
+	blockHeight := int64(60479432)
+	//dataHash, _ := hex.DecodeString("D81AD27D7C1D8114EB339158897C02337820BC17E10AB6405143EFE8E52AB526")
+
+	bnbProof := new(BNBProof)
+	err := bnbProof.Build(txIndex, blockHeight)
+	assert.Nil(t, err)
+	fmt.Printf("bnbProof: %+v\n", bnbProof)
+
+	jsonStr, _ := json.Marshal(bnbProof)
+	b64EncodeProof := base64.StdEncoding.EncodeToString(jsonStr)
+	fmt.Printf("b64EncodeProof: %+v\n", b64EncodeProof)
+
+	bnbProof2, err := ParseBNBProofFromB64EncodeJsonStr(b64EncodeProof)
+	assert.Nil(t, err)
+
+	isValid, err := bnbProof.Verify(nil)
+	assert.Nil(t, err)
+	assert.Equal(t, true, isValid)
+
+	isValid2, err := bnbProof2.Verify(nil)
+	assert.Nil(t, err)
+	assert.Equal(t, true, isValid2)
 }
 
 

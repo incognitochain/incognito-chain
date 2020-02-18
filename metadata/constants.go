@@ -90,8 +90,8 @@ var PortalSupportedTokenIDs = []string{
 }
 
 const (
-	PortalTokenBTC = "BTC"
-	PortalTokenBNB = "BNB"
+	PortalTokenSymbolBTC = "BTC"
+	PortalTokenSymbolBNB = "BNB"
 )
 
 var PortalSupportedTokenSymbols = []string{

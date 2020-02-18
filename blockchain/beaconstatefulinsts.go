@@ -431,6 +431,34 @@ func (blockchain *BlockChain) handlePortalInsts(
 		}
 	}
 	// handle portal user request ptoken inst
+	var reqPTokenShardIDKeys []int
+	for k := range portalUserRequestPTokenActionsByShardID {
+		reqPTokenShardIDKeys = append(reqPTokenShardIDKeys, int(k))
+	}
+
+	sort.Ints(reqPTokenShardIDKeys)
+	for _, value := range reqPTokenShardIDKeys {
+		shardID := byte(value)
+		actions := portalUserRequestPTokenActionsByShardID[shardID]
+		for _, action := range actions {
+			contentStr := action[1]
+			newInst, err := blockchain.buildInstructionsForReqPTokens(
+				contentStr,
+				shardID,
+				metadata.PortalUserRequestPTokenMeta,
+				currentPortalState,
+				beaconHeight,
+			)
+
+			if err != nil {
+				Logger.log.Error(err)
+				continue
+			}
+			if len(newInst) > 0 {
+				instructions = append(instructions, newInst...)
+			}
+		}
+	}
 
 	// ...
 

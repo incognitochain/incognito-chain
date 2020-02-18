@@ -13,19 +13,46 @@ import (
 )
 
 // PortalRequestPTokens - portal user requests ptoken (after sending pubToken to custodians)
+// metadata - user requests ptoken - create normal tx with this metadata
 type PortalRequestPTokens struct {
 	MetadataBase
 	UniquePortingID string
-	TokenID         string
+	TokenID         string     // pTokenID in incognito chain
 	IncogAddressStr string
 	PortingAmount   uint64
 	PortingProof    string
 }
 
+// PortalRequestPTokensAction - shard validator creates instruction that contain this action content
+// it will be append to ShardToBeaconBlock
 type PortalRequestPTokensAction struct {
 	Meta    PortalRequestPTokens
 	TxReqID common.Hash
 	ShardID byte
+}
+
+// PortalRequestPTokensContent - Beacon builds a new instruction with this content after receiving a instruction from shard
+// It will be appended to beaconBlock
+// both accepted and rejected status
+type PortalRequestPTokensContent struct {
+	UniquePortingID string
+	TokenID         string 			// pTokenID in incognito chain
+	IncogAddressStr string
+	PortingAmount   uint64
+	PortingProof    string
+	TxReqID         common.Hash
+	ShardID byte
+}
+
+// PortalRequestPTokensStatus - Beacon tracks status of request ptokens into db
+type PortalRequestPTokensStatus struct {
+	Status byte
+	UniquePortingID string
+	TokenID         string 			// pTokenID in incognito chain
+	IncogAddressStr string
+	PortingAmount   uint64
+	PortingProof    string
+	TxReqID         common.Hash
 }
 
 func NewPortalRequestPTokens(
@@ -89,15 +116,14 @@ func (reqPToken PortalRequestPTokens) ValidateSanityData(bcr BlockchainRetriever
 	}
 
 	// validate tokenID and porting proof
-	if reqPToken.TokenID == PortalSupportedTokenMap["BTC"] {
+	if reqPToken.TokenID == PortalSupportedTokenMap[PortalTokenSymbolBTC] {
 		// token BTC
 		// convert porting proof to BTC proof
 		// todo:
-	} else if reqPToken.TokenID == PortalSupportedTokenMap["BNB"] {
+	} else if reqPToken.TokenID == PortalSupportedTokenMap[PortalTokenSymbolBNB] {
 		// token BNB
 		// convert porting proof to BNB proof
-
-		_, err := relaying.ParseProofFromB64EncodeJsonStr(reqPToken.PortingProof)
+		_, err := relaying.ParseBNBProofFromB64EncodeJsonStr(reqPToken.PortingProof)
 		if err != nil {
 			return false, false, NewMetadataTxError(PortalRequestPTokenParamError, err)
 		}
@@ -134,7 +160,7 @@ func (reqPToken *PortalRequestPTokens) BuildReqActions(tx Transaction, bcr Block
 		return [][]string{}, err
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(PDEContributionMeta), actionContentBase64Str}
+	action := []string{strconv.Itoa(PortalUserRequestPTokenMeta), actionContentBase64Str}
 	return [][]string{action}, nil
 }
 

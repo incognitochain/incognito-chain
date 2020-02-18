@@ -150,7 +150,7 @@ func (custodianDeposit *PortalCustodianDeposit) BuildReqActions(tx Transaction, 
 		return [][]string{}, err
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(PDEContributionMeta), actionContentBase64Str}
+	action := []string{strconv.Itoa(PortalCustodianDepositMeta), actionContentBase64Str}
 	return [][]string{action}, nil
 }
 
