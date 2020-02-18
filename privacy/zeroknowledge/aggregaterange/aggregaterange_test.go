@@ -178,7 +178,7 @@ func TestAggregatedRangeProveVerifyUltraFast(t *testing.T) {
 	assert.Equal(t, nil, err)
 }
 
-func TestBenchamrkAggregatedRangeProveVerifyUltraFast(t *testing.T) {
+func TestBenchmarkAggregatedRangeProveVerifyUltraFast(t *testing.T) {
 	count := 50
 	proofs := make([]*AggregatedRangeProof, 0)
 	start := time.Now()
@@ -210,7 +210,7 @@ func TestBenchamrkAggregatedRangeProveVerifyUltraFast(t *testing.T) {
 	fmt.Println("Verify Faster:", t1)
 	start = time.Now()
 	res, err := BPVerifyUltraFast(proofs)
-	fmt.Println("Ultra Farst:", time.Now().Sub(start))
+	fmt.Println("Ultra Fast:", time.Now().Sub(start))
 
 	assert.Equal(t, true, res)
 	assert.Equal(t, nil, err)
@@ -344,6 +344,115 @@ func benchmarkAggRangeProof_Proof(numberofOutput int, b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		wit.Prove()
+	}
+}
+
+func TestAnStrictInnerProductProveVerifyUltraFast(t *testing.T) {
+	proofs := make([]*InnerProductProof, 0)
+	csList := make([][]byte, 0)
+	count := 5
+	for k := 0; k < count; k++ {
+		numValue := rand.Intn(maxOutputNumber)
+		numValuePad := pad(numValue)
+		aggParam := new(bulletproofParams)
+		aggParam.g = AggParam.g[0 : numValuePad*maxExp]
+		aggParam.h = AggParam.h[0 : numValuePad*maxExp]
+		aggParam.u = AggParam.u
+		aggParam.cs = AggParam.cs
+		wit := new(InnerProductWitness)
+		n := maxExp * numValuePad
+		wit.a = make([]*privacy.Scalar, n)
+		wit.b = make([]*privacy.Scalar, n)
+		for i := range wit.a {
+			wit.a[i] = new(privacy.Scalar).FromUint64(uint64(rand.Intn(1000000)))
+			wit.b[i] = new(privacy.Scalar).FromUint64(uint64(rand.Intn(1000000)))
+		}
+		c, err := innerProduct(wit.a, wit.b)
+		if err != nil {
+			privacy.Logger.Log.Info("Err: %v\n", err)
+		}
+		wit.p = new(privacy.Point).ScalarMult(aggParam.u, c)
+		for i := range wit.a {
+			wit.p.Add(wit.p, new(privacy.Point).ScalarMult(aggParam.g[i], wit.a[i]))
+			wit.p.Add(wit.p, new(privacy.Point).ScalarMult(aggParam.h[i], wit.b[i]))
+		}
+		proof, err := wit.Prove(aggParam)
+		if err != nil {
+			fmt.Printf("Err: %v\n", err)
+			return
+		}
+		proofs = append(proofs, proof)
+		csList = append(csList, aggParam.cs)
+	}
+	res := VerifyUltraFast(proofs, csList)
+	assert.Equal(t, true, res)
+	for j := 0; j < 50; j += 1 {
+		i := common.RandInt() % len(proofs)
+		r := common.RandInt() % 5
+		if r == 0 {
+			ran := common.RandInt() % len(proofs[i].l)
+			remember := proofs[i].l[ran]
+			proofs[i].l[ran] = obfuscatePoint(proofs[i].l[ran])
+			assert.NotEqual(t, remember, proofs[i].l[ran])
+			res := VerifyUltraFast(proofs, csList)
+			assert.Equal(t, false, res)
+			proofs[i].l[ran] = remember
+		} else if r == 1 {
+			ran := common.RandInt() % len(proofs[i].r)
+			remember := proofs[i].r[ran]
+			proofs[i].r[ran] = obfuscatePoint(proofs[i].r[ran])
+			assert.NotEqual(t, remember, proofs[i].r[ran])
+			res := VerifyUltraFast(proofs, csList)
+			assert.Equal(t, false, res)
+			proofs[i].r[ran] = remember
+		} else if r == 2 {
+			remember := proofs[i].a
+			proofs[i].a = obfuscateScalar(proofs[i].a)
+			assert.NotEqual(t, remember, proofs[i].a)
+			res := VerifyUltraFast(proofs, csList)
+			assert.Equal(t, false, res)
+			proofs[i].a = remember
+		} else if r == 3 {
+			remember := proofs[i].b
+			proofs[i].b = obfuscateScalar(proofs[i].b)
+			assert.NotEqual(t, remember, proofs[i].b)
+			res := VerifyUltraFast(proofs, csList)
+			assert.Equal(t, false, res)
+			proofs[i].b = remember
+		} else if r == 4 {
+			remember := proofs[i].p
+			proofs[i].p = obfuscatePoint(proofs[i].p)
+			assert.NotEqual(t, remember, proofs[i].p)
+			res := VerifyUltraFast(proofs, csList)
+			assert.Equal(t, false, res)
+			proofs[i].p = remember
+		}
+	}
+	res = VerifyUltraFast(proofs, csList)
+	assert.Equal(t, true, res)
+}
+func obfuscatePoint(value *privacy.Point) *privacy.Point {
+	for {
+		k := value.GetKey()
+		r := common.RandInt() % len(k)
+		i := common.RandInt() % 8
+		k[r] ^= (1 << uint8(i))
+		after, err := new(privacy.Point).SetKey(&k)
+		if err == nil {
+			return after
+		}
+	}
+}
+func obfuscateScalar(value *privacy.Scalar) *privacy.Scalar {
+	for {
+		k := value.GetKey()
+		r := common.RandInt() % len(k)
+		i := common.RandInt() % 8
+		k[r] ^= (1 << uint8(i))
+		after, err := new(privacy.Scalar).SetKey(&k)
+		if err == nil {
+			return after
+		}
 	}
 }
 

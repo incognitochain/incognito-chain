@@ -112,7 +112,7 @@ type Transaction interface {
 	ValidateSanityData(BlockchainRetriever) (bool, error)
 	ValidateTxByItself(bool, database.DatabaseInterface, BlockchainRetriever, byte) (bool, error)
 	ValidateType() bool
-	ValidateTransaction(bool, database.DatabaseInterface, byte, *common.Hash) (bool, error)
+	ValidateTransaction(bool, database.DatabaseInterface, byte, *common.Hash, bool) (bool, error)
 	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, BlockchainRetriever, *AccumulatedValues) (bool, error)
 
 	IsPrivacy() bool
