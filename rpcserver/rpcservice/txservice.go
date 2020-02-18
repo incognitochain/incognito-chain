@@ -885,19 +885,18 @@ func (txService TxService) PrivacyCustomTokenDetail(tokenIDStr string) ([]common
 		return nil, nil, err
 	}
 
-	listTxInitPrivacyToken, listTxInitPrivacyTokenCrossShard, err := txService.BlockChain.ListPrivacyCustomToken()
-	tokenData := &transaction.TxPrivacyTokenData{}
-	if err == nil {
-		if token, ok := listTxInitPrivacyToken[*tokenID]; ok {
-			tokenData.PropertyName = token.TxPrivacyTokenData.PropertyName
-			tokenData.PropertySymbol = token.TxPrivacyTokenData.PropertySymbol
-		} else if token, ok := listTxInitPrivacyTokenCrossShard[*tokenID]; ok {
-			tokenData.PropertyName = token.PropertyName
-			tokenData.PropertySymbol = token.PropertySymbol
-		}
+	tokenStates, err := txService.BlockChain.ListAllPrivacyCustomToken()
+	if err != nil {
+		return nil, nil, err
 	}
-
-	txs, _ := txService.BlockChain.GetPrivacyCustomTokenTxsHash(tokenID)
+	tokenData := &transaction.TxPrivacyTokenData{}
+	txs := []common.Hash{}
+	if token, ok := tokenStates[*tokenID]; ok {
+		tokenData.PropertyName = token.PropertyName()
+		tokenData.PropertySymbol = token.PropertySymbol()
+		txs = append(txs, token.InitTx())
+		txs = append(txs, token.Txs()...)
+	}
 	return txs, tokenData, nil
 }
 
