@@ -729,7 +729,7 @@ func (txService TxService) GetListPrivacyCustomTokenBalance(privateKey string) (
 	result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
 	lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
-	tokenStates, err := txService.BlockChain.ListPrivacyCustomTokenV2(shardIDSender)
+	tokenStates, err := txService.BlockChain.ListAllPrivacyCustomToken()
 	if err != nil {
 		Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
 		return jsonresult.ListCustomTokenBalance{}, NewRPCError(GetListPrivacyCustomTokenBalanceError, err)

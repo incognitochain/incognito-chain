@@ -572,28 +572,7 @@ func (blockService BlockService) GetActiveShards() int {
 }
 
 func (blockService BlockService) ListPrivacyCustomToken() (map[common.Hash]*statedb.TokenState, error) {
-	tokenStates := make(map[common.Hash]*statedb.TokenState)
-	for i := 0; i < blockService.BlockChain.BestState.Beacon.ActiveShards; i++ {
-		shardID := byte(i)
-		m, err := blockService.BlockChain.ListPrivacyCustomTokenV2(shardID)
-		if err != nil {
-			return nil, err
-		}
-		for newK, newV := range m {
-			if v, ok := tokenStates[newK]; !ok {
-				tokenStates[newK] = newV
-			} else {
-				if v.PropertyName() == "" && newV.PropertyName() != "" {
-					v.SetPropertyName(newV.PropertyName())
-				}
-				if v.PropertySymbol() == "" && newV.PropertySymbol() != "" {
-					v.SetPropertySymbol(newV.PropertySymbol())
-				}
-				v.AddTxs(newV.Txs())
-			}
-		}
-	}
-	return tokenStates, nil
+	return blockService.BlockChain.ListAllPrivacyCustomToken()
 }
 
 func (blockService BlockService) ListPrivacyCustomTokenByShardID(shardID byte) (map[common.Hash]*statedb.TokenState, error) {
