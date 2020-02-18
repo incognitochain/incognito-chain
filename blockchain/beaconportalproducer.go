@@ -3,7 +3,6 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"github.com/binance-chain/go-sdk/types/msg"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
@@ -406,7 +405,19 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		// todo: remove waitingPortingRequest
 		return [][]string{inst}, nil
 	} else {
-		return [][]string{}, errors.New("TokenID is not supported currently on Portal")
+		Logger.log.Errorf("TokenID is not supported currently on Portal")
+		inst := buildReqPTokensInst(
+			meta.UniquePortingID,
+			meta.TokenID,
+			meta.IncogAddressStr,
+			meta.PortingAmount,
+			meta.PortingProof,
+			meta.Type,
+			shardID,
+			actionData.TxReqID,
+			common.PortalReqPTokensRejectedChainStatus,
+		)
+		return [][]string{inst}, nil
 	}
 
 	return [][]string{}, nil
