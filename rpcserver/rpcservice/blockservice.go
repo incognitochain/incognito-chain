@@ -589,7 +589,7 @@ func (blockService BlockService) ListPrivacyCustomToken() (map[common.Hash]*stat
 				if v.PropertySymbol() == "" && newV.PropertySymbol() != "" {
 					v.SetPropertySymbol(newV.PropertySymbol())
 				}
-				//TODO: append all txs
+				v.AddTxs(newV.Txs())
 			}
 		}
 	}
