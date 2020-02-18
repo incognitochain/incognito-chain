@@ -310,7 +310,6 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 		item := jsonresult.NewPrivacyToken(tokenState)
 		result.ListCustomToken = append(result.ListCustomToken, *item)
 	}
-
 	// overwrite amounts with bridge tokens
 	allBridgeTokens, err := httpServer.blockService.GetAllBridgeTokens()
 	if err != nil {

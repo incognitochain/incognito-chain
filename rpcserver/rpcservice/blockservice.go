@@ -579,8 +579,20 @@ func (blockService BlockService) ListPrivacyCustomToken() (map[common.Hash]*stat
 		if err != nil {
 			return nil, err
 		}
-		for k, v := range m {
-			tokenStates[k] = v
+		for newK, newV := range m {
+			if v, ok := tokenStates[newK]; !ok {
+				tokenStates[newK] = newV
+			} else {
+				if v.PropertyName() == "" && newV.PropertyName() != "" {
+					v.SetPropertyName(newV.PropertyName())
+					tokenStates[newK] = v
+				}
+				v = tokenStates[newK]
+				if v.PropertySymbol() == "" && newV.PropertySymbol() != "" {
+					v.SetPropertySymbol(newV.PropertySymbol())
+					tokenStates[newK] = v
+				}
+			}
 		}
 	}
 	return tokenStates, nil
