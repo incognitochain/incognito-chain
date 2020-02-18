@@ -114,13 +114,8 @@ func TestAggregatedRangeProveVerify(t *testing.T) {
 		proof, err := wit.Prove()
 		assert.Equal(t, nil, err)
 
-		// verify the proof
-		res, err := proof.Verify()
-		assert.Equal(t, true, res)
-		assert.Equal(t, nil, err)
-
 		// verify the proof faster
-		res, err = proof.VerifyFaster()
+		res, err := proof.Verify()
 		assert.Equal(t, true, res)
 		assert.Equal(t, nil, err)
 
@@ -137,13 +132,8 @@ func TestAggregatedRangeProveVerify(t *testing.T) {
 		proof2 := new(AggregatedRangeProof)
 		proof2.SetBytes(bytes)
 
-		// verify the proof
-		res, err = proof2.Verify()
-		assert.Equal(t, true, res)
-		assert.Equal(t, nil, err)
-
 		// verify the proof faster
-		res, err = proof2.VerifyFaster()
+		res, err = proof2.Verify()
 		assert.Equal(t, true, res)
 		assert.Equal(t, nil, err)
 	}
@@ -173,7 +163,7 @@ func TestAggregatedRangeProveVerifyUltraFast(t *testing.T) {
 		proofs = append(proofs, proof)
 	}
 	// verify the proof faster
-	res, err := BPVerifyUltraFast(proofs)
+	res, err := VerifyBatching(proofs)
 	assert.Equal(t, true, res)
 	assert.Equal(t, nil, err)
 }
@@ -201,7 +191,7 @@ func TestBenchmarkAggregatedRangeProveVerifyUltraFast(t *testing.T) {
 		proof, err := wit.Prove()
 		assert.Equal(t, nil, err)
 		start := time.Now()
-		proof.VerifyFaster()
+		proof.Verify()
 		t1 += time.Now().Sub(start)
 
 		proofs = append(proofs, proof)
@@ -209,7 +199,7 @@ func TestBenchmarkAggregatedRangeProveVerifyUltraFast(t *testing.T) {
 	// verify the proof faster
 	fmt.Println("Verify Faster:", t1)
 	start = time.Now()
-	res, err := BPVerifyUltraFast(proofs)
+	res, err := VerifyBatching(proofs)
 	fmt.Println("Ultra Fast:", time.Now().Sub(start))
 
 	assert.Equal(t, true, res)
@@ -302,10 +292,9 @@ func TestInnerProductProveVerifyUltraFast(t *testing.T) {
 			wit.p = new(privacy.Point).ScalarMult(aggParam.u, c)
 		}
 
-
 		for i := range wit.a {
 			wit.p.Add(wit.p, new(privacy.Point).ScalarMult(aggParam.g[i], wit.a[i]))
-			if k == count -1 {
+			if k == count-1 {
 				wit.p.Add(wit.p, new(privacy.Point).ScalarMult(aggParam.h[i], wit.a[i]))
 			} else {
 				wit.p.Add(wit.p, new(privacy.Point).ScalarMult(aggParam.h[i], wit.b[i]))
@@ -327,7 +316,7 @@ func TestInnerProductProveVerifyUltraFast(t *testing.T) {
 	res = VerifyUltraFast(proofs[:len(proofs)-1], csList[:len(proofs)-1])
 	assert.Equal(t, false, res)
 	res = VerifyUltraFast(proofs[1:len(proofs)-1], csList[1:len(proofs)-1])
-	assert.Equal(t, true	, res)
+	assert.Equal(t, true, res)
 }
 func benchmarkAggRangeProof_Proof(numberofOutput int, b *testing.B) {
 	wit := new(AggregatedRangeWitness)
@@ -456,7 +445,7 @@ func obfuscateScalar(value *privacy.Scalar) *privacy.Scalar {
 	}
 }
 
-func benchmarkAggRangeProof_Verify(numberofOutput int, b *testing.B) {
+func benchmarkAggRangeProof_VerifyFaster(numberofOutput int, b *testing.B) {
 	wit := new(AggregatedRangeWitness)
 	values := make([]uint64, numberofOutput)
 	rands := make([]*privacy.Scalar, numberofOutput)
@@ -475,51 +464,32 @@ func benchmarkAggRangeProof_Verify(numberofOutput int, b *testing.B) {
 	}
 }
 
-func benchmarkAggRangeProof_VerifyFaster(numberofOutput int, b *testing.B) {
-	wit := new(AggregatedRangeWitness)
-	values := make([]uint64, numberofOutput)
-	rands := make([]*privacy.Scalar, numberofOutput)
-
-	for i := range values {
-		values[i] = uint64(common.RandInt64())
-		rands[i] = privacy.RandomScalar()
-	}
-	wit.Set(values, rands)
-	proof, _ := wit.Prove()
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		proof.VerifyFaster()
-	}
-}
-
 func BenchmarkAggregatedRangeWitness_Prove1(b *testing.B) { benchmarkAggRangeProof_Proof(1, b) }
-func BenchmarkAggregatedRangeProof_Verify1(b *testing.B)  { benchmarkAggRangeProof_Verify(1, b) }
+
 func BenchmarkAggregatedRangeProof_VerifyFaster1(b *testing.B) {
 	benchmarkAggRangeProof_VerifyFaster(1, b)
 }
 
 func BenchmarkAggregatedRangeWitness_Prove2(b *testing.B) { benchmarkAggRangeProof_Proof(2, b) }
-func BenchmarkAggregatedRangeProof_Verify2(b *testing.B)  { benchmarkAggRangeProof_Verify(2, b) }
+
 func BenchmarkAggregatedRangeProof_VerifyFaster2(b *testing.B) {
 	benchmarkAggRangeProof_VerifyFaster(2, b)
 }
 
 func BenchmarkAggregatedRangeWitness_Prove4(b *testing.B) { benchmarkAggRangeProof_Proof(4, b) }
-func BenchmarkAggregatedRangeProof_Verify4(b *testing.B)  { benchmarkAggRangeProof_Verify(4, b) }
+
 func BenchmarkAggregatedRangeProof_VerifyFaster4(b *testing.B) {
 	benchmarkAggRangeProof_VerifyFaster(4, b)
 }
 
 func BenchmarkAggregatedRangeWitness_Prove8(b *testing.B) { benchmarkAggRangeProof_Proof(8, b) }
-func BenchmarkAggregatedRangeProof_Verify8(b *testing.B)  { benchmarkAggRangeProof_Verify(8, b) }
+
 func BenchmarkAggregatedRangeProof_VerifyFaster8(b *testing.B) {
 	benchmarkAggRangeProof_VerifyFaster(8, b)
 }
 
 func BenchmarkAggregatedRangeWitness_Prove16(b *testing.B) { benchmarkAggRangeProof_Proof(16, b) }
-func BenchmarkAggregatedRangeProof_Verify16(b *testing.B)  { benchmarkAggRangeProof_Verify(16, b) }
+
 func BenchmarkAggregatedRangeProof_VerifyFaster16(b *testing.B) {
 	benchmarkAggRangeProof_VerifyFaster(16, b)
 }
