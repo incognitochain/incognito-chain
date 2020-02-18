@@ -555,23 +555,18 @@ func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 		{
 			tokenID, err := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
 			if err != nil {
-				allBridgeTokensBytes, err := statedb.GetAllBridgeTokens(txService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB())
+				return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
+			}
+			isExisted := statedb.PrivacyTokenIDExisted(txService.BlockChain.BestState.Shard[shardIDSender].GetCopiedTransactionStateDB(), *tokenID)
+			if !isExisted {
+				var isBridgeToken bool
+				_, allBridgeTokens, err := txService.BlockChain.GetAllBridgeTokens()
 				if err != nil {
 					return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
 				}
-				isBridgeToken := false
-				if len(allBridgeTokensBytes) > 0 {
-					var allBridgeTokens []*rawdb.BridgeTokenInfo
-					err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
-					if err != nil {
-						return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
-					}
-					if len(allBridgeTokens) > 0 {
-						for _, bridgeToken := range allBridgeTokens {
-							isBridgeToken = true
-							if bridgeToken.TokenID.IsEqual(tokenID) {
-							}
-						}
+				for _, bridgeToken := range allBridgeTokens {
+					if bridgeToken.TokenID.IsEqual(tokenID) {
+						isBridgeToken = true
 					}
 				}
 				if !isBridgeToken {

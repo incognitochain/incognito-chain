@@ -289,6 +289,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 			propertyID, _ := common.Hash{}.NewHashFromStr(params.tokenParams.PropertyID)
 			existed := statedb.PrivacyTokenIDExisted(params.stateDB, *propertyID)
 			if !existed {
+				//TODO: 0xmerman is bridge token existed
 				return NewTransactionErr(TokenIDExistedError, errors.New("invalid Token ID"))
 			}
 			Logger.log.Debugf("Token %+v wil be transfered with", propertyID)
