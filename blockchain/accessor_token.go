@@ -7,6 +7,31 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
+func (blockchain *BlockChain) ListAllPrivacyCustomToken() (map[common.Hash]*statedb.TokenState, error) {
+	tokenStates := make(map[common.Hash]*statedb.TokenState)
+	for i := 0; i < blockchain.BestState.Beacon.ActiveShards; i++ {
+		shardID := byte(i)
+		m, err := blockchain.ListPrivacyCustomTokenV2(shardID)
+		if err != nil {
+			return nil, err
+		}
+		for newK, newV := range m {
+			if v, ok := tokenStates[newK]; !ok {
+				tokenStates[newK] = newV
+			} else {
+				if v.PropertyName() == "" && newV.PropertyName() != "" {
+					v.SetPropertyName(newV.PropertyName())
+				}
+				if v.PropertySymbol() == "" && newV.PropertySymbol() != "" {
+					v.SetPropertySymbol(newV.PropertySymbol())
+				}
+				v.AddTxs(newV.Txs())
+			}
+		}
+	}
+	return tokenStates, nil
+}
+
 // ListCustomToken - return all custom token which existed in network
 func (blockchain *BlockChain) ListPrivacyCustomTokenV2(shardID byte) (map[common.Hash]*statedb.TokenState, error) {
 	tokenStates, err := statedb.ListPrivacyToken(blockchain.BestState.Shard[shardID].GetCopiedTransactionStateDB())

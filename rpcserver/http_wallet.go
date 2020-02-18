@@ -316,6 +316,7 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 	for index, _ := range result.ListCustomToken {
+		result.ListCustomToken[index].Image = common.Render([]byte(result.ListCustomToken[index].ID))
 		for _, bridgeToken := range allBridgeTokens {
 			if result.ListCustomToken[index].ID == bridgeToken.TokenID.String() {
 				result.ListCustomToken[index].Amount = bridgeToken.Amount
