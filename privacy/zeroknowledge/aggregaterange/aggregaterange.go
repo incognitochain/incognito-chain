@@ -534,7 +534,7 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 		return false, errors.New("verify aggregated range proof statement 1 failed")
 	}
 
-	innerProductArgValid := proof.innerProductProof.VerifyFaster(aggParam)
+	innerProductArgValid := proof.innerProductProof.Verify(aggParam)
 	if !innerProductArgValid {
 		privacy.Logger.Log.Errorf("verify aggregated range proof statement 2 failed")
 		return false, errors.New("verify aggregated range proof statement 2 failed")
@@ -543,7 +543,7 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	return true, nil
 }
 
-func VerifyBatching(proofs []*AggregatedRangeProof) (bool, error) {
+func VerifyBatchingAggregatedRangeProofs(proofs []*AggregatedRangeProof) (bool, error) {
 	innerProductProofs := make([]*InnerProductProof, 0)
 	csList := make([][]byte, 0)
 	for k := range proofs {
@@ -644,7 +644,7 @@ func VerifyBatching(proofs []*AggregatedRangeProof) (bool, error) {
 		csList = append(csList, aggParam.cs)
 	}
 
-	innerProductArgsValid := VerifyUltraFast(innerProductProofs, csList)
+	innerProductArgsValid := VerifyBatchingInnerProductProofs(innerProductProofs, csList)
 	if !innerProductArgsValid {
 		privacy.Logger.Log.Errorf("verify batch aggregated range proofs statement 2 failed")
 		return false, errors.New("verify batch aggregated range proofs statement 2 failed")

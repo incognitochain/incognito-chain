@@ -163,7 +163,7 @@ func TestAggregatedRangeProveVerifyUltraFast(t *testing.T) {
 		proofs = append(proofs, proof)
 	}
 	// verify the proof faster
-	res, err := VerifyBatching(proofs)
+	res, err := VerifyBatchingAggregatedRangeProofs(proofs)
 	assert.Equal(t, true, res)
 	assert.Equal(t, nil, err)
 }
@@ -199,7 +199,7 @@ func TestBenchmarkAggregatedRangeProveVerifyUltraFast(t *testing.T) {
 	// verify the proof faster
 	fmt.Println("Verify Faster:", t1)
 	start = time.Now()
-	res, err := VerifyBatching(proofs)
+	res, err := VerifyBatchingAggregatedRangeProofs(proofs)
 	fmt.Println("Ultra Fast:", time.Now().Sub(start))
 
 	assert.Equal(t, true, res)
@@ -243,18 +243,9 @@ func TestInnerProductProveVerify(t *testing.T) {
 			fmt.Printf("Err: %v\n", err)
 			return
 		}
-		res2 := proof.Verify(aggParam)
-		assert.Equal(t, true, res2)
-		res2prime := proof.VerifyFaster(aggParam)
-		assert.Equal(t, true, res2prime)
-
 		bytes := proof.Bytes()
 		proof2 := new(InnerProductProof)
 		proof2.SetBytes(bytes)
-		res3 := proof2.Verify(aggParam)
-		assert.Equal(t, true, res3)
-		res3prime := proof2.Verify(aggParam)
-		assert.Equal(t, true, res3prime)
 
 	}
 }
@@ -309,13 +300,13 @@ func TestInnerProductProveVerifyUltraFast(t *testing.T) {
 		proofs = append(proofs, proof)
 		csList = append(csList, aggParam.cs)
 	}
-	res := VerifyUltraFast(proofs, csList)
+	res := VerifyBatchingInnerProductProofs(proofs, csList)
 	assert.Equal(t, false, res)
-	res = VerifyUltraFast(proofs[1:], csList[1:])
+	res = VerifyBatchingInnerProductProofs(proofs[1:], csList[1:])
 	assert.Equal(t, false, res)
-	res = VerifyUltraFast(proofs[:len(proofs)-1], csList[:len(proofs)-1])
+	res = VerifyBatchingInnerProductProofs(proofs[:len(proofs)-1], csList[:len(proofs)-1])
 	assert.Equal(t, false, res)
-	res = VerifyUltraFast(proofs[1:len(proofs)-1], csList[1:len(proofs)-1])
+	res = VerifyBatchingInnerProductProofs(proofs[1:len(proofs)-1], csList[1:len(proofs)-1])
 	assert.Equal(t, true, res)
 }
 func benchmarkAggRangeProof_Proof(numberofOutput int, b *testing.B) {
@@ -373,7 +364,7 @@ func TestAnStrictInnerProductProveVerifyUltraFast(t *testing.T) {
 		proofs = append(proofs, proof)
 		csList = append(csList, aggParam.cs)
 	}
-	res := VerifyUltraFast(proofs, csList)
+	res := VerifyBatchingInnerProductProofs(proofs, csList)
 	assert.Equal(t, true, res)
 	for j := 0; j < 50; j += 1 {
 		i := common.RandInt() % len(proofs)
@@ -383,7 +374,7 @@ func TestAnStrictInnerProductProveVerifyUltraFast(t *testing.T) {
 			remember := proofs[i].l[ran]
 			proofs[i].l[ran] = obfuscatePoint(proofs[i].l[ran])
 			assert.NotEqual(t, remember, proofs[i].l[ran])
-			res := VerifyUltraFast(proofs, csList)
+			res := VerifyBatchingInnerProductProofs(proofs, csList)
 			assert.Equal(t, false, res)
 			proofs[i].l[ran] = remember
 		} else if r == 1 {
@@ -391,33 +382,33 @@ func TestAnStrictInnerProductProveVerifyUltraFast(t *testing.T) {
 			remember := proofs[i].r[ran]
 			proofs[i].r[ran] = obfuscatePoint(proofs[i].r[ran])
 			assert.NotEqual(t, remember, proofs[i].r[ran])
-			res := VerifyUltraFast(proofs, csList)
+			res := VerifyBatchingInnerProductProofs(proofs, csList)
 			assert.Equal(t, false, res)
 			proofs[i].r[ran] = remember
 		} else if r == 2 {
 			remember := proofs[i].a
 			proofs[i].a = obfuscateScalar(proofs[i].a)
 			assert.NotEqual(t, remember, proofs[i].a)
-			res := VerifyUltraFast(proofs, csList)
+			res := VerifyBatchingInnerProductProofs(proofs, csList)
 			assert.Equal(t, false, res)
 			proofs[i].a = remember
 		} else if r == 3 {
 			remember := proofs[i].b
 			proofs[i].b = obfuscateScalar(proofs[i].b)
 			assert.NotEqual(t, remember, proofs[i].b)
-			res := VerifyUltraFast(proofs, csList)
+			res := VerifyBatchingInnerProductProofs(proofs, csList)
 			assert.Equal(t, false, res)
 			proofs[i].b = remember
 		} else if r == 4 {
 			remember := proofs[i].p
 			proofs[i].p = obfuscatePoint(proofs[i].p)
 			assert.NotEqual(t, remember, proofs[i].p)
-			res := VerifyUltraFast(proofs, csList)
+			res := VerifyBatchingInnerProductProofs(proofs, csList)
 			assert.Equal(t, false, res)
 			proofs[i].p = remember
 		}
 	}
-	res = VerifyUltraFast(proofs, csList)
+	res = VerifyBatchingInnerProductProofs(proofs, csList)
 	assert.Equal(t, true, res)
 }
 func obfuscatePoint(value *privacy.Point) *privacy.Point {

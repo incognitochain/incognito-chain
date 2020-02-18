@@ -198,58 +198,8 @@ func (wit InnerProductWitness) Prove(aggParam *bulletproofParams) (*InnerProduct
 
 	return proof, nil
 }
+
 func (proof InnerProductProof) Verify(aggParam *bulletproofParams) bool {
-	//var aggParam = newBulletproofParams(1)
-	p := new(privacy.Point)
-	p.Set(proof.p)
-	n := len(aggParam.g)
-	G := make([]*privacy.Point, n)
-	H := make([]*privacy.Point, n)
-	for i := range G {
-		G[i] = new(privacy.Point).Set(aggParam.g[i])
-		H[i] = new(privacy.Point).Set(aggParam.h[i])
-	}
-
-	for i := range proof.l {
-		nPrime := n / 2
-		// calculate challenge x = hash(G || H || u || p || x || l || r)
-		x := generateChallenge([][]byte{aggParam.cs, p.ToBytesS(), proof.l[i].ToBytesS(), proof.r[i].ToBytesS()})
-		xInverse := new(privacy.Scalar).Invert(x)
-		xSquare := new(privacy.Scalar).Mul(x, x)
-		xSquareInverse := new(privacy.Scalar).Mul(xInverse, xInverse)
-
-		// calculate GPrime, HPrime, PPrime for the next loop
-		GPrime := make([]*privacy.Point, nPrime)
-		HPrime := make([]*privacy.Point, nPrime)
-
-		for j := 0; j < len(GPrime); j++ {
-			GPrime[j] = new(privacy.Point).AddPedersen(xInverse, G[j], x, G[j+nPrime])
-			HPrime[j] = new(privacy.Point).AddPedersen(x, H[j], xInverse, H[j+nPrime])
-		}
-		// calculate x^2 * l + P + xInverse^2 * r
-		PPrime := new(privacy.Point).AddPedersen(xSquare, proof.l[i], xSquareInverse, proof.r[i])
-		PPrime.Add(PPrime, p)
-
-		p = PPrime
-		G = GPrime
-		H = HPrime
-		n = nPrime
-	}
-
-	c := new(privacy.Scalar).Mul(proof.a, proof.b)
-	rightPoint := new(privacy.Point).AddPedersen(proof.a, G[0], proof.b, H[0])
-	rightPoint.Add(rightPoint, new(privacy.Point).ScalarMult(aggParam.u, c))
-	res := privacy.IsPointEqual(rightPoint, p)
-	if !res {
-		privacy.Logger.Log.Error("Inner product argument failed:")
-		privacy.Logger.Log.Error("p: %v\n", p)
-		privacy.Logger.Log.Error("RightPoint: %v\n", rightPoint)
-	}
-
-	return res
-}
-
-func (proof InnerProductProof) VerifyFaster(aggParam *bulletproofParams) bool {
 	//var aggParam = newBulletproofParams(1)
 	p := new(privacy.Point)
 	p.Set(proof.p)
@@ -318,25 +268,25 @@ func (proof InnerProductProof) VerifyFaster(aggParam *bulletproofParams) bool {
 	return res
 }
 
-func VerifyUltraFast(proofs []*InnerProductProof, csList [][]byte) bool {
+func VerifyBatchingInnerProductProofs(proofs []*InnerProductProof, csList [][]byte) bool {
 	batchSize := len(proofs)
 	// Generate list of random value
 	sum_abAlpha := new(privacy.Scalar).FromUint64(0)
 	pList := make([]*privacy.Point, 0)
 	alphaList := make([]*privacy.Scalar, 0)
-	LList := make([]*privacy.Point,0)
+	LList := make([]*privacy.Point, 0)
 	nXSquareList := make([]*privacy.Scalar, 0)
-	RList := make([]*privacy.Point,0)
+	RList := make([]*privacy.Point, 0)
 	nXInverseSquareList := make([]*privacy.Scalar, 0)
 
 	maxN := 0
-	asAlphaList := make([]*privacy.Scalar,len(AggParam.g))
-	bsInverseAlphaList := make([]*privacy.Scalar,len(AggParam.g))
-	for k:= 0; k < len(AggParam.g); k++ {
+	asAlphaList := make([]*privacy.Scalar, len(AggParam.g))
+	bsInverseAlphaList := make([]*privacy.Scalar, len(AggParam.g))
+	for k := 0; k < len(AggParam.g); k++ {
 		asAlphaList[k] = new(privacy.Scalar).FromUint64(0)
 		bsInverseAlphaList[k] = new(privacy.Scalar).FromUint64(0)
 	}
-	for i:= 0; i < batchSize; i++ {
+	for i := 0; i < batchSize; i++ {
 		alpha := privacy.RandomScalar()
 		abAlpha := new(privacy.Scalar).Mul(proofs[i].a, proofs[i].b)
 		abAlpha.Mul(abAlpha, alpha)
@@ -366,7 +316,7 @@ func VerifyUltraFast(proofs []*InnerProductProof, csList [][]byte) bool {
 		}
 
 		p := new(privacy.Point).Set(proofs[i].p)
-		for j:=0 ; j < len(proofs[i].l); j++ {
+		for j := 0; j < len(proofs[i].l); j++ {
 			// calculate challenge x = hash(hash(G || H || u || p) || x || l || r)
 			xList[j] = generateChallenge([][]byte{csList[i], p.ToBytesS(), proofs[i].l[j].ToBytesS(), proofs[i].r[j].ToBytesS()})
 			xInverseList[j] = new(privacy.Scalar).Invert(xList[j])
@@ -390,9 +340,9 @@ func VerifyUltraFast(proofs []*InnerProductProof, csList [][]byte) bool {
 				}
 			}
 		}
-		for k:=0; k < n; k++ {
+		for k := 0; k < n; k++ {
 			asAlphaList[k].Add(asAlphaList[k], s[k])
-			bsInverseAlphaList[k].Add(bsInverseAlphaList[k],sInverse[k])
+			bsInverseAlphaList[k].Add(bsInverseAlphaList[k], sInverse[k])
 		}
 
 		LList = append(LList, proofs[i].l...)

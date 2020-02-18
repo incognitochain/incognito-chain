@@ -374,7 +374,7 @@ func ValidateBatchTxsByItself(
 		}
 		bulletProofList = append(bulletProofList, tx.Proof.GetAggregatedRangeProof())
 	}
-	ok, error := aggregaterange.VerifyBatching(bulletProofList)
+	ok, error := aggregaterange.VerifyBatchingAggregatedRangeProofs(bulletProofList)
 	if !ok {
 		if error != nil {
 			Logger.log.Error(error)
