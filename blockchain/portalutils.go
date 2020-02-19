@@ -256,6 +256,7 @@ func getPortingRequestsState(
 ) (map[string]*lvdb.PortingRequest, error) {
 	portingRequestState := make(map[string]*lvdb.PortingRequest)
 	portingRequestStateKeysBytes, portingRequestStateValuesBytes, err := db.GetAllRecordsPortalByPrefix(beaconHeight, lvdb.PortalPortingRequestsPrefix)
+
 	if err != nil {
 		return nil, err
 	}

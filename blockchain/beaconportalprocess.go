@@ -164,6 +164,8 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 
 func (blockchain *BlockChain) processPortalUserRegister(
 	beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
+	db := blockchain.GetDatabase()
+
 	if currentPortalState == nil {
 		Logger.log.Errorf("current portal state is nil")
 		return nil
@@ -177,9 +179,14 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		return nil
 	}
 
-	keyPortingRequestState := lvdb.NewPortingRequestKey(beaconHeight, portingRequestContent.UniqueRegisterId)
+	//check unique id from record from db
+	keyPortingRequest := append(lvdb.PortalPortingRequestsPrefix, []byte(portingRequestContent.UniqueRegisterId)...)
+	portingRequestExist, err := db.GetItemPortalByPrefix(keyPortingRequest)
+	if err != nil {
+		return err
+	}
 
-	if currentPortalState.PortingRequests[keyPortingRequestState] != nil {
+	if portingRequestExist != 0 {
 		Logger.log.Errorf("Unique porting id is duplicated")
 		return nil
 	}
@@ -217,8 +224,15 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		return err
 	}
 
-	currentPortalState.PortingRequests[keyPortingRequestState] = newPortingRequestState
+	//save porting request
+	keyPortingRequestState := lvdb.NewPortingRequestKey(beaconHeight + 1, portingRequestContent.UniqueRegisterId)
+	err = db.StorePortingRequestItem([]byte(keyPortingRequestState), newPortingRequestState)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while store porting request item: %+v", err)
+		return nil
+	}
 
+	//save custodian state
 	for address, itemCustodian := range custodians {
 		custodian := currentPortalState.CustodianPoolState[address]
 		totalCollateral := custodian.TotalCollateral
@@ -239,6 +253,8 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		}
 		currentPortalState.CustodianPoolState[address] = newCustodian
 	}
+
+	//save waiting request porting state
 
 	return nil
 }

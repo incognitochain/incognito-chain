@@ -1,6 +1,7 @@
 package lvdb
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
@@ -77,9 +78,9 @@ func NewCustodianStateKey (beaconHeight uint64, custodianAddress string) string 
 
 func NewPortingRequestKey (beaconHeight uint64, uniquePortingID string) string {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
-	key := append(PortalPortingRequestsPrefix, beaconHeightBytes...)
-	key = append(key, []byte(uniquePortingID)...)
-	return string(key)
+	key := append(PortalPortingRequestsPrefix, []byte(uniquePortingID)...)
+	key = append(key, beaconHeightBytes...)
+	return string(key) //prefix + uniqueId + beaconHeight
 }
 
 func NewPortingReqKey (beaconHeight uint64, portingID string) string {
@@ -154,5 +155,31 @@ func (db *db) TrackCustodianDepositCollateral(prefix []byte, suffix []byte, cont
 		return database.NewDatabaseError(database.TrackCustodianDepositError, errors.Wrap(err, "db.lvdb.put"))
 	}
 	return nil
+}
 
+func (db *db) StorePortingRequestItem(keyId []byte, content interface{}) error {
+	contributionBytes, err := json.Marshal(content)
+	if err != nil {
+		return err
+	}
+
+	err = db.Put(keyId, contributionBytes)
+	if err != nil {
+		return database.NewDatabaseError(database.StorePortingRequestStateError, errors.Wrap(err, "db.lvdb.put"))
+	}
+
+	return nil
+}
+
+func (db *db) GetItemPortalByPrefix(prefix []byte) (byte, error) {
+	itemRecord, dbErr := db.lvdb.Get(prefix, nil)
+	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
+		return 0, database.NewDatabaseError(database.GetItemPortalByPrefixError, dbErr)
+	}
+
+	if len(itemRecord) == 0 {
+		return 0, nil
+	}
+
+	return itemRecord[0], nil
 }

@@ -111,6 +111,7 @@ const (
 	StoreExchangeRatesRequestStateError
 	StoreFinalExchangeRatesStateError
 	TrackCustodianDepositError
+	GetItemPortalByPrefixError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -222,6 +223,7 @@ var ErrCodeMessage = map[int]struct {
 	TrackCustodianDepositError:             {-14004, "Track custodian deposit error"},
 	StoreExchangeRatesRequestStateError:	{-14005, "Store exchange rates request error"},
 	StoreFinalExchangeRatesStateError:		{-14006, "Store final exchange rates request error"},
+	GetItemPortalByPrefixError:				{-14007, "Get item portal by prefix error"},
 }
 
 type DatabaseError struct {
