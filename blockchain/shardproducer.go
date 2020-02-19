@@ -111,7 +111,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	}
 	Logger.log.Infof("Get Beacon Block With Height %+v, Shard BestState %+v", beaconHeight, shardBestState.BeaconHeight)
 	//Fetch beacon block from height
-	beaconBlocks, err := FetchBeaconBlockFromHeightV2(blockGenerator.chain.GetDatabase(), shardBestState.BeaconHeight+1, beaconHeight)
+	beaconBlocks, err := FetchBeaconBlockFromHeight(blockGenerator.chain.GetDatabase(), shardBestState.BeaconHeight+1, beaconHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -321,7 +321,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 					if _, ok := autoStaking[outPublicKeys]; ok {
 						continue
 					}
-					tx, err := blockGenerator.buildReturnStakingAmountTxV2(outPublicKeys, producerPrivateKey, shardID)
+					tx, err := blockGenerator.buildReturnStakingAmountTx(outPublicKeys, producerPrivateKey, shardID)
 					if err != nil {
 						Logger.log.Error(err)
 						continue
