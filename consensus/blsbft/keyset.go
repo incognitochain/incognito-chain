@@ -89,7 +89,7 @@ func (e *BLSBFT) LoadUserKey(privateSeed string) error {
 	return nil
 }
 
-func (e *BLSBFT) LoadUserKeyFromIncPrivateKey(privateKey string) (string, error) {
+func LoadUserKeyFromIncPrivateKey(privateKey string) (string, error) {
 	wl, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
 		return "", NewConsensusError(LoadKeyError, err)

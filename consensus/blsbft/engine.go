@@ -1,7 +1,6 @@
 package blsbft
 
 import (
-	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -15,27 +14,40 @@ type Engine struct {
 	consensusName        string
 	currentMiningProcess ConsensusInterface
 	config               *EngineConfig
-	status               int //0 > stop, 1: running
+	IsEnabled            int //0 > stop, 1: running
+
+	curringMiningState struct {
+		layer   string
+		role    string
+		chainID int
+	}
 }
 
 func (engine *Engine) GetUserLayer() (string, int) {
-	panic("implement me")
-}
-
-func (engine *Engine) IsOngoing(chainName string) bool {
-	panic("implement me")
-}
-
-func (engine *Engine) CommitteeChange(chainName string) {
-	panic("implement me")
-}
-
-func (s *Engine) GetMiningPublicKeys() incognitokey.CommitteePublicKey {
-	return *s.userMiningPublicKeys[s.consensusName]
+	return engine.curringMiningState.layer, engine.curringMiningState.chainID
 }
 
 func (s *Engine) GetUserRole() (string, string, int) {
-	return "", "", 0
+	return s.curringMiningState.role, s.curringMiningState.layer, s.curringMiningState.chainID
+}
+
+func (engine *Engine) IsOngoing(chainName string) bool {
+	if engine.currentMiningProcess == nil {
+		return false
+	}
+	return engine.currentMiningProcess.IsOngoing()
+}
+
+//TODO: remove all places use this function
+func (engine *Engine) CommitteeChange(chainName string) {
+	return
+}
+
+func (s *Engine) GetMiningPublicKeys() *incognitokey.CommitteePublicKey {
+	if s.userMiningPublicKeys[s.consensusName] == nil {
+		return nil
+	}
+	return s.userMiningPublicKeys[s.consensusName]
 }
 
 func (s *Engine) WatchCommitteeChange() {
@@ -43,11 +55,27 @@ func (s *Engine) WatchCommitteeChange() {
 		time.AfterFunc(time.Second, s.WatchCommitteeChange)
 	}()
 
-	if s.status == 0 {
+	//extract role, layer, chainID
+	role, chainID := s.config.Node.GetUserMiningState()
+	s.curringMiningState.chainID = chainID
+	s.curringMiningState.role = role
+
+	if chainID == -2 {
+		s.curringMiningState.role = ""
+		s.curringMiningState.layer = ""
+	} else if chainID == -1 {
+		s.curringMiningState.layer = "beacon"
+	} else if chainID >= 0 {
+		s.curringMiningState.layer = "shard"
+	} else {
+		panic("User Mining State Error")
+	}
+
+	//check if enable
+	if s.IsEnabled == 0 {
 		return
 	}
 
-	role, chainID := s.config.Node.GetUserMiningState()
 	for _, BFTProcess := range s.BFTProcess {
 		if role == "" || chainID != BFTProcess.GetChainID() {
 			BFTProcess.Stop()
@@ -74,7 +102,6 @@ func (s *Engine) WatchCommitteeChange() {
 		}
 		miningProcess = s.BFTProcess[chainID]
 	}
-
 	s.currentMiningProcess = miningProcess
 }
 
@@ -86,12 +113,6 @@ func NewConsensusEngine(config *EngineConfig) *Engine {
 	}
 	go engine.WatchCommitteeChange()
 	return engine
-}
-
-func (engine *Engine) OnBFTMsg(msg *wire.MessageBFT) {
-	if engine.currentMiningProcess.GetChainKey() == msg.ChainKey {
-		engine.currentMiningProcess.ProcessBFTMsg(msg)
-	}
 }
 
 func (engine *Engine) Start() error {
@@ -110,7 +131,7 @@ func (engine *Engine) Start() error {
 			panic(err)
 		}
 	}
-	engine.status = 1
+	engine.IsEnabled = 1
 	return nil
 }
 
@@ -119,13 +140,12 @@ func (engine *Engine) Stop() error {
 		BFTProcess.Stop()
 		engine.currentMiningProcess = nil
 	}
-	engine.status = 0
+	engine.IsEnabled = 0
 	return nil
 }
 
-func (engine *Engine) ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error) {
-	if engine.currentMiningProcess != nil {
-		return engine.currentMiningProcess.ExtractBridgeValidationData(block)
+func (engine *Engine) OnBFTMsg(msg *wire.MessageBFT) {
+	if engine.currentMiningProcess.GetChainKey() == msg.ChainKey {
+		engine.currentMiningProcess.ProcessBFTMsg(msg)
 	}
-	return nil, nil, NewConsensusError(ConsensusTypeNotExistError, errors.New(block.GetConsensusType()))
 }

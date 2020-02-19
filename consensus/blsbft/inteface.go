@@ -47,8 +47,6 @@ type ConsensusInterface interface {
 
 	// LoadUserKey - load user mining key
 	LoadUserKey(miningKey string) error
-	// LoadUserKeyFromIncPrivateKey - load user mining key from incognito privatekey
-	LoadUserKeyFromIncPrivateKey(privateKey string) (string, error)
 	// GetUserPublicKey - get user public key of loaded mining key
 	GetUserPublicKey() *incognitokey.CommitteePublicKey
 	// ValidateData - validate data with this consensus signature scheme

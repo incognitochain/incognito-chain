@@ -119,7 +119,7 @@ func (engine *Engine) GenMiningKeyFromPrivateKey(privateKey string) (string, err
 	var keyList string
 	var key string
 	key = "bls"
-	consensusKey, err := engine.currentMiningProcess.LoadUserKeyFromIncPrivateKey(privateKey)
+	consensusKey, err := LoadUserKeyFromIncPrivateKey(privateKey)
 	if err != nil {
 		return "", err
 	}
@@ -129,4 +129,11 @@ func (engine *Engine) GenMiningKeyFromPrivateKey(privateKey string) (string, err
 	}
 	keyList += key
 	return keyList, nil
+}
+
+func (engine *Engine) ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error) {
+	if engine.currentMiningProcess != nil {
+		return engine.currentMiningProcess.ExtractBridgeValidationData(block)
+	}
+	return nil, nil, NewConsensusError(ConsensusTypeNotExistError, errors.New(block.GetConsensusType()))
 }

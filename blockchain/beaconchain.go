@@ -43,6 +43,10 @@ func (chain *BeaconChain) GetCommittee() []incognitokey.CommitteePublicKey {
 	return chain.BestState.GetBeaconCommittee()
 }
 
+func (chain *BeaconChain) GetPendingCommittee() []incognitokey.CommitteePublicKey {
+	return chain.BestState.GetBeaconPendingValidator()
+}
+
 func (chain *BeaconChain) GetCommitteeSize() int {
 	return len(chain.BestState.BeaconCommittee)
 }

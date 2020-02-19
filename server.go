@@ -57,12 +57,12 @@ type Server struct {
 	started     int32
 	startupTime int64
 
-	protocolVersion   string
-	isEnableMining    bool
-	chainParams       *blockchain.Params
-	connManager       *connmanager.ConnManager
-	blockChain        *blockchain.BlockChain
-	syncker           *syncker.Syncker
+	protocolVersion string
+	isEnableMining  bool
+	chainParams     *blockchain.Params
+	connManager     *connmanager.ConnManager
+	blockChain      *blockchain.BlockChain
+	//syncker           *syncker.Syncker
 	dataBase          database.DatabaseInterface
 	memCache          *memcache.MemoryCache
 	rpcServer         *rpcserver.RpcServer
@@ -329,7 +329,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.highway = peerv2.NewConnManager(
 		host,
 		cfg.DiscoverPeersAddress,
-		&pubkey,
+		pubkey,
 		serverObj.consensusEngine,
 		dispatcher,
 		cfg.NodeMode,
@@ -508,7 +508,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	})
 	serverObj.connManager = connManager
 
-	serverObj.syncker = syncker.NewSyncker(incognitokey.CommitteePublicKey{}, serverObj)
+	//serverObj.syncker = syncker.NewSyncker(incognitokey.CommitteePublicKey{}, serverObj)
 	// Start up persistent peers.
 	permanentPeers := cfg.ConnectPeers
 	if len(permanentPeers) == 0 {
@@ -753,7 +753,7 @@ func (serverObj Server) Start() {
 		go serverObj.beaconPool.Start(serverObj.cQuit)
 	}
 
-	//go serverObj.blockChain.Synker.Start()
+	go serverObj.blockChain.Synker.Start()
 
 	if serverObj.memPool != nil {
 		err := serverObj.memPool.LoadOrResetDatabaseMempool()
@@ -1272,9 +1272,9 @@ func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 
 func (serverObj *Server) OnPeerState(_ *peer.PeerConn, msg *wire.MessagePeerState) {
 	Logger.log.Debug("Receive a peerstate START")
-	//var txProcessed chan struct{}
-	//serverObj.netSync.QueueMessage(nil, msg, txProcessed)
-	serverObj.syncker.PeerStateCh <- msg
+	var txProcessed chan struct{}
+	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
+	//serverObj.syncker.PeerStateCh <- msg
 	Logger.log.Debug("Receive a peerstate END")
 }
 
@@ -1310,8 +1310,7 @@ func (serverObj *Server) GetNodeRole() string {
 	if cfg.NodeMode == "relay" {
 		return "RELAY"
 	}
-	role, shardID := serverObj.consensusEngine.GetUserLayer()
-
+	role, shardID := serverObj.GetUserMiningState()
 	switch shardID {
 	case -2:
 		return ""
@@ -1320,25 +1319,6 @@ func (serverObj *Server) GetNodeRole() string {
 	default:
 		return "SHARD_" + role
 	}
-	// pubkey := serverObj.userKeySet.GetPublicKeyInBase58CheckEncode()
-	// if common.IndexOfStr(pubkey, blockchain.GetBestStateBeacon().BeaconCommittee) > -1 {
-	// 	return "BEACON_VALIDATOR"
-	// }
-	// if common.IndexOfStr(pubkey, blockchain.GetBestStateBeacon().BeaconPendingValidator) > -1 {
-	// 	return "BEACON_WAITING"
-	// }
-	// shardCommittee := blockchain.GetBestStateBeacon().GetShardCommittee()
-	// for _, s := range shardCommittee {
-	// 	if common.IndexOfStr(pubkey, s) > -1 {
-	// 		return "SHARD_VALIDATOR"
-	// 	}
-	// }
-	// shardPendingCommittee := blockchain.GetBestStateBeacon().GetShardPendingValidator()
-	// for _, s := range shardPendingCommittee {
-	// 	if common.IndexOfStr(pubkey, s) > -1 {
-	// 		return "SHARD_VALIDATOR"
-	// 	}
-	// }
 }
 
 /*
@@ -1808,7 +1788,7 @@ func (serverObj *Server) BoardcastNodeState() error {
 	publicKeyInBase58CheckEncode, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
 	// signDataInBase58CheckEncode := common.EmptyString
 	if publicKeyInBase58CheckEncode != "" {
-		_, shardID := serverObj.consensusEngine.GetUserLayer()
+		_, shardID := serverObj.GetUserMiningState()
 		if (cfg.NodeMode == common.NodeModeAuto || cfg.NodeMode == common.NodeModeShard) && shardID >= 0 {
 			msg.(*wire.MessagePeerState).CrossShardPool[byte(shardID)] = serverObj.crossShardPool[byte(shardID)].GetValidBlockHeight()
 		}
@@ -1853,17 +1833,22 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 	}
 	if cfg.MiningKeys != "" || cfg.PrivateKey != "" {
 		//Beacon: chain = -1
-		layer, role, shardID := serverObj.consensusEngine.GetUserRole()
-
-		if shardID == -2 {
+		role, chainID := serverObj.GetUserMiningState()
+		layer := ""
+		if chainID == -2 {
 			return notmining
 		}
-		if chain != -1 && layer == common.BeaconRole {
-			return notmining
+		if chainID == -1 {
+			layer = common.BeaconRole
+		} else if chainID >= 0 {
+			layer = common.ShardRole
 		}
 
 		switch layer {
 		case common.BeaconRole:
+			if chain != -1 {
+				return notmining
+			}
 			switch role {
 			case common.CommitteeRole:
 				if serverObj.blockChain.Synker.IsLatest(false, 0) {
@@ -1876,7 +1861,7 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 				return waiting
 			}
 		case common.ShardRole:
-			if chain != shardID {
+			if chain != chainID {
 				return notmining
 			}
 			switch role {
@@ -2304,5 +2289,36 @@ func (serverObj *Server) GetBlocksViaChannel(sID int, fromBlockHeight, finalBloc
 }
 
 func (s *Server) GetUserMiningState() (role string, chainID int) {
-	return "", 0
+	userPk := s.consensusEngine.GetMiningPublicKeys()
+	if s.blockChain == nil {
+		return "", -2
+	}
+	for chainName, chain := range s.blockChain.Chains {
+		if chainName == "beacon" {
+			//For Beacon, check in beacon state, if user is in committee
+			for _, v := range chain.GetCommittee() {
+				if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
+					return common.CommitteeRole, -1
+				}
+			}
+			for _, v := range chain.GetPendingCommittee() {
+				if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
+					return common.PendingRole, -1
+				}
+			}
+		} else {
+			//For Shard, loop through shard chain and check if they in committee
+			for _, v := range chain.GetCommittee() {
+				if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
+					return common.CommitteeRole, chain.GetShardID()
+				}
+			}
+			for _, v := range chain.GetPendingCommittee() {
+				if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
+					return common.PendingRole, chain.GetShardID()
+				}
+			}
+		}
+	}
+	return "", -2
 }
