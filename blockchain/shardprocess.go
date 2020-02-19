@@ -872,19 +872,18 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(txs []metadata.Trans
 		panic("TempTxPool Is not Empty")
 	}
 	defer blockchain.config.TempTxPool.EmptyPool()
-
-	// TODO:
-	/*err := blockchain.config.TempTxPool.ValidateTxList(txs)
-	if err != nil {
-		Logger.log.Errorf("Error validating transaction in block creation: %+v \n", err)
-		return NewBlockChainError(TransactionFromNewBlockError, errors.New("Some Transactions in New Block IS invalid"))
-	}*/
-	// TODO: uncomment to synchronize validate method with shard process and mempool
-	for index, tx := range txs {
+	listTxs := []metadata.Transaction{}
+	for _, tx := range txs {
 		if !tx.IsSalaryTx() {
-			_, err := blockchain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx, beaconHeight)
-			if err != nil {
-				return NewBlockChainError(TransactionFromNewBlockError, fmt.Errorf("Transaction %+v, index %+v get %+v ", *tx.Hash(), index, err))
+			listTxs = append(listTxs, tx)
+		}
+	}
+	_, err := blockchain.config.TempTxPool.MaybeAcceptBatchTransactionForBlockProducing(txs, beaconHeight)
+	if err != nil {
+		for index, tx := range listTxs {
+			_, err1 := blockchain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx, beaconHeight)
+			if err1 != nil {
+				return NewBlockChainError(TransactionFromNewBlockError, fmt.Errorf("Transaction %+v, index %+v get %+v ", *tx.Hash(), index, err1))
 			}
 		}
 	}

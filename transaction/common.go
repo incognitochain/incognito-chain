@@ -3,6 +3,10 @@ package transaction
 import (
 	"encoding/json"
 	"errors"
+	"math"
+	"math/big"
+	"math/rand"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
@@ -10,9 +14,6 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
-	"math"
-	"math/big"
-	"math/rand"
 )
 
 // ConvertOutputCoinToInputCoin - convert output coin from old tx to input coin for new tx

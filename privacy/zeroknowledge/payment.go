@@ -716,7 +716,7 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 	return true, nil
 }
 
-func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
+func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash, isBatch bool) (bool, error) {
 	// verify for input coins
 	cmInputSum := make([]*privacy.Point, len(proof.oneOfManyProof))
 	for i := 0; i < len(proof.oneOfManyProof); i++ {
@@ -786,10 +786,12 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 	}
 
 	// Verify the proof that output values and sum of them do not exceed v_max
-	valid, err := proof.aggregatedRangeProof.VerifyFaster()
-	if !valid {
-		privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Multi-range failed")
-		return false, privacy.NewPrivacyErr(privacy.VerifyAggregatedProofFailedErr, err)
+	if isBatch == false {
+		valid, err := proof.aggregatedRangeProof.Verify()
+		if !valid {
+			privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Multi-range failed")
+			return false, privacy.NewPrivacyErr(privacy.VerifyAggregatedProofFailedErr, err)
+		}
 	}
 
 	// Verify the proof that sum of all input values is equal to sum of all output values
@@ -820,12 +822,11 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 	return true, nil
 }
 
-func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
+func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash, isBatch bool) (bool, error) {
 	// has no privacy
 	if !hasPrivacy {
 		return proof.verifyNoPrivacy(pubKey, fee, db, shardID, tokenID)
 	}
 
-	return proof.verifyHasPrivacy(pubKey, fee, db, shardID, tokenID)
+	return proof.verifyHasPrivacy(pubKey, fee, db, shardID, tokenID, isBatch)
 }
-

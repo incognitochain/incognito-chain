@@ -316,6 +316,44 @@ func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transactio
 	tempTxDesc := &txDesc.Desc
 	return tempTxDesc, err
 }
+func (tp *TxPool) MaybeAcceptBatchTransactionForBlockProducing(txs []metadata.Transaction, beaconHeight int64) ([]*metadata.TxDesc, error) {
+	tp.mtx.Lock()
+	defer tp.mtx.Unlock()
+	_, txDesc, err := tp.maybeAcceptBatchTransaction(txs, beaconHeight)
+	return txDesc, err
+}
+
+func (tp *TxPool) maybeAcceptBatchTransaction(txs []metadata.Transaction, beaconHeight int64) ([]common.Hash, []*metadata.TxDesc, error) {
+	txDescs := []*metadata.TxDesc{}
+	txHashes := []common.Hash{}
+	batch := transaction.NewBatchTransaction(txs)
+	ok, err, _ := batch.Validate(tp.config.DataBase, tp.config.BlockChain)
+	if err != nil {
+		return nil, nil, err
+	}
+	if !ok {
+		return nil, nil, fmt.Errorf("Verify Batch Transaction failed %+v", txs)
+	}
+	for _, tx := range txs {
+		// validate tx
+		err := tp.validateTransaction(tx, beaconHeight, true)
+		if err != nil {
+			return nil, nil, err
+		}
+		shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+		bestHeight := tp.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.Height
+		txFee := tx.GetTxFee()
+		txFeeToken := tx.GetTxFeeToken()
+		txD := createTxDescMempool(tx, bestHeight, txFee, txFeeToken)
+		err = tp.addTx(txD, false)
+		if err != nil {
+			return nil, nil, err
+		}
+		txDescs = append(txDescs, &txD.Desc)
+		txHashes = append(txHashes, *tx.Hash())
+	}
+	return txHashes, txDescs, nil
+}
 
 /*
 // maybeAcceptTransaction into pool
@@ -335,7 +373,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 	txSize := fmt.Sprintf("%d", tx.GetTxActualSize())
 	startValidate := time.Now()
 	// validate tx
-	err := tp.validateTransaction(tx, beaconHeight)
+	err := tp.validateTransaction(tx, beaconHeight, false)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -481,7 +519,7 @@ In Param#2: isStore: store transaction to persistence storage only work for tran
 9. Staking Transaction: Check Duplicate stake public key in pool ONLY with staking transaction
 10. RequestStopAutoStaking
 */
-func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int64) error {
+func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int64, isBatch bool) error {
 	var shardID byte
 	var err error
 	var now time.Time
@@ -599,19 +637,20 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int6
 		}
 	}
 	// Condition 6: ValidateTransaction tx by it self
-	shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-	now = time.Now()
-	validated, errValidateTxByItself := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.DataBase, tp.config.BlockChain, shardID)
-	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-		metrics.Measurement:      metrics.TxPoolValidationDetails,
-		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
-		metrics.TagValue:         metrics.VTBITxTypeMetic,
-		metrics.Tag:              metrics.ValidateConditionTag,
-	})
-	if !validated {
-		return NewMempoolTxError(RejectInvalidTx, errValidateTxByItself)
+	if !isBatch {
+		shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+		now = time.Now()
+		validated, errValidateTxByItself := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.DataBase, tp.config.BlockChain, shardID)
+		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+			metrics.Measurement:      metrics.TxPoolValidationDetails,
+			metrics.MeasurementValue: float64(time.Since(now).Seconds()),
+			metrics.TagValue:         metrics.VTBITxTypeMetic,
+			metrics.Tag:              metrics.ValidateConditionTag,
+		})
+		if !validated {
+			return NewMempoolTxError(RejectInvalidTx, errValidateTxByItself)
+		}
 	}
-
 	// Condition 7: validate tx with data of blockchain
 	now = time.Now()
 	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, shardID, tp.config.DataBase)
