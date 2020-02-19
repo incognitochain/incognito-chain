@@ -133,6 +133,14 @@ func NewWaitingRedeemReqKey (beaconHeight uint64, redeemID string) string {
 	return string(key)
 }
 
+// NewPortalReqPTokenKey creates key for tracking request pToken in portal
+func NewPortalReqPTokenKey (beaconHeight uint64, portingID string) string {
+	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+	key := append(PortalRequestPTokensPrefix, beaconHeightBytes...)
+	key = append(key, []byte(portingID)...)
+	return string(key)
+}
+
 func BuildCustodianDepositKey(
 	prefix []byte,
 	suffix []byte,
@@ -164,8 +172,15 @@ func (db *db) GetAllRecordsPortalByPrefix(beaconHeight uint64, prefix []byte) ([
 	return keys, values, nil
 }
 
-func (db *db) TrackCustodianDepositCollateral(prefix []byte, suffix []byte, content []byte) error {
-	key := BuildCustodianDepositKey(prefix, suffix)
+func (db *db) TrackCustodianDepositCollateral(key []byte, content []byte) error {
+	err := db.Put(key, content)
+	if err != nil {
+		return database.NewDatabaseError(database.TrackCustodianDepositError, errors.Wrap(err, "db.lvdb.put"))
+	}
+	return nil
+}
+
+func (db *db) TrackReqPTokens(key []byte, content []byte) error {
 	err := db.Put(key, content)
 	if err != nil {
 		return database.NewDatabaseError(database.TrackCustodianDepositError, errors.Wrap(err, "db.lvdb.put"))

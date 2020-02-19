@@ -111,6 +111,7 @@ const (
 	StoreExchangeRatesRequestStateError
 	StoreFinalExchangeRatesStateError
 	TrackCustodianDepositError
+	TrackReqPTokenError
 	GetItemPortalByPrefixError
 	GetItemPortalByPrefixNotFound
 )
@@ -218,14 +219,15 @@ var ErrCodeMessage = map[int]struct {
 	GetPDEStatusError:                      {-13014, "Get pde status error"},
 
 	//portal
-	StoreCustodianDepositStateError:		{-14001, "Store custodian deposit error"},
-	StorePortingRequestStateError:			{-14002, "Store porting request error"},
-	StoreRedeemRequestStateError:			{-14003, "Store redeem request error"},
-	TrackCustodianDepositError:             {-14004, "Track custodian deposit error"},
-	StoreExchangeRatesRequestStateError:	{-14005, "Store exchange rates request error"},
-	StoreFinalExchangeRatesStateError:		{-14006, "Store final exchange rates request error"},
-	GetItemPortalByPrefixError:				{-14007, "Get item portal by prefix error"},
-	GetItemPortalByPrefixNotFound:			{-14008, "Get item portal by prefix not found"},
+	StoreCustodianDepositStateError:     {-14001, "Store custodian deposit error"},
+	StorePortingRequestStateError:       {-14002, "Store porting request error"},
+	StoreRedeemRequestStateError:        {-14003, "Store redeem request error"},
+	TrackCustodianDepositError:          {-14004, "Track custodian deposit error"},
+	TrackReqPTokenError:                 {-14004, "Track requesting ptokens error"},
+	StoreExchangeRatesRequestStateError: {-14005, "Store exchange rates request error"},
+	StoreFinalExchangeRatesStateError:   {-14006, "Store final exchange rates request error"},
+	GetItemPortalByPrefixError:          {-14007, "Get item portal by prefix error"},
+	GetItemPortalByPrefixNotFound:       {-14008, "Get item portal by prefix not found"},
 }
 
 type DatabaseError struct {

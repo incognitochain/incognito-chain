@@ -68,17 +68,16 @@ var (
 	PDEWithdrawalStatusPrefix    = []byte("pdewithdrawalstatus-")
 
 	// Portal
-
-	CustodianStatePrefix        = []byte("custodianstate-")
-	PortalPortingRequestsPrefix = []byte("portalportingrequest-")
-	PortalRedeemRequestsPrefix  = []byte("portalredeemrequest-")
-	PortalExchangeRatesPrefix  = []byte("portalexchangeratesrequest-")
-	PortalFinalExchangeRatesPrefix  = []byte("portalfinalexchangeratesrequest-")
-	PortalCustodianStatePrefix   = []byte("portalcustodianstate-")
-	PortalCustodianDepositPrefix = []byte("portalcustodiandeposit-")
+	CustodianStatePrefix               = []byte("custodianstate-")
+	PortalPortingRequestsPrefix        = []byte("portalportingrequest-")
+	PortalRedeemRequestsPrefix         = []byte("portalredeemrequest-")
+	PortalExchangeRatesPrefix          = []byte("portalexchangeratesrequest-")
+	PortalFinalExchangeRatesPrefix     = []byte("portalfinalexchangeratesrequest-")
+	PortalCustodianStatePrefix         = []byte("portalcustodianstate-")
+	PortalCustodianDepositPrefix       = []byte("portalcustodiandeposit-")
 	PortalWaitingPortingRequestsPrefix = []byte("portalwaitingportingrequest-")
-	PortalWaitingRedeemRequestsPrefix = []byte("portalwaitingredeemrequest-")
-
+	PortalWaitingRedeemRequestsPrefix  = []byte("portalwaitingredeemrequest-")
+	PortalRequestPTokensPrefix         = []byte("portalrequestptokens-")
 )
 
 // value

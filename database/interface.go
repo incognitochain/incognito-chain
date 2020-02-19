@@ -203,6 +203,7 @@ type DatabaseInterface interface {
 	//portal
 	GetAllRecordsPortalByPrefix(beaconHeight uint64, prefix []byte) ([][]byte, [][]byte, error)
 	TrackCustodianDepositCollateral(key []byte, value []byte) error
+	TrackReqPTokens(key []byte, value []byte) error
 	GetItemPortalByPrefix(prefix []byte) (byte, error)
 	StorePortingRequestItem(key []byte, value interface{}) error
 	StoreExchangeRatesRequestItem(key []byte, value interface{}) error

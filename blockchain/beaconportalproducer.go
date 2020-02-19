@@ -402,7 +402,8 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 			common.PortalReqPTokensAcceptedChainStatus,
 		)
 
-		// todo: remove waitingPortingRequest
+		// remove waiting porting request from currentPortalState
+		removeWaitingPortingReqByKey(keyWaitingPortingRequest, currentPortalState)
 		return [][]string{inst}, nil
 	} else {
 		Logger.log.Errorf("TokenID is not supported currently on Portal")
