@@ -61,6 +61,9 @@ const (
 	RejectSanityTxLocktime
 	RejectReplacementTx
 	TxPoolRejectTxError
+
+	//portal
+	GetExchangeRatesError
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -135,6 +138,9 @@ var ErrCodeMessage = map[int]struct {
 
 	// pde
 	GetPDEStateError: {-8000, "Get pde state error"},
+
+	//portal
+	GetExchangeRatesError: {-9000, "Get get exchange rates error"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse

@@ -242,3 +242,7 @@ func (db *db) GetItemPortalByPrefix(prefix []byte) (byte, error) {
 
 	return itemRecord[0], nil
 }
+
+func (db *db) GetFinalExchangeRatesByBeaconHeight() {
+
+}

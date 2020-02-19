@@ -239,7 +239,7 @@ func getRedeemRequestsState(
 	return redeemRequestState, nil
 }
 
-func getFinalExchangeRatesPreState(
+func GetFinalExchangeRatesByKey(
 	db database.DatabaseInterface,
 	key []byte,
 ) (*lvdb.FinalExchangeRates, error) {

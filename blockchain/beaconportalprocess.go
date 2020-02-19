@@ -507,7 +507,7 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 	})
 
 	exchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
-	exchangeRatesPreState, err := getFinalExchangeRatesPreState(db, []byte(exchangeRatesKey))
+	exchangeRatesPreState, err := GetFinalExchangeRatesByKey(db, []byte(exchangeRatesKey))
 	if err != nil {
 		return  err
 	}

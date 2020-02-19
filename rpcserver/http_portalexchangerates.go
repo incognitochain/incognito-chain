@@ -76,3 +76,26 @@ func (httpServer *HttpServer) handleCreateAndSendPortalExchangeRate(params inter
 	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
 	return result, nil
 }
+
+func (httpServer *HttpServer) handleGetPortalExchangeRate(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+
+	// get meta data from params
+	data, ok := arrayParams[2].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
+	}
+
+	senderAddress, ok := data["SenderAddress"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata SenderAddress is invalid"))
+	}
+
+	result, err := httpServer.portalExchangeRates.GetExchangeRates(senderAddress, httpServer.blockService)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
