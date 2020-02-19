@@ -52,10 +52,9 @@ func (blockchain *BlockChain) processPortalInstructions(block *BeaconBlock, bd *
 	//todo: check timeout register porting via beacon height
 	// all request timeout ? unhold
 
-	//save exchangeRates
+	//save final exchangeRates
 	if len(currentPortalState.ExchangeRatesRequests) > 0 {
-		err = blockchain.pickExchangesRatesFinal(db, beaconHeight, currentPortalState)
-
+		err = blockchain.pickExchangesRatesFinal(beaconHeight, currentPortalState)
 		if err != nil {
 			Logger.log.Error(err)
 			return nil
@@ -225,8 +224,8 @@ func (blockchain *BlockChain) processPortalUserRegister(
 	}
 
 	//save porting request
-	keyPortingRequestState := lvdb.NewPortingRequestKey(beaconHeight + 1, portingRequestContent.UniqueRegisterId)
-	err = db.StorePortingRequestItem([]byte(keyPortingRequestState), newPortingRequestState)
+	keyPortingRequestNewState := lvdb.NewPortingRequestKey(beaconHeight + 1, portingRequestContent.UniqueRegisterId)
+	err = db.StorePortingRequestItem([]byte(keyPortingRequestNewState), newPortingRequestState)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occurred while store porting request item: %+v", err)
 		return nil
@@ -255,6 +254,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 	}
 
 	//save waiting request porting state
+	currentPortalState.WaitingPortingRequests[keyPortingRequestNewState] = newPortingRequestState
 
 	return nil
 }
@@ -448,6 +448,7 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 }
 
 func (blockchain *BlockChain) processPortalExchangeRates(beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
+	db := blockchain.GetDatabase()
 
 	// parse instruction
 	var portingExchangeRatesContent metadata.PortalExchangeRatesContent
@@ -458,11 +459,10 @@ func (blockchain *BlockChain) processPortalExchangeRates(beaconHeight uint64, in
 	}
 
 	exchangeRatesKey := lvdb.NewExchangeRatesRequestKey(
-		beaconHeight, portingExchangeRatesContent.TxReqID.String(),
+		beaconHeight + 1, portingExchangeRatesContent.TxReqID.String(),
 		strconv.FormatInt(portingExchangeRatesContent.LockTime, 10),
-		)
+	)
 
-    //todo: check exist key
     exchangeRatesDetail := make(map[string]lvdb.ExchangeRatesDetail)
     for pTokenId, rates := range portingExchangeRatesContent.Rates {
 		exchangeRatesDetail[pTokenId] = lvdb.ExchangeRatesDetail {
@@ -470,27 +470,41 @@ func (blockchain *BlockChain) processPortalExchangeRates(beaconHeight uint64, in
 		}
 	}
 
-	if currentPortalState.ExchangeRatesRequests[exchangeRatesKey] == nil {
-		// new custodian
-		// new request
-		newExchangeRates, err := NewExchangeRatesState(
-			portingExchangeRatesContent.SenderAddress,
-			exchangeRatesDetail,
-		)
+	//check key from db
+	exchangeRatesKeyExist, err := db.GetItemPortalByPrefix([]byte(exchangeRatesKey))
+	if err != nil {
+		return err
+	}
 
-		if err != nil {
-			return err
-		}
-
-		currentPortalState.ExchangeRatesRequests[exchangeRatesKey] = newExchangeRates
+	if exchangeRatesKeyExist != 0 {
+		Logger.log.Errorf(" id is duplicated")
 		return nil
 	}
 
-	Logger.log.Errorf("ERROR: exchange rates request id is duplicate")
+	//save db
+	newExchangeRates, err := NewExchangeRatesState(
+		portingExchangeRatesContent.SenderAddress,
+		exchangeRatesDetail,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	err = db.StoreExchangeRatesRequestItem([]byte(exchangeRatesKey), newExchangeRates)
+
+	if err != nil {
+		return err
+	}
+
+	currentPortalState.ExchangeRatesRequests[exchangeRatesKey] = newExchangeRates
+
 	return nil
 }
 
-func (blockchain *BlockChain) pickExchangesRatesFinal(db database.DatabaseInterface, beaconHeight uint64, currentPortalState *CurrentPortalState) error  {
+func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, currentPortalState *CurrentPortalState) error  {
+
+	db := blockchain.GetDatabase()
 
 	//convert to slice
 	var btcExchangeRatesSlice []uint64
@@ -512,62 +526,66 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(db database.DatabaseInterf
 		}
 	}
 
-	exchangeRatesPreState, err := getFinalExchangeRatesPreState(db, beaconHeight - 1)
-
-	if err != nil {
-		return  err
-	}
-
 	//sort
 	sort.SliceStable(btcExchangeRatesSlice, func(i, j int) bool {
 		return btcExchangeRatesSlice[i] < btcExchangeRatesSlice[j]
 	})
 
-	exchangeRatesList := make(map[string]lvdb.FinalExchangeRatesDetail)
-	if len(btcExchangeRatesSlice) > 0 {
-		exchangeRatesList["BTC"] = lvdb.FinalExchangeRatesDetail{
-			Amount: calcMedian(btcExchangeRatesSlice),
-		}
-	} else {
-		preExchangeRates := exchangeRatesPreState[string(beaconHeight - 1)].Rates["BTC"]
-		exchangeRatesList["BTC"] = lvdb.FinalExchangeRatesDetail{
-			Amount: preExchangeRates.Amount,
-		}
-	}
-
 	sort.SliceStable(bnbExchangeRatesSlice, func(i, j int) bool {
 		return bnbExchangeRatesSlice[i] < bnbExchangeRatesSlice[j]
 	})
-
-	if len(bnbExchangeRatesSlice) > 0 {
-		exchangeRatesList["BNB"] = lvdb.FinalExchangeRatesDetail{
-			Amount: calcMedian(bnbExchangeRatesSlice),
-		}
-	} else {
-		preExchangeRates := exchangeRatesPreState[string(beaconHeight - 1)].Rates["BNB"]
-		exchangeRatesList["BNB"] = lvdb.FinalExchangeRatesDetail{
-			Amount: preExchangeRates.Amount,
-		}
-	}
 
 	sort.SliceStable(prvExchangeRatesSlice, func(i, j int) bool {
 		return prvExchangeRatesSlice[i] < prvExchangeRatesSlice[j]
 	})
 
-	if len(prvExchangeRatesSlice) > 0 {
-		exchangeRatesList["PRV"] = lvdb.FinalExchangeRatesDetail{
-			Amount: calcMedian(prvExchangeRatesSlice),
-		}
-	} else {
-		preExchangeRates := exchangeRatesPreState[string(beaconHeight - 1)].Rates["PRV"]
-		exchangeRatesList["PRV"] = lvdb.FinalExchangeRatesDetail{
-			Amount: preExchangeRates.Amount,
-		}
+	exchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
+	exchangeRatesPreState, err := getFinalExchangeRatesPreState(db, []byte(exchangeRatesKey))
+	if err != nil {
+		return  err
 	}
 
-	newFinalExchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
-	currentPortalState.FinalExchangeRates[newFinalExchangeRatesKey] = &lvdb.FinalExchangeRates{
+	//pick
+	exchangeRatesList := make(map[string]lvdb.FinalExchangeRatesDetail)
+	btcAmount := exchangeRatesPreState.Rates["BTC"].Amount
+	bnbAmount := exchangeRatesPreState.Rates["BNB"].Amount
+	prvAmount := exchangeRatesPreState.Rates["PRV"].Amount
+
+	//pick final rates of BTC
+	if len(btcExchangeRatesSlice) > 0 {
+		btcAmount = calcMedian(btcExchangeRatesSlice)
+	}
+
+	exchangeRatesList["BTC"] = lvdb.FinalExchangeRatesDetail{
+		Amount: btcAmount,
+	}
+
+	//pick final rates of BNB
+	if len(bnbExchangeRatesSlice) > 0 {
+		bnbAmount = calcMedian(bnbExchangeRatesSlice)
+	}
+
+	exchangeRatesList["BTC"] = lvdb.FinalExchangeRatesDetail{
+		Amount: bnbAmount,
+	}
+
+	//pick final rates of PRV
+	if len(prvExchangeRatesSlice) > 0 {
+		prvAmount = calcMedian(prvExchangeRatesSlice)
+	}
+
+	exchangeRatesList["BTC"] = lvdb.FinalExchangeRatesDetail{
+		Amount: prvAmount,
+	}
+
+	//save to db
+	newFinalExchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconHeight + 1)
+	err = db.StoreFinalExchangeRatesItem([]byte(newFinalExchangeRatesKey), lvdb.FinalExchangeRates{
 		Rates: exchangeRatesList,
+	})
+
+	if err != nil {
+		return  err
 	}
 
 	return nil

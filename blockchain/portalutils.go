@@ -15,7 +15,6 @@ type CurrentPortalState struct {
 	PortingRequests        map[string]*lvdb.PortingRequest       // key : beaconHeight || UniquePortingID
 	RedeemRequests         map[string]*lvdb.RedeemRequest        // key : beaconHeight || UniqueRedeemID
 	ExchangeRatesRequests  map[string]*lvdb.ExchangeRatesRequest // key : beaconHeight | TxID
-	FinalExchangeRates     map[string]*lvdb.FinalExchangeRates   // key : beaconHeight
 	WaitingPortingRequests map[string]*lvdb.PortingRequest       // key : beaconHeight || UniquePortingID
 	WaitingRedeemRequests  map[string]*lvdb.RedeemRequest        // key : beaconHeight || UniqueRedeemID
 }
@@ -111,55 +110,6 @@ func storePortalStateToDB(
 		return err
 	}
 
-	if len(currentPortalState.ExchangeRatesRequests) > 0 {
-		err = storeExchangeRatesRequest(db, beaconHeight, currentPortalState.ExchangeRatesRequests)
-		if err != nil {
-			return err
-		}
-	}
-
-	//save final exchangeRates
-	if len(currentPortalState.FinalExchangeRates) > 0 {
-		err = storeFinalExchangeRates(db, beaconHeight, currentPortalState.FinalExchangeRates)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func storeExchangeRatesRequest(db database.DatabaseInterface,
-	beaconHeight uint64,
-	exchangeRatesRequest map[string]*lvdb.ExchangeRatesRequest) error {
-	for contribKey, contribution := range exchangeRatesRequest {
-		newKey := replaceKeyByBeaconHeight(contribKey, beaconHeight)
-		contributionBytes, err := json.Marshal(contribution)
-		if err != nil {
-			return err
-		}
-		err = db.Put([]byte(newKey), contributionBytes)
-		if err != nil {
-			return database.NewDatabaseError(database.StoreExchangeRatesRequestStateError, errors.Wrap(err, "db.lvdb.put"))
-		}
-	}
-	return nil
-}
-
-func storeFinalExchangeRates(db database.DatabaseInterface,
-	beaconHeight uint64,
-	finalExchangeRates map[string]*lvdb.FinalExchangeRates) error {
-	for contribKey, contribution := range finalExchangeRates {
-		newKey := replaceKeyByBeaconHeight(contribKey, beaconHeight)
-		contributionBytes, err := json.Marshal(contribution)
-		if err != nil {
-			return err
-		}
-		err = db.Put([]byte(newKey), contributionBytes)
-		if err != nil {
-			return database.NewDatabaseError(database.StoreFinalExchangeRatesStateError, errors.Wrap(err, "db.lvdb.put"))
-		}
-	}
 	return nil
 }
 
@@ -293,30 +243,26 @@ func getRedeemRequestsState(
 
 func getFinalExchangeRatesPreState(
 	db database.DatabaseInterface,
-	beaconHeight uint64,
-) (map[string]*lvdb.FinalExchangeRates, error) {
-	finalExchangeRates := make(map[string]*lvdb.FinalExchangeRates)
-	finalExchangeRatesKeysBytes, finalExchangeRatesValueBytes, err := db.GetAllRecordsPortalByPrefix(beaconHeight, lvdb.PortalFinalExchangeRatesPrefix)
+	key []byte,
+) (*lvdb.FinalExchangeRates, error) {
+	finalExchangeRatesItem, err := db.GetItemPortalByPrefix(key)
 
 	if err != nil {
 		return nil, err
 	}
 
-	//for via key
-	for idx, finalExchangeRatesKeyBytes := range finalExchangeRatesKeysBytes {
-		var finalExchangeRatesState lvdb.FinalExchangeRates
+	var finalExchangeRatesState lvdb.FinalExchangeRates
 
-		//get value via idx
-		err = json.Unmarshal(finalExchangeRatesValueBytes[idx], &finalExchangeRatesState)
-		if err != nil {
-			return nil, err
-		}
+	//get value via idx
+	var slice []byte
+	slice = append(slice, finalExchangeRatesItem)
 
-		//combine key and value
-		finalExchangeRates[string(finalExchangeRatesKeyBytes)] = &finalExchangeRatesState
+	err = json.Unmarshal(slice, &finalExchangeRatesState)
+	if err != nil {
+		return nil, err
 	}
 
-	return finalExchangeRates, nil
+	return &finalExchangeRatesState, nil
 }
 
 func getAmountAdaptable(amount uint64, exchangeRate uint64) (uint64, error) {

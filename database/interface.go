@@ -205,4 +205,6 @@ type DatabaseInterface interface {
 	TrackCustodianDepositCollateral(key []byte, value []byte) error
 	GetItemPortalByPrefix(prefix []byte) (byte, error)
 	StorePortingRequestItem(key []byte, value interface{}) error
+	StoreExchangeRatesRequestItem(key []byte, value interface{}) error
+	StoreFinalExchangeRatesItem(key []byte, value interface{}) error
 }
