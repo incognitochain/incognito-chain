@@ -118,6 +118,9 @@ const (
 
 	PortalCustodianDepositAcceptedStatus = 1
 	PortalCustodianDepositRefundStatus   = 2
+
+	PortalReqPTokenAcceptedStatus = 1
+	PortalReqPTokenRejectedStatus = 2
 )
 
 // PDE statuses for chain
@@ -144,5 +147,5 @@ const (
 
 	PortalPortingRequestSuccessStatus  = "success"
 	PortalPortingRequestCanceledStatus = "canceled"
-	PortalExchangeRatesStatus = "canceled"
+	PortalExchangeRatesStatus          = "canceled"
 )

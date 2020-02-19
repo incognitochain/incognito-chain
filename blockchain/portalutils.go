@@ -374,3 +374,13 @@ func getWaitingRedeemRequests(
 	//return custodianPoolState, nil
 	return nil, nil
 }
+
+
+func removeWaitingPortingReqByKey (key string, state *CurrentPortalState) bool {
+	if state.WaitingPortingRequests[key] != nil {
+		delete(state.WaitingPortingRequests, key)
+		return true
+	}
+
+	return false
+}
