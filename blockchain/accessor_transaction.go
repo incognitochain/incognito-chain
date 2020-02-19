@@ -276,7 +276,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlockV2(shardBlock *Sh
 		return err
 	}
 	view := NewTxViewPoint(shardBlock.Header.ShardID)
-	err = view.fetchTxViewPointFromBlockV2(transactionStateRoot, shardBlock)
+	err = view.fetchTxViewPointFromBlock(transactionStateRoot, shardBlock)
 	if err != nil {
 		return err
 	}
@@ -475,7 +475,7 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionViewPointFromBlockV2(
 	Logger.log.Critical("Fetch Cross transaction", shardBlock.Body.CrossTransactions)
 	// Fetch data from block into tx View point
 	view := NewTxViewPoint(shardBlock.Header.ShardID)
-	err := view.fetchCrossTransactionViewPointFromBlockV2(transactionStateRoot, shardBlock)
+	err := view.fetchCrossTransactionViewPointFromBlock(transactionStateRoot, shardBlock)
 	if err != nil {
 		Logger.log.Error("CreateAndSaveCrossTransactionCoinViewPointFromBlock ", err)
 		return err

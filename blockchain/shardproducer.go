@@ -502,7 +502,7 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 		if err != nil {
 			return instructions, shardPendingValidator, shardCommittee, err
 		}
-		producersBlackList, err := blockchain.getUpdatedProducersBlackListV2(slashStateDB, false, int(shardID), shardCommittee, beaconHeight)
+		producersBlackList, err := blockchain.getUpdatedProducersBlackList(slashStateDB, false, int(shardID), shardCommittee, beaconHeight)
 		if err != nil {
 			Logger.log.Error(err)
 			return instructions, shardPendingValidator, shardCommittee, err

@@ -721,7 +721,7 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(blockchain *B
 	if len(shardBlock.Body.Instructions) != 0 {
 		Logger.log.Info("Shard Process/updateShardBestState: Shard Instruction", shardBlock.Body.Instructions)
 	}
-	producersBlackList, err := blockchain.getUpdatedProducersBlackListV2(blockchain.BestState.Beacon.slashStateDB, false, int(shardID), shardCommittee, shardBlock.Header.BeaconHeight)
+	producersBlackList, err := blockchain.getUpdatedProducersBlackList(blockchain.BestState.Beacon.slashStateDB, false, int(shardID), shardCommittee, shardBlock.Header.BeaconHeight)
 	if err != nil {
 		return err
 	}

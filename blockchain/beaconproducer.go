@@ -611,7 +611,7 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 			return [][]string{}, err
 		}
 		slashStateDB, err := statedb.NewWithPrefixTrie(rootHash, statedb.NewDatabaseAccessWarper(blockchain.GetDatabase()))
-		producersBlackList, err := blockchain.getUpdatedProducersBlackListV2(slashStateDB, true, -1, beaconCommitteeStr, newBeaconHeight-1)
+		producersBlackList, err := blockchain.getUpdatedProducersBlackList(slashStateDB, true, -1, beaconCommitteeStr, newBeaconHeight-1)
 		if err != nil {
 			Logger.log.Error(err)
 		}
