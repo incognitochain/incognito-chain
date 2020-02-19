@@ -546,8 +546,7 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 func VerifyBatchingAggregatedRangeProofs(proofs []*AggregatedRangeProof) (bool, error, int) {
 	innerProductProofs := make([]*InnerProductProof, 0)
 	csList := make([][]byte, 0)
-	for k := range proofs {
-		proof := proofs[k]
+	for k, proof := range proofs {
 		numValue := len(proof.cmsValue)
 		if numValue > maxOutputNumber {
 			return false, errors.New("Must less than maxOutputNumber"), k
