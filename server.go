@@ -228,7 +228,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.cNewPeers = make(chan *peer.Peer)
 	serverObj.dataBase = db
 	serverObj.memCache = memcache.New()
-	serverObj.consensusEngine = blsbft.NewConsensusEngine(&blsbft.EngineConfig{Node: serverObj, Blockchain: serverObj.blockChain, BlockGen: serverObj.blockgen, PubSubManager: serverObj.pusubManager})
+	serverObj.consensusEngine = blsbft.NewConsensusEngine()
 
 	//Init channel
 	cPendingTxs := make(chan metadata.Transaction, 500)
@@ -507,7 +507,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		MaxPeersBeacon:     cfg.MaxPeersBeacon,
 	})
 	serverObj.connManager = connManager
-
+	serverObj.consensusEngine.Init(&blsbft.EngineConfig{Node: serverObj, Blockchain: serverObj.blockChain, BlockGen: serverObj.blockgen, PubSubManager: serverObj.pusubManager})
 	//serverObj.syncker = syncker.NewSyncker(incognitokey.CommitteePublicKey{}, serverObj)
 	// Start up persistent peers.
 	permanentPeers := cfg.ConnectPeers
@@ -738,12 +738,7 @@ func (serverObj Server) Start() {
 
 		serverObj.rpcServer.Start()
 	}
-	err := serverObj.consensusEngine.Start()
-	if err != nil {
-		Logger.log.Error(err)
-		go serverObj.Stop()
-		return
-	}
+
 	if cfg.NodeMode != common.NodeModeRelay {
 		serverObj.memPool.IsBlockGenStarted = true
 		serverObj.blockChain.SetIsBlockGenStarted(true)
@@ -765,6 +760,13 @@ func (serverObj Server) Start() {
 		go serverObj.memPool.MonitorPool()
 	}
 	go serverObj.pusubManager.Start()
+
+	err := serverObj.consensusEngine.Start()
+	if err != nil {
+		Logger.log.Error(err)
+		go serverObj.Stop()
+		return
+	}
 	// go metrics.StartSystemMetrics()
 }
 
@@ -2290,7 +2292,7 @@ func (serverObj *Server) GetBlocksViaChannel(sID int, fromBlockHeight, finalBloc
 
 func (s *Server) GetUserMiningState() (role string, chainID int) {
 	userPk := s.consensusEngine.GetMiningPublicKeys()
-	if s.blockChain == nil {
+	if s.blockChain == nil || userPk == nil {
 		return "", -2
 	}
 	for chainName, chain := range s.blockChain.Chains {

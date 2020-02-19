@@ -11,6 +11,7 @@ import (
 type Engine struct {
 	BFTProcess           map[int]ConsensusInterface //chainID -> consensus
 	userMiningPublicKeys map[string]*incognitokey.CommitteePublicKey
+	userKeyListString    string
 	consensusName        string
 	currentMiningProcess ConsensusInterface
 	config               *EngineConfig
@@ -28,7 +29,7 @@ func (engine *Engine) GetUserLayer() (string, int) {
 }
 
 func (s *Engine) GetUserRole() (string, string, int) {
-	return s.curringMiningState.role, s.curringMiningState.layer, s.curringMiningState.chainID
+	return s.curringMiningState.layer, s.curringMiningState.role, s.curringMiningState.chainID
 }
 
 func (engine *Engine) IsOngoing(chainName string) bool {
@@ -44,16 +45,23 @@ func (engine *Engine) CommitteeChange(chainName string) {
 }
 
 func (s *Engine) GetMiningPublicKeys() *incognitokey.CommitteePublicKey {
-	if s.userMiningPublicKeys[s.consensusName] == nil {
+	if s.userMiningPublicKeys == nil || s.userMiningPublicKeys[s.consensusName] == nil {
 		return nil
 	}
 	return s.userMiningPublicKeys[s.consensusName]
 }
 
 func (s *Engine) WatchCommitteeChange() {
+
 	defer func() {
 		time.AfterFunc(time.Second, s.WatchCommitteeChange)
 	}()
+
+	//check if enable
+	if s.IsEnabled == 0 || s.config == nil {
+		fmt.Println("CONSENSUS: enable", s.IsEnabled, s.config == nil)
+		return
+	}
 
 	//extract role, layer, chainID
 	role, chainID := s.config.Node.GetUserMiningState()
@@ -69,11 +77,6 @@ func (s *Engine) WatchCommitteeChange() {
 		s.curringMiningState.layer = "shard"
 	} else {
 		panic("User Mining State Error")
-	}
-
-	//check if enable
-	if s.IsEnabled == 0 {
-		return
 	}
 
 	for _, BFTProcess := range s.BFTProcess {
@@ -93,26 +96,33 @@ func (s *Engine) WatchCommitteeChange() {
 				panic("Chain " + chainName + " not available")
 			}
 			s.BFTProcess[chainID] = NewInstance(s.config.Blockchain.Chains[chainName], chainName, chainID, s.config.Node, Logger.log)
-			if err := s.BFTProcess[chainID].LoadUserKey(s.config.Node.GetMiningKeys()); err != nil {
-				Logger.log.Error("Cannot load mining keys")
-			}
+
 		}
-		if err := s.BFTProcess[chainID].Start(); err != nil {
-			Logger.log.Error("Cannot start BFT Process")
-		}
+		s.BFTProcess[chainID].Start()
 		miningProcess = s.BFTProcess[chainID]
+		s.currentMiningProcess = s.BFTProcess[chainID]
+		err := s.LoadMiningKeys(s.userKeyListString)
+		if err != nil {
+			panic(err)
+		}
 	}
+	//fmt.Println("CONSENSUS:", role, chainID)
 	s.currentMiningProcess = miningProcess
 }
 
-func NewConsensusEngine(config *EngineConfig) *Engine {
+func NewConsensusEngine() *Engine {
+	fmt.Println("CONSENSUS: NewConsensusEngine")
 	engine := &Engine{
-		BFTProcess:    make(map[int]ConsensusInterface),
-		consensusName: common.BlsConsensus,
-		config:        config,
+		BFTProcess:           make(map[int]ConsensusInterface),
+		consensusName:        common.BlsConsensus,
+		userMiningPublicKeys: make(map[string]*incognitokey.CommitteePublicKey),
 	}
-	go engine.WatchCommitteeChange()
 	return engine
+}
+
+func (engine *Engine) Init(config *EngineConfig) {
+	engine.config = config
+	go engine.WatchCommitteeChange()
 }
 
 func (engine *Engine) Start() error {
@@ -121,15 +131,13 @@ func (engine *Engine) Start() error {
 		if err != nil {
 			panic(err)
 		}
-		err = engine.LoadMiningKeys(keyList)
-		if err != nil {
-			panic(err)
-		}
+		engine.userKeyListString = keyList
 	} else if engine.config.Node.GetMiningKeys() != "" {
-		err := engine.LoadMiningKeys(engine.config.Node.GetMiningKeys())
-		if err != nil {
-			panic(err)
-		}
+		engine.userKeyListString = engine.config.Node.GetMiningKeys()
+	}
+	err := engine.LoadMiningKeys(engine.userKeyListString)
+	if err != nil {
+		panic(err)
 	}
 	engine.IsEnabled = 1
 	return nil

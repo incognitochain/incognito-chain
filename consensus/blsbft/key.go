@@ -23,7 +23,11 @@ func (engine *Engine) LoadMiningKeys(keysString string) error {
 					availableConsensus = keyParts[0]
 					keyConsensus = keyParts[1]
 				}
-				f := BLSBFT{}
+
+				f := &BLSBFT{}
+				if engine.currentMiningProcess != nil {
+					f = engine.currentMiningProcess.(*BLSBFT)
+				}
 				err := f.LoadUserKey(keyConsensus)
 				if err != nil {
 					return errors.New("Key for this consensus can not load - " + keyConsensus)
