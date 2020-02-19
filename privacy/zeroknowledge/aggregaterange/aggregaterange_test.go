@@ -179,41 +179,42 @@ func TestAggregatedRangeProveVerifyUltraFast(t *testing.T) {
 }
 
 func TestBenchmarkAggregatedRangeProveVerifyUltraFast(t *testing.T) {
-	count := 50
-	proofs := make([]*AggregatedRangeProof, 0)
-	start := time.Now()
-	t1 := time.Now().Sub(start)
-	for i := 0; i < count; i++ {
-		//prepare witness for Aggregated range protocol
-		wit := new(AggregatedRangeWitness)
-		numValue := rand.Intn(maxOutputNumber)
-		//numValue := 2
-		values := make([]uint64, numValue)
-		rands := make([]*privacy.Scalar, numValue)
-
-		for i := range values {
-			values[i] = uint64(rand.Uint64())
-			rands[i] = privacy.RandomScalar()
-		}
-		wit.Set(values, rands)
-
-		// proving
-		proof, err := wit.Prove()
-		assert.Equal(t, nil, err)
+	for k := 1; k < 400; k+=5 {
+		count := k
+		proofs := make([]*AggregatedRangeProof, 0)
 		start := time.Now()
-		proof.VerifyFaster()
-		t1 += time.Now().Sub(start)
+		t1 := time.Now().Sub(start)
+		for i := 0; i < count; i++ {
+			//prepare witness for Aggregated range protocol
+			wit := new(AggregatedRangeWitness)
+			//numValue := rand.Intn(maxOutputNumber)
+			numValue := 2
+			values := make([]uint64, numValue)
+			rands := make([]*privacy.Scalar, numValue)
 
-		proofs = append(proofs, proof)
+			for i := range values {
+				values[i] = uint64(rand.Uint64())
+				rands[i] = privacy.RandomScalar()
+			}
+			wit.Set(values, rands)
+
+			// proving
+			proof, err := wit.Prove()
+			assert.Equal(t, nil, err)
+			start := time.Now()
+			proof.VerifyFaster()
+			t1 += time.Now().Sub(start)
+
+			proofs = append(proofs, proof)
+		}
+		// verify the proof faster
+		start = time.Now()
+		res, err := BPVerifyUltraFast(proofs)
+		fmt.Println(t1, time.Now().Sub(start), k)
+
+		assert.Equal(t, true, res)
+		assert.Equal(t, nil, err)
 	}
-	// verify the proof faster
-	fmt.Println("Verify Faster:", t1)
-	start = time.Now()
-	res, err := BPVerifyUltraFast(proofs)
-	fmt.Println("Ultra Fast:", time.Now().Sub(start))
-
-	assert.Equal(t, true, res)
-	assert.Equal(t, nil, err)
 }
 
 func TestInnerProductProveVerify(t *testing.T) {
