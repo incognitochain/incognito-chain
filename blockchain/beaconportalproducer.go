@@ -237,8 +237,8 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 
 	// check meta.UniquePortingID is in waiting PortingRequests list in portal state or not
 	portingID := meta.UniquePortingID
-	keyWaitingPortingRequest := lvdb.NewPortingReqKey(beaconHeight, portingID)
-	waitingPortingRequest := currentPortalState.PortingRequests[keyWaitingPortingRequest]
+	keyWaitingPortingRequest := lvdb.NewWaitingPortingReqKey(beaconHeight, portingID)
+	waitingPortingRequest := currentPortalState.WaitingPortingRequests[keyWaitingPortingRequest]
 	if waitingPortingRequest == nil {
 		Logger.log.Errorf("PortingID is not existed in waiting porting requests list")
 		inst := buildReqPTokensInst(

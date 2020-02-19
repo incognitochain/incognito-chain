@@ -12,8 +12,6 @@ import (
 
 type CurrentPortalState struct {
 	CustodianPoolState     map[string]*lvdb.CustodianState       // key : beaconHeight || custodian_address
-	PortingRequests        map[string]*lvdb.PortingRequest       // key : beaconHeight || UniquePortingID
-	RedeemRequests         map[string]*lvdb.RedeemRequest        // key : beaconHeight || UniqueRedeemID
 	ExchangeRatesRequests  map[string]*lvdb.ExchangeRatesRequest // key : beaconHeight | TxID
 	FinalExchangeRates     map[string]*lvdb.FinalExchangeRates   // key : beaconHeight
 	WaitingPortingRequests map[string]*lvdb.PortingRequest       // key : beaconHeight || UniquePortingID

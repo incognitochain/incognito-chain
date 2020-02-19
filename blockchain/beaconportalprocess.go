@@ -1,16 +1,12 @@
 package blockchain
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"github.com/binance-chain/go-sdk/types/msg"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
-	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"sort"
 	"strconv"
 )
@@ -358,90 +354,90 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 		return nil
 	}
 
-	// parse instruction
-	actionContentB64Str := instructions[1]
-	actionContentBytes, err := base64.StdEncoding.DecodeString(actionContentB64Str)
-	if err != nil {
-		return err
-	}
-	var actionData metadata.PortalRequestPTokensAction
-	err = json.Unmarshal(actionContentBytes, &actionData)
-	if err != nil {
-		return err
-	}
-
-	meta := actionData.Meta
-	// check meta.UniquePortingID is in PortingRequests list in portal state or not
-	portingID := meta.UniquePortingID
-	keyWaitingPortingRequest := lvdb.NewPortingReqKey(beaconHeight, portingID)
-	waitingPortingRequest := currentPortalState.PortingRequests[keyWaitingPortingRequest]
-
-	if waitingPortingRequest == nil {
-		return errors.New("PortingID is not existed in waiting porting requests list")
-	}
-
-	// check tokenID
-	if meta.TokenID != waitingPortingRequest.TokenID {
-		return errors.New("TokenID is not correct in portingID req")
-	}
-
-	// check porting amount
-	if meta.PortingAmount != waitingPortingRequest.Amount {
-		return errors.New("PortingAmount is not correct in portingID req")
-	}
-
-	if meta.TokenID == "BTC" {
-		//todo:
-	} else if meta.TokenID == "BNB" {
-		// parse txproof in meta
-		txProofBNB, err := relaying.ParseProofFromB64EncodeJsonStr(meta.PortingProof)
-		if err != nil {
-			return errors.New("PortingProof is invalid")
-		}
-
-		// parse Tx from Data in txProofBNB
-		txBNB, err := relaying.ParseTxFromData(txProofBNB.Data)
-		if err != nil {
-			return errors.New("Data in PortingProof is invalid")
-		}
-
-		// check whether amount transfer in txBNB is equal porting amount or not
-		// check receiver and amount in tx
-		// get list matching custodians in waitingPortingRequest
-		custodians := waitingPortingRequest.Custodians
-		outputs := txBNB.Msgs[0].(msg.SendMsg).Outputs
-
-		for _, cusDetail := range custodians {
-			remoteAddressNeedToBeTransfer := cusDetail.RemoteAddress
-			amountNeedToBeTransfer := cusDetail.Amount
-
-			for _, out := range outputs {
-				addr := string(out.Address)
-				if addr != remoteAddressNeedToBeTransfer {
-					continue
-				}
-
-				// calculate amount that was transferred to custodian's remote address
-				amountTransfer := int64(0)
-				for _, coin := range out.Coins {
-					if coin.Denom == relaying.DenomBNB {
-						amountTransfer += coin.Amount
-					}
-				}
-
-				if amountTransfer != int64(amountNeedToBeTransfer) {
-					return fmt.Errorf("TxProof-BNB is invalid - Amount transfer to %s must be equal %d, but got %d",
-						addr, amountNeedToBeTransfer, amountTransfer)
-				}
-			}
-
-		}
-	} else {
-		return errors.New("TokenID is not supported currently on Portal")
-	}
-
-	// create instruction mint ptoken to IncogAddressStr and send to shard
-	//todo:
+	//// parse instruction
+	//actionContentB64Str := instructions[1]
+	//actionContentBytes, err := base64.StdEncoding.DecodeString(actionContentB64Str)
+	//if err != nil {
+	//	return err
+	//}
+	//var actionData metadata.PortalRequestPTokensAction
+	//err = json.Unmarshal(actionContentBytes, &actionData)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//meta := actionData.Meta
+	//// check meta.UniquePortingID is in PortingRequests list in portal state or not
+	//portingID := meta.UniquePortingID
+	//keyWaitingPortingRequest := lvdb.NewWaitingPortingReqKey(beaconHeight, portingID)
+	//waitingPortingRequest := currentPortalState.WaitingPortingRequests[keyWaitingPortingRequest]
+	//
+	//if waitingPortingRequest == nil {
+	//	return errors.New("PortingID is not existed in waiting porting requests list")
+	//}
+	//
+	//// check tokenID
+	//if meta.TokenID != waitingPortingRequest.TokenID {
+	//	return errors.New("TokenID is not correct in portingID req")
+	//}
+	//
+	//// check porting amount
+	//if meta.PortingAmount != waitingPortingRequest.Amount {
+	//	return errors.New("PortingAmount is not correct in portingID req")
+	//}
+	//
+	//if meta.TokenID == "BTC" {
+	//	//todo:
+	//} else if meta.TokenID == "BNB" {
+	//	// parse txproof in meta
+	//	txProofBNB, err := relaying.ParseProofFromB64EncodeJsonStr(meta.PortingProof)
+	//	if err != nil {
+	//		return errors.New("PortingProof is invalid")
+	//	}
+	//
+	//	// parse Tx from Data in txProofBNB
+	//	txBNB, err := relaying.ParseTxFromData(txProofBNB.Data)
+	//	if err != nil {
+	//		return errors.New("Data in PortingProof is invalid")
+	//	}
+	//
+	//	// check whether amount transfer in txBNB is equal porting amount or not
+	//	// check receiver and amount in tx
+	//	// get list matching custodians in waitingPortingRequest
+	//	custodians := waitingPortingRequest.Custodians
+	//	outputs := txBNB.Msgs[0].(msg.SendMsg).Outputs
+	//
+	//	for _, cusDetail := range custodians {
+	//		remoteAddressNeedToBeTransfer := cusDetail.RemoteAddress
+	//		amountNeedToBeTransfer := cusDetail.Amount
+	//
+	//		for _, out := range outputs {
+	//			addr := string(out.Address)
+	//			if addr != remoteAddressNeedToBeTransfer {
+	//				continue
+	//			}
+	//
+	//			// calculate amount that was transferred to custodian's remote address
+	//			amountTransfer := int64(0)
+	//			for _, coin := range out.Coins {
+	//				if coin.Denom == relaying.DenomBNB {
+	//					amountTransfer += coin.Amount
+	//				}
+	//			}
+	//
+	//			if amountTransfer != int64(amountNeedToBeTransfer) {
+	//				return fmt.Errorf("TxProof-BNB is invalid - Amount transfer to %s must be equal %d, but got %d",
+	//					addr, amountNeedToBeTransfer, amountTransfer)
+	//			}
+	//		}
+	//
+	//	}
+	//} else {
+	//	return errors.New("TokenID is not supported currently on Portal")
+	//}
+	//
+	//// create instruction mint ptoken to IncogAddressStr and send to shard
+	////todo:
 
 
 	return nil
