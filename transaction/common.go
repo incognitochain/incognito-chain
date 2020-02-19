@@ -3,6 +3,7 @@ package transaction
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
@@ -343,16 +344,28 @@ func IsBridgeTokenID(tokenID common.Hash, db database.DatabaseInterface) (bool, 
 	return false, errors.New("invalid bridge tokenID")
 }
 
-func ValidateBatchTxsByItself(
-	txList []*Tx,
-	db database.DatabaseInterface,
-	bcr metadata.BlockchainRetriever) (bool, error, int) {
+type batchTransaction struct {
+	txs []metadata.Transaction
+}
+
+func NewBatchTransaction(txs []metadata.Transaction) *batchTransaction {
+	return &batchTransaction{txs: txs}
+}
+
+func (b *batchTransaction) AddTxs(txs []metadata.Transaction) {
+	b.txs = append(b.txs, txs...)
+}
+
+func (b *batchTransaction) Validate(db database.DatabaseInterface, bcr metadata.BlockchainRetriever) (bool, error, int) {
+	return validateBatchTxsByItself(b.txs, db, bcr)
+}
+
+func validateBatchTxsByItself(txList []metadata.Transaction, db database.DatabaseInterface, bcr metadata.BlockchainRetriever) (bool, error, int) {
 	prvCoinID := &common.Hash{}
 	err := prvCoinID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
 		return false, err, -1
 	}
-
 	bulletProofList := make([]*aggregaterange.AggregatedRangeProof, 0)
 	for i, tx := range txList {
 		shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
@@ -361,27 +374,25 @@ func ValidateBatchTxsByItself(
 		if !ok {
 			return false, err, i
 		}
-		if tx.Metadata != nil {
+		if tx.GetMetadata() != nil {
 			if hasPrivacy {
-				return false, errors.New("Metadata can not exist in not privacy tx"), i
+				return false, errors.New("Metadata can not exist in privacy tx"), i
 			}
-			validateMetadata := tx.Metadata.ValidateMetadataByItself()
-			if validateMetadata {
-				return validateMetadata, nil, i
-			} else {
+			validateMetadata := tx.GetMetadata().ValidateMetadataByItself()
+			if !validateMetadata {
 				return validateMetadata, NewTransactionErr(UnexpectedError, errors.New("Metadata is invalid")), i
 			}
 		}
-		bulletProofList = append(bulletProofList, tx.Proof.GetAggregatedRangeProof())
+		bulletProofList = append(bulletProofList, tx.GetProof().GetAggregatedRangeProof())
 	}
-	ok, error, i := aggregaterange.VerifyBatchingAggregatedRangeProofs(bulletProofList)
+	//TODO: add go routine
+	ok, err, i := aggregaterange.VerifyBatchingAggregatedRangeProofs(bulletProofList)
+	if err != nil {
+		return false, NewTransactionErr(TxProofVerifyFailError, err), -1
+	}
 	if !ok {
-		if error != nil {
-			Logger.log.Error(error)
-		}
 		Logger.log.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF %d", i)
-		return false, NewTransactionErr(TxProofVerifyFailError, error), -1
+		return false, NewTransactionErr(TxProofVerifyFailError, fmt.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF %d", i)), -1
 	}
-
 	return true, nil, -1
 }
