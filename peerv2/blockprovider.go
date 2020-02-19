@@ -2,6 +2,7 @@ package peerv2
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
@@ -195,7 +196,27 @@ func (bp *BlockProvider) GetBlockShardToBeaconByHeight(ctx context.Context, req 
 	return resp, nil
 }
 
+func (bp *BlockProvider) StreamBlockBeaconByHeight(req *proto.GetBlockBeaconByHeightRequest, stream proto.HighwayService_StreamBlockBeaconByHeightServer) error {
+	Logger.Infof("[stream] Block provider received request %v %v [%v..%v], len %v", req.GetFromHeight(), req.GetToHeight(), req.Heights[0], req.Heights[len(req.Heights)-1], len(req.Heights))
+	blkRecv := bp.NetSync.StreamBlockBeaconByHeight(false, false, []uint64{req.GetFromHeight(), req.GetToHeight()})
+	for blk := range blkRecv {
+		blkData, err := json.Marshal(blk)
+		if err != nil {
+			Logger.Infof("[stream] block channel return error when marshal %v", err)
+			return err
+		}
+		Logger.Infof("[stream] block channel return block ok")
+		if err := stream.Send(&proto.BlockData{Data: blkData}); err != nil {
+			Logger.Infof("[stream] Server send block to client return err %v", err)
+			return err
+		}
+		Logger.Infof("[stream] Server send block to client ok")
+	}
+	return nil
+}
+
 type BlockProvider struct {
+	proto.UnimplementedHighwayServiceServer
 	NetSync NetSync
 }
 
@@ -206,4 +227,5 @@ type NetSync interface {
 	//GetBlockBeaconByHeight fromPool bool, specificHeight bool, blkHeights []uint64
 	GetBlockBeaconByHeight(bool, bool, []uint64) []wire.Message
 	GetBlockBeaconByHash(blkHashes []common.Hash) []wire.Message
+	StreamBlockBeaconByHeight(fromPool bool, specificHeight bool, blkHeights []uint64) chan interface{}
 }

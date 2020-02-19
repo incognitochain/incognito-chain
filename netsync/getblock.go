@@ -267,3 +267,44 @@ func (netSync *NetSync) createBlockShardMsgByType(block *blockchain.ShardBlock, 
 	}
 	return blkMsg, nil
 }
+
+func (netSync *NetSync) StreamBlockBeaconByHeight(fromPool bool, specificHeight bool, blkHeights []uint64) chan interface{} {
+	Logger.log.Infof("[stream] Netsync received request get block %v %v [%v...%v] len %v", fromPool, specificHeight, blkHeights[0], blkHeights[len(blkHeights)-1], len(blkHeights))
+	blkCh := make(chan interface{})
+	if !specificHeight {
+		if len(blkHeights) != 2 || blkHeights[1] < blkHeights[0] {
+			return nil
+		}
+	}
+	sort.Slice(blkHeights, func(i, j int) bool { return blkHeights[i] < blkHeights[j] })
+
+	go func(
+		height []uint64,
+		specific bool,
+		blkCh chan interface{},
+		BlkByHeightGetter func(uint64) (*blockchain.BeaconBlock, error),
+	) {
+		blkHeight := blkHeights[0] - 1
+		idx := 0
+		for blkHeight < blkHeights[len(blkHeights)-1] {
+			if specific {
+				blkHeight = blkHeights[idx]
+				idx++
+			} else {
+				blkHeight++
+			}
+			if blkHeight <= 1 {
+				continue
+			}
+			blk, err := BlkByHeightGetter(blkHeight)
+			if err != nil {
+				close(blkCh)
+			}
+			blkCh <- blk
+			Logger.log.Infof("[stream] Netsync push block to channel")
+		}
+		close(blkCh)
+		return
+	}(blkHeights, specificHeight, blkCh, netSync.config.BlockChain.GetBeaconBlockByHeight)
+	return blkCh
+}

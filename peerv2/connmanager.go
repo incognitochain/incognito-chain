@@ -119,6 +119,7 @@ func (cm *ConnManager) Start(ns NetSync) {
 	go cm.keepHighwayConnection()
 
 	cm.Requester = NewRequester(cm.LocalHost.GRPC)
+	cm.Requester.HandleResponseBlock = cm.PutData
 	cm.subscriber = NewSubManager(cm.info, cm.ps, cm.Requester, cm.messages)
 	cm.Provider = NewBlockProvider(cm.LocalHost.GRPC, ns)
 	go cm.manageRoleSubscription()
@@ -174,6 +175,7 @@ type ConnManager struct {
 
 	ps               *pubsub.PubSub
 	messages         chan *pubsub.Message // queue messages from all topics
+	data             chan []byte
 	registerRequests chan peer.ID
 
 	discoverer HighwayDiscoverer
@@ -188,11 +190,20 @@ func (cm *ConnManager) PutMessage(msg *pubsub.Message) {
 	cm.messages <- msg
 }
 
+func (cm *ConnManager) PutData(data []byte) {
+	cm.data <- data
+}
+
 func (cm *ConnManager) process() {
 	for {
 		select {
 		case msg := <-cm.messages:
 			err := cm.disp.processInMessageString(string(msg.Data))
+			if err != nil {
+				Logger.Warn(err)
+			}
+		case data := <-cm.data:
+			err := cm.disp.processStreamBlk(0, data)
 			if err != nil {
 				Logger.Warn(err)
 			}
