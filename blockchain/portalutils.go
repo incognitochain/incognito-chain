@@ -77,10 +77,7 @@ func InitCurrentPortalStateFromDB(
 	if err != nil {
 		return nil, err
 	}
-	portingRequestsState, err := getPortingRequestsState(db, beaconHeight)
-	if err != nil {
-		return nil, err
-	}
+
 	redeemRequestsState, err := getRedeemRequestsState(db, beaconHeight)
 	if err != nil {
 		return nil, err
@@ -96,7 +93,6 @@ func InitCurrentPortalStateFromDB(
 
 	return &CurrentPortalState{
 		CustodianPoolState:     custodianPoolState,
-		PortingRequests:        portingRequestsState,
 		RedeemRequests:         redeemRequestsState,
 		WaitingPortingRequests: waitingPortingReqs,
 		WaitingRedeemRequests:  waitingRedeemReqs,
@@ -112,10 +108,7 @@ func storePortalStateToDB(
 	if err != nil {
 		return err
 	}
-	err = storePortingRequestsState(db, beaconHeight, currentPortalState.PortingRequests)
-	if err != nil {
-		return err
-	}
+
 	err = storeRedeemRequestsState(db, beaconHeight, currentPortalState.RedeemRequests)
 	if err != nil {
 		return err
@@ -176,23 +169,6 @@ func storeFinalExchangeRates(db database.DatabaseInterface,
 		err = db.Put([]byte(newKey), contributionBytes)
 		if err != nil {
 			return database.NewDatabaseError(database.StoreFinalExchangeRatesStateError, errors.Wrap(err, "db.lvdb.put"))
-		}
-	}
-	return nil
-}
-
-func storePortingRequestsState(db database.DatabaseInterface,
-	beaconHeight uint64,
-	portingRequestState map[string]*lvdb.PortingRequest) error {
-	for contribKey, contribution := range portingRequestState {
-		newKey := replaceKeyByBeaconHeight(contribKey, beaconHeight)
-		contributionBytes, err := json.Marshal(contribution)
-		if err != nil {
-			return err
-		}
-		err = db.Put([]byte(newKey), contributionBytes)
-		if err != nil {
-			return database.NewDatabaseError(database.StorePortingRequestStateError, errors.Wrap(err, "db.lvdb.put"))
 		}
 	}
 	return nil
@@ -303,28 +279,6 @@ func getCustodianPoolState(
 		custodianPoolState[string(custodianPoolStateKeyBytes)] = &custodianState
 	}
 	return custodianPoolState, nil
-}
-
-func getPortingRequestsState(
-	db database.DatabaseInterface,
-	beaconHeight uint64,
-) (map[string]*lvdb.PortingRequest, error) {
-	portingRequestState := make(map[string]*lvdb.PortingRequest)
-	portingRequestStateKeysBytes, portingRequestStateValuesBytes, err := db.GetAllRecordsPortalByPrefix(beaconHeight, lvdb.PortalPortingRequestsPrefix)
-
-	if err != nil {
-		return nil, err
-	}
-	for idx, portingRequestStateKeyBytes := range portingRequestStateKeysBytes {
-		var portingRequest lvdb.PortingRequest
-		err = json.Unmarshal(portingRequestStateValuesBytes[idx], &portingRequest)
-		if err != nil {
-			return nil, err
-		}
-
-		portingRequestState[string(portingRequestStateKeyBytes)] = &portingRequest
-	}
-	return portingRequestState, nil
 }
 
 func getRedeemRequestsState(
