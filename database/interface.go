@@ -207,4 +207,5 @@ type DatabaseInterface interface {
 	StorePortingRequestItem(key []byte, value interface{}) error
 	StoreExchangeRatesRequestItem(key []byte, value interface{}) error
 	StoreFinalExchangeRatesItem(key []byte, value interface{}) error
+	GetFinalExchangeRatesByBeaconHeight() error
 }
