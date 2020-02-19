@@ -12,7 +12,6 @@ import (
 
 func (engine *Engine) LoadMiningKeys(keysString string) error {
 	if len(keysString) > 0 {
-		engine.userMiningPublicKeys = make(map[string]*incognitokey.CommitteePublicKey)
 		keys := strings.Split(keysString, "|")
 		if len(keys) > 0 {
 			for _, key := range keys {
