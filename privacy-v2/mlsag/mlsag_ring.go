@@ -35,3 +35,7 @@ func NewRandomRing(privateKeys []privacy.Scalar, numFake, pi int) (K *Ring) {
 	}
 	return
 }
+
+func (this *Ring) AppendToRow(row int, val privacy.Point) {
+	this.keys[row] = append(this.keys[row], val)
+}

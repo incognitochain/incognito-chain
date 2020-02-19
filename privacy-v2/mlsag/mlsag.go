@@ -37,19 +37,6 @@ func (this *Mlsag) createRandomChallenges() (alpha []privacy.Scalar, r [][]priva
 	return
 }
 
-func NewMlsagWithDefinedRing(privateKeys []privacy.Scalar, K *Ring, pi, numFake int) (mlsag *Mlsag) {
-	if mlsag == nil {
-		mlsag = new(Mlsag)
-	}
-
-	mlsag.K = K
-	mlsag.pi = pi
-	mlsag.privateKeys = privateKeys
-	mlsag.keyImages = parseKeyImages(privateKeys) // 1st step in monero paper
-
-	return
-}
-
 // func NewMlsagWithRandomRing(privateKeys []privacy.Scalar, numFake int) (mlsag *Mlsag) {
 // 	if mlsag == nil {
 // 		mlsag = new(Mlsag)
@@ -61,10 +48,6 @@ func NewMlsagWithDefinedRing(privateKeys []privacy.Scalar, K *Ring, pi, numFake 
 // 	mlsag.K = NewRandomRing(privateKeys, numFake, mlsag.pi)
 // 	return
 // }
-
-func SignWithMlsag(mlsag Mlsag, message string) (*Signature, error) {
-	return mlsag.Sign(message)
-}
 
 // func SignWithOneKey(privateKey privacy.Scalar, message string, numFake int) (*Signature, error) {
 // 	keys := []privacy.Scalar{privateKey}
@@ -178,17 +161,17 @@ func (this *Mlsag) calculateC(digest [sha256.Size]byte, alpha []privacy.Scalar, 
 	return c, nil
 }
 
-func (this *Mlsag) Sign(message string) (*Signature, error) {
-	digest := hashToNum([]byte(message))
-	alpha, r := this.createRandomChallenges()    // step 2 in paper
-	c, err := this.calculateC(digest, alpha, &r) // step 3 and 4 in paper
-
-	if err != nil {
-		return nil, err
+func NewMlsagWithDefinedRing(privateKeys []privacy.Scalar, K *Ring, pi int) (mlsag *Mlsag) {
+	if mlsag == nil {
+		mlsag = new(Mlsag)
 	}
-	return &Signature{
-		*c[0], this.keyImages, r,
-	}, nil
+
+	mlsag.K = K
+	mlsag.pi = pi
+	mlsag.privateKeys = privateKeys
+	mlsag.keyImages = parseKeyImages(privateKeys) // 1st step in monero paper
+
+	return
 }
 
 // check l*KI = 0 by checking KI is a valid point
@@ -224,4 +207,17 @@ func Verify(sig *Signature, K *Ring, message string) (bool, error) {
 	b1 := verifyKeyImages(sig.keyImages)
 	b2, err := verifyRing(sig, K, message)
 	return (b1 && b2), err
+}
+
+func (this *Mlsag) Sign(message string) (*Signature, error) {
+	digest := hashToNum([]byte(message))
+	alpha, r := this.createRandomChallenges()    // step 2 in paper
+	c, err := this.calculateC(digest, alpha, &r) // step 3 and 4 in paper
+
+	if err != nil {
+		return nil, err
+	}
+	return &Signature{
+		*c[0], this.keyImages, r,
+	}, nil
 }

@@ -9,11 +9,6 @@ type PublicAddress struct {
 	publicView  *privacy.Point
 }
 
-// Get Public Key from Private Key
-func GetPublicSpend(privateKey *privacy.Scalar) *privacy.Point {
-	return new(privacy.Point).ScalarMultBase(privateKey)
-}
-
 func (this *PublicAddress) GetPublicSpend() *privacy.Point {
 	return this.publicSpend
 }

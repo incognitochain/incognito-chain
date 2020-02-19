@@ -31,16 +31,16 @@ func (this *PrivateAddress) GetPublicView() *privacy.Point {
 }
 
 // Get public address coresponding to this private address
-func (this *PrivateAddress) GetPublicAddress() *PublicAddress {
-	result := new(PublicAddress)
-	result.publicSpend = this.GetPublicSpend()
-	result.publicView = this.GetPublicView()
-	return result
+func (this *PrivateAddress) GetPublicAddress() PublicAddress {
+	return PublicAddress{
+		this.GetPublicSpend(),
+		this.GetPublicView(),
+	}
 }
 
-func GenerateRandomAddress() *PrivateAddress {
-	result := new(PrivateAddress)
-	result.privateSpend = privacy.RandomScalar()
-	result.privateView = privacy.RandomScalar()
-	return result
+func GenerateRandomAddress() PrivateAddress {
+	return PrivateAddress{
+		privacy.RandomScalar(),
+		privacy.RandomScalar(),
+	}
 }
