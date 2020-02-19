@@ -106,7 +106,9 @@ func NewRedeemReqKey (beaconHeight uint64, redeemID string) string {
 func NewExchangeRatesRequestKey (beaconHeight uint64, txId string, lockTime string) string {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 	key := append(PortalExchangeRatesPrefix, beaconHeightBytes...)
+	key = append(key, []byte(txId)...)
 	key = append(key, []byte(lockTime)...)
+
 	return string(key)
 }
 
@@ -200,6 +202,34 @@ func (db *db) StorePortingRequestItem(keyId []byte, content interface{}) error {
 	return nil
 }
 
+func (db *db) StoreExchangeRatesRequestItem(keyId []byte, content interface{}) error {
+	contributionBytes, err := json.Marshal(content)
+	if err != nil {
+		return err
+	}
+
+	err = db.Put(keyId, contributionBytes)
+	if err != nil {
+		return database.NewDatabaseError(database.StoreExchangeRatesRequestStateError, errors.Wrap(err, "db.lvdb.put"))
+	}
+
+	return nil
+}
+
+func (db *db) StoreFinalExchangeRatesItem(keyId []byte, content interface{}) error {
+	contributionBytes, err := json.Marshal(content)
+	if err != nil {
+		return err
+	}
+
+	err = db.Put(keyId, contributionBytes)
+	if err != nil {
+		return database.NewDatabaseError(database.StoreFinalExchangeRatesStateError, errors.Wrap(err, "db.lvdb.put"))
+	}
+
+	return nil
+}
+
 func (db *db) GetItemPortalByPrefix(prefix []byte) (byte, error) {
 	itemRecord, dbErr := db.lvdb.Get(prefix, nil)
 	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
@@ -207,7 +237,7 @@ func (db *db) GetItemPortalByPrefix(prefix []byte) (byte, error) {
 	}
 
 	if len(itemRecord) == 0 {
-		return 0, nil
+		return 0, database.NewDatabaseError(database.GetItemPortalByPrefixNotFound, dbErr)
 	}
 
 	return itemRecord[0], nil
