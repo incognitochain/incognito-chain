@@ -16,8 +16,8 @@ type CurrentPortalState struct {
 	RedeemRequests         map[string]*lvdb.RedeemRequest        // key : beaconHeight || UniqueRedeemID
 	ExchangeRatesRequests  map[string]*lvdb.ExchangeRatesRequest // key : beaconHeight | TxID
 	FinalExchangeRates     map[string]*lvdb.FinalExchangeRates   // key : beaconHeight
-	WaitingPortingRequests map[string]*lvdb.PortingRequest       // key : UniquePortingID || beaconHeight
-	WaitingRedeemRequests  map[string]*lvdb.RedeemRequest        // key : UniquePortingID || beaconHeight
+	WaitingPortingRequests map[string]*lvdb.PortingRequest       // key : beaconHeight || UniquePortingID
+	WaitingRedeemRequests  map[string]*lvdb.RedeemRequest        // key : beaconHeight || UniqueRedeemID
 }
 
 func NewCustodianState(
@@ -77,11 +77,6 @@ func InitCurrentPortalStateFromDB(
 	if err != nil {
 		return nil, err
 	}
-
-	redeemRequestsState, err := getRedeemRequestsState(db, beaconHeight)
-	if err != nil {
-		return nil, err
-	}
 	waitingPortingReqs, err := getWaitingPortingRequests(db, beaconHeight)
 	if err != nil {
 		return nil, err
@@ -93,7 +88,6 @@ func InitCurrentPortalStateFromDB(
 
 	return &CurrentPortalState{
 		CustodianPoolState:     custodianPoolState,
-		RedeemRequests:         redeemRequestsState,
 		WaitingPortingRequests: waitingPortingReqs,
 		WaitingRedeemRequests:  waitingRedeemReqs,
 	}, nil
@@ -105,11 +99,6 @@ func storePortalStateToDB(
 	currentPortalState *CurrentPortalState,
 ) error {
 	err := storeCustodianState(db, beaconHeight, currentPortalState.CustodianPoolState)
-	if err != nil {
-		return err
-	}
-
-	err = storeRedeemRequestsState(db, beaconHeight, currentPortalState.RedeemRequests)
 	if err != nil {
 		return err
 	}
