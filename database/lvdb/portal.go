@@ -117,6 +117,22 @@ func NewCustodianDepositKey (beaconHeight uint64, custodianAddress string) strin
 	return string(key)
 }
 
+func NewWaitingPortingReqKey (beaconHeight uint64, portingID string) string {
+	portingIDBytes := []byte(fmt.Sprintf("%s-", portingID))
+	beaconHeightBytes := []byte(fmt.Sprintf("%d", beaconHeight))
+	key := append(PortalWaitingPortingRequestsPrefix, portingIDBytes...)
+	key = append(key, beaconHeightBytes...)
+	return string(key)
+}
+
+func NewWaitingRedeemReqKey (beaconHeight uint64, redeemID string) string {
+	portingIDBytes := []byte(fmt.Sprintf("%s-", redeemID))
+	beaconHeightBytes := []byte(fmt.Sprintf("%d", beaconHeight))
+	key := append(PortalWaitingRedeemRequestsPrefix, portingIDBytes...)
+	key = append(key, beaconHeightBytes...)
+	return string(key)
+}
+
 func BuildCustodianDepositKey(
 	prefix []byte,
 	suffix []byte,
