@@ -255,7 +255,8 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(contentStr string, produce
 			false,
 			false,
 			shardID,
-			nil))
+			nil,
+			blockGenerator.chain.BestState.Beacon.GetCopiedFeatureStateDB()))
 
 	if initErr != nil {
 		Logger.log.Info("WARNING: an error occured while initializing response tx: ", initErr)
@@ -322,7 +323,8 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, prod
 			issuingETHRes,
 			false,
 			false,
-			shardID, nil))
+			shardID, nil,
+			blockGenerator.chain.BestState.Beacon.GetCopiedFeatureStateDB()))
 
 	if initErr != nil {
 		Logger.log.Info("WARNING: an error occured while initializing response tx: ", initErr)

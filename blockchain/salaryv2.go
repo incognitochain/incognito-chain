@@ -219,7 +219,7 @@ func (blockchain *BlockChain) addShardCommitteeRewardV2(rewardStateDB *statedb.S
 	return nil
 }
 
-func (blockchain *BlockChain) buildWithDrawTransactionResponseV2(txRequest *metadata.Transaction, blkProducerPrivateKey *privacy.PrivateKey, shardID byte) (metadata.Transaction, error) {
+func (blockchain *BlockChain) buildWithDrawTransactionResponse(txRequest *metadata.Transaction, blkProducerPrivateKey *privacy.PrivateKey, shardID byte) (metadata.Transaction, error) {
 	if (*txRequest).GetMetadataType() != metadata.WithDrawRewardRequestMeta {
 		return nil, errors.New("Can not understand this request!")
 	}
@@ -238,6 +238,7 @@ func (blockchain *BlockChain) buildWithDrawTransactionResponseV2(txRequest *meta
 		amount,
 		blkProducerPrivateKey,
 		blockchain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
+		blockchain.BestState.Beacon.GetCopiedFeatureStateDB(),
 		responseMeta,
 		requestDetail.TokenID,
 		common.GetShardIDFromLastByte(requestDetail.PaymentAddress.Pk[common.PublicKeySize-1]))

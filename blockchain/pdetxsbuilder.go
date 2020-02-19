@@ -50,7 +50,8 @@ func buildTradeResTx(
 	requestedTxID common.Hash,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
-	stateDB *statedb.StateDB,
+	transactionStateDB *statedb.StateDB,
+	bridgeStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
 	meta := metadata.NewPDETradeResponse(
 		instStatus,
@@ -75,7 +76,7 @@ func buildTradeResTx(
 			receiveAmt,
 			&receiverAddr,
 			producerPrivateKey,
-			stateDB,
+			transactionStateDB,
 			meta,
 		)
 		if err != nil {
@@ -109,12 +110,13 @@ func buildTradeResTx(
 			nil,
 			0,
 			tokenParams,
-			stateDB,
+			transactionStateDB,
 			meta,
 			false,
 			false,
 			shardID,
 			nil,
+			bridgeStateDB,
 		),
 	)
 	if initErr != nil {
@@ -146,6 +148,7 @@ func (blockGenerator *BlockGenerator) buildPDETradeRefundTx(
 		producerPrivateKey,
 		shardID,
 		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
+		blockGenerator.chain.BestState.Beacon.GetCopiedFeatureStateDB(),
 	)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing refunded trading response tx: %+v", err)
@@ -177,6 +180,7 @@ func (blockGenerator *BlockGenerator) buildPDETradeAcceptedTx(
 		producerPrivateKey,
 		shardID,
 		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
+		blockGenerator.chain.BestState.Beacon.GetCopiedFeatureStateDB(),
 	)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while initializing accepted trading response tx: %+v", err)
@@ -293,6 +297,7 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 			false,
 			shardID,
 			nil,
+			blockGenerator.chain.BestState.Beacon.GetCopiedFeatureStateDB(),
 		),
 	)
 	if initErr != nil {
@@ -388,6 +393,7 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
 			false,
 			shardID,
 			nil,
+			blockGenerator.chain.BestState.Beacon.GetCopiedFeatureStateDB(),
 		),
 	)
 	if initErr != nil {
@@ -484,6 +490,7 @@ func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
 			false,
 			shardID,
 			nil,
+			blockGenerator.chain.BestState.Beacon.GetCopiedFeatureStateDB(),
 		),
 	)
 	if initErr != nil {

@@ -653,8 +653,8 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransaction(params interfac
 			metaData,
 			txParam.HasPrivacyCoin,
 			txParam.HasPrivacyToken,
-			txParam.ShardIDSender, txParam.Info))
-
+			txParam.ShardIDSender, txParam.Info,
+			txService.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()))
 	if err != nil {
 		return nil, NewRPCError(CreateTxDataError, err)
 	}

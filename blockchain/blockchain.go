@@ -1159,36 +1159,6 @@ func (blockchain *BlockChain) BuildInstRewardForShards(epoch uint64, totalReward
 	return resInst, nil
 }
 
-func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(
-	transactions []metadata.Transaction,
-	blkProducerPrivateKey *privacy.PrivateKey,
-) (
-	[]metadata.Transaction,
-	error,
-) {
-	txRequestTable := reqTableFromReqTxs(transactions)
-	txsResponse := []metadata.Transaction{}
-	for key, value := range txRequestTable {
-		txRes, err := blockchain.buildWithDrawTransactionResponse(&value, blkProducerPrivateKey)
-		if err != nil {
-			Logger.log.Errorf("Build Withdraw transactions response for tx %v return errors %v", value, err)
-			delete(txRequestTable, key)
-			continue
-		} else {
-			Logger.log.Infof("[Reward] - BuildWithDrawTransactionResponse for tx %+v, ok: %+v\n", value, txRes)
-		}
-		txsResponse = append(txsResponse, txRes)
-	}
-	txsSpamRemoved := filterReqTxs(transactions, txRequestTable)
-	Logger.log.Infof("Number of metadata txs: %v; number of tx request %v; number of tx spam %v; number of tx response %v",
-		len(transactions),
-		len(txRequestTable),
-		len(transactions)-len(txsSpamRemoved),
-		len(txsResponse))
-	txsSpamRemoved = append(txsSpamRemoved, txsResponse...)
-	return txsSpamRemoved, nil
-}
-
 func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk *ShardBlock) error {
 	blkBody := blk.Body
 	txRequestTable := reqTableFromReqTxs(blkBody.Transactions)

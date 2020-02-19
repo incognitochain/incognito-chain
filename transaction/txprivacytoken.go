@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -143,17 +144,19 @@ func NewTxPrivacyTokenInitParams(senderKey *privacy.PrivateKey,
 	inputCoin []*privacy.InputCoin,
 	feeNativeCoin uint64,
 	tokenParams *CustomTokenPrivacyParamTx,
-	stateDB *statedb.StateDB,
+	transactionStateDB *statedb.StateDB,
 	metaData metadata.Metadata,
 	hasPrivacyCoin bool,
 	hasPrivacyToken bool,
 	shardID byte,
-	info []byte) *TxPrivacyTokenInitParams {
+	info []byte,
+	bridgeStateDB *statedb.StateDB) *TxPrivacyTokenInitParams {
 	params := &TxPrivacyTokenInitParams{
 		shardID:            shardID,
 		paymentInfo:        paymentInfo,
 		metaData:           metaData,
-		transactionStateDB: stateDB,
+		transactionStateDB: transactionStateDB,
+		bridgeStateDB:      bridgeStateDB,
 		feeNativeCoin:      feeNativeCoin,
 		hasPrivacyCoin:     hasPrivacyCoin,
 		hasPrivacyToken:    hasPrivacyToken,
@@ -290,8 +293,27 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 			propertyID, _ := common.Hash{}.NewHashFromStr(params.tokenParams.PropertyID)
 			existed := statedb.PrivacyTokenIDExisted(params.transactionStateDB, *propertyID)
 			if !existed {
-				//TODO: 0xmerman is bridge token existed
-				return NewTransactionErr(TokenIDExistedError, errors.New("invalid Token ID"))
+				isBridgeToken := false
+				allBridgeTokensBytes, err := statedb.GetAllBridgeTokens(params.bridgeStateDB)
+				if err != nil {
+					return NewTransactionErr(TokenIDExistedError, err)
+				}
+				if len(allBridgeTokensBytes) > 0 {
+					var allBridgeTokens []*rawdb.BridgeTokenInfo
+					err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
+					if err != nil {
+						return NewTransactionErr(TokenIDExistedError, err)
+					}
+					for _, bridgeTokens := range allBridgeTokens {
+						if propertyID.IsEqual(bridgeTokens.TokenID) {
+							isBridgeToken = true
+							break
+						}
+					}
+				}
+				if !isBridgeToken {
+					return NewTransactionErr(TokenIDExistedError, errors.New("invalid Token ID"))
+				}
 			}
 			Logger.log.Debugf("Token %+v wil be transfered with", propertyID)
 			txCustomTokenPrivacy.TxPrivacyTokenData = TxPrivacyTokenData{
@@ -698,7 +720,7 @@ func NewTxPrivacyTokenInitParamsForASM(
 	myCommitmentIndicesForPToken []uint64,
 	sndOutputsForPToken []*privacy.Scalar) *TxPrivacyTokenInitParamsForASM {
 
-	txParam := NewTxPrivacyTokenInitParams(senderKey, paymentInfo, inputCoin, feeNativeCoin, tokenParams, nil, metaData, hasPrivacyCoin, hasPrivacyToken, shardID, info)
+	txParam := NewTxPrivacyTokenInitParams(senderKey, paymentInfo, inputCoin, feeNativeCoin, tokenParams, nil, metaData, hasPrivacyCoin, hasPrivacyToken, shardID, info, nil)
 	params := &TxPrivacyTokenInitParamsForASM{
 		txParam:                           *txParam,
 		commitmentIndicesForNativeToken:   commitmentIndicesForNativeToken,

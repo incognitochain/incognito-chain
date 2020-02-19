@@ -282,36 +282,6 @@ func (blockchain *BlockChain) updateDatabaseWithBlockRewardInfo(beaconBlock *Bea
 	return nil
 }
 
-func (blockchain *BlockChain) buildWithDrawTransactionResponse(
-	txRequest *metadata.Transaction,
-	blkProducerPrivateKey *privacy.PrivateKey,
-) (
-	metadata.Transaction,
-	error,
-) {
-	if (*txRequest).GetMetadataType() != metadata.WithDrawRewardRequestMeta {
-		return nil, errors.New("Can not understand this request!")
-	}
-	requestDetail := (*txRequest).GetMetadata().(*metadata.WithDrawRewardRequest)
-	amount, err := rawdb.GetCommitteeReward(blockchain.GetDatabase(), requestDetail.PaymentAddress.Pk, requestDetail.TokenID)
-	if (amount == 0) || (err != nil) {
-		return nil, errors.New("Not enough reward")
-	}
-	responseMeta, err := metadata.NewWithDrawRewardResponse(requestDetail, (*txRequest).Hash())
-	if err != nil {
-		return nil, err
-	}
-	return blockchain.InitTxSalaryByCoinID(
-		&requestDetail.PaymentAddress,
-		amount,
-		blkProducerPrivateKey,
-		//blockGenerator.chain.config.DataBase,
-		nil,
-		responseMeta,
-		requestDetail.TokenID,
-		common.GetShardIDFromLastByte(requestDetail.PaymentAddress.Pk[common.PublicKeySize-1]))
-}
-
 // mapPlusMap(src, dst): dst = dst + src
 func mapPlusMap(src, dst *map[common.Hash]uint64) {
 	if src != nil {
