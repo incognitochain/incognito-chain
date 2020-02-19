@@ -92,7 +92,7 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 		txType = transaction.NormalCoinType
 	}
 	if txType == -1 {
-		tokenIDs, err := blockchain.GetAllCoinIDV2(shardID)
+		tokenIDs, err := blockchain.ListPrivacyTokenAndBridgeTokenAndPRVByShardID(shardID)
 		if err != nil {
 			return nil, err
 		}

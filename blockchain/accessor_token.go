@@ -7,11 +7,11 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
-func (blockchain *BlockChain) ListAllPrivacyCustomToken() (map[common.Hash]*statedb.TokenState, error) {
+func (blockchain *BlockChain) ListAllPrivacyCustomTokenAndPRV() (map[common.Hash]*statedb.TokenState, error) {
 	tokenStates := make(map[common.Hash]*statedb.TokenState)
 	for i := 0; i < blockchain.BestState.Beacon.ActiveShards; i++ {
 		shardID := byte(i)
-		m, err := blockchain.ListPrivacyCustomTokenV2(shardID)
+		m, err := blockchain.ListPrivacyCustomTokenAndPRVByShardID(shardID)
 		if err != nil {
 			return nil, err
 		}
@@ -35,17 +35,16 @@ func (blockchain *BlockChain) ListAllPrivacyCustomToken() (map[common.Hash]*stat
 }
 
 // ListCustomToken - return all custom token which existed in network
-func (blockchain *BlockChain) ListPrivacyCustomTokenV2(shardID byte) (map[common.Hash]*statedb.TokenState, error) {
+func (blockchain *BlockChain) ListPrivacyCustomTokenAndPRVByShardID(shardID byte) (map[common.Hash]*statedb.TokenState, error) {
 	tokenStates, err := statedb.ListPrivacyToken(blockchain.BestState.Shard[shardID].GetCopiedTransactionStateDB())
 	if err != nil {
 		return nil, err
 	}
-	delete(tokenStates, common.PRVCoinID)
 	return tokenStates, nil
 }
-func (blockchain *BlockChain) GetAllCoinIDV2(shardID byte) ([]common.Hash, error) {
+func (blockchain *BlockChain) ListPrivacyTokenAndBridgeTokenAndPRVByShardID(shardID byte) ([]common.Hash, error) {
 	tokenIDs := []common.Hash{}
-	tokenStates, err := blockchain.ListPrivacyCustomTokenV2(shardID)
+	tokenStates, err := blockchain.ListPrivacyCustomTokenAndPRVByShardID(shardID)
 	if err != nil {
 		return nil, err
 	}
