@@ -572,11 +572,16 @@ func (blockService BlockService) GetActiveShards() int {
 }
 
 func (blockService BlockService) ListPrivacyCustomToken() (map[common.Hash]*statedb.TokenState, error) {
-	return blockService.BlockChain.ListAllPrivacyCustomToken()
+	tokenStates, err := blockService.BlockChain.ListAllPrivacyCustomTokenAndPRV()
+	if err != nil {
+		return tokenStates, err
+	}
+	delete(tokenStates, common.PRVCoinID)
+	return tokenStates, err
 }
 
-func (blockService BlockService) ListPrivacyCustomTokenByShardID(shardID byte) (map[common.Hash]*statedb.TokenState, error) {
-	return blockService.BlockChain.ListPrivacyCustomTokenV2(shardID)
+func (blockService BlockService) ListPrivacyCustomTokenWithPRVByShardID(shardID byte) (map[common.Hash]*statedb.TokenState, error) {
+	return blockService.BlockChain.ListPrivacyCustomTokenAndPRVByShardID(shardID)
 }
 
 // TODO: 0xmerman update to DBV2 later
@@ -630,8 +635,8 @@ func (blockService BlockService) ListPrivacyCustomTokenByShardID(shardID byte) (
 //	return listTxInitPrivacyToken, listTxInitPrivacyTokenCrossShard, err
 //}
 
-func (blockService BlockService) GetAllCoinID(shardID byte) ([]common.Hash, error) {
-	tokenIDs, err := blockService.BlockChain.GetAllCoinIDV2(shardID)
+func (blockService BlockService) GetAllCoinIDWithPRV(shardID byte) ([]common.Hash, error) {
+	tokenIDs, err := blockService.BlockChain.ListPrivacyTokenAndBridgeTokenAndPRVByShardID(shardID)
 	if err != nil {
 		return []common.Hash{}, err
 	}
@@ -640,12 +645,11 @@ func (blockService BlockService) GetAllCoinID(shardID byte) ([]common.Hash, erro
 
 func (blockService BlockService) GetMinerRewardFromMiningKey(incPublicKey []byte) (map[string]uint64, error) {
 	shardID := common.GetShardIDFromLastByte(incPublicKey[len(incPublicKey)-1])
-	allCoinIDs, err := blockService.GetAllCoinID(shardID)
+	allCoinIDs, err := blockService.GetAllCoinIDWithPRV(shardID)
 	if err != nil {
 		return nil, err
 	}
 	rewardAmountResult := make(map[string]uint64)
-	rewardAmounts := make(map[common.Hash]uint64)
 	rewardStateDB := blockService.BlockChain.BestState.Shard[shardID].GetCopiedRewardStateDB()
 	tempIncPublicKey := base58.Base58Check{}.Encode(incPublicKey, common.Base58Version)
 	for _, coinID := range allCoinIDs {
@@ -653,19 +657,12 @@ func (blockService BlockService) GetMinerRewardFromMiningKey(incPublicKey []byte
 		if err != nil {
 			return nil, err
 		}
-		if coinID == common.PRVCoinID {
-			rewardAmountResult["PRV"] = amount
-		} else {
-			rewardAmounts[coinID] = amount
-		}
-	}
-	tokenStates, err := blockService.ListPrivacyCustomTokenByShardID(shardID)
-	if err != nil {
-		return nil, err
-	}
-	for _, tokenState := range tokenStates {
-		if rewardAmounts[tokenState.TokenID()] > 0 {
-			rewardAmountResult[tokenState.TokenID().String()] = rewardAmounts[tokenState.TokenID()]
+		if amount > 0 {
+			if coinID == common.PRVCoinID {
+				rewardAmountResult["PRV"] = amount
+			} else {
+				rewardAmountResult[coinID.String()] = amount
+			}
 		}
 	}
 	return rewardAmountResult, nil
@@ -712,7 +709,7 @@ func (blockService BlockService) GetRewardAmount(paymentAddress string) (map[str
 		return rewardAmountResult, nil
 	}
 	shardID := common.GetShardIDFromLastByte(publicKey[len(publicKey)-1])
-	allCoinIDs, err := blockService.BlockChain.GetAllCoinIDV2(shardID)
+	allCoinIDs, err := blockService.BlockChain.ListPrivacyTokenAndBridgeTokenAndPRVByShardID(shardID)
 	if err != nil {
 		return nil, err
 	}
@@ -741,7 +738,7 @@ func (blockService BlockService) GetRewardAmountByPublicKey(publicKey string) (m
 		return nil, err
 	}
 	shardID := common.GetShardIDFromLastByte(publicKey[len(tempPK)-1])
-	allCoinIDs, err := blockService.BlockChain.GetAllCoinIDV2(shardID)
+	allCoinIDs, err := blockService.BlockChain.ListPrivacyTokenAndBridgeTokenAndPRVByShardID(shardID)
 	if err != nil {
 		return nil, err
 	}

@@ -714,6 +714,14 @@ func (txService TxService) GetTransactionByHash(txHashStr string) (*jsonresult.T
 	return result, nil
 }
 
+func (txService TxService) ListPrivacyCustomToken() (map[common.Hash]*statedb.TokenState, error) {
+	tokenStates, err := txService.BlockChain.ListAllPrivacyCustomTokenAndPRV()
+	if err != nil {
+		return tokenStates, err
+	}
+	delete(tokenStates, common.PRVCoinID)
+	return tokenStates, nil
+}
 func (txService TxService) GetListPrivacyCustomTokenBalance(privateKey string) (jsonresult.ListCustomTokenBalance, *RPCError) {
 	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
 	resultM := make(map[string]jsonresult.CustomTokenBalance)
@@ -730,7 +738,7 @@ func (txService TxService) GetListPrivacyCustomTokenBalance(privateKey string) (
 	result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
 	lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
-	tokenStates, err := txService.BlockChain.ListAllPrivacyCustomToken()
+	tokenStates, err := txService.ListPrivacyCustomToken()
 	if err != nil {
 		Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
 		return jsonresult.ListCustomTokenBalance{}, NewRPCError(GetListPrivacyCustomTokenBalanceError, err)
@@ -822,9 +830,7 @@ func (txService TxService) GetBalancePrivacyCustomToken(privateKey string, token
 		Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
 		return uint64(0), NewRPCError(UnexpectedError, err)
 	}
-	lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
-	shardID := common.GetShardIDFromLastByte(lastByte)
-	tokenIDs, err := txService.BlockChain.ListPrivacyCustomTokenV2(shardID)
+	tokenIDs, err := txService.ListPrivacyCustomToken()
 	if err != nil {
 		Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
 		return uint64(0), NewRPCError(UnexpectedError, err)
@@ -884,8 +890,7 @@ func (txService TxService) PrivacyCustomTokenDetail(tokenIDStr string) ([]common
 		Logger.log.Debugf("handlePrivacyCustomTokenDetail result: %+v, err: %+v", nil, err)
 		return nil, nil, err
 	}
-
-	tokenStates, err := txService.BlockChain.ListAllPrivacyCustomToken()
+	tokenStates, err := txService.ListPrivacyCustomToken()
 	if err != nil {
 		return nil, nil, err
 	}
