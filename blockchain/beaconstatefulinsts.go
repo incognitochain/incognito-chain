@@ -91,10 +91,10 @@ func (blockchain *BlockChain) buildStatefulInstructions(stateDB *statedb.StateDB
 			newInst := [][]string{}
 			switch metaType {
 			case metadata.IssuingRequestMeta:
-				newInst, err = blockchain.buildInstructionsForIssuingReqV2(stateDB, contentStr, shardID, metaType, accumulatedValues)
+				newInst, err = blockchain.buildInstructionsForIssuingReq(stateDB, contentStr, shardID, metaType, accumulatedValues)
 
 			case metadata.IssuingETHRequestMeta:
-				newInst, err = blockchain.buildInstructionsForIssuingETHReqV2(stateDB, contentStr, shardID, metaType, accumulatedValues)
+				newInst, err = blockchain.buildInstructionsForIssuingETHReq(stateDB, contentStr, shardID, metaType, accumulatedValues)
 
 			case metadata.PDEContributionMeta:
 				pdeContributionActionsByShardID = groupPDEActionsByShardID(

@@ -352,15 +352,15 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 			switch metaType {
 			case metadata.IssuingETHRequestMeta:
 				if len(l) >= 4 && l[2] == "accepted" {
-					newTx, err = blockGenerator.buildETHIssuanceTxV2(l[3], producerPrivateKey, shardID)
+					newTx, err = blockGenerator.buildETHIssuanceTx(l[3], producerPrivateKey, shardID)
 				}
 			case metadata.IssuingRequestMeta:
 				if len(l) >= 4 && l[2] == "accepted" {
-					newTx, err = blockGenerator.buildIssuanceTxV2(l[3], producerPrivateKey, shardID)
+					newTx, err = blockGenerator.buildIssuanceTx(l[3], producerPrivateKey, shardID)
 				}
 			case metadata.PDETradeRequestMeta:
 				if len(l) >= 4 {
-					newTx, err = blockGenerator.buildPDETradeIssuanceTxV2(l[2], l[3], producerPrivateKey, shardID)
+					newTx, err = blockGenerator.buildPDETradeIssuanceTx(l[2], l[3], producerPrivateKey, shardID)
 				}
 			case metadata.PDEWithdrawalRequestMeta:
 				if len(l) >= 4 && l[2] == common.PDEWithdrawalAcceptedChainStatus {
@@ -369,9 +369,9 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 			case metadata.PDEContributionMeta:
 				if len(l) >= 4 {
 					if l[2] == common.PDEContributionRefundChainStatus {
-						newTx, err = blockGenerator.buildPDERefundContributionTxV2(l[3], producerPrivateKey, shardID)
+						newTx, err = blockGenerator.buildPDERefundContributionTx(l[3], producerPrivateKey, shardID)
 					} else if l[2] == common.PDEContributionMatchedNReturnedChainStatus {
-						newTx, err = blockGenerator.buildPDEMatchedNReturnedContributionTxV2(l[3], producerPrivateKey, shardID)
+						newTx, err = blockGenerator.buildPDEMatchedNReturnedContributionTx(l[3], producerPrivateKey, shardID)
 					}
 				}
 
