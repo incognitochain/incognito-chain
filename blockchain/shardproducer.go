@@ -746,8 +746,8 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	beaconHeight uint64,
 ) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
 	//TODO: 0xmerman dynamic calculate spare time
-	spareTime := 1000 * time.Millisecond
-	maxBlockCreationTime := blockCreationTimeLeftOver - spareTime.Nanoseconds()
+	spareTime := SpareTime * time.Millisecond
+	maxBlockCreationTimeLeftTime := blockCreationTimeLeftOver - spareTime.Nanoseconds()
 	startTime := time.Now()
 	sourceTxns := blockGenerator.GetPendingTxsV2()
 	var elasped int64
@@ -765,7 +765,7 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 		}
 		preparedTxForNewBlock = append(preparedTxForNewBlock, tx)
 		elasped = time.Since(startTime).Nanoseconds()
-		if elasped >= maxBlockCreationTime {
+		if elasped >= maxBlockCreationTimeLeftTime {
 			Logger.log.Info("Shard Producer/Elapsed, Break: ", elasped)
 			break
 		}
@@ -773,7 +773,7 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	listTxs := []metadata.Transaction{}
 	for index, tx := range preparedTxForNewBlock {
 		elasped = time.Since(startTime).Nanoseconds()
-		if elasped >= maxBlockCreationTime {
+		if elasped >= maxBlockCreationTimeLeftTime {
 			Logger.log.Info("Shard Producer/Elapsed, Break: ", elasped)
 			break
 		}
