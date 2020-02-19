@@ -83,6 +83,7 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 	amount uint64,
 	payByPrivateKey *privacy.PrivateKey,
 	transactionStateDB *statedb.StateDB,
+	bridgeStateDB *statedb.StateDB,
 	meta metadata.Metadata,
 	coinID common.Hash,
 	shardID byte,
@@ -115,7 +116,8 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 		coinID,
 		txType,
 		coinID.String(),
-		shardID)
+		shardID,
+		bridgeStateDB)
 	return transaction.BuildCoinBaseTxByCoinID(buildCoinBaseParams)
 }
 
@@ -124,7 +126,7 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadataV2(tran
 	txRequestTable := reqTableFromReqTxs(transactions)
 	txsResponse := []metadata.Transaction{}
 	for key, value := range txRequestTable {
-		txRes, err := blockchain.buildWithDrawTransactionResponseV2(&value, blkProducerPrivateKey, shardID)
+		txRes, err := blockchain.buildWithDrawTransactionResponse(&value, blkProducerPrivateKey, shardID)
 		if err != nil {
 			Logger.log.Errorf("Build Withdraw transactions response for tx %v return errors %v", value, err)
 			delete(txRequestTable, key)

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -124,17 +125,18 @@ func (tx TxCustomTokenPrivacy) GetTxPrivacyTokenActualSize() uint64 {
 }
 
 type TxPrivacyTokenInitParams struct {
-	senderKey       *privacy.PrivateKey
-	paymentInfo     []*privacy.PaymentInfo
-	inputCoin       []*privacy.InputCoin
-	feeNativeCoin   uint64
-	tokenParams     *CustomTokenPrivacyParamTx
-	stateDB         *statedb.StateDB
-	metaData        metadata.Metadata
-	hasPrivacyCoin  bool
-	hasPrivacyToken bool
-	shardID         byte
-	info            []byte
+	senderKey          *privacy.PrivateKey
+	paymentInfo        []*privacy.PaymentInfo
+	inputCoin          []*privacy.InputCoin
+	feeNativeCoin      uint64
+	tokenParams        *CustomTokenPrivacyParamTx
+	transactionStateDB *statedb.StateDB
+	bridgeStateDB      *statedb.StateDB
+	metaData           metadata.Metadata
+	hasPrivacyCoin     bool
+	hasPrivacyToken    bool
+	shardID            byte
+	info               []byte
 }
 
 func NewTxPrivacyTokenInitParams(senderKey *privacy.PrivateKey,
@@ -142,24 +144,26 @@ func NewTxPrivacyTokenInitParams(senderKey *privacy.PrivateKey,
 	inputCoin []*privacy.InputCoin,
 	feeNativeCoin uint64,
 	tokenParams *CustomTokenPrivacyParamTx,
-	stateDB *statedb.StateDB,
+	transactionStateDB *statedb.StateDB,
 	metaData metadata.Metadata,
 	hasPrivacyCoin bool,
 	hasPrivacyToken bool,
 	shardID byte,
-	info []byte) *TxPrivacyTokenInitParams {
+	info []byte,
+	bridgeStateDB *statedb.StateDB) *TxPrivacyTokenInitParams {
 	params := &TxPrivacyTokenInitParams{
-		shardID:         shardID,
-		paymentInfo:     paymentInfo,
-		metaData:        metaData,
-		stateDB:         stateDB,
-		feeNativeCoin:   feeNativeCoin,
-		hasPrivacyCoin:  hasPrivacyCoin,
-		hasPrivacyToken: hasPrivacyToken,
-		inputCoin:       inputCoin,
-		senderKey:       senderKey,
-		tokenParams:     tokenParams,
-		info:            info,
+		shardID:            shardID,
+		paymentInfo:        paymentInfo,
+		metaData:           metaData,
+		transactionStateDB: transactionStateDB,
+		bridgeStateDB:      bridgeStateDB,
+		feeNativeCoin:      feeNativeCoin,
+		hasPrivacyCoin:     hasPrivacyCoin,
+		hasPrivacyToken:    hasPrivacyToken,
+		inputCoin:          inputCoin,
+		senderKey:          senderKey,
+		tokenParams:        tokenParams,
+		info:               info,
 	}
 	return params
 }
@@ -175,7 +179,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 		params.inputCoin,
 		params.feeNativeCoin,
 		params.hasPrivacyCoin,
-		params.stateDB,
+		params.transactionStateDB,
 		nil,
 		params.metaData,
 		params.info))
@@ -271,7 +275,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 				//NOTICE: @merman update PropertyID calculated from hash of tokendata and shardID
 				newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), params.shardID))
 				Logger.log.Debug("New Privacy Token %+v ", newHashInitToken)
-				existed := statedb.PrivacyTokenIDExisted(params.stateDB, newHashInitToken)
+				existed := statedb.PrivacyTokenIDExisted(params.transactionStateDB, newHashInitToken)
 				if existed {
 					Logger.log.Error("INIT Tx Custom Token Privacy is Existed", newHashInitToken)
 					return NewTransactionErr(TokenIDExistedError, errors.New("this token is existed in network"))
@@ -287,10 +291,29 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 			// fee always 0 and reuse function of normal tx for custom token ID
 			temp := Tx{}
 			propertyID, _ := common.Hash{}.NewHashFromStr(params.tokenParams.PropertyID)
-			existed := statedb.PrivacyTokenIDExisted(params.stateDB, *propertyID)
+			existed := statedb.PrivacyTokenIDExisted(params.transactionStateDB, *propertyID)
 			if !existed {
-				//TODO: 0xmerman is bridge token existed
-				return NewTransactionErr(TokenIDExistedError, errors.New("invalid Token ID"))
+				isBridgeToken := false
+				allBridgeTokensBytes, err := statedb.GetAllBridgeTokens(params.bridgeStateDB)
+				if err != nil {
+					return NewTransactionErr(TokenIDExistedError, err)
+				}
+				if len(allBridgeTokensBytes) > 0 {
+					var allBridgeTokens []*rawdb.BridgeTokenInfo
+					err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
+					if err != nil {
+						return NewTransactionErr(TokenIDExistedError, err)
+					}
+					for _, bridgeTokens := range allBridgeTokens {
+						if propertyID.IsEqual(bridgeTokens.TokenID) {
+							isBridgeToken = true
+							break
+						}
+					}
+				}
+				if !isBridgeToken {
+					return NewTransactionErr(TokenIDExistedError, errors.New("invalid Token ID"))
+				}
 			}
 			Logger.log.Debugf("Token %+v wil be transfered with", propertyID)
 			txCustomTokenPrivacy.TxPrivacyTokenData = TxPrivacyTokenData{
@@ -305,7 +328,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 				params.tokenParams.TokenInput,
 				params.tokenParams.Fee,
 				params.hasPrivacyToken,
-				params.stateDB,
+				params.transactionStateDB,
 				propertyID,
 				nil,
 				nil))
@@ -653,7 +676,7 @@ type TxPrivacyTokenInitParamsForASM struct {
 	//inputCoin       []*privacy.InputCoin
 	//feeNativeCoin   uint64
 	//tokenParams     *CustomTokenPrivacyParamTx
-	//stateDB              database.DatabaseInterface
+	//transactionStateDB              database.DatabaseInterface
 	//metaData        metadata.Metadata
 	//hasPrivacyCoin  bool
 	//hasPrivacyToken bool
@@ -697,7 +720,7 @@ func NewTxPrivacyTokenInitParamsForASM(
 	myCommitmentIndicesForPToken []uint64,
 	sndOutputsForPToken []*privacy.Scalar) *TxPrivacyTokenInitParamsForASM {
 
-	txParam := NewTxPrivacyTokenInitParams(senderKey, paymentInfo, inputCoin, feeNativeCoin, tokenParams, nil, metaData, hasPrivacyCoin, hasPrivacyToken, shardID, info)
+	txParam := NewTxPrivacyTokenInitParams(senderKey, paymentInfo, inputCoin, feeNativeCoin, tokenParams, nil, metaData, hasPrivacyCoin, hasPrivacyToken, shardID, info, nil)
 	params := &TxPrivacyTokenInitParamsForASM{
 		txParam:                           *txParam,
 		commitmentIndicesForNativeToken:   commitmentIndicesForNativeToken,

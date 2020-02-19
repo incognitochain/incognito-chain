@@ -226,15 +226,16 @@ func EstimateTxSize(estimateTxSizeParam *EstimateTxSizeParam) uint64 {
 }
 
 type BuildCoinBaseTxByCoinIDParams struct {
-	payToAddress    *privacy.PaymentAddress
-	amount          uint64
-	payByPrivateKey *privacy.PrivateKey
-	stateDB         *statedb.StateDB
-	meta            metadata.Metadata
-	coinID          common.Hash
-	txType          int
-	coinName        string
-	shardID         byte
+	payToAddress       *privacy.PaymentAddress
+	amount             uint64
+	payByPrivateKey    *privacy.PrivateKey
+	transactionStateDB *statedb.StateDB
+	bridgeStateDB      *statedb.StateDB
+	meta               metadata.Metadata
+	coinID             common.Hash
+	txType             int
+	coinName           string
+	shardID            byte
 }
 
 func NewBuildCoinBaseTxByCoinIDParams(payToAddress *privacy.PaymentAddress,
@@ -245,17 +246,19 @@ func NewBuildCoinBaseTxByCoinIDParams(payToAddress *privacy.PaymentAddress,
 	coinID common.Hash,
 	txType int,
 	coinName string,
-	shardID byte) *BuildCoinBaseTxByCoinIDParams {
+	shardID byte,
+	bridgeStateDB *statedb.StateDB) *BuildCoinBaseTxByCoinIDParams {
 	params := &BuildCoinBaseTxByCoinIDParams{
-		stateDB:         stateDB,
-		shardID:         shardID,
-		meta:            meta,
-		amount:          amount,
-		coinID:          coinID,
-		coinName:        coinName,
-		payByPrivateKey: payByPrivateKey,
-		payToAddress:    payToAddress,
-		txType:          txType,
+		transactionStateDB: stateDB,
+		bridgeStateDB:      bridgeStateDB,
+		shardID:            shardID,
+		meta:               meta,
+		amount:             amount,
+		coinID:             coinID,
+		coinName:           coinName,
+		payByPrivateKey:    payByPrivateKey,
+		payToAddress:       payToAddress,
+		txType:             txType,
 	}
 	return params
 }
@@ -264,7 +267,7 @@ func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Tr
 	switch params.txType {
 	case NormalCoinType:
 		tx := &Tx{}
-		err := tx.InitTxSalary(params.amount, params.payToAddress, params.payByPrivateKey, params.stateDB, params.meta)
+		err := tx.InitTxSalary(params.amount, params.payToAddress, params.payByPrivateKey, params.transactionStateDB, params.meta)
 		return tx, err
 	case CustomTokenPrivacyType:
 		var propertyID [common.HashSize]byte
@@ -291,12 +294,13 @@ func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Tr
 				nil,
 				0,
 				tokenParams,
-				params.stateDB,
+				params.transactionStateDB,
 				params.meta,
 				false,
 				false,
 				params.shardID,
-				nil))
+				nil,
+				params.bridgeStateDB))
 		if err != nil {
 			return nil, errors.New(err.Error())
 		}

@@ -101,7 +101,7 @@ func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
 // Init - init value for tx from inputcoin(old output coin from old tx)
 // create new outputcoin and build privacy proof
 // if not want to create a privacy tx proof, set hashPrivacy = false
-// database is used like an interface which use to query info from stateDB in building tx
+// database is used like an interface which use to query info from transactionStateDB in building tx
 func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 	Logger.log.Debugf("CREATING TX........\n")
 	tx.Version = txVersion
@@ -178,8 +178,8 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 	}
 
 	shardID := common.GetShardIDFromLastByte(pkLastByteSender)
-	var commitmentIndexs []uint64   // array index random of commitments in stateDB
-	var myCommitmentIndexs []uint64 // index in array index random of commitment in stateDB
+	var commitmentIndexs []uint64   // array index random of commitments in transactionStateDB
+	var myCommitmentIndexs []uint64 // index in array index random of commitment in transactionStateDB
 
 	if params.hasPrivacy {
 		if len(params.inputCoins) == 0 {
@@ -808,7 +808,7 @@ func (tx Tx) ValidateTxWithBlockChain(
 	}
 	if tx.Metadata != nil {
 		isContinued, err := tx.Metadata.ValidateTxWithBlockChain(&tx, bcr, shardID, stateDB)
-		fmt.Printf("[stateDB] validate metadata with blockchain: %d %h %t %v\n", tx.GetMetadataType(), tx.Hash(), isContinued, err)
+		fmt.Printf("[transactionStateDB] validate metadata with blockchain: %d %h %t %v\n", tx.GetMetadataType(), tx.Hash(), isContinued, err)
 		if err != nil {
 			Logger.log.Errorf("[db] validate metadata with blockchain: %d %s %t %v\n", tx.GetMetadataType(), tx.Hash().String(), isContinued, err)
 			return NewTransactionErr(RejectTxMedataWithBlockChain, fmt.Errorf("validate metadata of tx %s with blockchain error %+v", tx.Hash().String(), err))
