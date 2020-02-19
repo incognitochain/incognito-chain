@@ -78,10 +78,16 @@ type CustomTokenPrivacyParamTx struct {
 
 // CreateCustomTokenReceiverArray - parse data frm rpc request to create a list vout for preparing to create a custom token tx
 // data interface is a map[paymentt-address]{transferring-amount}
-func CreateCustomTokenPrivacyReceiverArray(data interface{}) ([]*privacy.PaymentInfo, int64, error) {
+func CreateCustomTokenPrivacyReceiverArray(dataReceiver interface{}) ([]*privacy.PaymentInfo, int64, error) {
+	if dataReceiver == nil {
+		return nil, 0, fmt.Errorf("data receiver is in valid")
+	}
 	result := []*privacy.PaymentInfo{}
 	voutsAmount := int64(0)
-	receivers := data.(map[string]interface{})
+	receivers, ok := dataReceiver.(map[string]interface{})
+	if !ok {
+		return nil, 0, fmt.Errorf("data receiver is in valid")
+	}
 	for key, value := range receivers {
 		keyWallet, err := wallet.Base58CheckDeserialize(key)
 		if err != nil {
