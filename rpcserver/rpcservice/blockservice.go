@@ -657,10 +657,10 @@ func (blockService BlockService) GetMinerRewardFromMiningKey(incPublicKey []byte
 		if err != nil {
 			return nil, err
 		}
-		if amount > 0 {
-			if coinID == common.PRVCoinID {
-				rewardAmountResult["PRV"] = amount
-			} else {
+		if coinID == common.PRVCoinID {
+			rewardAmountResult["PRV"] = amount
+		} else {
+			if amount > 0 {
 				rewardAmountResult[coinID.String()] = amount
 			}
 		}
@@ -720,10 +720,10 @@ func (blockService BlockService) GetRewardAmount(paymentAddress string) (map[str
 		if err != nil {
 			return nil, err
 		}
-		if amount > 0 {
-			if coinID == common.PRVCoinID {
-				rewardAmountResult["PRV"] = amount
-			} else {
+		if coinID == common.PRVCoinID {
+			rewardAmountResult["PRV"] = amount
+		} else {
+			if amount > 0 {
 				rewardAmountResult[coinID.String()] = amount
 			}
 		}
@@ -748,10 +748,10 @@ func (blockService BlockService) GetRewardAmountByPublicKey(publicKey string) (m
 		if err != nil {
 			return nil, err
 		}
-		if amount > 0 {
-			if coinID == common.PRVCoinID {
-				rewardAmountResult["PRV"] = amount
-			} else {
+		if coinID == common.PRVCoinID {
+			rewardAmountResult["PRV"] = amount
+		} else {
+			if amount > 0 {
 				rewardAmountResult[coinID.String()] = amount
 			}
 		}
