@@ -42,11 +42,12 @@ const (
 	PDEContributionResponseMeta = 95
 
 	// portal
-	PortalCustodianDepositMeta  = 100
-	PortalUserRegisterMeta      = 101
-	PortalUserRequestPTokenMeta = 102
-	PortalCustodianDepositResponseMeta = 103
-	PortalExchangeRatesMeta     = 104
+	PortalCustodianDepositMeta          = 100
+	PortalUserRegisterMeta              = 101
+	PortalUserRequestPTokenMeta         = 102
+	PortalCustodianDepositResponseMeta  = 103
+	PortalUserRequestPTokenResponseMeta = 104
+	PortalExchangeRatesMeta             = 105
 )
 
 var minerCreatedMetaTypes = []int{
@@ -59,6 +60,7 @@ var minerCreatedMetaTypes = []int{
 	PDETradeResponseMeta,
 	PDEWithdrawalResponseMeta,
 	PDEContributionResponseMeta,
+	PortalUserRequestPTokenResponseMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock

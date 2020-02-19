@@ -488,7 +488,10 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 				if len(l) >= 4 && l[2] == common.PDEContributionRefundChainStatus {
 					newTx, err = blockGenerator.buildPortalRefundCustodianDepositTx(l[3], producerPrivateKey, shardID)
 				}
-
+			case metadata.PortalUserRequestPTokenMeta:
+				if len(l) >= 4 && l[2] == common.PortalReqPTokensAcceptedChainStatus {
+					newTx, err = blockGenerator.buildPortalAcceptedRequestPTokensTx(l[3], producerPrivateKey, shardID)
+				}
 			default:
 				continue
 			}
