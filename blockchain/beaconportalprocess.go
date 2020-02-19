@@ -177,7 +177,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		return nil
 	}
 
-	keyPortingRequestState := lvdb.NewPortingRequestKey(beaconHeight, portingRequestContent.UniqueRegisterId)
+	keyPortingRequestState := lvdb.NewPortingReqKey(beaconHeight, portingRequestContent.UniqueRegisterId)
 
 	if currentPortalState.PortingRequests[keyPortingRequestState] != nil {
 		Logger.log.Errorf("Unique porting id is duplicated")

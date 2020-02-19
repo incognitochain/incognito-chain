@@ -11,11 +11,13 @@ import (
 )
 
 type CurrentPortalState struct {
-	CustodianPoolState map[string]*lvdb.CustodianState // key : beaconHeight || custodian_address
-	PortingRequests    map[string]*lvdb.PortingRequest // key : beaconHeight || UniquePortingID
-	RedeemRequests     map[string]*lvdb.RedeemRequest  // key : beaconHeight || UniqueRedeemID
-	ExchangeRatesRequests     map[string]*lvdb.ExchangeRatesRequest  // key : beaconHeight | TxID
-	FinalExchangeRates    map[string]*lvdb.FinalExchangeRates  // key : beaconHeight
+	CustodianPoolState     map[string]*lvdb.CustodianState       // key : beaconHeight || custodian_address
+	PortingRequests        map[string]*lvdb.PortingRequest       // key : beaconHeight || UniquePortingID
+	RedeemRequests         map[string]*lvdb.RedeemRequest        // key : beaconHeight || UniqueRedeemID
+	ExchangeRatesRequests  map[string]*lvdb.ExchangeRatesRequest // key : beaconHeight | TxID
+	FinalExchangeRates     map[string]*lvdb.FinalExchangeRates   // key : beaconHeight
+	WaitingPortingRequests map[string]*lvdb.PortingRequest       // key : UniquePortingID || beaconHeight
+	WaitingRedeemRequests  map[string]*lvdb.RedeemRequest        // key : UniquePortingID || beaconHeight
 }
 
 func NewCustodianState(
@@ -27,12 +29,12 @@ func NewCustodianState(
 	remoteAddresses map[string]string,
 ) (*lvdb.CustodianState, error) {
 	return &lvdb.CustodianState{
-		IncognitoAddress: incognitoAddress,
-		TotalCollateral:  totalColl,
-		FreeCollateral:   freeColl,
-		HoldingPubTokens: holdingPubTokens,
+		IncognitoAddress:       incognitoAddress,
+		TotalCollateral:        totalColl,
+		FreeCollateral:         freeColl,
+		HoldingPubTokens:       holdingPubTokens,
 		LockedAmountCollateral: lockedAmountCollateral,
-		RemoteAddresses:  remoteAddresses,
+		RemoteAddresses:        remoteAddresses,
 	}, nil
 }
 
@@ -61,8 +63,8 @@ func NewExchangeRatesState(
 	rates map[string]lvdb.ExchangeRatesDetail,
 ) (*lvdb.ExchangeRatesRequest, error) {
 	return &lvdb.ExchangeRatesRequest{
-		 SenderAddress: senderAddress,
-		 Rates: rates,
+		SenderAddress: senderAddress,
+		Rates:         rates,
 	}, nil
 }
 
@@ -83,11 +85,21 @@ func InitCurrentPortalStateFromDB(
 	if err != nil {
 		return nil, err
 	}
+	waitingPortingReqs, err := getWaitingPortingRequests(db, beaconHeight)
+	if err != nil {
+		return nil, err
+	}
+	waitingRedeemReqs, err := getWaitingRedeemRequests(db, beaconHeight)
+	if err != nil {
+		return nil, err
+	}
 
 	return &CurrentPortalState{
-		CustodianPoolState: custodianPoolState,
-		PortingRequests:    portingRequestsState,
-		RedeemRequests:     redeemRequestsState,
+		CustodianPoolState:     custodianPoolState,
+		PortingRequests:        portingRequestsState,
+		RedeemRequests:         redeemRequestsState,
+		WaitingPortingRequests: waitingPortingReqs,
+		WaitingRedeemRequests:  waitingRedeemReqs,
 	}, nil
 }
 
@@ -105,6 +117,14 @@ func storePortalStateToDB(
 		return err
 	}
 	err = storeRedeemRequestsState(db, beaconHeight, currentPortalState.RedeemRequests)
+	if err != nil {
+		return err
+	}
+	err = storeWaitingPortingRequests(db, beaconHeight, currentPortalState.WaitingPortingRequests)
+	if err != nil {
+		return err
+	}
+	err = storeWaitingRedeemRequests(db, beaconHeight, currentPortalState.WaitingRedeemRequests)
 	if err != nil {
 		return err
 	}
@@ -129,7 +149,7 @@ func storePortalStateToDB(
 
 func storeExchangeRatesRequest(db database.DatabaseInterface,
 	beaconHeight uint64,
-	exchangeRatesRequest map[string]*lvdb.ExchangeRatesRequest) error  {
+	exchangeRatesRequest map[string]*lvdb.ExchangeRatesRequest) error {
 	for contribKey, contribution := range exchangeRatesRequest {
 		newKey := replaceKeyByBeaconHeight(contribKey, beaconHeight)
 		contributionBytes, err := json.Marshal(contribution)
@@ -146,7 +166,7 @@ func storeExchangeRatesRequest(db database.DatabaseInterface,
 
 func storeFinalExchangeRates(db database.DatabaseInterface,
 	beaconHeight uint64,
-	finalExchangeRates map[string]*lvdb.FinalExchangeRates) error  {
+	finalExchangeRates map[string]*lvdb.FinalExchangeRates) error {
 	for contribKey, contribution := range finalExchangeRates {
 		newKey := replaceKeyByBeaconHeight(contribKey, beaconHeight)
 		contributionBytes, err := json.Marshal(contribution)
@@ -163,7 +183,7 @@ func storeFinalExchangeRates(db database.DatabaseInterface,
 
 func storePortingRequestsState(db database.DatabaseInterface,
 	beaconHeight uint64,
-	portingRequestState map[string]*lvdb.PortingRequest) error  {
+	portingRequestState map[string]*lvdb.PortingRequest) error {
 	for contribKey, contribution := range portingRequestState {
 		newKey := replaceKeyByBeaconHeight(contribKey, beaconHeight)
 		contributionBytes, err := json.Marshal(contribution)
@@ -180,7 +200,7 @@ func storePortingRequestsState(db database.DatabaseInterface,
 
 func storeRedeemRequestsState(db database.DatabaseInterface,
 	beaconHeight uint64,
-	redeemRequestState map[string]*lvdb.RedeemRequest) error  {
+	redeemRequestState map[string]*lvdb.RedeemRequest) error {
 	for contribKey, contribution := range redeemRequestState {
 		newKey := replaceKeyByBeaconHeight(contribKey, beaconHeight)
 		contributionBytes, err := json.Marshal(contribution)
@@ -197,7 +217,7 @@ func storeRedeemRequestsState(db database.DatabaseInterface,
 
 func storeCustodianState(db database.DatabaseInterface,
 	beaconHeight uint64,
-	custodianState map[string]*lvdb.CustodianState) error  {
+	custodianState map[string]*lvdb.CustodianState) error {
 	for contribKey, contribution := range custodianState {
 		newKey := replaceKeyByBeaconHeight(contribKey, beaconHeight)
 		contributionBytes, err := json.Marshal(contribution)
@@ -209,6 +229,42 @@ func storeCustodianState(db database.DatabaseInterface,
 			return database.NewDatabaseError(database.StoreCustodianDepositStateError, errors.Wrap(err, "db.lvdb.put"))
 		}
 	}
+	return nil
+}
+
+func storeWaitingPortingRequests(db database.DatabaseInterface,
+	beaconHeight uint64,
+	waitingPortingReqs map[string]*lvdb.PortingRequest) error {
+	//todo:
+	//for contribKey, contribution := range waitingPortingReqs {
+	//	newKey := replaceKeyByBeaconHeight(contribKey, beaconHeight)
+	//	contributionBytes, err := json.Marshal(contribution)
+	//	if err != nil {
+	//		return err
+	//	}
+	//	err = db.Put([]byte(newKey), contributionBytes)
+	//	if err != nil {
+	//		return database.NewDatabaseError(database.StoreCustodianDepositStateError, errors.Wrap(err, "db.lvdb.put"))
+	//	}
+	//}
+	return nil
+}
+
+func storeWaitingRedeemRequests(db database.DatabaseInterface,
+	beaconHeight uint64,
+	waitingRedeemReqs map[string]*lvdb.RedeemRequest) error {
+	//todo:
+	//for contribKey, contribution := range waitingRedeemReqs {
+	//	newKey := replaceKeyByBeaconHeight(contribKey, beaconHeight)
+	//	contributionBytes, err := json.Marshal(contribution)
+	//	if err != nil {
+	//		return err
+	//	}
+	//	err = db.Put([]byte(newKey), contributionBytes)
+	//	if err != nil {
+	//		return database.NewDatabaseError(database.StoreCustodianDepositStateError, errors.Wrap(err, "db.lvdb.put"))
+	//	}
+	//}
 	return nil
 }
 
@@ -229,26 +285,25 @@ func replaceKeyByBeaconHeight(key string, newBeaconHeight uint64) string {
 	return newKey
 }
 
-
 func getCustodianPoolState(
 	db database.DatabaseInterface,
 	beaconHeight uint64,
 ) (map[string]*lvdb.CustodianState, error) {
-		custodianPoolState := make(map[string]*lvdb.CustodianState)
-		custodianPoolStateKeysBytes, custodianPoolStateValuesBytes, err := db.GetAllRecordsPortalByPrefix(beaconHeight, lvdb.PortalCustodianStatePrefix)
+	custodianPoolState := make(map[string]*lvdb.CustodianState)
+	custodianPoolStateKeysBytes, custodianPoolStateValuesBytes, err := db.GetAllRecordsPortalByPrefix(beaconHeight, lvdb.PortalCustodianStatePrefix)
+	if err != nil {
+		return nil, err
+	}
+	for idx, custodianPoolStateKeyBytes := range custodianPoolStateKeysBytes {
+		var custodianState lvdb.CustodianState
+		err = json.Unmarshal(custodianPoolStateValuesBytes[idx], &custodianState)
 		if err != nil {
 			return nil, err
 		}
-		for idx, custodianPoolStateKeyBytes := range custodianPoolStateKeysBytes {
-			var custodianState lvdb.CustodianState
-			err = json.Unmarshal(custodianPoolStateValuesBytes[idx], &custodianState)
-			if err != nil {
-				return nil, err
-			}
-			custodianPoolState[string(custodianPoolStateKeyBytes)] = &custodianState
-		}
-		return custodianPoolState, nil
+		custodianPoolState[string(custodianPoolStateKeyBytes)] = &custodianState
 	}
+	return custodianPoolState, nil
+}
 
 func getPortingRequestsState(
 	db database.DatabaseInterface,
@@ -292,7 +347,6 @@ func getRedeemRequestsState(
 	return redeemRequestState, nil
 }
 
-
 func getFinalExchangeRatesPreState(
 	db database.DatabaseInterface,
 	beaconHeight uint64,
@@ -321,17 +375,60 @@ func getFinalExchangeRatesPreState(
 	return finalExchangeRates, nil
 }
 
-func getAmountAdaptable(amount uint64, exchangeRate uint64) (uint64, error)  {
+func getAmountAdaptable(amount uint64, exchangeRate uint64) (uint64, error) {
 	convertPubTokenToPRVFloat64 := (float64(amount) * 1.5) * float64(exchangeRate)
 	convertPubTokenToPRVInt64 := uint64(convertPubTokenToPRVFloat64) // 2.2 -> 2
 
 	return convertPubTokenToPRVInt64, nil
 }
 
-func getPubTokenByTotalCollateral(total uint64, exchangeRate uint64) (uint64, error)  {
+func getPubTokenByTotalCollateral(total uint64, exchangeRate uint64) (uint64, error) {
 	pubToken := float64(total) / float64(exchangeRate) / 1.5
 	pubTokenByCollateral := uint64(pubToken) // 2.2 -> 2
 
 	return pubTokenByCollateral, nil
 }
 
+func getWaitingPortingRequests(
+	db database.DatabaseInterface,
+	beaconHeight uint64,
+) (map[string]*lvdb.PortingRequest, error) {
+	//todo:
+	//custodianPoolState := make(map[string]*lvdb.CustodianState)
+	//custodianPoolStateKeysBytes, custodianPoolStateValuesBytes, err := db.GetAllRecordsPortalByPrefix(beaconHeight, lvdb.PortalCustodianStatePrefix)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//for idx, custodianPoolStateKeyBytes := range custodianPoolStateKeysBytes {
+	//	var custodianState lvdb.CustodianState
+	//	err = json.Unmarshal(custodianPoolStateValuesBytes[idx], &custodianState)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	custodianPoolState[string(custodianPoolStateKeyBytes)] = &custodianState
+	//}
+	//return custodianPoolState, nil
+	return nil, nil
+}
+
+func getWaitingRedeemRequests(
+	db database.DatabaseInterface,
+	beaconHeight uint64,
+) (map[string]*lvdb.RedeemRequest, error) {
+	//todo:
+	//custodianPoolState := make(map[string]*lvdb.CustodianState)
+	//custodianPoolStateKeysBytes, custodianPoolStateValuesBytes, err := db.GetAllRecordsPortalByPrefix(beaconHeight, lvdb.PortalCustodianStatePrefix)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//for idx, custodianPoolStateKeyBytes := range custodianPoolStateKeysBytes {
+	//	var custodianState lvdb.CustodianState
+	//	err = json.Unmarshal(custodianPoolStateValuesBytes[idx], &custodianState)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	custodianPoolState[string(custodianPoolStateKeyBytes)] = &custodianState
+	//}
+	//return custodianPoolState, nil
+	return nil, nil
+}
