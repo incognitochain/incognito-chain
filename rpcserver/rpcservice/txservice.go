@@ -675,7 +675,7 @@ func (txService TxService) GetTransactionHashByReceiver(paymentAddressParam stri
 		return nil, errors.New("payment address is invalid")
 	}
 
-	return txService.BlockChain.GetTransactionHashByReceiverV2(keySet)
+	return txService.BlockChain.GetTransactionHashByReceiver(keySet)
 }
 
 func (txService TxService) GetTransactionByHash(txHashStr string) (*jsonresult.TransactionDetail, *RPCError) {
