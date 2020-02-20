@@ -215,9 +215,3 @@ func (db *db) Batch(data []incdb.BatchData) leveldb.Batch {
 	}
 	return *batch
 }
-
-func (db *db) PutBatch(data []incdb.BatchData) error {
-	batch := db.Batch(data)
-	err := db.lvdb.Write(&batch, nil)
-	return err
-}
