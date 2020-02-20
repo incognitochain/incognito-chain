@@ -463,7 +463,7 @@ func (tx *Tx) verifySigTx() (bool, error) {
 // ValidateTransaction returns true if transaction is valid:
 // - Verify tx signature
 // - Verify the payment proof
-func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash, isBatch bool) (bool, error) {
+func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
 	//hasPrivacy = false
 	Logger.log.Debugf("VALIDATING TX........\n")
 	// start := time.Now()
@@ -507,14 +507,16 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			return false, NewTransactionErr(DuplicatedOutputSndError, errors.New("Duplicate output coins' snd\n"))
 		}
 
-		for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
-			// Check output coins' SND is not exists in SND list (Database)
-			if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator(), db); ok || err != nil {
-				if err != nil {
-					Logger.log.Error(err)
+		if isNewTransaction {
+			for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
+				// Check output coins' SND is not exists in SND list (Database)
+				if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator(), db); ok || err != nil {
+					if err != nil {
+						Logger.log.Error(err)
+					}
+					Logger.log.Errorf("snd existed: %d\n", i)
+					return false, NewTransactionErr(SndExistedError, err, fmt.Sprintf("snd existed: %d\n", i))
 				}
-				Logger.log.Errorf("snd existed: %d\n", i)
-				return false, NewTransactionErr(SndExistedError, err, fmt.Sprintf("snd existed: %d\n", i))
 			}
 		}
 
@@ -1034,13 +1036,14 @@ func (tx Tx) ValidateTxByItself(
 	db database.DatabaseInterface,
 	bcr metadata.BlockchainRetriever,
 	shardID byte,
+	isNewTransaction bool,
 ) (bool, error) {
 	prvCoinID := &common.Hash{}
 	err := prvCoinID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
 		return false, err
 	}
-	ok, err := tx.ValidateTransaction(hasPrivacy, db, shardID, prvCoinID, false)
+	ok, err := tx.ValidateTransaction(hasPrivacy, db, shardID, prvCoinID, false, isNewTransaction)
 	if !ok {
 		return false, err
 	}

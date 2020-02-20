@@ -336,7 +336,7 @@ func (tp *TxPool) maybeAcceptBatchTransaction(txs []metadata.Transaction, beacon
 	}
 	for _, tx := range txs {
 		// validate tx
-		err := tp.validateTransaction(tx, beaconHeight, true)
+		err := tp.validateTransaction(tx, beaconHeight, true, false)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -373,7 +373,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 	txSize := fmt.Sprintf("%d", tx.GetTxActualSize())
 	startValidate := time.Now()
 	// validate tx
-	err := tp.validateTransaction(tx, beaconHeight, false)
+	err := tp.validateTransaction(tx, beaconHeight, false, isNewTransaction)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -519,7 +519,7 @@ In Param#2: isStore: store transaction to persistence storage only work for tran
 9. Staking Transaction: Check Duplicate stake public key in pool ONLY with staking transaction
 10. RequestStopAutoStaking
 */
-func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int64, isBatch bool) error {
+func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int64, isBatch bool, isNewTransaction bool) error {
 	var shardID byte
 	var err error
 	var now time.Time
@@ -640,7 +640,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int6
 	if !isBatch {
 		shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		now = time.Now()
-		validated, errValidateTxByItself := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.DataBase, tp.config.BlockChain, shardID)
+		validated, errValidateTxByItself := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.DataBase, tp.config.BlockChain, shardID, isNewTransaction)
 		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 			metrics.Measurement:      metrics.TxPoolValidationDetails,
 			metrics.MeasurementValue: float64(time.Since(now).Seconds()),

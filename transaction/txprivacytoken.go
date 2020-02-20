@@ -470,13 +470,14 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxByItself(
 	db database.DatabaseInterface,
 	bcr metadata.BlockchainRetriever,
 	shardID byte,
+	isNewTransaction bool,
 ) (bool, error) {
 	// no need to check for tx init token
 	if txCustomTokenPrivacy.TxPrivacyTokenData.Type == CustomTokenInit {
-		return txCustomTokenPrivacy.Tx.ValidateTransaction(hasPrivacyCoin, db, shardID, nil, false)
+		return txCustomTokenPrivacy.Tx.ValidateTransaction(hasPrivacyCoin, db, shardID, nil, false, isNewTransaction)
 	}
 	// check for proof, signature ...
-	if ok, err := txCustomTokenPrivacy.ValidateTransaction(hasPrivacyCoin, db, shardID, nil, false); !ok {
+	if ok, err := txCustomTokenPrivacy.ValidateTransaction(hasPrivacyCoin, db, shardID, nil, false, isNewTransaction); !ok {
 		return false, err
 	}
 
@@ -492,16 +493,16 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxByItself(
 }
 
 // ValidateTransaction - verify proof, signature, ... of PRV and pToken
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacyCoin bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash, isBatch bool) (bool, error) {
+func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacyCoin bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
 	// validate for PRV
-	ok, err := txCustomTokenPrivacy.Tx.ValidateTransaction(hasPrivacyCoin, db, shardID, nil, isBatch)
+	ok, err := txCustomTokenPrivacy.Tx.ValidateTransaction(hasPrivacyCoin, db, shardID, nil, isBatch, isNewTransaction)
 	if ok {
 		// validate for pToken
 		tokenID := txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID
 		if txCustomTokenPrivacy.TxPrivacyTokenData.Type == CustomTokenInit {
 			return true, nil
 		} else {
-			return txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.ValidateTransaction(txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.IsPrivacy(), db, shardID, &tokenID, isBatch)
+			return txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.ValidateTransaction(txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.IsPrivacy(), db, shardID, &tokenID, isBatch, isNewTransaction)
 		}
 	}
 	return false, err

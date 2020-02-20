@@ -1,6 +1,7 @@
 package aggregaterange
 
 import (
+	"fmt"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/pkg/errors"
 )
@@ -636,7 +637,7 @@ func VerifyBatchingAggregatedRangeProofs(proofs []*AggregatedRangeProof) (bool, 
 
 		if !privacy.IsPointEqual(left1, right1) {
 			privacy.Logger.Log.Errorf("verify aggregated range proof statement 1 failed index %d", k)
-			return false, errors.New("verify aggregated range proof statement 1 failed"), k
+			return false, fmt.Errorf("verify aggregated range proof statement 1 failed index %d", k), k
 		}
 
 		innerProductProofs = append(innerProductProofs, proof.innerProductProof)

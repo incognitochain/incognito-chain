@@ -128,7 +128,7 @@ func (tp *TxPool) validateTxIndependentProperties(tx metadata.Transaction) error
 
 	// ValidateTransaction tx by it self
 	shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-	validated, _ := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID)
+	validated, _ := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID, false)
 	if !validated {
 		return NewMempoolTxError(RejectInvalidTx, errors.New("invalid tx"))
 	}
