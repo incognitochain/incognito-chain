@@ -113,6 +113,7 @@ func (cm *ConnManager) Start(ns NetSync) {
 		panic(err)
 	}
 	cm.messages = make(chan *pubsub.Message, 1000)
+	cm.data = make(chan []byte)
 
 	// Wait until connection to highway is established to make sure gRPC won't fail
 	// NOTE: must Connect after creating FloodSub
