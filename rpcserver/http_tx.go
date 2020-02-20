@@ -287,6 +287,10 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 		Logger.log.Debugf("handleRandomCommitments result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("outputs is invalid"))
 	}
+	if len(outputs) == 0 {
+		Logger.log.Debugf("handleRandomCommitments result: %+v", nil)
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("len of outputs must be greater than zero"))
+	}
 
 	//#3 - tokenID - default PRV
 	tokenID := &common.Hash{}
