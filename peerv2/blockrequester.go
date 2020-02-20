@@ -3,7 +3,6 @@ package peerv2
 import (
 	"context"
 	"io"
-	"log"
 	"sync"
 	"time"
 
@@ -329,7 +328,7 @@ func (c *BlockRequester) StreamBlockBeaconByHeight(
 			break
 		}
 		if err != nil {
-			log.Fatalf("Received err %v", err)
+			// log.Fatalf("Received err %v", err)
 			Logger.Infof("[stream] This stream return error %v", err)
 			return err
 		}
