@@ -197,10 +197,6 @@ func (bp *BlockProvider) GetBlockShardToBeaconByHeight(ctx context.Context, req 
 }
 
 func (bp *BlockProvider) StreamBlockBeaconByHeight(req *proto.GetBlockBeaconByHeightRequest, stream proto.HighwayService_StreamBlockBeaconByHeightServer) error {
-	wp, err := wrapper.NewWrapper()
-	if err != nil {
-		return err
-	}
 	var heights []uint64
 	if req.Specific {
 		Logger.Infof("[stream] Block provider received request [%v..%v], len %v", req.Heights[0], req.Heights[len(req.Heights)-1], len(req.Heights))
@@ -211,7 +207,7 @@ func (bp *BlockProvider) StreamBlockBeaconByHeight(req *proto.GetBlockBeaconByHe
 	}
 	blkRecv := bp.NetSync.StreamBlockBeaconByHeight(false, req.GetSpecific(), heights)
 	for blk := range blkRecv {
-		rdata, err := wp.EnCom(blk)
+		rdata, err := wrapper.EnCom(blk)
 		blkData := append([]byte{blockbeacon}, rdata...)
 		if err != nil {
 			Logger.Infof("[stream] block channel return error when marshal %v", err)
