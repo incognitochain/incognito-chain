@@ -2377,3 +2377,125 @@ func (_m *DatabaseInterface) UpdatePDEPoolForPair(beaconHeight uint64, token1IDS
 
 	return r0
 }
+
+
+// Portal database
+// GetAllRecordsPortalByPrefix provides a mock function with given fields: beaconHeight, token1IDStr, token2IDStr, pdePoolForPairBytes
+func (_m *DatabaseInterface) GetAllRecordsPortalByPrefix(beaconHeight uint64, prefix []byte) ([][]byte, [][]byte, error) {
+	ret := _m.Called(beaconHeight, prefix)
+
+	var r0 [][]byte
+	if rf, ok := ret.Get(0).(func(uint64, []byte) [][]byte); ok {
+		r0 = rf(beaconHeight, prefix)
+	} else {
+		r0 = ret.Get(0).([][]byte)
+	}
+
+	var r1 [][]byte
+	if rf, ok := ret.Get(1).(func(uint64, []byte) [][]byte); ok {
+		r1 = rf(beaconHeight, prefix)
+	} else {
+		r1 = ret.Get(1).([][]byte)
+	}
+
+	var r2 error
+	if rf, ok := ret.Get(2).(func(uint64, []byte) error); ok {
+		r2 = rf(beaconHeight, prefix)
+	} else {
+		r2 = ret.Error(1)
+	}
+
+	return r0, r1, r2
+}
+
+// TrackCustodianDepositCollateral provides a mock function with given fields: beaconHeight, token1IDStr, token2IDStr, pdePoolForPairBytes
+func (_m *DatabaseInterface) TrackCustodianDepositCollateral(key []byte, value []byte) error {
+	ret := _m.Called(key, value)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func([]byte, []byte) error); ok {
+		r0 = rf(key, value)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// TrackReqPTokens provides a mock function with given fields: beaconHeight, token1IDStr, token2IDStr, pdePoolForPairBytes
+func (_m *DatabaseInterface) TrackReqPTokens(key []byte, value []byte) error {
+	ret := _m.Called(key, value)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func([]byte, []byte) error); ok {
+		r0 = rf(key, value)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// TrackReqPTokens provides a mock function with given fields: beaconHeight, token1IDStr, token2IDStr, pdePoolForPairBytes
+func (_m *DatabaseInterface) GetItemPortalByPrefix(prefix []byte) (byte, error) {
+	ret := _m.Called(prefix)
+
+	var r0 byte
+	if rf, ok := ret.Get(0).(func([]byte) byte); ok {
+		r0 = rf(prefix)
+	} else {
+		r0 = ret.Get(0).(byte)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func([]byte) error); ok {
+		r1 = rf(prefix)
+	} else {
+		r1 = ret.Error(0)
+	}
+
+	return r0, r1
+}
+
+
+// StorePortingRequestItem provides a mock function with given fields: beaconHeight, token1IDStr, token2IDStr, pdePoolForPairBytes
+func (_m *DatabaseInterface) StorePortingRequestItem(key []byte, value interface{}) error {
+	ret := _m.Called(key, value)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func([]byte, interface{}) error); ok {
+		r0 = rf(key, value)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// StoreExchangeRatesRequestItem provides a mock function with given fields: beaconHeight, token1IDStr, token2IDStr, pdePoolForPairBytes
+func (_m *DatabaseInterface) StoreExchangeRatesRequestItem(key []byte, value interface{}) error {
+	ret := _m.Called(key, value)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func([]byte, interface{}) error); ok {
+		r0 = rf(key, value)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// StoreFinalExchangeRatesItem provides a mock function with given fields: beaconHeight, token1IDStr, token2IDStr, pdePoolForPairBytes
+func (_m *DatabaseInterface) StoreFinalExchangeRatesItem(key []byte, value interface{}) error {
+	ret := _m.Called(key, value)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func([]byte, interface{}) error); ok {
+		r0 = rf(key, value)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
