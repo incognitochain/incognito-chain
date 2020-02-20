@@ -62,7 +62,7 @@ func randomScalars(_ js.Value, args []js.Value) interface{} {
 		return nil
 	}
 
-	println("[Go] Result: ", result)generateBLSKeyPairFromSeed
+	println("[Go] Result: ", result)
 
 	return result
 }
