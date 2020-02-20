@@ -500,7 +500,20 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacy
 		// validate for pToken
 		tokenID := txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID
 		if txCustomTokenPrivacy.TxPrivacyTokenData.Type == CustomTokenInit {
-			return true, nil
+			if txCustomTokenPrivacy.Type == common.TxRewardType && txCustomTokenPrivacy.TxPrivacyTokenData.Mintable {
+				isBridgeCentralizedToken, _ := db.IsBridgeTokenExistedByType(tokenID, true)
+				isBridgeDecentralizedToken, _ := db.IsBridgeTokenExistedByType(tokenID, false)
+				if isBridgeCentralizedToken || isBridgeDecentralizedToken {
+					return true, nil
+				}
+				return false, nil
+			} else {
+				// check exist token
+				if db.PrivacyTokenIDExisted(tokenID) || db.PrivacyTokenIDCrossShardExisted(tokenID) {
+					return false, nil
+				}
+				return true, nil
+			}
 		} else {
 			return txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.ValidateTransaction(txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.IsPrivacy(), db, shardID, &tokenID, isBatch, isNewTransaction)
 		}
