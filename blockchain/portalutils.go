@@ -73,7 +73,6 @@ func NewExchangeRatesState(
 	}, nil
 }
 
-//todo: need to be updated, get all porting/redeem requests from DB
 func InitCurrentPortalStateFromDB(
 	db database.DatabaseInterface,
 	beaconHeight uint64,
@@ -119,33 +118,17 @@ func storePortalStateToDB(
 	return nil
 }
 
-func storeRedeemRequestsState(db database.DatabaseInterface,
-	beaconHeight uint64,
-	redeemRequestState map[string]*lvdb.RedeemRequest) error {
-	for contribKey, contribution := range redeemRequestState {
-		newKey := replaceKeyByBeaconHeight(contribKey, beaconHeight)
-		contributionBytes, err := json.Marshal(contribution)
-		if err != nil {
-			return err
-		}
-		err = db.Put([]byte(newKey), contributionBytes)
-		if err != nil {
-			return database.NewDatabaseError(database.StoreRedeemRequestStateError, errors.Wrap(err, "db.lvdb.put"))
-		}
-	}
-	return nil
-}
-
+// storeCustodianState stores custodian state at beaconHeight
 func storeCustodianState(db database.DatabaseInterface,
 	beaconHeight uint64,
 	custodianState map[string]*lvdb.CustodianState) error {
-	for contribKey, contribution := range custodianState {
-		newKey := replaceKeyByBeaconHeight(contribKey, beaconHeight)
-		contributionBytes, err := json.Marshal(contribution)
+	for custodianStateKey, custodian := range custodianState {
+		newKey := replaceKeyByBeaconHeight(custodianStateKey, beaconHeight)
+		custodianBytes, err := json.Marshal(custodian)
 		if err != nil {
 			return err
 		}
-		err = db.Put([]byte(newKey), contributionBytes)
+		err = db.Put([]byte(newKey), custodianBytes)
 		if err != nil {
 			return database.NewDatabaseError(database.StoreCustodianDepositStateError, errors.Wrap(err, "db.lvdb.put"))
 		}
@@ -153,39 +136,39 @@ func storeCustodianState(db database.DatabaseInterface,
 	return nil
 }
 
+// storeWaitingPortingRequests stores waiting porting requests at beaconHeight
 func storeWaitingPortingRequests(db database.DatabaseInterface,
 	beaconHeight uint64,
 	waitingPortingReqs map[string]*lvdb.PortingRequest) error {
-	//todo:
-	//for contribKey, contribution := range waitingPortingReqs {
-	//	newKey := replaceKeyByBeaconHeight(contribKey, beaconHeight)
-	//	contributionBytes, err := json.Marshal(contribution)
-	//	if err != nil {
-	//		return err
-	//	}
-	//	err = db.Put([]byte(newKey), contributionBytes)
-	//	if err != nil {
-	//		return database.NewDatabaseError(database.StoreCustodianDepositStateError, errors.Wrap(err, "db.lvdb.put"))
-	//	}
-	//}
+	for waitingReqKey, waitingReq := range waitingPortingReqs {
+		newKey := replaceKeyByBeaconHeight(waitingReqKey, beaconHeight)
+		waitingReqBytes, err := json.Marshal(waitingReq)
+		if err != nil {
+			return err
+		}
+		err = db.Put([]byte(newKey), waitingReqBytes)
+		if err != nil {
+			return database.NewDatabaseError(database.StoreWaitingPortingRequestError, errors.Wrap(err, "db.lvdb.put"))
+		}
+	}
 	return nil
 }
 
+// storeWaitingRedeemRequests stores waiting redeem requests at beaconHeight
 func storeWaitingRedeemRequests(db database.DatabaseInterface,
 	beaconHeight uint64,
 	waitingRedeemReqs map[string]*lvdb.RedeemRequest) error {
-	//todo:
-	//for contribKey, contribution := range waitingRedeemReqs {
-	//	newKey := replaceKeyByBeaconHeight(contribKey, beaconHeight)
-	//	contributionBytes, err := json.Marshal(contribution)
-	//	if err != nil {
-	//		return err
-	//	}
-	//	err = db.Put([]byte(newKey), contributionBytes)
-	//	if err != nil {
-	//		return database.NewDatabaseError(database.StoreCustodianDepositStateError, errors.Wrap(err, "db.lvdb.put"))
-	//	}
-	//}
+	for waitingReqKey, waitingReq := range waitingRedeemReqs {
+		newKey := replaceKeyByBeaconHeight(waitingReqKey, beaconHeight)
+		waitingReqBytes, err := json.Marshal(waitingReq)
+		if err != nil {
+			return err
+		}
+		err = db.Put([]byte(newKey), waitingReqBytes)
+		if err != nil {
+			return database.NewDatabaseError(database.StoreWaitingRedeemRequestError, errors.Wrap(err, "db.lvdb.put"))
+		}
+	}
 	return nil
 }
 
@@ -194,6 +177,7 @@ func replaceKeyByBeaconHeight(key string, newBeaconHeight uint64) string {
 	if len(parts) <= 1 {
 		return key
 	}
+	// part beaconHeight
 	parts[1] = fmt.Sprintf("%d", newBeaconHeight)
 	newKey := ""
 	for idx, part := range parts {
@@ -206,6 +190,7 @@ func replaceKeyByBeaconHeight(key string, newBeaconHeight uint64) string {
 	return newKey
 }
 
+// getCustodianPoolState gets custodian pool state at beaconHeight
 func getCustodianPoolState(
 	db database.DatabaseInterface,
 	beaconHeight uint64,
@@ -215,36 +200,58 @@ func getCustodianPoolState(
 	if err != nil {
 		return nil, err
 	}
-	for idx, custodianPoolStateKeyBytes := range custodianPoolStateKeysBytes {
+	for idx, custodianStateKeyBytes := range custodianPoolStateKeysBytes {
 		var custodianState lvdb.CustodianState
 		err = json.Unmarshal(custodianPoolStateValuesBytes[idx], &custodianState)
 		if err != nil {
 			return nil, err
 		}
-		custodianPoolState[string(custodianPoolStateKeyBytes)] = &custodianState
+		custodianPoolState[string(custodianStateKeyBytes)] = &custodianState
 	}
 	return custodianPoolState, nil
 }
 
-func getRedeemRequestsState(
+
+// getWaitingPortingRequests gets waiting porting requests list at beaconHeight
+func getWaitingPortingRequests(
 	db database.DatabaseInterface,
 	beaconHeight uint64,
-) (map[string]*lvdb.RedeemRequest, error) {
-	redeemRequestState := make(map[string]*lvdb.RedeemRequest)
-	redeemRequestStateKeysBytes, redeemRequestStateValuesBytes, err := db.GetAllRecordsPortalByPrefix(beaconHeight, lvdb.PortalRedeemRequestsPrefix)
+) (map[string]*lvdb.PortingRequest, error) {
+	waitingPortingReqs := make(map[string]*lvdb.PortingRequest)
+	waitingPortingReqsKeyBytes, waitingPortingReqsValueBytes, err := db.GetAllRecordsPortalByPrefix(beaconHeight, lvdb.PortalWaitingPortingRequestsPrefix)
 	if err != nil {
 		return nil, err
 	}
-	for idx, portingRequestStateKeyBytes := range redeemRequestStateKeysBytes {
-		var redeemRequest lvdb.RedeemRequest
-		err = json.Unmarshal(redeemRequestStateValuesBytes[idx], &redeemRequest)
+	for idx, waitingPortingReqKeyBytes := range waitingPortingReqsKeyBytes {
+		var portingReq lvdb.PortingRequest
+		err = json.Unmarshal(waitingPortingReqsValueBytes[idx], &portingReq)
 		if err != nil {
 			return nil, err
 		}
-
-		redeemRequestState[string(portingRequestStateKeyBytes)] = &redeemRequest
+		waitingPortingReqs[string(waitingPortingReqKeyBytes)] = &portingReq
 	}
-	return redeemRequestState, nil
+	return waitingPortingReqs, nil
+}
+
+// getWaitingRedeemRequests gets waiting redeem requests list at beaconHeight
+func getWaitingRedeemRequests(
+	db database.DatabaseInterface,
+	beaconHeight uint64,
+) (map[string]*lvdb.RedeemRequest, error) {
+	waitingRedeemReqs := make(map[string]*lvdb.RedeemRequest)
+	waitingRedeemReqsKeyBytes, waitingRedeemReqsValueBytes, err := db.GetAllRecordsPortalByPrefix(beaconHeight, lvdb.PortalWaitingRedeemRequestsPrefix)
+	if err != nil {
+		return nil, err
+	}
+	for idx, waitingRedeemReqKeyBytes := range waitingRedeemReqsKeyBytes {
+		var redeemReq lvdb.RedeemRequest
+		err = json.Unmarshal(waitingRedeemReqsValueBytes[idx], &redeemReq)
+		if err != nil {
+			return nil, err
+		}
+		waitingRedeemReqs[string(waitingRedeemReqKeyBytes)] = &redeemReq
+	}
+	return waitingRedeemReqs, nil
 }
 
 func GetFinalExchangeRatesByKey(
@@ -278,51 +285,6 @@ func getAmountAdaptable(amount uint64, exchangeRate uint64) (uint64, error) {
 
 	return convertPubTokenToPRVInt64, nil
 }
-
-func getWaitingPortingRequests(
-	db database.DatabaseInterface,
-	beaconHeight uint64,
-) (map[string]*lvdb.PortingRequest, error) {
-	//todo:
-	//custodianPoolState := make(map[string]*lvdb.CustodianState)
-	//custodianPoolStateKeysBytes, custodianPoolStateValuesBytes, err := db.GetAllRecordsPortalByPrefix(beaconHeight, lvdb.PortalCustodianStatePrefix)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//for idx, custodianPoolStateKeyBytes := range custodianPoolStateKeysBytes {
-	//	var custodianState lvdb.CustodianState
-	//	err = json.Unmarshal(custodianPoolStateValuesBytes[idx], &custodianState)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	custodianPoolState[string(custodianPoolStateKeyBytes)] = &custodianState
-	//}
-	//return custodianPoolState, nil
-	return nil, nil
-}
-
-func getWaitingRedeemRequests(
-	db database.DatabaseInterface,
-	beaconHeight uint64,
-) (map[string]*lvdb.RedeemRequest, error) {
-	//todo:
-	//custodianPoolState := make(map[string]*lvdb.CustodianState)
-	//custodianPoolStateKeysBytes, custodianPoolStateValuesBytes, err := db.GetAllRecordsPortalByPrefix(beaconHeight, lvdb.PortalCustodianStatePrefix)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//for idx, custodianPoolStateKeyBytes := range custodianPoolStateKeysBytes {
-	//	var custodianState lvdb.CustodianState
-	//	err = json.Unmarshal(custodianPoolStateValuesBytes[idx], &custodianState)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	custodianPoolState[string(custodianPoolStateKeyBytes)] = &custodianState
-	//}
-	//return custodianPoolState, nil
-	return nil, nil
-}
-
 
 func removeWaitingPortingReqByKey (key string, state *CurrentPortalState) bool {
 	if state.WaitingPortingRequests[key] != nil {
