@@ -31,6 +31,8 @@ type MatchingRedeemCustodianDetail struct {
 	UnLockedAmountCollateral uint64
 }
 
+
+// todo: need to add beaconHeight when the porting request was created for checking timeout of porting request
 type PortingRequest struct {
 	UniquePortingID string
 	TxReqID         common.Hash
@@ -83,23 +85,9 @@ func NewPortingRequestKey (beaconHeight uint64, uniquePortingID string) string {
 	return string(key) //prefix + uniqueId + beaconHeight
 }
 
-func NewPortingReqKey (beaconHeight uint64, portingID string) string {
-	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
-	key := append(PortalPortingRequestsPrefix, beaconHeightBytes...)
-	key = append(key, []byte(portingID)...)
-	return string(key)
-}
-
 func NewFinalExchangeRatesKey (beaconHeight uint64) string {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 	key := append(PortalFinalExchangeRatesPrefix, beaconHeightBytes...)
-	return string(key)
-}
-
-func NewRedeemReqKey (beaconHeight uint64, redeemID string) string {
-	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
-	key := append(PortalRedeemRequestsPrefix, beaconHeightBytes...)
-	key = append(key, []byte(redeemID)...)
 	return string(key)
 }
 
@@ -139,13 +127,6 @@ func NewPortalReqPTokenKey (beaconHeight uint64, portingID string) string {
 	key := append(PortalRequestPTokensPrefix, beaconHeightBytes...)
 	key = append(key, []byte(portingID)...)
 	return string(key)
-}
-
-func BuildCustodianDepositKey(
-	prefix []byte,
-	suffix []byte,
-) []byte {
-	return append(prefix, suffix...)
 }
 
 func (db *db) GetAllRecordsPortalByPrefix(beaconHeight uint64, prefix []byte) ([][]byte, [][]byte, error) {
@@ -243,6 +224,6 @@ func (db *db) GetItemPortalByPrefix(prefix []byte) (byte, error) {
 	return itemRecord[0], nil
 }
 
-func (db *db) GetFinalExchangeRatesByBeaconHeight() {
-
+func (db *db) GetFinalExchangeRatesByBeaconHeight() error {
+	return nil
 }
