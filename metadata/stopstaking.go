@@ -68,7 +68,7 @@ func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateTxWithBlockChain(
 		if err != nil {
 			return false, err
 		}
-		_, _, _, stakingTx, err := bcr.GetTransactionByHashV2(*stakingTxHash)
+		_, _, _, stakingTx, err := bcr.GetTransactionByHash(*stakingTxHash)
 		if err != nil {
 			return false, NewMetadataTxError(StopAutoStakingRequestStakingTransactionNotFoundError, err)
 		}

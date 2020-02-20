@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"math/big"
 	"sort"
@@ -14,7 +15,6 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -492,16 +492,16 @@ func (httpServer *HttpServer) handleGetPDEState(params interface{}, closeChan <-
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-	beaconBlocks, err := httpServer.config.BlockChain.GetBeaconBlockByHeightV2(uint64(beaconHeight))
+	beaconBlocks, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
 	beaconBlock := beaconBlocks[0]
 	type CurrentPDEState struct {
-		WaitingPDEContributions map[string]*rawdb.PDEContribution `json:"WaitingPDEContributions"`
-		PDEPoolPairs            map[string]*rawdb.PDEPoolForPair  `json:"PDEPoolPairs"`
-		PDEShares               map[string]uint64                 `json:"PDEShares"`
-		BeaconTimeStamp         int64                             `json:"BeaconTimeStamp"`
+		WaitingPDEContributions map[string]*rawdbv2.PDEContribution `json:"WaitingPDEContributions"`
+		PDEPoolPairs            map[string]*rawdbv2.PDEPoolForPair  `json:"PDEPoolPairs"`
+		PDEShares               map[string]uint64                   `json:"PDEShares"`
+		BeaconTimeStamp         int64                               `json:"BeaconTimeStamp"`
 	}
 	result := CurrentPDEState{
 		BeaconTimeStamp:         beaconBlock.Header.Timestamp,
@@ -589,7 +589,7 @@ func (httpServer *HttpServer) handleGetPDEContributionStatus(params interface{},
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload is invalid"))
 	}
-	status, err := httpServer.blockService.GetPDEStatus(rawdb.PDEContributionStatusPrefix, []byte(contributionPairID))
+	status, err := httpServer.blockService.GetPDEStatus(rawdbv2.PDEContributionStatusPrefix, []byte(contributionPairID))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
@@ -603,7 +603,7 @@ func (httpServer *HttpServer) handleGetPDEContributionStatusV2(params interface{
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload is invalid"))
 	}
-	contributionStatus, err := httpServer.blockService.GetPDEContributionStatus(rawdb.PDEContributionStatusPrefix, []byte(contributionPairID))
+	contributionStatus, err := httpServer.blockService.GetPDEContributionStatus(rawdbv2.PDEContributionStatusPrefix, []byte(contributionPairID))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
@@ -621,7 +621,7 @@ func (httpServer *HttpServer) handleGetPDETradeStatus(params interface{}, closeC
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-	status, err := httpServer.blockService.GetPDEStatus(rawdb.PDETradeStatusPrefix, txIDHash[:])
+	status, err := httpServer.blockService.GetPDEStatus(rawdbv2.PDETradeStatusPrefix, txIDHash[:])
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
@@ -639,7 +639,7 @@ func (httpServer *HttpServer) handleGetPDEWithdrawalStatus(params interface{}, c
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-	status, err := httpServer.blockService.GetPDEStatus(rawdb.PDEWithdrawalStatusPrefix, txIDHash[:])
+	status, err := httpServer.blockService.GetPDEStatus(rawdbv2.PDEWithdrawalStatusPrefix, txIDHash[:])
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
@@ -796,7 +796,7 @@ func (httpServer *HttpServer) handleExtractPDEInstsFromBeaconBlock(
 	}
 
 	bcHeight := uint64(beaconHeight)
-	beaconBlocks, err := blockchain.FetchBeaconBlockFromHeightV2(
+	beaconBlocks, err := blockchain.FetchBeaconBlockFromHeight(
 		httpServer.config.BlockChain.GetDatabase(),
 		bcHeight,
 		bcHeight,
@@ -848,9 +848,9 @@ func convertPrice(
 	toTokenIDStr string,
 	fromTokenIDStr string,
 	convertingAmt uint64,
-	pdePoolPairs map[string]*rawdb.PDEPoolForPair,
+	pdePoolPairs map[string]*rawdbv2.PDEPoolForPair,
 ) *ConvertedPrice {
-	poolPairKey := rawdb.BuildPDEPoolForPairKey(
+	poolPairKey := rawdbv2.BuildPDEPoolForPairKey(
 		latestBcHeight,
 		toTokenIDStr,
 		fromTokenIDStr,

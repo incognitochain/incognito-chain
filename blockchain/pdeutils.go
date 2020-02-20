@@ -2,17 +2,16 @@ package blockchain
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"math/big"
 	"sort"
 	"strings"
-
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 )
 
 type CurrentPDEState struct {
-	WaitingPDEContributions map[string]*rawdb.PDEContribution
-	PDEPoolPairs            map[string]*rawdb.PDEPoolForPair
+	WaitingPDEContributions map[string]*rawdbv2.PDEContribution
+	PDEPoolPairs            map[string]*rawdbv2.PDEPoolForPair
 	PDEShares               map[string]uint64
 }
 
@@ -93,19 +92,19 @@ func addShareAmountUpV2(
 	amt uint64,
 	currentPDEState *CurrentPDEState,
 ) {
-	pdeShareOnTokenPrefix := string(rawdb.BuildPDESharesKeyV2(beaconHeight, token1IDStr, token2IDStr, ""))
+	pdeShareOnTokenPrefix := string(rawdbv2.BuildPDESharesKeyV2(beaconHeight, token1IDStr, token2IDStr, ""))
 	totalSharesOnToken := uint64(0)
 	for key, value := range currentPDEState.PDEShares {
 		if strings.Contains(key, pdeShareOnTokenPrefix) {
 			totalSharesOnToken += value
 		}
 	}
-	pdeShareKey := string(rawdb.BuildPDESharesKeyV2(beaconHeight, token1IDStr, token2IDStr, contributorAddrStr))
+	pdeShareKey := string(rawdbv2.BuildPDESharesKeyV2(beaconHeight, token1IDStr, token2IDStr, contributorAddrStr))
 	if totalSharesOnToken == 0 {
 		currentPDEState.PDEShares[pdeShareKey] = amt
 		return
 	}
-	poolPairKey := string(rawdb.BuildPDEPoolForPairKey(beaconHeight, token1IDStr, token2IDStr))
+	poolPairKey := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight, token1IDStr, token2IDStr))
 	poolPair, found := currentPDEState.PDEPoolPairs[poolPairKey]
 	if !found || poolPair == nil {
 		currentPDEState.PDEShares[pdeShareKey] = amt
@@ -131,8 +130,8 @@ func addShareAmountUpV2(
 
 func updateWaitingContributionPairToPoolV2(
 	beaconHeight uint64,
-	waitingContribution1 *rawdb.PDEContribution,
-	waitingContribution2 *rawdb.PDEContribution,
+	waitingContribution1 *rawdbv2.PDEContribution,
+	waitingContribution2 *rawdbv2.PDEContribution,
 	currentPDEState *CurrentPDEState,
 ) {
 	addShareAmountUpV2(
@@ -145,11 +144,11 @@ func updateWaitingContributionPairToPoolV2(
 		currentPDEState,
 	)
 
-	waitingContributions := []*rawdb.PDEContribution{waitingContribution1, waitingContribution2}
+	waitingContributions := []*rawdbv2.PDEContribution{waitingContribution1, waitingContribution2}
 	sort.Slice(waitingContributions, func(i, j int) bool {
 		return waitingContributions[i].TokenIDStr < waitingContributions[j].TokenIDStr
 	})
-	pdePoolForPairKey := string(rawdb.BuildPDEPoolForPairKey(beaconHeight, waitingContributions[0].TokenIDStr, waitingContributions[1].TokenIDStr))
+	pdePoolForPairKey := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight, waitingContributions[0].TokenIDStr, waitingContributions[1].TokenIDStr))
 	pdePoolForPair, found := currentPDEState.PDEPoolPairs[pdePoolForPairKey]
 	if !found || pdePoolForPair == nil {
 		storePDEPoolForPair(

@@ -34,7 +34,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 	if shardBlock.Header.BeaconHeight > blockchain.BestState.Beacon.BeaconHeight {
 		return errors.New(fmt.Sprintf("Beacon %d not ready, latest is %d", shardBlock.Header.BeaconHeight, blockchain.BestState.Beacon.BeaconHeight))
 	}
-	beaconBlocks, err := FetchBeaconBlockFromHeightV2(blockchain.GetDatabase(), previousBeaconHeight+1, shardBlock.Header.BeaconHeight)
+	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain.GetDatabase(), previousBeaconHeight+1, shardBlock.Header.BeaconHeight)
 	if err != nil {
 		return err
 	}
@@ -86,11 +86,11 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	tempShardBestState := blockchain.BestState.Shard[shardID]
 	if tempShardBestState.ShardHeight == blockHeight && tempShardBestState.BestBlock.Header.Timestamp < shardBlock.Header.Timestamp && tempShardBestState.BestBlock.Header.Round < shardBlock.Header.Round {
 		Logger.log.Infof("FORK SHARDID %+v, Current Block Height %+v, Block Hash %+v | Try To Insert New Shard Block Height %+v, Hash %+v", shardID, tempShardBestState.ShardHeight, tempShardBestState.BestBlockHash, blockHeight, blockHash)
-		if err := blockchain.ValidateBlockWithPreviousShardBestStateV2(shardBlock); err != nil {
+		if err := blockchain.ValidateBlockWithPreviousShardBestState(shardBlock); err != nil {
 			Logger.log.Error(err)
 			return err
 		}
-		if err := blockchain.RevertShardStateV2(shardBlock.Header.ShardID); err != nil {
+		if err := blockchain.RevertShardState(shardBlock.Header.ShardID); err != nil {
 			Logger.log.Error(err)
 			return err
 		}
@@ -103,7 +103,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 		return NewBlockChainError(DuplicateShardBlockError, fmt.Errorf("SHARD %+v, block height %+v wit hash %+v has been stored already", shardID, blockHeight, blockHash))
 	}
 	// fetch beacon blocks
-	beaconBlocks, err := FetchBeaconBlockFromHeightV2(blockchain.GetDatabase(), tempShardBestState.BeaconHeight+1, shardBlock.Header.BeaconHeight)
+	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain.GetDatabase(), tempShardBestState.BeaconHeight+1, shardBlock.Header.BeaconHeight)
 	if err != nil {
 		return NewBlockChainError(FetchBeaconBlocksError, err)
 	}
@@ -126,7 +126,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	if err != nil {
 		return NewBlockChainError(CleanBackUpError, err)
 	}
-	err = blockchain.BackupCurrentShardStateV2(shardBlock)
+	err = blockchain.BackupCurrentShardState(shardBlock)
 	if err != nil {
 		return NewBlockChainError(BackUpBestStateError, err)
 	}
@@ -160,7 +160,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	}
 	Logger.log.Infof("SHARD %+v | Remove Data After Processed, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
 	Logger.log.Infof("SHARD %+v | Update Beacon Instruction, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
-	err = blockchain.processSalaryInstructionsV2(tempShardBestState.rewardStateDB, beaconBlocks, shardID)
+	err = blockchain.processSalaryInstructions(tempShardBestState.rewardStateDB, beaconBlocks, shardID)
 	if err != nil {
 		return err
 	}
@@ -168,7 +168,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	//========Store new  Shard block and new shard bestState
 	err = blockchain.processStoreShardBlock(shardBlock, committeeChange)
 	if err != nil {
-		revertErr := blockchain.revertShardStateV2(shardID)
+		revertErr := blockchain.revertShardState(shardID)
 		if revertErr != nil {
 			return revertErr
 		}
@@ -404,7 +404,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 	if len(invalidTxs) > 0 {
 		return NewBlockChainError(TransactionCreatedByMinerError, fmt.Errorf("There are %d invalid txs", len(invalidTxs)))
 	}
-	err = blockchain.ValidateResponseTransactionFromTxsWithMetadataV2(shardBlock)
+	err = blockchain.ValidateResponseTransactionFromTxsWithMetadata(shardBlock)
 	if err != nil {
 		return NewBlockChainError(ResponsedTransactionWithMetadataError, err)
 	}
@@ -721,7 +721,7 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(blockchain *B
 	if len(shardBlock.Body.Instructions) != 0 {
 		Logger.log.Info("Shard Process/updateShardBestState: Shard Instruction", shardBlock.Body.Instructions)
 	}
-	producersBlackList, err := blockchain.getUpdatedProducersBlackListV2(blockchain.BestState.Beacon.slashStateDB, false, int(shardID), shardCommittee, shardBlock.Header.BeaconHeight)
+	producersBlackList, err := blockchain.getUpdatedProducersBlackList(blockchain.BestState.Beacon.slashStateDB, false, int(shardID), shardCommittee, shardBlock.Header.BeaconHeight)
 	if err != nil {
 		return err
 	}
@@ -892,7 +892,7 @@ func (blockchain *BlockChain) processStoreShardBlock(shardBlock *ShardBlock, com
 	if len(shardBlock.Body.CrossTransactions) != 0 {
 		Logger.log.Critical("processStoreShardBlock/CrossTransactions	", shardBlock.Body.CrossTransactions)
 	}
-	if err := blockchain.CreateAndSaveTxViewPointFromBlockV2(shardBlock, tempShardBestState.transactionStateDB, tempBeaconBestState.featureStateDB); err != nil {
+	if err := blockchain.CreateAndSaveTxViewPointFromBlock(shardBlock, tempShardBestState.transactionStateDB, tempBeaconBestState.featureStateDB); err != nil {
 		return NewBlockChainError(FetchAndStoreTransactionError, err)
 	}
 
@@ -912,7 +912,7 @@ func (blockchain *BlockChain) processStoreShardBlock(shardBlock *ShardBlock, com
 		Logger.log.Debugf("Transaction in block with hash", blockHash, "and index", index)
 	}
 	// Store Incomming Cross Shard
-	if err := blockchain.CreateAndSaveCrossTransactionViewPointFromBlockV2(shardBlock, tempShardBestState.transactionStateDB); err != nil {
+	if err := blockchain.CreateAndSaveCrossTransactionViewPointFromBlock(shardBlock, tempShardBestState.transactionStateDB); err != nil {
 		return NewBlockChainError(FetchAndStoreCrossTransactionError, err)
 	}
 	// Save result of BurningConfirm instruction to get proof later

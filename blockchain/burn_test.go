@@ -6,12 +6,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"math/big"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/mocks"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -452,7 +452,7 @@ func setupDB(t *testing.T) *mocks.Database {
 }
 
 func setupTokenInfos(t *testing.T) []byte {
-	tokens := []*rawdb.BridgeTokenInfo{
+	tokens := []*rawdbv2.BridgeTokenInfo{
 		newToken(1),
 		newToken(2),
 		newToken(3),
@@ -465,8 +465,8 @@ func setupTokenInfos(t *testing.T) []byte {
 	return tokenInfo
 }
 
-func newToken(b byte) *rawdb.BridgeTokenInfo {
-	return &rawdb.BridgeTokenInfo{
+func newToken(b byte) *rawdbv2.BridgeTokenInfo {
+	return &rawdbv2.BridgeTokenInfo{
 		TokenID:         &common.Hash{b},
 		ExternalTokenID: getExternalID(b),
 	}

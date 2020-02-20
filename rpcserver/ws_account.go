@@ -60,7 +60,7 @@ func (wsServer *WsServer) handleSubcribeCrossOutputCoinByPrivateKey(params inter
 				for senderShardID, crossTransactions := range shardBlock.Body.CrossTransactions {
 					for _, crossTransaction := range crossTransactions {
 						for _, crossOutputCoin := range crossTransaction.OutputCoin {
-							processedOutputCoin := blockchain.DecryptOutputCoinByKeyV2(wsServer.config.BlockChain.BestState.Shard[shardBlock.Header.ShardID].GetCopiedTransactionStateDB(), &crossOutputCoin, &keyWallet.KeySet, &common.PRVCoinID, senderShardID)
+							processedOutputCoin := blockchain.DecryptOutputCoinByKey(wsServer.config.BlockChain.BestState.Shard[shardBlock.Header.ShardID].GetCopiedTransactionStateDB(), &crossOutputCoin, &keyWallet.KeySet, &common.PRVCoinID, senderShardID)
 							if processedOutputCoin == nil {
 								Logger.log.Errorf("processedOutputCoin is nil!")
 								continue
@@ -149,16 +149,16 @@ func (wsServer *WsServer) handleSubcribeCrossCustomTokenPrivacyByPrivateKey(para
 					for _, crossTransaction := range crossTransactions {
 						for _, crossTokenPrivacyData := range crossTransaction.TokenPrivacyData {
 							for _, crossOutputCoin := range crossTokenPrivacyData.OutputCoin {
-								proccessedOutputCoin := wsServer.config.BlockChain.DecryptOutputCoinByKey(&crossOutputCoin, &keyWallet.KeySet, senderShardID, &crossTokenPrivacyData.PropertyID)
-								if proccessedOutputCoin != nil {
+								processedOutputCoin := blockchain.DecryptOutputCoinByKey(wsServer.config.BlockChain.BestState.Shard[shardBlock.Header.ShardID].GetCopiedTransactionStateDB(), &crossOutputCoin, &keyWallet.KeySet, &common.PRVCoinID, senderShardID)
+								if processedOutputCoin != nil {
 									if m[senderShardID] == nil {
 										m[senderShardID] = make(map[common.Hash]uint64)
 									}
 									if value, ok := m[senderShardID][crossTokenPrivacyData.PropertyID]; ok {
-										value += proccessedOutputCoin.CoinDetails.GetValue()
+										value += processedOutputCoin.CoinDetails.GetValue()
 										m[senderShardID][crossTokenPrivacyData.PropertyID] = value
 									} else {
-										m[senderShardID][crossTokenPrivacyData.PropertyID] = proccessedOutputCoin.CoinDetails.GetValue()
+										m[senderShardID][crossTokenPrivacyData.PropertyID] = processedOutputCoin.CoinDetails.GetValue()
 									}
 								}
 							}

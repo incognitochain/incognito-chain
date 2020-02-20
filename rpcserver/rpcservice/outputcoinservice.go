@@ -21,7 +21,7 @@ func (coinService CoinService) ListOutputCoinsByKeySet(keySet *incognitokey.KeyS
 	if err != nil {
 		return nil, err
 	}
-	return coinService.BlockChain.GetListOutputCoinsByKeysetV2(keySet, shardID, prvCoinID)
+	return coinService.BlockChain.GetListOutputCoinsByKeyset(keySet, shardID, prvCoinID)
 }
 
 func (coinService CoinService) ListUnspentOutputCoinsByKey(listKeyParams []interface{}) (*jsonresult.ListOutputCoins, *RPCError) {

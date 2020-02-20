@@ -5,8 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"log"
 )
 
@@ -167,11 +166,11 @@ func UpdateBridgeTokenInfo(stateDB *StateDB, incTokenID common.Hash, externalTok
 func GetAllBridgeTokens(stateDB *StateDB) ([]byte, error) {
 	cBridgeTokenInfoStates := stateDB.GetAllBridgeTokenInfoState(true)
 	dBridgeTokenInfoStates := stateDB.GetAllBridgeTokenInfoState(false)
-	bridgeTokenInfos := []*rawdb.BridgeTokenInfo{}
+	bridgeTokenInfos := []*rawdbv2.BridgeTokenInfo{}
 	bridgeTokenInfoStates := append(cBridgeTokenInfoStates, dBridgeTokenInfoStates...)
 	for _, bridgeTokenInfoState := range bridgeTokenInfoStates {
 		tokenID := bridgeTokenInfoState.IncTokenID()
-		tempBridgeTokenInfo := rawdb.NewBridgeTokenInfo(&tokenID, bridgeTokenInfoState.Amount(), bridgeTokenInfoState.ExternalTokenID(), bridgeTokenInfoState.Network(), bridgeTokenInfoState.IsCentralized())
+		tempBridgeTokenInfo := rawdbv2.NewBridgeTokenInfo(&tokenID, bridgeTokenInfoState.Amount(), bridgeTokenInfoState.ExternalTokenID(), bridgeTokenInfoState.Network(), bridgeTokenInfoState.IsCentralized())
 		bridgeTokenInfos = append(bridgeTokenInfos, tempBridgeTokenInfo)
 	}
 	res, err := json.Marshal(bridgeTokenInfos)

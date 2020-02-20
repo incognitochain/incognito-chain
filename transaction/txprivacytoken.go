@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -299,7 +299,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 					return NewTransactionErr(TokenIDExistedError, err)
 				}
 				if len(allBridgeTokensBytes) > 0 {
-					var allBridgeTokens []*rawdb.BridgeTokenInfo
+					var allBridgeTokens []*rawdbv2.BridgeTokenInfo
 					err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
 					if err != nil {
 						return NewTransactionErr(TokenIDExistedError, err)
@@ -468,6 +468,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacy
 		// validate for pToken
 		tokenID := txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID
 		if txCustomTokenPrivacy.TxPrivacyTokenData.Type == CustomTokenInit {
+			// bridge, pdex, ... => MINTABLE
 			return true, nil
 		} else {
 			return txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.ValidateTransaction(txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.IsPrivacy(), stateDB, shardID, &tokenID)

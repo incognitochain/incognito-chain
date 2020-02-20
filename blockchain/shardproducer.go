@@ -111,7 +111,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	}
 	Logger.log.Infof("Get Beacon Block With Height %+v, Shard BestState %+v", beaconHeight, shardBestState.BeaconHeight)
 	//Fetch beacon block from height
-	beaconBlocks, err := FetchBeaconBlockFromHeightV2(blockGenerator.chain.GetDatabase(), shardBestState.BeaconHeight+1, beaconHeight)
+	beaconBlocks, err := FetchBeaconBlockFromHeight(blockGenerator.chain.GetDatabase(), shardBestState.BeaconHeight+1, beaconHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +132,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	}
 	transactionsForNewBlock = append(transactionsForNewBlock, txsToAddFromBlock...)
 	// build txs with metadata
-	transactionsForNewBlock, err = blockGenerator.chain.BuildResponseTransactionFromTxsWithMetadataV2(transactionsForNewBlock, &tempPrivateKey, shardID)
+	transactionsForNewBlock, err = blockGenerator.chain.BuildResponseTransactionFromTxsWithMetadata(transactionsForNewBlock, &tempPrivateKey, shardID)
 	// process instruction from beacon block
 	shardPendingValidator, _, _ = blockGenerator.chain.processInstructionFromBeacon(beaconBlocks, shardID, newCommitteeChange())
 	// Create Instruction
@@ -321,7 +321,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 					if _, ok := autoStaking[outPublicKeys]; ok {
 						continue
 					}
-					tx, err := blockGenerator.buildReturnStakingAmountTxV2(outPublicKeys, producerPrivateKey, shardID)
+					tx, err := blockGenerator.buildReturnStakingAmountTx(outPublicKeys, producerPrivateKey, shardID)
 					if err != nil {
 						Logger.log.Error(err)
 						continue
@@ -434,7 +434,7 @@ func (blockchain *BlockChain) processInstructionFromBeacon(beaconBlocks []*Beaco
 						if err != nil {
 							continue
 						}
-						txShardID, _, _, _, err := blockchain.GetTransactionByHashV2(*txHash)
+						txShardID, _, _, _, err := blockchain.GetTransactionByHash(*txHash)
 						if err != nil {
 							continue
 						}
@@ -456,7 +456,7 @@ func (blockchain *BlockChain) processInstructionFromBeacon(beaconBlocks []*Beaco
 						if err != nil {
 							continue
 						}
-						txShardID, _, _, _, err := blockchain.GetTransactionByHashV2(*txHash)
+						txShardID, _, _, _, err := blockchain.GetTransactionByHash(*txHash)
 						if err != nil {
 							continue
 						}
@@ -502,7 +502,7 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 		if err != nil {
 			return instructions, shardPendingValidator, shardCommittee, err
 		}
-		producersBlackList, err := blockchain.getUpdatedProducersBlackListV2(slashStateDB, false, int(shardID), shardCommittee, beaconHeight)
+		producersBlackList, err := blockchain.getUpdatedProducersBlackList(slashStateDB, false, int(shardID), shardCommittee, beaconHeight)
 		if err != nil {
 			Logger.log.Error(err)
 			return instructions, shardPendingValidator, shardCommittee, err
@@ -685,7 +685,7 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(shardID byte, beacon
 // FindBeaconHeightForCrossShardBlock Find Beacon Block with compatible shard states of cross shard block
 func (blockchain *BlockChain) FindBeaconHeightForCrossShardBlock(beaconHeight uint64, fromShardID byte, crossShardBlockHeight uint64) (uint64, error) {
 	for {
-		beaconBlocks, err := blockchain.GetBeaconBlockByHeightV2(beaconHeight)
+		beaconBlocks, err := blockchain.GetBeaconBlockByHeight(beaconHeight)
 		if err != nil {
 			return 0, NewBlockChainError(FetchBeaconBlockError, err)
 		}

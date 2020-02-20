@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
@@ -57,7 +57,7 @@ type BlockchainRetriever interface {
 	GetTxChainHeight(tx Transaction) (uint64, error)
 	GetChainHeight(byte) uint64
 	GetBeaconHeight() uint64
-	GetTransactionByHashV2(common.Hash) (byte, common.Hash, int, Transaction, error)
+	GetTransactionByHash(common.Hash) (byte, common.Hash, int, Transaction, error)
 	GetCurrentBeaconBlockHeight(byte) uint64
 	GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error)
 	GetAllCommitteeValidatorCandidateFlattenListFromDatabase() ([]string, error)
@@ -125,8 +125,8 @@ func getPDEPoolPair(
 	prvIDStr, tokenIDStr string,
 	beaconHeight int64,
 	stateDB *statedb.StateDB,
-) (*rawdb.PDEPoolForPair, error) {
-	var pdePoolForPair rawdb.PDEPoolForPair
+) (*rawdbv2.PDEPoolForPair, error) {
+	var pdePoolForPair rawdbv2.PDEPoolForPair
 	var err error
 	poolPairBytes := []byte{}
 	if beaconHeight == -1 {
@@ -147,7 +147,7 @@ func getPDEPoolPair(
 	return &pdePoolForPair, nil
 }
 
-func isPairValid(poolPair *rawdb.PDEPoolForPair) bool {
+func isPairValid(poolPair *rawdbv2.PDEPoolForPair) bool {
 	if poolPair == nil {
 		return false
 	}
