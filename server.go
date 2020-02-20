@@ -300,6 +300,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			OnBFTMsg:    serverObj.OnBFTMsg,
 			OnPeerState: serverObj.OnPeerState,
 		},
+		BC: serverObj.blockChain,
 	}
 
 	metrics.SetGlobalParam("Bootnode", cfg.DiscoverPeersAddress)

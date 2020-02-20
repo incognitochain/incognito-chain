@@ -16,7 +16,7 @@ import (
 type Dispatcher struct {
 	MessageListeners   *MessageListeners
 	PublishableMessage []string
-	bc                 *blockchain.BlockChain
+	BC                 *blockchain.BlockChain
 }
 
 // Just for consensus v1
@@ -32,7 +32,7 @@ func (d *Dispatcher) processStreamBlk(blktype byte, data []byte) error {
 			Logger.Infof("[stream] process stream block return error %v", err)
 			return err
 		}
-		d.bc.OnBlockBeaconReceived(newBlk)
+		d.BC.OnBlockBeaconReceived(newBlk)
 	default:
 		return errors.Errorf("Not implement for this block type %v", blktype)
 	}
