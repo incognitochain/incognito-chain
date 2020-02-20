@@ -203,7 +203,7 @@ func (cm *ConnManager) process() {
 				Logger.Warn(err)
 			}
 		case data := <-cm.data:
-			err := cm.disp.processStreamBlk(0, data)
+			err := cm.disp.processStreamBlk(blockbeacon, data)
 			if err != nil {
 				Logger.Warn(err)
 			}
