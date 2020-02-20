@@ -878,7 +878,7 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(txs []metadata.Trans
 			listTxs = append(listTxs, tx)
 		}
 	}
-	_, err := blockchain.config.TempTxPool.MaybeAcceptBatchTransactionForBlockProducing(txs, beaconHeight)
+	_, err := blockchain.config.TempTxPool.MaybeAcceptBatchTransactionForBlockProducing(listTxs, beaconHeight)
 	if err != nil {
 		Logger.log.Errorf("Batching verify transactions from new block err: %+v\n Trying verify one by one", err)
 		for index, tx := range listTxs {
