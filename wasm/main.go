@@ -62,13 +62,13 @@ func randomScalars(_ js.Value, args []js.Value) interface{} {
 		return nil
 	}
 
-	println("[Go] Result: ", result)
+	println("[Go] Result: ", result)generateBLSKeyPairFromSeed
 
 	return result
 }
 
 func initPrivacyTx(_ js.Value, args []js.Value) interface{} {
-	result, err := gomobile.InitPrivacyTx(args[0].String())
+	result, err := gomobile.InitPrivacyTx(args[0].String(), int64(args[1].Int()))
 	if err != nil {
 		return nil
 	}
@@ -77,7 +77,7 @@ func initPrivacyTx(_ js.Value, args []js.Value) interface{} {
 }
 
 func stopAutoStaking(_ js.Value, args []js.Value) interface{} {
-	result, err := gomobile.StopAutoStaking(args[0].String())
+	result, err := gomobile.StopAutoStaking(args[0].String(), int64(args[1].Int()))
 	if err != nil {
 		return nil
 	}
@@ -86,7 +86,7 @@ func stopAutoStaking(_ js.Value, args []js.Value) interface{} {
 }
 
 func staking(_ js.Value, args []js.Value) interface{} {
-	result, err := gomobile.Staking(args[0].String())
+	result, err := gomobile.Staking(args[0].String(), int64(args[1].Int()))
 	if err != nil {
 		return nil
 	}
@@ -95,7 +95,7 @@ func staking(_ js.Value, args []js.Value) interface{} {
 }
 
 func initPrivacyTokenTx(_ js.Value, args []js.Value) interface{} {
-	result, err := gomobile.InitPrivacyTokenTx(args[0].String())
+	result, err := gomobile.InitPrivacyTokenTx(args[0].String(), int64(args[1].Int()))
 	if err != nil {
 		return nil
 	}
@@ -104,7 +104,7 @@ func initPrivacyTokenTx(_ js.Value, args []js.Value) interface{} {
 }
 
 func initBurningRequestTx(_ js.Value, args []js.Value) interface{} {
-	result, err := gomobile.InitBurningRequestTx(args[0].String())
+	result, err := gomobile.InitBurningRequestTx(args[0].String(), int64(args[1].Int()))
 	if err != nil {
 		return nil
 	}
@@ -113,7 +113,7 @@ func initBurningRequestTx(_ js.Value, args []js.Value) interface{} {
 }
 
 func initWithdrawRewardTx(_ js.Value, args []js.Value) interface{} {
-	result, err := gomobile.InitWithdrawRewardTx(args[0].String())
+	result, err := gomobile.InitWithdrawRewardTx(args[0].String(), int64(args[1].Int()))
 	if err != nil {
 		return nil
 	}
@@ -122,7 +122,7 @@ func initWithdrawRewardTx(_ js.Value, args []js.Value) interface{} {
 }
 
 func initPRVContributionTx(_ js.Value, args []js.Value) interface{} {
-	result, err := gomobile.InitPRVContributionTx(args[0].String())
+	result, err := gomobile.InitPRVContributionTx(args[0].String(), int64(args[1].Int()))
 	if err != nil {
 		return nil
 	}
@@ -131,7 +131,7 @@ func initPRVContributionTx(_ js.Value, args []js.Value) interface{} {
 }
 
 func initPTokenContributionTx(_ js.Value, args []js.Value) interface{} {
-	result, err := gomobile.InitPTokenContributionTx(args[0].String())
+	result, err := gomobile.InitPTokenContributionTx(args[0].String(), int64(args[1].Int()))
 	if err != nil {
 		return nil
 	}
@@ -140,7 +140,7 @@ func initPTokenContributionTx(_ js.Value, args []js.Value) interface{} {
 }
 
 func initPRVTradeTx(_ js.Value, args []js.Value) interface{} {
-	result, err := gomobile.InitPRVTradeTx(args[0].String())
+	result, err := gomobile.InitPRVTradeTx(args[0].String(), int64(args[1].Int()))
 	if err != nil {
 		return nil
 	}
@@ -149,7 +149,7 @@ func initPRVTradeTx(_ js.Value, args []js.Value) interface{} {
 }
 
 func initPTokenTradeTx(_ js.Value, args []js.Value) interface{} {
-	result, err := gomobile.InitPTokenTradeTx(args[0].String())
+	result, err := gomobile.InitPTokenTradeTx(args[0].String(), int64(args[1].Int()))
 	if err != nil {
 		return nil
 	}
@@ -158,7 +158,7 @@ func initPTokenTradeTx(_ js.Value, args []js.Value) interface{} {
 }
 
 func withdrawDexTx(_ js.Value, args []js.Value) interface{} {
-	result, err := gomobile.WithdrawDexTx(args[0].String())
+	result, err := gomobile.WithdrawDexTx(args[0].String(), int64(args[1].Int()))
 	if err != nil {
 		return nil
 	}

@@ -1364,8 +1364,7 @@ func (param *TxPrivacyInitParamsForASM) SetMetaData(meta metadata.Metadata) {
 	param.txParam.metaData = meta
 }
 
-func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
-
+func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM, serverTime int64) error {
 	//Logger.log.Debugf("CREATING TX........\n")
 	tx.Version = txVersion
 	var err error
@@ -1391,7 +1390,7 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 	//start := time.Now()
 
 	if tx.LockTime == 0 {
-		tx.LockTime = time.Now().Unix()
+		tx.LockTime = serverTime
 	}
 
 	// create sender's key set from sender's spending key
