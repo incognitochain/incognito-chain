@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"strconv"
 	"testing"
 
@@ -24,8 +24,8 @@ type PDEProcessSuite struct {
 
 func (suite *PDEProcessSuite) SetupTest() {
 	suite.currentPDEState = &CurrentPDEState{
-		WaitingPDEContributions: make(map[string]*rawdb.PDEContribution),
-		PDEPoolPairs:            make(map[string]*rawdb.PDEPoolForPair),
+		WaitingPDEContributions: make(map[string]*rawdbv2.PDEContribution),
+		PDEPoolPairs:            make(map[string]*rawdbv2.PDEPoolForPair),
 		PDEShares:               make(map[string]uint64),
 	}
 }
@@ -110,7 +110,7 @@ func (suite *PDEProcessSuite) TestPDEContributionOnUnexistedWaitingUniqID() {
 	bc := &BlockChain{}
 	err := bc.processPDEContributionV2(beaconHeight-1, contribInsts[0], suite.currentPDEState)
 	suite.Equal(err, nil)
-	waitingContribKey := string(rawdb.BuildWaitingPDEContributionKey(
+	waitingContribKey := string(rawdbv2.BuildWaitingPDEContributionKey(
 		beaconHeight-1,
 		uniqPairID,
 	))
@@ -132,12 +132,12 @@ func (suite *PDEProcessSuite) TestPDEContributionOnUnexistedPairForExistedWaitin
 	contribToken2IDStr := "0000000000000000000000000000000000000000000000000000000000000007"
 	beaconHeight := uint64(1001)
 
-	existedWaitingContribKey := string(rawdb.BuildWaitingPDEContributionKey(
+	existedWaitingContribKey := string(rawdbv2.BuildWaitingPDEContributionKey(
 		beaconHeight-1,
 		uniqPairID,
 	))
 	currentPDEState := suite.currentPDEState
-	currentPDEState.WaitingPDEContributions[existedWaitingContribKey] = &rawdb.PDEContribution{
+	currentPDEState.WaitingPDEContributions[existedWaitingContribKey] = &rawdbv2.PDEContribution{
 		ContributorAddressStr: contributorAddr,
 		TokenIDStr:            contribToken1IDStr,
 		Amount:                20000000000,
@@ -158,15 +158,15 @@ func (suite *PDEProcessSuite) TestPDEContributionOnUnexistedPairForExistedWaitin
 	suite.Equal(len(suite.currentPDEState.PDEShares), 2)
 	suite.Equal(len(suite.currentPDEState.WaitingPDEContributions), 0)
 
-	pairKey := string(rawdb.BuildPDEPoolForPairKey(beaconHeight-1, contribToken1IDStr, contribToken2IDStr))
+	pairKey := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight-1, contribToken1IDStr, contribToken2IDStr))
 	newPair := suite.currentPDEState.PDEPoolPairs[pairKey]
 	suite.Equal(newPair.Token1IDStr, contribToken1IDStr)
 	suite.Equal(newPair.Token2IDStr, contribToken2IDStr)
 	suite.Equal(newPair.Token1PoolValue, uint64(20000000000))
 	suite.Equal(newPair.Token2PoolValue, uint64(10000000000))
 
-	shareKey1 := string(rawdb.BuildPDESharesKey(beaconHeight-1, contribToken1IDStr, contribToken2IDStr, contribToken1IDStr, contributorAddr))
-	shareKey2 := string(rawdb.BuildPDESharesKey(beaconHeight-1, contribToken1IDStr, contribToken2IDStr, contribToken2IDStr, contributorAddr))
+	shareKey1 := string(rawdbv2.BuildPDESharesKey(beaconHeight-1, contribToken1IDStr, contribToken2IDStr, contribToken1IDStr, contributorAddr))
+	shareKey2 := string(rawdbv2.BuildPDESharesKey(beaconHeight-1, contribToken1IDStr, contribToken2IDStr, contribToken2IDStr, contributorAddr))
 
 	suite.Equal(suite.currentPDEState.PDEShares[shareKey1], uint64(20000000000))
 	suite.Equal(suite.currentPDEState.PDEShares[shareKey2], uint64(10000000000))
@@ -185,43 +185,43 @@ func (suite *PDEProcessSuite) TestPDEContributionOnExistedPairForExistedWaitingU
 
 	currentPDEState := suite.currentPDEState
 	// waiting contribution
-	existedWaitingContribKey1 := string(rawdb.BuildWaitingPDEContributionKey(
+	existedWaitingContribKey1 := string(rawdbv2.BuildWaitingPDEContributionKey(
 		beaconHeight-1,
 		uniqPairID1,
 	))
-	currentPDEState.WaitingPDEContributions[existedWaitingContribKey1] = &rawdb.PDEContribution{
+	currentPDEState.WaitingPDEContributions[existedWaitingContribKey1] = &rawdbv2.PDEContribution{
 		ContributorAddressStr: contributorAddr,
 		TokenIDStr:            contribToken1IDStr,
 		Amount:                20000000000,
 	}
-	existedWaitingContribKey2 := string(rawdb.BuildWaitingPDEContributionKey(
+	existedWaitingContribKey2 := string(rawdbv2.BuildWaitingPDEContributionKey(
 		beaconHeight-1,
 		uniqPairID2,
 	))
-	currentPDEState.WaitingPDEContributions[existedWaitingContribKey2] = &rawdb.PDEContribution{
+	currentPDEState.WaitingPDEContributions[existedWaitingContribKey2] = &rawdbv2.PDEContribution{
 		ContributorAddressStr: contributorAddr,
 		TokenIDStr:            contribToken1IDStr,
 		Amount:                80000000000,
 	}
 
 	// pool pairs
-	existedPoolPairKey1 := string(rawdb.BuildPDEPoolForPairKey(
+	existedPoolPairKey1 := string(rawdbv2.BuildPDEPoolForPairKey(
 		beaconHeight-1,
 		contribToken1IDStr,
 		contribToken2IDStr,
 	))
-	existedPoolPairKey2 := string(rawdb.BuildPDEPoolForPairKey(
+	existedPoolPairKey2 := string(rawdbv2.BuildPDEPoolForPairKey(
 		beaconHeight-1,
 		oldContribTokenIDStr,
 		contribToken1IDStr,
 	))
-	currentPDEState.PDEPoolPairs[existedPoolPairKey1] = &rawdb.PDEPoolForPair{
+	currentPDEState.PDEPoolPairs[existedPoolPairKey1] = &rawdbv2.PDEPoolForPair{
 		Token1IDStr:     contribToken1IDStr,
 		Token1PoolValue: 50000000000,
 		Token2IDStr:     contribToken2IDStr,
 		Token2PoolValue: 80000000000,
 	}
-	currentPDEState.PDEPoolPairs[existedPoolPairKey2] = &rawdb.PDEPoolForPair{
+	currentPDEState.PDEPoolPairs[existedPoolPairKey2] = &rawdbv2.PDEPoolForPair{
 		Token1IDStr:     oldContribTokenIDStr,
 		Token1PoolValue: 10000000000,
 		Token2IDStr:     contribToken1IDStr,
@@ -229,21 +229,21 @@ func (suite *PDEProcessSuite) TestPDEContributionOnExistedPairForExistedWaitingU
 	}
 
 	// shares
-	shareKey1 := string(rawdb.BuildPDESharesKey(
+	shareKey1 := string(rawdbv2.BuildPDESharesKey(
 		beaconHeight-1,
 		contribToken1IDStr,
 		contribToken2IDStr,
 		contribToken1IDStr,
 		contributorAddr,
 	))
-	shareKey2 := string(rawdb.BuildPDESharesKey(
+	shareKey2 := string(rawdbv2.BuildPDESharesKey(
 		beaconHeight-1,
 		contribToken1IDStr,
 		contribToken2IDStr,
 		contribToken2IDStr,
 		contributorAddr,
 	))
-	shareKey3 := string(rawdb.BuildPDESharesKey(
+	shareKey3 := string(rawdbv2.BuildPDESharesKey(
 		beaconHeight-1,
 		oldContribTokenIDStr,
 		contribToken2IDStr,

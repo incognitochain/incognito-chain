@@ -3,7 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
@@ -42,6 +42,7 @@ func (blockchain *BlockChain) ListPrivacyCustomTokenAndPRVByShardID(shardID byte
 	}
 	return tokenStates, nil
 }
+
 func (blockchain *BlockChain) ListPrivacyTokenAndBridgeTokenAndPRVByShardID(shardID byte) ([]common.Hash, error) {
 	tokenIDs := []common.Hash{}
 	tokenStates, err := blockchain.ListPrivacyCustomTokenAndPRVByShardID(shardID)
@@ -68,9 +69,9 @@ func (blockchain *BlockChain) PrivacyCustomTokenIDExistedV2(tokenID *common.Hash
 	return statedb.PrivacyTokenIDExisted(blockchain.BestState.Shard[shardID].GetCopiedTransactionStateDB(), *tokenID)
 }
 
-func (blockchain *BlockChain) GetAllBridgeTokens() ([]common.Hash, []*rawdb.BridgeTokenInfo, error) {
+func (blockchain *BlockChain) GetAllBridgeTokens() ([]common.Hash, []*rawdbv2.BridgeTokenInfo, error) {
 	bridgeTokenIDs := []common.Hash{}
-	allBridgeTokens := []*rawdb.BridgeTokenInfo{}
+	allBridgeTokens := []*rawdbv2.BridgeTokenInfo{}
 	bridgeStateDB := blockchain.BestState.Beacon.GetCopiedFeatureStateDB()
 	allBridgeTokensBytes, err := statedb.GetAllBridgeTokens(bridgeStateDB)
 	if err != nil {

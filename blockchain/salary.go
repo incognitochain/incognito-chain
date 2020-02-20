@@ -2,13 +2,12 @@ package blockchain
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -34,7 +33,7 @@ func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(swapPublicKey s
 	if err != nil {
 		return nil, NewBlockChainError(GetTransactionFromDatabaseError, err)
 	}
-	shardBlock, _, err := blockGenerator.chain.GetShardBlockByHashV2(blockHash)
+	shardBlock, _, err := blockGenerator.chain.GetShardBlockByHash(blockHash)
 	if err != nil || shardBlock == nil {
 		Logger.log.Error("ERROR", err, "NO Transaction in block with hash", blockHash, "and index", index, "contains", shardBlock.Body.Transactions[index])
 		return nil, NewBlockChainError(FetchShardBlockError, err)
@@ -285,6 +284,51 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(blkHeight, epoch uin
 	return resInst, nil
 }
 
+//BuildInstRewardForBeacons create reward instruction for beacons
+func (blockchain *BlockChain) BuildInstRewardForBeacons(epoch uint64, totalReward map[common.Hash]uint64) ([][]string, error) {
+	resInst := [][]string{}
+	baseRewards := map[common.Hash]uint64{}
+	for key, value := range totalReward {
+		baseRewards[key] = value / uint64(len(blockchain.BestState.Beacon.BeaconCommittee))
+	}
+	for _, beaconpublickey := range blockchain.BestState.Beacon.BeaconCommittee {
+		// indicate reward pubkey
+		singleInst, err := metadata.BuildInstForBeaconReward(baseRewards, beaconpublickey.GetNormalKey())
+		if err != nil {
+			Logger.log.Errorf("BuildInstForBeaconReward error %+v\n Totalreward: %+v, epoch: %+v, reward: %+v\n", err, totalReward, epoch, baseRewards)
+			return nil, err
+		}
+		resInst = append(resInst, singleInst)
+	}
+	return resInst, nil
+}
+
+func (blockchain *BlockChain) BuildInstRewardForIncDAO(epoch uint64, totalReward map[common.Hash]uint64) ([][]string, error) {
+	resInst := [][]string{}
+	devRewardInst, err := metadata.BuildInstForIncDAOReward(totalReward, blockchain.config.ChainParams.IncognitoDAOAddress)
+	if err != nil {
+		Logger.log.Errorf("BuildInstRewardForIncDAO error %+v\n Totalreward: %+v, epoch: %+v\n", err, totalReward, epoch)
+		return nil, err
+	}
+	resInst = append(resInst, devRewardInst)
+	return resInst, nil
+}
+
+func (blockchain *BlockChain) BuildInstRewardForShards(epoch uint64, totalRewards []map[common.Hash]uint64) ([][]string, error) {
+	resInst := [][]string{}
+	for i, reward := range totalRewards {
+		if len(reward) > 0 {
+			shardRewardInst, err := metadata.BuildInstForShardReward(reward, epoch, byte(i))
+			if err != nil {
+				Logger.log.Errorf("BuildInstForShardReward error %+v\n Totalreward: %+v, epoch: %+v\n; shard:%+v", err, reward, epoch, byte(i))
+				return nil, err
+			}
+			resInst = append(resInst, shardRewardInst...)
+		}
+	}
+	return resInst, nil
+}
+
 func (blockchain *BlockChain) buildWithDrawTransactionResponse(txRequest *metadata.Transaction, blkProducerPrivateKey *privacy.PrivateKey, shardID byte) (metadata.Transaction, error) {
 	if (*txRequest).GetMetadataType() != metadata.WithDrawRewardRequestMeta {
 		return nil, errors.New("Can not understand this request!")
@@ -359,55 +403,4 @@ func getPercentForIncognitoDAO(blockHeight, blkPerYear uint64) int {
 	} else {
 		return UpperBoundPercentForIncDAO - int(year)
 	}
-}
-
-func (blockchain *BlockChain) getRewardAmountForUserOfShard(
-	selfShardID byte,
-	rewardInfoShardToProcess *metadata.ShardBlockRewardInfo,
-	committeeOfShardToProcess []incognitokey.CommitteePublicKey,
-	rewardReceiver *map[string]string,
-	forBackup bool,
-) (
-	err error,
-) {
-	committeeSize := len(committeeOfShardToProcess)
-	// wg := sync.WaitGroup{}
-	// done := make(chan bool, 1)
-	// errChan := make(chan error, 1)
-	for _, candidate := range committeeOfShardToProcess {
-		// wg.Add(1)
-		// go func() {
-		// 	defer wg.Done()
-		wl, err := wallet.Base58CheckDeserialize((*rewardReceiver)[candidate.GetIncKeyBase58()])
-		if err != nil {
-			// errChan <- err
-			return err
-		}
-		if common.GetShardIDFromLastByte(wl.KeySet.PaymentAddress.Pk[common.PublicKeySize-1]) == selfShardID {
-			for key, value := range rewardInfoShardToProcess.ShardReward {
-				if forBackup {
-					err = rawdb.BackupCommitteeReward(blockchain.GetDatabase(), wl.KeySet.PaymentAddress.Pk, key)
-				} else {
-					err = rawdb.AddCommitteeReward(blockchain.GetDatabase(), wl.KeySet.PaymentAddress.Pk, value/uint64(committeeSize), key)
-				}
-				if err != nil {
-					// errChan <- err
-					return err
-				}
-			}
-		}
-		// }()
-
-	}
-	// go func() {
-	// 	wg.Wait()
-	// 	close(done)
-	// }()
-	// select {
-	// case <-done:
-	// case err = <-errChan:
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	return nil
 }

@@ -87,7 +87,7 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 		Logger.log.Error(errors.New("Commitments is empty"))
 		return
 	}
-	if lenCommitment.Uint64() == 0 {
+	if lenCommitment.Uint64() == 1 {
 		commitmentIndexs = []uint64{0, 0, 0, 0, 0, 0, 0}
 		temp := param.usableInputCoins[0].CoinDetails.GetCoinCommitment().ToBytesS()
 		commitments = [][]byte{temp, temp, temp, temp, temp, temp, temp}

@@ -404,7 +404,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 	if len(invalidTxs) > 0 {
 		return NewBlockChainError(TransactionCreatedByMinerError, fmt.Errorf("There are %d invalid txs", len(invalidTxs)))
 	}
-	err = blockchain.ValidateResponseTransactionFromTxsWithMetadataV2(shardBlock)
+	err = blockchain.ValidateResponseTransactionFromTxsWithMetadata(shardBlock)
 	if err != nil {
 		return NewBlockChainError(ResponsedTransactionWithMetadataError, err)
 	}
@@ -892,7 +892,7 @@ func (blockchain *BlockChain) processStoreShardBlock(shardBlock *ShardBlock, com
 	if len(shardBlock.Body.CrossTransactions) != 0 {
 		Logger.log.Critical("processStoreShardBlock/CrossTransactions	", shardBlock.Body.CrossTransactions)
 	}
-	if err := blockchain.CreateAndSaveTxViewPointFromBlockV2(shardBlock, tempShardBestState.transactionStateDB, tempBeaconBestState.featureStateDB); err != nil {
+	if err := blockchain.CreateAndSaveTxViewPointFromBlock(shardBlock, tempShardBestState.transactionStateDB, tempBeaconBestState.featureStateDB); err != nil {
 		return NewBlockChainError(FetchAndStoreTransactionError, err)
 	}
 
@@ -912,7 +912,7 @@ func (blockchain *BlockChain) processStoreShardBlock(shardBlock *ShardBlock, com
 		Logger.log.Debugf("Transaction in block with hash", blockHash, "and index", index)
 	}
 	// Store Incomming Cross Shard
-	if err := blockchain.CreateAndSaveCrossTransactionViewPointFromBlockV2(shardBlock, tempShardBestState.transactionStateDB); err != nil {
+	if err := blockchain.CreateAndSaveCrossTransactionViewPointFromBlock(shardBlock, tempShardBestState.transactionStateDB); err != nil {
 		return NewBlockChainError(FetchAndStoreCrossTransactionError, err)
 	}
 	// Save result of BurningConfirm instruction to get proof later

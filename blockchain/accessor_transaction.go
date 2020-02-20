@@ -21,7 +21,85 @@ import (
 	"time"
 )
 
-func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadataV2(shardBlock *ShardBlock) error {
+// DecryptOutputCoinByKey process outputcoin to get outputcoin data which relate to keyset
+// Param keyset: (private key, payment address, read only key)
+// in case private key: return unspent outputcoin tx
+// in case read only key: return all outputcoin tx with amount value
+// in case payment address: return all outputcoin tx with no amount value
+func DecryptOutputCoinByKey(transactionStateDB *statedb.StateDB, outCoinTemp *privacy.OutputCoin, keySet *incognitokey.KeySet, tokenID *common.Hash, shardID byte) *privacy.OutputCoin {
+	pubkeyCompress := outCoinTemp.CoinDetails.GetPublicKey().ToBytesS()
+	if bytes.Equal(pubkeyCompress, keySet.PaymentAddress.Pk[:]) {
+		result := &privacy.OutputCoin{
+			CoinDetails:          outCoinTemp.CoinDetails,
+			CoinDetailsEncrypted: outCoinTemp.CoinDetailsEncrypted,
+		}
+		if result.CoinDetailsEncrypted != nil && !result.CoinDetailsEncrypted.IsNil() {
+			if len(keySet.ReadonlyKey.Rk) > 0 {
+				// try to decrypt to get more data
+				err := result.Decrypt(keySet.ReadonlyKey)
+				if err != nil {
+					return nil
+				}
+			}
+		}
+		if len(keySet.PrivateKey) > 0 {
+			// check spent with private key
+			result.CoinDetails.SetSerialNumber(
+				new(privacy.Point).Derive(
+					privacy.PedCom.G[privacy.PedersenPrivateKeyIndex],
+					new(privacy.Scalar).FromBytesS(keySet.PrivateKey),
+					result.CoinDetails.GetSNDerivator()))
+			ok, err := statedb.HasSerialNumber(transactionStateDB, *tokenID, result.CoinDetails.GetSerialNumber().ToBytesS(), shardID)
+			if ok || err != nil {
+				return nil
+			}
+		}
+		return result
+	}
+	return nil
+}
+
+func storePRV(transactionStateRoot *statedb.StateDB) error {
+	tokenID := common.PRVCoinID
+	name := common.PRVCoinName
+	symbol := common.PRVCoinName
+	tokenType := 0
+	mintable := false
+	amount := uint64(1000000000000000)
+	info := []byte{}
+	txHash := common.Hash{}
+	err := statedb.StorePrivacyToken(transactionStateRoot, tokenID, name, symbol, tokenType, mintable, amount, info, txHash)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (blockchain *BlockChain) GetTransactionByHash(txHash common.Hash) (byte, common.Hash, int, metadata.Transaction, error) {
+	blockHash, index, err := rawdbv2.GetTransactionByHash(blockchain.config.DataBase, txHash)
+	if err != nil {
+		return byte(255), common.Hash{}, -1, nil, NewBlockChainError(GetTransactionFromDatabaseError, err)
+	}
+	shardBlock, _, err := blockchain.GetShardBlockByHash(blockHash)
+	if err != nil {
+		return byte(255), common.Hash{}, -1, nil, NewBlockChainError(GetTransactionFromDatabaseError, err)
+	}
+	return shardBlock.Header.ShardID, blockHash, index, shardBlock.Body.Transactions[index], nil
+}
+
+// GetTransactionHashByReceiver - return list tx id which receiver get from any sender
+// this feature only apply on full node, because full node get all data from all shard
+func (blockchain *BlockChain) GetTransactionHashByReceiver(keySet *incognitokey.KeySet) (map[byte][]common.Hash, error) {
+	result := make(map[byte][]common.Hash)
+	var err error
+	result, err = rawdbv2.GetTxByPublicKey(blockchain.config.DataBase, keySet.PaymentAddress.Pk)
+	if err != nil {
+		return nil, NewBlockChainError(UnExpectedError, err)
+	}
+	return result, nil
+}
+
+func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(shardBlock *ShardBlock) error {
 	txRequestTable := reqTableFromReqTxs(shardBlock.Body.Transactions)
 	if shardBlock.Header.Timestamp > ValidateTimeForSpamRequestTxs {
 		txsSpamRemoved := filterReqTxs(shardBlock.Body.Transactions, txRequestTable)
@@ -118,7 +196,7 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 }
 
 // @Notice: change from body.Transaction -> transactions
-func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadataV2(transactions []metadata.Transaction, blkProducerPrivateKey *privacy.PrivateKey, shardID byte) ([]metadata.Transaction, error) {
+func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(transactions []metadata.Transaction, blkProducerPrivateKey *privacy.PrivateKey, shardID byte) ([]metadata.Transaction, error) {
 	txRequestTable := reqTableFromReqTxs(transactions)
 	txsResponse := []metadata.Transaction{}
 	for key, value := range txRequestTable {
@@ -142,14 +220,14 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadataV2(tran
 	return txsSpamRemoved, nil
 }
 
-//GetListOutputCoinsByKeysetV2 - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key.
+//GetListOutputCoinsByKeyset - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key.
 //With private-key, we can check unspent tx by check serialNumber from database
 //- Param #1: keyset - (priv-key, payment-address, readonlykey)
 //in case priv-key: return unspent outputcoin tx
 //in case readonly-key: return all outputcoin tx with amount value
 //in case payment-address: return all outputcoin tx with no amount value
 //- Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
-func (blockchain *BlockChain) GetListOutputCoinsByKeysetV2(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash) ([]*privacy.OutputCoin, error) {
+func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash) ([]*privacy.OutputCoin, error) {
 	blockchain.BestState.Shard[shardID].lock.Lock()
 	defer blockchain.BestState.Shard[shardID].lock.Unlock()
 	var outCointsInBytes [][]byte
@@ -195,7 +273,7 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeysetV2(keyset *incognitokey.
 	// loop on all outputcoin to decrypt data
 	results := make([]*privacy.OutputCoin, 0)
 	for _, out := range outCoins {
-		decryptedOut := DecryptOutputCoinByKeyV2(transactionStateDB, out, keyset, tokenID, shardID)
+		decryptedOut := DecryptOutputCoinByKey(transactionStateDB, out, keyset, tokenID, shardID)
 		if decryptedOut == nil {
 			continue
 		} else {
@@ -205,64 +283,10 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeysetV2(keyset *incognitokey.
 	return results, nil
 }
 
-// DecryptOutputCoinByKeyV2 process outputcoin to get outputcoin data which relate to keyset
-// Param keyset: (private key, payment address, read only key)
-// in case private key: return unspent outputcoin tx
-// in case read only key: return all outputcoin tx with amount value
-// in case payment address: return all outputcoin tx with no amount value
-func DecryptOutputCoinByKeyV2(transactionStateDB *statedb.StateDB, outCoinTemp *privacy.OutputCoin, keySet *incognitokey.KeySet, tokenID *common.Hash, shardID byte) *privacy.OutputCoin {
-	pubkeyCompress := outCoinTemp.CoinDetails.GetPublicKey().ToBytesS()
-	if bytes.Equal(pubkeyCompress, keySet.PaymentAddress.Pk[:]) {
-		result := &privacy.OutputCoin{
-			CoinDetails:          outCoinTemp.CoinDetails,
-			CoinDetailsEncrypted: outCoinTemp.CoinDetailsEncrypted,
-		}
-		if result.CoinDetailsEncrypted != nil && !result.CoinDetailsEncrypted.IsNil() {
-			if len(keySet.ReadonlyKey.Rk) > 0 {
-				// try to decrypt to get more data
-				err := result.Decrypt(keySet.ReadonlyKey)
-				if err != nil {
-					return nil
-				}
-			}
-		}
-		if len(keySet.PrivateKey) > 0 {
-			// check spent with private key
-			result.CoinDetails.SetSerialNumber(
-				new(privacy.Point).Derive(
-					privacy.PedCom.G[privacy.PedersenPrivateKeyIndex],
-					new(privacy.Scalar).FromBytesS(keySet.PrivateKey),
-					result.CoinDetails.GetSNDerivator()))
-			ok, err := statedb.HasSerialNumber(transactionStateDB, *tokenID, result.CoinDetails.GetSerialNumber().ToBytesS(), shardID)
-			if ok || err != nil {
-				return nil
-			}
-		}
-		return result
-	}
-	return nil
-}
-
-func storePRV(transactionStateRoot *statedb.StateDB) error {
-	tokenID := common.PRVCoinID
-	name := common.PRVCoinName
-	symbol := common.PRVCoinName
-	tokenType := 0
-	mintable := false
-	amount := uint64(1000000000000000)
-	info := []byte{}
-	txHash := common.Hash{}
-	err := statedb.StorePrivacyToken(transactionStateRoot, tokenID, name, symbol, tokenType, mintable, amount, info, txHash)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // CreateAndSaveTxViewPointFromBlock - fetch data from block, put into txviewpoint variable and save into db
 // still storage full data of commitments, serial number, snderivator to check double spend
 // this function only work for transaction transfer token/prv within shard
-func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlockV2(shardBlock *ShardBlock, transactionStateRoot *statedb.StateDB, beaconFeatureStateRoot *statedb.StateDB) error {
+func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *ShardBlock, transactionStateRoot *statedb.StateDB, beaconFeatureStateRoot *statedb.StateDB) error {
 	// Fetch data from shardBlock into tx View point
 	if shardBlock.Header.Height == 1 {
 		err := storePRV(transactionStateRoot)
@@ -331,17 +355,17 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlockV2(shardBlock *Sh
 			return err
 		}
 
-		err = blockchain.StoreSerialNumbersFromTxViewPointV2(transactionStateRoot, *privacyCustomTokenSubView)
+		err = blockchain.StoreSerialNumbersFromTxViewPoint(transactionStateRoot, *privacyCustomTokenSubView)
 		if err != nil {
 			return err
 		}
 
-		err = blockchain.StoreCommitmentsFromTxViewPointV2(transactionStateRoot, *privacyCustomTokenSubView, shardBlock.Header.ShardID)
+		err = blockchain.StoreCommitmentsFromTxViewPoint(transactionStateRoot, *privacyCustomTokenSubView, shardBlock.Header.ShardID)
 		if err != nil {
 			return err
 		}
 
-		err = blockchain.StoreSNDerivatorsFromTxViewPointV2(transactionStateRoot, *privacyCustomTokenSubView)
+		err = blockchain.StoreSNDerivatorsFromTxViewPoint(transactionStateRoot, *privacyCustomTokenSubView)
 		if err != nil {
 			return err
 		}
@@ -350,29 +374,29 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlockV2(shardBlock *Sh
 	// updateShardBestState the list serialNumber and commitment, snd set using the state of the used tx view point. This
 	// entails adding the new
 	// ones created by the shardBlock.
-	err = blockchain.StoreSerialNumbersFromTxViewPointV2(transactionStateRoot, *view)
+	err = blockchain.StoreSerialNumbersFromTxViewPoint(transactionStateRoot, *view)
 	if err != nil {
 		return err
 	}
 
-	err = blockchain.StoreCommitmentsFromTxViewPointV2(transactionStateRoot, *view, shardBlock.Header.ShardID)
+	err = blockchain.StoreCommitmentsFromTxViewPoint(transactionStateRoot, *view, shardBlock.Header.ShardID)
 	if err != nil {
 		return err
 	}
 
-	err = blockchain.StoreSNDerivatorsFromTxViewPointV2(transactionStateRoot, *view)
+	err = blockchain.StoreSNDerivatorsFromTxViewPoint(transactionStateRoot, *view)
 	if err != nil {
 		return err
 	}
 
-	err = blockchain.StoreTxByPublicKeyV2(blockchain.GetDatabase(), view)
+	err = blockchain.StoreTxByPublicKey(blockchain.GetDatabase(), view)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (blockchain *BlockChain) StoreSerialNumbersFromTxViewPointV2(stateDB *statedb.StateDB, view TxViewPoint) error {
+func (blockchain *BlockChain) StoreSerialNumbersFromTxViewPoint(stateDB *statedb.StateDB, view TxViewPoint) error {
 	if len(view.listSerialNumbers) > 0 {
 		err := statedb.StoreSerialNumbers(stateDB, *view.tokenID, view.listSerialNumbers, view.shardID)
 		if err != nil {
@@ -382,7 +406,7 @@ func (blockchain *BlockChain) StoreSerialNumbersFromTxViewPointV2(stateDB *state
 	return nil
 }
 
-func (blockchain *BlockChain) StoreSNDerivatorsFromTxViewPointV2(stateDB *statedb.StateDB, view TxViewPoint) error {
+func (blockchain *BlockChain) StoreSNDerivatorsFromTxViewPoint(stateDB *statedb.StateDB, view TxViewPoint) error {
 	keys := make([]string, 0, len(view.mapCommitments))
 	for k := range view.mapCommitments {
 		keys = append(keys, k)
@@ -398,7 +422,7 @@ func (blockchain *BlockChain) StoreSNDerivatorsFromTxViewPointV2(stateDB *stated
 	return nil
 }
 
-func (blockchain *BlockChain) StoreTxByPublicKeyV2(db incdb.Database, view *TxViewPoint) error {
+func (blockchain *BlockChain) StoreTxByPublicKey(db incdb.Database, view *TxViewPoint) error {
 	for data := range view.txByPubKey {
 		dataArr := strings.Split(data, "_")
 		pubKey, _, err := base58.Base58Check{}.Decode(dataArr[0])
@@ -424,7 +448,7 @@ func (blockchain *BlockChain) StoreTxByPublicKeyV2(db incdb.Database, view *TxVi
 	return nil
 }
 
-func (blockchain *BlockChain) StoreCommitmentsFromTxViewPointV2(stateDB *statedb.StateDB, view TxViewPoint, shardID byte) error {
+func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.StateDB, view TxViewPoint, shardID byte) error {
 	// commitment and output are the same key in map
 	keys := make([]string, 0, len(view.mapCommitments))
 	for k := range view.mapCommitments {
@@ -471,7 +495,7 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPointV2(stateDB *statedb
 	return nil
 }
 
-func (blockchain *BlockChain) CreateAndSaveCrossTransactionViewPointFromBlockV2(shardBlock *ShardBlock, transactionStateRoot *statedb.StateDB) error {
+func (blockchain *BlockChain) CreateAndSaveCrossTransactionViewPointFromBlock(shardBlock *ShardBlock, transactionStateRoot *statedb.StateDB) error {
 	Logger.log.Critical("Fetch Cross transaction", shardBlock.Body.CrossTransactions)
 	// Fetch data from block into tx View point
 	view := NewTxViewPoint(shardBlock.Header.ShardID)
@@ -505,23 +529,23 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionViewPointFromBlockV2(
 			}
 		}
 		// Store both commitment and outcoin
-		err = blockchain.StoreCommitmentsFromTxViewPointV2(transactionStateRoot, *privacyCustomTokenSubView, shardBlock.Header.ShardID)
+		err = blockchain.StoreCommitmentsFromTxViewPoint(transactionStateRoot, *privacyCustomTokenSubView, shardBlock.Header.ShardID)
 		if err != nil {
 			return err
 		}
 		// store snd
-		err = blockchain.StoreSNDerivatorsFromTxViewPointV2(transactionStateRoot, *privacyCustomTokenSubView)
+		err = blockchain.StoreSNDerivatorsFromTxViewPoint(transactionStateRoot, *privacyCustomTokenSubView)
 		if err != nil {
 			return err
 		}
 	}
 	// store commitment
-	err = blockchain.StoreCommitmentsFromTxViewPointV2(transactionStateRoot, *view, shardBlock.Header.ShardID)
+	err = blockchain.StoreCommitmentsFromTxViewPoint(transactionStateRoot, *view, shardBlock.Header.ShardID)
 	if err != nil {
 		return err
 	}
 	// store snd
-	err = blockchain.StoreSNDerivatorsFromTxViewPointV2(transactionStateRoot, *view)
+	err = blockchain.StoreSNDerivatorsFromTxViewPoint(transactionStateRoot, *view)
 	if err != nil {
 		return err
 	}

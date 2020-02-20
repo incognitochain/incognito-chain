@@ -3,12 +3,12 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"math/big"
 	"sort"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
@@ -171,7 +171,7 @@ func sortPDETradeInstsByFee(
 				continue
 			}
 			tradeMeta := pdeTradeReqAction.Meta
-			poolPairKey := string(rawdb.BuildPDEPoolForPairKey(beaconHeight, tradeMeta.TokenIDToBuyStr, tradeMeta.TokenIDToSellStr))
+			poolPairKey := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight, tradeMeta.TokenIDToBuyStr, tradeMeta.TokenIDToSellStr))
 			tradesByPair, found := tradesByPairs[poolPairKey]
 			if !found {
 				tradesByPairs[poolPairKey] = []metadata.PDETradeRequestAction{pdeTradeReqAction}

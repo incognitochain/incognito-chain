@@ -30,7 +30,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/connmanager"
 	"github.com/incognitochain/incognito-chain/consensus"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdb"
 	"github.com/incognitochain/incognito-chain/databasemp"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -381,22 +380,21 @@ func (serverObj *Server) NewServer(listenAddrs string, db incdb.Database, dbmp d
 			}
 		}
 	} else {
-		err := rawdb.CleanCommitments(serverObj.dataBase)
-		if err != nil {
-			Logger.log.Error(err)
-			return err
-		}
-		err = rawdb.CleanSerialNumbers(serverObj.dataBase)
-		if err != nil {
-			Logger.log.Error(err)
-			return err
-		}
-		err = rawdb.CleanFeeEstimator(serverObj.dataBase)
-		if err != nil {
-			Logger.log.Error(err)
-			return err
-		}
-
+		//err := rawdb.CleanCommitments(serverObj.dataBase)
+		//if err != nil {
+		//	Logger.log.Error(err)
+		//	return err
+		//}
+		//err = rawdb.CleanSerialNumbers(serverObj.dataBase)
+		//if err != nil {
+		//	Logger.log.Error(err)
+		//	return err
+		//}
+		//err = rawdb.CleanFeeEstimator(serverObj.dataBase)
+		//if err != nil {
+		//	Logger.log.Error(err)
+		//	return err
+		//}
 		serverObj.feeEstimator = make(map[byte]*mempool.FeeEstimator)
 	}
 	for shardID, feeEstimator := range serverObj.feeEstimator {

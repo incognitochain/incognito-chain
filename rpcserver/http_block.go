@@ -355,7 +355,7 @@ func (httpServer *HttpServer) handleGetCrossShardBlock(params interface{}, close
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("blockHeight is invalid"))
 	}
 	blockHeight := uint64(blockHeightParam)
-	shardBlocks, err := httpServer.config.BlockChain.GetShardBlockByHeightV2(blockHeight, byte(shardID))
+	shardBlocks, err := httpServer.config.BlockChain.GetShardBlockByHeight(blockHeight, byte(shardID))
 	if err != nil {
 		Logger.log.Debugf("handleGetCrossShardBlock result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.GetShardBlockByHeightError, err)

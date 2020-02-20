@@ -109,9 +109,16 @@ func getShardAndBeaconBlocks(
 	db incdb.Database,
 ) (*blockchain.ShardBlock, []*blockchain.BeaconBlock, error) {
 	bridgeID := byte(common.BridgeShardID)
-	bridgeBlock, err := bc.GetShardBlockByHeight(height, bridgeID)
+	bridgeBlocks, err := bc.GetShardBlockByHeight(height, bridgeID)
 	if err != nil {
 		return nil, nil, err
+	}
+	if len(bridgeBlocks) == 0 {
+		return nil, nil, fmt.Errorf("shard block bridgeID %+v, height %+v not found", bridgeID, height)
+	}
+	var bridgeBlock *blockchain.ShardBlock
+	for _, temp := range bridgeBlocks {
+		bridgeBlock = temp
 	}
 	beaconBlocks, err := getIncludedBeaconBlocks(
 		bridgeBlock.Header.Height,
@@ -202,13 +209,17 @@ func getIncludedBeaconBlocks(
 	bc *blockchain.BlockChain,
 	db incdb.Database,
 ) ([]*blockchain.BeaconBlock, error) {
-	prevShardBlock, err := bc.GetShardBlockByHeight(shardHeight-1, shardID)
+	prevShardBlocks, err := bc.GetShardBlockByHeight(shardHeight-1, shardID)
 	if err != nil {
 		return nil, err
 	}
+	var previousShardBlock *blockchain.ShardBlock
+	for _, temp := range prevShardBlocks {
+		previousShardBlock = temp
+	}
 	beaconBlocks, err := blockchain.FetchBeaconBlockFromHeight(
 		db,
-		prevShardBlock.Header.BeaconHeight+1,
+		previousShardBlock.Header.BeaconHeight+1,
 		beaconHeight,
 	)
 	if err != nil {

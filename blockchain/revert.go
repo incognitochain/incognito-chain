@@ -129,7 +129,7 @@ func (blockchain *BlockChain) revertShardState(shardID byte) error {
 	if err != nil {
 		return NewBlockChainError(RevertStateError, err)
 	}
-	if err := blockchain.StoreShardBestStateV2(shardID); err != nil {
+	if err := blockchain.StoreShardBestState(shardID); err != nil {
 		return NewBlockChainError(RevertStateError, err)
 	}
 	for _, tx := range revertedBestShardBlock.Body.Transactions {
@@ -241,7 +241,7 @@ func (blockchain *BlockChain) revertBeaconState() error {
 	if err != nil {
 		return err
 	}
-	if err := blockchain.StoreBeaconBestStateV2(); err != nil {
+	if err := blockchain.StoreBeaconBestState(); err != nil {
 		return err
 	}
 	Logger.log.Criticalf("REVERT BEACON SUCCESS from %+v to %+v", currentBestBeaconBlock.Header.Height, blockchain.BestState.Beacon.BeaconHeight)
