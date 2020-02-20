@@ -231,7 +231,7 @@ func (blockchain *BlockChain) addShardCommitteeReward(rewardStateDB *statedb.Sta
 	return nil
 }
 
-func (blockchain *BlockChain) BuildRewardInstructionByEpoch(blkHeight, epoch uint64, rewardStateDB *statedb.StateDB) ([][]string, error) {
+func (blockchain *BlockChain) buildRewardInstructionByEpoch(blkHeight, epoch uint64, rewardStateDB *statedb.StateDB) ([][]string, error) {
 	var resInst [][]string
 	var err error
 	var instRewardForBeacons [][]string
@@ -265,17 +265,17 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(blkHeight, epoch uin
 		mapPlusMap(rewardForIncDAO, &totalRewardForIncDAO)
 	}
 	if len(totalRewardForBeacon) > 0 {
-		instRewardForBeacons, err = blockchain.BuildInstRewardForBeacons(epoch, totalRewardForBeacon)
+		instRewardForBeacons, err = blockchain.buildInstRewardForBeacons(epoch, totalRewardForBeacon)
 		if err != nil {
 			return nil, err
 		}
 	}
-	instRewardForShards, err = blockchain.BuildInstRewardForShards(epoch, totalRewards)
+	instRewardForShards, err = blockchain.buildInstRewardForShards(epoch, totalRewards)
 	if err != nil {
 		return nil, err
 	}
 	if len(totalRewardForIncDAO) > 0 {
-		instRewardForIncDAO, err = blockchain.BuildInstRewardForIncDAO(epoch, totalRewardForIncDAO)
+		instRewardForIncDAO, err = blockchain.buildInstRewardForIncDAO(epoch, totalRewardForIncDAO)
 		if err != nil {
 			return nil, err
 		}
@@ -284,8 +284,8 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(blkHeight, epoch uin
 	return resInst, nil
 }
 
-//BuildInstRewardForBeacons create reward instruction for beacons
-func (blockchain *BlockChain) BuildInstRewardForBeacons(epoch uint64, totalReward map[common.Hash]uint64) ([][]string, error) {
+//buildInstRewardForBeacons create reward instruction for beacons
+func (blockchain *BlockChain) buildInstRewardForBeacons(epoch uint64, totalReward map[common.Hash]uint64) ([][]string, error) {
 	resInst := [][]string{}
 	baseRewards := map[common.Hash]uint64{}
 	for key, value := range totalReward {
@@ -303,18 +303,18 @@ func (blockchain *BlockChain) BuildInstRewardForBeacons(epoch uint64, totalRewar
 	return resInst, nil
 }
 
-func (blockchain *BlockChain) BuildInstRewardForIncDAO(epoch uint64, totalReward map[common.Hash]uint64) ([][]string, error) {
+func (blockchain *BlockChain) buildInstRewardForIncDAO(epoch uint64, totalReward map[common.Hash]uint64) ([][]string, error) {
 	resInst := [][]string{}
 	devRewardInst, err := metadata.BuildInstForIncDAOReward(totalReward, blockchain.config.ChainParams.IncognitoDAOAddress)
 	if err != nil {
-		Logger.log.Errorf("BuildInstRewardForIncDAO error %+v\n Totalreward: %+v, epoch: %+v\n", err, totalReward, epoch)
+		Logger.log.Errorf("buildInstRewardForIncDAO error %+v\n Totalreward: %+v, epoch: %+v\n", err, totalReward, epoch)
 		return nil, err
 	}
 	resInst = append(resInst, devRewardInst)
 	return resInst, nil
 }
 
-func (blockchain *BlockChain) BuildInstRewardForShards(epoch uint64, totalRewards []map[common.Hash]uint64) ([][]string, error) {
+func (blockchain *BlockChain) buildInstRewardForShards(epoch uint64, totalRewards []map[common.Hash]uint64) ([][]string, error) {
 	resInst := [][]string{}
 	for i, reward := range totalRewards {
 		if len(reward) > 0 {
