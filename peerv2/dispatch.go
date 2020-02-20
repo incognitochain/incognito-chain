@@ -25,6 +25,7 @@ func (d *Dispatcher) processStreamBlk(blktype byte, data []byte) error {
 	case blockbeacon:
 		newBlk := new(blockchain.BeaconBlock)
 		err := json.Unmarshal(data, newBlk)
+		Logger.Infof("[stream] Got block %v", newBlk.GetHeight())
 		if err != nil {
 			Logger.Infof("[stream] process stream block return error %v", err)
 			return err

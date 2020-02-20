@@ -219,6 +219,7 @@ func (bp *BlockProvider) StreamBlockBeaconByHeight(req *proto.GetBlockBeaconByHe
 		}
 		Logger.Infof("[stream] Server send block to client ok")
 	}
+	Logger.Infof("[stream] Provider return StreamBlockBeaconByHeight")
 	return nil
 }
 

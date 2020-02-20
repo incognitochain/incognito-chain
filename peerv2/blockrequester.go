@@ -336,6 +336,7 @@ func (c *BlockRequester) StreamBlockBeaconByHeight(
 		Logger.Infof("[stream] Got block, push to handler")
 		c.HandleResponseBlock(blkData.Data)
 	}
+	Logger.Infof("[stream] Return StreamBlockBeaconByHeight")
 	return nil
 }
 
