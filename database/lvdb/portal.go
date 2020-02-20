@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/pkg/errors"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
@@ -243,6 +244,74 @@ func (db *db) GetItemPortalByPrefix(prefix []byte) (byte, error) {
 	return itemRecord[0], nil
 }
 
-func (db *db) GetFinalExchangeRatesByBeaconHeight() {
+func (finalExchangeRates *FinalExchangeRates) ExchangePToken2PRVByTokenId(pTokenId string, value uint64) uint64 {
+	switch pTokenId {
+	case metadata.PortalTokenSymbolBTC:
+		return finalExchangeRates.ExchangeBTC2PRV(value)
+	case metadata.PortalTokenSymbolBNB:
+		return finalExchangeRates.ExchangeBTC2PRV(value)
+	}
 
+	return 0
+}
+
+func (finalExchangeRates *FinalExchangeRates) ExchangePRV2PTokenByTokenId(pTokenId string, value uint64) uint64 {
+	switch pTokenId {
+	case metadata.PortalTokenSymbolBTC:
+		return finalExchangeRates.ExchangePRV2BTC(value)
+	case metadata.PortalTokenSymbolBNB:
+		return finalExchangeRates.ExchangePRV2BNB(value)
+	}
+
+	return 0
+}
+
+func (finalExchangeRates *FinalExchangeRates) ExchangeBTC2PRV(value uint64) uint64 {
+	//get rate of BTC
+	BTCRates := finalExchangeRates.Rates[metadata.PortalTokenSymbolBTC].Amount
+	PRVRates := finalExchangeRates.Rates[metadata.PortalTokenSymbolPRV].Amount
+	//BTC -> USDT
+	btc2usd := value * BTCRates
+
+	//BTC -> PRV
+	totalPRV := btc2usd / PRVRates
+	//totalPRV = uint64(totalPRV)
+	return  totalPRV
+}
+
+func (finalExchangeRates *FinalExchangeRates) ExchangeBNB2PRV(value uint64) uint64 {
+	//get rate of BTC
+	BNBRates := finalExchangeRates.Rates[metadata.PortalTokenSymbolBNB].Amount
+	PRVRates := finalExchangeRates.Rates[metadata.PortalTokenSymbolPRV].Amount
+	//BTC -> USDT
+	bnb2usd := value * BNBRates
+
+	//BTC -> PRV
+	totalPRV := bnb2usd / PRVRates
+	//totalPRV = uint64(totalPRV)
+	return  totalPRV
+}
+
+func (finalExchangeRates *FinalExchangeRates) ExchangePRV2BTC(value uint64) uint64 {
+	//get rate of BTC
+	BTCRates := finalExchangeRates.Rates[metadata.PortalTokenSymbolBTC].Amount
+	PRVRates := finalExchangeRates.Rates[metadata.PortalTokenSymbolPRV].Amount
+	//PRV -> USDT
+	prv2usd := value * PRVRates
+
+	//PRV -> BTC
+	totalBTC := prv2usd / BTCRates
+	return totalBTC
+}
+
+func (finalExchangeRates *FinalExchangeRates) ExchangePRV2BNB(value uint64) uint64 {
+	//get rate of BTC
+	BNBRates := finalExchangeRates.Rates[metadata.PortalTokenSymbolBNB].Amount
+	PRVRates := finalExchangeRates.Rates[metadata.PortalTokenSymbolPRV].Amount
+	//PRV -> USDT
+	prv2usd := value * PRVRates
+
+	//BNB -> PRV
+	totalBNB := prv2usd / BNBRates
+	return  totalBNB
 }

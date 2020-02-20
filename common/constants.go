@@ -141,6 +141,7 @@ const (
 const (
 	PortalCustodianDepositAcceptedChainStatus = "accepted"
 	PortalCustodianDepositRefundChainStatus   = "refund"
+	PortalCustodianNotFoundStatus   = "notfound"
 
 	PortalReqPTokensAcceptedChainStatus = "accepted"
 	PortalReqPTokensRejectedChainStatus = "rejected"

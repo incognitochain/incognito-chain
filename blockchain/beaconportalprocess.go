@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"encoding/json"
-	"errors"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
@@ -174,26 +173,6 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		return nil
 	}
 
-	//check unique id from record from db
-	keyPortingRequest := append(lvdb.PortalPortingRequestsPrefix, []byte(portingRequestContent.UniqueRegisterId)...)
-	portingRequestExist, err := db.GetItemPortalByPrefix(keyPortingRequest)
-	if err != nil {
-		return err
-	}
-
-	if portingRequestExist != 0 {
-		Logger.log.Errorf("Unique porting id is duplicated")
-		return nil
-	}
-
-	//find custodian
-	//todo: get exchangeRate via tokenid
-	pickCustodian, err := pickCustodian(portingRequestContent, 1, currentPortalState.CustodianPoolState)
-
-	if err != nil {
-		return err
-	}
-
 	uniquePortingID := portingRequestContent.UniqueRegisterId
 	txReqID := portingRequestContent.TxReqID
 	tokenID := portingRequestContent.PTokenId
@@ -201,7 +180,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 	porterAddress := portingRequestContent.IncogAddressStr
 	amount := portingRequestContent.RegisterAmount
 
-	custodians := pickCustodian
+	custodiansDetail := portingRequestContent.Custodian
 	portingFee := portingRequestContent.PortingFee
 
 	// new request
@@ -211,7 +190,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		tokenID,
 		porterAddress,
 		amount,
-		custodians,
+		custodiansDetail,
 		portingFee,
 		)
 
@@ -228,7 +207,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 	}
 
 	//save custodian state
-	for address, itemCustodian := range custodians {
+	for address, itemCustodian := range custodiansDetail {
 		custodian := currentPortalState.CustodianPoolState[address]
 		totalCollateral := custodian.TotalCollateral
 		freeCollateral := custodian.FreeCollateral - itemCustodian.LockedAmountCollateral
@@ -253,98 +232,6 @@ func (blockchain *BlockChain) processPortalUserRegister(
 	currentPortalState.WaitingPortingRequests[keyPortingRequestNewState] = newPortingRequestState
 
 	return nil
-}
-
-func pickCustodian(metadata metadata.PortalPortingRequestContent, exchangeRate uint64, custodianState map[string]*lvdb.CustodianState) (map[string]lvdb.MatchingPortingCustodianDetail, error) {
-
-	type custodianStateSlice struct {
-		Key   string
-		Value *lvdb.CustodianState
-	}
-
-	//convert to slice
-	var sortCustodianStateByFreeCollateral []custodianStateSlice
-	for k, v := range custodianState {
-		_, tokenIdExist := v.RemoteAddresses[metadata.PTokenId]
-		if !tokenIdExist {
-			continue
-		}
-
-		sortCustodianStateByFreeCollateral = append(sortCustodianStateByFreeCollateral, custodianStateSlice{k, v})
-	}
-
-	sort.Slice(sortCustodianStateByFreeCollateral, func(i, j int) bool {
-		return sortCustodianStateByFreeCollateral[i].Value.FreeCollateral <= sortCustodianStateByFreeCollateral[j].Value.FreeCollateral
-	})
-
-
-	if len(sortCustodianStateByFreeCollateral) == 0 {
-		return map[string]lvdb.MatchingPortingCustodianDetail{}, errors.New("Custodian not found")
-	}
-
-	//pick custodian
-	amountAdaptable, _ := getAmountAdaptable(metadata.RegisterAmount, exchangeRate)
-
-	//get only a custodian
-	for _, kv := range sortCustodianStateByFreeCollateral {
-		if kv.Value.FreeCollateral >= amountAdaptable {
-			result := make(map[string]lvdb.MatchingPortingCustodianDetail)
-			result[kv.Key] = lvdb.MatchingPortingCustodianDetail{
-				RemoteAddress: metadata.PTokenAddress,
-				Amount: metadata.RegisterAmount,
-				LockedAmountCollateral: amountAdaptable,
-			}
-
-			return result, nil
-		}
-	}
-
-	if len(sortCustodianStateByFreeCollateral) == 1 {
-		return map[string]lvdb.MatchingPortingCustodianDetail{}, errors.New("Custodian not found")
-	}
-
-	//get multiple custodian
-	var totalPubTokenAfterPick uint64
-
-	multipleCustodian := make(map[string]lvdb.MatchingPortingCustodianDetail)
-	for i := len(sortCustodianStateByFreeCollateral)-1; i >= 0; i-- {
-		custodianItem := sortCustodianStateByFreeCollateral[i]
-		if totalPubTokenAfterPick >= metadata.RegisterAmount {
-			break
-		}
-
-		pricePubToken, _ := getPubTokenByTotalCollateral(custodianItem.Value.FreeCollateral, exchangeRate)
-		collateral, _ := getAmountAdaptable(pricePubToken, exchangeRate)
-
-		amountAdaptableEachCustodian, _ := getAmountAdaptable(pricePubToken, exchangeRate)
-		//verify collateral
-		if custodianItem.Value.FreeCollateral >= amountAdaptableEachCustodian {
-			multipleCustodian[custodianItem.Key] = lvdb.MatchingPortingCustodianDetail{
-				RemoteAddress: metadata.PTokenAddress,
-				Amount: pricePubToken,
-				LockedAmountCollateral: collateral,
-			}
-
-			totalPubTokenAfterPick = totalPubTokenAfterPick + pricePubToken
-
-			continue
-		}
-
-		Logger.log.Errorf("current portal state is nil")
-		return map[string]lvdb.MatchingPortingCustodianDetail{}, errors.New("Pick mulitple custodian is fail")
-	}
-
-	//verify total amount group custodian
-	var verifyTotalPubTokenAfterPick uint64
-	for _, eachCustodian := range multipleCustodian {
-		verifyTotalPubTokenAfterPick = verifyTotalPubTokenAfterPick + eachCustodian.Amount
-	}
-
-	if verifyTotalPubTokenAfterPick != metadata.RegisterAmount {
-		return map[string]lvdb.MatchingPortingCustodianDetail{}, errors.New("Total public token do not match")
-	}
-
-	return multipleCustodian, nil
 }
 
 func (blockchain *BlockChain) processPortalUserReqPToken(
@@ -507,16 +394,16 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 	})
 
 	exchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
-	exchangeRatesPreState, err := GetFinalExchangeRatesByKey(db, []byte(exchangeRatesKey))
+	exchangeRatesState, err := GetFinalExchangeRatesByKey(db, []byte(exchangeRatesKey))
 	if err != nil {
 		return  err
 	}
 
 	//pick
 	exchangeRatesList := make(map[string]lvdb.FinalExchangeRatesDetail)
-	btcAmount := exchangeRatesPreState.Rates["BTC"].Amount
-	bnbAmount := exchangeRatesPreState.Rates["BNB"].Amount
-	prvAmount := exchangeRatesPreState.Rates["PRV"].Amount
+	btcAmount := exchangeRatesState.Rates["BTC"].Amount
+	bnbAmount := exchangeRatesState.Rates["BNB"].Amount
+	prvAmount := exchangeRatesState.Rates["PRV"].Amount
 
 	//pick final rates of BTC
 	if len(btcExchangeRatesSlice) > 0 {

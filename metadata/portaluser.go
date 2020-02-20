@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"strconv"
 	"reflect"
@@ -36,6 +37,7 @@ type PortalPortingRequestContent struct {
 	PTokenAddress string
 	RegisterAmount uint64
 	PortingFee uint64
+	Custodian map[string]lvdb.MatchingPortingCustodianDetail
 	TxReqID common.Hash
 }
 
@@ -103,7 +105,6 @@ func (portalUserRegister PortalUserRegister) ValidateSanityData(bcr BlockchainRe
 		return false, false, errors.New("register amount should be larger than 0")
 	}
 
-	//todo: verify porting fees
 	//validation porting fee
 	if portalUserRegister.PortingFee == 0 {
 		return false, false, errors.New("porting fee should be larger than 0")
