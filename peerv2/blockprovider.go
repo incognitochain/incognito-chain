@@ -5,6 +5,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
+	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
 	"github.com/incognitochain/incognito-chain/wire"
 
 	p2pgrpc "github.com/incognitochain/go-libp2p-grpc"
@@ -195,7 +196,36 @@ func (bp *BlockProvider) GetBlockShardToBeaconByHeight(ctx context.Context, req 
 	return resp, nil
 }
 
+func (bp *BlockProvider) StreamBlockBeaconByHeight(req *proto.GetBlockBeaconByHeightRequest, stream proto.HighwayService_StreamBlockBeaconByHeightServer) error {
+	var heights []uint64
+	if req.Specific {
+		Logger.Infof("[stream] Block provider received request [%v..%v], len %v", req.Heights[0], req.Heights[len(req.Heights)-1], len(req.Heights))
+		heights = req.GetHeights()
+	} else {
+		Logger.Infof("[stream] Block provider received request %v %v", req.GetFromHeight(), req.GetToHeight())
+		heights = []uint64{req.GetFromHeight(), req.GetToHeight()}
+	}
+	blkRecv := bp.NetSync.StreamBlockBeaconByHeight(false, req.GetSpecific(), heights)
+	for blk := range blkRecv {
+		rdata, err := wrapper.EnCom(blk)
+		blkData := append([]byte{blockbeacon}, rdata...)
+		if err != nil {
+			Logger.Infof("[stream] block channel return error when marshal %v", err)
+			return err
+		}
+		Logger.Infof("[stream] block channel return block ok")
+		if err := stream.Send(&proto.BlockData{Data: blkData}); err != nil {
+			Logger.Infof("[stream] Server send block to client return err %v", err)
+			return err
+		}
+		Logger.Infof("[stream] Server send block to client ok")
+	}
+	Logger.Infof("[stream] Provider return StreamBlockBeaconByHeight")
+	return nil
+}
+
 type BlockProvider struct {
+	proto.UnimplementedHighwayServiceServer
 	NetSync NetSync
 }
 
@@ -206,4 +236,5 @@ type NetSync interface {
 	//GetBlockBeaconByHeight fromPool bool, specificHeight bool, blkHeights []uint64
 	GetBlockBeaconByHeight(bool, bool, []uint64) []wire.Message
 	GetBlockBeaconByHash(blkHashes []common.Hash) []wire.Message
+	StreamBlockBeaconByHeight(fromPool bool, specificHeight bool, blkHeights []uint64) chan interface{}
 }

@@ -292,6 +292,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			OnBFTMsg:    serverObj.OnBFTMsg,
 			OnPeerState: serverObj.OnPeerState,
 		},
+		BC: serverObj.blockChain,
 	}
 
 	metrics.SetGlobalParam("Bootnode", cfg.DiscoverPeersAddress)
@@ -1491,7 +1492,8 @@ func (serverObj *Server) putResponseMsgs(msgs [][]byte) {
 }
 
 func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint64) error {
-	msgs, err := serverObj.highway.Requester.GetBlockBeaconByHeight(
+	Logger.log.Infof("[stream] Get blk beacon by heights %v %v", from, to)
+	err := serverObj.highway.Requester.StreamBlockBeaconByHeight(
 		false, // bySpecific
 		from,  // from
 		nil,   // heights (this params just != nil if bySpecific == true)
@@ -1501,13 +1503,13 @@ func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint6
 		Logger.log.Error(err)
 		return err
 	}
-	serverObj.putResponseMsgs(msgs)
+	// serverObj.putResponseMsgs(msgs)
 	return nil
 }
 
 func (serverObj *Server) PushMessageGetBlockBeaconBySpecificHeight(heights []uint64, getFromPool bool) error {
-	Logger.log.Infof("[byspecific] Get blk beacon by Specific heights %v", heights)
-	msgs, err := serverObj.highway.Requester.GetBlockBeaconByHeight(
+	Logger.log.Infof("[stream] Get blk beacon by Specific heights [%v..%v]", heights[0], heights[len(heights)-1])
+	err := serverObj.highway.Requester.StreamBlockBeaconByHeight(
 		true,    // bySpecific
 		0,       // from
 		heights, // heights (this params just != nil if bySpecific == true)
@@ -1518,7 +1520,7 @@ func (serverObj *Server) PushMessageGetBlockBeaconBySpecificHeight(heights []uin
 		return err
 	}
 	// TODO(@0xbunyip): instead of putting response to queue, use it immediately in synker
-	serverObj.putResponseMsgs(msgs)
+	// serverObj.putResponseMsgs(msgs)
 	return nil
 }
 

@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"reflect"
 
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/peer"
+	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
 	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/pkg/errors"
 )
@@ -15,6 +17,26 @@ import (
 type Dispatcher struct {
 	MessageListeners   *MessageListeners
 	PublishableMessage []string
+	BC                 *blockchain.BlockChain
+}
+
+// Just for consensus v1
+func (d *Dispatcher) processStreamBlk(blktype byte, data []byte) error {
+	switch blktype {
+	case blockbeacon:
+		Logger.Infof("[stream] process stream beaconblock")
+		newBlk := new(blockchain.BeaconBlock)
+		err := wrapper.DeCom(data, newBlk)
+		Logger.Infof("[stream] Got block %v", newBlk.GetHeight())
+		if err != nil {
+			Logger.Infof("[stream] process stream block return error %v", err)
+			return err
+		}
+		d.BC.OnBlockBeaconReceived(newBlk)
+	default:
+		return errors.Errorf("Not implement for this block type %v", blktype)
+	}
+	return nil
 }
 
 //TODO hy parse msg here
