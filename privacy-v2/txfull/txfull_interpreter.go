@@ -28,10 +28,10 @@ func getSumCommitment(arr []ota.UTXO) *privacy.Point {
 	return sum
 }
 
-func getPrivateKeyOfInputs(this *RingCTFull) []privacy.Scalar {
+func (this *RingCTFull) getPrivateKeyOfInputs() *[]privacy.Scalar {
 	privateKeys := make([]privacy.Scalar, len(this.inputs))
 	for i := 0; i < len(privateKeys); i += 1 {
 		privateKeys[i] = *ota.ParseUTXOPrivatekey(this.fromAddress[i], this.inputs[i])
 	}
-	return privateKeys
+	return &privateKeys
 }

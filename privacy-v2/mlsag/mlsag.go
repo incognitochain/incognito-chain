@@ -37,30 +37,6 @@ func (this *Mlsag) createRandomChallenges() (alpha []privacy.Scalar, r [][]priva
 	return
 }
 
-// func NewMlsagWithRandomRing(privateKeys []privacy.Scalar, numFake int) (mlsag *Mlsag) {
-// 	if mlsag == nil {
-// 		mlsag = new(Mlsag)
-// 	}
-
-// 	mlsag.privateKeys = privateKeys
-// 	mlsag.pi = common.RandInt() % numFake
-// 	mlsag.keyImages = parseKeyImages(privateKeys) // 1st step in monero paper
-// 	mlsag.K = NewRandomRing(privateKeys, numFake, mlsag.pi)
-// 	return
-// }
-
-// func SignWithOneKey(privateKey privacy.Scalar, message string, numFake int) (*Signature, error) {
-// 	keys := []privacy.Scalar{privateKey}
-// 	mlsag := NewMlsagWithRandomRing(keys, numFake)
-// 	return mlsag.Sign(message)
-// }
-
-// // SignWithRandomRing will generate random ring and use MLSAG to sign the message.
-// func SignWithRandomRing(privateKeys []privacy.Scalar, message string, numFake int) *Signature {
-// 	mlsag := NewMlsagWithRandomRing(privateKeys, numFake)
-// 	return mlsag.Sign(message)
-// }
-
 func calculateFirstC(digest [sha256.Size]byte, alpha []privacy.Scalar, K []privacy.Point) (*privacy.Scalar, error) {
 	if len(alpha) != len(K) {
 		return nil, errors.New("Error in MLSAG: Calculating first C must have length of alpha be the same with length of ring K")
@@ -161,17 +137,13 @@ func (this *Mlsag) calculateC(digest [sha256.Size]byte, alpha []privacy.Scalar, 
 	return c, nil
 }
 
-func NewMlsagWithDefinedRing(privateKeys []privacy.Scalar, K *Ring, pi int) (mlsag *Mlsag) {
-	if mlsag == nil {
-		mlsag = new(Mlsag)
+func NewMlsagWithDefinedRing(privateKeys *[]privacy.Scalar, K *Ring, pi int) (mlsag *Mlsag) {
+	return &Mlsag{
+		K,
+		pi,
+		*parseKeyImages(privateKeys),
+		*privateKeys,
 	}
-
-	mlsag.K = K
-	mlsag.pi = pi
-	mlsag.privateKeys = privateKeys
-	mlsag.keyImages = parseKeyImages(privateKeys) // 1st step in monero paper
-
-	return
 }
 
 // check l*KI = 0 by checking KI is a valid point

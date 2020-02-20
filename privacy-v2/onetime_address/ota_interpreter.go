@@ -54,7 +54,7 @@ func parseMoneyToCreateOutput(blind *privacy.Scalar, cachedHash *privacy.Scalar,
 func ParseBigIntToScalar(number big.Int) (*privacy.Scalar, error) {
 	b := number.Bytes()
 	if len(b) > 32 {
-		return nil, errors.New("Error in tx_full ParseBigIntToScalar: BigInt too big (length larger than 32)")
+		return nil, errors.New("Error in onetime_address ParseBigIntToScalar: BigInt too big (length larger than 32)")
 	}
 	zeroPadding := make([]byte, 32-len(b))
 	b = append(zeroPadding, b...)
@@ -64,7 +64,7 @@ func ParseBigIntToScalar(number big.Int) (*privacy.Scalar, error) {
 	keyReverse := privacy.Reverse(scalar.GetKey())
 	result, err := scalar.SetKey(&keyReverse)
 	if err != nil {
-		return nil, errors.New("Error in txfull ParseBigIntToScalar: scalar.SetKet got error")
+		return nil, errors.New("Error in onetime_address ParseBigIntToScalar: scalar.SetKet got error")
 	}
 
 	return result, nil

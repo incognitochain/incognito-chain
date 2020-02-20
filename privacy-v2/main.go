@@ -11,7 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy-v2/onetime_address/address"
-	"github.com/incognitochain/incognito-chain/privacy-v2/onetime_address/txfull"
+	"github.com/incognitochain/incognito-chain/privacy-v2/txfull"
 )
 
 func testMlsag() {
@@ -23,15 +23,15 @@ func testMlsag() {
 	}
 	numFake := 3
 	pi := common.RandInt() % numFake
-	ring := mlsag.NewRandomRing(keyInputs, numFake, pi)
-	signer := mlsag.NewMlsagWithDefinedRing(keyInputs, ring, pi)
+	ring := mlsag.NewRandomRing(&keyInputs, numFake, pi)
+	signer := mlsag.NewMlsagWithDefinedRing(&keyInputs, ring, pi)
 
 	signature, err := signer.Sign("Hello")
 	if err != nil {
 		fmt.Println("There is something wrong with signing")
 		fmt.Println(err)
 	}
-	// ring = mlsag.NewRandomRing(keyInputs, numFake, pi)
+	// ring = mlsag.NewRandomRing(&keyInputs, numFake, pi)
 	check, err := mlsag.Verify(signature, ring, "Hello")
 	if err != nil {
 		fmt.Println("There is something wrong with verifying")
@@ -74,7 +74,8 @@ func testOTA() {
 		curMoney, _ := new(big.Int).SetString("100", 10)
 		money[i] = *curMoney
 	}
-	outputs, _, err := ota.CreateOutputs(peoplePublicAddresses, money)
+	outputsPointer, _, err := ota.CreateOutputs(&peoplePublicAddresses, &money)
+	outputs := *outputsPointer
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -91,12 +92,10 @@ func testOTA() {
 	}
 }
 
-func main() {
-	// source := address.GenerateRandomAddress()
-
+func testTxFull() {
 	// Example of Alice has 5 inputs, give 10 outputs to Bob
 	moneyInput := "100"
-	moneyOutput := "50"
+	moneyOutput := "49"
 
 	// 5*100 = 500 = 50*10
 	n_input := 5
@@ -114,39 +113,57 @@ func main() {
 	}
 
 	// Initialize params to make output
+	n_output = n_output + 1
 	money_output := make([]big.Int, n_output)
 	bobAddresses := make([]address.PrivateAddress, n_output)
 	bobPublicAddresses := make([]address.PublicAddress, n_output)
 	for i := 0; i < n_output; i += 1 {
 		bobAddresses[i] = address.GenerateRandomAddress()
 		bobPublicAddresses[i] = bobAddresses[i].GetPublicAddress()
-		curMoney, _ := new(big.Int).SetString(moneyOutput, 10)
+		var curMoney *big.Int
+		if i == n_output-1 {
+			curMoney, _ = new(big.Int).SetString("10", 10)
+		} else {
+			curMoney, _ = new(big.Int).SetString(moneyOutput, 10)
+		}
 		money_output[i] = *curMoney
 	}
 
 	// Create inputs, outputs
-	inputs, _, err_inp := ota.CreateOutputs(alicePublicAddresses, money)
-	outputs, sumBlindOutput, err_out := ota.CreateOutputs(bobPublicAddresses, money_output)
+	inputs, _, err_inp := ota.CreateOutputs(&alicePublicAddresses, &money)
+	outputs, sumBlindOutput, err_out := ota.CreateOutputs(&bobPublicAddresses, &money_output)
 	if err_inp != nil || err_out != nil {
 		fmt.Println(err_inp)
 		fmt.Println(err_out)
 		return
 	}
 
-	fmt.Println(inputs)
-	fmt.Println(outputs)
-	fmt.Println(sumBlindOutput)
-
 	// Create signature
 	ringctfull := txfull.NewRingCTFull(
 		inputs,
-		aliceAddresses,
+		&aliceAddresses, //private keys
 		sumBlindOutput,
 		outputs,
-		bobPublicAddresses,
+		&bobPublicAddresses,
 	)
 	message := "Some f******* message that can be changed with the transaction message :D"
-	sig, err := ringctfull.Sign(message)
-	fmt.Println(sig)
+	ring, privateKeys, pi, err := ringctfull.CreateRandomRing(message)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	signer := mlsag.NewMlsagWithDefinedRing(privateKeys, ring, pi)
+	signature, err_sig := signer.Sign(message)
+	if err_sig != nil {
+		fmt.Println(err_sig)
+		return
+	}
+
+	check, err := mlsag.Verify(signature, ring, message)
 	fmt.Println(err)
+	fmt.Println(check)
+}
+
+func main() {
+	testTxFull()
 }

@@ -1,6 +1,8 @@
 package txfull
 
 import (
+	"errors"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy-v2/mlsag"
@@ -17,33 +19,34 @@ type RingCTFull struct {
 	toAddress      []address.PublicAddress
 }
 
-func NewRingCTFull(inputs []ota.UTXO, fromAddress []address.PrivateAddress, sumBlindOutput *privacy.Scalar, outputs []ota.UTXO, toAddress []address.PublicAddress) *RingCTFull {
+func NewRingCTFull(inputs *[]ota.UTXO, fromAddress *[]address.PrivateAddress, sumBlindOutput *privacy.Scalar, outputs *[]ota.UTXO, toAddress *[]address.PublicAddress) *RingCTFull {
 	return &RingCTFull{
-		inputs,
-		fromAddress,
+		*inputs,
+		*fromAddress,
 		sumBlindOutput,
-		outputs,
-		toAddress,
+		*outputs,
+		*toAddress,
 	}
 }
 
-func (this *RingCTFull) Sign(message string) (*mlsag.Signature, error) {
+// Create and return: ring, privatekey (of transaction), pi number of the ring, error
+func (this *RingCTFull) CreateRandomRing(message string) (*mlsag.Ring, *[]privacy.Scalar, int, error) {
 	// TODO
 	// In real system should change numFake
 	numFake := 10
+	pi := common.RandInt() % numFake
 
 	// Generating Ring without commitment then add later
-	pi := common.RandInt() % numFake
-	privateKeys := getPrivateKeyOfInputs(this)
-	ring := mlsag.NewRandomRing(privateKeys, numFake, pi)
+	priv := *this.getPrivateKeyOfInputs()
+	ring := mlsag.NewRandomRing(&priv, numFake, pi)
 
 	// Generate privateKey with commitment
 	sumBlindInput, err := getSumBlindInput(this)
 	if err != nil {
-		return nil, err
+		return nil, nil, 0, errors.New("Error in RingCTFull CreateRandomRing: the RingCTFull is broken (private key not associate with transaction")
 	}
 	privCommitment := new(privacy.Scalar).Sub(sumBlindInput, this.sumBlindOutput)
-	privateKeys = append(privateKeys, *privCommitment)
+	priv = append(priv, *privCommitment)
 
 	// Add commitment to ring
 	sumInputsCom := getSumCommitment(this.inputs)
@@ -58,9 +61,8 @@ func (this *RingCTFull) Sign(message string) (*mlsag.Signature, error) {
 			// Should get randomly in database the commitments
 			val = val.Sub(privacy.RandomPoint(), sumOutputCom)
 		}
-		ring.AppendToRow(i, *val)
+		ring.AppendToRow(i, val)
 	}
 
-	signer := mlsag.NewMlsagWithDefinedRing(privateKeys, ring, pi)
-	return signer.Sign(message)
+	return ring, &priv, pi, nil
 }

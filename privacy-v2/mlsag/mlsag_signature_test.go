@@ -17,7 +17,7 @@ func InitializeSignatureForTest() (mlsag *Mlsag) {
 	}
 	numFake := 3
 	pi := common.RandInt() % numFake
-	ring := NewRandomRing(keyInputs, numFake, pi)
+	ring := NewRandomRing(&keyInputs, numFake, pi)
 	return NewMlsagWithDefinedRing(keyInputs, ring, pi)
 }
 

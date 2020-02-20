@@ -17,14 +17,15 @@ func parsePublicKey(privateKey privacy.Scalar) *privacy.Point {
 	return new(privacy.Point).ScalarMultBase(&privateKey)
 }
 
-func parseKeyImages(privateKey []privacy.Scalar) (result []privacy.Point) {
-	var m int = len(privateKey)
+func parseKeyImages(privateKey *[]privacy.Scalar) *[]privacy.Point {
+	priv := *privateKey
+	var m int = len(priv)
 
-	result = make([]privacy.Point, m)
+	result := make([]privacy.Point, m)
 	for i := 0; i < m; i += 1 {
-		publicKey := parsePublicKey(privateKey[i])
+		publicKey := parsePublicKey(priv[i])
 		hashPoint := privacy.HashToPoint(publicKey.ToBytesS())
-		result[i] = *new(privacy.Point).ScalarMult(hashPoint, &privateKey[i])
+		result[i] = *new(privacy.Point).ScalarMult(hashPoint, &priv[i])
 	}
-	return
+	return &result
 }
