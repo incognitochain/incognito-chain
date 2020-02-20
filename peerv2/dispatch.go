@@ -21,8 +21,10 @@ type Dispatcher struct {
 
 // Just for consensus v1
 func (d *Dispatcher) processStreamBlk(blktype byte, data []byte) error {
+	Logger.Infof("[stream] process stream block type %v")
 	switch blktype {
 	case blockbeacon:
+		Logger.Infof("[stream] process stream beaconblock")
 		newBlk := new(blockchain.BeaconBlock)
 		err := json.Unmarshal(data, newBlk)
 		Logger.Infof("[stream] Got block %v", newBlk.GetHeight())
