@@ -333,6 +333,9 @@ func (c *BlockRequester) StreamBlockBeaconByHeight(
 			return err
 		}
 		Logger.Infof("[stream] Got block, push to handler")
+		if len(blkData.Data) < 2 {
+			return errors.Errorf("Received unexpected data, data len must greater than 1, data len received %v", len(blkData.GetData()))
+		}
 		c.HandleResponseBlock(blkData.Data)
 	}
 	Logger.Infof("[stream] Return StreamBlockBeaconByHeight")

@@ -298,7 +298,8 @@ func (netSync *NetSync) StreamBlockBeaconByHeight(fromPool bool, specificHeight 
 			}
 			blk, err := BlkByHeightGetter(blkHeight)
 			if err != nil {
-				close(blkCh)
+				Logger.log.Infof("[stream] Netsync cannot get block, return error %v", err)
+				break
 			}
 			blkCh <- blk
 			Logger.log.Infof("[stream] Netsync push block to channel")

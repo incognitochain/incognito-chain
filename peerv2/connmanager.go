@@ -206,7 +206,7 @@ func (cm *ConnManager) process() {
 			}
 		case data := <-cm.data:
 			Logger.Infof("[stream] process data")
-			err := cm.disp.processStreamBlk(blockbeacon, data)
+			err := cm.disp.processStreamBlk(data[0], data[1:])
 			if err != nil {
 				Logger.Warn(err)
 			}
