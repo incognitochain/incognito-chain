@@ -19,6 +19,25 @@ type ShardChain struct {
 	lock       sync.RWMutex
 }
 
+func (s *ShardChain) InsertBatchBlock([]common.BlockInterface) error {
+	panic("implement me")
+}
+
+func (s *ShardChain) GetBestViewHeight() uint64 {
+	return s.CurrentHeight()
+}
+
+func (s *ShardChain) GetFinalViewHeight() uint64 {
+	return s.CurrentHeight()
+}
+
+func (s *ShardChain) GetBestViewHash() string {
+	return s.BestState.Hash().String()
+}
+
+func (s *ShardChain) GetFinalViewHash() string {
+	return s.BestState.Hash().String()
+}
 func (chain *ShardChain) GetLastBlockTimeStamp() int64 {
 	return chain.BestState.BestBlock.Header.Timestamp
 }

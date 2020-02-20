@@ -112,6 +112,13 @@ type ChainInterface interface {
 	ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 	ValidatePreSignBlock(block common.BlockInterface) error
 	GetShardID() int
+
+	//for new syncker
+	GetBestViewHeight() uint64
+	GetFinalViewHeight() uint64
+	GetBestViewHash() string
+	GetFinalViewHash() string
+	InsertBatchBlock([]common.BlockInterface) error
 }
 
 type BestStateInterface interface {

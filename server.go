@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/consensus/blsbft"
-	"github.com/incognitochain/incognito-chain/syncker"
 	"io/ioutil"
 	"log"
 	"net"
@@ -89,34 +88,6 @@ type Server struct {
 
 	cQuit     chan struct{}
 	cNewPeers chan *peer.Peer
-}
-
-func (serverObj *Server) RequestCrossShardBlock(peerID string, toShardID int, latestCrossShardBlockHeight uint64) (blockCh chan interface{}, stopCh chan int) {
-	panic("implement me")
-}
-
-func (serverObj *Server) RequestS2BBlock(peerID string, fromSID int, latestS2BHeight uint64) (blockCh chan interface{}, stopCh chan int) {
-	panic("implement me")
-}
-
-func (serverObj *Server) GetCrossShardPool(sid byte) syncker.Pool {
-	panic("implement me")
-}
-
-func (serverObj *Server) GetS2BPool(sid byte) syncker.Pool {
-	panic("implement me")
-}
-
-func (serverObj *Server) GetBeaconBestState() syncker.Chain {
-	return blockchain.GetBeaconBestState()
-}
-
-func (serverObj *Server) GetAllShardBestState() map[byte]syncker.Chain {
-	res := make(map[byte]syncker.Chain)
-	for k, v := range blockchain.GetAllShardBestState() {
-		res[k] = v
-	}
-	return res
 }
 
 // setupRPCListeners returns a slice of listeners that are configured for use
@@ -507,7 +478,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		MaxPeersBeacon:     cfg.MaxPeersBeacon,
 	})
 	serverObj.connManager = connManager
-	serverObj.consensusEngine.Init(&blsbft.EngineConfig{Node: serverObj, Blockchain: serverObj.blockChain, BlockGen: serverObj.blockgen, PubSubManager: serverObj.pusubManager})
+	serverObj.consensusEngine.Init(&blsbft.EngineConfig{Node: serverObj, Blockchain: serverObj.blockChain})
 	//serverObj.syncker = syncker.NewSyncker(incognitokey.CommitteePublicKey{}, serverObj)
 	// Start up persistent peers.
 	permanentPeers := cfg.ConnectPeers
@@ -2130,7 +2101,7 @@ func (serverObj *Server) GetMinerIncognitoPublickey(publicKey string, keyType st
 	return nil
 }
 
-func (serverObj *Server) RequestBlocksViaChannel(peerID string, fromSID int, currentFinalHash string, currentBestHash string, toBlockHash string) (blockCh chan interface{}, stopCh chan int) {
+func (serverObj *Server) RequestBlocksViaChannel(peerID string, fromSID int, fromBlockHeight uint64, finalBlockHeight uint64, toBlockHashString string) (blockCh chan common.BlockInterface, stopCh chan int) {
 	panic("implement me")
 }
 
@@ -2339,3 +2310,19 @@ func (s *Server) GetUserMiningState() (role string, chainID int) {
 	}
 	return "", -2
 }
+
+//func (serverObj *Server) RequestCrossShardBlock(peerID string, toShardID int, latestCrossShardBlockHeight uint64) (blockCh chan interface{}, stopCh chan int) {
+//	panic("implement me")
+//}
+//
+//func (serverObj *Server) RequestS2BBlock(peerID string, fromSID int, latestS2BHeight uint64) (blockCh chan interface{}, stopCh chan int) {
+//	panic("implement me")
+//}
+
+//func (serverObj *Server) GetCrossShardPool(sid byte) syncker.Pool {
+//	panic("implement me")
+//}
+//
+//func (serverObj *Server) GetS2BPool(sid byte) syncker.Pool {
+//	panic("implement me")
+//}

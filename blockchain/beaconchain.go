@@ -19,6 +19,26 @@ type BeaconChain struct {
 	lock       sync.RWMutex
 }
 
+func (s *BeaconChain) InsertBatchBlock([]common.BlockInterface) error {
+	panic("implement me")
+}
+
+func (s *BeaconChain) GetBestViewHeight() uint64 {
+	return s.BestState.BeaconHeight
+}
+
+func (s *BeaconChain) GetFinalViewHeight() uint64 {
+	return s.BestState.BeaconHeight
+}
+
+func (s *BeaconChain) GetBestViewHash() string {
+	return s.BestState.BestBlockHash.String()
+}
+
+func (s *BeaconChain) GetFinalViewHash() string {
+	return s.BestState.BestBlockHash.String()
+}
+
 func (chain *BeaconChain) GetLastBlockTimeStamp() int64 {
 	return chain.BestState.BestBlock.Header.Timestamp
 }

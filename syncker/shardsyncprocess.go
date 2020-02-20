@@ -18,7 +18,7 @@ type CrossShardPeerState struct {
 type ShardSyncProcess struct {
 	IsCommittee         bool
 	RemainOneBlock      bool
-	ShardID             byte
+	ShardID             int
 	Status              string                         //stop, running
 	ShardPeerState      map[string]ShardPeerState      //peerid -> state
 	CrossShardPeerState map[string]CrossShardPeerState //peerID -> state
@@ -26,7 +26,7 @@ type ShardSyncProcess struct {
 	Chain               Chain
 }
 
-func NewShardSyncProcess(shardID byte, server Server, chain Chain) *ShardSyncProcess {
+func NewShardSyncProcess(shardID int, server Server, chain Chain) *ShardSyncProcess {
 	s := &ShardSyncProcess{
 		ShardID: shardID,
 		Status:  STOP_SYNC,

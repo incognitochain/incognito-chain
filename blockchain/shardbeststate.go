@@ -54,26 +54,6 @@ type ShardBestState struct {
 	lock              sync.RWMutex
 }
 
-func (shardBestState *ShardBestState) InsertBatchBlock([]common.BlockInterface) error {
-	panic("implement me")
-}
-
-func (shardBestState *ShardBestState) GetBestViewHeight() uint64 {
-	return shardBestState.ShardHeight
-}
-
-func (shardBestState *ShardBestState) GetFinalViewHeight() uint64 {
-	return shardBestState.ShardHeight
-}
-
-func (shardBestState *ShardBestState) GetBestViewHash() string {
-	return shardBestState.BestBlockHash.String()
-}
-
-func (shardBestState *ShardBestState) GetFinalViewHash() string {
-	return shardBestState.BestBlockHash.String()
-}
-
 var bestStateShardMap = make(map[byte]*ShardBestState)
 
 func NewShardBestState() *ShardBestState {
