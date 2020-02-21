@@ -459,13 +459,14 @@ func (tx *Tx) verifySigTx() (bool, error) {
 // ValidateTransaction returns true if transaction is valid:
 // - Verify tx signature
 // - Verify the payment proof
-func (tx *Tx) ValidateTransaction(hasPrivacy bool, stateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
+func (tx *Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
+	//hasPrivacy = false
 	Logger.log.Debugf("VALIDATING TX........\n")
 	if tx.GetType() == common.TxRewardType {
-		return tx.ValidateTxSalary(stateDB)
+		return tx.ValidateTxSalary(transactionStateDB)
 	}
 	if tx.GetType() == common.TxReturnStakingType {
-		return tx.ValidateTxReturnStaking(stateDB), nil
+		return tx.ValidateTxReturnStaking(transactionStateDB), nil
 	}
 	var valid bool
 	var err error
@@ -500,21 +501,23 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, stateDB *statedb.StateDB, sha
 			return false, NewTransactionErr(DuplicatedOutputSndError, errors.New("Duplicate output coins' snd\n"))
 		}
 
-		for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
-			// Check output coins' SND is not exists in SND list (Database)
-			if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator(), stateDB); ok || err != nil {
-				if err != nil {
-					Logger.log.Error(err)
+		if isNewTransaction {
+			for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
+				// Check output coins' SND is not exists in SND list (Database)
+				if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator(), transactionStateDB); ok || err != nil {
+					if err != nil {
+						Logger.log.Error(err)
+					}
+					Logger.log.Errorf("snd existed: %d\n", i)
+					return false, NewTransactionErr(SndExistedError, err, fmt.Sprintf("snd existed: %d\n", i))
 				}
-				Logger.log.Errorf("snd existed: %d\n", i)
-				return false, NewTransactionErr(SndExistedError, err, fmt.Sprintf("snd existed: %d\n", i))
 			}
 		}
 
 		if !hasPrivacy {
 			// Check input coins' commitment is exists in cm list (Database)
 			for i := 0; i < len(tx.Proof.GetInputCoins()); i++ {
-				ok, err := tx.CheckCMExistence(tx.Proof.GetInputCoins()[i].CoinDetails.GetCoinCommitment().ToBytesS(), stateDB, shardID, tokenID)
+				ok, err := tx.CheckCMExistence(tx.Proof.GetInputCoins()[i].CoinDetails.GetCoinCommitment().ToBytesS(), transactionStateDB, shardID, tokenID)
 				if !ok || err != nil {
 					if err != nil {
 						Logger.log.Error(err)
@@ -524,7 +527,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, stateDB *statedb.StateDB, sha
 			}
 		}
 		// Verify the payment proof
-		valid, err = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, stateDB, shardID, tokenID)
+		valid, err = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, transactionStateDB, shardID, tokenID, isBatch)
 		if !valid {
 			if err != nil {
 				Logger.log.Error(err)
@@ -1024,16 +1027,18 @@ func (tx Tx) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error) 
 
 func (tx Tx) ValidateTxByItself(
 	hasPrivacy bool,
-	stateDB *statedb.StateDB,
+	transactionStateDB *statedb.StateDB,
+	bridgeStateDB *statedb.StateDB,
 	bcr metadata.BlockchainRetriever,
 	shardID byte,
+	isNewTransaction bool,
 ) (bool, error) {
 	prvCoinID := &common.Hash{}
 	err := prvCoinID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
 		return false, err
 	}
-	ok, err := tx.ValidateTransaction(hasPrivacy, stateDB, shardID, prvCoinID)
+	ok, err := tx.ValidateTransaction(hasPrivacy, transactionStateDB, bridgeStateDB, shardID, prvCoinID, false, isNewTransaction)
 	if !ok {
 		return false, err
 	}

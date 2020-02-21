@@ -111,9 +111,9 @@ type Transaction interface {
 	ValidateTxWithBlockChain(BlockchainRetriever, byte, *statedb.StateDB) error
 	ValidateDoubleSpendWithBlockchain(BlockchainRetriever, byte, *statedb.StateDB, *common.Hash) error
 	ValidateSanityData(BlockchainRetriever) (bool, error)
-	ValidateTxByItself(bool, *statedb.StateDB, BlockchainRetriever, byte) (bool, error)
+	ValidateTxByItself(bool, *statedb.StateDB, *statedb.StateDB, BlockchainRetriever, byte, bool) (bool, error)
 	ValidateType() bool
-	ValidateTransaction(bool, *statedb.StateDB, byte, *common.Hash) (bool, error)
+	ValidateTransaction(bool, *statedb.StateDB, *statedb.StateDB, byte, *common.Hash, bool, bool) (bool, error)
 	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, BlockchainRetriever, *AccumulatedValues) (bool, error)
 	IsPrivacy() bool
 	IsCoinsBurning(BlockchainRetriever) bool

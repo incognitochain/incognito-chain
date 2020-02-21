@@ -509,6 +509,10 @@ func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 	if !ok {
 		return nil, nil, nil, NewRPCError(BuildPrivacyTokenParamError, fmt.Errorf("Invalid Token ID, Params %+v ", tokenParamsRaw))
 	}
+	_, ok = tokenParamsRaw["TokenReceivers"]
+	if !ok {
+		return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Token Receiver is invalid"))
+	}
 	tokenName, ok := tokenParamsRaw["TokenName"].(string)
 	if !ok {
 		return nil, nil, nil, NewRPCError(BuildPrivacyTokenParamError, fmt.Errorf("Invalid Token Name, Params %+v ", tokenParamsRaw))
@@ -543,6 +547,7 @@ func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 	}
 	voutsAmount := int64(0)
 	var err1 error
+
 	tokenParams.Receiver, voutsAmount, err1 = transaction.CreateCustomTokenPrivacyReceiverArray(tokenParamsRaw["TokenReceivers"])
 	if err1 != nil {
 		return nil, nil, nil, NewRPCError(BuildPrivacyTokenParamError, err1)
