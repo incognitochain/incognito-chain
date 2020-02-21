@@ -520,10 +520,10 @@ In Param#2: isStore: store transaction to persistence storage only work for tran
 10. RequestStopAutoStaking
 */
 func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int64, isBatch bool, isNewTransaction bool) error {
-	var shardID byte
 	var err error
 	var now time.Time
 	txHash := tx.Hash()
+	shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	txType := tx.GetType()
 	if txType == common.TxNormalType {
 		if tx.IsPrivacy() {
@@ -637,7 +637,6 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int6
 	}
 	// Condition 6: ValidateTransaction tx by it self
 	if !isBatch {
-		shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		now = time.Now()
 		validated, errValidateTxByItself := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.DataBase, tp.config.BlockChain, shardID, isNewTransaction)
 		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
