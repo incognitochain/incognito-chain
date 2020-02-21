@@ -402,13 +402,13 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 	for _, v := range currentPortalState.ExchangeRatesRequests {
 		for key, rates := range v.Rates {
 			switch key {
-			case "BTC":
+			case metadata.PortalTokenSymbolBTC:
 				btcExchangeRatesSlice = append(btcExchangeRatesSlice, rates.Amount)
 				break
-			case "BNB":
+			case metadata.PortalTokenSymbolBNB:
 				bnbExchangeRatesSlice = append(bnbExchangeRatesSlice, rates.Amount)
 				break
-			case "PRV":
+			case metadata.PortalTokenSymbolPRV:
 				prvExchangeRatesSlice = append(prvExchangeRatesSlice, rates.Amount)
 				break
 			}
@@ -436,16 +436,16 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 
 	//pick
 	exchangeRatesList := make(map[string]lvdb.FinalExchangeRatesDetail)
-	btcAmount := exchangeRatesState.Rates["BTC"].Amount
-	bnbAmount := exchangeRatesState.Rates["BNB"].Amount
-	prvAmount := exchangeRatesState.Rates["PRV"].Amount
+	btcAmount := exchangeRatesState.Rates[metadata.PortalTokenSymbolBTC].Amount
+	bnbAmount := exchangeRatesState.Rates[metadata.PortalTokenSymbolBNB].Amount
+	prvAmount := exchangeRatesState.Rates[metadata.PortalTokenSymbolPRV].Amount
 
 	//pick final rates of BTC
 	if len(btcExchangeRatesSlice) > 0 {
 		btcAmount = calcMedian(btcExchangeRatesSlice)
 	}
 
-	exchangeRatesList["BTC"] = lvdb.FinalExchangeRatesDetail{
+	exchangeRatesList[metadata.PortalTokenSymbolBTC] = lvdb.FinalExchangeRatesDetail{
 		Amount: btcAmount,
 	}
 
@@ -454,7 +454,7 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 		bnbAmount = calcMedian(bnbExchangeRatesSlice)
 	}
 
-	exchangeRatesList["BTC"] = lvdb.FinalExchangeRatesDetail{
+	exchangeRatesList[metadata.PortalTokenSymbolBNB] = lvdb.FinalExchangeRatesDetail{
 		Amount: bnbAmount,
 	}
 
@@ -463,7 +463,7 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 		prvAmount = calcMedian(prvExchangeRatesSlice)
 	}
 
-	exchangeRatesList["BTC"] = lvdb.FinalExchangeRatesDetail{
+	exchangeRatesList[metadata.PortalTokenSymbolPRV] = lvdb.FinalExchangeRatesDetail{
 		Amount: prvAmount,
 	}
 
