@@ -189,6 +189,10 @@ const (
 	createAndSendTxWithReqPToken        = "createandsendtxwithreqptoken"
 	getPortalState                      = "getportalstate"
 	getPortalCustodianDepositStatus     = "getPortalCustodianDepositStatus"
+	createAndSendRegisterPortingPublicTokens = "createandsendregisterportingpublictokens"
+	createAndSendPortalExchangeRates = "createandsendportalexchangerates"
+	getPortalExchangeRates = "getportalexchangerates"
+	convertExchangeRates = "convertexchangerates"
 )
 
 const (

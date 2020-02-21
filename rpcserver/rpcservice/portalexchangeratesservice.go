@@ -40,3 +40,36 @@ func (portalExchangeRatesService *PortalExchangeRatesService) GetExchangeRates(s
 	result := jsonresult.FinalExchangeRatesResult{Rates:item}
 	return result, nil
 }
+
+func (portalExchangeRatesService *PortalExchangeRatesService) ConvertExchangeRates(senderAddress string, valuePToken uint64, service *BlockService) (jsonresult.ExchangeRatesResult, *RPCError) {
+
+	_, _, err := GetKeySetFromPaymentAddressParam(senderAddress)
+	if err != nil {
+		return jsonresult.ExchangeRatesResult{}, NewRPCError(InvalidSenderPrivateKeyError, err)
+	}
+
+	beaconBlock, err := service.GetBeaconBestBlock()
+	if err != nil {
+		return jsonresult.ExchangeRatesResult{}, NewRPCError(GetBeaconBestBlockError, err)
+	}
+
+	finalExchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconBlock.GetHeight())
+	finalExchangeRates, err := blockchain.GetFinalExchangeRatesByKey(portalExchangeRatesService.BlockChain.GetDatabase(), []byte(finalExchangeRatesKey))
+
+	if err != nil {
+		return jsonresult.ExchangeRatesResult{}, NewRPCError(GetExchangeRatesError, err)
+	}
+
+	if finalExchangeRates == nil {
+		return jsonresult.ExchangeRatesResult{}, NewRPCError(GetExchangeRatesIsEmpty, err)
+	}
+
+	item := make(map[string]uint64)
+	btcExchange := finalExchangeRates.ExchangeBTC2PRV(valuePToken)
+	item["BTC"] = btcExchange
+	bnbExchange := finalExchangeRates.ExchangeBNB2PRV(valuePToken)
+	item["BNB"] = bnbExchange
+
+	result := jsonresult.ExchangeRatesResult{Rates:item}
+	return result, nil
+}

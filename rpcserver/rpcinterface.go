@@ -173,6 +173,10 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendTxWithReqPToken:        (*HttpServer).handleCreateAndSendTxWithReqPToken,
 	getPortalState:                      (*HttpServer).handleGetPortalState,
 	getPortalCustodianDepositStatus:     (*HttpServer).handleGetPortalCustodianDepositStatus,
+	createAndSendRegisterPortingPublicTokens: 	(*HttpServer).handleCreateAndSendRegisterPortingPublicTokens,
+	createAndSendPortalExchangeRates:      		(*HttpServer).handleCreateAndSendPortalExchangeRates,
+	getPortalExchangeRates:     				(*HttpServer).handleGetPortalExchangeRates,
+	convertExchangeRates:     					(*HttpServer).handleConvertExchangeRates,
 }
 
 // Commands that are available to a limited user

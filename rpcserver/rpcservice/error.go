@@ -64,6 +64,7 @@ const (
 
 	//portal
 	GetExchangeRatesError
+	GetExchangeRatesIsEmpty
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -141,6 +142,7 @@ var ErrCodeMessage = map[int]struct {
 
 	//portal
 	GetExchangeRatesError: {-9000, "Get get exchange rates error"},
+	GetExchangeRatesIsEmpty: {-9001, "Exchange rates is empty"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse

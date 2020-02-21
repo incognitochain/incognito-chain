@@ -60,7 +60,7 @@ func (httpServer *HttpServer) handlePortalExchangeRate(params interface{}, close
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleCreateAndSendPortalExchangeRate(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleCreateAndSendPortalExchangeRates(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	data, err := httpServer.handlePortalExchangeRate(params, closeChan)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
@@ -77,7 +77,7 @@ func (httpServer *HttpServer) handleCreateAndSendPortalExchangeRate(params inter
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleGetPortalExchangeRate(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleGetPortalExchangeRates(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
 	// get meta data from params
@@ -92,6 +92,34 @@ func (httpServer *HttpServer) handleGetPortalExchangeRate(params interface{}, cl
 	}
 
 	result, err := httpServer.portalExchangeRates.GetExchangeRates(senderAddress, httpServer.blockService)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleConvertExchangeRates(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+
+	// get meta data from params
+	data, ok := arrayParams[2].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
+	}
+
+	senderAddress, ok := data["SenderAddress"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata SenderAddress is invalid"))
+	}
+
+	valuePToken, ok := data["ValuePToken"].(uint64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata ValuePToken is invalid"))
+	}
+
+	result, err := httpServer.portalExchangeRates.ConvertExchangeRates(senderAddress, valuePToken, httpServer.blockService)
 
 	if err != nil {
 		return nil, err

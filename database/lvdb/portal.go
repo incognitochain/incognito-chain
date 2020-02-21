@@ -245,7 +245,8 @@ func (db *db) GetItemPortalByPrefix(prefix []byte) (byte, error) {
 	return itemRecord[0], nil
 }
 
-func (finalExchangeRates *FinalExchangeRates) ExchangePToken2PRVByTokenId(pTokenId string, value uint64) uint64 {
+
+func (finalExchangeRates FinalExchangeRates) ExchangePToken2PRVByTokenId(pTokenId string, value uint64) uint64 {
 	switch pTokenId {
 	case PortalTokenSymbolBTC:
 		return finalExchangeRates.ExchangeBTC2PRV(value)
