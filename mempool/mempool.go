@@ -522,7 +522,6 @@ In Param#2: isStore: store transaction to persistence storage only work for tran
 func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int64, isBatch bool, isNewTransaction bool) error {
 	var err error
 	var now time.Time
-	shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	txHash := tx.Hash()
 	shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	txType := tx.GetType()
