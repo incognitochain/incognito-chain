@@ -74,7 +74,6 @@ func (s *ShardSyncProcess) syncShardProcess() {
 		//		break
 		//	}
 		//}
-
 	}
 }
 

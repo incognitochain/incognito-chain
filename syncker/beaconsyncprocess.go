@@ -22,7 +22,7 @@ type S2BPeerState struct {
 type BeaconSyncProcess struct {
 	Status           string //stop, running
 	IsCommittee      bool
-	RemainOneBlock   bool
+	FewBlockBehind   bool
 	BeaconPeerStates map[string]BeaconPeerState //sender -> state
 	S2BPeerState     map[string]S2BPeerState    //sender -> state
 	Server           Server
@@ -59,6 +59,7 @@ func (s *BeaconSyncProcess) syncBeaconProcess() {
 		if requestCnt > 0 {
 			time.AfterFunc(0, s.syncBeaconProcess)
 		} else {
+			s.FewBlockBehind = true
 			time.AfterFunc(time.Millisecond*500, s.syncBeaconProcess)
 		}
 	}()
@@ -109,7 +110,6 @@ func (s *BeaconSyncProcess) syncBeaconProcess() {
 								break
 							}
 							blockBuffer = blockBuffer[successBlk:]
-
 						}
 					}
 
@@ -131,7 +131,7 @@ func (s *BeaconSyncProcess) syncBeaconProcess() {
 
 func (s *BeaconSyncProcess) syncS2BPoolProcess() {
 	defer time.AfterFunc(time.Millisecond*500, s.syncS2BPoolProcess)
-	if s.Status != RUNNING_SYNC || !s.IsCommittee || !s.RemainOneBlock {
+	if s.Status != RUNNING_SYNC || !s.IsCommittee || !s.FewBlockBehind {
 		return
 	}
 	//sync when status is enable and in committee and remain only one syncing beacon block
