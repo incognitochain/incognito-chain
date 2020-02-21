@@ -130,7 +130,7 @@ func (iRes PortalCustodianDepositResponse) VerifyMinerCreatedTxBeforeGettingInBl
 			receivingAmtFromInst = matchedNReturnedContrib.ReturnedContributedAmount
 		}
 
-		if !bytes.Equal(iRes.RequestedTxID[:], txReqIDFromInst[:]) ||
+		if !bytes.Equal(iRes.ReqTxID[:], txReqIDFromInst[:]) ||
 			shardID != shardIDFromInst {
 			continue
 		}

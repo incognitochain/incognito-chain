@@ -108,9 +108,6 @@ func (blockchain *BlockChain) buildInstructionsForCustodianDeposit(
 	currentPortalState *CurrentPortalState,
 	beaconHeight uint64,
 ) ([][]string, error) {
-
-	// todo: need to validate instruction ? (should update currentPortalState ?)
-
 	// parse instruction
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
@@ -137,6 +134,32 @@ func (blockchain *BlockChain) buildInstructionsForCustodianDeposit(
 			common.PortalCustodianDepositRefundChainStatus,
 		)
 		return [][]string{inst}, nil
+	}
+	meta := actionData.Meta
+
+	keyCustodianState := lvdb.NewCustodianStateKey(beaconHeight, meta.IncogAddressStr)
+
+	if currentPortalState.CustodianPoolState[keyCustodianState] == nil {
+		// new custodian
+		newCustodian, _ := NewCustodianState(meta.IncogAddressStr, meta.DepositedAmount, meta.DepositedAmount, nil, nil, meta.RemoteAddresses)
+		currentPortalState.CustodianPoolState[keyCustodianState] = newCustodian
+	} else {
+		// custodian deposited before
+		// update state of the custodian
+		custodian := currentPortalState.CustodianPoolState[keyCustodianState]
+		totalCollateral := custodian.TotalCollateral + meta.DepositedAmount
+		freeCollateral := custodian.FreeCollateral + meta.DepositedAmount
+		holdingPubTokens := custodian.HoldingPubTokens
+		lockedAmountCollateral := custodian.LockedAmountCollateral
+		remoteAddresses := custodian.RemoteAddresses
+		for tokenSymbol, address := range meta.RemoteAddresses {
+			if remoteAddresses[tokenSymbol] == "" {
+				remoteAddresses[tokenSymbol] = address
+			}
+		}
+
+		newCustodian, _ := NewCustodianState(meta.IncogAddressStr, totalCollateral, freeCollateral, holdingPubTokens, lockedAmountCollateral, remoteAddresses)
+		currentPortalState.CustodianPoolState[keyCustodianState] = newCustodian
 	}
 
 	inst := buildCustodianDepositInst(

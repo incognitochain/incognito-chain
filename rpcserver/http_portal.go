@@ -3,8 +3,10 @@ package rpcserver
 import (
 	"encoding/json"
 	"errors"
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -185,3 +187,58 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithReqPToken(params interfac
 	return result, nil
 }
 
+func (httpServer *HttpServer) handleGetPortalState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one"))
+	}
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	beaconHeight, ok := data["BeaconHeight"].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Beacon height is invalid"))
+	}
+	portalState, err := blockchain.InitCurrentPortalStateFromDB(httpServer.config.BlockChain.GetDatabase(), uint64(beaconHeight))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+	}
+	beaconBlock, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+	}
+	type CurrentPortalState struct {
+		WaitingPortingRequests map[string]*lvdb.PortingRequest `json:"WaitingPortingRequests"`
+		WaitingRedeemRequests  map[string]*lvdb.RedeemRequest  `json:"WaitingRedeemRequests"`
+		CustodianPool          map[string]*lvdb.CustodianState `json:"CustodianPool"`
+		BeaconTimeStamp        int64                           `json:"BeaconTimeStamp"`
+	}
+	result := CurrentPortalState{
+		BeaconTimeStamp:        beaconBlock.Header.Timestamp,
+		WaitingPortingRequests: portalState.WaitingPortingRequests,
+		WaitingRedeemRequests:  portalState.WaitingRedeemRequests,
+		CustodianPool:          portalState.CustodianPoolState,
+	}
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleGetPortalCustodianDepositStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one"))
+	}
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	depositTxID, ok := data["DepositTxID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param DepositTxID is invalid"))
+	}
+	statusBytes, err := httpServer.databaseService.GetPortalCustodianDepositStatus(depositTxID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+	}
+	return statusBytes, nil
+}

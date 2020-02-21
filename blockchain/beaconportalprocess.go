@@ -117,11 +117,11 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 		}
 
 		// track custodian deposit at beaconHeight + 1 into DB
-		custodianDepositTrackKey := lvdb.NewCustodianDepositKey(beaconHeight + 1, actionData.IncogAddressStr)
+		custodianDepositTrackKey := lvdb.NewCustodianDepositKey(actionData.TxReqID.String())
 		custodianDepositTrackData := metadata.PortalCustodianDepositStatus{
 			Status: common.PortalCustodianDepositAcceptedStatus,
+			IncogAddressStr: actionData.IncogAddressStr,
 			DepositedAmount : actionData.DepositedAmount,
-			TxReqID: actionData.TxReqID,
 		}
 
 		custodianDepositDataBytes, _ := json.Marshal(custodianDepositTrackData)
@@ -135,11 +135,11 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 		}
 	} else if depositStatus == common.PortalCustodianDepositRefundChainStatus {
 		// track custodian deposit at beaconHeight + 1 into DB
-		custodianDepositTrackKey := lvdb.NewCustodianDepositKey(beaconHeight + 1, actionData.IncogAddressStr)
+		custodianDepositTrackKey := lvdb.NewCustodianDepositKey(actionData.TxReqID.String())
 		custodianDepositTrackData := metadata.PortalCustodianDepositStatus{
 			Status: common.PortalCustodianDepositRefundStatus,
+			IncogAddressStr: actionData.IncogAddressStr,
 			DepositedAmount : actionData.DepositedAmount,
-			TxReqID: actionData.TxReqID,
 		}
 
 		custodianDepositDataBytes, _ := json.Marshal(custodianDepositTrackData)

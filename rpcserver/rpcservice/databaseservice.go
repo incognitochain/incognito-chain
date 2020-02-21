@@ -166,3 +166,10 @@ func (dbService DatabaseService) GetPDEContributionStatus(pdePrefix []byte, pdeS
 	}
 	return &contributionStatus, nil
 }
+
+
+
+// Portal
+func (dbService DatabaseService) GetPortalCustodianDepositStatus(txID string) (byte, error) {
+	return (*dbService.DB).GetCustodianDepositCollateralStatus(txID)
+}

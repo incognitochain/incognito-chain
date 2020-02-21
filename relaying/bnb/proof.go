@@ -133,7 +133,7 @@ func (p *BNBProof) Build(indexTx int, blockHeight int64) (*BNBRelayingError) {
 }
 
 func (p *BNBProof) Verify(db database.DatabaseInterface) (bool, *BNBRelayingError){
-	// get dataHash from db with p.BlockHeight
+	// todo: get dataHash from db with p.BlockHeight
 	//dataHash := []byte{}
 	dataHash, _ := hex.DecodeString("D81AD27D7C1D8114EB339158897C02337820BC17E10AB6405143EFE8E52AB526")
 	return VerifyProof(p.Proof, dataHash)
