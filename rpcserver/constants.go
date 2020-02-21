@@ -185,14 +185,15 @@ const (
 	getBurningAddress = "getburningaddress"
 
 	// portal
-	createAndSendTxWithCustodianDeposit = "createandsendtxwithcustodiandeposit"
-	createAndSendTxWithReqPToken        = "createandsendtxwithreqptoken"
-	getPortalState                      = "getportalstate"
-	getPortalCustodianDepositStatus     = "getportalcustodiandepositstatus"
+	createAndSendTxWithCustodianDeposit      = "createandsendtxwithcustodiandeposit"
+	createAndSendTxWithReqPToken             = "createandsendtxwithreqptoken"
+	getPortalState                           = "getportalstate"
+	getPortalCustodianDepositStatus          = "getportalcustodiandepositstatus"
 	createAndSendRegisterPortingPublicTokens = "createandsendregisterportingpublictokens"
-	createAndSendPortalExchangeRates = "createandsendportalexchangerates"
-	getPortalExchangeRates = "getportalexchangerates"
-	convertExchangeRates = "convertexchangerates"
+	createAndSendPortalExchangeRates         = "createandsendportalexchangerates"
+	getPortalExchangeRates                   = "getportalexchangerates"
+	convertExchangeRates                     = "convertexchangerates"
+	getPortalReqPTokenStatus                 = "getportalreqptokenstatus"
 )
 
 const (

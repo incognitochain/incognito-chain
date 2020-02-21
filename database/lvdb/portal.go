@@ -173,11 +173,7 @@ func (db *db) GetCustodianDepositCollateralStatus(txIDStr string) ([]byte, error
 		return nil, database.NewDatabaseError(database.GetCustodianDepositStatusError, err)
 	}
 
-	if len(custodianDepositStatusBytes) == 0 {
-		return nil, database.NewDatabaseError(database.GetCustodianDepositStatusNotFound, err)
-	}
-
-	return custodianDepositStatusBytes, nil
+	return custodianDepositStatusBytes, err
 }
 
 func (db *db) TrackReqPTokens(key []byte, content []byte) error {
@@ -197,11 +193,7 @@ func (db *db) GetReqPTokenStatusByPortingID(portingID string) ([]byte, error) {
 		return nil, database.NewDatabaseError(database.GetReqPTokenStatusError, err)
 	}
 
-	if len(reqPTokenStatusBytes) == 0 {
-		return nil, database.NewDatabaseError(database.GetReqPTokenStatusNotFound, err)
-	}
-
-	return reqPTokenStatusBytes, nil
+	return reqPTokenStatusBytes, err
 }
 
 func (db *db) StorePortingRequestItem(keyId []byte, content interface{}) error {

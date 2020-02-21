@@ -238,7 +238,27 @@ func (httpServer *HttpServer) handleGetPortalCustodianDepositStatus(params inter
 	}
 	statusBytes, err := httpServer.databaseService.GetPortalCustodianDepositStatus(depositTxID)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.GetCustodianDepositError, err)
+	}
+	return statusBytes, nil
+}
+
+func (httpServer *HttpServer) handleGetPortalReqPTokenStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one"))
+	}
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	portingID, ok := data["PortingID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param PortingID is invalid"))
+	}
+	statusBytes, err := httpServer.databaseService.GetPortalReqPTokenStatus(portingID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetReqPTokenStatusError, err)
 	}
 	return statusBytes, nil
 }

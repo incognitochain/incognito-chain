@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"github.com/binance-chain/go-sdk/types/msg"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"
+	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 	"strconv"
 )
 
@@ -440,7 +440,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 
 	// check reqPToken status of portingID (get status of reqPToken for portingID from db)
 	reqPTokenStatusBytes, err := db.GetReqPTokenStatusByPortingID(meta.UniquePortingID)
-	if err != nil && err.(*database.DatabaseError).Code != database.GetReqPTokenStatusNotFound {
+	if err != nil &&  err != lvdberr.ErrNotFound {
 		Logger.log.Errorf("Can not get req ptoken status for portingID %v, %v\n", meta.UniquePortingID, err)
 		inst := buildReqPTokensInst(
 			meta.UniquePortingID,
