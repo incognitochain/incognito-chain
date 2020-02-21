@@ -139,14 +139,18 @@ const (
 
 // Portal status for chain
 const (
-	PortalCustodianDepositAcceptedChainStatus = "accepted"
-	PortalCustodianDepositRefundChainStatus   = "refund"
-	PortalCustodianNotFoundStatus   = "notfound"
+	PortalLoadDataFailedStatus					= "LoadDataFailed"
+	PortalItemNotFoundStatus					= "itemNotFound"
+	PortalDuplicateKeyStatus 	    	= "duplicateKey"
 
-	PortalReqPTokensAcceptedChainStatus = "accepted"
-	PortalReqPTokensRejectedChainStatus = "rejected"
+	PortalCustodianDepositAcceptedChainStatus 	= "accepted"
+	PortalCustodianDepositRefundChainStatus   	= "refund"
 
-	PortalPortingRequestSuccessStatus  = "success"
-	PortalPortingRequestCanceledStatus = "canceled"
-	PortalExchangeRatesStatus          = "canceled"
+	PortalReqPTokensAcceptedChainStatus 		= "accepted"
+	PortalReqPTokensRejectedChainStatus 		= "rejected"
+
+	PortalPortingRequestWaitingStatus  			= "waiting"
+	PortalPortingFeesNotEnoughStatus 	    	= "prvNotEnough"
+
+	PortalExchangeRatesSuccessStatus            = "success"
 )
