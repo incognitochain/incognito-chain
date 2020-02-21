@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/binance-chain/go-sdk/types/msg"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"
@@ -386,8 +387,6 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 	beaconHeight uint64,
 ) ([][]string, error) {
 
-	// todo: need to validate instruction ? (should update currentPortalState ?)
-
 	// parse instruction
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
@@ -418,7 +417,6 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		return [][]string{inst}, nil
 	}
 
-
 	// check meta.UniquePortingID is in waiting PortingRequests list in portal state or not
 	portingID := meta.UniquePortingID
 	keyWaitingPortingRequest := lvdb.NewWaitingPortingReqKey(beaconHeight, portingID)
@@ -437,6 +435,59 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 			common.PortalReqPTokensRejectedChainStatus,
 		)
 		return [][]string{inst}, nil
+	}
+	db := blockchain.GetDatabase()
+
+	// check reqPToken status of portingID (get status of reqPToken for portingID from db)
+	reqPTokenStatusBytes, err := db.GetReqPTokenStatusByPortingID(meta.UniquePortingID)
+	if err != nil && err.(*database.DatabaseError).Code != database.GetReqPTokenStatusNotFound {
+		Logger.log.Errorf("Can not get req ptoken status for portingID %v, %v\n", meta.UniquePortingID, err)
+		inst := buildReqPTokensInst(
+			meta.UniquePortingID,
+			meta.TokenID,
+			meta.IncogAddressStr,
+			meta.PortingAmount,
+			meta.PortingProof,
+			meta.Type,
+			shardID,
+			actionData.TxReqID,
+			common.PortalReqPTokensRejectedChainStatus,
+		)
+		return [][]string{inst}, nil
+	}
+	if len(reqPTokenStatusBytes) > 0 {
+		reqPTokenStatus := metadata.PortalRequestPTokensStatus{}
+		err := json.Unmarshal(reqPTokenStatusBytes, &reqPTokenStatus)
+		if err != nil {
+			Logger.log.Errorf("Can not unmarshal req ptoken status %v\n", err)
+			inst := buildReqPTokensInst(
+				meta.UniquePortingID,
+				meta.TokenID,
+				meta.IncogAddressStr,
+				meta.PortingAmount,
+				meta.PortingProof,
+				meta.Type,
+				shardID,
+				actionData.TxReqID,
+				common.PortalReqPTokensRejectedChainStatus,
+			)
+			return [][]string{inst}, nil
+		}
+		if reqPTokenStatus.Status == common.PortalCustodianDepositAcceptedStatus {
+			Logger.log.Errorf("PortingID was requested ptoken before")
+			inst := buildReqPTokensInst(
+				meta.UniquePortingID,
+				meta.TokenID,
+				meta.IncogAddressStr,
+				meta.PortingAmount,
+				meta.PortingProof,
+				meta.Type,
+				shardID,
+				actionData.TxReqID,
+				common.PortalReqPTokensRejectedChainStatus,
+			)
+			return [][]string{inst}, nil
+		}
 	}
 
 	// check tokenID
@@ -472,8 +523,6 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		)
 		return [][]string{inst}, nil
 	}
-
-	db := blockchain.GetDatabase()
 
 	if meta.TokenID == metadata.PortalSupportedTokenMap[metadata.PortalTokenSymbolBTC] {
 		//todo:

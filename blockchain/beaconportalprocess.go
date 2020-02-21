@@ -283,13 +283,12 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 	var actionData metadata.PortalRequestPTokensContent
 	err := json.Unmarshal([]byte(instructions[3]), &actionData)
 	if err != nil {
-		return err
+		Logger.log.Errorf("Can not unmarshal instruction content %v\n", err)
+		return nil
 	}
 
 	reqStatus := instructions[2]
 	if reqStatus == common.PortalReqPTokensAcceptedChainStatus {
-		//todo:
-		// update status of porting request with portingID
 		// remove portingRequest from waitingPortingRequests
 		waitingPortingReqKey := lvdb.NewWaitingPortingReqKey(beaconHeight, actionData.UniquePortingID)
 		isRemoved := removeWaitingPortingReqByKey(waitingPortingReqKey, currentPortalState)
@@ -297,9 +296,9 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 			Logger.log.Errorf("Can not remove waiting porting request from portal state")
 			return nil
 		}
-		// track reqPToken and deposit proof at beaconHeight + 1 into DB
+		// track reqPToken and deposit proof into DB
 		// make sure user can not re-use proof for other portingID
-		reqPTokenTrackKey := lvdb.NewPortalReqPTokenKey(beaconHeight + 1, actionData.UniquePortingID)
+		reqPTokenTrackKey := lvdb.NewPortalReqPTokenKey(actionData.UniquePortingID)
 		reqPTokenTrackData := metadata.PortalRequestPTokensStatus{
 			Status: common.PortalReqPTokenAcceptedStatus,
 			TxReqID: actionData.TxReqID,
@@ -314,8 +313,8 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 			return nil
 		}
 	} else if reqStatus == common.PortalReqPTokensRejectedChainStatus {
-		// track reqPToken and deposit proof at beaconHeight + 1 into DB
-		reqPTokenTrackKey := lvdb.NewPortalReqPTokenKey(beaconHeight + 1, actionData.UniquePortingID)
+		// track reqPToken and deposit proof into DB
+		reqPTokenTrackKey := lvdb.NewPortalReqPTokenKey(actionData.UniquePortingID)
 		reqPTokenTrackData := metadata.PortalRequestPTokensStatus{
 			Status: common.PortalReqPTokenRejectedStatus,
 			TxReqID: actionData.TxReqID,
