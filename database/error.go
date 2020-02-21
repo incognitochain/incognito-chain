@@ -224,18 +224,18 @@ var ErrCodeMessage = map[int]struct {
 
 	//portal
 	StoreCustodianDepositStateError:     {-14001, "Store custodian deposit error"},
-	StoreWaitingPortingRequestError:     {-14001, "Store waiting porting requests error"},
-	StoreWaitingRedeemRequestError:      {-14001, "Store waiting redeem requests error"},
-	StorePortingRequestStateError:       {-14002, "Store porting request error"},
-	StoreRedeemRequestStateError:        {-14003, "Store redeem request error"},
-	TrackCustodianDepositError:          {-14004, "Track custodian deposit error"},
-	TrackReqPTokenError:                 {-14004, "Track requesting ptokens error"},
-	StoreExchangeRatesRequestStateError: {-14005, "Store exchange rates request error"},
-	StoreFinalExchangeRatesStateError:   {-14006, "Store final exchange rates request error"},
-	GetItemPortalByPrefixError:          {-14007, "Get item portal by prefix error"},
-	GetItemPortalByPrefixNotFound:       {-14008, "Get item portal by prefix not found"},
-	GetCustodianDepositStatusError:      {-14008, "Get all custodian deposit status error"},
-	GetCustodianDepositStatusNotFound:      {-14008, "Get all custodian deposit status not found"},
+	StoreWaitingPortingRequestError:     {-14002, "Store waiting porting requests error"},
+	StoreWaitingRedeemRequestError:      {-14003, "Store waiting redeem requests error"},
+	StorePortingRequestStateError:       {-14004, "Store porting request error"},
+	StoreRedeemRequestStateError:        {-14005, "Store redeem request error"},
+	TrackCustodianDepositError:          {-14006, "Track custodian deposit error"},
+	TrackReqPTokenError:                 {-14007, "Track requesting ptokens error"},
+	StoreExchangeRatesRequestStateError: {-14008, "Store exchange rates request error"},
+	StoreFinalExchangeRatesStateError:   {-14009, "Store final exchange rates request error"},
+	GetItemPortalByPrefixError:          {-14010, "Get item portal by prefix error"},
+	GetItemPortalByPrefixNotFound:       {-14011, "Get item portal by prefix not found"},
+	GetCustodianDepositStatusError:      {-14012, "Get all custodian deposit status error"},
+	GetCustodianDepositStatusNotFound:   {-14013, "Get all custodian deposit status not found"},
 }
 
 type DatabaseError struct {
