@@ -106,10 +106,8 @@ func NewExchangeRatesRequestKey (beaconHeight uint64, txId string, lockTime stri
 	return string(key)
 }
 
-func NewCustodianDepositKey (beaconHeight uint64, custodianAddress string) string {
-	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
-	key := append(PortalCustodianDepositPrefix, beaconHeightBytes...)
-	key = append(key, []byte(custodianAddress)...)
+func NewCustodianDepositKey (txID string) string {
+	key := append(PortalCustodianDepositPrefix, []byte(txID)...)
 	return string(key)
 }
 
@@ -165,6 +163,22 @@ func (db *db) TrackCustodianDepositCollateral(key []byte, content []byte) error 
 		return database.NewDatabaseError(database.TrackCustodianDepositError, errors.Wrap(err, "db.lvdb.put"))
 	}
 	return nil
+}
+
+// GetCustodianDepositCollateralStatus returns custodian deposit status with deposit txid
+func (db *db) GetCustodianDepositCollateralStatus(txIDStr string) ([]byte, error) {
+	key := append(PortalCustodianDepositPrefix, []byte(txIDStr)...)
+
+	custodianDepositStatusBytes, err := db.lvdb.Get(key, nil)
+	if err != nil && err != lvdberr.ErrNotFound {
+		return nil, database.NewDatabaseError(database.GetCustodianDepositStatusError, err)
+	}
+
+	if len(custodianDepositStatusBytes) == 0 {
+		return nil, database.NewDatabaseError(database.GetCustodianDepositStatusNotFound, err)
+	}
+
+	return custodianDepositStatusBytes, nil
 }
 
 func (db *db) TrackReqPTokens(key []byte, content []byte) error {
