@@ -385,13 +385,13 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxWithCurrentMempool(mr
 		return NewTransactionErr(DoubleSpendError, err)
 	}
 	// TODO: will move this to mempool process
-	if txCustomTokenPrivacy.TxPrivacyTokenData.Type == CustomTokenInit {
+	if txCustomTokenPrivacy.TxPrivacyTokenData.Type == CustomTokenInit && txCustomTokenPrivacy.GetMetadata() == nil {
 		initTokenID := txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID
 		txsInMem := mr.GetTxsInMem()
 		for _, tx := range txsInMem {
 			// try parse to TxCustomTokenPrivacy
 			privacyTokenTx, ok := tx.Tx.(*TxCustomTokenPrivacy)
-			if ok {
+			if ok && privacyTokenTx.TxPrivacyTokenData.Type == CustomTokenInit && privacyTokenTx.GetMetadata() == nil {
 				// check > 1 tx init token by the same token ID
 				if privacyTokenTx.TxPrivacyTokenData.PropertyID.IsEqual(&initTokenID) {
 					return NewTransactionErr(TokenIDInvalidError, fmt.Errorf("had already tx for initing token ID %s in pool", privacyTokenTx.TxPrivacyTokenData.PropertyID))
