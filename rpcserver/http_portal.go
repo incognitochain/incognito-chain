@@ -15,6 +15,9 @@ import (
 
 func (httpServer *HttpServer) handleCreateRawTxWithCustodianDeposit(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least 5"))
+	}
 
 	// get meta data from params
 	data, ok := arrayParams[4].(map[string]interface{})
@@ -102,6 +105,9 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithCustodianDeposit(params i
 
 func (httpServer *HttpServer) handleCreateRawTxWithReqPToken(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least 5"))
+	}
 
 	// get meta data from params
 	data, ok := arrayParams[4].(map[string]interface{})
