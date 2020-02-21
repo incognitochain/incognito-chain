@@ -878,9 +878,12 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(txs []metadata.Trans
 			listTxs = append(listTxs, tx)
 		}
 	}
-	_, err := blockchain.config.TempTxPool.MaybeAcceptBatchTransactionForBlockProducing(txs, beaconHeight)
+	_, err := blockchain.config.TempTxPool.MaybeAcceptBatchTransactionForBlockProducing(listTxs, beaconHeight)
 	if err != nil {
 		for index, tx := range listTxs {
+			if blockchain.config.TempTxPool.HaveTransaction(tx.Hash()) {
+				continue
+			}
 			_, err1 := blockchain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx, beaconHeight)
 			if err1 != nil {
 				return NewBlockChainError(TransactionFromNewBlockError, fmt.Errorf("Transaction %+v, index %+v get %+v ", *tx.Hash(), index, err1))
