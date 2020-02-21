@@ -188,7 +188,7 @@ const (
 	createAndSendTxWithCustodianDeposit = "createandsendtxwithcustodiandeposit"
 	createAndSendTxWithReqPToken        = "createandsendtxwithreqptoken"
 	getPortalState                      = "getportalstate"
-	getPortalCustodianDepositStatus     = "getPortalCustodianDepositStatus"
+	getPortalCustodianDepositStatus     = "getportalcustodiandepositstatus"
 	createAndSendRegisterPortingPublicTokens = "createandsendregisterportingpublictokens"
 	createAndSendPortalExchangeRates = "createandsendportalexchangerates"
 	getPortalExchangeRates = "getportalexchangerates"

@@ -21,7 +21,7 @@ func (blockchain *BlockChain) processPortalInstructions(block *BeaconBlock, bd *
 	}
 
 	for _, inst := range block.Body.Instructions {
-		if len(inst) < 2 {
+		if len(inst) < 4 {
 			continue // Not error, just not Portal instruction
 		}
 
@@ -116,7 +116,7 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 			currentPortalState.CustodianPoolState[keyCustodianState] = newCustodian
 		}
 
-		// track custodian deposit at beaconHeight + 1 into DB
+		// track custodian deposit into DB
 		custodianDepositTrackKey := lvdb.NewCustodianDepositKey(actionData.TxReqID.String())
 		custodianDepositTrackData := metadata.PortalCustodianDepositStatus{
 			Status: common.PortalCustodianDepositAcceptedStatus,
@@ -134,7 +134,7 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 			return nil
 		}
 	} else if depositStatus == common.PortalCustodianDepositRefundChainStatus {
-		// track custodian deposit at beaconHeight + 1 into DB
+		// track custodian deposit into DB
 		custodianDepositTrackKey := lvdb.NewCustodianDepositKey(actionData.TxReqID.String())
 		custodianDepositTrackData := metadata.PortalCustodianDepositStatus{
 			Status: common.PortalCustodianDepositRefundStatus,
