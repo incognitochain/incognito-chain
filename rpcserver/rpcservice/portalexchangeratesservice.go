@@ -3,6 +3,7 @@ package rpcservice
 import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
 
@@ -66,9 +67,9 @@ func (portalExchangeRatesService *PortalExchangeRatesService) ConvertExchangeRat
 
 	item := make(map[string]uint64)
 	btcExchange := finalExchangeRates.ExchangeBTC2PRV(valuePToken)
-	item["BTC"] = btcExchange
+	item[metadata.PortalTokenSymbolBTC] = btcExchange
 	bnbExchange := finalExchangeRates.ExchangeBNB2PRV(valuePToken)
-	item["BNB"] = bnbExchange
+	item[metadata.PortalTokenSymbolBNB] = bnbExchange
 
 	result := jsonresult.ExchangeRatesResult{Rates:item}
 	return result, nil
