@@ -187,6 +187,8 @@ const (
 	// portal
 	createAndSendTxWithCustodianDeposit = "createandsendtxwithcustodiandeposit"
 	createAndSendTxWithReqPToken        = "createandsendtxwithreqptoken"
+	getPortalState                      = "getportalstate"
+	getPortalCustodianDepositStatus     = "getPortalCustodianDepositStatus"
 )
 
 const (

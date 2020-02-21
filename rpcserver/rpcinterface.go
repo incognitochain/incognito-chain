@@ -171,6 +171,8 @@ var HttpHandler = map[string]httpHandler{
 	// portal
 	createAndSendTxWithCustodianDeposit: (*HttpServer).handleCreateAndSendTxWithCustodianDeposit,
 	createAndSendTxWithReqPToken:        (*HttpServer).handleCreateAndSendTxWithReqPToken,
+	getPortalState:                      (*HttpServer).handleGetPortalState,
+	getPortalCustodianDepositStatus:     (*HttpServer).handleGetPortalCustodianDepositStatus,
 }
 
 // Commands that are available to a limited user
