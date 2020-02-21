@@ -4,15 +4,17 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"math"
+	"sort"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"math"
-	"sort"
-	"strconv"
 )
 
 // TxCustomTokenPrivacy is class tx which is inherited from P tx(supporting privacy) for fee
@@ -382,6 +384,22 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxWithCurrentMempool(mr
 		Logger.log.Error(err)
 		return NewTransactionErr(DoubleSpendError, err)
 	}
+	// TODO: will move this to mempool process
+	if txCustomTokenPrivacy.TxPrivacyTokenData.Type == CustomTokenInit {
+		initTokenID := txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID
+		txsInMem := mr.GetTxsInMem()
+		for _, tx := range txsInMem {
+			// try parse to TxCustomTokenPrivacy
+			privacyTokenTx, ok := tx.Tx.(*TxCustomTokenPrivacy)
+			if ok {
+				// check > 1 tx init token by the same token ID
+				if privacyTokenTx.TxPrivacyTokenData.PropertyID.IsEqual(&initTokenID) {
+					return NewTransactionErr(TokenIDInvalidError, fmt.Errorf("had already tx for initing token ID %s in pool", privacyTokenTx.TxPrivacyTokenData.PropertyID))
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
