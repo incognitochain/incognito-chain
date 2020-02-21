@@ -1,8 +1,10 @@
 package syncker
 
 import (
+	"context"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
-	"log"
+	"reflect"
 	"time"
 )
 
@@ -47,8 +49,20 @@ func (s *BeaconSyncProcess) Stop() {
 	s.Status = STOP_SYNC
 }
 
+func isNil(v interface{}) bool {
+	return v == nil || (reflect.ValueOf(v).Kind() == reflect.Ptr && reflect.ValueOf(v).IsNil())
+}
+
 func (s *BeaconSyncProcess) syncBeaconProcess() {
-	defer time.AfterFunc(time.Millisecond*500, s.syncBeaconProcess)
+	requestCnt := 0
+	defer func() {
+		if requestCnt > 0 {
+			time.AfterFunc(0, s.syncBeaconProcess)
+		} else {
+			time.AfterFunc(time.Millisecond*500, s.syncBeaconProcess)
+		}
+	}()
+
 	if s.Status != RUNNING_SYNC {
 		return
 	}
@@ -62,37 +76,43 @@ func (s *BeaconSyncProcess) syncBeaconProcess() {
 			continue
 		}
 
-		log.Printf("SYNCKER Request Block from %s height %d hash %s from peer", peerID, s.Chain.GetFinalViewHeight(), s.Chain.GetBestViewHash())
-		blockBuffer := make([]common.BlockInterface, 1000) //using buffer
-		ch, stop := s.Server.RequestBlocksViaChannel(peerID, -1, s.Chain.GetBestViewHeight(), s.Chain.GetFinalViewHeight(), pState.BestViewHash)
+		blockBuffer := []common.BlockInterface{}
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
 
-		go func() {
-			for {
-				select {
-				case blk := <-ch:
+		ch, err := s.Server.RequestBlocksViaChannel(ctx, peerID, -1, s.Chain.GetBestViewHeight()+1, s.Chain.GetFinalViewHeight(), pState.BestViewHeight, pState.BestViewHash)
+		if err != nil {
+			continue
+		}
+
+		requestCnt++
+		insertTime := time.Now()
+		for {
+			select {
+			case blk := <-ch:
+				if !isNil(blk) {
 					blockBuffer = append(blockBuffer, blk)
 				}
-				for len(blockBuffer) > 350 {
-					stop <- 1
-				}
-				stop <- 0
-			}
-		}()
 
-		for {
-			if len(blockBuffer) > 0 {
-				retrieveBlock := blockBuffer[:]
-				blockBuffer = blockBuffer[len(retrieveBlock):]
-
-				//TODO: Process insert batch block
-				if err := s.Chain.InsertBatchBlock(retrieveBlock); err != nil {
-					break
+				if len(blockBuffer) >= 350 || (len(blockBuffer) > 0 && (isNil(blk) || time.Since(insertTime) > time.Millisecond*1000)) {
+					//if err := s.Chain.InsertBatchBlock(blockBuffer); err != nil {
+					//	goto CANCEL_REQUEST
+					//}
+					fmt.Println("SYNCKER insert", len(blockBuffer))
+					time.Sleep(2000 * time.Millisecond)
+					insertTime = time.Now()
+					blockBuffer = []common.BlockInterface{}
 				}
-			} else {
-				time.Sleep(100 * time.Millisecond)
+
+				if isNil(blk) && len(blockBuffer) == 0 {
+					goto CANCEL_REQUEST
+				}
+
 			}
 		}
 
+	CANCEL_REQUEST:
+		return
 	}
 }
 

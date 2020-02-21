@@ -7,6 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/consensus/blsbft"
+	"github.com/incognitochain/incognito-chain/peerv2/proto"
+	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
+	"github.com/incognitochain/incognito-chain/syncker"
+	"io"
 	"io/ioutil"
 	"log"
 	"net"
@@ -56,12 +60,12 @@ type Server struct {
 	started     int32
 	startupTime int64
 
-	protocolVersion string
-	isEnableMining  bool
-	chainParams     *blockchain.Params
-	connManager     *connmanager.ConnManager
-	blockChain      *blockchain.BlockChain
-	//syncker           *syncker.Syncker
+	protocolVersion   string
+	isEnableMining    bool
+	chainParams       *blockchain.Params
+	connManager       *connmanager.ConnManager
+	blockChain        *blockchain.BlockChain
+	syncker           *syncker.Syncker
 	dataBase          database.DatabaseInterface
 	memCache          *memcache.MemoryCache
 	rpcServer         *rpcserver.RpcServer
@@ -200,7 +204,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.dataBase = db
 	serverObj.memCache = memcache.New()
 	serverObj.consensusEngine = blsbft.NewConsensusEngine()
-
+	serverObj.syncker = syncker.NewSyncker()
 	//Init channel
 	cPendingTxs := make(chan metadata.Transaction, 500)
 	cRemovedTxs := make(chan metadata.Transaction, 500)
@@ -433,6 +437,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	// Init Net Sync manager to process messages
 	serverObj.netSync = &netsync.NetSync{}
 	serverObj.netSync.Init(&netsync.NetSyncConfig{
+		Syncker:           serverObj.syncker,
 		BlockChain:        serverObj.blockChain,
 		ChainParam:        chainParams,
 		TxMemPool:         serverObj.memPool,
@@ -464,6 +469,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		cfg.MaxPeersNoShard = 0
 		cfg.MaxPeersBeacon = 9999
 	}
+
 	connManager := connmanager.New(&connmanager.Config{
 		OnInboundAccept:      serverObj.InboundPeerConnected,
 		OnOutboundConnection: serverObj.OutboundPeerConnected,
@@ -478,9 +484,11 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		MaxPeersNoShard:    cfg.MaxPeersNoShard,
 		MaxPeersBeacon:     cfg.MaxPeersBeacon,
 	})
+
 	serverObj.connManager = connManager
 	serverObj.consensusEngine.Init(&blsbft.EngineConfig{Node: serverObj, Blockchain: serverObj.blockChain})
-	//serverObj.syncker = syncker.NewSyncker(incognitokey.CommitteePublicKey{}, serverObj)
+	serverObj.syncker.Init(&syncker.SynckerConfig{Node: serverObj, Blockchain: serverObj.blockChain})
+
 	// Start up persistent peers.
 	permanentPeers := cfg.ConnectPeers
 	if len(permanentPeers) == 0 {
@@ -720,7 +728,8 @@ func (serverObj Server) Start() {
 		go serverObj.beaconPool.Start(serverObj.cQuit)
 	}
 
-	go serverObj.blockChain.Synker.Start()
+	//go serverObj.blockChain.Synker.Start()
+	go serverObj.syncker.Start()
 
 	if serverObj.memPool != nil {
 		err := serverObj.memPool.LoadOrResetDatabaseMempool()
@@ -1246,9 +1255,9 @@ func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 
 func (serverObj *Server) OnPeerState(_ *peer.PeerConn, msg *wire.MessagePeerState) {
 	Logger.log.Debug("Receive a peerstate START")
-	var txProcessed chan struct{}
-	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
-	//serverObj.syncker.PeerStateCh <- msg
+	//var txProcessed chan struct{}
+	//serverObj.netSync.QueueMessage(nil, msg, txProcessed)
+	serverObj.syncker.PeerStateCh <- msg
 	Logger.log.Debug("Receive a peerstate END")
 }
 
@@ -1492,35 +1501,35 @@ func (serverObj *Server) putResponseMsgs(msgs [][]byte) {
 }
 
 func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint64) error {
-	Logger.log.Infof("[stream] Get blk beacon by heights %v %v", from, to)
-	err := serverObj.highway.Requester.StreamBlockBeaconByHeight(
-		false, // bySpecific
-		from,  // from
-		nil,   // heights (this params just != nil if bySpecific == true)
-		to,    // to
-	)
-	if err != nil {
-		Logger.log.Error(err)
-		return err
-	}
+	//Logger.log.Infof("[stream] Get blk beacon by heights %v %v", from, to)
+	//err := serverObj.highway.Requester.StreamBlockBeaconByHeight(
+	//	false, // bySpecific
+	//	from,  // from
+	//	nil,   // heights (this params just != nil if bySpecific == true)
+	//	to,    // to
+	//)
+	//if err != nil {
+	//	Logger.log.Error(err)
+	//	return err
+	//}
 	// serverObj.putResponseMsgs(msgs)
 	return nil
 }
 
 func (serverObj *Server) PushMessageGetBlockBeaconBySpecificHeight(heights []uint64, getFromPool bool) error {
-	Logger.log.Infof("[stream] Get blk beacon by Specific heights [%v..%v]", heights[0], heights[len(heights)-1])
-	err := serverObj.highway.Requester.StreamBlockBeaconByHeight(
-		true,    // bySpecific
-		0,       // from
-		heights, // heights (this params just != nil if bySpecific == true)
-		0,       // to
-	)
-	if err != nil {
-		Logger.log.Error(err)
-		return err
-	}
-	// TODO(@0xbunyip): instead of putting response to queue, use it immediately in synker
-	// serverObj.putResponseMsgs(msgs)
+	//Logger.log.Infof("[stream] Get blk beacon by Specific heights [%v..%v]", heights[0], heights[len(heights)-1])
+	//err := serverObj.highway.Requester.StreamBlockBeaconByHeight(
+	//	true,    // bySpecific
+	//	0,       // from
+	//	heights, // heights (this params just != nil if bySpecific == true)
+	//	0,       // to
+	//)
+	//if err != nil {
+	//	Logger.log.Error(err)
+	//	return err
+	//}
+	//// TODO(@0xbunyip): instead of putting response to queue, use it immediately in synker
+	//// serverObj.putResponseMsgs(msgs)
 	return nil
 }
 
@@ -2103,8 +2112,72 @@ func (serverObj *Server) GetMinerIncognitoPublickey(publicKey string, keyType st
 	return nil
 }
 
-func (serverObj *Server) RequestBlocksViaChannel(peerID string, fromSID int, fromBlockHeight uint64, finalBlockHeight uint64, toBlockHashString string) (blockCh chan common.BlockInterface, stopCh chan int) {
-	panic("implement me")
+func (serverObj *Server) RequestBlocksViaChannel(ctx context.Context, peerID string, fromSID int, fromBlockHeight uint64, finalBlockHeight uint64, toBlockheight uint64, toBlockHashString string) (blockCh chan common.BlockInterface, err error) {
+	fmt.Println("SYNCKER Request Block", peerID, fromSID, fromBlockHeight, toBlockheight)
+
+	blockCh = make(chan common.BlockInterface, 350)
+	stream, err := serverObj.highway.Requester.StreamBlockBeaconByHeight(
+		ctx,
+		false,           // bySpecific
+		fromBlockHeight, // from
+		nil,             // heights (this params just != nil if bySpecific == true)
+		toBlockheight,   // to
+	)
+	if err != nil {
+		fmt.Println("SYNCKER: Cannot stream block", err)
+		return nil, err
+	}
+
+	mt := sync.Mutex{}
+	var closeChannel = func() {
+		mt.Lock()
+		if blockCh != nil {
+			fmt.Println("SYNCKER: close Channel")
+			close(blockCh)
+			blockCh = nil
+		}
+		mt.Unlock()
+	}
+
+	go func() {
+		<-ctx.Done()
+		closeChannel()
+	}()
+
+	go func(stream proto.HighwayService_StreamBlockBeaconByHeightClient, ctx context.Context) {
+		defer func() {
+			fmt.Println("SYNCKER: Exit go routine")
+		}()
+		for {
+			//fmt.Println("SYNCKER: Waiting for beacon block ...")
+			blkData, err := stream.Recv()
+			if err != nil || err == io.EOF {
+				fmt.Println("SYNCKER: Error receive beacon block ...", err)
+				blockCh <- nil
+				return
+			}
+
+			if len(blkData.Data) < 2 {
+				return
+			}
+			newBlk := new(blockchain.BeaconBlock)
+			err = wrapper.DeCom(blkData.Data[1:], newBlk)
+			if err != nil {
+				fmt.Println("SYNCKER: Decode beacon block fail")
+				return
+			}
+			//fmt.Println("SYNCKER: Receive beacon block ...", newBlk.GetHeight())
+			select {
+			case blockCh <- newBlk:
+			case <-ctx.Done():
+				closeChannel()
+				return
+			}
+		}
+
+	}(stream, ctx)
+
+	return blockCh, nil
 }
 
 func (serverObj *Server) GetCrossShardBlocksFromDBViaChannel(toShardID int, fromBlockHeight uint64, toBlockHashString string, stopCh chan int) chan interface{} {

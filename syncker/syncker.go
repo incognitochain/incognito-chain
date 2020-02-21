@@ -1,10 +1,10 @@
 package syncker
 
 import (
+	"context"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
 	"time"
 )
@@ -14,7 +14,7 @@ type Server interface {
 
 	//Request block from "peerID" of shard "fromSID" with param currentFinalHeight and currentBestHash
 	//Function return channel of each block, and a stop channel to tell sender side to stop send block
-	RequestBlocksViaChannel(peerID string, fromSID int, fromBlockHeight uint64, finalBlockHeight uint64, toBlockHashString string) (blockCh chan common.BlockInterface, stopCh chan int)
+	RequestBlocksViaChannel(ctx context.Context, peerID string, fromSID int, fromBlockHeight uint64, finalBlockHeight uint64, toBlockheight uint64, toBlockHashString string) (blockCh chan common.BlockInterface, err error)
 
 	//Request cross block from "peerID" for shard "toShardID" with param latestCrossShardBlockHeight in current pool
 	//Function return channel of each block, and a stop channel to tell sender side to stop send block
@@ -58,7 +58,6 @@ type Syncker struct {
 	config    *SynckerConfig
 
 	PeerStateCh chan *wire.MessagePeerState
-	UserPk      incognitokey.CommitteePublicKey
 
 	BeaconSyncProcess *BeaconSyncProcess
 	ShardSyncProcess  map[int]*ShardSyncProcess
@@ -101,10 +100,9 @@ func (s *Syncker) WatchCommitteeChange() {
 	}
 }
 
-func NewSyncker(userPk incognitokey.CommitteePublicKey, server Server) *Syncker {
+func NewSyncker() *Syncker {
 	s := &Syncker{
 		PeerStateCh:      make(chan *wire.MessagePeerState),
-		UserPk:           userPk,
 		ShardSyncProcess: make(map[int]*ShardSyncProcess),
 
 		BeaconPeerStates:    make(map[string]BeaconPeerState),
@@ -170,7 +168,8 @@ func (s *Syncker) UpdatePeerState() {
 	for {
 		select {
 		case peerState := <-s.PeerStateCh:
-
+			//b, _ := json.Marshal(peerState)
+			//fmt.Println("SYNCKER: receive peer state", string(b))
 			//beacon
 			if peerState.Beacon.Height != 0 {
 				s.BeaconPeerStates[peerState.SenderID] = BeaconPeerState{

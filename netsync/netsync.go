@@ -2,6 +2,7 @@ package netsync
 
 import (
 	"errors"
+	"github.com/incognitochain/incognito-chain/syncker"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -36,6 +37,7 @@ type NetSync struct {
 }
 
 type NetSyncConfig struct {
+	Syncker               *syncker.Syncker
 	BlockChain            *blockchain.BlockChain
 	ChainParam            *blockchain.Params
 	TxMemPool             *mempool.TxPool
@@ -350,6 +352,8 @@ func (netSync *NetSync) handleMessageBeaconBlock(msg *wire.MessageBlockBeacon) {
 	// })
 	//if oldBlock := netSync.IsOldBeaconBlock(msg.Block.Header.Height); !oldBlock {
 	if isAdded := netSync.handleCacheBlock("b" + msg.Block.Header.Hash().String()); !isAdded {
+		//TODO: remove this when highway has its own PeerState
+		netSync.config.Syncker.PeerStateCh <- &wire.MessagePeerState{Beacon: blockchain.ChainState{Timestamp: msg.Block.Header.Timestamp, BlockHash: *msg.Block.Hash(), Height: msg.Block.GetHeight()}}
 		netSync.config.BlockChain.OnBlockBeaconReceived(msg.Block)
 	}
 	//}

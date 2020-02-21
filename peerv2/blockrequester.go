@@ -2,7 +2,6 @@ package peerv2
 
 import (
 	"context"
-	"io"
 	"sync"
 	"time"
 
@@ -297,20 +296,20 @@ func (c *BlockRequester) GetBlockBeaconByHeight(
 }
 
 func (c *BlockRequester) StreamBlockBeaconByHeight(
+	ctx context.Context,
 	specific bool,
 	from uint64,
 	heights []uint64,
 	to uint64,
-) error {
+) (proto.HighwayService_StreamBlockBeaconByHeightClient, error) {
 	c.RLock()
 	defer c.RUnlock()
 	if !c.ready() {
-		return errors.New("requester not ready")
+		return nil, errors.New("requester not ready")
 	}
 	Logger.Infof("[blkbyheight] Requesting stream beaconblock from = %v to = %v", from, to)
 	client := proto.NewHighwayServiceClient(c.conn)
-	ctx, cancel := context.WithTimeout(context.Background(), MaxTimePerRequest)
-	defer cancel()
+
 	req := &proto.GetBlockBeaconByHeightRequest{
 		Specific:   specific,
 		FromHeight: from,
@@ -321,26 +320,9 @@ func (c *BlockRequester) StreamBlockBeaconByHeight(
 	stream, err := client.StreamBlockBeaconByHeight(ctx, req, grpc.MaxCallRecvMsgSize(MaxCallRecvMsgSize))
 	if err != nil {
 		Logger.Infof("[stream] This client not return stream for this request %v, got error %v ", req, err)
-		return err
+		return nil, err
 	}
-	for {
-		blkData, err := stream.Recv()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			// log.Fatalf("Received err %v", err)
-			Logger.Infof("[stream] This stream return error %v", err)
-			return err
-		}
-		Logger.Infof("[stream] Got block, push to handler")
-		if len(blkData.Data) < 2 {
-			return errors.Errorf("Received unexpected data, data len must greater than 1, data len received %v", len(blkData.GetData()))
-		}
-		c.HandleResponseBlock(blkData.Data)
-	}
-	Logger.Infof("[stream] Return StreamBlockBeaconByHeight")
-	return nil
+	return stream, nil
 }
 
 func (c *BlockRequester) GetBlockBeaconByHash(
