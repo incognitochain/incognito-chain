@@ -574,12 +574,11 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int6
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
 	if isTxInPool {
-		str := fmt.Sprintf("already have transaction %+v", txHash.String())
 		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 			metrics.Measurement:      metrics.TxPoolDuplicateTxs,
 			metrics.MeasurementValue: float64(1),
 		})
-		return NewMempoolTxError(RejectDuplicateTx, fmt.Errorf("%+v", str))
+		return NewMempoolTxError(RejectDuplicateTx, fmt.Errorf("already had transaction %+v in mempool", txHash.String()))
 	}
 	// Condition 3: A standalone transaction must not be a salary transaction.
 	now = time.Now()
