@@ -82,6 +82,7 @@ func (s *BeaconSyncProcess) syncBeaconProcess() {
 
 		ch, err := s.Server.RequestBlocksViaChannel(ctx, peerID, -1, s.Chain.GetBestViewHeight()+1, s.Chain.GetFinalViewHeight(), pState.BestViewHeight, pState.BestViewHash)
 		if err != nil {
+			fmt.Println("Syncker: create channel fail")
 			continue
 		}
 
@@ -95,11 +96,23 @@ func (s *BeaconSyncProcess) syncBeaconProcess() {
 				}
 
 				if len(blockBuffer) >= 350 || (len(blockBuffer) > 0 && (isNil(blk) || time.Since(insertTime) > time.Millisecond*1000)) {
-					//if err := s.Chain.InsertBatchBlock(blockBuffer); err != nil {
-					//	goto CANCEL_REQUEST
-					//}
-					fmt.Println("SYNCKER insert", len(blockBuffer))
-					time.Sleep(2000 * time.Millisecond)
+					insertBlkCnt := 0
+					for {
+						time1 := time.Now()
+						if successBlk, err := s.Chain.InsertBatchBlock(blockBuffer); err != nil {
+							//fmt.Println("Syncker:", err)
+							goto CANCEL_REQUEST
+						} else {
+							insertBlkCnt += successBlk
+							fmt.Println("Syncker Insert:", successBlk, blockBuffer[0].GetHeight(), blockBuffer[len(blockBuffer)-1].GetHeight(), time.Since(time1).Seconds())
+							if successBlk >= len(blockBuffer) {
+								break
+							}
+							blockBuffer = blockBuffer[successBlk:]
+
+						}
+					}
+
 					insertTime = time.Now()
 					blockBuffer = []common.BlockInterface{}
 				}

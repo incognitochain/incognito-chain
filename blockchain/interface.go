@@ -118,7 +118,7 @@ type ChainInterface interface {
 	GetFinalViewHeight() uint64
 	GetBestViewHash() string
 	GetFinalViewHash() string
-	InsertBatchBlock([]common.BlockInterface) error
+	InsertBatchBlock([]common.BlockInterface) (int, error)
 }
 
 type BestStateInterface interface {

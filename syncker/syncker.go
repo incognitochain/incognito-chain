@@ -45,7 +45,7 @@ type Chain interface {
 
 	GetBestViewHash() string
 	GetFinalViewHash() string
-	InsertBatchBlock([]common.BlockInterface) error
+	InsertBatchBlock([]common.BlockInterface) (int, error)
 }
 
 type SynckerConfig struct {

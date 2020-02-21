@@ -2124,7 +2124,6 @@ func (serverObj *Server) RequestBlocksViaChannel(ctx context.Context, peerID str
 		toBlockheight,   // to
 	)
 	if err != nil {
-		fmt.Println("SYNCKER: Cannot stream block", err)
 		return nil, err
 	}
 
@@ -2132,7 +2131,6 @@ func (serverObj *Server) RequestBlocksViaChannel(ctx context.Context, peerID str
 	var closeChannel = func() {
 		mt.Lock()
 		if blockCh != nil {
-			fmt.Println("SYNCKER: close Channel")
 			close(blockCh)
 			blockCh = nil
 		}
@@ -2145,33 +2143,30 @@ func (serverObj *Server) RequestBlocksViaChannel(ctx context.Context, peerID str
 	}()
 
 	go func(stream proto.HighwayService_StreamBlockBeaconByHeightClient, ctx context.Context) {
-		defer func() {
-			fmt.Println("SYNCKER: Exit go routine")
-		}()
 		for {
 			//fmt.Println("SYNCKER: Waiting for beacon block ...")
 			blkData, err := stream.Recv()
 			if err != nil || err == io.EOF {
-				fmt.Println("SYNCKER: Error receive beacon block ...", err)
 				blockCh <- nil
 				return
 			}
 
 			if len(blkData.Data) < 2 {
+				blockCh <- nil
 				return
 			}
 			newBlk := new(blockchain.BeaconBlock)
 			err = wrapper.DeCom(blkData.Data[1:], newBlk)
 			if err != nil {
-				fmt.Println("SYNCKER: Decode beacon block fail")
+				blockCh <- nil
 				return
 			}
 			//fmt.Println("SYNCKER: Receive beacon block ...", newBlk.GetHeight())
 			select {
-			case blockCh <- newBlk:
 			case <-ctx.Done():
 				closeChannel()
 				return
+			case blockCh <- newBlk:
 			}
 		}
 

@@ -19,7 +19,7 @@ type ShardChain struct {
 	lock       sync.RWMutex
 }
 
-func (s *ShardChain) InsertBatchBlock([]common.BlockInterface) error {
+func (s *ShardChain) InsertBatchBlock([]common.BlockInterface) (int, error) {
 	panic("implement me")
 }
 
