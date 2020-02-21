@@ -38,6 +38,9 @@ func buildCustodianDepositInst(
 }
 
 func buildRequestPortingInst(
+	metaType int,
+	shardID byte,
+	reqStatus string,
 	uniqueRegisterId string,
 	incogAddressStr string,
 	pTokenId string,
@@ -45,8 +48,6 @@ func buildRequestPortingInst(
 	registerAmount uint64,
 	portingFee uint64,
 	custodian map[string]lvdb.MatchingPortingCustodianDetail,
-	metaType int,
-	shardID byte,
 	txReqID common.Hash,
 ) []string {
 	portingRequestContent := metadata.PortalPortingRequestContent{
@@ -64,7 +65,7 @@ func buildRequestPortingInst(
 	return []string{
 		strconv.Itoa(metaType),
 		strconv.Itoa(int(shardID)),
-		common.PortalPortingRequestSuccessStatus,
+		reqStatus,
 		string(portingRequestContentBytes),
 	}
 }
@@ -158,27 +159,13 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 	beaconHeight uint64,
 ) ([][]string, error) {
 	if currentPortalState == nil {
-		Logger.log.Warn("WARN - [buildInstructionsForPortingRequest]: Current Portal state is null.")
-		inst := []string{
-			strconv.Itoa(metaType),
-			strconv.Itoa(int(shardID)),
-			common.PortalPortingRequestCanceledStatus,
-			contentStr,
-		}
-		return [][]string{inst}, nil
+		Logger.log.Warn("WARN - [buildInstructionsForPortingRequest]: Current Portal state is null")
+		return [][]string{}, nil
 	}
 
 	if len(currentPortalState.CustodianPoolState) == 0 {
 		Logger.log.Errorf("ERROR: Custodian not found")
-
-		inst := []string{
-			strconv.Itoa(metaType),
-			strconv.Itoa(int(shardID)),
-			common.PortalCustodianNotFoundStatus,
-			contentStr,
-		}
-
-		return [][]string{inst}, nil
+		return [][]string{}, nil
 	}
 
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
@@ -194,59 +181,138 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		return [][]string{}, nil
 	}
 
-	//todo: validation
 	db := blockchain.GetDatabase()
 
 	//check unique id from record from db
 	keyPortingRequest := append(lvdb.PortalPortingRequestsPrefix, []byte(actionData.Meta.UniqueRegisterId)...)
 	portingRequestExist, err := db.GetItemPortalByPrefix(keyPortingRequest)
 	if err != nil {
-		return [][]string{}, err
+		Logger.log.Errorf("ERROR: Get item portal by prefix error: %+v", err)
+
+		inst := buildRequestPortingInst(
+			actionData.Meta.Type,
+			shardID,
+			common.PortalLoadDataFailedStatus,
+			actionData.Meta.UniqueRegisterId,
+			actionData.Meta.IncogAddressStr,
+			actionData.Meta.PTokenId,
+			actionData.Meta.PTokenAddress,
+			actionData.Meta.RegisterAmount,
+			actionData.Meta.PortingFee,
+			nil,
+			actionData.TxReqID,
+		)
+
+		return [][]string{inst}, nil
 	}
 
 	if portingRequestExist != 0 {
-		Logger.log.Errorf("ERROR: Unique porting id is duplicated")
-		return [][]string{}, nil
+		inst := buildRequestPortingInst(
+			actionData.Meta.Type,
+			shardID,
+			common.PortalDuplicateKeyStatus,
+			actionData.Meta.UniqueRegisterId,
+			actionData.Meta.IncogAddressStr,
+			actionData.Meta.PTokenId,
+			actionData.Meta.PTokenAddress,
+			actionData.Meta.RegisterAmount,
+			actionData.Meta.PortingFee,
+			nil,
+			actionData.TxReqID,
+		)
+
+		return [][]string{inst}, nil
 	}
 
 	exchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
 	exchangeRatesState, err := GetFinalExchangeRatesByKey(db, []byte(exchangeRatesKey))
 	if err != nil {
-		return [][]string{}, err
+		Logger.log.Errorf("ERROR: Get final exchange rates error: %+v", err)
+
+		inst := buildRequestPortingInst(
+			actionData.Meta.Type,
+			shardID,
+			common.PortalLoadDataFailedStatus,
+			actionData.Meta.UniqueRegisterId,
+			actionData.Meta.IncogAddressStr,
+			actionData.Meta.PTokenId,
+			actionData.Meta.PTokenAddress,
+			actionData.Meta.RegisterAmount,
+			actionData.Meta.PortingFee,
+			nil,
+			actionData.TxReqID,
+		)
+
+		return [][]string{inst}, nil
 	}
+
+	if exchangeRatesState == nil {
+		inst := buildRequestPortingInst(
+			actionData.Meta.Type,
+			shardID,
+			common.PortalItemNotFoundStatus,
+			actionData.Meta.UniqueRegisterId,
+			actionData.Meta.IncogAddressStr,
+			actionData.Meta.PTokenId,
+			actionData.Meta.PTokenAddress,
+			actionData.Meta.RegisterAmount,
+			actionData.Meta.PortingFee,
+			nil,
+			actionData.TxReqID,
+		)
+
+		return [][]string{inst}, nil
+	}
+
 
 	var sortCustodianStateByFreeCollateral []CustodianStateSlice
 	sortCustodianByAmountAscent(actionData.Meta, currentPortalState.CustodianPoolState, sortCustodianStateByFreeCollateral)
 
 	if len(sortCustodianStateByFreeCollateral) == 0 {
-		Logger.log.Errorf("ERROR: Custodian not found")
+		Logger.log.Errorf("ERROR: Collect Custodian by PTokenId not found")
 
-		inst := []string{
-			strconv.Itoa(metaType),
-			strconv.Itoa(int(shardID)),
-			common.PortalCustodianNotFoundStatus,
-			contentStr,
-		}
+		inst := buildRequestPortingInst(
+			actionData.Meta.Type,
+			shardID,
+			common.PortalItemNotFoundStatus,
+			actionData.Meta.UniqueRegisterId,
+			actionData.Meta.IncogAddressStr,
+			actionData.Meta.PTokenId,
+			actionData.Meta.PTokenAddress,
+			actionData.Meta.RegisterAmount,
+			actionData.Meta.PortingFee,
+			nil,
+			actionData.TxReqID,
+		)
 
 		return [][]string{inst}, nil
 	}
 
 	//pick one
-	pickCustodianResult, err := pickSingleCustodian(actionData.Meta, exchangeRatesState, sortCustodianStateByFreeCollateral)
-
-	if err != nil {
-		return [][]string{}, err
-	}
-
+	pickCustodianResult, _ := pickSingleCustodian(actionData.Meta, exchangeRatesState, sortCustodianStateByFreeCollateral)
 	//pick multiple
 	if len(pickCustodianResult) == 0 {
-		pickCustodianResult, err = pickMultipleCustodian(actionData.Meta, exchangeRatesState, sortCustodianStateByFreeCollateral)
-
-		if err != nil {
-			return [][]string{}, err
-		}
+		pickCustodianResult, _ = pickMultipleCustodian(actionData.Meta, exchangeRatesState, sortCustodianStateByFreeCollateral)
 	}
 	//end
+	if len(pickCustodianResult) == 0 {
+		inst := buildRequestPortingInst(
+			actionData.Meta.Type,
+			shardID,
+			common.PortalItemNotFoundStatus,
+			actionData.Meta.UniqueRegisterId,
+			actionData.Meta.IncogAddressStr,
+			actionData.Meta.PTokenId,
+			actionData.Meta.PTokenAddress,
+			actionData.Meta.RegisterAmount,
+			actionData.Meta.PortingFee,
+			pickCustodianResult,
+			actionData.TxReqID,
+		)
+
+		return [][]string{inst}, nil
+	}
+
 
 	getPortingFees := calculatePortingFees(actionData.Meta.RegisterAmount)
 	exchangePortingFees := exchangeRatesState.ExchangePToken2PRVByTokenId(actionData.Meta.PTokenId, getPortingFees)
@@ -254,17 +320,27 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 	if actionData.Meta.PortingFee < exchangePortingFees {
 		Logger.log.Errorf("ERROR: Porting fees is wrong")
 
-		inst := []string{
-			strconv.Itoa(metaType),
-			strconv.Itoa(int(shardID)),
-			common.PortalCustodianNotFoundStatus,
-			contentStr,
-		}
+		inst := buildRequestPortingInst(
+			actionData.Meta.Type,
+			shardID,
+			common.PortalPortingFeesNotEnoughStatus,
+			actionData.Meta.UniqueRegisterId,
+			actionData.Meta.IncogAddressStr,
+			actionData.Meta.PTokenId,
+			actionData.Meta.PTokenAddress,
+			actionData.Meta.RegisterAmount,
+			actionData.Meta.PortingFee,
+			pickCustodianResult,
+			actionData.TxReqID,
+		)
 
 		return [][]string{inst}, nil
 	}
 
 	inst := buildRequestPortingInst(
+		actionData.Meta.Type,
+		shardID,
+		common.PortalPortingRequestWaitingStatus,
 		actionData.Meta.UniqueRegisterId,
 		actionData.Meta.IncogAddressStr,
 		actionData.Meta.PTokenId,
@@ -272,8 +348,6 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		actionData.Meta.RegisterAmount,
 		actionData.Meta.PortingFee,
 		pickCustodianResult,
-		actionData.Meta.Type,
-		shardID,
 		actionData.TxReqID,
 	) //return  metadata.PortalPortingRequestContent at instruct[3]
 
@@ -523,6 +597,7 @@ func (blockchain *BlockChain) buildInstructionsForExchangeRates(
 		Logger.log.Errorf("ERROR: an error occurred while decoding content string of portal exchange rates action: %+v", err)
 		return [][]string{}, nil
 	}
+
 	var actionData metadata.PortalExchangeRatesAction
 	err = json.Unmarshal(actionContentBytes, &actionData)
 	if err != nil {
@@ -530,18 +605,76 @@ func (blockchain *BlockChain) buildInstructionsForExchangeRates(
 		return [][]string{}, nil
 	}
 
+	exchangeRatesKey := lvdb.NewExchangeRatesRequestKey(
+		beaconHeight + 1, actionData.TxReqID.String(),
+		strconv.FormatInt(actionData.LockTime, 10),
+		shardID,
+	)
+
+	db := blockchain.GetDatabase()
+	//check key from db
+	exchangeRatesKeyExist, err := db.GetItemPortalByPrefix([]byte(exchangeRatesKey))
+	if err != nil {
+		Logger.log.Errorf("ERROR: Get exchange rates error: %+v", err)
+
+		portalExchangeRatesContent := metadata.PortalExchangeRatesContent{
+			SenderAddress: 	actionData.Meta.SenderAddress,
+			Rates: 		actionData.Meta.Rates,
+			TxReqID:    actionData.TxReqID,
+			LockTime:	actionData.LockTime,
+			UniqueRequestId: exchangeRatesKey,
+		}
+
+		portalExchangeRatesContentBytes, _ := json.Marshal(portalExchangeRatesContent)
+
+		inst := []string{
+			strconv.Itoa(metaType),
+			strconv.Itoa(int(shardID)),
+			common.PortalLoadDataFailedStatus,
+			string(portalExchangeRatesContentBytes),
+		}
+
+		return [][]string{inst}, nil
+	}
+
+	if exchangeRatesKeyExist != 0 {
+		Logger.log.Errorf("ERROR: exchange rates key is duplicated")
+
+		portalExchangeRatesContent := metadata.PortalExchangeRatesContent{
+			SenderAddress: 	actionData.Meta.SenderAddress,
+			Rates: 		actionData.Meta.Rates,
+			TxReqID:    actionData.TxReqID,
+			LockTime:	actionData.LockTime,
+			UniqueRequestId: exchangeRatesKey,
+		}
+
+		portalExchangeRatesContentBytes, _ := json.Marshal(portalExchangeRatesContent)
+
+		inst := []string{
+			strconv.Itoa(metaType),
+			strconv.Itoa(int(shardID)),
+			common.PortalDuplicateKeyStatus,
+			string(portalExchangeRatesContentBytes),
+		}
+
+		return [][]string{inst}, nil
+	}
+
+	//success
 	portalExchangeRatesContent := metadata.PortalExchangeRatesContent{
 		SenderAddress: 	actionData.Meta.SenderAddress,
-		Rates: 	actionData.Meta.Rates,
+		Rates: 		actionData.Meta.Rates,
 		TxReqID:    actionData.TxReqID,
-		LockTime:    actionData.LockTime,
+		LockTime:	actionData.LockTime,
+		UniqueRequestId: exchangeRatesKey,
 	}
 
 	portalExchangeRatesContentBytes, _ := json.Marshal(portalExchangeRatesContent)
+
 	inst := []string{
 		strconv.Itoa(metaType),
 		strconv.Itoa(int(shardID)),
-		common.PortalExchangeRatesStatus,
+		common.PortalExchangeRatesSuccessStatus,
 		string(portalExchangeRatesContentBytes),
 	}
 

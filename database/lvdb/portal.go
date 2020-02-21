@@ -32,8 +32,6 @@ type MatchingRedeemCustodianDetail struct {
 	UnLockedAmountCollateral uint64
 }
 
-
-// todo: need to add beaconHeight when the porting request was created for checking timeout of porting request
 type PortingRequest struct {
 	UniquePortingID string
 	TxReqID         common.Hash
@@ -42,6 +40,8 @@ type PortingRequest struct {
 	Amount          uint64
 	Custodians      map[string]MatchingPortingCustodianDetail			// key : incogAddress
 	PortingFee      uint64
+	Status			string
+	BeaconHeight	uint64
 }
 
 type RedeemRequest struct {
@@ -92,11 +92,12 @@ func NewFinalExchangeRatesKey (beaconHeight uint64) string {
 	return string(key)
 }
 
-func NewExchangeRatesRequestKey (beaconHeight uint64, txId string, lockTime string) string {
+func NewExchangeRatesRequestKey (beaconHeight uint64, txId string, lockTime string, shardId byte) string {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 	key := append(PortalExchangeRatesPrefix, beaconHeightBytes...)
 	key = append(key, []byte(txId)...)
 	key = append(key, []byte(lockTime)...)
+	key = append(key, shardId)
 
 	return string(key)
 }

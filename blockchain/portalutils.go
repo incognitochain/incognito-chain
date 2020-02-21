@@ -51,6 +51,8 @@ func NewPortingRequestState(
 	amount uint64,
 	custodians map[string]lvdb.MatchingPortingCustodianDetail,
 	portingFee uint64,
+	status string,
+	beaconHeight uint64,
 ) (*lvdb.PortingRequest, error) {
 	return &lvdb.PortingRequest{
 		UniquePortingID: uniquePortingID,
@@ -60,6 +62,8 @@ func NewPortingRequestState(
 		Amount:          amount,
 		Custodians:      custodians,
 		PortingFee:      portingFee,
+		Status:          status,
+		BeaconHeight:    beaconHeight,
 	}, nil
 }
 

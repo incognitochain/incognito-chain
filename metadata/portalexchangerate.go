@@ -47,6 +47,7 @@ type PortalExchangeRatesContent struct {
 	Rates map[string]ExchangeRate
 	TxReqID common.Hash
 	LockTime int64
+	UniqueRequestId string
 }
 
 func (portalExchangeRates PortalExchangeRates) ValidateTxWithBlockChain(
