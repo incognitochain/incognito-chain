@@ -36,7 +36,7 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 	for i, tx := range txList {
 		shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		hasPrivacy := tx.IsPrivacy()
-		ok, err := tx.ValidateTransaction(hasPrivacy, db, shardID, prvCoinID, true)
+		ok, err := tx.ValidateTransaction(hasPrivacy, db, shardID, prvCoinID, true, false)
 		if !ok {
 			return false, err, i
 		}
