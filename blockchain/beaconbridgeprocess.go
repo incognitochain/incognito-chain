@@ -5,9 +5,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/database"
 	"math/big"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/database"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
@@ -48,9 +49,8 @@ func (blockchain *BlockChain) processBridgeInstructions(block *BeaconBlock, bd *
 		case strconv.Itoa(metadata.ContractingRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processContractingReq(inst, updatingInfoByTokenID)
 
-		case strconv.Itoa(metadata.BurningConfirmMeta):
+		case strconv.Itoa(metadata.BurningConfirmMeta), strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta):
 			updatingInfoByTokenID, err = blockchain.processBurningReq(inst, updatingInfoByTokenID)
-
 		}
 		if err != nil {
 			return err
@@ -261,10 +261,11 @@ func decodeContent(content string, action interface{}) error {
 
 func (blockchain *BlockChain) storeBurningConfirm(block *ShardBlock, bd *[]database.BatchData) error {
 	for _, inst := range block.Body.Instructions {
-		if inst[0] != strconv.Itoa(metadata.BurningConfirmMeta) {
+		if inst[0] != strconv.Itoa(metadata.BurningConfirmMeta) &&
+			inst[0] != strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta) {
 			continue
 		}
-		BLogger.log.Infof("storeBurningConfirm for block %d, inst %v", block.Header.Height, inst)
+		BLogger.log.Infof("storeBurningConfirm for block %d, inst %v, meta type %d", block.Header.Height, inst, inst[0])
 
 		txID, err := common.Hash{}.NewHashFromStr(inst[5])
 		if err != nil {
