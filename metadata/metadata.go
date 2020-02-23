@@ -147,17 +147,19 @@ func getPDEPoolPair(
 	return &pdePoolForPair, nil
 }
 
-func isPairValid(poolPair *lvdb.PDEPoolForPair) bool {
+func isPairValid(poolPair *lvdb.PDEPoolForPair, beaconHeight int64) bool {
 	if poolPair == nil {
 		return false
 	}
 	prvIDStr := common.PRVCoinID.String()
 	if poolPair.Token1IDStr == prvIDStr &&
-		poolPair.Token1PoolValue < uint64(common.MinTxFeesOnTokenRequirement) {
+		poolPair.Token1PoolValue < uint64(common.MinTxFeesOnTokenRequirement) &&
+		beaconHeight >= common.BeaconBlockHeighMilestoneForMinTxFeesOnTokenRequirement {
 		return false
 	}
 	if poolPair.Token2IDStr == prvIDStr &&
-		poolPair.Token2PoolValue < uint64(common.MinTxFeesOnTokenRequirement) {
+		poolPair.Token2PoolValue < uint64(common.MinTxFeesOnTokenRequirement) &&
+		beaconHeight >= common.BeaconBlockHeighMilestoneForMinTxFeesOnTokenRequirement {
 		return false
 	}
 	return true
@@ -176,7 +178,7 @@ func convertValueBetweenCurrencies(
 	if err != nil {
 		return 0, NewMetadataTxError(CouldNotGetExchangeRateError, err)
 	}
-	if !isPairValid(pdePoolForPair) {
+	if !isPairValid(pdePoolForPair, beaconHeight) {
 		return 0, NewMetadataTxError(CouldNotGetExchangeRateError, errors.New("PRV pool size on pdex is smaller minimum initial adding liquidity amount"))
 	}
 	invariant := float64(0)

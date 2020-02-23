@@ -456,8 +456,8 @@ func (tp *TxPool) checkFees(
 			feePTokenToNativeTokenTmp, err := metadata.ConvertPrivacyTokenToNativeToken(feePToken, tokenID, beaconHeight, tp.config.DataBase)
 			if err != nil {
 				Logger.log.Errorf("ERROR: %+v", NewMempoolTxError(RejectInvalidFee,
-					fmt.Errorf("transaction %+v: %+v %v can not convert to native token",
-						tx.Hash().String(), feePToken, tokenID)))
+					fmt.Errorf("transaction %+v: %+v %v can not convert to native token %+v",
+						tx.Hash().String(), feePToken, tokenID, err)))
 				return false
 			}
 
