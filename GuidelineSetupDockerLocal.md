@@ -1,5 +1,8 @@
 ###Docker file for testing
 
+###Login Docker Hub
+ Create account and login Docker hub
+ 
 ###Build image
 ```
 $ docker build -t hoangincognito/incognito-chain -f Dockerfilelocal .
