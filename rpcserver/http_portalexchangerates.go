@@ -14,20 +14,41 @@ import (
 func (httpServer *HttpServer) handlePortalExchangeRate(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
+	if len(arrayParams) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Params should be not empty"))
+	}
+
 	// get meta data from params
-	data, ok := arrayParams[2].(map[string]interface{})
+	data, ok := arrayParams[4].(map[string]interface{})
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
 	}
+
 	senderAddress, ok := data["SenderAddress"].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata SenderAddress is invalid"))
 	}
 
+	rates, ok := data["Rates"].([]byte)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata Rates is invalid"))
+	}
+
 	var exchangeRateMap = make(map[string]metadata.ExchangeRate)
-	err := json.Unmarshal(data["Rates"].([]byte), &exchangeRateMap)
+	err := json.Unmarshal(rates, &exchangeRateMap)
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Json Unmarshal Rates err"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Json Unmarshal Rates error"))
+	}
+
+	for pTokenId, RatesValue := range exchangeRateMap {
+		isSupported, err := common.SliceExists(metadata.PortalSupportedExchangeRatesSymbols, pTokenId)
+		if err != nil || !isSupported {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Public token is not supported currently"))
+		}
+
+		if RatesValue.Amount <= 0 {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Exchange rates should be larger than 0"))
+		}
 	}
 
 	meta, _ := metadata.NewPortalExchangeRates(
@@ -78,20 +99,7 @@ func (httpServer *HttpServer) handleCreateAndSendPortalExchangeRates(params inte
 }
 
 func (httpServer *HttpServer) handleGetPortalExchangeRates(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-
-	// get meta data from params
-	data, ok := arrayParams[2].(map[string]interface{})
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
-	}
-
-	senderAddress, ok := data["SenderAddress"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata SenderAddress is invalid"))
-	}
-
-	result, err := httpServer.portalExchangeRates.GetExchangeRates(senderAddress, httpServer.blockService)
+	result, err := httpServer.portalExchangeRates.GetExchangeRates(httpServer.blockService)
 
 	if err != nil {
 		return nil, err
@@ -109,17 +117,23 @@ func (httpServer *HttpServer) handleConvertExchangeRates(params interface{}, clo
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
 	}
 
-	senderAddress, ok := data["SenderAddress"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata SenderAddress is invalid"))
-	}
-
 	valuePToken, ok := data["ValuePToken"].(uint64)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata ValuePToken is invalid"))
 	}
 
-	result, err := httpServer.portalExchangeRates.ConvertExchangeRates(senderAddress, valuePToken, httpServer.blockService)
+	tokenSymbol, ok := data["TokenSymbol"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenSymbol is invalid"))
+	}
+
+	tokenSymbolExist, _ := common.SliceExists(metadata.PortalSupportedExchangeRatesSymbols, tokenSymbol)
+
+	if !tokenSymbolExist {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenSymbol is not support"))
+	}
+
+	result, err := httpServer.portalExchangeRates.ConvertExchangeRates(tokenSymbol, valuePToken, httpServer.blockService)
 
 	if err != nil {
 		return nil, err

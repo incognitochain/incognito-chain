@@ -5,19 +5,14 @@ import (
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
+	"github.com/pkg/errors"
 )
 
 type PortalExchangeRatesService struct {
 	BlockChain *blockchain.BlockChain
 }
 
-func (portalExchangeRatesService *PortalExchangeRatesService) GetExchangeRates(senderAddress string, service *BlockService) (jsonresult.FinalExchangeRatesResult, *RPCError) {
-
-	_, _, err := GetKeySetFromPaymentAddressParam(senderAddress)
-	if err != nil {
-		return jsonresult.FinalExchangeRatesResult{}, NewRPCError(InvalidSenderPrivateKeyError, err)
-	}
-
+func (portalExchangeRatesService *PortalExchangeRatesService) GetExchangeRates(service *BlockService) (jsonresult.FinalExchangeRatesResult, *RPCError) {
 	beaconBlock, err := service.GetBeaconBestBlock()
 	if err != nil {
 		return jsonresult.FinalExchangeRatesResult{}, NewRPCError(GetBeaconBestBlockError, err)
@@ -42,12 +37,7 @@ func (portalExchangeRatesService *PortalExchangeRatesService) GetExchangeRates(s
 	return result, nil
 }
 
-func (portalExchangeRatesService *PortalExchangeRatesService) ConvertExchangeRates(senderAddress string, valuePToken uint64, service *BlockService) (jsonresult.ExchangeRatesResult, *RPCError) {
-
-	_, _, err := GetKeySetFromPaymentAddressParam(senderAddress)
-	if err != nil {
-		return jsonresult.ExchangeRatesResult{}, NewRPCError(InvalidSenderPrivateKeyError, err)
-	}
+func (portalExchangeRatesService *PortalExchangeRatesService) ConvertExchangeRates(tokenSymbol string, valuePToken uint64, service *BlockService) (jsonresult.ExchangeRatesResult, *RPCError) {
 
 	beaconBlock, err := service.GetBeaconBestBlock()
 	if err != nil {
@@ -66,10 +56,16 @@ func (portalExchangeRatesService *PortalExchangeRatesService) ConvertExchangeRat
 	}
 
 	item := make(map[string]uint64)
-	btcExchange := finalExchangeRates.ExchangeBTC2PRV(valuePToken)
-	item[metadata.PortalTokenSymbolBTC] = btcExchange
-	bnbExchange := finalExchangeRates.ExchangeBNB2PRV(valuePToken)
-	item[metadata.PortalTokenSymbolBNB] = bnbExchange
+
+	if tokenSymbol == metadata.PortalTokenSymbolBTC {
+		btcExchange := finalExchangeRates.ExchangeBTC2PRV(valuePToken)
+		item[metadata.PortalTokenSymbolBTC] = btcExchange
+	} else if tokenSymbol == metadata.PortalTokenSymbolBNB {
+		bnbExchange := finalExchangeRates.ExchangeBNB2PRV(valuePToken)
+		item[metadata.PortalTokenSymbolBNB] = bnbExchange
+	} else if tokenSymbol == metadata.PortalTokenSymbolPRV {
+		return jsonresult.ExchangeRatesResult{}, NewRPCError(GetExchangeRatesIsEmpty, errors.New("PRV Token not support"))
+	}
 
 	result := jsonresult.ExchangeRatesResult{Rates:item}
 	return result, nil

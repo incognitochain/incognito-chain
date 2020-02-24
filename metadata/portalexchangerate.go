@@ -88,14 +88,14 @@ func (portalExchangeRates PortalExchangeRates) ValidateSanityData(bcr Blockchain
 		return false, false, errors.New("must send coin to burning address")
 	}
 
-	for pTokenId, exchangeRate := range portalExchangeRates.Rates {
+	for pTokenId, exchangeRates := range portalExchangeRates.Rates {
 		isSupported, err := common.SliceExists(PortalSupportedExchangeRatesSymbols, pTokenId)
 		if err != nil || !isSupported {
 			return false, false, errors.New("Public token is not supported currently")
 		}
 
-		if exchangeRate.Amount == 0 {
-			return false, false, errors.New("porting fee should be larger than 0")
+		if exchangeRates.Amount == 0 {
+			return false, false, errors.New("Exchange rates should be larger than 0")
 		}
 	}
 
