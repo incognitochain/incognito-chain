@@ -1,7 +1,6 @@
 package txfull
 
 import (
-	"fmt"
 	"math/big"
 	"strconv"
 	"testing"
@@ -21,8 +20,8 @@ func Create_Addresses_With_Specified_Money(n, sumSpecifiedMoney int) (*[]address
 	privAddresses := make([]address.PrivateAddress, n)
 	pubAddresses := make([]address.PublicAddress, n)
 	for i := 0; i < n-1; i += 1 {
-		privAddresses[i] = address.GenerateRandomAddress()
-		pubAddresses[i] = privAddresses[i].GetPublicAddress()
+		privAddresses[i] = *address.GenerateRandomAddress()
+		pubAddresses[i] = *privAddresses[i].GetPublicAddress()
 
 		curMoneyInt := common.RandIntInterval(10, 100)
 		sum += curMoneyInt
@@ -30,8 +29,8 @@ func Create_Addresses_With_Specified_Money(n, sumSpecifiedMoney int) (*[]address
 		curMoney, _ := new(big.Int).SetString(strconv.Itoa(curMoneyInt), 10)
 		money[i] = *curMoney
 	}
-	privAddresses[n-1] = address.GenerateRandomAddress()
-	pubAddresses[n-1] = privAddresses[n-1].GetPublicAddress()
+	privAddresses[n-1] = *address.GenerateRandomAddress()
+	pubAddresses[n-1] = *privAddresses[n-1].GetPublicAddress()
 
 	curMoneyInt := sumSpecifiedMoney - sum
 	curMoney, _ := new(big.Int).SetString(strconv.Itoa(curMoneyInt), 10)
@@ -79,7 +78,7 @@ func TestFailTxFullWorkflow(t *testing.T) {
 	)
 	message := "Some f******* message that can be changed with the transaction message :D"
 
-	ring, privateKeys, pi, err := ringctfull.CreateRandomRing(message)
+	ring, privateKeys, pi, err := ringctfull.CreateRandomRing()
 	assert.Equal(t, nil, err, "Should not have any error in correct workflow txfull")
 
 	signer := mlsag.NewMlsagWithDefinedRing(privateKeys, ring, pi)
@@ -118,7 +117,7 @@ func TestCorrectTxFullWorkflow(t *testing.T) {
 	)
 	message := "Some f******* message that can be changed with the transaction message :D"
 
-	ring, privateKeys, pi, err := ringctfull.CreateRandomRing(message)
+	ring, privateKeys, pi, err := ringctfull.CreateRandomRing()
 	assert.Equal(t, nil, err, "Should not have any error in correct workflow txfull")
 
 	signer := mlsag.NewMlsagWithDefinedRing(privateKeys, ring, pi)
@@ -128,26 +127,4 @@ func TestCorrectTxFullWorkflow(t *testing.T) {
 
 	check, err := mlsag.Verify(signature, ring, message)
 	assert.Equal(t, true, check, "Should verify true when workflow correct")
-
-	if check == false {
-		fmt.Println("Money Inputs")
-		fmt.Println(money_input)
-		fmt.Println("============")
-
-		fmt.Println("Alice addresses")
-		fmt.Println(aliceAddresses)
-		fmt.Println("============")
-
-		fmt.Println("SumBlind")
-		fmt.Println(sumBlindOutput)
-		fmt.Println("============")
-
-		fmt.Println("Money Outputs")
-		fmt.Println(money_output)
-		fmt.Println("============")
-
-		fmt.Println("Bob public addresses")
-		fmt.Println(bobPublicAddresses)
-		fmt.Println("============")
-	}
 }

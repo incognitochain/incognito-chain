@@ -6,20 +6,20 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy-v2/mlsag"
-	ota "github.com/incognitochain/incognito-chain/privacy-v2/onetime_address"
 
 	"github.com/incognitochain/incognito-chain/privacy-v2/onetime_address/address"
+	"github.com/incognitochain/incognito-chain/privacy-v2/onetime_address/utxo"
 )
 
 type RingCTFull struct {
-	inputs         []ota.UTXO
+	inputs         []utxo.Utxo
 	fromAddress    []address.PrivateAddress
 	sumBlindOutput *privacy.Scalar
-	outputs        []ota.UTXO
+	outputs        []utxo.Utxo
 	toAddress      []address.PublicAddress
 }
 
-func NewRingCTFull(inputs *[]ota.UTXO, fromAddress *[]address.PrivateAddress, sumBlindOutput *privacy.Scalar, outputs *[]ota.UTXO, toAddress *[]address.PublicAddress) *RingCTFull {
+func NewRingCTFull(inputs *[]utxo.Utxo, fromAddress *[]address.PrivateAddress, sumBlindOutput *privacy.Scalar, outputs *[]utxo.Utxo, toAddress *[]address.PublicAddress) *RingCTFull {
 	return &RingCTFull{
 		*inputs,
 		*fromAddress,
@@ -29,8 +29,8 @@ func NewRingCTFull(inputs *[]ota.UTXO, fromAddress *[]address.PrivateAddress, su
 	}
 }
 
-// Create and return: ring, privatekey (of transaction), pi number of the ring, error
-func (this *RingCTFull) CreateRandomRing(message string) (*mlsag.Ring, *[]privacy.Scalar, int, error) {
+// Create and return: ring, privatekey (of transaction), pi of the ring, error
+func (this *RingCTFull) CreateRandomRing() (*mlsag.Ring, *[]privacy.Scalar, int, error) {
 	// TODO
 	// In real system should change numFake
 	numFake := 10

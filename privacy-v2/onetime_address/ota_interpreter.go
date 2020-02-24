@@ -6,9 +6,10 @@ import (
 
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy-v2/onetime_address/address"
+	"github.com/incognitochain/incognito-chain/privacy-v2/onetime_address/utxo"
 )
 
-func ParseUTXOPrivatekey(addr address.PrivateAddress, utxo UTXO) *privacy.Scalar {
+func ParseUtxoPrivatekey(addr *address.PrivateAddress, utxo *utxo.Utxo) *privacy.Scalar {
 	rK := new(privacy.Point).ScalarMult(utxo.GetTxData(), addr.GetPrivateView())
 	hashed := privacy.HashToScalar(
 		append(rK.ToBytesS(), utxo.GetIndex()),
@@ -17,7 +18,7 @@ func ParseUTXOPrivatekey(addr address.PrivateAddress, utxo UTXO) *privacy.Scalar
 }
 
 // Step 1 Monero One-time Address
-func parseAddresseeWithCached(r *privacy.Scalar, addr address.PublicAddress, index byte) (*privacy.Point, *privacy.Scalar) {
+func parseAddresseeWithCached(r *privacy.Scalar, addr *address.PublicAddress, index byte) (*privacy.Point, *privacy.Scalar) {
 	rK := new(privacy.Point).ScalarMult(addr.GetPublicView(), r)
 	cachedHash := privacy.HashToScalar(
 		append(rK.ToBytesS(), index),
@@ -29,13 +30,13 @@ func parseAddresseeWithCached(r *privacy.Scalar, addr address.PublicAddress, ind
 }
 
 // Step 2 Monero One-time Address
-func parseOTAWithCached(r *privacy.Scalar, addr address.PublicAddress, index byte) (addressee *privacy.Point, txData *privacy.Point, cachedHash *privacy.Scalar) {
-	addressee, cachedHash = parseAddresseeWithCached(r, addr, index)
-	txData = new(privacy.Point).ScalarMultBase(r)
-	return
+func parseOTAWithCached(r *privacy.Scalar, addr *address.PublicAddress, index byte) (*privacy.Point, *privacy.Point, *privacy.Scalar) {
+	addressee, cachedHash := parseAddresseeWithCached(r, addr, index)
+	txData := new(privacy.Point).ScalarMultBase(r)
+	return addressee, txData, cachedHash
 }
 
-func parseMoneyToCreateOutput(blind *privacy.Scalar, cachedHash *privacy.Scalar, money big.Int, index byte) (mask *privacy.Scalar, amount *privacy.Scalar, commitment *privacy.Point, err error) {
+func parseMoneyToCreateOutput(blind *privacy.Scalar, cachedHash *privacy.Scalar, money *big.Int, index byte) (mask *privacy.Scalar, amount *privacy.Scalar, commitment *privacy.Point, err error) {
 	scMoney, err := ParseBigIntToScalar(money)
 	if err != nil {
 		return nil, nil, nil, err
@@ -51,7 +52,7 @@ func parseMoneyToCreateOutput(blind *privacy.Scalar, cachedHash *privacy.Scalar,
 	return mask, amount, commitment, nil
 }
 
-func ParseBigIntToScalar(number big.Int) (*privacy.Scalar, error) {
+func ParseBigIntToScalar(number *big.Int) (*privacy.Scalar, error) {
 	b := number.Bytes()
 	if len(b) > 32 {
 		return nil, errors.New("Error in onetime_address ParseBigIntToScalar: BigInt too big (length larger than 32)")
@@ -71,7 +72,7 @@ func ParseBigIntToScalar(number big.Int) (*privacy.Scalar, error) {
 }
 
 // Get Mask and Amount from UTXO if we have privateAddress
-func ParseBlindAndMoneyFromUtxo(addr address.PrivateAddress, utxo UTXO) (blind *privacy.Scalar, money *privacy.Scalar, err error) {
+func ParseBlindAndMoneyFromUtxo(addr *address.PrivateAddress, utxo *utxo.Utxo) (blind *privacy.Scalar, money *privacy.Scalar, err error) {
 	if IsUtxoOfAddress(addr, utxo) == false {
 		return nil, nil, errors.New("Error in ota_interpreter ParseBlindAndMoneyFromUtxo: utxo is not from this address")
 	}

@@ -69,8 +69,8 @@ func testOTA() {
 	peopleAddresses := make([]address.PrivateAddress, n)
 	peoplePublicAddresses := make([]address.PublicAddress, n)
 	for i := 0; i < n; i += 1 {
-		peopleAddresses[i] = address.GenerateRandomAddress()
-		peoplePublicAddresses[i] = peopleAddresses[i].GetPublicAddress()
+		peopleAddresses[i] = *address.GenerateRandomAddress()
+		peoplePublicAddresses[i] = *peopleAddresses[i].GetPublicAddress()
 		curMoney, _ := new(big.Int).SetString("100", 10)
 		money[i] = *curMoney
 	}
@@ -82,7 +82,7 @@ func testOTA() {
 	}
 
 	for i := 0; i < len(outputs); i += 1 {
-		mask, amount, err := ota.ParseBlindAndMoneyFromUtxo(peopleAddresses[i], outputs[i])
+		mask, amount, err := ota.ParseBlindAndMoneyFromUtxo(&peopleAddresses[i], &outputs[i])
 		fmt.Println("Mask =")
 		fmt.Println(mask)
 		fmt.Println("Amount =")
@@ -106,8 +106,8 @@ func testTxFull() {
 	aliceAddresses := make([]address.PrivateAddress, n_input)
 	alicePublicAddresses := make([]address.PublicAddress, n_input)
 	for i := 0; i < n_input; i += 1 {
-		aliceAddresses[i] = address.GenerateRandomAddress()
-		alicePublicAddresses[i] = aliceAddresses[i].GetPublicAddress()
+		aliceAddresses[i] = *address.GenerateRandomAddress()
+		alicePublicAddresses[i] = *aliceAddresses[i].GetPublicAddress()
 		curMoney, _ := new(big.Int).SetString(moneyInput, 10)
 		money[i] = *curMoney
 	}
@@ -118,8 +118,8 @@ func testTxFull() {
 	bobAddresses := make([]address.PrivateAddress, n_output)
 	bobPublicAddresses := make([]address.PublicAddress, n_output)
 	for i := 0; i < n_output; i += 1 {
-		bobAddresses[i] = address.GenerateRandomAddress()
-		bobPublicAddresses[i] = bobAddresses[i].GetPublicAddress()
+		bobAddresses[i] = *address.GenerateRandomAddress()
+		bobPublicAddresses[i] = *bobAddresses[i].GetPublicAddress()
 		var curMoney *big.Int
 		if i == n_output-1 {
 			curMoney, _ = new(big.Int).SetString("10", 10)
@@ -146,13 +146,13 @@ func testTxFull() {
 		outputs,
 		&bobPublicAddresses,
 	)
-	message := "Some f******* message that can be changed with the transaction message :D"
-	ring, privateKeys, pi, err := ringctfull.CreateRandomRing(message)
+	ring, privateKeys, pi, err := ringctfull.CreateRandomRing()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 	signer := mlsag.NewMlsagWithDefinedRing(privateKeys, ring, pi)
+	message := "Some f******* message that can be changed with the transaction message :D"
 	signature, err_sig := signer.Sign(message)
 	if err_sig != nil {
 		fmt.Println(err_sig)
