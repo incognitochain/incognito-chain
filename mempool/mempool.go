@@ -456,7 +456,7 @@ func (tp *TxPool) checkFees(
 			feePTokenToNativeTokenTmp, err := metadata.ConvertPrivacyTokenToNativeToken(feePToken, tokenID, beaconHeight, tp.config.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB())
 			if err != nil {
 				Logger.log.Errorf("ERROR: %+v", NewMempoolTxError(RejectInvalidFee,
-					fmt.Errorf("transaction %+v: %+v %v can not convert to native token, Error %+v",
+					fmt.Errorf("transaction %+v: %+v %v can not convert to native token %+v",
 						tx.Hash().String(), feePToken, tokenID, err)))
 				return false
 			}
