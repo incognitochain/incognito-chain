@@ -14,4 +14,5 @@ const (
 	blockShard    = 0
 	crossShard    = 1
 	shardToBeacon = 2
+	blockbeacon   = 3
 )

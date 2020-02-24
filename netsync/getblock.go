@@ -5,9 +5,53 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/peerv2/proto"
 	"github.com/incognitochain/incognito-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-peer"
+	"github.com/pkg/errors"
 )
+
+func (netSync *NetSync) GetBlockByHeight(
+	blkType proto.BlkType,
+	height uint64,
+	fromcID byte,
+	tocID byte,
+) (
+	interface{},
+	error,
+) {
+	bc := netSync.config.BlockChain
+	switch blkType {
+	case proto.BlkType_BlkBc:
+		return bc.GetBeaconBlockByHeight(height)
+	case proto.BlkType_BlkShard:
+		return bc.GetShardBlockByHeight(height, fromcID)
+	case proto.BlkType_BlkXShard:
+		blk, err := bc.GetShardBlockByHeight(height, fromcID)
+		if err != nil {
+			return nil, err
+		}
+		return blk.CreateCrossShardBlock(tocID)
+	case proto.BlkType_BlkS2B:
+		blk, err := bc.GetShardBlockByHeight(height, fromcID)
+		if err != nil {
+			return nil, err
+		}
+		return blk.CreateShardToBeaconBlock(bc), nil
+	default:
+		return nil, errors.Errorf("Invalid block type")
+	}
+}
+
+func (netSync *NetSync) GetBlockByHash(
+	blkType byte,
+	hash common.Hash,
+) (
+	interface{},
+	error,
+) {
+	return nil, nil
+}
 
 func (netSync *NetSync) GetBlockShardByHash(blkHashes []common.Hash) []wire.Message {
 	blkMsgs := []wire.Message{}
@@ -308,4 +352,69 @@ func (netSync *NetSync) StreamBlockBeaconByHeight(fromPool bool, specificHeight 
 		return
 	}(blkHeights, specificHeight, blkCh, netSync.config.BlockChain.GetBeaconBlockByHeight)
 	return blkCh
+}
+
+// func (netSync *NetSync) StreamBlockByHeight(
+// 	fromPool bool,
+// 	blktype byte,
+// 	specificHeight bool,
+// 	blkHeights []uint64,
+// 	fromcID byte,
+// 	tocID byte,
+// ) chan interface{} {
+// 	Logger.log.Infof("[stream] Netsync received request get block %v %v [%v...%v] len %v", fromPool, specificHeight, blkHeights[0], blkHeights[len(blkHeights)-1], len(blkHeights))
+// 	blkCh := make(chan interface{})
+// 	if !specificHeight {
+// 		if len(blkHeights) != 2 || blkHeights[1] < blkHeights[0] {
+// 			return nil
+// 		}
+// 	}
+// 	sort.Slice(blkHeights, func(i, j int) bool { return blkHeights[i] < blkHeights[j] })
+// 	go netSync.streamBlkByHeight(blktype, specificHeight, blkHeights, blkCh, fromcID, tocID)
+// 	return blkCh
+// }
+
+func (netSync *NetSync) StreamBlockByHeight(
+	fromPool bool,
+	req *proto.BlockByHeightRequest,
+) chan interface{} {
+	Logger.log.Infof("[stream] Netsync received request get block %v %v [%v...%v] len %v", fromPool, req.Specific, req.Heights[0], req.Heights[len(req.Heights)-1], len(req.Heights))
+	blkCh := make(chan interface{})
+	if !req.Specific {
+		if len(req.Heights) != 2 || req.Heights[1] < req.Heights[0] {
+			return nil
+		}
+	}
+	sort.Slice(req.Heights, func(i, j int) bool { return req.Heights[i] < req.Heights[j] })
+	go netSync.streamBlkByHeight(req, blkCh)
+	return blkCh
+}
+
+func (netSync *NetSync) streamBlkByHeight(
+	req *proto.BlockByHeightRequest,
+	blkCh chan interface{},
+) {
+
+	blkHeight := req.Heights[0] - 1
+	idx := 0
+	for blkHeight < req.Heights[len(req.Heights)-1] {
+		if req.Specific {
+			blkHeight = req.Heights[idx]
+			idx++
+		} else {
+			blkHeight++
+		}
+		if blkHeight <= 1 {
+			continue
+		}
+		blk, err := netSync.GetBlockByHeight(req.Type, blkHeight, byte(req.From), byte(req.To))
+		if err != nil {
+			Logger.log.Infof("[stream] Netsync cannot get block, return error %v", err)
+			break
+		}
+		blkCh <- blk
+		Logger.log.Infof("[stream] Netsync push block to channel")
+	}
+	close(blkCh)
+	return
 }

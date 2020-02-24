@@ -224,6 +224,29 @@ func (bp *BlockProvider) StreamBlockBeaconByHeight(req *proto.GetBlockBeaconByHe
 	return nil
 }
 
+func (bp *BlockProvider) StreamBlockByHeight(req *proto.BlockByHeightRequest, stream proto.HighwayService_StreamBlockByHeightServer) error {
+	var heights []uint64
+	Logger.Infof("[stream] Block provider received request block type %v, blk heights specific %v [%v..%v], len %v", req.GetType(), req.GetSpecific(), req.Heights[0], req.Heights[len(req.Heights)-1], len(req.Heights))
+	heights = req.GetHeights()
+	blkRecv := bp.NetSync.StreamBlockByHeight(false, req.GetType(), req.GetSpecific() req.GetSpecific(), heights)
+	for blk := range blkRecv {
+		rdata, err := wrapper.EnCom(blk)
+		blkData := append([]byte{blockbeacon}, rdata...)
+		if err != nil {
+			Logger.Infof("[stream] block channel return error when marshal %v", err)
+			return err
+		}
+		Logger.Infof("[stream] block channel return block ok")
+		if err := stream.Send(&proto.BlockData{Data: blkData}); err != nil {
+			Logger.Infof("[stream] Server send block to client return err %v", err)
+			return err
+		}
+		Logger.Infof("[stream] Server send block to client ok")
+	}
+	Logger.Infof("[stream] Provider return StreamBlockBeaconByHeight")
+	return nil
+}
+
 type BlockProvider struct {
 	proto.UnimplementedHighwayServiceServer
 	NetSync NetSync
@@ -237,4 +260,5 @@ type NetSync interface {
 	GetBlockBeaconByHeight(bool, bool, []uint64) []wire.Message
 	GetBlockBeaconByHash(blkHashes []common.Hash) []wire.Message
 	StreamBlockBeaconByHeight(fromPool bool, specificHeight bool, blkHeights []uint64) chan interface{}
+	StreamBlockByHeight(fromPool bool, blktype byte, specificHeight bool, blkHeights []uint64, fromcID byte, tocID byte) chan interface{}
 }
