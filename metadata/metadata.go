@@ -111,9 +111,9 @@ type Transaction interface {
 	ValidateTxWithBlockChain(BlockchainRetriever, byte, *statedb.StateDB) error
 	ValidateDoubleSpendWithBlockchain(BlockchainRetriever, byte, *statedb.StateDB, *common.Hash) error
 	ValidateSanityData(BlockchainRetriever) (bool, error)
-	ValidateTxByItself(bool, *statedb.StateDB, BlockchainRetriever, byte) (bool, error)
+	ValidateTxByItself(bool, *statedb.StateDB, *statedb.StateDB, BlockchainRetriever, byte, bool) (bool, error)
 	ValidateType() bool
-	ValidateTransaction(bool, *statedb.StateDB, byte, *common.Hash) (bool, error)
+	ValidateTransaction(bool, *statedb.StateDB, *statedb.StateDB, byte, *common.Hash, bool, bool) (bool, error)
 	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, BlockchainRetriever, *AccumulatedValues) (bool, error)
 	IsPrivacy() bool
 	IsCoinsBurning(BlockchainRetriever) bool
@@ -147,17 +147,19 @@ func getPDEPoolPair(
 	return &pdePoolForPair, nil
 }
 
-func isPairValid(poolPair *rawdbv2.PDEPoolForPair) bool {
+func isPairValid(poolPair *rawdbv2.PDEPoolForPair, beaconHeight int64) bool {
 	if poolPair == nil {
 		return false
 	}
 	prvIDStr := common.PRVCoinID.String()
 	if poolPair.Token1IDStr == prvIDStr &&
-		poolPair.Token1PoolValue < uint64(common.MinTxFeesOnTokenRequirement) {
+		poolPair.Token1PoolValue < uint64(common.MinTxFeesOnTokenRequirement) &&
+		beaconHeight >= common.BeaconBlockHeighMilestoneForMinTxFeesOnTokenRequirement {
 		return false
 	}
 	if poolPair.Token2IDStr == prvIDStr &&
-		poolPair.Token2PoolValue < uint64(common.MinTxFeesOnTokenRequirement) {
+		poolPair.Token2PoolValue < uint64(common.MinTxFeesOnTokenRequirement) &&
+		beaconHeight >= common.BeaconBlockHeighMilestoneForMinTxFeesOnTokenRequirement {
 		return false
 	}
 	return true
@@ -176,7 +178,7 @@ func convertValueBetweenCurrencies(
 	if err != nil {
 		return 0, NewMetadataTxError(CouldNotGetExchangeRateError, err)
 	}
-	if !isPairValid(pdePoolForPair) {
+	if !isPairValid(pdePoolForPair, beaconHeight) {
 		return 0, NewMetadataTxError(CouldNotGetExchangeRateError, errors.New("PRV pool size on pdex is smaller minimum initial adding liquidity amount"))
 	}
 	invariant := float64(0)

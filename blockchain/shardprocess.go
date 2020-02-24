@@ -431,7 +431,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock
 	// Verify Transaction
 	//get beacon height from shard block
 	beaconHeight := shardBlock.Header.BeaconHeight
-	if err := blockchain.verifyTransactionFromNewBlock(shardBlock.Body.Transactions, int64(beaconHeight)); err != nil {
+	if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, int64(beaconHeight)); err != nil {
 		return NewBlockChainError(TransactionFromNewBlockError, err)
 	}
 	// Verify Instruction
@@ -852,7 +852,7 @@ func (shardBestState *ShardBestState) verifyPostProcessingShardBlock(shardBlock 
 //	9. Not accept a salary tx
 //	10. Check duplicate staker public key in block
 //	11. Check duplicate Init Custom Token in block
-func (blockchain *BlockChain) verifyTransactionFromNewBlock(txs []metadata.Transaction, beaconHeight int64) error {
+func (blockchain *BlockChain) verifyTransactionFromNewBlock(shardID byte, txs []metadata.Transaction, beaconHeight int64) error {
 	if len(txs) == 0 {
 		return nil
 	}
@@ -861,11 +861,23 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(txs []metadata.Trans
 		panic("TempTxPool Is not Empty")
 	}
 	defer blockchain.config.TempTxPool.EmptyPool()
-	for index, tx := range txs {
+	listTxs := []metadata.Transaction{}
+	for _, tx := range txs {
 		if !tx.IsSalaryTx() {
-			_, err := blockchain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx, beaconHeight)
-			if err != nil {
-				return NewBlockChainError(TransactionFromNewBlockError, fmt.Errorf("Transaction %+v, index %+v get %+v ", *tx.Hash(), index, err))
+			listTxs = append(listTxs, tx)
+		}
+	}
+	_, err := blockchain.config.TempTxPool.MaybeAcceptBatchTransactionForBlockProducing(shardID, listTxs, beaconHeight)
+	if err != nil {
+		Logger.log.Errorf("Batching verify transactions from new block err: %+v\n Trying verify one by one", err)
+		for index, tx := range listTxs {
+			if blockchain.config.TempTxPool.HaveTransaction(tx.Hash()) {
+				continue
+			}
+			_, err1 := blockchain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx, beaconHeight)
+			if err1 != nil {
+				Logger.log.Errorf("One by one verify txs at index %d error: %+v", index, err1)
+				return NewBlockChainError(TransactionFromNewBlockError, fmt.Errorf("Transaction %+v, index %+v get %+v ", *tx.Hash(), index, err1))
 			}
 		}
 	}

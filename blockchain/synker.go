@@ -659,10 +659,10 @@ func (synker *Synker) SyncBlkShard(shardID byte, byHash bool, bySpecificHeights 
 			}
 		} else {
 			blkBatchsNeedToGet := getBlkNeedToGetByHeight(prefix, from, to, cacheItems, synker.GetShardPoolStateByHeight(shardID))
-			fmt.Println("SyncBlkShard", from, to, blkBatchsNeedToGet)
+			Logger.log.Debug("SyncBlkShard", from, to, blkBatchsNeedToGet)
 			if len(blkBatchsNeedToGet) > 0 {
 				for fromHeight, toHeight := range blkBatchsNeedToGet {
-					fmt.Println("SyncBlkShard", shardID, fromHeight, toHeight, peerID)
+					Logger.log.Debug("SyncBlkShard", shardID, fromHeight, toHeight, peerID)
 					go synker.blockchain.config.Server.PushMessageGetBlockShardByHeight(shardID, fromHeight, toHeight)
 					for height := fromHeight; height <= toHeight; height++ {
 						synker.Status.CurrentlySyncBlks.Add(fmt.Sprintf("%v%v", prefix, height), time.Now().Unix(), DefaultMaxBlockSyncTime)
@@ -992,13 +992,13 @@ func (synker *Synker) InsertBeaconBlockFromPool() {
 }
 
 func (synker *Synker) InsertShardBlockFromPool(shardID byte) {
-	fmt.Println("InsertShardBlockFromPool start")
+	Logger.log.Debug("InsertShardBlockFromPool start")
 	currentInsert.Shards[shardID].Lock()
 	defer currentInsert.Shards[shardID].Unlock()
 
 	blocks := synker.blockchain.config.ShardPool[shardID].GetValidBlock()
 	if len(blocks) > 0 {
-		fmt.Println("InsertShardBlockFromPool", len(blocks))
+		Logger.log.Infof("InsertShardBlockFromPool %d blocks", len(blocks))
 	}
 
 	chain := synker.blockchain.Chains[common.GetShardChainKey(shardID)]

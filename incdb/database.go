@@ -55,6 +55,4 @@ type Database interface {
 	Stater
 	Compacter
 	io.Closer
-	//old function
-	PutBatch(data []BatchData) error
 }
