@@ -45,7 +45,6 @@ type PortalCustodianDepositStatus struct {
 	IncogAddressStr string
 	RemoteAddresses map[string]string
 	DepositedAmount uint64
-	TxReqID         common.Hash
 }
 
 func NewPortalCustodianDeposit(metaType int, incognitoAddrStr string, remoteAddrs map[string]string, amount uint64) (*PortalCustodianDeposit, error) {

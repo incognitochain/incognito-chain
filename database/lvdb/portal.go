@@ -166,9 +166,8 @@ func (db *db) TrackCustodianDepositCollateral(key []byte, content []byte) error 
 
 // GetCustodianDepositCollateralStatus returns custodian deposit status with deposit txid
 func (db *db) GetCustodianDepositCollateralStatus(txIDStr string) ([]byte, error) {
-	key := append(PortalCustodianDepositPrefix, []byte(txIDStr)...)
-
-	custodianDepositStatusBytes, err := db.lvdb.Get(key, nil)
+	key := NewCustodianDepositKey(txIDStr)
+	custodianDepositStatusBytes, err := db.lvdb.Get([]byte(key), nil)
 	if err != nil && err != lvdberr.ErrNotFound {
 		return nil, database.NewDatabaseError(database.GetCustodianDepositStatusError, err)
 	}

@@ -168,8 +168,20 @@ func (dbService DatabaseService) GetPDEContributionStatus(pdePrefix []byte, pdeS
 }
 
 // Portal
-func (dbService DatabaseService) GetPortalCustodianDepositStatus(txID string) ([]byte, error) {
-	return (*dbService.DB).GetCustodianDepositCollateralStatus(txID)
+func (dbService DatabaseService) GetPortalCustodianDepositStatus(txID string) (*metadata.PortalCustodianDepositStatus, error) {
+	statusBytes, err := (*dbService.DB).GetCustodianDepositCollateralStatus(txID)
+	if err != nil {
+		return nil, err
+	}
+	if len(statusBytes) == 0 {
+		return nil, nil
+	}
+	var status metadata.PortalCustodianDepositStatus
+	err = json.Unmarshal(statusBytes, &status)
+	if err != nil {
+		return nil, err
+	}
+	return &status, nil
 }
 
 func (dbService DatabaseService) GetPortalReqPTokenStatus(portingID string) ([]byte, error) {
