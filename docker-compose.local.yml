@@ -11,4 +11,4 @@ services:
       - incognito-highway
   incognito-highway:
     container_name: incognito-highway
-    image: hoangincognito/incognitochain-highway
+    image: hoangincognito/incognito-highway
