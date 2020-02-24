@@ -65,6 +65,8 @@ const (
 	//portal
 	GetExchangeRatesError
 	GetExchangeRatesIsEmpty
+	GetReqPTokenStatusError
+	GetCustodianDepositError
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -141,8 +143,10 @@ var ErrCodeMessage = map[int]struct {
 	GetPDEStateError: {-8000, "Get pde state error"},
 
 	//portal
-	GetExchangeRatesError: {-9000, "Get get exchange rates error"},
-	GetExchangeRatesIsEmpty: {-9001, "Exchange rates is empty"},
+	GetExchangeRatesError:    {-9000, "Get get exchange rates error"},
+	GetExchangeRatesIsEmpty:  {-9001, "Exchange rates is empty"},
+	GetReqPTokenStatusError:  {-9002, "Get request ptoken status error"},
+	GetCustodianDepositError: {-9003, "Get custodian deposit status error"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse

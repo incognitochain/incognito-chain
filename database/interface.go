@@ -209,4 +209,5 @@ type DatabaseInterface interface {
 	StoreExchangeRatesRequestItem(key []byte, value interface{}) error
 	StoreFinalExchangeRatesItem(key []byte, value interface{}) error
 	GetCustodianDepositCollateralStatus(txIDStr string) ([]byte, error)
+	GetReqPTokenStatusByPortingID(portingID string) ([]byte, error)
 }

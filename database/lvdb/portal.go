@@ -127,10 +127,8 @@ func NewWaitingRedeemReqKey (beaconHeight uint64, redeemID string) string {
 }
 
 // NewPortalReqPTokenKey creates key for tracking request pToken in portal
-func NewPortalReqPTokenKey (beaconHeight uint64, portingID string) string {
-	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
-	key := append(PortalRequestPTokensPrefix, beaconHeightBytes...)
-	key = append(key, []byte(portingID)...)
+func NewPortalReqPTokenKey (portingID string) string {
+	key := append(PortalRequestPTokensPrefix, []byte(portingID)...)
 	return string(key)
 }
 
@@ -175,11 +173,7 @@ func (db *db) GetCustodianDepositCollateralStatus(txIDStr string) ([]byte, error
 		return nil, database.NewDatabaseError(database.GetCustodianDepositStatusError, err)
 	}
 
-	if len(custodianDepositStatusBytes) == 0 {
-		return nil, database.NewDatabaseError(database.GetCustodianDepositStatusNotFound, err)
-	}
-
-	return custodianDepositStatusBytes, nil
+	return custodianDepositStatusBytes, err
 }
 
 func (db *db) TrackReqPTokens(key []byte, content []byte) error {
@@ -188,6 +182,18 @@ func (db *db) TrackReqPTokens(key []byte, content []byte) error {
 		return database.NewDatabaseError(database.TrackCustodianDepositError, errors.Wrap(err, "db.lvdb.put"))
 	}
 	return nil
+}
+
+// GetCustodianDepositCollateralStatus returns custodian deposit status with deposit txid
+func (db *db) GetReqPTokenStatusByPortingID(portingID string) ([]byte, error) {
+	key := append(PortalRequestPTokensPrefix, []byte(portingID)...)
+
+	reqPTokenStatusBytes, err := db.lvdb.Get(key, nil)
+	if err != nil && err != lvdberr.ErrNotFound {
+		return nil, database.NewDatabaseError(database.GetReqPTokenStatusError, err)
+	}
+
+	return reqPTokenStatusBytes, err
 }
 
 func (db *db) StorePortingRequestItem(keyId []byte, content interface{}) error {

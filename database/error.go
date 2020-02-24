@@ -117,7 +117,7 @@ const (
 	GetItemPortalByPrefixError
 	GetItemPortalByPrefixNotFound
 	GetCustodianDepositStatusError
-	GetCustodianDepositStatusNotFound
+	GetReqPTokenStatusError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -235,7 +235,7 @@ var ErrCodeMessage = map[int]struct {
 	GetItemPortalByPrefixError:          {-14010, "Get item portal by prefix error"},
 	GetItemPortalByPrefixNotFound:       {-14011, "Get item portal by prefix not found"},
 	GetCustodianDepositStatusError:      {-14012, "Get all custodian deposit status error"},
-	GetCustodianDepositStatusNotFound:   {-14013, "Get all custodian deposit status not found"},
+	GetReqPTokenStatusError:             {-14014, "Get request ptoken status error"},
 }
 
 type DatabaseError struct {
