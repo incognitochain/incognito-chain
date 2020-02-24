@@ -1,0 +1,14 @@
+version: '3'
+services:
+  incognito-chain:
+    container_name: incognito-chain
+    image: incognito
+    ports:
+      - "9334:9334"
+    depends_on:
+      - incognito-highway
+    links:
+      - incognito-highway
+  incognito-highway:
+    container_name: incognito-highway
+    image: highway
