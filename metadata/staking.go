@@ -114,6 +114,7 @@ func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(
 func (stakingMetadata StakingMetadata) ValidateSanityData(
 	bcr BlockchainRetriever,
 	txr Transaction,
+	beaconHeight uint64,
 ) (
 	bool,
 	bool,
@@ -128,9 +129,9 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(
 	}
 
 	// get burning address
-	burningAddress := bcr.GetBurningAddress(0)
+	burningAddress := bcr.GetBurningAddress(beaconHeight)
 	keyWalletBurningAdd, err := wallet.Base58CheckDeserialize(burningAddress)
-	if err != nil{
+	if err != nil {
 		return false, false, errors.New("burning address is invalid")
 	}
 	if !bytes.Equal(pubkey, keyWalletBurningAdd.KeySet.PaymentAddress.Pk) {

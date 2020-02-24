@@ -76,7 +76,7 @@ func (sbsRes BeaconBlockSalaryRes) ValidateTxWithBlockChain(txr Transaction, bcr
 	return false, nil
 }
 
-func (sbsRes BeaconBlockSalaryRes) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (sbsRes BeaconBlockSalaryRes) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
 	if len(sbsRes.ProducerAddress.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's producer address")
 	}

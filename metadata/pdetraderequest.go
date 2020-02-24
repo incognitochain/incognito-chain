@@ -81,7 +81,7 @@ func (pc PDETradeRequest) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (pc PDETradeRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (pc PDETradeRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
 	if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
 		return true, true, nil
@@ -96,7 +96,7 @@ func (pc PDETradeRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transa
 	if len(traderAddr.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's trader address")
 	}
-	if !txr.IsCoinsBurning(bcr) {
+	if !txr.IsCoinsBurning(bcr, beaconHeight) {
 		return false, false, errors.New("Must send coin to burning address")
 	}
 	if (pc.SellAmount + pc.TradingFee) != txr.CalculateTxValue() {

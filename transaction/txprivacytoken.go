@@ -457,10 +457,10 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxWithBlockChain(
 }
 
 // ValidateSanityData - validate sanity data of PRV and pToken
-func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateSanityData(bcr metadata.BlockchainRetriever, beaconHeight uint64) (bool, error) {
 	meta := txCustomTokenPrivacy.Tx.Metadata
 	if meta != nil {
-		isContinued, ok, err := meta.ValidateSanityData(bcr, &txCustomTokenPrivacy)
+		isContinued, ok, err := meta.ValidateSanityData(bcr, &txCustomTokenPrivacy, beaconHeight)
 		if err != nil || !ok || !isContinued {
 			return ok, err
 		}
@@ -468,14 +468,14 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateSanityData(bcr metadata
 
 	// validate sanity data for PRV
 	//result, err := txCustomTokenPrivacy.Tx.validateNormalTxSanityData()
-	result, err := txCustomTokenPrivacy.Tx.ValidateSanityData(bcr)
+	result, err := txCustomTokenPrivacy.Tx.ValidateSanityData(bcr, beaconHeight)
 	if err != nil {
 		return result, NewTransactionErr(InvalidSanityDataPRVError, err)
 	}
 	// validate sanity for pToken
 
 	//result, err = txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.validateNormalTxSanityData()
-	result, err = txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.ValidateSanityData(bcr)
+	result, err = txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.ValidateSanityData(bcr, beaconHeight)
 	if err != nil {
 		return result, NewTransactionErr(InvalidSanityDataPrivacyTokenError, err)
 	}
@@ -628,7 +628,7 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetTransferData() (bool, []byte
 }
 
 // IsCoinsBurning - checking this is a burning pToken
-func (txCustomTokenPrivacy TxCustomTokenPrivacy) IsCoinsBurning(bcr metadata.BlockchainRetriever) bool {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) IsCoinsBurning(bcr metadata.BlockchainRetriever, beaconHeight uint64) bool {
 	// get proof of pToken
 	proof := txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.Proof
 	if proof == nil || len(proof.GetOutputCoins()) == 0 {
@@ -641,7 +641,7 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) IsCoinsBurning(bcr metadata.Blo
 	}
 
 	//get burning address
-	burningAddress := bcr.GetBurningAddress(0)
+	burningAddress := bcr.GetBurningAddress(beaconHeight)
 	keyWalletBurningAccount, err := wallet.Base58CheckDeserialize(burningAddress)
 	if err != nil {
 		Logger.log.Errorf("Can not deserialize burn address: %v\n", burningAddress)

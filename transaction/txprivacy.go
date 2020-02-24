@@ -1034,11 +1034,11 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 	return true, nil
 }
 
-func (tx Tx) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
+func (tx Tx) ValidateSanityData(bcr metadata.BlockchainRetriever, beaconHeight uint64) (bool, error) {
 	Logger.log.Debugf("\n\n\n START Validating sanity data of metadata %+v\n\n\n", tx.Metadata)
 	if tx.Metadata != nil {
 		Logger.log.Debug("tx.Metadata.ValidateSanityData")
-		isContinued, ok, err := tx.Metadata.ValidateSanityData(bcr, &tx)
+		isContinued, ok, err := tx.Metadata.ValidateSanityData(bcr, &tx, beaconHeight)
 		Logger.log.Debug("END tx.Metadata.ValidateSanityData")
 		if err != nil || !ok || !isContinued {
 			return ok, err
@@ -1124,7 +1124,7 @@ func (tx Tx) ValidateType() bool {
 	return tx.Type == common.TxNormalType || tx.Type == common.TxRewardType || tx.Type == common.TxReturnStakingType
 }
 
-func (tx Tx) IsCoinsBurning(bcr metadata.BlockchainRetriever) bool {
+func (tx Tx) IsCoinsBurning(bcr metadata.BlockchainRetriever, beaconHeight uint64) bool {
 	if tx.Proof == nil || len(tx.Proof.GetOutputCoins()) == 0 {
 		return false
 	}
@@ -1133,7 +1133,7 @@ func (tx Tx) IsCoinsBurning(bcr metadata.BlockchainRetriever) bool {
 		senderPKBytes = tx.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().ToBytesS()
 	}
 	//get burning address
-	burningAddress := bcr.GetBurningAddress(0)
+	burningAddress := bcr.GetBurningAddress(beaconHeight)
 	keyWalletBurningAccount, err := wallet.Base58CheckDeserialize(burningAddress)
 	if err != nil {
 		return false

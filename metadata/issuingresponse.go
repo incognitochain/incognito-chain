@@ -40,7 +40,7 @@ func (iRes IssuingResponse) ValidateTxWithBlockChain(txr Transaction, bcr Blockc
 	return false, nil
 }
 
-func (iRes IssuingResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (iRes IssuingResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
 	return false, true, nil
 }
 
