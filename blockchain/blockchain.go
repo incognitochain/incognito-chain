@@ -1170,17 +1170,19 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(
 	error,
 ) {
 	txRequestTable := reqTableFromReqTxs(transactions)
-	txsSpamRemoved := filterReqTxs(transactions, txRequestTable)
 	txsResponse := []metadata.Transaction{}
-	for _, value := range txRequestTable {
+	for key, value := range txRequestTable {
 		txRes, err := blockchain.buildWithDrawTransactionResponse(&value, blkProducerPrivateKey)
 		if err != nil {
-			return txsResponse, err
+			Logger.log.Errorf("Build Withdraw transactions response for tx %v return errors %v", value, err)
+			delete(txRequestTable, key)
+			continue
 		} else {
 			Logger.log.Infof("[Reward] - BuildWithDrawTransactionResponse for tx %+v, ok: %+v\n", value, txRes)
 		}
 		txsResponse = append(txsResponse, txRes)
 	}
+	txsSpamRemoved := filterReqTxs(transactions, txRequestTable)
 	Logger.log.Infof("Number of metadata txs: %v; number of tx request %v; number of tx spam %v; number of tx response %v",
 		len(transactions),
 		len(txRequestTable),
@@ -1190,11 +1192,15 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(
 	return txsSpamRemoved, nil
 }
 
-func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blkBody *ShardBody) error {
+func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk *ShardBlock) error {
+	blkBody := blk.Body
 	txRequestTable := reqTableFromReqTxs(blkBody.Transactions)
-	txsSpamRemoved := filterReqTxs(blkBody.Transactions, txRequestTable)
-	if len(blkBody.Transactions) != len(txsSpamRemoved) {
-		return errors.Errorf("This block contains txs spam request reward. Number of spam: %v", len(blkBody.Transactions)-len(txsSpamRemoved))
+	// validate more than with spam request tx
+	if blk.Header.Timestamp > ValidateTimeForSpamRequestTxs {
+		txsSpamRemoved := filterReqTxs(blkBody.Transactions, txRequestTable)
+		if len(blkBody.Transactions) != len(txsSpamRemoved) {
+			return errors.Errorf("This block contains txs spam request reward. Number of spam: %v", len(blkBody.Transactions)-len(txsSpamRemoved))
+		}
 	}
 	txReturnTable := map[string]bool{}
 	db := blockchain.config.DataBase
@@ -1233,8 +1239,10 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 			}
 		}
 	}
-	if len(txRequestTable) > 0 {
-		return errors.Errorf("Not match request and response, num of unresponse request: %v", len(txRequestTable))
+	if blk.Header.Timestamp > ValidateTimeForSpamRequestTxs {
+		if len(txRequestTable) > 0 {
+			return errors.Errorf("Not match request and response, num of unresponse request: %v", len(txRequestTable))
+		}
 	}
 	return nil
 }

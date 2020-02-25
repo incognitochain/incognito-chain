@@ -470,7 +470,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 	if len(invalidTxs) > 0 {
 		return NewBlockChainError(TransactionCreatedByMinerError, fmt.Errorf("There are %d invalid txs", len(invalidTxs)))
 	}
-	err = blockchain.ValidateResponseTransactionFromTxsWithMetadata(&shardBlock.Body)
+	err = blockchain.ValidateResponseTransactionFromTxsWithMetadata(shardBlock)
 	if err != nil {
 		return NewBlockChainError(ResponsedTransactionWithMetadataError, err)
 	}
@@ -872,19 +872,23 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(txs []metadata.Trans
 		panic("TempTxPool Is not Empty")
 	}
 	defer blockchain.config.TempTxPool.EmptyPool()
-
-	// TODO:
-	/*err := blockchain.config.TempTxPool.ValidateTxList(txs)
-	if err != nil {
-		Logger.log.Errorf("Error validating transaction in block creation: %+v \n", err)
-		return NewBlockChainError(TransactionFromNewBlockError, errors.New("Some Transactions in New Block IS invalid"))
-	}*/
-	// TODO: uncomment to synchronize validate method with shard process and mempool
-	for index, tx := range txs {
+	listTxs := []metadata.Transaction{}
+	for _, tx := range txs {
 		if !tx.IsSalaryTx() {
-			_, err := blockchain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx, beaconHeight)
-			if err != nil {
-				return NewBlockChainError(TransactionFromNewBlockError, fmt.Errorf("Transaction %+v, index %+v get %+v ", *tx.Hash(), index, err))
+			listTxs = append(listTxs, tx)
+		}
+	}
+	_, err := blockchain.config.TempTxPool.MaybeAcceptBatchTransactionForBlockProducing(listTxs, beaconHeight)
+	if err != nil {
+		Logger.log.Errorf("Batching verify transactions from new block err: %+v\n Trying verify one by one", err)
+		for index, tx := range listTxs {
+			if blockchain.config.TempTxPool.HaveTransaction(tx.Hash()) {
+				continue
+			}
+			_, err1 := blockchain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx, beaconHeight)
+			if err1 != nil {
+				Logger.log.Errorf("One by one verify txs at index %d error: %+v", index, err1)
+				return NewBlockChainError(TransactionFromNewBlockError, fmt.Errorf("Transaction %+v, index %+v get %+v ", *tx.Hash(), index, err1))
 			}
 		}
 	}

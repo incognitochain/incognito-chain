@@ -11,25 +11,28 @@ import (
 //Network fixed params
 const (
 	// SHARD_BLOCK_VERSION is the current latest supported block version.
-	VERSION                    = 1
-	RANDOM_NUMBER              = 3
-	SHARD_BLOCK_VERSION        = 1
-	BEACON_BLOCK_VERSION       = 1
-	DefaultMaxBlkReqPerPeer    = 600
-	DefaultMaxBlkReqPerTime    = 1200
-	MinCommitteeSize           = 3                // min size to run bft
-	DefaultBroadcastStateTime  = 6 * time.Second  // in second
-	DefaultStateUpdateTime     = 8 * time.Second  // in second
-	DefaultMaxBlockSyncTime    = 10 * time.Second // in second
-	DefaultCacheCleanupTime    = 40 * time.Second // in second
-	WorkerNumber               = 5
-	MAX_S2B_BLOCK              = 30
-	MAX_BEACON_BLOCK           = 5
-	LowerBoundPercentForIncDAO = 3
-	UpperBoundPercentForIncDAO = 10
-	GetValidBlock              = 20
-	TestRandom                 = true
-	BEACON_ID                  = -1 // CommitteeID of beacon chain, used for highway
+	VERSION                       = 1
+	RANDOM_NUMBER                 = 3
+	SHARD_BLOCK_VERSION           = 1
+	BEACON_BLOCK_VERSION          = 1
+	DefaultMaxBlkReqPerPeer       = 600
+	DefaultMaxBlkReqPerTime       = 1200
+	MinCommitteeSize              = 3                // min size to run bft
+	DefaultBroadcastStateTime     = 6 * time.Second  // in second
+	DefaultStateUpdateTime        = 8 * time.Second  // in second
+	DefaultMaxBlockSyncTime       = 10 * time.Second // in second
+	DefaultCacheCleanupTime       = 40 * time.Second // in second
+	WorkerNumber                  = 5
+	MAX_S2B_BLOCK                 = 30
+	MAX_BEACON_BLOCK              = 5
+	LowerBoundPercentForIncDAO    = 3
+	UpperBoundPercentForIncDAO    = 10
+	GetValidBlock                 = 20
+	TestRandom                    = true
+	BEACON_ID                     = -1         // CommitteeID of beacon chain, used for highway
+	ValidateTimeForSpamRequestTxs = 1581565837 // GMT: Thursday, February 13, 2020 3:50:37 AM. From this time, block will be checked spam request-reward tx
+	TransactionBatchSize          = 10
+	SpareTime                     = 1000 // in mili-second
 )
 
 // burning addresses
