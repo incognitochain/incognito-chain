@@ -2,7 +2,6 @@ package incognitokey
 
 import (
 	"encoding/json"
-	"reflect"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/common"
@@ -16,12 +15,6 @@ import (
 type CommitteePublicKey struct {
 	IncPubKey    privacy.PublicKey
 	MiningPubKey map[string][]byte
-}
-
-func (pubKey *CommitteePublicKey) IsEqualMiningPubKey(consensusName string, k *CommitteePublicKey) bool {
-	u, _ := pubKey.GetMiningKey(consensusName)
-	b, _ := k.GetMiningKey(consensusName)
-	return reflect.DeepEqual(u, b)
 }
 
 func (pubKey *CommitteePublicKey) CheckSanityData() bool {

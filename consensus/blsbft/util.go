@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/consensus"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 
@@ -118,7 +119,7 @@ func parseRoundKey(roundKey string) (uint64, int) {
 func (e *BLSBFT) ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error) {
 	valData, err := DecodeValidationData(block.GetValidationField())
 	if err != nil {
-		return nil, nil, NewConsensusError(UnExpectedError, err)
+		return nil, nil, consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
 	return valData.BridgeSig, valData.ValidatiorsIdx, nil
 }

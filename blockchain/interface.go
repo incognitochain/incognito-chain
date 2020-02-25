@@ -101,7 +101,6 @@ type ChainInterface interface {
 	CurrentHeight() uint64
 	GetCommitteeSize() int
 	GetCommittee() []incognitokey.CommitteePublicKey
-	GetPendingCommittee() []incognitokey.CommitteePublicKey
 	GetPubKeyCommitteeIndex(string) int
 	GetLastProposerIndex() int
 	UnmarshalBlock(blockString []byte) (common.BlockInterface, error)
