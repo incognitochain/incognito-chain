@@ -762,9 +762,12 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 	defer ticker.Stop()
 	for _ = range ticker.C {
 		txDescs := serverObj.memPool.GetPool()
+		ticker := time.NewTicker(50 * time.Millisecond)
+		defer ticker.Stop()
+
 		for _, txDesc := range txDescs {
-			<-time.Tick(50 * time.Millisecond)
 			if !txDesc.IsFowardMessage {
+				<-ticker.C
 				tx := txDesc.Desc.Tx
 				switch tx.GetType() {
 				case common.TxNormalType:
