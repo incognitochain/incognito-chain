@@ -60,7 +60,7 @@ func (cReq ContractingRequest) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (cReq ContractingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (cReq ContractingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
 
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
 	if reflect.TypeOf(txr).String() == "*transaction.Tx" {
@@ -76,7 +76,7 @@ func (cReq ContractingRequest) ValidateSanityData(bcr BlockchainRetriever, txr T
 	if cReq.BurnedAmount == 0 {
 		return false, false, errors.New("Wrong request info's burned amount")
 	}
-	if !txr.IsCoinsBurning(bcr) {
+	if !txr.IsCoinsBurning(bcr, beaconHeight) {
 		return false, false, errors.New("Must send coin to burning address")
 	}
 	if cReq.BurnedAmount != txr.CalculateTxValue() {

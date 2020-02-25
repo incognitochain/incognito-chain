@@ -116,7 +116,7 @@ func (iReq IssuingRequest) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (iReq IssuingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (iReq IssuingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
 	if len(iReq.ReceiverAddress.Pk) == 0 {
 		return false, false, NewMetadataTxError(IssuingRequestValidateSanityDataError, errors.New("Wrong request info's receiver address"))
 	}

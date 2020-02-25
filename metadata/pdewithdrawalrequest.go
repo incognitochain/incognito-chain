@@ -68,7 +68,7 @@ func (pc PDEWithdrawalRequest) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (pc PDEWithdrawalRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (pc PDEWithdrawalRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
 	keyWallet, err := wallet.Base58CheckDeserialize(pc.WithdrawerAddressStr)
 	if err != nil {
 		return false, false, NewMetadataTxError(PDEWithdrawalRequestFromMapError, errors.New("WithdrawerAddressStr incorrect"))
