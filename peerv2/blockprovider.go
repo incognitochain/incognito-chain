@@ -224,14 +224,16 @@ func (bp *BlockProvider) StreamBlockBeaconByHeight(req *proto.GetBlockBeaconByHe
 	return nil
 }
 
-func (bp *BlockProvider) StreamBlockByHeight(req *proto.BlockByHeightRequest, stream proto.HighwayService_StreamBlockByHeightServer) error {
-	var heights []uint64
-	Logger.Infof("[stream] Block provider received request block type %v, blk heights specific %v [%v..%v], len %v", req.GetType(), req.GetSpecific(), req.Heights[0], req.Heights[len(req.Heights)-1], len(req.Heights))
-	heights = req.GetHeights()
-	blkRecv := bp.NetSync.StreamBlockByHeight(false, req.GetType(), req.GetSpecific() req.GetSpecific(), heights)
+func (bp *BlockProvider) StreamBlockByHeight(
+	req *proto.BlockByHeightRequest,
+	stream proto.HighwayService_StreamBlockByHeightServer,
+) error {
+	// Logger.Infof("[stream] Block provider received request block type %v, blk heights specific %v [%v..%v], len %v", req.GetType(), req.GetSpecific(), req.Heights[0], req.Heights[len(req.Heights)-1], len(req.Heights))
+	Logger.Infof("[stream] Block provider received request stream block type %v, spec %v, height [%v..%v] len %v, from %v to %v", req.Type, req.Specific, req.Heights[0], req.Heights[len(req.Heights)-1], len(req.Heights), req.From, req.To)
+	blkRecv := bp.NetSync.StreamBlockByHeight(false, req)
 	for blk := range blkRecv {
 		rdata, err := wrapper.EnCom(blk)
-		blkData := append([]byte{blockbeacon}, rdata...)
+		blkData := append([]byte{byte(req.Type)}, rdata...)
 		if err != nil {
 			Logger.Infof("[stream] block channel return error when marshal %v", err)
 			return err
@@ -260,5 +262,5 @@ type NetSync interface {
 	GetBlockBeaconByHeight(bool, bool, []uint64) []wire.Message
 	GetBlockBeaconByHash(blkHashes []common.Hash) []wire.Message
 	StreamBlockBeaconByHeight(fromPool bool, specificHeight bool, blkHeights []uint64) chan interface{}
-	StreamBlockByHeight(fromPool bool, blktype byte, specificHeight bool, blkHeights []uint64, fromcID byte, tocID byte) chan interface{}
+	StreamBlockByHeight(fromPool bool, req *proto.BlockByHeightRequest) chan interface{}
 }

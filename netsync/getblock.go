@@ -378,7 +378,8 @@ func (netSync *NetSync) StreamBlockByHeight(
 	fromPool bool,
 	req *proto.BlockByHeightRequest,
 ) chan interface{} {
-	Logger.log.Infof("[stream] Netsync received request get block %v %v [%v...%v] len %v", fromPool, req.Specific, req.Heights[0], req.Heights[len(req.Heights)-1], len(req.Heights))
+	// Logger.log.Infof("[stream] Netsync received request get block %v %v [%v...%v] len %v", fromPool, req.Specific, req.Heights[0], req.Heights[len(req.Heights)-1], len(req.Heights))
+	Logger.log.Infof("[stream] Netsync received request stream block type %v, spec %v, height [%v..%v] len %v, from %v to %v", req.Type, req.Specific, req.Heights[0], req.Heights[len(req.Heights)-1], len(req.Heights), req.From, req.To)
 	blkCh := make(chan interface{})
 	if !req.Specific {
 		if len(req.Heights) != 2 || req.Heights[1] < req.Heights[0] {

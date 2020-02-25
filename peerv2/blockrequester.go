@@ -342,6 +342,45 @@ func (c *BlockRequester) StreamBlockBeaconByHeight(
 	return nil
 }
 
+func (c *BlockRequester) StreamBlockByHeight(
+	req *proto.BlockByHeightRequest,
+) error {
+	c.RLock()
+	defer c.RUnlock()
+	if !c.ready() {
+		return errors.New("requester not ready")
+	}
+	Logger.Infof("[stream] Requesting stream block type %v, spec %v, height [%v..%v] len %v, from %v to %v", req.Type, req.Specific, req.Heights[0], req.Heights[len(req.Heights)-1], len(req.Heights), req.From, req.To)
+	client := proto.NewHighwayServiceClient(c.conn)
+	ctx, cancel := context.WithTimeout(context.Background(), MaxTimePerRequest)
+	defer cancel()
+	stream, err := client.StreamBlockByHeight(ctx, req, grpc.MaxCallRecvMsgSize(MaxCallRecvMsgSize))
+	if err != nil {
+		Logger.Infof("[stream] This client not return stream for this request %v, got error %v ", req, err)
+		return err
+	}
+
+	for {
+		blkData, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			// log.Fatalf("Received err %v", err)
+			Logger.Infof("[stream] This stream return error %v", err)
+			return err
+		}
+		Logger.Infof("[stream] Got block, push to handler")
+		if len(blkData.Data) < 2 {
+			return errors.Errorf("[stream] Received unexpected data, data len must greater than 1, data len received %v", len(blkData.GetData()))
+		}
+		c.HandleResponseBlock(blkData.Data)
+	}
+
+	Logger.Infof("[stream] Return StreamBlockBeaconByHeight")
+	return nil
+}
+
 func (c *BlockRequester) GetBlockBeaconByHash(
 	hashes []common.Hash,
 ) ([][]byte, error) {
