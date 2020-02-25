@@ -45,7 +45,8 @@ func NewRequester(prtc GRPCDialer) *BlockRequester {
 // keepConnection dials highway to establish gRPC connection if it isn't available
 func (c *BlockRequester) keepConnection() {
 	currentHWID := peer.ID("")
-	watchTimestep := time.Tick(RequesterDialTimestep)
+	watchTimestep := time.NewTicker(RequesterDialTimestep)
+	defer watchTimestep.Stop()
 
 	closeConnection := func() {
 		c.Lock()
@@ -64,7 +65,7 @@ func (c *BlockRequester) keepConnection() {
 
 	for {
 		select {
-		case <-watchTimestep:
+		case <-watchTimestep.C:
 			c.RLock()
 			ready := c.ready()
 			c.RUnlock()
@@ -137,6 +138,7 @@ func (c *BlockRequester) Register(
 		return nil, nil, errors.New("requester not ready")
 	}
 
+	uuid := genUUID()
 	client := proto.NewHighwayServiceClient(c.conn)
 	reply, err := client.Register(
 		ctx,
@@ -146,6 +148,7 @@ func (c *BlockRequester) Register(
 			CommitteeID:        committeeIDs,
 			PeerID:             peer.IDB58Encode(selfID),
 			Role:               role,
+			UUID:               uuid,
 		},
 	)
 	if err != nil {
@@ -178,7 +181,8 @@ func (c *BlockRequester) GetBlockShardByHeight(
 	res := [][]byte{}
 	client := proto.NewHighwayServiceClient(c.conn)
 	for _, rangeBlk := range rangeBlks {
-		Logger.Infof("[blkbyheight] Range blk Requesting block shard %v (by specific %v): from = %v to = %v; height: %v", shardID, bySpecific, rangeBlk.from, rangeBlk.to, rangeBlk.heights)
+		uuid := genUUID()
+		Logger.Infof("[blkbyheight] Range blk Requesting block shard %v (by specific %v): from = %v to = %v; height: %v, uuid = %s", shardID, bySpecific, rangeBlk.from, rangeBlk.to, rangeBlk.heights, uuid)
 		ctx, cancel := context.WithTimeout(context.Background(), MaxTimePerRequest)
 		defer cancel()
 		reply, err := client.GetBlockShardByHeight(
@@ -190,14 +194,15 @@ func (c *BlockRequester) GetBlockShardByHeight(
 				ToHeight:   rangeBlk.to,
 				Heights:    rangeBlk.heights,
 				FromPool:   false,
+				UUID:       uuid,
 			},
 			grpc.MaxCallRecvMsgSize(MaxCallRecvMsgSize),
 		)
 		if err != nil {
-			Logger.Errorf("Request block shard %v by spec height %v (from %v to %v height %v) return error %v", shardID, bySpecific, rangeBlk.from, rangeBlk.to, rangeBlk.heights, err)
+			Logger.Errorf("Request block shard %v by spec height %v (from %v to %v height %v) return error %v, uuid = %v", shardID, bySpecific, rangeBlk.from, rangeBlk.to, rangeBlk.heights, err, uuid)
 			continue
 		}
-		Logger.Infof("[blkbyheight] Received block shard %v data %v", shardID, len(reply.Data))
+		Logger.Infof("[blkbyheight] Received block shard %v data %v, uuid = %v", shardID, len(reply.Data), uuid)
 		res = append(res, reply.Data...)
 	}
 	return res, nil
@@ -228,6 +233,7 @@ func (c *BlockRequester) GetBlockShardByHash(
 	})
 	client := proto.NewHighwayServiceClient(c.conn)
 	for _, rangeBlk := range rangeBlks {
+		uuid := genUUID()
 		ctx, cancel := context.WithTimeout(context.Background(), MaxTimePerRequest)
 		defer cancel()
 		reply, err := client.GetBlockShardByHash(
@@ -235,15 +241,16 @@ func (c *BlockRequester) GetBlockShardByHash(
 			&proto.GetBlockShardByHashRequest{
 				Shard:  shardID,
 				Hashes: rangeBlk.hashes,
+				UUID:   uuid,
 			},
 			grpc.MaxCallRecvMsgSize(MaxCallRecvMsgSize),
 		)
 		if err != nil {
-			Logger.Errorf("Request block shard %v by hashes %v return error %v", shardID, hashes, err)
+			Logger.Errorf("Request block shard %v by hashes %v return error %v, uuid = %s", shardID, hashes, err, uuid)
 			continue
 		}
 		res = append(res, reply.Data...)
-		Logger.Infof("[blkbyhash] Received block shard % by hashes data %v", shardID, len(reply.Data))
+		Logger.Infof("[blkbyhash] Received block shard % by hashes data %v, uuid = %s", shardID, len(reply.Data), uuid)
 	}
 	return res, nil
 }
@@ -271,6 +278,7 @@ func (c *BlockRequester) GetBlockBeaconByHeight(
 		hashes:        [][]byte{},
 	})
 	for _, rangeBlk := range rangeBlks {
+		uuid := genUUID()
 		ctx, cancel := context.WithTimeout(context.Background(), MaxTimePerRequest)
 		defer cancel()
 		reply, err := client.GetBlockBeaconByHeight(
@@ -281,15 +289,16 @@ func (c *BlockRequester) GetBlockBeaconByHeight(
 				ToHeight:   rangeBlk.to,
 				Heights:    rangeBlk.heights,
 				FromPool:   false,
+				UUID:       uuid,
 			},
 			grpc.MaxCallRecvMsgSize(MaxCallRecvMsgSize),
 		)
 		if err != nil {
-			Logger.Errorf("Request block beacon by spec height %v (from %v to %v height %v) return error %v", bySpecific, rangeBlk.from, rangeBlk.to, rangeBlk.heights, err)
+			Logger.Errorf("Request block beacon by spec height %v (from %v to %v height %v) return error %v, uuid = %s", bySpecific, rangeBlk.from, rangeBlk.to, rangeBlk.heights, err, uuid)
 			continue
 		} else if reply != nil {
 			res = append(res, reply.Data...)
-			Logger.Infof("[blkbyheight] Received block beacon data len: %v", len(reply.Data))
+			Logger.Infof("[blkbyheight] Received block beacon data len: %v, uuid = %s", len(reply.Data), uuid)
 		}
 	}
 	return res, nil
@@ -405,20 +414,22 @@ func (c *BlockRequester) GetBlockBeaconByHash(
 	})
 	client := proto.NewHighwayServiceClient(c.conn)
 	for _, rangeBlk := range rangeBlks {
+		uuid := genUUID()
 		ctx, cancel := context.WithTimeout(context.Background(), MaxTimePerRequest)
 		defer cancel()
 		reply, err := client.GetBlockBeaconByHash(
 			ctx,
 			&proto.GetBlockBeaconByHashRequest{
 				Hashes: rangeBlk.hashes,
+				UUID:   uuid,
 			},
 			grpc.MaxCallRecvMsgSize(MaxCallRecvMsgSize),
 		)
 		if err != nil {
-			Logger.Errorf("Request block beacon by hashes %v return error %v", hashes, err)
+			Logger.Errorf("Request block beacon by hashes %v return error %v, uuid = %s", hashes, err, uuid)
 			continue
 		}
-		Logger.Infof("Received block beacon data from get beacon by hash %v", len(reply.Data))
+		Logger.Infof("Received block beacon data from get beacon by hash %v, uuid = %s", len(reply.Data), uuid)
 		res = append(res, reply.Data...)
 	}
 	return res, nil
@@ -449,7 +460,8 @@ func (c *BlockRequester) GetBlockShardToBeaconByHeight(
 	})
 	Logger.Infof("[syncblkinfo] shard %v original from %v to %v heights %v", shardID, from, to, heights)
 	for _, rangeBlk := range rangeBlks {
-		Logger.Infof("[syncblkinfo] shard %v from %v to %v heights %v", shardID, rangeBlk.from, rangeBlk.to, rangeBlk.heights)
+		uuid := genUUID()
+		Logger.Infof("[syncblkinfo] shard %v from %v to %v heights %v, uuid = %s", shardID, rangeBlk.from, rangeBlk.to, rangeBlk.heights, uuid)
 		ctx, cancel := context.WithTimeout(context.Background(), MaxTimePerRequest)
 		defer cancel()
 		reply, err := client.GetBlockShardToBeaconByHeight(
@@ -461,15 +473,16 @@ func (c *BlockRequester) GetBlockShardToBeaconByHeight(
 				ToHeight:   rangeBlk.to,
 				Heights:    rangeBlk.heights,
 				FromPool:   false,
+				UUID:       uuid,
 			},
 			grpc.MaxCallRecvMsgSize(MaxCallRecvMsgSize),
 		)
 		if err != nil {
-			Logger.Infof("[sync] Received err: %v from = %v to = %v shard %v; Heights: %v", err, from, to, shardID, heights)
+			Logger.Infof("[sync] Received err: %v from = %v to = %v shard %v; Heights: %v, uuid = %s", err, from, to, shardID, heights, uuid)
 			continue
 		} else if reply != nil {
 			res = append(res, reply.Data...)
-			Logger.Infof("[sync] Received block s2b (shard %v) data len: %v from = %v to = %v; Heights: %v ", shardID, len(reply.Data), from, to, heights)
+			Logger.Infof("[sync] Received block s2b (shard %v) data len: %v from = %v to = %v; Heights: %v , uuid = %s", shardID, len(reply.Data), from, to, heights, uuid)
 		}
 	}
 	return res, nil
@@ -498,6 +511,7 @@ func (c *BlockRequester) GetBlockCrossShardByHeight(
 		hashes:        [][]byte{},
 	})
 	for _, rangeBlk := range rangeBlks {
+		uuid := genUUID()
 		ctx, cancel := context.WithTimeout(context.Background(), MaxTimePerRequest)
 		defer cancel()
 		reply, err := client.GetBlockCrossShardByHeight(
@@ -510,14 +524,15 @@ func (c *BlockRequester) GetBlockCrossShardByHeight(
 				ToHeight:   0,
 				Heights:    rangeBlk.heights,
 				FromPool:   getFromPool,
+				UUID:       uuid,
 			},
 			grpc.MaxCallRecvMsgSize(MaxCallRecvMsgSize),
 		)
 		if err != nil {
-			Logger.Errorf("Request block crossshard by spec height (height %v) return error %v", rangeBlk.heights, err)
+			Logger.Errorf("Request block crossshard by spec height (height %v) return error %v, uuid = %s", rangeBlk.heights, err, uuid)
 			continue
 		} else if reply != nil {
-			Logger.Infof("Received block s2b data len: %v", len(reply.Data))
+			Logger.Infof("Received block s2b data len: %v, uuid = %s", len(reply.Data), uuid)
 			res = append(res, reply.Data...)
 		}
 	}

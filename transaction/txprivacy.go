@@ -463,7 +463,7 @@ func (tx *Tx) verifySigTx() (bool, error) {
 // ValidateTransaction returns true if transaction is valid:
 // - Verify tx signature
 // - Verify the payment proof
-func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
+func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
 	//hasPrivacy = false
 	Logger.log.Debugf("VALIDATING TX........\n")
 	// start := time.Now()
@@ -507,14 +507,16 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			return false, NewTransactionErr(DuplicatedOutputSndError, errors.New("Duplicate output coins' snd\n"))
 		}
 
-		for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
-			// Check output coins' SND is not exists in SND list (Database)
-			if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator(), db); ok || err != nil {
-				if err != nil {
-					Logger.log.Error(err)
+		if isNewTransaction {
+			for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
+				// Check output coins' SND is not exists in SND list (Database)
+				if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator(), db); ok || err != nil {
+					if err != nil {
+						Logger.log.Error(err)
+					}
+					Logger.log.Errorf("snd existed: %d\n", i)
+					return false, NewTransactionErr(SndExistedError, err, fmt.Sprintf("snd existed: %d\n", i))
 				}
-				Logger.log.Errorf("snd existed: %d\n", i)
-				return false, NewTransactionErr(SndExistedError, err, fmt.Sprintf("snd existed: %d\n", i))
 			}
 		}
 
@@ -532,12 +534,29 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		}
 
 		// Verify the payment proof
-		valid, err = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, db, shardID, tokenID)
+		valid, err = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, db, shardID, tokenID, isBatch)
 		if !valid {
 			if err != nil {
 				Logger.log.Error(err)
 			}
 			Logger.log.Error("FAILED VERIFICATION PAYMENT PROOF")
+			err1, ok := err.(*privacy.PrivacyError)
+			if ok {
+				// parse error detail
+				if err1.Code == privacy.ErrCodeMessage[privacy.VerifyOneOutOfManyProofFailedErr].Code {
+					if isNewTransaction {
+						return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
+					} else {
+						// for old txs which be get from sync block or validate new block
+						if tx.LockTime <= ValidateTimeForOneoutOfManyProof {
+							// only verify by sign on block because of issue #504(that mean we should pass old tx, which happen before this issue)
+							return true, nil
+						} else {
+							return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
+						}
+					}
+				}
+			}
 			return false, NewTransactionErr(TxProofVerifyFailError, err, tx.Hash().String())
 		} else {
 			Logger.log.Debugf("SUCCESSED VERIFICATION PAYMENT PROOF ")
@@ -816,9 +835,9 @@ func (tx Tx) ValidateTxWithBlockChain(
 	}
 	if tx.Metadata != nil {
 		isContinued, err := tx.Metadata.ValidateTxWithBlockChain(&tx, bcr, shardID, db)
-		fmt.Printf("[db] validate metadata with blockchain: %d %h %t %v\n", tx.GetMetadataType(), tx.Hash(), isContinued, err)
 		if err != nil {
-			return err
+			Logger.log.Errorf("[db] validate metadata with blockchain: %d %s %t %v\n", tx.GetMetadataType(), tx.Hash().String(), isContinued, err)
+			return NewTransactionErr(RejectTxMedataWithBlockChain, fmt.Errorf("validate metadata of tx %s with blockchain error %+v", tx.Hash().String(), err))
 		}
 		if !isContinued {
 			return nil
@@ -1015,11 +1034,11 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 	return true, nil
 }
 
-func (tx Tx) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
+func (tx Tx) ValidateSanityData(bcr metadata.BlockchainRetriever, beaconHeight uint64) (bool, error) {
 	Logger.log.Debugf("\n\n\n START Validating sanity data of metadata %+v\n\n\n", tx.Metadata)
 	if tx.Metadata != nil {
 		Logger.log.Debug("tx.Metadata.ValidateSanityData")
-		isContinued, ok, err := tx.Metadata.ValidateSanityData(bcr, &tx)
+		isContinued, ok, err := tx.Metadata.ValidateSanityData(bcr, &tx, beaconHeight)
 		Logger.log.Debug("END tx.Metadata.ValidateSanityData")
 		if err != nil || !ok || !isContinued {
 			return ok, err
@@ -1034,13 +1053,14 @@ func (tx Tx) ValidateTxByItself(
 	db database.DatabaseInterface,
 	bcr metadata.BlockchainRetriever,
 	shardID byte,
+	isNewTransaction bool,
 ) (bool, error) {
 	prvCoinID := &common.Hash{}
 	err := prvCoinID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
 		return false, err
 	}
-	ok, err := tx.ValidateTransaction(hasPrivacy, db, shardID, prvCoinID)
+	ok, err := tx.ValidateTransaction(hasPrivacy, db, shardID, prvCoinID, false, isNewTransaction)
 	if !ok {
 		return false, err
 	}
@@ -1104,7 +1124,7 @@ func (tx Tx) ValidateType() bool {
 	return tx.Type == common.TxNormalType || tx.Type == common.TxRewardType || tx.Type == common.TxReturnStakingType
 }
 
-func (tx Tx) IsCoinsBurning(bcr metadata.BlockchainRetriever) bool {
+func (tx Tx) IsCoinsBurning(bcr metadata.BlockchainRetriever, beaconHeight uint64) bool {
 	if tx.Proof == nil || len(tx.Proof.GetOutputCoins()) == 0 {
 		return false
 	}
@@ -1113,7 +1133,7 @@ func (tx Tx) IsCoinsBurning(bcr metadata.BlockchainRetriever) bool {
 		senderPKBytes = tx.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().ToBytesS()
 	}
 	//get burning address
-	burningAddress := bcr.GetBurningAddress(0)
+	burningAddress := bcr.GetBurningAddress(beaconHeight)
 	keyWalletBurningAccount, err := wallet.Base58CheckDeserialize(burningAddress)
 	if err != nil {
 		return false

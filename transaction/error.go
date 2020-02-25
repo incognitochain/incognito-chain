@@ -40,6 +40,8 @@ const (
 	SndExistedError
 	InputCommitmentIsNotExistedError
 	TxProofVerifyFailError
+	VerifyOneOutOfManyProofFailedErr
+	BatchTxProofVerifyFailError
 	VerifyMinerCreatedTxBeforeGettingInBlockError
 	CommitOutputCoinError
 
@@ -62,6 +64,7 @@ const (
 	RejectTxPublickeySigSize
 	RejectTxType
 	RejectTxInfoSize
+	RejectTxMedataWithBlockChain
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -108,6 +111,9 @@ var ErrCodeMessage = map[int]struct {
 	RejectTxPublickeySigSize:                      {-1036, "Wrong tx Sig PK"},
 	RejectTxType:                                  {-1037, "Wrong tx type"},
 	RejectTxInfoSize:                              {-1038, "Wrong tx info length"},
+	RejectTxMedataWithBlockChain:                  {-1039, "Reject invalid metadata with blockchain"},
+	BatchTxProofVerifyFailError:                   {-1040, "Can not verify proof of batch txs %s"},
+	VerifyOneOutOfManyProofFailedErr:              {-1041, "Verify one out of many proof failed"},
 
 	// for PRV
 	InvalidSanityDataPRVError:  {-2000, "Invalid sanity data for PRV"},

@@ -95,7 +95,7 @@ func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateTxWithBlockChain(
 	// Receiver Is Burning Address
 	//
 */
-func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
 	if txr.IsPrivacy() {
 		return false, false, errors.New("Stop AutoStaking Request Transaction Is No Privacy Transaction")
 	}
@@ -105,7 +105,7 @@ func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateSanityData(bcr Bl
 	}
 
 	// get burning address
-	burningAddress := bcr.GetBurningAddress(0)
+	burningAddress := bcr.GetBurningAddress(beaconHeight)
 	keyWalletBurningAdd, err := wallet.Base58CheckDeserialize(burningAddress)
 	if err != nil {
 		return false, false, err

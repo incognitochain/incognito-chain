@@ -1,4 +1,4 @@
-This is the setup to run the very basic incognito blockchain on your local server. Then blockchain will contain 4 node in Beacon, 4 node in Shard-0, 4 node in Shard-1. In short, you will setup 12 node in only one server.
+This is the setup to run the very basic incognito blockchain on your local server. Then blockchain will contain 2 Highway-Proxies, 4 nodes in Beacon, 4 nodes in Shard-0, 4 nodes in Shard-1. In short, you will setup 2 Highway and 12 nodes in only one server.
 
 **Prerequisites:** 
  + Ubuntu 18.04 or higher
@@ -15,16 +15,44 @@ This is the setup to run the very basic incognito blockchain on your local serve
  + 16 CPU ~ 2.4Ghz
  + 24 GB of RAM
 
+#SECTION I: DEPLOY THE INCOGNITO-HIGHWAY
+--------------------
+1. Clone the repo:
 
-#SECTION I: DEPLOY THE CHAIN
+`git clone https://github.com/incognitochain/incognito-highway.git`
+
+2. Checkout the branch v1
+
+`git checkout v1`
+
+3. Create tmux sessions:
+```
+tmux new -s highway1
+Ctrl B D (detach)
+tmux new -s highway2
+Ctrl B D (detach)
+```
+
+4. Build the highway binary
+```
+go build -o highway
+```
+
+5. Run the highway
+```
+tmux send-keys -t highway1 C-C ENTER ./run.sh lc1 ENTER
+tmux send-keys -t highway2 C-C ENTER ./run.sh lc2 ENTER
+```
+
+#SECTION II: DEPLOY THE CHAIN
 --------------------
 1. Clone the repo:
 
 `git clone https://github.com/incognitochain/incognito-chain.git`
 
-2. Checkout the branch master-temp-B
+2. Checkout the tag 20200114_1
 
-`git checkout master-temp-B `
+`git checkout 20200114_1`
 
 3. Modify the following params in *./incognito-chain/common/constants.go*
 ```
@@ -112,7 +140,7 @@ testUserkeyList := map[string]uint64{
 }]
 ```
 
-6. Copy genesis block data to *./incognito-chain/blockchain/constant.go*, 
+6. Copy genesis block data to *./incognito-chain/blockchain/constantstx.go*, 
 replace the output at step5 to the section TestnetInitPRV. 
 ```
 var TestnetInitPRV = []string{
@@ -146,7 +174,8 @@ TestNetActiveShards           = 2		// Number of Shard in Incognito Blockchain
 ```
 8. Modify the following params in *./incognito-chain/blockchain/params.go*: (Under ChainTestParam section)
 ```
-CheckForce:   false, 					// Avoid system update when received signal from Master Server
+CheckForce:   false, 					          // Avoid system update when received signal from Master Server
+BeaconHeightBreakPointBurnAddr: 1,      // Apply newest burning address started from block beacon no. 1
 ```
 
 9. Generate 12 keyset for committee node:
@@ -218,9 +247,6 @@ randomString := []byte("YourRandomStringTwo")    	// A random string used to cre
 ```
 cd ./incognito-chain/
 go build -o incognito
-
-cd ./incognito-chain/bootnode/
-go build -o bootnode
 ```
 
 13. Create Tmux session
@@ -235,39 +261,6 @@ go build -o bootnode
 eg:
 
 `tmux a -t fullnode`
-
-
-#SECTION II: THE ABOVE IS SO COMPLICATED FOR YOU?
---------------------
-Simply check out this branch `git checkout qc-testing`
-(the code is up to date with branch `master-temp-B`, included all the configuration above)
-- Run the following script:
-```
-bash build_chain.sh
-bash create_tmux.sh
-bash start_chain.sh
-```
-
-- This is the privatekey and payment address for your testing at section III:
-```
-##SHARD0:
-Private key 112t8rnX5E2Mkqywuid4r4Nb2XTeLu3NJda43cuUM1ck2brpHrufi4Vi42EGybFhzfmouNbej81YJVoWewJqbR4rPhq2H945BXCLS2aDLBTA
-Payment address: 12RxERBySmquLtM1R1Dk2s7J4LyPxqHxcZ956kupQX3FPhVo2KtoUYJWKet2nWqWqSh3asWmgGTYsvz3jX73HqD8Jr2LwhjhJfpG756
-Balance          : 1000000000000000 
-
-Private key 112t8rnXVMJJZzfF1naXvfE9nkTKwUwFWFeh8cfEyViG1vpA8A9khJk3mhyB1hDuJ4RbreDTsZpgJK4YcSxdEpXJKMEd8Vmp5UqKWwBcYzxv
-Payment address: 12RyJTSL2G8KvjN7SUFuiS9Ek4pvFFze3EMMic31fmXVw8McwYzpKPpxeW6TLsNo1UoPhCHKV3GDRLQwdLF41PED3LQNCLsGNKzmCE5
-Balance          : 0
-
-##SHARD1:
-Payment Address  : 12RquWY3vpaSPMtAQEozAB1pgbJJnnphzhJTux2VGaX5eHBxYGKcUTYEqJqQdAUsjzr8cpNQRnSTygnduxBpBvrqH1XthdrJMxCQyaC
-Private Key      : 112t8rnY3WLfkE9MsKyW9s3Z5qGnPgCkeutTXJzcT5KJgAMS3vgTL9YbaJ7wyc52CzMnrj8QtwHuCpDzo47PV1qCnrui2dfJzKpuYJ3H6fa9
-Balance          : 0
-
-Payment Address  : 12S1X46G28CSfcAnxz1bT6LymKuLodW9RDT9hLckBVzGozAiCGoZ1xP9yA6DpyUQYuXCQXvW1fkUeNSJRryQwHtvFUh5WnFycngdzu5
-Private Key      : 112t8rnYRAAQ9BqLA9CF7ESWQzAAUBL1EZQwVPx4z5gPstyNpLk9abFp7iXQFu1rQ5xKukKtvorrxyetpP6Crs7Hj7GeVaVPDL5oW12zx6sQ
-Balance          : 0
-```
 
 #SECTION III: TEST THE CHAIN
 --------------------
