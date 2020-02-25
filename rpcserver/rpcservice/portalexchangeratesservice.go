@@ -2,6 +2,7 @@ package rpcservice
 
 import (
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -12,14 +13,17 @@ type PortalExchangeRatesService struct {
 	BlockChain *blockchain.BlockChain
 }
 
-func (portalExchangeRatesService *PortalExchangeRatesService) GetExchangeRates(service *BlockService) (jsonresult.FinalExchangeRatesResult, *RPCError) {
+func (portalExchangeRatesService *PortalExchangeRatesService) GetExchangeRates(service *BlockService, db database.DatabaseInterface) (jsonresult.FinalExchangeRatesResult, *RPCError) {
 	beaconBlock, err := service.GetBeaconBestBlock()
 	if err != nil {
 		return jsonresult.FinalExchangeRatesResult{}, NewRPCError(GetBeaconBestBlockError, err)
 	}
 
 	finalExchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconBlock.GetHeight())
-	finalExchangeRates, err := blockchain.GetFinalExchangeRatesByKey(portalExchangeRatesService.BlockChain.GetDatabase(), []byte(finalExchangeRatesKey))
+	finalExchangeRates, err := blockchain.GetFinalExchangeRatesByKey(
+		db,
+		[]byte(finalExchangeRatesKey),
+	)
 
 	if err != nil {
 		return  jsonresult.FinalExchangeRatesResult{}, NewRPCError(GetExchangeRatesError, err)

@@ -348,17 +348,10 @@ func (blockchain *BlockChain) processPortalExchangeRates(beaconHeight uint64, in
 
 	switch reqStatus {
 	case common.PortalExchangeRatesSuccessStatus:
-		exchangeRatesDetail := make(map[string]lvdb.ExchangeRatesDetail)
-		for pTokenId, rates := range portingExchangeRatesContent.Rates {
-			exchangeRatesDetail[pTokenId] = lvdb.ExchangeRatesDetail {
-				Amount: rates.Amount,
-			}
-		}
-
 		//save db
 		newExchangeRates, _ := NewExchangeRatesState(
 			portingExchangeRatesContent.SenderAddress,
-			exchangeRatesDetail,
+			portingExchangeRatesContent.Rates,
 		)
 
 
@@ -403,13 +396,13 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 		for key, rates := range v.Rates {
 			switch key {
 			case metadata.PortalTokenSymbolBTC:
-				btcExchangeRatesSlice = append(btcExchangeRatesSlice, rates.Amount)
+				btcExchangeRatesSlice = append(btcExchangeRatesSlice, rates)
 				break
 			case metadata.PortalTokenSymbolBNB:
-				bnbExchangeRatesSlice = append(bnbExchangeRatesSlice, rates.Amount)
+				bnbExchangeRatesSlice = append(bnbExchangeRatesSlice, rates)
 				break
 			case metadata.PortalTokenSymbolPRV:
-				prvExchangeRatesSlice = append(prvExchangeRatesSlice, rates.Amount)
+				prvExchangeRatesSlice = append(prvExchangeRatesSlice, rates)
 				break
 			}
 		}

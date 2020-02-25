@@ -12,14 +12,10 @@ import (
 	"errors"
 )
 
-type ExchangeRate struct {
-	Amount uint64 //amount * 10^6 (USDT)
-}
-
 type PortalExchangeRates struct {
 	MetadataBase
 	SenderAddress string
-	Rates map[string]ExchangeRate //Key: Crypto Symbol
+	Rates map[string]uint64
 }
 
 type PortalExchangeRatesAction struct {
@@ -29,7 +25,7 @@ type PortalExchangeRatesAction struct {
 	ShardID byte
 }
 
-func NewPortalExchangeRates(metaType int, senderAddress string, currency map[string]ExchangeRate) (*PortalExchangeRates, error) {
+func NewPortalExchangeRates(metaType int, senderAddress string, currency map[string]uint64) (*PortalExchangeRates, error) {
 	metadataBase := MetadataBase{Type: metaType}
 
 	portalExchangeRates := &PortalExchangeRates {
@@ -44,7 +40,7 @@ func NewPortalExchangeRates(metaType int, senderAddress string, currency map[str
 
 type PortalExchangeRatesContent struct {
 	SenderAddress string
-	Rates map[string]ExchangeRate
+	Rates map[string]uint64
 	TxReqID common.Hash
 	LockTime int64
 	UniqueRequestId string
@@ -80,24 +76,24 @@ func (portalExchangeRates PortalExchangeRates) ValidateSanityData(bcr Blockchain
 	}
 
 	if txr.GetType() != common.TxNormalType {
-		return false, false, errors.New("tx exchange rates must be TxNormalType")
+		return false, false, errors.New("Tx exchange rates must be TxNormalType")
 	}
 
 	// check burning tx
 	if !txr.IsCoinsBurning(bcr) {
-		return false, false, errors.New("must send coin to burning address")
+		return false, false, errors.New("Must send coin to burning address")
 	}
 
-	for pTokenId, exchangeRates := range portalExchangeRates.Rates {
-		isSupported, err := common.SliceExists(PortalSupportedExchangeRatesSymbols, pTokenId)
+	/*for pToken, value := range portalExchangeRates.Rates {
+		isSupported, err := common.SliceExists(PortalSupportedExchangeRatesSymbols, pToken)
 		if err != nil || !isSupported {
 			return false, false, errors.New("Public token is not supported currently")
 		}
 
-		if exchangeRates.Amount == 0 {
+		if value == 0 {
 			return false, false, errors.New("Exchange rates should be larger than 0")
 		}
-	}
+	}*/
 
 	return true, true, nil
 }
@@ -110,9 +106,9 @@ func (portalExchangeRates PortalExchangeRates) Hash() *common.Hash {
 	record := portalExchangeRates.MetadataBase.Hash().String()
 	record += portalExchangeRates.SenderAddress
 
-	for pTokenId, exchange := range portalExchangeRates.Rates {
-		record += pTokenId
-		record += strconv.FormatUint(exchange.Amount, 10)
+	for pToken, value := range portalExchangeRates.Rates {
+		record += pToken
+		record += strconv.FormatUint(value, 10)
 	}
 
 	// final hash

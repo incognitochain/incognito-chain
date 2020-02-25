@@ -60,13 +60,9 @@ type RedeemRequest struct {
 	RedeemFee             uint64
 }
 
-type ExchangeRatesDetail struct {
-	Amount uint64
-}
-
 type ExchangeRatesRequest struct {
 	SenderAddress string
-	Rates map[string]ExchangeRatesDetail
+	Rates map[string]uint64
 }
 
 type FinalExchangeRatesDetail struct {

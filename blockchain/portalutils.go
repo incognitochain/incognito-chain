@@ -69,7 +69,7 @@ func NewPortingRequestState(
 
 func NewExchangeRatesState(
 	senderAddress string,
-	rates map[string]lvdb.ExchangeRatesDetail,
+	rates map[string]uint64,
 ) (*lvdb.ExchangeRatesRequest, error) {
 	return &lvdb.ExchangeRatesRequest{
 		SenderAddress: senderAddress,

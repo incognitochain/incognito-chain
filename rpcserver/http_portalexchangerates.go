@@ -29,32 +29,39 @@ func (httpServer *HttpServer) handlePortalExchangeRate(params interface{}, close
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata SenderAddress is invalid"))
 	}
 
-	rates, ok := data["Rates"].([]byte)
+	var exchangeRate = make(map[string]uint64)
+
+	exchangeRateMap, ok := data["Rates"].(map[string]interface{})
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata Rates is invalid"))
 	}
 
-	var exchangeRateMap = make(map[string]metadata.ExchangeRate)
-	err := json.Unmarshal(rates, &exchangeRateMap)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Json Unmarshal Rates error"))
+	if len(exchangeRateMap) <= 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata Rates is invalid"))
 	}
 
-	for pTokenId, RatesValue := range exchangeRateMap {
-		isSupported, err := common.SliceExists(metadata.PortalSupportedExchangeRatesSymbols, pTokenId)
+	for pToken, value := range exchangeRateMap {
+		isSupported, err := common.SliceExists(metadata.PortalSupportedExchangeRatesSymbols, pToken)
 		if err != nil || !isSupported {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Public token is not supported currently"))
 		}
 
-		if RatesValue.Amount <= 0 {
+		amount, ok := value.(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Value must be is integer"))
+		}
+
+		if amount <= 0 {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Exchange rates should be larger than 0"))
 		}
+
+		exchangeRate[pToken] = uint64(amount)
 	}
 
 	meta, _ := metadata.NewPortalExchangeRates(
 		metadata.PortalExchangeRatesMeta,
 		senderAddress,
-		exchangeRateMap,
+		exchangeRate,
 	)
 
 	// create new param to build raw tx from param interface
@@ -99,7 +106,7 @@ func (httpServer *HttpServer) handleCreateAndSendPortalExchangeRates(params inte
 }
 
 func (httpServer *HttpServer) handleGetPortalExchangeRates(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	result, err := httpServer.portalExchangeRates.GetExchangeRates(httpServer.blockService)
+	result, err := httpServer.portalExchangeRates.GetExchangeRates(httpServer.blockService, *httpServer.config.Database)
 
 	if err != nil {
 		return nil, err
