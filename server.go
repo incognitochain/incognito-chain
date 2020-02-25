@@ -764,8 +764,9 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 	defer ticker.Stop()
 	for _ = range ticker.C {
 		txDescs := serverObj.memPool.GetPool()
+
 		for _, txDesc := range txDescs {
-			<-time.Tick(50 * time.Millisecond)
+			time.Sleep(50 * time.Millisecond)
 			if !txDesc.IsFowardMessage {
 				tx := txDesc.Desc.Tx
 				switch tx.GetType() {
