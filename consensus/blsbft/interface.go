@@ -1,11 +1,18 @@
-package consensus
+package blsbft
 
 import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/wire"
 )
+
+type EngineConfig struct {
+	Node          NodeInterface
+	Blockchain    *blockchain.BlockChain
+	PubSubManager *pubsub.PubSubManager
+}
 
 type NodeInterface interface {
 	PushMessageToChain(msg wire.Message, chain blockchain.ChainInterface) error
@@ -15,13 +22,14 @@ type NodeInterface interface {
 	GetMiningKeys() string
 	GetPrivateKey() string
 	DropAllConnections()
+	GetUserMiningState() (role string, chainID int)
 }
 
 type ConsensusInterface interface {
-	// NewInstance - Create a new instance of this consensus
-	NewInstance(chain blockchain.ChainInterface, chainKey string, node NodeInterface, logger common.Logger) ConsensusInterface
 	// GetConsensusName - retrieve consensus name
 	GetConsensusName() string
+	GetChainKey() string
+	GetChainID() int
 
 	// Start - start consensus
 	Start() error
@@ -38,8 +46,6 @@ type ConsensusInterface interface {
 
 	// LoadUserKey - load user mining key
 	LoadUserKey(miningKey string) error
-	// LoadUserKeyFromIncPrivateKey - load user mining key from incognito privatekey
-	LoadUserKeyFromIncPrivateKey(privateKey string) (string, error)
 	// GetUserPublicKey - get user public key of loaded mining key
 	GetUserPublicKey() *incognitokey.CommitteePublicKey
 	// ValidateData - validate data with this consensus signature scheme

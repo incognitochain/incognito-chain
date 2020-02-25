@@ -44,6 +44,11 @@ func (chain *ShardChain) GetCommittee() []incognitokey.CommitteePublicKey {
 	return append(result, chain.BestState.ShardCommittee...)
 }
 
+func (chain *ShardChain) GetPendingCommittee() []incognitokey.CommitteePublicKey {
+	result := []incognitokey.CommitteePublicKey{}
+	return append(result, chain.BestState.ShardPendingValidator...)
+}
+
 func (chain *ShardChain) GetCommitteeSize() int {
 	return len(chain.BestState.ShardCommittee)
 }
