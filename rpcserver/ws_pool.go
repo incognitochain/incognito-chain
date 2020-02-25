@@ -68,8 +68,6 @@ func (wsServer *WsServer) handleSubscribeBeaconPoolBestState(params interface{},
 		Logger.log.Info("Finish Subscribe Beacon Pool Beststate")
 		close(cResult)
 	}()
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
 
 	for {
 		select {
@@ -82,7 +80,7 @@ func (wsServer *WsServer) handleSubscribeBeaconPoolBestState(params interface{},
 			{
 				result := jsonresult.Blocks{Valid: beaconPool.GetValidBlockHeight(), Pending: beaconPool.GetPendingBlockHeight(), Latest: beaconPool.GetBeaconState()}
 				cResult <- RpcSubResult{Result: result, Error: nil}
-				<-ticker.C
+				time.Sleep(1 * time.Second)
 			}
 		}
 	}
@@ -106,7 +104,6 @@ func (wsServer *WsServer) handleSubscribeShardPoolBeststate(params interface{}, 
 		Logger.log.Info("Finish Subscribe Shard Pool Beststate")
 		close(cResult)
 	}()
-	ticker := time.NewTicker(1 * time.Second)
 	for {
 		select {
 
@@ -119,7 +116,7 @@ func (wsServer *WsServer) handleSubscribeShardPoolBeststate(params interface{}, 
 			{
 				result := jsonresult.Blocks{Valid: shardPool.GetValidBlockHeight(), Pending: shardPool.GetPendingBlockHeight(), Latest: shardPool.GetShardState()}
 				cResult <- RpcSubResult{Result: result, Error: nil}
-				<-ticker.C
+				time.Sleep(1 * time.Second)
 			}
 		}
 	}

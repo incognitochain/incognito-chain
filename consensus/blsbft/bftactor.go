@@ -91,11 +91,11 @@ func (e *BLSBFT) Start() error {
 	e.VoteMessageCh = make(chan BFTVote)
 	e.InitRoundData()
 
-	ticker := time.NewTicker(500 * time.Millisecond)
-	defer ticker.Stop()
-
 	e.logger.Info("start bls-bft consensus for chain", e.ChainKey)
 	go func() {
+		ticker := time.NewTicker(500 * time.Millisecond)
+		defer ticker.Stop()
+
 		fmt.Println("action")
 		for { //actor loop
 			select {
