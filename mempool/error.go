@@ -51,7 +51,7 @@ var ErrCodeMessage = map[int]struct {
 	Code    int
 	Message string
 }{
-	RejectDuplicateTx:                           {-1000, "Reject duplicate tx"},
+	RejectDuplicateTx:                           {-1000, "Reject duplicate tx in mempool"},
 	RejectInvalidTx:                             {-1001, "Reject invalid tx"},
 	RejectSanityTx:                              {-1002, "Reject not sansity tx"},
 	RejectSalaryTx:                              {-1003, "Reject salary tx"},
