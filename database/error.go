@@ -118,6 +118,10 @@ const (
 	GetItemPortalByPrefixNotFound
 	GetCustodianDepositStatusError
 	GetReqPTokenStatusError
+
+	// relaying
+	StoreRelayingBNBHeaderError
+	GetRelayingBNBHeaderError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -236,6 +240,11 @@ var ErrCodeMessage = map[int]struct {
 	GetItemPortalByPrefixNotFound:       {-14011, "Get item portal by prefix not found"},
 	GetCustodianDepositStatusError:      {-14012, "Get all custodian deposit status error"},
 	GetReqPTokenStatusError:             {-14014, "Get request ptoken status error"},
+
+
+	// relaying
+	StoreRelayingBNBHeaderError:             {-15001, "Store relaying header bnb error"},
+	GetRelayingBNBHeaderError:             {-15002, "Get relaying header bnb error"},
 }
 
 type DatabaseError struct {

@@ -180,7 +180,9 @@ var HttpHandler = map[string]httpHandler{
 	getPortalReqPTokenStatus:                 (*HttpServer).handleGetPortalReqPTokenStatus,
 
 	// relaying
-	createAndSendTxWithRelayingBNBHeader:      (*HttpServer).handleCreateAndSendTxWithRelayingBNBHeader,
+	createAndSendTxWithRelayingBNBHeader: (*HttpServer).handleCreateAndSendTxWithRelayingBNBHeader,
+	getRelayingBNBHeaderState:            (*HttpServer).handleGetRelayingBNBHeaderState,
+	getRelayingBNBHeaderByBlockHeight:    (*HttpServer).handleGetRelayingBNBHeaderByBlockHeight,
 }
 
 // Commands that are available to a limited user

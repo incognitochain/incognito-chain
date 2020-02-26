@@ -39,8 +39,19 @@ func (db *db) StoreRelayingBNBHeaderChain(blockHeight uint64, header []byte) err
 
 	err := db.Put([]byte(key), header)
 	if err != nil {
-		return err
+		return database.NewDatabaseError(database.StoreRelayingBNBHeaderError, err)
 	}
 
 	return nil
+}
+
+func (db *db) GetRelayingBNBHeaderChain(blockHeight uint64) ([]byte, error) {
+	key := NewRelayingBNBHeaderChainKey(blockHeight)
+
+	data, err := db.lvdb.Get([]byte(key), nil)
+	if err != nil && err != lvdberr.ErrNotFound {
+		return nil, database.NewDatabaseError(database.GetRelayingBNBHeaderError, err)
+	}
+
+	return data, nil
 }

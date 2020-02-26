@@ -197,6 +197,8 @@ const (
 
 	// relaying
 	createAndSendTxWithRelayingBNBHeader = "createandsendtxwithrelayingbnbheader"
+	getRelayingBNBHeaderState            = "getrelayingbnbheaderstate"
+	getRelayingBNBHeaderByBlockHeight    = "getrelayingbnbheaderbyblockheight"
 )
 
 const (
