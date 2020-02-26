@@ -111,7 +111,7 @@ func (d *Dispatcher) processInMessageString(msgStr string) error {
 	}
 
 	if len(jsonDecodeBytes) > message.MaxPayloadLength(wire.Version) {
-		return errors.WithStack(err)
+		return errors.Errorf("Message size too lagre %v, it must be less than %v", len(jsonDecodeBytes), message.MaxPayloadLength(wire.Version))
 	}
 	// check forward TODO
 	/*if peerConn.config.MessageListeners.GetCurrentRoleShard != nil {
