@@ -50,7 +50,7 @@ const (
 	PortalExchangeRatesMeta             = 105
 
 	// relaying
-	RelayingHeaderMeta = 106
+	RelayingBNBHeaderMeta = 106
 )
 
 var minerCreatedMetaTypes = []int{

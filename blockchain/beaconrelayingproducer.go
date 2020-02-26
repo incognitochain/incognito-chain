@@ -19,7 +19,7 @@ func buildHeaderRelayingInst(
 	txReqID common.Hash,
 	status string,
 ) []string {
-	headerRelayingContent := metadata.RelayingHeaderContent{
+	headerRelayingContent := metadata.RelayingBNBHeaderContent{
 		IncogAddressStr: senderAddressStr,
 		Header:          header,
 		TxReqID:         txReqID,
@@ -34,8 +34,8 @@ func buildHeaderRelayingInst(
 	}
 }
 
-// buildInstructionsForHeaderRelaying builds instruction for custodian deposit action
-func (blockchain *BlockChain) buildInstructionsForHeaderRelaying(
+// buildInstructionsForBNBHeaderRelaying builds instruction for custodian deposit action
+func (blockchain *BlockChain) buildInstructionsForBNBHeaderRelaying(
 	contentStr string,
 	shardID byte,
 	metaType int,
@@ -48,7 +48,7 @@ func (blockchain *BlockChain) buildInstructionsForHeaderRelaying(
 		Logger.log.Errorf("ERROR: an error occured while decoding content string of portal custodian deposit action: %+v", err)
 		return [][]string{}, nil
 	}
-	var actionData metadata.RelayingHeaderAction
+	var actionData metadata.RelayingBNBHeaderAction
 	err = json.Unmarshal(actionContentBytes, &actionData)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while unmarshal portal custodian deposit action: %+v", err)
@@ -56,7 +56,7 @@ func (blockchain *BlockChain) buildInstructionsForHeaderRelaying(
 	}
 
 	if relayingHeaderChain == nil {
-		Logger.log.Warn("WARN - [buildInstructionsForHeaderRelaying]: relayingHeaderChain is null.")
+		Logger.log.Warn("WARN - [buildInstructionsForBNBHeaderRelaying]: relayingHeaderChain is null.")
 		inst := buildHeaderRelayingInst(
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.Header,
@@ -72,7 +72,7 @@ func (blockchain *BlockChain) buildInstructionsForHeaderRelaying(
 	// parse and verify header chain
 	headerBytes, err := base64.StdEncoding.DecodeString(meta.Header)
 	if err != nil {
-		Logger.log.Errorf("Error - [buildInstructionsForHeaderRelaying]: Can not decode header string.%v\n", err)
+		Logger.log.Errorf("Error - [buildInstructionsForBNBHeaderRelaying]: Can not decode header string.%v\n", err)
 		inst := buildHeaderRelayingInst(
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.Header,
@@ -88,7 +88,7 @@ func (blockchain *BlockChain) buildInstructionsForHeaderRelaying(
 	var newHeader lvdb.BNBHeader
 	err = json.Unmarshal(headerBytes, &newHeader)
 	if err != nil {
-		Logger.log.Errorf("Error - [buildInstructionsForHeaderRelaying]: Can not unmarshal header.%v\n", err)
+		Logger.log.Errorf("Error - [buildInstructionsForBNBHeaderRelaying]: Can not unmarshal header.%v\n", err)
 		inst := buildHeaderRelayingInst(
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.Header,
@@ -102,7 +102,7 @@ func (blockchain *BlockChain) buildInstructionsForHeaderRelaying(
 	}
 
 	if newHeader.Header.Height != int64(actionData.Meta.BlockHeight) {
-		Logger.log.Errorf("Error - [buildInstructionsForHeaderRelaying]: Block height in metadata is unmatched with block height in new header.")
+		Logger.log.Errorf("Error - [buildInstructionsForBNBHeaderRelaying]: Block height in metadata is unmatched with block height in new header.")
 		inst := buildHeaderRelayingInst(
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.Header,
@@ -120,7 +120,7 @@ func (blockchain *BlockChain) buildInstructionsForHeaderRelaying(
 	latestBNBHeader := relayingHeaderChain.BNBHeaderChain.LatestHeader
 	isValid, err := relayingHeaderChain.BNBHeaderChain.ReceiveNewHeader(newHeader.Header, newHeader.LastCommit)
 	if err != nil || !isValid {
-		Logger.log.Errorf("Error - [buildInstructionsForHeaderRelaying]: Verify new header failed. %v\n", err)
+		Logger.log.Errorf("Error - [buildInstructionsForBNBHeaderRelaying]: Verify new header failed. %v\n", err)
 		inst := buildHeaderRelayingInst(
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.Header,

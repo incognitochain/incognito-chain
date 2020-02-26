@@ -13,6 +13,7 @@ import (
 	"strconv"
 )
 
+//todo: process instruction btc header relaying
 func (blockchain *BlockChain) processRelayingInstructions(block *BeaconBlock, bd *[]database.BatchData) error {
 	beaconHeight := block.Header.Height - 1
 	db := blockchain.GetDatabase()
@@ -23,19 +24,19 @@ func (blockchain *BlockChain) processRelayingInstructions(block *BeaconBlock, bd
 		return nil
 	}
 
-	// collect instruction RelayingHeader
+	// collect instruction RelayingBNBHeader
 	// sort by block height
 	// store header chain
 	// update relaying state
 	instsGroupByBlockHeight := make(map[uint64][][]string)
 	blockHeightArr := make([]uint64, 0)
 	for _, inst := range block.Body.Instructions {
-		if len(inst) < 4 || inst[0] != strconv.Itoa(metadata.RelayingHeaderMeta) {
+		if len(inst) < 4 || inst[0] != strconv.Itoa(metadata.RelayingBNBHeaderMeta) {
 			continue // Not error, just not relaying instruction
 		}
 
 		var err error
-		var relayingContent metadata.RelayingHeaderContent
+		var relayingContent metadata.RelayingBNBHeaderContent
 		err = json.Unmarshal([]byte(inst[3]), &relayingContent)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while unmarshaling relaying header instruction: %+v", err)
@@ -96,7 +97,7 @@ func (blockchain *BlockChain) processRelayingHeaderInst(
 	db := blockchain.GetDatabase()
 
 	// unmarshal instructions content
-	var actionData metadata.RelayingHeaderContent
+	var actionData metadata.RelayingBNBHeaderContent
 	err := json.Unmarshal([]byte(instructions[3]), &actionData)
 	if err != nil {
 		return err

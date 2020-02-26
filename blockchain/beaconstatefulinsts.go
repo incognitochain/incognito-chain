@@ -42,7 +42,7 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.PortalUserRegisterMeta,
 			metadata.PortalUserRequestPTokenMeta,
 			metadata.PortalExchangeRatesMeta,
-			metadata.RelayingHeaderMeta:
+			metadata.RelayingBNBHeaderMeta:
 			statefulInsts = append(statefulInsts, inst)
 
 		default:
@@ -172,7 +172,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					action,
 					shardID,
 				)
-			case metadata.RelayingHeaderMeta:
+			case metadata.RelayingBNBHeaderMeta:
 				relayingActions = append(relayingActions, action)
 			default:
 				continue
@@ -550,16 +550,16 @@ func groupRelayingActionsByShardID(
 	return relayingActionsByShardID
 }
 
-func sortRelayingInstsByBlockHeight(portalPushHeaderRelayingActions [][]string)(
-	map[uint64][]metadata.RelayingHeaderAction, []uint64, error){
+func sortBNBHeaderRelayingInstsByBlockHeight(bnbHeaderRelayingActions [][]string)(
+	map[uint64][]metadata.RelayingBNBHeaderAction, []uint64, error){
 	// sort push header relaying inst
-	actionsGroupByBlockHeight := make(map[uint64][]metadata.RelayingHeaderAction)
+	actionsGroupByBlockHeight := make(map[uint64][]metadata.RelayingBNBHeaderAction)
 
 	var blockHeightArr []uint64
 
-	for _, inst := range portalPushHeaderRelayingActions {
+	for _, inst := range bnbHeaderRelayingActions {
 		// parse inst
-		var action metadata.RelayingHeaderAction
+		var action metadata.RelayingBNBHeaderAction
 		actionBytes, err := base64.StdEncoding.DecodeString(inst[1])
 		if err != nil {
 			continue
@@ -581,7 +581,7 @@ func sortRelayingInstsByBlockHeight(portalPushHeaderRelayingActions [][]string)(
 		if actionsGroupByBlockHeight[blockHeight] != nil {
 			actionsGroupByBlockHeight[blockHeight] = append(actionsGroupByBlockHeight[blockHeight], action)
 		} else{
-			actionsGroupByBlockHeight[blockHeight] = []metadata.RelayingHeaderAction{action}
+			actionsGroupByBlockHeight[blockHeight] = []metadata.RelayingBNBHeaderAction{action}
 		}
 	}
 
@@ -596,11 +596,11 @@ func sortRelayingInstsByBlockHeight(portalPushHeaderRelayingActions [][]string)(
 func (blockchain *BlockChain) handleRelayingInsts(
 	beaconHeight uint64,
 	headerChain *RelayingHeaderChainState,
-	relayingHeaderActions [][]string,
+	relayingBNBHeaderActions [][]string,
 ) ([][]string, error) {
 	instructions := [][]string{}
 
-	actionsGroupByBlockHeight, sortedBlockHeights, _ := sortRelayingInstsByBlockHeight(relayingHeaderActions)
+	actionsGroupByBlockHeight, sortedBlockHeights, _ := sortBNBHeaderRelayingInstsByBlockHeight(relayingBNBHeaderActions)
 
 	for _, value := range sortedBlockHeights {
 		blockHeight := uint64(value)
@@ -608,10 +608,10 @@ func (blockchain *BlockChain) handleRelayingInsts(
 		for _, action := range actions {
 			actionBytes, _ := json.Marshal(action)
 			contentStr := base64.StdEncoding.EncodeToString(actionBytes)
-			newInst, err := blockchain.buildInstructionsForHeaderRelaying(
+			newInst, err := blockchain.buildInstructionsForBNBHeaderRelaying(
 				contentStr,
 				action.ShardID,
-				metadata.RelayingHeaderMeta,
+				metadata.RelayingBNBHeaderMeta,
 				headerChain,
 				beaconHeight,
 			)

@@ -11,9 +11,9 @@ import (
 	"strconv"
 )
 
-// RelayingHeader - relaying header chain
+// RelayingBNBHeader - relaying header chain
 // metadata - create normal tx with this metadata
-type RelayingHeader struct {
+type RelayingBNBHeader struct {
 	MetadataBase
 	IncogAddressStr string
 	Header          string
@@ -22,8 +22,8 @@ type RelayingHeader struct {
 
 // PortalCustodianDepositAction - shard validator creates instruction that contain this action content
 // it will be append to ShardToBeaconBlock
-type RelayingHeaderAction struct {
-	Meta    RelayingHeader
+type RelayingBNBHeaderAction struct {
+	Meta    RelayingBNBHeader
 	TxReqID common.Hash
 	ShardID byte
 }
@@ -31,7 +31,7 @@ type RelayingHeaderAction struct {
 // PortalCustodianDepositContent - Beacon builds a new instruction with this content after receiving a instruction from shard
 // It will be appended to beaconBlock
 // both accepted and refund status
-type RelayingHeaderContent struct {
+type RelayingBNBHeaderContent struct {
 	IncogAddressStr string
 	Header          string
 	BlockHeight     uint64
@@ -39,18 +39,18 @@ type RelayingHeaderContent struct {
 }
 
 // PortalCustodianDepositStatus - Beacon tracks status of custodian deposit tx into db
-type RelayingHeaderStatus struct {
+type RelayingBNBHeaderStatus struct {
 	Status          byte
 	IncogAddressStr string
 	Header          string
 	BlockHeight     uint64
 }
 
-func NewRelayingHeader(metaType int, incognitoAddrStr string, header string, blockHeight uint64) (*RelayingHeader, error) {
+func NewRelayingBNBHeader(metaType int, incognitoAddrStr string, header string, blockHeight uint64) (*RelayingBNBHeader, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
-	custodianDepositMeta := &RelayingHeader{
+	custodianDepositMeta := &RelayingBNBHeader{
 		IncogAddressStr: incognitoAddrStr,
 		Header:          header,
 		BlockHeight:     blockHeight,
@@ -60,7 +60,7 @@ func NewRelayingHeader(metaType int, incognitoAddrStr string, header string, blo
 }
 
 //todo
-func (headerRelaying RelayingHeader) ValidateTxWithBlockChain(
+func (headerRelaying RelayingBNBHeader) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,
@@ -69,7 +69,7 @@ func (headerRelaying RelayingHeader) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (headerRelaying RelayingHeader) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (headerRelaying RelayingBNBHeader) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
 	//if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
 	//	return true, true, nil
@@ -107,22 +107,23 @@ func (headerRelaying RelayingHeader) ValidateSanityData(bcr BlockchainRetriever,
 	return true, true, nil
 }
 
-func (headerRelaying RelayingHeader) ValidateMetadataByItself() bool {
-	return headerRelaying.Type == RelayingHeaderMeta
+func (headerRelaying RelayingBNBHeader) ValidateMetadataByItself() bool {
+	return headerRelaying.Type == RelayingBNBHeaderMeta
 }
 
-func (headerRelaying RelayingHeader) Hash() *common.Hash {
+func (headerRelaying RelayingBNBHeader) Hash() *common.Hash {
 	record := headerRelaying.MetadataBase.Hash().String()
 	record += headerRelaying.IncogAddressStr
 	record += headerRelaying.Header
+	record += strconv.Itoa(int(headerRelaying.BlockHeight))
 
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash
 }
 
-func (headerRelaying *RelayingHeader) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
-	actionContent := RelayingHeaderAction{
+func (headerRelaying *RelayingBNBHeader) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+	actionContent := RelayingBNBHeaderAction{
 		Meta:    *headerRelaying,
 		TxReqID: *tx.Hash(),
 		ShardID: shardID,
@@ -132,10 +133,10 @@ func (headerRelaying *RelayingHeader) BuildReqActions(tx Transaction, bcr Blockc
 		return [][]string{}, err
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(RelayingHeaderMeta), actionContentBase64Str}
+	action := []string{strconv.Itoa(RelayingBNBHeaderMeta), actionContentBase64Str}
 	return [][]string{action}, nil
 }
 
-func (headerRelaying *RelayingHeader) CalculateSize() uint64 {
+func (headerRelaying *RelayingBNBHeader) CalculateSize() uint64 {
 	return calculateSize(headerRelaying)
 }
