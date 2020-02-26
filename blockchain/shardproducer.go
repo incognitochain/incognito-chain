@@ -676,8 +676,8 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 			break
 		}
 		listBatchTxs = append(listBatchTxs, tx)
-		if (index != 0 && index%TransactionBatchSize == 0) || (index == len(preparedTxForNewBlock)-1) {
-			tempTxDesc, err := blockGenerator.chain.config.TempTxPool.MaybeAcceptBatchTransactionForBlockProducing(shardID, listBatchTxs, int64(beaconHeight))
+		if ((index+1)%TransactionBatchSize == 0) || (index == len(preparedTxForNewBlock)-1) {
+			tempTxDesc, err := blockGenerator.chain.config.TempTxPool.MaybeAcceptBatchTransactionForBlockProducing(listBatchTxs, int64(beaconHeight))
 			if err != nil {
 				Logger.log.Errorf("SHARD %+v | Verify Batch Transaction for new block error %+v", shardID, err)
 				for _, tx2 := range listBatchTxs {
