@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/peerv2/proto"
 	"github.com/incognitochain/incognito-chain/wire"
 	"time"
 )
@@ -14,7 +15,7 @@ type Server interface {
 
 	//Request block from "peerID" of shard "fromSID" with param currentFinalHeight and currentBestHash
 	//Function return channel of each block, and a stop channel to tell sender side to stop send block
-	RequestBlocksViaChannel(ctx context.Context, peerID string, fromSID int, fromBlockHeight uint64, finalBlockHeight uint64, toBlockheight uint64, toBlockHashString string) (blockCh chan common.BlockInterface, err error)
+	RequestBlocksViaStream(ctx context.Context, peerID string, fromSID int, _type proto.BlkType, fromBlockHeight uint64, finalBlockHeight uint64, toBlockheight uint64, toBlockHashString string) (blockCh chan common.BlockInterface, err error)
 
 	//Request cross block from "peerID" for shard "toShardID" with param latestCrossShardBlockHeight in current pool
 	//Function return channel of each block, and a stop channel to tell sender side to stop send block

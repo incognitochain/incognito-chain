@@ -81,7 +81,7 @@ func (s *BeaconSyncProcess) syncBeaconProcess() {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 		defer cancel()
 
-		ch, err := s.Server.RequestBlocksViaChannel(ctx, peerID, -1, s.Chain.GetBestViewHeight()+1, s.Chain.GetFinalViewHeight(), pState.BestViewHeight, pState.BestViewHash)
+		ch, err := s.Server.RequestBlocksViaStream(ctx, peerID, -1, s.Chain.GetBestViewHeight()+1, s.Chain.GetFinalViewHeight(), pState.BestViewHeight, pState.BestViewHash)
 		if err != nil {
 			fmt.Println("Syncker: create channel fail")
 			continue

@@ -60,7 +60,7 @@ func (s *ShardSyncProcess) syncShardProcess() {
 			continue
 		}
 
-		//ch, stop := s.Server.RequestBlocksViaChannel(PeerID, int(s.ShardID), s.Chain.GetFinalViewHash(), s.Chain.GetBestViewHash(), pState.BestViewHash)
+		//ch, stop := s.Server.RequestBlocksViaStream(PeerID, int(s.ShardID), s.Chain.GetFinalViewHash(), s.Chain.GetBestViewHash(), pState.BestViewHash)
 		//for {
 		//	shouldBreak := false
 		//	select {
