@@ -18,7 +18,7 @@ type Metadata interface {
 	Hash() *common.Hash
 	CheckTransactionFee(Transaction, uint64, int64, *statedb.StateDB) bool
 	ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, b byte, db *statedb.StateDB) (bool, error)
-	ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error)
+	ValidateSanityData(bcr BlockchainRetriever, tx Transaction, beaconHeight uint64) (bool, bool, error)
 	ValidateMetadataByItself() bool
 	BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error)
 	CalculateSize() uint64
@@ -108,15 +108,15 @@ type Transaction interface {
 	CheckTxVersion(int8) bool
 	// CheckTransactionFee(minFeePerKbTx uint64) bool
 	ValidateTxWithCurrentMempool(MempoolRetriever) error
+	ValidateSanityData(BlockchainRetriever, uint64) (bool, error)
 	ValidateTxWithBlockChain(BlockchainRetriever, byte, *statedb.StateDB) error
 	ValidateDoubleSpendWithBlockchain(BlockchainRetriever, byte, *statedb.StateDB, *common.Hash) error
-	ValidateSanityData(BlockchainRetriever) (bool, error)
 	ValidateTxByItself(bool, *statedb.StateDB, *statedb.StateDB, BlockchainRetriever, byte, bool) (bool, error)
 	ValidateType() bool
 	ValidateTransaction(bool, *statedb.StateDB, *statedb.StateDB, byte, *common.Hash, bool, bool) (bool, error)
 	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, BlockchainRetriever, *AccumulatedValues) (bool, error)
 	IsPrivacy() bool
-	IsCoinsBurning(BlockchainRetriever) bool
+	IsCoinsBurning(BlockchainRetriever, uint64) bool
 	CalculateTxValue() uint64
 	IsSalaryTx() bool
 }

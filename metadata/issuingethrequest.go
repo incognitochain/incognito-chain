@@ -124,7 +124,7 @@ func (iReq IssuingETHRequest) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (iReq IssuingETHRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (iReq IssuingETHRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
 	if len(iReq.ProofStrs) == 0 {
 		return false, false, NewMetadataTxError(IssuingEthRequestValidateSanityDataError, errors.New("Wrong request info's proof"))
 	}

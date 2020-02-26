@@ -535,7 +535,13 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int6
 
 	// Condition 1: sanity data
 	now = time.Now()
-	validated, err := tx.ValidateSanityData(tp.config.BlockChain)
+	validated := false
+	if !isNewTransaction {
+		// need to use beacon height from
+		validated, err = tx.ValidateSanityData(tp.config.BlockChain, uint64(beaconHeight))
+	} else {
+		validated, err = tx.ValidateSanityData(tp.config.BlockChain, 0)
+	}
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
