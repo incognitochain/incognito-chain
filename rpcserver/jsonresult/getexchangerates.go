@@ -5,6 +5,7 @@ type FinalExchangeRatesDetailResult struct {
 }
 
 type FinalExchangeRatesResult struct {
+	BeaconHeight uint64 `json:"BeaconHeight"`
 	Rates map[string]FinalExchangeRatesDetailResult `json:"Rates"`
 }
 

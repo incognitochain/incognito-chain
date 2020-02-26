@@ -105,8 +105,8 @@ func (httpServer *HttpServer) handleCreateAndSendPortalExchangeRates(params inte
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleGetPortalExchangeRates(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	result, err := httpServer.portalExchangeRates.GetExchangeRates(httpServer.blockService, *httpServer.config.Database)
+func (httpServer *HttpServer) handleGetPortalFinalExchangeRates(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	result, err := httpServer.portalExchangeRates.GetFinalExchangeRates(httpServer.blockService, *httpServer.config.Database)
 
 	if err != nil {
 		return nil, err

@@ -233,17 +233,17 @@ func (db *db) StoreFinalExchangeRatesItem(keyId []byte, content interface{}) err
 	return nil
 }
 
-func (db *db) GetItemPortalByPrefix(prefix []byte) (byte, error) {
+func (db *db) GetItemPortalByPrefix(prefix []byte) ([]byte, error) {
 	itemRecord, dbErr := db.lvdb.Get(prefix, nil)
 	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
-		return 0, database.NewDatabaseError(database.GetItemPortalByPrefixError, dbErr)
+		return nil, database.NewDatabaseError(database.GetItemPortalByPrefixError, dbErr)
 	}
 
-	if len(itemRecord) == 0 {
-		return 0, database.NewDatabaseError(database.GetItemPortalByPrefixNotFound, dbErr)
+	if itemRecord == nil {
+		return nil, nil
 	}
 
-	return itemRecord[0], nil
+	return itemRecord, nil
 }
 
 

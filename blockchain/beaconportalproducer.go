@@ -230,7 +230,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		return [][]string{inst}, nil
 	}
 
-	if portingRequestExist != 0 {
+	if portingRequestExist != nil {
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,
 			shardID,
@@ -709,7 +709,7 @@ func (blockchain *BlockChain) buildInstructionsForExchangeRates(
 		return [][]string{inst}, nil
 	}
 
-	if exchangeRatesKeyExist != 0 {
+	if exchangeRatesKeyExist != nil {
 		Logger.log.Errorf("ERROR: exchange rates key is duplicated")
 
 		portalExchangeRatesContent := metadata.PortalExchangeRatesContent{
