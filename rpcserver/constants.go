@@ -194,6 +194,9 @@ const (
 	getPortalExchangeRates                   = "getportalexchangerates"
 	convertExchangeRates                     = "convertexchangerates"
 	getPortalReqPTokenStatus                 = "getportalreqptokenstatus"
+
+	// relaying
+	createAndSendTxWithRelayingBNBHeader = "createandsendtxwithrelayingbnbheader"
 )
 
 const (

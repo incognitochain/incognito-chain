@@ -41,7 +41,8 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.PortalCustodianDepositMeta,
 			metadata.PortalUserRegisterMeta,
 			metadata.PortalUserRequestPTokenMeta,
-			metadata.PortalExchangeRatesMeta:
+			metadata.PortalExchangeRatesMeta,
+			metadata.RelayingHeaderMeta:
 			statefulInsts = append(statefulInsts, inst)
 
 		default:
@@ -80,6 +81,11 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		Logger.log.Error(err)
 	}
 
+	relayingHeaderState, err := InitRelayingHeaderChainStateFromDB(db, beaconHeight-1)
+	if err != nil {
+		Logger.log.Error(err)
+	}
+
 	accumulatedValues := &metadata.AccumulatedValues{
 		UniqETHTxsUsed:   [][]byte{},
 		DBridgeTokenPair: map[string][]byte{},
@@ -92,11 +98,15 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	pdeTradeActionsByShardID := map[byte][][]string{}
 	pdeWithdrawalActionsByShardID := map[byte][][]string{}
 
-	//portal instructions
+	// portal instructions
 	portalCustodianDepositActionsByShardID := map[byte][][]string{}
 	portalUserReqPortingActionsByShardID := map[byte][][]string{}
 	portalUserReqPTokenActionsByShardID := map[byte][][]string{}
 	portalExchangeRatesActionsByShardID := map[byte][][]string{}
+
+	// relaying instructions
+	// don't need to be grouped by shardID
+	relayingActions := [][]string{}
 
 	var keys []int
 	for k := range statefulActionsByShardID {
@@ -162,6 +172,8 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					action,
 					shardID,
 				)
+			case metadata.RelayingHeaderMeta:
+				relayingActions = append(relayingActions, action)
 			default:
 				continue
 			}
@@ -205,6 +217,20 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	}
 	if len(portalInsts) > 0 {
 		instructions = append(instructions, portalInsts...)
+	}
+
+	relayingInsts, err := blockchain.handleRelayingInsts(
+		beaconHeight-1,
+		relayingHeaderState,
+		relayingActions,
+	)
+
+	if err != nil {
+		Logger.log.Error(err)
+		return instructions
+	}
+	if len(relayingInsts) > 0 {
+		instructions = append(instructions, relayingInsts...)
 	}
 
 	return instructions
@@ -376,7 +402,6 @@ func groupPortalActionsByShardID(
 	return portalActionsByShardID
 }
 
-// todo
 func (blockchain *BlockChain) handlePortalInsts(
 	beaconHeight uint64,
 	currentPortalState *CurrentPortalState,
@@ -476,9 +501,6 @@ func (blockchain *BlockChain) handlePortalInsts(
 		}
 	}
 
-	// ...
-
-
 	//handle portal exchange rates
 	var exchangeRatesShardIDKeys []int
 	for k := range portalExchangeRatesActionsByShardID {
@@ -512,3 +534,97 @@ func (blockchain *BlockChain) handlePortalInsts(
 	return instructions, nil
 }
 
+
+// Header relaying
+func groupRelayingActionsByShardID(
+	relayingActionsByShardID map[byte][][]string,
+	action []string,
+	shardID byte,
+) map[byte][][]string {
+	_, found := relayingActionsByShardID[shardID]
+	if !found {
+		relayingActionsByShardID[shardID] = [][]string{action}
+	} else {
+		relayingActionsByShardID[shardID] = append(relayingActionsByShardID[shardID], action)
+	}
+	return relayingActionsByShardID
+}
+
+func sortRelayingInstsByBlockHeight(portalPushHeaderRelayingActions [][]string)(
+	map[uint64][]metadata.RelayingHeaderAction, []uint64, error){
+	// sort push header relaying inst
+	actionsGroupByBlockHeight := make(map[uint64][]metadata.RelayingHeaderAction)
+
+	var blockHeightArr []uint64
+
+	for _, inst := range portalPushHeaderRelayingActions {
+		// parse inst
+		var action metadata.RelayingHeaderAction
+		actionBytes, err := base64.StdEncoding.DecodeString(inst[1])
+		if err != nil {
+			continue
+		}
+		err = json.Unmarshal(actionBytes, &action)
+		if err != nil {
+			continue
+		}
+
+		// get blockHeight in action
+		blockHeight := action.Meta.BlockHeight
+
+		// add to blockHeightArr
+		if isExist, _ := common.SliceExists(blockHeightArr, blockHeight); !isExist {
+			blockHeightArr = append(blockHeightArr, blockHeight)
+		}
+
+		// add to actionsGroupByBlockHeight
+		if actionsGroupByBlockHeight[blockHeight] != nil {
+			actionsGroupByBlockHeight[blockHeight] = append(actionsGroupByBlockHeight[blockHeight], action)
+		} else{
+			actionsGroupByBlockHeight[blockHeight] = []metadata.RelayingHeaderAction{action}
+		}
+	}
+
+	// sort blockHeightArr
+	sort.Slice(blockHeightArr, func(i, j int) bool {
+		return blockHeightArr[i] < blockHeightArr[j]
+	})
+
+	return actionsGroupByBlockHeight, blockHeightArr, nil
+}
+
+func (blockchain *BlockChain) handleRelayingInsts(
+	beaconHeight uint64,
+	headerChain *RelayingHeaderChainState,
+	relayingHeaderActions [][]string,
+) ([][]string, error) {
+	instructions := [][]string{}
+
+	actionsGroupByBlockHeight, sortedBlockHeights, _ := sortRelayingInstsByBlockHeight(relayingHeaderActions)
+
+	for _, value := range sortedBlockHeights {
+		blockHeight := uint64(value)
+		actions := actionsGroupByBlockHeight[blockHeight]
+		for _, action := range actions {
+			actionBytes, _ := json.Marshal(action)
+			contentStr := base64.StdEncoding.EncodeToString(actionBytes)
+			newInst, err := blockchain.buildInstructionsForHeaderRelaying(
+				contentStr,
+				action.ShardID,
+				metadata.RelayingHeaderMeta,
+				headerChain,
+				beaconHeight,
+			)
+
+			if err != nil {
+				Logger.log.Error(err)
+				continue
+			}
+			if len(newInst) > 0 {
+				instructions = append(instructions, newInst...)
+			}
+		}
+	}
+
+	return instructions, nil
+}

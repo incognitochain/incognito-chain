@@ -139,18 +139,27 @@ const (
 
 // Portal status for chain
 const (
-	PortalLoadDataFailedStatus					= "LoadDataFailed"
-	PortalItemNotFoundStatus					= "itemNotFound"
-	PortalDuplicateKeyStatus 	    	= "duplicateKey"
+	PortalLoadDataFailedStatus = "LoadDataFailed"
+	PortalItemNotFoundStatus   = "itemNotFound"
+	PortalDuplicateKeyStatus   = "duplicateKey"
 
-	PortalCustodianDepositAcceptedChainStatus 	= "accepted"
-	PortalCustodianDepositRefundChainStatus   	= "refund"
+	PortalCustodianDepositAcceptedChainStatus = "accepted"
+	PortalCustodianDepositRefundChainStatus   = "refund"
 
-	PortalReqPTokensAcceptedChainStatus 		= "accepted"
-	PortalReqPTokensRejectedChainStatus 		= "rejected"
+	PortalReqPTokensAcceptedChainStatus = "accepted"
+	PortalReqPTokensRejectedChainStatus = "rejected"
 
-	PortalPortingRequestWaitingStatus  			= "waiting"
-	PortalPortingFeesNotEnoughStatus 	    	= "prvNotEnough"
+	PortalPortingRequestWaitingStatus = "waiting"
+	PortalPortingFeesNotEnoughStatus  = "prvNotEnough"
 
-	PortalExchangeRatesSuccessStatus            = "success"
+	PortalExchangeRatesSuccessStatus = "success"
+
+
+)
+
+// Relaying header
+const (
+	RelayingHeaderConfirmedAcceptedChainStatus   = "confirmedAccepted"
+	RelayingHeaderUnconfirmedAcceptedChainStatus = "unconfirmedAccepted"
+	RelayingHeaderRejectedChainStatus            = "rejected"
 )

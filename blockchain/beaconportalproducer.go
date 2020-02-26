@@ -752,3 +752,4 @@ func (blockchain *BlockChain) buildInstructionsForExchangeRates(
 
 	return [][]string{inst}, nil
 }
+

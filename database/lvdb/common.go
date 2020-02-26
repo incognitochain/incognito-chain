@@ -78,6 +78,10 @@ var (
 	PortalWaitingPortingRequestsPrefix = []byte("portalwaitingportingrequest-")
 	PortalWaitingRedeemRequestsPrefix  = []byte("portalwaitingredeemrequest-")
 	PortalRequestPTokensPrefix         = []byte("portalrequestptokens-")
+
+	// Relaying
+	RelayingStatePrefix               = []byte("relayingstate-")
+	RelayingBNBHeaderChainPrefix               = []byte("relayingbnbheaderchain-")
 )
 
 // value

@@ -1232,5 +1232,12 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(ProcessPDEInstructionError, err)
 	}
 
+	// execute, store
+	err = blockchain.processRelayingInstructions(beaconBlock, &batchPutData)
+	if err != nil {
+		//todo: change error struct
+		return NewBlockChainError(ProcessPDEInstructionError, err)
+	}
+
 	return blockchain.config.DataBase.PutBatch(batchPutData)
 }

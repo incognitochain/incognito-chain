@@ -412,7 +412,7 @@ func TestHeaderChain_ReceiveNewHeader(t *testing.T) {
 	// header chain
 	headerChain := new(HeaderChain)
 	headerChain.HeaderChain = []*types.Header{}
-	headerChain.unconfirmedHeaders = []*types.Header{}
+	headerChain.UnconfirmedHeaders = []*types.Header{}
 
 	// receive header 1
 	isResult, err := headerChain.ReceiveNewHeader(header1, nil)
@@ -420,7 +420,7 @@ func TestHeaderChain_ReceiveNewHeader(t *testing.T) {
 	assert.Equal(t, (*BNBRelayingError)(nil), err)
 
 	fmt.Printf("Header chain after receive header 1: %v\n", headerChain.HeaderChain)
-	fmt.Printf("Prev header after receive header 1: %v\n", headerChain.unconfirmedHeaders)
+	fmt.Printf("Prev header after receive header 1: %v\n", headerChain.UnconfirmedHeaders)
 
 	// receive header 2
 	isResult2, err := headerChain.ReceiveNewHeader(header2, lastCommit1)
@@ -428,7 +428,7 @@ func TestHeaderChain_ReceiveNewHeader(t *testing.T) {
 	assert.Equal(t, (*BNBRelayingError)(nil), err)
 
 	fmt.Printf("Header chain after receive header 2: %v\n", headerChain.HeaderChain)
-	fmt.Printf("Prev header after receive header 2: %v\n", headerChain.unconfirmedHeaders)
+	fmt.Printf("Prev header after receive header 2: %v\n", headerChain.UnconfirmedHeaders)
 
 	// receive header 3
 	isResult3, err := headerChain.ReceiveNewHeader(header3, lastCommit2)
@@ -436,7 +436,7 @@ func TestHeaderChain_ReceiveNewHeader(t *testing.T) {
 	assert.Equal(t, (*BNBRelayingError)(nil), err)
 
 	fmt.Printf("Header chain after receive header 3: %v\n", headerChain.HeaderChain)
-	fmt.Printf("Prev header after receive header 3: %v\n", headerChain.unconfirmedHeaders)
+	fmt.Printf("Prev header after receive header 3: %v\n", headerChain.UnconfirmedHeaders)
 }
 
 ////
