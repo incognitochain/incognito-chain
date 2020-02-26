@@ -178,6 +178,11 @@ var HttpHandler = map[string]httpHandler{
 	getPortalFinalExchangeRates:              (*HttpServer).handleGetPortalFinalExchangeRates,
 	convertExchangeRates:                     (*HttpServer).handleConvertExchangeRates,
 	getPortalReqPTokenStatus:                 (*HttpServer).handleGetPortalReqPTokenStatus,
+
+	// relaying
+	createAndSendTxWithRelayingBNBHeader: (*HttpServer).handleCreateAndSendTxWithRelayingBNBHeader,
+	getRelayingBNBHeaderState:            (*HttpServer).handleGetRelayingBNBHeaderState,
+	getRelayingBNBHeaderByBlockHeight:    (*HttpServer).handleGetRelayingBNBHeaderByBlockHeight,
 }
 
 // Commands that are available to a limited user

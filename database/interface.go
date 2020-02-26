@@ -210,4 +210,9 @@ type DatabaseInterface interface {
 	StoreFinalExchangeRatesItem(key []byte, value interface{}) error
 	GetCustodianDepositCollateralStatus(txIDStr string) ([]byte, error)
 	GetReqPTokenStatusByPortingID(portingID string) ([]byte, error)
+
+	// relaying
+	GetItemByKey(key []byte) ([]byte, error)
+	StoreRelayingBNBHeaderChain(blockHeight uint64, header []byte) error
+	GetRelayingBNBHeaderChain(blockHeight uint64) ([]byte, error)
 }

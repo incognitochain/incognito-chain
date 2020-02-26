@@ -48,7 +48,8 @@ const (
 	PortalCustodianDepositResponseMeta  = 103
 	PortalUserRequestPTokenResponseMeta = 104
 	PortalExchangeRatesMeta             = 105
-	PortalPushHeaderRelayingMeta        = 106
+	// relaying
+	RelayingBNBHeaderMeta = 106
 )
 
 var minerCreatedMetaTypes = []int{

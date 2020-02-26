@@ -187,3 +187,7 @@ func (dbService DatabaseService) GetPortalCustodianDepositStatus(txID string) (*
 func (dbService DatabaseService) GetPortalReqPTokenStatus(portingID string) ([]byte, error) {
 	return (*dbService.DB).GetReqPTokenStatusByPortingID(portingID)
 }
+
+func (dbService DatabaseService) GetRelayingBNBHeaderByBlockHeight(blockHeight uint64) ([]byte, error) {
+	return (*dbService.DB).GetRelayingBNBHeaderChain(blockHeight)
+}
