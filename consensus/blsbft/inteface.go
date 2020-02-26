@@ -14,12 +14,9 @@ type EngineConfig struct {
 
 type NodeInterface interface {
 	PushMessageToChain(msg wire.Message, chain blockchain.ChainInterface) error
-	// PushMessageToBlockToAll(msg wire.Message) error
-	UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string)
 	IsEnableMining() bool
 	GetMiningKeys() string
 	GetPrivateKey() string
-	DropAllConnections()
 	GetUserMiningState() (role string, chainID int)
 }
 

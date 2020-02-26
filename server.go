@@ -2114,7 +2114,7 @@ func (serverObj *Server) GetMinerIncognitoPublickey(publicKey string, keyType st
 }
 
 func (serverObj *Server) RequestBlocksViaStream(ctx context.Context, peerID string, fromSID int, _type proto.BlkType, fromBlockHeight uint64, finalBlockHeight uint64, toBlockheight uint64, toBlockHashString string) (blockCh chan common.BlockInterface, err error) {
-	fmt.Println("SYNCKER Request Block", peerID, fromSID, fromBlockHeight, toBlockheight)
+	//fmt.Println("SYNCKER Request Block", peerID, fromSID, fromBlockHeight, toBlockheight)
 
 	blockCh = make(chan common.BlockInterface, 350)
 
@@ -2124,6 +2124,15 @@ func (serverObj *Server) RequestBlocksViaStream(ctx context.Context, peerID stri
 		Heights:  []uint64{fromBlockHeight, toBlockheight},
 		From:     int32(peerv2.HighwayBeaconID),
 		To:       int32(peerv2.HighwayBeaconID),
+	}
+
+	if _type == proto.BlkType_BlkShard {
+		req.From = int32(fromSID)
+		req.To = int32(fromSID)
+	} else if _type == proto.BlkType_BlkS2B {
+		req.From = int32(fromSID)
+	} else if _type == proto.BlkType_BlkXShard {
+		req.From = int32(fromSID)
 	}
 
 	stream, err := serverObj.highway.Requester.StreamBlockByHeight(ctx, req)

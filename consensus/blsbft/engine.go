@@ -54,7 +54,7 @@ func (s *Engine) GetMiningPublicKeys() *incognitokey.CommitteePublicKey {
 func (s *Engine) WatchCommitteeChange() {
 
 	defer func() {
-		time.AfterFunc(time.Second, s.WatchCommitteeChange)
+		time.AfterFunc(time.Second*3, s.WatchCommitteeChange)
 	}()
 
 	//check if enable
@@ -98,6 +98,7 @@ func (s *Engine) WatchCommitteeChange() {
 			s.BFTProcess[chainID] = NewInstance(s.config.Blockchain.Chains[chainName], chainName, chainID, s.config.Node, Logger.log)
 
 		}
+
 		s.BFTProcess[chainID].Start()
 		miningProcess = s.BFTProcess[chainID]
 		s.currentMiningProcess = s.BFTProcess[chainID]
@@ -106,7 +107,6 @@ func (s *Engine) WatchCommitteeChange() {
 			panic(err)
 		}
 	}
-	//fmt.Println("CONSENSUS:", role, chainID)
 	s.currentMiningProcess = miningProcess
 }
 
@@ -121,11 +121,13 @@ func NewConsensusEngine() *Engine {
 }
 
 func (engine *Engine) Init(config *EngineConfig) {
+
 	engine.config = config
 	go engine.WatchCommitteeChange()
 }
 
 func (engine *Engine) Start() error {
+	fmt.Println("CONSENSUS: Start")
 	if engine.config.Node.GetPrivateKey() != "" {
 		keyList, err := engine.GenMiningKeyFromPrivateKey(engine.config.Node.GetPrivateKey())
 		if err != nil {
@@ -144,6 +146,7 @@ func (engine *Engine) Start() error {
 }
 
 func (engine *Engine) Stop() error {
+	fmt.Println("CONSENSUS: Stop")
 	for _, BFTProcess := range engine.BFTProcess {
 		BFTProcess.Stop()
 		engine.currentMiningProcess = nil

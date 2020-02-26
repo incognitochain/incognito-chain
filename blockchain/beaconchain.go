@@ -16,6 +16,7 @@ type BeaconChain struct {
 	BlockGen   *BlockGenerator
 	Blockchain *BlockChain
 	ChainName  string
+	Ready      bool
 	lock       sync.RWMutex
 }
 
@@ -63,6 +64,10 @@ func (chain *BeaconChain) InsertBatchBlock(blocks []common.BlockInterface) (int,
 	return len(sameCommitteeBlock), nil
 }
 
+func (s *BeaconChain) GetEpoch() uint64 {
+	return s.BestState.Epoch
+}
+
 func (s *BeaconChain) GetBestViewHeight() uint64 {
 	return s.BestState.BeaconHeight
 }
@@ -92,7 +97,10 @@ func (chain *BeaconChain) GetMaxBlkCreateTime() time.Duration {
 }
 
 func (chain *BeaconChain) IsReady() bool {
-	return chain.Blockchain.Synker.IsLatest(false, 0)
+	return chain.Ready
+}
+func (chain *BeaconChain) SetReady(ready bool) {
+	chain.Ready = ready
 }
 
 func (chain *BeaconChain) CurrentHeight() uint64 {
@@ -135,9 +143,9 @@ func (chain *BeaconChain) CreateNewBlock(round int) (common.BlockInterface, erro
 }
 
 func (chain *BeaconChain) InsertBlk(block common.BlockInterface) error {
-	if chain.Blockchain.config.ConsensusEngine.IsOngoing(common.BeaconChainKey) {
-		return NewBlockChainError(ConsensusIsOngoingError, errors.New(fmt.Sprint(common.BeaconChainKey, block.Hash())))
-	}
+	//if chain.Blockchain.config.ConsensusEngine.IsOngoing(common.BeaconChainKey) {
+	//	return NewBlockChainError(ConsensusIsOngoingError, errors.New(fmt.Sprint(common.BeaconChainKey, block.Hash())))
+	//}
 	return chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true)
 }
 

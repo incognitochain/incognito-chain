@@ -2,21 +2,24 @@ package blockchain
 
 import (
 	"encoding/json"
-	"fmt"
 	"sync"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/pkg/errors"
 )
 
 type ShardChain struct {
 	BestState  *ShardBestState
 	BlockGen   *BlockGenerator
 	Blockchain *BlockChain
+	Ready      bool
 	ChainName  string
 	lock       sync.RWMutex
+}
+
+func (s *ShardChain) GetEpoch() uint64 {
+	return s.BestState.Epoch
 }
 
 func (s *ShardChain) InsertBatchBlock([]common.BlockInterface) (int, error) {
@@ -51,7 +54,11 @@ func (chain *ShardChain) GetMaxBlkCreateTime() time.Duration {
 }
 
 func (chain *ShardChain) IsReady() bool {
-	return chain.Blockchain.Synker.IsLatest(true, chain.BestState.ShardID)
+	return chain.Ready
+}
+
+func (chain *ShardChain) SetReady(ready bool) {
+	chain.Ready = ready
 }
 
 func (chain *ShardChain) CurrentHeight() uint64 {
@@ -90,14 +97,11 @@ func (chain *ShardChain) CreateNewBlock(round int) (common.BlockInterface, error
 	defer chain.lock.Unlock()
 	start := time.Now()
 	Logger.log.Infof("Begin Create New Block %+v", start)
-	beaconHeight := chain.Blockchain.Synker.States.ClosestState.ClosestBeaconState
-	if chain.Blockchain.BestState.Beacon.BeaconHeight < beaconHeight {
-		beaconHeight = chain.Blockchain.BestState.Beacon.BeaconHeight
-	} else {
-		if beaconHeight < GetBestStateShard(byte(chain.GetShardID())).BeaconHeight {
-			beaconHeight = GetBestStateShard(byte(chain.GetShardID())).BeaconHeight
-		}
+	beaconHeight := chain.Blockchain.Chains["beacon"].CurrentHeight()
+	if beaconHeight < GetBestStateShard(byte(chain.GetShardID())).BeaconHeight {
+		beaconHeight = GetBestStateShard(byte(chain.GetShardID())).BeaconHeight
 	}
+
 	Logger.log.Infof("Begin Enter New Block Shard %+v", time.Now())
 	newBlock, err := chain.BlockGen.NewBlockShard(byte(chain.GetShardID()), round, chain.Blockchain.Synker.GetClosestCrossShardPoolState(), beaconHeight, start)
 	Logger.log.Infof("Begin Finish New Block Shard %+v", time.Now())
@@ -138,9 +142,9 @@ func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, co
 }
 
 func (chain *ShardChain) InsertBlk(block common.BlockInterface) error {
-	if chain.Blockchain.config.ConsensusEngine.IsOngoing(chain.ChainName) {
-		return NewBlockChainError(ConsensusIsOngoingError, errors.New(fmt.Sprint(chain.ChainName, block.Hash())))
-	}
+	//if chain.Blockchain.config.ConsensusEngine.IsOngoing(chain.ChainName) {
+	//	return NewBlockChainError(ConsensusIsOngoingError, errors.New(fmt.Sprint(chain.ChainName, block.Hash())))
+	//}
 	return chain.Blockchain.InsertShardBlock(block.(*ShardBlock), false)
 }
 

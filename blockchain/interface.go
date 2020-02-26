@@ -90,12 +90,14 @@ type FeeEstimator interface {
 }
 
 type ChainInterface interface {
+	GetEpoch() uint64
 	GetChainName() string
 	GetConsensusType() string
 	GetLastBlockTimeStamp() int64
 	GetMinBlkInterval() time.Duration
 	GetMaxBlkCreateTime() time.Duration
 	IsReady() bool
+	SetReady(bool)
 	GetActiveShardNumber() int
 	GetPubkeyRole(pubkey string, round int) (string, byte)
 	CurrentHeight() uint64
