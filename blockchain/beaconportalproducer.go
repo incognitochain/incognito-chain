@@ -183,25 +183,25 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 	beaconHeight uint64,
 ) ([][]string, error) {
 	if currentPortalState == nil {
-		Logger.log.Warn("WARN - [buildInstructionsForPortingRequest]: Current Portal state is null")
+		Logger.log.Warn("Porting request: Current Portal state is null")
 		return [][]string{}, nil
 	}
 
 	if len(currentPortalState.CustodianPoolState) == 0 {
-		Logger.log.Errorf("ERROR: Custodian not found")
+		Logger.log.Errorf("Porting request: Custodian not found")
 		return [][]string{}, nil
 	}
 
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
-		Logger.log.Errorf("ERROR: an error occurred while decoding content string of portal porting request action: %+v", err)
+		Logger.log.Errorf("Porting request: an error occurred while decoding content string of portal porting request action: %+v", err)
 		return [][]string{}, nil
 	}
 
 	var actionData metadata.PortalUserRegisterAction
 	err = json.Unmarshal(actionContentBytes, &actionData)
 	if err != nil {
-		Logger.log.Errorf("ERROR: an error occurred while unmarshal portal porting request action: %+v", err)
+		Logger.log.Errorf("Porting request: an error occurred while unmarshal portal porting request action: %+v", err)
 		return [][]string{}, nil
 	}
 
@@ -211,7 +211,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 	keyPortingRequest := append(lvdb.PortalPortingRequestsPrefix, []byte(actionData.Meta.UniqueRegisterId)...)
 	portingRequestExist, err := db.GetItemPortalByPrefix(keyPortingRequest)
 	if err != nil {
-		Logger.log.Errorf("ERROR: Get item portal by prefix error: %+v", err)
+		Logger.log.Errorf("Porting request: Get item portal by prefix error: %+v", err)
 
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,
@@ -231,6 +231,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 	}
 
 	if portingRequestExist != nil {
+		Logger.log.Errorf("Porting request: Porting request exist")
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,
 			shardID,
@@ -248,29 +249,12 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		return [][]string{inst}, nil
 	}
 
+	//get exchange rates
 	exchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
-	exchangeRatesState, err := GetFinalExchangeRatesByKey(db, []byte(exchangeRatesKey))
-	if err != nil {
-		Logger.log.Errorf("ERROR: Get final exchange rates error: %+v", err)
+	exchangeRatesState := currentPortalState.FinalExchangeRates[exchangeRatesKey]
 
-		inst := buildRequestPortingInst(
-			actionData.Meta.Type,
-			shardID,
-			common.PortalLoadDataFailedStatus,
-			actionData.Meta.UniqueRegisterId,
-			actionData.Meta.IncogAddressStr,
-			actionData.Meta.PTokenId,
-			actionData.Meta.PTokenAddress,
-			actionData.Meta.RegisterAmount,
-			actionData.Meta.PortingFee,
-			nil,
-			actionData.TxReqID,
-		)
-
-		return [][]string{inst}, nil
-	}
-
-	if exchangeRatesState == nil {
+	if exchangeRatesState.Rates == nil {
+		Logger.log.Errorf("Porting request, exchange rates not found")
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,
 			shardID,
@@ -290,10 +274,14 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 
 
 	var sortCustodianStateByFreeCollateral []CustodianStateSlice
-	sortCustodianByAmountAscent(actionData.Meta, currentPortalState.CustodianPoolState, sortCustodianStateByFreeCollateral)
+	err = sortCustodianByAmountAscent(actionData.Meta, currentPortalState.CustodianPoolState, &sortCustodianStateByFreeCollateral)
 
-	if len(sortCustodianStateByFreeCollateral) == 0 {
-		Logger.log.Errorf("ERROR: Collect Custodian by PTokenId not found")
+	if err != nil {
+		return [][]string{}, nil
+	}
+
+	if len(sortCustodianStateByFreeCollateral) <= 0 {
+		Logger.log.Errorf("Porting request, custodian not found")
 
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,
@@ -314,12 +302,17 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 
 	//pick one
 	pickCustodianResult, _ := pickSingleCustodian(actionData.Meta, exchangeRatesState, sortCustodianStateByFreeCollateral)
+
+	Logger.log.Infof("Porting request, pick single custodian result %v", len(pickCustodianResult))
 	//pick multiple
 	if len(pickCustodianResult) == 0 {
 		pickCustodianResult, _ = pickMultipleCustodian(actionData.Meta, exchangeRatesState, sortCustodianStateByFreeCollateral)
+		Logger.log.Infof("Porting request, pick multiple custodian result %v", len(pickCustodianResult))
 	}
+
 	//end
 	if len(pickCustodianResult) == 0 {
+		Logger.log.Errorf("Porting request, custodian not found")
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,
 			shardID,
@@ -338,11 +331,12 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 	}
 
 
+	//validation porting fees
 	getPortingFees := calculatePortingFees(actionData.Meta.RegisterAmount)
 	exchangePortingFees := exchangeRatesState.ExchangePToken2PRVByTokenId(actionData.Meta.PTokenId, getPortingFees)
 
 	if actionData.Meta.PortingFee < exchangePortingFees {
-		Logger.log.Errorf("ERROR: Porting fees is wrong")
+		Logger.log.Errorf("Porting request, Porting fees is wrong")
 
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,

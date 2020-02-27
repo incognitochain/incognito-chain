@@ -57,7 +57,7 @@ func TestDbAddShardRewardRequest(t *testing.T) {
 			// db := &db{
 			// 	lvdb: tt.fields.lvdb,
 			// }
-			if err := db.AddShardRewardRequest(tt.args.epoch, tt.args.shardID, tt.args.rewardAmount, tt.args.tokenID); (err != nil) != tt.wantErr {
+			if err := db.AddShardRewardRequest(tt.args.epoch, tt.args.shardID, tt.args.rewardAmount, tt.args.tokenID, nil); (err != nil) != tt.wantErr {
 				t.Errorf("db.AddShardRewardRequest() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -223,7 +223,7 @@ func TestDbRemoveCommitteeReward(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := db.RemoveCommitteeReward(tt.args.committeeAddress, tt.args.amount, tt.args.tokenID); (err != nil) != tt.wantErr {
+			if err := db.RemoveCommitteeReward(tt.args.committeeAddress, tt.args.amount, tt.args.tokenID, nil); (err != nil) != tt.wantErr {
 				t.Errorf("db.RemoveCommitteeReward() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

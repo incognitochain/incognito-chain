@@ -21,6 +21,7 @@ func InitRelayingHeaderChainStateFromDB(
 	if err != nil {
 		return nil, err
 	}
+
 	btcHeaderChainState, err := getBTCHeaderChainState(db, beaconHeight)
 	if err != nil {
 		return nil, err

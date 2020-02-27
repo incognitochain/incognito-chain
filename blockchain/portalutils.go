@@ -104,8 +104,8 @@ func InitCurrentPortalStateFromDB(
 		CustodianPoolState:     custodianPoolState,
 		WaitingPortingRequests: waitingPortingReqs,
 		WaitingRedeemRequests:  waitingRedeemReqs,
-		FinalExchangeRates:  finalExchangeRates,
-		ExchangeRatesRequests: make(map[string]*lvdb.ExchangeRatesRequest),
+		FinalExchangeRates:     finalExchangeRates,
+		ExchangeRatesRequests:  make(map[string]*lvdb.ExchangeRatesRequest),
 	}, nil
 }
 
@@ -123,6 +123,11 @@ func storePortalStateToDB(
 		return err
 	}
 	err = storeWaitingRedeemRequests(db, beaconHeight, currentPortalState.WaitingRedeemRequests)
+	if err != nil {
+		return err
+	}
+
+	err = storeFinalExchangeRates(db, beaconHeight, currentPortalState.FinalExchangeRates)
 	if err != nil {
 		return err
 	}
@@ -154,13 +159,41 @@ func storeWaitingPortingRequests(db database.DatabaseInterface,
 	waitingPortingReqs map[string]*lvdb.PortingRequest) error {
 	for waitingReqKey, waitingReq := range waitingPortingReqs {
 		newKey := replaceKeyByBeaconHeight(waitingReqKey, beaconHeight)
+
+		Logger.log.Infof("Porting request, save waiting db with key %v", newKey)
+
 		waitingReqBytes, err := json.Marshal(waitingReq)
 		if err != nil {
 			return err
 		}
-		err = db.Put([]byte(newKey), waitingReqBytes)
+		err = db.Put([]byte(waitingReqKey), waitingReqBytes)
 		if err != nil {
 			return database.NewDatabaseError(database.StoreWaitingPortingRequestError, errors.Wrap(err, "db.lvdb.put"))
+		}
+	}
+
+	return nil
+}
+
+func storeFinalExchangeRates(db database.DatabaseInterface,
+	beaconHeight uint64,
+	finalExchangeRates map[string]*lvdb.FinalExchangeRates) error {
+
+	Logger.log.Infof("Portal exchange rates, save exchange rates: count final exchange rate %v", len(finalExchangeRates))
+
+	for key, exchangeRates := range finalExchangeRates {
+		newKey := replaceKeyByBeaconHeight(key, beaconHeight)
+
+		Logger.log.Infof("Portal exchange rates, generate new key %v", newKey)
+
+		exchangeRatesBytes, err := json.Marshal(exchangeRates)
+		if err != nil {
+			return err
+		}
+
+		err = db.Put([]byte(newKey), exchangeRatesBytes)
+		if err != nil {
+			return database.NewDatabaseError(database.StoreFinalExchangeRatesStateError, errors.Wrap(err, "db.lvdb.put"))
 		}
 	}
 	return nil
@@ -271,18 +304,23 @@ func getFinalExchangeRates(
 	beaconHeight uint64,
 ) (map[string]*lvdb.FinalExchangeRates, error) {
 	finalExchangeRates := make(map[string]*lvdb.FinalExchangeRates)
-	finalExchangeRatesKeyBytes, finalExchangeRatesValueBytes, err := db.GetAllRecordsPortalByPrefix(beaconHeight, lvdb.PortalFinalExchangeRatesPrefix)
+
+	finalExchangeRatesKeysBytes, finalExchangeRatesValueBytes, err := db.GetAllRecordsPortalByPrefix(beaconHeight, lvdb.PortalFinalExchangeRatesPrefix)
+
 	if err != nil {
 		return nil, err
 	}
-	for idx, waitingRedeemReqKeyBytes := range finalExchangeRatesKeyBytes {
+
+	for idx, finalExchangeRatesKeyBytes := range finalExchangeRatesKeysBytes {
 		var items lvdb.FinalExchangeRates
 		err = json.Unmarshal(finalExchangeRatesValueBytes[idx], &items)
 		if err != nil {
 			return nil, err
 		}
-		finalExchangeRates[string(waitingRedeemReqKeyBytes)] = &items
+		finalExchangeRates[string(finalExchangeRatesKeyBytes)] = &items
 	}
+
+	Logger.log.Infof("Portal exchange rates, init db %v, raw data %v", len(finalExchangeRates), finalExchangeRatesValueBytes)
 
 	return finalExchangeRates, nil
 }
@@ -329,8 +367,10 @@ func removeWaitingPortingReqByKey (key string, state *CurrentPortalState) bool {
 	return false
 }
 
-func sortCustodianByAmountAscent(metadata metadata.PortalUserRegister, custodianState map[string]*lvdb.CustodianState, custodianStateSlice []CustodianStateSlice) {
+func sortCustodianByAmountAscent(metadata metadata.PortalUserRegister, custodianState map[string]*lvdb.CustodianState, custodianStateSlice *[]CustodianStateSlice) error {
 	//convert to slice
+
+	var result []CustodianStateSlice
 	for k, v := range custodianState {
 		//check pTokenId, select only ptokenid
 		_, tokenIdExist := v.RemoteAddresses[metadata.PTokenId]
@@ -338,18 +378,19 @@ func sortCustodianByAmountAscent(metadata metadata.PortalUserRegister, custodian
 			continue
 		}
 
-		custodianStateSlice = append(custodianStateSlice, struct{
-			Key string
-			Value *lvdb.CustodianState
-		}{
+		item := CustodianStateSlice {
 			Key: k,
 			Value: v,
-		})
+		}
+		result = append(result, item)
 	}
 
-	sort.Slice(custodianStateSlice, func(i, j int) bool {
-		return custodianStateSlice[i].Value.FreeCollateral <= custodianStateSlice[j].Value.FreeCollateral
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Value.FreeCollateral <= result[j].Value.FreeCollateral
 	})
+
+	*custodianStateSlice = result
+	return nil
 }
 
 func pickSingleCustodian(metadata metadata.PortalUserRegister, exchangeRate *lvdb.FinalExchangeRates, custodianStateSlice []CustodianStateSlice) (map[string]lvdb.MatchingPortingCustodianDetail, error) {
@@ -358,6 +399,8 @@ func pickSingleCustodian(metadata metadata.PortalUserRegister, exchangeRate *lvd
 	totalPTokenAfterUp150PercentUnit64 := uint64(totalPTokenAfterUp150Percent)
 
 	totalPRV := exchangeRate.ExchangePToken2PRVByTokenId(metadata.PTokenId, totalPTokenAfterUp150PercentUnit64)
+
+	Logger.log.Infof("Porting request, pick single custodian ptoken: %v, total prv %v", metadata.PTokenId, totalPRV)
 
 	for _, kv := range custodianStateSlice {
 		if kv.Value.FreeCollateral >= totalPRV {

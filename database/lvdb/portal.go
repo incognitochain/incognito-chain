@@ -84,12 +84,14 @@ func NewPortingRequestKey (beaconHeight uint64, uniquePortingID string) string {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 	key := append(PortalPortingRequestsPrefix, []byte(uniquePortingID)...)
 	key = append(key, beaconHeightBytes...)
+	key = append(key, []byte("height")...)
 	return string(key) //prefix + uniqueId + beaconHeight
 }
 
 func NewFinalExchangeRatesKey (beaconHeight uint64) string {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 	key := append(PortalFinalExchangeRatesPrefix, beaconHeightBytes...)
+	key = append(key, []byte("height")...)
 	return string(key)
 }
 
@@ -131,8 +133,10 @@ func NewPortalReqPTokenKey (portingID string) string {
 func (db *db) GetAllRecordsPortalByPrefix(beaconHeight uint64, prefix []byte) ([][]byte, [][]byte, error) {
 	keys := [][]byte{}
 	values := [][]byte{}
+
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 	prefixByBeaconHeight := append(prefix, beaconHeightBytes...)
+
 	iter := db.lvdb.NewIterator(util.BytesPrefix(prefixByBeaconHeight), nil)
 	for iter.Next() {
 		key := iter.Key()
@@ -219,6 +223,7 @@ func (db *db) StoreExchangeRatesRequestItem(keyId []byte, content interface{}) e
 	return nil
 }
 
+
 func (db *db) StoreFinalExchangeRatesItem(keyId []byte, content interface{}) error {
 	contributionBytes, err := json.Marshal(content)
 	if err != nil {
@@ -252,7 +257,7 @@ func (finalExchangeRates FinalExchangeRates) ExchangePToken2PRVByTokenId(pTokenI
 	case PortalTokenSymbolBTC:
 		return finalExchangeRates.ExchangeBTC2PRV(value)
 	case PortalTokenSymbolBNB:
-		return finalExchangeRates.ExchangeBTC2PRV(value)
+		return finalExchangeRates.ExchangeBNB2PRV(value)
 	}
 
 	return 0
@@ -278,7 +283,7 @@ func (finalExchangeRates *FinalExchangeRates) ExchangeBTC2PRV(value uint64) uint
 
 	//BTC -> PRV
 	totalPRV := btc2usd / PRVRates
-	//totalPRV = uint64(totalPRV)
+	totalPRV = uint64(totalPRV)
 	return totalPRV
 }
 
@@ -286,12 +291,12 @@ func (finalExchangeRates *FinalExchangeRates) ExchangeBNB2PRV(value uint64) uint
 	//get rate of BTC
 	BNBRates := finalExchangeRates.Rates[PortalTokenSymbolBNB].Amount
 	PRVRates := finalExchangeRates.Rates[PortalTokenSymbolPRV].Amount
-	//BTC -> USDT
+	//BNB -> USDT
 	bnb2usd := value * BNBRates
 
 	//BTC -> PRV
 	totalPRV := bnb2usd / PRVRates
-	//totalPRV = uint64(totalPRV)
+	totalPRV = uint64(totalPRV)
 	return  totalPRV
 }
 
@@ -304,6 +309,9 @@ func (finalExchangeRates *FinalExchangeRates) ExchangePRV2BTC(value uint64) uint
 
 	//PRV -> BTC
 	totalBTC := prv2usd / BTCRates
+	totalBTC = uint64(totalBTC)
+
+	//common.Logger.Infof("Exchange, prv 2 btc prv = %v", metadata.PTokenId, totalPRV)
 	return totalBTC
 }
 
@@ -316,5 +324,6 @@ func (finalExchangeRates *FinalExchangeRates) ExchangePRV2BNB(value uint64) uint
 
 	//BNB -> PRV
 	totalBNB := prv2usd / BNBRates
+	totalBNB = uint64(totalBNB)
 	return  totalBNB
 }

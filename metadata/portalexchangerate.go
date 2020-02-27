@@ -15,7 +15,7 @@ import (
 type PortalExchangeRates struct {
 	MetadataBase
 	SenderAddress string
-	Rates map[string]uint64
+	Rates map[string]uint64 //amount * 10^6 (USDT)
 }
 
 type PortalExchangeRatesAction struct {

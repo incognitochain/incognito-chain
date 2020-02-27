@@ -223,6 +223,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 
 			holdingPubTokensMapping := make(map[string]uint64)
 			holdingPubTokensMapping[tokenID] = amount
+
 			lockedAmountCollateralMapping := make(map[string]uint64)
 			lockedAmountCollateralMapping[tokenID] = itemCustodian.LockedAmountCollateral
 
@@ -333,6 +334,11 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 }
 
 func (blockchain *BlockChain) processPortalExchangeRates(beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
+	if currentPortalState == nil {
+		Logger.log.Errorf("current portal state is nil")
+		return nil
+	}
+
 	db := blockchain.GetDatabase()
 
 	// parse instruction
@@ -342,6 +348,8 @@ func (blockchain *BlockChain) processPortalExchangeRates(beaconHeight uint64, in
 		Logger.log.Errorf("ERROR: an error occurred while unmarshaling content string of portal exchange rates instruction: %+v", err)
 		return nil
 	}
+
+	Logger.log.Infof("Portal exchange rates, data input %v", portingExchangeRatesContent)
 
 	reqStatus := instructions[2]
 
@@ -362,6 +370,9 @@ func (blockchain *BlockChain) processPortalExchangeRates(beaconHeight uint64, in
 		}
 
 		currentPortalState.ExchangeRatesRequests[portingExchangeRatesContent.UniqueRequestId] = newExchangeRates
+
+		Logger.log.Infof("Portal exchange rates, exchange rates request: count final exchange rate %v , exchange rate request %v", len(currentPortalState.FinalExchangeRates), len(currentPortalState.ExchangeRatesRequests))
+
 	case common.PortalLoadDataFailedStatus:
 	case common.PortalDuplicateKeyStatus:
 		//save db
@@ -384,8 +395,7 @@ func (blockchain *BlockChain) processPortalExchangeRates(beaconHeight uint64, in
 }
 
 func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, currentPortalState *CurrentPortalState) error  {
-
-	db := blockchain.GetDatabase()
+	Logger.log.Infof("Portal exchange rates, pick final exchange rates: count final exchange rate %v , exchange rate request %v", len(currentPortalState.FinalExchangeRates), len(currentPortalState.ExchangeRatesRequests))
 
 	//convert to slice
 	var btcExchangeRatesSlice []uint64
@@ -439,12 +449,13 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 	}
 
 	if len(prvExchangeRatesSlice) > 0 {
-		prvAmount = calcMedian(btcExchangeRatesSlice)
+		prvAmount = calcMedian(prvExchangeRatesSlice)
 	}
 
+	Logger.log.Infof("Portal exchange rates, generate key %v", exchangeRatesKey)
 	//if pre state exist
-	if currentPortalState.FinalExchangeRates[exchangeRatesKey] != nil {
-		exchangeRatesState := currentPortalState.FinalExchangeRates[exchangeRatesKey]
+	if exchangeRatesState, ok := currentPortalState.FinalExchangeRates[exchangeRatesKey]; ok {
+		Logger.log.Infof("Portal exchange rates, pre block exits generate key %v", exchangeRatesKey)
 
 		var btcAmountPreState uint64
 		var bnbAmountPreState uint64
@@ -488,14 +499,12 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 
 
 	if len(exchangeRatesList) > 0 {
-		newFinalExchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconHeight + 1)
-		err := db.StoreFinalExchangeRatesItem([]byte(newFinalExchangeRatesKey), lvdb.FinalExchangeRates{
+		newFinalExchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
+		currentPortalState.FinalExchangeRates[newFinalExchangeRatesKey] = &lvdb.FinalExchangeRates{
 			Rates: exchangeRatesList,
-		})
-
-		if err != nil {
-			return err
 		}
+
+		Logger.log.Infof("Portal exchange rates, done pick: count final exchange rate %v , exchange rate request %v", len(currentPortalState.FinalExchangeRates), len(currentPortalState.ExchangeRatesRequests))
 	}
 
 	return nil

@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"strconv"
 	"reflect"
-	"errors"
+	"strconv"
 )
 
 // PortalUserRegister - User register porting public tokens
@@ -98,6 +98,14 @@ func (portalUserRegister PortalUserRegister) ValidateSanityData(bcr BlockchainRe
 	// check burning tx
 	if !txr.IsCoinsBurning(bcr) {
 		return false, false, errors.New("must send coin to burning address")
+	}
+
+	if len(portalUserRegister.UniqueRegisterId) <= 0 {
+		return false, false, errors.New("UniqueRegisterId should be not empty")
+	}
+
+	if len(portalUserRegister.IncogAddressStr) <= 0 {
+		return false, false, errors.New("IncogAddressStr should be not empty")
 	}
 
 	// validate amount register

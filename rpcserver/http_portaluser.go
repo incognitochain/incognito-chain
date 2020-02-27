@@ -22,16 +22,17 @@ func (httpServer *HttpServer) handleRegisterPortingPublicTokens(params interface
 
 	uniqueRegisterId, ok := data["UniqueRegisterId"].(string)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata UniqueRegisterId is invalid"))
 	}
+
 	incogAddressStr, ok := data["IncogAddressStr"].(string)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata IncogAddressStr is invalid"))
 	}
 
 	pTokenId, ok := data["PTokenId"].(string)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PTokenId is invalid"))
 	}
 
 	isSupported, err := common.SliceExists(metadata.PortalSupportedTokenSymbols, pTokenId)
@@ -39,22 +40,22 @@ func (httpServer *HttpServer) handleRegisterPortingPublicTokens(params interface
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
 	}
 
-	registerAmount, ok := data["RegisterAmount"].(uint64)
+	registerAmount, ok := data["RegisterAmount"].(float64)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata RegisterAmount is invalid"))
 	}
 
-	portingFee, ok := data["PortingFee"].(uint64)
+	portingFee, ok := data["PortingFee"].(float64)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PortingFee is invalid"))
 	}
 
 	meta, _ := metadata.NewPortalUserRegister(
 		uniqueRegisterId,
 		incogAddressStr,
 		pTokenId,
-		registerAmount,
-		portingFee,
+		uint64(registerAmount),
+		uint64(portingFee),
 		metadata.PortalUserRegisterMeta,
 	)
 
@@ -75,6 +76,7 @@ func (httpServer *HttpServer) handleRegisterPortingPublicTokens(params interface
 		Logger.log.Error(err1)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
 	}
+
 	result := jsonresult.CreateTransactionResult{
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
