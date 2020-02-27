@@ -1,28 +1,29 @@
-package privacy
+package polynomial
 
 import (
 	"fmt"
 	"math/big"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 func TestConvert(t *testing.T) {
-
-	L1 := RandomScalar()
-	L2 := RandomScalar()
-	L3 := RandomScalar()
-	LRes := new(Scalar).Sub(L1, L2)
+	L1 := privacy.RandomScalar()
+	L2 := privacy.RandomScalar()
+	L3 := privacy.RandomScalar()
+	LRes := new(privacy.Scalar).Sub(L1, L2)
 	LRes.Sub(LRes, L3)
 	fmt.Println(LRes)
 
-	I1 := ScalarToBigInt(L1)
-	I2 := ScalarToBigInt(L2)
-	I3 := ScalarToBigInt(L3)
+	I1 := privacy.ScalarToBigInt(L1)
+	I2 := privacy.ScalarToBigInt(L2)
+	I3 := privacy.ScalarToBigInt(L3)
 
 	tmp := new(big.Int).Sub(I1, I2)
 	tmp = tmp.Sub(tmp, I3)
-	IRes:= tmp.Mod(tmp, LInt)
-	LResPrime := BigIntToScalar(IRes)
+	IRes := tmp.Mod(tmp, LInt)
+	LResPrime := privacy.BigIntToScalar(IRes)
 	fmt.Println(LResPrime)
 
 }

@@ -1,9 +1,7 @@
-package privacy
+package polynomial
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy/curve25519"
 	"math/big"
 	"math/rand"
 	"time"
@@ -22,25 +20,6 @@ func newPoly(coeffs ...int) (p Poly) {
 	}
 	p.trim()
 	return
-}
-
-func ScalarToBigInt( sc *Scalar) *big.Int {
-	keyR := Reverse(sc.key)
-	keyRByte := keyR.ToBytes()
-	bi := new(big.Int).SetBytes(keyRByte[:])
-	return bi
-}
-
-func BigIntToScalar( bi *big.Int) *Scalar{
-	biByte := common.AddPaddingBigInt(bi, Ed25519KeySize)
-	var key curve25519.Key
-	key.FromBytes(SliceToArray(biByte))
-	keyR := Reverse(key)
-	sc, err := new(Scalar).SetKey(&keyR)
-	if err != nil {
-		return nil
-	}
-	return sc
 }
 
 // Returns a polynomial with random coefficients

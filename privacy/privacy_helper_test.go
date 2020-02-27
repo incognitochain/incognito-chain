@@ -2,10 +2,11 @@ package privacy
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/stretchr/testify/assert"
 )
 
 var _ = func() (_ struct{}) {
