@@ -2,13 +2,17 @@ package relaying
 
 import (
 	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
 	"errors"
-	"github.com/tendermint/tendermint/crypto"
+	"fmt"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/types"
+	"strings"
 )
 
-var validatorMap, _ = NewFixedValidators()
+// Mainnet - Binance
+var validatorMapMainnet, _ = NewFixedValidators()
 
 // address = hexEncode(sha256(pubKey)[:20])
 var ValidatorAddresses = []string{
@@ -55,8 +59,6 @@ var ValidatorPubKeyBytes = [][]byte{
 	{113, 242, 215, 184, 236, 28, 139, 153, 166, 83, 66, 155, 1, 24, 205, 32, 31, 121, 79, 64, 157, 15, 234, 77, 101, 177, 182, 98, 242, 176, 0, 99},
 }
 
-var ValidatorPubKeys = []crypto.PubKey{}
-
 var ValidatorVotingPowers = []int64{
 	1000000000000,
 	1000000000000,
@@ -79,38 +81,28 @@ func SHA256(data []byte) []byte {
 }
 
 // DecodePublicKeyValidator decodes encoded public key to public key in bytes array
-//func DecodePublicKeyValidator() error {
-//	ValidatorPubKeyBytes = make([][]byte, len(ValidatorB64EncodePubKeys))
-//	ValidatorPubKeys = make([]crypto.PubKey, len(ValidatorB64EncodePubKeys))
-//	for i, item := range ValidatorB64EncodePubKeys {
-//		bytes, err := base64.StdEncoding.DecodeString(item)
-//		if err != nil {
-//			return err
-//		}
-//
-//		// check public key bytes to address
-//		pubKeyHash := SHA256(bytes)
-//		addTmpStr := strings.ToUpper(hex.EncodeToString(pubKeyHash[0:20]))
-//
-//		if addTmpStr == ValidatorAddresses[i] {
-//			ValidatorPubKeyBytes[i] = bytes
-//		} else{
-//			fmt.Printf("Public key is wrong %v\n", i)
-//		}
-//		var pubKey ed25519.PubKeyEd25519
-//
-//
-//		//ValidatorPubKeys[i] = crypto.PubKey{ValidatorPubKeyBytes[i]}
-//		copy(pubKey[:], ValidatorPubKeyBytes[i])
-//		ValidatorPubKeys[i] = pubKey
-//		fmt.Printf("pubKey %#v\n", pubKey)
-//		fmt.Printf("ValidatorPubKeys[i].Bytes() %#v\n", len(ValidatorPubKeys[i].Bytes()))
-//		fmt.Printf("ValidatorPubKeys[i].Bytes() %#v\n", ValidatorPubKeys[i].Bytes())
-//	}
-//
-//	fmt.Printf("ValidatorPubKeyBytes %#v\n", ValidatorPubKeyBytes)
-//	return nil
-//}
+func DecodePublicKeyValidator() error {
+	ValidatorPubKeyBytes = make([][]byte, len(ValidatorB64EncodePubKeys))
+	for i, item := range ValidatorB64EncodePubKeys {
+		bytes, err := base64.StdEncoding.DecodeString(item)
+		if err != nil {
+			return err
+		}
+
+		// check public key bytes to address
+		pubKeyHash := SHA256(bytes)
+		addTmpStr := strings.ToUpper(hex.EncodeToString(pubKeyHash[0:20]))
+
+		if addTmpStr == ValidatorAddresses[i] {
+			ValidatorPubKeyBytes[i] = bytes
+		} else{
+			fmt.Printf("Public key is wrong %v\n", i)
+		}
+	}
+
+	fmt.Printf("ValidatorPubKeyBytes %#v\n", ValidatorPubKeyBytes)
+	return nil
+}
 
 func NewFixedValidators() (map[string]*types.Validator, error) {
 	if len(ValidatorAddresses) != len(ValidatorPubKeyBytes) || len(ValidatorAddresses) != len(ValidatorVotingPowers) {
@@ -127,3 +119,44 @@ func NewFixedValidators() (map[string]*types.Validator, error) {
 	}
 	return validators, nil
 }
+
+
+// Testnet
+
+// address = hexEncode(sha256(pubKey)[:20])
+var ValidatorAddressesTestnet = []string{
+	"76154E686175F3E1111930C4E6496C2754CBA48E",
+}
+
+// public key on ed25519 curve (base64 encoded)
+var ValidatorB64EncodePubKeysTestnet = []string{
+	"RtEX+5PkniuWYH0rwr2NW742SXCoeqU3xvlzg7tmnVM=",
+}
+
+// ValidatorPubKeyBytes are results from base-64 decoding ValidatorB64EncodePubKeys
+var ValidatorPubKeyBytesTestnet = [][]byte{
+	{70, 209, 23, 251, 147, 228, 158, 43, 150, 96, 125, 43, 194, 189, 141, 91, 190, 54, 73, 112, 168, 122, 165, 55, 198, 249, 115, 131, 187, 102, 157, 83},
+}
+
+var ValidatorVotingPowersTestnet = []int64{
+	1000000000000,
+}
+
+var validatorMapTestnet, _ = NewFixedValidatorsTestnet()
+
+func NewFixedValidatorsTestnet() (map[string]*types.Validator, error) {
+	if len(ValidatorAddressesTestnet) != len(ValidatorPubKeyBytesTestnet) || len(ValidatorAddressesTestnet) != len(ValidatorVotingPowersTestnet) {
+		return nil, errors.New("invalid validator set data")
+	}
+	validators := make(map[string]*types.Validator, len(ValidatorAddressesTestnet))
+	for i, addressStr := range ValidatorAddressesTestnet {
+		var pubKey ed25519.PubKeyEd25519
+		copy(pubKey[:], ValidatorPubKeyBytesTestnet[i])
+		validators[addressStr] = &types.Validator{
+			PubKey:      pubKey,
+			VotingPower: ValidatorVotingPowersTestnet[i],
+		}
+	}
+	return validators, nil
+}
+

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"os"
 	"path/filepath"
 
@@ -52,6 +53,7 @@ var (
 	bridgeLogger           = backendLog.Logger("DeBridge log", false)
 	metadataLogger         = backendLog.Logger("Metadata log", false)
 	peerv2Logger           = backendLog.Logger("Peerv2 log", false)
+	relayingLogger         = backendLog.Logger("Relaying log", false)
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -89,7 +91,7 @@ func init() {
 	rpcserver.BLogger.Init(bridgeLogger)
 	metadata.Logger.Init(metadataLogger)
 	peerv2.Logger.Init(peerv2Logger)
-
+	relaying.Logger.Init(relayingLogger)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.

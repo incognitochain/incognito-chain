@@ -80,8 +80,8 @@ var (
 	PortalRequestPTokensPrefix         = []byte("portalrequestptokens-")
 
 	// Relaying
-	RelayingStatePrefix               = []byte("relayingstate-")
-	RelayingBNBHeaderChainPrefix               = []byte("relayingbnbheaderchain-")
+	RelayingBNBHeaderStatePrefix = []byte("relayingbnbheaderstate-")
+	RelayingBNBHeaderChainPrefix = []byte("relayingbnbheaderchain-")
 )
 
 // value

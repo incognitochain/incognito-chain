@@ -8,18 +8,18 @@ import (
 )
 
 type BNBHeader struct {
-	Header *types.Header
-	LastCommit *types.Commit
+	Header *types.Header   		`json:"Header"`
+	LastCommit *types.Commit	`json:"LastCommit"`
 }
 
-func NewRelayingStateKey(beaconHeight uint64) string {
-	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
-	key := append(RelayingStatePrefix, beaconHeightBytes...)
+func NewBNBHeaderRelayingStateKey(beaconHeight uint64) string {
+	beaconHeightBytes := []byte(fmt.Sprintf("%d", beaconHeight))
+	key := append(RelayingBNBHeaderStatePrefix, beaconHeightBytes...)
 	return string(key) //prefix + beaconHeight
 }
 
 func NewRelayingBNBHeaderChainKey(blockHeight uint64) string {
-	beaconHeightBytes := []byte(fmt.Sprintf("%d-", blockHeight))
+	beaconHeightBytes := []byte(fmt.Sprintf("%d", blockHeight))
 	key := append(RelayingBNBHeaderChainPrefix, beaconHeightBytes...)
 	return string(key) //prefix + blockHeight
 }
@@ -31,7 +31,7 @@ func(db*db) GetItemByKey(key []byte) ([]byte, error){
 		return nil, database.NewDatabaseError(database.UnexpectedError, err)
 	}
 
-	return valueBytes, err
+	return valueBytes, nil
 }
 
 func (db *db) StoreRelayingBNBHeaderChain(blockHeight uint64, header []byte) error {
