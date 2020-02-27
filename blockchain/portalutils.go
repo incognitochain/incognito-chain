@@ -158,6 +158,7 @@ func storeWaitingPortingRequests(db database.DatabaseInterface,
 	beaconHeight uint64,
 	waitingPortingReqs map[string]*lvdb.PortingRequest) error {
 	for waitingReqKey, waitingReq := range waitingPortingReqs {
+		//todo: review new key
 		newKey := replaceKeyByBeaconHeight(waitingReqKey, beaconHeight)
 
 		Logger.log.Infof("Porting request, save waiting db with key %v", newKey)
