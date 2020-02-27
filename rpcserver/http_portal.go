@@ -214,17 +214,21 @@ func (httpServer *HttpServer) handleGetPortalState(params interface{}, closeChan
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
+
 	type CurrentPortalState struct {
 		WaitingPortingRequests map[string]*lvdb.PortingRequest `json:"WaitingPortingRequests"`
 		WaitingRedeemRequests  map[string]*lvdb.RedeemRequest  `json:"WaitingRedeemRequests"`
 		CustodianPool          map[string]*lvdb.CustodianState `json:"CustodianPool"`
 		BeaconTimeStamp        int64                           `json:"BeaconTimeStamp"`
+		FinalExchangeRates     map[string]*lvdb.FinalExchangeRates `json:"FinalExchangeRates"`
 	}
+
 	result := CurrentPortalState{
 		BeaconTimeStamp:        beaconBlock.Header.Timestamp,
 		WaitingPortingRequests: portalState.WaitingPortingRequests,
 		WaitingRedeemRequests:  portalState.WaitingRedeemRequests,
 		CustodianPool:          portalState.CustodianPoolState,
+		FinalExchangeRates:		portalState.FinalExchangeRates,
 	}
 	return result, nil
 }

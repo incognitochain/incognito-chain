@@ -106,8 +106,18 @@ func (portalExchangeRates PortalExchangeRates) Hash() *common.Hash {
 	record := portalExchangeRates.MetadataBase.Hash().String()
 	record += portalExchangeRates.SenderAddress
 
-	for pToken, value := range portalExchangeRates.Rates {
-		record += pToken
+	if value, ok := portalExchangeRates.Rates[PortalTokenSymbolBTC]; ok {
+		record += PortalTokenSymbolBTC
+		record += strconv.FormatUint(value, 10)
+	}
+
+	if value, ok := portalExchangeRates.Rates[PortalTokenSymbolBNB]; ok {
+		record += PortalTokenSymbolBNB
+		record += strconv.FormatUint(value, 10)
+	}
+
+	if value, ok := portalExchangeRates.Rates[PortalTokenSymbolPRV]; ok {
+		record += PortalTokenSymbolPRV
 		record += strconv.FormatUint(value, 10)
 	}
 

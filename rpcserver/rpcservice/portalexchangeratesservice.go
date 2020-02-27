@@ -13,7 +13,7 @@ type PortalExchangeRatesService struct {
 	BlockChain *blockchain.BlockChain
 }
 
-func (portalExchangeRatesService *PortalExchangeRatesService) GetExchangeRates(service *BlockService, db database.DatabaseInterface) (jsonresult.FinalExchangeRatesResult, *RPCError) {
+func (portalExchangeRatesService *PortalExchangeRatesService) GetFinalExchangeRates(service *BlockService, db database.DatabaseInterface) (jsonresult.FinalExchangeRatesResult, *RPCError) {
 	beaconBlock, err := service.GetBeaconBestBlock()
 	if err != nil {
 		return jsonresult.FinalExchangeRatesResult{}, NewRPCError(GetBeaconBestBlockError, err)
@@ -37,7 +37,10 @@ func (portalExchangeRatesService *PortalExchangeRatesService) GetExchangeRates(s
 		}
 	}
 
-	result := jsonresult.FinalExchangeRatesResult{Rates:item}
+	result := jsonresult.FinalExchangeRatesResult{
+		BeaconHeight: beaconBlock.GetHeight(),
+		Rates: item,
+	}
 	return result, nil
 }
 

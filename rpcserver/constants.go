@@ -191,7 +191,7 @@ const (
 	getPortalCustodianDepositStatus          = "getportalcustodiandepositstatus"
 	createAndSendRegisterPortingPublicTokens = "createandsendregisterportingpublictokens"
 	createAndSendPortalExchangeRates         = "createandsendportalexchangerates"
-	getPortalExchangeRates                   = "getportalexchangerates"
+	getPortalFinalExchangeRates              = "getportalfinalexchangerates"
 	convertExchangeRates                     = "convertexchangerates"
 	getPortalReqPTokenStatus                 = "getportalreqptokenstatus"
 

@@ -17,6 +17,7 @@ type CurrentPortalState struct {
 	ExchangeRatesRequests  map[string]*lvdb.ExchangeRatesRequest // key : beaconHeight | TxID
 	WaitingPortingRequests map[string]*lvdb.PortingRequest       // key : beaconHeight || UniquePortingID
 	WaitingRedeemRequests  map[string]*lvdb.RedeemRequest        // key : beaconHeight || UniqueRedeemID
+	FinalExchangeRates     map[string]*lvdb.FinalExchangeRates      // key : beaconHeight || TxID
 }
 
 
@@ -94,10 +95,17 @@ func InitCurrentPortalStateFromDB(
 		return nil, err
 	}
 
+	finalExchangeRates, err := getFinalExchangeRates(db, beaconHeight)
+	if err != nil {
+		return nil, err
+	}
+
 	return &CurrentPortalState{
 		CustodianPoolState:     custodianPoolState,
 		WaitingPortingRequests: waitingPortingReqs,
 		WaitingRedeemRequests:  waitingRedeemReqs,
+		FinalExchangeRates:  finalExchangeRates,
+		ExchangeRatesRequests: make(map[string]*lvdb.ExchangeRatesRequest),
 	}, nil
 }
 
@@ -258,6 +266,27 @@ func getWaitingRedeemRequests(
 	return waitingRedeemReqs, nil
 }
 
+func getFinalExchangeRates(
+	db database.DatabaseInterface,
+	beaconHeight uint64,
+) (map[string]*lvdb.FinalExchangeRates, error) {
+	finalExchangeRates := make(map[string]*lvdb.FinalExchangeRates)
+	finalExchangeRatesKeyBytes, finalExchangeRatesValueBytes, err := db.GetAllRecordsPortalByPrefix(beaconHeight, lvdb.PortalFinalExchangeRatesPrefix)
+	if err != nil {
+		return nil, err
+	}
+	for idx, waitingRedeemReqKeyBytes := range finalExchangeRatesKeyBytes {
+		var items lvdb.FinalExchangeRates
+		err = json.Unmarshal(finalExchangeRatesValueBytes[idx], &items)
+		if err != nil {
+			return nil, err
+		}
+		finalExchangeRates[string(waitingRedeemReqKeyBytes)] = &items
+	}
+
+	return finalExchangeRates, nil
+}
+
 func GetFinalExchangeRatesByKey(
 	db database.DatabaseInterface,
 	key []byte,
@@ -270,11 +299,12 @@ func GetFinalExchangeRatesByKey(
 
 	var finalExchangeRatesState lvdb.FinalExchangeRates
 
-	//get value via idx
-	var slice []byte
-	slice = append(slice, finalExchangeRatesItem)
+	if  finalExchangeRatesItem == nil {
+		return &finalExchangeRatesState, nil
+	}
 
-	err = json.Unmarshal(slice, &finalExchangeRatesState)
+	//get value via idx
+	err = json.Unmarshal(finalExchangeRatesItem, &finalExchangeRatesState)
 	if err != nil {
 		return nil, err
 	}

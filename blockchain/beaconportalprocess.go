@@ -48,13 +48,12 @@ func (blockchain *BlockChain) processPortalInstructions(block *BeaconBlock, bd *
 	// all request timeout ? unhold
 
 	//save final exchangeRates
-	if len(currentPortalState.ExchangeRatesRequests) > 0 {
-		err = blockchain.pickExchangesRatesFinal(beaconHeight, currentPortalState)
-		if err != nil {
-			Logger.log.Error(err)
-			return nil
-		}
+	err = blockchain.pickExchangesRatesFinal(beaconHeight, currentPortalState)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil
 	}
+
 
 	// store updated currentPortalState to leveldb with new beacon height
 	err = storePortalStateToDB(db, beaconHeight+1, currentPortalState)
@@ -422,52 +421,81 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 	})
 
 	exchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
-	exchangeRatesState, err := GetFinalExchangeRatesByKey(db, []byte(exchangeRatesKey))
-	if err != nil {
-		return  err
-	}
-
-	//pick
 	exchangeRatesList := make(map[string]lvdb.FinalExchangeRatesDetail)
-	btcAmount := exchangeRatesState.Rates[metadata.PortalTokenSymbolBTC].Amount
-	bnbAmount := exchangeRatesState.Rates[metadata.PortalTokenSymbolBNB].Amount
-	prvAmount := exchangeRatesState.Rates[metadata.PortalTokenSymbolPRV].Amount
 
-	//pick final rates of BTC
+	var btcAmount uint64
+	var bnbAmount uint64
+	var prvAmount uint64
+
+
+	//get current value
 	if len(btcExchangeRatesSlice) > 0 {
 		btcAmount = calcMedian(btcExchangeRatesSlice)
 	}
 
-	exchangeRatesList[metadata.PortalTokenSymbolBTC] = lvdb.FinalExchangeRatesDetail{
-		Amount: btcAmount,
-	}
-
-	//pick final rates of BNB
 	if len(bnbExchangeRatesSlice) > 0 {
 		bnbAmount = calcMedian(bnbExchangeRatesSlice)
+
 	}
 
-	exchangeRatesList[metadata.PortalTokenSymbolBNB] = lvdb.FinalExchangeRatesDetail{
-		Amount: bnbAmount,
-	}
-
-	//pick final rates of PRV
 	if len(prvExchangeRatesSlice) > 0 {
-		prvAmount = calcMedian(prvExchangeRatesSlice)
+		prvAmount = calcMedian(btcExchangeRatesSlice)
 	}
 
-	exchangeRatesList[metadata.PortalTokenSymbolPRV] = lvdb.FinalExchangeRatesDetail{
-		Amount: prvAmount,
+	//if pre state exist
+	if currentPortalState.FinalExchangeRates[exchangeRatesKey] != nil {
+		exchangeRatesState := currentPortalState.FinalExchangeRates[exchangeRatesKey]
+
+		var btcAmountPreState uint64
+		var bnbAmountPreState uint64
+		var prvAmountPreState uint64
+		if value, ok := exchangeRatesState.Rates[metadata.PortalTokenSymbolBTC]; ok {
+			btcAmountPreState = value.Amount
+		}
+
+		if value, ok := exchangeRatesState.Rates[metadata.PortalTokenSymbolBNB]; ok {
+			bnbAmountPreState = value.Amount
+		}
+
+		if value, ok := exchangeRatesState.Rates[metadata.PortalTokenSymbolPRV]; ok {
+			prvAmountPreState = value.Amount
+		}
+
+		//pick current value and pre value state
+		btcAmount = choicePrice(btcAmount, btcAmountPreState)
+		bnbAmount = choicePrice(bnbAmount, bnbAmountPreState)
+		prvAmount = choicePrice(prvAmount, prvAmountPreState)
 	}
 
-	//save to db
-	newFinalExchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconHeight + 1)
-	err = db.StoreFinalExchangeRatesItem([]byte(newFinalExchangeRatesKey), lvdb.FinalExchangeRates{
-		Rates: exchangeRatesList,
-	})
+	//select
+	if btcAmount > 0 {
+		exchangeRatesList[metadata.PortalTokenSymbolBTC] = lvdb.FinalExchangeRatesDetail{
+			Amount: btcAmount,
+		}
+	}
 
-	if err != nil {
-		return  err
+	if bnbAmount > 0 {
+		exchangeRatesList[metadata.PortalTokenSymbolBNB] = lvdb.FinalExchangeRatesDetail{
+			Amount: bnbAmount,
+		}
+	}
+
+	if prvAmount > 0 {
+		exchangeRatesList[metadata.PortalTokenSymbolPRV] = lvdb.FinalExchangeRatesDetail{
+			Amount: prvAmount,
+		}
+	}
+
+
+	if len(exchangeRatesList) > 0 {
+		newFinalExchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconHeight + 1)
+		err := db.StoreFinalExchangeRatesItem([]byte(newFinalExchangeRatesKey), lvdb.FinalExchangeRates{
+			Rates: exchangeRatesList,
+		})
+
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -481,4 +509,16 @@ func calcMedian(ratesList []uint64) uint64 {
 	}
 
 	return ratesList[mNumber]
+}
+
+func choicePrice(currentPrice uint64, prePrice uint64) uint64  {
+	if currentPrice > 0 {
+		return currentPrice
+	} else {
+		if prePrice > 0 {
+			return prePrice
+		}
+	}
+
+	return 0
 }

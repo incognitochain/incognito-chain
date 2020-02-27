@@ -175,7 +175,7 @@ var HttpHandler = map[string]httpHandler{
 	getPortalCustodianDepositStatus:          (*HttpServer).handleGetPortalCustodianDepositStatus,
 	createAndSendRegisterPortingPublicTokens: (*HttpServer).handleCreateAndSendRegisterPortingPublicTokens,
 	createAndSendPortalExchangeRates:         (*HttpServer).handleCreateAndSendPortalExchangeRates,
-	getPortalExchangeRates:                   (*HttpServer).handleGetPortalExchangeRates,
+	getPortalFinalExchangeRates:              (*HttpServer).handleGetPortalFinalExchangeRates,
 	convertExchangeRates:                     (*HttpServer).handleConvertExchangeRates,
 	getPortalReqPTokenStatus:                 (*HttpServer).handleGetPortalReqPTokenStatus,
 
