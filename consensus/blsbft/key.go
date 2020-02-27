@@ -39,7 +39,7 @@ func (engine *Engine) LoadMiningKeys(keysString string) error {
 }
 
 func (engine *Engine) GetCurrentMiningPublicKey() (publickey string, keyType string) {
-	if engine != nil {
+	if engine != nil && engine.userMiningPublicKeys[engine.consensusName] != nil {
 		name := engine.consensusName
 		pubkey := engine.userMiningPublicKeys[name].GetMiningKeyBase58(name)
 		return pubkey, name

@@ -1704,6 +1704,10 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 	// }
 
 	userKey, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
+	if userKey == "" {
+		return nil
+	}
+
 	metrics.SetGlobalParam("MINING_PUBKEY", userKey)
 	msg, err := wire.MakeEmptyMessage(wire.CmdPeerState)
 	if err != nil {
@@ -1732,7 +1736,6 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 		msg.(*wire.MessagePeerState).CrossShardPool[byte(shardID)] = serverObj.crossShardPool[byte(shardID)].GetValidBlockHeight()
 	}
 
-	//
 	currentMiningKey := serverObj.consensusEngine.GetMiningPublicKeys()
 	msg.(*wire.MessagePeerState).SenderMiningPublicKey, err = currentMiningKey.ToBase58()
 	if err != nil {
