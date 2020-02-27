@@ -44,6 +44,8 @@ func (portal *Portal) GetPortingRequestByBeaconHeight(service *BlockService, db 
 		Rates: item,
 	}
 	return result, nil*/
+
+	return  jsonresult.FinalExchangeRatesResult{}, nil
 }
 
 func (portal *Portal) GetFinalExchangeRates(service *BlockService, db database.DatabaseInterface) (jsonresult.FinalExchangeRatesResult, *RPCError) {
