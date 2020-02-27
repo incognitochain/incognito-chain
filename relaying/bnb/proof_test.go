@@ -21,12 +21,12 @@ func TestGetTxByHash(t *testing.T){
 }
 
 func TestGetTxsInBlockHeight(t *testing.T){
-	txs, _ := getTxsInBlockHeight(66239775)
+	txs, _ := getTxsInBlockHeight(66239775, MainnetURLRemote)
 	fmt.Printf("Len txs: %v\n", txs)
 }
 
 func TestGetBlock(t *testing.T){
-	getBlock(66239775)
+	GetBlock(66239775, MainnetURLRemote)
 }
 
 func TestBuildProof1_VerifyProof(t *testing.T){
@@ -48,7 +48,7 @@ func TestBuildProof2_VerifyProof(t *testing.T){
 	//txHash := "24B93E8B6C5817B159870E5C617597EBD0BDAE100430DB8242BFBA5DA37D70CE"
 	blockHeight := int64(60479432)
 	dataHash, _ := hex.DecodeString("D81AD27D7C1D8114EB339158897C02337820BC17E10AB6405143EFE8E52AB526")
-	proof, err := BuildProof2(txIndex, blockHeight)
+	proof, err := BuildProof2(txIndex, blockHeight, MainnetURLRemote)
 	assert.Nil(t, err)
 	//fmt.Printf("Proof1: %+v\n", proof)
 
@@ -65,7 +65,7 @@ func TestBuildProof1_BuildProof2(t *testing.T){
 	proof1, err := BuildProof1(txHash)
 	assert.Nil(t, err)
 
-	proof2, err := BuildProof2(txIndex, blockHeight)
+	proof2, err := BuildProof2(txIndex, blockHeight, MainnetURLRemote)
 	assert.Nil(t, err)
 
 	assert.Equal(t, proof1, proof2)
@@ -115,7 +115,7 @@ func TestBNBProof(t *testing.T) {
 	//dataHash, _ := hex.DecodeString("D81AD27D7C1D8114EB339158897C02337820BC17E10AB6405143EFE8E52AB526")
 
 	bnbProof := new(BNBProof)
-	err := bnbProof.Build(txIndex, blockHeight)
+	err := bnbProof.Build(txIndex, blockHeight, MainnetURLRemote)
 	assert.Nil(t, err)
 	fmt.Printf("bnbProof: %+v\n", bnbProof)
 

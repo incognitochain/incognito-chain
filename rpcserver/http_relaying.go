@@ -104,12 +104,12 @@ func (httpServer *HttpServer) handleGetRelayingBNBHeaderState(params interface{}
 	}
 	relayingState, err := blockchain.InitRelayingHeaderChainStateFromDB(httpServer.config.BlockChain.GetDatabase(), uint64(beaconHeight))
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.GetRelayingBNBHeaderError, err)
 	}
 	bnbRelayingHeader := relayingState.BNBHeaderChain
 	beaconBlock, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.GetRelayingBNBHeaderError, err)
 	}
 	type RelayingBNBHeader struct {
 		LatestHeader       *types.Header   `json:"LatestHeader"`
@@ -141,11 +141,17 @@ func (httpServer *HttpServer) handleGetRelayingBNBHeaderByBlockHeight(params int
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetRelayingBNBHeaderByBlockHeightError, err)
 	}
-	var bnbHeader types.Header
-	err = json.Unmarshal(bnbHeaderBytes, &bnbHeader)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetRelayingBNBHeaderByBlockHeightError, err)
+
+	if len(bnbHeaderBytes) > 0 {
+		var bnbHeader types.Header
+		err = json.Unmarshal(bnbHeaderBytes, &bnbHeader)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.GetRelayingBNBHeaderByBlockHeightError, err)
+		}
+
+		return bnbHeader, nil
 	}
+
 
 	//bnbRelayingHeader := bnbHeaderBytes.BNBHeaderChain
 	//beaconBlock, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(blockHeight))
@@ -162,5 +168,5 @@ func (httpServer *HttpServer) handleGetRelayingBNBHeaderByBlockHeight(params int
 	//	LatestHeader:       bnbRelayingHeader.LatestHeader,
 	//	UnconfirmedHeaders: bnbRelayingHeader.UnconfirmedHeaders,
 	//}
-	return bnbHeader, nil
+	return nil, nil
 }

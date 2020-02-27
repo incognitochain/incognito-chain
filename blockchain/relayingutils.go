@@ -39,18 +39,20 @@ func getBNBHeaderChainState(
 	db database.DatabaseInterface,
 	beaconHeight uint64,
 ) (*relaying.LatestHeaderChain, error) {
-	relayingStateKey := lvdb.NewRelayingStateKey(beaconHeight)
+	relayingStateKey := lvdb.NewBNBHeaderRelayingStateKey(beaconHeight)
 	relayingStateValueBytes, err := db.GetItemByKey([]byte(relayingStateKey))
 	if err != nil {
+		Logger.log.Errorf("getBNBHeaderChainState - Can not get relaying bnb header state from db %v\n", err)
 		return nil, err
 	}
-
 	var hc relaying.LatestHeaderChain
-	err = json.Unmarshal(relayingStateValueBytes, &hc)
-	if err != nil {
-		return nil, err
+	if len(relayingStateValueBytes) > 0 {
+		err = json.Unmarshal(relayingStateValueBytes, &hc)
+		if err != nil {
+			Logger.log.Errorf("getBNBHeaderChainState - Can not unmarshal relaying bnb header state %v\n", err)
+			return nil, err
+		}
 	}
-
 	return &hc, nil
 }
 
@@ -68,7 +70,7 @@ func getBTCHeaderChainState(
 func storeBNBHeaderChainState(db database.DatabaseInterface,
 	beaconHeight uint64,
 	bnbHeaderRelaying *relaying.LatestHeaderChain) error {
-	key := lvdb.NewRelayingStateKey(beaconHeight)
+	key := lvdb.NewBNBHeaderRelayingStateKey(beaconHeight)
 	value, err := json.Marshal(bnbHeaderRelaying)
 	if err != nil {
 		return err

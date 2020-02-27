@@ -24,13 +24,31 @@ func (blockchain *BlockChain) processRelayingInstructions(block *BeaconBlock, bd
 		return nil
 	}
 
+	err = blockchain.processBNBRelayingHeaderInsts(block.Body.Instructions, beaconHeight, relayingState)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil
+	}
+
+	// todo: processBTCRelayingHeaderInsts
+
+	// store updated relayingState to leveldb with new beacon height
+	err = storeRelayingHeaderStateToDB(db, beaconHeight+1, relayingState)
+	if err != nil {
+		Logger.log.Error(err)
+	}
+
+	return nil
+}
+
+func (blockchain *BlockChain) processBNBRelayingHeaderInsts(insts [][]string, beaconHeight uint64, relayingState *RelayingHeaderChainState) error{
 	// collect instruction RelayingBNBHeader
 	// sort by block height
 	// store header chain
 	// update relaying state
 	instsGroupByBlockHeight := make(map[uint64][][]string)
 	blockHeightArr := make([]uint64, 0)
-	for _, inst := range block.Body.Instructions {
+	for _, inst := range insts {
 		if len(inst) < 4 || inst[0] != strconv.Itoa(metadata.RelayingBNBHeaderMeta) {
 			continue // Not error, just not relaying instruction
 		}
@@ -40,7 +58,7 @@ func (blockchain *BlockChain) processRelayingInstructions(block *BeaconBlock, bd
 		err = json.Unmarshal([]byte(inst[3]), &relayingContent)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while unmarshaling relaying header instruction: %+v", err)
-			return nil
+			return err
 		}
 
 		// get blockHeight in content
@@ -67,23 +85,16 @@ func (blockchain *BlockChain) processRelayingInstructions(block *BeaconBlock, bd
 	// process each instruction
 	for _, blockHeight := range blockHeightArr {
 		for _, inst := range instsGroupByBlockHeight[blockHeight] {
-			err = blockchain.processRelayingHeaderInst(beaconHeight, inst, relayingState)
+			err := blockchain.processRelayingHeaderInst(beaconHeight, inst, relayingState)
 			if err != nil {
 				Logger.log.Error(err)
-				return nil
+				return err
 			}
 		}
 	}
 
-	// store updated relayingState to leveldb with new beacon height
-	err = storeRelayingHeaderStateToDB(db, beaconHeight+1, relayingState)
-	if err != nil {
-		Logger.log.Error(err)
-	}
-
 	return nil
 }
-
 
 func (blockchain *BlockChain) processRelayingHeaderInst(
 	beaconHeight uint64, instructions []string, relayingState *RelayingHeaderChainState) error {
@@ -117,27 +128,10 @@ func (blockchain *BlockChain) processRelayingHeaderInst(
 	if reqStatus == common.RelayingHeaderUnconfirmedAcceptedChainStatus {
 		//update relaying state
 		relayingState.BNBHeaderChain.UnconfirmedHeaders = append(relayingState.BNBHeaderChain.UnconfirmedHeaders, header.Header)
-		// track into DB ?
-		//custodianDepositTrackKey := lvdb.NewCustodianDepositKey(actionData.TxReqID.String())
-		//custodianDepositTrackData := metadata.PortalCustodianDepositStatus{
-		//	Status: common.PortalCustodianDepositAcceptedStatus,
-		//	IncogAddressStr: actionData.IncogAddressStr,
-		//	DepositedAmount : actionData.DepositedAmount,
-		//}
-		//
-		//custodianDepositDataBytes, _ := json.Marshal(custodianDepositTrackData)
-		//err = db.TrackCustodianDepositCollateral(
-		//	[]byte(custodianDepositTrackKey),
-		//	custodianDepositDataBytes,
-		//)
-		//if err != nil {
-		//	Logger.log.Errorf("ERROR: an error occured while tracking custodian deposit collateral: %+v", err)
-		//	return nil
-		//}
+
 	} else if reqStatus == common.RelayingHeaderConfirmedAcceptedChainStatus {
 		// get new latest header
 		blockIDNewLatestHeader := header.Header.LastBlockID
-		//todo:
 		for _, header := range relayingState.BNBHeaderChain.UnconfirmedHeaders {
 			if bytes.Equal(header.Hash().Bytes(), blockIDNewLatestHeader.Hash) {
 				relayingState.BNBHeaderChain.LatestHeader = header
@@ -152,31 +146,12 @@ func (blockchain *BlockChain) processRelayingHeaderInst(
 		newConfirmedheader := relayingState.BNBHeaderChain.LatestHeader
 		newConfirmedheaderBytes, _ := json.Marshal(newConfirmedheader)
 
-		err := db.StoreRelayingBNBHeaderChain(actionData.BlockHeight, newConfirmedheaderBytes)
+		err := db.StoreRelayingBNBHeaderChain(uint64(newConfirmedheader.Height), newConfirmedheaderBytes)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while storing new confirmed header: %+v", err)
 			return nil
 		}
-
-		//// track custodian deposit into DB
-		//custodianDepositTrackKey := lvdb.NewCustodianDepositKey(actionData.TxReqID.String())
-		//custodianDepositTrackData := metadata.PortalCustodianDepositStatus{
-		//	Status: common.PortalCustodianDepositRefundStatus,
-		//	IncogAddressStr: actionData.IncogAddressStr,
-		//	DepositedAmount : actionData.DepositedAmount,
-		//}
-		//
-		//custodianDepositDataBytes, _ := json.Marshal(custodianDepositTrackData)
-		//err = db.TrackCustodianDepositCollateral(
-		//	[]byte(custodianDepositTrackKey),
-		//	custodianDepositDataBytes,
-		//)
-		//if err != nil {
-		//	Logger.log.Errorf("ERROR: an error occured while tracking custodian deposit collateral: %+v", err)
-		//	return nil
-		//}
 	} else if reqStatus == common.RelayingHeaderRejectedChainStatus {
-		// track into DB ?
 	}
 
 	return nil

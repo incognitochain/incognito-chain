@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
-	"github.com/incognitochain/incognito-chain/relaying"
+	"fmt"
 	"github.com/tendermint/tendermint/types"
 	"strings"
 )
@@ -17,6 +17,7 @@ type HeaderChain struct {
 
 // ReceiveNewHeader receives new header and last commit for the previous header block
 func (hc *HeaderChain) ReceiveNewHeader(h *types.Header, lastCommit *types.Commit) (bool, *BNBRelayingError) {
+	chainID := TestnetBNBChainID
 	// h is the first header block
 	if len(hc.HeaderChain) == 0 && lastCommit == nil {
 		// just append into hc.UnconfirmedHeaders
@@ -44,7 +45,7 @@ func (hc *HeaderChain) ReceiveNewHeader(h *types.Header, lastCommit *types.Commi
 			// create new signed header and verify
 			// add to UnconfirmedHeaders list
 			newSignedHeader := NewSignedHeader(latestHeader, lastCommit)
-			isValid, err := VerifySignedHeader(newSignedHeader)
+			isValid, err := VerifySignedHeader(newSignedHeader, chainID)
 			if isValid && err == nil{
 				hc.UnconfirmedHeaders = append(hc.UnconfirmedHeaders, h)
 				return true, nil
@@ -62,7 +63,7 @@ func (hc *HeaderChain) ReceiveNewHeader(h *types.Header, lastCommit *types.Commi
 				// append uh to hc.HeaderChain,
 				// clear all UnconfirmedHeaders => append h to UnconfirmedHeaders
 				newSignedHeader := NewSignedHeader(uh, lastCommit)
-				isValid, err := VerifySignedHeader(newSignedHeader)
+				isValid, err := VerifySignedHeader(newSignedHeader, chainID)
 				if isValid && err == nil{
 					hc.HeaderChain = append(hc.HeaderChain, uh)
 					hc.UnconfirmedHeaders = []*types.Header{h}
@@ -85,6 +86,16 @@ func NewSignedHeader (h *types.Header, lastCommit *types.Commit) *types.SignedHe
 }
 
 func VerifySignature(sh *types.SignedHeader, chainID string) *BNBRelayingError {
+	validatorMap := validatorMapMainnet
+	validatorVotingPowers := ValidatorVotingPowers
+	totalVotingPowerParam := MainnetTotalVotingPowers
+
+	if chainID == TestnetBNBChainID {
+		validatorMap = validatorMapTestnet
+		validatorVotingPowers = ValidatorVotingPowersTestnet
+		totalVotingPowerParam = TestnetTotalVotingPowers
+	}
+
 	signedValidator := map[string]bool{}
 	sigs := sh.Commit.Precommits
 	totalVotingPower := int64(0)
@@ -101,31 +112,31 @@ func VerifySignature(sh *types.SignedHeader, chainID string) *BNBRelayingError {
 				signedValidator[validateAddressStr] = true
 				err := vote.Verify(chainID, validatorMap[validateAddressStr].PubKey)
 				if err != nil {
-					relaying.Logger.Log.Errorf("Invalid signature index %v\n", i)
+					Logger.log.Errorf("Invalid signature index %v\n", i)
 					continue
 				}
-				totalVotingPower += ValidatorVotingPowers[i]
+				totalVotingPower += validatorVotingPowers[i]
 			} else {
-				relaying.Logger.Log.Errorf("Duplicate signature from the same validator %v\n", validateAddressStr)
+				Logger.log.Errorf("Duplicate signature from the same validator %v\n", validateAddressStr)
 			}
 		}
 	}
 
 	// not greater than 2/3 voting power
-	if totalVotingPower <= TotalVotingPowers * 2 / 3 {
+	if totalVotingPower <= int64(totalVotingPowerParam) * 2 / 3 {
 		return NewBNBRelayingError(InvalidSignatureSignedHeaderErr, errors.New("not greater than 2/3 voting power"))
 	}
 
 	return nil
 }
 
-func VerifySignedHeader(sh *types.SignedHeader) (bool, *BNBRelayingError){
-	err := sh.ValidateBasic(BNBChainID)
+func VerifySignedHeader(sh *types.SignedHeader, chainID string) (bool, *BNBRelayingError){
+	err := sh.ValidateBasic(chainID)
 	if err != nil {
 		return false, NewBNBRelayingError(InvalidBasicSignedHeaderErr, err)
 	}
 
-	err2 := VerifySignature(sh, BNBChainID)
+	err2 := VerifySignature(sh, chainID)
 	if err2 != nil {
 		return false, err2
 	}
@@ -140,13 +151,26 @@ type LatestHeaderChain struct {
 	UnconfirmedHeaders []*types.Header
 }
 
+func appendHeaderToUnconfirmedHeaders (header *types.Header, unconfirmedHeaders []*types.Header) (bool, *BNBRelayingError){
+	hHash := header.Hash().Bytes()
+	for _, unconfirmedHeader := range unconfirmedHeaders {
+		if bytes.Equal(unconfirmedHeader.Hash().Bytes(), hHash) {
+			Logger.log.Errorf("Header is existed %v\n", hHash)
+			return false, NewBNBRelayingError(ExistedNewHeaderErr, fmt.Errorf("Header is existed %v\n", hHash))
+		}
+	}
+	unconfirmedHeaders = append(unconfirmedHeaders, header)
+	return true, nil
+}
+
 // ReceiveNewHeader receives new header and last commit for the previous header block
 func (hc *LatestHeaderChain) ReceiveNewHeader(h *types.Header, lastCommit *types.Commit) (bool, *BNBRelayingError) {
+	//todo: need to change
+	chainID := TestnetBNBChainID
 	// h is the first header block
 	if hc.LatestHeader == nil && lastCommit == nil {
 		// just append into hc.UnconfirmedHeaders
-		hc.UnconfirmedHeaders = append(hc.UnconfirmedHeaders, h)
-		return true, nil
+		return appendHeaderToUnconfirmedHeaders(h, hc.UnconfirmedHeaders)
 	}
 
 	if hc.LatestHeader != nil && lastCommit == nil {
@@ -169,11 +193,9 @@ func (hc *LatestHeaderChain) ReceiveNewHeader(h *types.Header, lastCommit *types
 			// create new signed header and verify
 			// add to UnconfirmedHeaders list
 			newSignedHeader := NewSignedHeader(latestHeader, lastCommit)
-			isValid, err := VerifySignedHeader(newSignedHeader)
+			isValid, err := VerifySignedHeader(newSignedHeader, chainID)
 			if isValid && err == nil{
-				// todo: avoid duplicating unconfirmed headers
-				hc.UnconfirmedHeaders = append(hc.UnconfirmedHeaders, h)
-				return true, nil
+				return appendHeaderToUnconfirmedHeaders(h, hc.UnconfirmedHeaders)
 			}
 
 			return false, NewBNBRelayingError(InvalidNewHeaderErr, err)
@@ -188,7 +210,7 @@ func (hc *LatestHeaderChain) ReceiveNewHeader(h *types.Header, lastCommit *types
 				// append uh to hc.HeaderChain,
 				// clear all UnconfirmedHeaders => append h to UnconfirmedHeaders
 				newSignedHeader := NewSignedHeader(uh, lastCommit)
-				isValid, err := VerifySignedHeader(newSignedHeader)
+				isValid, err := VerifySignedHeader(newSignedHeader, chainID)
 				if isValid && err == nil{
 					hc.LatestHeader = uh
 					hc.UnconfirmedHeaders = []*types.Header{h}

@@ -20,7 +20,7 @@ type RelayingBNBHeader struct {
 	BlockHeight     uint64
 }
 
-// PortalCustodianDepositAction - shard validator creates instruction that contain this action content
+// RelayingBNBHeaderAction - shard validator creates instruction that contain this action content
 // it will be append to ShardToBeaconBlock
 type RelayingBNBHeaderAction struct {
 	Meta    RelayingBNBHeader

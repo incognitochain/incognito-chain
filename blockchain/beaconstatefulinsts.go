@@ -106,7 +106,8 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 
 	// relaying instructions
 	// don't need to be grouped by shardID
-	relayingActions := [][]string{}
+	relayingBNBActions := [][]string{}
+	relayingBTCActions := [][]string{}
 
 	var keys []int
 	for k := range statefulActionsByShardID {
@@ -173,7 +174,9 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					shardID,
 				)
 			case metadata.RelayingBNBHeaderMeta:
-				relayingActions = append(relayingActions, action)
+				relayingBNBActions = append(relayingBNBActions, action)
+			case metadata.RelayingBTCHeaderMeta:
+				relayingBTCActions = append(relayingBTCActions, action)
 			default:
 				continue
 			}
@@ -222,7 +225,8 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	relayingInsts, err := blockchain.handleRelayingInsts(
 		beaconHeight-1,
 		relayingHeaderState,
-		relayingActions,
+		relayingBNBActions,
+		relayingBTCActions,
 	)
 
 	if err != nil {
@@ -595,11 +599,13 @@ func sortBNBHeaderRelayingInstsByBlockHeight(bnbHeaderRelayingActions [][]string
 
 func (blockchain *BlockChain) handleRelayingInsts(
 	beaconHeight uint64,
-	headerChain *RelayingHeaderChainState,
+	relayingState *RelayingHeaderChainState,
 	relayingBNBHeaderActions [][]string,
+	relayingBTCHeaderActions [][]string,
 ) ([][]string, error) {
 	instructions := [][]string{}
 
+	// handle bnb header relaying instructions
 	actionsGroupByBlockHeight, sortedBlockHeights, _ := sortBNBHeaderRelayingInstsByBlockHeight(relayingBNBHeaderActions)
 
 	for _, value := range sortedBlockHeights {
@@ -612,7 +618,7 @@ func (blockchain *BlockChain) handleRelayingInsts(
 				contentStr,
 				action.ShardID,
 				metadata.RelayingBNBHeaderMeta,
-				headerChain,
+				relayingState,
 				beaconHeight,
 			)
 
@@ -625,6 +631,9 @@ func (blockchain *BlockChain) handleRelayingInsts(
 			}
 		}
 	}
+
+	//todo
+	// handle btc header relaying instructions
 
 	return instructions, nil
 }

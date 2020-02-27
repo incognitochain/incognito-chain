@@ -10,7 +10,7 @@ import (
 )
 
 // beacon build new instruction from instruction received from ShardToBeaconBlock
-func buildHeaderRelayingInst(
+func buildBNBHeaderRelayingInst(
 	senderAddressStr string,
 	header string,
 	blockHeight uint64,
@@ -19,18 +19,18 @@ func buildHeaderRelayingInst(
 	txReqID common.Hash,
 	status string,
 ) []string {
-	headerRelayingContent := metadata.RelayingBNBHeaderContent{
+	bnbHeaderRelayingContent := metadata.RelayingBNBHeaderContent{
 		IncogAddressStr: senderAddressStr,
 		Header:          header,
 		TxReqID:         txReqID,
 		BlockHeight:     blockHeight,
 	}
-	headerRelayingContentBytes, _ := json.Marshal(headerRelayingContent)
+	bnbHeaderRelayingContentBytes, _ := json.Marshal(bnbHeaderRelayingContent)
 	return []string{
 		strconv.Itoa(metaType),
 		strconv.Itoa(int(shardID)),
 		status,
-		string(headerRelayingContentBytes),
+		string(bnbHeaderRelayingContentBytes),
 	}
 }
 
@@ -42,6 +42,7 @@ func (blockchain *BlockChain) buildInstructionsForBNBHeaderRelaying(
 	relayingHeaderChain *RelayingHeaderChainState,
 	beaconHeight uint64,
 ) ([][]string, error) {
+	Logger.log.Infof("[RELAYING] beacon relaying producer starting....")
 	// parse instruction
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
@@ -57,7 +58,7 @@ func (blockchain *BlockChain) buildInstructionsForBNBHeaderRelaying(
 
 	if relayingHeaderChain == nil {
 		Logger.log.Warn("WARN - [buildInstructionsForBNBHeaderRelaying]: relayingHeaderChain is null.")
-		inst := buildHeaderRelayingInst(
+		inst := buildBNBHeaderRelayingInst(
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.Header,
 			actionData.Meta.BlockHeight,
@@ -73,7 +74,7 @@ func (blockchain *BlockChain) buildInstructionsForBNBHeaderRelaying(
 	headerBytes, err := base64.StdEncoding.DecodeString(meta.Header)
 	if err != nil {
 		Logger.log.Errorf("Error - [buildInstructionsForBNBHeaderRelaying]: Can not decode header string.%v\n", err)
-		inst := buildHeaderRelayingInst(
+		inst := buildBNBHeaderRelayingInst(
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.Header,
 			actionData.Meta.BlockHeight,
@@ -89,7 +90,7 @@ func (blockchain *BlockChain) buildInstructionsForBNBHeaderRelaying(
 	err = json.Unmarshal(headerBytes, &newHeader)
 	if err != nil {
 		Logger.log.Errorf("Error - [buildInstructionsForBNBHeaderRelaying]: Can not unmarshal header.%v\n", err)
-		inst := buildHeaderRelayingInst(
+		inst := buildBNBHeaderRelayingInst(
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.Header,
 			actionData.Meta.BlockHeight,
@@ -103,7 +104,7 @@ func (blockchain *BlockChain) buildInstructionsForBNBHeaderRelaying(
 
 	if newHeader.Header.Height != int64(actionData.Meta.BlockHeight) {
 		Logger.log.Errorf("Error - [buildInstructionsForBNBHeaderRelaying]: Block height in metadata is unmatched with block height in new header.")
-		inst := buildHeaderRelayingInst(
+		inst := buildBNBHeaderRelayingInst(
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.Header,
 			actionData.Meta.BlockHeight,
@@ -118,10 +119,10 @@ func (blockchain *BlockChain) buildInstructionsForBNBHeaderRelaying(
 	// if valid, create instruction with status accepted
 	// if not, create instruction with status rejected
 	latestBNBHeader := relayingHeaderChain.BNBHeaderChain.LatestHeader
-	isValid, err := relayingHeaderChain.BNBHeaderChain.ReceiveNewHeader(newHeader.Header, newHeader.LastCommit)
-	if err != nil || !isValid {
+	isValid, err2 := relayingHeaderChain.BNBHeaderChain.ReceiveNewHeader(newHeader.Header, newHeader.LastCommit)
+	if err2 != nil || !isValid {
 		Logger.log.Errorf("Error - [buildInstructionsForBNBHeaderRelaying]: Verify new header failed. %v\n", err)
-		inst := buildHeaderRelayingInst(
+		inst := buildBNBHeaderRelayingInst(
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.Header,
 			actionData.Meta.BlockHeight,
@@ -134,11 +135,9 @@ func (blockchain *BlockChain) buildInstructionsForBNBHeaderRelaying(
 	}
 
 	// check newHeader is a header contain last commit for one of the header in unconfirmed header list or not
-	//todo: check pointer
 	newLatestBNBHeader := relayingHeaderChain.BNBHeaderChain.LatestHeader
-	//newLatestBNBHeader.Last
-	if newLatestBNBHeader.Height  == latestBNBHeader.Height + 1 {
-		inst := buildHeaderRelayingInst(
+	if newLatestBNBHeader != nil && newLatestBNBHeader.Height == 1 && latestBNBHeader == nil {
+		inst := buildBNBHeaderRelayingInst(
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.Header,
 			actionData.Meta.BlockHeight,
@@ -150,7 +149,22 @@ func (blockchain *BlockChain) buildInstructionsForBNBHeaderRelaying(
 		return [][]string{inst}, nil
 	}
 
-	inst := buildHeaderRelayingInst(
+	if newLatestBNBHeader != nil && latestBNBHeader != nil {
+		if newLatestBNBHeader.Height == latestBNBHeader.Height + 1 {
+			inst := buildBNBHeaderRelayingInst(
+				actionData.Meta.IncogAddressStr,
+				actionData.Meta.Header,
+				actionData.Meta.BlockHeight,
+				actionData.Meta.Type,
+				shardID,
+				actionData.TxReqID,
+				common.RelayingHeaderConfirmedAcceptedChainStatus,
+			)
+			return [][]string{inst}, nil
+		}
+	}
+
+	inst := buildBNBHeaderRelayingInst(
 		actionData.Meta.IncogAddressStr,
 		actionData.Meta.Header,
 		actionData.Meta.BlockHeight,

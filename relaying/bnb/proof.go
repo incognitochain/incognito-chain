@@ -27,8 +27,8 @@ func BuildProof1(txHash string) (*types.TxProof, *BNBRelayingError) {
 }
 
 // buildProof creates a proof for tx at indexTx in block height
-func BuildProof2(indexTx int, blockHeight int64) (*types.TxProof, *BNBRelayingError) {
-	txs, err := getTxsInBlockHeight(blockHeight)
+func BuildProof2(indexTx int, blockHeight int64, url string) (*types.TxProof, *BNBRelayingError) {
+	txs, err := getTxsInBlockHeight(blockHeight, url)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func getProofFromTxHash(txHashStr string) (*types.TxProof, *BNBRelayingError) {
 		return nil, NewBNBRelayingError(UnexpectedErr, err)
 	}
 
-	client := client.NewHTTP(URLRemote, "/websocket")
+	client := client.NewHTTP(MainnetURLRemote, "/websocket")
 	err = client.Start()
 	if err != nil {
 		// handle error
@@ -66,8 +66,8 @@ func getProofFromTxHash(txHashStr string) (*types.TxProof, *BNBRelayingError) {
 	return &tx.Proof, nil
 }
 
-func getTxsInBlockHeight(blockHeight int64) (*types.Txs, *BNBRelayingError) {
-	block, err := getBlock(blockHeight)
+func getTxsInBlockHeight(blockHeight int64, url string) (*types.Txs, *BNBRelayingError) {
+	block, err := GetBlock(blockHeight, url)
 	if err != nil {
 		return nil, err
 	}
@@ -75,8 +75,8 @@ func getTxsInBlockHeight(blockHeight int64) (*types.Txs, *BNBRelayingError) {
 	return &block.Txs, nil
 }
 
-func getBlock(blockHeight int64) (*types.Block, *BNBRelayingError) {
-	client := client.NewHTTP(URLRemote, "/websocket")
+func GetBlock(blockHeight int64, url string) (*types.Block, *BNBRelayingError) {
+	client := client.NewHTTP(url, "/websocket")
 	err := client.Start()
 	if err != nil {
 		// handle error
@@ -118,8 +118,8 @@ type BNBProof struct {
 }
 
 // buildProof creates a proof for tx at indexTx in block height
-func (p *BNBProof) Build(indexTx int, blockHeight int64) (*BNBRelayingError) {
-	txs, err := getTxsInBlockHeight(blockHeight)
+func (p *BNBProof) Build(indexTx int, blockHeight int64, url string) (*BNBRelayingError) {
+	txs, err := getTxsInBlockHeight(blockHeight, url)
 	if err != nil {
 		return err
 	}
