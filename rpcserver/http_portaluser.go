@@ -100,3 +100,13 @@ func (httpServer *HttpServer) handleCreateAndSendRegisterPortingPublicTokens(par
 	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
 	return result, nil
 }
+
+func (httpServer *HttpServer) handleGetPortingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	result, err := httpServer.portal.GetPortingRequestByBeaconHeight(httpServer.blockService, *httpServer.config.Database)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}

@@ -351,6 +351,31 @@ func GetFinalExchangeRatesByKey(
 	return &finalExchangeRatesState, nil
 }
 
+func GetPortingRequestByKey(
+	db database.DatabaseInterface,
+	key []byte,
+) (*lvdb.PortingRequest, error) {
+	portingRequest, err := db.GetItemPortalByPrefix(key)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var portingRequestState lvdb.PortingRequest
+
+	if  portingRequest == nil {
+		return &portingRequestState, nil
+	}
+
+	//get value via idx
+	err = json.Unmarshal(portingRequest, &portingRequestState)
+	if err != nil {
+		return nil, err
+	}
+
+	return &portingRequestState, nil
+}
+
 
 func getAmountAdaptable(amount uint64, exchangeRate uint64) (uint64, error) {
 	convertPubTokenToPRVFloat64 := (float64(amount) * 1.5) * float64(exchangeRate)
