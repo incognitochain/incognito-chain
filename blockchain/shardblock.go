@@ -22,6 +22,14 @@ type ShardBlock struct {
 	Header ShardHeader
 }
 
+func (shardBlock *ShardBlock) GetPrevHash() string {
+	return shardBlock.Header.PreviousBlockHash.String()
+}
+
+func (shardBlock *ShardBlock) GetHash() string {
+	return shardBlock.Hash().String()
+}
+
 type ShardToBeaconBlock struct {
 	// AggregatedSig  string  `json:"AggregatedSig"`
 	// R              string  `json:"R"`

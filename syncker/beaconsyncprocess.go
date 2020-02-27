@@ -32,18 +32,22 @@ type BeaconSyncProcess struct {
 	Server           Server
 	Chain            Chain
 	ChainID          int
-	lock             *sync.RWMutex
+
+	BeaconPool *BlkPool
+	lock       *sync.RWMutex
 }
 
 func NewBeaconSyncProcess(server Server, chain Chain) *BeaconSyncProcess {
 	s := &BeaconSyncProcess{
-		Status: STOP_SYNC,
-		Server: server,
-		Chain:  chain,
-		lock:   new(sync.RWMutex),
+		Status:     STOP_SYNC,
+		Server:     server,
+		Chain:      chain,
+		BeaconPool: NewBlkPool("BeaconPool"),
+		lock:       new(sync.RWMutex),
 	}
 
 	go s.syncBeaconProcess()
+	go s.insertBeaconBlockFromPool()
 	go s.syncS2BPoolProcess()
 	return s
 }
@@ -61,9 +65,42 @@ func isNil(v interface{}) bool {
 	return v == nil || (reflect.ValueOf(v).Kind() == reflect.Ptr && reflect.ValueOf(v).IsNil())
 }
 
+func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
+	defer func() {
+		if s.FewBlockBehind {
+			time.AfterFunc(time.Millisecond*100, s.insertBeaconBlockFromPool)
+		} else {
+			time.AfterFunc(time.Second*1, s.insertBeaconBlockFromPool)
+		}
+	}()
+
+	if !s.FewBlockBehind {
+		return
+	}
+	var blk common.BlockPoolInterface
+	if s.ChainID == -1 {
+		blk = s.BeaconPool.GetNextBlock(s.Chain.GetBestViewHash(), true)
+	} else {
+		blk = s.BeaconPool.GetNextBlock(s.Chain.GetBestViewHash(), false)
+	}
+
+	if isNil(blk) {
+		return
+	}
+	//fmt.Println("Syncker: Insert beacon from pool", blk.(common.BlockInterface).GetHeight())
+	s.BeaconPool.RemoveBlock(blk.GetHash())
+	if err := s.Chain.ValidateBlockSignatures(blk.(common.BlockInterface), s.Chain.GetCommittee()); err != nil {
+		return
+	}
+
+	if err := s.Chain.InsertBlk(blk.(common.BlockInterface)); err != nil {
+	}
+}
+
 func (s *BeaconSyncProcess) syncBeaconProcess() {
 	s.Chain.SetReady(s.FewBlockBehind)
 	requestCnt := 0
+
 	defer func() {
 		if requestCnt > 0 {
 			s.FewBlockBehind = false
@@ -72,7 +109,7 @@ func (s *BeaconSyncProcess) syncBeaconProcess() {
 			if len(s.BeaconPeerStates) > 0 {
 				s.FewBlockBehind = true
 			}
-			time.AfterFunc(time.Millisecond*100, s.syncBeaconProcess)
+			time.AfterFunc(time.Second*1, s.syncBeaconProcess)
 		}
 	}()
 
@@ -110,20 +147,19 @@ func (s *BeaconSyncProcess) syncBeaconProcess() {
 			select {
 			case blk := <-ch:
 				if !isNil(blk) {
-
 					blockBuffer = append(blockBuffer, blk)
 				}
 
 				if len(blockBuffer) >= 350 || (len(blockBuffer) > 0 && (isNil(blk) || time.Since(insertTime) > time.Millisecond*1000)) {
 					insertBlkCnt := 0
 					for {
-						time1 := time.Now()
+						//time1 := time.Now()
 						if successBlk, err := InsertBatchBlock(s.Chain, blockBuffer); err != nil {
-							//fmt.Println("Syncker:" , err)
+							//fmt.Printf("Syncker Insert %d beacon (from %d to %d) elaspse %f \n", successBlk, blockBuffer[0].GetHeight(), blockBuffer[successBlk-1].GetHeight(), time.Since(time1).Seconds())
 							goto CANCEL_REQUEST
 						} else {
 							insertBlkCnt += successBlk
-							fmt.Printf("Syncker Insert %d beacon (from %d to %d) elaspse %f \n", successBlk, blockBuffer[0].GetHeight(), blockBuffer[len(blockBuffer)-1].GetHeight(), time.Since(time1).Seconds())
+							//fmt.Printf("Syncker Insert %d beacon (from %d to %d) elaspse %f \n", successBlk, blockBuffer[0].GetHeight(), blockBuffer[len(blockBuffer)-1].GetHeight(), time.Since(time1).Seconds())
 							if successBlk >= len(blockBuffer) {
 								break
 							}

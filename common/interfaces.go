@@ -1,5 +1,11 @@
 package common
 
+type BlockPoolInterface interface {
+	GetPrevHash() string
+	GetHash() string
+	GetHeight() uint64
+}
+
 type BlockInterface interface {
 	GetHeight() uint64
 	Hash() *Hash

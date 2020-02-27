@@ -1,19 +1,22 @@
 package syncker
 
 import (
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
-	"sync"
 	"time"
 )
 
 type BlkPool struct {
-	action          chan func()
-	BlkPoolByHash   sync.Map // hash -> block
-	BlkPoolByHeight sync.Map // height -> []hash
+	action            chan func()
+	BlkPoolByHash     map[string]common.BlockPoolInterface // hash -> block
+	BlkPoolByPrevHash map[string][]string                  // prevhash -> []nexthash
 }
 
 func NewBlkPool(name string) *BlkPool {
 	pool := new(BlkPool)
+	pool.action = make(chan func())
+	pool.BlkPoolByHash = make(map[string]common.BlockPoolInterface)
+	pool.BlkPoolByPrevHash = make(map[string][]string)
 	go pool.Start()
 	return pool
 }
@@ -24,22 +27,50 @@ func (pool *BlkPool) Start() {
 		select {
 		case f := <-pool.action:
 			f()
-		case <-ticker.C:
+		default:
+			<-ticker.C
+			//TODO: loop through all prevhash, delete if all nextHash is deleted
 		}
 	}
 }
 
-func (pool *BlkPool) AddBlock(blk common.BlockInterface) {
+func (pool *BlkPool) AddBlock(blk common.BlockPoolInterface) {
 	pool.action <- func() {
-		height := blk.GetHeight()
-		hash := blk.Hash().String()
-		pool.BlkPoolByHash.Store(hash, blk)
-		if loadValue, isLoad := pool.BlkPoolByHeight.LoadOrStore(height, []string{hash}); isLoad {
-			if common.IndexOfStr(hash, loadValue.([]string)) > -1 {
+		prevHash := blk.GetPrevHash()
+		hash := blk.GetHash()
+		if _, ok := pool.BlkPoolByHash[hash]; ok {
+			return
+		}
+		pool.BlkPoolByHash[hash] = blk
+		if common.IndexOfStr(hash, pool.BlkPoolByPrevHash[prevHash]) > -1 {
+			return
+		}
+		pool.BlkPoolByPrevHash[prevHash] = append(pool.BlkPoolByPrevHash[prevHash], hash)
+		fmt.Println("Syncker: add block to pool", blk.GetHeight())
+	}
+}
+
+func (pool *BlkPool) RemoveBlock(hash string) {
+	pool.action <- func() {
+		if _, ok := pool.BlkPoolByHash[hash]; ok {
+			delete(pool.BlkPoolByHash, hash)
+		}
+	}
+}
+
+func (pool *BlkPool) GetNextBlock(prevhash string, shouldGetLatest bool) common.BlockPoolInterface {
+	//For multichain, we need to Get a Map
+	res := make(chan common.BlockPoolInterface)
+	pool.action <- func() {
+		hashes := pool.BlkPoolByPrevHash[prevhash][:]
+		for _, h := range hashes {
+			blk := pool.BlkPoolByHash[h]
+			if _, ok := pool.BlkPoolByPrevHash[blk.GetHash()]; shouldGetLatest || ok {
+				res <- pool.BlkPoolByHash[h]
 				return
 			}
-			pool.BlkPoolByHeight.Store(height, append(loadValue.([]string), hash))
 		}
-
+		res <- nil
 	}
+	return (<-res)
 }

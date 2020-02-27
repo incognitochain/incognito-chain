@@ -3,6 +3,7 @@ package syncker
 import (
 	"context"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
 	"sync"
@@ -33,19 +34,24 @@ type ShardSyncProcess struct {
 	CrossShardPeerState map[string]CrossShardPeerState //peerID -> state
 	Server              Server
 	Chain               Chain
+	BeaconChain         Chain
+	ShardPool           *BlkPool
 	lock                *sync.RWMutex
 }
 
-func NewShardSyncProcess(shardID int, server Server, chain Chain) *ShardSyncProcess {
+func NewShardSyncProcess(shardID int, server Server, beaconChain, chain Chain) *ShardSyncProcess {
 	s := &ShardSyncProcess{
-		ShardID: shardID,
-		Status:  STOP_SYNC,
-		Server:  server,
-		Chain:   chain,
-		lock:    new(sync.RWMutex),
+		ShardID:     shardID,
+		Status:      STOP_SYNC,
+		Server:      server,
+		Chain:       chain,
+		BeaconChain: beaconChain,
+		ShardPool:   NewBlkPool("ShardPool-" + string(shardID)),
+		lock:        new(sync.RWMutex),
 	}
 
 	go s.syncShardProcess()
+	go s.insertShardBlockFromPool()
 	go s.syncCrossShardPoolProcess()
 	return s
 }
@@ -56,6 +62,35 @@ func (s *ShardSyncProcess) Start() {
 
 func (s *ShardSyncProcess) Stop() {
 	s.Status = STOP_SYNC
+}
+
+func (s *ShardSyncProcess) insertShardBlockFromPool() {
+	defer func() {
+		if s.FewBlockBehind {
+			time.AfterFunc(time.Millisecond*100, s.insertShardBlockFromPool)
+		} else {
+			time.AfterFunc(time.Second*1, s.insertShardBlockFromPool)
+		}
+	}()
+
+	if !s.FewBlockBehind {
+		return
+	}
+	var blk common.BlockPoolInterface
+	blk = s.ShardPool.GetNextBlock(s.Chain.GetBestViewHash(), true)
+
+	if isNil(blk) {
+		return
+	}
+
+	fmt.Println("Syncker: Insert shard from pool", blk.(common.BlockInterface).GetHeight())
+	s.ShardPool.RemoveBlock(blk.GetHash())
+	if err := s.Chain.ValidateBlockSignatures(blk.(common.BlockInterface), s.Chain.GetCommittee()); err != nil {
+		return
+	}
+
+	if err := s.Chain.InsertBlk(blk.(common.BlockInterface)); err != nil {
+	}
 }
 
 func (s *ShardSyncProcess) syncShardProcess() {
@@ -71,7 +106,7 @@ func (s *ShardSyncProcess) syncShardProcess() {
 			if len(s.ShardPeerState) > 0 {
 				s.FewBlockBehind = true
 			}
-			time.AfterFunc(time.Second*10, s.syncShardProcess)
+			time.AfterFunc(time.Second*1, s.syncShardProcess)
 		}
 	}()
 
@@ -95,7 +130,7 @@ func (s *ShardSyncProcess) syncShardProcess() {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 		defer cancel()
 
-		fmt.Println("SYNCKER Request Shard Block", peerID, s.ShardID, s.Chain.GetBestViewHeight()+1, pState.BestViewHeight, pState.BestViewHash, s.Chain.GetBestViewHash())
+		fmt.Println("SYNCKER Request Shard Block", peerID, s.ShardID, s.Chain.GetBestViewHeight()+1, pState.BestViewHeight)
 
 		ch, err := s.Server.RequestBlocksViaStream(ctx, peerID, s.ShardID, proto.BlkType_BlkShard, s.Chain.GetBestViewHeight()+1, s.Chain.GetFinalViewHeight(), pState.BestViewHeight, pState.BestViewHash)
 		if err != nil {
@@ -110,6 +145,12 @@ func (s *ShardSyncProcess) syncShardProcess() {
 			case blk := <-ch:
 				if !isNil(blk) {
 					blockBuffer = append(blockBuffer, blk)
+					if blk.(*blockchain.ShardBlock).Header.BeaconHeight > s.BeaconChain.GetBestViewHeight() {
+						time.Sleep(5 * time.Second)
+					}
+					if blk.(*blockchain.ShardBlock).Header.BeaconHeight > s.BeaconChain.GetBestViewHeight() {
+						goto CANCEL_REQUEST
+					}
 				}
 
 				if len(blockBuffer) >= 350 || (len(blockBuffer) > 0 && (isNil(blk) || time.Since(insertTime) > time.Millisecond*1000)) {
@@ -117,7 +158,7 @@ func (s *ShardSyncProcess) syncShardProcess() {
 					for {
 						time1 := time.Now()
 						if successBlk, err := InsertBatchBlock(s.Chain, blockBuffer); err != nil {
-							fmt.Println("Syncker:", err)
+							//fmt.Println("Syncker:", err)
 							goto CANCEL_REQUEST
 						} else {
 							insertBlkCnt += successBlk
@@ -134,7 +175,7 @@ func (s *ShardSyncProcess) syncShardProcess() {
 				}
 
 				if isNil(blk) && len(blockBuffer) == 0 {
-					fmt.Println("Syncker: blk nil")
+					//fmt.Println("Syncker: blk nil")
 					goto CANCEL_REQUEST
 				}
 
@@ -142,7 +183,7 @@ func (s *ShardSyncProcess) syncShardProcess() {
 		}
 
 	CANCEL_REQUEST:
-		fmt.Println("Syncker: request cancel")
+		//fmt.Println("Syncker: request cancel")
 		pState.processed = true
 		return
 	}

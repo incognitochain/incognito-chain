@@ -96,16 +96,17 @@ func (s *Engine) WatchCommitteeChange() {
 				panic("Chain " + chainName + " not available")
 			}
 			s.BFTProcess[chainID] = NewInstance(s.config.Blockchain.Chains[chainName], chainName, chainID, s.config.Node, Logger.log)
-
 		}
 
-		s.BFTProcess[chainID].Start()
+		if err := s.BFTProcess[chainID].Start(); err != nil {
+			return
+		}
 		miningProcess = s.BFTProcess[chainID]
 		s.currentMiningProcess = s.BFTProcess[chainID]
-		err := s.LoadMiningKeys(s.userKeyListString)
-		if err != nil {
+		if err := s.LoadMiningKeys(s.userKeyListString); err != nil {
 			panic(err)
 		}
+
 	}
 	s.currentMiningProcess = miningProcess
 }

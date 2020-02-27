@@ -969,24 +969,27 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 // blocks until the coin block has been fully processed.
 func (serverObj *Server) OnBlockShard(p *peer.PeerConn,
 	msg *wire.MessageBlockShard) {
-	Logger.log.Debug("Receive a new blockshard START")
-
-	var txProcessed chan struct{}
-	serverObj.netSync.QueueBlock(nil, msg, txProcessed)
-	//<-txProcessed
-
-	Logger.log.Debug("Receive a new blockshard END")
+	//Logger.log.Debug("Receive a new blockshard START")
+	//
+	//var txProcessed chan struct{}
+	//serverObj.netSync.QueueBlock(nil, msg, txProcessed)
+	////<-txProcessed
+	//
+	//Logger.log.Debug("Receive a new blockshard END")
+	serverObj.syncker.ShardSyncProcess[int(msg.Block.Header.ShardID)].ShardPool.AddBlock(msg.Block)
 }
 
 func (serverObj *Server) OnBlockBeacon(p *peer.PeerConn,
 	msg *wire.MessageBlockBeacon) {
-	Logger.log.Debug("Receive a new blockbeacon START")
 
-	var txProcessed chan struct{}
-	serverObj.netSync.QueueBlock(nil, msg, txProcessed)
-	//<-txProcessed
-
-	Logger.log.Debug("Receive a new blockbeacon END")
+	//Logger.log.Info("Receive a new blockbeacon START")
+	//
+	//var txProcessed chan struct{}
+	//serverObj.netSync.QueueBlock(nil, msg, txProcessed)
+	////<-txProcessed
+	//
+	//Logger.log.Debug("Receive a new blockbeacon END")
+	serverObj.syncker.BeaconSyncProcess.BeaconPool.AddBlock(msg.Block)
 }
 
 func (serverObj *Server) OnCrossShard(p *peer.PeerConn,

@@ -45,6 +45,7 @@ type Chain interface {
 	GetBestViewHeight() uint64
 	GetFinalViewHeight() uint64
 	SetReady(bool)
+	IsReady() bool
 	GetBestViewHash() string
 	GetFinalViewHash() string
 
@@ -140,7 +141,7 @@ func (s *Syncker) Init(config *SynckerConfig) {
 	for chainName, chain := range s.config.Blockchain.Chains {
 		if chainName != "beacon" {
 			sid := chain.GetShardID()
-			s.ShardSyncProcess[sid] = NewShardSyncProcess(sid, s.config.Node, chain)
+			s.ShardSyncProcess[sid] = NewShardSyncProcess(sid, s.config.Node, s.config.Blockchain.Chains["beacon"], chain)
 			s.ShardPeerStates[int(sid)] = make(map[string]ShardPeerState)
 			s.CrossShardPeerState[int(sid)] = make(map[string]CrossShardPeerState)
 
