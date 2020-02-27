@@ -1,4 +1,4 @@
-package privacy
+package hybridencryption
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 )
 
@@ -68,7 +69,7 @@ func (ciphertext HybridCipherText) Bytes() []byte {
 // SetBytes reverts bytes array to hybridCipherText_Old
 func (ciphertext *HybridCipherText) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
-		return NewPrivacyErr(InvalidInputToSetBytesErr, nil)
+		return errorhandler.NewPrivacyErr(errorhandler.InvalidInputToSetBytesErr, nil)
 	}
 
 	if len(bytes) < elGamalCiphertextSize {
@@ -84,7 +85,7 @@ func (ciphertext *HybridCipherText) SetBytes(bytes []byte) error {
 // hybridEncrypt_Old generates AES key by randomize an elliptic point aesKeyPoint and get X-coordinate
 // using AES key to encrypt message
 // After that, using ElGamal encryption encrypt aesKeyPoint using publicKey
-func HybridEncrypt(msg []byte, publicKey *Point) (ciphertext *HybridCipherText, err error) {
+func HybridEncrypt(msg []byte, publicKey *operation.Point) (ciphertext *HybridCipherText, err error) {
 	ciphertext = new(HybridCipherText)
 
 	// Generate a AES key bytes
@@ -112,7 +113,7 @@ func HybridEncrypt(msg []byte, publicKey *Point) (ciphertext *HybridCipherText, 
 // hybridDecrypt_Old receives a ciphertext and privateKey
 // it decrypts aesKeyPoint, using ElGamal encryption with privateKey
 // Using X-coordinate of aesKeyPoint to decrypts message
-func HybridDecrypt(ciphertext *HybridCipherText, privateKey *Scalar) (msg []byte, err error) {
+func HybridDecrypt(ciphertext *HybridCipherText, privateKey *operation.Scalar) (msg []byte, err error) {
 	// Validate ciphertext
 	if ciphertext.IsNil() {
 		return []byte{}, errors.New("ciphertext must not be nil")

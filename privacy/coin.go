@@ -8,6 +8,8 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
+	henc "github.com/incognitochain/incognito-chain/privacy/hybridencryption"
 )
 
 // Coin represents a coin
@@ -481,13 +483,13 @@ func (inputCoin *InputCoin) ParseCoinObjectToInputCoin(coinObj CoinObject) error
 // CoinDetailsEncrypted is nil when you send tx without privacy
 type OutputCoin struct {
 	CoinDetails          *Coin
-	CoinDetailsEncrypted *HybridCipherText
+	CoinDetailsEncrypted *henc.HybridCipherText
 }
 
 // Init (OutputCoin) initializes a output coin
 func (outputCoin *OutputCoin) Init() *OutputCoin {
 	outputCoin.CoinDetails = new(Coin).Init()
-	outputCoin.CoinDetailsEncrypted = new(HybridCipherText)
+	outputCoin.CoinDetailsEncrypted = new(henc.HybridCipherText)
 	return outputCoin
 }
 
@@ -534,7 +536,7 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 			// out of range
 			return errors.New("out of range Parse CoinDetailsEncrypted")
 		}
-		outputCoin.CoinDetailsEncrypted = new(HybridCipherText)
+		outputCoin.CoinDetailsEncrypted = new(henc.HybridCipherText)
 		err := outputCoin.CoinDetailsEncrypted.SetBytes(bytes[offset : offset+lenCoinDetailEncrypted])
 		if err != nil {
 			return err
@@ -595,28 +597,28 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 // Encrypt returns a ciphertext encrypting for a coin using a hybrid cryptosystem,
 // in which AES encryption scheme is used as a data encapsulation scheme,
 // and ElGamal cryptosystem is used as a key encapsulation scheme.
-func (outputCoin *OutputCoin) Encrypt(recipientTK TransmissionKey) *PrivacyError {
+func (outputCoin *OutputCoin) Encrypt(recipientTK TransmissionKey) *errhandler.PrivacyError {
 	// 32-byte first: Randomness, the rest of msg is value of coin
 	msg := append(outputCoin.CoinDetails.randomness.ToBytesS(), new(big.Int).SetUint64(outputCoin.CoinDetails.value).Bytes()...)
 
 	pubKeyPoint, err := new(Point).FromBytesS(recipientTK)
 	if err != nil {
-		return NewPrivacyErr(EncryptOutputCoinErr, err)
+		return errhandler.NewPrivacyErr(errhandler.EncryptOutputCoinErr, err)
 	}
 
-	outputCoin.CoinDetailsEncrypted, err = HybridEncrypt(msg, pubKeyPoint)
+	outputCoin.CoinDetailsEncrypted, err = henc.HybridEncrypt(msg, pubKeyPoint)
 	if err != nil {
-		return NewPrivacyErr(EncryptOutputCoinErr, err)
+		return errhandler.NewPrivacyErr(errhandler.EncryptOutputCoinErr, err)
 	}
 
 	return nil
 }
 
 // Decrypt decrypts a ciphertext encrypting for coin with recipient's receiving key
-func (outputCoin *OutputCoin) Decrypt(viewingKey ViewingKey) *PrivacyError {
-	msg, err := HybridDecrypt(outputCoin.CoinDetailsEncrypted, new(Scalar).FromBytesS(viewingKey.Rk))
+func (outputCoin *OutputCoin) Decrypt(viewingKey ViewingKey) *errhandler.PrivacyError {
+	msg, err := henc.HybridDecrypt(outputCoin.CoinDetailsEncrypted, new(Scalar).FromBytesS(viewingKey.Rk))
 	if err != nil {
-		return NewPrivacyErr(DecryptOutputCoinErr, err)
+		return errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
 	}
 
 	// Assign randomness and value to outputCoin details

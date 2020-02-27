@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/incognitochain/incognito-chain/common"
+	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 )
 
@@ -63,7 +64,7 @@ func (publicKey *SchnorrPublicKey) Set(pk *Point) {
 //Sign is function which using for signing on hash array by private key
 func (privateKey SchnorrPrivateKey) Sign(data []byte) (*SchnSignature, error) {
 	if len(data) != common.HashSize {
-		return nil, NewPrivacyErr(UnexpectedErr, errors.New("hash length must be 32 bytes"))
+		return nil, errhandler.NewPrivacyErr(errhandler.UnexpectedErr, errors.New("hash length must be 32 bytes"))
 	}
 
 	signature := new(SchnSignature)
@@ -139,7 +140,7 @@ func (sig SchnSignature) Bytes() []byte {
 
 func (sig *SchnSignature) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
-		return NewPrivacyErr(InvalidInputToSetBytesErr, nil)
+		return errhandler.NewPrivacyErr(errhandler.InvalidInputToSetBytesErr, nil)
 	}
 	sig.e = new(Scalar).FromBytesS(bytes[0:Ed25519KeySize])
 	sig.z1 = new(Scalar).FromBytesS(bytes[Ed25519KeySize : 2*Ed25519KeySize])

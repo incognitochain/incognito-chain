@@ -5,6 +5,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
+	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/aggregaterange"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/oneoutofmany"
@@ -57,7 +58,7 @@ type PaymentWitnessParam struct {
 // Build prepares witnesses for all protocol need to be proved when create tx
 // if hashPrivacy = false, witness includes spending key, input coins, output coins
 // otherwise, witness includes all attributes in PaymentWitness struct
-func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privacy.PrivacyError {
+func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *errhandler.PrivacyError {
 
 	hasPrivacy := PaymentWitnessParam.HasPrivacy
 	privateKey := PaymentWitnessParam.PrivateKey
@@ -74,7 +75,7 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 			outCoin.CoinDetails.SetRandomness(operation.RandomScalar())
 			err := outCoin.CoinDetails.CommitAll()
 			if err != nil {
-				return privacy.NewPrivacyErr(privacy.CommitNewOutputCoinNoPrivacyErr, nil)
+				return errhandler.NewPrivacyErr(errhandler.CommitNewOutputCoinNoPrivacyErr, nil)
 			}
 		}
 		wit.privateKey = privateKey
@@ -262,7 +263,7 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 		if outputCoins[i].CoinDetails.GetValue() > 0 {
 			outputValue[i] = outputCoins[i].CoinDetails.GetValue()
 		} else {
-			return privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("output coin's value is less than 0"))
+			return errhandler.NewPrivacyErr(errhandler.UnexpectedErr, errors.New("output coin's value is less than 0"))
 		}
 	}
 	if wit.aggregatedRangeWitness == nil {
@@ -280,7 +281,7 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 }
 
 // Prove creates big proof
-func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.PrivacyError) {
+func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *errhandler.PrivacyError) {
 	proof := new(PaymentProof)
 	proof.Init()
 
@@ -304,7 +305,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.Priva
 		for i := 0; i < len(wit.inputCoins); i++ {
 			snNoPrivacyProof, err := wit.serialNumberNoPrivacyWitness[i].Prove(nil)
 			if err != nil {
-				return nil, privacy.NewPrivacyErr(privacy.ProveSerialNumberNoPrivacyErr, err)
+				return nil, errhandler.NewPrivacyErr(errhandler.ProveSerialNumberNoPrivacyErr, err)
 			}
 			proof.serialNumberNoPrivacyProof = append(proof.serialNumberNoPrivacyProof, snNoPrivacyProof)
 		}
@@ -318,14 +319,14 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.Priva
 		// Proving one-out-of-N commitments is a commitment to the coins being spent
 		oneOfManyProof, err := wit.oneOfManyWitness[i].Prove()
 		if err != nil {
-			return nil, privacy.NewPrivacyErr(privacy.ProveOneOutOfManyErr, err)
+			return nil, errhandler.NewPrivacyErr(errhandler.ProveOneOutOfManyErr, err)
 		}
 		proof.oneOfManyProof = append(proof.oneOfManyProof, oneOfManyProof)
 
 		// Proving that serial number is derived from the committed derivator
 		serialNumberProof, err := wit.serialNumberWitness[i].Prove(nil)
 		if err != nil {
-			return nil, privacy.NewPrivacyErr(privacy.ProveSerialNumberPrivacyErr, err)
+			return nil, errhandler.NewPrivacyErr(errhandler.ProveSerialNumberPrivacyErr, err)
 		}
 		proof.serialNumberProof = append(proof.serialNumberProof, serialNumberProof)
 	}
@@ -334,7 +335,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.Priva
 	// Proving that each output values and sum of them does not exceed v_max
 	proof.aggregatedRangeProof, err = wit.aggregatedRangeWitness.Prove()
 	if err != nil {
-		return nil, privacy.NewPrivacyErr(privacy.ProveAggregatedRangeErr, err)
+		return nil, errhandler.NewPrivacyErr(errhandler.ProveAggregatedRangeErr, err)
 	}
 
 	if len(proof.inputCoins) == 0 {

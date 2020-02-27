@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/privacy"
+	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/pkg/errors"
 )
@@ -504,7 +505,7 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	// innerProduct1 = <1^(n*m), y^(n*m)>
 	innerProduct1, err := innerProduct(oneVector, yVector)
 	if err != nil {
-		return false, privacy.NewPrivacyErr(privacy.CalInnerProductErr, err)
+		return false, errhandler.NewPrivacyErr(errhandler.CalInnerProductErr, err)
 	}
 
 	deltaYZ.Mul(deltaYZ, innerProduct1)
@@ -512,7 +513,7 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	// innerProduct2 = <1^n, 2^n>
 	innerProduct2, err := innerProduct(oneVectorN, twoVectorN)
 	if err != nil {
-		return false, privacy.NewPrivacyErr(privacy.CalInnerProductErr, err)
+		return false, errhandler.NewPrivacyErr(errhandler.CalInnerProductErr, err)
 	}
 
 	sum := new(privacy.Scalar).FromUint64(0)
@@ -609,7 +610,7 @@ func VerifyBatchingAggregatedRangeProofs(proofs []*AggregatedRangeProof) (bool, 
 		// innerProduct1 = <1^(n*m), y^(n*m)>
 		innerProduct1, err := innerProduct(oneVector, yVector)
 		if err != nil {
-			return false, privacy.NewPrivacyErr(privacy.CalInnerProductErr, err), k
+			return false, errhandler.NewPrivacyErr(errhandler.CalInnerProductErr, err), k
 		}
 
 		deltaYZ.Mul(deltaYZ, innerProduct1)
@@ -617,7 +618,7 @@ func VerifyBatchingAggregatedRangeProofs(proofs []*AggregatedRangeProof) (bool, 
 		// innerProduct2 = <1^n, 2^n>
 		innerProduct2, err := innerProduct(oneVectorN, twoVectorN)
 		if err != nil {
-			return false, privacy.NewPrivacyErr(privacy.CalInnerProductErr, err), k
+			return false, errhandler.NewPrivacyErr(errhandler.CalInnerProductErr, err), k
 		}
 
 		sum := new(privacy.Scalar).FromUint64(0)

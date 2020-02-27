@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
+	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/stretchr/testify/assert"
 )
@@ -410,7 +411,7 @@ func TestOutputCoinEncryptDecrypt(t *testing.T) {
 
 		// encrypt output coins
 		err := coin.Encrypt(paymentAddress.Tk)
-		assert.Equal(t, (*PrivacyError)(nil), err)
+		assert.Equal(t, (*errhandler.PrivacyError)(nil), err)
 
 		// convert output coin to bytes array
 		coinBytes := coin.Bytes()
@@ -421,7 +422,7 @@ func TestOutputCoinEncryptDecrypt(t *testing.T) {
 		assert.Equal(t, nil, err2)
 
 		err3 := coin2.Decrypt(viewingKey)
-		assert.Equal(t, (*PrivacyError)(nil), err3)
+		assert.Equal(t, (*errhandler.PrivacyError)(nil), err3)
 
 		assert.Equal(t, coin.CoinDetails.randomness, coin2.CoinDetails.randomness)
 		assert.Equal(t, coin.CoinDetails.value, coin2.CoinDetails.value)
@@ -443,7 +444,7 @@ func TestOutputCoinEncryptDecryptWithUnmatchedKey(t *testing.T) {
 
 	// encrypt output coins
 	err := coin.Encrypt(paymentAddress.Tk)
-	assert.Equal(t, (*PrivacyError)(nil), err)
+	assert.Equal(t, (*errhandler.PrivacyError)(nil), err)
 
 	// convert output coin to bytes array
 	coinBytes := coin.Bytes()
@@ -456,7 +457,7 @@ func TestOutputCoinEncryptDecryptWithUnmatchedKey(t *testing.T) {
 	// edit receiving key to be unmatched with transmission key
 	viewingKey.Rk[0] = 12
 	err3 := coin2.Decrypt(viewingKey)
-	assert.Equal(t, (*PrivacyError)(nil), err3)
+	assert.Equal(t, (*errhandler.PrivacyError)(nil), err3)
 	assert.NotEqual(t, coin.CoinDetails.randomness, coin2.CoinDetails.randomness)
 	assert.NotEqual(t, coin.CoinDetails.value, coin2.CoinDetails.value)
 }

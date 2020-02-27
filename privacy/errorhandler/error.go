@@ -1,7 +1,8 @@
-package privacy
+package errorhandler
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
 )
 

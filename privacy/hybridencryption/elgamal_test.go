@@ -1,4 +1,4 @@
-package privacy
+package hybridencryption
 
 import (
 	"fmt"
@@ -18,7 +18,7 @@ func TestElGamalCipherText_Bytes(t *testing.T) {
 
 	// generate public key
 	pubKey := new(elGamalPublicKey)
-	pubKey.h = new(Point).ScalarMultBase(privKey.x)
+	pubKey.h = new(operation.Point).ScalarMultBase(privKey.x)
 
 	message := operation.RandomPoint()
 
@@ -36,7 +36,7 @@ func TestElGamalPublicKey_Encryption(t *testing.T) {
 
 		// generate public key
 		pubKey := new(elGamalPublicKey)
-		pubKey.h = new(Point).ScalarMultBase(privKey.x)
+		pubKey.h = new(operation.Point).ScalarMultBase(privKey.x)
 
 		// random message (msg is an elliptic point)
 		message := operation.RandomPoint()

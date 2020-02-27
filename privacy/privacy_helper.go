@@ -5,8 +5,8 @@ import (
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy/curve25519"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/privacy/operation/curve25519"
 )
 
 func ScalarToBigInt(sc *Scalar) *big.Int {

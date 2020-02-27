@@ -17,7 +17,8 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
+	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -324,14 +325,14 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 		Fee:                     params.fee,
 	}
 	err = witness.Init(paymentWitnessParam)
-	if err.(*privacy.PrivacyError) != nil {
+	if err.(*errhandler.PrivacyError) != nil {
 		Logger.log.Error(err)
 		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, common.EmptyString, "  ")
 		return NewTransactionErr(InitWithnessError, err, string(jsonParam))
 	}
 
 	tx.Proof, err = witness.Prove(params.hasPrivacy)
-	if err.(*privacy.PrivacyError) != nil {
+	if err.(*errhandler.PrivacyError) != nil {
 		Logger.log.Error(err)
 		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, common.EmptyString, "  ")
 		return NewTransactionErr(WithnessProveError, err, params.hasPrivacy, string(jsonParam))
@@ -348,7 +349,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 		// hide information of output coins except coin commitments, public key, snDerivators
 		for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
 			err = tx.Proof.GetOutputCoins()[i].Encrypt(params.paymentInfo[i].PaymentAddress.Tk)
-			if err.(*privacy.PrivacyError) != nil {
+			if err.(*errhandler.PrivacyError) != nil {
 				Logger.log.Error(err)
 				return NewTransactionErr(EncryptOutputError, err)
 			}
@@ -1553,14 +1554,14 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 		Fee:                     params.txParam.fee,
 	}
 	err = witness.Init(paymentWitnessParam)
-	if err.(*privacy.PrivacyError) != nil {
+	if err.(*errhandler.PrivacyError) != nil {
 		Logger.log.Error(err)
 		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, common.EmptyString, "  ")
 		return NewTransactionErr(InitWithnessError, err, string(jsonParam))
 	}
 
 	tx.Proof, err = witness.Prove(params.txParam.hasPrivacy)
-	if err.(*privacy.PrivacyError) != nil {
+	if err.(*errhandler.PrivacyError) != nil {
 		Logger.log.Error(err)
 		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, common.EmptyString, "  ")
 		return NewTransactionErr(WithnessProveError, err, params.txParam.hasPrivacy, string(jsonParam))
@@ -1577,7 +1578,7 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 		// hide information of output coins except coin commitments, public key, snDerivators
 		for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
 			err = tx.Proof.GetOutputCoins()[i].Encrypt(params.txParam.paymentInfo[i].PaymentAddress.Tk)
-			if err.(*privacy.PrivacyError) != nil {
+			if err.(*errhandler.PrivacyError) != nil {
 				Logger.log.Error(err)
 				return NewTransactionErr(EncryptOutputError, err)
 			}

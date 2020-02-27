@@ -8,6 +8,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -156,7 +158,7 @@ func (proof *PaymentProof) UnmarshalJSON(data []byte) error {
 	}
 
 	err = proof.SetBytes(temp)
-	if err.(*privacy.PrivacyError) != nil {
+	if err.(*errhandler.PrivacyError) != nil {
 		return err
 	}
 	return nil
@@ -291,91 +293,91 @@ func (proof *PaymentProof) Bytes() []byte {
 	return bytes
 }
 
-func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
+func (proof *PaymentProof) SetBytes(proofbytes []byte) *errhandler.PrivacyError {
 	if len(proofbytes) == 0 {
-		return privacy.NewPrivacyErr(privacy.InvalidInputToSetBytesErr, nil)
+		return errhandler.NewPrivacyErr(errhandler.InvalidInputToSetBytesErr, nil)
 	}
 
 	offset := 0
 
 	// Set OneOfManyProofSize
 	if offset >= len(proofbytes) {
-		return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range one out of many proof"))
+		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range one out of many proof"))
 	}
 	lenOneOfManyProofArray := int(proofbytes[offset])
 	offset += 1
 	proof.oneOfManyProof = make([]*oneoutofmany.OneOutOfManyProof, lenOneOfManyProofArray)
 	for i := 0; i < lenOneOfManyProofArray; i++ {
 		if offset+2 > len(proofbytes) {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range one out of many proof"))
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range one out of many proof"))
 		}
 		lenOneOfManyProof := common.BytesToInt(proofbytes[offset : offset+2])
 		offset += 2
 		proof.oneOfManyProof[i] = new(oneoutofmany.OneOutOfManyProof).Init()
 
 		if offset+lenOneOfManyProof > len(proofbytes) {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range one out of many proof"))
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range one out of many proof"))
 		}
 		err := proof.oneOfManyProof[i].SetBytes(proofbytes[offset : offset+lenOneOfManyProof])
 		if err != nil {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err)
 		}
 		offset += lenOneOfManyProof
 	}
 
 	// Set serialNumberProofSize
 	if offset >= len(proofbytes) {
-		return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range serial number proof"))
+		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range serial number proof"))
 	}
 	lenSerialNumberProofArray := int(proofbytes[offset])
 	offset += 1
 	proof.serialNumberProof = make([]*serialnumberprivacy.SNPrivacyProof, lenSerialNumberProofArray)
 	for i := 0; i < lenSerialNumberProofArray; i++ {
 		if offset+2 > len(proofbytes) {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range serial number proof"))
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range serial number proof"))
 		}
 		lenSerialNumberProof := common.BytesToInt(proofbytes[offset : offset+2])
 		offset += 2
 		proof.serialNumberProof[i] = new(serialnumberprivacy.SNPrivacyProof).Init()
 
 		if offset+lenSerialNumberProof > len(proofbytes) {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range serial number proof"))
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range serial number proof"))
 		}
 		err := proof.serialNumberProof[i].SetBytes(proofbytes[offset : offset+lenSerialNumberProof])
 		if err != nil {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err)
 		}
 		offset += lenSerialNumberProof
 	}
 
 	// Set SNNoPrivacyProofSize
 	if offset >= len(proofbytes) {
-		return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range serial number no privacy proof"))
+		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range serial number no privacy proof"))
 	}
 	lenSNNoPrivacyProofArray := int(proofbytes[offset])
 	offset += 1
 	proof.serialNumberNoPrivacyProof = make([]*serialnumbernoprivacy.SNNoPrivacyProof, lenSNNoPrivacyProofArray)
 	for i := 0; i < lenSNNoPrivacyProofArray; i++ {
 		if offset >= len(proofbytes) {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range serial number no privacy proof"))
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range serial number no privacy proof"))
 		}
 		lenSNNoPrivacyProof := int(proofbytes[offset])
 		offset += 1
 
 		proof.serialNumberNoPrivacyProof[i] = new(serialnumbernoprivacy.SNNoPrivacyProof).Init()
 		if offset+lenSNNoPrivacyProof >= len(proofbytes) {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range serial number no privacy proof"))
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range serial number no privacy proof"))
 		}
 		err := proof.serialNumberNoPrivacyProof[i].SetBytes(proofbytes[offset : offset+lenSNNoPrivacyProof])
 		if err != nil {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err)
 		}
 		offset += lenSNNoPrivacyProof
 	}
 
 	//ComOutputMultiRangeProofSize *aggregatedRangeProof
 	if offset+2 >= len(proofbytes) {
-		return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range aggregated range proof"))
+		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range aggregated range proof"))
 	}
 	lenComOutputMultiRangeProof := common.BytesToInt(proofbytes[offset : offset+2])
 	offset += 2
@@ -384,43 +386,43 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 		aggregatedRangeProof.Init()
 		proof.aggregatedRangeProof = aggregatedRangeProof
 		if offset+lenComOutputMultiRangeProof >= len(proofbytes) {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range aggregated range proof"))
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range aggregated range proof"))
 		}
 		err := proof.aggregatedRangeProof.SetBytes(proofbytes[offset : offset+lenComOutputMultiRangeProof])
 		if err != nil {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err)
 		}
 		offset += lenComOutputMultiRangeProof
 	}
 
 	//InputCoins  []*privacy.InputCoin
 	if offset >= len(proofbytes) {
-		return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range input coins"))
+		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range input coins"))
 	}
 	lenInputCoinsArray := int(proofbytes[offset])
 	offset += 1
 	proof.inputCoins = make([]*privacy.InputCoin, lenInputCoinsArray)
 	for i := 0; i < lenInputCoinsArray; i++ {
 		if offset >= len(proofbytes) {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range input coins"))
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range input coins"))
 		}
 		lenInputCoin := int(proofbytes[offset])
 		offset += 1
 
 		proof.inputCoins[i] = new(privacy.InputCoin)
 		if offset+lenInputCoin >= len(proofbytes) {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range input coins"))
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range input coins"))
 		}
 		err := proof.inputCoins[i].SetBytes(proofbytes[offset : offset+lenInputCoin])
 		if err != nil {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err)
 		}
 		offset += lenInputCoin
 	}
 
 	//OutputCoins []*privacy.OutputCoin
 	if offset >= len(proofbytes) {
-		return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range output coins"))
+		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
 	}
 	lenOutputCoinsArray := int(proofbytes[offset])
 	offset += 1
@@ -429,37 +431,37 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 		proof.outputCoins[i] = new(privacy.OutputCoin)
 		// try get 1-byte for len
 		if offset >= len(proofbytes) {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range output coins"))
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
 		}
 		lenOutputCoin := int(proofbytes[offset])
 		offset += 1
 
 		if offset+lenOutputCoin >= len(proofbytes) {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range output coins"))
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
 		}
 		err := proof.outputCoins[i].SetBytes(proofbytes[offset : offset+lenOutputCoin])
 		if err != nil {
 			// 1-byte is wrong
 			// try get 2-byte for len
 			if offset+1 >= len(proofbytes) {
-				return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range output coins"))
+				return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
 			}
 			lenOutputCoin = common.BytesToInt(proofbytes[offset-1 : offset+1])
 			offset += 1
 
 			if offset+lenOutputCoin >= len(proofbytes) {
-				return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range output coins"))
+				return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
 			}
 			err1 := proof.outputCoins[i].SetBytes(proofbytes[offset : offset+lenOutputCoin])
 			if err1 != nil {
-				return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
+				return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err)
 			}
 		}
 		offset += lenOutputCoin
 	}
 	//ComOutputValue   []*privacy.Point
 	if offset >= len(proofbytes) {
-		return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range commitment output coins value"))
+		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range commitment output coins value"))
 	}
 	lenComOutputValueArray := int(proofbytes[offset])
 	offset += 1
@@ -467,149 +469,149 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 	var err error
 	for i := 0; i < lenComOutputValueArray; i++ {
 		if offset >= len(proofbytes) {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range commitment output coins value"))
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range commitment output coins value"))
 		}
 		lenComOutputValue := int(proofbytes[offset])
 		offset += 1
 
 		if offset+lenComOutputValue >= len(proofbytes) {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range commitment output coins value"))
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range commitment output coins value"))
 		}
 		proof.commitmentOutputValue[i], err = new(privacy.Point).FromBytesS(proofbytes[offset : offset+lenComOutputValue])
 		if err != nil {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err)
 		}
 		offset += lenComOutputValue
 	}
 	//ComOutputSND     []*privacy.Point
 	if offset >= len(proofbytes) {
-		return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range commitment output coins snd"))
+		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range commitment output coins snd"))
 	}
 	lenComOutputSNDArray := int(proofbytes[offset])
 	offset += 1
 	proof.commitmentOutputSND = make([]*privacy.Point, lenComOutputSNDArray)
 	for i := 0; i < lenComOutputSNDArray; i++ {
 		if offset >= len(proofbytes) {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range commitment output coins snd"))
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range commitment output coins snd"))
 		}
 		lenComOutputSND := int(proofbytes[offset])
 		offset += 1
 
 		if offset+lenComOutputSND >= len(proofbytes) {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range commitment output coins snd"))
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range commitment output coins snd"))
 		}
 		proof.commitmentOutputSND[i], err = new(privacy.Point).FromBytesS(proofbytes[offset : offset+lenComOutputSND])
 
 		if err != nil {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err)
 		}
 		offset += lenComOutputSND
 	}
 
 	// commitmentOutputShardID
 	if offset >= len(proofbytes) {
-		return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range commitment output coins shardid"))
+		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range commitment output coins shardid"))
 	}
 	lenComOutputShardIdArray := int(proofbytes[offset])
 	offset += 1
 	proof.commitmentOutputShardID = make([]*privacy.Point, lenComOutputShardIdArray)
 	for i := 0; i < lenComOutputShardIdArray; i++ {
 		if offset >= len(proofbytes) {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range commitment output coins shardid"))
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range commitment output coins shardid"))
 		}
 		lenComOutputShardId := int(proofbytes[offset])
 		offset += 1
 
 		if offset+lenComOutputShardId >= len(proofbytes) {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range commitment output coins shardid"))
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range commitment output coins shardid"))
 		}
 		proof.commitmentOutputShardID[i], err = new(privacy.Point).FromBytesS(proofbytes[offset : offset+lenComOutputShardId])
 
 		if err != nil {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err)
 		}
 		offset += lenComOutputShardId
 	}
 
 	//ComInputSK 				*privacy.Point
 	if offset >= len(proofbytes) {
-		return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range commitment input coins private key"))
+		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range commitment input coins private key"))
 	}
 	lenComInputSK := int(proofbytes[offset])
 	offset += 1
 	if lenComInputSK > 0 {
 		if offset+lenComInputSK >= len(proofbytes) {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range commitment input coins private key"))
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range commitment input coins private key"))
 		}
 		proof.commitmentInputSecretKey, err = new(privacy.Point).FromBytesS(proofbytes[offset : offset+lenComInputSK])
 
 		if err != nil {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err)
 		}
 		offset += lenComInputSK
 	}
 	//ComInputValue 		[]*privacy.Point
 	if offset >= len(proofbytes) {
-		return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range commitment input coins value"))
+		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range commitment input coins value"))
 	}
 	lenComInputValueArr := int(proofbytes[offset])
 	offset += 1
 	proof.commitmentInputValue = make([]*privacy.Point, lenComInputValueArr)
 	for i := 0; i < lenComInputValueArr; i++ {
 		if offset >= len(proofbytes) {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range commitment input coins value"))
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range commitment input coins value"))
 		}
 		lenComInputValue := int(proofbytes[offset])
 		offset += 1
 
 		if offset+lenComInputValue >= len(proofbytes) {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range commitment input coins value"))
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range commitment input coins value"))
 		}
 		proof.commitmentInputValue[i], err = new(privacy.Point).FromBytesS(proofbytes[offset : offset+lenComInputValue])
 
 		if err != nil {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err)
 		}
 		offset += lenComInputValue
 	}
 	//ComInputSND 			[]*privacy.Point
 	if offset >= len(proofbytes) {
-		return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range commitment input coins snd"))
+		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range commitment input coins snd"))
 	}
 	lenComInputSNDArr := int(proofbytes[offset])
 	offset += 1
 	proof.commitmentInputSND = make([]*privacy.Point, lenComInputSNDArr)
 	for i := 0; i < lenComInputSNDArr; i++ {
 		if offset >= len(proofbytes) {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range commitment input coins snd"))
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range commitment input coins snd"))
 		}
 		lenComInputSND := int(proofbytes[offset])
 		offset += 1
 
 		if offset+lenComInputSND >= len(proofbytes) {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range commitment input coins snd"))
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range commitment input coins snd"))
 		}
 		proof.commitmentInputSND[i], err = new(privacy.Point).FromBytesS(proofbytes[offset : offset+lenComInputSND])
 
 		if err != nil {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err)
 		}
 		offset += lenComInputSND
 	}
 	//ComInputShardID 	*privacy.Point
 	if offset >= len(proofbytes) {
-		return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range commitment input coins shardid"))
+		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range commitment input coins shardid"))
 	}
 	lenComInputShardID := int(proofbytes[offset])
 	offset += 1
 	if lenComInputShardID > 0 {
 		if offset+lenComInputShardID > len(proofbytes) {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range commitment input coins shardid"))
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range commitment input coins shardid"))
 		}
 		proof.commitmentInputShardID, err = new(privacy.Point).FromBytesS(proofbytes[offset : offset+lenComInputShardID])
 
 		if err != nil {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err)
 		}
 		offset += lenComInputShardID
 	}
@@ -618,7 +620,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 	proof.commitmentIndices = make([]uint64, len(proof.oneOfManyProof)*privacy.CommitmentRingSize)
 	for i := 0; i < len(proof.oneOfManyProof)*privacy.CommitmentRingSize; i++ {
 		if offset+common.Uint64Size > len(proofbytes) {
-			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range commitment indices"))
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range commitment indices"))
 		}
 		proof.commitmentIndices[i] = new(big.Int).SetBytes(proofbytes[offset : offset+common.Uint64Size]).Uint64()
 		offset = offset + common.Uint64Size
@@ -644,7 +646,7 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 		valid, err := proof.serialNumberNoPrivacyProof[i].Verify(nil)
 		if !valid {
 			privacy.Logger.Log.Errorf("Verify serial number no privacy proof failed")
-			return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, err)
+			return false, errhandler.NewPrivacyErr(errhandler.VerifySerialNumberNoPrivacyProofFailedErr, err)
 		}
 
 		// Check input coins' cm is calculated correctly
@@ -659,7 +661,7 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 
 		if !operation.IsPointEqual(cmTmp, proof.inputCoins[i].CoinDetails.GetCoinCommitment()) {
 			privacy.Logger.Log.Errorf("Input coins %v commitment wrong!\n", i)
-			return false, privacy.NewPrivacyErr(privacy.VerifyCoinCommitmentInputFailedErr, nil)
+			return false, errhandler.NewPrivacyErr(errhandler.VerifyCoinCommitmentInputFailedErr, nil)
 		}
 
 		// Calculate sum of input values
@@ -682,7 +684,7 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 
 		if !operation.IsPointEqual(cmTmp, proof.outputCoins[i].CoinDetails.GetCoinCommitment()) {
 			privacy.Logger.Log.Errorf("Output coins %v commitment wrong!\n", i)
-			return false, privacy.NewPrivacyErr(privacy.VerifyCoinCommitmentOutputFailedErr, nil)
+			return false, errhandler.NewPrivacyErr(errhandler.VerifyCoinCommitmentOutputFailedErr, nil)
 		}
 	}
 
@@ -694,7 +696,7 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 			outValue := proof.outputCoins[i].CoinDetails.GetValue()
 			sumTmp := sumOutputValue + outValue
 			if sumTmp < sumOutputValue || sumTmp < outValue {
-				return false, privacy.NewPrivacyErr(privacy.UnexpectedErr, fmt.Errorf("Overflow output value %v\n", outValue))
+				return false, errhandler.NewPrivacyErr(errhandler.UnexpectedErr, fmt.Errorf("Overflow output value %v\n", outValue))
 			}
 
 			sumOutputValue += outValue
@@ -704,7 +706,7 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 	// check overflow fee value
 	tmp := sumOutputValue + fee
 	if tmp < sumOutputValue || tmp < fee {
-		return false, privacy.NewPrivacyErr(privacy.UnexpectedErr, fmt.Errorf("Overflow fee value %v\n", fee))
+		return false, errhandler.NewPrivacyErr(errhandler.UnexpectedErr, fmt.Errorf("Overflow fee value %v\n", fee))
 	}
 
 	// check if sum of input values equal sum of output values
@@ -713,7 +715,7 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 		privacy.Logger.Log.Debugf("sumOutputValue: %v\n", sumOutputValue)
 		privacy.Logger.Log.Debugf("fee: %v\n", fee)
 		privacy.Logger.Log.Errorf("Sum of inputs is not equal sum of output!\n")
-		return false, privacy.NewPrivacyErr(privacy.VerifyAmountNoPrivacyFailedErr, nil)
+		return false, errhandler.NewPrivacyErr(errhandler.VerifyAmountNoPrivacyFailedErr, nil)
 	}
 	return true, nil
 }
@@ -738,25 +740,25 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 			privacy.Logger.Log.Debugf("[TEST] commitment at index %v: %v\n", index, commitmentBytes)
 			if err != nil {
 				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF 1: Error when get commitment by index from database", index, err)
-				return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, err)
+				return false, errhandler.NewPrivacyErr(errhandler.VerifyOneOutOfManyProofFailedErr, err)
 			}
 			recheckIndex, err := db.GetCommitmentIndex(*tokenID, commitmentBytes, shardID)
 			if err != nil || recheckIndex.Uint64() != index {
 				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF 2: Error when get commitment by index from database", index, err)
-				return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, err)
+				return false, errhandler.NewPrivacyErr(errhandler.VerifyOneOutOfManyProofFailedErr, err)
 			}
 
 			commitments[j], err = new(privacy.Point).FromBytesS(commitmentBytes)
 
 			if err != nil {
 				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Cannot decompress commitment from database", index, err)
-				return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, err)
+				return false, errhandler.NewPrivacyErr(errhandler.VerifyOneOutOfManyProofFailedErr, err)
 			}
 
 			commitments[j].Sub(commitments[j], cmInputSum[i])
 			if err != nil {
 				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Cannot sub commitment to sum of commitment inputs", index, err)
-				return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, err)
+				return false, errhandler.NewPrivacyErr(errhandler.VerifyOneOutOfManyProofFailedErr, err)
 			}
 		}
 
@@ -765,13 +767,13 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 		valid, err := proof.oneOfManyProof[i].Verify()
 		if !valid {
 			privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: One out of many failed")
-			return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, err)
+			return false, errhandler.NewPrivacyErr(errhandler.VerifyOneOutOfManyProofFailedErr, err)
 		}
 		// Verify for the Proof that input coins' serial number is derived from the committed derivator
 		valid, err = proof.serialNumberProof[i].Verify(nil)
 		if !valid {
 			privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Serial number privacy failed")
-			return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberPrivacyProofFailedErr, err)
+			return false, errhandler.NewPrivacyErr(errhandler.VerifySerialNumberPrivacyProofFailedErr, err)
 		}
 	}
 
@@ -783,7 +785,7 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 
 		if !operation.IsPointEqual(cmTmp, proof.outputCoins[i].CoinDetails.GetCoinCommitment()) {
 			privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Commitment for output coins are not computed correctly")
-			return false, privacy.NewPrivacyErr(privacy.VerifyCoinCommitmentOutputFailedErr, nil)
+			return false, errhandler.NewPrivacyErr(errhandler.VerifyCoinCommitmentOutputFailedErr, nil)
 		}
 	}
 
@@ -792,7 +794,7 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 		valid, err := proof.aggregatedRangeProof.Verify()
 		if !valid {
 			privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Multi-range failed")
-			return false, privacy.NewPrivacyErr(privacy.VerifyAggregatedProofFailedErr, err)
+			return false, errhandler.NewPrivacyErr(errhandler.VerifyAggregatedProofFailedErr, err)
 		}
 	}
 
@@ -818,7 +820,7 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 		privacy.Logger.Log.Debugf("comInputValueSum: ", comInputValueSum)
 		privacy.Logger.Log.Debugf("comOutputValueSum: ", comOutputValueSum)
 		privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: Sum of input coins' value is not equal to sum of output coins' value")
-		return false, privacy.NewPrivacyErr(privacy.VerifyAmountPrivacyFailedErr, nil)
+		return false, errhandler.NewPrivacyErr(errhandler.VerifyAmountPrivacyFailedErr, nil)
 	}
 
 	return true, nil

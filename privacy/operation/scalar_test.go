@@ -10,7 +10,7 @@ import (
 	//C25519 "github.com/deroproject/derosuite/crypto"
 	"testing"
 
-	C25519 "github.com/incognitochain/incognito-chain/privacy/curve25519"
+	C25519 "github.com/incognitochain/incognito-chain/privacy/operation/curve25519"
 )
 
 func TestCompare(t *testing.T) {

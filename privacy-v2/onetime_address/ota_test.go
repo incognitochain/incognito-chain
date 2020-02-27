@@ -63,7 +63,7 @@ func TestParseBlindAndMoneyFromUtxo(t *testing.T) {
 		money[i] = *curMoney
 	}
 	outputsPointer, sumBlind, err := CreateOutputs(&peoplePublicAddresses, &money)
-	assert.NotEqual(t, nil, err, "There should not be any error in creating output")
+	assert.Equal(t, nil, err, "There should not be any error in creating output")
 
 	outputs := *outputsPointer
 

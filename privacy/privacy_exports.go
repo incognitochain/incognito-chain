@@ -1,8 +1,9 @@
 package privacy
 
 import (
-	C25519 "github.com/incognitochain/incognito-chain/privacy/curve25519"
+	"github.com/incognitochain/incognito-chain/privacy/hybridencryption"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
+	C25519 "github.com/incognitochain/incognito-chain/privacy/operation/curve25519"
 	"github.com/incognitochain/incognito-chain/privacy/pedersen"
 )
 
@@ -32,7 +33,9 @@ const (
 
 type Point = operation.Point
 type Scalar = operation.Scalar
+type HybridCipherText = hybridencryption.HybridCipherText
 
+// Point and Scalar operations
 func RandomScalar() *Scalar {
 	return operation.RandomScalar()
 }
@@ -59,4 +62,17 @@ func HashToScalar(data []byte) *Scalar {
 
 func Reverse(x C25519.Key) (result C25519.Key) {
 	return operation.Reverse(x)
+}
+
+func HashToPointFromIndex(index int64, padStr string) *Point {
+	return operation.HashToPointFromIndex(index, padStr)
+}
+
+// Hybrid encryption operations
+func HybridEncrypt(msg []byte, publicKey *operation.Point) (ciphertext *HybridCipherText, err error) {
+	return hybridencryption.HybridEncrypt(msg, publicKey)
+}
+
+func HybridDecrypt(ciphertext *HybridCipherText, privateKey *operation.Scalar) (msg []byte, err error) {
+	return hybridencryption.HybridDecrypt(ciphertext, privateKey)
 }

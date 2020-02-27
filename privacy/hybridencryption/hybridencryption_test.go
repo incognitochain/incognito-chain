@@ -1,4 +1,4 @@
-package privacy
+package hybridencryption
 
 import (
 	"crypto/rand"
@@ -22,7 +22,7 @@ func TestHybridEncryption(t *testing.T) {
 
 		// generate public key
 		pubKey := new(elGamalPublicKey)
-		pubKey.h = new(Point).ScalarMultBase(privKey.x)
+		pubKey.h = new(operation.Point).ScalarMultBase(privKey.x)
 
 		// encrypt message using public key
 		ciphertext, err := HybridEncrypt(msg, pubKey.h)
