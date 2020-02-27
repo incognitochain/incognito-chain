@@ -2,8 +2,10 @@ package privacy
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/stretchr/testify/assert"
 )
 
 /*
@@ -12,13 +14,13 @@ import (
 
 func TestElGamalCipherText_Bytes(t *testing.T) {
 	privKey := new(elGamalPrivateKey)
-	privKey.x = RandomScalar()
+	privKey.x = operation.RandomScalar()
 
 	// generate public key
 	pubKey := new(elGamalPublicKey)
 	pubKey.h = new(Point).ScalarMultBase(privKey.x)
 
-	message := RandomPoint()
+	message := operation.RandomPoint()
 
 	// Encrypt message using public key
 	c := pubKey.encrypt(message)
@@ -27,17 +29,17 @@ func TestElGamalCipherText_Bytes(t *testing.T) {
 }
 
 func TestElGamalPublicKey_Encryption(t *testing.T) {
-	for i:=0 ; i <5000; i ++ {
+	for i := 0; i < 5000; i++ {
 		// generate private key
 		privKey := new(elGamalPrivateKey)
-		privKey.x = RandomScalar()
+		privKey.x = operation.RandomScalar()
 
 		// generate public key
 		pubKey := new(elGamalPublicKey)
 		pubKey.h = new(Point).ScalarMultBase(privKey.x)
 
 		// random message (msg is an elliptic point)
-		message := RandomPoint()
+		message := operation.RandomPoint()
 
 		// Encrypt message using public key
 		ciphertext1 := pubKey.encrypt(message)

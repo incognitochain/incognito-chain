@@ -2,8 +2,10 @@ package aggregaterange
 
 import (
 	"errors"
-	"github.com/incognitochain/incognito-chain/privacy"
 	"math"
+
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 )
 
 const (
@@ -33,14 +35,14 @@ func newBulletproofParams(m int) *bulletproofParams {
 	csByteH := []byte{}
 	csByteG := []byte{}
 	for i := 0; i < capacity; i++ {
-		gen.g[i] = privacy.HashToPointFromIndex(int64(numCommitValue + i), privacy.CStringBulletProof)
-		gen.h[i] = privacy.HashToPointFromIndex(int64(numCommitValue + i + maxOutputNumberParam*maxExp), privacy.CStringBulletProof)
+		gen.g[i] = operation.HashToPointFromIndex(int64(numCommitValue+i), privacy.CStringBulletProof)
+		gen.h[i] = operation.HashToPointFromIndex(int64(numCommitValue+i+maxOutputNumberParam*maxExp), privacy.CStringBulletProof)
 		csByteG = append(csByteG, gen.g[i].ToBytesS()...)
 		csByteH = append(csByteH, gen.h[i].ToBytesS()...)
 	}
 
 	gen.u = new(privacy.Point)
-	gen.u = privacy.HashToPointFromIndex(int64(numCommitValue + 2*maxOutputNumberParam*maxExp), privacy.CStringBulletProof)
+	gen.u = operation.HashToPointFromIndex(int64(numCommitValue+2*maxOutputNumberParam*maxExp), privacy.CStringBulletProof)
 
 	gen.cs = append(gen.cs, csByteG...)
 	gen.cs = append(gen.cs, csByteH...)
@@ -54,7 +56,7 @@ func generateChallenge(values [][]byte) *privacy.Scalar {
 	for i := 0; i < len(values); i++ {
 		bytes = append(bytes, values[i]...)
 	}
-	hash := privacy.HashToScalar(bytes)
+	hash := operation.HashToScalar(bytes)
 	return hash
 }
 
@@ -74,7 +76,7 @@ func generateChallengeOld(AggParam *bulletproofParams, values [][]byte) *privacy
 		bytes = append(bytes, values[i]...)
 	}
 
-	hash := privacy.HashToScalar(bytes)
+	hash := operation.HashToScalar(bytes)
 	return hash
 }
 

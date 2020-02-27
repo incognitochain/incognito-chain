@@ -2,14 +2,16 @@ package oneoutofmany
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"log"
 	"testing"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
@@ -38,8 +40,8 @@ func TestPKOneOfMany(t *testing.T) {
 		randoms := make([]*privacy.Scalar, privacy.CommitmentRingSize)
 
 		for i := 0; i < privacy.CommitmentRingSize; i++ {
-			values[i] = privacy.RandomScalar()
-			randoms[i] = privacy.RandomScalar()
+			values[i] = operation.RandomScalar()
+			randoms[i] = operation.RandomScalar()
 			commitments[i] = privacy.PedCom.CommitAtIndex(values[i], randoms[i], privacy.PedersenSndIndex)
 		}
 
@@ -89,4 +91,3 @@ func TestPKOneOfMany(t *testing.T) {
 
 	}
 }
-

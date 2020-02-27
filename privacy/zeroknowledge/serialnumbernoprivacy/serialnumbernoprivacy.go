@@ -2,7 +2,9 @@ package serialnumbernoprivacy
 
 import (
 	"errors"
+
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 )
 
@@ -186,7 +188,7 @@ func (pro *SNNoPrivacyProof) SetBytes(bytes []byte) error {
 
 func (wit SNNoPrivacyWitness) Prove(mess []byte) (*SNNoPrivacyProof, error) {
 	// randomness
-	eSK := privacy.RandomScalar()
+	eSK := operation.RandomScalar()
 
 	// calculate tSeed = g_SK^eSK
 	tSK := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex], eSK)
@@ -228,7 +230,7 @@ func (pro SNNoPrivacyProof) Verify(mess []byte) (bool, error) {
 	rightPoint1 := new(privacy.Point).ScalarMult(pro.stmt.vKey, x)
 	rightPoint1 = rightPoint1.Add(rightPoint1, pro.tSeed)
 
-	if !privacy.IsPointEqual(leftPoint1, rightPoint1) {
+	if !operation.IsPointEqual(leftPoint1, rightPoint1) {
 		privacy.Logger.Log.Errorf("verify serial number no privacy proof statement 1 failed")
 		return false, errors.New("verify serial number no privacy proof statement 1 failed")
 	}
@@ -237,10 +239,10 @@ func (pro SNNoPrivacyProof) Verify(mess []byte) (bool, error) {
 	tmp := new(privacy.Scalar).Add(pro.zSeed, new(privacy.Scalar).Mul(x, pro.stmt.input))
 	leftPoint2 := new(privacy.Point).ScalarMult(pro.stmt.output, tmp)
 
-	rightPoint2 := new (privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex], x)
+	rightPoint2 := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex], x)
 	rightPoint2 = rightPoint2.Add(rightPoint2, pro.tOutput)
 
-	if !privacy.IsPointEqual(leftPoint2, rightPoint2) {
+	if !operation.IsPointEqual(leftPoint2, rightPoint2) {
 		privacy.Logger.Log.Errorf("verify serial number no privacy proof statement 2 failed")
 		return false, errors.New("verify serial number no privacy proof statement 2 failed")
 	}

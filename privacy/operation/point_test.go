@@ -1,14 +1,15 @@
-package privacy
+package operation
 
 import (
 	"crypto/subtle"
 	"fmt"
 
 	//C25519 "github.com/deroproject/derosuite/crypto"
-	C25519 "github.com/incognitochain/incognito-chain/privacy/curve25519"
 	"testing"
-)
 
+	C25519 "github.com/incognitochain/incognito-chain/privacy/curve25519"
+	"github.com/stretchr/testify/assert"
+)
 
 func BenchmarkPoint_AddPedersen(b *testing.B) {
 	a := RandomScalar()
@@ -19,13 +20,13 @@ func BenchmarkPoint_AddPedersen(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i:=0; i< b.N; i++ {
-		new(Point).AddPedersen(a,A,c,C)
+	for i := 0; i < b.N; i++ {
+		new(Point).AddPedersen(a, A, c, C)
 	}
 }
 
 func TestPoint_ScalarMultPRIME(t *testing.T) {
-	for i:=0; i< 10000; i++ {
+	for i := 0; i < 10000; i++ {
 		a := RandomScalar()
 		pa := RandomPoint()
 		b := RandomScalar()
@@ -34,7 +35,7 @@ func TestPoint_ScalarMultPRIME(t *testing.T) {
 		res.ScalarMult(res, b)
 		tmpres := res.MarshalText()
 
-		tmp := new(Scalar).Mul(a,b)
+		tmp := new(Scalar).Mul(a, b)
 		tmpP := new(Point).ScalarMult(pa, tmp)
 
 		resPrime := C25519.ScalarMultKey(&pa.key, &a.key)
@@ -46,7 +47,7 @@ func TestPoint_ScalarMultPRIME(t *testing.T) {
 			t.Fatalf("expected Scalar Mul Base correct !")
 		}
 
-		ok1:= subtle.ConstantTimeCompare(tmpP.MarshalText(), tmpresPrime) == 1
+		ok1 := subtle.ConstantTimeCompare(tmpP.MarshalText(), tmpresPrime) == 1
 		if !ok1 {
 			t.Fatalf("expected Scalar Mul Base correct !")
 		}
@@ -62,9 +63,8 @@ func TestPoint_MarshalText(t *testing.T) {
 	fmt.Println(pPrime)
 }
 
-
 func TestScalarMul(t *testing.T) {
-	for i:=0; i< 1000; i++ {
+	for i := 0; i < 1000; i++ {
 		a := RandomScalar()
 		pa := RandomPoint()
 		b := RandomScalar()
@@ -87,19 +87,21 @@ func TestScalarMul(t *testing.T) {
 }
 
 func TestScalarMulBase(t *testing.T) {
-
-	Gbytes := PedCom.G[0].ToBytesS()
+	G := new(Point).ScalarMultBase(new(Scalar).FromUint64(1))
+	Gbytes := G.ToBytes()
 	fmt.Printf("Gbytes: %v\n", Gbytes)
 
-	array := []byte{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,1,2,3,4,5,6,7,8,9,10,11,12}
+	array := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
 	aScalar := new(Scalar)
 	aScalar.FromBytesS(array)
 	res1 := new(Point).ScalarMultBase(aScalar)
-	res2 := new(Point).ScalarMult(PedCom.G[0], aScalar)
+	res2 := new(Point).ScalarMult(G, aScalar)
 	fmt.Printf("Res1: %v\n", res1.ToBytesS())
 	fmt.Printf("Res2: %v\n", res2.ToBytesS())
 
-	for i:=0; i< 1000; i++ {
+	assert.Equal(t, res1.GetKey(), res2.GetKey(), "ScalarMultBase should be correct")
+
+	for i := 0; i < 1000; i++ {
 		a := RandomScalar()
 		b := RandomScalar()
 
@@ -114,7 +116,7 @@ func TestScalarMulBase(t *testing.T) {
 
 		C25519.AddKeys(&resPrime, resPrime1, resPrime2)
 
-		tmpresPrime  := resPrime.MarshalText()
+		tmpresPrime := resPrime.MarshalText()
 		ok := subtle.ConstantTimeCompare(tmpres, tmpresPrime) == 1
 		if !ok {
 			t.Fatalf("expected Scalar Mul Base correct !")
@@ -123,17 +125,14 @@ func TestScalarMulBase(t *testing.T) {
 }
 
 func TestPoint_Add(t *testing.T) {
-	count:= 0
-	for i:=0; i< 1000; i++ {
+	count := 0
+	for i := 0; i < 1000; i++ {
 		pa := RandomPoint()
 		pb := RandomPoint()
 		pc := RandomPoint()
 
 		res := new(Point).Add(pa, pb)
 		res.Add(res, pc)
-
-
-
 
 		tmpres := res.MarshalText()
 
@@ -157,7 +156,7 @@ func TestPoint_Add(t *testing.T) {
 }
 
 func TestPoint_Sub(t *testing.T) {
-	for i:=0; i< 1000; i++ {
+	for i := 0; i < 1000; i++ {
 		pa := RandomPoint()
 		pb := RandomPoint()
 		pc := RandomPoint()
@@ -184,14 +183,14 @@ func TestPoint_Sub(t *testing.T) {
 }
 
 func TestPoint_InvertScalarMul(t *testing.T) {
-	for i:=0; i< 1000; i++ {
+	for i := 0; i < 1000; i++ {
 		a := RandomScalar()
 		pa := RandomPoint()
 
 		// compute (pa^a)^1/a = pa
 		res := new(Point).ScalarMult(pa, a)
 		res.InvertScalarMult(res, a)
-		tmpres:= res.MarshalText()
+		tmpres := res.MarshalText()
 
 		tmpresPrime := pa.MarshalText()
 		ok := subtle.ConstantTimeCompare(tmpres, tmpresPrime) == 1
@@ -202,7 +201,7 @@ func TestPoint_InvertScalarMul(t *testing.T) {
 }
 
 func TestPoint_InvertScalarMultBase(t *testing.T) {
-	for i:=0; i< 1000; i++ {
+	for i := 0; i < 1000; i++ {
 		a := RandomScalar()
 
 		// compute (g^1/a)^a = g
@@ -219,8 +218,8 @@ func TestPoint_InvertScalarMultBase(t *testing.T) {
 }
 
 func TestHashToPoint(t *testing.T) {
-	for i:=0; i< 10; i++ {
-		for j:= 0; j< 6; j++ {
+	for i := 0; i < 10; i++ {
+		for j := 0; j < 6; j++ {
 			p := HashToPointFromIndex(int64(j), CStringBulletProof)
 			fmt.Println(p.key)
 		}

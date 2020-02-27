@@ -1,5 +1,7 @@
 package privacy
 
+import "github.com/incognitochain/incognito-chain/privacy/operation"
+
 // elGamalPublicKeyOld represents to public key in ElGamal encryption
 // H = G^X, X is private key
 type elGamalPublicKey struct {
@@ -46,7 +48,7 @@ func (ciphertext elGamalCipherText) Bytes() []byte {
 	}
 	b1 := ciphertext.c1.ToBytes()
 	b2 := ciphertext.c2.ToBytes()
-	res := append(b1[:], b2[:] ...)
+	res := append(b1[:], b2[:]...)
 	return res
 }
 
@@ -63,14 +65,14 @@ func (ciphertext *elGamalCipherText) SetBytes(bytes []byte) error {
 	var err error
 
 	var tmp [Ed25519KeySize]byte
-	copy(tmp[:],bytes[:Ed25519KeySize])
+	copy(tmp[:], bytes[:Ed25519KeySize])
 	ciphertext.c1, err = new(Point).FromBytes(tmp)
-	if err != nil{
+	if err != nil {
 		return err
 	}
-	copy(tmp[:],bytes[Ed25519KeySize:])
+	copy(tmp[:], bytes[Ed25519KeySize:])
 	ciphertext.c2, err = new(Point).FromBytes(tmp)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 
@@ -81,7 +83,7 @@ func (ciphertext *elGamalCipherText) SetBytes(bytes []byte) error {
 // returns ElGamal ciphertext
 func (pub elGamalPublicKey) encrypt(plaintext *Point) *elGamalCipherText {
 	// r random, S:= h^r where h = g^x
-	r := RandomScalar()
+	r := operation.RandomScalar()
 	S := new(Point).ScalarMult(pub.h, r)
 
 	//return ciphertext (c1, c2) = (g^r, m.s=m.h^r)

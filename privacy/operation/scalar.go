@@ -1,19 +1,19 @@
-package privacy
+package operation
 
 import (
 	"crypto/subtle"
 	"encoding/hex"
 	"errors"
 	"fmt"
-	C25519 "github.com/incognitochain/incognito-chain/privacy/curve25519"
 	"math/big"
 	"sort"
+
+	C25519 "github.com/incognitochain/incognito-chain/privacy/curve25519"
 )
 
 type Scalar struct {
 	key C25519.Key
 }
-
 
 func (sc Scalar) GetKey() C25519.Key {
 	return sc.key
@@ -23,7 +23,7 @@ func (sc Scalar) String() string {
 	return fmt.Sprintf("%x", sc.key[:])
 }
 
-func (sc Scalar) MarshalText() ([]byte) {
+func (sc Scalar) MarshalText() []byte {
 	return []byte(fmt.Sprintf("%x", sc.key[:]))
 }
 
@@ -49,7 +49,7 @@ func (sc Scalar) ToBytesS() []byte {
 	return slice[:]
 }
 
-func (sc *Scalar) FromBytes(b [Ed25519KeySize]byte) (*Scalar) {
+func (sc *Scalar) FromBytes(b [Ed25519KeySize]byte) *Scalar {
 	if sc == nil {
 		sc = new(Scalar)
 	}
@@ -60,7 +60,7 @@ func (sc *Scalar) FromBytes(b [Ed25519KeySize]byte) (*Scalar) {
 	return sc
 }
 
-func (sc *Scalar) FromBytesS(b []byte) (*Scalar) {
+func (sc *Scalar) FromBytesS(b []byte) *Scalar {
 	//if len(b) != Ed25519KeySize {
 	//	panic("Invalid Ed25519 Key Size")
 	//}
@@ -79,11 +79,11 @@ func (sc *Scalar) FromBytesS(b []byte) (*Scalar) {
 
 // Should not use this if you don't know what you are doing
 func (p *Scalar) SetKeyUnsafe(a *C25519.Key) *Scalar {
-       if p == nil {
-               p = new(Scalar)
-       }
-       p.key = *a
-       return p
+	if p == nil {
+		p = new(Scalar)
+	}
+	p.key = *a
+	return p
 }
 
 func (sc *Scalar) SetKey(a *C25519.Key) (*Scalar, error) {
@@ -97,7 +97,7 @@ func (sc *Scalar) SetKey(a *C25519.Key) (*Scalar, error) {
 	return sc, nil
 }
 
-func (sc *Scalar) Set(a *Scalar) (*Scalar) {
+func (sc *Scalar) Set(a *Scalar) *Scalar {
 	if sc == nil {
 		sc = new(Scalar)
 	}
@@ -168,7 +168,7 @@ func (sc *Scalar) Mul(a, b *Scalar) *Scalar {
 }
 
 // a*b + c % l
-func (sc *Scalar) MulAdd(a,b, c *Scalar) *Scalar {
+func (sc *Scalar) MulAdd(a, b, c *Scalar) *Scalar {
 	if sc == nil {
 		sc = new(Scalar)
 	}
@@ -185,11 +185,11 @@ func (sc *Scalar) Exp(a *Scalar, v uint64) *Scalar {
 
 	var res C25519.Key
 	C25519.ScMul(&res, &a.key, &a.key)
-	for i:=0; i< int(v)-2; i++ {
+	for i := 0; i < int(v)-2; i++ {
 		C25519.ScMul(&res, &res, &a.key)
 	}
 
-	sc.key =res
+	sc.key = res
 	return sc
 }
 
@@ -202,10 +202,10 @@ func (sc *Scalar) ScalarValid() bool {
 
 func (sc *Scalar) IsOne() bool {
 	s := sc.key
-	return ((int(s[0] | s[1] | s[2] | s[3] | s[4] | s[5] | s[6] | s[7] | s[8] |
-		s[9] | s[10] | s[11] | s[12] | s[13] | s[14] | s[15] | s[16] | s[17] |
-		s[18] | s[19] | s[20] | s[21] | s[22] | s[23] | s[24] | s[25] | s[26] |
-		s[27] | s[28] | s[29] | s[30] | s[31]) - 1) >> 8)+1 == 1
+	return ((int(s[0]|s[1]|s[2]|s[3]|s[4]|s[5]|s[6]|s[7]|s[8]|
+		s[9]|s[10]|s[11]|s[12]|s[13]|s[14]|s[15]|s[16]|s[17]|
+		s[18]|s[19]|s[20]|s[21]|s[22]|s[23]|s[24]|s[25]|s[26]|
+		s[27]|s[28]|s[29]|s[30]|s[31])-1)>>8)+1 == 1
 }
 
 func IsScalarEqual(sc1, sc2 *Scalar) bool {
@@ -219,7 +219,7 @@ func Compare(sca, scb *Scalar) int {
 	tmpa := sca.ToBytesS()
 	tmpb := scb.ToBytesS()
 
-	for i:= Ed25519KeySize-1; i>=0; i-- {
+	for i := Ed25519KeySize - 1; i >= 0; i-- {
 		if uint64(tmpa[i]) > uint64(tmpb[i]) {
 			return 1
 		}

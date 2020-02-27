@@ -6,12 +6,13 @@ import (
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 )
 
 func TestConvert(t *testing.T) {
-	L1 := privacy.RandomScalar()
-	L2 := privacy.RandomScalar()
-	L3 := privacy.RandomScalar()
+	L1 := operation.RandomScalar()
+	L2 := operation.RandomScalar()
+	L3 := operation.RandomScalar()
 	LRes := new(privacy.Scalar).Sub(L1, L2)
 	LRes.Sub(LRes, L3)
 	fmt.Println(LRes)

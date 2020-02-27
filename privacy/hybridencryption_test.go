@@ -2,21 +2,23 @@ package privacy
 
 import (
 	"crypto/rand"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/stretchr/testify/assert"
 )
 
 /*
 	Unit test for Hybrid encryption
 */
 func TestHybridEncryption(t *testing.T) {
-	for i :=0 ; i < 5000; i ++ {
+	for i := 0; i < 5000; i++ {
 		// random message
 		msg := randomMessage()
 
 		// generate key pair for ElGamal
 		privKey := new(elGamalPrivateKey)
-		privKey.x = RandomScalar()
+		privKey.x = operation.RandomScalar()
 
 		// generate public key
 		pubKey := new(elGamalPublicKey)

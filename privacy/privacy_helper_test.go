@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -146,7 +147,7 @@ func TestFee(t *testing.T) {
 
 	tmp1 := new(Point).Add(comOutputValueSum, comFee)
 
-	if IsPointEqual(tmp1, comInputValueSum) {
+	if operation.IsPointEqual(tmp1, comInputValueSum) {
 		fmt.Printf("Equal\n")
 	} else {
 		fmt.Printf(" Not Equal\n")
@@ -166,7 +167,7 @@ func TestFee(t *testing.T) {
 func TestEncryptByXorOperator(t *testing.T) {
 	v := new(big.Int).SetUint64(100)
 
-	randomness := RandomScalar()
+	randomness := operation.RandomScalar()
 	randomnessBytes := randomness.ToBytesS()
 
 	// encrypt

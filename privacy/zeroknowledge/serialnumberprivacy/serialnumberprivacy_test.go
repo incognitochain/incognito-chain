@@ -6,21 +6,22 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPKSNPrivacy(t *testing.T) {
-	for i:= 0 ; i <1000; i++ {
+	for i := 0; i < 1000; i++ {
 		sk := privacy.GeneratePrivateKey(privacy.RandBytes(31))
 		skScalar := new(privacy.Scalar).FromBytesS(sk)
 		if skScalar.ScalarValid() == false {
 			fmt.Println("Invalid scala key value")
 		}
 
-		SND := privacy.RandomScalar()
-		rSK := privacy.RandomScalar()
-		rSND := privacy.RandomScalar()
+		SND := operation.RandomScalar()
+		rSK := operation.RandomScalar()
+		rSND := operation.RandomScalar()
 
 		serialNumber := new(privacy.Point).Derive(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex], skScalar, SND)
 		comSK := privacy.PedCom.CommitAtIndex(skScalar, rSK, privacy.PedersenPrivateKeyIndex)

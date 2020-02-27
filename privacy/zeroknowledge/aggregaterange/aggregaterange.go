@@ -2,7 +2,9 @@ package aggregaterange
 
 import (
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/pkg/errors"
 )
 
@@ -247,7 +249,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	}
 
 	// random alpha
-	alpha := privacy.RandomScalar()
+	alpha := operation.RandomScalar()
 
 	// Commitment to aL, aR: A = h^alpha * G^aL * H^aR
 	A, err := encodeVectors(aL, aR, aggParam.g, aggParam.h)
@@ -261,12 +263,12 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	sL := make([]*privacy.Scalar, n*numValuePad)
 	sR := make([]*privacy.Scalar, n*numValuePad)
 	for i := range sL {
-		sL[i] = privacy.RandomScalar()
-		sR[i] = privacy.RandomScalar()
+		sL[i] = operation.RandomScalar()
+		sR[i] = operation.RandomScalar()
 	}
 
 	// random rho
-	rho := privacy.RandomScalar()
+	rho := operation.RandomScalar()
 
 	// Commitment to sL, sR : S = h^rho * G^sL * H^sR
 	S, err := encodeVectors(sL, sR, aggParam.g, aggParam.h)
@@ -362,8 +364,8 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	}
 
 	// commitment to t1, t2
-	tau1 := privacy.RandomScalar()
-	tau2 := privacy.RandomScalar()
+	tau1 := operation.RandomScalar()
+	tau2 := operation.RandomScalar()
 
 	proof.t1 = privacy.PedCom.CommitAtIndex(t1, tau1, privacy.PedersenValueIndex)
 	proof.t2 = privacy.PedCom.CommitAtIndex(t2, tau2, privacy.PedersenValueIndex)
@@ -530,7 +532,7 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	expVector := vectorMulScalar(powerVector(z, numValuePad), zSquare)
 	right1.Add(right1, new(privacy.Point).MultiScalarMult(expVector, tmpcmsValue))
 
-	if !privacy.IsPointEqual(left1, right1) {
+	if !operation.IsPointEqual(left1, right1) {
 		privacy.Logger.Log.Errorf("verify aggregated range proof statement 1 failed")
 		return false, errors.New("verify aggregated range proof statement 1 failed")
 	}
@@ -635,7 +637,7 @@ func VerifyBatchingAggregatedRangeProofs(proofs []*AggregatedRangeProof) (bool, 
 		expVector := vectorMulScalar(powerVector(z, numValuePad), zSquare)
 		right1.Add(right1, new(privacy.Point).MultiScalarMult(expVector, tmpcmsValue))
 
-		if !privacy.IsPointEqual(left1, right1) {
+		if !operation.IsPointEqual(left1, right1) {
 			privacy.Logger.Log.Errorf("verify aggregated range proof statement 1 failed index %d", k)
 			return false, fmt.Errorf("verify aggregated range proof statement 1 failed index %d", k), k
 		}

@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/oneoutofmany/polynomial"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 	"github.com/pkg/errors"
@@ -292,11 +293,11 @@ func (wit OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 
 	for j := 0; j < n; j++ {
 		// Generate random numbers
-		r[j] = privacy.RandomScalar()
-		a[j] = privacy.RandomScalar()
-		s[j] = privacy.RandomScalar()
-		t[j] = privacy.RandomScalar()
-		u[j] = privacy.RandomScalar()
+		r[j] = operation.RandomScalar()
+		a[j] = operation.RandomScalar()
+		s[j] = operation.RandomScalar()
+		t[j] = operation.RandomScalar()
+		u[j] = operation.RandomScalar()
 
 		// convert indexIsZeroBinary[j] to privacy.Scalar
 		indexInt := new(privacy.Scalar).FromUint64(uint64(indexIsZeroBinary[j]))
@@ -402,7 +403,7 @@ func (proof OneOutOfManyProof) Verify() (bool, error) {
 
 		rightPoint1 := privacy.PedCom.CommitAtIndex(proof.f[i], proof.za[i], privacy.PedersenPrivateKeyIndex)
 
-		if !privacy.IsPointEqual(leftPoint1, rightPoint1) {
+		if !operation.IsPointEqual(leftPoint1, rightPoint1) {
 			privacy.Logger.Log.Errorf("verify one out of many proof statement 1 failed")
 			return false, errors.New("verify one out of many proof statement 1 failed")
 		}
@@ -414,7 +415,7 @@ func (proof OneOutOfManyProof) Verify() (bool, error) {
 		leftPoint2.Add(leftPoint2, proof.cb[i])
 		rightPoint2 := privacy.PedCom.CommitAtIndex(new(privacy.Scalar).FromUint64(0), proof.zb[i], privacy.PedersenPrivateKeyIndex)
 
-		if !privacy.IsPointEqual(leftPoint2, rightPoint2) {
+		if !operation.IsPointEqual(leftPoint2, rightPoint2) {
 			privacy.Logger.Log.Errorf("verify one out of many proof statement 2 failed")
 			return false, errors.New("verify one out of many proof statement 2 failed")
 		}
@@ -452,7 +453,7 @@ func (proof OneOutOfManyProof) Verify() (bool, error) {
 
 	rightPoint3 := privacy.PedCom.CommitAtIndex(new(privacy.Scalar).FromUint64(0), proof.zd, privacy.PedersenPrivateKeyIndex)
 
-	if !privacy.IsPointEqual(leftPoint3, rightPoint3) {
+	if !operation.IsPointEqual(leftPoint3, rightPoint3) {
 		privacy.Logger.Log.Errorf("verify one out of many proof statement 3 failed")
 		return false, errors.New("verify one out of many proof statement 3 failed")
 	}

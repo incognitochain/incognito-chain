@@ -3,8 +3,10 @@ package privacy
 import (
 	"encoding/json"
 	"errors"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 )
 
 // hybridCipherText_Old represents to hybridCipherText_Old for Hybrid encryption
@@ -69,7 +71,7 @@ func (ciphertext *HybridCipherText) SetBytes(bytes []byte) error {
 		return NewPrivacyErr(InvalidInputToSetBytesErr, nil)
 	}
 
-	if len(bytes) <  elGamalCiphertextSize {
+	if len(bytes) < elGamalCiphertextSize {
 		// out of range
 		return errors.New("out of range Parse ciphertext")
 	}
@@ -86,7 +88,7 @@ func HybridEncrypt(msg []byte, publicKey *Point) (ciphertext *HybridCipherText, 
 	ciphertext = new(HybridCipherText)
 
 	// Generate a AES key bytes
-	sKeyPoint := RandomPoint()
+	sKeyPoint := operation.RandomPoint()
 	sKeyByte := sKeyPoint.ToBytes()
 	// Encrypt msg using aesKeyByte
 

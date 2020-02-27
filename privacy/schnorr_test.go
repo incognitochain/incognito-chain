@@ -3,18 +3,19 @@ package privacy
 import (
 	"testing"
 
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSchnorrSignature(t *testing.T) {
-	for i := 0; i <100; i++ {
+	for i := 0; i < 100; i++ {
 		// generate Schnorr Private Key
 
 		privKey := new(SchnorrPrivateKey)
-		privKey.Set(RandomScalar(), RandomScalar())
+		privKey.Set(operation.RandomScalar(), operation.RandomScalar())
 
 		// random message to sign
-		data := RandomScalar()
+		data := operation.RandomScalar()
 		// sign on message
 		signature, err := privKey.Sign(data.ToBytesS())
 		assert.Equal(t, nil, err)
@@ -34,14 +35,14 @@ func TestSchnorrSignature(t *testing.T) {
 }
 
 func TestSchnorrSignatureWithoutZ2(t *testing.T) {
-	for i := 0; i <100; i++ {
+	for i := 0; i < 100; i++ {
 		// generate Schnorr Private Key
 
 		privKey := new(SchnorrPrivateKey)
-		privKey.Set(RandomScalar(), new(Scalar).FromUint64(0))
+		privKey.Set(operation.RandomScalar(), new(Scalar).FromUint64(0))
 
 		// random message to sign
-		data := RandomScalar()
+		data := operation.RandomScalar()
 		// sign on message
 		signature, err := privKey.Sign(data.ToBytesS())
 		assert.Equal(t, nil, err)

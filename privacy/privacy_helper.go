@@ -6,10 +6,11 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/curve25519"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 )
 
 func ScalarToBigInt(sc *Scalar) *big.Int {
-	keyR := Reverse(sc.GetKey())
+	keyR := operation.Reverse(sc.GetKey())
 	keyRByte := keyR.ToBytes()
 	bi := new(big.Int).SetBytes(keyRByte[:])
 	return bi
@@ -19,7 +20,7 @@ func BigIntToScalar(bi *big.Int) *Scalar {
 	biByte := common.AddPaddingBigInt(bi, Ed25519KeySize)
 	var key curve25519.Key
 	key.FromBytes(SliceToArray(biByte))
-	keyR := Reverse(key)
+	keyR := operation.Reverse(key)
 	sc, err := new(Scalar).SetKey(&keyR)
 	if err != nil {
 		return nil
@@ -91,9 +92,21 @@ func ConvertScalarArrayToBigIntArray(scalarArr []*Scalar) []*big.Int {
 	res := make([]*big.Int, len(scalarArr))
 
 	for i := 0; i < len(res); i++ {
-		tmp := Reverse(scalarArr[i].GetKey())
+		tmp := operation.Reverse(scalarArr[i].GetKey())
 		res[i] = new(big.Int).SetBytes(ArrayToSlice(tmp.ToBytes()))
 	}
 
 	return res
+}
+
+func SliceToArray(slice []byte) [Ed25519KeySize]byte {
+	var array [Ed25519KeySize]byte
+	copy(array[:], slice)
+	return array
+}
+
+func ArrayToSlice(array [Ed25519KeySize]byte) []byte {
+	var slice []byte
+	slice = array[:]
+	return slice
 }

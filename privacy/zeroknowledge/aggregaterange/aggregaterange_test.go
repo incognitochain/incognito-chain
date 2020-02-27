@@ -2,14 +2,16 @@ package aggregaterange
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"log"
 	"math/rand"
 	"testing"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
@@ -75,8 +77,8 @@ func TestEncodeVectors(t *testing.T) {
 		H := make([]*privacy.Point, n)
 
 		for i := range a {
-			a[i] = privacy.RandomScalar()
-			b[i] = privacy.RandomScalar()
+			a[i] = operation.RandomScalar()
+			b[i] = operation.RandomScalar()
 			G[i] = new(privacy.Point).Set(AggParam.g[i])
 			H[i] = new(privacy.Point).Set(AggParam.h[i])
 		}
@@ -106,7 +108,7 @@ func TestAggregatedRangeProveVerify(t *testing.T) {
 
 		for i := range values {
 			values[i] = uint64(rand.Uint64())
-			rands[i] = privacy.RandomScalar()
+			rands[i] = operation.RandomScalar()
 		}
 		wit.Set(values, rands)
 
@@ -152,7 +154,7 @@ func TestAggregatedRangeProveVerifyUltraFast(t *testing.T) {
 
 		for i := range values {
 			values[i] = uint64(rand.Uint64())
-			rands[i] = privacy.RandomScalar()
+			rands[i] = operation.RandomScalar()
 		}
 		wit.Set(values, rands)
 
@@ -163,13 +165,13 @@ func TestAggregatedRangeProveVerifyUltraFast(t *testing.T) {
 		proofs = append(proofs, proof)
 	}
 	// verify the proof faster
-	res, err,_ := VerifyBatchingAggregatedRangeProofs(proofs)
+	res, err, _ := VerifyBatchingAggregatedRangeProofs(proofs)
 	assert.Equal(t, true, res)
 	assert.Equal(t, nil, err)
 }
 
 func TestBenchmarkAggregatedRangeProveVerifyUltraFast(t *testing.T) {
-	for k := 1; k < 100; k+=5 {
+	for k := 1; k < 100; k += 5 {
 		count := k
 		proofs := make([]*AggregatedRangeProof, 0)
 		start := time.Now()
@@ -184,7 +186,7 @@ func TestBenchmarkAggregatedRangeProveVerifyUltraFast(t *testing.T) {
 
 			for i := range values {
 				values[i] = uint64(rand.Uint64())
-				rands[i] = privacy.RandomScalar()
+				rands[i] = operation.RandomScalar()
 			}
 			wit.Set(values, rands)
 
@@ -291,10 +293,9 @@ func TestInnerProductProveVerifyUltraFast(t *testing.T) {
 			wit.p = new(privacy.Point).ScalarMult(aggParam.u, c)
 		}
 
-
 		for i := range wit.a {
 			wit.p.Add(wit.p, new(privacy.Point).ScalarMult(aggParam.g[i], wit.a[i]))
-			if k == count -1 {
+			if k == count-1 {
 				wit.p.Add(wit.p, new(privacy.Point).ScalarMult(aggParam.h[i], wit.a[i]))
 			} else {
 				wit.p.Add(wit.p, new(privacy.Point).ScalarMult(aggParam.h[i], wit.b[i]))
@@ -311,12 +312,12 @@ func TestInnerProductProveVerifyUltraFast(t *testing.T) {
 	}
 	res := VerifyBatchingInnerProductProofs(proofs, csList)
 	assert.Equal(t, false, res)
-	res = VerifyBatchingInnerProductProofs(proofs[1:],csList[1:])
+	res = VerifyBatchingInnerProductProofs(proofs[1:], csList[1:])
 	assert.Equal(t, false, res)
 	res = VerifyBatchingInnerProductProofs(proofs[:len(proofs)-1], csList[:len(proofs)-1])
 	assert.Equal(t, false, res)
 	res = VerifyBatchingInnerProductProofs(proofs[1:len(proofs)-1], csList[1:len(proofs)-1])
-	assert.Equal(t, true	, res)
+	assert.Equal(t, true, res)
 }
 func benchmarkAggRangeProof_Proof(numberofOutput int, b *testing.B) {
 	wit := new(AggregatedRangeWitness)
@@ -325,7 +326,7 @@ func benchmarkAggRangeProof_Proof(numberofOutput int, b *testing.B) {
 
 	for i := range values {
 		values[i] = uint64(rand.Uint64())
-		rands[i] = privacy.RandomScalar()
+		rands[i] = operation.RandomScalar()
 	}
 	wit.Set(values, rands)
 
@@ -452,7 +453,7 @@ func benchmarkAggRangeProof_Verify(numberofOutput int, b *testing.B) {
 
 	for i := range values {
 		values[i] = uint64(common.RandInt64())
-		rands[i] = privacy.RandomScalar()
+		rands[i] = operation.RandomScalar()
 	}
 	wit.Set(values, rands)
 	proof, _ := wit.Prove()
@@ -471,7 +472,7 @@ func benchmarkAggRangeProof_VerifyFaster(numberofOutput int, b *testing.B) {
 
 	for i := range values {
 		values[i] = uint64(common.RandInt64())
-		rands[i] = privacy.RandomScalar()
+		rands[i] = operation.RandomScalar()
 	}
 	wit.Set(values, rands)
 	proof, _ := wit.Prove()

@@ -3,6 +3,7 @@ package utils
 import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/aggregaterange"
 )
 
@@ -19,7 +20,7 @@ func GenerateChallenge(values [][]byte) *privacy.Scalar {
 		bytes = append(bytes, values[i]...)
 	}
 
-	hash := privacy.HashToScalar(bytes)
+	hash := operation.HashToScalar(bytes)
 	//res := new(big.Int).SetBytes(hash)
 	//res.Mod(res, privacy.Curve.Params().N)
 	return hash

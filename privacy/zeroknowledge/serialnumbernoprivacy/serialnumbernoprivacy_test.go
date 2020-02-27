@@ -2,14 +2,16 @@ package serialnumbernoprivacy
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestPKSNNoPrivacy(t *testing.T) {
-	for i:=0; i<1000; i++{
+	for i := 0; i < 1000; i++ {
 		// prepare witness for Serial number no privacy protocol
 		sk := privacy.GeneratePrivateKey(privacy.RandBytes(10))
 		skScalar := new(privacy.Scalar).FromBytesS(sk)
@@ -22,7 +24,7 @@ func TestPKSNNoPrivacy(t *testing.T) {
 		if err != nil {
 			fmt.Println("Invalid point key valu")
 		}
-		SND := privacy.RandomScalar()
+		SND := operation.RandomScalar()
 
 		serialNumber := new(privacy.Point).Derive(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex], skScalar, SND)
 

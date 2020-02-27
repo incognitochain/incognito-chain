@@ -137,7 +137,7 @@ func (coin *Coin) HashH() *common.Hash {
 func (coin *Coin) CommitAll() error {
 	shardID := common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())
 	values := []*Scalar{new(Scalar).FromUint64(0), new(Scalar).FromUint64(coin.value), coin.snDerivator, new(Scalar).FromUint64(uint64(shardID)), coin.randomness}
-	commitment, err := PedCom.commitAll(values)
+	commitment, err := PedCom.CommitAll(values)
 	if err != nil {
 		return err
 	}
@@ -330,7 +330,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 			// out of range
 			return errors.New("out of range Parse PublicKey")
 		}
-		coin.value = new(big.Int).SetBytes(coinBytes[offset:offset+int(lenField)]).Uint64()
+		coin.value = new(big.Int).SetBytes(coinBytes[offset : offset+int(lenField)]).Uint64()
 		offset += int(lenField)
 	}
 

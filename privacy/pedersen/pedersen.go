@@ -1,15 +1,8 @@
-package privacy
+package pedersen
 
 import (
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/pkg/errors"
-)
-
-const (
-	PedersenPrivateKeyIndex = byte(0x00)
-	PedersenValueIndex      = byte(0x01)
-	PedersenSndIndex        = byte(0x02)
-	PedersenShardIDIndex    = byte(0x03)
-	PedersenRandomnessIndex = byte(0x04)
 )
 
 // PedersenCommitment represents the parameters for the commitment
@@ -22,22 +15,20 @@ type PedersenCommitment struct {
 	// G[4]: Randomness
 }
 
-func newPedersenParams() PedersenCommitment {
+func NewPedersenParams() PedersenCommitment {
 	var pcm PedersenCommitment
 	const capacity = 5 // fixed value = 5
 	pcm.G = make([]*Point, capacity)
 	pcm.G[0] = new(Point).ScalarMultBase(new(Scalar).FromUint64(1))
 
 	for i := 1; i < len(pcm.G); i++ {
-		pcm.G[i] = HashToPointFromIndex(int64(i), CStringBulletProof)
+		pcm.G[i] = operation.HashToPointFromIndex(int64(i), operation.CStringBulletProof)
 	}
 	return pcm
 }
 
-var PedCom = newPedersenParams()
-
 // CommitAll commits a list of PCM_CAPACITY value(s)
-func (com PedersenCommitment) commitAll(openings []*Scalar) (*Point, error) {
+func (com PedersenCommitment) CommitAll(openings []*Scalar) (*Point, error) {
 	if len(openings) != len(com.G) {
 		return nil, errors.New("invalid length of openings to commit")
 	}
@@ -59,5 +50,3 @@ func (com PedersenCommitment) CommitAtIndex(value, rand *Scalar, index byte) *Po
 	//return commitment
 	return new(Point).AddPedersen(value, com.G[index], rand, com.G[PedersenRandomnessIndex])
 }
-
-

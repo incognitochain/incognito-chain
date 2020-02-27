@@ -2,8 +2,10 @@ package aggregaterange
 
 import (
 	"errors"
-	"github.com/incognitochain/incognito-chain/privacy"
 	"math"
+
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 )
 
 type InnerProductWitness struct {
@@ -258,7 +260,7 @@ func (proof InnerProductProof) Verify(aggParam *bulletproofParams) bool {
 	leftHS := new(privacy.Point).Add(leftHSPart1, leftHSPart2)
 	leftHS.Add(leftHS, proof.p)
 
-	res := privacy.IsPointEqual(rightHS, leftHS)
+	res := operation.IsPointEqual(rightHS, leftHS)
 	if !res {
 		privacy.Logger.Log.Error("Inner product argument failed:")
 		privacy.Logger.Log.Error("LHS: %v\n", leftHS)
@@ -287,7 +289,7 @@ func VerifyBatchingInnerProductProofs(proofs []*InnerProductProof, csList [][]by
 		bsInverseAlphaList[k] = new(privacy.Scalar).FromUint64(0)
 	}
 	for i := 0; i < batchSize; i++ {
-		alpha := privacy.RandomScalar()
+		alpha := operation.RandomScalar()
 		abAlpha := new(privacy.Scalar).Mul(proofs[i].a, proofs[i].b)
 		abAlpha.Mul(abAlpha, alpha)
 		sum_abAlpha.Add(sum_abAlpha, abAlpha)
@@ -365,7 +367,7 @@ func VerifyBatchingInnerProductProofs(proofs []*InnerProductProof, csList [][]by
 	RHS.Add(RHS, prod_PAlpha)
 	//fmt.Println("RHS:", RHS)
 
-	res := privacy.IsPointEqual(RHS, LHS)
+	res := operation.IsPointEqual(RHS, LHS)
 	if !res {
 		privacy.Logger.Log.Error("Inner product argument failed:")
 		privacy.Logger.Log.Error("LHS: %v\n", LHS)
