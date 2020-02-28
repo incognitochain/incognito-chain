@@ -94,7 +94,7 @@ func (sub *SubManager) Subscribe(forced bool) error {
 	// 	return role, topics, errors.Errorf("lole not matching with highway, local = %+v, highway = %+v", newRole, roleOfTopics)
 	// }
 
-	Logger.Infof("Received topics = %+v, oldTopics = %+v", newTopics, sub.topics)
+	Logger.Debugf("Received topics = %+v, oldTopics = %+v", newTopics, sub.topics)
 
 	// Subscribing
 	if err := sub.subscribeNewTopics(newTopics, sub.topics); err != nil {
@@ -149,20 +149,20 @@ func (sub *SubManager) subscribeNewTopics(newTopics, subscribed msgToTopics) err
 
 	// Subscribe to new topics
 	for m, topicList := range newTopics {
-		Logger.Infof("Process message %v and topic %v", m, topicList)
+		Logger.Debug("Process message %v and topic %v", m, topicList)
 		for _, t := range topicList {
 			if found(t.Name, subscribed) {
-				Logger.Infof("Continue 1 %v %v", t.Name, subscribed)
+				Logger.Debugf("Continue 1 %v %v", t.Name, subscribed)
 				continue
 			}
 
 			if t.Act == proto.MessageTopicPair_PUB {
 				sub.subs[m] = append(sub.subs[m], Topic{Name: t.Name, Sub: nil, Act: t.Act})
-				Logger.Infof("Continue 2 %v %v", t.Name, subscribed)
+				Logger.Debugf("Continue 2 %v %v", t.Name, subscribed)
 				continue
 			}
 
-			Logger.Info("subscribing", m, t.Name)
+			Logger.Debugf("subscribing", m, t.Name)
 
 			s, err := sub.subscriber.Subscribe(t.Name)
 			if err != nil {

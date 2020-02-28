@@ -101,7 +101,7 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 
 			err := blockchain.config.ShardPool[newBlk.Header.ShardID].AddShardBlock(newBlk)
 			if err != nil {
-				Logger.log.Errorf("Add block %+v from shard %+v error %+v: \n", newBlk.Header.Height, newBlk.Header.ShardID, err)
+				Logger.log.Warnf("Shard block pool add block %d from shard %d with error %s: \n", newBlk.Header.Height, newBlk.Header.ShardID, err.Error())
 			}
 		}
 	}
