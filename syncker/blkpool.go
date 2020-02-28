@@ -26,8 +26,7 @@ func (pool *BlkPool) Start() {
 		select {
 		case f := <-pool.action:
 			f()
-		default:
-			<-ticker.C
+		case <-ticker.C:
 			//TODO: loop through all prevhash, delete if all nextHash is deleted
 		}
 	}
@@ -72,4 +71,20 @@ func (pool *BlkPool) GetNextBlock(prevhash string, shouldGetLatest bool) common.
 		res <- nil
 	}
 	return (<-res)
+}
+
+func (pool *BlkPool) GetBlockForProducer(currentHash string) []common.BlockPoolInterface {
+	res := make(chan []common.BlockPoolInterface)
+	pool.action <- func() {
+		res <- GetFinalBlocksInS2BPool(currentHash, pool.BlkPoolByHash, pool.BlkPoolByPrevHash)
+	}
+	return <-res
+}
+
+func (pool *BlkPool) GetLongestChain(currentHash string) []common.BlockPoolInterface {
+	res := make(chan []common.BlockPoolInterface)
+	pool.action <- func() {
+		res <- GetLongestChain(currentHash, pool.BlkPoolByHash, pool.BlkPoolByPrevHash)
+	}
+	return <-res
 }

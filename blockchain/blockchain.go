@@ -35,7 +35,6 @@ type BlockChain struct {
 	chainLock sync.Mutex
 
 	cQuitSync        chan struct{}
-	Synker           Synker
 	ConsensusOngoing bool
 	//RPCClient        *rpccaller.RPCClient
 	IsTest bool
@@ -67,7 +66,6 @@ type Config struct {
 	PubSubManager     *pubsub.PubSubManager
 	RandomClient      btc.RandomClient
 	Server            interface {
-		BoardcastNodeState() error
 		PublishNodeState(userLayer string, shardID int) error
 
 		PushMessageGetBlockBeaconByHeight(from uint64, to uint64) error
@@ -122,10 +120,7 @@ func NewBlockChain(config *Config, isTest bool) *BlockChain {
 	bc.BestState.Beacon.Params = make(map[string]string)
 	bc.BestState.Beacon.ShardCommittee = make(map[byte][]incognitokey.CommitteePublicKey)
 	bc.BestState.Beacon.ShardPendingValidator = make(map[byte][]incognitokey.CommitteePublicKey)
-	bc.Synker = Synker{
-		blockchain: bc,
-		cQuit:      bc.cQuitSync,
-	}
+
 	return bc
 }
 
@@ -150,7 +145,6 @@ func (blockchain *BlockChain) Init(config *Config) error {
 		return err
 	}
 	blockchain.cQuitSync = make(chan struct{})
-	blockchain.Synker = newSyncker(blockchain.cQuitSync, blockchain, blockchain.config.PubSubManager)
 	return nil
 }
 

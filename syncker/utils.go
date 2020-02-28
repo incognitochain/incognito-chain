@@ -4,7 +4,15 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"reflect"
 )
+
+const RUNNING_SYNC = "running_sync"
+const STOP_SYNC = "stop_sync"
+
+func isNil(v interface{}) bool {
+	return v == nil || (reflect.ValueOf(v).Kind() == reflect.Ptr && reflect.ValueOf(v).IsNil())
+}
 
 func InsertBatchBlock(chain Chain, blocks []common.BlockInterface) (int, error) {
 	curEpoch := chain.GetEpoch()
@@ -47,4 +55,71 @@ func InsertBatchBlock(chain Chain, blocks []common.BlockInterface) (int, error) 
 		}
 	}
 	return len(sameCommitteeBlock), nil
+}
+
+func GetFinalBlocksInS2BPool(currentFinalHash string, byHash map[string]common.BlockPoolInterface, byPrevHash map[string][]string) (res []common.BlockPoolInterface) {
+	var finalBlock common.BlockPoolInterface = nil
+	var traverse func(currentHash string)
+	traverse = func(currentHash string) {
+		if byPrevHash[currentHash] == nil {
+			return
+		} else {
+			if finalBlock == nil {
+				finalBlock = byHash[currentHash]
+			} else if finalBlock.GetHeight() < byHash[currentHash].GetHeight() {
+				finalBlock = byHash[currentHash]
+			}
+			for _, nextHash := range byPrevHash[currentHash] {
+				traverse(nextHash)
+			}
+		}
+	}
+	traverse(currentFinalHash)
+
+	if finalBlock == nil {
+		return nil
+	}
+
+	for {
+		res = append([]common.BlockPoolInterface{byHash[finalBlock.GetHash()]}, res...)
+		finalBlock = byHash[finalBlock.GetPrevHash()]
+		if finalBlock == nil {
+			break
+		}
+	}
+	return res
+}
+
+func GetLongestChain(currentFinalHash string, byHash map[string]common.BlockPoolInterface, byPrevHash map[string][]string) (res []common.BlockPoolInterface) {
+	var finalBlock common.BlockPoolInterface = nil
+	var traverse func(currentHash string)
+	traverse = func(currentHash string) {
+		if byPrevHash[currentHash] == nil {
+			if finalBlock == nil {
+				finalBlock = byHash[currentHash]
+			} else if finalBlock.GetHeight() < byHash[currentHash].GetHeight() {
+				finalBlock = byHash[currentHash]
+			}
+			return
+		} else {
+
+			for _, nextHash := range byPrevHash[currentHash] {
+				traverse(nextHash)
+			}
+		}
+	}
+	traverse(currentFinalHash)
+
+	if finalBlock == nil {
+		return nil
+	}
+
+	for {
+		res = append([]common.BlockPoolInterface{byHash[finalBlock.GetHash()]}, res...)
+		finalBlock = byHash[finalBlock.GetPrevHash()]
+		if finalBlock == nil {
+			break
+		}
+	}
+	return res
 }

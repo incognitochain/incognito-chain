@@ -6,12 +6,10 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
+	"github.com/incognitochain/incognito-chain/wire"
 	"sync"
 	"time"
 )
-
-const RUNNING_SYNC = "running_sync"
-const STOP_SYNC = "stop_sync"
 
 type ShardPeerState struct {
 	Timestamp      int64
@@ -19,45 +17,84 @@ type ShardPeerState struct {
 	BestViewHeight uint64
 	processed      bool
 }
-type CrossShardPeerState struct {
-	Timestamp int64
-	Height    map[byte]uint64 //fromShardID -> hieght
-	processed bool
-}
 
 type ShardSyncProcess struct {
-	IsCommittee         bool
-	FewBlockBehind      bool
-	ShardID             int
-	Status              string                         //stop, running
-	ShardPeerState      map[string]ShardPeerState      //peerid -> state
-	CrossShardPeerState map[string]CrossShardPeerState //peerID -> state
-	Server              Server
-	Chain               Chain
-	BeaconChain         Chain
-	ShardPool           *BlkPool
-	lock                *sync.RWMutex
+	IsCommittee      bool
+	FewBlockBehind   bool
+	ShardID          int
+	Status           string                    //stop, running
+	ShardPeerState   map[string]ShardPeerState //peerid -> state
+	ShardPeerStateCh chan *wire.MessagePeerState
+	//CrossShardPeerState map[string]CrossShardPeerState //peerID -> state
+	Server      Server
+	Chain       Chain
+	BeaconChain Chain
+	ShardPool   *BlkPool
+	actionCh    chan func()
+	lock        *sync.RWMutex
 }
 
 func NewShardSyncProcess(shardID int, server Server, beaconChain, chain Chain) *ShardSyncProcess {
 	s := &ShardSyncProcess{
-		ShardID:     shardID,
-		Status:      STOP_SYNC,
-		Server:      server,
-		Chain:       chain,
-		BeaconChain: beaconChain,
-		ShardPool:   NewBlkPool("ShardPool-" + string(shardID)),
-		lock:        new(sync.RWMutex),
+		ShardID:          shardID,
+		Status:           STOP_SYNC,
+		Server:           server,
+		Chain:            chain,
+		BeaconChain:      beaconChain,
+		ShardPool:        NewBlkPool("ShardPool-" + string(shardID)),
+		ShardPeerState:   make(map[string]ShardPeerState),
+		ShardPeerStateCh: make(chan *wire.MessagePeerState),
+		actionCh:         make(chan func()),
 	}
 
 	go s.syncShardProcess()
 	go s.insertShardBlockFromPool()
-	go s.syncCrossShardPoolProcess()
 	return s
 }
 
+func (s *ShardSyncProcess) GetShardPeerStates() map[string]ShardPeerState {
+	res := make(chan map[string]ShardPeerState)
+	s.actionCh <- func() {
+		ps := make(map[string]ShardPeerState)
+		for k, v := range s.ShardPeerState {
+			ps[k] = v
+		}
+		res <- ps
+	}
+	return <-res
+}
+
 func (s *ShardSyncProcess) Start() {
+	if s.Status == RUNNING_SYNC {
+		return
+	}
 	s.Status = RUNNING_SYNC
+	go func() {
+		ticker := time.NewTicker(time.Millisecond * 500)
+		for {
+			if s.Status != RUNNING_SYNC {
+				break
+			}
+			select {
+			case f := <-s.actionCh:
+				f()
+			case shardPeerState := <-s.ShardPeerStateCh:
+				for sid, peerShardState := range shardPeerState.Shards {
+					if int(sid) == s.ShardID {
+						s.ShardPeerState[shardPeerState.SenderID] = ShardPeerState{
+							Timestamp:      shardPeerState.Timestamp,
+							BestViewHash:   peerShardState.BlockHash.String(),
+							BestViewHeight: peerShardState.Height,
+						}
+					}
+				}
+
+			case <-ticker.C:
+				s.Chain.SetReady(s.FewBlockBehind)
+			}
+		}
+	}()
+
 }
 
 func (s *ShardSyncProcess) Stop() {
@@ -93,130 +130,95 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 	}
 }
 
-func (s *ShardSyncProcess) syncShardProcess() {
-
-	s.Chain.SetReady(s.FewBlockBehind)
-
-	requestCnt := 0
+func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) (requestCnt int) {
+	blockBuffer := []common.BlockInterface{}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer func() {
+		if requestCnt == 0 {
+			pState.processed = true
+		}
+		cancel()
+	}()
+
+	if pState.processed {
+		return
+	}
+
+	if pState.BestViewHeight <= s.Chain.GetBestViewHeight() {
+		return
+	}
+
+	//fmt.Println("SYNCKER Request Shard Block", peerID, s.ShardID, s.Chain.GetBestViewHeight()+1, pState.BestViewHeight)
+	ch, err := s.Server.RequestBlocksViaStream(ctx, peerID, s.ShardID, proto.BlkType_BlkShard, s.Chain.GetBestViewHeight()+1, s.Chain.GetFinalViewHeight(), pState.BestViewHeight, pState.BestViewHash)
+	if err != nil {
+		fmt.Println("Syncker: create channel fail")
+		return
+	}
+
+	requestCnt++
+	insertTime := time.Now()
+	for {
+		select {
+		case blk := <-ch:
+			if !isNil(blk) {
+				blockBuffer = append(blockBuffer, blk)
+				if blk.(*blockchain.ShardBlock).Header.BeaconHeight > s.BeaconChain.GetBestViewHeight() {
+					time.Sleep(5 * time.Second)
+				}
+				if blk.(*blockchain.ShardBlock).Header.BeaconHeight > s.BeaconChain.GetBestViewHeight() {
+					return
+				}
+			}
+
+			if len(blockBuffer) >= 350 || (len(blockBuffer) > 0 && (isNil(blk) || time.Since(insertTime) > time.Millisecond*1000)) {
+				insertBlkCnt := 0
+				for {
+					time1 := time.Now()
+					if successBlk, err := InsertBatchBlock(s.Chain, blockBuffer); err != nil {
+						return
+					} else {
+						insertBlkCnt += successBlk
+						fmt.Printf("Syncker Insert %d shard (from %d to %d) elaspse %f \n", successBlk, blockBuffer[0].GetHeight(), blockBuffer[len(blockBuffer)-1].GetHeight(), time.Since(time1).Seconds())
+						if successBlk >= len(blockBuffer) {
+							break
+						}
+						blockBuffer = blockBuffer[successBlk:]
+					}
+				}
+
+				insertTime = time.Now()
+				blockBuffer = []common.BlockInterface{}
+			}
+
+			if isNil(blk) && len(blockBuffer) == 0 {
+				return
+			}
+		}
+	}
+
+}
+func (s *ShardSyncProcess) syncShardProcess() {
+	for {
+		requestCnt := 0
+		if s.Status != RUNNING_SYNC {
+			s.FewBlockBehind = false
+			time.Sleep(time.Second * 5)
+			continue
+		}
+
+		for peerID, pState := range s.GetShardPeerStates() {
+			requestCnt += s.streamFromPeer(peerID, pState)
+		}
+
 		if requestCnt > 0 {
 			s.FewBlockBehind = false
-			time.AfterFunc(0, s.syncShardProcess)
+			s.syncShardProcess()
 		} else {
 			if len(s.ShardPeerState) > 0 {
 				s.FewBlockBehind = true
 			}
-			time.AfterFunc(time.Second*1, s.syncShardProcess)
+			time.Sleep(time.Second * 5)
 		}
-	}()
-
-	if s.Status != RUNNING_SYNC {
-		return
 	}
-
-	s.lock.RLock()
-	defer s.lock.RUnlock()
-
-	for peerID, pState := range s.ShardPeerState {
-		if pState.processed {
-			continue
-		}
-
-		if pState.BestViewHeight <= s.Chain.GetBestViewHeight() {
-			continue
-		}
-
-		blockBuffer := []common.BlockInterface{}
-		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-		defer cancel()
-
-		fmt.Println("SYNCKER Request Shard Block", peerID, s.ShardID, s.Chain.GetBestViewHeight()+1, pState.BestViewHeight)
-
-		ch, err := s.Server.RequestBlocksViaStream(ctx, peerID, s.ShardID, proto.BlkType_BlkShard, s.Chain.GetBestViewHeight()+1, s.Chain.GetFinalViewHeight(), pState.BestViewHeight, pState.BestViewHash)
-		if err != nil {
-			fmt.Println("Syncker: create channel fail")
-			continue
-		}
-
-		requestCnt++
-		insertTime := time.Now()
-		for {
-			select {
-			case blk := <-ch:
-				if !isNil(blk) {
-					blockBuffer = append(blockBuffer, blk)
-					if blk.(*blockchain.ShardBlock).Header.BeaconHeight > s.BeaconChain.GetBestViewHeight() {
-						time.Sleep(5 * time.Second)
-					}
-					if blk.(*blockchain.ShardBlock).Header.BeaconHeight > s.BeaconChain.GetBestViewHeight() {
-						goto CANCEL_REQUEST
-					}
-				}
-
-				if len(blockBuffer) >= 350 || (len(blockBuffer) > 0 && (isNil(blk) || time.Since(insertTime) > time.Millisecond*1000)) {
-					insertBlkCnt := 0
-					for {
-						time1 := time.Now()
-						if successBlk, err := InsertBatchBlock(s.Chain, blockBuffer); err != nil {
-							//fmt.Println("Syncker:", err)
-							goto CANCEL_REQUEST
-						} else {
-							insertBlkCnt += successBlk
-							fmt.Printf("Syncker Insert %d shard (from %d to %d) elaspse %f \n", successBlk, blockBuffer[0].GetHeight(), blockBuffer[len(blockBuffer)-1].GetHeight(), time.Since(time1).Seconds())
-							if successBlk >= len(blockBuffer) {
-								break
-							}
-							blockBuffer = blockBuffer[successBlk:]
-						}
-					}
-
-					insertTime = time.Now()
-					blockBuffer = []common.BlockInterface{}
-				}
-
-				if isNil(blk) && len(blockBuffer) == 0 {
-					//fmt.Println("Syncker: blk nil")
-					goto CANCEL_REQUEST
-				}
-
-			}
-		}
-
-	CANCEL_REQUEST:
-		//fmt.Println("Syncker: request cancel")
-		pState.processed = true
-		return
-	}
-}
-
-func (s *ShardSyncProcess) syncCrossShardPoolProcess() {
-	defer time.AfterFunc(time.Millisecond*500, s.syncCrossShardPoolProcess)
-	if s.Status != RUNNING_SYNC || !s.IsCommittee || !s.FewBlockBehind {
-		return
-	}
-	//TODO : sync CrossShard direct from shard node
-
-	//TODO optional later: sync CrossShard  from other validator pool
-	//for peerID, pState := range s.CrossShardPeerState {
-	//	for fromSID, height := range pState.Height {
-	//		if height <= s.Server.GetCrossShardPool(s.ShardID).GetLatestCrossShardFinalHeight(fromSID) {
-	//			continue
-	//		}
-	//		ch, stop := s.Server.RequestCrossShardBlock(peerID, int(s.ShardID), s.Server.GetCrossShardPool(s.ShardID).GetLatestCrossShardFinalHeight(fromSID))
-	//		for {
-	//			shouldBreak := false
-	//			select {
-	//			case block := <-ch:
-	//				if err := s.Server.GetCrossShardPool(s.ShardID).AddBlock(block); err != nil {
-	//					shouldBreak = true
-	//				}
-	//			}
-	//			if shouldBreak {
-	//				stop <- 1
-	//				break
-	//			}
-	//		}
-	//	}
-	//}
 
 }

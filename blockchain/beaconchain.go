@@ -64,6 +64,14 @@ func (chain *BeaconChain) InsertBatchBlock(blocks []common.BlockInterface) (int,
 	return len(sameCommitteeBlock), nil
 }
 
+func (s *BeaconChain) GetShardBestViewHash() map[byte]common.Hash {
+	return s.BestState.GetBestShardHash()
+}
+
+func (s *BeaconChain) GetShardBestViewHeight() map[byte]uint64 {
+	return s.BestState.GetBestShardHeight()
+}
+
 func (s *BeaconChain) GetEpoch() uint64 {
 	return s.BestState.Epoch
 }
@@ -135,7 +143,8 @@ func (chain *BeaconChain) GetLastProposerIndex() int {
 func (chain *BeaconChain) CreateNewBlock(round int) (common.BlockInterface, error) {
 	// chain.lock.Lock()
 	// defer chain.lock.Unlock()
-	newBlock, err := chain.BlockGen.NewBlockBeacon(round, chain.Blockchain.Synker.GetClosestShardToBeaconPoolState())
+	//TODO:
+	newBlock, err := chain.BlockGen.NewBlockBeacon(round, nil)
 	if err != nil {
 		return nil, err
 	}

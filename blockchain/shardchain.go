@@ -103,7 +103,8 @@ func (chain *ShardChain) CreateNewBlock(round int) (common.BlockInterface, error
 	}
 
 	Logger.log.Infof("Begin Enter New Block Shard %+v", time.Now())
-	newBlock, err := chain.BlockGen.NewBlockShard(byte(chain.GetShardID()), round, chain.Blockchain.Synker.GetClosestCrossShardPoolState(), beaconHeight, start)
+	//TODO: pool
+	newBlock, err := chain.BlockGen.NewBlockShard(byte(chain.GetShardID()), round, nil, beaconHeight, start)
 	Logger.log.Infof("Begin Finish New Block Shard %+v", time.Now())
 	if err != nil {
 		return nil, err

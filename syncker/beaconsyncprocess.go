@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
-	"reflect"
-	"sync"
+	"github.com/incognitochain/incognito-chain/wire"
 	"time"
 )
 
@@ -17,54 +16,81 @@ type BeaconPeerState struct {
 	processed      bool
 }
 
-type S2BPeerState struct {
-	Timestamp int64
-	Height    map[int]uint64 //shardid -> height
-	processed bool
-}
-
 type BeaconSyncProcess struct {
-	Status           string //stop, running
-	IsCommittee      bool
-	FewBlockBehind   bool
-	BeaconPeerStates map[string]BeaconPeerState //sender -> state
-	S2BPeerState     map[string]S2BPeerState    //sender -> state
-	Server           Server
-	Chain            Chain
-	ChainID          int
-
-	BeaconPool *BlkPool
-	S2BPool    *BlkPool
-	lock       *sync.RWMutex
+	Status            string //stop, running
+	IsCommittee       bool
+	FewBlockBehind    bool
+	BeaconPeerStates  map[string]BeaconPeerState //sender -> state
+	BeaconPeerStateCh chan *wire.MessagePeerState
+	Server            Server
+	Chain             Chain
+	ChainID           int
+	BeaconPool        *BlkPool
+	S2BSyncProcess    *S2BSyncProcess
+	actionCh          chan func()
 }
 
-func NewBeaconSyncProcess(server Server, chain Chain) *BeaconSyncProcess {
+func NewBeaconSyncProcess(server Server, chain BeaconChainInterface) *BeaconSyncProcess {
 	s := &BeaconSyncProcess{
-		Status:     STOP_SYNC,
-		Server:     server,
-		Chain:      chain,
-		BeaconPool: NewBlkPool("BeaconPool"),
-		S2BPool:    NewBlkPool("ShardToBeaconPool"),
-		lock:       new(sync.RWMutex),
+		Status:            STOP_SYNC,
+		Server:            server,
+		Chain:             chain,
+		BeaconPool:        NewBlkPool("BeaconPool"),
+		BeaconPeerStates:  make(map[string]BeaconPeerState),
+		BeaconPeerStateCh: make(chan *wire.MessagePeerState),
+		actionCh:          make(chan func()),
 	}
-
-	go s.syncBeaconProcess()
+	s.S2BSyncProcess = NewS2BSyncProcess(server, s, chain)
+	go s.syncBeacon()
 	go s.insertBeaconBlockFromPool()
-	go s.syncS2BPoolProcess()
 	return s
 }
 
 func (s *BeaconSyncProcess) Start(chainID int) {
+	if s.Status == RUNNING_SYNC {
+		return
+	}
 	s.ChainID = chainID
 	s.Status = RUNNING_SYNC
+	go func() {
+		ticker := time.NewTicker(time.Millisecond * 500)
+		for {
+			if s.Status != RUNNING_SYNC {
+				break
+			}
+
+			select {
+			case f := <-s.actionCh:
+				f()
+			case beaconPeerState := <-s.BeaconPeerStateCh:
+				s.BeaconPeerStates[beaconPeerState.SenderID] = BeaconPeerState{
+					Timestamp:      beaconPeerState.Timestamp,
+					BestViewHash:   beaconPeerState.Beacon.BlockHash.String(),
+					BestViewHeight: beaconPeerState.Beacon.Height,
+				}
+			case <-ticker.C:
+				s.Chain.SetReady(s.FewBlockBehind)
+			}
+		}
+	}()
+	s.S2BSyncProcess.Start()
+}
+
+func (s *BeaconSyncProcess) GetBeaconPeerStates() map[string]BeaconPeerState {
+	res := make(chan map[string]BeaconPeerState)
+	s.actionCh <- func() {
+		ps := make(map[string]BeaconPeerState)
+		for k, v := range s.BeaconPeerStates {
+			ps[k] = v
+		}
+		res <- ps
+	}
+	return <-res
 }
 
 func (s *BeaconSyncProcess) Stop() {
 	s.Status = STOP_SYNC
-}
-
-func isNil(v interface{}) bool {
-	return v == nil || (reflect.ValueOf(v).Kind() == reflect.Ptr && reflect.ValueOf(v).IsNil())
+	s.S2BSyncProcess.Stop()
 }
 
 func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
@@ -89,7 +115,7 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 	if isNil(blk) {
 		return
 	}
-	//fmt.Println("Syncker: Insert beacon from pool", blk.(common.BlockInterface).GetHeight())
+	fmt.Println("Syncker: Insert beacon from pool", blk.(common.BlockInterface).GetHeight())
 	s.BeaconPool.RemoveBlock(blk.GetHash())
 	if err := s.Chain.ValidateBlockSignatures(blk.(common.BlockInterface), s.Chain.GetCommittee()); err != nil {
 		return
@@ -99,135 +125,89 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 	}
 }
 
-func (s *BeaconSyncProcess) syncBeaconProcess() {
-	s.Chain.SetReady(s.FewBlockBehind)
-	requestCnt := 0
+func (s *BeaconSyncProcess) syncBeacon() {
 
-	defer func() {
+	for {
+		requestCnt := 0
+		if s.Status != RUNNING_SYNC {
+			s.FewBlockBehind = false
+			time.Sleep(time.Second)
+			continue
+		}
+
+		for peerID, pState := range s.GetBeaconPeerStates() {
+			requestCnt += s.streamFromPeer(peerID, pState)
+		}
+
+		//last check, if we still need to sync more
 		if requestCnt > 0 {
 			s.FewBlockBehind = false
-			time.AfterFunc(0, s.syncBeaconProcess)
 		} else {
 			if len(s.BeaconPeerStates) > 0 {
 				s.FewBlockBehind = true
 			}
-			time.AfterFunc(time.Second*1, s.syncBeaconProcess)
+			time.Sleep(time.Second * 5)
 		}
-	}()
-
-	if s.Status != RUNNING_SYNC {
-		return
 	}
 
-	s.lock.RLock()
-	defer s.lock.RUnlock()
-
-	for peerID, pState := range s.BeaconPeerStates {
-
-		toHeight := pState.BestViewHeight
-		if s.ChainID != -1 { //if not beacon committee, not insert the newest block (incase we need to revert beacon block)
-			toHeight -= 1
-		}
-
-		if toHeight <= s.Chain.GetBestViewHeight() {
-			continue
-		}
-
-		blockBuffer := []common.BlockInterface{}
-		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-		defer cancel()
-
-		ch, err := s.Server.RequestBlocksViaStream(ctx, peerID, -1, proto.BlkType_BlkBc, s.Chain.GetBestViewHeight()+1, s.Chain.GetFinalViewHeight(), toHeight, pState.BestViewHash)
-		if err != nil {
-			fmt.Println("Syncker: create channel fail")
-			continue
-		}
-
-		requestCnt++
-		insertTime := time.Now()
-		for {
-			select {
-			case blk := <-ch:
-				if !isNil(blk) {
-					blockBuffer = append(blockBuffer, blk)
-				}
-
-				if len(blockBuffer) >= 350 || (len(blockBuffer) > 0 && (isNil(blk) || time.Since(insertTime) > time.Millisecond*1000)) {
-					insertBlkCnt := 0
-					for {
-						//time1 := time.Now()
-						if successBlk, err := InsertBatchBlock(s.Chain, blockBuffer); err != nil {
-							//fmt.Printf("Syncker Insert %d beacon (from %d to %d) elaspse %f \n", successBlk, blockBuffer[0].GetHeight(), blockBuffer[successBlk-1].GetHeight(), time.Since(time1).Seconds())
-							goto CANCEL_REQUEST
-						} else {
-							insertBlkCnt += successBlk
-							//fmt.Printf("Syncker Insert %d beacon (from %d to %d) elaspse %f \n", successBlk, blockBuffer[0].GetHeight(), blockBuffer[len(blockBuffer)-1].GetHeight(), time.Since(time1).Seconds())
-							if successBlk >= len(blockBuffer) {
-								break
-							}
-							blockBuffer = blockBuffer[successBlk:]
-						}
-					}
-
-					insertTime = time.Now()
-					blockBuffer = []common.BlockInterface{}
-				}
-
-				if isNil(blk) && len(blockBuffer) == 0 {
-					//fmt.Println("Syncker: blk nil")GetBestViewHeight()+1
-					goto CANCEL_REQUEST
-				}
-
-			}
-		}
-
-	CANCEL_REQUEST:
-		//fmt.Println("Syncker: request cancel")
-		return
-	}
 }
 
-func (s *BeaconSyncProcess) syncS2BPoolProcess() {
-	defer time.AfterFunc(time.Millisecond*500, s.syncS2BPoolProcess)
-	if s.Status != RUNNING_SYNC || !s.IsCommittee || !s.FewBlockBehind {
-		//fmt.Printf("syncker: not sync s2b notRunning:%v notCommmittee:%v notReady:%v \n", s.Status != RUNNING_SYNC, !s.IsCommittee, !s.FewBlockBehind)
+func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState) (requestCnt int) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	blockBuffer := []common.BlockInterface{}
+	defer func() {
+		if requestCnt == 0 {
+			pState.processed = true
+		}
+		cancel()
+	}()
+
+	toHeight := pState.BestViewHeight
+	//process param
+	if s.ChainID != -1 { //if not beacon committee, not insert the newest block (incase we need to revert beacon block)
+		toHeight -= 1
+	}
+
+	if toHeight <= s.Chain.GetBestViewHeight() {
 		return
 	}
 
-	s.lock.RLock()
-	defer s.lock.RUnlock()
+	//stream
+	ch, err := s.Server.RequestBlocksViaStream(ctx, peerID, -1, proto.BlkType_BlkBc, s.Chain.GetBestViewHeight()+1, s.Chain.GetFinalViewHeight(), toHeight, pState.BestViewHash)
+	if err != nil {
+		fmt.Println("Syncker: create channel fail")
+		return
+	}
 
-	//fmt.Println("syncker: try sync s2b")
-	for peerID, pState := range s.S2BPeerState {
-		for fromSID, height := range pState.Height {
-			if time.Now().Unix()-pState.Timestamp > 30 {
-				continue
-			}
-			fmt.Println("syncker:", peerID, fromSID, height)
-
-			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-			defer cancel()
-
-			//TODO: retrieve information from pool -> request missing block
-			ch, err := s.Server.RequestBlocksViaStream(ctx, peerID, -1, proto.BlkType_BlkS2B, s.Chain.Get, s.Chain.GetFinalViewHeight(), toHeight, pState.BestViewHash)
-			if err != nil {
-				fmt.Println("Syncker: create channel fail")
-				continue
+	//receive
+	requestCnt++
+	insertTime := time.Now()
+	for {
+		select {
+		case blk := <-ch:
+			if !isNil(blk) {
+				blockBuffer = append(blockBuffer, blk)
 			}
 
-			blkCnt := int(0)
-			for {
-				blkCnt++
-				select {
-				case blk := <-ch:
-					if !isNil(blk) || blkCnt > 50 {
-						s.S2BPool.AddBlock(blk.(common.BlockPoolInterface))
-					} else {
+			if len(blockBuffer) >= 350 || (len(blockBuffer) > 0 && (isNil(blk) || time.Since(insertTime) > time.Millisecond*1000)) {
+				insertBlkCnt := 0
+				for {
+					if successBlk, err := InsertBatchBlock(s.Chain, blockBuffer); err != nil {
 						return
+					} else {
+						insertBlkCnt += successBlk
+						if successBlk >= len(blockBuffer) {
+							break
+						}
+						blockBuffer = blockBuffer[successBlk:]
 					}
 				}
+				insertTime = time.Now()
+				blockBuffer = []common.BlockInterface{}
+			}
+			if isNil(blk) && len(blockBuffer) == 0 {
+				return
 			}
 		}
 	}
-
 }
