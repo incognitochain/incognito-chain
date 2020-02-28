@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
+	"math"
 )
 
 const (
@@ -82,10 +83,17 @@ func NewCustodianStateKey (beaconHeight uint64, custodianAddress string) string 
 
 func NewPortingRequestKey (beaconHeight uint64, uniquePortingID string) string {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
-	key := append(PortalPortingRequestsPrefix, []byte(uniquePortingID)...)
+	uniquePortingIDBytes := []byte(fmt.Sprintf("%v-", uniquePortingID))
+
+	key := append(PortalPortingRequestsPrefix, uniquePortingIDBytes...)
 	key = append(key, beaconHeightBytes...)
 	key = append(key, []byte("height")...)
 	return string(key) //prefix + uniqueId + beaconHeight
+}
+
+func NewPortingRequestKeyForValidation (uniquePortingID string) string {
+	key := append(PortalPortingRequestsPrefix, []byte(uniquePortingID)...)
+	return string(key) //prefix + uniqueId
 }
 
 func NewFinalExchangeRatesKey (beaconHeight uint64) string {
@@ -275,15 +283,19 @@ func (finalExchangeRates *FinalExchangeRates) ExchangePRV2PTokenByTokenId(pToken
 }
 
 func (finalExchangeRates *FinalExchangeRates) ExchangeBTC2PRV(value uint64) uint64 {
+	//input : nano pBTC, pBNB
+
 	//get rate of BTC
-	BTCRates := finalExchangeRates.Rates[PortalTokenSymbolBTC].Amount
-	PRVRates := finalExchangeRates.Rates[PortalTokenSymbolPRV].Amount
+	BTCRates := finalExchangeRates.Rates[PortalTokenSymbolBTC].Amount //return nano pUSDT
+	PRVRates := finalExchangeRates.Rates[PortalTokenSymbolPRV].Amount //return nano pUSDT
 	//BTC -> USDT
-	btc2usd := value * BTCRates
+	btc2usd := value * BTCRates //return nano pUSDT by nano pBTC, pBNB
 
 	//BTC -> PRV
-	totalPRV := btc2usd / PRVRates
-	database.Logger.Log.Infof("Exchange rates, BTC %v 2 PRV with BTCRates %v PRVRates %v, result %v", value, BTCRates, PRVRates , totalPRV)
+	totalPRV := btc2usd / PRVRates //return PRV
+	//convert PRV to nano
+	totalPRV = totalPRV * uint64(math.Pow10(9))
+	database.Logger.Log.Infof("Exchange rates, BTC %v (nano) 2 PRV with BTCRates %v (nano pUSDT) PRVRates %v (nano pUSDT), result %v (nano PRV)", value, BTCRates, PRVRates , totalPRV)
 
 	return totalPRV
 }
@@ -297,6 +309,7 @@ func (finalExchangeRates *FinalExchangeRates) ExchangeBNB2PRV(value uint64) uint
 
 	//BTC -> PRV
 	totalPRV := bnb2usd / PRVRates
+	totalPRV = totalPRV * uint64(math.Pow10(9))
 
 	database.Logger.Log.Infof("Exchange rates, BNB %v 2 PRV with BNBRates %v PRVRates %v, result %v", value, BNBRates, PRVRates , totalPRV)
 
@@ -304,14 +317,18 @@ func (finalExchangeRates *FinalExchangeRates) ExchangeBNB2PRV(value uint64) uint
 }
 
 func (finalExchangeRates *FinalExchangeRates) ExchangePRV2BTC(value uint64) uint64 {
+	//input nano PRV
+
 	//get rate of BTC
-	BTCRates := finalExchangeRates.Rates[PortalTokenSymbolBTC].Amount
-	PRVRates := finalExchangeRates.Rates[PortalTokenSymbolPRV].Amount
+	BTCRates := finalExchangeRates.Rates[PortalTokenSymbolBTC].Amount //return nano pUSDT
+	PRVRates := finalExchangeRates.Rates[PortalTokenSymbolPRV].Amount //return nano pUSDT
 	//PRV -> USDT
 	prv2usd := value * PRVRates
 
 	//PRV -> BTC
 	totalBTC := prv2usd / BTCRates
+	//convert BTC to nano
+	totalBTC = totalBTC * uint64(math.Pow10(9))
 
 	database.Logger.Log.Infof("Exchange rates, PRV %v 2 BTC with BTCRates %v PRVRates %v, result %v", value, BTCRates, PRVRates , totalBTC)
 	return totalBTC
@@ -326,6 +343,8 @@ func (finalExchangeRates *FinalExchangeRates) ExchangePRV2BNB(value uint64) uint
 
 	//BNB -> PRV
 	totalBNB := prv2usd / BNBRates
+	totalBNB = totalBNB * uint64(math.Pow10(9))
+
 	database.Logger.Log.Infof("Exchange rates, PRV %v 2 BNB with BNBRates %v PRVRates %v, result %v", value, BNBRates, PRVRates , totalBNB)
 	return  totalBNB
 }

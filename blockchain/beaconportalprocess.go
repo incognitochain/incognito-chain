@@ -209,6 +209,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 
 		//save porting request
 		keyPortingRequestNewState := lvdb.NewPortingRequestKey(beaconHeight + 1, portingRequestContent.UniqueRegisterId)
+		Logger.log.Infof("Porting request, save porting request with key %v", keyPortingRequestNewState)
 		err = db.StorePortingRequestItem([]byte(keyPortingRequestNewState), newPortingRequestState)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store porting request item: %+v", err)
@@ -239,7 +240,9 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		}
 
 		//save waiting request porting state
-		currentPortalState.WaitingPortingRequests[keyPortingRequestNewState] = newPortingRequestState
+		keyWaitingPortingRequest := lvdb.NewWaitingPortingReqKey(beaconHeight, portingRequestContent.UniqueRegisterId)
+		Logger.log.Infof("Porting request, save waiting porting request with key %v", keyWaitingPortingRequest)
+		currentPortalState.WaitingPortingRequests[keyWaitingPortingRequest] = newPortingRequestState
 
 		break
 	case common.PortalLoadDataFailedStatus:

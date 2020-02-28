@@ -208,8 +208,9 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 	db := blockchain.GetDatabase()
 
 	//check unique id from record from db
-	keyPortingRequest := append(lvdb.PortalPortingRequestsPrefix, []byte(actionData.Meta.UniqueRegisterId)...)
-	portingRequestExist, err := db.GetItemPortalByPrefix(keyPortingRequest)
+	keyPortingRequest := lvdb.NewPortingRequestKeyForValidation(actionData.Meta.UniqueRegisterId)
+	Logger.log.Errorf("Porting request, validation porting request key %v", keyPortingRequest)
+	portingRequestExist, err := db.GetItemPortalByPrefix([]byte(keyPortingRequest))
 	if err != nil {
 		Logger.log.Errorf("Porting request: Get item portal by prefix error: %+v", err)
 
@@ -299,6 +300,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 
 		return [][]string{inst}, nil
 	}
+
 
 	//pick one
 	pickCustodianResult, _ := pickSingleCustodian(actionData.Meta, exchangeRatesState, sortCustodianStateByFreeCollateral)

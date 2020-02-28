@@ -158,16 +158,14 @@ func storeWaitingPortingRequests(db database.DatabaseInterface,
 	beaconHeight uint64,
 	waitingPortingReqs map[string]*lvdb.PortingRequest) error {
 	for waitingReqKey, waitingReq := range waitingPortingReqs {
-		//todo: review new key
 		newKey := replaceKeyByBeaconHeight(waitingReqKey, beaconHeight)
-
 		Logger.log.Infof("Porting request, save waiting db with key %v", newKey)
 
 		waitingReqBytes, err := json.Marshal(waitingReq)
 		if err != nil {
 			return err
 		}
-		err = db.Put([]byte(waitingReqKey), waitingReqBytes)
+		err = db.Put([]byte(newKey), waitingReqBytes)
 		if err != nil {
 			return database.NewDatabaseError(database.StoreWaitingPortingRequestError, errors.Wrap(err, "db.lvdb.put"))
 		}
@@ -423,14 +421,15 @@ func pickSingleCustodian(metadata metadata.PortalUserRegister, exchangeRate *lvd
 	//pToken to PRV
 
 	//todo: register amount convert to nano token
-	totalPTokenAfterUp150Percent := float64(metadata.RegisterAmount) * 1.5
-	totalPTokenAfterUp150PercentUnit64 := uint64(totalPTokenAfterUp150Percent)
+	totalPTokenAfterUp150Percent := float64(metadata.RegisterAmount) * 1.5 //return nano pBTC, pBNB
+	totalPTokenAfterUp150PercentUnit64 := uint64(totalPTokenAfterUp150Percent) //return nano pBTC, pBNB
 
 	totalPRV := exchangeRate.ExchangePToken2PRVByTokenId(metadata.PTokenId, totalPTokenAfterUp150PercentUnit64)
 
 	Logger.log.Infof("Porting request, pick single custodian ptoken: %v, total prv %v", metadata.PTokenId, totalPRV)
 
 	for _, kv := range custodianStateSlice {
+		Logger.log.Infof("Porting request, free collateral: %v", kv.Value.FreeCollateral)
 		if kv.Value.FreeCollateral >= totalPRV {
 			result := make(map[string]lvdb.MatchingPortingCustodianDetail)
 			result[kv.Key] = lvdb.MatchingPortingCustodianDetail{
@@ -469,6 +468,8 @@ func pickMultipleCustodian (metadata metadata.PortalUserRegister, exchangeRate *
 		totalPRV := exchangeRate.ExchangePToken2PRVByTokenId(metadata.PTokenId, totalPTokenAfterUp150PercentUnit64) //final
 
 		//verify collateral
+
+		Logger.log.Infof("Porting request, free collateral: %v with custodian key: %v", custodianItem.Value.FreeCollateral, custodianItem.Key)
 		if custodianItem.Value.FreeCollateral >= totalPRV {
 			multipleCustodian[custodianItem.Key] = lvdb.MatchingPortingCustodianDetail{
 				RemoteAddress: metadata.PTokenAddress,
@@ -481,7 +482,7 @@ func pickMultipleCustodian (metadata metadata.PortalUserRegister, exchangeRate *
 			continue
 		}
 
-		Logger.log.Errorf("current portal state is nil")
+		Logger.log.Errorf("Pick multiple custodian is fail")
 		return nil, errors.New("Pick multiple custodian is fail")
 	}
 

@@ -16,8 +16,8 @@ func TestFinalExchangeRates(t *testing.T)  {
 		Rates: ratesDetail,
 	}
 
-	bnb2PRV := finalExchangeRates.ExchangeBNB2PRV(20)
-	assert.Equal(t, bnb2PRV, uint64(800))
+	bnb2PRV := finalExchangeRates.ExchangeBNB2PRV(1000) //0.000001 bnb
+	assert.Equal(t, bnb2PRV, uint64(40000000000000))
 
 	prv2BNB := finalExchangeRates.ExchangePRV2BNB(800)
 	assert.Equal(t, prv2BNB, uint64(20))
