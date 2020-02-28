@@ -4,7 +4,6 @@ tmux new -d -s beacon0
 tmux new -d -s beacon1
 tmux new -d -s beacon2
 tmux new -d -s beacon3
-tmux new -d -s bootnode
 tmux new -d -s fullnode
 tmux new -d -s shard00
 tmux new -d -s shard01
