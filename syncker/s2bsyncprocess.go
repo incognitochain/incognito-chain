@@ -10,7 +10,6 @@ import (
 )
 
 //TODO: Request sync must include all block that in pool
-
 type S2BPeerState struct {
 	Timestamp int64
 	Height    map[int]uint64 //shardid -> height
@@ -68,7 +67,7 @@ func (s *S2BSyncProcess) Start() {
 					Height:    s2bState,
 				}
 			case <-ticker.C:
-				time.Sleep(10 * time.Minute)
+
 			}
 		}
 	}()
@@ -176,7 +175,6 @@ func (s *S2BSyncProcess) streamFromPeer(peerID string, pState S2BPeerState) (req
 
 			}
 		}
-
 	}
 	return
 }
