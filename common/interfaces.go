@@ -4,6 +4,7 @@ type BlockPoolInterface interface {
 	GetPrevHash() string
 	GetHash() string
 	GetHeight() uint64
+	GetShardID() int
 }
 
 type BlockInterface interface {

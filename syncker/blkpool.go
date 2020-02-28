@@ -1,7 +1,6 @@
 package syncker
 
 import (
-	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"time"
 )
@@ -46,7 +45,7 @@ func (pool *BlkPool) AddBlock(blk common.BlockPoolInterface) {
 			return
 		}
 		pool.BlkPoolByPrevHash[prevHash] = append(pool.BlkPoolByPrevHash[prevHash], hash)
-		fmt.Println("Syncker: add block to pool", blk.GetHeight())
+		//fmt.Println("Syncker: add block to pool", blk.GetHeight())
 	}
 }
 

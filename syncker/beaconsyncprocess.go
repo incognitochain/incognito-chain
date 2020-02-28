@@ -19,7 +19,7 @@ type BeaconPeerState struct {
 
 type S2BPeerState struct {
 	Timestamp int64
-	Height    map[byte]uint64 //shardid -> height
+	Height    map[int]uint64 //shardid -> height
 	processed bool
 }
 
@@ -34,6 +34,7 @@ type BeaconSyncProcess struct {
 	ChainID          int
 
 	BeaconPool *BlkPool
+	S2BPool    *BlkPool
 	lock       *sync.RWMutex
 }
 
@@ -43,6 +44,7 @@ func NewBeaconSyncProcess(server Server, chain Chain) *BeaconSyncProcess {
 		Server:     server,
 		Chain:      chain,
 		BeaconPool: NewBlkPool("BeaconPool"),
+		S2BPool:    NewBlkPool("ShardToBeaconPool"),
 		lock:       new(sync.RWMutex),
 	}
 
@@ -172,7 +174,7 @@ func (s *BeaconSyncProcess) syncBeaconProcess() {
 				}
 
 				if isNil(blk) && len(blockBuffer) == 0 {
-					//fmt.Println("Syncker: blk nil")
+					//fmt.Println("Syncker: blk nil")GetBestViewHeight()+1
 					goto CANCEL_REQUEST
 				}
 
@@ -188,34 +190,44 @@ func (s *BeaconSyncProcess) syncBeaconProcess() {
 func (s *BeaconSyncProcess) syncS2BPoolProcess() {
 	defer time.AfterFunc(time.Millisecond*500, s.syncS2BPoolProcess)
 	if s.Status != RUNNING_SYNC || !s.IsCommittee || !s.FewBlockBehind {
+		//fmt.Printf("syncker: not sync s2b notRunning:%v notCommmittee:%v notReady:%v \n", s.Status != RUNNING_SYNC, !s.IsCommittee, !s.FewBlockBehind)
 		return
 	}
 
 	s.lock.RLock()
 	defer s.lock.RUnlock()
-	//TODO : sync S2B direct from shard node
 
-	//TODO optional later : sync S2B from other validator pool
-	//for peerID, pState := range s.S2BPeerState {
-	//	for fromSID, height := range pState.Height {
-	//		if height <= s.Server.GetS2BPool(fromSID).GetLatestFinalHeight() {
-	//			continue
-	//		}
-	//		ch, stop := s.Server.RequestS2BBlock(peerID, int(fromSID), s.Server.GetS2BPool(fromSID).GetLatestFinalHeight())
-	//		for {
-	//			shouldBreak := false
-	//			select {
-	//			case block := <-ch:
-	//				if err := s.Server.GetS2BPool(fromSID).AddBlock(block); err != nil {
-	//					shouldBreak = true
-	//				}
-	//			}
-	//			if shouldBreak {
-	//				stop <- 1
-	//				break
-	//			}
-	//		}
-	//	}
-	//}
+	//fmt.Println("syncker: try sync s2b")
+	for peerID, pState := range s.S2BPeerState {
+		for fromSID, height := range pState.Height {
+			if time.Now().Unix()-pState.Timestamp > 30 {
+				continue
+			}
+			fmt.Println("syncker:", peerID, fromSID, height)
+
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+			defer cancel()
+
+			//TODO: retrieve information from pool -> request missing block
+			ch, err := s.Server.RequestBlocksViaStream(ctx, peerID, -1, proto.BlkType_BlkS2B, s.Chain.Get, s.Chain.GetFinalViewHeight(), toHeight, pState.BestViewHash)
+			if err != nil {
+				fmt.Println("Syncker: create channel fail")
+				continue
+			}
+
+			blkCnt := int(0)
+			for {
+				blkCnt++
+				select {
+				case blk := <-ch:
+					if !isNil(blk) || blkCnt > 50 {
+						s.S2BPool.AddBlock(blk.(common.BlockPoolInterface))
+					} else {
+						return
+					}
+				}
+			}
+		}
+	}
 
 }

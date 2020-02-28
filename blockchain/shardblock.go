@@ -22,6 +22,9 @@ type ShardBlock struct {
 	Header ShardHeader
 }
 
+func (shardBlock *ShardBlock) GetShardID() int {
+	return int(shardBlock.Header.ShardID)
+}
 func (shardBlock *ShardBlock) GetPrevHash() string {
 	return shardBlock.Header.PreviousBlockHash.String()
 }
@@ -39,6 +42,18 @@ type ShardToBeaconBlock struct {
 
 	Instructions [][]string
 	Header       ShardHeader
+}
+
+func (shardToBeaconBlock *ShardToBeaconBlock) GetPrevHash() string {
+	return shardToBeaconBlock.Header.PreviousBlockHash.String()
+}
+
+func (shardToBeaconBlock *ShardToBeaconBlock) GetHash() string {
+	return shardToBeaconBlock.Hash().String()
+}
+
+func (shardToBeaconBlock *ShardToBeaconBlock) GetShardID() int {
+	return int(shardToBeaconBlock.Header.ShardID)
 }
 
 type CrossShardBlock struct {

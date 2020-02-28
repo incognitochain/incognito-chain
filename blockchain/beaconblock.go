@@ -43,6 +43,9 @@ func (beaconBlock BeaconBlock) GetCurrentEpoch() uint64 {
 func (beaconBlock BeaconBlock) GetHeight() uint64 {
 	return beaconBlock.Header.Height
 }
+func (beaconBlock BeaconBlock) GetShardID() int {
+	return -1
+}
 
 // func (beaconBlock *BeaconBlock) GetProducerPubKey() string {
 // 	return string(beaconBlock.Header.ProducerAddress.Pk)

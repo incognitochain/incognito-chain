@@ -67,6 +67,10 @@ type Syncker struct {
 
 	PeerStateCh chan *wire.MessagePeerState
 
+	BeaconBlockCh        chan common.BlockPoolInterface
+	ShardBlockCh         chan common.BlockPoolInterface
+	ShardToBeaconBlockCh chan common.BlockPoolInterface
+
 	BeaconSyncProcess *BeaconSyncProcess
 	ShardSyncProcess  map[int]*ShardSyncProcess
 
@@ -119,7 +123,11 @@ func (s *Syncker) WatchCommitteeChange() {
 
 func NewSyncker() *Syncker {
 	s := &Syncker{
-		PeerStateCh:      make(chan *wire.MessagePeerState),
+		PeerStateCh:          make(chan *wire.MessagePeerState),
+		BeaconBlockCh:        make(chan common.BlockPoolInterface),
+		ShardBlockCh:         make(chan common.BlockPoolInterface),
+		ShardToBeaconBlockCh: make(chan common.BlockPoolInterface),
+
 		ShardSyncProcess: make(map[int]*ShardSyncProcess),
 
 		BeaconPeerStates:    make(map[string]BeaconPeerState),
@@ -153,9 +161,6 @@ func (s *Syncker) Init(config *SynckerConfig) {
 	//watch commitee change
 	go s.WatchCommitteeChange()
 
-	//Receive other peer state and count
-	go s.UpdatePeerState()
-
 	//Publish node state to other peer
 	go func() {
 		t := time.NewTicker(time.Second * 3)
@@ -171,22 +176,37 @@ func (s *Syncker) Init(config *SynckerConfig) {
 	}()
 }
 
+func (s *Syncker) ReceiveS2BBlock(blk common.BlockPoolInterface, peerID string) {
+	s.ShardToBeaconBlockCh <- blk
+	s.BeaconSyncProcess.lock.Lock()
+	s2bState := make(map[int]uint64)
+	s2bState[blk.GetShardID()] = blk.GetHeight()
+	if peerID == "" {
+		peerID = time.Now().String()
+	}
+	s.S2BPeerState[peerID] = S2BPeerState{
+		Timestamp: time.Now().Unix(),
+		Height:    s2bState,
+	}
+	s.BeaconSyncProcess.lock.Unlock()
+
+}
+
 func (s *Syncker) Start() {
 	s.IsEnabled = true
-}
 
-func (s *Syncker) Stop() {
-	s.IsEnabled = false
-	s.BeaconSyncProcess.Stop()
-	for _, chain := range s.ShardSyncProcess {
-		chain.Stop()
-	}
-}
-
-//TODO: clear outdate peerstate
-func (s *Syncker) UpdatePeerState() {
+	//TODO: clear outdate peerstate
 	for {
+		if !s.IsEnabled {
+			break
+		}
 		select {
+		case block := <-s.BeaconBlockCh:
+			s.BeaconSyncProcess.BeaconPool.AddBlock(block)
+		case block := <-s.ShardBlockCh:
+			s.ShardSyncProcess[block.GetShardID()].ShardPool.AddBlock(block)
+		case block := <-s.ShardToBeaconBlockCh:
+			s.BeaconSyncProcess.S2BPool.AddBlock(block)
 		case peerState := <-s.PeerStateCh:
 			//b, _ := json.Marshal(peerState)
 			//fmt.Println("SYNCKER: receive peer state", string(b))
@@ -203,9 +223,9 @@ func (s *Syncker) UpdatePeerState() {
 			//s2b
 			if len(peerState.ShardToBeaconPool) != 0 {
 				s.BeaconSyncProcess.lock.Lock()
-				s2bState := make(map[byte]uint64)
+				s2bState := make(map[int]uint64)
 				for sid, v := range peerState.ShardToBeaconPool {
-					s2bState[sid] = v[len(v)-1]
+					s2bState[int(sid)] = v[len(v)-1]
 				}
 				s.S2BPeerState[peerState.SenderID] = S2BPeerState{
 					Timestamp: peerState.Timestamp,
@@ -242,5 +262,13 @@ func (s *Syncker) UpdatePeerState() {
 			}
 
 		}
+	}
+}
+
+func (s *Syncker) Stop() {
+	s.IsEnabled = false
+	s.BeaconSyncProcess.Stop()
+	for _, chain := range s.ShardSyncProcess {
+		chain.Stop()
 	}
 }
