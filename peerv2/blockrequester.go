@@ -257,7 +257,7 @@ func (c *BlockRequester) GetBlockBeaconByHeight(
 	if !c.ready() {
 		return nil, errors.New("requester not ready")
 	}
-	Logger.Infof("[blkbyheight] Requesting beaconblock (by specific %v): from = %v to = %v; height: %v", bySpecific, from, to, heights)
+	Logger.Debugf("[blkbyheight] Requesting beaconblock (by specific %v): from = %v to = %v; height: %v", bySpecific, from, to, heights)
 	client := proto.NewHighwayServiceClient(c.conn)
 	res := [][]byte{}
 	rangeBlks := batchingBlkForSync(defaultMaxBlkReqPerPeer, syncBlkInfo{

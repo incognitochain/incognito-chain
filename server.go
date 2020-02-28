@@ -1529,7 +1529,7 @@ func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint6
 }
 
 func (serverObj *Server) PushMessageGetBlockBeaconBySpecificHeight(heights []uint64, getFromPool bool) error {
-	Logger.log.Infof("[byspecific] Get blk beacon by Specific heights %v", heights)
+	Logger.log.Debugf("[byspecific] Get blk beacon by Specific heights %v", heights)
 	msgs, err := serverObj.highway.Requester.GetBlockBeaconByHeight(
 		true,    // bySpecific
 		0,       // from
@@ -1575,7 +1575,7 @@ func (serverObj *Server) PushMessageGetBlockShardByHeight(shardID byte, from uin
 }
 
 func (serverObj *Server) PushMessageGetBlockShardBySpecificHeight(shardID byte, heights []uint64, getFromPool bool) error {
-	Logger.log.Infof("[byspecific] Get blk shard %v by Specific heights %v", shardID, heights)
+	Logger.log.Debugf("[byspecific] Get blk shard %v by Specific heights %v", shardID, heights)
 	msgs, err := serverObj.highway.Requester.GetBlockShardByHeight(
 		int32(shardID), // shardID
 		true,           // bySpecific
@@ -1592,17 +1592,16 @@ func (serverObj *Server) PushMessageGetBlockShardBySpecificHeight(shardID byte, 
 }
 
 func (serverObj *Server) PushMessageGetBlockShardByHash(shardID byte, blkHashes []common.Hash, getFromPool bool, peerID libp2p.ID) error {
-	Logger.log.Infof("[blkbyhash] Get blk shard by hash %v", blkHashes)
+	Logger.log.Debugf("[blkbyhash] Get blk shard by hash %v", blkHashes)
 	msgs, err := serverObj.highway.Requester.GetBlockShardByHash(
 		int32(shardID),
 		blkHashes, // by blockHashes
 	)
 	if err != nil {
-		Logger.log.Infof("[blkbyhash] Get blk shard by hash error %v ", err)
-		Logger.log.Error(err)
+		Logger.log.Errorf("[blkbyhash] Get blk shard by hash error %v ", err)
 		return err
 	}
-	Logger.log.Infof("[blkbyhash] Get blk shard by hash get %v ", msgs)
+	Logger.log.Debugf("[blkbyhash] Get blk shard by hash get %v ", msgs)
 
 	serverObj.putResponseMsgs(msgs)
 	return nil

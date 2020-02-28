@@ -76,7 +76,7 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 	if blockchain.IsTest {
 		return
 	}
-	Logger.log.Infof("Received shard block  message from shard %d block %d", newBlk.Header.ShardID, newBlk.Header.Height)
+	Logger.log.Debugf("Received shard block  message from shard %d block %d", newBlk.Header.ShardID, newBlk.Header.Height)
 
 	if _, ok := blockchain.Synker.Status.Shards[newBlk.Header.ShardID]; ok {
 		if _, ok := currentInsert.Shards[newBlk.Header.ShardID]; !ok {
