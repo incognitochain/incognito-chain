@@ -56,7 +56,8 @@ func (s *BeaconSyncProcess) Start(chainID int) {
 		ticker := time.NewTicker(time.Millisecond * 500)
 		for {
 			if s.Status != RUNNING_SYNC {
-				break
+				time.Sleep(time.Second)
+				continue
 			}
 
 			select {

@@ -52,7 +52,8 @@ func (s *S2BSyncProcess) Start() {
 		ticker := time.NewTicker(time.Millisecond * 500)
 		for {
 			if s.Status != RUNNING_SYNC {
-				break
+				time.Sleep(time.Second)
+				continue
 			}
 			select {
 			case f := <-s.actionCh:
@@ -93,7 +94,7 @@ func (s *S2BSyncProcess) GetS2BPeerState() map[string]S2BPeerState {
 func (s *S2BSyncProcess) syncS2BPoolProcess() {
 	for {
 		requestCnt := 0
-		if !s.BeaconSyncProcess.FewBlockBehind || s.Status == RUNNING_SYNC {
+		if !s.BeaconSyncProcess.FewBlockBehind || s.Status != RUNNING_SYNC {
 			time.Sleep(time.Second)
 			continue
 		}
@@ -118,7 +119,7 @@ func (s *S2BSyncProcess) streamFromPeer(peerID string, pState S2BPeerState) (req
 		}
 		cancel()
 	}()
-
+	fmt.Println("Syncker: streamFromPeer")
 	if pState.processed {
 		return
 	}
