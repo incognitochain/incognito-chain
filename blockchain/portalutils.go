@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/pkg/errors"
+	"math"
 	"sort"
 	"strings"
 )
@@ -501,5 +502,6 @@ func pickMultipleCustodian (metadata metadata.PortalUserRegister, exchangeRate *
 
 func calculatePortingFees(totalPToken uint64) uint64  {
 	result := 0.01 * float64(totalPToken) / 100
-	return uint64(result)
+	integer, _  := math.Modf(result)
+	return  uint64(integer)
 }

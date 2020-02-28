@@ -292,9 +292,8 @@ func (finalExchangeRates *FinalExchangeRates) ExchangeBTC2PRV(value uint64) uint
 	btc2usd := value * BTCRates //return nano pUSDT by nano pBTC, pBNB
 
 	//BTC -> PRV
-	totalPRV := btc2usd / PRVRates //return PRV
-	//convert PRV to nano
-	totalPRV = totalPRV * uint64(math.Pow10(9))
+	totalPRV := btc2usd * uint64(math.Pow10(9)) / PRVRates //return nano PRV
+
 	database.Logger.Log.Infof("Exchange rates, BTC %v (nano) 2 PRV with BTCRates %v (nano pUSDT) PRVRates %v (nano pUSDT), result %v (nano PRV)", value, BTCRates, PRVRates , totalPRV)
 
 	return totalPRV
@@ -304,13 +303,12 @@ func (finalExchangeRates *FinalExchangeRates) ExchangeBNB2PRV(value uint64) uint
 	//get rate of BTC
 	BNBRates := finalExchangeRates.Rates[PortalTokenSymbolBNB].Amount
 	PRVRates := finalExchangeRates.Rates[PortalTokenSymbolPRV].Amount
-	//BNB -> USDT
+	//BNB -> nano USDT
 	bnb2usd := value * BNBRates
 
-	//BTC -> PRV
-	totalPRV := bnb2usd / PRVRates
-	totalPRV = totalPRV * uint64(math.Pow10(9))
-
+	//nano USDT -> PRV
+	nanoPRV := uint64(math.Pow10(9))
+	totalPRV := (bnb2usd * nanoPRV)  / PRVRates
 	database.Logger.Log.Infof("Exchange rates, BNB %v 2 PRV with BNBRates %v PRVRates %v, result %v", value, BNBRates, PRVRates , totalPRV)
 
 	return  totalPRV
@@ -322,15 +320,14 @@ func (finalExchangeRates *FinalExchangeRates) ExchangePRV2BTC(value uint64) uint
 	//get rate of BTC
 	BTCRates := finalExchangeRates.Rates[PortalTokenSymbolBTC].Amount //return nano pUSDT
 	PRVRates := finalExchangeRates.Rates[PortalTokenSymbolPRV].Amount //return nano pUSDT
-	//PRV -> USDT
-	prv2usd := value * PRVRates
+	//nano PRV -> USDT
+	prv2usd := value * PRVRates / uint64(math.Pow10(9))
 
-	//PRV -> BTC
-	totalBTC := prv2usd / BTCRates
-	//convert BTC to nano
-	totalBTC = totalBTC * uint64(math.Pow10(9))
+	//nano PRV -> nano pBTC
+	totalBTC := prv2usd * uint64(math.Pow10(9)) / BTCRates
 
 	database.Logger.Log.Infof("Exchange rates, PRV %v 2 BTC with BTCRates %v PRVRates %v, result %v", value, BTCRates, PRVRates , totalBTC)
+
 	return totalBTC
 }
 
@@ -339,11 +336,10 @@ func (finalExchangeRates *FinalExchangeRates) ExchangePRV2BNB(value uint64) uint
 	BNBRates := finalExchangeRates.Rates[PortalTokenSymbolBNB].Amount
 	PRVRates := finalExchangeRates.Rates[PortalTokenSymbolPRV].Amount
 	//PRV -> USDT
-	prv2usd := value * PRVRates
+	prv2usd := value * PRVRates / uint64(math.Pow10(9))
 
-	//BNB -> PRV
-	totalBNB := prv2usd / BNBRates
-	totalBNB = totalBNB * uint64(math.Pow10(9))
+	//PRV -> BNB
+	totalBNB := (prv2usd * uint64(math.Pow10(9))) / BNBRates
 
 	database.Logger.Log.Infof("Exchange rates, PRV %v 2 BNB with BNBRates %v PRVRates %v, result %v", value, BNBRates, PRVRates , totalBNB)
 	return  totalBNB
