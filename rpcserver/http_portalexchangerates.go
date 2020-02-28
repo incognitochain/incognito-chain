@@ -106,7 +106,7 @@ func (httpServer *HttpServer) handleCreateAndSendPortalExchangeRates(params inte
 }
 
 func (httpServer *HttpServer) handleGetPortalFinalExchangeRates(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	result, err := httpServer.portalExchangeRates.GetFinalExchangeRates(httpServer.blockService, *httpServer.config.Database)
+	result, err := httpServer.portal.GetFinalExchangeRates(httpServer.blockService, *httpServer.config.Database)
 
 	if err != nil {
 		return nil, err
@@ -140,7 +140,7 @@ func (httpServer *HttpServer) handleConvertExchangeRates(params interface{}, clo
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenSymbol is not support"))
 	}
 
-	result, err := httpServer.portalExchangeRates.ConvertExchangeRates(tokenSymbol, valuePToken, httpServer.blockService)
+	result, err := httpServer.portal.ConvertExchangeRates(tokenSymbol, valuePToken, httpServer.blockService)
 
 	if err != nil {
 		return nil, err

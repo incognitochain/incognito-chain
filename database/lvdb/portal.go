@@ -283,7 +283,8 @@ func (finalExchangeRates *FinalExchangeRates) ExchangeBTC2PRV(value uint64) uint
 
 	//BTC -> PRV
 	totalPRV := btc2usd / PRVRates
-	totalPRV = uint64(totalPRV)
+	database.Logger.Log.Infof("Exchange rates, BTC %v 2 PRV with BTCRates %v PRVRates %v, result %v", value, BTCRates, PRVRates , totalPRV)
+
 	return totalPRV
 }
 
@@ -296,7 +297,9 @@ func (finalExchangeRates *FinalExchangeRates) ExchangeBNB2PRV(value uint64) uint
 
 	//BTC -> PRV
 	totalPRV := bnb2usd / PRVRates
-	totalPRV = uint64(totalPRV)
+
+	database.Logger.Log.Infof("Exchange rates, BNB %v 2 PRV with BNBRates %v PRVRates %v, result %v", value, BNBRates, PRVRates , totalPRV)
+
 	return  totalPRV
 }
 
@@ -309,9 +312,8 @@ func (finalExchangeRates *FinalExchangeRates) ExchangePRV2BTC(value uint64) uint
 
 	//PRV -> BTC
 	totalBTC := prv2usd / BTCRates
-	totalBTC = uint64(totalBTC)
 
-	//common.Logger.Infof("Exchange, prv 2 btc prv = %v", metadata.PTokenId, totalPRV)
+	database.Logger.Log.Infof("Exchange rates, PRV %v 2 BTC with BTCRates %v PRVRates %v, result %v", value, BTCRates, PRVRates , totalBTC)
 	return totalBTC
 }
 
@@ -324,6 +326,6 @@ func (finalExchangeRates *FinalExchangeRates) ExchangePRV2BNB(value uint64) uint
 
 	//BNB -> PRV
 	totalBNB := prv2usd / BNBRates
-	totalBNB = uint64(totalBNB)
+	database.Logger.Log.Infof("Exchange rates, PRV %v 2 BNB with BNBRates %v PRVRates %v, result %v", value, BNBRates, PRVRates , totalBNB)
 	return  totalBNB
 }

@@ -421,6 +421,8 @@ func sortCustodianByAmountAscent(metadata metadata.PortalUserRegister, custodian
 
 func pickSingleCustodian(metadata metadata.PortalUserRegister, exchangeRate *lvdb.FinalExchangeRates, custodianStateSlice []CustodianStateSlice) (map[string]lvdb.MatchingPortingCustodianDetail, error) {
 	//pToken to PRV
+
+	//todo: register amount convert to nano token
 	totalPTokenAfterUp150Percent := float64(metadata.RegisterAmount) * 1.5
 	totalPTokenAfterUp150PercentUnit64 := uint64(totalPTokenAfterUp150Percent)
 
