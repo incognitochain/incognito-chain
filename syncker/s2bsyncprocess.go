@@ -119,7 +119,7 @@ func (s *S2BSyncProcess) streamFromPeer(peerID string, pState S2BPeerState) (req
 		}
 		cancel()
 	}()
-	fmt.Println("Syncker: streamFromPeer")
+
 	if pState.processed {
 		return
 	}
@@ -169,11 +169,13 @@ func (s *S2BSyncProcess) streamFromPeer(peerID string, pState S2BPeerState) (req
 			blkCnt++
 			select {
 			case blk := <-ch:
-				if !isNil(blk) && blkCnt < 100 {
-					fmt.Println("Syncker: Insert shard2beacon block", blk.GetHeight(), blk.Hash().String(), blk.(common.BlockPoolInterface).GetPrevHash())
+				if !isNil(blk) {
+					//fmt.Println("Syncker: Insert shard2beacon block", blk.GetHeight(), blk.Hash().String(), blk.(common.BlockPoolInterface).GetPrevHash())
 					s.S2BPool.AddBlock(blk.(common.BlockPoolInterface))
 				}
-
+			}
+			if blkCnt > 100 {
+				break
 			}
 		}
 	}
