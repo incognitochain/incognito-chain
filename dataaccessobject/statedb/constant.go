@@ -59,7 +59,7 @@ const (
 // bridge
 const (
 	BridgeMinorOperator = "-"
-	BridgePlusOperator  = "-"
+	BridgePlusOperator  = "+"
 )
 
 // commitment
