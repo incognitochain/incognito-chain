@@ -219,20 +219,45 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		//save custodian state
 		for address, itemCustodian := range custodiansDetail {
 			custodian := currentPortalState.CustodianPoolState[address]
+
 			totalCollateral := custodian.TotalCollateral
 			freeCollateral := custodian.FreeCollateral - itemCustodian.LockedAmountCollateral
 
+
+			//update ptoken holded
 			holdingPubTokensMapping := make(map[string]uint64)
-			holdingPubTokensMapping[tokenID] = amount
-
-			lockedAmountCollateralMapping := make(map[string]uint64)
-			lockedAmountCollateralMapping[tokenID] = itemCustodian.LockedAmountCollateral
-
-			lockedAmountCollateral := lockedAmountCollateralMapping
+			if custodian.HoldingPubTokens == nil {
+				holdingPubTokensMapping[tokenID] =  itemCustodian.Amount
+			} else {
+				for ptokenId, value := range custodian.HoldingPubTokens {
+					holdingPubTokensMapping[ptokenId] = value + itemCustodian.Amount
+				}
+			}
 			holdingPubTokens := holdingPubTokensMapping
+
+			//update collateral holded
+			lockedAmountCollateralMapping := make(map[string]uint64)
+			if custodian.LockedAmountCollateral == nil {
+				lockedAmountCollateralMapping[tokenID] = itemCustodian.LockedAmountCollateral
+			} else {
+				for ptokenId, value := range custodian.LockedAmountCollateral {
+					lockedAmountCollateralMapping[ptokenId] = value + itemCustodian.LockedAmountCollateral
+				}
+			}
+			lockedAmountCollateral := lockedAmountCollateralMapping
+
+
 			remoteAddresses := custodian.RemoteAddresses
 
-			newCustodian, err := NewCustodianState(portingRequestContent.IncogAddressStr, totalCollateral, freeCollateral, holdingPubTokens, lockedAmountCollateral, remoteAddresses)
+			newCustodian, err := NewCustodianState(
+				portingRequestContent.IncogAddressStr,
+				totalCollateral,
+				freeCollateral,
+				holdingPubTokens,
+				lockedAmountCollateral,
+				remoteAddresses,
+				)
+
 			if err != nil {
 				return err
 			}
@@ -258,8 +283,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		}
 
 		//save porting request
-		//todo: review key for fail case
-		newKey := reqStatus + txReqID.String() + portingRequestContent.UniqueRegisterId
+		newKey := portingRequestContent.UniqueRegisterId + txReqID.String()
 		keyPortingRequestNewState := lvdb.NewPortingRequestKey(newKey, beaconHeight + 1)
 
 		err = db.StorePortingRequestItem([]byte(keyPortingRequestNewState), newPortingRequest)
@@ -386,8 +410,7 @@ func (blockchain *BlockChain) processPortalExchangeRates(beaconHeight uint64, in
 			SenderAddress: portingExchangeRatesContent.SenderAddress,
 		}
 
-		//todo: review key for fail case
-		err = db.StoreExchangeRatesRequestItem([]byte(reqStatus + portingExchangeRatesContent.UniqueRequestId), newExchangeRates)
+		err = db.StoreExchangeRatesRequestItem([]byte(portingExchangeRatesContent.UniqueRequestId), newExchangeRates)
 
 		if err != nil {
 			Logger.log.Errorf("ERROR: Save exchange rates error: %+v", err)

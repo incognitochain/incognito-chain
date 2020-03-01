@@ -251,7 +251,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 	}
 
 	waitingPortingRequestKey := lvdb.NewWaitingPortingReqKey(beaconHeight, actionData.Meta.UniqueRegisterId)
-	if _, ok := currentPortalState.WaitingPortingRequests[waitingPortingRequestKey]; !ok {
+	if _, ok := currentPortalState.WaitingPortingRequests[waitingPortingRequestKey]; ok {
 		Logger.log.Errorf("Porting request: Waiting porting request exist")
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,
@@ -695,7 +695,8 @@ func (blockchain *BlockChain) buildInstructionsForExchangeRates(
 	}
 
 	exchangeRatesKey := lvdb.NewExchangeRatesRequestKey(
-		beaconHeight + 1, actionData.TxReqID.String(),
+		beaconHeight + 1,
+		actionData.TxReqID.String(),
 		strconv.FormatInt(actionData.LockTime, 10),
 		shardID,
 	)

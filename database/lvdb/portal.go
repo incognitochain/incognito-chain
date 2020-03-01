@@ -30,6 +30,7 @@ type MatchingPortingCustodianDetail struct {
 	RemoteAddress string
 	Amount uint64
 	LockedAmountCollateral uint64
+	RemainCollateral uint64
 }
 
 type MatchingRedeemCustodianDetail struct {
