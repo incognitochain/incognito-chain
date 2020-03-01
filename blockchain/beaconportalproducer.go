@@ -209,8 +209,8 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 
 	//check unique id from record from db
 	keyPortingRequest := lvdb.NewPortingRequestKeyForValidation(actionData.Meta.UniqueRegisterId)
-	Logger.log.Errorf("Porting request, validation porting request key %v", keyPortingRequest)
 	portingRequestExist, err := db.GetItemPortalByPrefix([]byte(keyPortingRequest))
+
 	if err != nil {
 		Logger.log.Errorf("Porting request: Get item portal by prefix error: %+v", err)
 
@@ -233,6 +233,26 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 
 	if portingRequestExist != nil {
 		Logger.log.Errorf("Porting request: Porting request exist")
+		inst := buildRequestPortingInst(
+			actionData.Meta.Type,
+			shardID,
+			common.PortalDuplicateKeyStatus,
+			actionData.Meta.UniqueRegisterId,
+			actionData.Meta.IncogAddressStr,
+			actionData.Meta.PTokenId,
+			actionData.Meta.PTokenAddress,
+			actionData.Meta.RegisterAmount,
+			actionData.Meta.PortingFee,
+			nil,
+			actionData.TxReqID,
+		)
+
+		return [][]string{inst}, nil
+	}
+
+	waitingPortingRequestKey := lvdb.NewWaitingPortingReqKey(beaconHeight, actionData.Meta.UniqueRegisterId)
+	if _, ok := currentPortalState.WaitingPortingRequests[waitingPortingRequestKey]; !ok {
+		Logger.log.Errorf("Porting request: Waiting porting request exist")
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,
 			shardID,
@@ -336,6 +356,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 	//validation porting fees
 	pToken2PRV := exchangeRatesState.ExchangePToken2PRVByTokenId(actionData.Meta.PTokenId, actionData.Meta.RegisterAmount)
 	exchangePortingFees := calculatePortingFees(pToken2PRV)
+	Logger.log.Infof("Porting request, porting fees need %v", exchangePortingFees)
 
 	if actionData.Meta.PortingFee < exchangePortingFees {
 		Logger.log.Errorf("Porting request, Porting fees is wrong")

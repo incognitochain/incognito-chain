@@ -142,6 +142,7 @@ func storeCustodianState(db database.DatabaseInterface,
 	custodianState map[string]*lvdb.CustodianState) error {
 	for custodianStateKey, custodian := range custodianState {
 		newKey := replaceKeyByBeaconHeight(custodianStateKey, beaconHeight)
+		Logger.log.Infof("Porting request, store custodian key  %v", newKey)
 		custodianBytes, err := json.Marshal(custodian)
 		if err != nil {
 			return err
@@ -305,6 +306,7 @@ func getFinalExchangeRates(
 ) (map[string]*lvdb.FinalExchangeRates, error) {
 	finalExchangeRates := make(map[string]*lvdb.FinalExchangeRates)
 
+	//note: key for get data
 	finalExchangeRatesKeysBytes, finalExchangeRatesValueBytes, err := db.GetAllRecordsPortalByPrefix(beaconHeight, lvdb.PortalFinalExchangeRatesPrefix)
 
 	if err != nil {
@@ -319,8 +321,6 @@ func getFinalExchangeRates(
 		}
 		finalExchangeRates[string(finalExchangeRatesKeyBytes)] = &items
 	}
-
-	Logger.log.Infof("Portal exchange rates, init db %v, raw data %v", len(finalExchangeRates), finalExchangeRatesValueBytes)
 
 	return finalExchangeRates, nil
 }
@@ -427,10 +427,10 @@ func pickSingleCustodian(metadata metadata.PortalUserRegister, exchangeRate *lvd
 
 	totalPRV := exchangeRate.ExchangePToken2PRVByTokenId(metadata.PTokenId, totalPTokenAfterUp150PercentUnit64)
 
-	Logger.log.Infof("Porting request, pick single custodian ptoken: %v, total prv %v", metadata.PTokenId, totalPRV)
+	Logger.log.Infof("Porting request, pick single custodian ptoken: %v, need prv %v",  metadata.PTokenId, totalPRV)
 
 	for _, kv := range custodianStateSlice {
-		Logger.log.Infof("Porting request, free collateral: %v", kv.Value.FreeCollateral)
+		Logger.log.Infof("Porting request, custodian key %v, free collateral: %v", kv.Key, kv.Value.FreeCollateral)
 		if kv.Value.FreeCollateral >= totalPRV {
 			result := make(map[string]lvdb.MatchingPortingCustodianDetail)
 			result[kv.Key] = lvdb.MatchingPortingCustodianDetail{
@@ -448,52 +448,59 @@ func pickSingleCustodian(metadata metadata.PortalUserRegister, exchangeRate *lvd
 
 func pickMultipleCustodian (metadata metadata.PortalUserRegister, exchangeRate *lvdb.FinalExchangeRates, custodianStateSlice []CustodianStateSlice) (map[string]lvdb.MatchingPortingCustodianDetail, error){
 	//get multiple custodian
-	var totalPubTokenAfterPick uint64
+	var holdPToken uint64 = 0
 
 	multipleCustodian := make(map[string]lvdb.MatchingPortingCustodianDetail)
+
 	for i := len(custodianStateSlice) - 1; i >= 0; i-- {
 		custodianItem := custodianStateSlice[i]
-		if totalPubTokenAfterPick >= metadata.RegisterAmount {
+		if holdPToken >= metadata.RegisterAmount {
 			break
 		}
+		Logger.log.Infof("Porting request, pick multiple custodian key: %v, has collateral %v", custodianItem.Key, custodianItem.Value.FreeCollateral)
 
-		totalPTokenExchange := exchangeRate.ExchangePRV2PTokenByTokenId(metadata.PTokenId, custodianItem.Value.FreeCollateral)
+		//base on current FreeCollateral find PToken can use
+		totalPToken := exchangeRate.ExchangePRV2PTokenByTokenId(metadata.PTokenId, custodianItem.Value.FreeCollateral)
+		pTokenCanUse := float64(totalPToken) / 1.5
 
-		//temp
-		totalPTokenAdaptable := float64(totalPTokenExchange) / 1.5
-		totalPTokenCustodianCouldBeKept := uint64(totalPTokenAdaptable) //final 2.2 -> 2
+		pTokenCanUseUint64 := uint64(pTokenCanUse)
+		remainPToken := metadata.RegisterAmount - holdPToken // 1000 - 833 = 167
+		if pTokenCanUseUint64 >  remainPToken {
+			pTokenCanUseUint64 = remainPToken
+			Logger.log.Infof("Porting request, custodian key: %v, ptoken amount is more larger than remain so custodian can keep ptoken  %v", custodianItem.Key, pTokenCanUseUint64)
+		} else {
+			Logger.log.Infof("Porting request, pick multiple custodian key: %v, can keep ptoken %v", custodianItem.Key, pTokenCanUseUint64)
+		}
 
-		totalPTokenAfterUp150Percent := float64(totalPTokenCustodianCouldBeKept) * 1.5
+		totalPTokenAfterUp150Percent := float64(pTokenCanUseUint64) * 1.5
 		totalPTokenAfterUp150PercentUnit64 := uint64(totalPTokenAfterUp150Percent)
 
 		totalPRV := exchangeRate.ExchangePToken2PRVByTokenId(metadata.PTokenId, totalPTokenAfterUp150PercentUnit64) //final
 
-		//verify collateral
+		Logger.log.Infof("Porting request, custodian key: %v, to keep ptoken %v need prv %v", custodianItem.Key, pTokenCanUseUint64, totalPRV)
 
-		Logger.log.Infof("Porting request, free collateral: %v with custodian key: %v", custodianItem.Value.FreeCollateral, custodianItem.Key)
+
 		if custodianItem.Value.FreeCollateral >= totalPRV {
 			multipleCustodian[custodianItem.Key] = lvdb.MatchingPortingCustodianDetail{
 				RemoteAddress: metadata.PTokenAddress,
-				Amount: totalPTokenCustodianCouldBeKept,
+				Amount: pTokenCanUseUint64,
 				LockedAmountCollateral: totalPRV,
 			}
 
-			totalPubTokenAfterPick = totalPubTokenAfterPick + totalPTokenCustodianCouldBeKept
-
-			continue
+			holdPToken = holdPToken + pTokenCanUseUint64
 		}
-
-		Logger.log.Errorf("Pick multiple custodian is fail")
-		return nil, errors.New("Pick multiple custodian is fail")
 	}
 
 	//verify total amount
-	var verifyTotalPubTokenAfterPick uint64
-	for _, eachCustodian := range multipleCustodian {
-		verifyTotalPubTokenAfterPick = verifyTotalPubTokenAfterPick + eachCustodian.Amount
+	var verifyTotalPubTokenAfterPick uint64 = 0
+	if len(multipleCustodian) > 0 {
+		for _, eachCustodian := range multipleCustodian {
+			verifyTotalPubTokenAfterPick = verifyTotalPubTokenAfterPick + eachCustodian.Amount
+		}
 	}
 
 	if verifyTotalPubTokenAfterPick != metadata.RegisterAmount {
+		Logger.log.Errorf("Porting request, total picked %v", verifyTotalPubTokenAfterPick)
 		return nil, errors.New("Total public token do not match")
 	}
 

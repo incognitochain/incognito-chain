@@ -208,7 +208,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		}
 
 		//save porting request
-		keyPortingRequestNewState := lvdb.NewPortingRequestKey(beaconHeight + 1, portingRequestContent.UniqueRegisterId)
+		keyPortingRequestNewState := lvdb.NewPortingRequestKey(portingRequestContent.UniqueRegisterId, beaconHeight + 1)
 		Logger.log.Infof("Porting request, save porting request with key %v", keyPortingRequestNewState)
 		err = db.StorePortingRequestItem([]byte(keyPortingRequestNewState), newPortingRequestState)
 		if err != nil {
@@ -236,6 +236,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			if err != nil {
 				return err
 			}
+			Logger.log.Infof("Porting request, custodian key  %v", address)
 			currentPortalState.CustodianPoolState[address] = newCustodian
 		}
 
@@ -257,8 +258,10 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		}
 
 		//save porting request
+		//todo: review key for fail case
 		newKey := reqStatus + txReqID.String() + portingRequestContent.UniqueRegisterId
-		keyPortingRequestNewState := lvdb.NewPortingRequestKey(beaconHeight + 1, newKey)
+		keyPortingRequestNewState := lvdb.NewPortingRequestKey(newKey, beaconHeight + 1)
+
 		err = db.StorePortingRequestItem([]byte(keyPortingRequestNewState), newPortingRequest)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store porting request item: %+v", err)
@@ -383,7 +386,7 @@ func (blockchain *BlockChain) processPortalExchangeRates(beaconHeight uint64, in
 			SenderAddress: portingExchangeRatesContent.SenderAddress,
 		}
 
-		//todo: verify key
+		//todo: review key for fail case
 		err = db.StoreExchangeRatesRequestItem([]byte(reqStatus + portingExchangeRatesContent.UniqueRequestId), newExchangeRates)
 
 		if err != nil {
@@ -398,7 +401,9 @@ func (blockchain *BlockChain) processPortalExchangeRates(beaconHeight uint64, in
 }
 
 func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, currentPortalState *CurrentPortalState) error  {
-	Logger.log.Infof("Portal exchange rates, pick final exchange rates: count final exchange rate %v , exchange rate request %v", len(currentPortalState.FinalExchangeRates), len(currentPortalState.ExchangeRatesRequests))
+	exchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
+
+	Logger.log.Infof("Portal final exchange rates, pick final exchange rates from exchange rates, key %v, count final exchange rate %v , exchange rate request %v", exchangeRatesKey, len(currentPortalState.FinalExchangeRates), len(currentPortalState.ExchangeRatesRequests))
 
 	//convert to slice
 	var btcExchangeRatesSlice []uint64
@@ -433,7 +438,6 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 		return prvExchangeRatesSlice[i] < prvExchangeRatesSlice[j]
 	})
 
-	exchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
 	exchangeRatesList := make(map[string]lvdb.FinalExchangeRatesDetail)
 
 	var btcAmount uint64
@@ -455,10 +459,9 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 		prvAmount = calcMedian(prvExchangeRatesSlice)
 	}
 
-	Logger.log.Infof("Portal exchange rates, generate key %v", exchangeRatesKey)
 	//if pre state exist
 	if exchangeRatesState, ok := currentPortalState.FinalExchangeRates[exchangeRatesKey]; ok {
-		Logger.log.Infof("Portal exchange rates, pre block exits generate key %v", exchangeRatesKey)
+		Logger.log.Infof("Portal final exchange rates, pre block exits generate key %v", exchangeRatesKey)
 
 		var btcAmountPreState uint64
 		var bnbAmountPreState uint64
@@ -502,12 +505,11 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 
 
 	if len(exchangeRatesList) > 0 {
-		newFinalExchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
-		currentPortalState.FinalExchangeRates[newFinalExchangeRatesKey] = &lvdb.FinalExchangeRates{
+		currentPortalState.FinalExchangeRates[exchangeRatesKey] = &lvdb.FinalExchangeRates{
 			Rates: exchangeRatesList,
 		}
 
-		Logger.log.Infof("Portal exchange rates, done pick: count final exchange rate %v , exchange rate request %v", len(currentPortalState.FinalExchangeRates), len(currentPortalState.ExchangeRatesRequests))
+		Logger.log.Infof("Portal final exchange rates, key %v, count final exchange rate %v", exchangeRatesKey, len(currentPortalState.FinalExchangeRates))
 	}
 
 	return nil
