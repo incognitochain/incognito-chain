@@ -1,6 +1,7 @@
 package lvdb
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/database"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
@@ -19,8 +20,8 @@ func NewBNBHeaderRelayingStateKey(beaconHeight uint64) string {
 }
 
 func NewRelayingBNBHeaderChainKey(blockHeight uint64) string {
-	beaconHeightBytes := []byte(fmt.Sprintf("%d", blockHeight))
-	key := append(RelayingBNBHeaderChainPrefix, beaconHeightBytes...)
+	blockHeightBytes := []byte(fmt.Sprintf("%d", blockHeight))
+	key := append(RelayingBNBHeaderChainPrefix, blockHeightBytes...)
 	return string(key) //prefix + blockHeight
 }
 
@@ -54,4 +55,21 @@ func (db *db) GetRelayingBNBHeaderChain(blockHeight uint64) ([]byte, error) {
 	}
 
 	return data, nil
+}
+
+func (db *db) GetBNBDataHashByBlockHeight(blockHeight uint64) ([]byte, error) {
+	key := NewRelayingBNBHeaderChainKey(blockHeight)
+
+	data, err := db.lvdb.Get([]byte(key), nil)
+	if err != nil {
+		return nil, database.NewDatabaseError(database.GetRelayingBNBHeaderError, err)
+	}
+
+	var bnbHeader types.Header
+	err = json.Unmarshal(data, &bnbHeader)
+	if err != nil {
+		return nil, database.NewDatabaseError(database.GetRelayingBNBHeaderError, err)
+	}
+
+	return bnbHeader.DataHash, nil
 }

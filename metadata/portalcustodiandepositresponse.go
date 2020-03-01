@@ -80,76 +80,60 @@ func (iRes PortalCustodianDepositResponse) VerifyMinerCreatedTxBeforeGettingInBl
 ) (bool, error) {
 	idx := -1
 	for i, inst := range insts {
-		if len(inst) < 4 { // this is not PortalCustodianDeposit instruction
+		if len(inst) < 4 { // this is not PortalCustodianDeposit response instruction
 			continue
 		}
 		instMetaType := inst[0]
 		if instUsed[i] > 0 ||
-			instMetaType != strconv.Itoa(PDEContributionMeta) {
+			instMetaType != strconv.Itoa(PortalCustodianDepositResponseMeta) {
 			continue
 		}
 		instDepositStatus := inst[2]
 		if instDepositStatus != iRes.DepositStatus ||
-			(instDepositStatus != common.PortalCustodianDepositAcceptedChainStatus &&
-				instDepositStatus != common.PortalCustodianDepositRefundChainStatus) {
+			(instDepositStatus != common.PortalCustodianDepositRefundChainStatus) {
 			continue
 		}
 
 		var shardIDFromInst byte
 		var txReqIDFromInst common.Hash
-		var receiverAddrStrFromInst string
-		var receivingAmtFromInst uint64
-		var receivingTokenIDStr string
+		var custodianAddrStrFromInst string
+		var depositedAmountFromInst uint64
 
-		if instDepositStatus == common.PDEContributionRefundChainStatus {
-			contentBytes := []byte(inst[3])
-			var refundContribution PDERefundContribution
-			err := json.Unmarshal(contentBytes, &refundContribution)
-			if err != nil {
-				Logger.log.Error("WARNING - VALIDATION: an error occured while parsing refund contribution content: ", err)
-				continue
-			}
-			shardIDFromInst = refundContribution.ShardID
-			txReqIDFromInst = refundContribution.TxReqID
-			receiverAddrStrFromInst = refundContribution.ContributorAddressStr
-			receivingTokenIDStr = refundContribution.TokenIDStr
-			receivingAmtFromInst = refundContribution.ContributedAmount
-
-		} else { // matched and returned
-			contentBytes := []byte(inst[3])
-			var matchedNReturnedContrib PDEMatchedNReturnedContribution
-			err := json.Unmarshal(contentBytes, &matchedNReturnedContrib)
-			if err != nil {
-				Logger.log.Error("WARNING - VALIDATION: an error occured while parsing matched and returned contribution content: ", err)
-				continue
-			}
-			shardIDFromInst = matchedNReturnedContrib.ShardID
-			txReqIDFromInst = matchedNReturnedContrib.TxReqID
-			receiverAddrStrFromInst = matchedNReturnedContrib.ContributorAddressStr
-			receivingTokenIDStr = matchedNReturnedContrib.TokenIDStr
-			receivingAmtFromInst = matchedNReturnedContrib.ReturnedContributedAmount
+		contentBytes := []byte(inst[3])
+		var custodianDepositContent PortalCustodianDepositContent
+		err := json.Unmarshal(contentBytes, &custodianDepositContent)
+		if err != nil {
+			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing portal custodian deposit content: ", err)
+			continue
 		}
+		shardIDFromInst = custodianDepositContent.ShardID
+		txReqIDFromInst = custodianDepositContent.TxReqID
+		custodianAddrStrFromInst = custodianDepositContent.IncogAddressStr
+		depositedAmountFromInst = custodianDepositContent.DepositedAmount
 
 		if !bytes.Equal(iRes.ReqTxID[:], txReqIDFromInst[:]) ||
 			shardID != shardIDFromInst {
 			continue
 		}
-		key, err := wallet.Base58CheckDeserialize(receiverAddrStrFromInst)
+		key, err := wallet.Base58CheckDeserialize(custodianAddrStrFromInst)
 		if err != nil {
-			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
+			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing custodian address string: ", err)
 			continue
 		}
+
+		// collateral must be PRV
+		PRVIDStr := common.PRVCoinID.String()
 		_, pk, paidAmount, assetID := tx.GetTransferData()
 		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
-			receivingAmtFromInst != paidAmount ||
-			receivingTokenIDStr != assetID.String() {
+			depositedAmountFromInst != paidAmount ||
+			PRVIDStr != assetID.String() {
 			continue
 		}
 		idx = i
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
-		return false, fmt.Errorf(fmt.Sprintf("no PDEContribution instruction found for PDEContributionResponse tx %s", tx.Hash().String()))
+		return false, fmt.Errorf(fmt.Sprintf("no PortalCustodianDeposit instruction found for PortalCustodianDepositResponse tx %s", tx.Hash().String()))
 	}
 	instUsed[idx] = 1
 	return true, nil

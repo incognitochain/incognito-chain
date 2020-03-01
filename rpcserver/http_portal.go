@@ -246,11 +246,11 @@ func (httpServer *HttpServer) handleGetPortalCustodianDepositStatus(params inter
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param DepositTxID is invalid"))
 	}
-	statusBytes, err := httpServer.databaseService.GetPortalCustodianDepositStatus(depositTxID)
+	status, err := httpServer.databaseService.GetPortalCustodianDepositStatus(depositTxID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetCustodianDepositError, err)
 	}
-	return statusBytes, nil
+	return status, nil
 }
 
 func (httpServer *HttpServer) handleGetPortalReqPTokenStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -266,10 +266,10 @@ func (httpServer *HttpServer) handleGetPortalReqPTokenStatus(params interface{},
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param PortingID is invalid"))
 	}
-	statusBytes, err := httpServer.databaseService.GetPortalReqPTokenStatus(portingID)
+	status, err := httpServer.databaseService.GetPortalReqPTokenStatus(portingID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetReqPTokenStatusError, err)
 	}
-	return statusBytes, nil
+	return status, nil
 }
 

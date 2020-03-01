@@ -38,9 +38,6 @@ func BuildProof2(indexTx int, blockHeight int64, url string) (*types.TxProof, *B
 }
 
 func VerifyProof(txProof *types.TxProof, dataHash []byte) (bool, *BNBRelayingError) {
-	// todo: get dataHash in blockHeight from db
-	// if there is no blockheight in db, return error
-	//dataHash := []byte{}
 	err := txProof.Validate(dataHash)
 	if err != nil {
 		return false, NewBNBRelayingError(InvalidTxProofErr, err)
@@ -133,9 +130,11 @@ func (p *BNBProof) Build(indexTx int, blockHeight int64, url string) (*BNBRelayi
 }
 
 func (p *BNBProof) Verify(db database.DatabaseInterface) (bool, *BNBRelayingError){
-	// todo: get dataHash from db with p.BlockHeight
-	//dataHash := []byte{}
-	dataHash, _ := hex.DecodeString("D81AD27D7C1D8114EB339158897C02337820BC17E10AB6405143EFE8E52AB526")
+	dataHash, err := db.GetBNBDataHashByBlockHeight(uint64(p.BlockHeight))
+	if err != nil {
+		return false, NewBNBRelayingError(GetBNBDataHashErr, err)
+	}
+
 	return VerifyProof(p.Proof, dataHash)
 }
 

@@ -509,9 +509,9 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 				responsedTxs = append(responsedTxs, newTx)
 				responsedHashTxs = append(responsedHashTxs, newTxHash)
 			}
-		}
-	}
-	return responsedTxs, errorInstructions, nil
+}
+}
+return responsedTxs, errorInstructions, nil
 }
 
 /*

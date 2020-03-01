@@ -1,8 +1,12 @@
 package metadata
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"strconv"
 )
 
@@ -67,7 +71,6 @@ func (iRes *PortalRequestPTokensResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-//todo:
 func (iRes PortalRequestPTokensResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	txsInBlock []Transaction,
 	txsUsed []int,
@@ -78,79 +81,63 @@ func (iRes PortalRequestPTokensResponse) VerifyMinerCreatedTxBeforeGettingInBloc
 	bcr BlockchainRetriever,
 	ac *AccumulatedValues,
 ) (bool, error) {
-	//idx := -1
-	//for i, inst := range insts {
-	//	if len(inst) < 4 { // this is not PortalCustodianDeposit instruction
-	//		continue
-	//	}
-	//	instMetaType := inst[0]
-	//	if instUsed[i] > 0 ||
-	//		instMetaType != strconv.Itoa(PDEContributionMeta) {
-	//		continue
-	//	}
-	//	instDepositStatus := inst[2]
-	//	if instDepositStatus != iRes.RequestStatus ||
-	//		(instDepositStatus != common.PortalCustodianDepositAcceptedChainStatus &&
-	//			instDepositStatus != common.PortalCustodianDepositRefundChainStatus) {
-	//		continue
-	//	}
-	//
-	//	var shardIDFromInst byte
-	//	var txReqIDFromInst common.Hash
-	//	var receiverAddrStrFromInst string
-	//	var receivingAmtFromInst uint64
-	//	var receivingTokenIDStr string
-	//
-	//	if instDepositStatus == common.PDEContributionRefundChainStatus {
-	//		contentBytes := []byte(inst[3])
-	//		var refundContribution PDERefundContribution
-	//		err := json.Unmarshal(contentBytes, &refundContribution)
-	//		if err != nil {
-	//			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing refund contribution content: ", err)
-	//			continue
-	//		}
-	//		shardIDFromInst = refundContribution.ShardID
-	//		txReqIDFromInst = refundContribution.TxReqID
-	//		receiverAddrStrFromInst = refundContribution.ContributorAddressStr
-	//		receivingTokenIDStr = refundContribution.TokenIDStr
-	//		receivingAmtFromInst = refundContribution.ContributedAmount
-	//
-	//	} else { // matched and returned
-	//		contentBytes := []byte(inst[3])
-	//		var matchedNReturnedContrib PDEMatchedNReturnedContribution
-	//		err := json.Unmarshal(contentBytes, &matchedNReturnedContrib)
-	//		if err != nil {
-	//			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing matched and returned contribution content: ", err)
-	//			continue
-	//		}
-	//		shardIDFromInst = matchedNReturnedContrib.ShardID
-	//		txReqIDFromInst = matchedNReturnedContrib.TxReqID
-	//		receiverAddrStrFromInst = matchedNReturnedContrib.ContributorAddressStr
-	//		receivingTokenIDStr = matchedNReturnedContrib.TokenIDStr
-	//		receivingAmtFromInst = matchedNReturnedContrib.ReturnedContributedAmount
-	//	}
-	//
-	//	if !bytes.Equal(iRes.ReqTxID[:], txReqIDFromInst[:]) ||
-	//		shardID != shardIDFromInst {
-	//		continue
-	//	}
-	//	key, err := wallet.Base58CheckDeserialize(receiverAddrStrFromInst)
-	//	if err != nil {
-	//		Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
-	//		continue
-	//	}
-	//	_, pk, paidAmount, assetID := tx.GetTransferData()
-	//	if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
-	//		receivingAmtFromInst != paidAmount ||
-	//		receivingTokenIDStr != assetID.String() {
-	//		continue
-	//	}
-	//	idx = i
-	//	break
-	//}
-	//if idx == -1 { // not found the issuance request tx for this response
-	//	return false, fmt.Errorf(fmt.Sprintf("no PDEContribution instruction found for PDEContributionResponse tx %s", tx.Hash().String()))
-	//}
-	//instUsed[idx] = 1
+	idx := -1
+	for i, inst := range insts {
+		if len(inst) < 4 { // this is not PortalRequestPTokens response instruction
+			continue
+		}
+		instMetaType := inst[0]
+		if instUsed[i] > 0 ||
+			instMetaType != strconv.Itoa(PortalUserRequestPTokenResponseMeta) {
+			continue
+		}
+		instDepositStatus := inst[2]
+		if instDepositStatus != iRes.RequestStatus ||
+			(instDepositStatus != common.PortalReqPTokensAcceptedChainStatus) {
+			continue
+		}
+
+		var shardIDFromInst byte
+		var txReqIDFromInst common.Hash
+		var requesterAddrStrFromInst string
+		var portingAmountFromInst uint64
+		var tokenIDStrFromInst string
+
+		contentBytes := []byte(inst[3])
+		var reqPTokensContent PortalRequestPTokensContent
+		err := json.Unmarshal(contentBytes, &reqPTokensContent)
+		if err != nil {
+			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing portal request ptokens content: ", err)
+			continue
+		}
+		shardIDFromInst = reqPTokensContent.ShardID
+		txReqIDFromInst = reqPTokensContent.TxReqID
+		requesterAddrStrFromInst = reqPTokensContent.IncogAddressStr
+		portingAmountFromInst = reqPTokensContent.PortingAmount
+		tokenIDStrFromInst = reqPTokensContent.TokenID
+
+		if !bytes.Equal(iRes.ReqTxID[:], txReqIDFromInst[:]) ||
+			shardID != shardIDFromInst {
+			continue
+		}
+		key, err := wallet.Base58CheckDeserialize(requesterAddrStrFromInst)
+		if err != nil {
+			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
+			continue
+		}
+
+		_, pk, paidAmount, assetID := tx.GetTransferData()
+		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
+			portingAmountFromInst != paidAmount ||
+			tokenIDStrFromInst != assetID.String() {
+			continue
+		}
+		idx = i
+		break
+	}
+	if idx == -1 { // not found the issuance request tx for this response
+		return false, fmt.Errorf(fmt.Sprintf("no PortalReqPtokens instruction found for PortalReqPtokensResponse tx %s", tx.Hash().String()))
+	}
+	instUsed[idx] = 1
 	return true, nil
 }

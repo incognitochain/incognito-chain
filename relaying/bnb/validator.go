@@ -125,17 +125,17 @@ func NewFixedValidators() (map[string]*types.Validator, error) {
 
 // address = hexEncode(sha256(pubKey)[:20])
 var ValidatorAddressesTestnet = []string{
-	"76154E686175F3E1111930C4E6496C2754CBA48E",
+	"75D14638A3DD5779D886646B640BD3BBA729902E",
 }
 
 // public key on ed25519 curve (base64 encoded)
 var ValidatorB64EncodePubKeysTestnet = []string{
-	"RtEX+5PkniuWYH0rwr2NW742SXCoeqU3xvlzg7tmnVM=",
+	"tVNtS1VjHDoC7zho5WkEdzQXiOe4407LvE+FuBsxgJM=",
 }
 
 // ValidatorPubKeyBytes are results from base-64 decoding ValidatorB64EncodePubKeys
 var ValidatorPubKeyBytesTestnet = [][]byte{
-	{70, 209, 23, 251, 147, 228, 158, 43, 150, 96, 125, 43, 194, 189, 141, 91, 190, 54, 73, 112, 168, 122, 165, 55, 198, 249, 115, 131, 187, 102, 157, 83},
+	[]byte{0xb5, 0x53, 0x6d, 0x4b, 0x55, 0x63, 0x1c, 0x3a, 0x2, 0xef, 0x38, 0x68, 0xe5, 0x69, 0x4, 0x77, 0x34, 0x17, 0x88, 0xe7, 0xb8, 0xe3, 0x4e, 0xcb, 0xbc, 0x4f, 0x85, 0xb8, 0x1b, 0x31, 0x80, 0x93},
 }
 
 var ValidatorVotingPowersTestnet = []int64{

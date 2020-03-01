@@ -67,7 +67,7 @@ func (blockGenerator *BlockGenerator) buildPortalAcceptedRequestPTokensTx(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 ) (metadata.Transaction, error) {
-	Logger.log.Info("[Portal refund custodian deposit] Starting...")
+	Logger.log.Errorf("[Shard buildPortalAcceptedRequestPTokensTx] Starting...")
 	contentBytes := []byte(contentStr)
 	var acceptedReqPToken metadata.PortalRequestPTokensContent
 	err := json.Unmarshal(contentBytes, &acceptedReqPToken)
@@ -76,6 +76,7 @@ func (blockGenerator *BlockGenerator) buildPortalAcceptedRequestPTokensTx(
 		return nil, nil
 	}
 	if acceptedReqPToken.ShardID != shardID {
+		Logger.log.Errorf("ERROR: ShardID unexpected expect %v, but got %+v", shardID, acceptedReqPToken.ShardID)
 		return nil, nil
 	}
 
@@ -84,7 +85,7 @@ func (blockGenerator *BlockGenerator) buildPortalAcceptedRequestPTokensTx(
 		acceptedReqPToken.TxReqID,
 		acceptedReqPToken.IncogAddressStr,
 		acceptedReqPToken.PortingAmount,
-		metadata.PortalCustodianDepositResponseMeta,
+		metadata.PortalUserRequestPTokenResponseMeta,
 	)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(acceptedReqPToken.IncogAddressStr)
@@ -135,5 +136,7 @@ func (blockGenerator *BlockGenerator) buildPortalAcceptedRequestPTokensTx(
 		Logger.log.Errorf("ERROR: an error occured while initializing request ptoken response tx: %+v", initErr)
 		return nil, initErr
 	}
+
+	Logger.log.Errorf("Suucc: %+v", err)
 	return resTx, nil
 }

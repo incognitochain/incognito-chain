@@ -40,10 +40,7 @@ func PushBNBProofIntoIncognito(
         	"TokenID": "` + tokenID + `",
         	"IncogAddressStr": "12S5pBBRDf1GqfRHouvCV86sWaHzNfvakAWpVMvNnWu2k299xWCgQzLLc9wqPYUHfMYGDprPvQ794dbi6UU1hfRN4tPiU61txWWenhC",
         	"PortingAmount": ` + strconv.Itoa(int(portingAmount)) + `,
-        	"PortingProof": {
-        		"BlockHeight" : ` + strconv.Itoa(int(blockHeight)) + `,
-        		"Proof" : "` + bnbProof + `"
-        	}
+        	"PortingProof": "` + bnbProof + `"
         }
 	`
 

@@ -184,8 +184,20 @@ func (dbService DatabaseService) GetPortalCustodianDepositStatus(txID string) (*
 	return &status, nil
 }
 
-func (dbService DatabaseService) GetPortalReqPTokenStatus(portingID string) ([]byte, error) {
-	return (*dbService.DB).GetReqPTokenStatusByPortingID(portingID)
+func (dbService DatabaseService) GetPortalReqPTokenStatus(portingID string) (*metadata.PortalRequestPTokensStatus, error) {
+	statusBytes, err := (*dbService.DB).GetReqPTokenStatusByPortingID(portingID)
+	if err != nil {
+		return nil, err
+	}
+	if len(statusBytes) == 0 {
+		return nil, nil
+	}
+	var status metadata.PortalRequestPTokensStatus
+	err = json.Unmarshal(statusBytes, &status)
+	if err != nil {
+		return nil, err
+	}
+	return &status, nil
 }
 
 func (dbService DatabaseService) GetRelayingBNBHeaderByBlockHeight(blockHeight uint64) ([]byte, error) {
