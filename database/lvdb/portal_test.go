@@ -8,23 +8,49 @@ import "github.com/stretchr/testify/assert"
 
 func TestFinalExchangeRates(t *testing.T)  {
 	ratesDetail := make(map[string]FinalExchangeRatesDetail)
-	ratesDetail["BTC"] = FinalExchangeRatesDetail{Amount: uint64(8000 * math.Pow10(6))}
-	ratesDetail["BNB"] = FinalExchangeRatesDetail{Amount: uint64(20 * math.Pow10(6))}
+	ratesDetail["BTC"] = FinalExchangeRatesDetail{Amount: 10}
+	ratesDetail["BNB"] = FinalExchangeRatesDetail{Amount: 20}
+	ratesDetail["PRV"] = FinalExchangeRatesDetail{Amount: 5}
+
+	finalExchangeRates := FinalExchangeRates {
+		Rates: ratesDetail,
+	}
+
+	bnb2PRV := finalExchangeRates.ExchangeBNB2PRV(uint64(math.Pow10(9)))
+	assert.Equal(t, bnb2PRV, uint64(4000000000))
+
+
+	prv2BNB := finalExchangeRates.ExchangePRV2BNB(4000000000)
+	assert.Equal(t, prv2BNB, uint64(math.Pow10(9)))
+
+	btc2PRV := finalExchangeRates.ExchangeBTC2PRV(uint64(math.Pow10(9)))
+	assert.Equal(t, btc2PRV, 2 * uint64(math.Pow10(9)))
+
+	prv2BTC := finalExchangeRates.ExchangePRV2BTC(2 * uint64(math.Pow10(9)))
+	assert.Equal(t, prv2BTC, uint64(math.Pow10(9)))
+}
+
+func TestRealFinalExchangeRates(t *testing.T)  {
+	ratesDetail := make(map[string]FinalExchangeRatesDetail)
+	ratesDetail["BTC"] = FinalExchangeRatesDetail{Amount: 9000 * uint64(math.Pow10(6))}
+	ratesDetail["BNB"] = FinalExchangeRatesDetail{Amount: 20 * uint64(math.Pow10(6))}
 	ratesDetail["PRV"] = FinalExchangeRatesDetail{Amount: uint64(0.5 * math.Pow10(6))}
 
 	finalExchangeRates := FinalExchangeRates {
 		Rates: ratesDetail,
 	}
 
-	bnb2PRV := finalExchangeRates.ExchangeBNB2PRV(20)
-	assert.Equal(t, bnb2PRV, uint64(800))
 
-	prv2BNB := finalExchangeRates.ExchangePRV2BNB(800)
-	assert.Equal(t, prv2BNB, uint64(20))
+	bnb2PRV := finalExchangeRates.ExchangeBNB2PRV(1000) //nano BNB
+	assert.Equal(t, bnb2PRV, uint64(40000))
 
-	btc2PRV := finalExchangeRates.ExchangeBTC2PRV(1)
-	assert.Equal(t, btc2PRV, uint64(16000))
+	prv2BNB := finalExchangeRates.ExchangePRV2BNB(40000) //nano PRV
+	assert.Equal(t, prv2BNB,  uint64(1000))
 
-	prv2BTC := finalExchangeRates.ExchangePRV2BTC(16000)
-	assert.Equal(t, prv2BTC, uint64(1))
+	btc2PRV := finalExchangeRates.ExchangeBTC2PRV(1000)
+	assert.Equal(t, btc2PRV, uint64(18000000))
+
+	prv2BTC := finalExchangeRates.ExchangePRV2BTC(18000000) //nano PRV
+	assert.Equal(t, prv2BTC,  uint64(1000))
+
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"strings"
 )
 
 func (httpServer *HttpServer) handleRegisterPortingPublicTokens(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -50,6 +51,7 @@ func (httpServer *HttpServer) handleRegisterPortingPublicTokens(params interface
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PortingFee is invalid"))
 	}
 
+	uniqueRegisterId = strings.Replace(uniqueRegisterId, "-", "", -1)
 	meta, _ := metadata.NewPortalUserRegister(
 		uniqueRegisterId,
 		incogAddressStr,

@@ -118,6 +118,7 @@ func (portalUserRegister PortalUserRegister) ValidateSanityData(bcr BlockchainRe
 		return false, false, errors.New("porting fee should be larger than 0")
 	}
 
+	//todo: review
 	if (portalUserRegister.PortingFee) != txr.CalculateTxValue() {
 		return false, false, errors.New("Total of register amount and porting fee should be equal to the tx value")
 	}

@@ -79,7 +79,7 @@ func (portal *Portal) GetFinalExchangeRates(service *BlockService, db database.D
 	return result, nil
 }
 
-func (portal *Portal) ConvertExchangeRates(tokenSymbol string, valuePToken uint64, service *BlockService) (jsonresult.ExchangeRatesResult, *RPCError) {
+func (portal *Portal) ConvertExchangeRates(tokenSymbol string, valuePToken uint64, service *BlockService, db database.DatabaseInterface) (jsonresult.ExchangeRatesResult, *RPCError) {
 
 	beaconBlock, err := service.GetBeaconBestBlock()
 	if err != nil {
@@ -87,13 +87,13 @@ func (portal *Portal) ConvertExchangeRates(tokenSymbol string, valuePToken uint6
 	}
 
 	finalExchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconBlock.GetHeight())
-	finalExchangeRates, err := blockchain.GetFinalExchangeRatesByKey(portal.BlockChain.GetDatabase(), []byte(finalExchangeRatesKey))
+	finalExchangeRates, err := blockchain.GetFinalExchangeRatesByKey(db, []byte(finalExchangeRatesKey))
 
 	if err != nil {
 		return jsonresult.ExchangeRatesResult{}, NewRPCError(GetExchangeRatesError, err)
 	}
 
-	if finalExchangeRates == nil {
+	if finalExchangeRates.Rates == nil {
 		return jsonresult.ExchangeRatesResult{}, NewRPCError(GetExchangeRatesIsEmpty, err)
 	}
 
