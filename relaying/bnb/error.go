@@ -14,6 +14,7 @@ const (
 	InvalidTxProofErr
 	ParseProofErr
 	ExistedNewHeaderErr
+	GetBNBDataHashErr
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -29,6 +30,7 @@ var ErrCodeMessage = map[int]struct {
 	InvalidTxProofErr:               {-14005, "Invalid tx proof error"},
 	ParseProofErr:                   {-14006, "Parse proof from json string error"},
 	ExistedNewHeaderErr:             {-14007, "New header is existed in list of unconfirmed headers error"},
+	GetBNBDataHashErr:               {-14008, "Can not get bnb data hash from db error"},
 }
 
 type BNBRelayingError struct {

@@ -215,4 +215,5 @@ type DatabaseInterface interface {
 	GetItemByKey(key []byte) ([]byte, error)
 	StoreRelayingBNBHeaderChain(blockHeight uint64, header []byte) error
 	GetRelayingBNBHeaderChain(blockHeight uint64) ([]byte, error)
+	GetBNBDataHashByBlockHeight(blockHeight uint64) ([]byte, error)
 }

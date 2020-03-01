@@ -432,6 +432,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 	}
 	db := blockchain.GetDatabase()
 
+
 	// check reqPToken status of portingID (get status of reqPToken for portingID from db)
 	reqPTokenStatusBytes, err := db.GetReqPTokenStatusByPortingID(meta.UniquePortingID)
 	if err != nil &&  err != lvdberr.ErrNotFound {
@@ -524,7 +525,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		// parse PortingProof in meta
 		txProofBNB, err := relaying.ParseBNBProofFromB64EncodeJsonStr(meta.PortingProof)
 		if err != nil {
-			Logger.log.Errorf("PortingProof is invalid")
+			Logger.log.Errorf("PortingProof is invalid %v\n", err)
 			inst := buildReqPTokensInst(
 				meta.UniquePortingID,
 				meta.TokenID,
@@ -574,10 +575,74 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 			return [][]string{inst}, nil
 		}
 
+		// check memo attach portingID req:
+		type PortingMemoBNB struct {
+			PortingID string		`json:"PortingID"`
+		}
+		memo := txBNB.Memo
+		Logger.log.Infof("[buildInstructionsForReqPTokens] memo: %v\n", memo)
+		memoBytes, err2 := base64.StdEncoding.DecodeString(memo)
+		if err2 != nil {
+			Logger.log.Errorf("Can not decode memo in tx bnb proof", err2)
+			inst := buildReqPTokensInst(
+				meta.UniquePortingID,
+				meta.TokenID,
+				meta.IncogAddressStr,
+				meta.PortingAmount,
+				meta.PortingProof,
+				meta.Type,
+				shardID,
+				actionData.TxReqID,
+				common.PortalReqPTokensRejectedChainStatus,
+			)
+			return [][]string{inst}, nil
+		}
+		Logger.log.Infof("[buildInstructionsForReqPTokens] memoBytes: %v\n", memoBytes)
+
+		var portingMemo PortingMemoBNB
+		err2 = json.Unmarshal(memoBytes, &portingMemo)
+		if err2 != nil {
+			Logger.log.Errorf("Can not unmarshal memo in tx bnb proof", err2)
+			inst := buildReqPTokensInst(
+				meta.UniquePortingID,
+				meta.TokenID,
+				meta.IncogAddressStr,
+				meta.PortingAmount,
+				meta.PortingProof,
+				meta.Type,
+				shardID,
+				actionData.TxReqID,
+				common.PortalReqPTokensRejectedChainStatus,
+			)
+			return [][]string{inst}, nil
+		}
+
+		if portingMemo.PortingID != meta.UniquePortingID {
+			Logger.log.Errorf("PortingId in memoTx is not matched with portingID in metadata", err2)
+			inst := buildReqPTokensInst(
+				meta.UniquePortingID,
+				meta.TokenID,
+				meta.IncogAddressStr,
+				meta.PortingAmount,
+				meta.PortingProof,
+				meta.Type,
+				shardID,
+				actionData.TxReqID,
+				common.PortalReqPTokensRejectedChainStatus,
+			)
+			return [][]string{inst}, nil
+		}
+
 		// check whether amount transfer in txBNB is equal porting amount or not
 		// check receiver and amount in tx
 		// get list matching custodians in waitingPortingRequest
 		custodians := waitingPortingRequest.Custodians
+		//custodians := make(map[string]lvdb.MatchingPortingCustodianDetail, 1)
+		//custodians["12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ"] = lvdb.MatchingPortingCustodianDetail{
+		//	RemoteAddress: "tbnb1v63crn5slveu50v8x590uwmqf7kk5xca74scwx",
+		//	Amount: 10000000000,   // 10 bnb
+		//}
+
 		outputs := txBNB.Msgs[0].(msg.SendMsg).Outputs
 
 		for _, cusDetail := range custodians {
@@ -598,7 +663,8 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 					}
 				}
 
-				if amountTransfer != int64(amountNeedToBeTransfer) {
+				//TODO:
+				if amountTransfer * 10^9 != int64(amountNeedToBeTransfer) {
 					Logger.log.Errorf("TxProof-BNB is invalid - Amount transfer to %s must be equal %d, but got %d",
 						addr, amountNeedToBeTransfer, amountTransfer)
 					inst := buildReqPTokensInst(

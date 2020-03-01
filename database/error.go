@@ -122,6 +122,7 @@ const (
 	// relaying
 	StoreRelayingBNBHeaderError
 	GetRelayingBNBHeaderError
+	GetBNBDataHashError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -245,6 +246,7 @@ var ErrCodeMessage = map[int]struct {
 	// relaying
 	StoreRelayingBNBHeaderError:             {-15001, "Store relaying header bnb error"},
 	GetRelayingBNBHeaderError:             {-15002, "Get relaying header bnb error"},
+	GetBNBDataHashError:  {-15003, "Get bnb data hash by block height error"},
 }
 
 type DatabaseError struct {

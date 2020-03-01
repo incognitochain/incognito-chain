@@ -134,7 +134,7 @@ func (reqPToken PortalRequestPTokens) ValidateSanityData(bcr BlockchainRetriever
 }
 
 func (reqPToken PortalRequestPTokens) ValidateMetadataByItself() bool {
-	return reqPToken.Type == PortalCustodianDepositMeta
+	return reqPToken.Type == PortalUserRequestPTokenMeta
 }
 
 func (reqPToken PortalRequestPTokens) Hash() *common.Hash {
