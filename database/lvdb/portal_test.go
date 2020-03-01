@@ -47,4 +47,10 @@ func TestRealFinalExchangeRates(t *testing.T)  {
 	prv2BNB := finalExchangeRates.ExchangePRV2BNB(40000) //nano PRV
 	assert.Equal(t, prv2BNB,  uint64(1000))
 
+	btc2PRV := finalExchangeRates.ExchangeBTC2PRV(1000)
+	assert.Equal(t, btc2PRV, uint64(18000000))
+
+	prv2BTC := finalExchangeRates.ExchangePRV2BTC(18000000) //nano PRV
+	assert.Equal(t, prv2BTC,  uint64(1000))
+
 }

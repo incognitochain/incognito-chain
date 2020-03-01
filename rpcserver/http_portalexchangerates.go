@@ -119,12 +119,12 @@ func (httpServer *HttpServer) handleConvertExchangeRates(params interface{}, clo
 	arrayParams := common.InterfaceSlice(params)
 
 	// get meta data from params
-	data, ok := arrayParams[2].(map[string]interface{})
+	data, ok := arrayParams[0].(map[string]interface{})
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
 	}
 
-	valuePToken, ok := data["ValuePToken"].(uint64)
+	valuePToken, ok := data["ValuePToken"].(float64)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata ValuePToken is invalid"))
 	}
@@ -140,7 +140,7 @@ func (httpServer *HttpServer) handleConvertExchangeRates(params interface{}, clo
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenSymbol is not support"))
 	}
 
-	result, err := httpServer.portal.ConvertExchangeRates(tokenSymbol, valuePToken, httpServer.blockService)
+	result, err := httpServer.portal.ConvertExchangeRates(tokenSymbol, uint64(valuePToken), httpServer.blockService, *httpServer.config.Database)
 
 	if err != nil {
 		return nil, err
