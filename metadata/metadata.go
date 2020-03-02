@@ -18,7 +18,7 @@ type Metadata interface {
 	Hash() *common.Hash
 	CheckTransactionFee(Transaction, uint64, int64, database.DatabaseInterface) bool
 	ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error)
-	ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error)
+	ValidateSanityData(bcr BlockchainRetriever, tx Transaction, beaconHeight uint64) (bool, bool, error)
 	ValidateMetadataByItself() bool
 	BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error)
 	CalculateSize() uint64
@@ -109,14 +109,14 @@ type Transaction interface {
 	ValidateTxWithCurrentMempool(MempoolRetriever) error
 	ValidateTxWithBlockChain(BlockchainRetriever, byte, database.DatabaseInterface) error
 	ValidateDoubleSpendWithBlockchain(BlockchainRetriever, byte, database.DatabaseInterface, *common.Hash) error
-	ValidateSanityData(BlockchainRetriever) (bool, error)
-	ValidateTxByItself(bool, database.DatabaseInterface, BlockchainRetriever, byte) (bool, error)
+	ValidateSanityData(BlockchainRetriever, uint64) (bool, error)
+	ValidateTxByItself(bool, database.DatabaseInterface, BlockchainRetriever, byte, bool) (bool, error)
 	ValidateType() bool
-	ValidateTransaction(bool, database.DatabaseInterface, byte, *common.Hash) (bool, error)
+	ValidateTransaction(bool, database.DatabaseInterface, byte, *common.Hash, bool, bool) (bool, error)
 	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, BlockchainRetriever, *AccumulatedValues) (bool, error)
 
 	IsPrivacy() bool
-	IsCoinsBurning(BlockchainRetriever) bool
+	IsCoinsBurning(BlockchainRetriever, uint64) bool
 	CalculateTxValue() uint64
 	IsSalaryTx() bool
 }
@@ -147,17 +147,19 @@ func getPDEPoolPair(
 	return &pdePoolForPair, nil
 }
 
-func isPairValid(poolPair *lvdb.PDEPoolForPair) bool {
+func isPairValid(poolPair *lvdb.PDEPoolForPair, beaconHeight int64) bool {
 	if poolPair == nil {
 		return false
 	}
 	prvIDStr := common.PRVCoinID.String()
 	if poolPair.Token1IDStr == prvIDStr &&
-		poolPair.Token1PoolValue < uint64(common.MinTxFeesOnTokenRequirement) {
+		poolPair.Token1PoolValue < uint64(common.MinTxFeesOnTokenRequirement) &&
+		beaconHeight >= common.BeaconBlockHeighMilestoneForMinTxFeesOnTokenRequirement {
 		return false
 	}
 	if poolPair.Token2IDStr == prvIDStr &&
-		poolPair.Token2PoolValue < uint64(common.MinTxFeesOnTokenRequirement) {
+		poolPair.Token2PoolValue < uint64(common.MinTxFeesOnTokenRequirement) &&
+		beaconHeight >= common.BeaconBlockHeighMilestoneForMinTxFeesOnTokenRequirement {
 		return false
 	}
 	return true
@@ -176,7 +178,7 @@ func convertValueBetweenCurrencies(
 	if err != nil {
 		return 0, NewMetadataTxError(CouldNotGetExchangeRateError, err)
 	}
-	if !isPairValid(pdePoolForPair) {
+	if !isPairValid(pdePoolForPair, beaconHeight) {
 		return 0, NewMetadataTxError(CouldNotGetExchangeRateError, errors.New("PRV pool size on pdex is smaller minimum initial adding liquidity amount"))
 	}
 	invariant := float64(0)

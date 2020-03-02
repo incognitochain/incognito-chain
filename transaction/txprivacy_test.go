@@ -151,7 +151,7 @@ func TestInitTx(t *testing.T) {
 		assert.Equal(t, true, isValidSanity)
 		assert.Equal(t, nil, err)
 
-		isValid, err := tx1.ValidateTransaction(hasPrivacy, db, shardID, nil)
+		isValid, err := tx1.ValidateTransaction(hasPrivacy, db, shardID, nil, false)
 
 		fmt.Printf("Error: %v\n", err)
 		assert.Equal(t, true, isValid)
@@ -314,7 +314,7 @@ func TestInitTxWithMultiScenario(t *testing.T) {
 		assert.Equal(t, true, isValidSanity)
 		assert.Equal(t, nil, err)
 		fmt.Println("Hello")
-		isValid, err := tx1.ValidateTransaction(hasPrivacy, db, shardID, nil)
+		isValid, err := tx1.ValidateTransaction(hasPrivacy, db, shardID, nil, false)
 		assert.Equal(t, true, isValid)
 		assert.Equal(t, nil, err)
 		fmt.Println("Hello")
@@ -331,7 +331,7 @@ func TestInitTxWithMultiScenario(t *testing.T) {
 		// modify Sig
 		tx1.Sig[len(tx1.Sig)-1] = tx1.Sig[len(tx1.Sig)-1] ^ tx1.Sig[0]
 		tx1.Sig[len(tx1.Sig)-2] = tx1.Sig[len(tx1.Sig)-2] ^ tx1.Sig[1]
-		isValid, err = tx1.ValidateTransaction(hasPrivacy, db, shardID, nil)
+		isValid, err = tx1.ValidateTransaction(hasPrivacy, db, shardID, nil, false)
 		assert.Equal(t, false, isValid)
 		assert.NotEqual(t, nil, err)
 		tx1.Sig[len(tx1.Sig)-1] = tx1.Sig[len(tx1.Sig)-1] ^ tx1.Sig[0]
@@ -341,7 +341,7 @@ func TestInitTxWithMultiScenario(t *testing.T) {
 		tx1.SigPubKey[len(tx1.SigPubKey)-1] = tx1.SigPubKey[len(tx1.SigPubKey)-1] ^ tx1.SigPubKey[0]
 		tx1.SigPubKey[len(tx1.SigPubKey)-2] = tx1.SigPubKey[len(tx1.SigPubKey)-2] ^ tx1.SigPubKey[1]
 
-		isValid, err = tx1.ValidateTransaction(hasPrivacy, db, shardID, nil)
+		isValid, err = tx1.ValidateTransaction(hasPrivacy, db, shardID, nil,false)
 		assert.Equal(t, false, isValid)
 		assert.NotEqual(t, nil, err)
 

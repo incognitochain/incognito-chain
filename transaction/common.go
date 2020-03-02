@@ -1,16 +1,19 @@
 package transaction
 
 import (
+	"encoding/json"
 	"errors"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/database"
-	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 	"math"
 	"math/big"
 	"math/rand"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 )
 
 // ConvertOutputCoinToInputCoin - convert output coin from old tx to input coin for new tx
@@ -54,6 +57,9 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 	commitmentIndexs = []uint64{} // : list commitment indexes which: random from full db commitments + commitments of usableInputCoins
 	commitments = [][]byte{}
 	myCommitmentIndexs = []uint64{} // : list indexes of commitments(usableInputCoins) in {commitmentIndexs}
+	if len(param.usableInputCoins) == 0 {
+		return
+	}
 	if param.randNum == 0 {
 		param.randNum = privacy.CommitmentRingSize // default
 	}
@@ -91,7 +97,7 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 		Logger.log.Error(errors.New("Commitments is empty"))
 		return
 	}
-	if lenCommitment.Uint64() == 1 {
+	if lenCommitment.Uint64() == 1 && len(param.usableInputCoins) == 1 {
 		commitmentIndexs = []uint64{0, 0, 0, 0, 0, 0, 0}
 		temp := param.usableInputCoins[0].CoinDetails.GetCoinCommitment().ToBytesS()
 		commitments = [][]byte{temp, temp, temp, temp, temp, temp, temp}
@@ -156,7 +162,7 @@ func NewEstimateTxSizeParam(numInputCoins, numPayments int,
 	estimateTxSizeParam := &EstimateTxSizeParam{
 		numInputCoins:            numInputCoins,
 		numPayments:              numPayments,
-		hasPrivacy:				  hasPrivacy,
+		hasPrivacy:               hasPrivacy,
 		limitFee:                 limitFee,
 		metadata:                 metadata,
 		privacyCustomTokenParams: privacyCustomTokenParams,
@@ -319,4 +325,23 @@ func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Tr
 		return tx, nil
 	}
 	return nil, nil
+}
+
+// IsBridgeTokenID finds the external tokenID for a bridge token from database
+func IsBridgeTokenID(tokenID common.Hash, db database.DatabaseInterface) (bool, error) {
+	allBridgeTokensBytes, err := db.GetAllBridgeTokens()
+	if err != nil {
+		return false, err
+	}
+	var allBridgeTokens []*lvdb.BridgeTokenInfo
+	err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
+	if err != nil {
+		return false, err
+	}
+	for _, token := range allBridgeTokens {
+		if token.TokenID.IsEqual(&tokenID) {
+			return true, nil
+		}
+	}
+	return false, errors.New("invalid bridge tokenID")
 }

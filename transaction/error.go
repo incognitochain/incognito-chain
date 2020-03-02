@@ -40,6 +40,8 @@ const (
 	SndExistedError
 	InputCommitmentIsNotExistedError
 	TxProofVerifyFailError
+	VerifyOneOutOfManyProofFailedErr
+	BatchTxProofVerifyFailError
 	VerifyMinerCreatedTxBeforeGettingInBlockError
 	CommitOutputCoinError
 
@@ -110,6 +112,8 @@ var ErrCodeMessage = map[int]struct {
 	RejectTxType:                                  {-1037, "Wrong tx type"},
 	RejectTxInfoSize:                              {-1038, "Wrong tx info length"},
 	RejectTxMedataWithBlockChain:                  {-1039, "Reject invalid metadata with blockchain"},
+	BatchTxProofVerifyFailError:                   {-1040, "Can not verify proof of batch txs %s"},
+	VerifyOneOutOfManyProofFailedErr:              {-1041, "Verify one out of many proof failed"},
 
 	// for PRV
 	InvalidSanityDataPRVError:  {-2000, "Invalid sanity data for PRV"},
@@ -143,7 +147,6 @@ func NewTransactionErr(key int, err error, params ...interface{}) *TransactionEr
 	e := &TransactionError{
 		err:  errors.Wrap(err, common.EmptyString),
 		Code: ErrCodeMessage[key].Code,
-		//Message: fmt.Sprintf(ErrCodeMessage[key].Message, params),
 	}
 	e.Message = ErrCodeMessage[key].Message
 	if len(params) > 0 {

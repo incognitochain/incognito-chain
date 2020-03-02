@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/pkg/errors"
 )
 
@@ -127,7 +128,7 @@ const (
 
 var ErrCodeMessage = map[int]struct {
 	Code    int
-	message string
+	Message string
 }{
 	// -1xxx driver
 	DriverExistErr:       {-1000, "Driver is already registered"},
@@ -264,9 +265,13 @@ func (e DatabaseError) Error() string {
 }
 
 func NewDatabaseError(key int, err error, params ...interface{}) *DatabaseError {
-	return &DatabaseError{
-		err:     errors.Wrap(err, ErrCodeMessage[key].message),
-		Code:    ErrCodeMessage[key].Code,
-		Message: fmt.Sprintf(ErrCodeMessage[key].message, params),
+	e := &DatabaseError{
+		err:  errors.Wrap(err, common.EmptyString),
+		Code: ErrCodeMessage[key].Code,
 	}
+	e.Message = ErrCodeMessage[key].Message
+	if len(params) > 0 {
+		e.Message = fmt.Sprintf(ErrCodeMessage[key].Message, params)
+	}
+	return e
 }

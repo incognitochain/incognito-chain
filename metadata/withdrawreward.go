@@ -6,18 +6,27 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
+	"strconv"
 )
 
 type WithDrawRewardRequest struct {
 	privacy.PaymentAddress
 	MetadataBase
 	TokenID common.Hash
+	Version int
 }
 
 func (withDrawRewardRequest WithDrawRewardRequest) Hash() *common.Hash {
-	bArr := append(withDrawRewardRequest.PaymentAddress.Bytes(), withDrawRewardRequest.TokenID.GetBytes()...)
-	txReqHash := common.HashH(bArr)
-	return &txReqHash
+	if withDrawRewardRequest.Version == 1 {
+		bArr := append(withDrawRewardRequest.PaymentAddress.Bytes(), withDrawRewardRequest.TokenID.GetBytes()...)
+		txReqHash := common.HashH(bArr)
+		return &txReqHash
+	} else {
+		record := strconv.Itoa(withDrawRewardRequest.Type)
+		data := []byte(record)
+		hash := common.HashH(data)
+		return &hash
+	}
 }
 
 func NewWithDrawRewardRequestFromRPC(data map[string]interface{}) (Metadata, error) {
@@ -40,37 +49,61 @@ func NewWithDrawRewardRequestFromRPC(data map[string]interface{}) (Metadata, err
 	if err != nil {
 		return nil, err
 	}
-	return &WithDrawRewardRequest{
+	result := &WithDrawRewardRequest{
 		MetadataBase:   metadataBase,
 		PaymentAddress: requesterPublicKeySet.KeySet.PaymentAddress,
 		TokenID:        *tokenID,
-	}, nil
+	}
+
+	versionFloat, ok := data["Version"].(float64)
+	if ok {
+		version := int(versionFloat)
+		result.Version = version
+	}
+	if ok, err := common.SliceExists(AcceptedWithdrawRewardRequestVersion, result.Version); !ok || err != nil {
+		return nil, errors.Errorf("Invalid version %d", result.Version)
+	}
+	return result, nil
 }
 
 type WithDrawRewardResponse struct {
 	MetadataBase
 	TxRequest *common.Hash
 	TokenID   common.Hash
+	Version   int
 }
 
 func NewWithDrawRewardResponse(txRequest *WithDrawRewardRequest, reqID *common.Hash) (Metadata, error) {
 	metadataBase := MetadataBase{
 		Type: WithDrawRewardResponseMeta,
 	}
-	return &WithDrawRewardResponse{
+	result := &WithDrawRewardResponse{
 		MetadataBase: metadataBase,
 		TxRequest:    reqID,
 		TokenID:      txRequest.TokenID,
-	}, nil
+	}
+	result.Version = txRequest.Version
+
+	if ok, err := common.SliceExists(AcceptedWithdrawRewardRequestVersion, result.Version); !ok || err != nil {
+		return nil, errors.Errorf("Invalid version %d", result.Version)
+	}
+
+	return result, nil
 }
 
 func (withDrawRewardResponse WithDrawRewardResponse) Hash() *common.Hash {
-	if withDrawRewardResponse.TxRequest == nil {
-		return &common.Hash{}
+	if withDrawRewardResponse.Version == 1 {
+		if withDrawRewardResponse.TxRequest == nil {
+			return &common.Hash{}
+		}
+		bArr := append(withDrawRewardResponse.TxRequest.GetBytes(), withDrawRewardResponse.TokenID.GetBytes()...)
+		version := strconv.Itoa(withDrawRewardResponse.Version)
+		bArr = append(bArr, []byte(version)...)
+		txResHash := common.HashH(bArr)
+		return &txResHash
+	} else {
+		return withDrawRewardResponse.TxRequest
 	}
-	bArr := append(withDrawRewardResponse.TxRequest.GetBytes(), withDrawRewardResponse.TokenID.GetBytes()...)
-	txResHash := common.HashH(bArr)
-	return &txResHash
 }
 
 func (withDrawRewardRequest WithDrawRewardRequest) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db database.DatabaseInterface) bool {
@@ -116,7 +149,7 @@ func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(txr 
 	return true, nil
 }
 
-func (withDrawRewardRequest WithDrawRewardRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (withDrawRewardRequest WithDrawRewardRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
 	return false, true, nil
 }
 
@@ -152,7 +185,7 @@ func (withDrawRewardResponse *WithDrawRewardResponse) ValidateTxWithBlockChain(t
 	return true, nil
 }
 
-func (withDrawRewardResponse WithDrawRewardResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (withDrawRewardResponse WithDrawRewardResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
 	return false, true, nil
 }
 

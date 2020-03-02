@@ -114,7 +114,8 @@ const (
 	PDEWithdrawalAcceptedStatus = 1
 	PDEWithdrawalRejectedStatus = 2
 
-	MinTxFeesOnTokenRequirement = 10000000000000 // 10000 prv
+	MinTxFeesOnTokenRequirement                             = 10000000000000 // 10000 prv, this requirement is applied from beacon height 87301 mainnet
+	BeaconBlockHeighMilestoneForMinTxFeesOnTokenRequirement = 87301          // milestone of beacon height, when apply min fee on token requirement
 
 	PortalCustodianDepositAcceptedStatus = 1
 	PortalCustodianDepositRefundStatus   = 2
