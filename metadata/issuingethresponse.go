@@ -137,4 +137,3 @@ func (iRes IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	instUsed[idx] = 1
 	return true, nil
 }
->>>>>>> dev/master

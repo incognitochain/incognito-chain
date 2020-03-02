@@ -285,4 +285,3 @@ func PickAndParseLogMapFromReceipt(constructedReceipt *types.Receipt, ethContrac
 	}
 	return ParseETHLogData(logData)
 }
->>>>>>> dev/master
