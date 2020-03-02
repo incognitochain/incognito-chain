@@ -124,7 +124,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 		params.tokenID = &common.Hash{}
 		err := params.tokenID.SetBytes(common.PRVCoinID[:])
 		if err != nil {
-			return NewTransactionErr(TokenIDInvalidError, err, params.tokenID.GetBytes())
+			return NewTransactionErr(TokenIDInvalidError, err, params.tokenID.String())
 		}
 	}
 
@@ -487,7 +487,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.S
 			err := tokenID.SetBytes(common.PRVCoinID[:])
 			if err != nil {
 				Logger.log.Error(err)
-				return false, NewTransactionErr(TokenIDInvalidError, err)
+				return false, NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
 			}
 		}
 
@@ -1200,7 +1200,7 @@ func (tx *Tx) InitTxSalary(salary uint64, receiverAddr *privacy.PaymentAddress, 
 		tokenID := &common.Hash{}
 		err := tokenID.SetBytes(common.PRVCoinID[:])
 		if err != nil {
-			return NewTransactionErr(TokenIDInvalidError, err)
+			return NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
 		}
 		ok, err := CheckSNDerivatorExistence(tokenID, sndOut, stateDB)
 		if err != nil {
@@ -1250,7 +1250,7 @@ func (tx Tx) ValidateTxSalary(stateDB *statedb.StateDB) (bool, error) {
 	tokenID := &common.Hash{}
 	err = tokenID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
-		return false, NewTransactionErr(TokenIDInvalidError, err)
+		return false, NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
 	}
 	if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[0].CoinDetails.GetSNDerivator(), stateDB); ok || err != nil {
 		return false, err
@@ -1358,8 +1358,7 @@ func (param *TxPrivacyInitParamsForASM) SetMetaData(meta metadata.Metadata) {
 	param.txParam.metaData = meta
 }
 
-func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
-
+func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM, serverTime int64) error {
 	//Logger.log.Debugf("CREATING TX........\n")
 	tx.Version = txVersion
 	var err error
@@ -1377,7 +1376,7 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 		params.txParam.tokenID = &common.Hash{}
 		err := params.txParam.tokenID.SetBytes(common.PRVCoinID[:])
 		if err != nil {
-			return NewTransactionErr(TokenIDInvalidError, err, params.txParam.tokenID.GetBytes())
+			return NewTransactionErr(TokenIDInvalidError, err, params.txParam.tokenID.String())
 		}
 	}
 
@@ -1385,7 +1384,7 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 	//start := time.Now()
 
 	if tx.LockTime == 0 {
-		tx.LockTime = time.Now().Unix()
+		tx.LockTime = serverTime
 	}
 
 	// create sender's key set from sender's spending key
