@@ -206,10 +206,12 @@ func (httpServer *HttpServer) handleGetPortalState(params interface{}, closeChan
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Beacon height is invalid"))
 	}
+
 	portalState, err := blockchain.InitCurrentPortalStateFromDB(httpServer.config.BlockChain.GetDatabase(), uint64(beaconHeight))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
+
 	beaconBlock, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)

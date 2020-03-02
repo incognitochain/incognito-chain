@@ -79,36 +79,34 @@ func (portal *Portal) GetFinalExchangeRates(service *BlockService, db database.D
 	return result, nil
 }
 
-func (portal *Portal) ConvertExchangeRates(tokenSymbol string, valuePToken uint64, service *BlockService, db database.DatabaseInterface) (jsonresult.ExchangeRatesResult, *RPCError) {
+func (portal *Portal) ConvertExchangeRates(tokenSymbol string, valuePToken uint64, service *BlockService, db database.DatabaseInterface) (map[string]uint64, *RPCError) {
 
+	result := make(map[string]uint64)
 	beaconBlock, err := service.GetBeaconBestBlock()
 	if err != nil {
-		return jsonresult.ExchangeRatesResult{}, NewRPCError(GetBeaconBestBlockError, err)
+		return result, NewRPCError(GetBeaconBestBlockError, err)
 	}
 
 	finalExchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconBlock.GetHeight())
 	finalExchangeRates, err := blockchain.GetFinalExchangeRatesByKey(db, []byte(finalExchangeRatesKey))
 
 	if err != nil {
-		return jsonresult.ExchangeRatesResult{}, NewRPCError(GetExchangeRatesError, err)
+		return result, NewRPCError(GetExchangeRatesError, err)
 	}
 
-	if finalExchangeRates.Rates == nil {
-		return jsonresult.ExchangeRatesResult{}, NewRPCError(GetExchangeRatesIsEmpty, err)
+	if err := blockchain.ValidationExchangeRates(finalExchangeRates) ; err != nil {
+		return result, NewRPCError(GetExchangeRatesError, err)
 	}
-
-	item := make(map[string]uint64)
 
 	if tokenSymbol == metadata.PortalTokenSymbolBTC {
 		btcExchange := finalExchangeRates.ExchangeBTC2PRV(valuePToken)
-		item[metadata.PortalTokenSymbolBTC] = btcExchange
+		result[metadata.PortalTokenSymbolPRV] = btcExchange
 	} else if tokenSymbol == metadata.PortalTokenSymbolBNB {
 		bnbExchange := finalExchangeRates.ExchangeBNB2PRV(valuePToken)
-		item[metadata.PortalTokenSymbolBNB] = bnbExchange
+		result[metadata.PortalTokenSymbolPRV] = bnbExchange
 	} else if tokenSymbol == metadata.PortalTokenSymbolPRV {
-		return jsonresult.ExchangeRatesResult{}, NewRPCError(GetExchangeRatesIsEmpty, errors.New("PRV Token not support"))
+		return result, NewRPCError(GetExchangeRatesIsEmpty, errors.New("PRV Token not support"))
 	}
 
-	result := jsonresult.ExchangeRatesResult{Rates:item}
 	return result, nil
 }

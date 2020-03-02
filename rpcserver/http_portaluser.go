@@ -3,8 +3,10 @@ package rpcserver
 import (
 	"errors"
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -49,6 +51,24 @@ func (httpServer *HttpServer) handleRegisterPortingPublicTokens(params interface
 	portingFee, ok := data["PortingFee"].(float64)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PortingFee is invalid"))
+	}
+
+
+	//check exchange rates
+	beaconBlock, err := httpServer.blockService.GetBeaconBestBlock()
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Get Beacon best block fail"))
+	}
+
+	finalExchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconBlock.GetHeight())
+	finalExchangeRates, err := blockchain.GetFinalExchangeRatesByKey(*httpServer.config.Database, []byte(finalExchangeRatesKey))
+
+	if err != nil {
+		return jsonresult.ExchangeRatesResult{}, rpcservice.NewRPCError(rpcservice.GetExchangeRatesError, errors.New("Get exchange rates error"))
+	}
+
+	if err := blockchain.ValidationExchangeRates(finalExchangeRates) ; err != nil {
+		return jsonresult.ExchangeRatesResult{}, rpcservice.NewRPCError(rpcservice.GetExchangeRatesError, err)
 	}
 
 	uniqueRegisterId = strings.Replace(uniqueRegisterId, "-", "", -1)

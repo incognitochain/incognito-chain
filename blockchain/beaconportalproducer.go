@@ -182,16 +182,6 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 	currentPortalState *CurrentPortalState,
 	beaconHeight uint64,
 ) ([][]string, error) {
-	if currentPortalState == nil {
-		Logger.log.Warn("Porting request: Current Portal state is null")
-		return [][]string{}, nil
-	}
-
-	if len(currentPortalState.CustodianPoolState) == 0 {
-		Logger.log.Errorf("Porting request: Custodian not found")
-		return [][]string{}, nil
-	}
-
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
 		Logger.log.Errorf("Porting request: an error occurred while decoding content string of portal porting request action: %+v", err)
@@ -202,6 +192,11 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 	err = json.Unmarshal(actionContentBytes, &actionData)
 	if err != nil {
 		Logger.log.Errorf("Porting request: an error occurred while unmarshal portal porting request action: %+v", err)
+		return [][]string{}, nil
+	}
+
+	if currentPortalState == nil {
+		Logger.log.Warn("Porting request: Current Portal state is null")
 		return [][]string{}, nil
 	}
 
@@ -272,9 +267,8 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 
 	//get exchange rates
 	exchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
-	exchangeRatesState := currentPortalState.FinalExchangeRates[exchangeRatesKey]
-
-	if exchangeRatesState.Rates == nil {
+	exchangeRatesState, ok := currentPortalState.FinalExchangeRates[exchangeRatesKey]
+	if  !ok {
 		Logger.log.Errorf("Porting request, exchange rates not found")
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,
@@ -293,6 +287,11 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		return [][]string{inst}, nil
 	}
 
+	//todo: create error instruction
+	if currentPortalState.CustodianPoolState == nil {
+		Logger.log.Errorf("Porting request: Custodian not found")
+		return [][]string{}, nil
+	}
 
 	var sortCustodianStateByFreeCollateral []CustodianStateSlice
 	err = sortCustodianByAmountAscent(actionData.Meta, currentPortalState.CustodianPoolState, &sortCustodianStateByFreeCollateral)
