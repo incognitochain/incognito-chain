@@ -55,6 +55,7 @@ func (s *SNDerivatorState) UnmarshalJSON(data []byte) error {
 	s.snd = temp.Snd
 	return nil
 }
+
 func NewSNDerivatorState() *SNDerivatorState {
 	return &SNDerivatorState{}
 }
@@ -92,6 +93,7 @@ func newSNDerivatorObject(db *StateDB, hash common.Hash) *SNDerivatorObject {
 		deleted:          false,
 	}
 }
+
 func newSNDerivatorObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*SNDerivatorObject, error) {
 	var newSNDerivatorState = NewSNDerivatorState()
 	var ok bool

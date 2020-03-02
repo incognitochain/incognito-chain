@@ -108,6 +108,7 @@ func newBlackListProducerObject(db *StateDB, hash common.Hash) *BlackListProduce
 		deleted:                false,
 	}
 }
+
 func newBlackListProducerObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*BlackListProducerObject, error) {
 	var newBlackListProducerState = NewBlackListProducerState()
 	var ok bool

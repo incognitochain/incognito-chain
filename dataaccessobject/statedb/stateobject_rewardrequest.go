@@ -121,6 +121,7 @@ func newRewardRequestObject(db *StateDB, hash common.Hash) *RewardRequestObject 
 		deleted:             false,
 	}
 }
+
 func newRewardRequestObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*RewardRequestObject, error) {
 	var newRewardRequestState = NewRewardRequestState()
 	var ok bool

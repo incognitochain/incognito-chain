@@ -192,6 +192,7 @@ func newTokenObject(db *StateDB, hash common.Hash) *TokenObject {
 		deleted:    false,
 	}
 }
+
 func newTokenObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*TokenObject, error) {
 	var newTokenState = NewTokenState()
 	var ok bool

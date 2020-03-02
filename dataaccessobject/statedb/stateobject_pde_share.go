@@ -132,6 +132,7 @@ func newPDEShareObject(db *StateDB, hash common.Hash) *PDEShareObject {
 		deleted:       false,
 	}
 }
+
 func newPDEShareObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*PDEShareObject, error) {
 	var newPDEShareState = NewPDEShareState()
 	var ok bool

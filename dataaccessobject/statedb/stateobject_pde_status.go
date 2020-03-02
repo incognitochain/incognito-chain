@@ -105,6 +105,7 @@ func newPDEStatusObject(db *StateDB, hash common.Hash) *PDEStatusObject {
 		deleted:                     false,
 	}
 }
+
 func newPDEStatusObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*PDEStatusObject, error) {
 	var newPDEStatus = NewPDEStatusState()
 	var ok bool

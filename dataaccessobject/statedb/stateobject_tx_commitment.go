@@ -120,6 +120,7 @@ func newCommitmentObject(db *StateDB, hash common.Hash) *CommitmentObject {
 		deleted:         false,
 	}
 }
+
 func newCommitmentObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*CommitmentObject, error) {
 	var newCommitmentState = NewCommitmentState()
 	var ok bool
@@ -249,6 +250,7 @@ func newCommitmentIndexObject(db *StateDB, hash common.Hash) *CommitmentIndexObj
 		deleted:             false,
 	}
 }
+
 func newCommitmentIndexObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*CommitmentIndexObject, error) {
 	var newCommitmentIndexState = common.Hash{}
 	var ok bool
@@ -371,6 +373,7 @@ func newCommitmentLengthObject(db *StateDB, hash common.Hash) *CommitmentLengthO
 		deleted:              false,
 	}
 }
+
 func newCommitmentLengthObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*CommitmentLengthObject, error) {
 	var newCommitmentLengthValue = new(big.Int)
 	var ok bool

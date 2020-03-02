@@ -81,6 +81,7 @@ func newBridgeEthTxObject(db *StateDB, hash common.Hash) *BridgeEthTxObject {
 		deleted:          false,
 	}
 }
+
 func newBridgeEthTxObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*BridgeEthTxObject, error) {
 	var newBridgeEthTxState = NewBridgeEthTxState()
 	var ok bool

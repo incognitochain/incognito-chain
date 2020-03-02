@@ -864,6 +864,7 @@ func (stateDB *StateDB) GetCommitmentState(key common.Hash) (*CommitmentState, b
 	}
 	return NewCommitmentState(), false, nil
 }
+
 func (stateDB *StateDB) GetCommitmentIndexState(key common.Hash) (*CommitmentState, bool, error) {
 	commitmentIndexState, err := stateDB.getStateObject(CommitmentIndexObjectType, key)
 	if err != nil {

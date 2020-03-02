@@ -152,6 +152,7 @@ func newCommitteeObject(db *StateDB, hash common.Hash) *CommitteeObject {
 		deleted:                false,
 	}
 }
+
 func newCommitteeObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*CommitteeObject, error) {
 	var newCommitteeState = NewCommitteeState()
 	var ok bool
