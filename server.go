@@ -730,6 +730,7 @@ func (serverObj Server) Start() {
 
 	//go serverObj.blockChain.Synker.Start()
 	go serverObj.syncker.Start()
+	go serverObj.blockgen.Start(serverObj.cQuit)
 
 	if serverObj.memPool != nil {
 		err := serverObj.memPool.LoadOrResetDatabaseMempool()
