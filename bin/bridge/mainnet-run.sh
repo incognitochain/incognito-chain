@@ -11,6 +11,7 @@ run()
   eth_data_dir="eth-mainnet-data"
   eth_data_dir_geth="eth-mainnet-data-geth"
   logshipper_data_dir="logshipper-mainnet-data"
+  backup_log=0
 
 
   if [ -z "$node_port" ]; then
@@ -55,6 +56,12 @@ run()
     fi
     docker image rm -f incognitochain/logshipper:1.0.0
     docker run --restart=always -d --name inc_logshipper -e RAW_LOG_PATHS=/tmp/*.txt -e JSON_LOG_PATHS=/tmp/*.json -e LOGSTASH_ADDRESSES=34.94.14.147:5000 --mount type=bind,source=$PWD/${data_dir},target=/tmp --mount type=bind,source=$PWD/${logshipper_data_dir},target=/usr/share/filebeat/data incognitochain/logshipper:1.0.0
+  fi
+
+  if [ $backup_log -eq 1 ]
+  then
+    mv $data_dir/log.txt $data_dir/log_$(date "+%Y%m%d_%H%M%S").txt
+    mv $data_dir/error_log.txt $data_dir/error_log_$(date "+%Y%m%d_%H%M%S").txt
   fi
 }
 

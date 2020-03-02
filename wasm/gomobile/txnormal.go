@@ -12,14 +12,14 @@ import (
 	"math/big"
 )
 
-func InitPrivacyTx(args string) (string, error) {
+func InitPrivacyTx(args string, serverTime int64) (string, error) {
 	paramCreateTx, err := InitParamCreatePrivacyTx(args)
 	if err != nil {
 		return "", err
 	}
 
 	tx := new(transaction.Tx)
-	err = tx.InitForASM(paramCreateTx)
+	err = tx.InitForASM(paramCreateTx, serverTime)
 
 	if err != nil {
 		println("Can not create tx: ", err)
@@ -41,7 +41,7 @@ func InitPrivacyTx(args string) (string, error) {
 	return B64Res, nil
 }
 
-func Staking(args string) (string, error) {
+func Staking(args string, serverTime int64) (string, error) {
 	// parse meta data
 	bytes := []byte(args)
 	println("Bytes: %v\n", bytes)
@@ -106,7 +106,7 @@ func Staking(args string) (string, error) {
 	paramCreateTx.SetMetaData(metaData)
 
 	tx := new(transaction.Tx)
-	err = tx.InitForASM(paramCreateTx)
+	err = tx.InitForASM(paramCreateTx, serverTime)
 
 	if err != nil {
 		println("Can not create tx: ", err)
@@ -128,7 +128,7 @@ func Staking(args string) (string, error) {
 	return B64Res, nil
 }
 
-func StopAutoStaking(args string) (string, error) {
+func StopAutoStaking(args string, serverTime int64) (string, error) {
 	// parse meta data
 	bytes := []byte(args)
 	println("Bytes: %v\n", bytes)
@@ -173,7 +173,7 @@ func StopAutoStaking(args string) (string, error) {
 	paramCreateTx.SetMetaData(metaData)
 
 	tx := new(transaction.Tx)
-	err = tx.InitForASM(paramCreateTx)
+	err = tx.InitForASM(paramCreateTx, serverTime)
 
 	if err != nil {
 		println("Can not create tx: ", err)
@@ -195,7 +195,7 @@ func StopAutoStaking(args string) (string, error) {
 	return B64Res, nil
 }
 
-func InitWithdrawRewardTx(args string) (string, error) {
+func InitWithdrawRewardTx(args string, serverTime int64) (string, error) {
 	// parse meta data
 	bytes := []byte(args)
 	println("Bytes: %v\n", bytes)
@@ -258,7 +258,7 @@ func InitWithdrawRewardTx(args string) (string, error) {
 	paramCreateTx.SetMetaData(tmp)
 
 	tx := new(transaction.Tx)
-	err = tx.InitForASM(paramCreateTx)
+	err = tx.InitForASM(paramCreateTx, serverTime)
 
 	if err != nil {
 		println("Can not create tx: ", err)

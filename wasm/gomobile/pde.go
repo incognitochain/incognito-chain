@@ -48,7 +48,7 @@ func InitPEDContributionMetadataFromParam(metaDataParam map[string]interface{}) 
 	return metaData, nil
 }
 
-func InitPRVContributionTx(args string) (string, error) {
+func InitPRVContributionTx(args string, serverTime int64) (string, error) {
 	// parse meta data
 	bytes := []byte(args)
 	println("Bytes: %v\n", bytes)
@@ -81,7 +81,7 @@ func InitPRVContributionTx(args string) (string, error) {
 	paramCreateTx.SetMetaData(metaData)
 
 	tx := new(transaction.Tx)
-	err = tx.InitForASM(paramCreateTx)
+	err = tx.InitForASM(paramCreateTx, serverTime)
 
 	if err != nil {
 		println("Can not create tx: ", err)
@@ -103,7 +103,7 @@ func InitPRVContributionTx(args string) (string, error) {
 	return B64Res, nil
 }
 
-func InitPTokenContributionTx(args string) (string, error) {
+func InitPTokenContributionTx(args string, serverTime int64) (string, error) {
 	// parse meta data
 	bytes := []byte(args)
 	println("Bytes: %v\n", bytes)
@@ -136,7 +136,7 @@ func InitPTokenContributionTx(args string) (string, error) {
 	paramCreateTx.SetMetaData(metaData)
 
 	tx := new(transaction.TxCustomTokenPrivacy)
-	err = tx.InitForASM(paramCreateTx)
+	err = tx.InitForASM(paramCreateTx, serverTime)
 
 	if err != nil {
 		println("Can not create tx: ", err)
@@ -206,7 +206,7 @@ func InitPEDTradeRequestMetadataFromParam(metaDataParam map[string]interface{}) 
 	return metaData, nil
 }
 
-func InitPRVTradeTx(args string) (string, error) {
+func InitPRVTradeTx(args string, serverTime int64) (string, error) {
 	// parse meta data
 	bytes := []byte(args)
 	println("Bytes: %v\n", bytes)
@@ -239,7 +239,7 @@ func InitPRVTradeTx(args string) (string, error) {
 	paramCreateTx.SetMetaData(metaData)
 
 	tx := new(transaction.Tx)
-	err = tx.InitForASM(paramCreateTx)
+	err = tx.InitForASM(paramCreateTx, serverTime)
 
 	if err != nil {
 		println("Can not create tx: ", err)
@@ -261,7 +261,7 @@ func InitPRVTradeTx(args string) (string, error) {
 	return B64Res, nil
 }
 
-func InitPTokenTradeTx(args string) (string, error) {
+func InitPTokenTradeTx(args string, serverTime int64) (string, error) {
 	// parse meta data
 	bytes := []byte(args)
 	println("Bytes: %v\n", bytes)
@@ -294,7 +294,7 @@ func InitPTokenTradeTx(args string) (string, error) {
 	paramCreateTx.SetMetaData(metaData)
 
 	tx := new(transaction.TxCustomTokenPrivacy)
-	err = tx.InitForASM(paramCreateTx)
+	err = tx.InitForASM(paramCreateTx, serverTime)
 
 	if err != nil {
 		println("Can not create tx: ", err)
@@ -316,7 +316,7 @@ func InitPTokenTradeTx(args string) (string, error) {
 	return B64Res, nil
 }
 
-func WithdrawDexTx(args string) (string, error) {
+func WithdrawDexTx(args string, serverTime int64) (string, error) {
 	// parse meta data
 	bytes := []byte(args)
 	println("Bytes: %v\n", bytes)
@@ -379,7 +379,7 @@ func WithdrawDexTx(args string) (string, error) {
 	paramCreateTx.SetMetaData(metaData)
 
 	tx := new(transaction.Tx)
-	err = tx.InitForASM(paramCreateTx)
+	err = tx.InitForASM(paramCreateTx, serverTime)
 
 	if err != nil {
 		println("Can not create tx: ", err)

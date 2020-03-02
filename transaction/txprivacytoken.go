@@ -800,7 +800,7 @@ func NewTxPrivacyTokenInitParamsForASM(
 }
 
 // Init -  build normal tx component and privacy custom token data
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTokenInitParamsForASM) error {
+func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTokenInitParamsForASM, serverTime int64) error {
 	var err error
 	// init data for tx PRV for fee
 	normalTx := Tx{}
@@ -817,7 +817,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 		params.commitmentBytesForNativeToken,
 		params.myCommitmentIndicesForNativeToken,
 		params.sndOutputsForNativeToken,
-	))
+	), serverTime)
 	if err != nil {
 		return NewTransactionErr(PrivacyTokenInitPRVError, err)
 	}
@@ -932,7 +932,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 				params.commitmentBytesForPToken,
 				params.myCommitmentIndicesForPToken,
 				params.sndOutputsForPToken,
-			))
+			), serverTime)
 			if err != nil {
 				return NewTransactionErr(PrivacyTokenInitTokenDataError, err)
 			}

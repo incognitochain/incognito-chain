@@ -11,14 +11,14 @@ import (
 	"math/big"
 )
 
-func InitPrivacyTokenTx(args string) (string, error) {
+func InitPrivacyTokenTx(args string, serverTime int64) (string, error) {
 	paramCreateTx, err := InitParamCreatePrivacyTokenTx(args)
 	if err != nil {
 		return "", err
 	}
 
 	tx := new(transaction.TxCustomTokenPrivacy)
-	err = tx.InitForASM(paramCreateTx)
+	err = tx.InitForASM(paramCreateTx, serverTime)
 
 	if err != nil {
 		println("Can not create tx: ", err)
@@ -43,7 +43,7 @@ func InitPrivacyTokenTx(args string) (string, error) {
 	return B64Res, nil
 }
 
-func InitBurningRequestTx(args string) (string, error) {
+func InitBurningRequestTx(args string, serverTime int64) (string, error) {
 	// parse meta data
 	bytes := []byte(args)
 	println("Bytes: %v\n", bytes)
@@ -119,7 +119,7 @@ func InitBurningRequestTx(args string) (string, error) {
 	paramCreateTx.SetMetaData(metaData)
 
 	tx := new(transaction.TxCustomTokenPrivacy)
-	err = tx.InitForASM(paramCreateTx)
+	err = tx.InitForASM(paramCreateTx, serverTime)
 
 	if err != nil {
 		println("Can not create tx: ", err)
