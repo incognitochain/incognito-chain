@@ -8,7 +8,6 @@ import (
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"
-	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 	"strconv"
 )
 
@@ -455,10 +454,10 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 	db := blockchain.GetDatabase()
 
 
-	// check reqPToken status of portingID (get status of reqPToken for portingID from db)
-	reqPTokenStatusBytes, err := db.GetReqPTokenStatusByPortingID(meta.UniquePortingID)
-	if err != nil &&  err != lvdberr.ErrNotFound {
-		Logger.log.Errorf("Can not get req ptoken status for portingID %v, %v\n", meta.UniquePortingID, err)
+	// check porting request status of portingID from db
+	portingReqStatusBytes, err := db.GetPortingRequestStatusByPortingID(meta.UniquePortingID)
+	if err != nil {
+		Logger.log.Errorf("Can not get porting req status for portingID %v, %v\n", meta.UniquePortingID, err)
 		inst := buildReqPTokensInst(
 			meta.UniquePortingID,
 			meta.TokenID,
@@ -472,9 +471,10 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		)
 		return [][]string{inst}, nil
 	}
-	if len(reqPTokenStatusBytes) > 0 {
+	if len(portingReqStatusBytes) > 0 {
+		//todo: need to change to portal request status
 		reqPTokenStatus := metadata.PortalRequestPTokensStatus{}
-		err := json.Unmarshal(reqPTokenStatusBytes, &reqPTokenStatus)
+		err := json.Unmarshal(portingReqStatusBytes, &reqPTokenStatus)
 		if err != nil {
 			Logger.log.Errorf("Can not unmarshal req ptoken status %v\n", err)
 			inst := buildReqPTokensInst(
@@ -490,8 +490,8 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 			)
 			return [][]string{inst}, nil
 		}
-		if reqPTokenStatus.Status == common.PortalCustodianDepositAcceptedStatus {
-			Logger.log.Errorf("PortingID was requested ptoken before")
+		if reqPTokenStatus.Status != common.PortalPortingReqWaitingStatus {
+			Logger.log.Errorf("PortingID status invalid")
 			inst := buildReqPTokensInst(
 				meta.UniquePortingID,
 				meta.TokenID,
@@ -682,6 +682,9 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 				for _, coin := range out.Coins {
 					if coin.Denom == relaying.DenomBNB {
 						amountTransfer += coin.Amount
+						// note: log error for debug
+						Logger.log.Errorf("TxProof-BNB coin.Amount %d",
+							coin.Amount)
 					}
 				}
 

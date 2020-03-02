@@ -20,6 +20,9 @@ func (blockchain *BlockChain) processPortalInstructions(block *BeaconBlock, bd *
 		return nil
 	}
 
+	// re-use update info of bridge
+	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+
 	for _, inst := range block.Body.Instructions {
 		if len(inst) < 4 {
 			continue // Not error, just not Portal instruction
@@ -33,7 +36,7 @@ func (blockchain *BlockChain) processPortalInstructions(block *BeaconBlock, bd *
 		case strconv.Itoa(metadata.PortalUserRegisterMeta):
 			err = blockchain.processPortalUserRegister(beaconHeight, inst, currentPortalState)
 		case strconv.Itoa(metadata.PortalUserRequestPTokenMeta):
-			err = blockchain.processPortalUserReqPToken(beaconHeight, inst, currentPortalState)
+			err = blockchain.processPortalUserReqPToken(beaconHeight, inst, currentPortalState, updatingInfoByTokenID)
 		case strconv.Itoa(metadata.PortalExchangeRatesMeta):
 			err = blockchain.processPortalExchangeRates(beaconHeight, inst, currentPortalState)
 		}
@@ -54,6 +57,30 @@ func (blockchain *BlockChain) processPortalInstructions(block *BeaconBlock, bd *
 		return nil
 	}
 
+	// update info of bridge portal token
+	for _, updatingInfo := range updatingInfoByTokenID {
+		var updatingAmt uint64
+		var updatingType string
+		if updatingInfo.countUpAmt > updatingInfo.deductAmt {
+			updatingAmt = updatingInfo.countUpAmt - updatingInfo.deductAmt
+			updatingType = "+"
+		}
+		if updatingInfo.countUpAmt < updatingInfo.deductAmt {
+			updatingAmt = updatingInfo.deductAmt - updatingInfo.countUpAmt
+			updatingType = "-"
+		}
+		err := db.UpdateBridgeTokenInfo(
+			updatingInfo.tokenID,
+			updatingInfo.externalTokenID,
+			updatingInfo.isCentralized,
+			updatingAmt,
+			updatingType,
+			bd,
+		)
+		if err != nil {
+			return err
+		}
+	}
 
 	// store updated currentPortalState to leveldb with new beacon height
 	err = storePortalStateToDB(db, beaconHeight+1, currentPortalState)
@@ -298,7 +325,9 @@ func (blockchain *BlockChain) processPortalUserRegister(
 }
 
 func (blockchain *BlockChain) processPortalUserReqPToken(
-	beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
+	beaconHeight uint64, instructions []string,
+	currentPortalState *CurrentPortalState,
+	updatingInfoByTokenID map[common.Hash]UpdatingInfo) error {
 	if currentPortalState == nil {
 		Logger.log.Errorf("current portal state is nil")
 		return nil
@@ -326,12 +355,41 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 			Logger.log.Errorf("Can not remove waiting porting request from portal state")
 			return nil
 		}
-		// track reqPToken and deposit proof into DB
+
 		// make sure user can not re-use proof for other portingID
-		reqPTokenTrackKey := lvdb.NewPortalReqPTokenKey(actionData.UniquePortingID)
+		// update status of porting request with portingID
+
+		//todo: Can save less more data ? (portingID and txReqID)
+		newPortingRequestState, err := NewPortingRequestState(
+			actionData.UniquePortingID,
+			actionData.TxReqID,
+			actionData.TokenID,
+			actionData.IncogAddressStr,
+			actionData.PortingAmount,
+			nil,
+			uint64(0),
+			"common.PortalPortingReqSuccessStatus",				//todo: need to update
+			beaconHeight + 1,
+		)
+
+		if err != nil {
+			return err
+		}
+
+		//save porting request => success
+		// todo: should remove beaconHeight from key db?
+		keyPortingRequestNewState := lvdb.NewPortingRequestKey(actionData.UniquePortingID, beaconHeight + 1)
+		err = db.StorePortingRequestItem([]byte(keyPortingRequestNewState), newPortingRequestState)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occurred while store porting request item status: %+v", err)
+			return nil
+		}
+
+		// track reqPToken status by txID into DB
+		reqPTokenTrackKey := lvdb.NewPortalReqPTokenKey(actionData.TxReqID.String())
 		reqPTokenTrackData := metadata.PortalRequestPTokensStatus{
 			Status: common.PortalReqPTokenAcceptedStatus,
-			TxReqID: actionData.TxReqID,
+			UniquePortingID: actionData.UniquePortingID,
 		}
 		reqPTokenTrackDataBytes, _ := json.Marshal(reqPTokenTrackData)
 		err = db.TrackReqPTokens(
@@ -339,15 +397,36 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 			reqPTokenTrackDataBytes,
 		)
 		if err != nil {
-			Logger.log.Errorf("ERROR: an error occured while tracking custodian deposit collateral: %+v", err)
+			Logger.log.Errorf("ERROR: an error occured while tracking request ptoken tx: %+v", err)
 			return nil
 		}
+
+		// update bridge/portal token info
+		incTokenID, err := common.Hash{}.NewHashFromStr(actionData.TokenID)
+		if err != nil {
+			Logger.log.Errorf("ERROR: Can not new hash from porting incTokenID: %+v", err)
+			return nil
+		}
+		updatingInfo, found := updatingInfoByTokenID[*incTokenID]
+		if found {
+			updatingInfo.countUpAmt += actionData.PortingAmount
+		} else {
+			updatingInfo = UpdatingInfo{
+				countUpAmt:      actionData.PortingAmount,
+				deductAmt:       0,
+				tokenID:         *incTokenID,
+				externalTokenID: nil,
+				isCentralized:   false,
+			}
+		}
+		updatingInfoByTokenID[*incTokenID] = updatingInfo
+
 	} else if reqStatus == common.PortalReqPTokensRejectedChainStatus {
 		// track reqPToken and deposit proof into DB
-		reqPTokenTrackKey := lvdb.NewPortalReqPTokenKey(actionData.UniquePortingID)
+		reqPTokenTrackKey := lvdb.NewPortalReqPTokenKey(actionData.TxReqID.String())
 		reqPTokenTrackData := metadata.PortalRequestPTokensStatus{
 			Status: common.PortalReqPTokenRejectedStatus,
-			TxReqID: actionData.TxReqID,
+			UniquePortingID: actionData.UniquePortingID,
 		}
 		reqPTokenTrackDataBytes, _ := json.Marshal(reqPTokenTrackData)
 		err = db.TrackReqPTokens(

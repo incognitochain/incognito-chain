@@ -70,7 +70,7 @@ func callRPCIncognito(method string, params string, url string) (map[string]inte
 
 func PushBNBHeaderIntoIncognito(bnbHeaderStr string, blockHeight int64, urlIncognitoNode string) (map[string]interface{}, error) {
 	params := `
-		"", 
+		"112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or", 
     	null, 
     	-1,   
         0,
@@ -91,8 +91,8 @@ func PushBNBHeaderIntoIncognito(bnbHeaderStr string, blockHeight int64, urlIncog
 func GetAndPushBNBHeader() {
 	url := relaying.TestnetURLRemote
 	urlIncognitoNode := "http://localhost:9334"
-	blockHeight := 30
-	for i := 1; i <= blockHeight; i++ {
+	blockHeight := 540
+	for i := 74; i <= blockHeight; i++ {
 		bnbHeaderStr, err := GetBNBHeaderFromBinanceNetwork(int64(i), url)
 		if err != nil {
 			fmt.Printf("Error GetBNBHeaderFromBinanceNetwork: %v\n", err)

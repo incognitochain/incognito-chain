@@ -67,6 +67,7 @@ const (
 	GetExchangeRatesIsEmpty
 	GetReqPTokenStatusError
 	GetCustodianDepositError
+	GetPortalStateError
 
 	// relaying
 	GetRelayingBNBHeaderByBlockHeightError
@@ -151,11 +152,12 @@ var ErrCodeMessage = map[int]struct {
 	GetExchangeRatesIsEmpty:  {-9001, "Exchange rates is empty"},
 	GetReqPTokenStatusError:  {-9002, "Get request ptoken status error"},
 	GetCustodianDepositError: {-9003, "Get custodian deposit status error"},
+	GetPortalStateError:      {-9004, "Get portal state error"},
 
 
 	// relaying
 	GetRelayingBNBHeaderByBlockHeightError: {-10001, "Get relaying bnb header by block height error"},
-	GetRelayingBNBHeaderError: {-10002, "Get relaying bnb header error"},
+	GetRelayingBNBHeaderError:              {-10002, "Get relaying bnb header error"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse

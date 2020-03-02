@@ -209,12 +209,12 @@ func (httpServer *HttpServer) handleGetPortalState(params interface{}, closeChan
 
 	portalState, err := blockchain.InitCurrentPortalStateFromDB(httpServer.config.BlockChain.GetDatabase(), uint64(beaconHeight))
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.GetPortalStateError, err)
 	}
 
 	beaconBlock, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.GetPortalStateError, err)
 	}
 
 	type CurrentPortalState struct {

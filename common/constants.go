@@ -122,6 +122,10 @@ const (
 
 	PortalReqPTokenAcceptedStatus = 1
 	PortalReqPTokenRejectedStatus = 2
+
+	PortalPortingReqSuccessStatus = 1
+	PortalPortingReqWaitingStatus = 2
+	PortalPortingReqRejectedStatus = 3
 )
 
 // PDE statuses for chain
@@ -154,8 +158,6 @@ const (
 	PortalPortingFeesNotEnoughStatus  = "prvNotEnough"
 
 	PortalExchangeRatesSuccessStatus = "success"
-
-
 )
 
 // Relaying header

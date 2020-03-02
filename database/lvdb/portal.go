@@ -132,8 +132,8 @@ func NewWaitingRedeemReqKey (beaconHeight uint64, redeemID string) string {
 }
 
 // NewPortalReqPTokenKey creates key for tracking request pToken in portal
-func NewPortalReqPTokenKey (portingID string) string {
-	key := append(PortalRequestPTokensPrefix, []byte(portingID)...)
+func NewPortalReqPTokenKey (txReqStr string) string {
+	key := append(PortalRequestPTokensPrefix, []byte(txReqStr)...)
 	return string(key)
 }
 
@@ -260,6 +260,11 @@ func (db *db) GetItemPortalByPrefix(prefix []byte) ([]byte, error) {
 	return itemRecord, nil
 }
 
+func (db *db) GetPortingRequestStatusByPortingID(portingID string) ([]byte, error) {
+	//todo:
+	return nil, nil
+}
+
 
 func (finalExchangeRates FinalExchangeRates) ExchangePToken2PRVByTokenId(pTokenId string, value uint64) uint64 {
 	switch pTokenId {
@@ -339,3 +344,4 @@ func (finalExchangeRates *FinalExchangeRates) ExchangePRV2BNB(value uint64) uint
 	database.Logger.Log.Infof("================ Convert, PRV %v 2 BNB with BNBRates %v PRVRates %v, result %v", value, BNBRates, PRVRates , valueExchange)
 	return  valueExchange
 }
+

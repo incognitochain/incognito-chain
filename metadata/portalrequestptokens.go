@@ -17,7 +17,7 @@ import (
 type PortalRequestPTokens struct {
 	MetadataBase
 	UniquePortingID string
-	TokenID         string     // pTokenID in incognito chain
+	TokenID         string // pTokenID in incognito chain
 	IncogAddressStr string
 	PortingAmount   uint64
 	PortingProof    string
@@ -36,19 +36,19 @@ type PortalRequestPTokensAction struct {
 // both accepted and rejected status
 type PortalRequestPTokensContent struct {
 	UniquePortingID string
-	TokenID         string 			// pTokenID in incognito chain
+	TokenID         string // pTokenID in incognito chain
 	IncogAddressStr string
 	PortingAmount   uint64
 	PortingProof    string
 	TxReqID         common.Hash
-	ShardID byte
+	ShardID         byte
 }
 
 // PortalRequestPTokensStatus - Beacon tracks status of request ptokens into db
 type PortalRequestPTokensStatus struct {
-	Status byte
+	Status          byte
 	UniquePortingID string
-	TokenID         string 			// pTokenID in incognito chain
+	TokenID         string // pTokenID in incognito chain
 	IncogAddressStr string
 	PortingAmount   uint64
 	PortingProof    string
