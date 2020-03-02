@@ -71,7 +71,7 @@ func (portalUserRegister PortalUserRegister) ValidateTxWithBlockChain(
 }
 
 
-func (portalUserRegister PortalUserRegister) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (portalUserRegister PortalUserRegister) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
 	if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
 		return true, true, nil
 	}
@@ -96,7 +96,7 @@ func (portalUserRegister PortalUserRegister) ValidateSanityData(bcr BlockchainRe
 	}
 
 	// check burning tx
-	if !txr.IsCoinsBurning(bcr) {
+	if !txr.IsCoinsBurning(bcr, beaconHeight) {
 		return false, false, errors.New("must send coin to burning address")
 	}
 
