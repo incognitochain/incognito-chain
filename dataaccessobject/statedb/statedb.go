@@ -976,7 +976,7 @@ func (stateDB *StateDB) GetTokenTxs(tokenID common.Hash) ([]common.Hash, bool, e
 	if !has {
 		return []common.Hash{}, has, nil
 	}
-	return t.txs, true, nil
+	return t.Txs(), true, nil
 }
 
 func (stateDB *StateDB) GetAllToken() map[common.Hash]*TokenState {

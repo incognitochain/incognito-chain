@@ -83,8 +83,13 @@ func (t *TokenState) SetInitTx(initTx common.Hash) {
 	t.initTx = initTx
 }
 
+//filter empty tx hash
 func (t *TokenState) AddTxs(txs []common.Hash) {
-	t.txs = append(t.txs, txs...)
+	for _, tx := range txs {
+		if !tx.IsEqual(&common.Hash{}) {
+			t.txs = append(t.txs, tx)
+		}
+	}
 }
 
 func (t TokenState) Txs() []common.Hash {
