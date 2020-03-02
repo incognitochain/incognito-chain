@@ -269,7 +269,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 			if params.tokenParams.Mintable {
 				propertyID, err := common.Hash{}.NewHashFromStr(params.tokenParams.PropertyID)
 				if err != nil {
-					return NewTransactionErr(TokenIDInvalidError, err)
+					return NewTransactionErr(TokenIDInvalidError, err, propertyID.String())
 				}
 				txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID = *propertyID
 				txCustomTokenPrivacy.TxPrivacyTokenData.Mintable = true
@@ -369,7 +369,7 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxWithCurrentMempool(mr
 			if ok && privacyTokenTx.TxPrivacyTokenData.Type == CustomTokenInit && privacyTokenTx.GetMetadata() == nil {
 				// check > 1 tx init token by the same token ID
 				if privacyTokenTx.TxPrivacyTokenData.PropertyID.IsEqual(&initTokenID) {
-					return NewTransactionErr(TokenIDInvalidError, fmt.Errorf("had already tx for initing token ID %s in pool", privacyTokenTx.TxPrivacyTokenData.PropertyID))
+					return NewTransactionErr(TokenIDInvalidError, fmt.Errorf("had already tx for initing token ID %s in pool", privacyTokenTx.TxPrivacyTokenData.PropertyID.String()), privacyTokenTx.TxPrivacyTokenData.PropertyID.String())
 				}
 			}
 		}
@@ -775,7 +775,7 @@ func NewTxPrivacyTokenInitParamsForASM(
 }
 
 // Init -  build normal tx component and privacy custom token data
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTokenInitParamsForASM) error {
+func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTokenInitParamsForASM, serverTime int64) error {
 	var err error
 	// init data for tx PRV for fee
 	normalTx := Tx{}
@@ -792,7 +792,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 		params.commitmentBytesForNativeToken,
 		params.myCommitmentIndicesForNativeToken,
 		params.sndOutputsForNativeToken,
-	))
+	), serverTime)
 	if err != nil {
 		return NewTransactionErr(PrivacyTokenInitPRVError, err)
 	}
@@ -870,7 +870,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 			if params.txParam.tokenParams.Mintable {
 				propertyID, err := common.Hash{}.NewHashFromStr(params.txParam.tokenParams.PropertyID)
 				if err != nil {
-					return NewTransactionErr(TokenIDInvalidError, err)
+					return NewTransactionErr(TokenIDInvalidError, err, propertyID.String())
 				}
 				txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID = *propertyID
 				txCustomTokenPrivacy.TxPrivacyTokenData.Mintable = true
@@ -907,7 +907,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 				params.commitmentBytesForPToken,
 				params.myCommitmentIndicesForPToken,
 				params.sndOutputsForPToken,
-			))
+			), serverTime)
 			if err != nil {
 				return NewTransactionErr(PrivacyTokenInitTokenDataError, err)
 			}

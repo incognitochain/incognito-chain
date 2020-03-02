@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -77,7 +76,7 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 	if blockchain.IsTest {
 		return
 	}
-	Logger.log.Infof("Received shard block  message from shard %d block %d", newBlk.Header.ShardID, newBlk.Header.Height)
+	Logger.log.Debugf("Received shard block  message from shard %d block %d", newBlk.Header.ShardID, newBlk.Header.Height)
 
 	if _, ok := blockchain.Synker.Status.Shards[newBlk.Header.ShardID]; ok {
 		if _, ok := currentInsert.Shards[newBlk.Header.ShardID]; !ok {
@@ -90,11 +89,9 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 
 		if currentShardBestState.ShardHeight <= newBlk.Header.Height {
 			//layer, role, _ := blockchain.config.ConsensusEngine.GetUserRole()
-			//fmt.Println("Shard block received 0", layer, role)
 			currentShardBestState := blockchain.BestState.Shard[newBlk.Header.ShardID]
 
 			if currentShardBestState.ShardHeight == newBlk.Header.Height && currentShardBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentShardBestState.BestBlock.Header.Round < newBlk.Header.Round {
-				//fmt.Println("Shard block received 1", role)
 				err := blockchain.InsertShardBlock(newBlk, false)
 				if err != nil {
 					Logger.log.Error(err)
@@ -104,13 +101,9 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 
 			err := blockchain.config.ShardPool[newBlk.Header.ShardID].AddShardBlock(newBlk)
 			if err != nil {
-				Logger.log.Errorf("Add block %+v from shard %+v error %+v: \n", newBlk.Header.Height, newBlk.Header.ShardID, err)
+				Logger.log.Warnf("Shard block pool add block %d from shard %d with error %s: \n", newBlk.Header.Height, newBlk.Header.ShardID, err.Error())
 			}
-		} else {
-			//fmt.Println("Shard block received 2")
 		}
-	} else {
-		//fmt.Println("Shard block received 1")
 	}
 }
 
@@ -119,14 +112,14 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 		return
 	}
 	if blockchain.Synker.Status.Beacon {
-		fmt.Println("Beacon block received", newBlk.Header.Height, blockchain.BestState.Beacon.BeaconHeight, newBlk.Header.Timestamp)
+		Logger.log.Debugf("Beacon block received at height: %d, current  beacon best state: %d, received block time %+v", newBlk.Header.Height, blockchain.BestState.Beacon.BeaconHeight, newBlk.Header.Timestamp)
 		if newBlk.Header.Timestamp < blockchain.BestState.Beacon.BestBlock.Header.Timestamp { // not receive block older than current latest block
 			return
 		}
 		if blockchain.BestState.Beacon.BeaconHeight <= newBlk.Header.Height {
 			currentBeaconBestState := blockchain.BestState.Beacon
 			if currentBeaconBestState.BeaconHeight == newBlk.Header.Height && currentBeaconBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentBeaconBestState.BestBlock.Header.Round < newBlk.Header.Round {
-				fmt.Println("Beacon block insert", newBlk.Header.Height)
+				Logger.log.Debugf("Beacon block insert %d", newBlk.Header.Height)
 				err := blockchain.InsertBeaconBlock(newBlk, false)
 				if err != nil {
 					Logger.log.Error(err)
@@ -134,10 +127,10 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 				}
 				return
 			}
-			fmt.Println("Beacon block prepare add to pool", newBlk.Header.Height)
+			Logger.log.Debugf("Beacon block prepare add to pool, new block height: %d", newBlk.Header.Height)
 			err := blockchain.config.BeaconPool.AddBeaconBlock(newBlk)
 			if err != nil {
-				fmt.Println("Beacon block add pool err", err)
+				Logger.log.Debugf("Beacon block add pool err %+v", err)
 			}
 		}
 

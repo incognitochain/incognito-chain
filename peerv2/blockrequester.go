@@ -132,7 +132,7 @@ func (c *BlockRequester) Register(
 	c.RLock()
 	defer c.RUnlock()
 	if !c.ready() {
-		return nil, nil, errors.New("requester not ready")
+		return nil, nil, errors.New("requester still not ready")
 	}
 
 	client := proto.NewHighwayServiceClient(c.conn)
@@ -162,7 +162,7 @@ func (c *BlockRequester) GetBlockShardByHeight(
 	c.RLock()
 	defer c.RUnlock()
 	if !c.ready() {
-		return nil, errors.New("requester not ready")
+		return nil, errors.New("requester still not ready")
 	}
 	rangeBlks := batchingBlkForSync(defaultMaxBlkReqPerPeer, syncBlkInfo{
 		bySpecHeights: bySpecific,
@@ -172,11 +172,11 @@ func (c *BlockRequester) GetBlockShardByHeight(
 		heights:       heights,
 		hashes:        [][]byte{},
 	})
-	Logger.Infof("[blkbyheight] Requesting block shard %v (by specific %v): from = %v to = %v; height: %v number of batching %v", shardID, bySpecific, from, to, heights, len(rangeBlks))
+	Logger.Debugf("[blkbyheight] Requesting block shard %v (by specific %v): from = %v to = %v; height: %v number of batching %v", shardID, bySpecific, from, to, heights, len(rangeBlks))
 	res := [][]byte{}
 	client := proto.NewHighwayServiceClient(c.conn)
 	for _, rangeBlk := range rangeBlks {
-		Logger.Infof("[blkbyheight] Range blk Requesting block shard %v (by specific %v): from = %v to = %v; height: %v", shardID, bySpecific, rangeBlk.from, rangeBlk.to, rangeBlk.heights)
+		Logger.Debugf("[blkbyheight] Range blk Requesting block shard %v (by specific %v): from = %v to = %v; height: %v", shardID, bySpecific, rangeBlk.from, rangeBlk.to, rangeBlk.heights)
 		ctx, cancel := context.WithTimeout(context.Background(), MaxTimePerRequest)
 		defer cancel()
 		reply, err := client.GetBlockShardByHeight(
@@ -195,7 +195,7 @@ func (c *BlockRequester) GetBlockShardByHeight(
 			Logger.Errorf("Request block shard %v by spec height %v (from %v to %v height %v) return error %v", shardID, bySpecific, rangeBlk.from, rangeBlk.to, rangeBlk.heights, err)
 			continue
 		}
-		Logger.Infof("[blkbyheight] Received block shard %v data %v", shardID, len(reply.Data))
+		Logger.Debugf("[blkbyheight] Received block shard %v data %v", shardID, len(reply.Data))
 		res = append(res, reply.Data...)
 	}
 	return res, nil
@@ -208,7 +208,7 @@ func (c *BlockRequester) GetBlockShardByHash(
 	c.RLock()
 	defer c.RUnlock()
 	if !c.ready() {
-		return nil, errors.New("requester not ready")
+		return nil, errors.New("requester still not ready")
 	}
 	res := [][]byte{}
 	blkHashBytes := [][]byte{}
@@ -255,9 +255,9 @@ func (c *BlockRequester) GetBlockBeaconByHeight(
 	c.RLock()
 	defer c.RUnlock()
 	if !c.ready() {
-		return nil, errors.New("requester not ready")
+		return nil, errors.New("requester still not ready")
 	}
-	Logger.Infof("[blkbyheight] Requesting beaconblock (by specific %v): from = %v to = %v; height: %v", bySpecific, from, to, heights)
+	Logger.Debugf("[blkbyheight] Requesting beaconblock (by specific %v): from = %v to = %v; height: %v", bySpecific, from, to, heights)
 	client := proto.NewHighwayServiceClient(c.conn)
 	res := [][]byte{}
 	rangeBlks := batchingBlkForSync(defaultMaxBlkReqPerPeer, syncBlkInfo{
@@ -287,7 +287,7 @@ func (c *BlockRequester) GetBlockBeaconByHeight(
 			continue
 		} else if reply != nil {
 			res = append(res, reply.Data...)
-			Logger.Infof("[blkbyheight] Received block beacon data len: %v", len(reply.Data))
+			Logger.Debugf("[blkbyheight] Received block beacon data len: %d", len(reply.Data))
 		}
 	}
 	return res, nil
@@ -299,7 +299,7 @@ func (c *BlockRequester) GetBlockBeaconByHash(
 	c.RLock()
 	defer c.RUnlock()
 	if !c.ready() {
-		return nil, errors.New("requester not ready")
+		return nil, errors.New("requester still not ready")
 	}
 	res := [][]byte{}
 	blkHashBytes := [][]byte{}
@@ -327,10 +327,10 @@ func (c *BlockRequester) GetBlockBeaconByHash(
 			grpc.MaxCallRecvMsgSize(MaxCallRecvMsgSize),
 		)
 		if err != nil {
-			Logger.Errorf("Request block beacon by hashes %v return error %v", hashes, err)
+			Logger.Errorf("Request block beacon by hashes %v return error %+v", hashes, err)
 			continue
 		}
-		Logger.Infof("Received block beacon data from get beacon by hash %v", len(reply.Data))
+		Logger.Debugf("Received block beacon data from get beacon by hash %d", len(reply.Data))
 		res = append(res, reply.Data...)
 	}
 	return res, nil
@@ -346,7 +346,7 @@ func (c *BlockRequester) GetBlockShardToBeaconByHeight(
 	c.RLock()
 	defer c.RUnlock()
 	if !c.ready() {
-		return nil, errors.New("requester not ready")
+		return nil, errors.New("requester still not ready")
 	}
 	res := [][]byte{}
 	Logger.Infof("[sync] Requesting blkshdtobcn shard %v by specific height %v: from = %v to = %v; Heights: %v", shardID, bySpecific, from, to, heights)
@@ -396,7 +396,7 @@ func (c *BlockRequester) GetBlockCrossShardByHeight(
 	c.RLock()
 	defer c.RUnlock()
 	if !c.ready() {
-		return nil, errors.New("requester not ready")
+		return nil, errors.New("requester still not ready")
 	}
 	res := [][]byte{}
 	Logger.Infof("Requesting block crossshard by height: shard %v to %v, height %v", fromShard, toShard, heights)

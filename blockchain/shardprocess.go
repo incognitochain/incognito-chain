@@ -94,6 +94,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 			Logger.log.Error(err)
 			return err
 		}
+		Logger.log.Debugf("REVERTED SHARDID %+v, Revert Current Block Height %+v, Block Hash %+v", shardBlock.Header.ShardID, tempShardBestState.ShardHeight, tempShardBestState.BestBlockHash)
 	}
 	if blockHeight != GetBestStateShard(shardID).ShardHeight+1 {
 		return errors.New("Not expected height")
@@ -719,7 +720,7 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(blockchain *B
 	shardSwappedCommittees := []string{}
 	shardNewCommittees := []string{}
 	if len(shardBlock.Body.Instructions) != 0 {
-		Logger.log.Info("Shard Process/updateShardBestState: Shard Instruction", shardBlock.Body.Instructions)
+		Logger.log.Debugf("Shard Process/updateShardBestState: Shard Instruction %+v", shardBlock.Body.Instructions)
 	}
 	producersBlackList, err := blockchain.getUpdatedProducersBlackList(blockchain.BestState.Beacon.slashStateDB, false, int(shardID), shardCommittee, shardBlock.Header.BeaconHeight)
 	if err != nil {
@@ -941,7 +942,7 @@ func (blockchain *BlockChain) processStoreShardBlock(shardBlock *ShardBlock, com
 	if feeEstimator, ok := blockchain.config.FeeEstimator[shardBlock.Header.ShardID]; ok {
 		err := feeEstimator.RegisterBlock(shardBlock)
 		if err != nil {
-			Logger.log.Warn(NewBlockChainError(RegisterEstimatorFeeError, err))
+			Logger.log.Debug(NewBlockChainError(RegisterEstimatorFeeError, err))
 		}
 	}
 	//statedb===========================START

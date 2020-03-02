@@ -147,7 +147,6 @@ func NewTransactionErr(key int, err error, params ...interface{}) *TransactionEr
 	e := &TransactionError{
 		err:  errors.Wrap(err, common.EmptyString),
 		Code: ErrCodeMessage[key].Code,
-		//Message: fmt.Sprintf(ErrCodeMessage[key].Message, params),
 	}
 	e.Message = ErrCodeMessage[key].Message
 	if len(params) > 0 {
