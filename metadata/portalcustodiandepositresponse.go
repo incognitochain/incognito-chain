@@ -44,7 +44,7 @@ func (iRes PortalCustodianDepositResponse) ValidateTxWithBlockChain(txr Transact
 	return false, nil
 }
 
-func (iRes PortalCustodianDepositResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (iRes PortalCustodianDepositResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
 	return false, true, nil
 }
 

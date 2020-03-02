@@ -70,7 +70,7 @@ func (custodianDeposit PortalCustodianDeposit) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (custodianDeposit PortalCustodianDeposit) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (custodianDeposit PortalCustodianDeposit) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
 	//if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
 	//	return true, true, nil
@@ -95,7 +95,7 @@ func (custodianDeposit PortalCustodianDeposit) ValidateSanityData(bcr Blockchain
 	}
 
 	// check burning tx
-	if !txr.IsCoinsBurning(bcr) {
+	if !txr.IsCoinsBurning(bcr, beaconHeight) {
 		return false, false, errors.New("must send coin to burning address")
 	}
 
