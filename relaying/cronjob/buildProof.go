@@ -51,9 +51,10 @@ func PushBNBProofIntoIncognito(
 	return result, err
 }
 
-func BuildAndPushBNBProof(txIndex int, blockHeight int64, url string, uniqueID string, tokenID string,
-	portingAmount uint64,
-	urlIncognitoNode string){
+func BuildAndPushBNBProof(
+	txIndex int, blockHeight int64,
+	url string, uniqueID string, tokenID string,
+	portingAmount uint64, urlIncognitoNode string){
 	bnbProofStr, err := BuildProof(txIndex, blockHeight, url)
 	if err != nil {
 		fmt.Printf("err BuildProof: %v\n", err)

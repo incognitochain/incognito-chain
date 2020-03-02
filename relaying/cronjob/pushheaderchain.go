@@ -3,6 +3,7 @@ package cronjob
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"github.com/tendermint/tendermint/types"
@@ -22,6 +23,9 @@ func GetBNBHeaderFromBinanceNetwork(blockHeight int64, url string) (string, erro
 	block, err := relaying.GetBlock(blockHeight, url)
 	if err != nil {
 		return "", err
+	}
+	if block == nil {
+		return "", errors.New("Can not get block from bnb chain")
 	}
 
 	bnbHeader := new(BNBHeader)
@@ -66,7 +70,7 @@ func callRPCIncognito(method string, params string, url string) (map[string]inte
 
 func PushBNBHeaderIntoIncognito(bnbHeaderStr string, blockHeight int64, urlIncognitoNode string) (map[string]interface{}, error) {
 	params := `
-		"112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or", 
+		"", 
     	null, 
     	-1,   
         0,
@@ -87,17 +91,21 @@ func PushBNBHeaderIntoIncognito(bnbHeaderStr string, blockHeight int64, urlIncog
 func GetAndPushBNBHeader() {
 	url := relaying.TestnetURLRemote
 	urlIncognitoNode := "http://localhost:9334"
-	blockHeight := 2260
-	for i := 101; i <= blockHeight; i++ {
+	blockHeight := 30
+	for i := 1; i <= blockHeight; i++ {
 		bnbHeaderStr, err := GetBNBHeaderFromBinanceNetwork(int64(i), url)
 		if err != nil {
 			fmt.Printf("Error GetBNBHeaderFromBinanceNetwork: %v\n", err)
 			panic(nil)
 		}
+		if bnbHeaderStr == "" {
+			fmt.Printf("Error GetBNBHeaderFromBinanceNetwork: %v\n", err)
+			panic(nil)
+		}
 
-		result, err := PushBNBHeaderIntoIncognito(bnbHeaderStr, int64(i), urlIncognitoNode)
-		if err != nil {
-			fmt.Printf("Error PushBNBHeaderIntoIncognito: %v\n", err)
+		result, err2 := PushBNBHeaderIntoIncognito(bnbHeaderStr, int64(i), urlIncognitoNode)
+		if err2 != nil {
+			fmt.Printf("Error PushBNBHeaderIntoIncognito: %v\n", err2)
 			panic(nil)
 		}
 

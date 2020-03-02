@@ -85,7 +85,7 @@ func (iRes PortalCustodianDepositResponse) VerifyMinerCreatedTxBeforeGettingInBl
 		}
 		instMetaType := inst[0]
 		if instUsed[i] > 0 ||
-			instMetaType != strconv.Itoa(PortalCustodianDepositResponseMeta) {
+			instMetaType != strconv.Itoa(PortalCustodianDepositMeta) {
 			continue
 		}
 		instDepositStatus := inst[2]

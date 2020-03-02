@@ -509,7 +509,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 	}
 
 	// check tokenID
-	if meta.TokenID != waitingPortingRequest.TokenID {
+	if meta.TokenID != metadata.PortalSupportedTokenMap[waitingPortingRequest.TokenID] {
 		Logger.log.Errorf("TokenID is not correct in portingID req")
 		inst := buildReqPTokensInst(
 			meta.UniquePortingID,

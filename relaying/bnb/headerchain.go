@@ -110,6 +110,7 @@ func VerifySignature(sh *types.SignedHeader, chainID string) *BNBRelayingError {
 			// check duplicate vote
 			if !signedValidator[validateAddressStr] {
 				signedValidator[validateAddressStr] = true
+				fmt.Printf("validatorMap[validateAddressStr].PubKey: %v\n", validatorMap[validateAddressStr].PubKey)
 				err := vote.Verify(chainID, validatorMap[validateAddressStr].PubKey)
 				if err != nil {
 					Logger.log.Errorf("Invalid signature index %v\n", i)
@@ -165,10 +166,15 @@ func appendHeaderToUnconfirmedHeaders (header *types.Header, unconfirmedHeaders 
 
 // ReceiveNewHeader receives new header and last commit for the previous header block
 func (hc *LatestHeaderChain) ReceiveNewHeader(h *types.Header, lastCommit *types.Commit) (bool, *BNBRelayingError) {
-	//todo: need to change
+	//todo: need to change to mainnet
 	chainID := TestnetBNBChainID
 	// h is the first header block
 	if hc.LatestHeader == nil && lastCommit == nil {
+		// check h.height = 1
+		if h.Height != 1 {
+			return false, NewBNBRelayingError(InvalidNewHeaderErr, errors.New("the height of header must be 1"))
+		}
+
 		// just append into hc.UnconfirmedHeaders
 		return appendHeaderToUnconfirmedHeaders(h, hc.UnconfirmedHeaders)
 	}
