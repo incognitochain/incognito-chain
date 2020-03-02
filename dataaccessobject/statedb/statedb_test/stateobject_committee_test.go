@@ -89,7 +89,7 @@ func TestStateDB_GetMixCommitteePublicKey(t *testing.T) {
 		flag := false
 		for _, want := range wants {
 			for _, got := range gotCurrentValidatorM[id] {
-				if reflect.DeepEqual(got, want) {
+				if reflect.DeepEqual(got.CommitteePublicKey(), want) {
 					flag = true
 					break
 				}
@@ -114,7 +114,7 @@ func TestStateDB_GetMixCommitteePublicKey(t *testing.T) {
 		flag := false
 		for _, want := range wants {
 			for _, got := range gotSubstituteValidatorM[id] {
-				if reflect.DeepEqual(got, want) {
+				if reflect.DeepEqual(got.CommitteePublicKey(), want) {
 					flag = true
 					break
 				}
@@ -132,7 +132,7 @@ func TestStateDB_GetMixCommitteePublicKey(t *testing.T) {
 	for _, want := range wantNextEpochCandidateM {
 		flag := false
 		for _, got := range gotNextEpochCandidateM {
-			if reflect.DeepEqual(got, want) {
+			if reflect.DeepEqual(got.CommitteePublicKey(), want) {
 				flag = true
 				break
 			}
@@ -149,7 +149,7 @@ func TestStateDB_GetMixCommitteePublicKey(t *testing.T) {
 	for _, want := range wantCurrentEpochCandidateM {
 		flag := false
 		for _, got := range gotCurrentEpochCandidateM {
-			if reflect.DeepEqual(got, want) {
+			if reflect.DeepEqual(got.CommitteePublicKey(), want) {
 				flag = true
 				break
 			}
@@ -177,11 +177,13 @@ func TestStateDB_GetMixCommitteeState(t *testing.T) {
 		rootHashes = append(rootHashes, tempRootHash)
 		for _, v := range tempM {
 			wantCurrentValidatorM[id] = append(wantCurrentValidatorM[id], v.CommitteePublicKey())
+			committeePublicKey := v.CommitteePublicKey()
 			tempCurrentValidatorString, err := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{v.CommitteePublicKey()})
 			if err != nil {
 				t.Fatal(err)
 			}
-			wantRewardReceiverM[tempCurrentValidatorString[0]] = v.RewardReceiver()
+			incPublicKey := committeePublicKey.GetIncKeyBase58()
+			wantRewardReceiverM[incPublicKey] = v.RewardReceiver()
 			wantAutoStakingM[tempCurrentValidatorString[0]] = v.AutoStaking()
 		}
 	}
@@ -195,11 +197,13 @@ func TestStateDB_GetMixCommitteeState(t *testing.T) {
 		rootHashes = append(rootHashes, tempRootHash)
 		for _, v := range tempM {
 			wantSubstituteValidatorM[id] = append(wantSubstituteValidatorM[id], v.CommitteePublicKey())
-			tempCurrentValidatorString, err := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{v.CommitteePublicKey()})
+			committeePublicKey := v.CommitteePublicKey()
+			tempCurrentValidatorString, err := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{committeePublicKey})
 			if err != nil {
 				t.Fatal(err)
 			}
-			wantRewardReceiverM[tempCurrentValidatorString[0]] = v.RewardReceiver()
+			incPublicKey := committeePublicKey.GetIncKeyBase58()
+			wantRewardReceiverM[incPublicKey] = v.RewardReceiver()
 			wantAutoStakingM[tempCurrentValidatorString[0]] = v.AutoStaking()
 		}
 	}
@@ -208,11 +212,13 @@ func TestStateDB_GetMixCommitteeState(t *testing.T) {
 	tempRootHash, tempM := storeCommitteeObjectOneShard(statedb.NextEpochShardCandidate, tempRootHash, statedb.CandidateShardID, from, to)
 	for _, v := range tempM {
 		wantNextEpochCandidateM = append(wantNextEpochCandidateM, v.CommitteePublicKey())
+		committeePublicKey := v.CommitteePublicKey()
 		tempCurrentValidatorString, err := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{v.CommitteePublicKey()})
 		if err != nil {
 			t.Fatal(err)
 		}
-		wantRewardReceiverM[tempCurrentValidatorString[0]] = v.RewardReceiver()
+		incPublicKey := committeePublicKey.GetIncKeyBase58()
+		wantRewardReceiverM[incPublicKey] = v.RewardReceiver()
 		wantAutoStakingM[tempCurrentValidatorString[0]] = v.AutoStaking()
 	}
 
@@ -221,11 +227,13 @@ func TestStateDB_GetMixCommitteeState(t *testing.T) {
 	tempRootHash, tempM = storeCommitteeObjectOneShard(statedb.CurrentEpochShardCandidate, tempRootHash, statedb.CandidateShardID, from, to)
 	for _, v := range tempM {
 		wantCurrentEpochCandidateM = append(wantCurrentEpochCandidateM, v.CommitteePublicKey())
+		committeePublicKey := v.CommitteePublicKey()
 		tempCurrentValidatorString, err := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{v.CommitteePublicKey()})
 		if err != nil {
 			t.Fatal(err)
 		}
-		wantRewardReceiverM[tempCurrentValidatorString[0]] = v.RewardReceiver()
+		incPublicKey := committeePublicKey.GetIncKeyBase58()
+		wantRewardReceiverM[incPublicKey] = v.RewardReceiver()
 		wantAutoStakingM[tempCurrentValidatorString[0]] = v.AutoStaking()
 	}
 
@@ -248,7 +256,7 @@ func TestStateDB_GetMixCommitteeState(t *testing.T) {
 		flag := false
 		for _, want := range wants {
 			for _, got := range gotCurrentValidatorM[id] {
-				if reflect.DeepEqual(got, want) {
+				if reflect.DeepEqual(got.CommitteePublicKey(), want) {
 					flag = true
 					break
 				}
@@ -272,7 +280,7 @@ func TestStateDB_GetMixCommitteeState(t *testing.T) {
 		flag := false
 		for _, want := range wants {
 			for _, got := range gotSubstituteValidatorM[id] {
-				if reflect.DeepEqual(got, want) {
+				if reflect.DeepEqual(got.CommitteePublicKey(), want) {
 					flag = true
 					break
 				}
@@ -289,7 +297,7 @@ func TestStateDB_GetMixCommitteeState(t *testing.T) {
 	for _, want := range wantNextEpochCandidateM {
 		flag := false
 		for _, got := range gotNextEpochCandidateM {
-			if reflect.DeepEqual(got, want) {
+			if reflect.DeepEqual(got.CommitteePublicKey(), want) {
 				flag = true
 				break
 			}
@@ -305,7 +313,7 @@ func TestStateDB_GetMixCommitteeState(t *testing.T) {
 	for _, want := range wantCurrentEpochCandidateM {
 		flag := false
 		for _, got := range gotCurrentEpochCandidateM {
-			if reflect.DeepEqual(got, want) {
+			if reflect.DeepEqual(got.CommitteePublicKey(), want) {
 				flag = true
 				break
 			}

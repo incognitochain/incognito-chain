@@ -155,7 +155,7 @@ func TestStateDB_GetAllCurrentValidatorCommitteeKey512OneShard(t *testing.T) {
 	for _, want := range m {
 		flag := false
 		for _, got := range gotMShard0 {
-			if reflect.DeepEqual(got, want.CommitteePublicKey()) {
+			if reflect.DeepEqual(got.CommitteePublicKey(), want.CommitteePublicKey()) {
 				flag = true
 				break
 			}
@@ -198,7 +198,7 @@ func TestStateDB_GetAllCurrentValidatorCommitteeKey512EightShard(t *testing.T) {
 		flag := false
 		for _, want := range wants {
 			for _, got := range gotM[id] {
-				if reflect.DeepEqual(got, want) {
+				if reflect.DeepEqual(got.CommitteePublicKey(), want) {
 					flag = true
 					break
 				}
@@ -250,7 +250,7 @@ func TestStateDB_GetAllCurrentValidatorCommitteePublicKey512EightShardMultipleRo
 		flag := false
 		for _, want := range wants {
 			for _, got := range gotM[id] {
-				if reflect.DeepEqual(got, want) {
+				if reflect.DeepEqual(got.CommitteePublicKey(), want) {
 					flag = true
 					break
 				}
@@ -351,7 +351,7 @@ func TestStateDB_GetAllCurrentValidatorCommitteePublicKey512EightShardMultipleRo
 			flag := false
 			for _, want := range wants {
 				for _, got := range gotM[id] {
-					if reflect.DeepEqual(got, want) {
+					if reflect.DeepEqual(got.CommitteePublicKey(), want) {
 						flag = true
 						break
 					}
@@ -390,7 +390,7 @@ func TestStateDB_GetCurrentValidatorCommitteePublicKeyByShardIDState512EightShar
 		for _, want := range wantM[id] {
 			flag := false
 			for _, got := range gotM {
-				if reflect.DeepEqual(got, want) {
+				if reflect.DeepEqual(got.CommitteePublicKey(), want) {
 					flag = true
 					break
 				}
@@ -450,7 +450,7 @@ func TestStateDB_GetSubstituteValidatorCommitteePublicKeyByShardIDState512EightS
 		for _, want := range wantM[id] {
 			flag := false
 			for _, got := range gotM {
-				if reflect.DeepEqual(got, want) {
+				if reflect.DeepEqual(got.CommitteePublicKey(), want) {
 					flag = true
 					break
 				}
@@ -481,7 +481,7 @@ func TestStateDB_GetAllSubstituteValidatorCommitteeKey512OneShard(t *testing.T) 
 	for _, want := range m {
 		flag := false
 		for _, got := range gotMShard0 {
-			if reflect.DeepEqual(got, want.CommitteePublicKey()) {
+			if reflect.DeepEqual(got.CommitteePublicKey(), want.CommitteePublicKey()) {
 				flag = true
 				break
 			}
@@ -524,7 +524,7 @@ func TestStateDB_GetAllSubstituteValidatorCommitteeKey512EightShard(t *testing.T
 		flag := false
 		for _, want := range wants {
 			for _, got := range gotM[id] {
-				if reflect.DeepEqual(got, want) {
+				if reflect.DeepEqual(got.CommitteePublicKey(), want) {
 					flag = true
 					break
 				}
@@ -576,7 +576,7 @@ func TestStateDB_AllSubstituteValidatorCommitteePublicKey512EightShardMultipleRo
 		flag := false
 		for _, want := range wants {
 			for _, got := range gotM[id] {
-				if reflect.DeepEqual(got, want) {
+				if reflect.DeepEqual(got.CommitteePublicKey(), want) {
 					flag = true
 					break
 				}
@@ -677,7 +677,7 @@ func TestStateDB_AllSubstituteValidatorCommitteePublicKey512EightShardMultipleRo
 			flag := false
 			for _, want := range wants {
 				for _, got := range gotM[id] {
-					if reflect.DeepEqual(got, want) {
+					if reflect.DeepEqual(got.CommitteePublicKey(), want) {
 						flag = true
 						break
 					}

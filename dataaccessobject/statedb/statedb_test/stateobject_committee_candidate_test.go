@@ -66,7 +66,7 @@ func TestStateDB_GetAllCurrentEpochCandidateCommitteeKey512EightShard(t *testing
 	for _, want := range wantM {
 		flag := false
 		for _, got := range gotM {
-			if reflect.DeepEqual(got, want) {
+			if reflect.DeepEqual(got.CommitteePublicKey(), want) {
 				flag = true
 				break
 			}
@@ -90,7 +90,7 @@ func TestStateDB_GetAllNextEpochCandidateCommitteeKey(t *testing.T) {
 	for _, want := range m {
 		flag := false
 		for _, got := range gotM {
-			if reflect.DeepEqual(got, want.CommitteePublicKey()) {
+			if reflect.DeepEqual(got.CommitteePublicKey(), want.CommitteePublicKey()) {
 				flag = true
 				break
 			}
@@ -115,7 +115,7 @@ func TestStateDB_GetAllCurrentEpochCandidateCommitteeKey(t *testing.T) {
 	for _, want := range m {
 		flag := false
 		for _, got := range gotM {
-			if reflect.DeepEqual(got, want.CommitteePublicKey()) {
+			if reflect.DeepEqual(got.CommitteePublicKey(), want.CommitteePublicKey()) {
 				flag = true
 				break
 			}
@@ -145,7 +145,7 @@ func TestStateDB_GetAllNextEpochCandidateCommitteeKey512EightShard(t *testing.T)
 	for _, want := range wantM {
 		flag := false
 		for _, got := range gotM {
-			if reflect.DeepEqual(got, want) {
+			if reflect.DeepEqual(got.CommitteePublicKey(), want) {
 				flag = true
 				break
 			}

@@ -216,7 +216,7 @@ func TestStoreAndHasCommitment(t *testing.T) {
 				tokenID:           generateTokenIDs(1)[0],
 				commitments:       generateCommitmentList(10),
 				shardID:           0,
-				commitmentsLength: 9,
+				commitmentsLength: 10,
 			},
 			wantErr: false,
 			wantHas: true,
@@ -228,7 +228,7 @@ func TestStoreAndHasCommitment(t *testing.T) {
 				tokenID:           generateTokenIDs(1)[0],
 				commitments:       generateCommitmentList(10),
 				shardID:           1,
-				commitmentsLength: 9,
+				commitmentsLength: 10,
 			},
 			wantErr: false,
 			wantHas: true,
@@ -240,7 +240,7 @@ func TestStoreAndHasCommitment(t *testing.T) {
 				tokenID:           generateTokenIDs(1)[0],
 				commitments:       generateCommitmentList(10),
 				shardID:           2,
-				commitmentsLength: 9,
+				commitmentsLength: 10,
 			},
 			wantErr: false,
 			wantHas: true,
@@ -252,7 +252,7 @@ func TestStoreAndHasCommitment(t *testing.T) {
 				tokenID:           generateTokenIDs(1)[0],
 				commitments:       generateCommitmentList(10),
 				shardID:           3,
-				commitmentsLength: 9,
+				commitmentsLength: 10,
 			},
 			wantErr: false,
 			wantHas: true,
@@ -352,14 +352,14 @@ func TestStateDB_ListCommitment(t *testing.T) {
 			wantM := make(map[string]uint64)
 			for index, tempCommitment := range commitments {
 				commitment := base58.Base58Check{}.Encode(tempCommitment, common.Base58Version)
-				wantM[commitment] = uint64(index + 1)
+				wantM[commitment] = uint64(index)
 			}
 			tempWantCommitmentM[tokenID] = wantM
 
 			wantIndexM := make(map[uint64]string)
 			for index, tempCommitment := range commitments {
 				commitment := base58.Base58Check{}.Encode(tempCommitment, common.Base58Version)
-				wantIndexM[uint64(index)+1] = commitment
+				wantIndexM[uint64(index)] = commitment
 			}
 			tempWantCommitmentIndexM[tokenID] = wantIndexM
 		}
