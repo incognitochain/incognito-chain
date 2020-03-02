@@ -131,7 +131,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 		params.tokenID = &common.Hash{}
 		err := params.tokenID.SetBytes(common.PRVCoinID[:])
 		if err != nil {
-			return NewTransactionErr(TokenIDInvalidError, err, params.tokenID.GetBytes())
+			return NewTransactionErr(TokenIDInvalidError, err, params.tokenID.String())
 		}
 	}
 
@@ -463,7 +463,7 @@ func (tx *Tx) verifySigTx() (bool, error) {
 // ValidateTransaction returns true if transaction is valid:
 // - Verify tx signature
 // - Verify the payment proof
-func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash, isBatch bool) (bool, error) {
+func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
 	//hasPrivacy = false
 	Logger.log.Debugf("VALIDATING TX........\n")
 	// start := time.Now()
@@ -493,7 +493,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			err := tokenID.SetBytes(common.PRVCoinID[:])
 			if err != nil {
 				Logger.log.Error(err)
-				return false, NewTransactionErr(TokenIDInvalidError, err)
+				return false, NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
 			}
 		}
 
@@ -507,14 +507,16 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			return false, NewTransactionErr(DuplicatedOutputSndError, errors.New("Duplicate output coins' snd\n"))
 		}
 
-		for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
-			// Check output coins' SND is not exists in SND list (Database)
-			if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator(), db); ok || err != nil {
-				if err != nil {
-					Logger.log.Error(err)
+		if isNewTransaction {
+			for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
+				// Check output coins' SND is not exists in SND list (Database)
+				if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator(), db); ok || err != nil {
+					if err != nil {
+						Logger.log.Error(err)
+					}
+					Logger.log.Errorf("snd existed: %d\n", i)
+					return false, NewTransactionErr(SndExistedError, err, fmt.Sprintf("snd existed: %d\n", i))
 				}
-				Logger.log.Errorf("snd existed: %d\n", i)
-				return false, NewTransactionErr(SndExistedError, err, fmt.Sprintf("snd existed: %d\n", i))
 			}
 		}
 
@@ -538,6 +540,23 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 				Logger.log.Error(err)
 			}
 			Logger.log.Error("FAILED VERIFICATION PAYMENT PROOF")
+			err1, ok := err.(*privacy.PrivacyError)
+			if ok {
+				// parse error detail
+				if err1.Code == privacy.ErrCodeMessage[privacy.VerifyOneOutOfManyProofFailedErr].Code {
+					if isNewTransaction {
+						return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
+					} else {
+						// for old txs which be get from sync block or validate new block
+						if tx.LockTime <= ValidateTimeForOneoutOfManyProof {
+							// only verify by sign on block because of issue #504(that mean we should pass old tx, which happen before this issue)
+							return true, nil
+						} else {
+							return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
+						}
+					}
+				}
+			}
 			return false, NewTransactionErr(TxProofVerifyFailError, err, tx.Hash().String())
 		} else {
 			Logger.log.Debugf("SUCCESSED VERIFICATION PAYMENT PROOF ")
@@ -1015,11 +1034,11 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 	return true, nil
 }
 
-func (tx Tx) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
+func (tx Tx) ValidateSanityData(bcr metadata.BlockchainRetriever, beaconHeight uint64) (bool, error) {
 	Logger.log.Debugf("\n\n\n START Validating sanity data of metadata %+v\n\n\n", tx.Metadata)
 	if tx.Metadata != nil {
 		Logger.log.Debug("tx.Metadata.ValidateSanityData")
-		isContinued, ok, err := tx.Metadata.ValidateSanityData(bcr, &tx)
+		isContinued, ok, err := tx.Metadata.ValidateSanityData(bcr, &tx, beaconHeight)
 		Logger.log.Debug("END tx.Metadata.ValidateSanityData")
 		if err != nil || !ok || !isContinued {
 			return ok, err
@@ -1034,13 +1053,14 @@ func (tx Tx) ValidateTxByItself(
 	db database.DatabaseInterface,
 	bcr metadata.BlockchainRetriever,
 	shardID byte,
+	isNewTransaction bool,
 ) (bool, error) {
 	prvCoinID := &common.Hash{}
 	err := prvCoinID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
 		return false, err
 	}
-	ok, err := tx.ValidateTransaction(hasPrivacy, db, shardID, prvCoinID, false)
+	ok, err := tx.ValidateTransaction(hasPrivacy, db, shardID, prvCoinID, false, isNewTransaction)
 	if !ok {
 		return false, err
 	}
@@ -1104,7 +1124,7 @@ func (tx Tx) ValidateType() bool {
 	return tx.Type == common.TxNormalType || tx.Type == common.TxRewardType || tx.Type == common.TxReturnStakingType
 }
 
-func (tx Tx) IsCoinsBurning(bcr metadata.BlockchainRetriever) bool {
+func (tx Tx) IsCoinsBurning(bcr metadata.BlockchainRetriever, beaconHeight uint64) bool {
 	if tx.Proof == nil || len(tx.Proof.GetOutputCoins()) == 0 {
 		return false
 	}
@@ -1113,7 +1133,7 @@ func (tx Tx) IsCoinsBurning(bcr metadata.BlockchainRetriever) bool {
 		senderPKBytes = tx.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().ToBytesS()
 	}
 	//get burning address
-	burningAddress := bcr.GetBurningAddress(0)
+	burningAddress := bcr.GetBurningAddress(beaconHeight)
 	keyWalletBurningAccount, err := wallet.Base58CheckDeserialize(burningAddress)
 	if err != nil {
 		return false
@@ -1194,7 +1214,7 @@ func (tx *Tx) InitTxSalary(
 		tokenID := &common.Hash{}
 		err := tokenID.SetBytes(common.PRVCoinID[:])
 		if err != nil {
-			return NewTransactionErr(TokenIDInvalidError, err)
+			return NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
 		}
 		ok, err := CheckSNDerivatorExistence(tokenID, sndOut, db)
 		if err != nil {
@@ -1251,7 +1271,7 @@ func (tx Tx) ValidateTxSalary(
 	tokenID := &common.Hash{}
 	err = tokenID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
-		return false, NewTransactionErr(TokenIDInvalidError, err)
+		return false, NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
 	}
 	if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[0].CoinDetails.GetSNDerivator(), db); ok || err != nil {
 		return false, err
@@ -1361,8 +1381,7 @@ func (param *TxPrivacyInitParamsForASM) SetMetaData(meta metadata.Metadata) {
 	param.txParam.metaData = meta
 }
 
-func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
-
+func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM, serverTime int64) error {
 	//Logger.log.Debugf("CREATING TX........\n")
 	tx.Version = txVersion
 	var err error
@@ -1380,7 +1399,7 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 		params.txParam.tokenID = &common.Hash{}
 		err := params.txParam.tokenID.SetBytes(common.PRVCoinID[:])
 		if err != nil {
-			return NewTransactionErr(TokenIDInvalidError, err, params.txParam.tokenID.GetBytes())
+			return NewTransactionErr(TokenIDInvalidError, err, params.txParam.tokenID.String())
 		}
 	}
 
@@ -1388,7 +1407,7 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 	//start := time.Now()
 
 	if tx.LockTime == 0 {
-		tx.LockTime = time.Now().Unix()
+		tx.LockTime = serverTime
 	}
 
 	// create sender's key set from sender's spending key

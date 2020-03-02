@@ -708,7 +708,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 			}
 		case transaction.CustomTokenTransfer:
 			{
-				Logger.log.Info("Transfer custom token %+v", privacyCustomTokenTx)
+				Logger.log.Infof("Transfer custom token, tx hash %+v", privacyCustomTokenTx.Hash().String())
 			}
 		}
 		err = blockchain.config.DataBase.StorePrivacyTokenTx(privacyCustomTokenTx.TxPrivacyTokenData.PropertyID, block.Header.ShardID, block.Header.Height, int32(indexTx), privacyCustomTokenTx.Hash()[:])

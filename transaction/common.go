@@ -57,6 +57,9 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 	commitmentIndexs = []uint64{} // : list commitment indexes which: random from full db commitments + commitments of usableInputCoins
 	commitments = [][]byte{}
 	myCommitmentIndexs = []uint64{} // : list indexes of commitments(usableInputCoins) in {commitmentIndexs}
+	if len(param.usableInputCoins) == 0 {
+		return
+	}
 	if param.randNum == 0 {
 		param.randNum = privacy.CommitmentRingSize // default
 	}
@@ -94,7 +97,7 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 		Logger.log.Error(errors.New("Commitments is empty"))
 		return
 	}
-	if lenCommitment.Uint64() == 1 {
+	if lenCommitment.Uint64() == 1 && len(param.usableInputCoins) == 1 {
 		commitmentIndexs = []uint64{0, 0, 0, 0, 0, 0, 0}
 		temp := param.usableInputCoins[0].CoinDetails.GetCoinCommitment().ToBytesS()
 		commitments = [][]byte{temp, temp, temp, temp, temp, temp, temp}

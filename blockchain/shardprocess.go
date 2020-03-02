@@ -88,13 +88,13 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	}
 
 	Logger.log.Criticalf("SHARD %+v | Begin insert new block height %+v with hash %+v", shardID, shardBlock.Header.Height, blockHash)
-	Logger.log.Infof("SHARD %+v | Check block existence for insert height %+v with hash %+v", shardID, shardBlock.Header.Height, blockHash)
+	Logger.log.Debugf("SHARD %+v | Check block existence for insert height %+v with hash %+v", shardID, shardBlock.Header.Height, blockHash)
 	currentShardBestState := blockchain.BestState.Shard[shardBlock.Header.ShardID]
 
 	if currentShardBestState.ShardHeight == shardBlock.Header.Height && currentShardBestState.BestBlock.Header.Timestamp < shardBlock.Header.Timestamp && currentShardBestState.BestBlock.Header.Round < shardBlock.Header.Round {
 		currentShardHeight := currentShardBestState.ShardHeight
 		currentShardHash := currentShardBestState.BestBlockHash
-		Logger.log.Infof("FORK SHARDID %+v, Current Block Height %+v, Block Hash %+v | Try To Insert New Shard Block Height %+v, Hash %+v", shardBlock.Header.ShardID, currentShardBestState.ShardHeight, currentShardBestState.BestBlockHash, shardBlock.Header.Height, shardBlock.Header.Hash())
+		Logger.log.Debugf("FORK SHARDID %+v, Current Block Height %+v, Block Hash %+v | Try To Insert New Shard Block Height %+v, Hash %+v", shardBlock.Header.ShardID, currentShardBestState.ShardHeight, currentShardBestState.BestBlockHash, shardBlock.Header.Height, shardBlock.Header.Hash())
 		if err := blockchain.ValidateBlockWithPrevShardBestState(shardBlock); err != nil {
 			Logger.log.Error(err)
 			return err
@@ -102,7 +102,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 		if err := blockchain.RevertShardState(shardBlock.Header.ShardID); err != nil {
 			panic(err)
 		}
-		Logger.log.Infof("REVERTED SHARDID %+v, Revert Current Block Height %+v, Block Hash %+v", shardBlock.Header.ShardID, currentShardHeight, currentShardHash)
+		Logger.log.Debugf("REVERTED SHARDID %+v, Revert Current Block Height %+v, Block Hash %+v", shardBlock.Header.ShardID, currentShardHeight, currentShardHash)
 	}
 
 	if shardBlock.Header.Height != GetBestStateShard(shardID).ShardHeight+1 {
@@ -130,19 +130,19 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 		return NewBlockChainError(FetchBeaconBlocksError, err)
 	}
 	if !isValidated {
-		Logger.log.Infof("SHARD %+v | Verify Pre Processing, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+		Logger.log.Debugf("SHARD %+v | Verify Pre Processing, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 		if err := blockchain.verifyPreProcessingShardBlock(shardBlock, beaconBlocks, shardID, false); err != nil {
 			return err
 		}
 	} else {
-		Logger.log.Infof("SHARD %+v | SKIP Verify Pre Processing, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+		Logger.log.Infof("SHARD %+v | SKIP Verify Pre Processing, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	}
 	// Verify block with previous best state
-	Logger.log.Infof("SHARD %+v | Verify BestState With Shard Block, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+	Logger.log.Debugf("SHARD %+v | Verify BestState With Shard Block, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	if err := blockchain.BestState.Shard[shardID].verifyBestStateWithShardBlock(shardBlock, true, shardID); err != nil {
 		return err
 	}
-	Logger.log.Infof("SHARD %+v | BackupCurrentShardState, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+	Logger.log.Debugf("SHARD %+v | BackupCurrentShardState, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	// Backup beststate
 	err = blockchain.config.DataBase.CleanBackup(false, shardBlock.Header.ShardID)
 	if err != nil {
@@ -158,7 +158,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 		return err
 	}
 
-	Logger.log.Infof("SHARD %+v | Update ShardBestState, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+	Logger.log.Debugf("SHARD %+v | Update ShardBestState, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	if err := blockchain.BestState.Shard[shardID].updateShardBestState(blockchain, shardBlock, beaconBlocks); err != nil {
 		errRevert := blockchain.revertShardBestState(shardID)
 		if errRevert != nil {
@@ -167,7 +167,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 		return err
 	}
 
-	Logger.log.Infof("SHARD %+v | Update NumOfBlocksByProducers, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+	Logger.log.Debugf("SHARD %+v | Update NumOfBlocksByProducers, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	// update number of blocks produced by producers to shard best state
 	blockchain.BestState.Shard[shardID].updateNumOfBlocksByProducers(shardBlock)
 
@@ -181,21 +181,21 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 
 	//========Post verififcation: verify new beaconstate with corresponding block
 	if !isValidated {
-		Logger.log.Infof("SHARD %+v | Verify Post Processing, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+		Logger.log.Debugf("SHARD %+v | Verify Post Processing, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 		if err := blockchain.BestState.Shard[shardID].verifyPostProcessingShardBlock(shardBlock, shardID); err != nil {
 			return err
 		}
 	} else {
-		Logger.log.Infof("SHARD %+v | SKIP Verify Post Processing, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+		Logger.log.Debugf("SHARD %+v | SKIP Verify Post Processing, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	}
-	Logger.log.Infof("SHARD %+v | Remove Data After Processed, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+	Logger.log.Debugf("SHARD %+v | Remove Data After Processed, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	blockchain.removeOldDataAfterProcessingShardBlock(shardBlock, shardID)
-	Logger.log.Infof("SHARD %+v | Update Beacon Instruction, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+	Logger.log.Debugf("SHARD %+v | Update Beacon Instruction, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	err = blockchain.updateDatabaseFromBeaconInstructions(beaconBlocks, shardID)
 	if err != nil {
 		return err
 	}
-	Logger.log.Infof("SHARD %+v | Store New Shard Block And Update Data, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+	Logger.log.Debugf("SHARD %+v | Store New Shard Block And Update Data, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	//========Store new  Shard block and new shard bestState
 	err = blockchain.processStoreShardBlockAndUpdateDatabase(shardBlock)
 	if err != nil {
@@ -232,7 +232,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	//		metrics.TagValue:         fmt.Sprintf("%d-%d", shardBlock.Header.ShardID, shardBlock.Header.Height),
 	//	})
 	//}
-	Logger.log.Infof("SHARD %+v | 🔗 Finish Insert new block %d, with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v 🔗", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	return nil
 }
 
@@ -765,7 +765,7 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(blockchain *B
 	shardSwappedCommittees := []string{}
 	shardNewCommittees := []string{}
 	if len(shardBlock.Body.Instructions) != 0 {
-		Logger.log.Info("Shard Process/updateShardBestState: Shard Instruction", shardBlock.Body.Instructions)
+		Logger.log.Debugf("Shard Process/updateShardBestState: Shard Instruction %+v", shardBlock.Body.Instructions)
 	}
 
 	producersBlackList, err := blockchain.getUpdatedProducersBlackList(false, int(shardID), shardCommittee, shardBlock.Header.BeaconHeight)
@@ -805,8 +805,8 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(blockchain *B
 			if !reflect.DeepEqual(newCommittees, shardNewCommittees) {
 				return NewBlockChainError(SwapValidatorError, fmt.Errorf("Expect new committees to be %+v but get %+v", newCommittees, shardNewCommittees))
 			}
-			Logger.log.Infof("SHARD %+v | Swap: Out committee %+v", shardBlock.Header.ShardID, shardSwappedCommittees)
-			Logger.log.Infof("SHARD %+v | Swap: In committee %+v", shardBlock.Header.ShardID, shardNewCommittees)
+			Logger.log.Debugf("SHARD %+v | Swap: Out committee %+v", shardBlock.Header.ShardID, shardSwappedCommittees)
+			Logger.log.Debugf("SHARD %+v | Swap: In committee %+v", shardBlock.Header.ShardID, shardNewCommittees)
 		}
 	}
 	shardBestState.ShardPendingValidator, err = incognitokey.CommitteeBase58KeyListToStruct(shardPendingValidator)
@@ -883,11 +883,16 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(txs []metadata.Trans
 			listTxs = append(listTxs, tx)
 		}
 	}
-	_, err := blockchain.config.TempTxPool.MaybeAcceptBatchTransactionForBlockProducing(txs, beaconHeight)
+	_, err := blockchain.config.TempTxPool.MaybeAcceptBatchTransactionForBlockProducing(listTxs, beaconHeight)
 	if err != nil {
+		Logger.log.Errorf("Batching verify transactions from new block err: %+v\n Trying verify one by one", err)
 		for index, tx := range listTxs {
+			if blockchain.config.TempTxPool.HaveTransaction(tx.Hash()) {
+				continue
+			}
 			_, err1 := blockchain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx, beaconHeight)
 			if err1 != nil {
+				Logger.log.Errorf("One by one verify txs at index %d error: %+v", index, err1)
 				return NewBlockChainError(TransactionFromNewBlockError, fmt.Errorf("Transaction %+v, index %+v get %+v ", *tx.Hash(), index, err1))
 			}
 		}
@@ -911,7 +916,7 @@ func (blockchain *BlockChain) processStoreShardBlockAndUpdateDatabase(shardBlock
 	blockHash := shardBlock.Hash().String()
 	batchPutData := []database.BatchData{}
 
-	Logger.log.Infof("SHARD %+v | Process store block height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, *shardBlock.Hash())
+	Logger.log.Debugf("SHARD %+v | Process store block height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, *shardBlock.Hash())
 	if err := blockchain.StoreShardBlock(shardBlock, &batchPutData); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
@@ -969,10 +974,10 @@ func (blockchain *BlockChain) processStoreShardBlockAndUpdateDatabase(shardBlock
 	if feeEstimator, ok := blockchain.config.FeeEstimator[shardBlock.Header.ShardID]; ok {
 		err := feeEstimator.RegisterBlock(shardBlock)
 		if err != nil {
-			Logger.log.Warn(NewBlockChainError(RegisterEstimatorFeeError, err))
+			Logger.log.Debug(NewBlockChainError(RegisterEstimatorFeeError, err))
 		}
 	}
-	Logger.log.Infof("SHARD %+v | 🔎 %d transactions in block height %+v \n", shardBlock.Header.ShardID, len(shardBlock.Body.Transactions), shardBlock.Header.Height)
+	Logger.log.Debugf("SHARD %+v | 🔎 %d transactions in block height %+v", shardBlock.Header.ShardID, len(shardBlock.Body.Transactions), shardBlock.Header.Height)
 	return blockchain.config.DataBase.PutBatch(batchPutData)
 	//return nil
 }

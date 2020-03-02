@@ -18,7 +18,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -613,14 +612,14 @@ func (serverObj *Server) Stop() error {
 
 	// Save fee estimator in the db
 	for shardID, feeEstimator := range serverObj.feeEstimator {
-		Logger.log.Infof("Fee estimator data when saving #%d", feeEstimator)
+		Logger.log.Debugf("Fee estimator data when saving #%d", feeEstimator)
 		feeEstimatorData := feeEstimator.Save()
 		if len(feeEstimatorData) > 0 {
 			err := serverObj.dataBase.StoreFeeEstimator(feeEstimatorData, shardID)
 			if err != nil {
 				Logger.log.Errorf("Can't save fee estimator data on chain #%d: %v", shardID, err)
 			} else {
-				Logger.log.Infof("Save fee estimator data on chain #%d", shardID)
+				Logger.log.Debugf("Save fee estimator data on chain #%d", shardID)
 			}
 		}
 	}
@@ -1593,17 +1592,16 @@ func (serverObj *Server) PushMessageGetBlockShardBySpecificHeight(shardID byte, 
 }
 
 func (serverObj *Server) PushMessageGetBlockShardByHash(shardID byte, blkHashes []common.Hash, getFromPool bool, peerID libp2p.ID) error {
-	Logger.log.Infof("[blkbyhash] Get blk shard by hash %v", blkHashes)
+	Logger.log.Debugf("[blkbyhash] Get blk shard by hash %v", blkHashes)
 	msgs, err := serverObj.highway.Requester.GetBlockShardByHash(
 		int32(shardID),
 		blkHashes, // by blockHashes
 	)
 	if err != nil {
-		Logger.log.Infof("[blkbyhash] Get blk shard by hash error %v ", err)
-		Logger.log.Error(err)
+		Logger.log.Errorf("[blkbyhash] Get blk shard by hash error %v ", err)
 		return err
 	}
-	Logger.log.Infof("[blkbyhash] Get blk shard by hash get %v ", msgs)
+	Logger.log.Debugf("[blkbyhash] Get blk shard by hash get %v ", msgs)
 
 	serverObj.putResponseMsgs(msgs)
 	return nil
@@ -2153,105 +2151,6 @@ func (serverObj *Server) RequestBlocksViaStream(ctx context.Context, peerID stri
 	}(stream, ctx)
 
 	return blockCh, nil
-}
-
-func (serverObj *Server) GetCrossShardBlocksFromDBViaChannel(toShardID int, fromBlockHeight uint64, toBlockHashString string, stopCh chan int) chan interface{} {
-	blockCh := make(chan interface{})
-
-	nextBlkByHeight := func(sID int, fromBlockHeight uint64) (common.BlockInterface, error) {
-
-		bh, err := serverObj.dataBase.GetBlockByIndex(fromBlockHeight+1, byte(sID))
-		if err != nil {
-			return nil, err
-		}
-		b, err := serverObj.dataBase.FetchBlock(bh)
-		if err != nil {
-			return nil, err
-		}
-		shardBlock := &blockchain.ShardBlock{}
-		err = json.Unmarshal(b, &shardBlock)
-		if err != nil {
-			return nil, err
-		}
-		crossShard, err := shardBlock.CreateCrossShardBlock(byte(sID))
-		if err != nil {
-			return nil, err
-		}
-		return crossShard, nil
-	}
-
-	go func(blockCh chan interface{}) {
-		for {
-			select {
-			case <-stopCh:
-				close(stopCh)
-				break
-			default:
-				block, err := nextBlkByHeight(toShardID, fromBlockHeight)
-				fromBlockHeight++
-				if err != nil {
-					stopCh <- 1
-					if strings.Index(err.Error(), "No cross Outputcoin, Cross Custom Token, Cross Custom Token Privacy") == -1 {
-						go func() {
-							stopCh <- 1
-						}()
-						break
-					} else {
-						continue
-					}
-				}
-				blockCh <- block
-			}
-		}
-
-	}(blockCh)
-
-	return blockCh
-}
-
-func (serverObj *Server) GetS2BBlocksFromDBViaChannel(sID int, fromBlockHeight uint64, toBlockHashString string, stopCh chan int) chan interface{} {
-	blockCh := make(chan interface{})
-
-	nextBlkByHeight := func(sID int, fromBlockHeight uint64) (common.BlockInterface, error) {
-
-		bh, err := serverObj.dataBase.GetBlockByIndex(fromBlockHeight+1, byte(sID))
-		if err != nil {
-			return nil, err
-		}
-		b, err := serverObj.dataBase.FetchBlock(bh)
-		if err != nil {
-			return nil, err
-		}
-		shardBlock := &blockchain.ShardBlock{}
-		err = json.Unmarshal(b, &shardBlock)
-		if err != nil {
-			return nil, err
-		}
-		s2b := shardBlock.CreateShardToBeaconBlock(serverObj.blockChain)
-		return s2b, nil
-	}
-	go func(blockCh chan interface{}) {
-		for {
-			select {
-			case <-stopCh:
-				close(stopCh)
-				break
-			default:
-				block, err := nextBlkByHeight(sID, fromBlockHeight)
-				fromBlockHeight++
-				if err != nil {
-					go func() {
-						stopCh <- 1
-					}()
-					break
-				}
-				blockCh <- block
-			}
-		}
-
-	}(blockCh)
-
-	return blockCh
 }
 
 func (serverObj *Server) GetBlocksViaChannel(sID int, fromBlockHeight, finalBlockHeight uint64, toBlockHashString string, stopCh chan int) chan interface{} {

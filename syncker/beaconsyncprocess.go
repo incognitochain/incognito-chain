@@ -127,7 +127,6 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 }
 
 func (s *BeaconSyncProcess) syncBeacon() {
-
 	for {
 		requestCnt := 0
 		if s.Status != RUNNING_SYNC {

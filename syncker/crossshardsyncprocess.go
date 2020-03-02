@@ -110,6 +110,7 @@ func (s *CrossShardSyncProcess) syncCrossShard() {
 }
 
 func (s *CrossShardSyncProcess) pullCrossShardBlock() {
+	//TODO: should limit the number of request block
 	currentCrossShardStatus := s.BeaconChain.GetCurrentCrossShardHeightToShard(byte(s.ShardID))
 	for fromSID, reqs := range s.requestPool {
 		reqHash := []common.Hash{}
