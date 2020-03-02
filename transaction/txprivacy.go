@@ -136,13 +136,11 @@ func getTxInfo(paramInfo []byte) ([]byte, error) {
 	return paramInfo, nil
 }
 
-func (tx *Tx) isNonPrivacyNonInput(params *TxPrivacyInitParams, pkLastByteSender byte) (bool, error) {
+func (tx *Tx) isNonPrivacyNonInput(params *TxPrivacyInitParams) (bool, error) {
 	Logger.log.Debugf("len(inputCoins), fee, hasPrivacy: %d, %d, %v\n", len(params.inputCoins), params.fee, params.hasPrivacy)
 	if len(params.inputCoins) == 0 && params.fee == 0 && !params.hasPrivacy {
 		Logger.log.Debugf("len(inputCoins) == 0 && fee == 0 && !hasPrivacy\n")
-		tx.Fee = params.fee
 		tx.sigPrivKey = *params.senderSK
-		tx.PubKeyLastByteSender = pkLastByteSender
 		err := tx.signTx()
 		if err != nil {
 			Logger.log.Error(errors.New(fmt.Sprintf("Cannot sign tx %v\n", err)))
@@ -153,12 +151,106 @@ func (tx *Tx) isNonPrivacyNonInput(params *TxPrivacyInitParams, pkLastByteSender
 	return false, nil
 }
 
+func updateParamsWhenOverBalance(params *TxPrivacyInitParams) error {
+	// Calculate sum of all output coins' value
+	sumOutputValue := uint64(0)
+	for _, p := range params.paymentInfo {
+		sumOutputValue += p.Amount
+	}
+
+	// Calculate sum of all input coins' value
+	sumInputValue := uint64(0)
+	for _, coin := range params.inputCoins {
+		sumInputValue += coin.CoinDetails.GetValue()
+	}
+	Logger.log.Debugf("sumInputValue: %d\n", sumInputValue)
+
+	overBalance := int64(sumInputValue - sumOutputValue - params.fee)
+	// Check if sum of input coins' value is at least sum of output coins' value and tx fee
+	if overBalance < 0 {
+		return NewTransactionErr(WrongInputError, errors.New(fmt.Sprintf("input value less than output value. sumInputValue=%d sumOutputValue=%d fee=%d", sumInputValue, sumOutputValue, params.fee)))
+	}
+	// Create a new payment to sender's pk where amount is overBalance if > 0
+	if overBalance > 0 {
+		// Should not check error because have checked before
+		senderFullKey, _ := parseSenderFullKey(params)
+		changePaymentInfo := new(privacy.PaymentInfo)
+		changePaymentInfo.Amount = uint64(overBalance)
+		changePaymentInfo.PaymentAddress = senderFullKey.PaymentAddress
+		params.paymentInfo = append(params.paymentInfo, changePaymentInfo)
+	}
+
+	return nil
+}
+
+func initializeTxAndParams(tx *Tx, params *TxPrivacyInitParams) error {
+	var err error
+
+	// Tx: initialize some values
+	if tx.LockTime == 0 {
+		tx.LockTime = time.Now().Unix()
+	}
+	tx.Fee = params.fee
+	tx.Version = txVersion
+	tx.Type = common.TxNormalType
+	tx.Metadata = params.metaData
+	tx.Proof = &zkp.PaymentProof{}
+	tx.Info, err = getTxInfo(params.info)
+	if err != nil {
+		return err
+	}
+	tx.PubKeyLastByteSender, err = parseLastByteSender(params)
+	if err != nil {
+		return err
+	}
+	if isNonPrivacy, err := tx.isNonPrivacyNonInput(params); isNonPrivacy {
+		return err
+	}
+
+	// Params: update balance if overbalance
+	if err = updateParamsWhenOverBalance(params); err != nil {
+		return err
+	}
+	return nil
+}
+
+// This payment witness currently use one out of many
+func initializePaymentWitnessParam(tx *Tx, params *TxPrivacyInitParams) (*zkp.PaymentWitnessParam, error) {
+	shardID := common.GetShardIDFromLastByte(tx.PubKeyLastByteSender)
+
+	// get list of commitments for proving one-out-of-many from commitmentIndexs
+	commitmentIndexs, myCommitmentIndexs, err := parseCommitments(params, shardID)
+	if err != nil {
+		return nil, err
+	}
+	commitmentProving, err := parseCommitmentProving(params, shardID, commitmentIndexs)
+	if err != nil {
+		return nil, err
+	}
+	outputCoins, err := parseOutputCoins(params)
+	if err != nil {
+		return nil, err
+	}
+	// prepare witness for proving
+	paymentWitnessParam := zkp.PaymentWitnessParam{
+		HasPrivacy:              params.hasPrivacy,
+		PrivateKey:              new(privacy.Scalar).FromBytesS(*params.senderSK),
+		InputCoins:              params.inputCoins,
+		OutputCoins:             *outputCoins,
+		PublicKeyLastByteSender: tx.PubKeyLastByteSender,
+		Commitments:             *commitmentProving,
+		CommitmentIndices:       *commitmentIndexs,
+		MyCommitmentIndices:     *myCommitmentIndexs,
+		Fee:                     params.fee,
+	}
+	return &paymentWitnessParam, nil
+}
+
 // Init - init value for tx from inputcoin(old output coin from old tx)
 // create new outputcoin and build privacy proof
 // if not want to create a privacy tx proof, set hashPrivacy = false
 // database is used like an interface which use to query info from db in building tx
 func (tx *Tx) Init(params *TxPrivacyInitParams) error {
-	var err error
 	Logger.log.Debugf("CREATING TX........\n")
 	if err := validateTxInit(params); err != nil {
 		return err
@@ -166,90 +258,20 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 
 	// Execution time
 	start := time.Now()
-	if tx.LockTime == 0 {
-		tx.LockTime = time.Now().Unix()
-	}
-
-	// Setup Fee, Version, Type, Metadata, Info,
-	tx.Fee = params.fee
-	tx.Version = txVersion
-	tx.Type = common.TxNormalType
-	tx.Metadata = params.metaData
-	tx.Info, err = getTxInfo(params.info)
+	err := initializeTxAndParams(tx, params)
 	if err != nil {
 		return err
 	}
-
-	// create sender's key set from sender's spending key
-	senderFullKey, err := parseSenderFullKey(params)
-	if err != nil {
-		return err
-	}
-	pkLastByteSender := parseLastByteSender(senderFullKey)
-	isNonPrivacy, err := tx.isNonPrivacyNonInput(params, pkLastByteSender)
-	if isNonPrivacy {
-		return err
-	}
-	overBalance, err := parseOverBalance(params)
-	if err != nil {
-		return err
-	}
-	// Create a new payment to sender's pk where amount is overBalance if > 0
-	if overBalance > 0 {
-		changePaymentInfo := new(privacy.PaymentInfo)
-		changePaymentInfo.Amount = uint64(overBalance)
-		changePaymentInfo.PaymentAddress = senderFullKey.PaymentAddress
-		params.paymentInfo = append(params.paymentInfo, changePaymentInfo)
-	}
-
-	// create new output coins with info: Pk, value, last byte of pk, snd
-	outputCoinsPtr, err := parseOutputCoins(params)
-	if err != nil {
-		return err
-	}
-	outputCoins := *outputCoinsPtr
 
 	// Calculate execution time for creating payment proof
 	startPrivacy := time.Now()
-	tx.Proof = &zkp.PaymentProof{}
-
-	// get list of commitments for proving one-out-of-many from commitmentIndexs
-	shardID := common.GetShardIDFromLastByte(pkLastByteSender)
-	commitmentIdxPtr, myCommitmentIdxPtr, err := parseCommitments(params, shardID)
+	paymentWitnessParamPtr, err := initializePaymentWitnessParam(tx, params)
 	if err != nil {
 		return err
 	}
-	commitmentIndexs := *commitmentIdxPtr
-	myCommitmentIndexs := *myCommitmentIdxPtr
+	paymentWitnessParam := *paymentWitnessParamPtr
 
-	commitmentProving := make([]*privacy.Point, len(commitmentIndexs))
-	for i, cmIndex := range commitmentIndexs {
-		temp, err := params.db.GetCommitmentByIndex(*params.tokenID, cmIndex, shardID)
-		if err != nil {
-			Logger.log.Error(errors.New(fmt.Sprintf("can not get commitment from index=%d shardID=%+v", cmIndex, shardID)))
-			return NewTransactionErr(CanNotGetCommitmentFromIndexError, err, cmIndex, shardID)
-		}
-		commitmentProving[i] = new(privacy.Point)
-		commitmentProving[i], err = commitmentProving[i].FromBytesS(temp)
-		if err != nil {
-			Logger.log.Error(errors.New(fmt.Sprintf("can not get commitment from index=%d shardID=%+v value=%+v", cmIndex, shardID, temp)))
-			return NewTransactionErr(CanNotDecompressCommitmentFromIndexError, err, cmIndex, shardID, temp)
-		}
-	}
-
-	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
-	paymentWitnessParam := zkp.PaymentWitnessParam{
-		HasPrivacy:              params.hasPrivacy,
-		PrivateKey:              new(privacy.Scalar).FromBytesS(*params.senderSK),
-		InputCoins:              params.inputCoins,
-		OutputCoins:             outputCoins,
-		PublicKeyLastByteSender: pkLastByteSender,
-		Commitments:             commitmentProving,
-		CommitmentIndices:       commitmentIndexs,
-		MyCommitmentIndices:     myCommitmentIndexs,
-		Fee:                     params.fee,
-	}
 	err = witness.Init(paymentWitnessParam)
 	if err.(*errhandler.PrivacyError) != nil {
 		Logger.log.Error(err)
@@ -300,7 +322,6 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 	}
 
 	// sign tx
-	tx.PubKeyLastByteSender = pkLastByteSender
 	err = tx.signTx()
 	if err != nil {
 		Logger.log.Error(err)

@@ -8,8 +8,12 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
-func parseLastByteSender(senderFullKey *incognitokey.KeySet) byte {
-	return senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
+func parseLastByteSender(params *TxPrivacyInitParams) (byte, error) {
+	senderFullKey, err := parseSenderFullKey(params)
+	if err != nil {
+		return 0, err
+	}
+	return senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1], nil
 }
 
 func parseSenderFullKey(params *TxPrivacyInitParams) (*incognitokey.KeySet, error) {
@@ -19,7 +23,6 @@ func parseSenderFullKey(params *TxPrivacyInitParams) (*incognitokey.KeySet, erro
 		Logger.log.Error(errors.New(fmt.Sprintf("Can not import Private key for sender keyset from %+v", params.senderSK)))
 		return nil, NewTransactionErr(PrivateKeySenderInvalidError, err)
 	}
-	// get public key last byte of sender
 	return &senderFullKey, nil
 }
 
@@ -43,27 +46,23 @@ func parseCommitments(params *TxPrivacyInitParams, shardID byte) (*[]uint64, *[]
 	return &commitmentIndexs, &myCommitmentIndexs, nil
 }
 
-func parseOverBalance(params *TxPrivacyInitParams) (int64, error) {
-	// Calculate sum of all output coins' value
-	sumOutputValue := uint64(0)
-	for _, p := range params.paymentInfo {
-		sumOutputValue += p.Amount
+func parseCommitmentProving(params *TxPrivacyInitParams, shardID byte, commitmentIndexsPtr *[]uint64) (*[]*privacy.Point, error) {
+	commitmentIndexs := *commitmentIndexsPtr
+	commitmentProving := make([]*privacy.Point, len(commitmentIndexs))
+	for i, cmIndex := range commitmentIndexs {
+		temp, err := params.db.GetCommitmentByIndex(*params.tokenID, cmIndex, shardID)
+		if err != nil {
+			Logger.log.Error(errors.New(fmt.Sprintf("can not get commitment from index=%d shardID=%+v", cmIndex, shardID)))
+			return nil, NewTransactionErr(CanNotGetCommitmentFromIndexError, err, cmIndex, shardID)
+		}
+		commitmentProving[i] = new(privacy.Point)
+		commitmentProving[i], err = commitmentProving[i].FromBytesS(temp)
+		if err != nil {
+			Logger.log.Error(errors.New(fmt.Sprintf("can not get commitment from index=%d shardID=%+v value=%+v", cmIndex, shardID, temp)))
+			return nil, NewTransactionErr(CanNotDecompressCommitmentFromIndexError, err, cmIndex, shardID, temp)
+		}
 	}
-
-	// Calculate sum of all input coins' value
-	sumInputValue := uint64(0)
-	for _, coin := range params.inputCoins {
-		sumInputValue += coin.CoinDetails.GetValue()
-	}
-	Logger.log.Debugf("sumInputValue: %d\n", sumInputValue)
-
-	overBalance := int64(sumInputValue - sumOutputValue - params.fee)
-	// Check if sum of input coins' value is at least sum of output coins' value and tx fee
-	if overBalance < 0 {
-		return 0, NewTransactionErr(WrongInputError, errors.New(fmt.Sprintf("input value less than output value. sumInputValue=%d sumOutputValue=%d fee=%d", sumInputValue, sumOutputValue, params.fee)))
-	}
-
-	return overBalance, nil
+	return &commitmentProving, nil
 }
 
 func parseSndOut(params *TxPrivacyInitParams) *[]*privacy.Scalar {
