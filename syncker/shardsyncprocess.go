@@ -19,22 +19,22 @@ type ShardPeerState struct {
 }
 
 type ShardSyncProcess struct {
-	IsCommittee      bool
-	FewBlockBehind   bool
-	ShardID          int
-	Status           string                    //stop, running
-	ShardPeerState   map[string]ShardPeerState //peerid -> state
-	ShardPeerStateCh chan *wire.MessagePeerState
-	//CrossShardPeerState map[string]CrossShardPeerState //peerID -> state
-	Server      Server
-	Chain       Chain
-	BeaconChain Chain
-	ShardPool   *BlkPool
-	actionCh    chan func()
-	lock        *sync.RWMutex
+	IsCommittee           bool
+	FewBlockBehind        bool
+	ShardID               int
+	Status                string                    //stop, running
+	ShardPeerState        map[string]ShardPeerState //peerid -> state
+	ShardPeerStateCh      chan *wire.MessagePeerState
+	CrossShardSyncProcess *CrossShardSyncProcess
+	Server                Server
+	Chain                 Chain
+	BeaconChain           Chain
+	ShardPool             *BlkPool
+	actionCh              chan func()
+	lock                  *sync.RWMutex
 }
 
-func NewShardSyncProcess(shardID int, server Server, beaconChain, chain Chain) *ShardSyncProcess {
+func NewShardSyncProcess(shardID int, server Server, beaconChain BeaconChainInterface, chain Chain) *ShardSyncProcess {
 	s := &ShardSyncProcess{
 		ShardID:          shardID,
 		Status:           STOP_SYNC,
@@ -44,9 +44,10 @@ func NewShardSyncProcess(shardID int, server Server, beaconChain, chain Chain) *
 		ShardPool:        NewBlkPool("ShardPool-" + string(shardID)),
 		ShardPeerState:   make(map[string]ShardPeerState),
 		ShardPeerStateCh: make(chan *wire.MessagePeerState),
-		actionCh:         make(chan func()),
-	}
 
+		actionCh: make(chan func()),
+	}
+	s.CrossShardSyncProcess = NewCrossShardSyncProcess(server, s, beaconChain)
 	go s.syncShardProcess()
 	go s.insertShardBlockFromPool()
 	return s
@@ -68,6 +69,7 @@ func (s *ShardSyncProcess) Start() {
 	if s.Status == RUNNING_SYNC {
 		return
 	}
+	s.CrossShardSyncProcess.Start()
 	s.Status = RUNNING_SYNC
 	go func() {
 		ticker := time.NewTicker(time.Millisecond * 500)
@@ -100,6 +102,7 @@ func (s *ShardSyncProcess) Start() {
 
 func (s *ShardSyncProcess) Stop() {
 	s.Status = STOP_SYNC
+	s.CrossShardSyncProcess.Stop()
 }
 
 func (s *ShardSyncProcess) insertShardBlockFromPool() {
@@ -122,7 +125,7 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 	}
 
 	fmt.Println("Syncker: Insert shard from pool", blk.(common.BlockInterface).GetHeight())
-	s.ShardPool.RemoveBlock(blk.GetHash())
+	s.ShardPool.RemoveBlock(blk.Hash().String())
 	if err := s.Chain.ValidateBlockSignatures(blk.(common.BlockInterface), s.Chain.GetCommittee()); err != nil {
 		return
 	}

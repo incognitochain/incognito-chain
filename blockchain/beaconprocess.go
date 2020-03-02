@@ -232,7 +232,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 		}
 		return err
 	}
-	blockchain.removeOldDataAfterProcessingBeaconBlock()
+
 	// go metrics.AnalyzeTimeSeriesMetricDataWithTime(map[string]interface{}{
 	// 	metrics.Measurement:      metrics.NumOfBlockInsertToChain,
 	// 	metrics.MeasurementValue: float64(1),
@@ -283,20 +283,6 @@ func (beaconBestState *BeaconBestState) updateNumOfBlocksByProducers(beaconBlock
 	} else {
 		beaconBestState.NumOfBlocksByProducers[producer] = numOfBlks + 1
 	}
-}
-
-func (blockchain *BlockChain) removeOldDataAfterProcessingBeaconBlock() {
-	//=========Remove beacon beaconBlock in pool
-	go blockchain.config.BeaconPool.SetBeaconState(blockchain.BestState.Beacon.BeaconHeight)
-	go blockchain.config.BeaconPool.RemoveBlock(blockchain.BestState.Beacon.BeaconHeight)
-	//=========Remove shard to beacon beaconBlock in pool
-
-	go func() {
-		shardHeightMap := blockchain.BestState.Beacon.GetBestShardHeight()
-		//force release readLock first, before execute the params in below function (which use same readLock).
-		//if writeLock occur before release, readLock will be block
-		blockchain.config.ShardToBeaconPool.SetShardState(shardHeightMap)
-	}()
 }
 
 /*
@@ -434,7 +420,12 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 		}
 	}
 	// get shard to beacon blocks from pool
-	allShardBlocks := blockchain.config.ShardToBeaconPool.GetValidBlock(nil)
+	var allShardBlocks = make(map[byte][]*ShardToBeaconBlock)
+	for sid, v := range blockchain.config.Syncker.GetS2BBlocksForBeaconProducer() {
+		for _, b := range v {
+			allShardBlocks[sid] = append(allShardBlocks[sid], b.(*ShardToBeaconBlock))
+		}
+	}
 
 	var keys []int
 	for k := range beaconBlock.Body.ShardState {
@@ -1190,7 +1181,8 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 					lastCrossShardState[fromShard][toShard] = waitHeight //update lastHeight to waitHeight
 				}
 			}
-			blockchain.config.CrossShardPool[fromShard].UpdatePool()
+			//TODO: crossshard update pool
+			//blockchain.config.CrossShardPool[fromShard].UpdatePool()
 		}
 		GetBeaconBestState().lock.Unlock()
 	}

@@ -678,7 +678,12 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeaconHeight uint64, currentBeaconHeight uint64, crossShards map[byte]uint64) map[byte][]CrossTransaction {
 	crossTransactions := make(map[byte][]CrossTransaction)
 	// get cross shard block
-	allCrossShardBlock := blockGenerator.crossShardPool[toShard].GetValidBlock(crossShards)
+	var allCrossShardBlock = make(map[byte][]*CrossShardBlock)
+	for sid, v := range blockGenerator.syncker.GetCrossShardBlocksForShardProducer(toShard) {
+		for _, b := range v {
+			allCrossShardBlock[sid] = append(allCrossShardBlock[sid], b.(*CrossShardBlock))
+		}
+	}
 	// Get Cross Shard Block
 	for fromShard, crossShardBlock := range allCrossShardBlock {
 		sort.SliceStable(crossShardBlock[:], func(i, j int) bool {
@@ -824,7 +829,9 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	Find Beacon Block with compatible shard states of cross shard block
 */
 func (blockchain *BlockChain) FindBeaconHeightForCrossShardBlock(beaconHeight uint64, fromShardID byte, crossShardBlockHeight uint64) (uint64, error) {
-	return blockchain.config.CrossShardPool[fromShardID].FindBeaconHeightForCrossShardBlock(beaconHeight, fromShardID, crossShardBlockHeight)
+	//return blockchain.config.CrossShardPool[fromShardID].FindBeaconHeightForCrossShardBlock(beaconHeight, fromShardID, crossShardBlockHeight)
+	//TODO:
+	return 0, nil
 }
 
 func (blockGenerator *BlockGenerator) createTempKeyset() privacy.PrivateKey {

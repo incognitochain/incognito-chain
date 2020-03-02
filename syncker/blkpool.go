@@ -1,6 +1,7 @@
 package syncker
 
 import (
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"time"
 )
@@ -35,7 +36,7 @@ func (pool *BlkPool) Start() {
 func (pool *BlkPool) AddBlock(blk common.BlockPoolInterface) {
 	pool.action <- func() {
 		prevHash := blk.GetPrevHash()
-		hash := blk.GetHash()
+		hash := blk.Hash().String()
 		if _, ok := pool.BlkPoolByHash[hash]; ok {
 			return
 		}
@@ -63,7 +64,7 @@ func (pool *BlkPool) GetNextBlock(prevhash string, shouldGetLatest bool) common.
 		hashes := pool.BlkPoolByPrevHash[prevhash][:]
 		for _, h := range hashes {
 			blk := pool.BlkPoolByHash[h]
-			if _, ok := pool.BlkPoolByPrevHash[blk.GetHash()]; shouldGetLatest || ok {
+			if _, ok := pool.BlkPoolByPrevHash[blk.Hash().String()]; shouldGetLatest || ok {
 				res <- pool.BlkPoolByHash[h]
 				return
 			}
@@ -73,10 +74,10 @@ func (pool *BlkPool) GetNextBlock(prevhash string, shouldGetLatest bool) common.
 	return (<-res)
 }
 
-func (pool *BlkPool) GetBlockForProducer(currentHash string) []common.BlockPoolInterface {
+func (pool *BlkPool) GetFinalBlockFromBlockHash(currentHash string) []common.BlockPoolInterface {
 	res := make(chan []common.BlockPoolInterface)
 	pool.action <- func() {
-		res <- GetFinalBlocksInS2BPool(currentHash, pool.BlkPoolByHash, pool.BlkPoolByPrevHash)
+		res <- GetFinalBlockFromBlockHash_v1(currentHash, pool.BlkPoolByHash, pool.BlkPoolByPrevHash)
 	}
 	return <-res
 }
@@ -87,4 +88,12 @@ func (pool *BlkPool) GetLongestChain(currentHash string) []common.BlockPoolInter
 		res <- GetLongestChain(currentHash, pool.BlkPoolByHash, pool.BlkPoolByPrevHash)
 	}
 	return <-res
+}
+
+func (pool *BlkPool) Print() {
+	pool.action <- func() {
+		for _, v := range pool.BlkPoolByHash {
+			fmt.Println("syncker", v.GetHeight(), v.Hash().String())
+		}
+	}
 }

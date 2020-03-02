@@ -104,6 +104,7 @@ func (s *S2BSyncProcess) syncS2BPoolProcess() {
 
 		//last check, if we still need to sync more
 		if requestCnt == 0 {
+			//s.S2BPool.Print()
 			time.Sleep(time.Second * 5)
 		}
 
@@ -151,7 +152,7 @@ func (s *S2BSyncProcess) streamFromPeer(peerID string, pState S2BPeerState) (req
 				reqFromHeight = validS2BBlock[len(validS2BBlock)-1].GetHeight() + 1
 			}
 		}
-		if viewHeight+100 > toHeight {
+		if viewHeight+100 <= toHeight {
 			toHeight = viewHeight + 100
 		}
 
@@ -170,7 +171,7 @@ func (s *S2BSyncProcess) streamFromPeer(peerID string, pState S2BPeerState) (req
 			select {
 			case blk := <-ch:
 				if !isNil(blk) {
-					//fmt.Println("Syncker: Insert shard2beacon block", blk.GetHeight(), blk.Hash().String(), blk.(common.BlockPoolInterface).GetPrevHash())
+					fmt.Println("Syncker: Insert shard2beacon block", blk.GetHeight(), blk.Hash().String(), blk.(common.BlockPoolInterface).GetPrevHash())
 					s.S2BPool.AddBlock(blk.(common.BlockPoolInterface))
 				}
 			}

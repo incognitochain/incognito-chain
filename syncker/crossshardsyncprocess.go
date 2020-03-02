@@ -1,104 +1,127 @@
 package syncker
 
 import (
-	"github.com/incognitochain/incognito-chain/wire"
-	"sync"
+	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
 	"time"
 )
 
-type CrossShardPeerState struct {
-	Timestamp int64
-	Height    map[byte]uint64 //fromShardID -> hieght
-	processed bool
-}
-
 type CrossShardSyncProcess struct {
-	ShardID             int
-	Status              string                    //stop, running
-	ShardPeerState      map[string]ShardPeerState //peerid -> state
-	ShardPeerStateCh    chan *wire.MessagePeerState
-	CrossShardPeerState map[string]CrossShardPeerState //peerID -> state
-	Server              Server
-	Chain               Chain
-	BeaconChain         Chain
-	ShardPool           *BlkPool
-	ShardSyncProcess    *ShardSyncProcess
-	lock                *sync.RWMutex
+	Status                string //stop, running
+	Server                Server
+	ShardID               int
+	ShardSyncProcess      *ShardSyncProcess
+	BeaconChain           BeaconChainInterface
+	CrossShardPool        *CrossShardBlkPool
+	lastRequestCrossShard map[byte]uint64
+	requestPool           map[byte]map[common.Hash]*CrossXReq
+	actionCh              chan func()
 }
 
-func NewCrossShardSyncProcess(shardID int, shardSyncProcess *ShardSyncProcess, server Server, beaconChain, chain Chain) *CrossShardSyncProcess {
+type CrossXReq struct {
+	height uint64
+	time   time.Time
+}
+
+func NewCrossShardSyncProcess(server Server, shardSyncProcess *ShardSyncProcess, beaconChain BeaconChainInterface) *CrossShardSyncProcess {
 	s := &CrossShardSyncProcess{
-		ShardID:          shardID,
 		Status:           STOP_SYNC,
 		Server:           server,
-		Chain:            chain,
 		BeaconChain:      beaconChain,
-		ShardPool:        NewBlkPool("ShardPool-" + string(shardID)),
 		ShardSyncProcess: shardSyncProcess,
+		actionCh:         make(chan func()),
 	}
+
+	go s.syncCrossShard()
 	return s
 }
 
 func (s *CrossShardSyncProcess) Start() {
+	if s.Status == RUNNING_SYNC {
+		return
+	}
 	s.Status = RUNNING_SYNC
+	s.lastRequestCrossShard = s.BeaconChain.GetCurrentCrossShardHeightToShard(byte(s.ShardID))
+	s.requestPool = make(map[byte]map[common.Hash]*CrossXReq)
+
 	go func() {
 		ticker := time.NewTicker(time.Millisecond * 500)
 		for {
-			if s.Status != RUNNING_SYNC {
-				break
+			if s.Status != RUNNING_SYNC || !s.ShardSyncProcess.FewBlockBehind {
+				time.Sleep(time.Second)
+				continue
 			}
-			select {
-			case shardPeerState := <-s.ShardPeerStateCh:
-				for sid, peerShardState := range shardPeerState.Shards {
-					if int(sid) == s.ShardID {
-						s.ShardPeerState[shardPeerState.SenderID] = ShardPeerState{
-							Timestamp:      shardPeerState.Timestamp,
-							BestViewHash:   peerShardState.BlockHash.String(),
-							BestViewHeight: peerShardState.Height,
-						}
-					}
-				}
 
+			select {
 			case <-ticker.C:
-				s.syncCrossShardPoolProcess()
+				s.pullCrossShardBlock() //we need batching 500ms per request
+			case f := <-s.actionCh:
+				f()
 			}
 		}
 	}()
-
 }
 
 func (s *CrossShardSyncProcess) Stop() {
 	s.Status = STOP_SYNC
 }
 
-func (s *CrossShardSyncProcess) syncCrossShardPoolProcess() {
-	defer time.AfterFunc(time.Millisecond*500, s.syncCrossShardPoolProcess)
-	if !s.ShardSyncProcess.FewBlockBehind {
-		return
+func (s *CrossShardSyncProcess) syncCrossShard() {
+	for {
+		reqCnt := 0
+		if s.Status != RUNNING_SYNC || !s.ShardSyncProcess.FewBlockBehind {
+			time.Sleep(time.Second * 5)
+			continue
+		}
+
+		//get last confirm crossshard -> process request until retrieve info
+		for i := 0; i < s.Server.GetChainParam().ActiveShards; i++ {
+			for {
+				requestHeight := s.lastRequestCrossShard[byte(i)]
+				nextHeight := s.Server.FetchNextCrossShard(i, s.ShardID, requestHeight)
+				if nextHeight == 0 {
+					break
+				}
+				beaconBlock, err := s.Server.FetchBeaconBlockConfirmCrossShardHeight(i, s.ShardID, nextHeight)
+				if err != nil {
+					break
+				}
+
+				for _, shardState := range beaconBlock.Body.ShardState[byte(i)] {
+					if shardState.Height == nextHeight {
+						s.actionCh <- func() {
+							reqCnt++
+							if s.requestPool[byte(i)] == nil {
+								s.requestPool[byte(i)] = make(map[common.Hash]*CrossXReq)
+							}
+							s.requestPool[byte(i)][shardState.Hash] = nil
+						}
+						s.lastRequestCrossShard[byte(i)] = nextHeight
+						break
+					}
+				}
+			}
+		}
+
+		if reqCnt == 0 {
+			time.Sleep(time.Second * 5)
+		}
 	}
-	//TODO : sync CrossShard direct from shard node
+}
 
-	//TODO optional later: sync CrossShard  from other validator pool
-	//for peerID, pState := range s.CrossShardPeerState {
-	//	for fromSID, height := range pState.Height {
-	//		if height <= s.Server.GetCrossShardPool(s.ShardID).GetLatestCrossShardFinalHeight(fromSID) {
-	//			continue
-	//		}
-	//		ch, stop := s.Server.RequestCrossShardBlock(peerID, int(s.ShardID), s.Server.GetCrossShardPool(s.ShardID).GetLatestCrossShardFinalHeight(fromSID))
-	//		for {
-	//			shouldBreak := false
-	//			select {
-	//			case block := <-ch:
-	//				if err := s.Server.GetCrossShardPool(s.ShardID).AddBlock(block); err != nil {
-	//					shouldBreak = true
-	//				}
-	//			}
-	//			if shouldBreak {
-	//				stop <- 1
-	//				break
-	//			}
-	//		}
-	//	}
-	//}
+func (s *CrossShardSyncProcess) pullCrossShardBlock() {
+	currentCrossShardStatus := s.BeaconChain.GetCurrentCrossShardHeightToShard(byte(s.ShardID))
+	for fromSID, reqs := range s.requestPool {
+		reqHash := []common.Hash{}
+		for hash, reqTime := range reqs {
+			//if not request or (time out and cross shard not confirm and in pool yet)
+			if reqTime == nil || (reqTime.time.Add(time.Second*10).Before(time.Now()) && s.CrossShardPool.BlkPoolByHash[hash.String()] == nil && reqTime.height > currentCrossShardStatus[fromSID]) {
+				reqHash = append(reqHash, hash)
+			}
+		}
+		if err := s.Server.PushMessageGetBlockCrossShardByHash(fromSID, byte(s.ShardID), reqHash, false, ""); err != nil {
+			fmt.Println("syncker: Cannot PushMessageGetBlockCrossShardByHash")
+		}
 
+	}
 }

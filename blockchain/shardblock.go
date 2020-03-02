@@ -29,10 +29,6 @@ func (shardBlock *ShardBlock) GetPrevHash() string {
 	return shardBlock.Header.PreviousBlockHash.String()
 }
 
-func (shardBlock *ShardBlock) GetHash() string {
-	return shardBlock.Hash().String()
-}
-
 type ShardToBeaconBlock struct {
 	// AggregatedSig  string  `json:"AggregatedSig"`
 	// R              string  `json:"R"`
@@ -46,10 +42,6 @@ type ShardToBeaconBlock struct {
 
 func (shardToBeaconBlock *ShardToBeaconBlock) GetPrevHash() string {
 	return shardToBeaconBlock.Header.PreviousBlockHash.String()
-}
-
-func (shardToBeaconBlock *ShardToBeaconBlock) GetHash() string {
-	return shardToBeaconBlock.Hash().String()
 }
 
 func (shardToBeaconBlock *ShardToBeaconBlock) GetShardID() int {

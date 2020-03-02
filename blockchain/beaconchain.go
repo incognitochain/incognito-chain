@@ -72,6 +72,21 @@ func (s *BeaconChain) GetShardBestViewHeight() map[byte]uint64 {
 	return s.BestState.GetBestShardHeight()
 }
 
+func (s *BeaconChain) GetCurrentCrossShardHeightToShard(sid byte) map[byte]uint64 {
+	GetBeaconBestState().lock.RLock()
+	defer GetBeaconBestState().lock.RUnlock()
+
+	res := make(map[byte]uint64)
+	for fromShard, toShardStatus := range s.BestState.LastCrossShardState {
+		for toShard, currentHeight := range toShardStatus {
+			if toShard == sid {
+				res[fromShard] = currentHeight
+			}
+		}
+	}
+	return res
+}
+
 func (s *BeaconChain) GetEpoch() uint64 {
 	return s.BestState.Epoch
 }

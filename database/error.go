@@ -74,6 +74,8 @@ const (
 	HasShardCommitteeByHeightError
 	StoreAutoStakingByHeightError
 	FetchAutoStakingByHeightError
+	StoreBeaconHashConfirmCrossShardHeight
+	FetchBeaconHashConfirmCrossShardHeight
 
 	// Bridge
 	BridgeUnexpectedError
@@ -155,29 +157,30 @@ var ErrCodeMessage = map[int]struct {
 	GetTxByPublicKeyError:        {-8003, "Get tx by public key error publlic key = %+v"},
 
 	// -9xxx beacon
-	StoreCrossShardNextHeightError:    {-9000, "Cannot store cross shard next height"},
-	HasCrossShardNextHeightError:      {-9001, "Has cross shard next height"},
-	FetchCrossShardNextHeightError:    {-9002, "Fetch cross shard next height error"},
-	StoreBeaconBlockError:             {-9003, "Store beacon block error"},
-	HasBeaconBlockError:               {-9004, "Has beacon block error"},
-	FetchBeaconBlockError:             {-9005, "Fetch beacon block error"},
-	StoreBeaconBlockIndexError:        {-9006, "Store beacon block index"},
-	GetIndexOfBeaconBlockError:        {-9007, "Get index of beacon block error hash=%+v"},
-	DeleteBeaconBlockError:            {-9008, "Delete beacon block error hash=%+v index=%+v"},
-	StoreBeaconBestStateError:         {-9009, "Store beacon best state error"},
-	FetchBeaconBestStateError:         {-9010, "Fetch beacon beststate error"},
-	CleanBeaconBestStateError:         {-9011, "Clean beacon beststate error"},
-	GetBeaconBlockHashByIndexError:    {-9012, "Get beacon block hash by index error index=%+v"},
-	StoreAcceptedShardToBeaconError:   {-9013, "Store accepted shard to beacon error"},
-	GetAcceptedShardToBeaconError:     {-9014, "Get accepted shard to beacon error"},
-	StoreBeaconCommitteeByHeightError: {-9015, "Store beacon committee by height error"},
-	StoreShardCommitteeByHeightError:  {-9016, "Store shard committee by height error"},
-	FetchShardCommitteeByHeightError:  {-9017, "Fetch committee by height=%+v error"},
-	FetchBeaconCommitteeByHeightError: {-9018, "Fetch beacon committee by height=%+v error"},
-	HasShardCommitteeByHeightError:    {-9019, "Has committee shard by height error"},
-	StoreAutoStakingByHeightError:     {-9020, "Store Auto Staking By Height Error"},
-	FetchAutoStakingByHeightError:     {-9021, "Fetch Auto Staking By Height Error"},
-
+	StoreCrossShardNextHeightError:         {-9000, "Cannot store cross shard next height"},
+	HasCrossShardNextHeightError:           {-9001, "Has cross shard next height"},
+	FetchCrossShardNextHeightError:         {-9002, "Fetch cross shard next height error"},
+	StoreBeaconBlockError:                  {-9003, "Store beacon block error"},
+	HasBeaconBlockError:                    {-9004, "Has beacon block error"},
+	FetchBeaconBlockError:                  {-9005, "Fetch beacon block error"},
+	StoreBeaconBlockIndexError:             {-9006, "Store beacon block index"},
+	GetIndexOfBeaconBlockError:             {-9007, "Get index of beacon block error hash=%+v"},
+	DeleteBeaconBlockError:                 {-9008, "Delete beacon block error hash=%+v index=%+v"},
+	StoreBeaconBestStateError:              {-9009, "Store beacon best state error"},
+	FetchBeaconBestStateError:              {-9010, "Fetch beacon beststate error"},
+	CleanBeaconBestStateError:              {-9011, "Clean beacon beststate error"},
+	GetBeaconBlockHashByIndexError:         {-9012, "Get beacon block hash by index error index=%+v"},
+	StoreAcceptedShardToBeaconError:        {-9013, "Store accepted shard to beacon error"},
+	GetAcceptedShardToBeaconError:          {-9014, "Get accepted shard to beacon error"},
+	StoreBeaconCommitteeByHeightError:      {-9015, "Store beacon committee by height error"},
+	StoreShardCommitteeByHeightError:       {-9016, "Store shard committee by height error"},
+	FetchShardCommitteeByHeightError:       {-9017, "Fetch committee by height=%+v error"},
+	FetchBeaconCommitteeByHeightError:      {-9018, "Fetch beacon committee by height=%+v error"},
+	HasShardCommitteeByHeightError:         {-9019, "Has committee shard by height error"},
+	StoreAutoStakingByHeightError:          {-9020, "Store Auto Staking By Height Error"},
+	FetchAutoStakingByHeightError:          {-9021, "Fetch Auto Staking By Height Error"},
+	StoreBeaconHashConfirmCrossShardHeight: {-9022, "Store Beacon Hash Confirming CrossShard Height Error"},
+	FetchBeaconHashConfirmCrossShardHeight: {-9023, "Fetch Beacon Hash Confirming CrossShard Height Error"},
 	// -10xxx bridge
 	BridgeUnexpectedError:      {-10000, "Insert ETH tx hash issued error"},
 	InsertETHTxHashIssuedError: {-10001, "Insert ETH tx hash issued error"},

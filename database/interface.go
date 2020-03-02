@@ -48,6 +48,9 @@ type DatabaseInterface interface {
 	//Crossshard
 	StoreCrossShardNextHeight(fromShard byte, toShard byte, curHeight uint64, nextHeight uint64) error
 	FetchCrossShardNextHeight(fromShard, toShard byte, curHeight uint64) (uint64, error)
+	StoreBeaconHashConfirmCrossShardHeight(fromShard, toShard byte, height uint64, beaconHash string) error
+	FetchBeaconHashConfirmCrossShardHeight(fromShard, toShard byte, height uint64) ([]byte, error)
+
 	RestoreCrossShardNextHeights(fromShard byte, toShard byte, curHeight uint64) error
 
 	// Block index

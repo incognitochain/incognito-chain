@@ -53,11 +53,7 @@ type Config struct {
 	ChainParams       *Params
 	RelayShards       []byte
 	NodeMode          string
-	ShardToBeaconPool ShardToBeaconPool
 	BlockGen          *BlockGenerator
-	CrossShardPool    map[byte]CrossShardPool
-	BeaconPool        BeaconPool
-	ShardPool         map[byte]ShardPool
 	TxPool            TxPool
 	TempTxPool        TxPool
 	CRemovedTxs       chan metadata.Transaction
@@ -65,6 +61,7 @@ type Config struct {
 	IsBlockGenStarted bool
 	PubSubManager     *pubsub.PubSubManager
 	RandomClient      btc.RandomClient
+	Syncker           Syncker
 	Server            interface {
 		PublishNodeState(userLayer string, shardID int) error
 

@@ -23,10 +23,6 @@ func (beaconBlock *BeaconBlock) GetPrevHash() string {
 	return beaconBlock.Header.PreviousBlockHash.String()
 }
 
-func (beaconBlock *BeaconBlock) GetHash() string {
-	return beaconBlock.Hash().String()
-}
-
 func NewBeaconBlock() *BeaconBlock {
 	return &BeaconBlock{}
 }

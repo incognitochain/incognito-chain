@@ -57,7 +57,8 @@ func InsertBatchBlock(chain Chain, blocks []common.BlockInterface) (int, error) 
 	return len(sameCommitteeBlock), nil
 }
 
-func GetFinalBlocksInS2BPool(currentFinalHash string, byHash map[string]common.BlockPoolInterface, byPrevHash map[string][]string) (res []common.BlockPoolInterface) {
+//final block
+func GetFinalBlockFromBlockHash_v1(currentFinalHash string, byHash map[string]common.BlockPoolInterface, byPrevHash map[string][]string) (res []common.BlockPoolInterface) {
 	var finalBlock common.BlockPoolInterface = nil
 	var traverse func(currentHash string)
 	traverse = func(currentHash string) {
@@ -81,9 +82,9 @@ func GetFinalBlocksInS2BPool(currentFinalHash string, byHash map[string]common.B
 	}
 
 	for {
-		res = append([]common.BlockPoolInterface{byHash[finalBlock.GetHash()]}, res...)
+		res = append([]common.BlockPoolInterface{byHash[finalBlock.Hash().String()]}, res...)
 		finalBlock = byHash[finalBlock.GetPrevHash()]
-		if finalBlock == nil {
+		if finalBlock == nil || finalBlock.Hash().String() == currentFinalHash {
 			break
 		}
 	}
@@ -115,7 +116,7 @@ func GetLongestChain(currentFinalHash string, byHash map[string]common.BlockPool
 	}
 
 	for {
-		res = append([]common.BlockPoolInterface{byHash[finalBlock.GetHash()]}, res...)
+		res = append([]common.BlockPoolInterface{byHash[finalBlock.Hash().String()]}, res...)
 		finalBlock = byHash[finalBlock.GetPrevHash()]
 		if finalBlock == nil {
 			break

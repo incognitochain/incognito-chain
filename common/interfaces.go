@@ -2,9 +2,14 @@ package common
 
 type BlockPoolInterface interface {
 	GetPrevHash() string
-	GetHash() string
+	Hash() *Hash
 	GetHeight() uint64
 	GetShardID() int
+}
+
+type CrossShardBlkPoolInterface interface {
+	Hash() *Hash
+	GetHeight() uint64
 }
 
 type BlockInterface interface {

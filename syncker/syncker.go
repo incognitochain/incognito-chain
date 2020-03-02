@@ -8,44 +8,28 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
 	"github.com/incognitochain/incognito-chain/wire"
+	libp2p "github.com/libp2p/go-libp2p-peer"
 	"time"
 )
 
 type Server interface {
 	GetChainParam() *blockchain.Params
 	GetUserMiningState() (role string, chainID int)
-
-	//Request block from "peerID" of shard "fromSID" with param currentFinalHeight and currentBestHash
-	//Function return channel of each block, and a stop channel to tell sender side to stop send block
 	RequestBlocksViaStream(ctx context.Context, peerID string, fromSID int, _type proto.BlkType, fromBlockHeight uint64, finalBlockHeight uint64, toBlockheight uint64, toBlockHashString string) (blockCh chan common.BlockInterface, err error)
-
-	//Request cross block from "peerID" for shard "toShardID" with param latestCrossShardBlockHeight in current pool
-	//Function return channel of each block, and a stop channel to tell sender side to stop send block
-	//RequestCrossShardBlock(peerID string, toShardID int, latestCrossShardBlockHeight uint64) (blockCh chan interface{}, stopCh chan int)
-
-	//Request s2b block from "peerID" of shard "fromSID" with param latestS2BHeight in current pool
-	//Function return channel of each block, and a stop channel to tell sender side to stop send block
-	//RequestS2BBlock(peerID string, fromSID int, latestS2BHeight uint64) (blockCh chan interface{}, stopCh chan int)
-
-	//GetCrossShardPool(sid byte) Pool
-	//GetS2BPool(sid byte) Pool
-
 	PublishNodeState(userLayer string, shardID int) error
 
-	//GetBeaconBestState() Chain
-	//GetAllShardBestState() map[byte]Chain
-}
+	FetchNextCrossShard(fromSID, toSID int, currentHeight uint64) uint64
+	StoreBeaconHashConfirmCrossShardHeight(fromSID, toSID int, height uint64, beaconHash string) error
+	FetchBeaconBlockConfirmCrossShardHeight(fromSID, toSID int, height uint64) (*blockchain.BeaconBlock, error)
 
-type Pool interface {
-	GetLatestCrossShardFinalHeight(byte) uint64
-	GetLatestFinalHeight() uint64
-	AddBlock(block interface{}) error
+	PushMessageGetBlockCrossShardByHash(fromShard byte, toShard byte, blkHashes []common.Hash, getFromPool bool, peerID libp2p.ID) error
 }
 
 type BeaconChainInterface interface {
 	Chain
 	GetShardBestViewHash() map[byte]common.Hash
 	GetShardBestViewHeight() map[byte]uint64
+	GetCurrentCrossShardHeightToShard(toShard byte) map[byte]uint64 //must use final block
 }
 type Chain interface {
 	GetBestViewHeight() uint64
@@ -54,7 +38,6 @@ type Chain interface {
 	IsReady() bool
 	GetBestViewHash() string
 	GetFinalViewHash() string
-
 	GetEpoch() uint64
 	ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 	GetCommittee() []incognitokey.CommitteePublicKey
@@ -68,11 +51,17 @@ type SynckerConfig struct {
 }
 
 type Syncker struct {
-	IsEnabled         bool //0 > stop, 1: running
-	config            *SynckerConfig
-	BeaconSyncProcess *BeaconSyncProcess
-	S2BSyncProcess    *S2BSyncProcess
-	ShardSyncProcess  map[int]*ShardSyncProcess
+	IsEnabled             bool //0 > stop, 1: running
+	config                *SynckerConfig
+	BeaconSyncProcess     *BeaconSyncProcess
+	S2BSyncProcess        *S2BSyncProcess
+	ShardSyncProcess      map[int]*ShardSyncProcess
+	CrossShardSyncProcess map[int]*CrossShardSyncProcess
+
+	BeaconPool     *BlkPool
+	ShardPool      map[int]*BlkPool
+	S2BPool        *BlkPool
+	CrossShardPool map[int]*CrossShardBlkPool
 }
 
 // Everytime beacon block is inserted after sync finish, we update shard committee (from beacon view)
@@ -117,7 +106,10 @@ func (s *Syncker) WatchCommitteeChange() {
 
 func NewSyncker() *Syncker {
 	s := &Syncker{
-		ShardSyncProcess: make(map[int]*ShardSyncProcess),
+		ShardSyncProcess:      make(map[int]*ShardSyncProcess),
+		ShardPool:             make(map[int]*BlkPool),
+		CrossShardSyncProcess: make(map[int]*CrossShardSyncProcess),
+		CrossShardPool:        make(map[int]*CrossShardBlkPool),
 	}
 
 	return s
@@ -128,13 +120,17 @@ func (s *Syncker) Init(config *SynckerConfig) {
 	//init beacon sync process
 	s.BeaconSyncProcess = NewBeaconSyncProcess(s.config.Node, s.config.Blockchain.Chains["beacon"].(BeaconChainInterface))
 	s.S2BSyncProcess = s.BeaconSyncProcess.S2BSyncProcess
+	s.BeaconPool = s.BeaconSyncProcess.BeaconPool
+	s.S2BPool = s.S2BSyncProcess.S2BPool
 
 	//init shard sync process
 	for chainName, chain := range s.config.Blockchain.Chains {
 		if chainName != "beacon" {
 			sid := chain.GetShardID()
-			s.ShardSyncProcess[sid] = NewShardSyncProcess(sid, s.config.Node, s.config.Blockchain.Chains["beacon"], chain)
-			//s.Cr[sid] = NewShardSyncProcess(sid, s.config.Node, s.config.Blockchain.Chains["beacon"], chain)
+			s.ShardSyncProcess[sid] = NewShardSyncProcess(sid, s.config.Node, s.config.Blockchain.Chains["beacon"].(BeaconChainInterface), chain)
+			s.ShardPool[sid] = s.ShardSyncProcess[sid].ShardPool
+			s.CrossShardSyncProcess[sid] = s.ShardSyncProcess[sid].CrossShardSyncProcess
+			s.CrossShardPool[sid] = s.CrossShardSyncProcess[sid].CrossShardPool
 		}
 	}
 
@@ -160,7 +156,7 @@ func (s *Syncker) ReceiveBlock(blk interface{}, peerID string) {
 	switch blk.(type) {
 	case *blockchain.BeaconBlock:
 		beaconBlk := blk.(*blockchain.BeaconBlock)
-		s.BeaconSyncProcess.BeaconPool.AddBlock(beaconBlk)
+		s.BeaconPool.AddBlock(beaconBlk)
 		//create fake s2b pool peerstate
 		s.BeaconSyncProcess.BeaconPeerStateCh <- &wire.MessagePeerState{
 			Beacon: wire.ChainState{
@@ -172,17 +168,21 @@ func (s *Syncker) ReceiveBlock(blk interface{}, peerID string) {
 
 	case *blockchain.ShardBlock:
 		shardBlk := blk.(*blockchain.ShardBlock)
-		s.ShardSyncProcess[shardBlk.GetShardID()].ShardPool.AddBlock(shardBlk)
+		s.ShardPool[shardBlk.GetShardID()].AddBlock(shardBlk)
 
 	case *blockchain.ShardToBeaconBlock:
 		s2bBlk := blk.(*blockchain.ShardToBeaconBlock)
-		s.S2BSyncProcess.S2BPool.AddBlock(s2bBlk)
+		s.S2BPool.AddBlock(s2bBlk)
+		//fmt.Println("syncker AddBlock S2B", s2bBlk.Header.ShardID, s2bBlk.Header.Height)
 		//create fake s2b pool peerstate
 		s.S2BSyncProcess.S2BPeerStateCh <- &wire.MessagePeerState{
 			SenderID:          time.Now().String(),
 			ShardToBeaconPool: map[byte][]uint64{s2bBlk.Header.ShardID: []uint64{1, s2bBlk.GetHeight()}},
 			Timestamp:         time.Now().Unix(),
 		}
+	case *blockchain.CrossShardBlock:
+		csBlk := blk.(*blockchain.CrossShardBlock)
+		s.CrossShardPool[int(csBlk.ToShardID)].AddBlock(csBlk)
 	}
 
 }
@@ -199,25 +199,9 @@ func (s *Syncker) ReceivePeerState(peerState *wire.MessagePeerState) {
 		s.S2BSyncProcess.S2BPeerStateCh <- peerState
 	}
 	//shard
-	//fmt.Printf("SYNCKER %+v\n", peerState)
 	for sid, _ := range peerState.Shards {
 		s.ShardSyncProcess[int(sid)].ShardPeerStateCh <- peerState
 	}
-	//crossshard
-	//if len(peerState.CrossShardPool) != 0 {
-	//	for sid, peerShardState := range peerState.CrossShardPool {
-	//		crossShardState := make(map[byte]uint64)
-	//		for sid, v := range peerShardState {
-	//			crossShardState[sid] = v[len(v)-1]
-	//		}
-	//		s.ShardSyncProcess[int(sid)].lock.Lock()
-	//		s.CrossShardPeerState[int(sid)][peerState.SenderID] = CrossShardPeerState{
-	//			Timestamp: peerState.Timestamp,
-	//			Height:    crossShardState,
-	//		}
-	//		s.ShardSyncProcess[int(sid)].lock.Unlock()
-	//	}
-	//}
 }
 
 func (s *Syncker) Start() {
@@ -227,8 +211,45 @@ func (s *Syncker) Start() {
 func (s *Syncker) Stop() {
 	s.IsEnabled = false
 	s.BeaconSyncProcess.Stop()
-
 	for _, chain := range s.ShardSyncProcess {
 		chain.Stop()
 	}
+}
+
+func (s *Syncker) GetS2BBlocksForBeaconProducer() map[byte][]interface{} {
+	bestViewShardHash := s.config.Blockchain.Chains["beacon"].(BeaconChainInterface).GetShardBestViewHash()
+	res := make(map[byte][]interface{})
+
+	//bypass first block
+	if len(bestViewShardHash) == 0 {
+		for i := 0; i < s.config.Node.GetChainParam().ActiveShards; i++ {
+			bestViewShardHash[byte(i)] = common.Hash{}
+		}
+	}
+
+	//fist beacon beststate dont have shard hash end => create one
+	for i, v := range bestViewShardHash {
+		fmt.Println("syncker: bestViewShardHash", i, v.String())
+		if (&v).IsEqual(&common.Hash{}) {
+			blk := *s.config.Node.GetChainParam().GenesisShardBlock
+			blk.Header.ShardID = i
+			v = *blk.Hash()
+		}
+		for _, v := range s.S2BPool.GetFinalBlockFromBlockHash(v.String()) {
+			res[i] = append(res[i], v)
+			fmt.Println("syncker: get block ", v.GetHeight(), v.Hash().String())
+		}
+	}
+	//fmt.Println("syncker: GetS2BBlocksForBeaconProducer", res)
+	return res
+}
+
+func (s *Syncker) GetS2BBlocksForBeaconValidator(ctx context.Context, needBlkHash []common.Hash) map[byte][]interface{} {
+
+	return nil
+}
+
+func (s *Syncker) GetCrossShardBlocksForShardProducer(toShard byte) map[byte][]interface{} {
+
+	return nil
 }

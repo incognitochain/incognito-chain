@@ -529,8 +529,12 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock
 	}
 	// Verify Cross Shard Output Coin and Custom Token Transaction
 	toShard := shardID
-	crossShardLimit := blockchain.config.CrossShardPool[toShard].GetLatestValidBlockHeight()
-	toShardAllCrossShardBlock := blockchain.config.CrossShardPool[toShard].GetValidBlock(crossShardLimit)
+	var toShardAllCrossShardBlock = make(map[byte][]*CrossShardBlock)
+	for sid, v := range blockchain.config.Syncker.GetCrossShardBlocksForShardProducer(toShard) {
+		for _, b := range v {
+			toShardAllCrossShardBlock[sid] = append(toShardAllCrossShardBlock[sid], b.(*CrossShardBlock))
+		}
+	}
 	for fromShard, crossTransactions := range shardBlock.Body.CrossTransactions {
 		toShardCrossShardBlocks, ok := toShardAllCrossShardBlock[fromShard]
 		if !ok {
@@ -1009,12 +1013,6 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock 
 	//		}
 	//	}
 	//}()
-	//=========Remove invalid shard block in pool
-	go blockchain.config.ShardPool[shardID].SetShardState(blockchain.BestState.Shard[shardID].ShardHeight)
-	//updateShardBestState Cross shard pool: remove invalid block
-	go func() {
-		blockchain.config.CrossShardPool[shardID].RemoveBlockByHeight(blockchain.BestState.Shard[shardID].BestCrossShard)
-	}()
 	go func() {
 		//Remove Candidate In pool
 		candidates := []string{}

@@ -264,7 +264,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		Logger.log.Infof("Init Bitcoin Core Client with IP %+v, Port %+v, Username %+v, Password %+v", cfg.BtcClientIP, cfg.BtcClientPort, cfg.BtcClientUsername, cfg.BtcClientPassword)
 	}
 	// Init block template generator
-	serverObj.blockgen, err = blockchain.NewBlockGenerator(serverObj.memPool, serverObj.blockChain, serverObj.shardToBeaconPool, serverObj.crossShardPool, cPendingTxs, cRemovedTxs)
+	serverObj.blockgen, err = blockchain.NewBlockGenerator(serverObj.memPool, serverObj.blockChain, serverObj.syncker, cPendingTxs, cRemovedTxs)
 	if err != nil {
 		return err
 	}
@@ -321,14 +321,11 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		DataBase:    serverObj.dataBase,
 		MemCache:    serverObj.memCache,
 		//MemCache:          nil,
-		BlockGen:          serverObj.blockgen,
-		Interrupt:         interrupt,
-		RelayShards:       relayShards,
-		BeaconPool:        serverObj.beaconPool,
-		ShardPool:         serverObj.shardPool,
-		ShardToBeaconPool: serverObj.shardToBeaconPool,
-		CrossShardPool:    serverObj.crossShardPool,
-		Server:            serverObj,
+		BlockGen:    serverObj.blockgen,
+		Interrupt:   interrupt,
+		RelayShards: relayShards,
+		Server:      serverObj,
+		Syncker:     serverObj.syncker,
 		// UserKeySet:        serverObj.userKeySet,
 		NodeMode:        cfg.NodeMode,
 		FeeEstimator:    make(map[byte]blockchain.FeeEstimator),
@@ -998,13 +995,14 @@ func (serverObj *Server) OnBlockBeacon(p *peer.PeerConn,
 
 func (serverObj *Server) OnCrossShard(p *peer.PeerConn,
 	msg *wire.MessageCrossShard) {
-	Logger.log.Debug("Receive a new crossshard START")
-
-	var txProcessed chan struct{}
-	serverObj.netSync.QueueBlock(nil, msg, txProcessed)
-	//<-txProcessed
-
-	Logger.log.Debug("Receive a new crossshard END")
+	//Logger.log.Debug("Receive a new crossshard START")
+	//
+	//var txProcessed chan struct{}
+	//serverObj.netSync.QueueBlock(nil, msg, txProcessed)
+	////<-txProcessed
+	//
+	//Logger.log.Debug("Receive a new crossshard END")
+	go serverObj.syncker.ReceiveBlock(msg.Block, "")
 }
 
 func (serverObj *Server) OnShardToBeacon(p *peer.PeerConn,
@@ -1699,7 +1697,7 @@ func (serverObj *Server) PushMessageGetBlockCrossShardByHash(fromShard byte, toS
 }
 
 func (serverObj *Server) PushMessageGetBlockCrossShardBySpecificHeight(fromShard byte, toShard byte, heights []uint64, getFromPool bool, peerID libp2p.ID) error {
-	//Logger.log.Infof("[streas
+
 	return nil
 }
 
@@ -1848,10 +1846,6 @@ func (serverObj *Server) PushMessageToChain(msg wire.Message, chain blockchain.C
 		serverObj.PushMessageToShard(msg, byte(chainID), map[libp2p.ID]bool{})
 	}
 	return nil
-}
-
-func (serverObj *Server) DropAllConnections() {
-	serverObj.connManager.DropAllConnections()
 }
 
 func (serverObj *Server) PushBlockToAll(block common.BlockInterface, isBeacon bool) error {
@@ -2367,18 +2361,26 @@ func (s *Server) GetUserMiningState() (role string, chainID int) {
 	return "", -2
 }
 
-//func (serverObj *Server) RequestCrossShardBlock(peerID string, toShardID int, latestCrossShardBlockHeight uint64) (blockCh chan interface{}, stopCh chan int) {
-//	panic("implement me")
-//}
-//
-//func (serverObj *Server) RequestS2BBlock(peerID string, fromSID int, latestS2BHeight uint64) (blockCh chan interface{}, stopCh chan int) {
-//	panic("implement me")
-//}
+func (s *Server) StoreBeaconHashConfirmCrossShardHeight(fromSID, toSID int, height uint64, beaconHash string) error {
+	return s.dataBase.StoreBeaconHashConfirmCrossShardHeight(byte(fromSID), byte(toSID), height, beaconHash)
+}
 
-//func (serverObj *Server) GetCrossShardPool(sid byte) syncker.Pool {
-//	panic("implement me")
-//}
-//
-//func (serverObj *Server) GetS2BPool(sid byte) syncker.Pool {
-//	panic("implement me")
-//}
+func (s *Server) FetchBeaconBlockConfirmCrossShardHeight(fromSID, toSID int, height uint64) (*blockchain.BeaconBlock, error) {
+	if data, err := s.dataBase.FetchBeaconHashConfirmCrossShardHeight(byte(fromSID), byte(toSID), height); err != nil {
+		return nil, err
+	} else {
+		blk := &blockchain.BeaconBlock{}
+		if err := json.Unmarshal(data, blk); err != nil {
+			return nil, err
+		}
+		return blk, nil
+	}
+}
+
+func (s *Server) FetchNextCrossShard(fromSID, toSID int, currentHeight uint64) uint64 {
+	nextHeight, err := s.dataBase.FetchCrossShardNextHeight(byte(fromSID), byte(toSID), uint64(currentHeight))
+	if err != nil {
+		Logger.log.Error(fmt.Sprintf("Cannot FetchCrossShardNextHeight fromSID %d toSID %d with currentHeight %d", fromSID, toSID, currentHeight))
+	}
+	return nextHeight
+}
