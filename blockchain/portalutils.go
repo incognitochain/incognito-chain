@@ -432,7 +432,7 @@ func pickSingleCustodian(metadata metadata.PortalUserRegister, exchangeRate *lvd
 		if kv.Value.FreeCollateral >= totalPRV {
 			result := make(map[string]lvdb.MatchingPortingCustodianDetail)
 			result[kv.Key] = lvdb.MatchingPortingCustodianDetail{
-				RemoteAddress: metadata.PTokenAddress,
+				RemoteAddress: kv.Value.RemoteAddresses[metadata.PTokenId],
 				Amount: metadata.RegisterAmount,
 				LockedAmountCollateral: totalPRV,
 				RemainCollateral: kv.Value.FreeCollateral - totalPRV,
@@ -481,7 +481,7 @@ func pickMultipleCustodian (metadata metadata.PortalUserRegister, exchangeRate *
 
 		if custodianItem.Value.FreeCollateral >= totalPRV {
 			multipleCustodian[custodianItem.Key] = lvdb.MatchingPortingCustodianDetail{
-				RemoteAddress: metadata.PTokenAddress,
+				RemoteAddress: custodianItem.Value.RemoteAddresses[metadata.PTokenId],
 				Amount: pTokenCanUseUint64,
 				LockedAmountCollateral: totalPRV,
 				RemainCollateral: custodianItem.Value.FreeCollateral - totalPRV,
@@ -511,4 +511,24 @@ func calculatePortingFees(totalPToken uint64) uint64  {
 	result := 0.01 * float64(totalPToken) / 100
 	integer, _  := math.Modf(result)
 	return  uint64(integer)
+}
+
+func ValidationExchangeRates(exchangeRates *lvdb.FinalExchangeRates) error  {
+	if exchangeRates == nil || exchangeRates.Rates == nil {
+		return errors.New("Exchange rates not found")
+	}
+
+	if _, ok := exchangeRates.Rates[metadata.PortalTokenSymbolBTC]; !ok {
+		return errors.New("BTC rates is not exist")
+	}
+
+	if _, ok := exchangeRates.Rates[metadata.PortalTokenSymbolBNB]; !ok {
+		return errors.New("BNB rates is not exist")
+	}
+
+	if _, ok := exchangeRates.Rates[metadata.PortalTokenSymbolPRV]; !ok {
+		return errors.New("PRV rates is not exist")
+	}
+
+	return  nil
 }
