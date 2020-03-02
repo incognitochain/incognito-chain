@@ -38,14 +38,13 @@ type RandomCommitmentsProcessParam struct {
 
 func NewRandomCommitmentsProcessParam(usableInputCoins []*privacy.InputCoin, randNum int,
 	db database.DatabaseInterface, shardID byte, tokenID *common.Hash) *RandomCommitmentsProcessParam {
-	result := &RandomCommitmentsProcessParam{
+	return &RandomCommitmentsProcessParam{
 		tokenID:          tokenID,
 		shardID:          shardID,
 		db:               db,
 		randNum:          randNum,
 		usableInputCoins: usableInputCoins,
 	}
-	return result
 }
 
 // RandomCommitmentsProcess - process list commitments and useable tx to create
