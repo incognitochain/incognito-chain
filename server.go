@@ -486,7 +486,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	})
 
 	serverObj.connManager = connManager
-	serverObj.consensusEngine.Init(&blsbft.EngineConfig{Node: serverObj, Blockchain: serverObj.blockChain})
+	serverObj.consensusEngine.Init(&blsbft.EngineConfig{Node: serverObj, Blockchain: serverObj.blockChain, PubSubManager: serverObj.pusubManager})
 	serverObj.syncker.Init(&syncker.SynckerConfig{Node: serverObj, Blockchain: serverObj.blockChain})
 
 	// Start up persistent peers.

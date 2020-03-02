@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/wire"
 	"time"
 )
@@ -71,14 +72,19 @@ func (s *Engine) WatchCommitteeChange() {
 	if chainID == -2 {
 		s.curringMiningState.role = ""
 		s.curringMiningState.layer = ""
+		s.NotifyBeaconRole(false)
+		s.NotifyShardRole(-2)
 	} else if chainID == -1 {
 		s.curringMiningState.layer = "beacon"
+		s.NotifyBeaconRole(true)
+		s.NotifyShardRole(-1)
 	} else if chainID >= 0 {
 		s.curringMiningState.layer = "shard"
+		s.NotifyBeaconRole(false)
+		s.NotifyShardRole(chainID)
 	} else {
 		panic("User Mining State Error")
 	}
-
 	for _, BFTProcess := range s.BFTProcess {
 		if role == "" || chainID != BFTProcess.GetChainID() {
 			BFTProcess.Stop()
@@ -160,4 +166,11 @@ func (engine *Engine) OnBFTMsg(msg *wire.MessageBFT) {
 	if engine.currentMiningProcess.GetChainKey() == msg.ChainKey {
 		engine.currentMiningProcess.ProcessBFTMsg(msg)
 	}
+}
+
+func (engine *Engine) NotifyBeaconRole(beaconRole bool) {
+	engine.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.BeaconRoleTopic, beaconRole))
+}
+func (engine *Engine) NotifyShardRole(shardRole int) {
+	engine.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardRoleTopic, shardRole))
 }

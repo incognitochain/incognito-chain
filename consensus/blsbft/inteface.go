@@ -4,12 +4,14 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
 type EngineConfig struct {
-	Node       NodeInterface
-	Blockchain *blockchain.BlockChain
+	Node          NodeInterface
+	Blockchain    *blockchain.BlockChain
+	PubSubManager *pubsub.PubSubManager
 }
 
 type NodeInterface interface {
