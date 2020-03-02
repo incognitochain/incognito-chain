@@ -456,8 +456,8 @@ func (tp *TxPool) checkFees(
 			feePTokenToNativeTokenTmp, err := metadata.ConvertPrivacyTokenToNativeToken(feePToken, tokenID, beaconHeight, tp.config.DataBase)
 			if err != nil {
 				Logger.log.Errorf("ERROR: %+v", NewMempoolTxError(RejectInvalidFee,
-					fmt.Errorf("transaction %+v: %+v %v can not convert to native token",
-						tx.Hash().String(), feePToken, tokenID)))
+					fmt.Errorf("transaction %+v: %+v %v can not convert to native token %+v",
+						tx.Hash().String(), feePToken, tokenID, err)))
 				return false
 			}
 
@@ -520,10 +520,10 @@ In Param#2: isStore: store transaction to persistence storage only work for tran
 10. RequestStopAutoStaking
 */
 func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int64, isBatch bool, isNewTransaction bool) error {
-	var shardID byte
 	var err error
 	var now time.Time
 	txHash := tx.Hash()
+	shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	txType := tx.GetType()
 	if txType == common.TxNormalType {
 		if tx.IsPrivacy() {
@@ -535,7 +535,13 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int6
 
 	// Condition 1: sanity data
 	now = time.Now()
-	validated, err := tx.ValidateSanityData(tp.config.BlockChain)
+	validated := false
+	if !isNewTransaction {
+		// need to use beacon height from
+		validated, err = tx.ValidateSanityData(tp.config.BlockChain, uint64(beaconHeight))
+	} else {
+		validated, err = tx.ValidateSanityData(tp.config.BlockChain, 0)
+	}
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
@@ -574,12 +580,11 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int6
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
 	if isTxInPool {
-		str := fmt.Sprintf("already have transaction %+v", txHash.String())
 		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 			metrics.Measurement:      metrics.TxPoolDuplicateTxs,
 			metrics.MeasurementValue: float64(1),
 		})
-		return NewMempoolTxError(RejectDuplicateTx, fmt.Errorf("%+v", str))
+		return NewMempoolTxError(RejectDuplicateTx, fmt.Errorf("already had transaction %+v in mempool", txHash.String()))
 	}
 	// Condition 3: A standalone transaction must not be a salary transaction.
 	now = time.Now()
@@ -638,7 +643,6 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int6
 	}
 	// Condition 6: ValidateTransaction tx by it self
 	if !isBatch {
-		shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		now = time.Now()
 		validated, errValidateTxByItself := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.DataBase, tp.config.BlockChain, shardID, isNewTransaction)
 		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{

@@ -55,7 +55,7 @@ func (sbsRes ReturnStakingMetadata) ValidateTxWithBlockChain(txr Transaction, bc
 	return false, errors.New("Can not find any staking information of this publickey")
 }
 
-func (sbsRes ReturnStakingMetadata) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (sbsRes ReturnStakingMetadata) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
 	if len(sbsRes.StakerAddress.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's producer address")
 	}

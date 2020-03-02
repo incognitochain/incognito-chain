@@ -323,7 +323,7 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.ShardBlock) error {
 	} else {
 		ef.dropped = append(ef.dropped, dropped)
 	}
-	Logger.log.Info("RegisterBlock: success for", block.Header.ShardID, block.Hash().String())
+	Logger.log.Debugf("Estimate fee register block success for block hash %s", block.Header.ShardID, block.Hash().String())
 	return nil
 }
 
@@ -801,7 +801,7 @@ func RestoreFeeEstimator(data FeeEstimatorState) (*FeeEstimator, error) {
 			return nil, err
 		}
 	}
-	Logger.log.Infof("Fee estimator data when restoring #%d", ef)
+	Logger.log.Debugf("Fee estimator data when restoring #%d", ef)
 	return ef, nil
 }
 

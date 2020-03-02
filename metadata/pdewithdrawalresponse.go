@@ -42,7 +42,7 @@ func (iRes PDEWithdrawalResponse) ValidateTxWithBlockChain(txr Transaction, bcr 
 	return false, nil
 }
 
-func (iRes PDEWithdrawalResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (iRes PDEWithdrawalResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
 	return false, true, nil
 }
 

@@ -770,18 +770,22 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 			break
 		}
 	}
-	listTxs := []metadata.Transaction{}
+	listBatchTxs := []metadata.Transaction{}
 	for index, tx := range preparedTxForNewBlock {
 		elasped = time.Since(startTime).Nanoseconds()
 		if elasped >= maxBlockCreationTimeLeftTime {
 			Logger.log.Info("Shard Producer/Elapsed, Break: ", elasped)
 			break
 		}
-		listTxs = append(listTxs, tx)
-		if (index != 0 && index%TransactionBatchSize == 0) || (index == len(preparedTxForNewBlock)-1) {
-			tempTxDesc, err := blockGenerator.chain.config.TempTxPool.MaybeAcceptBatchTransactionForBlockProducing(listTxs, int64(beaconHeight))
+		listBatchTxs = append(listBatchTxs, tx)
+		if ((index+1)%TransactionBatchSize == 0) || (index == len(preparedTxForNewBlock)-1) {
+			tempTxDesc, err := blockGenerator.chain.config.TempTxPool.MaybeAcceptBatchTransactionForBlockProducing(listBatchTxs, int64(beaconHeight))
 			if err != nil {
-				for _, tx2 := range listTxs {
+				Logger.log.Errorf("SHARD %+v | Verify Batch Transaction for new block error %+v", shardID, err)
+				for _, tx2 := range listBatchTxs {
+					if blockGenerator.chain.config.TempTxPool.HaveTransaction(tx2.Hash()) {
+						continue
+					}
 					txShardID := common.GetShardIDFromLastByte(tx2.GetSenderAddrLastByte())
 					if txShardID != shardID {
 						continue
@@ -811,6 +815,9 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 				currentSize += tempSize
 				txsToAdd = append(txsToAdd, tempTx)
 			}
+			// reset list batch and add new txs
+			listBatchTxs = []metadata.Transaction{}
+
 		} else {
 			continue
 		}
