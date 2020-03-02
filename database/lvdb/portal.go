@@ -47,7 +47,7 @@ type PortingRequest struct {
 	Amount          uint64
 	Custodians      map[string]MatchingPortingCustodianDetail			// key : incogAddress
 	PortingFee      uint64
-	Status			string
+	Status			int
 	BeaconHeight	uint64
 }
 

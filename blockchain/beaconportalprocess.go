@@ -206,7 +206,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 	reqStatus := instructions[2]
 
 	switch reqStatus {
-	case common.PortalPortingRequestWaitingStatus:
+	case common.PortalPortingRequestAcceptedStatus:
 		uniquePortingID := portingRequestContent.UniqueRegisterId
 		txReqID := portingRequestContent.TxReqID
 		tokenID := portingRequestContent.PTokenId
@@ -226,7 +226,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			amount,
 			custodiansDetail,
 			portingFee,
-			reqStatus,
+			common.PortalPortingReqWaitingStatus,
 			beaconHeight + 1,
 		)
 
@@ -298,14 +298,11 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		currentPortalState.WaitingPortingRequests[keyWaitingPortingRequest] = newPortingRequestState
 
 		break
-	case common.PortalLoadDataFailedStatus:
-	case common.PortalDuplicateKeyStatus:
-	case common.PortalItemNotFoundStatus:
-	case common.PortalPortingFeesNotEnoughStatus:
+	case common.PortalPortingRequestRejectedStatus:
 		txReqID := portingRequestContent.TxReqID
 		newPortingRequest := lvdb.PortingRequest{
 			TxReqID:        txReqID,
-			Status:			reqStatus,
+			Status:			common.PortalPortingReqRejectedStatus,
 			BeaconHeight:	beaconHeight + 1,
 		}
 
@@ -368,7 +365,7 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 			actionData.PortingAmount,
 			nil,
 			uint64(0),
-			"common.PortalPortingReqSuccessStatus",				//todo: need to update
+			common.PortalPortingReqSuccessStatus,	//todo: need to update
 			beaconHeight + 1,
 		)
 
@@ -482,8 +479,7 @@ func (blockchain *BlockChain) processPortalExchangeRates(beaconHeight uint64, in
 
 		Logger.log.Infof("Portal exchange rates, exchange rates request: count final exchange rate %v , exchange rate request %v", len(currentPortalState.FinalExchangeRates), len(currentPortalState.ExchangeRatesRequests))
 
-	case common.PortalLoadDataFailedStatus:
-	case common.PortalDuplicateKeyStatus:
+	case common.PortalExchangeRatesRejectedStatus:
 		//save db
 		newExchangeRates := lvdb.ExchangeRatesRequest{
 			SenderAddress: portingExchangeRatesContent.SenderAddress,
