@@ -94,6 +94,7 @@ func newBridgeStatusObject(db *StateDB, hash common.Hash) *BridgeStatusObject {
 		deleted:           false,
 	}
 }
+
 func newBridgeStatusObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*BridgeStatusObject, error) {
 	var newBridgeStatusState = NewBridgeStatusState()
 	var ok bool

@@ -133,6 +133,7 @@ func newBridgeTokenInfoObject(db *StateDB, hash common.Hash) *BridgeTokenInfoObj
 		deleted:              false,
 	}
 }
+
 func newBridgeTokenInfoObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*BridgeTokenInfoObject, error) {
 	var newBridgeTokenInfoState = NewBridgeTokenInfoState()
 	var ok bool

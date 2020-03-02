@@ -81,6 +81,7 @@ func (o *OutputCoinState) UnmarshalJSON(data []byte) error {
 	o.outputCoins = temp.OutputCoins
 	return nil
 }
+
 func NewOutputCoinStateWithValue(tokenID common.Hash, shardID byte, publicKey []byte, outputCoins [][]byte) *OutputCoinState {
 	return &OutputCoinState{tokenID: tokenID, shardID: shardID, publicKey: publicKey, outputCoins: outputCoins}
 }
@@ -118,6 +119,7 @@ func newOutputCoinObject(db *StateDB, hash common.Hash) *OutputCoinObject {
 		deleted:          false,
 	}
 }
+
 func newOutputCoinObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*OutputCoinObject, error) {
 	var newOutputCoinState = NewOutputCoinState()
 	var ok bool

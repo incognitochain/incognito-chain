@@ -132,6 +132,7 @@ func newPDEPoolPairObject(db *StateDB, hash common.Hash) *PDEPoolPairObject {
 		deleted:          false,
 	}
 }
+
 func newPDEPoolPairObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*PDEPoolPairObject, error) {
 	var newPDEPoolPairState = NewPDEPoolPairState()
 	var ok bool

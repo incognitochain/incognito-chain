@@ -97,7 +97,9 @@ func storeAllConsensusStateObjectForTesting(initRoot common.Hash) (
 		for _, v := range tempM {
 			wantCurrentValidatorM[id] = append(wantCurrentValidatorM[id], v.CommitteePublicKey())
 			tempString, _ := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{v.CommitteePublicKey()})
-			wantMRewardReceiver[tempString[0]] = v.RewardReceiver()
+			committeePublicKey := v.CommitteePublicKey()
+			incPublicKey := committeePublicKey.GetIncKeyBase58()
+			wantMRewardReceiver[incPublicKey] = v.RewardReceiver()
 			wantMAutoStaking[tempString[0]] = v.AutoStaking()
 		}
 	}
@@ -113,7 +115,9 @@ func storeAllConsensusStateObjectForTesting(initRoot common.Hash) (
 		for _, v := range tempM {
 			wantMSubstituteValidator[id] = append(wantMSubstituteValidator[id], v.CommitteePublicKey())
 			tempString, _ := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{v.CommitteePublicKey()})
-			wantMRewardReceiver[tempString[0]] = v.RewardReceiver()
+			committeePublicKey := v.CommitteePublicKey()
+			incPublicKey := committeePublicKey.GetIncKeyBase58()
+			wantMRewardReceiver[incPublicKey] = v.RewardReceiver()
 			wantMAutoStaking[tempString[0]] = v.AutoStaking()
 		}
 	}
@@ -123,7 +127,9 @@ func storeAllConsensusStateObjectForTesting(initRoot common.Hash) (
 	for _, v := range tempM {
 		wantNextEpochCandidate = append(wantNextEpochCandidate, v.CommitteePublicKey())
 		tempString, _ := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{v.CommitteePublicKey()})
-		wantMRewardReceiver[tempString[0]] = v.RewardReceiver()
+		committeePublicKey := v.CommitteePublicKey()
+		incPublicKey := committeePublicKey.GetIncKeyBase58()
+		wantMRewardReceiver[incPublicKey] = v.RewardReceiver()
 		wantMAutoStaking[tempString[0]] = v.AutoStaking()
 	}
 
@@ -133,7 +139,9 @@ func storeAllConsensusStateObjectForTesting(initRoot common.Hash) (
 	for _, v := range tempM {
 		wantCurrentEpochCandidate = append(wantCurrentEpochCandidate, v.CommitteePublicKey())
 		tempString, _ := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{v.CommitteePublicKey()})
-		wantMRewardReceiver[tempString[0]] = v.RewardReceiver()
+		committeePublicKey := v.CommitteePublicKey()
+		incPublicKey := committeePublicKey.GetIncKeyBase58()
+		wantMRewardReceiver[incPublicKey] = v.RewardReceiver()
 		wantMAutoStaking[tempString[0]] = v.AutoStaking()
 	}
 	tempStateDB, err := statedb.NewWithPrefixTrie(tempRootHash, warperDBAllTest)
@@ -193,7 +201,7 @@ func TestStateDB_GetAllConsensusStateObject(t *testing.T) {
 		flag := false
 		for _, want := range wants {
 			for _, got := range gotMSubstituteValidator[id] {
-				if reflect.DeepEqual(got, want) {
+				if reflect.DeepEqual(got.CommitteePublicKey(), want) {
 					flag = true
 					break
 				}
@@ -211,7 +219,7 @@ func TestStateDB_GetAllConsensusStateObject(t *testing.T) {
 	for id, want := range wantNextEpochCandidate {
 		flag := false
 		for _, got := range gotNextEpochCandidate {
-			if reflect.DeepEqual(got, want) {
+			if reflect.DeepEqual(got.CommitteePublicKey(), want) {
 				flag = true
 				break
 			}
@@ -228,7 +236,7 @@ func TestStateDB_GetAllConsensusStateObject(t *testing.T) {
 	for id, want := range wantCurrentEpochCandidate {
 		flag := false
 		for _, got := range gotCurrentEpochCandidate {
-			if reflect.DeepEqual(got, want) {
+			if reflect.DeepEqual(got.CommitteePublicKey(), want) {
 				flag = true
 				break
 			}

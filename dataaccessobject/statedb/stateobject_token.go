@@ -83,8 +83,13 @@ func (t *TokenState) SetInitTx(initTx common.Hash) {
 	t.initTx = initTx
 }
 
+//filter empty tx hash
 func (t *TokenState) AddTxs(txs []common.Hash) {
-	t.txs = append(t.txs, txs...)
+	for _, tx := range txs {
+		if !tx.IsEqual(&common.Hash{}) {
+			t.txs = append(t.txs, tx)
+		}
+	}
 }
 
 func (t TokenState) Txs() []common.Hash {
@@ -192,6 +197,7 @@ func newTokenObject(db *StateDB, hash common.Hash) *TokenObject {
 		deleted:    false,
 	}
 }
+
 func newTokenObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*TokenObject, error) {
 	var newTokenState = NewTokenState()
 	var ok bool

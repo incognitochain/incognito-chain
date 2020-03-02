@@ -106,6 +106,7 @@ func newSerialNumberObject(db *StateDB, hash common.Hash) *SerialNumberObject {
 		deleted:           false,
 	}
 }
+
 func newSerialNumberObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*SerialNumberObject, error) {
 	var newSerialNumberState = NewSerialNumberState()
 	var ok bool

@@ -865,6 +865,7 @@ func (stateDB *StateDB) GetCommitmentState(key common.Hash) (*CommitmentState, b
 	}
 	return NewCommitmentState(), false, nil
 }
+
 func (stateDB *StateDB) GetCommitmentIndexState(key common.Hash) (*CommitmentState, bool, error) {
 	commitmentIndexState, err := stateDB.getStateObject(CommitmentIndexObjectType, key)
 	if err != nil {
@@ -976,7 +977,7 @@ func (stateDB *StateDB) GetTokenTxs(tokenID common.Hash) ([]common.Hash, bool, e
 	if !has {
 		return []common.Hash{}, has, nil
 	}
-	return t.txs, true, nil
+	return t.Txs(), true, nil
 }
 
 func (stateDB *StateDB) GetAllToken() map[common.Hash]*TokenState {

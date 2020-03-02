@@ -96,6 +96,7 @@ func newCommitteeRewardObject(db *StateDB, hash common.Hash) *CommitteeRewardObj
 		deleted:                false,
 	}
 }
+
 func newCommitteeRewardObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*CommitteeRewardObject, error) {
 	var newCommitteeRewardState = NewCommitteeRewardState()
 	var ok bool

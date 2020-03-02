@@ -111,6 +111,7 @@ func (wc *WaitingPDEContributionState) UnmarshalJSON(data []byte) error {
 func NewWaitingPDEContributionState() *WaitingPDEContributionState {
 	return &WaitingPDEContributionState{}
 }
+
 func NewWaitingPDEContributionStateWithValue(beaconHeight uint64, pairID string, contributorAddress string, tokenID string, amount uint64, txReqID common.Hash) *WaitingPDEContributionState {
 	return &WaitingPDEContributionState{beaconHeight: beaconHeight, pairID: pairID, contributorAddress: contributorAddress, tokenID: tokenID, amount: amount, txReqID: txReqID}
 }
@@ -144,6 +145,7 @@ func newWaitingPDEContributionObject(db *StateDB, hash common.Hash) *WaitingPDEC
 		deleted:                     false,
 	}
 }
+
 func newWaitingPDEContributionObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*WaitingPDEContributionObject, error) {
 	var newWaitingPDEContributionState = NewWaitingPDEContributionState()
 	var ok bool
