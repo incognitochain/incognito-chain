@@ -148,3 +148,36 @@ func (httpServer *HttpServer) handleConvertExchangeRates(params interface{}, clo
 
 	return result, nil
 }
+
+func (httpServer *HttpServer) handleGetPortingFees(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+
+	// get meta data from params
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
+	}
+
+	valuePToken, ok := data["ValuePToken"].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata ValuePToken is invalid"))
+	}
+
+	tokenSymbol, ok := data["TokenSymbol"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenSymbol is invalid"))
+	}
+
+	tokenSymbolExist, _ := common.SliceExists(metadata.PortalSupportedExchangeRatesSymbols, tokenSymbol)
+	if !tokenSymbolExist {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenSymbol is not support"))
+	}
+
+	result, err := httpServer.portal.GetPortingFees(tokenSymbol, uint64(valuePToken), httpServer.blockService, *httpServer.config.Database)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}

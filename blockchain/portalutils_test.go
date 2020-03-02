@@ -6,7 +6,7 @@ import (
 )
 
 func TestCalculatePortingFees(t *testing.T)  {
-	result := calculatePortingFees(3106511852580)
+	result := CalculatePortingFees(3106511852580)
 	assert.Equal(t, result, uint64(310651185))
 }
 

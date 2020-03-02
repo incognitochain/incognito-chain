@@ -123,6 +123,7 @@ func (httpServer *HttpServer) handleCreateAndSendRegisterPortingPublicTokens(par
 	return result, nil
 }
 
+//todo
 func (httpServer *HttpServer) handleGetPortingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	result, err := httpServer.portal.GetPortingRequestByBeaconHeight(httpServer.blockService, *httpServer.config.Database)
 

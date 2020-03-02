@@ -110,3 +110,37 @@ func (portal *Portal) ConvertExchangeRates(tokenSymbol string, valuePToken uint6
 
 	return result, nil
 }
+
+func (portal *Portal) GetPortingFees(tokenSymbol string, valuePToken uint64, service *BlockService, db database.DatabaseInterface) (map[string]uint64, *RPCError) {
+
+	result := make(map[string]uint64)
+	beaconBlock, err := service.GetBeaconBestBlock()
+	if err != nil {
+		return result, NewRPCError(GetBeaconBestBlockError, err)
+	}
+
+	finalExchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconBlock.GetHeight())
+	finalExchangeRates, err := blockchain.GetFinalExchangeRatesByKey(db, []byte(finalExchangeRatesKey))
+
+	if err != nil {
+		return result, NewRPCError(GetExchangeRatesError, err)
+	}
+
+	if err := blockchain.ValidationExchangeRates(finalExchangeRates) ; err != nil {
+		return result, NewRPCError(GetExchangeRatesError, err)
+	}
+
+	if tokenSymbol == metadata.PortalTokenSymbolBTC {
+		btcExchange := finalExchangeRates.ExchangeBTC2PRV(valuePToken)
+		exchangePortingFees := blockchain.CalculatePortingFees(btcExchange)
+		result[metadata.PortalTokenSymbolPRV] = exchangePortingFees
+	} else if tokenSymbol == metadata.PortalTokenSymbolBNB {
+		bnbExchange := finalExchangeRates.ExchangeBNB2PRV(valuePToken)
+		exchangePortingFees := blockchain.CalculatePortingFees(bnbExchange)
+		result[metadata.PortalTokenSymbolPRV] = exchangePortingFees
+	} else if tokenSymbol == metadata.PortalTokenSymbolPRV {
+		return result, NewRPCError(GetExchangeRatesIsEmpty, errors.New("PRV Token not support"))
+	}
+
+	return result, nil
+}

@@ -354,7 +354,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 
 	//validation porting fees
 	pToken2PRV := exchangeRatesState.ExchangePToken2PRVByTokenId(actionData.Meta.PTokenId, actionData.Meta.RegisterAmount)
-	exchangePortingFees := calculatePortingFees(pToken2PRV)
+	exchangePortingFees := CalculatePortingFees(pToken2PRV)
 	Logger.log.Infof("Porting request, porting fees need %v", exchangePortingFees)
 
 	if actionData.Meta.PortingFee < exchangePortingFees {

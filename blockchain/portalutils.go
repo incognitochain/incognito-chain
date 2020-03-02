@@ -507,7 +507,7 @@ func pickMultipleCustodian (metadata metadata.PortalUserRegister, exchangeRate *
 	return multipleCustodian, nil
 }
 
-func calculatePortingFees(totalPToken uint64) uint64  {
+func CalculatePortingFees(totalPToken uint64) uint64  {
 	result := 0.01 * float64(totalPToken) / 100
 	integer, _  := math.Modf(result)
 	return  uint64(integer)
