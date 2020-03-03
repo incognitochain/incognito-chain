@@ -87,7 +87,7 @@ func NewPortingRequestKey (uniquePortingID string, beaconHeight uint64) string {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d", beaconHeight))
 	key := append(PortalPortingRequestsPrefix, uniquePortingIDBytes...)
 	key = append(key, beaconHeightBytes...)
-	return string(key) //prefix + uniqueId + beaconHeight
+	return string(key) //prefix + uniqueId + status + beaconHeight
 }
 
 func NewPortingRequestKeyForValidation (uniquePortingID string) string {

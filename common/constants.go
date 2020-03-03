@@ -75,7 +75,7 @@ const (
 	ValidatorRole  = "validator"
 	PendingRole    = "pending"
 	WaitingRole    = "waiting"
-	MaxShardNumber = 8
+	MaxShardNumber = 1
 
 	BlsConsensus    = "bls"
 	BridgeConsensus = "dsa"
@@ -144,20 +144,17 @@ const (
 
 // Portal status for chain
 const (
-	PortalLoadDataFailedStatus = "LoadDataFailed"
-	PortalItemNotFoundStatus   = "itemNotFound"
-	PortalDuplicateKeyStatus   = "duplicateKey"
-
 	PortalCustodianDepositAcceptedChainStatus = "accepted"
 	PortalCustodianDepositRefundChainStatus   = "refund"
 
 	PortalReqPTokensAcceptedChainStatus = "accepted"
 	PortalReqPTokensRejectedChainStatus = "rejected"
 
-	PortalPortingRequestWaitingStatus = "waiting"
-	PortalPortingFeesNotEnoughStatus  = "prvNotEnough"
+	PortalPortingRequestAcceptedStatus = "accepted"
+	PortalPortingRequestRejectedStatus = "rejected"
 
-	PortalExchangeRatesSuccessStatus = "success"
+	PortalExchangeRatesSuccessStatus = "accepted"
+	PortalExchangeRatesRejectedStatus = "rejected"
 )
 
 // Relaying header

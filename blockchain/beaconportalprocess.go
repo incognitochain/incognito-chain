@@ -307,7 +307,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		}
 
 		//save porting request
-		newKey := portingRequestContent.UniqueRegisterId + txReqID.String()
+		newKey := txReqID.String() + portingRequestContent.UniqueRegisterId
 		keyPortingRequestNewState := lvdb.NewPortingRequestKey(newKey, beaconHeight + 1)
 
 		err = db.StorePortingRequestItem([]byte(keyPortingRequestNewState), newPortingRequest)

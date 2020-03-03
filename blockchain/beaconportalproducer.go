@@ -246,7 +246,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 
 	waitingPortingRequestKey := lvdb.NewWaitingPortingReqKey(beaconHeight, actionData.Meta.UniqueRegisterId)
 	if _, ok := currentPortalState.WaitingPortingRequests[waitingPortingRequestKey]; ok {
-		Logger.log.Errorf("Porting request: Waiting porting request exist")
+		Logger.log.Errorf("Porting request: Waiting porting request exist, key %v", waitingPortingRequestKey)
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,
 			shardID,

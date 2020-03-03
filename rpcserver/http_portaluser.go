@@ -124,7 +124,7 @@ func (httpServer *HttpServer) handleCreateAndSendRegisterPortingPublicTokens(par
 }
 
 //todo
-func (httpServer *HttpServer) handleGetPortingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleGetPortingRequestByKey(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	result, err := httpServer.portal.GetPortingRequestByBeaconHeight(httpServer.blockService, *httpServer.config.Database)
 
 	if err != nil {
