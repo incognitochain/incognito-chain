@@ -148,6 +148,11 @@ func (redeemReq PortalRedeemRequest) ValidateSanityData(bcr BlockchainRetriever,
 		return false, false, fmt.Errorf("redeem fee should be larger than min fee %v\n", minFee)
 	}
 
+	// validate value transfer of tx
+	if redeemReq.RedeemAmount + redeemReq.RedeemFee != txr.CalculateTxValue() {
+		return false, false, errors.New("deposit amount should be equal to the tx value")
+	}
+
 	// validate tokenID
 	if redeemReq.TokenID != txr.GetTokenID().String() {
 		return false, false, NewMetadataTxError(PortalRedeemRequestParamError, errors.New("TokenID in metadata is not matched to tokenID in tx"))

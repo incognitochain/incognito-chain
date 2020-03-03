@@ -909,6 +909,8 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 		return [][]string{inst}, nil
 	}
 
+
+
 	//keyCustodianState := lvdb.NewCustodianStateKey(beaconHeight, meta.IncogAddressStr)
 	//
 	//if currentPortalState.CustodianPoolState[keyCustodianState] == nil {
