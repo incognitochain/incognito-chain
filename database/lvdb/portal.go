@@ -93,16 +93,20 @@ func NewPortingRequestAcceptKey (uniquePortingID string, txReqID string) string 
 }
 
 func GetNewPortingRequestKeyValid(uniquePortingID string) string  {
+	uniquePortingIDBytes := []byte(fmt.Sprintf("%v-", uniquePortingID))
 	status := common.PortalPortingRequestAcceptedStatus
-	key := append(PortalPortingRequestsPrefix, []byte(uniquePortingID)...)
+
+	key := append(PortalPortingRequestsPrefix, uniquePortingIDBytes...)
 	key = append(key, []byte(status)...)
 	return string(key) //prefix + uniqueId + status
 }
 
 func GetNewPortingRequestKeyInvalid(uniquePortingID string) string  {
+	uniquePortingIDBytes := []byte(fmt.Sprintf("%v-", uniquePortingID))
 	status := common.PortalPortingRequestRejectedStatus
-	key := append(PortalPortingRequestsPrefix, []byte(uniquePortingID)...)
-	key = append(key, []byte(status)...)
+
+	key := append(PortalPortingRequestsPrefix, uniquePortingIDBytes...)
+	key = append(key, status...)
 	return string(key) //prefix + uniqueId + status
 }
 
