@@ -194,7 +194,7 @@ func (s *Syncker) ReceiveBlock(blk interface{}, peerID string) {
 		}
 	case *blockchain.CrossShardBlock:
 		csBlk := blk.(*blockchain.CrossShardBlock)
-		fmt.Printf("crossdebug: receive block from %d to %d \n", csBlk.Header.ShardID, csBlk.ToShardID)
+		fmt.Printf("crossdebug: receive block from %d to %d (%s)\n", csBlk.Header.ShardID, csBlk.ToShardID, csBlk.Hash().String())
 		s.CrossShardPool[int(csBlk.ToShardID)].AddBlock(csBlk)
 	}
 

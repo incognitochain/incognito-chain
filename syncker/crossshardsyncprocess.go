@@ -125,15 +125,18 @@ func (s *CrossShardSyncProcess) pullCrossShardBlock() {
 		reqHash := []common.Hash{}
 		for hash, req := range reqs {
 			//if not request or (time out and cross shard not confirm and in pool yet)
-			if req.time == nil || (req.time.Add(time.Second*10).Before(time.Now()) && s.CrossShardPool.BlkPoolByHash[hash.String()] == nil && req.height > currentCrossShardStatus[fromSID]) {
+			if req.height > currentCrossShardStatus[fromSID] && s.CrossShardPool.BlkPoolByHash[hash.String()] == nil && (req.time == nil || (req.time.Add(time.Second * 10).Before(time.Now()))) {
 				reqHash = append(reqHash, hash)
 				t := time.Now()
 				reqs[hash].time = &t
 			}
 		}
-		fmt.Println("crossdebug: PushMessageGetBlockCrossShardByHash", fromSID, byte(s.ShardID), reqHash)
-		//if err := s.Server.PushMessageGetBlockCrossShardByHash(fromSID, byte(s.ShardID), reqHash, false, ""); err != nil {
-		//	fmt.Println("crossdebug: Cannot PushMessageGetBlockCrossShardByHash")
-		//}
+		if len(reqHash) > 0 {
+			fmt.Println("crossdebug: PushMessageGetBlockCrossShardByHash", fromSID, byte(s.ShardID), reqHash)
+			if err := s.Server.PushMessageGetBlockCrossShardByHash(fromSID, byte(s.ShardID), reqHash, true, ""); err != nil {
+				fmt.Println("crossdebug: Cannot PushMessageGetBlockCrossShardByHash")
+			}
+		}
+
 	}
 }
