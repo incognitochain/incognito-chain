@@ -155,6 +155,9 @@ const (
 
 	PortalExchangeRatesSuccessStatus = "accepted"
 	PortalExchangeRatesRejectedStatus = "rejected"
+
+	PortalRedeemRequestAcceptedStatus = "accepted"
+	PortalRedeemRequestRejectedStatus = "rejected"
 )
 
 // Relaying header

@@ -5,9 +5,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"math"
+	"reflect"
 	"strconv"
 )
 
@@ -20,6 +23,7 @@ type PortalRedeemRequest struct {
 	RedeemAmount   uint64
 	IncAddressStr  string
 	RemoteAddress  string // btc/bnb/etc address
+	RedeemFee      uint64 // ptoken fee
 }
 
 // PortalRedeemRequestAction - shard validator creates instruction that contain this action content
@@ -39,6 +43,7 @@ type PortalRedeemRequestContent struct {
 	RedeemAmount   uint64
 	IncAddressStr  string
 	RemoteAddress  string // btc/bnb/etc address
+	RedeemFee      uint64 // ptoken fee, 0.01% redeemAmount
 	TxReqID        common.Hash
 	ShardID        byte
 }
@@ -51,6 +56,7 @@ type PortalRedeemRequestStatus struct {
 	RedeemAmount   uint64
 	IncAddressStr  string
 	RemoteAddress  string // btc/bnb/etc address
+	RedeemFee      uint64 // ptoken fee
 	TxReqID        common.Hash
 }
 
@@ -60,7 +66,8 @@ func NewPortalRedeemRequest(
 	tokenID string,
 	redeemAmount uint64,
 	incAddressStr string,
-	remoteAddr string) (*PortalRedeemRequest, error) {
+	remoteAddr string,
+	redeemFee uint64) (*PortalRedeemRequest, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
@@ -70,9 +77,19 @@ func NewPortalRedeemRequest(
 		RedeemAmount:   redeemAmount,
 		IncAddressStr:  incAddressStr,
 		RemoteAddress:  remoteAddr,
+		RedeemFee: redeemFee,
 	}
 	requestPTokenMeta.MetadataBase = metadataBase
 	return requestPTokenMeta, nil
+}
+
+func getMinRedeemFeeByRedeemAmount (redeemAmount uint64) (uint64, error) {
+	if redeemAmount == 0 {
+		return 0, errors.New("redeem amount must be greater than 0")
+	}
+	// minRedeemFee = redeemAmount * 0.01%
+	minRedeemFee := uint64(math.Floor(float64(redeemAmount) * 0.01 / 100))
+	return minRedeemFee, nil
 }
 
 func (redeemReq PortalRedeemRequest) ValidateTxWithBlockChain(
@@ -86,9 +103,9 @@ func (redeemReq PortalRedeemRequest) ValidateTxWithBlockChain(
 
 func (redeemReq PortalRedeemRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
-	//if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
-	//	return true, true, nil
-	//}
+	if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
+		return true, true, nil
+	}
 
 	// validate IncAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(redeemReq.IncAddressStr)
@@ -115,6 +132,20 @@ func (redeemReq PortalRedeemRequest) ValidateSanityData(bcr BlockchainRetriever,
 	// validate redeem amount
 	if redeemReq.RedeemAmount == 0 {
 		return false, false, errors.New("redeem amount should be larger than 0")
+	}
+
+	// validate redeem fee
+	if redeemReq.RedeemFee == 0 {
+		return false, false, errors.New("redeem fee should be larger than 0")
+	}
+
+	minFee, err := getMinRedeemFeeByRedeemAmount(redeemReq.RedeemAmount)
+	if err != nil {
+		return false, false, err
+	}
+
+	if redeemReq.RedeemFee < minFee {
+		return false, false, fmt.Errorf("redeem fee should be larger than min fee %v\n", minFee)
 	}
 
 	// validate tokenID

@@ -48,7 +48,7 @@ const (
 	PortalCustodianDepositResponseMeta  = 103
 	PortalUserRequestPTokenResponseMeta = 104
 	PortalExchangeRatesMeta             = 105
-	PortalRedeemRequestMeta         = 106
+	PortalRedeemRequestMeta             = 106
 
 	// relaying
 	RelayingBNBHeaderMeta = 200

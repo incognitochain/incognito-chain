@@ -26,7 +26,7 @@ func buildCustodianDepositInst(
 		RemoteAddresses: remoteAddresses,
 		DepositedAmount: depositedAmount,
 		TxReqID:         txReqID,
-		ShardID: shardID,
+		ShardID:         shardID,
 	}
 	custodianDepositContentBytes, _ := json.Marshal(custodianDepositContent)
 	return []string{
@@ -51,14 +51,14 @@ func buildRequestPortingInst(
 	txReqID common.Hash,
 ) []string {
 	portingRequestContent := metadata.PortalPortingRequestContent{
-		UniqueRegisterId: 	uniqueRegisterId,
-		IncogAddressStr: 	incogAddressStr,
-		PTokenId: 			pTokenId,
-		PTokenAddress: 		pTokenAddress,
-		RegisterAmount: 	registerAmount,
-		PortingFee: 		portingFee,
-		Custodian: 			custodian,
-		TxReqID:         	txReqID,
+		UniqueRegisterId: uniqueRegisterId,
+		IncogAddressStr:  incogAddressStr,
+		PTokenId:         pTokenId,
+		PTokenAddress:    pTokenAddress,
+		RegisterAmount:   registerAmount,
+		PortingFee:       portingFee,
+		Custodian:        custodian,
+		TxReqID:          txReqID,
 	}
 
 	portingRequestContentBytes, _ := json.Marshal(portingRequestContent)
@@ -84,12 +84,12 @@ func buildReqPTokensInst(
 ) []string {
 	reqPTokenContent := metadata.PortalRequestPTokensContent{
 		UniquePortingID: uniquePortingID,
-		TokenID: tokenID,
+		TokenID:         tokenID,
 		IncogAddressStr: incogAddressStr,
-		PortingAmount : portingAmount,
-		PortingProof : portingProof,
+		PortingAmount:   portingAmount,
+		PortingProof:    portingProof,
 		TxReqID:         txReqID,
-		ShardID: shardID,
+		ShardID:         shardID,
 	}
 	reqPTokenContentBytes, _ := json.Marshal(reqPTokenContent)
 	return []string{
@@ -170,7 +170,7 @@ func (blockchain *BlockChain) buildInstructionsForCustodianDeposit(
 		shardID,
 		actionData.TxReqID,
 		common.PortalCustodianDepositAcceptedChainStatus,
-		)
+	)
 	return [][]string{inst}, nil
 }
 
@@ -267,7 +267,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 	//get exchange rates
 	exchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
 	exchangeRatesState, ok := currentPortalState.FinalExchangeRates[exchangeRatesKey]
-	if  !ok {
+	if !ok {
 		Logger.log.Errorf("Porting request, exchange rates not found")
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,
@@ -319,7 +319,6 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		return [][]string{inst}, nil
 	}
 
-
 	//pick one
 	pickCustodianResult, _ := pickSingleCustodian(actionData.Meta, exchangeRatesState, sortCustodianStateByFreeCollateral)
 
@@ -349,7 +348,6 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 
 		return [][]string{inst}, nil
 	}
-
 
 	//validation porting fees
 	pToken2PRV := exchangeRatesState.ExchangePToken2PRVByTokenId(actionData.Meta.PTokenId, actionData.Meta.RegisterAmount)
@@ -452,7 +450,6 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		return [][]string{inst}, nil
 	}
 	db := blockchain.GetDatabase()
-
 
 	// check porting request status of portingID from db
 	portingReqStatusBytes, err := db.GetPortingRequestStatusByPortingID(meta.UniquePortingID)
@@ -599,7 +596,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 
 		// check memo attach portingID req:
 		type PortingMemoBNB struct {
-			PortingID string		`json:"PortingID"`
+			PortingID string `json:"PortingID"`
 		}
 		memo := txBNB.Memo
 		Logger.log.Infof("[buildInstructionsForReqPTokens] memo: %v\n", memo)
@@ -689,7 +686,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 				}
 
 				//TODO:
-				if amountTransfer * 10^9 != int64(amountNeedToBeTransfer) {
+				if amountTransfer*10^9 != int64(amountNeedToBeTransfer) {
 					Logger.log.Errorf("TxProof-BNB is invalid - Amount transfer to %s must be equal %d, but got %d",
 						addr, amountNeedToBeTransfer, amountTransfer)
 					inst := buildReqPTokensInst(
@@ -763,7 +760,7 @@ func (blockchain *BlockChain) buildInstructionsForExchangeRates(
 	}
 
 	exchangeRatesKey := lvdb.NewExchangeRatesRequestKey(
-		beaconHeight + 1,
+		beaconHeight+1,
 		actionData.TxReqID.String(),
 		strconv.FormatInt(actionData.LockTime, 10),
 		shardID,
@@ -776,10 +773,10 @@ func (blockchain *BlockChain) buildInstructionsForExchangeRates(
 		Logger.log.Errorf("ERROR: Get exchange rates error: %+v", err)
 
 		portalExchangeRatesContent := metadata.PortalExchangeRatesContent{
-			SenderAddress: 	actionData.Meta.SenderAddress,
-			Rates: 		actionData.Meta.Rates,
-			TxReqID:    actionData.TxReqID,
-			LockTime:	actionData.LockTime,
+			SenderAddress:   actionData.Meta.SenderAddress,
+			Rates:           actionData.Meta.Rates,
+			TxReqID:         actionData.TxReqID,
+			LockTime:        actionData.LockTime,
 			UniqueRequestId: exchangeRatesKey,
 		}
 
@@ -799,10 +796,10 @@ func (blockchain *BlockChain) buildInstructionsForExchangeRates(
 		Logger.log.Errorf("ERROR: exchange rates key is duplicated")
 
 		portalExchangeRatesContent := metadata.PortalExchangeRatesContent{
-			SenderAddress: 	actionData.Meta.SenderAddress,
-			Rates: 		actionData.Meta.Rates,
-			TxReqID:    actionData.TxReqID,
-			LockTime:	actionData.LockTime,
+			SenderAddress:   actionData.Meta.SenderAddress,
+			Rates:           actionData.Meta.Rates,
+			TxReqID:         actionData.TxReqID,
+			LockTime:        actionData.LockTime,
 			UniqueRequestId: exchangeRatesKey,
 		}
 
@@ -820,10 +817,10 @@ func (blockchain *BlockChain) buildInstructionsForExchangeRates(
 
 	//success
 	portalExchangeRatesContent := metadata.PortalExchangeRatesContent{
-		SenderAddress: 	actionData.Meta.SenderAddress,
-		Rates: 		actionData.Meta.Rates,
-		TxReqID:    actionData.TxReqID,
-		LockTime:	actionData.LockTime,
+		SenderAddress:   actionData.Meta.SenderAddress,
+		Rates:           actionData.Meta.Rates,
+		TxReqID:         actionData.TxReqID,
+		LockTime:        actionData.LockTime,
 		UniqueRequestId: exchangeRatesKey,
 	}
 
@@ -839,3 +836,112 @@ func (blockchain *BlockChain) buildInstructionsForExchangeRates(
 	return [][]string{inst}, nil
 }
 
+// beacon build new instruction from instruction received from ShardToBeaconBlock
+func buildRedeemRequestInst(
+	uniqueRedeemID string,
+	tokenID string,
+	redeemAmount uint64,
+	incAddressStr string,
+	remoteAddress string,
+	redeemFee uint64,
+	metaType int,
+	shardID byte,
+	txReqID common.Hash,
+	status string,
+) []string {
+	redeemRequestContent := metadata.PortalRedeemRequestContent{
+		UniqueRedeemID: uniqueRedeemID,
+		TokenID:        tokenID,
+		RedeemAmount:   redeemAmount,
+		IncAddressStr:  incAddressStr,
+		RemoteAddress:  remoteAddress,
+		RedeemFee:      redeemFee,
+		TxReqID:        txReqID,
+		ShardID:        shardID,
+	}
+	redeemRequestContentBytes, _ := json.Marshal(redeemRequestContent)
+	return []string{
+		strconv.Itoa(metaType),
+		strconv.Itoa(int(shardID)),
+		status,
+		string(redeemRequestContentBytes),
+	}
+}
+
+//todo
+// buildInstructionsForRedeemRequest builds instruction for redeem request action
+func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
+	contentStr string,
+	shardID byte,
+	metaType int,
+	currentPortalState *CurrentPortalState,
+	beaconHeight uint64,
+) ([][]string, error) {
+	// parse instruction
+	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while decoding content string of portal redeem request action: %+v", err)
+		return [][]string{}, nil
+	}
+	var actionData metadata.PortalRedeemRequestAction
+	err = json.Unmarshal(actionContentBytes, &actionData)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while unmarshal portal redeem request action: %+v", err)
+		return [][]string{}, nil
+	}
+
+	meta := actionData.Meta
+	if currentPortalState == nil {
+		Logger.log.Warn("WARN - [buildInstructionsForRedeemRequest]: Current Portal state is null.")
+		// need to mint ptoken to user
+		inst := buildRedeemRequestInst(
+			meta.UniqueRedeemID,
+			meta.TokenID,
+			meta.RedeemAmount,
+			meta.IncAddressStr,
+			meta.RemoteAddress,
+			meta.RedeemFee,
+			meta.Type,
+			actionData.ShardID,
+			actionData.TxReqID,
+			common.PortalRedeemRequestRejectedStatus,
+		)
+		return [][]string{inst}, nil
+	}
+
+	//keyCustodianState := lvdb.NewCustodianStateKey(beaconHeight, meta.IncogAddressStr)
+	//
+	//if currentPortalState.CustodianPoolState[keyCustodianState] == nil {
+	//	// new custodian
+	//	newCustodian, _ := NewCustodianState(meta.IncogAddressStr, meta.DepositedAmount, meta.DepositedAmount, nil, nil, meta.RemoteAddresses)
+	//	currentPortalState.CustodianPoolState[keyCustodianState] = newCustodian
+	//} else {
+	//	// custodian deposited before
+	//	// update state of the custodian
+	//	custodian := currentPortalState.CustodianPoolState[keyCustodianState]
+	//	totalCollateral := custodian.TotalCollateral + meta.DepositedAmount
+	//	freeCollateral := custodian.FreeCollateral + meta.DepositedAmount
+	//	holdingPubTokens := custodian.HoldingPubTokens
+	//	lockedAmountCollateral := custodian.LockedAmountCollateral
+	//	remoteAddresses := custodian.RemoteAddresses
+	//	for tokenSymbol, address := range meta.RemoteAddresses {
+	//		if remoteAddresses[tokenSymbol] == "" {
+	//			remoteAddresses[tokenSymbol] = address
+	//		}
+	//	}
+	//
+	//	newCustodian, _ := NewCustodianState(meta.IncogAddressStr, totalCollateral, freeCollateral, holdingPubTokens, lockedAmountCollateral, remoteAddresses)
+	//	currentPortalState.CustodianPoolState[keyCustodianState] = newCustodian
+	//}
+	//
+	//inst := buildCustodianDepositInst(
+	//	actionData.Meta.IncogAddressStr,
+	//	actionData.Meta.DepositedAmount,
+	//	actionData.Meta.RemoteAddresses,
+	//	actionData.Meta.Type,
+	//	shardID,
+	//	actionData.TxReqID,
+	//	common.PortalCustodianDepositAcceptedChainStatus,
+	//)
+	return [][]string{}, nil
+}
