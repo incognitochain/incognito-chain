@@ -115,8 +115,8 @@ const (
 	StoreFinalExchangeRatesStateError
 	TrackCustodianDepositError
 	TrackReqPTokenError
-	GetItemPortalByPrefixError
-	GetItemPortalByPrefixNotFound
+	GetItemPortalByKeyError
+	GetItemPortalByKeyNotFound
 	GetCustodianDepositStatusError
 	GetReqPTokenStatusError
 
@@ -238,10 +238,10 @@ var ErrCodeMessage = map[int]struct {
 	TrackReqPTokenError:                 {-14007, "Track requesting ptokens error"},
 	StoreExchangeRatesRequestStateError: {-14008, "Store exchange rates request error"},
 	StoreFinalExchangeRatesStateError:   {-14009, "Store final exchange rates request error"},
-	GetItemPortalByPrefixError:          {-14010, "Get item portal by prefix error"},
-	GetItemPortalByPrefixNotFound:       {-14011, "Get item portal by prefix not found"},
-	GetCustodianDepositStatusError:      {-14012, "Get all custodian deposit status error"},
-	GetReqPTokenStatusError:             {-14014, "Get request ptoken status error"},
+	GetItemPortalByKeyError:          	{-14010, "Get item portal by key error"},
+	GetItemPortalByKeyNotFound:       	{-14011, "Get item portal by key not found"},
+	GetCustodianDepositStatusError:     {-14012, "Get all custodian deposit status error"},
+	GetReqPTokenStatusError:            {-14014, "Get request ptoken status error"},
 
 
 	// relaying

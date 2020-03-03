@@ -125,7 +125,20 @@ func (httpServer *HttpServer) handleCreateAndSendRegisterPortingPublicTokens(par
 
 //todo
 func (httpServer *HttpServer) handleGetPortingRequestByKey(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	result, err := httpServer.portal.GetPortingRequestByBeaconHeight(httpServer.blockService, *httpServer.config.Database)
+	arrayParams := common.InterfaceSlice(params)
+
+	// get meta data from params
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
+	}
+
+	portingRequestId, ok := data["PortingRequestId"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PortingRequestId is invalid"))
+	}
+
+	result, err := httpServer.portal.GetPortingRequestByByKey(portingRequestId, *httpServer.config.Database)
 
 	if err != nil {
 		return nil, err

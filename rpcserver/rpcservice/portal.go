@@ -13,39 +13,23 @@ type Portal struct {
 	BlockChain *blockchain.BlockChain
 }
 
-func (portal *Portal) GetPortingRequestByBeaconHeight(service *BlockService, db database.DatabaseInterface) (jsonresult.FinalExchangeRatesResult, *RPCError) {
-	//todo:
-	/*
-	beaconBlock, err := service.GetBeaconBestBlock()
-	if err != nil {
-		return jsonresult.FinalExchangeRatesResult{}, NewRPCError(GetBeaconBestBlockError, err)
-	}
+func (portal *Portal) GetPortingRequestByByKey(portingRequestId string, db database.DatabaseInterface) (jsonresult.PortalPortingRequest, *RPCError) {
 
-	finalExchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconBlock.GetHeight())
-	finalExchangeRates, err := blockchain.GetPortingRequestByKey(
+	portingRequestKey := lvdb.GetNewPortingRequestKey(portingRequestId)
+	portingRequestList, err := blockchain.GetAllPortingRequest(
 		db,
-		[]byte(finalExchangeRatesKey),
+		[]byte(portingRequestKey),
 	)
 
 	if err != nil {
-		return  jsonresult.FinalExchangeRatesResult{}, NewRPCError(GetExchangeRatesError, err)
+		return  jsonresult.PortalPortingRequest{}, NewRPCError(GetExchangeRatesError, err)
 	}
 
-	item := make(map[string]jsonresult.FinalExchangeRatesDetailResult)
-
-	for pTokenId, rates := range finalExchangeRates.Rates {
-		item[pTokenId] = jsonresult.FinalExchangeRatesDetailResult{
-			Value: rates.Amount,
-		}
+	result := jsonresult.PortalPortingRequest{
+		PortingRequest: portingRequestList,
 	}
 
-	result := jsonresult.FinalExchangeRatesResult{
-		BeaconHeight: beaconBlock.GetHeight(),
-		Rates: item,
-	}
-	return result, nil*/
-
-	return  jsonresult.FinalExchangeRatesResult{}, nil
+	return result, nil
 }
 
 func (portal *Portal) GetFinalExchangeRates(service *BlockService, db database.DatabaseInterface) (jsonresult.FinalExchangeRatesResult, *RPCError) {

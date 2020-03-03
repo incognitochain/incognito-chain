@@ -82,18 +82,45 @@ func NewCustodianStateKey (beaconHeight uint64, custodianAddress string) string 
 	return string(key)
 }
 
-func NewPortingRequestKey (uniquePortingID string, beaconHeight uint64) string {
+func NewPortingRequestAcceptKey (uniquePortingID string, txReqID string) string {
 	uniquePortingIDBytes := []byte(fmt.Sprintf("%v-", uniquePortingID))
-	beaconHeightBytes := []byte(fmt.Sprintf("%d", beaconHeight))
+	status := []byte(fmt.Sprintf("%v-", common.PortalPortingRequestAcceptedStatus))
+
 	key := append(PortalPortingRequestsPrefix, uniquePortingIDBytes...)
-	key = append(key, beaconHeightBytes...)
-	return string(key) //prefix + uniqueId + status + beaconHeight
+	key = append(key, status...)
+	key = append(key, []byte(txReqID)...)
+	return string(key) //prefix + uniqueId + status + txHash
 }
 
-func NewPortingRequestKeyForValidation (uniquePortingID string) string {
+func GetNewPortingRequestKeyValid(uniquePortingID string) string  {
+	status := common.PortalPortingRequestAcceptedStatus
+	key := append(PortalPortingRequestsPrefix, []byte(uniquePortingID)...)
+	key = append(key, []byte(status)...)
+	return string(key) //prefix + uniqueId + status
+}
+
+func GetNewPortingRequestKeyInvalid(uniquePortingID string) string  {
+	status := common.PortalPortingRequestRejectedStatus
+	key := append(PortalPortingRequestsPrefix, []byte(uniquePortingID)...)
+	key = append(key, []byte(status)...)
+	return string(key) //prefix + uniqueId + status
+}
+
+func GetNewPortingRequestKey(uniquePortingID string) string  {
 	key := append(PortalPortingRequestsPrefix, []byte(uniquePortingID)...)
 	return string(key) //prefix + uniqueId
 }
+
+func NewPortingRequestRejectKey (uniquePortingID string, txReqID string) string {
+	uniquePortingIDBytes := []byte(fmt.Sprintf("%v-", uniquePortingID))
+	status := []byte(fmt.Sprintf("%v-", common.PortalPortingRequestRejectedStatus))
+
+	key := append(PortalPortingRequestsPrefix, uniquePortingIDBytes...)
+	key = append(key, status...)
+	key = append(key, []byte(txReqID)...)
+	return string(key) //prefix + uniqueId + status + txHash
+}
+
 
 func NewFinalExchangeRatesKey (beaconHeight uint64) string {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
@@ -162,6 +189,31 @@ func (db *db) GetAllRecordsPortalByPrefix(beaconHeight uint64, prefix []byte) ([
 	if err != nil && err != lvdberr.ErrNotFound {
 		return keys, values, database.NewDatabaseError(database.GetAllRecordsByPrefixError, err)
 	}
+	return keys, values, nil
+}
+
+func (db *db) GetAllRecordsPortalByPrefixWithoutBeaconHeight(key []byte) ([][]byte, [][]byte, error) {
+	keys := [][]byte{}
+	values := [][]byte{}
+
+	iter := db.lvdb.NewIterator(util.BytesPrefix(key), nil)
+	for iter.Next() {
+		key := iter.Key()
+		value := iter.Value()
+		keyBytes := make([]byte, len(key))
+		valueBytes := make([]byte, len(value))
+		copy(keyBytes, key)
+		copy(valueBytes, value)
+		keys = append(keys, keyBytes)
+		values = append(values, valueBytes)
+	}
+	iter.Release()
+	err := iter.Error()
+
+	if err != nil && err != lvdberr.ErrNotFound {
+		return keys, values, database.NewDatabaseError(database.GetAllRecordsByPrefixError, err)
+	}
+
 	return keys, values, nil
 }
 
@@ -247,10 +299,10 @@ func (db *db) StoreFinalExchangeRatesItem(keyId []byte, content interface{}) err
 	return nil
 }
 
-func (db *db) GetItemPortalByPrefix(prefix []byte) ([]byte, error) {
+func (db *db) GetItemPortalByKey(prefix []byte) ([]byte, error) {
 	itemRecord, dbErr := db.lvdb.Get(prefix, nil)
 	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
-		return nil, database.NewDatabaseError(database.GetItemPortalByPrefixError, dbErr)
+		return nil, database.NewDatabaseError(database.GetItemPortalByKeyError, dbErr)
 	}
 
 	if itemRecord == nil {

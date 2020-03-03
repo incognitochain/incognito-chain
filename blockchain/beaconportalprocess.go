@@ -235,7 +235,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		}
 
 		//save porting request
-		keyPortingRequestNewState := lvdb.NewPortingRequestKey(portingRequestContent.UniqueRegisterId, beaconHeight + 1)
+		keyPortingRequestNewState := lvdb.NewPortingRequestAcceptKey(portingRequestContent.UniqueRegisterId, txReqID.String())
 		Logger.log.Infof("Porting request, save porting request with key %v", keyPortingRequestNewState)
 		err = db.StorePortingRequestItem([]byte(keyPortingRequestNewState), newPortingRequestState)
 		if err != nil {
@@ -307,8 +307,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		}
 
 		//save porting request
-		newKey := txReqID.String() + portingRequestContent.UniqueRegisterId
-		keyPortingRequestNewState := lvdb.NewPortingRequestKey(newKey, beaconHeight + 1)
+		keyPortingRequestNewState := lvdb.NewPortingRequestRejectKey(portingRequestContent.UniqueRegisterId, txReqID.String())
 
 		err = db.StorePortingRequestItem([]byte(keyPortingRequestNewState), newPortingRequest)
 		if err != nil {
@@ -375,7 +374,7 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 
 		//save porting request => success
 		// todo: should remove beaconHeight from key db?
-		keyPortingRequestNewState := lvdb.NewPortingRequestKey(actionData.UniquePortingID, beaconHeight + 1)
+		keyPortingRequestNewState := lvdb.GetNewPortingRequestKeyValid(actionData.UniquePortingID)
 		err = db.StorePortingRequestItem([]byte(keyPortingRequestNewState), newPortingRequestState)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store porting request item status: %+v", err)
