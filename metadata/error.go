@@ -44,6 +44,7 @@ const (
 
 	// portal
 	PortalRequestPTokenParamError
+	PortalRedeemRequestParamError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -92,6 +93,7 @@ var ErrCodeMessage = map[int]struct {
 
 	// portal
 	PortalRequestPTokenParamError:                 {-7001, "Portal request ptoken param error"},
+	PortalRedeemRequestParamError:                 {-7002, "Portal redeem request param error"},
 }
 
 type MetadataTxError struct {
