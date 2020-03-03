@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	wl, _ := wallet.Base58CheckDeserialize("112t8rngNKpZHv6WsKqaYqKPi8JvfEVY9oqob3QiSKmbHbfDrDFXZZtmqLAacnmfqTJKKR9P2UJ1kYvkmdHAHU4zPRHpv38kHRRjLtHNv4yN")
+	wl, _ := wallet.Base58CheckDeserialize("112t8rnXJgKz6wxuvo6s8aFHFN16j9fvh7y3ZLdrQpN1zRZcubmekm7WHc8KjQS3EWeGBCq8L7qQTuVm3QtnEX66WFHP5e7v6fQunJRJZx2c")
 	//privKeyB58 := wl.Base58CheckSerialize(wallet.PriKeyType)
 	wl.KeySet.InitFromPrivateKey(&wl.KeySet.PrivateKey)
 	//readOnlyKeyB58 := wl.Base58CheckSerialize(wallet.ReadonlyKeyType)
@@ -20,6 +20,7 @@ func main() {
 	committeeKey, _ := incognitokey.NewCommitteeKeyFromSeed(common.HashB(common.HashB(wl.KeySet.PrivateKey)), wl.KeySet.PaymentAddress.Pk)
 	res, _ := incognitokey.CommitteeKeyListToString([]incognitokey.CommitteePublicKey{committeeKey})
 	fmt.Println("Payment Address", paymentAddressB58)
+	fmt.Println("ShardID", wl.KeySet.PaymentAddress.Pk[len(wl.KeySet.PaymentAddress.Pk)-1])
 	fmt.Println("Mining Seed", miningSeed)
 	fmt.Println(res)
 	fmt.Println("-----------------------")

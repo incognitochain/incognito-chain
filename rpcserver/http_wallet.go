@@ -371,6 +371,41 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 	}
 	return result, nil
 }
+func (httpServer *HttpServer) handleListPrivacyCustomTokenByShard(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("params is invalid"))
+	}
+	shardID, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("params type is invalid"))
+	}
+	listPrivacyToken, err := httpServer.blockService.ListPrivacyCustomTokenWithPRVByShardID(byte(shardID))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
+	}
+	result := jsonresult.ListCustomToken{ListCustomToken: []jsonresult.CustomToken{}}
+	for _, tokenState := range listPrivacyToken {
+		item := jsonresult.NewPrivacyToken(tokenState)
+		result.ListCustomToken = append(result.ListCustomToken, *item)
+	}
+	// overwrite amounts with bridge tokens
+	allBridgeTokens, err := httpServer.blockService.GetAllBridgeTokens()
+	if err != nil {
+		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	for index, _ := range result.ListCustomToken {
+		result.ListCustomToken[index].Image = common.Render([]byte(result.ListCustomToken[index].ID))
+		for _, bridgeToken := range allBridgeTokens {
+			if result.ListCustomToken[index].ID == bridgeToken.TokenID.String() {
+				result.ListCustomToken[index].Amount = bridgeToken.Amount
+				result.ListCustomToken[index].IsBridgeToken = true
+				break
+			}
+		}
+	}
+	return result, nil
+}
 
 // handleGetPublicKeyFromPaymentAddress - return base58check encode of public key which is got from payment address
 func (httpServer *HttpServer) handleGetPublicKeyFromPaymentAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
