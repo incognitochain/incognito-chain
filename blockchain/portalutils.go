@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/pkg/errors"
 	"math"
+	"math/rand"
 	"sort"
 	"strings"
 )
@@ -528,4 +529,86 @@ func ValidationExchangeRates(exchangeRates *lvdb.FinalExchangeRates) error  {
 	}
 
 	return  nil
+}
+
+func sortCustodiansByAmountHoldingPubTokenAscent(tokenSymbol string, custodians map[string]*lvdb.CustodianState) ([]*CustodianStateSlice, error) {
+	sortedCustodians := make([]*CustodianStateSlice, 0)
+	for key, value := range custodians {
+		 if value.HoldingPubTokens[tokenSymbol] > 0 {
+			 item := CustodianStateSlice {
+				 Key:   key,
+				 Value: value,
+			 }
+			 sortedCustodians = append(sortedCustodians, &item)
+		 }
+	}
+
+	sort.Slice(sortedCustodians, func(i, j int) bool {
+		return sortedCustodians[i].Value.HoldingPubTokens[tokenSymbol] <= sortedCustodians[j].Value.HoldingPubTokens[tokenSymbol]
+	})
+
+	return sortedCustodians, nil
+}
+
+
+func pickupCustodianForRedeem(redeemAmount uint64, redeemTokenID string, portalState *CurrentPortalState) (map[string]*lvdb.CustodianState, error) {
+	custodianPoolState := portalState.CustodianPoolState
+
+	// get tokenSymbol from redeemTokenID
+	tokenSymbol := ""
+	for tokenSym, incTokenID := range metadata.PortalSupportedTokenMap {
+		if incTokenID == redeemTokenID {
+			tokenSymbol = tokenSym
+			break
+		}
+	}
+
+	// case 1: pick one custodian
+	// filter custodians
+	// bigCustodians who holding amount public token greater than or equal to redeem amount
+	// smallCustodians who holding amount public token less than redeem amount
+	bigCustodians := make(map[string]*lvdb.CustodianState, 0)
+	bigCustodianKeys  := make([]string, 0)
+	smallCustodians := make(map[string]*lvdb.CustodianState, 0)
+	matchedCustodians := make(map[string]*lvdb.CustodianState, 0)
+
+	for key, cus := range custodianPoolState {
+		if cus.HoldingPubTokens[tokenSymbol] >= redeemAmount {
+			bigCustodians[key] = new(lvdb.CustodianState)
+			bigCustodians[key] = cus
+			bigCustodianKeys = append(bigCustodianKeys, key)
+		} else if cus.HoldingPubTokens[tokenSymbol] > 0 {
+			smallCustodians[key] = new(lvdb.CustodianState)
+			smallCustodians[key] = cus
+		}
+	}
+
+	// random to pick-up one custodian in bigCustodians
+	if len(bigCustodians) > 0 {
+		randomIndexCus := rand.Intn(len(bigCustodians))
+		custodianKey := bigCustodianKeys[randomIndexCus]
+		matchedCustodians[custodianKey] = new(lvdb.CustodianState)
+		matchedCustodians[custodianKey] = bigCustodians[custodianKey]
+
+		return matchedCustodians, nil
+	}
+
+	// pick-up multiple custodians in smallCustodians
+	if len(smallCustodians) == 0 {
+		Logger.log.Errorf("there is no custodian in custodian pool")
+		return nil, errors.New("there is no custodian in custodian pool")
+	}
+	// sort smallCustodians by amount holding public token
+	sortedCustodianSlice, err := sortCustodiansByAmountHoldingPubTokenAscent(tokenSymbol, smallCustodians)
+	if err != nil {
+		Logger.log.Errorf("Error when sorting custodians by amount holding public token %v", err)
+		return nil, err
+	}
+
+	//todo:
+	for _, _ = range sortedCustodianSlice {
+
+	}
+
+	return nil, nil
 }

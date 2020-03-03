@@ -205,7 +205,7 @@ type DatabaseInterface interface {
 	GetAllRecordsPortalByPrefixWithoutBeaconHeight(key []byte) ([][]byte, [][]byte, error)
 	TrackCustodianDepositCollateral(key []byte, value []byte) error
 	TrackReqPTokens(key []byte, value []byte) error
-	GetItemPortalByKey(prefix []byte) ([]byte, error)
+	GetItemPortalByKey(key []byte) ([]byte, error)
 	StorePortingRequestItem(key []byte, value interface{}) error
 	StoreExchangeRatesRequestItem(key []byte, value interface{}) error
 	StoreFinalExchangeRatesItem(key []byte, value interface{}) error
@@ -213,6 +213,9 @@ type DatabaseInterface interface {
 	GetReqPTokenStatusByTxReqID(txReqID string) ([]byte, error)
 	GetPortingRequestStatusByPortingID(portingID string) (int, error)
 	UpdatePortingRequestStatus(portingID string, newStatus int) error
+
+	StoreRedeemRequest(key []byte, value []byte) error
+	GetRedeemRequestByRedeemID(redeemID string) ([]byte, error)
 
 	// relaying
 	GetItemByKey(key []byte) ([]byte, error)

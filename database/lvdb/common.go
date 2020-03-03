@@ -70,14 +70,15 @@ var (
 	// Portal
 	CustodianStatePrefix               = []byte("custodianstate-")
 	PortalPortingRequestsPrefix        = []byte("portalportingrequest-")
-	PortalRedeemRequestsPrefix         = []byte("portalredeemrequest-")
 	PortalExchangeRatesPrefix          = []byte("portalexchangeratesrequest-")
 	PortalFinalExchangeRatesPrefix     = []byte("portalfinalexchangerates-")
 	PortalCustodianStatePrefix         = []byte("portalcustodianstate-")
 	PortalCustodianDepositPrefix       = []byte("portalcustodiandeposit-")
 	PortalWaitingPortingRequestsPrefix = []byte("portalwaitingportingrequest-")
-	PortalWaitingRedeemRequestsPrefix  = []byte("portalwaitingredeemrequest-")
 	PortalRequestPTokensPrefix         = []byte("portalrequestptokens-")
+	PortalWaitingRedeemRequestsPrefix  = []byte("portalwaitingredeemrequest-")
+	PortalRedeemRequestsPrefix         = []byte("portalredeemrequest-")
+
 
 	// Relaying
 	RelayingBNBHeaderStatePrefix = []byte("relayingbnbheaderstate-")

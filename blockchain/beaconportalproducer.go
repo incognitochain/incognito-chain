@@ -328,7 +328,6 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		pickCustodianResult, _ = pickMultipleCustodian(actionData.Meta, exchangeRatesState, sortCustodianStateByFreeCollateral)
 		Logger.log.Infof("Porting request, pick multiple custodian result %v", len(pickCustodianResult))
 	}
-
 	//end
 	if len(pickCustodianResult) == 0 {
 		Logger.log.Errorf("Porting request, custodian not found")
@@ -908,47 +907,73 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 		return [][]string{inst}, nil
 	}
 
-	// check uniqueRedeemID is existed in db and waitingRedeem list or not
+	redeemID := meta.UniqueRedeemID
+
+	// check uniqueRedeemID is existed waitingRedeem list or not
+	keyWaitingRedeemRequest := lvdb.NewWaitingRedeemReqKey(beaconHeight, redeemID)
+	waitingRedeemRequest := currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest]
+	if waitingRedeemRequest != nil {
+		Logger.log.Errorf("RedeemID is existed in waiting redeem requests list %v\n", redeemID)
+		inst := buildRedeemRequestInst(
+			meta.UniqueRedeemID,
+			meta.TokenID,
+			meta.RedeemAmount,
+			meta.IncAddressStr,
+			meta.RemoteAddress,
+			meta.RedeemFee,
+			meta.Type,
+			actionData.ShardID,
+			actionData.TxReqID,
+			common.PortalRedeemRequestRejectedStatus,
+		)
+		return [][]string{inst}, nil
+	}
+
+	db := blockchain.GetDatabase()
+
+	// check uniqueRedeemID is existed in db or not
+	redeemRequestBytes, err := db.GetRedeemRequestByRedeemID(meta.UniqueRedeemID)
+	if err != nil {
+		Logger.log.Errorf("Can not get redeem req status for redeemID %v, %v\n", meta.UniqueRedeemID, err)
+		inst := buildRedeemRequestInst(
+			meta.UniqueRedeemID,
+			meta.TokenID,
+			meta.RedeemAmount,
+			meta.IncAddressStr,
+			meta.RemoteAddress,
+			meta.RedeemFee,
+			meta.Type,
+			actionData.ShardID,
+			actionData.TxReqID,
+			common.PortalRedeemRequestRejectedStatus,
+		)
+		return [][]string{inst}, nil
+	} else if len(redeemRequestBytes) > 0 {
+		Logger.log.Errorf("RedeemID is existed in redeem requests list in db %v\n", redeemID)
+		inst := buildRedeemRequestInst(
+			meta.UniqueRedeemID,
+			meta.TokenID,
+			meta.RedeemAmount,
+			meta.IncAddressStr,
+			meta.RemoteAddress,
+			meta.RedeemFee,
+			meta.Type,
+			actionData.ShardID,
+			actionData.TxReqID,
+			common.PortalRedeemRequestRejectedStatus,
+		)
+		return [][]string{inst}, nil
+	}
+
+	//todo:
 	// pick custodian(s) who holding public token to return user
+
+
 	// add to waiting Redeem list
 	//
 
+	//currentPortalState.CustodianPoolState
 
 
-
-	//keyCustodianState := lvdb.NewCustodianStateKey(beaconHeight, meta.IncogAddressStr)
-	//
-	//if currentPortalState.CustodianPoolState[keyCustodianState] == nil {
-	//	// new custodian
-	//	newCustodian, _ := NewCustodianState(meta.IncogAddressStr, meta.DepositedAmount, meta.DepositedAmount, nil, nil, meta.RemoteAddresses)
-	//	currentPortalState.CustodianPoolState[keyCustodianState] = newCustodian
-	//} else {
-	//	// custodian deposited before
-	//	// update state of the custodian
-	//	custodian := currentPortalState.CustodianPoolState[keyCustodianState]
-	//	totalCollateral := custodian.TotalCollateral + meta.DepositedAmount
-	//	freeCollateral := custodian.FreeCollateral + meta.DepositedAmount
-	//	holdingPubTokens := custodian.HoldingPubTokens
-	//	lockedAmountCollateral := custodian.LockedAmountCollateral
-	//	remoteAddresses := custodian.RemoteAddresses
-	//	for tokenSymbol, address := range meta.RemoteAddresses {
-	//		if remoteAddresses[tokenSymbol] == "" {
-	//			remoteAddresses[tokenSymbol] = address
-	//		}
-	//	}
-	//
-	//	newCustodian, _ := NewCustodianState(meta.IncogAddressStr, totalCollateral, freeCollateral, holdingPubTokens, lockedAmountCollateral, remoteAddresses)
-	//	currentPortalState.CustodianPoolState[keyCustodianState] = newCustodian
-	//}
-	//
-	//inst := buildCustodianDepositInst(
-	//	actionData.Meta.IncogAddressStr,
-	//	actionData.Meta.DepositedAmount,
-	//	actionData.Meta.RemoteAddresses,
-	//	actionData.Meta.Type,
-	//	shardID,
-	//	actionData.TxReqID,
-	//	common.PortalCustodianDepositAcceptedChainStatus,
-	//)
 	return [][]string{}, nil
 }

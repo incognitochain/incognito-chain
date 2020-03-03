@@ -119,6 +119,7 @@ const (
 	GetItemPortalByKeyNotFound
 	GetCustodianDepositStatusError
 	GetReqPTokenStatusError
+	StoreRedeemRequestError
 
 	// relaying
 	StoreRelayingBNBHeaderError
@@ -238,16 +239,16 @@ var ErrCodeMessage = map[int]struct {
 	TrackReqPTokenError:                 {-14007, "Track requesting ptokens error"},
 	StoreExchangeRatesRequestStateError: {-14008, "Store exchange rates request error"},
 	StoreFinalExchangeRatesStateError:   {-14009, "Store final exchange rates request error"},
-	GetItemPortalByKeyError:          	{-14010, "Get item portal by key error"},
-	GetItemPortalByKeyNotFound:       	{-14011, "Get item portal by key not found"},
-	GetCustodianDepositStatusError:     {-14012, "Get all custodian deposit status error"},
-	GetReqPTokenStatusError:            {-14014, "Get request ptoken status error"},
-
+	GetItemPortalByKeyError:             {-14010, "Get item portal by key error"},
+	GetItemPortalByKeyNotFound:          {-14011, "Get item portal by key not found"},
+	GetCustodianDepositStatusError:      {-14012, "Get all custodian deposit status error"},
+	GetReqPTokenStatusError:             {-14013, "Get request ptoken status error"},
+	StoreRedeemRequestError:             {-14014, "Store redeem request error"},
 
 	// relaying
-	StoreRelayingBNBHeaderError:             {-15001, "Store relaying header bnb error"},
-	GetRelayingBNBHeaderError:             {-15002, "Get relaying header bnb error"},
-	GetBNBDataHashError:  {-15003, "Get bnb data hash by block height error"},
+	StoreRelayingBNBHeaderError: {-15001, "Store relaying header bnb error"},
+	GetRelayingBNBHeaderError:   {-15002, "Get relaying header bnb error"},
+	GetBNBDataHashError:         {-15003, "Get bnb data hash by block height error"},
 }
 
 type DatabaseError struct {

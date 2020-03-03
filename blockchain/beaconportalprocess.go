@@ -97,8 +97,8 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 		Logger.log.Errorf("current portal state is nil")
 		return nil
 	}
-	if len(instructions) !=  4 {
-		return nil  // skip the instruction
+	if len(instructions) != 4 {
+		return nil // skip the instruction
 	}
 	db := blockchain.GetDatabase()
 
@@ -145,9 +145,9 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 		// track custodian deposit into DB
 		custodianDepositTrackKey := lvdb.NewCustodianDepositKey(actionData.TxReqID.String())
 		custodianDepositTrackData := metadata.PortalCustodianDepositStatus{
-			Status: common.PortalCustodianDepositAcceptedStatus,
+			Status:          common.PortalCustodianDepositAcceptedStatus,
 			IncogAddressStr: actionData.IncogAddressStr,
-			DepositedAmount : actionData.DepositedAmount,
+			DepositedAmount: actionData.DepositedAmount,
 		}
 
 		custodianDepositDataBytes, _ := json.Marshal(custodianDepositTrackData)
@@ -163,9 +163,9 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 		// track custodian deposit into DB
 		custodianDepositTrackKey := lvdb.NewCustodianDepositKey(actionData.TxReqID.String())
 		custodianDepositTrackData := metadata.PortalCustodianDepositStatus{
-			Status: common.PortalCustodianDepositRefundStatus,
+			Status:          common.PortalCustodianDepositRefundStatus,
 			IncogAddressStr: actionData.IncogAddressStr,
-			DepositedAmount : actionData.DepositedAmount,
+			DepositedAmount: actionData.DepositedAmount,
 		}
 
 		custodianDepositDataBytes, _ := json.Marshal(custodianDepositTrackData)
@@ -191,8 +191,8 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		return nil
 	}
 
-	if len(instructions) !=  4 {
-		return nil  // skip the instruction
+	if len(instructions) != 4 {
+		return nil // skip the instruction
 	}
 
 	// parse instruction
@@ -227,7 +227,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			custodiansDetail,
 			portingFee,
 			common.PortalPortingReqWaitingStatus,
-			beaconHeight + 1,
+			beaconHeight+1,
 		)
 
 		if err != nil {
@@ -250,11 +250,10 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			totalCollateral := custodian.TotalCollateral
 			freeCollateral := custodian.FreeCollateral - itemCustodian.LockedAmountCollateral
 
-
 			//update ptoken holded
 			holdingPubTokensMapping := make(map[string]uint64)
 			if custodian.HoldingPubTokens == nil {
-				holdingPubTokensMapping[tokenID] =  itemCustodian.Amount
+				holdingPubTokensMapping[tokenID] = itemCustodian.Amount
 			} else {
 				for ptokenId, value := range custodian.HoldingPubTokens {
 					holdingPubTokensMapping[ptokenId] = value + itemCustodian.Amount
@@ -273,7 +272,6 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			}
 			lockedAmountCollateral := lockedAmountCollateralMapping
 
-
 			remoteAddresses := custodian.RemoteAddresses
 
 			newCustodian, err := NewCustodianState(
@@ -283,7 +281,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 				holdingPubTokens,
 				lockedAmountCollateral,
 				remoteAddresses,
-				)
+			)
 
 			if err != nil {
 				return err
@@ -301,9 +299,9 @@ func (blockchain *BlockChain) processPortalUserRegister(
 	case common.PortalPortingRequestRejectedStatus:
 		txReqID := portingRequestContent.TxReqID
 		newPortingRequest := lvdb.PortingRequest{
-			TxReqID:        txReqID,
-			Status:			common.PortalPortingReqRejectedStatus,
-			BeaconHeight:	beaconHeight + 1,
+			TxReqID:      txReqID,
+			Status:       common.PortalPortingReqRejectedStatus,
+			BeaconHeight: beaconHeight + 1,
 		}
 
 		//save porting request
@@ -329,8 +327,8 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 		return nil
 	}
 
-	if len(instructions) !=  4 {
-		return nil  // skip the instruction
+	if len(instructions) != 4 {
+		return nil // skip the instruction
 	}
 	db := blockchain.GetDatabase()
 
@@ -363,12 +361,12 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 		// track reqPToken status by txID into DB
 		reqPTokenTrackKey := lvdb.NewPortalReqPTokenKey(actionData.TxReqID.String())
 		reqPTokenTrackData := metadata.PortalRequestPTokensStatus{
-			Status: common.PortalReqPTokenAcceptedStatus,
+			Status:          common.PortalReqPTokenAcceptedStatus,
 			UniquePortingID: actionData.UniquePortingID,
-			TokenID: actionData.TokenID,
+			TokenID:         actionData.TokenID,
 			IncogAddressStr: actionData.IncogAddressStr,
-			PortingAmount: actionData.PortingAmount,
-			PortingProof: actionData.PortingProof,
+			PortingAmount:   actionData.PortingAmount,
+			PortingProof:    actionData.PortingProof,
 		}
 		reqPTokenTrackDataBytes, _ := json.Marshal(reqPTokenTrackData)
 		err = db.TrackReqPTokens(
@@ -404,7 +402,7 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 		// track reqPToken and deposit proof into DB
 		reqPTokenTrackKey := lvdb.NewPortalReqPTokenKey(actionData.TxReqID.String())
 		reqPTokenTrackData := metadata.PortalRequestPTokensStatus{
-			Status: common.PortalReqPTokenRejectedStatus,
+			Status:          common.PortalReqPTokenRejectedStatus,
 			UniquePortingID: actionData.UniquePortingID,
 		}
 		reqPTokenTrackDataBytes, _ := json.Marshal(reqPTokenTrackData)
@@ -449,7 +447,6 @@ func (blockchain *BlockChain) processPortalExchangeRates(beaconHeight uint64, in
 			portingExchangeRatesContent.Rates,
 		)
 
-
 		err = db.StoreExchangeRatesRequestItem([]byte(portingExchangeRatesContent.UniqueRequestId), newExchangeRates)
 
 		if err != nil {
@@ -480,7 +477,7 @@ func (blockchain *BlockChain) processPortalExchangeRates(beaconHeight uint64, in
 	return nil
 }
 
-func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, currentPortalState *CurrentPortalState) error  {
+func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, currentPortalState *CurrentPortalState) error {
 	exchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
 
 	Logger.log.Infof("Portal final exchange rates, pick final exchange rates from exchange rates, key %v, count final exchange rate %v , exchange rate request %v", exchangeRatesKey, len(currentPortalState.FinalExchangeRates), len(currentPortalState.ExchangeRatesRequests))
@@ -523,7 +520,6 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 	var btcAmount uint64
 	var bnbAmount uint64
 	var prvAmount uint64
-
 
 	//get current value
 	if len(btcExchangeRatesSlice) > 0 {
@@ -583,7 +579,6 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 		}
 	}
 
-
 	if len(exchangeRatesList) > 0 {
 		currentPortalState.FinalExchangeRates[exchangeRatesKey] = &lvdb.FinalExchangeRates{
 			Rates: exchangeRatesList,
@@ -598,14 +593,14 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 func calcMedian(ratesList []uint64) uint64 {
 	mNumber := len(ratesList) / 2
 
-	if len(ratesList) % 2 == 0 {
+	if len(ratesList)%2 == 0 {
 		return (ratesList[mNumber-1] + ratesList[mNumber]) / 2
 	}
 
 	return ratesList[mNumber]
 }
 
-func choicePrice(currentPrice uint64, prePrice uint64) uint64  {
+func choicePrice(currentPrice uint64, prePrice uint64) uint64 {
 	if currentPrice > 0 {
 		return currentPrice
 	} else {
