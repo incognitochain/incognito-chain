@@ -9,16 +9,16 @@ import (
 	ota "github.com/incognitochain/incognito-chain/privacy/privacy-v2/onetime_address"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy-v2/onetime_address/address"
 	"github.com/incognitochain/incognito-chain/privacy/privacy-v2/txfull"
 )
 
 func testMlsag() {
 	fmt.Println("Running test")
-	keyInputs := []privacy.Scalar{}
+	keyInputs := []operation.Scalar{}
 	for i := 0; i < 8; i += 1 {
-		privateKey := privacy.RandomScalar()
+		privateKey := operation.RandomScalar()
 		keyInputs = append(keyInputs, *privateKey)
 	}
 	numFake := 3

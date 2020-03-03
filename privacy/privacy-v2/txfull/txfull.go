@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy-v2/mlsag"
 
 	"github.com/incognitochain/incognito-chain/privacy/privacy-v2/onetime_address/address"
@@ -14,12 +14,12 @@ import (
 type RingCTFull struct {
 	inputs         []utxo.Utxo
 	fromAddress    []address.PrivateAddress
-	sumBlindOutput *privacy.Scalar
+	sumBlindOutput *operation.Scalar
 	outputs        []utxo.Utxo
 	toAddress      []address.PublicAddress
 }
 
-func NewRingCTFull(inputs *[]utxo.Utxo, fromAddress *[]address.PrivateAddress, sumBlindOutput *privacy.Scalar, outputs *[]utxo.Utxo, toAddress *[]address.PublicAddress) *RingCTFull {
+func NewRingCTFull(inputs *[]utxo.Utxo, fromAddress *[]address.PrivateAddress, sumBlindOutput *operation.Scalar, outputs *[]utxo.Utxo, toAddress *[]address.PublicAddress) *RingCTFull {
 	return &RingCTFull{
 		*inputs,
 		*fromAddress,
@@ -30,7 +30,7 @@ func NewRingCTFull(inputs *[]utxo.Utxo, fromAddress *[]address.PrivateAddress, s
 }
 
 // Create and return: ring, privatekey (of transaction), pi of the ring, error
-func (this *RingCTFull) CreateRandomRing() (*mlsag.Ring, *[]privacy.Scalar, int, error) {
+func (this *RingCTFull) CreateRandomRing() (*mlsag.Ring, *[]operation.Scalar, int, error) {
 	// TODO
 	// In real system should change numFake
 	numFake := 10
@@ -45,21 +45,21 @@ func (this *RingCTFull) CreateRandomRing() (*mlsag.Ring, *[]privacy.Scalar, int,
 	if err != nil {
 		return nil, nil, 0, errors.New("Error in RingCTFull CreateRandomRing: the RingCTFull is broken (private key not associate with transaction")
 	}
-	privCommitment := new(privacy.Scalar).Sub(sumBlindInput, this.sumBlindOutput)
+	privCommitment := new(operation.Scalar).Sub(sumBlindInput, this.sumBlindOutput)
 	priv = append(priv, *privCommitment)
 
 	// Add commitment to ring
 	sumInputsCom := getSumCommitment(this.inputs)
 	sumOutputCom := getSumCommitment(this.outputs)
 	for i := 0; i < numFake; i += 1 {
-		val := new(privacy.Point)
+		val := new(operation.Point)
 		if i == pi {
 			val = val.Sub(sumInputsCom, sumOutputCom)
 		} else {
 			// TODO
 			// Random scalar should be changed when use in real product
 			// Should get randomly in database the commitments
-			val = val.Sub(privacy.RandomPoint(), sumOutputCom)
+			val = val.Sub(operation.RandomPoint(), sumOutputCom)
 		}
 		ring.AppendToRow(i, val)
 	}

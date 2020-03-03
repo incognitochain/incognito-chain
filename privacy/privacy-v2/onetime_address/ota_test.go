@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy-v2/onetime_address/address"
 	"github.com/stretchr/testify/assert"
 )
@@ -46,7 +46,7 @@ func TestParseUtxoPrivateKey(t *testing.T) {
 
 	for i := 0; i < len(outputs); i += 1 {
 		priv := ParseUtxoPrivatekey(&peopleAddresses[i], &outputs[i])
-		check := new(privacy.Point).ScalarMultBase(priv)
+		check := new(operation.Point).ScalarMultBase(priv)
 		assert.Equal(t, check.GetKey(), outputs[i].GetAddressee().GetKey(), "Parse private key of utxo should return correctly")
 	}
 }
@@ -67,7 +67,7 @@ func TestParseBlindAndMoneyFromUtxo(t *testing.T) {
 
 	outputs := *outputsPointer
 
-	sumMoney := new(privacy.Scalar)
+	sumMoney := new(operation.Scalar)
 	for i := 0; i < len(outputs); i += 1 {
 		blind, money, _ := ParseBlindAndMoneyFromUtxo(&peopleAddresses[i], &outputs[i])
 		sumBlind = sumBlind.Sub(sumBlind, blind)

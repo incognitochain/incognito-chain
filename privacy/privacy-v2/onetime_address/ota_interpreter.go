@@ -4,47 +4,47 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/pedersen"
 	"github.com/incognitochain/incognito-chain/privacy/privacy-v2/onetime_address/address"
 	"github.com/incognitochain/incognito-chain/privacy/privacy-v2/onetime_address/utxo"
 )
 
-func ParseUtxoPrivatekey(addr *address.PrivateAddress, utxo *utxo.Utxo) *privacy.Scalar {
-	rK := new(privacy.Point).ScalarMult(utxo.GetTxData(), addr.GetPrivateView())
-	hashed := privacy.HashToScalar(
+func ParseUtxoPrivatekey(addr *address.PrivateAddress, utxo *utxo.Utxo) *operation.Scalar {
+	rK := new(operation.Point).ScalarMult(utxo.GetTxData(), addr.GetPrivateView())
+	hashed := operation.HashToScalar(
 		append(rK.ToBytesS(), utxo.GetIndex()),
 	)
-	return new(privacy.Scalar).Add(hashed, addr.GetPrivateSpend())
+	return new(operation.Scalar).Add(hashed, addr.GetPrivateSpend())
 }
 
 // Step 1 Monero One-time Address
-func parseAddresseeWithCached(r *privacy.Scalar, addr *address.PublicAddress, index byte) (*privacy.Point, *privacy.Scalar) {
-	rK := new(privacy.Point).ScalarMult(addr.GetPublicView(), r)
-	cachedHash := privacy.HashToScalar(
+func parseAddresseeWithCached(r *operation.Scalar, addr *address.PublicAddress, index byte) (*operation.Point, *operation.Scalar) {
+	rK := new(operation.Point).ScalarMult(addr.GetPublicView(), r)
+	cachedHash := operation.HashToScalar(
 		append(rK.ToBytesS(), index),
 	)
-	HrKG := new(privacy.Point).ScalarMultBase(cachedHash)
-	addressee := new(privacy.Point).Add(HrKG, addr.GetPublicSpend())
+	HrKG := new(operation.Point).ScalarMultBase(cachedHash)
+	addressee := new(operation.Point).Add(HrKG, addr.GetPublicSpend())
 
 	return addressee, cachedHash
 }
 
 // Step 2 Monero One-time Address
-func parseOTAWithCached(r *privacy.Scalar, addr *address.PublicAddress, index byte) (*privacy.Point, *privacy.Point, *privacy.Scalar) {
+func parseOTAWithCached(r *operation.Scalar, addr *address.PublicAddress, index byte) (*operation.Point, *operation.Point, *operation.Scalar) {
 	addressee, cachedHash := parseAddresseeWithCached(r, addr, index)
-	txData := new(privacy.Point).ScalarMultBase(r)
+	txData := new(operation.Point).ScalarMultBase(r)
 	return addressee, txData, cachedHash
 }
 
-func parseMoneyToCreateOutput(blind *privacy.Scalar, cachedHash *privacy.Scalar, money *big.Int, index byte) (mask *privacy.Scalar, amount *privacy.Scalar, commitment *privacy.Point, err error) {
+func parseMoneyToCreateOutput(blind *operation.Scalar, cachedHash *operation.Scalar, money *big.Int, index byte) (mask *operation.Scalar, amount *operation.Scalar, commitment *operation.Point, err error) {
 	scMoney, err := ParseBigIntToScalar(money)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	mask = privacy.HashToScalar(cachedHash.ToBytesS())
-	amount = privacy.HashToScalar(mask.ToBytesS())
+	mask = operation.HashToScalar(cachedHash.ToBytesS())
+	amount = operation.HashToScalar(mask.ToBytesS())
 
 	mask = mask.Add(blind, mask)
 	amount = amount.Add(scMoney, amount)
@@ -53,7 +53,7 @@ func parseMoneyToCreateOutput(blind *privacy.Scalar, cachedHash *privacy.Scalar,
 	return mask, amount, commitment, nil
 }
 
-func ParseBigIntToScalar(number *big.Int) (*privacy.Scalar, error) {
+func ParseBigIntToScalar(number *big.Int) (*operation.Scalar, error) {
 	b := number.Bytes()
 	if len(b) > 32 {
 		return nil, errors.New("Error in onetime_address ParseBigIntToScalar: BigInt too big (length larger than 32)")
@@ -62,8 +62,8 @@ func ParseBigIntToScalar(number *big.Int) (*privacy.Scalar, error) {
 	b = append(zeroPadding, b...)
 
 	// Reverse key of scalar
-	scalar := new(privacy.Scalar).FromBytesS(b)
-	keyReverse := privacy.Reverse(scalar.GetKey())
+	scalar := new(operation.Scalar).FromBytesS(b)
+	keyReverse := operation.Reverse(scalar.GetKey())
 	result, err := scalar.SetKey(&keyReverse)
 	if err != nil {
 		return nil, errors.New("Error in onetime_address ParseBigIntToScalar: scalar.SetKet got error")
@@ -73,37 +73,37 @@ func ParseBigIntToScalar(number *big.Int) (*privacy.Scalar, error) {
 }
 
 // Get Mask and Amount from UTXO if we have privateAddress
-func ParseBlindAndMoneyFromUtxo(addr *address.PrivateAddress, utxo *utxo.Utxo) (blind *privacy.Scalar, money *privacy.Scalar, err error) {
+func ParseBlindAndMoneyFromUtxo(addr *address.PrivateAddress, utxo *utxo.Utxo) (blind *operation.Scalar, money *operation.Scalar, err error) {
 	if IsUtxoOfAddress(addr, utxo) == false {
 		return nil, nil, errors.New("Error in ota_interpreter ParseBlindAndMoneyFromUtxo: utxo is not from this address")
 	}
-	shared_secret := new(privacy.Point).ScalarMult(utxo.GetTxData(), addr.GetPrivateView())
-	hashed_offset := privacy.HashToScalar(
+	shared_secret := new(operation.Point).ScalarMult(utxo.GetTxData(), addr.GetPrivateView())
+	hashed_offset := operation.HashToScalar(
 		append(shared_secret.ToBytesS(), utxo.GetIndex()),
 	)
 
 	// Get blind value
-	blind_offset := privacy.HashToScalar(
+	blind_offset := operation.HashToScalar(
 		hashed_offset.ToBytesS(),
 	)
-	blind = new(privacy.Scalar).Sub(utxo.GetMask(), blind_offset)
+	blind = new(operation.Scalar).Sub(utxo.GetMask(), blind_offset)
 
 	// Get amount value
-	money_offset := privacy.HashToScalar(
+	money_offset := operation.HashToScalar(
 		blind_offset.ToBytesS(),
 	)
-	money = new(privacy.Scalar).Sub(utxo.GetAmount(), money_offset)
+	money = new(operation.Scalar).Sub(utxo.GetAmount(), money_offset)
 
 	return blind, money, nil
 }
 
-func ParseCommitment(blind *privacy.Scalar, money *privacy.Scalar) *privacy.Point {
+func ParseCommitment(blind *operation.Scalar, money *operation.Scalar) *operation.Point {
 	// Get blind*G
-	blindHalf := new(privacy.Point).ScalarMultBase(blind)
+	blindHalf := new(operation.Point).ScalarMultBase(blind)
 
 	// Get value pedersen H in privacy library
-	H := pedersen.PedCom.G[privacy.PedersenValueIndex]
-	moneyHalf := new(privacy.Point).ScalarMult(H, money)
+	H := pedersen.PedCom.G[pedersen.PedersenValueIndex]
+	moneyHalf := new(operation.Point).ScalarMult(H, money)
 
-	return new(privacy.Point).Add(blindHalf, moneyHalf)
+	return new(operation.Point).Add(blindHalf, moneyHalf)
 }
