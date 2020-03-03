@@ -452,7 +452,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 	db := blockchain.GetDatabase()
 
 	// check porting request status of portingID from db
-	portingReqStatusBytes, err := db.GetPortingRequestStatusByPortingID(meta.UniquePortingID)
+	portingReqStatus, err := db.GetPortingRequestStatusByPortingID(meta.UniquePortingID)
 	if err != nil {
 		Logger.log.Errorf("Can not get porting req status for portingID %v, %v\n", meta.UniquePortingID, err)
 		inst := buildReqPTokensInst(
@@ -468,40 +468,39 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		)
 		return [][]string{inst}, nil
 	}
-	if len(portingReqStatusBytes) > 0 {
-		//todo: need to change to portal request status
-		reqPTokenStatus := metadata.PortalRequestPTokensStatus{}
-		err := json.Unmarshal(portingReqStatusBytes, &reqPTokenStatus)
-		if err != nil {
-			Logger.log.Errorf("Can not unmarshal req ptoken status %v\n", err)
-			inst := buildReqPTokensInst(
-				meta.UniquePortingID,
-				meta.TokenID,
-				meta.IncogAddressStr,
-				meta.PortingAmount,
-				meta.PortingProof,
-				meta.Type,
-				shardID,
-				actionData.TxReqID,
-				common.PortalReqPTokensRejectedChainStatus,
-			)
-			return [][]string{inst}, nil
-		}
-		if reqPTokenStatus.Status != common.PortalPortingReqWaitingStatus {
-			Logger.log.Errorf("PortingID status invalid")
-			inst := buildReqPTokensInst(
-				meta.UniquePortingID,
-				meta.TokenID,
-				meta.IncogAddressStr,
-				meta.PortingAmount,
-				meta.PortingProof,
-				meta.Type,
-				shardID,
-				actionData.TxReqID,
-				common.PortalReqPTokensRejectedChainStatus,
-			)
-			return [][]string{inst}, nil
-		}
+	//if len(portingReqStatus) > 0 {
+	//	//todo: need to change to portal request status
+	//	reqPTokenStatus := metadata.PortalRequestPTokensStatus{}
+	//	err := json.Unmarshal(portingReqStatus, &reqPTokenStatus)
+	//	if err != nil {
+	//		Logger.log.Errorf("Can not unmarshal req ptoken status %v\n", err)
+	//		inst := buildReqPTokensInst(
+	//			meta.UniquePortingID,
+	//			meta.TokenID,
+	//			meta.IncogAddressStr,
+	//			meta.PortingAmount,
+	//			meta.PortingProof,
+	//			meta.Type,
+	//			shardID,
+	//			actionData.TxReqID,
+	//			common.PortalReqPTokensRejectedChainStatus,
+	//		)
+	//		return [][]string{inst}, nil
+	//	}
+	if portingReqStatus != common.PortalPortingReqWaitingStatus {
+		Logger.log.Errorf("PortingID status invalid")
+		inst := buildReqPTokensInst(
+			meta.UniquePortingID,
+			meta.TokenID,
+			meta.IncogAddressStr,
+			meta.PortingAmount,
+			meta.PortingProof,
+			meta.Type,
+			shardID,
+			actionData.TxReqID,
+			common.PortalReqPTokensRejectedChainStatus,
+		)
+		return [][]string{inst}, nil
 	}
 
 	// check tokenID

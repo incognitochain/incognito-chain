@@ -244,9 +244,9 @@ func (db *db) TrackReqPTokens(key []byte, content []byte) error {
 	return nil
 }
 
-// GetCustodianDepositCollateralStatus returns custodian deposit status with deposit txid
-func (db *db) GetReqPTokenStatusByPortingID(portingID string) ([]byte, error) {
-	key := append(PortalRequestPTokensPrefix, []byte(portingID)...)
+// GetReqPTokenStatusByTxReqID returns request ptoken status with  txReqID
+func (db *db) GetReqPTokenStatusByTxReqID(txReqID string) ([]byte, error) {
+	key := append(PortalRequestPTokensPrefix, []byte(txReqID)...)
 
 	reqPTokenStatusBytes, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -312,9 +312,14 @@ func (db *db) GetItemPortalByKey(prefix []byte) ([]byte, error) {
 	return itemRecord, nil
 }
 
-func (db *db) GetPortingRequestStatusByPortingID(portingID string) ([]byte, error) {
+func (db *db) GetPortingRequestStatusByPortingID(portingID string) (int, error) {
 	//todo:
-	return nil, nil
+	return 0, nil
+}
+
+func (db *db) UpdatePortingRequestStatus(portingID string, newStatus int) error {
+	//todo:
+	return nil
 }
 
 
