@@ -234,8 +234,16 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			return err
 		}
 
-		//save porting request
-		keyPortingRequestNewState := lvdb.NewPortingRequestAcceptKey(portingRequestContent.UniqueRegisterId, txReqID.String())
+		//save transaction
+		keyPortingRequestNewTxState := lvdb.NewPortingRequestTxKey(txReqID.String())
+		err = db.StorePortingRequestItem([]byte(keyPortingRequestNewTxState), newPortingRequestState)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occurred while store porting request item: %+v", err)
+			return nil
+		}
+
+		//save success porting request
+		keyPortingRequestNewState := lvdb.NewPortingRequestKey(portingRequestContent.UniqueRegisterId)
 		Logger.log.Infof("Porting request, save porting request with key %v", keyPortingRequestNewState)
 		err = db.StorePortingRequestItem([]byte(keyPortingRequestNewState), newPortingRequestState)
 		if err != nil {
@@ -301,14 +309,17 @@ func (blockchain *BlockChain) processPortalUserRegister(
 	case common.PortalPortingRequestRejectedStatus:
 		txReqID := portingRequestContent.TxReqID
 		newPortingRequest := lvdb.PortingRequest{
+			UniquePortingID: portingRequestContent.UniqueRegisterId,
+			Amount:         portingRequestContent.RegisterAmount,
+			TokenID:        portingRequestContent.PTokenId,
+			PorterAddress:  portingRequestContent.IncogAddressStr,
 			TxReqID:        txReqID,
 			Status:			common.PortalPortingReqRejectedStatus,
 			BeaconHeight:	beaconHeight + 1,
 		}
 
 		//save porting request
-		keyPortingRequestNewState := lvdb.NewPortingRequestRejectKey(portingRequestContent.UniqueRegisterId, txReqID.String())
-
+		keyPortingRequestNewState := lvdb.NewPortingRequestTxKey(txReqID.String())
 		err = db.StorePortingRequestItem([]byte(keyPortingRequestNewState), newPortingRequest)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store porting request item: %+v", err)

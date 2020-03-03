@@ -321,7 +321,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithRedeemReq(params interface{},
 	}
 
 	meta, _ := metadata.NewPortalRedeemRequest(metadata.PortalRedeemRequestMeta, uniqueRedeemID,
-		redeemTokenID, redeemAmount, incAddressStr, remoteAddress)
+		redeemTokenID, redeemAmount, incAddressStr, remoteAddress,1)
 
 	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta, *httpServer.config.Database)
 	if rpcErr != nil {

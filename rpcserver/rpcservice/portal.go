@@ -13,20 +13,21 @@ type Portal struct {
 	BlockChain *blockchain.BlockChain
 }
 
-func (portal *Portal) GetPortingRequestByByKey(portingRequestId string, db database.DatabaseInterface) (jsonresult.PortalPortingRequest, *RPCError) {
+func (portal *Portal) GetPortingRequestByByKey(txHash string, db database.DatabaseInterface) (jsonresult.PortalPortingRequest, *RPCError) {
 
-	portingRequestKey := lvdb.GetNewPortingRequestKey(portingRequestId)
-	portingRequestList, err := blockchain.GetAllPortingRequest(
-		db,
-		[]byte(portingRequestKey),
-	)
+	portingRequestKey := lvdb.NewPortingRequestTxKey(txHash)
+	portingRequestItem, err :=  blockchain.GetPortingRequestByKey(db, []byte(portingRequestKey))
 
 	if err != nil {
-		return  jsonresult.PortalPortingRequest{}, NewRPCError(GetExchangeRatesError, err)
+		return jsonresult.PortalPortingRequest{}, NewRPCError(GetPortingRequestError, err)
+	}
+
+	if  portingRequestItem == nil {
+		return jsonresult.PortalPortingRequest{}, NewRPCError(GetPortingRequestIsEmpty, err)
 	}
 
 	result := jsonresult.PortalPortingRequest{
-		PortingRequest: portingRequestList,
+		PortingRequest: *portingRequestItem,
 	}
 
 	return result, nil

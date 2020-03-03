@@ -69,6 +69,9 @@ const (
 	GetCustodianDepositError
 	GetPortalStateError
 
+	GetPortingRequestError
+	GetPortingRequestIsEmpty
+
 	// relaying
 	GetRelayingBNBHeaderByBlockHeightError
 	GetRelayingBNBHeaderError
@@ -153,6 +156,8 @@ var ErrCodeMessage = map[int]struct {
 	GetReqPTokenStatusError:  {-9002, "Get request ptoken status error"},
 	GetCustodianDepositError: {-9003, "Get custodian deposit status error"},
 	GetPortalStateError:      {-9004, "Get portal state error"},
+	GetPortingRequestError:      {-9005, "Get portal request error"},
+	GetPortingRequestIsEmpty:      {-9006, "Get portal request is empty"},
 
 
 	// relaying

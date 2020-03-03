@@ -202,8 +202,8 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 	db := blockchain.GetDatabase()
 
 	//check unique id from record from db
-	keyPortingRequest := lvdb.GetNewPortingRequestKey(actionData.Meta.UniqueRegisterId)
-	portingRequestKeyExist, err := GetAllPortingRequest(db, []byte(keyPortingRequest))
+	keyPortingRequest := lvdb.NewPortingRequestKey(actionData.Meta.UniqueRegisterId)
+	portingRequestKeyExist, err := db.GetItemPortalByKey([]byte(keyPortingRequest))
 
 	if err != nil {
 		Logger.log.Errorf("Porting request: Get item portal by prefix error: %+v", err)
@@ -225,7 +225,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		return [][]string{inst}, nil
 	}
 
-	if len(portingRequestKeyExist) > 0 {
+	if portingRequestKeyExist != nil {
 		Logger.log.Errorf("Porting request: Porting request exist, key %v", keyPortingRequest)
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,
