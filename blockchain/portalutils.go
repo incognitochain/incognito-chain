@@ -351,6 +351,31 @@ func GetFinalExchangeRatesByKey(
 	return &finalExchangeRatesState, nil
 }
 
+func GetPortingRequestByKey(
+	db database.DatabaseInterface,
+	key []byte,
+) (*lvdb.PortingRequest, error) {
+	portingRequest, err := db.GetItemPortalByKey(key)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var portingRequestResult lvdb.PortingRequest
+
+	if  portingRequest == nil {
+		return &portingRequestResult, nil
+	}
+
+	//get value via idx
+	err = json.Unmarshal(portingRequest, &portingRequestResult)
+	if err != nil {
+		return nil, err
+	}
+
+	return &portingRequestResult, nil
+}
+
 func GetAllPortingRequest(
 	db database.DatabaseInterface,
 	key []byte,

@@ -74,7 +74,7 @@ func buildPortalCustodianDepositAction(
 func TestBuildInstructionsForPortingRequest(t *testing.T)  {
 	databaseInterface := new(mocks.DatabaseInterface)
 
-	keyPortingRequest := lvdb.GetNewPortingRequestKeyValid("123")
+	keyPortingRequest := lvdb.NewPortingRequestKey("123")
 	databaseInterface.On("GetItemPortalByKey", []byte(keyPortingRequest)).Return(
 		nil,
 		database.NewDatabaseError(database.GetItemPortalByKeyError, errors.New("data not found")),

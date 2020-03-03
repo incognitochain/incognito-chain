@@ -82,43 +82,15 @@ func NewCustodianStateKey (beaconHeight uint64, custodianAddress string) string 
 	return string(key)
 }
 
-func NewPortingRequestAcceptKey (uniquePortingID string, txReqID string) string {
-	uniquePortingIDBytes := []byte(fmt.Sprintf("%v-", uniquePortingID))
-	status := []byte(fmt.Sprintf("%v-", common.PortalPortingRequestAcceptedStatus))
 
-	key := append(PortalPortingRequestsPrefix, uniquePortingIDBytes...)
-	key = append(key, status...)
-	key = append(key, []byte(txReqID)...)
-	return string(key) //prefix + uniqueId + status + txHash
-}
-
-func GetNewPortingRequestKeyValid(uniquePortingID string) string  {
-	status := common.PortalPortingRequestAcceptedStatus
-	key := append(PortalPortingRequestsPrefix, []byte(uniquePortingID)...)
-	key = append(key, []byte(status)...)
-	return string(key) //prefix + uniqueId + status
-}
-
-func GetNewPortingRequestKeyInvalid(uniquePortingID string) string  {
-	status := common.PortalPortingRequestRejectedStatus
-	key := append(PortalPortingRequestsPrefix, []byte(uniquePortingID)...)
-	key = append(key, []byte(status)...)
-	return string(key) //prefix + uniqueId + status
-}
-
-func GetNewPortingRequestKey(uniquePortingID string) string  {
+func NewPortingRequestKey (uniquePortingID string) string {
 	key := append(PortalPortingRequestsPrefix, []byte(uniquePortingID)...)
 	return string(key) //prefix + uniqueId
 }
 
-func NewPortingRequestRejectKey (uniquePortingID string, txReqID string) string {
-	uniquePortingIDBytes := []byte(fmt.Sprintf("%v-", uniquePortingID))
-	status := []byte(fmt.Sprintf("%v-", common.PortalPortingRequestRejectedStatus))
-
-	key := append(PortalPortingRequestsPrefix, uniquePortingIDBytes...)
-	key = append(key, status...)
-	key = append(key, []byte(txReqID)...)
-	return string(key) //prefix + uniqueId + status + txHash
+func NewPortingRequestTxKey (txReqID string) string {
+	key := append(PortalPortingRequestsTxPrefix, []byte(txReqID)...)
+	return string(key) //prefix + txHash
 }
 
 
@@ -306,12 +278,56 @@ func (db *db) GetItemPortalByKey(key []byte) ([]byte, error) {
 }
 
 func (db *db) GetPortingRequestStatusByPortingID(portingID string) (int, error) {
-	//todo:
-	return 0, nil
+	key := NewPortingRequestKey(portingID)
+	portingRequest, err := db.GetItemPortalByKey([]byte(key))
+
+	if err != nil {
+		return 0, err
+	}
+
+	var portingRequestResult PortingRequest
+
+	if  portingRequest == nil {
+		return 0, nil
+	}
+
+	//get value via idx
+	err = json.Unmarshal(portingRequest, &portingRequestResult)
+	if err != nil {
+		return 0, err
+	}
+
+	return portingRequestResult.Status, nil
 }
 
 func (db *db) UpdatePortingRequestStatus(portingID string, newStatus int) error {
-	//todo:
+	key := NewPortingRequestKey(portingID)
+	portingRequest, err := db.GetItemPortalByKey([]byte(key))
+
+	if err != nil {
+		return err
+	}
+
+	var portingRequestResult PortingRequest
+
+	if  portingRequest == nil {
+		return nil
+	}
+
+	//get value via idx
+	err = json.Unmarshal(portingRequest, &portingRequestResult)
+	if err != nil {
+		return err
+	}
+
+	portingRequestResult.Status = newStatus
+
+	//save porting request
+	err = db.StorePortingRequestItem([]byte(key), portingRequestResult)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
