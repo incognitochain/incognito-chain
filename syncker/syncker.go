@@ -267,6 +267,35 @@ func (s *Syncker) GetS2BBlocksForBeaconValidator(ctx context.Context, needBlkHas
 }
 
 func (s *Syncker) GetCrossShardBlocksForShardProducer(toShard byte) map[byte][]interface{} {
-	//s.ShardSyncProcess[int(toShard)].Chain.GetCrossShardState()
-	return nil
+	//get last confirm crossshard -> process request until retrieve info
+	res := make(map[byte][]interface{})
+	lastRequestCrossShard := s.ShardSyncProcess[int(toShard)].Chain.GetCrossShardState()
+	for i := 0; i < s.config.Node.GetChainParam().ActiveShards; i++ {
+		for {
+			if i == int(toShard) {
+				break
+			}
+			requestHeight := lastRequestCrossShard[byte(i)]
+			nextHeight := s.config.Node.FetchNextCrossShard(i, int(toShard), requestHeight)
+			if nextHeight == 0 {
+				break
+			}
+			beaconBlock, err := s.config.Node.FetchBeaconBlockConfirmCrossShardHeight(i, int(toShard), nextHeight)
+			if err != nil {
+				break
+			}
+			for _, shardState := range beaconBlock.Body.ShardState[byte(i)] {
+				if shardState.Height == nextHeight {
+					if s.CrossShardPool[int(toShard)].HasBlock(shardState.Hash) {
+						//fmt.Println("crossdebug: GetCrossShardBlocksForShardProducer", s.CrossShardPool[int(toShard)].GetBlock(shardState.Hash).Hash().String())
+						res[byte(i)] = append(res[byte(i)], s.CrossShardPool[int(toShard)].GetBlock(shardState.Hash))
+					}
+					lastRequestCrossShard[byte(i)] = nextHeight
+					break
+				}
+			}
+		}
+
+	}
+	return res
 }

@@ -562,11 +562,13 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock
 						return NewBlockChainError(NextCrossShardBlockError, fmt.Errorf("Next Cross Shard Block Height %+v is Not Expected, Expect Next block Height %+v from shard %+v ", toShardCrossShardBlock.Header.Height, nextHeight, fromShard))
 					}
 					startHeight = nextHeight
-					beaconHeight, err := blockchain.FindBeaconHeightForCrossShardBlock(toShardCrossShardBlock.Header.BeaconHeight, toShardCrossShardBlock.Header.ShardID, toShardCrossShardBlock.Header.Height)
+					startHeight = nextHeight
+					beaconBlk, err := blockchain.config.Server.FetchBeaconBlockConfirmCrossShardHeight(int(fromShard), int(toShard), nextHeight)
 					if err != nil {
 						break
 					}
-					temp, err := blockchain.config.DataBase.FetchShardCommitteeByHeight(beaconHeight)
+
+					temp, err := blockchain.config.DataBase.FetchShardCommitteeByHeight(beaconBlk.GetHeight())
 					if err != nil {
 						return NewBlockChainError(FetchShardCommitteeError, err)
 					}

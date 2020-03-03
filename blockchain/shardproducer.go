@@ -684,7 +684,6 @@ func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeacon
 			allCrossShardBlock[sid] = append(allCrossShardBlock[sid], b.(*CrossShardBlock))
 		}
 	}
-	fmt.Println("crossdebug", allCrossShardBlock)
 	// Get Cross Shard Block
 	for fromShard, crossShardBlock := range allCrossShardBlock {
 		sort.SliceStable(crossShardBlock[:], func(i, j int) bool {
@@ -704,11 +703,12 @@ func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeacon
 				continue
 			}
 			startHeight = nextHeight
-			beaconHeight, err := blockGenerator.chain.FindBeaconHeightForCrossShardBlock(crossShardBlock.Header.BeaconHeight, crossShardBlock.Header.ShardID, crossShardBlock.Header.Height)
+			beaconBlk, err := blockGenerator.chain.config.Server.FetchBeaconBlockConfirmCrossShardHeight(int(fromShard), int(toShard), nextHeight)
 			if err != nil {
 				break
 			}
-			temp, err := blockGenerator.chain.config.DataBase.FetchShardCommitteeByHeight(beaconHeight)
+
+			temp, err := blockGenerator.chain.config.DataBase.FetchShardCommitteeByHeight(beaconBlk.GetHeight())
 			if err != nil {
 				break
 			}
@@ -831,15 +831,6 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	Logger.log.Criticalf(" 🔎 %+v transactions for New Block from pool \n", len(txsToAdd))
 	blockGenerator.chain.config.TempTxPool.EmptyPool()
 	return txsToAdd, txToRemove, totalFee
-}
-
-/*
-	Find Beacon Block with compatible shard states of cross shard block
-*/
-func (blockchain *BlockChain) FindBeaconHeightForCrossShardBlock(beaconHeight uint64, fromShardID byte, crossShardBlockHeight uint64) (uint64, error) {
-	//return blockchain.config.CrossShardPool[fromShardID].FindBeaconHeightForCrossShardBlock(beaconHeight, fromShardID, crossShardBlockHeight)
-	//TODO:
-	return 0, nil
 }
 
 func (blockGenerator *BlockGenerator) createTempKeyset() privacy.PrivateKey {

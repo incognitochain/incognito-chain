@@ -51,6 +51,15 @@ func (pool *CrossShardBlkPool) HasBlock(hash common.Hash) bool {
 	return <-res
 }
 
+func (pool *CrossShardBlkPool) GetBlock(hash common.Hash) common.CrossShardBlkPoolInterface {
+	res := make(chan common.CrossShardBlkPoolInterface)
+	pool.action <- func() {
+		b, _ := pool.BlkPoolByHash[hash.String()]
+		res <- b
+	}
+	return <-res
+}
+
 func (pool *CrossShardBlkPool) RemoveBlock(hash string) {
 	pool.action <- func() {
 		if _, ok := pool.BlkPoolByHash[hash]; ok {
