@@ -364,7 +364,7 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 			actionData.PortingAmount,
 			nil,
 			uint64(0),
-			common.PortalPortingReqSuccessStatus,	//todo: need to update
+			common.PortalPortingReqSuccessStatus,
 			beaconHeight + 1,
 		)
 
@@ -386,6 +386,10 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 		reqPTokenTrackData := metadata.PortalRequestPTokensStatus{
 			Status: common.PortalReqPTokenAcceptedStatus,
 			UniquePortingID: actionData.UniquePortingID,
+			TokenID: actionData.TokenID,
+			IncogAddressStr: actionData.IncogAddressStr,
+			PortingAmount: actionData.PortingAmount,
+			PortingProof: actionData.PortingProof,
 		}
 		reqPTokenTrackDataBytes, _ := json.Marshal(reqPTokenTrackData)
 		err = db.TrackReqPTokens(

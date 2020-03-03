@@ -76,7 +76,6 @@ func NewPortalRequestPTokens(
 	return requestPTokenMeta, nil
 }
 
-//todo
 func (reqPToken PortalRequestPTokens) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,

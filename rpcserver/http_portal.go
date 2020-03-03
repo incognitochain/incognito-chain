@@ -275,3 +275,87 @@ func (httpServer *HttpServer) handleGetPortalReqPTokenStatus(params interface{},
 	return status, nil
 }
 
+
+func (httpServer *HttpServer) handleCreateRawTxWithRedeemReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+
+	if len(arrayParams) >= 7 {
+		hasPrivacyTokenParam, ok := arrayParams[6].(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("HasPrivacyToken is invalid"))
+		}
+		hasPrivacyToken := int(hasPrivacyTokenParam) > 0
+		if hasPrivacyToken {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("The privacy mode must be disabled"))
+		}
+	}
+	tokenParamsRaw, ok := arrayParams[4].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param metadata is invalid"))
+	}
+
+	uniqueRedeemID, ok := tokenParamsRaw["UniqueRedeemID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("UniqueRedeemID is invalid"))
+	}
+
+	redeemTokenID, ok := tokenParamsRaw["RedeemTokenID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("RedeemTokenID is invalid"))
+	}
+
+	redeemAmountParam, ok := tokenParamsRaw["RedeemAmount"].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("RedeemAmount is invalid"))
+	}
+	redeemAmount := uint64(redeemAmountParam)
+
+	incAddressStr, ok := tokenParamsRaw["IncAddressStr"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("IncAddressStr is invalid"))
+	}
+
+	remoteAddress, ok := tokenParamsRaw["RemoteAddress"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("RemoteAddress is invalid"))
+	}
+
+	meta, _ := metadata.NewPortalRedeemRequest(metadata.PortalRedeemRequestMeta, uniqueRedeemID,
+		redeemTokenID, redeemAmount, incAddressStr, remoteAddress)
+
+	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta, *httpServer.config.Database)
+	if rpcErr != nil {
+		Logger.log.Error(rpcErr)
+		return nil, rpcErr
+	}
+
+	byteArrays, err2 := json.Marshal(customTokenTx)
+	if err2 != nil {
+		Logger.log.Error(err2)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            customTokenTx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateAndSendTxWithRedeemReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithRedeemReq(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err1 := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	return sendResult, nil
+}
+

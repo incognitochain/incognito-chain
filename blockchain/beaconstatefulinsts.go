@@ -103,6 +103,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	portalUserReqPortingActionsByShardID := map[byte][][]string{}
 	portalUserReqPTokenActionsByShardID := map[byte][][]string{}
 	portalExchangeRatesActionsByShardID := map[byte][][]string{}
+	portalRedeemReqActionsByShardID := map[byte][][]string{}
 
 	// relaying instructions
 	// don't need to be grouped by shardID
@@ -173,6 +174,12 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					action,
 					shardID,
 				)
+			case metadata.PortalRedeemRequestMeta:
+				portalRedeemReqActionsByShardID = groupPortalActionsByShardID(
+					portalRedeemReqActionsByShardID,
+					action,
+					shardID,
+				)
 			case metadata.RelayingBNBHeaderMeta:
 				relayingBNBActions = append(relayingBNBActions, action)
 			case metadata.RelayingBTCHeaderMeta:
@@ -212,6 +219,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		portalUserReqPortingActionsByShardID,
 		portalUserReqPTokenActionsByShardID,
 		portalExchangeRatesActionsByShardID,
+		portalRedeemReqActionsByShardID,
 		)
 
 	if err != nil {
@@ -413,6 +421,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 	portalUserRequestPortingActionsByShardID map[byte][][]string,
 	portalUserRequestPTokenActionsByShardID map[byte][][]string,
 	portalExchangeRatesActionsByShardID map[byte][][]string,
+	portalRedeemReqActionsByShardID  map[byte][][]string,
 ) ([][]string, error) {
 	instructions := [][]string{}
 
@@ -491,6 +500,36 @@ func (blockchain *BlockChain) handlePortalInsts(
 				contentStr,
 				shardID,
 				metadata.PortalUserRequestPTokenMeta,
+				currentPortalState,
+				beaconHeight,
+			)
+
+			if err != nil {
+				Logger.log.Error(err)
+				continue
+			}
+			if len(newInst) > 0 {
+				instructions = append(instructions, newInst...)
+			}
+		}
+	}
+
+	// handle portal redeem req inst
+	var redeemReqShardIDKeys []int
+	for k := range portalRedeemReqActionsByShardID {
+		redeemReqShardIDKeys = append(redeemReqShardIDKeys, int(k))
+	}
+
+	sort.Ints(redeemReqShardIDKeys)
+	for _, value := range redeemReqShardIDKeys {
+		shardID := byte(value)
+		actions := portalRedeemReqActionsByShardID[shardID]
+		for _, action := range actions {
+			contentStr := action[1]
+			newInst, err := blockchain.buildInstructionsForRedeemRequest(
+				contentStr,
+				shardID,
+				metadata.PortalRedeemRequestMeta,
 				currentPortalState,
 				beaconHeight,
 			)

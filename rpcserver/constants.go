@@ -195,7 +195,8 @@ const (
 	getPortalPortingRequestByKey             = "getportalportingrequestbykey"
 	convertExchangeRates                     = "convertexchangerates"
 	getPortalReqPTokenStatus                 = "getportalreqptokenstatus"
-	getPortingFees                 		     = "getportingfees"
+	getPortingFees                           = "getportingfees"
+	createAndSendTxWithRedeemReq             = "createandsendtxwithredeemreq"
 
 	// relaying
 	createAndSendTxWithRelayingBNBHeader = "createandsendtxwithrelayingbnbheader"
