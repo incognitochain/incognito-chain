@@ -354,28 +354,7 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 
 		// make sure user can not re-use proof for other portingID
 		// update status of porting request with portingID
-
-		//todo: Can save less more data ? (portingID and txReqID)
-		newPortingRequestState, err := NewPortingRequestState(
-			actionData.UniquePortingID,
-			actionData.TxReqID,
-			actionData.TokenID,
-			actionData.IncogAddressStr,
-			actionData.PortingAmount,
-			nil,
-			uint64(0),
-			common.PortalPortingReqSuccessStatus,
-			beaconHeight + 1,
-		)
-
-		if err != nil {
-			return err
-		}
-
-		//save porting request => success
-		// todo: should remove beaconHeight from key db?
-		keyPortingRequestNewState := lvdb.GetNewPortingRequestKeyValid(actionData.UniquePortingID)
-		err = db.StorePortingRequestItem([]byte(keyPortingRequestNewState), newPortingRequestState)
+		err = db.UpdatePortingRequestStatus(actionData.UniquePortingID, common.PortalPortingReqSuccessStatus)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store porting request item status: %+v", err)
 			return nil

@@ -157,6 +157,10 @@ func (redeemReq PortalRedeemRequest) ValidateSanityData(bcr BlockchainRetriever,
 	if redeemReq.TokenID != txr.GetTokenID().String() {
 		return false, false, NewMetadataTxError(PortalRedeemRequestParamError, errors.New("TokenID in metadata is not matched to tokenID in tx"))
 	}
+	// check tokenId is portal token or not
+	if !IsPortalToken(redeemReq.TokenID) {
+		return false, false, NewMetadataTxError(PortalRedeemRequestParamError, errors.New("TokenID is not in portal tokens list"))
+	}
 
 	//validate RemoteAddress
 	// todo:

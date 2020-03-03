@@ -184,8 +184,8 @@ func (dbService DatabaseService) GetPortalCustodianDepositStatus(txID string) (*
 	return &status, nil
 }
 
-func (dbService DatabaseService) GetPortalReqPTokenStatus(portingID string) (*metadata.PortalRequestPTokensStatus, error) {
-	statusBytes, err := (*dbService.DB).GetReqPTokenStatusByPortingID(portingID)
+func (dbService DatabaseService) GetPortalReqPTokenStatus(txID string) (*metadata.PortalRequestPTokensStatus, error) {
+	statusBytes, err := (*dbService.DB).GetReqPTokenStatusByTxReqID(txID)
 	if err != nil {
 		return nil, err
 	}
