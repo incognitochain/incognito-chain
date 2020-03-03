@@ -108,6 +108,10 @@ func (redeemReq PortalRedeemRequest) ValidateSanityData(bcr BlockchainRetriever,
 		return false, false, errors.New("tx redeem request must be TxCustomTokenPrivacyType")
 	}
 
+	if !txr.IsCoinsBurning(bcr, beaconHeight) {
+		return false, false, errors.New("tx redeem request must be coin burning tx")
+	}
+
 	// validate redeem amount
 	if redeemReq.RedeemAmount == 0 {
 		return false, false, errors.New("redeem amount should be larger than 0")
