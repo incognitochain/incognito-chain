@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/peerv2/proto"
 	"github.com/incognitochain/incognito-chain/wire"
 	"time"
 )
@@ -205,7 +204,7 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 	}
 
 	//stream
-	ch, err := s.Server.RequestBlocksViaStream(ctx, peerID, -1, proto.BlkType_BlkBc, s.Chain.GetBestViewHeight()+1, s.Chain.GetFinalViewHeight(), toHeight, pState.BestViewHash)
+	ch, err := s.Server.RequestBeaconBlocksViaStream(ctx, peerID, s.Chain.GetBestViewHeight()+1, toHeight)
 	if err != nil {
 		fmt.Println("Syncker: create channel fail")
 		return

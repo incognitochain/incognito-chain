@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/peerv2/proto"
 	"github.com/incognitochain/incognito-chain/wire"
 	"time"
 )
@@ -158,7 +157,7 @@ func (s *S2BSyncProcess) streamFromPeer(peerID string, pState S2BPeerState) (req
 
 		//start request
 		requestCnt++
-		ch, err := s.Server.RequestBlocksViaStream(ctx, peerID, int(sID), proto.BlkType_BlkS2B, reqFromHeight, reqFromHeight, toHeight, "")
+		ch, err := s.Server.RequestShardToBeaconBlocksViaStream(ctx, peerID, int(sID), reqFromHeight, toHeight)
 		if err != nil {
 			fmt.Println("Syncker: create channel fail")
 			return
@@ -173,6 +172,8 @@ func (s *S2BSyncProcess) streamFromPeer(peerID string, pState S2BPeerState) (req
 				if !isNil(blk) {
 					fmt.Println("Syncker: Insert shard2beacon block", blk.GetHeight(), blk.Hash().String(), blk.(common.BlockPoolInterface).GetPrevHash())
 					s.S2BPool.AddBlock(blk.(common.BlockPoolInterface))
+				} else {
+					break
 				}
 			}
 			if blkCnt > 100 {

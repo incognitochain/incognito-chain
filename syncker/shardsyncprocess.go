@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/peerv2/proto"
 	"github.com/incognitochain/incognito-chain/wire"
 	"sync"
 	"time"
@@ -179,7 +178,7 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 	}
 
 	//fmt.Println("SYNCKER Request Shard Block", peerID, s.ShardID, s.Chain.GetBestViewHeight()+1, pState.BestViewHeight)
-	ch, err := s.Server.RequestBlocksViaStream(ctx, peerID, s.ShardID, proto.BlkType_BlkShard, s.Chain.GetBestViewHeight()+1, s.Chain.GetFinalViewHeight(), pState.BestViewHeight, pState.BestViewHash)
+	ch, err := s.Server.RequestShardBlocksViaStream(ctx, peerID, s.ShardID, s.Chain.GetBestViewHeight()+1, pState.BestViewHeight)
 	if err != nil {
 		fmt.Println("Syncker: create channel fail")
 		return
