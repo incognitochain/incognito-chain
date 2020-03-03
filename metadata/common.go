@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/common"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -112,4 +113,10 @@ func HasBridgeInstructions(instructions [][]string) bool {
 		}
 	}
 	return false
+}
+
+
+func IsPortalToken(tokenIDStr string) bool {
+	isExisted, _ := common.SliceExists(PortalSupportedIncTokenIDs, tokenIDStr)
+	return isExisted
 }

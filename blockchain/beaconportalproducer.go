@@ -909,6 +909,12 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 		return [][]string{inst}, nil
 	}
 
+	// check uniqueRedeemID is existed in db and waitingRedeem list or not
+	// pick custodian(s) who holding public token to return user
+	// add to waiting Redeem list
+	//
+
+
 
 
 	//keyCustodianState := lvdb.NewCustodianStateKey(beaconHeight, meta.IncogAddressStr)
