@@ -1,4 +1,4 @@
-package privacy
+package coin
 
 import (
 	"encoding/json"
@@ -10,57 +10,60 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	henc "github.com/incognitochain/incognito-chain/privacy/hybridencryption"
+	"github.com/incognitochain/incognito-chain/privacy/key"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/privacy/pedersen"
 )
 
 // Coin represents a coin
 type Coin struct {
-	publicKey      *Point
-	coinCommitment *Point
-	snDerivator    *Scalar
-	serialNumber   *Point
-	randomness     *Scalar
+	publicKey      *operation.Point
+	coinCommitment *operation.Point
+	snDerivator    *operation.Scalar
+	serialNumber   *operation.Point
+	randomness     *operation.Scalar
 	value          uint64
 	info           []byte //256 bytes
 }
 
 // Start GET/SET
-func (coin Coin) GetPublicKey() *Point {
+func (coin *Coin) GetPublicKey() *operation.Point {
 	return coin.publicKey
 }
 
-func (coin *Coin) SetPublicKey(v *Point) {
+func (coin *Coin) SetPublicKey(v *operation.Point) {
 	coin.publicKey = v
 }
 
-func (coin Coin) GetCoinCommitment() *Point {
+func (coin Coin) GetCoinCommitment() *operation.Point {
 	return coin.coinCommitment
 }
 
-func (coin *Coin) SetCoinCommitment(v *Point) {
+func (coin *Coin) SetCoinCommitment(v *operation.Point) {
 	coin.coinCommitment = v
 }
 
-func (coin Coin) GetSNDerivator() *Scalar {
+func (coin Coin) GetSNDerivator() *operation.Scalar {
 	return coin.snDerivator
 }
 
-func (coin *Coin) SetSNDerivator(v *Scalar) {
+func (coin *Coin) SetSNDerivator(v *operation.Scalar) {
 	coin.snDerivator = v
 }
 
-func (coin Coin) GetSerialNumber() *Point {
+func (coin Coin) GetSerialNumber() *operation.Point {
 	return coin.serialNumber
 }
 
-func (coin *Coin) SetSerialNumber(v *Point) {
+func (coin *Coin) SetSerialNumber(v *operation.Point) {
 	coin.serialNumber = v
 }
 
-func (coin Coin) GetRandomness() *Scalar {
+func (coin Coin) GetRandomness() *operation.Scalar {
 	return coin.randomness
 }
 
-func (coin *Coin) SetRandomness(v *Scalar) {
+func (coin *Coin) SetRandomness(v *operation.Scalar) {
 	coin.randomness = v
 }
 
@@ -83,15 +86,15 @@ func (coin *Coin) SetInfo(v []byte) {
 
 // Init (Coin) initializes a coin
 func (coin *Coin) Init() *Coin {
-	coin.publicKey = new(Point).Identity()
+	coin.publicKey = new(operation.Point).Identity()
 
-	coin.coinCommitment = new(Point).Identity()
+	coin.coinCommitment = new(operation.Point).Identity()
 
-	coin.snDerivator = new(Scalar).FromUint64(0)
+	coin.snDerivator = new(operation.Scalar).FromUint64(0)
 
-	coin.serialNumber = new(Point).Identity()
+	coin.serialNumber = new(operation.Point).Identity()
 
-	coin.randomness = new(Scalar)
+	coin.randomness = new(operation.Scalar)
 
 	coin.value = 0
 
@@ -101,7 +104,7 @@ func (coin *Coin) Init() *Coin {
 // GetPubKeyLastByte returns the last byte of public key
 func (coin *Coin) GetPubKeyLastByte() byte {
 	pubKeyBytes := coin.publicKey.ToBytes()
-	return pubKeyBytes[Ed25519KeySize-1]
+	return pubKeyBytes[operation.Ed25519KeySize-1]
 }
 
 // MarshalJSON (Coin) converts coin to bytes array,
@@ -138,8 +141,8 @@ func (coin *Coin) HashH() *common.Hash {
 // public key, value, serial number derivator, shardID form last byte public key, randomness
 func (coin *Coin) CommitAll() error {
 	shardID := common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())
-	values := []*Scalar{new(Scalar).FromUint64(0), new(Scalar).FromUint64(coin.value), coin.snDerivator, new(Scalar).FromUint64(uint64(shardID)), coin.randomness}
-	commitment, err := PedCom.CommitAll(values)
+	values := []*operation.Scalar{new(operation.Scalar).FromUint64(0), new(operation.Scalar).FromUint64(coin.value), coin.snDerivator, new(operation.Scalar).FromUint64(uint64(shardID)), coin.randomness}
+	commitment, err := pedersen.PedCom.CommitAll(values)
 	if err != nil {
 		return err
 	}
@@ -156,7 +159,7 @@ func (coin *Coin) Bytes() []byte {
 
 	if coin.publicKey != nil {
 		publicKey := coin.publicKey.ToBytesS()
-		coinBytes = append(coinBytes, byte(Ed25519KeySize))
+		coinBytes = append(coinBytes, byte(operation.Ed25519KeySize))
 		coinBytes = append(coinBytes, publicKey...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
@@ -164,14 +167,14 @@ func (coin *Coin) Bytes() []byte {
 
 	if coin.coinCommitment != nil {
 		coinCommitment := coin.coinCommitment.ToBytesS()
-		coinBytes = append(coinBytes, byte(Ed25519KeySize))
+		coinBytes = append(coinBytes, byte(operation.Ed25519KeySize))
 		coinBytes = append(coinBytes, coinCommitment...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
 	if coin.snDerivator != nil {
-		coinBytes = append(coinBytes, byte(Ed25519KeySize))
+		coinBytes = append(coinBytes, byte(operation.Ed25519KeySize))
 		coinBytes = append(coinBytes, coin.snDerivator.ToBytesS()...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
@@ -179,14 +182,14 @@ func (coin *Coin) Bytes() []byte {
 
 	if coin.serialNumber != nil {
 		serialNumber := coin.serialNumber.ToBytesS()
-		coinBytes = append(coinBytes, byte(Ed25519KeySize))
+		coinBytes = append(coinBytes, byte(operation.Ed25519KeySize))
 		coinBytes = append(coinBytes, serialNumber...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
 	if coin.randomness != nil {
-		coinBytes = append(coinBytes, byte(Ed25519KeySize))
+		coinBytes = append(coinBytes, byte(operation.Ed25519KeySize))
 		coinBytes = append(coinBytes, coin.randomness.ToBytesS()...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
@@ -238,7 +241,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 			return errors.New("out of range Parse PublicKey")
 		}
 		data := coinBytes[offset : offset+int(lenField)]
-		coin.publicKey, err = new(Point).FromBytesS(data)
+		coin.publicKey, err = new(operation.Point).FromBytesS(data)
 		if err != nil {
 			return err
 		}
@@ -258,7 +261,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 			return errors.New("out of range Parse CoinCommitment")
 		}
 		data := coinBytes[offset : offset+int(lenField)]
-		coin.coinCommitment, err = new(Point).FromBytesS(data)
+		coin.coinCommitment, err = new(operation.Point).FromBytesS(data)
 		if err != nil {
 			return err
 		}
@@ -278,7 +281,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 			return errors.New("out of range Parse SNDerivator")
 		}
 		data := coinBytes[offset : offset+int(lenField)]
-		coin.snDerivator = new(Scalar).FromBytesS(data)
+		coin.snDerivator = new(operation.Scalar).FromBytesS(data)
 
 		offset += int(lenField)
 	}
@@ -296,7 +299,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 			return errors.New("out of range Parse sn")
 		}
 		data := coinBytes[offset : offset+int(lenField)]
-		coin.serialNumber, err = new(Point).FromBytesS(data)
+		coin.serialNumber, err = new(operation.Point).FromBytesS(data)
 		if err != nil {
 			return err
 		}
@@ -316,7 +319,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 			return errors.New("out of range Parse Randomness")
 		}
 		data := coinBytes[offset : offset+int(lenField)]
-		coin.randomness = new(Scalar).FromBytesS(data)
+		coin.randomness = new(operation.Scalar).FromBytesS(data)
 		offset += int(lenField)
 	}
 
@@ -401,7 +404,7 @@ func (inputCoin *InputCoin) ParseCoinObjectToInputCoin(coinObj CoinObject) error
 			return err
 		}
 
-		publicKeyPoint, err := new(Point).FromBytesS(publicKey)
+		publicKeyPoint, err := new(operation.Point).FromBytesS(publicKey)
 		if err != nil {
 			return err
 		}
@@ -414,7 +417,7 @@ func (inputCoin *InputCoin) ParseCoinObjectToInputCoin(coinObj CoinObject) error
 			return err
 		}
 
-		coinCommitmentPoint, err := new(Point).FromBytesS(coinCommitment)
+		coinCommitmentPoint, err := new(operation.Point).FromBytesS(coinCommitment)
 		if err != nil {
 			return err
 		}
@@ -427,7 +430,7 @@ func (inputCoin *InputCoin) ParseCoinObjectToInputCoin(coinObj CoinObject) error
 			return err
 		}
 
-		snderivatorScalar := new(Scalar).FromBytesS(snderivator)
+		snderivatorScalar := new(operation.Scalar).FromBytesS(snderivator)
 		if err != nil {
 			return err
 		}
@@ -440,7 +443,7 @@ func (inputCoin *InputCoin) ParseCoinObjectToInputCoin(coinObj CoinObject) error
 			return err
 		}
 
-		serialNumberPoint, err := new(Point).FromBytesS(serialNumber)
+		serialNumberPoint, err := new(operation.Point).FromBytesS(serialNumber)
 		if err != nil {
 			return err
 		}
@@ -453,7 +456,7 @@ func (inputCoin *InputCoin) ParseCoinObjectToInputCoin(coinObj CoinObject) error
 			return err
 		}
 
-		randomnessScalar := new(Scalar).FromBytesS(randomness)
+		randomnessScalar := new(operation.Scalar).FromBytesS(randomness)
 		if err != nil {
 			return err
 		}
@@ -597,11 +600,11 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 // Encrypt returns a ciphertext encrypting for a coin using a hybrid cryptosystem,
 // in which AES encryption scheme is used as a data encapsulation scheme,
 // and ElGamal cryptosystem is used as a key encapsulation scheme.
-func (outputCoin *OutputCoin) Encrypt(recipientTK TransmissionKey) *errhandler.PrivacyError {
+func (outputCoin *OutputCoin) Encrypt(recipientTK key.TransmissionKey) *errhandler.PrivacyError {
 	// 32-byte first: Randomness, the rest of msg is value of coin
 	msg := append(outputCoin.CoinDetails.randomness.ToBytesS(), new(big.Int).SetUint64(outputCoin.CoinDetails.value).Bytes()...)
 
-	pubKeyPoint, err := new(Point).FromBytesS(recipientTK)
+	pubKeyPoint, err := new(operation.Point).FromBytesS(recipientTK)
 	if err != nil {
 		return errhandler.NewPrivacyErr(errhandler.EncryptOutputCoinErr, err)
 	}
@@ -615,15 +618,15 @@ func (outputCoin *OutputCoin) Encrypt(recipientTK TransmissionKey) *errhandler.P
 }
 
 // Decrypt decrypts a ciphertext encrypting for coin with recipient's receiving key
-func (outputCoin *OutputCoin) Decrypt(viewingKey ViewingKey) *errhandler.PrivacyError {
-	msg, err := henc.HybridDecrypt(outputCoin.CoinDetailsEncrypted, new(Scalar).FromBytesS(viewingKey.Rk))
+func (outputCoin *OutputCoin) Decrypt(viewingKey key.ViewingKey) *errhandler.PrivacyError {
+	msg, err := henc.HybridDecrypt(outputCoin.CoinDetailsEncrypted, new(operation.Scalar).FromBytesS(viewingKey.Rk))
 	if err != nil {
 		return errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
 	}
 
 	// Assign randomness and value to outputCoin details
-	outputCoin.CoinDetails.randomness = new(Scalar).FromBytesS(msg[0:Ed25519KeySize])
-	outputCoin.CoinDetails.value = new(big.Int).SetBytes(msg[Ed25519KeySize:]).Uint64()
+	outputCoin.CoinDetails.randomness = new(operation.Scalar).FromBytesS(msg[0:operation.Ed25519KeySize])
+	outputCoin.CoinDetails.value = new(big.Int).SetBytes(msg[operation.Ed25519KeySize:]).Uint64()
 
 	return nil
 }

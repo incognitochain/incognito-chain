@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"crypto/rand"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
@@ -65,4 +67,10 @@ func EstimateProofSize(nInput int, nOutput int, hasPrivacy bool) uint64 {
 		sizeCommitmentIndices + FlagSize
 
 	return uint64(sizeProof)
+}
+
+func RandBytes(length int) []byte {
+	rbytes := make([]byte, length)
+	rand.Read(rbytes)
+	return rbytes
 }

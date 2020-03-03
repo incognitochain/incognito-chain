@@ -1,10 +1,22 @@
-package privacy
+package key
 
 import (
 	"encoding/hex"
 
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 )
+
+func SliceToArray(slice []byte) [operation.Ed25519KeySize]byte {
+	var array [operation.Ed25519KeySize]byte
+	copy(array[:], slice)
+	return array
+}
+
+func ArrayToSlice(array [operation.Ed25519KeySize]byte) []byte {
+	var slice []byte
+	slice = array[:]
+	return slice
+}
 
 // 32-byte spending key
 type PrivateKey []byte
@@ -47,8 +59,8 @@ func GeneratePrivateKey(seed []byte) PrivateKey {
 
 // GeneratePublicKey computes a 32-byte public-key corresponding to a spending key
 func GeneratePublicKey(privateKey []byte) PublicKey {
-	privScalar := new(Scalar).FromBytesS(privateKey)
-	publicKey := new(Point).ScalarMultBase(privScalar)
+	privScalar := new(operation.Scalar).FromBytesS(privateKey)
+	publicKey := new(operation.Point).ScalarMultBase(privScalar)
 	return publicKey.ToBytesS()
 }
 
@@ -60,8 +72,8 @@ func GenerateReceivingKey(privateKey []byte) ReceivingKey {
 
 // GenerateTransmissionKey computes a 33-byte transmission key corresponding to a receiving key
 func GenerateTransmissionKey(receivingKey []byte) TransmissionKey {
-	receiScalar := new(Scalar).FromBytesS(receivingKey)
-	transmissionKey := new(Point).ScalarMultBase(receiScalar)
+	receiScalar := new(operation.Scalar).FromBytesS(receivingKey)
+	transmissionKey := new(operation.Point).ScalarMultBase(receiScalar)
 	return transmissionKey.ToBytesS()
 }
 
@@ -89,9 +101,9 @@ func (addr *PaymentAddress) Bytes() []byte {
 // SetBytes reverts bytes array to payment address
 func (addr *PaymentAddress) SetBytes(bytes []byte) *PaymentAddress {
 	// the first 33 bytes are public key
-	addr.Pk = bytes[:Ed25519KeySize]
+	addr.Pk = bytes[:operation.Ed25519KeySize]
 	// the last 33 bytes are transmission key
-	addr.Tk = bytes[Ed25519KeySize:]
+	addr.Tk = bytes[operation.Ed25519KeySize:]
 	return addr
 }
 

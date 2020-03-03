@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/incognitochain/incognito-chain/privacy-v2/mlsag"
-	ota "github.com/incognitochain/incognito-chain/privacy-v2/onetime_address"
+	"github.com/incognitochain/incognito-chain/privacy/privacy-v2/mlsag"
+	ota "github.com/incognitochain/incognito-chain/privacy/privacy-v2/onetime_address"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy-v2/onetime_address/address"
-	"github.com/incognitochain/incognito-chain/privacy-v2/txfull"
+	"github.com/incognitochain/incognito-chain/privacy/privacy-v2/onetime_address/address"
+	"github.com/incognitochain/incognito-chain/privacy/privacy-v2/txfull"
 )
 
 func testMlsag() {

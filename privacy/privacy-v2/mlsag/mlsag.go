@@ -6,48 +6,48 @@ import (
 	"crypto/sha256"
 	"errors"
 
-	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 )
 
 type Mlsag struct {
 	K           *Ring
 	pi          int
-	keyImages   []privacy.Point
-	privateKeys []privacy.Scalar
+	keyImages   []operation.Point
+	privateKeys []operation.Scalar
 }
 
-func (this *Mlsag) createRandomChallenges() (alpha []privacy.Scalar, r [][]privacy.Scalar) {
+func (this *Mlsag) createRandomChallenges() (alpha []operation.Scalar, r [][]operation.Scalar) {
 	m := len(this.privateKeys)
 	n := len(this.K.keys)
 
-	alpha = make([]privacy.Scalar, m)
+	alpha = make([]operation.Scalar, m)
 	for i := 0; i < m; i += 1 {
-		alpha[i] = *privacy.RandomScalar()
+		alpha[i] = *operation.RandomScalar()
 	}
-	r = make([][]privacy.Scalar, n)
+	r = make([][]operation.Scalar, n)
 	for i := 0; i < n; i += 1 {
-		r[i] = make([]privacy.Scalar, m)
+		r[i] = make([]operation.Scalar, m)
 		if i == this.pi {
 			continue
 		}
 		for j := 0; j < m; j += 1 {
-			r[i][j] = *privacy.RandomScalar()
+			r[i][j] = *operation.RandomScalar()
 		}
 	}
 	return
 }
 
-func calculateFirstC(digest [sha256.Size]byte, alpha []privacy.Scalar, K []privacy.Point) (*privacy.Scalar, error) {
+func calculateFirstC(digest [sha256.Size]byte, alpha []operation.Scalar, K []operation.Point) (*operation.Scalar, error) {
 	if len(alpha) != len(K) {
 		return nil, errors.New("Error in MLSAG: Calculating first C must have length of alpha be the same with length of ring K")
 	}
 	var b []byte
 	b = append(b, digest[:]...)
 	for i := 0; i < len(K); i += 1 {
-		alphaG := new(privacy.Point).ScalarMultBase(&alpha[i])
+		alphaG := new(operation.Point).ScalarMultBase(&alpha[i])
 
-		H := privacy.HashToPoint(K[i].ToBytesS())
-		alphaH := new(privacy.Point).ScalarMult(H, &alpha[i])
+		H := operation.HashToPoint(K[i].ToBytesS())
+		alphaH := new(operation.Point).ScalarMult(H, &alpha[i])
 
 		b = append(b, alphaG.ToBytesS()...)
 		b = append(b, alphaH.ToBytesS()...)
@@ -57,10 +57,10 @@ func calculateFirstC(digest [sha256.Size]byte, alpha []privacy.Scalar, K []priva
 		return nil, errors.New("Error in MLSAG: Something is wrong while calculating first C")
 	}
 
-	return privacy.HashToScalar(b), nil
+	return operation.HashToScalar(b), nil
 }
 
-func calculateNextC(digest [sha256.Size]byte, r []privacy.Scalar, c *privacy.Scalar, K []privacy.Point, keyImages []privacy.Point) (*privacy.Scalar, error) {
+func calculateNextC(digest [sha256.Size]byte, r []operation.Scalar, c *operation.Scalar, K []operation.Point, keyImages []operation.Point) (*operation.Scalar, error) {
 	if len(r) != len(K) || len(r) != len(keyImages) {
 		return nil, errors.New("Error in MLSAG: Calculating next C must have length of r be the same with length of ring K and same with length of keyImages")
 	}
@@ -78,14 +78,14 @@ func calculateNextC(digest [sha256.Size]byte, r []privacy.Scalar, c *privacy.Sca
 	// cKI: c*K~ (KI as keyImage)
 	// rHK_cKI: rHK + cKI
 	for i := 0; i < len(K); i += 1 {
-		rG := new(privacy.Point).ScalarMultBase(&r[i])
-		cK := new(privacy.Point).ScalarMult(&K[i], c)
-		rG_cK := new(privacy.Point).Add(rG, cK)
+		rG := new(operation.Point).ScalarMultBase(&r[i])
+		cK := new(operation.Point).ScalarMult(&K[i], c)
+		rG_cK := new(operation.Point).Add(rG, cK)
 
-		HK := privacy.HashToPoint(K[i].ToBytesS())
-		rHK := new(privacy.Point).ScalarMult(HK, &r[i])
-		cKI := new(privacy.Point).ScalarMult(&keyImages[i], c)
-		rHK_cKI := new(privacy.Point).Add(rHK, cKI)
+		HK := operation.HashToPoint(K[i].ToBytesS())
+		rHK := new(operation.Point).ScalarMult(HK, &r[i])
+		cKI := new(operation.Point).ScalarMult(&keyImages[i], c)
+		rHK_cKI := new(operation.Point).Add(rHK, cKI)
 
 		b = append(b, rG_cK.ToBytesS()...)
 		b = append(b, rHK_cKI.ToBytesS()...)
@@ -95,14 +95,14 @@ func calculateNextC(digest [sha256.Size]byte, r []privacy.Scalar, c *privacy.Sca
 		return nil, errors.New("Error in MLSAG: Something is wrong while calculating next C")
 	}
 
-	return privacy.HashToScalar(b), nil
+	return operation.HashToScalar(b), nil
 }
 
-func (this *Mlsag) calculateC(digest [sha256.Size]byte, alpha []privacy.Scalar, r *[][]privacy.Scalar) ([]*privacy.Scalar, error) {
+func (this *Mlsag) calculateC(digest [sha256.Size]byte, alpha []operation.Scalar, r *[][]operation.Scalar) ([]*operation.Scalar, error) {
 	m := len(this.privateKeys)
 	n := len(this.K.keys)
 
-	c := make([]*privacy.Scalar, n)
+	c := make([]*operation.Scalar, n)
 	firstC, err := calculateFirstC(
 		digest,
 		alpha,
@@ -130,14 +130,14 @@ func (this *Mlsag) calculateC(digest [sha256.Size]byte, alpha []privacy.Scalar, 
 	}
 
 	for i := 0; i < m; i += 1 {
-		ck := new(privacy.Scalar).Mul(c[this.pi], &this.privateKeys[i])
-		(*r)[this.pi][i] = *new(privacy.Scalar).Sub(&alpha[i], ck)
+		ck := new(operation.Scalar).Mul(c[this.pi], &this.privateKeys[i])
+		(*r)[this.pi][i] = *new(operation.Scalar).Sub(&alpha[i], ck)
 	}
 
 	return c, nil
 }
 
-func NewMlsagWithDefinedRing(privateKeys *[]privacy.Scalar, K *Ring, pi int) (mlsag *Mlsag) {
+func NewMlsagWithDefinedRing(privateKeys *[]operation.Scalar, K *Ring, pi int) (mlsag *Mlsag) {
 	return &Mlsag{
 		K,
 		pi,
@@ -147,10 +147,10 @@ func NewMlsagWithDefinedRing(privateKeys *[]privacy.Scalar, K *Ring, pi int) (ml
 }
 
 // check l*KI = 0 by checking KI is a valid point
-func verifyKeyImages(keyImages []privacy.Point) bool {
+func verifyKeyImages(keyImages []operation.Point) bool {
 	var check bool = true
 	for i := 0; i < len(keyImages); i += 1 {
-		lKI := new(privacy.Point).ScalarMult(&keyImages[i], CurveOrder)
+		lKI := new(operation.Point).ScalarMult(&keyImages[i], CurveOrder)
 		check = check && lKI.IsIdentity()
 	}
 	return check

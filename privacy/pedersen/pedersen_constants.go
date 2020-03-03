@@ -13,4 +13,4 @@ const (
 type Point = operation.Point
 type Scalar = operation.Scalar
 
-var pedCom = NewPedersenParams()
+var PedCom PedersenCommitment = NewPedersenParams()

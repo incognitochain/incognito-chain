@@ -6,35 +6,36 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/privacy/pedersen"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 )
 
 type SerialNumberPrivacyStatement struct {
-	sn       *privacy.Point // serial number
-	comSK    *privacy.Point // commitment to private key
-	comInput *privacy.Point // commitment to input of the pseudo-random function
+	sn       *operation.Point // serial number
+	comSK    *operation.Point // commitment to private key
+	comInput *operation.Point // commitment to input of the pseudo-random function
 }
 
 type SNPrivacyWitness struct {
 	stmt *SerialNumberPrivacyStatement // statement to be proved
 
-	sk     *privacy.Scalar // private key
-	rSK    *privacy.Scalar // blinding factor in the commitment to private key
-	input  *privacy.Scalar // input of pseudo-random function
-	rInput *privacy.Scalar // blinding factor in the commitment to input
+	sk     *operation.Scalar // private key
+	rSK    *operation.Scalar // blinding factor in the commitment to private key
+	input  *operation.Scalar // input of pseudo-random function
+	rInput *operation.Scalar // blinding factor in the commitment to input
 }
 
 type SNPrivacyProof struct {
 	stmt *SerialNumberPrivacyStatement // statement to be proved
 
-	tSK    *privacy.Point // random commitment related to private key
-	tInput *privacy.Point // random commitment related to input
-	tSN    *privacy.Point // random commitment related to serial number
+	tSK    *operation.Point // random commitment related to private key
+	tInput *operation.Point // random commitment related to input
+	tSN    *operation.Point // random commitment related to serial number
 
-	zSK     *privacy.Scalar // first challenge-dependent information to open the commitment to private key
-	zRSK    *privacy.Scalar // second challenge-dependent information to open the commitment to private key
-	zInput  *privacy.Scalar // first challenge-dependent information to open the commitment to input
-	zRInput *privacy.Scalar // second challenge-dependent information to open the commitment to input
+	zSK     *operation.Scalar // first challenge-dependent information to open the commitment to private key
+	zRSK    *operation.Scalar // second challenge-dependent information to open the commitment to private key
+	zInput  *operation.Scalar // first challenge-dependent information to open the commitment to input
+	zRInput *operation.Scalar // second challenge-dependent information to open the commitment to input
 }
 
 // ValidateSanity validates sanity of proof
@@ -107,23 +108,23 @@ func (proof SNPrivacyProof) isNil() bool {
 func (proof *SNPrivacyProof) Init() *SNPrivacyProof {
 	proof.stmt = new(SerialNumberPrivacyStatement)
 
-	proof.tSK = new(privacy.Point)
-	proof.tInput = new(privacy.Point)
-	proof.tSN = new(privacy.Point)
+	proof.tSK = new(operation.Point)
+	proof.tInput = new(operation.Point)
+	proof.tSN = new(operation.Point)
 
-	proof.zSK = new(privacy.Scalar)
-	proof.zRSK = new(privacy.Scalar)
-	proof.zInput = new(privacy.Scalar)
-	proof.zRInput = new(privacy.Scalar)
+	proof.zSK = new(operation.Scalar)
+	proof.zRSK = new(operation.Scalar)
+	proof.zInput = new(operation.Scalar)
+	proof.zRInput = new(operation.Scalar)
 
 	return proof
 }
 
 // Set sets Statement
 func (stmt *SerialNumberPrivacyStatement) Set(
-	SN *privacy.Point,
-	comSK *privacy.Point,
-	comInput *privacy.Point) {
+	SN *operation.Point,
+	comSK *operation.Point,
+	comInput *operation.Point) {
 	stmt.sn = SN
 	stmt.comSK = comSK
 	stmt.comInput = comInput
@@ -132,10 +133,10 @@ func (stmt *SerialNumberPrivacyStatement) Set(
 // Set sets Witness
 func (wit *SNPrivacyWitness) Set(
 	stmt *SerialNumberPrivacyStatement,
-	SK *privacy.Scalar,
-	rSK *privacy.Scalar,
-	input *privacy.Scalar,
-	rInput *privacy.Scalar) {
+	SK *operation.Scalar,
+	rSK *operation.Scalar,
+	input *operation.Scalar,
+	rInput *operation.Scalar) {
 
 	wit.stmt = stmt
 	wit.sk = SK
@@ -147,13 +148,13 @@ func (wit *SNPrivacyWitness) Set(
 // Set sets Proof
 func (proof *SNPrivacyProof) Set(
 	stmt *SerialNumberPrivacyStatement,
-	tSK *privacy.Point,
-	tInput *privacy.Point,
-	tSN *privacy.Point,
-	zSK *privacy.Scalar,
-	zRSK *privacy.Scalar,
-	zInput *privacy.Scalar,
-	zRInput *privacy.Scalar) {
+	tSK *operation.Point,
+	tInput *operation.Point,
+	tSN *operation.Point,
+	zSK *operation.Scalar,
+	zRSK *operation.Scalar,
+	zInput *operation.Scalar,
+	zRInput *operation.Scalar) {
 	proof.stmt = stmt
 	proof.tSK = tSK
 	proof.tInput = tInput
@@ -196,58 +197,58 @@ func (proof *SNPrivacyProof) SetBytes(bytes []byte) error {
 	offset := 0
 	var err error
 
-	proof.stmt.sn = new(privacy.Point)
-	proof.stmt.sn, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
+	proof.stmt.sn = new(operation.Point)
+	proof.stmt.sn, err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
-	offset += privacy.Ed25519KeySize
+	offset += operation.Ed25519KeySize
 
-	proof.stmt.comSK = new(privacy.Point)
-	proof.stmt.comSK, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
-	if err != nil {
-		return err
-	}
-
-	offset += privacy.Ed25519KeySize
-	proof.stmt.comInput = new(privacy.Point)
-	proof.stmt.comInput, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
+	proof.stmt.comSK = new(operation.Point)
+	proof.stmt.comSK, err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
 
-	offset += privacy.Ed25519KeySize
-	proof.tSK = new(privacy.Point)
-	proof.tSK, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
+	offset += operation.Ed25519KeySize
+	proof.stmt.comInput = new(operation.Point)
+	proof.stmt.comInput, err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
 
-	offset += privacy.Ed25519KeySize
-	proof.tInput = new(privacy.Point)
-	proof.tInput, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
+	offset += operation.Ed25519KeySize
+	proof.tSK = new(operation.Point)
+	proof.tSK, err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
 
-	offset += privacy.Ed25519KeySize
-	proof.tSN = new(privacy.Point)
-	proof.tSN, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
+	offset += operation.Ed25519KeySize
+	proof.tInput = new(operation.Point)
+	proof.tInput, err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
 
-	offset += privacy.Ed25519KeySize
-	proof.zSK = new(privacy.Scalar).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
+	offset += operation.Ed25519KeySize
+	proof.tSN = new(operation.Point)
+	proof.tSN, err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
+	if err != nil {
+		return err
+	}
 
-	offset += privacy.Ed25519KeySize
-	proof.zRSK = new(privacy.Scalar).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
+	offset += operation.Ed25519KeySize
+	proof.zSK = new(operation.Scalar).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 
-	offset += privacy.Ed25519KeySize
-	proof.zInput = new(privacy.Scalar).FromBytesS(bytes[offset : offset+common.BigIntSize])
+	offset += operation.Ed25519KeySize
+	proof.zRSK = new(operation.Scalar).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 
-	offset += privacy.Ed25519KeySize
-	proof.zRInput = new(privacy.Scalar).FromBytesS(bytes[offset : offset+common.BigIntSize])
+	offset += operation.Ed25519KeySize
+	proof.zInput = new(operation.Scalar).FromBytesS(bytes[offset : offset+common.BigIntSize])
+
+	offset += operation.Ed25519KeySize
+	proof.zRInput = new(operation.Scalar).FromBytesS(bytes[offset : offset+common.BigIntSize])
 
 	return nil
 }
@@ -260,16 +261,16 @@ func (wit SNPrivacyWitness) Prove(mess []byte) (*SNPrivacyProof, error) {
 	dSND := operation.RandomScalar()
 
 	// calculate tSeed = g_SK^eSK * h^dSK
-	tSeed := privacy.PedCom.CommitAtIndex(eSK, dSK, privacy.PedersenPrivateKeyIndex)
+	tSeed := pedersen.PedCom.CommitAtIndex(eSK, dSK, pedersen.PedersenPrivateKeyIndex)
 
 	// calculate tSND = g_SND^eSND * h^dSND
-	tInput := privacy.PedCom.CommitAtIndex(eSND, dSND, privacy.PedersenSndIndex)
+	tInput := pedersen.PedCom.CommitAtIndex(eSND, dSND, pedersen.PedersenSndIndex)
 
 	// calculate tSND = g_SK^eSND * h^dSND2
-	tOutput := new(privacy.Point).ScalarMult(wit.stmt.sn, new(privacy.Scalar).Add(eSK, eSND))
+	tOutput := new(operation.Point).ScalarMult(wit.stmt.sn, new(operation.Scalar).Add(eSK, eSND))
 
 	// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
-	x := new(privacy.Scalar)
+	x := new(operation.Scalar)
 	if mess == nil {
 		x = utils.GenerateChallenge([][]byte{
 			tSeed.ToBytesS(),
@@ -280,24 +281,24 @@ func (wit SNPrivacyWitness) Prove(mess []byte) (*SNPrivacyProof, error) {
 	}
 
 	// Calculate zSeed = sk * x + eSK
-	zSeed := new(privacy.Scalar).Mul(wit.sk, x)
+	zSeed := new(operation.Scalar).Mul(wit.sk, x)
 	zSeed.Add(zSeed, eSK)
-	//zSeed.Mod(zSeed, privacy.Curve.Params().N)
+	//zSeed.Mod(zSeed, operation.Curve.Params().N)
 
 	// Calculate zRSeed = rSK * x + dSK
-	zRSeed := new(privacy.Scalar).Mul(wit.rSK, x)
+	zRSeed := new(operation.Scalar).Mul(wit.rSK, x)
 	zRSeed.Add(zRSeed, dSK)
-	//zRSeed.Mod(zRSeed, privacy.Curve.Params().N)
+	//zRSeed.Mod(zRSeed, operation.Curve.Params().N)
 
 	// Calculate zInput = input * x + eSND
-	zInput := new(privacy.Scalar).Mul(wit.input, x)
+	zInput := new(operation.Scalar).Mul(wit.input, x)
 	zInput.Add(zInput, eSND)
-	//zInput.Mod(zInput, privacy.Curve.Params().N)
+	//zInput.Mod(zInput, operation.Curve.Params().N)
 
 	// Calculate zRInput = rInput * x + dSND
-	zRInput := new(privacy.Scalar).Mul(wit.rInput, x)
+	zRInput := new(operation.Scalar).Mul(wit.rInput, x)
 	zRInput.Add(zRInput, dSND)
-	//zRInput.Mod(zRInput, privacy.Curve.Params().N)
+	//zRInput.Mod(zRInput, operation.Curve.Params().N)
 
 	proof := new(SNPrivacyProof).Init()
 	proof.Set(wit.stmt, tSeed, tInput, tOutput, zSeed, zRSeed, zInput, zRInput)
@@ -306,7 +307,7 @@ func (wit SNPrivacyWitness) Prove(mess []byte) (*SNPrivacyProof, error) {
 
 func (proof SNPrivacyProof) Verify(mess []byte) (bool, error) {
 	// re-calculate x = hash(tSeed || tInput || tSND2 || tOutput)
-	x := new(privacy.Scalar)
+	x := new(operation.Scalar)
 	if mess == nil {
 		x = utils.GenerateChallenge([][]byte{
 			proof.tSK.ToBytesS(),
@@ -317,9 +318,9 @@ func (proof SNPrivacyProof) Verify(mess []byte) (bool, error) {
 	}
 
 	// Check gSND^zInput * h^zRInput = input^x * tInput
-	leftPoint1 := privacy.PedCom.CommitAtIndex(proof.zInput, proof.zRInput, privacy.PedersenSndIndex)
+	leftPoint1 := pedersen.PedCom.CommitAtIndex(proof.zInput, proof.zRInput, pedersen.PedersenSndIndex)
 
-	rightPoint1 := new(privacy.Point).ScalarMult(proof.stmt.comInput, x)
+	rightPoint1 := new(operation.Point).ScalarMult(proof.stmt.comInput, x)
 	rightPoint1.Add(rightPoint1, proof.tInput)
 
 	if !operation.IsPointEqual(leftPoint1, rightPoint1) {
@@ -328,9 +329,9 @@ func (proof SNPrivacyProof) Verify(mess []byte) (bool, error) {
 	}
 
 	// Check gSK^zSeed * h^zRSeed = vKey^x * tSeed
-	leftPoint2 := privacy.PedCom.CommitAtIndex(proof.zSK, proof.zRSK, privacy.PedersenPrivateKeyIndex)
+	leftPoint2 := pedersen.PedCom.CommitAtIndex(proof.zSK, proof.zRSK, pedersen.PedersenPrivateKeyIndex)
 
-	rightPoint2 := new(privacy.Point).ScalarMult(proof.stmt.comSK, x)
+	rightPoint2 := new(operation.Point).ScalarMult(proof.stmt.comSK, x)
 	rightPoint2.Add(rightPoint2, proof.tSK)
 
 	if !operation.IsPointEqual(leftPoint2, rightPoint2) {
@@ -339,9 +340,9 @@ func (proof SNPrivacyProof) Verify(mess []byte) (bool, error) {
 	}
 
 	// Check sn^(zSeed + zInput) = gSK^x * tOutput
-	leftPoint3 := new(privacy.Point).ScalarMult(proof.stmt.sn, new(privacy.Scalar).Add(proof.zSK, proof.zInput))
+	leftPoint3 := new(operation.Point).ScalarMult(proof.stmt.sn, new(operation.Scalar).Add(proof.zSK, proof.zInput))
 
-	rightPoint3 := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex], x)
+	rightPoint3 := new(operation.Point).ScalarMult(pedersen.PedCom.G[pedersen.PedersenPrivateKeyIndex], x)
 	rightPoint3.Add(rightPoint3, proof.tSN)
 
 	if !operation.IsPointEqual(leftPoint3, rightPoint3) {

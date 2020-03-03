@@ -1,7 +1,9 @@
 package privacy
 
 import (
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/privacy/hybridencryption"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	C25519 "github.com/incognitochain/incognito-chain/privacy/operation/curve25519"
 	"github.com/incognitochain/incognito-chain/privacy/pedersen"
@@ -23,10 +25,10 @@ const (
 	PedersenRandomnessIndex = byte(0x04)
 )
 
-var PedCom = pedersen.NewPedersenParams()
+var PedCom = pedersen.PedCom
 
 const (
-	MaxSizeInfoCoin = 255 // byte
+	MaxSizeInfoCoin = coin.MaxSizeInfoCoin // byte
 )
 
 // Export as package privacy for other packages easily use it
@@ -76,3 +78,33 @@ func HybridEncrypt(msg []byte, publicKey *operation.Point) (ciphertext *HybridCi
 func HybridDecrypt(ciphertext *HybridCipherText, privateKey *operation.Scalar) (msg []byte, err error) {
 	return hybridencryption.HybridDecrypt(ciphertext, privateKey)
 }
+
+type Coin = coin.Coin
+type InputCoin = coin.InputCoin
+type CoinObject = coin.CoinObject
+type OutputCoin = coin.OutputCoin
+
+type PublicKey = key.PublicKey
+type ViewingKey = key.ViewingKey
+type PrivateKey = key.PrivateKey
+type PaymentInfo = key.PaymentInfo
+type PaymentAddress = key.PaymentAddress
+
+func GeneratePublicKey(privateKey []byte) PublicKey {
+	return key.GeneratePublicKey(privateKey)
+}
+
+func GeneratePrivateKey(seed []byte) PrivateKey {
+	return key.GeneratePrivateKey(seed)
+}
+
+func GeneratePaymentAddress(privateKey []byte) PaymentAddress {
+	return key.GeneratePaymentAddress(privateKey)
+}
+
+func GenerateViewingKey(privateKey []byte) ViewingKey {
+	return key.GenerateViewingKey(privateKey)
+}
+
+// type ReceivingKey = key.ReceivingKey
+// type TransmissionKey = key.TransmissionKey

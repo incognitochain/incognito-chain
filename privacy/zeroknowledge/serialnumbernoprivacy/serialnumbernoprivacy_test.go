@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/privacy/pedersen"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -13,20 +14,20 @@ import (
 func TestPKSNNoPrivacy(t *testing.T) {
 	for i := 0; i < 1000; i++ {
 		// prepare witness for Serial number no privacy protocol
-		sk := privacy.GeneratePrivateKey(privacy.RandBytes(10))
-		skScalar := new(privacy.Scalar).FromBytesS(sk)
+		sk := key.GeneratePrivateKey(utils.RandBytes(10))
+		skScalar := new(operation.Scalar).FromBytesS(sk)
 		if skScalar.ScalarValid() == false {
 			fmt.Println("Invalid key value")
 		}
 
-		pk := privacy.GeneratePublicKey(sk)
-		pkPoint, err := new(privacy.Point).FromBytesS(pk)
+		pk := key.GeneratePublicKey(sk)
+		pkPoint, err := new(operation.Point).FromBytesS(pk)
 		if err != nil {
 			fmt.Println("Invalid point key valu")
 		}
 		SND := operation.RandomScalar()
 
-		serialNumber := new(privacy.Point).Derive(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex], skScalar, SND)
+		serialNumber := new(operation.Point).Derive(pedersen.PedCom.G[pedersen.PedersenPrivateKeyIndex], skScalar, SND)
 
 		witness := new(SNNoPrivacyWitness)
 		witness.Set(serialNumber, pkPoint, SND, skScalar)

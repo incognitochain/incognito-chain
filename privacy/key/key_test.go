@@ -1,15 +1,17 @@
-package privacy
+package key
 
 import (
-	"github.com/stretchr/testify/assert"
 	"fmt"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestKey(t *testing.T) {
-	for i:=0; i< 1; i ++ {
+	for i := 0; i < 1; i++ {
 		// random seed
-		seed := []byte{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,1,2,3,4,5,6,7,8,9,10,11,12}
+		seed := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
 
 		// generate private key from seed
 		privateKey := GeneratePrivateKey(seed)
@@ -18,7 +20,7 @@ func TestKey(t *testing.T) {
 		publicKey := GeneratePublicKey(privateKey)
 
 		// check public key
-		publicKeyPrime := new(Point).ScalarMultBase(new(Scalar).FromBytesS(privateKey))
+		publicKeyPrime := new(operation.Point).ScalarMultBase(new(operation.Scalar).FromBytesS(privateKey))
 		assert.Equal(t, publicKeyPrime.ToBytes(), SliceToArray(publicKey))
 
 		// generate receiving key from private key
@@ -28,7 +30,7 @@ func TestKey(t *testing.T) {
 		transmissionKey := GenerateTransmissionKey(receivingKey)
 
 		// decompress transmission key to transmissionKeyPoint
-		transmissionKeyPrime := new(Point).ScalarMultBase(new(Scalar).FromBytesS(receivingKey))
+		transmissionKeyPrime := new(operation.Point).ScalarMultBase(new(operation.Scalar).FromBytesS(receivingKey))
 		assert.Equal(t, transmissionKeyPrime.ToBytes(), SliceToArray(transmissionKey))
 
 		// generate payment address from private key

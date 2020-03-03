@@ -4,13 +4,13 @@ import (
 	"encoding/hex"
 	"errors"
 
-	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 )
 
 type Signature struct {
-	c         privacy.Scalar     // 32 bytes
-	keyImages []privacy.Point    // 32 * size bytes
-	r         [][]privacy.Scalar // 32 * size_1 * size_2 bytes
+	c         operation.Scalar     // 32 bytes
+	keyImages []operation.Point    // 32 * size bytes
+	r         [][]operation.Scalar // 32 * size_1 * size_2 bytes
 }
 
 func (this *Signature) ToHex() (string, error) {
@@ -64,12 +64,12 @@ func (this *Signature) FromBytes(b []byte) (*Signature, error) {
 		return nil, errors.New("Error in MLSAG Signature FromBytes: the signature byte is broken (some scalar is missing)")
 	}
 
-	c := new(privacy.Scalar).FromBytesS(b[1:33])
+	c := new(operation.Scalar).FromBytesS(b[1:33])
 
 	index := 33
-	keyImages := make([]privacy.Point, m)
+	keyImages := make([]operation.Point, m)
 	for i := 0; i < m; i += 1 {
-		val, err := new(privacy.Point).FromBytesS(b[index : index+32])
+		val, err := new(operation.Point).FromBytesS(b[index : index+32])
 		if err != nil {
 			return nil, errors.New("Error in MLSAG Signature FromBytes: the signature byte is broken (keyImages is broken)")
 		}
@@ -77,11 +77,11 @@ func (this *Signature) FromBytes(b []byte) (*Signature, error) {
 		index += 32
 	}
 
-	r := make([][]privacy.Scalar, n)
+	r := make([][]operation.Scalar, n)
 	for i := 0; i < n; i += 1 {
-		row := make([]privacy.Scalar, m)
+		row := make([]operation.Scalar, m)
 		for j := 0; j < m; j += 1 {
-			row[j] = *new(privacy.Scalar).FromBytesS(b[index : index+32])
+			row[j] = *new(operation.Scalar).FromBytesS(b[index : index+32])
 			index += 32
 		}
 		r[i] = row
