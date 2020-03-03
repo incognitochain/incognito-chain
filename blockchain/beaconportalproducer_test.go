@@ -74,10 +74,10 @@ func buildPortalCustodianDepositAction(
 func TestBuildInstructionsForPortingRequest(t *testing.T)  {
 	databaseInterface := new(mocks.DatabaseInterface)
 
-	keyPortingRequest := lvdb.NewPortingRequestKeyForValidation("123")
-	databaseInterface.On("GetItemPortalByPrefix", []byte(keyPortingRequest)).Return(
+	keyPortingRequest := lvdb.GetNewPortingRequestKeyValid("123")
+	databaseInterface.On("GetItemPortalByKey", []byte(keyPortingRequest)).Return(
 		nil,
-		database.NewDatabaseError(database.GetItemPortalByPrefixError, errors.New("data not found")),
+		database.NewDatabaseError(database.GetItemPortalByKeyError, errors.New("data not found")),
 	).Once()
 
 	config := &Config{

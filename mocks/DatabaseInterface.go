@@ -847,6 +847,38 @@ func (_m *DatabaseInterface) GetAllRecordsPortalByPrefix(beaconHeight uint64, pr
 	return r0, r1, r2
 }
 
+// GetAllRecordsPortalByPrefixWithoutBeaconHeight provides a mock function with given fields: key
+func (_m *DatabaseInterface) GetAllRecordsPortalByPrefixWithoutBeaconHeight(key []byte) ([][]byte, [][]byte, error) {
+	ret := _m.Called(key)
+
+	var r0 [][]byte
+	if rf, ok := ret.Get(0).(func([]byte) [][]byte); ok {
+		r0 = rf(key)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([][]byte)
+		}
+	}
+
+	var r1 []byte
+	if rf, ok := ret.Get(1).(func([]byte) []byte); ok {
+		r1 = rf(key)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).([]byte)
+		}
+	}
+
+	var r2 error
+	if rf, ok := ret.Get(2).(func([]byte) error); ok {
+		r2 = rf(key)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
 // GetAllTokenIDForReward provides a mock function with given fields: epoch
 func (_m *DatabaseInterface) GetAllTokenIDForReward(epoch uint64) ([]common.Hash, error) {
 	ret := _m.Called(epoch)
@@ -1210,8 +1242,8 @@ func (_m *DatabaseInterface) GetItemByKey(key []byte) ([]byte, error) {
 	return r0, r1
 }
 
-// GetItemPortalByPrefix provides a mock function with given fields: prefix
-func (_m *DatabaseInterface) GetItemPortalByPrefix(prefix []byte) ([]byte, error) {
+// GetItemPortalByKey provides a mock function with given fields: prefix
+func (_m *DatabaseInterface) GetItemPortalByKey(prefix []byte) ([]byte, error) {
 	ret := _m.Called(prefix)
 
 	var r0 []byte
@@ -1339,6 +1371,29 @@ func (_m *DatabaseInterface) GetPDEStatus(prefix []byte, suffix []byte) (byte, e
 	var r1 error
 	if rf, ok := ret.Get(1).(func([]byte, []byte) error); ok {
 		r1 = rf(prefix, suffix)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetPortingRequestStatusByPortingID provides a mock function with given fields: portingID
+func (_m *DatabaseInterface) GetPortingRequestStatusByPortingID(portingID string) ([]byte, error) {
+	ret := _m.Called(portingID)
+
+	var r0 []byte
+	if rf, ok := ret.Get(0).(func(string) []byte); ok {
+		r0 = rf(portingID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]byte)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(portingID)
 	} else {
 		r1 = ret.Error(1)
 	}

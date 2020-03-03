@@ -176,6 +176,7 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendRegisterPortingPublicTokens: (*HttpServer).handleCreateAndSendRegisterPortingPublicTokens,
 	createAndSendPortalExchangeRates:         (*HttpServer).handleCreateAndSendPortalExchangeRates,
 	getPortalFinalExchangeRates:              (*HttpServer).handleGetPortalFinalExchangeRates,
+	getPortalPortingRequestByKey:             (*HttpServer).handleGetPortingRequestByKey,
 	convertExchangeRates:                     (*HttpServer).handleConvertExchangeRates,
 	getPortalReqPTokenStatus:                 (*HttpServer).handleGetPortalReqPTokenStatus,
 	getPortingFees:                 		  (*HttpServer).handleGetPortingFees,

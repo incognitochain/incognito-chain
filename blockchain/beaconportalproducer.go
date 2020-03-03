@@ -202,8 +202,8 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 	db := blockchain.GetDatabase()
 
 	//check unique id from record from db
-	keyPortingRequest := lvdb.NewPortingRequestKeyForValidation(actionData.Meta.UniqueRegisterId)
-	portingRequestExist, err := db.GetItemPortalByPrefix([]byte(keyPortingRequest))
+	keyPortingRequest := lvdb.GetNewPortingRequestKeyValid(actionData.Meta.UniqueRegisterId)
+	portingRequestExist, err := db.GetItemPortalByKey([]byte(keyPortingRequest))
 
 	if err != nil {
 		Logger.log.Errorf("Porting request: Get item portal by prefix error: %+v", err)
@@ -771,7 +771,7 @@ func (blockchain *BlockChain) buildInstructionsForExchangeRates(
 
 	db := blockchain.GetDatabase()
 	//check key from db
-	exchangeRatesKeyExist, err := db.GetItemPortalByPrefix([]byte(exchangeRatesKey))
+	exchangeRatesKeyExist, err := db.GetItemPortalByKey([]byte(exchangeRatesKey))
 	if err != nil {
 		Logger.log.Errorf("ERROR: Get exchange rates error: %+v", err)
 
