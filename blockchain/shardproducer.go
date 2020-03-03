@@ -684,6 +684,7 @@ func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeacon
 			allCrossShardBlock[sid] = append(allCrossShardBlock[sid], b.(*CrossShardBlock))
 		}
 	}
+	fmt.Println("crossdebug", allCrossShardBlock)
 	// Get Cross Shard Block
 	for fromShard, crossShardBlock := range allCrossShardBlock {
 		sort.SliceStable(crossShardBlock[:], func(i, j int) bool {

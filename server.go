@@ -2284,3 +2284,17 @@ func (s *Server) FetchNextCrossShard(fromSID, toSID int, currentHeight uint64) u
 	}
 	return nextHeight
 }
+
+func (s *Server) FetchBeaconBlock(height uint64) (*blockchain.BeaconBlock, error) {
+	h, err := s.dataBase.GetBeaconBlockHashByIndex(height)
+	if err != nil {
+		return nil, err
+	}
+	data, err := s.dataBase.FetchBeaconBlock(h)
+	blk := &blockchain.BeaconBlock{}
+	if err := json.Unmarshal(data, blk); err != nil {
+		return nil, err
+	}
+	return blk, nil
+
+}

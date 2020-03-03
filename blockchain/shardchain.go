@@ -26,6 +26,16 @@ func (s *ShardChain) InsertBatchBlock([]common.BlockInterface) (int, error) {
 	panic("implement me")
 }
 
+func (s *ShardChain) GetCrossShardState() map[byte]uint64 {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	res := make(map[byte]uint64)
+	for index, key := range s.BestState.BestCrossShard {
+		res[index] = key
+	}
+	return res
+}
+
 func (s *ShardChain) GetBestViewHeight() uint64 {
 	return s.CurrentHeight()
 }

@@ -18,6 +18,8 @@ type Server interface {
 	RequestBlocksViaStream(ctx context.Context, peerID string, fromSID int, _type proto.BlkType, fromBlockHeight uint64, finalBlockHeight uint64, toBlockheight uint64, toBlockHashString string) (blockCh chan common.BlockInterface, err error)
 	PublishNodeState(userLayer string, shardID int) error
 
+	FetchBeaconBlock(height uint64) (*blockchain.BeaconBlock, error)
+
 	FetchNextCrossShard(fromSID, toSID int, currentHeight uint64) uint64
 	StoreBeaconHashConfirmCrossShardHeight(fromSID, toSID int, height uint64, beaconHash string) error
 	FetchBeaconBlockConfirmCrossShardHeight(fromSID, toSID int, height uint64) (*blockchain.BeaconBlock, error)
@@ -29,7 +31,12 @@ type BeaconChainInterface interface {
 	Chain
 	GetShardBestViewHash() map[byte]common.Hash
 	GetShardBestViewHeight() map[byte]uint64
-	GetCurrentCrossShardHeightToShard(toShard byte) map[byte]uint64 //must use final block
+	//GetCurrentCrossShardHeightToShard(toShard byte) map[byte]uint64 //must use final block
+}
+
+type ShardChainInterface interface {
+	Chain
+	GetCrossShardState() map[byte]uint64
 }
 type Chain interface {
 	GetBestViewHeight() uint64
@@ -67,7 +74,7 @@ type Syncker struct {
 // Everytime beacon block is inserted after sync finish, we update shard committee (from beacon view)
 func (s *Syncker) WatchCommitteeChange() {
 	defer func() {
-		time.AfterFunc(time.Second*3, s.WatchCommitteeChange)
+		time.AfterFunc(time.Second*5, s.WatchCommitteeChange)
 	}()
 
 	//check if enable
@@ -85,9 +92,11 @@ func (s *Syncker) WatchCommitteeChange() {
 			for sid, syncProc := range s.ShardSyncProcess {
 				if int(sid) == chainID {
 					syncProc.IsCommittee = true
+					//fmt.Println("crossdebug syncProc.Start()", int(sid), chainID)
 					syncProc.Start()
 				} else {
 					syncProc.IsCommittee = false
+					//fmt.Println("crossdebug syncProc.Stop()", int(sid), chainID)
 					syncProc.Stop()
 				}
 			}
@@ -116,6 +125,7 @@ func NewSyncker() *Syncker {
 }
 
 func (s *Syncker) Init(config *SynckerConfig) {
+
 	s.config = config
 	//init beacon sync process
 	s.BeaconSyncProcess = NewBeaconSyncProcess(s.config.Node, s.config.Blockchain.Chains["beacon"].(BeaconChainInterface))
@@ -127,7 +137,7 @@ func (s *Syncker) Init(config *SynckerConfig) {
 	for chainName, chain := range s.config.Blockchain.Chains {
 		if chainName != "beacon" {
 			sid := chain.GetShardID()
-			s.ShardSyncProcess[sid] = NewShardSyncProcess(sid, s.config.Node, s.config.Blockchain.Chains["beacon"].(BeaconChainInterface), chain)
+			s.ShardSyncProcess[sid] = NewShardSyncProcess(sid, s.config.Node, s.config.Blockchain.Chains["beacon"].(BeaconChainInterface), chain.(ShardChainInterface))
 			s.ShardPool[sid] = s.ShardSyncProcess[sid].ShardPool
 			s.CrossShardSyncProcess[sid] = s.ShardSyncProcess[sid].CrossShardSyncProcess
 			s.CrossShardPool[sid] = s.CrossShardSyncProcess[sid].CrossShardPool
@@ -167,7 +177,9 @@ func (s *Syncker) ReceiveBlock(blk interface{}, peerID string) {
 		}
 
 	case *blockchain.ShardBlock:
+
 		shardBlk := blk.(*blockchain.ShardBlock)
+		fmt.Printf("syncker: receive shard block %d \n", shardBlk.GetHeight())
 		s.ShardPool[shardBlk.GetShardID()].AddBlock(shardBlk)
 
 	case *blockchain.ShardToBeaconBlock:
@@ -182,6 +194,7 @@ func (s *Syncker) ReceiveBlock(blk interface{}, peerID string) {
 		}
 	case *blockchain.CrossShardBlock:
 		csBlk := blk.(*blockchain.CrossShardBlock)
+		fmt.Printf("crossdebug: receive block from %d to %d \n", csBlk.Header.ShardID, csBlk.ToShardID)
 		s.CrossShardPool[int(csBlk.ToShardID)].AddBlock(csBlk)
 	}
 
@@ -250,6 +263,6 @@ func (s *Syncker) GetS2BBlocksForBeaconValidator(ctx context.Context, needBlkHas
 }
 
 func (s *Syncker) GetCrossShardBlocksForShardProducer(toShard byte) map[byte][]interface{} {
-
+	//s.ShardSyncProcess[int(toShard)].Chain.GetCrossShardState()
 	return nil
 }
