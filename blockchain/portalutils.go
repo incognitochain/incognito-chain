@@ -684,3 +684,8 @@ func pickupCustodianForRedeem(redeemAmount uint64, tokenSymbol string, portalSta
 	Logger.log.Errorf("Not enough amount public token to return user")
 	return nil, errors.New("Not enough amount public token to return user")
 }
+
+// convertExternalBNBAmountToIncAmount converts amount in bnb chain (decimal 8) to amount in inc chain (decimal 9)
+func convertExternalBNBAmountToIncAmount(externalBNBAmount int64) int64 {
+	return externalBNBAmount * 10   // externalBNBAmount / 1^8 * 1^9
+}

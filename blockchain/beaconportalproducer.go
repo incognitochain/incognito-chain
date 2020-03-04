@@ -467,25 +467,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		)
 		return [][]string{inst}, nil
 	}
-	//if len(portingReqStatus) > 0 {
-	//	//todo: need to change to portal request status
-	//	reqPTokenStatus := metadata.PortalRequestPTokensStatus{}
-	//	err := json.Unmarshal(portingReqStatus, &reqPTokenStatus)
-	//	if err != nil {
-	//		Logger.log.Errorf("Can not unmarshal req ptoken status %v\n", err)
-	//		inst := buildReqPTokensInst(
-	//			meta.UniquePortingID,
-	//			meta.TokenID,
-	//			meta.IncogAddressStr,
-	//			meta.PortingAmount,
-	//			meta.PortingProof,
-	//			meta.Type,
-	//			shardID,
-	//			actionData.TxReqID,
-	//			common.PortalReqPTokensRejectedChainStatus,
-	//		)
-	//		return [][]string{inst}, nil
-	//	}
+
 	if portingReqStatus != common.PortalPortingReqWaitingStatus {
 		Logger.log.Errorf("PortingID status invalid")
 		inst := buildReqPTokensInst(
@@ -654,11 +636,6 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		// check receiver and amount in tx
 		// get list matching custodians in waitingPortingRequest
 		custodians := waitingPortingRequest.Custodians
-		//custodians := make(map[string]lvdb.MatchingPortingCustodianDetail, 1)
-		//custodians["12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ"] = lvdb.MatchingPortingCustodianDetail{
-		//	RemoteAddress: "tbnb1v63crn5slveu50v8x590uwmqf7kk5xca74scwx",
-		//	Amount: 10000000000,   // 10 bnb
-		//}
 
 		outputs := txBNB.Msgs[0].(msg.SendMsg).Outputs
 
@@ -682,9 +659,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 							coin.Amount)
 					}
 				}
-
-				//TODO:
-				if amountTransfer*10^9 != int64(amountNeedToBeTransfer) {
+				if convertExternalBNBAmountToIncAmount(amountTransfer) != int64(amountNeedToBeTransfer) {
 					Logger.log.Errorf("TxProof-BNB is invalid - Amount transfer to %s must be equal %d, but got %d",
 						addr, amountNeedToBeTransfer, amountTransfer)
 					inst := buildReqPTokensInst(
