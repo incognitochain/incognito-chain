@@ -904,7 +904,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 			meta.Type,
 			actionData.ShardID,
 			actionData.TxReqID,
-			common.PortalRedeemRequestRejectedStatus,
+			common.PortalRedeemRequestRejectedChainStatus,
 		)
 		return [][]string{inst}, nil
 	}
@@ -927,7 +927,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 			meta.Type,
 			actionData.ShardID,
 			actionData.TxReqID,
-			common.PortalRedeemRequestRejectedStatus,
+			common.PortalRedeemRequestRejectedChainStatus,
 		)
 		return [][]string{inst}, nil
 	}
@@ -949,7 +949,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 			meta.Type,
 			actionData.ShardID,
 			actionData.TxReqID,
-			common.PortalRedeemRequestRejectedStatus,
+			common.PortalRedeemRequestRejectedChainStatus,
 		)
 		return [][]string{inst}, nil
 	} else if len(redeemRequestBytes) > 0 {
@@ -965,7 +965,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 			meta.Type,
 			actionData.ShardID,
 			actionData.TxReqID,
-			common.PortalRedeemRequestRejectedStatus,
+			common.PortalRedeemRequestRejectedChainStatus,
 		)
 		return [][]string{inst}, nil
 	}
@@ -994,7 +994,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 			meta.Type,
 			actionData.ShardID,
 			actionData.TxReqID,
-			common.PortalRedeemRequestRejectedStatus,
+			common.PortalRedeemRequestRejectedChainStatus,
 		)
 		return [][]string{inst}, nil
 	}
@@ -1028,7 +1028,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 				meta.Type,
 				actionData.ShardID,
 				actionData.TxReqID,
-				common.PortalRedeemRequestRejectedStatus,
+				common.PortalRedeemRequestRejectedChainStatus,
 			)
 			return [][]string{inst}, nil
 		}
@@ -1047,7 +1047,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 		meta.Type,
 		actionData.ShardID,
 		actionData.TxReqID,
-		common.PortalRedeemRequestAcceptedStatus,
+		common.PortalRedeemRequestAcceptedChainStatus,
 	)
 	return [][]string{inst}, nil
 }

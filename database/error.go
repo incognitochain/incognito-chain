@@ -120,6 +120,7 @@ const (
 	GetCustodianDepositStatusError
 	GetReqPTokenStatusError
 	StoreRedeemRequestError
+	TrackRedeemReqByTxReqIDError
 
 	// relaying
 	StoreRelayingBNBHeaderError
@@ -244,6 +245,7 @@ var ErrCodeMessage = map[int]struct {
 	GetCustodianDepositStatusError:      {-14012, "Get all custodian deposit status error"},
 	GetReqPTokenStatusError:             {-14013, "Get request ptoken status error"},
 	StoreRedeemRequestError:             {-14014, "Store redeem request error"},
+	TrackRedeemReqByTxReqIDError: {-14015, "Track redeem request by txReqID error"},
 
 	// relaying
 	StoreRelayingBNBHeaderError: {-15001, "Store relaying header bnb error"},

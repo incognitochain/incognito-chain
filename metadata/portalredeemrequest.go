@@ -52,14 +52,15 @@ type PortalRedeemRequestContent struct {
 
 // PortalRedeemRequestStatus - Beacon tracks status of redeem request into db
 type PortalRedeemRequestStatus struct {
-	Status         byte
-	UniqueRedeemID string
-	TokenID        string // pTokenID in incognito chain
-	RedeemAmount   uint64
-	IncAddressStr  string
-	RemoteAddress  string // btc/bnb/etc address
-	RedeemFee      uint64 // ptoken fee
-	TxReqID        common.Hash
+	Status                  byte
+	UniqueRedeemID          string
+	TokenID                 string // pTokenID in incognito chain
+	RedeemAmount            uint64
+	IncAddressStr           string
+	RemoteAddress           string // btc/bnb/etc address
+	RedeemFee               uint64 // ptoken fee
+	MatchingCustodianDetail map[string]*lvdb.MatchingRedeemCustodianDetail
+	TxReqID                 common.Hash
 }
 
 func NewPortalRedeemRequest(

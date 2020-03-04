@@ -421,6 +421,13 @@ func NewRedeemReqKey(redeemID string) string {
 	return string(key)
 }
 
+// NewRedeemReqKey creates key for tracking redeems status in portal
+func NewTrackRedeemReqByTxReqIDKey(txID string) string {
+	key := append(PortalRedeemRequestsByTxReqIDPrefix, []byte(txID)...)
+	return string(key)
+}
+
+// StoreRedeemRequest stores status of redeem request by redeemID
 func (db *db) StoreRedeemRequest(key []byte, value []byte) error {
 	err := db.Put(key, value)
 	if err != nil {
@@ -432,4 +439,13 @@ func (db *db) StoreRedeemRequest(key []byte, value []byte) error {
 func (db *db) GetRedeemRequestByRedeemID(redeemID string) ([]byte, error) {
 	key := NewRedeemReqKey(redeemID)
 	return db.GetItemPortalByKey([]byte(key))
+}
+
+// TrackRedeemRequestByTxReqID tracks status of redeem request by txReqID
+func (db *db) TrackRedeemRequestByTxReqID(key []byte, value []byte) error {
+	err := db.Put(key, value)
+	if err != nil {
+		return database.NewDatabaseError(database.TrackRedeemReqByTxReqIDError, errors.Wrap(err, "db.lvdb.put"))
+	}
+	return nil
 }
