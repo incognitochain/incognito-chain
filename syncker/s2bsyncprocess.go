@@ -78,6 +78,7 @@ func (s *S2BSyncProcess) stop() {
 	s.status = STOP_SYNC
 }
 
+//helper function to access map in atomic way
 func (s *S2BSyncProcess) getS2BPeerState() map[string]S2BPeerState {
 	res := make(chan map[string]S2BPeerState)
 	s.actionCh <- func() {

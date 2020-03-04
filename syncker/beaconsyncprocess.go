@@ -89,6 +89,7 @@ func (s *BeaconSyncProcess) stop() {
 	s.s2bSyncProcess.stop()
 }
 
+//helper function to access map in atomic way
 func (s *BeaconSyncProcess) getBeaconPeerStates() map[string]BeaconPeerState {
 	res := make(chan map[string]BeaconPeerState)
 	s.actionCh <- func() {
@@ -101,6 +102,7 @@ func (s *BeaconSyncProcess) getBeaconPeerStates() map[string]BeaconPeerState {
 	return <-res
 }
 
+//watching confirm beacon block and update cross shard info (which beacon confirm crossshard block N of shard X)
 func (s *BeaconSyncProcess) updateConfirmCrossShard() {
 	//TODO: update lastUpdateConfirmCrossShard using DB
 	fmt.Println("crossdebug lastUpdateConfirmCrossShard ", s.lastUpdateConfirmCrossShard)
@@ -130,6 +132,7 @@ func (s *BeaconSyncProcess) updateConfirmCrossShard() {
 	}
 }
 
+//periodically check pool and insert into pool
 func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 	defer func() {
 		if s.isCatchUp {
@@ -163,6 +166,7 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 	}
 }
 
+//sync beacon
 func (s *BeaconSyncProcess) syncBeacon() {
 	for {
 		requestCnt := 0

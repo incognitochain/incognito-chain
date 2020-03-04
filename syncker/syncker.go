@@ -85,6 +85,7 @@ func (synckerManager *SynckerManager) Stop() {
 	}
 }
 
+// periodically check user commmittee status, enable shard sync process if needed (beacon always start)
 func (synckerManager *SynckerManager) manageSyncProcess() {
 	defer time.AfterFunc(time.Second*5, synckerManager.manageSyncProcess)
 
@@ -121,7 +122,7 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 
 }
 
-//Pocess incomming process
+//Process incomming broadcast block
 func (synckerManager *SynckerManager) ReceiveBlock(blk interface{}, peerID string) {
 	switch blk.(type) {
 	case *blockchain.BeaconBlock:
@@ -160,6 +161,7 @@ func (synckerManager *SynckerManager) ReceiveBlock(blk interface{}, peerID strin
 
 }
 
+//Process incomming broadcast peerstate
 func (synckerManager *SynckerManager) ReceivePeerState(peerState *wire.MessagePeerState) {
 	//b, _ := json.Marshal(peerState)
 	//fmt.Println("SYNCKER: receive peer state", string(b))
@@ -177,7 +179,7 @@ func (synckerManager *SynckerManager) ReceivePeerState(peerState *wire.MessagePe
 	}
 }
 
-//Get Block for creating block
+//Get S2B Block for creating beacon block
 func (synckerManager *SynckerManager) GetS2BBlocksForBeaconProducer() map[byte][]interface{} {
 	bestViewShardHash := synckerManager.config.Blockchain.Chains["beacon"].(BeaconChainInterface).GetShardBestViewHash()
 	res := make(map[byte][]interface{})
@@ -206,6 +208,7 @@ func (synckerManager *SynckerManager) GetS2BBlocksForBeaconProducer() map[byte][
 	return res
 }
 
+//Get Crossshard Block for creating shardblock block
 func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShard byte) map[byte][]interface{} {
 	//get last confirm crossshard -> process request until retrieve info
 	res := make(map[byte][]interface{})

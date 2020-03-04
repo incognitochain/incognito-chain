@@ -59,6 +59,7 @@ func (s *CrossShardSyncProcess) stop() {
 	s.status = STOP_SYNC
 }
 
+//helper function to access map in atomic way
 func (s *CrossShardSyncProcess) getRequestPool() map[byte]map[common.Hash]*CrossXReq {
 	res := make(chan map[byte]map[common.Hash]*CrossXReq)
 	s.actionCh <- func() {
@@ -76,6 +77,7 @@ func (s *CrossShardSyncProcess) getRequestPool() map[byte]map[common.Hash]*Cross
 	return <-res
 }
 
+//helper function to access map in atomic way
 func (s *CrossShardSyncProcess) setRequestPool(fromSID int, hash common.Hash, crossReq *CrossXReq) {
 	res := make(chan int)
 	s.actionCh <- func() {
@@ -88,6 +90,7 @@ func (s *CrossShardSyncProcess) setRequestPool(fromSID int, hash common.Hash, cr
 	<-res
 }
 
+//check beacon state and retrieve needed crossshard block, then add to request pool
 func (s *CrossShardSyncProcess) syncCrossShard() {
 	for {
 		reqCnt := 0
@@ -131,6 +134,7 @@ func (s *CrossShardSyncProcess) syncCrossShard() {
 	}
 }
 
+//check request pool, and send request to get block
 func (s *CrossShardSyncProcess) pullCrossShardBlock() {
 	//TODO: should limit the number of request block
 	defer time.AfterFunc(time.Second*1, s.pullCrossShardBlock)
