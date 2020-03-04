@@ -246,25 +246,10 @@ func initializePaymentWitnessParam(tx *Tx, params *TxPrivacyInitParams) (*zkp.Pa
 	return &paymentWitnessParam, nil
 }
 
-// Init - init value for tx from inputcoin(old output coin from old tx)
-// create new outputcoin and build privacy proof
-// if not want to create a privacy tx proof, set hashPrivacy = false
-// database is used like an interface which use to query info from db in building tx
-func (tx *Tx) Init(params *TxPrivacyInitParams) error {
-	Logger.log.Debugf("CREATING TX........\n")
-	if err := validateTxInit(params); err != nil {
-		return err
-	}
-
-	// Execution time
-	start := time.Now()
-	err := initializeTxAndParams(tx, params)
-	if err != nil {
-		return err
-	}
-
-	// Calculate execution time for creating payment proof
-	startPrivacy := time.Now()
+// Used in Tx.Init
+// For Tx to be formed correctly by using privacy package
+func initBridgeTxWithPrivacy(tx *Tx, params *TxPrivacyInitParams) error {
+	// Prepare paymentWitness params
 	paymentWitnessParamPtr, err := initializePaymentWitnessParam(tx, params)
 	if err != nil {
 		return err
@@ -285,8 +270,6 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, common.EmptyString, "  ")
 		return NewTransactionErr(WithnessProveError, err, params.hasPrivacy, string(jsonParam))
 	}
-
-	Logger.log.Debugf("DONE PROVING........\n")
 
 	// set private key for signing tx
 	if params.hasPrivacy {
@@ -326,6 +309,33 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 	if err != nil {
 		Logger.log.Error(err)
 		return NewTransactionErr(SignTxError, err)
+	}
+	return nil
+}
+
+// Init - init value for tx from inputcoin(old output coin from old tx)
+// create new outputcoin and build privacy proof
+// if not want to create a privacy tx proof, set hashPrivacy = false
+// database is used like an interface which use to query info from db in building tx
+func (tx *Tx) Init(params *TxPrivacyInitParams) error {
+	Logger.log.Debugf("CREATING TX........\n")
+	if err := validateTxInit(params); err != nil {
+		return err
+	}
+
+	// Execution time
+	start := time.Now()
+
+	// Init tx and params (tx and params will be changed)
+	if err := initializeTxAndParams(tx, params); err != nil {
+		return err
+	}
+
+	// Calculate execution time for creating payment proof
+	startPrivacy := time.Now()
+
+	if err := initBridgeTxWithPrivacy(tx, params); err != nil {
+		return err
 	}
 
 	elapsedPrivacy := time.Since(startPrivacy)
