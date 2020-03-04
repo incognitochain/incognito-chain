@@ -287,7 +287,7 @@ func (c *BlockRequester) GetBlockBeaconByHeight(
 			continue
 		} else if reply != nil {
 			res = append(res, reply.Data...)
-			Logger.Infof("[blkbyheight] Received block beacon data len: %v", len(reply.Data))
+			Logger.Debugf("[blkbyheight] Received block beacon data len: %d", len(reply.Data))
 		}
 	}
 	return res, nil
@@ -327,10 +327,10 @@ func (c *BlockRequester) GetBlockBeaconByHash(
 			grpc.MaxCallRecvMsgSize(MaxCallRecvMsgSize),
 		)
 		if err != nil {
-			Logger.Errorf("Request block beacon by hashes %v return error %v", hashes, err)
+			Logger.Errorf("Request block beacon by hashes %v return error %+v", hashes, err)
 			continue
 		}
-		Logger.Infof("Received block beacon data from get beacon by hash %v", len(reply.Data))
+		Logger.Debugf("Received block beacon data from get beacon by hash %d", len(reply.Data))
 		res = append(res, reply.Data...)
 	}
 	return res, nil
