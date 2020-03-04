@@ -182,20 +182,20 @@ func (sub *SubManager) subscribeNewTopics(newTopics, subscribed msgToTopics, for
 
 	// Subscribe to new topics
 	for m, topicList := range newTopics {
-		Logger.Debug("Process message %v and topic %v", m, topicList)
+		Logger.Info("Process message %v and topic %v", m, topicList)
 		for _, t := range topicList {
 			if !forced && found(t.Name, subscribed) {
-				Logger.Debugf("Continue 1 %v %v", t.Name, subscribed)
+				Logger.Infof("Continue 1 %v %v", t.Name, subscribed)
 				continue
 			}
 
 			if t.Act == proto.MessageTopicPair_PUB {
 				sub.subs[m] = append(sub.subs[m], Topic{Name: t.Name, Sub: nil, Act: t.Act})
-				Logger.Debugf("Continue 2 %v %v", t.Name, subscribed)
+				Logger.Infof("Continue 2 %v %v", t.Name, subscribed)
 				continue
 			}
 
-			Logger.Debugf("subscribing", m, t.Name)
+			Logger.Infof("subscribing", m, t.Name)
 
 			s, err := sub.subscriber.Subscribe(t.Name)
 			if err != nil {
