@@ -860,12 +860,12 @@ func (_m *DatabaseInterface) GetAllRecordsPortalByPrefixWithoutBeaconHeight(key 
 		}
 	}
 
-	var r1 []byte
-	if rf, ok := ret.Get(1).(func([]byte) []byte); ok {
+	var r1 [][]byte
+	if rf, ok := ret.Get(1).(func([]byte) [][]byte); ok {
 		r1 = rf(key)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).([]byte)
+			r1 = ret.Get(1).([][]byte)
 		}
 	}
 
@@ -1379,16 +1379,14 @@ func (_m *DatabaseInterface) GetPDEStatus(prefix []byte, suffix []byte) (byte, e
 }
 
 // GetPortingRequestStatusByPortingID provides a mock function with given fields: portingID
-func (_m *DatabaseInterface) GetPortingRequestStatusByPortingID(portingID string) ([]byte, error) {
+func (_m *DatabaseInterface) GetPortingRequestStatusByPortingID(portingID string) (int, error) {
 	ret := _m.Called(portingID)
 
-	var r0 []byte
-	if rf, ok := ret.Get(0).(func(string) []byte); ok {
+	var r0 int
+	if rf, ok := ret.Get(0).(func(string) int); ok {
 		r0 = rf(portingID)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]byte)
-		}
+		r0 = ret.Get(0).(int)
 	}
 
 	var r1 error
@@ -1447,13 +1445,13 @@ func (_m *DatabaseInterface) GetRelayingBNBHeaderChain(blockHeight uint64) ([]by
 	return r0, r1
 }
 
-// GetReqPTokenStatusByPortingID provides a mock function with given fields: portingID
-func (_m *DatabaseInterface) GetReqPTokenStatusByPortingID(portingID string) ([]byte, error) {
-	ret := _m.Called(portingID)
+// GetReqPTokenStatusByTxReqID provides a mock function with given fields: txReqID
+func (_m *DatabaseInterface) GetReqPTokenStatusByTxReqID(txReqID string) ([]byte, error) {
+	ret := _m.Called(txReqID)
 
 	var r0 []byte
 	if rf, ok := ret.Get(0).(func(string) []byte); ok {
-		r0 = rf(portingID)
+		r0 = rf(txReqID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]byte)
@@ -1462,7 +1460,7 @@ func (_m *DatabaseInterface) GetReqPTokenStatusByPortingID(portingID string) ([]
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(portingID)
+		r1 = rf(txReqID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -2680,6 +2678,20 @@ func (_m *DatabaseInterface) UpdatePDEPoolForPair(beaconHeight uint64, token1IDS
 	var r0 error
 	if rf, ok := ret.Get(0).(func(uint64, string, string, []byte) error); ok {
 		r0 = rf(beaconHeight, token1IDStr, token2IDStr, pdePoolForPairBytes)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// UpdatePortingRequestStatus provides a mock function with given fields: portingID, newStatus
+func (_m *DatabaseInterface) UpdatePortingRequestStatus(portingID string, newStatus int) error {
+	ret := _m.Called(portingID, newStatus)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, int) error); ok {
+		r0 = rf(portingID, newStatus)
 	} else {
 		r0 = ret.Error(0)
 	}

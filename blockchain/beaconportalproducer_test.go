@@ -147,5 +147,5 @@ func TestBuildInstructionsForPortingRequest(t *testing.T)  {
 	)
 
 	result := instruct[0]
-	assert.Equal(t, result[2], "LoadDataFailed")
+	assert.Equal(t, result[2], "rejected")
 }
