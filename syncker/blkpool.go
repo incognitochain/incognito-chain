@@ -32,6 +32,14 @@ func (pool *BlkPool) Start() {
 	}
 }
 
+func (pool *BlkPool) GetPoolLength() int {
+	res := make(chan int)
+	pool.action <- func() {
+		res <- len(pool.blkPoolByHash)
+	}
+	return <-res
+}
+
 func (pool *BlkPool) AddBlock(blk common.BlockPoolInterface) {
 	pool.action <- func() {
 		prevHash := blk.GetPrevHash()

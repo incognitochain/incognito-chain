@@ -1797,7 +1797,7 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 			}
 			switch role {
 			case common.CommitteeRole:
-				if serverObj.syncker.BeaconSyncProcess.FewBlockBehind {
+				if serverObj.syncker.IsChainReady(chain) {
 					return mining
 				}
 				return syncing
@@ -1812,7 +1812,7 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 			}
 			switch role {
 			case common.CommitteeRole:
-				if serverObj.syncker.ShardSyncProcess[chain].FewBlockBehind {
+				if serverObj.syncker.IsChainReady(chain) {
 					return mining
 				}
 				return syncing

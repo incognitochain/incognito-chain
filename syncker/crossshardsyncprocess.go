@@ -31,7 +31,7 @@ func NewCrossShardSyncProcess(server Server, shardSyncProcess *ShardSyncProcess,
 		beaconChain:      beaconChain,
 		shardSyncProcess: shardSyncProcess,
 		crossShardPool:   NewCrossShardBlkPool("crossshard"),
-		shardID:          shardSyncProcess.ShardID,
+		shardID:          shardSyncProcess.shardID,
 		actionCh:         make(chan func()),
 	}
 
@@ -91,7 +91,7 @@ func (s *CrossShardSyncProcess) setRequestPool(fromSID int, hash common.Hash, cr
 func (s *CrossShardSyncProcess) syncCrossShard() {
 	for {
 		reqCnt := 0
-		if s.status != RUNNING_SYNC || !s.shardSyncProcess.FewBlockBehind {
+		if s.status != RUNNING_SYNC || !s.shardSyncProcess.isCatchUp {
 			time.Sleep(time.Second * 5)
 			continue
 		}

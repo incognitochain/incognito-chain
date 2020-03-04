@@ -93,7 +93,7 @@ func (s *S2BSyncProcess) getS2BPeerState() map[string]S2BPeerState {
 func (s *S2BSyncProcess) syncS2BPoolProcess() {
 	for {
 		requestCnt := 0
-		if !s.beaconSyncProcess.FewBlockBehind || s.status != RUNNING_SYNC {
+		if !s.beaconSyncProcess.isCatchUp || s.status != RUNNING_SYNC {
 			time.Sleep(time.Second)
 			continue
 		}

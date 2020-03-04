@@ -18,7 +18,7 @@ type BeaconPeerState struct {
 type BeaconSyncProcess struct {
 	status                      string //stop, running
 	isCommittee                 bool
-	FewBlockBehind              bool
+	isCatchUp                   bool
 	beaconPeerStates            map[string]BeaconPeerState //sender -> state
 	beaconPeerStateCh           chan *wire.MessagePeerState
 	server                      Server
@@ -73,7 +73,7 @@ func (s *BeaconSyncProcess) start(isCommittee bool) {
 					BestViewHeight: beaconPeerState.Beacon.Height,
 				}
 			case <-ticker.C:
-				s.chain.SetReady(s.FewBlockBehind)
+				s.chain.SetReady(s.isCatchUp)
 			}
 			if s.status != RUNNING_SYNC {
 				time.Sleep(time.Second)
@@ -132,14 +132,14 @@ func (s *BeaconSyncProcess) updateConfirmCrossShard() {
 
 func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 	defer func() {
-		if s.FewBlockBehind {
+		if s.isCatchUp {
 			time.AfterFunc(time.Millisecond*100, s.insertBeaconBlockFromPool)
 		} else {
 			time.AfterFunc(time.Second*1, s.insertBeaconBlockFromPool)
 		}
 	}()
 
-	if !s.FewBlockBehind {
+	if !s.isCatchUp {
 		return
 	}
 	var blk common.BlockPoolInterface
@@ -167,7 +167,7 @@ func (s *BeaconSyncProcess) syncBeacon() {
 	for {
 		requestCnt := 0
 		if s.status != RUNNING_SYNC {
-			s.FewBlockBehind = false
+			s.isCatchUp = false
 			time.Sleep(time.Second)
 			continue
 		}
@@ -178,10 +178,10 @@ func (s *BeaconSyncProcess) syncBeacon() {
 
 		//last check, if we still need to sync more
 		if requestCnt > 0 {
-			s.FewBlockBehind = false
+			s.isCatchUp = false
 		} else {
 			if len(s.beaconPeerStates) > 0 {
-				s.FewBlockBehind = true
+				s.isCatchUp = true
 			}
 			time.Sleep(time.Second * 5)
 		}

@@ -49,8 +49,8 @@ func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 		if chainName != "beacon" {
 			sid := chain.GetShardID()
 			synckerManager.ShardSyncProcess[sid] = NewShardSyncProcess(sid, synckerManager.config.Node, synckerManager.config.Blockchain.Chains["beacon"].(BeaconChainInterface), chain.(ShardChainInterface))
-			synckerManager.shardPool[sid] = synckerManager.ShardSyncProcess[sid].ShardPool
-			synckerManager.CrossShardSyncProcess[sid] = synckerManager.ShardSyncProcess[sid].CrossShardSyncProcess
+			synckerManager.shardPool[sid] = synckerManager.ShardSyncProcess[sid].shardPool
+			synckerManager.CrossShardSyncProcess[sid] = synckerManager.ShardSyncProcess[sid].crossShardSyncProcess
 			synckerManager.crossShardPool[sid] = synckerManager.CrossShardSyncProcess[sid].crossShardPool
 		}
 	}
@@ -85,6 +85,43 @@ func (synckerManager *SynckerManager) Stop() {
 	}
 }
 
+func (synckerManager *SynckerManager) manageSyncProcess() {
+	defer time.AfterFunc(time.Second*5, synckerManager.manageSyncProcess)
+
+	//check if enable
+	if !synckerManager.isEnabled || synckerManager.config == nil {
+		return
+	}
+	role, chainID := synckerManager.config.Node.GetUserMiningState()
+	synckerManager.BeaconSyncProcess.start(chainID == -1)
+
+	if role == common.CommitteeRole || role == common.PendingRole {
+		if chainID == -1 {
+			synckerManager.BeaconSyncProcess.isCommittee = true
+		} else {
+			for sid, syncProc := range synckerManager.ShardSyncProcess {
+				if int(sid) == chainID {
+					syncProc.isCommittee = true
+					syncProc.start()
+				} else {
+					syncProc.isCommittee = false
+					syncProc.stop()
+				}
+			}
+		}
+	}
+
+	if chainID == -1 {
+		synckerManager.config.Node.PublishNodeState(common.BeaconRole, chainID)
+	} else if chainID >= 0 {
+		synckerManager.config.Node.PublishNodeState(common.ShardRole, chainID)
+	} else {
+		synckerManager.config.Node.PublishNodeState("", -2)
+	}
+
+}
+
+//Pocess incomming process
 func (synckerManager *SynckerManager) ReceiveBlock(blk interface{}, peerID string) {
 	switch blk.(type) {
 	case *blockchain.BeaconBlock:
@@ -136,46 +173,11 @@ func (synckerManager *SynckerManager) ReceivePeerState(peerState *wire.MessagePe
 	}
 	//shard
 	for sid, _ := range peerState.Shards {
-		synckerManager.ShardSyncProcess[int(sid)].ShardPeerStateCh <- peerState
+		synckerManager.ShardSyncProcess[int(sid)].shardPeerStateCh <- peerState
 	}
 }
 
-func (synckerManager *SynckerManager) manageSyncProcess() {
-	defer time.AfterFunc(time.Second*5, synckerManager.manageSyncProcess)
-
-	//check if enable
-	if !synckerManager.isEnabled || synckerManager.config == nil {
-		return
-	}
-	role, chainID := synckerManager.config.Node.GetUserMiningState()
-	synckerManager.BeaconSyncProcess.start(chainID == -1)
-
-	if role == common.CommitteeRole || role == common.PendingRole {
-		if chainID == -1 {
-			synckerManager.BeaconSyncProcess.isCommittee = true
-		} else {
-			for sid, syncProc := range synckerManager.ShardSyncProcess {
-				if int(sid) == chainID {
-					syncProc.IsCommittee = true
-					syncProc.start()
-				} else {
-					syncProc.IsCommittee = false
-					syncProc.stop()
-				}
-			}
-		}
-	}
-
-	if chainID == -1 {
-		synckerManager.config.Node.PublishNodeState(common.BeaconRole, chainID)
-	} else if chainID >= 0 {
-		synckerManager.config.Node.PublishNodeState(common.ShardRole, chainID)
-	} else {
-		synckerManager.config.Node.PublishNodeState("", -2)
-	}
-
-}
-
+//Get Block for creating block
 func (synckerManager *SynckerManager) GetS2BBlocksForBeaconProducer() map[byte][]interface{} {
 	bestViewShardHash := synckerManager.config.Blockchain.Chains["beacon"].(BeaconChainInterface).GetShardBestViewHash()
 	res := make(map[byte][]interface{})
@@ -235,4 +237,67 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 		}
 	}
 	return res
+}
+
+//Get Status Function
+type syncInfo struct {
+	IsSync     bool
+	IsLatest   bool
+	PoolLength int
+}
+
+type SynckerStatusInfo struct {
+	Beacon     syncInfo
+	S2B        syncInfo
+	Shard      map[int]*syncInfo
+	Crossshard map[int]*syncInfo
+}
+
+func (synckerManager *SynckerManager) GetSyncStatus(includePool bool) SynckerStatusInfo {
+	info := SynckerStatusInfo{}
+	info.Beacon = syncInfo{
+		IsSync:   synckerManager.BeaconSyncProcess.status == RUNNING_SYNC,
+		IsLatest: synckerManager.BeaconSyncProcess.isCatchUp,
+	}
+	info.S2B = syncInfo{
+		IsSync:   synckerManager.S2BSyncProcess.status == RUNNING_SYNC,
+		IsLatest: false,
+	}
+
+	info.Shard = make(map[int]*syncInfo)
+	for k, v := range synckerManager.ShardSyncProcess {
+		info.Shard[k] = &syncInfo{
+			IsSync:   v.status == RUNNING_SYNC,
+			IsLatest: v.isCatchUp,
+		}
+	}
+
+	info.Crossshard = make(map[int]*syncInfo)
+	for k, v := range synckerManager.CrossShardSyncProcess {
+		info.Crossshard[k] = &syncInfo{
+			IsSync:   v.status == RUNNING_SYNC,
+			IsLatest: false,
+		}
+	}
+
+	if includePool {
+		info.Beacon.PoolLength = synckerManager.beaconPool.GetPoolLength()
+		info.S2B.PoolLength = synckerManager.s2bPool.GetPoolLength()
+		for k, _ := range synckerManager.ShardSyncProcess {
+			info.Shard[k].PoolLength = synckerManager.shardPool[k].GetPoolLength()
+		}
+		for k, _ := range synckerManager.CrossShardSyncProcess {
+			info.Crossshard[k].PoolLength = synckerManager.crossShardPool[k].GetPoolLength()
+		}
+	}
+	return info
+}
+
+func (synckerManager *SynckerManager) IsChainReady(chainID int) bool {
+	if chainID == -1 {
+		return synckerManager.BeaconSyncProcess.isCatchUp
+	} else if chainID >= 0 {
+		return synckerManager.ShardSyncProcess[chainID].isCatchUp
+	}
+	return false
 }

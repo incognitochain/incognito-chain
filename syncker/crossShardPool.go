@@ -7,13 +7,13 @@ import (
 
 type CrossShardBlkPool struct {
 	action        chan func()
-	BlkPoolByHash map[string]common.CrossShardBlkPoolInterface // hash -> block
+	blkPoolByHash map[string]common.CrossShardBlkPoolInterface // hash -> block
 }
 
 func NewCrossShardBlkPool(name string) *CrossShardBlkPool {
 	pool := new(CrossShardBlkPool)
 	pool.action = make(chan func())
-	pool.BlkPoolByHash = make(map[string]common.CrossShardBlkPoolInterface)
+	pool.blkPoolByHash = make(map[string]common.CrossShardBlkPoolInterface)
 	go pool.Start()
 	return pool
 }
@@ -30,13 +30,21 @@ func (pool *CrossShardBlkPool) Start() {
 	}
 }
 
+func (pool *CrossShardBlkPool) GetPoolLength() int {
+	res := make(chan int)
+	pool.action <- func() {
+		res <- len(pool.blkPoolByHash)
+	}
+	return <-res
+}
+
 func (pool *CrossShardBlkPool) AddBlock(blk common.CrossShardBlkPoolInterface) {
 	pool.action <- func() {
 		hash := blk.Hash()
-		if _, ok := pool.BlkPoolByHash[hash.String()]; ok {
+		if _, ok := pool.blkPoolByHash[hash.String()]; ok {
 			return
 		}
-		pool.BlkPoolByHash[hash.String()] = blk
+		pool.blkPoolByHash[hash.String()] = blk
 
 	}
 }
@@ -44,7 +52,7 @@ func (pool *CrossShardBlkPool) AddBlock(blk common.CrossShardBlkPoolInterface) {
 func (pool *CrossShardBlkPool) HasBlock(hash common.Hash) bool {
 	res := make(chan bool)
 	pool.action <- func() {
-		_, ok := pool.BlkPoolByHash[hash.String()]
+		_, ok := pool.blkPoolByHash[hash.String()]
 		res <- ok
 	}
 	return <-res
@@ -53,7 +61,7 @@ func (pool *CrossShardBlkPool) HasBlock(hash common.Hash) bool {
 func (pool *CrossShardBlkPool) GetBlock(hash common.Hash) common.CrossShardBlkPoolInterface {
 	res := make(chan common.CrossShardBlkPoolInterface)
 	pool.action <- func() {
-		b, _ := pool.BlkPoolByHash[hash.String()]
+		b, _ := pool.blkPoolByHash[hash.String()]
 		res <- b
 	}
 	return <-res
@@ -61,8 +69,8 @@ func (pool *CrossShardBlkPool) GetBlock(hash common.Hash) common.CrossShardBlkPo
 
 func (pool *CrossShardBlkPool) RemoveBlock(hash string) {
 	pool.action <- func() {
-		if _, ok := pool.BlkPoolByHash[hash]; ok {
-			delete(pool.BlkPoolByHash, hash)
+		if _, ok := pool.blkPoolByHash[hash]; ok {
+			delete(pool.blkPoolByHash, hash)
 		}
 	}
 }
