@@ -51,6 +51,7 @@ const (
 	PortalRedeemRequestMeta             = 106
 	PortalRedeemRequestResponseMeta     = 107
 	PortalRequestUnlockCollateralMeta   = 108
+	PortalCustodianWithDrawRequestMeta  = 109
 
 	// relaying
 	RelayingBNBHeaderMeta = 200

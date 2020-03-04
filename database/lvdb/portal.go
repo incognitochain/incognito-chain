@@ -99,13 +99,10 @@ func NewFinalExchangeRatesKey(beaconHeight uint64) string {
 	return string(key)
 }
 
-func NewExchangeRatesRequestKey(beaconHeight uint64, txId string, lockTime string, shardId byte) string {
+func NewExchangeRatesRequestKey (beaconHeight uint64, txId string) string {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 	key := append(PortalExchangeRatesPrefix, beaconHeightBytes...)
 	key = append(key, []byte(txId)...)
-	key = append(key, []byte(lockTime)...)
-	key = append(key, shardId)
-
 	return string(key)
 }
 

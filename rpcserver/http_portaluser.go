@@ -123,7 +123,6 @@ func (httpServer *HttpServer) handleCreateAndSendRegisterPortingPublicTokens(par
 	return result, nil
 }
 
-//todo
 func (httpServer *HttpServer) handleGetPortingRequestByKey(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 

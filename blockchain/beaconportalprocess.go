@@ -220,7 +220,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		portingFee := portingRequestContent.PortingFee
 
 		// new request
-		newPortingRequestState, err := NewPortingRequestState(
+		newPortingRequestStateWaiting, err := NewPortingRequestState(
 			uniquePortingID,
 			txReqID,
 			tokenID,
@@ -236,9 +236,25 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			return err
 		}
 
+		newPortingRequestStateAccept, err := NewPortingRequestState(
+			uniquePortingID,
+			txReqID,
+			tokenID,
+			porterAddress,
+			amount,
+			custodiansDetail,
+			portingFee,
+			common.PortalPortingReqAcceptedStatus,
+			beaconHeight+1,
+		)
+
+		if err != nil {
+			return err
+		}
+
 		//save transaction
 		keyPortingRequestNewTxState := lvdb.NewPortingRequestTxKey(txReqID.String())
-		err = db.StorePortingRequestItem([]byte(keyPortingRequestNewTxState), newPortingRequestState)
+		err = db.StorePortingRequestItem([]byte(keyPortingRequestNewTxState), newPortingRequestStateAccept)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store porting request item: %+v", err)
 			return nil
@@ -247,7 +263,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		//save success porting request
 		keyPortingRequestNewState := lvdb.NewPortingRequestKey(portingRequestContent.UniqueRegisterId)
 		Logger.log.Infof("Porting request, save porting request with key %v", keyPortingRequestNewState)
-		err = db.StorePortingRequestItem([]byte(keyPortingRequestNewState), newPortingRequestState)
+		err = db.StorePortingRequestItem([]byte(keyPortingRequestNewState), newPortingRequestStateWaiting)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store porting request item: %+v", err)
 			return nil
@@ -303,7 +319,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		//save waiting request porting state
 		keyWaitingPortingRequest := lvdb.NewWaitingPortingReqKey(beaconHeight, portingRequestContent.UniqueRegisterId)
 		Logger.log.Infof("Porting request, save waiting porting request with key %v", keyWaitingPortingRequest)
-		currentPortalState.WaitingPortingRequests[keyWaitingPortingRequest] = newPortingRequestState
+		currentPortalState.WaitingPortingRequests[keyWaitingPortingRequest] = newPortingRequestStateWaiting
 
 		break
 	case common.PortalPortingRequestRejectedStatus:
