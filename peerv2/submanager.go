@@ -97,7 +97,7 @@ func (sub *SubManager) Subscribe(forced bool) error {
 	Logger.Debugf("Received topics = %+v, oldTopics = %+v", newTopics, sub.topics)
 
 	// Subscribing
-	if err := sub.subscribeNewTopics(newTopics, sub.topics); err != nil {
+	if err := sub.subscribeNewTopics(newTopics, sub.topics, forced); err != nil {
 		return err
 	}
 
@@ -135,7 +135,7 @@ func newUserRole(layer, role string, shardID int) userRole {
 }
 
 // subscribeNewTopics subscribes to new topics and unsubcribes any topics that aren't needed anymore
-func (sub *SubManager) subscribeNewTopics(newTopics, subscribed msgToTopics) error {
+func (sub *SubManager) subscribeNewTopics(newTopics, subscribed msgToTopics, forced bool) error {
 	found := func(tName string, tmap msgToTopics) bool {
 		for _, topicList := range tmap {
 			for _, t := range topicList {
@@ -147,11 +147,44 @@ func (sub *SubManager) subscribeNewTopics(newTopics, subscribed msgToTopics) err
 		return false
 	}
 
+	// Unsubscribe to old ones
+	for m, topicList := range subscribed {
+		for _, t := range topicList {
+			if !forced && found(t.Name, newTopics) { // Unsub and sub again if forced subscribe
+				continue
+			}
+
+			idx := -1
+			for i, s := range sub.subs[m] {
+				if s.Name == t.Name {
+					if t.Act != proto.MessageTopicPair_PUB {
+						Logger.Info("unsubscribing", m, t.Name)
+						if s.Sub != nil {
+							go s.Sub.Cancel()
+						}
+					}
+					idx = i
+					break
+				}
+			}
+
+			if idx < 0 {
+				continue
+			}
+
+			if len(sub.subs[m]) == 1 {
+				delete(sub.subs, m)
+			} else {
+				sub.subs[m] = append(sub.subs[m][:idx], sub.subs[m][idx+1:]...)
+			}
+		}
+	}
+
 	// Subscribe to new topics
 	for m, topicList := range newTopics {
 		Logger.Debug("Process message %v and topic %v", m, topicList)
 		for _, t := range topicList {
-			if found(t.Name, subscribed) {
+			if !forced && found(t.Name, subscribed) {
 				Logger.Debugf("Continue 1 %v %v", t.Name, subscribed)
 				continue
 			}
@@ -170,37 +203,6 @@ func (sub *SubManager) subscribeNewTopics(newTopics, subscribed msgToTopics) err
 			}
 			sub.subs[m] = append(sub.subs[m], Topic{Name: t.Name, Sub: s, Act: t.Act})
 			go processSubscriptionMessage(sub.messages, s)
-		}
-	}
-
-	// Unsubscribe to old ones
-	for m, topicList := range subscribed {
-		for _, t := range topicList {
-			if found(t.Name, newTopics) {
-				continue
-			}
-
-			idx := -1
-			for i, s := range sub.subs[m] {
-				if s.Name == t.Name {
-					if t.Act != proto.MessageTopicPair_PUB {
-						Logger.Info("unsubscribing", m, t.Name)
-						go s.Sub.Cancel()
-					}
-					idx = i
-					break
-				}
-			}
-
-			if idx < 0 {
-				continue
-			}
-
-			if len(sub.subs[m]) == 1 {
-				delete(sub.subs, m)
-			} else {
-				sub.subs[m] = append(sub.subs[m][:idx], sub.subs[m][idx+1:]...)
-			}
 		}
 	}
 	return nil
