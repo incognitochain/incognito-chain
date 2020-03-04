@@ -297,7 +297,7 @@ func (db *db) GetCommitmentByIndex(tokenID common.Hash, commitmentIndex uint64, 
 	}
 	data, err := db.Get(keySpec)
 	if err != nil {
-		return data, database.NewDatabaseError(database.GetCommitmentByIndexError, err, commitmentIndex, shardID, tokenID)
+		return data, database.NewDatabaseError(database.GetCommitmentByIndexError, err, commitmentIndex, shardID, tokenID.String())
 	} else {
 		return data, nil
 	}

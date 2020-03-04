@@ -2,7 +2,6 @@ package lvdb
 
 import (
 	"encoding/binary"
-	"log"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
@@ -35,7 +34,6 @@ func (db *db) StorePrivacyTokenTx(tokenID common.Hash, shardID byte, blockHeight
 	bs = make([]byte, 4)
 	binary.LittleEndian.PutUint32(bs, uint32(bigNumber-txIndex))
 	key = append(key, bs...)
-	log.Println(string(key))
 	if err := db.Put(key, txHash); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, err)
 	}
@@ -89,7 +87,6 @@ func (db *db) PrivacyTokenTxs(tokenID common.Hash) ([]common.Hash, error) {
 	key := addPrefixToKeyHash(string(privacyTokenPrefix), tokenID)
 	// PubKey = token-{tokenID}
 	iter := db.lvdb.NewIterator(util.BytesPrefix(key), nil)
-	log.Println(string(key))
 	for iter.Next() {
 		value := iter.Value()
 		hash, _ := common.Hash{}.NewHash(value)

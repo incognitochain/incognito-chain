@@ -612,14 +612,14 @@ func (serverObj *Server) Stop() error {
 
 	// Save fee estimator in the db
 	for shardID, feeEstimator := range serverObj.feeEstimator {
-		Logger.log.Infof("Fee estimator data when saving #%d", feeEstimator)
+		Logger.log.Debugf("Fee estimator data when saving #%d", feeEstimator)
 		feeEstimatorData := feeEstimator.Save()
 		if len(feeEstimatorData) > 0 {
 			err := serverObj.dataBase.StoreFeeEstimator(feeEstimatorData, shardID)
 			if err != nil {
 				Logger.log.Errorf("Can't save fee estimator data on chain #%d: %v", shardID, err)
 			} else {
-				Logger.log.Infof("Save fee estimator data on chain #%d", shardID)
+				Logger.log.Debugf("Save fee estimator data on chain #%d", shardID)
 			}
 		}
 	}
@@ -1584,7 +1584,6 @@ func (serverObj *Server) PushMessageGetBlockShardByHeight(shardID byte, from uin
 }
 
 func (serverObj *Server) PushMessageGetBlockShardBySpecificHeight(shardID byte, heights []uint64, getFromPool bool) error {
-
 	Logger.log.Infof("[stream] Get blk shard %v by specific heights [%v..%v] len %v", shardID, heights[0], heights[len(heights)-1], len(heights))
 	req := &proto.BlockByHeightRequest{
 		Type:     proto.BlkType_BlkShard,
@@ -1603,17 +1602,16 @@ func (serverObj *Server) PushMessageGetBlockShardBySpecificHeight(shardID byte, 
 }
 
 func (serverObj *Server) PushMessageGetBlockShardByHash(shardID byte, blkHashes []common.Hash, getFromPool bool, peerID libp2p.ID) error {
-	Logger.log.Infof("[blkbyhash] Get blk shard by hash %v", blkHashes)
+	Logger.log.Debugf("[blkbyhash] Get blk shard by hash %v", blkHashes)
 	msgs, err := serverObj.highway.Requester.GetBlockShardByHash(
 		int32(shardID),
 		blkHashes, // by blockHashes
 	)
 	if err != nil {
-		Logger.log.Infof("[blkbyhash] Get blk shard by hash error %v ", err)
-		Logger.log.Error(err)
+		Logger.log.Errorf("[blkbyhash] Get blk shard by hash error %v ", err)
 		return err
 	}
-	Logger.log.Infof("[blkbyhash] Get blk shard by hash get %v ", msgs)
+	Logger.log.Debugf("[blkbyhash] Get blk shard by hash get %v ", msgs)
 
 	serverObj.putResponseMsgs(msgs)
 	return nil

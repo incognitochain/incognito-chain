@@ -135,7 +135,7 @@ func (c *BlockRequester) Register(
 	c.RLock()
 	defer c.RUnlock()
 	if !c.ready() {
-		return nil, nil, errors.New("requester not ready")
+		return nil, nil, errors.New("requester still not ready")
 	}
 
 	uuid := genUUID()
@@ -164,7 +164,7 @@ func (c *BlockRequester) GetBlockShardByHash(
 	c.RLock()
 	defer c.RUnlock()
 	if !c.ready() {
-		return nil, errors.New("requester not ready")
+		return nil, errors.New("requester still not ready")
 	}
 	res := [][]byte{}
 	blkHashBytes := [][]byte{}
@@ -249,7 +249,7 @@ func (c *BlockRequester) GetBlockBeaconByHash(
 	c.RLock()
 	defer c.RUnlock()
 	if !c.ready() {
-		return nil, errors.New("requester not ready")
+		return nil, errors.New("requester still not ready")
 	}
 	res := [][]byte{}
 	blkHashBytes := [][]byte{}
