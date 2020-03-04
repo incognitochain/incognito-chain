@@ -16,25 +16,25 @@ type S2BPeerState struct {
 }
 
 type S2BSyncProcess struct {
-	Status            string                  //stop, running
-	S2BPeerState      map[string]S2BPeerState //sender -> state
-	S2BPeerStateCh    chan *wire.MessagePeerState
+	status            string                  //stop, running
+	s2bPeerState      map[string]S2BPeerState //sender -> state
+	s2bPeerStateCh    chan *wire.MessagePeerState
 	Server            Server
-	BeaconSyncProcess *BeaconSyncProcess
-	BeaconChain       BeaconChainInterface
-	S2BPool           *BlkPool
+	beaconSyncProcess *BeaconSyncProcess
+	beaconChain       BeaconChainInterface
+	s2bPool           *BlkPool
 	actionCh          chan func()
 }
 
 func NewS2BSyncProcess(server Server, beaconSyncProc *BeaconSyncProcess, beaconChain BeaconChainInterface) *S2BSyncProcess {
 	s := &S2BSyncProcess{
-		Status:            STOP_SYNC,
+		status:            STOP_SYNC,
 		Server:            server,
-		BeaconChain:       beaconChain,
-		S2BPool:           NewBlkPool("ShardToBeaconPool"),
-		BeaconSyncProcess: beaconSyncProc,
-		S2BPeerState:      make(map[string]S2BPeerState),
-		S2BPeerStateCh:    make(chan *wire.MessagePeerState),
+		beaconChain:       beaconChain,
+		s2bPool:           NewBlkPool("ShardToBeaconPool"),
+		beaconSyncProcess: beaconSyncProc,
+		s2bPeerState:      make(map[string]S2BPeerState),
+		s2bPeerStateCh:    make(chan *wire.MessagePeerState),
 		actionCh:          make(chan func()),
 	}
 
@@ -42,27 +42,27 @@ func NewS2BSyncProcess(server Server, beaconSyncProc *BeaconSyncProcess, beaconC
 	return s
 }
 
-func (s *S2BSyncProcess) Start() {
-	if s.Status == RUNNING_SYNC {
+func (s *S2BSyncProcess) start() {
+	if s.status == RUNNING_SYNC {
 		return
 	}
-	s.Status = RUNNING_SYNC
+	s.status = RUNNING_SYNC
 	go func() {
 		ticker := time.NewTicker(time.Millisecond * 500)
 		for {
-			if s.Status != RUNNING_SYNC {
+			if s.status != RUNNING_SYNC {
 				time.Sleep(time.Second)
 				continue
 			}
 			select {
 			case f := <-s.actionCh:
 				f()
-			case s2bPeerState := <-s.S2BPeerStateCh:
+			case s2bPeerState := <-s.s2bPeerStateCh:
 				s2bState := make(map[int]uint64)
 				for sid, v := range s2bPeerState.ShardToBeaconPool {
 					s2bState[int(sid)] = v[len(v)-1]
 				}
-				s.S2BPeerState[s2bPeerState.SenderID] = S2BPeerState{
+				s.s2bPeerState[s2bPeerState.SenderID] = S2BPeerState{
 					Timestamp: s2bPeerState.Timestamp,
 					Height:    s2bState,
 				}
@@ -74,15 +74,15 @@ func (s *S2BSyncProcess) Start() {
 
 }
 
-func (s *S2BSyncProcess) Stop() {
-	s.Status = STOP_SYNC
+func (s *S2BSyncProcess) stop() {
+	s.status = STOP_SYNC
 }
 
-func (s *S2BSyncProcess) GetS2BPeerState() map[string]S2BPeerState {
+func (s *S2BSyncProcess) getS2BPeerState() map[string]S2BPeerState {
 	res := make(chan map[string]S2BPeerState)
 	s.actionCh <- func() {
 		ps := make(map[string]S2BPeerState)
-		for k, v := range s.S2BPeerState {
+		for k, v := range s.s2bPeerState {
 			ps[k] = v
 		}
 		res <- ps
@@ -93,11 +93,11 @@ func (s *S2BSyncProcess) GetS2BPeerState() map[string]S2BPeerState {
 func (s *S2BSyncProcess) syncS2BPoolProcess() {
 	for {
 		requestCnt := 0
-		if !s.BeaconSyncProcess.FewBlockBehind || s.Status != RUNNING_SYNC {
+		if !s.beaconSyncProcess.FewBlockBehind || s.status != RUNNING_SYNC {
 			time.Sleep(time.Second)
 			continue
 		}
-		for peerID, pState := range s.GetS2BPeerState() {
+		for peerID, pState := range s.getS2BPeerState() {
 			requestCnt += s.streamFromPeer(peerID, pState)
 		}
 
@@ -132,8 +132,8 @@ func (s *S2BSyncProcess) streamFromPeer(peerID string, pState S2BPeerState) (req
 		//retrieve information from pool -> request missing block
 		//not retrieve genesis block (if height = 0, we get block shard height = 1)
 		sID := byte(fromSID)
-		viewHash := s.BeaconChain.GetShardBestViewHash()[sID]
-		viewHeight := s.BeaconChain.GetShardBestViewHeight()[sID]
+		viewHash := s.beaconChain.GetShardBestViewHash()[sID]
+		viewHeight := s.beaconChain.GetShardBestViewHeight()[sID]
 		if viewHeight == 0 {
 			blk := *s.Server.GetChainParam().GenesisShardBlock
 			blk.Header.ShardID = sID
@@ -143,7 +143,7 @@ func (s *S2BSyncProcess) streamFromPeer(peerID string, pState S2BPeerState) (req
 
 		reqFromHeight := viewHeight + 1
 		if viewHeight < toHeight {
-			validS2BBlock := s.S2BPool.GetLongestChain(viewHash.String())
+			validS2BBlock := s.s2bPool.GetLongestChain(viewHash.String())
 			if len(validS2BBlock) > 100 {
 				return
 			}
@@ -171,7 +171,7 @@ func (s *S2BSyncProcess) streamFromPeer(peerID string, pState S2BPeerState) (req
 			case blk := <-ch:
 				if !isNil(blk) {
 					fmt.Println("Syncker: Insert shard2beacon block", blk.GetHeight(), blk.Hash().String(), blk.(common.BlockPoolInterface).GetPrevHash())
-					s.S2BPool.AddBlock(blk.(common.BlockPoolInterface))
+					s.s2bPool.AddBlock(blk.(common.BlockPoolInterface))
 				} else {
 					break
 				}

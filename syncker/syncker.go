@@ -1,178 +1,97 @@
 package syncker
 
 import (
-	"context"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
-	libp2p "github.com/libp2p/go-libp2p-peer"
 	"time"
 )
 
-type Server interface {
-	GetChainParam() *blockchain.Params
-	GetUserMiningState() (role string, chainID int)
-
-	RequestBeaconBlocksViaStream(ctx context.Context, peerID string, from uint64, to uint64) (blockCh chan common.BlockInterface, err error)
-	RequestShardBlocksViaStream(ctx context.Context, peerID string, fromSID int, from uint64, to uint64) (blockCh chan common.BlockInterface, err error)
-	RequestShardToBeaconBlocksViaStream(ctx context.Context, peerID string, fromSID int, from uint64, to uint64) (blockCh chan common.BlockInterface, err error)
-	RequestCrossShardBlocksViaStream(ctx context.Context, peerID string, fromSID int, toSID int, heights []uint64) (blockCh chan common.BlockInterface, err error)
-
-	PublishNodeState(userLayer string, shardID int) error
-
-	FetchBeaconBlock(height uint64) (*blockchain.BeaconBlock, error)
-
-	FetchNextCrossShard(fromSID, toSID int, currentHeight uint64) uint64
-	StoreBeaconHashConfirmCrossShardHeight(fromSID, toSID int, height uint64, beaconHash string) error
-	FetchBeaconBlockConfirmCrossShardHeight(fromSID, toSID int, height uint64) (*blockchain.BeaconBlock, error)
-
-	PushMessageGetBlockCrossShardByHash(fromShard byte, toShard byte, blkHashes []common.Hash, getFromPool bool, peerID libp2p.ID) error
-}
-
-type BeaconChainInterface interface {
-	Chain
-	GetShardBestViewHash() map[byte]common.Hash
-	GetShardBestViewHeight() map[byte]uint64
-	//GetCurrentCrossShardHeightToShard(toShard byte) map[byte]uint64 //must use final block
-}
-
-type ShardChainInterface interface {
-	Chain
-	GetCrossShardState() map[byte]uint64
-}
-type Chain interface {
-	GetBestViewHeight() uint64
-	GetFinalViewHeight() uint64
-	SetReady(bool)
-	IsReady() bool
-	GetBestViewHash() string
-	GetFinalViewHash() string
-	GetEpoch() uint64
-	ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
-	GetCommittee() []incognitokey.CommitteePublicKey
-	CurrentHeight() uint64
-	InsertBlk(block common.BlockInterface) error
-}
-
-type SynckerConfig struct {
+type SynckerManagerConfig struct {
 	Node       Server
 	Blockchain *blockchain.BlockChain
 }
 
-type Syncker struct {
-	IsEnabled             bool //0 > stop, 1: running
-	config                *SynckerConfig
+type SynckerManager struct {
+	isEnabled             bool //0 > stop, 1: running
+	config                *SynckerManagerConfig
 	BeaconSyncProcess     *BeaconSyncProcess
 	S2BSyncProcess        *S2BSyncProcess
 	ShardSyncProcess      map[int]*ShardSyncProcess
 	CrossShardSyncProcess map[int]*CrossShardSyncProcess
-
-	BeaconPool     *BlkPool
-	ShardPool      map[int]*BlkPool
-	S2BPool        *BlkPool
-	CrossShardPool map[int]*CrossShardBlkPool
+	beaconPool            *BlkPool
+	shardPool             map[int]*BlkPool
+	s2bPool               *BlkPool
+	crossShardPool        map[int]*CrossShardBlkPool
 }
 
-// Everytime beacon block is inserted after sync finish, we update shard committee (from beacon view)
-func (s *Syncker) WatchCommitteeChange() {
-	defer func() {
-		time.AfterFunc(time.Second*5, s.WatchCommitteeChange)
-	}()
-
-	//check if enable
-	if !s.IsEnabled || s.config == nil {
-		fmt.Println("SYNCKER: enable", s.IsEnabled, s.config == nil)
-		return
-	}
-	role, chainID := s.config.Node.GetUserMiningState()
-	s.BeaconSyncProcess.Start(chainID)
-
-	if role == common.CommitteeRole || role == common.PendingRole {
-		if chainID == -1 {
-			s.BeaconSyncProcess.IsCommittee = true
-		} else {
-			for sid, syncProc := range s.ShardSyncProcess {
-				if int(sid) == chainID {
-					syncProc.IsCommittee = true
-					//fmt.Println("crossdebug syncProc.Start()", int(sid), chainID)
-					syncProc.Start()
-				} else {
-					syncProc.IsCommittee = false
-					//fmt.Println("crossdebug syncProc.Stop()", int(sid), chainID)
-					syncProc.Stop()
-				}
-			}
-		}
-	}
-
-	if chainID == -1 {
-		s.config.Node.PublishNodeState(common.BeaconRole, chainID)
-	} else if chainID >= 0 {
-		s.config.Node.PublishNodeState(common.ShardRole, chainID)
-	} else {
-		s.config.Node.PublishNodeState("", -2)
-	}
-
-}
-
-func NewSyncker() *Syncker {
-	s := &Syncker{
+func NewSynckerManager() *SynckerManager {
+	s := &SynckerManager{
 		ShardSyncProcess:      make(map[int]*ShardSyncProcess),
-		ShardPool:             make(map[int]*BlkPool),
+		shardPool:             make(map[int]*BlkPool),
 		CrossShardSyncProcess: make(map[int]*CrossShardSyncProcess),
-		CrossShardPool:        make(map[int]*CrossShardBlkPool),
+		crossShardPool:        make(map[int]*CrossShardBlkPool),
 	}
-
 	return s
 }
 
-func (s *Syncker) Init(config *SynckerConfig) {
-
-	s.config = config
+func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
+	synckerManager.config = config
 	//init beacon sync process
-	s.BeaconSyncProcess = NewBeaconSyncProcess(s.config.Node, s.config.Blockchain.Chains["beacon"].(BeaconChainInterface))
-	s.S2BSyncProcess = s.BeaconSyncProcess.S2BSyncProcess
-	s.BeaconPool = s.BeaconSyncProcess.BeaconPool
-	s.S2BPool = s.S2BSyncProcess.S2BPool
+	synckerManager.BeaconSyncProcess = NewBeaconSyncProcess(synckerManager.config.Node, synckerManager.config.Blockchain.Chains["beacon"].(BeaconChainInterface))
+	synckerManager.S2BSyncProcess = synckerManager.BeaconSyncProcess.s2bSyncProcess
+	synckerManager.beaconPool = synckerManager.BeaconSyncProcess.beaconPool
+	synckerManager.s2bPool = synckerManager.S2BSyncProcess.s2bPool
 
 	//init shard sync process
-	for chainName, chain := range s.config.Blockchain.Chains {
+	for chainName, chain := range synckerManager.config.Blockchain.Chains {
 		if chainName != "beacon" {
 			sid := chain.GetShardID()
-			s.ShardSyncProcess[sid] = NewShardSyncProcess(sid, s.config.Node, s.config.Blockchain.Chains["beacon"].(BeaconChainInterface), chain.(ShardChainInterface))
-			s.ShardPool[sid] = s.ShardSyncProcess[sid].ShardPool
-			s.CrossShardSyncProcess[sid] = s.ShardSyncProcess[sid].CrossShardSyncProcess
-			s.CrossShardPool[sid] = s.CrossShardSyncProcess[sid].CrossShardPool
+			synckerManager.ShardSyncProcess[sid] = NewShardSyncProcess(sid, synckerManager.config.Node, synckerManager.config.Blockchain.Chains["beacon"].(BeaconChainInterface), chain.(ShardChainInterface))
+			synckerManager.shardPool[sid] = synckerManager.ShardSyncProcess[sid].ShardPool
+			synckerManager.CrossShardSyncProcess[sid] = synckerManager.ShardSyncProcess[sid].CrossShardSyncProcess
+			synckerManager.crossShardPool[sid] = synckerManager.CrossShardSyncProcess[sid].crossShardPool
 		}
 	}
 
 	//watch commitee change
-	go s.WatchCommitteeChange()
+	go synckerManager.manageSyncProcess()
 
 	//Publish node state to other peer
 	go func() {
 		t := time.NewTicker(time.Second * 3)
 		for _ = range t.C {
-			_, chainID := s.config.Node.GetUserMiningState()
+			_, chainID := synckerManager.config.Node.GetUserMiningState()
 			if chainID == -1 {
-				_ = s.config.Node.PublishNodeState("beacon", chainID)
+				_ = synckerManager.config.Node.PublishNodeState("beacon", chainID)
 			}
 			if chainID >= 0 {
-				_ = s.config.Node.PublishNodeState("shard", chainID)
+				_ = synckerManager.config.Node.PublishNodeState("shard", chainID)
 			}
 		}
 	}()
 }
 
-func (s *Syncker) ReceiveBlock(blk interface{}, peerID string) {
+func (synckerManager *SynckerManager) Start() {
+	synckerManager.isEnabled = true
+}
+
+func (synckerManager *SynckerManager) Stop() {
+	synckerManager.isEnabled = false
+	synckerManager.BeaconSyncProcess.stop()
+	for _, chain := range synckerManager.ShardSyncProcess {
+		chain.stop()
+	}
+}
+
+func (synckerManager *SynckerManager) ReceiveBlock(blk interface{}, peerID string) {
 	switch blk.(type) {
 	case *blockchain.BeaconBlock:
 		beaconBlk := blk.(*blockchain.BeaconBlock)
-		s.BeaconPool.AddBlock(beaconBlk)
+		synckerManager.beaconPool.AddBlock(beaconBlk)
 		//create fake s2b pool peerstate
-		s.BeaconSyncProcess.BeaconPeerStateCh <- &wire.MessagePeerState{
+		synckerManager.BeaconSyncProcess.beaconPeerStateCh <- &wire.MessagePeerState{
 			Beacon: wire.ChainState{
 				Timestamp: beaconBlk.Header.Timestamp,
 				BlockHash: *beaconBlk.Hash(),
@@ -184,62 +103,86 @@ func (s *Syncker) ReceiveBlock(blk interface{}, peerID string) {
 
 		shardBlk := blk.(*blockchain.ShardBlock)
 		fmt.Printf("syncker: receive shard block %d \n", shardBlk.GetHeight())
-		s.ShardPool[shardBlk.GetShardID()].AddBlock(shardBlk)
+		synckerManager.shardPool[shardBlk.GetShardID()].AddBlock(shardBlk)
 
 	case *blockchain.ShardToBeaconBlock:
 		s2bBlk := blk.(*blockchain.ShardToBeaconBlock)
-		s.S2BPool.AddBlock(s2bBlk)
+		synckerManager.s2bPool.AddBlock(s2bBlk)
 		//fmt.Println("syncker AddBlock S2B", s2bBlk.Header.ShardID, s2bBlk.Header.Height)
 		//create fake s2b pool peerstate
-		s.S2BSyncProcess.S2BPeerStateCh <- &wire.MessagePeerState{
+		synckerManager.S2BSyncProcess.s2bPeerStateCh <- &wire.MessagePeerState{
 			SenderID:          time.Now().String(),
 			ShardToBeaconPool: map[byte][]uint64{s2bBlk.Header.ShardID: []uint64{1, s2bBlk.GetHeight()}},
 			Timestamp:         time.Now().Unix(),
 		}
 	case *blockchain.CrossShardBlock:
 		csBlk := blk.(*blockchain.CrossShardBlock)
-		fmt.Printf("crossdebug: receive block from %d to %d (%s)\n", csBlk.Header.ShardID, csBlk.ToShardID, csBlk.Hash().String())
-		s.CrossShardPool[int(csBlk.ToShardID)].AddBlock(csBlk)
+		fmt.Printf("crossdebug: receive block from %d to %d (%synckerManager)\n", csBlk.Header.ShardID, csBlk.ToShardID, csBlk.Hash().String())
+		synckerManager.crossShardPool[int(csBlk.ToShardID)].AddBlock(csBlk)
 	}
 
 }
 
-func (s *Syncker) ReceivePeerState(peerState *wire.MessagePeerState) {
+func (synckerManager *SynckerManager) ReceivePeerState(peerState *wire.MessagePeerState) {
 	//b, _ := json.Marshal(peerState)
 	//fmt.Println("SYNCKER: receive peer state", string(b))
 	//beacon
 	if peerState.Beacon.Height != 0 {
-		s.BeaconSyncProcess.BeaconPeerStateCh <- peerState
+		synckerManager.BeaconSyncProcess.beaconPeerStateCh <- peerState
 	}
 	//s2b
 	if len(peerState.ShardToBeaconPool) != 0 {
-		s.S2BSyncProcess.S2BPeerStateCh <- peerState
+		synckerManager.S2BSyncProcess.s2bPeerStateCh <- peerState
 	}
 	//shard
 	for sid, _ := range peerState.Shards {
-		s.ShardSyncProcess[int(sid)].ShardPeerStateCh <- peerState
+		synckerManager.ShardSyncProcess[int(sid)].ShardPeerStateCh <- peerState
 	}
 }
 
-func (s *Syncker) Start() {
-	s.IsEnabled = true
-}
+func (synckerManager *SynckerManager) manageSyncProcess() {
+	defer time.AfterFunc(time.Second*5, synckerManager.manageSyncProcess)
 
-func (s *Syncker) Stop() {
-	s.IsEnabled = false
-	s.BeaconSyncProcess.Stop()
-	for _, chain := range s.ShardSyncProcess {
-		chain.Stop()
+	//check if enable
+	if !synckerManager.isEnabled || synckerManager.config == nil {
+		return
 	}
+	role, chainID := synckerManager.config.Node.GetUserMiningState()
+	synckerManager.BeaconSyncProcess.start(chainID == -1)
+
+	if role == common.CommitteeRole || role == common.PendingRole {
+		if chainID == -1 {
+			synckerManager.BeaconSyncProcess.isCommittee = true
+		} else {
+			for sid, syncProc := range synckerManager.ShardSyncProcess {
+				if int(sid) == chainID {
+					syncProc.IsCommittee = true
+					syncProc.start()
+				} else {
+					syncProc.IsCommittee = false
+					syncProc.stop()
+				}
+			}
+		}
+	}
+
+	if chainID == -1 {
+		synckerManager.config.Node.PublishNodeState(common.BeaconRole, chainID)
+	} else if chainID >= 0 {
+		synckerManager.config.Node.PublishNodeState(common.ShardRole, chainID)
+	} else {
+		synckerManager.config.Node.PublishNodeState("", -2)
+	}
+
 }
 
-func (s *Syncker) GetS2BBlocksForBeaconProducer() map[byte][]interface{} {
-	bestViewShardHash := s.config.Blockchain.Chains["beacon"].(BeaconChainInterface).GetShardBestViewHash()
+func (synckerManager *SynckerManager) GetS2BBlocksForBeaconProducer() map[byte][]interface{} {
+	bestViewShardHash := synckerManager.config.Blockchain.Chains["beacon"].(BeaconChainInterface).GetShardBestViewHash()
 	res := make(map[byte][]interface{})
 
 	//bypass first block
 	if len(bestViewShardHash) == 0 {
-		for i := 0; i < s.config.Node.GetChainParam().ActiveShards; i++ {
+		for i := 0; i < synckerManager.config.Node.GetChainParam().ActiveShards; i++ {
 			bestViewShardHash[byte(i)] = common.Hash{}
 		}
 	}
@@ -248,11 +191,11 @@ func (s *Syncker) GetS2BBlocksForBeaconProducer() map[byte][]interface{} {
 	for i, v := range bestViewShardHash {
 		fmt.Println("syncker: bestViewShardHash", i, v.String())
 		if (&v).IsEqual(&common.Hash{}) {
-			blk := *s.config.Node.GetChainParam().GenesisShardBlock
+			blk := *synckerManager.config.Node.GetChainParam().GenesisShardBlock
 			blk.Header.ShardID = i
 			v = *blk.Hash()
 		}
-		for _, v := range s.S2BPool.GetFinalBlockFromBlockHash(v.String()) {
+		for _, v := range synckerManager.s2bPool.GetFinalBlockFromBlockHash(v.String()) {
 			res[i] = append(res[i], v)
 			fmt.Println("syncker: get block ", v.GetHeight(), v.Hash().String())
 		}
@@ -261,41 +204,35 @@ func (s *Syncker) GetS2BBlocksForBeaconProducer() map[byte][]interface{} {
 	return res
 }
 
-func (s *Syncker) GetS2BBlocksForBeaconValidator(ctx context.Context, needBlkHash []common.Hash) map[byte][]interface{} {
-
-	return nil
-}
-
-func (s *Syncker) GetCrossShardBlocksForShardProducer(toShard byte) map[byte][]interface{} {
+func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShard byte) map[byte][]interface{} {
 	//get last confirm crossshard -> process request until retrieve info
 	res := make(map[byte][]interface{})
-	lastRequestCrossShard := s.ShardSyncProcess[int(toShard)].Chain.GetCrossShardState()
-	for i := 0; i < s.config.Node.GetChainParam().ActiveShards; i++ {
+	lastRequestCrossShard := synckerManager.ShardSyncProcess[int(toShard)].Chain.GetCrossShardState()
+	for i := 0; i < synckerManager.config.Node.GetChainParam().ActiveShards; i++ {
 		for {
 			if i == int(toShard) {
 				break
 			}
 			requestHeight := lastRequestCrossShard[byte(i)]
-			nextHeight := s.config.Node.FetchNextCrossShard(i, int(toShard), requestHeight)
+			nextHeight := synckerManager.config.Node.FetchNextCrossShard(i, int(toShard), requestHeight)
 			if nextHeight == 0 {
 				break
 			}
-			beaconBlock, err := s.config.Node.FetchBeaconBlockConfirmCrossShardHeight(i, int(toShard), nextHeight)
+			beaconBlock, err := synckerManager.config.Node.FetchBeaconBlockConfirmCrossShardHeight(i, int(toShard), nextHeight)
 			if err != nil {
 				break
 			}
 			for _, shardState := range beaconBlock.Body.ShardState[byte(i)] {
 				if shardState.Height == nextHeight {
-					if s.CrossShardPool[int(toShard)].HasBlock(shardState.Hash) {
-						//fmt.Println("crossdebug: GetCrossShardBlocksForShardProducer", s.CrossShardPool[int(toShard)].GetBlock(shardState.Hash).Hash().String())
-						res[byte(i)] = append(res[byte(i)], s.CrossShardPool[int(toShard)].GetBlock(shardState.Hash))
+					if synckerManager.crossShardPool[int(toShard)].HasBlock(shardState.Hash) {
+						//fmt.Println("crossdebug: GetCrossShardBlocksForShardProducer", synckerManager.CrossShardPool[int(toShard)].GetBlock(shardState.Hash).Hash().String())
+						res[byte(i)] = append(res[byte(i)], synckerManager.crossShardPool[int(toShard)].GetBlock(shardState.Hash))
 					}
 					lastRequestCrossShard[byte(i)] = nextHeight
 					break
 				}
 			}
 		}
-
 	}
 	return res
 }

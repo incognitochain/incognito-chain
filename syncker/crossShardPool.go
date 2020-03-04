@@ -1,7 +1,6 @@
 package syncker
 
 import (
-	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"time"
 )
@@ -64,14 +63,6 @@ func (pool *CrossShardBlkPool) RemoveBlock(hash string) {
 	pool.action <- func() {
 		if _, ok := pool.BlkPoolByHash[hash]; ok {
 			delete(pool.BlkPoolByHash, hash)
-		}
-	}
-}
-
-func (pool *CrossShardBlkPool) Print() {
-	pool.action <- func() {
-		for _, v := range pool.BlkPoolByHash {
-			fmt.Println("syncker", v.GetHeight(), v.Hash().String())
 		}
 	}
 }

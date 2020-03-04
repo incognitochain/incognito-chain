@@ -53,30 +53,21 @@ func NewShardSyncProcess(shardID int, server Server, beaconChain BeaconChainInte
 	return s
 }
 
-func (s *ShardSyncProcess) GetShardPeerStates() map[string]ShardPeerState {
-	res := make(chan map[string]ShardPeerState)
-	s.actionCh <- func() {
-		ps := make(map[string]ShardPeerState)
-		for k, v := range s.ShardPeerState {
-			ps[k] = v
-		}
-		res <- ps
-	}
-	return <-res
-}
-
-func (s *ShardSyncProcess) Start() {
+func (s *ShardSyncProcess) start() {
 	if s.Status == RUNNING_SYNC {
 		return
 	}
 	s.Status = RUNNING_SYNC
+
 	go func() {
 		ticker := time.NewTicker(time.Millisecond * 500)
 		for {
-			if s.Status != RUNNING_SYNC {
-				time.Sleep(time.Second)
-				continue
+			if s.IsCommittee {
+				s.CrossShardSyncProcess.start()
+			} else {
+				s.CrossShardSyncProcess.stop()
 			}
+
 			select {
 			case f := <-s.actionCh:
 				f()
@@ -96,38 +87,23 @@ func (s *ShardSyncProcess) Start() {
 		}
 	}()
 
-	s.CrossShardSyncProcess.Start()
 }
 
-func (s *ShardSyncProcess) Stop() {
+func (s *ShardSyncProcess) stop() {
 	s.Status = STOP_SYNC
-	s.CrossShardSyncProcess.Stop()
+	s.CrossShardSyncProcess.stop()
 }
 
-func (s *ShardSyncProcess) syncShardProcess() {
-	for {
-		requestCnt := 0
-		if s.Status != RUNNING_SYNC {
-			s.FewBlockBehind = false
-			time.Sleep(time.Second * 5)
-			continue
+func (s *ShardSyncProcess) getShardPeerStates() map[string]ShardPeerState {
+	res := make(chan map[string]ShardPeerState)
+	s.actionCh <- func() {
+		ps := make(map[string]ShardPeerState)
+		for k, v := range s.ShardPeerState {
+			ps[k] = v
 		}
-
-		for peerID, pState := range s.GetShardPeerStates() {
-			requestCnt += s.streamFromPeer(peerID, pState)
-		}
-
-		if requestCnt > 0 {
-			s.FewBlockBehind = false
-			s.syncShardProcess()
-		} else {
-			if len(s.ShardPeerState) > 0 {
-				s.FewBlockBehind = true
-			}
-			time.Sleep(time.Second * 5)
-		}
+		res <- ps
 	}
-
+	return <-res
 }
 
 func (s *ShardSyncProcess) insertShardBlockFromPool() {
@@ -157,6 +133,32 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 
 	if err := s.Chain.InsertBlk(blk.(common.BlockInterface)); err != nil {
 	}
+}
+
+func (s *ShardSyncProcess) syncShardProcess() {
+	for {
+		requestCnt := 0
+		if s.Status != RUNNING_SYNC {
+			s.FewBlockBehind = false
+			time.Sleep(time.Second * 5)
+			continue
+		}
+
+		for peerID, pState := range s.getShardPeerStates() {
+			requestCnt += s.streamFromPeer(peerID, pState)
+		}
+
+		if requestCnt > 0 {
+			s.FewBlockBehind = false
+			s.syncShardProcess()
+		} else {
+			if len(s.ShardPeerState) > 0 {
+				s.FewBlockBehind = true
+			}
+			time.Sleep(time.Second * 5)
+		}
+	}
+
 }
 
 func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) (requestCnt int) {

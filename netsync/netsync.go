@@ -37,7 +37,7 @@ type NetSync struct {
 }
 
 type NetSyncConfig struct {
-	Syncker               *syncker.Syncker
+	Syncker               *syncker.SynckerManager
 	BlockChain            *blockchain.BlockChain
 	ChainParam            *blockchain.Params
 	TxMemPool             *mempool.TxPool

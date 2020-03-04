@@ -16,48 +16,101 @@ type BeaconPeerState struct {
 }
 
 type BeaconSyncProcess struct {
-	Status                      string //stop, running
-	IsCommittee                 bool
+	status                      string //stop, running
+	isCommittee                 bool
 	FewBlockBehind              bool
-	BeaconPeerStates            map[string]BeaconPeerState //sender -> state
-	BeaconPeerStateCh           chan *wire.MessagePeerState
-	Server                      Server
-	Chain                       Chain
-	ChainID                     int
-	BeaconPool                  *BlkPool
-	S2BSyncProcess              *S2BSyncProcess
+	beaconPeerStates            map[string]BeaconPeerState //sender -> state
+	beaconPeerStateCh           chan *wire.MessagePeerState
+	server                      Server
+	chain                       Chain
+	beaconPool                  *BlkPool
+	s2bSyncProcess              *S2BSyncProcess
 	actionCh                    chan func()
 	lastUpdateConfirmCrossShard uint64
 }
 
 func NewBeaconSyncProcess(server Server, chain BeaconChainInterface) *BeaconSyncProcess {
 	s := &BeaconSyncProcess{
-		Status:                      STOP_SYNC,
-		Server:                      server,
-		Chain:                       chain,
-		BeaconPool:                  NewBlkPool("BeaconPool"),
-		BeaconPeerStates:            make(map[string]BeaconPeerState),
-		BeaconPeerStateCh:           make(chan *wire.MessagePeerState),
+		status:                      STOP_SYNC,
+		server:                      server,
+		chain:                       chain,
+		beaconPool:                  NewBlkPool("BeaconPool"),
+		beaconPeerStates:            make(map[string]BeaconPeerState),
+		beaconPeerStateCh:           make(chan *wire.MessagePeerState),
 		actionCh:                    make(chan func()),
 		lastUpdateConfirmCrossShard: 1,
 	}
-	s.S2BSyncProcess = NewS2BSyncProcess(server, s, chain)
+	s.s2bSyncProcess = NewS2BSyncProcess(server, s, chain)
 	go s.syncBeacon()
 	go s.insertBeaconBlockFromPool()
 	go s.updateConfirmCrossShard()
 	return s
 }
 
+func (s *BeaconSyncProcess) start(isCommittee bool) {
+	if s.status == RUNNING_SYNC {
+		return
+	}
+	s.isCommittee = isCommittee
+	s.status = RUNNING_SYNC
+
+	go func() {
+		ticker := time.NewTicker(time.Millisecond * 500)
+		for {
+			if s.isCommittee {
+				s.s2bSyncProcess.start()
+			} else {
+				s.s2bSyncProcess.stop()
+			}
+
+			select {
+			case f := <-s.actionCh:
+				f()
+			case beaconPeerState := <-s.beaconPeerStateCh:
+				s.beaconPeerStates[beaconPeerState.SenderID] = BeaconPeerState{
+					Timestamp:      beaconPeerState.Timestamp,
+					BestViewHash:   beaconPeerState.Beacon.BlockHash.String(),
+					BestViewHeight: beaconPeerState.Beacon.Height,
+				}
+			case <-ticker.C:
+				s.chain.SetReady(s.FewBlockBehind)
+			}
+			if s.status != RUNNING_SYNC {
+				time.Sleep(time.Second)
+				continue
+			}
+		}
+	}()
+
+}
+
+func (s *BeaconSyncProcess) stop() {
+	s.status = STOP_SYNC
+	s.s2bSyncProcess.stop()
+}
+
+func (s *BeaconSyncProcess) getBeaconPeerStates() map[string]BeaconPeerState {
+	res := make(chan map[string]BeaconPeerState)
+	s.actionCh <- func() {
+		ps := make(map[string]BeaconPeerState)
+		for k, v := range s.beaconPeerStates {
+			ps[k] = v
+		}
+		res <- ps
+	}
+	return <-res
+}
+
 func (s *BeaconSyncProcess) updateConfirmCrossShard() {
 	//TODO: update lastUpdateConfirmCrossShard using DB
 	fmt.Println("crossdebug lastUpdateConfirmCrossShard ", s.lastUpdateConfirmCrossShard)
 	for {
-		if s.lastUpdateConfirmCrossShard > s.Chain.GetBestViewHeight() { //TODO: get confirm height
+		if s.lastUpdateConfirmCrossShard > s.chain.GetBestViewHeight() { //TODO: get confirm height
 			time.Sleep(time.Second * 5)
 			continue
 		}
 
-		blk, err := s.Server.FetchBeaconBlock(s.lastUpdateConfirmCrossShard)
+		blk, err := s.server.FetchBeaconBlock(s.lastUpdateConfirmCrossShard)
 		if err != nil {
 			time.Sleep(time.Second * 5)
 			continue
@@ -67,7 +120,7 @@ func (s *BeaconSyncProcess) updateConfirmCrossShard() {
 			for _, blockState := range shardState {
 				for _, toSID := range blockState.CrossShard {
 					fmt.Printf("crossdebug: from %d to %d with crossshard height %d confirmed by beacon hash %s\n", int(fromSID), int(toSID), blockState.Height, blk.Hash().String())
-					err := s.Server.StoreBeaconHashConfirmCrossShardHeight(int(fromSID), int(toSID), blockState.Height, blk.Hash().String())
+					err := s.server.StoreBeaconHashConfirmCrossShardHeight(int(fromSID), int(toSID), blockState.Height, blk.Hash().String())
 					if err != nil {
 						panic(err)
 					}
@@ -75,54 +128,6 @@ func (s *BeaconSyncProcess) updateConfirmCrossShard() {
 			}
 		}
 	}
-}
-
-func (s *BeaconSyncProcess) Start(chainID int) {
-	if s.Status == RUNNING_SYNC {
-		return
-	}
-	s.ChainID = chainID
-	s.Status = RUNNING_SYNC
-	go func() {
-		ticker := time.NewTicker(time.Millisecond * 500)
-		for {
-			if s.Status != RUNNING_SYNC {
-				time.Sleep(time.Second)
-				continue
-			}
-
-			select {
-			case f := <-s.actionCh:
-				f()
-			case beaconPeerState := <-s.BeaconPeerStateCh:
-				s.BeaconPeerStates[beaconPeerState.SenderID] = BeaconPeerState{
-					Timestamp:      beaconPeerState.Timestamp,
-					BestViewHash:   beaconPeerState.Beacon.BlockHash.String(),
-					BestViewHeight: beaconPeerState.Beacon.Height,
-				}
-			case <-ticker.C:
-				s.Chain.SetReady(s.FewBlockBehind)
-			}
-		}
-	}()
-	s.S2BSyncProcess.Start()
-}
-
-func (s *BeaconSyncProcess) GetBeaconPeerStates() map[string]BeaconPeerState {
-	res := make(chan map[string]BeaconPeerState)
-	s.actionCh <- func() {
-		ps := make(map[string]BeaconPeerState)
-		for k, v := range s.BeaconPeerStates {
-			ps[k] = v
-		}
-		res <- ps
-	}
-	return <-res
-}
-
-func (s *BeaconSyncProcess) Stop() {
-	s.Status = STOP_SYNC
-	s.S2BSyncProcess.Stop()
 }
 
 func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
@@ -138,35 +143,36 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 		return
 	}
 	var blk common.BlockPoolInterface
-	if s.ChainID == -1 {
-		blk = s.BeaconPool.GetNextBlock(s.Chain.GetBestViewHash(), true)
+	if s.isCommittee {
+		blk = s.beaconPool.GetNextBlock(s.chain.GetBestViewHash(), true)
 	} else {
-		blk = s.BeaconPool.GetNextBlock(s.Chain.GetBestViewHash(), false)
+		blk = s.beaconPool.GetNextBlock(s.chain.GetBestViewHash(), false)
 	}
 
 	if isNil(blk) {
 		return
 	}
+
 	fmt.Println("Syncker: Insert beacon from pool", blk.(common.BlockInterface).GetHeight())
-	s.BeaconPool.RemoveBlock(blk.Hash().String())
-	if err := s.Chain.ValidateBlockSignatures(blk.(common.BlockInterface), s.Chain.GetCommittee()); err != nil {
+	s.beaconPool.RemoveBlock(blk.Hash().String())
+	if err := s.chain.ValidateBlockSignatures(blk.(common.BlockInterface), s.chain.GetCommittee()); err != nil {
 		return
 	}
 
-	if err := s.Chain.InsertBlk(blk.(common.BlockInterface)); err != nil {
+	if err := s.chain.InsertBlk(blk.(common.BlockInterface)); err != nil {
 	}
 }
 
 func (s *BeaconSyncProcess) syncBeacon() {
 	for {
 		requestCnt := 0
-		if s.Status != RUNNING_SYNC {
+		if s.status != RUNNING_SYNC {
 			s.FewBlockBehind = false
 			time.Sleep(time.Second)
 			continue
 		}
 
-		for peerID, pState := range s.GetBeaconPeerStates() {
+		for peerID, pState := range s.getBeaconPeerStates() {
 			requestCnt += s.streamFromPeer(peerID, pState)
 		}
 
@@ -174,13 +180,12 @@ func (s *BeaconSyncProcess) syncBeacon() {
 		if requestCnt > 0 {
 			s.FewBlockBehind = false
 		} else {
-			if len(s.BeaconPeerStates) > 0 {
+			if len(s.beaconPeerStates) > 0 {
 				s.FewBlockBehind = true
 			}
 			time.Sleep(time.Second * 5)
 		}
 	}
-
 }
 
 func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState) (requestCnt int) {
@@ -195,16 +200,16 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 
 	toHeight := pState.BestViewHeight
 	//process param
-	if s.ChainID != -1 { //if not beacon committee, not insert the newest block (incase we need to revert beacon block)
+	if !s.isCommittee { //if not beacon committee, not insert the newest block (incase we need to revert beacon block)
 		toHeight -= 1
 	}
 
-	if toHeight <= s.Chain.GetBestViewHeight() {
+	if toHeight <= s.chain.GetBestViewHeight() {
 		return
 	}
 
 	//stream
-	ch, err := s.Server.RequestBeaconBlocksViaStream(ctx, peerID, s.Chain.GetBestViewHeight()+1, toHeight)
+	ch, err := s.server.RequestBeaconBlocksViaStream(ctx, peerID, s.chain.GetBestViewHeight()+1, toHeight)
 	if err != nil {
 		fmt.Println("Syncker: create channel fail")
 		return
@@ -223,7 +228,7 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 			if len(blockBuffer) >= 350 || (len(blockBuffer) > 0 && (isNil(blk) || time.Since(insertTime) > time.Millisecond*1000)) {
 				insertBlkCnt := 0
 				for {
-					if successBlk, err := InsertBatchBlock(s.Chain, blockBuffer); err != nil {
+					if successBlk, err := InsertBatchBlock(s.chain, blockBuffer); err != nil {
 						return
 					} else {
 						insertBlkCnt += successBlk

@@ -64,7 +64,7 @@ type Server struct {
 	chainParams       *blockchain.Params
 	connManager       *connmanager.ConnManager
 	blockChain        *blockchain.BlockChain
-	syncker           *syncker.Syncker
+	syncker           *syncker.SynckerManager
 	dataBase          database.DatabaseInterface
 	memCache          *memcache.MemoryCache
 	rpcServer         *rpcserver.RpcServer
@@ -207,7 +207,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.dataBase = db
 	serverObj.memCache = memcache.New()
 	serverObj.consensusEngine = blsbft.NewConsensusEngine()
-	serverObj.syncker = syncker.NewSyncker()
+	serverObj.syncker = syncker.NewSynckerManager()
 	//Init channel
 	cPendingTxs := make(chan metadata.Transaction, 500)
 	cRemovedTxs := make(chan metadata.Transaction, 500)
@@ -487,7 +487,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 	serverObj.connManager = connManager
 	serverObj.consensusEngine.Init(&blsbft.EngineConfig{Node: serverObj, Blockchain: serverObj.blockChain, PubSubManager: serverObj.pusubManager})
-	serverObj.syncker.Init(&syncker.SynckerConfig{Node: serverObj, Blockchain: serverObj.blockChain})
+	serverObj.syncker.Init(&syncker.SynckerManagerConfig{Node: serverObj, Blockchain: serverObj.blockChain})
 
 	// Start up persistent peers.
 	permanentPeers := cfg.ConnectPeers
