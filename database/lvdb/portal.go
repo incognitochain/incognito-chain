@@ -123,13 +123,6 @@ func NewWaitingPortingReqKey (beaconHeight uint64, portingID string) string {
 	return string(key)
 }
 
-func NewWaitingRedeemReqKey (beaconHeight uint64, redeemID string) string {
-	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
-	key := append(PortalWaitingRedeemRequestsPrefix, beaconHeightBytes...)
-	key = append(key, []byte(redeemID)...)
-	return string(key)
-}
-
 // NewPortalReqPTokenKey creates key for tracking request pToken in portal
 func NewPortalReqPTokenKey (txReqStr string) string {
 	key := append(PortalRequestPTokensPrefix, []byte(txReqStr)...)
@@ -271,8 +264,8 @@ func (db *db) StoreFinalExchangeRatesItem(keyId []byte, content interface{}) err
 	return nil
 }
 
-func (db *db) GetItemPortalByKey(prefix []byte) ([]byte, error) {
-	itemRecord, dbErr := db.lvdb.Get(prefix, nil)
+func (db *db) GetItemPortalByKey(key []byte) ([]byte, error) {
+	itemRecord, dbErr := db.lvdb.Get(key, nil)
 	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
 		return nil, database.NewDatabaseError(database.GetItemPortalByKeyError, dbErr)
 	}
@@ -417,4 +410,35 @@ func (finalExchangeRates *FinalExchangeRates) ExchangePRV2BNB(value uint64) uint
 	database.Logger.Log.Infof("================ Convert, PRV %v 2 BNB with BNBRates %v PRVRates %v, result %v", value, BNBRates, PRVRates , valueExchange)
 	return  valueExchange
 }
+
+
+// ======= REDEEM =======
+// NewWaitingRedeemReqKey creates key for storing waiting redeems list in portal
+func NewWaitingRedeemReqKey (beaconHeight uint64, redeemID string) string {
+	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+	key := append(PortalWaitingRedeemRequestsPrefix, beaconHeightBytes...)
+	key = append(key, []byte(redeemID)...)
+	return string(key)
+}
+
+// NewRedeemReqKey creates key for tracking redeems status in portal
+func NewRedeemReqKey(redeemID string) string {
+	key := append(PortalRedeemRequestsPrefix, []byte(redeemID)...)
+	return string(key)
+}
+
+
+func (db *db) StoreRedeemRequest(key []byte, value []byte) error {
+	err := db.Put(key, value)
+	if err != nil {
+		return database.NewDatabaseError(database.StoreRedeemRequestError, errors.Wrap(err, "db.lvdb.put"))
+	}
+	return nil
+}
+
+func (db *db) GetRedeemRequestByRedeemID(redeemID string) ([]byte, error) {
+	key := NewRedeemReqKey(redeemID)
+	return db.GetItemPortalByKey([]byte(key))
+}
+
 
