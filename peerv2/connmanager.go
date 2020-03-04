@@ -113,7 +113,7 @@ func (cm *ConnManager) Start(ns NetSync) {
 		panic(err)
 	}
 	cm.messages = make(chan *pubsub.Message, 1000)
-	cm.data = make(chan []byte)
+	cm.data = make(chan []byte, 1000)
 
 	// Wait until connection to highway is established to make sure gRPC won't fail
 	// NOTE: must Connect after creating FloodSub
@@ -204,12 +204,14 @@ func (cm *ConnManager) process() {
 			if err != nil {
 				Logger.Warn(err)
 			}
-			//case data := <-cm.data:
-			//	Logger.Infof("[stream] process data")
-			//	//err := cm.disp.processStreamBlk(data[0], data[1:])
-			//	if err != nil {
-			//		Logger.Warn(err)
-			//	}
+		case data := <-cm.data:
+			//Logger.Infof("[stream] process data")
+			go func(data []byte) {
+				err := cm.disp.processStreamBlk(data[0], data[1:])
+				if err != nil {
+					Logger.Warn(err)
+				}
+			}(data)
 		}
 	}
 }
