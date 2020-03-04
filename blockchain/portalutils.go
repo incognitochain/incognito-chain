@@ -70,6 +70,39 @@ func NewPortingRequestState(
 	}, nil
 }
 
+func NewRedeemRequestState(
+	uniqueRedeemID string,
+	txReqID common.Hash,
+	tokenID string,
+	redeemerAddress string,
+	redeemerRemoteAddress string,
+	redeemAmount uint64,
+	custodians map[string]*lvdb.MatchingRedeemCustodianDetail,
+	redeemFee uint64,
+	beaconHeight uint64,
+) (*lvdb.RedeemRequest, error) {
+	return &lvdb.RedeemRequest{
+		UniqueRedeemID: uniqueRedeemID,
+		TxReqID : txReqID,
+		TokenID: tokenID,
+		RedeemerAddress:redeemerAddress,
+		RedeemerRemoteAddress: redeemerRemoteAddress,
+		RedeemAmount: redeemAmount,
+		Custodians: custodians,
+		RedeemFee: redeemFee,
+		BeaconHeight: beaconHeight,
+	}, nil
+}
+
+func NewMatchingRedeemCustodianDetail(
+	remoteAddress string,
+	amount uint64) (*lvdb.MatchingRedeemCustodianDetail, error){
+	return &lvdb.MatchingRedeemCustodianDetail{
+		RemoteAddress:remoteAddress,
+		Amount:amount,
+	}, nil
+}
+
 func NewExchangeRatesState(
 	senderAddress string,
 	rates map[string]uint64,
@@ -576,17 +609,8 @@ func sortCustodiansByAmountHoldingPubTokenAscent(tokenSymbol string, custodians 
 }
 
 
-func pickupCustodianForRedeem(redeemAmount uint64, redeemTokenID string, portalState *CurrentPortalState) (map[string]*lvdb.CustodianState, error) {
+func pickupCustodianForRedeem(redeemAmount uint64, tokenSymbol string, portalState *CurrentPortalState) (map[string]*lvdb.MatchingRedeemCustodianDetail, error) {
 	custodianPoolState := portalState.CustodianPoolState
-
-	// get tokenSymbol from redeemTokenID
-	tokenSymbol := ""
-	for tokenSym, incTokenID := range metadata.PortalSupportedTokenMap {
-		if incTokenID == redeemTokenID {
-			tokenSymbol = tokenSym
-			break
-		}
-	}
 
 	// case 1: pick one custodian
 	// filter custodians
@@ -595,7 +619,7 @@ func pickupCustodianForRedeem(redeemAmount uint64, redeemTokenID string, portalS
 	bigCustodians := make(map[string]*lvdb.CustodianState, 0)
 	bigCustodianKeys  := make([]string, 0)
 	smallCustodians := make(map[string]*lvdb.CustodianState, 0)
-	matchedCustodians := make(map[string]*lvdb.CustodianState, 0)
+	matchedCustodians := make(map[string]*lvdb.MatchingRedeemCustodianDetail, 0)
 
 	for key, cus := range custodianPoolState {
 		if cus.HoldingPubTokens[tokenSymbol] >= redeemAmount {
@@ -612,13 +636,17 @@ func pickupCustodianForRedeem(redeemAmount uint64, redeemTokenID string, portalS
 	if len(bigCustodians) > 0 {
 		randomIndexCus := rand.Intn(len(bigCustodians))
 		custodianKey := bigCustodianKeys[randomIndexCus]
-		matchedCustodians[custodianKey] = new(lvdb.CustodianState)
-		matchedCustodians[custodianKey] = bigCustodians[custodianKey]
+		matchingCustodian := bigCustodians[custodianKey]
+
+		matchedCustodians[custodianKey] = new(lvdb.MatchingRedeemCustodianDetail)
+		matchedCustodians[custodianKey], _ = NewMatchingRedeemCustodianDetail(
+			matchingCustodian.RemoteAddresses[tokenSymbol],
+			redeemAmount)
 
 		return matchedCustodians, nil
 	}
 
-	// pick-up multiple custodians in smallCustodians
+	// case 2: pick-up multiple custodians in smallCustodians
 	if len(smallCustodians) == 0 {
 		Logger.log.Errorf("there is no custodian in custodian pool")
 		return nil, errors.New("there is no custodian in custodian pool")
@@ -630,10 +658,29 @@ func pickupCustodianForRedeem(redeemAmount uint64, redeemTokenID string, portalS
 		return nil, err
 	}
 
-	//todo:
-	for _, _ = range sortedCustodianSlice {
+	// get custodians util matching full redeemAmount
+	totalMatchedAmount := uint64(0)
+	for i := len(sortedCustodianSlice) - 1; i <= 0; i++ {
+		custodianKey := sortedCustodianSlice[i].Key
+		custodianValue := sortedCustodianSlice[i].Value
 
+		matchedAmount := custodianValue.HoldingPubTokens[tokenSymbol]
+		amountNeedToBeMatched := redeemAmount - totalMatchedAmount
+		if matchedAmount >  amountNeedToBeMatched {
+			matchedAmount = amountNeedToBeMatched
+		}
+
+		matchedCustodians[custodianKey] = new(lvdb.MatchingRedeemCustodianDetail)
+		matchedCustodians[custodianKey], _ = NewMatchingRedeemCustodianDetail(
+			custodianValue.RemoteAddresses[tokenSymbol],
+			matchedAmount)
+
+		totalMatchedAmount += matchedAmount
+		if totalMatchedAmount == redeemAmount {
+			return matchedCustodians, nil
+		}
 	}
 
-	return nil, nil
+	Logger.log.Errorf("Not enough amount public token to return user")
+	return nil, errors.New("Not enough amount public token to return user")
 }

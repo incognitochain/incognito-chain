@@ -18,25 +18,24 @@ const (
 )
 
 type CustodianState struct {
-	IncognitoAddress string
-	TotalCollateral  uint64			// prv
-	FreeCollateral   uint64			// prv
-	HoldingPubTokens map[string]uint64   	// tokenSymbol : amount
+	IncognitoAddress       string
+	TotalCollateral        uint64            // prv
+	FreeCollateral         uint64            // prv
+	HoldingPubTokens       map[string]uint64 // tokenSymbol : amount
 	LockedAmountCollateral map[string]uint64
-	RemoteAddresses  map[string]string  	// tokenSymbol : address
+	RemoteAddresses        map[string]string // tokenSymbol : address
 }
 
 type MatchingPortingCustodianDetail struct {
-	RemoteAddress string
-	Amount uint64
+	RemoteAddress          string
+	Amount                 uint64
 	LockedAmountCollateral uint64
-	RemainCollateral uint64
+	RemainCollateral       uint64
 }
 
 type MatchingRedeemCustodianDetail struct {
-	RemoteAddress string
-	Amount uint64
-	UnLockedAmountCollateral uint64
+	RemoteAddress            string
+	Amount                   uint64
 }
 
 type PortingRequest struct {
@@ -45,26 +44,27 @@ type PortingRequest struct {
 	TokenID         string
 	PorterAddress   string
 	Amount          uint64
-	Custodians      map[string]MatchingPortingCustodianDetail			// key : incogAddress
+	Custodians      map[string]MatchingPortingCustodianDetail // key : incogAddress
 	PortingFee      uint64
-	Status			int
-	BeaconHeight	uint64
+	Status          int
+	BeaconHeight    uint64
 }
 
 type RedeemRequest struct {
 	UniqueRedeemID        string
-	TxReqID               string
+	TxReqID               common.Hash
 	TokenID               string
 	RedeemerAddress       string
 	RedeemerRemoteAddress string
 	RedeemAmount          uint64
-	Custodians            map[string]MatchingRedeemCustodianDetail 	// key : incogAddress
+	Custodians            map[string]*MatchingRedeemCustodianDetail // key : incogAddress
 	RedeemFee             uint64
+	BeaconHeight          uint64
 }
 
 type ExchangeRatesRequest struct {
 	SenderAddress string
-	Rates map[string]uint64
+	Rates         map[string]uint64
 }
 
 type FinalExchangeRatesDetail struct {
@@ -75,33 +75,31 @@ type FinalExchangeRates struct {
 	Rates map[string]FinalExchangeRatesDetail
 }
 
-func NewCustodianStateKey (beaconHeight uint64, custodianAddress string) string {
+func NewCustodianStateKey(beaconHeight uint64, custodianAddress string) string {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 	key := append(PortalCustodianStatePrefix, beaconHeightBytes...)
 	key = append(key, []byte(custodianAddress)...)
 	return string(key)
 }
 
-
-func NewPortingRequestKey (uniquePortingID string) string {
+func NewPortingRequestKey(uniquePortingID string) string {
 	key := append(PortalPortingRequestsPrefix, []byte(uniquePortingID)...)
 	return string(key) //prefix + uniqueId
 }
 
-func NewPortingRequestTxKey (txReqID string) string {
+func NewPortingRequestTxKey(txReqID string) string {
 	key := append(PortalPortingRequestsTxPrefix, []byte(txReqID)...)
 	return string(key) //prefix + txHash
 }
 
-
-func NewFinalExchangeRatesKey (beaconHeight uint64) string {
+func NewFinalExchangeRatesKey(beaconHeight uint64) string {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 	key := append(PortalFinalExchangeRatesPrefix, beaconHeightBytes...)
 	key = append(key, []byte("portal")...)
 	return string(key)
 }
 
-func NewExchangeRatesRequestKey (beaconHeight uint64, txId string, lockTime string, shardId byte) string {
+func NewExchangeRatesRequestKey(beaconHeight uint64, txId string, lockTime string, shardId byte) string {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 	key := append(PortalExchangeRatesPrefix, beaconHeightBytes...)
 	key = append(key, []byte(txId)...)
@@ -111,12 +109,12 @@ func NewExchangeRatesRequestKey (beaconHeight uint64, txId string, lockTime stri
 	return string(key)
 }
 
-func NewCustodianDepositKey (txID string) string {
+func NewCustodianDepositKey(txID string) string {
 	key := append(PortalCustodianDepositPrefix, []byte(txID)...)
 	return string(key)
 }
 
-func NewWaitingPortingReqKey (beaconHeight uint64, portingID string) string {
+func NewWaitingPortingReqKey(beaconHeight uint64, portingID string) string {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 	key := append(PortalWaitingPortingRequestsPrefix, beaconHeightBytes...)
 	key = append(key, []byte(portingID)...)
@@ -124,7 +122,7 @@ func NewWaitingPortingReqKey (beaconHeight uint64, portingID string) string {
 }
 
 // NewPortalReqPTokenKey creates key for tracking request pToken in portal
-func NewPortalReqPTokenKey (txReqStr string) string {
+func NewPortalReqPTokenKey(txReqStr string) string {
 	key := append(PortalRequestPTokensPrefix, []byte(txReqStr)...)
 	return string(key)
 }
@@ -249,7 +247,6 @@ func (db *db) StoreExchangeRatesRequestItem(keyId []byte, content interface{}) e
 	return nil
 }
 
-
 func (db *db) StoreFinalExchangeRatesItem(keyId []byte, content interface{}) error {
 	contributionBytes, err := json.Marshal(content)
 	if err != nil {
@@ -287,7 +284,7 @@ func (db *db) GetPortingRequestStatusByPortingID(portingID string) (int, error) 
 
 	var portingRequestResult PortingRequest
 
-	if  portingRequest == nil {
+	if portingRequest == nil {
 		return 0, nil
 	}
 
@@ -310,7 +307,7 @@ func (db *db) UpdatePortingRequestStatus(portingID string, newStatus int) error 
 
 	var portingRequestResult PortingRequest
 
-	if  portingRequest == nil {
+	if portingRequest == nil {
 		return nil
 	}
 
@@ -330,7 +327,6 @@ func (db *db) UpdatePortingRequestStatus(portingID string, newStatus int) error 
 
 	return nil
 }
-
 
 func (finalExchangeRates FinalExchangeRates) ExchangePToken2PRVByTokenId(pTokenId string, value uint64) uint64 {
 	switch pTokenId {
@@ -356,12 +352,12 @@ func (finalExchangeRates *FinalExchangeRates) ExchangePRV2PTokenByTokenId(pToken
 
 func (finalExchangeRates *FinalExchangeRates) convert(value uint64, ratesFrom uint64, RatesTo uint64) uint64 {
 	//convert to pusdt
-	total := (value * ratesFrom) /  uint64(math.Pow10(9)) //value of nanno
+	total := (value * ratesFrom) / uint64(math.Pow10(9)) //value of nanno
 
 	//pusdt -> new coin
-	result  := (total * uint64(math.Pow10(9))) / RatesTo
+	result := (total * uint64(math.Pow10(9))) / RatesTo
 
-	return  result
+	return result
 
 }
 
@@ -371,7 +367,7 @@ func (finalExchangeRates *FinalExchangeRates) ExchangeBTC2PRV(value uint64) uint
 	PRVRates := finalExchangeRates.Rates[PortalTokenSymbolPRV].Amount //return nano pUSDT
 	valueExchange := finalExchangeRates.convert(value, BTCRates, PRVRates)
 
-	database.Logger.Log.Infof("================ Convert, BTC %d 2 PRV with BTCRates %d PRVRates %d , result %d", value, BTCRates, PRVRates , valueExchange)
+	database.Logger.Log.Infof("================ Convert, BTC %d 2 PRV with BTCRates %d PRVRates %d , result %d", value, BTCRates, PRVRates, valueExchange)
 
 	//nano
 	return valueExchange
@@ -383,9 +379,9 @@ func (finalExchangeRates *FinalExchangeRates) ExchangeBNB2PRV(value uint64) uint
 
 	valueExchange := finalExchangeRates.convert(value, BNBRates, PRVRates)
 
-	database.Logger.Log.Infof("================ Convert, BNB %v 2 PRV with BNBRates %v PRVRates %v, result %v", value, BNBRates, PRVRates , valueExchange)
+	database.Logger.Log.Infof("================ Convert, BNB %v 2 PRV with BNBRates %v PRVRates %v, result %v", value, BNBRates, PRVRates, valueExchange)
 
-	return  valueExchange
+	return valueExchange
 }
 
 func (finalExchangeRates *FinalExchangeRates) ExchangePRV2BTC(value uint64) uint64 {
@@ -395,7 +391,7 @@ func (finalExchangeRates *FinalExchangeRates) ExchangePRV2BTC(value uint64) uint
 
 	valueExchange := finalExchangeRates.convert(value, PRVRates, BTCRates)
 
-	database.Logger.Log.Infof("================ Convert, PRV %v 2 BTC with BTCRates %v PRVRates %v, result %v", value, BTCRates, PRVRates , valueExchange)
+	database.Logger.Log.Infof("================ Convert, PRV %v 2 BTC with BTCRates %v PRVRates %v, result %v", value, BTCRates, PRVRates, valueExchange)
 
 	return valueExchange
 }
@@ -406,15 +402,13 @@ func (finalExchangeRates *FinalExchangeRates) ExchangePRV2BNB(value uint64) uint
 
 	valueExchange := finalExchangeRates.convert(value, PRVRates, BNBRates)
 
-
-	database.Logger.Log.Infof("================ Convert, PRV %v 2 BNB with BNBRates %v PRVRates %v, result %v", value, BNBRates, PRVRates , valueExchange)
-	return  valueExchange
+	database.Logger.Log.Infof("================ Convert, PRV %v 2 BNB with BNBRates %v PRVRates %v, result %v", value, BNBRates, PRVRates, valueExchange)
+	return valueExchange
 }
-
 
 // ======= REDEEM =======
 // NewWaitingRedeemReqKey creates key for storing waiting redeems list in portal
-func NewWaitingRedeemReqKey (beaconHeight uint64, redeemID string) string {
+func NewWaitingRedeemReqKey(beaconHeight uint64, redeemID string) string {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 	key := append(PortalWaitingRedeemRequestsPrefix, beaconHeightBytes...)
 	key = append(key, []byte(redeemID)...)
@@ -426,7 +420,6 @@ func NewRedeemReqKey(redeemID string) string {
 	key := append(PortalRedeemRequestsPrefix, []byte(redeemID)...)
 	return string(key)
 }
-
 
 func (db *db) StoreRedeemRequest(key []byte, value []byte) error {
 	err := db.Put(key, value)
@@ -440,5 +433,3 @@ func (db *db) GetRedeemRequestByRedeemID(redeemID string) ([]byte, error) {
 	key := NewRedeemReqKey(redeemID)
 	return db.GetItemPortalByKey([]byte(key))
 }
-
-

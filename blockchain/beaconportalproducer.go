@@ -842,20 +842,22 @@ func buildRedeemRequestInst(
 	incAddressStr string,
 	remoteAddress string,
 	redeemFee uint64,
+	matchingCustodianDetail map[string]*lvdb.MatchingRedeemCustodianDetail,
 	metaType int,
 	shardID byte,
 	txReqID common.Hash,
 	status string,
 ) []string {
 	redeemRequestContent := metadata.PortalRedeemRequestContent{
-		UniqueRedeemID: uniqueRedeemID,
-		TokenID:        tokenID,
-		RedeemAmount:   redeemAmount,
-		IncAddressStr:  incAddressStr,
-		RemoteAddress:  remoteAddress,
-		RedeemFee:      redeemFee,
-		TxReqID:        txReqID,
-		ShardID:        shardID,
+		UniqueRedeemID:          uniqueRedeemID,
+		TokenID:                 tokenID,
+		RedeemAmount:            redeemAmount,
+		IncAddressStr:           incAddressStr,
+		RemoteAddress:           remoteAddress,
+		MatchingCustodianDetail: matchingCustodianDetail,
+		RedeemFee:               redeemFee,
+		TxReqID:                 txReqID,
+		ShardID:                 shardID,
 	}
 	redeemRequestContentBytes, _ := json.Marshal(redeemRequestContent)
 	return []string{
@@ -866,7 +868,6 @@ func buildRedeemRequestInst(
 	}
 }
 
-//todo
 // buildInstructionsForRedeemRequest builds instruction for redeem request action
 func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 	contentStr string,
@@ -899,6 +900,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 			meta.IncAddressStr,
 			meta.RemoteAddress,
 			meta.RedeemFee,
+			nil,
 			meta.Type,
 			actionData.ShardID,
 			actionData.TxReqID,
@@ -921,6 +923,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 			meta.IncAddressStr,
 			meta.RemoteAddress,
 			meta.RedeemFee,
+			nil,
 			meta.Type,
 			actionData.ShardID,
 			actionData.TxReqID,
@@ -942,6 +945,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 			meta.IncAddressStr,
 			meta.RemoteAddress,
 			meta.RedeemFee,
+			nil,
 			meta.Type,
 			actionData.ShardID,
 			actionData.TxReqID,
@@ -957,6 +961,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 			meta.IncAddressStr,
 			meta.RemoteAddress,
 			meta.RedeemFee,
+			nil,
 			meta.Type,
 			actionData.ShardID,
 			actionData.TxReqID,
@@ -965,15 +970,84 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 		return [][]string{inst}, nil
 	}
 
-	//todo:
-	// pick custodian(s) who holding public token to return user
+	// get tokenSymbol from redeemTokenID
+	tokenSymbol := ""
+	for tokenSym, incTokenID := range metadata.PortalSupportedTokenMap {
+		if incTokenID == meta.TokenID {
+			tokenSymbol = tokenSym
+			break
+		}
+	}
 
+	// pick custodian(s) who holding public token to return user
+	matchingCustodiansDetail, err := pickupCustodianForRedeem(meta.RedeemAmount, tokenSymbol, currentPortalState)
+	if err != nil {
+		Logger.log.Errorf("Error when pick up custodian for redeem %v\n", err)
+		inst := buildRedeemRequestInst(
+			meta.UniqueRedeemID,
+			meta.TokenID,
+			meta.RedeemAmount,
+			meta.IncAddressStr,
+			meta.RemoteAddress,
+			meta.RedeemFee,
+			nil,
+			meta.Type,
+			actionData.ShardID,
+			actionData.TxReqID,
+			common.PortalRedeemRequestRejectedStatus,
+		)
+		return [][]string{inst}, nil
+	}
 
 	// add to waiting Redeem list
-	//
+	redeemRequest, _ := NewRedeemRequestState(
+		meta.UniqueRedeemID,
+		actionData.TxReqID,
+		meta.TokenID,
+		meta.IncAddressStr,
+		meta.RemoteAddress,
+		meta.RedeemAmount,
+		matchingCustodiansDetail,
+		meta.RedeemFee,
+		beaconHeight,
+	)
+	currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest] = redeemRequest
 
-	//currentPortalState.CustodianPoolState
+	// update custodian state (holding public tokens)
+	for k, cus := range matchingCustodiansDetail {
+		if currentPortalState.CustodianPoolState[k].HoldingPubTokens[tokenSymbol] < cus.Amount {
+			Logger.log.Errorf("Amount holding public tokens is less than matching redeem amount")
+			inst := buildRedeemRequestInst(
+				meta.UniqueRedeemID,
+				meta.TokenID,
+				meta.RedeemAmount,
+				meta.IncAddressStr,
+				meta.RemoteAddress,
+				meta.RedeemFee,
+				nil,
+				meta.Type,
+				actionData.ShardID,
+				actionData.TxReqID,
+				common.PortalRedeemRequestRejectedStatus,
+			)
+			return [][]string{inst}, nil
+		}
+		currentPortalState.CustodianPoolState[k].HoldingPubTokens[tokenSymbol] -= cus.Amount
+	}
 
-
-	return [][]string{}, nil
+	Logger.log.Infof("[Portal] Build accepted instruction for redeem request")
+	inst := buildRedeemRequestInst(
+		meta.UniqueRedeemID,
+		meta.TokenID,
+		meta.RedeemAmount,
+		meta.IncAddressStr,
+		meta.RemoteAddress,
+		meta.RedeemFee,
+		matchingCustodiansDetail,
+		meta.Type,
+		actionData.ShardID,
+		actionData.TxReqID,
+		common.PortalRedeemRequestAcceptedStatus,
+	)
+	return [][]string{inst}, nil
 }

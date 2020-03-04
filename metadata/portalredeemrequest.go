@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"math"
 	"reflect"
@@ -38,14 +39,15 @@ type PortalRedeemRequestAction struct {
 // It will be appended to beaconBlock
 // both accepted and rejected status
 type PortalRedeemRequestContent struct {
-	UniqueRedeemID string
-	TokenID        string // pTokenID in incognito chain
-	RedeemAmount   uint64
-	IncAddressStr  string
-	RemoteAddress  string // btc/bnb/etc address
-	RedeemFee      uint64 // ptoken fee, 0.01% redeemAmount
-	TxReqID        common.Hash
-	ShardID        byte
+	UniqueRedeemID          string
+	TokenID                 string // pTokenID in incognito chain
+	RedeemAmount            uint64
+	IncAddressStr           string
+	RemoteAddress           string // btc/bnb/etc address
+	RedeemFee               uint64 // ptoken fee, 0.01% redeemAmount
+	MatchingCustodianDetail map[string]*lvdb.MatchingRedeemCustodianDetail
+	TxReqID                 common.Hash
+	ShardID                 byte
 }
 
 // PortalRedeemRequestStatus - Beacon tracks status of redeem request into db
@@ -77,13 +79,13 @@ func NewPortalRedeemRequest(
 		RedeemAmount:   redeemAmount,
 		IncAddressStr:  incAddressStr,
 		RemoteAddress:  remoteAddr,
-		RedeemFee: redeemFee,
+		RedeemFee:      redeemFee,
 	}
 	requestPTokenMeta.MetadataBase = metadataBase
 	return requestPTokenMeta, nil
 }
 
-func getMinRedeemFeeByRedeemAmount (redeemAmount uint64) (uint64, error) {
+func getMinRedeemFeeByRedeemAmount(redeemAmount uint64) (uint64, error) {
 	if redeemAmount == 0 {
 		return 0, errors.New("redeem amount must be greater than 0")
 	}
@@ -149,7 +151,7 @@ func (redeemReq PortalRedeemRequest) ValidateSanityData(bcr BlockchainRetriever,
 	}
 
 	// validate value transfer of tx
-	if redeemReq.RedeemAmount + redeemReq.RedeemFee != txr.CalculateTxValue() {
+	if redeemReq.RedeemAmount+redeemReq.RedeemFee != txr.CalculateTxValue() {
 		return false, false, errors.New("deposit amount should be equal to the tx value")
 	}
 
