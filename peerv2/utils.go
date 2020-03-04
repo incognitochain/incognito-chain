@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 func ParseListenner(s, defaultIP string, defaultPort int) (string, int) {
@@ -141,4 +143,9 @@ func batchingRangeBlkForSync(
 	}
 	res = append(res, to)
 	return res
+}
+
+func genUUID() string {
+	randUUID, _ := uuid.NewRandom()
+	return randUUID.String()
 }
