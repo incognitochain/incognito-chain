@@ -50,6 +50,7 @@ const (
 	PortalExchangeRatesMeta             = 105
 	PortalRedeemRequestMeta             = 106
 	PortalRedeemRequestResponseMeta     = 107
+	PortalRequestUnlockCollateralMeta   = 108
 
 	// relaying
 	RelayingBNBHeaderMeta = 200
