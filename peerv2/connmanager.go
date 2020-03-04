@@ -205,7 +205,7 @@ func (cm *ConnManager) process() {
 				Logger.Warn(err)
 			}
 		case data := <-cm.data:
-			Logger.Infof("[stream] process data")
+			//Logger.Infof("[stream] process data")
 			go func(data []byte) {
 				err := cm.disp.processStreamBlk(data[0], data[1:])
 				if err != nil {
