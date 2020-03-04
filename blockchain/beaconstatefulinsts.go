@@ -42,7 +42,8 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.PortalUserRegisterMeta,
 			metadata.PortalUserRequestPTokenMeta,
 			metadata.PortalExchangeRatesMeta,
-			metadata.RelayingBNBHeaderMeta:
+			metadata.RelayingBNBHeaderMeta,
+			metadata.PortalCustodianWithDrawRequestMeta:
 			statefulInsts = append(statefulInsts, inst)
 
 		default:
@@ -465,6 +466,8 @@ func (blockchain *BlockChain) handlePortalInsts(
 	for _, value := range requestPortingShardIDKeys {
 		shardID := byte(value)
 		actions := portalUserRequestPortingActionsByShardID[shardID]
+
+		//check identity of porting request id
 		for _, action := range actions {
 			contentStr := action[1]
 			newInst, err := blockchain.buildInstructionsForPortingRequest(

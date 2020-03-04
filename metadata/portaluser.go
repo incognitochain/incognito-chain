@@ -76,6 +76,10 @@ func (portalUserRegister PortalUserRegister) ValidateSanityData(bcr BlockchainRe
 		return true, true, nil
 	}
 
+	if len(portalUserRegister.IncogAddressStr) <= 0 {
+		return false, false, errors.New("IncogAddressStr should be not empty")
+	}
+
 	// validate IncogAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(portalUserRegister.IncogAddressStr)
 	if err != nil {
@@ -102,10 +106,6 @@ func (portalUserRegister PortalUserRegister) ValidateSanityData(bcr BlockchainRe
 
 	if len(portalUserRegister.UniqueRegisterId) <= 0 {
 		return false, false, errors.New("UniqueRegisterId should be not empty")
-	}
-
-	if len(portalUserRegister.IncogAddressStr) <= 0 {
-		return false, false, errors.New("IncogAddressStr should be not empty")
 	}
 
 	// validate amount register

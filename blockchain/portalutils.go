@@ -18,8 +18,9 @@ type CurrentPortalState struct {
 	CustodianPoolState     map[string]*lvdb.CustodianState       // key : beaconHeight || custodian_address
 	ExchangeRatesRequests  map[string]*lvdb.ExchangeRatesRequest // key : beaconHeight | TxID
 	WaitingPortingRequests map[string]*lvdb.PortingRequest       // key : beaconHeight || UniquePortingID
+	PortingIdRequests 	   map[string]string       			     // key : UniquePortingID
 	WaitingRedeemRequests  map[string]*lvdb.RedeemRequest        // key : beaconHeight || UniqueRedeemID
-	FinalExchangeRates     map[string]*lvdb.FinalExchangeRates      // key : beaconHeight || TxID
+	FinalExchangeRates     map[string]*lvdb.FinalExchangeRates   // key : beaconHeight || TxID
 }
 
 
@@ -108,6 +109,7 @@ func InitCurrentPortalStateFromDB(
 		WaitingRedeemRequests:  waitingRedeemReqs,
 		FinalExchangeRates:     finalExchangeRates,
 		ExchangeRatesRequests:  make(map[string]*lvdb.ExchangeRatesRequest),
+		PortingIdRequests: 		make(map[string]string),
 	}, nil
 }
 

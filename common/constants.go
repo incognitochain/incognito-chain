@@ -126,6 +126,7 @@ const (
 	PortalPortingReqSuccessStatus = 1
 	PortalPortingReqWaitingStatus = 2
 	PortalPortingReqRejectedStatus = 3
+	PortalPortingReqAcceptedStatus = 4
 )
 
 // PDE statuses for chain
