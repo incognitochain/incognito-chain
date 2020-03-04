@@ -43,16 +43,6 @@ func (netSync *NetSync) GetBlockByHeight(
 	}
 }
 
-func (netSync *NetSync) GetBlockByHash(
-	blkType byte,
-	hash common.Hash,
-) (
-	interface{},
-	error,
-) {
-	return nil, nil
-}
-
 func (netSync *NetSync) GetBlockShardByHash(blkHashes []common.Hash) []wire.Message {
 	blkMsgs := []wire.Message{}
 	for _, blkHash := range blkHashes {
@@ -348,7 +338,7 @@ func (netSync *NetSync) streamBlkByHeight(
 		}
 		blk, err := netSync.GetBlockByHeight(req.Type, blkHeight, byte(req.From), byte(req.To))
 		if err != nil {
-			Logger.log.Infof("[stream] Netsync cannot get block, return error %v", err)
+			Logger.log.Errorf("[stream] Netsync cannot get block, return error %+v", err)
 			break
 		}
 		blkCh <- blk
