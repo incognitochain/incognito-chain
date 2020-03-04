@@ -10,28 +10,28 @@ import (
 	"strconv"
 )
 
-type PortalRequestPTokensResponse struct {
+type PortalRedeemRequestResponse struct {
 	MetadataBase
 	RequestStatus    string
 	ReqTxID          common.Hash
 	RequesterAddrStr string
 	Amount           uint64
-	IncTokenID       string
+	IncTokenID string
 }
 
-func NewPortalRequestPTokensResponse(
-	depositStatus string,
+func NewPortalRedeemRequestResponse(
+	requestStatus string,
 	reqTxID common.Hash,
 	requesterAddressStr string,
 	amount uint64,
 	tokenID string,
 	metaType int,
-) *PortalRequestPTokensResponse {
+) *PortalRedeemRequestResponse {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
-	return &PortalRequestPTokensResponse{
-		RequestStatus:    depositStatus,
+	return &PortalRedeemRequestResponse{
+		RequestStatus:    requestStatus,
 		ReqTxID:          reqTxID,
 		MetadataBase:     metadataBase,
 		RequesterAddrStr: requesterAddressStr,
@@ -40,26 +40,26 @@ func NewPortalRequestPTokensResponse(
 	}
 }
 
-func (iRes PortalRequestPTokensResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db database.DatabaseInterface) bool {
+func (iRes PortalRedeemRequestResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db database.DatabaseInterface) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (iRes PortalRequestPTokensResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
+func (iRes PortalRedeemRequestResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requested tx (via RequestedTxID)
 	return false, nil
 }
 
-func (iRes PortalRequestPTokensResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+func (iRes PortalRedeemRequestResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
 	return false, true, nil
 }
 
-func (iRes PortalRequestPTokensResponse) ValidateMetadataByItself() bool {
+func (iRes PortalRedeemRequestResponse) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
-	return iRes.Type == PortalUserRequestPTokenResponseMeta
+	return iRes.Type == PortalRedeemRequestResponseMeta
 }
 
-func (iRes PortalRequestPTokensResponse) Hash() *common.Hash {
+func (iRes PortalRedeemRequestResponse) Hash() *common.Hash {
 	record := iRes.MetadataBase.Hash().String()
 	record += iRes.RequestStatus
 	record += iRes.ReqTxID.String()
@@ -71,11 +71,11 @@ func (iRes PortalRequestPTokensResponse) Hash() *common.Hash {
 	return &hash
 }
 
-func (iRes *PortalRequestPTokensResponse) CalculateSize() uint64 {
+func (iRes *PortalRedeemRequestResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-func (iRes PortalRequestPTokensResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
+func (iRes PortalRedeemRequestResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	txsInBlock []Transaction,
 	txsUsed []int,
 	insts [][]string,
@@ -87,38 +87,38 @@ func (iRes PortalRequestPTokensResponse) VerifyMinerCreatedTxBeforeGettingInBloc
 ) (bool, error) {
 	idx := -1
 	for i, inst := range insts {
-		if len(inst) < 4 { // this is not PortalRequestPTokens response instruction
+		if len(inst) < 4 { // this is not PortalRedeemRequest response instruction
 			continue
 		}
 		instMetaType := inst[0]
 		if instUsed[i] > 0 ||
-			instMetaType != strconv.Itoa(PortalUserRequestPTokenMeta) {
+			instMetaType != strconv.Itoa(PortalRedeemRequestMeta) {
 			continue
 		}
-		instDepositStatus := inst[2]
-		if instDepositStatus != iRes.RequestStatus ||
-			(instDepositStatus != common.PortalReqPTokensAcceptedChainStatus) {
+		instReqStatus := inst[2]
+		if instReqStatus != iRes.RequestStatus ||
+			(instReqStatus != common.PortalRedeemRequestRejectedChainStatus) {
 			continue
 		}
 
 		var shardIDFromInst byte
 		var txReqIDFromInst common.Hash
 		var requesterAddrStrFromInst string
-		var portingAmountFromInst uint64
+		var redeemAmountFromInst uint64
 		var tokenIDStrFromInst string
 
 		contentBytes := []byte(inst[3])
-		var reqPTokensContent PortalRequestPTokensContent
-		err := json.Unmarshal(contentBytes, &reqPTokensContent)
+		var redeemReqContent PortalRedeemRequestContent
+		err := json.Unmarshal(contentBytes, &redeemReqContent)
 		if err != nil {
-			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing portal request ptokens content: ", err)
+			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing portal redeem request content: ", err)
 			continue
 		}
-		shardIDFromInst = reqPTokensContent.ShardID
-		txReqIDFromInst = reqPTokensContent.TxReqID
-		requesterAddrStrFromInst = reqPTokensContent.IncogAddressStr
-		portingAmountFromInst = reqPTokensContent.PortingAmount
-		tokenIDStrFromInst = reqPTokensContent.TokenID
+		shardIDFromInst = redeemReqContent.ShardID
+		txReqIDFromInst = redeemReqContent.TxReqID
+		requesterAddrStrFromInst = redeemReqContent.IncAddressStr
+		redeemAmountFromInst = redeemReqContent.RedeemAmount
+		tokenIDStrFromInst = redeemReqContent.TokenID
 
 		if !bytes.Equal(iRes.ReqTxID[:], txReqIDFromInst[:]) ||
 			shardID != shardIDFromInst {
@@ -126,13 +126,13 @@ func (iRes PortalRequestPTokensResponse) VerifyMinerCreatedTxBeforeGettingInBloc
 		}
 		key, err := wallet.Base58CheckDeserialize(requesterAddrStrFromInst)
 		if err != nil {
-			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
+			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing requester address string: ", err)
 			continue
 		}
 
 		_, pk, paidAmount, assetID := tx.GetTransferData()
 		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
-			portingAmountFromInst != paidAmount ||
+			redeemAmountFromInst != paidAmount ||
 			tokenIDStrFromInst != assetID.String() {
 			continue
 		}
@@ -140,8 +140,9 @@ func (iRes PortalRequestPTokensResponse) VerifyMinerCreatedTxBeforeGettingInBloc
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
-		return false, fmt.Errorf(fmt.Sprintf("no PortalReqPtokens instruction found for PortalReqPtokensResponse tx %s", tx.Hash().String()))
+		return false, fmt.Errorf(fmt.Sprintf("no PortalRedeemRequest instruction found for PortalRedeemRequestResponse tx %s", tx.Hash().String()))
 	}
 	instUsed[idx] = 1
 	return true, nil
 }
+

@@ -50,6 +50,7 @@ const (
 	PortalExchangeRatesMeta             = 105
 	PortalRedeemRequestMeta             = 106
 	PortalCustodianWithDrawRequestMeta  = 107
+	PortalRedeemRequestResponseMeta     = 108
 
 	// relaying
 	RelayingBNBHeaderMeta = 200
@@ -68,6 +69,7 @@ var minerCreatedMetaTypes = []int{
 	PDEContributionResponseMeta,
 	PortalUserRequestPTokenResponseMeta,
 	PortalCustodianDepositResponseMeta,
+	PortalRedeemRequestResponseMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
