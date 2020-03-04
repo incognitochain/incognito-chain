@@ -6,8 +6,11 @@ import (
 	"encoding/json"
 	"reflect"
 
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/peer"
+	"github.com/incognitochain/incognito-chain/peerv2/proto"
+	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
 	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/pkg/errors"
 )
@@ -15,6 +18,53 @@ import (
 type Dispatcher struct {
 	MessageListeners   *MessageListeners
 	PublishableMessage []string
+	BC                 *blockchain.BlockChain
+}
+
+// Just for consensus v1
+func (d *Dispatcher) processStreamBlk(blktype byte, data []byte) error {
+	switch blktype {
+	case byte(proto.BlkType_BlkBc):
+		newBlk := new(blockchain.BeaconBlock)
+		err := wrapper.DeCom(data, newBlk)
+		if err != nil {
+			Logger.Infof("[stream] process stream beacon block return error %v", err)
+			return err
+		}
+		Logger.Infof("[stream] Got beacon block %v", newBlk.GetHeight())
+		d.BC.OnBlockBeaconReceived(newBlk)
+	case byte(proto.BlkType_BlkShard):
+		newBlk := new(blockchain.ShardBlock)
+		err := wrapper.DeCom(data, newBlk)
+		if err != nil {
+			Logger.Infof("[stream] process stream block return error %v", err)
+			return err
+		}
+		Logger.Infof("[stream] Got Shard Block height %v, shard %v", newBlk.GetHeight(), newBlk.Header.ShardID)
+		d.BC.OnBlockShardReceived(newBlk)
+	case byte(proto.BlkType_BlkS2B):
+		newBlk := new(blockchain.ShardToBeaconBlock)
+		err := wrapper.DeCom(data, newBlk)
+		if err != nil {
+			Logger.Infof("[stream] process stream S2B block return error %v", err)
+			return err
+		}
+		Logger.Infof("[stream] Got S2B block height %v shard %v", newBlk.GetHeight(), newBlk.Header.ShardID)
+		d.BC.OnShardToBeaconBlockReceived(newBlk)
+	case byte(proto.BlkType_BlkXShard):
+		newBlk := new(blockchain.CrossShardBlock)
+		err := wrapper.DeCom(data, newBlk)
+		Logger.Infof("[stream] Got block %v", newBlk.GetHeight())
+		if err != nil {
+			Logger.Infof("[stream] process stream Cross shard block return error %v", err)
+			return err
+		}
+		Logger.Infof("[stream] Got Cross block height %v shard %v to shard %v", newBlk.GetHeight(), newBlk.Header.ShardID, newBlk.ToShardID)
+		d.BC.OnCrossShardBlockReceived(newBlk)
+	default:
+		return errors.Errorf("[stream] Not implement for this block type %v", blktype)
+	}
+	return nil
 }
 
 //TODO hy parse msg here
@@ -61,7 +111,7 @@ func (d *Dispatcher) processInMessageString(msgStr string) error {
 	}
 
 	if len(jsonDecodeBytes) > message.MaxPayloadLength(wire.Version) {
-		return errors.WithStack(err)
+		return errors.Errorf("Message size too lagre %v, it must be less than %v", len(jsonDecodeBytes), message.MaxPayloadLength(wire.Version))
 	}
 	// check forward TODO
 	/*if peerConn.config.MessageListeners.GetCurrentRoleShard != nil {
