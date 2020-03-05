@@ -185,7 +185,7 @@ func (tp *TxPool) MonitorPool() {
 			tp.removeTx(txDesc.Desc.Tx)
 			tp.TriggerCRemoveTxs(txDesc.Desc.Tx)
 			tp.removeCandidateByTxHash(txHash)
-			tp.removeRequestStopStakingByTxHash(txHash)
+			//tp.removeRequestStopStakingByTxHash(txHash)
 			err := tp.config.DataBaseMempool.RemoveTransaction(txDesc.Desc.Tx.Hash())
 			if err != nil {
 				Logger.log.Errorf("MonitorPool: RemoveTransaction tx hash=%+v with error %+v", txDesc.Desc.Tx.Hash().String(), err)
@@ -785,7 +785,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				txToBeReplaced := txDescToBeReplaced.Desc.Tx
 				tp.removeTx(txToBeReplaced)
 				tp.TriggerCRemoveTxs(txToBeReplaced)
-				tp.removeRequestStopStakingByTxHash(*txToBeReplaced.Hash())
+				//tp.removeRequestStopStakingByTxHash(*txToBeReplaced.Hash())
 				// send tx into channel of CRmoveTxs
 				tp.TriggerCRemoveTxs(tx)
 				return nil, true
@@ -1025,6 +1025,7 @@ func (tp *TxPool) removeTx(tx metadata.Transaction) {
 			delete(tp.poolSerialNumbersHashList, hash)
 		}
 	}
+	tp.removeRequestStopStakingByTxHash(*tx.Hash())
 }
 
 func (tp *TxPool) addCandidateToList(txHash common.Hash, candidate string) {
