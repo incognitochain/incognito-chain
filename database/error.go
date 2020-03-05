@@ -122,6 +122,7 @@ const (
 	StoreRedeemRequestError
 	TrackRedeemReqByTxReqIDError
 	TrackReqUnlockCollateralByTxReqIDError
+	GetReqUnlockCollateralStatusError
 
 	// relaying
 	StoreRelayingBNBHeaderError
@@ -248,6 +249,7 @@ var ErrCodeMessage = map[int]struct {
 	StoreRedeemRequestError:                {-14014, "Store redeem request error"},
 	TrackRedeemReqByTxReqIDError:           {-14015, "Track redeem request by txReqID error"},
 	TrackReqUnlockCollateralByTxReqIDError: {-14016, "Track request unlock collateral by txReqID error"},
+	GetReqUnlockCollateralStatusError:      {-14017, "Get status of request unlock collateral by txReqID error"},
 
 	// relaying
 	StoreRelayingBNBHeaderError: {-15001, "Store relaying header bnb error"},

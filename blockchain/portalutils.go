@@ -23,7 +23,6 @@ type CurrentPortalState struct {
 	FinalExchangeRates     map[string]*lvdb.FinalExchangeRates   // key : beaconHeight || TxID
 }
 
-
 type CustodianStateSlice struct {
 	Key   string
 	Value *lvdb.CustodianState
@@ -690,15 +689,6 @@ func pickupCustodianForRedeem(redeemAmount uint64, tokenSymbol string, portalSta
 // convertExternalBNBAmountToIncAmount converts amount in bnb chain (decimal 8) to amount in inc chain (decimal 9)
 func convertExternalBNBAmountToIncAmount(externalBNBAmount int64) int64 {
 	return externalBNBAmount * 10   // externalBNBAmount / 1^8 * 1^9
-}
-
-func removeMatchingCustodianInRedeemRequest (custodianIncAddress string, state *CurrentPortalState, redeemRequestStateKey string) bool {
-	if state.WaitingRedeemRequests[redeemRequestStateKey] != nil {
-		delete(state.WaitingRedeemRequests[redeemRequestStateKey].Custodians, custodianIncAddress)
-		return true
-	}
-
-	return false
 }
 
 // updateFreeCollateralCustodian updates custodian state (amount collaterals) when custodian returns redeemAmount public token to user

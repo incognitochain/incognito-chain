@@ -182,6 +182,8 @@ var HttpHandler = map[string]httpHandler{
 	getPortingFees:                           (*HttpServer).handleGetPortingFees,
 	createAndSendTxWithRedeemReq:             (*HttpServer).handleCreateAndSendTxWithRedeemReq,
 	createAndSendTxWithReqUnlockCollateral:   (*HttpServer).handleCreateAndSendTxWithReqUnlockCollateral,
+	getPortalReqUnlockCollateralStatus:       (*HttpServer).handleGetPortalReqUnlockCollateralStatus,
+	getPortalReqRedeemStatus:                 (*HttpServer).handleGetPortalReqRedeemStatus,
 
 	// relaying
 	createAndSendTxWithRelayingBNBHeader: (*HttpServer).handleCreateAndSendTxWithRelayingBNBHeader,

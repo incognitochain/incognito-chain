@@ -68,6 +68,8 @@ const (
 	GetReqPTokenStatusError
 	GetCustodianDepositError
 	GetPortalStateError
+	GetReqUnlockCollateralStatusError
+	GetReqRedeemStatusError
 
 	GetPortingRequestError
 	GetPortingRequestIsEmpty
@@ -151,14 +153,15 @@ var ErrCodeMessage = map[int]struct {
 	GetPDEStateError: {-8000, "Get pde state error"},
 
 	//portal
-	GetExchangeRatesError:    {-9000, "Get get exchange rates error"},
-	GetExchangeRatesIsEmpty:  {-9001, "Exchange rates is empty"},
-	GetReqPTokenStatusError:  {-9002, "Get request ptoken status error"},
-	GetCustodianDepositError: {-9003, "Get custodian deposit status error"},
-	GetPortalStateError:      {-9004, "Get portal state error"},
-	GetPortingRequestError:      {-9005, "Get portal request error"},
-	GetPortingRequestIsEmpty:      {-9006, "Get portal request is empty"},
-
+	GetExchangeRatesError:             {-9000, "Get get exchange rates error"},
+	GetExchangeRatesIsEmpty:           {-9001, "Exchange rates is empty"},
+	GetReqPTokenStatusError:           {-9002, "Get request ptoken status error"},
+	GetCustodianDepositError:          {-9003, "Get custodian deposit status error"},
+	GetPortalStateError:               {-9004, "Get portal state error"},
+	GetPortingRequestError:            {-9005, "Get portal request error"},
+	GetPortingRequestIsEmpty:          {-9006, "Get portal request is empty"},
+	GetReqUnlockCollateralStatusError: {-9007, "Get status of request unlock collateral error"},
+	GetReqRedeemStatusError:           {-9008, "Get status of request redeem by redeemId error"},
 
 	// relaying
 	GetRelayingBNBHeaderByBlockHeightError: {-10001, "Get relaying bnb header by block height error"},

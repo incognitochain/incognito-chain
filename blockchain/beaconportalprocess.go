@@ -677,7 +677,7 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 	reqStatus := instructions[2]
 	if reqStatus == common.PortalRedeemRequestAcceptedChainStatus {
 		// add waiting redeem request into waiting redeems list
-		keyWaitingRedeemRequest := lvdb.NewWaitingRedeemReqKey(beaconHeight+1, actionData.TokenID)
+		keyWaitingRedeemRequest := lvdb.NewWaitingRedeemReqKey(beaconHeight, actionData.TokenID)
 		redeemRequest, _ := NewRedeemRequestState(
 			actionData.UniqueRedeemID,
 			actionData.TxReqID,
@@ -687,7 +687,7 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 			actionData.RedeemAmount,
 			actionData.MatchingCustodianDetail,
 			actionData.RedeemFee,
-			beaconHeight+1,
+			beaconHeight + 1,
 		)
 		currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest] = redeemRequest
 

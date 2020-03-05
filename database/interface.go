@@ -214,10 +214,12 @@ type DatabaseInterface interface {
 	GetPortingRequestStatusByPortingID(portingID string) (int, error)
 	UpdatePortingRequestStatus(portingID string, newStatus int) error
 
+
 	StoreRedeemRequest(key []byte, value []byte) error
 	GetRedeemRequestByRedeemID(redeemID string) ([]byte, error)
 	TrackRedeemRequestByTxReqID(key []byte, value []byte) error
 	TrackRequestUnlockCollateralByTxReqID(key []byte, value []byte) error
+	GetReqUnlockCollateralStatusByTxReqID(txReqID string) ([]byte, error)
 
 	// relaying
 	GetItemByKey(key []byte) ([]byte, error)

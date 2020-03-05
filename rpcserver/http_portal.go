@@ -264,17 +264,16 @@ func (httpServer *HttpServer) handleGetPortalReqPTokenStatus(params interface{},
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
 	}
-	portingID, ok := data["PortingID"].(string)
+	reqTxID, ok := data["ReqTxID"].(string)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param PortingID is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param ReqTxID is invalid"))
 	}
-	status, err := httpServer.databaseService.GetPortalReqPTokenStatus(portingID)
+	status, err := httpServer.databaseService.GetPortalReqPTokenStatus(reqTxID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetReqPTokenStatusError, err)
 	}
 	return status, nil
 }
-
 
 func (httpServer *HttpServer) handleCreateRawTxWithRedeemReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
@@ -432,7 +431,6 @@ func (httpServer * HttpServer) handleCreateAndSendCustodianWithdrawRequest(param
 	return result, nil
 }
 
-
 func (httpServer *HttpServer) handleCreateRawTxWithReqUnlockCollateral(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 5 {
@@ -523,3 +521,42 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithReqUnlockCollateral(param
 	return result, nil
 }
 
+func (httpServer *HttpServer) handleGetPortalReqUnlockCollateralStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one"))
+	}
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	reqTxID, ok := data["ReqTxID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param PortingID is invalid"))
+	}
+	status, err := httpServer.databaseService.GetPortalReqUnlockCollateralStatus(reqTxID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetReqUnlockCollateralStatusError, err)
+	}
+	return status, nil
+}
+
+func (httpServer *HttpServer) handleGetPortalReqRedeemStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one"))
+	}
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	redeemID, ok := data["RedeemID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param RedeemID is invalid"))
+	}
+	status, err := httpServer.databaseService.GetPortalRedeemReqStatus(redeemID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetReqRedeemStatusError, err)
+	}
+	return status, nil
+}

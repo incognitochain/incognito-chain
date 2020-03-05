@@ -463,6 +463,19 @@ func (db *db) TrackRequestUnlockCollateralByTxReqID(key []byte, value []byte) er
 }
 
 
+// GetReqUnlockCollateralStatusByTxReqID returns request unlock collateral status with txReqID
+func (db *db) GetReqUnlockCollateralStatusByTxReqID(txReqID string) ([]byte, error) {
+	key := NewPortalReqUnlockCollateralKey(txReqID)
+
+	reqUnlockCollateralStatusBytes, err := db.lvdb.Get([]byte(key), nil)
+	if err != nil && err != lvdberr.ErrNotFound {
+		return nil, database.NewDatabaseError(database.GetReqUnlockCollateralStatusError, err)
+	}
+
+	return reqUnlockCollateralStatusBytes, err
+}
+
+
 //GetRedeemRequestStatusByPortingID(redeemID string) (int, error)
 
 //func (db *db) GetRedeemRequestByRedeemID(redeemID string) ([]byte, error) {

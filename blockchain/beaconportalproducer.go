@@ -1006,7 +1006,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 		meta.RedeemAmount,
 		matchingCustodiansDetail,
 		meta.RedeemFee,
-		beaconHeight,
+		beaconHeight + 1,
 	)
 	currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest] = redeemRequest
 
