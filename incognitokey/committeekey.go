@@ -164,7 +164,7 @@ func (committeePublicKey *CommitteePublicKey) IsValid(target CommitteePublicKey)
 	return true
 }
 
-/*func (committeePublicKey *CommitteePublicKey) IsEqual(target CommitteePublicKey) bool {
+func (committeePublicKey *CommitteePublicKey) IsEqual(target CommitteePublicKey) bool {
 	if bytes.Compare(committeePublicKey.IncPubKey[:], target.IncPubKey[:]) != 0 {
 		return false
 	}
@@ -181,4 +181,4 @@ func (committeePublicKey *CommitteePublicKey) IsValid(target CommitteePublicKey)
 		}
 	}
 	return true
-}*/
+}
