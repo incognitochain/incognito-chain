@@ -50,6 +50,17 @@ func (blockchain *BlockChain) GetBeaconBlockByHeight(height uint64) ([]*BeaconBl
 	return beaconBlocks, nil
 }
 
+func (blockchain *BlockChain) GetBeaconBlockByHeightV1(height uint64) (*BeaconBlock, error) {
+	beaconBlocks, err := blockchain.GetBeaconBlockByHeight(height)
+	if err != nil {
+		return nil, err
+	}
+	if len(beaconBlocks) == 0 {
+		return nil, fmt.Errorf("Beacon Block Height %+v NOT FOUND", height)
+	}
+	return beaconBlocks[0], nil
+}
+
 func (blockchain *BlockChain) GetBeaconBlockByHash(beaconBlockHash common.Hash) (*BeaconBlock, uint64, error) {
 	if blockchain.IsTest {
 		return &BeaconBlock{}, 2, nil
