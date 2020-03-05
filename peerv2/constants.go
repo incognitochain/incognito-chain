@@ -19,6 +19,6 @@ const (
 	DialTimeout               = 5 * time.Second  // Timeout for dialing's context
 	RequesterKeepaliveTime    = 10 * time.Minute
 	RequesterKeepaliveTimeout = 30 * time.Second
-	defaultMaxBlkReqPerPeer   = 300
-	defaultMaxBlkReqPerTime   = 300
+	defaultMaxBlkReqPerPeer   = 900
+	defaultMaxBlkReqPerTime   = 900
 )

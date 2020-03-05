@@ -1249,6 +1249,7 @@ func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 }
 
 func (serverObj *Server) OnPeerState(_ *peer.PeerConn, msg *wire.MessagePeerState) {
+	Logger.log.Infof("Handling new message peerstate %+v", msg)
 	Logger.log.Debug("Receive a peerstate START")
 	var txProcessed chan struct{}
 	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
