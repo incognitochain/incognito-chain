@@ -37,8 +37,10 @@ var beaconPool *BeaconPool = nil
 func init() {
 	go func() {
 		mainLoopTime := time.Duration(beaconPoolMainLoopTime)
-		ticker := time.Tick(mainLoopTime)
-		for _ = range ticker {
+		ticker := time.NewTicker(mainLoopTime)
+		defer ticker.Stop()
+
+		for _ = range ticker.C {
 			GetBeaconPool().RemoveBlock(blockchain.GetBeaconBestState().BeaconHeight)
 			GetBeaconPool().cleanOldBlock(blockchain.GetBeaconBestState().BeaconHeight)
 			GetBeaconPool().PromotePendingPool()

@@ -91,9 +91,11 @@ func (e *BLSBFT) Start() error {
 	e.VoteMessageCh = make(chan BFTVote)
 	e.InitRoundData()
 
-	ticker := time.Tick(500 * time.Millisecond)
 	e.logger.Info("start bls-bft consensus for chain", e.ChainKey)
 	go func() {
+		ticker := time.NewTicker(500 * time.Millisecond)
+		defer ticker.Stop()
+
 		fmt.Println("action")
 		for { //actor loop
 			select {
@@ -182,7 +184,7 @@ func (e *BLSBFT) Start() error {
 				}
 				e.addEarlyVote(msg)
 
-			case <-ticker:
+			case <-ticker.C:
 
 				metrics.SetGlobalParam("RoundKey", getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), "Phase", e.RoundData.State)
 
