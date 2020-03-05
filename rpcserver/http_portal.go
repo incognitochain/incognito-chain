@@ -532,7 +532,7 @@ func (httpServer *HttpServer) handleGetPortalReqUnlockCollateralStatus(params in
 	}
 	reqTxID, ok := data["ReqTxID"].(string)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param PortingID is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param ReqTxID is invalid"))
 	}
 	status, err := httpServer.databaseService.GetPortalReqUnlockCollateralStatus(reqTxID)
 	if err != nil {

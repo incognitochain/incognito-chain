@@ -717,6 +717,7 @@ func updateFreeCollateralCustodian(custodianState * lvdb.CustodianState, redeemA
 	return unlockedAmount, nil
 }
 
+// updateRedeemRequestStatusByRedeemId updates status of redeem request into db
 func updateRedeemRequestStatusByRedeemId(redeemID string, newStatus int, db database.DatabaseInterface) error {
 	redeemRequestBytes, err := db.GetRedeemRequestByRedeemID(redeemID)
 	if err != nil {
