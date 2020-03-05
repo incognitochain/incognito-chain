@@ -38,7 +38,12 @@ func (blockchain *BlockChain) buildBridgeInstructions(stateDB *statedb.StateDB, 
 
 		case metadata.BurningRequestMeta:
 			burningConfirm := []string{}
-			burningConfirm, err = buildBurningConfirmInst(stateDB, inst, beaconHeight)
+			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningConfirmMeta, inst, beaconHeight)
+			newInst = [][]string{burningConfirm}
+
+		case metadata.BurningForDepositToSCRequestMeta:
+			burningConfirm := []string{}
+			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningConfirmForDepositToSCMeta, inst, beaconHeight)
 			newInst = [][]string{burningConfirm}
 
 		default:
@@ -57,7 +62,12 @@ func (blockchain *BlockChain) buildBridgeInstructions(stateDB *statedb.StateDB, 
 }
 
 // buildBurningConfirmInst builds on beacon an instruction confirming a tx burning bridge-token
-func buildBurningConfirmInst(stateDB *statedb.StateDB, inst []string, height uint64) ([]string, error) {
+func buildBurningConfirmInst(
+	stateDB *statedb.StateDB,
+	burningMetaType int,
+	inst []string,
+	height uint64,
+) ([]string, error) {
 	BLogger.log.Infof("Build BurningConfirmInst: %s", inst)
 	// Parse action and get metadata
 	var burningReqAction BurningReqAction
@@ -86,7 +96,7 @@ func buildBurningConfirmInst(stateDB *statedb.StateDB, inst []string, height uin
 	h := big.NewInt(0).SetUint64(height)
 
 	return []string{
-		strconv.Itoa(metadata.BurningConfirmMeta),
+		strconv.Itoa(burningMetaType),
 		strconv.Itoa(int(shardID)),
 		base58.Base58Check{}.Encode(tokenID, 0x00),
 		md.RemoteAddress,

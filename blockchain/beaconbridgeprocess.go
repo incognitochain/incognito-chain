@@ -30,6 +30,57 @@ type BurningReqAction struct {
 	RequestedTxID *common.Hash            `json:"RequestedTxID"`
 }
 
+func (blockchain *BlockChain) processBridgeInstructions(bridgeStateDB *statedb.StateDB, block *BeaconBlock) error {
+	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+	for _, inst := range block.Body.Instructions {
+		if len(inst) < 2 {
+			continue // Not error, just not bridge instruction
+		}
+		var err error
+		switch inst[0] {
+		case strconv.Itoa(metadata.IssuingETHRequestMeta):
+			updatingInfoByTokenID, err = blockchain.processIssuingETHReq(bridgeStateDB, inst, updatingInfoByTokenID)
+
+		case strconv.Itoa(metadata.IssuingRequestMeta):
+			updatingInfoByTokenID, err = blockchain.processIssuingReq(bridgeStateDB, inst, updatingInfoByTokenID)
+
+		case strconv.Itoa(metadata.ContractingRequestMeta):
+			updatingInfoByTokenID, err = blockchain.processContractingReq(inst, updatingInfoByTokenID)
+
+		case strconv.Itoa(metadata.BurningConfirmMeta):
+			updatingInfoByTokenID, err = blockchain.processBurningReq(inst, updatingInfoByTokenID)
+
+		}
+		if err != nil {
+			return err
+		}
+	}
+	for _, updatingInfo := range updatingInfoByTokenID {
+		var updatingAmt uint64
+		var updatingType string
+		if updatingInfo.countUpAmt > updatingInfo.deductAmt {
+			updatingAmt = updatingInfo.countUpAmt - updatingInfo.deductAmt
+			updatingType = "+"
+		}
+		if updatingInfo.countUpAmt < updatingInfo.deductAmt {
+			updatingAmt = updatingInfo.deductAmt - updatingInfo.countUpAmt
+			updatingType = "-"
+		}
+		err := statedb.UpdateBridgeTokenInfo(
+			bridgeStateDB,
+			updatingInfo.tokenID,
+			updatingInfo.externalTokenID,
+			updatingInfo.isCentralized,
+			updatingAmt,
+			updatingType,
+		)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (blockchain *BlockChain) processIssuingETHReq(bridgeStateDB *statedb.StateDB, instruction []string, updatingInfoByTokenID map[common.Hash]UpdatingInfo) (map[common.Hash]UpdatingInfo, error) {
 	if len(instruction) != 4 {
 		return nil, nil // skip the instruction
@@ -193,63 +244,13 @@ func (blockchain *BlockChain) processBurningReq(instruction []string, updatingIn
 	return updatingInfoByTokenID, nil
 }
 
-func (blockchain *BlockChain) processBridgeInstructions(bridgeStateDB *statedb.StateDB, block *BeaconBlock) error {
-	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
-	for _, inst := range block.Body.Instructions {
-		if len(inst) < 2 {
-			continue // Not error, just not bridge instruction
-		}
-		var err error
-		switch inst[0] {
-		case strconv.Itoa(metadata.IssuingETHRequestMeta):
-			updatingInfoByTokenID, err = blockchain.processIssuingETHReq(bridgeStateDB, inst, updatingInfoByTokenID)
-
-		case strconv.Itoa(metadata.IssuingRequestMeta):
-			updatingInfoByTokenID, err = blockchain.processIssuingReq(bridgeStateDB, inst, updatingInfoByTokenID)
-
-		case strconv.Itoa(metadata.ContractingRequestMeta):
-			updatingInfoByTokenID, err = blockchain.processContractingReq(inst, updatingInfoByTokenID)
-
-		case strconv.Itoa(metadata.BurningConfirmMeta):
-			updatingInfoByTokenID, err = blockchain.processBurningReq(inst, updatingInfoByTokenID)
-
-		}
-		if err != nil {
-			return err
-		}
-	}
-	for _, updatingInfo := range updatingInfoByTokenID {
-		var updatingAmt uint64
-		var updatingType string
-		if updatingInfo.countUpAmt > updatingInfo.deductAmt {
-			updatingAmt = updatingInfo.countUpAmt - updatingInfo.deductAmt
-			updatingType = "+"
-		}
-		if updatingInfo.countUpAmt < updatingInfo.deductAmt {
-			updatingAmt = updatingInfo.deductAmt - updatingInfo.countUpAmt
-			updatingType = "-"
-		}
-		err := statedb.UpdateBridgeTokenInfo(
-			bridgeStateDB,
-			updatingInfo.tokenID,
-			updatingInfo.externalTokenID,
-			updatingInfo.isCentralized,
-			updatingAmt,
-			updatingType,
-		)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (blockchain *BlockChain) storeBurningConfirm(bridgeStateDB *statedb.StateDB, shardBlock *ShardBlock) error {
 	for _, inst := range shardBlock.Body.Instructions {
-		if inst[0] != strconv.Itoa(metadata.BurningConfirmMeta) {
+		if inst[0] != strconv.Itoa(metadata.BurningConfirmMeta) &&
+			inst[0] != strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta) {
 			continue
 		}
-		BLogger.log.Infof("storeBurningConfirm for shard block %d, inst %v", shardBlock.Header.Height, inst)
+		BLogger.log.Infof("storeBurningConfirm for shardBlock %d, inst %v, meta type %d", shardBlock.Header.Height, inst, inst[0])
 
 		txID, err := common.Hash{}.NewHashFromStr(inst[5])
 		if err != nil {

@@ -75,7 +75,7 @@ func getBridgeSwapProofOnBridge(
 	}
 	insts := b.Body.Instructions
 	block := &shardBlock{ShardBlock: b}
-	return buildProofForBlock(block, insts, instID, db, ce)
+	return buildProofForBlock(block, insts, instID, ce)
 }
 
 // findBridgeBlockWithInst traverses all shard blocks included in a beacon block and returns the one containing a bridge swap instruction

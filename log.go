@@ -19,6 +19,7 @@ import (
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/peerv2"
+	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -55,6 +56,7 @@ var (
 	metadataLogger         = backendLog.Logger("Metadata log", false)
 	trieLogger             = backendLog.Logger("Trie log", false)
 	peerv2Logger           = backendLog.Logger("Peerv2 log", false)
+	wrapperLogger          = backendLog.Logger("Wrapper log", false)
 	daov2Logger            = backendLog.Logger("DAO log", false)
 )
 
@@ -94,6 +96,7 @@ func init() {
 	metadata.Logger.Init(metadataLogger)
 	trie.Logger.Init(trieLogger)
 	peerv2.Logger.Init(peerv2Logger)
+	wrapper.Logger.Init(wrapperLogger)
 	dataaccessobject.Logger.Init(daov2Logger)
 
 }

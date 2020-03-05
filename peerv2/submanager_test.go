@@ -191,6 +191,7 @@ func TestSubscribeNewTopics(t *testing.T) {
 		desc       string
 		newTopics  msgToTopics
 		subscribed msgToTopics
+		forced     bool
 		subCalled  int
 		subsLen    int
 	}{
@@ -253,6 +254,20 @@ func TestSubscribeNewTopics(t *testing.T) {
 			subCalled: 0,
 			subsLen:   0,
 		},
+		{
+			desc: "Forced subscribe old topics",
+			newTopics: msgToTopics{
+				wire.CmdBlockBeacon: []Topic{Topic{Name: "abc"}},
+				wire.CmdTx:          []Topic{Topic{Name: "xyz"}, Topic{Name: "ijk"}},
+			},
+			subscribed: msgToTopics{
+				wire.CmdBlockBeacon: []Topic{Topic{Name: "abc"}},
+				wire.CmdTx:          []Topic{Topic{Name: "xyz"}, Topic{Name: "ijk"}},
+			},
+			forced:    true,
+			subCalled: 3,
+			subsLen:   2,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -263,7 +278,7 @@ func TestSubscribeNewTopics(t *testing.T) {
 			subscriber.On("Subscribe", mock.Anything).Return(subscription, err)
 			sub := &SubManager{subs: tc.subscribed, subscriber: subscriber}
 
-			err = sub.subscribeNewTopics(tc.newTopics, tc.subscribed)
+			err = sub.subscribeNewTopics(tc.newTopics, tc.subscribed, tc.forced)
 			assert.Nil(t, err)
 			subscriber.AssertNumberOfCalls(t, "Subscribe", tc.subCalled)
 			assert.Equal(t, tc.subsLen, len(sub.subs))
