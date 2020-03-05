@@ -217,6 +217,7 @@ type DatabaseInterface interface {
 	StoreRedeemRequest(key []byte, value []byte) error
 	GetRedeemRequestByRedeemID(redeemID string) ([]byte, error)
 	TrackRedeemRequestByTxReqID(key []byte, value []byte) error
+	//GetRedeemRequestStatusByPortingID(redeemID string) (int, error)
 
 	// relaying
 	GetItemByKey(key []byte) ([]byte, error)

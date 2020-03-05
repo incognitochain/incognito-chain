@@ -163,6 +163,9 @@ const (
 
 	PortalRedeemRequestAcceptedChainStatus = "accepted"
 	PortalRedeemRequestRejectedChainStatus = "rejected"
+
+	PortalReqUnlockCollateralAcceptedChainStatus = "accepted"
+	PortalReqUnlockCollateralRejectedChainStatus = "rejected"
 )
 
 // Relaying header

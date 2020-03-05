@@ -38,6 +38,7 @@ type PortalRequestUnlockCollateralContent struct {
 	TokenID             string // pTokenID in incognito chain
 	CustodianAddressStr string
 	RedeemAmount        uint64
+	UnlockAmount        uint64 // prv
 	RedeemProof         string
 	TxReqID             common.Hash
 	ShardID             byte
@@ -50,6 +51,7 @@ type PortalRequestUnlockCollateralStatus struct {
 	TokenID             string // pTokenID in incognito chain
 	CustodianAddressStr string
 	RedeemAmount        uint64
+	UnlockAmount        uint64 // prv
 	RedeemProof         string
 	TxReqID             common.Hash
 }

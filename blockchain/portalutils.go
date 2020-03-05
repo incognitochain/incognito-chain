@@ -691,3 +691,36 @@ func pickupCustodianForRedeem(redeemAmount uint64, tokenSymbol string, portalSta
 func convertExternalBNBAmountToIncAmount(externalBNBAmount int64) int64 {
 	return externalBNBAmount * 10   // externalBNBAmount / 1^8 * 1^9
 }
+
+func removeMatchingCustodianInRedeemRequest (custodianIncAddress string, state *CurrentPortalState, redeemRequestStateKey string) bool {
+	if state.WaitingRedeemRequests[redeemRequestStateKey] != nil {
+		delete(state.WaitingRedeemRequests[redeemRequestStateKey].Custodians, custodianIncAddress)
+		return true
+	}
+
+	return false
+}
+
+// updateFreeCollateralCustodian updates custodian state (amount collaterals) when custodian returns redeemAmount public token to user
+func updateFreeCollateralCustodian(custodianState * lvdb.CustodianState, redeemAmount uint64, tokenSymbol string) (uint64, error){
+	// calculate unlock amount for custodian
+	// if custodian returns redeem amount that is all amount holding of token => unlock full amount
+	// else => return 120% redeem amount
+
+	unlockedAmount := uint64(0)
+	if custodianState.HoldingPubTokens[tokenSymbol] == 0 {
+		unlockedAmount = custodianState.LockedAmountCollateral[tokenSymbol]
+		custodianState.LockedAmountCollateral[tokenSymbol] = 0
+		custodianState.FreeCollateral += unlockedAmount
+	} else {
+		unlockedAmount = uint64(math.Floor(float64(redeemAmount) * 1.2))
+		// todo: convert unlockedAmount from ptoken to prv
+		if custodianState.LockedAmountCollateral[tokenSymbol] <= unlockedAmount {
+			return 0, errors.New("[portal-updateFreeCollateralCustodian] Locked amount must be greater than amount need to unlocked")
+		}
+		custodianState.LockedAmountCollateral[tokenSymbol] -= unlockedAmount
+		custodianState.FreeCollateral += unlockedAmount
+	}
+	return unlockedAmount, nil
+}
+

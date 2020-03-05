@@ -203,3 +203,19 @@ func (dbService DatabaseService) GetPortalReqPTokenStatus(txID string) (*metadat
 func (dbService DatabaseService) GetRelayingBNBHeaderByBlockHeight(blockHeight uint64) ([]byte, error) {
 	return (*dbService.DB).GetRelayingBNBHeaderChain(blockHeight)
 }
+
+//func (dbService DatabaseService) GetPortalReqPTokenStatus(txID string) (*metadata.PortalRequestPTokensStatus, error) {
+//	statusBytes, err := (*dbService.DB).GetReqPTokenStatusByTxReqID(txID)
+//	if err != nil {
+//		return nil, err
+//	}
+//	if len(statusBytes) == 0 {
+//		return nil, nil
+//	}
+//	var status metadata.PortalRequestPTokensStatus
+//	err = json.Unmarshal(statusBytes, &status)
+//	if err != nil {
+//		return nil, err
+//	}
+//	return &status, nil
+//}

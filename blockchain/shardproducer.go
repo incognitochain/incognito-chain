@@ -485,7 +485,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 					}
 				}
 			case metadata.PortalCustodianDepositMeta:
-				if len(l) >= 4 && l[2] == common.PDEContributionRefundChainStatus {
+				if len(l) >= 4 && l[2] == common.PortalCustodianDepositRefundChainStatus {
 					newTx, err = blockGenerator.buildPortalRefundCustodianDepositTx(l[3], producerPrivateKey, shardID)
 				}
 			case metadata.PortalUserRequestPTokenMeta:
@@ -495,6 +495,10 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 			case metadata.PortalRedeemRequestMeta:
 				if len(l) >= 4 && l[2] == common.PortalRedeemRequestRejectedChainStatus {
 					newTx, err = blockGenerator.buildPortalRejectedRedeemRequestTx(l[3], producerPrivateKey, shardID)
+				}
+			case metadata.PortalRequestUnlockCollateralMeta:
+				if len(l) >= 4 && l[2] == common.PortalReqUnlockCollateralAcceptedChainStatus {
+					newTx, err = blockGenerator.buildPortalAcceptedRequestUnlockCollateralTx(l[3], producerPrivateKey, shardID)
 				}
 			default:
 				continue

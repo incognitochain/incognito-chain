@@ -446,3 +446,28 @@ func (db *db) TrackRedeemRequestByTxReqID(key []byte, value []byte) error {
 	}
 	return nil
 }
+
+//GetRedeemRequestStatusByPortingID(redeemID string) (int, error)
+
+//func (db *db) GetRedeemRequestByRedeemID(redeemID string) ([]byte, error) {
+//	key := NewRedeemReqKey(redeemID)
+//	redeemRequest, err := db.GetItemPortalByKey([]byte(key))
+//
+//	if err != nil {
+//		return 0, err
+//	}
+//
+//	var portingRequestResult PortingRequest
+//
+//	if redeemRequest == nil {
+//		return 0, nil
+//	}
+//
+//	//get value via idx
+//	err = json.Unmarshal(redeemRequest, &portingRequestResult)
+//	if err != nil {
+//		return 0, err
+//	}
+//
+//	return portingRequestResult.Status, nil
+//}

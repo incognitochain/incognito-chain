@@ -105,6 +105,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	portalUserReqPTokenActionsByShardID := map[byte][][]string{}
 	portalExchangeRatesActionsByShardID := map[byte][][]string{}
 	portalRedeemReqActionsByShardID := map[byte][][]string{}
+	portalReqUnlockCollateralActionsByShardID := map[byte][][]string{}
 
 	// relaying instructions
 	// don't need to be grouped by shardID
@@ -181,6 +182,12 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					action,
 					shardID,
 				)
+			case metadata.PortalRequestUnlockCollateralMeta:
+				portalReqUnlockCollateralActionsByShardID = groupPortalActionsByShardID(
+					portalReqUnlockCollateralActionsByShardID,
+					action,
+					shardID,
+				)
 			case metadata.RelayingBNBHeaderMeta:
 				relayingBNBActions = append(relayingBNBActions, action)
 			case metadata.RelayingBTCHeaderMeta:
@@ -221,6 +228,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		portalUserReqPTokenActionsByShardID,
 		portalExchangeRatesActionsByShardID,
 		portalRedeemReqActionsByShardID,
+		portalReqUnlockCollateralActionsByShardID,
 		)
 
 	if err != nil {
@@ -423,6 +431,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 	portalUserRequestPTokenActionsByShardID map[byte][][]string,
 	portalExchangeRatesActionsByShardID map[byte][][]string,
 	portalRedeemReqActionsByShardID  map[byte][][]string,
+	portalReqUnlockCollateralActionsByShardID map[byte][][]string,
 ) ([][]string, error) {
 	instructions := [][]string{}
 
@@ -563,6 +572,36 @@ func (blockchain *BlockChain) handlePortalInsts(
 				contentStr,
 				shardID,
 				metadata.PortalExchangeRatesMeta,
+				currentPortalState,
+				beaconHeight,
+			)
+
+			if err != nil {
+				Logger.log.Error(err)
+				continue
+			}
+			if len(newInst) > 0 {
+				instructions = append(instructions, newInst...)
+			}
+		}
+	}
+
+	// handle portal req unlock collateral inst
+	var reqUnlockCollateralShardIDKeys []int
+	for k := range portalReqUnlockCollateralActionsByShardID {
+		reqUnlockCollateralShardIDKeys = append(reqUnlockCollateralShardIDKeys, int(k))
+	}
+
+	sort.Ints(reqUnlockCollateralShardIDKeys)
+	for _, value := range reqUnlockCollateralShardIDKeys {
+		shardID := byte(value)
+		actions := portalReqUnlockCollateralActionsByShardID[shardID]
+		for _, action := range actions {
+			contentStr := action[1]
+			newInst, err := blockchain.buildInstructionsForReqUnlockCollateral(
+				contentStr,
+				shardID,
+				metadata.PortalCustodianDepositMeta,
 				currentPortalState,
 				beaconHeight,
 			)
