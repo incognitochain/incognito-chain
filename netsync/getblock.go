@@ -27,13 +27,13 @@ func (netSync *NetSync) GetBlockByHeight(
 	case proto.BlkType_BlkShard:
 		return bc.GetShardBlockByHeight(height, fromcID)
 	case proto.BlkType_BlkXShard:
-		blk, err := bc.GetShardBlockByHeight(height, fromcID)
+		blk, err := bc.GetShardBlockByHeightV1(height, fromcID)
 		if err != nil {
 			return nil, err
 		}
 		return blk.CreateCrossShardBlock(tocID)
 	case proto.BlkType_BlkS2B:
-		blk, err := bc.GetShardBlockByHeight(height, fromcID)
+		blk, err := bc.GetShardBlockByHeightV1(height, fromcID)
 		if err != nil {
 			return nil, err
 		}

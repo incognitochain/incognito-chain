@@ -99,6 +99,17 @@ func (blockchain *BlockChain) GetShardBlockByHeight(height uint64, shardID byte)
 	return shardBlockMap, err
 }
 
+func (blockchain *BlockChain) GetShardBlockByHeightV1(height uint64, shardID byte) (*ShardBlock, error) {
+	res, err := blockchain.GetShardBlockByHeight(height, shardID)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range res {
+		return v, nil
+	}
+	return nil, fmt.Errorf("NOT FOUND Shard Block By ShardID %+v Height %+v", shardID, height)
+}
+
 func (blockchain *BlockChain) GetShardBlockByHash(hash common.Hash) (*ShardBlock, uint64, error) {
 	if blockchain.IsTest {
 		return &ShardBlock{}, 2, nil
