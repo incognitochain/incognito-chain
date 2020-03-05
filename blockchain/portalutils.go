@@ -724,3 +724,31 @@ func updateFreeCollateralCustodian(custodianState * lvdb.CustodianState, redeemA
 	return unlockedAmount, nil
 }
 
+func updateRedeemRequestStatusByRedeemId(redeemID string, newStatus int, db database.DatabaseInterface) error {
+	redeemRequestBytes, err := db.GetRedeemRequestByRedeemID(redeemID)
+	if err != nil {
+		return err
+	}
+	if len(redeemRequestBytes) == 0 {
+		return fmt.Errorf("Not found redeem request from db with redeemId %v\n", redeemID)
+	}
+
+	var redeemRequest metadata.PortalRedeemRequestStatus
+	err = json.Unmarshal(redeemRequestBytes, &redeemRequest)
+	if err != nil {
+		return err
+	}
+
+	redeemRequest.Status = byte(newStatus)
+	newRedeemRequest, err := json.Marshal(redeemRequest)
+	if err != nil {
+		return err
+	}
+	redeemRequestKey := lvdb.NewRedeemReqKey(redeemID)
+	err = db.StoreRedeemRequest([]byte(redeemRequestKey), newRedeemRequest)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+

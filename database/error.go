@@ -121,6 +121,7 @@ const (
 	GetReqPTokenStatusError
 	StoreRedeemRequestError
 	TrackRedeemReqByTxReqIDError
+	TrackReqUnlockCollateralByTxReqIDError
 
 	// relaying
 	StoreRelayingBNBHeaderError
@@ -231,21 +232,22 @@ var ErrCodeMessage = map[int]struct {
 	GetPDEStatusError:                      {-13014, "Get pde status error"},
 
 	//portal
-	StoreCustodianDepositStateError:     {-14001, "Store custodian deposit error"},
-	StoreWaitingPortingRequestError:     {-14002, "Store waiting porting requests error"},
-	StoreWaitingRedeemRequestError:      {-14003, "Store waiting redeem requests error"},
-	StorePortingRequestStateError:       {-14004, "Store porting request error"},
-	StoreRedeemRequestStateError:        {-14005, "Store redeem request error"},
-	TrackCustodianDepositError:          {-14006, "Track custodian deposit error"},
-	TrackReqPTokenError:                 {-14007, "Track requesting ptokens error"},
-	StoreExchangeRatesRequestStateError: {-14008, "Store exchange rates request error"},
-	StoreFinalExchangeRatesStateError:   {-14009, "Store final exchange rates request error"},
-	GetItemPortalByKeyError:             {-14010, "Get item portal by key error"},
-	GetItemPortalByKeyNotFound:          {-14011, "Get item portal by key not found"},
-	GetCustodianDepositStatusError:      {-14012, "Get all custodian deposit status error"},
-	GetReqPTokenStatusError:             {-14013, "Get request ptoken status error"},
-	StoreRedeemRequestError:             {-14014, "Store redeem request error"},
-	TrackRedeemReqByTxReqIDError: {-14015, "Track redeem request by txReqID error"},
+	StoreCustodianDepositStateError:        {-14001, "Store custodian deposit error"},
+	StoreWaitingPortingRequestError:        {-14002, "Store waiting porting requests error"},
+	StoreWaitingRedeemRequestError:         {-14003, "Store waiting redeem requests error"},
+	StorePortingRequestStateError:          {-14004, "Store porting request error"},
+	StoreRedeemRequestStateError:           {-14005, "Store redeem request error"},
+	TrackCustodianDepositError:             {-14006, "Track custodian deposit error"},
+	TrackReqPTokenError:                    {-14007, "Track requesting ptokens error"},
+	StoreExchangeRatesRequestStateError:    {-14008, "Store exchange rates request error"},
+	StoreFinalExchangeRatesStateError:      {-14009, "Store final exchange rates request error"},
+	GetItemPortalByKeyError:                {-14010, "Get item portal by key error"},
+	GetItemPortalByKeyNotFound:             {-14011, "Get item portal by key not found"},
+	GetCustodianDepositStatusError:         {-14012, "Get all custodian deposit status error"},
+	GetReqPTokenStatusError:                {-14013, "Get request ptoken status error"},
+	StoreRedeemRequestError:                {-14014, "Store redeem request error"},
+	TrackRedeemReqByTxReqIDError:           {-14015, "Track redeem request by txReqID error"},
+	TrackReqUnlockCollateralByTxReqIDError: {-14016, "Track request unlock collateral by txReqID error"},
 
 	// relaying
 	StoreRelayingBNBHeaderError: {-15001, "Store relaying header bnb error"},

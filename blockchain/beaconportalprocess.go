@@ -41,6 +41,8 @@ func (blockchain *BlockChain) processPortalInstructions(block *BeaconBlock, bd *
 			err = blockchain.processPortalExchangeRates(beaconHeight, inst, currentPortalState)
 		case strconv.Itoa(metadata.PortalRedeemRequestMeta):
 			err = blockchain.processPortalRedeemRequest(beaconHeight, inst, currentPortalState, updatingInfoByTokenID)
+		case strconv.Itoa(metadata.PortalRequestUnlockCollateralMeta):
+			err = blockchain.processPortalUnlockCollateral(beaconHeight, inst, currentPortalState)
 		}
 
 		if err != nil {
@@ -326,12 +328,12 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		txReqID := portingRequestContent.TxReqID
 		newPortingRequest := lvdb.PortingRequest{
 			UniquePortingID: portingRequestContent.UniqueRegisterId,
-			Amount:         portingRequestContent.RegisterAmount,
-			TokenID:        portingRequestContent.PTokenId,
-			PorterAddress:  portingRequestContent.IncogAddressStr,
-			TxReqID:        txReqID,
-			Status:			common.PortalPortingReqRejectedStatus,
-			BeaconHeight:	beaconHeight + 1,
+			Amount:          portingRequestContent.RegisterAmount,
+			TokenID:         portingRequestContent.PTokenId,
+			PorterAddress:   portingRequestContent.IncogAddressStr,
+			TxReqID:         txReqID,
+			Status:          common.PortalPortingReqRejectedStatus,
+			BeaconHeight:    beaconHeight + 1,
 		}
 
 		//save porting request
@@ -675,7 +677,7 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 	reqStatus := instructions[2]
 	if reqStatus == common.PortalRedeemRequestAcceptedChainStatus {
 		// add waiting redeem request into waiting redeems list
-		keyWaitingRedeemRequest := lvdb.NewWaitingRedeemReqKey(beaconHeight + 1, actionData.TokenID)
+		keyWaitingRedeemRequest := lvdb.NewWaitingRedeemReqKey(beaconHeight+1, actionData.TokenID)
 		redeemRequest, _ := NewRedeemRequestState(
 			actionData.UniqueRedeemID,
 			actionData.TxReqID,
@@ -685,7 +687,7 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 			actionData.RedeemAmount,
 			actionData.MatchingCustodianDetail,
 			actionData.RedeemFee,
-			beaconHeight + 1,
+			beaconHeight+1,
 		)
 		currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest] = redeemRequest
 
@@ -701,15 +703,15 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 		// track status of redeem request by redeemID
 		trackStatusByRedeemIDKey := lvdb.NewRedeemReqKey(actionData.UniqueRedeemID)
 		trackStatusByRedeemIDValue := metadata.PortalRedeemRequestStatus{
-			Status: common.PortalRedeemReqWaitingStatus,
-			UniqueRedeemID: actionData.UniqueRedeemID,
-			TokenID: actionData.TokenID,
-			RedeemAmount : actionData.RedeemAmount,
-			IncAddressStr : actionData.IncAddressStr,
-			RemoteAddress : actionData.RemoteAddress,
-			RedeemFee  : actionData.RedeemFee,
+			Status:                  common.PortalRedeemReqWaitingStatus,
+			UniqueRedeemID:          actionData.UniqueRedeemID,
+			TokenID:                 actionData.TokenID,
+			RedeemAmount:            actionData.RedeemAmount,
+			IncAddressStr:           actionData.IncAddressStr,
+			RemoteAddress:           actionData.RemoteAddress,
+			RedeemFee:               actionData.RedeemFee,
 			MatchingCustodianDetail: actionData.MatchingCustodianDetail,
-			TxReqID  : actionData.TxReqID,
+			TxReqID:                 actionData.TxReqID,
 		}
 		trackStatusByRedeemIDValueBytes, _ := json.Marshal(trackStatusByRedeemIDValue)
 		err := db.StoreRedeemRequest([]byte(trackStatusByRedeemIDKey), trackStatusByRedeemIDValueBytes)
@@ -721,7 +723,7 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 		// track status of redeem request by txReqID
 		trackStatusByTxReqIDKey := lvdb.NewTrackRedeemReqByTxReqIDKey(actionData.TxReqID.String())
 		trackStatusByTxReqIDValue := metadata.PortalRedeemRequestStatus{
-			Status: common.PortalRedeemReqWaitingStatus,
+			Status:         common.PortalRedeemReqWaitingStatus,
 			UniqueRedeemID: actionData.UniqueRedeemID,
 		}
 		trackStatusByTxReqIDValueBytes, _ := json.Marshal(trackStatusByTxReqIDValue)
@@ -755,13 +757,120 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 		// track status of redeem request by txReqID
 		trackStatusByTxReqIDKey := lvdb.NewTrackRedeemReqByTxReqIDKey(actionData.TxReqID.String())
 		trackStatusByTxReqIDValue := metadata.PortalRedeemRequestStatus{
-			Status: common.PortalRedeemReqRejectedStatus,
+			Status:         common.PortalRedeemReqRejectedStatus,
 			UniqueRedeemID: actionData.UniqueRedeemID,
 		}
 		trackStatusByTxReqIDValueBytes, _ := json.Marshal(trackStatusByTxReqIDValue)
 		err = db.TrackRedeemRequestByTxReqID([]byte(trackStatusByTxReqIDKey), trackStatusByTxReqIDValueBytes)
 		if err != nil {
 			Logger.log.Errorf("[processPortalRedeemRequest] Error when tracking status of redeem request by txReqID: %v\n", err)
+			return nil
+		}
+	}
+
+	return nil
+}
+
+func (blockchain *BlockChain) processPortalUnlockCollateral(
+	beaconHeight uint64, instructions []string,
+	currentPortalState *CurrentPortalState) error {
+	if currentPortalState == nil {
+		Logger.log.Errorf("current portal state is nil")
+		return nil
+	}
+
+	if len(instructions) != 4 {
+		return nil // skip the instruction
+	}
+	db := blockchain.GetDatabase()
+
+	// unmarshal instructions content
+	var actionData metadata.PortalRequestUnlockCollateralContent
+	err := json.Unmarshal([]byte(instructions[3]), &actionData)
+	if err != nil {
+		Logger.log.Errorf("Can not unmarshal instruction content %v\n", err)
+		return nil
+	}
+
+	// get tokenSymbol from redeemTokenID
+	tokenSymbol := ""
+	for tokenSym, incTokenID := range metadata.PortalSupportedTokenMap {
+		if incTokenID == actionData.TokenID {
+			tokenSymbol = tokenSym
+			break
+		}
+	}
+
+	reqStatus := instructions[2]
+	if reqStatus == common.PortalReqUnlockCollateralAcceptedChainStatus {
+		// update custodian state (FreeCollateral, LockedAmountCollateral)
+		custodianStateKey := lvdb.NewCustodianStateKey(beaconHeight, actionData.CustodianAddressStr)
+		_, err2 := updateFreeCollateralCustodian(currentPortalState.CustodianPoolState[custodianStateKey], actionData.RedeemAmount, tokenSymbol)
+		if err2 != nil {
+			Logger.log.Errorf("Error when update free collateral amount for custodian", err2)
+
+			return nil
+		}
+
+		redeemID := actionData.UniqueRedeemID
+		keyWaitingRedeemRequest := lvdb.NewWaitingRedeemReqKey(beaconHeight, redeemID)
+
+		// update redeem request state in WaitingRedeemRequest (remove custodian from matchingCustodianDetail)
+		delete(currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest].Custodians, actionData.CustodianAddressStr)
+
+		// remove redeem request from WaitingRedeemRequest list when all matching custodians return public token to user
+		// when list matchingCustodianDetail is empty
+		if len(currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest].Custodians) == 0 {
+			delete(currentPortalState.WaitingRedeemRequests, keyWaitingRedeemRequest)
+
+			// update status of redeem request with redeemID
+			err = updateRedeemRequestStatusByRedeemId(redeemID, common.PortalRedeemReqSuccessStatus, db)
+			if err != nil {
+				Logger.log.Errorf("ERROR: an error occurred while updating redeem request status by redeemID: %+v", err)
+				return nil
+			}
+		}
+
+		// track reqUnlockCollateral status by txID into DB
+		reqUnlockCollateralTrackKey := lvdb.NewPortalReqUnlockCollateralKey(actionData.TxReqID.String())
+		reqUnlockCollateralTrackData := metadata.PortalRequestUnlockCollateralStatus{
+			Status:              common.PortalReqUnlockCollateralAcceptedStatus,
+			UniqueRedeemID:      actionData.UniqueRedeemID,
+			TokenID:             actionData.TokenID,
+			CustodianAddressStr: actionData.CustodianAddressStr,
+			RedeemAmount:        actionData.RedeemAmount,
+			UnlockAmount:        actionData.UnlockAmount,
+			RedeemProof:         actionData.RedeemProof,
+		}
+		reqUnlockCollateralTrackDataBytes, _ := json.Marshal(reqUnlockCollateralTrackData)
+		err = db.TrackRequestUnlockCollateralByTxReqID(
+			[]byte(reqUnlockCollateralTrackKey),
+			reqUnlockCollateralTrackDataBytes,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while tracking request unlock collateral tx: %+v", err)
+			return nil
+		}
+
+	} else if reqStatus == common.PortalReqUnlockCollateralRejectedChainStatus {
+		// track reqUnlockCollateral status by txID into DB
+		reqUnlockCollateralTrackKey := lvdb.NewPortalReqUnlockCollateralKey(actionData.TxReqID.String())
+		reqUnlockCollateralTrackData := metadata.PortalRequestUnlockCollateralStatus{
+			Status:              common.PortalReqUnlockCollateralRejectedStatus,
+			UniqueRedeemID:      actionData.UniqueRedeemID,
+			TokenID:             actionData.TokenID,
+			CustodianAddressStr: actionData.CustodianAddressStr,
+			RedeemAmount:        actionData.RedeemAmount,
+			UnlockAmount:        actionData.UnlockAmount,
+			RedeemProof:         actionData.RedeemProof,
+		}
+		reqUnlockCollateralTrackDataBytes, _ := json.Marshal(reqUnlockCollateralTrackData)
+		err = db.TrackRequestUnlockCollateralByTxReqID(
+			[]byte(reqUnlockCollateralTrackKey),
+			reqUnlockCollateralTrackDataBytes,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while tracking request unlock collateral tx: %+v", err)
 			return nil
 		}
 	}

@@ -447,6 +447,22 @@ func (db *db) TrackRedeemRequestByTxReqID(key []byte, value []byte) error {
 	return nil
 }
 
+// NewPortalReqUnlockCollateralKey creates key for tracking request unlock collateral in portal
+func NewPortalReqUnlockCollateralKey(txReqStr string) string {
+	key := append(PortalRequestUnlockCollateralPrefix, []byte(txReqStr)...)
+	return string(key)
+}
+
+// TrackRequestUnlockCollateralByTxReqID tracks status of request unlock collateral by txReqID
+func (db *db) TrackRequestUnlockCollateralByTxReqID(key []byte, value []byte) error {
+	err := db.Put(key, value)
+	if err != nil {
+		return database.NewDatabaseError(database.TrackRedeemReqByTxReqIDError, errors.Wrap(err, "db.lvdb.put"))
+	}
+	return nil
+}
+
+
 //GetRedeemRequestStatusByPortingID(redeemID string) (int, error)
 
 //func (db *db) GetRedeemRequestByRedeemID(redeemID string) ([]byte, error) {

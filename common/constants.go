@@ -131,6 +131,9 @@ const (
 	PortalRedeemReqSuccessStatus = 1
 	PortalRedeemReqWaitingStatus = 2
 	PortalRedeemReqRejectedStatus = 3
+
+	PortalReqUnlockCollateralAcceptedStatus = 1
+	PortalReqUnlockCollateralRejectedStatus = 2
 )
 
 // PDE statuses for chain

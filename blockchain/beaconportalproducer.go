@@ -1081,7 +1081,6 @@ func buildReqUnlockCollateralInst(
 	}
 }
 
-//todo:
 // buildInstructionsForReqUnlockCollateral builds instruction for custodian deposit action
 func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 	contentStr string,
