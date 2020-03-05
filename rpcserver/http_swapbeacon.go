@@ -95,7 +95,7 @@ func getSwapProofOnBeacon(
 		return nil, nil, rpcservice.NewRPCError(rpcservice.NoSwapConfirmInst, err)
 	}
 	block := &beaconBlock{BeaconBlock: b}
-	proof, err := buildProofForBlock(block, insts, instID, db, ce)
+	proof, err := buildProofForBlock(block, insts, instID, ce)
 	if err != nil {
 		return nil, nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -151,7 +151,6 @@ func buildProofForBlock(
 	blk block,
 	insts [][]string,
 	id int,
-	db incdb.Database,
 	ce ConsensusEngine,
 ) (*swapProof, error) {
 	// Build merkle proof for instruction in bridge block
@@ -198,7 +197,7 @@ func getBeaconSwapProofOnBeacon(
 
 	insts := b.Body.Instructions
 	block := &beaconBlock{BeaconBlock: b}
-	return buildProofForBlock(block, insts, instID, db, ce)
+	return buildProofForBlock(block, insts, instID, ce)
 }
 
 // getIncludedBeaconBlocks retrieves all beacon blocks included in a shard block

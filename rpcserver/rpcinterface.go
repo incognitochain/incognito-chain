@@ -169,6 +169,10 @@ var HttpHandler = map[string]httpHandler{
 	extractPDEInstsFromBeaconBlock:        (*HttpServer).handleExtractPDEInstsFromBeaconBlock,
 
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,
+
+	// incognnito mode for sc
+	getBurnProofForDepositToSC:             (*HttpServer).handleGetBurnProofForDepositToSC,
+	createAndSendBurningForDepositToSCRequest:      (*HttpServer).handleCreateAndSendBurningForDepositToSCRequest,
 }
 
 // Commands that are available to a limited user

@@ -44,7 +44,14 @@ func NewContractingRequestMetadata(senderPrivateKeyStr string, tokenReceivers in
 	return meta, nil
 }
 
-func NewBurningRequestMetadata(senderPrivateKeyStr string, tokenReceivers interface{}, tokenID string, tokenName string, remoteAddress string) (*metadata.BurningRequest, *RPCError) {
+func NewBurningRequestMetadata(
+	senderPrivateKeyStr string,
+	tokenReceivers interface{},
+	tokenID string,
+	tokenName string,
+	remoteAddress string,
+	burningMetaType int,
+) (*metadata.BurningRequest, *RPCError) {
 	senderKey, err := wallet.Base58CheckDeserialize(senderPrivateKeyStr)
 	if err != nil {
 		return nil, NewRPCError(UnexpectedError, err)
@@ -70,7 +77,7 @@ func NewBurningRequestMetadata(senderPrivateKeyStr string, tokenReceivers interf
 		*tokenIDHash,
 		tokenName,
 		remoteAddress,
-		metadata.BurningRequestMeta,
+		burningMetaType,
 	)
 	if err != nil {
 		return nil, NewRPCError(UnexpectedError, err)

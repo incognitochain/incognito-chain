@@ -71,9 +71,6 @@ func (bReq BurningRequest) ValidateSanityData(bcr BlockchainRetriever, txr Trans
 	if _, err := hex.DecodeString(bReq.RemoteAddress); err != nil {
 		return false, false, err
 	}
-	if bReq.Type != BurningRequestMeta {
-		return false, false, errors.New("Wrong request info's meta type")
-	}
 	if len(bReq.BurnerAddress.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's burner address")
 	}
@@ -89,11 +86,14 @@ func (bReq BurningRequest) ValidateSanityData(bcr BlockchainRetriever, txr Trans
 	if !bytes.Equal(txr.GetSigPubKey()[:], bReq.BurnerAddress.Pk[:]) {
 		return false, false, errors.New("BurnerAddress incorrect")
 	}
+	if !bytes.Equal(txr.GetTokenID()[:], bReq.TokenID[:]) {
+		return false, false, errors.New("Wrong request info's token id, it should be equal to tx's token id.")
+	}
 	return true, true, nil
 }
 
 func (bReq BurningRequest) ValidateMetadataByItself() bool {
-	return bReq.Type == BurningRequestMeta
+	return bReq.Type == BurningRequestMeta || bReq.Type == BurningForDepositToSCRequestMeta
 }
 
 func (bReq BurningRequest) Hash() *common.Hash {
@@ -119,7 +119,7 @@ func (bReq *BurningRequest) BuildReqActions(tx Transaction, bcr BlockchainRetrie
 		return [][]string{}, err
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(BurningRequestMeta), actionContentBase64Str}
+	action := []string{strconv.Itoa(bReq.Type), actionContentBase64Str}
 	return [][]string{action}, nil
 }
 
