@@ -86,6 +86,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalRedeemRequestResponse{}
 	case PortalRequestUnlockCollateralMeta:
 		md = &PortalRequestUnlockCollateral{}
+	case PortalRequestUnlockCollateralResponseMeta:
+		md = &PortalRequestUnlockCollateralResponse{}
 	case PortalExchangeRatesMeta:
 		md = &PortalExchangeRates{}
 	case RelayingBNBHeaderMeta:

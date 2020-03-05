@@ -28,6 +28,14 @@ type CustodianStateSlice struct {
 	Value *lvdb.CustodianState
 }
 
+type RedeemMemoBNB struct {
+	RedeemID string `json:"RedeemID"`
+}
+
+type PortingMemoBNB struct {
+	PortingID string `json:"PortingID"`
+}
+
 func NewCustodianState(
 	incognitoAddress string,
 	totalColl uint64,

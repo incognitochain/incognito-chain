@@ -598,9 +598,6 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		}
 
 		// check memo attach portingID req:
-		type PortingMemoBNB struct {
-			PortingID string `json:"PortingID"`
-		}
 		memo := txBNB.Memo
 		Logger.log.Infof("[buildInstructionsForReqPTokens] memo: %v\n", memo)
 		memoBytes, err2 := base64.StdEncoding.DecodeString(memo)
@@ -1294,9 +1291,6 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		}
 
 		// check memo attach redeemID req:
-		type RedeemMemoBNB struct {
-			RedeemID string `json:"RedeemID"`
-		}
 		memo := txBNB.Memo
 		Logger.log.Infof("[buildInstructionsForReqUnlockCollateral] memo: %v\n", memo)
 		memoBytes, err2 := base64.StdEncoding.DecodeString(memo)
