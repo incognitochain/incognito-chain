@@ -805,7 +805,11 @@ func (blockchain *BlockChain) processPortalUnlockCollateral(
 	if reqStatus == common.PortalReqUnlockCollateralAcceptedChainStatus {
 		// update custodian state (FreeCollateral, LockedAmountCollateral)
 		custodianStateKey := lvdb.NewCustodianStateKey(beaconHeight, actionData.CustodianAddressStr)
-		_, err2 := updateFreeCollateralCustodian(currentPortalState.CustodianPoolState[custodianStateKey], actionData.RedeemAmount, tokenSymbol)
+		finalExchangeRateKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
+		_, err2 := updateFreeCollateralCustodian(
+			currentPortalState.CustodianPoolState[custodianStateKey],
+			actionData.RedeemAmount, tokenSymbol,
+			currentPortalState.FinalExchangeRates[finalExchangeRateKey])
 		if err2 != nil {
 			Logger.log.Errorf("Error when update free collateral amount for custodian", err2)
 

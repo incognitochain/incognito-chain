@@ -702,7 +702,7 @@ func removeMatchingCustodianInRedeemRequest (custodianIncAddress string, state *
 }
 
 // updateFreeCollateralCustodian updates custodian state (amount collaterals) when custodian returns redeemAmount public token to user
-func updateFreeCollateralCustodian(custodianState * lvdb.CustodianState, redeemAmount uint64, tokenSymbol string) (uint64, error){
+func updateFreeCollateralCustodian(custodianState * lvdb.CustodianState, redeemAmount uint64, tokenSymbol string, exchangeRate *lvdb.FinalExchangeRates) (uint64, error){
 	// calculate unlock amount for custodian
 	// if custodian returns redeem amount that is all amount holding of token => unlock full amount
 	// else => return 120% redeem amount
@@ -713,8 +713,11 @@ func updateFreeCollateralCustodian(custodianState * lvdb.CustodianState, redeemA
 		custodianState.LockedAmountCollateral[tokenSymbol] = 0
 		custodianState.FreeCollateral += unlockedAmount
 	} else {
-		unlockedAmount = uint64(math.Floor(float64(redeemAmount) * 1.2))
-		// todo: convert unlockedAmount from ptoken to prv
+		unlockedAmountInPToken := uint64(math.Floor(float64(redeemAmount) * 1.2))
+		unlockedAmount = exchangeRate.ExchangePToken2PRVByTokenId(tokenSymbol, unlockedAmountInPToken)
+		if unlockedAmount == 0 {
+			return 0, errors.New("[portal-updateFreeCollateralCustodian] error convert amount ptoken to amount in prv ")
+		}
 		if custodianState.LockedAmountCollateral[tokenSymbol] <= unlockedAmount {
 			return 0, errors.New("[portal-updateFreeCollateralCustodian] Locked amount must be greater than amount need to unlocked")
 		}
