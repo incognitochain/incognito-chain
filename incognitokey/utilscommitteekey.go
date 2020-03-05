@@ -168,17 +168,35 @@ func (committeePublicKey *CommitteePublicKey) IsEqual(target CommitteePublicKey)
 	}
 	return true
 }
+
+func (committeePublicKey *CommitteePublicKey) IsValid(target CommitteePublicKey) bool {
+	if bytes.Compare(committeePublicKey.IncPubKey[:], target.IncPubKey[:]) == 0 {
+		return false
+	}
+	if committeePublicKey.MiningPubKey == nil || target.MiningPubKey == nil {
+		return false
+	}
+	for key, value := range committeePublicKey.MiningPubKey {
+		if targetValue, ok := target.MiningPubKey[key]; ok {
+			if bytes.Compare(targetValue, value) == 0 {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 func GetValidStakeStructCommitteePublicKey(committees []CommitteePublicKey, stakers []CommitteePublicKey) []CommitteePublicKey {
 	validStaker := []CommitteePublicKey{}
 	for _, staker := range stakers {
-		flag := false
+		flag := true
 		for _, committee := range committees {
-			if staker.IsEqual(committee) {
-				flag = true
+			if !staker.IsValid(committee) {
+				flag = false
 				break
 			}
 		}
-		if !flag {
+		if flag {
 			validStaker = append(validStaker, staker)
 		}
 	}
