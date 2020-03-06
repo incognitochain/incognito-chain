@@ -276,7 +276,8 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		//save custodian state
 		for address, itemCustodian := range custodiansDetail {
 			//update custodian state
-			_ = UpdateCustodianWithNewAmount(currentPortalState, address, tokenID, itemCustodian.Amount, itemCustodian.LockedAmountCollateral)
+			custodianKey := lvdb.NewCustodianStateKey(beaconHeight, address)
+			_ = UpdateCustodianWithNewAmount(currentPortalState, custodianKey, tokenID, itemCustodian.Amount, itemCustodian.LockedAmountCollateral)
 		}
 
 		//save waiting request porting state

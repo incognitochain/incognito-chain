@@ -590,8 +590,8 @@ func pickMultipleCustodian (metadata metadata.PortalUserRegister, exchangeRate *
 	return multipleCustodian, nil
 }
 
-func UpdateCustodianWithNewAmount(currentPortalState *CurrentPortalState, address string, PTokenId string,  amountPToken uint64, lockedAmountCollateral uint64) error  {
-	custodian := currentPortalState.CustodianPoolState[address]
+func UpdateCustodianWithNewAmount(currentPortalState *CurrentPortalState, custodianKey string, PTokenId string,  amountPToken uint64, lockedAmountCollateral uint64) error  {
+	custodian := currentPortalState.CustodianPoolState[custodianKey]
 
 	freeCollateral := custodian.FreeCollateral - lockedAmountCollateral
 
@@ -620,7 +620,7 @@ func UpdateCustodianWithNewAmount(currentPortalState *CurrentPortalState, addres
 	custodian.HoldingPubTokens = holdingPubTokens
 	custodian.LockedAmountCollateral = lockedAmountCollateralMapping
 
-	currentPortalState.CustodianPoolState[address] = custodian
+	currentPortalState.CustodianPoolState[custodianKey] = custodian
 
 	return nil
 }
