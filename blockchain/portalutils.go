@@ -24,10 +24,17 @@ type CurrentPortalState struct {
 	FinalExchangeRates     map[string]*lvdb.FinalExchangeRates   // key : beaconHeight || TxID
 }
 
-
 type CustodianStateSlice struct {
 	Key   string
 	Value *lvdb.CustodianState
+}
+
+type RedeemMemoBNB struct {
+	RedeemID string `json:"RedeemID"`
+}
+
+type PortingMemoBNB struct {
+	PortingID string `json:"PortingID"`
 }
 
 func NewCustodianState(
@@ -744,3 +751,59 @@ func pickupCustodianForRedeem(redeemAmount uint64, tokenSymbol string, portalSta
 func convertExternalBNBAmountToIncAmount(externalBNBAmount int64) int64 {
 	return externalBNBAmount * 10   // externalBNBAmount / 1^8 * 1^9
 }
+
+// updateFreeCollateralCustodian updates custodian state (amount collaterals) when custodian returns redeemAmount public token to user
+func updateFreeCollateralCustodian(custodianState * lvdb.CustodianState, redeemAmount uint64, tokenSymbol string, exchangeRate *lvdb.FinalExchangeRates) (uint64, error){
+	// calculate unlock amount for custodian
+	// if custodian returns redeem amount that is all amount holding of token => unlock full amount
+	// else => return 120% redeem amount
+
+	unlockedAmount := uint64(0)
+	if custodianState.HoldingPubTokens[tokenSymbol] == 0 {
+		unlockedAmount = custodianState.LockedAmountCollateral[tokenSymbol]
+		custodianState.LockedAmountCollateral[tokenSymbol] = 0
+		custodianState.FreeCollateral += unlockedAmount
+	} else {
+		unlockedAmountInPToken := uint64(math.Floor(float64(redeemAmount) * 1.2))
+		unlockedAmount = exchangeRate.ExchangePToken2PRVByTokenId(tokenSymbol, unlockedAmountInPToken)
+		if unlockedAmount == 0 {
+			return 0, errors.New("[portal-updateFreeCollateralCustodian] error convert amount ptoken to amount in prv ")
+		}
+		if custodianState.LockedAmountCollateral[tokenSymbol] <= unlockedAmount {
+			return 0, errors.New("[portal-updateFreeCollateralCustodian] Locked amount must be greater than amount need to unlocked")
+		}
+		custodianState.LockedAmountCollateral[tokenSymbol] -= unlockedAmount
+		custodianState.FreeCollateral += unlockedAmount
+	}
+	return unlockedAmount, nil
+}
+
+// updateRedeemRequestStatusByRedeemId updates status of redeem request into db
+func updateRedeemRequestStatusByRedeemId(redeemID string, newStatus int, db database.DatabaseInterface) error {
+	redeemRequestBytes, err := db.GetRedeemRequestByRedeemID(redeemID)
+	if err != nil {
+		return err
+	}
+	if len(redeemRequestBytes) == 0 {
+		return fmt.Errorf("Not found redeem request from db with redeemId %v\n", redeemID)
+	}
+
+	var redeemRequest metadata.PortalRedeemRequestStatus
+	err = json.Unmarshal(redeemRequestBytes, &redeemRequest)
+	if err != nil {
+		return err
+	}
+
+	redeemRequest.Status = byte(newStatus)
+	newRedeemRequest, err := json.Marshal(redeemRequest)
+	if err != nil {
+		return err
+	}
+	redeemRequestKey := lvdb.NewRedeemReqKey(redeemID)
+	err = db.StoreRedeemRequest([]byte(redeemRequestKey), newRedeemRequest)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+

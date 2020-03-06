@@ -124,6 +124,16 @@ func (iRes PortalRedeemRequestResponse) VerifyMinerCreatedTxBeforeGettingInBlock
 			shardID != shardIDFromInst {
 			continue
 		}
+		if requesterAddrStrFromInst != iRes.RequesterAddrStr {
+			Logger.log.Errorf("Error - VALIDATION: Requester address %v is not matching to Requester address in instruction %v", iRes.RequesterAddrStr, requesterAddrStrFromInst)
+			continue
+		}
+
+		if redeemAmountFromInst != iRes.Amount {
+			Logger.log.Errorf("Error - VALIDATION: Redeem amount %v is not matching to redeem amount in instruction %v", iRes.Amount, redeemAmountFromInst)
+			continue
+		}
+
 		key, err := wallet.Base58CheckDeserialize(requesterAddrStrFromInst)
 		if err != nil {
 			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing requester address string: ", err)

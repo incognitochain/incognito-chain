@@ -459,6 +459,7 @@ func (db *db) TrackRedeemRequestByTxReqID(key []byte, value []byte) error {
 	return nil
 }
 
+
 func (db *db) StoreCustodianWithdrawRequest(key []byte, content interface{}) error  {
 	contributionBytes, err := json.Marshal(content)
 	if err != nil {
@@ -473,4 +474,56 @@ func (db *db) StoreCustodianWithdrawRequest(key []byte, content interface{}) err
 	return nil
 }
 
+// NewPortalReqUnlockCollateralKey creates key for tracking request unlock collateral in portal
+func NewPortalReqUnlockCollateralKey(txReqStr string) string {
+	key := append(PortalRequestUnlockCollateralPrefix, []byte(txReqStr)...)
+	return string(key)
+}
 
+// TrackRequestUnlockCollateralByTxReqID tracks status of request unlock collateral by txReqID
+func (db *db) TrackRequestUnlockCollateralByTxReqID(key []byte, value []byte) error {
+	err := db.Put(key, value)
+	if err != nil {
+		return database.NewDatabaseError(database.TrackRedeemReqByTxReqIDError, errors.Wrap(err, "db.lvdb.put"))
+	}
+	return nil
+}
+
+
+// GetReqUnlockCollateralStatusByTxReqID returns request unlock collateral status with txReqID
+func (db *db) GetReqUnlockCollateralStatusByTxReqID(txReqID string) ([]byte, error) {
+	key := NewPortalReqUnlockCollateralKey(txReqID)
+
+	reqUnlockCollateralStatusBytes, err := db.lvdb.Get([]byte(key), nil)
+	if err != nil && err != lvdberr.ErrNotFound {
+		return nil, database.NewDatabaseError(database.GetReqUnlockCollateralStatusError, err)
+	}
+
+	return reqUnlockCollateralStatusBytes, err
+}
+
+
+//GetRedeemRequestStatusByPortingID(redeemID string) (int, error)
+
+//func (db *db) GetRedeemRequestByRedeemID(redeemID string) ([]byte, error) {
+//	key := NewRedeemReqKey(redeemID)
+//	redeemRequest, err := db.GetItemPortalByKey([]byte(key))
+//
+//	if err != nil {
+//		return 0, err
+//	}
+//
+//	var portingRequestResult PortingRequest
+//
+//	if redeemRequest == nil {
+//		return 0, nil
+//	}
+//
+//	//get value via idx
+//	err = json.Unmarshal(redeemRequest, &portingRequestResult)
+//	if err != nil {
+//		return 0, err
+//	}
+//
+//	return portingRequestResult.Status, nil
+//}

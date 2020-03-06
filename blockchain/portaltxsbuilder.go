@@ -216,7 +216,7 @@ func (blockGenerator *BlockGenerator) buildPortalRejectedRedeemRequestTx(
 	}
 
 	meta := metadata.NewPortalRedeemRequestResponse(
-		"accepted",
+		"rejected",
 		redeemReqContent.TxReqID,
 		redeemReqContent.IncAddressStr,
 		redeemReqContent.RedeemAmount,
@@ -274,3 +274,57 @@ func (blockGenerator *BlockGenerator) buildPortalRejectedRedeemRequestTx(
 	Logger.log.Errorf("Suucc: %+v", err)
 	return resTx, nil
 }
+
+// buildPortalAcceptedRequestUnlockCollateralTx builds accepted tx for custodian request unlock collateral tx with status "accepted"
+// mints PRV to return to custodian
+func (blockGenerator *BlockGenerator) buildPortalAcceptedRequestUnlockCollateralTx(
+	contentStr string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+) (metadata.Transaction, error) {
+	Logger.log.Info("[Portal accepted unlock collateral] Starting...")
+	contentBytes := []byte(contentStr)
+	var reqContent metadata.PortalRequestUnlockCollateralContent
+	err := json.Unmarshal(contentBytes, &reqContent)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while unmarshaling portal custodian request unlock content: %+v", err)
+		return nil, nil
+	}
+	if reqContent.ShardID != shardID {
+		return nil, nil
+	}
+
+	meta := metadata.NewPortalRequestUnlockCollateralResponse(
+		"accepted",
+		reqContent.TxReqID,
+		reqContent.CustodianAddressStr,
+		reqContent.RedeemAmount,
+		common.PRVCoinID.String(),
+		metadata.PortalRequestUnlockCollateralResponseMeta,
+	)
+
+	keyWallet, err := wallet.Base58CheckDeserialize(reqContent.CustodianAddressStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while deserializing custodian address string: %+v", err)
+		return nil, nil
+	}
+	receiverAddr := keyWallet.KeySet.PaymentAddress
+
+	// the returned currency is PRV
+	resTx := new(transaction.Tx)
+	err = resTx.InitTxSalary(
+		reqContent.RedeemAmount,
+		&receiverAddr,
+		producerPrivateKey,
+		blockGenerator.chain.config.DataBase,
+		meta,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing unlock collateral (normal) tx: %+v", err)
+		return nil, nil
+	}
+	//modify the type of the salary transaction
+	// resTx.Type = common.TxBlockProducerCreatedType
+	return resTx, nil
+}
+

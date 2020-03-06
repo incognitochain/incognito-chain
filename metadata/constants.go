@@ -42,16 +42,19 @@ const (
 	PDEContributionResponseMeta = 95
 
 	// portal
-	PortalCustodianDepositMeta          = 100
-	PortalUserRegisterMeta              = 101
-	PortalUserRequestPTokenMeta         = 102
-	PortalCustodianDepositResponseMeta  = 103
-	PortalUserRequestPTokenResponseMeta = 104
-	PortalExchangeRatesMeta             = 105
-	PortalRedeemRequestMeta             = 106
-	PortalCustodianWithdrawRequestMeta  = 107
-	PortalRedeemRequestResponseMeta     = 108
-	PortalCustodianWithdrawResponseMeta     = 109
+	PortalCustodianDepositMeta                = 100
+	PortalUserRegisterMeta                    = 101
+	PortalUserRequestPTokenMeta               = 102
+	PortalCustodianDepositResponseMeta        = 103
+	PortalUserRequestPTokenResponseMeta       = 104
+	PortalExchangeRatesMeta                   = 105
+	PortalRedeemRequestMeta                   = 106
+	PortalRedeemRequestResponseMeta           = 107
+	PortalRequestUnlockCollateralMeta         = 108
+	PortalRequestUnlockCollateralResponseMeta = 109
+	PortalCustodianWithdrawRequestMeta        = 110
+	PortalCustodianWithdrawResponseMeta       = 111
+
 
 	// relaying
 	RelayingBNBHeaderMeta = 200

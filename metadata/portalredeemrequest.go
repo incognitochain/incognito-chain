@@ -45,7 +45,7 @@ type PortalRedeemRequestContent struct {
 	IncAddressStr           string
 	RemoteAddress           string // btc/bnb/etc address
 	RedeemFee               uint64 // ptoken fee, 0.01% redeemAmount
-	MatchingCustodianDetail map[string]*lvdb.MatchingRedeemCustodianDetail
+	MatchingCustodianDetail map[string]*lvdb.MatchingRedeemCustodianDetail   // key: incAddressCustodian
 	TxReqID                 common.Hash
 	ShardID                 byte
 }
@@ -59,7 +59,7 @@ type PortalRedeemRequestStatus struct {
 	IncAddressStr           string
 	RemoteAddress           string // btc/bnb/etc address
 	RedeemFee               uint64 // ptoken fee
-	MatchingCustodianDetail map[string]*lvdb.MatchingRedeemCustodianDetail
+	MatchingCustodianDetail map[string]*lvdb.MatchingRedeemCustodianDetail   // key: incAddressCustodian
 	TxReqID                 common.Hash
 }
 
@@ -183,6 +183,7 @@ func (redeemReq PortalRedeemRequest) Hash() *common.Hash {
 	record += redeemReq.UniqueRedeemID
 	record += redeemReq.TokenID
 	record += strconv.FormatUint(redeemReq.RedeemAmount, 10)
+	record += strconv.FormatUint(redeemReq.RedeemFee, 10)
 	record += redeemReq.IncAddressStr
 	record += redeemReq.RemoteAddress
 	// final hash

@@ -75,7 +75,7 @@ const (
 	ValidatorRole  = "validator"
 	PendingRole    = "pending"
 	WaitingRole    = "waiting"
-	MaxShardNumber = 1
+	MaxShardNumber = 8
 
 	BlsConsensus    = "bls"
 	BridgeConsensus = "dsa"
@@ -132,8 +132,12 @@ const (
 	PortalRedeemReqWaitingStatus = 2
 	PortalRedeemReqRejectedStatus = 3
 
+
 	PortalCustodianWithdrawReqRejectStatus = 1
 	PortalCustodianWithdrawReqAcceptedStatus = 2
+
+	PortalReqUnlockCollateralAcceptedStatus = 1
+	PortalReqUnlockCollateralRejectedStatus = 2
 )
 
 // PDE statuses for chain
@@ -167,8 +171,12 @@ const (
 	PortalRedeemRequestAcceptedChainStatus = "accepted"
 	PortalRedeemRequestRejectedChainStatus = "rejected"
 
+
 	PortalCustodianWithdrawRequestAcceptedStatus = "accepted"
 	PortalCustodianWithdrawRequestRejectedStatus = "rejected"
+
+	PortalReqUnlockCollateralAcceptedChainStatus = "accepted"
+	PortalReqUnlockCollateralRejectedChainStatus = "rejected"
 )
 
 // Relaying header

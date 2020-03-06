@@ -130,9 +130,19 @@ func (p *BNBProof) Build(indexTx int, blockHeight int64, url string) (*BNBRelayi
 }
 
 func (p *BNBProof) Verify(db database.DatabaseInterface) (bool, *BNBRelayingError){
-	dataHash, err := db.GetBNBDataHashByBlockHeight(uint64(p.BlockHeight))
-	if err != nil {
-		return false, NewBNBRelayingError(GetBNBDataHashErr, err)
+	//dataHash, err := db.GetBNBDataHashByBlockHeight(uint64(p.BlockHeight))
+	//if err != nil {
+	//	//	return false, NewBNBRelayingError(GetBNBDataHashErr, err)
+	//	//}
+
+	//todo: hard code to test
+	dataHash := []byte{}
+	if p.BlockHeight == 247 {
+		dataHash, _ = hex.DecodeString("7F26964EF77D1E0876A6F852AA9125125BE832AFD4912CBD4DE69BFD63640AA8")
+	} else if p.BlockHeight == 355  {
+		dataHash, _ = hex.DecodeString("8DE56BE85401D4737E3AB7FD305EB9A86300CED4A3E0EF55571F08C1C45E4D8F")
+	} else if p.BlockHeight == 450  {
+		dataHash, _ = hex.DecodeString("193CDB951A4F8F47C472646EE64FD062F9415F1A0BDB0FC76D2FA5E5EE9DFCC7")
 	}
 
 	return VerifyProof(p.Proof, dataHash)

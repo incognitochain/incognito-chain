@@ -663,9 +663,6 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		}
 
 		// check memo attach portingID req:
-		type PortingMemoBNB struct {
-			PortingID string `json:"PortingID"`
-		}
 		memo := txBNB.Memo
 		Logger.log.Infof("[buildInstructionsForReqPTokens] memo: %v\n", memo)
 		memoBytes, err2 := base64.StdEncoding.DecodeString(memo)
@@ -1071,7 +1068,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 		meta.RedeemAmount,
 		matchingCustodiansDetail,
 		meta.RedeemFee,
-		beaconHeight,
+		beaconHeight + 1,
 	)
 	currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest] = redeemRequest
 
@@ -1097,6 +1094,15 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 		currentPortalState.CustodianPoolState[k].HoldingPubTokens[tokenSymbol] -= cus.Amount
 	}
 
+	// @@notice@@
+	// update key of matching custodian
+	matchingCustodianUpdateKey := map[string]*lvdb.MatchingRedeemCustodianDetail{}
+	for k, cus := range matchingCustodiansDetail {
+		incAddressCus := currentPortalState.CustodianPoolState[k].IncognitoAddress
+		matchingCustodianUpdateKey[incAddressCus] = new(lvdb.MatchingRedeemCustodianDetail)
+		matchingCustodianUpdateKey[incAddressCus] = cus
+	}
+
 	Logger.log.Infof("[Portal] Build accepted instruction for redeem request")
 	inst := buildRedeemRequestInst(
 		meta.UniqueRedeemID,
@@ -1105,7 +1111,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 		meta.IncAddressStr,
 		meta.RemoteAddress,
 		meta.RedeemFee,
-		matchingCustodiansDetail,
+		matchingCustodianUpdateKey,
 		meta.Type,
 		actionData.ShardID,
 		actionData.TxReqID,
@@ -1113,6 +1119,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 	)
 	return [][]string{inst}, nil
 }
+
 
 /**
 	Validation:
@@ -1126,7 +1133,7 @@ func (blockchain *BlockChain) buildInstructionsForCustodianWithdraw(
 	metaType int,
 	currentPortalState *CurrentPortalState,
 	beaconHeight uint64,
-	) ([][]string, error)  {
+) ([][]string, error) {
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
 		Logger.log.Errorf("Have an error occurred while decoding content string of custodian withdraw request action: %+v", err)
@@ -1230,7 +1237,6 @@ func (blockchain *BlockChain) buildInstructionsForCustodianWithdraw(
 		)
 		return [][]string{inst}, nil
 	}
-
 	//withdraw
 	remainFreeCollateral := custodian.FreeCollateral - actionData.Meta.Amount
 	inst := buildCustodianWithdrawInst(
@@ -1247,4 +1253,431 @@ func (blockchain *BlockChain) buildInstructionsForCustodianWithdraw(
 	custodian.FreeCollateral = remainFreeCollateral
 	currentPortalState.CustodianPoolState[custodianKey] = custodian
 	return [][]string{inst}, nil
+}
+// beacon build new instruction from instruction received from ShardToBeaconBlock
+func buildReqUnlockCollateralInst(
+	uniqueRedeemID string,
+	tokenID string,
+	custodianAddressStr string,
+	redeemAmount uint64,
+	unlockAmount uint64,
+	redeemProof string,
+	metaType int,
+	shardID byte,
+	txReqID common.Hash,
+	status string,
+) []string {
+	reqUnlockCollateralContent := metadata.PortalRequestUnlockCollateralContent{
+		UniqueRedeemID:      uniqueRedeemID,
+		TokenID:             tokenID,
+		CustodianAddressStr: custodianAddressStr,
+		RedeemAmount:        redeemAmount,
+		UnlockAmount: unlockAmount,
+		RedeemProof:         redeemProof,
+		TxReqID:             txReqID,
+		ShardID:             shardID,
+	}
+	reqUnlockCollateralContentBytes, _ := json.Marshal(reqUnlockCollateralContent)
+	return []string{
+		strconv.Itoa(metaType),
+		strconv.Itoa(int(shardID)),
+		status,
+		string(reqUnlockCollateralContentBytes),
+	}
+}
+
+// buildInstructionsForReqUnlockCollateral builds instruction for custodian deposit action
+func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
+	contentStr string,
+	shardID byte,
+	metaType int,
+	currentPortalState *CurrentPortalState,
+	beaconHeight uint64,
+) ([][]string, error) {
+
+	// parse instruction
+	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while decoding content string of portal request unlock collateral action: %+v", err)
+		return [][]string{}, nil
+	}
+	var actionData metadata.PortalRequestUnlockCollateralAction
+	err = json.Unmarshal(actionContentBytes, &actionData)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while unmarshal portal request unlock collateral action: %+v", err)
+		return [][]string{}, nil
+	}
+	meta := actionData.Meta
+
+	if currentPortalState == nil {
+		Logger.log.Warn("WARN - [buildInstructionsForReqUnlockCollateral]: Current Portal state is null.")
+		inst := buildReqUnlockCollateralInst(
+			meta.UniqueRedeemID,
+			meta.TokenID,
+			meta.CustodianAddressStr,
+			meta.RedeemAmount,
+			0,
+			meta.RedeemProof,
+			meta.Type,
+			shardID,
+			actionData.TxReqID,
+			common.PortalReqUnlockCollateralRejectedChainStatus,
+		)
+		return [][]string{inst}, nil
+	}
+
+	// check meta.UniqueRedeemID is in waiting RedeemRequests list in portal state or not
+	redeemID := meta.UniqueRedeemID
+	//todo: need to change to redeemID
+	keyWaitingRedeemRequest := lvdb.NewWaitingRedeemReqKey(beaconHeight, redeemID)
+	waitingRedeemRequest := currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest]
+	if waitingRedeemRequest == nil {
+		Logger.log.Errorf("redeemID is not existed in waiting redeem requests list")
+		inst := buildReqUnlockCollateralInst(
+			meta.UniqueRedeemID,
+			meta.TokenID,
+			meta.CustodianAddressStr,
+			meta.RedeemAmount,
+			0,
+			meta.RedeemProof,
+			meta.Type,
+			shardID,
+			actionData.TxReqID,
+			common.PortalReqUnlockCollateralRejectedChainStatus,
+		)
+		return [][]string{inst}, nil
+	}
+	db := blockchain.GetDatabase()
+
+	// check status of request unlock collateral by redeemID
+	redeemReqStatusBytes, err := db.GetRedeemRequestByRedeemID(redeemID)
+	if err != nil {
+		Logger.log.Errorf("Can not get redeem request by redeemID from db %v\n", err)
+		inst := buildReqUnlockCollateralInst(
+			meta.UniqueRedeemID,
+			meta.TokenID,
+			meta.CustodianAddressStr,
+			meta.RedeemAmount,
+			0,
+			meta.RedeemProof,
+			meta.Type,
+			shardID,
+			actionData.TxReqID,
+			common.PortalReqUnlockCollateralRejectedChainStatus,
+		)
+		return [][]string{inst}, nil
+	}
+	var redeemRequest metadata.PortalRedeemRequestStatus
+	err = json.Unmarshal(redeemReqStatusBytes, &redeemRequest)
+	if err != nil {
+		Logger.log.Errorf("Can not unmarshal redeem request %v\n", err)
+		inst := buildReqUnlockCollateralInst(
+			meta.UniqueRedeemID,
+			meta.TokenID,
+			meta.CustodianAddressStr,
+			meta.RedeemAmount,
+			0,
+			meta.RedeemProof,
+			meta.Type,
+			shardID,
+			actionData.TxReqID,
+			common.PortalReqUnlockCollateralRejectedChainStatus,
+		)
+		return [][]string{inst}, nil
+	}
+
+	if redeemRequest.Status != common.PortalRedeemReqWaitingStatus {
+		Logger.log.Errorf("Redeem request %v has invalid status %v\n", redeemID, redeemRequest.Status)
+		inst := buildReqUnlockCollateralInst(
+			meta.UniqueRedeemID,
+			meta.TokenID,
+			meta.CustodianAddressStr,
+			meta.RedeemAmount,
+			0,
+			meta.RedeemProof,
+			meta.Type,
+			shardID,
+			actionData.TxReqID,
+			common.PortalReqUnlockCollateralRejectedChainStatus,
+		)
+		return [][]string{inst}, nil
+	}
+
+	// check tokenID
+	if meta.TokenID != waitingRedeemRequest.TokenID {
+		Logger.log.Errorf("TokenID is not correct in redeemID req")
+		inst := buildReqUnlockCollateralInst(
+			meta.UniqueRedeemID,
+			meta.TokenID,
+			meta.CustodianAddressStr,
+			meta.RedeemAmount,
+			0,
+			meta.RedeemProof,
+			meta.Type,
+			shardID,
+			actionData.TxReqID,
+			common.PortalReqUnlockCollateralRejectedChainStatus,
+		)
+		return [][]string{inst}, nil
+	}
+
+
+	// check redeem amount of matching custodian
+	//todo: need to be fixed
+	if meta.RedeemAmount != waitingRedeemRequest.Custodians[meta.CustodianAddressStr].Amount {
+		Logger.log.Errorf("RedeemAmount is not correct in redeemID req")
+		inst := buildReqUnlockCollateralInst(
+			meta.UniqueRedeemID,
+			meta.TokenID,
+			meta.CustodianAddressStr,
+			meta.RedeemAmount,
+			0,
+			meta.RedeemProof,
+			meta.Type,
+			shardID,
+			actionData.TxReqID,
+			common.PortalReqUnlockCollateralRejectedChainStatus,
+
+		)
+		return [][]string{inst}, nil
+	}
+
+
+	// validate proof and memo in tx
+	if meta.TokenID == metadata.PortalSupportedTokenMap[metadata.PortalTokenSymbolBTC] {
+		//todo:
+	} else if meta.TokenID == metadata.PortalSupportedTokenMap[metadata.PortalTokenSymbolBNB] {
+		// parse PortingProof in meta
+		txProofBNB, err := relaying.ParseBNBProofFromB64EncodeJsonStr(meta.RedeemProof)
+		if err != nil {
+			Logger.log.Errorf("RedeemProof is invalid %v\n", err)
+			inst := buildReqUnlockCollateralInst(
+				meta.UniqueRedeemID,
+				meta.TokenID,
+				meta.CustodianAddressStr,
+				meta.RedeemAmount,
+				0,
+				meta.RedeemProof,
+				meta.Type,
+				shardID,
+				actionData.TxReqID,
+				common.PortalReqUnlockCollateralRejectedChainStatus,
+			)
+			return [][]string{inst}, nil
+		}
+
+		isValid, err := txProofBNB.Verify(db)
+		if !isValid || err != nil {
+			Logger.log.Errorf("Verify txProofBNB failed %v", err)
+			inst := buildReqUnlockCollateralInst(
+				meta.UniqueRedeemID,
+				meta.TokenID,
+				meta.CustodianAddressStr,
+				meta.RedeemAmount,
+				0,
+				meta.RedeemProof,
+				meta.Type,
+				shardID,
+				actionData.TxReqID,
+				common.PortalReqUnlockCollateralRejectedChainStatus,
+			)
+			return [][]string{inst}, nil
+		}
+
+		// parse Tx from Data in txProofBNB
+		txBNB, err := relaying.ParseTxFromData(txProofBNB.Proof.Data)
+		if err != nil {
+			Logger.log.Errorf("Data in RedeemProof is invalid %v", err)
+			inst := buildReqUnlockCollateralInst(
+				meta.UniqueRedeemID,
+				meta.TokenID,
+				meta.CustodianAddressStr,
+				meta.RedeemAmount,
+				0,
+				meta.RedeemProof,
+				meta.Type,
+				shardID,
+				actionData.TxReqID,
+				common.PortalReqUnlockCollateralRejectedChainStatus,
+			)
+			return [][]string{inst}, nil
+		}
+
+		// check memo attach redeemID req:
+		memo := txBNB.Memo
+		Logger.log.Infof("[buildInstructionsForReqUnlockCollateral] memo: %v\n", memo)
+		memoBytes, err2 := base64.StdEncoding.DecodeString(memo)
+		if err2 != nil {
+			Logger.log.Errorf("Can not decode memo in tx bnb proof", err2)
+			inst := buildReqUnlockCollateralInst(
+				meta.UniqueRedeemID,
+				meta.TokenID,
+				meta.CustodianAddressStr,
+				meta.RedeemAmount,
+				0,
+				meta.RedeemProof,
+				meta.Type,
+				shardID,
+				actionData.TxReqID,
+				common.PortalReqUnlockCollateralRejectedChainStatus,
+			)
+			return [][]string{inst}, nil
+		}
+		Logger.log.Infof("[buildInstructionsForReqUnlockCollateral] memoBytes: %v\n", memoBytes)
+
+		var redeemMemo RedeemMemoBNB
+		err2 = json.Unmarshal(memoBytes, &redeemMemo)
+		if err2 != nil {
+			Logger.log.Errorf("Can not unmarshal memo in tx bnb proof", err2)
+			inst := buildReqUnlockCollateralInst(
+				meta.UniqueRedeemID,
+				meta.TokenID,
+				meta.CustodianAddressStr,
+				meta.RedeemAmount,
+				0,
+				meta.RedeemProof,
+				meta.Type,
+				shardID,
+				actionData.TxReqID,
+				common.PortalReqUnlockCollateralRejectedChainStatus,
+			)
+			return [][]string{inst}, nil
+		}
+
+		if redeemMemo.RedeemID != meta.UniqueRedeemID {
+			Logger.log.Errorf("PortingId in memoTx is not matched with redeemID in metadata", err2)
+			inst := buildReqUnlockCollateralInst(
+				meta.UniqueRedeemID,
+				meta.TokenID,
+				meta.CustodianAddressStr,
+				meta.RedeemAmount,
+				0,
+				meta.RedeemProof,
+				meta.Type,
+				shardID,
+				actionData.TxReqID,
+				common.PortalReqUnlockCollateralRejectedChainStatus,
+			)
+			return [][]string{inst}, nil
+		}
+
+		// check whether amount transfer in txBNB is equal redeem amount or not
+		// check receiver and amount in tx
+		// get list matching custodians in waitingRedeemRequest
+		//custodians := waitingRedeemRequest.Custodians
+
+		outputs := txBNB.Msgs[0].(msg.SendMsg).Outputs
+
+		remoteAddressNeedToBeTransfer := waitingRedeemRequest.RedeemerRemoteAddress
+		amountNeedToBeTransfer := meta.RedeemAmount
+
+		for _, out := range outputs {
+			addr := string(out.Address)
+			if addr != remoteAddressNeedToBeTransfer {
+				continue
+			}
+
+			// calculate amount that was transferred to custodian's remote address
+			amountTransfer := int64(0)
+			for _, coin := range out.Coins {
+				if coin.Denom == relaying.DenomBNB {
+					amountTransfer += coin.Amount
+					// note: log error for debug
+					Logger.log.Errorf("TxProof-BNB coin.Amount %d",
+						coin.Amount)
+				}
+			}
+			if convertExternalBNBAmountToIncAmount(amountTransfer) != int64(amountNeedToBeTransfer) {
+				Logger.log.Errorf("TxProof-BNB is invalid - Amount transfer to %s must be equal %d, but got %d",
+					addr, amountNeedToBeTransfer, amountTransfer)
+				inst := buildReqUnlockCollateralInst(
+					meta.UniqueRedeemID,
+					meta.TokenID,
+					meta.CustodianAddressStr,
+					meta.RedeemAmount,
+					0,
+					meta.RedeemProof,
+					meta.Type,
+					shardID,
+					actionData.TxReqID,
+					common.PortalReqUnlockCollateralRejectedChainStatus,
+				)
+				return [][]string{inst}, nil
+			}
+		}
+		// get tokenSymbol from redeemTokenID
+		tokenSymbol := ""
+		for tokenSym, incTokenID := range metadata.PortalSupportedTokenMap {
+			if incTokenID == meta.TokenID {
+				tokenSymbol = tokenSym
+				break
+			}
+		}
+
+		// update custodian state (FreeCollateral, LockedAmountCollateral)
+		custodianStateKey := lvdb.NewCustodianStateKey(beaconHeight, meta.CustodianAddressStr)
+		finalExchangeRateKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
+		unlockAmount, err2 := updateFreeCollateralCustodian(
+			currentPortalState.CustodianPoolState[custodianStateKey],
+			meta.RedeemAmount, tokenSymbol,
+			currentPortalState.FinalExchangeRates[finalExchangeRateKey])
+		if err2 != nil {
+			Logger.log.Errorf("Error when update free collateral amount for custodian", err2)
+			inst := buildReqUnlockCollateralInst(
+				meta.UniqueRedeemID,
+				meta.TokenID,
+				meta.CustodianAddressStr,
+				meta.RedeemAmount,
+				0,
+				meta.RedeemProof,
+				meta.Type,
+				shardID,
+				actionData.TxReqID,
+				common.PortalReqUnlockCollateralRejectedChainStatus,
+			)
+			return [][]string{inst}, nil
+		}
+
+		// update redeem request state in WaitingRedeemRequest (remove custodian from matchingCustodianDetail)
+		delete(currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest].Custodians, meta.CustodianAddressStr)
+
+		// remove redeem request from WaitingRedeemRequest list when all matching custodians return public token to user
+		// when list matchingCustodianDetail is empty
+		if len(currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest].Custodians) == 0 {
+			delete(currentPortalState.WaitingRedeemRequests, keyWaitingRedeemRequest)
+		}
+
+		inst := buildReqUnlockCollateralInst(
+			meta.UniqueRedeemID,
+			meta.TokenID,
+			meta.CustodianAddressStr,
+			meta.RedeemAmount,
+			unlockAmount,
+			meta.RedeemProof,
+			meta.Type,
+			shardID,
+			actionData.TxReqID,
+			common.PortalReqUnlockCollateralAcceptedChainStatus,
+		)
+
+		return [][]string{inst}, nil
+	} else {
+		Logger.log.Errorf("TokenID is not supported currently on Portal")
+		inst := buildReqUnlockCollateralInst(
+			meta.UniqueRedeemID,
+			meta.TokenID,
+			meta.CustodianAddressStr,
+			meta.RedeemAmount,
+			0,
+			meta.RedeemProof,
+			meta.Type,
+			shardID,
+			actionData.TxReqID,
+			common.PortalReqUnlockCollateralRejectedChainStatus,
+
+		)
+		return [][]string{inst}, nil
+	}
+
+	return [][]string{}, nil
 }

@@ -43,7 +43,9 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.PortalUserRequestPTokenMeta,
 			metadata.PortalExchangeRatesMeta,
 			metadata.RelayingBNBHeaderMeta,
-			metadata.PortalCustodianWithdrawRequestMeta:
+			metadata.PortalCustodianWithdrawRequestMeta,
+			metadata.PortalRedeemRequestMeta,
+			metadata.PortalRequestUnlockCollateralMeta:
 			statefulInsts = append(statefulInsts, inst)
 
 		default:
@@ -106,6 +108,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	portalExchangeRatesActionsByShardID := map[byte][][]string{}
 	portalRedeemReqActionsByShardID := map[byte][][]string{}
 	portalCustodianWithdrawActionsByShardID := map[byte][][]string{}
+	portalReqUnlockCollateralActionsByShardID := map[byte][][]string{}
 
 	// relaying instructions
 	// don't need to be grouped by shardID
@@ -188,6 +191,12 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					action,
 					shardID,
 				)
+			case metadata.PortalRequestUnlockCollateralMeta:
+				portalReqUnlockCollateralActionsByShardID = groupPortalActionsByShardID(
+					portalReqUnlockCollateralActionsByShardID,
+					action,
+					shardID,
+				)
 			case metadata.RelayingBNBHeaderMeta:
 				relayingBNBActions = append(relayingBNBActions, action)
 			case metadata.RelayingBTCHeaderMeta:
@@ -229,6 +238,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		portalExchangeRatesActionsByShardID,
 		portalRedeemReqActionsByShardID,
 		portalCustodianWithdrawActionsByShardID,
+		portalReqUnlockCollateralActionsByShardID,
 		)
 
 	if err != nil {
@@ -432,6 +442,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 	portalExchangeRatesActionsByShardID map[byte][][]string,
 	portalRedeemReqActionsByShardID  map[byte][][]string,
 	portalCustodianWithdrawActionByShardID map[byte][][]string,
+	portalReqUnlockCollateralActionsByShardID map[byte][][]string,
 ) ([][]string, error) {
 	instructions := [][]string{}
 
@@ -586,6 +597,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 		}
 	}
 
+
 	//handle portal custodian withdraw
 	var portalCustodianWithdrawShardIDKeys []int
 	for k := range portalCustodianWithdrawActionByShardID {
@@ -602,6 +614,37 @@ func (blockchain *BlockChain) handlePortalInsts(
 				contentStr,
 				shardID,
 				metadata.PortalCustodianWithdrawRequestMeta,
+
+				currentPortalState,
+				beaconHeight,
+			)
+
+			if err != nil {
+				Logger.log.Error(err)
+				continue
+			}
+			if len(newInst) > 0 {
+				instructions = append(instructions, newInst...)
+			}
+		}
+	}
+
+	// handle portal req unlock collateral inst
+	var reqUnlockCollateralShardIDKeys []int
+	for k := range portalReqUnlockCollateralActionsByShardID {
+		reqUnlockCollateralShardIDKeys = append(reqUnlockCollateralShardIDKeys, int(k))
+	}
+
+	sort.Ints(reqUnlockCollateralShardIDKeys)
+	for _, value := range reqUnlockCollateralShardIDKeys {
+		shardID := byte(value)
+		actions := portalReqUnlockCollateralActionsByShardID[shardID]
+		for _, action := range actions {
+			contentStr := action[1]
+			newInst, err := blockchain.buildInstructionsForReqUnlockCollateral(
+				contentStr,
+				shardID,
+				metadata.PortalRequestUnlockCollateralMeta,
 				currentPortalState,
 				beaconHeight,
 			)
@@ -618,6 +661,8 @@ func (blockchain *BlockChain) handlePortalInsts(
 
 	return instructions, nil
 }
+
+
 
 
 // Header relaying

@@ -80,6 +80,7 @@ var (
 	PortalWaitingRedeemRequestsPrefix   = []byte("portalwaitingredeemrequest-")
 	PortalRedeemRequestsPrefix          = []byte("portalredeemrequest-")
 	PortalRedeemRequestsByTxReqIDPrefix = []byte("portalredeemrequestbytxid-")
+	PortalRequestUnlockCollateralPrefix = []byte("portalrequestunlockcollateral-")
 
 	PortalCustodianWithdrawTxPrefix 	= []byte("portalcustodianwithdrawtx-")
 	PortalCustodianWithdrawPrefix 		= []byte("portalcustodianwithdraw-")
