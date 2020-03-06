@@ -116,7 +116,7 @@ func (iRes PortalRedeemRequestResponse) VerifyMinerCreatedTxBeforeGettingInBlock
 		}
 		shardIDFromInst = redeemReqContent.ShardID
 		txReqIDFromInst = redeemReqContent.TxReqID
-		requesterAddrStrFromInst = redeemReqContent.IncAddressStr
+		requesterAddrStrFromInst = redeemReqContent.RedeemerIncAddressStr
 		redeemAmountFromInst = redeemReqContent.RedeemAmount
 		tokenIDStrFromInst = redeemReqContent.TokenID
 

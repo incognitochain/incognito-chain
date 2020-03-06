@@ -675,6 +675,8 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 	}
 
 	reqStatus := instructions[2]
+
+	Logger.log.Errorf("[Portal - processPortalRedeemRequest] actionData.MatchingCustodianDetail: %v\n", actionData.MatchingCustodianDetail)
 	if reqStatus == common.PortalRedeemRequestAcceptedChainStatus {
 		// add waiting redeem request into waiting redeems list
 		keyWaitingRedeemRequest := lvdb.NewWaitingRedeemReqKey(beaconHeight, actionData.UniqueRedeemID)
@@ -682,7 +684,7 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 			actionData.UniqueRedeemID,
 			actionData.TxReqID,
 			actionData.TokenID,
-			actionData.IncAddressStr,
+			actionData.RedeemerIncAddressStr,
 			actionData.RemoteAddress,
 			actionData.RedeemAmount,
 			actionData.MatchingCustodianDetail,
@@ -692,12 +694,16 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 		currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest] = redeemRequest
 
 		// update custodian state
-		for k, cus := range actionData.MatchingCustodianDetail {
-			if currentPortalState.CustodianPoolState[k].HoldingPubTokens[tokenSymbol] < cus.Amount {
+		for incAddr, cus := range actionData.MatchingCustodianDetail {
+			custodianStateKey := lvdb.NewCustodianStateKey(beaconHeight, incAddr)
+			//todo: need to be removed
+			Logger.log.Errorf("custodianStateKey: %v\n", custodianStateKey)
+			Logger.log.Errorf("currentPortalState.CustodianPoolState: %+v\n", currentPortalState.CustodianPoolState)
+			if currentPortalState.CustodianPoolState[custodianStateKey].HoldingPubTokens[tokenSymbol] < cus.Amount {
 				Logger.log.Errorf("[processPortalRedeemRequest] Amount holding public tokens is less than matching redeem amount")
 				return nil
 			}
-			currentPortalState.CustodianPoolState[k].HoldingPubTokens[tokenSymbol] -= cus.Amount
+			currentPortalState.CustodianPoolState[custodianStateKey].HoldingPubTokens[tokenSymbol] -= cus.Amount
 		}
 
 		// track status of redeem request by redeemID
@@ -707,7 +713,7 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 			UniqueRedeemID:          actionData.UniqueRedeemID,
 			TokenID:                 actionData.TokenID,
 			RedeemAmount:            actionData.RedeemAmount,
-			IncAddressStr:           actionData.IncAddressStr,
+			RedeemerIncAddressStr:   actionData.RedeemerIncAddressStr,
 			RemoteAddress:           actionData.RemoteAddress,
 			RedeemFee:               actionData.RedeemFee,
 			MatchingCustodianDetail: actionData.MatchingCustodianDetail,
