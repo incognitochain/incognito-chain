@@ -1016,9 +1016,45 @@ func (stateDB *StateDB) GetAllWaitingPDEContributionState(beaconHeight uint64) [
 	return waitingPDEContributionStates
 }
 
+func (stateDB *StateDB) GetAllWaitingPDEContributionStateV2() []*WaitingPDEContributionState {
+	waitingPDEContributionStates := []*WaitingPDEContributionState{}
+	temp := stateDB.trie.NodeIterator(GetWaitingPDEContributionPrefixV2())
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		wc := NewWaitingPDEContributionState()
+		err := json.Unmarshal(newValue, wc)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		waitingPDEContributionStates = append(waitingPDEContributionStates, wc)
+	}
+	return waitingPDEContributionStates
+}
+
 func (stateDB *StateDB) GetAllPDEPoolPairState(beaconHeight uint64) []*PDEPoolPairState {
 	pdePoolPairStates := []*PDEPoolPairState{}
 	temp := stateDB.trie.NodeIterator(GetPDEPoolPairPrefix(beaconHeight))
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		pp := NewPDEPoolPairState()
+		err := json.Unmarshal(newValue, pp)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		pdePoolPairStates = append(pdePoolPairStates, pp)
+	}
+	return pdePoolPairStates
+}
+
+func (stateDB *StateDB) GetAllPDEPoolPairStateV2() []*PDEPoolPairState {
+	pdePoolPairStates := []*PDEPoolPairState{}
+	temp := stateDB.trie.NodeIterator(GetPDEPoolPairPrefixV2())
 	it := trie.NewIterator(temp)
 	for it.Next() {
 		value := it.Value
@@ -1048,6 +1084,24 @@ func (stateDB *StateDB) GetPDEPoolPairState(key common.Hash) (*PDEPoolPairState,
 func (stateDB *StateDB) GetAllPDEShareState(beaconHeight uint64) []*PDEShareState {
 	pdeShareStates := []*PDEShareState{}
 	temp := stateDB.trie.NodeIterator(GetPDESharePrefix(beaconHeight))
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		pp := NewPDEShareState()
+		err := json.Unmarshal(newValue, pp)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		pdeShareStates = append(pdeShareStates, pp)
+	}
+	return pdeShareStates
+}
+
+func (stateDB *StateDB) GetAllPDEShareStateV2() []*PDEShareState {
+	pdeShareStates := []*PDEShareState{}
+	temp := stateDB.trie.NodeIterator(GetPDESharePrefixV2())
 	it := trie.NewIterator(temp)
 	for it.Next() {
 		value := it.Value

@@ -164,6 +164,12 @@ func GeneratePDEPoolPairObjectKey(beaconHeight uint64, token1ID, token2ID string
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 
+func GeneratePDEPoolPairObjectKeyV2(token1ID, token2ID string) common.Hash {
+	prefixHash := GetPDEPoolPairPrefixV2()
+	valueHash := common.HashH([]byte(token1ID + token2ID))
+	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
+}
+
 func (t PDEPoolPairObject) GetVersion() int {
 	return t.version
 }

@@ -164,6 +164,12 @@ func GeneratePDEShareObjectKey(beaconHeight uint64, token1ID, token2ID, contribu
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 
+func GeneratePDEShareObjectKeyV2(token1ID, token2ID, contributorAddress string) common.Hash {
+	prefixHash := GetPDESharePrefixV2()
+	valueHash := common.HashH([]byte(token1ID + token2ID + contributorAddress))
+	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
+}
+
 func (t PDEShareObject) GetVersion() int {
 	return t.version
 }

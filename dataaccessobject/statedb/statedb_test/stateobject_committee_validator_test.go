@@ -117,6 +117,63 @@ func TestStateDB_SetStateObjectCommitteeState(t *testing.T) {
 	}
 }
 
+func TestStateDB_SetDuplicateStateObjectCommitteeState(t *testing.T) {
+	var shardID = 0
+	var err error = nil
+	tempCommitteePublicKey, err := incognitokey.CommitteeBase58KeyListToStruct(committeePublicKeys)
+	if err != nil {
+		panic(err)
+	}
+	sampleCommittee := tempCommitteePublicKey[0]
+	key, _ := statedb.GenerateCommitteeObjectKeyWithRole(statedb.CurrentValidator, shardID, sampleCommittee)
+	committeeState := statedb.NewCommitteeStateWithValue(shardID, statedb.CurrentValidator, sampleCommittee, receiverPaymentAddress[0], true)
+	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDBCommitteeTest)
+	if err != nil {
+		panic(err)
+	}
+	err = sDB.SetStateObject(statedb.CommitteeObjectType, key, committeeState)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rootHash, err := sDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = sDB.Database().TrieDB().Commit(rootHash, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBCommitteeTest)
+	if err != nil || tempStateDB == nil {
+		t.Fatal(err)
+	}
+	got, has, err := tempStateDB.GetCommitteeState(key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !has {
+		t.Fatal(has)
+	}
+	if !reflect.DeepEqual(got, committeeState) {
+		t.Fatalf("want value %+v but got %+v", committeeState, got)
+	}
+	err = tempStateDB.SetStateObject(statedb.CommitteeObjectType, key, committeeState)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rootHash2, err := sDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = sDB.Database().TrieDB().Commit(rootHash2, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !rootHash.IsEqual(&rootHash2) {
+		t.Fatalf("expect %+v equal to %+v", rootHash2, rootHash)
+	}
+}
+
 func TestStateDB_GetCurrentValidatorCommitteeState(t *testing.T) {
 	rootHash, m := storeCommitteeObjectOneShard(statedb.CurrentValidator, emptyRoot, 0, 0, len(committeePublicKeys))
 	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBCommitteeTest)
