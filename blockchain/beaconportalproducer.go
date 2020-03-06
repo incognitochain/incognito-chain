@@ -100,6 +100,33 @@ func buildReqPTokensInst(
 	}
 }
 
+
+func buildCustodianWithdrawInst(
+	metaType int,
+	shardID byte,
+	reqStatus string,
+	paymentAddress string,
+	amount uint64,
+	remainFreeCollateral uint64,
+	txReqID common.Hash,
+) []string {
+	content := metadata.PortalCustodianWithdrawRequestContent{
+		PaymentAddress: paymentAddress,
+		Amount: amount,
+		RemainFreeCollateral: remainFreeCollateral,
+		TxReqID:          txReqID,
+		ShardID: shardID,
+	}
+
+	contentBytes, _ := json.Marshal(content)
+	return []string{
+		strconv.Itoa(metaType),
+		strconv.Itoa(int(shardID)),
+		reqStatus,
+		string(contentBytes),
+	}
+}
+
 // buildInstructionsForCustodianDeposit builds instruction for custodian deposit action
 func (blockchain *BlockChain) buildInstructionsForCustodianDeposit(
 	contentStr string,
@@ -307,22 +334,8 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		return [][]string{inst}, nil
 	}
 
-	//todo: create error instruction
 	if currentPortalState.CustodianPoolState == nil {
 		Logger.log.Errorf("Porting request: Custodian not found")
-		return [][]string{}, nil
-	}
-
-	var sortCustodianStateByFreeCollateral []CustodianStateSlice
-	err = sortCustodianByAmountAscent(actionData.Meta, currentPortalState.CustodianPoolState, &sortCustodianStateByFreeCollateral)
-
-	if err != nil {
-		return [][]string{}, nil
-	}
-
-	if len(sortCustodianStateByFreeCollateral) <= 0 {
-		Logger.log.Errorf("Porting request, custodian not found")
-
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,
 			shardID,
@@ -340,18 +353,12 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		return [][]string{inst}, nil
 	}
 
-	//pick one
-	pickCustodianResult, _ := pickSingleCustodian(actionData.Meta, exchangeRatesState, sortCustodianStateByFreeCollateral)
+	var sortCustodianStateByFreeCollateral []CustodianStateSlice
+	_ = sortCustodianByAmountAscent(actionData.Meta, currentPortalState.CustodianPoolState, &sortCustodianStateByFreeCollateral)
 
-	Logger.log.Infof("Porting request, pick single custodian result %v", len(pickCustodianResult))
-	//pick multiple
-	if len(pickCustodianResult) == 0 {
-		pickCustodianResult, _ = pickMultipleCustodian(actionData.Meta, exchangeRatesState, sortCustodianStateByFreeCollateral)
-		Logger.log.Infof("Porting request, pick multiple custodian result %v", len(pickCustodianResult))
-	}
-	//end
-	if len(pickCustodianResult) == 0 {
+	if len(sortCustodianStateByFreeCollateral) <= 0 {
 		Logger.log.Errorf("Porting request, custodian not found")
+
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,
 			shardID,
@@ -362,7 +369,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 			actionData.Meta.PTokenAddress,
 			actionData.Meta.RegisterAmount,
 			actionData.Meta.PortingFee,
-			pickCustodianResult,
+			nil,
 			actionData.TxReqID,
 		)
 
@@ -387,12 +394,69 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 			actionData.Meta.PTokenAddress,
 			actionData.Meta.RegisterAmount,
 			actionData.Meta.PortingFee,
+			nil,
+			actionData.TxReqID,
+		)
+
+		return [][]string{inst}, nil
+	}
+
+	//pick one
+	pickCustodianResult, _ := pickSingleCustodian(actionData.Meta, exchangeRatesState, sortCustodianStateByFreeCollateral, currentPortalState)
+
+	Logger.log.Infof("Porting request, pick single custodian result %v", len(pickCustodianResult))
+	//pick multiple
+	if len(pickCustodianResult) == 0 {
+		pickCustodianResult, _ = pickMultipleCustodian(actionData.Meta, exchangeRatesState, sortCustodianStateByFreeCollateral, currentPortalState)
+		Logger.log.Infof("Porting request, pick multiple custodian result %v", len(pickCustodianResult))
+	}
+	//end
+	if len(pickCustodianResult) == 0 {
+		Logger.log.Errorf("Porting request, custodian not found")
+		inst := buildRequestPortingInst(
+			actionData.Meta.Type,
+			shardID,
+			common.PortalPortingRequestRejectedStatus,
+			actionData.Meta.UniqueRegisterId,
+			actionData.Meta.IncogAddressStr,
+			actionData.Meta.PTokenId,
+			actionData.Meta.PTokenAddress,
+			actionData.Meta.RegisterAmount,
+			actionData.Meta.PortingFee,
 			pickCustodianResult,
 			actionData.TxReqID,
 		)
 
 		return [][]string{inst}, nil
 	}
+
+	//verify total amount
+	var totalPToken uint64 = 0
+	for _, eachCustodian := range pickCustodianResult {
+		totalPToken = totalPToken + eachCustodian.Amount
+	}
+
+	if totalPToken != actionData.Meta.RegisterAmount {
+		Logger.log.Errorf("Porting request, total custodian picked difference with total input PToken %v != %v", actionData.Meta.RegisterAmount, totalPToken)
+
+		Logger.log.Errorf("Porting request, custodian not found")
+		inst := buildRequestPortingInst(
+			actionData.Meta.Type,
+			shardID,
+			common.PortalPortingRequestRejectedStatus,
+			actionData.Meta.UniqueRegisterId,
+			actionData.Meta.IncogAddressStr,
+			actionData.Meta.PTokenId,
+			actionData.Meta.PTokenAddress,
+			actionData.Meta.RegisterAmount,
+			actionData.Meta.PortingFee,
+			nil,
+			actionData.TxReqID,
+		)
+
+		return [][]string{inst}, nil
+	}
+
 
 	inst := buildRequestPortingInst(
 		actionData.Meta.Type,
@@ -410,6 +474,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 
 	//store porting request id for validation next instruct
 	currentPortalState.PortingIdRequests[keyPortingRequest] = keyPortingRequest
+
 	return [][]string{inst}, nil
 }
 
@@ -1046,5 +1111,140 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 		actionData.TxReqID,
 		common.PortalRedeemRequestAcceptedChainStatus,
 	)
+	return [][]string{inst}, nil
+}
+
+/**
+	Validation:
+		- verify each instruct belong shard
+		- check amount < fee collateral
+		- build PortalCustodianWithdrawRequestContent to send beacon
+ */
+func (blockchain *BlockChain) buildInstructionsForCustodianWithdraw(
+	contentStr string,
+	shardID byte,
+	metaType int,
+	currentPortalState *CurrentPortalState,
+	beaconHeight uint64,
+	) ([][]string, error)  {
+	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		Logger.log.Errorf("Have an error occurred while decoding content string of custodian withdraw request action: %+v", err)
+		return [][]string{}, nil
+	}
+
+	var actionData metadata.PortalCustodianWithdrawRequestAction
+	err = json.Unmarshal(actionContentBytes, &actionData)
+	if err != nil {
+		Logger.log.Errorf("Have an error occurred while unmarshal  custodian withdraw request action: %+v", err)
+		return [][]string{}, nil
+	}
+
+	if currentPortalState == nil {
+		Logger.log.Warn("Current Portal state is null")
+		return [][]string{}, nil
+	}
+
+	db := blockchain.GetDatabase()
+
+	//check custodian withdraw request
+	custodianWithdrawRequestKey := lvdb.NewCustodianWithdrawRequestTxStateKey(actionData.TxReqID.String())
+	custodianWithdrawRequestKeyExist, err := db.GetItemPortalByKey([]byte(custodianWithdrawRequestKey))
+
+	if err != nil {
+		Logger.log.Errorf("Custodian withdraw is exist %+v", err)
+
+		inst := buildCustodianWithdrawInst(
+			actionData.Meta.Type,
+			shardID,
+			common.PortalCustodianWithdrawRequestRejectedStatus,
+			actionData.Meta.PaymentAddress,
+			actionData.Meta.Amount,
+			0,
+			actionData.TxReqID,
+		)
+
+		return [][]string{inst}, nil
+	}
+
+	if custodianWithdrawRequestKeyExist != nil {
+		Logger.log.Errorf("Custodian withdraw key is duplicated")
+
+		inst := buildCustodianWithdrawInst(
+			actionData.Meta.Type,
+			shardID,
+			common.PortalCustodianWithdrawRequestRejectedStatus,
+			actionData.Meta.PaymentAddress,
+			actionData.Meta.Amount,
+			0,
+			actionData.TxReqID,
+		)
+
+		return [][]string{inst}, nil
+	}
+
+	if currentPortalState.CustodianPoolState == nil {
+		Logger.log.Errorf("Custodian state is empty")
+
+		inst := buildCustodianWithdrawInst(
+			actionData.Meta.Type,
+			shardID,
+			common.PortalCustodianWithdrawRequestRejectedStatus,
+			actionData.Meta.PaymentAddress,
+			actionData.Meta.Amount,
+			0,
+			actionData.TxReqID,
+		)
+		return [][]string{inst}, nil
+	}
+
+	custodianKey := lvdb.NewCustodianStateKey(beaconHeight, actionData.Meta.PaymentAddress)
+	custodian, ok := currentPortalState.CustodianPoolState[custodianKey]
+
+	if !ok {
+		Logger.log.Errorf("Custodian not found")
+
+		inst := buildCustodianWithdrawInst(
+			actionData.Meta.Type,
+			shardID,
+			common.PortalCustodianWithdrawRequestRejectedStatus,
+			actionData.Meta.PaymentAddress,
+			actionData.Meta.Amount,
+			0,
+			actionData.TxReqID,
+		)
+		return [][]string{inst}, nil
+	}
+
+	if actionData.Meta.Amount > custodian.FreeCollateral {
+		Logger.log.Errorf("Free Collateral is not enough PRV")
+
+		inst := buildCustodianWithdrawInst(
+			actionData.Meta.Type,
+			shardID,
+			common.PortalCustodianWithdrawRequestRejectedStatus,
+			actionData.Meta.PaymentAddress,
+			actionData.Meta.Amount,
+			0,
+			actionData.TxReqID,
+		)
+		return [][]string{inst}, nil
+	}
+
+	//withdraw
+	remainFreeCollateral := custodian.FreeCollateral - actionData.Meta.Amount
+	inst := buildCustodianWithdrawInst(
+		actionData.Meta.Type,
+		shardID,
+		common.PortalCustodianWithdrawRequestAcceptedStatus,
+		actionData.Meta.PaymentAddress,
+		actionData.Meta.Amount,
+		remainFreeCollateral,
+		actionData.TxReqID,
+	)
+
+	//update free collateral custodian
+	custodian.FreeCollateral = remainFreeCollateral
+	currentPortalState.CustodianPoolState[custodianKey] = custodian
 	return [][]string{inst}, nil
 }

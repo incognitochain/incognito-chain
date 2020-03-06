@@ -12,40 +12,42 @@ import (
 	"strconv"
 )
 
-type PortalCustodianWithDrawRequest struct {
+type PortalCustodianWithdrawRequest struct {
 	MetadataBase
 	PaymentAddress string
 	Amount uint64
 }
 
-type PortalCustodianWithDrawRequestAction struct {
-	Meta PortalCustodianWithDrawRequest
+type PortalCustodianWithdrawRequestAction struct {
+	Meta PortalCustodianWithdrawRequest
 	TxReqID common.Hash
 	ShardID byte
 }
 
-type PortalCustodianWithDrawRequestContent struct {
+type PortalCustodianWithdrawRequestContent struct {
 	PaymentAddress string
 	Amount uint64
+	RemainFreeCollateral uint64
 	TxReqID common.Hash
+	ShardID	byte
 }
 
-func NewPortalCustodianWithDrawRequest(metaType int, paymentAddress string , amount uint64) (*PortalCustodianWithDrawRequest, error){
+func NewPortalCustodianWithdrawRequest(metaType int, paymentAddress string , amount uint64) (*PortalCustodianWithdrawRequest, error){
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
 
-	portalCustodianWithDrawReq := &PortalCustodianWithDrawRequest {
+	portalCustodianWithdrawReq := &PortalCustodianWithdrawRequest {
 		PaymentAddress: paymentAddress,
 		Amount: amount,
 	}
 
-	portalCustodianWithDrawReq.MetadataBase = metadataBase
+	portalCustodianWithdrawReq.MetadataBase = metadataBase
 
-	return portalCustodianWithDrawReq, nil
+	return portalCustodianWithdrawReq, nil
 }
 
-func (withDraw PortalCustodianWithDrawRequest) ValidateTxWithBlockChain(
+func (Withdraw PortalCustodianWithdrawRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,
@@ -55,17 +57,17 @@ func (withDraw PortalCustodianWithDrawRequest) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (withDraw PortalCustodianWithDrawRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+func (Withdraw PortalCustodianWithdrawRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
 	if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
 		return true, true, nil
 	}
 
-	if len(withDraw.PaymentAddress) <= 0 {
+	if len(Withdraw.PaymentAddress) <= 0 {
 		return false, false, errors.New("Payment address should be not empty")
 	}
 
 	// validate Payment address
-	keyWallet, err := wallet.Base58CheckDeserialize(withDraw.PaymentAddress)
+	keyWallet, err := wallet.Base58CheckDeserialize(Withdraw.PaymentAddress)
 	if err != nil {
 		return false, false, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("ContributorAddressStr incorrect"))
 	}
@@ -83,30 +85,30 @@ func (withDraw PortalCustodianWithDrawRequest) ValidateSanityData(bcr Blockchain
 		return false, false, errors.New("tx custodian deposit must be TxNormalType")
 	}
 
-	if withDraw.Amount <= 0 {
+	if Withdraw.Amount <= 0 {
 		return false, false, errors.New("Amount should be larger than 0")
 	}
 
 	return true, true, nil
 }
 
-func (withDraw PortalCustodianWithDrawRequest) ValidateMetadataByItself() bool {
-	return withDraw.Type == PortalCustodianWithDrawRequestMeta
+func (Withdraw PortalCustodianWithdrawRequest) ValidateMetadataByItself() bool {
+	return Withdraw.Type == PortalCustodianWithdrawRequestMeta
 }
 
-func (withDraw PortalCustodianWithDrawRequest) Hash() *common.Hash {
-	record := withDraw.MetadataBase.Hash().String()
-	record += withDraw.PaymentAddress
-	record += strconv.FormatUint(withDraw.Amount, 10)
+func (Withdraw PortalCustodianWithdrawRequest) Hash() *common.Hash {
+	record := Withdraw.MetadataBase.Hash().String()
+	record += Withdraw.PaymentAddress
+	record += strconv.FormatUint(Withdraw.Amount, 10)
 
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash
 }
 
-func (withDraw *PortalCustodianWithDrawRequest) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
-	actionContent := PortalCustodianWithDrawRequestAction{
-		Meta:    *withDraw,
+func (Withdraw *PortalCustodianWithdrawRequest) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+	actionContent := PortalCustodianWithdrawRequestAction{
+		Meta:    *Withdraw,
 		TxReqID: *tx.Hash(),
 		ShardID: shardID,
 	}
@@ -115,10 +117,10 @@ func (withDraw *PortalCustodianWithDrawRequest) BuildReqActions(tx Transaction, 
 		return [][]string{}, err
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(PortalCustodianWithDrawRequestMeta), actionContentBase64Str}
+	action := []string{strconv.Itoa(PortalCustodianWithdrawRequestMeta), actionContentBase64Str}
 	return [][]string{action}, nil
 }
 
-func (withDraw *PortalCustodianWithDrawRequest) CalculateSize() uint64 {
-	return calculateSize(withDraw)
+func (Withdraw *PortalCustodianWithdrawRequest) CalculateSize() uint64 {
+	return calculateSize(Withdraw)
 }

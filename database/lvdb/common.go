@@ -81,6 +81,9 @@ var (
 	PortalRedeemRequestsPrefix          = []byte("portalredeemrequest-")
 	PortalRedeemRequestsByTxReqIDPrefix = []byte("portalredeemrequestbytxid-")
 
+	PortalCustodianWithdrawTxPrefix 	= []byte("portalcustodianwithdrawtx-")
+	PortalCustodianWithdrawPrefix 		= []byte("portalcustodianwithdraw-")
+
 	// Relaying
 	RelayingBNBHeaderStatePrefix = []byte("relayingbnbheaderstate-")
 	RelayingBNBHeaderChainPrefix = []byte("relayingbnbheaderchain-")

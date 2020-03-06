@@ -41,6 +41,8 @@ func (blockchain *BlockChain) processPortalInstructions(block *BeaconBlock, bd *
 			err = blockchain.processPortalExchangeRates(beaconHeight, inst, currentPortalState)
 		case strconv.Itoa(metadata.PortalRedeemRequestMeta):
 			err = blockchain.processPortalRedeemRequest(beaconHeight, inst, currentPortalState, updatingInfoByTokenID)
+		case strconv.Itoa(metadata.PortalCustodianWithdrawRequestMeta):
+			err = blockchain.processPortalCustodianWithdrawRequest(beaconHeight, inst, currentPortalState)
 		}
 
 		if err != nil {
@@ -271,49 +273,8 @@ func (blockchain *BlockChain) processPortalUserRegister(
 
 		//save custodian state
 		for address, itemCustodian := range custodiansDetail {
-			custodian := currentPortalState.CustodianPoolState[address]
-
-			totalCollateral := custodian.TotalCollateral
-			freeCollateral := custodian.FreeCollateral - itemCustodian.LockedAmountCollateral
-
-			//update ptoken holded
-			holdingPubTokensMapping := make(map[string]uint64)
-			if custodian.HoldingPubTokens == nil {
-				holdingPubTokensMapping[tokenID] = itemCustodian.Amount
-			} else {
-				for ptokenId, value := range custodian.HoldingPubTokens {
-					holdingPubTokensMapping[ptokenId] = value + itemCustodian.Amount
-				}
-			}
-			holdingPubTokens := holdingPubTokensMapping
-
-			//update collateral holded
-			lockedAmountCollateralMapping := make(map[string]uint64)
-			if custodian.LockedAmountCollateral == nil {
-				lockedAmountCollateralMapping[tokenID] = itemCustodian.LockedAmountCollateral
-			} else {
-				for ptokenId, value := range custodian.LockedAmountCollateral {
-					lockedAmountCollateralMapping[ptokenId] = value + itemCustodian.LockedAmountCollateral
-				}
-			}
-			lockedAmountCollateral := lockedAmountCollateralMapping
-
-			remoteAddresses := custodian.RemoteAddresses
-
-			newCustodian, err := NewCustodianState(
-				portingRequestContent.IncogAddressStr,
-				totalCollateral,
-				freeCollateral,
-				holdingPubTokens,
-				lockedAmountCollateral,
-				remoteAddresses,
-			)
-
-			if err != nil {
-				return err
-			}
-			Logger.log.Infof("Porting request, custodian key  %v", address)
-			currentPortalState.CustodianPoolState[address] = newCustodian
+			//update custodian state
+			_ = UpdateCustodianWithNewAmount(currentPortalState, address, tokenID, itemCustodian.Amount, itemCustodian.LockedAmountCollateral)
 		}
 
 		//save waiting request porting state
@@ -762,6 +723,75 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 		err = db.TrackRedeemRequestByTxReqID([]byte(trackStatusByTxReqIDKey), trackStatusByTxReqIDValueBytes)
 		if err != nil {
 			Logger.log.Errorf("[processPortalRedeemRequest] Error when tracking status of redeem request by txReqID: %v\n", err)
+			return nil
+		}
+	}
+
+	return nil
+}
+
+func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
+	db := blockchain.GetDatabase()
+
+	if currentPortalState == nil {
+		Logger.log.Errorf("current portal state is nil")
+		return nil
+	}
+
+	if len(instructions) != 4 {
+		return nil // skip the instruction
+	}
+
+	// parse instruction
+	var custodianWithdrawRequestContent = metadata.PortalCustodianWithdrawRequestContent{}
+	err := json.Unmarshal([]byte(instructions[3]), &custodianWithdrawRequestContent)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while unmarshaling content string of custodian withdraw request instruction: %+v", err)
+		return nil
+	}
+
+	reqStatus := instructions[2]
+	paymentAddress := custodianWithdrawRequestContent.PaymentAddress
+	amount := custodianWithdrawRequestContent.Amount
+	freeCollateral := custodianWithdrawRequestContent.RemainFreeCollateral
+	txHash := custodianWithdrawRequestContent.TxReqID.String()
+
+	switch reqStatus {
+	case common.PortalCustodianWithdrawRequestAcceptedStatus:
+		//save transaction
+		newCustodianWithdrawRequest, _ := NewCustodianWithdrawRequest(
+			paymentAddress,
+			amount,
+			common.PortalCustodianWithdrawReqAcceptedStatus,
+			freeCollateral,
+		)
+
+		keyCustodianState := lvdb.NewCustodianWithdrawRequestTxStateKey(txHash)
+		err = db.StoreCustodianWithdrawRequest([]byte(keyCustodianState), newCustodianWithdrawRequest)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw item: %+v", err)
+			return nil
+		}
+
+		//update custodian
+		custodianKey := lvdb.NewCustodianStateKey(beaconHeight, paymentAddress)
+		custodian, _ := currentPortalState.CustodianPoolState[custodianKey]
+		custodian.FreeCollateral = custodian.FreeCollateral - amount
+
+		currentPortalState.CustodianPoolState[custodianKey] = custodian
+
+	case common.PortalCustodianWithdrawRequestRejectedStatus:
+		newCustodianWithdrawRequest, _ := NewCustodianWithdrawRequest(
+			paymentAddress,
+			amount,
+			common.PortalCustodianWithdrawReqRejectStatus,
+			freeCollateral,
+		)
+
+		keyCustodianState := lvdb.NewCustodianWithdrawRequestTxStateKey(txHash)
+		err = db.StoreCustodianWithdrawRequest([]byte(keyCustodianState), newCustodianWithdrawRequest)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw item: %+v", err)
 			return nil
 		}
 	}

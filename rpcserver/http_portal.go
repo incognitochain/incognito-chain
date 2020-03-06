@@ -378,8 +378,8 @@ func (httpServer * HttpServer) handleCustodianWithdrawRequest(params interface{}
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata Amount is invalid"))
 	}
 
-	meta, _ := metadata.NewPortalCustodianWithDrawRequest(
-		metadata.PortalCustodianWithDrawRequestMeta,
+	meta, _ := metadata.NewPortalCustodianWithdrawRequest(
+		metadata.PortalCustodianWithdrawRequestMeta,
 		paymentAddress,
 		uint64(amount),
 	)

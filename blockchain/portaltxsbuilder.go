@@ -142,6 +142,58 @@ func (blockGenerator *BlockGenerator) buildPortalAcceptedRequestPTokensTx(
 	return resTx, nil
 }
 
+//todo: write code
+func (blockGenerator *BlockGenerator) buildPortalCustodianWithdrawRequest(
+	contentStr string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+) (metadata.Transaction, error) {
+	Logger.log.Infof("[Shard buildPortalCustodianWithdrawRequest] Starting...")
+	contentBytes := []byte(contentStr)
+	var custodianWithdrawRequest metadata.PortalCustodianWithdrawRequestContent
+	err := json.Unmarshal(contentBytes, &custodianWithdrawRequest)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while unmarshaling portal custodian withdraw request content: %+v", err)
+		return nil, nil
+	}
+	if custodianWithdrawRequest.ShardID != shardID {
+		Logger.log.Errorf("ERROR: ShardID unexpected expect %v, but got %+v", shardID, custodianWithdrawRequest.ShardID)
+		return nil, nil
+	}
+
+	meta := metadata.NewPortalCustodianWithdrawResponse(
+		common.PortalCustodianWithdrawRequestAcceptedStatus,
+		custodianWithdrawRequest.TxReqID,
+		custodianWithdrawRequest.PaymentAddress,
+		custodianWithdrawRequest.Amount,
+		metadata.PortalCustodianWithdrawResponseMeta,
+	)
+
+	keyWallet, err := wallet.Base58CheckDeserialize(custodianWithdrawRequest.PaymentAddress)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while deserializing custodian address string: %+v", err)
+		return nil, nil
+	}
+
+	receiverAddr := keyWallet.KeySet.PaymentAddress
+	receiveAmt := custodianWithdrawRequest.Amount
+
+	// the returned currency is PRV
+	resTx := new(transaction.Tx)
+	err = resTx.InitTxSalary(
+		receiveAmt,
+		&receiverAddr,
+		producerPrivateKey,
+		blockGenerator.chain.config.DataBase,
+		meta,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing custodian withdraw  (normal) tx: %+v", err)
+		return nil, nil
+	}
+
+	return resTx, nil
+}
 
 // buildPortalRejectedRedeemRequestTx builds response tx for user request redeem tx with status "rejected"
 // mints ptoken to return to user (ptoken that user burned)

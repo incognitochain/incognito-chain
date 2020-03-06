@@ -122,6 +122,8 @@ const (
 	StoreRedeemRequestError
 	TrackRedeemReqByTxReqIDError
 
+	StorePortalCustodianWithdrawRequestStateError
+
 	// relaying
 	StoreRelayingBNBHeaderError
 	GetRelayingBNBHeaderError
@@ -246,6 +248,7 @@ var ErrCodeMessage = map[int]struct {
 	GetReqPTokenStatusError:             {-14013, "Get request ptoken status error"},
 	StoreRedeemRequestError:             {-14014, "Store redeem request error"},
 	TrackRedeemReqByTxReqIDError: {-14015, "Track redeem request by txReqID error"},
+	StorePortalCustodianWithdrawRequestStateError: {-14016, "Store portal custodian withdraw request error"},
 
 	// relaying
 	StoreRelayingBNBHeaderError: {-15001, "Store relaying header bnb error"},

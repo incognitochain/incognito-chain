@@ -131,6 +131,9 @@ const (
 	PortalRedeemReqSuccessStatus = 1
 	PortalRedeemReqWaitingStatus = 2
 	PortalRedeemReqRejectedStatus = 3
+
+	PortalCustodianWithdrawReqRejectStatus = 1
+	PortalCustodianWithdrawReqAcceptedStatus = 2
 )
 
 // PDE statuses for chain
@@ -163,6 +166,9 @@ const (
 
 	PortalRedeemRequestAcceptedChainStatus = "accepted"
 	PortalRedeemRequestRejectedChainStatus = "rejected"
+
+	PortalCustodianWithdrawRequestAcceptedStatus = "accepted"
+	PortalCustodianWithdrawRequestRejectedStatus = "rejected"
 )
 
 // Relaying header

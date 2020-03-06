@@ -492,6 +492,10 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 				if len(l) >= 4 && l[2] == common.PortalReqPTokensAcceptedChainStatus {
 					newTx, err = blockGenerator.buildPortalAcceptedRequestPTokensTx(l[3], producerPrivateKey, shardID)
 				}
+			case metadata.PortalCustodianWithdrawRequestMeta:
+				if len(l) >= 4 && l[2] == common.PortalCustodianWithdrawRequestAcceptedStatus {
+					newTx, err = blockGenerator.buildPortalCustodianWithdrawRequest(l[3], producerPrivateKey, shardID)
+				}
 			case metadata.PortalRedeemRequestMeta:
 				if len(l) >= 4 && l[2] == common.PortalRedeemRequestRejectedChainStatus {
 					newTx, err = blockGenerator.buildPortalRejectedRedeemRequestTx(l[3], producerPrivateKey, shardID)

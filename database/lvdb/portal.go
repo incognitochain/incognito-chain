@@ -75,6 +75,18 @@ type FinalExchangeRates struct {
 	Rates map[string]FinalExchangeRatesDetail
 }
 
+type CustodianWithdrawRequest struct {
+	PaymentAddress string
+	Amount uint64
+	Status int
+	RemainCustodianFreeCollateral uint64
+}
+
+func NewCustodianWithdrawRequestTxStateKey(txHash string) string {
+	key := append(PortalCustodianWithdrawTxPrefix, []byte(txHash)...)
+	return string(key)
+}
+
 func NewCustodianStateKey(beaconHeight uint64, custodianAddress string) string {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 	key := append(PortalCustodianStatePrefix, beaconHeightBytes...)
@@ -446,3 +458,19 @@ func (db *db) TrackRedeemRequestByTxReqID(key []byte, value []byte) error {
 	}
 	return nil
 }
+
+func (db *db) StoreCustodianWithdrawRequest(key []byte, content interface{}) error  {
+	contributionBytes, err := json.Marshal(content)
+	if err != nil {
+		return err
+	}
+
+	err = db.Put(key, contributionBytes)
+	if err != nil {
+		return database.NewDatabaseError(database.StorePortalCustodianWithdrawRequestStateError, errors.Wrap(err, "db.lvdb.put"))
+	}
+
+	return nil
+}
+
+
