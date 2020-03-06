@@ -164,7 +164,7 @@ func (blockGenerator *BlockGenerator) buildPortalRejectedRedeemRequestTx(
 	}
 
 	meta := metadata.NewPortalRedeemRequestResponse(
-		"accepted",
+		"rejected",
 		redeemReqContent.TxReqID,
 		redeemReqContent.IncAddressStr,
 		redeemReqContent.RedeemAmount,

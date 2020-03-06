@@ -1029,6 +1029,15 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 		currentPortalState.CustodianPoolState[k].HoldingPubTokens[tokenSymbol] -= cus.Amount
 	}
 
+	// @@notice@@
+	// update key of matching custodian
+	matchingCustodianUpdateKey := map[string]*lvdb.MatchingRedeemCustodianDetail{}
+	for k, cus := range matchingCustodiansDetail {
+		incAddressCus := currentPortalState.CustodianPoolState[k].IncognitoAddress
+		matchingCustodianUpdateKey[incAddressCus] = new(lvdb.MatchingRedeemCustodianDetail)
+		matchingCustodianUpdateKey[incAddressCus] = cus
+	}
+
 	Logger.log.Infof("[Portal] Build accepted instruction for redeem request")
 	inst := buildRedeemRequestInst(
 		meta.UniqueRedeemID,
@@ -1037,7 +1046,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 		meta.IncAddressStr,
 		meta.RemoteAddress,
 		meta.RedeemFee,
-		matchingCustodiansDetail,
+		matchingCustodianUpdateKey,
 		meta.Type,
 		actionData.ShardID,
 		actionData.TxReqID,
@@ -1120,6 +1129,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 
 	// check meta.UniqueRedeemID is in waiting RedeemRequests list in portal state or not
 	redeemID := meta.UniqueRedeemID
+	//todo: need to change to redeemID
 	keyWaitingRedeemRequest := lvdb.NewWaitingRedeemReqKey(beaconHeight, redeemID)
 	waitingRedeemRequest := currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest]
 	if waitingRedeemRequest == nil {
@@ -1213,6 +1223,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 	}
 
 	// check redeem amount of matching custodian
+	//todo: need to be fixed
 	if meta.RedeemAmount != waitingRedeemRequest.Custodians[meta.CustodianAddressStr].Amount {
 		Logger.log.Errorf("RedeemAmount is not correct in redeemID req")
 		inst := buildReqUnlockCollateralInst(

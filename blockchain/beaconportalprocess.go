@@ -677,7 +677,7 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 	reqStatus := instructions[2]
 	if reqStatus == common.PortalRedeemRequestAcceptedChainStatus {
 		// add waiting redeem request into waiting redeems list
-		keyWaitingRedeemRequest := lvdb.NewWaitingRedeemReqKey(beaconHeight, actionData.TokenID)
+		keyWaitingRedeemRequest := lvdb.NewWaitingRedeemReqKey(beaconHeight, actionData.UniqueRedeemID)
 		redeemRequest, _ := NewRedeemRequestState(
 			actionData.UniqueRedeemID,
 			actionData.TxReqID,
@@ -820,7 +820,7 @@ func (blockchain *BlockChain) processPortalUnlockCollateral(
 		keyWaitingRedeemRequest := lvdb.NewWaitingRedeemReqKey(beaconHeight, redeemID)
 
 		// update redeem request state in WaitingRedeemRequest (remove custodian from matchingCustodianDetail)
-		delete(currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest].Custodians, actionData.CustodianAddressStr)
+		delete(currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest].Custodians, custodianStateKey)
 
 		// remove redeem request from WaitingRedeemRequest list when all matching custodians return public token to user
 		// when list matchingCustodianDetail is empty

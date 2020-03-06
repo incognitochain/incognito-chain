@@ -43,7 +43,9 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.PortalUserRequestPTokenMeta,
 			metadata.PortalExchangeRatesMeta,
 			metadata.RelayingBNBHeaderMeta,
-			metadata.PortalCustodianWithDrawRequestMeta:
+			metadata.PortalCustodianWithDrawRequestMeta,
+			metadata.PortalRedeemRequestMeta,
+			metadata.PortalRequestUnlockCollateralMeta:
 			statefulInsts = append(statefulInsts, inst)
 
 		default:
@@ -601,7 +603,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 			newInst, err := blockchain.buildInstructionsForReqUnlockCollateral(
 				contentStr,
 				shardID,
-				metadata.PortalCustodianDepositMeta,
+				metadata.PortalRequestUnlockCollateralMeta,
 				currentPortalState,
 				beaconHeight,
 			)
