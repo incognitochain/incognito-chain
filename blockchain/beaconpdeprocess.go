@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"reflect"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -17,6 +18,15 @@ func (blockchain *BlockChain) processPDEInstructions(pdexStateDB *statedb.StateD
 	if err != nil {
 		Logger.log.Error(err)
 		return nil
+	}
+	backUpCurrentPDEState := new(CurrentPDEState)
+	temp, err := json.Marshal(currentPDEState)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(temp, backUpCurrentPDEState)
+	if err != nil {
+		return err
 	}
 	for _, inst := range beaconBlock.Body.Instructions {
 		if len(inst) < 2 {
@@ -36,8 +46,11 @@ func (blockchain *BlockChain) processPDEInstructions(pdexStateDB *statedb.StateD
 			return nil
 		}
 	}
+	if reflect.DeepEqual(backUpCurrentPDEState, currentPDEState) {
+		return nil
+	}
 	// store updated currentPDEState to leveldb with new beacon height
-	err = storePDEStateToDBV2(pdexStateDB, beaconHeight+1, currentPDEState)
+	err = storePDEStateToDB(pdexStateDB, beaconHeight+1, currentPDEState)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -90,8 +103,9 @@ func (blockchain *BlockChain) processPDEContributionV2(pdexStateDB *statedb.Stat
 			return nil
 		}
 		waitingContribPairKey := string(rawdbv2.BuildWaitingPDEContributionKey(beaconHeight, refundContribution.PDEContributionPairID))
-		_, found := currentPDEState.WaitingPDEContributions[waitingContribPairKey]
+		existingWaitingContribution, found := currentPDEState.WaitingPDEContributions[waitingContribPairKey]
 		if found {
+			currentPDEState.DeletedWaitingPDEContributions[waitingContribPairKey] = existingWaitingContribution
 			delete(currentPDEState.WaitingPDEContributions, waitingContribPairKey)
 		}
 		contribStatus := metadata.PDEContributionStatus{
@@ -134,6 +148,7 @@ func (blockchain *BlockChain) processPDEContributionV2(pdexStateDB *statedb.Stat
 			incomingWaitingContribution,
 			currentPDEState,
 		)
+		currentPDEState.DeletedWaitingPDEContributions[waitingContribPairKey] = existingWaitingContribution
 		delete(currentPDEState.WaitingPDEContributions, waitingContribPairKey)
 		contribStatus := metadata.PDEContributionStatus{
 			Status: byte(common.PDEContributionAcceptedStatus),
@@ -178,6 +193,7 @@ func (blockchain *BlockChain) processPDEContributionV2(pdexStateDB *statedb.Stat
 				incomingWaitingContribution,
 				currentPDEState,
 			)
+			currentPDEState.DeletedWaitingPDEContributions[waitingContribPairKey] = waitingContribution
 			delete(currentPDEState.WaitingPDEContributions, waitingContribPairKey)
 		}
 		pdeStatusContentBytes, err := statedb.GetPDEContributionStatus(

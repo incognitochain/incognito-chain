@@ -337,7 +337,6 @@ func (t *Trie) delete(n node, prefix, key []byte) (bool, node, error) {
 
 	case valueNode:
 		return true, nil, nil
-
 	case nil:
 		return false, nil, nil
 

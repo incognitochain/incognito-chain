@@ -10,9 +10,10 @@ import (
 )
 
 type CurrentPDEState struct {
-	WaitingPDEContributions map[string]*rawdbv2.PDEContribution
-	PDEPoolPairs            map[string]*rawdbv2.PDEPoolForPair
-	PDEShares               map[string]uint64
+	WaitingPDEContributions        map[string]*rawdbv2.PDEContribution
+	DeletedWaitingPDEContributions map[string]*rawdbv2.PDEContribution
+	PDEPoolPairs                   map[string]*rawdbv2.PDEPoolForPair
+	PDEShares                      map[string]uint64
 }
 
 type DeductingAmountsByWithdrawal struct {
@@ -40,21 +41,24 @@ func InitCurrentPDEStateFromDB(
 		return nil, err
 	}
 	return &CurrentPDEState{
-		WaitingPDEContributions: waitingPDEContributions,
-		PDEPoolPairs:            pdePoolPairs,
-		PDEShares:               pdeShares,
+		WaitingPDEContributions:        waitingPDEContributions,
+		PDEPoolPairs:                   pdePoolPairs,
+		PDEShares:                      pdeShares,
+		DeletedWaitingPDEContributions: make(map[string]*rawdbv2.PDEContribution),
 	}, nil
 }
 
-func storePDEStateToDBV2(
+func storePDEStateToDB(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	currentPDEState *CurrentPDEState,
 ) error {
-	err := statedb.StoreWaitingPDEContributions(stateDB, beaconHeight, currentPDEState.WaitingPDEContributions)
+	var err error
+	err = statedb.StoreWaitingPDEContributions(stateDB, beaconHeight, currentPDEState.WaitingPDEContributions)
 	if err != nil {
 		return err
 	}
+	statedb.DeleteWaitingPDEContributions(stateDB, currentPDEState.DeletedWaitingPDEContributions)
 	err = statedb.StorePDEPoolPairs(stateDB, beaconHeight, currentPDEState.PDEPoolPairs)
 	if err != nil {
 		return err
