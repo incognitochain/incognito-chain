@@ -79,7 +79,7 @@ func (custodianDeposit PortalCustodianDeposit) ValidateSanityData(bcr Blockchain
 	// validate IncogAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(custodianDeposit.IncogAddressStr)
 	if err != nil {
-		return false, false, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("ContributorAddressStr incorrect"))
+		return false, false, errors.New("IncogAddressStr of custodian incorrect")
 	}
 	incogAddr := keyWallet.KeySet.PaymentAddress
 	if len(incogAddr.Pk) == 0 {

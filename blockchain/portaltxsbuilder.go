@@ -218,13 +218,13 @@ func (blockGenerator *BlockGenerator) buildPortalRejectedRedeemRequestTx(
 	meta := metadata.NewPortalRedeemRequestResponse(
 		"rejected",
 		redeemReqContent.TxReqID,
-		redeemReqContent.IncAddressStr,
+		redeemReqContent.RedeemerIncAddressStr,
 		redeemReqContent.RedeemAmount,
 		redeemReqContent.TokenID,
 		metadata.PortalRedeemRequestResponseMeta,
 	)
 
-	keyWallet, err := wallet.Base58CheckDeserialize(redeemReqContent.IncAddressStr)
+	keyWallet, err := wallet.Base58CheckDeserialize(redeemReqContent.RedeemerIncAddressStr)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while deserializing requester address string: %+v", err)
 		return nil, nil

@@ -19,12 +19,12 @@ import (
 // metadata - redeem request - create normal tx with this metadata
 type PortalRedeemRequest struct {
 	MetadataBase
-	UniqueRedeemID string
-	TokenID        string // pTokenID in incognito chain
-	RedeemAmount   uint64
-	IncAddressStr  string
-	RemoteAddress  string // btc/bnb/etc address
-	RedeemFee      uint64 // ptoken fee
+	UniqueRedeemID        string
+	TokenID               string // pTokenID in incognito chain
+	RedeemAmount          uint64
+	RedeemerIncAddressStr string
+	RemoteAddress         string // btc/bnb/etc address
+	RedeemFee             uint64 // ptoken fee
 }
 
 // PortalRedeemRequestAction - shard validator creates instruction that contain this action content
@@ -42,7 +42,7 @@ type PortalRedeemRequestContent struct {
 	UniqueRedeemID          string
 	TokenID                 string // pTokenID in incognito chain
 	RedeemAmount            uint64
-	IncAddressStr           string
+	RedeemerIncAddressStr   string
 	RemoteAddress           string // btc/bnb/etc address
 	RedeemFee               uint64 // ptoken fee, 0.01% redeemAmount
 	MatchingCustodianDetail map[string]*lvdb.MatchingRedeemCustodianDetail   // key: incAddressCustodian
@@ -56,7 +56,7 @@ type PortalRedeemRequestStatus struct {
 	UniqueRedeemID          string
 	TokenID                 string // pTokenID in incognito chain
 	RedeemAmount            uint64
-	IncAddressStr           string
+	RedeemerIncAddressStr   string
 	RemoteAddress           string // btc/bnb/etc address
 	RedeemFee               uint64 // ptoken fee
 	MatchingCustodianDetail map[string]*lvdb.MatchingRedeemCustodianDetail   // key: incAddressCustodian
@@ -75,12 +75,12 @@ func NewPortalRedeemRequest(
 		Type: metaType,
 	}
 	requestPTokenMeta := &PortalRedeemRequest{
-		UniqueRedeemID: uniqueRedeemID,
-		TokenID:        tokenID,
-		RedeemAmount:   redeemAmount,
-		IncAddressStr:  incAddressStr,
-		RemoteAddress:  remoteAddr,
-		RedeemFee:      redeemFee,
+		UniqueRedeemID:        uniqueRedeemID,
+		TokenID:               tokenID,
+		RedeemAmount:          redeemAmount,
+		RedeemerIncAddressStr: incAddressStr,
+		RemoteAddress:         remoteAddr,
+		RedeemFee:             redeemFee,
 	}
 	requestPTokenMeta.MetadataBase = metadataBase
 	return requestPTokenMeta, nil
@@ -93,6 +93,18 @@ func getMinRedeemFeeByRedeemAmount(redeemAmount uint64) (uint64, error) {
 	// minRedeemFee = redeemAmount * 0.01%
 	minRedeemFee := uint64(math.Floor(float64(redeemAmount) * 0.01 / 100))
 	return minRedeemFee, nil
+}
+
+// isValidRedeemAmount checks redeem amount is valid ot not
+func isValidRedeemAmount(redeemAmount uint64, incTokenID string) bool {
+	if incTokenID == PortalSupportedTokenMap[PortalTokenSymbolBNB] {
+		// redeem Amount of token bnb must be multiple of 10 (minimum amount is 10 nano pbnb)
+		return redeemAmount % 10 == 0
+	} else if incTokenID == PortalSupportedTokenMap[PortalTokenSymbolBNB] {
+		// todo:
+	}
+
+	return false
 }
 
 func (redeemReq PortalRedeemRequest) ValidateTxWithBlockChain(
@@ -110,8 +122,8 @@ func (redeemReq PortalRedeemRequest) ValidateSanityData(bcr BlockchainRetriever,
 		return true, true, nil
 	}
 
-	// validate IncAddressStr
-	keyWallet, err := wallet.Base58CheckDeserialize(redeemReq.IncAddressStr)
+	// validate RedeemerIncAddressStr
+	keyWallet, err := wallet.Base58CheckDeserialize(redeemReq.RedeemerIncAddressStr)
 	if err != nil {
 		return false, false, NewMetadataTxError(PortalRedeemRequestParamError, errors.New("Requester incognito address is invalid"))
 	}
@@ -135,6 +147,10 @@ func (redeemReq PortalRedeemRequest) ValidateSanityData(bcr BlockchainRetriever,
 	// validate redeem amount
 	if redeemReq.RedeemAmount == 0 {
 		return false, false, errors.New("redeem amount should be larger than 0")
+	}
+
+	if !isValidRedeemAmount(redeemReq.RedeemAmount, redeemReq.TokenID) {
+		return false, false, errors.New("redeem amount should be multiple of 10")
 	}
 
 	// validate redeem fee
@@ -184,7 +200,7 @@ func (redeemReq PortalRedeemRequest) Hash() *common.Hash {
 	record += redeemReq.TokenID
 	record += strconv.FormatUint(redeemReq.RedeemAmount, 10)
 	record += strconv.FormatUint(redeemReq.RedeemFee, 10)
-	record += redeemReq.IncAddressStr
+	record += redeemReq.RedeemerIncAddressStr
 	record += redeemReq.RemoteAddress
 	// final hash
 	hash := common.HashH([]byte(record))
