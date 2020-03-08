@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"math/big"
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
@@ -47,6 +48,11 @@ type IssuingETHAcceptedInst struct {
 type GetBlockByNumberRes struct {
 	rpccaller.RPCBaseRes
 	Result *types.Header `json:"result"`
+}
+
+type GetETHBlockNumRes struct {
+	rpccaller.RPCBaseRes
+	Result string `json:"result"`
 }
 
 func ParseETHIssuingInstContent(instContentStr string) (*IssuingETHReqAction, error) {
@@ -174,7 +180,6 @@ func (iReq *IssuingETHRequest) BuildReqActions(tx Transaction, bcr BlockchainRet
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
 	action := []string{strconv.Itoa(IssuingETHRequestMeta), actionContentBase64Str}
 
-	Logger.log.Debug("hahaha txreqid: ", txReqID)
 	err = bcr.GetDatabase().TrackBridgeReqWithStatus(txReqID, byte(common.BridgeRequestProcessingStatus), nil)
 	if err != nil {
 		return [][]string{}, NewMetadataTxError(IssuingEthRequestBuildReqActionsError, err)
@@ -195,6 +200,19 @@ func (iReq *IssuingETHRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 		Logger.log.Info("WARNING: Could not find out the ETH block header with the hash: ", iReq.BlockHash)
 		return nil, NewMetadataTxError(IssuingEthRequestVerifyProofAndParseReceipt, errors.Errorf("WARNING: Could not find out the ETH block header with the hash: %s", iReq.BlockHash.String()))
 	}
+
+	mostRecentBlkNum, err := GetMostRecentETHBlockHeight()
+	if err != nil {
+		Logger.log.Info("WARNING: Could not find the most recent block height on Ethereum")
+		return nil, NewMetadataTxError(IssuingEthRequestVerifyProofAndParseReceipt, err)
+	}
+
+	if mostRecentBlkNum.Cmp(big.NewInt(0).Add(ethHeader.Number, big.NewInt(ETHConfirmationBlocks))) == -1 {
+		errMsg := fmt.Sprintf("WARNING: It needs 15 confirmation blocks for the process, the requested block (%s) but the latest block (%s)", ethHeader.Number.String(), mostRecentBlkNum.String())
+		Logger.log.Info(errMsg)
+		return nil, NewMetadataTxError(IssuingEthRequestVerifyProofAndParseReceipt, errors.New(errMsg))
+	}
+
 	keybuf := new(bytes.Buffer)
 	keybuf.Reset()
 	rlp.Encode(keybuf, iReq.TxIndex)
@@ -219,6 +237,11 @@ func (iReq *IssuingETHRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 	if err != nil {
 		return nil, NewMetadataTxError(IssuingEthRequestVerifyProofAndParseReceipt, err)
 	}
+
+	if constructedReceipt.Status != types.ReceiptStatusSuccessful {
+		return nil, NewMetadataTxError(IssuingEthRequestVerifyProofAndParseReceipt, errors.New("The constructedReceipt's status is not success"))
+	}
+
 	return constructedReceipt, nil
 }
 
@@ -265,6 +288,35 @@ func GetETHHeader(
 		return nil, nil
 	}
 	return getBlockByNumberRes.Result, nil
+}
+
+// GetMostRecentETHBlockHeight get most recent block height on Ethereum
+func GetMostRecentETHBlockHeight() (*big.Int, error) {
+	rpcClient := rpccaller.NewRPCClient()
+	params := []interface{}{}
+	var getETHBlockNumRes GetETHBlockNumRes
+	err := rpcClient.RPCCall(
+		EthereumLightNodeProtocol,
+		EthereumLightNodeHost,
+		EthereumLightNodePort,
+		"eth_blockNumber",
+		params,
+		&getETHBlockNumRes,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if getETHBlockNumRes.RPCError != nil {
+		Logger.log.Debugf("WARNING: an error occured during calling eth_blockNumber: %s", getETHBlockNumRes.RPCError.Message)
+		return nil, nil
+	}
+
+	blockNumber := new(big.Int)
+	_, ok := blockNumber.SetString(getETHBlockNumRes.Result[2:], 16)
+	if !ok {
+		return nil, errors.New("Cannot convert blockNumber into integer")
+	}
+	return blockNumber, nil
 }
 
 func PickAndParseLogMapFromReceipt(constructedReceipt *types.Receipt, ethContractAddressStr string) (map[string]interface{}, error) {
