@@ -377,7 +377,12 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 	}
 
 	//validation porting fees
-	pToken2PRV := exchangeRatesState.ExchangePToken2PRVByTokenId(actionData.Meta.PTokenId, actionData.Meta.RegisterAmount)
+	pToken2PRV, err := exchangeRatesState.ExchangePToken2PRVByTokenId(actionData.Meta.PTokenId, actionData.Meta.RegisterAmount)
+	if err != nil {
+		Logger.log.Errorf("Convert PToken is error %v", err)
+		return [][]string{}, nil
+	}
+
 	exchangePortingFees := CalculatePortingFees(pToken2PRV)
 	Logger.log.Infof("Porting request, porting fees need %v", exchangePortingFees)
 
@@ -1260,6 +1265,8 @@ func (blockchain *BlockChain) buildInstructionsForCustodianWithdraw(
 	}
 	//withdraw
 	remainFreeCollateral := custodian.FreeCollateral - actionData.Meta.Amount
+	totalFreeCollateral := custodian.TotalCollateral - actionData.Meta.Amount
+
 	inst := buildCustodianWithdrawInst(
 		actionData.Meta.Type,
 		shardID,
@@ -1272,6 +1279,7 @@ func (blockchain *BlockChain) buildInstructionsForCustodianWithdraw(
 
 	//update free collateral custodian
 	custodian.FreeCollateral = remainFreeCollateral
+	custodian.TotalCollateral = totalFreeCollateral
 	currentPortalState.CustodianPoolState[custodianKey] = custodian
 	return [][]string{inst}, nil
 }

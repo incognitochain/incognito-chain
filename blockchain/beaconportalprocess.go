@@ -807,8 +807,15 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(beaconHeight
 
 		//update custodian
 		custodianKey := lvdb.NewCustodianStateKey(beaconHeight, paymentAddress)
-		custodian, _ := currentPortalState.CustodianPoolState[custodianKey]
+		custodian, ok := currentPortalState.CustodianPoolState[custodianKey]
+
+		if !ok {
+			Logger.log.Errorf("ERROR: Custodian not found ")
+			return nil
+		}
+
 		custodian.FreeCollateral = custodian.FreeCollateral - amount
+		custodian.TotalCollateral = custodian.TotalCollateral - amount
 
 		currentPortalState.CustodianPoolState[custodianKey] = custodian
 

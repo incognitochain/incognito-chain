@@ -124,10 +124,19 @@ func (portal *Portal) ConvertExchangeRates(tokenSymbol string, valuePToken uint6
 	}
 
 	if tokenSymbol == metadata.PortalTokenSymbolBTC {
-		btcExchange := finalExchangeRates.ExchangeBTC2PRV(valuePToken)
+		btcExchange, err := finalExchangeRates.ExchangeBTC2PRV(valuePToken)
+		if err != nil {
+			return result, NewRPCError(GetExchangeRatesError, err)
+		}
+
 		result[metadata.PortalTokenSymbolPRV] = btcExchange
 	} else if tokenSymbol == metadata.PortalTokenSymbolBNB {
-		bnbExchange := finalExchangeRates.ExchangeBNB2PRV(valuePToken)
+		bnbExchange, err := finalExchangeRates.ExchangeBNB2PRV(valuePToken)
+
+		if err != nil {
+			return result, NewRPCError(GetExchangeRatesError, err)
+		}
+
 		result[metadata.PortalTokenSymbolPRV] = bnbExchange
 	} else if tokenSymbol == metadata.PortalTokenSymbolPRV {
 		return result, NewRPCError(GetExchangeRatesIsEmpty, errors.New("PRV Token not support"))
@@ -156,11 +165,19 @@ func (portal *Portal) GetPortingFees(tokenSymbol string, valuePToken uint64, ser
 	}
 
 	if tokenSymbol == metadata.PortalTokenSymbolBTC {
-		btcExchange := finalExchangeRates.ExchangeBTC2PRV(valuePToken)
+		btcExchange, err := finalExchangeRates.ExchangeBTC2PRV(valuePToken)
+		if err != nil {
+			return result, NewRPCError(GetExchangeRatesError, err)
+		}
+
 		exchangePortingFees := blockchain.CalculatePortingFees(btcExchange)
 		result[metadata.PortalTokenSymbolPRV] = exchangePortingFees
 	} else if tokenSymbol == metadata.PortalTokenSymbolBNB {
-		bnbExchange := finalExchangeRates.ExchangeBNB2PRV(valuePToken)
+		bnbExchange, err := finalExchangeRates.ExchangeBNB2PRV(valuePToken)
+		if err != nil {
+			return result, NewRPCError(GetExchangeRatesError, err)
+		}
+
 		exchangePortingFees := blockchain.CalculatePortingFees(bnbExchange)
 		result[metadata.PortalTokenSymbolPRV] = exchangePortingFees
 	} else if tokenSymbol == metadata.PortalTokenSymbolPRV {

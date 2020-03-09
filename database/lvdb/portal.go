@@ -337,7 +337,7 @@ func (db *db) UpdatePortingRequestStatus(portingID string, newStatus int) error 
 	return nil
 }
 
-func (finalExchangeRates FinalExchangeRates) ExchangePToken2PRVByTokenId(pTokenId string, value uint64) uint64 {
+func (finalExchangeRates FinalExchangeRates) ExchangePToken2PRVByTokenId(pTokenId string, value uint64) (uint64, error) {
 	switch pTokenId {
 	case PortalTokenSymbolBTC:
 		return finalExchangeRates.ExchangeBTC2PRV(value)
@@ -345,10 +345,10 @@ func (finalExchangeRates FinalExchangeRates) ExchangePToken2PRVByTokenId(pTokenI
 		return finalExchangeRates.ExchangeBNB2PRV(value)
 	}
 
-	return 0
+	return 0, errors.New("Ptoken is not support")
 }
 
-func (finalExchangeRates *FinalExchangeRates) ExchangePRV2PTokenByTokenId(pTokenId string, value uint64) uint64 {
+func (finalExchangeRates *FinalExchangeRates) ExchangePRV2PTokenByTokenId(pTokenId string, value uint64) (uint64, error) {
 	switch pTokenId {
 	case PortalTokenSymbolBTC:
 		return finalExchangeRates.ExchangePRV2BTC(value)
@@ -356,63 +356,81 @@ func (finalExchangeRates *FinalExchangeRates) ExchangePRV2PTokenByTokenId(pToken
 		return finalExchangeRates.ExchangePRV2BNB(value)
 	}
 
-	return 0
+	return 0, errors.New("Ptoken is not support")
 }
 
-func (finalExchangeRates *FinalExchangeRates) convert(value uint64, ratesFrom uint64, RatesTo uint64) uint64 {
+func (finalExchangeRates *FinalExchangeRates) convert(value uint64, ratesFrom uint64, RatesTo uint64) (uint64, error){
 	//convert to pusdt
 	total := (value * ratesFrom) / uint64(math.Pow10(9)) //value of nanno
+
+	if RatesTo <= 0 {
+		return 0, errors.New("Can not divide zero")
+	}
 
 	//pusdt -> new coin
 	result := (total * uint64(math.Pow10(9))) / RatesTo
 
-	return result
+	return result, nil
 
 }
 
-func (finalExchangeRates *FinalExchangeRates) ExchangeBTC2PRV(value uint64) uint64 {
+func (finalExchangeRates *FinalExchangeRates) ExchangeBTC2PRV(value uint64) (uint64, error) {
 	//input : nano
 	BTCRates := finalExchangeRates.Rates[PortalTokenSymbolBTC].Amount //return nano pUSDT
 	PRVRates := finalExchangeRates.Rates[PortalTokenSymbolPRV].Amount //return nano pUSDT
-	valueExchange := finalExchangeRates.convert(value, BTCRates, PRVRates)
+	valueExchange, err := finalExchangeRates.convert(value, BTCRates, PRVRates)
+
+	if err != nil {
+		return 0, err
+	}
 
 	database.Logger.Log.Infof("================ Convert, BTC %d 2 PRV with BTCRates %d PRVRates %d , result %d", value, BTCRates, PRVRates, valueExchange)
 
 	//nano
-	return valueExchange
+	return valueExchange, nil
 }
 
-func (finalExchangeRates *FinalExchangeRates) ExchangeBNB2PRV(value uint64) uint64 {
+func (finalExchangeRates *FinalExchangeRates) ExchangeBNB2PRV(value uint64) (uint64, error) {
 	BNBRates := finalExchangeRates.Rates[PortalTokenSymbolBNB].Amount
 	PRVRates := finalExchangeRates.Rates[PortalTokenSymbolPRV].Amount
 
-	valueExchange := finalExchangeRates.convert(value, BNBRates, PRVRates)
+	valueExchange, err := finalExchangeRates.convert(value, BNBRates, PRVRates)
+
+	if err != nil {
+		return 0, err
+	}
 
 	database.Logger.Log.Infof("================ Convert, BNB %v 2 PRV with BNBRates %v PRVRates %v, result %v", value, BNBRates, PRVRates, valueExchange)
 
-	return valueExchange
+	return valueExchange, nil
 }
 
-func (finalExchangeRates *FinalExchangeRates) ExchangePRV2BTC(value uint64) uint64 {
+func (finalExchangeRates *FinalExchangeRates) ExchangePRV2BTC(value uint64) (uint64, error) {
 	//input nano
 	BTCRates := finalExchangeRates.Rates[PortalTokenSymbolBTC].Amount //return nano pUSDT
 	PRVRates := finalExchangeRates.Rates[PortalTokenSymbolPRV].Amount //return nano pUSDT
 
-	valueExchange := finalExchangeRates.convert(value, PRVRates, BTCRates)
+	valueExchange, err := finalExchangeRates.convert(value, PRVRates, BTCRates)
+
+	if err != nil {
+		return 0, err
+	}
 
 	database.Logger.Log.Infof("================ Convert, PRV %v 2 BTC with BTCRates %v PRVRates %v, result %v", value, BTCRates, PRVRates, valueExchange)
 
-	return valueExchange
+	return valueExchange, nil
 }
 
-func (finalExchangeRates *FinalExchangeRates) ExchangePRV2BNB(value uint64) uint64 {
+func (finalExchangeRates *FinalExchangeRates) ExchangePRV2BNB(value uint64) (uint64, error) {
 	BNBRates := finalExchangeRates.Rates[PortalTokenSymbolBNB].Amount
 	PRVRates := finalExchangeRates.Rates[PortalTokenSymbolPRV].Amount
 
-	valueExchange := finalExchangeRates.convert(value, PRVRates, BNBRates)
-
+	valueExchange, err := finalExchangeRates.convert(value, PRVRates, BNBRates)
+	if err != nil {
+		return 0, err
+	}
 	database.Logger.Log.Infof("================ Convert, PRV %v 2 BNB with BNBRates %v PRVRates %v, result %v", value, BNBRates, PRVRates, valueExchange)
-	return valueExchange
+	return valueExchange, nil
 }
 
 // ======= REDEEM =======
