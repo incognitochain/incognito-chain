@@ -775,7 +775,9 @@ func updateFreeCollateralCustodian(custodianState * lvdb.CustodianState, redeemA
 		custodianState.FreeCollateral += unlockedAmount
 	} else {
 		unlockedAmountInPToken := uint64(math.Floor(float64(redeemAmount) * 1.2))
+		Logger.log.Errorf("updateFreeCollateralCustodian - unlockedAmountInPToken: %v\n", unlockedAmountInPToken)
 		unlockedAmount = exchangeRate.ExchangePToken2PRVByTokenId(tokenSymbol, unlockedAmountInPToken)
+		Logger.log.Errorf("updateFreeCollateralCustodian - unlockedAmount: %v\n", unlockedAmount)
 		if unlockedAmount == 0 {
 			return 0, errors.New("[portal-updateFreeCollateralCustodian] error convert amount ptoken to amount in prv ")
 		}

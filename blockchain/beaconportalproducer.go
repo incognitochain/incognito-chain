@@ -728,6 +728,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 			remoteAddressNeedToBeTransfer := cusDetail.RemoteAddress
 			amountNeedToBeTransfer := cusDetail.Amount
 
+			isChecked := false
 			for _, out := range outputs {
 				addr := string(out.Address)
 				if addr != remoteAddressNeedToBeTransfer {
@@ -759,7 +760,26 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 						common.PortalReqPTokensRejectedChainStatus,
 					)
 					return [][]string{inst}, nil
+				} else{
+					isChecked = true
+					break
 				}
+			}
+			if !isChecked {
+				Logger.log.Errorf("TxProof-BNB is invalid - Receiver address is invalid, expected %v",
+					remoteAddressNeedToBeTransfer)
+				inst := buildReqPTokensInst(
+					meta.UniquePortingID,
+					meta.TokenID,
+					meta.IncogAddressStr,
+					meta.PortingAmount,
+					meta.PortingProof,
+					meta.Type,
+					shardID,
+					actionData.TxReqID,
+					common.PortalReqPTokensRejectedChainStatus,
+				)
+				return [][]string{inst}, nil
 			}
 		}
 
@@ -1573,6 +1593,8 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		remoteAddressNeedToBeTransfer := waitingRedeemRequest.RedeemerRemoteAddress
 		amountNeedToBeTransfer := meta.RedeemAmount
 
+		isChecked := false
+
 		for _, out := range outputs {
 			addr := string(out.Address)
 			if addr != remoteAddressNeedToBeTransfer {
@@ -1605,8 +1627,30 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 					common.PortalReqUnlockCollateralRejectedChainStatus,
 				)
 				return [][]string{inst}, nil
+			} else {
+				isChecked = true
+				break
 			}
 		}
+
+		if !isChecked{
+			Logger.log.Errorf("TxProof-BNB is invalid - Receiver address is invalid, expected %v",
+				remoteAddressNeedToBeTransfer)
+			inst := buildReqUnlockCollateralInst(
+				meta.UniqueRedeemID,
+				meta.TokenID,
+				meta.CustodianAddressStr,
+				meta.RedeemAmount,
+				0,
+				meta.RedeemProof,
+				meta.Type,
+				shardID,
+				actionData.TxReqID,
+				common.PortalReqUnlockCollateralRejectedChainStatus,
+			)
+			return [][]string{inst}, nil
+		}
+
 		// get tokenSymbol from redeemTokenID
 		tokenSymbol := ""
 		for tokenSym, incTokenID := range metadata.PortalSupportedTokenMap {
