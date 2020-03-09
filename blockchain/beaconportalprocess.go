@@ -498,7 +498,7 @@ func (blockchain *BlockChain) processPortalExchangeRates(beaconHeight uint64, in
 func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, currentPortalState *CurrentPortalState) error {
 	exchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
 
-	Logger.log.Infof("Portal final exchange rates, pick final exchange rates from exchange rates, key %v, count final exchange rate %v , exchange rate request %v", exchangeRatesKey, len(currentPortalState.FinalExchangeRates), len(currentPortalState.ExchangeRatesRequests))
+	Logger.log.Infof("Portal final exchange rates, start pick... count exchange rate request %v", len(currentPortalState.ExchangeRatesRequests))
 
 	//convert to slice
 	var btcExchangeRatesSlice []uint64
@@ -555,7 +555,7 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 
 	//if pre state exist
 	if exchangeRatesState, ok := currentPortalState.FinalExchangeRates[exchangeRatesKey]; ok {
-		Logger.log.Infof("Portal final exchange rates, pre block exits generate key %v", exchangeRatesKey)
+		Logger.log.Infof("Portal final exchange rates, exits  key %v", exchangeRatesKey)
 
 		var btcAmountPreState uint64
 		var bnbAmountPreState uint64
@@ -602,7 +602,7 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 			Rates: exchangeRatesList,
 		}
 
-		Logger.log.Infof("Portal final exchange rates, key %v, count final exchange rate %v", exchangeRatesKey, len(currentPortalState.FinalExchangeRates))
+		Logger.log.Infof("Portal final exchange rates, picked key %v", exchangeRatesKey)
 	}
 
 	return nil
@@ -797,7 +797,7 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(beaconHeight
 			freeCollateral,
 		)
 
-		keyCustodianState := lvdb.NewCustodianWithdrawRequestTxStateKey(txHash)
+		keyCustodianState := lvdb.NewCustodianWithdrawRequest(txHash)
 		err = db.StoreCustodianWithdrawRequest([]byte(keyCustodianState), newCustodianWithdrawRequest)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw item: %+v", err)
@@ -819,7 +819,7 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(beaconHeight
 			freeCollateral,
 		)
 
-		keyCustodianState := lvdb.NewCustodianWithdrawRequestTxStateKey(txHash)
+		keyCustodianState := lvdb.NewCustodianWithdrawRequest(txHash)
 		err = db.StoreCustodianWithdrawRequest([]byte(keyCustodianState), newCustodianWithdrawRequest)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw item: %+v", err)
