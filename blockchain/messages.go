@@ -49,7 +49,7 @@ func (blockchain *BlockChain) OnPeerStateReceived(
 	if userRole == common.ShardRole && (nodeMode == common.NodeModeAuto || nodeMode == common.NodeModeBeacon) {
 		// userShardRole = blockchain.BestState.Shard[userShardID].GetPubkeyRole(miningKey, blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
 		// if userShardRole == common.ProposerRole || userShardRole == common.ValidatorRole {
-		if shardState, ok := (*shard)[userShardID]; ok && shardState.Height >= blockchain.BestState.Shard[userShardID].ShardHeight {
+		if shardState, ok := (*shard)[userShardID]; ok && shardState.Height >= blockchain.GetBestStateShard(byte(userShardID)).ShardHeight {
 			pState.Shard[userShardID] = &shardState
 			if pool, ok := (*crossShardPool)[userShardID]; ok {
 				pState.CrossShardPool = make(map[byte]*map[byte][]uint64)
@@ -85,11 +85,11 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 
 		currentInsert.Shards[newBlk.Header.ShardID].Lock()
 		defer currentInsert.Shards[newBlk.Header.ShardID].Unlock()
-		currentShardBestState := blockchain.BestState.Shard[newBlk.Header.ShardID]
+		currentShardBestState := blockchain.GetBestStateShard(newBlk.Header.ShardID)
 
 		if currentShardBestState.ShardHeight <= newBlk.Header.Height {
 			//layer, role, _ := blockchain.config.ConsensusEngine.GetUserRole()
-			currentShardBestState := blockchain.BestState.Shard[newBlk.Header.ShardID]
+			currentShardBestState := blockchain.GetBestStateShard(newBlk.Header.ShardID)
 
 			if currentShardBestState.ShardHeight == newBlk.Header.Height && currentShardBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentShardBestState.BestBlock.Header.Round < newBlk.Header.Round {
 				err := blockchain.InsertShardBlock(newBlk, false)

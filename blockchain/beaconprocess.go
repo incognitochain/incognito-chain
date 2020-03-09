@@ -36,8 +36,6 @@ import (
 	- Error: invalid new block
 */
 func (blockchain *BlockChain) VerifyPreSignBeaconBlock(beaconBlock *BeaconBlock, isPreSign bool) error {
-	blockchain.chainLock.Lock()
-	defer blockchain.chainLock.Unlock()
 	// Verify block only
 	Logger.log.Infof("BEACON | Verify block for signing process %d, with hash %+v", beaconBlock.Header.Height, *beaconBlock.Hash())
 	if err := blockchain.verifyPreProcessingBeaconBlock(beaconBlock, isPreSign); err != nil {
@@ -62,8 +60,6 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(beaconBlock *BeaconBlock,
 }
 
 func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isValidated bool) error {
-	blockchain.chainLock.Lock()
-	defer blockchain.chainLock.Unlock()
 
 	if beaconBlock.Header.Height != blockchain.GetBeaconBestState().BeaconHeight+1 {
 		return errors.New("Not expected height")
@@ -810,8 +806,6 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 		newShardCandidate  = []incognitokey.CommitteePublicKey{}
 	)
 	Logger.log.Info("Process Update Beacon Best State With Beacon Genesis Block")
-	beaconBestState.lock.Lock()
-	defer beaconBestState.lock.Unlock()
 	beaconBestState.PreviousBestBlockHash = beaconBestState.BestBlockHash
 	beaconBestState.BestBlockHash = *genesisBeaconBlock.Hash()
 	beaconBestState.BestBlock = *genesisBeaconBlock
@@ -1194,6 +1188,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	blockchain.BeaconChain.multiView.AddView(newBestState)
 	Logger.log.Debugf("Store Beacon BestState Height %+v", beaconBlock.Header.Height)
+
 	if err := blockchain.BackupBeaconViews(&batchPutData); err != nil {
 		return NewBlockChainError(StoreBeaconBestStateError, err)
 	}

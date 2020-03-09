@@ -34,7 +34,7 @@ func (blockService BlockService) GetShardBestStates() map[byte]*blockchain.Shard
 		}
 	}
 	if len(shards) == 0 {
-		shards = blockService.BlockChain.BestState.GetClonedAllShardBestState()
+		shards = blockService.BlockChain.GetClonedAllShardBestState()
 		cacheValue, err := json.Marshal(shards)
 		if err == nil {
 			err1 := blockService.MemCache.PutExpired(cacheKey, cacheValue, 10000)
@@ -50,13 +50,13 @@ func (blockService BlockService) GetShardBestStateByShardID(shardID byte) (*bloc
 	if blockService.IsShardBestStateNil() {
 		return nil, errors.New("Best State shard not existed")
 	}
-	shard, err := blockService.BlockChain.BestState.GetClonedAShardBestState(shardID)
+	shard, err := blockService.BlockChain.GetClonedAShardBestState(shardID)
 	return shard, err
 }
 
 func (blockService BlockService) GetShardBestBlocks() map[byte]blockchain.ShardBlock {
 	bestBlocks := make(map[byte]blockchain.ShardBlock)
-	shards := blockService.BlockChain.BestState.GetClonedAllShardBestState()
+	shards := blockService.BlockChain.GetClonedAllShardBestState()
 	for shardID, best := range shards {
 		bestBlocks[shardID] = *best.BestBlock
 	}
@@ -64,13 +64,13 @@ func (blockService BlockService) GetShardBestBlocks() map[byte]blockchain.ShardB
 }
 
 func (blockService BlockService) GetShardBestBlockByShardID(shardID byte) (blockchain.ShardBlock, common.Hash, error) {
-	shard, err := blockService.BlockChain.BestState.GetClonedAShardBestState(shardID)
+	shard, err := blockService.BlockChain.GetClonedAShardBestState(shardID)
 	return *shard.BestBlock, shard.BestBlockHash, err
 }
 
 func (blockService BlockService) GetShardBestBlockHashes() map[int]common.Hash {
 	bestBlockHashes := make(map[int]common.Hash)
-	shards := blockService.BlockChain.BestState.GetClonedAllShardBestState()
+	shards := blockService.BlockChain.GetClonedAllShardBestState()
 	for shardID, best := range shards {
 		bestBlockHashes[int(shardID)] = best.BestBlockHash
 	}
@@ -78,7 +78,7 @@ func (blockService BlockService) GetShardBestBlockHashes() map[int]common.Hash {
 }
 
 func (blockService BlockService) GetShardBestBlockHashByShardID(shardID byte) common.Hash {
-	shards := blockService.BlockChain.BestState.GetClonedAllShardBestState()
+	shards := blockService.BlockChain.GetClonedAllShardBestState()
 	return shards[shardID].BestBlockHash
 }
 
@@ -149,7 +149,7 @@ func (blockService BlockService) RetrieveShardBlock(hashString string, verbosity
 		}
 		result.Data = hex.EncodeToString(data)
 	} else if verbosity == "1" {
-		best := blockService.BlockChain.BestState.Shard[shardID].BestBlock
+		best := blockService.BlockChain.GetBestStateShard(byte(shardID)).BestBlock
 
 		blockHeight := block.Header.Height
 		// Get next block hash unless there are none.
@@ -194,7 +194,7 @@ func (blockService BlockService) RetrieveShardBlock(hashString string, verbosity
 			result.TxHashes = append(result.TxHashes, tx.Hash().String())
 		}
 	} else if verbosity == "2" {
-		best := blockService.BlockChain.BestState.Shard[shardID].BestBlock
+		best := blockService.BlockChain.GetBestStateShard(byte(shardID)).BestBlock
 
 		blockHeight := block.Header.Height
 		// Get next block hash unless there are none.
@@ -279,7 +279,7 @@ func (blockService BlockService) RetrieveShardBlockByHeight(blockHeight uint64, 
 		}
 		result.Data = hex.EncodeToString(data)
 	} else if verbosity == "1" {
-		best := blockService.BlockChain.BestState.Shard[shardID].BestBlock
+		best := blockService.BlockChain.GetBestStateShard(byte(shardID)).BestBlock
 
 		// Get next block hash unless there are none.
 		var nextHashString string
@@ -323,7 +323,7 @@ func (blockService BlockService) RetrieveShardBlockByHeight(blockHeight uint64, 
 			result.TxHashes = append(result.TxHashes, tx.Hash().String())
 		}
 	} else if verbosity == "2" {
-		best := blockService.BlockChain.BestState.Shard[shardID].BestBlock
+		best := blockService.BlockChain.GetBestStateShard(byte(shardID)).BestBlock
 
 		blockHeight := block.Header.Height
 		// Get next block hash unless there are none.
@@ -481,7 +481,7 @@ func (blockService BlockService) GetBlocks(shardIDParam int, numBlock int) (inte
 	if shardIDParam != -1 {
 		if len(result) == 0 {
 			shardID := byte(shardIDParam)
-			clonedShardBestState, err := blockService.BlockChain.BestState.GetClonedAShardBestState(shardID)
+			clonedShardBestState, err := blockService.BlockChain.GetClonedAShardBestState(shardID)
 			if err != nil {
 				return nil, NewRPCError(GetClonedShardBestStateError, err)
 			}
@@ -564,7 +564,7 @@ func (blockService BlockService) IsBeaconBestStateNil() bool {
 }
 
 func (blockService BlockService) IsShardBestStateNil() bool {
-	return blockService.BlockChain.BestState == nil || blockService.BlockChain.BestState.Shard == nil || len(blockService.BlockChain.BestState.Shard) <= 0
+	return blockService.BlockChain.GetBestStateShard(0) == nil
 }
 
 func (blockService BlockService) GetValidStakers(publicKeys []string) ([]string, *RPCError) {

@@ -56,9 +56,7 @@ import (
 		+ Block Producer Signature is not included in block header
 */
 func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLimit map[byte]uint64) (*BeaconBlock, error) {
-	// lock blockchain
-	blockGenerator.chain.chainLock.Lock()
-	defer blockGenerator.chain.chainLock.Unlock()
+
 	Logger.log.Infof("⛏ Creating Beacon Block %+v", blockGenerator.chain.GetBeaconBestState().BeaconHeight+1)
 	//============Init Variable============
 	var err error

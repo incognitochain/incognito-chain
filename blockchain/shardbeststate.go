@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
-	"sync"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -51,7 +50,22 @@ type ShardBestState struct {
 	BlockMaxCreateTime time.Duration
 
 	MetricBlockHeight uint64
-	lock              sync.RWMutex
+}
+
+func (shardBestState *ShardBestState) GetHash() *common.Hash {
+	return shardBestState.BestBlock.Hash()
+}
+
+func (shardBestState *ShardBestState) GetPreviousHash() *common.Hash {
+	return &shardBestState.BestBlock.Header.PreviousBlockHash
+}
+
+func (shardBestState *ShardBestState) GetHeight() uint64 {
+	return shardBestState.BestBlock.GetHeight()
+}
+
+func (shardBestState *ShardBestState) GetBlockTime() int64 {
+	return shardBestState.BestBlock.Header.Timestamp
 }
 
 // var bestStateShardMap = make(map[byte]*ShardBestState)
@@ -88,17 +102,11 @@ func NewBestStateShardWithConfig(shardID byte, netparam *Params) *ShardBestState
 }
 
 func (blockchain *BlockChain) GetBestStateShard(shardID byte) *ShardBestState {
-	if bestStateShard, ok := blockchain.BestState.Shard[shardID]; !ok {
-		return NewShardBestStateWithShardID(shardID)
-	} else {
-		return bestStateShard
+	if blockchain.ShardChain[int(shardID)].multiView.GetBestView() == nil {
+		return nil
 	}
+	return blockchain.ShardChain[int(shardID)].multiView.GetBestView().(*ShardBestState)
 }
-
-// func SetBestStateShard(shardID byte, beststateShard *ShardBestState) {
-// 	beststateShard.lock = GetBestStateShard(shardID).lock
-// 	*GetBestStateShard(shardID) = *beststateShard
-// }
 
 // Get role of a public key base on best state shard
 func (shardBestState *ShardBestState) GetBytes() []byte {
@@ -173,14 +181,10 @@ func (shardBestState *ShardBestState) GetBytes() []byte {
 }
 
 func (shardBestState *ShardBestState) Hash() common.Hash {
-	shardBestState.lock.RLock()
-	defer shardBestState.lock.RUnlock()
 	return common.HashH(shardBestState.GetBytes())
 }
 
 func (shardBestState *ShardBestState) SetMaxShardCommitteeSize(maxShardCommitteeSize int) bool {
-	shardBestState.lock.Lock()
-	defer shardBestState.lock.Unlock()
 	// check input params, below MinCommitteeSize failed to acheive consensus
 	if maxShardCommitteeSize < MinCommitteeSize {
 		return false
@@ -194,8 +198,6 @@ func (shardBestState *ShardBestState) SetMaxShardCommitteeSize(maxShardCommittee
 }
 
 func (shardBestState *ShardBestState) SetMinShardCommitteeSize(minShardCommitteeSize int) bool {
-	shardBestState.lock.Lock()
-	defer shardBestState.lock.Unlock()
 	// check input params, below MinCommitteeSize failed to acheive consensus
 	if minShardCommitteeSize < MinCommitteeSize {
 		return false
@@ -266,8 +268,6 @@ func (shardBestState *ShardBestState) cloneShardBestStateFrom(target *ShardBestS
 	return nil
 }
 func (shardBestState *ShardBestState) GetStakingTx() map[string]string {
-	shardBestState.lock.RLock()
-	defer shardBestState.lock.RUnlock()
 	m := make(map[string]string)
 	for k, v := range shardBestState.StakingTx {
 		m[k] = v

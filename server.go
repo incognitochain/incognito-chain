@@ -358,25 +358,24 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	if cfg.FastStartup {
 		Logger.log.Debug("Load chain dependencies from DB")
 		serverObj.feeEstimator = make(map[byte]*mempool.FeeEstimator)
-		for shardID, bestState := range serverObj.blockChain.BestState.Shard {
-			_ = bestState
-			feeEstimatorData, err := serverObj.dataBase.GetFeeEstimator(shardID)
+		for shardID, _ := range serverObj.blockChain.ShardChain {
+			feeEstimatorData, err := serverObj.dataBase.GetFeeEstimator(byte(shardID))
 			if err == nil && len(feeEstimatorData) > 0 {
 				feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)
 				if err != nil {
 					Logger.log.Debugf("Failed to restore fee estimator %v", err)
 					Logger.log.Debug("Init NewFeeEstimator")
-					serverObj.feeEstimator[shardID] = mempool.NewFeeEstimator(
+					serverObj.feeEstimator[byte(shardID)] = mempool.NewFeeEstimator(
 						mempool.DefaultEstimateFeeMaxRollback,
 						mempool.DefaultEstimateFeeMinRegisteredBlocks,
 						cfg.LimitFee)
 				} else {
-					serverObj.feeEstimator[shardID] = feeEstimator
+					serverObj.feeEstimator[byte(shardID)] = feeEstimator
 				}
 			} else {
 				Logger.log.Debugf("Failed to get fee estimator from DB %v", err)
 				Logger.log.Debug("Init NewFeeEstimator")
-				serverObj.feeEstimator[shardID] = mempool.NewFeeEstimator(
+				serverObj.feeEstimator[byte(shardID)] = mempool.NewFeeEstimator(
 					mempool.DefaultEstimateFeeMaxRollback,
 					mempool.DefaultEstimateFeeMinRegisteredBlocks,
 					cfg.LimitFee)
@@ -1746,10 +1745,10 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 
 	if userLayer != common.BeaconRole {
 		msg.(*wire.MessagePeerState).Shards[byte(shardID)] = blockchain.ChainState{
-			serverObj.blockChain.BestState.Shard[byte(shardID)].BestBlock.Header.Timestamp,
-			serverObj.blockChain.BestState.Shard[byte(shardID)].ShardHeight,
-			serverObj.blockChain.BestState.Shard[byte(shardID)].BestBlockHash,
-			serverObj.blockChain.BestState.Shard[byte(shardID)].Hash(),
+			serverObj.blockChain.GetBestStateShard(byte(shardID)).BestBlock.Header.Timestamp,
+			serverObj.blockChain.GetBestStateShard(byte(shardID)).ShardHeight,
+			serverObj.blockChain.GetBestStateShard(byte(shardID)).BestBlockHash,
+			serverObj.blockChain.GetBestStateShard(byte(shardID)).Hash(),
 		}
 	} else {
 		msg.(*wire.MessagePeerState).ShardToBeaconPool = serverObj.shardToBeaconPool.GetAllBlockHeight()
@@ -1790,10 +1789,10 @@ func (serverObj *Server) BoardcastNodeState() error {
 	}
 	for _, shardID := range serverObj.blockChain.Synker.GetCurrentSyncShards() {
 		msg.(*wire.MessagePeerState).Shards[shardID] = blockchain.ChainState{
-			serverObj.blockChain.BestState.Shard[shardID].BestBlock.Header.Timestamp,
-			serverObj.blockChain.BestState.Shard[shardID].ShardHeight,
-			serverObj.blockChain.BestState.Shard[shardID].BestBlockHash,
-			serverObj.blockChain.BestState.Shard[shardID].Hash(),
+			serverObj.blockChain.GetBestStateShard(byte(shardID)).BestBlock.Header.Timestamp,
+			serverObj.blockChain.GetBestStateShard(byte(shardID)).ShardHeight,
+			serverObj.blockChain.GetBestStateShard(byte(shardID)).BestBlockHash,
+			serverObj.blockChain.GetBestStateShard(byte(shardID)).Hash(),
 		}
 	}
 	msg.(*wire.MessagePeerState).ShardToBeaconPool = serverObj.shardToBeaconPool.GetValidBlockHeight()
@@ -1811,7 +1810,7 @@ func (serverObj *Server) BoardcastNodeState() error {
 		metrics.SetGlobalParam("MINING_PUBKEY", userKey)
 		userRole, shardID := serverObj.blockChain.GetBeaconBestState().GetPubkeyRole(userKey, serverObj.blockChain.GetBeaconBestState().BestBlock.Header.Round)
 		if (cfg.NodeMode == common.NodeModeAuto || cfg.NodeMode == common.NodeModeShard) && userRole == common.NodeModeShard {
-			userRole = serverObj.blockChain.BestState.Shard[shardID].GetPubkeyRole(userKey, serverObj.blockChain.BestState.Shard[shardID].BestBlock.Header.Round)
+			userRole = serverObj.blockChain.GetBestStateShard(byte(shardID)).GetPubkeyRole(userKey, serverObj.blockChain.GetBestStateShard(byte(shardID)).BestBlock.Header.Round)
 			if userRole == "shard-proposer" || userRole == "shard-validator" {
 				msg.(*wire.MessagePeerState).CrossShardPool[shardID] = serverObj.crossShardPool[shardID].GetValidBlockHeight()
 			}

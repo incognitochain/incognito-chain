@@ -22,8 +22,7 @@ type BeaconChain struct {
 }
 
 func (chain *BeaconChain) GetBestState() *BeaconBestState {
-	view := chain.multiView.GetBestView()
-	return view.(*BeaconBestState)
+	return chain.multiView.GetBestView().(*BeaconBestState)
 }
 
 func (chain *BeaconChain) GetLastBlockTimeStamp() int64 {

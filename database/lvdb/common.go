@@ -9,6 +9,7 @@ var (
 	beaconPrefix             = []byte("bea-")
 	beaconBestBlockkeyPrefix = []byte("bea-bestBlock")
 	beaconViewsPrefix        = []byte("bea-views")
+	shardViewsPrefix         = []byte("shard-views")
 	committeePrefix          = []byte("com-")
 	rewardReceiverPrefix     = []byte("rewardreceiver-")
 	heightPrefix             = []byte("height-")

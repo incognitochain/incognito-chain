@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/multiview"
-	"sync"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -15,45 +14,47 @@ import (
 type ShardChain struct {
 	multiView *multiview.MultiView
 
-	BestState  *ShardBestState
 	BlockGen   *BlockGenerator
 	Blockchain *BlockChain
 	ChainName  string
-	lock       sync.RWMutex
+}
+
+func (chain *ShardChain) GetBestState() *ShardBestState {
+	return chain.multiView.GetBestView().(*ShardBestState)
 }
 
 func (chain *ShardChain) GetLastBlockTimeStamp() int64 {
-	return chain.BestState.BestBlock.Header.Timestamp
+	return chain.GetBestState().BestBlock.Header.Timestamp
 }
 
 func (chain *ShardChain) GetMinBlkInterval() time.Duration {
-	return chain.BestState.BlockInterval
+	return chain.GetBestState().BlockInterval
 }
 
 func (chain *ShardChain) GetMaxBlkCreateTime() time.Duration {
-	return chain.BestState.BlockMaxCreateTime
+	return chain.GetBestState().BlockMaxCreateTime
 }
 
 func (chain *ShardChain) IsReady() bool {
-	return chain.Blockchain.Synker.IsLatest(true, chain.BestState.ShardID)
+	return chain.Blockchain.Synker.IsLatest(true, chain.GetBestState().ShardID)
 }
 
 func (chain *ShardChain) CurrentHeight() uint64 {
-	return chain.BestState.BestBlock.Header.Height
+	return chain.GetBestState().BestBlock.Header.Height
 }
 
 func (chain *ShardChain) GetCommittee() []incognitokey.CommitteePublicKey {
 	result := []incognitokey.CommitteePublicKey{}
-	return append(result, chain.BestState.ShardCommittee...)
+	return append(result, chain.GetBestState().ShardCommittee...)
 }
 
 func (chain *ShardChain) GetCommitteeSize() int {
-	return len(chain.BestState.ShardCommittee)
+	return len(chain.GetBestState().ShardCommittee)
 }
 
 func (chain *ShardChain) GetPubKeyCommitteeIndex(pubkey string) int {
-	for index, key := range chain.BestState.ShardCommittee {
-		if key.GetMiningKeyBase58(chain.BestState.ConsensusAlgorithm) == pubkey {
+	for index, key := range chain.GetBestState().ShardCommittee {
+		if key.GetMiningKeyBase58(chain.GetBestState().ConsensusAlgorithm) == pubkey {
 			return index
 		}
 	}
@@ -61,12 +62,10 @@ func (chain *ShardChain) GetPubKeyCommitteeIndex(pubkey string) int {
 }
 
 func (chain *ShardChain) GetLastProposerIndex() int {
-	return chain.BestState.ShardProposerIdx
+	return chain.GetBestState().ShardProposerIdx
 }
 
 func (chain *ShardChain) CreateNewBlock(round int) (common.BlockInterface, error) {
-	chain.lock.Lock()
-	defer chain.lock.Unlock()
 	start := time.Now()
 	Logger.log.Infof("Begin Create New Block %+v", start)
 	beaconHeight := chain.Blockchain.Synker.States.ClosestState.ClosestBeaconState
@@ -74,8 +73,8 @@ func (chain *ShardChain) CreateNewBlock(round int) (common.BlockInterface, error
 		beaconHeight = chain.Blockchain.GetBeaconBestState().BeaconHeight
 	} else {
 
-		if beaconHeight < chain.BestState.BeaconHeight {
-			beaconHeight = chain.BestState.BeaconHeight
+		if beaconHeight < chain.GetBestState().BeaconHeight {
+			beaconHeight = chain.GetBestState().BeaconHeight
 		}
 	}
 	Logger.log.Infof("Begin Enter New Block Shard %+v", time.Now())
@@ -142,15 +141,15 @@ func (chain *ShardChain) GetChainName() string {
 }
 
 func (chain *ShardChain) GetConsensusType() string {
-	return chain.BestState.ConsensusAlgorithm
+	return chain.GetBestState().ConsensusAlgorithm
 }
 
 func (chain *ShardChain) GetShardID() int {
-	return int(chain.BestState.ShardID)
+	return int(chain.GetBestState().ShardID)
 }
 
 func (chain *ShardChain) GetPubkeyRole(pubkey string, round int) (string, byte) {
-	return chain.BestState.GetPubkeyRole(pubkey, round), chain.BestState.ShardID
+	return chain.GetBestState().GetPubkeyRole(pubkey, round), chain.GetBestState().ShardID
 }
 
 func (chain *ShardChain) UnmarshalBlock(blockString []byte) (common.BlockInterface, error) {
@@ -163,5 +162,5 @@ func (chain *ShardChain) UnmarshalBlock(blockString []byte) (common.BlockInterfa
 }
 
 func (chain *ShardChain) ValidatePreSignBlock(block common.BlockInterface) error {
-	return chain.Blockchain.VerifyPreSignShardBlock(block.(*ShardBlock), chain.BestState.ShardID)
+	return chain.Blockchain.VerifyPreSignShardBlock(block.(*ShardBlock), chain.GetBestState().ShardID)
 }

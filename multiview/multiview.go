@@ -47,7 +47,6 @@ func (multiView *MultiView) AddView(view View) bool {
 	multiView.actionCh <- func() {
 		if len(multiView.viewByHash) == 0 { //if no view in map, this is init view -> always allow
 			multiView.viewByHash[*view.GetHash()] = view
-			multiView.viewByPrevHash[*view.GetPreviousHash()] = append(multiView.viewByPrevHash[*view.GetPreviousHash()], view)
 			multiView.updateViewState(view)
 			res <- true
 			return
@@ -75,12 +74,19 @@ func (multiView *MultiView) GetFinalView() View {
 
 //update view whenever there is new view insert into system
 func (multiView *MultiView) updateViewState(newView View) {
+
+	if multiView.finalView == nil {
+		multiView.bestView = newView
+		multiView.finalView = newView
+		return
+	}
+
 	//update bestView
-	if multiView.bestView == nil || newView.GetHeight() > multiView.bestView.GetHeight() {
+	if newView.GetHeight() > multiView.bestView.GetHeight() {
 		multiView.bestView = newView
 	}
-	if multiView.finalView == nil || newView.GetHeight() == multiView.bestView.GetHeight() && newView.GetBlockTime() < multiView.bestView.GetBlockTime() {
-		multiView.bestView = newView
+	if newView.GetHeight() == multiView.bestView.GetHeight() && newView.GetBlockTime() < multiView.bestView.GetBlockTime() {
+		multiView.finalView = newView
 	}
 
 	//update finalView: consensus 1

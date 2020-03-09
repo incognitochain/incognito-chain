@@ -56,7 +56,7 @@ func (blockchain *BlockChain) GetTxChainHeight(tx metadata.Transaction) (uint64,
 }
 
 func (blockchain *BlockChain) GetChainHeight(shardID byte) uint64 {
-	return blockchain.BestState.Shard[shardID].ShardHeight
+	return blockchain.GetBestStateShard(byte(shardID)).ShardHeight
 }
 
 func (blockchain *BlockChain) GetBeaconHeight() uint64 {
@@ -167,7 +167,7 @@ func (blockchain *BlockChain) GetAllCommitteeValidatorCandidateFlattenListFromDa
 }
 
 func (blockchain *BlockChain) GetStakingTx(shardID byte) map[string]string {
-	return blockchain.BestState.Shard[shardID].GetStakingTx()
+	return blockchain.GetBestStateShard(byte(shardID)).GetStakingTx()
 }
 func (blockchain *BlockChain) GetAutoStakingList() map[string]bool {
 	return blockchain.GetBeaconBestState().GetAutoStakingList()

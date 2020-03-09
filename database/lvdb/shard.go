@@ -168,6 +168,27 @@ func (db *db) DeleteBlock(hash common.Hash, idx uint64, shardID byte) error {
 	return nil
 }
 
+func (db *db) StoreShardViews(val []byte, shardID byte, bd *[]database.BatchData) error {
+	key := append(shardViewsPrefix, shardID)
+	if bd != nil {
+		*bd = append(*bd, database.BatchData{key, val})
+		return nil
+	}
+	if err := db.Put(key, val); err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, err)
+	}
+	return nil
+}
+
+func (db *db) FetchShardViews(shardID byte) ([]byte, error) {
+	key := append(shardViewsPrefix, shardID)
+	block, err := db.Get(key)
+	if err != nil {
+		return nil, database.NewDatabaseError(database.UnexpectedError, err)
+	}
+	return block, nil
+}
+
 func (db *db) StoreShardBestState(v interface{}, shardID byte, bd *[]database.BatchData) error {
 	val, err := json.Marshal(v)
 	if err != nil {
