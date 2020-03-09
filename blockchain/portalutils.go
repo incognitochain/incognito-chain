@@ -526,12 +526,16 @@ func pickSingleCustodian(metadata metadata.PortalUserRegister, exchangeRate *lvd
 		custodianStateSlice[i]
 	})
 
-
 	//pToken to PRV
 	totalPTokenAfterUp150Percent := float64(metadata.RegisterAmount) * 1.5 //return nano pBTC, pBNB
 	totalPTokenAfterUp150PercentUnit64 := uint64(totalPTokenAfterUp150Percent) //return nano pBTC, pBNB
 
-	totalPRV := exchangeRate.ExchangePToken2PRVByTokenId(metadata.PTokenId, totalPTokenAfterUp150PercentUnit64)
+	totalPRV, err := exchangeRate.ExchangePToken2PRVByTokenId(metadata.PTokenId, totalPTokenAfterUp150PercentUnit64)
+
+	if err != nil {
+		Logger.log.Errorf("Convert PToken is error %v", err)
+		return nil, err
+	}
 
 	Logger.log.Infof("Porting request, pick single custodian ptoken: %v,  need prv %v for %v ptoken",  metadata.PTokenId, totalPRV, metadata.RegisterAmount)
 
@@ -575,10 +579,15 @@ func pickMultipleCustodian (metadata metadata.PortalUserRegister, exchangeRate *
 		Logger.log.Infof("Porting request, pick multiple custodian key: %v, has collateral %v", custodianItem.Key, custodianItem.Value.FreeCollateral)
 
 		//base on current FreeCollateral find PToken can use
-		totalPToken := exchangeRate.ExchangePRV2PTokenByTokenId(metadata.PTokenId, custodianItem.Value.FreeCollateral)
-		pTokenCanUse := float64(totalPToken) / 1.5
+		totalPToken, err := exchangeRate.ExchangePRV2PTokenByTokenId(metadata.PTokenId, custodianItem.Value.FreeCollateral)
+		if err != nil {
+			Logger.log.Errorf("Convert PToken is error %v", err)
+			return nil, err
+		}
 
+		pTokenCanUse := float64(totalPToken) / 1.5
 		pTokenCanUseUint64 := uint64(pTokenCanUse)
+
 		remainPToken := metadata.RegisterAmount - holdPToken // 1000 - 833 = 167
 		if pTokenCanUseUint64 >  remainPToken {
 			pTokenCanUseUint64 = remainPToken
@@ -590,7 +599,12 @@ func pickMultipleCustodian (metadata metadata.PortalUserRegister, exchangeRate *
 		totalPTokenAfterUp150Percent := float64(pTokenCanUseUint64) * 1.5
 		totalPTokenAfterUp150PercentUnit64 := uint64(totalPTokenAfterUp150Percent)
 
-		totalPRV := exchangeRate.ExchangePToken2PRVByTokenId(metadata.PTokenId, totalPTokenAfterUp150PercentUnit64) //final
+		totalPRV, err := exchangeRate.ExchangePToken2PRVByTokenId(metadata.PTokenId, totalPTokenAfterUp150PercentUnit64) //final
+
+		if err != nil {
+			Logger.log.Errorf("Convert PToken is error %v", err)
+			return nil, err
+		}
 
 		Logger.log.Infof("Porting request, custodian key: %v, to keep ptoken %v need prv %v", custodianItem.Key, pTokenCanUseUint64, totalPRV)
 
@@ -805,8 +819,15 @@ func updateFreeCollateralCustodian(custodianState * lvdb.CustodianState, redeemA
 	} else {
 		unlockedAmountInPToken := uint64(math.Floor(float64(redeemAmount) * 1.2))
 		Logger.log.Errorf("updateFreeCollateralCustodian - unlockedAmountInPToken: %v\n", unlockedAmountInPToken)
-		unlockedAmount = exchangeRate.ExchangePToken2PRVByTokenId(tokenSymbol, unlockedAmountInPToken)
+		unlockedAmount, err := exchangeRate.ExchangePToken2PRVByTokenId(tokenSymbol, unlockedAmountInPToken)
+
 		Logger.log.Errorf("updateFreeCollateralCustodian - unlockedAmount: %v\n", unlockedAmount)
+
+		if err != nil {
+			Logger.log.Errorf("Convert PToken is error %v", err)
+			return 0, errors.New("[portal-updateFreeCollateralCustodian] error convert amount ptoken to amount in prv ")
+		}
+
 		if unlockedAmount == 0 {
 			return 0, errors.New("[portal-updateFreeCollateralCustodian] error convert amount ptoken to amount in prv ")
 		}
