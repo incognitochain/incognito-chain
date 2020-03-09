@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"reflect"
 	"sort"
+	"stathat.com/c/consistent"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -18,7 +19,6 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/pkg/errors"
-	"github.com/stathat/consistent"
 )
 
 var HighwayBeaconID = byte(255)

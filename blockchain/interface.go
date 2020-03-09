@@ -90,17 +90,20 @@ type FeeEstimator interface {
 }
 
 type ChainInterface interface {
+	GetEpoch() uint64
 	GetChainName() string
 	GetConsensusType() string
 	GetLastBlockTimeStamp() int64
 	GetMinBlkInterval() time.Duration
 	GetMaxBlkCreateTime() time.Duration
 	IsReady() bool
+	SetReady(bool)
 	GetActiveShardNumber() int
 	GetPubkeyRole(pubkey string, round int) (string, byte)
 	CurrentHeight() uint64
 	GetCommitteeSize() int
 	GetCommittee() []incognitokey.CommitteePublicKey
+	GetPendingCommittee() []incognitokey.CommitteePublicKey
 	GetPubKeyCommitteeIndex(string) int
 	GetLastProposerIndex() int
 	UnmarshalBlock(blockString []byte) (common.BlockInterface, error)
@@ -111,6 +114,13 @@ type ChainInterface interface {
 	ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 	ValidatePreSignBlock(block common.BlockInterface) error
 	GetShardID() int
+
+	//for new syncker
+	GetBestViewHeight() uint64
+	GetFinalViewHeight() uint64
+	GetBestViewHash() string
+	GetFinalViewHash() string
+	InsertBatchBlock([]common.BlockInterface) (int, error)
 }
 
 type BestStateInterface interface {

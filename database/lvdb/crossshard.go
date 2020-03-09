@@ -9,6 +9,45 @@ import (
 	"github.com/incognitochain/incognito-chain/database"
 )
 
+func (db *db) StoreBeaconHashConfirmCrossShardHeight(fromShard, toShard byte, height uint64, beaconHash string) error {
+	//beah-cx-height-{fromShard}-{toShard}-{curHeight} = beaconHash
+	key := append(beaconHashConfirmCrossShardHeightKeyPrefix, fromShard)
+	key = append(key, []byte("-")...)
+	key = append(key, toShard)
+	key = append(key, []byte("-")...)
+	curHeightBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(curHeightBytes, height)
+	key = append(key, curHeightBytes...)
+
+	if err := db.Put(key, []byte(beaconHash)); err != nil {
+		return database.NewDatabaseError(database.StoreBeaconHashConfirmCrossShardHeight, err)
+	}
+	return nil
+}
+
+func (db *db) FetchBeaconHashConfirmCrossShardHeight(fromShard, toShard byte, height uint64) ([]byte, error) {
+	//beah-cx-height-{fromShard}-{toShard}-{curHeight} = beaconHash
+	key := append(beaconHashConfirmCrossShardHeightKeyPrefix, fromShard)
+	key = append(key, []byte("-")...)
+	key = append(key, toShard)
+	key = append(key, []byte("-")...)
+	curHeightBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(curHeightBytes, height)
+	key = append(key, curHeightBytes...)
+
+	info, err := db.Get(key)
+	if err != nil {
+		return nil, database.NewDatabaseError(database.FetchBeaconHashConfirmCrossShardHeight, err)
+	}
+
+	h, err := common.Hash{}.NewHashFromStr(string(info))
+	if err != nil {
+		return nil, database.NewDatabaseError(database.FetchBeaconHashConfirmCrossShardHeight, err)
+	}
+
+	return db.FetchBlock(*h)
+}
+
 func (db *db) StoreCrossShardNextHeight(fromShard byte, toShard byte, curHeight uint64, nextHeight uint64) error {
 	//ncsh-{fromShard}-{toShard}-{curHeight} = nextHeight
 	key := append(nextCrossShardKeyPrefix, fromShard)
@@ -25,7 +64,6 @@ func (db *db) StoreCrossShardNextHeight(fromShard byte, toShard byte, curHeight 
 	if err := db.Put(key, buf); err != nil {
 		return database.NewDatabaseError(database.StoreCrossShardNextHeightError, err)
 	}
-
 	return nil
 }
 
