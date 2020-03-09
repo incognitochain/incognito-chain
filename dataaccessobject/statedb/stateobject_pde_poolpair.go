@@ -8,19 +8,10 @@ import (
 )
 
 type PDEPoolPairState struct {
-	beaconHeight    uint64
 	token1ID        string
 	token1PoolValue uint64
 	token2ID        string
 	token2PoolValue uint64
-}
-
-func (pp PDEPoolPairState) BeaconHeight() uint64 {
-	return pp.beaconHeight
-}
-
-func (pp *PDEPoolPairState) SetBeaconHeight(beaconHeight uint64) {
-	pp.beaconHeight = beaconHeight
 }
 
 func (pp PDEPoolPairState) Token1ID() string {
@@ -57,13 +48,11 @@ func (pp *PDEPoolPairState) SetToken2PoolValue(token2PoolValue uint64) {
 
 func (pp PDEPoolPairState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		BeaconHeight    uint64
 		Token1ID        string
 		Token1PoolValue uint64
 		Token2ID        string
 		Token2PoolValue uint64
 	}{
-		BeaconHeight:    pp.beaconHeight,
 		Token1ID:        pp.token1ID,
 		Token1PoolValue: pp.token1PoolValue,
 		Token2ID:        pp.token2ID,
@@ -77,7 +66,6 @@ func (pp PDEPoolPairState) MarshalJSON() ([]byte, error) {
 
 func (pp *PDEPoolPairState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		BeaconHeight    uint64
 		Token1ID        string
 		Token1PoolValue uint64
 		Token2ID        string
@@ -87,7 +75,6 @@ func (pp *PDEPoolPairState) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	pp.beaconHeight = temp.BeaconHeight
 	pp.token1ID = temp.Token1ID
 	pp.token1PoolValue = temp.Token1PoolValue
 	pp.token2ID = temp.Token2ID
@@ -99,8 +86,8 @@ func NewPDEPoolPairState() *PDEPoolPairState {
 	return &PDEPoolPairState{}
 }
 
-func NewPDEPoolPairStateWithValue(beaconHeight uint64, token1ID string, token1PoolValue uint64, token2ID string, token2PoolValue uint64) *PDEPoolPairState {
-	return &PDEPoolPairState{beaconHeight: beaconHeight, token1ID: token1ID, token1PoolValue: token1PoolValue, token2ID: token2ID, token2PoolValue: token2PoolValue}
+func NewPDEPoolPairStateWithValue(token1ID string, token1PoolValue uint64, token2ID string, token2PoolValue uint64) *PDEPoolPairState {
+	return &PDEPoolPairState{token1ID: token1ID, token1PoolValue: token1PoolValue, token2ID: token2ID, token2PoolValue: token2PoolValue}
 }
 
 type PDEPoolPairObject struct {

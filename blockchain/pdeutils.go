@@ -54,11 +54,11 @@ func storePDEStateToDB(
 	currentPDEState *CurrentPDEState,
 ) error {
 	var err error
+	statedb.DeleteWaitingPDEContributions(stateDB, currentPDEState.DeletedWaitingPDEContributions)
 	err = statedb.StoreWaitingPDEContributions(stateDB, beaconHeight, currentPDEState.WaitingPDEContributions)
 	if err != nil {
 		return err
 	}
-	statedb.DeleteWaitingPDEContributions(stateDB, currentPDEState.DeletedWaitingPDEContributions)
 	err = statedb.StorePDEPoolPairs(stateDB, beaconHeight, currentPDEState.PDEPoolPairs)
 	if err != nil {
 		return err
