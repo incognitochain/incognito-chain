@@ -730,13 +730,17 @@ func pickupCustodianForRedeem(redeemAmount uint64, tokenSymbol string, portalSta
 		return nil, err
 	}
 
+	Logger.log.Errorf("[portal] sortedCustodianSlice: %v\n", sortedCustodianSlice)
+
 	// get custodians util matching full redeemAmount
 	totalMatchedAmount := uint64(0)
-	for i := len(sortedCustodianSlice) - 1; i <= 0; i++ {
+	for i := len(sortedCustodianSlice) - 1; i >= 0; i-- {
+		Logger.log.Errorf("[portal] sortedCustodianSlice[i].Value: %v\n", sortedCustodianSlice[i].Value)
 		custodianKey := sortedCustodianSlice[i].Key
 		custodianValue := sortedCustodianSlice[i].Value
 
 		matchedAmount := custodianValue.HoldingPubTokens[tokenSymbol]
+		Logger.log.Errorf("[portal] matchedAmount: %v\n", matchedAmount)
 		amountNeedToBeMatched := redeemAmount - totalMatchedAmount
 		if matchedAmount >  amountNeedToBeMatched {
 			matchedAmount = amountNeedToBeMatched
@@ -748,7 +752,8 @@ func pickupCustodianForRedeem(redeemAmount uint64, tokenSymbol string, portalSta
 			matchedAmount)
 
 		totalMatchedAmount += matchedAmount
-		if totalMatchedAmount == redeemAmount {
+		Logger.log.Errorf("[portal] totalMatchedAmount: %v\n", totalMatchedAmount)
+		if totalMatchedAmount >= redeemAmount {
 			return matchedCustodians, nil
 		}
 	}

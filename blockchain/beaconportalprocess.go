@@ -663,7 +663,6 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 
 	reqStatus := instructions[2]
 
-	Logger.log.Errorf("[Portal - processPortalRedeemRequest] actionData.MatchingCustodianDetail: %v\n", actionData.MatchingCustodianDetail)
 	if reqStatus == common.PortalRedeemRequestAcceptedChainStatus {
 		// add waiting redeem request into waiting redeems list
 		keyWaitingRedeemRequest := lvdb.NewWaitingRedeemReqKey(beaconHeight, actionData.UniqueRedeemID)

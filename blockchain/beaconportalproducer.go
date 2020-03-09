@@ -722,6 +722,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		// get list matching custodians in waitingPortingRequest
 		custodians := waitingPortingRequest.Custodians
 		outputs := txBNB.Msgs[0].(msg.SendMsg).Outputs
+		bnbNetworkType := byte(relaying.TestnetType)
 		for _, cusDetail := range custodians {
 			remoteAddressNeedToBeTransfer := cusDetail.RemoteAddress
 			amountNeedToBeTransfer := cusDetail.Amount
@@ -729,8 +730,9 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 
 			isChecked := false
 			for _, out := range outputs {
-				addr := string(out.Address)
+				addr, _ := relaying.GetAccAddressString(&out.Address, bnbNetworkType)
 				if addr != remoteAddressNeedToBeTransfer {
+					Logger.log.Errorf("[portal] remoteAddressNeedToBeTransfer: %v - addr: %v\n", remoteAddressNeedToBeTransfer, addr)
 					continue
 				}
 
@@ -744,7 +746,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 							coin.Amount)
 					}
 				}
-				if amountTransfer >= amountNeedToBeTransferInBNB {
+				if amountTransfer < amountNeedToBeTransferInBNB {
 					Logger.log.Errorf("TxProof-BNB is invalid - Amount transfer to %s must be equal to or greater than %d, but got %d",
 						addr, amountNeedToBeTransferInBNB, amountTransfer)
 					inst := buildReqPTokensInst(
@@ -759,7 +761,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 						common.PortalReqPTokensRejectedChainStatus,
 					)
 					return [][]string{inst}, nil
-				} else{
+				} else {
 					isChecked = true
 					break
 				}
@@ -1590,10 +1592,12 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		amountNeedToBeTransfer := meta.RedeemAmount
 		amountNeedToBeTransferInBNB := convertIncPBNBAmountToExternalBNBAmount(int64(amountNeedToBeTransfer))
 
-		isChecked := false
+		//todo: need to get network type
+		bnbNetworkType := byte(relaying.TestnetType)
 
+		isChecked := false
 		for _, out := range outputs {
-			addr := string(out.Address)
+			addr, _ := relaying.GetAccAddressString(&out.Address, bnbNetworkType)
 			if addr != remoteAddressNeedToBeTransfer {
 				continue
 			}
@@ -1608,7 +1612,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 						coin.Amount)
 				}
 			}
-			if amountTransfer >= amountNeedToBeTransferInBNB {
+			if amountTransfer < amountNeedToBeTransferInBNB {
 				Logger.log.Errorf("TxProof-BNB is invalid - Amount transfer to %s must be equal to or greater than %d, but got %d",
 					addr, amountNeedToBeTransferInBNB, amountTransfer)
 				inst := buildReqUnlockCollateralInst(
