@@ -113,6 +113,18 @@ func (iReq IssuingRequest) ValidateTxWithBlockChain(
 	if err != nil || !bytes.Equal(txr.GetSigPubKey(), keySet.KeySet.PaymentAddress.Pk) {
 		return false, NewMetadataTxError(IssuingRequestValidateTxWithBlockChainError, errors.New("the issuance request must be called by centralized website"))
 	}
+
+	// check this is a normal pToken
+	if db.PrivacyTokenIDExisted(iReq.TokenID) || db.PrivacyTokenIDCrossShardExisted(iReq.TokenID) {
+		isBridgeToken, err := db.IsBridgeTokenExistedByType(iReq.TokenID, true)
+		if !isBridgeToken {
+			if err != nil {
+				return false, NewMetadataTxError(InvalidMeta, err)
+			} else {
+				return false, NewMetadataTxError(InvalidMeta, errors.New("token is invalid"))
+			}
+		}
+	}
 	return true, nil
 }
 
