@@ -36,7 +36,6 @@ type BlockChain struct {
 	config Config
 
 	cQuitSync        chan struct{}
-	Synker           Synker
 	ConsensusOngoing bool
 	//RPCClient        *rpccaller.RPCClient
 	IsTest bool
@@ -50,11 +49,7 @@ type Config struct {
 	ChainParams       *Params
 	RelayShards       []byte
 	NodeMode          string
-	ShardToBeaconPool ShardToBeaconPool
 	BlockGen          *BlockGenerator
-	CrossShardPool    map[byte]CrossShardPool
-	BeaconPool        BeaconPool
-	ShardPool         map[byte]ShardPool
 	TxPool            TxPool
 	TempTxPool        TxPool
 	CRemovedTxs       chan metadata.Transaction
@@ -62,8 +57,8 @@ type Config struct {
 	IsBlockGenStarted bool
 	PubSubManager     *pubsub.PubSubManager
 	RandomClient      btc.RandomClient
+	Syncker           Syncker
 	Server            interface {
-		BoardcastNodeState() error
 		PublishNodeState(userLayer string, shardID int) error
 
 		PushMessageGetBlockBeaconByHeight(from uint64, to uint64) error
@@ -82,6 +77,7 @@ type Config struct {
 		PushMessageGetBlockCrossShardBySpecificHeight(fromShard byte, toShard byte, blksHeight []uint64, getFromPool bool, peerID libp2p.ID) error
 		UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string)
 		PushBlockToAll(block common.BlockInterface, isBeacon bool) error
+		FetchBeaconBlockConfirmCrossShardHeight(fromSID, toSID int, height uint64) (*BeaconBlock, error)
 	}
 	// UserKeySet *incognitokey.KeySet
 
@@ -118,10 +114,6 @@ func NewBlockChain(config *Config, isTest bool) *BlockChain {
 	bc.GetBeaconBestState().Params = make(map[string]string)
 	bc.GetBeaconBestState().ShardCommittee = make(map[byte][]incognitokey.CommitteePublicKey)
 	bc.GetBeaconBestState().ShardPendingValidator = make(map[byte][]incognitokey.CommitteePublicKey)
-	bc.Synker = Synker{
-		blockchain: bc,
-		cQuit:      bc.cQuitSync,
-	}
 	return bc
 }
 
@@ -146,7 +138,6 @@ func (blockchain *BlockChain) Init(config *Config) error {
 		return err
 	}
 	blockchain.cQuitSync = make(chan struct{})
-	blockchain.Synker = newSyncker(blockchain.cQuitSync, blockchain, blockchain.config.PubSubManager)
 	return nil
 }
 

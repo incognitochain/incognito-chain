@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"sync"
 	"time"
 
@@ -11,8 +12,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/consensus"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -20,8 +19,9 @@ import (
 
 type BLSBFT struct {
 	Chain    blockchain.ChainInterface
-	Node     consensus.NodeInterface
+	Node     NodeInterface
 	ChainKey string
+	ChainID  int
 	PeerID   string
 
 	UserKeySet       *MiningKey
@@ -64,6 +64,13 @@ func (e *BLSBFT) GetConsensusName() string {
 	return consensusName
 }
 
+func (e *BLSBFT) GetChainKey() string {
+	return e.ChainKey
+}
+func (e *BLSBFT) GetChainID() int {
+	return e.ChainID
+}
+
 func (e *BLSBFT) Stop() error {
 	if e.isStarted {
 		select {
@@ -75,12 +82,12 @@ func (e *BLSBFT) Stop() error {
 		e.isStarted = false
 		e.isOngoing = false
 	}
-	return consensus.NewConsensusError(consensus.ConsensusAlreadyStoppedError, errors.New(e.ChainKey))
+	return NewConsensusError(ConsensusAlreadyStoppedError, errors.New(e.ChainKey))
 }
 
 func (e *BLSBFT) Start() error {
 	if e.isStarted {
-		return consensus.NewConsensusError(consensus.ConsensusAlreadyStartedError, errors.New(e.ChainKey))
+		return NewConsensusError(ConsensusAlreadyStartedError, errors.New(e.ChainKey))
 	}
 	e.isStarted = true
 	e.isOngoing = false
@@ -163,7 +170,7 @@ func (e *BLSBFT) Start() error {
 								go func() {
 									voteCtnBytes, err := json.Marshal(voteMsg)
 									if err != nil {
-										e.logger.Error(consensus.NewConsensusError(consensus.UnExpectedError, err))
+										e.logger.Error(NewConsensusError(UnExpectedError, err))
 										return
 									}
 									msg, _ := wire.MakeEmptyMessage(wire.CmdBFT)
@@ -429,20 +436,20 @@ func (e *BLSBFT) createNewBlock() (common.BlockInterface, error) {
 		if block != nil {
 			e.logger.Info("Create block has something wrong ", block.GetHeight())
 		}
-		return nil, consensus.NewConsensusError(consensus.BlockCreationError, errors.New("block creation timeout"))
+		return nil, NewConsensusError(BlockCreationError, errors.New("block creation timeout"))
 	}
 
 }
-func (e BLSBFT) NewInstance(chain blockchain.ChainInterface, chainKey string, node consensus.NodeInterface, logger common.Logger) consensus.ConsensusInterface {
+func NewInstance(chain blockchain.ChainInterface, chainKey string, chainID int, node NodeInterface, logger common.Logger) ConsensusInterface {
 	var newInstance BLSBFT
 	newInstance.Chain = chain
 	newInstance.ChainKey = chainKey
+	newInstance.ChainID = chainID
 	newInstance.Node = node
-	newInstance.UserKeySet = e.UserKeySet
 	newInstance.logger = logger
 	return &newInstance
 }
 
-func init() {
-	consensus.RegisterConsensus(common.BlsConsensus, &BLSBFT{})
-}
+//func init() {
+//	consensus.RegisterConsensus(common.BlsConsensus, &BLSBFT{})
+//}

@@ -475,8 +475,12 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock
 	}
 	// Verify Cross Shard Output Coin and Custom Token Transaction
 	toShard := shardID
-	crossShardLimit := blockchain.config.CrossShardPool[toShard].GetLatestValidBlockHeight()
-	toShardAllCrossShardBlock := blockchain.config.CrossShardPool[toShard].GetValidBlock(crossShardLimit)
+	var toShardAllCrossShardBlock = make(map[byte][]*CrossShardBlock)
+	for sid, v := range blockchain.config.Syncker.GetCrossShardBlocksForShardProducer(toShard) {
+		for _, b := range v {
+			toShardAllCrossShardBlock[sid] = append(toShardAllCrossShardBlock[sid], b.(*CrossShardBlock))
+		}
+	}
 	for fromShard, crossTransactions := range shardBlock.Body.CrossTransactions {
 		toShardCrossShardBlocks, ok := toShardAllCrossShardBlock[fromShard]
 		if !ok {
@@ -484,7 +488,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock
 			for _, crossTransaction := range crossTransactions {
 				heights = append(heights, crossTransaction.BlockHeight)
 			}
-			blockchain.Synker.SyncBlkCrossShard(false, false, []common.Hash{}, heights, fromShard, shardID, "")
+			//blockchain.Synker.SyncBlkCrossShard(false, false, []common.Hash{}, heights, fromShard, shardID, "")
 			return NewBlockChainError(CrossShardBlockError, fmt.Errorf("Cross Shard Block From Shard %+v Not Found in Pool", fromShard))
 		}
 		sort.SliceStable(toShardCrossShardBlocks[:], func(i, j int) bool {
@@ -504,11 +508,13 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock
 						return NewBlockChainError(NextCrossShardBlockError, fmt.Errorf("Next Cross Shard Block Height %+v is Not Expected, Expect Next block Height %+v from shard %+v ", toShardCrossShardBlock.Header.Height, nextHeight, fromShard))
 					}
 					startHeight = nextHeight
-					beaconHeight, err := blockchain.FindBeaconHeightForCrossShardBlock(toShardCrossShardBlock.Header.BeaconHeight, toShardCrossShardBlock.Header.ShardID, toShardCrossShardBlock.Header.Height)
+					startHeight = nextHeight
+					beaconBlk, err := blockchain.config.Server.FetchBeaconBlockConfirmCrossShardHeight(int(fromShard), int(toShard), nextHeight)
 					if err != nil {
 						break
 					}
-					temp, err := blockchain.config.DataBase.FetchShardCommitteeByHeight(beaconHeight)
+
+					temp, err := blockchain.config.DataBase.FetchShardCommitteeByHeight(beaconBlk.GetHeight())
 					if err != nil {
 						return NewBlockChainError(FetchShardCommitteeError, err)
 					}
@@ -970,12 +976,6 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock 
 	//		}
 	//	}
 	//}()
-	//=========Remove invalid shard block in pool
-	go blockchain.config.ShardPool[shardID].SetShardState(blockchain.GetBestStateShard(shardID).ShardHeight)
-	//updateShardBestState Cross shard pool: remove invalid block
-	go func() {
-		blockchain.config.CrossShardPool[shardID].RemoveBlockByHeight(blockchain.GetBestStateShard(shardID).BestCrossShard)
-	}()
 	go func() {
 		//Remove Candidate In pool
 		candidates := []string{}

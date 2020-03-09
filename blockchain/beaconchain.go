@@ -18,11 +18,97 @@ type BeaconChain struct {
 	BlockGen   *BlockGenerator
 	Blockchain *BlockChain
 	ChainName  string
+	Ready      bool
 	lock       sync.RWMutex
 }
 
 func (chain *BeaconChain) GetBestState() *BeaconBestState {
 	return chain.multiView.GetBestView().(*BeaconBestState)
+}
+
+func (chain *BeaconChain) InsertBatchBlock(blocks []common.BlockInterface) (int, error) {
+
+	curEpoch := chain.GetBestState().Epoch
+	sameCommitteeBlock := blocks
+	for i, v := range blocks {
+		if v.GetCurrentEpoch() == curEpoch+1 {
+			sameCommitteeBlock = blocks[:i+1]
+			break
+		}
+	}
+
+	for i, blk := range sameCommitteeBlock {
+		if i == len(sameCommitteeBlock)-1 {
+			break
+		}
+		if blk.GetHeight() != sameCommitteeBlock[i+1].GetHeight()-1 {
+			sameCommitteeBlock = blocks[:i+1]
+			break
+		}
+	}
+
+	for i := len(sameCommitteeBlock) - 1; i >= 0; i-- {
+		if err := chain.ValidateBlockSignatures(sameCommitteeBlock[i], chain.GetCommittee()); err != nil {
+			sameCommitteeBlock = sameCommitteeBlock[:i]
+		} else {
+			break
+		}
+	}
+
+	if len(sameCommitteeBlock) > 0 {
+		if sameCommitteeBlock[0].GetHeight()-1 != chain.CurrentHeight() {
+			return 0, errors.New(fmt.Sprintf("Not expected height: %d %d", sameCommitteeBlock[0].GetHeight()-1, chain.CurrentHeight()))
+		}
+	}
+
+	for _, v := range sameCommitteeBlock {
+		err := chain.InsertBlk(v)
+		if err != nil {
+			return 0, err
+		}
+	}
+	return len(sameCommitteeBlock), nil
+}
+
+func (s *BeaconChain) GetShardBestViewHash() map[byte]common.Hash {
+	return s.GetBestState().GetBestShardHash()
+}
+
+func (s *BeaconChain) GetShardBestViewHeight() map[byte]uint64 {
+	return s.GetBestState().GetBestShardHeight()
+}
+
+func (s *BeaconChain) GetCurrentCrossShardHeightToShard(sid byte) map[byte]uint64 {
+
+	res := make(map[byte]uint64)
+	for fromShard, toShardStatus := range s.GetBestState().LastCrossShardState {
+		for toShard, currentHeight := range toShardStatus {
+			if toShard == sid {
+				res[fromShard] = currentHeight
+			}
+		}
+	}
+	return res
+}
+
+func (s *BeaconChain) GetEpoch() uint64 {
+	return s.GetBestState().Epoch
+}
+
+func (s *BeaconChain) GetBestViewHeight() uint64 {
+	return s.GetBestState().BeaconHeight
+}
+
+func (s *BeaconChain) GetFinalViewHeight() uint64 {
+	return s.GetBestState().BeaconHeight
+}
+
+func (s *BeaconChain) GetBestViewHash() string {
+	return s.GetBestState().BestBlockHash.String()
+}
+
+func (s *BeaconChain) GetFinalViewHash() string {
+	return s.GetBestState().BestBlockHash.String()
 }
 
 func (chain *BeaconChain) GetLastBlockTimeStamp() int64 {
@@ -38,7 +124,10 @@ func (chain *BeaconChain) GetMaxBlkCreateTime() time.Duration {
 }
 
 func (chain *BeaconChain) IsReady() bool {
-	return chain.Blockchain.Synker.IsLatest(false, 0)
+	return chain.Ready
+}
+func (chain *BeaconChain) SetReady(ready bool) {
+	chain.Ready = ready
 }
 
 func (chain *BeaconChain) CurrentHeight() uint64 {
@@ -47,6 +136,10 @@ func (chain *BeaconChain) CurrentHeight() uint64 {
 
 func (chain *BeaconChain) GetCommittee() []incognitokey.CommitteePublicKey {
 	return chain.multiView.GetBestView().(*BeaconBestState).GetBeaconCommittee()
+}
+
+func (chain *BeaconChain) GetPendingCommittee() []incognitokey.CommitteePublicKey {
+	return chain.GetBestState().GetBeaconPendingValidator()
 }
 
 func (chain *BeaconChain) GetCommitteeSize() int {
@@ -69,7 +162,8 @@ func (chain *BeaconChain) GetLastProposerIndex() int {
 func (chain *BeaconChain) CreateNewBlock(round int) (common.BlockInterface, error) {
 	// chain.lock.Lock()
 	// defer chain.lock.Unlock()
-	newBlock, err := chain.BlockGen.NewBlockBeacon(round, chain.Blockchain.Synker.GetClosestShardToBeaconPoolState())
+	//TODO:
+	newBlock, err := chain.BlockGen.NewBlockBeacon(round, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -77,9 +171,9 @@ func (chain *BeaconChain) CreateNewBlock(round int) (common.BlockInterface, erro
 }
 
 func (chain *BeaconChain) InsertBlk(block common.BlockInterface) error {
-	if chain.Blockchain.config.ConsensusEngine.IsOngoing(common.BeaconChainKey) {
-		return NewBlockChainError(ConsensusIsOngoingError, errors.New(fmt.Sprint(common.BeaconChainKey, block.Hash())))
-	}
+	//if chain.Blockchain.config.ConsensusEngine.IsOngoing(common.BeaconChainKey) {
+	//	return NewBlockChainError(ConsensusIsOngoingError, errors.New(fmt.Sprint(common.BeaconChainKey, block.Hash())))
+	//}
 	return chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true)
 }
 

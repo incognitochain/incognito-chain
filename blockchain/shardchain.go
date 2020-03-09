@@ -2,13 +2,11 @@ package blockchain
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/multiview"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/pkg/errors"
 )
 
 type ShardChain struct {
@@ -16,6 +14,7 @@ type ShardChain struct {
 
 	BlockGen   *BlockGenerator
 	Blockchain *BlockChain
+	Ready      bool
 	ChainName  string
 }
 
@@ -23,6 +22,38 @@ func (chain *ShardChain) GetBestState() *ShardBestState {
 	return chain.multiView.GetBestView().(*ShardBestState)
 }
 
+func (s *ShardChain) GetEpoch() uint64 {
+	return s.GetBestState().Epoch
+}
+
+func (s *ShardChain) InsertBatchBlock([]common.BlockInterface) (int, error) {
+	panic("implement me")
+}
+
+func (s *ShardChain) GetCrossShardState() map[byte]uint64 {
+
+	res := make(map[byte]uint64)
+	for index, key := range s.GetBestState().BestCrossShard {
+		res[index] = key
+	}
+	return res
+}
+
+func (s *ShardChain) GetBestViewHeight() uint64 {
+	return s.CurrentHeight()
+}
+
+func (s *ShardChain) GetFinalViewHeight() uint64 {
+	return s.CurrentHeight()
+}
+
+func (s *ShardChain) GetBestViewHash() string {
+	return s.GetBestState().Hash().String()
+}
+
+func (s *ShardChain) GetFinalViewHash() string {
+	return s.GetBestState().Hash().String()
+}
 func (chain *ShardChain) GetLastBlockTimeStamp() int64 {
 	return chain.GetBestState().BestBlock.Header.Timestamp
 }
@@ -36,7 +67,11 @@ func (chain *ShardChain) GetMaxBlkCreateTime() time.Duration {
 }
 
 func (chain *ShardChain) IsReady() bool {
-	return chain.Blockchain.Synker.IsLatest(true, chain.GetBestState().ShardID)
+	return chain.Ready
+}
+
+func (chain *ShardChain) SetReady(ready bool) {
+	chain.Ready = ready
 }
 
 func (chain *ShardChain) CurrentHeight() uint64 {
@@ -46,6 +81,11 @@ func (chain *ShardChain) CurrentHeight() uint64 {
 func (chain *ShardChain) GetCommittee() []incognitokey.CommitteePublicKey {
 	result := []incognitokey.CommitteePublicKey{}
 	return append(result, chain.GetBestState().ShardCommittee...)
+}
+
+func (chain *ShardChain) GetPendingCommittee() []incognitokey.CommitteePublicKey {
+	result := []incognitokey.CommitteePublicKey{}
+	return append(result, chain.GetBestState().ShardPendingValidator...)
 }
 
 func (chain *ShardChain) GetCommitteeSize() int {
@@ -68,17 +108,14 @@ func (chain *ShardChain) GetLastProposerIndex() int {
 func (chain *ShardChain) CreateNewBlock(round int) (common.BlockInterface, error) {
 	start := time.Now()
 	Logger.log.Infof("Begin Create New Block %+v", start)
-	beaconHeight := chain.Blockchain.Synker.States.ClosestState.ClosestBeaconState
-	if chain.Blockchain.GetBeaconBestState().BeaconHeight < beaconHeight {
-		beaconHeight = chain.Blockchain.GetBeaconBestState().BeaconHeight
-	} else {
-
-		if beaconHeight < chain.GetBestState().BeaconHeight {
-			beaconHeight = chain.GetBestState().BeaconHeight
-		}
+	beaconHeight := chain.Blockchain.Chains["beacon"].CurrentHeight()
+	if beaconHeight < chain.GetBestState().BeaconHeight {
+		beaconHeight = chain.GetBestState().BeaconHeight
 	}
+
 	Logger.log.Infof("Begin Enter New Block Shard %+v", time.Now())
-	newBlock, err := chain.BlockGen.NewBlockShard(byte(chain.GetShardID()), round, chain.Blockchain.Synker.GetClosestCrossShardPoolState(), beaconHeight, start)
+	//TODO: pool
+	newBlock, err := chain.BlockGen.NewBlockShard(byte(chain.GetShardID()), round, nil, beaconHeight, start)
 	Logger.log.Infof("Begin Finish New Block Shard %+v", time.Now())
 	if err != nil {
 		return nil, err
@@ -117,9 +154,9 @@ func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, co
 }
 
 func (chain *ShardChain) InsertBlk(block common.BlockInterface) error {
-	if chain.Blockchain.config.ConsensusEngine.IsOngoing(chain.ChainName) {
-		return NewBlockChainError(ConsensusIsOngoingError, errors.New(fmt.Sprint(chain.ChainName, block.Hash())))
-	}
+	//if chain.Blockchain.config.ConsensusEngine.IsOngoing(chain.ChainName) {
+	//	return NewBlockChainError(ConsensusIsOngoingError, errors.New(fmt.Sprint(chain.ChainName, block.Hash())))
+	//}
 	return chain.Blockchain.InsertShardBlock(block.(*ShardBlock), false)
 }
 

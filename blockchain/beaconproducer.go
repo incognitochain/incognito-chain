@@ -277,7 +277,13 @@ func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestS
 	validSwapInstructions := make(map[byte][][]string)
 	//Get shard to beacon block from pool
 	Logger.log.Infof("In GetShardState shardsToBeacon limit: %+v", shardsToBeacon)
-	allShardBlocks := blockGenerator.shardToBeaconPool.GetValidBlock(shardsToBeacon)
+	var allShardBlocks = make(map[byte][]*ShardToBeaconBlock)
+	for sid, v := range blockGenerator.syncker.GetS2BBlocksForBeaconProducer() {
+		for _, b := range v {
+			allShardBlocks[sid] = append(allShardBlocks[sid], b.(*ShardToBeaconBlock))
+		}
+	}
+
 	Logger.log.Infof("In GetShardState allShardBlocks: %+v", allShardBlocks)
 	//Shard block is a map ShardId -> array of shard block
 	bridgeInstructions := [][]string{}

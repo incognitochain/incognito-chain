@@ -22,6 +22,13 @@ type ShardBlock struct {
 	Header ShardHeader
 }
 
+func (shardBlock *ShardBlock) GetShardID() int {
+	return int(shardBlock.Header.ShardID)
+}
+func (shardBlock *ShardBlock) GetPrevHash() string {
+	return shardBlock.Header.PreviousBlockHash.String()
+}
+
 type ShardToBeaconBlock struct {
 	// AggregatedSig  string  `json:"AggregatedSig"`
 	// R              string  `json:"R"`
@@ -31,6 +38,14 @@ type ShardToBeaconBlock struct {
 
 	Instructions [][]string
 	Header       ShardHeader
+}
+
+func (shardToBeaconBlock *ShardToBeaconBlock) GetPrevHash() string {
+	return shardToBeaconBlock.Header.PreviousBlockHash.String()
+}
+
+func (shardToBeaconBlock *ShardToBeaconBlock) GetShardID() int {
+	return int(shardToBeaconBlock.Header.ShardID)
 }
 
 type CrossShardBlock struct {
@@ -317,17 +332,17 @@ func (shardBlock *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToB
 	block.ValidationData = shardBlock.ValidationData
 	block.Header = shardBlock.Header
 	blockInstructions := shardBlock.Body.Instructions
-	previousShardBlockByte, err := bc.config.DataBase.FetchBlock(shardBlock.Header.PreviousBlockHash)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil
-	}
-	previousShardBlock := ShardBlock{}
-	err = json.Unmarshal(previousShardBlockByte, &previousShardBlock)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil
-	}
+	//previousShardBlockByte, err := bc.config.DataBase.FetchBlock(shardBlock.Header.PreviousBlockHash)
+	//if err != nil {
+	//	Logger.log.Error(err)
+	//	return nil
+	//}
+	//previousShardBlock := ShardBlock{}
+	//err = json.Unmarshal(previousShardBlockByte, &previousShardBlock)
+	//if err != nil {
+	//	Logger.log.Error(err)
+	//	return nil
+	//}
 	instructions, err := CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, bc, shardBlock.Header.ShardID)
 	if err != nil {
 		Logger.log.Error(err)
@@ -365,6 +380,7 @@ func (shardBlock *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBl
 	if len(crossOutputCoin) == 0 && len(crossCustomTokenPrivacyData) == 0 {
 		return nil, NewBlockChainError(CreateCrossShardBlockError, errors.New("No cross Outputcoin, Cross Custom Token, Cross Custom Token Privacy"))
 	}
+
 	merklePathShard, merkleShardRoot := GetMerklePathCrossShard2(shardBlock.Body.Transactions, shardID)
 	if merkleShardRoot != shardBlock.Header.ShardTxRoot {
 		return crossShard, NewBlockChainError(VerifyCrossShardBlockShardTxRootError, fmt.Errorf("Expect Shard Tx Root To be %+v but get %+v", shardBlock.Header.ShardTxRoot, merkleShardRoot))

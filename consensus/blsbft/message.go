@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/consensus"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/wire"
 )
@@ -30,7 +29,7 @@ func MakeBFTProposeMsg(block []byte, chainKey string, userKeySet *MiningKey) (wi
 	proposeCtn.Block = block
 	proposeCtnBytes, err := json.Marshal(proposeCtn)
 	if err != nil {
-		return nil, consensus.NewConsensusError(consensus.UnExpectedError, err)
+		return nil, NewConsensusError(UnExpectedError, err)
 	}
 	msg, _ := wire.MakeEmptyMessage(wire.CmdBFT)
 	msg.(*wire.MessageBFT).ChainKey = chainKey
@@ -46,7 +45,7 @@ func MakeBFTVoteMsg(userPublicKey string, chainKey, roundKey string, vote vote) 
 	voteCtn.Vote = vote
 	voteCtnBytes, err := json.Marshal(voteCtn)
 	if err != nil {
-		return nil, consensus.NewConsensusError(consensus.UnExpectedError, err)
+		return nil, NewConsensusError(UnExpectedError, err)
 	}
 	msg, _ := wire.MakeEmptyMessage(wire.CmdBFT)
 	msg.(*wire.MessageBFT).ChainKey = chainKey
@@ -108,13 +107,13 @@ func (e *BLSBFT) sendVote() error {
 
 	blsSig, err := e.UserKeySet.BLSSignData(e.RoundData.Block.Hash().GetBytes(), selfIdx, e.RoundData.CommitteeBLS.ByteList)
 	if err != nil {
-		return consensus.NewConsensusError(consensus.UnExpectedError, err)
+		return NewConsensusError(UnExpectedError, err)
 	}
 	bridgeSig := []byte{}
 	if metadata.HasBridgeInstructions(e.RoundData.Block.GetInstructions()) {
 		bridgeSig, err = e.UserKeySet.BriSignData(e.RoundData.Block.Hash().GetBytes())
 		if err != nil {
-			return consensus.NewConsensusError(consensus.UnExpectedError, err)
+			return NewConsensusError(UnExpectedError, err)
 		}
 	}
 
@@ -124,13 +123,13 @@ func (e *BLSBFT) sendVote() error {
 	//TODO hy
 	err = e.confirmVote(&Vote)
 	if err != nil {
-		return consensus.NewConsensusError(consensus.UnExpectedError, err)
+		return NewConsensusError(UnExpectedError, err)
 	}
 	key := e.UserKeySet.GetPublicKey()
 
 	msg, err := MakeBFTVoteMsg(key.GetMiningKeyBase58(consensusName), e.ChainKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), Vote)
 	if err != nil {
-		return consensus.NewConsensusError(consensus.UnExpectedError, err)
+		return NewConsensusError(UnExpectedError, err)
 	}
 	e.RoundData.Votes[pubKey.GetMiningKeyBase58(consensusName)] = Vote
 	e.logger.Info("sending vote...", getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
