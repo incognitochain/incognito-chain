@@ -193,6 +193,7 @@ const (
 	createAndSendPortalExchangeRates         = "createandsendportalexchangerates"
 	getPortalFinalExchangeRates              = "getportalfinalexchangerates"
 	getPortalPortingRequestByKey             = "getportalportingrequestbykey"
+	getPortalPortingRequestByPortingId       = "getportalportingrequestbyportingid"
 	convertExchangeRates                     = "convertexchangerates"
 	getPortalReqPTokenStatus                 = "getportalreqptokenstatus"
 	getPortingFees                           = "getportingfees"

@@ -223,17 +223,19 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		custodiansDetail := portingRequestContent.Custodian
 		portingFee := portingRequestContent.PortingFee
 
-
-		//todo: verify custodian
+		//verify custodian
 		isCustodianAccepted := true
 		for address, itemCustodian := range custodiansDetail {
-			custodian, ok := currentPortalState.CustodianPoolState[address]
+			keyPortingRequestNewState := lvdb.NewCustodianStateKey(beaconHeight, address)
+			custodian, ok := currentPortalState.CustodianPoolState[keyPortingRequestNewState]
 			if !ok {
+				Logger.log.Errorf("ERROR: Custodian not found")
 				isCustodianAccepted	= false
 				break
 			}
 
 			if custodian.FreeCollateral < itemCustodian.LockedAmountCollateral {
+				Logger.log.Errorf("ERROR: Custodian is not enough PRV, free collateral %v < lock amount %v", custodian.FreeCollateral, itemCustodian.LockedAmountCollateral)
 				isCustodianAccepted	= false
 				break
 			}

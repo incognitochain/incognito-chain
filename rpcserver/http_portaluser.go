@@ -145,3 +145,26 @@ func (httpServer *HttpServer) handleGetPortingRequestByKey(params interface{}, c
 
 	return result, nil
 }
+
+func (httpServer *HttpServer) handleGetPortingRequestByPortingId(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError)  {
+	arrayParams := common.InterfaceSlice(params)
+
+	// get meta data from params
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
+	}
+
+	portingId, ok := data["PortingId"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata Porting Id is invalid"))
+	}
+
+	result, err := httpServer.portal.GetPortingRequestByByPortingId(portingId, *httpServer.config.Database)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
