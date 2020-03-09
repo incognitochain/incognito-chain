@@ -14,7 +14,7 @@ func StoreWaitingPDEContributions(stateDB *StateDB, beaconHeight uint64, waiting
 		pairID := strs[2]
 		//key := GenerateWaitingPDEContributionObjectKey(beaconHeight, pairID)
 		key := GenerateWaitingPDEContributionObjectKeyV2(pairID)
-		value := NewWaitingPDEContributionStateWithValue(beaconHeight, pairID, contribution.ContributorAddressStr, contribution.TokenIDStr, contribution.Amount, contribution.TxReqID)
+		value := NewWaitingPDEContributionStateWithValue(pairID, contribution.ContributorAddressStr, contribution.TokenIDStr, contribution.Amount, contribution.TxReqID)
 		err := stateDB.SetStateObject(WaitingPDEContributionObjectType, key, value)
 		if err != nil {
 			return NewStatedbError(StoreWaitingPDEContributionError, err)
@@ -48,7 +48,7 @@ func StorePDEPoolPairs(stateDB *StateDB, beaconHeight uint64, pdePoolPairs map[s
 	for _, pdePoolPair := range pdePoolPairs {
 		//key := GeneratePDEPoolPairObjectKey(beaconHeight, pdePoolPair.Token1IDStr, pdePoolPair.Token2IDStr)
 		key := GeneratePDEPoolPairObjectKeyV2(pdePoolPair.Token1IDStr, pdePoolPair.Token2IDStr)
-		value := NewPDEPoolPairStateWithValue(beaconHeight, pdePoolPair.Token1IDStr, pdePoolPair.Token1PoolValue, pdePoolPair.Token2IDStr, pdePoolPair.Token2PoolValue)
+		value := NewPDEPoolPairStateWithValue(pdePoolPair.Token1IDStr, pdePoolPair.Token1PoolValue, pdePoolPair.Token2IDStr, pdePoolPair.Token2PoolValue)
 		err := stateDB.SetStateObject(PDEPoolPairObjectType, key, value)
 		if err != nil {
 			return NewStatedbError(StorePDEPoolPairError, err)
@@ -76,7 +76,7 @@ func StorePDEShares(stateDB *StateDB, beaconHeight uint64, pdeShares map[string]
 		contributorAddress := strs[4]
 		//key := GeneratePDEShareObjectKey(beaconHeight, token1ID, token2ID, contributorAddress)
 		key := GeneratePDEShareObjectKeyV2(token1ID, token2ID, contributorAddress)
-		value := NewPDEShareStateWithValue(beaconHeight, token1ID, token2ID, contributorAddress, shareAmount)
+		value := NewPDEShareStateWithValue(token1ID, token2ID, contributorAddress, shareAmount)
 		err := stateDB.SetStateObject(PDEShareObjectType, key, value)
 		if err != nil {
 			return NewStatedbError(StorePDEShareError, err)

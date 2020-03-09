@@ -206,13 +206,13 @@ func PDEWithdrawalStatusPrefix() []byte {
 	return pdeWithdrawalStatusPrefix
 }
 
-// key: WaitingPDEContributionPrefix - beacon height - pairid
+// GetWaitingPDEContributionKey: WaitingPDEContributionPrefix - beacon height - pairid
 func GetWaitingPDEContributionKey(beaconHeight uint64, pairID string) []byte {
 	prefix := append(waitingPDEContributionPrefix, []byte(fmt.Sprintf("%d-", beaconHeight))...)
 	return append(prefix, []byte(pairID)...)
 }
 
-// key: PDEPoolPrefix - beacon height - token1ID - token2ID
+// GetPDEPoolForPairKey: PDEPoolPrefix - beacon height - token1ID - token2ID
 func GetPDEPoolForPairKey(beaconHeight uint64, token1ID string, token2ID string) []byte {
 	prefix := append(pdePoolPrefix, []byte(fmt.Sprintf("%d-", beaconHeight))...)
 	tokenIDs := []string{token1ID, token2ID}
@@ -220,7 +220,7 @@ func GetPDEPoolForPairKey(beaconHeight uint64, token1ID string, token2ID string)
 	return append(prefix, []byte(tokenIDs[0]+"-"+tokenIDs[1])...)
 }
 
-// key: PDESharePrefix + beacon height + token1ID + token2ID + contributor address
+// GetPDEShareKey: PDESharePrefix + beacon height + token1ID + token2ID + contributor address
 func GetPDEShareKey(beaconHeight uint64, token1ID string, token2ID string, contributorAddress string) []byte {
 	prefix := append(pdeSharePrefix, []byte(fmt.Sprintf("%d-", beaconHeight))...)
 	tokenIDs := []string{token1ID, token2ID}

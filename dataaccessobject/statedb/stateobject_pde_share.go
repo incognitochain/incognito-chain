@@ -8,19 +8,10 @@ import (
 )
 
 type PDEShareState struct {
-	beaconHeight       uint64
 	token1ID           string
 	token2ID           string
 	contributorAddress string
 	amount             uint64
-}
-
-func (s PDEShareState) BeaconHeight() uint64 {
-	return s.beaconHeight
-}
-
-func (s *PDEShareState) SetBeaconHeight(beaconHeight uint64) {
-	s.beaconHeight = beaconHeight
 }
 
 func (s PDEShareState) Token1ID() string {
@@ -57,13 +48,11 @@ func (s *PDEShareState) SetContributorAddress(contributorAddress string) {
 
 func (s PDEShareState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		BeaconHeight       uint64
 		Token1ID           string
 		Token2ID           string
 		ContributorAddress string
 		Amount             uint64
 	}{
-		BeaconHeight:       s.beaconHeight,
 		Token1ID:           s.token1ID,
 		Token2ID:           s.token2ID,
 		ContributorAddress: s.contributorAddress,
@@ -77,7 +66,6 @@ func (s PDEShareState) MarshalJSON() ([]byte, error) {
 
 func (s *PDEShareState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		BeaconHeight       uint64
 		Token1ID           string
 		Token2ID           string
 		ContributorAddress string
@@ -87,7 +75,6 @@ func (s *PDEShareState) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	s.beaconHeight = temp.BeaconHeight
 	s.token1ID = temp.Token1ID
 	s.token2ID = temp.Token2ID
 	s.contributorAddress = temp.ContributorAddress
@@ -99,8 +86,8 @@ func NewPDEShareState() *PDEShareState {
 	return &PDEShareState{}
 }
 
-func NewPDEShareStateWithValue(beaconHeight uint64, token1ID string, token2ID string, contributorAddress string, amount uint64) *PDEShareState {
-	return &PDEShareState{beaconHeight: beaconHeight, token1ID: token1ID, token2ID: token2ID, contributorAddress: contributorAddress, amount: amount}
+func NewPDEShareStateWithValue(token1ID string, token2ID string, contributorAddress string, amount uint64) *PDEShareState {
+	return &PDEShareState{token1ID: token1ID, token2ID: token2ID, contributorAddress: contributorAddress, amount: amount}
 }
 
 type PDEShareObject struct {

@@ -8,7 +8,6 @@ import (
 )
 
 type WaitingPDEContributionState struct {
-	beaconHeight       uint64
 	pairID             string
 	contributorAddress string
 	tokenID            string
@@ -56,24 +55,14 @@ func (wc *WaitingPDEContributionState) SetPairID(pairID string) {
 	wc.pairID = pairID
 }
 
-func (wc WaitingPDEContributionState) BeaconHeight() uint64 {
-	return wc.beaconHeight
-}
-
-func (wc *WaitingPDEContributionState) SetBeaconHeight(beaconHeight uint64) {
-	wc.beaconHeight = beaconHeight
-}
-
 func (wc WaitingPDEContributionState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		BeaconHeight       uint64
 		PairID             string
 		ContributorAddress string
 		TokenID            string
 		Amount             uint64
 		TxReqID            common.Hash
 	}{
-		BeaconHeight:       wc.beaconHeight,
 		PairID:             wc.pairID,
 		ContributorAddress: wc.contributorAddress,
 		TokenID:            wc.tokenID,
@@ -88,7 +77,6 @@ func (wc WaitingPDEContributionState) MarshalJSON() ([]byte, error) {
 
 func (wc *WaitingPDEContributionState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		BeaconHeight       uint64
 		PairID             string
 		ContributorAddress string
 		TokenID            string
@@ -99,7 +87,6 @@ func (wc *WaitingPDEContributionState) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	wc.beaconHeight = temp.BeaconHeight
 	wc.pairID = temp.PairID
 	wc.contributorAddress = temp.ContributorAddress
 	wc.tokenID = temp.TokenID
@@ -112,8 +99,8 @@ func NewWaitingPDEContributionState() *WaitingPDEContributionState {
 	return &WaitingPDEContributionState{}
 }
 
-func NewWaitingPDEContributionStateWithValue(beaconHeight uint64, pairID string, contributorAddress string, tokenID string, amount uint64, txReqID common.Hash) *WaitingPDEContributionState {
-	return &WaitingPDEContributionState{beaconHeight: beaconHeight, pairID: pairID, contributorAddress: contributorAddress, tokenID: tokenID, amount: amount, txReqID: txReqID}
+func NewWaitingPDEContributionStateWithValue(pairID string, contributorAddress string, tokenID string, amount uint64, txReqID common.Hash) *WaitingPDEContributionState {
+	return &WaitingPDEContributionState{pairID: pairID, contributorAddress: contributorAddress, tokenID: tokenID, amount: amount, txReqID: txReqID}
 }
 
 type WaitingPDEContributionObject struct {
