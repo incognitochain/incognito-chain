@@ -33,6 +33,26 @@ func (portal *Portal) GetPortingRequestByByKey(txHash string, db database.Databa
 	return result, nil
 }
 
+func (portal *Portal) GetPortingRequestByByPortingId(portingId string, db database.DatabaseInterface) (jsonresult.PortalPortingRequest, *RPCError) {
+
+	portingRequestKey := lvdb.NewPortingRequestKey(portingId)
+	portingRequestItem, err :=  blockchain.GetPortingRequestByKey(db, []byte(portingRequestKey))
+
+	if err != nil {
+		return jsonresult.PortalPortingRequest{}, NewRPCError(GetPortingRequestError, err)
+	}
+
+	if  portingRequestItem == nil {
+		return jsonresult.PortalPortingRequest{}, NewRPCError(GetPortingRequestIsEmpty, err)
+	}
+
+	result := jsonresult.PortalPortingRequest{
+		PortingRequest: *portingRequestItem,
+	}
+
+	return result, nil
+}
+
 func (portal *Portal) GetFinalExchangeRates(service *BlockService, db database.DatabaseInterface) (jsonresult.FinalExchangeRatesResult, *RPCError) {
 	beaconBlock, err := service.GetBeaconBestBlock()
 	if err != nil {
