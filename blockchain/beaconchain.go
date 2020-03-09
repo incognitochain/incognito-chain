@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/multiview"
-	"sync"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -19,7 +18,6 @@ type BeaconChain struct {
 	Blockchain *BlockChain
 	ChainName  string
 	Ready      bool
-	lock       sync.RWMutex
 }
 
 func (chain *BeaconChain) GetBestState() *BeaconBestState {

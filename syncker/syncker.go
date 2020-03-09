@@ -39,20 +39,19 @@ func NewSynckerManager() *SynckerManager {
 func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 	synckerManager.config = config
 	//init beacon sync process
-	synckerManager.BeaconSyncProcess = NewBeaconSyncProcess(synckerManager.config.Node, synckerManager.config.Blockchain.Chains["beacon"].(BeaconChainInterface))
+	synckerManager.BeaconSyncProcess = NewBeaconSyncProcess(synckerManager.config.Node, synckerManager.config.Blockchain.BeaconChain)
 	synckerManager.S2BSyncProcess = synckerManager.BeaconSyncProcess.s2bSyncProcess
 	synckerManager.beaconPool = synckerManager.BeaconSyncProcess.beaconPool
 	synckerManager.s2bPool = synckerManager.S2BSyncProcess.s2bPool
 
 	//init shard sync process
-	for chainName, chain := range synckerManager.config.Blockchain.Chains {
-		if chainName != "beacon" {
-			sid := chain.GetShardID()
-			synckerManager.ShardSyncProcess[sid] = NewShardSyncProcess(sid, synckerManager.config.Node, synckerManager.config.Blockchain.Chains["beacon"].(BeaconChainInterface), chain.(ShardChainInterface))
-			synckerManager.shardPool[sid] = synckerManager.ShardSyncProcess[sid].shardPool
-			synckerManager.CrossShardSyncProcess[sid] = synckerManager.ShardSyncProcess[sid].crossShardSyncProcess
-			synckerManager.crossShardPool[sid] = synckerManager.CrossShardSyncProcess[sid].crossShardPool
-		}
+	for _, chain := range synckerManager.config.Blockchain.ShardChain {
+		sid := chain.GetShardID()
+		synckerManager.ShardSyncProcess[sid] = NewShardSyncProcess(sid, synckerManager.config.Node, synckerManager.config.Blockchain.BeaconChain, chain)
+		synckerManager.shardPool[sid] = synckerManager.ShardSyncProcess[sid].shardPool
+		synckerManager.CrossShardSyncProcess[sid] = synckerManager.ShardSyncProcess[sid].crossShardSyncProcess
+		synckerManager.crossShardPool[sid] = synckerManager.CrossShardSyncProcess[sid].crossShardPool
+
 	}
 
 	//watch commitee change
@@ -181,7 +180,7 @@ func (synckerManager *SynckerManager) ReceivePeerState(peerState *wire.MessagePe
 
 //Get S2B Block for creating beacon block
 func (synckerManager *SynckerManager) GetS2BBlocksForBeaconProducer() map[byte][]interface{} {
-	bestViewShardHash := synckerManager.config.Blockchain.Chains["beacon"].(BeaconChainInterface).GetShardBestViewHash()
+	bestViewShardHash := synckerManager.config.Blockchain.BeaconChain.GetShardBestViewHash()
 	res := make(map[byte][]interface{})
 
 	//bypass first block

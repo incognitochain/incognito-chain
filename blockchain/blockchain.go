@@ -31,13 +31,9 @@ import (
 type BlockChain struct {
 	BeaconChain *BeaconChain
 	ShardChain  []*ShardChain
+	config      Config
+	cQuitSync   chan struct{}
 
-	Chains map[string]ChainInterface
-	config Config
-
-	cQuitSync        chan struct{}
-	ConsensusOngoing bool
-	//RPCClient        *rpccaller.RPCClient
 	IsTest bool
 }
 
@@ -174,7 +170,6 @@ func (blockchain *BlockChain) initChainState() error {
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
 
-	blockchain.Chains = make(map[string]ChainInterface)
 	blockchain.BeaconChain = &BeaconChain{
 		multiView:  multiview.NewMultiView(),
 		BlockGen:   blockchain.config.BlockGen,
@@ -191,7 +186,6 @@ func (blockchain *BlockChain) initChainState() error {
 		}
 	}
 
-	blockchain.Chains[common.BeaconChainKey] = blockchain.BeaconChain
 	blockchain.ShardChain = make([]*ShardChain, blockchain.GetBeaconBestState().ActiveShards)
 
 	for shard := 1; shard <= blockchain.GetBeaconBestState().ActiveShards; shard++ {
@@ -211,7 +205,6 @@ func (blockchain *BlockChain) initChainState() error {
 				return err
 			}
 		}
-		blockchain.Chains[blockchain.ShardChain[shardID].ChainName] = blockchain.ShardChain[shardID]
 	}
 
 	return nil

@@ -94,19 +94,26 @@ func (s *Engine) WatchCommitteeChange() {
 	var miningProcess ConsensusInterface = nil
 	if role == "committee" {
 		chainName := "beacon"
+
 		if chainID >= 0 {
 			chainName = fmt.Sprintf("shard-%d", chainID)
 		}
+
 		if _, ok := s.BFTProcess[chainID]; !ok {
-			if s.config.Blockchain.Chains[chainName] == nil {
+			if len(s.config.Blockchain.ShardChain)-1 < chainID {
 				panic("Chain " + chainName + " not available")
 			}
-			s.BFTProcess[chainID] = NewInstance(s.config.Blockchain.Chains[chainName], chainName, chainID, s.config.Node, Logger.log)
+			if chainID == -1 {
+				s.BFTProcess[chainID] = NewInstance(s.config.Blockchain.BeaconChain, chainName, chainID, s.config.Node, Logger.log)
+			} else {
+				s.BFTProcess[chainID] = NewInstance(s.config.Blockchain.ShardChain[chainID], chainName, chainID, s.config.Node, Logger.log)
+			}
 		}
 
 		if err := s.BFTProcess[chainID].Start(); err != nil {
 			return
 		}
+
 		miningProcess = s.BFTProcess[chainID]
 		s.currentMiningProcess = s.BFTProcess[chainID]
 		if err := s.LoadMiningKeys(s.userKeyListString); err != nil {

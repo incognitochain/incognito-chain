@@ -108,7 +108,7 @@ func (chain *ShardChain) GetLastProposerIndex() int {
 func (chain *ShardChain) CreateNewBlock(round int) (common.BlockInterface, error) {
 	start := time.Now()
 	Logger.log.Infof("Begin Create New Block %+v", start)
-	beaconHeight := chain.Blockchain.Chains["beacon"].CurrentHeight()
+	beaconHeight := chain.Blockchain.BeaconChain.CurrentHeight()
 	if beaconHeight < chain.GetBestState().BeaconHeight {
 		beaconHeight = chain.GetBestState().BeaconHeight
 	}
