@@ -1719,7 +1719,7 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 	if err != nil {
 		return err
 	}
-	msg.(*wire.MessagePeerState).Beacon = blockchain.ChainState{
+	msg.(*wire.MessagePeerState).Beacon = wire.ChainState{
 		serverObj.blockChain.GetBeaconBestState().BestBlock.Header.Timestamp,
 		serverObj.blockChain.GetBeaconBestState().BeaconHeight,
 		serverObj.blockChain.GetBeaconBestState().BestBlockHash,
@@ -1727,7 +1727,7 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 	}
 
 	if userLayer != common.BeaconRole {
-		msg.(*wire.MessagePeerState).Shards[byte(shardID)] = blockchain.ChainState{
+		msg.(*wire.MessagePeerState).Shards[byte(shardID)] = wire.ChainState{
 			serverObj.blockChain.GetBestStateShard(byte(shardID)).BestBlock.Header.Timestamp,
 			serverObj.blockChain.GetBestStateShard(byte(shardID)).ShardHeight,
 			serverObj.blockChain.GetBestStateShard(byte(shardID)).BestBlockHash,
@@ -2201,8 +2201,8 @@ func (s *Server) GetUserMiningState() (role string, chainID int) {
 	}
 
 	//For Shard, loop through shard chain and check if they in committee
-	shardPendingCommiteeFromBeaconView := blockchain.GetBeaconBestState().GetShardPendingValidator()
-	shardCommiteeFromBeaconView := blockchain.GetBeaconBestState().GetShardCommittee()
+	shardPendingCommiteeFromBeaconView := s.blockChain.GetBeaconBestState().GetShardPendingValidator()
+	shardCommiteeFromBeaconView := s.blockChain.GetBeaconBestState().GetShardCommittee()
 
 	for chainName, chain := range s.blockChain.Chains {
 		if chainName != "beacon" {
