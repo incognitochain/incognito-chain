@@ -11,7 +11,7 @@ import (
 func StoreWaitingPDEContributions(stateDB *StateDB, beaconHeight uint64, waitingPDEContributions map[string]*rawdbv2.PDEContribution) error {
 	for tempKey, contribution := range waitingPDEContributions {
 		strs := strings.Split(tempKey, "-")
-		pairID := strs[2]
+		pairID := strings.Join(strs[2:], "-")
 		//key := GenerateWaitingPDEContributionObjectKey(beaconHeight, pairID)
 		key := GenerateWaitingPDEContributionObjectKeyV2(pairID)
 		value := NewWaitingPDEContributionStateWithValue(pairID, contribution.ContributorAddressStr, contribution.TokenIDStr, contribution.Amount, contribution.TxReqID)
@@ -37,7 +37,7 @@ func GetWaitingPDEContributions(stateDB *StateDB, beaconHeight uint64) (map[stri
 func DeleteWaitingPDEContributions(stateDB *StateDB, deletedWaitingPDEContributions map[string]*rawdbv2.PDEContribution) {
 	for tempKey, _ := range deletedWaitingPDEContributions {
 		strs := strings.Split(tempKey, "-")
-		pairID := strs[2]
+		pairID := strings.Join(strs[2:], "-")
 		//key := GenerateWaitingPDEContributionObjectKey(beaconHeight, pairID)
 		key := GenerateWaitingPDEContributionObjectKeyV2(pairID)
 		stateDB.MarkDeleteStateObject(WaitingPDEContributionObjectType, key)
