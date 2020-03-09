@@ -87,8 +87,12 @@ func (blockchain *BlockChain) revertShardBestState(shardID byte) error {
 		return NewBlockChainError(RevertStateError, errors.New("can't revert same beststate"))
 	}
 
-	SetBestStateShard(shardID, &shardBestState)
+	// SetBestStateShard(shardID, &shardBestState)
 
+	shardBestState.lock = blockchain.BestState.Shard[shardID].lock
+	blockchain.BestState.Shard[shardID] = &shardBestState
+
+	blockchain.Chains[common.GetShardChainKey(shardID)].(*ShardChain).SetBestState(&shardBestState)
 	blockchain.config.ShardPool[shardID].RevertShardPool(shardBestState.ShardHeight)
 	for sid, height := range shardBestState.BestCrossShard {
 		blockchain.config.CrossShardPool[sid].RevertCrossShardPool(height)
@@ -712,7 +716,12 @@ func (blockchain *BlockChain) revertBeaconBestState() error {
 	if beaconBestState.BeaconHeight == blockchain.BestState.Beacon.BeaconHeight {
 		return NewBlockChainError(RevertStateError, errors.New("can't revert same beststate"))
 	}
-	SetBeaconBestState(&beaconBestState)
+
+	// SetBeaconBestState(&beaconBestState)
+
+	beaconBestState.lock = blockchain.BestState.Beacon.lock
+	blockchain.BestState.Beacon = &beaconBestState
+	blockchain.Chains[common.BeaconChainKey].(*BeaconChain).SetBestState(&beaconBestState)
 
 	blockchain.config.BeaconPool.RevertBeconPool(beaconBestState.BeaconHeight)
 	for sid, height := range blockchain.BestState.Beacon.GetBestShardHeight() {
@@ -747,7 +756,7 @@ func (blockchain *BlockChain) revertBeaconState() error {
 		}
 	}
 
-	lastCrossShardState := beaconBestState.LastCrossShardState
+	lastCrossShardState := currentBestState.LastCrossShardState
 	for fromShard, toShards := range lastCrossShardState {
 		for toShard, height := range toShards {
 			blockchain.config.DataBase.RestoreCrossShardNextHeights(fromShard, toShard, height)

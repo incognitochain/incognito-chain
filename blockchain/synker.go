@@ -363,8 +363,8 @@ func (synker *Synker) UpdateState() {
 				}
 				for shardID := byte(0); shardID < common.MaxShardNumber; shardID++ {
 					if shardState, ok := peerState.Shard[shardID]; ok {
-						if shardState.Height >= GetBeaconBestState().GetBestHeightOfShard(shardID) {
-							if RCS.ClosestShardsState[shardID].Height == GetBeaconBestState().GetBestHeightOfShard(shardID) {
+						if shardState.Height >= beaconStateClone.GetBestHeightOfShard(shardID) {
+							if RCS.ClosestShardsState[shardID].Height == beaconStateClone.GetBestHeightOfShard(shardID) {
 								RCS.ClosestShardsState[shardID] = *shardState
 							} else {
 								if shardState.Height < RCS.ClosestShardsState[shardID].Height {
@@ -404,7 +404,7 @@ func (synker *Synker) UpdateState() {
 		}
 
 		if userLayer == common.ShardRole && RCS.ClosestBeaconState.Height-1 <= beaconStateClone.BeaconHeight {
-			if RCS.ClosestShardsState[byte(userShardIDInt)].Height == GetBestStateShard(byte(userShardIDInt)).ShardHeight && RCS.ClosestShardsState[byte(userShardIDInt)].Height >= GetBeaconBestState().GetBestHeightOfShard(byte(userShardIDInt)) {
+			if RCS.ClosestShardsState[byte(userShardIDInt)].Height == synker.blockchain.BestState.Shard[byte(userShardIDInt)].ShardHeight && RCS.ClosestShardsState[byte(userShardIDInt)].Height >= beaconStateClone.GetBestHeightOfShard(byte(userShardIDInt)) {
 				synker.SetChainState(false, 0, true)
 				synker.SetChainState(true, byte(userShardIDInt), true)
 			} else {
@@ -452,8 +452,8 @@ func (synker *Synker) UpdateState() {
 	missingBestState := GetMissingBlockHashesFromPeersState(
 		synker.States.PeersState,
 		synker.Status.Shards,
-		GetBeaconBestState,
-		GetBestStateShard,
+		synker.blockchain.GetBeaconBestState,
+		synker.blockchain.GetBestStateShard,
 	)
 	//remove hardcode later
 	for cID, listBlks := range missingBestState {
@@ -935,8 +935,9 @@ func (synker *Synker) InsertBeaconBlockFromPool() {
 	}
 
 	chain := synker.blockchain.Chains[common.BeaconChainKey]
-
-	curEpoch := GetBeaconBestState().Epoch
+	bestState := &BeaconBestState{}
+	bestState.cloneBeaconBestStateFrom(synker.blockchain.GetBeaconBestState())
+	curEpoch := bestState.Epoch
 	sameCommitteeBlock := blocks
 	for i, v := range blocks {
 		if v.GetCurrentEpoch() == curEpoch+1 {
@@ -956,7 +957,7 @@ func (synker *Synker) InsertBeaconBlockFromPool() {
 	}
 
 	for i := len(sameCommitteeBlock) - 1; i >= 0; i-- {
-		if err := chain.ValidateBlockSignatures(sameCommitteeBlock[i], beaconBestState.BeaconCommittee); err != nil {
+		if err := chain.ValidateBlockSignatures(sameCommitteeBlock[i], bestState.BeaconCommittee); err != nil {
 			sameCommitteeBlock = sameCommitteeBlock[:i]
 			//TODO: remove invalid block
 		} else {
@@ -965,7 +966,7 @@ func (synker *Synker) InsertBeaconBlockFromPool() {
 	}
 
 	if len(sameCommitteeBlock) > 0 {
-		if sameCommitteeBlock[0].Header.Height-1 != GetBeaconBestState().BeaconHeight {
+		if sameCommitteeBlock[0].Header.Height-1 != bestState.BeaconHeight {
 			return
 		}
 	}
@@ -990,7 +991,11 @@ func (synker *Synker) InsertShardBlockFromPool(shardID byte) {
 	}
 
 	chain := synker.blockchain.Chains[common.GetShardChainKey(shardID)]
-	curEpoch := GetBestStateShard(shardID).Epoch
+	bestState := &ShardBestState{}
+	sbs, _ := synker.blockchain.GetShardBestState(shardID)
+	bestState.cloneShardBestStateFrom(sbs)
+
+	curEpoch := bestState.Epoch
 	sameCommitteeBlock := blocks
 
 	for i, v := range blocks {
@@ -1020,7 +1025,7 @@ func (synker *Synker) InsertShardBlockFromPool(shardID byte) {
 	}
 
 	if len(sameCommitteeBlock) > 0 {
-		if sameCommitteeBlock[0].Header.Height-1 != GetBestStateShard(shardID).ShardHeight {
+		if sameCommitteeBlock[0].Header.Height-1 != bestState.ShardHeight {
 			return
 		}
 	}

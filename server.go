@@ -1222,7 +1222,7 @@ func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 		// fmt.Println("eiiiiiiiiiiiii")
 		// os.Exit(0)
 		//TODO hy check here
-		bestState := blockchain.GetBeaconBestState()
+		bestState := serverObj.blockChain.GetBeaconBestState()
 		beaconCommitteeList, err := incognitokey.CommitteeKeyListToString(bestState.BeaconCommittee)
 		if err != nil {
 			panic(err)

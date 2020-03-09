@@ -70,15 +70,13 @@ type BeaconBestState struct {
 	BlockMaxCreateTime time.Duration
 }
 
-var beaconBestState *BeaconBestState
+// var beaconBestState *BeaconBestState
 
 func NewBeaconBestState() *BeaconBestState {
 	return &BeaconBestState{}
 }
 func NewBeaconBestStateWithConfig(netparam *Params) *BeaconBestState {
-	if beaconBestState == nil {
-		beaconBestState = GetBeaconBestState()
-	}
+	beaconBestState := NewBeaconBestState()
 	beaconBestState.BestBlockHash.SetBytes(make([]byte, 32))
 	beaconBestState.BestBlockHash.SetBytes(make([]byte, 32))
 	beaconBestState.BestShardHash = make(map[byte]common.Hash)
@@ -106,17 +104,18 @@ func NewBeaconBestStateWithConfig(netparam *Params) *BeaconBestState {
 	beaconBestState.BlockMaxCreateTime = netparam.MaxBeaconBlockCreation
 	return beaconBestState
 }
-func SetBeaconBestState(beacon *BeaconBestState) {
-	beacon.lock = GetBeaconBestState().lock
-	*GetBeaconBestState() = *beacon
-}
 
-func GetBeaconBestState() *BeaconBestState {
-	if beaconBestState != nil {
-		return beaconBestState
+// func SetBeaconBestState(beacon *BeaconBestState) {
+// 	beacon.lock = GetBeaconBestState().lock
+// 	*GetBeaconBestState() = *beacon
+// }
+
+func (bc *BlockChain) GetBeaconBestState() *BeaconBestState {
+	if bc.BestState.Beacon != nil {
+		return bc.BestState.Beacon
 	}
-	beaconBestState = NewBeaconBestState()
-	return beaconBestState
+	bc.BestState.Beacon = NewBeaconBestState()
+	return bc.BestState.Beacon
 }
 
 func (beaconBestState *BeaconBestState) MarshalJSON() ([]byte, error) {

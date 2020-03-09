@@ -19,6 +19,12 @@ type ShardChain struct {
 	lock       sync.RWMutex
 }
 
+func (chain *ShardChain) SetBestState(beststate *ShardBestState) {
+	chain.lock.Lock()
+	defer chain.lock.Unlock()
+	chain.BestState = beststate
+	return
+}
 func (chain *ShardChain) GetLastBlockTimeStamp() int64 {
 	return chain.BestState.BestBlock.Header.Timestamp
 }
@@ -70,8 +76,9 @@ func (chain *ShardChain) CreateNewBlock(round int) (common.BlockInterface, error
 	if chain.Blockchain.BestState.Beacon.BeaconHeight < beaconHeight {
 		beaconHeight = chain.Blockchain.BestState.Beacon.BeaconHeight
 	} else {
-		if beaconHeight < GetBestStateShard(byte(chain.GetShardID())).BeaconHeight {
-			beaconHeight = GetBestStateShard(byte(chain.GetShardID())).BeaconHeight
+
+		if beaconHeight < chain.BestState.BeaconHeight {
+			beaconHeight = chain.BestState.BeaconHeight
 		}
 	}
 	Logger.log.Infof("Begin Enter New Block Shard %+v", time.Now())
