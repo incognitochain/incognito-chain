@@ -346,7 +346,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		return err
 	}
 	//init beacon pol
-	mempool.InitBeaconPool(serverObj.pusubManager)
+	mempool.InitBeaconPool(serverObj.pusubManager, serverObj.blockChain)
 	//init shard pool
 	mempool.InitShardPool(serverObj.shardPool, serverObj.pusubManager)
 	//init cross shard pool

@@ -223,7 +223,7 @@ func (crossShardPool *CrossShardPool) validateCrossShardBlockSignature(crossShar
 */
 func (crossShardPool *CrossShardPool) updatePool() map[byte]uint64 {
 	Logger.log.Debugf("Update Cross Shard Pool %+v State", crossShardPool.shardID)
-	crossShardPool.crossShardState = blockchain.GetBestStateShard(crossShardPool.shardID).BestCrossShard
+	crossShardPool.crossShardState = blockchainObj.GetBestStateShard(crossShardPool.shardID).BestCrossShard
 	crossShardPool.removeBlockByHeight(crossShardPool.crossShardState)
 	expectedHeight := make(map[byte]uint64)
 	for blkShardID, crossShardBlocks := range crossShardPool.pendingPool {
