@@ -721,12 +721,11 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		// check receiver and amount in tx
 		// get list matching custodians in waitingPortingRequest
 		custodians := waitingPortingRequest.Custodians
-
 		outputs := txBNB.Msgs[0].(msg.SendMsg).Outputs
-
 		for _, cusDetail := range custodians {
 			remoteAddressNeedToBeTransfer := cusDetail.RemoteAddress
 			amountNeedToBeTransfer := cusDetail.Amount
+			amountNeedToBeTransferInBNB := convertIncPBNBAmountToExternalBNBAmount(int64(amountNeedToBeTransfer))
 
 			isChecked := false
 			for _, out := range outputs {
@@ -745,9 +744,9 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 							coin.Amount)
 					}
 				}
-				if convertExternalBNBAmountToIncAmount(amountTransfer) != int64(amountNeedToBeTransfer) {
-					Logger.log.Errorf("TxProof-BNB is invalid - Amount transfer to %s must be equal %d, but got %d",
-						addr, amountNeedToBeTransfer, amountTransfer)
+				if amountTransfer >= amountNeedToBeTransferInBNB {
+					Logger.log.Errorf("TxProof-BNB is invalid - Amount transfer to %s must be equal to or greater than %d, but got %d",
+						addr, amountNeedToBeTransferInBNB, amountTransfer)
 					inst := buildReqPTokensInst(
 						meta.UniquePortingID,
 						meta.TokenID,
@@ -1350,7 +1349,6 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 
 	// check meta.UniqueRedeemID is in waiting RedeemRequests list in portal state or not
 	redeemID := meta.UniqueRedeemID
-	//todo: need to change to redeemID
 	keyWaitingRedeemRequest := lvdb.NewWaitingRedeemReqKey(beaconHeight, redeemID)
 	waitingRedeemRequest := currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest]
 	if waitingRedeemRequest == nil {
@@ -1445,7 +1443,6 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 
 
 	// check redeem amount of matching custodian
-	//todo: need to be fixed
 	if meta.RedeemAmount != waitingRedeemRequest.Custodians[meta.CustodianAddressStr].Amount {
 		Logger.log.Errorf("RedeemAmount is not correct in redeemID req")
 		inst := buildReqUnlockCollateralInst(
@@ -1586,12 +1583,12 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		// check whether amount transfer in txBNB is equal redeem amount or not
 		// check receiver and amount in tx
 		// get list matching custodians in waitingRedeemRequest
-		//custodians := waitingRedeemRequest.Custodians
 
 		outputs := txBNB.Msgs[0].(msg.SendMsg).Outputs
 
 		remoteAddressNeedToBeTransfer := waitingRedeemRequest.RedeemerRemoteAddress
 		amountNeedToBeTransfer := meta.RedeemAmount
+		amountNeedToBeTransferInBNB := convertIncPBNBAmountToExternalBNBAmount(int64(amountNeedToBeTransfer))
 
 		isChecked := false
 
@@ -1611,9 +1608,9 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 						coin.Amount)
 				}
 			}
-			if convertExternalBNBAmountToIncAmount(amountTransfer) != int64(amountNeedToBeTransfer) {
-				Logger.log.Errorf("TxProof-BNB is invalid - Amount transfer to %s must be equal %d, but got %d",
-					addr, amountNeedToBeTransfer, amountTransfer)
+			if amountTransfer >= amountNeedToBeTransferInBNB {
+				Logger.log.Errorf("TxProof-BNB is invalid - Amount transfer to %s must be equal to or greater than %d, but got %d",
+					addr, amountNeedToBeTransferInBNB, amountTransfer)
 				inst := buildReqUnlockCollateralInst(
 					meta.UniqueRedeemID,
 					meta.TokenID,

@@ -762,6 +762,11 @@ func convertExternalBNBAmountToIncAmount(externalBNBAmount int64) int64 {
 	return externalBNBAmount * 10   // externalBNBAmount / 1^8 * 1^9
 }
 
+// convertIncPBNBAmountToExternalBNBAmount converts amount in inc chain (decimal 9) to amount in bnb chain (decimal 8)
+func convertIncPBNBAmountToExternalBNBAmount(incPBNBAmount int64) int64 {
+	return incPBNBAmount / 10   // incPBNBAmount / 1^9 * 1^8
+}
+
 // updateFreeCollateralCustodian updates custodian state (amount collaterals) when custodian returns redeemAmount public token to user
 func updateFreeCollateralCustodian(custodianState * lvdb.CustodianState, redeemAmount uint64, tokenSymbol string, exchangeRate *lvdb.FinalExchangeRates) (uint64, error){
 	// calculate unlock amount for custodian

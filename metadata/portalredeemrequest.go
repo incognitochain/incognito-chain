@@ -95,18 +95,6 @@ func getMinRedeemFeeByRedeemAmount(redeemAmount uint64) (uint64, error) {
 	return minRedeemFee, nil
 }
 
-// isValidRedeemAmount checks redeem amount is valid ot not
-func isValidRedeemAmount(redeemAmount uint64, incTokenID string) bool {
-	if incTokenID == PortalSupportedTokenMap[PortalTokenSymbolBNB] {
-		// redeem Amount of token bnb must be multiple of 10 (minimum amount is 10 nano pbnb)
-		return redeemAmount % 10 == 0
-	} else if incTokenID == PortalSupportedTokenMap[PortalTokenSymbolBNB] {
-		// todo:
-	}
-
-	return false
-}
-
 func (redeemReq PortalRedeemRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
@@ -147,10 +135,6 @@ func (redeemReq PortalRedeemRequest) ValidateSanityData(bcr BlockchainRetriever,
 	// validate redeem amount
 	if redeemReq.RedeemAmount == 0 {
 		return false, false, errors.New("redeem amount should be larger than 0")
-	}
-
-	if !isValidRedeemAmount(redeemReq.RedeemAmount, redeemReq.TokenID) {
-		return false, false, errors.New("redeem amount should be multiple of 10")
 	}
 
 	// validate redeem fee
