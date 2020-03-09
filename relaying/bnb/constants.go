@@ -11,4 +11,7 @@ const(
 	TestnetTotalVotingPowers = 1000000000000
 
 	TestnetURLRemote = "http://localhost:26657"
+
+	TestnetType = 1
+	MainnetType = 2
 )
