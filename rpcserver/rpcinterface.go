@@ -186,6 +186,7 @@ var HttpHandler = map[string]httpHandler{
 	getPortalReqUnlockCollateralStatus:       (*HttpServer).handleGetPortalReqUnlockCollateralStatus,
 	getPortalReqRedeemStatus:                 (*HttpServer).handleGetPortalReqRedeemStatus,
 	createAndSendCustodianWithdrawRequest:    (*HttpServer).handleCreateAndSendCustodianWithdrawRequest,
+	getCustodianWithdrawByTxId:    			  (*HttpServer).handleGetCustodianWithdrawByTxId,
 
 	// relaying
 	createAndSendTxWithRelayingBNBHeader: (*HttpServer).handleCreateAndSendTxWithRelayingBNBHeader,

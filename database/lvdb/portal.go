@@ -82,7 +82,7 @@ type CustodianWithdrawRequest struct {
 	RemainCustodianFreeCollateral uint64
 }
 
-func NewCustodianWithdrawRequestTxStateKey(txHash string) string {
+func NewCustodianWithdrawRequest(txHash string) string {
 	key := append(PortalCustodianWithdrawTxPrefix, []byte(txHash)...)
 	return string(key)
 }

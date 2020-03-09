@@ -237,14 +237,8 @@ func storeWaitingPortingRequests(db database.DatabaseInterface,
 func storeFinalExchangeRates(db database.DatabaseInterface,
 	beaconHeight uint64,
 	finalExchangeRates map[string]*lvdb.FinalExchangeRates) error {
-
-	Logger.log.Infof("Portal exchange rates, save exchange rates: count final exchange rate %v", len(finalExchangeRates))
-
 	for key, exchangeRates := range finalExchangeRates {
 		newKey := replaceKeyByBeaconHeight(key, beaconHeight)
-
-		Logger.log.Infof("Portal exchange rates, generate new key %v", newKey)
-
 		exchangeRatesBytes, err := json.Marshal(exchangeRates)
 		if err != nil {
 			return err
@@ -431,6 +425,31 @@ func GetPortingRequestByKey(
 	}
 
 	return &portingRequestResult, nil
+}
+
+func GetCustodianWithdrawRequestByKey(
+	db database.DatabaseInterface,
+	key []byte,
+) (*lvdb.CustodianWithdrawRequest, error) {
+	custodianWithdrawItem, err := db.GetItemPortalByKey(key)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var custodianWithdraw lvdb.CustodianWithdrawRequest
+
+	if  custodianWithdrawItem == nil {
+		return &custodianWithdraw, nil
+	}
+
+	//get value via idx
+	err = json.Unmarshal(custodianWithdrawItem, &custodianWithdraw)
+	if err != nil {
+		return nil, err
+	}
+
+	return &custodianWithdraw, nil
 }
 
 func GetAllPortingRequest(

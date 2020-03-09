@@ -504,6 +504,29 @@ func (httpServer *HttpServer) handleCreateRawTxWithReqUnlockCollateral(params in
 	return result, nil
 }
 
+func (httpServer *HttpServer) handleGetCustodianWithdrawByTxId(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+
+	// get meta data from params
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
+	}
+
+	txId, ok := data["TxId"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata txId is invalid"))
+	}
+
+	result, err := httpServer.portal.GetCustodianWithdrawByTxId(txId, *httpServer.config.Database)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 func (httpServer *HttpServer) handleCreateAndSendTxWithReqUnlockCollateral(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	data, err := httpServer.handleCreateRawTxWithReqUnlockCollateral(params, closeChan)
 	if err != nil {

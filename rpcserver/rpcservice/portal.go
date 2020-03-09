@@ -53,6 +53,26 @@ func (portal *Portal) GetPortingRequestByByPortingId(portingId string, db databa
 	return result, nil
 }
 
+func (portal *Portal) GetCustodianWithdrawByTxId(txId string, db database.DatabaseInterface) (jsonresult.PortalCustodianWithdrawRequest, *RPCError) {
+	key := lvdb.NewCustodianWithdrawRequest(txId)
+	custodianWithdraw, err :=  blockchain.GetCustodianWithdrawRequestByKey(db, []byte(key))
+
+	if err != nil {
+		return jsonresult.PortalCustodianWithdrawRequest{}, NewRPCError(GetPortingRequestError, err)
+	}
+
+	if  custodianWithdraw == nil {
+		return jsonresult.PortalCustodianWithdrawRequest{}, NewRPCError(GetPortingRequestIsEmpty, err)
+	}
+
+	result := jsonresult.PortalCustodianWithdrawRequest{
+		CustodianWithdrawRequest: *custodianWithdraw,
+	}
+
+	return result, nil
+}
+
+
 func (portal *Portal) GetFinalExchangeRates(service *BlockService, db database.DatabaseInterface) (jsonresult.FinalExchangeRatesResult, *RPCError) {
 	beaconBlock, err := service.GetBeaconBestBlock()
 	if err != nil {
