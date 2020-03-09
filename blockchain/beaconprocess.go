@@ -71,21 +71,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
 
-	currentBeaconBestState := blockchain.GetBeaconBestState()
-	if currentBeaconBestState.BeaconHeight == beaconBlock.Header.Height && currentBeaconBestState.BestBlock.Header.Timestamp < beaconBlock.Header.Timestamp && currentBeaconBestState.BestBlock.Header.Round < beaconBlock.Header.Round {
-		currentBeaconHeight, currentBeaconHash := currentBeaconBestState.BeaconHeight, currentBeaconBestState.BestBlockHash
-		Logger.log.Infof("FORK BEACON, Current Beacon Block Height %+v, Hash %+v | Try to Insert New Beacon Block Height %+v, Hash %+v", currentBeaconBestState.BeaconHeight, currentBeaconBestState.BestBlockHash, beaconBlock.Header.Height, beaconBlock.Header.Hash())
-		if err := blockchain.ValidateBlockWithPrevBeaconBestState(beaconBlock); err != nil {
-			Logger.log.Error(err)
-			return err
-		}
-		if err := blockchain.revertBeaconState(); err != nil {
-			panic(err)
-		}
-		blockchain.BestState.Beacon.lock.Unlock()
-		Logger.log.Infof("REVERTED BEACON, Revert Current Beacon Block Height %+v, Hash %+v", currentBeaconHeight, currentBeaconHash)
-	}
-
 	if beaconBlock.Header.Height != blockchain.GetBeaconBestState().BeaconHeight+1 {
 		return errors.New("Not expected height")
 	}
@@ -117,14 +102,14 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 		Logger.log.Debugf("BEACON | SKIP Verify Best State With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	}
 	// Backup beststate
-	err := blockchain.config.DataBase.CleanBackup(true, 0)
-	if err != nil {
-		return NewBlockChainError(CleanBackUpError, err)
-	}
-	err = blockchain.BackupCurrentBeaconState(beaconBlock)
-	if err != nil {
-		return NewBlockChainError(BackUpBestStateError, err)
-	}
+	//err := blockchain.config.DataBase.CleanBackup(true, 0)
+	//if err != nil {
+	//	return NewBlockChainError(CleanBackUpError, err)
+	//}
+	//err = blockchain.BackupCurrentBeaconState(beaconBlock)
+	//if err != nil {
+	//	return NewBlockChainError(BackUpBestStateError, err)
+	//}
 	// process for slashing, make sure this one is called before update best state
 	// since we'd like to process with old committee, not updated committee
 	slashErr := blockchain.processForSlashing(beaconBlock)
@@ -153,10 +138,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	// Update best state with new beaconBlock
 
 	if err := blockchain.BestState.Beacon.updateBeaconBestState(beaconBlock, blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.AssignOffset, blockchain.config.ChainParams.RandomTime); err != nil {
-		errRevert := blockchain.revertBeaconBestState()
-		if errRevert != nil {
-			return errors.WithStack(errRevert)
-		}
+
 		return err
 	}
 	// updateNumOfBlocksByProducers updates number of blocks produced by producers
@@ -226,10 +208,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	}
 	Logger.log.Debugf("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	if err := blockchain.processStoreBeaconBlock(beaconBlock, snapshotBeaconCommittee, snapshotAllShardCommittee, snapshotRewardReceiver); err != nil {
-		revertErr := blockchain.revertBeaconState()
-		if revertErr != nil {
-			return errors.WithStack(revertErr)
-		}
+
 		return err
 	}
 	blockchain.removeOldDataAfterProcessingBeaconBlock()
@@ -330,16 +309,9 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *Beacon
 	previousBlockHash := beaconBlock.Header.PreviousBlockHash
 	parentBlockBytes, err := blockchain.config.DataBase.FetchBeaconBlock(previousBlockHash)
 	if err != nil {
-		Logger.log.Criticalf("FORK BEACON DETECTED, New Beacon Block Height %+v, Hash %+v, Expected Previous Hash %+v, BUT Current Best State Height %+v and Hash %+v", beaconBlock.Header.Height, beaconBlock.Header.Hash(), beaconBlock.Header.PreviousBlockHash, blockchain.BestState.Beacon.BeaconHeight, blockchain.BestState.Beacon.BestBlockHash)
-		blockchain.Synker.SyncBlkBeacon(true, false, false, []common.Hash{previousBlockHash}, nil, 0, 0, "")
-		if !isPreSign {
-			revertErr := blockchain.revertBeaconState()
-			if revertErr != nil {
-				return errors.WithStack(revertErr)
-			}
-		}
 		return NewBlockChainError(FetchBeaconBlockError, err)
 	}
+
 	previousBeaconBlock := NewBeaconBlock()
 	err = json.Unmarshal(parentBlockBytes, previousBeaconBlock)
 	if err != nil {

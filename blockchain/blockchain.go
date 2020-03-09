@@ -29,6 +29,9 @@ import (
 )
 
 type BlockChain struct {
+	BeaconChain *BeaconChain
+	ShardChain  []*ShardChain
+
 	Chains    map[string]ChainInterface
 	BestState *BestState
 	config    Config
@@ -225,6 +228,8 @@ func (blockchain *BlockChain) initChainState() error {
 		Blockchain: blockchain,
 	}
 	blockchain.Chains[common.BeaconChainKey] = &beaconChain
+	blockchain.BeaconChain = &beaconChain
+	blockchain.ShardChain = make([]*ShardChain, blockchain.BestState.Beacon.ActiveShards)
 
 	for shard := 1; shard <= blockchain.BestState.Beacon.ActiveShards; shard++ {
 		shardID := byte(shard - 1)
@@ -260,6 +265,7 @@ func (blockchain *BlockChain) initChainState() error {
 			Blockchain: blockchain,
 		}
 		blockchain.Chains[shardChain.ChainName] = &shardChain
+		blockchain.ShardChain[shardID] = &shardChain
 	}
 
 	return nil

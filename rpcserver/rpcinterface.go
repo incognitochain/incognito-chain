@@ -136,10 +136,6 @@ var HttpHandler = map[string]httpHandler{
 	getRewardAmount:              (*HttpServer).handleGetRewardAmount,
 	listRewardAmount:             (*HttpServer).handleListRewardAmount,
 
-	// revert
-	revertbeaconchain: (*HttpServer).handleRevertBeacon,
-	revertshardchain:  (*HttpServer).handleRevertShard,
-
 	// mining info
 	getMiningInfo:               (*HttpServer).handleGetMiningInfo,
 	enableMining:                (*HttpServer).handleEnableMining,
@@ -169,8 +165,8 @@ var HttpHandler = map[string]httpHandler{
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,
 
 	// incognnito mode for sc
-	getBurnProofForDepositToSC:             (*HttpServer).handleGetBurnProofForDepositToSC,
-	createAndSendBurningForDepositToSCRequest:      (*HttpServer).handleCreateAndSendBurningForDepositToSCRequest,
+	getBurnProofForDepositToSC:                (*HttpServer).handleGetBurnProofForDepositToSC,
+	createAndSendBurningForDepositToSCRequest: (*HttpServer).handleCreateAndSendBurningForDepositToSCRequest,
 }
 
 // Commands that are available to a limited user

@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/multiview"
 	"sync"
 	"time"
 
@@ -12,6 +13,8 @@ import (
 )
 
 type ShardChain struct {
+	multiView *multiview.MultiView
+
 	BestState  *ShardBestState
 	BlockGen   *BlockGenerator
 	Blockchain *BlockChain
@@ -19,12 +22,6 @@ type ShardChain struct {
 	lock       sync.RWMutex
 }
 
-func (chain *ShardChain) SetBestState(beststate *ShardBestState) {
-	chain.lock.Lock()
-	defer chain.lock.Unlock()
-	chain.BestState = beststate
-	return
-}
 func (chain *ShardChain) GetLastBlockTimeStamp() int64 {
 	return chain.BestState.BestBlock.Header.Timestamp
 }

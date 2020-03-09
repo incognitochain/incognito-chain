@@ -89,21 +89,6 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 
 	Logger.log.Criticalf("SHARD %+v | Begin insert new block height %+v with hash %+v", shardID, shardBlock.Header.Height, blockHash)
 	Logger.log.Debugf("SHARD %+v | Check block existence for insert height %+v with hash %+v", shardID, shardBlock.Header.Height, blockHash)
-	currentShardBestState := blockchain.BestState.Shard[shardBlock.Header.ShardID]
-
-	if currentShardBestState.ShardHeight == shardBlock.Header.Height && currentShardBestState.BestBlock.Header.Timestamp < shardBlock.Header.Timestamp && currentShardBestState.BestBlock.Header.Round < shardBlock.Header.Round {
-		currentShardHeight := currentShardBestState.ShardHeight
-		currentShardHash := currentShardBestState.BestBlockHash
-		Logger.log.Debugf("FORK SHARDID %+v, Current Block Height %+v, Block Hash %+v | Try To Insert New Shard Block Height %+v, Hash %+v", shardBlock.Header.ShardID, currentShardBestState.ShardHeight, currentShardBestState.BestBlockHash, shardBlock.Header.Height, shardBlock.Header.Hash())
-		if err := blockchain.ValidateBlockWithPrevShardBestState(shardBlock); err != nil {
-			Logger.log.Error(err)
-			return err
-		}
-		if err := blockchain.RevertShardState(shardBlock.Header.ShardID); err != nil {
-			panic(err)
-		}
-		Logger.log.Debugf("REVERTED SHARDID %+v, Revert Current Block Height %+v, Block Hash %+v", shardBlock.Header.ShardID, currentShardHeight, currentShardHash)
-	}
 
 	if shardBlock.Header.Height != blockchain.BestState.Shard[shardID].ShardHeight+1 {
 		return errors.New("Not expected height")
@@ -143,15 +128,6 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 		return err
 	}
 	Logger.log.Debugf("SHARD %+v | BackupCurrentShardState, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-	// Backup beststate
-	err = blockchain.config.DataBase.CleanBackup(false, shardBlock.Header.ShardID)
-	if err != nil {
-		return NewBlockChainError(CleanBackUpError, err)
-	}
-	err = blockchain.BackupCurrentShardState(shardBlock, beaconBlocks)
-	if err != nil {
-		return NewBlockChainError(BackUpBestStateError, err)
-	}
 
 	oldCommittee, err := incognitokey.CommitteeKeyListToString(blockchain.BestState.Shard[shardID].ShardCommittee)
 	if err != nil {
@@ -160,10 +136,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 
 	Logger.log.Debugf("SHARD %+v | Update ShardBestState, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	if err := blockchain.BestState.Shard[shardID].updateShardBestState(blockchain, shardBlock, beaconBlocks); err != nil {
-		errRevert := blockchain.revertShardBestState(shardID)
-		if errRevert != nil {
-			return errors.WithStack(errRevert)
-		}
+
 		return err
 	}
 
@@ -199,10 +172,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	//========Store new  Shard block and new shard bestState
 	err = blockchain.processStoreShardBlockAndUpdateDatabase(shardBlock)
 	if err != nil {
-		revertErr := blockchain.revertShardState(shardID)
-		if revertErr != nil {
-			return errors.WithStack(revertErr)
-		}
+
 		return err
 	}
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewShardblockTopic, shardBlock))
@@ -309,22 +279,9 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 	previousBlockHash := shardBlock.Header.PreviousBlockHash
 	previousShardBlockData, err := blockchain.config.DataBase.FetchBlock(previousBlockHash)
 	if err != nil {
-		Logger.log.Criticalf("FORK SHARD DETECTED shardID=%+v at BlockHeight=%+v hash=%+v pre-hash=%+v",
-			shardID,
-			shardBlock.Header.Height,
-			shardBlock.Hash().String(),
-			previousBlockHash.String())
-		blockchain.Synker.SyncBlkShard(shardID, true, false, false, []common.Hash{previousBlockHash}, nil, 0, 0, "")
-		Logger.log.Critical("SEND REQUEST FOR BLOCK HASH", previousBlockHash.String(), shardBlock.Header.Height, shardBlock.Header.ShardID)
-		if !isPreSign {
-			revertErr := blockchain.revertShardState(shardID)
-			if revertErr != nil {
-				Logger.log.Error("blockchain.revertShardState error", revertErr)
-				return errors.WithStack(revertErr)
-			}
-		}
 		return NewBlockChainError(FetchPreviousBlockError, err)
 	}
+
 	previousShardBlock := ShardBlock{}
 	err = json.Unmarshal(previousShardBlockData, &previousShardBlock)
 	if err != nil {

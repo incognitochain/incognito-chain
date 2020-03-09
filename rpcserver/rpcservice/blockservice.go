@@ -723,14 +723,6 @@ func (blockService BlockService) GetMinerRewardFromMiningKey(incPublicKey []byte
 	return rewardAmountResult, nil
 }
 
-func (blockService BlockService) RevertBeacon() error {
-	return blockService.BlockChain.RevertBeaconState()
-}
-
-func (blockService BlockService) RevertShard(shardID byte) error {
-	return blockService.BlockChain.RevertShardState(shardID)
-}
-
 func (blockService BlockService) GetRewardAmount(paymentAddress string) (map[string]uint64, *RPCError) {
 	rewardAmountResult := make(map[string]uint64)
 	rewardAmounts := make(map[common.Hash]uint64)

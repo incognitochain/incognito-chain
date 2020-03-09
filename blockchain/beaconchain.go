@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/multiview"
 	"sync"
 	"time"
 
@@ -12,18 +13,13 @@ import (
 )
 
 type BeaconChain struct {
+	multiView *multiview.MultiView
+
 	BestState  *BeaconBestState
 	BlockGen   *BlockGenerator
 	Blockchain *BlockChain
 	ChainName  string
 	lock       sync.RWMutex
-}
-
-func (chain *BeaconChain) SetBestState(beststate *BeaconBestState) {
-	chain.lock.Lock()
-	defer chain.lock.Unlock()
-	chain.BestState = beststate
-	return
 }
 
 func (chain *BeaconChain) GetLastBlockTimeStamp() int64 {
