@@ -67,7 +67,11 @@ func (s *S2BSyncProcess) start() {
 					Height:    s2bState,
 				}
 			case <-ticker.C:
-
+				for sender, ps := range s.s2bPeerState {
+					if ps.Timestamp < time.Now().Unix()-10 {
+						delete(s.s2bPeerState, sender)
+					}
+				}
 			}
 		}
 	}()

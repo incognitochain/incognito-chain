@@ -3,6 +3,7 @@ package multiview
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"time"
 )
 
 type View interface {
@@ -31,14 +32,31 @@ func NewMultiView() *MultiView {
 	}
 
 	go func() {
+		ticker := time.NewTicker(time.Second * 10)
 		for {
-			f := <-s.actionCh
-			f()
+			select {
+			case f := <-s.actionCh:
+				f()
+			case <-ticker.C:
+				if len(s.viewByHash) > 100 {
+					s.removeOutdatedView()
+				}
+			}
 		}
 	}()
 
 	return s
 
+}
+
+func (multiView *MultiView) removeOutdatedView() {
+	for h, v := range multiView.viewByHash {
+		if v.GetHeight() < multiView.finalView.GetHeight() {
+			delete(multiView.viewByHash, h)
+			delete(multiView.viewByPrevHash, h)
+			delete(multiView.viewByPrevHash, *v.GetPreviousHash())
+		}
+	}
 }
 
 //Only add view if view is validated (at least enough signature)
@@ -74,6 +92,12 @@ func (multiView *MultiView) GetFinalView() View {
 
 //update view whenever there is new view insert into system
 func (multiView *MultiView) updateViewState(newView View) {
+	defer func() {
+		if multiView.viewByHash[*multiView.finalView.GetPreviousHash()] != nil {
+			delete(multiView.viewByHash, *multiView.finalView.GetPreviousHash())
+			delete(multiView.viewByPrevHash, *multiView.finalView.GetPreviousHash())
+		}
+	}()
 
 	if multiView.finalView == nil {
 		multiView.bestView = newView
@@ -120,16 +144,6 @@ func (multiView *MultiView) updateViewState(newView View) {
 	return
 }
 
-//update view when
-//func (multiView *MultiView) SerializeViews() []byte {
-//
-//}
-//
-//func (multiView *MultiView) DeSerializeViews() []byte {
-//
-//}
-
-//
 func (multiView *MultiView) GetAllViewsWithBFS() []View {
 	queue := []View{multiView.finalView}
 	res := []View{}

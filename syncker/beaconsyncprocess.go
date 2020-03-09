@@ -74,6 +74,11 @@ func (s *BeaconSyncProcess) start(isCommittee bool) {
 				}
 			case <-ticker.C:
 				s.chain.SetReady(s.isCatchUp)
+				for sender, ps := range s.beaconPeerStates {
+					if ps.Timestamp < time.Now().Unix()-10 {
+						delete(s.beaconPeerStates, sender)
+					}
+				}
 			}
 			if s.status != RUNNING_SYNC {
 				time.Sleep(time.Second)

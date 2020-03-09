@@ -83,6 +83,11 @@ func (s *ShardSyncProcess) start() {
 				}
 			case <-ticker.C:
 				s.Chain.SetReady(s.isCatchUp)
+				for sender, ps := range s.shardPeerState {
+					if ps.Timestamp < time.Now().Unix()-10 {
+						delete(s.shardPeerState, sender)
+					}
+				}
 			}
 		}
 	}()
