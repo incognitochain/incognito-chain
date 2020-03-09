@@ -303,7 +303,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		},
 		BC: serverObj.blockChain,
 	}
-
+	metrics.SetBlockChainObj(serverObj.blockChain)
 	metrics.SetGlobalParam("Bootnode", cfg.DiscoverPeersAddress)
 	metrics.SetGlobalParam("ExternalAddress", cfg.ExternalAddress)
 
