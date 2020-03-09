@@ -136,6 +136,28 @@ func (db *db) DeleteBeaconBlock(hash common.Hash, idx uint64) error {
 	return nil
 }
 
+func (db *db) StoreBeaconViews(val []byte, bd *[]database.BatchData) error {
+	key := beaconViewsPrefix
+
+	if bd != nil {
+		*bd = append(*bd, database.BatchData{key, val})
+		return nil
+	}
+	if err := db.Put(key, val); err != nil {
+		return database.NewDatabaseError(database.StoreBeaconBestStateError, err)
+	}
+	return nil
+}
+
+func (db *db) FetchBeaconViews() ([]byte, error) {
+	key := beaconViewsPrefix
+	block, err := db.Get(key)
+	if err != nil {
+		return nil, database.NewDatabaseError(database.FetchBeaconBestStateError, err)
+	}
+	return block, nil
+}
+
 func (db *db) StoreBeaconBestState(v interface{}, bd *[]database.BatchData) error {
 	val, err := json.Marshal(v)
 	if err != nil {

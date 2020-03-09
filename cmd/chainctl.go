@@ -247,7 +247,7 @@ func restoreBeaconChain(bc *blockchain.BlockChain, filename string) error {
 		if err != nil {
 			return err
 		}
-		if bc.BestState.Beacon.BeaconHeight >= block.Header.Height {
+		if bc.GetBeaconBestState().BeaconHeight >= block.Header.Height {
 			continue
 		}
 		if block.Header.Height%100 == 0 {

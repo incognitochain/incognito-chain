@@ -24,7 +24,7 @@ func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(
 	// addressBytes := blockGenerator.chain.config.UserKeySet.PaymentAddress.Pk
 	//shardID := common.GetShardIDFromLastByte(addressBytes[len(addressBytes)-1])
 	publicKey, _ := blockGenerator.chain.config.ConsensusEngine.GetCurrentMiningPublicKey()
-	_, committeeShardID := blockGenerator.chain.BestState.Beacon.GetPubkeyRole(publicKey, 0)
+	_, committeeShardID := blockGenerator.chain.GetBeaconBestState().GetPubkeyRole(publicKey, 0)
 
 	shardBestState := blockGenerator.chain.GetBestStateShard(committeeShardID)
 	fmt.Println("SA: get tx for ", swapPublicKey, shardBestState.StakingTx, committeeShardID)
@@ -95,7 +95,7 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(blkHeight, epoch uin
 	var instRewardForBeacons [][]string
 	var instRewardForIncDAO [][]string
 	var instRewardForShards [][]string
-	numberOfActiveShards := blockchain.BestState.Beacon.ActiveShards
+	numberOfActiveShards := blockchain.GetBeaconBestState().ActiveShards
 	allCoinID, err := blockchain.config.DataBase.GetAllTokenIDForReward(epoch)
 
 	if err != nil {

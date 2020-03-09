@@ -105,17 +105,8 @@ func NewBeaconBestStateWithConfig(netparam *Params) *BeaconBestState {
 	return beaconBestState
 }
 
-// func SetBeaconBestState(beacon *BeaconBestState) {
-// 	beacon.lock = GetBeaconBestState().lock
-// 	*GetBeaconBestState() = *beacon
-// }
-
 func (bc *BlockChain) GetBeaconBestState() *BeaconBestState {
-	if bc.BestState.Beacon != nil {
-		return bc.BestState.Beacon
-	}
-	bc.BestState.Beacon = NewBeaconBestState()
-	return bc.BestState.Beacon
+	return bc.BeaconChain.multiView.GetBestView().(*BeaconBestState)
 }
 
 func (beaconBestState *BeaconBestState) MarshalJSON() ([]byte, error) {
@@ -653,4 +644,20 @@ func (beaconBestState *BeaconBestState) getAllCommitteeValidatorCandidateFlatten
 	}
 	res = append(res, candidateShardWaitingForNextRandomStr...)
 	return res
+}
+
+func (beaconBestState *BeaconBestState) GetHash() *common.Hash {
+	return beaconBestState.BestBlock.Hash()
+}
+
+func (beaconBestState *BeaconBestState) GetPreviousHash() *common.Hash {
+	return &beaconBestState.BestBlock.Header.PreviousBlockHash
+}
+
+func (beaconBestState *BeaconBestState) GetHeight() uint64 {
+	return beaconBestState.BestBlock.GetHeight()
+}
+
+func (beaconBestState *BeaconBestState) GetBlockTime() int64 {
+	return beaconBestState.BestBlock.Header.Timestamp
 }

@@ -15,23 +15,27 @@ import (
 type BeaconChain struct {
 	multiView *multiview.MultiView
 
-	BestState  *BeaconBestState
 	BlockGen   *BlockGenerator
 	Blockchain *BlockChain
 	ChainName  string
 	lock       sync.RWMutex
 }
 
+func (chain *BeaconChain) GetBestState() *BeaconBestState {
+	view := chain.multiView.GetBestView()
+	return view.(*BeaconBestState)
+}
+
 func (chain *BeaconChain) GetLastBlockTimeStamp() int64 {
-	return chain.BestState.BestBlock.Header.Timestamp
+	return chain.multiView.GetBestView().(*BeaconBestState).BestBlock.Header.Timestamp
 }
 
 func (chain *BeaconChain) GetMinBlkInterval() time.Duration {
-	return chain.BestState.BlockInterval
+	return chain.multiView.GetBestView().(*BeaconBestState).BlockInterval
 }
 
 func (chain *BeaconChain) GetMaxBlkCreateTime() time.Duration {
-	return chain.BestState.BlockMaxCreateTime
+	return chain.multiView.GetBestView().(*BeaconBestState).BlockMaxCreateTime
 }
 
 func (chain *BeaconChain) IsReady() bool {
@@ -39,20 +43,20 @@ func (chain *BeaconChain) IsReady() bool {
 }
 
 func (chain *BeaconChain) CurrentHeight() uint64 {
-	return chain.BestState.BestBlock.Header.Height
+	return chain.multiView.GetBestView().(*BeaconBestState).BestBlock.Header.Height
 }
 
 func (chain *BeaconChain) GetCommittee() []incognitokey.CommitteePublicKey {
-	return chain.BestState.GetBeaconCommittee()
+	return chain.multiView.GetBestView().(*BeaconBestState).GetBeaconCommittee()
 }
 
 func (chain *BeaconChain) GetCommitteeSize() int {
-	return len(chain.BestState.BeaconCommittee)
+	return len(chain.multiView.GetBestView().(*BeaconBestState).BeaconCommittee)
 }
 
 func (chain *BeaconChain) GetPubKeyCommitteeIndex(pubkey string) int {
-	for index, key := range chain.BestState.GetBeaconCommittee() {
-		if key.GetMiningKeyBase58(chain.BestState.ConsensusAlgorithm) == pubkey {
+	for index, key := range chain.multiView.GetBestView().(*BeaconBestState).GetBeaconCommittee() {
+		if key.GetMiningKeyBase58(chain.multiView.GetBestView().(*BeaconBestState).ConsensusAlgorithm) == pubkey {
 			return index
 		}
 	}
@@ -60,7 +64,7 @@ func (chain *BeaconChain) GetPubKeyCommitteeIndex(pubkey string) int {
 }
 
 func (chain *BeaconChain) GetLastProposerIndex() int {
-	return chain.BestState.BeaconProposerIndex
+	return chain.multiView.GetBestView().(*BeaconBestState).BeaconProposerIndex
 }
 
 func (chain *BeaconChain) CreateNewBlock(round int) (common.BlockInterface, error) {
@@ -90,7 +94,7 @@ func (chain *BeaconChain) InsertAndBroadcastBlock(block common.BlockInterface) e
 }
 
 func (chain *BeaconChain) GetActiveShardNumber() int {
-	return chain.BestState.ActiveShards
+	return chain.multiView.GetBestView().(*BeaconBestState).ActiveShards
 }
 
 func (chain *BeaconChain) GetChainName() string {
@@ -98,7 +102,7 @@ func (chain *BeaconChain) GetChainName() string {
 }
 
 func (chain *BeaconChain) GetPubkeyRole(pubkey string, round int) (string, byte) {
-	return chain.BestState.GetPubkeyRole(pubkey, round)
+	return chain.multiView.GetBestView().(*BeaconBestState).GetPubkeyRole(pubkey, round)
 }
 
 func (chain *BeaconChain) ValidatePreSignBlock(block common.BlockInterface) error {
@@ -108,7 +112,7 @@ func (chain *BeaconChain) ValidatePreSignBlock(block common.BlockInterface) erro
 // func (chain *BeaconChain) ValidateAndInsertBlock(block common.BlockInterface) error {
 // 	var beaconBestState BeaconBestState
 // 	beaconBlock := block.(*BeaconBlock)
-// 	beaconBestState.cloneBeaconBestStateFrom(chain.BestState)
+// 	beaconBestState.cloneBeaconBestStateFrom(chain.multiView.GetBestView().(*BeaconBestState))
 // 	producerPublicKey := beaconBlock.Header.Producer
 // 	producerPosition := (beaconBestState.BeaconProposerIndex + beaconBlock.Header.Round) % len(beaconBestState.BeaconCommittee)
 // 	tempProducer := beaconBestState.BeaconCommittee[producerPosition].GetMiningKeyBase58(beaconBestState.ConsensusAlgorithm)
@@ -132,7 +136,7 @@ func (chain *BeaconChain) ValidateBlockSignatures(block common.BlockInterface, c
 }
 
 func (chain *BeaconChain) GetConsensusType() string {
-	return chain.BestState.ConsensusAlgorithm
+	return chain.multiView.GetBestView().(*BeaconBestState).ConsensusAlgorithm
 }
 
 func (chain *BeaconChain) GetShardID() int {
@@ -142,46 +146,46 @@ func (chain *BeaconChain) GetShardID() int {
 func (chain *BeaconChain) GetAllCommittees() map[string]map[string][]incognitokey.CommitteePublicKey {
 	var result map[string]map[string][]incognitokey.CommitteePublicKey
 	result = make(map[string]map[string][]incognitokey.CommitteePublicKey)
-	result[chain.BestState.ConsensusAlgorithm] = make(map[string][]incognitokey.CommitteePublicKey)
-	result[chain.BestState.ConsensusAlgorithm][common.BeaconChainKey] = append([]incognitokey.CommitteePublicKey{}, chain.BestState.BeaconCommittee...)
-	for shardID, consensusType := range chain.BestState.GetShardConsensusAlgorithm() {
+	result[chain.multiView.GetBestView().(*BeaconBestState).ConsensusAlgorithm] = make(map[string][]incognitokey.CommitteePublicKey)
+	result[chain.multiView.GetBestView().(*BeaconBestState).ConsensusAlgorithm][common.BeaconChainKey] = append([]incognitokey.CommitteePublicKey{}, chain.multiView.GetBestView().(*BeaconBestState).BeaconCommittee...)
+	for shardID, consensusType := range chain.multiView.GetBestView().(*BeaconBestState).GetShardConsensusAlgorithm() {
 		if _, ok := result[consensusType]; !ok {
 			result[consensusType] = make(map[string][]incognitokey.CommitteePublicKey)
 		}
-		result[consensusType][common.GetShardChainKey(shardID)] = append([]incognitokey.CommitteePublicKey{}, chain.BestState.ShardCommittee[shardID]...)
+		result[consensusType][common.GetShardChainKey(shardID)] = append([]incognitokey.CommitteePublicKey{}, chain.multiView.GetBestView().(*BeaconBestState).ShardCommittee[shardID]...)
 	}
 	return result
 }
 
 func (chain *BeaconChain) GetBeaconPendingList() []incognitokey.CommitteePublicKey {
 	var result []incognitokey.CommitteePublicKey
-	result = append(result, chain.BestState.BeaconPendingValidator...)
+	result = append(result, chain.multiView.GetBestView().(*BeaconBestState).BeaconPendingValidator...)
 	return result
 }
 
 func (chain *BeaconChain) GetShardsPendingList() map[string]map[string][]incognitokey.CommitteePublicKey {
 	var result map[string]map[string][]incognitokey.CommitteePublicKey
 	result = make(map[string]map[string][]incognitokey.CommitteePublicKey)
-	for shardID, consensusType := range chain.BestState.GetShardConsensusAlgorithm() {
+	for shardID, consensusType := range chain.multiView.GetBestView().(*BeaconBestState).GetShardConsensusAlgorithm() {
 		if _, ok := result[consensusType]; !ok {
 			result[consensusType] = make(map[string][]incognitokey.CommitteePublicKey)
 		}
-		result[consensusType][common.GetShardChainKey(shardID)] = append([]incognitokey.CommitteePublicKey{}, chain.BestState.ShardPendingValidator[shardID]...)
+		result[consensusType][common.GetShardChainKey(shardID)] = append([]incognitokey.CommitteePublicKey{}, chain.multiView.GetBestView().(*BeaconBestState).ShardPendingValidator[shardID]...)
 	}
 	return result
 }
 
 func (chain *BeaconChain) GetShardsWaitingList() []incognitokey.CommitteePublicKey {
 	var result []incognitokey.CommitteePublicKey
-	result = append(result, chain.BestState.CandidateShardWaitingForNextRandom...)
-	result = append(result, chain.BestState.CandidateShardWaitingForCurrentRandom...)
+	result = append(result, chain.multiView.GetBestView().(*BeaconBestState).CandidateShardWaitingForNextRandom...)
+	result = append(result, chain.multiView.GetBestView().(*BeaconBestState).CandidateShardWaitingForCurrentRandom...)
 	return result
 }
 
 func (chain *BeaconChain) GetBeaconWaitingList() []incognitokey.CommitteePublicKey {
 	var result []incognitokey.CommitteePublicKey
-	result = append(result, chain.BestState.CandidateBeaconWaitingForNextRandom...)
-	result = append(result, chain.BestState.CandidateBeaconWaitingForCurrentRandom...)
+	result = append(result, chain.multiView.GetBestView().(*BeaconBestState).CandidateBeaconWaitingForNextRandom...)
+	result = append(result, chain.multiView.GetBestView().(*BeaconBestState).CandidateBeaconWaitingForCurrentRandom...)
 	return result
 }
 

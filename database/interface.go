@@ -76,6 +76,9 @@ type DatabaseInterface interface {
 	CleanShardBestState() error
 
 	// Best state of beacon chain
+	StoreBeaconViews(v []byte, bd *[]BatchData) error
+	FetchBeaconViews() ([]byte, error)
+
 	StoreBeaconBestState(v interface{}, bd *[]BatchData) error
 	FetchBeaconBestState() ([]byte, error)
 	CleanBeaconBestState() error

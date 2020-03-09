@@ -58,7 +58,7 @@ func (blockchain *BlockChain) OnPeerStateReceived(
 		}
 		// }
 	}
-	for shardID := 0; shardID < blockchain.BestState.Beacon.ActiveShards; shardID++ {
+	for shardID := 0; shardID < blockchain.GetBeaconBestState().ActiveShards; shardID++ {
 		if shardState, ok := (*shard)[byte(shardID)]; ok {
 			if shardState.Height > blockchain.GetBestStateShard(byte(shardID)).ShardHeight && (*shard)[byte(shardID)].Timestamp > blockchain.GetBestStateShard(byte(shardID)).BestBlock.Header.Timestamp {
 				pState.Shard[byte(shardID)] = &shardState
@@ -112,12 +112,12 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 		return
 	}
 	if blockchain.Synker.Status.Beacon {
-		Logger.log.Debugf("Beacon block received at height: %d, current  beacon best state: %d, received block time %+v", newBlk.Header.Height, blockchain.BestState.Beacon.BeaconHeight, newBlk.Header.Timestamp)
-		if newBlk.Header.Timestamp < blockchain.BestState.Beacon.BestBlock.Header.Timestamp { // not receive block older than current latest block
+		Logger.log.Debugf("Beacon block received at height: %d, current  beacon best state: %d, received block time %+v", newBlk.Header.Height, blockchain.GetBeaconBestState().BeaconHeight, newBlk.Header.Timestamp)
+		if newBlk.Header.Timestamp < blockchain.GetBeaconBestState().BestBlock.Header.Timestamp { // not receive block older than current latest block
 			return
 		}
-		if blockchain.BestState.Beacon.BeaconHeight <= newBlk.Header.Height {
-			currentBeaconBestState := blockchain.BestState.Beacon
+		if blockchain.GetBeaconBestState().BeaconHeight <= newBlk.Header.Height {
+			currentBeaconBestState := blockchain.GetBeaconBestState()
 			if currentBeaconBestState.BeaconHeight == newBlk.Header.Height && currentBeaconBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentBeaconBestState.BestBlock.Header.Round < newBlk.Header.Round {
 				Logger.log.Debugf("Beacon block insert %d", newBlk.Header.Height)
 				err := blockchain.InsertBeaconBlock(newBlk, false)

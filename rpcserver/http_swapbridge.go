@@ -15,7 +15,7 @@ import (
 
 // handleGetLatestBridgeSwapProof returns the latest proof of a change in bridge's committee
 func (httpServer *HttpServer) handleGetLatestBridgeSwapProof(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	latestBlock := httpServer.config.BlockChain.BestState.Beacon.BeaconHeight
+	latestBlock := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
 	for i := latestBlock; i >= 1; i-- {
 		params := []interface{}{float64(i)}
 		proof, err := httpServer.handleGetBridgeSwapProof(params, closeChan)
@@ -31,11 +31,11 @@ func (httpServer *HttpServer) handleGetLatestBridgeSwapProof(params interface{},
 func (httpServer *HttpServer) handleGetBridgeSwapProof(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Infof("handleGetBridgeSwapProof params: %+v", params)
 	listParams, ok := params.([]interface{})
-	if !ok || len(listParams) < 1{
+	if !ok || len(listParams) < 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
 	}
 
-	heightParam, ok :=listParams[0].(float64)
+	heightParam, ok := listParams[0].(float64)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("height param is invalid"))
 	}

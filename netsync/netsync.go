@@ -151,21 +151,15 @@ out:
 					switch msg := msgC.(type) {
 					case *wire.MessageTx, *wire.MessageTxPrivacyToken:
 						{
-							beaconHeight := int64(-1)
-							beaconBestState, err := netSync.config.BlockChain.BestState.GetClonedBeaconBestState()
-							if err == nil {
-								beaconHeight = int64(beaconBestState.BeaconHeight)
-							} else {
-								Logger.log.Error(err)
-							}
+							beaconHeight := netSync.config.BlockChain.GetBeaconBestState().BestBlock.GetHeight()
 							switch msg := msgC.(type) {
 							case *wire.MessageTx:
 								{
-									netSync.handleMessageTx(msg, beaconHeight)
+									netSync.handleMessageTx(msg, int64(beaconHeight))
 								}
 							case *wire.MessageTxPrivacyToken:
 								{
-									netSync.handleMessageTxPrivacyToken(msg, beaconHeight)
+									netSync.handleMessageTxPrivacyToken(msg, int64(beaconHeight))
 								}
 							}
 						}

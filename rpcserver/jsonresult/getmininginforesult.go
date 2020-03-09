@@ -23,7 +23,7 @@ func NewGetMiningInfoResult(txMemPool mempool.TxPool, blChain blockchain.BlockCh
 	result.PoolSize = txMemPool.Count()
 	result.Chain = param.Name
 	result.IsEnableMining = isEnableMining
-	result.BeaconHeight = blChain.BestState.Beacon.BeaconHeight
+	result.BeaconHeight = blChain.GetBeaconBestState().BeaconHeight
 
 	// role, shardID := httpServer.config.BlockChain.BestState.Beacon.GetPubkeyRole(httpServer.config.MiningPubKeyB58, 0)
 	layer, role, shardID := consensus.GetUserRole()

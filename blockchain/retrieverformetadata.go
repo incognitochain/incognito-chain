@@ -60,7 +60,7 @@ func (blockchain *BlockChain) GetChainHeight(shardID byte) uint64 {
 }
 
 func (blockchain *BlockChain) GetBeaconHeight() uint64 {
-	return blockchain.BestState.Beacon.BeaconHeight
+	return blockchain.GetBeaconBestState().BeaconHeight
 }
 
 func ListPubKeyFromListPayment(listPaymentAddresses []privacy.PaymentAddress) [][]byte {
@@ -170,7 +170,7 @@ func (blockchain *BlockChain) GetStakingTx(shardID byte) map[string]string {
 	return blockchain.BestState.Shard[shardID].GetStakingTx()
 }
 func (blockchain *BlockChain) GetAutoStakingList() map[string]bool {
-	return blockchain.BestState.Beacon.GetAutoStakingList()
+	return blockchain.GetBeaconBestState().GetAutoStakingList()
 }
 
 func (blockchain *BlockChain) GetCentralizedWebsitePaymentAddress() string {

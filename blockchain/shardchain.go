@@ -70,8 +70,8 @@ func (chain *ShardChain) CreateNewBlock(round int) (common.BlockInterface, error
 	start := time.Now()
 	Logger.log.Infof("Begin Create New Block %+v", start)
 	beaconHeight := chain.Blockchain.Synker.States.ClosestState.ClosestBeaconState
-	if chain.Blockchain.BestState.Beacon.BeaconHeight < beaconHeight {
-		beaconHeight = chain.Blockchain.BestState.Beacon.BeaconHeight
+	if chain.Blockchain.GetBeaconBestState().BeaconHeight < beaconHeight {
+		beaconHeight = chain.Blockchain.GetBeaconBestState().BeaconHeight
 	} else {
 
 		if beaconHeight < chain.BestState.BeaconHeight {

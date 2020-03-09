@@ -33,8 +33,8 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 	// fetch beacon blocks
 
 	previousBeaconHeight := blockchain.BestState.Shard[shardID].BeaconHeight
-	if shardBlock.Header.BeaconHeight > blockchain.BestState.Beacon.BeaconHeight {
-		return errors.New(fmt.Sprintf("Beacon %d not ready, latest is %d", shardBlock.Header.BeaconHeight, blockchain.BestState.Beacon.BeaconHeight))
+	if shardBlock.Header.BeaconHeight > blockchain.GetBeaconBestState().BeaconHeight {
+		return errors.New(fmt.Sprintf("Beacon %d not ready, latest is %d", shardBlock.Header.BeaconHeight, blockchain.GetBeaconBestState().BeaconHeight))
 	}
 
 	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain.config.DataBase, previousBeaconHeight+1, shardBlock.Header.BeaconHeight)

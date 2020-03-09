@@ -11,7 +11,7 @@ type FakeView struct {
 	prevHash *common.Hash
 	height   uint64
 	timeslot uint64
-	time     int
+	time     int64
 }
 
 func (s FakeView) GetHash() *common.Hash {
@@ -30,27 +30,26 @@ func (s *FakeView) GetTimeSlot() uint64 {
 	return s.timeslot
 }
 
-func (s *FakeView) GetBlockTime() int {
+func (s *FakeView) GetBlockTime() int64 {
 	return s.time
 }
 
 func TestNewMultiView(t *testing.T) {
 
-	initView := []View{&FakeView{
+	multiView := NewMultiView()
+	multiView.AddView(&FakeView{
 		&common.Hash{1},
-		nil,
+		&common.Hash{0},
 		1,
 		1,
 		1,
-	}}
-	multiView := NewMultiView(initView)
+	})
+
 	var print = func() {
 		fmt.Println("best", multiView.bestView.GetHash().String())
 		fmt.Println("final", multiView.finalView.GetHash().String())
 		fmt.Println(" ")
 	}
-
-	print()
 
 	multiView.AddView(&FakeView{
 		&common.Hash{2},
@@ -60,7 +59,6 @@ func TestNewMultiView(t *testing.T) {
 		2,
 	})
 
-	print()
 	multiView.AddView(&FakeView{
 		&common.Hash{3},
 		&common.Hash{2},
@@ -69,7 +67,6 @@ func TestNewMultiView(t *testing.T) {
 		3,
 	})
 
-	print()
 	multiView.AddView(&FakeView{
 		&common.Hash{4},
 		&common.Hash{3},
@@ -78,7 +75,20 @@ func TestNewMultiView(t *testing.T) {
 		4,
 	})
 
+	multiView.AddView(&FakeView{
+		&common.Hash{5},
+		&common.Hash{3},
+		4,
+		5,
+		5,
+	})
+
 	print()
+
+	for _, v := range multiView.GetAllViewsWithBFS() {
+		fmt.Println("node", v.GetHash().String())
+		fmt.Println("->")
+	}
 
 	if multiView.bestView.GetHash().String() != "0000000000000000000000000000000000000000000000000000000000000004" || multiView.finalView.GetHash().String() != "0000000000000000000000000000000000000000000000000000000000000003" {
 		panic("Wrong")

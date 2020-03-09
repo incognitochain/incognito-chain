@@ -225,7 +225,7 @@ func (synker *Synker) syncShard(shardID byte) error {
 
 func (synker *Synker) startSyncRelayShards() {
 	for _, shardID := range synker.blockchain.config.RelayShards {
-		if shardID > byte(synker.blockchain.BestState.Beacon.ActiveShards-1) {
+		if shardID > byte(synker.blockchain.GetBeaconBestState().ActiveShards-1) {
 			break
 		}
 		synker.syncShard(shardID)
@@ -273,7 +273,7 @@ func (synker *Synker) UpdateState() {
 	var shardsStateClone map[byte]ShardBestState
 	shardsStateClone = make(map[byte]ShardBestState)
 	var beaconStateClone BeaconBestState
-	err := beaconStateClone.cloneBeaconBestStateFrom(synker.blockchain.BestState.Beacon)
+	err := beaconStateClone.cloneBeaconBestStateFrom(synker.blockchain.GetBeaconBestState())
 	if err != nil {
 		panic(err)
 	}
@@ -562,7 +562,7 @@ func (synker *Synker) UpdateState() {
 	for shardID, committee := range beaconStateClone.GetShardCommittee() {
 		shardCommittee[shardID], _ = incognitokey.ExtractMiningPublickeysFromCommitteeKeyList(committee, beaconStateClone.ShardConsensusAlgorithm[shardID])
 	}
-	userMiningKey, err := synker.blockchain.config.ConsensusEngine.GetMiningPublicKeyByConsensus(synker.blockchain.BestState.Beacon.ConsensusAlgorithm)
+	userMiningKey, err := synker.blockchain.config.ConsensusEngine.GetMiningPublicKeyByConsensus(synker.blockchain.GetBeaconBestState().ConsensusAlgorithm)
 	if err != nil {
 		synker.Status.Unlock()
 		synker.States.Unlock()
@@ -838,7 +838,7 @@ func (synker *Synker) GetPoolsState() {
 	userPK, _ = synker.blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
 
 	if userPK != "" {
-		userRole, userShardID = synker.blockchain.BestState.Beacon.GetPubkeyRole(userPK, synker.blockchain.BestState.Beacon.BestBlock.Header.Round)
+		userRole, userShardID = synker.blockchain.GetBeaconBestState().GetPubkeyRole(userPK, synker.blockchain.GetBeaconBestState().BestBlock.Header.Round)
 		userShardRole = synker.blockchain.BestState.Shard[userShardID].GetPubkeyRole(userPK, synker.blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
 	}
 

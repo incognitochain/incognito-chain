@@ -1,6 +1,7 @@
 package multiview
 
 import (
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 )
 
@@ -9,29 +10,24 @@ type View interface {
 	GetPreviousHash() *common.Hash
 	GetHeight() uint64
 	//GetTimeSlot() uint64
-	GetBlockTime() int
+	GetBlockTime() int64
 }
 
 type MultiView struct {
-	viewByHash map[common.Hash]View //viewByPrevHash map[common.Hash][]View
-	actionCh   chan func()
+	viewByHash     map[common.Hash]View //viewByPrevHash map[common.Hash][]View
+	viewByPrevHash map[common.Hash][]View
+	actionCh       chan func()
 
 	//state
 	finalView View
 	bestView  View
 }
 
-func NewMultiView(initView []View) *MultiView {
-	if len(initView) == 0 {
-		panic("Init MultiView must not be null")
-	}
-
+func NewMultiView() *MultiView {
 	s := &MultiView{
-		viewByHash: make(map[common.Hash]View),
-		actionCh:   make(chan func()),
-
-		finalView: initView[0],
-		bestView:  initView[0],
+		viewByHash:     make(map[common.Hash]View),
+		viewByPrevHash: make(map[common.Hash][]View),
+		actionCh:       make(chan func()),
 	}
 
 	go func() {
@@ -41,24 +37,24 @@ func NewMultiView(initView []View) *MultiView {
 		}
 	}()
 
-	for _, v := range initView {
-		s.AddView(v)
-	}
 	return s
+
 }
 
 //Only add view if view is validated (at least enough signature)
-func (multiView *MultiView) AddView(view View) {
+func (multiView *MultiView) AddView(view View) bool {
 	res := make(chan bool)
 	multiView.actionCh <- func() {
 		if len(multiView.viewByHash) == 0 { //if no view in map, this is init view -> always allow
 			multiView.viewByHash[*view.GetHash()] = view
+			multiView.viewByPrevHash[*view.GetPreviousHash()] = append(multiView.viewByPrevHash[*view.GetPreviousHash()], view)
 			multiView.updateViewState(view)
 			res <- true
 			return
 		} else if _, ok := multiView.viewByHash[*view.GetHash()]; !ok { //otherwise, if view is not yet inserted
 			if _, ok := multiView.viewByHash[*view.GetPreviousHash()]; ok { // view must point to previous valid view
 				multiView.viewByHash[*view.GetHash()] = view
+				multiView.viewByPrevHash[*view.GetPreviousHash()] = append(multiView.viewByPrevHash[*view.GetPreviousHash()], view)
 				multiView.updateViewState(view)
 				res <- true
 				return
@@ -66,16 +62,24 @@ func (multiView *MultiView) AddView(view View) {
 		}
 		res <- false
 	}
-	<-res
+	return <-res
+}
+
+func (multiView *MultiView) GetBestView() View {
+	return multiView.bestView
+}
+
+func (multiView *MultiView) GetFinalView() View {
+	return multiView.finalView
 }
 
 //update view whenever there is new view insert into system
 func (multiView *MultiView) updateViewState(newView View) {
 	//update bestView
-	if newView.GetHeight() > multiView.bestView.GetHeight() {
+	if multiView.bestView == nil || newView.GetHeight() > multiView.bestView.GetHeight() {
 		multiView.bestView = newView
 	}
-	if newView.GetHeight() == multiView.bestView.GetHeight() && newView.GetBlockTime() < multiView.bestView.GetBlockTime() {
+	if multiView.finalView == nil || newView.GetHeight() == multiView.bestView.GetHeight() && newView.GetBlockTime() < multiView.bestView.GetBlockTime() {
 		multiView.bestView = newView
 	}
 
@@ -106,11 +110,36 @@ func (multiView *MultiView) updateViewState(newView View) {
 	//if prev1View.GetTimeSlot()+1 == multiView.bestView.GetTimeSlot() && prev2View.GetTimeSlot()+2 == multiView.bestView.GetTimeSlot() {
 	//	multiView.finalView = prev2View
 	//}
-
+	fmt.Println("Debug bestview", multiView.bestView.GetHeight())
 	return
 }
 
 //update view when
-func (multiView *MultiView) backupMultiView() {
+//func (multiView *MultiView) SerializeViews() []byte {
+//
+//}
+//
+//func (multiView *MultiView) DeSerializeViews() []byte {
+//
+//}
 
+//
+func (multiView *MultiView) GetAllViewsWithBFS() []View {
+	queue := []View{multiView.finalView}
+	res := []View{}
+	for {
+		if len(queue) == 0 {
+			break
+		}
+		firstItem := queue[0]
+		if firstItem == nil {
+			break
+		}
+		for _, v := range multiView.viewByPrevHash[*firstItem.GetHash()] {
+			queue = append(queue, v)
+		}
+		res = append(res, firstItem)
+		queue = queue[1:]
+	}
+	return res
 }

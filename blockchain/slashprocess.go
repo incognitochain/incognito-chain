@@ -26,7 +26,7 @@ func (blockchain *BlockChain) buildBadProducersWithPunishment(
 	slashLevels := blockchain.config.ChainParams.SlashLevels
 	numOfBlocksByProducers := map[string]uint64{}
 	if isBeacon {
-		numOfBlocksByProducers = blockchain.BestState.Beacon.NumOfBlocksByProducers
+		numOfBlocksByProducers = blockchain.GetBeaconBestState().NumOfBlocksByProducers
 	} else {
 		numOfBlocksByProducers = blockchain.BestState.Shard[byte(shardID)].NumOfBlocksByProducers
 	}

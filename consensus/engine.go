@@ -114,7 +114,7 @@ func (engine *Engine) watchConsensusCommittee() {
 				if common.IndexOfStr(publickey.GetMiningKeyBase58(consensusType), committee) != -1 {
 					engine.CurrentMiningChain = chainName
 					shardID := getShardFromChainName(chainName)
-					if engine.config.Blockchain.BestState.Shard[shardID].GetShardHeight() > engine.config.Blockchain.BestState.Beacon.GetBestHeightOfShard(shardID) {
+					if engine.config.Blockchain.BestState.Shard[shardID].GetShardHeight() > engine.config.Blockchain.GetBeaconBestState().GetBestHeightOfShard(shardID) {
 						role, shardID := engine.config.Blockchain.Chains[chainName].GetPubkeyRole(publickey.GetMiningKeyBase58(consensusType), 0)
 						if role == common.ProposerRole || role == common.ValidatorRole {
 							engine.updateUserState(&publickey, common.ShardRole, common.CommitteeRole, shardID)
@@ -182,7 +182,7 @@ func (engine *Engine) watchConsensusCommittee() {
 								shardID = getShardFromChainName(chainname)
 								userLayer = common.ShardRole
 								//member still in shard committee on beacon beststate but not on shard beststate
-								if engine.config.Blockchain.BestState.Shard[shardID].GetShardHeight() > engine.config.Blockchain.BestState.Beacon.GetBestHeightOfShard(shardID) {
+								if engine.config.Blockchain.BestState.Shard[shardID].GetShardHeight() > engine.config.Blockchain.GetBeaconBestState().GetBestHeightOfShard(shardID) {
 									role, _ := engine.config.Blockchain.Chains[chainname].GetPubkeyRole(userCurrentPublicKey, 0)
 									if role == common.EmptyString {
 										isSkip = true
@@ -202,7 +202,7 @@ func (engine *Engine) watchConsensusCommittee() {
 						} else {
 							if chainname == engine.CurrentMiningChain && chainname != common.BeaconChainKey {
 								shardID := getShardFromChainName(chainname)
-								if engine.config.Blockchain.BestState.Shard[shardID].GetShardHeight() > engine.config.Blockchain.BestState.Beacon.GetBestHeightOfShard(shardID) {
+								if engine.config.Blockchain.BestState.Shard[shardID].GetShardHeight() > engine.config.Blockchain.GetBeaconBestState().GetBestHeightOfShard(shardID) {
 									role, _ := engine.config.Blockchain.Chains[chainname].GetPubkeyRole(userCurrentPublicKey, 0)
 									if role == common.ValidatorRole || role == common.ProposerRole {
 										isSkip = true
@@ -271,7 +271,7 @@ func (engine *Engine) watchConsensusCommittee() {
 				} else {
 					if engine.CurrentMiningChain == chainName {
 						shardID := getShardFromChainName(chainName)
-						if engine.config.Blockchain.BestState.Shard[shardID].GetShardHeight() > engine.config.Blockchain.BestState.Beacon.GetBestHeightOfShard(shardID) {
+						if engine.config.Blockchain.BestState.Shard[shardID].GetShardHeight() > engine.config.Blockchain.GetBeaconBestState().GetBestHeightOfShard(shardID) {
 							engine.CurrentMiningChain = common.EmptyString
 							engine.updateUserState(&userMiningKey, common.EmptyString, common.EmptyString, 0)
 						}
@@ -458,7 +458,7 @@ func (engine *Engine) updateConsensusState() {
 		go engine.NotifyBeaconRole(false)
 		go engine.NotifyShardRole(int(getShardFromChainName(engine.CurrentMiningChain)))
 	}
-	publicKey, err := engine.GetMiningPublicKeyByConsensus(engine.config.Blockchain.BestState.Beacon.ConsensusAlgorithm)
+	publicKey, err := engine.GetMiningPublicKeyByConsensus(engine.config.Blockchain.GetBeaconBestState().ConsensusAlgorithm)
 	if err != nil {
 		Logger.log.Error(err)
 		return

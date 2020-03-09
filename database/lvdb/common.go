@@ -8,6 +8,7 @@ var (
 	prevBeaconPrefix         = []byte("prevBea-")
 	beaconPrefix             = []byte("bea-")
 	beaconBestBlockkeyPrefix = []byte("bea-bestBlock")
+	beaconViewsPrefix        = []byte("bea-views")
 	committeePrefix          = []byte("com-")
 	rewardReceiverPrefix     = []byte("rewardreceiver-")
 	heightPrefix             = []byte("height-")

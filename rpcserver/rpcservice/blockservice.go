@@ -98,7 +98,7 @@ func (blockService BlockService) GetBeaconBestState() (*blockchain.BeaconBestSta
 			Logger.log.Error("Json Unmarshal cache of shard best state error", err1)
 		}
 	} else {
-		beacon, err = blockService.BlockChain.BestState.GetClonedBeaconBestState()
+		beacon, err = blockService.BlockChain.GetClonedBeaconBestState()
 		cacheValue, err := json.Marshal(beacon)
 		if err == nil {
 			err1 := blockService.MemCache.PutExpired(cachedKey, cacheValue, 10000)
@@ -111,7 +111,7 @@ func (blockService BlockService) GetBeaconBestState() (*blockchain.BeaconBestSta
 }
 
 func (blockService BlockService) GetBeaconBestBlock() (*blockchain.BeaconBlock, error) {
-	clonedBeaconBestState, err := blockService.BlockChain.BestState.GetClonedBeaconBestState()
+	clonedBeaconBestState, err := blockService.BlockChain.GetClonedBeaconBestState()
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +119,7 @@ func (blockService BlockService) GetBeaconBestBlock() (*blockchain.BeaconBlock, 
 }
 
 func (blockService BlockService) GetBeaconBestBlockHash() (*common.Hash, error) {
-	clonedBeaconBestState, err := blockService.BlockChain.BestState.GetClonedBeaconBestState()
+	clonedBeaconBestState, err := blockService.BlockChain.GetClonedBeaconBestState()
 	if err != nil {
 		return nil, err
 	}
@@ -402,7 +402,7 @@ func (blockService BlockService) RetrieveBeaconBlock(hashString string) (*jsonre
 		return nil, NewRPCError(GetBeaconBlockByHashError, errD)
 	}
 
-	best := blockService.BlockChain.BestState.Beacon.BestBlock
+	best := blockService.BlockChain.GetBeaconBestState().BestBlock
 	blockHeight := block.Header.Height
 	// Get next block hash unless there are none.
 	var nextHashString string
@@ -430,7 +430,7 @@ func (blockService BlockService) RetrieveBeaconBlockByHeigh(blockHeight uint64) 
 		return nil, NewRPCError(GetBeaconBlockByHashError, errD)
 	}
 
-	best := blockService.BlockChain.BestState.Beacon.BestBlock
+	best := blockService.BlockChain.GetBeaconBestState().BestBlock
 	// Get next block hash unless there are none.
 	var nextHashString string
 	// if blockHeight < best.Header.GetHeight() {
@@ -516,7 +516,7 @@ func (blockService BlockService) GetBlocks(shardIDParam int, numBlock int) (inte
 		return result, nil
 	} else {
 		if len(resultBeacon) == 0 {
-			clonedBeaconBestState, err := blockService.BlockChain.BestState.GetClonedBeaconBestState()
+			clonedBeaconBestState, err := blockService.BlockChain.GetClonedBeaconBestState()
 			if err != nil {
 				return nil, NewRPCError(GetClonedBeaconBestStateError, err)
 			}
@@ -560,7 +560,7 @@ func (blockService BlockService) GetShardBlockByHeight(height uint64, shardID by
 }
 
 func (blockService BlockService) IsBeaconBestStateNil() bool {
-	return blockService.BlockChain.BestState == nil || blockService.BlockChain.BestState.Beacon == nil
+	return blockService.BlockChain.GetBeaconBestState() == nil
 }
 
 func (blockService BlockService) IsShardBestStateNil() bool {
@@ -620,7 +620,7 @@ func (blockService BlockService) CheckHashValue(hashStr string) (isTransaction b
 }
 
 func (blockService BlockService) GetActiveShards() int {
-	return blockService.BlockChain.BestState.Beacon.ActiveShards
+	return blockService.BlockChain.GetBeaconBestState().ActiveShards
 }
 
 func (blockService BlockService) ListPrivacyCustomToken() (map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData, error) {
