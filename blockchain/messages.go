@@ -16,7 +16,7 @@ func (blockchain *BlockChain) OnPeerStateReceived(
 	if blockchain.IsTest {
 		return
 	}
-	if beacon.Timestamp < GetBeaconBestState().BestBlock.Header.Timestamp && beacon.Height > GetBeaconBestState().BestBlock.Header.Height {
+	if beacon.Timestamp < blockchain.GetBeaconBestState().BestBlock.Header.Timestamp && beacon.Height > blockchain.GetBeaconBestState().BestBlock.Header.Height {
 		return
 	}
 
@@ -40,7 +40,7 @@ func (blockchain *BlockChain) OnPeerStateReceived(
 		pState.ShardToBeaconPool = shardToBeaconPool
 		for shardID := byte(0); shardID < byte(common.MaxShardNumber); shardID++ {
 			if shardState, ok := (*shard)[shardID]; ok {
-				if shardState.Height > GetBeaconBestState().GetBestHeightOfShard(shardID) {
+				if shardState.Height > blockchain.GetBeaconBestState().GetBestHeightOfShard(shardID) {
 					pState.Shard[shardID] = &shardState
 				}
 			}
@@ -60,7 +60,7 @@ func (blockchain *BlockChain) OnPeerStateReceived(
 	}
 	for shardID := 0; shardID < blockchain.BestState.Beacon.ActiveShards; shardID++ {
 		if shardState, ok := (*shard)[byte(shardID)]; ok {
-			if shardState.Height > GetBestStateShard(byte(shardID)).ShardHeight && (*shard)[byte(shardID)].Timestamp > GetBestStateShard(byte(shardID)).BestBlock.Header.Timestamp {
+			if shardState.Height > blockchain.GetBestStateShard(byte(shardID)).ShardHeight && (*shard)[byte(shardID)].Timestamp > blockchain.GetBestStateShard(byte(shardID)).BestBlock.Header.Timestamp {
 				pState.Shard[byte(shardID)] = &shardState
 			}
 		}

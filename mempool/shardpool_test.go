@@ -1,13 +1,14 @@
 package mempool
 
 import (
+	"sync"
+	"testing"
+	"time"
+
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/pubsub"
-	"sync"
-	"testing"
-	"time"
 )
 
 var (
@@ -96,13 +97,13 @@ var _ = func() (_ struct{}) {
 	for i := 0; i < 255; i++ {
 		shardID := byte(i)
 		bestShardHeight[shardID] = 1
-		blockchain.SetBestStateShard(shardID, &blockchain.ShardBestState{
-			ShardHeight: 1,
-		})
+		// blockchain.SetBestStateShard(shardID, &blockchain.ShardBestState{
+		// 	ShardHeight: 1,
+		// })
 	}
-	blockchain.SetBeaconBestState(&blockchain.BeaconBestState{
-		BestShardHeight: bestShardHeight,
-	})
+	// blockchain.SetBeaconBestState(&blockchain.BeaconBestState{
+	// 	BestShardHeight: bestShardHeight,
+	// })
 
 	InitShardPool(shardPoolMapInterface, pbShardPool)
 	InitShardPoolTest(pbShardPool)

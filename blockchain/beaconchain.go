@@ -19,6 +19,13 @@ type BeaconChain struct {
 	lock       sync.RWMutex
 }
 
+func (chain *BeaconChain) SetBestState(beststate *BeaconBestState) {
+	chain.lock.Lock()
+	defer chain.lock.Unlock()
+	chain.BestState = beststate
+	return
+}
+
 func (chain *BeaconChain) GetLastBlockTimeStamp() int64 {
 	return chain.BestState.BestBlock.Header.Timestamp
 }

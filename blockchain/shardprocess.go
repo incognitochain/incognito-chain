@@ -83,7 +83,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	shardLock.Lock()
 	defer shardLock.Unlock()
 
-	if shardBlock.Header.Height != GetBestStateShard(shardID).ShardHeight+1 {
+	if shardBlock.Header.Height != blockchain.BestState.Shard[shardID].ShardHeight+1 {
 		return errors.New("Not expected height")
 	}
 
@@ -105,7 +105,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 		Logger.log.Debugf("REVERTED SHARDID %+v, Revert Current Block Height %+v, Block Hash %+v", shardBlock.Header.ShardID, currentShardHeight, currentShardHash)
 	}
 
-	if shardBlock.Header.Height != GetBestStateShard(shardID).ShardHeight+1 {
+	if shardBlock.Header.Height != blockchain.BestState.Shard[shardID].ShardHeight+1 {
 		return errors.New("Not expected height")
 	}
 	// force non-committee member not to validate blk
@@ -785,7 +785,7 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(blockchain *B
 			for _, v := range swapedCommittees {
 				if txId, ok := shardBestState.StakingTx[v]; ok {
 					if checkReturnStakingTxExistence(txId, shardBlock) {
-						delete(GetBestStateShard(shardBestState.ShardID).StakingTx, v)
+						delete(shardBestState.StakingTx, v)
 					}
 				}
 			}

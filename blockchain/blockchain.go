@@ -198,9 +198,9 @@ func (blockchain *BlockChain) initChainState() error {
 		beacon := &BeaconBestState{}
 		err = json.Unmarshal(bestStateBeaconBytes, beacon)
 		//update singleton object
-		SetBeaconBestState(beacon)
+		// SetBeaconBestState(beacon)
 		//update beacon field in blockchain Beststate
-		blockchain.BestState.Beacon = GetBeaconBestState()
+		blockchain.BestState.Beacon = beacon
 
 		if err != nil {
 			initialized = false
@@ -219,7 +219,7 @@ func (blockchain *BlockChain) initChainState() error {
 		}
 	}
 	beaconChain := BeaconChain{
-		BestState:  GetBeaconBestState(),
+		BestState:  blockchain.BestState.Beacon,
 		BlockGen:   blockchain.config.BlockGen,
 		ChainName:  common.BeaconChainKey,
 		Blockchain: blockchain,
@@ -232,10 +232,10 @@ func (blockchain *BlockChain) initChainState() error {
 		if err == nil {
 			shardBestState := &ShardBestState{}
 			err = json.Unmarshal(bestStateBytes, shardBestState)
-			//update singleton object
-			SetBestStateShard(shardID, shardBestState)
+
 			//update Shard field in blockchain Beststate
-			blockchain.BestState.Shard[shardID] = GetBestStateShard(shardID)
+			blockchain.BestState.Shard[shardID] = shardBestState
+
 			if err != nil {
 				initialized = false
 			} else {
@@ -254,7 +254,7 @@ func (blockchain *BlockChain) initChainState() error {
 			}
 		}
 		shardChain := ShardChain{
-			BestState:  GetBestStateShard(shardID),
+			BestState:  blockchain.BestState.Shard[shardID],
 			BlockGen:   blockchain.config.BlockGen,
 			ChainName:  common.GetShardChainKey(shardID),
 			Blockchain: blockchain,

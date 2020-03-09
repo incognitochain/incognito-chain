@@ -303,7 +303,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		},
 		BC: serverObj.blockChain,
 	}
-
+	metrics.SetBlockChainObj(serverObj.blockChain)
 	metrics.SetGlobalParam("Bootnode", cfg.DiscoverPeersAddress)
 	metrics.SetGlobalParam("ExternalAddress", cfg.ExternalAddress)
 
@@ -346,7 +346,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		return err
 	}
 	//init beacon pol
-	mempool.InitBeaconPool(serverObj.pusubManager)
+	mempool.InitBeaconPool(serverObj.pusubManager, serverObj.blockChain)
 	//init shard pool
 	mempool.InitShardPool(serverObj.shardPool, serverObj.pusubManager)
 	//init cross shard pool
@@ -1222,7 +1222,7 @@ func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 		// fmt.Println("eiiiiiiiiiiiii")
 		// os.Exit(0)
 		//TODO hy check here
-		bestState := blockchain.GetBeaconBestState()
+		bestState := serverObj.blockChain.GetBeaconBestState()
 		beaconCommitteeList, err := incognitokey.CommitteeKeyListToString(bestState.BeaconCommittee)
 		if err != nil {
 			panic(err)

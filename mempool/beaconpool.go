@@ -13,6 +13,8 @@ import (
 	"github.com/incognitochain/incognito-chain/pubsub"
 )
 
+var blockchainObj *blockchain.BlockChain
+
 type BeaconPoolConfig struct {
 	MaxValidBlock   int
 	MaxPendingBlock int
@@ -41,17 +43,22 @@ func init() {
 		defer ticker.Stop()
 
 		for _ = range ticker.C {
-			GetBeaconPool().RemoveBlock(blockchain.GetBeaconBestState().BeaconHeight)
-			GetBeaconPool().cleanOldBlock(blockchain.GetBeaconBestState().BeaconHeight)
+			if blockchainObj == nil {
+				time.Sleep(time.Second)
+				continue
+			}
+			GetBeaconPool().RemoveBlock(blockchainObj.GetBeaconBestState().BeaconHeight)
+			GetBeaconPool().cleanOldBlock(blockchainObj.GetBeaconBestState().BeaconHeight)
 			GetBeaconPool().PromotePendingPool()
 		}
 	}()
 }
 
-func InitBeaconPool(pubsubManager *pubsub.PubSubManager) {
+func InitBeaconPool(pubsubManager *pubsub.PubSubManager, bc *blockchain.BlockChain) {
 	//do nothing
+	blockchainObj = bc
 	beaconPool := GetBeaconPool()
-	beaconPool.SetBeaconState(blockchain.GetBeaconBestState().BeaconHeight)
+	beaconPool.SetBeaconState(blockchainObj.GetBeaconBestState().BeaconHeight)
 	beaconPool.PubSubManager = pubsubManager
 	_, subChanRole, _ := beaconPool.PubSubManager.RegisterNewSubscriber(pubsub.BeaconRoleTopic)
 	beaconPool.RoleInCommitteesEvent = subChanRole
@@ -228,7 +235,7 @@ func (beaconPool *BeaconPool) updateLatestBeaconState() {
 	if len(beaconPool.validPool) > 0 {
 		beaconPool.latestValidHeight = beaconPool.validPool[len(beaconPool.validPool)-1].Header.Height
 	} else {
-		beaconPool.latestValidHeight = blockchain.GetBeaconBestState().BeaconHeight
+		beaconPool.latestValidHeight = blockchainObj.GetBeaconBestState().BeaconHeight
 	}
 }
 

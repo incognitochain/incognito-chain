@@ -54,7 +54,7 @@ type ShardBestState struct {
 	lock              sync.RWMutex
 }
 
-var bestStateShardMap = make(map[byte]*ShardBestState)
+// var bestStateShardMap = make(map[byte]*ShardBestState)
 
 func NewShardBestState() *ShardBestState {
 	return &ShardBestState{}
@@ -63,7 +63,7 @@ func NewShardBestStateWithShardID(shardID byte) *ShardBestState {
 	return &ShardBestState{ShardID: shardID}
 }
 func NewBestStateShardWithConfig(shardID byte, netparam *Params) *ShardBestState {
-	bestStateShard := GetBestStateShard(shardID)
+	bestStateShard := NewShardBestStateWithShardID(shardID)
 	err := bestStateShard.BestBlockHash.SetBytes(make([]byte, 32))
 	if err != nil {
 		panic(err)
@@ -87,20 +87,18 @@ func NewBestStateShardWithConfig(shardID byte, netparam *Params) *ShardBestState
 	return bestStateShard
 }
 
-func GetBestStateShard(shardID byte) *ShardBestState {
-	if bestStateShard, ok := bestStateShardMap[shardID]; !ok {
-		bestStateShardMap[shardID] = &ShardBestState{}
-		bestStateShardMap[shardID].ShardID = shardID
-		return bestStateShardMap[shardID]
+func (blockchain *BlockChain) GetBestStateShard(shardID byte) *ShardBestState {
+	if bestStateShard, ok := blockchain.BestState.Shard[shardID]; !ok {
+		return NewShardBestStateWithShardID(shardID)
 	} else {
 		return bestStateShard
 	}
 }
 
-func SetBestStateShard(shardID byte, beststateShard *ShardBestState) {
-	beststateShard.lock = GetBestStateShard(shardID).lock
-	*GetBestStateShard(shardID) = *beststateShard
-}
+// func SetBestStateShard(shardID byte, beststateShard *ShardBestState) {
+// 	beststateShard.lock = GetBestStateShard(shardID).lock
+// 	*GetBestStateShard(shardID) = *beststateShard
+// }
 
 // Get role of a public key base on best state shard
 func (shardBestState *ShardBestState) GetBytes() []byte {

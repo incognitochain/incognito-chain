@@ -3,14 +3,15 @@ package mempool
 import (
 	"errors"
 	"fmt"
-	lru "github.com/hashicorp/golang-lru"
-	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/pubsub"
 	"sort"
 	"strconv"
 	"sync"
 	"time"
+
+	lru "github.com/hashicorp/golang-lru"
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/pubsub"
 )
 
 type ShardPoolConfig struct {
@@ -48,8 +49,8 @@ func init() {
 		ticker := time.NewTicker(mainLoopTime)
 		for _ = range ticker.C {
 			for k, _ := range shardPoolMap {
-				GetShardPool(k).RemoveBlock(blockchain.GetBestStateShard(k).ShardHeight)
-				GetShardPool(k).CleanOldBlock(blockchain.GetBestStateShard(k).ShardHeight)
+				GetShardPool(k).RemoveBlock(blockchainObj.GetBestStateShard(k).ShardHeight)
+				GetShardPool(k).CleanOldBlock(blockchainObj.GetBestStateShard(k).ShardHeight)
 				GetShardPool(k).PromotePendingPool()
 			}
 		}
@@ -63,7 +64,7 @@ func InitShardPool(pool map[byte]blockchain.ShardPool, pubsubManager *pubsub.Pub
 		shardPoolMap[byte(i)] = getShardPool(byte(i))
 		shardPoolMap[byte(i)].mtx = new(sync.RWMutex)
 		//update last shard height
-		shardPoolMap[byte(i)].SetShardState(blockchain.GetBestStateShard(byte(i)).ShardHeight)
+		shardPoolMap[byte(i)].SetShardState(blockchainObj.GetBestStateShard(byte(i)).ShardHeight)
 		pool[byte(i)] = shardPoolMap[byte(i)]
 		shardPoolMap[byte(i)].PubSubManager = pubsubManager
 		_, subChanRole, _ := shardPoolMap[byte(i)].PubSubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
@@ -206,7 +207,7 @@ func (shardPool *ShardPool) updateLatestShardState() {
 	if len(shardPool.validPool) > 0 {
 		shardPool.latestValidHeight = shardPool.validPool[len(shardPool.validPool)-1].Header.Height
 	} else {
-		shardPool.latestValidHeight = blockchain.GetBestStateShard(shardPool.shardID).ShardHeight
+		shardPool.latestValidHeight = blockchainObj.GetBestStateShard(shardPool.shardID).ShardHeight
 	}
 }
 
@@ -260,7 +261,7 @@ func (shardPool *ShardPool) PromotePendingPool() {
 func (shardPool *ShardPool) insertNewShardBlockToPool(block *blockchain.ShardBlock) bool {
 	//If unknown to beacon best state store in pending
 	// Condition 1
-	if block.Header.Height > blockchain.GetBeaconBestState().GetBestHeightOfShard(block.Header.ShardID) {
+	if block.Header.Height > blockchainObj.GetBeaconBestState().GetBestHeightOfShard(block.Header.ShardID) {
 		shardPool.pendingPool[block.Header.Height] = block
 		return false
 	}
