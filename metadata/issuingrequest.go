@@ -107,7 +107,7 @@ func (iReq IssuingRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,
-	db *statedb.StateDB,
+	transactionStateDB *statedb.StateDB,
 ) (bool, error) {
 	keySet, err := wallet.Base58CheckDeserialize(bcr.GetCentralizedWebsitePaymentAddress())
 	if err != nil || !bytes.Equal(txr.GetSigPubKey(), keySet.KeySet.PaymentAddress.Pk) {
@@ -115,8 +115,8 @@ func (iReq IssuingRequest) ValidateTxWithBlockChain(
 	}
 
 	// check this is a normal pToken
-	if db.PrivacyTokenIDExisted(iReq.TokenID) || db.PrivacyTokenIDCrossShardExisted(iReq.TokenID) {
-		isBridgeToken, err := db.IsBridgeTokenExistedByType(iReq.TokenID, true)
+	if statedb.PrivacyTokenIDExisted(transactionStateDB, iReq.TokenID) {
+		isBridgeToken, err := statedb.IsBridgeTokenExistedByType(bcr.GetBeaconFeatureStateDB(), iReq.TokenID, true)
 		if !isBridgeToken {
 			if err != nil {
 				return false, NewMetadataTxError(InvalidMeta, err)

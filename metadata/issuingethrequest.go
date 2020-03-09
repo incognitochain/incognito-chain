@@ -1,11 +1,11 @@
 package metadata
 
 import (
-	"math/big"
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"strconv"
 	"strings"
 
@@ -118,7 +118,7 @@ func (iReq IssuingETHRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,
-	db *statedb.StateDB,
+	transactionStateDB *statedb.StateDB,
 ) (bool, error) {
 	ethReceipt, err := iReq.verifyProofAndParseReceipt()
 	if err != nil {
@@ -129,8 +129,8 @@ func (iReq IssuingETHRequest) ValidateTxWithBlockChain(
 	}
 
 	// check this is a normal pToken
-	if db.PrivacyTokenIDExisted(iReq.IncTokenID) || db.PrivacyTokenIDCrossShardExisted(iReq.IncTokenID) {
-		isBridgeToken, err := db.IsBridgeTokenExistedByType(iReq.IncTokenID, false)
+	if statedb.PrivacyTokenIDExisted(transactionStateDB, iReq.IncTokenID) {
+		isBridgeToken, err := statedb.IsBridgeTokenExistedByType(bcr.GetBeaconFeatureStateDB(), iReq.IncTokenID, false)
 		if !isBridgeToken {
 			if err != nil {
 				return false, NewMetadataTxError(InvalidMeta, err)
