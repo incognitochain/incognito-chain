@@ -334,7 +334,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		return [][]string{inst}, nil
 	}
 
-	if currentPortalState.CustodianPoolState == nil {
+	if len(currentPortalState.CustodianPoolState) <= 0 {
 		Logger.log.Errorf("Porting request: Custodian not found")
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,
@@ -1192,7 +1192,7 @@ func (blockchain *BlockChain) buildInstructionsForCustodianWithdraw(
 		return [][]string{inst}, nil
 	}
 
-	if currentPortalState.CustodianPoolState == nil {
+	if len(currentPortalState.CustodianPoolState) <= 0 {
 		Logger.log.Errorf("Custodian state is empty")
 
 		inst := buildCustodianWithdrawInst(

@@ -74,6 +74,7 @@ var minerCreatedMetaTypes = []int{
 	PortalUserRequestPTokenResponseMeta,
 	PortalCustodianDepositResponseMeta,
 	PortalRedeemRequestResponseMeta,
+	PortalCustodianWithdrawResponseMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock

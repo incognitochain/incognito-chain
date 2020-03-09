@@ -529,7 +529,11 @@ func pickSingleCustodian(metadata metadata.PortalUserRegister, exchangeRate *lvd
 			}
 
 			//update custodian state
-			_ = UpdateCustodianWithNewAmount(currentPortalState, kv.Key, metadata.PTokenId, metadata.RegisterAmount, totalPRV)
+			err := UpdateCustodianWithNewAmount(currentPortalState, kv.Key, metadata.PTokenId, metadata.RegisterAmount, totalPRV)
+
+			if err != nil {
+				return nil, err
+			}
 
 			return result, nil
 		}
@@ -583,7 +587,10 @@ func pickMultipleCustodian (metadata metadata.PortalUserRegister, exchangeRate *
 			holdPToken = holdPToken + pTokenCanUseUint64
 
 			//update custodian state
-			_ = UpdateCustodianWithNewAmount(currentPortalState, custodianItem.Key, metadata.PTokenId, pTokenCanUseUint64, totalPRV)
+			err := UpdateCustodianWithNewAmount(currentPortalState, custodianItem.Key, metadata.PTokenId, pTokenCanUseUint64, totalPRV)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -591,7 +598,10 @@ func pickMultipleCustodian (metadata metadata.PortalUserRegister, exchangeRate *
 }
 
 func UpdateCustodianWithNewAmount(currentPortalState *CurrentPortalState, custodianKey string, PTokenId string,  amountPToken uint64, lockedAmountCollateral uint64) error  {
-	custodian := currentPortalState.CustodianPoolState[custodianKey]
+	custodian, ok := currentPortalState.CustodianPoolState[custodianKey]
+	if !ok {
+		return errors.New("Custodian not found")
+	}
 
 	freeCollateral := custodian.FreeCollateral - lockedAmountCollateral
 
@@ -607,18 +617,18 @@ func UpdateCustodianWithNewAmount(currentPortalState *CurrentPortalState, custod
 	holdingPubTokens := holdingPubTokensMapping
 
 	//update collateral holded
-	lockedAmountCollateralMapping := make(map[string]uint64)
+	totalLockedAmountCollateral := make(map[string]uint64)
 	if custodian.LockedAmountCollateral == nil {
-		lockedAmountCollateralMapping[PTokenId] = lockedAmountCollateral
+		totalLockedAmountCollateral[PTokenId] = lockedAmountCollateral
 	} else {
 		for ptokenId, value := range custodian.LockedAmountCollateral {
-			lockedAmountCollateralMapping[ptokenId] = value + lockedAmountCollateral
+			totalLockedAmountCollateral[ptokenId] = value + lockedAmountCollateral
 		}
 	}
 
 	custodian.FreeCollateral = freeCollateral
 	custodian.HoldingPubTokens = holdingPubTokens
-	custodian.LockedAmountCollateral = lockedAmountCollateralMapping
+	custodian.LockedAmountCollateral = totalLockedAmountCollateral
 
 	currentPortalState.CustodianPoolState[custodianKey] = custodian
 

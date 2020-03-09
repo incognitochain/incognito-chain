@@ -223,6 +223,29 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		custodiansDetail := portingRequestContent.Custodian
 		portingFee := portingRequestContent.PortingFee
 
+
+		//todo: verify custodian
+		isCustodianAccepted := true
+		for address, itemCustodian := range custodiansDetail {
+			custodian, ok := currentPortalState.CustodianPoolState[address]
+			if !ok {
+				isCustodianAccepted	= false
+				break
+			}
+
+			if custodian.FreeCollateral < itemCustodian.LockedAmountCollateral {
+				isCustodianAccepted	= false
+				break
+			}
+
+			continue
+		}
+
+		if isCustodianAccepted == false {
+			Logger.log.Errorf("ERROR: Custodian not found")
+			return nil
+		}
+
 		// new request
 		newPortingRequestStateWaiting, err := NewPortingRequestState(
 			uniquePortingID,

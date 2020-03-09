@@ -368,7 +368,7 @@ func (httpServer * HttpServer) handleCustodianWithdrawRequest(params interface{}
 	arrayParams := common.InterfaceSlice(params)
 
 	// get meta data from params
-	data, ok := arrayParams[0].(map[string]interface{})
+	data, ok := arrayParams[4].(map[string]interface{})
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}

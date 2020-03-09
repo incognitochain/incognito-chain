@@ -70,7 +70,6 @@ func (responseMeta *PortalCustodianWithdrawResponse) CalculateSize() uint64 {
 	return calculateSize(responseMeta)
 }
 
-//todo: refactor
 func (responseMeta PortalCustodianWithdrawResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	txsInBlock []Transaction,
 	txsUsed []int,
@@ -137,7 +136,7 @@ func (responseMeta PortalCustodianWithdrawResponse) VerifyMinerCreatedTxBeforeGe
 	}
 
 	if idx == -1 { // not found the issuance request tx for this response
-		return false, fmt.Errorf(fmt.Sprintf("no PortalReqPtokens instruction found for PortalReqPtokensResponse tx %s", tx.Hash().String()))
+		return false, fmt.Errorf(fmt.Sprintf("no PortalCustodianWithdrawRequest instruction found for PortalCustodianWithdrawResponse tx %s", tx.Hash().String()))
 	}
 	instUsed[idx] = 1
 	return true, nil
