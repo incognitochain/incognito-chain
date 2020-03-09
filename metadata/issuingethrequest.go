@@ -127,9 +127,9 @@ func (iReq IssuingETHRequest) ValidateTxWithBlockChain(
 		isBridgeToken, err := db.IsBridgeTokenExistedByType(iReq.IncTokenID, false)
 		if !isBridgeToken {
 			if err != nil {
-				return false, NewMetadataTxError(InvalidMeta, errors.New("token is invalid"))
+				return false, NewMetadataTxError(InvalidMeta, err)
 			} else {
-				return false, nil
+				return false, NewMetadataTxError(InvalidMeta, errors.New("token is invalid"))
 			}
 		}
 	}
