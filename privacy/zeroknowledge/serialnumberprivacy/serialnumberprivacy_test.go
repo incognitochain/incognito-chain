@@ -8,13 +8,14 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/pedersen"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPKSNPrivacy(t *testing.T) {
 	for i := 0; i < 1000; i++ {
-		sk := key.GeneratePrivateKey(utils.RandBytes(31))
+		sk := key.GeneratePrivateKey(privacy_util.RandBytes(31))
 		skScalar := new(operation.Scalar).FromBytesS(sk)
 		if skScalar.ScalarValid() == false {
 			fmt.Println("Invalid scala key value")

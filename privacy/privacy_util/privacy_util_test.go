@@ -1,4 +1,4 @@
-package privacy
+package privacy_util
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/privacy/pedersen"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -49,21 +50,21 @@ func TestUtilsConvertIntToBinary(t *testing.T) {
 	}
 }
 
-//func TestUtilsConvertBigIntToBinary(t *testing.T) {
-//	data := []struct {
-//		number *big.Int
-//		size   int
-//		binary []*big.Int
-//	}{
-//		{new(big.Int).FromUint64(uint64(64)), 8, []*big.Int{new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(1), new(big.Int).SetInt64(0)}},
-//		{new(big.Int).FromUint64(uint64(100)), 10, []*big.Int{new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(1), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(1), new(big.Int).SetInt64(1), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0)}},
-//	}
-//
-//	for _, item := range data {
-//		res := ConvertBigIntToBinary(item.number, item.size)
-//		assert.Equal(t, item.binary, res)
-//	}
-//}
+// func TestUtilsConvertBigIntToBinary(t *testing.T) {
+// 	data := []struct {
+// 		number *big.Int
+// 		size   int
+// 		binary []*big.Int
+// 	}{
+// 		{new(big.Int).FromUint64(uint64(64)), 8, []*big.Int{new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(1), new(big.Int).SetInt64(0)}},
+// 		{new(big.Int).FromUint64(uint64(100)), 10, []*big.Int{new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(1), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(1), new(big.Int).SetInt64(1), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0)}},
+// 	}
+
+// 	for _, item := range data {
+// 		res := ConvertBigIntToBinary(item.number, item.size)
+// 		assert.Equal(t, item.binary, res)
+// 	}
+// }
 
 func TestUtilsAddPaddingBigInt(t *testing.T) {
 	data := []struct {
@@ -134,18 +135,21 @@ func TestFee(t *testing.T) {
 	fmt.Printf("Fee uint64: %v\n", uint64(fee))
 	fmt.Printf("outValue2: %v\n", outValue2)
 
-	comInputValueSum := new(Point).ScalarMult(PedCom.G[PedersenValueIndex], new(Scalar).FromUint64(uint64(inValue)))
-	comOutputValue1 := new(Point).ScalarMult(PedCom.G[PedersenValueIndex], new(Scalar).FromUint64(uint64(outValue1)))
-	comOutputValue2 := new(Point).ScalarMult(PedCom.G[PedersenValueIndex], new(Scalar).FromUint64(uint64(outValue2)))
-	comOutputValueSum := new(Point).Add(comOutputValue1, comOutputValue2)
+	comInputValueSum := new(operation.Point).ScalarMult(pedersen.PedCom.G[pedersen.PedersenValueIndex], new(operation.Scalar).FromUint64(uint64(inValue)))
 
-	comFee := new(Point)
+	comOutputValue1 := new(operation.Point).ScalarMult(pedersen.PedCom.G[pedersen.PedersenValueIndex], new(operation.Scalar).FromUint64(uint64(outValue1)))
+
+	comOutputValue2 := new(operation.Point).ScalarMult(pedersen.PedCom.G[pedersen.PedersenValueIndex], new(operation.Scalar).FromUint64(uint64(outValue2)))
+
+	comOutputValueSum := new(operation.Point).Add(comOutputValue1, comOutputValue2)
+
+	comFee := new(operation.Point)
 	if fee2 > 0 {
 		fmt.Printf("fee2 > 0\n")
-		comFee = comFee.ScalarMult(PedCom.G[PedersenValueIndex], new(Scalar).FromUint64(uint64(fee2)))
+		comFee = comFee.ScalarMult(pedersen.PedCom.G[pedersen.PedersenValueIndex], new(operation.Scalar).FromUint64(uint64(fee2)))
 	}
 
-	tmp1 := new(Point).Add(comOutputValueSum, comFee)
+	tmp1 := new(operation.Point).Add(comOutputValueSum, comFee)
 
 	if operation.IsPointEqual(tmp1, comInputValueSum) {
 		fmt.Printf("Equal\n")

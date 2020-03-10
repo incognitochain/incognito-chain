@@ -1,9 +1,9 @@
 package txfull
 
 import (
-	"github.com/incognitochain/incognito-chain/operation"
-	ota "github.com/incognitochain/incognito-chain/privacy/privacy-v2/onetime_address"
-	"github.com/incognitochain/incognito-chain/privacy/privacy-v2/onetime_address/utxo"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
+	ota "github.com/incognitochain/incognito-chain/privacy/privacy_v2/onetime_address"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/onetime_address/utxo"
 )
 
 func getSumBlindInput(this *RingCTFull) (*operation.Scalar, error) {

@@ -1,14 +1,14 @@
-package privacy
+package zkp
 
 import "github.com/incognitochain/incognito-chain/common"
 
-type PrivacyLogger struct {
+type PaymentLogger struct {
 	Log common.Logger
 }
 
-func (logger *PrivacyLogger) Init(inst common.Logger) {
+func (logger *PaymentLogger) Init(inst common.Logger) {
 	logger.Log = inst
 }
 
 // Global instant to use
-var Logger = PrivacyLogger{}
+var Logger = PaymentLogger{}

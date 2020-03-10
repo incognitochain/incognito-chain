@@ -1,4 +1,4 @@
-package aggregaterange
+package bulletproofs
 
 import (
 	"fmt"
@@ -14,16 +14,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMain(m *testing.M) {
-	log.SetOutput(ioutil.Discard)
-	m.Run()
-}
-
 var _ = func() (_ struct{}) {
 	fmt.Println("This runs before init()!")
 	Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return
 }()
+
+func TestMain(m *testing.M) {
+	log.SetOutput(ioutil.Discard)
+	m.Run()
+}
 
 func TestPad(t *testing.T) {
 	data := []struct {
@@ -85,7 +85,7 @@ func TestEncodeVectors(t *testing.T) {
 
 		actualRes, err := encodeVectors(a, b, G, H)
 		if err != nil {
-			Logger.Log.Info("Err: %v\n", err)
+			fmt.Printf("Err: %v\n", err)
 		}
 
 		expectedRes := new(operation.Point).Identity()
@@ -95,6 +95,56 @@ func TestEncodeVectors(t *testing.T) {
 		}
 
 		assert.Equal(t, expectedRes, actualRes)
+	}
+}
+
+func TestInnerProductProveVerify(t *testing.T) {
+	for k := 0; k < 10; k++ {
+		numValue := rand.Intn(maxOutputNumber)
+		numValuePad := pad(numValue)
+		aggParam := new(bulletproofParams)
+		aggParam.g = AggParam.g[0 : numValuePad*maxExp]
+		aggParam.h = AggParam.h[0 : numValuePad*maxExp]
+		aggParam.u = AggParam.u
+		aggParam.cs = AggParam.cs
+
+		wit := new(InnerProductWitness)
+		n := maxExp * numValuePad
+		wit.a = make([]*operation.Scalar, n)
+		wit.b = make([]*operation.Scalar, n)
+
+		for i := range wit.a {
+			//wit.a[i] = privacy.RandomScalar()
+			//wit.b[i] = privacy.RandomScalar()
+			wit.a[i] = new(operation.Scalar).FromUint64(uint64(rand.Intn(100000)))
+			wit.b[i] = new(operation.Scalar).FromUint64(uint64(rand.Intn(100000)))
+		}
+
+		c, _ := innerProduct(wit.a, wit.b)
+		wit.p = new(operation.Point).ScalarMult(aggParam.u, c)
+
+		for i := range wit.a {
+			wit.p.Add(wit.p, new(operation.Point).ScalarMult(aggParam.g[i], wit.a[i]))
+			wit.p.Add(wit.p, new(operation.Point).ScalarMult(aggParam.h[i], wit.b[i]))
+		}
+
+		proof, err := wit.Prove(aggParam.g, aggParam.h, aggParam.u, aggParam.cs.ToBytesS())
+		if err != nil {
+			fmt.Printf("Err: %v\n", err)
+			return
+		}
+		res2 := proof.Verify(aggParam.g, aggParam.h, aggParam.u, aggParam.cs.ToBytesS())
+		assert.Equal(t, true, res2)
+		res2prime := proof.VerifyFaster(aggParam.g, aggParam.h, aggParam.u, aggParam.cs.ToBytesS())
+		assert.Equal(t, true, res2prime)
+
+		bytes := proof.Bytes()
+		proof2 := new(InnerProductProof)
+		proof2.SetBytes(bytes)
+		res3 := proof2.Verify(aggParam.g, aggParam.h, aggParam.u, aggParam.cs.ToBytesS())
+		assert.Equal(t, true, res3)
+		res3prime := proof2.Verify(aggParam.g, aggParam.h, aggParam.u, aggParam.cs.ToBytesS())
+		assert.Equal(t, true, res3prime)
 	}
 }
 
@@ -116,11 +166,6 @@ func TestAggregatedRangeProveVerify(t *testing.T) {
 		proof, err := wit.Prove()
 		assert.Equal(t, nil, err)
 
-		// verify the proof
-		res, err := proof.Verify()
-		assert.Equal(t, true, res)
-		assert.Equal(t, nil, err)
-
 		// validate sanity for proof
 		isValidSanity := proof.ValidateSanity()
 		assert.Equal(t, true, isValidSanity)
@@ -135,13 +180,18 @@ func TestAggregatedRangeProveVerify(t *testing.T) {
 		proof2.SetBytes(bytes)
 
 		// verify the proof
-		res, err = proof2.Verify()
+		res, err := proof2.Verify()
+		assert.Equal(t, true, res)
+		assert.Equal(t, nil, err)
+
+		// verify the proof faster
+		res, err = proof2.VerifyFaster()
 		assert.Equal(t, true, res)
 		assert.Equal(t, nil, err)
 	}
 }
 
-func TestAggregatedRangeProveVerifyUltraFast(t *testing.T) {
+func TestAggregatedRangeProveVerifyBatch(t *testing.T) {
 	count := 10
 	proofs := make([]*AggregatedRangeProof, 0)
 
@@ -162,16 +212,24 @@ func TestAggregatedRangeProveVerifyUltraFast(t *testing.T) {
 		proof, err := wit.Prove()
 		assert.Equal(t, nil, err)
 
+		res, err := proof.Verify()
+		assert.Equal(t, true, res)
+		assert.Equal(t, nil, err)
+
+		res, err = proof.VerifyFaster()
+		assert.Equal(t, true, res)
+		assert.Equal(t, nil, err)
+
 		proofs = append(proofs, proof)
 	}
 	// verify the proof faster
-	res, err, _ := VerifyBatchingAggregatedRangeProofs(proofs)
+	res, err, _ := VerifyBatch(proofs)
 	assert.Equal(t, true, res)
 	assert.Equal(t, nil, err)
 }
 
 func TestBenchmarkAggregatedRangeProveVerifyUltraFast(t *testing.T) {
-	for k := 1; k < 100; k += 5 {
+	for k := 1; k < 100; k += 10 {
 		count := k
 		proofs := make([]*AggregatedRangeProof, 0)
 		start := time.Now()
@@ -194,14 +252,14 @@ func TestBenchmarkAggregatedRangeProveVerifyUltraFast(t *testing.T) {
 			proof, err := wit.Prove()
 			assert.Equal(t, nil, err)
 			start := time.Now()
-			proof.Verify()
+			proof.VerifyFaster()
 			t1 += time.Now().Sub(start)
 
 			proofs = append(proofs, proof)
 		}
 		// verify the proof faster
 		start = time.Now()
-		res, err, _ := VerifyBatchingAggregatedRangeProofs(proofs)
+		res, err, _ := VerifyBatch(proofs)
 		fmt.Println(t1, time.Now().Sub(start), k)
 
 		assert.Equal(t, true, res)
@@ -209,116 +267,6 @@ func TestBenchmarkAggregatedRangeProveVerifyUltraFast(t *testing.T) {
 	}
 }
 
-func TestInnerProductProveVerify(t *testing.T) {
-	for k := 0; k < 1; k++ {
-		numValue := rand.Intn(maxOutputNumber)
-		numValuePad := pad(numValue)
-		aggParam := new(bulletproofParams)
-		aggParam.g = AggParam.g[0 : numValuePad*maxExp]
-		aggParam.h = AggParam.h[0 : numValuePad*maxExp]
-		aggParam.u = AggParam.u
-		aggParam.cs = AggParam.cs
-
-		wit := new(InnerProductWitness)
-		n := maxExp * numValuePad
-		wit.a = make([]*operation.Scalar, n)
-		wit.b = make([]*operation.Scalar, n)
-
-		for i := range wit.a {
-			wit.a[i] = new(operation.Scalar).FromUint64(uint64(rand.Intn(1000000)))
-			wit.b[i] = new(operation.Scalar).FromUint64(uint64(rand.Intn(1000000)))
-		}
-
-		c, err := innerProduct(wit.a, wit.b)
-
-		if err != nil {
-			Logger.Log.Info("Err: %v\n", err)
-		}
-		wit.p = new(operation.Point).ScalarMult(aggParam.u, c)
-
-		for i := range wit.a {
-			wit.p.Add(wit.p, new(operation.Point).ScalarMult(aggParam.g[i], wit.a[i]))
-			wit.p.Add(wit.p, new(operation.Point).ScalarMult(aggParam.h[i], wit.b[i]))
-		}
-
-		proof, err := wit.Prove(aggParam)
-		if err != nil {
-			fmt.Printf("Err: %v\n", err)
-			return
-		}
-		res2 := proof.Verify(aggParam)
-		assert.Equal(t, true, res2)
-
-		bytes := proof.Bytes()
-		proof2 := new(InnerProductProof)
-		proof2.SetBytes(bytes)
-		res3 := proof2.Verify(aggParam)
-		assert.Equal(t, true, res3)
-		res3prime := proof2.Verify(aggParam)
-		assert.Equal(t, true, res3prime)
-
-	}
-}
-
-func TestInnerProductProveVerifyUltraFast(t *testing.T) {
-	proofs := make([]*InnerProductProof, 0)
-	csList := make([][]byte, 0)
-	count := 15
-	for k := 0; k < count; k++ {
-		numValue := rand.Intn(maxOutputNumber)
-		numValuePad := pad(numValue)
-		aggParam := new(bulletproofParams)
-		aggParam.g = AggParam.g[0 : numValuePad*maxExp]
-		aggParam.h = AggParam.h[0 : numValuePad*maxExp]
-		aggParam.u = AggParam.u
-		aggParam.cs = AggParam.cs
-
-		wit := new(InnerProductWitness)
-		n := maxExp * numValuePad
-		wit.a = make([]*operation.Scalar, n)
-		wit.b = make([]*operation.Scalar, n)
-
-		for i := range wit.a {
-			wit.a[i] = new(operation.Scalar).FromUint64(uint64(rand.Intn(1000000)))
-			wit.b[i] = new(operation.Scalar).FromUint64(uint64(rand.Intn(1000000)))
-		}
-
-		c, err := innerProduct(wit.a, wit.b)
-		if err != nil {
-			Logger.Log.Info("Err: %v\n", err)
-		}
-		if k == 0 {
-			wit.p = new(operation.Point).ScalarMult(aggParam.u, c.Add(c, new(operation.Scalar).FromUint64(1)))
-		} else {
-			wit.p = new(operation.Point).ScalarMult(aggParam.u, c)
-		}
-
-		for i := range wit.a {
-			wit.p.Add(wit.p, new(operation.Point).ScalarMult(aggParam.g[i], wit.a[i]))
-			if k == count-1 {
-				wit.p.Add(wit.p, new(operation.Point).ScalarMult(aggParam.h[i], wit.a[i]))
-			} else {
-				wit.p.Add(wit.p, new(operation.Point).ScalarMult(aggParam.h[i], wit.b[i]))
-			}
-		}
-
-		proof, err := wit.Prove(aggParam)
-		if err != nil {
-			fmt.Printf("Err: %v\n", err)
-			return
-		}
-		proofs = append(proofs, proof)
-		csList = append(csList, aggParam.cs)
-	}
-	res := VerifyBatchingInnerProductProofs(proofs, csList)
-	assert.Equal(t, false, res)
-	res = VerifyBatchingInnerProductProofs(proofs[1:], csList[1:])
-	assert.Equal(t, false, res)
-	res = VerifyBatchingInnerProductProofs(proofs[:len(proofs)-1], csList[:len(proofs)-1])
-	assert.Equal(t, false, res)
-	res = VerifyBatchingInnerProductProofs(proofs[1:len(proofs)-1], csList[1:len(proofs)-1])
-	assert.Equal(t, true, res)
-}
 func benchmarkAggRangeProof_Proof(numberofOutput int, b *testing.B) {
 	wit := new(AggregatedRangeWitness)
 	values := make([]uint64, numberofOutput)
@@ -334,115 +282,6 @@ func benchmarkAggRangeProof_Proof(numberofOutput int, b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		wit.Prove()
-	}
-}
-
-func TestAnStrictInnerProductProveVerifyUltraFast(t *testing.T) {
-	proofs := make([]*InnerProductProof, 0)
-	csList := make([][]byte, 0)
-	count := 5
-	for k := 0; k < count; k++ {
-		numValue := rand.Intn(maxOutputNumber)
-		numValuePad := pad(numValue)
-		aggParam := new(bulletproofParams)
-		aggParam.g = AggParam.g[0 : numValuePad*maxExp]
-		aggParam.h = AggParam.h[0 : numValuePad*maxExp]
-		aggParam.u = AggParam.u
-		aggParam.cs = AggParam.cs
-		wit := new(InnerProductWitness)
-		n := maxExp * numValuePad
-		wit.a = make([]*operation.Scalar, n)
-		wit.b = make([]*operation.Scalar, n)
-		for i := range wit.a {
-			wit.a[i] = new(operation.Scalar).FromUint64(uint64(rand.Intn(1000000)))
-			wit.b[i] = new(operation.Scalar).FromUint64(uint64(rand.Intn(1000000)))
-		}
-		c, err := innerProduct(wit.a, wit.b)
-		if err != nil {
-			Logger.Log.Info("Err: %v\n", err)
-		}
-		wit.p = new(operation.Point).ScalarMult(aggParam.u, c)
-		for i := range wit.a {
-			wit.p.Add(wit.p, new(operation.Point).ScalarMult(aggParam.g[i], wit.a[i]))
-			wit.p.Add(wit.p, new(operation.Point).ScalarMult(aggParam.h[i], wit.b[i]))
-		}
-		proof, err := wit.Prove(aggParam)
-		if err != nil {
-			fmt.Printf("Err: %v\n", err)
-			return
-		}
-		proofs = append(proofs, proof)
-		csList = append(csList, aggParam.cs)
-	}
-	res := VerifyBatchingInnerProductProofs(proofs, csList)
-	assert.Equal(t, true, res)
-	for j := 0; j < 50; j += 1 {
-		i := common.RandInt() % len(proofs)
-		r := common.RandInt() % 5
-		if r == 0 {
-			ran := common.RandInt() % len(proofs[i].l)
-			remember := proofs[i].l[ran]
-			proofs[i].l[ran] = obfuscatePoint(proofs[i].l[ran])
-			assert.NotEqual(t, remember, proofs[i].l[ran])
-			res := VerifyBatchingInnerProductProofs(proofs, csList)
-			assert.Equal(t, false, res)
-			proofs[i].l[ran] = remember
-		} else if r == 1 {
-			ran := common.RandInt() % len(proofs[i].r)
-			remember := proofs[i].r[ran]
-			proofs[i].r[ran] = obfuscatePoint(proofs[i].r[ran])
-			assert.NotEqual(t, remember, proofs[i].r[ran])
-			res := VerifyBatchingInnerProductProofs(proofs, csList)
-			assert.Equal(t, false, res)
-			proofs[i].r[ran] = remember
-		} else if r == 2 {
-			remember := proofs[i].a
-			proofs[i].a = obfuscateScalar(proofs[i].a)
-			assert.NotEqual(t, remember, proofs[i].a)
-			res := VerifyBatchingInnerProductProofs(proofs, csList)
-			assert.Equal(t, false, res)
-			proofs[i].a = remember
-		} else if r == 3 {
-			remember := proofs[i].b
-			proofs[i].b = obfuscateScalar(proofs[i].b)
-			assert.NotEqual(t, remember, proofs[i].b)
-			res := VerifyBatchingInnerProductProofs(proofs, csList)
-			assert.Equal(t, false, res)
-			proofs[i].b = remember
-		} else if r == 4 {
-			remember := proofs[i].p
-			proofs[i].p = obfuscatePoint(proofs[i].p)
-			assert.NotEqual(t, remember, proofs[i].p)
-			res := VerifyBatchingInnerProductProofs(proofs, csList)
-			assert.Equal(t, false, res)
-			proofs[i].p = remember
-		}
-	}
-	res = VerifyBatchingInnerProductProofs(proofs, csList)
-	assert.Equal(t, true, res)
-}
-func obfuscatePoint(value *operation.Point) *operation.Point {
-	for {
-		k := value.GetKey()
-		r := common.RandInt() % len(k)
-		i := common.RandInt() % 8
-		k[r] ^= (1 << uint8(i))
-		after, err := new(operation.Point).SetKey(&k)
-		if err == nil {
-			return after
-		}
-	}
-}
-func obfuscateScalar(value *operation.Scalar) *operation.Scalar {
-	for {
-		k := value.GetKey()
-		r := common.RandInt() % len(k)
-		i := common.RandInt() % 8
-		k[r] ^= (1 << uint8(i))
-		after, err := new(operation.Scalar).SetKey(&k)
-		if err == nil {
-			return after
-		}
 	}
 }
 
@@ -480,7 +319,7 @@ func benchmarkAggRangeProof_VerifyFaster(numberofOutput int, b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		proof.Verify()
+		proof.VerifyFaster()
 	}
 }
 

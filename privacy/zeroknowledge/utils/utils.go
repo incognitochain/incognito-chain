@@ -1,12 +1,11 @@
 package utils
 
 import (
-	"crypto/rand"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/aggregaterange"
+	"github.com/incognitochain/incognito-chain/privacy/pedersen"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 )
 
 // GenerateChallengeFromByte get hash of n points in G append with input values
@@ -14,8 +13,8 @@ import (
 // G[i] is list of all generator point of Curve
 func GenerateChallenge(values [][]byte) *privacy.Scalar {
 	bytes := []byte{}
-	for i := 0; i < len(privacy.PedCom.G); i++ {
-		bytes = append(bytes, privacy.PedCom.G[i].ToBytesS()...)
+	for i := 0; i < len(pedersen.PedCom.G); i++ {
+		bytes = append(bytes, pedersen.PedCom.G[i].ToBytesS()...)
 	}
 
 	for i := 0; i < len(values); i++ {
@@ -44,21 +43,21 @@ func EstimateProofSize(nInput int, nOutput int, hasPrivacy bool) uint64 {
 
 	sizeOneOfManyProof := nInput * OneOfManyProofSize
 	sizeSNPrivacyProof := nInput * SnPrivacyProofSize
-	sizeComOutputMultiRangeProof := int(aggregaterange.EstimateMultiRangeProofSize(nOutput))
+	sizeComOutputMultiRangeProof := int(privacy_util.EstimateMultiRangeProofSize(nOutput))
 
 	sizeInputCoins := nInput * inputCoinsPrivacySize
 	sizeOutputCoins := nOutput * outputCoinsPrivacySize
 
-	sizeComOutputValue := nOutput * privacy.Ed25519KeySize
-	sizeComOutputSND := nOutput * privacy.Ed25519KeySize
-	sizeComOutputShardID := nOutput * privacy.Ed25519KeySize
+	sizeComOutputValue := nOutput * operation.Ed25519KeySize
+	sizeComOutputSND := nOutput * operation.Ed25519KeySize
+	sizeComOutputShardID := nOutput * operation.Ed25519KeySize
 
-	sizeComInputSK := privacy.Ed25519KeySize
-	sizeComInputValue := nInput * privacy.Ed25519KeySize
-	sizeComInputSND := nInput * privacy.Ed25519KeySize
-	sizeComInputShardID := privacy.Ed25519KeySize
+	sizeComInputSK := operation.Ed25519KeySize
+	sizeComInputValue := nInput * operation.Ed25519KeySize
+	sizeComInputSND := nInput * operation.Ed25519KeySize
+	sizeComInputShardID := operation.Ed25519KeySize
 
-	sizeCommitmentIndices := nInput * privacy.CommitmentRingSize * common.Uint64Size
+	sizeCommitmentIndices := nInput * privacy_util.CommitmentRingSize * common.Uint64Size
 
 	sizeProof := sizeOneOfManyProof + sizeSNPrivacyProof +
 		sizeComOutputMultiRangeProof + sizeInputCoins + sizeOutputCoins +
@@ -67,10 +66,4 @@ func EstimateProofSize(nInput int, nOutput int, hasPrivacy bool) uint64 {
 		sizeCommitmentIndices + FlagSize
 
 	return uint64(sizeProof)
-}
-
-func RandBytes(length int) []byte {
-	rbytes := make([]byte, length)
-	rand.Read(rbytes)
-	return rbytes
 }

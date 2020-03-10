@@ -11,6 +11,7 @@ import (
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -42,7 +43,7 @@ func TestCoinCommitAll(t *testing.T) {
 
 		coin.snDerivator = operation.RandomScalar()
 		coin.randomness = operation.RandomScalar()
-		coin.value = new(big.Int).SetBytes(RandBytes(2)).Uint64()
+		coin.value = new(big.Int).SetBytes(privacy_util.RandBytes(2)).Uint64()
 		coin.serialNumber = new(operation.Point).Derive(PedCom.G[0], new(operation.Scalar).FromBytesS(privateKey), coin.snDerivator)
 		coin.CommitAll()
 		coin.info = []byte("Incognito chain")
@@ -408,7 +409,7 @@ func TestOutputCoinEncryptDecrypt(t *testing.T) {
 		// new output coin with value and randomness
 		coin := new(OutputCoin).Init()
 		coin.CoinDetails.randomness = operation.RandomScalar()
-		coin.CoinDetails.value = new(big.Int).SetBytes(RandBytes(2)).Uint64()
+		coin.CoinDetails.value = new(big.Int).SetBytes(privacy_util.RandBytes(2)).Uint64()
 		coin.CoinDetails.publicKey.FromBytesS(paymentAddress.Pk)
 
 		// encrypt output coins
@@ -441,7 +442,7 @@ func TestOutputCoinEncryptDecryptWithUnmatchedKey(t *testing.T) {
 	// new output coin with value and randomness
 	coin := new(OutputCoin).Init()
 	coin.CoinDetails.randomness = operation.RandomScalar()
-	coin.CoinDetails.value = new(big.Int).SetBytes(RandBytes(2)).Uint64()
+	coin.CoinDetails.value = new(big.Int).SetBytes(privacy_util.RandBytes(2)).Uint64()
 	coin.CoinDetails.publicKey.FromBytesS(paymentAddress.Pk)
 
 	// encrypt output coins

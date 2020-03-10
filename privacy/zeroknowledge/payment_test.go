@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -19,31 +19,31 @@ type CoinObject struct {
 	Info           string
 }
 
-func ParseCoinObjectToStruct(coinObjects []CoinObject) ([]*privacy.InputCoin, uint64) {
-	coins := make([]*privacy.InputCoin, len(coinObjects))
+func ParseCoinObjectToStruct(coinObjects []CoinObject) ([]*coin.InputCoin, uint64) {
+	coins := make([]*coin.InputCoin, len(coinObjects))
 	sumValue := uint64(0)
 
 	for i := 0; i < len(coins); i++ {
 
 		publicKey, _, _ := base58.Base58Check{}.Decode(coinObjects[i].PublicKey)
-		publicKeyPoint := new(privacy.Point)
+		publicKeyPoint := new(operation.Point)
 		publicKeyPoint.FromBytesS(publicKey)
 
 		coinCommitment, _, _ := base58.Base58Check{}.Decode(coinObjects[i].CoinCommitment)
-		coinCommitmentPoint := new(privacy.Point)
+		coinCommitmentPoint := new(operation.Point)
 		coinCommitmentPoint.FromBytesS(coinCommitment)
 
 		snd, _, _ := base58.Base58Check{}.Decode(coinObjects[i].SNDerivator)
-		sndBN := new(privacy.Scalar).FromBytesS(snd)
+		sndBN := new(operation.Scalar).FromBytesS(snd)
 
 		serialNumber, _, _ := base58.Base58Check{}.Decode(coinObjects[i].CoinCommitment)
-		serialNumberPoint := new(privacy.Point)
+		serialNumberPoint := new(operation.Point)
 		serialNumberPoint.FromBytesS(serialNumber)
 
 		randomness, _, _ := base58.Base58Check{}.Decode(coinObjects[i].Randomness)
-		randomnessBN := new(privacy.Scalar).FromBytesS(randomness)
+		randomnessBN := new(operation.Scalar).FromBytesS(randomness)
 
-		coins[i] = new(privacy.InputCoin).Init()
+		coins[i] = new(coin.InputCoin).Init()
 		coins[i].CoinDetails.SetPublicKey(publicKeyPoint)
 		coins[i].CoinDetails.SetCoinCommitment(coinCommitmentPoint)
 		coins[i].CoinDetails.SetSNDerivator(sndBN)
@@ -64,8 +64,8 @@ func TestPaymentProofToBytes(t *testing.T) {
 
 	keyWallet, _ := wallet.Base58CheckDeserialize("112t8rnXHD9s2MXSXigMyMtKdGFtSJmhA9cCBN34Fj55ox3cJVL6Fykv8uNWkDagL56RnA4XybQKNRrNXinrDDfKZmq9Y4LR18NscSrc9inc")
 	_ = keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
-	senderKeyBN := new(privacy.Scalar).FromBytesS(keyWallet.KeySet.PrivateKey)
-	senderPKPoint := new(privacy.Point)
+	senderKeyBN := new(operation.Scalar).FromBytesS(keyWallet.KeySet.PrivateKey)
+	senderPKPoint := new(operation.Point)
 	senderPKPoint.FromBytesS(keyWallet.KeySet.PaymentAddress.Pk)
 
 	coinStrs := []CoinObject{
@@ -131,13 +131,13 @@ func TestPaymentProofToBytes(t *testing.T) {
 	_ = keyWalletReceiver.KeySet.InitFromPrivateKey(&keyWalletReceiver.KeySet.PrivateKey)
 	//receiverKeyBN := new(big.Int).SetBytes(keyWalletReceiver.KeySet.PrivateKey)
 	receiverPublicKey := keyWalletReceiver.KeySet.PaymentAddress.Pk
-	receiverPublicKeyPoint := new(privacy.Point)
+	receiverPublicKeyPoint := new(operation.Point)
 	receiverPublicKeyPoint.FromBytesS(receiverPublicKey)
 
 	amountTransfer := uint64(1000000000)
 
-	outputCoins := make([]*privacy.OutputCoin, 2)
-	outputCoins[0] = new(privacy.OutputCoin)
+	outputCoins := make([]*coin.OutputCoin, 2)
+	outputCoins[0] = new(coin.OutputCoin)
 	outputCoins[0].Init()
 	outputCoins[0].CoinDetails.SetValue(uint64(amountTransfer))
 	outputCoins[0].CoinDetails.SetPublicKey(receiverPublicKeyPoint)
@@ -145,7 +145,7 @@ func TestPaymentProofToBytes(t *testing.T) {
 
 	changeAmount := sumValue - amountTransfer
 
-	outputCoins[1] = new(privacy.OutputCoin)
+	outputCoins[1] = new(coin.OutputCoin)
 	outputCoins[1].Init()
 	outputCoins[1].CoinDetails.SetValue(changeAmount)
 	outputCoins[1].CoinDetails.SetPublicKey(senderPKPoint)

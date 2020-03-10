@@ -7,22 +7,22 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	C25519 "github.com/incognitochain/incognito-chain/privacy/operation/curve25519"
 	"github.com/incognitochain/incognito-chain/privacy/pedersen"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 )
 
 // Public Constants
 const (
-	Ed25519KeySize        = 32
-	AESKeySize            = 32
-	CommitmentRingSize    = 8
-	CommitmentRingSizeExp = 3
-	CStringBulletProof    = "bulletproof"
 	CStringBurnAddress    = "burningaddress"
+	Ed25519KeySize        = operation.Ed25519KeySize
+	CStringBulletProof    = operation.CStringBulletProof
+	CommitmentRingSize    = privacy_util.CommitmentRingSize
+	CommitmentRingSizeExp = privacy_util.CommitmentRingSizeExp
 
-	PedersenPrivateKeyIndex = byte(0x00)
-	PedersenValueIndex      = byte(0x01)
-	PedersenSndIndex        = byte(0x02)
-	PedersenShardIDIndex    = byte(0x03)
-	PedersenRandomnessIndex = byte(0x04)
+	PedersenSndIndex        = pedersen.PedersenSndIndex
+	PedersenValueIndex      = pedersen.PedersenValueIndex
+	PedersenShardIDIndex    = pedersen.PedersenShardIDIndex
+	PedersenPrivateKeyIndex = pedersen.PedersenPrivateKeyIndex
+	PedersenRandomnessIndex = pedersen.PedersenRandomnessIndex
 )
 
 var PedCom = pedersen.PedCom

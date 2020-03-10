@@ -3,7 +3,6 @@ package serialnumbernoprivacy
 import (
 	"errors"
 
-	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/pedersen"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
@@ -232,7 +231,7 @@ func (pro SNNoPrivacyProof) Verify(mess []byte) (bool, error) {
 	rightPoint1 = rightPoint1.Add(rightPoint1, pro.tSeed)
 
 	if !operation.IsPointEqual(leftPoint1, rightPoint1) {
-		privacy.Logger.Log.Errorf("verify serial number no privacy proof statement 1 failed")
+		Logger.Log.Errorf("verify serial number no privacy proof statement 1 failed")
 		return false, errors.New("verify serial number no privacy proof statement 1 failed")
 	}
 
@@ -244,7 +243,7 @@ func (pro SNNoPrivacyProof) Verify(mess []byte) (bool, error) {
 	rightPoint2 = rightPoint2.Add(rightPoint2, pro.tOutput)
 
 	if !operation.IsPointEqual(leftPoint2, rightPoint2) {
-		privacy.Logger.Log.Errorf("verify serial number no privacy proof statement 2 failed")
+		Logger.Log.Errorf("verify serial number no privacy proof statement 2 failed")
 		return false, errors.New("verify serial number no privacy proof statement 2 failed")
 	}
 

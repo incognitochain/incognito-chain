@@ -1,7 +1,8 @@
-package privacy
+package privacy_util
 
 import (
 	"crypto/rand"
+	"math"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -9,19 +10,19 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/operation/curve25519"
 )
 
-func ScalarToBigInt(sc *Scalar) *big.Int {
+func ScalarToBigInt(sc *operation.Scalar) *big.Int {
 	keyR := operation.Reverse(sc.GetKey())
 	keyRByte := keyR.ToBytes()
 	bi := new(big.Int).SetBytes(keyRByte[:])
 	return bi
 }
 
-func BigIntToScalar(bi *big.Int) *Scalar {
-	biByte := common.AddPaddingBigInt(bi, Ed25519KeySize)
+func BigIntToScalar(bi *big.Int) *operation.Scalar {
+	biByte := common.AddPaddingBigInt(bi, operation.Ed25519KeySize)
 	var key curve25519.Key
 	key.FromBytes(SliceToArray(biByte))
 	keyR := operation.Reverse(key)
-	sc, err := new(Scalar).SetKey(&keyR)
+	sc, err := new(operation.Scalar).SetKey(&keyR)
 	if err != nil {
 		return nil
 	}
@@ -48,19 +49,19 @@ func ConvertIntToBinary(inum int, n int) []byte {
 }
 
 // ConvertIntToBinary represents a integer number in binary
-func ConvertUint64ToBinary(number uint64, n int) []*Scalar {
+func ConvertUint64ToBinary(number uint64, n int) []*operation.Scalar {
 	if number == 0 {
-		res := make([]*Scalar, n)
+		res := make([]*operation.Scalar, n)
 		for i := 0; i < n; i++ {
-			res[i] = new(Scalar).FromUint64(0)
+			res[i] = new(operation.Scalar).FromUint64(0)
 		}
 		return res
 	}
 
-	binary := make([]*Scalar, n)
+	binary := make([]*operation.Scalar, n)
 
 	for i := 0; i < n; i++ {
-		binary[i] = new(Scalar).FromUint64(number % 2)
+		binary[i] = new(operation.Scalar).FromUint64(number % 2)
 		number = number / 2
 	}
 	return binary
@@ -88,7 +89,7 @@ func paddedAppend(size uint, dst, src []byte) []byte {
 	return append(dst, src...)
 }
 
-func ConvertScalarArrayToBigIntArray(scalarArr []*Scalar) []*big.Int {
+func ConvertScalarArrayToBigIntArray(scalarArr []*operation.Scalar) []*big.Int {
 	res := make([]*big.Int, len(scalarArr))
 
 	for i := 0; i < len(res); i++ {
@@ -99,14 +100,35 @@ func ConvertScalarArrayToBigIntArray(scalarArr []*Scalar) []*big.Int {
 	return res
 }
 
-func SliceToArray(slice []byte) [Ed25519KeySize]byte {
-	var array [Ed25519KeySize]byte
+func SliceToArray(slice []byte) [operation.Ed25519KeySize]byte {
+	var array [operation.Ed25519KeySize]byte
 	copy(array[:], slice)
 	return array
 }
 
-func ArrayToSlice(array [Ed25519KeySize]byte) []byte {
+func ArrayToSlice(array [operation.Ed25519KeySize]byte) []byte {
 	var slice []byte
 	slice = array[:]
 	return slice
+}
+
+// pad returns number has format 2^k that it is the nearest number to num
+func pad(num int) int {
+	if num == 1 || num == 2 {
+		return num
+	}
+	tmp := 2
+	for i := 2; ; i++ {
+		tmp *= 2
+		if tmp >= num {
+			num = tmp
+			break
+		}
+	}
+	return num
+}
+
+// estimateMultiRangeProofSize estimate multi range proof size
+func EstimateMultiRangeProofSize(nOutput int) uint64 {
+	return uint64((nOutput+2*int(math.Log2(float64(maxExp*pad(nOutput))))+5)*operation.Ed25519KeySize + 5*operation.Ed25519KeySize + 2)
 }

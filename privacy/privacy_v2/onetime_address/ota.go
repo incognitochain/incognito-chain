@@ -5,8 +5,8 @@ import (
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/privacy/privacy-v2/onetime_address/address"
-	"github.com/incognitochain/incognito-chain/privacy/privacy-v2/onetime_address/utxo"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/onetime_address/address"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/onetime_address/utxo"
 )
 
 // Create output of utxos and sum of blind values for later usage

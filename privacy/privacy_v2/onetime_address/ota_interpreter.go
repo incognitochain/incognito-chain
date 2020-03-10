@@ -6,8 +6,8 @@ import (
 
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/pedersen"
-	"github.com/incognitochain/incognito-chain/privacy/privacy-v2/onetime_address/address"
-	"github.com/incognitochain/incognito-chain/privacy/privacy-v2/onetime_address/utxo"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/onetime_address/address"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/onetime_address/utxo"
 )
 
 func ParseUtxoPrivatekey(addr *address.PrivateAddress, utxo *utxo.Utxo) *operation.Scalar {

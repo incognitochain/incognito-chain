@@ -3,9 +3,10 @@ package aggregaterange
 import (
 	"fmt"
 
-	"github.com/incognitochain/incognito-chain/privacy"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/privacy/pedersen"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 	"github.com/pkg/errors"
 )
 
@@ -13,18 +14,18 @@ import (
 
 type AggregatedRangeWitness struct {
 	values []uint64
-	rands  []*privacy.Scalar
+	rands  []*operation.Scalar
 }
 
 type AggregatedRangeProof struct {
-	cmsValue          []*privacy.Point
-	a                 *privacy.Point
-	s                 *privacy.Point
-	t1                *privacy.Point
-	t2                *privacy.Point
-	tauX              *privacy.Scalar
-	tHat              *privacy.Scalar
-	mu                *privacy.Scalar
+	cmsValue          []*operation.Point
+	a                 *operation.Point
+	s                 *operation.Point
+	t1                *operation.Point
+	t2                *operation.Point
+	tauX              *operation.Scalar
+	tHat              *operation.Scalar
+	mu                *operation.Scalar
 	innerProductProof *InnerProductProof
 }
 
@@ -60,13 +61,13 @@ func (proof AggregatedRangeProof) ValidateSanity() bool {
 }
 
 func (proof *AggregatedRangeProof) Init() {
-	proof.a = new(privacy.Point).Identity()
-	proof.s = new(privacy.Point).Identity()
-	proof.t1 = new(privacy.Point).Identity()
-	proof.t2 = new(privacy.Point).Identity()
-	proof.tauX = new(privacy.Scalar)
-	proof.tHat = new(privacy.Scalar)
-	proof.mu = new(privacy.Scalar)
+	proof.a = new(operation.Point).Identity()
+	proof.s = new(operation.Point).Identity()
+	proof.t1 = new(operation.Point).Identity()
+	proof.t2 = new(operation.Point).Identity()
+	proof.tauX = new(operation.Scalar)
+	proof.tHat = new(operation.Scalar)
+	proof.mu = new(operation.Scalar)
 	proof.innerProductProof = new(InnerProductProof)
 }
 
@@ -130,63 +131,63 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 	offset := 1
 	var err error
 
-	proof.cmsValue = make([]*privacy.Point, lenValues)
+	proof.cmsValue = make([]*operation.Point, lenValues)
 	for i := 0; i < lenValues; i++ {
-		proof.cmsValue[i], err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
+		proof.cmsValue[i], err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 		if err != nil {
 			return err
 		}
-		offset += privacy.Ed25519KeySize
+		offset += operation.Ed25519KeySize
 	}
 
-	proof.a, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
+	proof.a, err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
-	offset += privacy.Ed25519KeySize
+	offset += operation.Ed25519KeySize
 
-	proof.s, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
+	proof.s, err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
-	offset += privacy.Ed25519KeySize
+	offset += operation.Ed25519KeySize
 
-	proof.t1, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
+	proof.t1, err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
-	offset += privacy.Ed25519KeySize
+	offset += operation.Ed25519KeySize
 
-	proof.t2, err = new(privacy.Point).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
+	proof.t2, err = new(operation.Point).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	if err != nil {
 		return err
 	}
-	offset += privacy.Ed25519KeySize
+	offset += operation.Ed25519KeySize
 
-	proof.tauX = new(privacy.Scalar).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
-	offset += privacy.Ed25519KeySize
+	proof.tauX = new(operation.Scalar).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
+	offset += operation.Ed25519KeySize
 
-	proof.tHat = new(privacy.Scalar).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
-	offset += privacy.Ed25519KeySize
+	proof.tHat = new(operation.Scalar).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
+	offset += operation.Ed25519KeySize
 
-	proof.mu = new(privacy.Scalar).FromBytesS(bytes[offset : offset+privacy.Ed25519KeySize])
-	offset += privacy.Ed25519KeySize
+	proof.mu = new(operation.Scalar).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
+	offset += operation.Ed25519KeySize
 
 	proof.innerProductProof = new(InnerProductProof)
 	proof.innerProductProof.SetBytes(bytes[offset:])
 
-	//privacy.Logger.Log.Debugf("AFTER SETBYTES ------------ %v\n", proof.Bytes())
+	//Logger.Log.Debugf("AFTER SETBYTES ------------ %v\n", proof.Bytes())
 	return nil
 }
 
-func (wit *AggregatedRangeWitness) Set(values []uint64, rands []*privacy.Scalar) {
+func (wit *AggregatedRangeWitness) Set(values []uint64, rands []*operation.Scalar) {
 	numValue := len(values)
 	wit.values = make([]uint64, numValue)
-	wit.rands = make([]*privacy.Scalar, numValue)
+	wit.rands = make([]*operation.Scalar, numValue)
 
 	for i := range values {
 		wit.values[i] = values[i]
-		wit.rands[i] = new(privacy.Scalar).Set(rands[i])
+		wit.rands[i] = new(operation.Scalar).Set(rands[i])
 	}
 }
 
@@ -213,40 +214,40 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	aggParam.cs = append(aggParam.cs, aggParam.u.ToBytesS()...)
 
 	values := make([]uint64, numValuePad)
-	rands := make([]*privacy.Scalar, numValuePad)
+	rands := make([]*operation.Scalar, numValuePad)
 
 	for i := range wit.values {
 		values[i] = wit.values[i]
-		rands[i] = new(privacy.Scalar).Set(wit.rands[i])
+		rands[i] = new(operation.Scalar).Set(wit.rands[i])
 	}
 
 	for i := numValue; i < numValuePad; i++ {
 		values[i] = uint64(0)
-		rands[i] = new(privacy.Scalar).FromUint64(0)
+		rands[i] = new(operation.Scalar).FromUint64(0)
 	}
 
-	proof.cmsValue = make([]*privacy.Point, numValue)
+	proof.cmsValue = make([]*operation.Point, numValue)
 	for i := 0; i < numValue; i++ {
-		proof.cmsValue[i] = privacy.PedCom.CommitAtIndex(new(privacy.Scalar).FromUint64(values[i]), rands[i], privacy.PedersenValueIndex)
+		proof.cmsValue[i] = pedersen.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(values[i]), rands[i], pedersen.PedersenValueIndex)
 	}
 
 	n := maxExp
 	// Convert values to binary array
-	aL := make([]*privacy.Scalar, numValuePad*n)
+	aL := make([]*operation.Scalar, numValuePad*n)
 	for i, value := range values {
-		tmp := privacy.ConvertUint64ToBinary(value, n)
+		tmp := privacy_util.ConvertUint64ToBinary(value, n)
 		for j := 0; j < n; j++ {
 			aL[i*n+j] = tmp[j]
 		}
 	}
 
-	twoNumber := new(privacy.Scalar).FromUint64(2)
+	twoNumber := new(operation.Scalar).FromUint64(2)
 	twoVectorN := powerVector(twoNumber, n)
 
-	aR := make([]*privacy.Scalar, numValuePad*n)
+	aR := make([]*operation.Scalar, numValuePad*n)
 
 	for i := 0; i < numValuePad*n; i++ {
-		aR[i] = new(privacy.Scalar).Sub(aL[i], new(privacy.Scalar).FromUint64(1))
+		aR[i] = new(operation.Scalar).Sub(aL[i], new(operation.Scalar).FromUint64(1))
 	}
 
 	// random alpha
@@ -257,12 +258,12 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	if err != nil {
 		return nil, err
 	}
-	A.Add(A, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenRandomnessIndex], alpha))
+	A.Add(A, new(operation.Point).ScalarMult(pedersen.PedCom.G[pedersen.PedersenRandomnessIndex], alpha))
 	proof.a = A
 
 	// Random blinding vectors sL, sR
-	sL := make([]*privacy.Scalar, n*numValuePad)
-	sR := make([]*privacy.Scalar, n*numValuePad)
+	sL := make([]*operation.Scalar, n*numValuePad)
+	sR := make([]*operation.Scalar, n*numValuePad)
 	for i := range sL {
 		sL[i] = operation.RandomScalar()
 		sR[i] = operation.RandomScalar()
@@ -276,15 +277,15 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	if err != nil {
 		return nil, err
 	}
-	S.Add(S, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenRandomnessIndex], rho))
+	S.Add(S, new(operation.Point).ScalarMult(pedersen.PedCom.G[pedersen.PedersenRandomnessIndex], rho))
 	proof.s = S
 
 	// challenge y, z
 	y := generateChallenge([][]byte{aggParam.cs, A.ToBytesS(), S.ToBytesS()})
 	z := generateChallenge([][]byte{aggParam.cs, A.ToBytesS(), S.ToBytesS(), y.ToBytesS()})
 
-	zNeg := new(privacy.Scalar).Sub(new(privacy.Scalar).FromUint64(0), z)
-	zSquare := new(privacy.Scalar).Mul(z, z)
+	zNeg := new(operation.Scalar).Sub(new(operation.Scalar).FromUint64(0), z)
+	zSquare := new(operation.Scalar).Mul(z, z)
 
 	// l(X) = (aL -z*1^n) + sL*X
 	yVector := powerVector(y, n*numValuePad)
@@ -298,12 +299,12 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 		return nil, err
 	}
 
-	vectorSum := make([]*privacy.Scalar, n*numValuePad)
-	zTmp := new(privacy.Scalar).Set(z)
+	vectorSum := make([]*operation.Scalar, n*numValuePad)
+	zTmp := new(operation.Scalar).Set(z)
 	for j := 0; j < numValuePad; j++ {
 		zTmp.Mul(zTmp, z)
 		for i := 0; i < n; i++ {
-			vectorSum[j*n+i] = new(privacy.Scalar).Mul(twoVectorN[i], zTmp)
+			vectorSum[j*n+i] = new(operation.Scalar).Mul(twoVectorN[i], zTmp)
 		}
 	}
 
@@ -320,10 +321,10 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	//t(X) = <l(X), r(X)> = t0 + t1*X + t2*X^2
 
 	//calculate t0 = v*z^2 + delta(y, z)
-	deltaYZ := new(privacy.Scalar).Sub(z, zSquare)
+	deltaYZ := new(operation.Scalar).Sub(z, zSquare)
 
 	// innerProduct1 = <1^(n*m), y^(n*m)>
-	innerProduct1 := new(privacy.Scalar).FromUint64(0)
+	innerProduct1 := new(operation.Scalar).FromUint64(0)
 	for i := 0; i < n*numValuePad; i++ {
 		innerProduct1.Add(innerProduct1, yVector[i])
 	}
@@ -331,13 +332,13 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	deltaYZ.Mul(deltaYZ, innerProduct1)
 
 	// innerProduct2 = <1^n, 2^n>
-	innerProduct2 := new(privacy.Scalar).FromUint64(0)
+	innerProduct2 := new(operation.Scalar).FromUint64(0)
 	for i := 0; i < n; i++ {
 		innerProduct2.Add(innerProduct2, twoVectorN[i])
 	}
 
-	sum := new(privacy.Scalar).FromUint64(0)
-	zTmp = new(privacy.Scalar).Set(zSquare)
+	sum := new(operation.Scalar).FromUint64(0)
+	zTmp = new(operation.Scalar).Set(zSquare)
 	for j := 0; j < numValuePad; j++ {
 		zTmp.Mul(zTmp, z)
 		sum.Add(sum, zTmp)
@@ -356,7 +357,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 		return nil, err
 	}
 
-	t1 := new(privacy.Scalar).Add(innerProduct3, innerProduct4)
+	t1 := new(operation.Scalar).Add(innerProduct3, innerProduct4)
 
 	// t2 = <l1, r1>
 	t2, err := innerProduct(l1, r1)
@@ -368,13 +369,13 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	tau1 := operation.RandomScalar()
 	tau2 := operation.RandomScalar()
 
-	proof.t1 = privacy.PedCom.CommitAtIndex(t1, tau1, privacy.PedersenValueIndex)
-	proof.t2 = privacy.PedCom.CommitAtIndex(t2, tau2, privacy.PedersenValueIndex)
+	proof.t1 = pedersen.PedCom.CommitAtIndex(t1, tau1, pedersen.PedersenValueIndex)
+	proof.t2 = pedersen.PedCom.CommitAtIndex(t2, tau2, pedersen.PedersenValueIndex)
 
 	// challenge x = hash(G || H || A || S || T1 || T2)
 	x := generateChallenge([][]byte{aggParam.cs, proof.a.ToBytesS(), proof.s.ToBytesS(), proof.t1.ToBytesS(), proof.t2.ToBytesS()})
 
-	xSquare := new(privacy.Scalar).Mul(x, x)
+	xSquare := new(operation.Scalar).Mul(x, x)
 
 	// lVector = aL - z*1^n + sL*x
 	lVector, err := vectorAdd(vectorAddScalar(aL, zNeg), vectorMulScalar(sL, x))
@@ -392,12 +393,12 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 		return nil, err
 	}
 
-	vectorSum = make([]*privacy.Scalar, n*numValuePad)
-	zTmp = new(privacy.Scalar).Set(z)
+	vectorSum = make([]*operation.Scalar, n*numValuePad)
+	zTmp = new(operation.Scalar).Set(z)
 	for j := 0; j < numValuePad; j++ {
 		zTmp.Mul(zTmp, z)
 		for i := 0; i < n; i++ {
-			vectorSum[j*n+i] = new(privacy.Scalar).Mul(twoVectorN[i], zTmp)
+			vectorSum[j*n+i] = new(operation.Scalar).Mul(twoVectorN[i], zTmp)
 		}
 	}
 
@@ -413,10 +414,10 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	}
 
 	// blinding value for tHat: tauX = tau2*x^2 + tau1*x + z^2*rand
-	proof.tauX = new(privacy.Scalar).Mul(tau2, xSquare)
-	proof.tauX.Add(proof.tauX, new(privacy.Scalar).Mul(tau1, x))
-	zTmp = new(privacy.Scalar).Set(z)
-	tmpBN := new(privacy.Scalar)
+	proof.tauX = new(operation.Scalar).Mul(tau2, xSquare)
+	proof.tauX.Add(proof.tauX, new(operation.Scalar).Mul(tau1, x))
+	zTmp = new(operation.Scalar).Set(z)
+	tmpBN := new(operation.Scalar)
 	for j := 0; j < numValuePad; j++ {
 		zTmp.Mul(zTmp, z)
 		proof.tauX.Add(proof.tauX, tmpBN.Mul(zTmp, rands[j]))
@@ -424,7 +425,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 
 	// alpha, rho blind A, S
 	// mu = alpha + rho*x
-	proof.mu = new(privacy.Scalar).Mul(rho, x)
+	proof.mu = new(operation.Scalar).Mul(rho, x)
 	proof.mu.Add(proof.mu, alpha)
 
 	// instead of sending left vector and right vector, we use inner sum argument to reduce proof size from 2*n to 2(log2(n)) + 2
@@ -435,7 +436,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	if err != nil {
 		return nil, err
 	}
-	innerProductWit.p = innerProductWit.p.Add(innerProductWit.p, new(privacy.Point).ScalarMult(aggParam.u, proof.tHat))
+	innerProductWit.p = innerProductWit.p.Add(innerProductWit.p, new(operation.Point).ScalarMult(aggParam.u, proof.tHat))
 
 	proof.innerProductProof, err = innerProductWit.Prove(aggParam)
 	if err != nil {
@@ -468,13 +469,13 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	tmpcmsValue := proof.cmsValue
 
 	for i := numValue; i < numValuePad; i++ {
-		identity := new(privacy.Point).Identity()
+		identity := new(operation.Point).Identity()
 		tmpcmsValue = append(tmpcmsValue, identity)
 	}
 
 	n := maxExp
-	oneNumber := new(privacy.Scalar).FromUint64(1)
-	twoNumber := new(privacy.Scalar).FromUint64(2)
+	oneNumber := new(operation.Scalar).FromUint64(1)
+	twoNumber := new(operation.Scalar).FromUint64(2)
 	oneVector := powerVector(oneNumber, n*numValuePad)
 	oneVectorN := powerVector(oneNumber, n)
 	twoVectorN := powerVector(twoNumber, n)
@@ -482,25 +483,25 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	// recalculate challenge y, z
 	y := generateChallenge([][]byte{aggParam.cs, proof.a.ToBytesS(), proof.s.ToBytesS()})
 	z := generateChallenge([][]byte{aggParam.cs, proof.a.ToBytesS(), proof.s.ToBytesS(), y.ToBytesS()})
-	zSquare := new(privacy.Scalar).Mul(z, z)
+	zSquare := new(operation.Scalar).Mul(z, z)
 
 	// challenge x = hash(G || H || A || S || T1 || T2)
 	//fmt.Printf("T2: %v\n", proof.t2)
 	x := generateChallenge([][]byte{aggParam.cs, proof.a.ToBytesS(), proof.s.ToBytesS(), proof.t1.ToBytesS(), proof.t2.ToBytesS()})
-	xSquare := new(privacy.Scalar).Mul(x, x)
+	xSquare := new(operation.Scalar).Mul(x, x)
 
 	yVector := powerVector(y, n*numValuePad)
 	// HPrime = H^(y^(1-i)
-	HPrime := make([]*privacy.Point, n*numValuePad)
-	yInverse := new(privacy.Scalar).Invert(y)
-	expyInverse := new(privacy.Scalar).FromUint64(1)
+	HPrime := make([]*operation.Point, n*numValuePad)
+	yInverse := new(operation.Scalar).Invert(y)
+	expyInverse := new(operation.Scalar).FromUint64(1)
 	for i := 0; i < n*numValuePad; i++ {
-		HPrime[i] = new(privacy.Point).ScalarMult(aggParam.h[i], expyInverse)
+		HPrime[i] = new(operation.Point).ScalarMult(aggParam.h[i], expyInverse)
 		expyInverse.Mul(expyInverse, yInverse)
 	}
 
 	// g^tHat * h^tauX = V^(z^2) * g^delta(y,z) * T1^x * T2^(x^2)
-	deltaYZ := new(privacy.Scalar).Sub(z, zSquare)
+	deltaYZ := new(operation.Scalar).Sub(z, zSquare)
 
 	// innerProduct1 = <1^(n*m), y^(n*m)>
 	innerProduct1, err := innerProduct(oneVector, yVector)
@@ -516,8 +517,8 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 		return false, errhandler.NewPrivacyErr(errhandler.CalInnerProductErr, err)
 	}
 
-	sum := new(privacy.Scalar).FromUint64(0)
-	zTmp := new(privacy.Scalar).Set(zSquare)
+	sum := new(operation.Scalar).FromUint64(0)
+	zTmp := new(operation.Scalar).Set(zSquare)
 	for j := 0; j < numValuePad; j++ {
 		zTmp.Mul(zTmp, z)
 		sum.Add(sum, zTmp)
@@ -525,22 +526,22 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	sum.Mul(sum, innerProduct2)
 	deltaYZ.Sub(deltaYZ, sum)
 
-	left1 := privacy.PedCom.CommitAtIndex(proof.tHat, proof.tauX, privacy.PedersenValueIndex)
+	left1 := pedersen.PedCom.CommitAtIndex(proof.tHat, proof.tauX, pedersen.PedersenValueIndex)
 
-	right1 := new(privacy.Point).ScalarMult(proof.t2, xSquare)
-	right1.Add(right1, new(privacy.Point).AddPedersen(deltaYZ, privacy.PedCom.G[privacy.PedersenValueIndex], x, proof.t1))
+	right1 := new(operation.Point).ScalarMult(proof.t2, xSquare)
+	right1.Add(right1, new(operation.Point).AddPedersen(deltaYZ, pedersen.PedCom.G[pedersen.PedersenValueIndex], x, proof.t1))
 
 	expVector := vectorMulScalar(powerVector(z, numValuePad), zSquare)
-	right1.Add(right1, new(privacy.Point).MultiScalarMult(expVector, tmpcmsValue))
+	right1.Add(right1, new(operation.Point).MultiScalarMult(expVector, tmpcmsValue))
 
 	if !operation.IsPointEqual(left1, right1) {
-		privacy.Logger.Log.Errorf("verify aggregated range proof statement 1 failed")
+		Logger.Log.Errorf("verify aggregated range proof statement 1 failed")
 		return false, errors.New("verify aggregated range proof statement 1 failed")
 	}
 
 	innerProductArgValid := proof.innerProductProof.Verify(aggParam)
 	if !innerProductArgValid {
-		privacy.Logger.Log.Errorf("verify aggregated range proof statement 2 failed")
+		Logger.Log.Errorf("verify aggregated range proof statement 2 failed")
 		return false, errors.New("verify aggregated range proof statement 2 failed")
 	}
 
@@ -573,13 +574,13 @@ func VerifyBatchingAggregatedRangeProofs(proofs []*AggregatedRangeProof) (bool, 
 		tmpcmsValue := proof.cmsValue
 
 		for i := numValue; i < numValuePad; i++ {
-			identity := new(privacy.Point).Identity()
+			identity := new(operation.Point).Identity()
 			tmpcmsValue = append(tmpcmsValue, identity)
 		}
 
 		n := maxExp
-		oneNumber := new(privacy.Scalar).FromUint64(1)
-		twoNumber := new(privacy.Scalar).FromUint64(2)
+		oneNumber := new(operation.Scalar).FromUint64(1)
+		twoNumber := new(operation.Scalar).FromUint64(2)
 		oneVector := powerVector(oneNumber, n*numValuePad)
 		oneVectorN := powerVector(oneNumber, n)
 		twoVectorN := powerVector(twoNumber, n)
@@ -587,25 +588,25 @@ func VerifyBatchingAggregatedRangeProofs(proofs []*AggregatedRangeProof) (bool, 
 		// recalculate challenge y, z
 		y := generateChallenge([][]byte{aggParam.cs, proof.a.ToBytesS(), proof.s.ToBytesS()})
 		z := generateChallenge([][]byte{aggParam.cs, proof.a.ToBytesS(), proof.s.ToBytesS(), y.ToBytesS()})
-		zSquare := new(privacy.Scalar).Mul(z, z)
+		zSquare := new(operation.Scalar).Mul(z, z)
 
 		// challenge x = hash(G || H || A || S || T1 || T2)
 		//fmt.Printf("T2: %v\n", proof.t2)
 		x := generateChallenge([][]byte{aggParam.cs, proof.a.ToBytesS(), proof.s.ToBytesS(), proof.t1.ToBytesS(), proof.t2.ToBytesS()})
-		xSquare := new(privacy.Scalar).Mul(x, x)
+		xSquare := new(operation.Scalar).Mul(x, x)
 
 		yVector := powerVector(y, n*numValuePad)
 		// HPrime = H^(y^(1-i)
-		HPrime := make([]*privacy.Point, n*numValuePad)
-		yInverse := new(privacy.Scalar).Invert(y)
-		expyInverse := new(privacy.Scalar).FromUint64(1)
+		HPrime := make([]*operation.Point, n*numValuePad)
+		yInverse := new(operation.Scalar).Invert(y)
+		expyInverse := new(operation.Scalar).FromUint64(1)
 		for i := 0; i < n*numValuePad; i++ {
-			HPrime[i] = new(privacy.Point).ScalarMult(aggParam.h[i], expyInverse)
+			HPrime[i] = new(operation.Point).ScalarMult(aggParam.h[i], expyInverse)
 			expyInverse.Mul(expyInverse, yInverse)
 		}
 
 		// g^tHat * h^tauX = V^(z^2) * g^delta(y,z) * T1^x * T2^(x^2)
-		deltaYZ := new(privacy.Scalar).Sub(z, zSquare)
+		deltaYZ := new(operation.Scalar).Sub(z, zSquare)
 
 		// innerProduct1 = <1^(n*m), y^(n*m)>
 		innerProduct1, err := innerProduct(oneVector, yVector)
@@ -621,8 +622,8 @@ func VerifyBatchingAggregatedRangeProofs(proofs []*AggregatedRangeProof) (bool, 
 			return false, errhandler.NewPrivacyErr(errhandler.CalInnerProductErr, err), k
 		}
 
-		sum := new(privacy.Scalar).FromUint64(0)
-		zTmp := new(privacy.Scalar).Set(zSquare)
+		sum := new(operation.Scalar).FromUint64(0)
+		zTmp := new(operation.Scalar).Set(zSquare)
 		for j := 0; j < numValuePad; j++ {
 			zTmp.Mul(zTmp, z)
 			sum.Add(sum, zTmp)
@@ -630,16 +631,16 @@ func VerifyBatchingAggregatedRangeProofs(proofs []*AggregatedRangeProof) (bool, 
 		sum.Mul(sum, innerProduct2)
 		deltaYZ.Sub(deltaYZ, sum)
 
-		left1 := privacy.PedCom.CommitAtIndex(proof.tHat, proof.tauX, privacy.PedersenValueIndex)
+		left1 := pedersen.PedCom.CommitAtIndex(proof.tHat, proof.tauX, pedersen.PedersenValueIndex)
 
-		right1 := new(privacy.Point).ScalarMult(proof.t2, xSquare)
-		right1.Add(right1, new(privacy.Point).AddPedersen(deltaYZ, privacy.PedCom.G[privacy.PedersenValueIndex], x, proof.t1))
+		right1 := new(operation.Point).ScalarMult(proof.t2, xSquare)
+		right1.Add(right1, new(operation.Point).AddPedersen(deltaYZ, pedersen.PedCom.G[pedersen.PedersenValueIndex], x, proof.t1))
 
 		expVector := vectorMulScalar(powerVector(z, numValuePad), zSquare)
-		right1.Add(right1, new(privacy.Point).MultiScalarMult(expVector, tmpcmsValue))
+		right1.Add(right1, new(operation.Point).MultiScalarMult(expVector, tmpcmsValue))
 
 		if !operation.IsPointEqual(left1, right1) {
-			privacy.Logger.Log.Errorf("verify aggregated range proof statement 1 failed index %d", k)
+			Logger.Log.Errorf("verify aggregated range proof statement 1 failed index %d", k)
 			return false, fmt.Errorf("verify aggregated range proof statement 1 failed index %d", k), k
 		}
 
@@ -649,7 +650,7 @@ func VerifyBatchingAggregatedRangeProofs(proofs []*AggregatedRangeProof) (bool, 
 
 	innerProductArgsValid := VerifyBatchingInnerProductProofs(innerProductProofs, csList)
 	if !innerProductArgsValid {
-		privacy.Logger.Log.Errorf("verify batch aggregated range proofs statement 2 failed")
+		Logger.Log.Errorf("verify batch aggregated range proofs statement 2 failed")
 		return false, errors.New("verify batch aggregated range proofs statement 2 failed"), -1
 	}
 

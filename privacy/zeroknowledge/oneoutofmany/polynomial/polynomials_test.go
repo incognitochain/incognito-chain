@@ -5,26 +5,26 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 )
 
 func TestConvert(t *testing.T) {
 	L1 := operation.RandomScalar()
 	L2 := operation.RandomScalar()
 	L3 := operation.RandomScalar()
-	LRes := new(privacy.Scalar).Sub(L1, L2)
+	LRes := new(operation.Scalar).Sub(L1, L2)
 	LRes.Sub(LRes, L3)
 	fmt.Println(LRes)
 
-	I1 := privacy.ScalarToBigInt(L1)
-	I2 := privacy.ScalarToBigInt(L2)
-	I3 := privacy.ScalarToBigInt(L3)
+	I1 := privacy_util.ScalarToBigInt(L1)
+	I2 := privacy_util.ScalarToBigInt(L2)
+	I3 := privacy_util.ScalarToBigInt(L3)
 
 	tmp := new(big.Int).Sub(I1, I2)
 	tmp = tmp.Sub(tmp, I3)
 	IRes := tmp.Mod(tmp, LInt)
-	LResPrime := privacy.BigIntToScalar(IRes)
+	LResPrime := privacy_util.BigIntToScalar(IRes)
 	fmt.Println(LResPrime)
 
 }

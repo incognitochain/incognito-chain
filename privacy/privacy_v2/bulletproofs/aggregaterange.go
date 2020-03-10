@@ -5,6 +5,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/pedersen"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 	"github.com/pkg/errors"
 )
 
@@ -194,7 +195,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	if numValue > maxOutputNumber {
 		return nil, errors.New("Must less than maxOutputNumber")
 	}
-	numValuePad := roundUpPowTwo(numValue)
+	numValuePad := pad(numValue)
 	N := maxExp * numValuePad
 	aggParam := setAggregateParams(N)
 
@@ -220,7 +221,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	sR := make([]*operation.Scalar, N)
 
 	for i, value := range values {
-		tmp := ConvertUint64ToBinary(value, maxExp)
+		tmp := privacy_util.ConvertUint64ToBinary(value, maxExp)
 		for j := 0; j < maxExp; j++ {
 			aL[i*maxExp+j] = tmp[j]
 			aR[i*maxExp+j] = new(operation.Scalar).Sub(tmp[j], new(operation.Scalar).FromUint64(1))
@@ -366,7 +367,7 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	if numValue > maxOutputNumber {
 		return false, errors.New("Must less than maxOutputNumber")
 	}
-	numValuePad := roundUpPowTwo(numValue)
+	numValuePad := pad(numValue)
 	N := numValuePad * maxExp
 	aggParam := setAggregateParams(N)
 
@@ -419,7 +420,7 @@ func (proof AggregatedRangeProof) VerifyFaster() (bool, error) {
 	if numValue > maxOutputNumber {
 		return false, errors.New("Must less than maxOutputNumber")
 	}
-	numValuePad := roundUpPowTwo(numValue)
+	numValuePad := pad(numValue)
 	N := maxExp * numValuePad
 	aggParam := setAggregateParams(N)
 
@@ -544,7 +545,7 @@ func VerifyBatch(proofs []*AggregatedRangeProof) (bool, error, int) {
 		if numValue > maxOutputNumber {
 			return false, errors.New("Must less than maxOutputNumber"), k
 		}
-		numValuePad := roundUpPowTwo(numValue)
+		numValuePad := pad(numValue)
 		N := maxExp * numValuePad
 		aggParam := setAggregateParams(N)
 
@@ -692,7 +693,175 @@ func VerifyBatch(proofs []*AggregatedRangeProof) (bool, error, int) {
 	return true, nil, -1
 }
 
-// estimateMultiRangeProofSize estimate multi range proof size
-func EstimateMultiRangeProofSize(nOutput int) uint64 {
-	return uint64((nOutput+2*int(math.Log2(float64(maxExp*roundUpPowTwo(nOutput))))+5)*operation.Ed25519KeySize + 5*operation.Ed25519KeySize + 2)
+func computeHPrime(y *operation.Scalar, N int, H []*operation.Point) []*operation.Point {
+	yInverse := new(operation.Scalar).Invert(y)
+	HPrime := make([]*operation.Point, N)
+	expyInverse := new(operation.Scalar).FromUint64(1)
+	for i := 0; i < N; i++ {
+		HPrime[i] = new(operation.Point).ScalarMult(H[i], expyInverse)
+		expyInverse.Mul(expyInverse, yInverse)
+	}
+	return HPrime
+}
+
+func computeDeltaYZ(z, zSquare *operation.Scalar, yVector []*operation.Scalar, N int) (*operation.Scalar, error) {
+	oneNumber := new(operation.Scalar).FromUint64(1)
+	twoNumber := new(operation.Scalar).FromUint64(2)
+	oneVectorN := powerVector(oneNumber, maxExp)
+	twoVectorN := powerVector(twoNumber, maxExp)
+	oneVector := powerVector(oneNumber, N)
+
+	deltaYZ := new(operation.Scalar).Sub(z, zSquare)
+	// ip1 = <1^(n*m), y^(n*m)>
+	var ip1, ip2 *operation.Scalar
+	var err error
+	if ip1, err = innerProduct(oneVector, yVector); err != nil {
+		return nil, err
+	} else if ip2, err = innerProduct(oneVectorN, twoVectorN); err != nil {
+		return nil, err
+	} else {
+		deltaYZ.Mul(deltaYZ, ip1)
+		sum := new(operation.Scalar).FromUint64(0)
+		zTmp := new(operation.Scalar).Set(zSquare)
+		for j := 0; j < int(N/maxExp); j++ {
+			zTmp.Mul(zTmp, z)
+			sum.Add(sum, zTmp)
+		}
+		sum.Mul(sum, ip2)
+		deltaYZ.Sub(deltaYZ, sum)
+	}
+	return deltaYZ, nil
+}
+
+func innerProduct(a []*operation.Scalar, b []*operation.Scalar) (*operation.Scalar, error) {
+	if len(a) != len(b) {
+		return nil, errors.New("Incompatible sizes of a and b")
+	}
+	result := new(operation.Scalar).FromUint64(uint64(0))
+	for i := range a {
+		//res = a[i]*b[i] + res % l
+		result.MulAdd(a[i], b[i], result)
+	}
+	return result, nil
+}
+
+func vectorAdd(a []*operation.Scalar, b []*operation.Scalar) ([]*operation.Scalar, error) {
+	if len(a) != len(b) {
+		return nil, errors.New("Incompatible sizes of a and b")
+	}
+	result := make([]*operation.Scalar, len(a))
+	for i := range a {
+		result[i] = new(operation.Scalar).Add(a[i], b[i])
+	}
+	return result, nil
+}
+
+func setAggregateParams(N int) *bulletproofParams {
+	aggParam := new(bulletproofParams)
+	aggParam.g = AggParam.g[0:N]
+	aggParam.h = AggParam.h[0:N]
+	aggParam.u = AggParam.u
+	aggParam.cs = AggParam.cs
+	return aggParam
+}
+
+// bulletproofParams includes all generator for aggregated range proof
+func newBulletproofParams(m int) *bulletproofParams {
+	capacity := maxExp * m // fixed value
+	param := new(bulletproofParams)
+	param.g = make([]*operation.Point, capacity)
+	param.h = make([]*operation.Point, capacity)
+	csByte := []byte{}
+
+	for i := 0; i < capacity; i++ {
+		param.g[i] = operation.HashToPointFromIndex(int64(numCommitValue+i), operation.CStringBulletProof)
+		param.h[i] = operation.HashToPointFromIndex(int64(numCommitValue+i+maxOutputNumberParam*maxExp), operation.CStringBulletProof)
+		csByte = append(csByte, param.g[i].ToBytesS()...)
+		csByte = append(csByte, param.h[i].ToBytesS()...)
+	}
+
+	param.u = new(operation.Point)
+	param.u = operation.HashToPointFromIndex(int64(numCommitValue+2*maxOutputNumberParam*maxExp), operation.CStringBulletProof)
+	csByte = append(csByte, param.u.ToBytesS()...)
+
+	param.cs = operation.HashToPoint(csByte)
+	return param
+}
+
+func generateChallenge(hashCache []byte, values []*operation.Point) *operation.Scalar {
+	bytes := []byte{}
+	bytes = append(bytes, hashCache...)
+	for i := 0; i < len(values); i++ {
+		bytes = append(bytes, values[i].ToBytesS()...)
+	}
+	hash := operation.HashToScalar(bytes)
+	return hash
+}
+
+func pad(num int) int {
+	if num == 1 || num == 2 {
+		return num
+	}
+	tmp := 2
+	for i := 2; ; i++ {
+		tmp *= 2
+		if tmp >= num {
+			num = tmp
+			break
+		}
+	}
+	return num
+}
+
+func hadamardProduct(a []*operation.Scalar, b []*operation.Scalar) ([]*operation.Scalar, error) {
+	if len(a) != len(b) {
+		return nil, errors.New("Invalid input")
+	}
+	result := make([]*operation.Scalar, len(a))
+	for i := 0; i < len(result); i++ {
+		result[i] = new(operation.Scalar).Mul(a[i], b[i])
+	}
+	return result, nil
+}
+
+// powerVector calculates base^n
+func powerVector(base *operation.Scalar, n int) []*operation.Scalar {
+	result := make([]*operation.Scalar, n)
+	result[0] = new(operation.Scalar).FromUint64(1)
+	if n > 1 {
+		result[1] = new(operation.Scalar).Set(base)
+		for i := 2; i < n; i++ {
+			result[i] = new(operation.Scalar).Mul(result[i-1], base)
+		}
+	}
+	return result
+}
+
+// vectorAddScalar adds a vector to a big int, returns big int array
+func vectorAddScalar(v []*operation.Scalar, s *operation.Scalar) []*operation.Scalar {
+	result := make([]*operation.Scalar, len(v))
+	for i := range v {
+		result[i] = new(operation.Scalar).Add(v[i], s)
+	}
+	return result
+}
+
+// vectorMulScalar mul a vector to a big int, returns a vector
+func vectorMulScalar(v []*operation.Scalar, s *operation.Scalar) []*operation.Scalar {
+	result := make([]*operation.Scalar, len(v))
+	for i := range v {
+		result[i] = new(operation.Scalar).Mul(v[i], s)
+	}
+	return result
+}
+
+// CommitAll commits a list of PCM_CAPACITY value(s)
+func encodeVectors(l []*operation.Scalar, r []*operation.Scalar, g []*operation.Point, h []*operation.Point) (*operation.Point, error) {
+	if len(l) != len(r) || len(g) != len(l) || len(h) != len(g) {
+		return nil, errors.New("Invalid input")
+	}
+	tmp1 := new(operation.Point).MultiScalarMult(l, g)
+	tmp2 := new(operation.Point).MultiScalarMult(r, h)
+	res := new(operation.Point).Add(tmp1, tmp2)
+	return res, nil
 }
