@@ -609,12 +609,12 @@ func (httpServer *HttpServer) handleSendRawPrivacyCustomTokenTransaction(params 
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param is invalid"))
 	}
 
-	txMsg, tx, err := httpServer.txService.SendRawPrivacyCustomTokenTransaction(base58CheckData)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	txMsg, tx, err1 := httpServer.txService.SendRawPrivacyCustomTokenTransaction(base58CheckData)
+	if err1 != nil {
+		return nil, err1
 	}
 
-	err = httpServer.config.Server.PushMessageToAll(txMsg)
+	err := httpServer.config.Server.PushMessageToAll(txMsg)
 	//Mark forwarded message
 	if err == nil {
 		httpServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
