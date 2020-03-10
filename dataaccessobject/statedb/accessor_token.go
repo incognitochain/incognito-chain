@@ -28,11 +28,10 @@ func StorePrivacyTokenTx(stateDB *StateDB, tokenID common.Hash, txHash common.Ha
 		return NewStatedbError(GetPrivacyTokenError, err)
 	}
 	if !has {
-		err := StorePrivacyToken(stateDB, tokenID, "", "", UnknownToken, false, 0, []byte{}, txHash)
+		err := StorePrivacyToken(stateDB, tokenID, "", "", UnknownToken, false, 0, []byte{}, common.Hash{})
 		if err != nil {
 			return err
 		}
-		return nil
 	}
 	keyTokenTx := GenerateTokenTransactionObjectKey(tokenID, txHash)
 	tokenTransactionState := NewTokenTransactionStateWithValue(txHash)
@@ -43,13 +42,13 @@ func StorePrivacyTokenTx(stateDB *StateDB, tokenID common.Hash, txHash common.Ha
 	return nil
 }
 
-func ListPrivacyToken(stateDB *StateDB) (map[common.Hash]*TokenState, error) {
-	return stateDB.GetAllToken(), nil
+func ListPrivacyToken(stateDB *StateDB) map[common.Hash]*TokenState {
+	return stateDB.GetAllToken()
 }
 
-func GetPrivacyTokenTxs(stateDB *StateDB, tokenID common.Hash) ([]common.Hash, error) {
+func GetPrivacyTokenTxs(stateDB *StateDB, tokenID common.Hash) []common.Hash {
 	txs := stateDB.GetTokenTxs(tokenID)
-	return txs, nil
+	return txs
 }
 
 func PrivacyTokenIDExisted(stateDB *StateDB, tokenID common.Hash) bool {
