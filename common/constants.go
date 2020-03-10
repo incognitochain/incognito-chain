@@ -185,3 +185,9 @@ const (
 	RelayingHeaderUnconfirmedAcceptedChainStatus = "unconfirmedAccepted"
 	RelayingHeaderRejectedChainStatus            = "rejected"
 )
+
+const (
+	PortalTimeOutSendPubTokenBack = 2160    // beacon blocks ~ 24 hours
+
+	MinRatio = 120 // 120% - minimum ratio between collateral's value and holding public tokens' value
+)

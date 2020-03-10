@@ -229,6 +229,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		instructions = append(instructions, pdeInsts...)
 	}
 
+	// handle portal instructions
 	portalInsts, err := blockchain.handlePortalInsts(
 		beaconHeight-1,
 		currentPortalState,
@@ -249,6 +250,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		instructions = append(instructions, portalInsts...)
 	}
 
+	// handle relaying instructions
 	relayingInsts, err := blockchain.handleRelayingInsts(
 		beaconHeight-1,
 		relayingHeaderState,
@@ -262,6 +264,20 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	}
 	if len(relayingInsts) > 0 {
 		instructions = append(instructions, relayingInsts...)
+	}
+
+	// auto-liquidation portal instructions
+	portalLiquidationInsts, err := blockchain.autoCheckAndCreatePortalLiquidationInsts(
+		beaconHeight-1,
+		currentPortalState,
+	)
+
+	if err != nil {
+		Logger.log.Error(err)
+		return instructions
+	}
+	if len(portalLiquidationInsts) > 0 {
+		instructions = append(instructions, portalLiquidationInsts...)
 	}
 
 	return instructions
@@ -762,4 +778,15 @@ func (blockchain *BlockChain) handleRelayingInsts(
 	// handle btc header relaying instructions
 
 	return instructions, nil
+}
+
+func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
+	beaconHeight uint64, currentPortalState *CurrentPortalState) ([][]string, error) {
+
+	// case 1: check there is any custodian doesn't send public tokens back to user after PortalTimeOutSendPubTokenBack
+	// get custodian's collateral to return user
+
+	// case 2: check collateral's value (locked collateral amount) drops below MinRatio
+	return [][]string{}, nil
+
 }
