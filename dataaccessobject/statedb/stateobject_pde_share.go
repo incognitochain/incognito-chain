@@ -145,8 +145,8 @@ func newPDEShareObjectWithValue(db *StateDB, key common.Hash, data interface{}) 
 	}, nil
 }
 
-func GeneratePDEShareObjectKeyV2(token1ID, token2ID, contributorAddress string) common.Hash {
-	prefixHash := GetPDESharePrefixV2()
+func GeneratePDEShareObjectKey(token1ID, token2ID, contributorAddress string) common.Hash {
+	prefixHash := GetPDESharePrefix()
 	valueHash := common.HashH([]byte(token1ID + token2ID + contributorAddress))
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }

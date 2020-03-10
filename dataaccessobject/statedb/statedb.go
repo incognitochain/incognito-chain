@@ -968,15 +968,22 @@ func (stateDB *StateDB) GetTokenState(key common.Hash) (*TokenState, bool, error
 	return NewTokenState(), false, nil
 }
 
-func (stateDB *StateDB) GetTokenTxs(tokenID common.Hash) ([]common.Hash, bool, error) {
-	t, has, err := stateDB.GetTokenState(tokenID)
-	if err != nil {
-		return []common.Hash{}, false, err
+func (stateDB *StateDB) GetTokenTxs(tokenID common.Hash) []common.Hash {
+	txs := []common.Hash{}
+	temp := stateDB.trie.NodeIterator(GetTokenTransactionPrefix(tokenID))
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		tokenTransactionState := NewTokenTransactionState()
+		err := json.Unmarshal(newValue, tokenTransactionState)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		txs = append(txs, tokenTransactionState.TxHash())
 	}
-	if !has {
-		return []common.Hash{}, has, nil
-	}
-	return t.Txs(), true, nil
+	return txs
 }
 
 func (stateDB *StateDB) GetAllToken() map[common.Hash]*TokenState {
@@ -992,15 +999,18 @@ func (stateDB *StateDB) GetAllToken() map[common.Hash]*TokenState {
 		if err != nil {
 			panic("wrong expect type")
 		}
-		tokenIDs[tokenState.TokenID()] = tokenState
+		tokenID := tokenState.TokenID()
+		txs := stateDB.GetTokenTxs(tokenID)
+		tokenState.AddTxs(txs)
+		tokenIDs[tokenID] = tokenState
 	}
 	return tokenIDs
 }
 
 // ================================= PDE OBJECT =======================================
-func (stateDB *StateDB) GetAllWaitingPDEContributionStateV2() []*WaitingPDEContributionState {
+func (stateDB *StateDB) GetAllWaitingPDEContributionState() []*WaitingPDEContributionState {
 	waitingPDEContributionStates := []*WaitingPDEContributionState{}
-	temp := stateDB.trie.NodeIterator(GetWaitingPDEContributionPrefixV2())
+	temp := stateDB.trie.NodeIterator(GetWaitingPDEContributionPrefix())
 	it := trie.NewIterator(temp)
 	for it.Next() {
 		value := it.Value
@@ -1016,9 +1026,9 @@ func (stateDB *StateDB) GetAllWaitingPDEContributionStateV2() []*WaitingPDEContr
 	return waitingPDEContributionStates
 }
 
-func (stateDB *StateDB) GetAllPDEPoolPairStateV2() []*PDEPoolPairState {
+func (stateDB *StateDB) GetAllPDEPoolPairState() []*PDEPoolPairState {
 	pdePoolPairStates := []*PDEPoolPairState{}
-	temp := stateDB.trie.NodeIterator(GetPDEPoolPairPrefixV2())
+	temp := stateDB.trie.NodeIterator(GetPDEPoolPairPrefix())
 	it := trie.NewIterator(temp)
 	for it.Next() {
 		value := it.Value
@@ -1045,9 +1055,9 @@ func (stateDB *StateDB) GetPDEPoolPairState(key common.Hash) (*PDEPoolPairState,
 	return NewPDEPoolPairState(), false, nil
 }
 
-func (stateDB *StateDB) GetAllPDEShareStateV2() []*PDEShareState {
+func (stateDB *StateDB) GetAllPDEShareState() []*PDEShareState {
 	pdeShareStates := []*PDEShareState{}
-	temp := stateDB.trie.NodeIterator(GetPDESharePrefixV2())
+	temp := stateDB.trie.NodeIterator(GetPDESharePrefix())
 	it := trie.NewIterator(temp)
 	for it.Next() {
 		value := it.Value

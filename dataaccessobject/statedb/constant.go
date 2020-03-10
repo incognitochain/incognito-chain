@@ -27,6 +27,7 @@ const (
 	BridgeTokenInfoObjectType
 	BridgeStatusObjectType
 	BurningConfirmObjectType
+	TokenTransactionObjectType
 )
 
 // Prefix length
