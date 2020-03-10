@@ -35,7 +35,7 @@ func TestPad(t *testing.T) {
 	}
 
 	for _, item := range data {
-		num := pad(item.number)
+		num := roundUpPowTwo(item.number)
 		assert.Equal(t, item.paddedNumber, num)
 	}
 }
@@ -100,7 +100,7 @@ func TestEncodeVectors(t *testing.T) {
 func TestInnerProductProveVerify(t *testing.T) {
 	for k := 0; k < 10; k++ {
 		numValue := rand.Intn(maxOutputNumber)
-		numValuePad := pad(numValue)
+		numValuePad := roundUpPowTwo(numValue)
 		aggParam := new(bulletproofParams)
 		aggParam.g = AggParam.g[0 : numValuePad*maxExp]
 		aggParam.h = AggParam.h[0 : numValuePad*maxExp]

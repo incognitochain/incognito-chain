@@ -194,7 +194,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	if numValue > maxOutputNumber {
 		return nil, errors.New("Must less than maxOutputNumber")
 	}
-	numValuePad := pad(numValue)
+	numValuePad := roundUpPowTwo(numValue)
 	N := maxExp * numValuePad
 	aggParam := setAggregateParams(N)
 
@@ -366,7 +366,7 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	if numValue > maxOutputNumber {
 		return false, errors.New("Must less than maxOutputNumber")
 	}
-	numValuePad := pad(numValue)
+	numValuePad := roundUpPowTwo(numValue)
 	N := numValuePad * maxExp
 	aggParam := setAggregateParams(N)
 
@@ -419,7 +419,7 @@ func (proof AggregatedRangeProof) VerifyFaster() (bool, error) {
 	if numValue > maxOutputNumber {
 		return false, errors.New("Must less than maxOutputNumber")
 	}
-	numValuePad := pad(numValue)
+	numValuePad := roundUpPowTwo(numValue)
 	N := maxExp * numValuePad
 	aggParam := setAggregateParams(N)
 
@@ -544,7 +544,7 @@ func VerifyBatch(proofs []*AggregatedRangeProof) (bool, error, int) {
 		if numValue > maxOutputNumber {
 			return false, errors.New("Must less than maxOutputNumber"), k
 		}
-		numValuePad := pad(numValue)
+		numValuePad := roundUpPowTwo(numValue)
 		N := maxExp * numValuePad
 		aggParam := setAggregateParams(N)
 
@@ -695,5 +695,5 @@ func VerifyBatch(proofs []*AggregatedRangeProof) (bool, error, int) {
 
 // estimateMultiRangeProofSize estimate multi range proof size
 func EstimateMultiRangeProofSize(nOutput int) uint64 {
-	return uint64((nOutput+2*int(math.Log2(float64(maxExp*pad(nOutput))))+5)*operation.Ed25519KeySize + 5*operation.Ed25519KeySize + 2)
+	return uint64((nOutput+2*int(math.Log2(float64(maxExp*roundUpPowTwo(nOutput))))+5)*operation.Ed25519KeySize + 5*operation.Ed25519KeySize + 2)
 }

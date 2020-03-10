@@ -24,8 +24,6 @@ func ConvertUint64ToBinary(number uint64, n int) []*operation.Scalar {
 	return binary
 }
 
-
-
 func computeHPrime(y *operation.Scalar, N int, H []*operation.Point) []*operation.Point {
 	yInverse := new(operation.Scalar).Invert(y)
 	HPrime := make([]*operation.Point, N)
@@ -98,19 +96,19 @@ func setAggregateParams(N int) *bulletproofParams {
 	return aggParam
 }
 
-func pad(num int) int {
-	if num == 1 || num == 2 {
-		return num
+func roundUpPowTwo(v int) int {
+	if v == 0 {
+		return 1
+	} else {
+		v--
+		v |= v >> 1
+		v |= v >> 2
+		v |= v >> 4
+		v |= v >> 8
+		v |= v >> 16
+		v++
+		return v
 	}
-	tmp := 2
-	for i := 2; ; i++ {
-		tmp *= 2
-		if tmp >= num {
-			num = tmp
-			break
-		}
-	}
-	return num
 }
 
 func hadamardProduct(a []*operation.Scalar, b []*operation.Scalar) ([]*operation.Scalar, error) {
