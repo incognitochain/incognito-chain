@@ -22,7 +22,7 @@ type CustodianState struct {
 	TotalCollateral        uint64            // prv
 	FreeCollateral         uint64            // prv
 	HoldingPubTokens       map[string]uint64 // tokenSymbol : amount
-	LockedAmountCollateral map[string]uint64
+	LockedAmountCollateral map[string]uint64 // tokenSymbol : amount
 	RemoteAddresses        map[string]string // tokenSymbol : address
 }
 
