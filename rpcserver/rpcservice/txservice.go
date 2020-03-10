@@ -1011,10 +1011,50 @@ func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData 
 		beaconHeigh = int64(beaconBestState.BeaconHeight)
 	}
 	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx, beaconHeigh)
-	//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 	if err != nil {
-		Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction result: %+v, err: %+v", nil, err)
-		return nil, nil, err
+		Logger.log.Errorf("txService.SendRawPrivacyCustomTokenTransaction Try add tx into mempool of node with err: %+v", err)
+		mempoolErr, ok := err.(*mempool.MempoolTxError)
+		if ok {
+			switch mempoolErr.Code {
+			case mempool.ErrCodeMessage[mempool.RejectInvalidFee].Code:
+				{
+					return nil, nil, NewRPCError(RejectInvalidTxFeeError, mempoolErr)
+				}
+			case mempool.ErrCodeMessage[mempool.RejectInvalidSize].Code:
+				{
+					return nil, nil, NewRPCError(RejectInvalidTxSizeError, mempoolErr)
+				}
+			case mempool.ErrCodeMessage[mempool.RejectInvalidTxType].Code:
+				{
+					return nil, nil, NewRPCError(RejectInvalidTxTypeError, mempoolErr)
+				}
+			case mempool.ErrCodeMessage[mempool.RejectInvalidTx].Code:
+				{
+					return nil, nil, NewRPCError(RejectInvalidTxError, mempoolErr)
+				}
+			case mempool.ErrCodeMessage[mempool.RejectReplacementTxError].Code:
+				{
+					return nil, nil, NewRPCError(RejectReplacementTx, mempoolErr)
+				}
+			case mempool.ErrCodeMessage[mempool.RejectDoubleSpendWithBlockchainTx].Code, mempool.ErrCodeMessage[mempool.RejectDoubleSpendWithMempoolTx].Code:
+				{
+					return nil, nil, NewRPCError(RejectDoubleSpendTxError, mempoolErr)
+				}
+			case mempool.ErrCodeMessage[mempool.RejectDuplicateTx].Code:
+				{
+					return nil, nil, NewRPCError(RejectDuplicateTxInPoolError, mempoolErr)
+				}
+			case mempool.ErrCodeMessage[mempool.RejectVersion].Code:
+				{
+					return nil, nil, NewRPCError(RejectDuplicateTxInPoolError, mempoolErr)
+				}
+			case mempool.ErrCodeMessage[mempool.RejectSanityTxLocktime].Code:
+				{
+					return nil, nil, NewRPCError(RejectSanityTxLocktime, mempoolErr)
+				}
+			}
+		}
+		return nil, nil, NewRPCError(TxPoolRejectTxError, err)
 	}
 
 	Logger.log.Debugf("there is hash of transaction: %s\n", hash.String())
