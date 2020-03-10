@@ -145,14 +145,8 @@ func newPDEPoolPairObjectWithValue(db *StateDB, key common.Hash, data interface{
 	}, nil
 }
 
-func GeneratePDEPoolPairObjectKey(beaconHeight uint64, token1ID, token2ID string) common.Hash {
-	prefixHash := GetPDEPoolPairPrefix(beaconHeight)
-	valueHash := common.HashH([]byte(token1ID + token2ID))
-	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
-}
-
-func GeneratePDEPoolPairObjectKeyV2(token1ID, token2ID string) common.Hash {
-	prefixHash := GetPDEPoolPairPrefixV2()
+func GeneratePDEPoolPairObjectKey(token1ID, token2ID string) common.Hash {
+	prefixHash := GetPDEPoolPairPrefix()
 	valueHash := common.HashH([]byte(token1ID + token2ID))
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }

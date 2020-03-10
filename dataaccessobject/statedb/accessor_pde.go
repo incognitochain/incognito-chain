@@ -12,8 +12,7 @@ func StoreWaitingPDEContributions(stateDB *StateDB, beaconHeight uint64, waiting
 	for tempKey, contribution := range waitingPDEContributions {
 		strs := strings.Split(tempKey, "-")
 		pairID := strings.Join(strs[2:], "-")
-		//key := GenerateWaitingPDEContributionObjectKey(beaconHeight, pairID)
-		key := GenerateWaitingPDEContributionObjectKeyV2(pairID)
+		key := GenerateWaitingPDEContributionObjectKey(pairID)
 		value := NewWaitingPDEContributionStateWithValue(pairID, contribution.ContributorAddressStr, contribution.TokenIDStr, contribution.Amount, contribution.TxReqID)
 		err := stateDB.SetStateObject(WaitingPDEContributionObjectType, key, value)
 		if err != nil {
@@ -25,7 +24,7 @@ func StoreWaitingPDEContributions(stateDB *StateDB, beaconHeight uint64, waiting
 
 func GetWaitingPDEContributions(stateDB *StateDB, beaconHeight uint64) (map[string]*rawdbv2.PDEContribution, error) {
 	waitingPDEContributions := make(map[string]*rawdbv2.PDEContribution)
-	waitingPDEContributionStates := stateDB.GetAllWaitingPDEContributionStateV2()
+	waitingPDEContributionStates := stateDB.GetAllWaitingPDEContributionState()
 	for _, wcState := range waitingPDEContributionStates {
 		key := string(GetWaitingPDEContributionKey(beaconHeight, wcState.PairID()))
 		value := rawdbv2.NewPDEContribution(wcState.ContributorAddress(), wcState.TokenID(), wcState.Amount(), wcState.TxReqID())
@@ -38,16 +37,14 @@ func DeleteWaitingPDEContributions(stateDB *StateDB, deletedWaitingPDEContributi
 	for tempKey, _ := range deletedWaitingPDEContributions {
 		strs := strings.Split(tempKey, "-")
 		pairID := strings.Join(strs[2:], "-")
-		//key := GenerateWaitingPDEContributionObjectKey(beaconHeight, pairID)
-		key := GenerateWaitingPDEContributionObjectKeyV2(pairID)
+		key := GenerateWaitingPDEContributionObjectKey(pairID)
 		stateDB.MarkDeleteStateObject(WaitingPDEContributionObjectType, key)
 	}
 }
 
 func StorePDEPoolPairs(stateDB *StateDB, beaconHeight uint64, pdePoolPairs map[string]*rawdbv2.PDEPoolForPair) error {
 	for _, pdePoolPair := range pdePoolPairs {
-		//key := GeneratePDEPoolPairObjectKey(beaconHeight, pdePoolPair.Token1IDStr, pdePoolPair.Token2IDStr)
-		key := GeneratePDEPoolPairObjectKeyV2(pdePoolPair.Token1IDStr, pdePoolPair.Token2IDStr)
+		key := GeneratePDEPoolPairObjectKey(pdePoolPair.Token1IDStr, pdePoolPair.Token2IDStr)
 		value := NewPDEPoolPairStateWithValue(pdePoolPair.Token1IDStr, pdePoolPair.Token1PoolValue, pdePoolPair.Token2IDStr, pdePoolPair.Token2PoolValue)
 		err := stateDB.SetStateObject(PDEPoolPairObjectType, key, value)
 		if err != nil {
@@ -59,7 +56,7 @@ func StorePDEPoolPairs(stateDB *StateDB, beaconHeight uint64, pdePoolPairs map[s
 
 func GetPDEPoolPair(stateDB *StateDB, beaconHeight uint64) (map[string]*rawdbv2.PDEPoolForPair, error) {
 	pdePoolPairs := make(map[string]*rawdbv2.PDEPoolForPair)
-	pdePoolPairStates := stateDB.GetAllPDEPoolPairStateV2()
+	pdePoolPairStates := stateDB.GetAllPDEPoolPairState()
 	for _, ppState := range pdePoolPairStates {
 		key := string(GetPDEPoolForPairKey(beaconHeight, ppState.Token1ID(), ppState.Token2ID()))
 		value := rawdbv2.NewPDEPoolForPair(ppState.Token1ID(), ppState.Token1PoolValue(), ppState.Token2ID(), ppState.Token2PoolValue())
@@ -74,8 +71,7 @@ func StorePDEShares(stateDB *StateDB, beaconHeight uint64, pdeShares map[string]
 		token1ID := strs[2]
 		token2ID := strs[3]
 		contributorAddress := strs[4]
-		//key := GeneratePDEShareObjectKey(beaconHeight, token1ID, token2ID, contributorAddress)
-		key := GeneratePDEShareObjectKeyV2(token1ID, token2ID, contributorAddress)
+		key := GeneratePDEShareObjectKey(token1ID, token2ID, contributorAddress)
 		value := NewPDEShareStateWithValue(token1ID, token2ID, contributorAddress, shareAmount)
 		err := stateDB.SetStateObject(PDEShareObjectType, key, value)
 		if err != nil {
@@ -87,7 +83,7 @@ func StorePDEShares(stateDB *StateDB, beaconHeight uint64, pdeShares map[string]
 
 func GetPDEShares(stateDB *StateDB, beaconHeight uint64) (map[string]uint64, error) {
 	pdeShares := make(map[string]uint64)
-	pdeShareStates := stateDB.GetAllPDEShareStateV2()
+	pdeShareStates := stateDB.GetAllPDEShareState()
 	for _, sState := range pdeShareStates {
 		key := string(GetPDEShareKey(beaconHeight, sState.Token1ID(), sState.Token2ID(), sState.ContributorAddress()))
 		value := sState.Amount()
@@ -99,8 +95,7 @@ func GetPDEShares(stateDB *StateDB, beaconHeight uint64) (map[string]uint64, err
 func GetPDEPoolForPair(stateDB *StateDB, beaconHeight uint64, tokenIDToBuy string, tokenIDToSell string) ([]byte, error) {
 	tokenIDs := []string{tokenIDToBuy, tokenIDToSell}
 	sort.Strings(tokenIDs)
-	//key := GeneratePDEPoolPairObjectKey(beaconHeight, tokenIDs[0], tokenIDs[1])
-	key := GeneratePDEPoolPairObjectKeyV2(tokenIDs[0], tokenIDs[1])
+	key := GeneratePDEPoolPairObjectKey(tokenIDs[0], tokenIDs[1])
 	ppState, has, err := stateDB.GetPDEPoolPairState(key)
 	if err != nil {
 		return []byte{}, NewStatedbError(GetPDEPoolForPairError, err)

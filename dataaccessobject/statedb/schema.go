@@ -25,6 +25,7 @@ var (
 	snDerivatorPrefix                  = []byte("sn-derivator-")
 	outputCoinPrefix                   = []byte("output-coin-")
 	tokenPrefix                        = []byte("token-")
+	tokenTransactionPrefix             = []byte("token-transaction-")
 	waitingPDEContributionPrefix       = []byte("waitingpdecontribution-")
 	pdePoolPrefix                      = []byte("pdepool-")
 	pdeSharePrefix                     = []byte("pdeshare-")
@@ -122,35 +123,22 @@ func GetTokenPrefix() []byte {
 	return h[:][:prefixHashKeyLength]
 }
 
-func GetWaitingPDEContributionPrefix(beaconHeight uint64) []byte {
-	buf := common.Uint64ToBytes(beaconHeight)
-	h := common.HashH(append(waitingPDEContributionPrefix, buf...))
+func GetTokenTransactionPrefix(tokenID common.Hash) []byte {
+	h := common.HashH(append(tokenTransactionPrefix, tokenID[:]...))
 	return h[:][:prefixHashKeyLength]
 }
 
-func GetWaitingPDEContributionPrefixV2() []byte {
+func GetWaitingPDEContributionPrefix() []byte {
 	h := common.HashH(waitingPDEContributionPrefix)
 	return h[:][:prefixHashKeyLength]
 }
 
-func GetPDEPoolPairPrefix(beaconHeight uint64) []byte {
-	buf := common.Uint64ToBytes(beaconHeight)
-	h := common.HashH(append(pdePoolPrefix, buf...))
-	return h[:][:prefixHashKeyLength]
-}
-
-func GetPDEPoolPairPrefixV2() []byte {
+func GetPDEPoolPairPrefix() []byte {
 	h := common.HashH(pdePoolPrefix)
 	return h[:][:prefixHashKeyLength]
 }
 
-func GetPDESharePrefix(beaconHeight uint64) []byte {
-	buf := common.Uint64ToBytes(beaconHeight)
-	h := common.HashH(append(pdeSharePrefix, buf...))
-	return h[:][:prefixHashKeyLength]
-}
-
-func GetPDESharePrefixV2() []byte {
+func GetPDESharePrefix() []byte {
 	h := common.HashH(pdeSharePrefix)
 	return h[:][:prefixHashKeyLength]
 }
@@ -232,14 +220,6 @@ func GetPDEStatusKey(prefix []byte, suffix []byte) []byte {
 	return append(prefix, suffix...)
 }
 
-//func GetPDETradeFeesKey(beaconHeight uint64, token1IDStr string, token2IDStr string, tokenForFeeIDStr string) []byte {
-//	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
-//	pdeTradeFeesByBCHeightPrefix := append(PDETradeFeePrefix, beaconHeightBytes...)
-//	tokenIDStrs := []string{token1IDStr, token2IDStr}
-//	sort.Strings(tokenIDStrs)
-//	return append(pdeTradeFeesByBCHeightPrefix, []byte(tokenIDStrs[0]+"-"+tokenIDStrs[1]+"-"+tokenForFeeIDStr)...)
-//}
-
 var _ = func() (_ struct{}) {
 	m := make(map[string]string)
 	prefixs := [][]byte{}
@@ -275,13 +255,6 @@ var _ = func() (_ struct{}) {
 		panic("next-cand-" + " same prefix " + v)
 	}
 	m[string(tempNextCandidate)] = "next-cand-"
-	// serial number
-	//tempSerialNumber := GetSerialNumberPrefix()
-	//prefixs = append(prefixs, tempSerialNumber)
-	//if v, ok := m[string(tempSerialNumber)]; ok {
-	//	panic("serial-number-" + " same prefix " + v)
-	//}
-	//m[string(tempSerialNumber)] = "serial-number-"
 	// reward receiver
 	tempRewardReceiver := GetCommitteeRewardPrefix()
 	prefixs = append(prefixs, tempRewardReceiver)

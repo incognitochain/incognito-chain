@@ -138,19 +138,19 @@ func (blockchain *BlockChain) GetShardBlockByHash(hash common.Hash) (*ShardBlock
 }
 
 func (blockchain *BlockChain) GetShardRewardStateDB(shardID byte) *statedb.StateDB {
-	return blockchain.BestState.Shard[shardID].rewardStateDB
+	return blockchain.BestState.Shard[shardID].GetCopiedRewardStateDB()
 }
 
 func (blockchain *BlockChain) GetTransactionStateDB(shardID byte) *statedb.StateDB {
-	return blockchain.BestState.Shard[shardID].transactionStateDB
+	return blockchain.BestState.Shard[shardID].GetCopiedTransactionStateDB()
 }
 
 func (blockchain *BlockChain) GetShardFeatureStateDB(shardID byte) *statedb.StateDB {
-	return blockchain.BestState.Shard[shardID].featureStateDB
+	return blockchain.BestState.Shard[shardID].GetFeatureCopiedStateDB()
 }
 
 func (blockchain *BlockChain) GetBeaconFeatureStateDB() *statedb.StateDB {
-	return blockchain.BestState.Beacon.featureStateDB
+	return blockchain.BestState.Beacon.GetCopiedFeatureStateDB()
 }
 
 func (blockchain *BlockChain) GetBeaconFeatureStateDBByHeight(height uint64, db incdb.Database) (*statedb.StateDB, error) {

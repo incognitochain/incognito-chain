@@ -61,6 +61,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newBridgeStatusObjectWithValue(db, hash, value)
 	case BurningConfirmObjectType:
 		return newBurningConfirmObjectWithValue(db, hash, value)
+	case TokenTransactionObjectType:
+		return newTokenTransactionObjectWithValue(db, hash, value)
 	default:
 		panic("state object type not exist")
 	}

@@ -29,6 +29,7 @@ const (
 	ErrInvalidBridgeTokenInfoStateType        = "invalid bridge token info state type"
 	ErrInvalidBridgeStatusStateType           = "invalid bridge status state type"
 	ErrInvalidBurningConfirmStateType         = "invalid burning confirm state type"
+	ErrInvalidTokenTransactionStateType       = "invalid token transaction state type"
 )
 const (
 	InvalidByteArrayTypeError = iota
@@ -60,6 +61,7 @@ const (
 	StoreSNDerivatorError
 	GetSNDerivatorError
 	StorePrivacyTokenError
+	StorePrivacyTokenTransactionError
 	GetPrivacyTokenError
 	GetPrivacyTokenTxsError
 	PrivacyTokenIDExistedError
@@ -130,22 +132,23 @@ var ErrCodeMessage = map[int]struct {
 	InvalidSNDerivatorStateTypeError:       {-1011, "invalid snderivator state type"},
 	InvalidOutputCoinStateTypeError:        {-1011, "invalid output coin state type"},
 	// -2xxx transaction error
-	StoreSerialNumberError:     {-2000, "Store Serial Number Error"},
-	GetSerialNumberError:       {-2001, "Get Serial Number Error"},
-	StoreCommitmentError:       {-2002, "Store Commitment Error"},
-	GetCommitmentError:         {-2003, "Get Commitment Error"},
-	StoreCommitmentIndexError:  {-2004, "Store Commitment Index Error"},
-	GetCommitmentIndexError:    {-2005, "Get Commitment Index Error"},
-	StoreCommitmentLengthError: {-2006, "Store Commitment Length Error"},
-	GetCommitmentLengthError:   {-2007, "Get Commitment Length Error"},
-	StoreOutputCoinError:       {-2008, "Store Output Coin Error"},
-	GetOutputCoinError:         {-2009, "Get Output Coin Error"},
-	StoreSNDerivatorError:      {-2010, "Store SNDeriavator Error"},
-	GetSNDerivatorError:        {-2011, "Get SNDeriavator Error"},
-	StorePrivacyTokenError:     {-2012, "Store Privacy Token Error"},
-	GetPrivacyTokenError:       {-2013, "Get Privacy Token Error"},
-	GetPrivacyTokenTxsError:    {-2014, "Get Privacy Token Txs Error"},
-	PrivacyTokenIDExistedError: {-2015, "Privacy Token ID Existed Error"},
+	StoreSerialNumberError:            {-2000, "Store Serial Number Error"},
+	GetSerialNumberError:              {-2001, "Get Serial Number Error"},
+	StoreCommitmentError:              {-2002, "Store Commitment Error"},
+	GetCommitmentError:                {-2003, "Get Commitment Error"},
+	StoreCommitmentIndexError:         {-2004, "Store Commitment Index Error"},
+	GetCommitmentIndexError:           {-2005, "Get Commitment Index Error"},
+	StoreCommitmentLengthError:        {-2006, "Store Commitment Length Error"},
+	GetCommitmentLengthError:          {-2007, "Get Commitment Length Error"},
+	StoreOutputCoinError:              {-2008, "Store Output Coin Error"},
+	GetOutputCoinError:                {-2009, "Get Output Coin Error"},
+	StoreSNDerivatorError:             {-2010, "Store SNDeriavator Error"},
+	GetSNDerivatorError:               {-2011, "Get SNDeriavator Error"},
+	StorePrivacyTokenError:            {-2012, "Store Privacy Token Error"},
+	StorePrivacyTokenTransactionError: {-2013, "Store Privacy Token Transaction Error"},
+	GetPrivacyTokenError:              {-2014, "Get Privacy Token Error"},
+	GetPrivacyTokenTxsError:           {-2015, "Get Privacy Token Txs Error"},
+	PrivacyTokenIDExistedError:        {-2016, "Privacy Token ID Existed Error"},
 	// -3xxx: consensus error
 	StoreBeaconCommitteeError:       {-3000, "Store Beacon Committee Error"},
 	GetBeaconCommitteeError:         {-3001, "Get Beacon Committee Error"},

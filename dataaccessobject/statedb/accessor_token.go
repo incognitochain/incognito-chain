@@ -1,10 +1,8 @@
 package statedb
 
 import (
-	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject"
-	"strings"
 )
 
 func StorePrivacyToken(stateDB *StateDB, tokenID common.Hash, name string, symbol string, tokenType int, mintable bool, amount uint64, info []byte, txHash common.Hash) error {
@@ -17,7 +15,7 @@ func StorePrivacyToken(stateDB *StateDB, tokenID common.Hash, name string, symbo
 	if has {
 		return nil
 	}
-	value := NewTokenStateWithValue(tokenID, name, symbol, tokenType, mintable, amount, info, txHash, []common.Hash{})
+	value := NewTokenStateWithValue(tokenID, name, symbol, tokenType, mintable, amount, info, txHash)
 	err = stateDB.SetStateObject(TokenObjectType, key, value)
 	if err != nil {
 		return NewStatedbError(StorePrivacyTokenError, err)
@@ -26,8 +24,8 @@ func StorePrivacyToken(stateDB *StateDB, tokenID common.Hash, name string, symbo
 }
 
 func StorePrivacyTokenTx(stateDB *StateDB, tokenID common.Hash, txHash common.Hash) error {
-	key := GenerateTokenObjectKey(tokenID)
-	t, has, err := stateDB.GetTokenState(key)
+	keyToken := GenerateTokenObjectKey(tokenID)
+	_, has, err := stateDB.GetTokenState(keyToken)
 	if err != nil {
 		return NewStatedbError(GetPrivacyTokenError, err)
 	}
@@ -38,24 +36,13 @@ func StorePrivacyTokenTx(stateDB *StateDB, tokenID common.Hash, txHash common.Ha
 		}
 		return nil
 	}
-	t.AddTxs([]common.Hash{txHash})
-	err = stateDB.SetStateObject(TokenObjectType, key, t)
+	keyTokenTx := GenerateTokenTransactionObjectKey(tokenID, txHash)
+	tokenTransactionState := NewTokenTransactionStateWithValue(txHash)
+	err = stateDB.SetStateObject(TokenTransactionObjectType, keyTokenTx, tokenTransactionState)
 	if err != nil {
-		return NewStatedbError(StorePrivacyTokenError, err)
+		return NewStatedbError(StorePrivacyTokenTransactionError, err)
 	}
 	return nil
-}
-
-func HasPrivacyTokenID(stateDB *StateDB, tokenID common.Hash) (bool, error) {
-	key := GenerateTokenObjectKey(tokenID)
-	t, has, err := stateDB.GetTokenState(key)
-	if err != nil {
-		return false, NewStatedbError(GetPrivacyTokenError, err)
-	}
-	if strings.Compare(t.TokenID().String(), tokenID.String()) != 0 {
-		panic("same key wrong value")
-	}
-	return has, nil
 }
 
 func ListPrivacyToken(stateDB *StateDB) (map[common.Hash]*TokenState, error) {
@@ -63,13 +50,7 @@ func ListPrivacyToken(stateDB *StateDB) (map[common.Hash]*TokenState, error) {
 }
 
 func GetPrivacyTokenTxs(stateDB *StateDB, tokenID common.Hash) ([]common.Hash, error) {
-	txs, has, err := stateDB.GetTokenTxs(tokenID)
-	if err != nil {
-		return []common.Hash{}, NewStatedbError(GetPrivacyTokenTxsError, err)
-	}
-	if !has {
-		return []common.Hash{}, NewStatedbError(GetPrivacyTokenTxsError, fmt.Errorf("token %+v txs not exist", tokenID))
-	}
+	txs := stateDB.GetTokenTxs(tokenID)
 	return txs, nil
 }
 

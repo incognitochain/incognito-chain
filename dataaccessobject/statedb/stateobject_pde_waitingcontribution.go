@@ -158,13 +158,8 @@ func newWaitingPDEContributionObjectWithValue(db *StateDB, key common.Hash, data
 	}, nil
 }
 
-func GenerateWaitingPDEContributionObjectKey(beaconHeight uint64, pairID string) common.Hash {
-	prefixHash := GetWaitingPDEContributionPrefix(beaconHeight)
-	valueHash := common.HashH([]byte(pairID))
-	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
-}
-func GenerateWaitingPDEContributionObjectKeyV2(pairID string) common.Hash {
-	prefixHash := GetWaitingPDEContributionPrefixV2()
+func GenerateWaitingPDEContributionObjectKey(pairID string) common.Hash {
+	prefixHash := GetWaitingPDEContributionPrefix()
 	valueHash := common.HashH([]byte(pairID))
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }

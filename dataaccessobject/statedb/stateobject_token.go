@@ -164,8 +164,8 @@ func NewTokenStateForInitToken(tokenID common.Hash, initTx common.Hash) *TokenSt
 	return &TokenState{tokenID: tokenID, initTx: initTx}
 }
 
-func NewTokenStateWithValue(tokenID common.Hash, propertyName string, propertySymbol string, tokenType int, mintable bool, amount uint64, info []byte, initTx common.Hash, txs []common.Hash) *TokenState {
-	return &TokenState{tokenID: tokenID, propertyName: propertyName, propertySymbol: propertySymbol, tokenType: tokenType, mintable: mintable, amount: amount, info: info, initTx: initTx, txs: txs}
+func NewTokenStateWithValue(tokenID common.Hash, propertyName string, propertySymbol string, tokenType int, mintable bool, amount uint64, info []byte, initTx common.Hash) *TokenState {
+	return &TokenState{tokenID: tokenID, propertyName: propertyName, propertySymbol: propertySymbol, tokenType: tokenType, mintable: mintable, amount: amount, info: info, initTx: initTx}
 }
 
 type TokenObject struct {

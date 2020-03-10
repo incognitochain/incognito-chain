@@ -223,7 +223,7 @@ func (c *BlockRequester) StreamBlockByHeight(
 		Logger.Infof("[stream] This client not return stream for this request %v, got error %v, uuid = %s", req, err, uuid)
 		return err
 	}
-
+	defer stream.CloseSend()
 	for {
 		blkData, err := stream.Recv()
 		if err == io.EOF {
