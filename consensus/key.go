@@ -1,10 +1,12 @@
-package blsbft
+package consensus
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/consensus/blsbft"
+	"github.com/incognitochain/incognito-chain/consensus/blsbftv2"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"strings"
 )
@@ -22,9 +24,17 @@ func (engine *Engine) LoadMiningKeys(keysString string) error {
 					keyConsensus = keyParts[1]
 				}
 
-				f := &BLSBFT{}
-				if engine.currentMiningProcess != nil {
-					f = engine.currentMiningProcess.(*BLSBFT)
+				var f ConsensusInterface
+				if engine.version == 1 {
+					f = &blsbft.BLSBFT{}
+					if engine.currentMiningProcess != nil {
+						f = engine.currentMiningProcess.(*blsbft.BLSBFT)
+					}
+				} else {
+					f = &blsbftv2.BLSBFT_V2{}
+					if engine.currentMiningProcess != nil {
+						f = engine.currentMiningProcess.(*blsbftv2.BLSBFT_V2)
+					}
 				}
 				err := f.LoadUserKey(keyConsensus)
 				if err != nil {
@@ -52,11 +62,11 @@ func (engine *Engine) GetMiningPublicKeyByConsensus(consensusName string) (publi
 		keytype := engine.currentMiningProcess.GetConsensusName()
 		lightweightKey, exist := engine.userMiningPublicKeys[keytype].MiningPubKey[common.BridgeConsensus]
 		if !exist {
-			return "", NewConsensusError(LoadKeyError, errors.New("Lightweight key not found"))
+			return "", blsbft.NewConsensusError(blsbft.LoadKeyError, errors.New("Lightweight key not found"))
 		}
 		keyBytes[keytype], exist = engine.userMiningPublicKeys[keytype].MiningPubKey[keytype]
 		if !exist {
-			return "", NewConsensusError(LoadKeyError, errors.New("Key not found"))
+			return "", blsbft.NewConsensusError(blsbft.LoadKeyError, errors.New("Key not found"))
 		}
 		keyBytes[common.BridgeConsensus] = lightweightKey
 		// pubkey := engine.userMiningPublicKeys[keytype]
@@ -65,7 +75,7 @@ func (engine *Engine) GetMiningPublicKeyByConsensus(consensusName string) (publi
 	}
 	res, err := json.Marshal(keyBytes)
 	if err != nil {
-		return "", NewConsensusError(UnExpectedError, err)
+		return "", blsbft.NewConsensusError(blsbft.UnExpectedError, err)
 	}
 	return string(res), nil
 }
@@ -104,7 +114,7 @@ func (engine *Engine) VerifyData(data []byte, sig string, publicKey string, cons
 	mapPublicKey := map[string][]byte{}
 	err := json.Unmarshal([]byte(publicKey), &mapPublicKey)
 	if err != nil {
-		return NewConsensusError(LoadKeyError, err)
+		return blsbft.NewConsensusError(blsbft.LoadKeyError, err)
 	}
 	return engine.currentMiningProcess.ValidateData(data, sig, string(mapPublicKey[common.BridgeConsensus]))
 }
@@ -121,7 +131,7 @@ func (engine *Engine) GenMiningKeyFromPrivateKey(privateKey string) (string, err
 	var keyList string
 	var key string
 	key = "bls"
-	consensusKey, err := LoadUserKeyFromIncPrivateKey(privateKey)
+	consensusKey, err := blsbft.LoadUserKeyFromIncPrivateKey(privateKey)
 	if err != nil {
 		return "", err
 	}
@@ -137,5 +147,5 @@ func (engine *Engine) ExtractBridgeValidationData(block common.BlockInterface) (
 	if engine.currentMiningProcess != nil {
 		return engine.currentMiningProcess.ExtractBridgeValidationData(block)
 	}
-	return nil, nil, NewConsensusError(ConsensusTypeNotExistError, errors.New(block.GetConsensusType()))
+	return nil, nil, blsbft.NewConsensusError(blsbft.ConsensusTypeNotExistError, errors.New(block.GetConsensusType()))
 }

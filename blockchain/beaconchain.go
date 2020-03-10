@@ -20,13 +20,24 @@ type BeaconChain struct {
 	Ready      bool
 }
 
-func (chain *BeaconChain) GetBestState() *BeaconBestState {
-	return chain.multiView.GetBestView().(*BeaconBestState)
+func (chain *BeaconChain) GetBestView() multiview.View {
+	return chain.multiView.GetBestView()
+}
+
+func (chain *BeaconChain) GetFinalView() multiview.View {
+	return chain.multiView.GetFinalView()
+}
+
+func (chain *BeaconChain) GetViewByHash(hash common.Hash) multiview.View {
+	if chain.multiView.GetViewByHash(hash) == nil {
+		return nil
+	}
+	return chain.multiView.GetViewByHash(hash)
 }
 
 func (chain *BeaconChain) InsertBatchBlock(blocks []common.BlockInterface) (int, error) {
 
-	curEpoch := chain.GetBestState().Epoch
+	curEpoch := chain.GetBestView().(*BeaconBestState).Epoch
 	sameCommitteeBlock := blocks
 	for i, v := range blocks {
 		if v.GetCurrentEpoch() == curEpoch+1 {
@@ -69,17 +80,17 @@ func (chain *BeaconChain) InsertBatchBlock(blocks []common.BlockInterface) (int,
 }
 
 func (s *BeaconChain) GetShardBestViewHash() map[byte]common.Hash {
-	return s.GetBestState().GetBestShardHash()
+	return s.GetBestView().(*BeaconBestState).GetBestShardHash()
 }
 
 func (s *BeaconChain) GetShardBestViewHeight() map[byte]uint64 {
-	return s.GetBestState().GetBestShardHeight()
+	return s.GetBestView().(*BeaconBestState).GetBestShardHeight()
 }
 
 func (s *BeaconChain) GetCurrentCrossShardHeightToShard(sid byte) map[byte]uint64 {
 
 	res := make(map[byte]uint64)
-	for fromShard, toShardStatus := range s.GetBestState().LastCrossShardState {
+	for fromShard, toShardStatus := range s.GetBestView().(*BeaconBestState).LastCrossShardState {
 		for toShard, currentHeight := range toShardStatus {
 			if toShard == sid {
 				res[fromShard] = currentHeight
@@ -90,23 +101,23 @@ func (s *BeaconChain) GetCurrentCrossShardHeightToShard(sid byte) map[byte]uint6
 }
 
 func (s *BeaconChain) GetEpoch() uint64 {
-	return s.GetBestState().Epoch
+	return s.GetBestView().(*BeaconBestState).Epoch
 }
 
 func (s *BeaconChain) GetBestViewHeight() uint64 {
-	return s.GetBestState().BeaconHeight
+	return s.GetBestView().(*BeaconBestState).BeaconHeight
 }
 
 func (s *BeaconChain) GetFinalViewHeight() uint64 {
-	return s.GetBestState().BeaconHeight
+	return s.GetBestView().(*BeaconBestState).BeaconHeight
 }
 
 func (s *BeaconChain) GetBestViewHash() string {
-	return s.GetBestState().BestBlockHash.String()
+	return s.GetBestView().(*BeaconBestState).BestBlockHash.String()
 }
 
 func (s *BeaconChain) GetFinalViewHash() string {
-	return s.GetBestState().BestBlockHash.String()
+	return s.GetBestView().(*BeaconBestState).BestBlockHash.String()
 }
 
 func (chain *BeaconChain) GetLastBlockTimeStamp() int64 {
@@ -137,7 +148,7 @@ func (chain *BeaconChain) GetCommittee() []incognitokey.CommitteePublicKey {
 }
 
 func (chain *BeaconChain) GetPendingCommittee() []incognitokey.CommitteePublicKey {
-	return chain.GetBestState().GetBeaconPendingValidator()
+	return chain.GetBestView().(*BeaconBestState).GetBeaconPendingValidator()
 }
 
 func (chain *BeaconChain) GetCommitteeSize() int {
@@ -157,15 +168,24 @@ func (chain *BeaconChain) GetLastProposerIndex() int {
 	return chain.multiView.GetBestView().(*BeaconBestState).BeaconProposerIndex
 }
 
-func (chain *BeaconChain) CreateNewBlock(round int) (common.BlockInterface, error) {
-	// chain.lock.Lock()
-	// defer chain.lock.Unlock()
-	//TODO:
-	newBlock, err := chain.BlockGen.NewBlockBeacon(round, nil)
+func (chain *BeaconChain) CreateNewBlock(version int, proposer string, round int) (common.BlockInterface, error) {
+	newBlock, err := chain.BlockGen.NewBlockBeacon(version, proposer, round, nil)
+	newBlock.ConsensusHeader = ConsensusHeader{
+		Proposer:    proposer,
+		ProposeTime: time.Now().Unix(),
+	}
 	if err != nil {
 		return nil, err
 	}
 	return newBlock, nil
+}
+
+func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string) (common.BlockInterface, error) {
+	oldBlock.(*BeaconBlock).ConsensusHeader = ConsensusHeader{
+		Proposer:    proposer,
+		ProposeTime: time.Now().Unix(),
+	}
+	return oldBlock, nil
 }
 
 func (chain *BeaconChain) InsertBlk(block common.BlockInterface) error {

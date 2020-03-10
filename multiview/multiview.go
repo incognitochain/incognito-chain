@@ -3,6 +3,7 @@ package multiview
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"time"
 )
 
@@ -12,6 +13,8 @@ type View interface {
 	GetHeight() uint64
 	//GetTimeSlot() uint64
 	GetBlockTime() int64
+	GetCommittee() []incognitokey.CommitteePublicKey
+	GetProposerByTimeSlot(ts int64) incognitokey.CommitteePublicKey
 }
 
 type MultiView struct {
@@ -57,6 +60,15 @@ func (multiView *MultiView) removeOutdatedView() {
 			delete(multiView.viewByPrevHash, *v.GetPreviousHash())
 		}
 	}
+}
+
+func (multiView *MultiView) GetViewByHash(hash common.Hash) View {
+	res := make(chan View)
+	multiView.actionCh <- func() {
+		view, _ := multiView.viewByHash[hash]
+		res <- view
+	}
+	return <-res
 }
 
 //Only add view if view is validated (at least enough signature)

@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/consensus/blsbft"
+	"github.com/incognitochain/incognito-chain/consensus"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
 	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
 	"github.com/incognitochain/incognito-chain/syncker"
@@ -81,7 +81,7 @@ type Server struct {
 	miningKeys      string
 	privateKey      string
 	wallet          *wallet.Wallet
-	consensusEngine *blsbft.Engine
+	consensusEngine *consensus.Engine
 	blockgen        *blockchain.BlockGenerator
 	pusubManager    *pubsub.PubSubManager
 	// The fee estimator keeps track of how long transactions are left in
@@ -206,7 +206,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.cNewPeers = make(chan *peer.Peer)
 	serverObj.dataBase = db
 	serverObj.memCache = memcache.New()
-	serverObj.consensusEngine = blsbft.NewConsensusEngine()
+	serverObj.consensusEngine = consensus.NewConsensusEngine()
 	serverObj.syncker = syncker.NewSynckerManager()
 	//Init channel
 	cPendingTxs := make(chan metadata.Transaction, 500)
@@ -485,7 +485,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	})
 
 	serverObj.connManager = connManager
-	serverObj.consensusEngine.Init(&blsbft.EngineConfig{Node: serverObj, Blockchain: serverObj.blockChain, PubSubManager: serverObj.pusubManager})
+	serverObj.consensusEngine.Init(&consensus.EngineConfig{Node: serverObj, Blockchain: serverObj.blockChain, PubSubManager: serverObj.pusubManager})
 	serverObj.syncker.Init(&syncker.SynckerManagerConfig{Node: serverObj, Blockchain: serverObj.blockChain})
 
 	// Start up persistent peers.
@@ -1838,7 +1838,7 @@ func (serverObj *Server) GetPrivateKey() string {
 	return serverObj.privateKey
 }
 
-func (serverObj *Server) PushMessageToChain(msg wire.Message, chain blockchain.ChainInterface) error {
+func (serverObj *Server) PushMessageToChain(msg wire.Message, chain common.ChainInterface) error {
 	chainID := chain.GetShardID()
 	if chainID == -1 {
 		serverObj.PushMessageToBeacon(msg, map[libp2p.ID]bool{})

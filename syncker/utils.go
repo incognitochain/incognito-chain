@@ -83,7 +83,7 @@ func GetFinalBlockFromBlockHash_v1(currentFinalHash string, byHash map[string]co
 
 	for {
 		res = append([]common.BlockPoolInterface{byHash[finalBlock.Hash().String()]}, res...)
-		finalBlock = byHash[finalBlock.GetPrevHash()]
+		finalBlock = byHash[finalBlock.GetPrevHash().String()]
 		if finalBlock == nil || finalBlock.Hash().String() == currentFinalHash {
 			break
 		}
@@ -117,7 +117,7 @@ func GetLongestChain(currentFinalHash string, byHash map[string]common.BlockPool
 
 	for {
 		res = append([]common.BlockPoolInterface{byHash[finalBlock.Hash().String()]}, res...)
-		finalBlock = byHash[finalBlock.GetPrevHash()]
+		finalBlock = byHash[finalBlock.GetPrevHash().String()]
 		if finalBlock == nil {
 			break
 		}

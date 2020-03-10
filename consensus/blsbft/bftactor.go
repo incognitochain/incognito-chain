@@ -4,21 +4,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common/base58"
-	"sync"
-	"time"
-
-	"github.com/incognitochain/incognito-chain/metrics"
-
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/wire"
+	"sync"
+	"time"
 )
 
 type BLSBFT struct {
-	Chain    blockchain.ChainInterface
+	Chain    ChainInterface
 	Node     NodeInterface
 	ChainKey string
 	ChainID  int
@@ -414,7 +412,7 @@ func (e *BLSBFT) createNewBlock() (common.BlockInterface, error) {
 	go func() {
 		time1 := time.Now()
 		var err error
-		block, err = e.Chain.CreateNewBlock(int(e.RoundData.Round))
+		block, err = e.Chain.CreateNewBlock(1, e.UserKeySet.GetPublicKeyBase58(), int(e.RoundData.Round))
 		if block != nil {
 			e.logger.Info("create block", block.GetHeight(), time.Since(time1).Seconds())
 		} else {
@@ -440,7 +438,7 @@ func (e *BLSBFT) createNewBlock() (common.BlockInterface, error) {
 	}
 
 }
-func NewInstance(chain blockchain.ChainInterface, chainKey string, chainID int, node NodeInterface, logger common.Logger) ConsensusInterface {
+func NewInstance(chain ChainInterface, chainKey string, chainID int, node NodeInterface, logger common.Logger) *BLSBFT {
 	var newInstance BLSBFT
 	newInstance.Chain = chain
 	newInstance.ChainKey = chainKey

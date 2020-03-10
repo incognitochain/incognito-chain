@@ -18,6 +18,18 @@ type ShardChain struct {
 	ChainName  string
 }
 
+func (chain *ShardChain) GetFinalView() multiview.View {
+	return chain.multiView.GetFinalView()
+}
+
+func (chain *ShardChain) GetBestView() multiview.View {
+	return chain.multiView.GetBestView()
+}
+
+func (chain *ShardChain) GetViewByHash(hash common.Hash) multiview.View {
+	return chain.multiView.GetViewByHash(hash)
+}
+
 func (chain *ShardChain) GetBestState() *ShardBestState {
 	return chain.multiView.GetBestView().(*ShardBestState)
 }
@@ -105,7 +117,7 @@ func (chain *ShardChain) GetLastProposerIndex() int {
 	return chain.GetBestState().ShardProposerIdx
 }
 
-func (chain *ShardChain) CreateNewBlock(round int) (common.BlockInterface, error) {
+func (chain *ShardChain) CreateNewBlock(version int, proposer string, round int) (common.BlockInterface, error) {
 	start := time.Now()
 	Logger.log.Infof("Begin Create New Block %+v", start)
 	beaconHeight := chain.Blockchain.BeaconChain.CurrentHeight()
@@ -116,12 +128,24 @@ func (chain *ShardChain) CreateNewBlock(round int) (common.BlockInterface, error
 	Logger.log.Infof("Begin Enter New Block Shard %+v", time.Now())
 	//TODO: pool
 	newBlock, err := chain.BlockGen.NewBlockShard(byte(chain.GetShardID()), round, nil, beaconHeight, start)
+	newBlock.ConsensusHeader = ConsensusHeader{
+		Proposer:    proposer,
+		ProposeTime: time.Now().Unix(),
+	}
 	Logger.log.Infof("Begin Finish New Block Shard %+v", time.Now())
 	if err != nil {
 		return nil, err
 	}
 	Logger.log.Infof("Finish Create New Block %+v", start)
 	return newBlock, nil
+}
+
+func (chain *ShardChain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string) (common.BlockInterface, error) {
+	oldBlock.(*ShardBlock).ConsensusHeader = ConsensusHeader{
+		Proposer:    proposer,
+		ProposeTime: time.Now().Unix(),
+	}
+	return oldBlock, nil
 }
 
 // func (chain *ShardChain) ValidateAndInsertBlock(block common.BlockInterface) error {
