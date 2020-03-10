@@ -115,16 +115,19 @@ func (e *BLSBFT_V2) Start() error {
 				}
 				block := blockIntf.(common.ConsensusBlockInterface)
 				blkHash := block.Hash().String()
+
 				if _, ok := e.receiveBlockByHash[blkHash]; !ok {
 					e.receiveBlockByHash[blkHash] = &ProposeBlockInfo{
 						block:      block,
 						votes:      make(map[string]BFTVote),
 						hasNewVote: false,
 					}
+					fmt.Println("debug append", blkHash)
 					e.receiveBlockByHeight[block.GetHeight()] = append(e.receiveBlockByHeight[block.GetHeight()], e.receiveBlockByHash[blkHash])
 				} else {
 					e.receiveBlockByHash[blkHash].block = block
 				}
+
 				e.Logger.Info("Receive block ", block.Hash().String(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
 				if block.GetHeight() <= e.Chain.GetBestViewHeight() {
 					e.Logger.Info("Send proposer to update views. Propose view Height less than latest height: ", block.GetHeight(), "<=", e.Chain.GetBestViewHeight())
@@ -173,23 +176,20 @@ func (e *BLSBFT_V2) Start() error {
 						sort.Slice(e.receiveBlockByHeight[bestView.GetHeight()+1], func(i, j int) bool {
 							return e.receiveBlockByHeight[bestView.GetHeight()+1][i].block.GetProduceTime() < e.receiveBlockByHeight[bestView.GetHeight()+1][j].block.GetProduceTime()
 						})
+
 						var proposeBlock common.BlockInterface = nil
 						for _, v := range e.receiveBlockByHeight[bestView.GetHeight()+1] {
+							e.Logger.Info("prepare proposer block", v.block.Hash().String(), v.isValid)
 							if v.isValid {
 								proposeBlock = v.block
 								break
 							}
 						}
-						e.Logger.Debug("prepare proposer block")
+
 						if createdBlk, err := e.proposeBlock(proposerPk, proposeBlock); err != nil {
 							e.Logger.Critical(UnExpectedError, errors.New("can't propose block"))
 						} else {
 							e.Logger.Debug("proposer block", createdBlk.GetHeight(), "time slot ", e.currentTimeSlot, " with hash", createdBlk.Hash().String())
-							//if propose block is not in cache list, create new one
-							if _, ok := e.receiveBlockByHash[createdBlk.Hash().String()]; !ok {
-								e.receiveBlockByHash[createdBlk.Hash().String()] = &ProposeBlockInfo{isValid: true, block: createdBlk.(common.ConsensusBlockInterface), votes: make(map[string]BFTVote)}
-							}
-
 						}
 					}
 				}
@@ -225,11 +225,8 @@ func (e *BLSBFT_V2) Start() error {
 							e.validateAndVote(v)
 						} else if blkCreateTimeSlot == common.CalculateTimeSlot(lastVotedBlk.GetProduceTime()) && common.CalculateTimeSlot(v.block.GetProposeTime()) > common.CalculateTimeSlot(lastVotedBlk.GetProposeTime()) { //blk is old block (same round), but new proposer(larger timeslot) => vote again
 							e.validateAndVote(v)
-						} else {
-							fmt.Println("debug not validate", blkCreateTimeSlot, common.CalculateTimeSlot(v.block.GetProposeTime()), common.CalculateTimeSlot(lastVotedBlk.GetProposeTime()))
 						} //blkCreateTimeSlot is larger or equal than voted block => do nothing
 					} else { //there is no vote for this height yet
-
 						e.validateAndVote(v)
 					}
 				}
@@ -405,13 +402,14 @@ func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 		e.Logger.Error(err)
 		return NewConsensusError(UnExpectedError, err)
 	}
-	e.Logger.Info("sending vote...")
-	go e.Node.PushMessageToChain(msg, e.Chain)
-	go func() {
-		e.VoteMessageCh <- *Vote
-	}()
+
 	v.isValid = true
 	e.voteHistory[v.block.GetHeight()] = v.block
+	e.Logger.Info("sending vote...")
+	go e.Node.PushMessageToChain(msg, e.Chain)
+	//go func() {
+	//	e.VoteMessageCh <- *Vote
+	//}()
 	return nil
 }
 
@@ -423,17 +421,18 @@ func (e *BLSBFT_V2) proposeBlock(proposerPk incognitokey.CommitteePublicKey, blo
 		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
 		//block, _ = e.Chain.CreateNewBlock(ctx, e.currentTimeSlot, e.UserKeySet.GetPublicKeyBase58())
+		fmt.Println("debug CreateNewBlock")
 		block, _ = e.Chain.CreateNewBlock(2, b58Str, 0)
 	} else {
+		fmt.Println("debug CreateNewBlockFromOldBlock")
 		block, _ = e.Chain.CreateNewBlockFromOldBlock(block, b58Str)
 		//b58Str, _ := proposerPk.ToBase58()
 		//block = e.voteHistory[e.Chain.GetBestViewHeight()+1]
 	}
 
 	if block != nil {
-		e.Logger.Info("create block", block.GetHeight(), time.Since(time1).Seconds(), block.(common.ConsensusBlockInterface).GetProposeTime())
+		e.Logger.Info("create block", block.GetHeight(), block.Hash().String(), block.(common.ConsensusBlockInterface).GetProposeTime(), block.(common.ConsensusBlockInterface).GetProduceTime())
 	} else {
-
 		e.Logger.Info("create block", time.Since(time1).Seconds())
 		return nil, NewConsensusError(BlockCreationError, errors.New("block creation timeout"))
 	}
@@ -445,6 +444,7 @@ func (e *BLSBFT_V2) proposeBlock(proposerPk incognitokey.CommitteePublicKey, blo
 	var proposeCtn = new(BFTPropose)
 	proposeCtn.Block = blockData
 	msg, _ := MakeBFTProposeMsg(proposeCtn, e.ChainKey, e.currentTimeSlot)
+	go e.ProcessBFTMsg(msg.(*wire.MessageBFT))
 	go e.Node.PushMessageToChain(msg, e.Chain)
 
 	return block, nil
