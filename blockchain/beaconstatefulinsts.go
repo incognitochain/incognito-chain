@@ -785,6 +785,9 @@ func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
 
 	// case 1: check there is any custodian doesn't send public tokens back to user after PortalTimeOutSendPubTokenBack
 	// get custodian's collateral to return user
+	// todo
+	buildCustodianRunAwayLiquidationInst()
+
 
 	// case 2: check collateral's value (locked collateral amount) drops below MinRatio
 	return [][]string{}, nil
