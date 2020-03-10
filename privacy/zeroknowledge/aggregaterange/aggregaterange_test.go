@@ -10,7 +10,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -127,7 +126,7 @@ func TestAggregatedRangeProveVerify(t *testing.T) {
 
 		// convert proof to bytes array
 		bytes := proof.Bytes()
-		expectProofSize := privacy_util.EstimateMultiRangeProofSize(numValue)
+		expectProofSize := EstimateMultiRangeProofSize(numValue)
 		assert.Equal(t, int(expectProofSize), len(bytes))
 
 		// new aggregatedRangeProof from bytes array

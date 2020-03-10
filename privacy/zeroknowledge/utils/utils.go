@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"math"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
@@ -43,7 +45,7 @@ func EstimateProofSize(nInput int, nOutput int, hasPrivacy bool) uint64 {
 
 	sizeOneOfManyProof := nInput * OneOfManyProofSize
 	sizeSNPrivacyProof := nInput * SnPrivacyProofSize
-	sizeComOutputMultiRangeProof := int(privacy_util.EstimateMultiRangeProofSize(nOutput))
+	sizeComOutputMultiRangeProof := int(EstimateMultiRangeProofSize(nOutput))
 
 	sizeInputCoins := nInput * inputCoinsPrivacySize
 	sizeOutputCoins := nOutput * outputCoinsPrivacySize
@@ -66,4 +68,24 @@ func EstimateProofSize(nInput int, nOutput int, hasPrivacy bool) uint64 {
 		sizeCommitmentIndices + FlagSize
 
 	return uint64(sizeProof)
+}
+
+func pad(num int) int {
+	if num == 1 || num == 2 {
+		return num
+	}
+	tmp := 2
+	for i := 2; ; i++ {
+		tmp *= 2
+		if tmp >= num {
+			num = tmp
+			break
+		}
+	}
+	return num
+}
+
+// estimateMultiRangeProofSize estimate multi range proof size
+func EstimateMultiRangeProofSize(nOutput int) uint64 {
+	return uint64((nOutput+2*int(math.Log2(float64(maxExp*pad(nOutput))))+5)*operation.Ed25519KeySize + 5*operation.Ed25519KeySize + 2)
 }

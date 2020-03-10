@@ -2,6 +2,7 @@ package aggregaterange
 
 import (
 	"errors"
+	"math"
 
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 )
@@ -179,4 +180,9 @@ func encodeVectors(l []*operation.Scalar, r []*operation.Scalar, g []*operation.
 
 	res := new(operation.Point).Add(tmp1, tmp2)
 	return res, nil
+}
+
+// estimateMultiRangeProofSize estimate multi range proof size
+func EstimateMultiRangeProofSize(nOutput int) uint64 {
+	return uint64((nOutput+2*int(math.Log2(float64(maxExp*pad(nOutput))))+5)*operation.Ed25519KeySize + 5*operation.Ed25519KeySize + 2)
 }

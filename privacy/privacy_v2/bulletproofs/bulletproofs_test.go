@@ -46,7 +46,7 @@ func TestPowerVector(t *testing.T) {
 }
 
 func TestInnerProduct(t *testing.T) {
-	for j := 0; j < 100; j++ {
+	for j := 0; j < 5; j++ {
 		n := maxExp
 		a := make([]*operation.Scalar, n)
 		b := make([]*operation.Scalar, n)
@@ -67,7 +67,7 @@ func TestInnerProduct(t *testing.T) {
 }
 
 func TestEncodeVectors(t *testing.T) {
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 5; i++ {
 		var AggParam = newBulletproofParams(1)
 		n := maxExp
 		a := make([]*operation.Scalar, n)
@@ -98,7 +98,7 @@ func TestEncodeVectors(t *testing.T) {
 }
 
 func TestInnerProductProveVerify(t *testing.T) {
-	for k := 0; k < 10; k++ {
+	for k := 0; k < 4; k++ {
 		numValue := rand.Intn(maxOutputNumber)
 		numValuePad := roundUpPowTwo(numValue)
 		aggParam := new(bulletproofParams)
@@ -148,7 +148,7 @@ func TestInnerProductProveVerify(t *testing.T) {
 }
 
 func TestAggregatedRangeProveVerify(t *testing.T) {
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 4; i++ {
 		//prepare witness for Aggregated range protocol
 		wit := new(AggregatedRangeWitness)
 		numValue := rand.Intn(maxOutputNumber)

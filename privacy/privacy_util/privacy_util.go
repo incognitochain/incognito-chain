@@ -2,7 +2,6 @@ package privacy_util
 
 import (
 	"crypto/rand"
-	"math"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -110,25 +109,4 @@ func ArrayToSlice(array [operation.Ed25519KeySize]byte) []byte {
 	var slice []byte
 	slice = array[:]
 	return slice
-}
-
-// pad returns number has format 2^k that it is the nearest number to num
-func pad(num int) int {
-	if num == 1 || num == 2 {
-		return num
-	}
-	tmp := 2
-	for i := 2; ; i++ {
-		tmp *= 2
-		if tmp >= num {
-			num = tmp
-			break
-		}
-	}
-	return num
-}
-
-// estimateMultiRangeProofSize estimate multi range proof size
-func EstimateMultiRangeProofSize(nOutput int) uint64 {
-	return uint64((nOutput+2*int(math.Log2(float64(maxExp*pad(nOutput))))+5)*operation.Ed25519KeySize + 5*operation.Ed25519KeySize + 2)
 }
