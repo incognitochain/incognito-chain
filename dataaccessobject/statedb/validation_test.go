@@ -1,7 +1,6 @@
-package statedb_test
+package statedb
 
 import (
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"testing"
 )
 
@@ -11,29 +10,29 @@ func TestValidation_ValidatePaymentAddressSanity(t *testing.T) {
 	str3 := str1[2:]
 	str4 := str1[:len(str1)-1]
 	str5 := str1[:len(str1)-2]
-	err := statedb.SoValidation.ValidatePaymentAddressSanity(str1)
+	err := SoValidation.ValidatePaymentAddressSanity(str1)
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, v := range receiverPaymentAddress[1:] {
-		err := statedb.SoValidation.ValidatePaymentAddressSanity(v)
+		err := SoValidation.ValidatePaymentAddressSanity(v)
 		if err != nil {
 			t.Fatal(err)
 		}
 	}
-	err = statedb.SoValidation.ValidatePaymentAddressSanity(str2)
+	err = SoValidation.ValidatePaymentAddressSanity(str2)
 	if err == nil {
 		t.Fatal(err)
 	}
-	err = statedb.SoValidation.ValidatePaymentAddressSanity(str3)
+	err = SoValidation.ValidatePaymentAddressSanity(str3)
 	if err == nil {
 		t.Fatal(err)
 	}
-	err = statedb.SoValidation.ValidatePaymentAddressSanity(str4)
+	err = SoValidation.ValidatePaymentAddressSanity(str4)
 	if err == nil {
 		t.Fatal(err)
 	}
-	err = statedb.SoValidation.ValidatePaymentAddressSanity(str5)
+	err = SoValidation.ValidatePaymentAddressSanity(str5)
 	if err == nil {
 		t.Fatal(err)
 	}
@@ -45,29 +44,29 @@ func TestValidation_ValidateIncognitoPublicKeySanity(t *testing.T) {
 	str3 := str1[2:]
 	str4 := str1[:len(str1)-1]
 	str5 := str1[:len(str1)-2]
-	err := statedb.SoValidation.ValidateIncognitoPublicKeySanity(str1)
+	err := SoValidation.ValidateIncognitoPublicKeySanity(str1)
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, v := range incognitoPublicKeys[1:] {
-		err := statedb.SoValidation.ValidateIncognitoPublicKeySanity(v)
+		err := SoValidation.ValidateIncognitoPublicKeySanity(v)
 		if err != nil {
 			t.Fatal(err)
 		}
 	}
-	err = statedb.SoValidation.ValidateIncognitoPublicKeySanity(str2)
+	err = SoValidation.ValidateIncognitoPublicKeySanity(str2)
 	if err == nil {
 		t.Fatal(err)
 	}
-	err = statedb.SoValidation.ValidateIncognitoPublicKeySanity(str3)
+	err = SoValidation.ValidateIncognitoPublicKeySanity(str3)
 	if err == nil {
 		t.Fatal(err)
 	}
-	err = statedb.SoValidation.ValidateIncognitoPublicKeySanity(str4)
+	err = SoValidation.ValidateIncognitoPublicKeySanity(str4)
 	if err == nil {
 		t.Fatal(err)
 	}
-	err = statedb.SoValidation.ValidateIncognitoPublicKeySanity(str5)
+	err = SoValidation.ValidateIncognitoPublicKeySanity(str5)
 	if err == nil {
 		t.Fatal(err)
 	}

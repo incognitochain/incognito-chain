@@ -1,48 +1,28 @@
-package statedb_test
+package statedb
 
 import (
-	"io/ioutil"
-	"os"
 	"reflect"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/incdb"
-	"github.com/incognitochain/incognito-chain/trie"
 )
 
-var (
-	warperDBblTest statedb.DatabaseAccessWarper
-)
-
-var _ = func() (_ struct{}) {
-	dbPath, err := ioutil.TempDir(os.TempDir(), "test_blacklist")
-	if err != nil {
-		panic(err)
-	}
-	diskBD, _ := incdb.Open("leveldb", dbPath)
-	warperDBblTest = statedb.NewDatabaseAccessWarper(diskBD)
-	trie.Logger.Init(common.NewBackend(nil).Logger("test", true))
-	return
-}()
-
-func storeBlackListProducer(initRoot common.Hash, warperDB statedb.DatabaseAccessWarper, beaconHeight uint64, from, to int) (common.Hash, map[common.Hash]*statedb.BlackListProducerState, map[string]uint8) {
-	mState := make(map[common.Hash]*statedb.BlackListProducerState)
+func storeBlackListProducer(initRoot common.Hash, warperDB DatabaseAccessWarper, beaconHeight uint64, from, to int) (common.Hash, map[common.Hash]*BlackListProducerState, map[string]uint8) {
+	mState := make(map[common.Hash]*BlackListProducerState)
 	wantM := make(map[string]uint8)
 	for _, value := range committeePublicKeys[from:to] {
-		key := statedb.GenerateBlackListProducerObjectKey(value)
-		duration := generatePunishedDuration()
-		blackListProducerState := statedb.NewBlackListProducerStateWithValue(value, duration, beaconHeight)
+		key := GenerateBlackListProducerObjectKey(value)
+		duration := testGeneratePunishedDuration()
+		blackListProducerState := NewBlackListProducerStateWithValue(value, duration, beaconHeight)
 		mState[key] = blackListProducerState
 		wantM[value] = duration
 	}
-	sDB, err := statedb.NewWithPrefixTrie(initRoot, warperDB)
+	sDB, err := NewWithPrefixTrie(initRoot, warperDB)
 	if err != nil {
 		panic(err)
 	}
 	for key, value := range mState {
-		sDB.SetStateObject(statedb.BlackListProducerObjectType, key, value)
+		sDB.SetStateObject(BlackListProducerObjectType, key, value)
 	}
 	rootHash, err := sDB.Commit(true)
 	if err != nil {
@@ -55,8 +35,8 @@ func storeBlackListProducer(initRoot common.Hash, warperDB statedb.DatabaseAcces
 	return rootHash, mState, wantM
 }
 func TestStateDB_GetAllBlackListProducerStateByKey(t *testing.T) {
-	rootHash, wantMState, _ := storeBlackListProducer(emptyRoot, warperDBblTest, 1, 0, 100)
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBblTest)
+	rootHash, wantMState, _ := storeBlackListProducer(emptyRoot, wrarperDB, 1, 0, 100)
+	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err)
 	}
@@ -74,13 +54,13 @@ func TestStateDB_GetAllBlackListProducerStateByKey(t *testing.T) {
 	}
 }
 func TestStateDB_GetBlackListProducerPunishedEpoch(t *testing.T) {
-	rootHash, _, wantM := storeBlackListProducer(emptyRoot, warperDBblTest, 1, 0, 100)
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBblTest)
+	rootHash, _, wantM := storeBlackListProducer(emptyRoot, wrarperDB, 1, 0, 100)
+	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err)
 	}
 	for k, v := range wantM {
-		key := statedb.GenerateBlackListProducerObjectKey(k)
+		key := GenerateBlackListProducerObjectKey(k)
 		gotM, has, err := tempStateDB.GetBlackListProducerPunishedEpoch(key)
 		if err != nil {
 			t.Fatal(err)
@@ -95,8 +75,8 @@ func TestStateDB_GetBlackListProducerPunishedEpoch(t *testing.T) {
 }
 
 func TestStateDB_GetAllBlackListProducerState(t *testing.T) {
-	rootHash, _, wantM := storeBlackListProducer(emptyRoot, warperDBblTest, 1, 0, 100)
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBblTest)
+	rootHash, _, wantM := storeBlackListProducer(emptyRoot, wrarperDB, 1, 0, 100)
+	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err)
 	}
@@ -113,22 +93,22 @@ func TestStateDB_GetAllBlackListProducerState(t *testing.T) {
 }
 
 func TestStateDB_GetAllBlackListProducerStateMultipleRootHash(t *testing.T) {
-	rootHash, wantMState, wantM := storeBlackListProducer(emptyRoot, warperDBblTest, 1, 0, 100)
-	sDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBblTest)
+	rootHash, wantMState, wantM := storeBlackListProducer(emptyRoot, wrarperDB, 1, 0, 100)
+	sDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
 	if err != nil || sDB == nil {
 		t.Fatal(err)
 	}
 
-	newWantMState := make(map[common.Hash]*statedb.BlackListProducerState)
+	newWantMState := make(map[common.Hash]*BlackListProducerState)
 	newWantM := make(map[string]uint8)
 	for k, v := range wantMState {
 		newDuration := v.PunishedEpoches() - 1
-		newWantMState[k] = statedb.NewBlackListProducerStateWithValue(v.ProducerCommitteePublicKey(), newDuration, v.BeaconHeight()+1)
+		newWantMState[k] = NewBlackListProducerStateWithValue(v.ProducerCommitteePublicKey(), newDuration, v.BeaconHeight()+1)
 		newWantM[v.ProducerCommitteePublicKey()] = newDuration
 	}
 
 	for key, value := range newWantMState {
-		sDB.SetStateObject(statedb.BlackListProducerObjectType, key, value)
+		sDB.SetStateObject(BlackListProducerObjectType, key, value)
 	}
 	rootHash1, err := sDB.Commit(true)
 	if err != nil {
@@ -139,7 +119,7 @@ func TestStateDB_GetAllBlackListProducerStateMultipleRootHash(t *testing.T) {
 		panic(err)
 	}
 
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBblTest)
+	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err)
 	}
@@ -154,7 +134,7 @@ func TestStateDB_GetAllBlackListProducerStateMultipleRootHash(t *testing.T) {
 		}
 	}
 
-	tempStateDB1, err := statedb.NewWithPrefixTrie(rootHash1, warperDBblTest)
+	tempStateDB1, err := NewWithPrefixTrie(rootHash1, wrarperDB)
 	if err != nil || tempStateDB1 == nil {
 		t.Fatal(err)
 	}

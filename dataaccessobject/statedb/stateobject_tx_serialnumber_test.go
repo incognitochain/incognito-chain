@@ -1,55 +1,36 @@
-package statedb_test
+package statedb
 
 import (
 	"bytes"
-	"io/ioutil"
-	"os"
 	"reflect"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/incdb"
 	_ "github.com/incognitochain/incognito-chain/incdb"
-	"github.com/incognitochain/incognito-chain/trie"
 )
 
-var (
-	warperDBTxTest statedb.DatabaseAccessWarper
-)
-var _ = func() (_ struct{}) {
-	dbPath, err := ioutil.TempDir(os.TempDir(), "test_tx")
-	if err != nil {
-		panic(err)
-	}
-	diskBD, _ := incdb.Open("leveldb", dbPath)
-	warperDBTxTest = statedb.NewDatabaseAccessWarper(diskBD)
-	trie.Logger.Init(common.NewBackend(nil).Logger("test", true))
-	return
-}()
-
-func storeSerialNumber(initRoot common.Hash, db statedb.DatabaseAccessWarper, limit int, shardID byte) (common.Hash, map[common.Hash]*statedb.SerialNumberState, map[common.Hash][][]byte) {
+func storeSerialNumber(initRoot common.Hash, db DatabaseAccessWarper, limit int, shardID byte) (common.Hash, map[common.Hash]*SerialNumberState, map[common.Hash][][]byte) {
 	serialNumberPerToken := 5
-	serialNumberList := generateSerialNumberList(serialNumberPerToken * limit)
-	tokenIDs := generateTokenIDs(limit)
-	wantM := make(map[common.Hash]*statedb.SerialNumberState)
+	serialNumberList := testGenerateSerialNumberList(serialNumberPerToken * limit)
+	tokenIDs := testGenerateTokenIDs(limit)
+	wantM := make(map[common.Hash]*SerialNumberState)
 	wantMByToken := make(map[common.Hash][][]byte)
 	for i, tokenID := range tokenIDs {
 		for j := i; j < i+serialNumberPerToken; j++ {
 			serialNumber := serialNumberList[j]
-			key := statedb.GenerateSerialNumberObjectKey(tokenID, shardID, serialNumber)
-			serialNumberState := statedb.NewSerialNumberStateWithValue(tokenID, shardID, serialNumber)
+			key := GenerateSerialNumberObjectKey(tokenID, shardID, serialNumber)
+			serialNumberState := NewSerialNumberStateWithValue(tokenID, shardID, serialNumber)
 			wantM[key] = serialNumberState
 			wantMByToken[tokenID] = append(wantMByToken[tokenID], serialNumber)
 		}
 	}
 
-	sDB, err := statedb.NewWithPrefixTrie(initRoot, db)
+	sDB, err := NewWithPrefixTrie(initRoot, db)
 	if err != nil {
 		panic(err)
 	}
 	for k, v := range wantM {
-		err := sDB.SetStateObject(statedb.SerialNumberObjectType, k, v)
+		err := sDB.SetStateObject(SerialNumberObjectType, k, v)
 		if err != nil {
 			panic(err)
 		}
@@ -66,24 +47,24 @@ func storeSerialNumber(initRoot common.Hash, db statedb.DatabaseAccessWarper, li
 }
 
 func TestStateDB_StoreAndGetSerialNumberState(t *testing.T) {
-	tokenID := generateTokenIDs(1)[0]
+	tokenID := testGenerateTokenIDs(1)[0]
 	shardID := byte(0)
-	serialNumber := generateSerialNumberList(1)[0]
-	serialNumber2 := generateSerialNumberList(1)[0]
+	serialNumber := testGenerateSerialNumberList(1)[0]
+	serialNumber2 := testGenerateSerialNumberList(1)[0]
 
-	key := statedb.GenerateSerialNumberObjectKey(tokenID, shardID, serialNumber)
-	serialNumberState := statedb.NewSerialNumberStateWithValue(tokenID, shardID, serialNumber)
-	key2 := statedb.GenerateSerialNumberObjectKey(tokenID, shardID, serialNumber2)
+	key := GenerateSerialNumberObjectKey(tokenID, shardID, serialNumber)
+	serialNumberState := NewSerialNumberStateWithValue(tokenID, shardID, serialNumber)
+	key2 := GenerateSerialNumberObjectKey(tokenID, shardID, serialNumber2)
 
-	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDBTxTest)
+	sDB, err := NewWithPrefixTrie(emptyRoot, wrarperDB)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = sDB.SetStateObject(statedb.SerialNumberObjectType, key, serialNumberState)
+	err = sDB.SetStateObject(SerialNumberObjectType, key, serialNumberState)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = sDB.SetStateObject(statedb.SerialNumberObjectType, key2, serialNumber2)
+	err = sDB.SetStateObject(SerialNumberObjectType, key2, serialNumber2)
 	if err == nil {
 		t.Fatal("expect error")
 	}
@@ -96,7 +77,7 @@ func TestStateDB_StoreAndGetSerialNumberState(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBTxTest)
+	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,23 +95,23 @@ func TestStateDB_StoreAndGetSerialNumberState(t *testing.T) {
 	if has {
 		t.Fatal(has)
 	}
-	if !reflect.DeepEqual(gotS2, statedb.NewSerialNumberState()) {
-		t.Fatalf("GetSerialNumberState want %+v but got %+v", statedb.NewSerialNumberState(), gotS2)
+	if !reflect.DeepEqual(gotS2, NewSerialNumberState()) {
+		t.Fatalf("GetSerialNumberState want %+v but got %+v", NewSerialNumberState(), gotS2)
 	}
 }
 
 func TestStateDB_GetAllSerialNumberByPrefix(t *testing.T) {
-	wantMs := []map[common.Hash]*statedb.SerialNumberState{}
+	wantMs := []map[common.Hash]*SerialNumberState{}
 	wantMByTokens := []map[common.Hash][][]byte{}
 	rootHashes := []common.Hash{emptyRoot}
 	for index, shardID := range shardIDs {
-		tempRootHash, wantM, wantMByToken := storeSerialNumber(rootHashes[index], warperDBTxTest, 50, shardID)
+		tempRootHash, wantM, wantMByToken := storeSerialNumber(rootHashes[index], wrarperDB, 50, shardID)
 		rootHashes = append(rootHashes, tempRootHash)
 		wantMs = append(wantMs, wantM)
 		wantMByTokens = append(wantMByTokens, wantMByToken)
 	}
 	rootHash := rootHashes[len(rootHashes)-1]
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBTxTest)
+	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
 	if err != nil {
 		t.Fatal(err)
 	}

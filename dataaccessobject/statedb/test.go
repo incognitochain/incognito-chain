@@ -1,4 +1,32 @@
-package statedb_test
+package statedb
+
+import (
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject"
+	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/trie"
+	"io/ioutil"
+	"math/rand"
+	"os"
+	"strconv"
+)
+
+var (
+	wrarperDB DatabaseAccessWarper
+	diskDB    incdb.Database
+)
+
+var _ = func() (_ struct{}) {
+	dbPath, err := ioutil.TempDir(os.TempDir(), "test_reward")
+	if err != nil {
+		panic(err)
+	}
+	diskDB, _ = incdb.Open("leveldb", dbPath)
+	wrarperDB = NewDatabaseAccessWarper(diskDB)
+	trie.Logger.Init(common.NewBackend(nil).Logger("test", true))
+	dataaccessobject.Logger.Init(common.NewBackend(nil).Logger("test", true))
+	return
+}()
 
 var (
 	shardIDs               = []byte{0, 1, 2, 3, 4, 5, 6, 7}
@@ -1655,3 +1683,90 @@ var (
 		"66666666666666666666666",
 	}
 )
+
+func testGenerateTokenIDs(max int) []common.Hash {
+	hashes := []common.Hash{}
+	for i := 0; i < max; i++ {
+		temp := []byte(strconv.Itoa(i))
+		hashes = append(hashes, common.HashH(temp))
+	}
+	return hashes
+}
+
+func testGenerateSerialNumberList(max int) [][]byte {
+	list := [][]byte{}
+	for i := 0; i < max; i++ {
+		temp := []byte{}
+		for j := 0; j < 32; j++ {
+			v := byte(rand.Int() % 256)
+			temp = append(temp, v)
+		}
+		list = append(list, temp)
+	}
+	return list
+}
+
+func testGenerateSNDList(max int) [][]byte {
+	list := [][]byte{}
+	for i := 0; i < max; i++ {
+		temp := []byte{}
+		for j := 0; j < 32; j++ {
+			v := byte(rand.Int() % 256)
+			temp = append(temp, v)
+		}
+		list = append(list, temp)
+	}
+	return list
+}
+
+func testGenerateCommitmentList(max int) [][]byte {
+	list := [][]byte{}
+	for i := 0; i < max; i++ {
+		temp := []byte{}
+		for j := 0; j < 32; j++ {
+			v := byte(rand.Int() % 256)
+			temp = append(temp, v)
+		}
+		list = append(list, temp)
+	}
+	return list
+}
+
+func testGeneratePublicKeyList(max int) [][]byte {
+	list := [][]byte{}
+	for i := 0; i < max; i++ {
+		temp := []byte{}
+		for j := 0; j < 32; j++ {
+			v := byte(rand.Int() % 256)
+			temp = append(temp, v)
+		}
+		list = append(list, temp)
+	}
+	return list
+}
+
+func testGenerateOutputCoinList(max int) [][]byte {
+	list := [][]byte{}
+	for i := 0; i < max; i++ {
+		temp := []byte{}
+		for j := 0; j < 100; j++ {
+			v := byte(rand.Int() % 256)
+			temp = append(temp, v)
+		}
+		list = append(list, temp)
+	}
+	return list
+}
+
+func testGenerateTokenMapWithAmount() map[common.Hash]uint64 {
+	reward := make(map[common.Hash]uint64)
+	for _, temp := range tokenIDs {
+		tokenID := common.BytesToHash([]byte(temp))
+		reward[tokenID] = uint64(rand.Int() % 1000000000)
+	}
+	return reward
+}
+
+func testGeneratePunishedDuration() uint8 {
+	return uint8(rand.Int() % 256)
+}

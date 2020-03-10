@@ -1,34 +1,33 @@
-package statedb_test
+package statedb
 
 import (
 	"reflect"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
-func storeOutputCoin(initRoot common.Hash, db statedb.DatabaseAccessWarper, limit int, shardID byte) (common.Hash, map[common.Hash]*statedb.OutputCoinState, map[string][][]byte) {
-	tokenIDs := generateTokenIDs(limit)
-	publicKeys := generateOutputCoinList(10)
-	wantM := make(map[common.Hash]*statedb.OutputCoinState)
+func storeOutputCoin(initRoot common.Hash, db DatabaseAccessWarper, limit int, shardID byte) (common.Hash, map[common.Hash]*OutputCoinState, map[string][][]byte) {
+	tokenIDs := testGenerateTokenIDs(limit)
+	publicKeys := testGenerateOutputCoinList(10)
+	wantM := make(map[common.Hash]*OutputCoinState)
 	wantMByPublicKey := make(map[string][][]byte)
 	for _, tokenID := range tokenIDs {
 		for _, publicKey := range publicKeys {
-			outputCoinList := generateOutputCoinList(5)
-			key := statedb.GenerateOutputCoinObjectKey(tokenID, shardID, publicKey)
-			outputCoinState := statedb.NewOutputCoinStateWithValue(tokenID, shardID, publicKey, outputCoinList)
+			outputCoinList := testGenerateOutputCoinList(5)
+			key := GenerateOutputCoinObjectKey(tokenID, shardID, publicKey)
+			outputCoinState := NewOutputCoinStateWithValue(tokenID, shardID, publicKey, outputCoinList)
 			wantM[key] = outputCoinState
 			wantMByPublicKey[string(publicKey)] = outputCoinList
 		}
 	}
 
-	sDB, err := statedb.NewWithPrefixTrie(initRoot, db)
+	sDB, err := NewWithPrefixTrie(initRoot, db)
 	if err != nil {
 		panic(err)
 	}
 	for k, v := range wantM {
-		err := sDB.SetStateObject(statedb.OutputCoinObjectType, k, v)
+		err := sDB.SetStateObject(OutputCoinObjectType, k, v)
 		if err != nil {
 			panic(err)
 		}
@@ -46,19 +45,19 @@ func storeOutputCoin(initRoot common.Hash, db statedb.DatabaseAccessWarper, limi
 }
 
 func TestStateDB_StoreAndGetOutputCoinState(t *testing.T) {
-	tokenID := generateTokenIDs(1)[0]
+	tokenID := testGenerateTokenIDs(1)[0]
 	shardID := byte(0)
-	publicKey := generatePublicKeyList(1)[0]
-	outputCoins := generateOutputCoinList(5)
+	publicKey := testGeneratePublicKeyList(1)[0]
+	outputCoins := testGenerateOutputCoinList(5)
 
-	key := statedb.GenerateOutputCoinObjectKey(tokenID, shardID, publicKey)
-	outputCoinState := statedb.NewOutputCoinStateWithValue(tokenID, shardID, publicKey, outputCoins)
+	key := GenerateOutputCoinObjectKey(tokenID, shardID, publicKey)
+	outputCoinState := NewOutputCoinStateWithValue(tokenID, shardID, publicKey, outputCoins)
 
-	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDBTxTest)
+	sDB, err := NewWithPrefixTrie(emptyRoot, wrarperDB)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = sDB.SetStateObject(statedb.OutputCoinObjectType, key, outputCoinState)
+	err = sDB.SetStateObject(OutputCoinObjectType, key, outputCoinState)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +70,7 @@ func TestStateDB_StoreAndGetOutputCoinState(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBTxTest)
+	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,17 +87,17 @@ func TestStateDB_StoreAndGetOutputCoinState(t *testing.T) {
 }
 
 func TestStateDB_GetMultipleOutputCoinState(t *testing.T) {
-	wantMs := []map[common.Hash]*statedb.OutputCoinState{}
+	wantMs := []map[common.Hash]*OutputCoinState{}
 	wantMPublicKeys := []map[string][][]byte{}
 	rootHashes := []common.Hash{emptyRoot}
 	for index, shardID := range shardIDs {
-		tempRootHash, wantM, wantMPublicKey := storeOutputCoin(rootHashes[index], warperDBTxTest, 50, shardID)
+		tempRootHash, wantM, wantMPublicKey := storeOutputCoin(rootHashes[index], wrarperDB, 50, shardID)
 		rootHashes = append(rootHashes, tempRootHash)
 		wantMs = append(wantMs, wantM)
 		wantMPublicKeys = append(wantMPublicKeys, wantMPublicKey)
 	}
 	rootHash := rootHashes[len(rootHashes)-1]
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBTxTest)
+	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
 	if err != nil {
 		t.Fatal(err)
 	}

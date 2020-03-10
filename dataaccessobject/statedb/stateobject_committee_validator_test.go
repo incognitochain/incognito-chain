@@ -1,4 +1,4 @@
-package statedb_test
+package statedb
 
 import (
 	"math/rand"
@@ -7,33 +7,31 @@ import (
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	_ "github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
-func storeCommitteeObjectOneShard(role int, initRoot common.Hash, shardID, from, to int) (common.Hash, map[common.Hash]*statedb.CommitteeState) {
-	m := make(map[common.Hash]*statedb.CommitteeState)
+func storeCommitteeObjectOneShard(role int, initRoot common.Hash, shardID, from, to int) (common.Hash, map[common.Hash]*CommitteeState) {
+	m := make(map[common.Hash]*CommitteeState)
 	tempCommitteePublicKey, err := incognitokey.CommitteeBase58KeyListToStruct(committeePublicKeys)
 	if err != nil {
 		panic(err)
 	}
 	tempCommitteePublicKey = tempCommitteePublicKey[from:to]
 	for index, value := range tempCommitteePublicKey {
-		key, _ := statedb.GenerateCommitteeObjectKeyWithRole(role, shardID, value)
+		key, _ := GenerateCommitteeObjectKeyWithRole(role, shardID, value)
 		autoStaking := false
 		if rand.Int()%2 == 0 {
 			autoStaking = true
 		}
-		committeeState := statedb.NewCommitteeStateWithValue(shardID, role, value, receiverPaymentAddress[index], autoStaking)
+		committeeState := NewCommitteeStateWithValue(shardID, role, value, receiverPaymentAddress[index], autoStaking)
 		m[key] = committeeState
 	}
-	sDB, err := statedb.NewWithPrefixTrie(initRoot, warperDBCommitteeTest)
+	sDB, err := NewWithPrefixTrie(initRoot, wrarperDB)
 	if err != nil {
 		panic(err)
 	}
 	for key, value := range m {
-		sDB.SetStateObject(statedb.CommitteeObjectType, key, value)
+		sDB.SetStateObject(CommitteeObjectType, key, value)
 	}
 	rootHash, err := sDB.Commit(true)
 	if err != nil {
@@ -55,26 +53,26 @@ func TestStateDB_SetStateObjectCommitteeState(t *testing.T) {
 	}
 	sampleCommittee := tempCommitteePublicKey[0]
 	sampleCommittee2 := tempCommitteePublicKey[1]
-	key, _ := statedb.GenerateCommitteeObjectKeyWithRole(statedb.CurrentValidator, shardID, sampleCommittee)
-	key2, _ := statedb.GenerateCommitteeObjectKeyWithRole(statedb.CurrentValidator, shardID, sampleCommittee2)
-	committeeState := statedb.NewCommitteeStateWithValue(shardID, statedb.CurrentValidator, sampleCommittee, receiverPaymentAddress[0], true)
-	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDBCommitteeTest)
+	key, _ := GenerateCommitteeObjectKeyWithRole(CurrentValidator, shardID, sampleCommittee)
+	key2, _ := GenerateCommitteeObjectKeyWithRole(CurrentValidator, shardID, sampleCommittee2)
+	committeeState := NewCommitteeStateWithValue(shardID, CurrentValidator, sampleCommittee, receiverPaymentAddress[0], true)
+	sDB, err := NewWithPrefixTrie(emptyRoot, wrarperDB)
 	if err != nil {
 		panic(err)
 	}
-	err = sDB.SetStateObject(statedb.CommitteeObjectType, key, committeeState)
+	err = sDB.SetStateObject(CommitteeObjectType, key, committeeState)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = sDB.SetStateObject(statedb.CommitteeObjectType, key, "committeeState")
+	err = sDB.SetStateObject(CommitteeObjectType, key, "committeeState")
 	if err == nil {
 		t.Fatal("expect error")
 	}
-	err = sDB.SetStateObject(statedb.CommitteeObjectType, key, []byte("committee state"))
+	err = sDB.SetStateObject(CommitteeObjectType, key, []byte("committee state"))
 	if err == nil {
 		t.Fatal("expect error")
 	}
-	err = sDB.SetStateObject(statedb.CommitteeObjectType, key2, []byte("committee state"))
+	err = sDB.SetStateObject(CommitteeObjectType, key2, []byte("committee state"))
 	if err == nil {
 		t.Fatal("expect error")
 	}
@@ -90,7 +88,7 @@ func TestStateDB_SetStateObjectCommitteeState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBCommitteeTest)
+	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err)
 	}
@@ -112,8 +110,8 @@ func TestStateDB_SetStateObjectCommitteeState(t *testing.T) {
 	if has2 {
 		t.Fatal(has2)
 	}
-	if !reflect.DeepEqual(got2, statedb.NewCommitteeState()) {
-		t.Fatalf("want value %+v but got %+v", statedb.NewCommitteeState(), got2)
+	if !reflect.DeepEqual(got2, NewCommitteeState()) {
+		t.Fatalf("want value %+v but got %+v", NewCommitteeState(), got2)
 	}
 }
 
@@ -125,13 +123,13 @@ func TestStateDB_SetDuplicateStateObjectCommitteeState(t *testing.T) {
 		panic(err)
 	}
 	sampleCommittee := tempCommitteePublicKey[0]
-	key, _ := statedb.GenerateCommitteeObjectKeyWithRole(statedb.CurrentValidator, shardID, sampleCommittee)
-	committeeState := statedb.NewCommitteeStateWithValue(shardID, statedb.CurrentValidator, sampleCommittee, receiverPaymentAddress[0], true)
-	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDBCommitteeTest)
+	key, _ := GenerateCommitteeObjectKeyWithRole(CurrentValidator, shardID, sampleCommittee)
+	committeeState := NewCommitteeStateWithValue(shardID, CurrentValidator, sampleCommittee, receiverPaymentAddress[0], true)
+	sDB, err := NewWithPrefixTrie(emptyRoot, wrarperDB)
 	if err != nil {
 		panic(err)
 	}
-	err = sDB.SetStateObject(statedb.CommitteeObjectType, key, committeeState)
+	err = sDB.SetStateObject(CommitteeObjectType, key, committeeState)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -143,7 +141,7 @@ func TestStateDB_SetDuplicateStateObjectCommitteeState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBCommitteeTest)
+	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err)
 	}
@@ -157,7 +155,7 @@ func TestStateDB_SetDuplicateStateObjectCommitteeState(t *testing.T) {
 	if !reflect.DeepEqual(got, committeeState) {
 		t.Fatalf("want value %+v but got %+v", committeeState, got)
 	}
-	err = tempStateDB.SetStateObject(statedb.CommitteeObjectType, key, committeeState)
+	err = tempStateDB.SetStateObject(CommitteeObjectType, key, committeeState)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -175,8 +173,8 @@ func TestStateDB_SetDuplicateStateObjectCommitteeState(t *testing.T) {
 }
 
 func TestStateDB_GetCurrentValidatorCommitteeState(t *testing.T) {
-	rootHash, m := storeCommitteeObjectOneShard(statedb.CurrentValidator, emptyRoot, 0, 0, len(committeePublicKeys))
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBCommitteeTest)
+	rootHash, m := storeCommitteeObjectOneShard(CurrentValidator, emptyRoot, 0, 0, len(committeePublicKeys))
+	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
@@ -196,12 +194,12 @@ func TestStateDB_GetCurrentValidatorCommitteeState(t *testing.T) {
 
 func TestStateDB_GetAllCurrentValidatorCommitteeKey512OneShard(t *testing.T) {
 	from, to := 0, 512
-	rootHash, m := storeCommitteeObjectOneShard(statedb.CurrentValidator, emptyRoot, 0, from, to)
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBCommitteeTest)
+	rootHash, m := storeCommitteeObjectOneShard(CurrentValidator, emptyRoot, 0, from, to)
+	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
-	gotM := tempStateDB.GetAllValidatorCommitteePublicKey(statedb.CurrentValidator, []int{0})
+	gotM := tempStateDB.GetAllValidatorCommitteePublicKey(CurrentValidator, []int{0})
 	gotMShard0, ok := gotM[0]
 	if !ok {
 		t.Fatalf("GetAllCommitteeState want shard %+v", 0)
@@ -229,7 +227,7 @@ func TestStateDB_GetAllCurrentValidatorCommitteeKey512EightShard(t *testing.T) {
 	wantM := make(map[int][]incognitokey.CommitteePublicKey)
 	rootHashes := []common.Hash{emptyRoot}
 	for index, id := range ids {
-		tempRootHash, tempM := storeCommitteeObjectOneShard(statedb.CurrentValidator, rootHashes[index], id, from, to)
+		tempRootHash, tempM := storeCommitteeObjectOneShard(CurrentValidator, rootHashes[index], id, from, to)
 		from += 64
 		to += 64
 		rootHashes = append(rootHashes, tempRootHash)
@@ -237,11 +235,11 @@ func TestStateDB_GetAllCurrentValidatorCommitteeKey512EightShard(t *testing.T) {
 			wantM[id] = append(wantM[id], v.CommitteePublicKey())
 		}
 	}
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHashes[8], warperDBCommitteeTest)
+	tempStateDB, err := NewWithPrefixTrie(rootHashes[8], wrarperDB)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
-	gotM := tempStateDB.GetAllValidatorCommitteePublicKey(statedb.CurrentValidator, ids)
+	gotM := tempStateDB.GetAllValidatorCommitteePublicKey(CurrentValidator, ids)
 	for _, id := range ids {
 		temp, ok := gotM[id]
 		if !ok {
@@ -281,7 +279,7 @@ func TestStateDB_GetAllCurrentValidatorCommitteePublicKey512EightShardMultipleRo
 	}
 	committeePublicKey = committeePublicKey[0:512]
 	for index, id := range ids {
-		tempRootHash, tempM := storeCommitteeObjectOneShard(statedb.CurrentValidator, rootHashes[index], id, from, to)
+		tempRootHash, tempM := storeCommitteeObjectOneShard(CurrentValidator, rootHashes[index], id, from, to)
 		from += 32
 		to += 32
 		rootHashes = append(rootHashes, tempRootHash)
@@ -289,11 +287,11 @@ func TestStateDB_GetAllCurrentValidatorCommitteePublicKey512EightShardMultipleRo
 			wantM[id] = append(wantM[id], v.CommitteePublicKey())
 		}
 	}
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHashes[8], warperDBCommitteeTest)
+	tempStateDB, err := NewWithPrefixTrie(rootHashes[8], wrarperDB)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
-	gotM := tempStateDB.GetAllValidatorCommitteePublicKey(statedb.CurrentValidator, ids)
+	gotM := tempStateDB.GetAllValidatorCommitteePublicKey(CurrentValidator, ids)
 	for _, id := range ids {
 		temp, ok := gotM[id]
 		if !ok {
@@ -322,39 +320,39 @@ func TestStateDB_GetAllCurrentValidatorCommitteePublicKey512EightShardMultipleRo
 	from = 256
 	to = 260
 	for i := 1; i < maxHeight; i++ {
-		sDB, err := statedb.NewWithPrefixTrie(rootHashesByHeight[i-1], warperDBCommitteeTest)
+		sDB, err := NewWithPrefixTrie(rootHashesByHeight[i-1], wrarperDB)
 		if err != nil {
 			t.Fatalf("height %+v, err %+v", i, err)
 		}
 		prevWantM := wantMs[i-1]
-		newWantMState := make(map[common.Hash]*statedb.CommitteeState)
+		newWantMState := make(map[common.Hash]*CommitteeState)
 		for shardID, publicKeys := range prevWantM {
 			for index, value := range publicKeys {
-				key, _ := statedb.GenerateCommitteeObjectKeyWithRole(statedb.CurrentValidator, shardID, value)
-				committeeState := statedb.NewCommitteeStateWithValue(shardID, statedb.CurrentValidator, value, receiverPaymentAddress[index], true)
+				key, _ := GenerateCommitteeObjectKeyWithRole(CurrentValidator, shardID, value)
+				committeeState := NewCommitteeStateWithValue(shardID, CurrentValidator, value, receiverPaymentAddress[index], true)
 				newWantMState[key] = committeeState
 			}
 		}
 		newWantM := make(map[int][]incognitokey.CommitteePublicKey)
-		newAddedMState := make(map[common.Hash]*statedb.CommitteeState)
+		newAddedMState := make(map[common.Hash]*CommitteeState)
 		for _, shardID := range ids {
 			tempCommitteePublicKey := committeePublicKey[from:to]
 			for index, value := range tempCommitteePublicKey {
-				key, _ := statedb.GenerateCommitteeObjectKeyWithRole(statedb.CurrentValidator, shardID, value)
-				committeeState := statedb.NewCommitteeStateWithValue(shardID, statedb.CurrentValidator, value, receiverPaymentAddress[index], true)
+				key, _ := GenerateCommitteeObjectKeyWithRole(CurrentValidator, shardID, value)
+				committeeState := NewCommitteeStateWithValue(shardID, CurrentValidator, value, receiverPaymentAddress[index], true)
 				newAddedMState[key] = committeeState
 			}
 			from += 4
 			to += 4
-			prevWantMStateByShardID := make(map[common.Hash]*statedb.CommitteeState)
+			prevWantMStateByShardID := make(map[common.Hash]*CommitteeState)
 			for index, value := range prevWantM[shardID] {
-				key, _ := statedb.GenerateCommitteeObjectKeyWithRole(statedb.CurrentValidator, shardID, value)
-				committeeState := statedb.NewCommitteeStateWithValue(shardID, statedb.CurrentValidator, value, receiverPaymentAddress[index], true)
+				key, _ := GenerateCommitteeObjectKeyWithRole(CurrentValidator, shardID, value)
+				committeeState := NewCommitteeStateWithValue(shardID, CurrentValidator, value, receiverPaymentAddress[index], true)
 				prevWantMStateByShardID[key] = committeeState
 			}
 			count := 0
 			for key, _ := range prevWantMStateByShardID {
-				ok := sDB.MarkDeleteStateObject(statedb.CommitteeObjectType, key)
+				ok := sDB.MarkDeleteStateObject(CommitteeObjectType, key)
 				if sDB.Error() != nil {
 					t.Fatal(sDB.Error())
 				}
@@ -368,7 +366,7 @@ func TestStateDB_GetAllCurrentValidatorCommitteePublicKey512EightShardMultipleRo
 				}
 			}
 			for k, v := range newAddedMState {
-				err := sDB.SetStateObject(statedb.CommitteeObjectType, k, v)
+				err := sDB.SetStateObject(CommitteeObjectType, k, v)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -390,11 +388,11 @@ func TestStateDB_GetAllCurrentValidatorCommitteePublicKey512EightShardMultipleRo
 		wantMs = append(wantMs, newWantM)
 	}
 	for index, rootHash := range rootHashesByHeight {
-		tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBCommitteeTest)
+		tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
 		if err != nil {
 			t.Fatal(err)
 		}
-		gotM := tempStateDB.GetAllValidatorCommitteePublicKey(statedb.CurrentValidator, ids)
+		gotM := tempStateDB.GetAllValidatorCommitteePublicKey(CurrentValidator, ids)
 		for _, id := range ids {
 			temp, ok := gotM[id]
 			if !ok {
@@ -427,7 +425,7 @@ func TestStateDB_GetCurrentValidatorCommitteePublicKeyByShardIDState512EightShar
 	wantM := make(map[int][]incognitokey.CommitteePublicKey)
 	rootHashes := []common.Hash{emptyRoot}
 	for index, id := range ids {
-		tempRootHash, tempM := storeCommitteeObjectOneShard(statedb.CurrentValidator, rootHashes[index], id, from, to)
+		tempRootHash, tempM := storeCommitteeObjectOneShard(CurrentValidator, rootHashes[index], id, from, to)
 		from += 64
 		to += 64
 		rootHashes = append(rootHashes, tempRootHash)
@@ -435,7 +433,7 @@ func TestStateDB_GetCurrentValidatorCommitteePublicKeyByShardIDState512EightShar
 			wantM[id] = append(wantM[id], v.CommitteePublicKey())
 		}
 	}
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHashes[8], warperDBCommitteeTest)
+	tempStateDB, err := NewWithPrefixTrie(rootHashes[8], wrarperDB)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
@@ -462,8 +460,8 @@ func TestStateDB_GetCurrentValidatorCommitteePublicKeyByShardIDState512EightShar
 
 // SUBSTITUTE VALIDATOR===============================================================
 func TestStateDB_GetSubstituteValidatorCommitteeState(t *testing.T) {
-	rootHash, m := storeCommitteeObjectOneShard(statedb.SubstituteValidator, emptyRoot, 0, 0, len(committeePublicKeys))
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBCommitteeTest)
+	rootHash, m := storeCommitteeObjectOneShard(SubstituteValidator, emptyRoot, 0, 0, len(committeePublicKeys))
+	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
@@ -487,7 +485,7 @@ func TestStateDB_GetSubstituteValidatorCommitteePublicKeyByShardIDState512EightS
 	wantM := make(map[int][]incognitokey.CommitteePublicKey)
 	rootHashes := []common.Hash{emptyRoot}
 	for index, id := range ids {
-		tempRootHash, tempM := storeCommitteeObjectOneShard(statedb.SubstituteValidator, rootHashes[index], id, from, to)
+		tempRootHash, tempM := storeCommitteeObjectOneShard(SubstituteValidator, rootHashes[index], id, from, to)
 		from += 64
 		to += 64
 		rootHashes = append(rootHashes, tempRootHash)
@@ -495,7 +493,7 @@ func TestStateDB_GetSubstituteValidatorCommitteePublicKeyByShardIDState512EightS
 			wantM[id] = append(wantM[id], v.CommitteePublicKey())
 		}
 	}
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHashes[8], warperDBCommitteeTest)
+	tempStateDB, err := NewWithPrefixTrie(rootHashes[8], wrarperDB)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
@@ -522,12 +520,12 @@ func TestStateDB_GetSubstituteValidatorCommitteePublicKeyByShardIDState512EightS
 
 func TestStateDB_GetAllSubstituteValidatorCommitteeKey512OneShard(t *testing.T) {
 	from, to := 0, 512
-	rootHash, m := storeCommitteeObjectOneShard(statedb.SubstituteValidator, emptyRoot, 0, from, to)
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBCommitteeTest)
+	rootHash, m := storeCommitteeObjectOneShard(SubstituteValidator, emptyRoot, 0, from, to)
+	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
-	gotM := tempStateDB.GetAllValidatorCommitteePublicKey(statedb.SubstituteValidator, []int{0})
+	gotM := tempStateDB.GetAllValidatorCommitteePublicKey(SubstituteValidator, []int{0})
 	gotMShard0, ok := gotM[0]
 	if !ok {
 		t.Fatalf("GetAllCommitteeState want shard %+v", 0)
@@ -555,7 +553,7 @@ func TestStateDB_GetAllSubstituteValidatorCommitteeKey512EightShard(t *testing.T
 	wantM := make(map[int][]incognitokey.CommitteePublicKey)
 	rootHashes := []common.Hash{emptyRoot}
 	for index, id := range ids {
-		tempRootHash, tempM := storeCommitteeObjectOneShard(statedb.SubstituteValidator, rootHashes[index], id, from, to)
+		tempRootHash, tempM := storeCommitteeObjectOneShard(SubstituteValidator, rootHashes[index], id, from, to)
 		from += 64
 		to += 64
 		rootHashes = append(rootHashes, tempRootHash)
@@ -563,11 +561,11 @@ func TestStateDB_GetAllSubstituteValidatorCommitteeKey512EightShard(t *testing.T
 			wantM[id] = append(wantM[id], v.CommitteePublicKey())
 		}
 	}
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHashes[8], warperDBCommitteeTest)
+	tempStateDB, err := NewWithPrefixTrie(rootHashes[8], wrarperDB)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
-	gotM := tempStateDB.GetAllValidatorCommitteePublicKey(statedb.SubstituteValidator, ids)
+	gotM := tempStateDB.GetAllValidatorCommitteePublicKey(SubstituteValidator, ids)
 	for _, id := range ids {
 		temp, ok := gotM[id]
 		if !ok {
@@ -607,7 +605,7 @@ func TestStateDB_AllSubstituteValidatorCommitteePublicKey512EightShardMultipleRo
 	}
 	committeePublicKey = committeePublicKey[0:512]
 	for index, id := range ids {
-		tempRootHash, tempM := storeCommitteeObjectOneShard(statedb.SubstituteValidator, rootHashes[index], id, from, to)
+		tempRootHash, tempM := storeCommitteeObjectOneShard(SubstituteValidator, rootHashes[index], id, from, to)
 		from += 32
 		to += 32
 		rootHashes = append(rootHashes, tempRootHash)
@@ -615,11 +613,11 @@ func TestStateDB_AllSubstituteValidatorCommitteePublicKey512EightShardMultipleRo
 			wantM[id] = append(wantM[id], v.CommitteePublicKey())
 		}
 	}
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHashes[8], warperDBCommitteeTest)
+	tempStateDB, err := NewWithPrefixTrie(rootHashes[8], wrarperDB)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
-	gotM := tempStateDB.GetAllValidatorCommitteePublicKey(statedb.SubstituteValidator, ids)
+	gotM := tempStateDB.GetAllValidatorCommitteePublicKey(SubstituteValidator, ids)
 	for _, id := range ids {
 		temp, ok := gotM[id]
 		if !ok {
@@ -648,39 +646,39 @@ func TestStateDB_AllSubstituteValidatorCommitteePublicKey512EightShardMultipleRo
 	from = 256
 	to = 260
 	for i := 1; i < maxHeight; i++ {
-		sDB, err := statedb.NewWithPrefixTrie(rootHashesByHeight[i-1], warperDBCommitteeTest)
+		sDB, err := NewWithPrefixTrie(rootHashesByHeight[i-1], wrarperDB)
 		if err != nil {
 			t.Fatalf("height %+v, err %+v", i, err)
 		}
 		prevWantM := wantMs[i-1]
-		newWantMState := make(map[common.Hash]*statedb.CommitteeState)
+		newWantMState := make(map[common.Hash]*CommitteeState)
 		for shardID, publicKeys := range prevWantM {
 			for index, value := range publicKeys {
-				key, _ := statedb.GenerateCommitteeObjectKeyWithRole(statedb.SubstituteValidator, shardID, value)
-				committeeState := statedb.NewCommitteeStateWithValue(shardID, statedb.SubstituteValidator, value, receiverPaymentAddress[index], true)
+				key, _ := GenerateCommitteeObjectKeyWithRole(SubstituteValidator, shardID, value)
+				committeeState := NewCommitteeStateWithValue(shardID, SubstituteValidator, value, receiverPaymentAddress[index], true)
 				newWantMState[key] = committeeState
 			}
 		}
 		newWantM := make(map[int][]incognitokey.CommitteePublicKey)
-		newAddedMState := make(map[common.Hash]*statedb.CommitteeState)
+		newAddedMState := make(map[common.Hash]*CommitteeState)
 		for _, shardID := range ids {
 			tempCommitteePublicKey := committeePublicKey[from:to]
 			for index, value := range tempCommitteePublicKey {
-				key, _ := statedb.GenerateCommitteeObjectKeyWithRole(statedb.SubstituteValidator, shardID, value)
-				committeeState := statedb.NewCommitteeStateWithValue(shardID, statedb.SubstituteValidator, value, receiverPaymentAddress[index], true)
+				key, _ := GenerateCommitteeObjectKeyWithRole(SubstituteValidator, shardID, value)
+				committeeState := NewCommitteeStateWithValue(shardID, SubstituteValidator, value, receiverPaymentAddress[index], true)
 				newAddedMState[key] = committeeState
 			}
 			from += 4
 			to += 4
-			prevWantMStateByShardID := make(map[common.Hash]*statedb.CommitteeState)
+			prevWantMStateByShardID := make(map[common.Hash]*CommitteeState)
 			for index, value := range prevWantM[shardID] {
-				key, _ := statedb.GenerateCommitteeObjectKeyWithRole(statedb.SubstituteValidator, shardID, value)
-				committeeState := statedb.NewCommitteeStateWithValue(shardID, statedb.SubstituteValidator, value, receiverPaymentAddress[index], true)
+				key, _ := GenerateCommitteeObjectKeyWithRole(SubstituteValidator, shardID, value)
+				committeeState := NewCommitteeStateWithValue(shardID, SubstituteValidator, value, receiverPaymentAddress[index], true)
 				prevWantMStateByShardID[key] = committeeState
 			}
 			count := 0
 			for key, _ := range prevWantMStateByShardID {
-				ok := sDB.MarkDeleteStateObject(statedb.CommitteeObjectType, key)
+				ok := sDB.MarkDeleteStateObject(CommitteeObjectType, key)
 				if sDB.Error() != nil {
 					t.Fatal(sDB.Error())
 				}
@@ -694,7 +692,7 @@ func TestStateDB_AllSubstituteValidatorCommitteePublicKey512EightShardMultipleRo
 				}
 			}
 			for k, v := range newAddedMState {
-				err := sDB.SetStateObject(statedb.CommitteeObjectType, k, v)
+				err := sDB.SetStateObject(CommitteeObjectType, k, v)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -716,11 +714,11 @@ func TestStateDB_AllSubstituteValidatorCommitteePublicKey512EightShardMultipleRo
 		wantMs = append(wantMs, newWantM)
 	}
 	for index, rootHash := range rootHashesByHeight {
-		tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBCommitteeTest)
+		tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
 		if err != nil {
 			t.Fatal(err)
 		}
-		gotM := tempStateDB.GetAllValidatorCommitteePublicKey(statedb.SubstituteValidator, ids)
+		gotM := tempStateDB.GetAllValidatorCommitteePublicKey(SubstituteValidator, ids)
 		for _, id := range ids {
 			temp, ok := gotM[id]
 			if !ok {
@@ -755,7 +753,7 @@ func BenchmarkStateDB_GetCurrentValidatorCommitteePublicKey512EightShard(b *test
 	wantM := make(map[int][]incognitokey.CommitteePublicKey)
 	rootHashes := []common.Hash{emptyRoot}
 	for index, id := range ids {
-		tempRootHash, tempM := storeCommitteeObjectOneShard(statedb.CurrentValidator, rootHashes[index], id, from, to)
+		tempRootHash, tempM := storeCommitteeObjectOneShard(CurrentValidator, rootHashes[index], id, from, to)
 		from += 64
 		to += 64
 		rootHashes = append(rootHashes, tempRootHash)
@@ -763,7 +761,7 @@ func BenchmarkStateDB_GetCurrentValidatorCommitteePublicKey512EightShard(b *test
 			wantM[id] = append(wantM[id], v.CommitteePublicKey())
 		}
 	}
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHashes[8], warperDBCommitteeTest)
+	tempStateDB, err := NewWithPrefixTrie(rootHashes[8], wrarperDB)
 	if err != nil || tempStateDB == nil {
 		panic(err)
 	}
@@ -780,7 +778,7 @@ func BenchmarkStateDB_GetAllCurrentCandidateCommitteePublicKey512EightShard(b *t
 	wantM := make(map[int][]incognitokey.CommitteePublicKey)
 	rootHashes := []common.Hash{emptyRoot}
 	for index, id := range ids {
-		tempRootHash, tempM := storeCommitteeObjectOneShard(statedb.CurrentValidator, rootHashes[index], id, from, to)
+		tempRootHash, tempM := storeCommitteeObjectOneShard(CurrentValidator, rootHashes[index], id, from, to)
 		from += 64
 		to += 64
 		rootHashes = append(rootHashes, tempRootHash)
@@ -788,29 +786,29 @@ func BenchmarkStateDB_GetAllCurrentCandidateCommitteePublicKey512EightShard(b *t
 			wantM[id] = append(wantM[id], v.CommitteePublicKey())
 		}
 	}
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHashes[8], warperDBCommitteeTest)
+	tempStateDB, err := NewWithPrefixTrie(rootHashes[8], wrarperDB)
 	if err != nil || tempStateDB == nil {
 		panic(err)
 	}
 	for n := 0; n < b.N; n++ {
-		tempStateDB.GetAllValidatorCommitteePublicKey(statedb.CurrentValidator, ids)
+		tempStateDB.GetAllValidatorCommitteePublicKey(CurrentValidator, ids)
 	}
 }
 func BenchmarkStateDB_GetAllCurrentCandidateCommitteePublicKey512OneShard(b *testing.B) {
 	from, to := 0, 512
-	rootHash, _ := storeCommitteeObjectOneShard(statedb.CurrentValidator, emptyRoot, 0, from, to)
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBCommitteeTest)
+	rootHash, _ := storeCommitteeObjectOneShard(CurrentValidator, emptyRoot, 0, from, to)
+	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
 	if err != nil || tempStateDB == nil {
 		panic(err)
 	}
 	for n := 0; n < b.N; n++ {
-		tempStateDB.GetAllValidatorCommitteePublicKey(statedb.CurrentValidator, []int{0})
+		tempStateDB.GetAllValidatorCommitteePublicKey(CurrentValidator, []int{0})
 	}
 }
 
 func BenchmarkStateDB_GetCommitteeState512OneShard(b *testing.B) {
-	rootHash, m := storeCommitteeObjectOneShard(statedb.CurrentValidator, emptyRoot, 0, 0, 512)
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBCommitteeTest)
+	rootHash, m := storeCommitteeObjectOneShard(CurrentValidator, emptyRoot, 0, 0, 512)
+	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
 	if err != nil || tempStateDB == nil {
 		panic(err)
 	}
@@ -831,8 +829,8 @@ func BenchmarkStateDB_GetCommitteeState512OneShard(b *testing.B) {
 }
 
 func BenchmarkStateDB_GetCommitteeState256OneShard(b *testing.B) {
-	rootHash, m := storeCommitteeObjectOneShard(statedb.CurrentValidator, emptyRoot, 0, 0, 256)
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBCommitteeTest)
+	rootHash, m := storeCommitteeObjectOneShard(CurrentValidator, emptyRoot, 0, 0, 256)
+	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
 	if err != nil || tempStateDB == nil {
 		panic(err)
 	}
@@ -860,13 +858,13 @@ func BenchmarkStateDB_GetCommitteeState1In1(b *testing.B) {
 		panic(err)
 	}
 	sampleCommitteePublicKey := tempCommitteePublicKey[0]
-	key, _ = statedb.GenerateCommitteeObjectKeyWithRole(statedb.CurrentValidator, shardID, sampleCommitteePublicKey)
-	committeeState := statedb.NewCommitteeStateWithValue(shardID, statedb.CurrentValidator, sampleCommitteePublicKey, receiverPaymentAddress[0], true)
-	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDBCommitteeTest)
+	key, _ = GenerateCommitteeObjectKeyWithRole(CurrentValidator, shardID, sampleCommitteePublicKey)
+	committeeState := NewCommitteeStateWithValue(shardID, CurrentValidator, sampleCommitteePublicKey, receiverPaymentAddress[0], true)
+	sDB, err := NewWithPrefixTrie(emptyRoot, wrarperDB)
 	if err != nil {
 		panic(err)
 	}
-	sDB.SetStateObject(statedb.CommitteeObjectType, key, committeeState)
+	sDB.SetStateObject(CommitteeObjectType, key, committeeState)
 	rootHash, err := sDB.Commit(true)
 	if err != nil {
 		panic(err)
@@ -875,7 +873,7 @@ func BenchmarkStateDB_GetCommitteeState1In1(b *testing.B) {
 	if err != nil {
 		panic(err)
 	}
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBCommitteeTest)
+	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
 	if err != nil || tempStateDB == nil {
 		panic(err)
 	}
@@ -891,9 +889,9 @@ func BenchmarkStateDB_GetCommitteeState1In64(b *testing.B) {
 		panic(err)
 	}
 	sampleCommitteePublicKey := tempCommitteePublicKey[0]
-	key, _ = statedb.GenerateCommitteeObjectKeyWithRole(statedb.CurrentValidator, shardID, sampleCommitteePublicKey)
-	rootHash, _ := storeCommitteeObjectOneShard(statedb.CurrentValidator, emptyRoot, 0, 0, 64)
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBCommitteeTest)
+	key, _ = GenerateCommitteeObjectKeyWithRole(CurrentValidator, shardID, sampleCommitteePublicKey)
+	rootHash, _ := storeCommitteeObjectOneShard(CurrentValidator, emptyRoot, 0, 0, 64)
+	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
 	if err != nil || tempStateDB == nil {
 		panic(err)
 	}
@@ -909,9 +907,9 @@ func BenchmarkStateDB_GetCommitteeState1In256(b *testing.B) {
 		panic(err)
 	}
 	sampleCommitteePublicKey := tempCommitteePublicKey[0]
-	key, _ = statedb.GenerateCommitteeObjectKeyWithRole(statedb.CurrentValidator, shardID, sampleCommitteePublicKey)
-	rootHash, _ := storeCommitteeObjectOneShard(statedb.CurrentValidator, emptyRoot, 0, 0, 256)
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBCommitteeTest)
+	key, _ = GenerateCommitteeObjectKeyWithRole(CurrentValidator, shardID, sampleCommitteePublicKey)
+	rootHash, _ := storeCommitteeObjectOneShard(CurrentValidator, emptyRoot, 0, 0, 256)
+	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
 	if err != nil || tempStateDB == nil {
 		panic(err)
 	}

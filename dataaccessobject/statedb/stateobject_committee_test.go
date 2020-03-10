@@ -1,31 +1,12 @@
-package statedb_test
+package statedb
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/trie"
-	"io/ioutil"
-	"os"
 	"reflect"
 	"strings"
 	"testing"
 )
-
-var (
-	warperDBCommitteeTest statedb.DatabaseAccessWarper
-)
-var _ = func() (_ struct{}) {
-	dbPath, err := ioutil.TempDir(os.TempDir(), "test_committee")
-	if err != nil {
-		panic(err)
-	}
-	diskBD, _ := incdb.Open("leveldb", dbPath)
-	warperDBCommitteeTest = statedb.NewDatabaseAccessWarper(diskBD)
-	trie.Logger.Init(common.NewBackend(nil).Logger("test", true))
-	return
-}()
 
 func TestStateDB_GetMixCommitteePublicKey(t *testing.T) {
 	from, to := 0, 32
@@ -33,7 +14,7 @@ func TestStateDB_GetMixCommitteePublicKey(t *testing.T) {
 	wantCurrentValidatorM := make(map[int][]incognitokey.CommitteePublicKey)
 	rootHashes := []common.Hash{emptyRoot}
 	for index, id := range ids {
-		tempRootHash, tempM := storeCommitteeObjectOneShard(statedb.CurrentValidator, rootHashes[index], id, from, to)
+		tempRootHash, tempM := storeCommitteeObjectOneShard(CurrentValidator, rootHashes[index], id, from, to)
 		from += 32
 		to += 32
 		rootHashes = append(rootHashes, tempRootHash)
@@ -46,7 +27,7 @@ func TestStateDB_GetMixCommitteePublicKey(t *testing.T) {
 	to = from + 8
 	rootHashes = []common.Hash{tempRootHash}
 	for index, id := range ids {
-		tempRootHash, tempM := storeCommitteeObjectOneShard(statedb.SubstituteValidator, rootHashes[index], id, from, to)
+		tempRootHash, tempM := storeCommitteeObjectOneShard(SubstituteValidator, rootHashes[index], id, from, to)
 		from += 8
 		to += 8
 		rootHashes = append(rootHashes, tempRootHash)
@@ -57,7 +38,7 @@ func TestStateDB_GetMixCommitteePublicKey(t *testing.T) {
 	to = from + 80
 	tempRootHash = rootHashes[8]
 	wantNextEpochCandidateM := []incognitokey.CommitteePublicKey{}
-	tempRootHash, tempM := storeCommitteeObjectOneShard(statedb.NextEpochShardCandidate, tempRootHash, statedb.CandidateShardID, from, to)
+	tempRootHash, tempM := storeCommitteeObjectOneShard(NextEpochShardCandidate, tempRootHash, CandidateShardID, from, to)
 	for _, v := range tempM {
 		wantNextEpochCandidateM = append(wantNextEpochCandidateM, v.CommitteePublicKey())
 	}
@@ -65,17 +46,17 @@ func TestStateDB_GetMixCommitteePublicKey(t *testing.T) {
 	from += 80
 	to += 80
 	wantCurrentEpochCandidateM := []incognitokey.CommitteePublicKey{}
-	tempRootHash, tempM = storeCommitteeObjectOneShard(statedb.CurrentEpochShardCandidate, tempRootHash, statedb.CandidateShardID, from, to)
+	tempRootHash, tempM = storeCommitteeObjectOneShard(CurrentEpochShardCandidate, tempRootHash, CandidateShardID, from, to)
 	for _, v := range tempM {
 		wantCurrentEpochCandidateM = append(wantCurrentEpochCandidateM, v.CommitteePublicKey())
 	}
 
-	tempStateDB, err := statedb.NewWithPrefixTrie(tempRootHash, warperDBCommitteeTest)
+	tempStateDB, err := NewWithPrefixTrie(tempRootHash, wrarperDB)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
 
-	gotCurrentValidatorM := tempStateDB.GetAllValidatorCommitteePublicKey(statedb.CurrentValidator, ids)
+	gotCurrentValidatorM := tempStateDB.GetAllValidatorCommitteePublicKey(CurrentValidator, ids)
 	for _, id := range ids {
 		temp, ok := gotCurrentValidatorM[id]
 		if !ok {
@@ -100,7 +81,7 @@ func TestStateDB_GetMixCommitteePublicKey(t *testing.T) {
 		}
 	}
 
-	gotSubstituteValidatorM := tempStateDB.GetAllValidatorCommitteePublicKey(statedb.SubstituteValidator, ids)
+	gotSubstituteValidatorM := tempStateDB.GetAllValidatorCommitteePublicKey(SubstituteValidator, ids)
 	for _, id := range ids {
 		temp, ok := gotSubstituteValidatorM[id]
 		if !ok {
@@ -125,7 +106,7 @@ func TestStateDB_GetMixCommitteePublicKey(t *testing.T) {
 		}
 	}
 
-	gotNextEpochCandidateM := tempStateDB.GetAllCandidateCommitteePublicKey(statedb.NextEpochShardCandidate)
+	gotNextEpochCandidateM := tempStateDB.GetAllCandidateCommitteePublicKey(NextEpochShardCandidate)
 	if len(gotNextEpochCandidateM) != 80 {
 		t.Fatalf("GetAllCandidateCommitteePublicKey want key length %+v but got %+v", to-from, len(gotNextEpochCandidateM))
 	}
@@ -142,7 +123,7 @@ func TestStateDB_GetMixCommitteePublicKey(t *testing.T) {
 		}
 	}
 
-	gotCurrentEpochCandidateM := tempStateDB.GetAllCandidateCommitteePublicKey(statedb.CurrentEpochShardCandidate)
+	gotCurrentEpochCandidateM := tempStateDB.GetAllCandidateCommitteePublicKey(CurrentEpochShardCandidate)
 	if len(gotNextEpochCandidateM) != 80 {
 		t.Fatalf("GetAllCandidateCommitteePublicKey want key length %+v but got %+v", to-from, len(gotCurrentEpochCandidateM))
 	}
@@ -171,7 +152,7 @@ func TestStateDB_GetMixCommitteeState(t *testing.T) {
 	wantAutoStakingM := make(map[string]bool)
 	rootHashes := []common.Hash{emptyRoot}
 	for index, id := range ids {
-		tempRootHash, tempM := storeCommitteeObjectOneShard(statedb.CurrentValidator, rootHashes[index], id, from, to)
+		tempRootHash, tempM := storeCommitteeObjectOneShard(CurrentValidator, rootHashes[index], id, from, to)
 		from += 32
 		to += 32
 		rootHashes = append(rootHashes, tempRootHash)
@@ -191,7 +172,7 @@ func TestStateDB_GetMixCommitteeState(t *testing.T) {
 	to = from + 8
 	rootHashes = []common.Hash{tempRootHash}
 	for index, id := range ids {
-		tempRootHash, tempM := storeCommitteeObjectOneShard(statedb.SubstituteValidator, rootHashes[index], id, from, to)
+		tempRootHash, tempM := storeCommitteeObjectOneShard(SubstituteValidator, rootHashes[index], id, from, to)
 		from += 8
 		to += 8
 		rootHashes = append(rootHashes, tempRootHash)
@@ -209,7 +190,7 @@ func TestStateDB_GetMixCommitteeState(t *testing.T) {
 	}
 	to = from + 80
 	tempRootHash = rootHashes[8]
-	tempRootHash, tempM := storeCommitteeObjectOneShard(statedb.NextEpochShardCandidate, tempRootHash, statedb.CandidateShardID, from, to)
+	tempRootHash, tempM := storeCommitteeObjectOneShard(NextEpochShardCandidate, tempRootHash, CandidateShardID, from, to)
 	for _, v := range tempM {
 		wantNextEpochCandidateM = append(wantNextEpochCandidateM, v.CommitteePublicKey())
 		committeePublicKey := v.CommitteePublicKey()
@@ -224,7 +205,7 @@ func TestStateDB_GetMixCommitteeState(t *testing.T) {
 
 	from += 80
 	to += 80
-	tempRootHash, tempM = storeCommitteeObjectOneShard(statedb.CurrentEpochShardCandidate, tempRootHash, statedb.CandidateShardID, from, to)
+	tempRootHash, tempM = storeCommitteeObjectOneShard(CurrentEpochShardCandidate, tempRootHash, CandidateShardID, from, to)
 	for _, v := range tempM {
 		wantCurrentEpochCandidateM = append(wantCurrentEpochCandidateM, v.CommitteePublicKey())
 		committeePublicKey := v.CommitteePublicKey()
@@ -237,7 +218,7 @@ func TestStateDB_GetMixCommitteeState(t *testing.T) {
 		wantAutoStakingM[tempCurrentValidatorString[0]] = v.AutoStaking()
 	}
 
-	tempStateDB, err := statedb.NewWithPrefixTrie(tempRootHash, warperDBCommitteeTest)
+	tempStateDB, err := NewWithPrefixTrie(tempRootHash, wrarperDB)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}

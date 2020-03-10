@@ -1,53 +1,33 @@
-package statedb_test
+package statedb
 
 import (
-	"io/ioutil"
 	"math/rand"
-	"os"
 	"reflect"
 	"sort"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/incdb"
-	"github.com/incognitochain/incognito-chain/trie"
 )
 
-var (
-	warperDBrrTest statedb.DatabaseAccessWarper
-)
-
-var _ = func() (_ struct{}) {
-	dbPath, err := ioutil.TempDir(os.TempDir(), "test_reward")
-	if err != nil {
-		panic(err)
-	}
-	diskBD, _ := incdb.Open("leveldb", dbPath)
-	warperDBrrTest = statedb.NewDatabaseAccessWarper(diskBD)
-	trie.Logger.Init(common.NewBackend(nil).Logger("test", true))
-	return
-}()
-
-func storeRewardRequest(initRoot common.Hash, warperDB statedb.DatabaseAccessWarper, epoch uint64, shardIDs []byte) (common.Hash, map[common.Hash]*statedb.RewardRequestState) {
-	mState := make(map[common.Hash]*statedb.RewardRequestState)
-	tokenIDs := generateTokenIDs(maxTokenID)
+func storeRewardRequest(initRoot common.Hash, warperDB DatabaseAccessWarper, epoch uint64, shardIDs []byte) (common.Hash, map[common.Hash]*RewardRequestState) {
+	mState := make(map[common.Hash]*RewardRequestState)
+	tokenIDs := testGenerateTokenIDs(maxTokenID)
 	for i := uint64(1); i < epoch; i++ {
 		for _, shardID := range shardIDs {
 			for _, tokenID := range tokenIDs {
-				key := statedb.GenerateRewardRequestObjectKey(i, shardID, tokenID)
+				key := GenerateRewardRequestObjectKey(i, shardID, tokenID)
 				amount := uint64(rand.Int() % 100000000000)
-				rewardRequestState := statedb.NewRewardRequestStateWithValue(i, shardID, tokenID, amount)
+				rewardRequestState := NewRewardRequestStateWithValue(i, shardID, tokenID, amount)
 				mState[key] = rewardRequestState
 			}
 		}
 	}
-	sDB, err := statedb.NewWithPrefixTrie(initRoot, warperDB)
+	sDB, err := NewWithPrefixTrie(initRoot, warperDB)
 	if err != nil {
 		panic(err)
 	}
 	for key, value := range mState {
-		sDB.SetStateObject(statedb.RewardRequestObjectType, key, value)
+		sDB.SetStateObject(RewardRequestObjectType, key, value)
 	}
 	rootHash, err := sDB.Commit(true)
 	if err != nil {
@@ -61,8 +41,8 @@ func storeRewardRequest(initRoot common.Hash, warperDB statedb.DatabaseAccessWar
 }
 
 func TestStateDB_GetAllCommitteeRewardStateByKey(t *testing.T) {
-	rootHash, wantM := storeRewardRequest(emptyRoot, warperDBrrTest, defaultMaxEpoch, shardIDs)
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBrrTest)
+	rootHash, wantM := storeRewardRequest(emptyRoot, wrarperDB, defaultMaxEpoch, shardIDs)
+	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err)
 	}
@@ -81,8 +61,8 @@ func TestStateDB_GetAllCommitteeRewardStateByKey(t *testing.T) {
 }
 
 func TestStateDB_UpdateAndGetAllCommitteeRewardStateByKey(t *testing.T) {
-	rootHash1, wantM := storeRewardRequest(emptyRoot, warperDBrrTest, defaultMaxEpoch, shardIDs)
-	sDB, err := statedb.NewWithPrefixTrie(rootHash1, warperDBrrTest)
+	rootHash1, wantM := storeRewardRequest(emptyRoot, wrarperDB, defaultMaxEpoch, shardIDs)
+	sDB, err := NewWithPrefixTrie(rootHash1, wrarperDB)
 	if err != nil || sDB == nil {
 		t.Fatal(err)
 	}
@@ -98,13 +78,13 @@ func TestStateDB_UpdateAndGetAllCommitteeRewardStateByKey(t *testing.T) {
 			t.Fatalf("want %+v but got %+v", v, gotM)
 		}
 	}
-	newWantM := make(map[common.Hash]*statedb.RewardRequestState)
+	newWantM := make(map[common.Hash]*RewardRequestState)
 	for k, v := range wantM {
 		temp := v.Amount() / 2
-		newWantM[k] = statedb.NewRewardRequestStateWithValue(v.Epoch(), v.ShardID(), v.TokenID(), temp)
+		newWantM[k] = NewRewardRequestStateWithValue(v.Epoch(), v.ShardID(), v.TokenID(), temp)
 	}
 	for k, v := range newWantM {
-		sDB.SetStateObject(statedb.RewardRequestObjectType, k, v)
+		sDB.SetStateObject(RewardRequestObjectType, k, v)
 	}
 	rootHash2, err := sDB.Commit(true)
 	if err != nil {
@@ -115,7 +95,7 @@ func TestStateDB_UpdateAndGetAllCommitteeRewardStateByKey(t *testing.T) {
 		panic(err)
 	}
 
-	tempStateDB1, err := statedb.NewWithPrefixTrie(rootHash1, warperDBrrTest)
+	tempStateDB1, err := NewWithPrefixTrie(rootHash1, wrarperDB)
 	if err != nil || tempStateDB1 == nil {
 		t.Fatal(err)
 	}
@@ -132,7 +112,7 @@ func TestStateDB_UpdateAndGetAllCommitteeRewardStateByKey(t *testing.T) {
 		}
 	}
 
-	tempStateDB2, err := statedb.NewWithPrefixTrie(rootHash2, warperDBrrTest)
+	tempStateDB2, err := NewWithPrefixTrie(rootHash2, wrarperDB)
 	if err != nil || tempStateDB2 == nil {
 		t.Fatal(err)
 	}
@@ -160,7 +140,7 @@ func TestStateDB_UpdateAndGetAllCommitteeRewardStateByKey(t *testing.T) {
 }
 
 func TestStateDB_AddShardRewardRequest(t *testing.T) {
-	stateDB, err := statedb.NewWithPrefixTrie(common.EmptyRoot, warperDBrewardTest)
+	stateDB, err := NewWithPrefixTrie(common.EmptyRoot, wrarperDB)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -168,7 +148,7 @@ func TestStateDB_AddShardRewardRequest(t *testing.T) {
 	epoch1 := uint64(1)
 	shardID0 := byte(0)
 	//shardID1 := byte(1)
-	err = statedb.AddShardRewardRequest(stateDB, epoch1, shardID0, common.PRVCoinID, amount)
+	err = AddShardRewardRequest(stateDB, epoch1, shardID0, common.PRVCoinID, amount)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -180,14 +160,14 @@ func TestStateDB_AddShardRewardRequest(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	gotAmount0, err := statedb.GetRewardOfShardByEpoch(stateDB, epoch1, shardID0, common.PRVCoinID)
+	gotAmount0, err := GetRewardOfShardByEpoch(stateDB, epoch1, shardID0, common.PRVCoinID)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if gotAmount0 != amount {
 		t.Fatalf("want %+v but got %+v", amount, gotAmount0)
 	}
-	err = statedb.AddShardRewardRequest(stateDB, epoch1, shardID0, common.PRVCoinID, amount*3)
+	err = AddShardRewardRequest(stateDB, epoch1, shardID0, common.PRVCoinID, amount*3)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -199,7 +179,7 @@ func TestStateDB_AddShardRewardRequest(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	gotAmount1, err := statedb.GetRewardOfShardByEpoch(stateDB, epoch1, shardID0, common.PRVCoinID)
+	gotAmount1, err := GetRewardOfShardByEpoch(stateDB, epoch1, shardID0, common.PRVCoinID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -209,7 +189,7 @@ func TestStateDB_AddShardRewardRequest(t *testing.T) {
 }
 
 func TestStateDB_AddShardRewardRequest5000(t *testing.T) {
-	stateDB, err := statedb.NewWithPrefixTrie(common.EmptyRoot, warperDBrewardTest)
+	stateDB, err := NewWithPrefixTrie(common.EmptyRoot, wrarperDB)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -219,7 +199,7 @@ func TestStateDB_AddShardRewardRequest5000(t *testing.T) {
 	for i := 0; i < maxEpoch; i++ {
 		epoch := uint64(i)
 		amount := rand.Uint64()
-		err = statedb.AddShardRewardRequest(stateDB, epoch, shardID0, common.PRVCoinID, amount)
+		err = AddShardRewardRequest(stateDB, epoch, shardID0, common.PRVCoinID, amount)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -235,7 +215,7 @@ func TestStateDB_AddShardRewardRequest5000(t *testing.T) {
 	}
 	for i := 0; i < maxEpoch; i++ {
 		epoch := uint64(i)
-		gotAmount0, err := statedb.GetRewardOfShardByEpoch(stateDB, epoch, shardID0, common.PRVCoinID)
+		gotAmount0, err := GetRewardOfShardByEpoch(stateDB, epoch, shardID0, common.PRVCoinID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -250,15 +230,15 @@ func TestStateDB_GetAllTokenIDForReward(t *testing.T) {
 	maxEpoch := 100
 	amount := uint64(1000)
 	shardID := byte(0)
-	stateDB, err := statedb.NewWithPrefixTrie(common.EmptyRoot, warperDBrewardTest)
+	stateDB, err := NewWithPrefixTrie(common.EmptyRoot, wrarperDB)
 	if err != nil {
 		t.Fatal(err)
 	}
 	for i := 0; i < maxEpoch; i++ {
 		epoch := uint64(i)
-		tokenIDs := generateTokenIDs(10)
+		tokenIDs := testGenerateTokenIDs(10)
 		for _, tokenID := range tokenIDs {
-			err := statedb.AddShardRewardRequest(stateDB, epoch, shardID, tokenID, amount)
+			err := AddShardRewardRequest(stateDB, epoch, shardID, tokenID, amount)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -276,7 +256,7 @@ func TestStateDB_GetAllTokenIDForReward(t *testing.T) {
 	tempStateDB := stateDB.Copy()
 	for i := 0; i < maxEpoch; i++ {
 		epoch := uint64(i)
-		gotTokenIDs := statedb.GetAllTokenIDForReward(tempStateDB, epoch)
+		gotTokenIDs := GetAllTokenIDForReward(tempStateDB, epoch)
 		wantTokenIDs := wantMTokenIDs[epoch]
 		for _, wantTokenID := range wantTokenIDs {
 			flag := false

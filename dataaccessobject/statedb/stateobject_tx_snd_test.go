@@ -1,4 +1,4 @@
-package statedb_test
+package statedb
 
 import (
 	"bytes"
@@ -6,31 +6,30 @@ import (
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	_ "github.com/incognitochain/incognito-chain/incdb"
 )
 
-func storeSNDerivator(initRoot common.Hash, db statedb.DatabaseAccessWarper, limit int) (common.Hash, map[common.Hash]*statedb.SNDerivatorState, map[common.Hash][][]byte) {
+func storeSNDerivator(initRoot common.Hash, db DatabaseAccessWarper, limit int) (common.Hash, map[common.Hash]*SNDerivatorState, map[common.Hash][][]byte) {
 	sndPerToken := 5
-	sndList := generateSNDList(sndPerToken * limit)
-	tokenIDs := generateTokenIDs(limit)
-	wantM := make(map[common.Hash]*statedb.SNDerivatorState)
+	sndList := testGenerateSNDList(sndPerToken * limit)
+	tokenIDs := testGenerateTokenIDs(limit)
+	wantM := make(map[common.Hash]*SNDerivatorState)
 	wantMByToken := make(map[common.Hash][][]byte)
 	for i, tokenID := range tokenIDs {
 		for j := i; j < i+sndPerToken; j++ {
 			snd := sndList[j]
-			key := statedb.GenerateSNDerivatorObjectKey(tokenID, snd)
-			sndState := statedb.NewSNDerivatorStateWithValue(tokenID, snd)
+			key := GenerateSNDerivatorObjectKey(tokenID, snd)
+			sndState := NewSNDerivatorStateWithValue(tokenID, snd)
 			wantM[key] = sndState
 			wantMByToken[tokenID] = append(wantMByToken[tokenID], snd)
 		}
 	}
-	sDB, err := statedb.NewWithPrefixTrie(initRoot, db)
+	sDB, err := NewWithPrefixTrie(initRoot, db)
 	if err != nil {
 		panic(err)
 	}
 	for k, v := range wantM {
-		err := sDB.SetStateObject(statedb.SNDerivatorObjectType, k, v)
+		err := sDB.SetStateObject(SNDerivatorObjectType, k, v)
 		if err != nil {
 			panic(err)
 		}
@@ -47,23 +46,23 @@ func storeSNDerivator(initRoot common.Hash, db statedb.DatabaseAccessWarper, lim
 }
 
 func TestStateDB_StoreAndGetSNDerivatorrState(t *testing.T) {
-	tokenID := generateTokenIDs(1)[0]
-	snd := generateSNDList(1)[0]
-	snd2 := generateSNDList(1)[0]
+	tokenID := testGenerateTokenIDs(1)[0]
+	snd := testGenerateSNDList(1)[0]
+	snd2 := testGenerateSNDList(1)[0]
 
-	key := statedb.GenerateSNDerivatorObjectKey(tokenID, snd)
-	sndState := statedb.NewSNDerivatorStateWithValue(tokenID, snd)
-	key2 := statedb.GenerateSNDerivatorObjectKey(tokenID, snd2)
+	key := GenerateSNDerivatorObjectKey(tokenID, snd)
+	sndState := NewSNDerivatorStateWithValue(tokenID, snd)
+	key2 := GenerateSNDerivatorObjectKey(tokenID, snd2)
 
-	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDBTxTest)
+	sDB, err := NewWithPrefixTrie(emptyRoot, wrarperDB)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = sDB.SetStateObject(statedb.SNDerivatorObjectType, key, sndState)
+	err = sDB.SetStateObject(SNDerivatorObjectType, key, sndState)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = sDB.SetStateObject(statedb.SNDerivatorObjectType, key2, snd2)
+	err = sDB.SetStateObject(SNDerivatorObjectType, key2, snd2)
 	if err == nil {
 		t.Fatal("expect error")
 	}
@@ -76,7 +75,7 @@ func TestStateDB_StoreAndGetSNDerivatorrState(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBTxTest)
+	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,14 +93,14 @@ func TestStateDB_StoreAndGetSNDerivatorrState(t *testing.T) {
 	if has {
 		t.Fatal(has)
 	}
-	if !reflect.DeepEqual(gotSND2, statedb.NewSNDerivatorState()) {
-		t.Fatalf("GetSNDerivatorState want %+v but got %+v", statedb.NewSNDerivatorState(), gotSND2)
+	if !reflect.DeepEqual(gotSND2, NewSNDerivatorState()) {
+		t.Fatalf("GetSNDerivatorState want %+v but got %+v", NewSNDerivatorState(), gotSND2)
 	}
 }
 
 func TestStateDB_GetAllSNDerivatorByPrefix(t *testing.T) {
-	rootHash, _, wantMByToken := storeSNDerivator(emptyRoot, warperDBTxTest, 50)
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBTxTest)
+	rootHash, _, wantMByToken := storeSNDerivator(emptyRoot, wrarperDB, 50)
+	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
 	if err != nil {
 		t.Fatal(err)
 	}
