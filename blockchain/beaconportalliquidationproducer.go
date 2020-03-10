@@ -5,6 +5,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"strconv"
 )
 
@@ -18,6 +19,7 @@ func buildCustodianRunAwayLiquidationInst(
 	redeemerIncAddrStr string,
 	custodianIncAddrStr string,
 	metaType int,
+	shardID byte,
 	status string,
 ) []string {
 	liqCustodianContent := metadata.PortalLiquidateCustodianContent{
@@ -27,11 +29,12 @@ func buildCustodianRunAwayLiquidationInst(
 		MintedCollateralAmount: mintedCollateralAmount,
 		RedeemerIncAddressStr:  redeemerIncAddrStr,
 		CustodianIncAddressStr: custodianIncAddrStr,
+		ShardID: shardID,
 	}
 	liqCustodianContentBytes, _ := json.Marshal(liqCustodianContent)
 	return []string{
 		strconv.Itoa(metaType),
-		strconv.Itoa(-1), // shardID
+		strconv.Itoa(int(shardID)),
 		status,
 		string(liqCustodianContentBytes),
 	}
@@ -44,7 +47,16 @@ func checkAndBuildInstForCustodianLiquidation(
 
 	insts := [][]string{}
 	for _, redeemReq := range currentPortalState.WaitingRedeemRequests {
-		if beaconHeight-redeemReq.BeaconHeight >= common.PortalTimeOutCustodianSendPubTokenBack {
+		if beaconHeight - redeemReq.BeaconHeight >= common.PortalTimeOutCustodianSendPubTokenBack {
+			// get shardId of redeemer
+			redeemerKey, err := wallet.Base58CheckDeserialize(redeemReq.RedeemerAddress)
+			if err != nil {
+				Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when deserializing redeemer address string in redeemID %v - %v\n: ",
+					redeemReq.UniqueRedeemID, err)
+				continue
+			}
+			shardID := common.GetShardIDFromLastByte(redeemerKey.KeySet.PaymentAddress.Pk[len(redeemerKey.KeySet.PaymentAddress.Pk) - 1])
+
 			for cusIncAddr, matchCusDetail := range redeemReq.Custodians {
 				// calculate minted collateral amount
 				mintedAmount := matchCusDetail.Amount * common.PercentReceivedCollateralAmount / 100
@@ -82,6 +94,7 @@ func checkAndBuildInstForCustodianLiquidation(
 					redeemReq.RedeemerAddress,
 					cusIncAddr,
 					metadata.PortalLiquidateCustodianMeta,
+					shardID,
 					"",
 				)
 				insts = append(insts, inst)

@@ -36,6 +36,7 @@ type PortalLiquidateCustodianContent struct {
 	MintedCollateralAmount uint64 // minted PRV amount for sending back to users
 	RedeemerIncAddressStr  string
 	CustodianIncAddressStr string
+	ShardID                byte
 }
 
 //// PortalRedeemRequestStatus - Beacon tracks status of redeem request into db
