@@ -20,3 +20,7 @@ func buildCustodianRunAwayLiquidationInst(
 	//	string(custodianDepositContentBytes),
 	//}
 }
+
+func buildMinAspectRatioCollateralLiquidationInst()  []string {
+	return []string{}
+}
