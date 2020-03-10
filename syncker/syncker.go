@@ -1,11 +1,13 @@
 package syncker
 
 import (
+	"errors"
 	"fmt"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/wire"
-	"time"
 )
 
 type SynckerManagerConfig struct {
@@ -239,6 +241,46 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 		}
 	}
 	return res
+}
+
+//Get S2B Block for validating beacon block
+func (synckerManager *SynckerManager) GetS2BBlocksForBeaconValidator(list map[byte][]common.Hash) (map[byte][]interface{}, error) {
+	s2bPoolLists := synckerManager.GetS2BBlocksForBeaconProducer()
+
+	missingBlocks := compareLists(s2bPoolLists, list)
+	// synckerManager.config.Server.
+	if len(missingBlocks) > 0 {
+		ticker := time.NewTicker(5 * time.Second)
+		<-ticker.C
+
+		s2bPoolLists = synckerManager.GetS2BBlocksForBeaconProducer()
+		missingBlocks = compareLists(s2bPoolLists, list)
+		if len(missingBlocks) > 0 {
+			return nil, errors.New("Unable to sync required block in time")
+		}
+	}
+
+	return s2bPoolLists, nil
+}
+
+//Get Crossshard Block for validating shardblock block
+func (synckerManager *SynckerManager) GetCrossShardBlocksForShardValidator(toShard byte, list map[byte][]common.Hash) (map[byte][]interface{}, error) {
+	crossShardPoolLists := synckerManager.GetCrossShardBlocksForShardProducer(toShard)
+
+	missingBlocks := compareLists(crossShardPoolLists, list)
+	// synckerManager.config.Server.
+	if len(missingBlocks) > 0 {
+		ticker := time.NewTicker(5 * time.Second)
+		<-ticker.C
+
+		crossShardPoolLists = synckerManager.GetCrossShardBlocksForShardProducer(toShard)
+		missingBlocks = compareLists(crossShardPoolLists, list)
+		if len(missingBlocks) > 0 {
+			return nil, errors.New("Unable to sync required block in time")
+		}
+	}
+
+	return crossShardPoolLists, nil
 }
 
 //Get Status Function

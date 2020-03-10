@@ -11,6 +11,8 @@ import (
 type Syncker interface {
 	GetS2BBlocksForBeaconProducer() map[byte][]interface{}
 	GetCrossShardBlocksForShardProducer(toShard byte) map[byte][]interface{}
+	GetS2BBlocksForBeaconValidator(list map[byte][]common.Hash) (map[byte][]interface{}, error)
+	GetCrossShardBlocksForShardValidator(toShard byte, list map[byte][]common.Hash) (map[byte][]interface{}, error)
 }
 
 type BlockGenerator struct {

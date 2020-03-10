@@ -3,8 +3,9 @@ package syncker
 import (
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
 	"reflect"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 const RUNNING_SYNC = "running_sync"
@@ -123,4 +124,28 @@ func GetLongestChain(currentFinalHash string, byHash map[string]common.BlockPool
 		}
 	}
 	return res
+}
+
+func compareLists(poolList map[byte][]interface{}, hashList map[byte][]common.Hash) (diffHashes map[byte][]common.Hash) {
+	diffHashes = make(map[byte][]common.Hash)
+	poolListsHash := make(map[byte][]common.Hash)
+	for shardID, blkList := range poolList {
+		for _, blk := range blkList {
+			blkHash := blk.(common.BlockPoolInterface).Hash()
+			poolListsHash[shardID] = append(poolListsHash[shardID], *blkHash)
+		}
+	}
+
+	for shardID, blockHashes := range hashList {
+		if blockList, ok := poolListsHash[shardID]; ok {
+			for _, blockHash := range blockHashes {
+				if exist, _ := common.SliceExists(blockList, blockHash); !exist {
+					diffHashes[shardID] = append(diffHashes[shardID], blockHash)
+				}
+			}
+		} else {
+			diffHashes[shardID] = blockHashes
+		}
+	}
+	return diffHashes
 }

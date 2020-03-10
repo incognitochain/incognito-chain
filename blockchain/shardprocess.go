@@ -476,21 +476,30 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock
 	// Verify Cross Shard Output Coin and Custom Token Transaction
 	toShard := shardID
 	var toShardAllCrossShardBlock = make(map[byte][]*CrossShardBlock)
-	for sid, v := range blockchain.config.Syncker.GetCrossShardBlocksForShardProducer(toShard) {
+
+	// blockchain.config.Syncker.GetCrossShardBlocksForShardValidator(toShard, list map[byte]common.Hash) map[byte][]interface{}
+	crossShardRequired := make(map[byte][]common.Hash)
+	for fromShard, crossTransactions := range shardBlock.Body.CrossTransactions {
+		for _, crossTransaction := range crossTransactions {
+			crossShardRequired[fromShard] = append(crossShardRequired[fromShard], crossTransaction.BlockHash)
+		}
+	}
+	crossShardBlksFromPool, err := blockchain.config.Syncker.GetCrossShardBlocksForShardValidator(toShard, crossShardRequired)
+	if err != nil {
+		return NewBlockChainError(CrossShardBlockError, fmt.Errorf("Unable to get required crossShard blocks from pool in time"))
+	}
+	for sid, v := range crossShardBlksFromPool {
 		for _, b := range v {
 			toShardAllCrossShardBlock[sid] = append(toShardAllCrossShardBlock[sid], b.(*CrossShardBlock))
 		}
 	}
 	for fromShard, crossTransactions := range shardBlock.Body.CrossTransactions {
-		toShardCrossShardBlocks, ok := toShardAllCrossShardBlock[fromShard]
-		if !ok {
-			heights := []uint64{}
-			for _, crossTransaction := range crossTransactions {
-				heights = append(heights, crossTransaction.BlockHeight)
-			}
-			//blockchain.Synker.SyncBlkCrossShard(false, false, []common.Hash{}, heights, fromShard, shardID, "")
-			return NewBlockChainError(CrossShardBlockError, fmt.Errorf("Cross Shard Block From Shard %+v Not Found in Pool", fromShard))
-		}
+		toShardCrossShardBlocks := toShardAllCrossShardBlock[fromShard]
+		// if !ok {
+
+		// 	//blockchain.Synker.SyncBlkCrossShard(false, false, []common.Hash{}, heights, fromShard, shardID, "")
+		// 	return NewBlockChainError(CrossShardBlockError, fmt.Errorf("Cross Shard Block From Shard %+v Not Found in Pool", fromShard))
+		// }
 		sort.SliceStable(toShardCrossShardBlocks[:], func(i, j int) bool {
 			return toShardCrossShardBlocks[i].Header.Height < toShardCrossShardBlocks[j].Header.Height
 		})

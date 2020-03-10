@@ -380,18 +380,26 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 		}
 	}
 	// get shard to beacon blocks from pool
+	s2bRequired := make(map[byte][]common.Hash)
+	var keys []int
+	for k, shardstates := range beaconBlock.Body.ShardState {
+		keys = append(keys, int(k))
+		for _, state := range shardstates {
+			s2bRequired[k] = append(s2bRequired[k], state.Hash)
+		}
+	}
+	sort.Ints(keys)
+
 	var allShardBlocks = make(map[byte][]*ShardToBeaconBlock)
-	for sid, v := range blockchain.config.Syncker.GetS2BBlocksForBeaconProducer() {
+	s2bBlocksFromPool, err := blockchain.config.Syncker.GetS2BBlocksForBeaconValidator(s2bRequired)
+	if err != nil {
+		return NewBlockChainError(GetShardToBeaconBlocksError, fmt.Errorf("Unable to get required s2bBlocks from pool in time"))
+	}
+	for sid, v := range s2bBlocksFromPool {
 		for _, b := range v {
 			allShardBlocks[sid] = append(allShardBlocks[sid], b.(*ShardToBeaconBlock))
 		}
 	}
-
-	var keys []int
-	for k := range beaconBlock.Body.ShardState {
-		keys = append(keys, int(k))
-	}
-	sort.Ints(keys)
 
 	for _, value := range keys {
 		shardID := byte(value)
