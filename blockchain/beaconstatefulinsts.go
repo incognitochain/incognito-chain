@@ -783,9 +783,14 @@ func (blockchain *BlockChain) handleRelayingInsts(
 func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
 	beaconHeight uint64, currentPortalState *CurrentPortalState) ([][]string, error) {
 
-	// case 1: check there is any custodian doesn't send public tokens back to user after PortalTimeOutSendPubTokenBack
+	// case 1: check there is any custodian doesn't send public tokens back to user after PortalTimeOutCustodianSendPubTokenBack
 	// get custodian's collateral to return user
-	// todo
+
+	for _, redeemReq := range currentPortalState.WaitingRedeemRequests {
+		if beaconHeight - redeemReq.BeaconHeight >= common.PortalTimeOutCustodianSendPubTokenBack {
+
+		}
+	}
 	buildCustodianRunAwayLiquidationInst()
 
 

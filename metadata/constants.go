@@ -54,6 +54,7 @@ const (
 	PortalRequestUnlockCollateralResponseMeta = 109
 	PortalCustodianWithdrawRequestMeta        = 110
 	PortalCustodianWithdrawResponseMeta       = 111
+	PortalLiquidateCustodianMeta                   = 112
 
 
 	// relaying
