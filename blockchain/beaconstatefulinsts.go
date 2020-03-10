@@ -240,7 +240,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		portalRedeemReqActionsByShardID,
 		portalCustodianWithdrawActionsByShardID,
 		portalReqUnlockCollateralActionsByShardID,
-		)
+	)
 
 	if err != nil {
 		Logger.log.Error(err)
@@ -456,7 +456,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 	portalUserRequestPortingActionsByShardID map[byte][][]string,
 	portalUserRequestPTokenActionsByShardID map[byte][][]string,
 	portalExchangeRatesActionsByShardID map[byte][][]string,
-	portalRedeemReqActionsByShardID  map[byte][][]string,
+	portalRedeemReqActionsByShardID map[byte][][]string,
 	portalCustodianWithdrawActionByShardID map[byte][][]string,
 	portalReqUnlockCollateralActionsByShardID map[byte][][]string,
 ) ([][]string, error) {
@@ -480,7 +480,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 				metadata.PortalCustodianDepositMeta,
 				currentPortalState,
 				beaconHeight,
-				)
+			)
 
 			if err != nil {
 				Logger.log.Error(err)
@@ -613,7 +613,6 @@ func (blockchain *BlockChain) handlePortalInsts(
 		}
 	}
 
-
 	//handle portal custodian withdraw
 	var portalCustodianWithdrawShardIDKeys []int
 	for k := range portalCustodianWithdrawActionByShardID {
@@ -678,9 +677,6 @@ func (blockchain *BlockChain) handlePortalInsts(
 	return instructions, nil
 }
 
-
-
-
 // Header relaying
 func groupRelayingActionsByShardID(
 	relayingActionsByShardID map[byte][][]string,
@@ -696,8 +692,8 @@ func groupRelayingActionsByShardID(
 	return relayingActionsByShardID
 }
 
-func sortBNBHeaderRelayingInstsByBlockHeight(bnbHeaderRelayingActions [][]string)(
-	map[uint64][]metadata.RelayingBNBHeaderAction, []uint64, error){
+func sortBNBHeaderRelayingInstsByBlockHeight(bnbHeaderRelayingActions [][]string) (
+	map[uint64][]metadata.RelayingBNBHeaderAction, []uint64, error) {
 	// sort push header relaying inst
 	actionsGroupByBlockHeight := make(map[uint64][]metadata.RelayingBNBHeaderAction)
 
@@ -726,7 +722,7 @@ func sortBNBHeaderRelayingInstsByBlockHeight(bnbHeaderRelayingActions [][]string
 		// add to actionsGroupByBlockHeight
 		if actionsGroupByBlockHeight[blockHeight] != nil {
 			actionsGroupByBlockHeight[blockHeight] = append(actionsGroupByBlockHeight[blockHeight], action)
-		} else{
+		} else {
 			actionsGroupByBlockHeight[blockHeight] = []metadata.RelayingBNBHeaderAction{action}
 		}
 	}
@@ -783,16 +779,17 @@ func (blockchain *BlockChain) handleRelayingInsts(
 func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
 	beaconHeight uint64, currentPortalState *CurrentPortalState) ([][]string, error) {
 
+	insts := [][]string{}
+
 	// case 1: check there is any custodian doesn't send public tokens back to user after PortalTimeOutCustodianSendPubTokenBack
 	// get custodian's collateral to return user
-
-	for _, redeemReq := range currentPortalState.WaitingRedeemRequests {
-		if beaconHeight - redeemReq.BeaconHeight >= common.PortalTimeOutCustodianSendPubTokenBack {
-
-		}
+	custodianLiqInsts, err := checkAndBuildInstForCustodianLiquidation(beaconHeight, currentPortalState)
+	if err != nil {
+		Logger.log.Errorf("Error when check and build custodian liquidation %v\n", err)
 	}
-	buildCustodianRunAwayLiquidationInst()
-
+	if len(custodianLiqInsts) > 9 {
+		insts = append(insts, custodianLiqInsts...)
+	}
 
 	// case 2: check collateral's value (locked collateral amount) drops below MinRatio
 	buildMinAspectRatioCollateralLiquidationInst()

@@ -188,6 +188,7 @@ const (
 
 const (
 	PortalTimeOutCustodianSendPubTokenBack = 2160 // beacon blocks ~ 24 hours
+	PercentReceivedCollateralAmount = 120 // users will be receive 120% of redeem amount in PRV
 
 	MinRatio = 120 // 120% - minimum ratio between collateral's value and holding public tokens' value
 )

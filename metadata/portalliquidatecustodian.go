@@ -13,6 +13,7 @@ type PortalLiquidateCustodian struct {
 	UniqueRedeemID         string
 	TokenID                string // pTokenID in incognito chain
 	RedeemPubTokenAmount   uint64
+	MintedCollateralAmount uint64 // minted PRV amount for sending back to users
 	RedeemerIncAddressStr  string
 	CustodianIncAddressStr string
 }
@@ -32,9 +33,9 @@ type PortalLiquidateCustodianContent struct {
 	UniqueRedeemID         string
 	TokenID                string // pTokenID in incognito chain
 	RedeemPubTokenAmount   uint64
+	MintedCollateralAmount uint64 // minted PRV amount for sending back to users
 	RedeemerIncAddressStr  string
 	CustodianIncAddressStr string
-	ShardID                byte
 }
 
 //// PortalRedeemRequestStatus - Beacon tracks status of redeem request into db
@@ -55,6 +56,7 @@ func NewPortalLiquidateCustodian(
 	uniqueRedeemID string,
 	tokenID string,
 	redeemAmount uint64,
+	mintedCollateralAmount uint64,
 	redeemerIncAddressStr string,
 	custodianIncAddressStr string) (*PortalLiquidateCustodian, error) {
 	metadataBase := MetadataBase{
@@ -64,6 +66,7 @@ func NewPortalLiquidateCustodian(
 		UniqueRedeemID:         uniqueRedeemID,
 		TokenID:                tokenID,
 		RedeemPubTokenAmount:   redeemAmount,
+		MintedCollateralAmount: mintedCollateralAmount,
 		RedeemerIncAddressStr:  redeemerIncAddressStr,
 		CustodianIncAddressStr: custodianIncAddressStr,
 	}
@@ -159,6 +162,7 @@ func (liqCustodian PortalLiquidateCustodian) Hash() *common.Hash {
 	record += liqCustodian.UniqueRedeemID
 	record += liqCustodian.TokenID
 	record += strconv.FormatUint(liqCustodian.RedeemPubTokenAmount, 10)
+	record += strconv.FormatUint(liqCustodian.MintedCollateralAmount, 10)
 	record += liqCustodian.RedeemerIncAddressStr
 	record += liqCustodian.CustodianIncAddressStr
 	// final hash
