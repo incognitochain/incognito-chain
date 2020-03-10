@@ -795,6 +795,7 @@ func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
 
 
 	// case 2: check collateral's value (locked collateral amount) drops below MinRatio
+	buildMinAspectRatioCollateralLiquidationInst()
 	return [][]string{}, nil
 
 }
