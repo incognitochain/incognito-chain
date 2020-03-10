@@ -84,7 +84,7 @@ func TestEncodeVectors(t *testing.T) {
 
 		actualRes, err := encodeVectors(a, b, G, H)
 		if err != nil {
-			fmt.Println("Err: %v\n", err)
+			fmt.Printf("Err: %v\n", err)
 		}
 
 		expectedRes := new(operation.Point).Identity()
@@ -228,7 +228,7 @@ func TestAggregatedRangeProveVerifyBatch(t *testing.T) {
 }
 
 func TestBenchmarkAggregatedRangeProveVerifyUltraFast(t *testing.T) {
-	for k := 1; k < 100; k += 10 {
+	for k := 1; k < 20; k += 1 {
 		count := k
 		proofs := make([]*AggregatedRangeProof, 0)
 		start := time.Now()
@@ -237,7 +237,7 @@ func TestBenchmarkAggregatedRangeProveVerifyUltraFast(t *testing.T) {
 			//prepare witness for Aggregated range protocol
 			wit := new(AggregatedRangeWitness)
 			//numValue := rand.Intn(maxOutputNumber)
-			numValue := 2
+			numValue := 8
 			values := make([]uint64, numValue)
 			rands := make([]*operation.Scalar, numValue)
 
@@ -259,7 +259,7 @@ func TestBenchmarkAggregatedRangeProveVerifyUltraFast(t *testing.T) {
 		// verify the proof faster
 		start = time.Now()
 		res, err, _ := VerifyBatch(proofs)
-		fmt.Println(t1, time.Now().Sub(start), k)
+		fmt.Println(k+1, t1.Seconds(), time.Now().Sub(start).Seconds())
 
 		assert.Equal(t, true, res)
 		assert.Equal(t, nil, err)
