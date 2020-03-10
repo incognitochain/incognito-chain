@@ -991,18 +991,18 @@ func (txService TxService) RandomCommitments(paymentAddressStr string, outputs [
 	return commitmentIndexs, myCommitmentIndexs, commitments, nil
 }
 
-func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData string) (wire.Message, *transaction.TxCustomTokenPrivacy, error) {
+func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData string) (wire.Message, *transaction.TxCustomTokenPrivacy, *RPCError) {
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
 	if err != nil {
 		Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction result: %+v, err: %+v", nil, err)
-		return nil, nil, err
+		return nil, nil, NewRPCError(RPCInvalidParamsError, err)
 	}
 
 	tx := transaction.TxCustomTokenPrivacy{}
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
 		Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction result: %+v, err: %+v", nil, err)
-		return nil, nil, err
+		return nil, nil, NewRPCError(RPCInvalidParamsError, err)
 	}
 
 	beaconHeigh := int64(-1)
@@ -1062,7 +1062,7 @@ func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData 
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
 	if err != nil {
 		Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction result: %+v, err: %+v", nil, err)
-		return nil, nil, err
+		return nil, nil, NewRPCError(UnexpectedError, err)
 	}
 
 	txMsg.(*wire.MessageTxPrivacyToken).Transaction = &tx
