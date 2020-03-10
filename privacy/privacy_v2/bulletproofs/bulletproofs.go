@@ -4,7 +4,6 @@ import (
 	"math"
 
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/privacy/pedersen"
 	"github.com/pkg/errors"
 )
 
@@ -211,7 +210,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 
 	proof.cmsValue = make([]*operation.Point, numValue)
 	for i := 0; i < numValue; i++ {
-		proof.cmsValue[i] = pedersen.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(values[i]), rands[i], pedersen.PedersenValueIndex)
+		proof.cmsValue[i] = operation.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(values[i]), rands[i], operation.PedersenValueIndex)
 	}
 	// Convert values to binary array
 	aL := make([]*operation.Scalar, N)
@@ -239,8 +238,8 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	} else {
 		alpha = operation.RandomScalar()
 		rho = operation.RandomScalar()
-		A.Add(A, new(operation.Point).ScalarMult(pedersen.PedCom.G[pedersen.PedersenRandomnessIndex], alpha))
-		S.Add(S, new(operation.Point).ScalarMult(pedersen.PedCom.G[pedersen.PedersenRandomnessIndex], rho))
+		A.Add(A, new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenRandomnessIndex], alpha))
+		S.Add(S, new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenRandomnessIndex], rho))
 		proof.a = A
 		proof.s = S
 	}
@@ -298,8 +297,8 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	// commitment to t1, t2
 	tau1 := operation.RandomScalar()
 	tau2 := operation.RandomScalar()
-	proof.t1 = pedersen.PedCom.CommitAtIndex(t1, tau1, pedersen.PedersenValueIndex)
-	proof.t2 = pedersen.PedCom.CommitAtIndex(t2, tau2, pedersen.PedersenValueIndex)
+	proof.t1 = operation.PedCom.CommitAtIndex(t1, tau1, operation.PedersenValueIndex)
+	proof.t2 = operation.PedCom.CommitAtIndex(t2, tau2, operation.PedersenValueIndex)
 
 	x := generateChallenge(z.ToBytesS(), []*operation.Point{proof.t1, proof.t2})
 	xSquare := new(operation.Scalar).Mul(x, x)
@@ -393,9 +392,9 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 		return false, err
 	}
 
-	LHS := pedersen.PedCom.CommitAtIndex(proof.tHat, proof.tauX, pedersen.PedersenValueIndex)
+	LHS := operation.PedCom.CommitAtIndex(proof.tHat, proof.tauX, operation.PedersenValueIndex)
 	RHS := new(operation.Point).ScalarMult(proof.t2, xSquare)
-	RHS.Add(RHS, new(operation.Point).AddPedersen(deltaYZ, pedersen.PedCom.G[pedersen.PedersenValueIndex], x, proof.t1))
+	RHS.Add(RHS, new(operation.Point).AddPedersen(deltaYZ, operation.PedCom.G[operation.PedersenValueIndex], x, proof.t1))
 
 	expVector := vectorMulScalar(powerVector(z, numValuePad), zSquare)
 	RHS.Add(RHS, new(operation.Point).MultiScalarMult(expVector, cmsValue))
@@ -444,9 +443,9 @@ func (proof AggregatedRangeProof) VerifyFaster() (bool, error) {
 	}
 
 	// Verify the first argument
-	LHS := pedersen.PedCom.CommitAtIndex(proof.tHat, proof.tauX, pedersen.PedersenValueIndex)
+	LHS := operation.PedCom.CommitAtIndex(proof.tHat, proof.tauX, operation.PedersenValueIndex)
 	RHS := new(operation.Point).ScalarMult(proof.t2, xSquare)
-	RHS.Add(RHS, new(operation.Point).AddPedersen(deltaYZ, pedersen.PedCom.G[pedersen.PedersenValueIndex], x, proof.t1))
+	RHS.Add(RHS, new(operation.Point).AddPedersen(deltaYZ, operation.PedCom.G[operation.PedersenValueIndex], x, proof.t1))
 	expVector := vectorMulScalar(powerVector(z, numValuePad), zSquare)
 	RHS.Add(RHS, new(operation.Point).MultiScalarMult(expVector, cmsValue))
 	if !operation.IsPointEqual(LHS, RHS) {
@@ -510,8 +509,8 @@ func (proof AggregatedRangeProof) VerifyFaster() (bool, error) {
 }
 
 func VerifyBatch(proofs []*AggregatedRangeProof) (bool, error, int) {
-	baseG := pedersen.PedCom.G[pedersen.PedersenValueIndex]
-	baseH := pedersen.PedCom.G[pedersen.PedersenRandomnessIndex]
+	baseG := operation.PedCom.G[operation.PedersenValueIndex]
+	baseH := operation.PedCom.G[operation.PedersenRandomnessIndex]
 
 	sum_tHat := new(operation.Scalar).FromUint64(0)
 	sum_tauX := new(operation.Scalar).FromUint64(0)

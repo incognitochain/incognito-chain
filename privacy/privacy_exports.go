@@ -6,7 +6,6 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	C25519 "github.com/incognitochain/incognito-chain/privacy/operation/curve25519"
-	"github.com/incognitochain/incognito-chain/privacy/pedersen"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 )
 
@@ -18,14 +17,14 @@ const (
 	CommitmentRingSize    = privacy_util.CommitmentRingSize
 	CommitmentRingSizeExp = privacy_util.CommitmentRingSizeExp
 
-	PedersenSndIndex        = pedersen.PedersenSndIndex
-	PedersenValueIndex      = pedersen.PedersenValueIndex
-	PedersenShardIDIndex    = pedersen.PedersenShardIDIndex
-	PedersenPrivateKeyIndex = pedersen.PedersenPrivateKeyIndex
-	PedersenRandomnessIndex = pedersen.PedersenRandomnessIndex
+	PedersenSndIndex        = operation.PedersenSndIndex
+	PedersenValueIndex      = operation.PedersenValueIndex
+	PedersenShardIDIndex    = operation.PedersenShardIDIndex
+	PedersenPrivateKeyIndex = operation.PedersenPrivateKeyIndex
+	PedersenRandomnessIndex = operation.PedersenRandomnessIndex
 )
 
-var PedCom = pedersen.PedCom
+var PedCom = operation.PedCom
 
 const (
 	MaxSizeInfoCoin = coin.MaxSizeInfoCoin // byte

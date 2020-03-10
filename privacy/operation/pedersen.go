@@ -1,9 +1,19 @@
-package pedersen
+package operation
 
 import (
-	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/pkg/errors"
 )
+
+const (
+	PedersenPrivateKeyIndex = byte(0x00)
+	PedersenValueIndex      = byte(0x01)
+	PedersenSndIndex        = byte(0x02)
+	PedersenShardIDIndex    = byte(0x03)
+	PedersenRandomnessIndex = byte(0x04)
+)
+
+var PedCom PedersenCommitment = NewPedersenParams()
+
 
 // PedersenCommitment represents the parameters for the commitment
 type PedersenCommitment struct {
@@ -22,7 +32,7 @@ func NewPedersenParams() PedersenCommitment {
 	pcm.G[0] = new(Point).ScalarMultBase(new(Scalar).FromUint64(1))
 
 	for i := 1; i < len(pcm.G); i++ {
-		pcm.G[i] = operation.HashToPointFromIndex(int64(i), operation.CStringBulletProof)
+		pcm.G[i] = HashToPointFromIndex(int64(i), CStringBulletProof)
 	}
 	return pcm
 }

@@ -5,7 +5,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/privacy/pedersen"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 )
 
@@ -260,10 +259,10 @@ func (wit SNPrivacyWitness) Prove(mess []byte) (*SNPrivacyProof, error) {
 	dSND := operation.RandomScalar()
 
 	// calculate tSeed = g_SK^eSK * h^dSK
-	tSeed := pedersen.PedCom.CommitAtIndex(eSK, dSK, pedersen.PedersenPrivateKeyIndex)
+	tSeed := operation.PedCom.CommitAtIndex(eSK, dSK, operation.PedersenPrivateKeyIndex)
 
 	// calculate tSND = g_SND^eSND * h^dSND
-	tInput := pedersen.PedCom.CommitAtIndex(eSND, dSND, pedersen.PedersenSndIndex)
+	tInput := operation.PedCom.CommitAtIndex(eSND, dSND, operation.PedersenSndIndex)
 
 	// calculate tSND = g_SK^eSND * h^dSND2
 	tOutput := new(operation.Point).ScalarMult(wit.stmt.sn, new(operation.Scalar).Add(eSK, eSND))
@@ -317,7 +316,7 @@ func (proof SNPrivacyProof) Verify(mess []byte) (bool, error) {
 	}
 
 	// Check gSND^zInput * h^zRInput = input^x * tInput
-	leftPoint1 := pedersen.PedCom.CommitAtIndex(proof.zInput, proof.zRInput, pedersen.PedersenSndIndex)
+	leftPoint1 := operation.PedCom.CommitAtIndex(proof.zInput, proof.zRInput, operation.PedersenSndIndex)
 
 	rightPoint1 := new(operation.Point).ScalarMult(proof.stmt.comInput, x)
 	rightPoint1.Add(rightPoint1, proof.tInput)
@@ -328,7 +327,7 @@ func (proof SNPrivacyProof) Verify(mess []byte) (bool, error) {
 	}
 
 	// Check gSK^zSeed * h^zRSeed = vKey^x * tSeed
-	leftPoint2 := pedersen.PedCom.CommitAtIndex(proof.zSK, proof.zRSK, pedersen.PedersenPrivateKeyIndex)
+	leftPoint2 := operation.PedCom.CommitAtIndex(proof.zSK, proof.zRSK, operation.PedersenPrivateKeyIndex)
 
 	rightPoint2 := new(operation.Point).ScalarMult(proof.stmt.comSK, x)
 	rightPoint2.Add(rightPoint2, proof.tSK)
@@ -341,7 +340,7 @@ func (proof SNPrivacyProof) Verify(mess []byte) (bool, error) {
 	// Check sn^(zSeed + zInput) = gSK^x * tOutput
 	leftPoint3 := new(operation.Point).ScalarMult(proof.stmt.sn, new(operation.Scalar).Add(proof.zSK, proof.zInput))
 
-	rightPoint3 := new(operation.Point).ScalarMult(pedersen.PedCom.G[pedersen.PedersenPrivateKeyIndex], x)
+	rightPoint3 := new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenPrivateKeyIndex], x)
 	rightPoint3.Add(rightPoint3, proof.tSN)
 
 	if !operation.IsPointEqual(leftPoint3, rightPoint3) {

@@ -9,7 +9,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/privacy/pedersen"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 	"github.com/stretchr/testify/assert"
@@ -43,12 +42,12 @@ func TestPKOneOfMany(t *testing.T) {
 		for i := 0; i < privacy_util.CommitmentRingSize; i++ {
 			values[i] = operation.RandomScalar()
 			randoms[i] = operation.RandomScalar()
-			commitments[i] = pedersen.PedCom.CommitAtIndex(values[i], randoms[i], pedersen.PedersenSndIndex)
+			commitments[i] = operation.PedCom.CommitAtIndex(values[i], randoms[i], operation.PedersenSndIndex)
 		}
 
 		// create Commitment to zero at indexIsZero
 		values[indexIsZero] = new(operation.Scalar).FromUint64(0)
-		commitments[indexIsZero] = pedersen.PedCom.CommitAtIndex(values[indexIsZero], randoms[indexIsZero], pedersen.PedersenSndIndex)
+		commitments[indexIsZero] = operation.PedCom.CommitAtIndex(values[indexIsZero], randoms[indexIsZero], operation.PedersenSndIndex)
 
 		witness.Set(commitments, randoms[indexIsZero], uint64(indexIsZero))
 		start := time.Now()

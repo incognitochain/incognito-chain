@@ -4,7 +4,6 @@ import (
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/privacy/pedersen"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/oneoutofmany/polynomial"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
@@ -305,15 +304,15 @@ func (wit OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 
 		// Calculate cl, ca, cb, cd
 		// cl = Com(l, r)
-		cl[j] = pedersen.PedCom.CommitAtIndex(indexInt, r[j], pedersen.PedersenPrivateKeyIndex)
+		cl[j] = operation.PedCom.CommitAtIndex(indexInt, r[j], operation.PedersenPrivateKeyIndex)
 
 		// ca = Com(a, s)
-		ca[j] = pedersen.PedCom.CommitAtIndex(a[j], s[j], pedersen.PedersenPrivateKeyIndex)
+		ca[j] = operation.PedCom.CommitAtIndex(a[j], s[j], operation.PedersenPrivateKeyIndex)
 
 		// cb = Com(la, t)
 		la := new(operation.Scalar).Mul(indexInt, a[j])
 		//la.Mod(la, operation.Curve.Params().N)
-		cb[j] = pedersen.PedCom.CommitAtIndex(la, t[j], pedersen.PedersenPrivateKeyIndex)
+		cb[j] = operation.PedCom.CommitAtIndex(la, t[j], operation.PedersenPrivateKeyIndex)
 	}
 
 	// Calculate: cd_k = ci^pi,k
@@ -327,7 +326,7 @@ func (wit OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 			cd[k].Add(cd[k], new(operation.Point).ScalarMult(wit.stmt.Commitments[i], pik))
 		}
 
-		cd[k].Add(cd[k], pedersen.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(0), u[k], pedersen.PedersenPrivateKeyIndex))
+		cd[k].Add(cd[k], operation.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(0), u[k], operation.PedersenPrivateKeyIndex))
 	}
 
 	// Calculate x
@@ -402,7 +401,7 @@ func (proof OneOutOfManyProof) Verify() (bool, error) {
 		leftPoint1 := new(operation.Point).ScalarMult(proof.cl[i], x)
 		leftPoint1.Add(leftPoint1, proof.ca[i])
 
-		rightPoint1 := pedersen.PedCom.CommitAtIndex(proof.f[i], proof.za[i], pedersen.PedersenPrivateKeyIndex)
+		rightPoint1 := operation.PedCom.CommitAtIndex(proof.f[i], proof.za[i], operation.PedersenPrivateKeyIndex)
 
 		if !operation.IsPointEqual(leftPoint1, rightPoint1) {
 			Logger.Log.Errorf("verify one out of many proof statement 1 failed")
@@ -414,7 +413,7 @@ func (proof OneOutOfManyProof) Verify() (bool, error) {
 
 		leftPoint2 := new(operation.Point).ScalarMult(proof.cl[i], xSubF)
 		leftPoint2.Add(leftPoint2, proof.cb[i])
-		rightPoint2 := pedersen.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(0), proof.zb[i], pedersen.PedersenPrivateKeyIndex)
+		rightPoint2 := operation.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(0), proof.zb[i], operation.PedersenPrivateKeyIndex)
 
 		if !operation.IsPointEqual(leftPoint2, rightPoint2) {
 			Logger.Log.Errorf("verify one out of many proof statement 2 failed")
@@ -452,7 +451,7 @@ func (proof OneOutOfManyProof) Verify() (bool, error) {
 
 	leftPoint3.Add(leftPoint3, leftPoint32)
 
-	rightPoint3 := pedersen.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(0), proof.zd, pedersen.PedersenPrivateKeyIndex)
+	rightPoint3 := operation.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(0), proof.zd, operation.PedersenPrivateKeyIndex)
 
 	if !operation.IsPointEqual(leftPoint3, rightPoint3) {
 		Logger.Log.Errorf("verify one out of many proof statement 3 failed")

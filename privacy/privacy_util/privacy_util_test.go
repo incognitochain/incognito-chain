@@ -7,7 +7,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/privacy/pedersen"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -135,18 +134,18 @@ func TestFee(t *testing.T) {
 	fmt.Printf("Fee uint64: %v\n", uint64(fee))
 	fmt.Printf("outValue2: %v\n", outValue2)
 
-	comInputValueSum := new(operation.Point).ScalarMult(pedersen.PedCom.G[pedersen.PedersenValueIndex], new(operation.Scalar).FromUint64(uint64(inValue)))
+	comInputValueSum := new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenValueIndex], new(operation.Scalar).FromUint64(uint64(inValue)))
 
-	comOutputValue1 := new(operation.Point).ScalarMult(pedersen.PedCom.G[pedersen.PedersenValueIndex], new(operation.Scalar).FromUint64(uint64(outValue1)))
+	comOutputValue1 := new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenValueIndex], new(operation.Scalar).FromUint64(uint64(outValue1)))
 
-	comOutputValue2 := new(operation.Point).ScalarMult(pedersen.PedCom.G[pedersen.PedersenValueIndex], new(operation.Scalar).FromUint64(uint64(outValue2)))
+	comOutputValue2 := new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenValueIndex], new(operation.Scalar).FromUint64(uint64(outValue2)))
 
 	comOutputValueSum := new(operation.Point).Add(comOutputValue1, comOutputValue2)
 
 	comFee := new(operation.Point)
 	if fee2 > 0 {
 		fmt.Printf("fee2 > 0\n")
-		comFee = comFee.ScalarMult(pedersen.PedCom.G[pedersen.PedersenValueIndex], new(operation.Scalar).FromUint64(uint64(fee2)))
+		comFee = comFee.ScalarMult(operation.PedCom.G[operation.PedersenValueIndex], new(operation.Scalar).FromUint64(uint64(fee2)))
 	}
 
 	tmp1 := new(operation.Point).Add(comOutputValueSum, comFee)

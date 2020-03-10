@@ -5,7 +5,6 @@ import (
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/privacy/pedersen"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/onetime_address/address"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/onetime_address/utxo"
 )
@@ -102,7 +101,7 @@ func ParseCommitment(blind *operation.Scalar, money *operation.Scalar) *operatio
 	blindHalf := new(operation.Point).ScalarMultBase(blind)
 
 	// Get value pedersen H in privacy library
-	H := pedersen.PedCom.G[pedersen.PedersenValueIndex]
+	H := operation.PedCom.G[operation.PedersenValueIndex]
 	moneyHalf := new(operation.Point).ScalarMult(H, money)
 
 	return new(operation.Point).Add(blindHalf, moneyHalf)

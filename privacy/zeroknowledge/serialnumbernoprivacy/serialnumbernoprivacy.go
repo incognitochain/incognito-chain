@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/privacy/pedersen"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 )
 
@@ -191,7 +190,7 @@ func (wit SNNoPrivacyWitness) Prove(mess []byte) (*SNNoPrivacyProof, error) {
 	eSK := operation.RandomScalar()
 
 	// calculate tSeed = g_SK^eSK
-	tSK := new(operation.Point).ScalarMult(pedersen.PedCom.G[pedersen.PedersenPrivateKeyIndex], eSK)
+	tSK := new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenPrivateKeyIndex], eSK)
 
 	// calculate tOutput = sn^eSK
 	tE := new(operation.Point).ScalarMult(wit.stmt.output, eSK)
@@ -225,7 +224,7 @@ func (pro SNNoPrivacyProof) Verify(mess []byte) (bool, error) {
 	}
 
 	// Check gSK^zSeed = vKey^x * tSeed
-	leftPoint1 := new(operation.Point).ScalarMult(pedersen.PedCom.G[pedersen.PedersenPrivateKeyIndex], pro.zSeed)
+	leftPoint1 := new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenPrivateKeyIndex], pro.zSeed)
 
 	rightPoint1 := new(operation.Point).ScalarMult(pro.stmt.vKey, x)
 	rightPoint1 = rightPoint1.Add(rightPoint1, pro.tSeed)
@@ -239,7 +238,7 @@ func (pro SNNoPrivacyProof) Verify(mess []byte) (bool, error) {
 	tmp := new(operation.Scalar).Add(pro.zSeed, new(operation.Scalar).Mul(x, pro.stmt.input))
 	leftPoint2 := new(operation.Point).ScalarMult(pro.stmt.output, tmp)
 
-	rightPoint2 := new(operation.Point).ScalarMult(pedersen.PedCom.G[pedersen.PedersenPrivateKeyIndex], x)
+	rightPoint2 := new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenPrivateKeyIndex], x)
 	rightPoint2 = rightPoint2.Add(rightPoint2, pro.tOutput)
 
 	if !operation.IsPointEqual(leftPoint2, rightPoint2) {

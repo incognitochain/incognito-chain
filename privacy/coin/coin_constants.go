@@ -1,14 +1,14 @@
 package coin
 
-import "github.com/incognitochain/incognito-chain/privacy/pedersen"
+import "github.com/incognitochain/incognito-chain/privacy/operation"
 
 const (
 	MaxSizeInfoCoin         = 255
-	PedersenPrivateKeyIndex = pedersen.PedersenPrivateKeyIndex
-	PedersenValueIndex      = pedersen.PedersenValueIndex
-	PedersenSndIndex        = pedersen.PedersenSndIndex
-	PedersenShardIDIndex    = pedersen.PedersenShardIDIndex
-	PedersenRandomnessIndex = pedersen.PedersenRandomnessIndex
+	PedersenPrivateKeyIndex = operation.PedersenPrivateKeyIndex
+	PedersenValueIndex      = operation.PedersenValueIndex
+	PedersenSndIndex        = operation.PedersenSndIndex
+	PedersenShardIDIndex    = operation.PedersenShardIDIndex
+	PedersenRandomnessIndex = operation.PedersenRandomnessIndex
 )
 
-var PedCom pedersen.PedersenCommitment = pedersen.PedCom
+var PedCom operation.PedersenCommitment = operation.PedCom

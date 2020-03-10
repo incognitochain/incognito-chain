@@ -6,7 +6,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/privacy/pedersen"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 	"github.com/stretchr/testify/assert"
@@ -28,7 +27,7 @@ func TestPKSNNoPrivacy(t *testing.T) {
 		}
 		SND := operation.RandomScalar()
 
-		serialNumber := new(operation.Point).Derive(pedersen.PedCom.G[pedersen.PedersenPrivateKeyIndex], skScalar, SND)
+		serialNumber := new(operation.Point).Derive(operation.PedCom.G[operation.PedersenPrivateKeyIndex], skScalar, SND)
 
 		witness := new(SNNoPrivacyWitness)
 		witness.Set(serialNumber, pkPoint, SND, skScalar)

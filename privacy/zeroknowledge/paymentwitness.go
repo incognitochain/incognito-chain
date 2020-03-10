@@ -7,7 +7,6 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/privacy/pedersen"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/aggregaterange"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/oneoutofmany"
@@ -113,12 +112,12 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *errhan
 	// set rand sk for Schnorr signature
 	wit.randSecretKey = new(operation.Scalar).Set(randInputSK)
 
-	cmInputSK := pedersen.PedCom.CommitAtIndex(wit.privateKey, randInputSK, pedersen.PedersenPrivateKeyIndex)
+	cmInputSK := operation.PedCom.CommitAtIndex(wit.privateKey, randInputSK, operation.PedersenPrivateKeyIndex)
 	wit.comInputSecretKey = new(operation.Point).Set(cmInputSK)
 
 	randInputShardID := operation.RandomScalar()
 	senderShardID := common.GetShardIDFromLastByte(publicKeyLastByteSender)
-	wit.comInputShardID = pedersen.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(uint64(senderShardID)), randInputShardID, pedersen.PedersenShardIDIndex)
+	wit.comInputShardID = operation.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(uint64(senderShardID)), randInputShardID, operation.PedersenShardIDIndex)
 
 	wit.comInputValue = make([]*operation.Point, numInputCoin)
 	wit.comInputSerialNumberDerivator = make([]*operation.Point, numInputCoin)
@@ -157,8 +156,8 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *errhan
 		// commit each component of coin commitment
 		randInputSND[i] = operation.RandomScalar()
 
-		wit.comInputValue[i] = pedersen.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(inputCoin.CoinDetails.GetValue()), randInputValue[i], pedersen.PedersenValueIndex)
-		wit.comInputSerialNumberDerivator[i] = pedersen.PedCom.CommitAtIndex(inputCoin.CoinDetails.GetSNDerivator(), randInputSND[i], pedersen.PedersenSndIndex)
+		wit.comInputValue[i] = operation.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(inputCoin.CoinDetails.GetValue()), randInputValue[i], operation.PedersenValueIndex)
+		wit.comInputSerialNumberDerivator[i] = operation.PedCom.CommitAtIndex(inputCoin.CoinDetails.GetSNDerivator(), randInputSND[i], operation.PedersenSndIndex)
 
 		cmInputValueAll.Add(cmInputValueAll, wit.comInputValue[i])
 		randInputValueAll.Add(randInputValueAll, randInputValue[i])
@@ -232,11 +231,11 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *errhan
 		randOutputSND[i] = operation.RandomScalar()
 		randOutputShardID[i] = operation.RandomScalar()
 
-		cmOutputValue[i] = pedersen.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(outputCoin.CoinDetails.GetValue()), randOutputValue[i], pedersen.PedersenValueIndex)
-		cmOutputSND[i] = pedersen.PedCom.CommitAtIndex(outputCoin.CoinDetails.GetSNDerivator(), randOutputSND[i], pedersen.PedersenSndIndex)
+		cmOutputValue[i] = operation.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(outputCoin.CoinDetails.GetValue()), randOutputValue[i], operation.PedersenValueIndex)
+		cmOutputSND[i] = operation.PedCom.CommitAtIndex(outputCoin.CoinDetails.GetSNDerivator(), randOutputSND[i], operation.PedersenSndIndex)
 
 		receiverShardID := common.GetShardIDFromLastByte(outputCoins[i].CoinDetails.GetPubKeyLastByte())
-		cmOutputShardID[i] = pedersen.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(uint64(receiverShardID)), randOutputShardID[i], pedersen.PedersenShardIDIndex)
+		cmOutputShardID[i] = operation.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(uint64(receiverShardID)), randOutputShardID[i], operation.PedersenShardIDIndex)
 
 		randOutputSum[i] = new(operation.Scalar).FromUint64(0)
 		randOutputSum[i].Add(randOutputValue[i], randOutputSND[i])

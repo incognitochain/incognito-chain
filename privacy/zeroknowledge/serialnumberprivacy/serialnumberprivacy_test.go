@@ -7,7 +7,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/privacy/pedersen"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 	"github.com/stretchr/testify/assert"
@@ -25,9 +24,9 @@ func TestPKSNPrivacy(t *testing.T) {
 		rSK := operation.RandomScalar()
 		rSND := operation.RandomScalar()
 
-		serialNumber := new(operation.Point).Derive(pedersen.PedCom.G[pedersen.PedersenPrivateKeyIndex], skScalar, SND)
-		comSK := pedersen.PedCom.CommitAtIndex(skScalar, rSK, pedersen.PedersenPrivateKeyIndex)
-		comSND := pedersen.PedCom.CommitAtIndex(SND, rSND, pedersen.PedersenSndIndex)
+		serialNumber := new(operation.Point).Derive(operation.PedCom.G[operation.PedersenPrivateKeyIndex], skScalar, SND)
+		comSK := operation.PedCom.CommitAtIndex(skScalar, rSK, operation.PedersenPrivateKeyIndex)
+		comSND := operation.PedCom.CommitAtIndex(SND, rSND, operation.PedersenSndIndex)
 
 		stmt := new(SerialNumberPrivacyStatement)
 		stmt.Set(serialNumber, comSK, comSND)

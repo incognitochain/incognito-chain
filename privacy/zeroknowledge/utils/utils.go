@@ -6,7 +6,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/privacy/pedersen"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 )
 
@@ -15,8 +14,8 @@ import (
 // G[i] is list of all generator point of Curve
 func GenerateChallenge(values [][]byte) *privacy.Scalar {
 	bytes := []byte{}
-	for i := 0; i < len(pedersen.PedCom.G); i++ {
-		bytes = append(bytes, pedersen.PedCom.G[i].ToBytesS()...)
+	for i := 0; i < len(operation.PedCom.G); i++ {
+		bytes = append(bytes, operation.PedCom.G[i].ToBytesS()...)
 	}
 
 	for i := 0; i < len(values); i++ {

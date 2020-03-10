@@ -12,7 +12,6 @@ import (
 	henc "github.com/incognitochain/incognito-chain/privacy/hybridencryption"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/privacy/pedersen"
 )
 
 // Coin represents a coin
@@ -142,7 +141,7 @@ func (coin *Coin) HashH() *common.Hash {
 func (coin *Coin) CommitAll() error {
 	shardID := common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())
 	values := []*operation.Scalar{new(operation.Scalar).FromUint64(0), new(operation.Scalar).FromUint64(coin.value), coin.snDerivator, new(operation.Scalar).FromUint64(uint64(shardID)), coin.randomness}
-	commitment, err := pedersen.PedCom.CommitAll(values)
+	commitment, err := operation.PedCom.CommitAll(values)
 	if err != nil {
 		return err
 	}

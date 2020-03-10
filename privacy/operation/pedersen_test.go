@@ -1,9 +1,7 @@
-package pedersen
+package operation
 
 import (
 	"testing"
-
-	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -11,7 +9,7 @@ func TestPedersenCommitAll(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		openings := make([]*Scalar, len(PedCom.G))
 		for i := 0; i < len(openings); i++ {
-			openings[i] = operation.RandomScalar()
+			openings[i] = RandomScalar()
 		}
 
 		commitment, err := PedCom.CommitAll(openings)
@@ -30,10 +28,10 @@ func TestPedersenCommitAtIndex(t *testing.T) {
 			rand  *Scalar
 			index byte
 		}{
-			{operation.RandomScalar(), operation.RandomScalar(), PedersenPrivateKeyIndex},
-			{operation.RandomScalar(), operation.RandomScalar(), PedersenValueIndex},
-			{operation.RandomScalar(), operation.RandomScalar(), PedersenSndIndex},
-			{operation.RandomScalar(), operation.RandomScalar(), PedersenShardIDIndex},
+			{RandomScalar(), RandomScalar(), PedersenPrivateKeyIndex},
+			{RandomScalar(), RandomScalar(), PedersenValueIndex},
+			{RandomScalar(), RandomScalar(), PedersenSndIndex},
+			{RandomScalar(), RandomScalar(), PedersenShardIDIndex},
 		}
 
 		for _, item := range data {

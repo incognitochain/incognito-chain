@@ -11,7 +11,6 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/privacy/key"
-	"github.com/incognitochain/incognito-chain/privacy/pedersen"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -642,7 +641,7 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey key.PublicKey, fee uint64, db d
 	pubKeyLastByteSender := pubKey[len(pubKey)-1]
 	senderShardID := common.GetShardIDFromLastByte(pubKeyLastByteSender)
 	cmShardIDSender := new(operation.Point)
-	cmShardIDSender.ScalarMult(pedersen.PedCom.G[pedersen.PedersenShardIDIndex], new(operation.Scalar).FromBytes([operation.Ed25519KeySize]byte{senderShardID}))
+	cmShardIDSender.ScalarMult(operation.PedCom.G[operation.PedersenShardIDIndex], new(operation.Scalar).FromBytes([operation.Ed25519KeySize]byte{senderShardID}))
 
 	for i := 0; i < len(proof.inputCoins); i++ {
 		// Check input coins' Serial number is created from input coins' input and sender's spending key
@@ -654,9 +653,9 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey key.PublicKey, fee uint64, db d
 
 		// Check input coins' cm is calculated correctly
 		cmSK := proof.inputCoins[i].CoinDetails.GetPublicKey()
-		cmValue := new(operation.Point).ScalarMult(pedersen.PedCom.G[pedersen.PedersenValueIndex], new(operation.Scalar).FromUint64(proof.inputCoins[i].CoinDetails.GetValue()))
-		cmSND := new(operation.Point).ScalarMult(pedersen.PedCom.G[pedersen.PedersenSndIndex], proof.inputCoins[i].CoinDetails.GetSNDerivator())
-		cmRandomness := new(operation.Point).ScalarMult(pedersen.PedCom.G[pedersen.PedersenRandomnessIndex], proof.inputCoins[i].CoinDetails.GetRandomness())
+		cmValue := new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenValueIndex], new(operation.Scalar).FromUint64(proof.inputCoins[i].CoinDetails.GetValue()))
+		cmSND := new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenSndIndex], proof.inputCoins[i].CoinDetails.GetSNDerivator())
+		cmRandomness := new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenRandomnessIndex], proof.inputCoins[i].CoinDetails.GetRandomness())
 		cmTmp := new(operation.Point).Add(cmSK, cmValue)
 		cmTmp.Add(cmTmp, cmSND)
 		cmTmp.Add(cmTmp, cmShardIDSender)
@@ -675,10 +674,10 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey key.PublicKey, fee uint64, db d
 		// Check output coins' cm is calculated correctly
 		shardID := common.GetShardIDFromLastByte(proof.outputCoins[i].CoinDetails.GetPubKeyLastByte())
 		cmSK := proof.outputCoins[i].CoinDetails.GetPublicKey()
-		cmValue := new(operation.Point).ScalarMult(pedersen.PedCom.G[pedersen.PedersenValueIndex], new(operation.Scalar).FromUint64(proof.outputCoins[i].CoinDetails.GetValue()))
-		cmSND := new(operation.Point).ScalarMult(pedersen.PedCom.G[pedersen.PedersenSndIndex], proof.outputCoins[i].CoinDetails.GetSNDerivator())
-		cmShardID := new(operation.Point).ScalarMult(pedersen.PedCom.G[pedersen.PedersenShardIDIndex], new(operation.Scalar).FromBytes([operation.Ed25519KeySize]byte{shardID}))
-		cmRandomness := new(operation.Point).ScalarMult(pedersen.PedCom.G[pedersen.PedersenRandomnessIndex], proof.outputCoins[i].CoinDetails.GetRandomness())
+		cmValue := new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenValueIndex], new(operation.Scalar).FromUint64(proof.outputCoins[i].CoinDetails.GetValue()))
+		cmSND := new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenSndIndex], proof.outputCoins[i].CoinDetails.GetSNDerivator())
+		cmShardID := new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenShardIDIndex], new(operation.Scalar).FromBytes([operation.Ed25519KeySize]byte{shardID}))
+		cmRandomness := new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenRandomnessIndex], proof.outputCoins[i].CoinDetails.GetRandomness())
 
 		cmTmp := new(operation.Point).Add(cmSK, cmValue)
 		cmTmp.Add(cmTmp, cmSND)
@@ -813,7 +812,7 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey key.PublicKey, fee uint64, db 
 	}
 
 	if fee > 0 {
-		comOutputValueSum.Add(comOutputValueSum, new(operation.Point).ScalarMult(pedersen.PedCom.G[pedersen.PedersenValueIndex], new(operation.Scalar).FromUint64(uint64(fee))))
+		comOutputValueSum.Add(comOutputValueSum, new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenValueIndex], new(operation.Scalar).FromUint64(uint64(fee))))
 	}
 
 	Logger.Log.Infof("comInputValueSum: %v\n", comInputValueSum.ToBytesS())
