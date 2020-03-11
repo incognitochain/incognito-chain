@@ -6,7 +6,7 @@ import (
 
 func StorePrivacyToken(stateDB *StateDB, tokenID common.Hash, name string, symbol string, tokenType int, mintable bool, amount uint64, info []byte, txHash common.Hash) error {
 	key := GenerateTokenObjectKey(tokenID)
-	_, has, err := stateDB.GetTokenState(key)
+	_, has, err := stateDB.getTokenState(key)
 	if err != nil {
 		return NewStatedbError(StorePrivacyTokenError, err)
 	}
@@ -23,7 +23,7 @@ func StorePrivacyToken(stateDB *StateDB, tokenID common.Hash, name string, symbo
 
 func StorePrivacyTokenTx(stateDB *StateDB, tokenID common.Hash, txHash common.Hash) error {
 	keyToken := GenerateTokenObjectKey(tokenID)
-	_, has, err := stateDB.GetTokenState(keyToken)
+	_, has, err := stateDB.getTokenState(keyToken)
 	if err != nil {
 		return NewStatedbError(GetPrivacyTokenError, err)
 	}
@@ -43,17 +43,17 @@ func StorePrivacyTokenTx(stateDB *StateDB, tokenID common.Hash, txHash common.Ha
 }
 
 func ListPrivacyToken(stateDB *StateDB) map[common.Hash]*TokenState {
-	return stateDB.GetAllToken()
+	return stateDB.getAllToken()
 }
 
 func GetPrivacyTokenTxs(stateDB *StateDB, tokenID common.Hash) []common.Hash {
-	txs := stateDB.GetTokenTxs(tokenID)
+	txs := stateDB.getTokenTxs(tokenID)
 	return txs
 }
 
 func PrivacyTokenIDExisted(stateDB *StateDB, tokenID common.Hash) bool {
 	key := GenerateTokenObjectKey(tokenID)
-	tokenState, has, err := stateDB.GetTokenState(key)
+	tokenState, has, err := stateDB.getTokenState(key)
 	if err != nil {
 		return false
 	}

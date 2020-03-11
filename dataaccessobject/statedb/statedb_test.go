@@ -86,35 +86,35 @@ func TestStateDB_DeleteNotExistObject(t *testing.T) {
 	rootHash, _ := stateDB.Commit(true)
 	stateDB.Database().TrieDB().Commit(rootHash, false)
 
-	v0, err := stateDB.GetTestObject(keys[0])
+	v0, err := stateDB.getTestObject(keys[0])
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(v0, values[0]) {
 		t.Fatalf("want values 0 %+v, got %+v", values[0], v0)
 	}
-	v1, err := stateDB.GetTestObject(keys[1])
+	v1, err := stateDB.getTestObject(keys[1])
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(v1, values[1]) {
 		t.Fatalf("want values 0 %+v, got %+v", values[1], v1)
 	}
-	v2, err := stateDB.GetTestObject(keys[2])
+	v2, err := stateDB.getTestObject(keys[2])
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(v2, values[2]) {
 		t.Fatalf("want values 0 %+v, got %+v", values[2], v2)
 	}
-	v3, err := stateDB.GetTestObject(keys[3])
+	v3, err := stateDB.getTestObject(keys[3])
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(v3, []byte{}) {
 		t.Fatalf("want values 0 %+v, got %+v", []byte{}, v3)
 	}
-	v4, err := stateDB.GetTestObject(keys[4])
+	v4, err := stateDB.getTestObject(keys[4])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -133,11 +133,11 @@ func TestStateDB_DeleteNotExistObject(t *testing.T) {
 	rootHash2, _ := stateDB.Commit(true)
 	stateDB.Database().TrieDB().Commit(rootHash2, false)
 
-	v0, err = stateDB.GetTestObject(keys[0])
-	v1, err = stateDB.GetTestObject(keys[1])
-	v2, err = stateDB.GetTestObject(keys[2])
-	v3, err = stateDB.GetTestObject(keys[3])
-	v4, err = stateDB.GetTestObject(keys[4])
+	v0, err = stateDB.getTestObject(keys[0])
+	v1, err = stateDB.getTestObject(keys[1])
+	v2, err = stateDB.getTestObject(keys[2])
+	v3, err = stateDB.getTestObject(keys[3])
+	v4, err = stateDB.getTestObject(keys[4])
 	if !reflect.DeepEqual(v0, []byte{}) {
 		t.Fatalf("want values 0 %+v, got %+v", []byte{}, v0)
 	}
@@ -161,7 +161,7 @@ func TestStateDB_GetTestObjectByPrefix50000(t *testing.T) {
 	if err != nil || tempStateDB == nil {
 		panic(err)
 	}
-	keys, values := tempStateDB.GetAllTestObjectList()
+	keys, values := tempStateDB.getAllTestObjectList()
 	if len(keys) != limit10000*5 {
 		t.Fatalf("number of all keys want = %+v but got = %+v", limit10000*5, len(keys))
 	}
@@ -170,7 +170,7 @@ func TestStateDB_GetTestObjectByPrefix50000(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotKeys, gotValues := tempStateDB.GetByPrefixTestObjectList(tt.args.prefix)
+			gotKeys, gotValues := tempStateDB.getByPrefixTestObjectList(tt.args.prefix)
 			if len(gotKeys) != len(tt.wantKey) {
 
 				t.Errorf("GetByPrefixSerialNumberList() gotKey length = %v, wantKey length = %v", len(gotKeys), len(tt.wantKey))
@@ -209,7 +209,7 @@ func BenchmarkStateDB_GetAllTestObjectList500000(b *testing.B) {
 		panic(err)
 	}
 	for n := 0; n < b.N; n++ {
-		tempStateDB.GetAllTestObjectList()
+		tempStateDB.getAllTestObjectList()
 	}
 }
 func BenchmarkStateDB_GetAllTestObjectList50000(b *testing.B) {
@@ -219,7 +219,7 @@ func BenchmarkStateDB_GetAllTestObjectList50000(b *testing.B) {
 		if err != nil || tempStateDB == nil {
 			panic(err)
 		}
-		tempStateDB.GetAllTestObjectList()
+		tempStateDB.getAllTestObjectList()
 	}
 }
 func BenchmarkStateDB_GetAllTestObjectList5000(b *testing.B) {
@@ -229,7 +229,7 @@ func BenchmarkStateDB_GetAllTestObjectList5000(b *testing.B) {
 		if err != nil || tempStateDB == nil {
 			panic(err)
 		}
-		tempStateDB.GetAllTestObjectList()
+		tempStateDB.getAllTestObjectList()
 	}
 }
 func BenchmarkStateDB_GetAllTestObjectList500(b *testing.B) {
@@ -239,7 +239,7 @@ func BenchmarkStateDB_GetAllTestObjectList500(b *testing.B) {
 		if err != nil || tempStateDB == nil {
 			panic(err)
 		}
-		tempStateDB.GetAllTestObjectList()
+		tempStateDB.getAllTestObjectList()
 	}
 }
 func BenchmarkStateDB_GetAllTestObjectList5(b *testing.B) {
@@ -249,7 +249,7 @@ func BenchmarkStateDB_GetAllTestObjectList5(b *testing.B) {
 		if err != nil || tempStateDB == nil {
 			panic(err)
 		}
-		tempStateDB.GetAllTestObjectList()
+		tempStateDB.getAllTestObjectList()
 	}
 }
 
@@ -265,7 +265,7 @@ func BenchmarkStateDB_GetTestObject500000(b *testing.B) {
 		panic(err)
 	}
 	for n := 0; n < b.N; n++ {
-		tempStateDB.GetTestObject(sampleKey)
+		tempStateDB.getTestObject(sampleKey)
 	}
 }
 func BenchmarkStateDB_GetTestObject50000(b *testing.B) {
@@ -280,7 +280,7 @@ func BenchmarkStateDB_GetTestObject50000(b *testing.B) {
 		panic(err)
 	}
 	for n := 0; n < b.N; n++ {
-		tempStateDB.GetTestObject(sampleKey)
+		tempStateDB.getTestObject(sampleKey)
 	}
 }
 func BenchmarkStateDB_GetTestObject5000(b *testing.B) {
@@ -295,7 +295,7 @@ func BenchmarkStateDB_GetTestObject5000(b *testing.B) {
 		panic(err)
 	}
 	for n := 0; n < b.N; n++ {
-		tempStateDB.GetTestObject(sampleKey)
+		tempStateDB.getTestObject(sampleKey)
 	}
 }
 
@@ -306,7 +306,7 @@ func BenchmarkStateDB_GetByPrefixTestObjectList50000(b *testing.B) {
 		if err != nil || tempStateDB == nil {
 			panic(err)
 		}
-		tempStateDB.GetByPrefixTestObjectList(tests[0].args.prefix)
+		tempStateDB.getByPrefixTestObjectList(tests[0].args.prefix)
 	}
 }
 
@@ -317,7 +317,7 @@ func BenchmarkStateDB_GetByPrefixTestObjectList5000(b *testing.B) {
 		if err != nil || tempStateDB == nil {
 			panic(err)
 		}
-		tempStateDB.GetByPrefixTestObjectList(tests[0].args.prefix)
+		tempStateDB.getByPrefixTestObjectList(tests[0].args.prefix)
 	}
 }
 
@@ -328,7 +328,7 @@ func BenchmarkStateDB_GetByPrefixTestObjectList500(b *testing.B) {
 		if err != nil || tempStateDB == nil {
 			panic(err)
 		}
-		tempStateDB.GetByPrefixTestObjectList(tests[0].args.prefix)
+		tempStateDB.getByPrefixTestObjectList(tests[0].args.prefix)
 	}
 }
 

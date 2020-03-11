@@ -15,9 +15,11 @@ func storeOutputCoin(initRoot common.Hash, db DatabaseAccessWarper, limit int, s
 	for _, tokenID := range tokenIDs {
 		for _, publicKey := range publicKeys {
 			outputCoinList := testGenerateOutputCoinList(5)
-			key := GenerateOutputCoinObjectKey(tokenID, shardID, publicKey)
-			outputCoinState := NewOutputCoinStateWithValue(tokenID, shardID, publicKey, outputCoinList)
-			wantM[key] = outputCoinState
+			for _, outputCoin := range outputCoinList {
+				key := GenerateOutputCoinObjectKey(tokenID, shardID, publicKey, outputCoin)
+				outputCoinState := NewOutputCoinStateWithValue(tokenID, shardID, publicKey, outputCoin)
+				wantM[key] = outputCoinState
+			}
 			wantMByPublicKey[string(publicKey)] = outputCoinList
 		}
 	}
@@ -49,17 +51,19 @@ func TestStateDB_StoreAndGetOutputCoinState(t *testing.T) {
 	shardID := byte(0)
 	publicKey := testGeneratePublicKeyList(1)[0]
 	outputCoins := testGenerateOutputCoinList(5)
-
-	key := GenerateOutputCoinObjectKey(tokenID, shardID, publicKey)
-	outputCoinState := NewOutputCoinStateWithValue(tokenID, shardID, publicKey, outputCoins)
-
 	sDB, err := NewWithPrefixTrie(emptyRoot, wrarperDB)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = sDB.SetStateObject(OutputCoinObjectType, key, outputCoinState)
-	if err != nil {
-		t.Fatal(err)
+	wantM := make(map[common.Hash]*OutputCoinState)
+	for _, outputCoin := range outputCoins {
+		key := GenerateOutputCoinObjectKey(tokenID, shardID, publicKey, outputCoin)
+		outputCoinState := NewOutputCoinStateWithValue(tokenID, shardID, publicKey, outputCoin)
+		wantM[key] = outputCoinState
+		err = sDB.SetStateObject(OutputCoinObjectType, key, outputCoinState)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 	rootHash, err := sDB.Commit(true)
 	if err != nil {
@@ -74,15 +78,17 @@ func TestStateDB_StoreAndGetOutputCoinState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	gotO, has, err := tempStateDB.GetOutputCoinState(key)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !has {
-		t.Fatal(has)
-	}
-	if !reflect.DeepEqual(gotO, outputCoinState) {
-		t.Fatalf("GetOutputCoinState want %+v but got %+v", outputCoinState, gotO)
+	for key, outputCoinState := range wantM {
+		gotO, has, err := tempStateDB.getOutputCoinState(key)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !has {
+			t.Fatal(has)
+		}
+		if !reflect.DeepEqual(gotO, outputCoinState) {
+			t.Fatalf("getOutputCoinState want %+v but got %+v", outputCoinState, gotO)
+		}
 	}
 }
 
@@ -104,7 +110,7 @@ func TestStateDB_GetMultipleOutputCoinState(t *testing.T) {
 	for index, _ := range shardIDs {
 		tempWantM := wantMs[index]
 		for key, wantO := range tempWantM {
-			gotO, has, err := tempStateDB.GetOutputCoinState(key)
+			gotO, has, err := tempStateDB.getOutputCoinState(key)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -112,7 +118,7 @@ func TestStateDB_GetMultipleOutputCoinState(t *testing.T) {
 				t.Fatal(has)
 			}
 			if !reflect.DeepEqual(wantO, gotO) {
-				t.Fatalf("GetOutputCoinState want %+v got %+v ", wantO, gotO)
+				t.Fatalf("getOutputCoinState want %+v got %+v ", wantO, gotO)
 			}
 		}
 	}

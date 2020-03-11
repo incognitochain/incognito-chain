@@ -79,7 +79,7 @@ func TestStateDB_StoreAndGetSNDerivatorrState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	gotSND, has, err := tempStateDB.GetSNDerivatorState(key)
+	gotSND, has, err := tempStateDB.getSNDerivatorState(key)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,14 +87,14 @@ func TestStateDB_StoreAndGetSNDerivatorrState(t *testing.T) {
 		t.Fatal(has)
 	}
 	if !reflect.DeepEqual(gotSND, sndState) {
-		t.Fatalf("GetSNDerivatorState want %+v but got %+v", sndState, gotSND)
+		t.Fatalf("getSNDerivatorState want %+v but got %+v", sndState, gotSND)
 	}
-	gotSND2, has, err := tempStateDB.GetSNDerivatorState(key2)
+	gotSND2, has, err := tempStateDB.getSNDerivatorState(key2)
 	if has {
 		t.Fatal(has)
 	}
 	if !reflect.DeepEqual(gotSND2, NewSNDerivatorState()) {
-		t.Fatalf("GetSNDerivatorState want %+v but got %+v", NewSNDerivatorState(), gotSND2)
+		t.Fatalf("getSNDerivatorState want %+v but got %+v", NewSNDerivatorState(), gotSND2)
 	}
 }
 
@@ -105,7 +105,7 @@ func TestStateDB_GetAllSNDerivatorByPrefix(t *testing.T) {
 		t.Fatal(err)
 	}
 	for tokenID, wantSNDList := range wantMByToken {
-		gotSerialNumberList := tempStateDB.GetAllSNDerivatorStateByPrefix(tokenID)
+		gotSerialNumberList := tempStateDB.getAllSNDerivatorStateByPrefix(tokenID)
 		for _, gotSND := range gotSerialNumberList {
 			flag := false
 			for _, wantSND := range wantSNDList {
@@ -115,7 +115,7 @@ func TestStateDB_GetAllSNDerivatorByPrefix(t *testing.T) {
 				}
 			}
 			if !flag {
-				t.Fatalf("GetAllSerialNumberByPrefix didn't got %+v", gotSND)
+				t.Fatalf("getAllSerialNumberByPrefix didn't got %+v", gotSND)
 			}
 		}
 	}

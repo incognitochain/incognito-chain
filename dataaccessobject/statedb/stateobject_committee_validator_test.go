@@ -92,7 +92,7 @@ func TestStateDB_SetStateObjectCommitteeState(t *testing.T) {
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err)
 	}
-	got, has, err := tempStateDB.GetCommitteeState(key)
+	got, has, err := tempStateDB.getCommitteeState(key)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,7 +103,7 @@ func TestStateDB_SetStateObjectCommitteeState(t *testing.T) {
 		t.Fatalf("want value %+v but got %+v", committeeState, got)
 	}
 
-	got2, has2, err := tempStateDB.GetCommitteeState(key2)
+	got2, has2, err := tempStateDB.getCommitteeState(key2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -145,7 +145,7 @@ func TestStateDB_SetDuplicateStateObjectCommitteeState(t *testing.T) {
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err)
 	}
-	got, has, err := tempStateDB.GetCommitteeState(key)
+	got, has, err := tempStateDB.getCommitteeState(key)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -179,15 +179,15 @@ func TestStateDB_GetCurrentValidatorCommitteeState(t *testing.T) {
 		t.Fatal(err, tempStateDB)
 	}
 	for key, want := range m {
-		got, has, err := tempStateDB.GetCommitteeState(key)
+		got, has, err := tempStateDB.getCommitteeState(key)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if !has {
-			t.Fatalf("GetCommitteeState want key %+v, value %+v but didn't get anything", key, want)
+			t.Fatalf("getCommitteeState want key %+v, value %+v but didn't get anything", key, want)
 		}
 		if !reflect.DeepEqual(got, want) {
-			t.Fatalf("GetCommitteeState want key %+v, value %+v but got value %+v ", key, want, got)
+			t.Fatalf("getCommitteeState want key %+v, value %+v but got value %+v ", key, want, got)
 		}
 	}
 }
@@ -199,13 +199,13 @@ func TestStateDB_GetAllCurrentValidatorCommitteeKey512OneShard(t *testing.T) {
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
-	gotM := tempStateDB.GetAllValidatorCommitteePublicKey(CurrentValidator, []int{0})
+	gotM := tempStateDB.getAllValidatorCommitteePublicKey(CurrentValidator, []int{0})
 	gotMShard0, ok := gotM[0]
 	if !ok {
-		t.Fatalf("GetAllCommitteeState want shard %+v", 0)
+		t.Fatalf("getAllCommitteeState want shard %+v", 0)
 	}
 	if len(gotMShard0) != to-from {
-		t.Fatalf("GetAllCommitteeState want key length %+v but got %+v", to-from, len(gotM))
+		t.Fatalf("getAllCommitteeState want key length %+v but got %+v", to-from, len(gotM))
 	}
 	for _, want := range m {
 		flag := false
@@ -216,7 +216,7 @@ func TestStateDB_GetAllCurrentValidatorCommitteeKey512OneShard(t *testing.T) {
 			}
 		}
 		if !flag {
-			t.Fatalf("GetAllCommitteeState want %+v but didn't get anything", want.CommitteePublicKey())
+			t.Fatalf("getAllCommitteeState want %+v but didn't get anything", want.CommitteePublicKey())
 		}
 	}
 }
@@ -239,14 +239,14 @@ func TestStateDB_GetAllCurrentValidatorCommitteeKey512EightShard(t *testing.T) {
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
-	gotM := tempStateDB.GetAllValidatorCommitteePublicKey(CurrentValidator, ids)
+	gotM := tempStateDB.getAllValidatorCommitteePublicKey(CurrentValidator, ids)
 	for _, id := range ids {
 		temp, ok := gotM[id]
 		if !ok {
-			t.Fatalf("GetAllCommitteeState want shard %+v", id)
+			t.Fatalf("getAllCommitteeState want shard %+v", id)
 		}
 		if len(temp) != 64 {
-			t.Fatalf("GetAllCommitteeState want key length %+v but got %+v", 64, len(temp))
+			t.Fatalf("getAllCommitteeState want key length %+v but got %+v", 64, len(temp))
 		}
 	}
 	for id, wants := range wantM {
@@ -259,7 +259,7 @@ func TestStateDB_GetAllCurrentValidatorCommitteeKey512EightShard(t *testing.T) {
 				}
 			}
 			if !flag {
-				t.Fatalf("GetAllCommitteeState shard %+v want %+v but didn't get anything", id, want)
+				t.Fatalf("getAllCommitteeState shard %+v want %+v but didn't get anything", id, want)
 			}
 		}
 	}
@@ -291,14 +291,14 @@ func TestStateDB_GetAllCurrentValidatorCommitteePublicKey512EightShardMultipleRo
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
-	gotM := tempStateDB.GetAllValidatorCommitteePublicKey(CurrentValidator, ids)
+	gotM := tempStateDB.getAllValidatorCommitteePublicKey(CurrentValidator, ids)
 	for _, id := range ids {
 		temp, ok := gotM[id]
 		if !ok {
-			t.Fatalf("GetAllCommitteeState want shard %+v", id)
+			t.Fatalf("getAllCommitteeState want shard %+v", id)
 		}
 		if len(temp) != 32 {
-			t.Fatalf("GetAllCommitteeState want key length %+v but got %+v", 32, len(temp))
+			t.Fatalf("getAllCommitteeState want key length %+v but got %+v", 32, len(temp))
 		}
 	}
 	for id, wants := range wantM {
@@ -311,7 +311,7 @@ func TestStateDB_GetAllCurrentValidatorCommitteePublicKey512EightShardMultipleRo
 				}
 			}
 			if !flag {
-				t.Fatalf("GetAllCommitteeState shard %+v want %+v but didn't get anything", id, want)
+				t.Fatalf("getAllCommitteeState shard %+v want %+v but didn't get anything", id, want)
 			}
 		}
 	}
@@ -392,14 +392,14 @@ func TestStateDB_GetAllCurrentValidatorCommitteePublicKey512EightShardMultipleRo
 		if err != nil {
 			t.Fatal(err)
 		}
-		gotM := tempStateDB.GetAllValidatorCommitteePublicKey(CurrentValidator, ids)
+		gotM := tempStateDB.getAllValidatorCommitteePublicKey(CurrentValidator, ids)
 		for _, id := range ids {
 			temp, ok := gotM[id]
 			if !ok {
-				t.Fatalf("GetAllCommitteeState want shard %+v", id)
+				t.Fatalf("getAllCommitteeState want shard %+v", id)
 			}
 			if len(temp) != 32 {
-				t.Fatalf("GetAllCommitteeState want key length %+v but got %+v", 32, len(temp))
+				t.Fatalf("getAllCommitteeState want key length %+v but got %+v", 32, len(temp))
 			}
 		}
 		for id, wants := range wantMs[index] {
@@ -412,7 +412,7 @@ func TestStateDB_GetAllCurrentValidatorCommitteePublicKey512EightShardMultipleRo
 					}
 				}
 				if !flag {
-					t.Fatalf("GetAllCommitteeState shard %+v want %+v but didn't get anything", id, want)
+					t.Fatalf("getAllCommitteeState shard %+v want %+v but didn't get anything", id, want)
 				}
 			}
 		}
@@ -438,9 +438,9 @@ func TestStateDB_GetCurrentValidatorCommitteePublicKeyByShardIDState512EightShar
 		t.Fatal(err, tempStateDB)
 	}
 	for _, id := range ids {
-		gotM := tempStateDB.GetByShardIDCurrentValidatorState(id)
+		gotM := tempStateDB.getByShardIDCurrentValidatorState(id)
 		if len(gotM) != 64 {
-			t.Fatalf("GetAllCommitteeState want key length %+v but got %+v", 64, len(gotM))
+			t.Fatalf("getAllCommitteeState want key length %+v but got %+v", 64, len(gotM))
 		}
 		for _, want := range wantM[id] {
 			flag := false
@@ -451,7 +451,7 @@ func TestStateDB_GetCurrentValidatorCommitteePublicKeyByShardIDState512EightShar
 				}
 			}
 			if !flag {
-				t.Fatalf("GetAllCommitteeState shard %+v want %+v but didn't get anything", id, want)
+				t.Fatalf("getAllCommitteeState shard %+v want %+v but didn't get anything", id, want)
 			}
 		}
 
@@ -466,15 +466,15 @@ func TestStateDB_GetSubstituteValidatorCommitteeState(t *testing.T) {
 		t.Fatal(err, tempStateDB)
 	}
 	for key, want := range m {
-		got, has, err := tempStateDB.GetCommitteeState(key)
+		got, has, err := tempStateDB.getCommitteeState(key)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if !has {
-			t.Fatalf("GetCommitteeState want key %+v, value %+v but didn't get anything", key, want)
+			t.Fatalf("getCommitteeState want key %+v, value %+v but didn't get anything", key, want)
 		}
 		if !reflect.DeepEqual(got, want) {
-			t.Fatalf("GetCommitteeState want key %+v, value %+v but got value %+v ", key, want, got)
+			t.Fatalf("getCommitteeState want key %+v, value %+v but got value %+v ", key, want, got)
 		}
 	}
 }
@@ -498,9 +498,9 @@ func TestStateDB_GetSubstituteValidatorCommitteePublicKeyByShardIDState512EightS
 		t.Fatal(err, tempStateDB)
 	}
 	for _, id := range ids {
-		gotM := tempStateDB.GetByShardIDSubstituteValidatorState(id)
+		gotM := tempStateDB.getByShardIDSubstituteValidatorState(id)
 		if len(gotM) != 64 {
-			t.Fatalf("GetAllCommitteeState want key length %+v but got %+v", 64, len(gotM))
+			t.Fatalf("getAllCommitteeState want key length %+v but got %+v", 64, len(gotM))
 		}
 		for _, want := range wantM[id] {
 			flag := false
@@ -511,7 +511,7 @@ func TestStateDB_GetSubstituteValidatorCommitteePublicKeyByShardIDState512EightS
 				}
 			}
 			if !flag {
-				t.Fatalf("GetAllCommitteeState shard %+v want %+v but didn't get anything", id, want)
+				t.Fatalf("getAllCommitteeState shard %+v want %+v but didn't get anything", id, want)
 			}
 		}
 
@@ -525,13 +525,13 @@ func TestStateDB_GetAllSubstituteValidatorCommitteeKey512OneShard(t *testing.T) 
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
-	gotM := tempStateDB.GetAllValidatorCommitteePublicKey(SubstituteValidator, []int{0})
+	gotM := tempStateDB.getAllValidatorCommitteePublicKey(SubstituteValidator, []int{0})
 	gotMShard0, ok := gotM[0]
 	if !ok {
-		t.Fatalf("GetAllCommitteeState want shard %+v", 0)
+		t.Fatalf("getAllCommitteeState want shard %+v", 0)
 	}
 	if len(gotMShard0) != to-from {
-		t.Fatalf("GetAllCommitteeState want key length %+v but got %+v", to-from, len(gotM))
+		t.Fatalf("getAllCommitteeState want key length %+v but got %+v", to-from, len(gotM))
 	}
 	for _, want := range m {
 		flag := false
@@ -542,7 +542,7 @@ func TestStateDB_GetAllSubstituteValidatorCommitteeKey512OneShard(t *testing.T) 
 			}
 		}
 		if !flag {
-			t.Fatalf("GetAllCommitteeState want %+v but didn't get anything", want.CommitteePublicKey())
+			t.Fatalf("getAllCommitteeState want %+v but didn't get anything", want.CommitteePublicKey())
 		}
 	}
 }
@@ -565,14 +565,14 @@ func TestStateDB_GetAllSubstituteValidatorCommitteeKey512EightShard(t *testing.T
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
-	gotM := tempStateDB.GetAllValidatorCommitteePublicKey(SubstituteValidator, ids)
+	gotM := tempStateDB.getAllValidatorCommitteePublicKey(SubstituteValidator, ids)
 	for _, id := range ids {
 		temp, ok := gotM[id]
 		if !ok {
-			t.Fatalf("GetAllCommitteeState want shard %+v", id)
+			t.Fatalf("getAllCommitteeState want shard %+v", id)
 		}
 		if len(temp) != 64 {
-			t.Fatalf("GetAllCommitteeState want key length %+v but got %+v", 64, len(temp))
+			t.Fatalf("getAllCommitteeState want key length %+v but got %+v", 64, len(temp))
 		}
 	}
 	for id, wants := range wantM {
@@ -585,7 +585,7 @@ func TestStateDB_GetAllSubstituteValidatorCommitteeKey512EightShard(t *testing.T
 				}
 			}
 			if !flag {
-				t.Fatalf("GetAllCommitteeState shard %+v want %+v but didn't get anything", id, want)
+				t.Fatalf("getAllCommitteeState shard %+v want %+v but didn't get anything", id, want)
 			}
 		}
 	}
@@ -617,14 +617,14 @@ func TestStateDB_AllSubstituteValidatorCommitteePublicKey512EightShardMultipleRo
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
-	gotM := tempStateDB.GetAllValidatorCommitteePublicKey(SubstituteValidator, ids)
+	gotM := tempStateDB.getAllValidatorCommitteePublicKey(SubstituteValidator, ids)
 	for _, id := range ids {
 		temp, ok := gotM[id]
 		if !ok {
-			t.Fatalf("GetAllCommitteeState want shard %+v", id)
+			t.Fatalf("getAllCommitteeState want shard %+v", id)
 		}
 		if len(temp) != 32 {
-			t.Fatalf("GetAllCommitteeState want key length %+v but got %+v", 32, len(temp))
+			t.Fatalf("getAllCommitteeState want key length %+v but got %+v", 32, len(temp))
 		}
 	}
 	for id, wants := range wantM {
@@ -637,7 +637,7 @@ func TestStateDB_AllSubstituteValidatorCommitteePublicKey512EightShardMultipleRo
 				}
 			}
 			if !flag {
-				t.Fatalf("GetAllCommitteeState shard %+v want %+v but didn't get anything", id, want)
+				t.Fatalf("getAllCommitteeState shard %+v want %+v but didn't get anything", id, want)
 			}
 		}
 	}
@@ -718,14 +718,14 @@ func TestStateDB_AllSubstituteValidatorCommitteePublicKey512EightShardMultipleRo
 		if err != nil {
 			t.Fatal(err)
 		}
-		gotM := tempStateDB.GetAllValidatorCommitteePublicKey(SubstituteValidator, ids)
+		gotM := tempStateDB.getAllValidatorCommitteePublicKey(SubstituteValidator, ids)
 		for _, id := range ids {
 			temp, ok := gotM[id]
 			if !ok {
-				t.Fatalf("GetAllCommitteeState want shard %+v", id)
+				t.Fatalf("getAllCommitteeState want shard %+v", id)
 			}
 			if len(temp) != 32 {
-				t.Fatalf("GetAllCommitteeState want key length %+v but got %+v", 32, len(temp))
+				t.Fatalf("getAllCommitteeState want key length %+v but got %+v", 32, len(temp))
 			}
 		}
 		for id, wants := range wantMs[index] {
@@ -738,7 +738,7 @@ func TestStateDB_AllSubstituteValidatorCommitteePublicKey512EightShardMultipleRo
 					}
 				}
 				if !flag {
-					t.Fatalf("GetAllCommitteeState shard %+v want %+v but didn't get anything", id, want)
+					t.Fatalf("getAllCommitteeState shard %+v want %+v but didn't get anything", id, want)
 				}
 			}
 		}
@@ -767,7 +767,7 @@ func BenchmarkStateDB_GetCurrentValidatorCommitteePublicKey512EightShard(b *test
 	}
 	for n := 0; n < b.N; n++ {
 		for _, id := range ids {
-			tempStateDB.GetByShardIDCurrentValidatorState(id)
+			tempStateDB.getByShardIDCurrentValidatorState(id)
 		}
 	}
 }
@@ -791,7 +791,7 @@ func BenchmarkStateDB_GetAllCurrentCandidateCommitteePublicKey512EightShard(b *t
 		panic(err)
 	}
 	for n := 0; n < b.N; n++ {
-		tempStateDB.GetAllValidatorCommitteePublicKey(CurrentValidator, ids)
+		tempStateDB.getAllValidatorCommitteePublicKey(CurrentValidator, ids)
 	}
 }
 func BenchmarkStateDB_GetAllCurrentCandidateCommitteePublicKey512OneShard(b *testing.B) {
@@ -802,7 +802,7 @@ func BenchmarkStateDB_GetAllCurrentCandidateCommitteePublicKey512OneShard(b *tes
 		panic(err)
 	}
 	for n := 0; n < b.N; n++ {
-		tempStateDB.GetAllValidatorCommitteePublicKey(CurrentValidator, []int{0})
+		tempStateDB.getAllValidatorCommitteePublicKey(CurrentValidator, []int{0})
 	}
 }
 
@@ -814,7 +814,7 @@ func BenchmarkStateDB_GetCommitteeState512OneShard(b *testing.B) {
 	}
 	for n := 0; n < b.N; n++ {
 		for key, want := range m {
-			got, has, err := tempStateDB.GetCommitteeState(key)
+			got, has, err := tempStateDB.getCommitteeState(key)
 			if err != nil {
 				panic(err)
 			}
@@ -836,7 +836,7 @@ func BenchmarkStateDB_GetCommitteeState256OneShard(b *testing.B) {
 	}
 	for n := 0; n < b.N; n++ {
 		for key, want := range m {
-			got, has, err := tempStateDB.GetCommitteeState(key)
+			got, has, err := tempStateDB.getCommitteeState(key)
 			if err != nil {
 				panic(err)
 			}
@@ -878,7 +878,7 @@ func BenchmarkStateDB_GetCommitteeState1In1(b *testing.B) {
 		panic(err)
 	}
 	for i := 0; i < b.N; i++ {
-		tempStateDB.GetCommitteeState(key)
+		tempStateDB.getCommitteeState(key)
 	}
 }
 func BenchmarkStateDB_GetCommitteeState1In64(b *testing.B) {
@@ -896,7 +896,7 @@ func BenchmarkStateDB_GetCommitteeState1In64(b *testing.B) {
 		panic(err)
 	}
 	for i := 0; i < b.N; i++ {
-		tempStateDB.GetCommitteeState(key)
+		tempStateDB.getCommitteeState(key)
 	}
 }
 func BenchmarkStateDB_GetCommitteeState1In256(b *testing.B) {
@@ -914,6 +914,6 @@ func BenchmarkStateDB_GetCommitteeState1In256(b *testing.B) {
 		panic(err)
 	}
 	for i := 0; i < b.N; i++ {
-		tempStateDB.GetCommitteeState(key)
+		tempStateDB.getCommitteeState(key)
 	}
 }

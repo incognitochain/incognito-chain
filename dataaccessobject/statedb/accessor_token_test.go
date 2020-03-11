@@ -133,7 +133,7 @@ func TestStateDB_StorePrivacyToken(t *testing.T) {
 	}
 	for _, tt := range tests[:5] {
 		key := GenerateTokenObjectKey(tt.args.tokenID)
-		tokenState, has, err := sDB.GetTokenState(key)
+		tokenState, has, err := sDB.getTokenState(key)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -161,7 +161,7 @@ func TestStateDB_StorePrivacyToken(t *testing.T) {
 	}
 	duplicateTest := tests[5]
 	key := GenerateTokenObjectKey(duplicateTest.args.tokenID)
-	tokenState, has, err := sDB.GetTokenState(key)
+	tokenState, has, err := sDB.getTokenState(key)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -265,7 +265,7 @@ func TestStateDB_StorePrivacyTokenTx(t *testing.T) {
 		t.Fatal(err)
 	}
 	key := GenerateTokenObjectKey(tokenIDs[0])
-	tokenState, has, err := sDB.GetTokenState(key)
+	tokenState, has, err := sDB.getTokenState(key)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -275,7 +275,7 @@ func TestStateDB_StorePrivacyTokenTx(t *testing.T) {
 	if !tokenState.tokenID.IsEqual(&tokenIDs[0]) {
 		t.Fatalf("want token %+v but got %+v", tokenIDs[0], tokenState.tokenID)
 	}
-	txs := sDB.GetTokenTxs(tokenIDs[0])
+	txs := sDB.getTokenTxs(tokenIDs[0])
 	if len(txs) != len(tests) {
 		t.Fatalf("want len %+v but got %+v", len(tests), len(txs)-1)
 	}

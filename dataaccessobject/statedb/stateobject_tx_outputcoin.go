@@ -8,10 +8,18 @@ import (
 )
 
 type OutputCoinState struct {
-	tokenID     common.Hash
-	shardID     byte
-	publicKey   []byte
-	outputCoins [][]byte
+	tokenID    common.Hash
+	shardID    byte
+	publicKey  []byte
+	outputCoin []byte
+}
+
+func (o *OutputCoinState) OutputCoin() []byte {
+	return o.outputCoin
+}
+
+func (o *OutputCoinState) SetOutputCoin(outputCoin []byte) {
+	o.outputCoin = outputCoin
 }
 
 func (o OutputCoinState) TokenID() common.Hash {
@@ -38,25 +46,17 @@ func (o *OutputCoinState) SetPublicKey(publicKey []byte) {
 	o.publicKey = publicKey
 }
 
-func (o OutputCoinState) OutputCoins() [][]byte {
-	return o.outputCoins
-}
-
-func (o *OutputCoinState) SetOutputCoins(outputCoins [][]byte) {
-	o.outputCoins = outputCoins
-}
-
 func (o OutputCoinState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		TokenID     common.Hash
-		ShardID     byte
-		PublicKey   []byte
-		OutputCoins [][]byte
+		TokenID    common.Hash
+		ShardID    byte
+		PublicKey  []byte
+		OutputCoin []byte
 	}{
-		TokenID:     o.tokenID,
-		ShardID:     o.shardID,
-		PublicKey:   o.publicKey,
-		OutputCoins: o.outputCoins,
+		TokenID:    o.tokenID,
+		ShardID:    o.shardID,
+		PublicKey:  o.publicKey,
+		OutputCoin: o.outputCoin,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -66,10 +66,10 @@ func (o OutputCoinState) MarshalJSON() ([]byte, error) {
 
 func (o *OutputCoinState) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		TokenID     common.Hash
-		ShardID     byte
-		PublicKey   []byte
-		OutputCoins [][]byte
+		TokenID    common.Hash
+		ShardID    byte
+		PublicKey  []byte
+		OutputCoin []byte
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -78,12 +78,12 @@ func (o *OutputCoinState) UnmarshalJSON(data []byte) error {
 	o.tokenID = temp.TokenID
 	o.shardID = temp.ShardID
 	o.publicKey = temp.PublicKey
-	o.outputCoins = temp.OutputCoins
+	o.outputCoin = temp.OutputCoin
 	return nil
 }
 
-func NewOutputCoinStateWithValue(tokenID common.Hash, shardID byte, publicKey []byte, outputCoins [][]byte) *OutputCoinState {
-	return &OutputCoinState{tokenID: tokenID, shardID: shardID, publicKey: publicKey, outputCoins: outputCoins}
+func NewOutputCoinStateWithValue(tokenID common.Hash, shardID byte, publicKey []byte, outputCoin []byte) *OutputCoinState {
+	return &OutputCoinState{tokenID: tokenID, shardID: shardID, publicKey: publicKey, outputCoin: outputCoin}
 }
 
 func NewOutputCoinState() *OutputCoinState {
@@ -145,9 +145,9 @@ func newOutputCoinObjectWithValue(db *StateDB, key common.Hash, data interface{}
 	}, nil
 }
 
-func GenerateOutputCoinObjectKey(tokenID common.Hash, shardID byte, publicKey []byte) common.Hash {
-	prefixHash := GetOutputCoinPrefix(tokenID, shardID)
-	valueHash := common.HashH(publicKey)
+func GenerateOutputCoinObjectKey(tokenID common.Hash, shardID byte, publicKey []byte, outputCoin []byte) common.Hash {
+	prefixHash := GetOutputCoinPrefix(tokenID, shardID, publicKey)
+	valueHash := common.HashH(outputCoin)
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 

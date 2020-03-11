@@ -43,7 +43,7 @@ func TestStateDB_GetAllCommitteeRewardState(t *testing.T) {
 		t.Fatal(err)
 	}
 	for k, v := range wantM {
-		gotM, has, err := tempStateDB.GetCommitteeRewardState(k)
+		gotM, has, err := tempStateDB.getCommitteeRewardState(k)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -97,7 +97,7 @@ func TestStateDB_StoreAndGetRewardReceiver(t *testing.T) {
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err)
 	}
-	got, has, err := tempStateDB.GetCommitteeRewardState(key)
+	got, has, err := tempStateDB.getCommitteeRewardState(key)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,7 +108,7 @@ func TestStateDB_StoreAndGetRewardReceiver(t *testing.T) {
 		t.Fatalf("want value %+v but got %+v", rewardReceiverState, got)
 	}
 
-	got2, has2, err := tempStateDB.GetCommitteeState(key2)
+	got2, has2, err := tempStateDB.getCommitteeState(key2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -166,7 +166,7 @@ func TestStateDB_GetAllRewardReceiverStateMultipleRootHash(t *testing.T) {
 		if err != nil || tempStateDB == nil {
 			t.Fatal(err)
 		}
-		gotM := tempStateDB.GetAllCommitteeReward()
+		gotM := tempStateDB.getAllCommitteeReward()
 		for k, v1 := range gotM {
 			if v2, ok := wantM[k]; !ok {
 				t.Fatalf("want %+v but get nothing", k)

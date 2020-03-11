@@ -114,7 +114,7 @@ func TestStoreAndHasSerialNumbers(t *testing.T) {
 				wantSerialNumberM[serialNumber] = struct{}{}
 				keys = append(keys, GenerateSerialNumberObjectKey(tt.args.tokenID, tt.args.shardID, tempSerialNumber))
 			}
-			_, _, err := tt.args.stateDB.GetSerialNumberState(keys[0])
+			_, _, err := tt.args.stateDB.getSerialNumberState(keys[0])
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -461,8 +461,8 @@ func TestStoreAndGetOutputCoin(t *testing.T) {
 			if err := StoreOutputCoins(tt.args.stateDB, tt.args.tokenID, tt.args.publicKey, tt.args.outputCoins, tt.args.shardID); (err != nil) != tt.wantErr {
 				t.Errorf("StoreOutputCoins() error = %v, wantErr %v", err, tt.wantErr)
 			} else {
-				if len(stateDB.GetStateObjectMapForTestOnly()) != 1 && len(stateDB.GetStateObjectPendingMapForTestOnly()) != 1 {
-					t.Errorf("StoreOutputCoins() must have 1 object")
+				if len(stateDB.GetStateObjectMapForTestOnly()) != 10 && len(stateDB.GetStateObjectPendingMapForTestOnly()) != 10 {
+					t.Errorf("StoreOutputCoins() must have 10 object")
 				}
 			}
 			tt.args.stateDB.Reset(emptyRoot)

@@ -13,15 +13,15 @@ func TestStateDB_GetNextEpochCandidateCommitteeState(t *testing.T) {
 		t.Fatal(err, tempStateDB)
 	}
 	for key, want := range m {
-		got, has, err := tempStateDB.GetCommitteeState(key)
+		got, has, err := tempStateDB.getCommitteeState(key)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if !has {
-			t.Fatalf("GetCommitteeState want key %+v, value %+v but didn't get anything", key, want)
+			t.Fatalf("getCommitteeState want key %+v, value %+v but didn't get anything", key, want)
 		}
 		if !reflect.DeepEqual(got, want) {
-			t.Fatalf("GetCommitteeState want key %+v, value %+v but got value %+v ", key, want, got)
+			t.Fatalf("getCommitteeState want key %+v, value %+v but got value %+v ", key, want, got)
 		}
 	}
 }
@@ -33,15 +33,15 @@ func TestStateDB_GetCurrentEpochCandidateCommitteeState(t *testing.T) {
 		t.Fatal(err, tempStateDB)
 	}
 	for key, want := range m {
-		got, has, err := tempStateDB.GetCommitteeState(key)
+		got, has, err := tempStateDB.getCommitteeState(key)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if !has {
-			t.Fatalf("GetCommitteeState want key %+v, value %+v but didn't get anything", key, want)
+			t.Fatalf("getCommitteeState want key %+v, value %+v but didn't get anything", key, want)
 		}
 		if !reflect.DeepEqual(got, want) {
-			t.Fatalf("GetCommitteeState want key %+v, value %+v but got value %+v ", key, want, got)
+			t.Fatalf("getCommitteeState want key %+v, value %+v but got value %+v ", key, want, got)
 		}
 	}
 }
@@ -57,10 +57,10 @@ func TestStateDB_GetAllCurrentEpochCandidateCommitteeKey512EightShard(t *testing
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
-	gotM := tempStateDB.GetAllCandidateCommitteePublicKey(CurrentEpochShardCandidate)
+	gotM := tempStateDB.getAllCandidateCommitteePublicKey(CurrentEpochShardCandidate)
 
 	if len(gotM) != to-from {
-		t.Fatalf("GetAllCandidateCommitteePublicKey want key length %+v but got %+v", to-from, len(gotM))
+		t.Fatalf("getAllCandidateCommitteePublicKey want key length %+v but got %+v", to-from, len(gotM))
 	}
 	for _, want := range wantM {
 		flag := false
@@ -71,7 +71,7 @@ func TestStateDB_GetAllCurrentEpochCandidateCommitteeKey512EightShard(t *testing
 			}
 		}
 		if !flag {
-			t.Fatalf("GetAllCandidateCommitteePublicKey want %+v but didn't get anything", want)
+			t.Fatalf("getAllCandidateCommitteePublicKey want %+v but didn't get anything", want)
 		}
 	}
 }
@@ -82,9 +82,9 @@ func TestStateDB_GetAllNextEpochCandidateCommitteeKey(t *testing.T) {
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
-	gotM := tempStateDB.GetAllCandidateCommitteePublicKey(NextEpochShardCandidate)
+	gotM := tempStateDB.getAllCandidateCommitteePublicKey(NextEpochShardCandidate)
 	if len(gotM) != to-from {
-		t.Fatalf("GetAllCommitteeState want key length %+v but got %+v", to-from, len(gotM))
+		t.Fatalf("getAllCommitteeState want key length %+v but got %+v", to-from, len(gotM))
 	}
 	for _, want := range m {
 		flag := false
@@ -95,7 +95,7 @@ func TestStateDB_GetAllNextEpochCandidateCommitteeKey(t *testing.T) {
 			}
 		}
 		if !flag {
-			t.Fatalf("GetAllCommitteeState want %+v but didn't get anything", want.CommitteePublicKey())
+			t.Fatalf("getAllCommitteeState want %+v but didn't get anything", want.CommitteePublicKey())
 		}
 	}
 }
@@ -107,9 +107,9 @@ func TestStateDB_GetAllCurrentEpochCandidateCommitteeKey(t *testing.T) {
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
-	gotM := tempStateDB.GetAllCandidateCommitteePublicKey(CurrentEpochShardCandidate)
+	gotM := tempStateDB.getAllCandidateCommitteePublicKey(CurrentEpochShardCandidate)
 	if len(gotM) != to-from {
-		t.Fatalf("GetAllCommitteeState want key length %+v but got %+v", to-from, len(gotM))
+		t.Fatalf("getAllCommitteeState want key length %+v but got %+v", to-from, len(gotM))
 	}
 	for _, want := range m {
 		flag := false
@@ -120,7 +120,7 @@ func TestStateDB_GetAllCurrentEpochCandidateCommitteeKey(t *testing.T) {
 			}
 		}
 		if !flag {
-			t.Fatalf("GetAllCommitteeState want %+v but didn't get anything", want.CommitteePublicKey())
+			t.Fatalf("getAllCommitteeState want %+v but didn't get anything", want.CommitteePublicKey())
 		}
 	}
 }
@@ -136,10 +136,10 @@ func TestStateDB_GetAllNextEpochCandidateCommitteeKey512EightShard(t *testing.T)
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err, tempStateDB)
 	}
-	gotM := tempStateDB.GetAllCandidateCommitteePublicKey(NextEpochShardCandidate)
+	gotM := tempStateDB.getAllCandidateCommitteePublicKey(NextEpochShardCandidate)
 
 	if len(gotM) != to-from {
-		t.Fatalf("GetAllCandidateCommitteePublicKey want key length %+v but got %+v", to-from, len(gotM))
+		t.Fatalf("getAllCandidateCommitteePublicKey want key length %+v but got %+v", to-from, len(gotM))
 	}
 	for _, want := range wantM {
 		flag := false
@@ -150,7 +150,7 @@ func TestStateDB_GetAllNextEpochCandidateCommitteeKey512EightShard(t *testing.T)
 			}
 		}
 		if !flag {
-			t.Fatalf("GetAllCandidateCommitteePublicKey want %+v but didn't get anything", want)
+			t.Fatalf("getAllCandidateCommitteePublicKey want %+v but didn't get anything", want)
 		}
 	}
 }

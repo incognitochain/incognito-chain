@@ -41,7 +41,7 @@ func TestStateDB_GetAllBlackListProducerStateByKey(t *testing.T) {
 		t.Fatal(err)
 	}
 	for k, v := range wantMState {
-		gotM, has, err := tempStateDB.GetBlackListProducerState(k)
+		gotM, has, err := tempStateDB.getBlackListProducerState(k)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -61,7 +61,7 @@ func TestStateDB_GetBlackListProducerPunishedEpoch(t *testing.T) {
 	}
 	for k, v := range wantM {
 		key := GenerateBlackListProducerObjectKey(k)
-		gotM, has, err := tempStateDB.GetBlackListProducerPunishedEpoch(key)
+		gotM, has, err := tempStateDB.getBlackListProducerPunishedEpoch(key)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -80,7 +80,7 @@ func TestStateDB_GetAllBlackListProducerState(t *testing.T) {
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err)
 	}
-	gotM := tempStateDB.GetAllProducerBlackList()
+	gotM := tempStateDB.getAllProducerBlackList()
 	for k, v := range wantM {
 		if v2, ok := gotM[k]; !ok {
 			t.Fatalf("want %+v but got nothing", k)
@@ -123,7 +123,7 @@ func TestStateDB_GetAllBlackListProducerStateMultipleRootHash(t *testing.T) {
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err)
 	}
-	gotM := tempStateDB.GetAllProducerBlackList()
+	gotM := tempStateDB.getAllProducerBlackList()
 	for k, v := range wantM {
 		if v2, ok := gotM[k]; !ok {
 			t.Fatalf("want %+v but got nothing", k)
@@ -138,7 +138,7 @@ func TestStateDB_GetAllBlackListProducerStateMultipleRootHash(t *testing.T) {
 	if err != nil || tempStateDB1 == nil {
 		t.Fatal(err)
 	}
-	newGotM := tempStateDB1.GetAllProducerBlackList()
+	newGotM := tempStateDB1.getAllProducerBlackList()
 	for k, v := range newWantM {
 		if v2, ok := newGotM[k]; !ok {
 			t.Fatalf("want %+v but got nothing", k)

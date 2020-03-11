@@ -9,7 +9,7 @@ import (
 // Reward in Beacon
 func AddShardRewardRequest(stateDB *StateDB, epoch uint64, shardID byte, tokenID common.Hash, rewardAmount uint64) error {
 	key := GenerateRewardRequestObjectKey(epoch, shardID, tokenID)
-	r, has, err := stateDB.GetRewardRequestState(key)
+	r, has, err := stateDB.getRewardRequestState(key)
 	if err != nil {
 		return NewStatedbError(StoreRewardRequestError, err)
 	}
@@ -26,7 +26,7 @@ func AddShardRewardRequest(stateDB *StateDB, epoch uint64, shardID byte, tokenID
 
 func GetRewardOfShardByEpoch(stateDB *StateDB, epoch uint64, shardID byte, tokenID common.Hash) (uint64, error) {
 	key := GenerateRewardRequestObjectKey(epoch, shardID, tokenID)
-	amount, has, err := stateDB.GetRewardRequestAmount(key)
+	amount, has, err := stateDB.getRewardRequestAmount(key)
 	if err != nil {
 		return 0, NewStatedbError(GetRewardRequestError, err)
 	}
@@ -37,7 +37,7 @@ func GetRewardOfShardByEpoch(stateDB *StateDB, epoch uint64, shardID byte, token
 }
 
 func GetAllTokenIDForReward(stateDB *StateDB, epoch uint64) []common.Hash {
-	_, rewardRequestStates := stateDB.GetAllRewardRequestState(epoch)
+	_, rewardRequestStates := stateDB.getAllRewardRequestState(epoch)
 	tokenIDs := []common.Hash{}
 	for _, rewardRequestState := range rewardRequestStates {
 		tokenIDs = append(tokenIDs, rewardRequestState.TokenID())
@@ -46,7 +46,7 @@ func GetAllTokenIDForReward(stateDB *StateDB, epoch uint64) []common.Hash {
 }
 
 func RemoveRewardOfShardByEpoch(stateDB *StateDB, epoch uint64) {
-	rewardRequestKeys, _ := stateDB.GetAllRewardRequestState(epoch)
+	rewardRequestKeys, _ := stateDB.getAllRewardRequestState(epoch)
 	for _, k := range rewardRequestKeys {
 		stateDB.MarkDeleteStateObject(RewardRequestObjectType, k)
 	}
@@ -58,7 +58,7 @@ func AddCommitteeReward(stateDB *StateDB, incognitoPublicKey string, committeeRe
 	if err != nil {
 		return NewStatedbError(StoreCommitteeRewardError, err)
 	}
-	c, has, err := stateDB.GetCommitteeRewardState(key)
+	c, has, err := stateDB.getCommitteeRewardState(key)
 	if err != nil {
 		return NewStatedbError(StoreCommitteeRewardError, err)
 	}
@@ -84,7 +84,7 @@ func GetCommitteeReward(stateDB *StateDB, incognitoPublicKey string, tokenID com
 	if err != nil {
 		return 0, NewStatedbError(GetCommitteeRewardError, err)
 	}
-	r, has, err := stateDB.GetCommitteeRewardAmount(key)
+	r, has, err := stateDB.getCommitteeRewardAmount(key)
 	if err != nil {
 		return 0, NewStatedbError(GetCommitteeRewardError, err)
 	}
@@ -99,7 +99,7 @@ func GetCommitteeReward(stateDB *StateDB, incognitoPublicKey string, tokenID com
 }
 
 func ListCommitteeReward(stateDB *StateDB) map[string]map[common.Hash]uint64 {
-	return stateDB.GetAllCommitteeReward()
+	return stateDB.getAllCommitteeReward()
 }
 
 func RemoveCommitteeReward(stateDB *StateDB, incognitoPublicKeyBytes []byte, withdrawAmount uint64, tokenID common.Hash) error {
@@ -108,7 +108,7 @@ func RemoveCommitteeReward(stateDB *StateDB, incognitoPublicKeyBytes []byte, wit
 	if err != nil {
 		return NewStatedbError(RemoveCommitteeRewardError, err)
 	}
-	c, has, err := stateDB.GetCommitteeRewardState(key)
+	c, has, err := stateDB.getCommitteeRewardState(key)
 	if err != nil {
 		return NewStatedbError(RemoveCommitteeRewardError, err)
 	}
@@ -140,6 +140,6 @@ func RemoveCommitteeReward(stateDB *StateDB, incognitoPublicKeyBytes []byte, wit
 
 //================================= Testing ======================================
 func GetRewardRequestInfoByEpoch(stateDB *StateDB, epoch uint64) []*RewardRequestState {
-	_, rewardRequestStates := stateDB.GetAllRewardRequestState(epoch)
+	_, rewardRequestStates := stateDB.getAllRewardRequestState(epoch)
 	return rewardRequestStates
 }

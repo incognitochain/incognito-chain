@@ -21,7 +21,7 @@ func InsertETHTxHashIssued(stateDB *StateDB, uniqueEthTx []byte) error {
 
 func IsETHTxHashIssued(stateDB *StateDB, uniqueEthTx []byte) (bool, error) {
 	key := GenerateBridgeEthTxObjectKey(uniqueEthTx)
-	ethTxState, has, err := stateDB.GetBridgeEthTxState(key)
+	ethTxState, has, err := stateDB.getBridgeEthTxState(key)
 	if err != nil {
 		return false, NewStatedbError(IsETHTxHashIssuedError, err)
 	}
@@ -55,7 +55,7 @@ func CanProcessCIncToken(stateDB *StateDB, incTokenID common.Hash) (bool, error)
 
 func IsBridgeTokenExistedByType(stateDB *StateDB, incTokenID common.Hash, isCentralized bool) (bool, error) {
 	key := GenerateBridgeTokenInfoObjectKey(isCentralized, incTokenID)
-	tokenInfoState, has, err := stateDB.GetBridgeTokenInfoState(key)
+	tokenInfoState, has, err := stateDB.getBridgeTokenInfoState(key)
 	if err != nil {
 		return false, NewStatedbError(IsBridgeTokenExistedByTypeError, err)
 	}
@@ -71,7 +71,7 @@ func IsBridgeTokenExistedByType(stateDB *StateDB, incTokenID common.Hash, isCent
 
 func getBridgeTokenByType(stateDB *StateDB, incTokenID common.Hash, isCentralized bool) (*BridgeTokenInfoState, bool, error) {
 	key := GenerateBridgeTokenInfoObjectKey(isCentralized, incTokenID)
-	tokenInfoState, has, err := stateDB.GetBridgeTokenInfoState(key)
+	tokenInfoState, has, err := stateDB.getBridgeTokenInfoState(key)
 	if err != nil {
 		return nil, false, err
 	}
@@ -118,7 +118,7 @@ func CanProcessTokenPair(stateDB *StateDB, externalTokenID []byte, incTokenID co
 		log.Println("WARNING: failed at condition 2:", bridgeTokenInfoState.ExternalTokenID()[:], externalTokenID[:])
 		return false, nil
 	}
-	bridgeTokenInfoStates := stateDB.GetAllBridgeTokenInfoState(false)
+	bridgeTokenInfoStates := stateDB.getAllBridgeTokenInfoState(false)
 	for _, tempBridgeTokenInfoState := range bridgeTokenInfoStates {
 		if bytes.Compare(tempBridgeTokenInfoState.ExternalTokenID(), externalTokenID) != 0 {
 			continue
@@ -163,8 +163,8 @@ func UpdateBridgeTokenInfo(stateDB *StateDB, incTokenID common.Hash, externalTok
 }
 
 func GetAllBridgeTokens(stateDB *StateDB) ([]byte, error) {
-	cBridgeTokenInfoStates := stateDB.GetAllBridgeTokenInfoState(true)
-	dBridgeTokenInfoStates := stateDB.GetAllBridgeTokenInfoState(false)
+	cBridgeTokenInfoStates := stateDB.getAllBridgeTokenInfoState(true)
+	dBridgeTokenInfoStates := stateDB.getAllBridgeTokenInfoState(false)
 	bridgeTokenInfos := []*rawdbv2.BridgeTokenInfo{}
 	bridgeTokenInfoStates := append(cBridgeTokenInfoStates, dBridgeTokenInfoStates...)
 	for _, bridgeTokenInfoState := range bridgeTokenInfoStates {
@@ -191,7 +191,7 @@ func TrackBridgeReqWithStatus(stateDB *StateDB, txReqID common.Hash, status byte
 
 func GetBridgeReqWithStatus(stateDB *StateDB, txReqID common.Hash) (byte, error) {
 	key := GenerateBridgeStatusObjectKey(txReqID)
-	bridgeStatusState, has, err := stateDB.GetBridgeStatusState(key)
+	bridgeStatusState, has, err := stateDB.getBridgeStatusState(key)
 	if err != nil {
 		return 0, NewStatedbError(GetBridgeReqWithStatusError, err)
 	}

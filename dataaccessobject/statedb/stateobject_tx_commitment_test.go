@@ -120,7 +120,7 @@ func TestStateDB_StoreAndGetCommitmentState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	gotC, has, err := tempStateDB.GetCommitmentState(key)
+	gotC, has, err := tempStateDB.getCommitmentState(key)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -128,10 +128,10 @@ func TestStateDB_StoreAndGetCommitmentState(t *testing.T) {
 		t.Fatal(has)
 	}
 	if !reflect.DeepEqual(gotC, commitmentState) {
-		t.Fatalf("GetCommitmentState want %+v but got %+v", commitmentState, gotC)
+		t.Fatalf("getCommitmentState want %+v but got %+v", commitmentState, gotC)
 	}
 
-	gotC2, has, err := tempStateDB.GetCommitmentIndexState(keyIndex)
+	gotC2, has, err := tempStateDB.getCommitmentIndexState(keyIndex)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,10 +139,10 @@ func TestStateDB_StoreAndGetCommitmentState(t *testing.T) {
 		t.Fatal(has)
 	}
 	if !reflect.DeepEqual(gotC2, commitmentState) {
-		t.Fatalf("GetCommitmentState want %+v but got %+v", commitmentState, gotC2)
+		t.Fatalf("getCommitmentState want %+v but got %+v", commitmentState, gotC2)
 	}
 
-	gotCLength, has, err := tempStateDB.GetCommitmentLengthState(keyLength)
+	gotCLength, has, err := tempStateDB.getCommitmentLengthState(keyLength)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -150,7 +150,7 @@ func TestStateDB_StoreAndGetCommitmentState(t *testing.T) {
 		t.Fatal(has)
 	}
 	if gotCLength.Uint64() != commitmentLengthState.Uint64() {
-		t.Fatalf("GetCommitmentState want %+v but got %+v", commitmentLengthState.Uint64(), gotCLength.Uint64())
+		t.Fatalf("getCommitmentState want %+v but got %+v", commitmentLengthState.Uint64(), gotCLength.Uint64())
 	}
 }
 
@@ -177,7 +177,7 @@ func TestStateDB_GetGetAllCommitmentStateByPrefix(t *testing.T) {
 		tempWantIndexMByToken := wantIndexMByTokens[index]
 		tempWantMByToken := wantMByTokens[index]
 		for tokenID, wantIndexList := range tempWantIndexMByToken {
-			gotCIndexList := tempStateDB.GetAllCommitmentStateByPrefix(tokenID, shardID)
+			gotCIndexList := tempStateDB.getAllCommitmentStateByPrefix(tokenID, shardID)
 			for gotC, gotCIndex := range gotCIndexList {
 				flag := false
 				for _, wantCIndex := range wantIndexList {
@@ -187,7 +187,7 @@ func TestStateDB_GetGetAllCommitmentStateByPrefix(t *testing.T) {
 					}
 				}
 				if !flag {
-					t.Fatalf("GetAllCommitmentStateByPrefix shard %+v didn't want %+v", shardID, gotCIndex)
+					t.Fatalf("getAllCommitmentStateByPrefix shard %+v didn't want %+v", shardID, gotCIndex)
 				}
 				flag2 := false
 				for _, wantCBytes := range tempWantMByToken[tokenID] {
@@ -198,11 +198,11 @@ func TestStateDB_GetGetAllCommitmentStateByPrefix(t *testing.T) {
 					}
 				}
 				if !flag2 {
-					t.Fatalf("GetAllCommitmentStateByPrefix shard %+v didn't want %+v", shardID, gotC)
+					t.Fatalf("getAllCommitmentStateByPrefix shard %+v didn't want %+v", shardID, gotC)
 				}
 			}
 			keyLength := GenerateCommitmentLengthObjectKey(tokenID, shardID)
-			gotCLength, has, err := tempStateDB.GetCommitmentLengthState(keyLength)
+			gotCLength, has, err := tempStateDB.getCommitmentLengthState(keyLength)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -210,7 +210,7 @@ func TestStateDB_GetGetAllCommitmentStateByPrefix(t *testing.T) {
 				t.Fatal(has)
 			}
 			if gotCLength.Uint64() != wantLengthMByTokens[index][tokenID] {
-				t.Fatalf("GetAllSerialNumberByPrefix shard %+v want %+v but got %+v", shardID, wantLengthMByTokens[shardID][tokenID], gotCLength.Uint64())
+				t.Fatalf("getAllSerialNumberByPrefix shard %+v want %+v but got %+v", shardID, wantLengthMByTokens[shardID][tokenID], gotCLength.Uint64())
 			}
 		}
 	}

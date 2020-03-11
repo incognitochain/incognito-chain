@@ -47,7 +47,7 @@ func TestStateDB_GetAllCommitteeRewardStateByKey(t *testing.T) {
 		t.Fatal(err)
 	}
 	for k, v := range wantM {
-		gotM, has, err := tempStateDB.GetRewardRequestState(k)
+		gotM, has, err := tempStateDB.getRewardRequestState(k)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -67,7 +67,7 @@ func TestStateDB_UpdateAndGetAllCommitteeRewardStateByKey(t *testing.T) {
 		t.Fatal(err)
 	}
 	for k, v := range wantM {
-		gotM, has, err := sDB.GetRewardRequestState(k)
+		gotM, has, err := sDB.getRewardRequestState(k)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -100,7 +100,7 @@ func TestStateDB_UpdateAndGetAllCommitteeRewardStateByKey(t *testing.T) {
 		t.Fatal(err)
 	}
 	for k, v := range wantM {
-		gotM, has, err := tempStateDB1.GetRewardRequestState(k)
+		gotM, has, err := tempStateDB1.getRewardRequestState(k)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -117,7 +117,7 @@ func TestStateDB_UpdateAndGetAllCommitteeRewardStateByKey(t *testing.T) {
 		t.Fatal(err)
 	}
 	for k, v := range newWantM {
-		gotM, has, err := tempStateDB2.GetRewardRequestState(k)
+		gotM, has, err := tempStateDB2.getRewardRequestState(k)
 		if err != nil {
 			t.Fatal(err)
 		}

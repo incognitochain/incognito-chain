@@ -142,14 +142,14 @@ func TestStateDB_GetAllConsensusStateObject(t *testing.T) {
 	if err != nil || tempStateDB == nil {
 		t.Fatal(err)
 	}
-	gotMCommittee := tempStateDB.GetAllValidatorCommitteePublicKey(CurrentValidator, ids)
+	gotMCommittee := tempStateDB.getAllValidatorCommitteePublicKey(CurrentValidator, ids)
 	for _, id := range ids {
 		temp, ok := gotMCommittee[id]
 		if !ok {
-			t.Fatalf("GetAllValidatorCommitteePublicKey want shard %+v", id)
+			t.Fatalf("getAllValidatorCommitteePublicKey want shard %+v", id)
 		}
 		if len(temp) != 32 {
-			t.Fatalf("GetAllValidatorCommitteePublicKey want key length %+v but got %+v", 32, len(temp))
+			t.Fatalf("getAllValidatorCommitteePublicKey want key length %+v but got %+v", 32, len(temp))
 		}
 	}
 	for id, wants := range wantMCommittee {
@@ -162,19 +162,19 @@ func TestStateDB_GetAllConsensusStateObject(t *testing.T) {
 				}
 			}
 			if !flag {
-				t.Fatalf("GetAllValidatorCommitteePublicKey shard %+v want %+v but didn't get anything", id, want)
+				t.Fatalf("getAllValidatorCommitteePublicKey shard %+v want %+v but didn't get anything", id, want)
 			}
 		}
 	}
 
-	gotMSubstituteValidator := tempStateDB.GetAllValidatorCommitteePublicKey(SubstituteValidator, ids)
+	gotMSubstituteValidator := tempStateDB.getAllValidatorCommitteePublicKey(SubstituteValidator, ids)
 	for _, id := range ids {
 		temp, ok := gotMSubstituteValidator[id]
 		if !ok {
-			t.Fatalf("GetAllValidatorCommitteePublicKey want shard %+v", id)
+			t.Fatalf("getAllValidatorCommitteePublicKey want shard %+v", id)
 		}
 		if len(temp) != 8 {
-			t.Fatalf("GetAllValidatorCommitteePublicKey want key length %+v but got %+v", 8, len(temp))
+			t.Fatalf("getAllValidatorCommitteePublicKey want key length %+v but got %+v", 8, len(temp))
 		}
 	}
 	for id, wants := range wantMSubstituteValidator {
@@ -187,14 +187,14 @@ func TestStateDB_GetAllConsensusStateObject(t *testing.T) {
 				}
 			}
 			if !flag {
-				t.Fatalf("GetAllValidatorCommitteePublicKey shard %+v want %+v but didn't get anything", id, want)
+				t.Fatalf("getAllValidatorCommitteePublicKey shard %+v want %+v but didn't get anything", id, want)
 			}
 		}
 	}
 
-	gotNextEpochCandidate := tempStateDB.GetAllCandidateCommitteePublicKey(NextEpochShardCandidate)
+	gotNextEpochCandidate := tempStateDB.getAllCandidateCommitteePublicKey(NextEpochShardCandidate)
 	if len(gotNextEpochCandidate) != 80 {
-		t.Fatalf("GetAllCandidateCommitteePublicKey want key length %+v but got %+v", 80, len(gotNextEpochCandidate))
+		t.Fatalf("getAllCandidateCommitteePublicKey want key length %+v but got %+v", 80, len(gotNextEpochCandidate))
 	}
 	for id, want := range wantNextEpochCandidate {
 		flag := false
@@ -205,13 +205,13 @@ func TestStateDB_GetAllConsensusStateObject(t *testing.T) {
 			}
 		}
 		if !flag {
-			t.Fatalf("GetAllCandidateCommitteePublicKey shard %+v want %+v but didn't get anything", id, want)
+			t.Fatalf("getAllCandidateCommitteePublicKey shard %+v want %+v but didn't get anything", id, want)
 		}
 	}
 
-	gotCurrentEpochCandidate := tempStateDB.GetAllCandidateCommitteePublicKey(CurrentEpochShardCandidate)
+	gotCurrentEpochCandidate := tempStateDB.getAllCandidateCommitteePublicKey(CurrentEpochShardCandidate)
 	if len(gotCurrentEpochCandidate) != 80 {
-		t.Fatalf("GetAllCandidateCommitteePublicKey want key length %+v but got %+v", 80, len(gotCurrentEpochCandidate))
+		t.Fatalf("getAllCandidateCommitteePublicKey want key length %+v but got %+v", 80, len(gotCurrentEpochCandidate))
 	}
 	for id, want := range wantCurrentEpochCandidate {
 		flag := false
@@ -222,11 +222,11 @@ func TestStateDB_GetAllConsensusStateObject(t *testing.T) {
 			}
 		}
 		if !flag {
-			t.Fatalf("GetAllCandidateCommitteePublicKey %+v want %+v but didn't get anything", id, want)
+			t.Fatalf("getAllCandidateCommitteePublicKey %+v want %+v but didn't get anything", id, want)
 		}
 	}
 
-	_, _, _, _, _, _, gotMRewardReceiver, gotMAutoStaking := tempStateDB.GetAllCommitteeState(ids)
+	_, _, _, _, _, _, gotMRewardReceiver, gotMAutoStaking := tempStateDB.getAllCommitteeState(ids)
 	for k, v1 := range gotMRewardReceiver {
 		if v2, ok := wantMRewardReceiver[k]; !ok {
 			t.Fatalf("want %+v but get nothing", k)
@@ -245,7 +245,7 @@ func TestStateDB_GetAllConsensusStateObject(t *testing.T) {
 			}
 		}
 	}
-	gotMCommitteeReward := tempStateDB.GetAllCommitteeReward()
+	gotMCommitteeReward := tempStateDB.getAllCommitteeReward()
 	for k1, v1 := range wantMCommitteeReward {
 		if v2, ok := gotMCommitteeReward[k1]; !ok {
 			t.Fatalf("want %+v but got nothing", k1)
@@ -262,7 +262,7 @@ func TestStateDB_GetAllConsensusStateObject(t *testing.T) {
 		}
 	}
 	for k, v := range wantMRewardRequest {
-		gotRewardRequest, has, err := tempStateDB.GetRewardRequestAmount(k)
+		gotRewardRequest, has, err := tempStateDB.getRewardRequestAmount(k)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -273,7 +273,7 @@ func TestStateDB_GetAllConsensusStateObject(t *testing.T) {
 			t.Fatalf("want %+v but got %+v", v.Amount(), gotRewardRequest)
 		}
 	}
-	gotMBlackListProducer := tempStateDB.GetAllProducerBlackList()
+	gotMBlackListProducer := tempStateDB.getAllProducerBlackList()
 	for k, v := range wantMBlackListProducer {
 		if v2, ok := gotMBlackListProducer[k]; !ok {
 			t.Fatalf("want %+v but got nothing", k)
@@ -291,7 +291,7 @@ func BenchmarkStateDB_GetAllCommitteeRewardInFullData(b *testing.B) {
 		panic(err)
 	}
 	for n := 0; n < b.N; n++ {
-		tempStateDB.GetAllCommitteeReward()
+		tempStateDB.getAllCommitteeReward()
 	}
 }
 
@@ -303,7 +303,7 @@ func BenchmarkStateDB_GetAllAutoStakingInFullData(b *testing.B) {
 		panic(err)
 	}
 	for n := 0; n < b.N; n++ {
-		tempStateDB.GetAllCommitteeState([]int{0, 1, 2, 3, 4, 5, 6, 7, 8})
+		tempStateDB.getAllCommitteeState([]int{0, 1, 2, 3, 4, 5, 6, 7, 8})
 	}
 }
 func BenchmarkStateDB_GetAllCommitteeInFullData(b *testing.B) {
@@ -315,6 +315,6 @@ func BenchmarkStateDB_GetAllCommitteeInFullData(b *testing.B) {
 		panic(err)
 	}
 	for n := 0; n < b.N; n++ {
-		tempStateDB.GetAllValidatorCommitteePublicKey(CurrentValidator, ids)
+		tempStateDB.getAllValidatorCommitteePublicKey(CurrentValidator, ids)
 	}
 }

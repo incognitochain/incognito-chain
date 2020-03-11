@@ -56,14 +56,14 @@ func TestStateDB_GetMixCommitteePublicKey(t *testing.T) {
 		t.Fatal(err, tempStateDB)
 	}
 
-	gotCurrentValidatorM := tempStateDB.GetAllValidatorCommitteePublicKey(CurrentValidator, ids)
+	gotCurrentValidatorM := tempStateDB.getAllValidatorCommitteePublicKey(CurrentValidator, ids)
 	for _, id := range ids {
 		temp, ok := gotCurrentValidatorM[id]
 		if !ok {
-			t.Fatalf("GetAllCommitteeState want shard %+v", id)
+			t.Fatalf("getAllCommitteeState want shard %+v", id)
 		}
 		if len(temp) != 32 {
-			t.Fatalf("GetAllCommitteeState shard %+v want key length %+v but got %+v", id, 32, len(temp))
+			t.Fatalf("getAllCommitteeState shard %+v want key length %+v but got %+v", id, 32, len(temp))
 		}
 	}
 	for id, wants := range wantCurrentValidatorM {
@@ -76,19 +76,19 @@ func TestStateDB_GetMixCommitteePublicKey(t *testing.T) {
 				}
 			}
 			if !flag {
-				t.Fatalf("GetAllCommitteeState shard %+v want %+v but didn't get anything", id, want)
+				t.Fatalf("getAllCommitteeState shard %+v want %+v but didn't get anything", id, want)
 			}
 		}
 	}
 
-	gotSubstituteValidatorM := tempStateDB.GetAllValidatorCommitteePublicKey(SubstituteValidator, ids)
+	gotSubstituteValidatorM := tempStateDB.getAllValidatorCommitteePublicKey(SubstituteValidator, ids)
 	for _, id := range ids {
 		temp, ok := gotSubstituteValidatorM[id]
 		if !ok {
-			t.Fatalf("GetAllCommitteeState want shard %+v", id)
+			t.Fatalf("getAllCommitteeState want shard %+v", id)
 		}
 		if len(temp) != 8 {
-			t.Fatalf("GetAllCommitteeState want key length %+v but got %+v", 8, len(temp))
+			t.Fatalf("getAllCommitteeState want key length %+v but got %+v", 8, len(temp))
 		}
 	}
 	for id, wants := range wantSubstituteValidatorM {
@@ -101,14 +101,14 @@ func TestStateDB_GetMixCommitteePublicKey(t *testing.T) {
 				}
 			}
 			if !flag {
-				t.Fatalf("GetAllCommitteeState shard %+v want %+v but didn't get anything", id, want)
+				t.Fatalf("getAllCommitteeState shard %+v want %+v but didn't get anything", id, want)
 			}
 		}
 	}
 
-	gotNextEpochCandidateM := tempStateDB.GetAllCandidateCommitteePublicKey(NextEpochShardCandidate)
+	gotNextEpochCandidateM := tempStateDB.getAllCandidateCommitteePublicKey(NextEpochShardCandidate)
 	if len(gotNextEpochCandidateM) != 80 {
-		t.Fatalf("GetAllCandidateCommitteePublicKey want key length %+v but got %+v", to-from, len(gotNextEpochCandidateM))
+		t.Fatalf("getAllCandidateCommitteePublicKey want key length %+v but got %+v", to-from, len(gotNextEpochCandidateM))
 	}
 	for _, want := range wantNextEpochCandidateM {
 		flag := false
@@ -119,13 +119,13 @@ func TestStateDB_GetMixCommitteePublicKey(t *testing.T) {
 			}
 		}
 		if !flag {
-			t.Fatalf("GetAllCandidateCommitteePublicKey want %+v but didn't get anything", want)
+			t.Fatalf("getAllCandidateCommitteePublicKey want %+v but didn't get anything", want)
 		}
 	}
 
-	gotCurrentEpochCandidateM := tempStateDB.GetAllCandidateCommitteePublicKey(CurrentEpochShardCandidate)
+	gotCurrentEpochCandidateM := tempStateDB.getAllCandidateCommitteePublicKey(CurrentEpochShardCandidate)
 	if len(gotNextEpochCandidateM) != 80 {
-		t.Fatalf("GetAllCandidateCommitteePublicKey want key length %+v but got %+v", to-from, len(gotCurrentEpochCandidateM))
+		t.Fatalf("getAllCandidateCommitteePublicKey want key length %+v but got %+v", to-from, len(gotCurrentEpochCandidateM))
 	}
 	for _, want := range wantCurrentEpochCandidateM {
 		flag := false
@@ -136,7 +136,7 @@ func TestStateDB_GetMixCommitteePublicKey(t *testing.T) {
 			}
 		}
 		if !flag {
-			t.Fatalf("GetAllCandidateCommitteePublicKey want %+v but didn't get anything", want)
+			t.Fatalf("getAllCandidateCommitteePublicKey want %+v but didn't get anything", want)
 		}
 	}
 }
@@ -223,14 +223,14 @@ func TestStateDB_GetMixCommitteeState(t *testing.T) {
 		t.Fatal(err, tempStateDB)
 	}
 
-	gotCurrentValidatorM, gotSubstituteValidatorM, gotNextEpochCandidateM, gotCurrentEpochCandidateM, _, _, gotRewardReceiverM, gotAutoStakingM := tempStateDB.GetAllCommitteeState(ids)
+	gotCurrentValidatorM, gotSubstituteValidatorM, gotNextEpochCandidateM, gotCurrentEpochCandidateM, _, _, gotRewardReceiverM, gotAutoStakingM := tempStateDB.getAllCommitteeState(ids)
 	for _, id := range ids {
 		temp, ok := gotCurrentValidatorM[id]
 		if !ok {
-			t.Fatalf("GetAllCommitteeState want shard %+v", id)
+			t.Fatalf("getAllCommitteeState want shard %+v", id)
 		}
 		if len(temp) != 32 {
-			t.Fatalf("GetAllCommitteeState shard %+v want key length %+v but got %+v", id, 32, len(temp))
+			t.Fatalf("getAllCommitteeState shard %+v want key length %+v but got %+v", id, 32, len(temp))
 		}
 	}
 	for id, wants := range wantCurrentValidatorM {
@@ -243,7 +243,7 @@ func TestStateDB_GetMixCommitteeState(t *testing.T) {
 				}
 			}
 			if !flag {
-				t.Fatalf("GetAllCommitteeState shard %+v want %+v but didn't get anything", id, want)
+				t.Fatalf("getAllCommitteeState shard %+v want %+v but didn't get anything", id, want)
 			}
 		}
 	}
@@ -251,10 +251,10 @@ func TestStateDB_GetMixCommitteeState(t *testing.T) {
 	for _, id := range ids {
 		temp, ok := gotSubstituteValidatorM[id]
 		if !ok {
-			t.Fatalf("GetAllCommitteeState want shard %+v", id)
+			t.Fatalf("getAllCommitteeState want shard %+v", id)
 		}
 		if len(temp) != 8 {
-			t.Fatalf("GetAllCommitteeState want key length %+v but got %+v", 8, len(temp))
+			t.Fatalf("getAllCommitteeState want key length %+v but got %+v", 8, len(temp))
 		}
 	}
 	for id, wants := range wantSubstituteValidatorM {
@@ -267,13 +267,13 @@ func TestStateDB_GetMixCommitteeState(t *testing.T) {
 				}
 			}
 			if !flag {
-				t.Fatalf("GetAllCommitteeState shard %+v want %+v but didn't get anything", id, want)
+				t.Fatalf("getAllCommitteeState shard %+v want %+v but didn't get anything", id, want)
 			}
 		}
 	}
 
 	if len(gotNextEpochCandidateM) != 80 {
-		t.Fatalf("GetAllCommitteeState want key length %+v but got %+v", to-from, len(gotNextEpochCandidateM))
+		t.Fatalf("getAllCommitteeState want key length %+v but got %+v", to-from, len(gotNextEpochCandidateM))
 	}
 	for _, want := range wantNextEpochCandidateM {
 		flag := false
@@ -284,12 +284,12 @@ func TestStateDB_GetMixCommitteeState(t *testing.T) {
 			}
 		}
 		if !flag {
-			t.Fatalf("GetAllCommitteeState want %+v but didn't get anything", want)
+			t.Fatalf("getAllCommitteeState want %+v but didn't get anything", want)
 		}
 	}
 
 	if len(gotNextEpochCandidateM) != 80 {
-		t.Fatalf("GetAllCommitteeState want key length %+v but got %+v", to-from, len(gotCurrentEpochCandidateM))
+		t.Fatalf("getAllCommitteeState want key length %+v but got %+v", to-from, len(gotCurrentEpochCandidateM))
 	}
 	for _, want := range wantCurrentEpochCandidateM {
 		flag := false
@@ -300,26 +300,26 @@ func TestStateDB_GetMixCommitteeState(t *testing.T) {
 			}
 		}
 		if !flag {
-			t.Fatalf("GetAllCommitteeState want %+v but didn't get anything", want)
+			t.Fatalf("getAllCommitteeState want %+v but didn't get anything", want)
 		}
 	}
 
 	for k1, v1 := range wantRewardReceiverM {
 		if v2, ok := gotRewardReceiverM[k1]; !ok {
-			t.Fatalf("GetAllCommitteeState want %+v but got nothing", k1)
+			t.Fatalf("getAllCommitteeState want %+v but got nothing", k1)
 		} else {
 			if strings.Compare(v1, v2) != 0 {
-				t.Fatalf("GetAllCommitteeState want %+v but got %+v", v1, v2)
+				t.Fatalf("getAllCommitteeState want %+v but got %+v", v1, v2)
 			}
 		}
 	}
 
 	for k1, v1 := range wantAutoStakingM {
 		if v2, ok := gotAutoStakingM[k1]; !ok {
-			t.Fatalf("GetAllCommitteeState want %+v but got nothing", k1)
+			t.Fatalf("getAllCommitteeState want %+v but got nothing", k1)
 		} else {
 			if v1 != v2 {
-				t.Fatalf("GetAllCommitteeState want %+v but got %+v", v1, v2)
+				t.Fatalf("getAllCommitteeState want %+v but got %+v", v1, v2)
 			}
 		}
 	}

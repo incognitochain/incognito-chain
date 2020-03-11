@@ -81,7 +81,7 @@ func TestStateDB_StoreAndGetSerialNumberState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	gotS, has, err := tempStateDB.GetSerialNumberState(key)
+	gotS, has, err := tempStateDB.getSerialNumberState(key)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,14 +89,14 @@ func TestStateDB_StoreAndGetSerialNumberState(t *testing.T) {
 		t.Fatal(has)
 	}
 	if !reflect.DeepEqual(gotS, serialNumberState) {
-		t.Fatalf("GetSerialNumberState want %+v but got %+v", serialNumberState, gotS)
+		t.Fatalf("getSerialNumberState want %+v but got %+v", serialNumberState, gotS)
 	}
-	gotS2, has, err := tempStateDB.GetSerialNumberState(key2)
+	gotS2, has, err := tempStateDB.getSerialNumberState(key2)
 	if has {
 		t.Fatal(has)
 	}
 	if !reflect.DeepEqual(gotS2, NewSerialNumberState()) {
-		t.Fatalf("GetSerialNumberState want %+v but got %+v", NewSerialNumberState(), gotS2)
+		t.Fatalf("getSerialNumberState want %+v but got %+v", NewSerialNumberState(), gotS2)
 	}
 }
 
@@ -118,7 +118,7 @@ func TestStateDB_GetAllSerialNumberByPrefix(t *testing.T) {
 	for index, shardID := range shardIDs {
 		tempWantMByToken := wantMByTokens[index]
 		for tokenID, wantSerialNumberList := range tempWantMByToken {
-			gotSerialNumberList := tempStateDB.GetAllSerialNumberByPrefix(tokenID, shardID)
+			gotSerialNumberList := tempStateDB.getAllSerialNumberByPrefix(tokenID, shardID)
 			for _, wantSerialNumber := range wantSerialNumberList {
 				flag := false
 				for _, gotSerialNumber := range gotSerialNumberList {
@@ -128,7 +128,7 @@ func TestStateDB_GetAllSerialNumberByPrefix(t *testing.T) {
 					}
 				}
 				if !flag {
-					t.Fatalf("GetAllSerialNumberByPrefix shard %+v didn't got %+v", shardID, wantSerialNumber)
+					t.Fatalf("getAllSerialNumberByPrefix shard %+v didn't got %+v", shardID, wantSerialNumber)
 				}
 			}
 		}
