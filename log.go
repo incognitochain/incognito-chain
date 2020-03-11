@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/consensus/blsbft"
+	"github.com/incognitochain/incognito-chain/consensus"
 	"os"
 	"path/filepath"
 
@@ -81,7 +81,7 @@ func init() {
 	database.Logger.Init(dbLogger)
 	wallet.Logger.Init(walletLogger)
 	blockchain.Logger.Init(blockchainLogger)
-	blsbft.Logger.Init(consensusLogger)
+	consensus.Logger.Init(consensusLogger)
 	mempool.Logger.Init(mempoolLogger)
 	main2.Logger.Init(randomLogger)
 	transaction.Logger.Init(transactionLogger)

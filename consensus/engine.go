@@ -1,8 +1,10 @@
-package blsbft
+package consensus
 
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/consensus/blsbft"
+	blsbft2 "github.com/incognitochain/incognito-chain/consensus/blsbftv2"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -23,6 +25,8 @@ type Engine struct {
 		role    string
 		chainID int
 	}
+
+	version int
 }
 
 func (engine *Engine) GetUserLayer() (string, int) {
@@ -103,11 +107,20 @@ func (s *Engine) WatchCommitteeChange() {
 			if len(s.config.Blockchain.ShardChain)-1 < chainID {
 				panic("Chain " + chainName + " not available")
 			}
-			if chainID == -1 {
-				s.BFTProcess[chainID] = NewInstance(s.config.Blockchain.BeaconChain, chainName, chainID, s.config.Node, Logger.log)
+			if s.version == 1 {
+				if chainID == -1 {
+					s.BFTProcess[chainID] = blsbft.NewInstance(s.config.Blockchain.BeaconChain, chainName, chainID, s.config.Node, Logger.log)
+				} else {
+					s.BFTProcess[chainID] = blsbft.NewInstance(s.config.Blockchain.ShardChain[chainID], chainName, chainID, s.config.Node, Logger.log)
+				}
 			} else {
-				s.BFTProcess[chainID] = NewInstance(s.config.Blockchain.ShardChain[chainID], chainName, chainID, s.config.Node, Logger.log)
+				if chainID == -1 {
+					s.BFTProcess[chainID] = blsbft2.NewInstance(s.config.Blockchain.BeaconChain, chainName, chainID, s.config.Node, Logger.log)
+				} else {
+					s.BFTProcess[chainID] = blsbft2.NewInstance(s.config.Blockchain.ShardChain[chainID], chainName, chainID, s.config.Node, Logger.log)
+				}
 			}
+
 		}
 
 		if err := s.BFTProcess[chainID].Start(); err != nil {
@@ -130,6 +143,7 @@ func NewConsensusEngine() *Engine {
 		BFTProcess:           make(map[int]ConsensusInterface),
 		consensusName:        common.BlsConsensus,
 		userMiningPublicKeys: make(map[string]*incognitokey.CommitteePublicKey),
+		version:              1,
 	}
 	return engine
 }

@@ -55,7 +55,7 @@ import (
 		+ Block Producer Signature is calculated from hash block header
 		+ Block Producer Signature is not included in block header
 */
-func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLimit map[byte]uint64) (*BeaconBlock, error) {
+func (blockGenerator *BlockGenerator) NewBlockBeacon(version int, proposer string, round int, shardsToBeaconLimit map[byte]uint64) (*BeaconBlock, error) {
 
 	Logger.log.Infof("⛏ Creating Beacon Block %+v", blockGenerator.chain.GetBeaconBestState().BeaconHeight+1)
 	//============Init Variable============
@@ -71,27 +71,33 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLi
 	}
 	//======Build Header Essential Data=======
 	// beaconBlock.Header.ProducerAddress = *producerAddress
-	beaconBlock.Header.Version = BEACON_BLOCK_VERSION
+	beaconBlock.Header.Version = version
 	beaconBlock.Header.Height = beaconBestState.BeaconHeight + 1
 	if (beaconBestState.BeaconHeight+1)%blockGenerator.chain.config.ChainParams.Epoch == 1 {
 		epoch = beaconBestState.Epoch + 1
 	} else {
 		epoch = beaconBestState.Epoch
 	}
-	committee := blockGenerator.chain.GetBeaconBestState().GetBeaconCommittee()
-	producerPosition := (blockGenerator.chain.GetBeaconBestState().BeaconProposerIndex + round) % len(beaconBestState.BeaconCommittee)
 	beaconBlock.Header.ConsensusType = beaconBestState.ConsensusAlgorithm
 
-	beaconBlock.Header.Producer, err = committee[producerPosition].ToBase58() // .GetMiningKeyBase58(common.BridgeConsensus)
-	if err != nil {
-		return nil, err
+	if version == 1 {
+		committee := blockGenerator.chain.GetBeaconBestState().GetBeaconCommittee()
+		producerPosition := (blockGenerator.chain.GetBeaconBestState().BeaconProposerIndex + round) % len(beaconBestState.BeaconCommittee)
+		beaconBlock.Header.Producer, err = committee[producerPosition].ToBase58() // .GetMiningKeyBase58(common.BridgeConsensus)
+		if err != nil {
+			return nil, err
+		}
+		beaconBlock.Header.ProducerPubKeyStr, err = committee[producerPosition].ToBase58()
+		if err != nil {
+			Logger.log.Error(err)
+			return nil, NewBlockChainError(ConvertCommitteePubKeyToBase58Error, err)
+		}
+	} else {
+
+		beaconBlock.Header.Producer = proposer
+		beaconBlock.Header.ProducerPubKeyStr = proposer
 	}
-	beaconBlock.Header.ProducerPubKeyStr, err = committee[producerPosition].ToBase58()
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, NewBlockChainError(ConvertCommitteePubKeyToBase58Error, err)
-	}
-	beaconBlock.Header.Version = BEACON_BLOCK_VERSION
+
 	beaconBlock.Header.Height = beaconBestState.BeaconHeight + 1
 	beaconBlock.Header.Epoch = epoch
 	beaconBlock.Header.Round = round

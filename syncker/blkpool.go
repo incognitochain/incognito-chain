@@ -42,7 +42,7 @@ func (pool *BlkPool) GetPoolLength() int {
 
 func (pool *BlkPool) AddBlock(blk common.BlockPoolInterface) {
 	pool.action <- func() {
-		prevHash := blk.GetPrevHash()
+		prevHash := blk.GetPrevHash().String()
 		hash := blk.Hash().String()
 		if _, ok := pool.blkPoolByHash[hash]; ok {
 			return

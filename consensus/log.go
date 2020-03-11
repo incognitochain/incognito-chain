@@ -1,4 +1,4 @@
-package blsbft
+package consensus
 
 import "github.com/incognitochain/incognito-chain/common"
 

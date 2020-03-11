@@ -530,6 +530,20 @@ func (beaconBestState *BeaconBestState) GetBeaconCommittee() []incognitokey.Comm
 	result := []incognitokey.CommitteePublicKey{}
 	return append(result, beaconBestState.BeaconCommittee...)
 }
+
+func (beaconBestState *BeaconBestState) GetCommittee() []incognitokey.CommitteePublicKey {
+	beaconBestState.lock.RLock()
+	defer beaconBestState.lock.RUnlock()
+	result := []incognitokey.CommitteePublicKey{}
+	return append(result, beaconBestState.BeaconCommittee...)
+}
+
+func (beaconBestState *BeaconBestState) GetProposerByTimeSlot(ts int64) incognitokey.CommitteePublicKey {
+	id := int(ts) % len(beaconBestState.BeaconCommittee)
+	//fmt.Println("debug GetProposerByTimeSlot", len(beaconBestState.BeaconCommittee), int(ts), id)
+	return beaconBestState.BeaconCommittee[id]
+}
+
 func (beaconBestState *BeaconBestState) GetBeaconPendingValidator() []incognitokey.CommitteePublicKey {
 	beaconBestState.lock.RLock()
 	defer beaconBestState.lock.RUnlock()

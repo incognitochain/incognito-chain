@@ -258,9 +258,6 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 	// if len(shardBlock.Header.ProducerAddress.Bytes()) != 66 {
 	// 	return NewBlockChainError(ProducerError, fmt.Errorf("Expect has length 66 but get %+v", len(shardBlock.Header.ProducerAddress.Bytes())))
 	// }
-	if shardBlock.Header.Version != SHARD_BLOCK_VERSION {
-		return NewBlockChainError(WrongVersionError, fmt.Errorf("Expect shardBlock version %+v but get %+v", SHARD_BLOCK_VERSION, shardBlock.Header.Version))
-	}
 
 	if shardBlock.Header.Height > blockchain.GetBestStateShard(shardID).ShardHeight+1 {
 		return NewBlockChainError(WrongBlockHeightError, fmt.Errorf("Expect shardBlock height %+v but get %+v", blockchain.GetBestStateShard(shardID).ShardHeight+1, shardBlock.Header.Height))
@@ -581,13 +578,30 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(shardBlock *
 	producerPosition := (shardBestState.ShardProposerIdx + shardBlock.Header.Round) % len(shardBestState.ShardCommittee)
 
 	//verify producer
-	tempProducer, err := shardBestState.ShardCommittee[producerPosition].ToBase58() //.GetMiningKeyBase58(common.BridgeConsensus)
-	if err != nil {
-		return NewBlockChainError(UnExpectedError, err)
+	if shardBlock.Header.Version == 1 {
+		tempProducer, err := shardBestState.ShardCommittee[producerPosition].ToBase58() //.GetMiningKeyBase58(common.BridgeConsensus)
+		if err != nil {
+			return NewBlockChainError(UnExpectedError, err)
+		}
+		if strings.Compare(tempProducer, producerPublicKey) != 0 {
+			return NewBlockChainError(ProducerError, fmt.Errorf("Producer should be should be %+v", tempProducer))
+		}
+	} else {
+		tempProducer := shardBestState.GetProposerByTimeSlot(common.CalculateTimeSlot(shardBlock.GetProduceTime()))
+		b58Str, _ := tempProducer.ToBase58()
+		if strings.Compare(b58Str, producerPublicKey) != 0 {
+			return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", b58Str, producerPublicKey))
+		}
+
+		tempProducer = shardBestState.GetProposerByTimeSlot(common.CalculateTimeSlot(shardBlock.GetProposeTime()))
+		b58Str, _ = tempProducer.ToBase58()
+		if strings.Compare(b58Str, shardBlock.GetProposer()) != 0 {
+			fmt.Println("debug Version ", shardBlock.ConsensusHeader)
+			return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Proposer Public Key to be equal but get %+v From Index, %+v From Header", b58Str, shardBlock.GetProposer()))
+		}
+
 	}
-	if strings.Compare(tempProducer, producerPublicKey) != 0 {
-		return NewBlockChainError(ProducerError, fmt.Errorf("Producer should be should be %+v", tempProducer))
-	}
+
 	//=============End Verify producer signature
 	//=============Verify aggegrate signature
 	// if isVerifySig {

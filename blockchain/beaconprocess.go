@@ -276,10 +276,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *Beacon
 	// if len(beaconBlock.Header.Producer) == 0 {
 	// 	return NewBlockChainError(ProducerError, fmt.Errorf("Expect has length 66 but get %+v", len(beaconBlock.Header.Producer)))
 	// }
-	//verify version
-	if beaconBlock.Header.Version != BEACON_BLOCK_VERSION {
-		return NewBlockChainError(WrongVersionError, fmt.Errorf("Expect block version to be equal to %+v but get %+v", BEACON_BLOCK_VERSION, beaconBlock.Header.Version))
-	}
+
 	// Verify parent hash exist or not
 	previousBlockHash := beaconBlock.Header.PreviousBlockHash
 	parentBlockBytes, err := blockchain.config.DataBase.FetchBeaconBlock(previousBlockHash)
@@ -502,17 +499,30 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 	- New Stake public key must not found in beacon best state (candidate, pending validator, committee)
 */
 func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(beaconBlock *BeaconBlock, isVerifySig bool, chainParamEpoch uint64) error {
-	beaconBestState.lock.RLock()
-	defer beaconBestState.lock.RUnlock()
 	//verify producer via index
 	producerPublicKey := beaconBlock.Header.Producer
-	producerPosition := (beaconBestState.BeaconProposerIndex + beaconBlock.Header.Round) % len(beaconBestState.BeaconCommittee)
-	tempProducer, err := beaconBestState.BeaconCommittee[producerPosition].ToBase58() //.GetMiningKeyBase58(common.BridgeConsensus)
-	if err != nil {
-		return NewBlockChainError(UnExpectedError, err)
-	}
-	if strings.Compare(string(tempProducer), producerPublicKey) != 0 {
-		return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
+	if beaconBlock.Header.Version == 1 {
+		producerPosition := (beaconBestState.BeaconProposerIndex + beaconBlock.Header.Round) % len(beaconBestState.BeaconCommittee)
+		tempProducer, err := beaconBestState.BeaconCommittee[producerPosition].ToBase58() //.GetMiningKeyBase58(common.BridgeConsensus)
+		if err != nil {
+			return NewBlockChainError(UnExpectedError, err)
+		}
+		if strings.Compare(string(tempProducer), producerPublicKey) != 0 {
+			return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
+		}
+	} else {
+		tempProducer := beaconBestState.GetProposerByTimeSlot(common.CalculateTimeSlot(beaconBlock.GetProduceTime()))
+		b58Str, _ := tempProducer.ToBase58()
+		if strings.Compare(b58Str, producerPublicKey) != 0 {
+			return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", b58Str, producerPublicKey))
+		}
+
+		tempProducer = beaconBestState.GetProposerByTimeSlot(common.CalculateTimeSlot(beaconBlock.GetProposeTime()))
+		b58Str, _ = tempProducer.ToBase58()
+		if strings.Compare(b58Str, beaconBlock.ConsensusHeader.Proposer) != 0 {
+			return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Proposer Public Key to be equal but get %+v From Index, %+v From Header", b58Str, beaconBlock.ConsensusHeader.Proposer))
+		}
+
 	}
 
 	//=============End Verify Aggegrate signature

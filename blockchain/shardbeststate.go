@@ -274,3 +274,14 @@ func (shardBestState *ShardBestState) GetStakingTx() map[string]string {
 	}
 	return m
 }
+
+func (shardBestState *ShardBestState) GetCommittee() []incognitokey.CommitteePublicKey {
+	result := []incognitokey.CommitteePublicKey{}
+	return append(result, shardBestState.ShardCommittee...)
+}
+
+func (shardBestState *ShardBestState) GetProposerByTimeSlot(ts int64) incognitokey.CommitteePublicKey {
+	id := int(ts) % len(shardBestState.ShardCommittee)
+	//fmt.Println("debug GetProposerByTimeSlot", len(shardBestState.ShardCommittee), int(ts), id)
+	return shardBestState.ShardCommittee[id]
+}

@@ -54,7 +54,7 @@ import (
 	4. Update Cloned ShardBestState with New Shard Block
 	5. Create Root Hash from New Shard Block and updated Clone Shard Beststate Data
 */
-func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, crossShards map[byte]uint64, beaconHeight uint64, start time.Time) (*ShardBlock, error) {
+func (blockGenerator *BlockGenerator) NewBlockShard(version int, proposer string, shardID byte, round int, crossShards map[byte]uint64, beaconHeight uint64, start time.Time) (*ShardBlock, error) {
 	var (
 		transactionsForNewBlock = make([]metadata.Transaction, 0)
 		totalTxsFee             = make(map[common.Hash]uint64)
@@ -207,19 +207,20 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	//==========Build Essential Header Data=========
 	// startStep = time.Now()
 	// producer key
-	producerPosition := (blockGenerator.chain.GetBestStateShard(byte(shardID)).ShardProposerIdx + round) % len(currentCommitteePubKeys)
-	// committeeMiningKeys, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(blockGenerator.chain.GetBestStateShard(byte(shardID).ShardCommittee, common.BridgeConsensus)
-	// if err != nil {
-	// 	return nil, NewBlockChainError(ExtractPublicKeyFromCommitteeKeyListError, fmt.Errorf("Failed to extract key of producer in shard block %+v of shardID %+v", newShardBlock.Header.Height, newShardBlock.Header.ShardID))
-	// }
-	producerKey, err := blockGenerator.chain.GetBestStateShard(byte(shardID)).ShardCommittee[producerPosition].ToBase58()
-	if err != nil {
-		return nil, NewBlockChainError(UnExpectedError, err)
+	producerKey := proposer
+	producerPubKeyStr := proposer
+	if version == 1 {
+		producerPosition := (blockGenerator.chain.GetBestStateShard(byte(shardID)).ShardProposerIdx + round) % len(currentCommitteePubKeys)
+		producerKey, err = blockGenerator.chain.GetBestStateShard(byte(shardID)).ShardCommittee[producerPosition].ToBase58()
+		if err != nil {
+			return nil, NewBlockChainError(UnExpectedError, err)
+		}
+		producerPubKeyStr, err = blockGenerator.chain.GetBestStateShard(byte(shardID)).ShardCommittee[producerPosition].ToBase58()
+		if err != nil {
+			return nil, NewBlockChainError(ConvertCommitteePubKeyToBase58Error, fmt.Errorf("Failed to convert pub key of producer to base58 string in shard block %+v of shardID %+v", newShardBlock.Header.Height, newShardBlock.Header.ShardID))
+		}
 	}
-	producerPubKeyStr, err := blockGenerator.chain.GetBestStateShard(byte(shardID)).ShardCommittee[producerPosition].ToBase58()
-	if err != nil {
-		return nil, NewBlockChainError(ConvertCommitteePubKeyToBase58Error, fmt.Errorf("Failed to convert pub key of producer to base58 string in shard block %+v of shardID %+v", newShardBlock.Header.Height, newShardBlock.Header.ShardID))
-	}
+
 	for _, tx := range newShardBlock.Body.Transactions {
 		totalTxsFee[*tx.GetTokenID()] += tx.GetTxFee()
 		txType := tx.GetType()
@@ -233,7 +234,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 		ProducerPubKeyStr: producerPubKeyStr,
 
 		ShardID:           shardID,
-		Version:           SHARD_BLOCK_VERSION,
+		Version:           version,
 		PreviousBlockHash: shardBestState.BestBlockHash,
 		Height:            shardBestState.ShardHeight + 1,
 		Round:             round,
