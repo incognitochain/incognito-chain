@@ -60,6 +60,13 @@ func (blockchain *BlockChain) processPortalLiquidateCustodian(
 		// remove redeem request from waiting redeem requests list
 		if len(currentPortalState.WaitingRedeemRequests[waitingRedeemReqKey].Custodians) == 0 {
 			delete(currentPortalState.WaitingRedeemRequests, waitingRedeemReqKey)
+
+			// update status of redeem request with redeemID to liquidated status
+			err = updateRedeemRequestStatusByRedeemId(actionData.UniqueRedeemID, common.PortalRedeemReqLiquidatedStatus, db)
+			if err != nil {
+				Logger.log.Errorf("ERROR: an error occurred while updating redeem request status by redeemID: %+v", err)
+				return nil
+			}
 		}
 
 		// track liquidation custodian status by redeemID and custodian address into DB

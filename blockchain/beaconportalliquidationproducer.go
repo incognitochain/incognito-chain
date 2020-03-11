@@ -97,6 +97,22 @@ func checkAndBuildInstForCustodianLiquidation(
 				// update custodian state (total collateral, holding public tokens, locked amount, free collateral)
 				cusStateKey := lvdb.NewCustodianStateKey(beaconHeight, cusIncAddr)
 				custodianState := currentPortalState.CustodianPoolState[cusStateKey]
+				if custodianState == nil {
+					Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when get custodian state with key %v\n: ", cusStateKey)
+					inst := buildCustodianRunAwayLiquidationInst(
+						redeemReq.UniqueRedeemID,
+						redeemReq.TokenID,
+						matchCusDetail.Amount,
+						0,
+						redeemReq.RedeemerAddress,
+						cusIncAddr,
+						metadata.PortalLiquidateCustodianMeta,
+						shardID,
+						common.PortalLiquidateCustodianFailedChainStatus,
+					)
+					insts = append(insts, inst)
+					continue
+				}
 
 				if custodianState.TotalCollateral < mintedAmountInPRV ||
 					custodianState.LockedAmountCollateral[tokenSymbol] < mintedAmountInPRV {

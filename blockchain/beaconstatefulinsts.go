@@ -779,6 +779,7 @@ func (blockchain *BlockChain) handleRelayingInsts(
 
 func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
 	beaconHeight uint64, currentPortalState *CurrentPortalState) ([][]string, error) {
+	Logger.log.Errorf("autoCheckAndCreatePortalLiquidationInsts starting.......")
 
 	insts := [][]string{}
 
@@ -788,12 +789,12 @@ func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
 	if err != nil {
 		Logger.log.Errorf("Error when check and build custodian liquidation %v\n", err)
 	}
-	if len(custodianLiqInsts) > 9 {
+	if len(custodianLiqInsts) > 0 {
 		insts = append(insts, custodianLiqInsts...)
 	}
+	Logger.log.Infof("There are %v instruction for custodian liquidation in portal\n", len(custodianLiqInsts))
 
 	// case 2: check collateral's value (locked collateral amount) drops below MinRatio
 	buildMinAspectRatioCollateralLiquidationInst()
-	return [][]string{}, nil
-
+	return insts, nil
 }
