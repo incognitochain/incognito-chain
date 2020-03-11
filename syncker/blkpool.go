@@ -81,7 +81,7 @@ func (pool *BlkPool) GetNextBlock(prevhash string, shouldGetLatest bool) common.
 		hashes := pool.blkPoolByPrevHash[prevhash][:]
 		for _, h := range hashes {
 			blk := pool.blkPoolByHash[h]
-			if _, ok := pool.blkPoolByPrevHash[blk.Hash().String()]; shouldGetLatest || ok {
+			if _, ok := pool.blkPoolByPrevHash[blk.Hash().String()]; ok || shouldGetLatest {
 				res <- pool.blkPoolByHash[h]
 				return
 			}

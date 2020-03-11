@@ -129,6 +129,7 @@ func (synckerManager *SynckerManager) ReceiveBlock(blk interface{}, peerID strin
 	case *blockchain.BeaconBlock:
 		beaconBlk := blk.(*blockchain.BeaconBlock)
 		synckerManager.beaconPool.AddBlock(beaconBlk)
+		fmt.Printf("syncker: receive beacon block %d \n", beaconBlk.GetHeight())
 		//create fake s2b pool peerstate
 		synckerManager.BeaconSyncProcess.beaconPeerStateCh <- &wire.MessagePeerState{
 			Beacon: wire.ChainState{
@@ -136,12 +137,14 @@ func (synckerManager *SynckerManager) ReceiveBlock(blk interface{}, peerID strin
 				BlockHash: *beaconBlk.Hash(),
 				Height:    beaconBlk.GetHeight(),
 			},
+			SenderID:  time.Now().String(),
+			Timestamp: time.Now().Unix(),
 		}
 
 	case *blockchain.ShardBlock:
 
 		shardBlk := blk.(*blockchain.ShardBlock)
-		fmt.Printf("syncker: receive shard block %d \n", shardBlk.GetHeight())
+		//fmt.Printf("syncker: receive shard block %d \n", shardBlk.GetHeight())
 		synckerManager.shardPool[shardBlk.GetShardID()].AddBlock(shardBlk)
 
 	case *blockchain.ShardToBeaconBlock:

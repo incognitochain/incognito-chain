@@ -110,7 +110,7 @@ func (s *BeaconSyncProcess) getBeaconPeerStates() map[string]BeaconPeerState {
 //watching confirm beacon block and update cross shard info (which beacon confirm crossshard block N of shard X)
 func (s *BeaconSyncProcess) updateConfirmCrossShard() {
 	//TODO: update lastUpdateConfirmCrossShard using DB
-	fmt.Println("crossdebug lastUpdateConfirmCrossShard ", s.lastUpdateConfirmCrossShard)
+	//fmt.Println("crossdebug lastUpdateConfirmCrossShard ", s.lastUpdateConfirmCrossShard)
 	for {
 		if s.lastUpdateConfirmCrossShard > s.chain.GetBestViewHeight() { //TODO: get confirm height
 			time.Sleep(time.Second * 5)
@@ -152,8 +152,10 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 	}
 	var blk common.BlockPoolInterface
 	if s.isCommittee {
+		fmt.Println("debug beacon get next block A")
 		blk = s.beaconPool.GetNextBlock(s.chain.GetBestViewHash(), true)
 	} else {
+		fmt.Println("debug beacon get next block B")
 		blk = s.beaconPool.GetNextBlock(s.chain.GetBestViewHash(), false)
 	}
 
