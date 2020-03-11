@@ -60,6 +60,7 @@ const (
 	PortalLiquidateTPExchangeRatesResponseMeta = 115
 
 	PortalRewardMeta = 116
+	PortalRequestWithdrawRewardMeta = 117
 
 	// relaying
 	RelayingBNBHeaderMeta = 200
