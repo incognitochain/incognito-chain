@@ -117,5 +117,5 @@ func (blockchain *BlockChain) processPortalLiquidateCustodian(
 
 func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(beaconHeight uint64, instructions []string,
 currentPortalState *CurrentPortalState) error {
-
+	return nil
 }
