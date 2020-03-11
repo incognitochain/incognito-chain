@@ -170,24 +170,24 @@ func (chain *BeaconChain) GetLastProposerIndex() int {
 
 func (chain *BeaconChain) CreateNewBlock(version int, proposer string, round int) (common.BlockInterface, error) {
 	newBlock, err := chain.BlockGen.NewBlockBeacon(version, proposer, round, nil)
-	newBlock.ConsensusHeader = ConsensusHeader{
-		Proposer:    proposer,
-		ProposeTime: time.Now().Unix(),
-	}
 	if err != nil {
 		return nil, err
 	}
+	if version == 2 {
+		newBlock.Header.Proposer = proposer
+		newBlock.Header.ProposeTime = time.Now().Unix()
+	}
+
 	return newBlock, nil
 }
 
+//this function for version 2
 func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string) (common.BlockInterface, error) {
 	b, _ := json.Marshal(oldBlock)
 	newBlock := new(BeaconBlock)
 	json.Unmarshal(b, &newBlock)
-	newBlock.ConsensusHeader = ConsensusHeader{
-		Proposer:    proposer,
-		ProposeTime: time.Now().Unix(),
-	}
+	newBlock.Header.Proposer = proposer
+	newBlock.Header.ProposeTime = time.Now().Unix()
 	return oldBlock, nil
 }
 

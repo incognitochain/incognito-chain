@@ -16,18 +16,17 @@ type ShardBlock struct {
 	// ValidatorsIdx [][]int `json:"ValidatorsIdx"` //[0]: R | [1]:AggregatedSig
 	// ProducerSig   string  `json:"ProducerSig"`
 
-	ValidationData  string `json:"ValidationData"`
-	ConsensusHeader ConsensusHeader
-	Body            ShardBody
-	Header          ShardHeader
+	ValidationData string `json:"ValidationData"`
+	Body           ShardBody
+	Header         ShardHeader
 }
 
 func (shardBlock *ShardBlock) GetProposer() string {
-	return shardBlock.ConsensusHeader.Proposer
+	return shardBlock.Header.Proposer
 }
 
 func (shardBlock *ShardBlock) GetProposeTime() int64 {
-	return shardBlock.ConsensusHeader.ProposeTime
+	return shardBlock.Header.ProposeTime
 }
 
 func (shardBlock *ShardBlock) GetProduceTime() int64 {
@@ -46,10 +45,9 @@ type ShardToBeaconBlock struct {
 	// R              string  `json:"R"`
 	// ValidatorsIdx  [][]int `json:"ValidatorsIdx"` //[0]: R | [1]:AggregatedSig
 	// ProducerSig    string  `json:"ProducerSig"`
-	ValidationData  string `json:"ValidationData"`
-	ConsensusHeader ConsensusHeader
-	Instructions    [][]string
-	Header          ShardHeader
+	ValidationData string `json:"ValidationData"`
+	Instructions   [][]string
+	Header         ShardHeader
 }
 
 func (shardToBeaconBlock *ShardToBeaconBlock) GetPrevHash() common.Hash {
@@ -66,7 +64,6 @@ type CrossShardBlock struct {
 	// ValidatorsIdx   [][]int `json:"ValidatorsIdx"` //[0]: R | [1]:AggregatedSig
 	// ProducerSig     string  `json:"ProducerSig"`
 	ValidationData  string `json:"ValidationData"`
-	ConsensusHeader ConsensusHeader
 	Header          ShardHeader
 	ToShardID       byte
 	MerklePathShard []common.Hash
@@ -78,8 +75,7 @@ type CrossShardBlock struct {
 
 func NewShardBlock() *ShardBlock {
 	return &ShardBlock{
-		Header:          ShardHeader{},
-		ConsensusHeader: ConsensusHeader{},
+		Header: ShardHeader{},
 		Body: ShardBody{
 			Instructions:      [][]string{},
 			CrossTransactions: make(map[byte][]CrossTransaction),
@@ -243,17 +239,15 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 
 func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 	tempShardBlock := &struct {
-		ValidationData  string `json:"ValidationData"`
-		ConsensusHeader ConsensusHeader
-		Header          ShardHeader
-		Body            *json.RawMessage
+		ValidationData string `json:"ValidationData"`
+		Header         ShardHeader
+		Body           *json.RawMessage
 	}{}
 	err := json.Unmarshal(data, &tempShardBlock)
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
 	shardBlock.ValidationData = tempShardBlock.ValidationData
-	shardBlock.ConsensusHeader = tempShardBlock.ConsensusHeader
 
 	blkBody := ShardBody{}
 	err = blkBody.UnmarshalJSON(*tempShardBlock.Body)

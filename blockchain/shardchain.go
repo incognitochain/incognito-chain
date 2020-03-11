@@ -126,26 +126,25 @@ func (chain *ShardChain) CreateNewBlock(version int, proposer string, round int)
 	}
 	Logger.log.Infof("Begin Enter New Block Shard %+v", time.Now())
 	newBlock, err := chain.BlockGen.NewBlockShard(version, proposer, byte(chain.GetShardID()), round, nil, beaconHeight, start)
-	newBlock.ConsensusHeader = ConsensusHeader{
-		Proposer:    proposer,
-		ProposeTime: time.Now().Unix(),
-	}
+
 	Logger.log.Infof("Begin Finish New Block Shard %+v", time.Now())
 	if err != nil {
 		return nil, err
 	}
+
+	newBlock.Header.Proposer = proposer
+	newBlock.Header.ProposeTime = time.Now().Unix()
+
 	Logger.log.Infof("Finish Create New Block %+v", start)
 	return newBlock, nil
 }
 
 func (chain *ShardChain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string) (common.BlockInterface, error) {
 	b, _ := json.Marshal(oldBlock)
-	newBlock := new(BeaconBlock)
+	newBlock := new(ShardBlock)
 	json.Unmarshal(b, &newBlock)
-	newBlock.ConsensusHeader = ConsensusHeader{
-		Proposer:    proposer,
-		ProposeTime: time.Now().Unix(),
-	}
+	newBlock.Header.Proposer = proposer
+	newBlock.Header.ProposeTime = time.Now().Unix()
 	return oldBlock, nil
 }
 

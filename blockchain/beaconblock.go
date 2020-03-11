@@ -7,21 +7,15 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-type ConsensusHeader struct {
-	Proposer    string `json:"Proposer"`
-	ProposeTime int64  `json:"ProposeTime"`
-}
-
 type BeaconBlock struct {
 	// AggregatedSig string  `json:"AggregatedSig"`
 	// R             string  `json:"R"`
 	// ValidatorsIdx [][]int `json:"ValidatorsIdx"` //[0]: r | [1]:AggregatedSig
 	// ProducerSig   string  `json:"ProducerSig"`
 
-	ValidationData  string          `json:"ValidationData"`
-	ConsensusHeader ConsensusHeader `json:"ConsensusHeader"`
-	Body            BeaconBody
-	Header          BeaconHeader
+	ValidationData string `json:"ValidationData"`
+	Body           BeaconBody
+	Header         BeaconHeader
 }
 
 func (beaconBlock *BeaconBlock) GetPrevHash() common.Hash {
@@ -33,11 +27,11 @@ func NewBeaconBlock() *BeaconBlock {
 }
 
 func (beaconBlock *BeaconBlock) GetProposer() string {
-	return beaconBlock.ConsensusHeader.Proposer
+	return beaconBlock.Header.Proposer
 }
 
 func (beaconBlock *BeaconBlock) GetProposeTime() int64 {
-	return beaconBlock.ConsensusHeader.ProposeTime
+	return beaconBlock.Header.ProposeTime
 }
 
 func (beaconBlock *BeaconBlock) GetProduceTime() int64 {
@@ -66,10 +60,9 @@ func (beaconBlock BeaconBlock) GetShardID() int {
 
 func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
 	tempBeaconBlock := &struct {
-		ValidationData  string          `json:"ValidationData"`
-		ConsensusHeader ConsensusHeader `json:"ConsensusHeader"`
-		Header          BeaconHeader
-		Body            BeaconBody
+		ValidationData string `json:"ValidationData"`
+		Header         BeaconHeader
+		Body           BeaconBody
 	}{}
 	err := json.Unmarshal(data, &tempBeaconBlock)
 	if err != nil {
@@ -80,7 +73,6 @@ func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
 	// beaconBlock.ValidatorsIdx = tempBlk.ValidatorsIdx
 	// beaconBlock.ProducerSig = tempBlk.ProducerSig
 	beaconBlock.ValidationData = tempBeaconBlock.ValidationData
-	beaconBlock.ConsensusHeader = tempBeaconBlock.ConsensusHeader
 	beaconBlock.Header = tempBeaconBlock.Header
 	beaconBlock.Body = tempBeaconBlock.Body
 	return nil

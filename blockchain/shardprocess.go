@@ -605,7 +605,6 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(shardBlock *
 		tempProducer = shardBestState.GetProposerByTimeSlot(common.CalculateTimeSlot(shardBlock.GetProposeTime()))
 		b58Str, _ = tempProducer.ToBase58()
 		if strings.Compare(b58Str, shardBlock.GetProposer()) != 0 {
-			fmt.Println("debug Version ", shardBlock.ConsensusHeader)
 			return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Proposer Public Key to be equal but get %+v From Index, %+v From Header", b58Str, shardBlock.GetProposer()))
 		}
 

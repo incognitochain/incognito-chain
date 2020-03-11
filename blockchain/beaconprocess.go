@@ -515,8 +515,8 @@ func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(beaconBlo
 
 		tempProducer = beaconBestState.GetProposerByTimeSlot(common.CalculateTimeSlot(beaconBlock.GetProposeTime()))
 		b58Str, _ = tempProducer.ToBase58()
-		if strings.Compare(b58Str, beaconBlock.ConsensusHeader.Proposer) != 0 {
-			return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Proposer Public Key to be equal but get %+v From Index, %+v From Header", b58Str, beaconBlock.ConsensusHeader.Proposer))
+		if strings.Compare(b58Str, beaconBlock.GetProposer()) != 0 {
+			return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Proposer Public Key to be equal but get %+v From Index, %+v From Header", b58Str, beaconBlock.GetProposer()))
 		}
 
 	}
