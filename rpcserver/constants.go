@@ -202,7 +202,8 @@ const (
 	getPortalReqUnlockCollateralStatus       = "getportalrequnlockcollateralstatus"
 	getPortalReqRedeemStatus                 = "getportalreqredeemstatus"
 	createAndSendCustodianWithdrawRequest    = "createandsendcustodianwithdrawrequest"
-	getCustodianWithdrawByTxId   			 = "getcustodianwithdrawbytxid"
+	getCustodianWithdrawByTxId               = "getcustodianwithdrawbytxid"
+	getCustodianLiquidationStatus            = "getcustodianliquidationstatus"
 
 	// relaying
 	createAndSendTxWithRelayingBNBHeader = "createandsendtxwithrelayingbnbheader"

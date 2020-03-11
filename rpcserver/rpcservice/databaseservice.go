@@ -235,3 +235,19 @@ func (dbService DatabaseService) GetPortalRedeemReqStatus(redeemID string) (*met
 	}
 	return &status, nil
 }
+
+func (dbService DatabaseService) GetPortalLiquidationCustodianStatus(redeemID string, custodianIncAddrStr string) (*metadata.PortalLiquidateCustodianStatus, error) {
+	statusBytes, err := (*dbService.DB).GetLiquidateCustodian(redeemID, custodianIncAddrStr)
+	if err != nil {
+		return nil, err
+	}
+	if len(statusBytes) == 0 {
+		return nil, nil
+	}
+	var status metadata.PortalLiquidateCustodianStatus
+	err = json.Unmarshal(statusBytes, &status)
+	if err != nil {
+		return nil, err
+	}
+	return &status, nil
+}

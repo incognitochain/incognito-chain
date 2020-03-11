@@ -177,7 +177,7 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendPortalExchangeRates:         (*HttpServer).handleCreateAndSendPortalExchangeRates,
 	getPortalFinalExchangeRates:              (*HttpServer).handleGetPortalFinalExchangeRates,
 	getPortalPortingRequestByKey:             (*HttpServer).handleGetPortingRequestByKey,
-	getPortalPortingRequestByPortingId:		  (*HttpServer).handleGetPortingRequestByPortingId,
+	getPortalPortingRequestByPortingId:       (*HttpServer).handleGetPortingRequestByPortingId,
 	convertExchangeRates:                     (*HttpServer).handleConvertExchangeRates,
 	getPortalReqPTokenStatus:                 (*HttpServer).handleGetPortalReqPTokenStatus,
 	getPortingFees:                           (*HttpServer).handleGetPortingFees,
@@ -186,7 +186,8 @@ var HttpHandler = map[string]httpHandler{
 	getPortalReqUnlockCollateralStatus:       (*HttpServer).handleGetPortalReqUnlockCollateralStatus,
 	getPortalReqRedeemStatus:                 (*HttpServer).handleGetPortalReqRedeemStatus,
 	createAndSendCustodianWithdrawRequest:    (*HttpServer).handleCreateAndSendCustodianWithdrawRequest,
-	getCustodianWithdrawByTxId:    			  (*HttpServer).handleGetCustodianWithdrawByTxId,
+	getCustodianWithdrawByTxId:               (*HttpServer).handleGetCustodianWithdrawByTxId,
+	getCustodianLiquidationStatus:            (*HttpServer).handleGetCustodianLiquidationStatus,
 
 	// relaying
 	createAndSendTxWithRelayingBNBHeader: (*HttpServer).handleCreateAndSendTxWithRelayingBNBHeader,

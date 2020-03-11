@@ -139,7 +139,7 @@ const (
 	PortalReqUnlockCollateralRejectedStatus = 2
 
 	PortalLiquidateCustodianSuccessStatus = 1
-	PortalLiquidateCustodianFailedStatus = 2
+	PortalLiquidateCustodianFailedStatus  = 2
 )
 
 // PDE statuses for chain
@@ -191,7 +191,9 @@ const (
 )
 
 const (
-	PortalTimeOutCustodianSendPubTokenBack = 2160 // beacon blocks ~ 24 hours
+	// @@ Note: should replace tp 2160 before deploy
+	// 10 just for testings
+	PortalTimeOutCustodianSendPubTokenBack = 10 // 2160 beacon blocks ~ 24 hours
 	PercentReceivedCollateralAmount        = 120  // users will be receive 120% of redeem amount in PRV
 
 	MinRatio = 120 // 120% - minimum ratio between collateral's value and holding public tokens' value
