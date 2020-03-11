@@ -117,6 +117,10 @@ func (s *S2BSyncProcess) syncS2BPoolProcess() {
 }
 
 func (s *S2BSyncProcess) streamFromPeer(peerID string, pState S2BPeerState) (requestCnt int) {
+	if pState.processed {
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer func() {
 		if requestCnt == 0 {

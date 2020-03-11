@@ -120,13 +120,11 @@ func (chain *ShardChain) GetLastProposerIndex() int {
 func (chain *ShardChain) CreateNewBlock(version int, proposer string, round int) (common.BlockInterface, error) {
 	start := time.Now()
 	Logger.log.Infof("Begin Create New Block %+v", start)
-	beaconHeight := chain.Blockchain.BeaconChain.CurrentHeight()
+	beaconHeight := chain.Blockchain.BeaconChain.GetFinalView().GetHeight()
 	if beaconHeight < chain.GetBestState().BeaconHeight {
 		beaconHeight = chain.GetBestState().BeaconHeight
 	}
-
 	Logger.log.Infof("Begin Enter New Block Shard %+v", time.Now())
-	//TODO: pool
 	newBlock, err := chain.BlockGen.NewBlockShard(version, proposer, byte(chain.GetShardID()), round, nil, beaconHeight, start)
 	newBlock.ConsensusHeader = ConsensusHeader{
 		Proposer:    proposer,

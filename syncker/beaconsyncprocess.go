@@ -151,11 +151,7 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 		return
 	}
 	var blk common.BlockPoolInterface
-	if s.isCommittee {
-		blk = s.beaconPool.GetNextBlock(s.chain.GetBestViewHash(), true)
-	} else {
-		blk = s.beaconPool.GetNextBlock(s.chain.GetBestViewHash(), false)
-	}
+	blk = s.beaconPool.GetNextBlock(s.chain.GetBestViewHash())
 
 	if isNil(blk) {
 		return
@@ -198,6 +194,10 @@ func (s *BeaconSyncProcess) syncBeacon() {
 }
 
 func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState) (requestCnt int) {
+	if pState.processed {
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	blockBuffer := []common.BlockInterface{}
 	defer func() {
@@ -209,9 +209,6 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 
 	toHeight := pState.BestViewHeight
 	//process param
-	if !s.isCommittee { //if not beacon committee, not insert the newest block (incase we need to revert beacon block)
-		toHeight -= 1
-	}
 
 	if toHeight <= s.chain.GetBestViewHeight() {
 		return

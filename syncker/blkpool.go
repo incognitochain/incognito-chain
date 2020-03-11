@@ -74,14 +74,14 @@ func (pool *BlkPool) RemoveBlock(hash string) {
 	}
 }
 
-func (pool *BlkPool) GetNextBlock(prevhash string, shouldGetLatest bool) common.BlockPoolInterface {
+func (pool *BlkPool) GetNextBlock(prevhash string) common.BlockPoolInterface {
 	//For multichain, we need to Get a Map
 	res := make(chan common.BlockPoolInterface)
 	pool.action <- func() {
 		hashes := pool.blkPoolByPrevHash[prevhash][:]
 		for _, h := range hashes {
 			blk := pool.blkPoolByHash[h]
-			if _, ok := pool.blkPoolByPrevHash[blk.Hash().String()]; ok || shouldGetLatest {
+			if _, ok := pool.blkPoolByPrevHash[blk.Hash().String()]; ok {
 				res <- pool.blkPoolByHash[h]
 				return
 			}

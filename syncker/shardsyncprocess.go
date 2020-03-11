@@ -126,7 +126,7 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 		return
 	}
 	var blk common.BlockPoolInterface
-	blk = s.shardPool.GetNextBlock(s.Chain.GetBestViewHash(), true)
+	blk = s.shardPool.GetNextBlock(s.Chain.GetBestViewHash())
 
 	if isNil(blk) {
 		return
@@ -169,6 +169,10 @@ func (s *ShardSyncProcess) syncShardProcess() {
 }
 
 func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) (requestCnt int) {
+	if pState.processed {
+		return
+	}
+
 	blockBuffer := []common.BlockInterface{}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer func() {
