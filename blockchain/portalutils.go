@@ -19,7 +19,6 @@ type CurrentPortalState struct {
 	CustodianPoolState     map[string]*lvdb.CustodianState       // key : beaconHeight || custodian_address
 	ExchangeRatesRequests  map[string]*lvdb.ExchangeRatesRequest // key : beaconHeight | TxID
 	WaitingPortingRequests map[string]*lvdb.PortingRequest       // key : beaconHeight || UniquePortingID
-	PortingIdRequests 	   map[string]string       			     // key : UniquePortingID
 	WaitingRedeemRequests  map[string]*lvdb.RedeemRequest        // key : beaconHeight || UniqueRedeemID
 	FinalExchangeRates     map[string]*lvdb.FinalExchangeRates   // key : beaconHeight || TxID
 }
@@ -164,7 +163,6 @@ func InitCurrentPortalStateFromDB(
 		WaitingRedeemRequests:  waitingRedeemReqs,
 		FinalExchangeRates:     finalExchangeRates,
 		ExchangeRatesRequests:  make(map[string]*lvdb.ExchangeRatesRequest),
-		PortingIdRequests: 		make(map[string]string),
 	}, nil
 }
 
@@ -527,9 +525,7 @@ func pickSingleCustodian(metadata metadata.PortalUserRegister, exchangeRate *lvd
 	})
 
 	//pToken to PRV
-	totalPTokenAfterUp150Percent := float64(metadata.RegisterAmount) * 1.5 //return nano pBTC, pBNB
-	totalPTokenAfterUp150PercentUnit64 := uint64(totalPTokenAfterUp150Percent) //return nano pBTC, pBNB
-
+	totalPTokenAfterUp150PercentUnit64 := up150Percent(metadata.RegisterAmount) //return nano pBTC, pBNB
 	totalPRV, err := exchangeRate.ExchangePToken2PRVByTokenId(metadata.PTokenId, totalPTokenAfterUp150PercentUnit64)
 
 	if err != nil {
@@ -585,8 +581,7 @@ func pickMultipleCustodian (metadata metadata.PortalUserRegister, exchangeRate *
 			return nil, err
 		}
 
-		pTokenCanUse := float64(totalPToken) / 1.5
-		pTokenCanUseUint64 := uint64(pTokenCanUse)
+		pTokenCanUseUint64 := down150Percent(totalPToken)
 
 		remainPToken := metadata.RegisterAmount - holdPToken // 1000 - 833 = 167
 		if pTokenCanUseUint64 >  remainPToken {
@@ -596,9 +591,7 @@ func pickMultipleCustodian (metadata metadata.PortalUserRegister, exchangeRate *
 			Logger.log.Infof("Porting request, pick multiple custodian key: %v, can keep ptoken %v", custodianItem.Key, pTokenCanUseUint64)
 		}
 
-		totalPTokenAfterUp150Percent := float64(pTokenCanUseUint64) * 1.5
-		totalPTokenAfterUp150PercentUnit64 := uint64(totalPTokenAfterUp150Percent)
-
+		totalPTokenAfterUp150PercentUnit64 := up150Percent(pTokenCanUseUint64)
 		totalPRV, err := exchangeRate.ExchangePToken2PRVByTokenId(metadata.PTokenId, totalPTokenAfterUp150PercentUnit64) //final
 
 		if err != nil {
@@ -670,8 +663,56 @@ func UpdateCustodianWithNewAmount(currentPortalState *CurrentPortalState, custod
 
 func CalculatePortingFees(totalPToken uint64) uint64  {
 	result := 0.01 * float64(totalPToken) / 100
-	integer, _  := math.Modf(result)
-	return  uint64(integer)
+	roundNumber := math.Round(result)
+	return  uint64(roundNumber)
+}
+
+/*
+	up 150%
+ */
+func up150Percent(amount uint64)  uint64 {
+	result := float64(amount) * 1.5 //return nano pBTC, pBNB
+	roundNumber := math.Round(result)
+	return uint64(roundNumber) //return nano pBTC, pBNB
+}
+
+func down150Percent(amount uint64)  uint64  {
+	result := float64(amount) / 1.5
+	roundNumber := math.Round(result)
+	return uint64(roundNumber)
+}
+
+/*
+total1: total ptoken was converted ex: 1BNB = 1000 PRV
+total2: total prv (was up 150%)
+*/
+func calculatePercentMinAspectRatio(total1 uint64, total2 uint64) int {
+	percentUp := total2 * 100 / total1
+	roundNumber := math.Round(float64(percentUp))
+	return int(roundNumber)
+}
+
+func detectMinAspectRatio(holdPToken map[string]uint64, holdPRV map[string]uint64, finalExchange *lvdb.FinalExchangeRates) (interface{}, error) {
+	result := make(map[string]int)
+	for key, amountPToken := range holdPToken {
+		amountPRV, ok := holdPRV[key]
+		if !ok {
+			return nil, errors.New("Ptoken not found")
+		}
+
+		//(1): convert amount PToken to PRV
+		amountPTokenConverted, err := finalExchange.ExchangePToken2PRVByTokenId(key, amountPToken)
+
+		if err != nil {
+			return nil, errors.New("Exchange rates error")
+		}
+
+		//(2): calculate % up-down from amount PRV and (1)
+		percentRatesDetect := calculatePercentMinAspectRatio(amountPTokenConverted, amountPRV)
+		result[key] = percentRatesDetect
+	}
+
+	return result, nil
 }
 
 func ValidationExchangeRates(exchangeRates *lvdb.FinalExchangeRates) error  {

@@ -4,9 +4,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
-	"github.com/pkg/errors"
 )
 
 type Portal struct {
@@ -123,24 +121,12 @@ func (portal *Portal) ConvertExchangeRates(tokenSymbol string, valuePToken uint6
 		return result, NewRPCError(GetExchangeRatesError, err)
 	}
 
-	if tokenSymbol == metadata.PortalTokenSymbolBTC {
-		btcExchange, err := finalExchangeRates.ExchangeBTC2PRV(valuePToken)
-		if err != nil {
-			return result, NewRPCError(GetExchangeRatesError, err)
-		}
+	exchange, err := finalExchangeRates.ExchangePToken2PRVByTokenId(tokenSymbol, valuePToken)
 
-		result[metadata.PortalTokenSymbolPRV] = btcExchange
-	} else if tokenSymbol == metadata.PortalTokenSymbolBNB {
-		bnbExchange, err := finalExchangeRates.ExchangeBNB2PRV(valuePToken)
-
-		if err != nil {
-			return result, NewRPCError(GetExchangeRatesError, err)
-		}
-
-		result[metadata.PortalTokenSymbolPRV] = bnbExchange
-	} else if tokenSymbol == metadata.PortalTokenSymbolPRV {
-		return result, NewRPCError(GetExchangeRatesIsEmpty, errors.New("PRV Token not support"))
+	if err != nil {
+		return result, NewRPCError(GetExchangeRatesError, err)
 	}
+	result[tokenSymbol] = exchange
 
 	return result, nil
 }
@@ -164,25 +150,14 @@ func (portal *Portal) GetPortingFees(tokenSymbol string, valuePToken uint64, ser
 		return result, NewRPCError(GetExchangeRatesError, err)
 	}
 
-	if tokenSymbol == metadata.PortalTokenSymbolBTC {
-		btcExchange, err := finalExchangeRates.ExchangeBTC2PRV(valuePToken)
-		if err != nil {
-			return result, NewRPCError(GetExchangeRatesError, err)
-		}
+	exchange, err := finalExchangeRates.ExchangePToken2PRVByTokenId(tokenSymbol, valuePToken)
 
-		exchangePortingFees := blockchain.CalculatePortingFees(btcExchange)
-		result[metadata.PortalTokenSymbolPRV] = exchangePortingFees
-	} else if tokenSymbol == metadata.PortalTokenSymbolBNB {
-		bnbExchange, err := finalExchangeRates.ExchangeBNB2PRV(valuePToken)
-		if err != nil {
-			return result, NewRPCError(GetExchangeRatesError, err)
-		}
-
-		exchangePortingFees := blockchain.CalculatePortingFees(bnbExchange)
-		result[metadata.PortalTokenSymbolPRV] = exchangePortingFees
-	} else if tokenSymbol == metadata.PortalTokenSymbolPRV {
-		return result, NewRPCError(GetExchangeRatesIsEmpty, errors.New("PRV Token not support"))
+	if err != nil {
+		return result, NewRPCError(GetExchangeRatesError, err)
 	}
+
+	exchangePortingFees := blockchain.CalculatePortingFees(exchange)
+	result[tokenSymbol] = exchangePortingFees
 
 	return result, nil
 }

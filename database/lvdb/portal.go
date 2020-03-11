@@ -22,7 +22,7 @@ type CustodianState struct {
 	TotalCollateral        uint64            // prv
 	FreeCollateral         uint64            // prv
 	HoldingPubTokens       map[string]uint64 // tokenSymbol : amount
-	LockedAmountCollateral map[string]uint64
+	LockedAmountCollateral map[string]uint64 // prv
 	RemoteAddresses        map[string]string // tokenSymbol : address
 }
 
@@ -369,13 +369,14 @@ func (finalExchangeRates *FinalExchangeRates) convert(value uint64, ratesFrom ui
 
 	//pusdt -> new coin
 	result := (total * uint64(math.Pow10(9))) / RatesTo
-
-	return result, nil
+	roundNumber := math.Round(float64(result))
+	return uint64(roundNumber), nil
 
 }
 
 func (finalExchangeRates *FinalExchangeRates) ExchangeBTC2PRV(value uint64) (uint64, error) {
 	//input : nano
+	//todo: check rates exist
 	BTCRates := finalExchangeRates.Rates[PortalTokenSymbolBTC].Amount //return nano pUSDT
 	PRVRates := finalExchangeRates.Rates[PortalTokenSymbolPRV].Amount //return nano pUSDT
 	valueExchange, err := finalExchangeRates.convert(value, BTCRates, PRVRates)

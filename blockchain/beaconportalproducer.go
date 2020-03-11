@@ -230,26 +230,6 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 
 
 	keyPortingRequest := lvdb.NewPortingRequestKey(actionData.Meta.UniqueRegisterId)
-	//check unique id form temp
-	if _, ok := currentPortalState.PortingIdRequests[keyPortingRequest]; ok {
-		Logger.log.Errorf("Porting request: Porting request id exist from temp data, key %v", keyPortingRequest)
-		inst := buildRequestPortingInst(
-			actionData.Meta.Type,
-			shardID,
-			common.PortalPortingRequestRejectedStatus,
-			actionData.Meta.UniqueRegisterId,
-			actionData.Meta.IncogAddressStr,
-			actionData.Meta.PTokenId,
-			actionData.Meta.PTokenAddress,
-			actionData.Meta.RegisterAmount,
-			actionData.Meta.PortingFee,
-			nil,
-			actionData.TxReqID,
-		)
-
-		return [][]string{inst}, nil
-	}
-
 	//check unique id from record from db
 	portingRequestKeyExist, err := db.GetItemPortalByKey([]byte(keyPortingRequest))
 
@@ -477,8 +457,20 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		actionData.TxReqID,
 	) //return  metadata.PortalPortingRequestContent at instruct[3]
 
-	//store porting request id for validation next instruct
-	currentPortalState.PortingIdRequests[keyPortingRequest] = keyPortingRequest
+	newPortingRequestStateWaiting, err := NewPortingRequestState(
+		actionData.Meta.UniqueRegisterId,
+		actionData.TxReqID,
+		actionData.Meta.PTokenId,
+		actionData.Meta.IncogAddressStr,
+		actionData.Meta.RegisterAmount,
+		pickCustodianResult,
+		actionData.Meta.PortingFee,
+		common.PortalPortingReqWaitingStatus,
+		beaconHeight+1,
+	)
+
+	keyWaitingPortingRequest := lvdb.NewWaitingPortingReqKey(beaconHeight, actionData.Meta.UniqueRegisterId)
+	currentPortalState.WaitingPortingRequests[keyWaitingPortingRequest] = newPortingRequestStateWaiting
 
 	return [][]string{inst}, nil
 }

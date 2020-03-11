@@ -797,14 +797,6 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(beaconHeight
 			freeCollateral,
 		)
 
-		keyCustodianState := lvdb.NewCustodianWithdrawRequest(txHash)
-		err = db.StoreCustodianWithdrawRequest([]byte(keyCustodianState), newCustodianWithdrawRequest)
-		if err != nil {
-			Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw item: %+v", err)
-			return nil
-		}
-
-		//update custodian
 		custodianKey := lvdb.NewCustodianStateKey(beaconHeight, paymentAddress)
 		custodian, ok := currentPortalState.CustodianPoolState[custodianKey]
 
@@ -813,6 +805,20 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(beaconHeight
 			return nil
 		}
 
+		//check free collateral
+		if amount > custodian.FreeCollateral {
+			Logger.log.Errorf("ERROR: Free collateral is not enough to refund")
+			return nil
+		}
+
+		keyCustodianState := lvdb.NewCustodianWithdrawRequest(txHash)
+		err = db.StoreCustodianWithdrawRequest([]byte(keyCustodianState), newCustodianWithdrawRequest)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw item: %+v", err)
+			return nil
+		}
+
+		//update custodian
 		custodian.FreeCollateral = custodian.FreeCollateral - amount
 		custodian.TotalCollateral = custodian.TotalCollateral - amount
 

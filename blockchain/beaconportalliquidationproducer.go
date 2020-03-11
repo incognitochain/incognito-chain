@@ -21,6 +21,24 @@ func buildCustodianRunAwayLiquidationInst(
 	//}
 }
 
-func buildMinAspectRatioCollateralLiquidationInst()  []string {
-	return []string{}
+func buildMinAspectRatioCollateralLiquidationInst(beaconHeight uint64, currentPortalState *CurrentPortalState)  ([]string, error) {
+	if len(currentPortalState.CustodianPoolState) <= 0 {
+		return []string{}, nil
+	}
+
+	/*keyExchangeRate := lvdb.NewFinalExchangeRatesKey(beaconHeight)
+	exchangeRate, ok := currentPortalState.CustodianPoolState[keyExchangeRate]
+	if !ok {
+		return []string{}, nil
+	}
+
+
+	for i, v := range currentPortalState.CustodianPoolState {
+		detectMinAspectRatio()
+		v.HoldingPubTokens[]Op
+
+		convertToPRV := exchangeRate.
+	}*/
+
+	return []string{}, nil
 }
