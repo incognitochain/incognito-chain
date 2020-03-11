@@ -67,14 +67,20 @@ func (e *BLSBFT_V2) ValidateProducerPosition(block common.ConsensusBlockInterfac
 		return errors.New("No view in chain")
 	}
 
-	proposerPk := view.GetProposerByTimeSlot(common.CalculateTimeSlot(block.GetProduceTime()))
-	b58Str, _ := proposerPk.ToBase58()
-	if b58Str == block.GetProducer() {
-		return nil
+	producerPk := view.GetProposerByTimeSlot(common.CalculateTimeSlot(block.GetProduceTime()))
+	b58Str, _ := producerPk.ToBase58()
+	if b58Str != block.GetProducer() {
+		panic(fmt.Sprintf("%v %v", b58Str, block.GetProducer()))
+		return NewConsensusError(UnExpectedError, errors.New("Proposer should be should be :"+b58Str+" but get "+block.GetProducer()))
 	}
 
-	panic(fmt.Sprintf("%v %v", b58Str, block.GetProducer()))
-	return NewConsensusError(UnExpectedError, errors.New("Producer should be should be :"+proposerPk.GetMiningKeyBase58(common.BlsConsensus)))
+	proposerPk := view.GetProposerByTimeSlot(common.CalculateTimeSlot(block.GetProposeTime()))
+	b58Str, _ = proposerPk.ToBase58()
+	if b58Str != block.GetProposer() {
+		panic(fmt.Sprintf("%v %v", b58Str, block.GetProposer()))
+		return NewConsensusError(UnExpectedError, errors.New("Proposer should be should be :"+b58Str+" but get "+block.GetProposer()))
+	}
+	return nil
 }
 
 func (e BLSBFT_V2) ValidateProducerSig(block common.BlockInterface) error {

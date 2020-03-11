@@ -214,7 +214,7 @@ func (e *BLSBFT_V2) Start() error {
 				}
 				//rule 1: get history of vote for this height, vote if (round is lower than the vote before) or (round is equal but new proposer) or (there is no vote for this height yet)
 				sort.Slice(validProposeBlock, func(i, j int) bool {
-					return validProposeBlock[i].block.GetRound() < validProposeBlock[j].block.GetRound()
+					return validProposeBlock[i].block.GetProduceTime() < validProposeBlock[j].block.GetProduceTime()
 				})
 				for _, v := range validProposeBlock {
 					blkCreateTimeSlot := common.CalculateTimeSlot(v.block.GetProduceTime())
@@ -422,7 +422,7 @@ func (e *BLSBFT_V2) proposeBlock(proposerPk incognitokey.CommitteePublicKey, blo
 		defer cancel()
 		//block, _ = e.Chain.CreateNewBlock(ctx, e.currentTimeSlot, e.UserKeySet.GetPublicKeyBase58())
 		fmt.Println("debug CreateNewBlock")
-		block, _ = e.Chain.CreateNewBlock(2, b58Str, 0)
+		block, _ = e.Chain.CreateNewBlock(2, b58Str, 1)
 	} else {
 		fmt.Println("debug CreateNewBlockFromOldBlock")
 		block, _ = e.Chain.CreateNewBlockFromOldBlock(block, b58Str)

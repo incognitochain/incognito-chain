@@ -34,6 +34,7 @@ type ConsensusBlockInterface interface {
 	GetProduceTime() int64
 	GetProposeTime() int64
 	GetPrevHash() Hash
+	GetProposer() string
 }
 
 type ChainInterface interface {

@@ -32,6 +32,10 @@ func NewBeaconBlock() *BeaconBlock {
 	return &BeaconBlock{}
 }
 
+func (beaconBlock *BeaconBlock) GetProposer() string {
+	return beaconBlock.ConsensusHeader.Proposer
+}
+
 func (beaconBlock *BeaconBlock) GetProposeTime() int64 {
 	return beaconBlock.ConsensusHeader.ProposeTime
 }

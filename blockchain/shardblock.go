@@ -22,6 +22,10 @@ type ShardBlock struct {
 	Header          ShardHeader
 }
 
+func (shardBlock *ShardBlock) GetProposer() string {
+	return shardBlock.ConsensusHeader.Proposer
+}
+
 func (shardBlock *ShardBlock) GetProposeTime() int64 {
 	return shardBlock.ConsensusHeader.ProposeTime
 }
@@ -61,8 +65,8 @@ type CrossShardBlock struct {
 	// R               string  `json:"R"`
 	// ValidatorsIdx   [][]int `json:"ValidatorsIdx"` //[0]: R | [1]:AggregatedSig
 	// ProducerSig     string  `json:"ProducerSig"`
-	ValidationData string `json:"ValidationData"`
-
+	ValidationData  string `json:"ValidationData"`
+	ConsensusHeader ConsensusHeader
 	Header          ShardHeader
 	ToShardID       byte
 	MerklePathShard []common.Hash
@@ -74,7 +78,8 @@ type CrossShardBlock struct {
 
 func NewShardBlock() *ShardBlock {
 	return &ShardBlock{
-		Header: ShardHeader{},
+		Header:          ShardHeader{},
+		ConsensusHeader: ConsensusHeader{},
 		Body: ShardBody{
 			Instructions:      [][]string{},
 			CrossTransactions: make(map[byte][]CrossTransaction),
@@ -104,6 +109,7 @@ func NewShardBlockFull(header ShardHeader, body ShardBody) *ShardBlock {
 		Body:   body,
 	}
 }
+
 func (shardBlock *ShardBlock) BuildShardBlockBody(instructions [][]string, crossTransaction map[byte][]CrossTransaction, transactions []metadata.Transaction) {
 	shardBlock.Body.Instructions = append(shardBlock.Body.Instructions, instructions...)
 	shardBlock.Body.CrossTransactions = crossTransaction
@@ -247,7 +253,8 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
 	shardBlock.ValidationData = tempShardBlock.ValidationData
-	tempShardBlock.ConsensusHeader = tempShardBlock.ConsensusHeader
+	shardBlock.ConsensusHeader = tempShardBlock.ConsensusHeader
+
 	blkBody := ShardBody{}
 	err = blkBody.UnmarshalJSON(*tempShardBlock.Body)
 	if err != nil {
