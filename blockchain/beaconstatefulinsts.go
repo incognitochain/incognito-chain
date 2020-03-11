@@ -814,12 +814,5 @@ func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
 	return insts, nil
 }
 
-func (blockchain *BlockChain) buildPortalRewardsInsts(
-	beaconHeight uint64, currentPortalState *CurrentPortalState) ([][]string, error) {
-	insts := [][]string{}
 
-	//
-
-	return insts, nil
-}
 

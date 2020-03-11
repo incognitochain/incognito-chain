@@ -541,3 +541,21 @@ func (db *db) GetLiquidateCustodian(redeemID string, custodianIncAddrStr string)
 	key := NewPortalLiquidationCustodianKey(redeemID, custodianIncAddrStr)
 	return db.GetItemPortalByKey([]byte(key))
 }
+
+
+// NewPortalRewardKey creates key for storing portal reward by beacon height
+func NewPortalRewardKey(beaconHeight uint64) string {
+	beaconHeightBytes := []byte(fmt.Sprintf("%d", beaconHeight))
+	key := append(PortalRewardByBeaconHeightPrefix, beaconHeightBytes...)
+	return string(key)
+}
+
+
+// StorePortalRewardByBeaconHeight stores portal reward by beacon height
+func (db *db) StorePortalRewardByBeaconHeight(key []byte, value []byte) error {
+	err := db.Put(key, value)
+	if err != nil {
+		return database.NewDatabaseError(database.StorePortalRewardError, errors.Wrap(err, "db.lvdb.put"))
+	}
+	return nil
+}

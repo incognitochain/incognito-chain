@@ -57,6 +57,8 @@ const (
 	PortalLiquidateCustodianMeta              = 112
 	PortalLiquidateCustodianResponseMeta      = 113
 
+	PortalRewardMeta      = 114
+
 	// relaying
 	RelayingBNBHeaderMeta = 200
 	RelayingBTCHeaderMeta = 201

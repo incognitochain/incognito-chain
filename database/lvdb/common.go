@@ -88,6 +88,9 @@ var (
 	// liquidation in portal
 	PortalLiquidateCustodianPrefix = []byte("portalliquidatecustodian-")
 
+	// reward in portal
+	PortalRewardByBeaconHeightPrefix   = []byte("portalreward-")
+
 	// Relaying
 	RelayingBNBHeaderStatePrefix = []byte("relayingbnbheaderstate-")
 	RelayingBNBHeaderChainPrefix = []byte("relayingbnbheaderchain-")
