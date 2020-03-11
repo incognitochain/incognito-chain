@@ -1,4 +1,4 @@
-package statedb_test
+package statedb
 
 import (
 	"math/big"
@@ -7,14 +7,13 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
-func storeCommitment(initRoot common.Hash, db statedb.DatabaseAccessWarper, limit int, shardID byte) (common.Hash, map[common.Hash]*statedb.CommitmentState, map[common.Hash][][]byte, map[common.Hash][]uint64, map[common.Hash]uint64) {
+func storeCommitment(initRoot common.Hash, db DatabaseAccessWarper, limit int, shardID byte) (common.Hash, map[common.Hash]*CommitmentState, map[common.Hash][][]byte, map[common.Hash][]uint64, map[common.Hash]uint64) {
 	commitmentPerToken := 20
-	commitmentList := generateCommitmentList(commitmentPerToken * limit)
-	tokenIDs := generateTokenIDs(limit)
-	wantM := make(map[common.Hash]*statedb.CommitmentState)
+	commitmentList := testGenerateCommitmentList(commitmentPerToken * limit)
+	tokenIDs := testGenerateTokenIDs(limit)
+	wantM := make(map[common.Hash]*CommitmentState)
 	wantIndexM := make(map[common.Hash]common.Hash)
 	wantLengthM := make(map[common.Hash]uint64)
 	wantMByToken := make(map[common.Hash][][]byte)
@@ -24,17 +23,17 @@ func storeCommitment(initRoot common.Hash, db statedb.DatabaseAccessWarper, limi
 		commitmentIndex := new(big.Int).SetUint64(1)
 		for j := i; j < i+commitmentPerToken; j++ {
 			commitment := commitmentList[j]
-			key := statedb.GenerateCommitmentObjectKey(tokenID, shardID, commitment)
-			commitmentState := statedb.NewCommitmentStateWithValue(tokenID, shardID, commitment, commitmentIndex)
+			key := GenerateCommitmentObjectKey(tokenID, shardID, commitment)
+			commitmentState := NewCommitmentStateWithValue(tokenID, shardID, commitment, commitmentIndex)
 			wantM[key] = commitmentState
 			wantMByToken[tokenID] = append(wantMByToken[tokenID], commitment)
 
-			keyIndex := statedb.GenerateCommitmentIndexObjectKey(tokenID, shardID, commitmentIndex)
+			keyIndex := GenerateCommitmentIndexObjectKey(tokenID, shardID, commitmentIndex)
 			commitmentIndexState := key
 			wantIndexM[keyIndex] = commitmentIndexState
 			wantIndexMByToken[tokenID] = append(wantIndexMByToken[tokenID], commitmentIndex.Uint64())
 
-			keyLength := statedb.GenerateCommitmentLengthObjectKey(tokenID, shardID)
+			keyLength := GenerateCommitmentLengthObjectKey(tokenID, shardID)
 			commitmentLengthState := commitmentIndex.Uint64()
 			wantLengthM[keyLength] = commitmentLengthState
 			wantLengthMByToken[tokenID] = commitmentIndex.Uint64()
@@ -44,24 +43,24 @@ func storeCommitment(initRoot common.Hash, db statedb.DatabaseAccessWarper, limi
 		}
 	}
 
-	sDB, err := statedb.NewWithPrefixTrie(initRoot, db)
+	sDB, err := NewWithPrefixTrie(initRoot, db)
 	if err != nil {
 		panic(err)
 	}
 	for k, v := range wantM {
-		err := sDB.SetStateObject(statedb.CommitmentObjectType, k, v)
+		err := sDB.SetStateObject(CommitmentObjectType, k, v)
 		if err != nil {
 			panic(err)
 		}
 	}
 	for k, v := range wantIndexM {
-		err := sDB.SetStateObject(statedb.CommitmentIndexObjectType, k, v)
+		err := sDB.SetStateObject(CommitmentIndexObjectType, k, v)
 		if err != nil {
 			panic(err)
 		}
 	}
 	for k, v := range wantLengthM {
-		err := sDB.SetStateObject(statedb.CommitmentLengthObjectType, k, new(big.Int).SetUint64(v))
+		err := sDB.SetStateObject(CommitmentLengthObjectType, k, new(big.Int).SetUint64(v))
 		if err != nil {
 			panic(err)
 		}
@@ -78,33 +77,33 @@ func storeCommitment(initRoot common.Hash, db statedb.DatabaseAccessWarper, limi
 }
 
 func TestStateDB_StoreAndGetCommitmentState(t *testing.T) {
-	tokenID := generateTokenIDs(1)[0]
+	tokenID := testGenerateTokenIDs(1)[0]
 	shardID := byte(0)
 	commitmentIndex := new(big.Int).SetUint64(0)
-	commitment := generateCommitmentList(1)[0]
+	commitment := testGenerateCommitmentList(1)[0]
 
-	key := statedb.GenerateCommitmentObjectKey(tokenID, shardID, commitment)
-	commitmentState := statedb.NewCommitmentStateWithValue(tokenID, shardID, commitment, commitmentIndex)
+	key := GenerateCommitmentObjectKey(tokenID, shardID, commitment)
+	commitmentState := NewCommitmentStateWithValue(tokenID, shardID, commitment, commitmentIndex)
 
-	keyIndex := statedb.GenerateCommitmentIndexObjectKey(tokenID, shardID, commitmentIndex)
+	keyIndex := GenerateCommitmentIndexObjectKey(tokenID, shardID, commitmentIndex)
 	commitmentIndexState := key
 
-	keyLength := statedb.GenerateCommitmentLengthObjectKey(tokenID, shardID)
+	keyLength := GenerateCommitmentLengthObjectKey(tokenID, shardID)
 	commitmentLengthState := new(big.Int).SetUint64(commitmentIndex.Uint64())
 
-	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDBTxTest)
+	sDB, err := NewWithPrefixTrie(emptyRoot, wrarperDB)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = sDB.SetStateObject(statedb.CommitmentObjectType, key, commitmentState)
+	err = sDB.SetStateObject(CommitmentObjectType, key, commitmentState)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = sDB.SetStateObject(statedb.CommitmentIndexObjectType, keyIndex, commitmentIndexState)
+	err = sDB.SetStateObject(CommitmentIndexObjectType, keyIndex, commitmentIndexState)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = sDB.SetStateObject(statedb.CommitmentLengthObjectType, keyLength, commitmentLengthState)
+	err = sDB.SetStateObject(CommitmentLengthObjectType, keyLength, commitmentLengthState)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -117,11 +116,11 @@ func TestStateDB_StoreAndGetCommitmentState(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBTxTest)
+	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
 	if err != nil {
 		t.Fatal(err)
 	}
-	gotC, has, err := tempStateDB.GetCommitmentState(key)
+	gotC, has, err := tempStateDB.getCommitmentState(key)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,10 +128,10 @@ func TestStateDB_StoreAndGetCommitmentState(t *testing.T) {
 		t.Fatal(has)
 	}
 	if !reflect.DeepEqual(gotC, commitmentState) {
-		t.Fatalf("GetCommitmentState want %+v but got %+v", commitmentState, gotC)
+		t.Fatalf("getCommitmentState want %+v but got %+v", commitmentState, gotC)
 	}
 
-	gotC2, has, err := tempStateDB.GetCommitmentIndexState(keyIndex)
+	gotC2, has, err := tempStateDB.getCommitmentIndexState(keyIndex)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -140,10 +139,10 @@ func TestStateDB_StoreAndGetCommitmentState(t *testing.T) {
 		t.Fatal(has)
 	}
 	if !reflect.DeepEqual(gotC2, commitmentState) {
-		t.Fatalf("GetCommitmentState want %+v but got %+v", commitmentState, gotC2)
+		t.Fatalf("getCommitmentState want %+v but got %+v", commitmentState, gotC2)
 	}
 
-	gotCLength, has, err := tempStateDB.GetCommitmentLengthState(keyLength)
+	gotCLength, has, err := tempStateDB.getCommitmentLengthState(keyLength)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -151,18 +150,18 @@ func TestStateDB_StoreAndGetCommitmentState(t *testing.T) {
 		t.Fatal(has)
 	}
 	if gotCLength.Uint64() != commitmentLengthState.Uint64() {
-		t.Fatalf("GetCommitmentState want %+v but got %+v", commitmentLengthState.Uint64(), gotCLength.Uint64())
+		t.Fatalf("getCommitmentState want %+v but got %+v", commitmentLengthState.Uint64(), gotCLength.Uint64())
 	}
 }
 
 func TestStateDB_GetGetAllCommitmentStateByPrefix(t *testing.T) {
-	wantMs := []map[common.Hash]*statedb.CommitmentState{}
+	wantMs := []map[common.Hash]*CommitmentState{}
 	wantMByTokens := []map[common.Hash][][]byte{}
 	wantIndexMByTokens := []map[common.Hash][]uint64{}
 	wantLengthMByTokens := []map[common.Hash]uint64{}
 	rootHashes := []common.Hash{emptyRoot}
 	for index, shardID := range shardIDs {
-		tempRootHash, wantM, wantMByToken, wantIndexMByToken, wantLengthMByToken := storeCommitment(rootHashes[index], warperDBTxTest, 50, shardID)
+		tempRootHash, wantM, wantMByToken, wantIndexMByToken, wantLengthMByToken := storeCommitment(rootHashes[index], wrarperDB, 50, shardID)
 		rootHashes = append(rootHashes, tempRootHash)
 		wantMs = append(wantMs, wantM)
 		wantMByTokens = append(wantMByTokens, wantMByToken)
@@ -170,7 +169,7 @@ func TestStateDB_GetGetAllCommitmentStateByPrefix(t *testing.T) {
 		wantLengthMByTokens = append(wantLengthMByTokens, wantLengthMByToken)
 	}
 	rootHash := rootHashes[len(rootHashes)-1]
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBTxTest)
+	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -178,7 +177,7 @@ func TestStateDB_GetGetAllCommitmentStateByPrefix(t *testing.T) {
 		tempWantIndexMByToken := wantIndexMByTokens[index]
 		tempWantMByToken := wantMByTokens[index]
 		for tokenID, wantIndexList := range tempWantIndexMByToken {
-			gotCIndexList := tempStateDB.GetAllCommitmentStateByPrefix(tokenID, shardID)
+			gotCIndexList := tempStateDB.getAllCommitmentStateByPrefix(tokenID, shardID)
 			for gotC, gotCIndex := range gotCIndexList {
 				flag := false
 				for _, wantCIndex := range wantIndexList {
@@ -188,7 +187,7 @@ func TestStateDB_GetGetAllCommitmentStateByPrefix(t *testing.T) {
 					}
 				}
 				if !flag {
-					t.Fatalf("GetAllCommitmentStateByPrefix shard %+v didn't want %+v", shardID, gotCIndex)
+					t.Fatalf("getAllCommitmentStateByPrefix shard %+v didn't want %+v", shardID, gotCIndex)
 				}
 				flag2 := false
 				for _, wantCBytes := range tempWantMByToken[tokenID] {
@@ -199,11 +198,11 @@ func TestStateDB_GetGetAllCommitmentStateByPrefix(t *testing.T) {
 					}
 				}
 				if !flag2 {
-					t.Fatalf("GetAllCommitmentStateByPrefix shard %+v didn't want %+v", shardID, gotC)
+					t.Fatalf("getAllCommitmentStateByPrefix shard %+v didn't want %+v", shardID, gotC)
 				}
 			}
-			keyLength := statedb.GenerateCommitmentLengthObjectKey(tokenID, shardID)
-			gotCLength, has, err := tempStateDB.GetCommitmentLengthState(keyLength)
+			keyLength := GenerateCommitmentLengthObjectKey(tokenID, shardID)
+			gotCLength, has, err := tempStateDB.getCommitmentLengthState(keyLength)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -211,7 +210,7 @@ func TestStateDB_GetGetAllCommitmentStateByPrefix(t *testing.T) {
 				t.Fatal(has)
 			}
 			if gotCLength.Uint64() != wantLengthMByTokens[index][tokenID] {
-				t.Fatalf("GetAllSerialNumberByPrefix shard %+v want %+v but got %+v", shardID, wantLengthMByTokens[shardID][tokenID], gotCLength.Uint64())
+				t.Fatalf("getAllSerialNumberByPrefix shard %+v want %+v but got %+v", shardID, wantLengthMByTokens[shardID][tokenID], gotCLength.Uint64())
 			}
 		}
 	}
@@ -220,12 +219,12 @@ func TestStateDB_GetGetAllCommitmentStateByPrefix(t *testing.T) {
 func TestStateDB_StoreCommitments(t *testing.T) {
 	tokenID := common.PRVCoinID
 	shardID := byte(0)
-	commitments := generateCommitmentList(20)
-	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDBTxTest)
+	commitments := testGenerateCommitmentList(20)
+	sDB, err := NewWithPrefixTrie(emptyRoot, wrarperDB)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = statedb.StoreCommitments(sDB, tokenID, []byte{}, commitments, shardID)
+	err = StoreCommitments(sDB, tokenID, []byte{}, commitments, shardID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -238,11 +237,11 @@ func TestStateDB_StoreCommitments(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBTxTest)
+	tempStateDB, err := NewWithPrefixTrie(rootHash, wrarperDB)
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, err := statedb.GetCommitmentLength(tempStateDB, tokenID, shardID)
+	res, err := GetCommitmentLength(tempStateDB, tokenID, shardID)
 	if err != nil {
 		t.Fatal(err)
 	}

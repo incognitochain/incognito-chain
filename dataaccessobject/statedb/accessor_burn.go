@@ -17,7 +17,7 @@ func StoreBurningConfirm(stateDB *StateDB, txID common.Hash, height uint64) erro
 
 func GetBurningConfirm(stateDB *StateDB, txID common.Hash) (uint64, error) {
 	key := GenerateBurningConfirmObjectKey(txID)
-	burningConfrimState, has, err := stateDB.GetBurningConfirmState(key)
+	burningConfrimState, has, err := stateDB.getBurningConfirmState(key)
 	if err != nil {
 		return 0, NewStatedbError(GetBurningConfirmError, err)
 	}

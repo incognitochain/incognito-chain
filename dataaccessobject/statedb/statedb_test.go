@@ -1,4 +1,4 @@
-package statedb_test
+package statedb
 
 import (
 	"bytes"
@@ -9,15 +9,13 @@ import (
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	_ "github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"github.com/incognitochain/incognito-chain/trie"
 )
 
 var (
-	warperDBStatedbTest statedb.DatabaseAccessWarper
+	warperDBStatedbTest DatabaseAccessWarper
 	emptyRoot           = common.HexToHash("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
 	prefixA             = "serialnumber"
 	prefixB             = "serialnumberderivator"
@@ -47,7 +45,7 @@ var _ = func() (_ struct{}) {
 		panic(err)
 	}
 	diskBD, _ := incdb.Open("leveldb", dbPath)
-	warperDBStatedbTest = statedb.NewDatabaseAccessWarper(diskBD)
+	warperDBStatedbTest = NewDatabaseAccessWarper(diskBD)
 	trie.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return
 }()
@@ -81,42 +79,42 @@ func generateKeyValuePairWithPrefix(limit int, prefix []byte) ([]common.Hash, []
 
 func TestStateDB_DeleteNotExistObject(t *testing.T) {
 	keys, values := generateKeyValuePairWithPrefix(5, []byte("abc"))
-	stateDB, _ := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
-	stateDB.SetStateObject(statedb.TestObjectType, keys[0], values[0])
-	stateDB.SetStateObject(statedb.TestObjectType, keys[1], values[1])
-	stateDB.SetStateObject(statedb.TestObjectType, keys[2], values[2])
+	stateDB, _ := NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
+	stateDB.SetStateObject(TestObjectType, keys[0], values[0])
+	stateDB.SetStateObject(TestObjectType, keys[1], values[1])
+	stateDB.SetStateObject(TestObjectType, keys[2], values[2])
 	rootHash, _ := stateDB.Commit(true)
 	stateDB.Database().TrieDB().Commit(rootHash, false)
 
-	v0, err := stateDB.GetTestObject(keys[0])
+	v0, err := stateDB.getTestObject(keys[0])
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(v0, values[0]) {
 		t.Fatalf("want values 0 %+v, got %+v", values[0], v0)
 	}
-	v1, err := stateDB.GetTestObject(keys[1])
+	v1, err := stateDB.getTestObject(keys[1])
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(v1, values[1]) {
 		t.Fatalf("want values 0 %+v, got %+v", values[1], v1)
 	}
-	v2, err := stateDB.GetTestObject(keys[2])
+	v2, err := stateDB.getTestObject(keys[2])
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(v2, values[2]) {
 		t.Fatalf("want values 0 %+v, got %+v", values[2], v2)
 	}
-	v3, err := stateDB.GetTestObject(keys[3])
+	v3, err := stateDB.getTestObject(keys[3])
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(v3, []byte{}) {
 		t.Fatalf("want values 0 %+v, got %+v", []byte{}, v3)
 	}
-	v4, err := stateDB.GetTestObject(keys[4])
+	v4, err := stateDB.getTestObject(keys[4])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -124,22 +122,22 @@ func TestStateDB_DeleteNotExistObject(t *testing.T) {
 		t.Fatalf("want values 0 %+v, got %+v", []byte{}, v4)
 	}
 
-	stateDB.SetStateObject(statedb.TestObjectType, keys[3], values[3])
-	stateDB.SetStateObject(statedb.TestObjectType, keys[4], values[4])
-	stateDB.MarkDeleteStateObject(statedb.TestObjectType, keys[0])
-	stateDB.MarkDeleteStateObject(statedb.TestObjectType, keys[1])
-	stateDB.MarkDeleteStateObject(statedb.TestObjectType, keys[2])
-	stateDB.MarkDeleteStateObject(statedb.TestObjectType, keys[3])
-	stateDB.MarkDeleteStateObject(statedb.TestObjectType, keys[4])
+	stateDB.SetStateObject(TestObjectType, keys[3], values[3])
+	stateDB.SetStateObject(TestObjectType, keys[4], values[4])
+	stateDB.MarkDeleteStateObject(TestObjectType, keys[0])
+	stateDB.MarkDeleteStateObject(TestObjectType, keys[1])
+	stateDB.MarkDeleteStateObject(TestObjectType, keys[2])
+	stateDB.MarkDeleteStateObject(TestObjectType, keys[3])
+	stateDB.MarkDeleteStateObject(TestObjectType, keys[4])
 
 	rootHash2, _ := stateDB.Commit(true)
 	stateDB.Database().TrieDB().Commit(rootHash2, false)
 
-	v0, err = stateDB.GetTestObject(keys[0])
-	v1, err = stateDB.GetTestObject(keys[1])
-	v2, err = stateDB.GetTestObject(keys[2])
-	v3, err = stateDB.GetTestObject(keys[3])
-	v4, err = stateDB.GetTestObject(keys[4])
+	v0, err = stateDB.getTestObject(keys[0])
+	v1, err = stateDB.getTestObject(keys[1])
+	v2, err = stateDB.getTestObject(keys[2])
+	v3, err = stateDB.getTestObject(keys[3])
+	v4, err = stateDB.getTestObject(keys[4])
 	if !reflect.DeepEqual(v0, []byte{}) {
 		t.Fatalf("want values 0 %+v, got %+v", []byte{}, v0)
 	}
@@ -159,11 +157,11 @@ func TestStateDB_DeleteNotExistObject(t *testing.T) {
 
 func TestStateDB_GetTestObjectByPrefix50000(t *testing.T) {
 	rootHash, tests := createAndStoreDataForTesting(limit10000)
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+	tempStateDB, err := NewWithPrefixTrie(rootHash, warperDBStatedbTest)
 	if err != nil || tempStateDB == nil {
 		panic(err)
 	}
-	keys, values := tempStateDB.GetAllTestObjectList()
+	keys, values := tempStateDB.getAllTestObjectList()
 	if len(keys) != limit10000*5 {
 		t.Fatalf("number of all keys want = %+v but got = %+v", limit10000*5, len(keys))
 	}
@@ -172,7 +170,7 @@ func TestStateDB_GetTestObjectByPrefix50000(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotKeys, gotValues := tempStateDB.GetByPrefixTestObjectList(tt.args.prefix)
+			gotKeys, gotValues := tempStateDB.getByPrefixTestObjectList(tt.args.prefix)
 			if len(gotKeys) != len(tt.wantKey) {
 
 				t.Errorf("GetByPrefixSerialNumberList() gotKey length = %v, wantKey length = %v", len(gotKeys), len(tt.wantKey))
@@ -198,7 +196,7 @@ func TestStateDB_GetTestObjectByPrefix50000(t *testing.T) {
 
 func BenchmarkStateDB_NewWithPrefixTrie20000(b *testing.B) {
 	rootHash, _ := createAndStoreDataForTesting(limit100000)
-	sDB, _ := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
+	sDB, _ := NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
 	for n := 0; n < b.N; n++ {
 		sDB.Reset(rootHash)
 	}
@@ -206,52 +204,52 @@ func BenchmarkStateDB_NewWithPrefixTrie20000(b *testing.B) {
 
 func BenchmarkStateDB_GetAllTestObjectList500000(b *testing.B) {
 	rootHash, _ := createAndStoreDataForTesting(limit100000)
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+	tempStateDB, err := NewWithPrefixTrie(rootHash, warperDBStatedbTest)
 	if err != nil || tempStateDB == nil {
 		panic(err)
 	}
 	for n := 0; n < b.N; n++ {
-		tempStateDB.GetAllTestObjectList()
+		tempStateDB.getAllTestObjectList()
 	}
 }
 func BenchmarkStateDB_GetAllTestObjectList50000(b *testing.B) {
 	rootHash, _ := createAndStoreDataForTesting(limit10000)
 	for n := 0; n < b.N; n++ {
-		tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+		tempStateDB, err := NewWithPrefixTrie(rootHash, warperDBStatedbTest)
 		if err != nil || tempStateDB == nil {
 			panic(err)
 		}
-		tempStateDB.GetAllTestObjectList()
+		tempStateDB.getAllTestObjectList()
 	}
 }
 func BenchmarkStateDB_GetAllTestObjectList5000(b *testing.B) {
 	rootHash, _ := createAndStoreDataForTesting(limit1000)
 	for n := 0; n < b.N; n++ {
-		tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+		tempStateDB, err := NewWithPrefixTrie(rootHash, warperDBStatedbTest)
 		if err != nil || tempStateDB == nil {
 			panic(err)
 		}
-		tempStateDB.GetAllTestObjectList()
+		tempStateDB.getAllTestObjectList()
 	}
 }
 func BenchmarkStateDB_GetAllTestObjectList500(b *testing.B) {
 	rootHash, _ := createAndStoreDataForTesting(limit100)
 	for n := 0; n < b.N; n++ {
-		tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+		tempStateDB, err := NewWithPrefixTrie(rootHash, warperDBStatedbTest)
 		if err != nil || tempStateDB == nil {
 			panic(err)
 		}
-		tempStateDB.GetAllTestObjectList()
+		tempStateDB.getAllTestObjectList()
 	}
 }
 func BenchmarkStateDB_GetAllTestObjectList5(b *testing.B) {
 	rootHash, _ := createAndStoreDataForTesting(limit1)
 	for n := 0; n < b.N; n++ {
-		tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+		tempStateDB, err := NewWithPrefixTrie(rootHash, warperDBStatedbTest)
 		if err != nil || tempStateDB == nil {
 			panic(err)
 		}
-		tempStateDB.GetAllTestObjectList()
+		tempStateDB.getAllTestObjectList()
 	}
 }
 
@@ -262,12 +260,12 @@ func BenchmarkStateDB_GetTestObject500000(b *testing.B) {
 		sampleKey = key
 		break
 	}
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+	tempStateDB, err := NewWithPrefixTrie(rootHash, warperDBStatedbTest)
 	if err != nil || tempStateDB == nil {
 		panic(err)
 	}
 	for n := 0; n < b.N; n++ {
-		tempStateDB.GetTestObject(sampleKey)
+		tempStateDB.getTestObject(sampleKey)
 	}
 }
 func BenchmarkStateDB_GetTestObject50000(b *testing.B) {
@@ -277,12 +275,12 @@ func BenchmarkStateDB_GetTestObject50000(b *testing.B) {
 		sampleKey = key
 		break
 	}
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+	tempStateDB, err := NewWithPrefixTrie(rootHash, warperDBStatedbTest)
 	if err != nil || tempStateDB == nil {
 		panic(err)
 	}
 	for n := 0; n < b.N; n++ {
-		tempStateDB.GetTestObject(sampleKey)
+		tempStateDB.getTestObject(sampleKey)
 	}
 }
 func BenchmarkStateDB_GetTestObject5000(b *testing.B) {
@@ -292,50 +290,50 @@ func BenchmarkStateDB_GetTestObject5000(b *testing.B) {
 		sampleKey = key
 		break
 	}
-	tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+	tempStateDB, err := NewWithPrefixTrie(rootHash, warperDBStatedbTest)
 	if err != nil || tempStateDB == nil {
 		panic(err)
 	}
 	for n := 0; n < b.N; n++ {
-		tempStateDB.GetTestObject(sampleKey)
+		tempStateDB.getTestObject(sampleKey)
 	}
 }
 
 func BenchmarkStateDB_GetByPrefixTestObjectList50000(b *testing.B) {
 	rootHash, tests := createAndStoreDataForTesting(limit10000)
 	for n := 0; n < b.N; n++ {
-		tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+		tempStateDB, err := NewWithPrefixTrie(rootHash, warperDBStatedbTest)
 		if err != nil || tempStateDB == nil {
 			panic(err)
 		}
-		tempStateDB.GetByPrefixTestObjectList(tests[0].args.prefix)
+		tempStateDB.getByPrefixTestObjectList(tests[0].args.prefix)
 	}
 }
 
 func BenchmarkStateDB_GetByPrefixTestObjectList5000(b *testing.B) {
 	rootHash, tests := createAndStoreDataForTesting(limit1000)
 	for n := 0; n < b.N; n++ {
-		tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+		tempStateDB, err := NewWithPrefixTrie(rootHash, warperDBStatedbTest)
 		if err != nil || tempStateDB == nil {
 			panic(err)
 		}
-		tempStateDB.GetByPrefixTestObjectList(tests[0].args.prefix)
+		tempStateDB.getByPrefixTestObjectList(tests[0].args.prefix)
 	}
 }
 
 func BenchmarkStateDB_GetByPrefixTestObjectList500(b *testing.B) {
 	rootHash, tests := createAndStoreDataForTesting(limit100)
 	for n := 0; n < b.N; n++ {
-		tempStateDB, err := statedb.NewWithPrefixTrie(rootHash, warperDBStatedbTest)
+		tempStateDB, err := NewWithPrefixTrie(rootHash, warperDBStatedbTest)
 		if err != nil || tempStateDB == nil {
 			panic(err)
 		}
-		tempStateDB.GetByPrefixTestObjectList(tests[0].args.prefix)
+		tempStateDB.getByPrefixTestObjectList(tests[0].args.prefix)
 	}
 }
 
 func createAndStoreDataForTesting(limit int) (common.Hash, []test) {
-	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
+	sDB, err := NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
 	if err != nil {
 		panic(err)
 	}
@@ -387,19 +385,19 @@ func createAndStoreDataForTesting(limit int) (common.Hash, []test) {
 	keysD, valuesD = generateKeyValuePairWithPrefix(limit, []byte(prefixD))
 	keysE, valuesE = generateKeyValuePairWithPrefix(limit, []byte(prefixE))
 	for i := 0; i < len(keysA); i++ {
-		sDB.SetStateObject(statedb.TestObjectType, keysA[i], valuesA[i])
+		sDB.SetStateObject(TestObjectType, keysA[i], valuesA[i])
 	}
 	for i := 0; i < len(keysB); i++ {
-		sDB.SetStateObject(statedb.TestObjectType, keysB[i], valuesB[i])
+		sDB.SetStateObject(TestObjectType, keysB[i], valuesB[i])
 	}
 	for i := 0; i < len(keysC); i++ {
-		sDB.SetStateObject(statedb.TestObjectType, keysC[i], valuesC[i])
+		sDB.SetStateObject(TestObjectType, keysC[i], valuesC[i])
 	}
 	for i := 0; i < len(keysD); i++ {
-		sDB.SetStateObject(statedb.TestObjectType, keysD[i], valuesD[i])
+		sDB.SetStateObject(TestObjectType, keysD[i], valuesD[i])
 	}
 	for i := 0; i < len(keysE); i++ {
-		sDB.SetStateObject(statedb.TestObjectType, keysE[i], valuesE[i])
+		sDB.SetStateObject(TestObjectType, keysE[i], valuesE[i])
 	}
 	for _, tt := range tests {
 		if tt.name == prefixA {

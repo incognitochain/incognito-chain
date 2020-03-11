@@ -113,8 +113,8 @@ func GetSNDerivatorPrefix(tokenID common.Hash) []byte {
 	return h[:][:prefixHashKeyLength]
 }
 
-func GetOutputCoinPrefix(tokenID common.Hash, shardID byte) []byte {
-	h := common.HashH(append(outputCoinPrefix, append(tokenID[:], shardID)...))
+func GetOutputCoinPrefix(tokenID common.Hash, shardID byte, publicKey []byte) []byte {
+	h := common.HashH(append(outputCoinPrefix, append(tokenID[:], append(publicKey, shardID)...)...))
 	return h[:][:prefixHashKeyLength]
 }
 

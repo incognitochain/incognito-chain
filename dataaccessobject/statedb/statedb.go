@@ -356,12 +356,13 @@ func (stateDB *StateDB) getStateObject(objectType int, addr common.Hash) (StateO
 func (stateDB *StateDB) GetStateObjectMapForTestOnly() map[common.Hash]StateObject {
 	return stateDB.stateObjects
 }
+
 func (stateDB *StateDB) GetStateObjectPendingMapForTestOnly() map[common.Hash]struct{} {
 	return stateDB.stateObjectsPending
 }
 
 // =================================     Test Object     ========================================
-func (stateDB *StateDB) GetTestObject(key common.Hash) ([]byte, error) {
+func (stateDB *StateDB) getTestObject(key common.Hash) ([]byte, error) {
 	testObject, err := stateDB.getStateObject(TestObjectType, key)
 	if err != nil {
 		return []byte{}, err
@@ -371,7 +372,8 @@ func (stateDB *StateDB) GetTestObject(key common.Hash) ([]byte, error) {
 	}
 	return []byte{}, nil
 }
-func (stateDB *StateDB) GetAllTestObjectList() ([]common.Hash, [][]byte) {
+
+func (stateDB *StateDB) getAllTestObjectList() ([]common.Hash, [][]byte) {
 	temp := stateDB.trie.NodeIterator(nil)
 	it := trie.NewIterator(temp)
 	keys := []common.Hash{}
@@ -388,7 +390,8 @@ func (stateDB *StateDB) GetAllTestObjectList() ([]common.Hash, [][]byte) {
 	}
 	return keys, values
 }
-func (stateDB *StateDB) GetAllTestObjectMap() map[common.Hash][]byte {
+
+func (stateDB *StateDB) getAllTestObjectMap() map[common.Hash][]byte {
 	temp := stateDB.trie.NodeIterator(nil)
 	it := trie.NewIterator(temp)
 	m := make(map[common.Hash][]byte)
@@ -403,7 +406,8 @@ func (stateDB *StateDB) GetAllTestObjectMap() map[common.Hash][]byte {
 	}
 	return m
 }
-func (stateDB *StateDB) GetByPrefixTestObjectList(prefix []byte) ([]common.Hash, [][]byte) {
+
+func (stateDB *StateDB) getByPrefixTestObjectList(prefix []byte) ([]common.Hash, [][]byte) {
 	temp := stateDB.trie.NodeIterator(prefix)
 	it := trie.NewIterator(temp)
 	keys := []common.Hash{}
@@ -422,7 +426,7 @@ func (stateDB *StateDB) GetByPrefixTestObjectList(prefix []byte) ([]common.Hash,
 }
 
 // ================================= Committee OBJECT =======================================
-func (stateDB *StateDB) GetCommitteeState(key common.Hash) (*CommitteeState, bool, error) {
+func (stateDB *StateDB) getCommitteeState(key common.Hash) (*CommitteeState, bool, error) {
 	committeeStateObject, err := stateDB.getStateObject(CommitteeObjectType, key)
 	if err != nil {
 		return nil, false, err
@@ -432,7 +436,8 @@ func (stateDB *StateDB) GetCommitteeState(key common.Hash) (*CommitteeState, boo
 	}
 	return NewCommitteeState(), false, nil
 }
-func (stateDB *StateDB) GetAllValidatorCommitteePublicKey(role int, ids []int) map[int][]*CommitteeState {
+
+func (stateDB *StateDB) getAllValidatorCommitteePublicKey(role int, ids []int) map[int][]*CommitteeState {
 	if role != CurrentValidator && role != SubstituteValidator {
 		panic("wrong expected role " + strconv.Itoa(role))
 	}
@@ -456,7 +461,7 @@ func (stateDB *StateDB) GetAllValidatorCommitteePublicKey(role int, ids []int) m
 	return m
 }
 
-func (stateDB *StateDB) GetAllCandidateCommitteePublicKey(role int) []*CommitteeState {
+func (stateDB *StateDB) getAllCandidateCommitteePublicKey(role int) []*CommitteeState {
 	if role != CurrentEpochShardCandidate && role != NextEpochShardCandidate {
 		panic("wrong expected role " + strconv.Itoa(role))
 	}
@@ -478,7 +483,7 @@ func (stateDB *StateDB) GetAllCandidateCommitteePublicKey(role int) []*Committee
 	return list
 }
 
-func (stateDB *StateDB) GetByShardIDCurrentValidatorState(shardID int) []*CommitteeState {
+func (stateDB *StateDB) getByShardIDCurrentValidatorState(shardID int) []*CommitteeState {
 	committees := []*CommitteeState{}
 	prefix := GetCommitteePrefixWithRole(CurrentValidator, shardID)
 	temp := stateDB.trie.NodeIterator(prefix)
@@ -500,7 +505,7 @@ func (stateDB *StateDB) GetByShardIDCurrentValidatorState(shardID int) []*Commit
 	return committees
 }
 
-func (stateDB *StateDB) GetByShardIDSubstituteValidatorState(shardID int) []*CommitteeState {
+func (stateDB *StateDB) getByShardIDSubstituteValidatorState(shardID int) []*CommitteeState {
 	committees := []*CommitteeState{}
 	prefix := GetCommitteePrefixWithRole(SubstituteValidator, shardID)
 	temp := stateDB.trie.NodeIterator(prefix)
@@ -522,14 +527,14 @@ func (stateDB *StateDB) GetByShardIDSubstituteValidatorState(shardID int) []*Com
 	return committees
 }
 
-// GetAllCommitteeState return all data related to all committee roles
+// getAllCommitteeState return all data related to all committee roles
 // return params #1: current validator
 // return params #2: substitute validator
 // return params #3: next epoch candidate
 // return params #4: current epoch candidate
 // return params #5: reward receiver map
 // return params #6: auto staking map
-func (stateDB *StateDB) GetAllCommitteeState(ids []int) (map[int][]*CommitteeState, map[int][]*CommitteeState, []*CommitteeState, []*CommitteeState, []*CommitteeState, []*CommitteeState, map[string]string, map[string]bool) {
+func (stateDB *StateDB) getAllCommitteeState(ids []int) (map[int][]*CommitteeState, map[int][]*CommitteeState, []*CommitteeState, []*CommitteeState, []*CommitteeState, []*CommitteeState, map[string]string, map[string]bool) {
 	currentValidator := make(map[int][]*CommitteeState)
 	substituteValidator := make(map[int][]*CommitteeState)
 	nextEpochShardCandidate := []*CommitteeState{}
@@ -645,7 +650,7 @@ func (stateDB *StateDB) iterateWithCommitteeState(prefix []byte) []*CommitteeSta
 }
 
 // ================================= Committee Reward OBJECT =======================================
-func (stateDB *StateDB) GetCommitteeRewardState(key common.Hash) (*CommitteeRewardState, bool, error) {
+func (stateDB *StateDB) getCommitteeRewardState(key common.Hash) (*CommitteeRewardState, bool, error) {
 	committeeRewardObject, err := stateDB.getStateObject(CommitteeRewardObjectType, key)
 	if err != nil {
 		return nil, false, err
@@ -656,7 +661,7 @@ func (stateDB *StateDB) GetCommitteeRewardState(key common.Hash) (*CommitteeRewa
 	return NewCommitteeRewardState(), false, nil
 }
 
-func (stateDB *StateDB) GetCommitteeRewardAmount(key common.Hash) (map[common.Hash]uint64, bool, error) {
+func (stateDB *StateDB) getCommitteeRewardAmount(key common.Hash) (map[common.Hash]uint64, bool, error) {
 	m := make(map[common.Hash]uint64)
 	committeeRewardObject, err := stateDB.getStateObject(CommitteeRewardObjectType, key)
 	if err != nil {
@@ -670,7 +675,7 @@ func (stateDB *StateDB) GetCommitteeRewardAmount(key common.Hash) (map[common.Ha
 	return m, false, nil
 }
 
-func (stateDB *StateDB) GetAllCommitteeReward() map[string]map[common.Hash]uint64 {
+func (stateDB *StateDB) getAllCommitteeReward() map[string]map[common.Hash]uint64 {
 	m := make(map[string]map[common.Hash]uint64)
 	prefix := GetCommitteeRewardPrefix()
 	temp := stateDB.trie.NodeIterator(prefix)
@@ -690,7 +695,7 @@ func (stateDB *StateDB) GetAllCommitteeReward() map[string]map[common.Hash]uint6
 }
 
 // ================================= Reward Request OBJECT =======================================
-func (stateDB *StateDB) GetRewardRequestState(key common.Hash) (*RewardRequestState, bool, error) {
+func (stateDB *StateDB) getRewardRequestState(key common.Hash) (*RewardRequestState, bool, error) {
 	rewardRequestState, err := stateDB.getStateObject(RewardRequestObjectType, key)
 	if err != nil {
 		return nil, false, err
@@ -701,7 +706,7 @@ func (stateDB *StateDB) GetRewardRequestState(key common.Hash) (*RewardRequestSt
 	return NewRewardRequestState(), false, nil
 }
 
-func (stateDB *StateDB) GetRewardRequestAmount(key common.Hash) (uint64, bool, error) {
+func (stateDB *StateDB) getRewardRequestAmount(key common.Hash) (uint64, bool, error) {
 	amount := uint64(0)
 	rewardRequestObject, err := stateDB.getStateObject(RewardRequestObjectType, key)
 	if err != nil {
@@ -715,7 +720,7 @@ func (stateDB *StateDB) GetRewardRequestAmount(key common.Hash) (uint64, bool, e
 	return amount, false, nil
 }
 
-func (stateDB *StateDB) GetAllRewardRequestState(epoch uint64) ([]common.Hash, []*RewardRequestState) {
+func (stateDB *StateDB) getAllRewardRequestState(epoch uint64) ([]common.Hash, []*RewardRequestState) {
 	m := []*RewardRequestState{}
 	keys := []common.Hash{}
 	prefix := GetRewardRequestPrefix(epoch)
@@ -740,7 +745,7 @@ func (stateDB *StateDB) GetAllRewardRequestState(epoch uint64) ([]common.Hash, [
 }
 
 // ================================= Black List Producer OBJECT =======================================
-func (stateDB *StateDB) GetBlackListProducerState(key common.Hash) (*BlackListProducerState, bool, error) {
+func (stateDB *StateDB) getBlackListProducerState(key common.Hash) (*BlackListProducerState, bool, error) {
 	blackListProducerState, err := stateDB.getStateObject(BlackListProducerObjectType, key)
 	if err != nil {
 		return nil, false, err
@@ -751,7 +756,7 @@ func (stateDB *StateDB) GetBlackListProducerState(key common.Hash) (*BlackListPr
 	return NewBlackListProducerState(), false, nil
 }
 
-func (stateDB *StateDB) GetBlackListProducerPunishedEpoch(key common.Hash) (uint8, bool, error) {
+func (stateDB *StateDB) getBlackListProducerPunishedEpoch(key common.Hash) (uint8, bool, error) {
 	duration := uint8(0)
 	blackListProducerObject, err := stateDB.getStateObject(BlackListProducerObjectType, key)
 	if err != nil {
@@ -765,7 +770,7 @@ func (stateDB *StateDB) GetBlackListProducerPunishedEpoch(key common.Hash) (uint
 	return duration, false, nil
 }
 
-func (stateDB *StateDB) GetAllBlackListProducerState() []*BlackListProducerState {
+func (stateDB *StateDB) getAllBlackListProducerState() []*BlackListProducerState {
 	blackListProducerStates := []*BlackListProducerState{}
 	prefix := GetBlackListProducerPrefix()
 	temp := stateDB.trie.NodeIterator(prefix)
@@ -784,7 +789,7 @@ func (stateDB *StateDB) GetAllBlackListProducerState() []*BlackListProducerState
 	return blackListProducerStates
 }
 
-func (stateDB *StateDB) GetAllProducerBlackList() map[string]uint8 {
+func (stateDB *StateDB) getAllProducerBlackList() map[string]uint8 {
 	m := make(map[string]uint8)
 	prefix := GetBlackListProducerPrefix()
 	temp := stateDB.trie.NodeIterator(prefix)
@@ -803,7 +808,7 @@ func (stateDB *StateDB) GetAllProducerBlackList() map[string]uint8 {
 	return m
 }
 
-func (stateDB *StateDB) GetAllProducerBlackListState() map[common.Hash]uint8 {
+func (stateDB *StateDB) getAllProducerBlackListState() map[common.Hash]uint8 {
 	m := make(map[common.Hash]uint8)
 	prefix := GetBlackListProducerPrefix()
 	temp := stateDB.trie.NodeIterator(prefix)
@@ -824,7 +829,7 @@ func (stateDB *StateDB) GetAllProducerBlackListState() map[common.Hash]uint8 {
 }
 
 // ================================= Serial Number OBJECT =======================================
-func (stateDB *StateDB) GetSerialNumberState(key common.Hash) (*SerialNumberState, bool, error) {
+func (stateDB *StateDB) getSerialNumberState(key common.Hash) (*SerialNumberState, bool, error) {
 	serialNumberState, err := stateDB.getStateObject(SerialNumberObjectType, key)
 	if err != nil {
 		return nil, false, err
@@ -835,7 +840,7 @@ func (stateDB *StateDB) GetSerialNumberState(key common.Hash) (*SerialNumberStat
 	return NewSerialNumberState(), false, nil
 }
 
-func (stateDB *StateDB) GetAllSerialNumberByPrefix(tokenID common.Hash, shardID byte) [][]byte {
+func (stateDB *StateDB) getAllSerialNumberByPrefix(tokenID common.Hash, shardID byte) [][]byte {
 	serialNumberList := [][]byte{}
 	prefix := GetSerialNumberPrefix(tokenID, shardID)
 	temp := stateDB.trie.NodeIterator(prefix)
@@ -855,7 +860,7 @@ func (stateDB *StateDB) GetAllSerialNumberByPrefix(tokenID common.Hash, shardID 
 }
 
 // ================================= Commitment OBJECT =======================================
-func (stateDB *StateDB) GetCommitmentState(key common.Hash) (*CommitmentState, bool, error) {
+func (stateDB *StateDB) getCommitmentState(key common.Hash) (*CommitmentState, bool, error) {
 	commitmentState, err := stateDB.getStateObject(CommitmentObjectType, key)
 	if err != nil {
 		return nil, false, err
@@ -866,7 +871,7 @@ func (stateDB *StateDB) GetCommitmentState(key common.Hash) (*CommitmentState, b
 	return NewCommitmentState(), false, nil
 }
 
-func (stateDB *StateDB) GetCommitmentIndexState(key common.Hash) (*CommitmentState, bool, error) {
+func (stateDB *StateDB) getCommitmentIndexState(key common.Hash) (*CommitmentState, bool, error) {
 	commitmentIndexState, err := stateDB.getStateObject(CommitmentIndexObjectType, key)
 	if err != nil {
 		return nil, false, err
@@ -885,7 +890,7 @@ func (stateDB *StateDB) GetCommitmentIndexState(key common.Hash) (*CommitmentSta
 	return NewCommitmentState(), false, nil
 }
 
-func (stateDB *StateDB) GetCommitmentLengthState(key common.Hash) (*big.Int, bool, error) {
+func (stateDB *StateDB) getCommitmentLengthState(key common.Hash) (*big.Int, bool, error) {
 	commitmentLengthState, err := stateDB.getStateObject(CommitmentLengthObjectType, key)
 	if err != nil {
 		return nil, false, err
@@ -896,7 +901,7 @@ func (stateDB *StateDB) GetCommitmentLengthState(key common.Hash) (*big.Int, boo
 	return new(big.Int), false, nil
 }
 
-func (stateDB *StateDB) GetAllCommitmentStateByPrefix(tokenID common.Hash, shardID byte) map[string]uint64 {
+func (stateDB *StateDB) getAllCommitmentStateByPrefix(tokenID common.Hash, shardID byte) map[string]uint64 {
 	temp := stateDB.trie.NodeIterator(GetCommitmentPrefix(tokenID, shardID))
 	it := trie.NewIterator(temp)
 	m := make(map[string]uint64)
@@ -916,7 +921,7 @@ func (stateDB *StateDB) GetAllCommitmentStateByPrefix(tokenID common.Hash, shard
 }
 
 // ================================= Output Coin OBJECT =======================================
-func (stateDB *StateDB) GetOutputCoinState(key common.Hash) (*OutputCoinState, bool, error) {
+func (stateDB *StateDB) getOutputCoinState(key common.Hash) (*OutputCoinState, bool, error) {
 	outputCoinState, err := stateDB.getStateObject(OutputCoinObjectType, key)
 	if err != nil {
 		return nil, false, err
@@ -927,8 +932,26 @@ func (stateDB *StateDB) GetOutputCoinState(key common.Hash) (*OutputCoinState, b
 	return NewOutputCoinState(), false, nil
 }
 
+func (stateDB *StateDB) getAllOutputCoinState(tokenID common.Hash, shardID byte, publicKey []byte) []*OutputCoinState {
+	temp := stateDB.trie.NodeIterator(GetOutputCoinPrefix(tokenID, shardID, publicKey))
+	it := trie.NewIterator(temp)
+	outputCoins := []*OutputCoinState{}
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		newOutputCoin := NewOutputCoinState()
+		err := json.Unmarshal(newValue, newOutputCoin)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		outputCoins = append(outputCoins, newOutputCoin)
+	}
+	return outputCoins
+}
+
 // ================================= SNDerivator OBJECT =======================================
-func (stateDB *StateDB) GetSNDerivatorState(key common.Hash) (*SNDerivatorState, bool, error) {
+func (stateDB *StateDB) getSNDerivatorState(key common.Hash) (*SNDerivatorState, bool, error) {
 	sndState, err := stateDB.getStateObject(SNDerivatorObjectType, key)
 	if err != nil {
 		return nil, false, err
@@ -939,7 +962,7 @@ func (stateDB *StateDB) GetSNDerivatorState(key common.Hash) (*SNDerivatorState,
 	return NewSNDerivatorState(), false, nil
 }
 
-func (stateDB *StateDB) GetAllSNDerivatorStateByPrefix(tokenID common.Hash) [][]byte {
+func (stateDB *StateDB) getAllSNDerivatorStateByPrefix(tokenID common.Hash) [][]byte {
 	temp := stateDB.trie.NodeIterator(GetSNDerivatorPrefix(tokenID))
 	it := trie.NewIterator(temp)
 	list := [][]byte{}
@@ -958,7 +981,7 @@ func (stateDB *StateDB) GetAllSNDerivatorStateByPrefix(tokenID common.Hash) [][]
 }
 
 // ================================= Token OBJECT =======================================
-func (stateDB *StateDB) GetTokenState(key common.Hash) (*TokenState, bool, error) {
+func (stateDB *StateDB) getTokenState(key common.Hash) (*TokenState, bool, error) {
 	tokenState, err := stateDB.getStateObject(TokenObjectType, key)
 	if err != nil {
 		return nil, false, err
@@ -969,7 +992,7 @@ func (stateDB *StateDB) GetTokenState(key common.Hash) (*TokenState, bool, error
 	return NewTokenState(), false, nil
 }
 
-func (stateDB *StateDB) GetTokenTxs(tokenID common.Hash) []common.Hash {
+func (stateDB *StateDB) getTokenTxs(tokenID common.Hash) []common.Hash {
 	txs := []common.Hash{}
 	temp := stateDB.trie.NodeIterator(GetTokenTransactionPrefix(tokenID))
 	it := trie.NewIterator(temp)
@@ -987,7 +1010,7 @@ func (stateDB *StateDB) GetTokenTxs(tokenID common.Hash) []common.Hash {
 	return txs
 }
 
-func (stateDB *StateDB) GetAllToken() map[common.Hash]*TokenState {
+func (stateDB *StateDB) getAllToken() map[common.Hash]*TokenState {
 	temp := stateDB.trie.NodeIterator(GetTokenPrefix())
 	it := trie.NewIterator(temp)
 	tokenIDs := make(map[common.Hash]*TokenState)
@@ -1001,7 +1024,7 @@ func (stateDB *StateDB) GetAllToken() map[common.Hash]*TokenState {
 			panic("wrong expect type")
 		}
 		tokenID := tokenState.TokenID()
-		txs := stateDB.GetTokenTxs(tokenID)
+		txs := stateDB.getTokenTxs(tokenID)
 		tokenState.AddTxs(txs)
 		tokenIDs[tokenID] = tokenState
 	}
@@ -1009,7 +1032,7 @@ func (stateDB *StateDB) GetAllToken() map[common.Hash]*TokenState {
 }
 
 // ================================= PDE OBJECT =======================================
-func (stateDB *StateDB) GetAllWaitingPDEContributionState() []*WaitingPDEContributionState {
+func (stateDB *StateDB) getAllWaitingPDEContributionState() []*WaitingPDEContributionState {
 	waitingPDEContributionStates := []*WaitingPDEContributionState{}
 	temp := stateDB.trie.NodeIterator(GetWaitingPDEContributionPrefix())
 	it := trie.NewIterator(temp)
@@ -1027,7 +1050,7 @@ func (stateDB *StateDB) GetAllWaitingPDEContributionState() []*WaitingPDEContrib
 	return waitingPDEContributionStates
 }
 
-func (stateDB *StateDB) GetAllPDEPoolPairState() []*PDEPoolPairState {
+func (stateDB *StateDB) getAllPDEPoolPairState() []*PDEPoolPairState {
 	pdePoolPairStates := []*PDEPoolPairState{}
 	temp := stateDB.trie.NodeIterator(GetPDEPoolPairPrefix())
 	it := trie.NewIterator(temp)
@@ -1045,7 +1068,7 @@ func (stateDB *StateDB) GetAllPDEPoolPairState() []*PDEPoolPairState {
 	return pdePoolPairStates
 }
 
-func (stateDB *StateDB) GetPDEPoolPairState(key common.Hash) (*PDEPoolPairState, bool, error) {
+func (stateDB *StateDB) getPDEPoolPairState(key common.Hash) (*PDEPoolPairState, bool, error) {
 	ppState, err := stateDB.getStateObject(PDEPoolPairObjectType, key)
 	if err != nil {
 		return nil, false, err
@@ -1056,7 +1079,7 @@ func (stateDB *StateDB) GetPDEPoolPairState(key common.Hash) (*PDEPoolPairState,
 	return NewPDEPoolPairState(), false, nil
 }
 
-func (stateDB *StateDB) GetAllPDEShareState() []*PDEShareState {
+func (stateDB *StateDB) getAllPDEShareState() []*PDEShareState {
 	pdeShareStates := []*PDEShareState{}
 	temp := stateDB.trie.NodeIterator(GetPDESharePrefix())
 	it := trie.NewIterator(temp)
@@ -1074,7 +1097,7 @@ func (stateDB *StateDB) GetAllPDEShareState() []*PDEShareState {
 	return pdeShareStates
 }
 
-func (stateDB *StateDB) GetAllPDEStatus() []*PDEStatusState {
+func (stateDB *StateDB) getAllPDEStatus() []*PDEStatusState {
 	pdeStatusStates := []*PDEStatusState{}
 	temp := stateDB.trie.NodeIterator(GetPDEStatusPrefix())
 	it := trie.NewIterator(temp)
@@ -1092,7 +1115,7 @@ func (stateDB *StateDB) GetAllPDEStatus() []*PDEStatusState {
 	return pdeStatusStates
 }
 
-func (stateDB *StateDB) GetPDEStatusByKey(key common.Hash) (*PDEStatusState, bool, error) {
+func (stateDB *StateDB) getPDEStatusByKey(key common.Hash) (*PDEStatusState, bool, error) {
 	pdeStatusState, err := stateDB.getStateObject(PDEStatusObjectType, key)
 	if err != nil {
 		return nil, false, err
@@ -1104,7 +1127,7 @@ func (stateDB *StateDB) GetPDEStatusByKey(key common.Hash) (*PDEStatusState, boo
 }
 
 // ================================= Bridge OBJECT =======================================
-func (stateDB *StateDB) GetBridgeEthTxState(key common.Hash) (*BridgeEthTxState, bool, error) {
+func (stateDB *StateDB) getBridgeEthTxState(key common.Hash) (*BridgeEthTxState, bool, error) {
 	ethTxState, err := stateDB.getStateObject(BridgeEthTxObjectType, key)
 	if err != nil {
 		return nil, false, err
@@ -1115,7 +1138,7 @@ func (stateDB *StateDB) GetBridgeEthTxState(key common.Hash) (*BridgeEthTxState,
 	return NewBridgeEthTxState(), false, nil
 }
 
-func (stateDB *StateDB) GetBridgeTokenInfoState(key common.Hash) (*BridgeTokenInfoState, bool, error) {
+func (stateDB *StateDB) getBridgeTokenInfoState(key common.Hash) (*BridgeTokenInfoState, bool, error) {
 	tokenInfoState, err := stateDB.getStateObject(BridgeTokenInfoObjectType, key)
 	if err != nil {
 		return nil, false, err
@@ -1126,7 +1149,7 @@ func (stateDB *StateDB) GetBridgeTokenInfoState(key common.Hash) (*BridgeTokenIn
 	return NewBridgeTokenInfoState(), false, nil
 }
 
-func (stateDB *StateDB) GetAllBridgeTokenInfoState(isCentralized bool) []*BridgeTokenInfoState {
+func (stateDB *StateDB) getAllBridgeTokenInfoState(isCentralized bool) []*BridgeTokenInfoState {
 	bridgeTokenInfoStates := []*BridgeTokenInfoState{}
 	temp := stateDB.trie.NodeIterator(GetBridgeTokenInfoPrefix(isCentralized))
 	it := trie.NewIterator(temp)
@@ -1144,7 +1167,7 @@ func (stateDB *StateDB) GetAllBridgeTokenInfoState(isCentralized bool) []*Bridge
 	return bridgeTokenInfoStates
 }
 
-func (stateDB *StateDB) GetBridgeStatusState(key common.Hash) (*BridgeStatusState, bool, error) {
+func (stateDB *StateDB) getBridgeStatusState(key common.Hash) (*BridgeStatusState, bool, error) {
 	statusState, err := stateDB.getStateObject(BridgeStatusObjectType, key)
 	if err != nil {
 		return nil, false, err
@@ -1156,7 +1179,7 @@ func (stateDB *StateDB) GetBridgeStatusState(key common.Hash) (*BridgeStatusStat
 }
 
 // ================================= Burn OBJECT =======================================
-func (stateDB *StateDB) GetBurningConfirmState(key common.Hash) (*BurningConfirmState, bool, error) {
+func (stateDB *StateDB) getBurningConfirmState(key common.Hash) (*BurningConfirmState, bool, error) {
 	burningConfirmState, err := stateDB.getStateObject(BridgeStatusObjectType, key)
 	if err != nil {
 		return nil, false, err
