@@ -152,10 +152,8 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 	}
 	var blk common.BlockPoolInterface
 	if s.isCommittee {
-		fmt.Println("debug beacon get next block A")
 		blk = s.beaconPool.GetNextBlock(s.chain.GetBestViewHash(), true)
 	} else {
-		fmt.Println("debug beacon get next block B")
 		blk = s.beaconPool.GetNextBlock(s.chain.GetBestViewHash(), false)
 	}
 

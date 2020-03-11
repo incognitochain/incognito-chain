@@ -269,10 +269,6 @@ func (beaconBestState *BeaconBestState) updateNumOfBlocksByProducers(beaconBlock
 	- If verify block for signing then verifyPreProcessingBeaconBlockForSigning
 */
 func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *BeaconBlock, isPreSign bool) error {
-	beaconLock := &blockchain.GetBeaconBestState().lock
-	beaconLock.RLock()
-	defer beaconLock.RUnlock()
-
 	// if len(beaconBlock.Header.Producer) == 0 {
 	// 	return NewBlockChainError(ProducerError, fmt.Errorf("Expect has length 66 but get %+v", len(beaconBlock.Header.Producer)))
 	// }
@@ -582,8 +578,6 @@ func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(beaconBlo
 - Random number if have in instruction
 */
 func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBlock *BeaconBlock, randomClient btc.RandomClient) error {
-	beaconBestState.lock.RLock()
-	defer beaconBestState.lock.RUnlock()
 	var (
 		strs []string
 	)
@@ -1131,7 +1125,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 	//================================Store cross shard state ==================================
 	if beaconBlock.Body.ShardState != nil {
-		blockchain.GetBeaconBestState().lock.Lock()
 		lastCrossShardState := blockchain.GetBeaconBestState().LastCrossShardState
 		for fromShard, shardBlocks := range beaconBlock.Body.ShardState {
 			for _, shardBlock := range shardBlocks {
@@ -1146,14 +1139,12 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 					waitHeight := shardBlock.Height
 					err := blockchain.config.DataBase.StoreCrossShardNextHeight(fromShard, toShard, lastHeight, waitHeight)
 					if err != nil {
-						blockchain.GetBeaconBestState().lock.Unlock()
 						return NewBlockChainError(StoreCrossShardNextHeightError, err)
 					}
 					//beacon process shard_to_beacon in order so cross shard next height also will be saved in order
 					//dont care overwrite this value
 					err = blockchain.config.DataBase.StoreCrossShardNextHeight(fromShard, toShard, waitHeight, 0)
 					if err != nil {
-						blockchain.GetBeaconBestState().lock.Unlock()
 						return NewBlockChainError(StoreCrossShardNextHeightError, err)
 					}
 					if lastCrossShardState[fromShard] == nil {
@@ -1162,10 +1153,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 					lastCrossShardState[fromShard][toShard] = waitHeight //update lastHeight to waitHeight
 				}
 			}
-			//TODO: crossshard update pool
-			//blockchain.config.CrossShardPool[fromShard].UpdatePool()
 		}
-		blockchain.GetBeaconBestState().lock.Unlock()
 	}
 	//=============================END Store cross shard state ==================================
 	if err := blockchain.config.DataBase.StoreBeaconBlockIndex(blockHash, beaconBlock.Header.Height); err != nil {
