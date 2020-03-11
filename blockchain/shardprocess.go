@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/database"
 
@@ -33,7 +34,15 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 
 	previousBeaconHeight := blockchain.GetBestStateShard(shardID).BeaconHeight
 	if shardBlock.Header.BeaconHeight > blockchain.GetBeaconBestState().BeaconHeight {
-		return errors.New(fmt.Sprintf("Beacon %d not ready, latest is %d", shardBlock.Header.BeaconHeight, blockchain.GetBeaconBestState().BeaconHeight))
+		err := blockchain.config.Server.PushMessageGetBlockBeaconByHeight(blockchain.GetBeaconBestState().BeaconHeight, shardBlock.Header.BeaconHeight)
+		if err != nil {
+			return errors.New(fmt.Sprintf("Beacon %d not ready, latest is %d", shardBlock.Header.BeaconHeight, blockchain.GetBeaconBestState().BeaconHeight))
+		}
+		ticker := time.NewTicker(5 * time.Second)
+		<-ticker.C
+		if shardBlock.Header.BeaconHeight > blockchain.GetBeaconBestState().BeaconHeight {
+			return errors.New(fmt.Sprintf("Beacon %d not ready, latest is %d", shardBlock.Header.BeaconHeight, blockchain.GetBeaconBestState().BeaconHeight))
+		}
 	}
 
 	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain.config.DataBase, previousBeaconHeight+1, shardBlock.Header.BeaconHeight)
