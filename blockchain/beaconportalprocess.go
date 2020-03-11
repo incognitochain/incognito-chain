@@ -47,6 +47,8 @@ func (blockchain *BlockChain) processPortalInstructions(block *BeaconBlock, bd *
 			err = blockchain.processPortalUnlockCollateral(beaconHeight, inst, currentPortalState)
 		case strconv.Itoa(metadata.PortalLiquidateCustodianMeta):
 			err = blockchain.processPortalLiquidateCustodian(beaconHeight, inst, currentPortalState)
+		case strconv.Itoa(metadata.PortalLiquidateTPExchangeRatesMeta):
+			err = blockchain.processLiquidationTopPercentileExchangeRates(beaconHeight, inst, currentPortalState)
 		}
 
 		if err != nil {

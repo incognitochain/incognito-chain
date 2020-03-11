@@ -156,7 +156,7 @@ func InitCurrentPortalStateFromDB(
 	if err != nil {
 		return nil, err
 	}
-
+	//todo: create total PRV liquidation
 	return &CurrentPortalState{
 		CustodianPoolState:     custodianPoolState,
 		WaitingPortingRequests: waitingPortingReqs,
@@ -685,6 +685,12 @@ func down150Percent(amount uint64)  uint64  {
 /*
 total1: total ptoken was converted ex: 1BNB = 1000 PRV
 total2: total prv (was up 150%)
+
+1500 ------ ?
+1000 ------ 100%
+
+=> 1500 * 100 / 1000 = 150%
+
 */
 func calculatePercentMinAspectRatio(total1 uint64, total2 uint64) int {
 	percentUp := total2 * 100 / total1
@@ -692,7 +698,7 @@ func calculatePercentMinAspectRatio(total1 uint64, total2 uint64) int {
 	return int(roundNumber)
 }
 
-func detectMinAspectRatio(holdPToken map[string]uint64, holdPRV map[string]uint64, finalExchange *lvdb.FinalExchangeRates) (interface{}, error) {
+func detectMinAspectRatio(holdPToken map[string]uint64, holdPRV map[string]uint64, finalExchange *lvdb.FinalExchangeRates) (map[string]int, error) {
 	result := make(map[string]int)
 	for key, amountPToken := range holdPToken {
 		amountPRV, ok := holdPRV[key]
