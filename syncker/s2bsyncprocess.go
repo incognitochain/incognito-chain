@@ -175,7 +175,7 @@ func (s *S2BSyncProcess) streamFromPeer(peerID string, pState S2BPeerState) (req
 			select {
 			case blk := <-ch:
 				if !isNil(blk) {
-					fmt.Println("Syncker: Insert shard2beacon block", blk.GetHeight(), blk.Hash().String(), blk.(common.BlockPoolInterface).GetPrevHash())
+					fmt.Println("Syncker: Insert shard2beacon block", sID, blk.GetHeight(), blk.Hash().String(), blk.(common.BlockPoolInterface).GetPrevHash())
 					s.s2bPool.AddBlock(blk.(common.BlockPoolInterface))
 				} else {
 					break

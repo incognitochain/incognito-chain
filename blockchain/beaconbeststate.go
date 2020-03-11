@@ -135,7 +135,6 @@ func (beaconBestState *BeaconBestState) GetShardConsensusAlgorithm() map[byte]st
 }
 
 func (beaconBestState *BeaconBestState) GetBestShardHash() map[byte]common.Hash {
-
 	res := make(map[byte]common.Hash)
 	for index, element := range beaconBestState.BestShardHash {
 		res[index] = element

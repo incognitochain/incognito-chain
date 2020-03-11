@@ -188,27 +188,19 @@ func (synckerManager *SynckerManager) GetS2BBlocksForBeaconProducer() map[byte][
 	bestViewShardHash := synckerManager.config.Blockchain.BeaconChain.GetShardBestViewHash()
 	res := make(map[byte][]interface{})
 
-	//bypass first block
-	if len(bestViewShardHash) == 0 {
-		for i := 0; i < synckerManager.config.Node.GetChainParam().ActiveShards; i++ {
-			bestViewShardHash[byte(i)] = common.Hash{}
-		}
-	}
-
-	//fist beacon beststate dont have shard hash end => create one
-	for i, v := range bestViewShardHash {
-		fmt.Println("syncker: bestViewShardHash", i, v.String())
+	for i := 0; i < synckerManager.config.Node.GetChainParam().ActiveShards; i++ {
+		v := bestViewShardHash[byte(i)]
+		//beacon beststate dont have shard hash  => create one
 		if (&v).IsEqual(&common.Hash{}) {
 			blk := *synckerManager.config.Node.GetChainParam().GenesisShardBlock
-			blk.Header.ShardID = i
+			blk.Header.ShardID = byte(i)
 			v = *blk.Hash()
 		}
 		for _, v := range synckerManager.s2bPool.GetFinalBlockFromBlockHash(v.String()) {
-			res[i] = append(res[i], v)
-			fmt.Println("syncker: get block ", v.GetHeight(), v.Hash().String())
+			res[byte(i)] = append(res[byte(i)], v)
+			//fmt.Println("syncker: get block ", v.GetHeight(), v.Hash().String())
 		}
 	}
-	//fmt.Println("syncker: GetS2BBlocksForBeaconProducer", res)
 	return res
 }
 
