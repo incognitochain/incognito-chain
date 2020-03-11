@@ -128,9 +128,10 @@ const (
 	PortalPortingReqRejectedStatus = 3
 	PortalPortingReqAcceptedStatus = 4
 
-	PortalRedeemReqSuccessStatus  = 1
-	PortalRedeemReqWaitingStatus  = 2
-	PortalRedeemReqRejectedStatus = 3
+	PortalRedeemReqSuccessStatus    = 1
+	PortalRedeemReqWaitingStatus    = 2
+	PortalRedeemReqRejectedStatus   = 3
+	PortalRedeemReqLiquidatedStatus = 4
 
 	PortalCustodianWithdrawReqRejectStatus   = 1
 	PortalCustodianWithdrawReqAcceptedStatus = 2
@@ -193,8 +194,8 @@ const (
 const (
 	// @@ Note: should replace tp 2160 before deploy
 	// 10 just for testings
-	PortalTimeOutCustodianSendPubTokenBack = 10 // 2160 beacon blocks ~ 24 hours
-	PercentReceivedCollateralAmount        = 120  // users will be receive 120% of redeem amount in PRV
+	PortalTimeOutCustodianSendPubTokenBack = 10  // 2160 beacon blocks ~ 24 hours
+	PercentReceivedCollateralAmount        = 120 // users will be receive 120% of redeem amount in PRV
 
 	MinRatio = 120 // 120% - minimum ratio between collateral's value and holding public tokens' value
 )

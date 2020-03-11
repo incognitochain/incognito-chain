@@ -8,7 +8,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
-	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"math"
 	"reflect"
@@ -107,6 +106,13 @@ func (redeemReq PortalRedeemRequest) ValidateTxWithBlockChain(
 func (redeemReq PortalRedeemRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
 	if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
+		if !txr.IsCoinsBurning(bcr, beaconHeight) {
+			return false, false, errors.New("txnormal in tx redeem request must be coin burning tx")
+		}
+		// validate value transfer of tx for redeem fee in prv
+		if redeemReq.RedeemFee != txr.CalculateTxValue() {
+			return false, false, errors.New("redeem fee amount should be equal to the tx value")
+		}
 		return true, true, nil
 	}
 
@@ -132,10 +138,6 @@ func (redeemReq PortalRedeemRequest) ValidateSanityData(bcr BlockchainRetriever,
 		return false, false, errors.New("txprivacytoken in tx redeem request must be coin burning tx")
 	}
 
-	if !txr.(*transaction.Tx).IsCoinsBurning(bcr, beaconHeight) {
-		return false, false, errors.New("txnormal in tx redeem request must be coin burning tx")
-	}
-
 	// validate redeem amount
 	if redeemReq.RedeemAmount <= 0 {
 		return false, false, errors.New("redeem amount should be larger than 0")
@@ -149,11 +151,6 @@ func (redeemReq PortalRedeemRequest) ValidateSanityData(bcr BlockchainRetriever,
 	// validate value transfer of tx for redeem amount in ptoken
 	if redeemReq.RedeemAmount != txr.CalculateTxValue() {
 		return false, false, errors.New("redeem amount should be equal to the tx value")
-	}
-
-	// validate value transfer of tx for redeem fee in prv
-	if redeemReq.RedeemFee != txr.(*transaction.Tx).CalculateTxValue() {
-		return false, false, errors.New("deposit amount should be equal to the tx value")
 	}
 
 	// validate tokenID

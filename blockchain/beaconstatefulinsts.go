@@ -281,6 +281,20 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		instructions = append(instructions, portalLiquidationInsts...)
 	}
 
+	// calculate rewards (include porting fee and redeem fee) for custodians and build instructions at beaconHeight
+	portalRewardsInsts, err := blockchain.buildPortalRewardsInsts(
+		beaconHeight-1,
+		currentPortalState,
+	)
+
+	if err != nil {
+		Logger.log.Error(err)
+		return instructions
+	}
+	if len(portalRewardsInsts) > 0 {
+		instructions = append(instructions, portalRewardsInsts...)
+	}
+
 	return instructions
 }
 
@@ -797,6 +811,15 @@ func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
 	// case 2: check collateral's value (locked collateral amount) drops below MinRatio
 
 	buildMinAspectRatioCollateralLiquidationInst(beaconHeight, currentPortalState)
+	return insts, nil
+}
+
+func (blockchain *BlockChain) buildPortalRewardsInsts(
+	beaconHeight uint64, currentPortalState *CurrentPortalState) ([][]string, error) {
+	insts := [][]string{}
+
+	//
+
 	return insts, nil
 }
 

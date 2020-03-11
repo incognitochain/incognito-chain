@@ -24,6 +24,7 @@ type CustodianState struct {
 	HoldingPubTokens       map[string]uint64 // tokenSymbol : amount
 	LockedAmountCollateral map[string]uint64 // tokenSymbol : amount
 	RemoteAddresses        map[string]string // tokenSymbol : address
+	RewardAmount           uint64            // reward in prv
 }
 
 type MatchingPortingCustodianDetail struct {
@@ -34,8 +35,8 @@ type MatchingPortingCustodianDetail struct {
 }
 
 type MatchingRedeemCustodianDetail struct {
-	RemoteAddress            string
-	Amount                   uint64
+	RemoteAddress string
+	Amount        uint64
 }
 
 type PortingRequest struct {
@@ -76,9 +77,9 @@ type FinalExchangeRates struct {
 }
 
 type CustodianWithdrawRequest struct {
-	PaymentAddress string
-	Amount uint64
-	Status int
+	PaymentAddress                string
+	Amount                        uint64
+	Status                        int
 	RemainCustodianFreeCollateral uint64
 }
 
@@ -111,7 +112,7 @@ func NewFinalExchangeRatesKey(beaconHeight uint64) string {
 	return string(key)
 }
 
-func NewExchangeRatesRequestKey (beaconHeight uint64, txId string) string {
+func NewExchangeRatesRequestKey(beaconHeight uint64, txId string) string {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 	key := append(PortalExchangeRatesPrefix, beaconHeightBytes...)
 	key = append(key, []byte(txId)...)
@@ -359,7 +360,7 @@ func (finalExchangeRates *FinalExchangeRates) ExchangePRV2PTokenByTokenId(pToken
 	return 0, errors.New("Ptoken is not support")
 }
 
-func (finalExchangeRates *FinalExchangeRates) convert(value uint64, ratesFrom uint64, RatesTo uint64) (uint64, error){
+func (finalExchangeRates *FinalExchangeRates) convert(value uint64, ratesFrom uint64, RatesTo uint64) (uint64, error) {
 	//convert to pusdt
 	total := (value * ratesFrom) / uint64(math.Pow10(9)) //value of nanno
 
@@ -478,8 +479,7 @@ func (db *db) TrackRedeemRequestByTxReqID(key []byte, value []byte) error {
 	return nil
 }
 
-
-func (db *db) StoreCustodianWithdrawRequest(key []byte, content interface{}) error  {
+func (db *db) StoreCustodianWithdrawRequest(key []byte, content interface{}) error {
 	contributionBytes, err := json.Marshal(content)
 	if err != nil {
 		return err
@@ -507,7 +507,6 @@ func (db *db) TrackRequestUnlockCollateralByTxReqID(key []byte, value []byte) er
 	}
 	return nil
 }
-
 
 // GetReqUnlockCollateralStatusByTxReqID returns request unlock collateral status with txReqID
 func (db *db) GetReqUnlockCollateralStatusByTxReqID(txReqID string) ([]byte, error) {

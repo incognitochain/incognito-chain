@@ -48,6 +48,7 @@ func NewCustodianState(
 	holdingPubTokens map[string]uint64,
 	lockedAmountCollateral map[string]uint64,
 	remoteAddresses map[string]string,
+	rewardAmount uint64,
 ) (*lvdb.CustodianState, error) {
 	return &lvdb.CustodianState{
 		IncognitoAddress:       incognitoAddress,
@@ -56,6 +57,7 @@ func NewCustodianState(
 		HoldingPubTokens:       holdingPubTokens,
 		LockedAmountCollateral: lockedAmountCollateral,
 		RemoteAddresses:        remoteAddresses,
+		RewardAmount: rewardAmount,
 	}, nil
 }
 

@@ -168,7 +168,10 @@ func (blockchain *BlockChain) buildInstructionsForCustodianDeposit(
 
 	if currentPortalState.CustodianPoolState[keyCustodianState] == nil {
 		// new custodian
-		newCustodian, _ := NewCustodianState(meta.IncogAddressStr, meta.DepositedAmount, meta.DepositedAmount, nil, nil, meta.RemoteAddresses)
+		newCustodian, _ := NewCustodianState(
+			meta.IncogAddressStr, meta.DepositedAmount, meta.DepositedAmount,
+			nil, nil,
+			meta.RemoteAddresses, 0)
 		currentPortalState.CustodianPoolState[keyCustodianState] = newCustodian
 	} else {
 		// custodian deposited before
@@ -178,6 +181,7 @@ func (blockchain *BlockChain) buildInstructionsForCustodianDeposit(
 		freeCollateral := custodian.FreeCollateral + meta.DepositedAmount
 		holdingPubTokens := custodian.HoldingPubTokens
 		lockedAmountCollateral := custodian.LockedAmountCollateral
+		rewardAmount := custodian.RewardAmount
 		remoteAddresses := custodian.RemoteAddresses
 		for tokenSymbol, address := range meta.RemoteAddresses {
 			if remoteAddresses[tokenSymbol] == "" {
@@ -185,7 +189,8 @@ func (blockchain *BlockChain) buildInstructionsForCustodianDeposit(
 			}
 		}
 
-		newCustodian, _ := NewCustodianState(meta.IncogAddressStr, totalCollateral, freeCollateral, holdingPubTokens, lockedAmountCollateral, remoteAddresses)
+		newCustodian, _ := NewCustodianState(meta.IncogAddressStr, totalCollateral, freeCollateral,
+			holdingPubTokens, lockedAmountCollateral, remoteAddresses, rewardAmount)
 		currentPortalState.CustodianPoolState[keyCustodianState] = newCustodian
 	}
 
