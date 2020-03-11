@@ -233,7 +233,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 	// Calculate execution time for creating payment proof
 	startPrivacy := time.Now()
 
-	if err := initBridgeTxWithPrivacy(tx, params); err != nil {
+	if err := proveAndSignVersionSwitcher(tx, params); err != nil {
 		return err
 	}
 
@@ -241,39 +241,6 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 	elapsed := time.Since(start)
 	Logger.log.Debugf("Creating payment proof time %s", elapsedPrivacy)
 	Logger.log.Debugf("Successfully Creating normal tx %+v in %s time", *tx.Hash(), elapsed)
-	return nil
-}
-
-// signTx - signs tx
-func (tx *Tx) signTx() error {
-	//Check input transaction
-	if tx.Sig != nil {
-		return NewTransactionErr(UnexpectedError, errors.New("input transaction must be an unsigned one"))
-	}
-
-	/****** using Schnorr signature *******/
-	// sign with sigPrivKey
-	// prepare private key for Schnorr
-	sk := new(privacy.Scalar).FromBytesS(tx.sigPrivKey[:common.BigIntSize])
-	r := new(privacy.Scalar).FromBytesS(tx.sigPrivKey[common.BigIntSize:])
-	sigKey := new(privacy.SchnorrPrivateKey)
-	sigKey.Set(sk, r)
-
-	// save public key for verification signature tx
-	tx.SigPubKey = sigKey.GetPublicKey().GetPublicKey().ToBytesS()
-
-	// signing
-	if Logger.log != nil {
-		Logger.log.Debugf(tx.Hash().String())
-	}
-	signature, err := sigKey.Sign(tx.Hash()[:])
-	if err != nil {
-		return err
-	}
-
-	// convert signature to byte array
-	tx.Sig = signature.Bytes()
-
 	return nil
 }
 
@@ -315,6 +282,24 @@ func (tx *Tx) verifySigTx() (bool, error) {
 	res = verifyKey.Verify(signature, tx.Hash()[:])
 
 	return res, nil
+}
+
+// ValidateTransaction returns true if transaction is valid:
+// - Verify tx signature
+// - Verify the payment proof
+func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
+	//hasPrivacy = false
+	Logger.log.Debugf("VALIDATING TX........\n")
+	// start := time.Now()
+	// Verify tx signature
+	if tx.GetType() == common.TxRewardType {
+		return tx.ValidateTxSalary(db)
+	}
+	if tx.GetType() == common.TxReturnStakingType {
+		return tx.ValidateTxReturnStaking(db), nil
+	}
+
+	return verifierVersionSwitcher(tx, hasPrivacy, db, shardID, tokenID, isBatch, isNewTransaction)
 }
 
 func (tx Tx) String() string {
