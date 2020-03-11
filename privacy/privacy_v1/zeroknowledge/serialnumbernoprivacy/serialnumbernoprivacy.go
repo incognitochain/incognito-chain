@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/utils"
 )
 
 type SerialNumberNoPrivacyStatement struct {

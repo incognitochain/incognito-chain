@@ -53,46 +53,47 @@ func (this *Signature) FromHex(s string) (*Signature, error) {
 
 // Get from byte and store to signature
 func (this *Signature) FromBytes(b []byte) (*Signature, error) {
-	if len(b)%32 != 1 {
+	if len(b)%HashSize != 1 {
 		return nil, errors.New("Error in MLSAG Signature FromBytes: the signature byte is broken (missing byte)")
 	}
+
+	// Get size at index 0
 	var m int = int(b[0])
-	lenArr := len(b) - 33 - m*32
-	n := lenArr / 32 / m
+	lenArr := len(b) - HashSize - 1 - m*32
+	n := lenArr / HashSize / m
 
-	if len(b) != 1+(1+m+m*n)*32 {
+	if len(b) != 1+(1+m+m*n)*HashSize {
 		return nil, errors.New("Error in MLSAG Signature FromBytes: the signature byte is broken (some scalar is missing)")
-	}
-
-	c := new(operation.Scalar).FromBytesS(b[1:33])
-
-	index := 33
-	keyImages := make([]operation.Point, m)
-	for i := 0; i < m; i += 1 {
-		val, err := new(operation.Point).FromBytesS(b[index : index+32])
-		if err != nil {
-			return nil, errors.New("Error in MLSAG Signature FromBytes: the signature byte is broken (keyImages is broken)")
-		}
-		keyImages[i] = *val
-		index += 32
-	}
-
-	r := make([][]operation.Scalar, n)
-	for i := 0; i < n; i += 1 {
-		row := make([]operation.Scalar, m)
-		for j := 0; j < m; j += 1 {
-			row[j] = *new(operation.Scalar).FromBytesS(b[index : index+32])
-			index += 32
-		}
-		r[i] = row
 	}
 
 	if this == nil {
 		this = new(Signature)
 	}
-	this.c = *c
-	this.keyImages = keyImages
-	this.r = r
+
+	// Get c at index [1; 32]
+	this.c = *new(operation.Scalar).FromBytesS(b[1 : HashSize+1])
+
+	// Start from 33
+	index := HashSize + 1
+	this.keyImages = make([]operation.Point, m)
+	for i := 0; i < m; i += 1 {
+		val, err := new(operation.Point).FromBytesS(b[index : index+HashSize])
+		if err != nil {
+			return nil, errors.New("Error in MLSAG Signature FromBytes: the signature byte is broken (keyImages is broken)")
+		}
+		this.keyImages[i] = *val
+		index += HashSize
+	}
+
+	this.r = make([][]operation.Scalar, n)
+	for i := 0; i < n; i += 1 {
+		row := make([]operation.Scalar, m)
+		for j := 0; j < m; j += 1 {
+			row[j] = *new(operation.Scalar).FromBytesS(b[index : index+32])
+			index += HashSize
+		}
+		this.r[i] = row
+	}
 
 	return this, nil
 }

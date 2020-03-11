@@ -10,7 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
-	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
 )
 
 type TxPrivacyInitParamsForASM struct {

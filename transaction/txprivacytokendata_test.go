@@ -1,10 +1,11 @@
 package transaction
 
 import (
-	"github.com/incognitochain/incognito-chain/privacy"
-	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/privacy"
+	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestTxTokenPrivacyData(t *testing.T) {

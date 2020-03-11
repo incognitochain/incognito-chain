@@ -9,9 +9,9 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
-	henc "github.com/incognitochain/incognito-chain/privacy/hybridencryption"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
+	henc "github.com/incognitochain/incognito-chain/privacy/privacy_v1/hybridencryption"
 )
 
 // Coin represents a coin

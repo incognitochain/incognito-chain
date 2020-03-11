@@ -8,10 +8,10 @@ import (
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/aggregaterange"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/oneoutofmany"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/serialnumbernoprivacy"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/serialnumberprivacy"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/aggregaterange"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/oneoutofmany"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/serialnumbernoprivacy"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/serialnumberprivacy"
 )
 
 // PaymentWitness contains all of witness for proving when spending coins

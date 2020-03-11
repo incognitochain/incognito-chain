@@ -1,66 +1,18 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/mlsag"
 	ota "github.com/incognitochain/incognito-chain/privacy/privacy_v2/onetime_address"
 
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/onetime_address/address"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/txfull"
 )
 
 func testMlsag() {
-	fmt.Println("Running test")
-	keyInputs := []operation.Scalar{}
-	for i := 0; i < 8; i += 1 {
-		privateKey := operation.RandomScalar()
-		keyInputs = append(keyInputs, *privateKey)
-	}
-	numFake := 3
-	pi := common.RandInt() % numFake
-	ring := mlsag.NewRandomRing(&keyInputs, numFake, pi)
-	signer := mlsag.NewMlsagWithDefinedRing(&keyInputs, ring, pi)
 
-	signature, err := signer.Sign("Hello")
-	if err != nil {
-		fmt.Println("There is something wrong with signing")
-		fmt.Println(err)
-	}
-	// ring = mlsag.NewRandomRing(&keyInputs, numFake, pi)
-	check, err := mlsag.Verify(signature, ring, "Hello")
-	if err != nil {
-		fmt.Println("There is something wrong with verifying")
-		fmt.Println(err)
-	}
-	fmt.Println("Check signature:")
-	fmt.Println(check)
-
-	b, err := signature.ToHex()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println("Printing signature")
-	fmt.Println(signature)
-	fmt.Println("==============")
-	fmt.Println("Printing signature hex")
-	fmt.Println(b)
-	sig, _ := new(mlsag.Signature).FromHex(b)
-
-	fmt.Println("==============")
-	fmt.Println("Printing signature from hex")
-	fmt.Println(sig)
-
-	fmt.Println("==============")
-	fmt.Println("Checking 2 signatures are the same")
-	b1, _ := sig.ToBytes()
-	b2, _ := signature.ToBytes()
-	fmt.Println(bytes.Equal(b1, b2))
 }
 
 func testOTA() {

@@ -5,8 +5,8 @@ import (
 
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/oneoutofmany/polynomial"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/oneoutofmany/polynomial"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/utils"
 	"github.com/pkg/errors"
 )
 

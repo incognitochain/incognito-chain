@@ -14,7 +14,6 @@ const (
 
 var PedCom PedersenCommitment = NewPedersenParams()
 
-
 // PedersenCommitment represents the parameters for the commitment
 type PedersenCommitment struct {
 	G []*Point // generators

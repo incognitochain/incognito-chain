@@ -2,11 +2,12 @@ package privacy
 
 import (
 	"github.com/incognitochain/incognito-chain/privacy/coin"
-	"github.com/incognitochain/incognito-chain/privacy/hybridencryption"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	C25519 "github.com/incognitochain/incognito-chain/privacy/operation/curve25519"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/hybridencryption"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/schnorr"
 )
 
 // Public Constants
@@ -105,5 +106,11 @@ func GenerateViewingKey(privateKey []byte) ViewingKey {
 	return key.GenerateViewingKey(privateKey)
 }
 
-// type ReceivingKey = key.ReceivingKey
-// type TransmissionKey = key.TransmissionKey
+// Utils
+func RandBytes(length int) []byte {
+	return privacy_util.RandBytes(length)
+}
+
+type SchnSignature = schnorr.SchnSignature
+type SchnorrPublicKey = schnorr.SchnorrPublicKey
+type SchnorrPrivateKey = schnorr.SchnorrPrivateKey

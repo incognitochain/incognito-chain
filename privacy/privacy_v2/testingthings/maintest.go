@@ -30,13 +30,12 @@ func (rect *Rectangle) getPerimeter() float64 { return 2 * (rect.l + rect.r) }
 
 func main() {
 	const n int = 10
+	x := Shape{}
 	arr := make([]Shape, n)
 	for i := 0; i < n; i += 1 {
 		val := common.RandInt() % 2
 		if val == 0 {
-			arr[i] = &Circle{
-				radius: 10,
-			}
+			arr[i] = new(Circle)
 		} else {
 			arr[i] = &Rectangle{
 				l: 10,
