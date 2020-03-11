@@ -15,6 +15,11 @@ import (
 	"time"
 )
 
+const (
+	PercentPortingFeeAmount = 0.01
+	PercentRedeemFeeAmount  = 0.01
+)
+
 type CurrentPortalState struct {
 	CustodianPoolState     map[string]*lvdb.CustodianState       // key : beaconHeight || custodian_address
 	ExchangeRatesRequests  map[string]*lvdb.ExchangeRatesRequest // key : beaconHeight | TxID
@@ -43,6 +48,7 @@ func NewCustodianState(
 	holdingPubTokens map[string]uint64,
 	lockedAmountCollateral map[string]uint64,
 	remoteAddresses map[string]string,
+	rewardAmount uint64,
 ) (*lvdb.CustodianState, error) {
 	return &lvdb.CustodianState{
 		IncognitoAddress:       incognitoAddress,
@@ -51,6 +57,7 @@ func NewCustodianState(
 		HoldingPubTokens:       holdingPubTokens,
 		LockedAmountCollateral: lockedAmountCollateral,
 		RemoteAddresses:        remoteAddresses,
+		RewardAmount: rewardAmount,
 	}, nil
 }
 
@@ -90,24 +97,24 @@ func NewRedeemRequestState(
 	beaconHeight uint64,
 ) (*lvdb.RedeemRequest, error) {
 	return &lvdb.RedeemRequest{
-		UniqueRedeemID: uniqueRedeemID,
-		TxReqID : txReqID,
-		TokenID: tokenID,
-		RedeemerAddress:redeemerAddress,
+		UniqueRedeemID:        uniqueRedeemID,
+		TxReqID:               txReqID,
+		TokenID:               tokenID,
+		RedeemerAddress:       redeemerAddress,
 		RedeemerRemoteAddress: redeemerRemoteAddress,
-		RedeemAmount: redeemAmount,
-		Custodians: custodians,
-		RedeemFee: redeemFee,
-		BeaconHeight: beaconHeight,
+		RedeemAmount:          redeemAmount,
+		Custodians:            custodians,
+		RedeemFee:             redeemFee,
+		BeaconHeight:          beaconHeight,
 	}, nil
 }
 
 func NewMatchingRedeemCustodianDetail(
 	remoteAddress string,
-	amount uint64) (*lvdb.MatchingRedeemCustodianDetail, error){
+	amount uint64) (*lvdb.MatchingRedeemCustodianDetail, error) {
 	return &lvdb.MatchingRedeemCustodianDetail{
-		RemoteAddress:remoteAddress,
-		Amount:amount,
+		RemoteAddress: remoteAddress,
+		Amount:        amount,
 	}, nil
 }
 
@@ -128,9 +135,9 @@ func NewCustodianWithdrawRequest(
 	remainCustodianFreeCollateral uint64,
 ) (*lvdb.CustodianWithdrawRequest, error) {
 	return &lvdb.CustodianWithdrawRequest{
-		PaymentAddress: paymentAddress,
-		Amount: amount,
-		Status: status,
+		PaymentAddress:                paymentAddress,
+		Amount:                        amount,
+		Status:                        status,
 		RemainCustodianFreeCollateral: remainCustodianFreeCollateral,
 	}, nil
 }
@@ -307,7 +314,6 @@ func getCustodianPoolState(
 	return custodianPoolState, nil
 }
 
-
 // getWaitingPortingRequests gets waiting porting requests list at beaconHeight
 func getWaitingPortingRequests(
 	db database.DatabaseInterface,
@@ -387,7 +393,7 @@ func GetFinalExchangeRatesByKey(
 
 	var finalExchangeRatesState lvdb.FinalExchangeRates
 
-	if  finalExchangeRatesItem == nil {
+	if finalExchangeRatesItem == nil {
 		return &finalExchangeRatesState, nil
 	}
 
@@ -412,7 +418,7 @@ func GetPortingRequestByKey(
 
 	var portingRequestResult lvdb.PortingRequest
 
-	if  portingRequest == nil {
+	if portingRequest == nil {
 		return &portingRequestResult, nil
 	}
 
@@ -437,7 +443,7 @@ func GetCustodianWithdrawRequestByKey(
 
 	var custodianWithdraw lvdb.CustodianWithdrawRequest
 
-	if  custodianWithdrawItem == nil {
+	if custodianWithdrawItem == nil {
 		return &custodianWithdraw, nil
 	}
 
@@ -480,7 +486,7 @@ func getAmountAdaptable(amount uint64, exchangeRate uint64) (uint64, error) {
 	return convertPubTokenToPRVInt64, nil
 }
 
-func removeWaitingPortingReqByKey (key string, state *CurrentPortalState) bool {
+func removeWaitingPortingReqByKey(key string, state *CurrentPortalState) bool {
 	if state.WaitingPortingRequests[key] != nil {
 		delete(state.WaitingPortingRequests, key)
 		return true
@@ -500,8 +506,8 @@ func sortCustodianByAmountAscent(metadata metadata.PortalUserRegister, custodian
 			continue
 		}
 
-		item := CustodianStateSlice {
-			Key: k,
+		item := CustodianStateSlice{
+			Key:   k,
 			Value: v,
 		}
 		result = append(result, item)
@@ -520,8 +526,8 @@ func pickSingleCustodian(metadata metadata.PortalUserRegister, exchangeRate *lvd
 	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(custodianStateSlice), func(i, j int) {
 		custodianStateSlice[i],
-		custodianStateSlice[j] = custodianStateSlice[j],
-		custodianStateSlice[i]
+			custodianStateSlice[j] = custodianStateSlice[j],
+			custodianStateSlice[i]
 	})
 
 	//pToken to PRV
@@ -533,7 +539,7 @@ func pickSingleCustodian(metadata metadata.PortalUserRegister, exchangeRate *lvd
 		return nil, err
 	}
 
-	Logger.log.Infof("Porting request, pick single custodian ptoken: %v,  need prv %v for %v ptoken",  metadata.PTokenId, totalPRV, metadata.RegisterAmount)
+	Logger.log.Infof("Porting request, pick single custodian ptoken: %v,  need prv %v for %v ptoken", metadata.PTokenId, totalPRV, metadata.RegisterAmount)
 
 	for _, kv := range custodianStateSlice {
 		Logger.log.Infof("Porting request,  pick single custodian key %v, free collateral: %v", kv.Key, kv.Value.FreeCollateral)
@@ -541,10 +547,10 @@ func pickSingleCustodian(metadata metadata.PortalUserRegister, exchangeRate *lvd
 			result := make(map[string]lvdb.MatchingPortingCustodianDetail)
 
 			result[kv.Value.IncognitoAddress] = lvdb.MatchingPortingCustodianDetail{
-				RemoteAddress: kv.Value.RemoteAddresses[metadata.PTokenId],
-				Amount: metadata.RegisterAmount,
+				RemoteAddress:          kv.Value.RemoteAddresses[metadata.PTokenId],
+				Amount:                 metadata.RegisterAmount,
 				LockedAmountCollateral: totalPRV,
-				RemainCollateral: kv.Value.FreeCollateral - totalPRV,
+				RemainCollateral:       kv.Value.FreeCollateral - totalPRV,
 			}
 
 			//update custodian state
@@ -558,10 +564,10 @@ func pickSingleCustodian(metadata metadata.PortalUserRegister, exchangeRate *lvd
 		}
 	}
 
-	return  nil, nil
+	return nil, nil
 }
 
-func pickMultipleCustodian (metadata metadata.PortalUserRegister, exchangeRate *lvdb.FinalExchangeRates, custodianStateSlice []CustodianStateSlice, currentPortalState *CurrentPortalState) (map[string]lvdb.MatchingPortingCustodianDetail, error){
+func pickMultipleCustodian(metadata metadata.PortalUserRegister, exchangeRate *lvdb.FinalExchangeRates, custodianStateSlice []CustodianStateSlice, currentPortalState *CurrentPortalState) (map[string]lvdb.MatchingPortingCustodianDetail, error) {
 	//get multiple custodian
 	var holdPToken uint64 = 0
 
@@ -584,7 +590,7 @@ func pickMultipleCustodian (metadata metadata.PortalUserRegister, exchangeRate *
 		pTokenCanUseUint64 := down150Percent(totalPToken)
 
 		remainPToken := metadata.RegisterAmount - holdPToken // 1000 - 833 = 167
-		if pTokenCanUseUint64 >  remainPToken {
+		if pTokenCanUseUint64 > remainPToken {
 			pTokenCanUseUint64 = remainPToken
 			Logger.log.Infof("Porting request, custodian key: %v, ptoken amount is more larger than remain so custodian can keep ptoken  %v", custodianItem.Key, pTokenCanUseUint64)
 		} else {
@@ -601,13 +607,12 @@ func pickMultipleCustodian (metadata metadata.PortalUserRegister, exchangeRate *
 
 		Logger.log.Infof("Porting request, custodian key: %v, to keep ptoken %v need prv %v", custodianItem.Key, pTokenCanUseUint64, totalPRV)
 
-
 		if custodianItem.Value.FreeCollateral >= totalPRV {
 			multipleCustodian[custodianItem.Value.IncognitoAddress] = lvdb.MatchingPortingCustodianDetail{
-				RemoteAddress: custodianItem.Value.RemoteAddresses[metadata.PTokenId],
-				Amount: pTokenCanUseUint64,
+				RemoteAddress:          custodianItem.Value.RemoteAddresses[metadata.PTokenId],
+				Amount:                 pTokenCanUseUint64,
 				LockedAmountCollateral: totalPRV,
-				RemainCollateral: custodianItem.Value.FreeCollateral - totalPRV,
+				RemainCollateral:       custodianItem.Value.FreeCollateral - totalPRV,
 			}
 
 			holdPToken = holdPToken + pTokenCanUseUint64
@@ -623,7 +628,7 @@ func pickMultipleCustodian (metadata metadata.PortalUserRegister, exchangeRate *
 	return multipleCustodian, nil
 }
 
-func UpdateCustodianWithNewAmount(currentPortalState *CurrentPortalState, custodianKey string, PTokenId string,  amountPToken uint64, lockedAmountCollateral uint64) error  {
+func UpdateCustodianWithNewAmount(currentPortalState *CurrentPortalState, custodianKey string, PTokenId string, amountPToken uint64, lockedAmountCollateral uint64) error {
 	custodian, ok := currentPortalState.CustodianPoolState[custodianKey]
 	if !ok {
 		return errors.New("Custodian not found")
@@ -661,22 +666,44 @@ func UpdateCustodianWithNewAmount(currentPortalState *CurrentPortalState, custod
 	return nil
 }
 
-func CalculatePortingFees(totalPToken uint64) uint64  {
+func CalculatePortingFees(totalPToken uint64) uint64 {
 	result := 0.01 * float64(totalPToken) / 100
 	roundNumber := math.Round(result)
-	return  uint64(roundNumber)
+	return uint64(roundNumber)
+}
+
+func calMinPortingFee(portingAmountInPToken uint64, tokenSymbol string, exchangeRate *lvdb.FinalExchangeRates) (uint64, error) {
+	portingAmountInPRV, err := exchangeRate.ExchangePToken2PRVByTokenId(tokenSymbol, portingAmountInPToken)
+	if err != nil {
+		Logger.log.Errorf("Error when calculating minimum porting fee %v", err)
+		return 0, err
+	}
+
+	portingFee := math.Ceil(float64(portingAmountInPRV) * PercentPortingFeeAmount / 100)
+	return uint64(portingFee), nil
+}
+
+func calMinRedeemFee(redeemAmountInPToken uint64, tokenSymbol string, exchangeRate *lvdb.FinalExchangeRates) (uint64, error) {
+	redeemAmountInPRV, err := exchangeRate.ExchangePToken2PRVByTokenId(tokenSymbol, redeemAmountInPToken)
+	if err != nil {
+		Logger.log.Errorf("Error when calculating minimum redeem fee %v", err)
+		return 0, err
+	}
+
+	redeemFee := math.Ceil(float64(redeemAmountInPRV) * PercentRedeemFeeAmount / 100)
+	return uint64(redeemFee), nil
 }
 
 /*
 	up 150%
- */
-func up150Percent(amount uint64)  uint64 {
+*/
+func up150Percent(amount uint64) uint64 {
 	result := float64(amount) * 1.5 //return nano pBTC, pBNB
 	roundNumber := math.Round(result)
 	return uint64(roundNumber) //return nano pBTC, pBNB
 }
 
-func down150Percent(amount uint64)  uint64  {
+func down150Percent(amount uint64) uint64 {
 	result := float64(amount) / 1.5
 	roundNumber := math.Round(result)
 	return uint64(roundNumber)
@@ -721,7 +748,7 @@ func detectMinAspectRatio(holdPToken map[string]uint64, holdPRV map[string]uint6
 	return result, nil
 }
 
-func ValidationExchangeRates(exchangeRates *lvdb.FinalExchangeRates) error  {
+func ValidationExchangeRates(exchangeRates *lvdb.FinalExchangeRates) error {
 	if exchangeRates == nil || exchangeRates.Rates == nil {
 		return errors.New("Exchange rates not found")
 	}
@@ -738,19 +765,19 @@ func ValidationExchangeRates(exchangeRates *lvdb.FinalExchangeRates) error  {
 		return errors.New("PRV rates is not exist")
 	}
 
-	return  nil
+	return nil
 }
 
 func sortCustodiansByAmountHoldingPubTokenAscent(tokenSymbol string, custodians map[string]*lvdb.CustodianState) ([]*CustodianStateSlice, error) {
 	sortedCustodians := make([]*CustodianStateSlice, 0)
 	for key, value := range custodians {
-		 if value.HoldingPubTokens[tokenSymbol] > 0 {
-			 item := CustodianStateSlice {
-				 Key:   key,
-				 Value: value,
-			 }
-			 sortedCustodians = append(sortedCustodians, &item)
-		 }
+		if value.HoldingPubTokens[tokenSymbol] > 0 {
+			item := CustodianStateSlice{
+				Key:   key,
+				Value: value,
+			}
+			sortedCustodians = append(sortedCustodians, &item)
+		}
 	}
 
 	sort.Slice(sortedCustodians, func(i, j int) bool {
@@ -760,7 +787,6 @@ func sortCustodiansByAmountHoldingPubTokenAscent(tokenSymbol string, custodians 
 	return sortedCustodians, nil
 }
 
-
 func pickupCustodianForRedeem(redeemAmount uint64, tokenSymbol string, portalState *CurrentPortalState) (map[string]*lvdb.MatchingRedeemCustodianDetail, error) {
 	custodianPoolState := portalState.CustodianPoolState
 
@@ -769,7 +795,7 @@ func pickupCustodianForRedeem(redeemAmount uint64, tokenSymbol string, portalSta
 	// bigCustodians who holding amount public token greater than or equal to redeem amount
 	// smallCustodians who holding amount public token less than redeem amount
 	bigCustodians := make(map[string]*lvdb.CustodianState, 0)
-	bigCustodianKeys  := make([]string, 0)
+	bigCustodianKeys := make([]string, 0)
 	smallCustodians := make(map[string]*lvdb.CustodianState, 0)
 	matchedCustodians := make(map[string]*lvdb.MatchingRedeemCustodianDetail, 0)
 
@@ -822,7 +848,7 @@ func pickupCustodianForRedeem(redeemAmount uint64, tokenSymbol string, portalSta
 		matchedAmount := custodianValue.HoldingPubTokens[tokenSymbol]
 		Logger.log.Errorf("[portal] matchedAmount: %v\n", matchedAmount)
 		amountNeedToBeMatched := redeemAmount - totalMatchedAmount
-		if matchedAmount >  amountNeedToBeMatched {
+		if matchedAmount > amountNeedToBeMatched {
 			matchedAmount = amountNeedToBeMatched
 		}
 
@@ -844,16 +870,16 @@ func pickupCustodianForRedeem(redeemAmount uint64, tokenSymbol string, portalSta
 
 // convertExternalBNBAmountToIncAmount converts amount in bnb chain (decimal 8) to amount in inc chain (decimal 9)
 func convertExternalBNBAmountToIncAmount(externalBNBAmount int64) int64 {
-	return externalBNBAmount * 10   // externalBNBAmount / 1^8 * 1^9
+	return externalBNBAmount * 10 // externalBNBAmount / 1^8 * 1^9
 }
 
 // convertIncPBNBAmountToExternalBNBAmount converts amount in inc chain (decimal 9) to amount in bnb chain (decimal 8)
 func convertIncPBNBAmountToExternalBNBAmount(incPBNBAmount int64) int64 {
-	return incPBNBAmount / 10   // incPBNBAmount / 1^9 * 1^8
+	return incPBNBAmount / 10 // incPBNBAmount / 1^9 * 1^8
 }
 
 // updateFreeCollateralCustodian updates custodian state (amount collaterals) when custodian returns redeemAmount public token to user
-func updateFreeCollateralCustodian(custodianState * lvdb.CustodianState, redeemAmount uint64, tokenSymbol string, exchangeRate *lvdb.FinalExchangeRates) (uint64, error){
+func updateFreeCollateralCustodian(custodianState *lvdb.CustodianState, redeemAmount uint64, tokenSymbol string, exchangeRate *lvdb.FinalExchangeRates) (uint64, error) {
 	// calculate unlock amount for custodian
 	// if custodian returns redeem amount that is all amount holding of token => unlock full amount
 	// else => return 120% redeem amount
@@ -916,7 +942,7 @@ func updateRedeemRequestStatusByRedeemId(redeemID string, newStatus int, db data
 	return nil
 }
 
-func updateCustodianStateAfterLiquidateCustodian(custodianState * lvdb.CustodianState, mintedAmountInPRV uint64, tokenSymbol string) error {
+func updateCustodianStateAfterLiquidateCustodian(custodianState *lvdb.CustodianState, mintedAmountInPRV uint64, tokenSymbol string) error {
 	custodianState.TotalCollateral -= mintedAmountInPRV
 
 	if custodianState.HoldingPubTokens[tokenSymbol] > 0 {
@@ -928,4 +954,3 @@ func updateCustodianStateAfterLiquidateCustodian(custodianState * lvdb.Custodian
 	}
 	return nil
 }
-

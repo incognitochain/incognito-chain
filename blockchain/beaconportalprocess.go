@@ -125,7 +125,10 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 		// update custodian state
 		if currentPortalState.CustodianPoolState[keyCustodianState] == nil {
 			// new custodian
-			newCustodian, err := NewCustodianState(actionData.IncogAddressStr, actionData.DepositedAmount, actionData.DepositedAmount, nil, nil, actionData.RemoteAddresses)
+			newCustodian, err := NewCustodianState(
+				actionData.IncogAddressStr, actionData.DepositedAmount,
+				actionData.DepositedAmount, nil, nil,
+				actionData.RemoteAddresses, 0)
 			if err != nil {
 				return err
 			}
@@ -138,6 +141,7 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 			freeCollateral := custodian.FreeCollateral + actionData.DepositedAmount
 			holdingPubTokens := custodian.HoldingPubTokens
 			lockedAmountCollateral := custodian.LockedAmountCollateral
+			rewardAmount := custodian.RewardAmount
 			remoteAddresses := custodian.RemoteAddresses
 			for tokenSymbol, address := range actionData.RemoteAddresses {
 				if remoteAddresses[tokenSymbol] == "" {
@@ -145,7 +149,11 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 				}
 			}
 
-			newCustodian, err := NewCustodianState(actionData.IncogAddressStr, totalCollateral, freeCollateral, holdingPubTokens, lockedAmountCollateral, remoteAddresses)
+			newCustodian, err := NewCustodianState(
+				actionData.IncogAddressStr,
+				totalCollateral, freeCollateral,
+				holdingPubTokens, lockedAmountCollateral,
+				remoteAddresses, rewardAmount)
 			if err != nil {
 				return err
 			}

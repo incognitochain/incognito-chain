@@ -168,7 +168,10 @@ func (blockchain *BlockChain) buildInstructionsForCustodianDeposit(
 
 	if currentPortalState.CustodianPoolState[keyCustodianState] == nil {
 		// new custodian
-		newCustodian, _ := NewCustodianState(meta.IncogAddressStr, meta.DepositedAmount, meta.DepositedAmount, nil, nil, meta.RemoteAddresses)
+		newCustodian, _ := NewCustodianState(
+			meta.IncogAddressStr, meta.DepositedAmount, meta.DepositedAmount,
+			nil, nil,
+			meta.RemoteAddresses, 0)
 		currentPortalState.CustodianPoolState[keyCustodianState] = newCustodian
 	} else {
 		// custodian deposited before
@@ -178,6 +181,7 @@ func (blockchain *BlockChain) buildInstructionsForCustodianDeposit(
 		freeCollateral := custodian.FreeCollateral + meta.DepositedAmount
 		holdingPubTokens := custodian.HoldingPubTokens
 		lockedAmountCollateral := custodian.LockedAmountCollateral
+		rewardAmount := custodian.RewardAmount
 		remoteAddresses := custodian.RemoteAddresses
 		for tokenSymbol, address := range meta.RemoteAddresses {
 			if remoteAddresses[tokenSymbol] == "" {
@@ -185,7 +189,8 @@ func (blockchain *BlockChain) buildInstructionsForCustodianDeposit(
 			}
 		}
 
-		newCustodian, _ := NewCustodianState(meta.IncogAddressStr, totalCollateral, freeCollateral, holdingPubTokens, lockedAmountCollateral, remoteAddresses)
+		newCustodian, _ := NewCustodianState(meta.IncogAddressStr, totalCollateral, freeCollateral,
+			holdingPubTokens, lockedAmountCollateral, remoteAddresses, rewardAmount)
 		currentPortalState.CustodianPoolState[keyCustodianState] = newCustodian
 	}
 
@@ -1056,6 +1061,62 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 		}
 	}
 
+	// check redeem fee
+	exchangeRateKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
+	if currentPortalState.FinalExchangeRates[exchangeRateKey] == nil {
+		Logger.log.Errorf("Can not get exchange rate at beaconHeight %v\n", beaconHeight)
+		inst := buildRedeemRequestInst(
+			meta.UniqueRedeemID,
+			meta.TokenID,
+			meta.RedeemAmount,
+			meta.RedeemerIncAddressStr,
+			meta.RemoteAddress,
+			meta.RedeemFee,
+			nil,
+			meta.Type,
+			actionData.ShardID,
+			actionData.TxReqID,
+			common.PortalRedeemRequestRejectedChainStatus,
+		)
+		return [][]string{inst}, nil
+	}
+	minRedeemFee, err := calMinRedeemFee(meta.RedeemAmount, tokenSymbol, currentPortalState.FinalExchangeRates[exchangeRateKey])
+	if err != nil {
+		Logger.log.Errorf("Error when calculating minimum redeem fee %v\n", err)
+		inst := buildRedeemRequestInst(
+			meta.UniqueRedeemID,
+			meta.TokenID,
+			meta.RedeemAmount,
+			meta.RedeemerIncAddressStr,
+			meta.RemoteAddress,
+			meta.RedeemFee,
+			nil,
+			meta.Type,
+			actionData.ShardID,
+			actionData.TxReqID,
+			common.PortalRedeemRequestRejectedChainStatus,
+		)
+		return [][]string{inst}, nil
+	}
+
+	if meta.RedeemFee < minRedeemFee {
+		Logger.log.Errorf("Redeem fee is invalid, minRedeemFee %v, but get %v\n", minRedeemFee, meta.RedeemFee)
+		inst := buildRedeemRequestInst(
+			meta.UniqueRedeemID,
+			meta.TokenID,
+			meta.RedeemAmount,
+			meta.RedeemerIncAddressStr,
+			meta.RemoteAddress,
+			meta.RedeemFee,
+			nil,
+			meta.Type,
+			actionData.ShardID,
+			actionData.TxReqID,
+			common.PortalRedeemRequestRejectedChainStatus,
+		)
+		return [][]string{inst}, nil
+	}
+
 	// pick custodian(s) who holding public token to return user
 	matchingCustodiansDetail, err := pickupCustodianForRedeem(meta.RedeemAmount, tokenSymbol, currentPortalState)
 	if err != nil {
@@ -1112,7 +1173,6 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 		currentPortalState.CustodianPoolState[k].HoldingPubTokens[tokenSymbol] -= cus.Amount
 	}
 
-	// @@notice@@
 	// update key of matching custodian
 	matchingCustodianUpdateKey := map[string]*lvdb.MatchingRedeemCustodianDetail{}
 	for k, cus := range matchingCustodiansDetail {
@@ -1120,8 +1180,6 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 		matchingCustodianUpdateKey[incAddressCus] = new(lvdb.MatchingRedeemCustodianDetail)
 		matchingCustodianUpdateKey[incAddressCus] = cus
 	}
-
-	Logger.log.Errorf("[Portal - buildInstructionsForRedeemRequest] matchingCustodianUpdateKey: %v\n", matchingCustodianUpdateKey)
 
 	Logger.log.Infof("[Portal] Build accepted instruction for redeem request")
 	inst := buildRedeemRequestInst(
