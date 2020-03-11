@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
@@ -112,4 +113,108 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 	inst := blockchain.buildInstForPortalReward(beaconHeight + 1, receivers)
 
 	return [][]string{inst}, nil
+}
+
+// beacon build new instruction from instruction received from ShardToBeaconBlock
+func buildWithdrawPortalRewardInst(
+	custodianAddressStr string,
+	rewardAmount uint64,
+	metaType int,
+	shardID byte,
+	txReqID common.Hash,
+	status string,
+) []string {
+	withdrawRewardContent := metadata.PortalRequestWithdrawRewardContent{
+		CustodianAddressStr: custodianAddressStr,
+		RewardAmount: rewardAmount,
+		TxReqID:         txReqID,
+		ShardID:         shardID,
+	}
+	withdrawRewardContentBytes, _ := json.Marshal(withdrawRewardContent)
+	return []string{
+		strconv.Itoa(metaType),
+		strconv.Itoa(int(shardID)),
+		status,
+		string(withdrawRewardContentBytes),
+	}
+}
+
+// buildInstructionsForCustodianDeposit builds instruction for custodian deposit action
+func (blockchain *BlockChain) buildInstructionsForReqWithdrawPortalReward(
+	contentStr string,
+	shardID byte,
+	metaType int,
+	currentPortalState *CurrentPortalState,
+	beaconHeight uint64,
+) ([][]string, error) {
+	// parse instruction
+	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while decoding content string of portal custodian deposit action: %+v", err)
+		return [][]string{}, nil
+	}
+	var actionData metadata.PortalRequestWithdrawRewardAction
+	err = json.Unmarshal(actionContentBytes, &actionData)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while unmarshal portal custodian deposit action: %+v", err)
+		return [][]string{}, nil
+	}
+
+	if currentPortalState == nil {
+		Logger.log.Warn("WARN - [buildInstructionsForReqWithdrawPortalReward]: Current Portal state is null.")
+		// need to refund collateral to custodian
+		inst := buildWithdrawPortalRewardInst(
+			actionData.Meta.CustodianAddressStr,
+			0,
+			actionData.Meta.Type,
+			shardID,
+			actionData.TxReqID,
+			common.PortalReqWithdrawRewardRejectedChainStatus,
+		)
+		return [][]string{inst}, nil
+	}
+	meta := actionData.Meta
+
+	keyCustodianState := lvdb.NewCustodianStateKey(beaconHeight, meta.CustodianAddressStr)
+	custodian := currentPortalState.CustodianPoolState[keyCustodianState]
+	if custodian == nil {
+		Logger.log.Warn("WARN - [buildInstructionsForReqWithdrawPortalReward]: Not found custodian address in custodian pool.")
+		inst := buildWithdrawPortalRewardInst(
+			actionData.Meta.CustodianAddressStr,
+			0,
+			actionData.Meta.Type,
+			shardID,
+			actionData.TxReqID,
+			common.PortalReqWithdrawRewardRejectedChainStatus,
+		)
+		return [][]string{inst}, nil
+	} else {
+		rewardAmount := custodian.RewardAmount
+		if rewardAmount <= 0 {
+			Logger.log.Warn("WARN - [buildInstructionsForReqWithdrawPortalReward]: Reward amount of custodian %v is zero.", meta.CustodianAddressStr)
+			// need to refund collateral to custodian
+			inst := buildWithdrawPortalRewardInst(
+				actionData.Meta.CustodianAddressStr,
+				0,
+				actionData.Meta.Type,
+				shardID,
+				actionData.TxReqID,
+				common.PortalReqWithdrawRewardRejectedChainStatus,
+			)
+			return [][]string{inst}, nil
+		}
+
+		inst := buildWithdrawPortalRewardInst(
+			actionData.Meta.CustodianAddressStr,
+			rewardAmount,
+			actionData.Meta.Type,
+			shardID,
+			actionData.TxReqID,
+			common.PortalReqWithdrawRewardAcceptedChainStatus,
+		)
+
+		// update reward amount of custodian
+		custodian.RewardAmount = 0
+		return [][]string{inst}, nil
+	}
 }
