@@ -35,9 +35,6 @@ func (blockchain *BlockChain) ListAllPrivacyCustomTokenAndPRV() (map[common.Hash
 // ListCustomToken - return all custom token which existed in network
 func (blockchain *BlockChain) ListPrivacyCustomTokenAndPRVByShardID(shardID byte) (map[common.Hash]*statedb.TokenState, error) {
 	tokenStates := statedb.ListPrivacyToken(blockchain.BestState.Shard[shardID].GetCopiedTransactionStateDB())
-	if err != nil {
-		return nil, err
-	}
 	return tokenStates, nil
 }
 
