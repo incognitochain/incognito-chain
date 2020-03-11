@@ -5,10 +5,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"math"
 	"reflect"
@@ -24,7 +24,7 @@ type PortalRedeemRequest struct {
 	RedeemAmount          uint64
 	RedeemerIncAddressStr string
 	RemoteAddress         string // btc/bnb/etc address
-	RedeemFee             uint64 // ptoken fee
+	RedeemFee             uint64 // redeem fee in PRV, 0.01% redeemAmount in PRV
 }
 
 // PortalRedeemRequestAction - shard validator creates instruction that contain this action content
@@ -44,7 +44,7 @@ type PortalRedeemRequestContent struct {
 	RedeemAmount            uint64
 	RedeemerIncAddressStr   string
 	RemoteAddress           string // btc/bnb/etc address
-	RedeemFee               uint64 // ptoken fee, 0.01% redeemAmount
+	RedeemFee               uint64 // redeem fee in PRV, 0.01% redeemAmount in PRV
 	MatchingCustodianDetail map[string]*lvdb.MatchingRedeemCustodianDetail   // key: incAddressCustodian
 	TxReqID                 common.Hash
 	ShardID                 byte
@@ -58,7 +58,7 @@ type PortalRedeemRequestStatus struct {
 	RedeemAmount            uint64
 	RedeemerIncAddressStr   string
 	RemoteAddress           string // btc/bnb/etc address
-	RedeemFee               uint64 // ptoken fee
+	RedeemFee               uint64 // redeem fee in PRV, 0.01% redeemAmount in PRV
 	MatchingCustodianDetail map[string]*lvdb.MatchingRedeemCustodianDetail   // key: incAddressCustodian
 	TxReqID                 common.Hash
 }
@@ -129,30 +129,30 @@ func (redeemReq PortalRedeemRequest) ValidateSanityData(bcr BlockchainRetriever,
 	}
 
 	if !txr.IsCoinsBurning(bcr, beaconHeight) {
-		return false, false, errors.New("tx redeem request must be coin burning tx")
+		return false, false, errors.New("txprivacytoken in tx redeem request must be coin burning tx")
+	}
+
+	if !txr.(*transaction.Tx).IsCoinsBurning(bcr, beaconHeight) {
+		return false, false, errors.New("txnormal in tx redeem request must be coin burning tx")
 	}
 
 	// validate redeem amount
-	if redeemReq.RedeemAmount == 0 {
+	if redeemReq.RedeemAmount <= 0 {
 		return false, false, errors.New("redeem amount should be larger than 0")
 	}
 
 	// validate redeem fee
-	if redeemReq.RedeemFee == 0 {
+	if redeemReq.RedeemFee <= 0 {
 		return false, false, errors.New("redeem fee should be larger than 0")
 	}
 
-	minFee, err := getMinRedeemFeeByRedeemAmount(redeemReq.RedeemAmount)
-	if err != nil {
-		return false, false, err
+	// validate value transfer of tx for redeem amount in ptoken
+	if redeemReq.RedeemAmount != txr.CalculateTxValue() {
+		return false, false, errors.New("redeem amount should be equal to the tx value")
 	}
 
-	if redeemReq.RedeemFee < minFee {
-		return false, false, fmt.Errorf("redeem fee should be larger than min fee %v\n", minFee)
-	}
-
-	// validate value transfer of tx
-	if redeemReq.RedeemAmount+redeemReq.RedeemFee != txr.CalculateTxValue() {
+	// validate value transfer of tx for redeem fee in prv
+	if redeemReq.RedeemFee != txr.(*transaction.Tx).CalculateTxValue() {
 		return false, false, errors.New("deposit amount should be equal to the tx value")
 	}
 
