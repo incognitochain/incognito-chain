@@ -93,6 +93,11 @@ func (iRes PortalLiquidateCustodianResponse) VerifyMinerCreatedTxBeforeGettingIn
 			continue
 		}
 
+		status := inst[2]
+		if status != common.PortalLiquidateCustodianSuccessChainStatus {
+			continue
+		}
+
 		var shardIDFromInst byte
 		var custodianAddrStrFromInst string
 		var redeemerIncAddressStrFromInst string

@@ -45,7 +45,8 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.RelayingBNBHeaderMeta,
 			metadata.PortalCustodianWithdrawRequestMeta,
 			metadata.PortalRedeemRequestMeta,
-			metadata.PortalRequestUnlockCollateralMeta:
+			metadata.PortalRequestUnlockCollateralMeta,
+			metadata.PortalLiquidateCustodianMeta:
 			statefulInsts = append(statefulInsts, inst)
 
 		default:

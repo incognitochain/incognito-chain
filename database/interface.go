@@ -220,6 +220,9 @@ type DatabaseInterface interface {
 	TrackRequestUnlockCollateralByTxReqID(key []byte, value []byte) error
 	GetReqUnlockCollateralStatusByTxReqID(txReqID string) ([]byte, error)
 
+	TrackLiquidateCustodian(key []byte, value []byte) error
+	GetLiquidateCustodian(redeemID string, custodianIncAddrStr string) ([]byte, error)
+
 
 	// relaying
 	GetItemByKey(key []byte) ([]byte, error)

@@ -10,7 +10,6 @@ import (
 )
 
 // beacon build instruction for portal liquidation when custodians run away - don't send public tokens back to users.
-//todo:
 func buildCustodianRunAwayLiquidationInst(
 	redeemID string,
 	tokenID string,
@@ -29,7 +28,7 @@ func buildCustodianRunAwayLiquidationInst(
 		MintedCollateralAmount: mintedCollateralAmount,
 		RedeemerIncAddressStr:  redeemerIncAddrStr,
 		CustodianIncAddressStr: custodianIncAddrStr,
-		ShardID: shardID,
+		ShardID:                shardID,
 	}
 	liqCustodianContentBytes, _ := json.Marshal(liqCustodianContent)
 	return []string{
@@ -46,7 +45,15 @@ func checkAndBuildInstForCustodianLiquidation(
 ) ([][]string, error) {
 
 	insts := [][]string{}
-	for _, redeemReq := range currentPortalState.WaitingRedeemRequests {
+
+	// get exchange rate
+	exchangeRateKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
+	exchangeRate := currentPortalState.FinalExchangeRates[exchangeRateKey]
+	if exchangeRate == nil {
+		Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when get exchange rate")
+	}
+
+	for redeemReqKey, redeemReq := range currentPortalState.WaitingRedeemRequests {
 		if beaconHeight - redeemReq.BeaconHeight >= common.PortalTimeOutCustodianSendPubTokenBack {
 			// get shardId of redeemer
 			redeemerKey, err := wallet.Base58CheckDeserialize(redeemReq.RedeemerAddress)
@@ -55,49 +62,101 @@ func checkAndBuildInstForCustodianLiquidation(
 					redeemReq.UniqueRedeemID, err)
 				continue
 			}
-			shardID := common.GetShardIDFromLastByte(redeemerKey.KeySet.PaymentAddress.Pk[len(redeemerKey.KeySet.PaymentAddress.Pk) - 1])
+			shardID := common.GetShardIDFromLastByte(redeemerKey.KeySet.PaymentAddress.Pk[len(redeemerKey.KeySet.PaymentAddress.Pk)-1])
+
+			// get tokenSymbol from redeemTokenID
+			tokenSymbol := ""
+			for tokenSym, incTokenID := range metadata.PortalSupportedTokenMap {
+				if incTokenID == redeemReq.TokenID {
+					tokenSymbol = tokenSym
+					break
+				}
+			}
 
 			for cusIncAddr, matchCusDetail := range redeemReq.Custodians {
 				// calculate minted collateral amount
-				mintedAmount := matchCusDetail.Amount * common.PercentReceivedCollateralAmount / 100
-
-				// update waiting redeem request (remove custodian from matching custodians list)
-				//delete(redeemReq.Custodians, cusIncAddr)
+				mintedAmountInPToken := matchCusDetail.Amount * common.PercentReceivedCollateralAmount / 100
+				mintedAmountInPRV, err := exchangeRate.ExchangePToken2PRVByTokenId(tokenSymbol, mintedAmountInPToken)
+				if err != nil {
+					Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when exchanging ptoken to prv amount %v\n: ", err)
+					inst := buildCustodianRunAwayLiquidationInst(
+						redeemReq.UniqueRedeemID,
+						redeemReq.TokenID,
+						matchCusDetail.Amount,
+						0,
+						redeemReq.RedeemerAddress,
+						cusIncAddr,
+						metadata.PortalLiquidateCustodianMeta,
+						shardID,
+						common.PortalLiquidateCustodianFailedChainStatus,
+					)
+					insts = append(insts, inst)
+					continue
+				}
 
 				// update custodian state (total collateral, holding public tokens, locked amount, free collateral)
-				// get tokenSymbol from redeemTokenID
-				tokenSymbol := ""
-				for tokenSym, incTokenID := range metadata.PortalSupportedTokenMap {
-					if incTokenID == redeemReq.TokenID {
-						tokenSymbol = tokenSym
-						break
-					}
-				}
 				cusStateKey := lvdb.NewCustodianStateKey(beaconHeight, cusIncAddr)
-				currentPortalState.CustodianPoolState[cusStateKey].TotalCollateral -= mintedAmount
-				currentPortalState.CustodianPoolState[cusStateKey].HoldingPubTokens[tokenSymbol] -= matchCusDetail.Amount
+				custodianState := currentPortalState.CustodianPoolState[cusStateKey]
 
-				if currentPortalState.CustodianPoolState[cusStateKey].HoldingPubTokens[tokenSymbol] > 0 {
-					currentPortalState.CustodianPoolState[cusStateKey].LockedAmountCollateral[tokenSymbol] -= mintedAmount
-				} else {
-					unlockedCollateralAmount := currentPortalState.CustodianPoolState[cusStateKey].LockedAmountCollateral[tokenSymbol] - mintedAmount
-					currentPortalState.CustodianPoolState[cusStateKey].FreeCollateral += unlockedCollateralAmount
-					currentPortalState.CustodianPoolState[cusStateKey].LockedAmountCollateral[tokenSymbol] = 0
+				if custodianState.TotalCollateral < mintedAmountInPRV ||
+					custodianState.LockedAmountCollateral[tokenSymbol] < mintedAmountInPRV {
+					Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Total collateral %v, locked amount %v " +
+						"should be greater than minted amount %v\n: ",
+						custodianState.TotalCollateral, custodianState.LockedAmountCollateral[tokenSymbol], mintedAmountInPRV)
+					inst := buildCustodianRunAwayLiquidationInst(
+						redeemReq.UniqueRedeemID,
+						redeemReq.TokenID,
+						matchCusDetail.Amount,
+						mintedAmountInPRV,
+						redeemReq.RedeemerAddress,
+						cusIncAddr,
+						metadata.PortalLiquidateCustodianMeta,
+						shardID,
+						common.PortalLiquidateCustodianFailedChainStatus,
+					)
+					insts = append(insts, inst)
+					continue
 				}
+
+				err = updateCustodianStateAfterLiquidateCustodian(custodianState, mintedAmountInPRV, tokenSymbol)
+				if err != nil {
+					Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when updating %v\n: ", err)
+					inst := buildCustodianRunAwayLiquidationInst(
+						redeemReq.UniqueRedeemID,
+						redeemReq.TokenID,
+						matchCusDetail.Amount,
+						mintedAmountInPRV,
+						redeemReq.RedeemerAddress,
+						cusIncAddr,
+						metadata.PortalLiquidateCustodianMeta,
+						shardID,
+						common.PortalLiquidateCustodianFailedChainStatus,
+					)
+					insts = append(insts, inst)
+					continue
+				}
+
+				// remove matching custodian from matching custodians list in waiting redeem request
+				delete(currentPortalState.WaitingRedeemRequests[redeemReqKey].Custodians, cusIncAddr)
 
 				// build instruction
 				inst := buildCustodianRunAwayLiquidationInst(
 					redeemReq.UniqueRedeemID,
 					redeemReq.TokenID,
 					matchCusDetail.Amount,
-					mintedAmount,
+					mintedAmountInPRV,
 					redeemReq.RedeemerAddress,
 					cusIncAddr,
 					metadata.PortalLiquidateCustodianMeta,
 					shardID,
-					"",
+					common.PortalLiquidateCustodianSuccessChainStatus,
 				)
 				insts = append(insts, inst)
+			}
+
+			// remove redeem request from waiting redeem requests list
+			if len(currentPortalState.WaitingRedeemRequests[redeemReqKey].Custodians) == 0 {
+				delete(currentPortalState.WaitingRedeemRequests, redeemReqKey)
 			}
 		}
 	}

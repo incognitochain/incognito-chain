@@ -39,18 +39,18 @@ type PortalLiquidateCustodianContent struct {
 	ShardID                byte
 }
 
-//// PortalRedeemRequestStatus - Beacon tracks status of redeem request into db
-//type PortalRedeemRequestStatus struct {
-//	Status                  byte
-//	UniqueRedeemID          string
-//	TokenID                 string // pTokenID in incognito chain
-//	RedeemAmount            uint64
-//	RedeemerIncAddressStr   string
-//	RemoteAddress           string // btc/bnb/etc address
-//	RedeemFee               uint64 // ptoken fee
-//	MatchingCustodianDetail map[string]*lvdb.MatchingRedeemCustodianDetail   // key: incAddressCustodian
-//	TxReqID                 common.Hash
-//}
+// PortalLiquidateCustodianStatus - Beacon tracks status of custodian liquidation into db
+type PortalLiquidateCustodianStatus struct {
+	Status                 byte
+	UniqueRedeemID         string
+	TokenID                string // pTokenID in incognito chain
+	RedeemPubTokenAmount   uint64
+	MintedCollateralAmount uint64 // minted PRV amount for sending back to users
+	RedeemerIncAddressStr  string
+	CustodianIncAddressStr string
+	ShardID                byte
+	LiquidatedBeaconHeight uint64
+}
 
 func NewPortalLiquidateCustodian(
 	metaType int,

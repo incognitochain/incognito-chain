@@ -869,3 +869,16 @@ func updateRedeemRequestStatusByRedeemId(redeemID string, newStatus int, db data
 	return nil
 }
 
+func updateCustodianStateAfterLiquidateCustodian(custodianState * lvdb.CustodianState, mintedAmountInPRV uint64, tokenSymbol string) error {
+	custodianState.TotalCollateral -= mintedAmountInPRV
+
+	if custodianState.HoldingPubTokens[tokenSymbol] > 0 {
+		custodianState.LockedAmountCollateral[tokenSymbol] -= mintedAmountInPRV
+	} else {
+		unlockedCollateralAmount := custodianState.LockedAmountCollateral[tokenSymbol] - mintedAmountInPRV
+		custodianState.FreeCollateral += unlockedCollateralAmount
+		custodianState.LockedAmountCollateral[tokenSymbol] = 0
+	}
+	return nil
+}
+

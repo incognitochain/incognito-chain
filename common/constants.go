@@ -123,21 +123,23 @@ const (
 	PortalReqPTokenAcceptedStatus = 1
 	PortalReqPTokenRejectedStatus = 2
 
-	PortalPortingReqSuccessStatus = 1
-	PortalPortingReqWaitingStatus = 2
+	PortalPortingReqSuccessStatus  = 1
+	PortalPortingReqWaitingStatus  = 2
 	PortalPortingReqRejectedStatus = 3
 	PortalPortingReqAcceptedStatus = 4
 
-	PortalRedeemReqSuccessStatus = 1
-	PortalRedeemReqWaitingStatus = 2
+	PortalRedeemReqSuccessStatus  = 1
+	PortalRedeemReqWaitingStatus  = 2
 	PortalRedeemReqRejectedStatus = 3
 
-
-	PortalCustodianWithdrawReqRejectStatus = 1
+	PortalCustodianWithdrawReqRejectStatus   = 1
 	PortalCustodianWithdrawReqAcceptedStatus = 2
 
 	PortalReqUnlockCollateralAcceptedStatus = 1
 	PortalReqUnlockCollateralRejectedStatus = 2
+
+	PortalLiquidateCustodianSuccessStatus = 1
+	PortalLiquidateCustodianFailedStatus = 2
 )
 
 // PDE statuses for chain
@@ -165,18 +167,20 @@ const (
 	PortalPortingRequestAcceptedStatus = "accepted"
 	PortalPortingRequestRejectedStatus = "rejected"
 
-	PortalExchangeRatesSuccessStatus = "accepted"
+	PortalExchangeRatesSuccessStatus  = "accepted"
 	PortalExchangeRatesRejectedStatus = "rejected"
 
 	PortalRedeemRequestAcceptedChainStatus = "accepted"
 	PortalRedeemRequestRejectedChainStatus = "rejected"
-
 
 	PortalCustodianWithdrawRequestAcceptedStatus = "accepted"
 	PortalCustodianWithdrawRequestRejectedStatus = "rejected"
 
 	PortalReqUnlockCollateralAcceptedChainStatus = "accepted"
 	PortalReqUnlockCollateralRejectedChainStatus = "rejected"
+
+	PortalLiquidateCustodianSuccessChainStatus = "success"
+	PortalLiquidateCustodianFailedChainStatus  = "failed"
 )
 
 // Relaying header
@@ -188,7 +192,7 @@ const (
 
 const (
 	PortalTimeOutCustodianSendPubTokenBack = 2160 // beacon blocks ~ 24 hours
-	PercentReceivedCollateralAmount = 120 // users will be receive 120% of redeem amount in PRV
+	PercentReceivedCollateralAmount        = 120  // users will be receive 120% of redeem amount in PRV
 
 	MinRatio = 120 // 120% - minimum ratio between collateral's value and holding public tokens' value
 )

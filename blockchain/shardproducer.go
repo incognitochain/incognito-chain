@@ -501,7 +501,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 					newTx, err = blockGenerator.buildPortalRejectedRedeemRequestTx(l[3], producerPrivateKey, shardID)
 				}
 			case metadata.PortalLiquidateCustodianMeta:
-				if len(l) >= 4 {
+				if len(l) >= 4 && l[2] == common.PortalLiquidateCustodianSuccessChainStatus {
 					newTx, err = blockGenerator.buildPortalLiquidateCustodianResponseTx(l[3], producerPrivateKey, shardID)
 				}
 			default:
