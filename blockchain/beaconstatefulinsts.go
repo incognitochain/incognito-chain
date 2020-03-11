@@ -45,7 +45,8 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.RelayingBNBHeaderMeta,
 			metadata.PortalCustodianWithdrawRequestMeta,
 			metadata.PortalRedeemRequestMeta,
-			metadata.PortalRequestUnlockCollateralMeta:
+			metadata.PortalRequestUnlockCollateralMeta,
+			metadata.PortalLiquidateCustodianMeta:
 			statefulInsts = append(statefulInsts, inst)
 
 		default:
@@ -240,7 +241,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		portalRedeemReqActionsByShardID,
 		portalCustodianWithdrawActionsByShardID,
 		portalReqUnlockCollateralActionsByShardID,
-		)
+	)
 
 	if err != nil {
 		Logger.log.Error(err)
@@ -456,7 +457,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 	portalUserRequestPortingActionsByShardID map[byte][][]string,
 	portalUserRequestPTokenActionsByShardID map[byte][][]string,
 	portalExchangeRatesActionsByShardID map[byte][][]string,
-	portalRedeemReqActionsByShardID  map[byte][][]string,
+	portalRedeemReqActionsByShardID map[byte][][]string,
 	portalCustodianWithdrawActionByShardID map[byte][][]string,
 	portalReqUnlockCollateralActionsByShardID map[byte][][]string,
 ) ([][]string, error) {
@@ -480,7 +481,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 				metadata.PortalCustodianDepositMeta,
 				currentPortalState,
 				beaconHeight,
-				)
+			)
 
 			if err != nil {
 				Logger.log.Error(err)
@@ -613,7 +614,6 @@ func (blockchain *BlockChain) handlePortalInsts(
 		}
 	}
 
-
 	//handle portal custodian withdraw
 	var portalCustodianWithdrawShardIDKeys []int
 	for k := range portalCustodianWithdrawActionByShardID {
@@ -678,9 +678,6 @@ func (blockchain *BlockChain) handlePortalInsts(
 	return instructions, nil
 }
 
-
-
-
 // Header relaying
 func groupRelayingActionsByShardID(
 	relayingActionsByShardID map[byte][][]string,
@@ -696,8 +693,8 @@ func groupRelayingActionsByShardID(
 	return relayingActionsByShardID
 }
 
-func sortBNBHeaderRelayingInstsByBlockHeight(bnbHeaderRelayingActions [][]string)(
-	map[uint64][]metadata.RelayingBNBHeaderAction, []uint64, error){
+func sortBNBHeaderRelayingInstsByBlockHeight(bnbHeaderRelayingActions [][]string) (
+	map[uint64][]metadata.RelayingBNBHeaderAction, []uint64, error) {
 	// sort push header relaying inst
 	actionsGroupByBlockHeight := make(map[uint64][]metadata.RelayingBNBHeaderAction)
 
@@ -726,7 +723,7 @@ func sortBNBHeaderRelayingInstsByBlockHeight(bnbHeaderRelayingActions [][]string
 		// add to actionsGroupByBlockHeight
 		if actionsGroupByBlockHeight[blockHeight] != nil {
 			actionsGroupByBlockHeight[blockHeight] = append(actionsGroupByBlockHeight[blockHeight], action)
-		} else{
+		} else {
 			actionsGroupByBlockHeight[blockHeight] = []metadata.RelayingBNBHeaderAction{action}
 		}
 	}
@@ -782,15 +779,24 @@ func (blockchain *BlockChain) handleRelayingInsts(
 
 func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
 	beaconHeight uint64, currentPortalState *CurrentPortalState) ([][]string, error) {
+	Logger.log.Errorf("autoCheckAndCreatePortalLiquidationInsts starting.......")
 
-	// case 1: check there is any custodian doesn't send public tokens back to user after PortalTimeOutSendPubTokenBack
+	insts := [][]string{}
+
+	// case 1: check there is any custodian doesn't send public tokens back to user after PortalTimeOutCustodianSendPubTokenBack
 	// get custodian's collateral to return user
-	// todo
-	buildCustodianRunAwayLiquidationInst()
-
+	custodianLiqInsts, err := checkAndBuildInstForCustodianLiquidation(beaconHeight, currentPortalState)
+	if err != nil {
+		Logger.log.Errorf("Error when check and build custodian liquidation %v\n", err)
+	}
+	if len(custodianLiqInsts) > 0 {
+		insts = append(insts, custodianLiqInsts...)
+	}
+	Logger.log.Infof("There are %v instruction for custodian liquidation in portal\n", len(custodianLiqInsts))
 
 	// case 2: check collateral's value (locked collateral amount) drops below MinRatio
-	buildMinAspectRatioCollateralLiquidationInst(beaconHeight, currentPortalState)
-	return [][]string{}, nil
 
+	buildMinAspectRatioCollateralLiquidationInst(beaconHeight, currentPortalState)
+	return insts, nil
 }
+

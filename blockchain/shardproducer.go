@@ -500,10 +500,10 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 				if len(l) >= 4 && l[2] == common.PortalRedeemRequestRejectedChainStatus {
 					newTx, err = blockGenerator.buildPortalRejectedRedeemRequestTx(l[3], producerPrivateKey, shardID)
 				}
-			//case metadata.PortalRequestUnlockCollateralMeta:
-			//	if len(l) >= 4 && l[2] == common.PortalReqUnlockCollateralAcceptedChainStatus {
-			//		newTx, err = blockGenerator.buildPortalAcceptedRequestUnlockCollateralTx(l[3], producerPrivateKey, shardID)
-			//	}
+			case metadata.PortalLiquidateCustodianMeta:
+				if len(l) >= 4 && l[2] == common.PortalLiquidateCustodianSuccessChainStatus {
+					newTx, err = blockGenerator.buildPortalLiquidateCustodianResponseTx(l[3], producerPrivateKey, shardID)
+				}
 			default:
 				continue
 			}

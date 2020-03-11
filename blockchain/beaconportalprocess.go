@@ -45,6 +45,8 @@ func (blockchain *BlockChain) processPortalInstructions(block *BeaconBlock, bd *
 			err = blockchain.processPortalCustodianWithdrawRequest(beaconHeight, inst, currentPortalState)
 		case strconv.Itoa(metadata.PortalRequestUnlockCollateralMeta):
 			err = blockchain.processPortalUnlockCollateral(beaconHeight, inst, currentPortalState)
+		case strconv.Itoa(metadata.PortalLiquidateCustodianMeta):
+			err = blockchain.processPortalLiquidateCustodian(beaconHeight, inst, currentPortalState)
 		}
 
 		if err != nil {

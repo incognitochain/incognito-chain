@@ -16,7 +16,7 @@ import (
 type PortalCustodianDeposit struct {
 	MetadataBase
 	IncogAddressStr string
-	RemoteAddresses map[string]string		// token symbol: remote address
+	RemoteAddresses map[string]string // token symbol: remote address
 	DepositedAmount uint64
 }
 
@@ -36,12 +36,12 @@ type PortalCustodianDepositContent struct {
 	RemoteAddresses map[string]string
 	DepositedAmount uint64
 	TxReqID         common.Hash
-	ShardID byte
+	ShardID         byte
 }
 
 // PortalCustodianDepositStatus - Beacon tracks status of custodian deposit tx into db
 type PortalCustodianDepositStatus struct {
-	Status byte
+	Status          byte
 	IncogAddressStr string
 	RemoteAddresses map[string]string
 	DepositedAmount uint64
@@ -60,7 +60,6 @@ func NewPortalCustodianDeposit(metaType int, incognitoAddrStr string, remoteAddr
 	return custodianDepositMeta, nil
 }
 
-//todo
 func (custodianDeposit PortalCustodianDeposit) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,

@@ -274,3 +274,53 @@ func (blockGenerator *BlockGenerator) buildPortalRejectedRedeemRequestTx(
 	Logger.log.Errorf("Suucc: %+v", err)
 	return resTx, nil
 }
+
+// buildPortalRefundCustodianDepositTx builds refund tx for custodian deposit tx with status "refund"
+// mints PRV to return to custodian
+func (blockGenerator *BlockGenerator) buildPortalLiquidateCustodianResponseTx(
+	contentStr string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+) (metadata.Transaction, error) {
+	Logger.log.Info("[Portal liquidate custodian response] Starting...")
+	contentBytes := []byte(contentStr)
+	var liqCustodian metadata.PortalLiquidateCustodianContent
+	err := json.Unmarshal(contentBytes, &liqCustodian)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while unmarshaling portal liquidation custodian content: %+v", err)
+		return nil, nil
+	}
+	if liqCustodian.ShardID != shardID {
+		return nil, nil
+	}
+
+	meta := metadata.NewPortalLiquidateCustodianResponse(
+		liqCustodian.UniqueRedeemID,
+		liqCustodian.MintedCollateralAmount,
+		liqCustodian.RedeemerIncAddressStr,
+		liqCustodian.CustodianIncAddressStr,
+		metadata.PortalLiquidateCustodianResponseMeta,
+	)
+
+	keyWallet, err := wallet.Base58CheckDeserialize(liqCustodian.RedeemerIncAddressStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while deserializing redeemer address string: %+v", err)
+		return nil, nil
+	}
+	receiverAddr := keyWallet.KeySet.PaymentAddress
+
+	// the returned currency is PRV
+	resTx := new(transaction.Tx)
+	err = resTx.InitTxSalary(
+		liqCustodian.MintedCollateralAmount,
+		&receiverAddr,
+		producerPrivateKey,
+		blockGenerator.chain.config.DataBase,
+		meta,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing refund contribution (normal) tx: %+v", err)
+		return nil, nil
+	}
+	return resTx, nil
+}

@@ -22,7 +22,7 @@ type CustodianState struct {
 	TotalCollateral        uint64            // prv
 	FreeCollateral         uint64            // prv
 	HoldingPubTokens       map[string]uint64 // tokenSymbol : amount
-	LockedAmountCollateral map[string]uint64 // prv
+	LockedAmountCollateral map[string]uint64 // tokenSymbol : amount
 	RemoteAddresses        map[string]string // tokenSymbol : address
 }
 
@@ -521,28 +521,24 @@ func (db *db) GetReqUnlockCollateralStatusByTxReqID(txReqID string) ([]byte, err
 	return reqUnlockCollateralStatusBytes, err
 }
 
+// NewPortalLiquidationCustodianKey creates key for tracking custodian liquidation in portal
+func NewPortalLiquidationCustodianKey(redeemID string, custodianIncAddrStr string) string {
+	key := append(PortalLiquidateCustodianPrefix, []byte(redeemID)...)
+	key = append(key, []byte(custodianIncAddrStr)...)
+	return string(key)
+}
 
-//GetRedeemRequestStatusByPortingID(redeemID string) (int, error)
+// TrackRequestUnlockCollateralByTxReqID tracks status of request unlock collateral by txReqID
+func (db *db) TrackLiquidateCustodian(key []byte, value []byte) error {
+	err := db.Put(key, value)
+	if err != nil {
+		return database.NewDatabaseError(database.TrackLiquidateCustodianError, errors.Wrap(err, "db.lvdb.put"))
+	}
+	return nil
+}
 
-//func (db *db) GetRedeemRequestByRedeemID(redeemID string) ([]byte, error) {
-//	key := NewRedeemReqKey(redeemID)
-//	redeemRequest, err := db.GetItemPortalByKey([]byte(key))
-//
-//	if err != nil {
-//		return 0, err
-//	}
-//
-//	var portingRequestResult PortingRequest
-//
-//	if redeemRequest == nil {
-//		return 0, nil
-//	}
-//
-//	//get value via idx
-//	err = json.Unmarshal(redeemRequest, &portingRequestResult)
-//	if err != nil {
-//		return 0, err
-//	}
-//
-//	return portingRequestResult.Status, nil
-//}
+// TrackRequestUnlockCollateralByTxReqID tracks status of request unlock collateral by txReqID
+func (db *db) GetLiquidateCustodian(redeemID string, custodianIncAddrStr string) ([]byte, error) {
+	key := NewPortalLiquidationCustodianKey(redeemID, custodianIncAddrStr)
+	return db.GetItemPortalByKey([]byte(key))
+}

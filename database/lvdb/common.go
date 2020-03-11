@@ -85,6 +85,9 @@ var (
 	PortalCustodianWithdrawTxPrefix 	= []byte("portalcustodianwithdrawtx-")
 	PortalCustodianWithdrawPrefix 		= []byte("portalcustodianwithdraw-")
 
+	// liquidation in portal
+	PortalLiquidateCustodianPrefix = []byte("portalliquidatecustodian-")
+
 	// Relaying
 	RelayingBNBHeaderStatePrefix = []byte("relayingbnbheaderstate-")
 	RelayingBNBHeaderChainPrefix = []byte("relayingbnbheaderchain-")

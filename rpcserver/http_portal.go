@@ -218,10 +218,10 @@ func (httpServer *HttpServer) handleGetPortalState(params interface{}, closeChan
 	}
 
 	type CurrentPortalState struct {
-		WaitingPortingRequests map[string]*lvdb.PortingRequest `json:"WaitingPortingRequests"`
-		WaitingRedeemRequests  map[string]*lvdb.RedeemRequest  `json:"WaitingRedeemRequests"`
-		CustodianPool          map[string]*lvdb.CustodianState `json:"CustodianPool"`
-		BeaconTimeStamp        int64                           `json:"BeaconTimeStamp"`
+		WaitingPortingRequests map[string]*lvdb.PortingRequest     `json:"WaitingPortingRequests"`
+		WaitingRedeemRequests  map[string]*lvdb.RedeemRequest      `json:"WaitingRedeemRequests"`
+		CustodianPool          map[string]*lvdb.CustodianState     `json:"CustodianPool"`
+		BeaconTimeStamp        int64                               `json:"BeaconTimeStamp"`
 		FinalExchangeRates     map[string]*lvdb.FinalExchangeRates `json:"FinalExchangeRates"`
 	}
 
@@ -230,7 +230,7 @@ func (httpServer *HttpServer) handleGetPortalState(params interface{}, closeChan
 		WaitingPortingRequests: portalState.WaitingPortingRequests,
 		WaitingRedeemRequests:  portalState.WaitingRedeemRequests,
 		CustodianPool:          portalState.CustodianPoolState,
-		FinalExchangeRates:		portalState.FinalExchangeRates,
+		FinalExchangeRates:     portalState.FinalExchangeRates,
 	}
 	return result, nil
 }
@@ -364,7 +364,7 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithRedeemReq(params interfac
 	return sendResult, nil
 }
 
-func (httpServer * HttpServer) handleCustodianWithdrawRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError)  {
+func (httpServer *HttpServer) handleCustodianWithdrawRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
 	// get meta data from params
@@ -414,7 +414,7 @@ func (httpServer * HttpServer) handleCustodianWithdrawRequest(params interface{}
 	return result, nil
 }
 
-func (httpServer * HttpServer) handleCreateAndSendCustodianWithdrawRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError)  {
+func (httpServer *HttpServer) handleCreateAndSendCustodianWithdrawRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	data, err := httpServer.handleCustodianWithdrawRequest(params, closeChan)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
@@ -578,6 +578,31 @@ func (httpServer *HttpServer) handleGetPortalReqRedeemStatus(params interface{},
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param RedeemID is invalid"))
 	}
 	status, err := httpServer.databaseService.GetPortalRedeemReqStatus(redeemID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetReqRedeemStatusError, err)
+	}
+	return status, nil
+}
+
+func (httpServer *HttpServer) handleGetCustodianLiquidationStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one"))
+	}
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	redeemID, ok := data["RedeemID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param RedeemID is invalid"))
+	}
+
+	custodianAddress, ok := data["CustodianIncAddress"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param CustodianIncAddress is invalid"))
+	}
+	status, err := httpServer.databaseService.GetPortalLiquidationCustodianStatus(redeemID, custodianAddress)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetReqRedeemStatusError, err)
 	}
