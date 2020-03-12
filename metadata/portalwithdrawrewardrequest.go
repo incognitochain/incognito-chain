@@ -51,7 +51,6 @@ func NewPortalRequestWithdrawReward(
 		Type: metaType,
 	}
 	meta := &PortalRequestWithdrawReward{
-
 		CustodianAddressStr: incogAddressStr,
 	}
 	meta.MetadataBase = metadataBase
@@ -90,7 +89,7 @@ func (meta PortalRequestWithdrawReward) ValidateSanityData(bcr BlockchainRetriev
 }
 
 func (meta PortalRequestWithdrawReward) ValidateMetadataByItself() bool {
-	return meta.Type == PortalRequestUnlockCollateralMeta
+	return meta.Type == PortalRequestWithdrawRewardMeta
 }
 
 func (meta PortalRequestWithdrawReward) Hash() *common.Hash {
