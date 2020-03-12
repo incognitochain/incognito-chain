@@ -105,14 +105,9 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 		splitRewardForCustodians(common.TotalRewardPerBlock, totalLockedCollateralAmount, currentPortalState.CustodianPoolState, receivers)
 	}
 
-	Logger.log.Errorf("totalLockedCollateralAmount: %v\n", totalLockedCollateralAmount)
-	Logger.log.Errorf("receivers: %+v\n", receivers)
-	Logger.log.Errorf("currentPortalState.CustodianPoolState: %+v\n", currentPortalState.CustodianPoolState)
-
 	// update reward amount for each custodian
 	for _, custodianState := range currentPortalState.CustodianPoolState {
 		custodianState.RewardAmount += receivers[custodianState.IncognitoAddress]
-		Logger.log.Errorf("receivers[custodianState.IncognitoAddress]: %+v\n", receivers[custodianState.IncognitoAddress])
 	}
 
 	// build beacon instruction for portal reward
@@ -153,6 +148,7 @@ func (blockchain *BlockChain) buildInstructionsForReqWithdrawPortalReward(
 	currentPortalState *CurrentPortalState,
 	beaconHeight uint64,
 ) ([][]string, error) {
+	Logger.log.Errorf("[buildInstructionsForReqWithdrawPortalReward] Starting....")
 	// parse instruction
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
@@ -185,6 +181,7 @@ func (blockchain *BlockChain) buildInstructionsForReqWithdrawPortalReward(
 	custodian := currentPortalState.CustodianPoolState[keyCustodianState]
 	if custodian == nil {
 		Logger.log.Warn("WARN - [buildInstructionsForReqWithdrawPortalReward]: Not found custodian address in custodian pool.")
+		Logger.log.Errorf("[buildInstructionsForReqWithdrawPortalReward] Rejected....")
 		inst := buildWithdrawPortalRewardInst(
 			actionData.Meta.CustodianAddressStr,
 			0,
@@ -198,7 +195,7 @@ func (blockchain *BlockChain) buildInstructionsForReqWithdrawPortalReward(
 		rewardAmount := custodian.RewardAmount
 		if rewardAmount <= 0 {
 			Logger.log.Warn("WARN - [buildInstructionsForReqWithdrawPortalReward]: Reward amount of custodian %v is zero.", meta.CustodianAddressStr)
-			// need to refund collateral to custodian
+			Logger.log.Errorf("[buildInstructionsForReqWithdrawPortalReward] Rejected....")
 			inst := buildWithdrawPortalRewardInst(
 				actionData.Meta.CustodianAddressStr,
 				0,
@@ -210,6 +207,7 @@ func (blockchain *BlockChain) buildInstructionsForReqWithdrawPortalReward(
 			return [][]string{inst}, nil
 		}
 
+		Logger.log.Errorf("[buildInstructionsForReqWithdrawPortalReward] Accepted....")
 		inst := buildWithdrawPortalRewardInst(
 			actionData.Meta.CustodianAddressStr,
 			rewardAmount,

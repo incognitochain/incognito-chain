@@ -324,3 +324,52 @@ func (blockGenerator *BlockGenerator) buildPortalLiquidateCustodianResponseTx(
 	}
 	return resTx, nil
 }
+
+// buildPortalAcceptedWithdrawRewardTx builds withdraw portal rewards response tx
+// mints rewards in PRV for sending to custodian
+func (blockGenerator *BlockGenerator) buildPortalAcceptedWithdrawRewardTx(
+	contentStr string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+) (metadata.Transaction, error) {
+	Logger.log.Info("[buildPortalAcceptedWithdrawRewardTx] Starting...")
+	contentBytes := []byte(contentStr)
+	var withdrawRewardContent metadata.PortalRequestWithdrawRewardContent
+	err := json.Unmarshal(contentBytes, &withdrawRewardContent)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while unmarshaling portal withdraw reward content: %+v", err)
+		return nil, nil
+	}
+	if withdrawRewardContent.ShardID != shardID {
+		return nil, nil
+	}
+
+	meta := metadata.NewPortalWithdrawRewardResponse(
+		withdrawRewardContent.TxReqID,
+		withdrawRewardContent.CustodianAddressStr,
+		withdrawRewardContent.RewardAmount,
+		metadata.PortalRequestWithdrawRewardResponseMeta,
+	)
+
+	keyWallet, err := wallet.Base58CheckDeserialize(withdrawRewardContent.CustodianAddressStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while deserializing custodian address string: %+v", err)
+		return nil, nil
+	}
+	receiverAddr := keyWallet.KeySet.PaymentAddress
+
+	// the returned currency is PRV
+	resTx := new(transaction.Tx)
+	err = resTx.InitTxSalary(
+		withdrawRewardContent.RewardAmount,
+		&receiverAddr,
+		producerPrivateKey,
+		blockGenerator.chain.config.DataBase,
+		meta,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing withdraw portal reward tx: %+v", err)
+		return nil, nil
+	}
+	return resTx, nil
+}

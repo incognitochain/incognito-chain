@@ -61,6 +61,7 @@ const (
 
 	PortalRewardMeta = 116
 	PortalRequestWithdrawRewardMeta = 117
+	PortalRequestWithdrawRewardResponseMeta = 118
 
 	// relaying
 	RelayingBNBHeaderMeta = 200
@@ -82,6 +83,7 @@ var minerCreatedMetaTypes = []int{
 	PortalRedeemRequestResponseMeta,
 	PortalCustodianWithdrawResponseMeta,
 	PortalLiquidateCustodianResponseMeta,
+	PortalRequestWithdrawRewardResponseMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
