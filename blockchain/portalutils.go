@@ -26,6 +26,7 @@ type CurrentPortalState struct {
 	WaitingPortingRequests map[string]*lvdb.PortingRequest       // key : beaconHeight || UniquePortingID
 	WaitingRedeemRequests  map[string]*lvdb.RedeemRequest        // key : beaconHeight || UniqueRedeemID
 	FinalExchangeRates     map[string]*lvdb.FinalExchangeRates   // key : beaconHeight || TxID
+	LiquidateExchangeRates     map[string]*lvdb.LiquidateExchangeRates   // key : beaconHeight || TxID
 }
 
 type CustodianStateSlice struct {
@@ -142,6 +143,24 @@ func NewCustodianWithdrawRequest(
 	}, nil
 }
 
+func NewLiquidateTopPercentileExchangeRates(
+	tPValue map[string]int,
+	custodianAddress string,
+	liquidateFreeCollateral map[string]uint64,
+	liquidatePubToken map[string]uint64,
+	exchangeRates lvdb.FinalExchangeRates,
+	status string,
+) (*lvdb.LiquidateTopPercentileExchangeRates, error)  {
+	return &lvdb.LiquidateTopPercentileExchangeRates{
+		TPValue:                 tPValue,
+		CustodianAddress:        custodianAddress,
+		LiquidateFreeCollateral: liquidateFreeCollateral,
+		LiquidatePubToken:       liquidatePubToken,
+		ExchangeRates:           exchangeRates,
+		Status:                  status,
+	}, nil
+}
+
 func InitCurrentPortalStateFromDB(
 	db database.DatabaseInterface,
 	beaconHeight uint64,
@@ -163,13 +182,19 @@ func InitCurrentPortalStateFromDB(
 	if err != nil {
 		return nil, err
 	}
-	//todo: create total PRV liquidation
+
+	liquidateExchangeRates, err := getLiquidateExchangeRates(db, beaconHeight)
+	if err != nil {
+		return nil, err
+	}
+
 	return &CurrentPortalState{
 		CustodianPoolState:     custodianPoolState,
 		WaitingPortingRequests: waitingPortingReqs,
 		WaitingRedeemRequests:  waitingRedeemReqs,
 		FinalExchangeRates:     finalExchangeRates,
 		ExchangeRatesRequests:  make(map[string]*lvdb.ExchangeRatesRequest),
+		LiquidateExchangeRates:  liquidateExchangeRates,
 	}, nil
 }
 
@@ -379,6 +404,31 @@ func getFinalExchangeRates(
 	}
 
 	return finalExchangeRates, nil
+}
+
+func getLiquidateExchangeRates(
+	db database.DatabaseInterface,
+	beaconHeight uint64,
+) (map[string]*lvdb.LiquidateExchangeRates, error) {
+	liquidateExchangeRates := make(map[string]*lvdb.LiquidateExchangeRates)
+
+	//note: key for get data
+	liquidateExchangeRatesKeysBytes, liquidateExchangeRatesValueBytes, err := db.GetAllRecordsPortalByPrefix(beaconHeight, lvdb.PortalLiquidateExchangeRatesPrefix)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for idx, liquidateExchangeRatesKeyBytes := range liquidateExchangeRatesKeysBytes {
+		var items lvdb.LiquidateExchangeRates
+		err = json.Unmarshal(liquidateExchangeRatesValueBytes[idx], &items)
+		if err != nil {
+			return nil, err
+		}
+		liquidateExchangeRates[string(liquidateExchangeRatesKeyBytes)] = &items
+	}
+
+	return liquidateExchangeRates, nil
 }
 
 func GetFinalExchangeRatesByKey(
@@ -709,6 +759,21 @@ func down150Percent(amount uint64) uint64 {
 	return uint64(roundNumber)
 }
 
+/**
+	return (isTP120, isWarning)
+ */
+func isTP120(tpValue int) (bool, bool) {
+	if  tpValue > common.TP120 && tpValue <= common.TP130 {
+		return false, true
+	}
+
+	if  tpValue <= common.TP120 {
+		return true, true
+	}
+
+	return false, false
+}
+
 /*
 total1: total ptoken was converted ex: 1BNB = 1000 PRV
 total2: total prv (was up 150%)
@@ -720,6 +785,7 @@ total2: total prv (was up 150%)
 
 */
 func calculatePercentMinAspectRatio(total1 uint64, total2 uint64) int {
+	//todo: divide zero
 	percentUp := total2 * 100 / total1
 	roundNumber := math.Round(float64(percentUp))
 	return int(roundNumber)

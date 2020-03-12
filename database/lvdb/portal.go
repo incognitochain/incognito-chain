@@ -83,8 +83,23 @@ type CustodianWithdrawRequest struct {
 	RemainCustodianFreeCollateral uint64
 }
 
+type LiquidateTopPercentileExchangeRates struct {
+	TPValue map[string]int
+	CustodianAddress string
+	LiquidateFreeCollateral map[string]uint64
+	LiquidatePubToken map[string]uint64
+	ExchangeRates FinalExchangeRates
+	Status string
+}
+
+type LiquidateExchangeRates struct {
+	CustodianAddress string
+	HoldAmountFreeCollateral map[string]int
+	HoldAmountPubToken map[string]int
+}
+
 func NewCustodianWithdrawRequest(txHash string) string {
-	key := append(PortalCustodianWithdrawTxPrefix, []byte(txHash)...)
+	key := append(PortalCustodianWithdrawPrefix, []byte(txHash)...)
 	return string(key)
 }
 
@@ -542,6 +557,46 @@ func (db *db) GetLiquidateCustodian(redeemID string, custodianIncAddrStr string)
 	return db.GetItemPortalByKey([]byte(key))
 }
 
+func NewPortalLiquidateTPExchangeRatesKey(beaconHeight uint64, custodianIncAddrStr string) string {
+	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+	key := append(PortalLiquidateTopPercentileExchangeRatesPrefix, beaconHeightBytes...)
+	key = append(key, []byte(custodianIncAddrStr)...)
+	return string(key)
+}
+
+func NewPortalLiquidateExchangeRatesKey(beaconHeight uint64) string {
+	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+	key := append(PortalLiquidateExchangeRatesPrefix, beaconHeightBytes...)
+	key = append(key, []byte("liquidation")...)
+	return string(key)
+}
+
+func (db *db) StoreLiquidateExchangeRates(keyId []byte, content interface{}) error  {
+	contributionBytes, err := json.Marshal(content)
+	if err != nil {
+		return err
+	}
+
+	err = db.Put(keyId, contributionBytes)
+	if err != nil {
+		return database.NewDatabaseError(database.StoreLiquidateTopPercentileExchangeRatesError, errors.Wrap(err, "db.lvdb.put"))
+	}
+
+	return nil
+}
+
+func (db *db) StoreLiquidateTopPercentileExchangeRates(keyId []byte, content interface{}) error  {
+	contributionBytes, err := json.Marshal(content)
+	if err != nil {
+		return err
+	}
+
+	err = db.Put(keyId, contributionBytes)
+	if err != nil {
+		return database.NewDatabaseError(database.StoreLiquidateTopPercentileExchangeRatesError, errors.Wrap(err, "db.lvdb.put"))
+	}
+	return nil
+}
 
 // NewPortalRewardKey creates key for storing portal reward by beacon height
 func NewPortalRewardKey(beaconHeight uint64) string {

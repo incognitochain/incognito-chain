@@ -81,12 +81,12 @@ var (
 	PortalRedeemRequestsPrefix          = []byte("portalredeemrequest-")
 	PortalRedeemRequestsByTxReqIDPrefix = []byte("portalredeemrequestbytxid-")
 	PortalRequestUnlockCollateralPrefix = []byte("portalrequestunlockcollateral-")
-
-	PortalCustodianWithdrawTxPrefix = []byte("portalcustodianwithdrawtx-")
-	PortalCustodianWithdrawPrefix   = []byte("portalcustodianwithdraw-")
+	PortalCustodianWithdrawPrefix 		= []byte("portalcustodianwithdraw-")
 
 	// liquidation in portal
 	PortalLiquidateCustodianPrefix = []byte("portalliquidatecustodian-")
+	PortalLiquidateTopPercentileExchangeRatesPrefix = []byte("portalliquidatetoppercentileexchangerates-")
+	PortalLiquidateExchangeRatesPrefix = []byte("portalliquidateexchangerates-")
 
 	// reward in portal
 	PortalRewardByBeaconHeightPrefix  = []byte("portalreward-")

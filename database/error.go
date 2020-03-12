@@ -126,6 +126,8 @@ const (
 
 	StorePortalCustodianWithdrawRequestStateError
 	TrackLiquidateCustodianError
+	StoreLiquidateTopPercentileExchangeRatesError
+	StoreLiquidateExchangeRatesError
 
 	StorePortalRewardError
 
@@ -258,6 +260,8 @@ var ErrCodeMessage = map[int]struct {
 	StorePortalCustodianWithdrawRequestStateError: {-14018, "Store portal custodian withdraw request error"},
 	TrackLiquidateCustodianError:                  {-14019, "Track liquidation custodian error"},
 	StorePortalRewardError:                        {-14020, "Store portal reward error"},
+	StoreLiquidateTopPercentileExchangeRatesError: {-14021, "Store liquidate top percentile exchange rates error"},
+	StoreLiquidateExchangeRatesError: {-14022, "Store liquidate exchange rates error"},
 
 	// relaying
 	StoreRelayingBNBHeaderError: {-15001, "Store relaying header bnb error"},

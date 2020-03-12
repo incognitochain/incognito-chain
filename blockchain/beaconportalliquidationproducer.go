@@ -40,17 +40,13 @@ func buildCustodianRunAwayLiquidationInst(
 }
 
 func buildTopPercentileExchangeRatesLiquidationInst(
-	tpValue map[string]int,
 	custodianAddress string,
-	exchangeRates lvdb.FinalExchangeRates,
 	metaType int,
 	shardID byte,
 	status string,
 ) []string {
-	tpContent := metadata.TopPercentileExchangeRatesLiquidationContent{
-		TPValue: tpValue,
+	tpContent := metadata.PortalLiquidateTopPercentileExchangeRatesContent{
 		CustodianAddress: custodianAddress,
-		ExchangeRates: exchangeRates,
 		MetaType: metaType,
 		Status: status,
 		ShardID:                shardID,
@@ -58,7 +54,7 @@ func buildTopPercentileExchangeRatesLiquidationInst(
 	tpContentBytes, _ := json.Marshal(tpContent)
 	return []string{
 		strconv.Itoa(metaType),
-		strconv.Itoa(int(shardID)),
+		strconv.Itoa(int(shardID)), //todo: shardId found
 		status,
 		string(tpContentBytes),
 	}
@@ -225,14 +221,13 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 
 	custodianPoolState := currentPortalState.CustodianPoolState
 
-	for custodianKey, v := range custodianPoolState {
-		result, err := detectMinAspectRatio(v.HoldingPubTokens, v.LockedAmountCollateral, exchangeRate)
+	for custodianKey, custodianState := range custodianPoolState {
+		//todo: check custodian is processing deposit
+		result, err := detectMinAspectRatio(custodianState.HoldingPubTokens, custodianState.LockedAmountCollateral, exchangeRate)
 		if err != nil {
 			Logger.log.Errorf("Detect TP exchange rates error %v", err)
 			inst := buildTopPercentileExchangeRatesLiquidationInst(
-				nil,
-				v.IncognitoAddress,
-				*exchangeRate,
+				custodianState.IncognitoAddress,
 				metadata.PortalLiquidateTPExchangeRatesMeta,
 				0, //todo: find shard id
 				common.PortalLiquidateTPExchangeRatesFailedChainStatus,
@@ -242,41 +237,28 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 		}
 
 		tpList := make(map[string]int)
+		newCustodian := custodianState
 		for ptoken, tpValue := range result {
-			if  tpValue > common.TP120 && tpValue <= common.TP130 {
+			if isTp120, ok := isTP120(tpValue); ok {
 				tpList[ptoken] = tpValue
-				continue
-			}
-
-			if  tpValue <= common.TP120 {
-				tpList[ptoken] = tpValue
-
-				//exec liquidation
-				//update custodian
-				lockAmount := v.LockedAmountCollateral[ptoken]
-				//holdPubtokens := v.HoldingPubTokens[ptoken]
-
-				newCustodian := v
-				newCustodian.LockedAmountCollateral[ptoken] = 0
-				newCustodian.HoldingPubTokens[ptoken] = 0
-				newCustodian.TotalCollateral = newCustodian.TotalCollateral - lockAmount
-
-				currentPortalState.CustodianPoolState[custodianKey] = newCustodian
-
-				//todo: update liquidationState
-				continue
+				if isTp120 {
+					newCustodian.LockedAmountCollateral[ptoken] = 0
+					newCustodian.HoldingPubTokens[ptoken] = 0
+					newCustodian.TotalCollateral = newCustodian.TotalCollateral - custodianState.LockedAmountCollateral[ptoken]
+					//todo: update final liquidate
+				}
 			}
 		}
 
 		if len(tpList) > 0 {
 			inst := buildTopPercentileExchangeRatesLiquidationInst(
-				tpList,
-				v.IncognitoAddress,
-				*exchangeRate,
+				custodianState.IncognitoAddress,
 				metadata.PortalLiquidateTPExchangeRatesMeta,
 				0, //todo: find shard id
 				common.PortalLiquidateTPExchangeRatesSuccessChainStatus,
 			)
+
+			currentPortalState.CustodianPoolState[custodianKey] = newCustodian
 			insts = append(insts, inst)
 		}
 	}
