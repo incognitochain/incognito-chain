@@ -15,12 +15,12 @@ const (
 	RANDOM_NUMBER                 = 3
 	SHARD_BLOCK_VERSION           = 1
 	BEACON_BLOCK_VERSION          = 1
-	DefaultMaxBlkReqPerPeer       = 600
-	DefaultMaxBlkReqPerTime       = 1200
+	DefaultMaxBlkReqPerPeer       = 900
+	DefaultMaxBlkReqPerTime       = 900
 	MinCommitteeSize              = 3                // min size to run bft
 	DefaultBroadcastStateTime     = 6 * time.Second  // in second
 	DefaultStateUpdateTime        = 8 * time.Second  // in second
-	DefaultMaxBlockSyncTime       = 10 * time.Second // in second
+	DefaultMaxBlockSyncTime       = 30 * time.Second // in second
 	DefaultCacheCleanupTime       = 40 * time.Second // in second
 	WorkerNumber                  = 5
 	MAX_S2B_BLOCK                 = 30

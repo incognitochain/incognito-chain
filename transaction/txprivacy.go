@@ -121,7 +121,7 @@ func validateTxInit(params *TxPrivacyInitParams) error {
 		params.tokenID = &common.Hash{}
 		err := params.tokenID.SetBytes(common.PRVCoinID[:])
 		if err != nil {
-			return NewTransactionErr(TokenIDInvalidError, err, params.tokenID.GetBytes())
+			return NewTransactionErr(TokenIDInvalidError, err, params.tokenID.String())
 		}
 	}
 	return nil
@@ -966,7 +966,7 @@ func (tx *Tx) InitTxSalary(
 		tokenID := &common.Hash{}
 		err := tokenID.SetBytes(common.PRVCoinID[:])
 		if err != nil {
-			return NewTransactionErr(TokenIDInvalidError, err)
+			return NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
 		}
 		ok, err := CheckSNDerivatorExistence(tokenID, sndOut, db)
 		if err != nil {
@@ -1023,7 +1023,7 @@ func (tx Tx) ValidateTxSalary(
 	tokenID := &common.Hash{}
 	err = tokenID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
-		return false, NewTransactionErr(TokenIDInvalidError, err)
+		return false, NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
 	}
 	if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[0].CoinDetails.GetSNDerivator(), db); ok || err != nil {
 		return false, err

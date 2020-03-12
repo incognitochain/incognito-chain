@@ -183,6 +183,10 @@ const (
 
 	// get burning address
 	getBurningAddress = "getburningaddress"
+
+	// incognito mode for sc
+	getBurnProofForDepositToSC                = "getburnprooffordeposittosc"
+	createAndSendBurningForDepositToSCRequest = "createandsendburningfordeposittoscrequest"
 )
 
 const (
