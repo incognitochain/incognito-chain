@@ -216,7 +216,7 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 	}
 	committeeChange := newCommitteeChange()
 	committeeChange.shardCommitteeAdded[shardID] = tempShardBestState.GetShardCommittee()
-	err = blockchain.processStoreShardBlock(&initShardBlock, committeeChange)
+	err = blockchain.processStoreShardBlock(initShardState, &initShardBlock, committeeChange)
 	if err != nil {
 		return err
 	}
@@ -273,7 +273,8 @@ func (blockchain *BlockChain) initBeaconState() error {
 	}
 
 	// Insert new block into beacon chain
-	if err := blockchain.BackupBeaconViews(nil); err != nil {
+	blockchain.BeaconChain.multiView.AddView(initBeaconBestState)
+	if err := blockchain.BackupBeaconViews(); err != nil {
 		Logger.log.Error("Error Store best state for block", blockchain.GetBeaconBestState().BestBlockHash, "in beacon chain")
 		return NewBlockChainError(UnExpectedError, err)
 	}
@@ -442,6 +443,80 @@ func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
 			log.Printf("Finish Backup Beacon with Block %+v", i)
 		}
 	}
+	return nil
+}
+
+//TODO:
+// current implement: backup all view data
+// Optimize: backup view -> backup view hash instead of view
+// restore: get view from hash and create new view, then insert into multiview
+/*
+Backup all BeaconView into Database
+*/
+func (blockchain *BlockChain) BackupBeaconViews() error {
+	allViews := []*BeaconBestState{}
+	for _, v := range blockchain.BeaconChain.multiView.GetAllViewsWithBFS() {
+		allViews = append(allViews, v.(*BeaconBestState))
+	}
+	//b, _ := json.Marshal(allViews)
+	//return blockchain.config.DataBase.StoreBeaconViews(b)
+	return nil
+}
+
+/*
+Restart all BeaconView from Database
+*/
+func (blockchain *BlockChain) RestoreBeaconViews() error {
+	allViews := []*BeaconBestState{}
+	//b, err := blockchain.config.DataBase.FetchBeaconViews()
+	//if err != nil {
+	//	return err
+	//}
+	//err = json.Unmarshal(b, &allViews)
+	//if err != nil {
+	//	return err
+	//}
+	for _, v := range allViews {
+		if !blockchain.BeaconChain.multiView.AddView(v) {
+			panic("Restart beacon views fail")
+		}
+	}
+	return nil
+}
+
+/*
+Backup shard views
+*/
+func (blockchain *BlockChain) BackupShardViews(shardID byte) error {
+	allViews := []*ShardBestState{}
+	for _, v := range blockchain.ShardChain[shardID].multiView.GetAllViewsWithBFS() {
+		allViews = append(allViews, v.(*ShardBestState))
+	}
+	fmt.Println("debug BackupShardViews", len(allViews))
+	//b, _ := json.Marshal(allViews)
+	//return blockchain.config.DataBase.StoreShardViews(b, shardID)
+	return nil
+}
+
+/*
+Restart all BeaconView from Database
+*/
+func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
+	allViews := []*ShardBestState{}
+	//b, err := blockchain.config.DataBase.FetchShardViews(shardID)
+	//if err != nil {
+	//	return err
+	//}
+	//err = json.Unmarshal(b, &allViews)
+	//if err != nil {
+	//	return err
+	//}
+	for _, v := range allViews {
+		if !blockchain.ShardChain[shardID].multiView.AddView(v) {
+			panic("Restart shard views fail")
+		}
+	}
+	fmt.Println("debug restore shard view: ", len(allViews))
 	return nil
 }
 

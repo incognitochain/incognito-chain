@@ -152,7 +152,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	}
 	Logger.log.Infof("SHARD %+v | Store New Shard Block And Update Data, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
 	//========Store new  Shard block and new shard bestState
-	err = blockchain.processStoreShardBlock(shardBlock, committeeChange)
+	err = blockchain.processStoreShardBlock(newBestState, shardBlock, committeeChange)
 	if err != nil {
 
 		return err
@@ -930,7 +930,7 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(shardID byte, txs []
 //	- Store incoming cross shard block
 //	- Store Burning Confirmation
 //	- Update Mempool fee estimator
-func (blockchain *BlockChain) processStoreShardBlock(shardBlock *ShardBlock, committeeChange *committeeChange) error {
+func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestState, shardBlock *ShardBlock, committeeChange *committeeChange) error {
 	shardID := shardBlock.Header.ShardID
 	blockHeight := shardBlock.Header.Height
 	blockHash := shardBlock.Header.Hash()
@@ -1070,9 +1070,13 @@ func (blockchain *BlockChain) processStoreShardBlock(shardBlock *ShardBlock, com
 	if err := rawdbv2.StoreShardBlockIndex(blockchain.GetDatabase(), shardID, blockHeight, blockHash); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
-	if err := rawdbv2.StoreShardBestState(blockchain.GetDatabase(), shardID, tempShardBestState); err != nil {
-		return NewBlockChainError(StoreBestStateError, err)
+
+	blockchain.ShardChain[shardBlock.Header.ShardID].multiView.AddView(newShardState)
+	err = blockchain.BackupShardViews(shardBlock.Header.ShardID)
+	if err != nil {
+		panic("Backup shard view error")
 	}
+
 	Logger.log.Infof("SHARD %+v | 🔎 %d transactions in block height %+v \n", shardBlock.Header.ShardID, len(shardBlock.Body.Transactions), blockHeight)
 	return nil
 }

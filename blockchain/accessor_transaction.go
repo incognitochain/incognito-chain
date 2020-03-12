@@ -130,7 +130,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 			Logger.log.Infof("Coin ID %+v", *coinID)
 			Logger.log.Infof("Amount Request %+v", amountRes)
 			Logger.log.Infof("Temp Public Key %+v", tempPublicKey)
-			amount, err := statedb.GetCommitteeReward(blockchain.BestState.Shard[shardBlock.Header.ShardID].GetCopiedRewardStateDB(), tempPublicKey, requestMeta.TokenID)
+			amount, err := statedb.GetCommitteeReward(blockchain.GetBestStateShard(shardBlock.Header.ShardID).GetCopiedRewardStateDB(), tempPublicKey, requestMeta.TokenID)
 			if (amount == 0) || (err != nil) {
 				return errors.Errorf("Invalid request %v, amount from db %v, error %v", requester, amount, err)
 			}
@@ -232,11 +232,9 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(transa
 //in case payment-address: return all outputcoin tx with no amount value
 //- Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
 func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash) ([]*privacy.OutputCoin, error) {
-	blockchain.BestState.Shard[shardID].lock.Lock()
-	defer blockchain.BestState.Shard[shardID].lock.Unlock()
 	var outCointsInBytes [][]byte
 	var err error
-	transactionStateDB := blockchain.BestState.Shard[shardID].transactionStateDB
+	transactionStateDB := blockchain.GetBestStateShard(shardID).transactionStateDB
 	if keyset == nil {
 		return nil, NewBlockChainError(GetListOutputCoinsByKeysetError, fmt.Errorf("invalid key set, got keyset %+v", keyset))
 	}
