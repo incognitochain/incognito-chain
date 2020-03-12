@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/multiview"
+	"strings"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -310,4 +311,41 @@ func (chain *BeaconChain) UnmarshalBlock(blockString []byte) (common.BlockInterf
 		return nil, err
 	}
 	return &beaconBlk, nil
+}
+
+//validate all type of signature, including producer, proposer and agg sig
+func (chain *BeaconChain) ValidateBlockSignature(version int, blk common.BlockInterface, shardCommittee []incognitokey.CommitteePublicKey) (err error) {
+
+	//check producer,proposer,agg sig with this version
+	if version == 1 {
+		//validate producer
+		producer := blk.GetProducer()
+		tmpProducer, _ := shardCommittee[0].ToBase58()
+		if tmpProducer != producer {
+			return NewBlockChainError(ProducerError, fmt.Errorf("Producer should be should be %+v", tmpProducer))
+		}
+	} else {
+
+		//validate producer
+		producer := blk.GetProducer()
+		produceTime := blk.GetProduceTime()
+		tempProducer := GetProposerByTimeSlot(common.CalculateTimeSlot(produceTime), shardCommittee)
+		b58Str, _ := tempProducer.ToBase58()
+		if strings.Compare(b58Str, producer) != 0 {
+			return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", b58Str, producer))
+		}
+
+		//validate proposer
+		proposer := blk.GetProposer()
+		proposeTime := blk.GetProposeTime()
+		tempProducer = GetProposerByTimeSlot(common.CalculateTimeSlot(proposeTime), shardCommittee)
+		b58Str, _ = tempProducer.ToBase58()
+		if strings.Compare(b58Str, proposer) != 0 {
+			return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Proposer Public Key to be equal but get %+v From Index, %+v From Header", b58Str, proposer))
+		}
+	}
+
+	//validate agg sig
+	return chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(blk, shardCommittee, common.BlsConsensus)
+
 }

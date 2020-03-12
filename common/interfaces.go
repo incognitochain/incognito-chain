@@ -27,10 +27,6 @@ type BlockInterface interface {
 	GetInstructions() [][]string
 	GetConsensusType() string
 	GetCurrentEpoch() uint64
-}
-
-type ConsensusBlockInterface interface {
-	BlockInterface
 	GetProduceTime() int64
 	GetProposeTime() int64
 	GetPrevHash() Hash

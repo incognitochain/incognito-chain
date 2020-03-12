@@ -281,7 +281,10 @@ func (shardBestState *ShardBestState) GetCommittee() []incognitokey.CommitteePub
 }
 
 func (shardBestState *ShardBestState) GetProposerByTimeSlot(ts int64) incognitokey.CommitteePublicKey {
-	id := int(ts) % len(shardBestState.ShardCommittee)
-	//fmt.Println("debug GetProposerByTimeSlot", len(shardBestState.ShardCommittee), int(ts), id)
-	return shardBestState.ShardCommittee[id]
+	return GetProposerByTimeSlot(ts, shardBestState.ShardCommittee)
+}
+
+func GetProposerByTimeSlot(ts int64, shardCommittee []incognitokey.CommitteePublicKey) incognitokey.CommitteePublicKey {
+	id := int(ts) % len(shardCommittee)
+	return shardCommittee[id]
 }

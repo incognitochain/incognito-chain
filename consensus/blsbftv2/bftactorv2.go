@@ -33,9 +33,9 @@ type BLSBFT_V2 struct {
 	ProposeMessageCh chan BFTPropose
 	VoteMessageCh    chan BFTVote
 
-	receiveBlockByHeight map[uint64][]*ProposeBlockInfo            //blockHeight -> blockInfo
-	receiveBlockByHash   map[string]*ProposeBlockInfo              //blockHash -> blockInfo
-	voteHistory          map[uint64]common.ConsensusBlockInterface // bestview height (previsous height )-> block
+	receiveBlockByHeight map[uint64][]*ProposeBlockInfo   //blockHeight -> blockInfo
+	receiveBlockByHash   map[string]*ProposeBlockInfo     //blockHash -> blockInfo
+	voteHistory          map[uint64]common.BlockInterface // bestview height (previsous height )-> block
 }
 
 func (e BLSBFT_V2) GetChainKey() string {
@@ -51,7 +51,7 @@ func (e BLSBFT_V2) IsOngoing() bool {
 }
 
 type ProposeBlockInfo struct {
-	block      common.ConsensusBlockInterface
+	block      common.BlockInterface
 	votes      map[string]BFTVote //pk->BFTVote
 	isValid    bool
 	hasNewVote bool
@@ -85,7 +85,7 @@ func (e *BLSBFT_V2) Start() error {
 	e.VoteMessageCh = make(chan BFTVote)
 	e.receiveBlockByHash = make(map[string]*ProposeBlockInfo)
 	e.receiveBlockByHeight = make(map[uint64][]*ProposeBlockInfo)
-	e.voteHistory = make(map[uint64]common.ConsensusBlockInterface)
+	e.voteHistory = make(map[uint64]common.BlockInterface)
 	var err error
 	e.proposeHistory, err = lru.New(1000)
 	if err != nil {
@@ -113,7 +113,7 @@ func (e *BLSBFT_V2) Start() error {
 					e.Logger.Info(err)
 					continue
 				}
-				block := blockIntf.(common.ConsensusBlockInterface)
+				block := blockIntf.(common.BlockInterface)
 				blkHash := block.Hash().String()
 
 				if _, ok := e.receiveBlockByHash[blkHash]; !ok {
@@ -431,7 +431,7 @@ func (e *BLSBFT_V2) proposeBlock(proposerPk incognitokey.CommitteePublicKey, blo
 	}
 
 	if block != nil {
-		e.Logger.Info("create block", block.GetHeight(), block.Hash().String(), block.(common.ConsensusBlockInterface).GetProposeTime(), block.(common.ConsensusBlockInterface).GetProduceTime())
+		e.Logger.Info("create block", block.GetHeight(), block.Hash().String(), block.(common.BlockInterface).GetProposeTime(), block.(common.BlockInterface).GetProduceTime())
 	} else {
 		e.Logger.Info("create block", time.Since(time1).Seconds())
 		return nil, NewConsensusError(BlockCreationError, errors.New("block creation timeout"))

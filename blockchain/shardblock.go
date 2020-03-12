@@ -112,8 +112,24 @@ func (shardBlock *ShardBlock) BuildShardBlockBody(instructions [][]string, cross
 	shardBlock.Body.Transactions = append(shardBlock.Body.Transactions, transactions...)
 }
 
+func (crossShardBlock CrossShardBlock) GetProposer() string {
+	return crossShardBlock.Header.Proposer
+}
+
+func (crossShardBlock CrossShardBlock) GetProposeTime() int64 {
+	return crossShardBlock.Header.ProposeTime
+}
+
+func (crossShardBlock CrossShardBlock) GetProduceTime() int64 {
+	return crossShardBlock.Header.Timestamp
+}
+
 func (crossShardBlock CrossShardBlock) GetCurrentEpoch() uint64 {
 	return crossShardBlock.Header.Epoch
+}
+
+func (crossShardBlock CrossShardBlock) GetPrevHash() common.Hash {
+	return crossShardBlock.Header.PreviousBlockHash
 }
 
 func (crossShardBlock *CrossShardBlock) Hash() *common.Hash {
@@ -504,6 +520,17 @@ func (block ShardToBeaconBlock) GetInstructions() [][]string {
 	return block.Instructions
 }
 
+func (block ShardToBeaconBlock) GetProposer() string {
+	return block.Header.Proposer
+}
+
+func (block ShardToBeaconBlock) GetProposeTime() int64 {
+	return block.Header.ProposeTime
+}
+
+func (block ShardToBeaconBlock) GetProduceTime() int64 {
+	return block.Header.Timestamp
+}
 func (block ShardToBeaconBlock) GetProducer() string {
 	return block.Header.Producer
 }

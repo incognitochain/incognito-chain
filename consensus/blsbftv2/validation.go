@@ -48,7 +48,7 @@ func (e BLSBFT_V2) CreateValidationData(block common.BlockInterface) ValidationD
 	return valData
 }
 
-func (e BLSBFT_V2) validatePreSignBlock(ctx context.Context, block common.ConsensusBlockInterface) error {
+func (e BLSBFT_V2) validatePreSignBlock(ctx context.Context, block common.BlockInterface) error {
 	if err := e.ValidateProducerPosition(block); err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
@@ -61,7 +61,7 @@ func (e BLSBFT_V2) validatePreSignBlock(ctx context.Context, block common.Consen
 	return nil
 }
 
-func (e *BLSBFT_V2) ValidateProducerPosition(block common.ConsensusBlockInterface) error {
+func (e *BLSBFT_V2) ValidateProducerPosition(block common.BlockInterface) error {
 	view := e.Chain.GetViewByHash(block.GetPrevHash())
 	if view == nil {
 		return errors.New("No view in chain")
