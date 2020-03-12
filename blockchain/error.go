@@ -164,6 +164,15 @@ const (
 	NotEnoughRewardError
 	InitPDETradeResponseTransactionError
 	ProcessPDEInstructionError
+	InitBeaconStateError
+	GetListOutputCoinsByKeysetError
+	ProcessSalaryInstructionsError
+	GetShardIDFromTxError
+	GetValueFromTxError
+	ValidateBlockWithPreviousShardBestStateError
+	ValidateBlockWithPreviousBeaconBestStateError
+	BackUpShardStateError
+	BackupCurrentBeaconStateError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -313,6 +322,15 @@ var ErrCodeMessage = map[int]struct {
 	NotEnoughRewardError:                              {-1140, "Not enough reward Error"},
 	InitPDETradeResponseTransactionError:              {-1141, "Init PDE trade response tx Error"},
 	ProcessPDEInstructionError:                        {-1142, "Process PDE instruction Error"},
+	InitBeaconStateError:                              {-1143, "Init Beacon State Error"},
+	ProcessSalaryInstructionsError:                    {-1144, "Proccess Salary Instruction Error"},
+	GetShardIDFromTxError:                             {-1145, "Get ShardID From Tx Error"},
+	GetValueFromTxError:                               {-1146, "Get Value From Tx Error"},
+	ValidateBlockWithPreviousShardBestStateError:      {-1147, "Validate Block With Previous Shard Best State Error"},
+	BackUpShardStateError:                             {-1148, "Back Up Shard State Error"},
+	ValidateBlockWithPreviousBeaconBestStateError:     {-1149, "Validate Block With Previous Beacon Best State Error"},
+	BackupCurrentBeaconStateError:                     {-1150, "Backup Current Beacon State Error"},
+	GetListOutputCoinsByKeysetError:                   {-2000, "Get List Output Coins By Keyset Error"},
 }
 
 type BlockChainError struct {

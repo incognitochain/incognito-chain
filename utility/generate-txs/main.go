@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/incognitochain/incognito-chain/database"
-	_ "github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/incdb"
+	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -17,7 +17,7 @@ import (
 func main() {
 	//==========Write
 	transactions := []string{}
-	db, err := database.Open("leveldb", filepath.Join("./", "./"))
+	db, err := incdb.Open("leveldb", filepath.Join("./", "./"))
 	if err != nil {
 		fmt.Print("could not open connection to leveldb")
 		fmt.Print(err)
@@ -49,7 +49,7 @@ func readTxsFromFile(filename string) []string {
 	defer jsonFile.Close()
 	return result
 }
-func initTx(amount string, privateKey string, db database.DatabaseInterface) []string {
+func initTx(amount string, privateKey string, db incdb.Database) []string {
 	var initTxs []string
 	var initAmount, _ = strconv.Atoi(amount) // amount init
 	testUserkeyList := []string{

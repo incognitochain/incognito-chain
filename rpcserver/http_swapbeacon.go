@@ -3,13 +3,13 @@ package rpcserver
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/pkg/errors"
@@ -51,28 +51,22 @@ func (httpServer *HttpServer) handleGetBeaconSwapProof(params interface{}, close
 	if !ok || len(listParams) < 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
 	}
-
 	heightParam, ok := listParams[0].(float64)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("height param is invalid"))
 	}
 	height := uint64(heightParam)
-
-	db := *httpServer.config.Database
-
 	// Get proof of instruction on beacon
-	beaconInstProof, _, errProof := getSwapProofOnBeacon(height, db, httpServer.config.ConsensusEngine, metadata.BeaconSwapConfirmMeta)
+	beaconInstProof, _, errProof := getSwapProofOnBeacon(height, httpServer.GetDatabase(), httpServer.config.ConsensusEngine, metadata.BeaconSwapConfirmMeta)
 	if errProof != nil {
 		return nil, errProof
 	}
-
 	// Decode instruction to send to Ethereum without having to decode on client
 	decodedInst, err := blockchain.DecodeInstruction(beaconInstProof.inst)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 	inst := hex.EncodeToString(decodedInst)
-
 	bridgeInstProof := &swapProof{}
 	return buildProofResult(inst, beaconInstProof, bridgeInstProof, "", ""), nil
 }
@@ -81,7 +75,7 @@ func (httpServer *HttpServer) handleGetBeaconSwapProof(params interface{}, close
 // returns rpcservice.RPCError if proof not found
 func getSwapProofOnBeacon(
 	height uint64,
-	db database.DatabaseInterface,
+	db incdb.Database,
 	ce ConsensusEngine,
 	meta int,
 ) (*swapProof, *blockchain.BeaconBlock, *rpcservice.RPCError) {
@@ -101,7 +95,7 @@ func getSwapProofOnBeacon(
 		return nil, nil, rpcservice.NewRPCError(rpcservice.NoSwapConfirmInst, err)
 	}
 	block := &beaconBlock{BeaconBlock: b}
-	proof, err := buildProofForBlock(block, insts, instID, db, ce)
+	proof, err := buildProofForBlock(block, insts, instID, ce)
 	if err != nil {
 		return nil, nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -112,12 +106,19 @@ func getSwapProofOnBeacon(
 func getShardAndBeaconBlocks(
 	height uint64,
 	bc *blockchain.BlockChain,
-	db database.DatabaseInterface,
+	db incdb.Database,
 ) (*blockchain.ShardBlock, []*blockchain.BeaconBlock, error) {
 	bridgeID := byte(common.BridgeShardID)
-	bridgeBlock, err := bc.GetShardBlockByHeight(height, bridgeID)
+	bridgeBlocks, err := bc.GetShardBlockByHeight(height, bridgeID)
 	if err != nil {
 		return nil, nil, err
+	}
+	if len(bridgeBlocks) == 0 {
+		return nil, nil, fmt.Errorf("shard block bridgeID %+v, height %+v not found", bridgeID, height)
+	}
+	var bridgeBlock *blockchain.ShardBlock
+	for _, temp := range bridgeBlocks {
+		bridgeBlock = temp
 	}
 	beaconBlocks, err := getIncludedBeaconBlocks(
 		bridgeBlock.Header.Height,
@@ -150,7 +151,6 @@ func buildProofForBlock(
 	blk block,
 	insts [][]string,
 	id int,
-	db database.DatabaseInterface,
 	ce ConsensusEngine,
 ) (*swapProof, error) {
 	// Build merkle proof for instruction in bridge block
@@ -186,7 +186,7 @@ func buildProofForBlock(
 func getBeaconSwapProofOnBeacon(
 	inst []string,
 	beaconBlocks []*blockchain.BeaconBlock,
-	db database.DatabaseInterface,
+	db incdb.Database,
 	ce ConsensusEngine,
 ) (*swapProof, error) {
 	// Get beacon block and check if it contains beacon swap instruction
@@ -197,7 +197,7 @@ func getBeaconSwapProofOnBeacon(
 
 	insts := b.Body.Instructions
 	block := &beaconBlock{BeaconBlock: b}
-	return buildProofForBlock(block, insts, instID, db, ce)
+	return buildProofForBlock(block, insts, instID, ce)
 }
 
 // getIncludedBeaconBlocks retrieves all beacon blocks included in a shard block
@@ -206,15 +206,19 @@ func getIncludedBeaconBlocks(
 	beaconHeight uint64,
 	shardID byte,
 	bc *blockchain.BlockChain,
-	db database.DatabaseInterface,
+	db incdb.Database,
 ) ([]*blockchain.BeaconBlock, error) {
-	prevShardBlock, err := bc.GetShardBlockByHeight(shardHeight-1, shardID)
+	prevShardBlocks, err := bc.GetShardBlockByHeight(shardHeight-1, shardID)
 	if err != nil {
 		return nil, err
 	}
+	var previousShardBlock *blockchain.ShardBlock
+	for _, temp := range prevShardBlocks {
+		previousShardBlock = temp
+	}
 	beaconBlocks, err := blockchain.FetchBeaconBlockFromHeight(
 		db,
-		prevShardBlock.Header.BeaconHeight+1,
+		previousShardBlock.Header.BeaconHeight+1,
 		beaconHeight,
 	)
 	if err != nil {

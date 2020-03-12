@@ -91,8 +91,7 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 
 		var err2 error
 		_, estimateFeeCoinPerKb, estimateTxSizeInKb, err2 = httpServer.txService.EstimateFee(
-			defaultFeeCoinPerKb, isGetPTokenFee, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy, nil,
-			customPrivacyTokenParam, *httpServer.config.Database, int64(beaconHeight))
+			defaultFeeCoinPerKb, isGetPTokenFee, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy, nil, customPrivacyTokenParam, int64(beaconHeight))
 		if err2 != nil {
 			return nil, rpcservice.NewRPCError(rpcservice.RejectInvalidTxFeeError, err2)
 		}
@@ -154,7 +153,7 @@ func (httpServer *HttpServer) handleEstimateFeeWithEstimator(params interface{},
 
 	beaconHeight := httpServer.blockService.BlockChain.GetBeaconBestState().BestBlock.GetHeight()
 
-	estimateFeeCoinPerKb, err := httpServer.txService.EstimateFeeWithEstimator(defaultFeeCoinPerKb, shardIDSender, numblock, tokenId, int64(beaconHeight), *httpServer.config.Database)
+	estimateFeeCoinPerKb, err := httpServer.txService.EstimateFeeWithEstimator(defaultFeeCoinPerKb, shardIDSender, numblock, tokenId, int64(beaconHeight))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}

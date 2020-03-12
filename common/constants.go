@@ -58,7 +58,8 @@ var (
 
 // special token ids (aka. PropertyID in custom token)
 var (
-	PRVCoinID = Hash{4} // To send PRV in custom token
+	PRVCoinID   = Hash{4} // To send PRV in custom token
+	PRVCoinName = "PRV"   // To send PRV in custom token
 )
 
 // CONSENSUS
@@ -130,4 +131,8 @@ const (
 
 	PDEWithdrawalAcceptedChainStatus = "accepted"
 	PDEWithdrawalRejectedChainStatus = "rejected"
+)
+
+var (
+	EmptyRoot = HexToHash("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
 )

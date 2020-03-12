@@ -3,6 +3,9 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"math/rand"
 	"sort"
 	"strconv"
@@ -10,50 +13,47 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
 )
 
-/*
-	Create New block Shard
-	1. Identify Beacon State for this Shard Block: Beacon Hash & Beacon Height & Epoch
-		+ Get Beacon Block (B) from Beacon Best State (from Beacon Chain of Shard Node)
-		+ Beacon Block (B) must have the same epoch With New Shard Block (S):
-		+ If Beacon Block (B) have different height previous shard block PS (previous of S)
-		Then Beacon Block (B) epoch greater than Shard Block (S) epoch exact 1 value
-		BUT This only works if Shard Best State have the Beacon Height divisible by epoch
-		+ Ex: 1 epoch has 50 block
-		Example 1:
-			shard block with
-				height 10,
-				epoch: 1,
-				beacon block height: 49
-			then shard block with
-				height 11 must have
-				epoch: 1,
-				beacon block height: must be 49 or 50
-		Example 2:
-			shard block with
-				height 10,
-				epoch: 1,
-				beacon block height: 50
-			then shard block with
-				height is 11 can have 2 option:
-				a. epoch: 1, if beacon block height remain 50
-				b. epoch: 2, and beacon block must in range from 51-100
-				Can have beacon block with height > 100
-	2. Build Shard Block Body:
-		a. Get Cross Transaction from other shard && Build Cross Shard Tx Custom Token Transaction (if exist)
-		b. Get Transactions for New Block
-		c. Process Assign Instructions from Beacon Blocks
-		c. Generate Instructions
-	3. Build Shard Block Essential Data for Header
-	4. Update Cloned ShardBestState with New Shard Block
-	5. Create Root Hash from New Shard Block and updated Clone Shard Beststate Data
-*/
+// NewBlockShard Create New block Shard:
+//	1. Identify Beacon State for this Shard Block: Beacon Hash & Beacon Height & Epoch
+//		+ Get Beacon Block (B) from Beacon Best State (from Beacon Chain of Shard Node)
+//		+ Beacon Block (B) must have the same epoch With New Shard Block (S):
+//		+ If Beacon Block (B) have different height previous shard block PS (previous of S)
+//		Then Beacon Block (B) epoch greater than Shard Block (S) epoch exact 1 value
+//		BUT This only works if Shard Best State have the Beacon Height divisible by epoch
+//		+ Ex: 1 epoch has 50 block
+//		Example 1:
+//			shard block with
+//				height 10,
+//				epoch: 1,
+//				beacon block height: 49
+//			then shard block with
+//				height 11 must have
+//				epoch: 1,
+//				beacon block height: must be 49 or 50
+//		Example 2:
+//			shard block with
+//				height 10,
+//				epoch: 1,
+//				beacon block height: 50
+//			then shard block with
+//				height is 11 can have 2 option:
+//				a. epoch: 1, if beacon block height remain 50
+//				b. epoch: 2, and beacon block must in range from 51-100
+//				Can have beacon block with height > 100
+//	2. Build Shard Block Body:
+//		a. Get Cross Transaction from other shard && Build Cross Shard Tx Custom Token Transaction (if exist)
+//		b. Get Transactions for New Block
+//		c. Process Assign Instructions from Beacon Blocks
+//		c. Generate Instructions
+//	3. Build Shard Block Essential Data for Header
+//	4. Update Cloned ShardBestState with New Shard Block
+//	5. Create Root Hash from New Shard Block and updated Clone Shard Beststate Data
 func (blockGenerator *BlockGenerator) NewBlockShard(version int, proposer string, shardID byte, round int, crossShards map[byte]uint64, beaconHeight uint64, start time.Time) (*ShardBlock, error) {
 	var (
 		transactionsForNewBlock = make([]metadata.Transaction, 0)
@@ -61,9 +61,8 @@ func (blockGenerator *BlockGenerator) NewBlockShard(version int, proposer string
 		newShardBlock           = NewShardBlock()
 		instructions            = [][]string{}
 		isOldBeaconHeight       = false
-		//stakingTx               = make(map[string]string)
-		tempPrivateKey = blockGenerator.createTempKeyset()
-		shardBestState = NewShardBestState()
+		tempPrivateKey          = blockGenerator.createTempKeyset()
+		shardBestState          = NewShardBestState()
 	)
 	Logger.log.Criticalf("⛏ Creating Shard Block %+v", blockGenerator.chain.GetBestStateShard(byte(shardID)).ShardHeight+1)
 	// startTime := time.Now()
@@ -82,23 +81,18 @@ func (blockGenerator *BlockGenerator) NewBlockShard(version int, proposer string
 	if err := shardBestState.cloneShardBestStateFrom(blockGenerator.chain.GetBestStateShard(byte(shardID))); err != nil {
 		return nil, err
 	}
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
-	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
-	// 	metrics.Tag:              metrics.NewShardBlockProcessingStep,
-	// 	metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, metrics.CloneShardBestStateStep),
-	// })
 	//==========Fetch Beacon Blocks============
 	// // startStep = time.Now()
 	BLogger.log.Infof("Producing block: %d", blockGenerator.chain.GetBestStateShard(byte(shardID)).ShardHeight+1)
 	if beaconHeight-shardBestState.BeaconHeight > MAX_BEACON_BLOCK {
 		beaconHeight = shardBestState.BeaconHeight + MAX_BEACON_BLOCK
 	}
-	beaconHash, err := blockGenerator.chain.config.DataBase.GetBeaconBlockHashByIndex(beaconHeight)
+	beaconHashes, err := rawdbv2.GetBeaconBlockHashByIndex(blockGenerator.chain.GetDatabase(), beaconHeight)
 	if err != nil {
 		return nil, err
 	}
-	beaconBlockBytes, err := blockGenerator.chain.config.DataBase.FetchBeaconBlock(beaconHash)
+	beaconHash := beaconHashes[0]
+	beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(blockGenerator.chain.GetDatabase(), beaconHash)
 	if err != nil {
 		return nil, err
 	}
@@ -110,16 +104,17 @@ func (blockGenerator *BlockGenerator) NewBlockShard(version int, proposer string
 	epoch := beaconBlock.Header.Epoch
 	if epoch-shardBestState.Epoch >= 1 {
 		beaconHeight = shardBestState.Epoch * blockGenerator.chain.config.ChainParams.Epoch
-		newBeaconHash, err := blockGenerator.chain.config.DataBase.GetBeaconBlockHashByIndex(beaconHeight)
+		newBeaconHashes, err := rawdbv2.GetBeaconBlockHashByIndex(blockGenerator.chain.GetDatabase(), beaconHeight)
 		if err != nil {
 			return nil, err
 		}
+		newBeaconHash := newBeaconHashes[0]
 		copy(beaconHash[:], newBeaconHash.GetBytes())
 		epoch = shardBestState.Epoch + 1
 	}
 	Logger.log.Infof("Get Beacon Block With Height %+v, Shard BestState %+v", beaconHeight, shardBestState.BeaconHeight)
 	//Fetch beacon block from height
-	beaconBlocks, err := FetchBeaconBlockFromHeight(blockGenerator.chain.config.DataBase, shardBestState.BeaconHeight+1, beaconHeight)
+	beaconBlocks, err := FetchBeaconBlockFromHeight(blockGenerator.chain.GetDatabase(), shardBestState.BeaconHeight+1, beaconHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -127,31 +122,11 @@ func (blockGenerator *BlockGenerator) NewBlockShard(version int, proposer string
 	if beaconHeight == shardBestState.BeaconHeight {
 		isOldBeaconHeight = true
 	}
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
-	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
-	// 	metrics.Tag:              metrics.NewShardBlockProcessingStep,
-	// 	metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, metrics.FetchBeaconBlockStep),
-	// })
 	//==========Build block body============
 	// Get Transaction For new Block
 	// Get Cross output coin from other shard && produce cross shard transaction
-	// // startStep = time.Now()
 	crossTransactions := blockGenerator.getCrossShardData(shardID, shardBestState.BeaconHeight, beaconHeight, crossShards)
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
-	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
-	// 	metrics.Tag:              metrics.NewShardBlockProcessingStep,
-	// 	metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, metrics.GetCrossShardDataStep),
-	// })
-	// Create Cross Token Transaction
-	// // startStep = time.Now()
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
-	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
-	// 	metrics.Tag:              metrics.NewShardBlockProcessingStep,
-	// 	metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, metrics.CreateNormalTokenTxFromCrossShardStep),
-	// })
+	Logger.log.Critical("Cross Transaction: ", crossTransactions)
 	// Get Transaction for new block
 	// // startStep = time.Now()
 	blockCreationLeftOver := blockGenerator.chain.GetBestStateShard(byte(shardID)).BlockMaxCreateTime.Nanoseconds() - time.Since(start).Nanoseconds()
@@ -159,44 +134,13 @@ func (blockGenerator *BlockGenerator) NewBlockShard(version int, proposer string
 	if err != nil {
 		return nil, err
 	}
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
-	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
-	// 	metrics.Tag:              metrics.NewShardBlockProcessingStep,
-	// 	metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, metrics.GetTransactionForNewBlockStep),
-	// })
 	transactionsForNewBlock = append(transactionsForNewBlock, txsToAddFromBlock...)
 	// build txs with metadata
-	// // startStep = time.Now()
-	transactionsForNewBlock, err = blockGenerator.chain.BuildResponseTransactionFromTxsWithMetadata(transactionsForNewBlock, &tempPrivateKey)
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
-	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
-	// 	metrics.Tag:              metrics.NewShardBlockProcessingStep,
-	// 	metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, metrics.BuildResponseTransactionFromTxsWithMetadataStep),
-	// })
-	if err != nil {
-		return nil, err
-	}
-
-	// process instruction from beacon
-	// startStep = time.Now()
-	shardPendingValidator, _ = blockGenerator.chain.processInstructionFromBeacon(beaconBlocks, shardID)
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
-	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
-	// 	metrics.Tag:              metrics.NewShardBlockProcessingStep,
-	// 	metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, metrics.ProcessInstructionFromBeaconStep),
-	// })
+	transactionsForNewBlock, err = blockGenerator.chain.BuildResponseTransactionFromTxsWithMetadata(transactionsForNewBlock, &tempPrivateKey, shardID)
+	// process instruction from beacon block
+	shardPendingValidator, _, _ = blockGenerator.chain.processInstructionFromBeacon(beaconBlocks, shardID, newCommitteeChange())
 	// Create Instruction
-	// startStep = time.Now()
 	instructions, _, _, err = blockGenerator.chain.generateInstruction(shardID, beaconHeight, isOldBeaconHeight, beaconBlocks, shardPendingValidator, currentCommitteePubKeys)
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
-	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
-	// 	metrics.Tag:              metrics.NewShardBlockProcessingStep,
-	// 	metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, metrics.GenerateInstructionStep),
-	// })
 	if err != nil {
 		return nil, NewBlockChainError(GenerateInstructionError, err)
 	}
@@ -205,7 +149,6 @@ func (blockGenerator *BlockGenerator) NewBlockShard(version int, proposer string
 	}
 	newShardBlock.BuildShardBlockBody(instructions, crossTransactions, transactionsForNewBlock)
 	//==========Build Essential Header Data=========
-	// startStep = time.Now()
 	// producer key
 	producerKey := proposer
 	producerPubKeyStr := proposer
@@ -232,7 +175,6 @@ func (blockGenerator *BlockGenerator) NewBlockShard(version int, proposer string
 	newShardBlock.Header = ShardHeader{
 		Producer:          producerKey, //committeeMiningKeys[producerPosition],
 		ProducerPubKeyStr: producerPubKeyStr,
-
 		ShardID:           shardID,
 		Version:           version,
 		PreviousBlockHash: shardBestState.BestBlockHash,
@@ -245,26 +187,13 @@ func (blockGenerator *BlockGenerator) NewBlockShard(version int, proposer string
 		TotalTxsFee:       totalTxsFee,
 		ConsensusType:     blockGenerator.chain.GetBestStateShard(byte(shardID)).ConsensusAlgorithm,
 	}
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
-	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
-	// 	metrics.Tag:              metrics.NewShardBlockProcessingStep,
-	// 	metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, metrics.BuildShardBlockHeaderEssentialStep),
-	// })
 	//============Update Shard BestState=============
 	// startStep = time.Now()
-	newShardBestState, err := shardBestState.updateShardBestState(blockGenerator.chain, newShardBlock, beaconBlocks)
+	newShardBestState, err := shardBestState.updateShardBestState(blockGenerator.chain, newShardBlock, beaconBlocks, newCommitteeChange())
 	if err != nil {
 		return nil, err
 	}
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
-	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
-	// 	metrics.Tag:              metrics.NewShardBlockProcessingStep,
-	// 	metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, metrics.UpdateShardBestStateStep),
-	// })
 	//============Build Header=============
-	// startStep = time.Now()
 	// Build Root Hash for Header
 	merkleRoots := Merkle{}.BuildMerkleTreeStore(newShardBlock.Body.Transactions)
 	merkleRoot := &common.Hash{}
@@ -322,7 +251,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(version int, proposer string
 	insts := append(flattenTxInsts, flattenInsts...) // Order of instructions must be preserved in shardprocess
 	instMerkleRoot := GetKeccak256MerkleRoot(insts)
 	// shard tx root
-	_, shardTxMerkleData := CreateShardTxRoot2(newShardBlock.Body.Transactions)
+	_, shardTxMerkleData := CreateShardTxRoot(newShardBlock.Body.Transactions)
 	// Add Root Hash To Header
 	newShardBlock.Header.TxRoot = *merkleRoot
 	newShardBlock.Header.ShardTxRoot = shardTxMerkleData[len(shardTxMerkleData)-1]
@@ -333,64 +262,28 @@ func (blockGenerator *BlockGenerator) NewBlockShard(version int, proposer string
 	newShardBlock.Header.StakingTxRoot = stakingTxRoot
 	newShardBlock.Header.Timestamp = start.Unix()
 	copy(newShardBlock.Header.InstructionMerkleRoot[:], instMerkleRoot)
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
-	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
-	// 	metrics.Tag:              metrics.NewShardBlockProcessingStep,
-	// 	metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, metrics.BuildHeaderRootHashStep),
-	// })
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
-	// 	metrics.MeasurementValue: float64(time.Since(startTime).Seconds()),
-	// 	metrics.Tag:              metrics.NewShardBlockProcessingStep,
-	// 	metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, metrics.FullProcessingStep),
-	// })
 	return newShardBlock, nil
 }
 
-// func (blockGenerator *BlockGenerator) FinalizeShardBlock(blk *ShardBlock, producerKeyset *incognitokey.KeySet) error {
-// 	// Signature of producer, sign on hash of header
-// 	blk.Header.Timestamp = time.Now().Unix()
-// 	blockHash := blk.Header.Hash()
-// 	producerSig, err := producerKeyset.SignDataInBase58CheckEncode(blockHash.GetBytes())
-// 	if err != nil {
-// 		Logger.log.Error(err)
-// 		return err
-// 	}
-// 	blk.ProducerSig = producerSig
-// 	//End Generate Signature
-// 	return nil
-// }
-
-/*
-	Get Transaction For new Block
-	1. Get pending transaction from blockgen
-	2. Keep valid tx & Removed error tx
-	3. Build response Transaction For Shard
-	4. Build response Transaction For Beacon
-	5. Return valid transaction from pending, response transactions from shard and beacon
-*/
-func (blockGenerator *BlockGenerator) getTransactionForNewBlock(privatekey *privacy.PrivateKey, shardID byte, db database.DatabaseInterface, beaconBlocks []*BeaconBlock, blockCreation int64, beaconHeight uint64) ([]metadata.Transaction, error) {
+// getTransactionForNewBlock get transaction for new block
+// 1. Get pending transaction from blockgen
+// 2. Keep valid tx & Removed error tx
+// 3. Build response Transaction For Shard
+// 4. Build response Transaction For Beacon
+// 5. Return valid transaction from pending, response transactions from shard and beacon
+func (blockGenerator *BlockGenerator) getTransactionForNewBlock(privatekey *privacy.PrivateKey, shardID byte, db incdb.Database, beaconBlocks []*BeaconBlock, blockCreation int64, beaconHeight uint64) ([]metadata.Transaction, error) {
 	txsToAdd, txToRemove, _ := blockGenerator.getPendingTransaction(shardID, beaconBlocks, blockCreation, beaconHeight)
 	if len(txsToAdd) == 0 {
 		Logger.log.Info("Creating empty block...")
 	}
 	go blockGenerator.txPool.RemoveTx(txToRemove, false)
-	// remove Pending Tx in Blockgen via Pool
-	//go func() {
-	//	for _, tx := range txToRemove {
-	//		go func() {
-	//			blockGenerator.chain.config.CRemovedTxs <- tx
-	//		}()
-	//	}
-	//}()
-	var responsedTxsBeacon []metadata.Transaction
+	var responseTxsBeacon []metadata.Transaction
 	var errInstructions [][]string
 	var cError chan error
 	cError = make(chan error)
 	go func() {
 		var err error
-		responsedTxsBeacon, errInstructions, err = blockGenerator.buildResponseTxsFromBeaconInstructions(beaconBlocks, privatekey, shardID)
+		responseTxsBeacon, errInstructions, err = blockGenerator.buildResponseTxsFromBeaconInstructions(beaconBlocks, privatekey, shardID)
 		cError <- err
 	}()
 	nilCount := 0
@@ -404,7 +297,7 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(privatekey *priv
 			break
 		}
 	}
-	txsToAdd = append(txsToAdd, responsedTxsBeacon...)
+	txsToAdd = append(txsToAdd, responseTxsBeacon...)
 	if len(errInstructions) > 0 {
 		Logger.log.Error("List error instructions, which can not create tx", errInstructions)
 	}
@@ -416,15 +309,21 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 	responsedTxs := []metadata.Transaction{}
 	responsedHashTxs := []common.Hash{} // capture hash of responsed tx
 	errorInstructions := [][]string{}   // capture error instruction -> which instruction can not create tx
+	tempAutoStakingM := make(map[uint64]map[string]bool)
 	for _, beaconBlock := range beaconBlocks {
-		autoStaking := make(map[string]bool)
-		autoStakingBytes, err := blockGenerator.chain.config.DataBase.FetchAutoStakingByHeight(beaconBlock.Header.Height)
-		if err != nil {
-			return []metadata.Transaction{}, errorInstructions, NewBlockChainError(FetchAutoStakingByHeightError, err)
-		}
-		err = json.Unmarshal(autoStakingBytes, &autoStaking)
-		if err != nil {
-			return []metadata.Transaction{}, errorInstructions, NewBlockChainError(FetchAutoStakingByHeightError, err)
+		autoStaking, ok := tempAutoStakingM[beaconBlock.Header.Height]
+		if !ok {
+			consensusStateRootHash, err := blockGenerator.chain.GetBeaconConsensusRootHash(blockGenerator.chain.GetDatabase(), beaconBlock.Header.Height)
+			if err != nil {
+				return []metadata.Transaction{}, errorInstructions, NewBlockChainError(FetchAutoStakingByHeightError, fmt.Errorf("can't get ConsensusStateRootHash of height %+v ,error %+v", beaconBlock.Header.Height, err))
+			}
+			consensusStateDB, err := statedb.NewWithPrefixTrie(consensusStateRootHash, statedb.NewDatabaseAccessWarper(blockGenerator.chain.GetDatabase()))
+			if err != nil {
+				return []metadata.Transaction{}, errorInstructions, NewBlockChainError(FetchAutoStakingByHeightError, err)
+			}
+			_, newAutoStaking := statedb.GetRewardReceiverAndAutoStaking(consensusStateDB, blockGenerator.chain.GetShardIDs())
+			tempAutoStakingM[beaconBlock.Header.Height] = newAutoStaking
+			autoStaking = newAutoStaking
 		}
 		for _, l := range beaconBlock.Body.Instructions {
 			if l[0] == SwapAction {
@@ -433,7 +332,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 					if _, ok := autoStaking[outPublicKeys]; ok {
 						continue
 					}
-					tx, err := blockGenerator.buildReturnStakingAmountTx(outPublicKeys, producerPrivateKey)
+					tx, err := blockGenerator.buildReturnStakingAmountTx(outPublicKeys, producerPrivateKey, shardID)
 					if err != nil {
 						Logger.log.Error(err)
 						continue
@@ -509,23 +408,17 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 	return responsedTxs, errorInstructions, nil
 }
 
-/*
-	Process Instruction From Beacon Blocks:
-	- Assign Instruction: get more pending validator from beacon and return new list of pending validator
-	+ ["assign" "shardCandidate1,shardCandidate2,..." "shard" "{shardID}"]
-	- stake instruction
-	+ ["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." flag]
-	+ ["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." flag]
-*/
-func (blockchain *BlockChain) processInstructionFromBeacon(beaconBlocks []*BeaconBlock, shardID byte) ([]string, map[string]string) {
-	shardBestState := blockchain.GetBestStateShard(byte(shardID))
-	shardPendingValidator := []string{}
-	if shardBestState != nil {
-		var err error
-		shardPendingValidator, err = incognitokey.CommitteeKeyListToString(shardBestState.ShardPendingValidator)
-		if err != nil {
-			panic(err)
-		}
+// Process Instruction From Beacon Blocks:
+//	- Assign Instruction: get more pending validator from beacon and return new list of pending validator
+//	 + ["assign" "shardCandidate1,shardCandidate2,..." "shard" "{shardID}"]
+//	- stake instruction format
+//	 + ["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." flag]
+//	 + ["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." flag]
+func (blockchain *BlockChain) processInstructionFromBeacon(beaconBlocks []*BeaconBlock, shardID byte, committeeChange *committeeChange) ([]string, []string, map[string]string) {
+	newShardPendingValidator := []string{}
+	shardPendingValidator, err := incognitokey.CommitteeKeyListToString(blockchain.GetBestStateShard(shardID).ShardPendingValidator)
+	if err != nil {
+		panic(err)
 	}
 
 	assignInstructions := [][]string{}
@@ -535,7 +428,9 @@ func (blockchain *BlockChain) processInstructionFromBeacon(beaconBlocks []*Beaco
 			// Process Assign Instruction
 			if l[0] == AssignAction && l[2] == "shard" {
 				if strings.Compare(l[3], strconv.Itoa(int(shardID))) == 0 {
-					shardPendingValidator = append(shardPendingValidator, strings.Split(l[1], ",")...)
+					tempNewShardPendingValidator := strings.Split(l[1], ",")
+					shardPendingValidator = append(shardPendingValidator, tempNewShardPendingValidator...)
+					newShardPendingValidator = append(newShardPendingValidator, tempNewShardPendingValidator...)
 					assignInstructions = append(assignInstructions, l)
 				}
 			}
@@ -587,19 +482,17 @@ func (blockchain *BlockChain) processInstructionFromBeacon(beaconBlocks []*Beaco
 			}
 		}
 	}
-	return shardPendingValidator, stakingTx
+	return shardPendingValidator, newShardPendingValidator, stakingTx
 }
 
-/*
-	Generate Instruction:
-	- Swap: at the end of beacon epoch
-	- Brigde: at the end of beacon epoch
-	Return params:
-	#1: instruction list
-	#2: shardpendingvalidator
-	#3: shardcommittee
-	#4: error
-*/
+//	Generate Instruction generate instruction for new shard block
+//	- Swap: at the end of beacon epoch
+//	- Brigde: at the end of beacon epoch
+//	Return params:
+//	#1: instruction list
+//	#2: shardpendingvalidator
+//	#3: shardcommittee
+//	#4: error
 func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uint64, isOldBeaconHeight bool, beaconBlocks []*BeaconBlock, shardPendingValidator []string, shardCommittee []string) ([][]string, []string, []string, error) {
 	var (
 		instructions          = [][]string{}
@@ -613,8 +506,15 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 		Logger.log.Info("ShardCommittee", shardCommittee)
 		Logger.log.Info("MaxShardCommitteeSize", blockchain.GetBestStateShard(byte(shardID)).MaxShardCommitteeSize)
 		Logger.log.Info("ShardID", shardID)
-
-		producersBlackList, err := blockchain.getUpdatedProducersBlackList(false, int(shardID), shardCommittee, beaconHeight)
+		rootHash, err := blockchain.GetBeaconSlashRootHash(blockchain.GetDatabase(), beaconHeight)
+		if err != nil {
+			return instructions, shardPendingValidator, shardCommittee, err
+		}
+		slashStateDB, err := statedb.NewWithPrefixTrie(rootHash, statedb.NewDatabaseAccessWarper(blockchain.GetDatabase()))
+		if err != nil {
+			return instructions, shardPendingValidator, shardCommittee, err
+		}
+		producersBlackList, err := blockchain.getUpdatedProducersBlackList(slashStateDB, false, int(shardID), shardCommittee, beaconHeight)
 		if err != nil {
 			Logger.log.Error(err)
 			return instructions, shardPendingValidator, shardCommittee, err
@@ -666,23 +566,21 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 	return instructions, shardPendingValidator, shardCommittee, nil
 }
 
-/*
-	getCrossShardData get cross shard data from cross shard block
-		1. Get Cross Shard Block and Validate
-			a. Get Valid Cross Shard Block from Cross Shard Pool
-			b. Get Current Cross Shard State: Last Cross Shard Block From other Shard (FS) to this shard (TS) (Ex: last cross shard block from Shard 0 to Shard 1)
-			c. Get Next Cross Shard Block Height from other Shard (FS) to this shard (TS)
-			   + Using FetchCrossShardNextHeight function in Database to determine next block height
-			d. Fetch Other Shard (FS) Committee at Next Cross Shard Block Height for Validation
-		2. Validate
-			a. Get Next Cross Shard Height from Database
-			a. Cross Shard Block Height is Next Cross Shard Height from Database (if miss Cross Shard Block according to beacon bytemap then stop discard the rest)
-			b. Verify Cross Shard Block Signature
-		4. After validation:
-			- Process valid block to extract:
-				+ Cross output coin
-				+ Cross Normal Token
-*/
+// getCrossShardData get cross shard data from cross shard block
+//  1. Get Cross Shard Block and Validate
+//	  a. Get Valid Cross Shard Block from Cross Shard Pool
+//	  b. Get Current Cross Shard State: Last Cross Shard Block From other Shard (FS) to this shard (TS) (Ex: last cross shard block from Shard 0 to Shard 1)
+//	  c. Get Next Cross Shard Block Height from other Shard (FS) to this shard (TS)
+//     + Using FetchCrossShardNextHeight function in Database to determine next block height
+//	  d. Fetch Other Shard (FS) Committee at Next Cross Shard Block Height for Validation
+//  2. Validate
+//	  a. Get Next Cross Shard Height from Database
+//	  b. Cross Shard Block Height is Next Cross Shard Height from Database (if miss Cross Shard Block according to beacon bytemap then stop discard the rest)
+//	  c. Verify Cross Shard Block Signature
+//  3. After validation:
+//	  - Process valid block to extract:
+//	   + Cross output coin
+//	   + Cross Normal Token
 func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeaconHeight uint64, currentBeaconHeight uint64, crossShards map[byte]uint64) map[byte][]CrossTransaction {
 	crossTransactions := make(map[byte][]CrossTransaction)
 	// get cross shard block
@@ -700,10 +598,11 @@ func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeacon
 		indexs := []int{}
 		startHeight := blockGenerator.chain.GetBestStateShard(toShard).BestCrossShard[fromShard]
 		for index, crossShardBlock := range crossShardBlock {
+			Logger.log.Critical("index cross shard block", index, crossShardBlock)
 			if crossShardBlock.Header.Height <= startHeight {
 				break
 			}
-			nextHeight, err := blockGenerator.chain.config.DataBase.FetchCrossShardNextHeight(fromShard, toShard, startHeight)
+			nextHeight, err := rawdbv2.GetCrossShardNextHeight(blockGenerator.chain.GetDatabase(), fromShard, toShard, startHeight)
 			if err != nil {
 				break
 			}
@@ -713,20 +612,23 @@ func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeacon
 			startHeight = nextHeight
 			beaconBlk, err := blockGenerator.chain.config.Server.FetchBeaconBlockConfirmCrossShardHeight(int(fromShard), int(toShard), nextHeight)
 			if err != nil {
+				Logger.log.Errorf("%+v", err)
 				break
 			}
-
-			temp, err := blockGenerator.chain.config.DataBase.FetchShardCommitteeByHeight(beaconBlk.GetHeight())
+			consensusStateRootHash, err := blockGenerator.chain.GetBeaconConsensusRootHash(blockGenerator.chain.GetDatabase(), beaconBlk.GetHeight())
 			if err != nil {
+				Logger.log.Errorf("Can't found ConsensusStateRootHash of beacon height %+v, error %+v", beaconBlk.GetHeight(), err)
 				break
 			}
-			shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
-			err = json.Unmarshal(temp, &shardCommittee)
+			consensusStateDB, err := statedb.NewWithPrefixTrie(consensusStateRootHash, statedb.NewDatabaseAccessWarper(blockGenerator.chain.GetDatabase()))
 			if err != nil {
+				Logger.log.Error(err)
 				break
 			}
-			err = crossShardBlock.VerifyCrossShardBlock(blockGenerator.chain, shardCommittee[crossShardBlock.Header.ShardID])
+			shardCommittee := statedb.GetOneShardCommittee(consensusStateDB, crossShardBlock.Header.ShardID)
+			err = crossShardBlock.VerifyCrossShardBlock(blockGenerator.chain, shardCommittee)
 			if err != nil {
+				Logger.log.Error(err)
 				break
 			}
 			indexs = append(indexs, index)
@@ -793,7 +695,7 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 		}
 		listBatchTxs = append(listBatchTxs, tx)
 		if ((index+1)%TransactionBatchSize == 0) || (index == len(preparedTxForNewBlock)-1) {
-			tempTxDesc, err := blockGenerator.chain.config.TempTxPool.MaybeAcceptBatchTransactionForBlockProducing(listBatchTxs, int64(beaconHeight))
+			tempTxDesc, err := blockGenerator.chain.config.TempTxPool.MaybeAcceptBatchTransactionForBlockProducing(shardID, listBatchTxs, int64(beaconHeight))
 			if err != nil {
 				Logger.log.Errorf("SHARD %+v | Verify Batch Transaction for new block error %+v", shardID, err)
 				for _, tx2 := range listBatchTxs {

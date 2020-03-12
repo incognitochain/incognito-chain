@@ -3,6 +3,7 @@ package mempool
 import (
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"math"
 	"reflect"
 	"strings"
@@ -15,7 +16,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/databasemp"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -34,7 +34,7 @@ const (
 // config is a descriptor containing the memory pool configuration.
 type Config struct {
 	BlockChain        *blockchain.BlockChain       // Block chain of node
-	DataBase          database.DatabaseInterface   // main database of blockchain
+	DataBase          incdb.Database               // main database of blockchain
 	DataBaseMempool   databasemp.DatabaseInterface // database is used for storage data in mempool into lvdb
 	ChainParams       *blockchain.Params
 	FeeEstimator      map[byte]*FeeEstimator // FeeEstimatator provides a feeEstimator. If it is not nil, the mempool records all new transactions it observes into the feeEstimator.
@@ -316,18 +316,18 @@ func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transactio
 	tempTxDesc := &txDesc.Desc
 	return tempTxDesc, err
 }
-func (tp *TxPool) MaybeAcceptBatchTransactionForBlockProducing(txs []metadata.Transaction, beaconHeight int64) ([]*metadata.TxDesc, error) {
+func (tp *TxPool) MaybeAcceptBatchTransactionForBlockProducing(shardID byte, txs []metadata.Transaction, beaconHeight int64) ([]*metadata.TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
-	_, txDesc, err := tp.maybeAcceptBatchTransaction(txs, beaconHeight)
+	_, txDesc, err := tp.maybeAcceptBatchTransaction(shardID, txs, beaconHeight)
 	return txDesc, err
 }
 
-func (tp *TxPool) maybeAcceptBatchTransaction(txs []metadata.Transaction, beaconHeight int64) ([]common.Hash, []*metadata.TxDesc, error) {
+func (tp *TxPool) maybeAcceptBatchTransaction(shardID byte, txs []metadata.Transaction, beaconHeight int64) ([]common.Hash, []*metadata.TxDesc, error) {
 	txDescs := []*metadata.TxDesc{}
 	txHashes := []common.Hash{}
 	batch := transaction.NewBatchTransaction(txs)
-	ok, err, _ := batch.Validate(tp.config.DataBase, tp.config.BlockChain)
+	ok, err, _ := batch.Validate(tp.config.BlockChain.BestState.Shard[shardID].GetCopiedTransactionStateDB(), tp.config.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB(), tp.config.BlockChain)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -439,7 +439,7 @@ func (tp *TxPool) checkFees(
 		meta := tx.GetMetadata()
 		// verify at metadata level
 		if meta != nil {
-			ok := meta.CheckTransactionFee(tx, limitFee, beaconHeight, tp.config.DataBase)
+			ok := meta.CheckTransactionFee(tx, limitFee, beaconHeight, tp.config.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB())
 			if !ok {
 				Logger.log.Errorf("Error: %+v", NewMempoolTxError(RejectInvalidFee,
 					fmt.Errorf("transaction %+v: Invalid fee metadata",
@@ -453,7 +453,7 @@ func (tp *TxPool) checkFees(
 		feePToken := tx.GetTxFeeToken()
 		//convert fee in Ptoken to fee in native token (if feePToken > 0)
 		if feePToken > 0 {
-			feePTokenToNativeTokenTmp, err := metadata.ConvertPrivacyTokenToNativeToken(feePToken, tokenID, beaconHeight, tp.config.DataBase)
+			feePTokenToNativeTokenTmp, err := metadata.ConvertPrivacyTokenToNativeToken(feePToken, tokenID, beaconHeight, tp.config.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB())
 			if err != nil {
 				Logger.log.Errorf("ERROR: %+v", NewMempoolTxError(RejectInvalidFee,
 					fmt.Errorf("transaction %+v: %+v %v can not convert to native token %+v",
@@ -482,7 +482,7 @@ func (tp *TxPool) checkFees(
 		if limitFee > 0 {
 			meta := tx.GetMetadata()
 			if meta != nil {
-				ok := tx.GetMetadata().CheckTransactionFee(tx, limitFee, beaconHeight, tp.config.DataBase)
+				ok := tx.GetMetadata().CheckTransactionFee(tx, limitFee, beaconHeight, tp.config.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB())
 				if !ok {
 					Logger.log.Errorf("ERROR: %+v", NewMempoolTxError(RejectInvalidFee,
 						fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
@@ -644,7 +644,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int6
 	// Condition 6: ValidateTransaction tx by it self
 	if !isBatch {
 		now = time.Now()
-		validated, errValidateTxByItself := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.DataBase, tp.config.BlockChain, shardID, isNewTransaction)
+		validated, errValidateTxByItself := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.BestState.Shard[shardID].GetCopiedTransactionStateDB(), tp.config.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB(), tp.config.BlockChain, shardID, isNewTransaction)
 		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 			metrics.Measurement:      metrics.TxPoolValidationDetails,
 			metrics.MeasurementValue: float64(time.Since(now).Seconds()),
@@ -657,7 +657,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int6
 	}
 	// Condition 7: validate tx with data of blockchain
 	now = time.Now()
-	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, shardID, tp.config.DataBase)
+	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, shardID, tp.config.BlockChain.BestState.Shard[shardID].GetCopiedTransactionStateDB())
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),

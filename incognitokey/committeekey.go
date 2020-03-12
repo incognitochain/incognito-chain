@@ -25,6 +25,12 @@ func (pubKey *CommitteePublicKey) IsEqualMiningPubKey(consensusName string, k *C
 	return reflect.DeepEqual(u, b)
 }
 
+func NewCommitteePublicKey() *CommitteePublicKey {
+	return &CommitteePublicKey{
+		IncPubKey:    privacy.PublicKey{},
+		MiningPubKey: make(map[string][]byte),
+	}
+}
 func (pubKey *CommitteePublicKey) CheckSanityData() bool {
 	if (len(pubKey.IncPubKey) != common.PublicKeySize) ||
 		(len(pubKey.MiningPubKey[common.BlsConsensus]) != common.BLSPublicKeySize) ||
@@ -165,7 +171,7 @@ func (committeePublicKey *CommitteePublicKey) IsValid(target CommitteePublicKey)
 	return true
 }
 
-/*func (committeePublicKey *CommitteePublicKey) IsEqual(target CommitteePublicKey) bool {
+func (committeePublicKey *CommitteePublicKey) IsEqual(target CommitteePublicKey) bool {
 	if bytes.Compare(committeePublicKey.IncPubKey[:], target.IncPubKey[:]) != 0 {
 		return false
 	}
@@ -182,4 +188,4 @@ func (committeePublicKey *CommitteePublicKey) IsValid(target CommitteePublicKey)
 		}
 	}
 	return true
-}*/
+}

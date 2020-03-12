@@ -109,15 +109,15 @@ func (s *Engine) WatchCommitteeChange() {
 			}
 			if s.version == 1 {
 				if chainID == -1 {
-					s.BFTProcess[chainID] = blsbft.NewInstance(s.config.Blockchain.BeaconChain, chainName, chainID, s.config.Node, Logger.log)
+					s.BFTProcess[chainID] = blsbft.NewInstance(s.config.Blockchain.BeaconChain, chainName, chainID, s.config.Node, Logger.Log)
 				} else {
-					s.BFTProcess[chainID] = blsbft.NewInstance(s.config.Blockchain.ShardChain[chainID], chainName, chainID, s.config.Node, Logger.log)
+					s.BFTProcess[chainID] = blsbft.NewInstance(s.config.Blockchain.ShardChain[chainID], chainName, chainID, s.config.Node, Logger.Log)
 				}
 			} else {
 				if chainID == -1 {
-					s.BFTProcess[chainID] = blsbft2.NewInstance(s.config.Blockchain.BeaconChain, chainName, chainID, s.config.Node, Logger.log)
+					s.BFTProcess[chainID] = blsbft2.NewInstance(s.config.Blockchain.BeaconChain, chainName, chainID, s.config.Node, Logger.Log)
 				} else {
-					s.BFTProcess[chainID] = blsbft2.NewInstance(s.config.Blockchain.ShardChain[chainID], chainName, chainID, s.config.Node, Logger.log)
+					s.BFTProcess[chainID] = blsbft2.NewInstance(s.config.Blockchain.ShardChain[chainID], chainName, chainID, s.config.Node, Logger.Log)
 				}
 			}
 

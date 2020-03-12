@@ -6,7 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/consensus"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
 	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
 	"github.com/incognitochain/incognito-chain/syncker"
@@ -28,24 +29,23 @@ import (
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/option"
 
-	"github.com/incognitochain/incognito-chain/blockchain/btc"
-	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/memcache"
-	"github.com/incognitochain/incognito-chain/pubsub"
-
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/connmanager"
-	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/transaction"
-
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/consensus"
 	"github.com/incognitochain/incognito-chain/databasemp"
+	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/mempool"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/peer"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/rpcserver"
+	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-peer"
@@ -64,7 +64,6 @@ type Server struct {
 	chainParams       *blockchain.Params
 	connManager       *connmanager.ConnManager
 	blockChain        *blockchain.BlockChain
-	syncker           *syncker.SynckerManager
 	dataBase          database.DatabaseInterface
 	memCache          *memcache.MemoryCache
 	rpcServer         *rpcserver.RpcServer
@@ -198,7 +197,7 @@ func (serverObj *Server) GetChainParam() *blockchain.Params {
 /*
 NewServer - create server object which control all process of node
 */
-func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInterface, dbmp databasemp.DatabaseInterface, chainParams *blockchain.Params, protocolVer string, interrupt <-chan struct{}) error {
+func (serverObj *Server) NewServer(listenAddrs string, db incdb.Database, dbmp databasemp.DatabaseInterface, chainParams *blockchain.Params, protocolVer string, interrupt <-chan struct{}) error {
 	// Init data for Server
 	serverObj.protocolVersion = protocolVer
 	serverObj.chainParams = chainParams
@@ -345,7 +344,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	//init shard pool
 	mempool.InitShardPool(serverObj.shardPool, serverObj.pusubManager)
 	//init cross shard pool
-	mempool.InitCrossShardPool(serverObj.crossShardPool, db)
+	mempool.InitCrossShardPool(serverObj.crossShardPool, db, serverObj.blockChain)
 
 	//init shard to beacon bool
 	mempool.InitShardToBeaconPool()
@@ -353,8 +352,9 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	if cfg.FastStartup {
 		Logger.log.Debug("Load chain dependencies from DB")
 		serverObj.feeEstimator = make(map[byte]*mempool.FeeEstimator)
-		for shardID, _ := range serverObj.blockChain.ShardChain {
-			feeEstimatorData, err := serverObj.dataBase.GetFeeEstimator(byte(shardID))
+		for shardID, bestState := range serverObj.blockChain.BestState.Shard {
+			_ = bestState
+			feeEstimatorData, err := serverObj.dataBase.GetFeeEstimator(shardID)
 			if err == nil && len(feeEstimatorData) > 0 {
 				feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)
 				if err != nil {
@@ -377,22 +377,21 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			}
 		}
 	} else {
-		err := serverObj.dataBase.CleanCommitments()
-		if err != nil {
-			Logger.log.Error(err)
-			return err
-		}
-		err = serverObj.dataBase.CleanSerialNumbers()
-		if err != nil {
-			Logger.log.Error(err)
-			return err
-		}
-		err = serverObj.dataBase.CleanFeeEstimator()
-		if err != nil {
-			Logger.log.Error(err)
-			return err
-		}
-
+		//err := rawdb.CleanCommitments(serverObj.dataBase)
+		//if err != nil {
+		//	Logger.log.Error(err)
+		//	return err
+		//}
+		//err = rawdb.CleanSerialNumbers(serverObj.dataBase)
+		//if err != nil {
+		//	Logger.log.Error(err)
+		//	return err
+		//}
+		//err = rawdb.CleanFeeEstimator(serverObj.dataBase)
+		//if err != nil {
+		//	Logger.log.Error(err)
+		//	return err
+		//}
 		serverObj.feeEstimator = make(map[byte]*mempool.FeeEstimator)
 	}
 	for shardID, feeEstimator := range serverObj.feeEstimator {
@@ -535,7 +534,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			NodeMode:                    cfg.NodeMode,
 			FeeEstimator:                serverObj.feeEstimator,
 			ProtocolVersion:             serverObj.protocolVersion,
-			Database:                    &serverObj.dataBase,
+			Database:                    serverObj.dataBase,
 			MiningKeys:                  cfg.MiningKeys,
 			NetSync:                     serverObj.netSync,
 			PubSubManager:               pubsubManager,
@@ -614,7 +613,7 @@ func (serverObj *Server) Stop() error {
 		Logger.log.Debugf("Fee estimator data when saving #%d", feeEstimator)
 		feeEstimatorData := feeEstimator.Save()
 		if len(feeEstimatorData) > 0 {
-			err := serverObj.dataBase.StoreFeeEstimator(feeEstimatorData, shardID)
+			err := rawdbv2.StoreFeeEstimator(serverObj.dataBase, feeEstimatorData, shardID)
 			if err != nil {
 				Logger.log.Errorf("Can't save fee estimator data on chain #%d: %v", shardID, err)
 			} else {
@@ -1876,7 +1875,6 @@ func (serverObj *Server) PushBlockToAll(block common.BlockInterface, isBeacon bo
 		}
 		msgShardToBeacon.(*wire.MessageShardToBeacon).Block = shardToBeaconBlk
 		serverObj.PushMessageToBeacon(msgShardToBeacon, map[libp2p.ID]bool{})
-		//TODO hy check
 		crossShardBlks := shardBlock.CreateAllCrossShardBlock(serverObj.blockChain.GetBeaconBestState().ActiveShards)
 		for shardID, crossShardBlk := range crossShardBlks {
 			msgCrossShardShard, err := wire.MakeEmptyMessage(wire.CmdCrossShard)
