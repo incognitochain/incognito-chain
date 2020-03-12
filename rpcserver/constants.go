@@ -205,6 +205,8 @@ const (
 	getCustodianWithdrawByTxId                 = "getcustodianwithdrawbytxid"
 	getCustodianLiquidationStatus              = "getcustodianliquidationstatus"
 	createAndSendTxWithReqWithdrawRewardPortal = "createandsendtxwithreqwithdrawrewardportal"
+	getLiquidationTpExchangeRates			   = "getliquidationtpexchangerates"
+	getLiquidationExchangeRates			   	   = "getliquidationexchangerates"
 
 	// relaying
 	createAndSendTxWithRelayingBNBHeader = "createandsendtxwithrelayingbnbheader"

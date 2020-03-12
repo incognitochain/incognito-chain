@@ -152,23 +152,59 @@ currentPortalState *CurrentPortalState) error {
 			return nil
 		}
 
-		tpList := make(map[string]int)
-		newCustodian := custodianState
+		liquidateChange, err := GetLiquidateExchangeRatesChange(custodianState, detectTPExchangeRates)
 
-		err = updateStateLiquidateExchangeRates(beaconHeight, cusStateKey, currentPortalState, &tpList, detectTPExchangeRates)
 		if err != nil {
-			Logger.log.Errorf("ERROR: an error occurred while update state exchange rates liquidation %v", err)
+			Logger.log.Errorf("ERROR: an error occurred while Get liquidate exchange rates change error %v", err)
 			return nil
 		}
 
-		if len(tpList) > 0 {
+		if len(liquidateChange) > 0 {
+			for ptoken, liquidateTopPercentileExchangeRatesDetail := range liquidateChange {
+				custodianState.LockedAmountCollateral[ptoken] = custodianState.LockedAmountCollateral[ptoken] - liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral
+				custodianState.HoldingPubTokens[ptoken] = custodianState.HoldingPubTokens[ptoken] - liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken
+				custodianState.TotalCollateral = custodianState.TotalCollateral - liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral
+			}
+
+			//update custodian
+			currentPortalState.CustodianPoolState[cusStateKey] = custodianState
+
+			//update
+			liquidateExchangeRatesKey := lvdb.NewPortalLiquidateExchangeRatesKey(beaconHeight)
+			liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey]
+
+			if !ok {
+				item := make(map[string]lvdb.LiquidateExchangeRatesDetail)
+
+				for ptoken, liquidateTopPercentileExchangeRatesDetail := range liquidateChange {
+					item[ptoken] = lvdb.LiquidateExchangeRatesDetail{
+						HoldAmountFreeCollateral: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
+						HoldAmountPubToken: liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
+					}
+				}
+				currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey], _ = NewLiquidateExchangeRates(item)
+			} else {
+				for ptoken, liquidateTopPercentileExchangeRatesDetail := range liquidateChange {
+					if _, ok := liquidateExchangeRates.Rates[ptoken]; !ok {
+						liquidateExchangeRates.Rates[ptoken] = lvdb.LiquidateExchangeRatesDetail{
+							HoldAmountFreeCollateral: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
+							HoldAmountPubToken: liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
+						}
+					} else {
+						liquidateExchangeRates.Rates[ptoken] = lvdb.LiquidateExchangeRatesDetail{
+							HoldAmountFreeCollateral: liquidateExchangeRates.Rates[ptoken].HoldAmountFreeCollateral +  liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
+							HoldAmountPubToken: liquidateExchangeRates.Rates[ptoken].HoldAmountPubToken +  liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
+						}
+					}
+				}
+
+				currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey] = liquidateExchangeRates
+			}
+
 			newTPKey := lvdb.NewPortalLiquidateTPExchangeRatesKey(beaconHeight, custodianState.IncognitoAddress)
 			newTPExchangeRates, _ := NewLiquidateTopPercentileExchangeRates(
-				tpList,
-				newCustodian.IncognitoAddress,
-				newCustodian.LockedAmountCollateral,
-				newCustodian.HoldingPubTokens,
-				*exchangeRate,
+				custodianState.IncognitoAddress,
+				liquidateChange,
 				common.PortalLiquidateTPExchangeRatesSuccessChainStatus,
 				)
 
@@ -177,17 +213,12 @@ currentPortalState *CurrentPortalState) error {
 				Logger.log.Errorf("ERROR: an error occurred while store liquidation TP exchange rates %v", err)
 				return nil
 			}
-
-			currentPortalState.CustodianPoolState[cusStateKey] = newCustodian
 		}
 	} else if reqStatus == common.PortalLiquidateTPExchangeRatesFailedChainStatus {
 		newTPKey := lvdb.NewPortalLiquidateTPExchangeRatesKey(beaconHeight, custodianState.IncognitoAddress)
 		newTPExchangeRates, _ := NewLiquidateTopPercentileExchangeRates(
-			nil,
 			custodianState.IncognitoAddress,
-			custodianState.LockedAmountCollateral,
-			custodianState.HoldingPubTokens,
-			*exchangeRate,
+		nil,
 			common.PortalLiquidateTPExchangeRatesFailedChainStatus,
 		)
 

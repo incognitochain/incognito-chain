@@ -85,14 +85,14 @@ func (responseMeta PortalCustodianWithdrawResponse) VerifyMinerCreatedTxBeforeGe
 		if len(inst) < 4 { // this is not PortalRequestPTokens response instruction
 			continue
 		}
+
 		instMetaType := inst[0]
-		if instUsed[i] > 0 ||
-			instMetaType != strconv.Itoa(PortalCustodianWithdrawRequestMeta) {
+		if instUsed[i] > 0 || instMetaType != strconv.Itoa(PortalCustodianWithdrawRequestMeta) {
 			continue
 		}
+
 		instDepositStatus := inst[2]
-		if instDepositStatus != responseMeta.RequestStatus ||
-			(instDepositStatus != common.PortalCustodianWithdrawRequestAcceptedStatus) {
+		if instDepositStatus != responseMeta.RequestStatus || (instDepositStatus != common.PortalCustodianWithdrawRequestAcceptedStatus) {
 			continue
 		}
 

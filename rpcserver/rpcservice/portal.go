@@ -161,3 +161,54 @@ func (portal *Portal) GetPortingFees(tokenSymbol string, valuePToken uint64, ser
 
 	return result, nil
 }
+
+func (portal *Portal) GetLiquidateTpExchangeRates(beaconHeight uint64, custodianAddress string, tokenSymbol string, service *BlockService, db database.DatabaseInterface) (jsonresult.GetLiquidateTpExchangeRates, *RPCError) {
+	liquidateTpExchangeRatesKey := lvdb.NewPortalLiquidateTPExchangeRatesKey(beaconHeight, custodianAddress)
+	liquidateTpExchangeRates, err := blockchain.GetLiquidateTPExchangeRatesByKey(db, []byte(liquidateTpExchangeRatesKey))
+
+	if err != nil {
+		return jsonresult.GetLiquidateTpExchangeRates{}, NewRPCError(GetTpExchangeRatesLiquidationError, err)
+	}
+
+	topPercentile, ok := liquidateTpExchangeRates.Rates[tokenSymbol]
+
+	if !ok {
+		return jsonresult.GetLiquidateTpExchangeRates{}, nil
+	}
+
+	tp := "TP130"
+	if isTp20, _ := blockchain.IsTP120(topPercentile.TPValue); isTp20 {
+		tp = "TP120"
+	}
+
+	result := jsonresult.GetLiquidateTpExchangeRates{
+		TokenSymbol: tokenSymbol,
+		TopPercentile: tp,
+		Data: topPercentile,
+	}
+
+	return result, nil
+}
+
+func (portal *Portal) GetLiquidateExchangeRates(beaconHeight uint64, tokenSymbol string, service *BlockService, db database.DatabaseInterface) (jsonresult.GetLiquidateExchangeRates, *RPCError) {
+	liquidateExchangeRatesKey := lvdb.NewPortalLiquidateExchangeRatesKey(beaconHeight)
+	liquidateExchangeRates, err := blockchain.GetLiquidateExchangeRatesByKey(db, []byte(liquidateExchangeRatesKey))
+
+	if err != nil {
+		return jsonresult.GetLiquidateExchangeRates{}, NewRPCError(GetExchangeRatesLiquidationError, err)
+	}
+
+	liquidateExchangeRatesDetail, ok := liquidateExchangeRates.Rates[tokenSymbol]
+
+	if !ok {
+		return jsonresult.GetLiquidateExchangeRates{}, nil
+	}
+
+
+	result := jsonresult.GetLiquidateExchangeRates{
+		TokenSymbol: tokenSymbol,
+		Liquidation: liquidateExchangeRatesDetail,
+	}
+
+	return result, nil
+}

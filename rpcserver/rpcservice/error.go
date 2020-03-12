@@ -75,6 +75,8 @@ const (
 	GetPortingRequestIsEmpty
 
 	GetCustodianLiquidationStatusError
+	GetTpExchangeRatesLiquidationError
+	GetExchangeRatesLiquidationError
 
 	// relaying
 	GetRelayingBNBHeaderByBlockHeightError
@@ -165,6 +167,8 @@ var ErrCodeMessage = map[int]struct {
 	GetReqUnlockCollateralStatusError:  {-9007, "Get status of request unlock collateral error"},
 	GetReqRedeemStatusError:            {-9008, "Get status of request redeem by redeemId error"},
 	GetCustodianLiquidationStatusError: {-9009, "Get status of custodian liquidation error"},
+	GetTpExchangeRatesLiquidationError: {-9010, "Get TP exchange rates liquidation error"},
+	GetExchangeRatesLiquidationError: {-9011, "Get exchange rates liquidation error"},
 
 	// relaying
 	GetRelayingBNBHeaderByBlockHeightError: {-10001, "Get relaying bnb header by block height error"},

@@ -83,19 +83,25 @@ type CustodianWithdrawRequest struct {
 	RemainCustodianFreeCollateral uint64
 }
 
+type LiquidateTopPercentileExchangeRatesDetail struct {
+	TPValue int
+	HoldAmountFreeCollateral uint64
+	HoldAmountPubToken uint64
+}
+
 type LiquidateTopPercentileExchangeRates struct {
-	TPValue map[string]int
 	CustodianAddress string
-	HoldAmountFreeCollateral map[string]uint64
-	HoldAmountPubToken map[string]uint64
-	ExchangeRates FinalExchangeRates
 	Status string
+	Rates map[string]LiquidateTopPercentileExchangeRatesDetail //ptoken | detail
+}
+
+type LiquidateExchangeRatesDetail struct {
+	HoldAmountFreeCollateral uint64
+	HoldAmountPubToken uint64
 }
 
 type LiquidateExchangeRates struct {
-	CustodianAddress string
-	HoldAmountFreeCollateral map[string]uint64
-	HoldAmountPubToken map[string]uint64
+	Rates map[string]LiquidateExchangeRatesDetail //ptoken | detail
 }
 
 func NewCustodianWithdrawRequest(txHash string) string {

@@ -144,32 +144,22 @@ func NewCustodianWithdrawRequest(
 }
 
 func NewLiquidateTopPercentileExchangeRates(
-	tPValue map[string]int,
 	custodianAddress string,
-	holdAmountFreeCollateral map[string]uint64,
-	holdAmountPubToken map[string]uint64,
-	exchangeRates lvdb.FinalExchangeRates,
+	rates map[string]lvdb.LiquidateTopPercentileExchangeRatesDetail,
 	status string,
 ) (*lvdb.LiquidateTopPercentileExchangeRates, error)  {
 	return &lvdb.LiquidateTopPercentileExchangeRates{
-		TPValue:                 tPValue,
-		CustodianAddress:        custodianAddress,
-		HoldAmountFreeCollateral: holdAmountFreeCollateral,
-		HoldAmountPubToken:       holdAmountPubToken,
-		ExchangeRates:           exchangeRates,
-		Status:                  status,
+		CustodianAddress:	custodianAddress,
+		Rates: 				rates,
+		Status:           	status,
 	}, nil
 }
 
 func NewLiquidateExchangeRates(
-	custodianAddress string,
-	holdAmountFreeCollateral map[string]uint64,
-	holdAmountPubToken map[string]uint64,
+	rates map[string]lvdb.LiquidateExchangeRatesDetail,
 ) (*lvdb.LiquidateExchangeRates, error)  {
 	return &lvdb.LiquidateExchangeRates{
-		CustodianAddress: custodianAddress,
-		HoldAmountFreeCollateral: holdAmountFreeCollateral,
-		HoldAmountPubToken: holdAmountPubToken,
+		Rates: 				rates,
 	}, nil
 }
 
@@ -464,6 +454,57 @@ func getLiquidateExchangeRates(
 
 	return liquidateExchangeRates, nil
 }
+
+func GetLiquidateTPExchangeRatesByKey(
+	db database.DatabaseInterface,
+	key []byte,
+) (*lvdb.LiquidateTopPercentileExchangeRates, error) {
+	item, err := db.GetItemPortalByKey(key)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var object lvdb.LiquidateTopPercentileExchangeRates
+
+	if item == nil {
+		return &object, nil
+	}
+
+	//get value via idx
+	err = json.Unmarshal(item, &object)
+	if err != nil {
+		return nil, err
+	}
+
+	return &object, nil
+}
+
+func GetLiquidateExchangeRatesByKey(
+	db database.DatabaseInterface,
+	key []byte,
+) (*lvdb.LiquidateExchangeRates, error) {
+	item, err := db.GetItemPortalByKey(key)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var object lvdb.LiquidateExchangeRates
+
+	if item == nil {
+		return &object, nil
+	}
+
+	//get value via idx
+	err = json.Unmarshal(item, &object)
+	if err != nil {
+		return nil, err
+	}
+
+	return &object, nil
+}
+
 
 func GetFinalExchangeRatesByKey(
 	db database.DatabaseInterface,
@@ -796,7 +837,7 @@ func down150Percent(amount uint64) uint64 {
 /**
 	return (isTP120, isWarning)
  */
-func isTP120(tpValue int) (bool, bool) {
+func IsTP120(tpValue int) (bool, bool) {
 	if  tpValue > common.TP120 && tpValue <= common.TP130 {
 		return false, true
 	}
@@ -808,52 +849,31 @@ func isTP120(tpValue int) (bool, bool) {
 	return false, false
 }
 
-func updateStateLiquidateExchangeRates(beaconHeight uint64, custodianKey string, currentPortalState *CurrentPortalState, tpList *map[string]int, detectTp map[string]int) error {
-	tpListTmp := make(map[string]int)
-
-	custodianState, ok := currentPortalState.CustodianPoolState[custodianKey]
-	if !ok {
-		return errors.New("Custodian not found")
+func GetLiquidateExchangeRatesChange(custodian *lvdb.CustodianState, tpList map[string]int) (map[string]lvdb.LiquidateTopPercentileExchangeRatesDetail, error) {
+	if custodian == nil {
+		return nil, errors.New("Custodian not found")
 	}
 
-	liquidateExchangeRatesKey := lvdb.NewPortalLiquidateExchangeRatesKey(beaconHeight)
-
-	newCustodian := custodianState
-
-	liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey]
-
-	for ptoken, tpValue := range detectTp {
-		if tp20, ok := isTP120(tpValue); ok {
-			tpListTmp[ptoken] = tpValue
+	 liquidateExchangeRatesList := make(map[string]lvdb.LiquidateTopPercentileExchangeRatesDetail)
+	for ptoken, tpValue := range tpList {
+		if tp20, ok := IsTP120(tpValue); ok {
 			if tp20 {
-				//update liquidation
-				if !ok {
-					liquidateExchangeRates.CustodianAddress = newCustodian.IncognitoAddress
-					liquidateExchangeRates.HoldAmountFreeCollateral[ptoken] = newCustodian.LockedAmountCollateral[ptoken]
-					liquidateExchangeRates.HoldAmountPubToken[ptoken] = newCustodian.HoldingPubTokens[ptoken]
-				} else {
-					//free collateral
-					liquidateExchangeRates.HoldAmountFreeCollateral[ptoken] = liquidateExchangeRates.HoldAmountFreeCollateral[ptoken] + newCustodian.LockedAmountCollateral[ptoken]
-					//pub
-					liquidateExchangeRates.HoldAmountPubToken[ptoken] = liquidateExchangeRates.HoldAmountPubToken[ptoken] + newCustodian.HoldingPubTokens[ptoken]
+				liquidateExchangeRatesList[ptoken] = lvdb.LiquidateTopPercentileExchangeRatesDetail{
+					TPValue: tpValue,
+					HoldAmountFreeCollateral: custodian.LockedAmountCollateral[ptoken],
+					HoldAmountPubToken: custodian.HoldingPubTokens[ptoken],
 				}
-
-				remainTotalCollateral := newCustodian.TotalCollateral - newCustodian.LockedAmountCollateral[ptoken]
-				newCustodian.LockedAmountCollateral[ptoken] = 0
-				newCustodian.HoldingPubTokens[ptoken] = 0
-				newCustodian.TotalCollateral = remainTotalCollateral
-
-				//update current state
-				currentPortalState.CustodianPoolState[custodianKey] = newCustodian
-				currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey] = liquidateExchangeRates
+			} else {
+				liquidateExchangeRatesList[ptoken] = lvdb.LiquidateTopPercentileExchangeRatesDetail{
+					TPValue: tpValue,
+					HoldAmountFreeCollateral: 0,
+					HoldAmountPubToken: 0,
+				}
 			}
 		}
 	}
 
-
-	tpList = &tpListTmp
-
-	return  nil
+	return liquidateExchangeRatesList, nil
 }
 
 /*

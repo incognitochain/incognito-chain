@@ -142,7 +142,6 @@ func (blockGenerator *BlockGenerator) buildPortalAcceptedRequestPTokensTx(
 	return resTx, nil
 }
 
-//todo: write code
 func (blockGenerator *BlockGenerator) buildPortalCustodianWithdrawRequest(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
@@ -162,7 +161,7 @@ func (blockGenerator *BlockGenerator) buildPortalCustodianWithdrawRequest(
 	}
 
 	meta := metadata.NewPortalCustodianWithdrawResponse(
-		common.PortalCustodianWithdrawRequestAcceptedStatus,
+		"refund",
 		custodianWithdrawRequest.TxReqID,
 		custodianWithdrawRequest.PaymentAddress,
 		custodianWithdrawRequest.Amount,

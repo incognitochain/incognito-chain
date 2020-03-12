@@ -236,11 +236,10 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 			continue
 		}
 
-		tpList := make(map[string]int)
-		err = updateStateLiquidateExchangeRates(beaconHeight, custodianKey, currentPortalState, &tpList, detectTPExchangeRates)
+		liquidateChange, err := GetLiquidateExchangeRatesChange(custodianState, detectTPExchangeRates)
 
 		if err != nil {
-			Logger.log.Errorf("Update exchange rates liquidation error %v", err)
+			Logger.log.Errorf("Get liquidate exchange rates change error %v", err)
 			inst := buildTopPercentileExchangeRatesLiquidationInst(
 				custodianState.IncognitoAddress,
 				metadata.PortalLiquidateTPExchangeRatesMeta,
@@ -252,7 +251,7 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 		}
 
 
-		if len(tpList) > 0 {
+		if len(liquidateChange) > 0 {
 			inst := buildTopPercentileExchangeRatesLiquidationInst(
 				custodianState.IncognitoAddress,
 				metadata.PortalLiquidateTPExchangeRatesMeta,
@@ -260,6 +259,13 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 				common.PortalLiquidateTPExchangeRatesSuccessChainStatus,
 			)
 
+			for i, v := range liquidateChange {
+				custodianState.LockedAmountCollateral[i] = custodianState.LockedAmountCollateral[i] - v.HoldAmountFreeCollateral
+				custodianState.HoldingPubTokens[i] = custodianState.HoldingPubTokens[i] - v.HoldAmountPubToken
+				custodianState.TotalCollateral = custodianState.TotalCollateral - v.HoldAmountFreeCollateral
+			}
+
+			currentPortalState.CustodianPoolState[custodianKey] = custodianState
 			insts = append(insts, inst)
 		}
 	}
