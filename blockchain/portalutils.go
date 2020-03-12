@@ -146,18 +146,30 @@ func NewCustodianWithdrawRequest(
 func NewLiquidateTopPercentileExchangeRates(
 	tPValue map[string]int,
 	custodianAddress string,
-	liquidateFreeCollateral map[string]uint64,
-	liquidatePubToken map[string]uint64,
+	holdAmountFreeCollateral map[string]uint64,
+	holdAmountPubToken map[string]uint64,
 	exchangeRates lvdb.FinalExchangeRates,
 	status string,
 ) (*lvdb.LiquidateTopPercentileExchangeRates, error)  {
 	return &lvdb.LiquidateTopPercentileExchangeRates{
 		TPValue:                 tPValue,
 		CustodianAddress:        custodianAddress,
-		LiquidateFreeCollateral: liquidateFreeCollateral,
-		LiquidatePubToken:       liquidatePubToken,
+		HoldAmountFreeCollateral: holdAmountFreeCollateral,
+		HoldAmountPubToken:       holdAmountPubToken,
 		ExchangeRates:           exchangeRates,
 		Status:                  status,
+	}, nil
+}
+
+func NewLiquidateExchangeRates(
+	custodianAddress string,
+	holdAmountFreeCollateral map[string]uint64,
+	holdAmountPubToken map[string]uint64,
+) (*lvdb.LiquidateExchangeRates, error)  {
+	return &lvdb.LiquidateExchangeRates{
+		CustodianAddress: custodianAddress,
+		HoldAmountFreeCollateral: holdAmountFreeCollateral,
+		HoldAmountPubToken: holdAmountPubToken,
 	}, nil
 }
 
@@ -221,6 +233,29 @@ func storePortalStateToDB(
 		return err
 	}
 
+	err = storeLiquidateExchangeRates(db, beaconHeight, currentPortalState.LiquidateExchangeRates)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func storeLiquidateExchangeRates(db database.DatabaseInterface,
+	beaconHeight uint64,
+	liquidateExchangeRates map[string]*lvdb.LiquidateExchangeRates) error  {
+	for key, value := range liquidateExchangeRates {
+		newKey := replaceKeyByBeaconHeight(key, beaconHeight)
+
+		valueBytes, err := json.Marshal(value)
+		if err != nil {
+			return err
+		}
+		err = db.Put([]byte(newKey), valueBytes)
+		if err != nil {
+			return database.NewDatabaseError(database.StoreLiquidateExchangeRatesError, errors.Wrap(err, "db.lvdb.put"))
+		}
+	}
 	return nil
 }
 
@@ -230,7 +265,7 @@ func storeCustodianState(db database.DatabaseInterface,
 	custodianState map[string]*lvdb.CustodianState) error {
 	for custodianStateKey, custodian := range custodianState {
 		newKey := replaceKeyByBeaconHeight(custodianStateKey, beaconHeight)
-		Logger.log.Infof("Porting request, store custodian key  %v", newKey)
+
 		custodianBytes, err := json.Marshal(custodian)
 		if err != nil {
 			return err
@@ -249,7 +284,6 @@ func storeWaitingPortingRequests(db database.DatabaseInterface,
 	waitingPortingReqs map[string]*lvdb.PortingRequest) error {
 	for waitingReqKey, waitingReq := range waitingPortingReqs {
 		newKey := replaceKeyByBeaconHeight(waitingReqKey, beaconHeight)
-		Logger.log.Infof("Porting request, save waiting db with key %v", newKey)
 
 		waitingReqBytes, err := json.Marshal(waitingReq)
 		if err != nil {
@@ -772,6 +806,54 @@ func isTP120(tpValue int) (bool, bool) {
 	}
 
 	return false, false
+}
+
+func updateStateLiquidateExchangeRates(beaconHeight uint64, custodianKey string, currentPortalState *CurrentPortalState, tpList *map[string]int, detectTp map[string]int) error {
+	tpListTmp := make(map[string]int)
+
+	custodianState, ok := currentPortalState.CustodianPoolState[custodianKey]
+	if !ok {
+		return errors.New("Custodian not found")
+	}
+
+	liquidateExchangeRatesKey := lvdb.NewPortalLiquidateExchangeRatesKey(beaconHeight)
+
+	newCustodian := custodianState
+
+	liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey]
+
+	for ptoken, tpValue := range detectTp {
+		if tp20, ok := isTP120(tpValue); ok {
+			tpListTmp[ptoken] = tpValue
+			if tp20 {
+				//update liquidation
+				if !ok {
+					liquidateExchangeRates.CustodianAddress = newCustodian.IncognitoAddress
+					liquidateExchangeRates.HoldAmountFreeCollateral[ptoken] = newCustodian.LockedAmountCollateral[ptoken]
+					liquidateExchangeRates.HoldAmountPubToken[ptoken] = newCustodian.HoldingPubTokens[ptoken]
+				} else {
+					//free collateral
+					liquidateExchangeRates.HoldAmountFreeCollateral[ptoken] = liquidateExchangeRates.HoldAmountFreeCollateral[ptoken] + newCustodian.LockedAmountCollateral[ptoken]
+					//pub
+					liquidateExchangeRates.HoldAmountPubToken[ptoken] = liquidateExchangeRates.HoldAmountPubToken[ptoken] + newCustodian.HoldingPubTokens[ptoken]
+				}
+
+				remainTotalCollateral := newCustodian.TotalCollateral - newCustodian.LockedAmountCollateral[ptoken]
+				newCustodian.LockedAmountCollateral[ptoken] = 0
+				newCustodian.HoldingPubTokens[ptoken] = 0
+				newCustodian.TotalCollateral = remainTotalCollateral
+
+				//update current state
+				currentPortalState.CustodianPoolState[custodianKey] = newCustodian
+				currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey] = liquidateExchangeRates
+			}
+		}
+	}
+
+
+	tpList = &tpListTmp
+
+	return  nil
 }
 
 /*
