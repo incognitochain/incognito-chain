@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"math"
 	"strconv"
 )
 
@@ -29,8 +30,8 @@ func splitPortingFeeForMatchingCustodians(
 	matchingCustodianAddresses map[string]lvdb.MatchingPortingCustodianDetail,
 	rewardInfos map[string]uint64) {
 	for incAddr, matchCustodianDetail := range matchingCustodianAddresses {
-		splitedFee := feeAmount * matchCustodianDetail.Amount / portingAmount
-		rewardInfos[incAddr] += splitedFee
+		splitedFee := float64(matchCustodianDetail.Amount) / float64(portingAmount) * float64(feeAmount)
+		rewardInfos[incAddr] += uint64(math.Floor(splitedFee))
 	}
 }
 
@@ -40,8 +41,8 @@ func splitRedeemFeeForMatchingCustodians(
 	matchingCustodianAddresses map[string]*lvdb.MatchingRedeemCustodianDetail,
 	rewardInfos map[string]uint64) {
 	for incAddr, matchCustodianDetail := range matchingCustodianAddresses {
-		splitedFee := feeAmount * matchCustodianDetail.Amount / redeemAmount
-		rewardInfos[incAddr] += splitedFee
+		splitedFee := float64(matchCustodianDetail.Amount) / float64(redeemAmount) * float64(feeAmount)
+		rewardInfos[incAddr] += uint64(math.Floor(splitedFee))
 	}
 }
 
@@ -52,8 +53,8 @@ func splitRewardForCustodians(
 	rewardInfos map[string]uint64)  {
 	for _, custodian := range custodianState {
 		for _, lockedAmount := range custodian.LockedAmountCollateral {
-			splitedReward := totalReward * lockedAmount / totalLockedAmount
-			rewardInfos[custodian.IncognitoAddress] += splitedReward
+			splitedReward :=  float64(lockedAmount) / float64(totalLockedAmount) * float64(totalReward)
+			rewardInfos[custodian.IncognitoAddress] += uint64(math.Floor(splitedReward))
 		}
 	}
 }
@@ -104,9 +105,14 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 		splitRewardForCustodians(common.TotalRewardPerBlock, totalLockedCollateralAmount, currentPortalState.CustodianPoolState, receivers)
 	}
 
+	Logger.log.Errorf("totalLockedCollateralAmount: %v\n", totalLockedCollateralAmount)
+	Logger.log.Errorf("receivers: %+v\n", receivers)
+	Logger.log.Errorf("currentPortalState.CustodianPoolState: %+v\n", currentPortalState.CustodianPoolState)
+
 	// update reward amount for each custodian
 	for _, custodianState := range currentPortalState.CustodianPoolState {
 		custodianState.RewardAmount += receivers[custodianState.IncognitoAddress]
+		Logger.log.Errorf("receivers[custodianState.IncognitoAddress]: %+v\n", receivers[custodianState.IncognitoAddress])
 	}
 
 	// build beacon instruction for portal reward
