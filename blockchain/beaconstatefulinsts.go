@@ -46,9 +46,9 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.PortalCustodianWithdrawRequestMeta,
 			metadata.PortalRedeemRequestMeta,
 			metadata.PortalRequestUnlockCollateralMeta,
-			metadata.PortalLiquidateCustodianMeta:
+			metadata.PortalLiquidateCustodianMeta,
+			metadata.PortalRequestWithdrawRewardMeta:
 			statefulInsts = append(statefulInsts, inst)
-
 		default:
 			continue
 		}
@@ -110,6 +110,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	portalRedeemReqActionsByShardID := map[byte][][]string{}
 	portalCustodianWithdrawActionsByShardID := map[byte][][]string{}
 	portalReqUnlockCollateralActionsByShardID := map[byte][][]string{}
+	portalReqWithdrawRewardActionsByShardID := map[byte][][]string{}
 
 	// relaying instructions
 	// don't need to be grouped by shardID
@@ -198,6 +199,12 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					action,
 					shardID,
 				)
+			case metadata.PortalRequestWithdrawRewardMeta:
+				portalReqWithdrawRewardActionsByShardID = groupPortalActionsByShardID(
+					portalReqWithdrawRewardActionsByShardID,
+					action,
+					shardID,
+				)
 			case metadata.RelayingBNBHeaderMeta:
 				relayingBNBActions = append(relayingBNBActions, action)
 			case metadata.RelayingBTCHeaderMeta:
@@ -282,9 +289,10 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	}
 
 	// calculate rewards (include porting fee and redeem fee) for custodians and build instructions at beaconHeight
-	portalRewardsInsts, err := blockchain.buildPortalRewardsInsts(
+	portalRewardsInsts, err := blockchain.handlePortalRewardInsts(
 		beaconHeight-1,
 		currentPortalState,
+		portalReqWithdrawRewardActionsByShardID,
 	)
 
 	if err != nil {
@@ -814,12 +822,57 @@ func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
 	return insts, nil
 }
 
-func (blockchain *BlockChain) buildPortalRewardsInsts(
-	beaconHeight uint64, currentPortalState *CurrentPortalState) ([][]string, error) {
-	insts := [][]string{}
+// handlePortalRewardInsts
+// 1. Build instructions for request withdraw portal reward
+// 2. Build instructions portal reward for each beacon block
+func (blockchain *BlockChain) handlePortalRewardInsts(
+	beaconHeight uint64,
+	currentPortalState *CurrentPortalState,
+	portalReqWithdrawRewardActionsByShardID map[byte][][]string,
+) ([][]string, error) {
+	instructions := [][]string{}
 
-	//
+	// handle portal request withdraw reward inst
+	var shardIDKeys []int
+	for k := range portalReqWithdrawRewardActionsByShardID {
+		shardIDKeys = append(shardIDKeys, int(k))
+	}
 
-	return insts, nil
+	sort.Ints(shardIDKeys)
+	for _, value := range shardIDKeys {
+		shardID := byte(value)
+		actions := portalReqWithdrawRewardActionsByShardID[shardID]
+		for _, action := range actions {
+			contentStr := action[1]
+			newInst, err := blockchain.buildInstructionsForReqWithdrawPortalReward(
+				contentStr,
+				shardID,
+				metadata.PortalRequestWithdrawRewardMeta,
+				currentPortalState,
+				beaconHeight,
+			)
+
+			if err != nil {
+				Logger.log.Error(err)
+				continue
+			}
+			if len(newInst) > 0 {
+				instructions = append(instructions, newInst...)
+			}
+		}
+	}
+
+	// Build instructions portal reward for each beacon block
+	portalRewardInsts, err := blockchain.buildPortalRewardsInsts(beaconHeight, currentPortalState)
+	if err != nil {
+		Logger.log.Error(err)
+	}
+	if len(portalRewardInsts) > 0 {
+		instructions = append(instructions, portalRewardInsts...)
+	}
+
+	return instructions, nil
 }
+
+
 

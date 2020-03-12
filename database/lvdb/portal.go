@@ -595,6 +595,40 @@ func (db *db) StoreLiquidateTopPercentileExchangeRates(keyId []byte, content int
 	if err != nil {
 		return database.NewDatabaseError(database.StoreLiquidateTopPercentileExchangeRatesError, errors.Wrap(err, "db.lvdb.put"))
 	}
+	return nil
+}
 
+// NewPortalRewardKey creates key for storing portal reward by beacon height
+func NewPortalRewardKey(beaconHeight uint64) string {
+	beaconHeightBytes := []byte(fmt.Sprintf("%d", beaconHeight))
+	key := append(PortalRewardByBeaconHeightPrefix, beaconHeightBytes...)
+	return string(key)
+}
+
+
+// StorePortalRewardByBeaconHeight stores portal reward by beacon height
+func (db *db) StorePortalRewardByBeaconHeight(key []byte, value []byte) error {
+	err := db.Put(key, value)
+	if err != nil {
+		return database.NewDatabaseError(database.StorePortalRewardError, errors.Wrap(err, "db.lvdb.put"))
+	}
+	return nil
+}
+
+// NewPortalReqWithdrawRewardKey creates key for storing request withdraw portal reward
+func NewPortalReqWithdrawRewardKey(beaconHeight uint64, custodianAddr string) string {
+	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+	key := append(PortalRequestWithdrawRewardPrefix, beaconHeightBytes...)
+	key = append(key, []byte(custodianAddr)...)
+	return string(key)
+}
+
+
+// TrackPortalReqWithdrawReward stores portal request withdraw portal reward
+func (db *db) TrackPortalReqWithdrawReward(key []byte, value []byte) error {
+	err := db.Put(key, value)
+	if err != nil {
+		return database.NewDatabaseError(database.StorePortalRewardError, errors.Wrap(err, "db.lvdb.put"))
+	}
 	return nil
 }

@@ -143,7 +143,10 @@ const (
 	PortalLiquidateCustodianFailedStatus  = 2
 
 	PortalLiquidationTPExchangeRatesSuccessStatus = 1
-	PortalLiquidationTPExchangeRatesFailedStatus = 2
+	PortalLiquidationTPExchangeRatesFailedStatus  = 2
+
+	PortalReqWithdrawRewardAcceptedStatus = 1
+	PortalReqWithdrawRewardRejectedStatus = 2
 )
 
 // PDE statuses for chain
@@ -187,7 +190,10 @@ const (
 	PortalLiquidateCustodianFailedChainStatus  = "failed"
 
 	PortalLiquidateTPExchangeRatesSuccessChainStatus = "success"
-	PortalLiquidateTPExchangeRatesFailedChainStatus = "rejected"
+	PortalLiquidateTPExchangeRatesFailedChainStatus  = "rejected"
+
+	PortalReqWithdrawRewardAcceptedChainStatus = "accepted"
+	PortalReqWithdrawRewardRejectedChainStatus = "rejected"
 )
 
 // Relaying header
@@ -200,8 +206,9 @@ const (
 const (
 	// @@ Note: should replace tp 2160 before deploy
 	// 10 just for testings
-	PortalTimeOutCustodianSendPubTokenBack = 10  // 2160 beacon blocks ~ 24 hours
-	PercentReceivedCollateralAmount        = 120 // users will be receive 120% of redeem amount in PRV
+	PortalTimeOutCustodianSendPubTokenBack = 10        // 2160 beacon blocks ~ 24 hours
+	PercentReceivedCollateralAmount        = 120       // users will be receive 120% of redeem amount in PRV
+	TotalRewardPerBlock                    = 100 * 1e9 // 100 prv
 
 	TP120 = 120 // 120% - minimum ratio between collateral's value and holding public tokens' value
 	TP130 = 130

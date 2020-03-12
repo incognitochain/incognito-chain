@@ -224,6 +224,9 @@ type DatabaseInterface interface {
 	GetLiquidateCustodian(redeemID string, custodianIncAddrStr string) ([]byte, error)
 	StoreLiquidateTopPercentileExchangeRates(key []byte, value interface{}) error
 
+	StorePortalRewardByBeaconHeight(key []byte, value []byte) error
+	TrackPortalReqWithdrawReward(key []byte, value []byte) error
+
 	// relaying
 	GetItemByKey(key []byte) ([]byte, error)
 	StoreRelayingBNBHeaderChain(blockHeight uint64, header []byte) error
