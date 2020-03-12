@@ -146,7 +146,7 @@ currentPortalState *CurrentPortalState) error {
 	reqStatus := instructions[2]
 	if reqStatus == common.PortalLiquidateTPExchangeRatesSuccessChainStatus {
 		//validation
-		result, err := detectMinAspectRatio(custodianState.HoldingPubTokens, custodianState.LockedAmountCollateral, exchangeRate)
+		detectTPExchangeRates, err := detectMinAspectRatio(custodianState.HoldingPubTokens, custodianState.LockedAmountCollateral, exchangeRate)
 		if err != nil {
 			Logger.log.Errorf("Detect min aspect ratio error %v", err)
 			return nil
@@ -155,20 +155,10 @@ currentPortalState *CurrentPortalState) error {
 		tpList := make(map[string]int)
 		newCustodian := custodianState
 
-		for ptoken, tpValue := range result {
-			if isTp120, ok := isTP120(tpValue); ok {
-				tpList[ptoken] = tpValue
-				if isTp120 {
-					//update custodian
-					newCustodian.LockedAmountCollateral[ptoken] = 0
-					newCustodian.HoldingPubTokens[ptoken] = 0
-					newCustodian.TotalCollateral = newCustodian.TotalCollateral - custodianState.LockedAmountCollateral[ptoken]
-
-					//todo: update final liquidate
-					//load liquidate
-					//save liquidate
-				}
-			}
+		err = updateStateLiquidateExchangeRates(beaconHeight, cusStateKey, currentPortalState, &tpList, detectTPExchangeRates)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occurred while update state exchange rates liquidation %v", err)
+			return nil
 		}
 
 		if len(tpList) > 0 {

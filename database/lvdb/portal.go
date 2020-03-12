@@ -86,16 +86,16 @@ type CustodianWithdrawRequest struct {
 type LiquidateTopPercentileExchangeRates struct {
 	TPValue map[string]int
 	CustodianAddress string
-	LiquidateFreeCollateral map[string]uint64
-	LiquidatePubToken map[string]uint64
+	HoldAmountFreeCollateral map[string]uint64
+	HoldAmountPubToken map[string]uint64
 	ExchangeRates FinalExchangeRates
 	Status string
 }
 
 type LiquidateExchangeRates struct {
 	CustodianAddress string
-	HoldAmountFreeCollateral map[string]int
-	HoldAmountPubToken map[string]int
+	HoldAmountFreeCollateral map[string]uint64
+	HoldAmountPubToken map[string]uint64
 }
 
 func NewCustodianWithdrawRequest(txHash string) string {
@@ -569,20 +569,6 @@ func NewPortalLiquidateExchangeRatesKey(beaconHeight uint64) string {
 	key := append(PortalLiquidateExchangeRatesPrefix, beaconHeightBytes...)
 	key = append(key, []byte("liquidation")...)
 	return string(key)
-}
-
-func (db *db) StoreLiquidateExchangeRates(keyId []byte, content interface{}) error  {
-	contributionBytes, err := json.Marshal(content)
-	if err != nil {
-		return err
-	}
-
-	err = db.Put(keyId, contributionBytes)
-	if err != nil {
-		return database.NewDatabaseError(database.StoreLiquidateTopPercentileExchangeRatesError, errors.Wrap(err, "db.lvdb.put"))
-	}
-
-	return nil
 }
 
 func (db *db) StoreLiquidateTopPercentileExchangeRates(keyId []byte, content interface{}) error  {

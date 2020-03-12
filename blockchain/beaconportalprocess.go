@@ -568,6 +568,10 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 	}
 
 	//if pre state exist
+
+	//todo: need refactor code, not need write this code
+	//update value when has exchange
+
 	if exchangeRatesState, ok := currentPortalState.FinalExchangeRates[exchangeRatesKey]; ok {
 		Logger.log.Infof("Portal final exchange rates, exits  key %v", exchangeRatesKey)
 

@@ -223,7 +223,7 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 
 	for custodianKey, custodianState := range custodianPoolState {
 		//todo: check custodian is processing deposit
-		result, err := detectMinAspectRatio(custodianState.HoldingPubTokens, custodianState.LockedAmountCollateral, exchangeRate)
+		detectTPExchangeRates, err := detectMinAspectRatio(custodianState.HoldingPubTokens, custodianState.LockedAmountCollateral, exchangeRate)
 		if err != nil {
 			Logger.log.Errorf("Detect TP exchange rates error %v", err)
 			inst := buildTopPercentileExchangeRatesLiquidationInst(
@@ -237,18 +237,20 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 		}
 
 		tpList := make(map[string]int)
-		newCustodian := custodianState
-		for ptoken, tpValue := range result {
-			if isTp120, ok := isTP120(tpValue); ok {
-				tpList[ptoken] = tpValue
-				if isTp120 {
-					newCustodian.LockedAmountCollateral[ptoken] = 0
-					newCustodian.HoldingPubTokens[ptoken] = 0
-					newCustodian.TotalCollateral = newCustodian.TotalCollateral - custodianState.LockedAmountCollateral[ptoken]
-					//todo: update final liquidate
-				}
-			}
+		err = updateStateLiquidateExchangeRates(beaconHeight, custodianKey, currentPortalState, &tpList, detectTPExchangeRates)
+
+		if err != nil {
+			Logger.log.Errorf("Update exchange rates liquidation error %v", err)
+			inst := buildTopPercentileExchangeRatesLiquidationInst(
+				custodianState.IncognitoAddress,
+				metadata.PortalLiquidateTPExchangeRatesMeta,
+				0, //todo: find shard id
+				common.PortalLiquidateTPExchangeRatesFailedChainStatus,
+			)
+			insts = append(insts, inst)
+			continue
 		}
+
 
 		if len(tpList) > 0 {
 			inst := buildTopPercentileExchangeRatesLiquidationInst(
@@ -258,7 +260,6 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 				common.PortalLiquidateTPExchangeRatesSuccessChainStatus,
 			)
 
-			currentPortalState.CustodianPoolState[custodianKey] = newCustodian
 			insts = append(insts, inst)
 		}
 	}
