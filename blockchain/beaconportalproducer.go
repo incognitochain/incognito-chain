@@ -1137,20 +1137,6 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 		return [][]string{inst}, nil
 	}
 
-	// add to waiting Redeem list
-	redeemRequest, _ := NewRedeemRequestState(
-		meta.UniqueRedeemID,
-		actionData.TxReqID,
-		meta.TokenID,
-		meta.RedeemerIncAddressStr,
-		meta.RemoteAddress,
-		meta.RedeemAmount,
-		matchingCustodiansDetail,
-		meta.RedeemFee,
-		beaconHeight + 1,
-	)
-	currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest] = redeemRequest
-
 	// update custodian state (holding public tokens)
 	for k, cus := range matchingCustodiansDetail {
 		if currentPortalState.CustodianPoolState[k].HoldingPubTokens[tokenSymbol] < cus.Amount {
@@ -1180,6 +1166,20 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 		matchingCustodianUpdateKey[incAddressCus] = new(lvdb.MatchingRedeemCustodianDetail)
 		matchingCustodianUpdateKey[incAddressCus] = cus
 	}
+
+	// add to waiting Redeem list
+	redeemRequest, _ := NewRedeemRequestState(
+		meta.UniqueRedeemID,
+		actionData.TxReqID,
+		meta.TokenID,
+		meta.RedeemerIncAddressStr,
+		meta.RemoteAddress,
+		meta.RedeemAmount,
+		matchingCustodianUpdateKey,
+		meta.RedeemFee,
+		beaconHeight + 1,
+	)
+	currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest] = redeemRequest
 
 	Logger.log.Infof("[Portal] Build accepted instruction for redeem request")
 	inst := buildRedeemRequestInst(

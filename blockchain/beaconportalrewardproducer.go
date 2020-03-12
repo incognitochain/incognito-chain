@@ -31,6 +31,10 @@ func splitPortingFeeForMatchingCustodians(
 	rewardInfos map[string]uint64) {
 	for incAddr, matchCustodianDetail := range matchingCustodianAddresses {
 		splitedFee := float64(matchCustodianDetail.Amount) / float64(portingAmount) * float64(feeAmount)
+		Logger.log.Errorf("matchCustodianDetail.Amount: %v\n", matchCustodianDetail.Amount)
+		Logger.log.Errorf("portingAmount: %v\n", portingAmount)
+		Logger.log.Errorf("feeAmount: %v\n", feeAmount)
+		Logger.log.Errorf("splitedFee: %v\n", splitedFee)
 		rewardInfos[incAddr] += uint64(math.Floor(splitedFee))
 	}
 }
@@ -42,7 +46,13 @@ func splitRedeemFeeForMatchingCustodians(
 	rewardInfos map[string]uint64) {
 	for incAddr, matchCustodianDetail := range matchingCustodianAddresses {
 		splitedFee := float64(matchCustodianDetail.Amount) / float64(redeemAmount) * float64(feeAmount)
+		Logger.log.Errorf("matchCustodianDetail.Amount: %v\n", matchCustodianDetail.Amount)
+		Logger.log.Errorf("redeemAmount: %v\n", redeemAmount)
+		Logger.log.Errorf("feeAmount: %v\n", feeAmount)
+		Logger.log.Errorf("splitedFee: %v\n", splitedFee)
 		rewardInfos[incAddr] += uint64(math.Floor(splitedFee))
+		Logger.log.Errorf("rewardInfos[incAddr]: %v\n", rewardInfos[incAddr])
+		Logger.log.Errorf("incAddr: %v\n", incAddr)
 	}
 }
 
@@ -54,6 +64,10 @@ func splitRewardForCustodians(
 	for _, custodian := range custodianState {
 		for _, lockedAmount := range custodian.LockedAmountCollateral {
 			splitedReward :=  float64(lockedAmount) / float64(totalLockedAmount) * float64(totalReward)
+			Logger.log.Errorf("lockedAmount: %v\n", lockedAmount)
+			Logger.log.Errorf("totalLockedAmount: %v\n", totalLockedAmount)
+			Logger.log.Errorf("totalReward: %v\n", totalReward)
+			Logger.log.Errorf("splitedReward: %v\n", splitedReward)
 			rewardInfos[custodian.IncognitoAddress] += uint64(math.Floor(splitedReward))
 		}
 	}

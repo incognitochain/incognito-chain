@@ -698,9 +698,6 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 		// update custodian state
 		for incAddr, cus := range actionData.MatchingCustodianDetail {
 			custodianStateKey := lvdb.NewCustodianStateKey(beaconHeight, incAddr)
-			//todo: need to be removed
-			Logger.log.Errorf("custodianStateKey: %v\n", custodianStateKey)
-			Logger.log.Errorf("currentPortalState.CustodianPoolState: %+v\n", currentPortalState.CustodianPoolState)
 			if currentPortalState.CustodianPoolState[custodianStateKey].HoldingPubTokens[tokenSymbol] < cus.Amount {
 				Logger.log.Errorf("[processPortalRedeemRequest] Amount holding public tokens is less than matching redeem amount")
 				return nil
