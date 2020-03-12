@@ -31,14 +31,14 @@ func CreateOutputs(addressesPointer *[]address.PublicAddress, moneyPointer *[]ui
 		if err != nil {
 			return nil, nil, errors.New("Error in tx_full CreateOutputs: money of the output is invalid")
 		}
-		result[i] = *utxo.NewUtxo(uint8(i), mask, amount, txData, addressee, commitment,  nil)
+		result[i] = *utxo.NewUtxo(uint8(i), mask, amount, txData, addressee, commitment)
 	}
 	return &result, sumBlind, nil
 }
 
 // Check whether the utxo is from this address
 func IsUtxoOfAddress(addr *address.PrivateAddress, utxo *utxo.Utxo) bool {
-	rK := new(operation.Point).ScalarMult(utxo.GetTxData(), addr.GetPrivateView())
+	rK := new(operation.Point).ScalarMult(utxo.GetTxRandom(), addr.GetPrivateView())
 
 	hashed := operation.HashToScalar(
 		append(rK.ToBytesS(), utxo.GetIndex()),
