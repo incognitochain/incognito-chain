@@ -2,16 +2,13 @@ package onetime_address
 
 import (
 	"errors"
-	"math/big"
-
+	"github.com/incognitochain/incognito-chain/privacy/address"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/onetime_address/address"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/onetime_address/utxo"
 )
 
 func ParseUtxoPrivatekey(addr *address.PrivateAddress, utxo *utxo.Utxo) *operation.Scalar {
-	rK := new(operation.Point).ScalarMult(utxo.GetTxData(), addr.GetPrivateView())
+	rK := new(operation.Point).ScalarMult(utxo.GetTxRandom(), addr.GetPrivateView())
 	hashed := operation.HashToScalar(
 		append(rK.ToBytesS(), utxo.GetIndex()),
 	)
@@ -37,11 +34,8 @@ func parseOTAWithCached(r *operation.Scalar, addr *address.PublicAddress, index 
 	return addressee, txData, cachedHash
 }
 
-func parseMoneyToCreateOutput(blind *operation.Scalar, cachedHash *operation.Scalar, money *big.Int, index byte) (mask *operation.Scalar, amount *operation.Scalar, commitment *operation.Point, err error) {
-	scMoney := privacy_util.BigIntToScalar(money)
-	if scMoney == nil {
-		return nil, nil, nil, errors.New("OTA error parseMoneyToCreateInput: Cannot parse BigInt To Scalar")
-	}
+func parseMoneyToCreateOutput(blind *operation.Scalar, cachedHash *operation.Scalar, money uint64, index byte) (mask *operation.Scalar, amount *operation.Scalar, commitment *operation.Point, err error) {
+	scMoney := new(operation.Scalar).FromUint64(money)
 
 	mask = operation.HashToScalar(cachedHash.ToBytesS())
 	amount = operation.HashToScalar(mask.ToBytesS())
@@ -58,7 +52,7 @@ func ParseBlindAndMoneyFromUtxo(addr *address.PrivateAddress, utxo *utxo.Utxo) (
 	if IsUtxoOfAddress(addr, utxo) == false {
 		return nil, nil, errors.New("Error in ota_interpreter ParseBlindAndMoneyFromUtxo: utxo is not from this address")
 	}
-	shared_secret := new(operation.Point).ScalarMult(utxo.GetTxData(), addr.GetPrivateView())
+	shared_secret := new(operation.Point).ScalarMult(utxo.GetTxRandom(), addr.GetPrivateView())
 	hashed_offset := operation.HashToScalar(
 		append(shared_secret.ToBytesS(), utxo.GetIndex()),
 	)
@@ -79,12 +73,5 @@ func ParseBlindAndMoneyFromUtxo(addr *address.PrivateAddress, utxo *utxo.Utxo) (
 }
 
 func ParseCommitment(blind *operation.Scalar, money *operation.Scalar) *operation.Point {
-	// Get blind*G
-	blindHalf := new(operation.Point).ScalarMultBase(blind)
-
-	// Get value pedersen H in privacy library
-	H := operation.PedCom.G[operation.PedersenValueIndex]
-	moneyHalf := new(operation.Point).ScalarMult(H, money)
-
-	return new(operation.Point).Add(blindHalf, moneyHalf)
+	return new(operation.Point).AddPedersen(blind, operation.GBase, money, operation.HBase)
 }

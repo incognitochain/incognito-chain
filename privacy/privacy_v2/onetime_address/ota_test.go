@@ -5,8 +5,8 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/incognitochain/incognito-chain/privacy/address"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/onetime_address/address"
 	"github.com/stretchr/testify/assert"
 )
 

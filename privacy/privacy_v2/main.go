@@ -7,7 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/mlsag"
 	ota "github.com/incognitochain/incognito-chain/privacy/privacy_v2/onetime_address"
 
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/onetime_address/address"
+	"github.com/incognitochain/incognito-chain/privacy/address"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/txfull"
 )
 

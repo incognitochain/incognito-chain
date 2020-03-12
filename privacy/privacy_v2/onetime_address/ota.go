@@ -2,20 +2,19 @@ package onetime_address
 
 import (
 	"errors"
-	"math/big"
-
+	"github.com/incognitochain/incognito-chain/privacy/address"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/onetime_address/address"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/onetime_address/utxo"
 )
 
 // Create output of utxos and sum of blind values for later usage
-func CreateOutputs(addressesPointer *[]address.PublicAddress, moneyPointer *[]big.Int) (*[]utxo.Utxo, *operation.Scalar, error) {
+func CreateOutputs(addressesPointer *[]address.PublicAddress, moneyPointer *[]uint64) (*[]utxo.Utxo, *operation.Scalar, error) {
 	addr := *addressesPointer
 	money := *moneyPointer
 
 	result := make([]utxo.Utxo, len(addr))
-	if len(addr) > 256 {
+	if len(addr) > privacy_util.MaxOutputCoin {
 		return nil, nil, errors.New("Error in tx_full CreateOutputs: Cannot create too much output (maximum is 256)")
 	}
 	if len(addr) != len(money) {
@@ -28,11 +27,11 @@ func CreateOutputs(addressesPointer *[]address.PublicAddress, moneyPointer *[]bi
 		sumBlind = sumBlind.Add(sumBlind, blind) // The creator of outputs should know sum of blind for signature
 
 		addressee, txData, cachedHash := parseOTAWithCached(r, &addr[i], byte(i))
-		mask, amount, commitment, err := parseMoneyToCreateOutput(blind, cachedHash, &money[i], byte(i))
+		mask, amount, commitment, err := parseMoneyToCreateOutput(blind, cachedHash, money[i], byte(i))
 		if err != nil {
 			return nil, nil, errors.New("Error in tx_full CreateOutputs: money of the output is invalid")
 		}
-		result[i] = *utxo.NewUtxo(uint8(i), mask, amount, txData, addressee, commitment)
+		result[i] = *utxo.NewUtxo(uint8(i), mask, amount, txData, addressee, commitment,  nil)
 	}
 	return &result, sumBlind, nil
 }

@@ -4,14 +4,8 @@ import (
 	"math"
 
 	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 	"github.com/pkg/errors"
-)
-
-const (
-	maxExp               = 64
-	numCommitValue       = 5
-	maxOutputNumber      = 32
-	maxOutputNumberParam = 256
 )
 
 type AggregatedRangeWitness struct {
@@ -38,7 +32,7 @@ type bulletproofParams struct {
 	cs *operation.Point
 }
 
-var AggParam = newBulletproofParams(maxOutputNumber)
+var AggParam = newBulletproofParams(privacy_util.MaxOutputCoin)
 
 func (proof AggregatedRangeProof) ValidateSanity() bool {
 	for i := 0; i < len(proof.cmsValue); i++ {
@@ -190,11 +184,13 @@ func (wit *AggregatedRangeWitness) Set(values []uint64, rands []*operation.Scala
 func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	proof := new(AggregatedRangeProof)
 	numValue := len(wit.values)
-	if numValue > maxOutputNumber {
-		return nil, errors.New("Must less than maxOutputNumber")
+	if numValue > privacy_util.MaxOutputCoin {
+		return nil, errors.New("Must less than MaxOutputCoin")
 	}
 	numValuePad := roundUpPowTwo(numValue)
+	maxExp := privacy_util.MaxExp
 	N := maxExp * numValuePad
+
 	aggParam := setAggregateParams(N)
 
 	values := make([]uint64, numValuePad)
@@ -362,10 +358,11 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 
 func (proof AggregatedRangeProof) Verify() (bool, error) {
 	numValue := len(proof.cmsValue)
-	if numValue > maxOutputNumber {
-		return false, errors.New("Must less than maxOutputNumber")
+	if numValue > privacy_util.MaxOutputCoin {
+		return false, errors.New("Must less than MaxOutputNumber")
 	}
 	numValuePad := roundUpPowTwo(numValue)
+	maxExp := privacy_util.MaxExp
 	N := numValuePad * maxExp
 	aggParam := setAggregateParams(N)
 
@@ -415,10 +412,11 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 
 func (proof AggregatedRangeProof) VerifyFaster() (bool, error) {
 	numValue := len(proof.cmsValue)
-	if numValue > maxOutputNumber {
-		return false, errors.New("Must less than maxOutputNumber")
+	if numValue > privacy_util.MaxOutputCoin {
+		return false, errors.New("Must less than MaxOutputNumber")
 	}
 	numValuePad := roundUpPowTwo(numValue)
+	maxExp := privacy_util.MaxExp
 	N := maxExp * numValuePad
 	aggParam := setAggregateParams(N)
 
@@ -509,6 +507,7 @@ func (proof AggregatedRangeProof) VerifyFaster() (bool, error) {
 }
 
 func VerifyBatch(proofs []*AggregatedRangeProof) (bool, error, int) {
+	maxExp := privacy_util.MaxExp
 	baseG := operation.PedCom.G[operation.PedersenValueIndex]
 	baseH := operation.PedCom.G[operation.PedersenRandomnessIndex]
 
@@ -540,8 +539,8 @@ func VerifyBatch(proofs []*AggregatedRangeProof) (bool, error, int) {
 
 	for k, proof := range proofs {
 		numValue := len(proof.cmsValue)
-		if numValue > maxOutputNumber {
-			return false, errors.New("Must less than maxOutputNumber"), k
+		if numValue > privacy_util.MaxOutputCoin {
+			return false, errors.New("Must less than MaxOutputNumber"), k
 		}
 		numValuePad := roundUpPowTwo(numValue)
 		N := maxExp * numValuePad
@@ -693,5 +692,5 @@ func VerifyBatch(proofs []*AggregatedRangeProof) (bool, error, int) {
 
 // estimateMultiRangeProofSize estimate multi range proof size
 func EstimateMultiRangeProofSize(nOutput int) uint64 {
-	return uint64((nOutput+2*int(math.Log2(float64(maxExp*roundUpPowTwo(nOutput))))+5)*operation.Ed25519KeySize + 5*operation.Ed25519KeySize + 2)
+	return uint64((nOutput+2*int(math.Log2(float64(privacy_util.MaxExp*roundUpPowTwo(nOutput))))+5)*operation.Ed25519KeySize + 5*operation.Ed25519KeySize + 2)
 }

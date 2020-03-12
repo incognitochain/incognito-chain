@@ -2,6 +2,7 @@ package bulletproofs
 
 import (
 	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 	"github.com/pkg/errors"
 )
 
@@ -38,8 +39,8 @@ func computeHPrime(y *operation.Scalar, N int, H []*operation.Point) []*operatio
 func computeDeltaYZ(z, zSquare *operation.Scalar, yVector []*operation.Scalar, N int) (*operation.Scalar, error) {
 	oneNumber := new(operation.Scalar).FromUint64(1)
 	twoNumber := new(operation.Scalar).FromUint64(2)
-	oneVectorN := powerVector(oneNumber, maxExp)
-	twoVectorN := powerVector(twoNumber, maxExp)
+	oneVectorN := powerVector(oneNumber, privacy_util.MaxExp)
+	twoVectorN := powerVector(twoNumber, privacy_util.MaxExp)
 	oneVector := powerVector(oneNumber, N)
 
 	deltaYZ := new(operation.Scalar).Sub(z, zSquare)
@@ -54,7 +55,7 @@ func computeDeltaYZ(z, zSquare *operation.Scalar, yVector []*operation.Scalar, N
 		deltaYZ.Mul(deltaYZ, ip1)
 		sum := new(operation.Scalar).FromUint64(0)
 		zTmp := new(operation.Scalar).Set(zSquare)
-		for j := 0; j < int(N/maxExp); j++ {
+		for j := 0; j < int(N/privacy_util.MaxExp); j++ {
 			zTmp.Mul(zTmp, z)
 			sum.Add(sum, zTmp)
 		}
@@ -166,6 +167,9 @@ func encodeVectors(l []*operation.Scalar, r []*operation.Scalar, g []*operation.
 
 // bulletproofParams includes all generator for aggregated range proof
 func newBulletproofParams(m int) *bulletproofParams {
+	maxExp := privacy_util.MaxExp
+	numCommitValue := privacy_util.NumBase
+	maxOutputCoin := privacy_util.MaxOutputCoin
 	capacity := maxExp * m // fixed value
 	param := new(bulletproofParams)
 	param.g = make([]*operation.Point, capacity)
@@ -174,13 +178,13 @@ func newBulletproofParams(m int) *bulletproofParams {
 
 	for i := 0; i < capacity; i++ {
 		param.g[i] = operation.HashToPointFromIndex(int64(numCommitValue+i), operation.CStringBulletProof)
-		param.h[i] = operation.HashToPointFromIndex(int64(numCommitValue+i+maxOutputNumberParam*maxExp), operation.CStringBulletProof)
+		param.h[i] = operation.HashToPointFromIndex(int64(numCommitValue+i+maxOutputCoin*maxExp), operation.CStringBulletProof)
 		csByte = append(csByte, param.g[i].ToBytesS()...)
 		csByte = append(csByte, param.h[i].ToBytesS()...)
 	}
 
 	param.u = new(operation.Point)
-	param.u = operation.HashToPointFromIndex(int64(numCommitValue+2*maxOutputNumberParam*maxExp), operation.CStringBulletProof)
+	param.u = operation.HashToPointFromIndex(int64(numCommitValue+2*maxOutputCoin*maxExp), operation.CStringBulletProof)
 	csByte = append(csByte, param.u.ToBytesS()...)
 
 	param.cs = operation.HashToPoint(csByte)

@@ -11,6 +11,11 @@ func RandInt() int {
 	return rand.Int()
 }
 
+func RandUint64() uint64 {
+	rand.Seed(time.Now().UnixNano())
+	return rand.Uint64()
+}
+
 // RandIntInterval returns a random int in range [L; R]
 func RandIntInterval(L, R int) int {
 	length := R - L + 1

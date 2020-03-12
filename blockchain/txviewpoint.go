@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"errors"
+	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
 	"sort"
 	"strconv"
 

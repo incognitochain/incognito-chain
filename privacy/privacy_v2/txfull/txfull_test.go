@@ -8,9 +8,9 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/privacy/address"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/mlsag"
 	ota "github.com/incognitochain/incognito-chain/privacy/privacy_v2/onetime_address"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/onetime_address/address"
 )
 
 func Create_Addresses_With_Specified_Money(n, sumSpecifiedMoney int) (*[]address.PrivateAddress, *[]address.PublicAddress, *[]big.Int) {

@@ -2,6 +2,7 @@ package bulletproofs
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -47,7 +48,7 @@ func TestPowerVector(t *testing.T) {
 
 func TestInnerProduct(t *testing.T) {
 	for j := 0; j < 5; j++ {
-		n := maxExp
+		n := privacy_util.MaxExp
 		a := make([]*operation.Scalar, n)
 		b := make([]*operation.Scalar, n)
 		uinta := make([]uint64, n)
@@ -69,7 +70,7 @@ func TestInnerProduct(t *testing.T) {
 func TestEncodeVectors(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		var AggParam = newBulletproofParams(1)
-		n := maxExp
+		n := privacy_util.MaxExp
 		a := make([]*operation.Scalar, n)
 		b := make([]*operation.Scalar, n)
 		G := make([]*operation.Point, n)
@@ -99,16 +100,16 @@ func TestEncodeVectors(t *testing.T) {
 
 func TestInnerProductProveVerify(t *testing.T) {
 	for k := 0; k < 4; k++ {
-		numValue := rand.Intn(maxOutputNumber)
+		numValue := rand.Intn(privacy_util.MaxOutputCoin)
 		numValuePad := roundUpPowTwo(numValue)
 		aggParam := new(bulletproofParams)
-		aggParam.g = AggParam.g[0 : numValuePad*maxExp]
-		aggParam.h = AggParam.h[0 : numValuePad*maxExp]
+		aggParam.g = AggParam.g[0 : numValuePad*privacy_util.MaxExp]
+		aggParam.h = AggParam.h[0 : numValuePad*privacy_util.MaxExp]
 		aggParam.u = AggParam.u
 		aggParam.cs = AggParam.cs
 
 		wit := new(InnerProductWitness)
-		n := maxExp * numValuePad
+		n := privacy_util.MaxExp * numValuePad
 		wit.a = make([]*operation.Scalar, n)
 		wit.b = make([]*operation.Scalar, n)
 
@@ -151,7 +152,7 @@ func TestAggregatedRangeProveVerify(t *testing.T) {
 	for i := 0; i < 4; i++ {
 		//prepare witness for Aggregated range protocol
 		wit := new(AggregatedRangeWitness)
-		numValue := rand.Intn(maxOutputNumber)
+		numValue := rand.Intn(privacy_util.MaxOutputCoin)
 		values := make([]uint64, numValue)
 		rands := make([]*operation.Scalar, numValue)
 
@@ -197,7 +198,7 @@ func TestAggregatedRangeProveVerifyBatch(t *testing.T) {
 	for i := 0; i < count; i++ {
 		//prepare witness for Aggregated range protocol
 		wit := new(AggregatedRangeWitness)
-		numValue := rand.Intn(maxOutputNumber)
+		numValue := rand.Intn(privacy_util.MaxOutputCoin)
 		values := make([]uint64, numValue)
 		rands := make([]*operation.Scalar, numValue)
 
@@ -236,7 +237,7 @@ func TestBenchmarkAggregatedRangeProveVerifyUltraFast(t *testing.T) {
 		for i := 0; i < count; i++ {
 			//prepare witness for Aggregated range protocol
 			wit := new(AggregatedRangeWitness)
-			//numValue := rand.Intn(maxOutputNumber)
+			//numValue := rand.Intn(MaxOutputNumber)
 			numValue := 8
 			values := make([]uint64, numValue)
 			rands := make([]*operation.Scalar, numValue)
