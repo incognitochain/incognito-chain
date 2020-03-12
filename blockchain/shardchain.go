@@ -2,9 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/multiview"
-	"strings"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -170,6 +168,9 @@ func (chain *ShardChain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterfa
 // }
 
 func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerPosition(block, committee); err != nil {
+		return err
+	}
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
 		return err
 	}
@@ -226,61 +227,4 @@ func (chain *ShardChain) UnmarshalBlock(blockString []byte) (common.BlockInterfa
 
 func (chain *ShardChain) ValidatePreSignBlock(block common.BlockInterface) error {
 	return chain.Blockchain.VerifyPreSignShardBlock(block.(*ShardBlock), chain.GetBestState().ShardID)
-}
-
-//validate all type of signature, including producer, proposer and agg sig
-func (chain *ShardChain) ValidateCrossShardBlockSignature(csBlk *CrossShardBlock) (err error) {
-	//get commmitee at this time
-	height := csBlk.Header.Height
-	sid := csBlk.Header.ShardID
-
-	beaconBlkConfirm, err := chain.Blockchain.config.Server.FetchBeaconBlockConfirmCrossShardHeight(int(sid), chain.GetShardID(), height)
-	if err != nil {
-		return err
-	}
-
-	shardCommitteeBytes, err := chain.Blockchain.config.DataBase.FetchShardCommitteeByHeight(beaconBlkConfirm.GetHeight())
-	if err != nil {
-		return err
-	}
-
-	allShardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
-	json.Unmarshal(shardCommitteeBytes, &allShardCommittee)
-	if err != nil {
-		return err
-	}
-
-	shardCommittee := allShardCommittee[byte(chain.GetShardID())]
-
-	//check producer,proposer,agg sig with this version
-	if csBlk.Header.Version == 1 {
-		//validate producer
-		producer := csBlk.Header.Producer
-		tmpProducer, _ := shardCommittee[0].ToBase58()
-		if tmpProducer != producer {
-			return NewBlockChainError(ProducerError, fmt.Errorf("Producer should be should be %+v", tmpProducer))
-		}
-	} else {
-
-		//validate producer
-		producer := csBlk.Header.Producer
-		produceTime := csBlk.Header.Timestamp
-		tempProducer := GetProposerByTimeSlot(common.CalculateTimeSlot(produceTime), shardCommittee)
-		b58Str, _ := tempProducer.ToBase58()
-		if strings.Compare(b58Str, producer) != 0 {
-			return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", b58Str, producer))
-		}
-
-		//validate proposer
-		proposer := csBlk.Header.Proposer
-		proposeTime := csBlk.Header.ProposeTime
-		tempProducer = GetProposerByTimeSlot(common.CalculateTimeSlot(proposeTime), shardCommittee)
-		b58Str, _ = tempProducer.ToBase58()
-		if strings.Compare(b58Str, proposer) != 0 {
-			return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Proposer Public Key to be equal but get %+v From Index, %+v From Header", b58Str, proposer))
-		}
-	}
-
-	//validate agg sig
-	return chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(csBlk, shardCommittee, common.BlsConsensus)
 }

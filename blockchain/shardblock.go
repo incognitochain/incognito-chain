@@ -461,6 +461,10 @@ func (block ShardBlock) GetValidationField() string {
 	return block.ValidationData
 }
 
+func (block ShardBlock) GetVersion() int {
+	return block.Header.Version
+}
+
 func (block ShardBlock) GetHeight() uint64 {
 	return block.Header.Height
 }
@@ -479,6 +483,10 @@ func (block ShardBlock) GetInstructions() [][]string {
 
 func (block CrossShardBlock) GetProducer() string {
 	return block.Header.Producer
+}
+
+func (block CrossShardBlock) GetVersion() int {
+	return block.Header.Version
 }
 
 func (block CrossShardBlock) GetHeight() uint64 {
@@ -503,6 +511,10 @@ func (block CrossShardBlock) GetInstructions() [][]string {
 
 func (block ShardToBeaconBlock) GetValidationField() string {
 	return block.ValidationData
+}
+
+func (block ShardToBeaconBlock) GetVersion() int {
+	return block.Header.Version
 }
 
 func (block ShardToBeaconBlock) GetHeight() uint64 {

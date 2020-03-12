@@ -18,6 +18,10 @@ type BeaconBlock struct {
 	Header         BeaconHeader
 }
 
+func (beaconBlock *BeaconBlock) GetVersion() int {
+	return beaconBlock.Header.Version
+}
+
 func (beaconBlock *BeaconBlock) GetPrevHash() common.Hash {
 	return beaconBlock.Header.PreviousBlockHash
 }

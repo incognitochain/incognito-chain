@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus/blsbft"
 	"github.com/incognitochain/incognito-chain/consensus/blsbftv2"
@@ -117,6 +118,39 @@ func (engine *Engine) VerifyData(data []byte, sig string, publicKey string, cons
 		return blsbft.NewConsensusError(blsbft.LoadKeyError, err)
 	}
 	return engine.currentMiningProcess.ValidateData(data, sig, string(mapPublicKey[common.BridgeConsensus]))
+}
+
+func (engine *Engine) ValidateProducerPosition(blk common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+	//check producer,proposer,agg sig with this version
+	if blk.GetVersion() == 1 {
+		//validate producer
+		producer := blk.GetProducer()
+		tmpProducer, _ := committee[0].ToBase58()
+		if tmpProducer != producer {
+			return fmt.Errorf("Producer should be should be %+v", tmpProducer)
+		}
+	} else {
+
+		//validate producer
+		producer := blk.GetProducer()
+		produceTime := blk.GetProduceTime()
+		tempProducer := blockchain.GetProposerByTimeSlot(common.CalculateTimeSlot(produceTime), committee)
+		b58Str, _ := tempProducer.ToBase58()
+		if strings.Compare(b58Str, producer) != 0 {
+			return fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", b58Str, producer)
+		}
+
+		//validate proposer
+		proposer := blk.GetProposer()
+		proposeTime := blk.GetProposeTime()
+		tempProducer = blockchain.GetProposerByTimeSlot(common.CalculateTimeSlot(proposeTime), committee)
+		b58Str, _ = tempProducer.ToBase58()
+		if strings.Compare(b58Str, proposer) != 0 {
+			return fmt.Errorf("Expect Proposer Public Key to be equal but get %+v From Index, %+v From Header", b58Str, proposer)
+		}
+	}
+
+	return nil
 }
 
 func (engine *Engine) ValidateProducerSig(block common.BlockInterface, consensusType string) error {

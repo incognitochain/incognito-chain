@@ -17,6 +17,7 @@ type CrossShardBlkPoolInterface interface {
 }
 
 type BlockInterface interface {
+	GetVersion() int
 	GetHeight() uint64
 	Hash() *Hash
 	// AddValidationField(validateData string) error

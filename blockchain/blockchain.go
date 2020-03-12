@@ -78,6 +78,7 @@ type Config struct {
 	// UserKeySet *incognitokey.KeySet
 
 	ConsensusEngine interface {
+		ValidateProducerPosition(blk common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 		ValidateProducerSig(block common.BlockInterface, consensusType string) error
 		ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey, consensusType string) error
 		GetCurrentMiningPublicKey() (string, string)
