@@ -2,17 +2,15 @@ package metadata
 
 import "github.com/incognitochain/incognito-chain/database/lvdb"
 
-type TopPercentileExchangeRatesLiquidation struct {
+type PortalLiquidateTopPercentileExchangeRates struct {
 	MetadataBase
 	TPValue int
 	CustodianAddress string
 	ExchangeRates lvdb.FinalExchangeRates
 }
 
-type TopPercentileExchangeRatesLiquidationContent struct {
-	TPValue map[string]int
+type PortalLiquidateTopPercentileExchangeRatesContent struct {
 	CustodianAddress string
-	ExchangeRates lvdb.FinalExchangeRates
 	Status string
 	MetaType int
 	ShardID byte

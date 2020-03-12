@@ -222,7 +222,7 @@ type DatabaseInterface interface {
 
 	TrackLiquidateCustodian(key []byte, value []byte) error
 	GetLiquidateCustodian(redeemID string, custodianIncAddrStr string) ([]byte, error)
-
+	StoreLiquidateTopPercentileExchangeRates(key []byte, value interface{}) error
 
 	// relaying
 	GetItemByKey(key []byte) ([]byte, error)

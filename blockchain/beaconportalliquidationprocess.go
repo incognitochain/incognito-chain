@@ -117,5 +117,96 @@ func (blockchain *BlockChain) processPortalLiquidateCustodian(
 
 func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(beaconHeight uint64, instructions []string,
 currentPortalState *CurrentPortalState) error {
+	db := blockchain.GetDatabase()
+
+	// unmarshal instructions content
+	var actionData metadata.PortalLiquidateTopPercentileExchangeRatesContent
+	err := json.Unmarshal([]byte(instructions[3]), &actionData)
+	if err != nil {
+		Logger.log.Errorf("Can not unmarshal instruction content %v\n", err)
+		return nil
+	}
+
+
+	keyExchangeRate := lvdb.NewFinalExchangeRatesKey(beaconHeight)
+	exchangeRate, ok := currentPortalState.FinalExchangeRates[keyExchangeRate]
+	if !ok {
+		Logger.log.Errorf("Exchange rate not found", err)
+		return nil
+	}
+
+	cusStateKey := lvdb.NewCustodianStateKey(beaconHeight, actionData.CustodianAddress)
+	custodianState, ok := currentPortalState.CustodianPoolState[cusStateKey]
+	//todo: check custodian exist on db
+	if !ok {
+		Logger.log.Errorf("Custodian not found")
+		return nil
+	}
+
+	reqStatus := instructions[2]
+	if reqStatus == common.PortalLiquidateTPExchangeRatesSuccessChainStatus {
+		//validation
+		result, err := detectMinAspectRatio(custodianState.HoldingPubTokens, custodianState.LockedAmountCollateral, exchangeRate)
+		if err != nil {
+			Logger.log.Errorf("Detect min aspect ratio error %v", err)
+			return nil
+		}
+
+		tpList := make(map[string]int)
+		newCustodian := custodianState
+
+		for ptoken, tpValue := range result {
+			if isTp120, ok := isTP120(tpValue); ok {
+				tpList[ptoken] = tpValue
+				if isTp120 {
+					//update custodian
+					newCustodian.LockedAmountCollateral[ptoken] = 0
+					newCustodian.HoldingPubTokens[ptoken] = 0
+					newCustodian.TotalCollateral = newCustodian.TotalCollateral - custodianState.LockedAmountCollateral[ptoken]
+
+					//todo: update final liquidate
+					//load liquidate
+					//save liquidate
+				}
+			}
+		}
+
+		if len(tpList) > 0 {
+			newTPKey := lvdb.NewPortalLiquidateTPExchangeRatesKey(beaconHeight, custodianState.IncognitoAddress)
+			newTPExchangeRates, _ := NewLiquidateTopPercentileExchangeRates(
+				tpList,
+				newCustodian.IncognitoAddress,
+				newCustodian.LockedAmountCollateral,
+				newCustodian.HoldingPubTokens,
+				*exchangeRate,
+				common.PortalLiquidateTPExchangeRatesSuccessChainStatus,
+				)
+
+			err := db.StoreLiquidateTopPercentileExchangeRates([]byte(newTPKey), newTPExchangeRates)
+			if err != nil {
+				Logger.log.Errorf("ERROR: an error occurred while store liquidation TP exchange rates %v", err)
+				return nil
+			}
+
+			currentPortalState.CustodianPoolState[cusStateKey] = newCustodian
+		}
+	} else if reqStatus == common.PortalLiquidateTPExchangeRatesFailedChainStatus {
+		newTPKey := lvdb.NewPortalLiquidateTPExchangeRatesKey(beaconHeight, custodianState.IncognitoAddress)
+		newTPExchangeRates, _ := NewLiquidateTopPercentileExchangeRates(
+			nil,
+			custodianState.IncognitoAddress,
+			custodianState.LockedAmountCollateral,
+			custodianState.HoldingPubTokens,
+			*exchangeRate,
+			common.PortalLiquidateTPExchangeRatesFailedChainStatus,
+		)
+
+		err := db.StoreLiquidateTopPercentileExchangeRates([]byte(newTPKey), newTPExchangeRates)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occurred while store liquidation TP exchange rates %v", err)
+			return nil
+		}
+	}
+
 	return nil
 }

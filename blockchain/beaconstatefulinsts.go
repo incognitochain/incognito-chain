@@ -810,7 +810,7 @@ func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
 
 	// case 2: check collateral's value (locked collateral amount) drops below MinRatio
 
-	checkTopPercentileExchangeRatesLiquidationInst(beaconHeight, currentPortalState)
+	//checkTopPercentileExchangeRatesLiquidationInst(beaconHeight, currentPortalState)
 	return insts, nil
 }
 
