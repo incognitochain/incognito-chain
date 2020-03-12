@@ -204,9 +204,7 @@ const (
 )
 
 const (
-	// @@ Note: should replace tp 2160 before deploy
-	// 10 just for testings
-	PortalTimeOutCustodianSendPubTokenBack = 10        // 2160 beacon blocks ~ 24 hours
+	PortalTimeOutCustodianSendPubTokenBack = 2160        // 2160 beacon blocks ~ 24 hours
 	PercentReceivedCollateralAmount        = 120       // users will be receive 120% of redeem amount in PRV
 	TotalRewardPerBlock                    = 1 * 1e9       // 1 prv
 

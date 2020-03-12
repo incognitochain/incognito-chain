@@ -76,7 +76,9 @@ func checkAndBuildInstForCustodianLiquidation(
 	}
 
 	for redeemReqKey, redeemReq := range currentPortalState.WaitingRedeemRequests {
-		if beaconHeight - redeemReq.BeaconHeight >= common.PortalTimeOutCustodianSendPubTokenBack {
+		if beaconHeight - (redeemReq.BeaconHeight - 1) >= common.PortalTimeOutCustodianSendPubTokenBack {
+			Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] redeemReq.BeaconHeight: %v\n", redeemReq.BeaconHeight)
+			Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] beaconHeight: %v\n", beaconHeight)
 			// get shardId of redeemer
 			redeemerKey, err := wallet.Base58CheckDeserialize(redeemReq.RedeemerAddress)
 			if err != nil {
@@ -117,6 +119,7 @@ func checkAndBuildInstForCustodianLiquidation(
 				}
 
 				// update custodian state (total collateral, holding public tokens, locked amount, free collateral)
+				Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] cusIncAddr: %v\n", cusIncAddr)
 				cusStateKey := lvdb.NewCustodianStateKey(beaconHeight, cusIncAddr)
 				custodianState := currentPortalState.CustodianPoolState[cusStateKey]
 				if custodianState == nil {
