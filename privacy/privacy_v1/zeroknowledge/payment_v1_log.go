@@ -2,13 +2,13 @@ package zkp
 
 import "github.com/incognitochain/incognito-chain/common"
 
-type PaymentLogger struct {
+type PaymentV1Logger struct {
 	Log common.Logger
 }
 
-func (logger *PaymentLogger) Init(inst common.Logger) {
+func (logger *PaymentV1Logger) Init(inst common.Logger) {
 	logger.Log = inst
 }
 
 // Global instant to use
-var Logger = PaymentLogger{}
+var Logger = PaymentV1Logger{}

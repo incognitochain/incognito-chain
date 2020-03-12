@@ -13,6 +13,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
@@ -179,6 +180,24 @@ func updateParamsWhenOverBalance(params *TxPrivacyInitParams) error {
 	}
 
 	return nil
+}
+
+func parseLastByteSender(params *TxPrivacyInitParams) (byte, error) {
+	senderFullKey, err := parseSenderFullKey(params)
+	if err != nil {
+		return 0, err
+	}
+	return senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1], nil
+}
+
+func parseSenderFullKey(params *TxPrivacyInitParams) (*incognitokey.KeySet, error) {
+	senderFullKey := incognitokey.KeySet{}
+	err := senderFullKey.InitFromPrivateKey(params.senderSK)
+	if err != nil {
+		Logger.log.Error(errors.New(fmt.Sprintf("Can not import Private key for sender keyset from %+v", params.senderSK)))
+		return nil, NewTransactionErr(PrivateKeySenderInvalidError, err)
+	}
+	return &senderFullKey, nil
 }
 
 func initializeTxAndParams(tx *Tx, params *TxPrivacyInitParams) error {

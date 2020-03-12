@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/onetime_address/address"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/onetime_address/utxo"
 )
@@ -37,9 +38,9 @@ func parseOTAWithCached(r *operation.Scalar, addr *address.PublicAddress, index 
 }
 
 func parseMoneyToCreateOutput(blind *operation.Scalar, cachedHash *operation.Scalar, money *big.Int, index byte) (mask *operation.Scalar, amount *operation.Scalar, commitment *operation.Point, err error) {
-	scMoney, err := ParseBigIntToScalar(money)
-	if err != nil {
-		return nil, nil, nil, err
+	scMoney := privacy_util.BigIntToScalar(money)
+	if scMoney == nil {
+		return nil, nil, nil, errors.New("OTA error parseMoneyToCreateInput: Cannot parse BigInt To Scalar")
 	}
 
 	mask = operation.HashToScalar(cachedHash.ToBytesS())
@@ -50,25 +51,6 @@ func parseMoneyToCreateOutput(blind *operation.Scalar, cachedHash *operation.Sca
 	commitment = ParseCommitment(blind, scMoney)
 
 	return mask, amount, commitment, nil
-}
-
-func ParseBigIntToScalar(number *big.Int) (*operation.Scalar, error) {
-	b := number.Bytes()
-	if len(b) > 32 {
-		return nil, errors.New("Error in onetime_address ParseBigIntToScalar: BigInt too big (length larger than 32)")
-	}
-	zeroPadding := make([]byte, 32-len(b))
-	b = append(zeroPadding, b...)
-
-	// Reverse key of scalar
-	scalar := new(operation.Scalar).FromBytesS(b)
-	keyReverse := operation.Reverse(scalar.GetKey())
-	result, err := scalar.SetKey(&keyReverse)
-	if err != nil {
-		return nil, errors.New("Error in onetime_address ParseBigIntToScalar: scalar.SetKet got error")
-	}
-
-	return result, nil
 }
 
 // Get Mask and Amount from UTXO if we have privateAddress

@@ -10,20 +10,26 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseBigIntToScalar(t *testing.T) {
-	n, _ := new(big.Int).SetString("99999999999999999999999999999999999999999999999999999999999999999999999999999999", 10)
-	// A number that larger than 32 byte
-	_, err := ParseBigIntToScalar(n)
-	assert.NotEqual(t, nil, err, "Should have error")
-	fmt.Println(err)
+func TestWorkflowOnetimeAddress(t *testing.T) {
+	const n int = 3
+	money := make([]big.Int, n)
+	peopleAddresses := make([]address.PrivateAddress, n)
+	peoplePublicAddresses := make([]address.PublicAddress, n)
+	for i := 0; i < n; i += 1 {
+		peopleAddresses[i] = *address.GenerateRandomAddress()
+		peoplePublicAddresses[i] = *peopleAddresses[i].GetPublicAddress()
+		curMoney, _ := new(big.Int).SetString("100", 10)
+		money[i] = *curMoney
+	}
+	outputsPtr, _, err := CreateOutputs(&peoplePublicAddresses, &money)
+	outputs := *outputsPtr
+	assert.Equal(t, nil, err, "Should not have error when creating outputs")
 
-	n, _ = new(big.Int).SetString("100", 10)
-	sc, err := ParseBigIntToScalar(n)
-	key := sc.GetKey()
-	assert.Equal(t, nil, err, "Should have error")
-	assert.Equal(t, uint8(100), key[0], "Should have value like before")
-
-	fmt.Println(err)
+	for i := 0; i < len(outputs); i += 1 {
+		_, amount, err := ParseBlindAndMoneyFromUtxo(&peopleAddresses[i], &outputs[i])
+		assert.Equal(t, nil, err, "Should not have any error when parsing money")
+		assert.Equal(t, uint8(100), amount.GetKey()[0], "Amount when parse should be 100")
+	}
 }
 
 func TestParseUtxoPrivateKey(t *testing.T) {

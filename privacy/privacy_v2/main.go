@@ -16,32 +16,7 @@ func testMlsag() {
 }
 
 func testOTA() {
-	const n int = 3
-	money := make([]big.Int, n)
-	peopleAddresses := make([]address.PrivateAddress, n)
-	peoplePublicAddresses := make([]address.PublicAddress, n)
-	for i := 0; i < n; i += 1 {
-		peopleAddresses[i] = *address.GenerateRandomAddress()
-		peoplePublicAddresses[i] = *peopleAddresses[i].GetPublicAddress()
-		curMoney, _ := new(big.Int).SetString("100", 10)
-		money[i] = *curMoney
-	}
-	outputsPointer, _, err := ota.CreateOutputs(&peoplePublicAddresses, &money)
-	outputs := *outputsPointer
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
 
-	for i := 0; i < len(outputs); i += 1 {
-		mask, amount, err := ota.ParseBlindAndMoneyFromUtxo(&peopleAddresses[i], &outputs[i])
-		fmt.Println("Mask =")
-		fmt.Println(mask)
-		fmt.Println("Amount =")
-		fmt.Println(amount)
-		fmt.Println("Err =")
-		fmt.Println(err)
-	}
 }
 
 func testTxFull() {
