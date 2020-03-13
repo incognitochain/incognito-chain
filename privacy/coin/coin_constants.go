@@ -12,3 +12,10 @@ const (
 )
 
 var PedCom operation.PedersenCommitment = operation.PedCom
+
+func getMin(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}

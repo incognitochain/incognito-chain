@@ -2,8 +2,6 @@ package coin
 
 import (
 	"errors"
-	"io/ioutil"
-	"log"
 	"math/big"
 	"testing"
 
@@ -15,14 +13,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMain(m *testing.M) {
-	log.SetOutput(ioutil.Discard)
-	m.Run()
-}
-
-func TestCoinCommitAll(t *testing.T) {
-	for i := 0; i < 1000; i++ {
-		coin := new(Coin).Init()
+func TestCoinV1CommitAll(t *testing.T) {
+	for i := 0; i < 10; i++ {
+		coin := new(Coin_v1).Init()
 		seedKey := operation.RandomScalar().ToBytesS()
 		privateKey := key.GeneratePrivateKey(seedKey)
 		publicKey := key.GeneratePublicKey(privateKey)
@@ -51,8 +44,8 @@ func TestCoinCommitAll(t *testing.T) {
 
 func TestCoinMarshalJSON(t *testing.T) {
 
-	for i := 0; i < 1000; i++ {
-		coin := new(Coin).Init()
+	for i := 0; i < 10; i++ {
+		coin := new(Coin_v1).Init()
 		seedKey := operation.RandomScalar().ToBytesS()
 		privateKey := key.GeneratePrivateKey(seedKey)
 		publicKey := key.GeneratePublicKey(privateKey)
@@ -69,7 +62,7 @@ func TestCoinMarshalJSON(t *testing.T) {
 		bytesJSON, err := coin.MarshalJSON()
 		assert.Equal(t, nil, err)
 
-		coin2 := new(Coin)
+		coin2 := new(Coin_v1)
 		err2 := coin2.UnmarshalJSON(bytesJSON)
 		assert.Equal(t, nil, err2)
 		assert.Equal(t, coin, coin2)
@@ -82,8 +75,8 @@ func TestCoinMarshalJSON(t *testing.T) {
 
 func TestCoinBytesSetBytes(t *testing.T) {
 
-	for i := 0; i < 1000; i++ {
-		coin := new(Coin).Init()
+	for i := 0; i < 10; i++ {
+		coin := new(Coin_v1).Init()
 		seedKey := operation.RandomScalar().ToBytesS()
 		privateKey := key.GeneratePrivateKey(seedKey)
 		publicKey := key.GeneratePublicKey(privateKey)
@@ -103,7 +96,7 @@ func TestCoinBytesSetBytes(t *testing.T) {
 		assert.Greater(t, len(coinBytes), 0)
 
 		// new coin object and set bytes from bytes array
-		coin2 := new(Coin)
+		coin2 := new(Coin_v1)
 		err := coin2.SetBytes(coinBytes)
 
 		assert.Equal(t, nil, err)
@@ -112,8 +105,8 @@ func TestCoinBytesSetBytes(t *testing.T) {
 }
 
 func TestCoinBytesSetBytesWithMissingFields(t *testing.T) {
-	for i := 0; i < 1000; i++ {
-		coin := new(Coin).Init()
+	for i := 0; i < 10; i++ {
+		coin := new(Coin_v1).Init()
 		seedKey := operation.RandomScalar().ToBytesS()
 		privateKey := key.GeneratePrivateKey(seedKey)
 		publicKey := key.GeneratePublicKey(privateKey)
@@ -133,7 +126,7 @@ func TestCoinBytesSetBytesWithMissingFields(t *testing.T) {
 		assert.Greater(t, len(coinBytes), 0)
 
 		// new coin object and set bytes from bytes array
-		coin2 := new(Coin).Init()
+		coin2 := new(Coin_v1).Init()
 		err := coin2.SetBytes(coinBytes)
 
 		assert.Equal(t, nil, err)
@@ -144,7 +137,7 @@ func TestCoinBytesSetBytesWithMissingFields(t *testing.T) {
 func TestCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
 	// init coin with fully fields
 	// init public key
-	coin := new(Coin).Init()
+	coin := new(Coin_v1).Init()
 	seedKey := operation.RandomScalar().ToBytesS()
 	privateKey := key.GeneratePrivateKey(seedKey)
 	publicKey := key.GeneratePublicKey(privateKey)
@@ -166,7 +159,7 @@ func TestCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
 	coinBytes[len(coinBytes)-2] = byte(12)
 
 	// new coin object and set bytes from bytes array
-	coin2 := new(Coin).Init()
+	coin2 := new(Coin_v1).Init()
 	err := coin2.SetBytes(coinBytes)
 
 	assert.Equal(t, nil, err)
@@ -175,7 +168,7 @@ func TestCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
 
 func TestCoinBytesSetBytesWithEmptyBytes(t *testing.T) {
 	// new coin object and set bytes from bytes array
-	coin2 := new(Coin).Init()
+	coin2 := new(Coin_v1).Init()
 	err := coin2.SetBytes([]byte{})
 
 	assert.Equal(t, errors.New("coinBytes is empty"), err)
@@ -186,7 +179,7 @@ func TestCoinBytesSetBytesWithEmptyBytes(t *testing.T) {
 */
 
 func TestInputCoinBytesSetBytes(t *testing.T) {
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 10; i++ {
 		coin := new(InputCoin).Init()
 		seedKey := operation.RandomScalar().ToBytesS()
 		privateKey := key.GeneratePrivateKey(seedKey)
@@ -284,7 +277,6 @@ func TestInputCoinBytesSetBytesWithEmptyBytes(t *testing.T) {
 /*
 	Unit test for Bytes/SetBytes OutputCoin function
 */
-
 func TestOutputCoinBytesSetBytes(t *testing.T) {
 	coin := new(OutputCoin).Init()
 	seedKey := operation.RandomScalar().ToBytesS()
