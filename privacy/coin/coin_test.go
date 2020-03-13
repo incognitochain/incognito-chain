@@ -15,21 +15,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Why does coin_test needs logger????? I commented it
-// var _ = func() (_ struct{}) {
-// 	Logger.Init(common.NewBackend(nil).Logger("test", true))
-// 	Logger.Log.Info("This runs before init()!")
-// 	return
-// }()
-
 func TestMain(m *testing.M) {
 	log.SetOutput(ioutil.Discard)
 	m.Run()
 }
-
-/*
-	Unit test for CommitAll Coin
-*/
 
 func TestCoinCommitAll(t *testing.T) {
 	for i := 0; i < 1000; i++ {

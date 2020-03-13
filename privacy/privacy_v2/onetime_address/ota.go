@@ -2,18 +2,19 @@ package onetime_address
 
 import (
 	"errors"
+
 	"github.com/incognitochain/incognito-chain/privacy/address"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/onetime_address/utxo"
 )
 
 // Create output of utxos and sum of blind values for later usage
-func CreateOutputs(addressesPointer *[]address.PublicAddress, moneyPointer *[]uint64) (*[]utxo.Utxo, *operation.Scalar, error) {
+func CreateOutputs(addressesPointer *[]address.PublicAddress, moneyPointer *[]uint64) (*[]coin.Coin_v2, *operation.Scalar, error) {
 	addr := *addressesPointer
 	money := *moneyPointer
 
-	result := make([]utxo.Utxo, len(addr))
+	result := make([]coin.Coin_v2, len(addr))
 	if len(addr) > privacy_util.MaxOutputCoin {
 		return nil, nil, errors.New("Error in tx_full CreateOutputs: Cannot create too much output (maximum is 256)")
 	}
@@ -31,13 +32,13 @@ func CreateOutputs(addressesPointer *[]address.PublicAddress, moneyPointer *[]ui
 		if err != nil {
 			return nil, nil, errors.New("Error in tx_full CreateOutputs: money of the output is invalid")
 		}
-		result[i] = *utxo.NewUtxo(uint8(i), mask, amount, txData, addressee, commitment)
+		result[i] = *utxo.NewCoinv2(uint8(i), mask, amount, txData, addressee, commitment)
 	}
 	return &result, sumBlind, nil
 }
 
 // Check whether the utxo is from this address
-func IsUtxoOfAddress(addr *address.PrivateAddress, utxo *utxo.Utxo) bool {
+func IsCoinOfAddress(addr *address.PrivateAddress, utxo *coin.Coin_v2) bool {
 	rK := new(operation.Point).ScalarMult(utxo.GetTxRandom(), addr.GetPrivateView())
 
 	hashed := operation.HashToScalar(
