@@ -2,8 +2,12 @@ package syncker
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/wire"
 	"time"
 )
@@ -16,34 +20,36 @@ type BeaconPeerState struct {
 }
 
 type BeaconSyncProcess struct {
-	status                      string //stop, running
-	isCommittee                 bool
-	isCatchUp                   bool
-	beaconPeerStates            map[string]BeaconPeerState //sender -> state
-	beaconPeerStateCh           chan *wire.MessagePeerState
-	server                      Server
-	chain                       Chain
-	beaconPool                  *BlkPool
-	s2bSyncProcess              *S2BSyncProcess
-	actionCh                    chan func()
-	lastUpdateConfirmCrossShard uint64
+	status                         string //stop, running
+	isCommittee                    bool
+	isCatchUp                      bool
+	beaconPeerStates               map[string]BeaconPeerState //sender -> state
+	beaconPeerStateCh              chan *wire.MessagePeerState
+	server                         Server
+	chain                          Chain
+	beaconPool                     *BlkPool
+	s2bSyncProcess                 *S2BSyncProcess
+	actionCh                       chan func()
+	lastProcessConfirmBeaconHeight uint64
+	lastCrossShardState            map[byte]map[byte]uint64
 }
 
 func NewBeaconSyncProcess(server Server, chain BeaconChainInterface) *BeaconSyncProcess {
 	s := &BeaconSyncProcess{
-		status:                      STOP_SYNC,
-		server:                      server,
-		chain:                       chain,
-		beaconPool:                  NewBlkPool("BeaconPool"),
-		beaconPeerStates:            make(map[string]BeaconPeerState),
-		beaconPeerStateCh:           make(chan *wire.MessagePeerState),
-		actionCh:                    make(chan func()),
-		lastUpdateConfirmCrossShard: 1,
+		status:                         STOP_SYNC,
+		server:                         server,
+		chain:                          chain,
+		beaconPool:                     NewBlkPool("BeaconPool"),
+		beaconPeerStates:               make(map[string]BeaconPeerState),
+		beaconPeerStateCh:              make(chan *wire.MessagePeerState),
+		actionCh:                       make(chan func()),
+		lastProcessConfirmBeaconHeight: 1,
+		lastCrossShardState:            make(map[byte]map[byte]uint64),
 	}
 	s.s2bSyncProcess = NewS2BSyncProcess(server, s, chain)
 	go s.syncBeacon()
 	go s.insertBeaconBlockFromPool()
-	//go s.updateConfirmCrossShard()
+	go s.updateConfirmCrossShard()
 	return s
 }
 
@@ -107,34 +113,72 @@ func (s *BeaconSyncProcess) getBeaconPeerStates() map[string]BeaconPeerState {
 	return <-res
 }
 
+type NextCrossShardInfo struct {
+	nextCrossShardHeight uint64
+	nextCrossShardHash   string
+	confirmBeaconHeight  uint64
+	confirmBeaconHash    string
+}
+
 //watching confirm beacon block and update cross shard info (which beacon confirm crossshard block N of shard X)
 func (s *BeaconSyncProcess) updateConfirmCrossShard() {
 	//TODO: update lastUpdateConfirmCrossShard using DB
-	//fmt.Println("crossdebug lastUpdateConfirmCrossShard ", s.lastUpdateConfirmCrossShard)
 	for {
-		if s.lastUpdateConfirmCrossShard > s.chain.GetFinalViewHeight() { //TODO: get confirm height
+		if s.lastProcessConfirmBeaconHeight > s.chain.GetFinalViewHeight() {
+			time.Sleep(time.Second * 5)
+			continue
+		}
+		beaconBlock, err := s.server.FetchConfirmBeaconBlockByHeight(s.lastProcessConfirmBeaconHeight)
+		if err != nil || beaconBlock == nil {
 			time.Sleep(time.Second * 5)
 			continue
 		}
 
-		blk, err := s.server.FetchBeaconBlock(s.lastUpdateConfirmCrossShard)
-		if err != nil {
+		err = processBeaconForConfirmmingCrossShard(s.server.GetIncDatabase(), beaconBlock, s.lastCrossShardState)
+		if err == nil {
+			s.lastProcessConfirmBeaconHeight++
+		} else {
+			fmt.Println(err)
 			time.Sleep(time.Second * 5)
-			continue
 		}
-		s.lastUpdateConfirmCrossShard++
-		for fromSID, shardState := range blk.Body.ShardState {
-			for _, blockState := range shardState {
-				for _, toSID := range blockState.CrossShard {
-					fmt.Printf("crossdebug: from %d to %d with crossshard height %d confirmed by beacon hash %s\n", int(fromSID), int(toSID), blockState.Height, blk.Hash().String())
-					err := s.server.StoreBeaconHashConfirmCrossShardHeight(int(fromSID), int(toSID), blockState.Height, blk.Hash().String())
-					if err != nil {
-						panic(err)
+
+	}
+}
+
+func processBeaconForConfirmmingCrossShard(database incdb.Database, beaconBlock *blockchain.BeaconBlock, lastCrossShardState map[byte]map[byte]uint64) error {
+	if beaconBlock != nil && beaconBlock.Body.ShardState != nil {
+		for fromShard, shardBlocks := range beaconBlock.Body.ShardState {
+			for _, shardBlock := range shardBlocks {
+				for _, toShard := range shardBlock.CrossShard {
+					if fromShard == toShard {
+						continue
 					}
+					if lastCrossShardState[fromShard] == nil {
+						lastCrossShardState[fromShard] = make(map[byte]uint64)
+					}
+					lastHeight := lastCrossShardState[fromShard][toShard] // get last cross shard height from shardID  to crossShardShardID
+					waitHeight := shardBlock.Height
+
+					info := NextCrossShardInfo{
+						waitHeight,
+						shardBlock.Hash.String(),
+						beaconBlock.GetHeight(),
+						beaconBlock.Hash().String(),
+					}
+					b, _ := json.Marshal(info)
+					err := rawdbv2.StoreCrossShardNextHeight(database, fromShard, toShard, lastHeight, b)
+					if err != nil {
+						return err
+					}
+					if lastCrossShardState[fromShard] == nil {
+						lastCrossShardState[fromShard] = make(map[byte]uint64)
+					}
+					lastCrossShardState[fromShard][toShard] = waitHeight //update lastHeight to waitHeight
 				}
 			}
 		}
 	}
+	return nil
 }
 
 //periodically check pool and insert into pool
@@ -158,13 +202,15 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 	}
 
 	fmt.Println("Syncker: Insert beacon from pool", blk.(common.BlockInterface).GetHeight())
-	s.beaconPool.RemoveBlock(blk.Hash().String())
+
 	if err := s.chain.ValidateBlockSignatures(blk.(common.BlockInterface), s.chain.GetCommittee()); err != nil {
 		return
 	}
 
 	if err := s.chain.InsertBlk(blk.(common.BlockInterface)); err != nil {
+		return
 	}
+	s.beaconPool.RemoveBlock(blk.Hash().String())
 }
 
 //sync beacon

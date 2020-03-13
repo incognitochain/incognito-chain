@@ -95,13 +95,10 @@ func (crossShardPool *CrossShardPool) UpdatePool() map[byte]uint64 {
 }
 
 func (crossShardPool *CrossShardPool) GetNextCrossShardHeight(fromShard, toShard byte, startHeight uint64) uint64 {
-	nextHeight, err := rawdbv2.GetCrossShardNextHeight(crossShardPool.db, fromShard, toShard, startHeight)
-	if err != nil {
-		return 0
-	}
-	return nextHeight
+	return 0
 
 }
+
 func (crossShardPool *CrossShardPool) RevertCrossShardPool(latestValidHeight uint64) {
 	crossShardPool.mtx.Lock()
 	defer crossShardPool.mtx.Unlock()

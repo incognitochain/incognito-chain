@@ -2,8 +2,11 @@ package syncker
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"time"
 )
 
@@ -98,6 +101,7 @@ func (s *CrossShardSyncProcess) syncCrossShard() {
 			time.Sleep(time.Second * 5)
 			continue
 		}
+		//TODO: refactor this so that syncCrossShard will loop beacon view and request for missing crossshard block
 		//get last confirm crossshard -> process request until retrieve info
 		for i := 0; i < s.server.GetChainParam().ActiveShards; i++ {
 			for {
@@ -105,23 +109,27 @@ func (s *CrossShardSyncProcess) syncCrossShard() {
 					break
 				}
 				requestHeight := s.lastRequestCrossShard[byte(i)]
-				nextHeight := s.server.FetchNextCrossShard(i, s.shardID, requestHeight)
-				//fmt.Println("crossdebug FetchNextCrossShard", i, s.ShardID, requestHeight, nextHeight)
-				if nextHeight == 0 {
+				nextCrossShardInfo := s.server.FetchNextCrossShard(i, int(s.shardID), requestHeight)
+				if nextCrossShardInfo == nil {
 					break
 				}
-				beaconBlock, err := s.server.FetchBeaconBlockConfirmCrossShardHeight(i, s.shardID, nextHeight)
+
+				beaconHash, _ := common.Hash{}.NewHashFromStr(nextCrossShardInfo.confirmBeaconHash)
+				beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(s.server.GetIncDatabase(), *beaconHash)
 				if err != nil {
 					break
 				}
+
+				beaconBlock := new(blockchain.BeaconBlock)
+				json.Unmarshal(beaconBlockBytes, beaconBlock)
 				//fmt.Println("crossdebug beaconBlock", beaconBlock.Body.ShardState[byte(i)])
 				for _, shardState := range beaconBlock.Body.ShardState[byte(i)] {
 					//fmt.Println("crossdebug shardState.Height", shardState.Height, nextHeight)
 					fromSID := i
-					if shardState.Height == nextHeight {
+					if shardState.Height == nextCrossShardInfo.nextCrossShardHeight {
 						reqCnt++
 						s.setRequestPool(fromSID, shardState.Hash, &CrossXReq{time: nil, height: shardState.Height})
-						s.lastRequestCrossShard[byte(fromSID)] = nextHeight
+						s.lastRequestCrossShard[byte(fromSID)] = nextCrossShardInfo.nextCrossShardHeight
 						break
 					}
 				}

@@ -69,7 +69,6 @@ type Config struct {
 		PushMessageGetBlockCrossShardBySpecificHeight(fromShard byte, toShard byte, blksHeight []uint64, getFromPool bool, peerID libp2p.ID) error
 		UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string)
 		PushBlockToAll(block common.BlockInterface, isBeacon bool) error
-		FetchBeaconBlockConfirmCrossShardHeight(fromSID, toSID int, height uint64) (*BeaconBlock, error)
 	}
 	// UserKeySet *incognitokey.KeySet
 
