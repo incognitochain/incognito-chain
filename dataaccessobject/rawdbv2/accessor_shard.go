@@ -36,6 +36,61 @@ func StoreShardBlock(db incdb.Database, shardID byte, index uint64, hash common.
 	return nil
 }
 
+func StoreShardBlockWithView(db incdb.Database, view common.Hash, height uint64, blockHash common.Hash) error {
+	key := GetViewKey(view, height)
+	err := db.Put(key, blockHash[:])
+	if err != nil {
+		return NewRawdbError(StoreShardBlockWithViewError, err)
+	}
+	return nil
+}
+
+func GetShardBlockByView(db incdb.Database, view common.Hash) (map[uint64]common.Hash, error) {
+	iter := db.NewIteratorWithPrefix(GetViewPrefixWithValue(view))
+	m := make(map[uint64]common.Hash)
+	for iter.Next() {
+		key := make([]byte, len(iter.Key()))
+		copy(key, iter.Key())
+		value := make([]byte, len(iter.Value()))
+		copy(value, iter.Value())
+		strs := strings.Split(string(key), string(splitter))
+		tempHeight := strs[2]
+		height, err := common.BytesToUint64([]byte(tempHeight))
+		if err != nil {
+			return nil, NewRawdbError(GetShardBlockByViewError, err)
+		}
+		h, err := common.Hash{}.NewHash(value)
+		if err != nil {
+			return nil, NewRawdbError(GetShardBlockByViewError, err)
+		}
+		m[height] = *h
+	}
+	return m, nil
+}
+
+func UpdateShardBlockView(db incdb.Database, oldView common.Hash, newView common.Hash) error {
+	iter := db.NewIteratorWithPrefix(GetViewPrefixWithValue(oldView))
+	for iter.Next() {
+		oldKey := make([]byte, len(iter.Key()))
+		copy(oldKey, iter.Key())
+		value := make([]byte, len(iter.Value()))
+		copy(value, iter.Value())
+		strs := strings.Split(string(oldKey), string(splitter))
+		tempHeight := strs[2]
+		height, err := common.BytesToUint64([]byte(tempHeight))
+		if err != nil {
+			return NewRawdbError(UpdateShardBlockViewError, err)
+		}
+		newKey := GetViewKey(newView, height)
+		if err := db.Put(newKey, value); err != nil {
+			return NewRawdbError(UpdateShardBlockViewError, err)
+		}
+		if err := db.Delete(oldKey); err != nil {
+			return NewRawdbError(UpdateShardBlockViewError, err)
+		}
+	}
+}
+
 // StoreShardBlockIndex store block hash => block index
 // key: i-{hash}
 // value: {index-shardID}

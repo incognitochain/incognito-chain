@@ -45,6 +45,9 @@ const (
 	CleanUpPreviousBeaconBestStateError
 	// Shard
 	StoreShardBlockError
+	StoreShardBlockWithViewError
+	UpdateShardBlockViewError
+	GetShardBlockByViewError
 	StoreShardBlockIndexError
 	HasShardBlockError
 	GetShardBlockByHashError
@@ -93,6 +96,9 @@ var ErrCodeMessage = map[int]struct {
 	StoreShardBestStateError:       {-2009, "Store Shard Best State Error"},
 	StoreFeeEstimatorError:         {-2010, "Store Fee Estimator Error"},
 	GetFeeEstimatorError:           {-2011, "Get Fee Estimator Error"},
+	StoreShardBlockWithViewError:   {-2012, "Store Shard Block With View Error"},
+	UpdateShardBlockViewError:      {-2013, "Update Shard Block View Error"},
+	GetShardBlockByViewError:       {-2014, "Get Shard Block By View Error"},
 
 	StoreTransactionIndexError:   {-3000, "Store Transaction Index Error"},
 	GetTransactionByHashError:    {-3001, "Get Transaction By Hash Error"},

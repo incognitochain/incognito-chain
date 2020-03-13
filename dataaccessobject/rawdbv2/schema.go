@@ -13,6 +13,7 @@ var (
 	beaconBestStatePrefix              = []byte("BeaconBestState")
 	shardBestStatePrefix               = []byte("ShardBestState" + string(splitter))
 	shardHashToBlockPrefix             = []byte("s-b-h" + string(splitter))
+	viewPrefix                         = []byte("V" + string(splitter))
 	shardIndexToBlockHashPrefix        = []byte("s-b-i" + string(splitter))
 	shardBlockHashToIndexPrefix        = []byte("s-b-H" + string(splitter))
 	shardHeaderHashPrefix              = []byte("s-h-h" + string(splitter))
@@ -52,6 +53,23 @@ func GetLastBeaconBlockKey() []byte {
 
 func GetLastBeaconHeaderKey() []byte {
 	return lastBeaconHeaderKey
+}
+
+// ============================= View =======================================
+
+func GetViewPrefix() []byte {
+	return viewPrefix
+}
+
+func GetViewPrefixWithValue(view common.Hash) []byte {
+	key := append(viewPrefix, view[:]...)
+	return append(key, splitter...)
+}
+
+func GetViewKey(view common.Hash, height uint64) []byte {
+	key := GetViewPrefixWithValue(view)
+	buf := common.Uint64ToBytes(height)
+	return append(key, buf...)
 }
 
 // ============================= Shard =======================================
