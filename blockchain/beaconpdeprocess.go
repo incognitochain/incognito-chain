@@ -13,6 +13,9 @@ import (
 )
 
 func (blockchain *BlockChain) processPDEInstructions(pdexStateDB *statedb.StateDB, beaconBlock *BeaconBlock) error {
+	if !hasPDEInstruction(beaconBlock.Body.Instructions) {
+		return nil
+	}
 	beaconHeight := beaconBlock.Header.Height - 1
 	currentPDEState, err := InitCurrentPDEStateFromDB(pdexStateDB, beaconHeight)
 	if err != nil {
@@ -57,6 +60,26 @@ func (blockchain *BlockChain) processPDEInstructions(pdexStateDB *statedb.StateD
 	return nil
 }
 
+func hasPDEInstruction(instructions [][]string) bool {
+	hasPDEXInstruction := false
+	for _, inst := range instructions {
+		if len(inst) < 2 {
+			continue // Not error, just not PDE instruction
+		}
+		switch inst[0] {
+		case strconv.Itoa(metadata.PDEContributionMeta):
+			hasPDEXInstruction = true
+			break
+		case strconv.Itoa(metadata.PDETradeRequestMeta):
+			hasPDEXInstruction = true
+			break
+		case strconv.Itoa(metadata.PDEWithdrawalRequestMeta):
+			hasPDEXInstruction = true
+			break
+		}
+	}
+	return hasPDEXInstruction
+}
 func (blockchain *BlockChain) processPDEContributionV2(pdexStateDB *statedb.StateDB, beaconHeight uint64, instruction []string, currentPDEState *CurrentPDEState) error {
 	if currentPDEState == nil {
 		Logger.log.Warn("WARN - [processPDEContribution]: Current PDE state is null.")
