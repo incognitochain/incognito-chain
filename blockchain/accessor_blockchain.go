@@ -11,11 +11,11 @@ import (
 )
 
 func (blockchain *BlockChain) StoreShardBestState(shardID byte) error {
-	return rawdbv2.StoreShardBestState(blockchain.GetDatabase(), shardID, blockchain.BestState.Shard[shardID])
+	return rawdbv2.StoreShardBestState(blockchain.GetDatabase(), shardID, blockchain.GetBestStateShard(shardID))
 }
 
 func (blockchain *BlockChain) StoreBeaconBestState() error {
-	beaconBestStateBytes, err := json.Marshal(blockchain.BestState.Beacon)
+	beaconBestStateBytes, err := json.Marshal(blockchain.GetBeaconBestState())
 	if err != nil {
 		return err
 	}
@@ -138,19 +138,19 @@ func (blockchain *BlockChain) GetShardBlockByHash(hash common.Hash) (*ShardBlock
 }
 
 func (blockchain *BlockChain) GetShardRewardStateDB(shardID byte) *statedb.StateDB {
-	return blockchain.BestState.Shard[shardID].GetCopiedRewardStateDB()
+	return blockchain.GetBestStateShard(shardID).GetCopiedRewardStateDB()
 }
 
 func (blockchain *BlockChain) GetTransactionStateDB(shardID byte) *statedb.StateDB {
-	return blockchain.BestState.Shard[shardID].GetCopiedTransactionStateDB()
+	return blockchain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
 }
 
 func (blockchain *BlockChain) GetShardFeatureStateDB(shardID byte) *statedb.StateDB {
-	return blockchain.BestState.Shard[shardID].GetFeatureCopiedStateDB()
+	return blockchain.GetBestStateShard(shardID).GetFeatureCopiedStateDB()
 }
 
 func (blockchain *BlockChain) GetBeaconFeatureStateDB() *statedb.StateDB {
-	return blockchain.BestState.Beacon.GetCopiedFeatureStateDB()
+	return blockchain.GetBeaconBestState().GetCopiedFeatureStateDB()
 }
 
 func (blockchain *BlockChain) GetBeaconFeatureStateDBByHeight(height uint64, db incdb.Database) (*statedb.StateDB, error) {
@@ -162,9 +162,9 @@ func (blockchain *BlockChain) GetBeaconFeatureStateDBByHeight(height uint64, db 
 }
 
 func (blockchain *BlockChain) GetBeaconSlashStateDB() *statedb.StateDB {
-	return blockchain.BestState.Beacon.slashStateDB
+	return blockchain.GetBeaconBestState().slashStateDB
 }
 
 func (blockchain *BlockChain) GetBeaconRewardStateDB() *statedb.StateDB {
-	return blockchain.BestState.Beacon.rewardStateDB
+	return blockchain.GetBeaconBestState().rewardStateDB
 }

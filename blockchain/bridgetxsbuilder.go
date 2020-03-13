@@ -250,13 +250,13 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(contentStr string, produce
 			nil,
 			0,
 			tokenParams,
-			blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
+			blockGenerator.chain.GetBestStateShard(shardID).GetCopiedTransactionStateDB(),
 			issuingRes,
 			false,
 			false,
 			shardID,
 			nil,
-			blockGenerator.chain.BestState.Beacon.GetCopiedFeatureStateDB()))
+			blockGenerator.chain.GetBeaconBestState().GetCopiedFeatureStateDB()))
 
 	if initErr != nil {
 		Logger.log.Info("WARNING: an error occured while initializing response tx: ", initErr)
@@ -319,12 +319,12 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, prod
 			nil,
 			0,
 			tokenParams,
-			blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
+			blockGenerator.chain.GetBestStateShard(shardID).GetCopiedTransactionStateDB(),
 			issuingETHRes,
 			false,
 			false,
 			shardID, nil,
-			blockGenerator.chain.BestState.Beacon.GetCopiedFeatureStateDB()))
+			blockGenerator.chain.GetBeaconBestState().GetCopiedFeatureStateDB()))
 
 	if initErr != nil {
 		Logger.log.Info("WARNING: an error occured while initializing response tx: ", initErr)

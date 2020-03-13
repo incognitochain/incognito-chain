@@ -1284,7 +1284,12 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err := rawdbv2.StoreBeaconBlockIndex(blockchain.GetDatabase(), blockHeight, blockHash); err != nil {
 		return NewBlockChainError(StoreBeaconBlockIndexError, err)
 	}
-	//TODO: update best view
+
+	blockchain.BeaconChain.multiView.AddView(newBestState)
+	err = blockchain.BackupBeaconViews()
+	if err != nil {
+		panic("Backup shard view error")
+	}
 
 	Logger.log.Debugf("Store Beacon Block Height %+v with Hash %+v ", blockHeight, blockHash)
 	if err := rawdbv2.StoreBeaconBlock(blockchain.GetDatabase(), blockHeight, blockHash, beaconBlock); err != nil {
