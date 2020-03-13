@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -29,7 +30,7 @@ func (httpServer *HttpServer) handlePortalExchangeRate(params interface{}, close
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata SenderAddress is invalid"))
 	}
 
-	var exchangeRate = make(map[string]uint64)
+	var exchangeRate = make([]*lvdb.ExchangeRateInfo, 0)
 
 	exchangeRateMap, ok := data["Rates"].(map[string]interface{})
 	if !ok {
@@ -54,7 +55,12 @@ func (httpServer *HttpServer) handlePortalExchangeRate(params interface{}, close
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Exchange rates should be larger than 0"))
 		}
 
-		exchangeRate[pTokenID] = uint64(amount)
+		exchangeRate = append(
+			exchangeRate,
+			&lvdb.ExchangeRateInfo{
+				PTokenID: pTokenID,
+				Rate:     uint64(amount),
+			})
 	}
 
 	meta, _ := metadata.NewPortalExchangeRates(

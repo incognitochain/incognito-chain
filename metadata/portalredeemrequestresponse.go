@@ -16,7 +16,7 @@ type PortalRedeemRequestResponse struct {
 	ReqTxID          common.Hash
 	RequesterAddrStr string
 	Amount           uint64
-	IncTokenID string
+	IncTokenID       string
 }
 
 func NewPortalRedeemRequestResponse(
@@ -155,4 +155,3 @@ func (iRes PortalRedeemRequestResponse) VerifyMinerCreatedTxBeforeGettingInBlock
 	instUsed[idx] = 1
 	return true, nil
 }
-

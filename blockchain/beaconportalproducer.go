@@ -15,7 +15,7 @@ import (
 func buildCustodianDepositInst(
 	custodianAddressStr string,
 	depositedAmount uint64,
-	remoteAddresses map[string]string,
+	remoteAddresses []lvdb.RemoteAddress,
 	metaType int,
 	shardID byte,
 	txReqID common.Hash,
@@ -46,7 +46,7 @@ func buildRequestPortingInst(
 	pTokenId string,
 	registerAmount uint64,
 	portingFee uint64,
-	custodian map[string]lvdb.MatchingPortingCustodianDetail,
+	custodian []*lvdb.MatchingPortingCustodianDetail,
 	txReqID common.Hash,
 ) []string {
 	portingRequestContent := metadata.PortalPortingRequestContent{
@@ -181,9 +181,9 @@ func (blockchain *BlockChain) buildInstructionsForCustodianDeposit(
 		lockedAmountCollateral := custodian.LockedAmountCollateral
 		rewardAmount := custodian.RewardAmount
 		remoteAddresses := custodian.RemoteAddresses
-		for tokenSymbol, address := range meta.RemoteAddresses {
-			if remoteAddresses[tokenSymbol] == "" {
-				remoteAddresses[tokenSymbol] = address
+		for _, address := range meta.RemoteAddresses {
+			if existedAddr, _ := lvdb.GetRemoteAddressByTokenID(remoteAddresses, address.PTokenID); existedAddr == "" {
+				remoteAddresses = append(remoteAddresses, address)
 			}
 		}
 
@@ -913,7 +913,7 @@ func buildRedeemRequestInst(
 	incAddressStr string,
 	remoteAddress string,
 	redeemFee uint64,
-	matchingCustodianDetail map[string]*lvdb.MatchingRedeemCustodianDetail,
+	matchingCustodianDetail []*lvdb.MatchingRedeemCustodianDetail,
 	metaType int,
 	shardID byte,
 	txReqID common.Hash,
@@ -1121,8 +1121,9 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 	}
 
 	// update custodian state (holding public tokens)
-	for k, cus := range matchingCustodiansDetail {
-		if currentPortalState.CustodianPoolState[k].HoldingPubTokens[tokenID] < cus.Amount {
+	for _, cus := range matchingCustodiansDetail {
+		custodianStateKey := lvdb.NewCustodianStateKey(beaconHeight, cus.IncAddress)
+		if currentPortalState.CustodianPoolState[custodianStateKey].HoldingPubTokens[tokenID] < cus.Amount {
 			Logger.log.Errorf("Amount holding public tokens is less than matching redeem amount")
 			inst := buildRedeemRequestInst(
 				meta.UniqueRedeemID,
@@ -1139,15 +1140,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 			)
 			return [][]string{inst}, nil
 		}
-		currentPortalState.CustodianPoolState[k].HoldingPubTokens[tokenID] -= cus.Amount
-	}
-
-	// update key of matching custodian
-	matchingCustodianUpdateKey := map[string]*lvdb.MatchingRedeemCustodianDetail{}
-	for k, cus := range matchingCustodiansDetail {
-		incAddressCus := currentPortalState.CustodianPoolState[k].IncognitoAddress
-		matchingCustodianUpdateKey[incAddressCus] = new(lvdb.MatchingRedeemCustodianDetail)
-		matchingCustodianUpdateKey[incAddressCus] = cus
+		currentPortalState.CustodianPoolState[custodianStateKey].HoldingPubTokens[tokenID] -= cus.Amount
 	}
 
 	// add to waiting Redeem list
@@ -1158,7 +1151,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 		meta.RedeemerIncAddressStr,
 		meta.RemoteAddress,
 		meta.RedeemAmount,
-		matchingCustodianUpdateKey,
+		matchingCustodiansDetail,
 		meta.RedeemFee,
 		beaconHeight + 1,
 	)
@@ -1172,7 +1165,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 		meta.RedeemerIncAddressStr,
 		meta.RemoteAddress,
 		meta.RedeemFee,
-		matchingCustodianUpdateKey,
+		matchingCustodiansDetail,
 		meta.Type,
 		actionData.ShardID,
 		actionData.TxReqID,
@@ -1486,7 +1479,15 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 
 
 	// check redeem amount of matching custodian
-	if meta.RedeemAmount != waitingRedeemRequest.Custodians[meta.CustodianAddressStr].Amount {
+	amountMatchingCustodian := uint64(0)
+	for _, cus := range waitingRedeemRequest.Custodians {
+		if cus.IncAddress == meta.CustodianAddressStr {
+			amountMatchingCustodian = cus.Amount
+			break
+		}
+	}
+
+	if meta.RedeemAmount != amountMatchingCustodian {
 		Logger.log.Errorf("RedeemAmount is not correct in redeemID req")
 		inst := buildReqUnlockCollateralInst(
 			meta.UniqueRedeemID,
@@ -1721,7 +1722,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		}
 
 		// update redeem request state in WaitingRedeemRequest (remove custodian from matchingCustodianDetail)
-		delete(currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest].Custodians, meta.CustodianAddressStr)
+		removeCustodianFromMatchingRedeemCustodians(currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest].Custodians, meta.CustodianAddressStr)
 
 		// remove redeem request from WaitingRedeemRequest list when all matching custodians return public token to user
 		// when list matchingCustodianDetail is empty

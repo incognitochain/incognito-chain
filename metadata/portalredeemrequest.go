@@ -44,7 +44,7 @@ type PortalRedeemRequestContent struct {
 	RedeemerIncAddressStr   string
 	RemoteAddress           string // btc/bnb/etc address
 	RedeemFee               uint64 // redeem fee in PRV, 0.01% redeemAmount in PRV
-	MatchingCustodianDetail map[string]*lvdb.MatchingRedeemCustodianDetail   // key: incAddressCustodian
+	MatchingCustodianDetail []*lvdb.MatchingRedeemCustodianDetail   // key: incAddressCustodian
 	TxReqID                 common.Hash
 	ShardID                 byte
 }
@@ -58,7 +58,7 @@ type PortalRedeemRequestStatus struct {
 	RedeemerIncAddressStr   string
 	RemoteAddress           string // btc/bnb/etc address
 	RedeemFee               uint64 // redeem fee in PRV, 0.01% redeemAmount in PRV
-	MatchingCustodianDetail map[string]*lvdb.MatchingRedeemCustodianDetail   // key: incAddressCustodian
+	MatchingCustodianDetail []*lvdb.MatchingRedeemCustodianDetail   // key: incAddressCustodian
 	TxReqID                 common.Hash
 }
 

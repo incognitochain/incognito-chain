@@ -1,13 +1,13 @@
 package metadata
 
 import (
-"bytes"
-"encoding/json"
-"fmt"
-"github.com/incognitochain/incognito-chain/common"
-"github.com/incognitochain/incognito-chain/database"
-"github.com/incognitochain/incognito-chain/wallet"
-"strconv"
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/wallet"
+	"strconv"
 )
 
 type PortalLiquidateCustodianResponse struct {
@@ -29,10 +29,10 @@ func NewPortalLiquidateCustodianResponse(
 		Type: metaType,
 	}
 	return &PortalLiquidateCustodianResponse{
-		MetadataBase: metadataBase,
-		UniqueRedeemID: uniqueRedeemID,
+		MetadataBase:           metadataBase,
+		UniqueRedeemID:         uniqueRedeemID,
 		MintedCollateralAmount: mintedAmount,
-		RedeemerIncAddressStr: redeemerIncAddressStr,
+		RedeemerIncAddressStr:  redeemerIncAddressStr,
 		CustodianIncAddressStr: custodianIncAddressStr,
 	}
 }

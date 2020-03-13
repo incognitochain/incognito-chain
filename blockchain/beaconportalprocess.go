@@ -149,9 +149,9 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 			lockedAmountCollateral := custodian.LockedAmountCollateral
 			rewardAmount := custodian.RewardAmount
 			remoteAddresses := custodian.RemoteAddresses
-			for tokenSymbol, address := range actionData.RemoteAddresses {
-				if remoteAddresses[tokenSymbol] == "" {
-					remoteAddresses[tokenSymbol] = address
+			for _, address := range actionData.RemoteAddresses {
+				if existedAddr, _ := lvdb.GetRemoteAddressByTokenID(remoteAddresses, address.PTokenID); existedAddr == "" {
+					remoteAddresses = append(remoteAddresses, address)
 				}
 			}
 
@@ -243,8 +243,8 @@ func (blockchain *BlockChain) processPortalUserRegister(
 
 		//verify custodian
 		isCustodianAccepted := true
-		for address, itemCustodian := range custodiansDetail {
-			keyPortingRequestNewState := lvdb.NewCustodianStateKey(beaconHeight, address)
+		for _, itemCustodian := range custodiansDetail {
+			keyPortingRequestNewState := lvdb.NewCustodianStateKey(beaconHeight, itemCustodian.IncAddress)
 			custodian, ok := currentPortalState.CustodianPoolState[keyPortingRequestNewState]
 			if !ok {
 				Logger.log.Errorf("ERROR: Custodian not found")
@@ -317,9 +317,9 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		}
 
 		//save custodian state
-		for address, itemCustodian := range custodiansDetail {
+		for _, itemCustodian := range custodiansDetail {
 			//update custodian state
-			custodianKey := lvdb.NewCustodianStateKey(beaconHeight, address)
+			custodianKey := lvdb.NewCustodianStateKey(beaconHeight, itemCustodian.IncAddress)
 			_ = UpdateCustodianWithNewAmount(currentPortalState, custodianKey, tokenID, itemCustodian.Amount, itemCustodian.LockedAmountCollateral)
 		}
 
@@ -523,16 +523,16 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 	var bnbExchangeRatesSlice []uint64
 	var prvExchangeRatesSlice []uint64
 	for _, v := range currentPortalState.ExchangeRatesRequests {
-		for key, rates := range v.Rates {
-			switch key {
+		for _, rate := range v.Rates {
+			switch rate.PTokenID {
 			case common.PortalBTCIDStr:
-				btcExchangeRatesSlice = append(btcExchangeRatesSlice, rates)
+				btcExchangeRatesSlice = append(btcExchangeRatesSlice, rate.Rate)
 				break
 			case common.PortalBNBIDStr:
-				bnbExchangeRatesSlice = append(bnbExchangeRatesSlice, rates)
+				bnbExchangeRatesSlice = append(bnbExchangeRatesSlice, rate.Rate)
 				break
 			case common.PRVIDStr:
-				prvExchangeRatesSlice = append(prvExchangeRatesSlice, rates)
+				prvExchangeRatesSlice = append(prvExchangeRatesSlice, rate.Rate)
 				break
 			}
 		}
@@ -696,8 +696,8 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 		currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest] = redeemRequest
 
 		// update custodian state
-		for incAddr, cus := range actionData.MatchingCustodianDetail {
-			custodianStateKey := lvdb.NewCustodianStateKey(beaconHeight, incAddr)
+		for _, cus := range actionData.MatchingCustodianDetail {
+			custodianStateKey := lvdb.NewCustodianStateKey(beaconHeight, cus.IncAddress)
 			if currentPortalState.CustodianPoolState[custodianStateKey].HoldingPubTokens[tokenID] < cus.Amount {
 				Logger.log.Errorf("[processPortalRedeemRequest] Amount holding public tokens is less than matching redeem amount")
 				return nil
@@ -891,7 +891,7 @@ func (blockchain *BlockChain) processPortalUnlockCollateral(
 		keyWaitingRedeemRequest := lvdb.NewWaitingRedeemReqKey(beaconHeight, redeemID)
 
 		// update redeem request state in WaitingRedeemRequest (remove custodian from matchingCustodianDetail)
-		delete(currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest].Custodians, actionData.CustodianAddressStr)
+		removeCustodianFromMatchingRedeemCustodians(currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest].Custodians, actionData.CustodianAddressStr)
 
 		// remove redeem request from WaitingRedeemRequest list when all matching custodians return public token to user
 		// when list matchingCustodianDetail is empty

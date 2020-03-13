@@ -49,7 +49,7 @@ func (blockchain *BlockChain) processPortalLiquidateCustodian(
 
 		// remove matching custodian from matching custodians list in waiting redeem request
 		waitingRedeemReqKey := lvdb.NewWaitingRedeemReqKey(beaconHeight, actionData.UniqueRedeemID)
-		delete(currentPortalState.WaitingRedeemRequests[waitingRedeemReqKey].Custodians, actionData.CustodianIncAddressStr)
+		removeCustodianFromMatchingRedeemCustodians(currentPortalState.WaitingRedeemRequests[waitingRedeemReqKey].Custodians, actionData.CustodianIncAddressStr)
 
 		// remove redeem request from waiting redeem requests list
 		if len(currentPortalState.WaitingRedeemRequests[waitingRedeemReqKey].Custodians) == 0 {

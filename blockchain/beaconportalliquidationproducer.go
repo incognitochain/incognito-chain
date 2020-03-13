@@ -118,7 +118,7 @@ func checkAndBuildInstForCustodianLiquidation(
 			// get tokenID from redeemTokenID
 			tokenID := redeemReq.TokenID
 
-			for cusIncAddr, matchCusDetail := range redeemReq.Custodians {
+			for _, matchCusDetail := range redeemReq.Custodians {
 				// calculate minted collateral amount
 				mintedAmountInPToken := float64(matchCusDetail.Amount) * float64(common.PercentReceivedCollateralAmount) / 100
 				mintedAmountInPRV, err := exchangeRate.ExchangePToken2PRVByTokenId(tokenID, uint64(math.Floor(mintedAmountInPToken)))
@@ -130,7 +130,7 @@ func checkAndBuildInstForCustodianLiquidation(
 						matchCusDetail.Amount,
 						0,
 						redeemReq.RedeemerAddress,
-						cusIncAddr,
+						matchCusDetail.IncAddress,
 						metadata.PortalLiquidateCustodianMeta,
 						shardID,
 						common.PortalLiquidateCustodianFailedChainStatus,
@@ -140,8 +140,8 @@ func checkAndBuildInstForCustodianLiquidation(
 				}
 
 				// update custodian state (total collateral, holding public tokens, locked amount, free collateral)
-				Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] cusIncAddr: %v\n", cusIncAddr)
-				cusStateKey := lvdb.NewCustodianStateKey(beaconHeight, cusIncAddr)
+				Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] cusIncAddr: %v\n", matchCusDetail.IncAddress)
+				cusStateKey := lvdb.NewCustodianStateKey(beaconHeight, matchCusDetail.IncAddress)
 				custodianState := currentPortalState.CustodianPoolState[cusStateKey]
 				if custodianState == nil {
 					Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when get custodian state with key %v\n: ", cusStateKey)
@@ -151,7 +151,7 @@ func checkAndBuildInstForCustodianLiquidation(
 						matchCusDetail.Amount,
 						0,
 						redeemReq.RedeemerAddress,
-						cusIncAddr,
+						matchCusDetail.IncAddress,
 						metadata.PortalLiquidateCustodianMeta,
 						shardID,
 						common.PortalLiquidateCustodianFailedChainStatus,
@@ -171,7 +171,7 @@ func checkAndBuildInstForCustodianLiquidation(
 						matchCusDetail.Amount,
 						mintedAmountInPRV,
 						redeemReq.RedeemerAddress,
-						cusIncAddr,
+						matchCusDetail.IncAddress,
 						metadata.PortalLiquidateCustodianMeta,
 						shardID,
 						common.PortalLiquidateCustodianFailedChainStatus,
@@ -189,7 +189,7 @@ func checkAndBuildInstForCustodianLiquidation(
 						matchCusDetail.Amount,
 						mintedAmountInPRV,
 						redeemReq.RedeemerAddress,
-						cusIncAddr,
+						matchCusDetail.IncAddress,
 						metadata.PortalLiquidateCustodianMeta,
 						shardID,
 						common.PortalLiquidateCustodianFailedChainStatus,
@@ -199,7 +199,7 @@ func checkAndBuildInstForCustodianLiquidation(
 				}
 
 				// remove matching custodian from matching custodians list in waiting redeem request
-				delete(currentPortalState.WaitingRedeemRequests[redeemReqKey].Custodians, cusIncAddr)
+				removeCustodianFromMatchingRedeemCustodians(currentPortalState.WaitingRedeemRequests[redeemReqKey].Custodians, matchCusDetail.IncAddress)
 
 				// build instruction
 				inst := buildCustodianRunAwayLiquidationInst(
@@ -208,7 +208,7 @@ func checkAndBuildInstForCustodianLiquidation(
 					matchCusDetail.Amount,
 					mintedAmountInPRV,
 					redeemReq.RedeemerAddress,
-					cusIncAddr,
+					matchCusDetail.IncAddress,
 					metadata.PortalLiquidateCustodianMeta,
 					shardID,
 					common.PortalLiquidateCustodianSuccessChainStatus,

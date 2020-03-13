@@ -11,17 +11,23 @@ import (
 	"math"
 )
 
+type RemoteAddress struct {
+	PTokenID string
+	Address  string
+}
+
 type CustodianState struct {
 	IncognitoAddress       string
 	TotalCollateral        uint64            // prv
 	FreeCollateral         uint64            // prv
 	HoldingPubTokens       map[string]uint64 // tokenID : amount
 	LockedAmountCollateral map[string]uint64 // tokenID : amount
-	RemoteAddresses        map[string]string // tokenID : address
+	RemoteAddresses        []RemoteAddress   // tokenID : address
 	RewardAmount           uint64            // reward in prv
 }
 
 type MatchingPortingCustodianDetail struct {
+	IncAddress             string
 	RemoteAddress          string
 	Amount                 uint64
 	LockedAmountCollateral uint64
@@ -29,6 +35,7 @@ type MatchingPortingCustodianDetail struct {
 }
 
 type MatchingRedeemCustodianDetail struct {
+	IncAddress    string
 	RemoteAddress string
 	Amount        uint64
 }
@@ -39,7 +46,7 @@ type PortingRequest struct {
 	TokenID         string
 	PorterAddress   string
 	Amount          uint64
-	Custodians      map[string]MatchingPortingCustodianDetail // key : incogAddress
+	Custodians      []*MatchingPortingCustodianDetail
 	PortingFee      uint64
 	Status          int
 	BeaconHeight    uint64
@@ -52,14 +59,14 @@ type RedeemRequest struct {
 	RedeemerAddress       string
 	RedeemerRemoteAddress string
 	RedeemAmount          uint64
-	Custodians            map[string]*MatchingRedeemCustodianDetail // key : incogAddress
+	Custodians            []*MatchingRedeemCustodianDetail
 	RedeemFee             uint64
 	BeaconHeight          uint64
 }
 
 type ExchangeRatesRequest struct {
 	SenderAddress string
-	Rates         map[string]uint64
+	Rates         []*ExchangeRateInfo
 }
 
 type FinalExchangeRatesDetail struct {
@@ -78,20 +85,20 @@ type CustodianWithdrawRequest struct {
 }
 
 type LiquidateTopPercentileExchangeRatesDetail struct {
-	TPValue int
+	TPValue                  int
 	HoldAmountFreeCollateral uint64
-	HoldAmountPubToken uint64
+	HoldAmountPubToken       uint64
 }
 
 type LiquidateTopPercentileExchangeRates struct {
 	CustodianAddress string
-	Status string
-	Rates map[string]LiquidateTopPercentileExchangeRatesDetail //ptoken | detail
+	Status           string
+	Rates            map[string]LiquidateTopPercentileExchangeRatesDetail //ptoken | detail
 }
 
 type LiquidateExchangeRatesDetail struct {
 	HoldAmountFreeCollateral uint64
-	HoldAmountPubToken uint64
+	HoldAmountPubToken       uint64
 }
 
 type LiquidateExchangeRates struct {
@@ -160,6 +167,55 @@ func NewWaitingPortingReqKey(beaconHeight uint64, portingID string) string {
 func NewPortalReqPTokenKey(txReqStr string) string {
 	key := append(PortalRequestPTokensPrefix, []byte(txReqStr)...)
 	return string(key)
+}
+
+func GetRemoteAddressByTokenID(addresses []RemoteAddress, tokenID string) (string, error) {
+	for _, addr := range addresses {
+		if addr.PTokenID == tokenID {
+			return addr.Address, nil
+		}
+	}
+
+	return "", errors.New("Can not found address with tokenID")
+}
+
+type PortalRewardInfo struct {
+	CustodianIncAddr string
+	Amount           uint64
+}
+
+func PlusPortalReward(rewards []*PortalRewardInfo, custodianIncAddr string, amount uint64) {
+	found := false
+	for _, rewardInfo := range rewards {
+		if rewardInfo.CustodianIncAddr == custodianIncAddr {
+			rewardInfo.Amount += amount
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		rewards = append(
+			rewards,
+			&PortalRewardInfo{
+				CustodianIncAddr: custodianIncAddr,
+				Amount:           amount,
+			})
+	}
+}
+
+func MinusPortalReward(rewards []*PortalRewardInfo, custodianIncAddr string, amount uint64) {
+	for _, rewardInfo := range rewards {
+		if rewardInfo.CustodianIncAddr == custodianIncAddr {
+			rewardInfo.Amount -= amount
+			break
+		}
+	}
+}
+
+type ExchangeRateInfo struct {
+	PTokenID string
+	Rate     uint64
 }
 
 func (db *db) GetAllRecordsPortalByPrefix(beaconHeight uint64, prefix []byte) ([][]byte, [][]byte, error) {
@@ -404,7 +460,7 @@ func (finalExchangeRates *FinalExchangeRates) ExchangeBTC2PRV(value uint64) (uin
 	//input : nano
 	//todo: check rates exist
 	BTCRates := finalExchangeRates.Rates[common.PortalBTCIDStr].Amount //return nano pUSDT
-	PRVRates := finalExchangeRates.Rates[common.PRVIDStr].Amount //return nano pUSDT
+	PRVRates := finalExchangeRates.Rates[common.PRVIDStr].Amount       //return nano pUSDT
 	valueExchange, err := finalExchangeRates.convert(value, BTCRates, PRVRates)
 
 	if err != nil {
@@ -435,7 +491,7 @@ func (finalExchangeRates *FinalExchangeRates) ExchangeBNB2PRV(value uint64) (uin
 func (finalExchangeRates *FinalExchangeRates) ExchangePRV2BTC(value uint64) (uint64, error) {
 	//input nano
 	BTCRates := finalExchangeRates.Rates[common.PortalBTCIDStr].Amount //return nano pUSDT
-	PRVRates := finalExchangeRates.Rates[common.PRVIDStr].Amount //return nano pUSDT
+	PRVRates := finalExchangeRates.Rates[common.PRVIDStr].Amount       //return nano pUSDT
 
 	valueExchange, err := finalExchangeRates.convert(value, PRVRates, BTCRates)
 
@@ -581,7 +637,7 @@ func NewPortalLiquidateExchangeRatesKey(beaconHeight uint64) string {
 	return string(key)
 }
 
-func (db *db) StoreLiquidateTopPercentileExchangeRates(keyId []byte, content interface{}) error  {
+func (db *db) StoreLiquidateTopPercentileExchangeRates(keyId []byte, content interface{}) error {
 	contributionBytes, err := json.Marshal(content)
 	if err != nil {
 		return err
@@ -601,7 +657,6 @@ func NewPortalRewardKey(beaconHeight uint64) string {
 	return string(key)
 }
 
-
 // StorePortalRewardByBeaconHeight stores portal reward by beacon height
 func (db *db) StorePortalRewardByBeaconHeight(key []byte, value []byte) error {
 	err := db.Put(key, value)
@@ -618,7 +673,6 @@ func NewPortalReqWithdrawRewardKey(beaconHeight uint64, custodianAddr string) st
 	key = append(key, []byte(custodianAddr)...)
 	return string(key)
 }
-
 
 // TrackPortalReqWithdrawReward stores portal request withdraw portal reward
 func (db *db) TrackPortalReqWithdrawReward(key []byte, value []byte) error {
