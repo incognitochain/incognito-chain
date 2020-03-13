@@ -10,33 +10,39 @@ import (
 )
 
 type Coin_v2 struct {
-	version    uint8
-	index      uint8
+	// Version should be described here as a reminder
+	// SetBytes and FromBytes of coin_v1 and coin_v2 will use this first byte as version
+	version 	uint8
 	mask       *operation.Scalar
 	amount     *operation.Scalar
 	txRandom   *operation.Point
 	publicKey  *operation.Point // K^o = H_n(r * K_B^v )G + K_B^s
 	commitment *operation.Point
+	index       uint8
 	info       []byte //256 bytes
 }
 
-func (this Coin_v2) Getinfo() []byte                 { return this.info }
-func (this Coin_v2) GetIndex() uint8                 { return this.index }
-func (this Coin_v2) GetVersion() uint8               { return this.version }
+func (this Coin_v2) GetVersion() uint8               { return 2 }
 func (this Coin_v2) GetMask() *operation.Scalar      { return this.mask }
 func (this Coin_v2) GetAmount() *operation.Scalar    { return this.amount }
 func (this Coin_v2) GetTxRandom() *operation.Point   { return this.txRandom }
 func (this Coin_v2) GetPublicKey() *operation.Point  { return this.publicKey }
 func (this Coin_v2) GetCommitment() *operation.Point { return this.commitment }
+func (this Coin_v2) GetIndex() uint8                 { return this.index }
+func (this Coin_v2) GetInfo() []byte                 { return this.info }
 
-func (this *Coin_v2) SetInfo(b []byte)                          { this.info = b }
-func (this *Coin_v2) SetIndex(index uint8)                      { this.index = index }
-func (this *Coin_v2) SetVersion(version uint8)                  { this.version = version }
 func (this *Coin_v2) SetMask(mask *operation.Scalar)            { this.mask.Set(mask) }
 func (this *Coin_v2) SetAmount(amount *operation.Scalar)        { this.amount.Set(amount) }
 func (this *Coin_v2) SetTxRandom(txRandom *operation.Point)     { this.txRandom.Set(txRandom) }
 func (this *Coin_v2) SetPublicKey(publicKey *operation.Point)   { this.publicKey.Set(publicKey) }
 func (this *Coin_v2) SetCommitment(commitment *operation.Point) { this.commitment.Set(commitment) }
+func (this *Coin_v2) SetIndex(index uint8)                      { this.index = index }
+func (this *Coin_v2) SetInfo(b []byte) error { 
+	if len(b) > 255 {
+		return errors.New("Cannot set info to coin_v2, info is longer than 255")
+	}
+	this.info = b;
+}
 
 func NewCoinv2(index uint8, mask *operation.Scalar, amount *operation.Scalar, txRandom *operation.Point, addressee *operation.Point, commitment *operation.Point) *Coin_v2 {
 	return &Coin_v2{
@@ -51,12 +57,14 @@ func NewCoinv2(index uint8, mask *operation.Scalar, amount *operation.Scalar, tx
 
 // Init (Coin) initializes a coin
 func (this *Coin_v2) Init() *Coin_v2 {
-	this.index = uint8(0)
+	this.version = uint8(2)
 	this.mask = new(operation.Scalar).FromUint64(0)
 	this.amount = new(operation.Scalar).FromUint64(0)
 	this.txRandom = new(operation.Point).Identity()
-	this.addressee = new(operation.Point).Identity()
+	this.publicKey = new(operation.Point).Identity()
 	this.commitment = new(operation.Point).Identity()
+	this.index = uint8(0)
+	this.info = []byte{}
 
 	return this
 }
@@ -89,8 +97,9 @@ func (coin *Coin_v2) UnmarshalJSON(data []byte) error {
 // Each fields in coin is saved in len - body format
 func (coin *Coin_v2) Bytes() []byte {
 	var coinBytes []byte
+	coinBytes = append(coinBytes, coin.)
 
-	if coin.publicKey != nil {
+	if coin. != nil {
 		publicKey := coin.publicKey.ToBytesS()
 		coinBytes = append(coinBytes, byte(operation.Ed25519KeySize))
 		coinBytes = append(coinBytes, publicKey...)
@@ -153,4 +162,10 @@ func (coin *Coin_v2) Bytes() []byte {
 	}
 
 	return coinBytes
+}
+
+// HashH returns the SHA3-256 hashing of coin bytes array
+func (coin *Coin_v2) HashH() *common.Hash {
+	hash := common.HashH(coin.Bytes())
+	return &hash
 }

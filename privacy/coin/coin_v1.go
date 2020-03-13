@@ -25,38 +25,15 @@ type Coin_v1 struct {
 	info           []byte //256 bytes
 }
 
-// Start GET/SET
-func (coin *Coin_v1) GetPublicKey() *operation.Point {
-	return coin.publicKey
-}
-
-func (coin *Coin_v1) SetPublicKey(v *operation.Point) {
-	coin.publicKey = v
-}
-
-func (coin *Coin_v1) GetCoinCommitment() *operation.Point {
-	return coin.coinCommitment
-}
-
-func (coin *Coin_v1) SetCoinCommitment(v *operation.Point) {
-	coin.coinCommitment = v
-}
-
-func (coin *Coin_v1) GetSNDerivator() *operation.Scalar {
-	return coin.snDerivator
-}
-
-func (coin *Coin_v1) SetSNDerivator(v *operation.Scalar) {
-	coin.snDerivator = v
-}
-
-func (coin *Coin_v1) GetSerialNumber() *operation.Point {
-	return coin.serialNumber
-}
-
-func (coin *Coin_v1) SetSerialNumber(v *operation.Point) {
-	coin.serialNumber = v
-}
+func (*Coin_v1) GetVersion() uint8                         { return 1 }
+func (coin *Coin_v1) GetPublicKey() *operation.Point       { return coin.publicKey }
+func (coin *Coin_v1) SetPublicKey(v *operation.Point)      { coin.publicKey = v }
+func (coin *Coin_v1) GetCoinCommitment() *operation.Point  { return coin.coinCommitment }
+func (coin *Coin_v1) SetCoinCommitment(v *operation.Point) { coin.coinCommitment = v }
+func (coin *Coin_v1) GetSNDerivator() *operation.Scalar    { return coin.snDerivator }
+func (coin *Coin_v1) SetSNDerivator(v *operation.Scalar)   { coin.snDerivator = v }
+func (coin *Coin_v1) GetSerialNumber() *operation.Point    { return coin.serialNumber }
+func (coin *Coin_v1) SetSerialNumber(v *operation.Point)   { coin.serialNumber = v }
 
 func (coin *Coin_v1) GetRandomness() *operation.Scalar {
 	return coin.randomness
@@ -355,7 +332,7 @@ func (coin *Coin_v1) SetBytes(coinBytes []byte) error {
 
 // InputCoin represents a input coin of transaction
 type InputCoin struct {
-	CoinDetails *Coin
+	CoinDetails *Coin_v1
 }
 
 // Init (InputCoin) initializes a input coin
