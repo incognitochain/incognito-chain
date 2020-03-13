@@ -1,8 +1,10 @@
 package syncker
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -208,6 +210,7 @@ func (synckerManager *SynckerManager) GetS2BBlocksForBeaconProducer() map[byte][
 func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShard byte) map[byte][]interface{} {
 	//get last confirm crossshard -> process request until retrieve info
 	res := make(map[byte][]interface{})
+	db := synckerManager.config.Node.GetIncDatabase()
 	lastRequestCrossShard := synckerManager.ShardSyncProcess[int(toShard)].Chain.GetCrossShardState()
 	for i := 0; i < synckerManager.config.Node.GetChainParam().ActiveShards; i++ {
 		for {
@@ -215,21 +218,25 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 				break
 			}
 			requestHeight := lastRequestCrossShard[byte(i)]
-			nextHeight := synckerManager.config.Node.FetchNextCrossShard(i, int(toShard), requestHeight)
-			if nextHeight == 0 {
+			nextCrossShardInfo := synckerManager.config.Node.FetchNextCrossShard(i, int(toShard), requestHeight)
+			if nextCrossShardInfo == nil {
 				break
 			}
-			beaconBlock, err := synckerManager.config.Node.FetchBeaconBlockConfirmCrossShardHeight(i, int(toShard), nextHeight)
+			beaconHash, _ := common.Hash{}.NewHashFromStr(nextCrossShardInfo.confirmBeaconHash)
+			beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(db, *beaconHash)
 			if err != nil {
 				break
 			}
+
+			beaconBlock := new(blockchain.BeaconBlock)
+			json.Unmarshal(beaconBlockBytes, beaconBlock)
 			for _, shardState := range beaconBlock.Body.ShardState[byte(i)] {
-				if shardState.Height == nextHeight {
+				if shardState.Height == nextCrossShardInfo.nextCrossShardHeight {
 					if synckerManager.crossShardPool[int(toShard)].HasBlock(shardState.Hash) {
 						//fmt.Println("crossdebug: GetCrossShardBlocksForShardProducer", synckerManager.CrossShardPool[int(toShard)].GetBlock(shardState.Hash).Hash().String())
 						res[byte(i)] = append(res[byte(i)], synckerManager.crossShardPool[int(toShard)].GetBlock(shardState.Hash))
 					}
-					lastRequestCrossShard[byte(i)] = nextHeight
+					lastRequestCrossShard[byte(i)] = nextCrossShardInfo.nextCrossShardHeight
 					break
 				}
 			}

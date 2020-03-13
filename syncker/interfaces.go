@@ -2,6 +2,7 @@ package syncker
 
 import (
 	"context"
+	"github.com/incognitochain/incognito-chain/incdb"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -24,10 +25,11 @@ type Server interface {
 	PushMessageGetBlockCrossShardByHash(fromShard byte, toShard byte, blkHashes []common.Hash, getFromPool bool, peerID libp2p.ID) error
 
 	//database
-	FetchBeaconBlock(height uint64) (*blockchain.BeaconBlock, error)
-	FetchNextCrossShard(fromSID, toSID int, currentHeight uint64) uint64
-	StoreBeaconHashConfirmCrossShardHeight(fromSID, toSID int, height uint64, beaconHash string) error
-	FetchBeaconBlockConfirmCrossShardHeight(fromSID, toSID int, height uint64) (*blockchain.BeaconBlock, error)
+	FetchConfirmBeaconBlockByHeight(height uint64) (*blockchain.BeaconBlock, error)
+	GetIncDatabase() incdb.Database
+	FetchNextCrossShard(fromSID, toSID int, currentHeight uint64) *NextCrossShardInfo
+	//StoreBeaconHashConfirmCrossShardHeight(fromSID, toSID int, height uint64, beaconHash string) error
+	//FetchBeaconBlockConfirmCrossShardHeight(fromSID, toSID int, height uint64) (*blockchain.BeaconBlock, error)
 }
 
 type BeaconChainInterface interface {

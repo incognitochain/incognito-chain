@@ -488,42 +488,43 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock
 		sort.SliceStable(toShardCrossShardBlocks[:], func(i, j int) bool {
 			return toShardCrossShardBlocks[i].Header.Height < toShardCrossShardBlocks[j].Header.Height
 		})
-		startHeight := blockchain.GetBestStateShard(toShard).BestCrossShard[fromShard]
+		//startHeight := blockchain.GetBestStateShard(toShard).BestCrossShard[fromShard]
 		isValids := 0
 		for _, crossTransaction := range crossTransactions {
 			for index, toShardCrossShardBlock := range toShardCrossShardBlocks {
 				//Compare block height and block hash
 				if crossTransaction.BlockHeight == toShardCrossShardBlock.Header.Height {
-					nextHeight, err := rawdbv2.GetCrossShardNextHeight(blockchain.GetDatabase(), fromShard, toShard, startHeight)
-					if err != nil {
-						return NewBlockChainError(NextCrossShardBlockError, err)
-					}
-					if nextHeight != crossTransaction.BlockHeight {
-						return NewBlockChainError(NextCrossShardBlockError, fmt.Errorf("Next Cross Shard Block Height %+v is Not Expected, Expect Next block Height %+v from shard %+v ", toShardCrossShardBlock.Header.Height, nextHeight, fromShard))
-					}
-					startHeight = nextHeight
-					startHeight = nextHeight
-					beaconBlk, err := blockchain.config.Server.FetchBeaconBlockConfirmCrossShardHeight(int(fromShard), int(toShard), nextHeight)
-					if err != nil {
-						Logger.log.Errorf("%+v", err)
-						break
-					}
-					consensusRootHash, err := blockchain.GetBeaconConsensusRootHash(blockchain.GetDatabase(), beaconBlk.GetHeight())
-					if err != nil {
-						Logger.log.Errorf("Can't found ConsensusStateRootHash of beacon height %+v, error %+v", beaconBlk.GetHeight(), err)
-						break
-					}
-					stateDB, err := statedb.NewWithPrefixTrie(consensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetDatabase()))
-					if err != nil {
-						Logger.log.Errorf("Init trie err", err)
-						break
-					}
-					shardCommittee := statedb.GetOneShardCommittee(stateDB, toShardCrossShardBlock.Header.ShardID)
-					Logger.log.Criticalf("Shard %+v, committee %+v", toShardCrossShardBlock.Header.ShardID, shardCommittee)
-					err = toShardCrossShardBlock.VerifyCrossShardBlock(blockchain, shardCommittee)
-					if err != nil {
-						return NewBlockChainError(VerifyCrossShardBlockError, err)
-					}
+					//TODO: move validation code into function GetCrossShardBlocksForShardValidator
+					//nextHeight, err := rawdbv2.GetCrossShardNextHeight(blockchain.GetDatabase(), fromShard, toShard, startHeight)
+					//if err != nil {
+					//	return NewBlockChainError(NextCrossShardBlockError, err)
+					//}
+					//if nextHeight != crossTransaction.BlockHeight {
+					//	return NewBlockChainError(NextCrossShardBlockError, fmt.Errorf("Next Cross Shard Block Height %+v is Not Expected, Expect Next block Height %+v from shard %+v ", toShardCrossShardBlock.Header.Height, nextHeight, fromShard))
+					//}
+					//startHeight = nextHeight
+					//startHeight = nextHeight
+					//beaconBlk, err := blockchain.config.Server.FetchBeaconBlockConfirmCrossShardHeight(int(fromShard), int(toShard), nextHeight)
+					//if err != nil {
+					//	Logger.log.Errorf("%+v", err)
+					//	break
+					//}
+					//consensusRootHash, err := blockchain.GetBeaconConsensusRootHash(blockchain.GetDatabase(), beaconBlk.GetHeight())
+					//if err != nil {
+					//	Logger.log.Errorf("Can't found ConsensusStateRootHash of beacon height %+v, error %+v", beaconBlk.GetHeight(), err)
+					//	break
+					//}
+					//stateDB, err := statedb.NewWithPrefixTrie(consensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetDatabase()))
+					//if err != nil {
+					//	Logger.log.Errorf("Init trie err", err)
+					//	break
+					//}
+					//shardCommittee := statedb.GetOneShardCommittee(stateDB, toShardCrossShardBlock.Header.ShardID)
+					//Logger.log.Criticalf("Shard %+v, committee %+v", toShardCrossShardBlock.Header.ShardID, shardCommittee)
+					//err = toShardCrossShardBlock.VerifyCrossShardBlock(blockchain, shardCommittee)
+					//if err != nil {
+					//	return NewBlockChainError(VerifyCrossShardBlockError, err)
+					//}
 					compareCrossTransaction := CrossTransaction{
 						TokenPrivacyData: toShardCrossShardBlock.CrossTxTokenPrivacyData,
 						OutputCoin:       toShardCrossShardBlock.CrossOutputCoin,

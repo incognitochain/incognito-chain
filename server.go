@@ -2227,43 +2227,34 @@ func (s *Server) GetUserMiningState() (role string, chainID int) {
 	return "", -2
 }
 
-//TODO: database
-func (s *Server) StoreBeaconHashConfirmCrossShardHeight(fromSID, toSID int, height uint64, beaconHash string) error {
-	//return s.dataBase.StoreBeaconHashConfirmCrossShardHeight(byte(fromSID), byte(toSID), height, beaconHash)
-	return nil
-}
-
-func (s *Server) FetchBeaconBlockConfirmCrossShardHeight(fromSID, toSID int, height uint64) (*blockchain.BeaconBlock, error) {
-	//if data, err := s.dataBase.FetchBeaconHashConfirmCrossShardHeight(byte(fromSID), byte(toSID), height); err != nil {
-	//	return nil, err
-	//} else {
-	//	blk := &blockchain.BeaconBlock{}
-	//	if err := json.Unmarshal(data, blk); err != nil {
-	//		return nil, err
-	//	}
-	//	return blk, nil
-	//}
-	return nil, nil
-}
-
-func (s *Server) FetchNextCrossShard(fromSID, toSID int, currentHeight uint64) uint64 {
-	nextHeight, err := rawdbv2.GetCrossShardNextHeight(s.dataBase, byte(fromSID), byte(toSID), uint64(currentHeight))
+func (s *Server) FetchNextCrossShard(fromSID, toSID int, currentHeight uint64) *syncker.NextCrossShardInfo {
+	b, err := rawdbv2.GetCrossShardNextHeight(s.dataBase, byte(fromSID), byte(toSID), uint64(currentHeight))
 	if err != nil {
 		Logger.log.Error(fmt.Sprintf("Cannot FetchCrossShardNextHeight fromSID %d toSID %d with currentHeight %d", fromSID, toSID, currentHeight))
+		return nil
 	}
-	return nextHeight
+	var res = new(syncker.NextCrossShardInfo)
+	err = json.Unmarshal(b, res)
+	if err != nil {
+		return nil
+	}
+	return res
 }
 
-func (s *Server) FetchBeaconBlock(height uint64) (*blockchain.BeaconBlock, error) {
-	//TODO: must get
+//TODO: @hung
+func (s *Server) FetchConfirmBeaconBlockByHeight(height uint64) (*blockchain.BeaconBlock, error) {
 	//h, err := rawdbv2.GetBeaconBlockByIndex(s.dataBase, height)
 	//if err != nil {
 	//	return nil, err
 	//}
-	//data, err := rawdbv2.GetBeaconBlockByHash(s.dataBase, *h)
+	//data, err := rawdbv2.GetBeaconBlockByHash(s.dataBase, h[0])
 	//blk := &blockchain.BeaconBlock{}
 	//if err := json.Unmarshal(data, blk); err != nil {
 	//	return nil, err
 	//}
 	return nil, nil
+}
+
+func (s *Server) GetIncDatabase() incdb.Database {
+	return s.dataBase
 }
