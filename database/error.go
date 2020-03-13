@@ -128,6 +128,7 @@ const (
 	TrackLiquidateCustodianError
 	StoreLiquidateTopPercentileExchangeRatesError
 	StoreLiquidateExchangeRatesError
+	StoreRedeemLiquidationExchangeRatesError
 
 	StorePortalRewardError
 
@@ -262,6 +263,7 @@ var ErrCodeMessage = map[int]struct {
 	StorePortalRewardError:                        {-14020, "Store portal reward error"},
 	StoreLiquidateTopPercentileExchangeRatesError: {-14021, "Store liquidate top percentile exchange rates error"},
 	StoreLiquidateExchangeRatesError: {-14022, "Store liquidate exchange rates error"},
+	StoreRedeemLiquidationExchangeRatesError: {-14023, "Store redeem liquidation exchange rates error"},
 
 	// relaying
 	StoreRelayingBNBHeaderError: {-15001, "Store relaying header bnb error"},

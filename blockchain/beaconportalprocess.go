@@ -53,6 +53,8 @@ func (blockchain *BlockChain) processPortalInstructions(block *BeaconBlock, bd *
 			err = blockchain.processPortalReward(beaconHeight, inst, currentPortalState)
 		case strconv.Itoa(metadata.PortalRequestWithdrawRewardMeta):
 			err = blockchain.processPortalWithdrawReward(beaconHeight, inst, currentPortalState)
+		case strconv.Itoa(metadata.PortalRedeemLiquidateExchangeRatesMeta):
+			err = blockchain.processPortalRedeemLiquidateExchangeRates(beaconHeight, inst, currentPortalState, updatingInfoByTokenID)
 		}
 
 		if err != nil {

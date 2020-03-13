@@ -147,6 +147,9 @@ const (
 
 	PortalReqWithdrawRewardAcceptedStatus = 1
 	PortalReqWithdrawRewardRejectedStatus = 2
+
+	PortalRedeemLiquidateExchangeRatesSuccessStatus = 1
+	PortalRedeemLiquidateExchangeRatesRejectedStatus = 2
 )
 
 // PDE statuses for chain
