@@ -151,22 +151,5 @@ func (httpServer *HttpServer) handleGetRelayingBNBHeaderByBlockHeight(params int
 
 		return bnbHeader, nil
 	}
-
-
-	//bnbRelayingHeader := bnbHeaderBytes.BNBHeaderChain
-	//beaconBlock, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(blockHeight))
-	//if err != nil {
-	//	return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
-	//}
-	//type RelayingBNBHeader struct {
-	//	LatestHeader       *types.Header   `json:"LatestHeader"`
-	//	UnconfirmedHeaders []*types.Header `json:"UnconfirmedHeaders"`
-	//	BeaconTimeStamp    int64           `json:"BeaconTimeStamp"`
-	//}
-	//result := RelayingBNBHeader{
-	//	BeaconTimeStamp:    beaconBlock.Header.Timestamp,
-	//	LatestHeader:       bnbRelayingHeader.LatestHeader,
-	//	UnconfirmedHeaders: bnbRelayingHeader.UnconfirmedHeaders,
-	//}
 	return nil, nil
 }

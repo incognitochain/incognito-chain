@@ -4,33 +4,33 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"strconv"
 	"reflect"
-	"errors"
+	"strconv"
 )
 
 type PortalExchangeRates struct {
 	MetadataBase
 	SenderAddress string
-	Rates map[string]uint64 //amount * 10^6 (USDT)
+	Rates         map[string]uint64 //amount * 10^6 (USDT)
 }
 
 type PortalExchangeRatesAction struct {
-	Meta PortalExchangeRates
-	TxReqID common.Hash
+	Meta     PortalExchangeRates
+	TxReqID  common.Hash
 	LockTime int64
-	ShardID byte
+	ShardID  byte
 }
 
 func NewPortalExchangeRates(metaType int, senderAddress string, currency map[string]uint64) (*PortalExchangeRates, error) {
 	metadataBase := MetadataBase{Type: metaType}
 
-	portalExchangeRates := &PortalExchangeRates {
+	portalExchangeRates := &PortalExchangeRates{
 		SenderAddress: senderAddress,
-		Rates: currency,
+		Rates:         currency,
 	}
 
 	portalExchangeRates.MetadataBase = metadataBase
@@ -39,10 +39,10 @@ func NewPortalExchangeRates(metaType int, senderAddress string, currency map[str
 }
 
 type PortalExchangeRatesContent struct {
-	SenderAddress string
-	Rates map[string]uint64
-	TxReqID common.Hash
-	LockTime int64
+	SenderAddress   string
+	Rates           map[string]uint64
+	TxReqID         common.Hash
+	LockTime        int64
 	UniqueRequestId string
 }
 
@@ -79,6 +79,8 @@ func (portalExchangeRates PortalExchangeRates) ValidateSanityData(bcr Blockchain
 		return false, false, errors.New("Tx exchange rates must be TxNormalType")
 	}
 
+	//todo: remove checking IsCoinsBurning and add more validate for Rates
+
 	// check burning tx
 	if !txr.IsCoinsBurning(bcr, beaconHeight) {
 		return false, false, errors.New("Must send coin to burning address")
@@ -105,21 +107,7 @@ func (portalExchangeRates PortalExchangeRates) ValidateMetadataByItself() bool {
 func (portalExchangeRates PortalExchangeRates) Hash() *common.Hash {
 	record := portalExchangeRates.MetadataBase.Hash().String()
 	record += portalExchangeRates.SenderAddress
-
-	if value, ok := portalExchangeRates.Rates[PortalTokenSymbolBTC]; ok {
-		record += PortalTokenSymbolBTC
-		record += strconv.FormatUint(value, 10)
-	}
-
-	if value, ok := portalExchangeRates.Rates[PortalTokenSymbolBNB]; ok {
-		record += PortalTokenSymbolBNB
-		record += strconv.FormatUint(value, 10)
-	}
-
-	if value, ok := portalExchangeRates.Rates[PortalTokenSymbolPRV]; ok {
-		record += PortalTokenSymbolPRV
-		record += strconv.FormatUint(value, 10)
-	}
+	record += ConvertMapIntToStringWithSortKey(portalExchangeRates.Rates)
 
 	// final hash
 	hash := common.HashH([]byte(record))
@@ -128,10 +116,10 @@ func (portalExchangeRates PortalExchangeRates) Hash() *common.Hash {
 
 func (portalExchangeRates *PortalExchangeRates) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
 	actionContent := PortalExchangeRatesAction{
-		Meta:    *portalExchangeRates,
-		TxReqID: *tx.Hash(),
+		Meta:     *portalExchangeRates,
+		TxReqID:  *tx.Hash(),
 		LockTime: tx.GetLockTime(),
-		ShardID: shardID,
+		ShardID:  shardID,
 	}
 
 	actionContentBytes, err := json.Marshal(actionContent)

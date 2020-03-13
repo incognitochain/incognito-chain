@@ -7,7 +7,6 @@ import (
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
-	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"strconv"
 )
@@ -115,20 +114,10 @@ func (reqPToken PortalRequestPTokens) ValidateSanityData(bcr BlockchainRetriever
 	}
 
 	// validate tokenID and porting proof
-	if reqPToken.TokenID == PortalSupportedTokenMap[PortalTokenSymbolBTC] {
-		// token BTC
-		// convert porting proof to BTC proof
-		// todo:
-	} else if reqPToken.TokenID == PortalSupportedTokenMap[PortalTokenSymbolBNB] {
-		// token BNB
-		// convert porting proof to BNB proof
-		_, err := relaying.ParseBNBProofFromB64EncodeJsonStr(reqPToken.PortingProof)
-		if err != nil {
-			return false, false, NewMetadataTxError(PortalRequestPTokenParamError, err)
-		}
-	} else {
+	if !common.IsPortalToken(reqPToken.TokenID){
 		return false, false, NewMetadataTxError(PortalRequestPTokenParamError, errors.New("TokenID is not supported currently on Portal"))
 	}
+
 	return true, true, nil
 }
 

@@ -44,7 +44,6 @@ func buildRequestPortingInst(
 	uniqueRegisterId string,
 	incogAddressStr string,
 	pTokenId string,
-	pTokenAddress string,
 	registerAmount uint64,
 	portingFee uint64,
 	custodian map[string]lvdb.MatchingPortingCustodianDetail,
@@ -54,7 +53,6 @@ func buildRequestPortingInst(
 		UniqueRegisterId: uniqueRegisterId,
 		IncogAddressStr:  incogAddressStr,
 		PTokenId:         pTokenId,
-		PTokenAddress:    pTokenAddress,
 		RegisterAmount:   registerAmount,
 		PortingFee:       portingFee,
 		Custodian:        custodian,
@@ -248,7 +246,6 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 			actionData.Meta.UniqueRegisterId,
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.PTokenId,
-			actionData.Meta.PTokenAddress,
 			actionData.Meta.RegisterAmount,
 			actionData.Meta.PortingFee,
 			nil,
@@ -267,7 +264,6 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 			actionData.Meta.UniqueRegisterId,
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.PTokenId,
-			actionData.Meta.PTokenAddress,
 			actionData.Meta.RegisterAmount,
 			actionData.Meta.PortingFee,
 			nil,
@@ -287,7 +283,6 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 			actionData.Meta.UniqueRegisterId,
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.PTokenId,
-			actionData.Meta.PTokenAddress,
 			actionData.Meta.RegisterAmount,
 			actionData.Meta.PortingFee,
 			nil,
@@ -309,7 +304,6 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 			actionData.Meta.UniqueRegisterId,
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.PTokenId,
-			actionData.Meta.PTokenAddress,
 			actionData.Meta.RegisterAmount,
 			actionData.Meta.PortingFee,
 			nil,
@@ -328,7 +322,6 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 			actionData.Meta.UniqueRegisterId,
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.PTokenId,
-			actionData.Meta.PTokenAddress,
 			actionData.Meta.RegisterAmount,
 			actionData.Meta.PortingFee,
 			nil,
@@ -351,7 +344,6 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 			actionData.Meta.UniqueRegisterId,
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.PTokenId,
-			actionData.Meta.PTokenAddress,
 			actionData.Meta.RegisterAmount,
 			actionData.Meta.PortingFee,
 			nil,
@@ -382,7 +374,6 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 			actionData.Meta.UniqueRegisterId,
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.PTokenId,
-			actionData.Meta.PTokenAddress,
 			actionData.Meta.RegisterAmount,
 			actionData.Meta.PortingFee,
 			nil,
@@ -411,7 +402,6 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 			actionData.Meta.UniqueRegisterId,
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.PTokenId,
-			actionData.Meta.PTokenAddress,
 			actionData.Meta.RegisterAmount,
 			actionData.Meta.PortingFee,
 			pickCustodianResult,
@@ -438,7 +428,6 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 			actionData.Meta.UniqueRegisterId,
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.PTokenId,
-			actionData.Meta.PTokenAddress,
 			actionData.Meta.RegisterAmount,
 			actionData.Meta.PortingFee,
 			nil,
@@ -456,7 +445,6 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		actionData.Meta.UniqueRegisterId,
 		actionData.Meta.IncogAddressStr,
 		actionData.Meta.PTokenId,
-		actionData.Meta.PTokenAddress,
 		actionData.Meta.RegisterAmount,
 		actionData.Meta.PortingFee,
 		pickCustodianResult,
@@ -576,7 +564,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 	}
 
 	// check tokenID
-	if meta.TokenID != metadata.PortalSupportedTokenMap[waitingPortingRequest.TokenID] {
+	if meta.TokenID != waitingPortingRequest.TokenID {
 		Logger.log.Errorf("TokenID is not correct in portingID req")
 		inst := buildReqPTokensInst(
 			meta.UniquePortingID,
@@ -609,9 +597,9 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		return [][]string{inst}, nil
 	}
 
-	if meta.TokenID == metadata.PortalSupportedTokenMap[metadata.PortalTokenSymbolBTC] {
+	if meta.TokenID == common.PortalBTCIDStr {
 		//todo:
-	} else if meta.TokenID == metadata.PortalSupportedTokenMap[metadata.PortalTokenSymbolBNB] {
+	} else if meta.TokenID == common.PortalBNBIDStr {
 		// parse PortingProof in meta
 		txProofBNB, err := relaying.ParseBNBProofFromB64EncodeJsonStr(meta.PortingProof)
 		if err != nil {
@@ -1053,14 +1041,8 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 		return [][]string{inst}, nil
 	}
 
-	// get tokenSymbol from redeemTokenID
-	tokenSymbol := ""
-	for tokenSym, incTokenID := range metadata.PortalSupportedTokenMap {
-		if incTokenID == meta.TokenID {
-			tokenSymbol = tokenSym
-			break
-		}
-	}
+	// get tokenID from redeemTokenID
+	tokenID := meta.TokenID
 
 	// check redeem fee
 	exchangeRateKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
@@ -1081,7 +1063,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 		)
 		return [][]string{inst}, nil
 	}
-	minRedeemFee, err := calMinRedeemFee(meta.RedeemAmount, tokenSymbol, currentPortalState.FinalExchangeRates[exchangeRateKey])
+	minRedeemFee, err := calMinRedeemFee(meta.RedeemAmount, tokenID, currentPortalState.FinalExchangeRates[exchangeRateKey])
 	if err != nil {
 		Logger.log.Errorf("Error when calculating minimum redeem fee %v\n", err)
 		inst := buildRedeemRequestInst(
@@ -1119,7 +1101,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 	}
 
 	// pick custodian(s) who holding public token to return user
-	matchingCustodiansDetail, err := pickupCustodianForRedeem(meta.RedeemAmount, tokenSymbol, currentPortalState)
+	matchingCustodiansDetail, err := pickupCustodianForRedeem(meta.RedeemAmount, tokenID, currentPortalState)
 	if err != nil {
 		Logger.log.Errorf("Error when pick up custodian for redeem %v\n", err)
 		inst := buildRedeemRequestInst(
@@ -1140,7 +1122,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 
 	// update custodian state (holding public tokens)
 	for k, cus := range matchingCustodiansDetail {
-		if currentPortalState.CustodianPoolState[k].HoldingPubTokens[tokenSymbol] < cus.Amount {
+		if currentPortalState.CustodianPoolState[k].HoldingPubTokens[tokenID] < cus.Amount {
 			Logger.log.Errorf("Amount holding public tokens is less than matching redeem amount")
 			inst := buildRedeemRequestInst(
 				meta.UniqueRedeemID,
@@ -1157,7 +1139,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 			)
 			return [][]string{inst}, nil
 		}
-		currentPortalState.CustodianPoolState[k].HoldingPubTokens[tokenSymbol] -= cus.Amount
+		currentPortalState.CustodianPoolState[k].HoldingPubTokens[tokenID] -= cus.Amount
 	}
 
 	// update key of matching custodian
@@ -1524,9 +1506,9 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 
 
 	// validate proof and memo in tx
-	if meta.TokenID == metadata.PortalSupportedTokenMap[metadata.PortalTokenSymbolBTC] {
+	if meta.TokenID == common.PortalBTCIDStr {
 		//todo:
-	} else if meta.TokenID == metadata.PortalSupportedTokenMap[metadata.PortalTokenSymbolBNB] {
+	} else if meta.TokenID == common.PortalBNBIDStr {
 		// parse PortingProof in meta
 		txProofBNB, err := relaying.ParseBNBProofFromB64EncodeJsonStr(meta.RedeemProof)
 		if err != nil {
@@ -1711,21 +1693,15 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 			return [][]string{inst}, nil
 		}
 
-		// get tokenSymbol from redeemTokenID
-		tokenSymbol := ""
-		for tokenSym, incTokenID := range metadata.PortalSupportedTokenMap {
-			if incTokenID == meta.TokenID {
-				tokenSymbol = tokenSym
-				break
-			}
-		}
+		// get tokenID from redeemTokenID
+		tokenID := meta.TokenID
 
 		// update custodian state (FreeCollateral, LockedAmountCollateral)
 		custodianStateKey := lvdb.NewCustodianStateKey(beaconHeight, meta.CustodianAddressStr)
 		finalExchangeRateKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
 		unlockAmount, err2 := updateFreeCollateralCustodian(
 			currentPortalState.CustodianPoolState[custodianStateKey],
-			meta.RedeemAmount, tokenSymbol,
+			meta.RedeemAmount, tokenID,
 			currentPortalState.FinalExchangeRates[finalExchangeRateKey])
 		if err2 != nil {
 			Logger.log.Errorf("Error when update free collateral amount for custodian", err2)

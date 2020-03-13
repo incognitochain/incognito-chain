@@ -22,14 +22,8 @@ func (blockchain *BlockChain) processPortalLiquidateCustodian(
 		return nil
 	}
 
-	// get tokenSymbol from redeemTokenID
-	tokenSymbol := ""
-	for tokenSym, incTokenID := range metadata.PortalSupportedTokenMap {
-		if incTokenID == actionData.TokenID {
-			tokenSymbol = tokenSym
-			break
-		}
-	}
+	// get pTokenID from actionData
+	pTokenID := actionData.TokenID
 
 	reqStatus := instructions[2]
 	if reqStatus == common.PortalLiquidateCustodianSuccessChainStatus {
@@ -38,16 +32,16 @@ func (blockchain *BlockChain) processPortalLiquidateCustodian(
 		custodianState := currentPortalState.CustodianPoolState[cusStateKey]
 
 		if custodianState.TotalCollateral < actionData.MintedCollateralAmount ||
-			custodianState.LockedAmountCollateral[tokenSymbol] < actionData.MintedCollateralAmount {
+			custodianState.LockedAmountCollateral[pTokenID] < actionData.MintedCollateralAmount {
 			Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Total collateral %v, locked amount %v "+
 				"should be greater than minted amount %v\n: ",
-				custodianState.TotalCollateral, custodianState.LockedAmountCollateral[tokenSymbol], actionData.MintedCollateralAmount)
+				custodianState.TotalCollateral, custodianState.LockedAmountCollateral[pTokenID], actionData.MintedCollateralAmount)
 			return fmt.Errorf("[checkAndBuildInstForCustodianLiquidation] Total collateral %v, locked amount %v "+
 				"should be greater than minted amount %v\n: ",
-				custodianState.TotalCollateral, custodianState.LockedAmountCollateral[tokenSymbol], actionData.MintedCollateralAmount)
+				custodianState.TotalCollateral, custodianState.LockedAmountCollateral[pTokenID], actionData.MintedCollateralAmount)
 		}
 
-		err = updateCustodianStateAfterLiquidateCustodian(custodianState, actionData.MintedCollateralAmount, tokenSymbol)
+		err = updateCustodianStateAfterLiquidateCustodian(custodianState, actionData.MintedCollateralAmount, pTokenID)
 		if err != nil {
 			Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when updating %v\n: ", err)
 			return err

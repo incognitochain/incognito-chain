@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"math"
 	"strconv"
 )
 
@@ -114,19 +115,13 @@ func checkAndBuildInstForCustodianLiquidation(
 			}
 			shardID := common.GetShardIDFromLastByte(redeemerKey.KeySet.PaymentAddress.Pk[len(redeemerKey.KeySet.PaymentAddress.Pk)-1])
 
-			// get tokenSymbol from redeemTokenID
-			tokenSymbol := ""
-			for tokenSym, incTokenID := range metadata.PortalSupportedTokenMap {
-				if incTokenID == redeemReq.TokenID {
-					tokenSymbol = tokenSym
-					break
-				}
-			}
+			// get tokenID from redeemTokenID
+			tokenID := redeemReq.TokenID
 
 			for cusIncAddr, matchCusDetail := range redeemReq.Custodians {
 				// calculate minted collateral amount
-				mintedAmountInPToken := matchCusDetail.Amount * common.PercentReceivedCollateralAmount / 100
-				mintedAmountInPRV, err := exchangeRate.ExchangePToken2PRVByTokenId(tokenSymbol, mintedAmountInPToken)
+				mintedAmountInPToken := float64(matchCusDetail.Amount) * float64(common.PercentReceivedCollateralAmount) / 100
+				mintedAmountInPRV, err := exchangeRate.ExchangePToken2PRVByTokenId(tokenID, uint64(math.Floor(mintedAmountInPToken)))
 				if err != nil {
 					Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when exchanging ptoken to prv amount %v\n: ", err)
 					inst := buildCustodianRunAwayLiquidationInst(
@@ -166,10 +161,10 @@ func checkAndBuildInstForCustodianLiquidation(
 				}
 
 				if custodianState.TotalCollateral < mintedAmountInPRV ||
-					custodianState.LockedAmountCollateral[tokenSymbol] < mintedAmountInPRV {
+					custodianState.LockedAmountCollateral[tokenID] < mintedAmountInPRV {
 					Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Total collateral %v, locked amount %v " +
 						"should be greater than minted amount %v\n: ",
-						custodianState.TotalCollateral, custodianState.LockedAmountCollateral[tokenSymbol], mintedAmountInPRV)
+						custodianState.TotalCollateral, custodianState.LockedAmountCollateral[tokenID], mintedAmountInPRV)
 					inst := buildCustodianRunAwayLiquidationInst(
 						redeemReq.UniqueRedeemID,
 						redeemReq.TokenID,
@@ -185,7 +180,7 @@ func checkAndBuildInstForCustodianLiquidation(
 					continue
 				}
 
-				err = updateCustodianStateAfterLiquidateCustodian(custodianState, mintedAmountInPRV, tokenSymbol)
+				err = updateCustodianStateAfterLiquidateCustodian(custodianState, mintedAmountInPRV, tokenID)
 				if err != nil {
 					Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when updating %v\n: ", err)
 					inst := buildCustodianRunAwayLiquidationInst(

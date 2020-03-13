@@ -40,10 +40,9 @@ func (httpServer *HttpServer) handlePortalExchangeRate(params interface{}, close
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata Rates is invalid"))
 	}
 
-	for pToken, value := range exchangeRateMap {
-		isSupported, err := common.SliceExists(metadata.PortalSupportedExchangeRatesSymbols, pToken)
-		if err != nil || !isSupported {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Public token is not supported currently"))
+	for pTokenID, value := range exchangeRateMap {
+		if !common.IsPortalExchangeRateToken(pTokenID) {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("TokenID is not portal exchange rate token"))
 		}
 
 		amount, ok := value.(float64)
@@ -55,7 +54,7 @@ func (httpServer *HttpServer) handlePortalExchangeRate(params interface{}, close
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Exchange rates should be larger than 0"))
 		}
 
-		exchangeRate[pToken] = uint64(amount)
+		exchangeRate[pTokenID] = uint64(amount)
 	}
 
 	meta, _ := metadata.NewPortalExchangeRates(
@@ -129,18 +128,16 @@ func (httpServer *HttpServer) handleConvertExchangeRates(params interface{}, clo
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata ValuePToken is invalid"))
 	}
 
-	tokenSymbol, ok := data["TokenSymbol"].(string)
+	tokenID, ok := data["TokenID"].(string)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenSymbol is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
 	}
 
-	tokenSymbolExist, _ := common.SliceExists(metadata.PortalSupportedExchangeRatesSymbols, tokenSymbol)
-
-	if !tokenSymbolExist {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenSymbol is not support"))
+	if !common.IsPortalExchangeRateToken(tokenID) {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is not support"))
 	}
 
-	result, err := httpServer.portal.ConvertExchangeRates(tokenSymbol, uint64(valuePToken), httpServer.blockService, *httpServer.config.Database)
+	result, err := httpServer.portal.ConvertExchangeRates(tokenID, uint64(valuePToken), httpServer.blockService, *httpServer.config.Database)
 
 	if err != nil {
 		return nil, err
@@ -163,17 +160,16 @@ func (httpServer *HttpServer) handleGetPortingFees(params interface{}, closeChan
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata ValuePToken is invalid"))
 	}
 
-	tokenSymbol, ok := data["TokenSymbol"].(string)
+	tokenID, ok := data["TokenID"].(string)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenSymbol is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
 	}
 
-	tokenSymbolExist, _ := common.SliceExists(metadata.PortalSupportedExchangeRatesSymbols, tokenSymbol)
-	if !tokenSymbolExist {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenSymbol is not support"))
+	if !common.IsPortalExchangeRateToken(tokenID) {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is not support"))
 	}
 
-	result, err := httpServer.portal.GetPortingFees(tokenSymbol, uint64(valuePToken), httpServer.blockService, *httpServer.config.Database)
+	result, err := httpServer.portal.GetPortingFees(tokenID, uint64(valuePToken), httpServer.blockService, *httpServer.config.Database)
 
 	if err != nil {
 		return nil, err

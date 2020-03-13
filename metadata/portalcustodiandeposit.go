@@ -8,7 +8,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"sort"
 	"strconv"
 )
 
@@ -111,10 +110,9 @@ func (custodianDeposit PortalCustodianDeposit) ValidateSanityData(bcr Blockchain
 	if len(custodianDeposit.RemoteAddresses) == 0 {
 		return false, false, errors.New("remote addresses should be at least one")
 	}
-	for tokenSymbol, _ := range custodianDeposit.RemoteAddresses {
-		isSupportedToken, err := common.SliceExists(PortalSupportedTokenSymbols, tokenSymbol)
-		if err != nil || !isSupportedToken {
-			return false, false, errors.New("remote address is invalid")
+	for tokenID, _ := range custodianDeposit.RemoteAddresses {
+		if !common.IsPortalToken(tokenID) {
+			return false, false, errors.New("TokenID in remote address is invalid")
 		}
 	}
 
@@ -128,17 +126,7 @@ func (custodianDeposit PortalCustodianDeposit) ValidateMetadataByItself() bool {
 func (custodianDeposit PortalCustodianDeposit) Hash() *common.Hash {
 	record := custodianDeposit.MetadataBase.Hash().String()
 	record += custodianDeposit.IncogAddressStr
-
-	// sort custodianDeposit.RemoteAddresses before appending to bytes array
-	tokenSymbolKeys := []string{}
-	for tokenSymbol, _ := range custodianDeposit.RemoteAddresses {
-		tokenSymbolKeys = append(tokenSymbolKeys, tokenSymbol)
-	}
-	sort.Strings(tokenSymbolKeys)
-	for _, tokenSymbol := range tokenSymbolKeys {
-		record += tokenSymbol
-		record += custodianDeposit.RemoteAddresses[tokenSymbol]
-	}
+	record += ConvertMapStringToStringWithSortKey(custodianDeposit.RemoteAddresses)
 	record += strconv.FormatUint(custodianDeposit.DepositedAmount, 10)
 	// final hash
 	hash := common.HashH([]byte(record))

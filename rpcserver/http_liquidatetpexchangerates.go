@@ -6,8 +6,8 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
-	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"errors"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
 
 func (httpServer *HttpServer) handleGetLiquidationTpExchangeRates(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -34,17 +34,16 @@ func (httpServer *HttpServer) handleGetLiquidationTpExchangeRates(params interfa
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata CustodianAddress is invalid"))
 	}
 
-	tokenSymbol, ok := data["TokenSymbol"].(string)
+	pTokenID, ok := data["TokenID"].(string)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenSymbol is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
 	}
 
-	tokenSymbolExist, _ := common.SliceExists(metadata.PortalSupportedExchangeRatesSymbols, tokenSymbol)
-	if !tokenSymbolExist {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenSymbol is not support"))
+	if !common.IsPortalExchangeRateToken(pTokenID) {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is not support"))
 	}
 
-	result, err := httpServer.portal.GetLiquidateTpExchangeRates(uint64(beaconHeight), custodianAddress, tokenSymbol, httpServer.blockService, *httpServer.config.Database)
+	result, err := httpServer.portal.GetLiquidateTpExchangeRates(uint64(beaconHeight), custodianAddress, pTokenID, httpServer.blockService, *httpServer.config.Database)
 
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetTpExchangeRatesLiquidationError, err)
@@ -72,17 +71,16 @@ func (httpServer *HttpServer) handleGetLiquidationExchangeRates(params interface
 		return nil, rpcservice.NewRPCError(rpcservice.GetExchangeRatesLiquidationError, err)
 	}
 
-	tokenSymbol, ok := data["TokenSymbol"].(string)
+	pTokenID, ok := data["TokenID"].(string)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenSymbol is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
 	}
 
-	tokenSymbolExist, _ := common.SliceExists(metadata.PortalSupportedExchangeRatesSymbols, tokenSymbol)
-	if !tokenSymbolExist {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenSymbol is not support"))
+	if !common.IsPortalExchangeRateToken(pTokenID) {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is not support"))
 	}
 
-	result, err := httpServer.portal.GetLiquidateExchangeRates(uint64(beaconHeight), tokenSymbol, httpServer.blockService, *httpServer.config.Database)
+	result, err := httpServer.portal.GetLiquidateExchangeRates(uint64(beaconHeight), pTokenID, httpServer.blockService, *httpServer.config.Database)
 
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetExchangeRatesLiquidationError, err)
