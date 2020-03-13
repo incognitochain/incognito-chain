@@ -416,9 +416,13 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 //	 + ["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." flag]
 func (blockchain *BlockChain) processInstructionFromBeacon(beaconBlocks []*BeaconBlock, shardID byte, committeeChange *committeeChange) ([]string, []string, map[string]string) {
 	newShardPendingValidator := []string{}
-	shardPendingValidator, err := incognitokey.CommitteeKeyListToString(blockchain.GetBestStateShard(shardID).ShardPendingValidator)
-	if err != nil {
-		panic(err)
+	shardPendingValidator := []string{}
+	if blockchain.GetBestStateShard(shardID) != nil {
+		var err error
+		shardPendingValidator, err = incognitokey.CommitteeKeyListToString(blockchain.GetBestStateShard(shardID).ShardPendingValidator)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	assignInstructions := [][]string{}

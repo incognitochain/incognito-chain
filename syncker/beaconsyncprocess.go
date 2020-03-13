@@ -43,7 +43,7 @@ func NewBeaconSyncProcess(server Server, chain BeaconChainInterface) *BeaconSync
 	s.s2bSyncProcess = NewS2BSyncProcess(server, s, chain)
 	go s.syncBeacon()
 	go s.insertBeaconBlockFromPool()
-	go s.updateConfirmCrossShard()
+	//go s.updateConfirmCrossShard()
 	return s
 }
 
@@ -112,7 +112,7 @@ func (s *BeaconSyncProcess) updateConfirmCrossShard() {
 	//TODO: update lastUpdateConfirmCrossShard using DB
 	//fmt.Println("crossdebug lastUpdateConfirmCrossShard ", s.lastUpdateConfirmCrossShard)
 	for {
-		if s.lastUpdateConfirmCrossShard > s.chain.GetBestViewHeight() { //TODO: get confirm height
+		if s.lastUpdateConfirmCrossShard > s.chain.GetFinalViewHeight() { //TODO: get confirm height
 			time.Sleep(time.Second * 5)
 			continue
 		}

@@ -2247,24 +2247,23 @@ func (s *Server) FetchBeaconBlockConfirmCrossShardHeight(fromSID, toSID int, hei
 }
 
 func (s *Server) FetchNextCrossShard(fromSID, toSID int, currentHeight uint64) uint64 {
-	//nextHeight, err := s.dataBase.FetchCrossShardNextHeight(byte(fromSID), byte(toSID), uint64(currentHeight))
-	//if err != nil {
-	//	Logger.log.Error(fmt.Sprintf("Cannot FetchCrossShardNextHeight fromSID %d toSID %d with currentHeight %d", fromSID, toSID, currentHeight))
-	//}
-	//return nextHeight
-	return 0
+	nextHeight, err := rawdbv2.GetCrossShardNextHeight(s.dataBase, byte(fromSID), byte(toSID), uint64(currentHeight))
+	if err != nil {
+		Logger.log.Error(fmt.Sprintf("Cannot FetchCrossShardNextHeight fromSID %d toSID %d with currentHeight %d", fromSID, toSID, currentHeight))
+	}
+	return nextHeight
 }
 
 func (s *Server) FetchBeaconBlock(height uint64) (*blockchain.BeaconBlock, error) {
-	//h, err := s.dataBase.GetBeaconBlockHashByIndex(height)
+	//TODO: must get
+	//h, err := rawdbv2.GetBeaconBlockByIndex(s.dataBase, height)
 	//if err != nil {
 	//	return nil, err
 	//}
-	//data, err := s.dataBase.FetchBeaconBlock(h)
+	//data, err := rawdbv2.GetBeaconBlockByHash(s.dataBase, *h)
 	//blk := &blockchain.BeaconBlock{}
 	//if err := json.Unmarshal(data, blk); err != nil {
 	//	return nil, err
 	//}
 	return nil, nil
-
 }
