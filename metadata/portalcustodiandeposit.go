@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"sort"
 	"strconv"
 )
 
@@ -127,9 +128,16 @@ func (custodianDeposit PortalCustodianDeposit) ValidateMetadataByItself() bool {
 func (custodianDeposit PortalCustodianDeposit) Hash() *common.Hash {
 	record := custodianDeposit.MetadataBase.Hash().String()
 	record += custodianDeposit.IncogAddressStr
-	for tokenSymbol, rAddress := range custodianDeposit.RemoteAddresses {
+
+	// sort custodianDeposit.RemoteAddresses before appending to bytes array
+	tokenSymbolKeys := []string{}
+	for tokenSymbol, _ := range custodianDeposit.RemoteAddresses {
+		tokenSymbolKeys = append(tokenSymbolKeys, tokenSymbol)
+	}
+	sort.Strings(tokenSymbolKeys)
+	for _, tokenSymbol := range tokenSymbolKeys {
 		record += tokenSymbol
-		record += rAddress
+		record += custodianDeposit.RemoteAddresses[tokenSymbol]
 	}
 	record += strconv.FormatUint(custodianDeposit.DepositedAmount, 10)
 	// final hash
