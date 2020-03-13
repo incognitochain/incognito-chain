@@ -147,9 +147,9 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 			lockedAmountCollateral := custodian.LockedAmountCollateral
 			rewardAmount := custodian.RewardAmount
 			remoteAddresses := custodian.RemoteAddresses
-			for tokenSymbol, address := range actionData.RemoteAddresses {
-				if remoteAddresses[tokenSymbol] == "" {
-					remoteAddresses[tokenSymbol] = address
+			for _, address := range actionData.RemoteAddresses {
+				if existedAddr, _ := lvdb.GetRemoteAddressByTokenID(remoteAddresses, address.PTokenID); existedAddr == "" {
+					remoteAddresses = append(remoteAddresses, address)
 				}
 			}
 

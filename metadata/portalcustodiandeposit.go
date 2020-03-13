@@ -7,6 +7,7 @@ import (
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"strconv"
 )
@@ -16,7 +17,7 @@ import (
 type PortalCustodianDeposit struct {
 	MetadataBase
 	IncogAddressStr string
-	RemoteAddresses map[string]string // token symbol: remote address
+	RemoteAddresses []lvdb.RemoteAddress // token symbol: remote address
 	DepositedAmount uint64
 }
 
@@ -33,7 +34,7 @@ type PortalCustodianDepositAction struct {
 // both accepted and refund status
 type PortalCustodianDepositContent struct {
 	IncogAddressStr string
-	RemoteAddresses map[string]string
+	RemoteAddresses []lvdb.RemoteAddress
 	DepositedAmount uint64
 	TxReqID         common.Hash
 	ShardID         byte
@@ -43,11 +44,11 @@ type PortalCustodianDepositContent struct {
 type PortalCustodianDepositStatus struct {
 	Status          byte
 	IncogAddressStr string
-	RemoteAddresses map[string]string
+	RemoteAddresses []lvdb.RemoteAddress
 	DepositedAmount uint64
 }
 
-func NewPortalCustodianDeposit(metaType int, incognitoAddrStr string, remoteAddrs map[string]string, amount uint64) (*PortalCustodianDeposit, error) {
+func NewPortalCustodianDeposit(metaType int, incognitoAddrStr string, remoteAddrs []lvdb.RemoteAddress, amount uint64) (*PortalCustodianDeposit, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
@@ -110,8 +111,8 @@ func (custodianDeposit PortalCustodianDeposit) ValidateSanityData(bcr Blockchain
 	if len(custodianDeposit.RemoteAddresses) == 0 {
 		return false, false, errors.New("remote addresses should be at least one")
 	}
-	for tokenID, _ := range custodianDeposit.RemoteAddresses {
-		if !common.IsPortalToken(tokenID) {
+	for _, remoteAddr := range custodianDeposit.RemoteAddresses {
+		if !common.IsPortalToken(remoteAddr.PTokenID) {
 			return false, false, errors.New("TokenID in remote address is invalid")
 		}
 	}
@@ -126,7 +127,10 @@ func (custodianDeposit PortalCustodianDeposit) ValidateMetadataByItself() bool {
 func (custodianDeposit PortalCustodianDeposit) Hash() *common.Hash {
 	record := custodianDeposit.MetadataBase.Hash().String()
 	record += custodianDeposit.IncogAddressStr
-	record += ConvertMapStringToStringWithSortKey(custodianDeposit.RemoteAddresses)
+	for _, remoteAddr := range custodianDeposit.RemoteAddresses {
+		record += remoteAddr.PTokenID
+		record += remoteAddr.Address
+	}
 	record += strconv.FormatUint(custodianDeposit.DepositedAmount, 10)
 	// final hash
 	hash := common.HashH([]byte(record))

@@ -15,7 +15,7 @@ import (
 func buildCustodianDepositInst(
 	custodianAddressStr string,
 	depositedAmount uint64,
-	remoteAddresses map[string]string,
+	remoteAddresses []lvdb.RemoteAddress,
 	metaType int,
 	shardID byte,
 	txReqID common.Hash,
@@ -181,9 +181,9 @@ func (blockchain *BlockChain) buildInstructionsForCustodianDeposit(
 		lockedAmountCollateral := custodian.LockedAmountCollateral
 		rewardAmount := custodian.RewardAmount
 		remoteAddresses := custodian.RemoteAddresses
-		for tokenSymbol, address := range meta.RemoteAddresses {
-			if remoteAddresses[tokenSymbol] == "" {
-				remoteAddresses[tokenSymbol] = address
+		for _, address := range meta.RemoteAddresses {
+			if existedAddr, _ := lvdb.GetRemoteAddressByTokenID(remoteAddresses, address.PTokenID); existedAddr == "" {
+				remoteAddresses = append(remoteAddresses, address)
 			}
 		}
 

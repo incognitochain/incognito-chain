@@ -11,13 +11,18 @@ import (
 	"math"
 )
 
+type RemoteAddress struct {
+	PTokenID string
+	Address string
+}
+
 type CustodianState struct {
 	IncognitoAddress       string
 	TotalCollateral        uint64            // prv
 	FreeCollateral         uint64            // prv
 	HoldingPubTokens       map[string]uint64 // tokenID : amount
 	LockedAmountCollateral map[string]uint64 // tokenID : amount
-	RemoteAddresses        map[string]string // tokenID : address
+	RemoteAddresses        []RemoteAddress // tokenID : address
 	RewardAmount           uint64            // reward in prv
 }
 
@@ -150,6 +155,16 @@ func NewWaitingPortingReqKey(beaconHeight uint64, portingID string) string {
 func NewPortalReqPTokenKey(txReqStr string) string {
 	key := append(PortalRequestPTokensPrefix, []byte(txReqStr)...)
 	return string(key)
+}
+
+func GetRemoteAddressByTokenID(addresses []RemoteAddress, tokenID string) (string, error) {
+	for _, addr := range addresses {
+		if addr.PTokenID == tokenID {
+			return addr.Address, nil
+		}
+	}
+
+	return "", errors.New("Can not found address with tokenID")
 }
 
 func (db *db) GetAllRecordsPortalByPrefix(beaconHeight uint64, prefix []byte) ([][]byte, [][]byte, error) {
