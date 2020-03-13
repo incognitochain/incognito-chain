@@ -11,12 +11,6 @@ import (
 	"math"
 )
 
-const (
-	PortalTokenSymbolBTC = "BTC"
-	PortalTokenSymbolBNB = "BNB"
-	PortalTokenSymbolPRV = "PRV"
-)
-
 type CustodianState struct {
 	IncognitoAddress       string
 	TotalCollateral        uint64            // prv
@@ -361,9 +355,9 @@ func (db *db) UpdatePortingRequestStatus(portingID string, newStatus int) error 
 
 func (finalExchangeRates FinalExchangeRates) ExchangePToken2PRVByTokenId(pTokenId string, value uint64) (uint64, error) {
 	switch pTokenId {
-	case PortalTokenSymbolBTC:
+	case common.PortalBTCIDStr:
 		return finalExchangeRates.ExchangeBTC2PRV(value)
-	case PortalTokenSymbolBNB:
+	case common.PortalBNBIDStr:
 		return finalExchangeRates.ExchangeBNB2PRV(value)
 	}
 
@@ -372,9 +366,9 @@ func (finalExchangeRates FinalExchangeRates) ExchangePToken2PRVByTokenId(pTokenI
 
 func (finalExchangeRates *FinalExchangeRates) ExchangePRV2PTokenByTokenId(pTokenId string, value uint64) (uint64, error) {
 	switch pTokenId {
-	case PortalTokenSymbolBTC:
+	case common.PortalBTCIDStr:
 		return finalExchangeRates.ExchangePRV2BTC(value)
-	case PortalTokenSymbolBNB:
+	case common.PortalBNBIDStr:
 		return finalExchangeRates.ExchangePRV2BNB(value)
 	}
 
@@ -399,8 +393,8 @@ func (finalExchangeRates *FinalExchangeRates) convert(value uint64, ratesFrom ui
 func (finalExchangeRates *FinalExchangeRates) ExchangeBTC2PRV(value uint64) (uint64, error) {
 	//input : nano
 	//todo: check rates exist
-	BTCRates := finalExchangeRates.Rates[PortalTokenSymbolBTC].Amount //return nano pUSDT
-	PRVRates := finalExchangeRates.Rates[PortalTokenSymbolPRV].Amount //return nano pUSDT
+	BTCRates := finalExchangeRates.Rates[common.PortalBTCIDStr].Amount //return nano pUSDT
+	PRVRates := finalExchangeRates.Rates[common.PRVIDStr].Amount //return nano pUSDT
 	valueExchange, err := finalExchangeRates.convert(value, BTCRates, PRVRates)
 
 	if err != nil {
@@ -414,8 +408,8 @@ func (finalExchangeRates *FinalExchangeRates) ExchangeBTC2PRV(value uint64) (uin
 }
 
 func (finalExchangeRates *FinalExchangeRates) ExchangeBNB2PRV(value uint64) (uint64, error) {
-	BNBRates := finalExchangeRates.Rates[PortalTokenSymbolBNB].Amount
-	PRVRates := finalExchangeRates.Rates[PortalTokenSymbolPRV].Amount
+	BNBRates := finalExchangeRates.Rates[common.PortalBNBIDStr].Amount
+	PRVRates := finalExchangeRates.Rates[common.PRVIDStr].Amount
 
 	valueExchange, err := finalExchangeRates.convert(value, BNBRates, PRVRates)
 
@@ -430,8 +424,8 @@ func (finalExchangeRates *FinalExchangeRates) ExchangeBNB2PRV(value uint64) (uin
 
 func (finalExchangeRates *FinalExchangeRates) ExchangePRV2BTC(value uint64) (uint64, error) {
 	//input nano
-	BTCRates := finalExchangeRates.Rates[PortalTokenSymbolBTC].Amount //return nano pUSDT
-	PRVRates := finalExchangeRates.Rates[PortalTokenSymbolPRV].Amount //return nano pUSDT
+	BTCRates := finalExchangeRates.Rates[common.PortalBTCIDStr].Amount //return nano pUSDT
+	PRVRates := finalExchangeRates.Rates[common.PRVIDStr].Amount //return nano pUSDT
 
 	valueExchange, err := finalExchangeRates.convert(value, PRVRates, BTCRates)
 
@@ -445,8 +439,8 @@ func (finalExchangeRates *FinalExchangeRates) ExchangePRV2BTC(value uint64) (uin
 }
 
 func (finalExchangeRates *FinalExchangeRates) ExchangePRV2BNB(value uint64) (uint64, error) {
-	BNBRates := finalExchangeRates.Rates[PortalTokenSymbolBNB].Amount
-	PRVRates := finalExchangeRates.Rates[PortalTokenSymbolPRV].Amount
+	BNBRates := finalExchangeRates.Rates[common.PortalBNBIDStr].Amount
+	PRVRates := finalExchangeRates.Rates[common.PRVIDStr].Amount
 
 	valueExchange, err := finalExchangeRates.convert(value, PRVRates, BNBRates)
 	if err != nil {
