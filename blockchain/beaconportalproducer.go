@@ -362,6 +362,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 	}
 
 	//validation porting fees
+	//todo: can use calMinPortingFee
 	pToken2PRV, err := exchangeRatesState.ExchangePToken2PRVByTokenId(actionData.Meta.PTokenId, actionData.Meta.RegisterAmount)
 	if err != nil {
 		Logger.log.Errorf("Convert PToken is error %v", err)
