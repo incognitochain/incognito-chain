@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
@@ -43,24 +44,49 @@ func buildCustodianRunAwayLiquidationInst(
 func buildTopPercentileExchangeRatesLiquidationInst(
 	custodianAddress string,
 	metaType int,
-	shardID byte,
 	status string,
 ) []string {
 	tpContent := metadata.PortalLiquidateTopPercentileExchangeRatesContent{
 		CustodianAddress: custodianAddress,
 		MetaType: metaType,
 		Status: status,
-		ShardID:                shardID,
 	}
 	tpContentBytes, _ := json.Marshal(tpContent)
 	return []string{
 		strconv.Itoa(metaType),
-		strconv.Itoa(int(shardID)), //todo: shardId found
 		status,
 		string(tpContentBytes),
 	}
 }
 
+func buildRedeemLiquidateExchangeRatesInst(
+	tokenID string,
+	redeemAmount uint64,
+	incAddressStr string,
+	remoteAddress string,
+	redeemFee uint64,
+	metaType int,
+	shardID byte,
+	txReqID common.Hash,
+	status string,
+) []string {
+	redeemRequestContent := metadata.PortalRedeemRequestContent{
+		TokenID:                 tokenID,
+		RedeemAmount:            redeemAmount,
+		RedeemerIncAddressStr:   incAddressStr,
+		RemoteAddress:           remoteAddress,
+		RedeemFee:               redeemFee,
+		TxReqID:                 txReqID,
+		ShardID:                 shardID,
+	}
+	redeemRequestContentBytes, _ := json.Marshal(redeemRequestContent)
+	return []string{
+		strconv.Itoa(metaType),
+		strconv.Itoa(int(shardID)),
+		status,
+		string(redeemRequestContentBytes),
+	}
+}
 
 func checkAndBuildInstForCustodianLiquidation(
 	beaconHeight uint64,
@@ -227,7 +253,6 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 			inst := buildTopPercentileExchangeRatesLiquidationInst(
 				custodianState.IncognitoAddress,
 				metadata.PortalLiquidateTPExchangeRatesMeta,
-				0, //todo: find shard id
 				common.PortalLiquidateTPExchangeRatesFailedChainStatus,
 			)
 			insts = append(insts, inst)
@@ -241,7 +266,6 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 			inst := buildTopPercentileExchangeRatesLiquidationInst(
 				custodianState.IncognitoAddress,
 				metadata.PortalLiquidateTPExchangeRatesMeta,
-				0, //todo: find shard id
 				common.PortalLiquidateTPExchangeRatesFailedChainStatus,
 			)
 			insts = append(insts, inst)
@@ -253,7 +277,6 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 			inst := buildTopPercentileExchangeRatesLiquidationInst(
 				custodianState.IncognitoAddress,
 				metadata.PortalLiquidateTPExchangeRatesMeta,
-				0, //todo: find shard id
 				common.PortalLiquidateTPExchangeRatesSuccessChainStatus,
 			)
 
@@ -269,4 +292,110 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 	}
 
 	return insts, nil
+}
+
+func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
+	contentStr string,
+	shardID byte,
+	metaType int,
+	currentPortalState *CurrentPortalState,
+	beaconHeight uint64,
+) ([][]string, error) {
+	// parse instruction
+	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while decoding content string of portal redeem liquidate exchange rate action: %+v", err)
+		return [][]string{}, nil
+	}
+	var actionData metadata.PortalRedeemLiquidateExchangeRatesAction
+	err = json.Unmarshal(actionContentBytes, &actionData)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while unmarshal portal redeem liquidate exchange rate action: %+v", err)
+		return [][]string{}, nil
+	}
+
+	meta := actionData.Meta
+	if currentPortalState == nil {
+		Logger.log.Warn("Current Portal state is null.")
+		// need to mint ptoken to user
+		inst := buildRedeemLiquidateExchangeRatesInst(
+			meta.TokenID,
+			meta.RedeemAmount,
+			meta.RedeemerIncAddressStr,
+			meta.RemoteAddress,
+			meta.RedeemFee,
+			meta.Type,
+			actionData.ShardID,
+			actionData.TxReqID,
+			common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus,
+		)
+		return [][]string{inst}, nil
+	}
+
+	//get exchange rates
+	exchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
+	exchangeRatesState, ok := currentPortalState.FinalExchangeRates[exchangeRatesKey]
+	if !ok {
+		Logger.log.Errorf("exchange rates not found")
+		inst := buildRedeemLiquidateExchangeRatesInst(
+			meta.TokenID,
+			meta.RedeemAmount,
+			meta.RedeemerIncAddressStr,
+			meta.RemoteAddress,
+			meta.RedeemFee,
+			meta.Type,
+			actionData.ShardID,
+			actionData.TxReqID,
+			common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus,
+		)
+		return [][]string{inst}, nil
+	}
+
+	minRedeemFee, err := calMinRedeemFee(meta.RedeemAmount, meta.TokenID, exchangeRatesState)
+	if err != nil {
+		Logger.log.Errorf("Error when calculating minimum redeem fee %v", err)
+		inst := buildRedeemLiquidateExchangeRatesInst(
+			meta.TokenID,
+			meta.RedeemAmount,
+			meta.RedeemerIncAddressStr,
+			meta.RemoteAddress,
+			meta.RedeemFee,
+			meta.Type,
+			actionData.ShardID,
+			actionData.TxReqID,
+			common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus,
+		)
+		return [][]string{inst}, nil
+	}
+
+	if meta.RedeemFee < minRedeemFee {
+		Logger.log.Errorf("Redeem fee is invalid, minRedeemFee %v, but get %v\n", minRedeemFee, meta.RedeemFee)
+		inst := buildRedeemLiquidateExchangeRatesInst(
+			meta.TokenID,
+			meta.RedeemAmount,
+			meta.RedeemerIncAddressStr,
+			meta.RemoteAddress,
+			meta.RedeemFee,
+			meta.Type,
+			actionData.ShardID,
+			actionData.TxReqID,
+			common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus,
+		)
+		return [][]string{inst}, nil
+	}
+
+	//check redeem amount
+
+	inst := buildRedeemLiquidateExchangeRatesInst(
+		meta.TokenID,
+		meta.RedeemAmount,
+		meta.RedeemerIncAddressStr,
+		meta.RemoteAddress,
+		meta.RedeemFee,
+		meta.Type,
+		actionData.ShardID,
+		actionData.TxReqID,
+		common.PortalRedeemLiquidateExchangeRatesSuccessChainStatus,
+	)
+	return [][]string{inst}, nil
 }

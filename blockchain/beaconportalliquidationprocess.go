@@ -115,7 +115,7 @@ currentPortalState *CurrentPortalState) error {
 
 	// unmarshal instructions content
 	var actionData metadata.PortalLiquidateTopPercentileExchangeRatesContent
-	err := json.Unmarshal([]byte(instructions[3]), &actionData)
+	err := json.Unmarshal([]byte(instructions[2]), &actionData)
 	if err != nil {
 		Logger.log.Errorf("Can not unmarshal instruction content %v\n", err)
 		return nil

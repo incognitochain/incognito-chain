@@ -207,6 +207,7 @@ const (
 	createAndSendTxWithReqWithdrawRewardPortal = "createandsendtxwithreqwithdrawrewardportal"
 	getLiquidationTpExchangeRates			   = "getliquidationtpexchangerates"
 	getLiquidationExchangeRates			   	   = "getliquidationexchangerates"
+	createAndSendRedeemLiquidationExchangeRates			   	   = "createandsendredeemliquidationexchangerates"
 
 	// relaying
 	createAndSendTxWithRelayingBNBHeader = "createandsendtxwithrelayingbnbheader"

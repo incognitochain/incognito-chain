@@ -47,7 +47,8 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.PortalRedeemRequestMeta,
 			metadata.PortalRequestUnlockCollateralMeta,
 			metadata.PortalLiquidateCustodianMeta,
-			metadata.PortalRequestWithdrawRewardMeta:
+			metadata.PortalRequestWithdrawRewardMeta,
+			metadata.PortalRedeemLiquidateExchangeRatesMeta:
 			statefulInsts = append(statefulInsts, inst)
 		default:
 			continue
@@ -111,6 +112,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	portalCustodianWithdrawActionsByShardID := map[byte][][]string{}
 	portalReqUnlockCollateralActionsByShardID := map[byte][][]string{}
 	portalReqWithdrawRewardActionsByShardID := map[byte][][]string{}
+	portalRedeemLiquidateExchangeRatesActionByShardID := map[byte][][]string{}
 
 	// relaying instructions
 	// don't need to be grouped by shardID
@@ -205,6 +207,14 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					action,
 					shardID,
 				)
+
+			case metadata.PortalRedeemLiquidateExchangeRatesMeta:
+				portalRedeemLiquidateExchangeRatesActionByShardID = groupPortalActionsByShardID(
+					portalRedeemLiquidateExchangeRatesActionByShardID,
+					action,
+					shardID,
+				)
+
 			case metadata.RelayingBNBHeaderMeta:
 				relayingBNBActions = append(relayingBNBActions, action)
 			case metadata.RelayingBTCHeaderMeta:
@@ -248,6 +258,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		portalRedeemReqActionsByShardID,
 		portalCustodianWithdrawActionsByShardID,
 		portalReqUnlockCollateralActionsByShardID,
+		portalRedeemLiquidateExchangeRatesActionByShardID,
 	)
 
 	if err != nil {
@@ -482,6 +493,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 	portalRedeemReqActionsByShardID map[byte][][]string,
 	portalCustodianWithdrawActionByShardID map[byte][][]string,
 	portalReqUnlockCollateralActionsByShardID map[byte][][]string,
+	portalRedeemLiquidateExchangeRatesActionByShardID map[byte][][]string,
 ) ([][]string, error) {
 	instructions := [][]string{}
 
@@ -683,6 +695,36 @@ func (blockchain *BlockChain) handlePortalInsts(
 				contentStr,
 				shardID,
 				metadata.PortalRequestUnlockCollateralMeta,
+				currentPortalState,
+				beaconHeight,
+			)
+
+			if err != nil {
+				Logger.log.Error(err)
+				continue
+			}
+			if len(newInst) > 0 {
+				instructions = append(instructions, newInst...)
+			}
+		}
+	}
+
+	// handle portal req unlock collateral inst
+	var redeemLiquidateExchangeRatesActionByShardIDKeys []int
+	for k := range portalRedeemLiquidateExchangeRatesActionByShardID {
+		redeemLiquidateExchangeRatesActionByShardIDKeys = append(redeemLiquidateExchangeRatesActionByShardIDKeys, int(k))
+	}
+
+	sort.Ints(redeemLiquidateExchangeRatesActionByShardIDKeys)
+	for _, value := range redeemLiquidateExchangeRatesActionByShardIDKeys {
+		shardID := byte(value)
+		actions := portalRedeemLiquidateExchangeRatesActionByShardID[shardID]
+		for _, action := range actions {
+			contentStr := action[1]
+			newInst, err := blockchain.buildInstructionsForRedeemLiquidateExchangeRates(
+				contentStr,
+				shardID,
+				metadata.PortalRedeemLiquidateExchangeRatesMeta,
 				currentPortalState,
 				beaconHeight,
 			)
