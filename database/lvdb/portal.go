@@ -15,9 +15,9 @@ type CustodianState struct {
 	IncognitoAddress       string
 	TotalCollateral        uint64            // prv
 	FreeCollateral         uint64            // prv
-	HoldingPubTokens       map[string]uint64 // tokenSymbol : amount
-	LockedAmountCollateral map[string]uint64 // tokenSymbol : amount
-	RemoteAddresses        map[string]string // tokenSymbol : address
+	HoldingPubTokens       map[string]uint64 // tokenID : amount
+	LockedAmountCollateral map[string]uint64 // tokenID : amount
+	RemoteAddresses        map[string]string // tokenID : address
 	RewardAmount           uint64            // reward in prv
 }
 
