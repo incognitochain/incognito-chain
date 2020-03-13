@@ -7,6 +7,7 @@ import (
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"reflect"
 	"strconv"
@@ -15,7 +16,7 @@ import (
 type PortalExchangeRates struct {
 	MetadataBase
 	SenderAddress string
-	Rates         map[string]uint64 //amount * 10^6 (USDT)
+	Rates         []*lvdb.ExchangeRateInfo //amount * 10^6 (USDT)
 }
 
 type PortalExchangeRatesAction struct {
@@ -25,7 +26,7 @@ type PortalExchangeRatesAction struct {
 	ShardID  byte
 }
 
-func NewPortalExchangeRates(metaType int, senderAddress string, currency map[string]uint64) (*PortalExchangeRates, error) {
+func NewPortalExchangeRates(metaType int, senderAddress string, currency []*lvdb.ExchangeRateInfo) (*PortalExchangeRates, error) {
 	metadataBase := MetadataBase{Type: metaType}
 
 	portalExchangeRates := &PortalExchangeRates{
@@ -40,7 +41,7 @@ func NewPortalExchangeRates(metaType int, senderAddress string, currency map[str
 
 type PortalExchangeRatesContent struct {
 	SenderAddress   string
-	Rates           map[string]uint64
+	Rates           []*lvdb.ExchangeRateInfo
 	TxReqID         common.Hash
 	LockTime        int64
 	UniqueRequestId string
@@ -107,7 +108,10 @@ func (portalExchangeRates PortalExchangeRates) ValidateMetadataByItself() bool {
 func (portalExchangeRates PortalExchangeRates) Hash() *common.Hash {
 	record := portalExchangeRates.MetadataBase.Hash().String()
 	record += portalExchangeRates.SenderAddress
-	record += ConvertMapIntToStringWithSortKey(portalExchangeRates.Rates)
+	for _, rateInfo := range portalExchangeRates.Rates {
+		record += rateInfo.PTokenID
+		record += strconv.FormatUint(rateInfo.Rate, 10)
+	}
 
 	// final hash
 	hash := common.HashH([]byte(record))

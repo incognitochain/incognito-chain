@@ -15,31 +15,31 @@ import (
 type PortalCustodianWithdrawRequest struct {
 	MetadataBase
 	PaymentAddress string
-	Amount uint64
+	Amount         uint64
 }
 
 type PortalCustodianWithdrawRequestAction struct {
-	Meta PortalCustodianWithdrawRequest
+	Meta    PortalCustodianWithdrawRequest
 	TxReqID common.Hash
 	ShardID byte
 }
 
 type PortalCustodianWithdrawRequestContent struct {
-	PaymentAddress string
-	Amount uint64
+	PaymentAddress       string
+	Amount               uint64
 	RemainFreeCollateral uint64
-	TxReqID common.Hash
-	ShardID	byte
+	TxReqID              common.Hash
+	ShardID              byte
 }
 
-func NewPortalCustodianWithdrawRequest(metaType int, paymentAddress string , amount uint64) (*PortalCustodianWithdrawRequest, error){
+func NewPortalCustodianWithdrawRequest(metaType int, paymentAddress string, amount uint64) (*PortalCustodianWithdrawRequest, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
 
-	portalCustodianWithdrawReq := &PortalCustodianWithdrawRequest {
+	portalCustodianWithdrawReq := &PortalCustodianWithdrawRequest{
 		PaymentAddress: paymentAddress,
-		Amount: amount,
+		Amount:         amount,
 	}
 
 	portalCustodianWithdrawReq.MetadataBase = metadataBase

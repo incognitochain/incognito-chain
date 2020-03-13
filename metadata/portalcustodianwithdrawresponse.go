@@ -12,10 +12,10 @@ import (
 
 type PortalCustodianWithdrawResponse struct {
 	MetadataBase
-	RequestStatus	string
-	ReqTxID        	common.Hash
-	PaymentAddress	string
-	Amount         	uint64
+	RequestStatus  string
+	ReqTxID        common.Hash
+	PaymentAddress string
+	Amount         uint64
 }
 
 func NewPortalCustodianWithdrawResponse(
@@ -25,14 +25,14 @@ func NewPortalCustodianWithdrawResponse(
 	amount uint64,
 	metaType int,
 ) *PortalCustodianWithdrawResponse {
-	metaDataBase := MetadataBase{Type:metaType}
+	metaDataBase := MetadataBase{Type: metaType}
 
 	return &PortalCustodianWithdrawResponse{
-		MetadataBase: metaDataBase,
-		RequestStatus: requestStatus,
-		ReqTxID: reqTxId,
+		MetadataBase:   metaDataBase,
+		RequestStatus:  requestStatus,
+		ReqTxID:        reqTxId,
 		PaymentAddress: paymentAddress,
-		Amount: amount,
+		Amount:         amount,
 	}
 }
 
@@ -141,4 +141,3 @@ func (responseMeta PortalCustodianWithdrawResponse) VerifyMinerCreatedTxBeforeGe
 	instUsed[idx] = 1
 	return true, nil
 }
-

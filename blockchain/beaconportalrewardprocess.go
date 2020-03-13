@@ -24,15 +24,15 @@ func (blockchain *BlockChain) processPortalReward(
 	reqStatus := instructions[2]
 	if reqStatus == "portalRewardInst" {
 		// update reward amount for each custodian
-		for incAddrCus, amount := range actionData.Receivers {
-			cusStateKey := lvdb.NewCustodianStateKey(beaconHeight, incAddrCus)
+		for _, receiver := range actionData.Rewards {
+			cusStateKey := lvdb.NewCustodianStateKey(beaconHeight, receiver.CustodianIncAddr)
 			custodianState := currentPortalState.CustodianPoolState[cusStateKey]
 			if custodianState == nil {
 				Logger.log.Errorf("[processPortalReward] Can not get custodian state with key %v", cusStateKey)
 				continue
 			}
 
-			custodianState.RewardAmount += amount
+			custodianState.RewardAmount += receiver.Amount
 		}
 
 		// store reward at beacon height into db

@@ -10,13 +10,13 @@ import (
 	"strconv"
 )
 
-func (blockchain *BlockChain) buildInstForPortalReward(beaconHeight uint64, receivers map[string]uint64) []string {
-	portalRewardContent, _ := metadata.NewPortalReward(beaconHeight, receivers)
+func (blockchain *BlockChain) buildInstForPortalReward(beaconHeight uint64, rewardInfos []*lvdb.PortalRewardInfo) []string {
+	portalRewardContent, _ := metadata.NewPortalReward(beaconHeight, rewardInfos)
 	contentStr, _ := json.Marshal(portalRewardContent)
 
 	inst := []string{
 		strconv.Itoa(metadata.PortalRewardMeta),
-		strconv.Itoa(-1),		// no need shardID
+		strconv.Itoa(-1), // no need shardID
 		"portalRewardInst",
 		string(contentStr),
 	}
@@ -27,32 +27,22 @@ func (blockchain *BlockChain) buildInstForPortalReward(beaconHeight uint64, rece
 func splitPortingFeeForMatchingCustodians(
 	feeAmount uint64,
 	portingAmount uint64,
-	matchingCustodianAddresses map[string]lvdb.MatchingPortingCustodianDetail,
-	rewardInfos map[string]uint64) {
-	for incAddr, matchCustodianDetail := range matchingCustodianAddresses {
+	matchingCustodianAddresses []*lvdb.MatchingPortingCustodianDetail,
+	rewardInfos []*lvdb.PortalRewardInfo) {
+	for _, matchCustodianDetail := range matchingCustodianAddresses {
 		splitedFee := float64(matchCustodianDetail.Amount) / float64(portingAmount) * float64(feeAmount)
-		Logger.log.Errorf("matchCustodianDetail.Amount: %v\n", matchCustodianDetail.Amount)
-		Logger.log.Errorf("portingAmount: %v\n", portingAmount)
-		Logger.log.Errorf("feeAmount: %v\n", feeAmount)
-		Logger.log.Errorf("splitedFee: %v\n", splitedFee)
-		rewardInfos[incAddr] += uint64(math.Floor(splitedFee))
+		lvdb.PlusPortalReward(rewardInfos, matchCustodianDetail.IncAddress, uint64(math.Floor(splitedFee)))
 	}
 }
 
 func splitRedeemFeeForMatchingCustodians(
 	feeAmount uint64,
 	redeemAmount uint64,
-	matchingCustodianAddresses map[string]*lvdb.MatchingRedeemCustodianDetail,
-	rewardInfos map[string]uint64) {
-	for incAddr, matchCustodianDetail := range matchingCustodianAddresses {
+	matchingCustodianAddresses []*lvdb.MatchingRedeemCustodianDetail,
+	rewardInfos []*lvdb.PortalRewardInfo) {
+	for _, matchCustodianDetail := range matchingCustodianAddresses {
 		splitedFee := float64(matchCustodianDetail.Amount) / float64(redeemAmount) * float64(feeAmount)
-		Logger.log.Errorf("matchCustodianDetail.Amount: %v\n", matchCustodianDetail.Amount)
-		Logger.log.Errorf("redeemAmount: %v\n", redeemAmount)
-		Logger.log.Errorf("feeAmount: %v\n", feeAmount)
-		Logger.log.Errorf("splitedFee: %v\n", splitedFee)
-		rewardInfos[incAddr] += uint64(math.Floor(splitedFee))
-		Logger.log.Errorf("rewardInfos[incAddr]: %v\n", rewardInfos[incAddr])
-		Logger.log.Errorf("incAddr: %v\n", incAddr)
+		lvdb.PlusPortalReward(rewardInfos, matchCustodianDetail.IncAddress, uint64(math.Floor(splitedFee)))
 	}
 }
 
@@ -60,15 +50,11 @@ func splitRewardForCustodians(
 	totalReward uint64,
 	totalLockedAmount uint64,
 	custodianState map[string]*lvdb.CustodianState,
-	rewardInfos map[string]uint64)  {
+	rewardInfos []*lvdb.PortalRewardInfo) {
 	for _, custodian := range custodianState {
 		for _, lockedAmount := range custodian.LockedAmountCollateral {
-			splitedReward :=  float64(lockedAmount) / float64(totalLockedAmount) * float64(totalReward)
-			Logger.log.Errorf("lockedAmount: %v\n", lockedAmount)
-			Logger.log.Errorf("totalLockedAmount: %v\n", totalLockedAmount)
-			Logger.log.Errorf("totalReward: %v\n", totalReward)
-			Logger.log.Errorf("splitedReward: %v\n", splitedReward)
-			rewardInfos[custodian.IncognitoAddress] += uint64(math.Floor(splitedReward))
+			splitedReward := float64(lockedAmount) / float64(totalLockedAmount) * float64(totalReward)
+			lvdb.PlusPortalReward(rewardInfos, custodian.IncognitoAddress, uint64(math.Floor(splitedReward)))
 		}
 	}
 }
@@ -76,18 +62,18 @@ func splitRewardForCustodians(
 func (blockchain *BlockChain) buildPortalRewardsInsts(
 	beaconHeight uint64, currentPortalState *CurrentPortalState) ([][]string, error) {
 
-	// receivers are map custodians' addresses and reward amount
-	receivers := make(map[string]uint64, 0)
+	// rewardInfos are map custodians' addresses and reward amount
+	rewardInfos := make([]*lvdb.PortalRewardInfo, 0)
 
 	// get porting fee from waiting porting request at beaconHeight + 1 (new waiting porting requests)
 	// and split fees for matching custodians
 	for _, waitingPortingReq := range currentPortalState.WaitingPortingRequests {
-		if waitingPortingReq.BeaconHeight == beaconHeight + 1 {
+		if waitingPortingReq.BeaconHeight == beaconHeight+1 {
 			splitPortingFeeForMatchingCustodians(
 				waitingPortingReq.PortingFee,
 				waitingPortingReq.Amount,
 				waitingPortingReq.Custodians,
-				receivers,
+				rewardInfos,
 			)
 		}
 	}
@@ -95,12 +81,12 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 	// get redeem fee from waiting redeem request at beaconHeight + 1 (new waiting redeem requests)
 	// and split fees for matching custodians
 	for _, waitingRedeemReq := range currentPortalState.WaitingRedeemRequests {
-		if waitingRedeemReq.BeaconHeight == beaconHeight + 1 {
+		if waitingRedeemReq.BeaconHeight == beaconHeight+1 {
 			splitRedeemFeeForMatchingCustodians(
 				waitingRedeemReq.RedeemFee,
 				waitingRedeemReq.RedeemAmount,
 				waitingRedeemReq.Custodians,
-				receivers,
+				rewardInfos,
 			)
 		}
 	}
@@ -116,16 +102,21 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 
 	if totalLockedCollateralAmount > 0 {
 		// split reward amount
-		splitRewardForCustodians(common.TotalRewardPerBlock, totalLockedCollateralAmount, currentPortalState.CustodianPoolState, receivers)
+		splitRewardForCustodians(common.TotalRewardPerBlock, totalLockedCollateralAmount, currentPortalState.CustodianPoolState, rewardInfos)
 	}
 
 	// update reward amount for each custodian
-	for _, custodianState := range currentPortalState.CustodianPoolState {
-		custodianState.RewardAmount += receivers[custodianState.IncognitoAddress]
+	for _, rewardInfo := range rewardInfos {
+		for _, custodianState := range currentPortalState.CustodianPoolState {
+			if rewardInfo.CustodianIncAddr == custodianState.IncognitoAddress {
+				custodianState.RewardAmount += rewardInfo.Amount
+				break
+			}
+		}
 	}
 
 	// build beacon instruction for portal reward
-	inst := blockchain.buildInstForPortalReward(beaconHeight + 1, receivers)
+	inst := blockchain.buildInstForPortalReward(beaconHeight+1, rewardInfos)
 
 	return [][]string{inst}, nil
 }
@@ -141,9 +132,9 @@ func buildWithdrawPortalRewardInst(
 ) []string {
 	withdrawRewardContent := metadata.PortalRequestWithdrawRewardContent{
 		CustodianAddressStr: custodianAddressStr,
-		RewardAmount: rewardAmount,
-		TxReqID:         txReqID,
-		ShardID:         shardID,
+		RewardAmount:        rewardAmount,
+		TxReqID:             txReqID,
+		ShardID:             shardID,
 	}
 	withdrawRewardContentBytes, _ := json.Marshal(withdrawRewardContent)
 	return []string{

@@ -17,39 +17,39 @@ import (
 type PortalUserRegister struct {
 	MetadataBase
 	UniqueRegisterId string //
-	IncogAddressStr string
-	PTokenId string
-	RegisterAmount uint64
-	PortingFee uint64
+	IncogAddressStr  string
+	PTokenId         string
+	RegisterAmount   uint64
+	PortingFee       uint64
 }
 
 type PortalUserRegisterAction struct {
-	Meta PortalUserRegister
+	Meta    PortalUserRegister
 	TxReqID common.Hash
 	ShardID byte
 }
 
 type PortalPortingRequestContent struct {
 	UniqueRegisterId string
-	IncogAddressStr string
-	PTokenId string
-	RegisterAmount uint64
-	PortingFee uint64
-	Custodian map[string]lvdb.MatchingPortingCustodianDetail
-	TxReqID common.Hash
+	IncogAddressStr  string
+	PTokenId         string
+	RegisterAmount   uint64
+	PortingFee       uint64
+	Custodian        []*lvdb.MatchingPortingCustodianDetail
+	TxReqID          common.Hash
 }
 
-func NewPortalUserRegister(uniqueRegisterId string , incogAddressStr string, pTokenId string, registerAmount uint64, portingFee uint64, metaType int) (*PortalUserRegister, error){
+func NewPortalUserRegister(uniqueRegisterId string, incogAddressStr string, pTokenId string, registerAmount uint64, portingFee uint64, metaType int) (*PortalUserRegister, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
 
-	portalUserRegisterMeta := &PortalUserRegister {
+	portalUserRegisterMeta := &PortalUserRegister{
 		UniqueRegisterId: uniqueRegisterId,
-		IncogAddressStr: incogAddressStr,
-		PTokenId: pTokenId,
-		RegisterAmount: registerAmount,
-		PortingFee: portingFee,
+		IncogAddressStr:  incogAddressStr,
+		PTokenId:         pTokenId,
+		RegisterAmount:   registerAmount,
+		PortingFee:       portingFee,
 	}
 
 	portalUserRegisterMeta.MetadataBase = metadataBase
@@ -66,7 +66,6 @@ func (portalUserRegister PortalUserRegister) ValidateTxWithBlockChain(
 	// NOTE: verify supported tokens pair as needed
 	return true, nil
 }
-
 
 func (portalUserRegister PortalUserRegister) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
 	if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
@@ -158,5 +157,3 @@ func (portalUserRegister *PortalUserRegister) BuildReqActions(tx Transaction, bc
 func (portalUserRegister *PortalUserRegister) CalculateSize() uint64 {
 	return calculateSize(portalUserRegister)
 }
-
-
