@@ -194,6 +194,9 @@ const (
 
 	PortalReqWithdrawRewardAcceptedChainStatus = "accepted"
 	PortalReqWithdrawRewardRejectedChainStatus = "rejected"
+
+	PortalRedeemLiquidateExchangeRatesSuccessChainStatus = "success"
+	PortalRedeemLiquidateExchangeRatesRejectedChainStatus  = "rejected"
 )
 
 // Relaying header
