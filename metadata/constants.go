@@ -40,6 +40,10 @@ const (
 	PDEWithdrawalRequestMeta    = 93
 	PDEWithdrawalResponseMeta   = 94
 	PDEContributionResponseMeta = 95
+
+	// incognito mode for smart contract
+	BurningForDepositToSCRequestMeta = 96
+	BurningConfirmForDepositToSCMeta = 97
 )
 
 var minerCreatedMetaTypes = []int{
@@ -75,6 +79,7 @@ var (
 //)
 const (
 	StopAutoStakingAmount = 0
+	ETHConfirmationBlocks = 15
 )
 
 var AcceptedWithdrawRewardRequestVersion = []int{0, 1}

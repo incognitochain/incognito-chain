@@ -37,7 +37,7 @@ func DecodeInstruction(inst []string) ([]byte, error) {
 			return nil, err
 		}
 
-	case strconv.Itoa(metadata.BurningConfirmMeta):
+	case strconv.Itoa(metadata.BurningConfirmMeta), strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta):
 		var err error
 		flatten, err = decodeBurningConfirmInst(inst)
 		if err != nil {
@@ -181,9 +181,17 @@ func pickBurningConfirmInstruction(
 	beaconBlocks []*BeaconBlock,
 	height uint64,
 ) [][]string {
-	// Pick
-	instType := strconv.Itoa(metadata.BurningConfirmMeta)
-	insts := pickInstructionFromBeaconBlocks(beaconBlocks, instType)
+	// Pick confirm insts for real burning
+	burningConfirmInstType := strconv.Itoa(metadata.BurningConfirmMeta)
+	burningConfirmInsts := pickInstructionFromBeaconBlocks(beaconBlocks, burningConfirmInstType)
+	BLogger.log.Infof("Num of burning confirm for withdrawal insts: %d", len(burningConfirmInsts))
+
+	// Pick confirm insts for deposit to SC
+	burningConfirmForDepositToSCInstType := strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta)
+	burningConfirmForDepositToSCInsts := pickInstructionFromBeaconBlocks(beaconBlocks, burningConfirmForDepositToSCInstType)
+	BLogger.log.Infof("Num of burning confirm for deposit to SC insts: %d", len(burningConfirmForDepositToSCInsts))
+
+	insts := append(burningConfirmInsts, burningConfirmForDepositToSCInsts...)
 
 	// Replace beacon block height with shard's
 	h := big.NewInt(0).SetUint64(height)

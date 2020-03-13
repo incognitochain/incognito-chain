@@ -18,6 +18,7 @@ import (
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/peerv2"
+	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -52,6 +53,7 @@ var (
 	bridgeLogger           = backendLog.Logger("DeBridge log", false)
 	metadataLogger         = backendLog.Logger("Metadata log", false)
 	peerv2Logger           = backendLog.Logger("Peerv2 log", false)
+	wrapperLogger          = backendLog.Logger("Wrapper log", false)
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -89,7 +91,7 @@ func init() {
 	rpcserver.BLogger.Init(bridgeLogger)
 	metadata.Logger.Init(metadataLogger)
 	peerv2.Logger.Init(peerv2Logger)
-
+	wrapper.Logger.Init(wrapperLogger)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.

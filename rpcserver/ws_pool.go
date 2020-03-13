@@ -2,13 +2,14 @@ package rpcserver
 
 import (
 	"errors"
+	"reflect"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
-	"reflect"
-	"time"
 )
 
 func (wsServer *WsServer) handleSubcribeMempoolInfo(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
@@ -67,6 +68,7 @@ func (wsServer *WsServer) handleSubscribeBeaconPoolBestState(params interface{},
 		Logger.log.Info("Finish Subscribe Beacon Pool Beststate")
 		close(cResult)
 	}()
+
 	for {
 		select {
 		case <-closeChan:
@@ -78,7 +80,7 @@ func (wsServer *WsServer) handleSubscribeBeaconPoolBestState(params interface{},
 			{
 				result := jsonresult.Blocks{Valid: beaconPool.GetValidBlockHeight(), Pending: beaconPool.GetPendingBlockHeight(), Latest: beaconPool.GetBeaconState()}
 				cResult <- RpcSubResult{Result: result, Error: nil}
-				<-time.Tick(1 * time.Second)
+				time.Sleep(1 * time.Second)
 			}
 		}
 	}
@@ -114,7 +116,7 @@ func (wsServer *WsServer) handleSubscribeShardPoolBeststate(params interface{}, 
 			{
 				result := jsonresult.Blocks{Valid: shardPool.GetValidBlockHeight(), Pending: shardPool.GetPendingBlockHeight(), Latest: shardPool.GetShardState()}
 				cResult <- RpcSubResult{Result: result, Error: nil}
-				<-time.Tick(1 * time.Second)
+				time.Sleep(1 * time.Second)
 			}
 		}
 	}
