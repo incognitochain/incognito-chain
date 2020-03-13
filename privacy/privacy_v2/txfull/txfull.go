@@ -2,6 +2,7 @@ package txfull
 
 import (
 	"errors"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
@@ -12,20 +13,20 @@ import (
 )
 
 type RingCTFull struct {
-	inputs         []utxo.Utxo
-	fromAddress    []address.PrivateAddress
+	inputs         []*utxo.Utxo
+	privateAddress *address.PrivateAddress
 	sumBlindOutput *operation.Scalar
-	outputs        []utxo.Utxo
-	toAddress      []address.PublicAddress
+	outputs        []*utxo.Utxo
+	toAddress      []*address.PublicAddress
 }
 
-func NewRingCTFull(inputs *[]utxo.Utxo, fromAddress *[]address.PrivateAddress, sumBlindOutput *operation.Scalar, outputs *[]utxo.Utxo, toAddress *[]address.PublicAddress) *RingCTFull {
+func NewRingCTFull(inputs []*utxo.Utxo, privateAddress *address.PrivateAddress, sumBlindOutput *operation.Scalar, outputs *[]utxo.Utxo, toAddress *[]address.PublicAddress) *RingCTFull {
 	return &RingCTFull{
-		*inputs,
-		*fromAddress,
+		inputs,
+		privateAddress,
 		sumBlindOutput,
-		*outputs,
-		*toAddress,
+		outputs,
+		toAddress,
 	}
 }
 
@@ -33,12 +34,12 @@ func NewRingCTFull(inputs *[]utxo.Utxo, fromAddress *[]address.PrivateAddress, s
 func (this *RingCTFull) CreateRandomRing() (*mlsag.Ring, *[]operation.Scalar, int, error) {
 	// TODO
 	// In real system should change numFake
-	numFake := 10
+	numFake :=  privacy_util.RingSize
 	pi := common.RandInt() % numFake
 
 	// Generating Ring without commitment then add later
-	priv := *this.getPrivateKeyOfInputs()
-	ring := mlsag.NewRandomRing(&priv, numFake, pi)
+	privKeys := *getTxPrivateKeys(this.privateAddress, &this.inputs)
+	ring := mlsag.NewRandomRing(&privKeys, numFake, pi)
 
 	// Generate privateKey with commitment
 	sumBlindInput, err := getSumBlindInput(this)

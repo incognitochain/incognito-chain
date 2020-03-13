@@ -10,7 +10,7 @@ func getSumBlindInput(this *RingCTFull) (*operation.Scalar, error) {
 	sumBlindInput := new(operation.Scalar)
 	for i := 0; i < len(this.inputs); i += 1 {
 		blind, _, err := ota.ParseBlindAndMoneyFromUtxo(
-			&this.fromAddress[i],
+			this.privateAddress,
 			&this.inputs[i],
 		)
 		if err != nil {
@@ -29,10 +29,12 @@ func getSumCommitment(arr []utxo.Utxo) *operation.Point {
 	return sum
 }
 
-func (this *RingCTFull) getPrivateKeyOfInputs() *[]operation.Scalar {
-	privateKeys := make([]operation.Scalar, len(this.inputs))
+func getTxPrivateKeys(this *RingCTFull) *[]operation.Scalar {
+	privAddress := this.privateAddress
+	inputCoins := this.inputs
+	privateKeys := make([]operation.Scalar, len(inputCoins))
 	for i := 0; i < len(privateKeys); i += 1 {
-		privateKeys[i] = *ota.ParseUtxoPrivatekey(&this.fromAddress[i], &this.inputs[i])
+		privateKeys[i] = *ota.ParseUtxoPrivatekey(privAddress, &inputCoins[i])
 	}
 	return &privateKeys
 }

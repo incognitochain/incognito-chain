@@ -8,4 +8,5 @@ const (
 	MaxOutputCoin         = 32
 	MaxInputCoin          = 32
 	MaxOutputNumberParam  = 256
+	RingSize			= 8
 )
