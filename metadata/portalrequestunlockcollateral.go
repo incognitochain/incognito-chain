@@ -116,7 +116,7 @@ func (meta PortalRequestUnlockCollateral) ValidateSanityData(bcr BlockchainRetri
 	}
 
 	// validate tokenID
-	if !IsPortalToken(meta.TokenID) {
+	if !common.IsPortalToken(meta.TokenID) {
 		return false, false, errors.New("TokenID is not a portal token")
 	}
 

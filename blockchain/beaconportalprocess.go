@@ -523,13 +523,13 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 	for _, v := range currentPortalState.ExchangeRatesRequests {
 		for key, rates := range v.Rates {
 			switch key {
-			case metadata.PortalTokenSymbolBTC:
+			case common.PortalBTCIDStr:
 				btcExchangeRatesSlice = append(btcExchangeRatesSlice, rates)
 				break
-			case metadata.PortalTokenSymbolBNB:
+			case common.PortalBNBIDStr:
 				bnbExchangeRatesSlice = append(bnbExchangeRatesSlice, rates)
 				break
-			case metadata.PortalTokenSymbolPRV:
+			case common.PRVIDStr:
 				prvExchangeRatesSlice = append(prvExchangeRatesSlice, rates)
 				break
 			}
@@ -580,15 +580,15 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 		var btcAmountPreState uint64
 		var bnbAmountPreState uint64
 		var prvAmountPreState uint64
-		if value, ok := exchangeRatesState.Rates[metadata.PortalTokenSymbolBTC]; ok {
+		if value, ok := exchangeRatesState.Rates[common.PortalBTCIDStr]; ok {
 			btcAmountPreState = value.Amount
 		}
 
-		if value, ok := exchangeRatesState.Rates[metadata.PortalTokenSymbolBNB]; ok {
+		if value, ok := exchangeRatesState.Rates[common.PortalBNBIDStr]; ok {
 			bnbAmountPreState = value.Amount
 		}
 
-		if value, ok := exchangeRatesState.Rates[metadata.PortalTokenSymbolPRV]; ok {
+		if value, ok := exchangeRatesState.Rates[common.PRVIDStr]; ok {
 			prvAmountPreState = value.Amount
 		}
 
@@ -600,19 +600,19 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 
 	//select
 	if btcAmount > 0 {
-		exchangeRatesList[metadata.PortalTokenSymbolBTC] = lvdb.FinalExchangeRatesDetail{
+		exchangeRatesList[common.PortalBTCIDStr] = lvdb.FinalExchangeRatesDetail{
 			Amount: btcAmount,
 		}
 	}
 
 	if bnbAmount > 0 {
-		exchangeRatesList[metadata.PortalTokenSymbolBNB] = lvdb.FinalExchangeRatesDetail{
+		exchangeRatesList[common.PortalBNBIDStr] = lvdb.FinalExchangeRatesDetail{
 			Amount: bnbAmount,
 		}
 	}
 
 	if prvAmount > 0 {
-		exchangeRatesList[metadata.PortalTokenSymbolPRV] = lvdb.FinalExchangeRatesDetail{
+		exchangeRatesList[common.PRVIDStr] = lvdb.FinalExchangeRatesDetail{
 			Amount: prvAmount,
 		}
 	}
@@ -672,14 +672,8 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 		return nil
 	}
 
-	// get tokenSymbol from redeemTokenID
-	tokenSymbol := ""
-	for tokenSym, incTokenID := range metadata.PortalSupportedTokenMap {
-		if incTokenID == actionData.TokenID {
-			tokenSymbol = tokenSym
-			break
-		}
-	}
+	// get tokenID from redeemTokenID
+	tokenID :=  actionData.TokenID
 
 	reqStatus := instructions[2]
 
@@ -702,11 +696,11 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 		// update custodian state
 		for incAddr, cus := range actionData.MatchingCustodianDetail {
 			custodianStateKey := lvdb.NewCustodianStateKey(beaconHeight, incAddr)
-			if currentPortalState.CustodianPoolState[custodianStateKey].HoldingPubTokens[tokenSymbol] < cus.Amount {
+			if currentPortalState.CustodianPoolState[custodianStateKey].HoldingPubTokens[tokenID] < cus.Amount {
 				Logger.log.Errorf("[processPortalRedeemRequest] Amount holding public tokens is less than matching redeem amount")
 				return nil
 			}
-			currentPortalState.CustodianPoolState[custodianStateKey].HoldingPubTokens[tokenSymbol] -= cus.Amount
+			currentPortalState.CustodianPoolState[custodianStateKey].HoldingPubTokens[tokenID] -= cus.Amount
 		}
 
 		// track status of redeem request by redeemID
@@ -874,15 +868,8 @@ func (blockchain *BlockChain) processPortalUnlockCollateral(
 		return nil
 	}
 
-	// get tokenSymbol from redeemTokenID
-	tokenSymbol := ""
-	for tokenSym, incTokenID := range metadata.PortalSupportedTokenMap {
-		if incTokenID == actionData.TokenID {
-			tokenSymbol = tokenSym
-			break
-		}
-	}
-
+	// get tokenID from redeemTokenID
+	tokenID :=  actionData.TokenID
 	reqStatus := instructions[2]
 	if reqStatus == common.PortalReqUnlockCollateralAcceptedChainStatus {
 		// update custodian state (FreeCollateral, LockedAmountCollateral)
@@ -890,7 +877,7 @@ func (blockchain *BlockChain) processPortalUnlockCollateral(
 		finalExchangeRateKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
 		_, err2 := updateFreeCollateralCustodian(
 			currentPortalState.CustodianPoolState[custodianStateKey],
-			actionData.RedeemAmount, tokenSymbol,
+			actionData.RedeemAmount, tokenID,
 			currentPortalState.FinalExchangeRates[finalExchangeRateKey])
 		if err2 != nil {
 			Logger.log.Errorf("Error when update free collateral amount for custodian", err2)

@@ -921,15 +921,15 @@ func ValidationExchangeRates(exchangeRates *lvdb.FinalExchangeRates) error {
 		return errors.New("Exchange rates not found")
 	}
 
-	if _, ok := exchangeRates.Rates[metadata.PortalTokenSymbolBTC]; !ok {
+	if _, ok := exchangeRates.Rates[common.PortalBTCIDStr]; !ok {
 		return errors.New("BTC rates is not exist")
 	}
 
-	if _, ok := exchangeRates.Rates[metadata.PortalTokenSymbolBNB]; !ok {
+	if _, ok := exchangeRates.Rates[common.PortalBNBIDStr]; !ok {
 		return errors.New("BNB rates is not exist")
 	}
 
-	if _, ok := exchangeRates.Rates[metadata.PortalTokenSymbolPRV]; !ok {
+	if _, ok := exchangeRates.Rates[common.PRVIDStr]; !ok {
 		return errors.New("PRV rates is not exist")
 	}
 

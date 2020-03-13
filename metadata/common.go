@@ -2,7 +2,7 @@ package metadata
 
 import (
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/common"
+	"sort"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -131,8 +131,36 @@ func HasBridgeInstructions(instructions [][]string) bool {
 	return false
 }
 
+func ConvertMapStringToStringWithSortKey(m map[string]string) string {
+	// sort m before appending to string
+	keys := []string{}
+	for key, _ := range m {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
 
-func IsPortalToken(tokenIDStr string) bool {
-	isExisted, _ := common.SliceExists(PortalSupportedIncTokenIDs, tokenIDStr)
-	return isExisted
+	str := ""
+	for _, key := range keys {
+		str += key
+		str += m[key]
+	}
+
+	return str
+}
+
+func ConvertMapIntToStringWithSortKey(m map[string]uint64) string {
+	// sort m before appending to string
+	keys := []string{}
+	for key, _ := range m {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	str := ""
+	for _, key := range keys {
+		str += key
+		str += strconv.FormatUint(m[key], 10)
+	}
+
+	return str
 }

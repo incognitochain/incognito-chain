@@ -19,7 +19,6 @@ type PortalUserRegister struct {
 	UniqueRegisterId string //
 	IncogAddressStr string
 	PTokenId string
-	PTokenAddress string
 	RegisterAmount uint64
 	PortingFee uint64
 }
@@ -34,7 +33,6 @@ type PortalPortingRequestContent struct {
 	UniqueRegisterId string
 	IncogAddressStr string
 	PTokenId string
-	PTokenAddress string
 	RegisterAmount uint64
 	PortingFee uint64
 	Custodian map[string]lvdb.MatchingPortingCustodianDetail
@@ -50,7 +48,6 @@ func NewPortalUserRegister(uniqueRegisterId string , incogAddressStr string, pTo
 		UniqueRegisterId: uniqueRegisterId,
 		IncogAddressStr: incogAddressStr,
 		PTokenId: pTokenId,
-		PTokenAddress: PortalSupportedTokenMap[pTokenId],
 		RegisterAmount: registerAmount,
 		PortingFee: portingFee,
 	}
