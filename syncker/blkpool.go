@@ -56,7 +56,7 @@ func (pool *BlkPool) AddBlock(blk common.BlockPoolInterface) {
 	}
 }
 
-func (pool *BlkPool) HashBlock(blk common.BlockPoolInterface) bool {
+func (pool *BlkPool) HasBlock(blk common.BlockPoolInterface) bool {
 	res := make(chan bool)
 	pool.action <- func() {
 		hash := blk.Hash().String()
@@ -80,7 +80,10 @@ func (pool *BlkPool) GetNextBlock(prevhash string) common.BlockPoolInterface {
 	pool.action <- func() {
 		hashes := pool.blkPoolByPrevHash[prevhash][:]
 		for _, h := range hashes {
-			blk := pool.blkPoolByHash[h]
+			blk, ok := pool.blkPoolByHash[h]
+			if !ok {
+				continue
+			}
 			if _, ok := pool.blkPoolByPrevHash[blk.Hash().String()]; ok {
 				res <- pool.blkPoolByHash[h]
 				return

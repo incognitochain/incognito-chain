@@ -133,13 +133,15 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 	}
 
 	fmt.Println("Syncker: Insert shard from pool", blk.(common.BlockInterface).GetHeight())
-	s.shardPool.RemoveBlock(blk.Hash().String())
+
 	if err := s.Chain.ValidateBlockSignatures(blk.(common.BlockInterface), s.Chain.GetCommittee()); err != nil {
 		return
 	}
 
 	if err := s.Chain.InsertBlk(blk.(common.BlockInterface)); err != nil {
+		return
 	}
+	s.shardPool.RemoveBlock(blk.Hash().String())
 }
 
 func (s *ShardSyncProcess) syncShardProcess() {

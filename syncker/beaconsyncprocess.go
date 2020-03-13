@@ -202,13 +202,15 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 	}
 
 	fmt.Println("Syncker: Insert beacon from pool", blk.(common.BlockInterface).GetHeight())
-	s.beaconPool.RemoveBlock(blk.Hash().String())
+
 	if err := s.chain.ValidateBlockSignatures(blk.(common.BlockInterface), s.chain.GetCommittee()); err != nil {
 		return
 	}
 
 	if err := s.chain.InsertBlk(blk.(common.BlockInterface)); err != nil {
+		return
 	}
+	s.beaconPool.RemoveBlock(blk.Hash().String())
 }
 
 //sync beacon
