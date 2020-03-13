@@ -11,6 +11,22 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 )
 
+func FinalizedShardBlock(db incdb.Database, shardID byte, hash common.Hash) error {
+	key := GetLastShardBlockKey(shardID)
+	if err := db.Put(key, hash[:]); err != nil {
+		return NewRawdbError(FinalizedShardBlockError, err)
+	}
+	iter := db.NewIteratorWithPrefix(GetViewPrefixWithValue(hash))
+	for iter.Next() {
+		key := make([]byte, len(iter.Key()))
+		copy(key, iter.Key())
+		if err := db.Delete(key); err != nil {
+			return NewRawdbError(FinalizedShardBlockError, err)
+		}
+	}
+	return nil
+}
+
 // StoreShardBlock store block hash => block value and block index => block hash
 // record1: prefix-shardid-index-hash => empty
 // record2: prefix-hash => block value
@@ -36,8 +52,8 @@ func StoreShardBlock(db incdb.Database, shardID byte, index uint64, hash common.
 	return nil
 }
 
-func StoreShardBlockWithView(db incdb.Database, view common.Hash, height uint64, blockHash common.Hash) error {
-	key := GetViewKey(view, height)
+func StoreShardBlockWithView(db incdb.Database, view common.Hash, shardID byte, height uint64, blockHash common.Hash) error {
+	key := GetViewShardKey(view, shardID, height)
 	err := db.Put(key, blockHash[:])
 	if err != nil {
 		return NewRawdbError(StoreShardBlockWithViewError, err)
@@ -54,7 +70,7 @@ func GetShardBlockByView(db incdb.Database, view common.Hash) (map[uint64]common
 		value := make([]byte, len(iter.Value()))
 		copy(value, iter.Value())
 		strs := strings.Split(string(key), string(splitter))
-		tempHeight := strs[2]
+		tempHeight := strs[3]
 		height, err := common.BytesToUint64([]byte(tempHeight))
 		if err != nil {
 			return nil, NewRawdbError(GetShardBlockByViewError, err)
@@ -76,12 +92,13 @@ func UpdateShardBlockView(db incdb.Database, oldView common.Hash, newView common
 		value := make([]byte, len(iter.Value()))
 		copy(value, iter.Value())
 		strs := strings.Split(string(oldKey), string(splitter))
-		tempHeight := strs[2]
+		shardID := []byte(strs[2])[0]
+		tempHeight := strs[3]
 		height, err := common.BytesToUint64([]byte(tempHeight))
 		if err != nil {
 			return NewRawdbError(UpdateShardBlockViewError, err)
 		}
-		newKey := GetViewKey(newView, height)
+		newKey := GetViewShardKey(newView, shardID, height)
 		if err := db.Put(newKey, value); err != nil {
 			return NewRawdbError(UpdateShardBlockViewError, err)
 		}
@@ -89,6 +106,35 @@ func UpdateShardBlockView(db incdb.Database, oldView common.Hash, newView common
 			return NewRawdbError(UpdateShardBlockViewError, err)
 		}
 	}
+	return nil
+}
+
+func DeleteShardBlockByView(db incdb.Database, view common.Hash) error {
+	iter := db.NewIteratorWithPrefix(GetViewPrefixWithValue(view))
+	for iter.Next() {
+		key := make([]byte, len(iter.Key()))
+		copy(key, iter.Key())
+		strs := strings.Split(string(key), string(splitter))
+		shardID := []byte(strs[2])[0]
+		tempHeight := strs[3]
+		height, err := common.BytesToUint64([]byte(tempHeight))
+		if err != nil {
+			return NewRawdbError(DeleteShardBlockByViewError, err)
+		}
+		value := make([]byte, len(iter.Value()))
+		copy(value, iter.Value())
+		h, err := common.Hash{}.NewHash(value)
+		if err != nil {
+			return NewRawdbError(DeleteShardBlockByViewError, err)
+		}
+		if err := DeleteShardBlock(db, shardID, height, *h); err != nil {
+			return NewRawdbError(DeleteShardBlockByViewError, err)
+		}
+		if err := db.Delete(key); err != nil {
+			return NewRawdbError(DeleteShardBlockByViewError, err)
+		}
+	}
+	return nil
 }
 
 // StoreShardBlockIndex store block hash => block index
