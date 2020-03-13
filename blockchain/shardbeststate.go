@@ -53,12 +53,17 @@ type ShardBestState struct {
 	MetricBlockHeight      uint64
 	//================================ StateDB Method
 	// block height => root hash
-	consensusStateDB   *statedb.StateDB
-	transactionStateDB *statedb.StateDB
-	featureStateDB     *statedb.StateDB
-	rewardStateDB      *statedb.StateDB
-	slashStateDB       *statedb.StateDB
-	lock               sync.RWMutex
+	consensusStateDB           *statedb.StateDB
+	ConsensusStateDBRootHash   common.Hash
+	transactionStateDB         *statedb.StateDB
+	TransactionStateDBRootHash common.Hash
+	featureStateDB             *statedb.StateDB
+	FeatureStateDBRootHash     common.Hash
+	rewardStateDB              *statedb.StateDB
+	RewardStateDBRootHash      common.Hash
+	slashStateDB               *statedb.StateDB
+	SlashStateDBRootHash       common.Hash
+	lock                       sync.RWMutex
 }
 
 func (shardBestState *ShardBestState) GetCopiedTransactionStateDB() *statedb.StateDB {
@@ -130,6 +135,32 @@ func (blockchain *BlockChain) GetBestStateShard(shardID byte) *ShardBestState {
 }
 
 func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, bc *BlockChain) error {
+	var err error
+	var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
+	shardBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(shardBestState.ConsensusStateDBRootHash, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	shardBestState.transactionStateDB, err = statedb.NewWithPrefixTrie(shardBestState.TransactionStateDBRootHash, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	shardBestState.featureStateDB, err = statedb.NewWithPrefixTrie(shardBestState.FeatureStateDBRootHash, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	shardBestState.rewardStateDB, err = statedb.NewWithPrefixTrie(shardBestState.RewardStateDBRootHash, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	shardBestState.slashStateDB, err = statedb.NewWithPrefixTrie(shardBestState.SlashStateDBRootHash, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (shardBestState *ShardBestState) InitStateRootHashFromDatabase(db incdb.Database, bc *BlockChain) error {
 	var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
 	if rootHash, err := bc.GetShardConsensusRootHash(db, shardBestState.ShardID, shardBestState.ShardHeight); err == nil {
 		shardBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(rootHash, dbAccessWarper)

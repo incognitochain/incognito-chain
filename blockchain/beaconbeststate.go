@@ -69,10 +69,14 @@ type BeaconBestState struct {
 
 	//================================ StateDB Method
 	// block height => root hash
-	consensusStateDB *statedb.StateDB
-	rewardStateDB    *statedb.StateDB
-	featureStateDB   *statedb.StateDB
-	slashStateDB     *statedb.StateDB
+	consensusStateDB         *statedb.StateDB
+	ConsensusStateDBRootHash common.Hash
+	rewardStateDB            *statedb.StateDB
+	RewardStateDBRootHash    common.Hash
+	featureStateDB           *statedb.StateDB
+	FeatureStateDBRootHash   common.Hash
+	slashStateDB             *statedb.StateDB
+	SlashStateDBRootHash     common.Hash
 }
 
 func (beaconBestState *BeaconBestState) GetCopiedSlashStateDB() *statedb.StateDB {
@@ -129,7 +133,8 @@ func NewBeaconBestStateWithConfig(netparam *Params) *BeaconBestState {
 func (bc *BlockChain) GetBeaconBestState() *BeaconBestState {
 	return bc.BeaconChain.multiView.GetBestView().(*BeaconBestState)
 }
-func (beaconBestState *BeaconBestState) InitStateRootHash(bc *BlockChain) error {
+
+func (beaconBestState *BeaconBestState) InitStateRootHashFromDatabase(bc *BlockChain) error {
 	db := bc.GetDatabase()
 	var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
 	if rootHash, err := bc.GetBeaconConsensusRootHash(db, beaconBestState.BeaconHeight); err == nil {
@@ -166,6 +171,30 @@ func (beaconBestState *BeaconBestState) InitStateRootHash(bc *BlockChain) error 
 	}
 	return nil
 }
+
+func (beaconBestState *BeaconBestState) InitStateRootHash(bc *BlockChain) error {
+	db := bc.GetDatabase()
+	var err error
+	var dbAccessWarper = statedb.NewDatabaseAccessWarper(db)
+	beaconBestState.consensusStateDB, err = statedb.NewWithPrefixTrie(beaconBestState.ConsensusStateDBRootHash, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	beaconBestState.featureStateDB, err = statedb.NewWithPrefixTrie(beaconBestState.FeatureStateDBRootHash, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	beaconBestState.rewardStateDB, err = statedb.NewWithPrefixTrie(beaconBestState.RewardStateDBRootHash, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	beaconBestState.slashStateDB, err = statedb.NewWithPrefixTrie(beaconBestState.SlashStateDBRootHash, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (beaconBestState *BeaconBestState) MarshalJSON() ([]byte, error) {
 	type Alias BeaconBestState
 	b, err := json.Marshal(&struct {

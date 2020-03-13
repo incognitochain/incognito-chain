@@ -737,6 +737,11 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 	if err != nil {
 		return err
 	}
+	shardBestState.ConsensusStateDBRootHash = common.EmptyRoot
+	shardBestState.SlashStateDBRootHash = common.EmptyRoot
+	shardBestState.RewardStateDBRootHash = common.EmptyRoot
+	shardBestState.FeatureStateDBRootHash = common.EmptyRoot
+	shardBestState.TransactionStateDBRootHash = common.EmptyRoot
 	//statedb===========================END
 	return nil
 }
@@ -1007,6 +1012,7 @@ func (blockchain *BlockChain) processStoreShardBlock(shardBlock *ShardBlock, com
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
+	tempShardBestState.ConsensusStateDBRootHash = consensusRootHash
 	// transaction root hash
 	transactionRootHash, err := tempShardBestState.transactionStateDB.Commit(true)
 	if err != nil {
@@ -1016,6 +1022,7 @@ func (blockchain *BlockChain) processStoreShardBlock(shardBlock *ShardBlock, com
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
+	tempShardBestState.TransactionStateDBRootHash = transactionRootHash
 	// feature root hash
 	featureRootHash, err := tempShardBestState.featureStateDB.Commit(true)
 	if err != nil {
@@ -1025,6 +1032,7 @@ func (blockchain *BlockChain) processStoreShardBlock(shardBlock *ShardBlock, com
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
+	tempShardBestState.FeatureStateDBRootHash = featureRootHash
 	// reward root hash
 	rewardRootHash, err := tempShardBestState.rewardStateDB.Commit(true)
 	if err != nil {
@@ -1034,6 +1042,7 @@ func (blockchain *BlockChain) processStoreShardBlock(shardBlock *ShardBlock, com
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
+	tempShardBestState.RewardStateDBRootHash = rewardRootHash
 	// slash root hash
 	slashRootHash, err := tempShardBestState.slashStateDB.Commit(true)
 	if err != nil {
@@ -1043,6 +1052,7 @@ func (blockchain *BlockChain) processStoreShardBlock(shardBlock *ShardBlock, com
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
+	tempShardBestState.SlashStateDBRootHash = slashRootHash
 	tempShardBestState.consensusStateDB.ClearObjects()
 	tempShardBestState.transactionStateDB.ClearObjects()
 	tempShardBestState.featureStateDB.ClearObjects()

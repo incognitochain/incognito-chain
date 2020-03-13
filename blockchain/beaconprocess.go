@@ -847,6 +847,10 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	if err != nil {
 		return err
 	}
+	beaconBestState.ConsensusStateDBRootHash = common.EmptyRoot
+	beaconBestState.SlashStateDBRootHash = common.EmptyRoot
+	beaconBestState.RewardStateDBRootHash = common.EmptyRoot
+	beaconBestState.FeatureStateDBRootHash = common.EmptyRoot
 	//statedb===========================END
 	return nil
 }
@@ -1211,6 +1215,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return err
 	}
+	currentBestState.ConsensusStateDBRootHash = consensusRootHash
 	featureRootHash, err := currentBestState.featureStateDB.Commit(true)
 	if err != nil {
 		return err
@@ -1219,6 +1224,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return err
 	}
+	currentBestState.FeatureStateDBRootHash = featureRootHash
 	rewardRootHash, err := currentBestState.rewardStateDB.Commit(true)
 	if err != nil {
 		return err
@@ -1227,6 +1233,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return err
 	}
+	currentBestState.RewardStateDBRootHash = rewardRootHash
 	slashRootHash, err := currentBestState.slashStateDB.Commit(true)
 	if err != nil {
 		return err
@@ -1235,6 +1242,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return err
 	}
+	currentBestState.SlashStateDBRootHash = slashRootHash
 	currentBestState.consensusStateDB.ClearObjects()
 	currentBestState.rewardStateDB.ClearObjects()
 	currentBestState.featureStateDB.ClearObjects()
