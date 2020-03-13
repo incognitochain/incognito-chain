@@ -170,7 +170,7 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 		tx.sigPrivKey = append(*params.txParam.senderSK, randSK.Bytes()...)
 	}
 
-	err = tx.signTx()
+	err = signTx(tx)
 	if err != nil {
 		Logger.log.Error(err)
 		return NewTransactionErr(SignTxError, err)

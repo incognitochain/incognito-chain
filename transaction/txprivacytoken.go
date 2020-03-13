@@ -283,7 +283,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 			// sign Tx
 			temp.SigPubKey = params.tokenParams.Receiver[0].PaymentAddress.Pk
 			temp.sigPrivKey = *params.senderKey
-			err = temp.signTx()
+			err = signTx(&temp)
 			if err != nil {
 				Logger.log.Error(errors.New("can't sign this tx"))
 				return NewTransactionErr(SignTxError, err)

@@ -2,12 +2,13 @@ package onetime_address
 
 import (
 	"errors"
+
 	"github.com/incognitochain/incognito-chain/privacy/address"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/onetime_address/utxo"
 )
 
-func ParseUtxoPrivatekey(addr *address.PrivateAddress, utxo *utxo.Utxo) *operation.Scalar {
+func ParseUtxoPrivatekey(addr *address.PrivateAddress, utxo *coin.Coin_v2) *operation.Scalar {
 	rK := new(operation.Point).ScalarMult(utxo.GetTxRandom(), addr.GetPrivateView())
 	hashed := operation.HashToScalar(
 		append(rK.ToBytesS(), utxo.GetIndex()),
@@ -48,8 +49,8 @@ func parseMoneyToCreateOutput(blind *operation.Scalar, cachedHash *operation.Sca
 }
 
 // Get Mask and Amount from UTXO if we have privateAddress
-func ParseBlindAndMoneyFromUtxo(addr *address.PrivateAddress, utxo *utxo.Utxo) (blind *operation.Scalar, money *operation.Scalar, err error) {
-	if IsUtxoOfAddress(addr, utxo) == false {
+func ParseBlindAndMoneyFromUtxo(addr *address.PrivateAddress, utxo *coin.Coin_v2) (blind *operation.Scalar, money *operation.Scalar, err error) {
+	if IsCoinOfAddress(addr, utxo) == false {
 		return nil, nil, errors.New("Error in ota_interpreter ParseBlindAndMoneyFromUtxo: utxo is not from this address")
 	}
 	shared_secret := new(operation.Point).ScalarMult(utxo.GetTxRandom(), addr.GetPrivateView())

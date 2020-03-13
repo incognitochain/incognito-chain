@@ -15,7 +15,7 @@ import (
 )
 
 // Coin represents a coin
-type Coin struct {
+type Coin_v1 struct {
 	publicKey      *operation.Point
 	coinCommitment *operation.Point
 	snDerivator    *operation.Scalar
@@ -26,90 +26,87 @@ type Coin struct {
 }
 
 // Start GET/SET
-func (coin *Coin) GetPublicKey() *operation.Point {
+func (coin *Coin_v1) GetPublicKey() *operation.Point {
 	return coin.publicKey
 }
 
-func (coin *Coin) SetPublicKey(v *operation.Point) {
+func (coin *Coin_v1) SetPublicKey(v *operation.Point) {
 	coin.publicKey = v
 }
 
-func (coin Coin) GetCoinCommitment() *operation.Point {
+func (coin *Coin_v1) GetCoinCommitment() *operation.Point {
 	return coin.coinCommitment
 }
 
-func (coin *Coin) SetCoinCommitment(v *operation.Point) {
+func (coin *Coin_v1) SetCoinCommitment(v *operation.Point) {
 	coin.coinCommitment = v
 }
 
-func (coin Coin) GetSNDerivator() *operation.Scalar {
+func (coin *Coin_v1) GetSNDerivator() *operation.Scalar {
 	return coin.snDerivator
 }
 
-func (coin *Coin) SetSNDerivator(v *operation.Scalar) {
+func (coin *Coin_v1) SetSNDerivator(v *operation.Scalar) {
 	coin.snDerivator = v
 }
 
-func (coin Coin) GetSerialNumber() *operation.Point {
+func (coin *Coin_v1) GetSerialNumber() *operation.Point {
 	return coin.serialNumber
 }
 
-func (coin *Coin) SetSerialNumber(v *operation.Point) {
+func (coin *Coin_v1) SetSerialNumber(v *operation.Point) {
 	coin.serialNumber = v
 }
 
-func (coin Coin) GetRandomness() *operation.Scalar {
+func (coin *Coin_v1) GetRandomness() *operation.Scalar {
 	return coin.randomness
 }
 
-func (coin *Coin) SetRandomness(v *operation.Scalar) {
+func (coin *Coin_v1) SetRandomness(v *operation.Scalar) {
 	coin.randomness = v
 }
 
-func (coin Coin) GetValue() uint64 {
+func (coin *Coin_v1) GetValue() uint64 {
 	return coin.value
 }
 
-func (coin *Coin) SetValue(v uint64) {
+func (coin *Coin_v1) SetValue(v uint64) {
 	coin.value = v
 }
 
-func (coin Coin) GetInfo() []byte {
+func (coin *Coin_v1) GetInfo() []byte {
 	return coin.info
 }
 
-func (coin *Coin) SetInfo(v []byte) {
+func (coin *Coin_v1) SetInfo(v []byte) {
 	coin.info = make([]byte, len(v))
 	copy(coin.info, v)
 }
 
 // Init (Coin) initializes a coin
-func (coin *Coin) Init() *Coin {
-	coin.publicKey = new(operation.Point).Identity()
-
-	coin.coinCommitment = new(operation.Point).Identity()
-
-	coin.snDerivator = new(operation.Scalar).FromUint64(0)
-
-	coin.serialNumber = new(operation.Point).Identity()
-
-	coin.randomness = new(operation.Scalar)
-
+func (coin *Coin_v1) Init() *Coin_v1 {
+	if coin == nil {
+		coin = new(Coin_v1)
+	}
 	coin.value = 0
-
+	coin.randomness = new(operation.Scalar)
+	coin.publicKey = new(operation.Point).Identity()
+	coin.serialNumber = new(operation.Point).Identity()
+	coin.coinCommitment = new(operation.Point).Identity()
+	coin.snDerivator = new(operation.Scalar).FromUint64(0)
 	return coin
 }
 
 // GetPubKeyLastByte returns the last byte of public key
-func (coin *Coin) GetPubKeyLastByte() byte {
+func (coin *Coin_v1) GetPubKeyLastByte() byte {
 	pubKeyBytes := coin.publicKey.ToBytes()
 	return pubKeyBytes[operation.Ed25519KeySize-1]
 }
 
-// MarshalJSON (Coin) converts coin to bytes array,
+// MarshalJSON (Coin_v1) converts coin to bytes array,
 // base58 check encode that bytes array into string
 // json.Marshal the string
-func (coin Coin) MarshalJSON() ([]byte, error) {
+func (coin Coin_v1) MarshalJSON() ([]byte, error) {
 	data := coin.Bytes()
 	temp := base58.Base58Check{}.Encode(data, common.ZeroByte)
 	return json.Marshal(temp)
@@ -119,7 +116,7 @@ func (coin Coin) MarshalJSON() ([]byte, error) {
 // json.Unmarshal the bytes array to string
 // base58 check decode that string to bytes array
 // and set bytes array to coin
-func (coin *Coin) UnmarshalJSON(data []byte) error {
+func (coin *Coin_v1) UnmarshalJSON(data []byte) error {
 	dataStr := ""
 	_ = json.Unmarshal(data, &dataStr)
 	temp, _, err := base58.Base58Check{}.Decode(dataStr)
@@ -131,14 +128,14 @@ func (coin *Coin) UnmarshalJSON(data []byte) error {
 }
 
 // HashH returns the SHA3-256 hashing of coin bytes array
-func (coin *Coin) HashH() *common.Hash {
+func (coin *Coin_v1) HashH() *common.Hash {
 	hash := common.HashH(coin.Bytes())
 	return &hash
 }
 
 //CommitAll commits a coin with 5 attributes include:
 // public key, value, serial number derivator, shardID form last byte public key, randomness
-func (coin *Coin) CommitAll() error {
+func (coin *Coin_v1) CommitAll() error {
 	shardID := common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())
 	values := []*operation.Scalar{new(operation.Scalar).FromUint64(0), new(operation.Scalar).FromUint64(coin.value), coin.snDerivator, new(operation.Scalar).FromUint64(uint64(shardID)), coin.randomness}
 	commitment, err := operation.PedCom.CommitAll(values)
@@ -153,7 +150,7 @@ func (coin *Coin) CommitAll() error {
 
 // Bytes converts a coin's details to a bytes array
 // Each fields in coin is saved in len - body format
-func (coin *Coin) Bytes() []byte {
+func (coin *Coin_v1) Bytes() []byte {
 	var coinBytes []byte
 
 	if coin.publicKey != nil {
@@ -223,7 +220,7 @@ func (coin *Coin) Bytes() []byte {
 
 // SetBytes receives a coinBytes (in bytes array), and
 // reverts coinBytes to a Coin object
-func (coin *Coin) SetBytes(coinBytes []byte) error {
+func (coin *Coin_v1) SetBytes(coinBytes []byte) error {
 	if len(coinBytes) == 0 {
 		return errors.New("coinBytes is empty")
 	}

@@ -140,7 +140,7 @@ func (tx *Tx) isNonPrivacyNonInput(params *TxPrivacyInitParams) (bool, error) {
 	if len(params.inputCoins) == 0 && params.fee == 0 && !params.hasPrivacy {
 		Logger.log.Debugf("len(inputCoins) == 0 && fee == 0 && !hasPrivacy\n")
 		tx.sigPrivKey = *params.senderSK
-		err := tx.signTx()
+		err := signTx(tx)
 		if err != nil {
 			Logger.log.Error(errors.New(fmt.Sprintf("Cannot sign tx %v\n", err)))
 			return true, NewTransactionErr(SignTxError, err)
