@@ -200,6 +200,9 @@ const (
 
 	PortalRedeemLiquidateExchangeRatesSuccessChainStatus = "success"
 	PortalRedeemLiquidateExchangeRatesRejectedChainStatus  = "rejected"
+
+	PortalLiquidationCustodianDepositSuccessChainStatus = "success"
+	PortalLiquidationCustodianDepositRejectedChainStatus = "rejected"
 )
 
 // Relaying header
