@@ -512,6 +512,10 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 				if len(l) >= 4 && l[2] == common.PortalReqWithdrawRewardAcceptedChainStatus {
 					newTx, err = blockGenerator.buildPortalAcceptedWithdrawRewardTx(l[3], producerPrivateKey, shardID)
 				}
+			case metadata.PortalLiquidationCustodianDepositMeta:
+				if len(l) >= 4 && l[2] == common.PortalLiquidationCustodianDepositSuccessChainStatus {
+					newTx, err = blockGenerator.buildPortalLiquidationCustodianDeposit(l[3], producerPrivateKey, shardID)
+				}
 			default:
 				continue
 			}
