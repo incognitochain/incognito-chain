@@ -113,6 +113,7 @@ type RedeemLiquidateExchangeRates struct {
 	RedeemAmount          uint64
 	RedeemFee             uint64
 	Status                byte
+	TotalPTokenReceived	  uint64
 }
 
 func NewCustodianWithdrawRequest(txHash string) string {
