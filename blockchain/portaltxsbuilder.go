@@ -194,6 +194,61 @@ func (blockGenerator *BlockGenerator) buildPortalCustodianWithdrawRequest(
 	return resTx, nil
 }
 
+func (blockGenerator *BlockGenerator) buildPortalRedeemLiquidateExchangeRatesRequestTx(
+	contentStr string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+) (metadata.Transaction, error) {
+	Logger.log.Errorf("[Shard buildPortalRedeemLiquidateExchangeRatesRequestTx] Starting...")
+	contentBytes := []byte(contentStr)
+	var redeemReqContent metadata.PortalRedeemLiquidateExchangeRatesContent
+	err := json.Unmarshal(contentBytes, &redeemReqContent)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while unmarshaling portal redeem liquidate exchange rates content: %+v", err)
+		return nil, nil
+	}
+	if redeemReqContent.ShardID != shardID {
+		Logger.log.Errorf("ERROR: ShardID unexpected expect %v, but got %+v", shardID, redeemReqContent.ShardID)
+		return nil, nil
+	}
+
+	meta := metadata.NewPortalRedeemLiquidateExchangeRatesResponse(
+		"refund",
+		redeemReqContent.TxReqID,
+		redeemReqContent.RedeemerIncAddressStr,
+		redeemReqContent.RedeemAmount,
+		redeemReqContent.TotalPTokenReceived,
+		redeemReqContent.TokenID,
+		metadata.PortalRedeemLiquidateExchangeRatesResponseMeta,
+	)
+
+	keyWallet, err := wallet.Base58CheckDeserialize(redeemReqContent.RedeemerIncAddressStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while deserializing custodian address string: %+v", err)
+		return nil, nil
+	}
+
+	receiverAddr := keyWallet.KeySet.PaymentAddress
+	receiveAmt := redeemReqContent.TotalPTokenReceived
+
+	// the returned currency is PRV
+	resTx := new(transaction.Tx)
+	err = resTx.InitTxSalary(
+		receiveAmt,
+		&receiverAddr,
+		producerPrivateKey,
+		blockGenerator.chain.config.DataBase,
+		meta,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing custodian withdraw  (normal) tx: %+v", err)
+		return nil, nil
+	}
+
+	return resTx, nil
+}
+
+
 // buildPortalRejectedRedeemRequestTx builds response tx for user request redeem tx with status "rejected"
 // mints ptoken to return to user (ptoken that user burned)
 func (blockGenerator *BlockGenerator) buildPortalRejectedRedeemRequestTx(

@@ -35,6 +35,7 @@ type PortalRedeemLiquidateExchangeRatesContent struct {
 	RedeemFee               uint64 // redeem fee in PRV, 0.01% redeemAmount in PRV
 	TxReqID                 common.Hash
 	ShardID                 byte
+	TotalPTokenReceived		uint64
 }
 
 func NewPortalRedeemLiquidateExchangeRates(

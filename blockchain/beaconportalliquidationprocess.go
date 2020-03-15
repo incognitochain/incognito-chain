@@ -250,7 +250,7 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(beaconHe
 	reqStatus := instructions[2]
 	if reqStatus == common.PortalRedeemLiquidateExchangeRatesSuccessChainStatus {
 		keyExchangeRate := lvdb.NewFinalExchangeRatesKey(beaconHeight)
-		exchangeRate, ok := currentPortalState.FinalExchangeRates[keyExchangeRate]
+		_, ok := currentPortalState.FinalExchangeRates[keyExchangeRate]
 		if !ok {
 			Logger.log.Errorf("Exchange rate not found", err)
 			return nil
@@ -270,17 +270,7 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(beaconHe
 			return nil
 		}
 
-		totalPrv, err := calTotalLiquidationByExchangeRates(actionData.RedeemAmount, liquidateByTokenID, actionData.TokenID, exchangeRate)
-
-		if err != nil {
-			Logger.log.Errorf("Calculate total liquidation error %v", err)
-			return nil
-		}
-
-		if totalPrv > liquidateByTokenID.HoldAmountFreeCollateral {
-			Logger.log.Errorf("total liquidation error %v", err)
-			return nil
-		}
+		totalPrv := actionData.TotalPTokenReceived
 
 		liquidateExchangeRates.Rates[actionData.TokenID] = lvdb.LiquidateExchangeRatesDetail{
 			HoldAmountFreeCollateral: liquidateByTokenID.HoldAmountFreeCollateral - totalPrv,
@@ -297,6 +287,7 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(beaconHe
 			actionData.RemoteAddress,
 			actionData.RedeemAmount,
 			actionData.RedeemFee,
+			totalPrv,
 			common.PortalRedeemLiquidateExchangeRatesSuccessStatus,
 			)
 
@@ -334,6 +325,7 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(beaconHe
 			actionData.RemoteAddress,
 			actionData.RedeemAmount,
 			actionData.RedeemFee,
+			actionData.TotalPTokenReceived,
 			common.PortalRedeemLiquidateExchangeRatesRejectedStatus,
 		)
 

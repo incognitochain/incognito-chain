@@ -170,6 +170,7 @@ func NewRedeemLiquidateExchangeRates(
 	redeemerRemoteAddress string,
 	redeemAmount uint64,
 	redeemFee uint64,
+	totalPTokenReceived uint64,
 	status byte,
 ) (*lvdb.RedeemLiquidateExchangeRates, error) {
 	return &lvdb.RedeemLiquidateExchangeRates{
@@ -180,6 +181,7 @@ func NewRedeemLiquidateExchangeRates(
 		RedeemAmount:          redeemAmount,
 		RedeemFee:             redeemFee,
 		Status:	status,
+		TotalPTokenReceived: totalPTokenReceived,
 	}, nil
 }
 
@@ -874,19 +876,11 @@ func upByPercent(amount uint64, percent int) uint64 {
 	return uint64(roundNumber) //return nano pBTC, pBNB
 }
 
-func calTotalLiquidationByExchangeRates(RedeemAmount uint64, liquidateExchangeRates lvdb.LiquidateExchangeRatesDetail, tokenID string, exchangeRate *lvdb.FinalExchangeRates) (uint64, error) {
-	amountPTokenConverted, err := exchangeRate.ExchangePToken2PRVByTokenId(tokenID, liquidateExchangeRates.HoldAmountPubToken)
-	if err != nil {
-		return 0, errors.New("Exchange rates error")
-	}
-
-	percentRatesDetect := calculatePercentMinAspectRatio(amountPTokenConverted, liquidateExchangeRates.HoldAmountFreeCollateral)
-	totalPToken := upByPercent(RedeemAmount, percentRatesDetect)
-	totalPrv, err := exchangeRate.ExchangePToken2PRVByTokenId(tokenID, totalPToken)
-	if err != nil {
-		return 0, errors.New("Exchange rates error")
-	}
-
+//todo: need review divide operator
+func calTotalLiquidationByExchangeRates(RedeemAmount uint64, liquidateExchangeRates lvdb.LiquidateExchangeRatesDetail) (uint64, error) {
+	// prv  ------   total token
+	// ?		     amount token
+	totalPrv := liquidateExchangeRates.HoldAmountFreeCollateral * RedeemAmount / liquidateExchangeRates.HoldAmountPubToken
 	return totalPrv, nil
 }
 

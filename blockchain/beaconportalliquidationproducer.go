@@ -65,12 +65,13 @@ func buildRedeemLiquidateExchangeRatesInst(
 	incAddressStr string,
 	remoteAddress string,
 	redeemFee uint64,
+	totalPTokenReceived uint64,
 	metaType int,
 	shardID byte,
 	txReqID common.Hash,
 	status string,
 ) []string {
-	redeemRequestContent := metadata.PortalRedeemRequestContent{
+	redeemRequestContent := metadata.PortalRedeemLiquidateExchangeRatesContent{
 		TokenID:                 tokenID,
 		RedeemAmount:            redeemAmount,
 		RedeemerIncAddressStr:   incAddressStr,
@@ -78,6 +79,7 @@ func buildRedeemLiquidateExchangeRatesInst(
 		RedeemFee:               redeemFee,
 		TxReqID:                 txReqID,
 		ShardID:                 shardID,
+		TotalPTokenReceived:     totalPTokenReceived,
 	}
 	redeemRequestContentBytes, _ := json.Marshal(redeemRequestContent)
 	return []string{
@@ -324,6 +326,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
 			meta.RedeemerIncAddressStr,
 			meta.RemoteAddress,
 			meta.RedeemFee,
+			0,
 			meta.Type,
 			actionData.ShardID,
 			actionData.TxReqID,
@@ -343,6 +346,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
 			meta.RedeemerIncAddressStr,
 			meta.RemoteAddress,
 			meta.RedeemFee,
+			0,
 			meta.Type,
 			actionData.ShardID,
 			actionData.TxReqID,
@@ -360,6 +364,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
 			meta.RedeemerIncAddressStr,
 			meta.RemoteAddress,
 			meta.RedeemFee,
+			0,
 			meta.Type,
 			actionData.ShardID,
 			actionData.TxReqID,
@@ -376,6 +381,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
 			meta.RedeemerIncAddressStr,
 			meta.RemoteAddress,
 			meta.RedeemFee,
+			0,
 			meta.Type,
 			actionData.ShardID,
 			actionData.TxReqID,
@@ -396,6 +402,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
 			meta.RedeemerIncAddressStr,
 			meta.RemoteAddress,
 			meta.RedeemFee,
+			0,
 			meta.Type,
 			actionData.ShardID,
 			actionData.TxReqID,
@@ -414,6 +421,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
 			meta.RedeemerIncAddressStr,
 			meta.RemoteAddress,
 			meta.RedeemFee,
+			0,
 			meta.Type,
 			actionData.ShardID,
 			actionData.TxReqID,
@@ -422,7 +430,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
 		return [][]string{inst}, nil
 	}
 
-	totalPrv, err := calTotalLiquidationByExchangeRates(meta.RedeemAmount, liquidateByTokenID, meta.TokenID, exchangeRatesState)
+	totalPrv, err := calTotalLiquidationByExchangeRates(meta.RedeemAmount, liquidateByTokenID)
 
 	if err != nil {
 		Logger.log.Errorf("Calculate total liquidation error %v", err)
@@ -432,6 +440,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
 			meta.RedeemerIncAddressStr,
 			meta.RemoteAddress,
 			meta.RedeemFee,
+			0,
 			meta.Type,
 			actionData.ShardID,
 			actionData.TxReqID,
@@ -448,6 +457,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
 			meta.RedeemerIncAddressStr,
 			meta.RemoteAddress,
 			meta.RedeemFee,
+			0,
 			meta.Type,
 			actionData.ShardID,
 			actionData.TxReqID,
@@ -469,6 +479,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
 		meta.RedeemerIncAddressStr,
 		meta.RemoteAddress,
 		meta.RedeemFee,
+		0,
 		meta.Type,
 		actionData.ShardID,
 		actionData.TxReqID,
