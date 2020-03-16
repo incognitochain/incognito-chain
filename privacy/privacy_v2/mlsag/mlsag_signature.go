@@ -9,8 +9,8 @@ import (
 
 type Signature struct {
 	c         operation.Scalar     // 32 bytes
-	keyImages []operation.Point    // 32 * size bytes
-	r         [][]operation.Scalar // 32 * size_1 * size_2 bytes
+	keyImages []*operation.Point    // 32 * size bytes
+	r         [][]*operation.Scalar // 32 * size_1 * size_2 bytes
 }
 
 func (this *Signature) ToHex() (string, error) {
@@ -25,18 +25,18 @@ func (this *Signature) ToBytes() ([]byte, error) {
 	var b []byte
 
 	// Number of private keys should be up to 2^8 only (1 byte)
-	var leng byte = byte(len(this.keyImages))
+	var length byte = byte(len(this.keyImages))
 
-	b = append(b, leng)
+	b = append(b, length)
 	b = append(b, this.c.ToBytesS()...)
-	for i := 0; i < int(leng); i += 1 {
+	for i := 0; i < int(length); i += 1 {
 		b = append(b, this.keyImages[i].ToBytesS()...)
 	}
 	for i := 0; i < len(this.r); i += 1 {
-		if int(leng) != len(this.r[i]) {
+		if int(length) != len(this.r[i]) {
 			return []byte{}, errors.New("Error in MLSAG Signature ToBytes: the signature is broken (size of keyImages and r differ)")
 		}
-		for j := 0; j < int(leng); j += 1 {
+		for j := 0; j < int(length); j += 1 {
 			b = append(b, this.r[i][j].ToBytesS()...)
 		}
 	}
@@ -75,21 +75,21 @@ func (this *Signature) FromBytes(b []byte) (*Signature, error) {
 
 	// Start from 33
 	index := HashSize + 1
-	this.keyImages = make([]operation.Point, m)
+	this.keyImages = make([]*operation.Point, m)
 	for i := 0; i < m; i += 1 {
 		val, err := new(operation.Point).FromBytesS(b[index : index+HashSize])
 		if err != nil {
 			return nil, errors.New("Error in MLSAG Signature FromBytes: the signature byte is broken (keyImages is broken)")
 		}
-		this.keyImages[i] = *val
+		this.keyImages[i] = val
 		index += HashSize
 	}
 
-	this.r = make([][]operation.Scalar, n)
+	this.r = make([][]*operation.Scalar, n)
 	for i := 0; i < n; i += 1 {
-		row := make([]operation.Scalar, m)
+		row := make([]*operation.Scalar, m)
 		for j := 0; j < m; j += 1 {
-			row[j] = *new(operation.Scalar).FromBytesS(b[index : index+32])
+			row[j] = new(operation.Scalar).FromBytesS(b[index : index+32])
 			index += HashSize
 		}
 		this.r[i] = row

@@ -1,17 +1,22 @@
 package txfull
 
 import (
+	"github.com/incognitochain/incognito-chain/privacy/address"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	ota "github.com/incognitochain/incognito-chain/privacy/privacy_v2/onetime_address"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/onetime_address/utxo"
 )
+
+func parsePublicKey(privateKey *operation.Scalar) *operation.Point {
+	return new(operation.Point).ScalarMultBase(privateKey)
+}
 
 func getSumBlindInput(this *RingCTFull) (*operation.Scalar, error) {
 	sumBlindInput := new(operation.Scalar)
 	for i := 0; i < len(this.inputs); i += 1 {
 		blind, _, err := ota.ParseBlindAndMoneyFromUtxo(
 			this.privateAddress,
-			&this.inputs[i],
+			this.inputs[i],
 		)
 		if err != nil {
 			return nil, err
@@ -21,20 +26,26 @@ func getSumBlindInput(this *RingCTFull) (*operation.Scalar, error) {
 	return sumBlindInput, nil
 }
 
-func getSumCommitment(arr []utxo.Utxo) *operation.Point {
-	sum := new(operation.Point)
+func getBlindInput(privAddress *address.PrivateAddress, coin *coin.Coin_v2) (*operation.Scalar, error) {
+	blind, _, err := ota.ParseBlindAndMoneyFromUtxo(privAddress, coin)
+	if err != nil {
+		return nil, err
+	} else {
+		return blind, nil
+	}
+
+}
+
+func getSumCommitment(arr []*coin.Coin_v2) *operation.Point {
+	sum := new(operation.Point).Identity()
 	for i := 0; i < len(arr); i += 1 {
-		sum = sum.Add(sum, arr[i].GetCommitment())
+		sum.Add(sum, arr[i].GetCommitment())
 	}
 	return sum
 }
 
-func getTxPrivateKeys(this *RingCTFull) *[]operation.Scalar {
-	privAddress := this.privateAddress
-	inputCoins := this.inputs
-	privateKeys := make([]operation.Scalar, len(inputCoins))
-	for i := 0; i < len(privateKeys); i += 1 {
-		privateKeys[i] = *ota.ParseUtxoPrivatekey(privAddress, &inputCoins[i])
-	}
-	return &privateKeys
+func getTxPrivateKey(privAddress *address.PrivateAddress, inputCoin *coin.Coin_v2) *operation.Scalar {
+	privKey := ota.ParseUtxoPrivatekey(privAddress, inputCoin)
+	return privKey
 }
+

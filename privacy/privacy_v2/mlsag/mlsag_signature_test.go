@@ -10,15 +10,15 @@ import (
 )
 
 func InitializeSignatureForTest() (mlsag *Mlsag) {
-	keyInputs := []operation.Scalar{}
+	keyInputs := []*operation.Scalar{}
 	for i := 0; i < 3; i += 1 {
 		privateKey := operation.RandomScalar()
-		keyInputs = append(keyInputs, *privateKey)
+		keyInputs = append(keyInputs, privateKey)
 	}
-	numFake := 3
+	numFake := 8
 	pi := common.RandInt() % numFake
-	ring := NewRandomRing(&keyInputs, numFake, pi)
-	return NewMlsagWithDefinedRing(&keyInputs, ring, pi)
+	ring := NewRandomRing(keyInputs, numFake, pi)
+	return NewMlsagWithDefinedRing(keyInputs, ring, pi)
 }
 
 func TestSignatureHexBytesConversion(t *testing.T) {
@@ -42,7 +42,7 @@ func TestSignatureHexBytesConversion(t *testing.T) {
 	assert.Equal(t, signature, temp_sig_hex, "Hex to signature should be correct")
 }
 
-func removeLastElement(s []operation.Point) []operation.Point {
+func removeLastElement(s []*operation.Point) []*operation.Point {
 	return s[:len(s)-1]
 }
 
