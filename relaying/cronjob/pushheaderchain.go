@@ -91,8 +91,8 @@ func PushBNBHeaderIntoIncognito(bnbHeaderStr string, blockHeight int64, urlIncog
 func GetAndPushBNBHeader() {
 	url := relaying.TestnetURLRemote
 	urlIncognitoNode := "http://localhost:9334"
-	blockHeight := 540
-	for i := 74; i <= blockHeight; i++ {
+	blockHeight := 100
+	for i := 3; i <= blockHeight; i++ {
 		bnbHeaderStr, err := GetBNBHeaderFromBinanceNetwork(int64(i), url)
 		if err != nil {
 			fmt.Printf("Error GetBNBHeaderFromBinanceNetwork: %v\n", err)
@@ -110,7 +110,7 @@ func GetAndPushBNBHeader() {
 		}
 
 		fmt.Printf("Result PushBNBHeaderIntoIncognito: %v\n", result)
-		fmt.Printf("====== Push successfully %v\n", i)
+		fmt.Printf("====== Push successfully %v\n\n\n", i)
 
 		time.Sleep(15*1000 * time.Millisecond)
 	}
