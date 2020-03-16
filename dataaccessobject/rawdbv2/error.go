@@ -21,6 +21,8 @@ const (
 	DeleteBeaconBlockError
 	StoreBeaconBestStateError
 	GetBeaconBestStateError
+	FinalizedBeaconBlockError
+	GetFinalizedBeaconBlockError
 	StoreBeaconConsensusRootHashError
 	GetBeaconConsensusRootHashError
 	StoreBeaconRewardRootHashError
@@ -54,6 +56,7 @@ const (
 	GetShardBlockByViewError
 	DeleteShardBlockByViewError
 	FinalizedShardBlockError
+	GetFinalizedShardBlockError
 	StoreShardBlockIndexError
 	HasShardBlockError
 	GetShardBlockByHashError
@@ -93,6 +96,8 @@ var ErrCodeMessage = map[int]struct {
 	UpdateBeaconBlockViewError:    {-1009, "Update Beacon Block View Error"},
 	GetBeaconBlockByViewError:     {-1010, "Get Beacon Block By View Error"},
 	DeleteBeaconBlockByViewError:  {-1011, "Delete Beacon Block By View"},
+	FinalizedBeaconBlockError:     {-2016, "Finalized Beacon Block Error "},
+	GetFinalizedBeaconBlockError:  {-2017, "Get Finalized Beacon Block Error"},
 
 	StoreShardBlockError:           {-2000, "Store Shard Block Error"},
 	HasShardBlockError:             {-2001, "Has Shard Block Error"},
@@ -111,6 +116,7 @@ var ErrCodeMessage = map[int]struct {
 	GetShardBlockByViewError:       {-2014, "Get Shard Block By View Error"},
 	DeleteShardBlockByViewError:    {-2015, "Delete Shard Block By View"},
 	FinalizedShardBlockError:       {-2016, "Finalized Shard Block Error "},
+	GetFinalizedShardBlockError:    {-2017, "Get Finalized Shard Block Error"},
 
 	StoreTransactionIndexError:   {-3000, "Store Transaction Index Error"},
 	GetTransactionByHashError:    {-3001, "Get Transaction By Hash Error"},

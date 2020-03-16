@@ -13,17 +13,30 @@ import (
 func FinalizedBeaconBlock(db incdb.Database, hash common.Hash) error {
 	key := GetLastBeaconBlockKey()
 	if err := db.Put(key, hash[:]); err != nil {
-		return NewRawdbError(FinalizedShardBlockError, err)
+		return NewRawdbError(FinalizedBeaconBlockError, err)
 	}
 	iter := db.NewIteratorWithPrefix(GetViewPrefixWithValue(hash))
 	for iter.Next() {
 		key := make([]byte, len(iter.Key()))
 		copy(key, iter.Key())
 		if err := db.Delete(key); err != nil {
-			return NewRawdbError(FinalizedShardBlockError, err)
+			return NewRawdbError(FinalizedBeaconBlockError, err)
 		}
 	}
 	return nil
+}
+
+func GetFinalizedBeaconBlock(db incdb.Database) (common.Hash, error) {
+	key := GetLastBeaconBlockKey()
+	res, err := db.Get(key)
+	if err != nil {
+		return common.Hash{}, NewRawdbError(GetFinalizedBeaconBlockError, err)
+	}
+	h, err := common.Hash{}.NewHash(res)
+	if err != nil {
+		return common.Hash{}, NewRawdbError(GetFinalizedBeaconBlockError, err)
+	}
+	return *h, nil
 }
 
 // StoreBeaconBlock store block hash => block value and block index => block hash

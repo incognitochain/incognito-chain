@@ -27,6 +27,19 @@ func FinalizedShardBlock(db incdb.Database, shardID byte, hash common.Hash) erro
 	return nil
 }
 
+func GetFinalizedShardBlock(db incdb.Database, shardID byte) (common.Hash, error) {
+	key := GetLastShardBlockKey(shardID)
+	res, err := db.Get(key)
+	if err != nil {
+		return common.Hash{}, NewRawdbError(GetFinalizedShardBlockError, err)
+	}
+	h, err := common.Hash{}.NewHash(res)
+	if err != nil {
+		return common.Hash{}, NewRawdbError(GetFinalizedShardBlockError, err)
+	}
+	return *h, nil
+}
+
 // StoreShardBlock store block hash => block value and block index => block hash
 // record1: prefix-shardid-index-hash => empty
 // record2: prefix-hash => block value
