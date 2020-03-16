@@ -65,12 +65,13 @@ func buildRedeemLiquidateExchangeRatesInst(
 	incAddressStr string,
 	remoteAddress string,
 	redeemFee uint64,
+	totalPTokenReceived uint64,
 	metaType int,
 	shardID byte,
 	txReqID common.Hash,
 	status string,
 ) []string {
-	redeemRequestContent := metadata.PortalRedeemRequestContent{
+	redeemRequestContent := metadata.PortalRedeemLiquidateExchangeRatesContent{
 		TokenID:                 tokenID,
 		RedeemAmount:            redeemAmount,
 		RedeemerIncAddressStr:   incAddressStr,
@@ -78,6 +79,7 @@ func buildRedeemLiquidateExchangeRatesInst(
 		RedeemFee:               redeemFee,
 		TxReqID:                 txReqID,
 		ShardID:                 shardID,
+		TotalPTokenReceived:     totalPTokenReceived,
 	}
 	redeemRequestContentBytes, _ := json.Marshal(redeemRequestContent)
 	return []string{
@@ -248,9 +250,9 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 
 	for custodianKey, custodianState := range custodianPoolState {
 		//todo: check custodian is processing deposit
-		detectTPExchangeRates, err := detectMinAspectRatio(custodianState.HoldingPubTokens, custodianState.LockedAmountCollateral, exchangeRate)
+		detectTPExchangeRates, err := detectTPRatio(custodianState.HoldingPubTokens, custodianState.LockedAmountCollateral, exchangeRate)
 		if err != nil {
-			Logger.log.Errorf("Detect TP exchange rates error %v", err)
+			Logger.log.Errorf("Detect tp ratio error %v", err)
 			inst := buildTopPercentileExchangeRatesLiquidationInst(
 				custodianState.IncognitoAddress,
 				metadata.PortalLiquidateTPExchangeRatesMeta,
@@ -325,6 +327,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
 			meta.RedeemerIncAddressStr,
 			meta.RemoteAddress,
 			meta.RedeemFee,
+			0,
 			meta.Type,
 			actionData.ShardID,
 			actionData.TxReqID,
@@ -344,6 +347,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
 			meta.RedeemerIncAddressStr,
 			meta.RemoteAddress,
 			meta.RedeemFee,
+			0,
 			meta.Type,
 			actionData.ShardID,
 			actionData.TxReqID,
@@ -361,6 +365,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
 			meta.RedeemerIncAddressStr,
 			meta.RemoteAddress,
 			meta.RedeemFee,
+			0,
 			meta.Type,
 			actionData.ShardID,
 			actionData.TxReqID,
@@ -377,6 +382,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
 			meta.RedeemerIncAddressStr,
 			meta.RemoteAddress,
 			meta.RedeemFee,
+			0,
 			meta.Type,
 			actionData.ShardID,
 			actionData.TxReqID,
@@ -386,6 +392,87 @@ func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
 	}
 
 	//check redeem amount
+	liquidateExchangeRatesKey := lvdb.NewPortalLiquidateExchangeRatesKey(beaconHeight)
+	liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey]
+
+	if !ok {
+		Logger.log.Errorf("Liquidate exchange rates not found")
+		inst := buildRedeemLiquidateExchangeRatesInst(
+			meta.TokenID,
+			meta.RedeemAmount,
+			meta.RedeemerIncAddressStr,
+			meta.RemoteAddress,
+			meta.RedeemFee,
+			0,
+			meta.Type,
+			actionData.ShardID,
+			actionData.TxReqID,
+			common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus,
+		)
+		return [][]string{inst}, nil
+	}
+
+	liquidateByTokenID, ok := liquidateExchangeRates.Rates[meta.TokenID]
+
+	if !ok {
+		Logger.log.Errorf("Liquidate exchange rates not found")
+		inst := buildRedeemLiquidateExchangeRatesInst(
+			meta.TokenID,
+			meta.RedeemAmount,
+			meta.RedeemerIncAddressStr,
+			meta.RemoteAddress,
+			meta.RedeemFee,
+			0,
+			meta.Type,
+			actionData.ShardID,
+			actionData.TxReqID,
+			common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus,
+		)
+		return [][]string{inst}, nil
+	}
+
+	totalPrv, err := calTotalLiquidationByExchangeRates(meta.RedeemAmount, liquidateByTokenID)
+
+	if err != nil {
+		Logger.log.Errorf("Calculate total liquidation error %v", err)
+		inst := buildRedeemLiquidateExchangeRatesInst(
+			meta.TokenID,
+			meta.RedeemAmount,
+			meta.RedeemerIncAddressStr,
+			meta.RemoteAddress,
+			meta.RedeemFee,
+			0,
+			meta.Type,
+			actionData.ShardID,
+			actionData.TxReqID,
+			common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus,
+		)
+		return [][]string{inst}, nil
+	}
+
+	if totalPrv > liquidateByTokenID.HoldAmountFreeCollateral {
+		Logger.log.Errorf("total liquidation error %v", err)
+		inst := buildRedeemLiquidateExchangeRatesInst(
+			meta.TokenID,
+			meta.RedeemAmount,
+			meta.RedeemerIncAddressStr,
+			meta.RemoteAddress,
+			meta.RedeemFee,
+			0,
+			meta.Type,
+			actionData.ShardID,
+			actionData.TxReqID,
+			common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus,
+		)
+		return [][]string{inst}, nil
+	}
+
+	liquidateExchangeRates.Rates[meta.TokenID] = lvdb.LiquidateExchangeRatesDetail{
+		HoldAmountFreeCollateral: liquidateByTokenID.HoldAmountFreeCollateral - totalPrv,
+		HoldAmountPubToken: liquidateByTokenID.HoldAmountPubToken - meta.RedeemAmount,
+	}
+
+	currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey] = liquidateExchangeRates
 
 	inst := buildRedeemLiquidateExchangeRatesInst(
 		meta.TokenID,
@@ -393,6 +480,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
 		meta.RedeemerIncAddressStr,
 		meta.RemoteAddress,
 		meta.RedeemFee,
+		0,
 		meta.Type,
 		actionData.ShardID,
 		actionData.TxReqID,

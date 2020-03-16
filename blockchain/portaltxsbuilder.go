@@ -60,6 +60,56 @@ func (blockGenerator *BlockGenerator) buildPortalRefundCustodianDepositTx(
 	return resTx, nil
 }
 
+func (blockGenerator *BlockGenerator) buildPortalLiquidationCustodianDeposit(
+	contentStr string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+) (metadata.Transaction, error) {
+	Logger.log.Info("[buildPortalLiquidationCustodianDeposit] Starting...")
+	contentBytes := []byte(contentStr)
+	var refundDeposit metadata.PortalLiquidationCustodianDepositContent
+	err := json.Unmarshal(contentBytes, &refundDeposit)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while unmarshaling portal liquidation custodian deposit content: %+v", err)
+		return nil, nil
+	}
+	if refundDeposit.ShardID != shardID {
+		return nil, nil
+	}
+
+	meta := metadata.NewPortalLiquidationCustodianDepositResponse(
+		"refund",
+		refundDeposit.TxReqID,
+		refundDeposit.IncogAddressStr,
+		refundDeposit.DepositedAmount,
+		metadata.PortalLiquidationCustodianDepositResponseMeta,
+	)
+
+	keyWallet, err := wallet.Base58CheckDeserialize(refundDeposit.IncogAddressStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while deserializing custodian liquidation address string: %+v", err)
+		return nil, nil
+	}
+	receiverAddr := keyWallet.KeySet.PaymentAddress
+
+	// the returned currency is PRV
+	resTx := new(transaction.Tx)
+	err = resTx.InitTxSalary(
+		refundDeposit.DepositedAmount,
+		&receiverAddr,
+		producerPrivateKey,
+		blockGenerator.chain.config.DataBase,
+		meta,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while initializing refund contribution (normal) tx: %+v", err)
+		return nil, nil
+	}
+	//modify the type of the salary transaction
+	// resTx.Type = common.TxBlockProducerCreatedType
+	return resTx, nil
+}
+
 // buildPortalAcceptedRequestPTokensTx builds response tx for user request ptoken tx with status "accepted"
 // mints ptoken to return to user
 func (blockGenerator *BlockGenerator) buildPortalAcceptedRequestPTokensTx(
@@ -193,6 +243,61 @@ func (blockGenerator *BlockGenerator) buildPortalCustodianWithdrawRequest(
 
 	return resTx, nil
 }
+
+func (blockGenerator *BlockGenerator) buildPortalRedeemLiquidateExchangeRatesRequestTx(
+	contentStr string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+) (metadata.Transaction, error) {
+	Logger.log.Errorf("[Shard buildPortalRedeemLiquidateExchangeRatesRequestTx] Starting...")
+	contentBytes := []byte(contentStr)
+	var redeemReqContent metadata.PortalRedeemLiquidateExchangeRatesContent
+	err := json.Unmarshal(contentBytes, &redeemReqContent)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while unmarshaling portal redeem liquidate exchange rates content: %+v", err)
+		return nil, nil
+	}
+	if redeemReqContent.ShardID != shardID {
+		Logger.log.Errorf("ERROR: ShardID unexpected expect %v, but got %+v", shardID, redeemReqContent.ShardID)
+		return nil, nil
+	}
+
+	meta := metadata.NewPortalRedeemLiquidateExchangeRatesResponse(
+		"refund",
+		redeemReqContent.TxReqID,
+		redeemReqContent.RedeemerIncAddressStr,
+		redeemReqContent.RedeemAmount,
+		redeemReqContent.TotalPTokenReceived,
+		redeemReqContent.TokenID,
+		metadata.PortalRedeemLiquidateExchangeRatesResponseMeta,
+	)
+
+	keyWallet, err := wallet.Base58CheckDeserialize(redeemReqContent.RedeemerIncAddressStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while deserializing custodian address string: %+v", err)
+		return nil, nil
+	}
+
+	receiverAddr := keyWallet.KeySet.PaymentAddress
+	receiveAmt := redeemReqContent.TotalPTokenReceived
+
+	// the returned currency is PRV
+	resTx := new(transaction.Tx)
+	err = resTx.InitTxSalary(
+		receiveAmt,
+		&receiverAddr,
+		producerPrivateKey,
+		blockGenerator.chain.config.DataBase,
+		meta,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing custodian withdraw  (normal) tx: %+v", err)
+		return nil, nil
+	}
+
+	return resTx, nil
+}
+
 
 // buildPortalRejectedRedeemRequestTx builds response tx for user request redeem tx with status "rejected"
 // mints ptoken to return to user (ptoken that user burned)

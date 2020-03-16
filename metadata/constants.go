@@ -63,6 +63,9 @@ const (
 	PortalRequestWithdrawRewardMeta = 117
 	PortalRequestWithdrawRewardResponseMeta = 118
 	PortalRedeemLiquidateExchangeRatesMeta = 119
+	PortalRedeemLiquidateExchangeRatesResponseMeta = 120
+	PortalLiquidationCustodianDepositMeta = 121
+	PortalLiquidationCustodianDepositResponseMeta = 122
 
 	// relaying
 	RelayingBNBHeaderMeta = 200

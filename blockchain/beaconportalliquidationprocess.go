@@ -141,9 +141,9 @@ currentPortalState *CurrentPortalState) error {
 	reqStatus := instructions[2]
 	if reqStatus == common.PortalLiquidateTPExchangeRatesSuccessChainStatus {
 		//validation
-		detectTPExchangeRates, err := detectMinAspectRatio(custodianState.HoldingPubTokens, custodianState.LockedAmountCollateral, exchangeRate)
+		detectTPExchangeRates, err := detectTPRatio(custodianState.HoldingPubTokens, custodianState.LockedAmountCollateral, exchangeRate)
 		if err != nil {
-			Logger.log.Errorf("Detect min aspect ratio error %v", err)
+			Logger.log.Errorf("Detect tp ratio error %v", err)
 			return nil
 		}
 
@@ -220,6 +220,119 @@ currentPortalState *CurrentPortalState) error {
 		err := db.StoreLiquidateTopPercentileExchangeRates([]byte(newTPKey), newTPExchangeRates)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store liquidation TP exchange rates %v", err)
+			return nil
+		}
+	}
+
+	return nil
+}
+
+func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState, updatingInfoByTokenID map[common.Hash]UpdatingInfo) error {
+	if currentPortalState == nil {
+		Logger.log.Errorf("current portal state is nil")
+		return nil
+	}
+
+	if len(instructions) != 4 {
+		return nil // skip the instruction
+	}
+
+	// unmarshal instructions content
+	var actionData metadata.PortalRedeemLiquidateExchangeRatesContent
+	err := json.Unmarshal([]byte(instructions[3]), &actionData)
+	if err != nil {
+		Logger.log.Errorf("Can not unmarshal instruction content %v\n", err)
+		return nil
+	}
+
+
+	db := blockchain.GetDatabase()
+
+	reqStatus := instructions[2]
+	if reqStatus == common.PortalRedeemLiquidateExchangeRatesSuccessChainStatus {
+		keyExchangeRate := lvdb.NewFinalExchangeRatesKey(beaconHeight)
+		_, ok := currentPortalState.FinalExchangeRates[keyExchangeRate]
+		if !ok {
+			Logger.log.Errorf("Exchange rate not found", err)
+			return nil
+		}
+
+		liquidateExchangeRatesKey := lvdb.NewPortalLiquidateExchangeRatesKey(beaconHeight)
+		liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey]
+
+		if !ok {
+			Logger.log.Errorf("Liquidate exchange rates not found")
+			return nil
+		}
+
+		liquidateByTokenID, ok := liquidateExchangeRates.Rates[actionData.TokenID]
+		if !ok {
+			Logger.log.Errorf("Liquidate exchange rates not found")
+			return nil
+		}
+
+		totalPrv := actionData.TotalPTokenReceived
+
+		liquidateExchangeRates.Rates[actionData.TokenID] = lvdb.LiquidateExchangeRatesDetail{
+			HoldAmountFreeCollateral: liquidateByTokenID.HoldAmountFreeCollateral - totalPrv,
+			HoldAmountPubToken: liquidateByTokenID.HoldAmountPubToken - actionData.RedeemAmount,
+		}
+
+		currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey] = liquidateExchangeRates
+
+		redeemKey := lvdb.NewRedeemLiquidateExchangeRatesKey(actionData.TxReqID.String())
+		redeem, _ := NewRedeemLiquidateExchangeRates(
+			actionData.TxReqID,
+			actionData.TokenID,
+			actionData.RedeemerIncAddressStr,
+			actionData.RemoteAddress,
+			actionData.RedeemAmount,
+			actionData.RedeemFee,
+			totalPrv,
+			common.PortalRedeemLiquidateExchangeRatesSuccessStatus,
+			)
+
+		err = db.StoreRedeemLiquidationExchangeRates([]byte(redeemKey), redeem)
+		if err != nil {
+			Logger.log.Errorf("Store redeem liquidate exchange rates error %v\n", err)
+			return nil
+		}
+
+		// update bridge/portal token info
+		incTokenID, err := common.Hash{}.NewHashFromStr(actionData.TokenID)
+		if err != nil {
+			Logger.log.Errorf("ERROR: Can not new hash from porting incTokenID: %+v", err)
+			return nil
+		}
+		updatingInfo, found := updatingInfoByTokenID[*incTokenID]
+		if found {
+			updatingInfo.deductAmt += actionData.RedeemAmount
+		} else {
+			updatingInfo = UpdatingInfo{
+				countUpAmt:      0,
+				deductAmt:       actionData.RedeemAmount,
+				tokenID:         *incTokenID,
+				externalTokenID: nil,
+				isCentralized:   false,
+			}
+		}
+		updatingInfoByTokenID[*incTokenID] = updatingInfo
+	} else if reqStatus == common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus {
+		redeemKey := lvdb.NewRedeemLiquidateExchangeRatesKey(actionData.TxReqID.String())
+		redeem, _ := NewRedeemLiquidateExchangeRates(
+			actionData.TxReqID,
+			actionData.TokenID,
+			actionData.RedeemerIncAddressStr,
+			actionData.RemoteAddress,
+			actionData.RedeemAmount,
+			actionData.RedeemFee,
+			actionData.TotalPTokenReceived,
+			common.PortalRedeemLiquidateExchangeRatesRejectedStatus,
+		)
+
+		err = db.StoreRedeemLiquidationExchangeRates([]byte(redeemKey), redeem)
+		if err != nil {
+			Logger.log.Errorf("Store redeem liquidate exchange rates error %v\n", err)
 			return nil
 		}
 	}

@@ -105,6 +105,17 @@ type LiquidateExchangeRates struct {
 	Rates map[string]LiquidateExchangeRatesDetail //ptoken | detail
 }
 
+type RedeemLiquidateExchangeRates struct {
+	TxReqID               common.Hash
+	TokenID               string
+	RedeemerAddress       string
+	RedeemerRemoteAddress string
+	RedeemAmount          uint64
+	RedeemFee             uint64
+	Status                byte
+	TotalPTokenReceived	  uint64
+}
+
 func NewCustodianWithdrawRequest(txHash string) string {
 	key := append(PortalCustodianWithdrawPrefix, []byte(txHash)...)
 	return string(key)
@@ -672,5 +683,24 @@ func (db *db) TrackPortalReqWithdrawReward(key []byte, value []byte) error {
 	if err != nil {
 		return database.NewDatabaseError(database.StorePortalRewardError, errors.Wrap(err, "db.lvdb.put"))
 	}
+	return nil
+}
+
+func NewRedeemLiquidateExchangeRatesKey(txId string) string {
+	key := append(PortalWaitingRedeemRequestsPrefix, []byte(txId)...)
+	return string(key)
+}
+
+func (db *db) StoreRedeemLiquidationExchangeRates(key []byte, content interface{}) error {
+	contributionBytes, err := json.Marshal(content)
+	if err != nil {
+		return err
+	}
+
+	err = db.Put(key, contributionBytes)
+	if err != nil {
+		return database.NewDatabaseError(database.StoreRedeemLiquidationExchangeRatesError, errors.Wrap(err, "db.lvdb.put"))
+	}
+
 	return nil
 }

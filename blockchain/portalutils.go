@@ -163,6 +163,29 @@ func NewLiquidateExchangeRates(
 	}, nil
 }
 
+func NewRedeemLiquidateExchangeRates(
+	txReqID common.Hash,
+	tokenID string,
+	redeemerAddress string,
+	redeemerRemoteAddress string,
+	redeemAmount uint64,
+	redeemFee uint64,
+	totalPTokenReceived uint64,
+	status byte,
+) (*lvdb.RedeemLiquidateExchangeRates, error) {
+	return &lvdb.RedeemLiquidateExchangeRates{
+		TxReqID:               txReqID,
+		TokenID:               tokenID,
+		RedeemerAddress:       redeemerAddress,
+		RedeemerRemoteAddress: redeemerRemoteAddress,
+		RedeemAmount:          redeemAmount,
+		RedeemFee:             redeemFee,
+		Status:	status,
+		TotalPTokenReceived: totalPTokenReceived,
+	}, nil
+}
+
+
 func InitCurrentPortalStateFromDB(
 	db database.DatabaseInterface,
 	beaconHeight uint64,
@@ -603,13 +626,6 @@ func GetAllPortingRequest(
 	return portingRequest, nil
 }
 
-func getAmountAdaptable(amount uint64, exchangeRate uint64) (uint64, error) {
-	convertPubTokenToPRVFloat64 := (float64(amount) * 1.5) * float64(exchangeRate)
-	convertPubTokenToPRVInt64 := uint64(convertPubTokenToPRVFloat64) // 2.2 -> 2
-
-	return convertPubTokenToPRVInt64, nil
-}
-
 func removeWaitingPortingReqByKey(key string, state *CurrentPortalState) bool {
 	if state.WaitingPortingRequests[key] != nil {
 		delete(state.WaitingPortingRequests, key)
@@ -854,6 +870,20 @@ func down150Percent(amount uint64) uint64 {
 	return uint64(roundNumber)
 }
 
+func upByPercent(amount uint64, percent int) uint64 {
+	result := float64(amount) * (float64(percent) / 100) //return nano pBTC, pBNB
+	roundNumber := math.Round(result)
+	return uint64(roundNumber) //return nano pBTC, pBNB
+}
+
+//todo: need review divide operator
+func calTotalLiquidationByExchangeRates(RedeemAmount uint64, liquidateExchangeRates lvdb.LiquidateExchangeRatesDetail) (uint64, error) {
+	// prv  ------   total token
+	// ?		     amount token
+	totalPrv := liquidateExchangeRates.HoldAmountFreeCollateral * RedeemAmount / liquidateExchangeRates.HoldAmountPubToken
+	return totalPrv, nil
+}
+
 /**
 return (isTP120, isWarning)
 */
@@ -913,7 +943,7 @@ func calculatePercentMinAspectRatio(total1 uint64, total2 uint64) int {
 	return int(roundNumber)
 }
 
-func detectMinAspectRatio(holdPToken map[string]uint64, holdPRV map[string]uint64, finalExchange *lvdb.FinalExchangeRates) (map[string]int, error) {
+func detectTPRatio(holdPToken map[string]uint64, holdPRV map[string]uint64, finalExchange *lvdb.FinalExchangeRates) (map[string]int, error) {
 	result := make(map[string]int)
 	for key, amountPToken := range holdPToken {
 		amountPRV, ok := holdPRV[key]

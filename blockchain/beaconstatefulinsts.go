@@ -48,7 +48,9 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.PortalRequestUnlockCollateralMeta,
 			metadata.PortalLiquidateCustodianMeta,
 			metadata.PortalRequestWithdrawRewardMeta,
-			metadata.PortalRedeemLiquidateExchangeRatesMeta:
+			metadata.PortalRedeemLiquidateExchangeRatesMeta,
+			metadata.PortalLiquidationCustodianDepositMeta,
+			metadata.PortalLiquidationCustodianDepositResponseMeta:
 			statefulInsts = append(statefulInsts, inst)
 		default:
 			continue
@@ -113,6 +115,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	portalReqUnlockCollateralActionsByShardID := map[byte][][]string{}
 	portalReqWithdrawRewardActionsByShardID := map[byte][][]string{}
 	portalRedeemLiquidateExchangeRatesActionByShardID := map[byte][][]string{}
+	portalLiquidationCustodianDepositActionByShardID := map[byte][][]string{}
 
 	// relaying instructions
 	// don't need to be grouped by shardID
@@ -214,7 +217,12 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					action,
 					shardID,
 				)
-
+			case metadata.PortalLiquidationCustodianDepositMeta:
+				portalLiquidationCustodianDepositActionByShardID = groupPortalActionsByShardID(
+					portalLiquidationCustodianDepositActionByShardID,
+					action,
+					shardID,
+				)
 			case metadata.RelayingBNBHeaderMeta:
 				relayingBNBActions = append(relayingBNBActions, action)
 			case metadata.RelayingBTCHeaderMeta:
@@ -259,6 +267,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		portalCustodianWithdrawActionsByShardID,
 		portalReqUnlockCollateralActionsByShardID,
 		portalRedeemLiquidateExchangeRatesActionByShardID,
+		portalLiquidationCustodianDepositActionByShardID,
 	)
 
 	if err != nil {
@@ -494,6 +503,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 	portalCustodianWithdrawActionByShardID map[byte][][]string,
 	portalReqUnlockCollateralActionsByShardID map[byte][][]string,
 	portalRedeemLiquidateExchangeRatesActionByShardID map[byte][][]string,
+	portalLiquidationCustodianDepositActionByShardID map[byte][][]string,
 ) ([][]string, error) {
 	instructions := [][]string{}
 

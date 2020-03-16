@@ -500,6 +500,10 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 				if len(l) >= 4 && l[2] == common.PortalRedeemRequestRejectedChainStatus {
 					newTx, err = blockGenerator.buildPortalRejectedRedeemRequestTx(l[3], producerPrivateKey, shardID)
 				}
+			case metadata.PortalRedeemLiquidateExchangeRatesMeta:
+				if len(l) >= 4 && l[2] == common.PortalRedeemLiquidateExchangeRatesSuccessChainStatus {
+					newTx, err = blockGenerator.buildPortalRedeemLiquidateExchangeRatesRequestTx(l[3], producerPrivateKey, shardID)
+				}
 			case metadata.PortalLiquidateCustodianMeta:
 				if len(l) >= 4 && l[2] == common.PortalLiquidateCustodianSuccessChainStatus {
 					newTx, err = blockGenerator.buildPortalLiquidateCustodianResponseTx(l[3], producerPrivateKey, shardID)
@@ -507,6 +511,10 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 			case metadata.PortalRequestWithdrawRewardMeta:
 				if len(l) >= 4 && l[2] == common.PortalReqWithdrawRewardAcceptedChainStatus {
 					newTx, err = blockGenerator.buildPortalAcceptedWithdrawRewardTx(l[3], producerPrivateKey, shardID)
+				}
+			case metadata.PortalLiquidationCustodianDepositMeta:
+				if len(l) >= 4 && l[2] == common.PortalLiquidationCustodianDepositSuccessChainStatus {
+					newTx, err = blockGenerator.buildPortalLiquidationCustodianDeposit(l[3], producerPrivateKey, shardID)
 				}
 			default:
 				continue
