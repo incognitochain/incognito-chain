@@ -1095,10 +1095,7 @@ func updateFreeCollateralCustodian(custodianState *lvdb.CustodianState, redeemAm
 		custodianState.FreeCollateral += unlockedAmount
 	} else {
 		unlockedAmountInPToken := uint64(math.Floor(float64(redeemAmount) * 1.2))
-		Logger.log.Errorf("updateFreeCollateralCustodian - unlockedAmountInPToken: %v\n", unlockedAmountInPToken)
 		unlockedAmount, err := exchangeRate.ExchangePToken2PRVByTokenId(tokenID, unlockedAmountInPToken)
-
-		Logger.log.Errorf("updateFreeCollateralCustodian - unlockedAmount: %v\n", unlockedAmount)
 
 		if err != nil {
 			Logger.log.Errorf("Convert PToken is error %v", err)
@@ -1174,7 +1171,7 @@ func removeCustodianFromMatchingPortingCustodians(matchingCustodians []*lvdb.Mat
 	return false
 }
 
-func removeCustodianFromMatchingRedeemCustodians(matchingCustodians []*lvdb.MatchingRedeemCustodianDetail, custodianIncAddr string) bool {
+func removeCustodianFromMatchingRedeemCustodians(matchingCustodians []*lvdb.MatchingRedeemCustodianDetail, custodianIncAddr string) ([]*lvdb.MatchingRedeemCustodianDetail, bool) {
 	for i, cus := range matchingCustodians {
 		if cus.IncAddress == custodianIncAddr {
 			if i == len(matchingCustodians)-1 {
@@ -1182,9 +1179,9 @@ func removeCustodianFromMatchingRedeemCustodians(matchingCustodians []*lvdb.Matc
 			} else {
 				matchingCustodians = append(matchingCustodians[:i], matchingCustodians[i+1:]...)
 			}
-			return true
+			return matchingCustodians, true
 		}
 	}
 
-	return false
+	return matchingCustodians, false
 }

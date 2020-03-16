@@ -174,11 +174,11 @@ type PortalRewardInfo struct {
 	Amount           uint64
 }
 
-func PlusPortalReward(rewards []*PortalRewardInfo, custodianIncAddr string, amount uint64) {
+func PlusPortalReward(rewards []*PortalRewardInfo, custodianIncAddr string, amount uint64) []*PortalRewardInfo {
 	found := false
-	for _, rewardInfo := range rewards {
+	for i, rewardInfo := range rewards {
 		if rewardInfo.CustodianIncAddr == custodianIncAddr {
-			rewardInfo.Amount += amount
+			rewards[i].Amount += amount
 			found = true
 			break
 		}
@@ -192,6 +192,8 @@ func PlusPortalReward(rewards []*PortalRewardInfo, custodianIncAddr string, amou
 				Amount:           amount,
 			})
 	}
+
+	return rewards
 }
 
 func MinusPortalReward(rewards []*PortalRewardInfo, custodianIncAddr string, amount uint64) {
