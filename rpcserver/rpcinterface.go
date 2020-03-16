@@ -81,6 +81,7 @@ var HttpHandler = map[string]httpHandler{
 	getAndSendTxsFromFile:   (*HttpServer).handleGetAndSendTxsFromFile,
 	getAndSendTxsFromFileV2: (*HttpServer).handleGetAndSendTxsFromFileV2,
 	unlockMempool:           (*HttpServer).handleUnlockMempool,
+	getAutoStakingByHeight:  (*HttpServer).handleGetAutoStakingByHeight,
 	//=================================
 
 	// Beststate
@@ -171,8 +172,8 @@ var HttpHandler = map[string]httpHandler{
 	getBurningAddress: (*HttpServer).handleGetBurningAddress,
 
 	// incognnito mode for sc
-	getBurnProofForDepositToSC:             (*HttpServer).handleGetBurnProofForDepositToSC,
-	createAndSendBurningForDepositToSCRequest:      (*HttpServer).handleCreateAndSendBurningForDepositToSCRequest,
+	getBurnProofForDepositToSC:                (*HttpServer).handleGetBurnProofForDepositToSC,
+	createAndSendBurningForDepositToSCRequest: (*HttpServer).handleCreateAndSendBurningForDepositToSCRequest,
 }
 
 // Commands that are available to a limited user

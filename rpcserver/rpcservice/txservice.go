@@ -747,9 +747,7 @@ func (txService TxService) GetListPrivacyCustomTokenBalance(privateKey string) (
 		Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
 		return jsonresult.ListCustomTokenBalance{}, NewRPCError(GetListPrivacyCustomTokenBalanceError, err)
 	}
-	tokenIDs := make(map[common.Hash]interface{})
 	for tokenID, tokenState := range tokenStates {
-		tokenIDs[tokenID] = 0
 		item := jsonresult.CustomTokenBalance{}
 		item.Name = tokenState.PropertyName()
 		item.Symbol = tokenState.PropertySymbol()
@@ -783,7 +781,10 @@ func (txService TxService) GetListPrivacyCustomTokenBalance(privateKey string) (
 		return jsonresult.ListCustomTokenBalance{}, NewRPCError(GetListPrivacyCustomTokenBalanceError, err)
 	}
 	for _, bridgeToken := range allBridgeTokens {
-		if _, ok := tokenIDs[*bridgeToken.TokenID]; ok {
+		bridgeTokenID := bridgeToken.TokenID.String()
+		if tokenInfo, ok := resultM[bridgeTokenID]; ok {
+			tokenInfo.IsBridgeToken = true
+			resultM[bridgeTokenID] = tokenInfo
 			continue
 		}
 		item := jsonresult.CustomTokenBalance{}

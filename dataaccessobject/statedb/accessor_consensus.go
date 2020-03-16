@@ -27,7 +27,17 @@ func storeCommittee(stateDB *StateDB, shardID int, role int, committees []incogn
 		if !ok {
 			return fmt.Errorf("auto staking of %+v not found", committeeString)
 		}
-		value := NewCommitteeStateWithValueAndTime(shardID, role, committee, rewardReceiverPaymentAddress, autoStakingValue, enterTime)
+		value := NewCommitteeState()
+		has := false
+		value, has, err = stateDB.getCommitteeState(key)
+		if err != nil {
+			return err
+		}
+		if has {
+			value.SetAutoStaking(autoStakingValue)
+		} else {
+			value = NewCommitteeStateWithValueAndTime(shardID, role, committee, rewardReceiverPaymentAddress, autoStakingValue, enterTime)
+		}
 		err = stateDB.SetStateObject(CommitteeObjectType, key, value)
 		if err != nil {
 			return err
@@ -253,7 +263,7 @@ func deleteCommittee(stateDB *StateDB, shardID int, role int, committees []incog
 		if err != nil {
 			return err
 		}
-		stateDB.MarkDeleteStateObject(CommitmentObjectType, key)
+		stateDB.MarkDeleteStateObject(CommitteeObjectType, key)
 	}
 	return nil
 }

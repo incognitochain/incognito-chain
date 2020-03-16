@@ -22,6 +22,7 @@ type committeeChange struct {
 	beaconSubstituteRemoved            []incognitokey.CommitteePublicKey
 	beaconCommitteeAdded               []incognitokey.CommitteePublicKey
 	beaconCommitteeRemoved             []incognitokey.CommitteePublicKey
+	stopAutoStaking                    []string
 }
 
 func newCommitteeChange() *committeeChange {
