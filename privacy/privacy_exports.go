@@ -79,11 +79,6 @@ func HybridDecrypt(ciphertext *HybridCipherText, privateKey *operation.Scalar) (
 	return hybridencryption.HybridDecrypt(ciphertext, privateKey)
 }
 
-type Coin = coin.Coin
-type InputCoin = coin.InputCoin
-type CoinObject = coin.CoinObject
-type OutputCoin = coin.OutputCoin
-
 type PublicKey = key.PublicKey
 type ViewingKey = key.ViewingKey
 type PrivateKey = key.PrivateKey
@@ -114,3 +109,10 @@ func RandBytes(length int) []byte {
 type SchnSignature = schnorr.SchnSignature
 type SchnorrPublicKey = schnorr.SchnorrPublicKey
 type SchnorrPrivateKey = schnorr.SchnorrPrivateKey
+
+type Coin = coin.Coin
+type CoinV1 = coin.CoinV1
+type CoinV2 = coin.CoinV1
+type InputCoin = coin.InputCoin
+type OutputCoin = coin.OutputCoin
+type CoinObject = coin.CoinObject

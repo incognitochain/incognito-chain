@@ -16,6 +16,7 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/utils"
 )
 
+// Version1 uses this
 // ConvertOutputCoinToInputCoin - convert output coin from old tx to input coin for new tx
 func ConvertOutputCoinToInputCoin(usableOutputsOfOld []*privacy.OutputCoin) []*privacy.InputCoin {
 	var inputCoins []*privacy.InputCoin

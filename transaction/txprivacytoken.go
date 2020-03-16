@@ -162,7 +162,7 @@ func (tx TxCustomTokenPrivacy) GetTxPrivacyTokenActualSize() uint64 {
 type TxPrivacyTokenInitParams struct {
 	senderKey       *privacy.PrivateKey
 	paymentInfo     []*privacy.PaymentInfo
-	inputCoin       []*privacy.InputCoin
+	inputCoin       []*privacy.Coin
 	feeNativeCoin   uint64
 	tokenParams     *CustomTokenPrivacyParamTx
 	db              database.DatabaseInterface
@@ -175,7 +175,7 @@ type TxPrivacyTokenInitParams struct {
 
 func NewTxPrivacyTokenInitParams(senderKey *privacy.PrivateKey,
 	paymentInfo []*privacy.PaymentInfo,
-	inputCoin []*privacy.InputCoin,
+	inputCoin []*privacy.Coin,
 	feeNativeCoin uint64,
 	tokenParams *CustomTokenPrivacyParamTx,
 	db database.DatabaseInterface,
@@ -184,6 +184,7 @@ func NewTxPrivacyTokenInitParams(senderKey *privacy.PrivateKey,
 	hasPrivacyToken bool,
 	shardID byte,
 	info []byte) *TxPrivacyTokenInitParams {
+
 	params := &TxPrivacyTokenInitParams{
 		shardID:         shardID,
 		paymentInfo:     paymentInfo,
@@ -251,7 +252,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 			temp.Proof = new(zkp.PaymentProof)
 			tempOutputCoin := make([]*privacy.OutputCoin, 1)
 			tempOutputCoin[0] = new(privacy.OutputCoin)
-			tempOutputCoin[0].CoinDetails = new(privacy.Coin)
+			tempOutputCoin[0].CoinDetails = new(privacy.CoinV1)
 			tempOutputCoin[0].CoinDetails.SetValue(params.tokenParams.Amount)
 			PK, err := new(privacy.Point).FromBytesS(params.tokenParams.Receiver[0].PaymentAddress.Pk)
 			if err != nil {
@@ -847,7 +848,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 			temp.Proof = new(zkp.PaymentProof)
 			tempOutputCoin := make([]*privacy.OutputCoin, 1)
 			tempOutputCoin[0] = new(privacy.OutputCoin)
-			tempOutputCoin[0].CoinDetails = new(privacy.Coin)
+			tempOutputCoin[0].CoinDetails = new(privacy.CoinV1)
 			tempOutputCoin[0].CoinDetails.SetValue(params.txParam.tokenParams.Amount)
 			PK, err := new(privacy.Point).FromBytesS(params.txParam.tokenParams.Receiver[0].PaymentAddress.Pk)
 			if err != nil {

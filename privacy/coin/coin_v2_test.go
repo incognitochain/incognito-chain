@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func getRandomCoinV2() *Coin_v2 {
-	c := new(Coin_v2)
+func getRandomCoinV2() *CoinV2 {
+	c := new(CoinV2)
 
 	c.version = uint8(2)
 	c.mask = operation.RandomScalar()
@@ -25,7 +25,7 @@ func TestCoinV2BytesAndSetBytes(t *testing.T) {
 	for i := 0; i < 5; i += 1 {
 		coin := getRandomCoinV2()
 		b := coin.Bytes()
-		coinByBytes := new(Coin_v2)
+		coinByBytes := new(CoinV2)
 		err := coinByBytes.SetBytes(b)
 		assert.Equal(t, nil, err, "Set Bytes should not have any error")
 		assert.Equal(t, coin.version, coinByBytes.version, "FromBytes then SetBytes should be equal")

@@ -89,7 +89,7 @@ func parseOutputCoins(params *TxPrivacyInitParams) (*[]*privacy.OutputCoin, erro
 	outputCoins := make([]*privacy.OutputCoin, len(params.paymentInfo))
 	for i, pInfo := range params.paymentInfo {
 		outputCoins[i] = new(privacy.OutputCoin)
-		outputCoins[i].CoinDetails = new(privacy.Coin)
+		outputCoins[i].CoinDetails = new(privacy.CoinV1)
 		outputCoins[i].CoinDetails.SetValue(pInfo.Amount)
 		if len(pInfo.Message) > 0 {
 			if len(pInfo.Message) > privacy.MaxSizeInfoCoin {

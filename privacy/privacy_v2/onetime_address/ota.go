@@ -10,11 +10,11 @@ import (
 )
 
 // Create output of utxos and sum of blind values for later usage
-func CreateOutputs(addressesPointer *[]address.PublicAddress, moneyPointer *[]uint64) (*[]coin.Coin_v2, *operation.Scalar, error) {
+func CreateOutputs(addressesPointer *[]address.PublicAddress, moneyPointer *[]uint64) (*[]coin.CoinV2, *operation.Scalar, error) {
 	addr := *addressesPointer
 	money := *moneyPointer
 
-	result := make([]coin.Coin_v2, len(addr))
+	result := make([]coin.CoinV2, len(addr))
 	if len(addr) > privacy_util.MaxOutputCoin {
 		return nil, nil, errors.New("Error in tx_full CreateOutputs: Cannot create too much output (maximum is 256)")
 	}
@@ -38,7 +38,7 @@ func CreateOutputs(addressesPointer *[]address.PublicAddress, moneyPointer *[]ui
 }
 
 // Check whether the utxo is from this address
-func IsCoinOfAddress(addr *address.PrivateAddress, utxo *coin.Coin_v2) bool {
+func IsCoinOfAddress(addr *address.PrivateAddress, utxo *coin.CoinV2) bool {
 	rK := new(operation.Point).ScalarMult(utxo.GetTxRandom(), addr.GetPrivateView())
 
 	hashed := operation.HashToScalar(

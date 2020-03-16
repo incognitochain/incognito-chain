@@ -15,7 +15,7 @@ import (
 
 func TestCoinV1CommitAll(t *testing.T) {
 	for i := 0; i < 10; i++ {
-		coin := new(Coin_v1).Init()
+		coin := new(CoinV1).Init()
 		seedKey := operation.RandomScalar().ToBytesS()
 		privateKey := key.GeneratePrivateKey(seedKey)
 		publicKey := key.GeneratePublicKey(privateKey)
@@ -45,7 +45,7 @@ func TestCoinV1CommitAll(t *testing.T) {
 func TestCoinMarshalJSON(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
-		coin := new(Coin_v1).Init()
+		coin := new(CoinV1).Init()
 		seedKey := operation.RandomScalar().ToBytesS()
 		privateKey := key.GeneratePrivateKey(seedKey)
 		publicKey := key.GeneratePublicKey(privateKey)
@@ -62,7 +62,7 @@ func TestCoinMarshalJSON(t *testing.T) {
 		bytesJSON, err := coin.MarshalJSON()
 		assert.Equal(t, nil, err)
 
-		coin2 := new(Coin_v1)
+		coin2 := new(CoinV1)
 		err2 := coin2.UnmarshalJSON(bytesJSON)
 		assert.Equal(t, nil, err2)
 		assert.Equal(t, coin, coin2)
@@ -76,7 +76,7 @@ func TestCoinMarshalJSON(t *testing.T) {
 func TestCoinBytesSetBytes(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
-		coin := new(Coin_v1).Init()
+		coin := new(CoinV1).Init()
 		seedKey := operation.RandomScalar().ToBytesS()
 		privateKey := key.GeneratePrivateKey(seedKey)
 		publicKey := key.GeneratePublicKey(privateKey)
@@ -96,7 +96,7 @@ func TestCoinBytesSetBytes(t *testing.T) {
 		assert.Greater(t, len(coinBytes), 0)
 
 		// new coin object and set bytes from bytes array
-		coin2 := new(Coin_v1)
+		coin2 := new(CoinV1)
 		err := coin2.SetBytes(coinBytes)
 
 		assert.Equal(t, nil, err)
@@ -106,7 +106,7 @@ func TestCoinBytesSetBytes(t *testing.T) {
 
 func TestCoinBytesSetBytesWithMissingFields(t *testing.T) {
 	for i := 0; i < 10; i++ {
-		coin := new(Coin_v1).Init()
+		coin := new(CoinV1).Init()
 		seedKey := operation.RandomScalar().ToBytesS()
 		privateKey := key.GeneratePrivateKey(seedKey)
 		publicKey := key.GeneratePublicKey(privateKey)
@@ -126,7 +126,7 @@ func TestCoinBytesSetBytesWithMissingFields(t *testing.T) {
 		assert.Greater(t, len(coinBytes), 0)
 
 		// new coin object and set bytes from bytes array
-		coin2 := new(Coin_v1).Init()
+		coin2 := new(CoinV1).Init()
 		err := coin2.SetBytes(coinBytes)
 
 		assert.Equal(t, nil, err)
@@ -137,7 +137,7 @@ func TestCoinBytesSetBytesWithMissingFields(t *testing.T) {
 func TestCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
 	// init coin with fully fields
 	// init public key
-	coin := new(Coin_v1).Init()
+	coin := new(CoinV1).Init()
 	seedKey := operation.RandomScalar().ToBytesS()
 	privateKey := key.GeneratePrivateKey(seedKey)
 	publicKey := key.GeneratePublicKey(privateKey)
@@ -159,7 +159,7 @@ func TestCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
 	coinBytes[len(coinBytes)-2] = byte(12)
 
 	// new coin object and set bytes from bytes array
-	coin2 := new(Coin_v1).Init()
+	coin2 := new(CoinV1).Init()
 	err := coin2.SetBytes(coinBytes)
 
 	assert.Equal(t, nil, err)
@@ -168,7 +168,7 @@ func TestCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
 
 func TestCoinBytesSetBytesWithEmptyBytes(t *testing.T) {
 	// new coin object and set bytes from bytes array
-	coin2 := new(Coin_v1).Init()
+	coin2 := new(CoinV1).Init()
 	err := coin2.SetBytes([]byte{})
 
 	assert.Equal(t, errors.New("coinBytes is empty"), err)

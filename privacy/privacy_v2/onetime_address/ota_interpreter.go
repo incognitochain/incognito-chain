@@ -8,7 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 )
 
-func ParseUtxoPrivatekey(addr *address.PrivateAddress, utxo *coin.Coin_v2) *operation.Scalar {
+func ParseUtxoPrivatekey(addr *address.PrivateAddress, utxo *coin.CoinV2) *operation.Scalar {
 	rK := new(operation.Point).ScalarMult(utxo.GetTxRandom(), addr.GetPrivateView())
 	hashed := operation.HashToScalar(
 		append(rK.ToBytesS(), utxo.GetIndex()),
@@ -49,7 +49,7 @@ func parseMoneyToCreateOutput(blind *operation.Scalar, cachedHash *operation.Sca
 }
 
 // Get Mask and Amount from UTXO if we have privateAddress
-func ParseBlindAndMoneyFromUtxo(addr *address.PrivateAddress, utxo *coin.Coin_v2) (blind *operation.Scalar, money *operation.Scalar, err error) {
+func ParseBlindAndMoneyFromUtxo(addr *address.PrivateAddress, utxo *coin.CoinV2) (blind *operation.Scalar, money *operation.Scalar, err error) {
 	if IsCoinOfAddress(addr, utxo) == false {
 		return nil, nil, errors.New("Error in ota_interpreter ParseBlindAndMoneyFromUtxo: utxo is not from this address")
 	}

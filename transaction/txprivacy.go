@@ -69,7 +69,7 @@ func (tx *Tx) UnmarshalJSON(data []byte) error {
 type TxPrivacyInitParams struct {
 	senderSK    *privacy.PrivateKey
 	paymentInfo []*privacy.PaymentInfo
-	inputCoins  []*privacy.InputCoin
+	inputCoins  []*privacy.Coin
 	fee         uint64
 	hasPrivacy  bool
 	db          database.DatabaseInterface
@@ -80,7 +80,7 @@ type TxPrivacyInitParams struct {
 
 func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
 	paymentInfo []*privacy.PaymentInfo,
-	inputCoins []*privacy.InputCoin,
+	inputCoins []*privacy.Coin,
 	fee uint64,
 	hasPrivacy bool,
 	db database.DatabaseInterface,
@@ -160,7 +160,7 @@ func updateParamsWhenOverBalance(params *TxPrivacyInitParams) error {
 	// Calculate sum of all input coins' value
 	sumInputValue := uint64(0)
 	for _, coin := range params.inputCoins {
-		sumInputValue += coin.CoinDetails.GetValue()
+		sumInputValue += coin.GetCoinValue(params.senderSK)
 	}
 	Logger.log.Debugf("sumInputValue: %d\n", sumInputValue)
 

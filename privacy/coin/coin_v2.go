@@ -4,12 +4,13 @@ import (
 	"errors"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 )
 
-type Coin_v2 struct {
+type CoinV2 struct {
 	// Version should be described here as a reminder
-	// SetBytes and FromBytes of coin_v1 and coin_v2 will use this first byte as version
+	// SetBytes and FromBytes of CoinV1 and CoinV2 will use this first byte as version
 	version    uint8
 	mask       *operation.Scalar
 	amount     *operation.Scalar
@@ -20,34 +21,34 @@ type Coin_v2 struct {
 	info       []byte //256 bytes
 }
 
-func (this Coin_v2) GetVersion() uint8               { return 2 }
-func (this Coin_v2) GetMask() *operation.Scalar      { return this.mask }
-func (this Coin_v2) GetAmount() *operation.Scalar    { return this.amount }
-func (this Coin_v2) GetTxRandom() *operation.Point   { return this.txRandom }
-func (this Coin_v2) GetPublicKey() *operation.Point  { return this.publicKey }
-func (this Coin_v2) GetCommitment() *operation.Point { return this.commitment }
-func (this Coin_v2) GetIndex() uint8                 { return this.index }
-func (this Coin_v2) GetInfo() []byte                 { return this.info }
+func (this CoinV2) GetVersion() uint8               { return 2 }
+func (this CoinV2) GetMask() *operation.Scalar      { return this.mask }
+func (this CoinV2) GetAmount() *operation.Scalar    { return this.amount }
+func (this CoinV2) GetTxRandom() *operation.Point   { return this.txRandom }
+func (this CoinV2) GetPublicKey() *operation.Point  { return this.publicKey }
+func (this CoinV2) GetCommitment() *operation.Point { return this.commitment }
+func (this CoinV2) GetIndex() uint8                 { return this.index }
+func (this CoinV2) GetInfo() []byte                 { return this.info }
 
-func (this *Coin_v2) SetVersion()                               { this.version = 2 }
-func (this *Coin_v2) SetMask(mask *operation.Scalar)            { this.mask.Set(mask) }
-func (this *Coin_v2) SetAmount(amount *operation.Scalar)        { this.amount.Set(amount) }
-func (this *Coin_v2) SetTxRandom(txRandom *operation.Point)     { this.txRandom.Set(txRandom) }
-func (this *Coin_v2) SetPublicKey(publicKey *operation.Point)   { this.publicKey.Set(publicKey) }
-func (this *Coin_v2) SetCommitment(commitment *operation.Point) { this.commitment.Set(commitment) }
-func (this *Coin_v2) SetIndex(index uint8)                      { this.index = index }
+func (this *CoinV2) SetVersion()                               { this.version = 2 }
+func (this *CoinV2) SetMask(mask *operation.Scalar)            { this.mask.Set(mask) }
+func (this *CoinV2) SetAmount(amount *operation.Scalar)        { this.amount.Set(amount) }
+func (this *CoinV2) SetTxRandom(txRandom *operation.Point)     { this.txRandom.Set(txRandom) }
+func (this *CoinV2) SetPublicKey(publicKey *operation.Point)   { this.publicKey.Set(publicKey) }
+func (this *CoinV2) SetCommitment(commitment *operation.Point) { this.commitment.Set(commitment) }
+func (this *CoinV2) SetIndex(index uint8)                      { this.index = index }
 
-func (this *Coin_v2) SetInfo(b []byte) error {
+func (this *CoinV2) SetInfo(b []byte) error {
 	if len(b) > MaxSizeInfoCoin {
-		return errors.New("Cannot set info to coin_v2, info is longer than 255")
+		return errors.New("Cannot set info to CoinV2, info is longer than 255")
 	}
 	this.info = make([]byte, len(b))
 	copy(this.info, b)
 	return nil
 }
 
-func NewCoinv2(mask *operation.Scalar, amount *operation.Scalar, txRandom *operation.Point, publicKey *operation.Point, commitment *operation.Point, index uint8, info []byte) *Coin_v2 {
-	return &Coin_v2{
+func NewCoinv2(mask *operation.Scalar, amount *operation.Scalar, txRandom *operation.Point, publicKey *operation.Point, commitment *operation.Point, index uint8, info []byte) *CoinV2 {
+	return &CoinV2{
 		2,
 		mask,
 		amount,
@@ -60,9 +61,9 @@ func NewCoinv2(mask *operation.Scalar, amount *operation.Scalar, txRandom *opera
 }
 
 // Init (Coin) initializes a coin
-func (this *Coin_v2) Init() *Coin_v2 {
+func (this *CoinV2) Init() *CoinV2 {
 	if this == nil {
-		this = new(Coin_v2)
+		this = new(CoinV2)
 	}
 	this.version = uint8(2)
 	this.mask = new(operation.Scalar).FromUint64(0)
@@ -77,7 +78,7 @@ func (this *Coin_v2) Init() *Coin_v2 {
 
 // Bytes converts a coin's details to a bytes array
 // Each fields in coin is saved in len - body format
-func (this *Coin_v2) Bytes() []byte {
+func (this *CoinV2) Bytes() []byte {
 	var coinBytes []byte
 	coinBytes = append(coinBytes, this.GetVersion())
 
@@ -124,7 +125,7 @@ func (this *Coin_v2) Bytes() []byte {
 	return coinBytes
 }
 
-func (this *Coin_v2) SetBytes(coinBytes []byte) error {
+func (this *CoinV2) SetBytes(coinBytes []byte) error {
 	if len(coinBytes) == 0 {
 		return errors.New("coinBytes is empty")
 	}
@@ -133,7 +134,7 @@ func (this *Coin_v2) SetBytes(coinBytes []byte) error {
 	}
 
 	if this == nil {
-		this = new(Coin_v2)
+		this = new(CoinV2)
 	}
 	var err error
 
@@ -141,23 +142,23 @@ func (this *Coin_v2) SetBytes(coinBytes []byte) error {
 	offset := 1
 	this.mask, err = parseScalarForSetBytes(&coinBytes, &offset)
 	if err != nil {
-		return errors.New("SetBytes coin_v2 mask error: " + err.Error())
+		return errors.New("SetBytes CoinV2 mask error: " + err.Error())
 	}
 	this.amount, err = parseScalarForSetBytes(&coinBytes, &offset)
 	if err != nil {
-		return errors.New("SetBytes coin_v2 amount error: " + err.Error())
+		return errors.New("SetBytes CoinV2 amount error: " + err.Error())
 	}
 	this.txRandom, err = parsePointForSetBytes(&coinBytes, &offset)
 	if err != nil {
-		return errors.New("SetBytes coin_v2 txRandom error: " + err.Error())
+		return errors.New("SetBytes CoinV2 txRandom error: " + err.Error())
 	}
 	this.publicKey, err = parsePointForSetBytes(&coinBytes, &offset)
 	if err != nil {
-		return errors.New("SetBytes coin_v2 publicKey error: " + err.Error())
+		return errors.New("SetBytes CoinV2 publicKey error: " + err.Error())
 	}
 	this.commitment, err = parsePointForSetBytes(&coinBytes, &offset)
 	if err != nil {
-		return errors.New("SetBytes coin_v2 commitment error: " + err.Error())
+		return errors.New("SetBytes CoinV2 commitment error: " + err.Error())
 	}
 
 	if offset >= len(coinBytes) {
@@ -167,14 +168,19 @@ func (this *Coin_v2) SetBytes(coinBytes []byte) error {
 	offset++
 	this.info, err = parseInfoForSetBytes(&coinBytes, &offset)
 	if err != nil {
-		return errors.New("SetBytes coin_v2 info error: " + err.Error())
+		return errors.New("SetBytes CoinV2 info error: " + err.Error())
 	}
 
 	return nil
 }
 
 // HashH returns the SHA3-256 hashing of coin bytes array
-func (this *Coin_v2) HashH() *common.Hash {
+func (this *CoinV2) HashH() *common.Hash {
 	hash := common.HashH(this.Bytes())
 	return &hash
+}
+
+func (coin *CoinV2) GetCoinValue(privateKey *key.PrivateKey) uint64 {
+	// PRIVACY TODO
+	return 0
 }
