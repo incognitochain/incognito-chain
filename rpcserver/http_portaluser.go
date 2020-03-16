@@ -59,7 +59,7 @@ func (httpServer *HttpServer) handleRegisterPortingPublicTokens(params interface
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Get Beacon best block fail"))
 	}
 
-	//todo: get data at share maybe not exactly
+	//check exchange rates exist
 	finalExchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconBlock.GetHeight())
 	finalExchangeRates, err := blockchain.GetFinalExchangeRatesByKey(*httpServer.config.Database, []byte(finalExchangeRatesKey))
 

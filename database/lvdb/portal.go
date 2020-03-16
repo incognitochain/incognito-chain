@@ -116,6 +116,15 @@ type RedeemLiquidateExchangeRates struct {
 	TotalPTokenReceived	  uint64
 }
 
+type LiquidationCustodianDeposit struct {
+	TxReqID common.Hash
+	IncogAddressStr string
+	PTokenId string
+	DepositAmount uint64
+	FreeCollateralSelected bool
+	Status byte
+}
+
 func NewCustodianWithdrawRequest(txHash string) string {
 	key := append(PortalCustodianWithdrawPrefix, []byte(txHash)...)
 	return string(key)
@@ -698,6 +707,25 @@ func (db *db) StoreRedeemLiquidationExchangeRates(key []byte, content interface{
 	err = db.Put(key, contributionBytes)
 	if err != nil {
 		return database.NewDatabaseError(database.StoreRedeemLiquidationExchangeRatesError, errors.Wrap(err, "db.lvdb.put"))
+	}
+
+	return nil
+}
+
+func NewLiquidationCustodianDepositKey(txID string) string  {
+	key := append(PortalCustodianDepositPrefix, []byte(txID)...)
+	return string(key)
+}
+
+func (db *db) StoredLiquidationCustodianDeposit(key []byte, content interface{}) error {
+	contributionBytes, err := json.Marshal(content)
+	if err != nil {
+		return err
+	}
+
+	err = db.Put(key, contributionBytes)
+	if err != nil {
+		return database.NewDatabaseError(database.StoreLiquidationCustodianDepositError, errors.Wrap(err, "db.lvdb.put"))
 	}
 
 	return nil

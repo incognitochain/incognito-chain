@@ -129,6 +129,7 @@ const (
 	StoreLiquidateTopPercentileExchangeRatesError
 	StoreLiquidateExchangeRatesError
 	StoreRedeemLiquidationExchangeRatesError
+	StoreLiquidationCustodianDepositError
 
 	StorePortalRewardError
 
@@ -264,6 +265,7 @@ var ErrCodeMessage = map[int]struct {
 	StoreLiquidateTopPercentileExchangeRatesError: {-14021, "Store liquidate top percentile exchange rates error"},
 	StoreLiquidateExchangeRatesError: {-14022, "Store liquidate exchange rates error"},
 	StoreRedeemLiquidationExchangeRatesError: {-14023, "Store redeem liquidation exchange rates error"},
+	StoreLiquidationCustodianDepositError: {-14024, "Store liquidation custodian deposit error"},
 
 	// relaying
 	StoreRelayingBNBHeaderError: {-15001, "Store relaying header bnb error"},

@@ -185,6 +185,24 @@ func NewRedeemLiquidateExchangeRates(
 	}, nil
 }
 
+func NewLiquidationCustodianDeposit(
+	txReqID common.Hash,
+	tokenID string,
+	incogAddressStr string,
+	depositAmount uint64,
+	freeCollateralSelected bool,
+	status byte,
+) (*lvdb.LiquidationCustodianDeposit, error) {
+	return &lvdb.LiquidationCustodianDeposit{
+		TxReqID: txReqID,
+		IncogAddressStr: incogAddressStr,
+		PTokenId: tokenID,
+		DepositAmount: depositAmount,
+		FreeCollateralSelected: freeCollateralSelected,
+		Status:	status,
+	}, nil
+}
+
 
 func InitCurrentPortalStateFromDB(
 	db database.DatabaseInterface,
@@ -750,7 +768,7 @@ func pickMultipleCustodian(metadata metadata.PortalUserRegister, exchangeRate *l
 		}
 
 		totalPTokenAfterUp150PercentUnit64 := up150Percent(pTokenCanUseUint64)
-		totalPRV, err := exchangeRate.ExchangePToken2PRVByTokenId(metadata.PTokenId, totalPTokenAfterUp150PercentUnit64) //final
+		totalPRV, err := exchangeRate.ExchangePToken2PRVByTokenId(metadata.PTokenId, totalPTokenAfterUp150PercentUnit64)
 
 		if err != nil {
 			Logger.log.Errorf("Convert PToken is error %v", err)
@@ -876,17 +894,18 @@ func upByPercent(amount uint64, percent int) uint64 {
 	return uint64(roundNumber) //return nano pBTC, pBNB
 }
 
-//todo: need review divide operator
+
 func calTotalLiquidationByExchangeRates(RedeemAmount uint64, liquidateExchangeRates lvdb.LiquidateExchangeRatesDetail) (uint64, error) {
+	//todo: need review divide operator
+
 	// prv  ------   total token
 	// ?		     amount token
 	totalPrv := liquidateExchangeRates.HoldAmountFreeCollateral * RedeemAmount / liquidateExchangeRates.HoldAmountPubToken
 	return totalPrv, nil
 }
 
-/**
-return (isTP120, isWarning)
-*/
+
+//check value is tp120 or tp130
 func IsTP120(tpValue int) (bool, bool) {
 	if tpValue > common.TP120 && tpValue <= common.TP130 {
 		return false, true
@@ -896,10 +915,12 @@ func IsTP120(tpValue int) (bool, bool) {
 		return true, true
 	}
 
+	//not found
 	return false, false
 }
 
-func GetLiquidateExchangeRatesChange(custodian *lvdb.CustodianState, tpList map[string]int) (map[string]lvdb.LiquidateTopPercentileExchangeRatesDetail, error) {
+//filter TP for ptoken each custodian
+func filterTopPercentileLiquidation(custodian *lvdb.CustodianState, tpList map[string]int) (map[string]lvdb.LiquidateTopPercentileExchangeRatesDetail, error) {
 	if custodian == nil {
 		return nil, errors.New("Custodian not found")
 	}
@@ -926,16 +947,12 @@ func GetLiquidateExchangeRatesChange(custodian *lvdb.CustodianState, tpList map[
 	return liquidateExchangeRatesList, nil
 }
 
-/*
-total1: total ptoken was converted ex: 1BNB = 1000 PRV
-total2: total prv (was up 150%)
 
-1500 ------ ?
-1000 ------ 100%
-
-=> 1500 * 100 / 1000 = 150%
-
-*/
+// total1: total ptoken was converted ex: 1BNB = 1000 PRV
+// total2: total prv (was up 150%)
+// 1500 ------ ?
+//1000 ------ 100%
+// => 1500 * 100 / 1000 = 150%
 func calculatePercentMinAspectRatio(total1 uint64, total2 uint64) int {
 	//todo: divide zero
 	percentUp := total2 * 100 / total1
@@ -943,6 +960,7 @@ func calculatePercentMinAspectRatio(total1 uint64, total2 uint64) int {
 	return int(roundNumber)
 }
 
+//detect tp by hold ptoken and hold prv each custodian
 func detectTPRatio(holdPToken map[string]uint64, holdPRV map[string]uint64, finalExchange *lvdb.FinalExchangeRates) (map[string]int, error) {
 	result := make(map[string]int)
 	for key, amountPToken := range holdPToken {
