@@ -103,40 +103,26 @@ func (blockchain *BlockChain) DeleteBeaconBlockByView(view common.Hash) error {
 	return rawdbv2.DeleteBeaconBlockByView(blockchain.GetDatabase(), view)
 }
 
-func (blockchain *BlockChain) GetBeaconBlockByHeightAndView(height uint64, view common.Hash) (*BeaconBlock, error) {
-	finalBeaconBlock, finalHeight, err := blockchain.GetFinalizedBeaconBlock()
-	if err != nil {
-		return nil, err
+func (blockchain *BlockChain) GetBeaconBlockByHeightAndView(height uint64, viewHash common.Hash) (*BeaconBlock, error) {
+	finalView := blockchain.BeaconChain.GetFinalView()
+
+	if height == finalView.GetHeight() {
+		return finalView.GetBlock().(*BeaconBlock), nil
 	}
-	if height == finalHeight {
-		return finalBeaconBlock, nil
-	}
-	if height < finalHeight {
+	if height < finalView.GetHeight() {
 		beaconBlocks, err := blockchain.GetBeaconBlockByHeight(height)
 		if err != nil {
 			return nil, err
 		}
 		return beaconBlocks[0], nil
 	}
-	if height > finalHeight {
-		beaconBlockIndexes, err := rawdbv2.GetBeaconBlockByView(blockchain.GetDatabase(), view)
-		if err != nil {
-			return nil, err
-		}
-		if blockHash, ok := beaconBlockIndexes[height]; !ok {
-			return nil, fmt.Errorf("Beacon, Block Height %+v, View %+v, not found", height, view)
-		} else {
-			beaconBlock, beaconHeight, err := blockchain.GetBeaconBlockByHash(blockHash)
-			if err != nil {
-				return nil, err
-			}
-			if beaconHeight != height {
-				return nil, fmt.Errorf("Beacon, Block Height %+v, View %+v, not found", height, view)
-			}
-			return beaconBlock, nil
+	if height > finalView.GetHeight() {
+		view := blockchain.BeaconChain.GetViewByHash(viewHash)
+		if view != nil {
+			return view.GetBlock().(*BeaconBlock), nil
 		}
 	}
-	return nil, fmt.Errorf("Beacon, Block Height %+v, View %+v, not found", height, view)
+	return nil, fmt.Errorf("Beacon, Block Height %+v, View %+v, not found", height, viewHash)
 }
 
 func (blockchain *BlockChain) GetBlockHeightByBlockHash(hash common.Hash) (uint64, byte, error) {

@@ -222,7 +222,7 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 			if nextCrossShardInfo == nil {
 				break
 			}
-			beaconHash, _ := common.Hash{}.NewHashFromStr(nextCrossShardInfo.confirmBeaconHash)
+			beaconHash, _ := common.Hash{}.NewHashFromStr(nextCrossShardInfo.ConfirmBeaconHash)
 			beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(db, *beaconHash)
 			if err != nil {
 				break
@@ -231,12 +231,11 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 			beaconBlock := new(blockchain.BeaconBlock)
 			json.Unmarshal(beaconBlockBytes, beaconBlock)
 			for _, shardState := range beaconBlock.Body.ShardState[byte(i)] {
-				if shardState.Height == nextCrossShardInfo.nextCrossShardHeight {
+				if shardState.Height == nextCrossShardInfo.NextCrossShardHeight {
 					if synckerManager.crossShardPool[int(toShard)].HasBlock(shardState.Hash) {
-						//fmt.Println("crossdebug: GetCrossShardBlocksForShardProducer", synckerManager.CrossShardPool[int(toShard)].GetBlock(shardState.Hash).Hash().String())
 						res[byte(i)] = append(res[byte(i)], synckerManager.crossShardPool[int(toShard)].GetBlock(shardState.Hash))
 					}
-					lastRequestCrossShard[byte(i)] = nextCrossShardInfo.nextCrossShardHeight
+					lastRequestCrossShard[byte(i)] = nextCrossShardInfo.NextCrossShardHeight
 					break
 				}
 			}

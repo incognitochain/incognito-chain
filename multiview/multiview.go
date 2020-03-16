@@ -15,6 +15,7 @@ type View interface {
 	GetBlockTime() int64
 	GetCommittee() []incognitokey.CommitteePublicKey
 	GetProposerByTimeSlot(ts int64) incognitokey.CommitteePublicKey
+	GetBlock() common.BlockInterface
 }
 
 type MultiView struct {

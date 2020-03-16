@@ -7,7 +7,6 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"math/rand"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -588,19 +587,20 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeaconHeight uint64, currentBeaconHeight uint64, crossShards map[byte]uint64) map[byte][]CrossTransaction {
 	crossTransactions := make(map[byte][]CrossTransaction)
 	// get cross shard block
-	var allCrossShardBlock = make(map[byte][]*CrossShardBlock)
+	var allCrossShardBlock = make([][]*CrossShardBlock, blockGenerator.chain.config.ChainParams.ActiveShards)
 	for sid, v := range blockGenerator.syncker.GetCrossShardBlocksForShardProducer(toShard) {
 		for _, b := range v {
 			allCrossShardBlock[sid] = append(allCrossShardBlock[sid], b.(*CrossShardBlock))
 		}
 	}
-	// Get Cross Shard Block
+	//fmt.Println("crossdebug: getCrossShardData", allCrossShardBlock)
+	// allCrossShardBlock => already short
 	for _, crossShardBlock := range allCrossShardBlock {
-		sort.SliceStable(crossShardBlock[:], func(i, j int) bool {
-			return crossShardBlock[i].Header.Height < crossShardBlock[j].Header.Height
-		})
-		indexs := []int{}
-		//TODO: move validation code into function GetCrossShardBlocksForShardProducer
+		//sort.SliceStable(crossShardBlock[:], func(i, j int) bool {
+		//	return crossShardBlock[i].Header.Height < crossShardBlock[j].Header.Height
+		//})
+		////TODO: move validation code into function GetCrossShardBlocksForShardProducer
+		//indexs := []int{}
 		//startHeight := blockGenerator.chain.GetBestStateShard(toShard).BestCrossShard[fromShard]
 		//for index, crossShardBlock := range crossShardBlock {
 		//Logger.log.Critical("index cross shard block", index, crossShardBlock)
@@ -638,8 +638,7 @@ func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeacon
 		//}
 		//indexs = append(indexs, index)
 		//}
-		for _, index := range indexs {
-			blk := crossShardBlock[index]
+		for _, blk := range crossShardBlock {
 			crossTransaction := CrossTransaction{
 				OutputCoin:       blk.CrossOutputCoin,
 				TokenPrivacyData: blk.CrossTxTokenPrivacyData,
@@ -649,11 +648,12 @@ func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeacon
 			crossTransactions[blk.Header.ShardID] = append(crossTransactions[blk.Header.ShardID], crossTransaction)
 		}
 	}
-	for _, crossTransaction := range crossTransactions {
-		sort.SliceStable(crossTransaction[:], func(i, j int) bool {
-			return crossTransaction[i].BlockHeight < crossTransaction[j].BlockHeight
-		})
-	}
+	//for _, crossTransaction := range crossTransactions {
+	//	sort.SliceStable(crossTransaction[:], func(i, j int) bool {
+	//		return crossTransaction[i].BlockHeight < crossTransaction[j].BlockHeight
+	//	})
+	//}
+	//fmt.Println("crossdebug: getCrossShardData", crossTransactions)
 	return crossTransactions
 }
 

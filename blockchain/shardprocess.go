@@ -1081,7 +1081,24 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
+	finalView := blockchain.ShardChain[shardBlock.Header.ShardID].GetFinalView()
 	blockchain.ShardChain[shardBlock.Header.ShardID].multiView.AddView(newShardState)
+	newFinalView := blockchain.ShardChain[shardBlock.Header.ShardID].GetFinalView()
+	if finalView != nil && newFinalView.GetHash().String() != finalView.GetHash().String() {
+		startView := newFinalView
+		for {
+			blks, _ := blockchain.GetShardBlockHashByHeight(startView.GetHeight(), shardID)
+			for _, hash := range blks {
+				if hash.String() != startView.GetPreviousHash().String() {
+					blockchain.DeleteShardBlockByView(hash)
+				}
+			}
+			startView = blockchain.ShardChain[shardBlock.Header.ShardID].GetViewByHash(*startView.GetPreviousHash())
+			if startView == nil || startView.GetHeight() == finalView.GetHeight() {
+				break
+			}
+		}
+	}
 	err = blockchain.BackupShardViews(shardBlock.Header.ShardID)
 	if err != nil {
 		panic("Backup shard view error")

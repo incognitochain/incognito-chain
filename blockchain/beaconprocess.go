@@ -1253,12 +1253,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(StoreBeaconBlockIndexError, err)
 	}
 
-	blockchain.BeaconChain.multiView.AddView(newBestState)
-	err = blockchain.BackupBeaconViews()
-	if err != nil {
-		panic("Backup shard view error")
-	}
-
 	Logger.log.Debugf("Store Beacon Block Height %+v with Hash %+v ", blockHeight, blockHash)
 	if err := rawdbv2.StoreBeaconBlock(blockchain.GetDatabase(), blockHeight, blockHash, beaconBlock); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
@@ -1275,6 +1269,29 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 	if err := rawdbv2.StoreSlashStateRootHash(blockchain.GetDatabase(), blockHeight, slashRootHash); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
+	}
+
+	finalView := blockchain.BeaconChain.GetFinalView()
+	blockchain.BeaconChain.multiView.AddView(newBestState)
+	newFinalView := blockchain.BeaconChain.GetFinalView()
+	if finalView != nil && newFinalView.GetHash().String() != finalView.GetHash().String() {
+		startView := newFinalView
+		for {
+			blks, _ := blockchain.GetBeaconBlockByHeight(startView.GetHeight())
+			for _, blk := range blks {
+				if blk.Hash().String() != startView.GetPreviousHash().String() {
+					blockchain.DeleteBeaconBlockByView(*blk.Hash())
+				}
+			}
+			startView = blockchain.BeaconChain.GetViewByHash(*startView.GetPreviousHash())
+			if startView == nil || startView.GetHeight() == finalView.GetHeight() {
+				break
+			}
+		}
+	}
+	err = blockchain.BackupBeaconViews()
+	if err != nil {
+		panic("Backup shard view error")
 	}
 	return nil
 }

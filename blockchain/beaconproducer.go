@@ -259,7 +259,7 @@ func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestS
 	validSwapInstructions := make(map[byte][][]string)
 	//Get shard to beacon block from pool
 	Logger.log.Infof("In GetShardState shardsToBeacon limit: %+v", shardsToBeacon)
-	var allShardBlocks = make(map[byte][]*ShardToBeaconBlock)
+	var allShardBlocks = make([][]*ShardToBeaconBlock, blockGenerator.chain.config.ChainParams.ActiveShards)
 	for sid, v := range blockGenerator.syncker.GetS2BBlocksForBeaconProducer() {
 		for _, b := range v {
 			allShardBlocks[sid] = append(allShardBlocks[sid], b.(*ShardToBeaconBlock))
@@ -271,40 +271,34 @@ func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestS
 	bridgeInstructions := [][]string{}
 	acceptedRewardInstructions := [][]string{}
 	statefulActionsByShardID := map[byte][][]string{}
-	var keys []int
-	for k := range allShardBlocks {
-		keys = append(keys, int(k))
-	}
-	sort.Ints(keys)
-	Logger.log.Infof("In GetShardState keys: %+v", keys)
-	for _, value := range keys {
-		shardID := byte(value)
-		shardBlocks := allShardBlocks[shardID]
-		// Only accept block in one epoch
-		totalBlock := 0
-		Logger.log.Infof("Beacon Producer Got %+v Shard Block from shard %+v: ", len(shardBlocks), shardID)
-		for _, shardBlocks := range shardBlocks {
-			Logger.log.Infof(" %+v ", shardBlocks.Header.Height)
-		}
-		//=======
-		currentCommittee := beaconBestState.GetAShardCommittee(shardID)
-		for index, shardBlock := range shardBlocks {
-			if index == MAX_S2B_BLOCK-1 {
-				break
-			}
-			err := blockGenerator.chain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, currentCommittee, beaconBestState.ShardConsensusAlgorithm[shardID])
-			Logger.log.Infof("Beacon Producer/ Validate Agg Signature for shard %+v, block height %+v, err %+v", shardID, shardBlock.Header.Height, err == nil)
-			if err != nil {
-				break
-			}
-			totalBlock = index
-			if totalBlock > MAX_S2B_BLOCK {
-				totalBlock = MAX_S2B_BLOCK
-				break
-			}
-		}
-		Logger.log.Infof("Beacon Producer/ AFTER FILTER, Shard %+v ONLY GET %+v block", shardID, totalBlock+1)
-		for _, shardBlock := range shardBlocks[:totalBlock+1] {
+
+	for chainID, shardBlocks := range allShardBlocks {
+		shardID := byte(chainID)
+		//// Only accept block in one epoch
+		//totalBlock := 0
+		//Logger.log.Infof("Beacon Producer Got %+v Shard Block from shard %+v: ", len(shardBlocks), shardID)
+		//for _, shardBlocks := range shardBlocks {
+		//	Logger.log.Infof(" %+v ", shardBlocks.Header.Height)
+		//}
+		////=======
+		//currentCommittee := beaconBestState.GetAShardCommittee(shardID)
+		//for index, shardBlock := range shardBlocks {
+		//	if index == MAX_S2B_BLOCK-1 {
+		//		break
+		//	}
+		//	err := blockGenerator.chain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, currentCommittee, beaconBestState.ShardConsensusAlgorithm[shardID])
+		//	Logger.log.Infof("Beacon Producer/ Validate Agg Signature for shard %+v, block height %+v, err %+v", shardID, shardBlock.Header.Height, err == nil)
+		//	if err != nil {
+		//		break
+		//	}
+		//	totalBlock = index
+		//	if totalBlock > MAX_S2B_BLOCK {
+		//		totalBlock = MAX_S2B_BLOCK
+		//		break
+		//	}
+		//}
+		//Logger.log.Infof("Beacon Producer/ AFTER FILTER, Shard %+v ONLY GET %+v block", shardID, totalBlock+1)
+		for _, shardBlock := range shardBlocks {
 			shardState, validStakeInstruction, tempValidStakePublicKeys, validSwapInstruction, bridgeInstruction, acceptedRewardInstruction, stopAutoStakingInstruction, statefulActions := blockGenerator.chain.GetShardStateFromBlock(beaconBestState.BeaconHeight+1, shardBlock, shardID, true, validStakePublicKeys)
 			shardStates[shardID] = append(shardStates[shardID], shardState[shardID])
 			validStakeInstructions = append(validStakeInstructions, validStakeInstruction...)

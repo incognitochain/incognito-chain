@@ -387,6 +387,10 @@ func (shardBestState *ShardBestState) GetProposerByTimeSlot(ts int64) incognitok
 	return GetProposerByTimeSlot(ts, shardBestState.ShardCommittee)
 }
 
+func (shardBestState *ShardBestState) GetBlock() common.BlockInterface {
+	return shardBestState.BestBlock
+}
+
 func GetProposerByTimeSlot(ts int64, shardCommittee []incognitokey.CommitteePublicKey) incognitokey.CommitteePublicKey {
 	id := int(ts) % len(shardCommittee)
 	return shardCommittee[id]

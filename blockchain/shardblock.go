@@ -417,6 +417,10 @@ func (block CrossShardBlock) GetHeight() uint64 {
 	return block.Header.Height
 }
 
+func (block CrossShardBlock) GetShardID() int {
+	return int(block.Header.ShardID)
+}
+
 func (block CrossShardBlock) GetValidationField() string {
 	return block.ValidationData
 }

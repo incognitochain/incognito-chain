@@ -601,6 +601,10 @@ func (beaconBestState *BeaconBestState) GetProposerByTimeSlot(ts int64) incognit
 	return beaconBestState.BeaconCommittee[id]
 }
 
+func (beaconBestState *BeaconBestState) GetBlock() common.BlockInterface {
+	return &beaconBestState.BestBlock
+}
+
 func (beaconBestState *BeaconBestState) GetBeaconPendingValidator() []incognitokey.CommitteePublicKey {
 
 	return beaconBestState.BeaconPendingValidator

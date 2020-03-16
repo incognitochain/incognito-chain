@@ -114,7 +114,7 @@ func (s *CrossShardSyncProcess) syncCrossShard() {
 					break
 				}
 
-				beaconHash, _ := common.Hash{}.NewHashFromStr(nextCrossShardInfo.confirmBeaconHash)
+				beaconHash, _ := common.Hash{}.NewHashFromStr(nextCrossShardInfo.ConfirmBeaconHash)
 				beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(s.server.GetIncDatabase(), *beaconHash)
 				if err != nil {
 					break
@@ -126,10 +126,10 @@ func (s *CrossShardSyncProcess) syncCrossShard() {
 				for _, shardState := range beaconBlock.Body.ShardState[byte(i)] {
 					//fmt.Println("crossdebug shardState.Height", shardState.Height, nextHeight)
 					fromSID := i
-					if shardState.Height == nextCrossShardInfo.nextCrossShardHeight {
+					if shardState.Height == nextCrossShardInfo.NextCrossShardHeight {
 						reqCnt++
 						s.setRequestPool(fromSID, shardState.Hash, &CrossXReq{time: nil, height: shardState.Height})
-						s.lastRequestCrossShard[byte(fromSID)] = nextCrossShardInfo.nextCrossShardHeight
+						s.lastRequestCrossShard[byte(fromSID)] = nextCrossShardInfo.NextCrossShardHeight
 						break
 					}
 				}
