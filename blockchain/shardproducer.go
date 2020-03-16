@@ -316,10 +316,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 		}
 		for _, l := range beaconBlock.Body.Instructions {
 			if l[0] == SwapAction {
-				fmt.Println(l)
-				fmt.Println(autoStaking)
 				for _, outPublicKeys := range strings.Split(l[2], ",") {
-					fmt.Println(outPublicKeys)
 					// If out public key has auto staking then ignore this public key
 					res, ok := autoStaking[outPublicKeys]
 					if ok && res {
