@@ -1249,7 +1249,7 @@ func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 }
 
 func (serverObj *Server) OnPeerState(_ *peer.PeerConn, msg *wire.MessagePeerState) {
-	Logger.log.Infof("Handling new message peerstate %+v", msg)
+	Logger.log.Debug("Handling new message peerstate %+v", msg)
 	Logger.log.Debug("Receive a peerstate START")
 	var txProcessed chan struct{}
 	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
@@ -1516,7 +1516,7 @@ func (serverObj *Server) putResponseMsgs(msgs [][]byte) {
 }
 
 func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint64) error {
-	Logger.log.Infof("[stream] Get blk beacon by heights %v %v", from, to)
+	Logger.log.Debug("[stream] Get blk beacon by heights %v %v", from, to)
 	req := &proto.BlockByHeightRequest{
 		Type:     proto.BlkType_BlkBc,
 		Specific: false,
@@ -1533,7 +1533,7 @@ func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint6
 }
 
 func (serverObj *Server) PushMessageGetBlockBeaconBySpecificHeight(heights []uint64, getFromPool bool) error {
-	Logger.log.Infof("[stream] Get blk beacon by Specific heights [%v..%v]", heights[0], heights[len(heights)-1])
+	Logger.log.Debug("[stream] Get blk beacon by Specific heights [%v..%v]", heights[0], heights[len(heights)-1])
 	req := &proto.BlockByHeightRequest{
 		Type:     proto.BlkType_BlkBc,
 		Specific: true,
@@ -1564,7 +1564,7 @@ func (serverObj *Server) PushMessageGetBlockBeaconByHash(blkHashes []common.Hash
 }
 
 func (serverObj *Server) PushMessageGetBlockShardByHeight(shardID byte, from uint64, to uint64) error {
-	Logger.log.Infof("[stream] Get blk shard %v by heights %v->%v", shardID, from, to)
+	Logger.log.Debug("[stream] Get blk shard %v by heights %v->%v", shardID, from, to)
 	req := &proto.BlockByHeightRequest{
 		Type:     proto.BlkType_BlkShard,
 		Specific: false,
@@ -1583,7 +1583,7 @@ func (serverObj *Server) PushMessageGetBlockShardByHeight(shardID byte, from uin
 }
 
 func (serverObj *Server) PushMessageGetBlockShardBySpecificHeight(shardID byte, heights []uint64, getFromPool bool) error {
-	Logger.log.Infof("[stream] Get blk shard %v by specific heights [%v..%v] len %v", shardID, heights[0], heights[len(heights)-1], len(heights))
+	Logger.log.Debug("[stream] Get blk shard %v by specific heights [%v..%v] len %v", shardID, heights[0], heights[len(heights)-1], len(heights))
 	req := &proto.BlockByHeightRequest{
 		Type:     proto.BlkType_BlkShard,
 		Specific: true,
@@ -1617,7 +1617,7 @@ func (serverObj *Server) PushMessageGetBlockShardByHash(shardID byte, blkHashes 
 }
 
 func (serverObj *Server) PushMessageGetBlockShardToBeaconByHeight(shardID byte, from uint64, to uint64) error {
-	Logger.log.Infof("[stream] Get blk S2B shard %v by heights %v->%v", shardID, from, to)
+	Logger.log.Debug("[stream] Get blk S2B shard %v by heights %v->%v", shardID, from, to)
 	req := &proto.BlockByHeightRequest{
 		Type:     proto.BlkType_BlkS2B,
 		Specific: false,
@@ -1661,7 +1661,7 @@ func (serverObj *Server) PushMessageGetBlockShardToBeaconBySpecificHeight(
 	peerID libp2p.ID,
 ) error {
 
-	Logger.log.Infof("[stream] Get blk S2B shard %v by specific heights [%v..%v] len %v", shardID, heights[0], heights[len(heights)-1], len(heights))
+	Logger.log.Debug("[stream] Get blk S2B shard %v by specific heights [%v..%v] len %v", shardID, heights[0], heights[len(heights)-1], len(heights))
 
 	req := &proto.BlockByHeightRequest{
 		Type:     proto.BlkType_BlkS2B,
@@ -1703,7 +1703,7 @@ func (serverObj *Server) PushMessageGetBlockCrossShardByHash(fromShard byte, toS
 }
 
 func (serverObj *Server) PushMessageGetBlockCrossShardBySpecificHeight(fromShard byte, toShard byte, heights []uint64, getFromPool bool, peerID libp2p.ID) error {
-	Logger.log.Infof("[stream] Get blk Cross shard %v to %v by specific heights [%v..%v] len %v", fromShard, toShard, heights[0], heights[len(heights)-1], len(heights))
+	Logger.log.Debug("[stream] Get blk Cross shard %v to %v by specific heights [%v..%v] len %v", fromShard, toShard, heights[0], heights[len(heights)-1], len(heights))
 
 	req := &proto.BlockByHeightRequest{
 		Type:     proto.BlkType_BlkXShard,
@@ -1722,7 +1722,7 @@ func (serverObj *Server) PushMessageGetBlockCrossShardBySpecificHeight(fromShard
 }
 
 func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
-	Logger.log.Infof("[peerstate] Start Publish SelfPeerState")
+	Logger.log.Debug("[peerstate] Start Publish SelfPeerState")
 	listener := serverObj.connManager.GetConfig().ListenerPeer
 
 	// if (userRole != common.CommitteeRole) && (userRole != common.ValidatorRole) && (userRole != common.ProposerRole) {
@@ -1751,7 +1751,7 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 		}
 	} else {
 		msg.(*wire.MessagePeerState).ShardToBeaconPool = serverObj.shardToBeaconPool.GetAllBlockHeight()
-		Logger.log.Infof("[peerstate] %v", msg.(*wire.MessagePeerState).ShardToBeaconPool)
+		Logger.log.Debug("[peerstate] %v", msg.(*wire.MessagePeerState).ShardToBeaconPool)
 	}
 
 	if (cfg.NodeMode == common.NodeModeAuto || cfg.NodeMode == common.NodeModeShard) && shardID >= 0 {
@@ -1765,7 +1765,7 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 		return err
 	}
 	msg.SetSenderID(serverObj.highway.LocalHost.Host.ID())
-	Logger.log.Infof("[peerstate] PeerID send to Proxy when publish node state %v \n", listener.GetPeerID())
+	Logger.log.Debug("[peerstate] PeerID send to Proxy when publish node state %v \n", listener.GetPeerID())
 	if err != nil {
 		return err
 	}

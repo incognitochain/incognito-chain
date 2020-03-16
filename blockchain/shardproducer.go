@@ -323,7 +323,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 					}
 					tx, err := blockGenerator.buildReturnStakingAmountTx(outPublicKeys, producerPrivateKey, shardID)
 					if err != nil {
-						Logger.log.Error(err)
+						Logger.log.Errorf("\n \n>>>>>>>>>>>>>>> %+v \n \n ", err)
 						continue
 					}
 					txHash := *tx.Hash()
