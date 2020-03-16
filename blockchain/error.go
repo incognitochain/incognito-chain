@@ -173,6 +173,7 @@ const (
 	ValidateBlockWithPreviousBeaconBestStateError
 	BackUpShardStateError
 	BackupCurrentBeaconStateError
+	ProcessAutoStakingError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -330,6 +331,7 @@ var ErrCodeMessage = map[int]struct {
 	BackUpShardStateError:                             {-1148, "Back Up Shard State Error"},
 	ValidateBlockWithPreviousBeaconBestStateError:     {-1149, "Validate Block With Previous Beacon Best State Error"},
 	BackupCurrentBeaconStateError:                     {-1150, "Backup Current Beacon State Error"},
+	ProcessAutoStakingError:                           {-1151, "Process Auto Staking Error"},
 	GetListOutputCoinsByKeysetError:                   {-2000, "Get List Output Coins By Keyset Error"},
 }
 
