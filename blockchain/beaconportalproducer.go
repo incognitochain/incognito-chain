@@ -1722,7 +1722,8 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		}
 
 		// update redeem request state in WaitingRedeemRequest (remove custodian from matchingCustodianDetail)
-		removeCustodianFromMatchingRedeemCustodians(currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest].Custodians, meta.CustodianAddressStr)
+		currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest].Custodians, _ = removeCustodianFromMatchingRedeemCustodians(
+			currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest].Custodians, meta.CustodianAddressStr)
 
 		// remove redeem request from WaitingRedeemRequest list when all matching custodians return public token to user
 		// when list matchingCustodianDetail is empty

@@ -229,7 +229,8 @@ func checkAndBuildInstForCustodianLiquidation(
 				}
 
 				// remove matching custodian from matching custodians list in waiting redeem request
-				removeCustodianFromMatchingRedeemCustodians(currentPortalState.WaitingRedeemRequests[redeemReqKey].Custodians, matchCusDetail.IncAddress)
+				currentPortalState.WaitingRedeemRequests[redeemReqKey].Custodians, _ = removeCustodianFromMatchingRedeemCustodians(
+					currentPortalState.WaitingRedeemRequests[redeemReqKey].Custodians, matchCusDetail.IncAddress)
 
 				// build instruction
 				inst := buildCustodianRunAwayLiquidationInst(

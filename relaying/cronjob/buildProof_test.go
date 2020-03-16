@@ -25,7 +25,7 @@ func TestB64EncodeMemo(t *testing.T) {
 	fmt.Printf("memoPortingStr: %v\n", memoPortingStr)
 	//  eyJQb3J0aW5nSUQiOiIxIn0=
 
-	redeemID := "3"
+	redeemID := "11"
 	memoRedeem := RedeemMemoBNB{RedeemID: redeemID}
 	memoRedeemBytes, err := json.Marshal(memoRedeem)
 	fmt.Printf("err: %v\n", err)
@@ -35,12 +35,15 @@ func TestB64EncodeMemo(t *testing.T) {
 
 	// eyJSZWRlZW1JRCI6IjMifQ== // 3
 	// eyJSZWRlZW1JRCI6IjQifQ==   // 4
+
+	// eyJSZWRlZW1JRCI6IjExIn0= // 11
+
 }
 
 
 func TestBuildAndPushBNBProof(t *testing.T) {
 	txIndex := 0
-	blockHeight := int64(1558)
+	blockHeight := int64(5592)
 	url := relaying.TestnetURLRemote
 
 	portingProof, err := BuildProof(txIndex, blockHeight, url)

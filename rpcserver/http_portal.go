@@ -223,8 +223,8 @@ func (httpServer *HttpServer) handleGetPortalState(params interface{}, closeChan
 		WaitingPortingRequests map[string]*lvdb.PortingRequest     `json:"WaitingPortingRequests"`
 		WaitingRedeemRequests  map[string]*lvdb.RedeemRequest      `json:"WaitingRedeemRequests"`
 		CustodianPool          map[string]*lvdb.CustodianState     `json:"CustodianPool"`
-		BeaconTimeStamp        int64                               `json:"BeaconTimeStamp"`
 		FinalExchangeRates     map[string]*lvdb.FinalExchangeRates `json:"FinalExchangeRates"`
+		BeaconTimeStamp        int64                               `json:"BeaconTimeStamp"`
 	}
 
 	result := CurrentPortalState{

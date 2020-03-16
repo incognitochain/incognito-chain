@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"math"
+	"sort"
 	"strconv"
 )
 
@@ -28,10 +29,10 @@ func splitPortingFeeForMatchingCustodians(
 	feeAmount uint64,
 	portingAmount uint64,
 	matchingCustodianAddresses []*lvdb.MatchingPortingCustodianDetail,
-	rewardInfos []*lvdb.PortalRewardInfo) {
+	rewardInfos map[string]uint64) {
 	for _, matchCustodianDetail := range matchingCustodianAddresses {
 		splitedFee := float64(matchCustodianDetail.Amount) / float64(portingAmount) * float64(feeAmount)
-		lvdb.PlusPortalReward(rewardInfos, matchCustodianDetail.IncAddress, uint64(math.Floor(splitedFee)))
+		rewardInfos[matchCustodianDetail.IncAddress] += uint64(math.Floor(splitedFee))
 	}
 }
 
@@ -39,10 +40,10 @@ func splitRedeemFeeForMatchingCustodians(
 	feeAmount uint64,
 	redeemAmount uint64,
 	matchingCustodianAddresses []*lvdb.MatchingRedeemCustodianDetail,
-	rewardInfos []*lvdb.PortalRewardInfo) {
+	rewardInfos map[string]uint64) {
 	for _, matchCustodianDetail := range matchingCustodianAddresses {
 		splitedFee := float64(matchCustodianDetail.Amount) / float64(redeemAmount) * float64(feeAmount)
-		lvdb.PlusPortalReward(rewardInfos, matchCustodianDetail.IncAddress, uint64(math.Floor(splitedFee)))
+		rewardInfos[matchCustodianDetail.IncAddress] += uint64(math.Floor(splitedFee))
 	}
 }
 
@@ -50,11 +51,12 @@ func splitRewardForCustodians(
 	totalReward uint64,
 	totalLockedAmount uint64,
 	custodianState map[string]*lvdb.CustodianState,
-	rewardInfos []*lvdb.PortalRewardInfo) {
+	rewardInfos map[string]uint64) {
 	for _, custodian := range custodianState {
 		for _, lockedAmount := range custodian.LockedAmountCollateral {
 			splitedReward := float64(lockedAmount) / float64(totalLockedAmount) * float64(totalReward)
-			lvdb.PlusPortalReward(rewardInfos, custodian.IncognitoAddress, uint64(math.Floor(splitedReward)))
+			//Logger.log.Errorf("[splitRewardForCustodians] splitedReward: %v\n", splitedReward)
+			rewardInfos[custodian.IncognitoAddress] += uint64(math.Floor(splitedReward))
 		}
 	}
 }
@@ -63,7 +65,8 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 	beaconHeight uint64, currentPortalState *CurrentPortalState) ([][]string, error) {
 
 	// rewardInfos are map custodians' addresses and reward amount
-	rewardInfos := make([]*lvdb.PortalRewardInfo, 0)
+	//rewardInfos := make([]*lvdb.PortalRewardInfo, 0)
+	rewardInfos := make(map[string]uint64, 0)
 
 	// get porting fee from waiting porting request at beaconHeight + 1 (new waiting porting requests)
 	// and split fees for matching custodians
@@ -106,17 +109,29 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 	}
 
 	// update reward amount for each custodian
-	for _, rewardInfo := range rewardInfos {
+	rewardInfoKeys := []string{}
+	for custodianAddr, amount := range rewardInfos {
 		for _, custodianState := range currentPortalState.CustodianPoolState {
-			if rewardInfo.CustodianIncAddr == custodianState.IncognitoAddress {
-				custodianState.RewardAmount += rewardInfo.Amount
+			if custodianAddr == custodianState.IncognitoAddress {
+				custodianState.RewardAmount += amount
 				break
 			}
 		}
+
+		rewardInfoKeys = append(rewardInfoKeys, custodianAddr)
 	}
 
 	// build beacon instruction for portal reward
-	inst := blockchain.buildInstForPortalReward(beaconHeight+1, rewardInfos)
+	// sort rewardInfos by custodian address before creating instruction
+	sort.Strings(rewardInfoKeys)
+	sortedRewardInfos := make([]*lvdb.PortalRewardInfo, len(rewardInfos))
+	for i, custodianAddr := range rewardInfoKeys {
+		sortedRewardInfos[i] = &lvdb.PortalRewardInfo{
+			CustodianIncAddr: custodianAddr,
+			Amount:           rewardInfos[custodianAddr],
+		}
+	}
+	inst := blockchain.buildInstForPortalReward(beaconHeight+1, sortedRewardInfos)
 
 	return [][]string{inst}, nil
 }

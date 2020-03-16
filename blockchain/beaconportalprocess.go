@@ -893,7 +893,8 @@ func (blockchain *BlockChain) processPortalUnlockCollateral(
 		keyWaitingRedeemRequest := lvdb.NewWaitingRedeemReqKey(beaconHeight, redeemID)
 
 		// update redeem request state in WaitingRedeemRequest (remove custodian from matchingCustodianDetail)
-		removeCustodianFromMatchingRedeemCustodians(currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest].Custodians, actionData.CustodianAddressStr)
+		currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest].Custodians, _ = removeCustodianFromMatchingRedeemCustodians(
+			currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest].Custodians, actionData.CustodianAddressStr)
 
 		// remove redeem request from WaitingRedeemRequest list when all matching custodians return public token to user
 		// when list matchingCustodianDetail is empty

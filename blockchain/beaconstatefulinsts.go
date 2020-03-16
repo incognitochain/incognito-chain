@@ -883,7 +883,7 @@ func (blockchain *BlockChain) handleRelayingInsts(
 
 func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
 	beaconHeight uint64, currentPortalState *CurrentPortalState) ([][]string, error) {
-	Logger.log.Errorf("autoCheckAndCreatePortalLiquidationInsts starting.......")
+	//Logger.log.Errorf("autoCheckAndCreatePortalLiquidationInsts starting.......")
 
 	insts := [][]string{}
 
