@@ -281,6 +281,8 @@ func (blockchain *BlockChain) revertBeaconBestState() error {
 	}
 	previousBeaconBestState.slashStateDB, err = statedb.NewWithPrefixTrie(slashRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetDatabase()))
 	SetBeaconBestState(&previousBeaconBestState)
+	previousBeaconBestState.lock = blockchain.BestState.Beacon.lock
+	blockchain.BestState.Beacon = &previousBeaconBestState
 	blockchain.config.BeaconPool.RevertBeconPool(previousBeaconBestState.BeaconHeight)
 	for sid, height := range blockchain.BestState.Beacon.GetBestShardHeight() {
 		blockchain.config.ShardToBeaconPool.RevertShardToBeaconPool(sid, height)
