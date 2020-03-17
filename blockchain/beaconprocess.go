@@ -149,6 +149,10 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	// Update best state with new beaconBlock
 
 	if err := blockchain.BestState.Beacon.updateBeaconBestState(beaconBlock, blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.AssignOffset, blockchain.config.ChainParams.RandomTime, committeeChange); err != nil {
+		errRevert := blockchain.revertBeaconBestState()
+		if errRevert != nil {
+			return errRevert
+		}
 		return err
 	}
 	// updateNumOfBlocksByProducers updates number of blocks produced by producers
@@ -156,10 +160,18 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 
 	newBeaconCommittee, newAllShardCommittee, err := snapshotCommittee(blockchain.BestState.Beacon.BeaconCommittee, blockchain.BestState.Beacon.ShardCommittee)
 	if err != nil {
+		errRevert := blockchain.revertBeaconBestState()
+		if errRevert != nil {
+			return errRevert
+		}
 		return NewBlockChainError(SnapshotCommitteeError, err)
 	}
 	_, newAllShardPending, err := snapshotCommittee([]incognitokey.CommitteePublicKey{}, blockchain.BestState.Beacon.ShardPendingValidator)
 	if err != nil {
+		errRevert := blockchain.revertBeaconBestState()
+		if errRevert != nil {
+			return errRevert
+		}
 		return NewBlockChainError(SnapshotCommitteeError, err)
 	}
 
@@ -208,6 +220,10 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 		Logger.log.Debugf("BEACON | Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 		// Post verification: verify new beacon best state with corresponding beacon block
 		if err := blockchain.BestState.Beacon.verifyPostProcessingBeaconBlock(beaconBlock, blockchain.config.RandomClient); err != nil {
+			errRevert := blockchain.revertBeaconBestState()
+			if errRevert != nil {
+				return errRevert
+			}
 			return err
 		}
 	} else {
