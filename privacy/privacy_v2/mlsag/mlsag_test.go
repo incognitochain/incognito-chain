@@ -10,15 +10,15 @@ import (
 )
 
 func TestWorkflowMlsag(t *testing.T) {
-	keyInputs := []operation.Scalar{}
+	keyInputs := []*operation.Scalar{}
 	for i := 0; i < 8; i += 1 {
 		privateKey := operation.RandomScalar()
-		keyInputs = append(keyInputs, *privateKey)
+		keyInputs = append(keyInputs, privateKey)
 	}
 	numFake := 5
 	pi := common.RandInt() % numFake
-	ring := NewRandomRing(&keyInputs, numFake, pi)
-	signer := NewMlsagWithDefinedRing(&keyInputs, ring, pi)
+	ring := NewRandomRing(keyInputs, numFake, pi)
+	signer := NewMlsagWithDefinedRing(keyInputs, ring, pi)
 
 	signature, err := signer.Sign("Hello")
 	assert.Equal(t, nil, err, "There should not be any error when sign")

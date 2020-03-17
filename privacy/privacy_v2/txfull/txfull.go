@@ -2,25 +2,37 @@ package txfull
 
 import (
 	"errors"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/mlsag"
-
 	"github.com/incognitochain/incognito-chain/privacy/address"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/onetime_address/utxo"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/mlsag"
 )
 
 type RingCTFull struct {
-	inputs         []*utxo.Utxo
+	inputs         []*coin.Coin_v2
 	privateAddress *address.PrivateAddress
 	sumBlindOutput *operation.Scalar
-	outputs        []*utxo.Utxo
+	outputs        []*coin.Coin_v2
 	toAddress      []*address.PublicAddress
 }
 
-func NewRingCTFull(inputs []*utxo.Utxo, privateAddress *address.PrivateAddress, sumBlindOutput *operation.Scalar, outputs *[]utxo.Utxo, toAddress *[]address.PublicAddress) *RingCTFull {
+type Member struct {
+	publicKey  *operation.Point
+	commitment *operation.Point
+}
+
+func NewMember(publicKey *operation.Point, commitment *operation.Point) *Member {
+	return &Member{
+		publicKey,
+		commitment,
+	}
+}
+
+func NewRingCTFull(inputs []*coin.Coin_v2, privateAddress *address.PrivateAddress, sumBlindOutput *operation.Scalar,
+	outputs []*coin.Coin_v2, toAddress []*address.PublicAddress) *RingCTFull {
 	return &RingCTFull{
 		inputs,
 		privateAddress,
@@ -30,40 +42,40 @@ func NewRingCTFull(inputs []*utxo.Utxo, privateAddress *address.PrivateAddress, 
 	}
 }
 
-// Create and return: ring, privatekey (of transaction), pi of the ring, error
-func (this *RingCTFull) CreateRandomRing() (*mlsag.Ring, *[]operation.Scalar, int, error) {
-	// TODO
-	// In real system should change numFake
-	numFake :=  privacy_util.RingSize
-	pi := common.RandInt() % numFake
-
-	// Generating Ring without commitment then add later
-	privKeys := *getTxPrivateKeys(this.privateAddress, &this.inputs)
-	ring := mlsag.NewRandomRing(&privKeys, numFake, pi)
-
-	// Generate privateKey with commitment
-	sumBlindInput, err := getSumBlindInput(this)
-	if err != nil {
-		return nil, nil, 0, errors.New("Error in RingCTFull CreateRandomRing: the RingCTFull is broken (private key not associate with transaction")
+func (this *RingCTFull) CreateRingCTFull(members [][]*Member) (*mlsag.Ring, []*operation.Scalar, int, error) {
+	m := len(this.inputs)
+	if m != privacy_util.RingSize {
+		return nil, nil, 0, errors.New("Invalid input members for MLSAG")
 	}
-	privCommitment := new(operation.Scalar).Sub(sumBlindInput, this.sumBlindOutput)
-	priv = append(priv, *privCommitment)
+	pi := common.RandInt() % privacy_util.RingSize
 
-	// Add commitment to ring
-	sumInputsCom := getSumCommitment(this.inputs)
-	sumOutputCom := getSumCommitment(this.outputs)
-	for i := 0; i < numFake; i += 1 {
-		val := new(operation.Point)
-		if i == pi {
-			val = val.Sub(sumInputsCom, sumOutputCom)
-		} else {
-			// TODO
-			// Random scalar should be changed when use in real product
-			// Should get randomly in database the commitments
-			val = val.Sub(operation.RandomPoint(), sumOutputCom)
+	decoyPubKeys := make([][]*operation.Point, privacy_util.RingSize)
+	txPrivateKeys := make([]*operation.Scalar, m+1)
+	sumBlindInput := new(operation.Scalar).FromUint64(0)
+
+	for i := 0; i < privacy_util.RingSize; i++ {
+		decoyPubKeys[i] = make([]*operation.Point, m+1)
+		sumInCommitment := new(operation.Point).Identity()
+		for j := 0; j < m; j++ {
+			if i != pi {
+				if blind, err := getBlindInput(this.privateAddress, this.inputs[j]); err != nil {
+					return nil, nil, 0, errors.New("Cannot get blind from Input")
+				} else {
+					sumBlindInput.Add(sumBlindInput, blind)
+				}
+				sumInCommitment.Add(sumInCommitment, members[i][j].commitment)
+				decoyPubKeys[i][j] = members[i][j].publicKey
+			} else {
+				txPrivateKeys[j] = getTxPrivateKey(this.privateAddress, this.inputs[j])
+				sumInCommitment.Add(sumInCommitment, this.inputs[j].GetCommitment())
+				decoyPubKeys[i][j] = parsePublicKey(txPrivateKeys[j])
+			}
+
 		}
-		ring.AppendToRow(i, val)
+		sumOutCommitment := getSumCommitment(this.outputs)
+		decoyPubKeys[i][m+1] = new(operation.Point).Sub(sumInCommitment, sumOutCommitment)
 	}
-
-	return ring, &priv, pi, nil
+	lastPrivateKey := new(operation.Scalar).Sub(sumBlindInput, this.sumBlindOutput)
+	ringCTFull := mlsag.InitRing(decoyPubKeys)
+	return ringCTFull, append(txPrivateKeys, lastPrivateKey), pi, nil
 }

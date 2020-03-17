@@ -37,7 +37,7 @@ func (this *PrivateAddress) GetPublicAddress() *PublicAddress {
 		this.GetPublicView(),
 	}
 }
-
+// For Test Only
 func GenerateRandomAddress() *PrivateAddress {
 	return &PrivateAddress{
 		operation.RandomScalar(),
