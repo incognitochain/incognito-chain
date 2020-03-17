@@ -16,73 +16,30 @@ type HeaderChain struct {
 }
 
 // ReceiveNewHeader receives new header and last commit for the previous header block
-func (hc *HeaderChain) ReceiveNewHeader(h *types.Header, lastCommit *types.Commit) (bool, *BNBRelayingError) {
-	chainID := TestnetBNBChainID
-	// h is the first header block
-	if len(hc.HeaderChain) == 0 && lastCommit == nil {
-		// just append into hc.UnconfirmedHeaders
-		hc.UnconfirmedHeaders = append(hc.UnconfirmedHeaders, h)
-		return true, nil
-	}
+func (hc *HeaderChain) ReceiveNewHeader(h *types.Header, lastCommit *types.Commit, chainID string) (*HeaderChain, bool, *BNBRelayingError) {
+	latestHeaderChain := new(LatestHeaderChain)
 
-	if len(hc.HeaderChain) > 0 && lastCommit == nil {
-		return false, NewBNBRelayingError(InvalidNewHeaderErr, errors.New("last commit is nil"))
-	}
-
-	// verify lastCommit
-	if !bytes.Equal(h.LastCommitHash , lastCommit.Hash()){
-		return false, NewBNBRelayingError(InvalidBasicSignedHeaderErr, errors.New("invalid last commit hash"))
-	}
-
-	// case 1: h is the next block header of the latest block header in HeaderChain
+	latestHeaderChain.UnconfirmedHeaders = hc.UnconfirmedHeaders
 	if len(hc.HeaderChain) > 0 {
-		// get the latest committed block header
-		latestHeader := hc.HeaderChain[len(hc.HeaderChain) - 1]
-		latestHeaderBlockID := latestHeader.Hash()
+		latestHeaderChain.LatestHeader = hc.HeaderChain[len(hc.HeaderChain) - 1]
+	}
 
-		// check last blockID
-		if bytes.Equal(h.LastBlockID.Hash.Bytes(), latestHeaderBlockID) && h.Height == latestHeader.Height + 1{
-			// create new signed header and verify
-			// add to UnconfirmedHeaders list
-			newSignedHeader := NewSignedHeader(latestHeader, lastCommit)
-			isValid, err := VerifySignedHeader(newSignedHeader, chainID)
-			if isValid && err == nil{
-				hc.UnconfirmedHeaders = append(hc.UnconfirmedHeaders, h)
-				return true, nil
-			}
-
-			return false, NewBNBRelayingError(InvalidNewHeaderErr, err)
+	latestHeaderChain, isValid, err := latestHeaderChain.ReceiveNewHeader(h, lastCommit, chainID)
+	if isValid {
+		hc.UnconfirmedHeaders = latestHeaderChain.UnconfirmedHeaders
+		if latestHeaderChain.LatestHeader != nil && latestHeaderChain.LatestHeader.Height == int64(len(hc.HeaderChain)) + 1 {
+			hc.HeaderChain = append(hc.HeaderChain, latestHeaderChain.LatestHeader)
 		}
 	}
 
-	// case2 : h is the next block header of one of block headers in UnconfirmedHeaders
-	if len(hc.UnconfirmedHeaders) > 0 {
-		for _, uh := range hc.UnconfirmedHeaders {
-			if bytes.Equal(h.LastBlockID.Hash.Bytes(), uh.Hash())  && h.Height == uh.Height + 1 {
-				// create new signed header and verify
-				// append uh to hc.HeaderChain,
-				// clear all UnconfirmedHeaders => append h to UnconfirmedHeaders
-				newSignedHeader := NewSignedHeader(uh, lastCommit)
-				isValid, err := VerifySignedHeader(newSignedHeader, chainID)
-				if isValid && err == nil{
-					hc.HeaderChain = append(hc.HeaderChain, uh)
-					hc.UnconfirmedHeaders = []*types.Header{h}
-					return true, nil
-				}
-				return false, NewBNBRelayingError(InvalidNewHeaderErr, err)
-			}
-		}
-	}
-
-	return true, nil
+	return hc, isValid, err
 }
 
 func NewSignedHeader (h *types.Header, lastCommit *types.Commit) *types.SignedHeader{
-	sh := new(types.SignedHeader)
-	sh.Header = h
-	sh.Commit = lastCommit
-
-	return sh
+	return &types.SignedHeader{
+		Header: h,
+		Commit: lastCommit,
+	}
 }
 
 func VerifySignature(sh *types.SignedHeader, chainID string) *BNBRelayingError {
@@ -110,7 +67,11 @@ func VerifySignature(sh *types.SignedHeader, chainID string) *BNBRelayingError {
 			// check duplicate vote
 			if !signedValidator[validateAddressStr] {
 				signedValidator[validateAddressStr] = true
-				fmt.Printf("validatorMap[validateAddressStr].PubKey: %v\n", validatorMap[validateAddressStr].PubKey)
+				Logger.log.Errorf("validatorMap: %v\n", validatorMap)
+				Logger.log.Errorf("validateAddressStr: %v\n", validateAddressStr)
+				Logger.log.Errorf("validatorMap[validateAddressStr]: %v\n", validatorMap[validateAddressStr])
+				Logger.log.Errorf("ChainId : %v\n", chainID)
+				//fmt.Printf("validatorMap[validateAddressStr].PubKey: %v\n", validatorMap[validateAddressStr].PubKey)
 				err := vote.Verify(chainID, validatorMap[validateAddressStr].PubKey)
 				if err != nil {
 					Logger.log.Errorf("Invalid signature index %v\n", i)
@@ -152,40 +113,47 @@ type LatestHeaderChain struct {
 	UnconfirmedHeaders []*types.Header
 }
 
-func appendHeaderToUnconfirmedHeaders (header *types.Header, unconfirmedHeaders []*types.Header) (bool, *BNBRelayingError){
+func appendHeaderToUnconfirmedHeaders (header *types.Header, unconfirmedHeaders []*types.Header) ([]*types.Header, error){
 	hHash := header.Hash().Bytes()
 	for _, unconfirmedHeader := range unconfirmedHeaders {
 		if bytes.Equal(unconfirmedHeader.Hash().Bytes(), hHash) {
 			Logger.log.Errorf("Header is existed %v\n", hHash)
-			return false, NewBNBRelayingError(ExistedNewHeaderErr, fmt.Errorf("Header is existed %v\n", hHash))
+			return unconfirmedHeaders, fmt.Errorf("Header is existed %v\n", hHash)
 		}
 	}
 	unconfirmedHeaders = append(unconfirmedHeaders, header)
-	return true, nil
+	return unconfirmedHeaders, nil
 }
 
 // ReceiveNewHeader receives new header and last commit for the previous header block
-func (hc *LatestHeaderChain) ReceiveNewHeader(h *types.Header, lastCommit *types.Commit) (bool, *BNBRelayingError) {
-	//todo: need to change to mainnet
-	chainID := TestnetBNBChainID
+func (hc *LatestHeaderChain) ReceiveNewHeader(h *types.Header, lastCommit *types.Commit, chainID string) (*LatestHeaderChain, bool, *BNBRelayingError) {
+	var err2 error
+
 	// h is the first header block
-	if hc.LatestHeader == nil && lastCommit == nil {
+	if hc.LatestHeader == nil && len(hc.UnconfirmedHeaders) == 0 {
 		// check h.height = 1
 		if h.Height != 1 {
-			return false, NewBNBRelayingError(InvalidNewHeaderErr, errors.New("the height of header must be 1"))
+			Logger.log.Errorf("[ReceiveNewHeader] the height of header must be 1")
+			return hc, false, NewBNBRelayingError(InvalidNewHeaderErr, errors.New("the height of header must be 1"))
 		}
 
 		// just append into hc.UnconfirmedHeaders
-		return appendHeaderToUnconfirmedHeaders(h, hc.UnconfirmedHeaders)
+		hc.UnconfirmedHeaders, err2 = appendHeaderToUnconfirmedHeaders(h, hc.UnconfirmedHeaders)
+		if err2 != nil {
+			return hc, false, NewBNBRelayingError(InvalidNewHeaderErr, err2)
+		}
+		return hc, true, nil
 	}
 
 	if hc.LatestHeader != nil && lastCommit == nil {
-		return false, NewBNBRelayingError(InvalidNewHeaderErr, errors.New("last commit is nil"))
+		Logger.log.Errorf("[ReceiveNewHeader] last commit is nil")
+		return hc, false, NewBNBRelayingError(InvalidNewHeaderErr, errors.New("last commit is nil"))
 	}
 
 	// verify lastCommit
 	if !bytes.Equal(h.LastCommitHash , lastCommit.Hash()){
-		return false, NewBNBRelayingError(InvalidBasicSignedHeaderErr, errors.New("invalid last commit hash"))
+		Logger.log.Errorf("[ReceiveNewHeader] invalid last commit hash")
+		return hc, false, NewBNBRelayingError(InvalidBasicSignedHeaderErr, errors.New("invalid last commit hash"))
 	}
 
 	// case 1: h is the next block header of the latest block header in HeaderChain
@@ -201,10 +169,16 @@ func (hc *LatestHeaderChain) ReceiveNewHeader(h *types.Header, lastCommit *types
 			newSignedHeader := NewSignedHeader(latestHeader, lastCommit)
 			isValid, err := VerifySignedHeader(newSignedHeader, chainID)
 			if isValid && err == nil{
-				return appendHeaderToUnconfirmedHeaders(h, hc.UnconfirmedHeaders)
+				Logger.log.Errorf("[ReceiveNewHeader] Case 1 new confirmed header %v\n", h.Height)
+				hc.UnconfirmedHeaders, err2 = appendHeaderToUnconfirmedHeaders(h, hc.UnconfirmedHeaders)
+				if err2 != nil {
+					return hc, false, NewBNBRelayingError(InvalidNewHeaderErr, err2)
+				}
+				return hc, true, nil
 			}
 
-			return false, NewBNBRelayingError(InvalidNewHeaderErr, err)
+			Logger.log.Errorf("[ReceiveNewHeader] invalid new signed header %v", err)
+			return hc, false, NewBNBRelayingError(InvalidNewHeaderErr, err)
 		}
 	}
 
@@ -220,13 +194,16 @@ func (hc *LatestHeaderChain) ReceiveNewHeader(h *types.Header, lastCommit *types
 				if isValid && err == nil{
 					hc.LatestHeader = uh
 					hc.UnconfirmedHeaders = []*types.Header{h}
-					return true, nil
+					Logger.log.Errorf("[ReceiveNewHeader] Case 2 new unconfirmed header %v\n", h.Height)
+					return hc, true, nil
 				}
-				return false, NewBNBRelayingError(InvalidNewHeaderErr, err)
+
+				Logger.log.Errorf("[ReceiveNewHeader] invalid new signed header %v", err)
+				return hc, false, NewBNBRelayingError(InvalidNewHeaderErr, err)
 			}
 		}
 	}
 
-	return true, nil
+	Logger.log.Errorf("New header is invalid")
+	return hc, false, NewBNBRelayingError(InvalidNewHeaderErr, nil)
 }
-
