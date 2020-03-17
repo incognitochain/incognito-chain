@@ -601,7 +601,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		//todo:
 	} else if meta.TokenID == common.PortalBNBIDStr {
 		// parse PortingProof in meta
-		txProofBNB, err := relaying.ParseBNBProofFromB64EncodeJsonStr(meta.PortingProof)
+		txProofBNB, err := relaying.ParseBNBProofFromB64EncodeStr(meta.PortingProof)
 		if err != nil {
 			Logger.log.Errorf("PortingProof is invalid %v\n", err)
 			inst := buildReqPTokensInst(
@@ -1511,7 +1511,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		//todo:
 	} else if meta.TokenID == common.PortalBNBIDStr {
 		// parse PortingProof in meta
-		txProofBNB, err := relaying.ParseBNBProofFromB64EncodeJsonStr(meta.RedeemProof)
+		txProofBNB, err := relaying.ParseBNBProofFromB64EncodeStr(meta.RedeemProof)
 		if err != nil {
 			Logger.log.Errorf("RedeemProof is invalid %v\n", err)
 			inst := buildReqUnlockCollateralInst(

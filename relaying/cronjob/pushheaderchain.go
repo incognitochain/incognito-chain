@@ -70,7 +70,7 @@ func callRPCIncognito(method string, params string, url string) (map[string]inte
 
 func PushBNBHeaderIntoIncognito(bnbHeaderStr string, blockHeight int64, urlIncognitoNode string) (map[string]interface{}, error) {
 	params := `
-		"112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or", 
+		"", 
     	null, 
     	-1,   
         0,
