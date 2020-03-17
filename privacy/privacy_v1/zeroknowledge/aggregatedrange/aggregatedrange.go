@@ -1,4 +1,4 @@
-package aggregaterange
+package aggregatedrange
 
 import (
 	"fmt"

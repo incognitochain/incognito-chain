@@ -7,7 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/aggregaterange"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/aggregatedrange"
 )
 
 type batchTransaction struct {
@@ -32,7 +32,7 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 	if err != nil {
 		return false, err, -1
 	}
-	bulletProofList := make([]*aggregaterange.AggregatedRangeProof, 0)
+	bulletProofList := make([]*aggregatedrange.AggregatedRangeProof, 0)
 	for i, tx := range txList {
 		shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		hasPrivacy := tx.IsPrivacy()
@@ -57,7 +57,7 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 		}
 	}
 	//TODO: add go routine
-	ok, err, i := aggregaterange.VerifyBatchingAggregatedRangeProofs(bulletProofList)
+	ok, err, i := aggregatedrange.VerifyBatchingAggregatedRangeProofs(bulletProofList)
 	if err != nil {
 		return false, NewTransactionErr(TxProofVerifyFailError, err), -1
 	}

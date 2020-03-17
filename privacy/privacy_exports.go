@@ -8,6 +8,8 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/hybridencryption"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/schnorr"
+	"github.com/incognitochain/incognito-chain/privacy/proof"
+	"github.com/incognitochain/incognito-chain/privacy/proof/agg_interface"
 )
 
 // Public Constants
@@ -116,3 +118,11 @@ type CoinV2 = coin.CoinV1
 type InputCoin = coin.InputCoin
 type OutputCoin = coin.OutputCoin
 type CoinObject = coin.CoinObject
+
+type Proof = proof.Proof
+type ProofV1 = proof.ProofV1
+type ProofV2 = proof.ProofV2
+type AggregatedRangeProof = agg_interface.AggregatedRangeProof
+
+// type AggregatedRangeProofV1 = proof.AggregatedRangeProofV1
+// type AggregatedRangeProofV2 = proof.AggregatedRangeProofV2

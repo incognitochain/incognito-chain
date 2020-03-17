@@ -12,11 +12,12 @@ import (
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
+	"github.com/incognitochain/incognito-chain/privacy/proof/agg_interface"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/aggregaterange"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/aggregatedrange"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/oneoutofmany"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/serialnumbernoprivacy"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/serialnumberprivacy"
@@ -33,7 +34,7 @@ type PaymentProof struct {
 
 	// for output coins
 	// for proving each value and sum of them are less than a threshold value
-	aggregatedRangeProof *aggregaterange.AggregatedRangeProof
+	aggregatedRangeProof *aggregatedrange.AggregatedRangeProof
 
 	inputCoins  []*coin.InputCoin
 	outputCoins []*coin.OutputCoin
@@ -50,6 +51,8 @@ type PaymentProof struct {
 	commitmentIndices []uint64
 }
 
+func (paymentProof *PaymentProof) GetVersion() uint8 { return 1 }
+
 // GET/SET function
 func (paymentProof PaymentProof) GetOneOfManyProof() []*oneoutofmany.OneOutOfManyProof {
 	return paymentProof.oneOfManyProof
@@ -63,8 +66,9 @@ func (paymentProof PaymentProof) GetSerialNumberNoPrivacyProof() []*serialnumber
 	return paymentProof.serialNumberNoPrivacyProof
 }
 
-func (paymentProof PaymentProof) GetAggregatedRangeProof() *aggregaterange.AggregatedRangeProof {
-	return paymentProof.aggregatedRangeProof
+func (paymentProof PaymentProof) GetAggregatedRangeProof() *agg_interface.AggregatedRangeProof {
+	var a agg_interface.AggregatedRangeProof = paymentProof.aggregatedRangeProof
+	return &a
 }
 
 func (paymentProof PaymentProof) GetCommitmentOutputValue() []*operation.Point {
@@ -103,12 +107,12 @@ func (paymentProof PaymentProof) GetInputCoins() []*coin.InputCoin {
 	return paymentProof.inputCoins
 }
 
-func (paymentProof *PaymentProof) SetInputCoins(v []*coin.InputCoin) {
-	paymentProof.inputCoins = v
-}
-
 func (paymentProof PaymentProof) GetOutputCoins() []*coin.OutputCoin {
 	return paymentProof.outputCoins
+}
+
+func (paymentProof *PaymentProof) SetInputCoins(v []*coin.InputCoin) {
+	paymentProof.inputCoins = v
 }
 
 func (paymentProof *PaymentProof) SetOutputCoins(v []*coin.OutputCoin) {
@@ -119,7 +123,7 @@ func (paymentProof *PaymentProof) SetOutputCoins(v []*coin.OutputCoin) {
 
 // Init
 func (proof *PaymentProof) Init() {
-	aggregatedRangeProof := &aggregaterange.AggregatedRangeProof{}
+	aggregatedRangeProof := &aggregatedrange.AggregatedRangeProof{}
 	aggregatedRangeProof.Init()
 	proof.oneOfManyProof = []*oneoutofmany.OneOutOfManyProof{}
 	proof.serialNumberProof = []*serialnumberprivacy.SNPrivacyProof{}
@@ -384,7 +388,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *errhandler.PrivacyError 
 	lenComOutputMultiRangeProof := common.BytesToInt(proofbytes[offset : offset+2])
 	offset += 2
 	if lenComOutputMultiRangeProof > 0 {
-		aggregatedRangeProof := &aggregaterange.AggregatedRangeProof{}
+		aggregatedRangeProof := &aggregatedrange.AggregatedRangeProof{}
 		aggregatedRangeProof.Init()
 		proof.aggregatedRangeProof = aggregatedRangeProof
 		if offset+lenComOutputMultiRangeProof >= len(proofbytes) {

@@ -7,5 +7,6 @@ type Coin interface {
 	GetVersion() uint8
 	Bytes() []byte
 	SetBytes([]byte) error
+	GetPubKeyLastByte() byte
 	GetCoinValue(key.PrivateKey) uint64
 }

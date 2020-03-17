@@ -31,7 +31,7 @@ type Tx struct {
 	// Sign and Privacy proof, required
 	SigPubKey            []byte `json:"SigPubKey, omitempty"` // 33 bytes
 	Sig                  []byte `json:"Sig, omitempty"`       //
-	Proof                *zkp.PaymentProof
+	Proof                *privacy.Proof
 	PubKeyLastByteSender byte
 
 	// Metadata, optional
@@ -69,7 +69,7 @@ func (tx *Tx) UnmarshalJSON(data []byte) error {
 type TxPrivacyInitParams struct {
 	senderSK    *privacy.PrivateKey
 	paymentInfo []*privacy.PaymentInfo
-	inputCoins  []*privacy.Coin
+	inputCoins  []*privacy.InputCoin
 	fee         uint64
 	hasPrivacy  bool
 	db          database.DatabaseInterface
@@ -80,7 +80,7 @@ type TxPrivacyInitParams struct {
 
 func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
 	paymentInfo []*privacy.PaymentInfo,
-	inputCoins []*privacy.Coin,
+	inputCoins []*privacy.InputCoin,
 	fee uint64,
 	hasPrivacy bool,
 	db database.DatabaseInterface,
@@ -160,7 +160,7 @@ func updateParamsWhenOverBalance(params *TxPrivacyInitParams) error {
 	// Calculate sum of all input coins' value
 	sumInputValue := uint64(0)
 	for _, coin := range params.inputCoins {
-		sumInputValue += coin.GetCoinValue(params.senderSK)
+		sumInputValue += coin.CoinDetails.GetValue()
 	}
 	Logger.log.Debugf("sumInputValue: %d\n", sumInputValue)
 
@@ -211,7 +211,7 @@ func initializeTxAndParams(tx *Tx, params *TxPrivacyInitParams) error {
 	tx.Version = txVersion
 	tx.Type = common.TxNormalType
 	tx.Metadata = params.metaData
-	tx.Proof = &zkp.PaymentProof{}
+	// tx.Proof = &privacy.Proof{}
 	tx.Info, err = getTxInfo(params.info)
 	if err != nil {
 		return err
@@ -327,7 +327,7 @@ func (tx Tx) String() string {
 	record += strconv.FormatInt(tx.LockTime, 10)
 	record += strconv.FormatUint(tx.Fee, 10)
 	if tx.Proof != nil {
-		tmp := base64.StdEncoding.EncodeToString(tx.Proof.Bytes())
+		tmp := base64.StdEncoding.EncodeToString((*tx.Proof).Bytes())
 		//tmp := base58.Base58Check{}.Encode(tx.Proof.Bytes(), 0x00)
 		record += tmp
 		// fmt.Printf("Proof check base 58: %v\n",tmp)
@@ -385,7 +385,7 @@ func (tx Tx) GetTxActualSize() uint64 {
 	sig := uint64(len(tx.Sig))
 	sizeTx += sig
 	if tx.Proof != nil {
-		proof := uint64(len(tx.Proof.Bytes()))
+		proof := uint64(len((*tx.Proof).Bytes()))
 		sizeTx += proof
 	}
 
@@ -411,7 +411,7 @@ func (tx Tx) GetType() string {
 func (tx Tx) ListSerialNumbersHashH() []common.Hash {
 	result := []common.Hash{}
 	if tx.Proof != nil {
-		for _, d := range tx.Proof.GetInputCoins() {
+		for _, d := range (*tx.Proof).GetInputCoins() {
 			hash := common.HashH(d.CoinDetails.GetSerialNumber().ToBytesS())
 			result = append(result, hash)
 		}
@@ -449,30 +449,33 @@ func (tx Tx) IsSalaryTx() bool {
 		return false
 	}
 	// Check serialNumber in every Descs
-	if len(tx.Proof.GetInputCoins()) == 0 {
+	txProof := *tx.Proof
+	if len(txProof.GetInputCoins()) == 0 {
 		return true
 	}
 	return false
 }
 
 func (tx Tx) GetSender() []byte {
-	if tx.Proof == nil || len(tx.Proof.GetInputCoins()) == 0 {
+	txProof := *tx.Proof
+	if tx.Proof == nil || len(txProof.GetInputCoins()) == 0 {
 		return nil
 	}
 	if tx.IsPrivacy() {
 		return nil
 	}
-	if len(tx.Proof.GetInputCoins()) == 0 || tx.Proof.GetInputCoins()[0].CoinDetails == nil {
+	if len((*tx.Proof).GetInputCoins()) == 0 || (*tx.Proof).GetInputCoins()[0].CoinDetails == nil {
 		return nil
 	}
-	return tx.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().ToBytesS()
+	return (*tx.Proof).GetInputCoins()[0].CoinDetails.GetPublicKey().ToBytesS()
 }
 
 func (tx Tx) GetReceivers() ([][]byte, []uint64) {
 	pubkeys := [][]byte{}
 	amounts := []uint64{}
-	if tx.Proof != nil && len(tx.Proof.GetOutputCoins()) > 0 {
-		for _, coin := range tx.Proof.GetOutputCoins() {
+	txProof := *tx.Proof
+	if tx.Proof != nil && len(txProof.GetOutputCoins()) > 0 {
+		for _, coin := range txProof.GetOutputCoins() {
 			added := false
 			coinPubKey := coin.CoinDetails.GetPublicKey().ToBytesS()
 			for i, key := range pubkeys {
@@ -493,8 +496,9 @@ func (tx Tx) GetReceivers() ([][]byte, []uint64) {
 
 func (tx Tx) GetUniqueReceiver() (bool, []byte, uint64) {
 	sender := []byte{} // Empty byte slice for coinbase tx
-	if tx.Proof != nil && len(tx.Proof.GetInputCoins()) > 0 && !tx.IsPrivacy() {
-		sender = tx.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().ToBytesS()
+	txProof := *tx.Proof
+	if tx.Proof != nil && len(txProof.GetInputCoins()) > 0 && !tx.IsPrivacy() {
+		sender = txProof.GetInputCoins()[0].CoinDetails.GetPublicKey().ToBytesS()
 	}
 	pubkeys, amounts := tx.GetReceivers()
 	pubkey := []byte{}
@@ -527,8 +531,9 @@ func (tx Tx) validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH map[
 	if tx.Proof == nil {
 		return nil
 	}
+	txProof := *tx.Proof
 	temp := make(map[common.Hash]interface{})
-	for _, desc := range tx.Proof.GetInputCoins() {
+	for _, desc := range txProof.GetInputCoins() {
 		hash := common.HashH(desc.CoinDetails.GetSerialNumber().ToBytesS())
 		temp[hash] = nil
 	}
@@ -567,8 +572,9 @@ func (tx Tx) ValidateDoubleSpendWithBlockchain(
 			return err
 		}
 	}
-	for i := 0; tx.Proof != nil && i < len(tx.Proof.GetInputCoins()); i++ {
-		serialNumber := tx.Proof.GetInputCoins()[i].CoinDetails.GetSerialNumber().ToBytesS()
+	txProof := *tx.Proof
+	for i := 0; tx.Proof != nil && i < len(txProof.GetInputCoins()); i++ {
+		serialNumber := txProof.GetInputCoins()[i].CoinDetails.GetSerialNumber().ToBytesS()
 		ok, err := db.HasSerialNumber(*prvCoinID, serialNumber, shardID)
 		if ok || err != nil {
 			return errors.New("double spend")
@@ -644,20 +650,30 @@ func (tx Tx) validateNormalTxSanityData() (bool, error) {
 }
 
 func (txN Tx) validateSanityDataOfProof() (bool, error) {
-	if txN.Proof != nil {
+	if txN.Proof == nil {
+		return true, nil
+	}
+	var txProofVersion privacy.Proof
+	if (*txN.Proof).GetVersion() == 1 {
+		txProofVersion = new(privacy.ProofV1)
+	} else {
+		txProofVersion = new(privacy.ProofV2)
+	}
 
-		if len(txN.Proof.GetInputCoins()) > 255 {
-			return false, errors.New("Input coins in tx are very large:" + strconv.Itoa(len(txN.Proof.GetInputCoins())))
+	if txN.Proof != nil {
+		txProof := *txN.Proof
+		if len(txProof.GetInputCoins()) > 255 {
+			return false, errors.New("Input coins in tx are very large:" + strconv.Itoa(len(txProof.GetInputCoins())))
 		}
 
-		if len(txN.Proof.GetOutputCoins()) > 255 {
-			return false, errors.New("Output coins in tx are very large:" + strconv.Itoa(len(txN.Proof.GetOutputCoins())))
+		if len(txProof.GetOutputCoins()) > 255 {
+			return false, errors.New("Output coins in tx are very large:" + strconv.Itoa(len(txProof.GetOutputCoins())))
 		}
 
 		isPrivacy := true
 		// check Privacy or not
 
-		if txN.Proof.GetAggregatedRangeProof() == nil || len(txN.Proof.GetOneOfManyProof()) == 0 || len(txN.Proof.GetSerialNumberProof()) == 0 {
+		if txProof.GetAggregatedRangeProof() == nil || len(txProof.GetOneOfManyProof()) == 0 || len(txN.Proof.GetSerialNumberProof()) == 0 {
 			isPrivacy = false
 		}
 
@@ -861,7 +877,7 @@ func (tx Tx) GetSigPubKey() []byte {
 	return tx.SigPubKey
 }
 
-func (tx Tx) GetProof() *zkp.PaymentProof {
+func (tx Tx) GetProof() *privacy.Proof {
 	return tx.Proof
 }
 

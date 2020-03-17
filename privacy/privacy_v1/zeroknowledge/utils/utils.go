@@ -4,7 +4,6 @@ import (
 	"math"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 )
@@ -12,7 +11,7 @@ import (
 // GenerateChallengeFromByte get hash of n points in G append with input values
 // return blake_2b(G[0]||G[1]||...||G[CM_CAPACITY-1]||<values>)
 // G[i] is list of all generator point of Curve
-func GenerateChallenge(values [][]byte) *privacy.Scalar {
+func GenerateChallenge(values [][]byte) *operation.Scalar {
 	bytes := []byte{}
 	for i := 0; i < len(operation.PedCom.G); i++ {
 		bytes = append(bytes, operation.PedCom.G[i].ToBytesS()...)
@@ -24,7 +23,7 @@ func GenerateChallenge(values [][]byte) *privacy.Scalar {
 
 	hash := operation.HashToScalar(bytes)
 	//res := new(big.Int).SetBytes(hash)
-	//res.Mod(res, privacy.Curve.Params().N)
+	//res.Mod(res, operation.Curve.Params().N)
 	return hash
 }
 

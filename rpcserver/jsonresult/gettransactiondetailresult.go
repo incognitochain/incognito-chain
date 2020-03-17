@@ -9,7 +9,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/transaction"
 )
 
@@ -26,12 +25,12 @@ type TransactionDetail struct {
 	Fee         uint64 `json:"Fee"` // Fee applies: always consant
 	Image       string `json:"Image"`
 
-	IsPrivacy       bool              `json:"IsPrivacy"`
-	Proof           *zkp.PaymentProof `json:"Proof"`
-	ProofDetail     ProofDetail       `json:"ProofDetail"`
-	InputCoinPubKey string            `json:"InputCoinPubKey"`
-	SigPubKey       string            `json:"SigPubKey,omitempty"` // 64 bytes
-	Sig             string            `json:"Sig,omitempty"`       // 64 bytes
+	IsPrivacy       bool           `json:"IsPrivacy"`
+	Proof           *privacy.Proof `json:"Proof"`
+	ProofDetail     ProofDetail    `json:"ProofDetail"`
+	InputCoinPubKey string         `json:"InputCoinPubKey"`
+	SigPubKey       string         `json:"SigPubKey,omitempty"` // 64 bytes
+	Sig             string         `json:"Sig,omitempty"`       // 64 bytes
 
 	Metadata                      string      `json:"Metadata"`
 	CustomTokenData               string      `json:"CustomTokenData"`
@@ -141,7 +140,7 @@ type ProofDetail struct {
 	OutputCoins []*CoinDetail
 }
 
-func (proofDetail *ProofDetail) ConvertFromProof(proof *zkp.PaymentProof) {
+func (proofDetail *ProofDetail) ConvertFromProof(proof *privacy.Proof) {
 	proofDetail.InputCoins = make([]*CoinDetail, 0)
 	for _, input := range proof.GetInputCoins() {
 		in := CoinDetail{

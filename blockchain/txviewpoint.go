@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"errors"
-	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
 	"sort"
 	"strconv"
 
@@ -66,7 +65,7 @@ func (view *TxViewPoint) ListSerialNumnbersEclipsePoint() []*privacy.Point {
 func (view *TxViewPoint) processFetchTxViewPoint(
 	shardID byte,
 	db database.DatabaseInterface,
-	proof *zkp.PaymentProof,
+	proof *privacy.Proof,
 	tokenID *common.Hash,
 ) ([][]byte, map[string][][]byte, map[string][]privacy.OutputCoin, map[string][]privacy.Scalar, error) {
 	acceptedSerialNumbers := make([][]byte, 0)

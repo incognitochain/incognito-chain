@@ -3,14 +3,15 @@ package transaction
 import (
 	"encoding/json"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 func TestUnmarshalJSON(t *testing.T) {
@@ -341,7 +342,7 @@ func TestInitTxWithMultiScenario(t *testing.T) {
 		tx1.SigPubKey[len(tx1.SigPubKey)-1] = tx1.SigPubKey[len(tx1.SigPubKey)-1] ^ tx1.SigPubKey[0]
 		tx1.SigPubKey[len(tx1.SigPubKey)-2] = tx1.SigPubKey[len(tx1.SigPubKey)-2] ^ tx1.SigPubKey[1]
 
-		isValid, err = tx1.ValidateTransaction(hasPrivacy, db, shardID, nil,false)
+		isValid, err = tx1.ValidateTransaction(hasPrivacy, db, shardID, nil, false)
 		assert.Equal(t, false, isValid)
 		assert.NotEqual(t, nil, err)
 

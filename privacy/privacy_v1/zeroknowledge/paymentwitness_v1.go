@@ -8,7 +8,7 @@ import (
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/aggregaterange"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/aggregatedrange"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/oneoutofmany"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/serialnumbernoprivacy"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/serialnumberprivacy"
@@ -26,7 +26,7 @@ type PaymentWitness struct {
 	serialNumberWitness          []*serialnumberprivacy.SNPrivacyWitness
 	serialNumberNoPrivacyWitness []*serialnumbernoprivacy.SNNoPrivacyWitness
 
-	aggregatedRangeWitness *aggregaterange.AggregatedRangeWitness
+	aggregatedRangeWitness *aggregatedrange.AggregatedRangeWitness
 
 	comOutputValue                 []*operation.Point
 	comOutputSerialNumberDerivator []*operation.Point
@@ -268,7 +268,7 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *errhan
 		}
 	}
 	if wit.aggregatedRangeWitness == nil {
-		wit.aggregatedRangeWitness = new(aggregaterange.AggregatedRangeWitness)
+		wit.aggregatedRangeWitness = new(aggregatedrange.AggregatedRangeWitness)
 	}
 	wit.aggregatedRangeWitness.Set(outputValue, randOutputValue)
 	// ---------------------------------------------------

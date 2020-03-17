@@ -162,7 +162,7 @@ func (tx TxCustomTokenPrivacy) GetTxPrivacyTokenActualSize() uint64 {
 type TxPrivacyTokenInitParams struct {
 	senderKey       *privacy.PrivateKey
 	paymentInfo     []*privacy.PaymentInfo
-	inputCoin       []*privacy.Coin
+	inputCoin       []*privacy.InputCoin
 	feeNativeCoin   uint64
 	tokenParams     *CustomTokenPrivacyParamTx
 	db              database.DatabaseInterface
@@ -175,7 +175,7 @@ type TxPrivacyTokenInitParams struct {
 
 func NewTxPrivacyTokenInitParams(senderKey *privacy.PrivateKey,
 	paymentInfo []*privacy.PaymentInfo,
-	inputCoin []*privacy.Coin,
+	inputCoin []*privacy.InputCoin,
 	feeNativeCoin uint64,
 	tokenParams *CustomTokenPrivacyParamTx,
 	db database.DatabaseInterface,
@@ -249,7 +249,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 			// issue token with data of privacy
 			temp := Tx{}
 			temp.Type = common.TxNormalType
-			temp.Proof = new(zkp.PaymentProof)
+			temp.Proof = new(privacy.Proof)
 			tempOutputCoin := make([]*privacy.OutputCoin, 1)
 			tempOutputCoin[0] = new(privacy.OutputCoin)
 			tempOutputCoin[0].CoinDetails = new(privacy.CoinV1)

@@ -9,7 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 // Interface for all types of metadata in tx
@@ -87,7 +87,7 @@ type Transaction interface {
 	GetInfo() []byte
 	GetSender() []byte
 	GetSigPubKey() []byte
-	GetProof() *zkp.PaymentProof
+	GetProof() *privacy.Proof
 	// Get receivers' data for tx
 	GetReceivers() ([][]byte, []uint64)
 	GetUniqueReceiver() (bool, []byte, uint64)

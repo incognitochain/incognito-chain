@@ -5,17 +5,17 @@ package transaction
 // "Prove" and "Verify" these rules:
 // - For each input conceal our real input by getting random inputs (ring signature).
 // - Ensure sum input = sum output (pedersen commitment)
-// - Ensure all output is non-negative (bulletproofs, aggregaterangeproof)
+// - Ensure all output is non-negative (bulletproofs, aggregatedrangeproof)
 
 // Ver 1:
 // Prove:
 // - Prove the input is oneofmany with other random inputs (with sum input = output by Pedersen)
-// - Prove the non-negative with bulletproofs (aggregaterangeproof)
+// - Prove the non-negative with bulletproofs (aggregatedrangeproof)
 // - Sign the above proofs
 
 // Ver 2:
 // Prove:
-// - Prove the non-negative with bulletproofs (aggregaterangeproof)
+// - Prove the non-negative with bulletproofs (aggregatedrangeproof)
 // - Prove the input is one of many with other random inputs plus sum input = output using MLSAG. (it also provides signature).
 
 import (
@@ -41,7 +41,6 @@ func proveAndSignVersionSwitcher(tx *Tx, params *TxPrivacyInitParams) error {
 	} else if tx.Version == 2 {
 		versionSwitcher = new(TxVersion2)
 	}
-
 	// Start proving and verifying
 	return versionSwitcher.Prove(tx, params)
 }
