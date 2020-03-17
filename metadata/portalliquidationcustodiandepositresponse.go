@@ -15,14 +15,14 @@ type PortalLiquidationCustodianDepositResponse struct {
 	DepositStatus    string
 	ReqTxID          common.Hash
 	CustodianAddrStr string
-	DepositAmount uint64
+	DepositedAmount uint64
 }
 
 func NewPortalLiquidationCustodianDepositResponse(
 	depositStatus string,
 	reqTxID common.Hash,
 	custodianAddressStr string,
-	depositAmount uint64,
+	depositedAmount uint64,
 	metaType int,
 ) *PortalLiquidationCustodianDepositResponse {
 	metadataBase := MetadataBase{
@@ -34,7 +34,7 @@ func NewPortalLiquidationCustodianDepositResponse(
 		ReqTxID:          reqTxID,
 		MetadataBase:     metadataBase,
 		CustodianAddrStr: custodianAddressStr,
-		DepositAmount: depositAmount,
+		DepositedAmount: depositedAmount,
 	}
 }
 
@@ -59,7 +59,7 @@ func (iRes PortalLiquidationCustodianDepositResponse) ValidateMetadataByItself()
 
 func (iRes PortalLiquidationCustodianDepositResponse) Hash() *common.Hash {
 	record := iRes.DepositStatus
-	record += strconv.FormatUint(iRes.DepositAmount, 10)
+	record += strconv.FormatUint(iRes.DepositedAmount, 10)
 	record += iRes.ReqTxID.String()
 	record += iRes.MetadataBase.Hash().String()
 

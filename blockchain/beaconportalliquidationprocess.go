@@ -147,15 +147,15 @@ currentPortalState *CurrentPortalState) error {
 			return nil
 		}
 
-		liquidateChange, err := GetLiquidateExchangeRatesChange(custodianState, detectTPExchangeRates)
+		resultFilterTp, err := filterTopPercentileLiquidation(custodianState, detectTPExchangeRates)
 
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while Get liquidate exchange rates change error %v", err)
 			return nil
 		}
 
-		if len(liquidateChange) > 0 {
-			for ptoken, liquidateTopPercentileExchangeRatesDetail := range liquidateChange {
+		if len(resultFilterTp) > 0 {
+			for ptoken, liquidateTopPercentileExchangeRatesDetail := range resultFilterTp {
 				custodianState.LockedAmountCollateral[ptoken] = custodianState.LockedAmountCollateral[ptoken] - liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral
 				custodianState.HoldingPubTokens[ptoken] = custodianState.HoldingPubTokens[ptoken] - liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken
 				custodianState.TotalCollateral = custodianState.TotalCollateral - liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral
@@ -164,14 +164,14 @@ currentPortalState *CurrentPortalState) error {
 			//update custodian
 			currentPortalState.CustodianPoolState[cusStateKey] = custodianState
 
-			//update
+			//update LiquidateExchangeRates
 			liquidateExchangeRatesKey := lvdb.NewPortalLiquidateExchangeRatesKey(beaconHeight)
 			liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey]
 
 			if !ok {
 				item := make(map[string]lvdb.LiquidateExchangeRatesDetail)
 
-				for ptoken, liquidateTopPercentileExchangeRatesDetail := range liquidateChange {
+				for ptoken, liquidateTopPercentileExchangeRatesDetail := range resultFilterTp {
 					item[ptoken] = lvdb.LiquidateExchangeRatesDetail{
 						HoldAmountFreeCollateral: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
 						HoldAmountPubToken: liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
@@ -179,7 +179,7 @@ currentPortalState *CurrentPortalState) error {
 				}
 				currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey], _ = NewLiquidateExchangeRates(item)
 			} else {
-				for ptoken, liquidateTopPercentileExchangeRatesDetail := range liquidateChange {
+				for ptoken, liquidateTopPercentileExchangeRatesDetail := range resultFilterTp {
 					if _, ok := liquidateExchangeRates.Rates[ptoken]; !ok {
 						liquidateExchangeRates.Rates[ptoken] = lvdb.LiquidateExchangeRatesDetail{
 							HoldAmountFreeCollateral: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
@@ -199,7 +199,7 @@ currentPortalState *CurrentPortalState) error {
 			newTPKey := lvdb.NewPortalLiquidateTPExchangeRatesKey(beaconHeight, custodianState.IncognitoAddress)
 			newTPExchangeRates, _ := NewLiquidateTopPercentileExchangeRates(
 				custodianState.IncognitoAddress,
-				liquidateChange,
+				resultFilterTp,
 				common.PortalLiquidateTPExchangeRatesSuccessChainStatus,
 				)
 
@@ -333,6 +333,86 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(beaconHe
 		err = db.StoreRedeemLiquidationExchangeRates([]byte(redeemKey), redeem)
 		if err != nil {
 			Logger.log.Errorf("Store redeem liquidate exchange rates error %v\n", err)
+			return nil
+		}
+	}
+
+	return nil
+}
+
+func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState)  error {
+	if currentPortalState == nil {
+		Logger.log.Errorf("current portal state is nil")
+		return nil
+	}
+	if len(instructions) != 4 {
+		return nil // skip the instruction
+	}
+
+	db := blockchain.GetDatabase()
+
+	// unmarshal instructions content
+	var actionData metadata.PortalLiquidationCustodianDepositContent
+	err := json.Unmarshal([]byte(instructions[3]), &actionData)
+	if err != nil {
+		return err
+	}
+
+	depositStatus := instructions[2]
+
+	if depositStatus == common.PortalLiquidationCustodianDepositSuccessChainStatus {
+		keyCustodianState := lvdb.NewCustodianStateKey(beaconHeight, actionData.IncogAddressStr)
+
+		custodian, ok := currentPortalState.CustodianPoolState[keyCustodianState]
+		if !ok {
+			Logger.log.Errorf("Custodian not found")
+			return nil
+		}
+
+		//deposit from DepositedAmount
+		//minimum prv deposit
+		if actionData.FreeCollateralSelected == false  {
+			custodian.TotalCollateral = custodian.TotalCollateral + actionData.DepositedAmount
+			custodian.LockedAmountCollateral[actionData.PTokenId] += custodian.LockedAmountCollateral[actionData.PTokenId] + actionData.DepositedAmount
+		} else {
+			//deposit from free collateral DepositedAmount
+			custodian.LockedAmountCollateral[actionData.PTokenId] = custodian.LockedAmountCollateral[actionData.PTokenId] + actionData.DepositedAmount
+			custodian.FreeCollateral = custodian.FreeCollateral - actionData.DepositedAmount
+		}
+
+		currentPortalState.CustodianPoolState[keyCustodianState] = custodian
+
+		liquidationCustodianDepositKey := lvdb.NewLiquidationCustodianDepositKey(actionData.TxReqID.String())
+		newLiquidationCustodianDeposit, _ := NewLiquidationCustodianDeposit(
+			actionData.TxReqID,
+			actionData.PTokenId,
+			actionData.IncogAddressStr,
+			actionData.DepositedAmount,
+			actionData.FreeCollateralSelected,
+			common.PortalLiquidationCustodianDepositSuccessStatus,
+		)
+
+		err = db.StoredLiquidationCustodianDeposit([]byte(liquidationCustodianDepositKey), newLiquidationCustodianDeposit)
+
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occurred while store liquidation custodian deposit error %v", err)
+			return nil
+		}
+	} else if depositStatus == common.PortalLiquidationCustodianDepositRejectedChainStatus {
+		liquidationCustodianDepositKey := lvdb.NewLiquidationCustodianDepositKey(actionData.TxReqID.String())
+		newLiquidationCustodianDeposit, _ := NewLiquidationCustodianDeposit(
+			actionData.TxReqID,
+			actionData.PTokenId,
+			actionData.IncogAddressStr,
+			actionData.DepositedAmount,
+			actionData.FreeCollateralSelected,
+			common.PortalLiquidationCustodianDepositRejectedStatus,
+		)
+
+		err = db.StoredLiquidationCustodianDeposit([]byte(liquidationCustodianDepositKey), newLiquidationCustodianDeposit)
+
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occurred while store liquidation custodian deposit error %v", err)
 			return nil
 		}
 	}

@@ -16,8 +16,8 @@ type PortalLiquidationCustodianDeposit struct {
 	MetadataBase
 	IncogAddressStr string
 	PTokenId string
-	RemoteAddress string
 	DepositedAmount uint64
+	FreeCollateralSelected bool
 }
 
 type PortalLiquidationCustodianDepositAction struct {
@@ -30,20 +30,20 @@ type PortalLiquidationCustodianDepositContent struct {
 	IncogAddressStr string
 	PTokenId string
 	DepositedAmount uint64
-	RemoteAddress string
+	FreeCollateralSelected bool
 	TxReqID         common.Hash
 	ShardID         byte
 }
 
-func NewPortalLiquidationCustodianDeposit(metaType int, incognitoAddrStr string, pToken string, remoteAddress string, amount uint64) (*PortalLiquidationCustodianDeposit , error) {
+func NewPortalLiquidationCustodianDeposit(metaType int, incognitoAddrStr string, pToken string, amount uint64, freeCollateralSelected bool) (*PortalLiquidationCustodianDeposit , error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
 	custodianDepositMeta := &PortalLiquidationCustodianDeposit {
 		IncogAddressStr: incognitoAddrStr,
 		PTokenId: pToken,
-		DepositedAmount: amount, 
-		RemoteAddress: remoteAddress,
+		DepositedAmount: amount,
+		FreeCollateralSelected: freeCollateralSelected,
 	}
 	custodianDepositMeta.MetadataBase = metadataBase
 	return custodianDepositMeta, nil
@@ -95,11 +95,6 @@ func (custodianDeposit PortalLiquidationCustodianDeposit) ValidateSanityData(bcr
 		return false, false, errors.New("deposit amount should be equal to the tx value")
 	}
 
-	// validate remote addresses
-	if len(custodianDeposit.RemoteAddress) == 0 {
-		return false, false, errors.New("remote addresses should be at least one")
-	}
-
 	if !common.IsPortalToken(custodianDeposit.PTokenId) {
 		return false, false, errors.New("TokenID in remote address is invalid")
 	}
@@ -114,9 +109,9 @@ func (custodianDeposit PortalLiquidationCustodianDeposit) ValidateMetadataByItse
 func (custodianDeposit PortalLiquidationCustodianDeposit) Hash() *common.Hash {
 	record := custodianDeposit.MetadataBase.Hash().String()
 	record += custodianDeposit.IncogAddressStr
-	record += custodianDeposit.RemoteAddress
 	record += custodianDeposit.PTokenId
 	record += strconv.FormatUint(custodianDeposit.DepositedAmount, 10)
+	record += strconv.FormatBool(custodianDeposit.FreeCollateralSelected)
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash

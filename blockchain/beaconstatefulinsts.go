@@ -749,6 +749,36 @@ func (blockchain *BlockChain) handlePortalInsts(
 		}
 	}
 
+	// handle portal  liquidation custodian deposit inst
+	var portalLiquidationCustodianDepositActionByShardIDKeys []int
+	for k := range portalLiquidationCustodianDepositActionByShardID {
+		portalLiquidationCustodianDepositActionByShardIDKeys = append(portalLiquidationCustodianDepositActionByShardIDKeys, int(k))
+	}
+
+	sort.Ints(portalLiquidationCustodianDepositActionByShardIDKeys)
+	for _, value := range portalLiquidationCustodianDepositActionByShardIDKeys {
+		shardID := byte(value)
+		actions := portalLiquidationCustodianDepositActionByShardID[shardID]
+		for _, action := range actions {
+			contentStr := action[1]
+			newInst, err := blockchain.buildInstructionsForRedeemLiquidateExchangeRates(
+				contentStr,
+				shardID,
+				metadata.PortalRedeemLiquidateExchangeRatesMeta,
+				currentPortalState,
+				beaconHeight,
+			)
+
+			if err != nil {
+				Logger.log.Error(err)
+				continue
+			}
+			if len(newInst) > 0 {
+				instructions = append(instructions, newInst...)
+			}
+		}
+	}
+
 	return instructions, nil
 }
 

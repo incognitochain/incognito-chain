@@ -80,23 +80,16 @@ func (portalExchangeRates PortalExchangeRates) ValidateSanityData(bcr Blockchain
 		return false, false, errors.New("Tx exchange rates must be TxNormalType")
 	}
 
-	//todo: remove checking IsCoinsBurning and add more validate for Rates
 
-	// check burning tx
-	if !txr.IsCoinsBurning(bcr, beaconHeight) {
-		return false, false, errors.New("Must send coin to burning address")
-	}
-
-	/*for pToken, value := range portalExchangeRates.Rates {
-		isSupported, err := common.SliceExists(PortalSupportedExchangeRatesSymbols, pToken)
-		if err != nil || !isSupported {
+	for _, value := range portalExchangeRates.Rates {
+		if !common.IsPortalToken(value.PTokenID) {
 			return false, false, errors.New("Public token is not supported currently")
 		}
 
-		if value == 0 {
+		if value.Rate <= 0 {
 			return false, false, errors.New("Exchange rates should be larger than 0")
 		}
-	}*/
+	}
 
 	return true, true, nil
 }

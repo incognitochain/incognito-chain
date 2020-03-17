@@ -150,6 +150,9 @@ const (
 
 	PortalRedeemLiquidateExchangeRatesSuccessStatus = 1
 	PortalRedeemLiquidateExchangeRatesRejectedStatus = 2
+
+	PortalLiquidationCustodianDepositSuccessStatus = 1
+	PortalLiquidationCustodianDepositRejectedStatus = 2
 )
 
 // PDE statuses for chain
