@@ -43,12 +43,12 @@ func NewSignedHeader (h *types.Header, lastCommit *types.Commit) *types.SignedHe
 }
 
 func VerifySignature(sh *types.SignedHeader, chainID string) *BNBRelayingError {
-	validatorMap := validatorMapMainnet
-	validatorVotingPowers := ValidatorVotingPowers
+	validatorMap := validatorsMainnet
+	validatorVotingPowers := MainnetValidatorVotingPowers
 	totalVotingPowerParam := MainnetTotalVotingPowers
 
 	if chainID == TestnetBNBChainID {
-		validatorMap = validatorMapTestnet
+		validatorMap = validatorsTestnet
 		validatorVotingPowers = ValidatorVotingPowersTestnet
 		totalVotingPowerParam = TestnetTotalVotingPowers
 	}
@@ -127,13 +127,19 @@ func appendHeaderToUnconfirmedHeaders (header *types.Header, unconfirmedHeaders 
 
 // ReceiveNewHeader receives new header and last commit for the previous header block
 func (hc *LatestHeaderChain) ReceiveNewHeader(h *types.Header, lastCommit *types.Commit, chainID string) (*LatestHeaderChain, bool, *BNBRelayingError) {
-	var err2 error
+	genesisBlockHeight := int64(0)
+	if chainID == MainnetBNBChainID {
+		genesisBlockHeight = MainnetGenesisBlockHeight
+	} else if chainID == TestnetBNBChainID {
+		genesisBlockHeight = TestnetGenesisBlockHeight
+	}
 
+	var err2 error
 	// h is the first header block
 	if hc.LatestHeader == nil && len(hc.UnconfirmedHeaders) == 0 {
 		// check h.height = 1
-		if h.Height != 1 {
-			Logger.log.Errorf("[ReceiveNewHeader] the height of header must be 1")
+		if h.Height != genesisBlockHeight {
+			Logger.log.Errorf("[ReceiveNewHeader] the genesis block height must be %v", genesisBlockHeight)
 			return hc, false, NewBNBRelayingError(InvalidNewHeaderErr, errors.New("the height of header must be 1"))
 		}
 

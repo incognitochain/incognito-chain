@@ -12,10 +12,9 @@ import (
 )
 
 // Mainnet - Binance
-var validatorMapMainnet, _ = NewFixedValidators()
 
 // address = hexEncode(sha256(pubKey)[:20])
-var ValidatorAddresses = []string{
+var MainnetValidatorAddresses = []string{
 	"1175946A48EAA473868A0A6F52E6C66CCAF472EA",
 	"14CFCE69B645F3F88BAF08EA5B77FA521E4480F9",
 	"17B42E8F284D3CA0E420262F89CD76C749BB12C9",
@@ -30,7 +29,7 @@ var ValidatorAddresses = []string{
 }
 
 // public key on ed25519 curve (base64 encoded)
-var ValidatorB64EncodePubKeys = []string{
+var MainnetValidatorB64EncodePubKeys = []string{
 	"03adih94tMF6ll96MNQYH6u9H5afRtPI6Dta1IRUIdg=",
 	"K6ToFUL0N7euH4o13bIzx4mo3CJzQ3fZttY68cpAO2E=",
 	"342oxav9s4WVORMIu3HloeCqvcHQzzgxXVDWvpObJgY=",
@@ -44,8 +43,8 @@ var ValidatorB64EncodePubKeys = []string{
 	"cfLXuOwci5mmU0KbARjNIB95T0CdD+pNZbG2YvKwAGM=",
 }
 
-// ValidatorPubKeyBytes are results from base-64 decoding ValidatorB64EncodePubKeys
-var ValidatorPubKeyBytes = [][]byte{
+// MainnetValidatorPubKeyBytes are results from base-64 decoding MainnetValidatorB64EncodePubKeys
+var MainnetValidatorPubKeyBytes = [][]byte{
 	{211, 118, 157, 138, 31, 120, 180, 193, 122, 150, 95, 122, 48, 212, 24, 31, 171, 189, 31, 150, 159, 70, 211, 200, 232, 59, 90, 212, 132, 84, 33, 216},
 	{43, 164, 232, 21, 66, 244, 55, 183, 174, 31, 138, 53, 221, 178, 51, 199, 137, 168, 220, 34, 115, 67, 119, 217, 182, 214, 58, 241, 202, 64, 59, 97},
 	{223, 141, 168, 197, 171, 253, 179, 133, 149, 57, 19, 8, 187, 113, 229, 161, 224, 170, 189, 193, 208, 207, 56, 49, 93, 80, 214, 190, 147, 155, 38, 6},
@@ -59,7 +58,7 @@ var ValidatorPubKeyBytes = [][]byte{
 	{113, 242, 215, 184, 236, 28, 139, 153, 166, 83, 66, 155, 1, 24, 205, 32, 31, 121, 79, 64, 157, 15, 234, 77, 101, 177, 182, 98, 242, 176, 0, 99},
 }
 
-var ValidatorVotingPowers = []int64{
+var MainnetValidatorVotingPowers = []int64{
 	1000000000000,
 	1000000000000,
 	1000000000000,
@@ -82,8 +81,8 @@ func SHA256(data []byte) []byte {
 
 // DecodePublicKeyValidator decodes encoded public key to public key in bytes array
 func DecodePublicKeyValidator() error {
-	ValidatorPubKeyBytes = make([][]byte, len(ValidatorB64EncodePubKeys))
-	for i, item := range ValidatorB64EncodePubKeys {
+	MainnetValidatorPubKeyBytes = make([][]byte, len(MainnetValidatorB64EncodePubKeys))
+	for i, item := range MainnetValidatorB64EncodePubKeys {
 		bytes, err := base64.StdEncoding.DecodeString(item)
 		if err != nil {
 			return err
@@ -93,33 +92,16 @@ func DecodePublicKeyValidator() error {
 		pubKeyHash := SHA256(bytes)
 		addTmpStr := strings.ToUpper(hex.EncodeToString(pubKeyHash[0:20]))
 
-		if addTmpStr == ValidatorAddresses[i] {
-			ValidatorPubKeyBytes[i] = bytes
+		if addTmpStr == MainnetValidatorAddresses[i] {
+			MainnetValidatorPubKeyBytes[i] = bytes
 		} else{
 			fmt.Printf("Public key is wrong %v\n", i)
 		}
 	}
 
-	fmt.Printf("ValidatorPubKeyBytes %#v\n", ValidatorPubKeyBytes)
+	fmt.Printf("MainnetValidatorPubKeyBytes %#v\n", MainnetValidatorPubKeyBytes)
 	return nil
 }
-
-func NewFixedValidators() (map[string]*types.Validator, error) {
-	if len(ValidatorAddresses) != len(ValidatorPubKeyBytes) || len(ValidatorAddresses) != len(ValidatorVotingPowers) {
-		return nil, errors.New("invalid validator set data")
-	}
-	validators := make(map[string]*types.Validator, len(ValidatorAddresses))
-	for i, addressStr := range ValidatorAddresses {
-		var pubKey ed25519.PubKeyEd25519
-		copy(pubKey[:], ValidatorPubKeyBytes[i])
-		validators[addressStr] = &types.Validator{
-			PubKey:      pubKey,
-			VotingPower: ValidatorVotingPowers[i],
-		}
-	}
-	return validators, nil
-}
-
 
 // Testnet
 
@@ -133,7 +115,7 @@ var ValidatorB64EncodePubKeysTestnet = []string{
 	"98r+D2A3M3E8sQvYobUkx3gEIMaJhc23md9cUXbtNhs=",
 }
 
-// ValidatorPubKeyBytes are results from base-64 decoding ValidatorB64EncodePubKeys
+// MainnetValidatorPubKeyBytes are results from base-64 decoding MainnetValidatorB64EncodePubKeys
 var ValidatorPubKeyBytesTestnet = [][]byte{
 	[]byte{0xf7, 0xca, 0xfe, 0xf, 0x60, 0x37, 0x33, 0x71, 0x3c, 0xb1, 0xb, 0xd8, 0xa1, 0xb5, 0x24, 0xc7, 0x78, 0x4, 0x20, 0xc6, 0x89, 0x85, 0xcd, 0xb7, 0x99, 0xdf, 0x5c, 0x51, 0x76, 0xed, 0x36, 0x1b},
 }
@@ -142,21 +124,83 @@ var ValidatorVotingPowersTestnet = []int64{
 	1000000000000,
 }
 
-var validatorMapTestnet, _ = NewFixedValidatorsTestnet()
+//var ValidatorAddressesTestnet = []string{
+//	"06FD60078EB4C2356137DD50036597DB267CF616",
+//	"18E69CC672973992BB5F76D049A5B2C5DDF77436",
+//	"344C39BB8F4512D6CAB1F6AAFAC1811EF9D8AFDF",
+//	"37EF19AF29679B368D2B9E9DE3F8769B35786676",
+//	"62633D9DB7ED78E951F79913FDC8231AA77EC12B",
+//	"7B343E041CA130000A8BC00C35152BD7E7740037",
+//	"91844D296BD8E591448EFC65FD6AD51A888D58FA",
+//	"B3727172CE6473BC780298A2D66C12F1A14F5B2A",
+//	"B6F20C7FAA2B2F6F24518FA02B71CB5F4A09FBA3",
+//	"E0DD72609CC106210D1AA13936CB67B93A0AEE21",
+//	"FC3108DC3814888F4187452182BC1BAF83B71BC9",
+//}
+//
+//// MainnetValidatorPubKeyBytes are results from base-64 decoding MainnetValidatorB64EncodePubKeys
+//var ValidatorPubKeyBytesTestnet = [][]byte{
+//	{22,36,222,100,32,225,124,190,156,32,205,207,223,135,107,59,18,151,141,50,100,160,7,252,170,167,28,76,219,112,29,158,188,3,35,244,79},
+//	{22,36,222,100,32,24,78,123,16,61,52,196,16,3,249,184,100,213,248,193,173,218,155,208,67,107,37,59,179,200,68,188,115,156,30,119,201},
+//	{22,36,222,100,32,77,66,10,234,132,62,146,160,207,230,157,137,105,109,255,104,39,118,159,156,181,42,36,154,245,55,206,137,191,42,75,116},
+//	{22,36,222,100,32,189,3,222,159,138,178,158,40,0,9,78,21,63,172,111,105,108,250,81,37,54,201,194,248,4,220,178,194,196,228,174,214},
+//	{22,36,222,100,32,143,74,116,160,115,81,137,93,223,55,48,87,185,143,174,109,250,242,205,33,243,122,6,62,25,96,16,120,254,71,13,83},
+//	{22,36,222,100,32,74,93,71,83,235,121,249,46,128,239,226,45,247,172,164,246,102,164,244,75,248,28,83,108,74,9,212,185,197,182,84,181},
+//	{22,36,222,100,32,200,14,154,190,247,255,67,156,16,198,143,232,241,48,61,237,223,197,39,113,140,59,55,216,186,104,7,68,110,60,130,122},
+//	{22,36,222,100,32,145,66,175,204,105,27,124,192,93,38,199,176,190,12,139,70,65,130,148,23,23,48,224,121,243,132,253,226,250,80,186,252},
+//	{22,36,222,100,32,73,178,136,228,235,187,58,40,28,45,84,111,195,2,83,213,186,240,137,147,182,229,210,149,251,120,122,91,49,74,41,142},
+//	{22,36,222,100,32,4,34,67,57,104,143,1,46,100,157,228,142,36,24,128,9,46,170,143,106,160,244,241,75,252,249,224,199,105,23,192,182},
+//	{22,36,222,100,32,64,52,179,124,237,168,160,191,19,177,171,174,238,122,143,147,131,84,32,153,165,84,210,25,185,61,12,230,158,57,112,232},
+//}
+//
+//var ValidatorVotingPowersTestnet = []int64{
+//	1000000000000,
+//	1000000000000,
+//	1000000000000,
+//	1000000000000,
+//	1000000000000,
+//	1000000000000,
+//	1000000000000,
+//	1000000000000,
+//	1000000000000,
+//	1000000000000,
+//	1000000000000,
+//}
 
-func NewFixedValidatorsTestnet() (map[string]*types.Validator, error) {
-	if len(ValidatorAddressesTestnet) != len(ValidatorPubKeyBytesTestnet) || len(ValidatorAddressesTestnet) != len(ValidatorVotingPowersTestnet) {
-		return nil, errors.New("invalid validator set data")
-	}
-	validators := make(map[string]*types.Validator, len(ValidatorAddressesTestnet))
-	for i, addressStr := range ValidatorAddressesTestnet {
-		var pubKey ed25519.PubKeyEd25519
-		copy(pubKey[:], ValidatorPubKeyBytesTestnet[i])
-		validators[addressStr] = &types.Validator{
-			PubKey:      pubKey,
-			VotingPower: ValidatorVotingPowersTestnet[i],
+func NewFixedValidators(chainID string) (map[string]*types.Validator, error) {
+	if chainID == MainnetBNBChainID {
+		if len(MainnetValidatorAddresses) != len(MainnetValidatorPubKeyBytes) || len(MainnetValidatorAddresses) != len(MainnetValidatorVotingPowers) {
+			return nil, errors.New("invalid validator set data")
 		}
+		validators := make(map[string]*types.Validator, len(MainnetValidatorAddresses))
+		for i, addressStr := range MainnetValidatorAddresses {
+			var pubKey ed25519.PubKeyEd25519
+			copy(pubKey[:], MainnetValidatorPubKeyBytes[i])
+			validators[addressStr] = &types.Validator{
+				PubKey:      pubKey,
+				VotingPower: MainnetValidatorVotingPowers[i],
+			}
+		}
+		return validators, nil
+	} else if chainID == TestnetBNBChainID {
+		if len(ValidatorAddressesTestnet) != len(ValidatorPubKeyBytesTestnet) || len(ValidatorAddressesTestnet) != len(ValidatorVotingPowersTestnet) {
+			return nil, errors.New("invalid validator set data")
+		}
+		validators := make(map[string]*types.Validator, len(ValidatorAddressesTestnet))
+		for i, addressStr := range ValidatorAddressesTestnet {
+			var pubKey ed25519.PubKeyEd25519
+			copy(pubKey[:], ValidatorPubKeyBytesTestnet[i])
+			validators[addressStr] = &types.Validator{
+				PubKey:      pubKey,
+				VotingPower: ValidatorVotingPowersTestnet[i],
+			}
+		}
+		return validators, nil
 	}
-	return validators, nil
+
+	return nil, errors.New("Invalid network chainID")
 }
+
+var validatorsMainnet, _ = NewFixedValidators(MainnetBNBChainID)
+var validatorsTestnet, _ = NewFixedValidators(TestnetBNBChainID)
 

@@ -711,7 +711,6 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		// get list matching custodians in waitingPortingRequest
 		custodians := waitingPortingRequest.Custodians
 		outputs := txBNB.Msgs[0].(msg.SendMsg).Outputs
-		bnbNetworkType := byte(relaying.TestnetType)
 		for _, cusDetail := range custodians {
 			remoteAddressNeedToBeTransfer := cusDetail.RemoteAddress
 			amountNeedToBeTransfer := cusDetail.Amount
@@ -719,7 +718,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 
 			isChecked := false
 			for _, out := range outputs {
-				addr, _ := relaying.GetAccAddressString(&out.Address, bnbNetworkType)
+				addr, _ := relaying.GetAccAddressString(&out.Address, blockchain.config.ChainParams.BNBRelayingHeaderChainID)
 				if addr != remoteAddressNeedToBeTransfer {
 					Logger.log.Errorf("[portal] remoteAddressNeedToBeTransfer: %v - addr: %v\n", remoteAddressNeedToBeTransfer, addr)
 					continue
@@ -1632,12 +1631,9 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		amountNeedToBeTransfer := meta.RedeemAmount
 		amountNeedToBeTransferInBNB := convertIncPBNBAmountToExternalBNBAmount(int64(amountNeedToBeTransfer))
 
-		//todo: need to get network type
-		bnbNetworkType := byte(relaying.TestnetType)
-
 		isChecked := false
 		for _, out := range outputs {
-			addr, _ := relaying.GetAccAddressString(&out.Address, bnbNetworkType)
+			addr, _ := relaying.GetAccAddressString(&out.Address, blockchain.config.ChainParams.BNBRelayingHeaderChainID)
 			if addr != remoteAddressNeedToBeTransfer {
 				continue
 			}
