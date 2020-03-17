@@ -271,6 +271,7 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 	keyExchangeRate := lvdb.NewFinalExchangeRatesKey(beaconHeight)
 	exchangeRate, ok := currentPortalState.FinalExchangeRates[keyExchangeRate]
 	if !ok {
+		Logger.log.Errorf("Exchange rate not found")
 		return [][]string{}, nil
 	}
 

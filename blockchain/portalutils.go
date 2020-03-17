@@ -851,7 +851,7 @@ func CalculatePortingFees(totalPToken uint64) uint64 {
 	return uint64(roundNumber)
 }
 
-func calMinPortingFee(portingAmountInPToken uint64, tokenSymbol string, exchangeRate *lvdb.FinalExchangeRates) (uint64, error) {
+func CalMinPortingFee(portingAmountInPToken uint64, tokenSymbol string, exchangeRate *lvdb.FinalExchangeRates) (uint64, error) {
 	portingAmountInPRV, err := exchangeRate.ExchangePToken2PRVByTokenId(tokenSymbol, portingAmountInPToken)
 	if err != nil {
 		Logger.log.Errorf("Error when calculating minimum porting fee %v", err)

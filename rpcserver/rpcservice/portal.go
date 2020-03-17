@@ -150,13 +150,12 @@ func (portal *Portal) GetPortingFees(tokenSymbol string, valuePToken uint64, ser
 		return result, NewRPCError(GetExchangeRatesError, err)
 	}
 
-	exchange, err := finalExchangeRates.ExchangePToken2PRVByTokenId(tokenSymbol, valuePToken)
+	exchangePortingFees, err := blockchain.CalMinPortingFee(valuePToken, tokenSymbol, finalExchangeRates)
 
 	if err != nil {
 		return result, NewRPCError(GetExchangeRatesError, err)
 	}
 
-	exchangePortingFees := blockchain.CalculatePortingFees(exchange)
 	result[tokenSymbol] = exchangePortingFees
 
 	return result, nil
