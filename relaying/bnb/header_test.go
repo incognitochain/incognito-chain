@@ -382,7 +382,7 @@ import (
 //		},
 //	}
 //
-//	//pubkey := validatorMapMainnet["14CFCE69B645F3F88BAF08EA5B77FA521E4480F9"].publicKey
+//	//pubkey := validatorsMainnet["14CFCE69B645F3F88BAF08EA5B77FA521E4480F9"].publicKey
 //
 //	vote := &types.Vote{
 //		Type:             2,
@@ -769,8 +769,8 @@ import (
 //	validatorHash, _ := hex.DecodeString("43C53A50D8653EF8CF1E5716DA68120FB51B636DC6D111EC3277B098ECD42D49")
 //
 //	validatorBytes := make([][]byte, 11)
-//	for i, v := range ValidatorAddresses{
-//		validatorBytes[i] = validatorMapMainnet[v].Bytes()
+//	for i, v := range MainnetValidatorAddresses{
+//		validatorBytes[i] = validatorsMainnet[v].Bytes()
 //	}
 //
 //	hash := merkle.SimpleHashFromByteSlices(validatorBytes)

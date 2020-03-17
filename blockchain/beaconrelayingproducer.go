@@ -6,7 +6,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
-	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"strconv"
 )
 
@@ -117,14 +116,13 @@ func (blockchain *BlockChain) buildInstructionsForBNBHeaderRelaying(
 		return [][]string{inst}, nil
 	}
 
-	// todo: need to be config
-	chainID := relaying.MainnetBNBChainID
 	// if valid, create instruction with status accepted
 	// if not, create instruction with status rejected
 	latestBNBHeader := relayingHeaderChain.BNBHeaderChain.LatestHeader
 	var isValid bool
 	var err2 error
-	relayingHeaderChain.BNBHeaderChain, isValid, err2 = relayingHeaderChain.BNBHeaderChain.ReceiveNewHeader(newHeader.Header, newHeader.LastCommit, chainID)
+	relayingHeaderChain.BNBHeaderChain, isValid, err2 = relayingHeaderChain.BNBHeaderChain.ReceiveNewHeader(
+		newHeader.Header, newHeader.LastCommit, blockchain.config.ChainParams.BNBRelayingHeaderChainID)
 	if err2 != nil || !isValid {
 		Logger.log.Errorf("Error - [buildInstructionsForBNBHeaderRelaying]: Verify new header failed. %v\n", err2)
 		inst := buildBNBHeaderRelayingInst(

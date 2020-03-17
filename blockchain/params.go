@@ -45,6 +45,7 @@ type Params struct {
 	ChainVersion                     string
 	AssignOffset                     int
 	BeaconHeightBreakPointBurnAddr   uint64
+	BNBRelayingHeaderChainID         string
 }
 
 type GenesisParams struct {
@@ -108,6 +109,7 @@ func init() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test.json",
 		BeaconHeightBreakPointBurnAddr: 250000,
+		BNBRelayingHeaderChainID:       TestnetBNBChainID,
 	}
 	// END TESTNET
 	// FOR MAINNET
@@ -153,5 +155,6 @@ func init() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-main.json",
 		BeaconHeightBreakPointBurnAddr: 150500,
+		BNBRelayingHeaderChainID:       MainnetBNBChainID,
 	}
 }
