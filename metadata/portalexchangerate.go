@@ -82,7 +82,7 @@ func (portalExchangeRates PortalExchangeRates) ValidateSanityData(bcr Blockchain
 
 
 	for _, value := range portalExchangeRates.Rates {
-		if !common.IsPortalToken(value.PTokenID) {
+		if !common.IsPortalExchangeRateToken(value.PTokenID) {
 			return false, false, errors.New("Public token is not supported currently")
 		}
 
