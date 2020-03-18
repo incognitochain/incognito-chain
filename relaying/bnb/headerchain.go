@@ -1,13 +1,42 @@
-package relaying
+package bnb
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/tendermint/tendermint/types"
 	"strings"
 )
+
+var TestnetGenesisHeaderStr = "eyJIZWFkZXIiOnsidmVyc2lvbiI6eyJibG9jayI6MTAsImFwcCI6MH0sImNoYWluX2lkIjoiQmluYW5jZS1EZXYiLCJoZWlnaHQiOjEsInRpbWUiOiIyMDIwLTAzLTA1VDA4OjI2OjIwLjk3MDUzMloiLCJudW1fdHhzIjowLCJ0b3RhbF90eHMiOjAsImxhc3RfYmxvY2tfaWQiOnsiaGFzaCI6IiIsInBhcnRzIjp7InRvdGFsIjowLCJoYXNoIjoiIn19LCJsYXN0X2NvbW1pdF9oYXNoIjoiIiwiZGF0YV9oYXNoIjoiIiwidmFsaWRhdG9yc19oYXNoIjoiMzg5NEUyMUNBNUEwMTRFM0E1Mzc4NUQwMjRDNkYwOTJBMDk4MzlEMUIwOThFMDBEMzRERDNBRDNGMTM1M0I5RSIsIm5leHRfdmFsaWRhdG9yc19oYXNoIjoiMzg5NEUyMUNBNUEwMTRFM0E1Mzc4NUQwMjRDNkYwOTJBMDk4MzlEMUIwOThFMDBEMzRERDNBRDNGMTM1M0I5RSIsImNvbnNlbnN1c19oYXNoIjoiMjk0RDhGQkQwQjk0Qjc2N0E3RUJBOTg0MEYyOTlBMzU4NkRBN0ZFNkI1REVBRDNCN0VFQ0JBMTkzQzQwMEY5MyIsImFwcF9oYXNoIjoiIiwibGFzdF9yZXN1bHRzX2hhc2giOiIiLCJldmlkZW5jZV9oYXNoIjoiIiwicHJvcG9zZXJfYWRkcmVzcyI6IkY2QjFDQTI5RTNFMTFGNDkwNDIwOUM4RjBCNkE4OTU5NTI2NTNCOTQifSwiTGFzdENvbW1pdCI6eyJibG9ja19pZCI6eyJoYXNoIjoiIiwicGFydHMiOnsidG90YWwiOjAsImhhc2giOiIifX0sInByZWNvbW1pdHMiOm51bGx9fQ=="
+var MainnetGenesisHeaderStr = ""
+
+func createGenesisHeaderChain(chainID string) (*lvdb.BNBHeader, error) {
+	genesisHeaderStr := ""
+	if chainID == MainnetBNBChainID {
+		genesisHeaderStr = MainnetGenesisHeaderStr
+	} else if chainID == TestnetBNBChainID {
+		genesisHeaderStr = TestnetGenesisHeaderStr
+	} else {
+		return nil, errors.New("Invalid network chainID")
+	}
+
+	genesisHeaderBytes, err := base64.StdEncoding.DecodeString(genesisHeaderStr)
+	if err != nil {
+		return nil, errors.New("Can not decode genesis header string")
+	}
+	var bnbHHeader lvdb.BNBHeader
+	err = json.Unmarshal(genesisHeaderBytes, &bnbHHeader)
+	if err != nil {
+		return nil, errors.New("Can not unmarshal genesis header bytes")
+	}
+
+	return &bnbHHeader, nil
+}
 
 type HeaderChain struct {
 	HeaderChain []*types.Header
@@ -106,6 +135,14 @@ func VerifySignedHeader(sh *types.SignedHeader, chainID string) (bool, *BNBRelay
 	return true, nil
 }
 
+func ValidateBasicSignedHeader(sh *types.SignedHeader, chainID string) (bool, *BNBRelayingError){
+	err := sh.ValidateBasic(chainID)
+	if err != nil {
+		return false, NewBNBRelayingError(InvalidBasicSignedHeaderErr, err)
+	}
+
+	return true, nil
+}
 
 type LatestHeaderChain struct {
 	LatestHeader *types.Header
@@ -127,30 +164,13 @@ func appendHeaderToUnconfirmedHeaders (header *types.Header, unconfirmedHeaders 
 
 // ReceiveNewHeader receives new header and last commit for the previous header block
 func (hc *LatestHeaderChain) ReceiveNewHeader(h *types.Header, lastCommit *types.Commit, chainID string) (*LatestHeaderChain, bool, *BNBRelayingError) {
-	genesisBlockHeight := int64(0)
-	if chainID == MainnetBNBChainID {
-		genesisBlockHeight = MainnetGenesisBlockHeight
-	} else if chainID == TestnetBNBChainID {
-		genesisBlockHeight = TestnetGenesisBlockHeight
+	// create genesis header before appending new header
+	if hc.LatestHeader == nil && len(hc.UnconfirmedHeaders) == 0 {
+		genesisHeader, _ := createGenesisHeaderChain(chainID)
+		hc.LatestHeader = genesisHeader.Header
 	}
 
 	var err2 error
-	// h is the first header block
-	if hc.LatestHeader == nil && len(hc.UnconfirmedHeaders) == 0 {
-		// check h.height = 1
-		if h.Height != genesisBlockHeight {
-			Logger.log.Errorf("[ReceiveNewHeader] the genesis block height must be %v", genesisBlockHeight)
-			return hc, false, NewBNBRelayingError(InvalidNewHeaderErr, errors.New("the height of header must be 1"))
-		}
-
-		// just append into hc.UnconfirmedHeaders
-		hc.UnconfirmedHeaders, err2 = appendHeaderToUnconfirmedHeaders(h, hc.UnconfirmedHeaders)
-		if err2 != nil {
-			return hc, false, NewBNBRelayingError(InvalidNewHeaderErr, err2)
-		}
-		return hc, true, nil
-	}
-
 	if hc.LatestHeader != nil && lastCommit == nil {
 		Logger.log.Errorf("[ReceiveNewHeader] last commit is nil")
 		return hc, false, NewBNBRelayingError(InvalidNewHeaderErr, errors.New("last commit is nil"))

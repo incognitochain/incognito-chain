@@ -1,4 +1,4 @@
-package relaying
+package bnb
 
 import "github.com/incognitochain/incognito-chain/common"
 
