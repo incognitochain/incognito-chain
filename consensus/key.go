@@ -4,15 +4,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus/blsbft"
 	"github.com/incognitochain/incognito-chain/consensus/blsbftv2"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"strings"
 )
 
 func (engine *Engine) LoadMiningKeys(keysString string) error {
+	fmt.Println("Start LoadMiningKey keysString", keysString)
+	defer fmt.Println("End LoadMiningKey")
 	if len(keysString) > 0 {
 		keys := strings.Split(keysString, "|")
 		if len(keys) > 0 {
@@ -154,6 +157,9 @@ func (engine *Engine) ValidateProducerPosition(blk common.BlockInterface, commit
 }
 
 func (engine *Engine) ValidateProducerSig(block common.BlockInterface, consensusType string) error {
+	Logger.Log.Errorf("%v ", engine)
+	Logger.Log.Errorf("%v ", engine.currentMiningProcess)
+	Logger.Log.Errorf("%v ", block)
 	return engine.currentMiningProcess.ValidateProducerSig(block)
 }
 

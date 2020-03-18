@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
@@ -70,14 +70,14 @@ func (e *BLSBFT_V2) ValidateProducerPosition(block common.BlockInterface) error 
 	producerPk := view.GetProposerByTimeSlot(common.CalculateTimeSlot(block.GetProduceTime()))
 	b58Str, _ := producerPk.ToBase58()
 	if b58Str != block.GetProducer() {
-		panic(fmt.Sprintf("%v %v", b58Str, block.GetProducer()))
+		// panic(fmt.Sprintf("%v %v", b58Str, block.GetProducer()))
 		return NewConsensusError(UnExpectedError, errors.New("Proposer should be should be :"+b58Str+" but get "+block.GetProducer()))
 	}
 
 	proposerPk := view.GetProposerByTimeSlot(common.CalculateTimeSlot(block.GetProposeTime()))
 	b58Str, _ = proposerPk.ToBase58()
 	if b58Str != block.GetProposer() {
-		panic(fmt.Sprintf("%v %v", b58Str, block.GetProposer()))
+		// panic(fmt.Sprintf("%v %v", b58Str, block.GetProposer()))
 		return NewConsensusError(UnExpectedError, errors.New("Proposer should be should be :"+b58Str+" but get "+block.GetProposer()))
 	}
 	return nil

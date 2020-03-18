@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -97,30 +98,16 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 		return
 	}
 	role, chainID := synckerManager.config.Node.GetUserMiningState()
-	synckerManager.BeaconSyncProcess.start(chainID == -1)
-
-	if role == common.CommitteeRole || role == common.PendingRole {
-		if chainID == -1 {
-			synckerManager.BeaconSyncProcess.isCommittee = true
+	synckerManager.BeaconSyncProcess.isCommittee = (role == common.CommitteeRole) && (chainID == -1)
+	synckerManager.BeaconSyncProcess.start(synckerManager.BeaconSyncProcess.isCommittee)
+	wantedShard := synckerManager.config.Blockchain.GetWantedShard()
+	for sid, syncProc := range synckerManager.ShardSyncProcess {
+		if _, ok := wantedShard[byte(sid)]; ok || (int(sid) == chainID) {
+			syncProc.start()
 		} else {
-			for sid, syncProc := range synckerManager.ShardSyncProcess {
-				if int(sid) == chainID {
-					syncProc.isCommittee = true
-					syncProc.start()
-				} else {
-					syncProc.isCommittee = false
-					syncProc.stop()
-				}
-			}
+			syncProc.stop()
 		}
-	}
-
-	if chainID == -1 {
-		synckerManager.config.Node.PublishNodeState(common.BeaconRole, chainID)
-	} else if chainID >= 0 {
-		synckerManager.config.Node.PublishNodeState(common.ShardRole, chainID)
-	} else {
-		synckerManager.config.Node.PublishNodeState("", -2)
+		syncProc.isCommittee = role == common.CommitteeRole || role == common.PendingRole
 	}
 
 }

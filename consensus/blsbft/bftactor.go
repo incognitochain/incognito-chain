@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -11,8 +14,6 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/wire"
-	"sync"
-	"time"
 )
 
 type BLSBFT struct {
@@ -86,6 +87,10 @@ func (e *BLSBFT) Stop() error {
 func (e *BLSBFT) Start() error {
 	if e.isStarted {
 		return NewConsensusError(ConsensusAlreadyStartedError, errors.New(e.ChainKey))
+	}
+	if e.GetChainID() == -2 {
+		e.logger.Infof("No need to run consensus with chain key %v, chain ID %v", e.GetChainKey(), e.GetChainID())
+		return nil
 	}
 	e.isStarted = true
 	e.isOngoing = false

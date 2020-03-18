@@ -5,9 +5,10 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/multiview"
 	"io"
 	"log"
+
+	"github.com/incognitochain/incognito-chain/multiview"
 
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/common"
@@ -524,3 +525,15 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 }
 
 // -------------- End of Blockchain BackUp And Restore --------------
+
+func (blockchain *BlockChain) GetNodeMode() string {
+	return blockchain.config.NodeMode
+}
+
+func (blockchain *BlockChain) GetWantedShard() map[byte]struct{} {
+	res := map[byte]struct{}{}
+	for _, sID := range blockchain.config.RelayShards {
+		res[sID] = struct{}{}
+	}
+	return res
+}

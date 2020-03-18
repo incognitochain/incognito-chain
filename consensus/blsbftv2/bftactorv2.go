@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
+	"time"
+
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/wire"
-	"sort"
-	"time"
 )
 
 type BLSBFT_V2 struct {
@@ -79,6 +80,10 @@ func (e *BLSBFT_V2) Start() error {
 	if e.isStarted {
 		return NewConsensusError(ConsensusAlreadyStartedError, errors.New(e.ChainKey))
 	}
+	if e.GetChainID() == -2 {
+		e.Logger.Infof("No need to run consensus with chain key %v, chain ID %v", e.GetChainKey(), e.GetChainID())
+		return nil
+	}
 	e.isStarted = true
 	e.StopCh = make(chan struct{})
 	e.ProposeMessageCh = make(chan BFTPropose)
@@ -88,10 +93,6 @@ func (e *BLSBFT_V2) Start() error {
 	e.voteHistory = make(map[uint64]common.BlockInterface)
 	var err error
 	e.proposeHistory, err = lru.New(1000)
-	if err != nil {
-		panic(err)
-	}
-
 	if err != nil {
 		panic(err)
 	}

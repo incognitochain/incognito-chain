@@ -3,9 +3,10 @@ package syncker
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/wire"
-	"time"
 )
 
 //TODO: Request sync must include all block that in pool
@@ -107,10 +108,10 @@ func (s *S2BSyncProcess) syncS2BPoolProcess() {
 		}
 
 		//last check, if we still need to sync more
-		if requestCnt == 0 {
-			//s.S2BPool.Print()
-			time.Sleep(time.Second * 5)
-		}
+		// if requestCnt == 0 {
+		//s.S2BPool.Print()
+		time.Sleep(time.Second * 5)
+		// }
 
 	}
 
@@ -129,9 +130,7 @@ func (s *S2BSyncProcess) streamFromPeer(peerID string, pState S2BPeerState) (req
 		cancel()
 	}()
 
-	if pState.processed {
-		return
-	}
+	fmt.Printf("Syncker received S2BState %v, start sync\n", pState)
 
 	for fromSID, toHeight := range pState.Height {
 		if time.Now().Unix()-pState.Timestamp > 30 {
@@ -160,8 +159,8 @@ func (s *S2BSyncProcess) streamFromPeer(peerID string, pState S2BPeerState) (req
 				reqFromHeight = validS2BBlock[len(validS2BBlock)-1].GetHeight() + 1
 			}
 		}
-		if viewHeight+100 <= toHeight {
-			toHeight = viewHeight + 100
+		if reqFromHeight+100 <= toHeight {
+			toHeight = reqFromHeight + 100
 		}
 
 		//start request
@@ -179,7 +178,7 @@ func (s *S2BSyncProcess) streamFromPeer(peerID string, pState S2BPeerState) (req
 			select {
 			case blk := <-ch:
 				if !isNil(blk) {
-					fmt.Println("Syncker: Insert shard2beacon block", sID, blk.GetHeight(), blk.Hash().String(), blk.(common.BlockPoolInterface).GetPrevHash())
+					fmt.Println("Syncker Insert shard2beacon block", sID, blk.GetHeight(), blk.Hash().String(), blk.(common.BlockPoolInterface).GetPrevHash())
 					s.s2bPool.AddBlock(blk.(common.BlockPoolInterface))
 				} else {
 					break
