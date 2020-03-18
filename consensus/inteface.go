@@ -23,8 +23,6 @@ type NodeInterface interface {
 	GetMiningKeys() string
 	GetPrivateKey() string
 	GetUserMiningState() (role string, chainID int)
-	GetNodeMode() string
-	GetWantedShard() map[byte]struct{}
 }
 
 type ConsensusInterface interface {

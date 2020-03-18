@@ -2,14 +2,13 @@ package consensus
 
 import (
 	"fmt"
-	"time"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus/blsbft"
-	"github.com/incognitochain/incognito-chain/consensus/blsbftv2"
+	blsbft2 "github.com/incognitochain/incognito-chain/consensus/blsbftv2"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/wire"
+	"time"
 )
 
 type Engine struct {
@@ -68,28 +67,26 @@ func (s *Engine) WatchCommitteeChange() {
 		fmt.Println("CONSENSUS: enable", s.IsEnabled, s.config == nil)
 		return
 	}
-	newConsensus := func(chain ChainInterface, chainKey string, chainID int, node NodeInterface, logger common.Logger, version int) ConsensusInterface {
-		if version == 1 {
-			return blsbft.NewInstance(chain, chainKey, chainID, node, logger)
-		} else {
-			return blsbftv2.NewInstance(chain, chainKey, chainID, node, logger)
-		}
-	}
-	getChain := func(e *Engine, chainID int) (ChainInterface, string) {
-		if chainID < -1 {
-			return nil, ""
-		}
-		if chainID == -1 {
-			return e.config.Blockchain.BeaconChain, common.BeaconRole
-		}
-		return s.config.Blockchain.ShardChain[chainID], common.ShardRole
-	}
 
 	//extract role, layer, chainID
 	role, chainID := s.config.Node.GetUserMiningState()
-	chain, layer := getChain(s, chainID)
+	s.curringMiningState.chainID = chainID
+	s.curringMiningState.role = role
 
-	if chainID < -2 {
+	if chainID == -2 {
+		s.curringMiningState.role = ""
+		s.curringMiningState.layer = ""
+		s.NotifyBeaconRole(false)
+		s.NotifyShardRole(-2)
+	} else if chainID == -1 {
+		s.curringMiningState.layer = "beacon"
+		s.NotifyBeaconRole(true)
+		s.NotifyShardRole(-1)
+	} else if chainID >= 0 {
+		s.curringMiningState.layer = "shard"
+		s.NotifyBeaconRole(false)
+		s.NotifyShardRole(chainID)
+	} else {
 		panic("User Mining State Error")
 	}
 	for _, BFTProcess := range s.BFTProcess {
@@ -98,33 +95,46 @@ func (s *Engine) WatchCommitteeChange() {
 		}
 	}
 
-	chainName := s.config.Node.GetNodeMode()
+	var miningProcess ConsensusInterface = nil
 	if role == "committee" {
-		chainName = common.BeaconRole
+		chainName := "beacon"
+
 		if chainID >= 0 {
-			chainName = fmt.Sprintf("%v-%d", common.ShardRole, chainID)
+			chainName = fmt.Sprintf("shard-%d", chainID)
 		}
+
 		if _, ok := s.BFTProcess[chainID]; !ok {
 			if len(s.config.Blockchain.ShardChain)-1 < chainID {
 				panic("Chain " + chainName + " not available")
 			}
-		}
-	}
+			if s.version == 1 {
+				if chainID == -1 {
+					s.BFTProcess[chainID] = blsbft.NewInstance(s.config.Blockchain.BeaconChain, chainName, chainID, s.config.Node, Logger.Log)
+				} else {
+					s.BFTProcess[chainID] = blsbft.NewInstance(s.config.Blockchain.ShardChain[chainID], chainName, chainID, s.config.Node, Logger.Log)
+				}
+			} else {
+				if chainID == -1 {
+					s.BFTProcess[chainID] = blsbft2.NewInstance(s.config.Blockchain.BeaconChain, chainName, chainID, s.config.Node, Logger.Log)
+				} else {
+					s.BFTProcess[chainID] = blsbft2.NewInstance(s.config.Blockchain.ShardChain[chainID], chainName, chainID, s.config.Node, Logger.Log)
+				}
+			}
 
-	s.curringMiningState.chainID = chainID
-	s.curringMiningState.role = role
-	s.curringMiningState.layer = layer
-	s.NotifyBeaconRole(chainID == -1)
-	s.NotifyShardRole(chainID)
-	s.BFTProcess[chainID] = newConsensus(chain, chainName, chainID, s.config.Node, Logger.Log, s.version)
-	s.currentMiningProcess = s.BFTProcess[chainID]
-	err := s.LoadMiningKeys(s.userKeyListString)
-	if err != nil {
-		panic(err)
+		}
+
+		if err := s.BFTProcess[chainID].Start(); err != nil {
+			return
+		}
+
+		miningProcess = s.BFTProcess[chainID]
+		s.currentMiningProcess = s.BFTProcess[chainID]
+		if err := s.LoadMiningKeys(s.userKeyListString); err != nil {
+			panic(err)
+		}
+
 	}
-	if err := s.currentMiningProcess.Start(); err != nil {
-		return
-	}
+	s.currentMiningProcess = miningProcess
 }
 
 func NewConsensusEngine() *Engine {
@@ -141,6 +151,11 @@ func NewConsensusEngine() *Engine {
 func (engine *Engine) Init(config *EngineConfig) {
 
 	engine.config = config
+	go engine.WatchCommitteeChange()
+}
+
+func (engine *Engine) Start() error {
+	fmt.Println("CONSENSUS: Start")
 	if engine.config.Node.GetPrivateKey() != "" {
 		keyList, err := engine.GenMiningKeyFromPrivateKey(engine.config.Node.GetPrivateKey())
 		if err != nil {
@@ -150,12 +165,11 @@ func (engine *Engine) Init(config *EngineConfig) {
 	} else if engine.config.Node.GetMiningKeys() != "" {
 		engine.userKeyListString = engine.config.Node.GetMiningKeys()
 	}
-}
-
-func (engine *Engine) Start() error {
-	fmt.Println("CONSENSUS: Start")
+	err := engine.LoadMiningKeys(engine.userKeyListString)
+	if err != nil {
+		panic(err)
+	}
 	engine.IsEnabled = 1
-	go engine.WatchCommitteeChange()
 	return nil
 }
 
