@@ -1402,3 +1402,90 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 	}
 	return &result, nil
 }
+
+func (txService TxService) DecryptOutputCoinByKeyByTransaction(keyParam *incognitokey.KeySet, txHashStr string) (map[string]interface{}, *RPCError) {
+	txHash, err := common.Hash{}.NewHashFromStr(txHashStr)
+	if err != nil {
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("tx hash is invalid"))
+	}
+
+	isInMempool := false
+	_, _, _, tx, err := txService.BlockChain.GetTransactionByHash(*txHash)
+	if err != nil {
+		// maybe tx is still in tx mempool -> check mempool
+		var errM error
+		tx, errM = txService.TxMemPool.GetTx(txHash)
+		if errM != nil {
+			return nil, NewRPCError(TxNotExistedInMemAndBLockError, errors.New("Tx is not existed in block or mempool"))
+		}
+		isInMempool = true
+	}
+
+	results := make(map[string]interface{})
+	results["IsMempool"] = isInMempool
+	results[common.PRVCoinID.String()] = 0
+
+	switch tx.GetType() {
+	case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
+		{
+			tempTx := tx.(*transaction.Tx)
+			prvOutputs, _ := txService.DecryptOutputCoinByKey(tempTx.Proof.GetOutputCoins(), keyParam)
+			if len(prvOutputs) > 0 {
+				totalPrvValue := uint64(0)
+				for _, output := range prvOutputs {
+					totalPrvValue += output.CoinDetails.GetValue()
+				}
+				results[common.PRVCoinID.String()] = totalPrvValue
+			}
+		}
+	case common.TxCustomTokenPrivacyType:
+		{
+			tempTx := tx.(*transaction.TxCustomTokenPrivacy)
+			outputOfPrv := tempTx.Proof.GetOutputCoins()
+			if len(outputOfPrv) > 0 {
+				prvOutputs, _ := txService.DecryptOutputCoinByKey(outputOfPrv, keyParam)
+				if len(prvOutputs) > 0 {
+					totalPrvValue := uint64(0)
+					for _, output := range prvOutputs {
+						totalPrvValue += output.CoinDetails.GetValue()
+					}
+					results[common.PRVCoinID.String()] = totalPrvValue
+				}
+			}
+
+			results[tempTx.TxPrivacyTokenData.PropertyID.String()] = 0
+			outputOfTokens := tempTx.TxPrivacyTokenData.TxNormal.Proof.GetOutputCoins()
+			if len(outputOfTokens) > 0 {
+				tokenOutput, _ := txService.DecryptOutputCoinByKey(outputOfTokens, keyParam)
+				if len(tokenOutput) > 0 {
+					totalTokenValue := uint64(0)
+					for _, output := range tokenOutput {
+						totalTokenValue += output.CoinDetails.GetValue()
+					}
+					results[tempTx.TxPrivacyTokenData.PropertyID.String()] = totalTokenValue
+				}
+			}
+		}
+	default:
+		{
+			return nil, NewRPCError(UnexpectedError, errors.New("tx type is invalid"))
+		}
+	}
+	return results, nil
+}
+
+func (txService TxService) DecryptOutputCoinByKey(outCoints []*privacy.OutputCoin, keyset *incognitokey.KeySet) ([]*privacy.OutputCoin, *RPCError) {
+	keyset.PrivateKey = nil // always nil
+
+	results := make([]*privacy.OutputCoin, 0)
+	for _, out := range outCoints {
+		decryptedOut := txService.BlockChain.DecryptOutputCoinByKey(out, keyset, 0, nil)
+		if decryptedOut == nil {
+			continue
+		} else {
+			results = append(results, decryptedOut)
+		}
+	}
+
+	return results, nil
+}

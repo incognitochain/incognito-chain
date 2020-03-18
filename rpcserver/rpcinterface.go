@@ -76,6 +76,7 @@ var HttpHandler = map[string]httpHandler{
 	listSerialNumbers:                       (*HttpServer).handleListSerialNumbers,
 	listCommitments:                         (*HttpServer).handleListCommitments,
 	listCommitmentIndices:                   (*HttpServer).handleListCommitmentIndices,
+	decryptoutputcoinbykeyoftransaction:     (*HttpServer).handleDecryptOutputCoinByKeyOfTransaction,
 
 	//======Testing and Benchmark======
 	getAndSendTxsFromFile:   (*HttpServer).handleGetAndSendTxsFromFile,
