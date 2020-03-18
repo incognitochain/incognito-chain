@@ -195,7 +195,7 @@ func (chain *BeaconChain) InsertBlk(block common.BlockInterface) error {
 	//if chain.Blockchain.config.ConsensusEngine.IsOngoing(common.BeaconChainKey) {
 	//	return NewBlockChainError(ConsensusIsOngoingError, errors.New(fmt.Sprint(common.BeaconChainKey, block.Hash())))
 	//}
-	return chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true)
+	//return chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true)
 	if err := chain.Blockchain.InsertBeaconBlock_V2(block.(*BeaconBlock), true); err != nil {
 		Logger.log.Info(err)
 		return err
@@ -205,7 +205,7 @@ func (chain *BeaconChain) InsertBlk(block common.BlockInterface) error {
 
 func (chain *BeaconChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
 	go chain.Blockchain.config.Server.PushBlockToAll(block, true)
-	err := chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true)
+	//chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true)
 	if err := chain.Blockchain.InsertBeaconBlock_V2(block.(*BeaconBlock), true); err != nil {
 		Logger.log.Info(err)
 		return err
