@@ -883,3 +883,61 @@ func (httpServer *HttpServer) handleCreateAndSendStopAutoStakingTransaction(para
 	Logger.log.Debugf("handleCreateAndSendStakingTx result: %+v", result)
 	return result, nil
 }
+
+func (httpServer *HttpServer) handleDecryptOutputCoinByKeyOfTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	paramsArray := common.InterfaceSlice(params)
+
+	txIdParam, ok := paramsArray[0].(string)
+	if !ok {
+		Logger.log.Debugf("handleDecryptOutputCoinByKeyOfTransaction result: %+v", nil)
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("tx id param is invalid"))
+	}
+	txId, err1 := common.Hash{}.NewHashFromStr(txIdParam)
+	if err1 != nil {
+		Logger.log.Debugf("handleDecryptOutputCoinByKeyOfTransaction result: %+v", nil)
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("tx id param is invalid"))
+	}
+
+	keys, ok := paramsArray[1].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("key param is invalid"))
+	}
+	// get keyset only contain readonly-key by deserializing(optional)
+	var readonlyKey *wallet.KeyWallet
+	var err error
+	readonlyKeyStr, ok := keys["ReadonlyKey"].(string)
+	if !ok || readonlyKeyStr == "" {
+		//return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid readonly key"))
+		Logger.log.Info("ReadonlyKey is optional")
+	} else {
+		readonlyKey, err = wallet.Base58CheckDeserialize(readonlyKeyStr)
+		if err != nil {
+			Logger.log.Debugf("readonlyKey is invalid: err: %+v", err)
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
+	}
+
+	// get keyset only contain pub-key by deserializing(required)
+	paymentAddressStr, ok := keys["PaymentAddress"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("invalid payment address"))
+	}
+	paymentAddressKey, err := wallet.Base58CheckDeserialize(paymentAddressStr)
+	if err != nil {
+		Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	// create a key set
+	keySet := &incognitokey.KeySet{
+		PaymentAddress: paymentAddressKey.KeySet.PaymentAddress,
+	}
+	// readonly key is optional
+	if readonlyKey != nil && len(readonlyKey.KeySet.ReadonlyKey.Rk) > 0 {
+		keySet.ReadonlyKey = readonlyKey.KeySet.ReadonlyKey
+	}
+
+	result, err2 := httpServer.txService.DecryptOutputCoinByKeyByTransaction(keySet, txId.String())
+
+	return result, err2
+}

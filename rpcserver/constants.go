@@ -91,6 +91,7 @@ const (
 	listCommitmentIndices                      = "listcommitmentindices"
 	createAndSendStakingTransaction            = "createandsendstakingtransaction"
 	createAndSendStopAutoStakingTransaction    = "createandsendstopautostakingtransaction"
+	decryptoutputcoinbykeyoftransaction        = "decryptoutputcoinbykeyoftransaction"
 
 	//===========For Testing and Benchmark==============
 	getAndSendTxsFromFile   = "getandsendtxsfromfile"
