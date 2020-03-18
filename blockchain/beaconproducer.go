@@ -51,7 +51,8 @@ import (
 //	f. InstructionHash: from instructions in beacon block body
 //	g. InstructionMerkleRoot
 func (blockGenerator *BlockGenerator) NewBlockBeacon(version int, proposer string, round int, shardsToBeaconLimit map[byte]uint64) (*BeaconBlock, error) {
-	Logger.log.Infof("⛏ Creating Beacon Block %+v", blockGenerator.chain.GetBeaconBestState().BeaconHeight+1)
+	curView := blockGenerator.chain.GetBeaconBestState()
+	Logger.log.Infof("⛏ Creating Beacon Block %+v", curView.BeaconHeight+1)
 	//============Init Variable============
 	var err error
 	var epoch uint64
@@ -59,7 +60,7 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(version int, proposer strin
 	beaconBestState := NewBeaconBestState()
 	rewardByEpochInstruction := [][]string{}
 	// produce new block with current beststate
-	err = beaconBestState.cloneBeaconBestStateFrom(blockGenerator.chain.GetBeaconBestState())
+	err = beaconBestState.cloneBeaconBestStateFrom(curView)
 	if err != nil {
 		return nil, err
 	}
@@ -74,8 +75,8 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(version int, proposer strin
 	beaconBlock.Header.ConsensusType = beaconBestState.ConsensusAlgorithm
 
 	if version == 1 {
-		committee := blockGenerator.chain.GetBeaconBestState().GetBeaconCommittee()
-		producerPosition := (blockGenerator.chain.GetBeaconBestState().BeaconProposerIndex + round) % len(beaconBestState.BeaconCommittee)
+		committee := curView.GetBeaconCommittee()
+		producerPosition := (curView.BeaconProposerIndex + round) % len(beaconBestState.BeaconCommittee)
 		beaconBlock.Header.Producer, err = committee[producerPosition].ToBase58() // .GetMiningKeyBase58(common.BridgeConsensus)
 		if err != nil {
 			return nil, err
@@ -99,7 +100,7 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(version int, proposer strin
 	//=====END Build Header Essential Data=====
 	//============Build body===================
 	if (beaconBestState.BeaconHeight+1)%blockGenerator.chain.config.ChainParams.Epoch == 1 {
-		rewardByEpochInstruction, err = blockGenerator.chain.buildRewardInstructionByEpoch(beaconBlock.Header.Height, beaconBestState.Epoch, blockGenerator.chain.GetBeaconBestState().GetCopiedRewardStateDB())
+		rewardByEpochInstruction, err = blockGenerator.chain.buildRewardInstructionByEpoch(curView, beaconBlock.Header.Height, beaconBestState.Epoch, curView.GetCopiedRewardStateDB())
 		if err != nil {
 			return nil, NewBlockChainError(BuildRewardInstructionError, err)
 		}
@@ -428,7 +429,8 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 	shardState.Height = shardBlock.Header.Height
 	shardStates[shardID] = shardState
 	instructions := shardBlock.Instructions
-	Logger.log.Info(instructions)
+	curView := blockchain.GetBeaconBestState()
+
 	// extract instructions
 	for _, instruction := range instructions {
 		if len(instruction) > 0 {
@@ -483,7 +485,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 		if len(tempStakePublicKey) != len(strings.Split(stakeInstruction[3], ",")) && len(strings.Split(stakeInstruction[3], ",")) != len(strings.Split(stakeInstruction[4], ",")) && len(strings.Split(stakeInstruction[4], ",")) != len(strings.Split(stakeInstruction[5], ",")) {
 			continue
 		}
-		tempStakePublicKey = blockchain.GetBeaconBestState().GetValidStakers(tempStakePublicKey)
+		tempStakePublicKey = curView.GetValidStakers(tempStakePublicKey)
 		tempStakePublicKey = common.GetValidStaker(stakeShardPublicKeys, tempStakePublicKey)
 		tempStakePublicKey = common.GetValidStaker(stakeBeaconPublicKeys, tempStakePublicKey)
 		tempStakePublicKey = common.GetValidStaker(validStakePublicKeys, tempStakePublicKey)
@@ -522,10 +524,10 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 		// avoid dead lock
 		// if producer new block then lock beststate
 		if isProducer {
-			allCommitteeValidatorCandidate = blockchain.GetBeaconBestState().getAllCommitteeValidatorCandidateFlattenList()
+			allCommitteeValidatorCandidate = curView.getAllCommitteeValidatorCandidateFlattenList()
 		} else {
 			// if process block then do not lock beststate
-			allCommitteeValidatorCandidate = blockchain.GetBeaconBestState().getAllCommitteeValidatorCandidateFlattenList()
+			allCommitteeValidatorCandidate = curView.getAllCommitteeValidatorCandidateFlattenList()
 		}
 		tempStopAutoStakingPublicKeys := strings.Split(instruction[1], ",")
 		for _, tempStopAutoStakingPublicKey := range tempStopAutoStakingPublicKeys {
@@ -542,7 +544,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 		BLogger.log.Debugf("Included shardID %d, block %d, insts: %s", shardID, shardBlock.Header.Height, shardBlock.Instructions)
 	}
 	bridgeInstructionForBlock, err := blockchain.buildBridgeInstructions(
-		blockchain.GetBeaconBestState().GetCopiedFeatureStateDB(),
+		curView.GetCopiedFeatureStateDB(),
 		shardID,
 		shardBlock.Instructions,
 		newBeaconHeight,

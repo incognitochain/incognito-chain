@@ -200,11 +200,11 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 }
 
 // @Notice: change from body.Transaction -> transactions
-func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(transactions []metadata.Transaction, blkProducerPrivateKey *privacy.PrivateKey, shardID byte) ([]metadata.Transaction, error) {
+func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(view *ShardBestState, transactions []metadata.Transaction, blkProducerPrivateKey *privacy.PrivateKey, shardID byte) ([]metadata.Transaction, error) {
 	txRequestTable := reqTableFromReqTxs(transactions)
 	txsResponse := []metadata.Transaction{}
 	for key, value := range txRequestTable {
-		txRes, err := blockchain.buildWithDrawTransactionResponse(&value, blkProducerPrivateKey, shardID)
+		txRes, err := blockchain.buildWithDrawTransactionResponse(view, &value, blkProducerPrivateKey, shardID)
 		if err != nil {
 			Logger.log.Errorf("Build Withdraw transactions response for tx %v return errors %v", value, err)
 			delete(txRequestTable, key)
