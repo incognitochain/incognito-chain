@@ -59,7 +59,7 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(beaconBlock *BeaconBlock,
 
 func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isValidated bool) error {
 	curView := blockchain.GetBeaconBestState()
-
+	committeeChange := newCommitteeChange()
 	if beaconBlock.Header.Height != curView.BeaconHeight+1 {
 		return errors.New("Not expected height")
 	}
@@ -121,7 +121,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	Logger.log.Debugf("BEACON | Update BestState With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	// Update best state with new beaconBlock
 
-	newBestState, err := curView.updateBeaconBestState(beaconBlock, blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.AssignOffset, blockchain.config.ChainParams.RandomTime, newCommitteeChange())
+	newBestState, err := curView.updateBeaconBestState(beaconBlock, blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.AssignOffset, blockchain.config.ChainParams.RandomTime, committeeChange)
 	if err != nil {
 		return err
 	}
@@ -190,7 +190,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	}
 
 	Logger.log.Infof("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-	if err := blockchain.processStoreBeaconBlock(newBestState, beaconBlock, snapshotBeaconCommittee, snapshotAllShardCommittee, snapshotRewardReceiver, newCommitteeChange()); err != nil {
+	if err := blockchain.processStoreBeaconBlock(newBestState, beaconBlock, snapshotBeaconCommittee, snapshotAllShardCommittee, snapshotRewardReceiver, committeeChange); err != nil {
 		return err
 	}
 
@@ -377,7 +377,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 	sort.Ints(keys)
 
 	var allShardBlocks = make(map[byte][]*ShardToBeaconBlock)
-	s2bBlocksFromPool, err := blockchain.config.Syncker.GetS2BBlocksForBeaconValidator(s2bRequired)
+	s2bBlocksFromPool, err := blockchain.config.Syncker.GetS2BBlocksForBeaconValidator(curView.BestShardHash, s2bRequired)
 	if err != nil {
 		return NewBlockChainError(GetShardToBeaconBlocksError, fmt.Errorf("Unable to get required s2bBlocks from pool in time"))
 	}
@@ -792,6 +792,8 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *BeaconBl
 			beaconBestState.BeaconPendingValidator = append(beaconBestState.BeaconPendingValidator, newBeaconPendingValidator...)
 		}
 	}
+
+	beaconBestState.updateNumOfBlocksByProducers(beaconBlock, chainParamEpoch)
 	return beaconBestState, nil
 }
 
@@ -1192,6 +1194,9 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return err
 	}
+
+	blockchain.processForSlashing(curView.slashStateDB, beaconBlock)
+
 	// Remove shard reward request of old epoch
 	// this value is no longer needed because, old epoch reward has been split and send to shard
 	if beaconBlock.Header.Height%blockchain.config.ChainParams.Epoch == 2 {
@@ -1257,7 +1262,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(StoreBeaconBlockIndexError, err)
 	}
 
-	Logger.log.Debugf("Store Beacon Block Height %+v with Hash %+v ", blockHeight, blockHash)
+	Logger.log.Infof("Store Beacon Block Height %+v with Hash %+v ", blockHeight, blockHash)
 	if err := rawdbv2.StoreBeaconBlock(blockchain.GetDatabase(), blockHeight, blockHash, beaconBlock); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
@@ -1275,6 +1280,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 
+	//fmt.Printf("debug AddView %s %+v\n", newBestState.Hash().String(), newBestState.BestBlock)
 	finalView := blockchain.BeaconChain.GetFinalView()
 	blockchain.BeaconChain.multiView.AddView(newBestState)
 	newFinalView := blockchain.BeaconChain.GetFinalView()
@@ -1283,7 +1289,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		for {
 			blks, _ := blockchain.GetBeaconBlockByHeight(startView.GetHeight())
 			for _, blk := range blks {
-				if blk.Hash().String() != startView.GetPreviousHash().String() {
+				if blk.Hash().String() != startView.GetHash().String() {
 					blockchain.DeleteBeaconBlockByView(*blk.Hash())
 				}
 			}

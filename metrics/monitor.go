@@ -157,7 +157,6 @@ func NewLog(p ...interface{}) *logKV {
 
 func (s *logKV) Add(p ...interface{}) *logKV {
 	if len(p) == 0 || len(p)%2 != 0 {
-		fmt.Println(len(p))
 		return s
 	}
 	s.Lock()

@@ -55,7 +55,7 @@ var (
 	bridgeLogger           = backendLog.Logger("DeBridge log", false)
 	metadataLogger         = backendLog.Logger("Metadata log", false)
 	trieLogger             = backendLog.Logger("Trie log", false)
-	peerv2Logger           = backendLog.Logger("Peerv2 log", false)
+	peerv2Logger           = backendLog.Logger("Peerv2 log", true)
 	wrapperLogger          = backendLog.Logger("Wrapper log", false)
 	daov2Logger            = backendLog.Logger("DAO log", false)
 )

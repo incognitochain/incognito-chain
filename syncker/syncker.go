@@ -186,8 +186,7 @@ func (synckerManager *SynckerManager) ReceivePeerState(peerState *wire.MessagePe
 }
 
 //Get S2B Block for creating beacon block
-func (synckerManager *SynckerManager) GetS2BBlocksForBeaconProducer() map[byte][]interface{} {
-	bestViewShardHash := synckerManager.config.Blockchain.BeaconChain.GetShardBestViewHash()
+func (synckerManager *SynckerManager) GetS2BBlocksForBeaconProducer(bestViewShardHash map[byte]common.Hash) map[byte][]interface{} {
 	res := make(map[byte][]interface{})
 
 	for i := 0; i < synckerManager.config.Node.GetChainParam().ActiveShards; i++ {
@@ -245,8 +244,8 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 }
 
 //Get S2B Block for validating beacon block
-func (synckerManager *SynckerManager) GetS2BBlocksForBeaconValidator(list map[byte][]common.Hash) (map[byte][]interface{}, error) {
-	s2bPoolLists := synckerManager.GetS2BBlocksForBeaconProducer()
+func (synckerManager *SynckerManager) GetS2BBlocksForBeaconValidator(bestViewShardHash map[byte]common.Hash, list map[byte][]common.Hash) (map[byte][]interface{}, error) {
+	s2bPoolLists := synckerManager.GetS2BBlocksForBeaconProducer(bestViewShardHash)
 
 	missingBlocks := compareLists(s2bPoolLists, list)
 	// synckerManager.config.Server.
@@ -254,7 +253,7 @@ func (synckerManager *SynckerManager) GetS2BBlocksForBeaconValidator(list map[by
 		ticker := time.NewTicker(5 * time.Second)
 		<-ticker.C
 
-		s2bPoolLists = synckerManager.GetS2BBlocksForBeaconProducer()
+		s2bPoolLists = synckerManager.GetS2BBlocksForBeaconProducer(bestViewShardHash)
 		missingBlocks = compareLists(s2bPoolLists, list)
 		if len(missingBlocks) > 0 {
 			return nil, errors.New("Unable to sync required block in time")

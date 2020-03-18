@@ -124,7 +124,6 @@ type NextCrossShardInfo struct {
 func (s *BeaconSyncProcess) updateConfirmCrossShard() {
 	//TODO: update lastUpdateConfirmCrossShard using DB
 	for {
-		fmt.Println("debug lastProcessConfirmBeaconHeight ", s.lastProcessConfirmBeaconHeight)
 		if s.lastProcessConfirmBeaconHeight > s.chain.GetFinalViewHeight() {
 			time.Sleep(time.Second * 5)
 			continue
@@ -212,6 +211,7 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 	}
 
 	if err := s.chain.InsertBlk(blk.(common.BlockInterface)); err != nil {
+		s.beaconPool.RemoveBlock(blk.Hash().String())
 		return
 	}
 	s.beaconPool.RemoveBlock(blk.Hash().String())

@@ -169,7 +169,7 @@ func (chain *BeaconChain) GetLastProposerIndex() int {
 }
 
 func (chain *BeaconChain) CreateNewBlock(version int, proposer string, round int) (common.BlockInterface, error) {
-	newBlock, err := chain.BlockGen.NewBlockBeacon(version, proposer, round, nil)
+	newBlock, err := chain.Blockchain.NewBlockBeacon_V2(chain.GetBestView().(*BeaconBestState), version, proposer, round, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -196,15 +196,22 @@ func (chain *BeaconChain) InsertBlk(block common.BlockInterface) error {
 	//	return NewBlockChainError(ConsensusIsOngoingError, errors.New(fmt.Sprint(common.BeaconChainKey, block.Hash())))
 	//}
 	return chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true)
+	if err := chain.Blockchain.InsertBeaconBlock_V2(block.(*BeaconBlock), true); err != nil {
+		Logger.log.Info(err)
+		return err
+	}
+	return nil
 }
 
 func (chain *BeaconChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
 	go chain.Blockchain.config.Server.PushBlockToAll(block, true)
 	err := chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true)
-	if err != nil {
+	if err := chain.Blockchain.InsertBeaconBlock_V2(block.(*BeaconBlock), true); err != nil {
+		Logger.log.Info(err)
 		return err
 	}
 	return nil
+
 }
 
 func (chain *BeaconChain) GetActiveShardNumber() int {
@@ -220,7 +227,7 @@ func (chain *BeaconChain) GetPubkeyRole(pubkey string, round int) (string, byte)
 }
 
 func (chain *BeaconChain) ValidatePreSignBlock(block common.BlockInterface) error {
-	return chain.Blockchain.VerifyPreSignBeaconBlock(block.(*BeaconBlock), true)
+	return chain.Blockchain.ValidateProposedBeaconBlock_V2(block.(*BeaconBlock))
 }
 
 // func (chain *BeaconChain) ValidateAndInsertBlock(block common.BlockInterface) error {
@@ -243,9 +250,11 @@ func (chain *BeaconChain) ValidateBlockSignatures(block common.BlockInterface, c
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerPosition(block, committee); err != nil {
 		return err
 	}
+
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
 		return err
 	}
+
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee, chain.GetConsensusType()); err != nil {
 		return nil
 	}

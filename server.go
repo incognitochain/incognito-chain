@@ -1258,7 +1258,6 @@ func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 }
 
 func (serverObj *Server) OnPeerState(_ *peer.PeerConn, msg *wire.MessagePeerState) {
-	Logger.log.Infof("Handling new message peerstate %+v", msg)
 	Logger.log.Debug("Receive a peerstate START")
 	//var txProcessed chan struct{}
 	//serverObj.netSync.QueueMessage(nil, msg, txProcessed)
@@ -1700,7 +1699,7 @@ func (serverObj *Server) PushMessageGetBlockCrossShardBySpecificHeight(fromShard
 }
 
 func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
-	Logger.log.Infof("[peerstate] Start Publish SelfPeerState")
+	Logger.log.Debugf("[peerstate] Start Publish SelfPeerState")
 	listener := serverObj.connManager.GetConfig().ListenerPeer
 
 	// if (userRole != common.CommitteeRole) && (userRole != common.ValidatorRole) && (userRole != common.ProposerRole) {
@@ -1733,7 +1732,7 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 		}
 	} else {
 		msg.(*wire.MessagePeerState).ShardToBeaconPool = serverObj.shardToBeaconPool.GetAllBlockHeight()
-		Logger.log.Infof("[peerstate] %v", msg.(*wire.MessagePeerState).ShardToBeaconPool)
+		Logger.log.Debugf("[peerstate] %v", msg.(*wire.MessagePeerState).ShardToBeaconPool)
 	}
 
 	if (cfg.NodeMode == common.NodeModeAuto || cfg.NodeMode == common.NodeModeShard) && shardID >= 0 {
@@ -1746,7 +1745,7 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 		return err
 	}
 	msg.SetSenderID(serverObj.highway.LocalHost.Host.ID())
-	Logger.log.Infof("[peerstate] PeerID send to Proxy when publish node state %v \n", listener.GetPeerID())
+	Logger.log.Debugf("[peerstate] PeerID send to Proxy when publish node state %v \n", listener.GetPeerID())
 	if err != nil {
 		return err
 	}

@@ -122,7 +122,7 @@ func (e *BLSBFT_V2) Start() error {
 						votes:      make(map[string]BFTVote),
 						hasNewVote: false,
 					}
-					fmt.Println("debug append", blkHash)
+					//fmt.Println("debug append", blkHash)
 					e.receiveBlockByHeight[block.GetHeight()] = append(e.receiveBlockByHeight[block.GetHeight()], e.receiveBlockByHash[blkHash])
 				} else {
 					e.receiveBlockByHash[blkHash].block = block

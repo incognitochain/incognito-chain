@@ -50,8 +50,8 @@ import (
 //	e. ShardStateHash: shard states from blocks of all shard
 //	f. InstructionHash: from instructions in beacon block body
 //	g. InstructionMerkleRoot
-func (blockGenerator *BlockGenerator) NewBlockBeacon(version int, proposer string, round int, shardsToBeaconLimit map[byte]uint64) (*BeaconBlock, error) {
-	curView := blockGenerator.chain.GetBeaconBestState()
+func (blockchain *BlockChain) NewBlockBeacon(version int, proposer string, round int, shardsToBeaconLimit map[byte]uint64) (*BeaconBlock, error) {
+	curView := blockchain.GetBeaconBestState()
 	Logger.log.Infof("⛏ Creating Beacon Block %+v", curView.BeaconHeight+1)
 	//============Init Variable============
 	var err error
@@ -67,7 +67,7 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(version int, proposer strin
 	//======Build Header Essential Data=======
 	beaconBlock.Header.Version = version
 	beaconBlock.Header.Height = beaconBestState.BeaconHeight + 1
-	if (beaconBestState.BeaconHeight+1)%blockGenerator.chain.config.ChainParams.Epoch == 1 {
+	if (beaconBestState.BeaconHeight+1)%blockchain.config.ChainParams.Epoch == 1 {
 		epoch = beaconBestState.Epoch + 1
 	} else {
 		epoch = beaconBestState.Epoch
@@ -99,18 +99,18 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(version int, proposer strin
 	BLogger.log.Infof("Producing block: %d (epoch %d)", beaconBlock.Header.Height, beaconBlock.Header.Epoch)
 	//=====END Build Header Essential Data=====
 	//============Build body===================
-	if (beaconBestState.BeaconHeight+1)%blockGenerator.chain.config.ChainParams.Epoch == 1 {
-		rewardByEpochInstruction, err = blockGenerator.chain.buildRewardInstructionByEpoch(curView, beaconBlock.Header.Height, beaconBestState.Epoch, curView.GetCopiedRewardStateDB())
+	if (beaconBestState.BeaconHeight+1)%blockchain.config.ChainParams.Epoch == 1 {
+		rewardByEpochInstruction, err = blockchain.buildRewardInstructionByEpoch(curView, beaconBlock.Header.Height, beaconBestState.Epoch, curView.GetCopiedRewardStateDB())
 		if err != nil {
 			return nil, NewBlockChainError(BuildRewardInstructionError, err)
 		}
 	}
-	tempShardState, stakeInstructions, swapInstructions, bridgeInstructions, acceptedRewardInstructions, stopAutoStakingInstructions := blockGenerator.GetShardState(beaconBestState, shardsToBeaconLimit)
+	tempShardState, stakeInstructions, swapInstructions, bridgeInstructions, acceptedRewardInstructions, stopAutoStakingInstructions := blockchain.GetShardState(beaconBestState, shardsToBeaconLimit)
 	Logger.log.Infof("In NewBlockBeacon tempShardState: %+v", tempShardState)
 	tempInstruction, err := beaconBestState.GenerateInstruction(
 		beaconBlock.Header.Height, stakeInstructions, swapInstructions, stopAutoStakingInstructions,
-		beaconBestState.CandidateShardWaitingForCurrentRandom, bridgeInstructions, acceptedRewardInstructions, blockGenerator.chain.config.ChainParams.Epoch,
-		blockGenerator.chain.config.ChainParams.RandomTime, blockGenerator.chain,
+		beaconBestState.CandidateShardWaitingForCurrentRandom, bridgeInstructions, acceptedRewardInstructions, blockchain.config.ChainParams.Epoch,
+		blockchain.config.ChainParams.RandomTime, blockchain,
 	)
 	if err != nil {
 		return nil, err
@@ -129,7 +129,7 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(version int, proposer strin
 	//============End Build Body================
 	//============Update Beacon Best State================
 	// Process new block with beststate
-	newBeaconBeststate, err := beaconBestState.updateBeaconBestState(beaconBlock, blockGenerator.chain.config.ChainParams.Epoch, blockGenerator.chain.config.ChainParams.AssignOffset, blockGenerator.chain.config.ChainParams.RandomTime, newCommitteeChange())
+	newBeaconBeststate, err := beaconBestState.updateBeaconBestState(beaconBlock, blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.AssignOffset, blockchain.config.ChainParams.RandomTime, newCommitteeChange())
 	if err != nil {
 		return nil, err
 	}
@@ -252,7 +252,7 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(version int, proposer strin
 // 4. bridge instructions
 // 5. accepted reward instructions
 // 6. stop auto staking instructions
-func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestState, shardsToBeacon map[byte]uint64) (map[byte][]ShardState, [][]string, map[byte][][]string, [][]string, [][]string, [][]string) {
+func (blockchain *BlockChain) GetShardState(beaconBestState *BeaconBestState, shardsToBeacon map[byte]uint64) (map[byte][]ShardState, [][]string, map[byte][][]string, [][]string, [][]string, [][]string) {
 	shardStates := make(map[byte][]ShardState)
 	validStakeInstructions := [][]string{}
 	validStakePublicKeys := []string{}
@@ -260,8 +260,8 @@ func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestS
 	validSwapInstructions := make(map[byte][][]string)
 	//Get shard to beacon block from pool
 	Logger.log.Infof("In GetShardState shardsToBeacon limit: %+v", shardsToBeacon)
-	var allShardBlocks = make([][]*ShardToBeaconBlock, blockGenerator.chain.config.ChainParams.ActiveShards)
-	for sid, v := range blockGenerator.syncker.GetS2BBlocksForBeaconProducer() {
+	var allShardBlocks = make([][]*ShardToBeaconBlock, blockchain.config.ChainParams.ActiveShards)
+	for sid, v := range blockchain.config.Syncker.GetS2BBlocksForBeaconProducer(beaconBestState.BestShardHash) {
 		for _, b := range v {
 			allShardBlocks[sid] = append(allShardBlocks[sid], b.(*ShardToBeaconBlock))
 		}
@@ -300,7 +300,7 @@ func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestS
 		//}
 		//Logger.log.Infof("Beacon Producer/ AFTER FILTER, Shard %+v ONLY GET %+v block", shardID, totalBlock+1)
 		for _, shardBlock := range shardBlocks {
-			shardState, validStakeInstruction, tempValidStakePublicKeys, validSwapInstruction, bridgeInstruction, acceptedRewardInstruction, stopAutoStakingInstruction, statefulActions := blockGenerator.chain.GetShardStateFromBlock(beaconBestState.BeaconHeight+1, shardBlock, shardID, true, validStakePublicKeys)
+			shardState, validStakeInstruction, tempValidStakePublicKeys, validSwapInstruction, bridgeInstruction, acceptedRewardInstruction, stopAutoStakingInstruction, statefulActions := blockchain.GetShardStateFromBlock(beaconBestState.BeaconHeight+1, shardBlock, shardID, true, validStakePublicKeys)
 			shardStates[shardID] = append(shardStates[shardID], shardState[shardID])
 			validStakeInstructions = append(validStakeInstructions, validStakeInstruction...)
 			validSwapInstructions[shardID] = append(validSwapInstructions[shardID], validSwapInstruction[shardID]...)
@@ -319,7 +319,7 @@ func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestS
 		}
 	}
 	// build stateful instructions
-	statefulInsts := blockGenerator.chain.buildStatefulInstructions(beaconBestState.featureStateDB, statefulActionsByShardID, beaconBestState.BeaconHeight+1)
+	statefulInsts := blockchain.buildStatefulInstructions(beaconBestState.featureStateDB, statefulActionsByShardID, beaconBestState.BeaconHeight+1)
 	bridgeInstructions = append(bridgeInstructions, statefulInsts...)
 	return shardStates, validStakeInstructions, validSwapInstructions, bridgeInstructions, acceptedRewardInstructions, validStopAutoStakingInstructions
 }
