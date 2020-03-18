@@ -76,7 +76,7 @@ type Config struct {
 	ConsensusEngine interface {
 		ValidateProducerPosition(blk common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 		ValidateProducerSig(block common.BlockInterface, consensusType string) error
-		ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey, consensusType string) error
+		ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 		GetCurrentMiningPublicKey() (string, string)
 		GetMiningPublicKeyByConsensus(consensusName string) (string, error)
 		GetUserLayer() (string, int)

@@ -88,10 +88,7 @@ func (e *BLSBFT) Start() error {
 	if e.isStarted {
 		return NewConsensusError(ConsensusAlreadyStartedError, errors.New(e.ChainKey))
 	}
-	if e.GetChainID() == -2 {
-		e.logger.Infof("No need to run consensus with chain key %v, chain ID %v", e.GetChainKey(), e.GetChainID())
-		return nil
-	}
+
 	e.isStarted = true
 	e.isOngoing = false
 	e.StopCh = make(chan struct{})
@@ -226,7 +223,8 @@ func (e *BLSBFT) Start() error {
 					if e.Blocks[roundKey] != nil {
 						metrics.SetGlobalParam("ReceiveBlockTime", time.Since(e.RoundData.TimeStart).Seconds())
 						//fmt.Println("CONSENSUS: listen phase 2")
-						if err := e.validatePreSignBlock(e.Blocks[roundKey]); err != nil {
+
+						if err := e.Chain.ValidatePreSignBlock(e.Blocks[roundKey]); err != nil {
 							delete(e.Blocks, roundKey)
 							e.logger.Error(err)
 							continue
@@ -275,7 +273,7 @@ func (e *BLSBFT) Start() error {
 
 						//TODO: check issue invalid sig when swap
 						//TODO 0xakk0r0kamui trace who is malicious node if ValidateCommitteeSig return false
-						err = e.ValidateCommitteeSig(e.RoundData.Block, e.RoundData.Committee)
+						err = ValidateCommitteeSig(e.RoundData.Block, e.RoundData.Committee)
 						if err != nil {
 							e.logger.Error(err)
 							e.logger.Errorf("e.RoundData.Block.GetValidationField()=%+v\n", e.RoundData.Block.GetValidationField())

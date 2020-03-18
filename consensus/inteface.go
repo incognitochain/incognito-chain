@@ -40,9 +40,9 @@ type ConsensusInterface interface {
 	// ProcessBFTMsg - process incoming BFT message
 	ProcessBFTMsg(msg *wire.MessageBFT)
 	// ValidateProducerSig - validate a block producer signature
-	ValidateProducerSig(block common.BlockInterface) error
+	//ValidateProducerSig(block common.BlockInterface) error
 	// ValidateCommitteeSig - validate a block committee signature
-	ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
+	//ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 
 	// LoadUserKey - load user mining key
 	LoadUserKey(miningKey string) error

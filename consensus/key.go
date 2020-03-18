@@ -157,14 +157,21 @@ func (engine *Engine) ValidateProducerPosition(blk common.BlockInterface, commit
 }
 
 func (engine *Engine) ValidateProducerSig(block common.BlockInterface, consensusType string) error {
-	Logger.Log.Errorf("%v ", engine)
-	Logger.Log.Errorf("%v ", engine.currentMiningProcess)
-	Logger.Log.Errorf("%v ", block)
-	return engine.currentMiningProcess.ValidateProducerSig(block)
+	if block.GetVersion() == 1 {
+		return blsbft.ValidateProducerSig(block)
+	} else if block.GetVersion() == 2 {
+		return blsbftv2.ValidateProducerSig(block)
+	}
+	return fmt.Errorf("Wrong block version: %v", block.GetVersion())
 }
 
-func (engine *Engine) ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey, consensusType string) error {
-	return engine.currentMiningProcess.ValidateCommitteeSig(block, committee)
+func (engine *Engine) ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+	if block.GetVersion() == 1 {
+		return blsbft.ValidateCommitteeSig(block, committee)
+	} else if block.GetVersion() == 2 {
+		return blsbftv2.ValidateCommitteeSig(block, committee)
+	}
+	return fmt.Errorf("Wrong block version: %v", block.GetVersion())
 }
 
 func (engine *Engine) GenMiningKeyFromPrivateKey(privateKey string) (string, error) {

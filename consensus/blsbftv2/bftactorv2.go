@@ -80,10 +80,6 @@ func (e *BLSBFT_V2) Start() error {
 	if e.isStarted {
 		return NewConsensusError(ConsensusAlreadyStartedError, errors.New(e.ChainKey))
 	}
-	if e.GetChainID() == -2 {
-		e.Logger.Infof("No need to run consensus with chain key %v, chain ID %v", e.GetChainKey(), e.GetChainID())
-		return nil
-	}
 	e.isStarted = true
 	e.StopCh = make(chan struct{})
 	e.ProposeMessageCh = make(chan BFTPropose)
@@ -352,10 +348,11 @@ func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 		return errors.New("View not connect")
 	}
 
-	//check block valid,
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	//TODO: using context to validate block
+	_, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-	if err := e.validatePreSignBlock(ctx, v.block); err != nil {
+
+	if err := e.Chain.ValidatePreSignBlock(v.block); err != nil {
 		e.Logger.Error(err)
 		return err
 	}
