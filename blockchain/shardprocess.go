@@ -167,7 +167,16 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	}
 	Logger.log.Infof("SHARD %+v | Store New Shard Block And Update Data, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
 	//========Store new  Shard block and new shard bestState
-	err = blockchain.processStoreShardBlock(shardBlock, committeeChange)
+	confirmBeaconBlock := NewBeaconBlock()
+	if len(beaconBlocks) > 0 {
+		confirmBeaconBlock = beaconBlocks[len(beaconBlocks)-1]
+	} else {
+		confirmBeaconBlock, _, err = blockchain.GetBeaconBlockByHash(shardBlock.Header.BeaconHash)
+		if err != nil {
+			return err
+		}
+	}
+	err = blockchain.processStoreShardBlock(shardBlock, committeeChange, confirmBeaconBlock)
 	if err != nil {
 		revertErr := blockchain.revertShardState(shardID)
 		if revertErr != nil {
@@ -895,17 +904,41 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(shardID byte, txs []
 //	- Store incoming cross shard block
 //	- Store Burning Confirmation
 //	- Update Mempool fee estimator
-func (blockchain *BlockChain) processStoreShardBlock(shardBlock *ShardBlock, committeeChange *committeeChange) error {
+func (blockchain *BlockChain) processStoreShardBlock(shardBlock *ShardBlock, committeeChange *committeeChange, beaconBlock *BeaconBlock) error {
 	shardID := shardBlock.Header.ShardID
 	blockHeight := shardBlock.Header.Height
 	blockHash := shardBlock.Header.Hash()
+	rewardReceiver := make(map[string]string)
+	autoStaking := make(map[string]bool)
 	tempShardBestState := blockchain.BestState.Shard[shardID]
-	tempBeaconBestState := blockchain.BestState.Beacon
+	//tempBeaconBestState := blockchain.BestState.Beacon
+	//if tempBeaconBestState.BeaconHeight == 1 {
+	//	rewardReceiver = tempBeaconBestState.RewardReceiver
+	//	autoStaking = tempBeaconBestState.AutoStaking
+	//} else {
+	consensusStateRootHash, err := blockchain.GetBeaconConsensusRootHash(blockchain.GetDatabase(), beaconBlock.Header.Height)
+	if err != nil {
+		return NewBlockChainError(StoreShardBlockError, fmt.Errorf("can't get ConsensusStateRootHash of height %+v ,error %+v", beaconBlock.Header.Height, err))
+	}
+	consensusStateDB, err := statedb.NewWithPrefixTrie(consensusStateRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetDatabase()))
+	if err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
+	}
+	rewardReceiver, autoStaking = statedb.GetRewardReceiverAndAutoStaking(consensusStateDB, blockchain.GetShardIDs())
+	//}
+	featureStateRootHash, err := blockchain.GetBeaconFeatureRootHash(blockchain.GetDatabase(), beaconBlock.Header.Height)
+	if err != nil {
+		return NewBlockChainError(StoreShardBlockError, fmt.Errorf("can't get ConsensusStateRootHash of height %+v ,error %+v", beaconBlock.Header.Height, err))
+	}
+	featureStateDB, err := statedb.NewWithPrefixTrie(featureStateRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetDatabase()))
+	if err != nil {
+		return NewBlockChainError(StoreShardBlockError, err)
+	}
 	Logger.log.Infof("SHARD %+v | Process store block height %+v at hash %+v", shardBlock.Header.ShardID, blockHeight, *shardBlock.Hash())
 	if len(shardBlock.Body.CrossTransactions) != 0 {
 		Logger.log.Critical("processStoreShardBlock/CrossTransactions	", shardBlock.Body.CrossTransactions)
 	}
-	if err := blockchain.CreateAndSaveTxViewPointFromBlock(shardBlock, tempShardBestState.transactionStateDB, tempBeaconBestState.featureStateDB); err != nil {
+	if err := blockchain.CreateAndSaveTxViewPointFromBlock(shardBlock, tempShardBestState.transactionStateDB, featureStateDB); err != nil {
 		return NewBlockChainError(FetchAndStoreTransactionError, err)
 	}
 
@@ -929,7 +962,7 @@ func (blockchain *BlockChain) processStoreShardBlock(shardBlock *ShardBlock, com
 		return NewBlockChainError(FetchAndStoreCrossTransactionError, err)
 	}
 	// Save result of BurningConfirm instruction to get proof later
-	err := blockchain.storeBurningConfirm(tempShardBestState.featureStateDB, shardBlock)
+	err = blockchain.storeBurningConfirm(tempShardBestState.featureStateDB, shardBlock)
 	if err != nil {
 		return NewBlockChainError(StoreBurningConfirmError, err)
 	}
@@ -946,11 +979,11 @@ func (blockchain *BlockChain) processStoreShardBlock(shardBlock *ShardBlock, com
 		}
 	}
 	//statedb===========================START
-	err = statedb.StoreOneShardCommittee(tempShardBestState.consensusStateDB, shardID, committeeChange.shardCommitteeAdded[shardID], tempBeaconBestState.RewardReceiver, tempBeaconBestState.AutoStaking)
+	err = statedb.StoreOneShardCommittee(tempShardBestState.consensusStateDB, shardID, committeeChange.shardCommitteeAdded[shardID], rewardReceiver, autoStaking)
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
-	err = statedb.StoreOneShardSubstitutesValidator(tempShardBestState.consensusStateDB, shardID, committeeChange.shardSubstituteAdded[shardID], tempBeaconBestState.RewardReceiver, tempBeaconBestState.AutoStaking)
+	err = statedb.StoreOneShardSubstitutesValidator(tempShardBestState.consensusStateDB, shardID, committeeChange.shardSubstituteAdded[shardID], rewardReceiver, autoStaking)
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}

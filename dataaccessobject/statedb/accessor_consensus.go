@@ -117,7 +117,7 @@ func StoreAllShardSubstitutesValidator(stateDB *StateDB, allShardSubstitutes map
 func StoreOneShardSubstitutesValidator(stateDB *StateDB, shardID byte, shardSubstitutes []incognitokey.CommitteePublicKey, rewardReceiver map[string]string, autoStaking map[string]bool) error {
 	err := storeCommittee(stateDB, int(shardID), SubstituteValidator, shardSubstitutes, rewardReceiver, autoStaking)
 	if err != nil {
-		return NewStatedbError(StoreNextEpochCandidateError, err)
+		return NewStatedbError(StoreOneShardSubstitutesValidatorError, err)
 	}
 	return nil
 }
@@ -125,7 +125,7 @@ func StoreOneShardSubstitutesValidator(stateDB *StateDB, shardID byte, shardSubs
 func StoreBeaconSubstituteValidator(stateDB *StateDB, beaconSubstitute []incognitokey.CommitteePublicKey, rewardReceiver map[string]string, autoStaking map[string]bool) error {
 	err := storeCommittee(stateDB, BeaconShardID, SubstituteValidator, beaconSubstitute, rewardReceiver, autoStaking)
 	if err != nil {
-		return NewStatedbError(StoreCurrentEpochCandidateError, err)
+		return NewStatedbError(StoreBeaconSubstitutesValidatorError, err)
 	}
 	return nil
 }
