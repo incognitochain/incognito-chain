@@ -1,4 +1,4 @@
-package relaying
+package bnb
 
 import (
 	"errors"
@@ -26,3 +26,5 @@ func GetAccAddressString(accAddress *types.AccAddress, chainID string) (string, 
 		return "", errors.New("Invalid network chainID")
 	}
 }
+
+

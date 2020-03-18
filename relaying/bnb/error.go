@@ -1,4 +1,4 @@
-package relaying
+package bnb
 
 import (
 	"fmt"
