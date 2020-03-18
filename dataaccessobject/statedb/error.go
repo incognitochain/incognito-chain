@@ -72,6 +72,8 @@ const (
 	GetShardCommitteeError
 	StoreAllShardCommitteeError
 	StoreNextEpochCandidateError
+	StoreOneShardSubstitutesValidatorError
+	StoreBeaconSubstitutesValidatorError
 	StoreCurrentEpochCandidateError
 	StoreRewardRequestError
 	GetRewardRequestError
@@ -150,20 +152,22 @@ var ErrCodeMessage = map[int]struct {
 	GetPrivacyTokenTxsError:           {-2015, "Get Privacy Token Txs Error"},
 	PrivacyTokenIDExistedError:        {-2016, "Privacy Token ID Existed Error"},
 	// -3xxx: consensus error
-	StoreBeaconCommitteeError:       {-3000, "Store Beacon Committee Error"},
-	GetBeaconCommitteeError:         {-3001, "Get Beacon Committee Error"},
-	StoreShardCommitteeError:        {-3002, "Store Shard Committee Error"},
-	GetShardCommitteeError:          {-3003, "Get Shard Committee Error"},
-	StoreAllShardCommitteeError:     {-3004, "Store All Shard Committee Error"},
-	StoreNextEpochCandidateError:    {-3005, "Store Next Epoch Candidate Error"},
-	StoreCurrentEpochCandidateError: {-3006, "Store Next Current Candidate Error"},
-	StoreRewardRequestError:         {-3007, "Store Reward Request Error"},
-	GetRewardRequestError:           {-3008, "Get Reward Request Error"},
-	StoreCommitteeRewardError:       {-3009, "Store Committee Reward Error"},
-	GetCommitteeRewardError:         {-3010, "Get Committee Reward Error"},
-	ListCommitteeRewardError:        {-3011, "List Committee Reward Error"},
-	RemoveCommitteeRewardError:      {-3012, "Remove Committee Reward Error"},
-	StoreBlackListProducersError:    {-3013, "Store Black List Producers Error"},
+	StoreBeaconCommitteeError:              {-3000, "Store Beacon Committee Error"},
+	GetBeaconCommitteeError:                {-3001, "Get Beacon Committee Error"},
+	StoreShardCommitteeError:               {-3002, "Store Shard Committee Error"},
+	GetShardCommitteeError:                 {-3003, "Get Shard Committee Error"},
+	StoreAllShardCommitteeError:            {-3004, "Store All Shard Committee Error"},
+	StoreNextEpochCandidateError:           {-3005, "Store Next Epoch Candidate Error"},
+	StoreCurrentEpochCandidateError:        {-3006, "Store Next Current Candidate Error"},
+	StoreRewardRequestError:                {-3007, "Store Reward Request Error"},
+	GetRewardRequestError:                  {-3008, "Get Reward Request Error"},
+	StoreCommitteeRewardError:              {-3009, "Store Committee Reward Error"},
+	GetCommitteeRewardError:                {-3010, "Get Committee Reward Error"},
+	ListCommitteeRewardError:               {-3011, "List Committee Reward Error"},
+	RemoveCommitteeRewardError:             {-3012, "Remove Committee Reward Error"},
+	StoreBlackListProducersError:           {-3013, "Store Black List Producers Error"},
+	StoreOneShardSubstitutesValidatorError: {-3014, "Store One Shard Substitutes Validator Error"},
+	StoreBeaconSubstitutesValidatorError:   {-3014, "Store Beacon Substitutes Validator Error"},
 	// -4xxx: pdex error
 	StoreWaitingPDEContributionError: {-4000, "Store Waiting PDEX Contribution Error"},
 	StorePDEPoolPairError:            {-4001, "Store PDEX Pool Pair Error"},

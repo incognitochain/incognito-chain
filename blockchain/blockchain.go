@@ -275,7 +275,7 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 	}
 	committeeChange := newCommitteeChange()
 	committeeChange.shardCommitteeAdded[shardID] = tempShardBestState.GetShardCommittee()
-	err = blockchain.processStoreShardBlock(&initShardBlock, committeeChange)
+	err = blockchain.processStoreShardBlock(&initShardBlock, committeeChange, genesisBeaconBlock)
 	if err != nil {
 		return err
 	}
