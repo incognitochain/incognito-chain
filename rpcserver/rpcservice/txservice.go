@@ -1473,13 +1473,11 @@ func (txService TxService) DecryptOutputCoinByKeyByTransaction(keyParam *incogni
 	}
 	return results, nil
 }
-
 func (txService TxService) DecryptOutputCoinByKey(outCoints []*privacy.OutputCoin, keyset *incognitokey.KeySet) ([]*privacy.OutputCoin, *RPCError) {
 	keyset.PrivateKey = nil // always nil
-
 	results := make([]*privacy.OutputCoin, 0)
 	for _, out := range outCoints {
-		decryptedOut := txService.BlockChain.DecryptOutputCoinByKey(out, keyset, 0, nil)
+		decryptedOut := blockchain.DecryptOutputCoinByKey(txService.BlockChain.GetTransactionStateDB(0), out, keyset, nil, 0)
 		if decryptedOut == nil {
 			continue
 		} else {
