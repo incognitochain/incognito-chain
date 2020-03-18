@@ -2,9 +2,10 @@ package blsbftv2
 
 import (
 	"encoding/json"
+	"sort"
+
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/bridgesig"
-	"sort"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -97,7 +98,7 @@ func (e *BLSBFT_V2) LoadUserKeyFromIncPrivateKey(privateKey string) (string, err
 	return privateSeed, nil
 }
 
-func (e BLSBFT_V2) GetUserPublicKey() *incognitokey.CommitteePublicKey {
+func (e *BLSBFT_V2) GetUserPublicKey() *incognitokey.CommitteePublicKey {
 	if e.UserKeySet != nil {
 		key := e.UserKeySet.GetPublicKey()
 		return &key

@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
+	"time"
+
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/wire"
-	"sort"
-	"time"
 )
 
 type BLSBFT_V2 struct {
@@ -88,10 +89,6 @@ func (e *BLSBFT_V2) Start() error {
 	e.voteHistory = make(map[uint64]common.BlockInterface)
 	var err error
 	e.proposeHistory, err = lru.New(1000)
-	if err != nil {
-		panic(err)
-	}
-
 	if err != nil {
 		panic(err)
 	}
@@ -351,10 +348,11 @@ func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 		return errors.New("View not connect")
 	}
 
-	//check block valid,
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	//TODO: using context to validate block
+	_, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-	if err := e.validatePreSignBlock(ctx, v.block); err != nil {
+
+	if err := e.Chain.ValidatePreSignBlock(v.block); err != nil {
 		e.Logger.Error(err)
 		return err
 	}

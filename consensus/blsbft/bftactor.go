@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -11,8 +14,6 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/wire"
-	"sync"
-	"time"
 )
 
 type BLSBFT struct {
@@ -87,6 +88,7 @@ func (e *BLSBFT) Start() error {
 	if e.isStarted {
 		return NewConsensusError(ConsensusAlreadyStartedError, errors.New(e.ChainKey))
 	}
+
 	e.isStarted = true
 	e.isOngoing = false
 	e.StopCh = make(chan struct{})
@@ -221,7 +223,8 @@ func (e *BLSBFT) Start() error {
 					if e.Blocks[roundKey] != nil {
 						metrics.SetGlobalParam("ReceiveBlockTime", time.Since(e.RoundData.TimeStart).Seconds())
 						//fmt.Println("CONSENSUS: listen phase 2")
-						if err := e.validatePreSignBlock(e.Blocks[roundKey]); err != nil {
+
+						if err := e.Chain.ValidatePreSignBlock(e.Blocks[roundKey]); err != nil {
 							delete(e.Blocks, roundKey)
 							e.logger.Error(err)
 							continue
@@ -270,7 +273,7 @@ func (e *BLSBFT) Start() error {
 
 						//TODO: check issue invalid sig when swap
 						//TODO 0xakk0r0kamui trace who is malicious node if ValidateCommitteeSig return false
-						err = e.ValidateCommitteeSig(e.RoundData.Block, e.RoundData.Committee)
+						err = ValidateCommitteeSig(e.RoundData.Block, e.RoundData.Committee)
 						if err != nil {
 							e.logger.Error(err)
 							e.logger.Errorf("e.RoundData.Block.GetValidationField()=%+v\n", e.RoundData.Block.GetValidationField())

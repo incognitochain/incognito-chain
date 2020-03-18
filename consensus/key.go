@@ -4,15 +4,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus/blsbft"
 	"github.com/incognitochain/incognito-chain/consensus/blsbftv2"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"strings"
 )
 
 func (engine *Engine) LoadMiningKeys(keysString string) error {
+	fmt.Println("Start LoadMiningKey keysString", keysString)
+	defer fmt.Println("End LoadMiningKey")
 	if len(keysString) > 0 {
 		keys := strings.Split(keysString, "|")
 		if len(keys) > 0 {
@@ -154,11 +157,21 @@ func (engine *Engine) ValidateProducerPosition(blk common.BlockInterface, commit
 }
 
 func (engine *Engine) ValidateProducerSig(block common.BlockInterface, consensusType string) error {
-	return engine.currentMiningProcess.ValidateProducerSig(block)
+	if block.GetVersion() == 1 {
+		return blsbft.ValidateProducerSig(block)
+	} else if block.GetVersion() == 2 {
+		return blsbftv2.ValidateProducerSig(block)
+	}
+	return fmt.Errorf("Wrong block version: %v", block.GetVersion())
 }
 
-func (engine *Engine) ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey, consensusType string) error {
-	return engine.currentMiningProcess.ValidateCommitteeSig(block, committee)
+func (engine *Engine) ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+	if block.GetVersion() == 1 {
+		return blsbft.ValidateCommitteeSig(block, committee)
+	} else if block.GetVersion() == 2 {
+		return blsbftv2.ValidateCommitteeSig(block, committee)
+	}
+	return fmt.Errorf("Wrong block version: %v", block.GetVersion())
 }
 
 func (engine *Engine) GenMiningKeyFromPrivateKey(privateKey string) (string, error) {

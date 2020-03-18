@@ -1,10 +1,8 @@
 package blsbftv2
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
@@ -48,42 +46,7 @@ func (e BLSBFT_V2) CreateValidationData(block common.BlockInterface) ValidationD
 	return valData
 }
 
-func (e BLSBFT_V2) validatePreSignBlock(ctx context.Context, block common.BlockInterface) error {
-	if err := e.ValidateProducerPosition(block); err != nil {
-		return NewConsensusError(UnExpectedError, err)
-	}
-	if err := e.ValidateProducerSig(block); err != nil {
-		return NewConsensusError(ProducerSignatureError, err)
-	}
-	if err := e.Chain.ValidatePreSignBlock(block); err != nil {
-		return NewConsensusError(UnExpectedError, err)
-	}
-	return nil
-}
-
-func (e *BLSBFT_V2) ValidateProducerPosition(block common.BlockInterface) error {
-	view := e.Chain.GetViewByHash(block.GetPrevHash())
-	if view == nil {
-		return errors.New("No view in chain")
-	}
-
-	producerPk := view.GetProposerByTimeSlot(common.CalculateTimeSlot(block.GetProduceTime()))
-	b58Str, _ := producerPk.ToBase58()
-	if b58Str != block.GetProducer() {
-		panic(fmt.Sprintf("%v %v", b58Str, block.GetProducer()))
-		return NewConsensusError(UnExpectedError, errors.New("Proposer should be should be :"+b58Str+" but get "+block.GetProducer()))
-	}
-
-	proposerPk := view.GetProposerByTimeSlot(common.CalculateTimeSlot(block.GetProposeTime()))
-	b58Str, _ = proposerPk.ToBase58()
-	if b58Str != block.GetProposer() {
-		panic(fmt.Sprintf("%v %v", b58Str, block.GetProposer()))
-		return NewConsensusError(UnExpectedError, errors.New("Proposer should be should be :"+b58Str+" but get "+block.GetProposer()))
-	}
-	return nil
-}
-
-func (e BLSBFT_V2) ValidateProducerSig(block common.BlockInterface) error {
+func ValidateProducerSig(block common.BlockInterface) error {
 	valData, err := DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
@@ -103,7 +66,7 @@ func (e BLSBFT_V2) ValidateProducerSig(block common.BlockInterface) error {
 	return nil
 }
 
-func (e BLSBFT_V2) ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+func ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
 	valData, err := DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)

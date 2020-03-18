@@ -55,37 +55,7 @@ func (e BLSBFT) CreateValidationData(block common.BlockInterface) ValidationData
 	return valData
 }
 
-func (e BLSBFT) validatePreSignBlock(block common.BlockInterface) error {
-	e.logger.Info("verifying block...")
-	e.logger.Info("ValidateProducerPosition...")
-	if err := e.ValidateProducerPosition(block, e.RoundData.LastProposerIndex, e.RoundData.Committee); err != nil {
-		return NewConsensusError(UnExpectedError, err)
-	}
-	e.logger.Info("ValidateProducerSig...")
-	if err := e.ValidateProducerSig(block); err != nil {
-		return NewConsensusError(ProducerSignatureError, err)
-	}
-	e.logger.Info("ValidatePreSignBlock...")
-	if err := e.Chain.ValidatePreSignBlock(block); err != nil {
-		return NewConsensusError(UnExpectedError, err)
-	}
-	e.logger.Info("done verify block...")
-	return nil
-}
-
-func (e BLSBFT) ValidateProducerPosition(block common.BlockInterface, lastProposerIndex int, committee []incognitokey.CommitteePublicKey) error {
-	producerPosition := (lastProposerIndex + block.GetRound()) % len(committee)
-	tempProducer, err := committee[producerPosition].ToBase58()
-	if err != nil {
-		return err
-	}
-	if tempProducer == block.GetProducer() {
-		return nil
-	}
-	return NewConsensusError(UnExpectedError, errors.New("Producer should be should be :"+tempProducer))
-}
-
-func (e BLSBFT) ValidateProducerSig(block common.BlockInterface) error {
+func ValidateProducerSig(block common.BlockInterface) error {
 	valData, err := DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
@@ -108,7 +78,7 @@ func (e BLSBFT) ValidateProducerSig(block common.BlockInterface) error {
 	return nil
 }
 
-func (e BLSBFT) ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+func ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
 	valData, err := DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)

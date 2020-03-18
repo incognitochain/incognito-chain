@@ -3,8 +3,9 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/multiview"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/multiview"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -255,7 +256,7 @@ func (chain *BeaconChain) ValidateBlockSignatures(block common.BlockInterface, c
 		return err
 	}
 
-	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee, chain.GetConsensusType()); err != nil {
+	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee); err != nil {
 		return nil
 	}
 	return nil

@@ -1,13 +1,14 @@
 package consensus
 
 import (
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/multiview"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/wire"
-	"time"
 )
 
 type EngineConfig struct {
@@ -39,9 +40,9 @@ type ConsensusInterface interface {
 	// ProcessBFTMsg - process incoming BFT message
 	ProcessBFTMsg(msg *wire.MessageBFT)
 	// ValidateProducerSig - validate a block producer signature
-	ValidateProducerSig(block common.BlockInterface) error
+	//ValidateProducerSig(block common.BlockInterface) error
 	// ValidateCommitteeSig - validate a block committee signature
-	ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
+	//ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 
 	// LoadUserKey - load user mining key
 	LoadUserKey(miningKey string) error
@@ -75,7 +76,9 @@ type ChainInterface interface {
 	GetPubKeyCommitteeIndex(string) int
 	GetLastProposerIndex() int
 	UnmarshalBlock(blockString []byte) (common.BlockInterface, error)
-	CreateNewBlock(proposer string, round int) (common.BlockInterface, error)
+	// CreateNewBlock(proposer string, round int) (common.BlockInterface, error)
+	CreateNewBlock(version int, proposer string, round int) (common.BlockInterface, error)
+	CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string) (common.BlockInterface, error)
 	InsertBlk(block common.BlockInterface) error
 	InsertAndBroadcastBlock(block common.BlockInterface) error
 	// ValidateAndInsertBlock(block common.BlockInterface) error
