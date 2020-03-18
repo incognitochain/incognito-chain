@@ -108,10 +108,10 @@ func (s *S2BSyncProcess) syncS2BPoolProcess() {
 		}
 
 		//last check, if we still need to sync more
-		// if requestCnt == 0 {
-		//s.S2BPool.Print()
-		time.Sleep(time.Second * 5)
-		// }
+		if requestCnt == 0 {
+			//s.S2BPool.Print()
+			time.Sleep(time.Second * 5)
+		}
 
 	}
 
