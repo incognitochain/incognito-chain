@@ -116,7 +116,7 @@ currentPortalState *CurrentPortalState) error {
 
 	// unmarshal instructions content
 	var actionData metadata.PortalLiquidateTopPercentileExchangeRatesContent
-	err := json.Unmarshal([]byte(instructions[2]), &actionData)
+	err := json.Unmarshal([]byte(instructions[3]), &actionData)
 	if err != nil {
 		Logger.log.Errorf("Can not unmarshal instruction content %v\n", err)
 		return nil
@@ -139,6 +139,9 @@ currentPortalState *CurrentPortalState) error {
 	}
 
 	reqStatus := instructions[2]
+
+	Logger.log.Infof("status %v", reqStatus)
+
 	if reqStatus == common.PortalLiquidateTPExchangeRatesSuccessChainStatus {
 		//validation
 		detectTPExchangeRates, err := detectTPRatio(custodianState.HoldingPubTokens, custodianState.LockedAmountCollateral, exchangeRate)
@@ -162,12 +165,14 @@ currentPortalState *CurrentPortalState) error {
 			}
 
 			//update custodian
+			Logger.log.Infof("update custodian key %v", cusStateKey)
 			currentPortalState.CustodianPoolState[cusStateKey] = custodianState
 
 			//update LiquidateExchangeRates
 			liquidateExchangeRatesKey := lvdb.NewPortalLiquidateExchangeRatesKey(beaconHeight)
 			liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey]
 
+			Logger.log.Infof("update liquidateExchangeRatesKey key %v", liquidateExchangeRatesKey)
 			if !ok {
 				item := make(map[string]lvdb.LiquidateExchangeRatesDetail)
 
@@ -200,9 +205,10 @@ currentPortalState *CurrentPortalState) error {
 			newTPExchangeRates, _ := NewLiquidateTopPercentileExchangeRates(
 				custodianState.IncognitoAddress,
 				resultFilterTp,
-				common.PortalLiquidateTPExchangeRatesSuccessChainStatus,
+				common.PortalLiquidationTPExchangeRatesSuccessStatus,
 				)
 
+			Logger.log.Infof("update liquidateTPExchangeRatesKey key %v", newTPKey)
 			err := db.StoreLiquidateTopPercentileExchangeRates([]byte(newTPKey), newTPExchangeRates)
 			if err != nil {
 				Logger.log.Errorf("ERROR: an error occurred while store liquidation TP exchange rates %v", err)
@@ -214,7 +220,7 @@ currentPortalState *CurrentPortalState) error {
 		newTPExchangeRates, _ := NewLiquidateTopPercentileExchangeRates(
 			custodianState.IncognitoAddress,
 		nil,
-			common.PortalLiquidateTPExchangeRatesFailedChainStatus,
+			common.PortalLiquidationTPExchangeRatesFailedStatus,
 		)
 
 		err := db.StoreLiquidateTopPercentileExchangeRates([]byte(newTPKey), newTPExchangeRates)

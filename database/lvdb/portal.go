@@ -92,7 +92,7 @@ type LiquidateTopPercentileExchangeRatesDetail struct {
 
 type LiquidateTopPercentileExchangeRates struct {
 	CustodianAddress string
-	Status           string
+	Status	byte
 	Rates            map[string]LiquidateTopPercentileExchangeRatesDetail //ptoken | detail
 }
 

@@ -54,6 +54,7 @@ func buildTopPercentileExchangeRatesLiquidationInst(
 	tpContentBytes, _ := json.Marshal(tpContent)
 	return []string{
 		strconv.Itoa(metaType),
+		"-1",
 		status,
 		string(tpContentBytes),
 	}
@@ -364,6 +365,10 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 	custodianPoolState := currentPortalState.CustodianPoolState
 
 	for custodianKey, custodianState := range custodianPoolState {
+		Logger.log.Infof("Start detect tp custodian key %v", custodianKey)
+
+		Logger.log.Infof("custodian key %v, total pubtokens %v, total amount collateral %v", custodianKey, custodianState.HoldingPubTokens, custodianState.LockedAmountCollateral)
+
 		detectTPExchangeRates, err := detectTPRatio(custodianState.HoldingPubTokens, custodianState.LockedAmountCollateral, exchangeRate)
 		if err != nil {
 			Logger.log.Errorf("Detect tp ratio error %v", err)
@@ -402,6 +407,7 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 		}
 
 
+		Logger.log.Infof("liquidate exchange rates: filter TP result  %v", resultFilterTp)
 		if len(resultFilterTp) > 0 {
 			// check and build instruction for waiting redeem request
 			for pTokenID, v := range resultFilterTp {
@@ -431,6 +437,7 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 				common.PortalLiquidateTPExchangeRatesSuccessChainStatus,
 			)
 
+			//update custodian
 			for pTokenId, v := range resultFilterTp {
 				custodianState.LockedAmountCollateral[pTokenId] = custodianState.LockedAmountCollateral[pTokenId] - v.HoldAmountFreeCollateral
 				custodianState.HoldingPubTokens[pTokenId] = custodianState.HoldingPubTokens[pTokenId] - v.HoldAmountPubToken
@@ -438,6 +445,41 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 			}
 
 			currentPortalState.CustodianPoolState[custodianKey] = custodianState
+
+			//update LiquidateExchangeRates
+			liquidateExchangeRatesKey := lvdb.NewPortalLiquidateExchangeRatesKey(beaconHeight)
+			liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey]
+
+			Logger.log.Infof("update liquidateExchangeRatesKey key %v", liquidateExchangeRatesKey)
+			if !ok {
+				item := make(map[string]lvdb.LiquidateExchangeRatesDetail)
+
+				for ptoken, liquidateTopPercentileExchangeRatesDetail := range resultFilterTp {
+					item[ptoken] = lvdb.LiquidateExchangeRatesDetail{
+						HoldAmountFreeCollateral: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
+						HoldAmountPubToken: liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
+					}
+				}
+				currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey], _ = NewLiquidateExchangeRates(item)
+			} else {
+				for ptoken, liquidateTopPercentileExchangeRatesDetail := range resultFilterTp {
+					if _, ok := liquidateExchangeRates.Rates[ptoken]; !ok {
+						liquidateExchangeRates.Rates[ptoken] = lvdb.LiquidateExchangeRatesDetail{
+							HoldAmountFreeCollateral: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
+							HoldAmountPubToken: liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
+						}
+					} else {
+						liquidateExchangeRates.Rates[ptoken] = lvdb.LiquidateExchangeRatesDetail{
+							HoldAmountFreeCollateral: liquidateExchangeRates.Rates[ptoken].HoldAmountFreeCollateral +  liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
+							HoldAmountPubToken: liquidateExchangeRates.Rates[ptoken].HoldAmountPubToken +  liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
+						}
+					}
+				}
+
+				currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey] = liquidateExchangeRates
+			}
+
+
 			insts = append(insts, inst)
 		}
 	}

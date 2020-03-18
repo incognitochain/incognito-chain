@@ -146,7 +146,7 @@ func NewCustodianWithdrawRequest(
 func NewLiquidateTopPercentileExchangeRates(
 	custodianAddress string,
 	rates map[string]lvdb.LiquidateTopPercentileExchangeRatesDetail,
-	status string,
+	status byte,
 ) (*lvdb.LiquidateTopPercentileExchangeRates, error) {
 	return &lvdb.LiquidateTopPercentileExchangeRates{
 		CustodianAddress: custodianAddress,
@@ -953,11 +953,13 @@ func filterTopPercentileLiquidation(custodian *lvdb.CustodianState, tpList map[s
 // 1500 ------ ?
 //1000 ------ 100%
 // => 1500 * 100 / 1000 = 150%
-func calculatePercentMinAspectRatio(total1 uint64, total2 uint64) int {
-	//todo: divide zero
+func calculatePercentMinAspectRatio(total1 uint64, total2 uint64) (int, error) {
+	if total1 <= 0 {
+		return 0, errors.New("Can not divide zero")
+	}
 	percentUp := total2 * 100 / total1
 	roundNumber := math.Round(float64(percentUp))
-	return int(roundNumber)
+	return int(roundNumber), nil
 }
 
 //detect tp by hold ptoken and hold prv each custodian
@@ -969,6 +971,10 @@ func detectTPRatio(holdPToken map[string]uint64, holdPRV map[string]uint64, fina
 			return nil, errors.New("Ptoken not found")
 		}
 
+		if amountPRV <= 0 || amountPToken <= 0 {
+			return nil, errors.New("TokenId is must larger than 0")
+		}
+
 		//(1): convert amount PToken to PRV
 		amountPTokenConverted, err := finalExchange.ExchangePToken2PRVByTokenId(key, amountPToken)
 
@@ -977,7 +983,12 @@ func detectTPRatio(holdPToken map[string]uint64, holdPRV map[string]uint64, fina
 		}
 
 		//(2): calculate % up-down from amount PRV and (1)
-		percentRatesDetect := calculatePercentMinAspectRatio(amountPTokenConverted, amountPRV)
+		percentRatesDetect, err := calculatePercentMinAspectRatio(amountPTokenConverted, amountPRV)
+
+		if err != nil {
+			return nil, err
+		}
+
 		result[key] = percentRatesDetect
 	}
 
