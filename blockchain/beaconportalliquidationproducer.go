@@ -19,6 +19,7 @@ func buildCustodianRunAwayLiquidationInst(
 	mintedCollateralAmount uint64,
 	redeemerIncAddrStr string,
 	custodianIncAddrStr string,
+	liquidatedByExchangeRate bool,
 	metaType int,
 	shardID byte,
 	status string,
@@ -30,6 +31,7 @@ func buildCustodianRunAwayLiquidationInst(
 		MintedCollateralAmount: mintedCollateralAmount,
 		RedeemerIncAddressStr:  redeemerIncAddrStr,
 		CustodianIncAddressStr: custodianIncAddrStr,
+		LiquidatedByExchangeRate: liquidatedByExchangeRate,
 		ShardID:                shardID,
 	}
 	liqCustodianContentBytes, _ := json.Marshal(liqCustodianContent)
@@ -132,6 +134,7 @@ func checkAndBuildInstForCustodianLiquidation(
 	if exchangeRate == nil {
 		Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when get exchange rate")
 	}
+	liquidatedByExchangeRate := false
 
 	for redeemReqKey, redeemReq := range currentPortalState.WaitingRedeemRequests {
 		if (beaconHeight + 1) - redeemReq.BeaconHeight >= common.PortalTimeOutCustodianSendPubTokenBack {
@@ -162,6 +165,7 @@ func checkAndBuildInstForCustodianLiquidation(
 						0,
 						redeemReq.RedeemerAddress,
 						matchCusDetail.IncAddress,
+						liquidatedByExchangeRate,
 						metadata.PortalLiquidateCustodianMeta,
 						shardID,
 						common.PortalLiquidateCustodianFailedChainStatus,
@@ -183,6 +187,7 @@ func checkAndBuildInstForCustodianLiquidation(
 						0,
 						redeemReq.RedeemerAddress,
 						matchCusDetail.IncAddress,
+						liquidatedByExchangeRate,
 						metadata.PortalLiquidateCustodianMeta,
 						shardID,
 						common.PortalLiquidateCustodianFailedChainStatus,
@@ -203,6 +208,7 @@ func checkAndBuildInstForCustodianLiquidation(
 						mintedAmountInPRV,
 						redeemReq.RedeemerAddress,
 						matchCusDetail.IncAddress,
+						liquidatedByExchangeRate,
 						metadata.PortalLiquidateCustodianMeta,
 						shardID,
 						common.PortalLiquidateCustodianFailedChainStatus,
@@ -221,6 +227,7 @@ func checkAndBuildInstForCustodianLiquidation(
 						mintedAmountInPRV,
 						redeemReq.RedeemerAddress,
 						matchCusDetail.IncAddress,
+						liquidatedByExchangeRate,
 						metadata.PortalLiquidateCustodianMeta,
 						shardID,
 						common.PortalLiquidateCustodianFailedChainStatus,
@@ -241,6 +248,7 @@ func checkAndBuildInstForCustodianLiquidation(
 					mintedAmountInPRV,
 					redeemReq.RedeemerAddress,
 					matchCusDetail.IncAddress,
+					liquidatedByExchangeRate,
 					metadata.PortalLiquidateCustodianMeta,
 					shardID,
 					common.PortalLiquidateCustodianSuccessChainStatus,
@@ -385,6 +393,7 @@ func checkAndBuildInstForTPExchangeRateRedeemRequest(
 
 	// calculate minted amount prv for each matching redeem requests
 	// rely on percent matching redeem amount and total matching redeem amount
+	liquidatedByExchangeRate := true
 	for redeemReqKey, redeemReq := range currentPortalState.WaitingRedeemRequests {
 		if redeemReq.TokenID == tokenID {
 			for _, matchCustodian := range redeemReq.Custodians {
@@ -412,6 +421,7 @@ func checkAndBuildInstForTPExchangeRateRedeemRequest(
 						mintedAmountPRV,
 						redeemReq.RedeemerAddress,
 						matchCustodian.IncAddress,
+						liquidatedByExchangeRate,
 						metadata.PortalLiquidateCustodianMeta,
 						shardID,
 						common.PortalLiquidateCustodianSuccessChainStatus,

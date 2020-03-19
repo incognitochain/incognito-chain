@@ -67,15 +67,16 @@ func (blockchain *BlockChain) processPortalLiquidateCustodian(
 		// track liquidation custodian status by redeemID and custodian address into DB
 		custodianLiquidationTrackKey := lvdb.NewPortalLiquidationCustodianKey(actionData.UniqueRedeemID, actionData.CustodianIncAddressStr)
 		custodianLiquidationTrackData := metadata.PortalLiquidateCustodianStatus{
-			Status:                 common.PortalLiquidateCustodianSuccessStatus,
-			UniqueRedeemID:         actionData.UniqueRedeemID,
-			TokenID:                actionData.TokenID,
-			RedeemPubTokenAmount:   actionData.RedeemPubTokenAmount,
-			MintedCollateralAmount: actionData.MintedCollateralAmount,
-			RedeemerIncAddressStr:  actionData.RedeemerIncAddressStr,
-			CustodianIncAddressStr: actionData.CustodianIncAddressStr,
-			ShardID:                actionData.ShardID,
-			LiquidatedBeaconHeight: beaconHeight + 1,
+			Status:                   common.PortalLiquidateCustodianSuccessStatus,
+			UniqueRedeemID:           actionData.UniqueRedeemID,
+			TokenID:                  actionData.TokenID,
+			RedeemPubTokenAmount:     actionData.RedeemPubTokenAmount,
+			MintedCollateralAmount:   actionData.MintedCollateralAmount,
+			RedeemerIncAddressStr:    actionData.RedeemerIncAddressStr,
+			CustodianIncAddressStr:   actionData.CustodianIncAddressStr,
+			LiquidatedByExchangeRate: actionData.LiquidatedByExchangeRate,
+			ShardID:                  actionData.ShardID,
+			LiquidatedBeaconHeight:   beaconHeight + 1,
 		}
 		custodianLiquidationTrackDataBytes, _ := json.Marshal(custodianLiquidationTrackData)
 		err = db.TrackLiquidateCustodian(
@@ -91,10 +92,11 @@ func (blockchain *BlockChain) processPortalLiquidateCustodian(
 		// track liquidation custodian status by redeemID and custodian address into DB
 		custodianLiquidationTrackKey := lvdb.NewPortalLiquidationCustodianKey(actionData.UniqueRedeemID, actionData.CustodianIncAddressStr)
 		custodianLiquidationTrackData := metadata.PortalLiquidateCustodianStatus{
-			Status:                 common.PortalLiquidateCustodianFailedStatus,
-			UniqueRedeemID:         actionData.UniqueRedeemID,
-			CustodianIncAddressStr: actionData.CustodianIncAddressStr,
-			LiquidatedBeaconHeight: beaconHeight + 1,
+			Status:                   common.PortalLiquidateCustodianFailedStatus,
+			UniqueRedeemID:           actionData.UniqueRedeemID,
+			CustodianIncAddressStr:   actionData.CustodianIncAddressStr,
+			LiquidatedByExchangeRate: actionData.LiquidatedByExchangeRate,
+			LiquidatedBeaconHeight:   beaconHeight + 1,
 		}
 		custodianLiquidationTrackDataBytes, _ := json.Marshal(custodianLiquidationTrackData)
 		err = db.TrackLiquidateCustodian(
