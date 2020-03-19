@@ -235,7 +235,7 @@ func (txService TxService) chooseOutsCoinByKeyset(
 		metadataParam,
 		privacyCustomTokenParams, int64(beaconHeight))
 	if err != nil {
-		return nil, 0, NewRPCError(GetOutputCoinError, err)
+		return nil, 0, NewRPCError(RejectInvalidTxFeeError, err)
 	}
 	if totalAmmount == 0 && realFee == 0 {
 		if metadataParam != nil {
@@ -246,7 +246,7 @@ func (txService TxService) chooseOutsCoinByKeyset(
 					return nil, realFee, nil
 				}
 			}
-			return nil, realFee, NewRPCError(GetOutputCoinError, fmt.Errorf("totalAmmount: %+v, realFee: %+v", totalAmmount, realFee))
+			return nil, realFee, NewRPCError(RejectInvalidTxFeeError, fmt.Errorf("totalAmmount: %+v, realFee: %+v", totalAmmount, realFee))
 		}
 		if privacyCustomTokenParams != nil {
 			// for privacy token
