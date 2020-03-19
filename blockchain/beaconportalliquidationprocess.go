@@ -144,21 +144,21 @@ currentPortalState *CurrentPortalState) error {
 
 	if reqStatus == common.PortalLiquidateTPExchangeRatesSuccessChainStatus {
 		//validation
-		detectTPExchangeRates, err := detectTPRatio(custodianState.HoldingPubTokens, custodianState.LockedAmountCollateral, exchangeRate)
+		detectTPExchangeRates, err := calculateTPRatio(custodianState.HoldingPubTokens, custodianState.LockedAmountCollateral, exchangeRate)
 		if err != nil {
 			Logger.log.Errorf("Detect tp ratio error %v", err)
 			return nil
 		}
 
-		resultFilterTp, err := filterTopPercentileLiquidation(custodianState, detectTPExchangeRates)
+		detectTp, err := detectTopPercentileLiquidation(custodianState, detectTPExchangeRates)
 
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while Get liquidate exchange rates change error %v", err)
 			return nil
 		}
 
-		if len(resultFilterTp) > 0 {
-			for ptoken, liquidateTopPercentileExchangeRatesDetail := range resultFilterTp {
+		if len(detectTp) > 0 {
+			for ptoken, liquidateTopPercentileExchangeRatesDetail := range detectTp {
 				custodianState.LockedAmountCollateral[ptoken] = custodianState.LockedAmountCollateral[ptoken] - liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral
 				custodianState.HoldingPubTokens[ptoken] = custodianState.HoldingPubTokens[ptoken] - liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken
 				custodianState.TotalCollateral = custodianState.TotalCollateral - liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral
@@ -176,7 +176,7 @@ currentPortalState *CurrentPortalState) error {
 			if !ok {
 				item := make(map[string]lvdb.LiquidateExchangeRatesDetail)
 
-				for ptoken, liquidateTopPercentileExchangeRatesDetail := range resultFilterTp {
+				for ptoken, liquidateTopPercentileExchangeRatesDetail := range detectTp {
 					item[ptoken] = lvdb.LiquidateExchangeRatesDetail{
 						HoldAmountFreeCollateral: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
 						HoldAmountPubToken: liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
@@ -184,7 +184,7 @@ currentPortalState *CurrentPortalState) error {
 				}
 				currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey], _ = NewLiquidateExchangeRates(item)
 			} else {
-				for ptoken, liquidateTopPercentileExchangeRatesDetail := range resultFilterTp {
+				for ptoken, liquidateTopPercentileExchangeRatesDetail := range detectTp {
 					if _, ok := liquidateExchangeRates.Rates[ptoken]; !ok {
 						liquidateExchangeRates.Rates[ptoken] = lvdb.LiquidateExchangeRatesDetail{
 							HoldAmountFreeCollateral: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
@@ -204,7 +204,7 @@ currentPortalState *CurrentPortalState) error {
 			newTPKey := lvdb.NewPortalLiquidateTPExchangeRatesKey(beaconHeight, custodianState.IncognitoAddress)
 			newTPExchangeRates, _ := NewLiquidateTopPercentileExchangeRates(
 				custodianState.IncognitoAddress,
-				resultFilterTp,
+				detectTp,
 				common.PortalLiquidationTPExchangeRatesSuccessStatus,
 				)
 
@@ -367,6 +367,9 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(beaconHei
 	depositStatus := instructions[2]
 
 	if depositStatus == common.PortalLiquidationCustodianDepositSuccessChainStatus {
+		keyExchangeRate := lvdb.NewFinalExchangeRatesKey(beaconHeight)
+		exchangeRate := currentPortalState.FinalExchangeRates[keyExchangeRate]
+
 		keyCustodianState := lvdb.NewCustodianStateKey(beaconHeight, actionData.IncogAddressStr)
 
 		custodian, ok := currentPortalState.CustodianPoolState[keyCustodianState]
@@ -375,15 +378,34 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(beaconHei
 			return nil
 		}
 
-		//deposit from DepositedAmount
-		//minimum prv deposit
-		if actionData.FreeCollateralSelected == false  {
-			custodian.TotalCollateral = custodian.TotalCollateral + actionData.DepositedAmount
-			custodian.LockedAmountCollateral[actionData.PTokenId] = custodian.LockedAmountCollateral[actionData.PTokenId] + actionData.DepositedAmount
+		amountNeeded, totalFreeCollateralNeeded, remainFreeCollateral, err := calAmountNeededDepositLiquidate(custodian, exchangeRate, actionData.PTokenId, actionData.FreeCollateralSelected)
+
+		if err != nil {
+			Logger.log.Errorf("Calculate amount needed deposit err %v", err)
+			return nil
+		}
+
+
+		if actionData.DepositedAmount < amountNeeded {
+			Logger.log.Errorf("Deposited amount is not enough, expect %v, data sent %v", amountNeeded, actionData.DepositedAmount)
+			return nil
+		}
+
+		Logger.log.Infof("Deposited amount: expect %v, data sent %v", amountNeeded, actionData.DepositedAmount)
+
+		remainDepositAmount := actionData.DepositedAmount - amountNeeded
+		custodian.TotalCollateral = custodian.TotalCollateral + actionData.DepositedAmount
+
+		if actionData.FreeCollateralSelected == false {
+			custodian.LockedAmountCollateral[actionData.PTokenId] = custodian.LockedAmountCollateral[actionData.PTokenId] + amountNeeded
+
+			//update remain
+			custodian.FreeCollateral = custodian.FreeCollateral + remainDepositAmount
 		} else {
 			//deposit from free collateral DepositedAmount
-			custodian.LockedAmountCollateral[actionData.PTokenId] = custodian.LockedAmountCollateral[actionData.PTokenId] + actionData.DepositedAmount
-			custodian.FreeCollateral = custodian.FreeCollateral - actionData.DepositedAmount
+			custodian.LockedAmountCollateral[actionData.PTokenId] = custodian.LockedAmountCollateral[actionData.PTokenId] + amountNeeded + totalFreeCollateralNeeded
+
+			custodian.FreeCollateral = remainFreeCollateral + remainDepositAmount
 		}
 
 		currentPortalState.CustodianPoolState[keyCustodianState] = custodian

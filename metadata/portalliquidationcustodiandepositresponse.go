@@ -94,7 +94,7 @@ func (iRes PortalLiquidationCustodianDepositResponse) VerifyMinerCreatedTxBefore
 		}
 		instDepositStatus := inst[2]
 		if instDepositStatus != iRes.DepositStatus ||
-			(instDepositStatus != common.PortalLiquidationCustodianDepositSuccessChainStatus) {
+			(instDepositStatus != common.PortalLiquidationCustodianDepositRejectedChainStatus) {
 			continue
 		}
 
@@ -136,6 +136,7 @@ func (iRes PortalLiquidationCustodianDepositResponse) VerifyMinerCreatedTxBefore
 		idx = i
 		break
 	}
+
 	if idx == -1 { // not found the issuance request tx for this response
 		return false, fmt.Errorf(fmt.Sprintf("no PortalLiquidationCustodianDeposit instruction found for PortalLiquidationCustodianDepositResponse tx %s", tx.Hash().String()))
 	}

@@ -92,7 +92,8 @@ func (responseMeta PortalCustodianWithdrawResponse) VerifyMinerCreatedTxBeforeGe
 		}
 
 		instDepositStatus := inst[2]
-		if instDepositStatus != responseMeta.RequestStatus || (instDepositStatus != common.PortalCustodianWithdrawRequestAcceptedStatus) {
+		if instDepositStatus != responseMeta.RequestStatus ||
+			(instDepositStatus != common.PortalCustodianWithdrawRequestAcceptedStatus) {
 			continue
 		}
 
@@ -127,7 +128,8 @@ func (responseMeta PortalCustodianWithdrawResponse) VerifyMinerCreatedTxBeforeGe
 
 		_, pk, amount, assetID := tx.GetTransferData()
 		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
-			portingAmountFromInst != amount || receivingTokenIDStr != assetID.String() {
+			portingAmountFromInst != amount ||
+			receivingTokenIDStr != assetID.String() {
 			continue
 		}
 

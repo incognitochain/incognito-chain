@@ -85,6 +85,7 @@ type CustodianWithdrawRequest struct {
 }
 
 type LiquidateTopPercentileExchangeRatesDetail struct {
+	TPKey int
 	TPValue                  int
 	HoldAmountFreeCollateral uint64
 	HoldAmountPubToken       uint64
