@@ -2,8 +2,9 @@ package blockchain
 
 import (
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/multiview"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/multiview"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -125,8 +126,9 @@ func (chain *ShardChain) CreateNewBlock(version int, proposer string, round int)
 		beaconHeight = chain.GetBestState().BeaconHeight
 	}
 	Logger.log.Infof("Begin Enter New Block Shard %+v", time.Now())
-	newBlock, err := chain.BlockGen.NewBlockShard(version, proposer, byte(chain.GetShardID()), round, nil, beaconHeight, start)
+	// newBlock, err := chain.BlockGen.NewBlockShard(version, proposer, byte(chain.GetShardID()), round, nil, beaconHeight, start)
 
+	newBlock, err := chain.Blockchain.NewBlockShard_V2(chain.GetBestState(), version, proposer, byte(chain.GetShardID()), round, nil, beaconHeight, start)
 	Logger.log.Infof("Begin Finish New Block Shard %+v", time.Now())
 	if err != nil {
 		return nil, err
@@ -191,12 +193,12 @@ func (chain *ShardChain) InsertBlk(block common.BlockInterface) error {
 	//if chain.Blockchain.config.ConsensusEngine.IsOngoing(chain.ChainName) {
 	//	return NewBlockChainError(ConsensusIsOngoingError, errors.New(fmt.Sprint(chain.ChainName, block.Hash())))
 	//}
-	return chain.Blockchain.InsertShardBlock(block.(*ShardBlock), false)
+	return chain.Blockchain.InsertShardBlock_V2(block.(*ShardBlock), false)
 }
 
 func (chain *ShardChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
 	go chain.Blockchain.config.Server.PushBlockToAll(block, false)
-	err := chain.Blockchain.InsertShardBlock(block.(*ShardBlock), true)
+	err := chain.Blockchain.InsertShardBlock_V2(block.(*ShardBlock), true)
 	if err != nil {
 		return err
 	}
@@ -233,5 +235,5 @@ func (chain *ShardChain) UnmarshalBlock(blockString []byte) (common.BlockInterfa
 }
 
 func (chain *ShardChain) ValidatePreSignBlock(block common.BlockInterface) error {
-	return chain.Blockchain.VerifyPreSignShardBlock(block.(*ShardBlock), chain.GetBestState().ShardID)
+	return chain.Blockchain.ValidateProposedShardBlock_V2(block.(*ShardBlock))
 }
