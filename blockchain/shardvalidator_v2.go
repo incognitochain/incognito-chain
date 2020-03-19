@@ -24,7 +24,7 @@ func (blockchain *BlockChain) ValidateProposedShardBlock_V2(shardProposedBlock *
 		version:             shardProposedBlock.Header.Version,
 		producer:            shardProposedBlock.Header.Proposer,
 		round:               1,
-		newBlock:            shardProposedBlock,
+		newBlock:            NewShardBlock(),
 		startTime:           time.Unix(shardProposedBlock.Header.Timestamp, 0),
 		crossShardBlocks:    make(map[byte][]*CrossShardBlock),
 		confirmBeaconHeight: shardProposedBlock.Header.BeaconHeight,
