@@ -65,7 +65,7 @@ func storePRV(transactionStateRoot *statedb.StateDB) error {
 	symbol := common.PRVCoinName
 	tokenType := 0
 	mintable := false
-	amount := uint64(1000000000000000)
+	amount := uint64(0)
 	info := []byte{}
 	txHash := common.Hash{}
 	err := statedb.StorePrivacyToken(transactionStateRoot, tokenID, name, symbol, tokenType, mintable, amount, info, txHash)
