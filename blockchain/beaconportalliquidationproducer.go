@@ -369,48 +369,24 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 
 		Logger.log.Infof("custodian key %v, total pubtokens %v, total amount collateral %v", custodianKey, custodianState.HoldingPubTokens, custodianState.LockedAmountCollateral)
 
-		detectTPExchangeRates, err := detectTPRatio(custodianState.HoldingPubTokens, custodianState.LockedAmountCollateral, exchangeRate)
+		calTPRatio, err := calculateTPRatio(custodianState.HoldingPubTokens, custodianState.LockedAmountCollateral, exchangeRate)
 		if err != nil {
-			Logger.log.Errorf("Auto liquidation: Detect tp ratio error %v", err)
-			inst := buildTopPercentileExchangeRatesLiquidationInst(
-				custodianState.IncognitoAddress,
-				metadata.PortalLiquidateTPExchangeRatesMeta,
-				common.PortalLiquidateTPExchangeRatesFailedChainStatus,
-			)
-			insts = append(insts, inst)
+			Logger.log.Errorf("Auto liquidation: cal tp ratio error %v", err)
 			continue
 		}
 
-		if len(detectTPExchangeRates) <= 0 {
-			Logger.log.Errorf("Detect tp ratio not found")
-			inst := buildTopPercentileExchangeRatesLiquidationInst(
-				custodianState.IncognitoAddress,
-				metadata.PortalLiquidateTPExchangeRatesMeta,
-				common.PortalLiquidateTPExchangeRatesFailedChainStatus,
-			)
-			insts = append(insts, inst)
-			continue
-		}
-
-		//filter TP by TP 120 & TP130
-		resultFilterTp, err := filterTopPercentileLiquidation(custodianState, detectTPExchangeRates)
-
+		//filter TP by TP 120 or TP130
+		detectTp, err := detectTopPercentileLiquidation(custodianState, calTPRatio)
 		if err != nil {
-			Logger.log.Errorf("Get liquidate exchange rates change error %v", err)
-			inst := buildTopPercentileExchangeRatesLiquidationInst(
-				custodianState.IncognitoAddress,
-				metadata.PortalLiquidateTPExchangeRatesMeta,
-				common.PortalLiquidateTPExchangeRatesFailedChainStatus,
-			)
-			insts = append(insts, inst)
+			Logger.log.Errorf("Auto liquidation: detect cal tp ratio error %v", err)
 			continue
 		}
 
 
-		Logger.log.Infof("liquidate exchange rates: filter TP result  %v", resultFilterTp)
-		if len(resultFilterTp) > 0 {
+		Logger.log.Infof("liquidate exchange rates: detect TP result  %v", detectTp)
+		if len(detectTp) > 0 {
 			// check and build instruction for waiting redeem request
-			for pTokenID, v := range resultFilterTp {
+			for pTokenID, v := range detectTp {
 				if v.HoldAmountFreeCollateral > 0 {
 					instsFromRedeemRequest, err := checkAndBuildInstForTPExchangeRateRedeemRequest(
 						beaconHeight,
@@ -438,7 +414,7 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 			)
 
 			//update custodian
-			for pTokenId, v := range resultFilterTp {
+			for pTokenId, v := range detectTp {
 				custodianState.LockedAmountCollateral[pTokenId] = custodianState.LockedAmountCollateral[pTokenId] - v.HoldAmountFreeCollateral
 				custodianState.HoldingPubTokens[pTokenId] = custodianState.HoldingPubTokens[pTokenId] - v.HoldAmountPubToken
 				custodianState.TotalCollateral = custodianState.TotalCollateral - v.HoldAmountFreeCollateral
@@ -454,7 +430,7 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 			if !ok {
 				item := make(map[string]lvdb.LiquidateExchangeRatesDetail)
 
-				for ptoken, liquidateTopPercentileExchangeRatesDetail := range resultFilterTp {
+				for ptoken, liquidateTopPercentileExchangeRatesDetail := range detectTp {
 					item[ptoken] = lvdb.LiquidateExchangeRatesDetail{
 						HoldAmountFreeCollateral: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
 						HoldAmountPubToken: liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
@@ -462,7 +438,7 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 				}
 				currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey], _ = NewLiquidateExchangeRates(item)
 			} else {
-				for ptoken, liquidateTopPercentileExchangeRatesDetail := range resultFilterTp {
+				for ptoken, liquidateTopPercentileExchangeRatesDetail := range detectTp {
 					if _, ok := liquidateExchangeRates.Rates[ptoken]; !ok {
 						liquidateExchangeRates.Rates[ptoken] = lvdb.LiquidateExchangeRatesDetail{
 							HoldAmountFreeCollateral: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
@@ -777,9 +753,9 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 	}
 
 
-	detectTPExchangeRates, err := detectTPRatio(custodian.HoldingPubTokens, custodian.LockedAmountCollateral, exchangeRate)
+	calTPRatio, err := calculateTPRatio(custodian.HoldingPubTokens, custodian.LockedAmountCollateral, exchangeRate)
 	if err != nil {
-		Logger.log.Errorf("Custodian deposit: Detect tp ratio error %v", err)
+		Logger.log.Errorf("Custodian deposit: cal tp ratio error %v", err)
 		inst := buildLiquidationCustodianDepositInst(
 			actionData.Meta.PTokenId,
 			actionData.Meta.IncogAddressStr,
@@ -794,63 +770,29 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 		return [][]string{inst}, nil
 	}
 
-	tpValue, ok := detectTPExchangeRates[actionData.Meta.PTokenId]
-
-	if !ok {
-		Logger.log.Errorf("Ptoken not found from detect TP Exchange rates")
-		inst := buildLiquidationCustodianDepositInst(
-			actionData.Meta.PTokenId,
-			actionData.Meta.IncogAddressStr,
-			actionData.Meta.DepositedAmount,
-			actionData.Meta.FreeCollateralSelected,
-			common.PortalLiquidationCustodianDepositRejectedChainStatus,
-			actionData.Meta.Type,
-			shardID,
-			actionData.TxReqID,
-		)
-
-		return [][]string{inst}, nil
-	}
-
-	isTp20, ok := IsTP120(tpValue)
-	if !ok {
-		Logger.log.Errorf("TP value is %v, value is must TP130 | TP120", tpValue)
-		inst := buildLiquidationCustodianDepositInst(
-			actionData.Meta.PTokenId,
-			actionData.Meta.IncogAddressStr,
-			actionData.Meta.DepositedAmount,
-			actionData.Meta.FreeCollateralSelected,
-			common.PortalLiquidationCustodianDepositRejectedChainStatus,
-			actionData.Meta.Type,
-			shardID,
-			actionData.TxReqID,
-		)
-
-		return [][]string{inst}, nil
-	}
-
-	if isTp20 {
-		Logger.log.Errorf("TP value is %v, value is must TP130", tpValue)
-		inst := buildLiquidationCustodianDepositInst(
-			actionData.Meta.PTokenId,
-			actionData.Meta.IncogAddressStr,
-			actionData.Meta.DepositedAmount,
-			actionData.Meta.FreeCollateralSelected,
-			common.PortalLiquidationCustodianDepositRejectedChainStatus,
-			actionData.Meta.Type,
-			shardID,
-			actionData.TxReqID,
-		)
-
-		return [][]string{inst}, nil
-	}
-
-	//check deposit amount
-	totalPToken := up150Percent(custodian.HoldingPubTokens[actionData.Meta.PTokenId])
-	totalPRV, err := exchangeRate.ExchangePToken2PRVByTokenId(actionData.Meta.PTokenId, totalPToken)
+	//filter TP by TP 120 & TP130
+	detectTp, err := detectTopPercentileLiquidation(custodian, calTPRatio)
 
 	if err != nil {
-		Logger.log.Errorf("Convert exchange rates error %v", err)
+		Logger.log.Errorf("Detect TP liquidation error %v", err)
+		inst := buildLiquidationCustodianDepositInst(
+			actionData.Meta.PTokenId,
+			actionData.Meta.IncogAddressStr,
+			actionData.Meta.DepositedAmount,
+			actionData.Meta.FreeCollateralSelected,
+			common.PortalLiquidationCustodianDepositRejectedChainStatus,
+			actionData.Meta.Type,
+			shardID,
+			actionData.TxReqID,
+		)
+
+		return [][]string{inst}, nil
+	}
+
+	tpItem, ok := detectTp[actionData.Meta.PTokenId]
+
+	if tpItem.TPKey != common.TP130 || !ok {
+		Logger.log.Errorf("TP value is must TP130")
 		inst := buildLiquidationCustodianDepositInst(
 			actionData.Meta.PTokenId,
 			actionData.Meta.IncogAddressStr,
@@ -866,10 +808,10 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 	}
 
 
-    totalPRVNeeded := totalPRV - custodian.LockedAmountCollateral[actionData.Meta.PTokenId]
+	amountNeeded, totalFreeCollateralNeeded, remainFreeCollateral, err := calAmountNeededDepositLiquidate(custodian, exchangeRate, actionData.Meta.PTokenId, actionData.Meta.FreeCollateralSelected)
 
-	if actionData.Meta.DepositedAmount < totalPRVNeeded {
-		Logger.log.Errorf("Deposited amount is not enough, expect %v, data sent %v", totalPRVNeeded, actionData.Meta.DepositedAmount)
+	if err != nil {
+		Logger.log.Errorf("Calculate amount needed deposit err %v", err)
 		inst := buildLiquidationCustodianDepositInst(
 			actionData.Meta.PTokenId,
 			actionData.Meta.IncogAddressStr,
@@ -884,9 +826,9 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 		return [][]string{inst}, nil
 	}
 
-	//todo: review paid all free collateral or a part free collateral
-	if actionData.Meta.FreeCollateralSelected == true &&  custodian.FreeCollateral < totalPRVNeeded {
-		Logger.log.Errorf("Deposited amount is not enough, expect %v, freeCollateral is %v", totalPRVNeeded, custodian.FreeCollateral)
+
+	if actionData.Meta.DepositedAmount < amountNeeded {
+		Logger.log.Errorf("Deposited amount is not enough, expect %v, data sent %v", amountNeeded, actionData.Meta.DepositedAmount)
 		inst := buildLiquidationCustodianDepositInst(
 			actionData.Meta.PTokenId,
 			actionData.Meta.IncogAddressStr,
@@ -901,16 +843,21 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 		return [][]string{inst}, nil
 	}
 
-	Logger.log.Errorf("Deposited amount: expect %v, data sent %v", totalPRVNeeded, actionData.Meta.DepositedAmount)
-	//deposit from DepositAmount
-	//minimum prv deposit
+	Logger.log.Infof("Deposited amount: expect %v, data sent %v", amountNeeded, actionData.Meta.DepositedAmount)
+
+	remainDepositAmount := actionData.Meta.DepositedAmount - amountNeeded
+	custodian.TotalCollateral = custodian.TotalCollateral + actionData.Meta.DepositedAmount
+
 	if actionData.Meta.FreeCollateralSelected == false {
-		custodian.TotalCollateral = custodian.TotalCollateral + actionData.Meta.DepositedAmount
-		custodian.LockedAmountCollateral[actionData.Meta.PTokenId] = custodian.LockedAmountCollateral[actionData.Meta.PTokenId] + actionData.Meta.DepositedAmount
+		custodian.LockedAmountCollateral[actionData.Meta.PTokenId] = custodian.LockedAmountCollateral[actionData.Meta.PTokenId] + amountNeeded
+
+		//update remain
+		custodian.FreeCollateral = custodian.FreeCollateral + remainDepositAmount
 	} else {
 		//deposit from free collateral DepositedAmount
-		custodian.LockedAmountCollateral[actionData.Meta.PTokenId] = custodian.LockedAmountCollateral[actionData.Meta.PTokenId] + actionData.Meta.DepositedAmount
-		custodian.FreeCollateral = custodian.FreeCollateral - actionData.Meta.DepositedAmount
+		custodian.LockedAmountCollateral[actionData.Meta.PTokenId] = custodian.LockedAmountCollateral[actionData.Meta.PTokenId] + amountNeeded + totalFreeCollateralNeeded
+
+		custodian.FreeCollateral = remainFreeCollateral + remainDepositAmount
 	}
 
 	currentPortalState.CustodianPoolState[keyCustodianState] = custodian

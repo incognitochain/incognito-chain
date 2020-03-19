@@ -60,12 +60,12 @@ func (blockGenerator *BlockGenerator) buildPortalRefundCustodianDepositTx(
 	return resTx, nil
 }
 
-func (blockGenerator *BlockGenerator) buildPortalLiquidationCustodianDeposit(
+func (blockGenerator *BlockGenerator) buildPortalLiquidationCustodianDepositReject(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 ) (metadata.Transaction, error) {
-	Logger.log.Info("[buildPortalLiquidationCustodianDeposit] Starting...")
+	Logger.log.Info("[buildPortalLiquidationCustodianDepositReject] Starting...")
 	contentBytes := []byte(contentStr)
 	var refundDeposit metadata.PortalLiquidationCustodianDepositContent
 	err := json.Unmarshal(contentBytes, &refundDeposit)
@@ -78,7 +78,7 @@ func (blockGenerator *BlockGenerator) buildPortalLiquidationCustodianDeposit(
 	}
 
 	meta := metadata.NewPortalLiquidationCustodianDepositResponse(
-		"refund",
+		common.PortalLiquidationCustodianDepositRejectedChainStatus,
 		refundDeposit.TxReqID,
 		refundDeposit.IncogAddressStr,
 		refundDeposit.DepositedAmount,
@@ -211,7 +211,7 @@ func (blockGenerator *BlockGenerator) buildPortalCustodianWithdrawRequest(
 	}
 
 	meta := metadata.NewPortalCustodianWithdrawResponse(
-		"refund",
+		common.PortalCustodianWithdrawRequestAcceptedStatus,
 		custodianWithdrawRequest.TxReqID,
 		custodianWithdrawRequest.PaymentAddress,
 		custodianWithdrawRequest.Amount,
@@ -263,7 +263,7 @@ func (blockGenerator *BlockGenerator) buildPortalRedeemLiquidateExchangeRatesReq
 	}
 
 	meta := metadata.NewPortalRedeemLiquidateExchangeRatesResponse(
-		"refund",
+		common.PortalRedeemLiquidateExchangeRatesSuccessChainStatus,
 		redeemReqContent.TxReqID,
 		redeemReqContent.RedeemerIncAddressStr,
 		redeemReqContent.RedeemAmount,

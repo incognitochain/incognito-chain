@@ -920,7 +920,7 @@ func IsTP120(tpValue int) (bool, bool) {
 }
 
 //filter TP for ptoken each custodian
-func filterTopPercentileLiquidation(custodian *lvdb.CustodianState, tpList map[string]int) (map[string]lvdb.LiquidateTopPercentileExchangeRatesDetail, error) {
+func detectTopPercentileLiquidation(custodian *lvdb.CustodianState, tpList map[string]int) (map[string]lvdb.LiquidateTopPercentileExchangeRatesDetail, error) {
 	if custodian == nil {
 		return nil, errors.New("Custodian not found")
 	}
@@ -930,12 +930,14 @@ func filterTopPercentileLiquidation(custodian *lvdb.CustodianState, tpList map[s
 		if tp20, ok := IsTP120(tpValue); ok {
 			if tp20 {
 				liquidateExchangeRatesList[ptoken] = lvdb.LiquidateTopPercentileExchangeRatesDetail{
+					TPKey: common.TP120,
 					TPValue:                  tpValue,
 					HoldAmountFreeCollateral: custodian.LockedAmountCollateral[ptoken],
 					HoldAmountPubToken:       custodian.HoldingPubTokens[ptoken],
 				}
 			} else {
 				liquidateExchangeRatesList[ptoken] = lvdb.LiquidateTopPercentileExchangeRatesDetail{
+					TPKey: common.TP130,
 					TPValue:                  tpValue,
 					HoldAmountFreeCollateral: 0,
 					HoldAmountPubToken:       0,
@@ -948,22 +950,8 @@ func filterTopPercentileLiquidation(custodian *lvdb.CustodianState, tpList map[s
 }
 
 
-// total1: total ptoken was converted ex: 1BNB = 1000 PRV
-// total2: total prv (was up 150%)
-// 1500 ------ ?
-//1000 ------ 100%
-// => 1500 * 100 / 1000 = 150%
-func calculatePercentMinAspectRatio(total1 uint64, total2 uint64) (int, error) {
-	if total1 <= 0 {
-		return 0, errors.New("Can not divide zero")
-	}
-	percentUp := total2 * 100 / total1
-	roundNumber := math.Round(float64(percentUp))
-	return int(roundNumber), nil
-}
-
 //detect tp by hold ptoken and hold prv each custodian
-func detectTPRatio(holdPToken map[string]uint64, holdPRV map[string]uint64, finalExchange *lvdb.FinalExchangeRates) (map[string]int, error) {
+func calculateTPRatio(holdPToken map[string]uint64, holdPRV map[string]uint64, finalExchange *lvdb.FinalExchangeRates) (map[string]int, error) {
 	result := make(map[string]int)
 	for key, amountPToken := range holdPToken {
 		amountPRV, ok := holdPRV[key]
@@ -983,16 +971,51 @@ func detectTPRatio(holdPToken map[string]uint64, holdPRV map[string]uint64, fina
 		}
 
 		//(2): calculate % up-down from amount PRV and (1)
-		percentRatesDetect, err := calculatePercentMinAspectRatio(amountPTokenConverted, amountPRV)
-
-		if err != nil {
-			return nil, err
+		// total1: total ptoken was converted ex: 1BNB = 1000 PRV
+		// total2: total prv (was up 150%)
+		// 1500 ------ ?
+		//1000 ------ 100%
+		// => 1500 * 100 / 1000 = 150%
+		if amountPTokenConverted <= 0 {
+			return nil, errors.New("Can not divide zero")
 		}
-
-		result[key] = percentRatesDetect
+		
+		percentUp := amountPRV * 100 / amountPTokenConverted
+		//todo: review round()
+		roundNumber := math.Round(float64(percentUp))
+		result[key] = int(roundNumber)
 	}
 
 	return result, nil
+}
+
+func calAmountNeededDepositLiquidate(custodian *lvdb.CustodianState, exchangeRates *lvdb.FinalExchangeRates, pTokenId string, isFreeCollateralSelected bool) (uint64, uint64, uint64, error)  {
+	totalPToken := up150Percent(custodian.HoldingPubTokens[pTokenId])
+	totalPRV, err := exchangeRates.ExchangePToken2PRVByTokenId(pTokenId, totalPToken)
+
+	if err != nil {
+		return  0, 0,0, err
+	}
+
+	totalAmountNeeded := totalPRV - custodian.LockedAmountCollateral[pTokenId]
+	var remainAmountFreeCollateral uint64
+	var totalFreeCollateralNeeded uint64
+
+	if isFreeCollateralSelected {
+		if custodian.FreeCollateral >= totalAmountNeeded {
+			remainAmountFreeCollateral = custodian.FreeCollateral - totalAmountNeeded
+			totalFreeCollateralNeeded =  totalAmountNeeded
+			totalAmountNeeded = 0
+		} else {
+			remainAmountFreeCollateral = 0
+			totalFreeCollateralNeeded = custodian.FreeCollateral
+			totalAmountNeeded = totalAmountNeeded - custodian.FreeCollateral
+		}
+
+		return totalAmountNeeded, totalFreeCollateralNeeded, remainAmountFreeCollateral, nil
+	}
+
+	return totalAmountNeeded,0, 0, nil
 }
 
 func ValidationExchangeRates(exchangeRates *lvdb.FinalExchangeRates) error {
