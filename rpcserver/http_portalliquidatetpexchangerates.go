@@ -81,7 +81,7 @@ func (httpServer *HttpServer) handleGetLiquidationExchangeRates(params interface
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is not support"))
 	}
 
-	result, err := httpServer.portal.GetLiquidateExchangeRates(uint64(beaconHeight), pTokenID, httpServer.blockService, *httpServer.config.Database)
+	result, err := httpServer.portal.GetLiquidateExchangeRates(uint64(beaconHeight), pTokenID, *httpServer.config.Database)
 
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetExchangeRatesLiquidationError, err)
