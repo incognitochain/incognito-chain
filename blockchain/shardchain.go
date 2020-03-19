@@ -118,28 +118,29 @@ func (chain *ShardChain) GetLastProposerIndex() int {
 	return chain.GetBestState().ShardProposerIdx
 }
 
-func (chain *ShardChain) CreateNewBlock(version int, proposer string, round int) (common.BlockInterface, error) {
-	newBlock, err := chain.Blockchain.NewBlockShard_V2(chain.GetBestState(), version, proposer, round)
-	Logger.log.Infof("Begin Finish New Block Shard %+v", time.Now())
+func (chain *ShardChain) CreateNewBlock(version int, proposer string, round int, startTime int64) (common.BlockInterface, error) {
+	Logger.log.Infof("Begin Start New Block Shard %+v", time.Now())
+	newBlock, err := chain.Blockchain.NewBlockShard_V2(chain.GetBestState(), version, proposer, round, startTime)
+	Logger.log.Infof("Finish New Block Shard %+v", time.Now())
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
 	}
 	if version == 2 {
 		newBlock.Header.Proposer = proposer
-		newBlock.Header.ProposeTime = time.Now().Unix()
+		newBlock.Header.ProposeTime = startTime
 	}
 
 	Logger.log.Infof("Finish Create New Block")
 	return newBlock, nil
 }
 
-func (chain *ShardChain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string) (common.BlockInterface, error) {
+func (chain *ShardChain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string, startTime int64) (common.BlockInterface, error) {
 	b, _ := json.Marshal(oldBlock)
 	newBlock := new(ShardBlock)
 	json.Unmarshal(b, &newBlock)
 	newBlock.Header.Proposer = proposer
-	newBlock.Header.ProposeTime = time.Now().Unix()
+	newBlock.Header.ProposeTime = startTime
 	return newBlock, nil
 }
 

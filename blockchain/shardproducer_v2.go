@@ -10,7 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
-func (blockchain *BlockChain) NewBlockShard_V2(curView *ShardBestState, version int, producer string, round int) (newBlock *ShardBlock, err error) {
+func (blockchain *BlockChain) NewBlockShard_V2(curView *ShardBestState, version int, producer string, round int, startTime int64) (newBlock *ShardBlock, err error) {
 	processState := &ShardProcessState{
 		curView:             curView,
 		newView:             nil,
@@ -20,23 +20,27 @@ func (blockchain *BlockChain) NewBlockShard_V2(curView *ShardBestState, version 
 		round:               round,
 		newBlock:            NewShardBlock(),
 		crossShardBlocks:    make(map[byte][]*CrossShardBlock),
-		startTime:           time.Now(),
+		startTime:           time.Unix(startTime, 0),
 		confirmBeaconHeight: 0,
 	}
-
+	Logger.log.Infof("PreProduceProcess", time.Now())
 	if err := processState.PreProduceProcess(); err != nil {
+		Logger.log.Info(err)
 		return nil, err
 	}
 
+	Logger.log.Infof("BuildBody", time.Now())
 	if err := processState.BuildBody(); err != nil {
 		return nil, err
 	}
 
+	Logger.log.Infof("updateShardBestState", time.Now())
 	processState.newView, err = processState.curView.updateShardBestState(blockchain, processState.newBlock, processState.beaconBlocks, newCommitteeChange())
 	if err != nil {
 		return nil, err
 	}
 
+	Logger.log.Infof("BuildHeader", time.Now())
 	if err := processState.BuildHeader(); err != nil {
 		return nil, err
 	}
@@ -85,10 +89,11 @@ func (shardFlowState *ShardProcessState) PreProduceProcess() (err error) {
 
 	//if this beacon block is in different epoch, drop to the final block in current epoch
 	epoch := beaconFinalView.BestBlock.Header.Epoch
-	if epoch-shardFlowState.curView.Epoch >= 1 {
+	if epoch > shardFlowState.curView.Epoch {
 		shardFlowState.confirmBeaconHeight = shardFlowState.curView.Epoch * shardFlowState.blockchain.config.ChainParams.Epoch
 		newBeaconHashes, err := rawdbv2.GetBeaconBlockHashByIndex(shardFlowState.blockchain.GetDatabase(), shardFlowState.confirmBeaconHeight)
 		if err != nil {
+			fmt.Println("FAIL GetBeaconBlockHashByIndex", beaconFinalView.BestBlock.Header.Height, epoch, shardFlowState.confirmBeaconHeight, shardFlowState.curView.Epoch, shardFlowState.blockchain.config.ChainParams.Epoch)
 			return err
 		}
 		newBeaconHash := newBeaconHashes[0]

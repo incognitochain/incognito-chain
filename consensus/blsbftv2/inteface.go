@@ -36,8 +36,8 @@ type ChainInterface interface {
 	GetPubKeyCommitteeIndex(string) int
 	GetLastProposerIndex() int
 	UnmarshalBlock(blockString []byte) (common.BlockInterface, error)
-	CreateNewBlock(version int, proposer string, round int) (common.BlockInterface, error)
-	CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string) (common.BlockInterface, error)
+	CreateNewBlock(version int, proposer string, round int, startTime int64) (common.BlockInterface, error)
+	CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string, startTime int64) (common.BlockInterface, error)
 	InsertBlk(block common.BlockInterface) error
 	InsertAndBroadcastBlock(block common.BlockInterface) error
 	// ValidateAndInsertBlock(block common.BlockInterface) error

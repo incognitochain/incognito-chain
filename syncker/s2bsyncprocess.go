@@ -130,7 +130,7 @@ func (s *S2BSyncProcess) streamFromPeer(peerID string, pState S2BPeerState) (req
 		cancel()
 	}()
 
-	fmt.Printf("Syncker received S2BState %v, start sync\n", pState)
+	//fmt.Printf("Syncker received S2BState %v, start sync\n", pState)
 
 	for fromSID, toHeight := range pState.Height {
 		if time.Now().Unix()-pState.Timestamp > 30 {

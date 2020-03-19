@@ -22,6 +22,7 @@ func (blockchain *BlockChain) ValidateProposedBeaconBlock_V2(beaconProposedBlock
 		version:            beaconProposedBlock.Header.Version,
 		proposer:           beaconProposedBlock.Header.Proposer,
 		round:              1,
+		startTime:          beaconProposedBlock.Header.Timestamp,
 		newBlock:           NewBeaconBlock(),
 		shardToBeaconBlock: make(map[byte][]*ShardToBeaconBlock),
 	}

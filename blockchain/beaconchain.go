@@ -169,8 +169,8 @@ func (chain *BeaconChain) GetLastProposerIndex() int {
 	return chain.multiView.GetBestView().(*BeaconBestState).BeaconProposerIndex
 }
 
-func (chain *BeaconChain) CreateNewBlock(version int, proposer string, round int) (common.BlockInterface, error) {
-	newBlock, err := chain.Blockchain.NewBlockBeacon_V2(chain.GetBestView().(*BeaconBestState), version, proposer, round, nil)
+func (chain *BeaconChain) CreateNewBlock(version int, proposer string, round int, startTime int64) (common.BlockInterface, error) {
+	newBlock, err := chain.Blockchain.NewBlockBeacon_V2(chain.GetBestView().(*BeaconBestState), version, proposer, round, startTime)
 	if err != nil {
 		return nil, err
 	}
@@ -183,12 +183,12 @@ func (chain *BeaconChain) CreateNewBlock(version int, proposer string, round int
 }
 
 //this function for version 2
-func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string) (common.BlockInterface, error) {
+func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string, startTime int64) (common.BlockInterface, error) {
 	b, _ := json.Marshal(oldBlock)
 	newBlock := new(BeaconBlock)
 	json.Unmarshal(b, &newBlock)
 	newBlock.Header.Proposer = proposer
-	newBlock.Header.ProposeTime = time.Now().Unix()
+	newBlock.Header.ProposeTime = startTime
 	return newBlock, nil
 }
 

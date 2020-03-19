@@ -77,8 +77,7 @@ type ChainInterface interface {
 	GetLastProposerIndex() int
 	UnmarshalBlock(blockString []byte) (common.BlockInterface, error)
 	// CreateNewBlock(proposer string, round int) (common.BlockInterface, error)
-	CreateNewBlock(version int, proposer string, round int) (common.BlockInterface, error)
-	CreateNewBlockFromOldBlock(oldBlock common.BlockInterface, proposer string) (common.BlockInterface, error)
+
 	InsertBlk(block common.BlockInterface) error
 	InsertAndBroadcastBlock(block common.BlockInterface) error
 	// ValidateAndInsertBlock(block common.BlockInterface) error

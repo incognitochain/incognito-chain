@@ -29,6 +29,7 @@ type BLSBFT_V2 struct {
 	StopCh       chan struct{}
 	Logger       common.Logger
 
+	currentTime      int64
 	currentTimeSlot  int64
 	proposeHistory   *lru.Cache
 	ProposeMessageCh chan BFTPropose
@@ -155,7 +156,8 @@ func (e *BLSBFT_V2) Start() error {
 
 			case <-ticker:
 				//TODO: syncker module should tell it is ready or not
-				e.currentTimeSlot = common.CalculateTimeSlot(time.Now().Unix())
+				e.currentTime = time.Now().Unix()
+				e.currentTimeSlot = common.CalculateTimeSlot(e.currentTime)
 				bestView := e.Chain.GetBestView()
 
 				/*
@@ -185,6 +187,8 @@ func (e *BLSBFT_V2) Start() error {
 
 						if createdBlk, err := e.proposeBlock(proposerPk, proposeBlock); err != nil {
 							e.Logger.Critical(UnExpectedError, errors.New("can't propose block"))
+							e.Logger.Critical(err)
+
 						} else {
 							e.Logger.Debug("proposer block", createdBlk.GetHeight(), "time slot ", e.currentTimeSlot, " with hash", createdBlk.Hash().String())
 						}
@@ -414,25 +418,29 @@ func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 func (e *BLSBFT_V2) proposeBlock(proposerPk incognitokey.CommitteePublicKey, block common.BlockInterface) (common.BlockInterface, error) {
 	time1 := time.Now()
 	b58Str, _ := proposerPk.ToBase58()
+	var err error
 	if block == nil {
 		ctx := context.Background()
 		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
 		//block, _ = e.Chain.CreateNewBlock(ctx, e.currentTimeSlot, e.UserKeySet.GetPublicKeyBase58())
 		fmt.Println("debug CreateNewBlock")
-		block, _ = e.Chain.CreateNewBlock(2, b58Str, 1)
+		block, err = e.Chain.CreateNewBlock(2, b58Str, 1, e.currentTime)
 	} else {
 		fmt.Println("debug CreateNewBlockFromOldBlock")
-		block, _ = e.Chain.CreateNewBlockFromOldBlock(block, b58Str)
+		block, err = e.Chain.CreateNewBlockFromOldBlock(block, b58Str, e.currentTime)
 		//b58Str, _ := proposerPk.ToBase58()
 		//block = e.voteHistory[e.Chain.GetBestViewHeight()+1]
+	}
+	if err != nil {
+		return nil, NewConsensusError(BlockCreationError, err)
 	}
 
 	if block != nil {
 		e.Logger.Info("create block", block.GetHeight(), block.Hash().String(), block.(common.BlockInterface).GetProposeTime(), block.(common.BlockInterface).GetProduceTime())
 	} else {
 		e.Logger.Info("create block", time.Since(time1).Seconds())
-		return nil, NewConsensusError(BlockCreationError, errors.New("block creation timeout"))
+		return nil, NewConsensusError(BlockCreationError, errors.New("block is nil"))
 	}
 
 	validationData := e.CreateValidationData(block)

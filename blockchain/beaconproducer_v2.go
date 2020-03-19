@@ -2,10 +2,9 @@ package blockchain
 
 import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"time"
 )
 
-func (blockchain *BlockChain) NewBlockBeacon_V2(curView *BeaconBestState, version int, proposer string, round int, shardsToBeaconLimit map[byte]uint64) (newBlock *BeaconBlock, err error) {
+func (blockchain *BlockChain) NewBlockBeacon_V2(curView *BeaconBestState, version int, proposer string, round int, startTime int64) (newBlock *BeaconBlock, err error) {
 	processState := &BeaconProcessState{
 		curView:            curView,
 		newView:            nil,
@@ -13,6 +12,7 @@ func (blockchain *BlockChain) NewBlockBeacon_V2(curView *BeaconBestState, versio
 		version:            version,
 		proposer:           proposer,
 		round:              round,
+		startTime:          startTime,
 		newBlock:           NewBeaconBlock(),
 		shardToBeaconBlock: make(map[byte][]*ShardToBeaconBlock),
 	}
@@ -45,7 +45,7 @@ type BeaconProcessState struct {
 	version    int
 	proposer   string
 	round      int
-
+	startTime  int64
 	//pre process state
 	newBlock           *BeaconBlock
 	shardToBeaconBlock map[byte][]*ShardToBeaconBlock
@@ -225,6 +225,6 @@ func (s *BeaconProcessState) BuildHeader() (err error) {
 	s.newBlock.Header.InstructionHash = tempInstructionHash
 	s.newBlock.Header.AutoStakingRoot = tempAutoStakingRoot
 	copy(s.newBlock.Header.InstructionMerkleRoot[:], GetKeccak256MerkleRoot(flattenInsts))
-	s.newBlock.Header.Timestamp = time.Now().Unix()
+	s.newBlock.Header.Timestamp = s.startTime
 	return
 }

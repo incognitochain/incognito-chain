@@ -418,7 +418,7 @@ func (e *BLSBFT) createNewBlock() (common.BlockInterface, error) {
 	go func() {
 		time1 := time.Now()
 		var err error
-		block, err = e.Chain.CreateNewBlock(1, e.UserKeySet.GetPublicKeyBase58(), int(e.RoundData.Round))
+		block, err = e.Chain.CreateNewBlock(1, e.UserKeySet.GetPublicKeyBase58(), int(e.RoundData.Round), e.RoundData.TimeStart.Unix())
 		if block != nil {
 			e.logger.Info("create block", block.GetHeight(), time.Since(time1).Seconds())
 		} else {
