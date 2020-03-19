@@ -379,7 +379,7 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(beaconHei
 		//minimum prv deposit
 		if actionData.FreeCollateralSelected == false  {
 			custodian.TotalCollateral = custodian.TotalCollateral + actionData.DepositedAmount
-			custodian.LockedAmountCollateral[actionData.PTokenId] += custodian.LockedAmountCollateral[actionData.PTokenId] + actionData.DepositedAmount
+			custodian.LockedAmountCollateral[actionData.PTokenId] = custodian.LockedAmountCollateral[actionData.PTokenId] + actionData.DepositedAmount
 		} else {
 			//deposit from free collateral DepositedAmount
 			custodian.LockedAmountCollateral[actionData.PTokenId] = custodian.LockedAmountCollateral[actionData.PTokenId] + actionData.DepositedAmount

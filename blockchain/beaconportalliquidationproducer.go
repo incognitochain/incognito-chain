@@ -371,7 +371,7 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 
 		detectTPExchangeRates, err := detectTPRatio(custodianState.HoldingPubTokens, custodianState.LockedAmountCollateral, exchangeRate)
 		if err != nil {
-			Logger.log.Errorf("Detect tp ratio error %v", err)
+			Logger.log.Errorf("Auto liquidation: Detect tp ratio error %v", err)
 			inst := buildTopPercentileExchangeRatesLiquidationInst(
 				custodianState.IncognitoAddress,
 				metadata.PortalLiquidateTPExchangeRatesMeta,
@@ -740,6 +740,7 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 		return [][]string{inst}, nil
 	}
 
+	//check exit ptoken
 	if _, ok := custodian.LockedAmountCollateral[actionData.Meta.PTokenId]; !ok {
 		Logger.log.Errorf("PToken not found")
 		// need to refund collateral to custodian
@@ -775,9 +776,96 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 		return [][]string{inst}, nil
 	}
 
+
+	detectTPExchangeRates, err := detectTPRatio(custodian.HoldingPubTokens, custodian.LockedAmountCollateral, exchangeRate)
+	if err != nil {
+		Logger.log.Errorf("Custodian deposit: Detect tp ratio error %v", err)
+		inst := buildLiquidationCustodianDepositInst(
+			actionData.Meta.PTokenId,
+			actionData.Meta.IncogAddressStr,
+			actionData.Meta.DepositedAmount,
+			actionData.Meta.FreeCollateralSelected,
+			common.PortalLiquidationCustodianDepositRejectedChainStatus,
+			actionData.Meta.Type,
+			shardID,
+			actionData.TxReqID,
+		)
+
+		return [][]string{inst}, nil
+	}
+
+	tpValue, ok := detectTPExchangeRates[actionData.Meta.PTokenId]
+
+	if !ok {
+		Logger.log.Errorf("Ptoken not found from detect TP Exchange rates")
+		inst := buildLiquidationCustodianDepositInst(
+			actionData.Meta.PTokenId,
+			actionData.Meta.IncogAddressStr,
+			actionData.Meta.DepositedAmount,
+			actionData.Meta.FreeCollateralSelected,
+			common.PortalLiquidationCustodianDepositRejectedChainStatus,
+			actionData.Meta.Type,
+			shardID,
+			actionData.TxReqID,
+		)
+
+		return [][]string{inst}, nil
+	}
+
+	isTp20, ok := IsTP120(tpValue)
+	if !ok {
+		Logger.log.Errorf("TP value is %v, value is must TP130 | TP120", tpValue)
+		inst := buildLiquidationCustodianDepositInst(
+			actionData.Meta.PTokenId,
+			actionData.Meta.IncogAddressStr,
+			actionData.Meta.DepositedAmount,
+			actionData.Meta.FreeCollateralSelected,
+			common.PortalLiquidationCustodianDepositRejectedChainStatus,
+			actionData.Meta.Type,
+			shardID,
+			actionData.TxReqID,
+		)
+
+		return [][]string{inst}, nil
+	}
+
+	if isTp20 {
+		Logger.log.Errorf("TP value is %v, value is must TP130", tpValue)
+		inst := buildLiquidationCustodianDepositInst(
+			actionData.Meta.PTokenId,
+			actionData.Meta.IncogAddressStr,
+			actionData.Meta.DepositedAmount,
+			actionData.Meta.FreeCollateralSelected,
+			common.PortalLiquidationCustodianDepositRejectedChainStatus,
+			actionData.Meta.Type,
+			shardID,
+			actionData.TxReqID,
+		)
+
+		return [][]string{inst}, nil
+	}
+
 	//check deposit amount
 	totalPToken := up150Percent(custodian.HoldingPubTokens[actionData.Meta.PTokenId])
 	totalPRV, err := exchangeRate.ExchangePToken2PRVByTokenId(actionData.Meta.PTokenId, totalPToken)
+
+	if err != nil {
+		Logger.log.Errorf("Convert exchange rates error %v", err)
+		inst := buildLiquidationCustodianDepositInst(
+			actionData.Meta.PTokenId,
+			actionData.Meta.IncogAddressStr,
+			actionData.Meta.DepositedAmount,
+			actionData.Meta.FreeCollateralSelected,
+			common.PortalLiquidationCustodianDepositRejectedChainStatus,
+			actionData.Meta.Type,
+			shardID,
+			actionData.TxReqID,
+		)
+
+		return [][]string{inst}, nil
+	}
+
+
     totalPRVNeeded := totalPRV - custodian.LockedAmountCollateral[actionData.Meta.PTokenId]
 
 	if actionData.Meta.DepositedAmount < totalPRVNeeded {
@@ -796,11 +884,29 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 		return [][]string{inst}, nil
 	}
 
+	//todo: review paid all free collateral or a part free collateral
+	if actionData.Meta.FreeCollateralSelected == true &&  custodian.FreeCollateral < totalPRVNeeded {
+		Logger.log.Errorf("Deposited amount is not enough, expect %v, freeCollateral is %v", totalPRVNeeded, custodian.FreeCollateral)
+		inst := buildLiquidationCustodianDepositInst(
+			actionData.Meta.PTokenId,
+			actionData.Meta.IncogAddressStr,
+			actionData.Meta.DepositedAmount,
+			actionData.Meta.FreeCollateralSelected,
+			common.PortalLiquidationCustodianDepositRejectedChainStatus,
+			actionData.Meta.Type,
+			shardID,
+			actionData.TxReqID,
+		)
+
+		return [][]string{inst}, nil
+	}
+
+	Logger.log.Errorf("Deposited amount: expect %v, data sent %v", totalPRVNeeded, actionData.Meta.DepositedAmount)
 	//deposit from DepositAmount
 	//minimum prv deposit
 	if actionData.Meta.FreeCollateralSelected == false {
 		custodian.TotalCollateral = custodian.TotalCollateral + actionData.Meta.DepositedAmount
-		custodian.LockedAmountCollateral[actionData.Meta.PTokenId] += custodian.LockedAmountCollateral[actionData.Meta.PTokenId] + actionData.Meta.DepositedAmount
+		custodian.LockedAmountCollateral[actionData.Meta.PTokenId] = custodian.LockedAmountCollateral[actionData.Meta.PTokenId] + actionData.Meta.DepositedAmount
 	} else {
 		//deposit from free collateral DepositedAmount
 		custodian.LockedAmountCollateral[actionData.Meta.PTokenId] = custodian.LockedAmountCollateral[actionData.Meta.PTokenId] + actionData.Meta.DepositedAmount
