@@ -175,8 +175,8 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	if shardBlock.Header.Epoch < 1 {
 		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Epoch greater or equal than 1"))
 	}
-	if shardBlock.Header.Timestamp < 0 {
-		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Epoch greater or equal than 0"))
+	if shardBlock.Header.Timestamp <= 0 {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Time greater than 0"))
 	}
 	if len(shardBlock.Header.TxRoot[:]) != common.HashSize {
 		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Tx Root in the right format"))

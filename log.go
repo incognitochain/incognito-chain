@@ -54,10 +54,10 @@ var (
 	randomLogger           = backendLog.Logger("RandomAPI log", false)
 	bridgeLogger           = backendLog.Logger("DeBridge log", false)
 	metadataLogger         = backendLog.Logger("Metadata log", false)
-	trieLogger             = backendLog.Logger("Trie log", false)
+	trieLogger             = backendLog.Logger("Trie log", true)
 	peerv2Logger           = backendLog.Logger("Peerv2 log", true)
-	wrapperLogger          = backendLog.Logger("Wrapper log", false)
-	daov2Logger            = backendLog.Logger("DAO log", false)
+	wrapperLogger          = backendLog.Logger("Wrapper log", true)
+	daov2Logger            = backendLog.Logger("DAO log", true)
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and

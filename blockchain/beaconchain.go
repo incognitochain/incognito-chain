@@ -189,7 +189,7 @@ func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterf
 	json.Unmarshal(b, &newBlock)
 	newBlock.Header.Proposer = proposer
 	newBlock.Header.ProposeTime = time.Now().Unix()
-	return oldBlock, nil
+	return newBlock, nil
 }
 
 func (chain *BeaconChain) InsertBlk(block common.BlockInterface) error {

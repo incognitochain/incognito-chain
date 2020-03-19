@@ -20,7 +20,7 @@ func (blockchain *BlockChain) InsertShardBlock_V2(shardBlock *ShardBlock, strict
 		newView:          nil,
 		blockchain:       blockchain,
 		version:          shardBlock.Header.Version,
-		proposer:         shardBlock.Header.Proposer,
+		producer:         shardBlock.Header.Producer,
 		round:            1,
 		newBlock:         shardBlock,
 		crossShardBlocks: make(map[byte][]*CrossShardBlock),
@@ -56,11 +56,11 @@ func (blockchain *BlockChain) InsertShardBlock_V2(shardBlock *ShardBlock, strict
 	return nil
 }
 
-func (s *ShardProcessState) PreInsertProcess(proposeBlock *ShardBlock) error {
+func (shardFlowState *ShardProcessState) PreInsertProcess(proposeBlock *ShardBlock) error {
 	//TODO: basic validation (pre processing)
 
 	//validate block signature
-	if err := s.blockchain.BeaconChain.ValidateBlockSignatures(proposeBlock, s.curView.GetCommittee()); err != nil {
+	if err := shardFlowState.blockchain.BeaconChain.ValidateBlockSignatures(proposeBlock, shardFlowState.curView.GetCommittee()); err != nil {
 		return err
 	}
 

@@ -53,7 +53,7 @@ func ValidateProducerSig(block common.BlockInterface) error {
 	}
 
 	producerKey := incognitokey.CommitteePublicKey{}
-	err = producerKey.FromBase58(block.GetProducer())
+	err = producerKey.FromBase58(block.GetProposer())
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}

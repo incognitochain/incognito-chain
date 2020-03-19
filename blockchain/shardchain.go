@@ -119,25 +119,18 @@ func (chain *ShardChain) GetLastProposerIndex() int {
 }
 
 func (chain *ShardChain) CreateNewBlock(version int, proposer string, round int) (common.BlockInterface, error) {
-	start := time.Now()
-	Logger.log.Infof("Begin Create New Block %+v", start)
-	beaconHeight := chain.Blockchain.BeaconChain.GetFinalView().GetHeight()
-	if beaconHeight < chain.GetBestState().BeaconHeight {
-		beaconHeight = chain.GetBestState().BeaconHeight
-	}
-	Logger.log.Infof("Begin Enter New Block Shard %+v", time.Now())
-	// newBlock, err := chain.BlockGen.NewBlockShard(version, proposer, byte(chain.GetShardID()), round, nil, beaconHeight, start)
-
-	newBlock, err := chain.Blockchain.NewBlockShard_V2(chain.GetBestState(), version, proposer, byte(chain.GetShardID()), round, nil, beaconHeight, start)
+	newBlock, err := chain.Blockchain.NewBlockShard_V2(chain.GetBestState(), version, proposer, round)
 	Logger.log.Infof("Begin Finish New Block Shard %+v", time.Now())
 	if err != nil {
+		Logger.log.Error(err)
 		return nil, err
 	}
+	if version == 2 {
+		newBlock.Header.Proposer = proposer
+		newBlock.Header.ProposeTime = time.Now().Unix()
+	}
 
-	newBlock.Header.Proposer = proposer
-	newBlock.Header.ProposeTime = time.Now().Unix()
-
-	Logger.log.Infof("Finish Create New Block %+v", start)
+	Logger.log.Infof("Finish Create New Block")
 	return newBlock, nil
 }
 
@@ -147,7 +140,7 @@ func (chain *ShardChain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterfa
 	json.Unmarshal(b, &newBlock)
 	newBlock.Header.Proposer = proposer
 	newBlock.Header.ProposeTime = time.Now().Unix()
-	return oldBlock, nil
+	return newBlock, nil
 }
 
 // func (chain *ShardChain) ValidateAndInsertBlock(block common.BlockInterface) error {

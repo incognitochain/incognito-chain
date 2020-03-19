@@ -17,82 +17,94 @@ func (blockchain *BlockChain) ValidateProposedShardBlock_V2(shardProposedBlock *
 	}
 
 	//create block and compare content
-	processState := &ShardProcessState{
-		curView:          preView.(*ShardBestState),
-		newView:          nil,
-		blockchain:       blockchain,
-		version:          shardProposedBlock.Header.Version,
-		proposer:         shardProposedBlock.Header.Proposer,
-		round:            1,
-		newBlock:         shardProposedBlock,
-		crossShardBlocks: make(map[byte][]*CrossShardBlock),
-		maxBeaconHeight:  shardProposedBlock.Header.BeaconHeight,
+	shardFlow := &ShardProcessState{
+		curView:             preView.(*ShardBestState),
+		newView:             nil,
+		blockchain:          blockchain,
+		version:             shardProposedBlock.Header.Version,
+		producer:            shardProposedBlock.Header.Proposer,
+		round:               1,
+		newBlock:            shardProposedBlock,
+		startTime:           time.Unix(shardProposedBlock.Header.Timestamp, 0),
+		crossShardBlocks:    make(map[byte][]*CrossShardBlock),
+		confirmBeaconHeight: shardProposedBlock.Header.BeaconHeight,
+		confirmBeaconHash:   shardProposedBlock.Header.BeaconHash,
 	}
 
-	if err = processState.PreValidateProcess(shardProposedBlock); err != nil {
+	if err = shardFlow.PreValidateProcess(shardProposedBlock); err != nil {
 		return err
 	}
-	if err := processState.BuildBody(); err != nil {
+	if err := shardFlow.BuildBody(); err != nil {
 		return err
 	}
 
-	processState.newView, err = processState.curView.updateShardBestState(blockchain, processState.newBlock, processState.beaconBlocks, newCommitteeChange())
+	shardFlow.newView, err = shardFlow.curView.updateShardBestState(blockchain, shardFlow.newBlock, shardFlow.beaconBlocks, newCommitteeChange())
 	if err != nil {
 		return err
 	}
 
-	if err := processState.BuildHeader(); err != nil {
+	if err := shardFlow.BuildHeader(); err != nil {
 		return err
 	}
 
 	//TODO: postProcessing (optional strictInsert) -> check header with new view
-	if err = isSameShardContent(shardProposedBlock, processState.newBlock); err != nil {
+	if err = isSameShardContent(shardProposedBlock, shardFlow.newBlock); err != nil {
 		return err
 	}
 
 	return
 }
 
-func (createState *ShardProcessState) PreValidateProcess(proposeBlock *ShardBlock) error {
+func (shardFlowState *ShardProcessState) PreValidateProcess(proposeBlock *ShardBlock) (err error) {
 	//TODO: basic validation
 
 	//validate block signature
-	if err := createState.blockchain.config.ConsensusEngine.ValidateProducerPosition(proposeBlock, createState.curView.ShardCommittee); err != nil {
+	if err := shardFlowState.blockchain.config.ConsensusEngine.ValidateProducerPosition(proposeBlock, shardFlowState.curView.ShardCommittee); err != nil {
 		return err
 	}
 
-	if err := createState.blockchain.config.ConsensusEngine.ValidateProducerSig(proposeBlock, createState.blockchain.BeaconChain.GetConsensusType()); err != nil {
+	if err := shardFlowState.blockchain.config.ConsensusEngine.ValidateProducerSig(proposeBlock, shardFlowState.blockchain.BeaconChain.GetConsensusType()); err != nil {
 		return err
 	}
-	if createState.maxBeaconHeight-createState.curView.BeaconHeight > MAX_BEACON_BLOCK {
-		createState.maxBeaconHeight = createState.curView.BeaconHeight + MAX_BEACON_BLOCK
-	}
+
 	//get enough beacon blocks
 	// fetch beacon blocks
-	previousBeaconHeight := createState.curView.BeaconHeight
+	previousBeaconHeight := shardFlowState.blockchain.GetBeaconBestState().GetHeight()
 	if proposeBlock.Header.BeaconHeight > previousBeaconHeight {
-		err := createState.blockchain.config.Server.PushMessageGetBlockBeaconByHeight(previousBeaconHeight, proposeBlock.Header.BeaconHeight)
+		err := shardFlowState.blockchain.config.Server.PushMessageGetBlockBeaconByHeight(previousBeaconHeight, proposeBlock.Header.BeaconHeight)
 		if err != nil {
 			return errors.New(fmt.Sprintf("Beacon %d not ready, latest is %d", proposeBlock.Header.BeaconHeight, previousBeaconHeight))
 		}
 		ticker := time.NewTicker(5 * time.Second)
 		<-ticker.C
+		previousBeaconHeight = shardFlowState.blockchain.GetBeaconBestState().GetHeight()
 		if proposeBlock.Header.BeaconHeight > previousBeaconHeight {
 			return errors.New(fmt.Sprintf("Beacon %d not ready, latest is %d", proposeBlock.Header.BeaconHeight, previousBeaconHeight))
 		}
 	}
 
-	createState.txs = createState.newBlock.Body.Transactions
+	//Fetch beacon block from height to confirm beacon block
+	shardFlowState.beaconBlocks, err = FetchBeaconBlockFromHeight(shardFlowState.blockchain.GetDatabase(), shardFlowState.curView.BeaconHeight+1, shardFlowState.confirmBeaconHeight)
+	if err != nil {
+		return err
+	}
 
-	toShard := createState.curView.ShardID
+	// this  beacon height is already seen by shard best state
+	if shardFlowState.confirmBeaconHeight == shardFlowState.curView.BeaconHeight {
+		shardFlowState.isOldBeaconHeight = true
+	}
+
+	shardFlowState.txs = shardFlowState.newBlock.Body.Transactions
+
+	toShard := shardFlowState.curView.ShardID
 	var toShardAllCrossShardBlock = make(map[byte][]*CrossShardBlock)
 	crossShardRequired := make(map[byte][]common.Hash)
-	for fromShard, crossTransactions := range createState.newBlock.Body.CrossTransactions {
+	for fromShard, crossTransactions := range shardFlowState.newBlock.Body.CrossTransactions {
 		for _, crossTransaction := range crossTransactions {
 			crossShardRequired[fromShard] = append(crossShardRequired[fromShard], crossTransaction.BlockHash)
 		}
 	}
-	crossShardBlksFromPool, err := createState.blockchain.config.Syncker.GetCrossShardBlocksForShardValidator(toShard, crossShardRequired)
+	crossShardBlksFromPool, err := shardFlowState.blockchain.config.Syncker.GetCrossShardBlocksForShardValidator(toShard, crossShardRequired)
 	if err != nil {
 		return NewBlockChainError(CrossShardBlockError, fmt.Errorf("Unable to get required crossShard blocks from pool in time"))
 	}
@@ -101,7 +113,7 @@ func (createState *ShardProcessState) PreValidateProcess(proposeBlock *ShardBloc
 			toShardAllCrossShardBlock[sid] = append(toShardAllCrossShardBlock[sid], b.(*CrossShardBlock))
 		}
 	}
-	createState.crossShardBlocks = toShardAllCrossShardBlock
+	shardFlowState.crossShardBlocks = toShardAllCrossShardBlock
 	return nil
 }
 
