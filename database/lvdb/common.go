@@ -89,6 +89,8 @@ var (
 	PortalLiquidateExchangeRatesPrefix = []byte("portalliquidateexchangerates-")
 	PortalLiquidationCustodianDepositPrefix = []byte("portalliquidationcustodiandepsit-")
 
+	PortalExpiredPortingReqPrefix = []byte("portalexpiredportingreq-")
+
 	// reward in portal
 	PortalRewardByBeaconHeightPrefix  = []byte("portalreward-")
 	PortalRequestWithdrawRewardPrefix = []byte("portalrequestwithdrawreward-")

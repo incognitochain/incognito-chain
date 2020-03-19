@@ -1238,6 +1238,14 @@ func updateCustodianStateAfterLiquidateCustodian(custodianState *lvdb.CustodianS
 	return nil
 }
 
+func updateCustodianStateAfterExpiredPortingReq(
+	custodianState *lvdb.CustodianState, unlockedAmount uint64, unholdingPublicToken uint64, tokenID string) error {
+	custodianState.HoldingPubTokens[tokenID] -= unholdingPublicToken
+	custodianState.FreeCollateral += unlockedAmount
+	custodianState.LockedAmountCollateral[tokenID] -= unlockedAmount
+	return nil
+}
+
 func removeCustodianFromMatchingPortingCustodians(matchingCustodians []*lvdb.MatchingPortingCustodianDetail, custodianIncAddr string) bool {
 	for i, cus := range matchingCustodians {
 		if cus.IncAddress == custodianIncAddr {

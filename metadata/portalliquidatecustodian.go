@@ -16,6 +16,7 @@ type PortalLiquidateCustodian struct {
 	MintedCollateralAmount uint64 // minted PRV amount for sending back to users
 	RedeemerIncAddressStr  string
 	CustodianIncAddressStr string
+	LiquidatedByExchangeRate bool
 }
 
 // PortalLiquidateCustodianContent - Beacon builds a new instruction with this content after detecting custodians run away
@@ -28,6 +29,7 @@ type PortalLiquidateCustodianContent struct {
 	MintedCollateralAmount uint64 // minted PRV amount for sending back to users
 	RedeemerIncAddressStr  string
 	CustodianIncAddressStr string
+	LiquidatedByExchangeRate bool
 	ShardID                byte
 }
 
@@ -40,6 +42,7 @@ type PortalLiquidateCustodianStatus struct {
 	MintedCollateralAmount uint64 // minted PRV amount for sending back to users
 	RedeemerIncAddressStr  string
 	CustodianIncAddressStr string
+	LiquidatedByExchangeRate bool
 	ShardID                byte
 	LiquidatedBeaconHeight uint64
 }
@@ -51,7 +54,8 @@ func NewPortalLiquidateCustodian(
 	redeemAmount uint64,
 	mintedCollateralAmount uint64,
 	redeemerIncAddressStr string,
-	custodianIncAddressStr string) (*PortalLiquidateCustodian, error) {
+	custodianIncAddressStr string,
+	liquidatedByExchangeRate bool) (*PortalLiquidateCustodian, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
@@ -62,6 +66,7 @@ func NewPortalLiquidateCustodian(
 		MintedCollateralAmount: mintedCollateralAmount,
 		RedeemerIncAddressStr:  redeemerIncAddressStr,
 		CustodianIncAddressStr: custodianIncAddressStr,
+		LiquidatedByExchangeRate: liquidatedByExchangeRate,
 	}
 	liquidCustodianMeta.MetadataBase = metadataBase
 	return liquidCustodianMeta, nil
@@ -92,6 +97,7 @@ func (liqCustodian PortalLiquidateCustodian) Hash() *common.Hash {
 	record += strconv.FormatUint(liqCustodian.MintedCollateralAmount, 10)
 	record += liqCustodian.RedeemerIncAddressStr
 	record += liqCustodian.CustodianIncAddressStr
+	record += strconv.FormatBool(liqCustodian.LiquidatedByExchangeRate)
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash

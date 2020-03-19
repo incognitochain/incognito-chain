@@ -123,10 +123,12 @@ const (
 	PortalReqPTokenAcceptedStatus = 1
 	PortalReqPTokenRejectedStatus = 2
 
-	PortalPortingReqSuccessStatus  = 1
-	PortalPortingReqWaitingStatus  = 2
-	PortalPortingReqRejectedStatus = 3
-	PortalPortingReqAcceptedStatus = 4
+	PortalPortingReqSuccessStatus    = 1
+	PortalPortingReqWaitingStatus    = 2
+	PortalPortingReqRejectedStatus   = 3
+	PortalPortingReqAcceptedStatus   = 4
+	PortalPortingReqExpiredStatus    = 5
+	PortalPortingReqLiquidatedStatus = 6
 
 	PortalRedeemReqSuccessStatus    = 1
 	PortalRedeemReqWaitingStatus    = 2
@@ -148,11 +150,14 @@ const (
 	PortalReqWithdrawRewardAcceptedStatus = 1
 	PortalReqWithdrawRewardRejectedStatus = 2
 
-	PortalRedeemLiquidateExchangeRatesSuccessStatus = 1
+	PortalRedeemLiquidateExchangeRatesSuccessStatus  = 1
 	PortalRedeemLiquidateExchangeRatesRejectedStatus = 2
 
-	PortalLiquidationCustodianDepositSuccessStatus = 1
+	PortalLiquidationCustodianDepositSuccessStatus  = 1
 	PortalLiquidationCustodianDepositRejectedStatus = 2
+
+	PortalExpiredPortingReqSuccessStatus = 1
+	PortalExpiredPortingReqFailedStatus  = 2
 )
 
 // PDE statuses for chain
@@ -201,11 +206,14 @@ const (
 	PortalReqWithdrawRewardAcceptedChainStatus = "accepted"
 	PortalReqWithdrawRewardRejectedChainStatus = "rejected"
 
-	PortalRedeemLiquidateExchangeRatesSuccessChainStatus = "success"
-	PortalRedeemLiquidateExchangeRatesRejectedChainStatus  = "rejected"
+	PortalRedeemLiquidateExchangeRatesSuccessChainStatus  = "success"
+	PortalRedeemLiquidateExchangeRatesRejectedChainStatus = "rejected"
 
-	PortalLiquidationCustodianDepositSuccessChainStatus = "success"
+	PortalLiquidationCustodianDepositSuccessChainStatus  = "success"
 	PortalLiquidationCustodianDepositRejectedChainStatus = "rejected"
+
+	PortalExpiredWaitingPortingReqSuccessChainStatus    = "success"
+	PortalExpiredWaitingPortingReqFailedChainStatus     = "failed"
 )
 
 // Relaying header
@@ -216,9 +224,10 @@ const (
 )
 
 const (
-	PortalTimeOutCustodianSendPubTokenBack = 2160        // 2160 beacon blocks ~ 24 hours
-	PercentReceivedCollateralAmount        = 120       // users will be receive 120% of redeem amount in PRV
-	TotalRewardPerBlock                    = 1 * 1e9       // 1 prv
+	PortalTimeOutCustodianSendPubTokenBack = 2160    // 2160 beacon blocks ~ 24 hours
+	PortalTimeOutWaitingPortingRequest     = 2160    // 2160 beacon blocks ~ 24 hours
+	PercentReceivedCollateralAmount        = 120     // users will be receive 120% of redeem amount in PRV
+	TotalRewardPerBlock                    = 1 * 1e9 // 1 prv
 
 	TP120 = 120 // 120% - minimum ratio between collateral's value and holding public tokens' value
 	TP130 = 130
