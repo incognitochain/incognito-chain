@@ -134,7 +134,7 @@ func checkAndBuildInstForCustodianLiquidation(
 	}
 
 	for redeemReqKey, redeemReq := range currentPortalState.WaitingRedeemRequests {
-		if beaconHeight - (redeemReq.BeaconHeight - 1) >= common.PortalTimeOutCustodianSendPubTokenBack {
+		if (beaconHeight + 1) - redeemReq.BeaconHeight >= common.PortalTimeOutCustodianSendPubTokenBack {
 			Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] redeemReq.BeaconHeight: %v\n", redeemReq.BeaconHeight)
 			Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] beaconHeight: %v\n", beaconHeight)
 			// get shardId of redeemer
@@ -252,6 +252,91 @@ func checkAndBuildInstForCustodianLiquidation(
 			if len(currentPortalState.WaitingRedeemRequests[redeemReqKey].Custodians) == 0 {
 				delete(currentPortalState.WaitingRedeemRequests, redeemReqKey)
 			}
+		}
+	}
+
+	return insts, nil
+}
+
+// beacon build instruction for expired waiting porting request - user doesn't send public token to custodian after requesting
+func buildExpiredWaitingPortingReqInst(
+	portingID string,
+	//tokenID string,
+	//redeemPubTokenAmount uint64,
+	//mintedCollateralAmount uint64,
+	//redeemerIncAddrStr string,
+	//custodianIncAddrStr string,
+	metaType int,
+	shardID byte,
+	status string,
+) []string {
+	liqCustodianContent := metadata.PortalExpiredWaitingPortingReqContent{
+		UniquePortingID: portingID,
+		//TokenID:                tokenID,
+		//RedeemPubTokenAmount:   redeemPubTokenAmount,
+		//MintedCollateralAmount: mintedCollateralAmount,
+		//RedeemerIncAddressStr:  redeemerIncAddrStr,
+		//CustodianIncAddressStr: custodianIncAddrStr,
+		ShardID:                shardID,
+	}
+	liqCustodianContentBytes, _ := json.Marshal(liqCustodianContent)
+	return []string{
+		strconv.Itoa(metaType),
+		strconv.Itoa(int(shardID)),
+		status,
+		string(liqCustodianContentBytes),
+	}
+}
+
+func checkAndBuildInstForExpiredWaitingPortingRequest(
+	beaconHeight uint64,
+	currentPortalState *CurrentPortalState,
+) ([][]string, error) {
+
+	insts := [][]string{}
+
+	for portingReqKey, portingReq := range currentPortalState.WaitingPortingRequests {
+		if (beaconHeight + 1) - portingReq.BeaconHeight >= common.PortalTimeOutCustodianSendPubTokenBack {
+			//get shardId of redeemer
+			redeemerKey, err := wallet.Base58CheckDeserialize(portingReq.PorterAddress)
+			if err != nil {
+				Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when deserializing redeemer address string in redeemID %v - %v\n: ",
+					portingReq.UniquePortingID, err)
+				continue
+			}
+			shardID := common.GetShardIDFromLastByte(redeemerKey.KeySet.PaymentAddress.Pk[len(redeemerKey.KeySet.PaymentAddress.Pk)-1])
+
+			// get tokenID from redeemTokenID
+			tokenID := portingReq.TokenID
+
+			// update custodian state in matching custodians list (holding public tokens, locked amount)
+			for _, matchCusDetail := range portingReq.Custodians {
+				cusStateKey := lvdb.NewCustodianStateKey(beaconHeight, matchCusDetail.IncAddress)
+				custodianState := currentPortalState.CustodianPoolState[cusStateKey]
+				if custodianState == nil {
+					Logger.log.Errorf("[checkAndBuildInstForExpiredWaitingPortingRequest] Error when get custodian state with key %v\n: ", cusStateKey)
+					continue
+				}
+
+				Logger.log.Errorf("Custodian state before : %v", custodianState.FreeCollateral)
+
+				_ = updateCustodianStateAfterExpiredPortingReq(
+					custodianState, matchCusDetail.LockedAmountCollateral, matchCusDetail.Amount, tokenID)
+
+				Logger.log.Errorf("Custodian state after : %v", custodianState.FreeCollateral)
+			}
+
+			// remove waiting porting request from waiting list
+			delete(currentPortalState.WaitingPortingRequests, portingReqKey)
+
+			// build instruction
+			inst := buildExpiredWaitingPortingReqInst(
+				portingReq.UniquePortingID,
+				metadata.PortalExpiredWaitingPortingReqMeta,
+				shardID,
+				common.PortalExpiredWaitingPortingReqSuccessChainStatus,
+			)
+			insts = append(insts, inst)
 		}
 	}
 

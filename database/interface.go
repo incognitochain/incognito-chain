@@ -225,6 +225,7 @@ type DatabaseInterface interface {
 	StoreLiquidateTopPercentileExchangeRates(key []byte, value interface{}) error
 	StoreRedeemLiquidationExchangeRates(key []byte, value interface{}) error
 	StoredLiquidationCustodianDeposit(key []byte, content interface{}) error
+	TrackExpiredPortingReq(key []byte, value []byte) error
 
 	StorePortalRewardByBeaconHeight(key []byte, value []byte) error
 	TrackPortalReqWithdrawReward(key []byte, value []byte) error

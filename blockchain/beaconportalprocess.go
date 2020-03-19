@@ -57,6 +57,8 @@ func (blockchain *BlockChain) processPortalInstructions(block *BeaconBlock, bd *
 			err = blockchain.processPortalRedeemLiquidateExchangeRates(beaconHeight, inst, currentPortalState, updatingInfoByTokenID)
 		case strconv.Itoa(metadata.PortalLiquidationCustodianDepositMeta):
 			err = blockchain.processPortalLiquidationCustodianDeposit(beaconHeight, inst, currentPortalState)
+		case strconv.Itoa(metadata.PortalExpiredWaitingPortingReqMeta):
+			err = blockchain.processPortalExpiredPortingRequest(beaconHeight, inst, currentPortalState)
 		}
 
 		if err != nil {
@@ -64,9 +66,6 @@ func (blockchain *BlockChain) processPortalInstructions(block *BeaconBlock, bd *
 			return nil
 		}
 	}
-
-	//todo: check timeout register porting via beacon height
-	// all request timeout ? unhold
 
 	//save final exchangeRates
 	err = blockchain.pickExchangesRatesFinal(beaconHeight, currentPortalState)

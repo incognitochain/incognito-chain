@@ -620,7 +620,13 @@ func NewPortalLiquidationCustodianKey(redeemID string, custodianIncAddrStr strin
 	return string(key)
 }
 
-// TrackRequestUnlockCollateralByTxReqID tracks status of request unlock collateral by txReqID
+// NewPortalLiquidationCustodianKey creates key for tracking custodian liquidation in portal
+func NewPortalExpiredPortingReqKey(portingID string) string {
+	key := append(PortalExpiredPortingReqPrefix, []byte(portingID)...)
+	return string(key)
+}
+
+// TrackLiquidateCustodian tracks status of liquidation custodian by txReqID
 func (db *db) TrackLiquidateCustodian(key []byte, value []byte) error {
 	err := db.Put(key, value)
 	if err != nil {
@@ -640,6 +646,15 @@ func NewPortalLiquidateTPExchangeRatesKey(beaconHeight uint64, custodianIncAddrS
 	key := append(PortalLiquidateTopPercentileExchangeRatesPrefix, beaconHeightBytes...)
 	key = append(key, []byte(custodianIncAddrStr)...)
 	return string(key)
+}
+
+// TrackExpiredPortingReq tracks status of expired waiting porting request by PortingID
+func (db *db) TrackExpiredPortingReq(key []byte, value []byte) error {
+	err := db.Put(key, value)
+	if err != nil {
+		return database.NewDatabaseError(database.TrackLiquidateCustodianError, errors.Wrap(err, "db.lvdb.put"))
+	}
+	return nil
 }
 
 func NewPortalLiquidateExchangeRatesKey(beaconHeight uint64) string {

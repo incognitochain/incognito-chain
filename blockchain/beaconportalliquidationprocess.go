@@ -425,3 +425,115 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(beaconHei
 
 	return nil
 }
+
+func (blockchain *BlockChain) processPortalExpiredPortingRequest(beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState)  error {
+	if currentPortalState == nil {
+		Logger.log.Errorf("current portal state is nil")
+		return nil
+	}
+	if len(instructions) != 4 {
+		return nil // skip the instruction
+	}
+
+	db := blockchain.GetDatabase()
+
+	// unmarshal instructions content
+	var actionData metadata.PortalExpiredWaitingPortingReqContent
+	err := json.Unmarshal([]byte(instructions[3]), &actionData)
+	if err != nil {
+		return err
+	}
+
+	status := instructions[2]
+	waitingPortingID := actionData.UniquePortingID
+
+	if status == common.PortalExpiredWaitingPortingReqSuccessChainStatus {
+
+		waitingPortingKey := lvdb.NewWaitingPortingReqKey(beaconHeight, waitingPortingID)
+		waitingPortingReq := currentPortalState.WaitingPortingRequests[waitingPortingKey]
+		if waitingPortingReq == nil {
+			Logger.log.Errorf("[processPortalExpiredPortingRequest] waiting porting req nil with key : %v", waitingPortingKey)
+			return nil
+		}
+
+		// get tokenID from redeemTokenID
+		tokenID := waitingPortingReq.TokenID
+
+		// update custodian state in matching custodians list (holding public tokens, locked amount)
+		for _, matchCusDetail := range waitingPortingReq.Custodians {
+			cusStateKey := lvdb.NewCustodianStateKey(beaconHeight, matchCusDetail.IncAddress)
+			custodianState := currentPortalState.CustodianPoolState[cusStateKey]
+			if custodianState == nil {
+				Logger.log.Errorf("[checkAndBuildInstForExpiredWaitingPortingRequest] Error when get custodian state with key %v\n: ", cusStateKey)
+				continue
+			}
+
+			Logger.log.Errorf("Custodian state before : %v", custodianState.FreeCollateral)
+
+			_ = updateCustodianStateAfterExpiredPortingReq(
+				custodianState, matchCusDetail.LockedAmountCollateral, matchCusDetail.Amount, tokenID)
+
+			Logger.log.Errorf("Custodian state after : %v", custodianState.FreeCollateral)
+		}
+
+		// remove waiting porting request from waiting list
+		delete(currentPortalState.WaitingPortingRequests, waitingPortingKey)
+
+		// update status of porting ID  => expired
+		newPortingRequestStatus, err := NewPortingRequestState(
+			waitingPortingReq.UniquePortingID,
+			waitingPortingReq.TxReqID,
+			tokenID,
+			waitingPortingReq.PorterAddress,
+			waitingPortingReq.Amount,
+			waitingPortingReq.Custodians,
+			waitingPortingReq.PortingFee,
+			common.PortalPortingReqExpiredStatus,
+			waitingPortingReq.BeaconHeight,
+		)
+		err = db.StorePortingRequestItem([]byte(waitingPortingKey), newPortingRequestStatus)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occurred while store porting request item: %+v", err)
+			return nil
+		}
+
+		// track expired waiting porting request status by portingID into DB
+		expiredPortingTrackKey := lvdb.NewPortalExpiredPortingReqKey(waitingPortingID)
+		expiredPortingTrackData := metadata.PortalExpiredWaitingPortingReqStatus{
+			Status:                 common.PortalExpiredPortingReqSuccessStatus,
+			UniquePortingID:         waitingPortingID,
+			ShardID:                actionData.ShardID,
+			LiquidatedBeaconHeight: beaconHeight + 1,
+		}
+		expiredPortingTrackDataBytes, _ := json.Marshal(expiredPortingTrackData)
+		err = db.TrackExpiredPortingReq(
+			[]byte(expiredPortingTrackKey),
+			expiredPortingTrackDataBytes,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while tracking expired porting request: %+v", err)
+			return nil
+		}
+
+	} else if status == common.PortalLiquidationCustodianDepositRejectedChainStatus {
+		// track expired waiting porting request status by portingID into DB
+		expiredPortingTrackKey := lvdb.NewPortalExpiredPortingReqKey(waitingPortingID)
+		expiredPortingTrackData := metadata.PortalExpiredWaitingPortingReqStatus{
+			Status:                 common.PortalExpiredPortingReqFailedStatus,
+			UniquePortingID:         waitingPortingID,
+			ShardID:                actionData.ShardID,
+			LiquidatedBeaconHeight: beaconHeight + 1,
+		}
+		expiredPortingTrackDataBytes, _ := json.Marshal(expiredPortingTrackData)
+		err = db.TrackExpiredPortingReq(
+			[]byte(expiredPortingTrackKey),
+			expiredPortingTrackDataBytes,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while tracking expired porting request: %+v", err)
+			return nil
+		}
+	}
+
+	return nil
+}

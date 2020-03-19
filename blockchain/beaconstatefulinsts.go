@@ -294,6 +294,8 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		instructions = append(instructions, relayingInsts...)
 	}
 
+
+
 	// auto-liquidation portal instructions
 	portalLiquidationInsts, err := blockchain.autoCheckAndCreatePortalLiquidationInsts(
 		beaconHeight-1,
@@ -886,6 +888,16 @@ func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(
 	//Logger.log.Errorf("autoCheckAndCreatePortalLiquidationInsts starting.......")
 
 	insts := [][]string{}
+
+	// check there is any waiting porting request timeout
+	expiredWaitingPortingInsts, err := checkAndBuildInstForExpiredWaitingPortingRequest(beaconHeight, currentPortalState)
+	if err != nil {
+		Logger.log.Errorf("Error when check and build custodian liquidation %v\n", err)
+	}
+	if len(expiredWaitingPortingInsts) > 0 {
+		insts = append(insts, expiredWaitingPortingInsts...)
+	}
+	Logger.log.Infof("There are %v instruction for expired waiting porting in portal\n", len(expiredWaitingPortingInsts))
 
 	// case 1: check there is any custodian doesn't send public tokens back to user after PortalTimeOutCustodianSendPubTokenBack
 	// get custodian's collateral to return user
