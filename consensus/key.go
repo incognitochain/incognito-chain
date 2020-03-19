@@ -124,13 +124,15 @@ func (engine *Engine) VerifyData(data []byte, sig string, publicKey string, cons
 }
 
 func (engine *Engine) ValidateProducerPosition(blk common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+
 	//check producer,proposer,agg sig with this version
 	if blk.GetVersion() == 1 {
+		producerPosition := 0
 		//validate producer
 		producer := blk.GetProducer()
-		tmpProducer, _ := committee[0].ToBase58()
+		tmpProducer, _ := committee[producerPosition].ToBase58()
 		if tmpProducer != producer {
-			return fmt.Errorf("Producer should be should be %+v", tmpProducer)
+			return fmt.Errorf("Producer should be %+v but get %v index %v", tmpProducer, producer, producerPosition)
 		}
 	} else {
 

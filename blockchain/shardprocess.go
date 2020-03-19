@@ -558,54 +558,13 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock
 // Get beacon state of this block
 // For example, new blockHeight is 91 then beacon state of this block must have height 90
 // OR new block has previous has is beacon best block hash
-//	- Producer
-//	- committee length and validatorIndex length
-//	- Producer + sig
 //	- New Shard Block has parent (previous) hash is current shard state best block hash (compatible with current beststate)
 //	- New Shard Block Height must be compatible with best shard state
 //	- New Shard Block has beacon must higher or equal to beacon height of shard best state
 func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(shardBlock *ShardBlock, isVerifySig bool, shardID byte) error {
 	Logger.log.Debugf("SHARD %+v | Begin VerifyBestStateWithShardBlock Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash())
-	//verify producer via index
-	producerPublicKey := shardBlock.Header.Producer
-	producerPosition := (shardBestState.ShardProposerIdx + shardBlock.Header.Round) % len(shardBestState.ShardCommittee)
-	//verify producer
-	if shardBlock.Header.Version == 1 {
-		tempProducer, err := shardBestState.ShardCommittee[producerPosition].ToBase58() //.GetMiningKeyBase58(common.BridgeConsensus)
-		if err != nil {
-			return NewBlockChainError(UnExpectedError, err)
-		}
-		if strings.Compare(tempProducer, producerPublicKey) != 0 {
-			return NewBlockChainError(ProducerError, fmt.Errorf("Producer should be should be %+v", tempProducer))
-		}
-	} else {
-		tempProducer := shardBestState.GetProposerByTimeSlot(common.CalculateTimeSlot(shardBlock.GetProduceTime()))
-		b58Str, _ := tempProducer.ToBase58()
-		if strings.Compare(b58Str, producerPublicKey) != 0 {
-			return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", b58Str, producerPublicKey))
-		}
+	//TODO: we will validate proposer index + agg in pre processing
 
-		tempProducer = shardBestState.GetProposerByTimeSlot(common.CalculateTimeSlot(shardBlock.GetProposeTime()))
-		b58Str, _ = tempProducer.ToBase58()
-		if strings.Compare(b58Str, shardBlock.GetProposer()) != 0 {
-			return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Proposer Public Key to be equal but get %+v From Index, %+v From Header", b58Str, shardBlock.GetProposer()))
-		}
-
-	}
-
-	//=============End Verify producer signature
-	//=============Verify aggegrate signature
-	// if isVerifySig {
-	// TODO: validator index condition
-	// if len(shardBestState.ShardCommittee) > 3 && len(shardBlock.ValidatorsIdx[1]) < (len(shardBestState.ShardCommittee)>>1) {
-	// 	return NewBlockChainError(ShardCommitteeLengthAndCommitteeIndexError, fmt.Errorf("Expect Number of Committee Size greater than 3 but get %+v", len(shardBestState.ShardCommittee)))
-	// }
-	// err := ValidateAggSignature(shardBlock.ValidatorsIdx, shardBestState.ShardCommittee, shardBlock.AggregatedSig, shardBlock.R, shardBlock.Hash())
-	// if err != nil {
-	// 	return err
-	// }
-	// }
-	//=============End Verify Aggegrate signature
 	// check with current final best state
 	// shardBlock can only be insert if it match the current best state
 	if !shardBestState.BestBlockHash.IsEqual(&shardBlock.Header.PreviousBlockHash) {

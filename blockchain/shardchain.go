@@ -180,6 +180,13 @@ func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, co
 	return nil
 }
 
+func (chain *ShardChain) ValidateProducerPosition(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerPosition(block, committee); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (chain *ShardChain) InsertBlk(block common.BlockInterface) error {
 	//if chain.Blockchain.config.ConsensusEngine.IsOngoing(chain.ChainName) {
 	//	return NewBlockChainError(ConsensusIsOngoingError, errors.New(fmt.Sprint(chain.ChainName, block.Hash())))

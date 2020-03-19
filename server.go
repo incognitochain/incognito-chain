@@ -2120,20 +2120,12 @@ func (serverObj *Server) requestBlocksViaStream(ctx context.Context, peerID stri
 		return nil, err
 	}
 
-	mt := sync.Mutex{}
 	var closeChannel = func() {
-		mt.Lock()
 		if blockCh != nil {
 			close(blockCh)
 			blockCh = nil
 		}
-		mt.Unlock()
 	}
-
-	go func() {
-		<-ctx.Done()
-		closeChannel()
-	}()
 
 	go func(stream proto.HighwayService_StreamBlockByHeightClient, ctx context.Context) {
 		for {

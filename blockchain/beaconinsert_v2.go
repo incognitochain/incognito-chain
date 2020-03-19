@@ -26,6 +26,7 @@ func (blockchain *BlockChain) InsertBeaconBlock_V2(beaconBlock *BeaconBlock, str
 	}
 
 	if err = processState.PreInsertProcess(beaconBlock); err != nil {
+		Logger.log.Error(err)
 		return err
 	}
 
@@ -60,9 +61,11 @@ func (s *BeaconProcessState) PreInsertProcess(proposeBlock *BeaconBlock) error {
 	//TODO: basic validation (pre processing)
 
 	//validate block signature
+	if err := s.blockchain.BeaconChain.ValidateProducerPosition(proposeBlock, s.curView.GetCommittee()); err != nil {
+		return err
+	}
 	if err := s.blockchain.BeaconChain.ValidateBlockSignatures(proposeBlock, s.curView.GetCommittee()); err != nil {
 		return err
 	}
-
 	return nil
 }

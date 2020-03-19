@@ -248,9 +248,6 @@ func (chain *BeaconChain) ValidatePreSignBlock(block common.BlockInterface) erro
 // }
 
 func (chain *BeaconChain) ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
-	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerPosition(block, committee); err != nil {
-		return err
-	}
 
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
 		return err
@@ -258,6 +255,13 @@ func (chain *BeaconChain) ValidateBlockSignatures(block common.BlockInterface, c
 
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee); err != nil {
 		return nil
+	}
+	return nil
+}
+
+func (chain *BeaconChain) ValidateProducerPosition(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerPosition(block, committee); err != nil {
+		return err
 	}
 	return nil
 }

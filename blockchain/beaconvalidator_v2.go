@@ -27,6 +27,7 @@ func (blockchain *BlockChain) ValidateProposedBeaconBlock_V2(beaconProposedBlock
 	}
 
 	if err = processState.PreValidateProcess(beaconProposedBlock); err != nil {
+		Logger.log.Error(err)
 		return err
 	}
 	if err := processState.BuildBody(); err != nil {
