@@ -425,7 +425,9 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 						continue
 					}
 
+
 					if len(instsFromRedeemRequest) > 0 {
+						Logger.log.Infof("There is %v instructions for tp exchange rate for redeem request", len(instsFromRedeemRequest))
 						insts = append(insts, instsFromRedeemRequest...)
 					}
 				}
