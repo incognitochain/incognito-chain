@@ -261,22 +261,14 @@ func checkAndBuildInstForCustodianLiquidation(
 // beacon build instruction for expired waiting porting request - user doesn't send public token to custodian after requesting
 func buildExpiredWaitingPortingReqInst(
 	portingID string,
-	//tokenID string,
-	//redeemPubTokenAmount uint64,
-	//mintedCollateralAmount uint64,
-	//redeemerIncAddrStr string,
-	//custodianIncAddrStr string,
+	expiredByLiquidation bool,
 	metaType int,
 	shardID byte,
 	status string,
 ) []string {
 	liqCustodianContent := metadata.PortalExpiredWaitingPortingReqContent{
 		UniquePortingID: portingID,
-		//TokenID:                tokenID,
-		//RedeemPubTokenAmount:   redeemPubTokenAmount,
-		//MintedCollateralAmount: mintedCollateralAmount,
-		//RedeemerIncAddressStr:  redeemerIncAddrStr,
-		//CustodianIncAddressStr: custodianIncAddrStr,
+		ExpiredByLiquidation: expiredByLiquidation,
 		ShardID:                shardID,
 	}
 	liqCustodianContentBytes, _ := json.Marshal(liqCustodianContent)
@@ -288,55 +280,69 @@ func buildExpiredWaitingPortingReqInst(
 	}
 }
 
+func buildInstForExpiredPortingReqByPortingID(
+	beaconHeight uint64,
+	currentPortalState *CurrentPortalState,
+	portingReqKey string,
+	portingReq *lvdb.PortingRequest,
+	expiredByLiquidation bool)([][]string, error){
+	insts := [][]string{}
+
+	//get shardId of redeemer
+	redeemerKey, err := wallet.Base58CheckDeserialize(portingReq.PorterAddress)
+	if err != nil {
+		Logger.log.Errorf("[buildInstForExpiredPortingReqByPortingID] Error when deserializing redeemer address string in redeemID %v - %v\n: ",
+			portingReq.UniquePortingID, err)
+		return insts, err
+	}
+	shardID := common.GetShardIDFromLastByte(redeemerKey.KeySet.PaymentAddress.Pk[len(redeemerKey.KeySet.PaymentAddress.Pk)-1])
+
+	// get tokenID from redeemTokenID
+	tokenID := portingReq.TokenID
+
+	// update custodian state in matching custodians list (holding public tokens, locked amount)
+	for _, matchCusDetail := range portingReq.Custodians {
+		cusStateKey := lvdb.NewCustodianStateKey(beaconHeight, matchCusDetail.IncAddress)
+		custodianState := currentPortalState.CustodianPoolState[cusStateKey]
+		if custodianState == nil {
+			Logger.log.Errorf("[checkAndBuildInstForExpiredWaitingPortingRequest] Error when get custodian state with key %v\n: ", cusStateKey)
+			continue
+		}
+
+		_ = updateCustodianStateAfterExpiredPortingReq(
+			custodianState, matchCusDetail.LockedAmountCollateral, matchCusDetail.Amount, tokenID)
+	}
+
+	// remove waiting porting request from waiting list
+	delete(currentPortalState.WaitingPortingRequests, portingReqKey)
+
+	// build instruction
+	inst := buildExpiredWaitingPortingReqInst(
+		portingReq.UniquePortingID,
+		expiredByLiquidation,
+		metadata.PortalExpiredWaitingPortingReqMeta,
+		shardID,
+		common.PortalExpiredWaitingPortingReqSuccessChainStatus,
+	)
+	insts = append(insts, inst)
+
+	return insts, nil
+}
+
 func checkAndBuildInstForExpiredWaitingPortingRequest(
 	beaconHeight uint64,
 	currentPortalState *CurrentPortalState,
 ) ([][]string, error) {
-
 	insts := [][]string{}
-
 	for portingReqKey, portingReq := range currentPortalState.WaitingPortingRequests {
 		if (beaconHeight + 1) - portingReq.BeaconHeight >= common.PortalTimeOutCustodianSendPubTokenBack {
-			//get shardId of redeemer
-			redeemerKey, err := wallet.Base58CheckDeserialize(portingReq.PorterAddress)
+			inst, err := buildInstForExpiredPortingReqByPortingID(
+				beaconHeight, currentPortalState, portingReqKey, portingReq, false)
 			if err != nil {
-				Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when deserializing redeemer address string in redeemID %v - %v\n: ",
-					portingReq.UniquePortingID, err)
+				Logger.log.Errorf("[checkAndBuildInstForExpiredWaitingPortingRequest] Error when build instruction for expired porting request %v\n", err)
 				continue
 			}
-			shardID := common.GetShardIDFromLastByte(redeemerKey.KeySet.PaymentAddress.Pk[len(redeemerKey.KeySet.PaymentAddress.Pk)-1])
-
-			// get tokenID from redeemTokenID
-			tokenID := portingReq.TokenID
-
-			// update custodian state in matching custodians list (holding public tokens, locked amount)
-			for _, matchCusDetail := range portingReq.Custodians {
-				cusStateKey := lvdb.NewCustodianStateKey(beaconHeight, matchCusDetail.IncAddress)
-				custodianState := currentPortalState.CustodianPoolState[cusStateKey]
-				if custodianState == nil {
-					Logger.log.Errorf("[checkAndBuildInstForExpiredWaitingPortingRequest] Error when get custodian state with key %v\n: ", cusStateKey)
-					continue
-				}
-
-				Logger.log.Errorf("Custodian state before : %v", custodianState.FreeCollateral)
-
-				_ = updateCustodianStateAfterExpiredPortingReq(
-					custodianState, matchCusDetail.LockedAmountCollateral, matchCusDetail.Amount, tokenID)
-
-				Logger.log.Errorf("Custodian state after : %v", custodianState.FreeCollateral)
-			}
-
-			// remove waiting porting request from waiting list
-			delete(currentPortalState.WaitingPortingRequests, portingReqKey)
-
-			// build instruction
-			inst := buildExpiredWaitingPortingReqInst(
-				portingReq.UniquePortingID,
-				metadata.PortalExpiredWaitingPortingReqMeta,
-				shardID,
-				common.PortalExpiredWaitingPortingReqSuccessChainStatus,
-			)
-			insts = append(insts, inst)
+			insts = append(insts, inst...)
 		}
 	}
 
@@ -428,6 +434,34 @@ func checkAndBuildInstForTPExchangeRateRedeemRequest(
 	return insts, nil
 }
 
+func checkAndBuildInstForTPExchangeRatePortingRequest(
+	beaconHeight uint64,
+	currentPortalState *CurrentPortalState,
+	exchangeRate *lvdb.FinalExchangeRates,
+	liquidatedCustodianState *lvdb.CustodianState,
+	tokenID string,
+)([][]string, error) {
+	insts := [][]string{}
+	// filter waiting porting request that has liquidated matching custodian by exchange rate drops down
+	for portingReqKey, portingReq := range currentPortalState.WaitingPortingRequests {
+		if portingReq.TokenID == tokenID {
+			for _, cus := range portingReq.Custodians {
+				if cus.IncAddress == liquidatedCustodianState.IncognitoAddress {
+					inst, err := buildInstForExpiredPortingReqByPortingID(
+						beaconHeight, currentPortalState, portingReqKey, portingReq, true)
+					if err != nil {
+						Logger.log.Errorf("[checkAndBuildInstForTPExchangeRatePortingRequest] Error when build instruction %v\n", err)
+						continue
+					}
+					insts = append(insts, inst...)
+				}
+			}
+		}
+	}
+
+	return insts, nil
+}
+
 
 /*
 Top percentile (TP): 150 (TP150), 130 (TP130), 120 (TP120)
@@ -470,9 +504,10 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 
 		Logger.log.Infof("liquidate exchange rates: detect TP result  %v", detectTp)
 		if len(detectTp) > 0 {
-			// check and build instruction for waiting redeem request
+
 			for pTokenID, v := range detectTp {
 				if v.HoldAmountFreeCollateral > 0 {
+					// check and build instruction for waiting redeem request
 					instsFromRedeemRequest, err := checkAndBuildInstForTPExchangeRateRedeemRequest(
 						beaconHeight,
 						currentPortalState,
@@ -480,16 +515,30 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 						custodianState,
 						pTokenID,
 					)
-
 					if err != nil {
 						Logger.log.Errorf("Error when check and build instruction from redeem request %v\n", err)
 						continue
 					}
-
-
 					if len(instsFromRedeemRequest) > 0 {
 						Logger.log.Infof("There is %v instructions for tp exchange rate for redeem request", len(instsFromRedeemRequest))
 						insts = append(insts, instsFromRedeemRequest...)
+					}
+
+					// check and build instruction for waiting porting request
+					instsFromWaitingPortingReq, err := checkAndBuildInstForTPExchangeRatePortingRequest(
+						beaconHeight,
+						currentPortalState,
+						exchangeRate,
+						custodianState,
+						pTokenID,
+					)
+					if err != nil {
+						Logger.log.Errorf("Error when check and build instruction from redeem request %v\n", err)
+						continue
+					}
+					if len(instsFromWaitingPortingReq) > 0 {
+						Logger.log.Infof("There is %v instructions for tp exchange rate for waiting porting request", len(instsFromWaitingPortingReq))
+						insts = append(insts, instsFromWaitingPortingReq...)
 					}
 				}
 			}

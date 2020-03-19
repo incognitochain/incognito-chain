@@ -123,11 +123,12 @@ const (
 	PortalReqPTokenAcceptedStatus = 1
 	PortalReqPTokenRejectedStatus = 2
 
-	PortalPortingReqSuccessStatus  = 1
-	PortalPortingReqWaitingStatus  = 2
-	PortalPortingReqRejectedStatus = 3
-	PortalPortingReqAcceptedStatus = 4
-	PortalPortingReqExpiredStatus  = 5
+	PortalPortingReqSuccessStatus    = 1
+	PortalPortingReqWaitingStatus    = 2
+	PortalPortingReqRejectedStatus   = 3
+	PortalPortingReqAcceptedStatus   = 4
+	PortalPortingReqExpiredStatus    = 5
+	PortalPortingReqLiquidatedStatus = 6
 
 	PortalRedeemReqSuccessStatus    = 1
 	PortalRedeemReqWaitingStatus    = 2
@@ -211,8 +212,8 @@ const (
 	PortalLiquidationCustodianDepositSuccessChainStatus  = "success"
 	PortalLiquidationCustodianDepositRejectedChainStatus = "rejected"
 
-	PortalExpiredWaitingPortingReqSuccessChainStatus = "success"
-	PortalExpiredWaitingPortingReqFailedChainStatus  = "failed"
+	PortalExpiredWaitingPortingReqSuccessChainStatus    = "success"
+	PortalExpiredWaitingPortingReqFailedChainStatus     = "failed"
 )
 
 // Relaying header

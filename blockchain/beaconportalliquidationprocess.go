@@ -111,7 +111,7 @@ func (blockchain *BlockChain) processPortalLiquidateCustodian(
 }
 
 func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(beaconHeight uint64, instructions []string,
-currentPortalState *CurrentPortalState) error {
+	currentPortalState *CurrentPortalState) error {
 	db := blockchain.GetDatabase()
 
 	// unmarshal instructions content
@@ -121,7 +121,6 @@ currentPortalState *CurrentPortalState) error {
 		Logger.log.Errorf("Can not unmarshal instruction content %v\n", err)
 		return nil
 	}
-
 
 	keyExchangeRate := lvdb.NewFinalExchangeRatesKey(beaconHeight)
 	exchangeRate, ok := currentPortalState.FinalExchangeRates[keyExchangeRate]
@@ -179,7 +178,7 @@ currentPortalState *CurrentPortalState) error {
 				for ptoken, liquidateTopPercentileExchangeRatesDetail := range detectTp {
 					item[ptoken] = lvdb.LiquidateExchangeRatesDetail{
 						HoldAmountFreeCollateral: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
-						HoldAmountPubToken: liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
+						HoldAmountPubToken:       liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
 					}
 				}
 				currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey], _ = NewLiquidateExchangeRates(item)
@@ -188,12 +187,12 @@ currentPortalState *CurrentPortalState) error {
 					if _, ok := liquidateExchangeRates.Rates[ptoken]; !ok {
 						liquidateExchangeRates.Rates[ptoken] = lvdb.LiquidateExchangeRatesDetail{
 							HoldAmountFreeCollateral: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
-							HoldAmountPubToken: liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
+							HoldAmountPubToken:       liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
 						}
 					} else {
 						liquidateExchangeRates.Rates[ptoken] = lvdb.LiquidateExchangeRatesDetail{
-							HoldAmountFreeCollateral: liquidateExchangeRates.Rates[ptoken].HoldAmountFreeCollateral +  liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
-							HoldAmountPubToken: liquidateExchangeRates.Rates[ptoken].HoldAmountPubToken +  liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
+							HoldAmountFreeCollateral: liquidateExchangeRates.Rates[ptoken].HoldAmountFreeCollateral + liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
+							HoldAmountPubToken:       liquidateExchangeRates.Rates[ptoken].HoldAmountPubToken + liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
 						}
 					}
 				}
@@ -206,7 +205,7 @@ currentPortalState *CurrentPortalState) error {
 				custodianState.IncognitoAddress,
 				detectTp,
 				common.PortalLiquidationTPExchangeRatesSuccessStatus,
-				)
+			)
 
 			Logger.log.Infof("update liquidateTPExchangeRatesKey key %v", newTPKey)
 			err := db.StoreLiquidateTopPercentileExchangeRates([]byte(newTPKey), newTPExchangeRates)
@@ -219,7 +218,7 @@ currentPortalState *CurrentPortalState) error {
 		newTPKey := lvdb.NewPortalLiquidateTPExchangeRatesKey(beaconHeight, custodianState.IncognitoAddress)
 		newTPExchangeRates, _ := NewLiquidateTopPercentileExchangeRates(
 			custodianState.IncognitoAddress,
-		nil,
+			nil,
 			common.PortalLiquidationTPExchangeRatesFailedStatus,
 		)
 
@@ -251,7 +250,6 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(beaconHe
 		return nil
 	}
 
-
 	db := blockchain.GetDatabase()
 
 	reqStatus := instructions[2]
@@ -281,7 +279,7 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(beaconHe
 
 		liquidateExchangeRates.Rates[actionData.TokenID] = lvdb.LiquidateExchangeRatesDetail{
 			HoldAmountFreeCollateral: liquidateByTokenID.HoldAmountFreeCollateral - totalPrv,
-			HoldAmountPubToken: liquidateByTokenID.HoldAmountPubToken - actionData.RedeemAmount,
+			HoldAmountPubToken:       liquidateByTokenID.HoldAmountPubToken - actionData.RedeemAmount,
 		}
 
 		currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey] = liquidateExchangeRates
@@ -296,7 +294,7 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(beaconHe
 			actionData.RedeemFee,
 			totalPrv,
 			common.PortalRedeemLiquidateExchangeRatesSuccessStatus,
-			)
+		)
 
 		err = db.StoreRedeemLiquidationExchangeRates([]byte(redeemKey), redeem)
 		if err != nil {
@@ -346,7 +344,7 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(beaconHe
 	return nil
 }
 
-func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState)  error {
+func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
 	if currentPortalState == nil {
 		Logger.log.Errorf("current portal state is nil")
 		return nil
@@ -384,7 +382,6 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(beaconHei
 			Logger.log.Errorf("Calculate amount needed deposit err %v", err)
 			return nil
 		}
-
 
 		if actionData.DepositedAmount < amountNeeded {
 			Logger.log.Errorf("Deposited amount is not enough, expect %v, data sent %v", amountNeeded, actionData.DepositedAmount)
@@ -448,7 +445,7 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(beaconHei
 	return nil
 }
 
-func (blockchain *BlockChain) processPortalExpiredPortingRequest(beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState)  error {
+func (blockchain *BlockChain) processPortalExpiredPortingRequest(beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
 	if currentPortalState == nil {
 		Logger.log.Errorf("current portal state is nil")
 		return nil
@@ -470,7 +467,6 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(beaconHeight ui
 	waitingPortingID := actionData.UniquePortingID
 
 	if status == common.PortalExpiredWaitingPortingReqSuccessChainStatus {
-
 		waitingPortingKey := lvdb.NewWaitingPortingReqKey(beaconHeight, waitingPortingID)
 		waitingPortingReq := currentPortalState.WaitingPortingRequests[waitingPortingKey]
 		if waitingPortingReq == nil {
@@ -501,7 +497,11 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(beaconHeight ui
 		// remove waiting porting request from waiting list
 		delete(currentPortalState.WaitingPortingRequests, waitingPortingKey)
 
-		// update status of porting ID  => expired
+		// update status of porting ID  => expired/liquidated
+		portingReqStatus := common.PortalPortingReqExpiredStatus
+		if actionData.ExpiredByLiquidation {
+			portingReqStatus = common.PortalPortingReqLiquidatedStatus
+		}
 		newPortingRequestStatus, err := NewPortingRequestState(
 			waitingPortingReq.UniquePortingID,
 			waitingPortingReq.TxReqID,
@@ -510,7 +510,7 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(beaconHeight ui
 			waitingPortingReq.Amount,
 			waitingPortingReq.Custodians,
 			waitingPortingReq.PortingFee,
-			common.PortalPortingReqExpiredStatus,
+			portingReqStatus,
 			waitingPortingReq.BeaconHeight,
 		)
 		err = db.StorePortingRequestItem([]byte(waitingPortingKey), newPortingRequestStatus)
@@ -522,10 +522,11 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(beaconHeight ui
 		// track expired waiting porting request status by portingID into DB
 		expiredPortingTrackKey := lvdb.NewPortalExpiredPortingReqKey(waitingPortingID)
 		expiredPortingTrackData := metadata.PortalExpiredWaitingPortingReqStatus{
-			Status:                 common.PortalExpiredPortingReqSuccessStatus,
-			UniquePortingID:         waitingPortingID,
-			ShardID:                actionData.ShardID,
-			LiquidatedBeaconHeight: beaconHeight + 1,
+			Status:               common.PortalExpiredPortingReqSuccessStatus,
+			UniquePortingID:      waitingPortingID,
+			ShardID:              actionData.ShardID,
+			ExpiredByLiquidation: actionData.ExpiredByLiquidation,
+			ExpiredBeaconHeight:  beaconHeight + 1,
 		}
 		expiredPortingTrackDataBytes, _ := json.Marshal(expiredPortingTrackData)
 		err = db.TrackExpiredPortingReq(
@@ -541,10 +542,11 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(beaconHeight ui
 		// track expired waiting porting request status by portingID into DB
 		expiredPortingTrackKey := lvdb.NewPortalExpiredPortingReqKey(waitingPortingID)
 		expiredPortingTrackData := metadata.PortalExpiredWaitingPortingReqStatus{
-			Status:                 common.PortalExpiredPortingReqFailedStatus,
-			UniquePortingID:         waitingPortingID,
-			ShardID:                actionData.ShardID,
-			LiquidatedBeaconHeight: beaconHeight + 1,
+			Status:               common.PortalExpiredPortingReqFailedStatus,
+			UniquePortingID:      waitingPortingID,
+			ShardID:              actionData.ShardID,
+			ExpiredByLiquidation: actionData.ExpiredByLiquidation,
+			ExpiredBeaconHeight:  beaconHeight + 1,
 		}
 		expiredPortingTrackDataBytes, _ := json.Marshal(expiredPortingTrackData)
 		err = db.TrackExpiredPortingReq(
