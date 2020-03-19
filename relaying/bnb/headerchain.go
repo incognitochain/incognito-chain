@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-var TestnetGenesisHeaderStr = "eyJIZWFkZXIiOnsidmVyc2lvbiI6eyJibG9jayI6MTAsImFwcCI6MH0sImNoYWluX2lkIjoiQmluYW5jZS1EZXYiLCJoZWlnaHQiOjEsInRpbWUiOiIyMDIwLTAzLTA1VDA4OjI2OjIwLjk3MDUzMloiLCJudW1fdHhzIjowLCJ0b3RhbF90eHMiOjAsImxhc3RfYmxvY2tfaWQiOnsiaGFzaCI6IiIsInBhcnRzIjp7InRvdGFsIjowLCJoYXNoIjoiIn19LCJsYXN0X2NvbW1pdF9oYXNoIjoiIiwiZGF0YV9oYXNoIjoiIiwidmFsaWRhdG9yc19oYXNoIjoiMzg5NEUyMUNBNUEwMTRFM0E1Mzc4NUQwMjRDNkYwOTJBMDk4MzlEMUIwOThFMDBEMzRERDNBRDNGMTM1M0I5RSIsIm5leHRfdmFsaWRhdG9yc19oYXNoIjoiMzg5NEUyMUNBNUEwMTRFM0E1Mzc4NUQwMjRDNkYwOTJBMDk4MzlEMUIwOThFMDBEMzRERDNBRDNGMTM1M0I5RSIsImNvbnNlbnN1c19oYXNoIjoiMjk0RDhGQkQwQjk0Qjc2N0E3RUJBOTg0MEYyOTlBMzU4NkRBN0ZFNkI1REVBRDNCN0VFQ0JBMTkzQzQwMEY5MyIsImFwcF9oYXNoIjoiIiwibGFzdF9yZXN1bHRzX2hhc2giOiIiLCJldmlkZW5jZV9oYXNoIjoiIiwicHJvcG9zZXJfYWRkcmVzcyI6IkY2QjFDQTI5RTNFMTFGNDkwNDIwOUM4RjBCNkE4OTU5NTI2NTNCOTQifSwiTGFzdENvbW1pdCI6eyJibG9ja19pZCI6eyJoYXNoIjoiIiwicGFydHMiOnsidG90YWwiOjAsImhhc2giOiIifX0sInByZWNvbW1pdHMiOm51bGx9fQ=="
+var TestnetGenesisHeaderStr = "eyJIZWFkZXIiOnsidmVyc2lvbiI6eyJibG9jayI6MTAsImFwcCI6MH0sImNoYWluX2lkIjoiQmluYW5jZS1EZXYiLCJoZWlnaHQiOjEwMDAsInRpbWUiOiIyMDIwLTAzLTA5VDA3OjIxOjQ1Ljg5Mzk0N1oiLCJudW1fdHhzIjowLCJ0b3RhbF90eHMiOjgsImxhc3RfYmxvY2tfaWQiOnsiaGFzaCI6IjhFMjQ0QTJFQzU3RjJCRDRDMjM2QzhGQTQyMjhGRUI4QjZEREJEM0Y2NTREMDU4QTYzQUNDQkUzNjc1MjgyQTgiLCJwYXJ0cyI6eyJ0b3RhbCI6MSwiaGFzaCI6IkM0RTc3ODg1Q0ZGQjI1QUY2NzdGN0E5RUJGNTk1RjFCM0JFNzY3MzhENDExNDQxRUQxODAzNTM2MDNCMEZCNDYifX0sImxhc3RfY29tbWl0X2hhc2giOiJFOUQyNkE4NzRCQTRBQjgyMEZFRTYzQTQzODA2NDcwODI5Njk2QjJEMTlEOTg4NjAxMzNFMkEwNDU1QTk2NkIwIiwiZGF0YV9oYXNoIjoiIiwidmFsaWRhdG9yc19oYXNoIjoiMzg5NEUyMUNBNUEwMTRFM0E1Mzc4NUQwMjRDNkYwOTJBMDk4MzlEMUIwOThFMDBEMzRERDNBRDNGMTM1M0I5RSIsIm5leHRfdmFsaWRhdG9yc19oYXNoIjoiMzg5NEUyMUNBNUEwMTRFM0E1Mzc4NUQwMjRDNkYwOTJBMDk4MzlEMUIwOThFMDBEMzRERDNBRDNGMTM1M0I5RSIsImNvbnNlbnN1c19oYXNoIjoiMjk0RDhGQkQwQjk0Qjc2N0E3RUJBOTg0MEYyOTlBMzU4NkRBN0ZFNkI1REVBRDNCN0VFQ0JBMTkzQzQwMEY5MyIsImFwcF9oYXNoIjoiNzRFODAyQzk2ODBCNkQwNEY0NDhBODRDQjNFQTBDMTNDM0ZGOTkyMDQxRkE2NkM5MjJGMjM5OTVGRjU2RjgxNSIsImxhc3RfcmVzdWx0c19oYXNoIjoiIiwiZXZpZGVuY2VfaGFzaCI6IiIsInByb3Bvc2VyX2FkZHJlc3MiOiJGNkIxQ0EyOUUzRTExRjQ5MDQyMDlDOEYwQjZBODk1OTUyNjUzQjk0In0sIkxhc3RDb21taXQiOnsiYmxvY2tfaWQiOnsiaGFzaCI6IjhFMjQ0QTJFQzU3RjJCRDRDMjM2QzhGQTQyMjhGRUI4QjZEREJEM0Y2NTREMDU4QTYzQUNDQkUzNjc1MjgyQTgiLCJwYXJ0cyI6eyJ0b3RhbCI6MSwiaGFzaCI6IkM0RTc3ODg1Q0ZGQjI1QUY2NzdGN0E5RUJGNTk1RjFCM0JFNzY3MzhENDExNDQxRUQxODAzNTM2MDNCMEZCNDYifX0sInByZWNvbW1pdHMiOlt7InR5cGUiOjIsImhlaWdodCI6OTk5LCJyb3VuZCI6MCwiYmxvY2tfaWQiOnsiaGFzaCI6IjhFMjQ0QTJFQzU3RjJCRDRDMjM2QzhGQTQyMjhGRUI4QjZEREJEM0Y2NTREMDU4QTYzQUNDQkUzNjc1MjgyQTgiLCJwYXJ0cyI6eyJ0b3RhbCI6MSwiaGFzaCI6IkM0RTc3ODg1Q0ZGQjI1QUY2NzdGN0E5RUJGNTk1RjFCM0JFNzY3MzhENDExNDQxRUQxODAzNTM2MDNCMEZCNDYifX0sInRpbWVzdGFtcCI6IjIwMjAtMDMtMDlUMDc6MjE6NDUuODkzOTQ3WiIsInZhbGlkYXRvcl9hZGRyZXNzIjoiRjZCMUNBMjlFM0UxMUY0OTA0MjA5QzhGMEI2QTg5NTk1MjY1M0I5NCIsInZhbGlkYXRvcl9pbmRleCI6MCwic2lnbmF0dXJlIjoiS1VuYVNuU1lVSm5QQ1NrNXBYTjdYbWtGUitXekdqbk1IcGlibWt0MktOcjFQL3U0M2F0VlM4S1hERGgzenI1TXVZUnlvTFpIRFVJSjlUNlZVOUF1RFE9PSJ9XX19"
 var MainnetGenesisHeaderStr = ""
 
 func createGenesisHeaderChain(chainID string) (*lvdb.BNBHeader, error) {
@@ -135,15 +135,6 @@ func VerifySignedHeader(sh *types.SignedHeader, chainID string) (bool, *BNBRelay
 	return true, nil
 }
 
-func ValidateBasicSignedHeader(sh *types.SignedHeader, chainID string) (bool, *BNBRelayingError){
-	err := sh.ValidateBasic(chainID)
-	if err != nil {
-		return false, NewBNBRelayingError(InvalidBasicSignedHeaderErr, err)
-	}
-
-	return true, nil
-}
-
 type LatestHeaderChain struct {
 	LatestHeader *types.Header
 	// UnconfirmedHeaders contains header blocks that aren't committed by validator set in the next header block
@@ -167,7 +158,9 @@ func (hc *LatestHeaderChain) ReceiveNewHeader(h *types.Header, lastCommit *types
 	// create genesis header before appending new header
 	if hc.LatestHeader == nil && len(hc.UnconfirmedHeaders) == 0 {
 		genesisHeader, _ := createGenesisHeaderChain(chainID)
+		Logger.log.Errorf("genesisHeader.Header %v\n", genesisHeader.Header)
 		hc.LatestHeader = genesisHeader.Header
+		Logger.log.Errorf("hc.LatestHeader %v\n", hc.LatestHeader)
 	}
 
 	var err2 error
@@ -198,6 +191,7 @@ func (hc *LatestHeaderChain) ReceiveNewHeader(h *types.Header, lastCommit *types
 				Logger.log.Errorf("[ReceiveNewHeader] Case 1 new confirmed header %v\n", h.Height)
 				hc.UnconfirmedHeaders, err2 = appendHeaderToUnconfirmedHeaders(h, hc.UnconfirmedHeaders)
 				if err2 != nil {
+					Logger.log.Errorf("[ReceiveNewHeader] Error when append header to unconfirmed headers %v\n", err2)
 					return hc, false, NewBNBRelayingError(InvalidNewHeaderErr, err2)
 				}
 				return hc, true, nil
@@ -210,6 +204,7 @@ func (hc *LatestHeaderChain) ReceiveNewHeader(h *types.Header, lastCommit *types
 
 	// case2 : h is the next block header of one of block headers in UnconfirmedHeaders
 	if len(hc.UnconfirmedHeaders) > 0 {
+		Logger.log.Errorf("33333")
 		for _, uh := range hc.UnconfirmedHeaders {
 			if bytes.Equal(h.LastBlockID.Hash.Bytes(), uh.Hash())  && h.Height == uh.Height + 1 {
 				// create new signed header and verify

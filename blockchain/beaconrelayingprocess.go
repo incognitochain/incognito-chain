@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/relaying/bnb"
 	"github.com/tendermint/tendermint/types"
 	"sort"
 	"strconv"
@@ -130,6 +131,28 @@ func (blockchain *BlockChain) processRelayingHeaderInst(
 		relayingState.BNBHeaderChain.UnconfirmedHeaders = append(relayingState.BNBHeaderChain.UnconfirmedHeaders, header.Header)
 
 	} else if reqStatus == common.RelayingHeaderConfirmedAcceptedChainStatus {
+		// check newLatestBNBHeader is genesis header or not
+		genesisHeaderHeight := int64(0)
+		if blockchain.config.ChainParams.BNBRelayingHeaderChainID == TestnetBNBChainID {
+			genesisHeaderHeight = bnb.TestnetGenesisBlockHeight
+		} else if blockchain.config.ChainParams.BNBRelayingHeaderChainID == MainnetBNBChainID {
+			genesisHeaderHeight = bnb.MainnetGenesisBlockHeight
+		}
+
+		if header.Header.Height == genesisHeaderHeight {
+			relayingState.BNBHeaderChain.LatestHeader = header.Header
+
+			// store new confirmed header into db
+			newConfirmedheader := relayingState.BNBHeaderChain.LatestHeader
+			newConfirmedheaderBytes, _ := json.Marshal(newConfirmedheader)
+
+			err := db.StoreRelayingBNBHeaderChain(uint64(newConfirmedheader.Height), newConfirmedheaderBytes)
+			if err != nil {
+				Logger.log.Errorf("ERROR: an error occured while storing new confirmed header: %+v", err)
+			}
+			return nil
+		}
+
 		// get new latest header
 		blockIDNewLatestHeader := header.Header.LastBlockID
 		for _, header := range relayingState.BNBHeaderChain.UnconfirmedHeaders {
