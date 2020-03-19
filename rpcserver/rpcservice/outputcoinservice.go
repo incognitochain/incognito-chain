@@ -31,17 +31,17 @@ func (coinService CoinService) ListUnspentOutputCoinsByKey(listKeyParams []inter
 	for _, keyParam := range listKeyParams {
 		keys, ok := keyParam.(map[string]interface{})
 		if !ok {
-			return nil, NewRPCError(ListUnspentOutputCoinsByKeyError, fmt.Errorf("Invalid Params %+v", keyParam))
+			return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Params %+v", keyParam))
 		}
 		// get keyset only contain private key by deserializing
 		privateKeyStr, ok := keys["PrivateKey"].(string)
 		if !ok {
-			return nil, NewRPCError(ListUnspentOutputCoinsByKeyError, errors.New("private key is invalid"))
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("private key is invalid"))
 		}
 		keyWallet, err := wallet.Base58CheckDeserialize(privateKeyStr)
 		if err != nil || keyWallet.KeySet.PrivateKey == nil {
 			Logger.log.Error("Check Deserialize err", err)
-			return nil, NewRPCError(ListUnspentOutputCoinsByKeyError, fmt.Errorf("Private key is invalid, error %+v", err))
+			return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Private key is invalid, error %+v", err))
 		}
 		keySetTmp, shardID, err := GetKeySetFromPrivateKey(keyWallet.KeySet.PrivateKey)
 		if err != nil {
