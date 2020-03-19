@@ -761,10 +761,10 @@ func (blockchain *BlockChain) handlePortalInsts(
 		actions := portalLiquidationCustodianDepositActionByShardID[shardID]
 		for _, action := range actions {
 			contentStr := action[1]
-			newInst, err := blockchain.buildInstructionsForRedeemLiquidateExchangeRates(
+			newInst, err := blockchain.buildInstructionsForLiquidationCustodianDeposit(
 				contentStr,
 				shardID,
-				metadata.PortalRedeemLiquidateExchangeRatesMeta,
+				metadata.PortalLiquidationCustodianDepositMeta,
 				currentPortalState,
 				beaconHeight,
 			)

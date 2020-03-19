@@ -224,6 +224,7 @@ func (httpServer *HttpServer) handleGetPortalState(params interface{}, closeChan
 		WaitingRedeemRequests  map[string]*lvdb.RedeemRequest      `json:"WaitingRedeemRequests"`
 		CustodianPool          map[string]*lvdb.CustodianState     `json:"CustodianPool"`
 		FinalExchangeRates     map[string]*lvdb.FinalExchangeRates `json:"FinalExchangeRates"`
+		LiquidateExchangeRates map[string]*lvdb.LiquidateExchangeRates `json:"LiquidateExchangeRates"`
 		BeaconTimeStamp        int64                               `json:"BeaconTimeStamp"`
 	}
 
@@ -233,6 +234,7 @@ func (httpServer *HttpServer) handleGetPortalState(params interface{}, closeChan
 		WaitingRedeemRequests:  portalState.WaitingRedeemRequests,
 		CustodianPool:          portalState.CustodianPoolState,
 		FinalExchangeRates:     portalState.FinalExchangeRates,
+		LiquidateExchangeRates: portalState.LiquidateExchangeRates,
 	}
 	return result, nil
 }
