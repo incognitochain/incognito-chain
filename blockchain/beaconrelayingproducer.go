@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/relaying/bnb"
 	"strconv"
 )
 
@@ -123,7 +124,7 @@ func (blockchain *BlockChain) buildInstructionsForBNBHeaderRelaying(
 	var err2 error
 	relayingHeaderChain.BNBHeaderChain, isValid, err2 = relayingHeaderChain.BNBHeaderChain.ReceiveNewHeader(
 		newHeader.Header, newHeader.LastCommit, blockchain.config.ChainParams.BNBRelayingHeaderChainID)
-	if err2 != nil || !isValid {
+	if err2.(*bnb.BNBRelayingError) != nil || !isValid {
 		Logger.log.Errorf("Error - [buildInstructionsForBNBHeaderRelaying]: Verify new header failed. %v\n", err2)
 		inst := buildBNBHeaderRelayingInst(
 			actionData.Meta.IncogAddressStr,
@@ -137,19 +138,39 @@ func (blockchain *BlockChain) buildInstructionsForBNBHeaderRelaying(
 		return [][]string{inst}, nil
 	}
 
-	// check newHeader is a header contain last commit for one of the header in unconfirmed header list or not
+	// check newHeader is a header contain last commit for one of the header in unconfirmed header list or not\
+	// check newLatestBNBHeader is genesis header or not
+	genesisHeaderHeight := int64(0)
+	genesisHeaderStr := ""
+	if blockchain.config.ChainParams.BNBRelayingHeaderChainID == TestnetBNBChainID {
+		genesisHeaderHeight = bnb.TestnetGenesisBlockHeight
+		genesisHeaderStr = bnb.TestnetGenesisHeaderStr
+	} else if blockchain.config.ChainParams.BNBRelayingHeaderChainID == MainnetBNBChainID {
+		genesisHeaderHeight = bnb.MainnetGenesisBlockHeight
+		genesisHeaderStr = bnb.MainnetGenesisHeaderStr
+	}
 	newLatestBNBHeader := relayingHeaderChain.BNBHeaderChain.LatestHeader
-	if newLatestBNBHeader != nil && newLatestBNBHeader.Height == 1 && latestBNBHeader == nil {
-		inst := buildBNBHeaderRelayingInst(
+	if newLatestBNBHeader != nil && newLatestBNBHeader.Height == genesisHeaderHeight && latestBNBHeader == nil {
+		inst1 := buildBNBHeaderRelayingInst(
+			actionData.Meta.IncogAddressStr,
+			genesisHeaderStr,
+			uint64(genesisHeaderHeight),
+			actionData.Meta.Type,
+			shardID,
+			actionData.TxReqID,
+			common.RelayingHeaderConfirmedAcceptedChainStatus,
+		)
+
+		inst2 := buildBNBHeaderRelayingInst(
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.Header,
 			actionData.Meta.BlockHeight,
 			actionData.Meta.Type,
 			shardID,
 			actionData.TxReqID,
-			common.RelayingHeaderConfirmedAcceptedChainStatus,
+			common.RelayingHeaderUnconfirmedAcceptedChainStatus,
 		)
-		return [][]string{inst}, nil
+		return [][]string{inst1, inst2}, nil
 	}
 
 	if newLatestBNBHeader != nil && latestBNBHeader != nil {

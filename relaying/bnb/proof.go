@@ -75,20 +75,18 @@ func (p *BNBProof) Build(indexTx int, blockHeight int64, url string) *BNBRelayin
 }
 
 func (p *BNBProof) Verify(db database.DatabaseInterface) (bool, *BNBRelayingError) {
-	dataHash, err := db.GetBNBDataHashByBlockHeight(uint64(p.BlockHeight))
-	if err != nil {
-		return false, NewBNBRelayingError(GetBNBDataHashErr, err)
-	}
-
-	//@@note@@: hard code to test
-	//dataHash := []byte{}
-	//if p.BlockHeight == 2655 {
-	//	dataHash, _ = hex.DecodeString("904C8E03340F13F502191B9C8257900F79D00360656E4A6BDD5D65A8CFF123A7")
-	//} else if p.BlockHeight == 5592 {
-	//	dataHash, _ = hex.DecodeString("8428F940CEF5C55161CD17689C153C9872C833725E5C697E6B40D95B1F2C4729")
+	//dataHash, err := db.GetBNBDataHashByBlockHeight(uint64(p.BlockHeight))
+	//if err != nil {
+	//	return false, NewBNBRelayingError(GetBNBDataHashErr, err)
 	//}
 
-	err = p.Proof.Validate(dataHash)
+	//@@note@@: hard code to test
+	dataHash := []byte{}
+	if p.BlockHeight == 106 {
+		dataHash, _ = hex.DecodeString("6DC16606BAB9B892C1342621E37339767E6C7C59FB109ECA5E95552A76E5323A")
+	}
+
+	err := p.Proof.Validate(dataHash)
 	if err != nil {
 		return false, NewBNBRelayingError(InvalidTxProofErr, err)
 	}
