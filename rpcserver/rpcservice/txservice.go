@@ -410,14 +410,14 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(txB58Check)
 	if err != nil {
 		Logger.log.Errorf("Send Raw Transaction Error: %+v", err)
-		return nil, nil, byte(0), NewRPCError(SendRawTransactionError, err)
+		return nil, nil, byte(0), NewRPCError(Base58ChedkDataOfTxInvalid, err)
 	}
 	// Unmarshal from json data to object tx
 	var tx transaction.Tx
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
 		Logger.log.Errorf("Send Raw Transaction Error: %+v", err)
-		return nil, nil, byte(0), NewRPCError(SendRawTransactionError, err)
+		return nil, nil, byte(0), NewRPCError(JsonDataOfTxInvalid, err)
 	}
 
 	beaconHeigh := int64(-1)
@@ -479,7 +479,7 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
 	if err != nil {
 		Logger.log.Errorf("Send Raw Transaction Error, Create tx message for broadcasting: %+v", err)
-		return nil, nil, byte(0), NewRPCError(SendRawTransactionError, err)
+		return nil, nil, byte(0), NewRPCError(SendTxDataError, err)
 	}
 	txMsg.(*wire.MessageTx).Transaction = &tx
 	return txMsg, hash, tx.PubKeyLastByteSender, nil
