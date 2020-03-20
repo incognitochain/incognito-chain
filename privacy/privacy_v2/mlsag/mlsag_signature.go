@@ -7,21 +7,21 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 )
 
-type Signature struct {
+type MlsagSig struct {
 	c         operation.Scalar     // 32 bytes
 	keyImages []*operation.Point    // 32 * size bytes
 	r         [][]*operation.Scalar // 32 * size_1 * size_2 bytes
 }
 
-func (this *Signature) ToHex() (string, error) {
+func (this *MlsagSig) ToHex() (string, error) {
 	b, err := this.ToBytes()
 	if err != nil {
-		return "", errors.New("Error in MLSAG Signature ToHex: the signature is broken (size of keyImages and r differ")
+		return "", errors.New("Error in MLSAG MlsagSig ToHex: the signature is broken (size of keyImages and r differ")
 	}
 	return hex.EncodeToString(b), nil
 }
 
-func (this *Signature) ToBytes() ([]byte, error) {
+func (this *MlsagSig) ToBytes() ([]byte, error) {
 	var b []byte
 
 	// Number of private keys should be up to 2^8 only (1 byte)
@@ -34,7 +34,7 @@ func (this *Signature) ToBytes() ([]byte, error) {
 	}
 	for i := 0; i < len(this.r); i += 1 {
 		if int(length) != len(this.r[i]) {
-			return []byte{}, errors.New("Error in MLSAG Signature ToBytes: the signature is broken (size of keyImages and r differ)")
+			return []byte{}, errors.New("Error in MLSAG MlsagSig ToBytes: the signature is broken (size of keyImages and r differ)")
 		}
 		for j := 0; j < int(length); j += 1 {
 			b = append(b, this.r[i][j].ToBytesS()...)
@@ -43,18 +43,18 @@ func (this *Signature) ToBytes() ([]byte, error) {
 	return b, nil
 }
 
-func (this *Signature) FromHex(s string) (*Signature, error) {
+func (this *MlsagSig) FromHex(s string) (*MlsagSig, error) {
 	b, err := hex.DecodeString(s)
 	if err != nil {
-		return nil, errors.New("Error in MLSAG Signature FromHex: the signature hex is broken")
+		return nil, errors.New("Error in MLSAG MlsagSig FromHex: the signature hex is broken")
 	}
 	return this.FromBytes(b)
 }
 
 // Get from byte and store to signature
-func (this *Signature) FromBytes(b []byte) (*Signature, error) {
+func (this *MlsagSig) FromBytes(b []byte) (*MlsagSig, error) {
 	if len(b)%HashSize != 1 {
-		return nil, errors.New("Error in MLSAG Signature FromBytes: the signature byte is broken (missing byte)")
+		return nil, errors.New("Error in MLSAG MlsagSig FromBytes: the signature byte is broken (missing byte)")
 	}
 
 	// Get size at index 0
@@ -63,11 +63,11 @@ func (this *Signature) FromBytes(b []byte) (*Signature, error) {
 	n := lenArr / HashSize / m
 
 	if len(b) != 1+(1+m+m*n)*HashSize {
-		return nil, errors.New("Error in MLSAG Signature FromBytes: the signature byte is broken (some scalar is missing)")
+		return nil, errors.New("Error in MLSAG MlsagSig FromBytes: the signature byte is broken (some scalar is missing)")
 	}
 
 	if this == nil {
-		this = new(Signature)
+		this = new(MlsagSig)
 	}
 
 	// Get c at index [1; 32]
@@ -79,7 +79,7 @@ func (this *Signature) FromBytes(b []byte) (*Signature, error) {
 	for i := 0; i < m; i += 1 {
 		val, err := new(operation.Point).FromBytesS(b[index : index+HashSize])
 		if err != nil {
-			return nil, errors.New("Error in MLSAG Signature FromBytes: the signature byte is broken (keyImages is broken)")
+			return nil, errors.New("Error in MLSAG MlsagSig FromBytes: the signature byte is broken (keyImages is broken)")
 		}
 		this.keyImages[i] = val
 		index += HashSize

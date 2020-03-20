@@ -73,7 +73,7 @@ func TxFullWorkFlow() {
 		fmt.Println(err)
 		return
 	}
-	signer := mlsag.NewMlsagWithDefinedRing(privateKeys, ring, pi)
+	signer := mlsag.NewMlsag(privateKeys, ring, pi)
 	message := "Some f******* message that can be changed with the transaction message :D"
 	signature, err_sig := signer.Sign(message)
 	if err_sig != nil {
@@ -154,7 +154,7 @@ func TestFailTxFullWorkflow(t *testing.T) {
 	ring, privateKeys, pi, err := ringctfull.CreateRandomRing()
 	assert.Equal(t, nil, err, "Should not have any error in correct workflow txfull")
 
-	signer := mlsag.NewMlsagWithDefinedRing(privateKeys, ring, pi)
+	signer := mlsag.NewMlsag(privateKeys, ring, pi)
 	signature, err_sig := signer.Sign(message)
 
 	assert.Equal(t, nil, err_sig, "Should not have any error in correct workflow txfull")
@@ -193,7 +193,7 @@ func TestCorrectTxFullWorkflow(t *testing.T) {
 	ring, privateKeys, pi, err := ringctfull.CreateRandomRing()
 	assert.Equal(t, nil, err, "Should not have any error in correct workflow txfull")
 
-	signer := mlsag.NewMlsagWithDefinedRing(privateKeys, ring, pi)
+	signer := mlsag.NewMlsag(privateKeys, ring, pi)
 	signature, err_sig := signer.Sign(message)
 
 	assert.Equal(t, nil, err_sig, "Should not have any error in correct workflow txfull")

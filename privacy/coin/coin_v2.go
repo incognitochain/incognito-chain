@@ -16,7 +16,7 @@ type CoinV2 struct {
 	mask       *operation.Scalar
 	amount     *operation.Scalar
 	txRandom   *operation.Point
-	publicKey  *operation.Point // K^o = H_n(r * K_B^v )G + K_B^s
+	publicKey  *operation.Point // R^o = H_n(r * K_B^v )G + K_B^s
 	commitment *operation.Point
 	index      uint8
 	info       []byte //256 bytes

@@ -12,20 +12,36 @@ import (
 
 var CurveOrder *operation.Scalar = new(operation.Scalar).SetKeyUnsafe(&C25519.L)
 
+type Ring struct {
+	keys [][]*operation.Point
+}
+
+func NewRing(keys [][]*operation.Point) *Ring {
+	return &Ring{keys}
+}
+
 type Mlsag struct {
-	K           *Ring
+	R           *Ring
 	pi          int
 	keyImages   []*operation.Point
 	privateKeys []*operation.Scalar
 }
 
+func NewMlsag(privateKeys []*operation.Scalar, K *Ring, pi int)  *Mlsag {
+	return &Mlsag{
+		K,
+		pi,
+		parseKeyImages(privateKeys),
+		privateKeys,
+	}
+}
 // Parse public key from private key
 func parsePublicKey(privateKey *operation.Scalar) *operation.Point {
 	return new(operation.Point).ScalarMultBase(privateKey)
 }
 
 func parseKeyImages(privateKeys []*operation.Scalar) []*operation.Point {
-	var m int = len(privateKeys)
+	m  := len(privateKeys)
 
 	result := make([]*operation.Point, m)
 	for i := 0; i < m; i += 1 {
@@ -38,7 +54,7 @@ func parseKeyImages(privateKeys []*operation.Scalar) []*operation.Point {
 
 func (this *Mlsag) createRandomChallenges() (alpha []*operation.Scalar, r [][]*operation.Scalar) {
 	m := len(this.privateKeys)
-	n := len(this.K.keys)
+	n := len(this.R.keys)
 
 	alpha = make([]*operation.Scalar, m)
 	for i := 0; i < m; i += 1 {
@@ -59,8 +75,8 @@ func (this *Mlsag) createRandomChallenges() (alpha []*operation.Scalar, r [][]*o
 
 func calculateFirstC(digest [sha256.Size]byte, alpha []*operation.Scalar, K []*operation.Point) (*operation.Scalar, error) {
 	if len(alpha) != len(K) {
-		Logger.log.Error("Calculating first C must have length of alpha be the same with length of ring K")
-		return nil, errors.New("Error in MLSAG: Calculating first C must have length of alpha be the same with length of ring K")
+		Logger.log.Error("Calculating first C must have length of alpha be the same with length of ring R")
+		return nil, errors.New("Error in MLSAG: Calculating first C must have length of alpha be the same with length of ring R")
 	}
 	var b []byte
 	b = append(b, digest[:]...)
@@ -78,8 +94,8 @@ func calculateFirstC(digest [sha256.Size]byte, alpha []*operation.Scalar, K []*o
 
 func calculateNextC(digest [sha256.Size]byte, r []*operation.Scalar, c *operation.Scalar, K []*operation.Point, keyImages []*operation.Point) (*operation.Scalar, error) {
 	if len(r) != len(K) || len(r) != len(keyImages) {
-		Logger.log.Error("Calculating next C must have length of r be the same with length of ring K and same with length of keyImages")
-		return nil, errors.New("Error in MLSAG: Calculating next C must have length of r be the same with length of ring K and same with length of keyImages")
+		Logger.log.Error("Calculating next C must have length of r be the same with length of ring R and same with length of keyImages")
+		return nil, errors.New("Error in MLSAG: Calculating next C must have length of r be the same with length of ring R and same with length of keyImages")
 	}
 	var b []byte
 	b = append(b, digest[:]...)
@@ -87,12 +103,12 @@ func calculateNextC(digest [sha256.Size]byte, r []*operation.Scalar, c *operatio
 	// Below is the mathematics within the Monero paper:
 	// If you are reviewing my code, please refer to paper
 	// rG: r*G
-	// cK: c*K
+	// cK: c*R
 	// rG_cK: rG + cK
 	//
 	// HK: H_p(K_i)
 	// rHK: r_i*H_p(K_i)
-	// cKI: c*K~ (KI as keyImage)
+	// cKI: c*R~ (KI as keyImage)
 	// rHK_cKI: rHK + cKI
 	for i := 0; i < len(K); i += 1 {
 		rG := new(operation.Point).ScalarMultBase(r[i])
@@ -112,13 +128,13 @@ func calculateNextC(digest [sha256.Size]byte, r []*operation.Scalar, c *operatio
 
 func (this *Mlsag) calculateC(digest [HashSize]byte, alpha []*operation.Scalar, r [][]*operation.Scalar) ([]*operation.Scalar, error) {
 	m := len(this.privateKeys)
-	n := len(this.K.keys)
+	n := len(this.R.keys)
 
 	c := make([]*operation.Scalar, n)
 	firstC, err := calculateFirstC(
 		digest,
 		alpha,
-		this.K.keys[this.pi],
+		this.R.keys[this.pi],
 	)
 	if err != nil {
 		return nil, err
@@ -130,7 +146,7 @@ func (this *Mlsag) calculateC(digest [HashSize]byte, alpha []*operation.Scalar, 
 		nextC, err := calculateNextC(
 			digest,
 			r[i], c[i],
-			(*this.K).keys[i],
+			(*this.R).keys[i],
 			this.keyImages,
 		)
 		if err != nil {
@@ -149,15 +165,6 @@ func (this *Mlsag) calculateC(digest [HashSize]byte, alpha []*operation.Scalar, 
 	return c, nil
 }
 
-func NewMlsagWithDefinedRing(privateKeys []*operation.Scalar, K *Ring, pi int) (mlsag *Mlsag) {
-	return &Mlsag{
-		K,
-		pi,
-		parseKeyImages(privateKeys),
-		privateKeys,
-	}
-}
-
 // check l*KI = 0 by checking KI is a valid point
 func verifyKeyImages(keyImages []*operation.Point) bool {
 	var check bool = true
@@ -168,15 +175,15 @@ func verifyKeyImages(keyImages []*operation.Point) bool {
 	return check
 }
 
-func verifyRing(sig *Signature, K *Ring, message string) (bool, error) {
-	digest := common.Keccak256([]byte(message))
+func verifyRing(sig *MlsagSig, R *Ring, message []byte) (bool, error) {
+	digest := common.Keccak256(message)
 	c := sig.c
 	cBefore := sig.c
 	for i := 0; i < len(sig.r); i += 1 {
 		nextC, err := calculateNextC(
 			digest,
 			sig.r[i], &c,
-			K.keys[i],
+			R.keys[i],
 			sig.keyImages,
 		)
 		if err != nil {
@@ -187,21 +194,21 @@ func verifyRing(sig *Signature, K *Ring, message string) (bool, error) {
 	return c == cBefore, nil
 }
 
-func Verify(sig *Signature, K *Ring, message string) (bool, error) {
+func Verify(sig *MlsagSig, K *Ring, message []byte) (bool, error) {
 	b1 := verifyKeyImages(sig.keyImages)
 	b2, err := verifyRing(sig, K, message)
 	return (b1 && b2), err
 }
 
-func (this *Mlsag) Sign(message string) (*Signature, error) {
-	digest := common.Keccak256([]byte(message))
+func (this *Mlsag) Sign(message []byte) (*MlsagSig, error) {
+	digest := common.Keccak256(message)
 	alpha, r := this.createRandomChallenges()    // step 2 in paper
 	c, err := this.calculateC(digest, alpha, r) // step 3 and 4 in paper
 
 	if err != nil {
 		return nil, err
 	}
-	return &Signature{
+	return &MlsagSig{
 		*c[0], this.keyImages, r,
 	}, nil
 }

@@ -10,8 +10,8 @@ import (
 )
 
 // Create output of coins and sum of blind values for later usage
-func CreateOutputs(publicKeys []*address.PublicAddress, moneys []uint64) ([]*coin.Coin_v2, *operation.Scalar, error) {
-	result := make([]*coin.Coin_v2, len(publicKeys))
+func CreateOutputs(publicKeys []*address.PublicAddress, moneys []uint64) ([]*coin.CoinV2, *operation.Scalar, error) {
+	result := make([]*coin.CoinV2, len(publicKeys))
 	if len(publicKeys) > privacy_util.MaxOutputCoin {
 		return nil, nil, errors.New("Error in tx_full CreateOutputs: Cannot create too much output (maximum is 256)")
 	}
