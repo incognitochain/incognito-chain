@@ -327,7 +327,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		//save success porting request
 		keyPortingRequestNewState := lvdb.NewPortingRequestKey(portingRequestContent.UniqueRegisterId)
 		Logger.log.Infof("Porting request, save porting request with key %v", keyPortingRequestNewState)
-		err = db.StorePortingRequestItem([]byte(keyPortingRequestNewState), newPortingRequestStateWaiting)
+		err = db.StorePortingRequestItem([]byte(keyPortingRequestNewState), newPortingRequestStateAccept)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store porting request item: %+v", err)
 			return nil
