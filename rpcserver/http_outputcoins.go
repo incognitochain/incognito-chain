@@ -114,7 +114,7 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 		tokenID, err1 = common.Hash{}.NewHashFromStr(tokenIdParam)
 		if err1 != nil {
 			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err1)
-			return nil, rpcservice.NewRPCError(rpcservice.ListCustomTokenNotFoundError, err1)
+			return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err1)
 		}
 	}
 	result, err1 := httpServer.outputCoinService.ListOutputCoinsByKey(listKeyParams, *tokenID)

@@ -1,17 +1,22 @@
 package mempool
 
 import (
-	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
-	"path/filepath"
+	"io/ioutil"
+	"log"
+	"os"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/incdb"
+	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 )
 
 var (
-	dbCrossShard          database.DatabaseInterface
+	dbCrossShard          incdb.Database
 	bestShardStateShard1  *blockchain.ShardBestState
 	crossShardPoolMapTest = make(map[byte]*CrossShardPool)
 	crossShardBlock2      = &blockchain.CrossShardBlock{
@@ -101,23 +106,28 @@ var _ = func() (_ struct{}) {
 		pool.isTest = true
 		crossShardPoolMapTest[shardID] = pool
 	}
-	dbCrossShard, err = database.Open("leveldb", filepath.Join("./", "./testdatabase/crossshard"))
+	dbPath, err := ioutil.TempDir(os.TempDir(), "test_")
+	if err != nil {
+		log.Fatalf("failed to create temp dir: %+v", err)
+	}
+	log.Println(dbPath)
+	dbCrossShard, err = incdb.Open("leveldb", dbPath)
 	if err != nil {
 		panic("Could not open db connection")
 	}
-	err = dbCrossShard.StoreCrossShardNextHeight(byte(0), byte(1), 1, 3)
+	err = rawdbv2.StoreCrossShardNextHeight(dbCrossShard, byte(0), byte(1), 1, 3)
 	if err != nil {
 		panic("Could not store in db")
 	}
-	err = dbCrossShard.StoreCrossShardNextHeight(byte(0), byte(1), 3, 4)
+	err = rawdbv2.StoreCrossShardNextHeight(dbCrossShard, byte(0), byte(1), 3, 4)
 	if err != nil {
 		panic("Could not store in db")
 	}
-	err = dbCrossShard.StoreCrossShardNextHeight(byte(0), byte(1), 4, 5)
+	err = rawdbv2.StoreCrossShardNextHeight(dbCrossShard, byte(0), byte(1), 4, 5)
 	if err != nil {
 		panic("Could not store in db")
 	}
-	err = dbCrossShard.StoreCrossShardNextHeight(byte(0), byte(1), 5, 7)
+	err = rawdbv2.StoreCrossShardNextHeight(dbCrossShard, byte(0), byte(1), 5, 7)
 	if err != nil {
 		panic("Could not store in db")
 	}
@@ -140,13 +150,13 @@ func ResetCrossShardPoolTest() {
 		crossShardPoolMapTest[shardID] = pool
 	}
 }
-func TestCrossShardPoolv2InitCrossShardPool(t *testing.T) {
-	InitCrossShardPool(make(map[byte]blockchain.CrossShardPool), dbCrossShard)
+func TestCrossShardPool_InitCrossShardPool(t *testing.T) {
+	InitCrossShardPool(make(map[byte]blockchain.CrossShardPool), dbCrossShard, &blockchain.BlockChain{})
 	if len(crossShardPoolMap) != 255 {
 		t.Fatal("Fail to init")
 	}
 }
-func TestCrossShardPoolv2GetNextCrossShardHeight(t *testing.T) {
+func TestCrossShardPool_GetNextCrossShardHeight(t *testing.T) {
 	ResetCrossShardPoolTest()
 	shardID := byte(0)
 	toShardID := byte(1)
@@ -176,7 +186,7 @@ func TestCrossShardPoolv2GetNextCrossShardHeight(t *testing.T) {
 		t.Fatal("Expect 0 but get ", nextHeight)
 	}
 }
-func TestCrossShardPoolv2RemoveBlockByHeight(t *testing.T) {
+func TestCrossShardPool_RemoveBlockByHeight(t *testing.T) {
 	ResetCrossShardPoolTest()
 	removeSinceBlockHeight := make(map[byte]uint64)
 	fromShardID := byte(0)
@@ -206,7 +216,7 @@ func TestCrossShardPoolv2RemoveBlockByHeight(t *testing.T) {
 		t.Fatalf("expect valid pool has block 5 but get %+v", crossShardPoolMapTest[toShardID].validPool[fromShardID][0].Header.Height)
 	}
 }
-func TestCrossShardPoolv2UpdatePool(t *testing.T) {
+func TestCrossShardPool_UpdatePool(t *testing.T) {
 	ResetCrossShardPoolTest()
 	fromShardID := byte(0)
 	toShardID := byte(1)
@@ -266,7 +276,7 @@ func TestCrossShardPoolv2UpdatePool(t *testing.T) {
 		}
 	}
 }
-func TestCrossShardPoolv2AddCrossShardBlock(t *testing.T) {
+func TestCrossShardPool_AddCrossShardBlock(t *testing.T) {
 	ResetCrossShardPoolTest()
 	fromShardID := byte(0)
 	toShardID := byte(1)

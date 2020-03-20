@@ -46,7 +46,7 @@ func (walletService WalletService) ListAccounts() (jsonresult.ListAccounts, *RPC
 }
 
 func (walletService WalletService) GetAccount(paymentAddrStr string) (string, error) {
-	if paymentAddrStr == ""{
+	if paymentAddrStr == "" {
 		return "", NewRPCError(RPCInvalidParamsError, errors.New("payment address is invalid"))
 	}
 
@@ -137,7 +137,7 @@ func (walletService WalletService) GetBalanceByPrivateKey(privateKey string) (ui
 
 func (walletService WalletService) GetBalanceByPaymentAddress(paymentAddress string) (uint64, *RPCError) {
 	keySet, shardIDSender, err := GetKeySetFromPaymentAddressParam(paymentAddress)
-	if err != nil{
+	if err != nil {
 		return uint64(0), NewRPCError(RPCInvalidParamsError, errors.New("payment address is invalid"))
 	}
 

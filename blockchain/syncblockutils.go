@@ -2,9 +2,10 @@ package blockchain
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/incdb"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
 	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/patrickmn/go-cache"
 )
@@ -183,7 +184,7 @@ func GetMissingBlockHashesFromPeersState(
 }
 
 func GetMissingCrossShardBlock(
-	db database.DatabaseInterface,
+	db incdb.Database,
 	bestCrossShardState map[byte]map[byte]uint64,
 	latestValidHeight map[byte]uint64,
 	userShardID byte,
@@ -193,7 +194,7 @@ func GetMissingCrossShardBlock(
 		missingBlock := []uint64{}
 		curHeight := start
 		for {
-			nextBlk, err := db.FetchCrossShardNextHeight(fromShardID, userShardID, curHeight)
+			nextBlk, err := rawdbv2.GetCrossShardNextHeight(db, fromShardID, userShardID, curHeight)
 			if err != nil {
 				Logger.log.Errorf("Can not fetch Cross Shard Next Height formshard %v toShard %v currentHeight %v", fromShardID, userShardID, curHeight)
 				break

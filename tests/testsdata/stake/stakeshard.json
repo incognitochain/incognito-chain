@@ -5,17 +5,17 @@
       "command": "createandsendstakingtransaction",
       "context": false,
       "params": [
-        "112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe",
+        "112t8rq19Uu7UGbTApZzZwCAvVszAgRNAzHzr3p8Cu75jPH3h5AUtRXMKiqF3hw8NbEfeLcjtbpeUvJfw4tGj7pbqwDYngc8wB13Gf77o33f",
         {
-          "1NHp2EKw7ALdXUzBfoRJvKrBBM9nkejyDcHVPvUjDcWRyG22dHHyiBKQGL1c":1750000000000
+          "15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs":1750000000000
         },
         2,
         0,
         {
           "StakingType": 63,
-          "CandidatePaymentAddress": "1Uv4APZadR2kbpm4Uazwng2hwfqb2AtuV6Y6QVcypzQurzwE9YvUzTA8TWVndLJxtuAytWPey57YiU97abmSJ7nnPxnDdsjGcXUAiiE6t",
-          "PrivateSeed": "12WQy3WYgtdp1G52hcdpv9zhW2wRg9DnzcM5pZM1cFhNo3VA6pB",
-          "RewardReceiverPaymentAddress": "1Uv4APZadR2kbpm4Uazwng2hwfqb2AtuV6Y6QVcypzQurzwE9YvUzTA8TWVndLJxtuAytWPey57YiU97abmSJ7nnPxnDdsjGcXUAiiE6t",
+          "CandidatePaymentAddress": "12S42qYc9pzsfWoxPZ21sVihEHJxYfNzEp1SXNnxvr7CGYMHNWX12ZaQkzcwvTYKAnhiVsDWwSqz5jFo6xuwzXZmz7QX1TnJaWnwEyX",
+          "PrivateSeed": "129pZpqYqYAA8wTAeDKuVwRthoBjNLUFm8FnLwUTkXddUqwShN9",
+          "RewardReceiverPaymentAddress": "12S42qYc9pzsfWoxPZ21sVihEHJxYfNzEp1SXNnxvr7CGYMHNWX12ZaQkzcwvTYKAnhiVsDWwSqz5jFo6xuwzXZmz7QX1TnJaWnwEyX",
           "AutoReStaking": true
         }
       ]
@@ -47,7 +47,7 @@
     "input": {
       "command": "subcribeshardcandidatebypublickey",
       "context": false,
-      "params": ["121VhftSAygpEJZ6i9jGk9a9efXH5dvhFqk7ihKSHxKV7kp7NrmrXxQjke43KxiTRyzRyQBCvPL57Jcbj6f1DHtzAsZwjGQR3bcQtiL6uJf1ZJu4WFNovDqGUASrA9XqG7GnGsKzESCMbUuyxZfuUeJR7NofNxHEUZXo65nuFyyFqPsmZq6NZtdQv1dAmbzQRzD4MkToiQuDquwVFyoHKgQ4DCKZh9MUmbAEVyqEfrAb9KVK4ckakU3WufA1UAXP3sZgQ7wSw5gNDLKVhXgL1JgpR2eGju8XJzZpBSJtYq638ALEqxmYTx1idBTcuw9xyGPFZvTF5oq5egF4ZEEBwLXBwNU2JYnPGfBVCbNEbZsHrbGDghuh3KxyBtveUca7kZkPgX9PwNfu2gsdFY8TN9ZhAdhBaJQpFugsUnhfwaHMywAn"],
+      "params": ["121VhftSAygpEJZ6i9jGk4fj81FpWVTwe3wWDzRZjzdjaQXk9QtGbwNWNwjt3p8zi3p2LRug8m78TDeq4LCAiQT2shDLSrK9sSHBX4DrNgnqsRbkEazrnWapvs7F5CMTPj5kT859WHJV26Wm1P8hwHXpxLwbeMM9n2kJXznTgRJGzdBZ4iY2CTF28s7ADyknqcBJ1RBfEUT9GVeixKC3AKDAna2QqQfdcdFiJaps5PixjJznk7CcTgcYgfPcnysdUgRuygAcbDikvw35KF9jzmeTZWZtbXhbXePhyPP8MuaGwDY75hCiDn1iDEvNHBGMqKJtENq8mfkQTW9GrGu2kkDBmNsmDVannjsbxUuoHU9MT5hYftTcsvyVi4s2S73JbGDNnWD7e3cVwXF8rgYGMFNyYBm3qWB3jobBkGwTPNh5Tpb7"],
       "type": "ws",
       "wait": 10000
     },
@@ -61,7 +61,7 @@
     "input": {
       "command": "subcribeshardpendingvalidatorbypublickey",
       "context": false,
-      "params": ["121VhftSAygpEJZ6i9jGk9a9efXH5dvhFqk7ihKSHxKV7kp7NrmrXxQjke43KxiTRyzRyQBCvPL57Jcbj6f1DHtzAsZwjGQR3bcQtiL6uJf1ZJu4WFNovDqGUASrA9XqG7GnGsKzESCMbUuyxZfuUeJR7NofNxHEUZXo65nuFyyFqPsmZq6NZtdQv1dAmbzQRzD4MkToiQuDquwVFyoHKgQ4DCKZh9MUmbAEVyqEfrAb9KVK4ckakU3WufA1UAXP3sZgQ7wSw5gNDLKVhXgL1JgpR2eGju8XJzZpBSJtYq638ALEqxmYTx1idBTcuw9xyGPFZvTF5oq5egF4ZEEBwLXBwNU2JYnPGfBVCbNEbZsHrbGDghuh3KxyBtveUca7kZkPgX9PwNfu2gsdFY8TN9ZhAdhBaJQpFugsUnhfwaHMywAn"],
+      "params": ["121VhftSAygpEJZ6i9jGk4fj81FpWVTwe3wWDzRZjzdjaQXk9QtGbwNWNwjt3p8zi3p2LRug8m78TDeq4LCAiQT2shDLSrK9sSHBX4DrNgnqsRbkEazrnWapvs7F5CMTPj5kT859WHJV26Wm1P8hwHXpxLwbeMM9n2kJXznTgRJGzdBZ4iY2CTF28s7ADyknqcBJ1RBfEUT9GVeixKC3AKDAna2QqQfdcdFiJaps5PixjJznk7CcTgcYgfPcnysdUgRuygAcbDikvw35KF9jzmeTZWZtbXhbXePhyPP8MuaGwDY75hCiDn1iDEvNHBGMqKJtENq8mfkQTW9GrGu2kkDBmNsmDVannjsbxUuoHU9MT5hYftTcsvyVi4s2S73JbGDNnWD7e3cVwXF8rgYGMFNyYBm3qWB3jobBkGwTPNh5Tpb7"],
       "type": "ws",
       "wait": 10000
     },
@@ -75,7 +75,7 @@
     "input": {
       "command": "subcribeshardcommitteebypublickey",
       "context": false,
-      "params": ["121VhftSAygpEJZ6i9jGk9a9efXH5dvhFqk7ihKSHxKV7kp7NrmrXxQjke43KxiTRyzRyQBCvPL57Jcbj6f1DHtzAsZwjGQR3bcQtiL6uJf1ZJu4WFNovDqGUASrA9XqG7GnGsKzESCMbUuyxZfuUeJR7NofNxHEUZXo65nuFyyFqPsmZq6NZtdQv1dAmbzQRzD4MkToiQuDquwVFyoHKgQ4DCKZh9MUmbAEVyqEfrAb9KVK4ckakU3WufA1UAXP3sZgQ7wSw5gNDLKVhXgL1JgpR2eGju8XJzZpBSJtYq638ALEqxmYTx1idBTcuw9xyGPFZvTF5oq5egF4ZEEBwLXBwNU2JYnPGfBVCbNEbZsHrbGDghuh3KxyBtveUca7kZkPgX9PwNfu2gsdFY8TN9ZhAdhBaJQpFugsUnhfwaHMywAn"],
+      "params": ["121VhftSAygpEJZ6i9jGk4fj81FpWVTwe3wWDzRZjzdjaQXk9QtGbwNWNwjt3p8zi3p2LRug8m78TDeq4LCAiQT2shDLSrK9sSHBX4DrNgnqsRbkEazrnWapvs7F5CMTPj5kT859WHJV26Wm1P8hwHXpxLwbeMM9n2kJXznTgRJGzdBZ4iY2CTF28s7ADyknqcBJ1RBfEUT9GVeixKC3AKDAna2QqQfdcdFiJaps5PixjJznk7CcTgcYgfPcnysdUgRuygAcbDikvw35KF9jzmeTZWZtbXhbXePhyPP8MuaGwDY75hCiDn1iDEvNHBGMqKJtENq8mfkQTW9GrGu2kkDBmNsmDVannjsbxUuoHU9MT5hYftTcsvyVi4s2S73JbGDNnWD7e3cVwXF8rgYGMFNyYBm3qWB3jobBkGwTPNh5Tpb7"],
       "type": "ws",
       "wait": 10000
     },

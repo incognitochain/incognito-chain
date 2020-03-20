@@ -6,11 +6,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"reflect"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
@@ -50,9 +50,9 @@ func (bReq BurningRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,
-	db database.DatabaseInterface,
+	db *statedb.StateDB,
 ) (bool, error) {
-	bridgeTokenExisted, err := db.IsBridgeTokenExistedByType(bReq.TokenID, false)
+	bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(bcr.GetBeaconFeatureStateDB(), bReq.TokenID, false)
 	if err != nil {
 		return false, err
 	}
