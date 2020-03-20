@@ -3,11 +3,11 @@ package consensus
 import "github.com/incognitochain/incognito-chain/common"
 
 type consensusLogger struct {
-	log common.Logger
+	Log common.Logger
 }
 
 func (consensusLogger *consensusLogger) Init(inst common.Logger) {
-	consensusLogger.log = inst
+	consensusLogger.Log = inst
 }
 
 // Global instant to use

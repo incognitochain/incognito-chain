@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
-	"github.com/pkg/errors"
-
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"github.com/pkg/errors"
 )
 
 // handleGetBurnProof returns a proof of a tx burning pETH
@@ -53,7 +52,7 @@ func retrieveBurnProof(
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 	// Get block height from txID
-	height, err := httpServer.databaseService.GetBurningConfirm(*txID)
+	height, err := httpServer.blockService.GetBurningConfirm(*txID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, fmt.Errorf("proof of tx not found"))
 	}
@@ -66,23 +65,21 @@ func getBurnProofByHeight(
 	height uint64,
 	txID *common.Hash,
 ) (interface{}, *rpcservice.RPCError) {
-	bc := httpServer.config.BlockChain
-	db := *httpServer.config.Database
 
 	// Get bridge block and corresponding beacon blocks
-	bridgeBlock, beaconBlocks, err := getShardAndBeaconBlocks(height, bc, db)
+	bridgeBlock, beaconBlocks, err := getShardAndBeaconBlocks(height, httpServer.GetBlockchain(), httpServer.GetDatabase())
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
 	// Get proof of instruction on bridge
-	bridgeInstProof, err := getBurnProofOnBridge(burningMetaType, txID, bridgeBlock, db, httpServer.config.ConsensusEngine)
+	bridgeInstProof, err := getBurnProofOnBridge(burningMetaType, txID, bridgeBlock, httpServer.config.ConsensusEngine)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
 	// Get proof of instruction on beacon
-	beaconInstProof, err := getBurnProofOnBeacon(bridgeInstProof.inst, beaconBlocks, db, httpServer.config.ConsensusEngine)
+	beaconInstProof, err := getBurnProofOnBeacon(bridgeInstProof.inst, beaconBlocks, httpServer.GetDatabase(), httpServer.config.ConsensusEngine)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -99,7 +96,6 @@ func getBurnProofOnBridge(
 	burningMetaType int,
 	txID *common.Hash,
 	bridgeBlock *blockchain.ShardBlock,
-	db database.DatabaseInterface,
 	ce ConsensusEngine,
 ) (*swapProof, error) {
 	insts := bridgeBlock.Body.Instructions
@@ -109,7 +105,7 @@ func getBurnProofOnBridge(
 	}
 
 	block := &shardBlock{ShardBlock: bridgeBlock}
-	proof, err := buildProofForBlock(block, insts, instID, db, ce)
+	proof, err := buildProofForBlock(block, insts, instID, ce)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +116,7 @@ func getBurnProofOnBridge(
 func getBurnProofOnBeacon(
 	inst []string,
 	beaconBlocks []*blockchain.BeaconBlock,
-	db database.DatabaseInterface,
+	db incdb.Database,
 	ce ConsensusEngine,
 ) (*swapProof, error) {
 	// Get beacon block and check if it contains beacon swap instruction
@@ -131,7 +127,7 @@ func getBurnProofOnBeacon(
 
 	insts := b.Body.Instructions
 	block := &beaconBlock{BeaconBlock: b}
-	return buildProofForBlock(block, insts, instID, db, ce)
+	return buildProofForBlock(block, insts, instID, ce)
 }
 
 // findBeaconBlockWithBurnInst finds a beacon block with a specific burning instruction and the instruction's index; nil if not found

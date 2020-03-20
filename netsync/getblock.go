@@ -23,17 +23,17 @@ func (netSync *NetSync) GetBlockByHeight(
 	bc := netSync.config.BlockChain
 	switch blkType {
 	case proto.BlkType_BlkBc:
-		return bc.GetBeaconBlockByHeight(height)
+		return bc.GetBeaconBlockByHeightV1(height)
 	case proto.BlkType_BlkShard:
-		return bc.GetShardBlockByHeight(height, fromcID)
+		return bc.GetShardBlockByHeightV1(height, fromcID)
 	case proto.BlkType_BlkXShard:
-		blk, err := bc.GetShardBlockByHeight(height, fromcID)
+		blk, err := bc.GetShardBlockByHeightV1(height, fromcID)
 		if err != nil {
 			return nil, err
 		}
 		return blk.CreateCrossShardBlock(tocID)
 	case proto.BlkType_BlkS2B:
-		blk, err := bc.GetShardBlockByHeight(height, fromcID)
+		blk, err := bc.GetShardBlockByHeightV1(height, fromcID)
 		if err != nil {
 			return nil, err
 		}
@@ -178,20 +178,21 @@ func (netSync *NetSync) GetBlockShardByHeight(fromPool bool, blkType byte, speci
 				blkMsg.(*wire.MessageShardToBeacon).Block = blkToSend
 			}
 		} else {
-			blk, err := netSync.config.BlockChain.GetShardBlockByHeight(blkHeight, shardID)
+			blks, err := netSync.config.BlockChain.GetShardBlockByHeight(blkHeight, shardID)
 			if err != nil {
 				Logger.log.Error(err)
 				continue
 			}
-			blkMsg, err = netSync.createBlockShardMsgByType(blk, blkType, crossShardID)
-			if err != nil {
-				Logger.log.Error(err)
-				continue
+			for _, blk := range blks {
+				blkMsg, err = netSync.createBlockShardMsgByType(blk, blkType, crossShardID)
+				if err != nil {
+					Logger.log.Error(err)
+					continue
+				}
+				blkMsgs = append(blkMsgs, blkMsg)
 			}
 		}
-		blkMsgs = append(blkMsgs, blkMsg)
 	}
-
 	return blkMsgs
 }
 
@@ -234,17 +235,19 @@ func (netSync *NetSync) GetBlockBeaconByHeight(fromPool bool, specificHeight boo
 		if blkHeight <= 1 {
 			continue
 		}
-		blk, err := netSync.config.BlockChain.GetBeaconBlockByHeight(blkHeight)
+		blks, err := netSync.config.BlockChain.GetBeaconBlockByHeight(blkHeight)
 		if err != nil {
 			continue
 		}
-		msgBeaconBlk, err := wire.MakeEmptyMessage(wire.CmdBlockBeacon)
-		if err != nil {
-			Logger.log.Error(err)
-			continue
+		for _, blk := range blks {
+			msgBeaconBlk, err := wire.MakeEmptyMessage(wire.CmdBlockBeacon)
+			if err != nil {
+				Logger.log.Error(err)
+				continue
+			}
+			msgBeaconBlk.(*wire.MessageBlockBeacon).Block = blk
+			blkMsgs = append(blkMsgs, msgBeaconBlk)
 		}
-		msgBeaconBlk.(*wire.MessageBlockBeacon).Block = blk
-		blkMsgs = append(blkMsgs, msgBeaconBlk)
 	}
 	return blkMsgs
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"golang.org/x/crypto/sha3"
 
 	"github.com/ethereum/go-ethereum/crypto"
 )
@@ -193,4 +194,26 @@ func HashArrayOfHashArray(target []Hash) Hash {
 		temp = append(temp, hash[:]...)
 	}
 	return HashH(temp)
+}
+
+func BytesToHash(b []byte) Hash {
+	var h Hash
+	_ = h.SetBytes(b)
+	//if err != nil {
+	//	panic(err)
+	//}
+	return h
+}
+
+func (h Hash) Bytes() []byte { return h[:] }
+
+// Keccak256Hash calculates and returns the Keccak256 hash of the input data,
+// converting it to an internal Hash data structure.
+func Keccak256Hash(data ...[]byte) (h Hash) {
+	d := sha3.NewLegacyKeccak256()
+	for _, b := range data {
+		d.Write(b)
+	}
+	d.Sum(h[:0])
+	return h
 }

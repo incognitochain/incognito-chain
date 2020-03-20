@@ -1,12 +1,14 @@
 package mempool
 
 import (
+	"sync"
+	"testing"
+	"time"
+
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/pubsub"
-	"testing"
-	"time"
 )
 
 var (
@@ -75,6 +77,7 @@ var InitBeaconPoolTest = func(pubsubManager *pubsub.PubSubManager) {
 	beaconPoolTest.PubSubManager = pubsubManager
 	_, subChanRole, _ := beaconPoolTest.PubSubManager.RegisterNewSubscriber(pubsub.BeaconRoleTopic)
 	beaconPoolTest.RoleInCommitteesEvent = subChanRole
+	beaconPoolTest.mtx = new(sync.RWMutex)
 }
 
 var _ = func() (_ struct{}) {
@@ -123,6 +126,7 @@ func ResetBeaconPool() {
 		CacheSize:       beaconCacheSize,
 	}
 	beaconPool.cache, _ = lru.New(beaconPool.config.CacheSize)
+	beaconPool.mtx = new(sync.RWMutex)
 	InitBeaconPool(pbBeaconPool)
 	// reset beacon pool test value
 	InitBeaconPoolTest(pbBeaconPool)

@@ -23,7 +23,7 @@ const (
 	InvalidSenderPrivateKeyError
 	InvalidSenderViewingKeyError
 	InvalidReceiverPaymentAddressError
-	ListCustomTokenNotFoundError
+	ListTokenNotFoundError
 	CanNotSignError
 	GetOutputCoinError
 	CreateTxDataError
@@ -49,7 +49,14 @@ const (
 	NoSwapConfirmInst
 	GetKeySetFromPrivateKeyError
 	GetPDEStateError
-
+	ListCommitteeRewardError
+	GetRewardAmountError
+	ListOutputCoinsByKeyError
+	ListUnspentOutputCoinsByKeyError
+	SendRawTransactionError
+	BuildTokenParamError
+	BuildPrivacyTokenParamError
+	GetListPrivacyCustomTokenBalanceError
 	// reject tx
 	RejectInvalidTxFeeError
 	RejectInvalidTxSizeError
@@ -61,6 +68,7 @@ const (
 	RejectSanityTxLocktime
 	RejectReplacementTx
 	TxPoolRejectTxError
+	RejectInvalidFeeError
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -75,26 +83,26 @@ var ErrCodeMessage = map[int]struct {
 	JsonError:           {-4, "Json error"},
 
 	// validate component -1xxx
-	RPCInvalidRequestError:             {-1001, "Invalid request"},
-	RPCMethodNotFoundError:             {-1002, "Method not found"},
-	RPCInvalidParamsError:              {-1003, "Invalid parameters"},
-	RPCInternalError:                   {-1004, "Internal error"},
-	RPCParseError:                      {-1005, "Parse error"},
-	InvalidTypeError:                   {-1006, "Invalid type"},
-	AuthFailError:                      {-1007, "Auth failure"},
-	RPCInvalidMethodPermissionError:    {-1008, "Invalid method permission"},
-	InvalidReceiverPaymentAddressError: {-1009, "Invalid receiver paymentaddress"},
-	ListCustomTokenNotFoundError:       {-1010, "Can not find any custom token"},
-	CanNotSignError:                    {-1011, "Can not sign with key"},
-	InvalidSenderPrivateKeyError:       {-1012, "Invalid sender's key"},
-	GetOutputCoinError:                 {-1013, "Can not get output coin"},
-	TxTypeInvalidError:                 {-1014, "Invalid tx type"},
-	InvalidSenderViewingKeyError:       {-1015, "Invalid viewing key"},
-	RejectInvalidTxFeeError:            {-1016, "Reject invalid fee"},
-	TxNotExistedInMemAndBLockError:     {-1017, "Tx is not existed in mem and block"},
-	TokenIsInvalidError:                {-1018, "Token is invalid"},
-	GetKeySetFromPrivateKeyError:       {-1019, "Get KeySet From Private Key Error"},
-
+	RPCInvalidRequestError:                {-1001, "Invalid request"},
+	RPCMethodNotFoundError:                {-1002, "Method not found"},
+	RPCInvalidParamsError:                 {-1003, "Invalid parameters"},
+	RPCInternalError:                      {-1004, "Internal error"},
+	RPCParseError:                         {-1005, "Parse error"},
+	InvalidTypeError:                      {-1006, "Invalid type"},
+	AuthFailError:                         {-1007, "Auth failure"},
+	RPCInvalidMethodPermissionError:       {-1008, "Invalid method permission"},
+	InvalidReceiverPaymentAddressError:    {-1009, "Invalid receiver paymentaddress"},
+	ListTokenNotFoundError:                {-1010, "Can not find any token"},
+	CanNotSignError:                       {-1011, "Can not sign with key"},
+	InvalidSenderPrivateKeyError:          {-1012, "Invalid sender's key"},
+	GetOutputCoinError:                    {-1013, "Can not get output coin"},
+	TxTypeInvalidError:                    {-1014, "Invalid tx type"},
+	InvalidSenderViewingKeyError:          {-1015, "Invalid viewing key"},
+	RejectInvalidTxFeeError:               {-1016, "Reject invalid fee"},
+	TxNotExistedInMemAndBLockError:        {-1017, "Tx is not existed in mem and block"},
+	TokenIsInvalidError:                   {-1018, "Token is invalid"},
+	GetKeySetFromPrivateKeyError:          {-1019, "Get KeySet From Private Key Error"},
+	GetListPrivacyCustomTokenBalanceError: {-1020, "Get List Privacy Custom Token Balance Error"},
 	// for block -2xxx
 	GetShardBlockByHeightError:  {-2000, "Get shard block by height error"},
 	GetShardBlockByHashError:    {-2001, "Get shard block by hash error"},
@@ -109,11 +117,15 @@ var ErrCodeMessage = map[int]struct {
 	GetClonedShardBestStateError:  {-3001, "Get Cloned Shard Best State Error"},
 
 	// tx -4xxx
-	CreateTxDataError:          {-4001, "Can not create tx"},
-	SendTxDataError:            {-4002, "Can not send tx"},
-	Base58ChedkDataOfTxInvalid: {-4003, "Base58Check encode data of tx is invalid, can not decode"},
-	JsonDataOfTxInvalid:        {-4004, "Json string data of tx is invalid, can not unmarshal"},
-
+	CreateTxDataError:                {-4001, "Can not create tx"},
+	SendTxDataError:                  {-4002, "Can not send tx"},
+	Base58ChedkDataOfTxInvalid:       {-4003, "Base58Check encode data of tx is invalid, can not decode"},
+	JsonDataOfTxInvalid:              {-4004, "Json string data of tx is invalid, can not unmarshal"},
+	ListOutputCoinsByKeyError:        {-4005, "List Output Coins By Key Error"},
+	ListUnspentOutputCoinsByKeyError: {-4006, "List Unspent Output Coins By Key Error"},
+	SendRawTransactionError:          {-4007, "Send Raw Transaction Error"},
+	BuildTokenParamError:             {-4008, "Build Token Param Error"},
+	BuildPrivacyTokenParamError:      {-4009, "Build Privacy Token Param Error"},
 	// socket/subcribe -5xxx
 	SubcribeError:   {-5000, "Failed to subcribe"},
 	UnsubcribeError: {-5001, "Failed to unsubcribe"},
@@ -129,6 +141,7 @@ var ErrCodeMessage = map[int]struct {
 	RejectInvalidTxVersionError:  {-6007, "Reject tx by invalid version"},
 	RejectSanityTxLocktime:       {-6008, "Reject wrong tx by locktime"},
 	RejectReplacementTx:          {-6009, "Reject error replacement or cancel transaction"},
+	RejectInvalidFeeError:        {-6010, "Reject Invalid Fee Error"},
 
 	// decentralized bridge
 	NoSwapConfirmInst: {-7000, "No swap confirm instruction found in block"},

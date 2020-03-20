@@ -53,7 +53,7 @@ func (engine *Engine) CommitteeChange(chainName string) {
 
 //watchConsensusState will watch MiningKey Role as well as chain consensus type
 func (engine *Engine) watchConsensusCommittee() {
-	Logger.log.Info("start watching consensus committee...")
+	Logger.Log.Info("start watching consensus committee...")
 	allcommittee := engine.config.Blockchain.Chains[common.BeaconChainKey].(BeaconInterface).GetAllCommittees()
 
 	for consensusType, publickey := range engine.userMiningPublicKeys {
@@ -137,7 +137,7 @@ func (engine *Engine) watchConsensusCommittee() {
 
 	for chainName, chain := range engine.config.Blockchain.Chains {
 		if _, ok := AvailableConsensus[chain.GetConsensusType()]; ok {
-			engine.ChainConsensusList[chainName] = AvailableConsensus[chain.GetConsensusType()].NewInstance(chain, chainName, engine.config.Node, Logger.log)
+			engine.ChainConsensusList[chainName] = AvailableConsensus[chain.GetConsensusType()].NewInstance(chain, chainName, engine.config.Node, Logger.Log)
 		}
 	}
 
@@ -154,7 +154,7 @@ func (engine *Engine) watchConsensusCommittee() {
 		select {
 		case <-engine.cQuit:
 		case chainName := <-engine.chainCommitteeChange:
-			Logger.log.Critical("chain committee change", chainName)
+			Logger.Log.Critical("chain committee change", chainName)
 			consensusType := engine.config.Blockchain.Chains[chainName].GetConsensusType()
 			userCurrentPublicKey, ok := engine.userCurrentState.KeysBase58[consensusType]
 			var userMiningKey incognitokey.CommitteePublicKey
@@ -288,7 +288,7 @@ func (engine *Engine) Start() error {
 	if engine.started {
 		return errors.New("Consensus engine is already started")
 	}
-	Logger.log.Info("starting consensus...")
+	Logger.Log.Info("starting consensus...")
 	go engine.config.BlockGen.Start(engine.cQuit)
 	go func() {
 		go engine.watchConsensusCommittee()
@@ -305,20 +305,20 @@ func (engine *Engine) Start() error {
 				for chainName, consensus := range engine.ChainConsensusList {
 					if chainName == engine.CurrentMiningChain && engine.userCurrentState.UserRole == common.CommitteeRole {
 						if _, ok := chainStatus[chainName]; !ok {
-							Logger.log.Critical("BFT: starting bft engine ", chainName)
+							Logger.Log.Critical("BFT: starting bft engine ", chainName)
 						}
 						consensus.Start()
 						if _, ok := chainStatus[chainName]; !ok {
-							Logger.log.Critical("BFT: started bft engine ", chainName)
+							Logger.Log.Critical("BFT: started bft engine ", chainName)
 							chainStatus[chainName] = true
 						}
 					} else {
 						if _, ok := chainStatus[chainName]; ok {
-							Logger.log.Critical("BFT: stopping bft engine ", chainName)
+							Logger.Log.Critical("BFT: stopping bft engine ", chainName)
 						}
 						consensus.Stop()
 						if _, ok := chainStatus[chainName]; ok {
-							Logger.log.Critical("BFT: stopped bft engine ", chainName)
+							Logger.Log.Critical("BFT: stopped bft engine ", chainName)
 							delete(chainStatus, chainName)
 						}
 					}
@@ -460,7 +460,7 @@ func (engine *Engine) updateConsensusState() {
 	}
 	publicKey, err := engine.GetMiningPublicKeyByConsensus(engine.config.Blockchain.BestState.Beacon.ConsensusAlgorithm)
 	if err != nil {
-		Logger.log.Error(err)
+		Logger.Log.Error(err)
 		return
 	}
 	//ExtractMiningPublickeysFromCommitteeKeyList

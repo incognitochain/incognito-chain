@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"io/ioutil"
 	"log"
 	"net"
@@ -24,25 +25,23 @@ import (
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/option"
 
-	"github.com/incognitochain/incognito-chain/blockchain/btc"
-	"github.com/incognitochain/incognito-chain/consensus"
-	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/memcache"
-	"github.com/incognitochain/incognito-chain/pubsub"
-
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/connmanager"
-	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/transaction"
-
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/consensus"
 	"github.com/incognitochain/incognito-chain/databasemp"
+	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/mempool"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/peer"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/rpcserver"
+	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-peer"
@@ -61,7 +60,7 @@ type Server struct {
 	chainParams       *blockchain.Params
 	connManager       *connmanager.ConnManager
 	blockChain        *blockchain.BlockChain
-	dataBase          database.DatabaseInterface
+	dataBase          incdb.Database
 	memCache          *memcache.MemoryCache
 	rpcServer         *rpcserver.RpcServer
 	memPool           *mempool.TxPool
@@ -190,7 +189,7 @@ func (serverObj *Server) setupRPCWsListeners() ([]net.Listener, error) {
 /*
 NewServer - create server object which control all process of node
 */
-func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInterface, dbmp databasemp.DatabaseInterface, chainParams *blockchain.Params, protocolVer string, interrupt <-chan struct{}) error {
+func (serverObj *Server) NewServer(listenAddrs string, db incdb.Database, dbmp databasemp.DatabaseInterface, chainParams *blockchain.Params, protocolVer string, interrupt <-chan struct{}) error {
 	// Init data for Server
 	serverObj.protocolVersion = protocolVer
 	serverObj.chainParams = chainParams
@@ -350,7 +349,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	//init shard pool
 	mempool.InitShardPool(serverObj.shardPool, serverObj.pusubManager)
 	//init cross shard pool
-	mempool.InitCrossShardPool(serverObj.crossShardPool, db)
+	mempool.InitCrossShardPool(serverObj.crossShardPool, db, serverObj.blockChain)
 
 	//init shard to beacon bool
 	mempool.InitShardToBeaconPool()
@@ -360,7 +359,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		serverObj.feeEstimator = make(map[byte]*mempool.FeeEstimator)
 		for shardID, bestState := range serverObj.blockChain.BestState.Shard {
 			_ = bestState
-			feeEstimatorData, err := serverObj.dataBase.GetFeeEstimator(shardID)
+			feeEstimatorData, err := rawdbv2.GetFeeEstimator(serverObj.dataBase, shardID)
 			if err == nil && len(feeEstimatorData) > 0 {
 				feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)
 				if err != nil {
@@ -383,22 +382,21 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			}
 		}
 	} else {
-		err := serverObj.dataBase.CleanCommitments()
-		if err != nil {
-			Logger.log.Error(err)
-			return err
-		}
-		err = serverObj.dataBase.CleanSerialNumbers()
-		if err != nil {
-			Logger.log.Error(err)
-			return err
-		}
-		err = serverObj.dataBase.CleanFeeEstimator()
-		if err != nil {
-			Logger.log.Error(err)
-			return err
-		}
-
+		//err := rawdb.CleanCommitments(serverObj.dataBase)
+		//if err != nil {
+		//	Logger.log.Error(err)
+		//	return err
+		//}
+		//err = rawdb.CleanSerialNumbers(serverObj.dataBase)
+		//if err != nil {
+		//	Logger.log.Error(err)
+		//	return err
+		//}
+		//err = rawdb.CleanFeeEstimator(serverObj.dataBase)
+		//if err != nil {
+		//	Logger.log.Error(err)
+		//	return err
+		//}
 		serverObj.feeEstimator = make(map[byte]*mempool.FeeEstimator)
 	}
 	for shardID, feeEstimator := range serverObj.feeEstimator {
@@ -536,7 +534,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			NodeMode:                    cfg.NodeMode,
 			FeeEstimator:                serverObj.feeEstimator,
 			ProtocolVersion:             serverObj.protocolVersion,
-			Database:                    &serverObj.dataBase,
+			Database:                    serverObj.dataBase,
 			MiningKeys:                  cfg.MiningKeys,
 			NetSync:                     serverObj.netSync,
 			PubSubManager:               pubsubManager,
@@ -615,7 +613,7 @@ func (serverObj *Server) Stop() error {
 		Logger.log.Debugf("Fee estimator data when saving #%d", feeEstimator)
 		feeEstimatorData := feeEstimator.Save()
 		if len(feeEstimatorData) > 0 {
-			err := serverObj.dataBase.StoreFeeEstimator(feeEstimatorData, shardID)
+			err := rawdbv2.StoreFeeEstimator(serverObj.dataBase, feeEstimatorData, shardID)
 			if err != nil {
 				Logger.log.Errorf("Can't save fee estimator data on chain #%d: %v", shardID, err)
 			} else {
@@ -1251,7 +1249,7 @@ func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 }
 
 func (serverObj *Server) OnPeerState(_ *peer.PeerConn, msg *wire.MessagePeerState) {
-	Logger.log.Infof("Handling new message peerstate %+v", msg)
+	Logger.log.Debug("Handling new message peerstate %+v", msg)
 	Logger.log.Debug("Receive a peerstate START")
 	var txProcessed chan struct{}
 	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
@@ -1518,7 +1516,7 @@ func (serverObj *Server) putResponseMsgs(msgs [][]byte) {
 }
 
 func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint64) error {
-	Logger.log.Infof("[stream] Get blk beacon by heights %v %v", from, to)
+	Logger.log.Debug("[stream] Get blk beacon by heights %v %v", from, to)
 	req := &proto.BlockByHeightRequest{
 		Type:     proto.BlkType_BlkBc,
 		Specific: false,
@@ -1535,7 +1533,7 @@ func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint6
 }
 
 func (serverObj *Server) PushMessageGetBlockBeaconBySpecificHeight(heights []uint64, getFromPool bool) error {
-	Logger.log.Infof("[stream] Get blk beacon by Specific heights [%v..%v]", heights[0], heights[len(heights)-1])
+	Logger.log.Debug("[stream] Get blk beacon by Specific heights [%v..%v]", heights[0], heights[len(heights)-1])
 	req := &proto.BlockByHeightRequest{
 		Type:     proto.BlkType_BlkBc,
 		Specific: true,
@@ -1566,7 +1564,7 @@ func (serverObj *Server) PushMessageGetBlockBeaconByHash(blkHashes []common.Hash
 }
 
 func (serverObj *Server) PushMessageGetBlockShardByHeight(shardID byte, from uint64, to uint64) error {
-	Logger.log.Infof("[stream] Get blk shard %v by heights %v->%v", shardID, from, to)
+	Logger.log.Debug("[stream] Get blk shard %v by heights %v->%v", shardID, from, to)
 	req := &proto.BlockByHeightRequest{
 		Type:     proto.BlkType_BlkShard,
 		Specific: false,
@@ -1585,7 +1583,7 @@ func (serverObj *Server) PushMessageGetBlockShardByHeight(shardID byte, from uin
 }
 
 func (serverObj *Server) PushMessageGetBlockShardBySpecificHeight(shardID byte, heights []uint64, getFromPool bool) error {
-	Logger.log.Infof("[stream] Get blk shard %v by specific heights [%v..%v] len %v", shardID, heights[0], heights[len(heights)-1], len(heights))
+	Logger.log.Debug("[stream] Get blk shard %v by specific heights [%v..%v] len %v", shardID, heights[0], heights[len(heights)-1], len(heights))
 	req := &proto.BlockByHeightRequest{
 		Type:     proto.BlkType_BlkShard,
 		Specific: true,
@@ -1619,7 +1617,7 @@ func (serverObj *Server) PushMessageGetBlockShardByHash(shardID byte, blkHashes 
 }
 
 func (serverObj *Server) PushMessageGetBlockShardToBeaconByHeight(shardID byte, from uint64, to uint64) error {
-	Logger.log.Infof("[stream] Get blk S2B shard %v by heights %v->%v", shardID, from, to)
+	Logger.log.Debug("[stream] Get blk S2B shard %v by heights %v->%v", shardID, from, to)
 	req := &proto.BlockByHeightRequest{
 		Type:     proto.BlkType_BlkS2B,
 		Specific: false,
@@ -1663,7 +1661,7 @@ func (serverObj *Server) PushMessageGetBlockShardToBeaconBySpecificHeight(
 	peerID libp2p.ID,
 ) error {
 
-	Logger.log.Infof("[stream] Get blk S2B shard %v by specific heights [%v..%v] len %v", shardID, heights[0], heights[len(heights)-1], len(heights))
+	Logger.log.Debug("[stream] Get blk S2B shard %v by specific heights [%v..%v] len %v", shardID, heights[0], heights[len(heights)-1], len(heights))
 
 	req := &proto.BlockByHeightRequest{
 		Type:     proto.BlkType_BlkS2B,
@@ -1705,7 +1703,7 @@ func (serverObj *Server) PushMessageGetBlockCrossShardByHash(fromShard byte, toS
 }
 
 func (serverObj *Server) PushMessageGetBlockCrossShardBySpecificHeight(fromShard byte, toShard byte, heights []uint64, getFromPool bool, peerID libp2p.ID) error {
-	Logger.log.Infof("[stream] Get blk Cross shard %v to %v by specific heights [%v..%v] len %v", fromShard, toShard, heights[0], heights[len(heights)-1], len(heights))
+	Logger.log.Debug("[stream] Get blk Cross shard %v to %v by specific heights [%v..%v] len %v", fromShard, toShard, heights[0], heights[len(heights)-1], len(heights))
 
 	req := &proto.BlockByHeightRequest{
 		Type:     proto.BlkType_BlkXShard,
@@ -1724,7 +1722,7 @@ func (serverObj *Server) PushMessageGetBlockCrossShardBySpecificHeight(fromShard
 }
 
 func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
-	Logger.log.Infof("[peerstate] Start Publish SelfPeerState")
+	Logger.log.Debug("[peerstate] Start Publish SelfPeerState")
 	listener := serverObj.connManager.GetConfig().ListenerPeer
 
 	// if (userRole != common.CommitteeRole) && (userRole != common.ValidatorRole) && (userRole != common.ProposerRole) {
@@ -1753,7 +1751,7 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 		}
 	} else {
 		msg.(*wire.MessagePeerState).ShardToBeaconPool = serverObj.shardToBeaconPool.GetAllBlockHeight()
-		Logger.log.Infof("[peerstate] %v", msg.(*wire.MessagePeerState).ShardToBeaconPool)
+		Logger.log.Debug("[peerstate] %v", msg.(*wire.MessagePeerState).ShardToBeaconPool)
 	}
 
 	if (cfg.NodeMode == common.NodeModeAuto || cfg.NodeMode == common.NodeModeShard) && shardID >= 0 {
@@ -1767,7 +1765,7 @@ func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 		return err
 	}
 	msg.SetSenderID(serverObj.highway.LocalHost.Host.ID())
-	Logger.log.Infof("[peerstate] PeerID send to Proxy when publish node state %v \n", listener.GetPeerID())
+	Logger.log.Debug("[peerstate] PeerID send to Proxy when publish node state %v \n", listener.GetPeerID())
 	if err != nil {
 		return err
 	}
@@ -1941,7 +1939,6 @@ func (serverObj *Server) PushBlockToAll(block common.BlockInterface, isBeacon bo
 		}
 		msgShardToBeacon.(*wire.MessageShardToBeacon).Block = shardToBeaconBlk
 		serverObj.PushMessageToBeacon(msgShardToBeacon, map[libp2p.ID]bool{})
-		//TODO hy check
 		crossShardBlks := shardBlock.CreateAllCrossShardBlock(serverObj.blockChain.BestState.Beacon.ActiveShards)
 		for shardID, crossShardBlk := range crossShardBlks {
 			msgCrossShardShard, err := wire.MakeEmptyMessage(wire.CmdCrossShard)
