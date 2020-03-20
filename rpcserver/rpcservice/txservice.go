@@ -729,6 +729,7 @@ func (txService TxService) GetListPrivacyCustomTokenBalance(privateKey string) (
 		if _, ok := tokenIDs[tokenID]; ok {
 			continue
 		}
+		tokenIDs[tokenID] = 0
 		item := jsonresult.CustomTokenBalance{}
 		item.Name = customTokenCrossShard.PropertyName
 		item.Symbol = customTokenCrossShard.PropertySymbol
