@@ -297,10 +297,11 @@ func (httpServer *HttpServer) handleSetTxFee(params interface{}, closeChan <-cha
 }
 
 func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	//listPrivacyToken, listPrivacyTokenCrossShard, err := httpServer.blockService.ListPrivacyCustomTokenCached()
-	//if err != nil {
-	//	return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	//}
+	arrayParams := common.InterfaceSlice(params)
+	getCountTxs := false
+	if len(arrayParams) == 1 {
+		getCountTxs = true
+	}
 	listPrivacyToken, err := httpServer.blockService.ListPrivacyCustomToken()
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
@@ -360,6 +361,9 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 		result.ListCustomToken = append(result.ListCustomToken, item)
 	}
 	for index, _ := range result.ListCustomToken {
+		if !getCountTxs {
+			result.ListCustomToken[index].ListTxs = []string{}
+		}
 		result.ListCustomToken[index].Image = common.Render([]byte(result.ListCustomToken[index].ID))
 		for _, bridgeToken := range allBridgeTokens {
 			if result.ListCustomToken[index].ID == bridgeToken.TokenID.String() {
