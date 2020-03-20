@@ -911,21 +911,10 @@ func (blockchain *BlockChain) processStoreShardBlock(shardBlock *ShardBlock, com
 	rewardReceiver := make(map[string]string)
 	autoStaking := make(map[string]bool)
 	tempShardBestState := blockchain.BestState.Shard[shardID]
-	//tempBeaconBestState := blockchain.BestState.Beacon
-	//if tempBeaconBestState.BeaconHeight == 1 {
-	//	rewardReceiver = tempBeaconBestState.RewardReceiver
-	//	autoStaking = tempBeaconBestState.AutoStaking
-	//} else {
-	consensusStateRootHash, err := blockchain.GetBeaconConsensusRootHash(blockchain.GetDatabase(), beaconBlock.Header.Height)
-	if err != nil {
-		return NewBlockChainError(StoreShardBlockError, fmt.Errorf("can't get ConsensusStateRootHash of height %+v ,error %+v", beaconBlock.Header.Height, err))
+	Logger.log.Infof("SHARD %+v | Process store block height %+v at hash %+v", shardBlock.Header.ShardID, blockHeight, *shardBlock.Hash())
+	if len(shardBlock.Body.CrossTransactions) != 0 {
+		Logger.log.Critical("processStoreShardBlock/CrossTransactions	", shardBlock.Body.CrossTransactions)
 	}
-	consensusStateDB, err := statedb.NewWithPrefixTrie(consensusStateRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetDatabase()))
-	if err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
-	rewardReceiver, autoStaking = statedb.GetRewardReceiverAndAutoStaking(consensusStateDB, blockchain.GetShardIDs())
-	//}
 	featureStateRootHash, err := blockchain.GetBeaconFeatureRootHash(blockchain.GetDatabase(), beaconBlock.Header.Height)
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, fmt.Errorf("can't get ConsensusStateRootHash of height %+v ,error %+v", beaconBlock.Header.Height, err))
@@ -933,10 +922,6 @@ func (blockchain *BlockChain) processStoreShardBlock(shardBlock *ShardBlock, com
 	featureStateDB, err := statedb.NewWithPrefixTrie(featureStateRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetDatabase()))
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
-	}
-	Logger.log.Infof("SHARD %+v | Process store block height %+v at hash %+v", shardBlock.Header.ShardID, blockHeight, *shardBlock.Hash())
-	if len(shardBlock.Body.CrossTransactions) != 0 {
-		Logger.log.Critical("processStoreShardBlock/CrossTransactions	", shardBlock.Body.CrossTransactions)
 	}
 	if err := blockchain.CreateAndSaveTxViewPointFromBlock(shardBlock, tempShardBestState.transactionStateDB, featureStateDB); err != nil {
 		return NewBlockChainError(FetchAndStoreTransactionError, err)
@@ -978,14 +963,25 @@ func (blockchain *BlockChain) processStoreShardBlock(shardBlock *ShardBlock, com
 			Logger.log.Debug(NewBlockChainError(RegisterEstimatorFeeError, err))
 		}
 	}
-	//statedb===========================START
-	err = statedb.StoreOneShardCommittee(tempShardBestState.consensusStateDB, shardID, committeeChange.shardCommitteeAdded[shardID], rewardReceiver, autoStaking)
-	if err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
-	}
-	err = statedb.StoreOneShardSubstitutesValidator(tempShardBestState.consensusStateDB, shardID, committeeChange.shardSubstituteAdded[shardID], rewardReceiver, autoStaking)
-	if err != nil {
-		return NewBlockChainError(StoreShardBlockError, err)
+	if len(committeeChange.shardCommitteeAdded[shardID]) > 0 || len(committeeChange.shardSubstituteAdded[shardID]) > 0 {
+		consensusStateRootHash, err := blockchain.GetBeaconConsensusRootHash(blockchain.GetDatabase(), beaconBlock.Header.Height)
+		if err != nil {
+			return NewBlockChainError(StoreShardBlockError, fmt.Errorf("can't get ConsensusStateRootHash of height %+v ,error %+v", beaconBlock.Header.Height, err))
+		}
+		consensusStateDB, err := statedb.NewWithPrefixTrie(consensusStateRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetDatabase()))
+		if err != nil {
+			return NewBlockChainError(StoreShardBlockError, err)
+		}
+		rewardReceiver, autoStaking = statedb.GetRewardReceiverAndAutoStaking(consensusStateDB, blockchain.GetShardIDs())
+		//statedb===========================START
+		err = statedb.StoreOneShardCommittee(tempShardBestState.consensusStateDB, shardID, committeeChange.shardCommitteeAdded[shardID], rewardReceiver, autoStaking)
+		if err != nil {
+			return NewBlockChainError(StoreShardBlockError, err)
+		}
+		err = statedb.StoreOneShardSubstitutesValidator(tempShardBestState.consensusStateDB, shardID, committeeChange.shardSubstituteAdded[shardID], rewardReceiver, autoStaking)
+		if err != nil {
+			return NewBlockChainError(StoreShardBlockError, err)
+		}
 	}
 	err = statedb.DeleteOneShardCommittee(tempShardBestState.consensusStateDB, shardID, committeeChange.shardCommitteeAdded[shardID])
 	if err != nil {
