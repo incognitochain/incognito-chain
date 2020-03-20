@@ -787,7 +787,6 @@ func (txService TxService) GetListPrivacyCustomTokenBalance(privateKey string) (
 			resultM[bridgeTokenID] = tokenInfo
 			continue
 		}
-		tokenIDs[tokenID] = 0
 		item := jsonresult.CustomTokenBalance{}
 		item.Name = ""
 		item.Symbol = ""
