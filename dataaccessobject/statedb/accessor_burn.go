@@ -17,16 +17,16 @@ func StoreBurningConfirm(stateDB *StateDB, txID common.Hash, height uint64) erro
 
 func GetBurningConfirm(stateDB *StateDB, txID common.Hash) (uint64, error) {
 	key := GenerateBurningConfirmObjectKey(txID)
-	burningConfrimState, has, err := stateDB.getBurningConfirmState(key)
+	burningConfirmState, has, err := stateDB.getBurningConfirmState(key)
 	if err != nil {
 		return 0, NewStatedbError(GetBurningConfirmError, err)
 	}
 	if !has {
 		return 0, NewStatedbError(GetBurningConfirmError, fmt.Errorf("burning confirm with txID %+v not found", txID))
 	}
-	tempTxID := burningConfrimState.TxID()
+	tempTxID := burningConfirmState.TxID()
 	if !tempTxID.IsEqual(&txID) {
 		panic("burning confirm state")
 	}
-	return burningConfrimState.Height(), nil
+	return burningConfirmState.Height(), nil
 }
