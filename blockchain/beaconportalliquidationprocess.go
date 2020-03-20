@@ -378,7 +378,7 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(beaconHei
 			return nil
 		}
 
-		amountNeeded, totalFreeCollateralNeeded, remainFreeCollateral, err := calAmountNeededDepositLiquidate(custodian, exchangeRate, actionData.PTokenId, actionData.FreeCollateralSelected)
+		amountNeeded, totalFreeCollateralNeeded, remainFreeCollateral, err := CalAmountNeededDepositLiquidate(custodian, exchangeRate, actionData.PTokenId, actionData.FreeCollateralSelected)
 
 		if err != nil {
 			Logger.log.Errorf("Calculate amount needed deposit err %v", err)

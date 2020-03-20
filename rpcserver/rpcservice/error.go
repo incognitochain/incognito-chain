@@ -77,6 +77,7 @@ const (
 	GetCustodianLiquidationStatusError
 	GetTpExchangeRatesLiquidationError
 	GetExchangeRatesLiquidationError
+	GetAmountNeededForCustodianDepositLiquidationError
 
 	// relaying
 	GetRelayingBNBHeaderByBlockHeightError
@@ -169,6 +170,7 @@ var ErrCodeMessage = map[int]struct {
 	GetCustodianLiquidationStatusError: {-9009, "Get status of custodian liquidation error"},
 	GetTpExchangeRatesLiquidationError: {-9010, "Get TP exchange rates liquidation error"},
 	GetExchangeRatesLiquidationError: {-9011, "Get exchange rates liquidation error"},
+	GetAmountNeededForCustodianDepositLiquidationError: {-9012, "Get amount needed for custodian deposit liquidation error"},
 
 	// relaying
 	GetRelayingBNBHeaderByBlockHeightError: {-10001, "Get relaying bnb header by block height error"},

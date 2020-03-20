@@ -242,7 +242,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,
 			shardID,
-			common.PortalPortingRequestRejectedStatus,
+			common.PortalPortingRequestRejectedChainStatus,
 			actionData.Meta.UniqueRegisterId,
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.PTokenId,
@@ -260,7 +260,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,
 			shardID,
-			common.PortalPortingRequestRejectedStatus,
+			common.PortalPortingRequestRejectedChainStatus,
 			actionData.Meta.UniqueRegisterId,
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.PTokenId,
@@ -279,7 +279,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,
 			shardID,
-			common.PortalPortingRequestRejectedStatus,
+			common.PortalPortingRequestRejectedChainStatus,
 			actionData.Meta.UniqueRegisterId,
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.PTokenId,
@@ -300,7 +300,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,
 			shardID,
-			common.PortalPortingRequestRejectedStatus,
+			common.PortalPortingRequestRejectedChainStatus,
 			actionData.Meta.UniqueRegisterId,
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.PTokenId,
@@ -318,7 +318,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,
 			shardID,
-			common.PortalPortingRequestRejectedStatus,
+			common.PortalPortingRequestRejectedChainStatus,
 			actionData.Meta.UniqueRegisterId,
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.PTokenId,
@@ -340,7 +340,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,
 			shardID,
-			common.PortalPortingRequestRejectedStatus,
+			common.PortalPortingRequestRejectedChainStatus,
 			actionData.Meta.UniqueRegisterId,
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.PTokenId,
@@ -368,7 +368,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,
 			shardID,
-			common.PortalPortingRequestRejectedStatus,
+			common.PortalPortingRequestRejectedChainStatus,
 			actionData.Meta.UniqueRegisterId,
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.PTokenId,
@@ -396,7 +396,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,
 			shardID,
-			common.PortalPortingRequestRejectedStatus,
+			common.PortalPortingRequestRejectedChainStatus,
 			actionData.Meta.UniqueRegisterId,
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.PTokenId,
@@ -422,7 +422,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,
 			shardID,
-			common.PortalPortingRequestRejectedStatus,
+			common.PortalPortingRequestRejectedChainStatus,
 			actionData.Meta.UniqueRegisterId,
 			actionData.Meta.IncogAddressStr,
 			actionData.Meta.PTokenId,
@@ -439,7 +439,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 	inst := buildRequestPortingInst(
 		actionData.Meta.Type,
 		shardID,
-		common.PortalPortingRequestAcceptedStatus,
+		common.PortalPortingRequestAcceptedChainStatus,
 		actionData.Meta.UniqueRegisterId,
 		actionData.Meta.IncogAddressStr,
 		actionData.Meta.PTokenId,

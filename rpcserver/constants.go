@@ -209,6 +209,7 @@ const (
 	getLiquidationExchangeRates                 = "getliquidationexchangerates"
 	createAndSendRedeemLiquidationExchangeRates = "createandsendredeemliquidationexchangerates"
 	createAndSendLiquidationCustodianDeposit    = "createandsendliquidationcustodiandeposit"
+	getAmountNeededForCustodianDepositLiquidation    = "getamountneededforcustodiandepositliquidation"
 
 	// relaying
 	createAndSendTxWithRelayingBNBHeader = "createandsendtxwithrelayingbnbheader"

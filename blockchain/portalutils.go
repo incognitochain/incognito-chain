@@ -621,6 +621,31 @@ func GetCustodianWithdrawRequestByKey(
 	return &custodianWithdraw, nil
 }
 
+func GetCustodianByKey(
+	db database.DatabaseInterface,
+	key []byte,
+) (*lvdb.CustodianState, error) {
+	custodianItem, err := db.GetItemPortalByKey(key)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var custodianState lvdb.CustodianState
+
+	if custodianItem == nil {
+		return &custodianState, nil
+	}
+
+	//get value via idx
+	err = json.Unmarshal(custodianItem, &custodianState)
+	if err != nil {
+		return nil, err
+	}
+
+	return &custodianState, nil
+}
+
 func GetAllPortingRequest(
 	db database.DatabaseInterface,
 	key []byte,
@@ -989,7 +1014,7 @@ func calculateTPRatio(holdPToken map[string]uint64, holdPRV map[string]uint64, f
 	return result, nil
 }
 
-func calAmountNeededDepositLiquidate(custodian *lvdb.CustodianState, exchangeRates *lvdb.FinalExchangeRates, pTokenId string, isFreeCollateralSelected bool) (uint64, uint64, uint64, error)  {
+func CalAmountNeededDepositLiquidate(custodian *lvdb.CustodianState, exchangeRates *lvdb.FinalExchangeRates, pTokenId string, isFreeCollateralSelected bool) (uint64, uint64, uint64, error)  {
 	totalPToken := up150Percent(custodian.HoldingPubTokens[pTokenId])
 	totalPRV, err := exchangeRates.ExchangePToken2PRVByTokenId(pTokenId, totalPToken)
 

@@ -193,6 +193,7 @@ var HttpHandler = map[string]httpHandler{
 	getLiquidationExchangeRates: 				(*HttpServer).handleGetLiquidationExchangeRates,
 	createAndSendRedeemLiquidationExchangeRates: (*HttpServer).handleCreateAndSendRedeemLiquidationExchangeRates,
 	createAndSendLiquidationCustodianDeposit: 	(*HttpServer).handleCreateAndSendLiquidationCustodianDeposit,
+	getAmountNeededForCustodianDepositLiquidation: 	(*HttpServer).handleGetAmountNeededForCustodianDepositLiquidation,
 
 	// relaying
 	createAndSendTxWithRelayingBNBHeader: (*HttpServer).handleCreateAndSendTxWithRelayingBNBHeader,

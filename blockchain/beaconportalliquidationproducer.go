@@ -954,7 +954,7 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 	}
 
 
-	amountNeeded, totalFreeCollateralNeeded, remainFreeCollateral, err := calAmountNeededDepositLiquidate(custodian, exchangeRate, actionData.Meta.PTokenId, actionData.Meta.FreeCollateralSelected)
+	amountNeeded, totalFreeCollateralNeeded, remainFreeCollateral, err := CalAmountNeededDepositLiquidate(custodian, exchangeRate, actionData.Meta.PTokenId, actionData.Meta.FreeCollateralSelected)
 
 	if err != nil {
 		Logger.log.Errorf("Calculate amount needed deposit err %v", err)

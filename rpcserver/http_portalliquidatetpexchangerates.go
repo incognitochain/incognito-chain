@@ -90,6 +90,53 @@ func (httpServer *HttpServer) handleGetLiquidationExchangeRates(params interface
 	return result, nil
 }
 
+func (httpServer *HttpServer) handleGetAmountNeededForCustodianDepositLiquidation(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+
+	// get meta data from params
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
+	}
+
+	beaconHeight, ok := data["BeaconHeight"].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata BeaconHeight is invalid"))
+	}
+
+	_, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetAmountNeededForCustodianDepositLiquidationError, err)
+	}
+
+	custodianAddress, ok := data["CustodianAddress"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata CustodianAddress is invalid"))
+	}
+
+	isFreeCollateralSelected, ok := data["IsFreeCollateralSelected"].(bool)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata IsFreeCollateralSelected is invalid"))
+	}
+
+	pTokenID, ok := data["TokenID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
+	}
+
+	if !common.IsPortalToken(pTokenID) {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is not support"))
+	}
+
+	result, err := httpServer.portal.CalculateAmountNeededCustodianDepositLiquidation(uint64(beaconHeight), custodianAddress, pTokenID, isFreeCollateralSelected, httpServer.blockService, *httpServer.config.Database)
+
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetAmountNeededForCustodianDepositLiquidationError, err)
+	}
+
+	return result, nil
+}
+
 func (httpServer *HttpServer) createRawRedeemLiquidationExchangeRates(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 

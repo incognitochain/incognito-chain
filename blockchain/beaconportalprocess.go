@@ -231,7 +231,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 	reqStatus := instructions[2]
 
 	switch reqStatus {
-	case common.PortalPortingRequestAcceptedStatus:
+	case common.PortalPortingRequestAcceptedChainStatus:
 		uniquePortingID := portingRequestContent.UniqueRegisterId
 		txReqID := portingRequestContent.TxReqID
 		tokenID := portingRequestContent.PTokenId
@@ -292,7 +292,23 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			amount,
 			custodiansDetail,
 			portingFee,
-			common.PortalPortingReqAcceptedStatus,
+			common.PortalPortingRequestAcceptedStatus,
+			beaconHeight+1,
+		)
+
+		if err != nil {
+			return err
+		}
+
+		newPortingTxRequestStateAccept, err := NewPortingRequestState(
+			uniquePortingID,
+			txReqID,
+			tokenID,
+			porterAddress,
+			amount,
+			custodiansDetail,
+			portingFee,
+			common.PortalPortingTxRequestAcceptedStatus,
 			beaconHeight+1,
 		)
 
@@ -302,9 +318,9 @@ func (blockchain *BlockChain) processPortalUserRegister(
 
 		//save transaction
 		keyPortingRequestNewTxState := lvdb.NewPortingRequestTxKey(txReqID.String())
-		err = db.StorePortingRequestItem([]byte(keyPortingRequestNewTxState), newPortingRequestStateAccept)
+		err = db.StorePortingRequestItem([]byte(keyPortingRequestNewTxState), newPortingTxRequestStateAccept)
 		if err != nil {
-			Logger.log.Errorf("ERROR: an error occurred while store porting request item: %+v", err)
+			Logger.log.Errorf("ERROR: an error occurred while store porting tx request item: %+v", err)
 			return nil
 		}
 
@@ -330,7 +346,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		currentPortalState.WaitingPortingRequests[keyWaitingPortingRequest] = newPortingRequestStateWaiting
 
 		break
-	case common.PortalPortingRequestRejectedStatus:
+	case common.PortalPortingRequestRejectedChainStatus:
 		txReqID := portingRequestContent.TxReqID
 		newPortingRequest := lvdb.PortingRequest{
 			UniquePortingID: portingRequestContent.UniqueRegisterId,
@@ -338,7 +354,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			TokenID:         portingRequestContent.PTokenId,
 			PorterAddress:   portingRequestContent.IncogAddressStr,
 			TxReqID:         txReqID,
-			Status:          common.PortalPortingReqRejectedStatus,
+			Status:          common.PortalPortingTxRequestRejectedStatus,
 			BeaconHeight:    beaconHeight + 1,
 		}
 
