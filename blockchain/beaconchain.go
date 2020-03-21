@@ -176,7 +176,7 @@ func (chain *BeaconChain) CreateNewBlock(version int, proposer string, round int
 	}
 	if version == 2 {
 		newBlock.Header.Proposer = proposer
-		newBlock.Header.ProposeTime = time.Now().Unix()
+		newBlock.Header.ProposeTime = startTime
 	}
 
 	return newBlock, nil

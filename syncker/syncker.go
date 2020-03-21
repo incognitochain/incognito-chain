@@ -186,7 +186,7 @@ func (synckerManager *SynckerManager) GetS2BBlocksForBeaconProducer(bestViewShar
 		}
 		for _, v := range synckerManager.s2bPool.GetFinalBlockFromBlockHash(v.String()) {
 			res[byte(i)] = append(res[byte(i)], v)
-			fmt.Println("syncker: get block ", i, v.GetHeight(), v.Hash().String())
+			//fmt.Println("syncker: get block ", i, v.GetHeight(), v.Hash().String())
 		}
 	}
 	return res
