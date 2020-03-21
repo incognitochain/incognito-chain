@@ -1287,10 +1287,14 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if finalView != nil && newFinalView.GetHash().String() != finalView.GetHash().String() {
 		startView := newFinalView
 		for {
-			blks, _ := blockchain.GetBeaconBlockByHeight(startView.GetHeight())
-			for _, blk := range blks {
-				if blk.Hash().String() != startView.GetHash().String() {
-					blockchain.DeleteBeaconBlockByView(*blk.Hash())
+			hashs, _ := blockchain.GetBeaconBlockHashByHeight(startView.GetHeight())
+			for _, hash := range hashs {
+				if hash.String() != startView.GetHash().String() {
+					err := rawdbv2.DeleteBeaconBlock(blockchain.GetDatabase(), startView.GetHeight(), hash)
+					if err != nil {
+						//must not have error
+						panic(err)
+					}
 				}
 			}
 			startView = blockchain.BeaconChain.GetViewByHash(*startView.GetPreviousHash())
