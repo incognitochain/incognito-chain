@@ -6,6 +6,11 @@ import (
 )
 
 func (blockchain *BlockChain) InsertBeaconBlock_V2(beaconBlock *BeaconBlock, strictInsert bool) (err error) {
+	//check already insert
+	if view := blockchain.BeaconChain.GetViewByHash(*beaconBlock.Hash()); view != nil {
+		return fmt.Errorf("View already insert %+v", *beaconBlock.Hash())
+	}
+
 	//check prev view exit
 	preViewHash := beaconBlock.GetPrevHash()
 	preView := blockchain.BeaconChain.GetViewByHash(preViewHash)

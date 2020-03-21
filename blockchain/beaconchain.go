@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/multiview"
@@ -19,6 +20,8 @@ type BeaconChain struct {
 	Blockchain *BlockChain
 	ChainName  string
 	Ready      bool
+
+	insertLock sync.Mutex
 }
 
 func (chain *BeaconChain) GetBestView() multiview.View {
@@ -193,10 +196,8 @@ func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterf
 }
 
 func (chain *BeaconChain) InsertBlk(block common.BlockInterface) error {
-	//if chain.Blockchain.config.ConsensusEngine.IsOngoing(common.BeaconChainKey) {
-	//	return NewBlockChainError(ConsensusIsOngoingError, errors.New(fmt.Sprint(common.BeaconChainKey, block.Hash())))
-	//}
-	//return chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true)
+	chain.insertLock.Lock()
+	defer chain.insertLock.Unlock()
 	if err := chain.Blockchain.InsertBeaconBlock_V2(block.(*BeaconBlock), true); err != nil {
 		Logger.log.Info(err)
 		return err
@@ -205,8 +206,9 @@ func (chain *BeaconChain) InsertBlk(block common.BlockInterface) error {
 }
 
 func (chain *BeaconChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
+	chain.insertLock.Lock()
+	defer chain.insertLock.Unlock()
 	go chain.Blockchain.config.Server.PushBlockToAll(block, true)
-	//chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true)
 	if err := chain.Blockchain.InsertBeaconBlock_V2(block.(*BeaconBlock), true); err != nil {
 		Logger.log.Info(err)
 		return err

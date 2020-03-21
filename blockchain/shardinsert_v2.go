@@ -7,6 +7,12 @@ import (
 )
 
 func (blockchain *BlockChain) InsertShardBlock_V2(shardBlock *ShardBlock, strictInsert bool) (err error) {
+
+	//check already insert
+	if view := blockchain.ShardChain[shardBlock.Header.ShardID].GetViewByHash(*shardBlock.Hash()); view != nil {
+		return fmt.Errorf("View already insert %+v", *shardBlock.Hash())
+	}
+
 	//check prev view exit
 	preViewHash := shardBlock.GetPrevHash()
 	preView := blockchain.ShardChain[shardBlock.Header.ShardID].GetViewByHash(preViewHash)

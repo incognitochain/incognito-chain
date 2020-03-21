@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
+	"sync"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/multiview"
@@ -17,6 +18,8 @@ type ShardChain struct {
 	Blockchain *BlockChain
 	Ready      bool
 	ChainName  string
+
+	insertLock sync.Mutex
 }
 
 func (chain *ShardChain) GetFinalView() multiview.View {
@@ -184,13 +187,14 @@ func (chain *ShardChain) ValidateProducerPosition(block common.BlockInterface, c
 }
 
 func (chain *ShardChain) InsertBlk(block common.BlockInterface) error {
-	//if chain.Blockchain.config.ConsensusEngine.IsOngoing(chain.ChainName) {
-	//	return NewBlockChainError(ConsensusIsOngoingError, errors.New(fmt.Sprint(chain.ChainName, block.Hash())))
-	//}
+	chain.insertLock.Lock()
+	defer chain.insertLock.Unlock()
 	return chain.Blockchain.InsertShardBlock_V2(block.(*ShardBlock), false)
 }
 
 func (chain *ShardChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
+	chain.insertLock.Lock()
+	defer chain.insertLock.Unlock()
 	go chain.Blockchain.config.Server.PushBlockToAll(block, false)
 	err := chain.Blockchain.InsertShardBlock_V2(block.(*ShardBlock), true)
 	if err != nil {
