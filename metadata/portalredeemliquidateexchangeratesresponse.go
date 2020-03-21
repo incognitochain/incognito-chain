@@ -102,6 +102,7 @@ func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBefor
 		instReqStatus := inst[2]
 		if instReqStatus != iRes.RequestStatus ||
 			(instReqStatus != common.PortalRedeemLiquidateExchangeRatesSuccessChainStatus) {
+			Logger.log.Error("WARNING - VALIDATION: status is not exactly, status  %v", instReqStatus)
 			continue
 		}
 
@@ -110,7 +111,7 @@ func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBefor
 		var requesterAddrStrFromInst string
 		var redeemAmountFromInst uint64
 		var totalPTokenReceived uint64
-		var tokenIDStrFromInst string
+		//var tokenIDStrFromInst string
 
 		contentBytes := []byte(inst[3])
 		var redeemReqContent PortalRedeemLiquidateExchangeRatesContent
@@ -125,7 +126,7 @@ func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBefor
 		requesterAddrStrFromInst = redeemReqContent.RedeemerIncAddressStr
 		redeemAmountFromInst = redeemReqContent.RedeemAmount
 		totalPTokenReceived = redeemReqContent.TotalPTokenReceived
-		tokenIDStrFromInst = redeemReqContent.TokenID
+		//tokenIDStrFromInst = redeemReqContent.TokenID
 
 		if !bytes.Equal(iRes.ReqTxID[:], txReqIDFromInst[:]) ||
 			shardID != shardIDFromInst {
@@ -153,10 +154,11 @@ func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBefor
 			continue
 		}
 
+		PRVIDStr := common.PRVCoinID.String()
 		_, pk, paidAmount, assetID := tx.GetTransferData()
 		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
 			redeemAmountFromInst != paidAmount ||
-			tokenIDStrFromInst != assetID.String() {
+			PRVIDStr != assetID.String() {
 			continue
 		}
 		idx = i

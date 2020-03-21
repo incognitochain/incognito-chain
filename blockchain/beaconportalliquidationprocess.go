@@ -140,9 +140,6 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(beaco
 	}
 
 	reqStatus := instructions[2]
-
-	Logger.log.Infof("status %v", reqStatus)
-
 	if reqStatus == common.PortalLiquidateTPExchangeRatesSuccessChainStatus {
 		//validation
 		detectTPExchangeRates, err := calculateTPRatio(custodianState.HoldingPubTokens, custodianState.LockedAmountCollateral, exchangeRate)
@@ -285,6 +282,8 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(beaconHe
 		}
 
 		currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey] = liquidateExchangeRates
+
+		Logger.log.Infof("Redeem Liquidation: Amount refund to user amount ptoken %v, amount prv %v", actionData.RedeemAmount, totalPrv)
 
 		redeemKey := lvdb.NewRedeemLiquidateExchangeRatesKey(actionData.TxReqID.String())
 		redeem, _ := NewRedeemLiquidateExchangeRates(

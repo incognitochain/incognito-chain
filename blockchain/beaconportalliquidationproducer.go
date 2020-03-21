@@ -780,6 +780,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
 		return [][]string{inst}, nil
 	}
 
+	Logger.log.Infof("Redeem Liquidation: Amount refund to user amount ptoken %v, amount prv %v", meta.RedeemAmount, totalPrv)
 	liquidateExchangeRates.Rates[meta.TokenID] = lvdb.LiquidateExchangeRatesDetail{
 		HoldAmountFreeCollateral: liquidateByTokenID.HoldAmountFreeCollateral - totalPrv,
 		HoldAmountPubToken: liquidateByTokenID.HoldAmountPubToken - meta.RedeemAmount,
@@ -793,7 +794,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
 		meta.RedeemerIncAddressStr,
 		meta.RemoteAddress,
 		meta.RedeemFee,
-		0,
+		totalPrv,
 		meta.Type,
 		actionData.ShardID,
 		actionData.TxReqID,
