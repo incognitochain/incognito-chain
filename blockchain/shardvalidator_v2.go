@@ -58,6 +58,11 @@ func (blockchain *BlockChain) ValidateProposedShardBlock_V2(shardProposedBlock *
 func (shardFlowState *ShardProcessState) PreValidateProcess(proposeBlock *ShardBlock) (err error) {
 	//TODO: basic validation
 
+	//check block version
+	if proposeBlock.GetVersion() != shardFlowState.blockchain.config.ConsensusEngine.GetCurrentConsensusVersion() {
+		return fmt.Errorf("Block created with wrong version %v. Expect %v", proposeBlock.GetVersion(), shardFlowState.blockchain.config.ConsensusEngine.GetCurrentConsensusVersion())
+	}
+
 	//validate block signature
 	if err := shardFlowState.blockchain.config.ConsensusEngine.ValidateProducerPosition(proposeBlock, shardFlowState.curView.ShardCommittee); err != nil {
 		return err

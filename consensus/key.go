@@ -198,3 +198,7 @@ func (engine *Engine) ExtractBridgeValidationData(block common.BlockInterface) (
 	}
 	return nil, nil, blsbft.NewConsensusError(blsbft.ConsensusTypeNotExistError, errors.New(block.GetConsensusType()))
 }
+
+func (engine *Engine) GetCurrentConsensusVersion() int {
+	return engine.version
+}

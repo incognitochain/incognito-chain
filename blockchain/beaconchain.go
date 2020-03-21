@@ -19,7 +19,7 @@ type BeaconChain struct {
 	BlockGen   *BlockGenerator
 	Blockchain *BlockChain
 	ChainName  string
-	Ready      bool
+	Ready      bool //when has peerstate
 
 	insertLock sync.Mutex
 }
@@ -139,6 +139,7 @@ func (chain *BeaconChain) GetMaxBlkCreateTime() time.Duration {
 func (chain *BeaconChain) IsReady() bool {
 	return chain.Ready
 }
+
 func (chain *BeaconChain) SetReady(ready bool) {
 	chain.Ready = ready
 }

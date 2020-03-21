@@ -79,10 +79,10 @@ func (s *ShardSyncProcess) start() {
 							BestViewHash:   peerShardState.BlockHash.String(),
 							BestViewHeight: peerShardState.Height,
 						}
+						s.Chain.SetReady(true)
 					}
 				}
 			case <-ticker.C:
-				s.Chain.SetReady(s.isCatchUp)
 				for sender, ps := range s.shardPeerState {
 					if ps.Timestamp < time.Now().Unix()-10 {
 						delete(s.shardPeerState, sender)

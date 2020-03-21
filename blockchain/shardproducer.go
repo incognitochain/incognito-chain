@@ -334,7 +334,9 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(vie
 					}
 					tx, err := blockGenerator.buildReturnStakingAmountTx(view, outPublicKeys, producerPrivateKey, shardID)
 					if err != nil {
-						Logger.log.Error(err)
+						if strings.Index(err.Error(), "No staking tx in best state") == -1 {
+							Logger.log.Error(err)
+						}
 						continue
 					}
 					txHash := *tx.Hash()

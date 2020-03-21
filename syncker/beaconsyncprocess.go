@@ -78,8 +78,8 @@ func (s *BeaconSyncProcess) start(isCommittee bool) {
 					BestViewHash:   beaconPeerState.Beacon.BlockHash.String(),
 					BestViewHeight: beaconPeerState.Beacon.Height,
 				}
+				s.chain.SetReady(true)
 			case <-ticker.C:
-				s.chain.SetReady(s.isCatchUp)
 				for sender, ps := range s.beaconPeerStates {
 					if ps.Timestamp < time.Now().Unix()-10 {
 						delete(s.beaconPeerStates, sender)

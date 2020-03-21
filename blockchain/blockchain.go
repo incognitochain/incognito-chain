@@ -21,7 +21,7 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/transaction"
-	libp2p "github.com/libp2p/go-libp2p-peer"
+
 	"github.com/pkg/errors"
 )
 
@@ -51,43 +51,9 @@ type Config struct {
 	PubSubManager     *pubsub.PubSubManager
 	RandomClient      btc.RandomClient
 	Syncker           Syncker
-	Server            interface {
-		PublishNodeState(userLayer string, shardID int) error
-
-		PushMessageGetBlockBeaconByHeight(from uint64, to uint64) error
-		PushMessageGetBlockBeaconByHash(blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error
-		PushMessageGetBlockBeaconBySpecificHeight(heights []uint64, getFromPool bool) error
-
-		PushMessageGetBlockShardByHeight(shardID byte, from uint64, to uint64) error
-		PushMessageGetBlockShardByHash(shardID byte, blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error
-		PushMessageGetBlockShardBySpecificHeight(shardID byte, heights []uint64, getFromPool bool) error
-
-		PushMessageGetBlockShardToBeaconByHeight(shardID byte, from uint64, to uint64) error
-		PushMessageGetBlockShardToBeaconByHash(shardID byte, blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error
-		PushMessageGetBlockShardToBeaconBySpecificHeight(shardID byte, blksHeight []uint64, getFromPool bool, peerID libp2p.ID) error
-
-		PushMessageGetBlockCrossShardByHash(fromShard byte, toShard byte, blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error
-		PushMessageGetBlockCrossShardBySpecificHeight(fromShard byte, toShard byte, blksHeight []uint64, getFromPool bool, peerID libp2p.ID) error
-		UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string)
-		PushBlockToAll(block common.BlockInterface, isBeacon bool) error
-	}
-	// UserKeySet *incognitokey.KeySet
-
-	ConsensusEngine interface {
-		ValidateProducerPosition(blk common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
-		ValidateProducerSig(block common.BlockInterface, consensusType string) error
-		ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
-		GetCurrentMiningPublicKey() (string, string)
-		GetMiningPublicKeyByConsensus(consensusName string) (string, error)
-		GetUserLayer() (string, int)
-		GetUserRole() (string, string, int)
-		IsOngoing(chainName string) bool
-		CommitteeChange(chainName string)
-	}
-
-	Highway interface {
-		BroadcastCommittee(uint64, []incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey)
-	}
+	Server            Server
+	ConsensusEngine   ConsensusEngine
+	Highway           Highway
 }
 
 func NewBlockChain(config *Config, isTest bool) *BlockChain {

@@ -55,6 +55,11 @@ func (blockchain *BlockChain) ValidateProposedBeaconBlock_V2(beaconProposedBlock
 func (createState *BeaconProcessState) PreValidateProcess(proposeBlock *BeaconBlock) error {
 	//TODO: basic validation
 
+	//check block version
+	if proposeBlock.GetVersion() != createState.blockchain.config.ConsensusEngine.GetCurrentConsensusVersion() {
+		return fmt.Errorf("Block created with wrong version %v. Expect %v", proposeBlock.GetVersion(), createState.blockchain.config.ConsensusEngine.GetCurrentConsensusVersion())
+	}
+
 	//validate block signature
 	if err := createState.blockchain.config.ConsensusEngine.ValidateProducerPosition(proposeBlock, createState.curView.BeaconCommittee); err != nil {
 		return err

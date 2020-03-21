@@ -81,6 +81,7 @@ func (e *BLSBFT_V2) Start() error {
 	if e.isStarted {
 		return NewConsensusError(ConsensusAlreadyStartedError, errors.New(e.ChainKey))
 	}
+
 	e.isStarted = true
 	e.StopCh = make(chan struct{})
 	e.ProposeMessageCh = make(chan BFTPropose)
@@ -155,7 +156,10 @@ func (e *BLSBFT_V2) Start() error {
 				e.Logger.Infof("receive vote for block %s (%d)", voteMsg.BlockHash, len(e.receiveBlockByHash[voteMsg.BlockHash].votes))
 
 			case <-ticker:
-				//TODO: syncker module should tell it is ready or not
+				if !e.Chain.IsReady() {
+					continue
+				}
+
 				e.currentTime = time.Now().Unix()
 				e.currentTimeSlot = common.CalculateTimeSlot(e.currentTime)
 				bestView := e.Chain.GetBestView()

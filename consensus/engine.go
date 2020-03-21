@@ -149,12 +149,12 @@ func NewConsensusEngine() *Engine {
 }
 
 func (engine *Engine) Init(config *EngineConfig) {
-
 	engine.config = config
 	go engine.WatchCommitteeChange()
 }
 
 func (engine *Engine) Start() error {
+
 	fmt.Println("CONSENSUS: Start")
 	if engine.config.Node.GetPrivateKey() != "" {
 		keyList, err := engine.GenMiningKeyFromPrivateKey(engine.config.Node.GetPrivateKey())
