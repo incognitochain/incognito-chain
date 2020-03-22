@@ -189,11 +189,12 @@ var HttpHandler = map[string]httpHandler{
 	getCustodianWithdrawByTxId:                 (*HttpServer).handleGetCustodianWithdrawByTxId,
 	getCustodianLiquidationStatus:              (*HttpServer).handleGetCustodianLiquidationStatus,
 	createAndSendTxWithReqWithdrawRewardPortal: (*HttpServer).handleCreateAndSendTxWithReqWithdrawRewardPortal,
-	getLiquidationTpExchangeRates: 				(*HttpServer).handleGetLiquidationTpExchangeRates,
-	getLiquidationExchangeRates: 				(*HttpServer).handleGetLiquidationExchangeRates,
-	createAndSendRedeemLiquidationExchangeRates: (*HttpServer).handleCreateAndSendRedeemLiquidationExchangeRates,
-	createAndSendLiquidationCustodianDeposit: 	(*HttpServer).handleCreateAndSendLiquidationCustodianDeposit,
+	getLiquidationTpExchangeRatesByTokenId: 	(*HttpServer).handleGetLiquidationTpExchangeRatesByTokenId,
+	getLiquidationExchangeRatesPool: 			(*HttpServer).handleGetLiquidationExchangeRatesPool,
+	createAndSendRedeemLiquidationExchangeRates: 	(*HttpServer).handleCreateAndSendRedeemLiquidationExchangeRates,
+	createAndSendLiquidationCustodianDeposit: 		(*HttpServer).handleCreateAndSendLiquidationCustodianDeposit,
 	getAmountNeededForCustodianDepositLiquidation: 	(*HttpServer).handleGetAmountNeededForCustodianDepositLiquidation,
+	getLiquidationTpExchangeRates: 					(*HttpServer).handleGetLiquidationTpExchangeRates,
 
 	// relaying
 	createAndSendTxWithRelayingBNBHeader: (*HttpServer).handleCreateAndSendTxWithRelayingBNBHeader,

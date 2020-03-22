@@ -903,19 +903,19 @@ func calMinRedeemFee(redeemAmountInPToken uint64, tokenSymbol string, exchangeRa
 */
 func up150Percent(amount uint64) uint64 {
 	result := float64(amount) * 1.5 //return nano pBTC, pBNB
-	roundNumber := math.Round(result)
+	roundNumber := math.Ceil(result)
 	return uint64(roundNumber) //return nano pBTC, pBNB
 }
 
 func down150Percent(amount uint64) uint64 {
 	result := float64(amount) / 1.5
-	roundNumber := math.Round(result)
+	roundNumber := math.Ceil(result)
 	return uint64(roundNumber)
 }
 
 func upByPercent(amount uint64, percent int) uint64 {
 	result := float64(amount) * (float64(percent) / 100) //return nano pBTC, pBNB
-	roundNumber := math.Round(result)
+	roundNumber := math.Ceil(result)
 	return uint64(roundNumber) //return nano pBTC, pBNB
 }
 
@@ -1004,10 +1004,9 @@ func calculateTPRatio(holdPToken map[string]uint64, holdPRV map[string]uint64, f
 		if amountPTokenConverted <= 0 {
 			return nil, errors.New("Can not divide zero")
 		}
-		
+		//todo: calculate
 		percentUp := amountPRV * 100 / amountPTokenConverted
-		//todo: review round()
-		roundNumber := math.Round(float64(percentUp))
+		roundNumber := math.Ceil(float64(percentUp))
 		result[key] = int(roundNumber)
 	}
 

@@ -533,8 +533,6 @@ func (blockchain *BlockChain) processPortalExchangeRates(beaconHeight uint64, in
 func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, currentPortalState *CurrentPortalState) error {
 	exchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
 
-	Logger.log.Infof("Portal final exchange rates, start pick... count exchange rate request %v", len(currentPortalState.ExchangeRatesRequests))
-
 	//convert to slice
 	var btcExchangeRatesSlice []uint64
 	var bnbExchangeRatesSlice []uint64
