@@ -72,6 +72,7 @@ const (
 	gettransactionbyreceiver                   = "gettransactionbyreceiver"
 	listCustomToken                            = "listcustomtoken"
 	listPrivacyCustomToken                     = "listprivacycustomtoken"
+	listPrivacyCustomTokenByShard              = "listprivacycustomtokenbyshard"
 	getBalancePrivacyCustomToken               = "getbalanceprivacycustomtoken"
 	customTokenTxs                             = "customtoken"
 	listCustomTokenHolders                     = "customtokenholder"
@@ -90,11 +91,13 @@ const (
 	listCommitmentIndices                      = "listcommitmentindices"
 	createAndSendStakingTransaction            = "createandsendstakingtransaction"
 	createAndSendStopAutoStakingTransaction    = "createandsendstopautostakingtransaction"
+	decryptoutputcoinbykeyoftransaction        = "decryptoutputcoinbykeyoftransaction"
 
 	//===========For Testing and Benchmark==============
 	getAndSendTxsFromFile   = "getandsendtxsfromfile"
 	getAndSendTxsFromFileV2 = "getandsendtxsfromfilev2"
 	unlockMempool           = "unlockmempool"
+	getAutoStakingByHeight  = "getautostakingbyheight"
 	//==================================================
 
 	getShardBestState        = "getshardbeststate"
@@ -148,6 +151,7 @@ const (
 	// reward
 	CreateRawWithDrawTransaction = "withdrawreward"
 	getRewardAmount              = "getrewardamount"
+	getRewardAmountByPublicKey   = "getrewardamountbypublickey"
 	listRewardAmount             = "listrewardamount"
 
 	revertbeaconchain = "revertbeaconchain"
@@ -185,37 +189,41 @@ const (
 	getBurningAddress = "getburningaddress"
 
 	// portal
-	createAndSendTxWithCustodianDeposit         = "createandsendtxwithcustodiandeposit"
-	createAndSendTxWithReqPToken                = "createandsendtxwithreqptoken"
-	getPortalState                              = "getportalstate"
-	getPortalCustodianDepositStatus             = "getportalcustodiandepositstatus"
-	createAndSendRegisterPortingPublicTokens    = "createandsendregisterportingpublictokens"
-	createAndSendPortalExchangeRates            = "createandsendportalexchangerates"
-	getPortalFinalExchangeRates                 = "getportalfinalexchangerates"
-	getPortalPortingRequestByKey                = "getportalportingrequestbykey"
-	getPortalPortingRequestByPortingId          = "getportalportingrequestbyportingid"
-	convertExchangeRates                        = "convertexchangerates"
-	getPortalReqPTokenStatus                    = "getportalreqptokenstatus"
-	getPortingFees                              = "getportingfees"
-	createAndSendTxWithRedeemReq                = "createandsendtxwithredeemreq"
-	createAndSendTxWithReqUnlockCollateral      = "createandsendtxwithrequnlockcollateral"
-	getPortalReqUnlockCollateralStatus          = "getportalrequnlockcollateralstatus"
-	getPortalReqRedeemStatus                    = "getportalreqredeemstatus"
-	createAndSendCustodianWithdrawRequest       = "createandsendcustodianwithdrawrequest"
-	getCustodianWithdrawByTxId                  = "getcustodianwithdrawbytxid"
-	getCustodianLiquidationStatus               = "getcustodianliquidationstatus"
-	createAndSendTxWithReqWithdrawRewardPortal  = "createandsendtxwithreqwithdrawrewardportal"
-	createAndSendRedeemLiquidationExchangeRates = "createandsendredeemliquidationexchangerates"
-	createAndSendLiquidationCustodianDeposit    = "createandsendliquidationcustodiandeposit"
-	getAmountNeededForCustodianDepositLiquidation    = "getamountneededforcustodiandepositliquidation"
-	getLiquidationTpExchangeRates               = "getliquidationtpexchangerates"
-	getLiquidationTpExchangeRatesByTokenId      = "getliquidationexchangeratesbytokenid"
-	getLiquidationExchangeRatesPool    			= "getliquidationtpexchangeratespool"
+	createAndSendTxWithCustodianDeposit           = "createandsendtxwithcustodiandeposit"
+	createAndSendTxWithReqPToken                  = "createandsendtxwithreqptoken"
+	getPortalState                                = "getportalstate"
+	getPortalCustodianDepositStatus               = "getportalcustodiandepositstatus"
+	createAndSendRegisterPortingPublicTokens      = "createandsendregisterportingpublictokens"
+	createAndSendPortalExchangeRates              = "createandsendportalexchangerates"
+	getPortalFinalExchangeRates                   = "getportalfinalexchangerates"
+	getPortalPortingRequestByKey                  = "getportalportingrequestbykey"
+	getPortalPortingRequestByPortingId            = "getportalportingrequestbyportingid"
+	convertExchangeRates                          = "convertexchangerates"
+	getPortalReqPTokenStatus                      = "getportalreqptokenstatus"
+	getPortingFees                                = "getportingfees"
+	createAndSendTxWithRedeemReq                  = "createandsendtxwithredeemreq"
+	createAndSendTxWithReqUnlockCollateral        = "createandsendtxwithrequnlockcollateral"
+	getPortalReqUnlockCollateralStatus            = "getportalrequnlockcollateralstatus"
+	getPortalReqRedeemStatus                      = "getportalreqredeemstatus"
+	createAndSendCustodianWithdrawRequest         = "createandsendcustodianwithdrawrequest"
+	getCustodianWithdrawByTxId                    = "getcustodianwithdrawbytxid"
+	getCustodianLiquidationStatus                 = "getcustodianliquidationstatus"
+	createAndSendTxWithReqWithdrawRewardPortal    = "createandsendtxwithreqwithdrawrewardportal"
+	createAndSendRedeemLiquidationExchangeRates   = "createandsendredeemliquidationexchangerates"
+	createAndSendLiquidationCustodianDeposit      = "createandsendliquidationcustodiandeposit"
+	getAmountNeededForCustodianDepositLiquidation = "getamountneededforcustodiandepositliquidation"
+	getLiquidationTpExchangeRates                 = "getliquidationtpexchangerates"
+	getLiquidationTpExchangeRatesByTokenId        = "getliquidationexchangeratesbytokenid"
+	getLiquidationExchangeRatesPool               = "getliquidationtpexchangeratespool"
 
 	// relaying
 	createAndSendTxWithRelayingBNBHeader = "createandsendtxwithrelayingbnbheader"
 	getRelayingBNBHeaderState            = "getrelayingbnbheaderstate"
 	getRelayingBNBHeaderByBlockHeight    = "getrelayingbnbheaderbyblockheight"
+
+	// incognito mode for sc
+	getBurnProofForDepositToSC                = "getburnprooffordeposittosc"
+	createAndSendBurningForDepositToSCRequest = "createandsendburningfordeposittoscrequest"
 )
 
 const (

@@ -9,7 +9,7 @@ import (
 )
 
 func TestInitTxPrivacyToken(t *testing.T) {
-	for i :=0; i < 1; i++ {
+	for i := 0; i < 1; i++ {
 		//Generate sender private key & receiver payment address
 		seed := privacy.RandomScalar().ToBytesS()
 		masterKey, _ := wallet.NewMasterKey(seed)
@@ -33,11 +33,11 @@ func TestInitTxPrivacyToken(t *testing.T) {
 
 		// message to receiver
 		msg := "Incognito-chain"
-		receiverTK , _:= new(privacy.Point).FromBytesS(senderKey.KeySet.PaymentAddress.Tk)
+		receiverTK, _ := new(privacy.Point).FromBytesS(senderKey.KeySet.PaymentAddress.Tk)
 		msgCipherText, _ := privacy.HybridEncrypt([]byte(msg), receiverTK)
 
 		initAmount := uint64(10000)
-		paymentInfo := []*privacy.PaymentInfo{{PaymentAddress: senderKey.KeySet.PaymentAddress, Amount: initAmount, Message: msgCipherText.Bytes() }}
+		paymentInfo := []*privacy.PaymentInfo{{PaymentAddress: senderKey.KeySet.PaymentAddress, Amount: initAmount, Message: msgCipherText.Bytes()}}
 
 		inputCoinsPRV := []*privacy.InputCoin{}
 		paymentInfoPRV := []*privacy.PaymentInfo{}

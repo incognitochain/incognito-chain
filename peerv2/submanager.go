@@ -97,7 +97,7 @@ func (sub *SubManager) Subscribe(forced bool) error {
 	Logger.Debugf("Received topics = %+v, oldTopics = %+v", newTopics, sub.topics)
 
 	// Subscribing
-	if err := sub.subscribeNewTopics(newTopics, sub.topics); err != nil {
+	if err := sub.subscribeNewTopics(newTopics, sub.topics, forced); err != nil {
 		return err
 	}
 
@@ -135,7 +135,7 @@ func newUserRole(layer, role string, shardID int) userRole {
 }
 
 // subscribeNewTopics subscribes to new topics and unsubcribes any topics that aren't needed anymore
-func (sub *SubManager) subscribeNewTopics(newTopics, subscribed msgToTopics) error {
+func (sub *SubManager) subscribeNewTopics(newTopics, subscribed msgToTopics, forced bool) error {
 	found := func(tName string, tmap msgToTopics) bool {
 		for _, topicList := range tmap {
 			for _, t := range topicList {
@@ -147,36 +147,10 @@ func (sub *SubManager) subscribeNewTopics(newTopics, subscribed msgToTopics) err
 		return false
 	}
 
-	// Subscribe to new topics
-	for m, topicList := range newTopics {
-		Logger.Debug("Process message %v and topic %v", m, topicList)
-		for _, t := range topicList {
-			if found(t.Name, subscribed) {
-				Logger.Debugf("Continue 1 %v %v", t.Name, subscribed)
-				continue
-			}
-
-			if t.Act == proto.MessageTopicPair_PUB {
-				sub.subs[m] = append(sub.subs[m], Topic{Name: t.Name, Sub: nil, Act: t.Act})
-				Logger.Debugf("Continue 2 %v %v", t.Name, subscribed)
-				continue
-			}
-
-			Logger.Debugf("subscribing", m, t.Name)
-
-			s, err := sub.subscriber.Subscribe(t.Name)
-			if err != nil {
-				return errors.WithStack(err)
-			}
-			sub.subs[m] = append(sub.subs[m], Topic{Name: t.Name, Sub: s, Act: t.Act})
-			go processSubscriptionMessage(sub.messages, s)
-		}
-	}
-
 	// Unsubscribe to old ones
 	for m, topicList := range subscribed {
 		for _, t := range topicList {
-			if found(t.Name, newTopics) {
+			if !forced && found(t.Name, newTopics) { // Unsub and sub again if forced subscribe
 				continue
 			}
 
@@ -185,7 +159,9 @@ func (sub *SubManager) subscribeNewTopics(newTopics, subscribed msgToTopics) err
 				if s.Name == t.Name {
 					if t.Act != proto.MessageTopicPair_PUB {
 						Logger.Info("unsubscribing", m, t.Name)
-						go s.Sub.Cancel()
+						if s.Sub != nil {
+							go s.Sub.Cancel()
+						}
 					}
 					idx = i
 					break
@@ -201,6 +177,32 @@ func (sub *SubManager) subscribeNewTopics(newTopics, subscribed msgToTopics) err
 			} else {
 				sub.subs[m] = append(sub.subs[m][:idx], sub.subs[m][idx+1:]...)
 			}
+		}
+	}
+
+	// Subscribe to new topics
+	for m, topicList := range newTopics {
+		Logger.Info("Process message %v and topic %v", m, topicList)
+		for _, t := range topicList {
+			if !forced && found(t.Name, subscribed) {
+				Logger.Infof("Continue 1 %v %v", t.Name, subscribed)
+				continue
+			}
+
+			if t.Act == proto.MessageTopicPair_PUB {
+				sub.subs[m] = append(sub.subs[m], Topic{Name: t.Name, Sub: nil, Act: t.Act})
+				Logger.Infof("Continue 2 %v %v", t.Name, subscribed)
+				continue
+			}
+
+			Logger.Infof("subscribing", m, t.Name)
+
+			s, err := sub.subscriber.Subscribe(t.Name)
+			if err != nil {
+				return errors.WithStack(err)
+			}
+			sub.subs[m] = append(sub.subs[m], Topic{Name: t.Name, Sub: s, Act: t.Act})
+			go processSubscriptionMessage(sub.messages, s)
 		}
 	}
 	return nil
@@ -288,7 +290,6 @@ func getMessagesForLayer(mode, layer string, shardID []byte) []string {
 				wire.CmdBlkShardToBeacon,
 				wire.CmdTx,
 				wire.CmdPrivacyCustomToken,
-				wire.CmdCustomToken,
 			}
 		} else if layer == common.BeaconRole {
 			return []string{
@@ -303,7 +304,6 @@ func getMessagesForLayer(mode, layer string, shardID []byte) []string {
 				wire.CmdPeerState,
 				wire.CmdTx,
 				wire.CmdPrivacyCustomToken,
-				wire.CmdCustomToken,
 			}
 		}
 	case common.NodeModeRelay:
@@ -319,7 +319,6 @@ func getMessagesForLayer(mode, layer string, shardID []byte) []string {
 			wire.CmdBlockBeacon,
 			wire.CmdPeerState,
 			wire.CmdPrivacyCustomToken,
-			wire.CmdCustomToken,
 		}
 		if containShard {
 			msgs = append(msgs, wire.CmdBlockShard)

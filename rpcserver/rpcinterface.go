@@ -76,11 +76,13 @@ var HttpHandler = map[string]httpHandler{
 	listSerialNumbers:                       (*HttpServer).handleListSerialNumbers,
 	listCommitments:                         (*HttpServer).handleListCommitments,
 	listCommitmentIndices:                   (*HttpServer).handleListCommitmentIndices,
+	decryptoutputcoinbykeyoftransaction:     (*HttpServer).handleDecryptOutputCoinByKeyOfTransaction,
 
 	//======Testing and Benchmark======
 	getAndSendTxsFromFile:   (*HttpServer).handleGetAndSendTxsFromFile,
 	getAndSendTxsFromFileV2: (*HttpServer).handleGetAndSendTxsFromFileV2,
 	unlockMempool:           (*HttpServer).handleUnlockMempool,
+	getAutoStakingByHeight:  (*HttpServer).handleGetAutoStakingByHeight,
 	//=================================
 
 	// Beststate
@@ -101,6 +103,7 @@ var HttpHandler = map[string]httpHandler{
 	sendRawPrivacyCustomTokenTransaction:       (*HttpServer).handleSendRawPrivacyCustomTokenTransaction,
 	createAndSendPrivacyCustomTokenTransaction: (*HttpServer).handleCreateAndSendPrivacyCustomTokenTransaction,
 	listPrivacyCustomToken:                     (*HttpServer).handleListPrivacyCustomToken,
+	listPrivacyCustomTokenByShard:              (*HttpServer).handleListPrivacyCustomTokenByShard,
 	privacyCustomTokenTxs:                      (*HttpServer).handlePrivacyCustomTokenDetail,
 	getListPrivacyCustomTokenBalance:           (*HttpServer).handleGetListPrivacyCustomTokenBalance,
 	getBalancePrivacyCustomToken:               (*HttpServer).handleGetBalancePrivacyCustomToken,
@@ -134,6 +137,7 @@ var HttpHandler = map[string]httpHandler{
 	//reward
 	CreateRawWithDrawTransaction: (*HttpServer).handleCreateAndSendWithDrawTransaction,
 	getRewardAmount:              (*HttpServer).handleGetRewardAmount,
+	getRewardAmountByPublicKey:   (*HttpServer).handleGetRewardAmountByPublicKey,
 	listRewardAmount:             (*HttpServer).handleListRewardAmount,
 
 	// revert
@@ -200,6 +204,10 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendTxWithRelayingBNBHeader: (*HttpServer).handleCreateAndSendTxWithRelayingBNBHeader,
 	getRelayingBNBHeaderState:            (*HttpServer).handleGetRelayingBNBHeaderState,
 	getRelayingBNBHeaderByBlockHeight:    (*HttpServer).handleGetRelayingBNBHeaderByBlockHeight,
+
+	// incognnito mode for sc
+	getBurnProofForDepositToSC:                (*HttpServer).handleGetBurnProofForDepositToSC,
+	createAndSendBurningForDepositToSCRequest: (*HttpServer).handleCreateAndSendBurningForDepositToSCRequest,
 }
 
 // Commands that are available to a limited user

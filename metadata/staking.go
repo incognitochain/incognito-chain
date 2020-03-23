@@ -3,9 +3,8 @@ package metadata
 import (
 	"bytes"
 	"errors"
-
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -70,15 +69,7 @@ func (sm *StakingMetadata) ValidateMetadataByItself() bool {
 	return sm.Type == ShardStakingMeta
 }
 
-func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(
-	txr Transaction,
-	bcr BlockchainRetriever,
-	b byte,
-	db database.DatabaseInterface,
-) (
-	bool,
-	error,
-) {
+func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, b byte, stateDB *statedb.StateDB) (bool, error) {
 	SC, SPV, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR, err := bcr.GetAllCommitteeValidatorCandidate()
 	if err != nil {
 		return false, err

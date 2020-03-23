@@ -2,10 +2,12 @@ package incognitokey_test
 
 import (
 	"encoding/json"
+	"testing"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"testing"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 func TestConvertCommitteePublicKeyBetweenStringAndStruct(t *testing.T) {
@@ -98,4 +100,112 @@ func TestUnmarshallkey(t *testing.T) {
 		t.Fatal()
 	}
 	t.Log(incKeyBytes)
+}
+
+func TestCommitteePublicKey_IsValid(t *testing.T) {
+	type fields struct {
+		IncPubKey    privacy.PublicKey
+		MiningPubKey map[string][]byte
+	}
+	type args struct {
+		target incognitokey.CommitteePublicKey
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		{
+			name: "Valid case",
+			fields: fields{
+				IncPubKey: []byte{0, 1, 2, 3, 4, 5},
+				MiningPubKey: map[string][]byte{
+					"BLS": []byte{0, 2, 4, 6, 8},
+					"DSA": []byte{0, 2, 4, 6, 8},
+				},
+			},
+			args: args{
+				target: incognitokey.CommitteePublicKey{
+					IncPubKey: []byte{0, 1, 2, 3, 4, 6},
+					MiningPubKey: map[string][]byte{
+						"BLS": []byte{0, 2, 4, 6, 9},
+						"DSA": []byte{0, 2, 4, 6, 9},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "Invalid case",
+			fields: fields{
+				IncPubKey: []byte{0, 1, 2, 3, 4, 5},
+				MiningPubKey: map[string][]byte{
+					"BLS": []byte{0, 2, 4, 6, 8},
+					"DSA": []byte{0, 2, 4, 6, 8},
+				},
+			},
+			args: args{
+				target: incognitokey.CommitteePublicKey{
+					IncPubKey: []byte{0, 1, 2, 3, 4, 5},
+					MiningPubKey: map[string][]byte{
+						"BLS": []byte{0, 2, 4, 6, 9},
+						"DSA": []byte{0, 2, 4, 6, 9},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "Invalid case",
+			fields: fields{
+				IncPubKey: []byte{0, 1, 2, 3, 4, 5},
+				MiningPubKey: map[string][]byte{
+					"BLS": []byte{0, 2, 4, 6, 8},
+					"DSA": []byte{0, 2, 4, 6, 8},
+				},
+			},
+			args: args{
+				target: incognitokey.CommitteePublicKey{
+					IncPubKey: []byte{0, 1, 2, 3, 4, 6},
+					MiningPubKey: map[string][]byte{
+						"BLS": []byte{0, 2, 4, 6, 8},
+						"DSA": []byte{0, 2, 4, 6, 9},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "Invalid case",
+			fields: fields{
+				IncPubKey: []byte{0, 1, 2, 3, 4, 5},
+				MiningPubKey: map[string][]byte{
+					"BLS": []byte{0, 2, 4, 6, 8},
+					"DSA": []byte{0, 2, 4, 6, 8},
+				},
+			},
+			args: args{
+				target: incognitokey.CommitteePublicKey{
+					IncPubKey: []byte{0, 1, 2, 3, 4, 6},
+					MiningPubKey: map[string][]byte{
+						"BLS": []byte{0, 2, 4, 6, 6},
+						"DSA": []byte{0, 2, 4, 6, 8},
+					},
+				},
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			committeePublicKey := &incognitokey.CommitteePublicKey{
+				IncPubKey:    tt.fields.IncPubKey,
+				MiningPubKey: tt.fields.MiningPubKey,
+			}
+			if got := committeePublicKey.IsValid(tt.args.target); got != tt.want {
+				t.Errorf("CommitteePublicKey.IsValid() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

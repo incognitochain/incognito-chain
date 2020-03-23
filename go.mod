@@ -5,7 +5,7 @@ go 1.13
 require (
 	cloud.google.com/go v0.38.0
 	github.com/0xsirrush/color v1.7.0
-	github.com/allegro/bigcache v1.2.1 // indirect
+	github.com/allegro/bigcache v1.2.1
 	github.com/aristanetworks/goarista v0.0.0-20190704150520-f44d68189fd7 // indirect
 	github.com/binance-chain/go-sdk v1.2.2
 	github.com/btcsuite/btcd v0.20.1-beta
@@ -27,8 +27,9 @@ require (
 	github.com/jbenet/goprocess v0.1.3
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/jrick/logrotate v1.0.0
-	github.com/libp2p/go-libp2p v0.5.1
-	github.com/libp2p/go-libp2p-core v0.3.0
+	github.com/klauspost/compress v1.10.1
+	github.com/libp2p/go-libp2p v0.3.1
+	github.com/libp2p/go-libp2p-core v0.2.4
 	github.com/libp2p/go-libp2p-crypto v0.1.0
 	github.com/libp2p/go-libp2p-host v0.1.0
 	github.com/libp2p/go-libp2p-net v0.1.0
@@ -42,20 +43,22 @@ require (
 	github.com/multiformats/go-multiaddr v0.2.0
 	github.com/olekukonko/tablewriter v0.0.1 // indirect
 	github.com/olivere/elastic v6.2.21+incompatible
+	github.com/onsi/ginkgo v1.10.3 // indirect
+	github.com/onsi/gomega v1.7.1 // indirect
+	github.com/opentracing/opentracing-go v1.0.2
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/common v0.4.1
 	github.com/prometheus/tsdb v0.9.1 // indirect
 	github.com/stathat/consistent v1.0.0
-	github.com/steakknife/bloomfilter v0.0.0-20180922174646-6819c0d2a570 // indirect
+	github.com/steakknife/bloomfilter v0.0.0-20180922174646-6819c0d2a570
 	github.com/steakknife/hamming v0.0.0-20180906055917-c99c65617cd3 // indirect
-	github.com/stretchr/testify v1.4.0
-	github.com/syndtr/goleveldb v1.0.1-0.20190923125748-758128399b1d
+	github.com/stretchr/testify v1.5.0
+	github.com/syndtr/goleveldb v1.0.1-0.20190318030020-c3a204f8e965
 	github.com/tendermint/tendermint v0.32.3
-	github.com/whyrusleeping/go-notifier v0.0.0-20170827234753-097c5d47330f // indirect
-	golang.org/x/crypto v0.0.0-20191206172530-e9b2fee46413
+	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
 	google.golang.org/api v0.10.0
-	google.golang.org/grpc v1.26.0
+	google.golang.org/grpc v1.27.1
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	stathat.com/c/consistent v1.0.0 // indirect
 )

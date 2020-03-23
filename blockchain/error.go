@@ -165,6 +165,17 @@ const (
 	InitPDETradeResponseTransactionError
 	ProcessPDEInstructionError
 	ProcessPortalInstructionError
+	InitBeaconStateError
+	GetListOutputCoinsByKeysetError
+	ProcessSalaryInstructionsError
+	GetShardIDFromTxError
+	GetValueFromTxError
+	ValidateBlockWithPreviousShardBestStateError
+	ValidateBlockWithPreviousBeaconBestStateError
+	BackUpShardStateError
+	BackupCurrentBeaconStateError
+	ProcessAutoStakingError
+	ProcessPortalRelayingError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -315,6 +326,17 @@ var ErrCodeMessage = map[int]struct {
 	InitPDETradeResponseTransactionError:              {-1141, "Init PDE trade response tx Error"},
 	ProcessPDEInstructionError:                        {-1142, "Process PDE instruction Error"},
 	ProcessPortalInstructionError:                     {-1143, "Process Portal instruction Error"},
+	InitBeaconStateError:                              {-1144, "Init Beacon State Error"},
+	ProcessSalaryInstructionsError:                    {-1145, "Proccess Salary Instruction Error"},
+	GetShardIDFromTxError:                             {-1146, "Get ShardID From Tx Error"},
+	GetValueFromTxError:                               {-1147, "Get Value From Tx Error"},
+	ValidateBlockWithPreviousShardBestStateError:      {-1148, "Validate Block With Previous Shard Best State Error"},
+	BackUpShardStateError:                             {-1149, "Back Up Shard State Error"},
+	ValidateBlockWithPreviousBeaconBestStateError:     {-1150, "Validate Block With Previous Beacon Best State Error"},
+	BackupCurrentBeaconStateError:                     {-1151, "Backup Current Beacon State Error"},
+	ProcessAutoStakingError:                           {-1152, "Process Auto Staking Error"},
+	ProcessPortalRelayingError:                        {-1153, "Process Portal Relaying Error"},
+	GetListOutputCoinsByKeysetError:                   {-2000, "Get List Output Coins By Keyset Error"},
 }
 
 type BlockChainError struct {

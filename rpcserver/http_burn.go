@@ -3,19 +3,40 @@ package rpcserver
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
-	"github.com/pkg/errors"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"github.com/pkg/errors"
 )
 
 // handleGetBurnProof returns a proof of a tx burning pETH
-func (httpServer *HttpServer) handleGetBurnProof(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleGetBurnProof(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Infof("handleGetBurnProof params: %+v", params)
+	return retrieveBurnProof(params, closeChan, metadata.BurningConfirmMeta, httpServer)
+}
+
+// handleGetBurnProof returns a proof of a tx burning pETH
+func (httpServer *HttpServer) handleGetBurnProofForDepositToSC(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	Logger.log.Infof("handleGetBurnProofForDepositToSC params: %+v", params)
+	return retrieveBurnProof(params, closeChan, metadata.BurningConfirmForDepositToSCMeta, httpServer)
+}
+
+func retrieveBurnProof(
+	params interface{},
+	closeChan <-chan struct{},
+	burningMetaType int,
+	httpServer *HttpServer,
+) (interface{}, *rpcservice.RPCError) {
 	listParams, ok := params.([]interface{})
 	if !ok || len(listParams) < 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
@@ -30,30 +51,35 @@ func (httpServer *HttpServer) handleGetBurnProof(params interface{}, closeChan <
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-
-	bc := httpServer.config.BlockChain
-	db := *httpServer.config.Database
-
 	// Get block height from txID
-	height, err := httpServer.databaseService.GetBurningConfirm(*txID)
+	height, err := httpServer.blockService.GetBurningConfirm(*txID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, fmt.Errorf("proof of tx not found"))
 	}
+	return getBurnProofByHeight(burningMetaType, httpServer, height, txID)
+}
+
+func getBurnProofByHeight(
+	burningMetaType int,
+	httpServer *HttpServer,
+	height uint64,
+	txID *common.Hash,
+) (interface{}, *rpcservice.RPCError) {
 
 	// Get bridge block and corresponding beacon blocks
-	bridgeBlock, beaconBlocks, err := getShardAndBeaconBlocks(height, bc, db)
+	bridgeBlock, beaconBlocks, err := getShardAndBeaconBlocks(height, httpServer.GetBlockchain(), httpServer.GetDatabase())
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
 	// Get proof of instruction on bridge
-	bridgeInstProof, err := getBurnProofOnBridge(txID, bridgeBlock, db, httpServer.config.ConsensusEngine)
+	bridgeInstProof, err := getBurnProofOnBridge(burningMetaType, txID, bridgeBlock, httpServer.config.ConsensusEngine)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
 	// Get proof of instruction on beacon
-	beaconInstProof, err := getBurnProofOnBeacon(bridgeInstProof.inst, beaconBlocks, db, httpServer.config.ConsensusEngine)
+	beaconInstProof, err := getBurnProofOnBeacon(bridgeInstProof.inst, beaconBlocks, httpServer.GetDatabase(), httpServer.config.ConsensusEngine)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -67,19 +93,19 @@ func (httpServer *HttpServer) handleGetBurnProof(params interface{}, closeChan <
 
 // getBurnProofOnBridge finds a beacon committee swap instruction in a given bridge block and returns its proof
 func getBurnProofOnBridge(
+	burningMetaType int,
 	txID *common.Hash,
 	bridgeBlock *blockchain.ShardBlock,
-	db database.DatabaseInterface,
 	ce ConsensusEngine,
 ) (*swapProof, error) {
 	insts := bridgeBlock.Body.Instructions
-	_, instID := findBurnConfirmInst(insts, txID)
+	_, instID := findBurnConfirmInst(burningMetaType, insts, txID)
 	if instID < 0 {
 		return nil, fmt.Errorf("cannot find burning instruction in bridge block")
 	}
 
 	block := &shardBlock{ShardBlock: bridgeBlock}
-	proof, err := buildProofForBlock(block, insts, instID, db, ce)
+	proof, err := buildProofForBlock(block, insts, instID, ce)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +116,7 @@ func getBurnProofOnBridge(
 func getBurnProofOnBeacon(
 	inst []string,
 	beaconBlocks []*blockchain.BeaconBlock,
-	db database.DatabaseInterface,
+	db incdb.Database,
 	ce ConsensusEngine,
 ) (*swapProof, error) {
 	// Get beacon block and check if it contains beacon swap instruction
@@ -101,7 +127,7 @@ func getBurnProofOnBeacon(
 
 	insts := b.Body.Instructions
 	block := &beaconBlock{BeaconBlock: b}
-	return buildProofForBlock(block, insts, instID, db, ce)
+	return buildProofForBlock(block, insts, instID, ce)
 }
 
 // findBeaconBlockWithBurnInst finds a beacon block with a specific burning instruction and the instruction's index; nil if not found
@@ -125,8 +151,12 @@ func findBeaconBlockWithBurnInst(beaconBlocks []*blockchain.BeaconBlock, inst []
 }
 
 // findBurnConfirmInst finds a BurningConfirm instruction in a list, returns it along with its index
-func findBurnConfirmInst(insts [][]string, txID *common.Hash) ([]string, int) {
-	instType := strconv.Itoa(metadata.BurningConfirmMeta)
+func findBurnConfirmInst(
+	burningMetaType int,
+	insts [][]string,
+	txID *common.Hash,
+) ([]string, int) {
+	instType := strconv.Itoa(burningMetaType)
 	for i, inst := range insts {
 		if inst[0] != instType || len(inst) < 5 {
 			continue
@@ -167,7 +197,7 @@ func (httpServer *HttpServer) handleGetBurningAddress(params interface{}, closeC
 	}
 
 	beaconHeightParam := float64(0)
-	if len(listParams) >= 1{
+	if len(listParams) >= 1 {
 		beaconHeightParam, ok = listParams[0].(float64)
 		if !ok {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("beacon height is invalid"))

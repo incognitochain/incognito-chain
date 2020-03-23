@@ -1,7 +1,6 @@
 package incognitokey
 
 import (
-	"bytes"
 	"encoding/json"
 	"reflect"
 
@@ -92,7 +91,7 @@ func ConvertToBase58ShortFormat(strKeyList []string) ([]string, error) {
 	return tempString, nil
 }
 
-func IsEqualCommitteeKey(keyString1 string, keyString2 string) bool {
+/*func IsEqualCommitteeKey(keyString1 string, keyString2 string) bool {
 	var pubKey1 CommitteePublicKey
 	var pubKey2 CommitteePublicKey
 	keyBytes1, ver, err := base58.Base58Check{}.Decode(keyString1)
@@ -119,7 +118,7 @@ func IsEqualCommitteeKey(keyString1 string, keyString2 string) bool {
 		return true
 	}
 	return false
-}
+}*/
 
 func IsOneMiner(keyString1 string, keyString2 string) bool {
 	var pubKey1 CommitteePublicKey
@@ -150,37 +149,42 @@ func IsOneMiner(keyString1 string, keyString2 string) bool {
 	return false
 }
 
-func (committeePublicKey *CommitteePublicKey) IsEqual(target CommitteePublicKey) bool {
-	if bytes.Compare(committeePublicKey.IncPubKey[:], target.IncPubKey[:]) != 0 {
-		return false
-	}
-	if committeePublicKey.MiningPubKey == nil && target.MiningPubKey != nil {
-		return false
-	}
-	for key, value := range committeePublicKey.MiningPubKey {
-		if targetValue, ok := target.MiningPubKey[key]; !ok {
-			return false
-		} else {
-			if bytes.Compare(targetValue, value) != 0 {
-				return false
-			}
-		}
-	}
-	return true
-}
 func GetValidStakeStructCommitteePublicKey(committees []CommitteePublicKey, stakers []CommitteePublicKey) []CommitteePublicKey {
 	validStaker := []CommitteePublicKey{}
 	for _, staker := range stakers {
-		flag := false
+		flag := true
 		for _, committee := range committees {
-			if staker.IsEqual(committee) {
-				flag = true
+			if !staker.IsValid(committee) {
+				flag = false
 				break
 			}
 		}
-		if !flag {
+		if flag {
 			validStaker = append(validStaker, staker)
 		}
 	}
 	return validStaker
+}
+
+func CommitteeKeyListToMapString(keyList []CommitteePublicKey) []CommitteeKeyString {
+	result := []CommitteeKeyString{}
+	for _, key := range keyList {
+		var keyMap CommitteeKeyString
+		keyMap.IncPubKey = key.GetIncKeyBase58()
+		keyMap.MiningPubKey = make(map[string]string)
+		for keyType := range key.MiningPubKey {
+			keyMap.MiningPubKey[keyType] = key.GetMiningKeyBase58(keyType)
+		}
+		result = append(result, keyMap)
+	}
+	return result
+}
+
+func IndexOfCommitteeKey(item CommitteePublicKey, list []CommitteePublicKey) int {
+	for k, v := range list {
+		if item.IsEqual(v) {
+			return k
+		}
+	}
+	return -1
 }

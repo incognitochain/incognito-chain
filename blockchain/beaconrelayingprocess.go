@@ -7,6 +7,7 @@ import (
 	"errors"
 	"github.com/btcsuite/btcutil"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -16,7 +17,7 @@ import (
 	"strconv"
 )
 
-func (blockchain *BlockChain) processRelayingInstructions(block *BeaconBlock, bd *[]database.BatchData) error {
+func (blockchain *BlockChain) processRelayingInstructions(relayingStateDB *statedb.StateDB, block *BeaconBlock) error {
 	beaconHeight := block.Header.Height - 1
 	db := blockchain.GetDatabase()
 

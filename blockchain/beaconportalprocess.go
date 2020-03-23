@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -10,7 +11,7 @@ import (
 	"strconv"
 )
 
-func (blockchain *BlockChain) processPortalInstructions(block *BeaconBlock, bd *[]database.BatchData) error {
+func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.StateDB, block *BeaconBlock) error {
 	beaconHeight := block.Header.Height - 1
 	db := blockchain.GetDatabase()
 

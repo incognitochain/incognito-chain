@@ -2,9 +2,9 @@ package rpcserver
 
 import (
 	"encoding/json"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -74,7 +74,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithContractingReq(params interfa
 		return nil, err
 	}
 
-	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta, *httpServer.config.Database)
+	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
 	if rpcErr != nil {
 		Logger.log.Error(rpcErr)
 		return nil, rpcErr
@@ -112,6 +112,148 @@ func (httpServer *HttpServer) handleCreateAndSendContractingRequest(params inter
 }
 
 func (httpServer *HttpServer) handleCreateRawTxWithBurningReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return processBurningReq(
+		metadata.BurningRequestMeta,
+		params,
+		closeChan,
+		httpServer,
+	)
+}
+
+func (httpServer *HttpServer) handleCreateAndSendBurningRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithBurningReq(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	// sendResult, err1 := httpServer.handleSendRawCustomTokenTransaction(newParam, closeChan)
+	sendResult, err1 := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	return sendResult, nil
+}
+
+func (httpServer *HttpServer) handleCreateRawTxWithIssuingETHReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 5 elements"))
+	}
+
+	// get meta data from params
+	data, ok := arrayParams[4].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+	}
+	meta, err := metadata.NewIssuingETHRequestFromMap(data)
+	if err != nil {
+		rpcErr := rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		Logger.log.Error(rpcErr)
+		return nil, rpcErr
+	}
+
+	// create new param to build raw tx from param interface
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	if errNewParam != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+	}
+
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
+	if err1 != nil {
+		Logger.log.Error(err1)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	byteArrays, err2 := json.Marshal(tx)
+	if err2 != nil {
+		Logger.log.Error(err1)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingETHReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithIssuingETHReq(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCheckETHHashIssued(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+	}
+	data := arrayParams[0].(map[string]interface{})
+
+	issued, err := httpServer.blockService.CheckETHHashIssued(data)
+	if err != nil {
+		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	return issued, nil
+}
+
+func (httpServer *HttpServer) handleGetAllBridgeTokens(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	allBridgeTokens, err := httpServer.blockService.GetAllBridgeTokens()
+	if err != nil {
+		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	return allBridgeTokens, nil
+}
+
+func (httpServer *HttpServer) handleGetETHHeaderByHash(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+	}
+	ethBlockHash := arrayParams[0].(string)
+
+	ethHeader, err := rpcservice.GetETHHeaderByHash(ethBlockHash)
+	if err != nil {
+		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	return ethHeader, nil
+}
+
+func (httpServer *HttpServer) handleGetBridgeReqWithStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+	}
+	data := arrayParams[0].(map[string]interface{})
+
+	status, err := httpServer.blockService.GetBridgeReqWithStatus(data["TxReqID"].(string))
+	if err != nil {
+		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	return status, nil
+}
+
+func processBurningReq(
+	burningMetaType int,
+	params interface{},
+	closeChan <-chan struct{},
+	httpServer *HttpServer,
+) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 5 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 5 elements"))
@@ -158,12 +300,12 @@ func (httpServer *HttpServer) handleCreateRawTxWithBurningReq(params interface{}
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("remote address is invalid"))
 	}
 
-	meta, err := rpcservice.NewBurningRequestMetadata(senderPrivateKeyParam, tokenReceivers, tokenID, tokenName, remoteAddress)
+	meta, err := rpcservice.NewBurningRequestMetadata(senderPrivateKeyParam, tokenReceivers, tokenID, tokenName, remoteAddress, burningMetaType)
 	if err != nil {
 		return nil, err
 	}
 
-	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta, *httpServer.config.Database)
+	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
 	if rpcErr != nil {
 		Logger.log.Error(rpcErr)
 		return nil, rpcErr
@@ -181,136 +323,27 @@ func (httpServer *HttpServer) handleCreateRawTxWithBurningReq(params interface{}
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleCreateAndSendBurningRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	data, err := httpServer.handleCreateRawTxWithBurningReq(params, closeChan)
+func (httpServer *HttpServer) handleCreateRawTxWithBurningForDepositToSCReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return processBurningReq(
+		metadata.BurningForDepositToSCRequestMeta,
+		params,
+		closeChan,
+		httpServer,
+	)
+}
+
+func (httpServer *HttpServer) handleCreateAndSendBurningForDepositToSCRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithBurningForDepositToSCReq(params, closeChan)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
-
 	tx := data.(jsonresult.CreateTransactionResult)
 	base58CheckData := tx.Base58CheckData
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	// sendResult, err1 := httpServer.handleSendRawCustomTokenTransaction(newParam, closeChan)
 	sendResult, err1 := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
 	if err1 != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
 	}
-
 	return sendResult, nil
-}
-
-func (httpServer *HttpServer) handleCreateRawTxWithIssuingETHReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	if arrayParams == nil || len(arrayParams) < 5 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 5 elements"))
-	}
-
-	// get meta data from params
-	data, ok := arrayParams[4].(map[string]interface{})
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
-	}
-	meta, err := metadata.NewIssuingETHRequestFromMap(data)
-	if err != nil {
-		rpcErr := rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-		Logger.log.Error(rpcErr)
-		return nil, rpcErr
-	}
-
-	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
-	if errNewParam != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
-	}
-
-	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta, *httpServer.config.Database)
-	if err1 != nil {
-		Logger.log.Error(err1)
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
-	}
-
-	byteArrays, err2 := json.Marshal(tx)
-	if err2 != nil {
-		Logger.log.Error(err1)
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
-	}
-	result := jsonresult.CreateTransactionResult{
-		TxID:            tx.Hash().String(),
-		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
-	}
-	return result, nil
-}
-
-func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingETHReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	data, err := httpServer.handleCreateRawTxWithIssuingETHReq(params, closeChan)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	tx := data.(jsonresult.CreateTransactionResult)
-	base58CheckData := tx.Base58CheckData
-	newParam := make([]interface{}, 0)
-	newParam = append(newParam, base58CheckData)
-	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
-	return result, nil
-}
-
-func (httpServer *HttpServer) handleCheckETHHashIssued(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	if arrayParams == nil || len(arrayParams) < 1 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
-	}
-	data := arrayParams[0].(map[string]interface{})
-
-	issued, err := httpServer.databaseService.CheckETHHashIssued(data)
-	if err != nil {
-		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	return issued, nil
-}
-
-func (httpServer *HttpServer) handleGetAllBridgeTokens(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	allBridgeTokensBytes, err := httpServer.databaseService.GetAllBridgeTokens()
-	if err != nil {
-		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-
-	var allBridgeTokens []*lvdb.BridgeTokenInfo
-	err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
-	if err != nil {
-		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	return allBridgeTokens, nil
-}
-
-func (httpServer *HttpServer) handleGetETHHeaderByHash(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	if arrayParams == nil || len(arrayParams) < 1 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
-	}
-	ethBlockHash := arrayParams[0].(string)
-
-	ethHeader, err := rpcservice.GetETHHeaderByHash(ethBlockHash)
-	if err != nil {
-		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	return ethHeader, nil
-}
-
-func (httpServer *HttpServer) handleGetBridgeReqWithStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	if arrayParams == nil || len(arrayParams) < 1 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
-	}
-	data := arrayParams[0].(map[string]interface{})
-
-	status, err := httpServer.databaseService.GetBridgeReqWithStatus(data["TxReqID"].(string))
-	if err != nil {
-		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	return status, nil
 }

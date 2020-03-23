@@ -112,6 +112,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalLiquidationCustodianDeposit{}
 	case PortalLiquidationCustodianDepositResponseMeta:
 		md = &PortalLiquidationCustodianDepositResponse{}
+	case BurningForDepositToSCRequestMeta:
+		md = &BurningRequest{}
 	default:
 		Logger.log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", int(mtTemp["Type"].(float64)))
@@ -128,6 +130,7 @@ var bridgeMetas = []string{
 	strconv.Itoa(BeaconSwapConfirmMeta),
 	strconv.Itoa(BridgeSwapConfirmMeta),
 	strconv.Itoa(BurningConfirmMeta),
+	strconv.Itoa(BurningConfirmForDepositToSCMeta),
 }
 
 func HasBridgeInstructions(instructions [][]string) bool {

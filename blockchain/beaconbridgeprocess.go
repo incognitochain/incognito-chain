@@ -5,15 +5,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/database"
-	"math/big"
-	"strconv"
-
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/pkg/errors"
+	"math/big"
+	"strconv"
 )
 
 // NOTE: for whole bridge's deposit process, anytime an error occurs it will be logged for debugging and the request will be skipped for retry later. No error will be returned so that the network can still continue to process others.
@@ -31,7 +30,7 @@ type BurningReqAction struct {
 	RequestedTxID *common.Hash            `json:"RequestedTxID"`
 }
 
-func (blockchain *BlockChain) processBridgeInstructions(block *BeaconBlock, bd *[]database.BatchData) error {
+func (blockchain *BlockChain) processBridgeInstructions(bridgeStateDB *statedb.StateDB, block *BeaconBlock) error {
 	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
 	for _, inst := range block.Body.Instructions {
 		if len(inst) < 2 {
@@ -40,15 +39,15 @@ func (blockchain *BlockChain) processBridgeInstructions(block *BeaconBlock, bd *
 		var err error
 		switch inst[0] {
 		case strconv.Itoa(metadata.IssuingETHRequestMeta):
-			updatingInfoByTokenID, err = blockchain.processIssuingETHReq(inst, updatingInfoByTokenID)
+			updatingInfoByTokenID, err = blockchain.processIssuingETHReq(bridgeStateDB, inst, updatingInfoByTokenID)
 
 		case strconv.Itoa(metadata.IssuingRequestMeta):
-			updatingInfoByTokenID, err = blockchain.processIssuingReq(inst, updatingInfoByTokenID)
+			updatingInfoByTokenID, err = blockchain.processIssuingReq(bridgeStateDB, inst, updatingInfoByTokenID)
 
 		case strconv.Itoa(metadata.ContractingRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processContractingReq(inst, updatingInfoByTokenID)
 
-		case strconv.Itoa(metadata.BurningConfirmMeta):
+		case strconv.Itoa(metadata.BurningConfirmMeta), strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta):
 			updatingInfoByTokenID, err = blockchain.processBurningReq(inst, updatingInfoByTokenID)
 
 		}
@@ -67,19 +66,110 @@ func (blockchain *BlockChain) processBridgeInstructions(block *BeaconBlock, bd *
 			updatingAmt = updatingInfo.deductAmt - updatingInfo.countUpAmt
 			updatingType = "-"
 		}
-		err := blockchain.GetDatabase().UpdateBridgeTokenInfo(
+		err := statedb.UpdateBridgeTokenInfo(
+			bridgeStateDB,
 			updatingInfo.tokenID,
 			updatingInfo.externalTokenID,
 			updatingInfo.isCentralized,
 			updatingAmt,
 			updatingType,
-			bd,
 		)
 		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func (blockchain *BlockChain) processIssuingETHReq(bridgeStateDB *statedb.StateDB, instruction []string, updatingInfoByTokenID map[common.Hash]UpdatingInfo) (map[common.Hash]UpdatingInfo, error) {
+	if len(instruction) != 4 {
+		return nil, nil // skip the instruction
+	}
+	if instruction[2] == "rejected" {
+		txReqID, err := common.Hash{}.NewHashFromStr(instruction[3])
+		if err != nil {
+			fmt.Println("WARNING: an error occured while building tx request id in bytes from string: ", err)
+			return nil, nil
+		}
+		err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, *txReqID, common.BridgeRequestRejectedStatus)
+		if err != nil {
+			fmt.Println("WARNING: an error occured while tracking bridge request with rejected status to leveldb: ", err)
+		}
+		return nil, nil
+	}
+	contentBytes, err := base64.StdEncoding.DecodeString(instruction[3])
+	if err != nil {
+		fmt.Println("WARNING: an error occured while decoding content string of accepted issuance instruction: ", err)
+		return nil, nil
+	}
+	var issuingETHAcceptedInst metadata.IssuingETHAcceptedInst
+	err = json.Unmarshal(contentBytes, &issuingETHAcceptedInst)
+	if err != nil {
+		fmt.Println("WARNING: an error occured while unmarshaling accepted issuance instruction: ", err)
+		return nil, nil
+	}
+	err = statedb.InsertETHTxHashIssued(bridgeStateDB, issuingETHAcceptedInst.UniqETHTx)
+	if err != nil {
+		fmt.Println("WARNING: an error occured while inserting ETH tx hash issued to leveldb: ", err)
+		return nil, nil
+	}
+	updatingInfo, found := updatingInfoByTokenID[issuingETHAcceptedInst.IncTokenID]
+	if found {
+		updatingInfo.countUpAmt += issuingETHAcceptedInst.IssuingAmount
+	} else {
+		updatingInfo = UpdatingInfo{
+			countUpAmt:      issuingETHAcceptedInst.IssuingAmount,
+			deductAmt:       0,
+			tokenID:         issuingETHAcceptedInst.IncTokenID,
+			externalTokenID: issuingETHAcceptedInst.ExternalTokenID,
+			isCentralized:   false,
+		}
+	}
+	updatingInfoByTokenID[issuingETHAcceptedInst.IncTokenID] = updatingInfo
+	return updatingInfoByTokenID, nil
+}
+
+func (blockchain *BlockChain) processIssuingReq(bridgeStateDB *statedb.StateDB, instruction []string, updatingInfoByTokenID map[common.Hash]UpdatingInfo) (map[common.Hash]UpdatingInfo, error) {
+	if len(instruction) != 4 {
+		return nil, nil // skip the instruction
+	}
+
+	if instruction[2] == "rejected" {
+		txReqID, err := common.Hash{}.NewHashFromStr(instruction[3])
+		if err != nil {
+			fmt.Println("WARNING: an error occured while building tx request id in bytes from string: ", err)
+			return nil, nil
+		}
+		err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, *txReqID, common.BridgeRequestRejectedStatus)
+		if err != nil {
+			fmt.Println("WARNING: an error occured while tracking bridge request with rejected status to leveldb: ", err)
+		}
+		return nil, nil
+	}
+	contentBytes, err := base64.StdEncoding.DecodeString(instruction[3])
+	if err != nil {
+		fmt.Println("WARNING: an error occured while decoding content string of accepted issuance instruction: ", err)
+		return nil, nil
+	}
+	var issuingAcceptedInst metadata.IssuingAcceptedInst
+	err = json.Unmarshal(contentBytes, &issuingAcceptedInst)
+	if err != nil {
+		fmt.Println("WARNING: an error occured while unmarshaling accepted issuance instruction: ", err)
+		return nil, nil
+	}
+	updatingInfo, found := updatingInfoByTokenID[issuingAcceptedInst.IncTokenID]
+	if found {
+		updatingInfo.countUpAmt += issuingAcceptedInst.DepositedAmount
+	} else {
+		updatingInfo = UpdatingInfo{
+			countUpAmt:    issuingAcceptedInst.DepositedAmount,
+			deductAmt:     0,
+			tokenID:       issuingAcceptedInst.IncTokenID,
+			isCentralized: true,
+		}
+	}
+	updatingInfoByTokenID[issuingAcceptedInst.IncTokenID] = updatingInfo
+	return updatingInfoByTokenID, nil
 }
 
 func (blockchain *BlockChain) processContractingReq(instruction []string, updatingInfoByTokenID map[common.Hash]UpdatingInfo) (map[common.Hash]UpdatingInfo, error) {
@@ -154,131 +244,26 @@ func (blockchain *BlockChain) processBurningReq(instruction []string, updatingIn
 	return updatingInfoByTokenID, nil
 }
 
-func (blockchain *BlockChain) processIssuingETHReq(instruction []string, updatingInfoByTokenID map[common.Hash]UpdatingInfo) (map[common.Hash]UpdatingInfo, error) {
-	if len(instruction) != 4 {
-		return nil, nil // skip the instruction
-	}
-
-	if instruction[2] == "rejected" {
-		txReqID, err := common.Hash{}.NewHashFromStr(instruction[3])
-		if err != nil {
-			fmt.Println("WARNING: an error occured while building tx request id in bytes from string: ", err)
-			return nil, nil
-		}
-		err = blockchain.GetDatabase().TrackBridgeReqWithStatus(*txReqID, common.BridgeRequestRejectedStatus, nil)
-		if err != nil {
-			fmt.Println("WARNING: an error occured while tracking bridge request with rejected status to leveldb: ", err)
-		}
-		return nil, nil
-	}
-
-	db := blockchain.GetDatabase()
-	contentBytes, err := base64.StdEncoding.DecodeString(instruction[3])
-	if err != nil {
-		fmt.Println("WARNING: an error occured while decoding content string of accepted issuance instruction: ", err)
-		return nil, nil
-	}
-	var issuingETHAcceptedInst metadata.IssuingETHAcceptedInst
-	err = json.Unmarshal(contentBytes, &issuingETHAcceptedInst)
-	if err != nil {
-		fmt.Println("WARNING: an error occured while unmarshaling accepted issuance instruction: ", err)
-		return nil, nil
-	}
-	err = db.InsertETHTxHashIssued(issuingETHAcceptedInst.UniqETHTx)
-	if err != nil {
-		fmt.Println("WARNING: an error occured while inserting ETH tx hash issued to leveldb: ", err)
-		return nil, nil
-	}
-
-	updatingInfo, found := updatingInfoByTokenID[issuingETHAcceptedInst.IncTokenID]
-	if found {
-		updatingInfo.countUpAmt += issuingETHAcceptedInst.IssuingAmount
-	} else {
-		updatingInfo = UpdatingInfo{
-			countUpAmt:      issuingETHAcceptedInst.IssuingAmount,
-			deductAmt:       0,
-			tokenID:         issuingETHAcceptedInst.IncTokenID,
-			externalTokenID: issuingETHAcceptedInst.ExternalTokenID,
-			isCentralized:   false,
-		}
-	}
-	updatingInfoByTokenID[issuingETHAcceptedInst.IncTokenID] = updatingInfo
-	return updatingInfoByTokenID, nil
-}
-
-func (blockchain *BlockChain) processIssuingReq(instruction []string, updatingInfoByTokenID map[common.Hash]UpdatingInfo) (map[common.Hash]UpdatingInfo, error) {
-	if len(instruction) != 4 {
-		return nil, nil // skip the instruction
-	}
-
-	if instruction[2] == "rejected" {
-		txReqID, err := common.Hash{}.NewHashFromStr(instruction[3])
-		if err != nil {
-			fmt.Println("WARNING: an error occured while building tx request id in bytes from string: ", err)
-			return nil, nil
-		}
-		err = blockchain.GetDatabase().TrackBridgeReqWithStatus(*txReqID, common.BridgeRequestRejectedStatus, nil)
-		if err != nil {
-			fmt.Println("WARNING: an error occured while tracking bridge request with rejected status to leveldb: ", err)
-		}
-		return nil, nil
-	}
-
-	contentBytes, err := base64.StdEncoding.DecodeString(instruction[3])
-	if err != nil {
-		fmt.Println("WARNING: an error occured while decoding content string of accepted issuance instruction: ", err)
-		return nil, nil
-	}
-	var issuingAcceptedInst metadata.IssuingAcceptedInst
-	err = json.Unmarshal(contentBytes, &issuingAcceptedInst)
-	if err != nil {
-		fmt.Println("WARNING: an error occured while unmarshaling accepted issuance instruction: ", err)
-		return nil, nil
-	}
-
-	updatingInfo, found := updatingInfoByTokenID[issuingAcceptedInst.IncTokenID]
-	if found {
-		updatingInfo.countUpAmt += issuingAcceptedInst.DepositedAmount
-	} else {
-		updatingInfo = UpdatingInfo{
-			countUpAmt:    issuingAcceptedInst.DepositedAmount,
-			deductAmt:     0,
-			tokenID:       issuingAcceptedInst.IncTokenID,
-			isCentralized: true,
-		}
-	}
-	updatingInfoByTokenID[issuingAcceptedInst.IncTokenID] = updatingInfo
-	return updatingInfoByTokenID, nil
-}
-
-func decodeContent(content string, action interface{}) error {
-	contentBytes, err := base64.StdEncoding.DecodeString(content)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(contentBytes, &action)
-}
-
-func (blockchain *BlockChain) storeBurningConfirm(block *ShardBlock, bd *[]database.BatchData) error {
-	for _, inst := range block.Body.Instructions {
-		if inst[0] != strconv.Itoa(metadata.BurningConfirmMeta) {
+func (blockchain *BlockChain) storeBurningConfirm(bridgeStateDB *statedb.StateDB, shardBlock *ShardBlock) error {
+	for _, inst := range shardBlock.Body.Instructions {
+		if inst[0] != strconv.Itoa(metadata.BurningConfirmMeta) &&
+			inst[0] != strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta) {
 			continue
 		}
-		BLogger.log.Infof("storeBurningConfirm for block %d, inst %v", block.Header.Height, inst)
+		BLogger.log.Infof("storeBurningConfirm for shardBlock %d, inst %v, meta type %d", shardBlock.Header.Height, inst, inst[0])
 
 		txID, err := common.Hash{}.NewHashFromStr(inst[5])
 		if err != nil {
 			return errors.Wrap(err, "txid invalid")
 		}
-		if err := blockchain.config.DataBase.StoreBurningConfirm(*txID, block.Header.Height, bd); err != nil {
+		if err := statedb.StoreBurningConfirm(bridgeStateDB, *txID, shardBlock.Header.Height); err != nil {
 			return errors.Wrapf(err, "store failed, txID: %x", txID)
 		}
 	}
 	return nil
 }
 
-func (blockchain *BlockChain) updateBridgeIssuanceStatus(block *ShardBlock, bd *[]database.BatchData) error {
-	db := blockchain.config.DataBase
+func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.StateDB, block *ShardBlock) error {
 	for _, tx := range block.Body.Transactions {
 		metaType := tx.GetMetadataType()
 		var reqTxID common.Hash
@@ -290,10 +275,18 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(block *ShardBlock, bd *
 			reqTxID = meta.RequestedTxID
 		}
 		var err error
-		err = db.TrackBridgeReqWithStatus(reqTxID, common.BridgeRequestAcceptedStatus, bd)
+		err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestAcceptedStatus)
 		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func decodeContent(content string, action interface{}) error {
+	contentBytes, err := base64.StdEncoding.DecodeString(content)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(contentBytes, &action)
 }

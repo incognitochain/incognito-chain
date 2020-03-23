@@ -71,6 +71,10 @@ const (
 	// relaying
 	RelayingBNBHeaderMeta = 200
 	RelayingBTCHeaderMeta = 201
+
+	// incognito mode for smart contract
+	BurningForDepositToSCRequestMeta = 96
+	BurningConfirmForDepositToSCMeta = 97
 )
 
 var minerCreatedMetaTypes = []int{
@@ -114,6 +118,7 @@ var (
 //)
 const (
 	StopAutoStakingAmount = 0
+	ETHConfirmationBlocks = 15
 )
 
 var AcceptedWithdrawRewardRequestVersion = []int{0, 1}

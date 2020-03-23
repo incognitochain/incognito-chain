@@ -310,7 +310,7 @@ func RemoveValidator(validators []string, removedValidators []string) ([]string,
 		Sort Hash Value Then Re-arrange Candidate corresponding to Hash Value
 */
 func ShuffleCandidate(candidates []incognitokey.CommitteePublicKey, rand int64) ([]incognitokey.CommitteePublicKey, error) {
-	fmt.Println("Beacon Process/Shuffle Candidate: Candidate Before Sort ", candidates)
+	Logger.log.Debug("Beacon Process/Shuffle Candidate: Candidate Before Sort ", candidates)
 	hashes := []string{}
 	m := make(map[string]incognitokey.CommitteePublicKey)
 	sortedCandidate := []incognitokey.CommitteePublicKey{}
@@ -325,7 +325,7 @@ func ShuffleCandidate(candidates []incognitokey.CommitteePublicKey, rand int64) 
 	for _, hash := range hashes {
 		sortedCandidate = append(sortedCandidate, m[hash])
 	}
-	fmt.Println("Beacon Process/Shuffle Candidate: Candidate After Sort ", sortedCandidate)
+	Logger.log.Debug("Beacon Process/Shuffle Candidate: Candidate After Sort ", sortedCandidate)
 	return sortedCandidate, nil
 }
 
