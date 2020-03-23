@@ -3,13 +3,13 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"math/big"
 	"sort"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
@@ -59,12 +59,8 @@ func groupPDEActionsByShardID(
 	return pdeActionsByShardID
 }
 
-func (blockchain *BlockChain) buildStatefulInstructions(
-	statefulActionsByShardID map[byte][][]string,
-	beaconHeight uint64,
-	db database.DatabaseInterface,
-) [][]string {
-	currentPDEState, err := InitCurrentPDEStateFromDB(db, beaconHeight-1)
+func (blockchain *BlockChain) buildStatefulInstructions(stateDB *statedb.StateDB, statefulActionsByShardID map[byte][][]string, beaconHeight uint64) [][]string {
+	currentPDEState, err := InitCurrentPDEStateFromDB(stateDB, beaconHeight-1)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -95,10 +91,10 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			newInst := [][]string{}
 			switch metaType {
 			case metadata.IssuingRequestMeta:
-				newInst, err = blockchain.buildInstructionsForIssuingReq(contentStr, shardID, metaType, accumulatedValues)
+				newInst, err = blockchain.buildInstructionsForIssuingReq(stateDB, contentStr, shardID, metaType, accumulatedValues)
 
 			case metadata.IssuingETHRequestMeta:
-				newInst, err = blockchain.buildInstructionsForIssuingETHReq(contentStr, shardID, metaType, accumulatedValues)
+				newInst, err = blockchain.buildInstructionsForIssuingETHReq(stateDB, contentStr, shardID, metaType, accumulatedValues)
 
 			case metadata.PDEContributionMeta:
 				pdeContributionActionsByShardID = groupPDEActionsByShardID(
@@ -175,7 +171,7 @@ func sortPDETradeInstsByFee(
 				continue
 			}
 			tradeMeta := pdeTradeReqAction.Meta
-			poolPairKey := string(lvdb.BuildPDEPoolForPairKey(beaconHeight, tradeMeta.TokenIDToBuyStr, tradeMeta.TokenIDToSellStr))
+			poolPairKey := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight, tradeMeta.TokenIDToBuyStr, tradeMeta.TokenIDToSellStr))
 			tradesByPair, found := tradesByPairs[poolPairKey]
 			if !found {
 				tradesByPairs[poolPairKey] = []metadata.PDETradeRequestAction{pdeTradeReqAction}

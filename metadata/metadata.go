@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
@@ -16,8 +16,8 @@ import (
 type Metadata interface {
 	GetType() int
 	Hash() *common.Hash
-	CheckTransactionFee(Transaction, uint64, int64, database.DatabaseInterface) bool
-	ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error)
+	CheckTransactionFee(Transaction, uint64, int64, *statedb.StateDB) bool
+	ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, b byte, db *statedb.StateDB) (bool, error)
 	ValidateSanityData(bcr BlockchainRetriever, tx Transaction, beaconHeight uint64) (bool, bool, error)
 	ValidateMetadataByItself() bool
 	BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error)
@@ -63,13 +63,18 @@ type BlockchainRetriever interface {
 	GetAllCommitteeValidatorCandidateFlattenListFromDatabase() ([]string, error)
 	GetStakingTx(byte) map[string]string
 	GetAutoStakingList() map[string]bool
-	GetDatabase() database.DatabaseInterface
+	//GetDatabase() *statedb.StateDB
 	GetTxValue(txid string) (uint64, error)
 	GetShardIDFromTx(txid string) (byte, error)
 	GetCentralizedWebsitePaymentAddress() string
-	GetAllCoinID() ([]common.Hash, error)
+	ListPrivacyTokenAndBridgeTokenAndPRVByShardID(byte) ([]common.Hash, error)
 	GetBeaconHeightBreakPointBurnAddr() uint64
 	GetBurningAddress(blockHeight uint64) string
+	GetShardRewardStateDB(shardID byte) *statedb.StateDB
+	GetShardFeatureStateDB(shardID byte) *statedb.StateDB
+	GetBeaconFeatureStateDB() *statedb.StateDB
+	GetBeaconRewardStateDB() *statedb.StateDB
+	GetBeaconSlashStateDB() *statedb.StateDB
 }
 
 // Interface for all type of transaction
@@ -92,29 +97,24 @@ type Transaction interface {
 	GetReceivers() ([][]byte, []uint64)
 	GetUniqueReceiver() (bool, []byte, uint64)
 	GetTransferData() (bool, []byte, uint64, *common.Hash)
-
 	// Get receivers' data for custom token tx (nil for normal tx)
 	GetTokenReceivers() ([][]byte, []uint64)
 	GetTokenUniqueReceiver() (bool, []byte, uint64)
-
 	GetMetadataFromVinsTx(BlockchainRetriever) (Metadata, error)
 	GetTokenID() *common.Hash
-
 	ListSerialNumbersHashH() []common.Hash
 	Hash() *common.Hash
-
 	// VALIDATE FUNC
 	CheckTxVersion(int8) bool
 	// CheckTransactionFee(minFeePerKbTx uint64) bool
 	ValidateTxWithCurrentMempool(MempoolRetriever) error
-	ValidateTxWithBlockChain(BlockchainRetriever, byte, database.DatabaseInterface) error
-	ValidateDoubleSpendWithBlockchain(BlockchainRetriever, byte, database.DatabaseInterface, *common.Hash) error
 	ValidateSanityData(BlockchainRetriever, uint64) (bool, error)
-	ValidateTxByItself(bool, database.DatabaseInterface, BlockchainRetriever, byte, bool) (bool, error)
+	ValidateTxWithBlockChain(BlockchainRetriever, byte, *statedb.StateDB) error
+	ValidateDoubleSpendWithBlockchain(BlockchainRetriever, byte, *statedb.StateDB, *common.Hash) error
+	ValidateTxByItself(bool, *statedb.StateDB, *statedb.StateDB, BlockchainRetriever, byte, bool) (bool, error)
 	ValidateType() bool
-	ValidateTransaction(bool, database.DatabaseInterface, byte, *common.Hash, bool, bool) (bool, error)
+	ValidateTransaction(bool, *statedb.StateDB, *statedb.StateDB, byte, *common.Hash, bool, bool) (bool, error)
 	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, BlockchainRetriever, *AccumulatedValues) (bool, error)
-
 	IsPrivacy() bool
 	IsCoinsBurning(BlockchainRetriever, uint64) bool
 	CalculateTxValue() uint64
@@ -124,15 +124,15 @@ type Transaction interface {
 func getPDEPoolPair(
 	prvIDStr, tokenIDStr string,
 	beaconHeight int64,
-	db database.DatabaseInterface,
-) (*lvdb.PDEPoolForPair, error) {
-	var pdePoolForPair lvdb.PDEPoolForPair
+	stateDB *statedb.StateDB,
+) (*rawdbv2.PDEPoolForPair, error) {
+	var pdePoolForPair rawdbv2.PDEPoolForPair
 	var err error
 	poolPairBytes := []byte{}
 	if beaconHeight == -1 {
-		poolPairBytes, err = db.GetLatestPDEPoolForPair(prvIDStr, tokenIDStr)
+		poolPairBytes, err = statedb.GetLatestPDEPoolForPair(stateDB, prvIDStr, tokenIDStr)
 	} else {
-		poolPairBytes, err = db.GetPDEPoolForPair(uint64(beaconHeight), prvIDStr, tokenIDStr)
+		poolPairBytes, err = statedb.GetPDEPoolForPair(stateDB, uint64(beaconHeight), prvIDStr, tokenIDStr)
 	}
 	if err != nil {
 		return nil, err
@@ -147,7 +147,7 @@ func getPDEPoolPair(
 	return &pdePoolForPair, nil
 }
 
-func isPairValid(poolPair *lvdb.PDEPoolForPair, beaconHeight int64) bool {
+func isPairValid(poolPair *rawdbv2.PDEPoolForPair, beaconHeight int64) bool {
 	if poolPair == nil {
 		return false
 	}
@@ -170,11 +170,11 @@ func convertValueBetweenCurrencies(
 	currentCurrencyIDStr string,
 	tokenID *common.Hash,
 	beaconHeight int64,
-	db database.DatabaseInterface,
+	stateDB *statedb.StateDB,
 ) (float64, error) {
 	prvIDStr := common.PRVCoinID.String()
 	tokenIDStr := tokenID.String()
-	pdePoolForPair, err := getPDEPoolPair(prvIDStr, tokenIDStr, beaconHeight, db)
+	pdePoolForPair, err := getPDEPoolPair(prvIDStr, tokenIDStr, beaconHeight, stateDB)
 	if err != nil {
 		return 0, NewMetadataTxError(CouldNotGetExchangeRateError, err)
 	}
@@ -206,14 +206,14 @@ func ConvertNativeTokenToPrivacyToken(
 	nativeTokenAmount uint64,
 	tokenID *common.Hash,
 	beaconHeight int64,
-	db database.DatabaseInterface,
+	stateDB *statedb.StateDB,
 ) (float64, error) {
 	return convertValueBetweenCurrencies(
 		nativeTokenAmount,
 		common.PRVCoinID.String(),
 		tokenID,
 		beaconHeight,
-		db,
+		stateDB,
 	)
 }
 
@@ -223,13 +223,13 @@ func ConvertPrivacyTokenToNativeToken(
 	privacyTokenAmount uint64,
 	tokenID *common.Hash,
 	beaconHeight int64,
-	db database.DatabaseInterface,
+	stateDB *statedb.StateDB,
 ) (float64, error) {
 	return convertValueBetweenCurrencies(
 		privacyTokenAmount,
 		tokenID.String(),
 		tokenID,
 		beaconHeight,
-		db,
+		stateDB,
 	)
 }

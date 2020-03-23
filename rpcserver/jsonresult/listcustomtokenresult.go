@@ -4,7 +4,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/transaction"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
 type CustomToken struct {
@@ -21,15 +21,18 @@ type CustomToken struct {
 	TxInfo             string   `json:"TxInfo"`
 }
 
-func NewPrivacyToken(obj transaction.TxCustomTokenPrivacy) *CustomToken {
+func NewPrivacyToken(tokenState *statedb.TokenState) *CustomToken {
 	customToken := &CustomToken{}
-	customToken.ID = obj.TxPrivacyTokenData.PropertyID.String()
-	customToken.Symbol = obj.TxPrivacyTokenData.PropertySymbol
-	customToken.Name = obj.TxPrivacyTokenData.PropertyName
-	customToken.Amount = obj.TxPrivacyTokenData.Amount
-	//customToken.Image = common.Render(obj.TxPrivacyTokenData.PropertyID[:])
+	customToken.ID = tokenState.TokenID().String()
+	customToken.Symbol = tokenState.PropertySymbol()
+	customToken.Name = tokenState.PropertyName()
+	customToken.Amount = tokenState.Amount()
 	customToken.IsPrivacy = true
-	customToken.TxInfo = base58.Base58Check{}.Encode(obj.Info, common.ZeroByte)
+	customToken.TxInfo = base58.Base58Check{}.Encode(tokenState.Info(), common.ZeroByte)
+	customToken.CountTxs = len(tokenState.Txs())
+	for _, tx := range tokenState.Txs() {
+		customToken.ListTxs = append(customToken.ListTxs, tx.String())
+	}
 	return customToken
 }
 

@@ -179,3 +179,12 @@ func CommitteeKeyListToMapString(keyList []CommitteePublicKey) []CommitteeKeyStr
 	}
 	return result
 }
+
+func IndexOfCommitteeKey(item CommitteePublicKey, list []CommitteePublicKey) int {
+	for k, v := range list {
+		if item.IsEqual(v) {
+			return k
+		}
+	}
+	return -1
+}

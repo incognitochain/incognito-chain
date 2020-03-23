@@ -3,13 +3,15 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
 
-	"github.com/incognitochain/incognito-chain/database"
-	_ "github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/incdb"
+	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -17,16 +19,17 @@ import (
 func main() {
 	//==========Write
 	transactions := []string{}
-	db, err := database.Open("leveldb", filepath.Join("./", "./"))
+	db, err := incdb.Open("leveldb", filepath.Join("./", "./"))
 	if err != nil {
 		fmt.Print("could not open connection to leveldb")
 		fmt.Print(err)
 		panic(err)
 	}
+	stateDB, _ := statedb.NewWithPrefixTrie(common.EmptyRoot, statedb.NewDatabaseAccessWarper(db))
 	privateKeys := readTxsFromFile("private-keys-shard-1-1.json")
 	fmt.Println(len(privateKeys))
 	for _, privateKey := range privateKeys {
-		txs := initTx("1000", privateKey, db)
+		txs := initTx("1000", privateKey, stateDB)
 		transactions = append(transactions, txs[0])
 	}
 	fmt.Println(len(transactions))
@@ -49,7 +52,7 @@ func readTxsFromFile(filename string) []string {
 	defer jsonFile.Close()
 	return result
 }
-func initTx(amount string, privateKey string, db database.DatabaseInterface) []string {
+func initTx(amount string, privateKey string, stateDB *statedb.StateDB) []string {
 	var initTxs []string
 	var initAmount, _ = strconv.Atoi(amount) // amount init
 	testUserkeyList := []string{
@@ -62,7 +65,7 @@ func initTx(amount string, privateKey string, db database.DatabaseInterface) []s
 
 		testSalaryTX := transaction.Tx{}
 		testSalaryTX.InitTxSalary(uint64(initAmount), &testUserKey.KeySet.PaymentAddress, &testUserKey.KeySet.PrivateKey,
-			db,
+			stateDB,
 			nil,
 		)
 		initTx, _ := json.Marshal(testSalaryTX)

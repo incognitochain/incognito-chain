@@ -20,19 +20,19 @@ List of flags
 Example:
 - Backup:
     - Beacon: 
-    `$ ./cmd/incognito --cmd backupchain --chaindatadir "data/fullnode/testnet/block" --outdatadir "data/" --beacon --testnet`
+    `$ ./cmd/incognito --cmd backupchain --chaindatadir "../testnet/fullnode/testnet/block" --outdatadir "../testnet/" --beacon --testnet`
     - Shard:
-    `$ ./cmd/incognito --cmd backupchain --chaindatadir "data/fullnode/testnet/block" --outdatadir "data/" --shardids 0,1,2,3 --testnet`
+    `$ ./cmd/incognito --cmd backupchain --chaindatadir "../testnet/fullnode/testnet/block" --outdatadir "../testnet/" --shardids 0,1,2,3 --testnet`
     - All:
-    `$ ./cmd/incognito --cmd backupchain --chaindatadir "data/fullnode/testnet/block" --outdatadir "data/" --shardids all --beacon --testnet`
+    `$ ./cmd/incognito-cmd --cmd backupchain --chaindatadir "../testnet/fullnode/testnet/block" --outdatadir "../testnet/" --shardids all --beacon --testnet`
   
 - Restore: 
     - Beacon: Restore only Beacon Chain
     
-    `$ ./cmd/incognito --cmd restorechain --chaindatadir "data/fullnode/testnet/block" --filename data/export-incognito-beacon --beacon --testnet`
+    `$ ./cmd/incognito-cmd --cmd restorechain --chaindatadir /home/testnet1/fullnode/testnet/block" --filename ../testnet/export-incognito-beacon --beacon --testnet`
     - Shard: Restore only Shard Chain (support multi shard at a time)
     
-    `$ ./cmd/incognito --cmd restorechain --chaindatadir "data/fullnode/testnet/block" --filename "data/export-incognito-shard-0,data/export-incognito-shard-1" --testnet`
+    `$ ./cmd/incognito-cmd --cmd restorechain --chaindatadir "/home/testnet1/fullnode/testnet/block" --filename "../testnet/export-incognito-shard-0,../testnet/export-incognito-shard-1,../testnet/export-incognito-shard-2,../testnet/export-incognito-shard-3,../testnet/export-incognito-shard-4,../testnet/export-incognito-shard-5,../testnet/export-incognito-shard-6,../testnet/export-incognito-shard-7" --testnet`
 
 ### Notice
 - You SHOULD Restore Beacon Chain Database BEFORE Shard Chain Database

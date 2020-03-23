@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/aggregatedrange"
 )
@@ -22,11 +22,11 @@ func (b *batchTransaction) AddTxs(txs []metadata.Transaction) {
 	b.txs = append(b.txs, txs...)
 }
 
-func (b *batchTransaction) Validate(db database.DatabaseInterface, bcr metadata.BlockchainRetriever) (bool, error, int) {
-	return b.validateBatchTxsByItself(b.txs, db, bcr)
+func (b *batchTransaction) Validate(transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, bcr metadata.BlockchainRetriever) (bool, error, int) {
+	return b.validateBatchTxsByItself(b.txs, transactionStateDB, bridgeStateDB, bcr)
 }
 
-func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transaction, db database.DatabaseInterface, bcr metadata.BlockchainRetriever) (bool, error, int) {
+func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transaction, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, bcr metadata.BlockchainRetriever) (bool, error, int) {
 	prvCoinID := &common.Hash{}
 	err := prvCoinID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
@@ -36,7 +36,7 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 	for i, tx := range txList {
 		shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		hasPrivacy := tx.IsPrivacy()
-		ok, err := tx.ValidateTransaction(hasPrivacy, db, shardID, prvCoinID, true, false)
+		ok, err := tx.ValidateTransaction(hasPrivacy, transactionStateDB, bridgeStateDB, shardID, prvCoinID, true, false)
 		if !ok {
 			return false, err, i
 		}

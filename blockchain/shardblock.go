@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -11,35 +12,19 @@ import (
 )
 
 type ShardBlock struct {
-	// AggregatedSig string  `json:"AggregatedSig"`
-	// R             string  `json:"R"`
-	// ValidatorsIdx [][]int `json:"ValidatorsIdx"` //[0]: R | [1]:AggregatedSig
-	// ProducerSig   string  `json:"ProducerSig"`
-
 	ValidationData string `json:"ValidationData"`
-
-	Body   ShardBody
-	Header ShardHeader
+	Body           ShardBody
+	Header         ShardHeader
 }
 
 type ShardToBeaconBlock struct {
-	// AggregatedSig  string  `json:"AggregatedSig"`
-	// R              string  `json:"R"`
-	// ValidatorsIdx  [][]int `json:"ValidatorsIdx"` //[0]: R | [1]:AggregatedSig
-	// ProducerSig    string  `json:"ProducerSig"`
 	ValidationData string `json:"ValidationData"`
-
-	Instructions [][]string
-	Header       ShardHeader
+	Instructions   [][]string
+	Header         ShardHeader
 }
 
 type CrossShardBlock struct {
-	// AggregatedSig   string  `json:"AggregatedSig"`
-	// R               string  `json:"R"`
-	// ValidatorsIdx   [][]int `json:"ValidatorsIdx"` //[0]: R | [1]:AggregatedSig
-	// ProducerSig     string  `json:"ProducerSig"`
-	ValidationData string `json:"ValidationData"`
-
+	ValidationData  string `json:"ValidationData"`
 	Header          ShardHeader
 	ToShardID       byte
 	MerklePathShard []common.Hash
@@ -261,63 +246,15 @@ func (shardBlock *ShardBlock) AddTransaction(tx metadata.Transaction) error {
 	return nil
 }
 
-// func (shardBlock *ShardBlock) GetProducerPubKey() string {
-// 	return string(shardBlock.Header.ProducerAddress.Pk)
-// }
-
-// func (shardBlock *ShardBlock) VerifyBlockReward(blockchain *BlockChain) error {
-// 	hasBlockReward := false
-// 	txsFee := uint64(0)
-// 	for _, tx := range shardBlock.Body.Transactions {
-// 		if tx.GetMetadataType() == metadata.ShardBlockReward {
-// 			if hasBlockReward {
-// 				return errors.New("This block contains more than one coinbase transaction for shard block producer!")
-// 			}
-// 			hasBlockReward = true
-// 		} else {
-// 			txsFee += tx.GetTxFee()
-// 		}
-// 	}
-// 	if !hasBlockReward {
-// 		return errors.New("This block dont have coinbase tx for shard block producer")
-// 	}
-// 	numberOfTxs := len(shardBlock.Body.Transactions)
-// 	if shardBlock.Body.Transactions[numberOfTxs-1].GetMetadataType() != metadata.ShardBlockReward {
-// 		return errors.New("Coinbase transaction must be the last transaction")
-// 	}
-
-// 	receivers, values := shardBlock.Body.Transactions[numberOfTxs-1].GetReceivers()
-// 	if len(receivers) != 1 {
-// 		return errors.New("Wrong receiver")
-// 	}
-// 	if !common.ByteEqual(receivers[0], shardBlock.Header.ProducerAddress.Pk) {
-// 		return errors.New("Wrong receiver")
-// 	}
-// 	reward := blockchain.getRewardAmount(shardBlock.Header.Height)
-// 	reward += txsFee
-// 	if reward != values[0] {
-// 		return errors.New("Wrong reward value")
-// 	}
-// 	return nil
-// }
-
 func (shardBlock *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBlock {
 	if bc.IsTest {
 		return &ShardToBeaconBlock{}
 	}
 	block := ShardToBeaconBlock{}
-
-	// block.AggregatedSig = blk.AggregatedSig
-	// block.ValidatorsIdx = make([][]int, 2)                                           //multi-node
-	// block.ValidatorsIdx[0] = append(block.ValidatorsIdx[0], blk.ValidatorsIdx[0]...) //multi-node
-	// block.ValidatorsIdx[1] = append(block.ValidatorsIdx[1], blk.ValidatorsIdx[1]...) //multi-node
-	// block.R = blk.R
-	// block.ProducerSig = blk.ProducerSig
-
 	block.ValidationData = shardBlock.ValidationData
 	block.Header = shardBlock.Header
 	blockInstructions := shardBlock.Body.Instructions
-	previousShardBlockByte, err := bc.config.DataBase.FetchBlock(shardBlock.Header.PreviousBlockHash)
+	previousShardBlockByte, err := rawdbv2.GetShardBlockByHash(bc.config.DataBase, shardBlock.Header.PreviousBlockHash)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil
@@ -348,7 +285,7 @@ func (shardBlock *ShardBlock) CreateAllCrossShardBlock(activeShards int) map[byt
 		if shardID != shardBlock.Header.ShardID {
 			crossShard, err := shardBlock.CreateCrossShardBlock(shardID)
 			if crossShard != nil {
-				Logger.log.Infof("Create CrossShardBlock from Shard %+v to Shard %+v: %+v \n", shardBlock.Header.ShardID, shardID, crossShard)
+				Logger.log.Criticalf("Create CrossShardBlock from Shard %+v to Shard %+v: %+v \n", shardBlock.Header.ShardID, shardID, crossShard)
 			}
 			if crossShard != nil && err == nil {
 				allCrossShard[byte(i)] = crossShard
@@ -358,25 +295,17 @@ func (shardBlock *ShardBlock) CreateAllCrossShardBlock(activeShards int) map[byt
 	return allCrossShard
 }
 
-func (shardBlock *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, error) {
+func (shardBlock ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, error) {
 	crossShard := &CrossShardBlock{}
 	crossOutputCoin, crossCustomTokenPrivacyData := getCrossShardData(shardBlock.Body.Transactions, shardID)
 	// Return nothing if nothing to cross
 	if len(crossOutputCoin) == 0 && len(crossCustomTokenPrivacyData) == 0 {
 		return nil, NewBlockChainError(CreateCrossShardBlockError, errors.New("No cross Outputcoin, Cross Custom Token, Cross Custom Token Privacy"))
 	}
-	merklePathShard, merkleShardRoot := GetMerklePathCrossShard2(shardBlock.Body.Transactions, shardID)
+	merklePathShard, merkleShardRoot := GetMerklePathCrossShard(shardBlock.Body.Transactions, shardID)
 	if merkleShardRoot != shardBlock.Header.ShardTxRoot {
 		return crossShard, NewBlockChainError(VerifyCrossShardBlockShardTxRootError, fmt.Errorf("Expect Shard Tx Root To be %+v but get %+v", shardBlock.Header.ShardTxRoot, merkleShardRoot))
 	}
-	//Copy signature and header
-	// crossShard.AggregatedSig = block.AggregatedSig
-	// crossShard.ValidatorsIdx = make([][]int, 2)                                                  //multi-node
-	// crossShard.ValidatorsIdx[0] = append(crossShard.ValidatorsIdx[0], block.ValidatorsIdx[0]...) //multi-node
-	// crossShard.ValidatorsIdx[1] = append(crossShard.ValidatorsIdx[1], block.ValidatorsIdx[1]...) //multi-node
-	// crossShard.R = block.R
-	// crossShard.ProducerSig = block.ProducerSig
-
 	crossShard.ValidationData = shardBlock.ValidationData
 	crossShard.Header = shardBlock.Header
 	crossShard.MerklePathShard = merklePathShard
@@ -385,17 +314,6 @@ func (shardBlock *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBl
 	crossShard.ToShardID = shardID
 	return crossShard, nil
 }
-
-// func (block *ShardBlock) getBlockRewardInst(blockHeight uint64) ([]string, error) {
-// 	txsFee := uint64(0)
-
-// 	for _, tx := range block.Body.Transactions {
-// 		txsFee += tx.GetTxFee()
-// 	}
-// 	blkRewardInfo := metadata.NewBlockRewardInfo(txsFee, blockHeight)
-// 	inst, err := blkRewardInfo.GetStringFormat()
-// 	return inst, err
-// }
 
 func (block *ShardBlock) AddValidationField(validationData string) error {
 	block.ValidationData = validationData

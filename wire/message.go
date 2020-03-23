@@ -23,7 +23,6 @@ const (
 	CmdCrossShard         = "crossshard"
 	CmdBlkShardToBeacon   = "blkshdtobcn"
 	CmdTx                 = "tx"
-	CmdCustomToken        = "txtoken"
 	CmdPrivacyCustomToken = "txprivacytok"
 	CmdVersion            = "version"
 	CmdVerack             = "verack"

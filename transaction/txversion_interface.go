@@ -20,6 +20,7 @@ package transaction
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/database"
 )
 
@@ -45,7 +46,7 @@ func proveAndSignVersionSwitcher(tx *Tx, params *TxPrivacyInitParams) error {
 	return versionSwitcher.Prove(tx, params)
 }
 
-func verifierVersionSwitcher(tx *Tx, hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
+func verifierVersionSwitcher(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
 	// Init interface
 	var versionSwitcher TxVersionSwitcher
 	if tx.Version == 1 {
@@ -55,5 +56,5 @@ func verifierVersionSwitcher(tx *Tx, hasPrivacy bool, db database.DatabaseInterf
 	}
 
 	// Start proving and verifying
-	return versionSwitcher.Verify(tx, hasPrivacy, db, shardID, tokenID, isBatch, isNewTransaction)
+	return versionSwitcher.Verify(tx, hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tokenID, isBatch, isNewTransaction)
 }

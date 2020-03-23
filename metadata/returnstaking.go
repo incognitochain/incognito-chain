@@ -1,10 +1,10 @@
 package metadata
 
 import (
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/pkg/errors"
@@ -31,12 +31,12 @@ func NewReturnStaking(
 	}
 }
 
-func (sbsRes ReturnStakingMetadata) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db database.DatabaseInterface) bool {
+func (sbsRes ReturnStakingMetadata) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, stateDB *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (sbsRes ReturnStakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
+func (sbsRes ReturnStakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, stateDB *statedb.StateDB) (bool, error) {
 	stakingTx := bcr.GetStakingTx(shardID)
 	for key, value := range stakingTx {
 		committeePublicKey := incognitokey.CommitteePublicKey{}
@@ -82,63 +82,3 @@ func (sbsRes ReturnStakingMetadata) Hash() *common.Hash {
 	hash := common.HashH([]byte(record))
 	return &hash
 }
-
-//validate in shard block
-// func (sbsRes ReturnStakingMetadata) VerifyMinerCreatedTxBeforeGettingInBlock(
-// 	txsInBlock []Transaction,
-// 	txsUsed []int,
-// 	insts [][]string,
-// 	instUsed []int,
-// 	shardID byte,
-// 	tx Transaction,
-// 	bcr BlockchainRetriever,
-// 	accumulatedValues *AccumulatedValues,
-// ) (bool, error) {
-
-// 	if len(insts) == 0 {
-// 		return false, errors.Errorf("no instruction found for BeaconBlockSalaryResponse tx %s", tx.Hash().String())
-// 	}
-
-// 	// check if tx staking is existed
-// 	txValue, err := bcr.GetTxValue(sbsRes.TxID)
-// 	if err != nil {
-// 		return false, err // not exist
-// 	}
-// 	if txValue != tx.CalculateTxValue() {
-// 		return false, errors.New("Not return correct amount")
-// 	}
-
-// 	// check if swaper is in this shard
-// 	sa := sbsRes.StakerAddress
-// 	spa := base58.Base58Check{}.Encode(sa.Pk[:], 0x00)
-
-// 	txShardID, err := bcr.GetShardIDFromTx(sbsRes.TxID)
-// 	if err != nil {
-// 		return false, err // not exist
-// 	}
-
-// 	if common.GetShardIDFromLastByte(sa.Pk[len(sa.Pk)-1]) != txShardID {
-// 		return false, errors.New(fmt.Sprint("SA: Not for this shard ", txShardID, common.GetShardIDFromLastByte(sa.Pk[len(sa.Pk)-1])))
-// 	}
-
-// 	// check if return public address is swaper
-// 	inSwapper := false
-// 	for i, inst := range insts {
-// 		if instUsed[i] == 0 { // not used before
-// 			if inst[0] == "swap" { // is swap action
-// 				if strings.Contains(inst[2], spa) { // in swaper list
-// 					inSwapper = true
-// 					instUsed[i] += 1
-// 					break
-// 				}
-// 			}
-// 		}
-// 	}
-
-// 	if !inSwapper {
-// 		Logger.log.Debug("SA: swaper public address", spa, insts[2])
-// 		return false, errors.Errorf("Public address is not in swap instruction")
-// 	}
-
-// 	return true, nil
-// }

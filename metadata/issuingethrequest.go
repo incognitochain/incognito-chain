@@ -1,12 +1,11 @@
 package metadata
 
 import (
-	"math/big"
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
+	"math/big"
 	"strconv"
 	"strings"
 
@@ -17,7 +16,8 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	"github.com/pkg/errors"
 )
 
@@ -118,7 +118,7 @@ func (iReq IssuingETHRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,
-	db database.DatabaseInterface,
+	transactionStateDB *statedb.StateDB,
 ) (bool, error) {
 	ethReceipt, err := iReq.verifyProofAndParseReceipt()
 	if err != nil {
@@ -129,8 +129,8 @@ func (iReq IssuingETHRequest) ValidateTxWithBlockChain(
 	}
 
 	// check this is a normal pToken
-	if db.PrivacyTokenIDExisted(iReq.IncTokenID) || db.PrivacyTokenIDCrossShardExisted(iReq.IncTokenID) {
-		isBridgeToken, err := db.IsBridgeTokenExistedByType(iReq.IncTokenID, false)
+	if statedb.PrivacyTokenIDExisted(transactionStateDB, iReq.IncTokenID) {
+		isBridgeToken, err := statedb.IsBridgeTokenExistedByType(bcr.GetBeaconFeatureStateDB(), iReq.IncTokenID, false)
 		if !isBridgeToken {
 			if err != nil {
 				return false, NewMetadataTxError(InvalidMeta, err)
@@ -193,7 +193,7 @@ func (iReq *IssuingETHRequest) BuildReqActions(tx Transaction, bcr BlockchainRet
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
 	action := []string{strconv.Itoa(IssuingETHRequestMeta), actionContentBase64Str}
 
-	err = bcr.GetDatabase().TrackBridgeReqWithStatus(txReqID, byte(common.BridgeRequestProcessingStatus), nil)
+	err = statedb.TrackBridgeReqWithStatus(bcr.GetBeaconFeatureStateDB(), txReqID, byte(common.BridgeRequestProcessingStatus))
 	if err != nil {
 		return [][]string{}, NewMetadataTxError(IssuingEthRequestBuildReqActionsError, err)
 	}
@@ -297,7 +297,7 @@ func GetETHHeader(
 		return nil, err
 	}
 	if getBlockByNumberRes.RPCError != nil {
-		Logger.log.Debugf("WARNING: an error occured during calling eth_getBlockByHash: %s", getBlockByNumberRes.RPCError.Message)
+		Logger.log.Infof("WARNING: an error occured during calling eth_getBlockByHash: %s", getBlockByNumberRes.RPCError.Message)
 		return nil, nil
 	}
 	return getBlockByNumberRes.Result, nil

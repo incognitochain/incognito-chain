@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -33,10 +34,25 @@ func (httpServer *HttpServer) handleUnlockMempool(params interface{}, closeChan 
 	httpServer.config.TxMemPool.SendTransactionToBlockGen()
 	return nil, nil
 }
+
+func (httpServer *HttpServer) handleGetAutoStakingByHeight(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	height := int(arrayParams[0].(float64))
+	consensusStateRootHash, err := httpServer.blockService.BlockChain.GetBeaconConsensusRootHash(httpServer.blockService.BlockChain.GetDatabase(), uint64(height))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	consensusStateDB, err := statedb.NewWithPrefixTrie(consensusStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.blockService.BlockChain.GetDatabase()))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	_, newAutoStaking := statedb.GetRewardReceiverAndAutoStaking(consensusStateDB, httpServer.blockService.BlockChain.GetShardIDs())
+	return []interface{}{consensusStateRootHash, newAutoStaking}, nil
+}
 func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	Logger.log.Critical(arrayParams)
 	shardIDParam := int(arrayParams[0].(float64))
+	Logger.log.Critical(arrayParams)
 	txType := arrayParams[1].(string)
 	isSent := arrayParams[2].(bool)
 	interval := int64(arrayParams[3].(float64))

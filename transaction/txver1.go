@@ -7,7 +7,7 @@ import (
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
@@ -20,7 +20,7 @@ func parseCommitments(params *TxPrivacyInitParams, shardID byte) (*[]uint64, *[]
 	var myCommitmentIndexs []uint64 // index in array index random of commitment in db
 
 	if params.hasPrivacy {
-		randomParams := NewRandomCommitmentsProcessParam(params.inputCoins, privacy.CommitmentRingSize, params.db, shardID, params.tokenID)
+		randomParams := NewRandomCommitmentsProcessParam(params.inputCoins, privacy.CommitmentRingSize, params.stateDB, shardID, params.tokenID)
 		commitmentIndexs, myCommitmentIndexs, _ = RandomCommitmentsProcess(randomParams)
 
 		// Check number of list of random commitments, list of random commitment indices
@@ -39,7 +39,7 @@ func parseCommitmentProving(params *TxPrivacyInitParams, shardID byte, commitmen
 	commitmentIndexs := *commitmentIndexsPtr
 	commitmentProving := make([]*privacy.Point, len(commitmentIndexs))
 	for i, cmIndex := range commitmentIndexs {
-		temp, err := params.db.GetCommitmentByIndex(*params.tokenID, cmIndex, shardID)
+		temp, err := statedb.GetCommitmentByIndex(params.stateDB, *params.tokenID, cmIndex, shardID)
 		if err != nil {
 			Logger.log.Error(errors.New(fmt.Sprintf("can not get commitment from index=%d shardID=%+v", cmIndex, shardID)))
 			return nil, NewTransactionErr(CanNotGetCommitmentFromIndexError, err, cmIndex, shardID)
@@ -61,7 +61,7 @@ func parseSndOut(params *TxPrivacyInitParams) *[]*privacy.Scalar {
 		for i := 0; i < len(params.paymentInfo); i++ {
 			sndOut := privacy.RandomScalar()
 			for {
-				ok1, err := CheckSNDerivatorExistence(params.tokenID, sndOut, params.db)
+				ok1, err := CheckSNDerivatorExistence(params.tokenID, sndOut, params.stateDB)
 				if err != nil {
 					Logger.log.Error(err)
 				}
@@ -216,7 +216,10 @@ func signTx(tx *Tx) error {
 	return nil
 }
 
-func (*TxVersion1) Verify(tx *Tx, hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
+// ValidateTransaction returns true if transaction is valid:
+// - Verify tx signature
+// - Verify the payment proof
+func (*TxVersion1) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
 	var valid bool
 	var err error
 
@@ -230,84 +233,83 @@ func (*TxVersion1) Verify(tx *Tx, hasPrivacy bool, db database.DatabaseInterface
 		return false, NewTransactionErr(VerifyTxSigFailError, fmt.Errorf("FAILED VERIFICATION SIGNATURE with tx hash %s", tx.Hash().String()))
 	}
 
-	if tx.Proof == nil {
-		return true, nil
-	}
-
-	if tokenID == nil {
-		tokenID = &common.Hash{}
-		err := tokenID.SetBytes(common.PRVCoinID[:])
-		if err != nil {
-			Logger.log.Error(err)
-			return false, NewTransactionErr(TokenIDInvalidError, err)
+	if tx.Proof != nil {
+		if tokenID == nil {
+			tokenID = &common.Hash{}
+			err := tokenID.SetBytes(common.PRVCoinID[:])
+			if err != nil {
+				Logger.log.Error(err)
+				return false, NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
+			}
 		}
-	}
 
-	sndOutputs := make([]*privacy.Scalar, len(tx.Proof.GetOutputCoins()))
-	for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
-		sndOutputs[i] = tx.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator()
-	}
-
-	if privacy.CheckDuplicateScalarArray(sndOutputs) {
-		Logger.log.Errorf("Duplicate output coins' snd\n")
-		return false, NewTransactionErr(DuplicatedOutputSndError, errors.New("Duplicate output coins' snd\n"))
-	}
-
-	if isNewTransaction {
+		sndOutputs := make([]*privacy.Scalar, len(tx.Proof.GetOutputCoins()))
 		for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
-			// Check output coins' SND is not exists in SND list (Database)
-			if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator(), db); ok || err != nil {
-				if err != nil {
-					Logger.log.Error(err)
+			sndOutputs[i] = tx.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator()
+		}
+
+		if privacy.CheckDuplicateScalarArray(sndOutputs) {
+			Logger.log.Errorf("Duplicate output coins' snd\n")
+			return false, NewTransactionErr(DuplicatedOutputSndError, errors.New("Duplicate output coins' snd\n"))
+		}
+
+		if isNewTransaction {
+			for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
+				// Check output coins' SND is not exists in SND list (Database)
+				if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator(), transactionStateDB); ok || err != nil {
+					if err != nil {
+						Logger.log.Error(err)
+					}
+					Logger.log.Errorf("snd existed: %d\n", i)
+					return false, NewTransactionErr(SndExistedError, err, fmt.Sprintf("snd existed: %d\n", i))
 				}
-				Logger.log.Errorf("snd existed: %d\n", i)
-				return false, NewTransactionErr(SndExistedError, err, fmt.Sprintf("snd existed: %d\n", i))
 			}
 		}
-	}
 
-	if !hasPrivacy {
-		// Check input coins' commitment is exists in cm list (Database)
-		for i := 0; i < len(tx.Proof.GetInputCoins()); i++ {
-			ok, err := tx.CheckCMExistence(tx.Proof.GetInputCoins()[i].CoinDetails.GetCoinCommitment().ToBytesS(), db, shardID, tokenID)
-			if !ok || err != nil {
-				if err != nil {
-					Logger.log.Error(err)
+		if !hasPrivacy {
+			// Check input coins' commitment is exists in cm list (Database)
+			for i := 0; i < len(tx.Proof.GetInputCoins()); i++ {
+				ok, err := tx.CheckCMExistence(tx.Proof.GetInputCoins()[i].CoinDetails.GetCoinCommitment().ToBytesS(), transactionStateDB, shardID, tokenID)
+				if !ok || err != nil {
+					if err != nil {
+						Logger.log.Error(err)
+					}
+					return false, NewTransactionErr(InputCommitmentIsNotExistedError, err)
 				}
-				return false, NewTransactionErr(InputCommitmentIsNotExistedError, err)
 			}
 		}
-	}
-
-	// Verify the payment proof
-	valid, err = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, db, shardID, tokenID, isBatch)
-	if !valid {
-		if err != nil {
-			Logger.log.Error(err)
-		}
-		Logger.log.Error("FAILED VERIFICATION PAYMENT PROOF")
-		err1, ok := err.(*errhandler.PrivacyError)
-		if ok {
-			// parse error detail
-			if err1.Code == errhandler.ErrCodeMessage[errhandler.VerifyOneOutOfManyProofFailedErr].Code {
-				if isNewTransaction {
-					return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
-				} else {
-					// for old txs which be get from sync block or validate new block
-					if tx.LockTime <= ValidateTimeForOneoutOfManyProof {
-						// only verify by sign on block because of issue #504(that mean we should pass old tx, which happen before this issue)
-						return true, nil
-					} else {
+		// Verify the payment proof
+		valid, err = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, transactionStateDB, shardID, tokenID, isBatch)
+		if !valid {
+			if err != nil {
+				Logger.log.Error(err)
+			}
+			Logger.log.Error("FAILED VERIFICATION PAYMENT PROOF")
+			err1, ok := err.(*privacy.PrivacyError)
+			if ok {
+				// parse error detail
+				if err1.Code == privacy.ErrCodeMessage[privacy.VerifyOneOutOfManyProofFailedErr].Code {
+					if isNewTransaction {
 						return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
+					} else {
+						// for old txs which be get from sync block or validate new block
+						if tx.LockTime <= ValidateTimeForOneoutOfManyProof {
+							// only verify by sign on block because of issue #504(that mean we should pass old tx, which happen before this issue)
+							return true, nil
+						} else {
+							return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
+						}
 					}
 				}
 			}
+			return false, NewTransactionErr(TxProofVerifyFailError, err, tx.Hash().String())
+		} else {
+			Logger.log.Debugf("SUCCESSED VERIFICATION PAYMENT PROOF ")
 		}
-		return false, NewTransactionErr(TxProofVerifyFailError, err, tx.Hash().String())
 	}
 	//@UNCOMMENT: metrics time
 	//elapsed := time.Since(start)
 	//Logger.log.Debugf("Validation normal tx %+v in %s time \n", *tx.Hash(), elapsed)
-	Logger.log.Debugf("SUCCESSED VERIFICATION PAYMENT PROOF ")
+
 	return true, nil
 }

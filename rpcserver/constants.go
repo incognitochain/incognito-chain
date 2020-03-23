@@ -72,6 +72,7 @@ const (
 	gettransactionbyreceiver                   = "gettransactionbyreceiver"
 	listCustomToken                            = "listcustomtoken"
 	listPrivacyCustomToken                     = "listprivacycustomtoken"
+	listPrivacyCustomTokenByShard              = "listprivacycustomtokenbyshard"
 	getBalancePrivacyCustomToken               = "getbalanceprivacycustomtoken"
 	customTokenTxs                             = "customtoken"
 	listCustomTokenHolders                     = "customtokenholder"
@@ -90,11 +91,13 @@ const (
 	listCommitmentIndices                      = "listcommitmentindices"
 	createAndSendStakingTransaction            = "createandsendstakingtransaction"
 	createAndSendStopAutoStakingTransaction    = "createandsendstopautostakingtransaction"
+	decryptoutputcoinbykeyoftransaction        = "decryptoutputcoinbykeyoftransaction"
 
 	//===========For Testing and Benchmark==============
 	getAndSendTxsFromFile   = "getandsendtxsfromfile"
 	getAndSendTxsFromFileV2 = "getandsendtxsfromfilev2"
 	unlockMempool           = "unlockmempool"
+	getAutoStakingByHeight  = "getautostakingbyheight"
 	//==================================================
 
 	getShardBestState        = "getshardbeststate"
@@ -148,6 +151,7 @@ const (
 	// reward
 	CreateRawWithDrawTransaction = "withdrawreward"
 	getRewardAmount              = "getrewardamount"
+	getRewardAmountByPublicKey   = "getrewardamountbypublickey"
 	listRewardAmount             = "listrewardamount"
 
 	revertbeaconchain = "revertbeaconchain"

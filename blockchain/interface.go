@@ -77,8 +77,7 @@ type TxPool interface {
 	RemoveCandidateList([]string)
 	EmptyPool() bool
 	MaybeAcceptTransactionForBlockProducing(metadata.Transaction, int64) (*metadata.TxDesc, error)
-	MaybeAcceptBatchTransactionForBlockProducing([]metadata.Transaction, int64) ([]*metadata.TxDesc, error)
-	ValidateTxList(txs []metadata.Transaction) error
+	MaybeAcceptBatchTransactionForBlockProducing(byte, []metadata.Transaction, int64) ([]*metadata.TxDesc, error)
 	//CheckTransactionFee
 	// CheckTransactionFee(tx metadata.Transaction) (uint64, error)
 	// Check tx validate by it self

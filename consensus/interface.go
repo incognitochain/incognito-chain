@@ -22,7 +22,6 @@ type ConsensusInterface interface {
 	NewInstance(chain blockchain.ChainInterface, chainKey string, node NodeInterface, logger common.Logger) ConsensusInterface
 	// GetConsensusName - retrieve consensus name
 	GetConsensusName() string
-
 	// Start - start consensus
 	Start() error
 	// Stop - stop consensus
@@ -35,7 +34,6 @@ type ConsensusInterface interface {
 	ValidateProducerSig(block common.BlockInterface) error
 	// ValidateCommitteeSig - validate a block committee signature
 	ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
-
 	// LoadUserKey - load user mining key
 	LoadUserKey(miningKey string) error
 	// LoadUserKeyFromIncPrivateKey - load user mining key from incognito privatekey

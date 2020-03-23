@@ -18,7 +18,7 @@ func (httpServer *HttpServer) handleGetProducersBlackList(params interface{}, cl
 	}
 	beaconHeight := uint64(beaconHeightParam)
 
-	producersBlackList, err := httpServer.databaseService.GetProducersBlackList(beaconHeight)
+	producersBlackList, err := httpServer.blockService.GetProducersBlackList(beaconHeight)
 	if err != nil {
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -38,7 +38,7 @@ func (httpServer *HttpServer) handleGetProducersBlackListDetail(params interface
 	}
 	beaconHeight := uint64(beaconHeightParam)
 
-	producersBlackList, err := httpServer.databaseService.GetProducersBlackList(beaconHeight)
+	producersBlackList, err := httpServer.blockService.GetProducersBlackList(beaconHeight)
 	if err != nil {
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}

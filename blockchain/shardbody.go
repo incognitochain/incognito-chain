@@ -16,14 +16,6 @@ const (
 	Duration   = 1000000
 )
 
-/*
-	Two kind of Instruction:
-	- Instruction created directly from proposer
-		+ Swap instruction
-		+ Brigde instruction
-		+ Committees Pubkey instruction
-		+
-*/
 type ShardBody struct {
 	Instructions      [][]string
 	CrossTransactions map[byte][]CrossTransaction //CrossOutputCoin from all other shard
