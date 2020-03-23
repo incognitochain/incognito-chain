@@ -112,6 +112,39 @@ const (
 	// burning confirm
 	StoreBurningConfirmError
 	GetBurningConfirmError
+
+	//portal
+	StoreCustodianDepositStateError
+	StoreWaitingPortingRequestError
+	StoreWaitingRedeemRequestError
+	StorePortingRequestStateError
+	StoreRedeemRequestStateError
+	StoreExchangeRatesRequestStateError
+	StoreFinalExchangeRatesStateError
+	TrackCustodianDepositError
+	TrackReqPTokenError
+	GetItemPortalByKeyError
+	GetItemPortalByKeyNotFound
+	GetCustodianDepositStatusError
+	GetReqPTokenStatusError
+	StoreRedeemRequestError
+	TrackRedeemReqByTxReqIDError
+	TrackReqUnlockCollateralByTxReqIDError
+	GetReqUnlockCollateralStatusError
+
+	StorePortalCustodianWithdrawRequestStateError
+	TrackLiquidateCustodianError
+	StoreLiquidateTopPercentileExchangeRatesError
+	StoreLiquidateExchangeRatesError
+	StoreRedeemLiquidationExchangeRatesError
+	StoreLiquidationCustodianDepositError
+
+	StorePortalRewardError
+
+	// relaying
+	StoreRelayingBNBHeaderError
+	GetRelayingBNBHeaderError
+	GetBNBDataHashError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -188,6 +221,37 @@ var ErrCodeMessage = map[int]struct {
 	// -6xxx: burning confirm
 	StoreBurningConfirmError: {-6000, "Store Burning Confirm Error"},
 	GetBurningConfirmError:   {-6001, "Get Burning Confirm Error"},
+
+	//portal
+	StoreCustodianDepositStateError:               {-14001, "Store custodian deposit error"},
+	StoreWaitingPortingRequestError:               {-14002, "Store waiting porting requests error"},
+	StoreWaitingRedeemRequestError:                {-14003, "Store waiting redeem requests error"},
+	StorePortingRequestStateError:                 {-14004, "Store porting request error"},
+	StoreRedeemRequestStateError:                  {-14005, "Store redeem request error"},
+	TrackCustodianDepositError:                    {-14006, "Track custodian deposit error"},
+	TrackReqPTokenError:                           {-14007, "Track requesting ptokens error"},
+	StoreExchangeRatesRequestStateError:           {-14008, "Store exchange rates request error"},
+	StoreFinalExchangeRatesStateError:             {-14009, "Store final exchange rates request error"},
+	GetItemPortalByKeyError:                       {-14010, "Get item portal by key error"},
+	GetItemPortalByKeyNotFound:                    {-14011, "Get item portal by key not found"},
+	GetCustodianDepositStatusError:                {-14012, "Get all custodian deposit status error"},
+	GetReqPTokenStatusError:                       {-14013, "Get request ptoken status error"},
+	StoreRedeemRequestError:                       {-14014, "Store redeem request error"},
+	TrackRedeemReqByTxReqIDError:                  {-14015, "Track redeem request by txReqID error"},
+	TrackReqUnlockCollateralByTxReqIDError:        {-14016, "Track request unlock collateral by txReqID error"},
+	GetReqUnlockCollateralStatusError:             {-14017, "Get status of request unlock collateral by txReqID error"},
+	StorePortalCustodianWithdrawRequestStateError: {-14018, "Store portal custodian withdraw request error"},
+	TrackLiquidateCustodianError:                  {-14019, "Track liquidation custodian error"},
+	StorePortalRewardError:                        {-14020, "Store portal reward error"},
+	StoreLiquidateTopPercentileExchangeRatesError: {-14021, "Store liquidate top percentile exchange rates error"},
+	StoreLiquidateExchangeRatesError: {-14022, "Store liquidate exchange rates error"},
+	StoreRedeemLiquidationExchangeRatesError: {-14023, "Store redeem liquidation exchange rates error"},
+	StoreLiquidationCustodianDepositError: {-14024, "Store liquidation custodian deposit error"},
+
+	// relaying
+	StoreRelayingBNBHeaderError: {-15001, "Store relaying header bnb error"},
+	GetRelayingBNBHeaderError:   {-15002, "Get relaying header bnb error"},
+	GetBNBDataHashError:         {-15003, "Get bnb data hash by block height error"},
 }
 
 type StatedbError struct {
