@@ -506,8 +506,6 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		return [][]string{inst}, nil
 	}
 
-
-
 	// check meta.UniquePortingID is in waiting PortingRequests list in portal state or not
 	portingID := meta.UniquePortingID
 	keyWaitingPortingRequest := lvdb.NewWaitingPortingReqKey(beaconHeight, portingID)
@@ -528,22 +526,6 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		return [][]string{inst}, nil
 	}
 	db := blockchain.GetDatabase()
-
-	inst := buildReqPTokensInst(
-		actionData.Meta.UniquePortingID,
-		actionData.Meta.TokenID,
-		actionData.Meta.IncogAddressStr,
-		actionData.Meta.PortingAmount,
-		actionData.Meta.PortingProof,
-		actionData.Meta.Type,
-		shardID,
-		actionData.TxReqID,
-		common.PortalReqPTokensAcceptedChainStatus,
-	)
-
-	// remove waiting porting request from currentPortalState
-	removeWaitingPortingReqByKey(keyWaitingPortingRequest, currentPortalState)
-	return [][]string{inst}, nil
 
 	// check porting request status of portingID from db
 	portingReqStatus, err := db.GetPortingRequestStatusByPortingID(meta.UniquePortingID)
@@ -671,7 +653,6 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 
 		// check memo attach portingID req:
 		memo := txBNB.Memo
-		Logger.log.Infof("[buildInstructionsForReqPTokens] memo: %v\n", memo)
 		memoBytes, err2 := base64.StdEncoding.DecodeString(memo)
 		if err2 != nil {
 			Logger.log.Errorf("Can not decode memo in tx bnb proof", err2)
@@ -688,7 +669,6 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 			)
 			return [][]string{inst}, nil
 		}
-		Logger.log.Infof("[buildInstructionsForReqPTokens] memoBytes: %v\n", memoBytes)
 
 		var portingMemo PortingMemoBNB
 		err2 = json.Unmarshal(memoBytes, &portingMemo)

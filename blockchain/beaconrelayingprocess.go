@@ -169,7 +169,6 @@ func (blockchain *BlockChain) processRelayingBNBHeaderInst(
 			Logger.log.Errorf("ERROR: an error occured while storing new confirmed header: %+v", err)
 			return nil
 		}
-	} else if reqStatus == common.RelayingHeaderRejectedChainStatus {
 	}
 
 	return nil
