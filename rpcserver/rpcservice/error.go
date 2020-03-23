@@ -76,7 +76,10 @@ const (
 
 	GetCustodianLiquidationStatusError
 	GetTpExchangeRatesLiquidationError
-	GetExchangeRatesLiquidationError
+	GetTpExchangeRatesLiquidationByTokenIdError
+	GetExchangeRatesLiquidationPoolError
+
+	GetAmountNeededForCustodianDepositLiquidationError
 
 	// relaying
 	GetRelayingBNBHeaderByBlockHeightError
@@ -167,8 +170,12 @@ var ErrCodeMessage = map[int]struct {
 	GetReqUnlockCollateralStatusError:  {-9007, "Get status of request unlock collateral error"},
 	GetReqRedeemStatusError:            {-9008, "Get status of request redeem by redeemId error"},
 	GetCustodianLiquidationStatusError: {-9009, "Get status of custodian liquidation error"},
-	GetTpExchangeRatesLiquidationError: {-9010, "Get TP exchange rates liquidation error"},
-	GetExchangeRatesLiquidationError: {-9011, "Get exchange rates liquidation error"},
+	GetAmountNeededForCustodianDepositLiquidationError: {-9010, "Get amount needed for custodian deposit liquidation error"},
+	GetTpExchangeRatesLiquidationError: {-9011, "Get top percentile exchange rates liquidation error"},
+	GetTpExchangeRatesLiquidationByTokenIdError: {-9012, "Get top percentile exchange rates by token id error"},
+	GetExchangeRatesLiquidationPoolError: {-9013, "Get exchange rates liquidation pool error"},
+
+
 
 	// relaying
 	GetRelayingBNBHeaderByBlockHeightError: {-10001, "Get relaying bnb header by block height error"},

@@ -88,6 +88,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		Logger.log.Error(err)
 	}
 
+	pm := NewPortalManager()
 	relayingHeaderState, err := InitRelayingHeaderChainStateFromDB(db, beaconHeight-1)
 	if err != nil {
 		Logger.log.Error(err)
@@ -116,11 +117,6 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	portalReqWithdrawRewardActionsByShardID := map[byte][][]string{}
 	portalRedeemLiquidateExchangeRatesActionByShardID := map[byte][][]string{}
 	portalLiquidationCustodianDepositActionByShardID := map[byte][][]string{}
-
-	// relaying instructions
-	// don't need to be grouped by shardID
-	relayingBNBActions := [][]string{}
-	relayingBTCActions := [][]string{}
 
 	var keys []int
 	for k := range statefulActionsByShardID {
@@ -224,9 +220,9 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					shardID,
 				)
 			case metadata.RelayingBNBHeaderMeta:
-				relayingBNBActions = append(relayingBNBActions, action)
+				pm.relayingChains[metadata.RelayingBNBHeaderMeta].putAction(action)
 			case metadata.RelayingBTCHeaderMeta:
-				relayingBTCActions = append(relayingBTCActions, action)
+				pm.relayingChains[metadata.RelayingBTCHeaderMeta].putAction(action)
 			default:
 				continue
 			}
@@ -279,22 +275,10 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	}
 
 	// handle relaying instructions
-	relayingInsts, err := blockchain.handleRelayingInsts(
-		beaconHeight-1,
-		relayingHeaderState,
-		relayingBNBActions,
-		relayingBTCActions,
-	)
-
-	if err != nil {
-		Logger.log.Error(err)
-		return instructions
-	}
+	relayingInsts := blockchain.handleRelayingInsts(relayingHeaderState, pm)
 	if len(relayingInsts) > 0 {
 		instructions = append(instructions, relayingInsts...)
 	}
-
-
 
 	// auto-liquidation portal instructions
 	portalLiquidationInsts, err := blockchain.autoCheckAndCreatePortalLiquidationInsts(
@@ -797,90 +781,6 @@ func groupRelayingActionsByShardID(
 		relayingActionsByShardID[shardID] = append(relayingActionsByShardID[shardID], action)
 	}
 	return relayingActionsByShardID
-}
-
-func sortBNBHeaderRelayingInstsByBlockHeight(bnbHeaderRelayingActions [][]string) (
-	map[uint64][]metadata.RelayingBNBHeaderAction, []uint64, error) {
-	// sort push header relaying inst
-	actionsGroupByBlockHeight := make(map[uint64][]metadata.RelayingBNBHeaderAction)
-
-	var blockHeightArr []uint64
-
-	for _, inst := range bnbHeaderRelayingActions {
-		// parse inst
-		var action metadata.RelayingBNBHeaderAction
-		actionBytes, err := base64.StdEncoding.DecodeString(inst[1])
-		if err != nil {
-			continue
-		}
-		err = json.Unmarshal(actionBytes, &action)
-		if err != nil {
-			continue
-		}
-
-		// get blockHeight in action
-		blockHeight := action.Meta.BlockHeight
-
-		// add to blockHeightArr
-		if isExist, _ := common.SliceExists(blockHeightArr, blockHeight); !isExist {
-			blockHeightArr = append(blockHeightArr, blockHeight)
-		}
-
-		// add to actionsGroupByBlockHeight
-		if actionsGroupByBlockHeight[blockHeight] != nil {
-			actionsGroupByBlockHeight[blockHeight] = append(actionsGroupByBlockHeight[blockHeight], action)
-		} else {
-			actionsGroupByBlockHeight[blockHeight] = []metadata.RelayingBNBHeaderAction{action}
-		}
-	}
-
-	// sort blockHeightArr
-	sort.Slice(blockHeightArr, func(i, j int) bool {
-		return blockHeightArr[i] < blockHeightArr[j]
-	})
-
-	return actionsGroupByBlockHeight, blockHeightArr, nil
-}
-
-func (blockchain *BlockChain) handleRelayingInsts(
-	beaconHeight uint64,
-	relayingState *RelayingHeaderChainState,
-	relayingBNBHeaderActions [][]string,
-	relayingBTCHeaderActions [][]string,
-) ([][]string, error) {
-	instructions := [][]string{}
-
-	// handle bnb header relaying instructions
-	actionsGroupByBlockHeight, sortedBlockHeights, _ := sortBNBHeaderRelayingInstsByBlockHeight(relayingBNBHeaderActions)
-
-	for _, value := range sortedBlockHeights {
-		blockHeight := uint64(value)
-		actions := actionsGroupByBlockHeight[blockHeight]
-		for _, action := range actions {
-			actionBytes, _ := json.Marshal(action)
-			contentStr := base64.StdEncoding.EncodeToString(actionBytes)
-			newInst, err := blockchain.buildInstructionsForBNBHeaderRelaying(
-				contentStr,
-				action.ShardID,
-				metadata.RelayingBNBHeaderMeta,
-				relayingState,
-				beaconHeight,
-			)
-
-			if err != nil {
-				Logger.log.Error(err)
-				continue
-			}
-			if len(newInst) > 0 {
-				instructions = append(instructions, newInst...)
-			}
-		}
-	}
-
-	//todo
-	// handle btc header relaying instructions
-
-	return instructions, nil
 }
 
 func (blockchain *BlockChain) autoCheckAndCreatePortalLiquidationInsts(

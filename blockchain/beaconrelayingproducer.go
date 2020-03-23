@@ -3,199 +3,83 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
+	"sort"
+
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/relaying/bnb"
-	"strconv"
 )
 
-// beacon build new instruction from instruction received from ShardToBeaconBlock
-func buildBNBHeaderRelayingInst(
-	senderAddressStr string,
-	header string,
-	blockHeight uint64,
-	metaType int,
-	shardID byte,
-	txReqID common.Hash,
-	status string,
-) []string {
-	bnbHeaderRelayingContent := metadata.RelayingBNBHeaderContent{
-		IncogAddressStr: senderAddressStr,
-		Header:          header,
-		TxReqID:         txReqID,
-		BlockHeight:     blockHeight,
-	}
-	bnbHeaderRelayingContentBytes, _ := json.Marshal(bnbHeaderRelayingContent)
-	return []string{
-		strconv.Itoa(metaType),
-		strconv.Itoa(int(shardID)),
-		status,
-		string(bnbHeaderRelayingContentBytes),
-	}
-}
+func buildRelayingInstsFromActions(
+	rc relayingProcessor,
+	relayingState *RelayingHeaderChainState,
+	blockchain *BlockChain,
+) [][]string {
+	actions := rc.getActions()
+	// sort push header relaying inst
+	actionsGroupByBlockHeight := make(map[uint64][]metadata.RelayingHeaderAction)
 
-// buildInstructionsForBNBHeaderRelaying builds instruction for custodian deposit action
-func (blockchain *BlockChain) buildInstructionsForBNBHeaderRelaying(
-	contentStr string,
-	shardID byte,
-	metaType int,
-	relayingHeaderChain *RelayingHeaderChainState,
-	beaconHeight uint64,
-) ([][]string, error) {
-	Logger.log.Infof("[RELAYING] beacon relaying producer starting....")
-	// parse instruction
-	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while decoding content string of portal custodian deposit action: %+v", err)
-		return [][]string{}, nil
-	}
-	var actionData metadata.RelayingBNBHeaderAction
-	err = json.Unmarshal(actionContentBytes, &actionData)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while unmarshal portal custodian deposit action: %+v", err)
-		return [][]string{}, nil
-	}
+	var blockHeightArr []uint64
 
-	if relayingHeaderChain == nil {
-		Logger.log.Warn("WARN - [buildInstructionsForBNBHeaderRelaying]: relayingHeaderChain is null.")
-		inst := buildBNBHeaderRelayingInst(
-			actionData.Meta.IncogAddressStr,
-			actionData.Meta.Header,
-			actionData.Meta.BlockHeight,
-			actionData.Meta.Type,
-			shardID,
-			actionData.TxReqID,
-			common.RelayingHeaderRejectedChainStatus,
-		)
-		return [][]string{inst}, nil
-	}
-	meta := actionData.Meta
-	// parse and verify header chain
-	headerBytes, err := base64.StdEncoding.DecodeString(meta.Header)
-	if err != nil {
-		Logger.log.Errorf("Error - [buildInstructionsForBNBHeaderRelaying]: Can not decode header string.%v\n", err)
-		inst := buildBNBHeaderRelayingInst(
-			actionData.Meta.IncogAddressStr,
-			actionData.Meta.Header,
-			actionData.Meta.BlockHeight,
-			actionData.Meta.Type,
-			shardID,
-			actionData.TxReqID,
-			common.RelayingHeaderRejectedChainStatus,
-		)
-		return [][]string{inst}, nil
-	}
+	for _, action := range actions {
+		// parse inst
+		var relayingHeaderAction metadata.RelayingHeaderAction
+		relayingHeaderActionBytes, err := base64.StdEncoding.DecodeString(action[1])
+		if err != nil {
+			continue
+		}
+		err = json.Unmarshal(relayingHeaderActionBytes, &relayingHeaderAction)
+		if err != nil {
+			continue
+		}
 
-	var newHeader lvdb.BNBHeader
-	err = json.Unmarshal(headerBytes, &newHeader)
-	if err != nil {
-		Logger.log.Errorf("Error - [buildInstructionsForBNBHeaderRelaying]: Can not unmarshal header.%v\n", err)
-		inst := buildBNBHeaderRelayingInst(
-			actionData.Meta.IncogAddressStr,
-			actionData.Meta.Header,
-			actionData.Meta.BlockHeight,
-			actionData.Meta.Type,
-			shardID,
-			actionData.TxReqID,
-			common.RelayingHeaderRejectedChainStatus,
-		)
-		return [][]string{inst}, nil
-	}
+		// get blockHeight in action
+		blockHeight := relayingHeaderAction.Meta.BlockHeight
 
-	if newHeader.Header.Height != int64(actionData.Meta.BlockHeight) {
-		Logger.log.Errorf("Error - [buildInstructionsForBNBHeaderRelaying]: Block height in metadata is unmatched with block height in new header.")
-		inst := buildBNBHeaderRelayingInst(
-			actionData.Meta.IncogAddressStr,
-			actionData.Meta.Header,
-			actionData.Meta.BlockHeight,
-			actionData.Meta.Type,
-			shardID,
-			actionData.TxReqID,
-			common.RelayingHeaderRejectedChainStatus,
-		)
-		return [][]string{inst}, nil
-	}
+		// add to blockHeightArr
+		if isExist, _ := common.SliceExists(blockHeightArr, blockHeight); !isExist {
+			blockHeightArr = append(blockHeightArr, blockHeight)
+		}
 
-	// if valid, create instruction with status accepted
-	// if not, create instruction with status rejected
-	latestBNBHeader := relayingHeaderChain.BNBHeaderChain.LatestHeader
-	var isValid bool
-	var err2 error
-	relayingHeaderChain.BNBHeaderChain, isValid, err2 = relayingHeaderChain.BNBHeaderChain.ReceiveNewHeader(
-		newHeader.Header, newHeader.LastCommit, blockchain.config.ChainParams.BNBRelayingHeaderChainID)
-	if err2.(*bnb.BNBRelayingError) != nil || !isValid {
-		Logger.log.Errorf("Error - [buildInstructionsForBNBHeaderRelaying]: Verify new header failed. %v\n", err2)
-		inst := buildBNBHeaderRelayingInst(
-			actionData.Meta.IncogAddressStr,
-			actionData.Meta.Header,
-			actionData.Meta.BlockHeight,
-			actionData.Meta.Type,
-			shardID,
-			actionData.TxReqID,
-			common.RelayingHeaderRejectedChainStatus,
-		)
-		return [][]string{inst}, nil
-	}
-
-	// check newHeader is a header contain last commit for one of the header in unconfirmed header list or not\
-	// check newLatestBNBHeader is genesis header or not
-	genesisHeaderHeight := int64(0)
-	genesisHeaderStr := ""
-	if blockchain.config.ChainParams.BNBRelayingHeaderChainID == TestnetBNBChainID {
-		genesisHeaderHeight = bnb.TestnetGenesisBlockHeight
-		genesisHeaderStr = bnb.TestnetGenesisHeaderStr
-	} else if blockchain.config.ChainParams.BNBRelayingHeaderChainID == MainnetBNBChainID {
-		genesisHeaderHeight = bnb.MainnetGenesisBlockHeight
-		genesisHeaderStr = bnb.MainnetGenesisHeaderStr
-	}
-	newLatestBNBHeader := relayingHeaderChain.BNBHeaderChain.LatestHeader
-	if newLatestBNBHeader != nil && newLatestBNBHeader.Height == genesisHeaderHeight && latestBNBHeader == nil {
-		inst1 := buildBNBHeaderRelayingInst(
-			actionData.Meta.IncogAddressStr,
-			genesisHeaderStr,
-			uint64(genesisHeaderHeight),
-			actionData.Meta.Type,
-			shardID,
-			actionData.TxReqID,
-			common.RelayingHeaderConfirmedAcceptedChainStatus,
-		)
-
-		inst2 := buildBNBHeaderRelayingInst(
-			actionData.Meta.IncogAddressStr,
-			actionData.Meta.Header,
-			actionData.Meta.BlockHeight,
-			actionData.Meta.Type,
-			shardID,
-			actionData.TxReqID,
-			common.RelayingHeaderUnconfirmedAcceptedChainStatus,
-		)
-		return [][]string{inst1, inst2}, nil
-	}
-
-	if newLatestBNBHeader != nil && latestBNBHeader != nil {
-		if newLatestBNBHeader.Height == latestBNBHeader.Height + 1 {
-			inst := buildBNBHeaderRelayingInst(
-				actionData.Meta.IncogAddressStr,
-				actionData.Meta.Header,
-				actionData.Meta.BlockHeight,
-				actionData.Meta.Type,
-				shardID,
-				actionData.TxReqID,
-				common.RelayingHeaderConfirmedAcceptedChainStatus,
-			)
-			return [][]string{inst}, nil
+		// add to actionsGroupByBlockHeight
+		if actionsGroupByBlockHeight[blockHeight] != nil {
+			actionsGroupByBlockHeight[blockHeight] = append(actionsGroupByBlockHeight[blockHeight], relayingHeaderAction)
+		} else {
+			actionsGroupByBlockHeight[blockHeight] = []metadata.RelayingHeaderAction{relayingHeaderAction}
 		}
 	}
 
-	inst := buildBNBHeaderRelayingInst(
-		actionData.Meta.IncogAddressStr,
-		actionData.Meta.Header,
-		actionData.Meta.BlockHeight,
-		actionData.Meta.Type,
-		shardID,
-		actionData.TxReqID,
-		common.RelayingHeaderUnconfirmedAcceptedChainStatus,
-	)
-	return [][]string{inst}, nil
+	// sort blockHeightArr
+	sort.Slice(blockHeightArr, func(i, j int) bool {
+		return blockHeightArr[i] < blockHeightArr[j]
+	})
+
+	relayingInsts := [][]string{}
+	for _, value := range blockHeightArr {
+		blockHeight := uint64(value)
+		actions := actionsGroupByBlockHeight[blockHeight]
+		for _, action := range actions {
+			inst := rc.buildRelayingInst(blockchain, action, relayingState)
+			relayingInsts = append(relayingInsts, inst...)
+		}
+	}
+	return relayingInsts
+}
+
+func (blockchain *BlockChain) handleRelayingInsts(
+	relayingState *RelayingHeaderChainState,
+	pm *portalManager,
+) [][]string {
+	newInsts := [][]string{}
+	// sort relayingChains map to make it consistent for every run
+	var metaTypes []int
+	for metaType := range pm.relayingChains {
+		metaTypes = append(metaTypes, metaType)
+	}
+	sort.Ints(metaTypes)
+	for _, metaType := range metaTypes {
+		rc := pm.relayingChains[metaType]
+		insts := buildRelayingInstsFromActions(rc, relayingState, blockchain)
+		newInsts = append(newInsts, insts...)
+	}
+	return newInsts
 }

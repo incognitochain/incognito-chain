@@ -11,6 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
 
+
 func (httpServer *HttpServer) handleGetLiquidationTpExchangeRates(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
@@ -27,7 +28,40 @@ func (httpServer *HttpServer) handleGetLiquidationTpExchangeRates(params interfa
 
 	_, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
 	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetTpExchangeRatesLiquidationByTokenIdError, err)
+	}
+
+	custodianAddress, ok := data["CustodianAddress"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata CustodianAddress is invalid"))
+	}
+
+	result, err := httpServer.portal.GetLiquidateTpExchangeRates(uint64(beaconHeight), custodianAddress, httpServer.blockService, *httpServer.config.Database)
+
+	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetTpExchangeRatesLiquidationError, err)
+	}
+
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleGetLiquidationTpExchangeRatesByTokenId(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+
+	// get meta data from params
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
+	}
+
+	beaconHeight, ok := data["BeaconHeight"].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata BeaconHeight is invalid"))
+	}
+
+	_, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetTpExchangeRatesLiquidationByTokenIdError, err)
 	}
 
 	custodianAddress, ok := data["CustodianAddress"].(string)
@@ -44,16 +78,16 @@ func (httpServer *HttpServer) handleGetLiquidationTpExchangeRates(params interfa
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is not support"))
 	}
 
-	result, err := httpServer.portal.GetLiquidateTpExchangeRates(uint64(beaconHeight), custodianAddress, pTokenID, httpServer.blockService, *httpServer.config.Database)
+	result, err := httpServer.portal.GetLiquidateTpExchangeRatesByToken(uint64(beaconHeight), custodianAddress, pTokenID, httpServer.blockService, *httpServer.config.Database)
 
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetTpExchangeRatesLiquidationError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.GetTpExchangeRatesLiquidationByTokenIdError, err)
 	}
 
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleGetLiquidationExchangeRates(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleGetLiquidationExchangeRatesPool(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
 	// get meta data from params
@@ -69,7 +103,7 @@ func (httpServer *HttpServer) handleGetLiquidationExchangeRates(params interface
 
 	_, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetExchangeRatesLiquidationError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.GetExchangeRatesLiquidationPoolError, err)
 	}
 
 	pTokenID, ok := data["TokenID"].(string)
@@ -81,10 +115,57 @@ func (httpServer *HttpServer) handleGetLiquidationExchangeRates(params interface
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is not support"))
 	}
 
-	result, err := httpServer.portal.GetLiquidateExchangeRates(uint64(beaconHeight), pTokenID, *httpServer.config.Database)
+	result, err := httpServer.portal.GetLiquidateExchangeRatesPool(uint64(beaconHeight), pTokenID, *httpServer.config.Database)
 
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetExchangeRatesLiquidationError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.GetExchangeRatesLiquidationPoolError, err)
+	}
+
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleGetAmountNeededForCustodianDepositLiquidation(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+
+	// get meta data from params
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
+	}
+
+	beaconHeight, ok := data["BeaconHeight"].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata BeaconHeight is invalid"))
+	}
+
+	_, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetAmountNeededForCustodianDepositLiquidationError, err)
+	}
+
+	custodianAddress, ok := data["CustodianAddress"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata CustodianAddress is invalid"))
+	}
+
+	isFreeCollateralSelected, ok := data["IsFreeCollateralSelected"].(bool)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata IsFreeCollateralSelected is invalid"))
+	}
+
+	pTokenID, ok := data["TokenID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
+	}
+
+	if !common.IsPortalToken(pTokenID) {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is not support"))
+	}
+
+	result, err := httpServer.portal.CalculateAmountNeededCustodianDepositLiquidation(uint64(beaconHeight), custodianAddress, pTokenID, isFreeCollateralSelected, httpServer.blockService, *httpServer.config.Database)
+
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetAmountNeededForCustodianDepositLiquidationError, err)
 	}
 
 	return result, nil

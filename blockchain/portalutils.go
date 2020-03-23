@@ -622,6 +622,31 @@ func GetCustodianWithdrawRequestByKey(
 	return &custodianWithdraw, nil
 }
 
+func GetCustodianByKey(
+	db database.DatabaseInterface,
+	key []byte,
+) (*lvdb.CustodianState, error) {
+	custodianItem, err := db.GetItemPortalByKey(key)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var custodianState lvdb.CustodianState
+
+	if custodianItem == nil {
+		return &custodianState, nil
+	}
+
+	//get value via idx
+	err = json.Unmarshal(custodianItem, &custodianState)
+	if err != nil {
+		return nil, err
+	}
+
+	return &custodianState, nil
+}
+
 func GetAllPortingRequest(
 	db database.DatabaseInterface,
 	key []byte,
@@ -879,19 +904,19 @@ func calMinRedeemFee(redeemAmountInPToken uint64, tokenSymbol string, exchangeRa
 */
 func up150Percent(amount uint64) uint64 {
 	result := float64(amount) * 1.5 //return nano pBTC, pBNB
-	roundNumber := math.Round(result)
+	roundNumber := math.Ceil(result)
 	return uint64(roundNumber) //return nano pBTC, pBNB
 }
 
 func down150Percent(amount uint64) uint64 {
 	result := float64(amount) / 1.5
-	roundNumber := math.Round(result)
+	roundNumber := math.Ceil(result)
 	return uint64(roundNumber)
 }
 
 func upByPercent(amount uint64, percent int) uint64 {
 	result := float64(amount) * (float64(percent) / 100) //return nano pBTC, pBNB
-	roundNumber := math.Round(result)
+	roundNumber := math.Ceil(result)
 	return uint64(roundNumber) //return nano pBTC, pBNB
 }
 
@@ -980,17 +1005,16 @@ func calculateTPRatio(holdPToken map[string]uint64, holdPRV map[string]uint64, f
 		if amountPTokenConverted <= 0 {
 			return nil, errors.New("Can not divide zero")
 		}
-		
+		//todo: calculate
 		percentUp := amountPRV * 100 / amountPTokenConverted
-		//todo: review round()
-		roundNumber := math.Round(float64(percentUp))
+		roundNumber := math.Ceil(float64(percentUp))
 		result[key] = int(roundNumber)
 	}
 
 	return result, nil
 }
 
-func calAmountNeededDepositLiquidate(custodian *lvdb.CustodianState, exchangeRates *lvdb.FinalExchangeRates, pTokenId string, isFreeCollateralSelected bool) (uint64, uint64, uint64, error)  {
+func CalAmountNeededDepositLiquidate(custodian *lvdb.CustodianState, exchangeRates *lvdb.FinalExchangeRates, pTokenId string, isFreeCollateralSelected bool) (uint64, uint64, uint64, error)  {
 	totalPToken := up150Percent(custodian.HoldingPubTokens[pTokenId])
 	totalPRV, err := exchangeRates.ExchangePToken2PRVByTokenId(pTokenId, totalPToken)
 

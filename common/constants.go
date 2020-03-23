@@ -123,6 +123,12 @@ const (
 	PortalReqPTokenAcceptedStatus = 1
 	PortalReqPTokenRejectedStatus = 2
 
+	PortalPortingRequestAcceptedStatus = 1
+	PortalPortingRequestRejectedStatus = 2
+
+	PortalPortingTxRequestAcceptedStatus = 1
+	PortalPortingTxRequestRejectedStatus = 2
+
 	PortalPortingReqSuccessStatus    = 1
 	PortalPortingReqWaitingStatus    = 2
 	PortalPortingReqRejectedStatus   = 3
@@ -182,8 +188,8 @@ const (
 	PortalReqPTokensAcceptedChainStatus = "accepted"
 	PortalReqPTokensRejectedChainStatus = "rejected"
 
-	PortalPortingRequestAcceptedStatus = "accepted"
-	PortalPortingRequestRejectedStatus = "rejected"
+	PortalPortingRequestAcceptedChainStatus = "accepted"
+	PortalPortingRequestRejectedChainStatus = "rejected"
 
 	PortalExchangeRatesSuccessStatus  = "accepted"
 	PortalExchangeRatesRejectedStatus = "rejected"
@@ -212,8 +218,8 @@ const (
 	PortalLiquidationCustodianDepositSuccessChainStatus  = "success"
 	PortalLiquidationCustodianDepositRejectedChainStatus = "rejected"
 
-	PortalExpiredWaitingPortingReqSuccessChainStatus    = "success"
-	PortalExpiredWaitingPortingReqFailedChainStatus     = "failed"
+	PortalExpiredWaitingPortingReqSuccessChainStatus = "success"
+	PortalExpiredWaitingPortingReqFailedChainStatus  = "failed"
 )
 
 // Relaying header
@@ -221,6 +227,7 @@ const (
 	RelayingHeaderConfirmedAcceptedChainStatus   = "confirmedAccepted"
 	RelayingHeaderUnconfirmedAcceptedChainStatus = "unconfirmedAccepted"
 	RelayingHeaderRejectedChainStatus            = "rejected"
+	RelayingHeaderConsideringChainStatus         = "considering"
 )
 
 const (

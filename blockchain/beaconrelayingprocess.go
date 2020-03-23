@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"bytes"
+	"errors"
 	"encoding/base64"
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
@@ -9,12 +10,12 @@ import (
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/relaying/bnb"
+	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/tendermint/tendermint/types"
-	"sort"
+	"github.com/btcsuite/btcutil"
 	"strconv"
 )
 
-//todo: process instruction btc header relaying
 func (blockchain *BlockChain) processRelayingInstructions(block *BeaconBlock, bd *[]database.BatchData) error {
 	beaconHeight := block.Header.Height - 1
 	db := blockchain.GetDatabase()
@@ -25,80 +26,74 @@ func (blockchain *BlockChain) processRelayingInstructions(block *BeaconBlock, bd
 		return nil
 	}
 
-	err = blockchain.processBNBRelayingHeaderInsts(block.Body.Instructions, beaconHeight, relayingState)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil
+	// because relaying instructions in received beacon block were sorted already as desired so dont need to do sorting again over here
+	for _, inst := range block.Body.Instructions {
+		if len(inst) < 4 {
+			continue // Not error, just not relaying instruction
+		}
+		var err error
+		switch inst[0] {
+		case strconv.Itoa(metadata.RelayingBNBHeaderMeta):
+			err = blockchain.processRelayingBNBHeaderInst(beaconHeight, inst, relayingState)
+		case strconv.Itoa(metadata.RelayingBTCHeaderMeta):
+			err = blockchain.processRelayingBTCHeaderInst(inst, relayingState)
+		}
+		if err != nil {
+			Logger.log.Error(err)
+		}
 	}
-
-	// todo: processBTCRelayingHeaderInsts
 
 	// store updated relayingState to leveldb with new beacon height
 	err = storeRelayingHeaderStateToDB(db, beaconHeight+1, relayingState)
 	if err != nil {
 		Logger.log.Error(err)
 	}
-
 	return nil
 }
 
-func (blockchain *BlockChain) processBNBRelayingHeaderInsts(insts [][]string, beaconHeight uint64, relayingState *RelayingHeaderChainState) error{
-	// collect instruction RelayingBNBHeader
-	// sort by block height
-	// store header chain
-	// update relaying state
-	instsGroupByBlockHeight := make(map[uint64][][]string)
-	blockHeightArr := make([]uint64, 0)
-	for _, inst := range insts {
-		if len(inst) < 4 || inst[0] != strconv.Itoa(metadata.RelayingBNBHeaderMeta) {
-			continue // Not error, just not relaying instruction
-		}
-
-		var err error
-		var relayingContent metadata.RelayingBNBHeaderContent
-		err = json.Unmarshal([]byte(inst[3]), &relayingContent)
-		if err != nil {
-			Logger.log.Errorf("ERROR: an error occured while unmarshaling relaying header instruction: %+v", err)
-			return err
-		}
-
-		// get blockHeight in content
-		blockHeight := relayingContent.BlockHeight
-
-		// add to blockHeightArr
-		if isExist, _ := common.SliceExists(blockHeightArr, blockHeight); !isExist {
-			blockHeightArr = append(blockHeightArr, blockHeight)
-		}
-
-		// add to actionsGroupByBlockHeight
-		if instsGroupByBlockHeight[blockHeight] != nil {
-			instsGroupByBlockHeight[blockHeight] = append(instsGroupByBlockHeight[blockHeight], inst)
-		} else{
-			instsGroupByBlockHeight[blockHeight] = [][]string{inst}
-		}
+func (blockchain *BlockChain) processRelayingBTCHeaderInst(
+	instruction []string,
+	relayingState *RelayingHeaderChainState,
+) error {
+	btcHeaderChain := relayingState.BTCHeaderChain
+	if btcHeaderChain == nil {
+		return errors.New("[processRelayingBTCHeaderInst] BTC Header chain instance should not be nil")
 	}
 
-	// sort blockHeightArr
-	sort.Slice(blockHeightArr, func(i, j int) bool {
-		return blockHeightArr[i] < blockHeightArr[j]
-	})
-
-	// process each instruction
-	for _, blockHeight := range blockHeightArr {
-		for _, inst := range instsGroupByBlockHeight[blockHeight] {
-			err := blockchain.processRelayingHeaderInst(beaconHeight, inst, relayingState)
-			if err != nil {
-				Logger.log.Error(err)
-				return err
-			}
-		}
+	if len(instruction) !=  4 {
+		return nil  // skip the instruction
 	}
 
+	var relayingHeaderContent metadata.RelayingHeaderContent
+	err := json.Unmarshal([]byte(instruction[3]), &relayingHeaderContent)
+	if err != nil {
+		return err
+	}
+
+	headerBytes, err := base64.StdEncoding.DecodeString(relayingHeaderContent.Header)
+	if err != nil {
+		return err
+	}
+	var block *btcutil.Block
+	err = json.Unmarshal(headerBytes, &block)
+	if err != nil {
+		return err
+	}
+
+	isMainChain, isOrphan, err := btcHeaderChain.ProcessBlockV2(block, btcrelaying.BFNone)
+	if err != nil {
+		Logger.log.Errorf("ProcessBlock fail with error: %v", err)
+		return err
+	}
+	Logger.log.Infof("ProcessBlock success with result: isMainChain: %v, isOrphan: %v", isMainChain, isOrphan)
 	return nil
 }
 
-func (blockchain *BlockChain) processRelayingHeaderInst(
-	beaconHeight uint64, instructions []string, relayingState *RelayingHeaderChainState) error {
+func (blockchain *BlockChain) processRelayingBNBHeaderInst(
+	beaconHeight uint64,
+	instructions []string,
+	relayingState *RelayingHeaderChainState,
+) error {
 	if relayingState == nil {
 		Logger.log.Errorf("relaying header state is nil")
 		return nil
@@ -109,7 +104,7 @@ func (blockchain *BlockChain) processRelayingHeaderInst(
 	db := blockchain.GetDatabase()
 
 	// unmarshal instructions content
-	var actionData metadata.RelayingBNBHeaderContent
+	var actionData metadata.RelayingHeaderContent
 	err := json.Unmarshal([]byte(instructions[3]), &actionData)
 	if err != nil {
 		return err
