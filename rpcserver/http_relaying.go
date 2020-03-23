@@ -39,7 +39,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithRelayingBNBHeader(params inte
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata Header param is invalid"))
 	}
 
-	meta, _ := metadata.NewRelayingBNBHeader(
+	meta, _ := metadata.NewRelayingHeader(
 		metadata.RelayingBNBHeaderMeta,
 		senderAddress,
 		header,
