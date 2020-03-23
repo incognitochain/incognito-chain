@@ -487,13 +487,8 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(beaconHeight ui
 				Logger.log.Errorf("[checkAndBuildInstForExpiredWaitingPortingRequest] Error when get custodian state with key %v\n: ", cusStateKey)
 				continue
 			}
-
-			Logger.log.Errorf("Custodian state before : %v", custodianState.FreeCollateral)
-
 			_ = updateCustodianStateAfterExpiredPortingReq(
 				custodianState, matchCusDetail.LockedAmountCollateral, matchCusDetail.Amount, tokenID)
-
-			Logger.log.Errorf("Custodian state after : %v", custodianState.FreeCollateral)
 		}
 
 		// remove waiting porting request from waiting list
@@ -504,6 +499,7 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(beaconHeight ui
 		if actionData.ExpiredByLiquidation {
 			portingReqStatus = common.PortalPortingReqLiquidatedStatus
 		}
+		portingReqKey := lvdb.NewPortingRequestKey(waitingPortingReq.UniquePortingID)
 		newPortingRequestStatus, err := NewPortingRequestState(
 			waitingPortingReq.UniquePortingID,
 			waitingPortingReq.TxReqID,
@@ -515,7 +511,7 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(beaconHeight ui
 			portingReqStatus,
 			waitingPortingReq.BeaconHeight,
 		)
-		err = db.StorePortingRequestItem([]byte(waitingPortingKey), newPortingRequestStatus)
+		err = db.StorePortingRequestItem([]byte(portingReqKey), newPortingRequestStatus)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store porting request item: %+v", err)
 			return nil

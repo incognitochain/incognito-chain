@@ -17,7 +17,7 @@ type RedeemMemoBNB struct {
 }
 
 func TestB64EncodeMemo(t *testing.T) {
-	portingID := "1"
+	portingID := "7"
 	memoPorting := PortingMemoBNB{PortingID: portingID}
 	memoPortingBytes, err := json.Marshal(memoPorting)
 	fmt.Printf("err: %v\n", err)
@@ -43,7 +43,7 @@ func TestB64EncodeMemo(t *testing.T) {
 
 func TestBuildAndPushBNBProof(t *testing.T) {
 	txIndex := 0
-	blockHeight := int64(106)
+	blockHeight := int64(446)
 	url := relaying.TestnetURLRemote
 
 	portingProof, err := BuildProof(txIndex, blockHeight, url)

@@ -82,8 +82,8 @@ func (p *BNBProof) Verify(db database.DatabaseInterface) (bool, *BNBRelayingErro
 
 	//@@note@@: hard code to test
 	dataHash := []byte{}
-	if p.BlockHeight == 106 {
-		dataHash, _ = hex.DecodeString("6DC16606BAB9B892C1342621E37339767E6C7C59FB109ECA5E95552A76E5323A")
+	if p.BlockHeight == 446 {
+		dataHash, _ = hex.DecodeString("4FF38A492977EF2880F5F6C0BA5B6E40B78599B53D5F3174A62888DD9EF7875D")
 	}
 
 	err := p.Proof.Validate(dataHash)

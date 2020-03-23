@@ -316,7 +316,6 @@ func buildInstForExpiredPortingReqByPortingID(
 			Logger.log.Errorf("[checkAndBuildInstForExpiredWaitingPortingRequest] Error when get custodian state with key %v\n: ", cusStateKey)
 			continue
 		}
-
 		_ = updateCustodianStateAfterExpiredPortingReq(
 			custodianState, matchCusDetail.LockedAmountCollateral, matchCusDetail.Amount, tokenID)
 	}
@@ -343,7 +342,7 @@ func checkAndBuildInstForExpiredWaitingPortingRequest(
 ) ([][]string, error) {
 	insts := [][]string{}
 	for portingReqKey, portingReq := range currentPortalState.WaitingPortingRequests {
-		if (beaconHeight + 1) - portingReq.BeaconHeight >= common.PortalTimeOutCustodianSendPubTokenBack {
+		if (beaconHeight + 1) - portingReq.BeaconHeight >= common.PortalTimeOutWaitingPortingRequest {
 			inst, err := buildInstForExpiredPortingReqByPortingID(
 				beaconHeight, currentPortalState, portingReqKey, portingReq, false)
 			if err != nil {
@@ -510,7 +509,6 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 			Logger.log.Errorf("Auto liquidation: detect cal tp ratio error %v", err)
 			continue
 		}
-
 
 		Logger.log.Infof("liquidate exchange rates: detect TP result  %v", detectTp)
 		if len(detectTp) > 0 {

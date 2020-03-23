@@ -36,6 +36,7 @@ type CustodianStateSlice struct {
 
 type RedeemMemoBNB struct {
 	RedeemID string `json:"RedeemID"`
+	CustodianIncognitoAddress string `json:"CustodianIncognitoAddress"`
 }
 
 type PortingMemoBNB struct {

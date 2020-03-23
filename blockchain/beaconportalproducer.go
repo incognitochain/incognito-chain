@@ -1620,6 +1620,22 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 			)
 			return [][]string{inst}, nil
 		}
+		if redeemMemo.CustodianIncognitoAddress != meta.CustodianAddressStr {
+			Logger.log.Errorf("CustodianIncognitoAddress in memoTx is not matched with CustodianIncognitoAddress in metadata", err2)
+			inst := buildReqUnlockCollateralInst(
+				meta.UniqueRedeemID,
+				meta.TokenID,
+				meta.CustodianAddressStr,
+				meta.RedeemAmount,
+				0,
+				meta.RedeemProof,
+				meta.Type,
+				shardID,
+				actionData.TxReqID,
+				common.PortalReqUnlockCollateralRejectedChainStatus,
+			)
+			return [][]string{inst}, nil
+		}
 
 		// check whether amount transfer in txBNB is equal redeem amount or not
 		// check receiver and amount in tx
