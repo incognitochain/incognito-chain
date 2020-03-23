@@ -157,7 +157,7 @@ func (*TxVersion1) Prove(tx *Tx, params *TxPrivacyInitParams) error {
 		return NewTransactionErr(InitWithnessError, err, string(jsonParam))
 	}
 
-	tx.Proof, err = witness.Prove(params.hasPrivacy)
+	tx.Proof, err = witness.Prove(params.hasPrivacy, params.paymentInfo[i].PaymentAddress.Tk)
 	if err.(*errhandler.PrivacyError) != nil {
 		Logger.log.Error(err)
 		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, common.EmptyString, "  ")
@@ -168,29 +168,6 @@ func (*TxVersion1) Prove(tx *Tx, params *TxPrivacyInitParams) error {
 	if params.hasPrivacy {
 		randSK := witness.GetRandSecretKey()
 		tx.sigPrivKey = append(*params.senderSK, randSK.ToBytesS()...)
-
-		// encrypt coin details (Randomness)
-		// hide information of output coins except coin commitments, public key, snDerivators
-		for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
-			err = tx.Proof.GetOutputCoins()[i].Encrypt(params.paymentInfo[i].PaymentAddress.Tk)
-			if err.(*errhandler.PrivacyError) != nil {
-				Logger.log.Error(err)
-				return NewTransactionErr(EncryptOutputError, err)
-			}
-			tx.Proof.GetOutputCoins()[i].CoinDetails.SetSerialNumber(nil)
-			tx.Proof.GetOutputCoins()[i].CoinDetails.SetValue(0)
-			tx.Proof.GetOutputCoins()[i].CoinDetails.SetRandomness(nil)
-		}
-
-		// hide information of input coins except serial number of input coins
-		for i := 0; i < len(tx.Proof.GetInputCoins()); i++ {
-			tx.Proof.GetInputCoins()[i].CoinDetails.SetCoinCommitment(nil)
-			tx.Proof.GetInputCoins()[i].CoinDetails.SetValue(0)
-			tx.Proof.GetInputCoins()[i].CoinDetails.SetSNDerivator(nil)
-			tx.Proof.GetInputCoins()[i].CoinDetails.SetPublicKey(nil)
-			tx.Proof.GetInputCoins()[i].CoinDetails.SetRandomness(nil)
-		}
-
 	} else {
 		tx.sigPrivKey = []byte{}
 		randSK := big.NewInt(0)

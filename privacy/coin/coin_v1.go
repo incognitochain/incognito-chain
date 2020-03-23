@@ -7,7 +7,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 )
 
@@ -22,14 +21,14 @@ type CoinV1 struct {
 	info           []byte //256 bytes
 }
 
-func (*CoinV1) GetVersion() uint8                        { return 1 }
-func (coin *CoinV1) GetPublicKey() *operation.Point      { return coin.publicKey }
-func (coin *CoinV1) GetCoinCommitment() *operation.Point { return coin.coinCommitment }
-func (coin *CoinV1) GetSNDerivator() *operation.Scalar   { return coin.snDerivator }
-func (coin *CoinV1) GetSerialNumber() *operation.Point   { return coin.serialNumber }
-func (coin *CoinV1) GetRandomness() *operation.Scalar    { return coin.randomness }
-func (coin *CoinV1) GetValue() uint64                    { return coin.value }
-func (coin *CoinV1) GetInfo() []byte                     { return coin.info }
+func (*CoinV1) GetVersion() uint8                       { return 1 }
+func (coin CoinV1) GetPublicKey() *operation.Point      { return coin.publicKey }
+func (coin CoinV1) GetCoinCommitment() *operation.Point { return coin.coinCommitment }
+func (coin CoinV1) GetSNDerivator() *operation.Scalar   { return coin.snDerivator }
+func (coin CoinV1) GetSerialNumber() *operation.Point   { return coin.serialNumber }
+func (coin CoinV1) GetRandomness() *operation.Scalar    { return coin.randomness }
+func (coin CoinV1) GetValue() uint64                    { return coin.value }
+func (coin CoinV1) GetInfo() []byte                     { return coin.info }
 
 func (coin *CoinV1) SetPublicKey(v *operation.Point)      { coin.publicKey = v }
 func (coin *CoinV1) SetCoinCommitment(v *operation.Point) { coin.coinCommitment = v }
@@ -222,6 +221,6 @@ func (coin *CoinV1) SetBytes(coinBytes []byte) error {
 	return nil
 }
 
-func (coin *CoinV1) GetCoinValue(privateKey *key.PrivateKey) uint64 {
-	return coin.GetValue()
-}
+// func (coin *CoinV1) GetCoinValue(privateKey *key.PrivateKey) uint64 {
+// 	return coin.GetValue()
+// }

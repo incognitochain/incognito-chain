@@ -1,73 +1,49 @@
 package privacy_v2
 
 import (
-	"math/big"
+	"errors"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
+	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/utils"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/bulletproofs"
 	"github.com/incognitochain/incognito-chain/privacy/proof/agg_interface"
 )
 
-type PaymentProof struct {
+type PaymentProofV2 struct {
+	Version              uint8
+	aggregatedRangeProof *bulletproofs.AggregatedRangeProof
 	inputCoins           []*coin.InputCoin
 	outputCoins          []*coin.OutputCoin
-	aggregatedRangeProof *bulletproofs.AggregatedRangeProof
 }
 
-func (paymentProof PaymentProof) GetInputCoins() []*coin.InputCoin {
+func (paymentProof PaymentProofV2) GetInputCoins() []*coin.InputCoin {
 	return paymentProof.inputCoins
 }
 
-func (paymentProof PaymentProof) GetOutputCoins() []*coin.OutputCoin {
+func (paymentProof PaymentProofV2) GetOutputCoins() []*coin.OutputCoin {
 	return paymentProof.outputCoins
 }
 
-func (paymentProof *PaymentProof) GetVersion() uint8 { return 2 }
+func (paymentProof PaymentProofV2) GetVersion() uint8 { return 2 }
+func (paymentProof *PaymentProofV2) SetVersion()      { this.Version = 2 }
 
-func (paymentProof PaymentProof) GetAggregatedRangeProof() *agg_interface.AggregatedRangeProof {
+func (paymentProof PaymentProofV2) GetAggregatedRangeProof() *agg_interface.AggregatedRangeProof {
 	var a agg_interface.AggregatedRangeProof = paymentProof.aggregatedRangeProof
 	return &a
 }
 
-func (proof *PaymentProof) Bytes() []byte {
+func (proof *PaymentProofV2) Bytes() []byte {
 	var bytes []byte
-	hasPrivacy := len(proof.oneOfManyProof) > 0
+	bytes = append(bytes, proof.GetVersion())
 
-	// OneOfManyProofSize
-	bytes = append(bytes, byte(len(proof.oneOfManyProof)))
-	for i := 0; i < len(proof.oneOfManyProof); i++ {
-		oneOfManyProof := proof.oneOfManyProof[i].Bytes()
-		bytes = append(bytes, common.IntToBytes(utils.OneOfManyProofSize)...)
-		bytes = append(bytes, oneOfManyProof...)
-	}
-
-	// SerialNumberProofSize
-	bytes = append(bytes, byte(len(proof.serialNumberProof)))
-	for i := 0; i < len(proof.serialNumberProof); i++ {
-		serialNumberProof := proof.serialNumberProof[i].Bytes()
-		bytes = append(bytes, common.IntToBytes(utils.SnPrivacyProofSize)...)
-		bytes = append(bytes, serialNumberProof...)
-	}
-
-	// SNNoPrivacyProofSize
-	bytes = append(bytes, byte(len(proof.serialNumberNoPrivacyProof)))
-	for i := 0; i < len(proof.serialNumberNoPrivacyProof); i++ {
-		snNoPrivacyProof := proof.serialNumberNoPrivacyProof[i].Bytes()
-		bytes = append(bytes, byte(utils.SnNoPrivacyProofSize))
-		bytes = append(bytes, snNoPrivacyProof...)
-	}
-
-	//ComOutputMultiRangeProofSize
-	if hasPrivacy {
-		comOutputMultiRangeProof := proof.aggregatedRangeProof.Bytes()
-		bytes = append(bytes, common.IntToBytes(len(comOutputMultiRangeProof))...)
-		bytes = append(bytes, comOutputMultiRangeProof...)
-	} else {
-		bytes = append(bytes, []byte{0, 0}...)
-	}
+	comOutputMultiRangeProof := proof.aggregatedRangeProof.Bytes()
+	var rangeproofLength uint32 = len(comOutputMultiRangeProof)
+	bytes = append(bytes, common.Uint32ToBytes(rangeproofLength)...)
+	bytes = append(bytes, comOutputMultiRangeProof...)
 
 	// InputCoins
 	bytes = append(bytes, byte(len(proof.inputCoins)))
@@ -93,70 +69,156 @@ func (proof *PaymentProof) Bytes() []byte {
 		bytes = append(bytes, outputCoins...)
 	}
 
-	// ComOutputValue
-	bytes = append(bytes, byte(len(proof.commitmentOutputValue)))
-	for i := 0; i < len(proof.commitmentOutputValue); i++ {
-		comOutputValue := proof.commitmentOutputValue[i].ToBytesS()
-		bytes = append(bytes, byte(operation.Ed25519KeySize))
-		bytes = append(bytes, comOutputValue...)
-	}
-
-	// ComOutputSND
-	bytes = append(bytes, byte(len(proof.commitmentOutputSND)))
-	for i := 0; i < len(proof.commitmentOutputSND); i++ {
-		comOutputSND := proof.commitmentOutputSND[i].ToBytesS()
-		bytes = append(bytes, byte(operation.Ed25519KeySize))
-		bytes = append(bytes, comOutputSND...)
-	}
-
-	// ComOutputShardID
-	bytes = append(bytes, byte(len(proof.commitmentOutputShardID)))
-	for i := 0; i < len(proof.commitmentOutputShardID); i++ {
-		comOutputShardID := proof.commitmentOutputShardID[i].ToBytesS()
-		bytes = append(bytes, byte(operation.Ed25519KeySize))
-		bytes = append(bytes, comOutputShardID...)
-	}
-
-	//ComInputSK 				*operation.Point
-	if proof.commitmentInputSecretKey != nil {
-		comInputSK := proof.commitmentInputSecretKey.ToBytesS()
-		bytes = append(bytes, byte(operation.Ed25519KeySize))
-		bytes = append(bytes, comInputSK...)
-	} else {
-		bytes = append(bytes, byte(0))
-	}
-
-	//ComInputValue 		[]*operation.Point
-	bytes = append(bytes, byte(len(proof.commitmentInputValue)))
-	for i := 0; i < len(proof.commitmentInputValue); i++ {
-		comInputValue := proof.commitmentInputValue[i].ToBytesS()
-		bytes = append(bytes, byte(operation.Ed25519KeySize))
-		bytes = append(bytes, comInputValue...)
-	}
-
-	//ComInputSND 			[]*privacy.Point
-	bytes = append(bytes, byte(len(proof.commitmentInputSND)))
-	for i := 0; i < len(proof.commitmentInputSND); i++ {
-		comInputSND := proof.commitmentInputSND[i].ToBytesS()
-		bytes = append(bytes, byte(operation.Ed25519KeySize))
-		bytes = append(bytes, comInputSND...)
-	}
-
-	//ComInputShardID 	*privacy.Point
-	if proof.commitmentInputShardID != nil {
-		comInputShardID := proof.commitmentInputShardID.ToBytesS()
-		bytes = append(bytes, byte(operation.Ed25519KeySize))
-		bytes = append(bytes, comInputShardID...)
-	} else {
-		bytes = append(bytes, byte(0))
-	}
-
-	// convert commitment index to bytes array
-	for i := 0; i < len(proof.commitmentIndices); i++ {
-		bytes = append(bytes, common.AddPaddingBigInt(big.NewInt(int64(proof.commitmentIndices[i])), common.Uint64Size)...)
-	}
-	//fmt.Printf("BYTES ------------------ %v\n", bytes)
-	//fmt.Printf("LEN BYTES ------------------ %v\n", len(bytes))
-
 	return bytes
+}
+
+func (proof *PaymentProof) SetBytes(proofbytes []byte) *errhandler.PrivacyError {
+	if len(proofbytes) == 0 {
+		return errhandler.NewPrivacyErr(errhandler.InvalidInputToSetBytesErr, nil)
+	}
+	if proofbytes[0] != proof.GetVersion() {
+		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, nil)
+	}
+
+	proof.SetVersion()
+	offset := 1
+
+	//ComOutputMultiRangeProofSize *aggregatedRangeProof
+	if offset+common.Uint32Size >= len(proofbytes) {
+		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range aggregated range proof"))
+	}
+	lenComOutputMultiRangeProof := common.BytesToUint32(proofbytes[offset : offset+common.Uint32Size])
+	offset += common.Uint32Size
+
+	if offset+lenComOutputMultiRangeProof >= len(proofbytes) {
+		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range aggregated range proof"))
+	}
+	if lenComOutputMultiRangeProof > 0 {
+		bulletproof := &bulletproofs.AggregatedRangeProof{}
+		bulletproof.Init()
+		proof.aggregatedRangeProof = bulletproof
+		err := proof.aggregatedRangeProof.SetBytes(proofbytes[offset : offset+lenComOutputMultiRangeProof])
+		if err != nil {
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err)
+		}
+		offset += lenComOutputMultiRangeProof
+	}
+
+	//InputCoins  []*privacy.InputCoin
+	if offset >= len(proofbytes) {
+		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range input coins"))
+	}
+	lenInputCoinsArray := int(proofbytes[offset])
+	offset += 1
+	proof.inputCoins = make([]*coin.InputCoin, lenInputCoinsArray)
+	for i := 0; i < lenInputCoinsArray; i++ {
+		if offset >= len(proofbytes) {
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range input coins"))
+		}
+		lenInputCoin := int(proofbytes[offset])
+		offset += 1
+
+		proof.inputCoins[i] = new(coin.InputCoin)
+		if offset+lenInputCoin >= len(proofbytes) {
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range input coins"))
+		}
+		err := proof.inputCoins[i].SetBytes(proofbytes[offset : offset+lenInputCoin])
+		if err != nil {
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err)
+		}
+		offset += lenInputCoin
+	}
+
+	//OutputCoins []*privacy.OutputCoin
+	if offset >= len(proofbytes) {
+		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
+	}
+	lenOutputCoinsArray := int(proofbytes[offset])
+	offset += 1
+	proof.outputCoins = make([]*coin.OutputCoin, lenOutputCoinsArray)
+	for i := 0; i < lenOutputCoinsArray; i++ {
+		proof.outputCoins[i] = new(coin.OutputCoin)
+		// try get 1-byte for len
+		if offset >= len(proofbytes) {
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
+		}
+		lenOutputCoin := int(proofbytes[offset])
+		offset += 1
+
+		if offset+lenOutputCoin >= len(proofbytes) {
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
+		}
+		err := proof.outputCoins[i].SetBytes(proofbytes[offset : offset+lenOutputCoin])
+		if err != nil {
+			// 1-byte is wrong
+			// try get 2-byte for len
+			if offset+1 >= len(proofbytes) {
+				return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
+			}
+			lenOutputCoin = common.BytesToInt(proofbytes[offset-1 : offset+1])
+			offset += 1
+
+			if offset+lenOutputCoin >= len(proofbytes) {
+				return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
+			}
+			err1 := proof.outputCoins[i].SetBytes(proofbytes[offset : offset+lenOutputCoin])
+			if err1 != nil {
+				return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err)
+			}
+		}
+		offset += lenOutputCoin
+	}
+
+	//fmt.Printf("SETBYTES ------------------ %v\n", proof.Bytes())
+
+	return nil
+}
+
+// Privacy TODO: update version 2 remember to fix this
+func Prove(inp []*coin.InputCoin, out []*coin.OutputCoin, hasPrivacy bool) (*PaymentProofV2, error) {
+	// Init proof
+	proof := new(PaymentProofV2)
+	proof.SetVersion()
+	proof.aggregatedRangeProof.Init()
+	proof.SetInputCoins(inp)
+	proof.SetOutputCoins(out)
+
+	// If not have privacy then don't need to prove range
+	if !hasPrivacy {
+		return proof, nil
+	}
+
+	// Prepare range proofs
+	const n int = len(out)
+	outputValues := make([]uint64, n)
+	outputRands := make([]uint64, operation.Scalar)
+	for i := 0; i < n; i += 1 {
+		outputValues[i] = out[i].CoinDetails.GetValue()
+		outputRands[i] = operation.RandomScalar()
+	}
+
+	wit := new(bulletproofs.AggregatedRangeWitness)
+	wit.Set(outputValues, outputRands)
+	proof.aggregatedRangeProof, err = wit.aggregatedRangeWitness.Prove()
+	if err != nil {
+		return nil, err
+	}
+	return proof, nil
+}
+
+func (proof PaymentProof) verifyNoPrivacy(pubKey key.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
+	return true, nil
+}
+
+func (proof PaymentProof) verifyHasPrivacy(pubKey key.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash, isBatch bool) (bool, error) {
+	return true, nil
+}
+
+func (proof PaymentProof) Verify(hasPrivacy bool, pubKey key.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash, isBatch bool) (bool, error) {
+	// has no privacy
+	if !hasPrivacy {
+		return proof.verifyNoPrivacy(pubKey, fee, db, shardID, tokenID)
+	}
+
+	return proof.verifyHasPrivacy(pubKey, fee, db, shardID, tokenID, isBatch)
 }

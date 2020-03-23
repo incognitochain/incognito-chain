@@ -5,6 +5,7 @@ package mlsag
 import (
 	"crypto/sha256"
 	"errors"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	C25519 "github.com/incognitochain/incognito-chain/privacy/operation/curve25519"
@@ -27,7 +28,7 @@ type Mlsag struct {
 	privateKeys []*operation.Scalar
 }
 
-func NewMlsag(privateKeys []*operation.Scalar, K *Ring, pi int)  *Mlsag {
+func NewMlsag(privateKeys []*operation.Scalar, K *Ring, pi int) *Mlsag {
 	return &Mlsag{
 		K,
 		pi,
@@ -35,13 +36,14 @@ func NewMlsag(privateKeys []*operation.Scalar, K *Ring, pi int)  *Mlsag {
 		privateKeys,
 	}
 }
+
 // Parse public key from private key
 func parsePublicKey(privateKey *operation.Scalar) *operation.Point {
 	return new(operation.Point).ScalarMultBase(privateKey)
 }
 
 func parseKeyImages(privateKeys []*operation.Scalar) []*operation.Point {
-	m  := len(privateKeys)
+	m := len(privateKeys)
 
 	result := make([]*operation.Point, m)
 	for i := 0; i < m; i += 1 {
@@ -202,7 +204,7 @@ func Verify(sig *MlsagSig, K *Ring, message []byte) (bool, error) {
 
 func (this *Mlsag) Sign(message []byte) (*MlsagSig, error) {
 	digest := common.Keccak256(message)
-	alpha, r := this.createRandomChallenges()    // step 2 in paper
+	alpha, r := this.createRandomChallenges()   // step 2 in paper
 	c, err := this.calculateC(digest, alpha, r) // step 3 and 4 in paper
 
 	if err != nil {

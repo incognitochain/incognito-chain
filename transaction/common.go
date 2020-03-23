@@ -54,14 +54,20 @@ func NewRandomCommitmentsProcessParam(usableInputCoins []*privacy.InputCoin, ran
 // commitmentIndexs = [{1,2,3,4,myindex1,6,7,8}{9,10,11,12,13,myindex2,15,16}...]
 // myCommitmentIndexs = [4, 13, ...]
 func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentIndexs []uint64, myCommitmentIndexs []uint64, commitments [][]byte) {
-	commitmentIndexs = []uint64{} // : list commitment indexes which: random from full db commitments + commitments of usableInputCoins
-	commitments = [][]byte{}
-	myCommitmentIndexs = []uint64{} // : list indexes of commitments(usableInputCoins) in {commitmentIndexs}
 	if len(param.usableInputCoins) == 0 {
 		return
 	}
 	if param.randNum == 0 {
 		param.randNum = privacy.CommitmentRingSize // default
+	}
+	lenCommitment, err1 := param.db.GetCommitmentLength(*param.tokenID, param.shardID)
+	if err1 != nil {
+		Logger.log.Error(err1)
+		return
+	}
+	if lenCommitment == nil {
+		Logger.log.Error(errors.New("Commitments is empty"))
+		return
 	}
 
 	// loop to create list usable commitments from usableInputCoins
@@ -85,18 +91,13 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 		mapIndexCommitmentsInUsableTx[commitmentInBase58Check] = index
 	}
 
+	// commitmentIndexs: list commitment indexes which: random from full db commitments + commitments of usableInputCoins
+	commitmentIndexs = []uint64{}
+	commitments = [][]byte{}
+	myCommitmentIndexs = []uint64{} // : list indexes of commitments(usableInputCoins) in {commitmentIndexs}
 	// loop to random commitmentIndexs
 	cpRandNum := (len(listUsableCommitments) * param.randNum) - len(listUsableCommitments)
 	//fmt.Printf("cpRandNum: %d\n", cpRandNum)
-	lenCommitment, err1 := param.db.GetCommitmentLength(*param.tokenID, param.shardID)
-	if err1 != nil {
-		Logger.log.Error(err1)
-		return
-	}
-	if lenCommitment == nil {
-		Logger.log.Error(errors.New("Commitments is empty"))
-		return
-	}
 	if lenCommitment.Uint64() == 1 && len(param.usableInputCoins) == 1 {
 		commitmentIndexs = []uint64{0, 0, 0, 0, 0, 0, 0}
 		temp := param.usableInputCoins[0].CoinDetails.GetCoinCommitment().ToBytesS()
