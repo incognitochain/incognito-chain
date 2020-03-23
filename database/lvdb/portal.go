@@ -126,7 +126,7 @@ type LiquidationCustodianDeposit struct {
 	Status byte
 }
 
-func NewCustodianWithdrawRequest(txHash string) string {
+func NewCustodianWithdrawRequestKey(txHash string) string {
 	key := append(PortalCustodianWithdrawPrefix, []byte(txHash)...)
 	return string(key)
 }
@@ -180,6 +180,7 @@ func NewPortalReqPTokenKey(txReqStr string) string {
 	return string(key)
 }
 
+// GetRemoteAddressByTokenID returns remote address for tokenID
 func GetRemoteAddressByTokenID(addresses []RemoteAddress, tokenID string) (string, error) {
 	for _, addr := range addresses {
 		if addr.PTokenID == tokenID {
@@ -193,37 +194,6 @@ func GetRemoteAddressByTokenID(addresses []RemoteAddress, tokenID string) (strin
 type PortalRewardInfo struct {
 	CustodianIncAddr string
 	Amount           uint64
-}
-
-func PlusPortalReward(rewards []*PortalRewardInfo, custodianIncAddr string, amount uint64) []*PortalRewardInfo {
-	found := false
-	for i, rewardInfo := range rewards {
-		if rewardInfo.CustodianIncAddr == custodianIncAddr {
-			rewards[i].Amount += amount
-			found = true
-			break
-		}
-	}
-
-	if !found {
-		rewards = append(
-			rewards,
-			&PortalRewardInfo{
-				CustodianIncAddr: custodianIncAddr,
-				Amount:           amount,
-			})
-	}
-
-	return rewards
-}
-
-func MinusPortalReward(rewards []*PortalRewardInfo, custodianIncAddr string, amount uint64) {
-	for _, rewardInfo := range rewards {
-		if rewardInfo.CustodianIncAddr == custodianIncAddr {
-			rewardInfo.Amount -= amount
-			break
-		}
-	}
 }
 
 type ExchangeRateInfo struct {
@@ -284,6 +254,7 @@ func (db *db) GetAllRecordsPortalByPrefixWithoutBeaconHeight(key []byte) ([][]by
 	return keys, values, nil
 }
 
+// TrackCustodianDepositCollateral stores custodian deposit collateral into db with deposit TxID
 func (db *db) TrackCustodianDepositCollateral(key []byte, content []byte) error {
 	err := db.Put(key, content)
 	if err != nil {
@@ -292,7 +263,7 @@ func (db *db) TrackCustodianDepositCollateral(key []byte, content []byte) error 
 	return nil
 }
 
-// GetCustodianDepositCollateralStatus returns custodian deposit status with deposit txid
+// GetCustodianDepositCollateralStatus returns custodian deposit status with deposit TxID
 func (db *db) GetCustodianDepositCollateralStatus(txIDStr string) ([]byte, error) {
 	key := NewCustodianDepositKey(txIDStr)
 	custodianDepositStatusBytes, err := db.lvdb.Get([]byte(key), nil)
@@ -303,6 +274,7 @@ func (db *db) GetCustodianDepositCollateralStatus(txIDStr string) ([]byte, error
 	return custodianDepositStatusBytes, err
 }
 
+// TrackReqPTokens stores request ptokens into db with req TxID
 func (db *db) TrackReqPTokens(key []byte, content []byte) error {
 	err := db.Put(key, content)
 	if err != nil {
@@ -311,7 +283,7 @@ func (db *db) TrackReqPTokens(key []byte, content []byte) error {
 	return nil
 }
 
-// GetReqPTokenStatusByTxReqID returns request ptoken status with  txReqID
+// GetReqPTokenStatusByTxReqID returns request ptoken status with txReqID
 func (db *db) GetReqPTokenStatusByTxReqID(txReqID string) ([]byte, error) {
 	key := append(PortalRequestPTokensPrefix, []byte(txReqID)...)
 
@@ -323,6 +295,7 @@ func (db *db) GetReqPTokenStatusByTxReqID(txReqID string) ([]byte, error) {
 	return reqPTokenStatusBytes, err
 }
 
+// StorePortingRequestItem store status of porting request by portingID
 func (db *db) StorePortingRequestItem(keyId []byte, content interface{}) error {
 	contributionBytes, err := json.Marshal(content)
 	if err != nil {
@@ -378,6 +351,7 @@ func (db *db) GetItemPortalByKey(key []byte) ([]byte, error) {
 	return itemRecord, nil
 }
 
+// GetPortingRequestStatusByPortingID returns status of porting request by portingID
 func (db *db) GetPortingRequestStatusByPortingID(portingID string) (int, error) {
 	key := NewPortingRequestKey(portingID)
 	portingRequest, err := db.GetItemPortalByKey([]byte(key))
@@ -401,6 +375,7 @@ func (db *db) GetPortingRequestStatusByPortingID(portingID string) (int, error) 
 	return portingRequestResult.Status, nil
 }
 
+// UpdatePortingRequestStatus updates status of porting request by portingID
 func (db *db) UpdatePortingRequestStatus(portingID string, newStatus int) error {
 	key := NewPortingRequestKey(portingID)
 	portingRequest, err := db.GetItemPortalByKey([]byte(key))
@@ -559,6 +534,7 @@ func (db *db) StoreRedeemRequest(key []byte, value []byte) error {
 	return nil
 }
 
+// GetRedeemRequestByRedeemID returns status of redeem request by redeemID
 func (db *db) GetRedeemRequestByRedeemID(redeemID string) ([]byte, error) {
 	key := NewRedeemReqKey(redeemID)
 	return db.GetItemPortalByKey([]byte(key))

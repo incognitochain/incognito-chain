@@ -839,7 +839,7 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(beaconHeight
 			return nil
 		}
 
-		keyCustodianState := lvdb.NewCustodianWithdrawRequest(txHash)
+		keyCustodianState := lvdb.NewCustodianWithdrawRequestKey(txHash)
 		err = db.StoreCustodianWithdrawRequest([]byte(keyCustodianState), newCustodianWithdrawRequest)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw item: %+v", err)
@@ -860,7 +860,7 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(beaconHeight
 			freeCollateral,
 		)
 
-		keyCustodianState := lvdb.NewCustodianWithdrawRequest(txHash)
+		keyCustodianState := lvdb.NewCustodianWithdrawRequestKey(txHash)
 		err = db.StoreCustodianWithdrawRequest([]byte(keyCustodianState), newCustodianWithdrawRequest)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw item: %+v", err)

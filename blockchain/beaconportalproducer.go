@@ -1204,7 +1204,7 @@ func (blockchain *BlockChain) buildInstructionsForCustodianWithdraw(
 	db := blockchain.GetDatabase()
 
 	//check custodian withdraw request
-	custodianWithdrawRequestKey := lvdb.NewCustodianWithdrawRequest(actionData.TxReqID.String())
+	custodianWithdrawRequestKey := lvdb.NewCustodianWithdrawRequestKey(actionData.TxReqID.String())
 	custodianWithdrawRequestKeyExist, err := db.GetItemPortalByKey([]byte(custodianWithdrawRequestKey))
 
 	if err != nil {

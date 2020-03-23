@@ -53,7 +53,7 @@ func (portal *Portal) GetPortingRequestByByPortingId(portingId string, db databa
 }
 
 func (portal *Portal) GetCustodianWithdrawByTxId(txId string, db database.DatabaseInterface) (jsonresult.PortalCustodianWithdrawRequest, *RPCError) {
-	key := lvdb.NewCustodianWithdrawRequest(txId)
+	key := lvdb.NewCustodianWithdrawRequestKey(txId)
 	custodianWithdraw, err :=  blockchain.GetCustodianWithdrawRequestByKey(db, []byte(key))
 
 	if err != nil {
