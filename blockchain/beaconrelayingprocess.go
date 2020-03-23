@@ -2,9 +2,10 @@ package blockchain
 
 import (
 	"bytes"
-	"errors"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"github.com/btcsuite/btcutil"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
@@ -12,7 +13,6 @@ import (
 	"github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/tendermint/tendermint/types"
-	"github.com/btcsuite/btcutil"
 	"strconv"
 )
 
@@ -34,7 +34,7 @@ func (blockchain *BlockChain) processRelayingInstructions(block *BeaconBlock, bd
 		var err error
 		switch inst[0] {
 		case strconv.Itoa(metadata.RelayingBNBHeaderMeta):
-			err = blockchain.processRelayingBNBHeaderInst(beaconHeight, inst, relayingState)
+			err = blockchain.processRelayingBNBHeaderInst(inst, relayingState)
 		case strconv.Itoa(metadata.RelayingBTCHeaderMeta):
 			err = blockchain.processRelayingBTCHeaderInst(inst, relayingState)
 		}
@@ -60,8 +60,8 @@ func (blockchain *BlockChain) processRelayingBTCHeaderInst(
 		return errors.New("[processRelayingBTCHeaderInst] BTC Header chain instance should not be nil")
 	}
 
-	if len(instruction) !=  4 {
-		return nil  // skip the instruction
+	if len(instruction) != 4 {
+		return nil // skip the instruction
 	}
 
 	var relayingHeaderContent metadata.RelayingHeaderContent
@@ -90,16 +90,15 @@ func (blockchain *BlockChain) processRelayingBTCHeaderInst(
 }
 
 func (blockchain *BlockChain) processRelayingBNBHeaderInst(
-	beaconHeight uint64,
 	instructions []string,
 	relayingState *RelayingHeaderChainState,
 ) error {
 	if relayingState == nil {
 		Logger.log.Errorf("relaying header state is nil")
-		return nil
+		return errors.New("relaying header state is nil")
 	}
-	if len(instructions) !=  4 {
-		return nil  // skip the instruction
+	if len(instructions) != 4 {
+		return nil // skip the instruction
 	}
 	db := blockchain.GetDatabase()
 
@@ -144,6 +143,7 @@ func (blockchain *BlockChain) processRelayingBNBHeaderInst(
 			err := db.StoreRelayingBNBHeaderChain(uint64(newConfirmedheader.Height), newConfirmedheaderBytes)
 			if err != nil {
 				Logger.log.Errorf("ERROR: an error occured while storing new confirmed header: %+v", err)
+				return err
 			}
 			return nil
 		}
@@ -167,7 +167,7 @@ func (blockchain *BlockChain) processRelayingBNBHeaderInst(
 		err := db.StoreRelayingBNBHeaderChain(uint64(newConfirmedheader.Height), newConfirmedheaderBytes)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while storing new confirmed header: %+v", err)
-			return nil
+			return err
 		}
 	}
 

@@ -7,7 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
-	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"
+	"github.com/incognitochain/incognito-chain/relaying/bnb"
 	"strconv"
 )
 
@@ -599,7 +599,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		//todo:
 	} else if meta.TokenID == common.PortalBNBIDStr {
 		// parse PortingProof in meta
-		txProofBNB, err := relaying.ParseBNBProofFromB64EncodeStr(meta.PortingProof)
+		txProofBNB, err := bnb.ParseBNBProofFromB64EncodeStr(meta.PortingProof)
 		if err != nil {
 			Logger.log.Errorf("PortingProof is invalid %v\n", err)
 			inst := buildReqPTokensInst(
@@ -634,7 +634,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		}
 
 		// parse Tx from Data in txProofBNB
-		txBNB, err := relaying.ParseTxFromData(txProofBNB.Proof.Data)
+		txBNB, err := bnb.ParseTxFromData(txProofBNB.Proof.Data)
 		if err != nil {
 			Logger.log.Errorf("Data in PortingProof is invalid %v", err)
 			inst := buildReqPTokensInst(
@@ -716,7 +716,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 
 			isChecked := false
 			for _, out := range outputs {
-				addr, _ := relaying.GetAccAddressString(&out.Address, blockchain.config.ChainParams.BNBRelayingHeaderChainID)
+				addr, _ := bnb.GetAccAddressString(&out.Address, blockchain.config.ChainParams.BNBRelayingHeaderChainID)
 				if addr != remoteAddressNeedToBeTransfer {
 					Logger.log.Errorf("[portal] remoteAddressNeedToBeTransfer: %v - addr: %v\n", remoteAddressNeedToBeTransfer, addr)
 					continue
@@ -725,7 +725,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 				// calculate amount that was transferred to custodian's remote address
 				amountTransfer := int64(0)
 				for _, coin := range out.Coins {
-					if coin.Denom == relaying.DenomBNB {
+					if coin.Denom == bnb.DenomBNB {
 						amountTransfer += coin.Amount
 						// note: log error for debug
 						Logger.log.Errorf("TxProof-BNB coin.Amount %d",
@@ -1506,7 +1506,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		//todo:
 	} else if meta.TokenID == common.PortalBNBIDStr {
 		// parse PortingProof in meta
-		txProofBNB, err := relaying.ParseBNBProofFromB64EncodeStr(meta.RedeemProof)
+		txProofBNB, err := bnb.ParseBNBProofFromB64EncodeStr(meta.RedeemProof)
 		if err != nil {
 			Logger.log.Errorf("RedeemProof is invalid %v\n", err)
 			inst := buildReqUnlockCollateralInst(
@@ -1543,7 +1543,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		}
 
 		// parse Tx from Data in txProofBNB
-		txBNB, err := relaying.ParseTxFromData(txProofBNB.Proof.Data)
+		txBNB, err := bnb.ParseTxFromData(txProofBNB.Proof.Data)
 		if err != nil {
 			Logger.log.Errorf("Data in RedeemProof is invalid %v", err)
 			inst := buildReqUnlockCollateralInst(
@@ -1647,7 +1647,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 
 		isChecked := false
 		for _, out := range outputs {
-			addr, _ := relaying.GetAccAddressString(&out.Address, blockchain.config.ChainParams.BNBRelayingHeaderChainID)
+			addr, _ := bnb.GetAccAddressString(&out.Address, blockchain.config.ChainParams.BNBRelayingHeaderChainID)
 			if addr != remoteAddressNeedToBeTransfer {
 				continue
 			}
@@ -1655,7 +1655,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 			// calculate amount that was transferred to custodian's remote address
 			amountTransfer := int64(0)
 			for _, coin := range out.Coins {
-				if coin.Denom == relaying.DenomBNB {
+				if coin.Denom == bnb.DenomBNB {
 					amountTransfer += coin.Amount
 					// note: log error for debug
 					Logger.log.Errorf("TxProof-BNB coin.Amount %d",

@@ -9,11 +9,12 @@ import (
 )
 
 type PortingMemoBNB struct {
-	PortingID string		`json:"PortingID"`
+	PortingID string `json:"PortingID"`
 }
 
 type RedeemMemoBNB struct {
-	RedeemID string `json:"RedeemID"`
+	RedeemID                  string `json:"RedeemID"`
+	CustodianIncognitoAddress string `json:"CustodianIncognitoAddress"`
 }
 
 func TestB64EncodeMemo(t *testing.T) {
@@ -40,7 +41,6 @@ func TestB64EncodeMemo(t *testing.T) {
 
 }
 
-
 func TestBuildAndPushBNBProof(t *testing.T) {
 	txIndex := 0
 	blockHeight := int64(446)
@@ -53,7 +53,6 @@ func TestBuildAndPushBNBProof(t *testing.T) {
 	fmt.Printf("BNB portingProof: %+v\n", portingProof)
 
 	//eyJQcm9vZiI6eyJSb290SGFzaCI6IjZEQzE2NjA2QkFCOUI4OTJDMTM0MjYyMUUzNzMzOTc2N0U2QzdDNTlGQjEwOUVDQTVFOTU1NTJBNzZFNTMyM0EiLCJEYXRhIjoiM0FId1lsM3VDazRxTElmNkNpTUtGUFlCSW1pVXNEQnlSNjdEbjlVVUVtTmRNSEdJRWdzS0EwSk9RaENBbE92Y0F4SWpDaFEzQ0NQQVRCYTRSZG9kS3hLaGhEeG1mNFNXcEJJTENnTkNUa0lRZ0pUcjNBTVNiQW9tNjFycGh5RUNaekxjSnNLR0d3eVFibkNaT2g1Y2sxcENNYzdHR1lKdGk3REFSMzZHYXQwU1FINE9XM1B5YW10V0hqN1pSQWh2Z0M3UzVESDBBOUZFck5lS3BLandZWjh2YWhIVldUTUhPWC9qdFFwTkM3OEVyeFBaL2QzdGRCekhkdG8xMi9FQUJJQWdBUm9ZWlhsS1VXSXpTakJoVnpWdVUxVlJhVTlwU1hoSmJqQTkiLCJQcm9vZiI6eyJ0b3RhbCI6MSwiaW5kZXgiOjAsImxlYWZfaGFzaCI6ImJjRm1CcnE1dUpMQk5DWWg0M001ZG41c2ZGbjdFSjdLWHBWVktuYmxNam89IiwiYXVudHMiOltdfX0sIkJsb2NrSGVpZ2h0IjoxMDZ9
-
 
 	//redeemProof, err := BuildProof(txIndex, blockHeight, url)
 	//if err != nil {
