@@ -289,6 +289,7 @@ func StorePortingRequestItem(stateDB *StateDB, keyId []byte, content interface{}
 }
 
 //Exchange rate
+//todo: replace method getFinalExchangeRates (at: blockchain/portalutils.go)
 func GetFinalExchangeRatesState(
 	stateDB *StateDB,
 	beaconHeight uint64,
