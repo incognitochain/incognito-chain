@@ -31,6 +31,7 @@ const (
 
 	// portal
 	CustodianStateObjectType
+	RedeemRequestObjectType
 )
 
 // Prefix length

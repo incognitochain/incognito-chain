@@ -223,8 +223,14 @@ func GetPDEStatusKey(prefix []byte, suffix []byte) []byte {
 	return append(prefix, suffix...)
 }
 
+// Portal
 func GetPortalCustodianStatePrefix() []byte {
 	h := common.HashH(portalCustodianStatePrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetWaitingRedeemRequestPrefix() []byte {
+	h := common.HashH(PortalWaitingRedeemRequestsPrefix)
 	return h[:][:prefixHashKeyLength]
 }
 

@@ -31,6 +31,7 @@ const (
 	ErrInvalidBurningConfirmStateType         = "invalid burning confirm state type"
 	ErrInvalidTokenTransactionStateType       = "invalid token transaction state type"
 	ErrInvalidPortalCustodianStateType        = "invalid portal custodian state type"
+	ErrInvalidPortalWaitingRedeemRequestType  = "invalid portal waiting redeem request type"
 )
 const (
 	InvalidByteArrayTypeError = iota
