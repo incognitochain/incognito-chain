@@ -39,6 +39,9 @@ var (
 	bridgeDecentralizedTokenInfoPrefix = []byte("bri-de-token-info-")
 	bridgeStatusPrefix                 = []byte("bri-status-")
 	burnPrefix                         = []byte("burn-")
+
+	// portal
+	portalCustodianStatePrefix                = []byte("portalcustodian-")
 )
 
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
@@ -218,6 +221,11 @@ func GetPDEShareKey(beaconHeight uint64, token1ID string, token2ID string, contr
 
 func GetPDEStatusKey(prefix []byte, suffix []byte) []byte {
 	return append(prefix, suffix...)
+}
+
+func GetPortalCustodianStatePrefix() []byte {
+	h := common.HashH(portalCustodianStatePrefix)
+	return h[:][:prefixHashKeyLength]
 }
 
 var _ = func() (_ struct{}) {

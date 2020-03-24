@@ -28,6 +28,9 @@ const (
 	BridgeStatusObjectType
 	BurningConfirmObjectType
 	TokenTransactionObjectType
+
+	// portal
+	CustodianStateObjectType
 )
 
 // Prefix length

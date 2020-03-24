@@ -30,6 +30,7 @@ const (
 	ErrInvalidBridgeStatusStateType           = "invalid bridge status state type"
 	ErrInvalidBurningConfirmStateType         = "invalid burning confirm state type"
 	ErrInvalidTokenTransactionStateType       = "invalid token transaction state type"
+	ErrInvalidPortalCustodianStateType        = "invalid portal custodian state type"
 )
 const (
 	InvalidByteArrayTypeError = iota
@@ -244,9 +245,9 @@ var ErrCodeMessage = map[int]struct {
 	TrackLiquidateCustodianError:                  {-14019, "Track liquidation custodian error"},
 	StorePortalRewardError:                        {-14020, "Store portal reward error"},
 	StoreLiquidateTopPercentileExchangeRatesError: {-14021, "Store liquidate top percentile exchange rates error"},
-	StoreLiquidateExchangeRatesError: {-14022, "Store liquidate exchange rates error"},
-	StoreRedeemLiquidationExchangeRatesError: {-14023, "Store redeem liquidation exchange rates error"},
-	StoreLiquidationCustodianDepositError: {-14024, "Store liquidation custodian deposit error"},
+	StoreLiquidateExchangeRatesError:              {-14022, "Store liquidate exchange rates error"},
+	StoreRedeemLiquidationExchangeRatesError:      {-14023, "Store redeem liquidation exchange rates error"},
+	StoreLiquidationCustodianDepositError:         {-14024, "Store liquidation custodian deposit error"},
 
 	// relaying
 	StoreRelayingBNBHeaderError: {-15001, "Store relaying header bnb error"},
