@@ -1189,3 +1189,44 @@ func (stateDB *StateDB) getBurningConfirmState(key common.Hash) (*BurningConfirm
 	}
 	return NewBurningConfirmState(), false, nil
 }
+
+// ================================= Portal OBJECT =======================================
+func (stateDB *StateDB) getAllWaitingRedeemRequest() map[string]*WaitingRedeemRequest {
+	waitingRedeemRequests := map[string]*WaitingRedeemRequest{}
+	temp := stateDB.trie.NodeIterator(GetWaitingRedeemRequestPrefix())
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		key := it.Key
+		keyStr := string(key)
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		wr := NewWaitingRedeemRequest()
+		err := json.Unmarshal(newValue, wr)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		waitingRedeemRequests[keyStr] = wr
+	}
+	return waitingRedeemRequests
+}
+
+func (stateDB *StateDB) getAllCustodianStatePool() map[string]*CustodianState {
+	custodians := map[string]*CustodianState{}
+	temp := stateDB.trie.NodeIterator(GetPortalCustodianStatePrefix())
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		key := it.Key
+		keyStr := string(key)
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		cus := NewCustodianState()
+		err := json.Unmarshal(newValue, cus)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		custodians[keyStr] = cus
+	}
+	return custodians
+}

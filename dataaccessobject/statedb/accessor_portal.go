@@ -1,11 +1,43 @@
 package statedb
 
 import (
-	"encoding/json"
-	"errors"
-	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
 )
 
+//// prefix key for portal
+//var (
+//	CustodianStatePrefix                = []byte("custodianstate-")
+//	PortalPortingRequestsPrefix         = []byte("portalportingrequest-")
+//	PortalPortingRequestsTxPrefix       = []byte("portalportingrequesttx-")
+//	PortalExchangeRatesPrefix           = []byte("portalexchangeratesrequest-")
+//	PortalFinalExchangeRatesPrefix      = []byte("portalfinalexchangerates-")
+//	PortalCustodianStatePrefix          = []byte("portalcustodianstate-")
+//	PortalCustodianDepositPrefix        = []byte("portalcustodiandeposit-")
+//	PortalWaitingPortingRequestsPrefix  = []byte("portalwaitingportingrequest-")
+//	PortalRequestPTokensPrefix          = []byte("portalrequestptokens-")
+//	PortalWaitingRedeemRequestsPrefix   = []byte("portalwaitingredeemrequest-")
+//	PortalRedeemRequestsPrefix          = []byte("portalredeemrequest-")
+//	PortalRedeemRequestsByTxReqIDPrefix = []byte("portalredeemrequestbytxid-")
+//	PortalRequestUnlockCollateralPrefix = []byte("portalrequestunlockcollateral-")
+//	PortalCustodianWithdrawPrefix       = []byte("portalcustodianwithdraw-")
+//
+//	// liquidation in portal
+//	PortalLiquidateCustodianPrefix                  = []byte("portalliquidatecustodian-")
+//	PortalLiquidateTopPercentileExchangeRatesPrefix = []byte("portalliquidatetoppercentileexchangerates-")
+//	PortalLiquidateExchangeRatesPrefix              = []byte("portalliquidateexchangerates-")
+//	PortalLiquidationCustodianDepositPrefix         = []byte("portalliquidationcustodiandepsit-")
+//
+//	PortalExpiredPortingReqPrefix = []byte("portalexpiredportingreq-")
+//
+//	// reward in portal
+//	PortalRewardByBeaconHeightPrefix  = []byte("portalreward-")
+//	PortalRequestWithdrawRewardPrefix = []byte("portalrequestwithdrawreward-")
+//
+//	// Relaying
+//	RelayingBNBHeaderStatePrefix = []byte("relayingbnbheaderstate-")
+//	RelayingBNBHeaderChainPrefix = []byte("relayingbnbheaderchain-")
+//)
+//
 //type RemoteAddress struct {
 //	PTokenID string
 //	Address  string
@@ -80,16 +112,16 @@ import (
 //}
 //
 //type LiquidateTopPercentileExchangeRatesDetail struct {
-//	TPKey int
+//	TPKey                    int
 //	TPValue                  int
 //	HoldAmountFreeCollateral uint64
 //	HoldAmountPubToken       uint64
 //}
 //
 //type LiquidateTopPercentileExchangeRates struct {
-//	CustodianAddress 	string
-//	Status				byte
-//	Rates        		map[string]LiquidateTopPercentileExchangeRatesDetail //ptoken | detail
+//	CustodianAddress string
+//	Status           byte
+//	Rates            map[string]LiquidateTopPercentileExchangeRatesDetail //ptoken | detail
 //}
 //
 //type LiquidateExchangeRatesDetail struct {
@@ -109,16 +141,16 @@ import (
 //	RedeemAmount          uint64
 //	RedeemFee             uint64
 //	Status                byte
-//	TotalPTokenReceived	  uint64
+//	TotalPTokenReceived   uint64
 //}
 //
 //type LiquidationCustodianDeposit struct {
-//	TxReqID common.Hash
-//	IncogAddressStr string
-//	PTokenId string
-//	DepositAmount uint64
+//	TxReqID                common.Hash
+//	IncogAddressStr        string
+//	PTokenId               string
+//	DepositAmount          uint64
 //	FreeCollateralSelected bool
-//	Status byte
+//	Status                 byte
 //}
 //
 //type PortalRewardInfo struct {
@@ -131,168 +163,135 @@ import (
 //	Rate     uint64
 //}
 
-// GetPortalRecordByKey gets record by key from stateDB
-func GetPortalRecordByKey(stateDB *StateDB, key []byte) ([]byte, error) {
-	return []byte{}, nil
+
+//// GetCustodianDepositCollateralStatus returns custodian deposit status with deposit TxID
+//func GetCustodianDepositCollateralStatus(stateDB *StateDB, txIDStr string) ([]byte, error) {
+//	key := NewCustodianDepositKey(txIDStr)
+//	custodianDepositStatusBytes, err :=  GetPortalRecordByKey(stateDB, []byte(key))
+//	if err != nil  {
+//		return nil, NewStatedbError(GetCustodianDepositStatusError, err)
+//	}
+//
+//	return custodianDepositStatusBytes, err
+//}
+//
+//// GetReqPTokenStatusByTxReqID returns request ptoken status with txReqID
+//func GetReqPTokenStatusByTxReqID(stateDB *StateDB, txReqID string) ([]byte, error) {
+//	key := append(PortalRequestPTokensPrefix, []byte(txReqID)...)
+//	items, err := GetPortalRecordByKey(stateDB, []byte(key))
+//	if err != nil {
+//		return nil, NewStatedbError(GetReqPTokenStatusError, err)
+//	}
+//
+//	return items, err
+//}
+//
+////Porting request
+//// StorePortingRequestItem store status of porting request by portingID
+//func StorePortingRequestItem(stateDB *StateDB, keyId []byte, content interface{}) error {
+//	contributionBytes, err := json.Marshal(content)
+//	if err != nil {
+//		return err
+//	}
+//
+//	err = StorePortalRecord(stateDB, keyId, contributionBytes )
+//	if err != nil {
+//		return NewStatedbError(StorePortingRequestStateError, err)
+//	}
+//
+//	return nil
+//}
+
+
+
+
+// Redeem
+func GetWaitingRedeemRequests(stateDB *StateDB, beaconHeight uint64) (map[string]*WaitingRedeemRequest, error) {
+	waitingRedeemRequests := stateDB.getAllWaitingRedeemRequest()
+	return waitingRedeemRequests, nil
 }
 
-// GetPortalRecordsByPrefix gets records by prefix from stateDB
-func GetPortalRecordsByPrefix(stateDB *StateDB, prefix []byte) ([][]byte, error) {
-	return [][]byte{}, nil
-}
-
-// StorePortalRecord stores record by key into stateDB
-func StorePortalRecord(stateDB *StateDB, key []byte, value []byte) error {
-	return nil
-}
-
-//A
-//Generate Key
-// Portal
-var (
-	CustodianStatePrefix                = []byte("custodianstate-")
-	PortalPortingRequestsPrefix         = []byte("portalportingrequest-")
-	PortalPortingRequestsTxPrefix       = []byte("portalportingrequesttx-")
-	PortalExchangeRatesPrefix           = []byte("portalexchangeratesrequest-")
-	PortalFinalExchangeRatesPrefix      = []byte("portalfinalexchangerates-")
-	PortalCustodianStatePrefix          = []byte("portalcustodianstate-")
-	PortalCustodianDepositPrefix        = []byte("portalcustodiandeposit-")
-	PortalWaitingPortingRequestsPrefix  = []byte("portalwaitingportingrequest-")
-	PortalRequestPTokensPrefix          = []byte("portalrequestptokens-")
-	PortalWaitingRedeemRequestsPrefix   = []byte("portalwaitingredeemrequest-")
-	PortalRedeemRequestsPrefix          = []byte("portalredeemrequest-")
-	PortalRedeemRequestsByTxReqIDPrefix = []byte("portalredeemrequestbytxid-")
-	PortalRequestUnlockCollateralPrefix = []byte("portalrequestunlockcollateral-")
-	PortalCustodianWithdrawPrefix 		= []byte("portalcustodianwithdraw-")
-
-	// liquidation in portal
-	PortalLiquidateCustodianPrefix = []byte("portalliquidatecustodian-")
-	PortalLiquidateTopPercentileExchangeRatesPrefix = []byte("portalliquidatetoppercentileexchangerates-")
-	PortalLiquidateExchangeRatesPrefix = []byte("portalliquidateexchangerates-")
-	PortalLiquidationCustodianDepositPrefix = []byte("portalliquidationcustodiandepsit-")
-
-	PortalExpiredPortingReqPrefix = []byte("portalexpiredportingreq-")
-
-	// reward in portal
-	PortalRewardByBeaconHeightPrefix  = []byte("portalreward-")
-	PortalRequestWithdrawRewardPrefix = []byte("portalrequestwithdrawreward-")
-
-	// Relaying
-	RelayingBNBHeaderStatePrefix = []byte("relayingbnbheaderstate-")
-	RelayingBNBHeaderChainPrefix = []byte("relayingbnbheaderchain-")
-)
-
-func NewCustodianWithdrawRequestKey(txHash string) string {
-	key := append(PortalCustodianWithdrawPrefix, []byte(txHash)...)
-	return string(key)
-}
-
-func NewCustodianStateKey(beaconHeight uint64, custodianAddress string) string {
-	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
-	key := append(PortalCustodianStatePrefix, beaconHeightBytes...)
-	key = append(key, []byte(custodianAddress)...)
-	return string(key)
-}
-
-func NewPortingRequestKey(uniquePortingID string) string {
-	key := append(PortalPortingRequestsPrefix, []byte(uniquePortingID)...)
-	return string(key) //prefix + uniqueId
-}
-
-func NewPortingRequestTxKey(txReqID string) string {
-	key := append(PortalPortingRequestsTxPrefix, []byte(txReqID)...)
-	return string(key) //prefix + txHash
-}
-
-func NewFinalExchangeRatesKey(beaconHeight uint64) string {
-	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
-	key := append(PortalFinalExchangeRatesPrefix, beaconHeightBytes...)
-	key = append(key, []byte("portal")...)
-	return string(key)
-}
-
-func NewExchangeRatesRequestKey(beaconHeight uint64, txId string) string {
-	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
-	key := append(PortalExchangeRatesPrefix, beaconHeightBytes...)
-	key = append(key, []byte(txId)...)
-	return string(key)
-}
-
-func NewCustodianDepositKey(txID string) string {
-	key := append(PortalCustodianDepositPrefix, []byte(txID)...)
-	return string(key)
-}
-
-func NewWaitingPortingReqKey(beaconHeight uint64, portingID string) string {
-	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
-	key := append(PortalWaitingPortingRequestsPrefix, beaconHeightBytes...)
-	key = append(key, []byte(portingID)...)
-	return string(key)
-}
-
-// NewPortalReqPTokenKey creates key for tracking request pToken in portal
-func NewPortalReqPTokenKey(txReqStr string) string {
-	key := append(PortalRequestPTokensPrefix, []byte(txReqStr)...)
-	return string(key)
-}
-
-
-//Custodian
-
-// GetRemoteAddressByTokenID returns remote address for tokenID
-func GetRemoteAddressByTokenID(addresses []RemoteAddress, tokenID string) (string, error) {
-	for _, addr := range addresses {
-		if addr.PTokenID == tokenID {
-			return addr.Address, nil
+// StoreWaitingRedeemRequests stores waiting redeem requests at beaconHeight
+func StoreWaitingRedeemRequests(
+	stateDB *StateDB,
+	beaconHeight uint64,
+	waitingRedeemReqs map[string]*WaitingRedeemRequest) error {
+	for _, waitingReq := range waitingRedeemReqs {
+		key := GenerateWaitingRedeemRequestObjectKey(beaconHeight, waitingReq.uniqueRedeemID)
+		value := NewWaitingRedeemRequestWithValue(
+			waitingReq.uniqueRedeemID,
+			waitingReq.tokenID,
+			waitingReq.redeemerAddress,
+			waitingReq.redeemerRemoteAddress,
+			waitingReq.redeemAmount,
+			waitingReq.custodians,
+			waitingReq.redeemFee,
+			waitingReq.beaconHeight,
+			waitingReq.txReqID,
+			)
+		err := stateDB.SetStateObject(WaitingRedeemRequestObjectType, key, value)
+		if err != nil {
+			return NewStatedbError(StoreWaitingRedeemRequestError, err)
 		}
 	}
 
-	return "", errors.New("Can not found address with tokenID")
+	return nil
 }
 
-// GetCustodianDepositCollateralStatus returns custodian deposit status with deposit TxID
-func GetCustodianDepositCollateralStatus(stateDB *StateDB, txIDStr string) ([]byte, error) {
-	key := NewCustodianDepositKey(txIDStr)
-	custodianDepositStatusBytes, err :=  GetPortalRecordByKey(stateDB, []byte(key))
-	if err != nil  {
-		return nil, NewStatedbError(GetCustodianDepositStatusError, err)
+func DeleteWaitingRedeemRequest(stateDB *StateDB, deletedWaitingRedeemRequests map[string]*WaitingRedeemRequest) {
+	for key, _ := range deletedWaitingRedeemRequests {
+		keyHash := common.Hash{}
+		copy(keyHash[:], key)
+		stateDB.MarkDeleteStateObject(WaitingRedeemRequestObjectType, keyHash)
 	}
-
-	return custodianDepositStatusBytes, err
 }
 
-// GetReqPTokenStatusByTxReqID returns request ptoken status with txReqID
-func GetReqPTokenStatusByTxReqID(stateDB *StateDB, txReqID string) ([]byte, error) {
-	key := append(PortalRequestPTokensPrefix, []byte(txReqID)...)
-	items, err := GetPortalRecordByKey(stateDB, []byte(key))
-	if err != nil {
-		return nil, NewStatedbError(GetReqPTokenStatusError, err)
-	}
-
-	return items, err
+// Custodian pool
+// getCustodianPoolState gets custodian pool state at beaconHeight
+func GetCustodianPoolState(
+	stateDB *StateDB,
+	beaconHeight uint64,
+) (map[string]*CustodianState, error) {
+	waitingRedeemRequests := stateDB.getAllCustodianStatePool()
+	return waitingRedeemRequests, nil
 }
 
-//Porting request
-// StorePortingRequestItem store status of porting request by portingID
-func StorePortingRequestItem(stateDB *StateDB, keyId []byte, content interface{}) error {
-	contributionBytes, err := json.Marshal(content)
-	if err != nil {
-		return err
-	}
-
-	err = StorePortalRecord(stateDB, keyId, contributionBytes )
-	if err != nil {
-		return NewStatedbError(StorePortingRequestStateError, err)
+// StoreWaitingRedeemRequests stores waiting redeem requests at beaconHeight
+func StoreCustodianState(
+	stateDB *StateDB,
+	beaconHeight uint64,
+	custodians map[string]*CustodianState) error {
+	for _, cus := range custodians {
+		key := GenerateCustodianStateObjectKey(beaconHeight, cus.incognitoAddress)
+		value := NewCustodianStateWithValue(
+			cus.incognitoAddress,
+			cus.totalCollateral,
+			cus.freeCollateral,
+			cus.holdingPubTokens,
+			cus.lockedAmountCollateral,
+			cus.remoteAddresses,
+			cus.rewardAmount,
+		)
+		err := stateDB.SetStateObject(CustodianStateObjectType, key, value)
+		if err != nil {
+			return NewStatedbError(StoreCustodianStateError, err)
+		}
 	}
 
 	return nil
 }
 
-//Redeem
+func DeleteCustodianState(stateDB *StateDB, deletedCustodianStates map[string]*CustodianState) {
+	for key, _ := range deletedCustodianStates {
+		keyHash := common.Hash{}
+		copy(keyHash[:], key)
+		stateDB.MarkDeleteStateObject(CustodianStateObjectType, keyHash)
+	}
+}
 
 //Withdraw
 
 
 //Liquidation
 
-// B
+// Porting

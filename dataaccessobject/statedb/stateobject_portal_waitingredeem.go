@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"reflect"
 )
 
@@ -20,9 +21,9 @@ type WaitingRedeemRequest struct {
 }
 
 type MatchingRedeemCustodianDetail struct {
-	IncAddress    string
-	RemoteAddress string
-	Amount        uint64
+	incAddress    string
+	remoteAddress string
+	amount        uint64
 }
 
 func (rq WaitingRedeemRequest) GetUniqueRedeemID() string {
@@ -153,6 +154,21 @@ func (rq *WaitingRedeemRequest) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func NewMatchingRedeemCustodianDetails(
+	custodians []*rawdbv2.MatchingRedeemCustodianDetail,
+) []*MatchingRedeemCustodianDetail {
+	newCus := make([]*MatchingRedeemCustodianDetail, len(custodians))
+	for i, cus := range custodians {
+		newCus[i] = &MatchingRedeemCustodianDetail{
+			incAddress:    cus.IncAddress,
+			remoteAddress: cus.RemoteAddress,
+			amount:        cus.Amount,
+		}
+	}
+
+	return newCus
+}
+
 func NewWaitingRedeemRequest() *WaitingRedeemRequest {
 	return &WaitingRedeemRequest{}
 }
@@ -206,7 +222,7 @@ func newWaitingRedeemRequestObject(db *StateDB, hash common.Hash) *WaitingRedeem
 		db:                       db,
 		waitingRedeemRequestHash: hash,
 		waitingRedeemRequest:     NewWaitingRedeemRequest(),
-		objectType:               RedeemRequestObjectType,
+		objectType:               WaitingRedeemRequestObjectType,
 		deleted:                  false,
 	}
 }

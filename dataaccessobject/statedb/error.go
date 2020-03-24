@@ -117,6 +117,7 @@ const (
 
 	//portal
 	StoreCustodianDepositStateError
+	StoreCustodianStateError
 	StoreWaitingPortingRequestError
 	StoreWaitingRedeemRequestError
 	StorePortingRequestStateError
@@ -142,11 +143,6 @@ const (
 	StoreLiquidationCustodianDepositError
 
 	StorePortalRewardError
-
-	// relaying
-	StoreRelayingBNBHeaderError
-	GetRelayingBNBHeaderError
-	GetBNBDataHashError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -249,11 +245,7 @@ var ErrCodeMessage = map[int]struct {
 	StoreLiquidateExchangeRatesError:              {-14022, "Store liquidate exchange rates error"},
 	StoreRedeemLiquidationExchangeRatesError:      {-14023, "Store redeem liquidation exchange rates error"},
 	StoreLiquidationCustodianDepositError:         {-14024, "Store liquidation custodian deposit error"},
-
-	// relaying
-	StoreRelayingBNBHeaderError: {-15001, "Store relaying header bnb error"},
-	GetRelayingBNBHeaderError:   {-15002, "Get relaying header bnb error"},
-	GetBNBDataHashError:         {-15003, "Get bnb data hash by block height error"},
+	StoreCustodianStateError:                      {-14025, "Store custodian state error"},
 }
 
 type StatedbError struct {

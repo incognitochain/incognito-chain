@@ -42,6 +42,7 @@ var (
 
 	// portal
 	portalCustodianStatePrefix                = []byte("portalcustodian-")
+	portalWaitingRedeemRequestsPrefix   = []byte("portalwaitingredeemrequest-")
 )
 
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
@@ -230,7 +231,7 @@ func GetPortalCustodianStatePrefix() []byte {
 }
 
 func GetWaitingRedeemRequestPrefix() []byte {
-	h := common.HashH(PortalWaitingRedeemRequestsPrefix)
+	h := common.HashH(portalWaitingRedeemRequestsPrefix)
 	return h[:][:prefixHashKeyLength]
 }
 
