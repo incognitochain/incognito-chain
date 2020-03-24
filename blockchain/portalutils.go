@@ -223,7 +223,7 @@ func InitCurrentPortalStateFromDB(
 		return nil, err
 	}
 
-	finalExchangeRates, err := getFinalExchangeRates(db, beaconHeight)
+	finalExchangeRates, err := stateDbgetAllFinalExchangeRatesState(db, beaconHeight)
 	if err != nil {
 		return nil, err
 	}

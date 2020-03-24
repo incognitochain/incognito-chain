@@ -30,6 +30,9 @@ const (
 	TokenTransactionObjectType
 
 	// portal
+	//A
+	FinalExchangeRatesStateObjectType
+	//B
 	CustodianStateObjectType
 	RedeemRequestObjectType
 )

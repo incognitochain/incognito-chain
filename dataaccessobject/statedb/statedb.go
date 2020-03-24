@@ -1189,3 +1189,27 @@ func (stateDB *StateDB) getBurningConfirmState(key common.Hash) (*BurningConfirm
 	}
 	return NewBurningConfirmState(), false, nil
 }
+
+
+// ================================= Portal OBJECT =======================================
+//A
+func (stateDB *StateDB) getAllFinalExchangeRatesState() []*FinalExchangeRatesState {
+	finalExchangeRatesStates := []*FinalExchangeRatesState{}
+	temp := stateDB.trie.NodeIterator(GetFinalExchangeRatesStatePrefix())
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		pp := NewFinalExchangeRatesState()
+		err := json.Unmarshal(newValue, pp)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		finalExchangeRatesStates = append(finalExchangeRatesStates, pp)
+	}
+	return finalExchangeRatesStates
+}
+
+
+//B
