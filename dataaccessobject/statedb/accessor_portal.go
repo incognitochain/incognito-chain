@@ -205,7 +205,7 @@ import (
 
 
 
-// Redeem
+//======================  Redeem  ======================
 func GetWaitingRedeemRequests(stateDB *StateDB, beaconHeight uint64) (map[string]*WaitingRedeemRequest, error) {
 	waitingRedeemRequests := stateDB.getAllWaitingRedeemRequest()
 	return waitingRedeemRequests, nil
@@ -246,7 +246,8 @@ func DeleteWaitingRedeemRequest(stateDB *StateDB, deletedWaitingRedeemRequests m
 	}
 }
 
-// Custodian pool
+
+//======================  Custodian pool  ======================
 // getCustodianPoolState gets custodian pool state at beaconHeight
 func GetCustodianPoolState(
 	stateDB *StateDB,
@@ -289,10 +290,9 @@ func DeleteCustodianState(stateDB *StateDB, deletedCustodianStates map[string]*C
 	}
 }
 
-
-//Exchange rate
+//======================  Exchange rate  ======================
 //todo: replace method getFinalExchangeRates (at: blockchain/portalutils.go)
-func GetFinalExchangeRatesState(
+func GetFinalExchangeRates(
 	stateDB *StateDB,
 	beaconHeight uint64,
 ) (map[string]*FinalExchangeRatesState, error) {
@@ -307,11 +307,32 @@ func GetFinalExchangeRatesState(
 	return finalExchangeRates, nil
 }
 
-//Redeem
 
 //Withdraw
 
 
-//Liquidation
 
-// Porting
+//======================  Liquidation  ======================
+
+
+//======================  Porting  ======================
+
+// getCustodianPoolState gets custodian pool state at beaconHeight
+func GetWaitingPortingRequests(
+	stateDB *StateDB,
+	beaconHeight uint64,
+) (map[string]*WaitingPortingRequest, error) {
+	//todo:
+	return nil, nil
+}
+
+// StoreWaitingRedeemRequests stores waiting redeem requests at beaconHeight
+func StoreWaitingPortingRequests(
+	stateDB *StateDB,
+	beaconHeight uint64,
+	portingReqs map[string]*WaitingPortingRequest) error {
+	//todo:
+	return nil
+}
+
+

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -62,7 +61,7 @@ func InitCurrentPortalStateFromDB(
 	if err != nil {
 		return nil, err
 	}
-	finalExchangeRates, err := getFinalExchangeRates(db, beaconHeight)
+	finalExchangeRates, err := statedb.GetFinalExchangeRates(stateDB, beaconHeight)
 	if err != nil {
 		return nil, err
 	}
