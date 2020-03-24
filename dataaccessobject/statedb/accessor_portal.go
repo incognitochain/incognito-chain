@@ -291,7 +291,6 @@ func DeleteCustodianState(stateDB *StateDB, deletedCustodianStates map[string]*C
 
 
 //Exchange rate
-//todo: replace method getFinalExchangeRates (at: blockchain/portalutils.go)
 func GetFinalExchangeRatesState(
 	stateDB *StateDB,
 	beaconHeight uint64,
