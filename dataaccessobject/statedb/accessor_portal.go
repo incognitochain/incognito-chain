@@ -289,6 +289,25 @@ func DeleteCustodianState(stateDB *StateDB, deletedCustodianStates map[string]*C
 	}
 }
 
+
+//Exchange rate
+func GetFinalExchangeRatesState(
+	stateDB *StateDB,
+	beaconHeight uint64,
+) (map[string]*FinalExchangeRatesState, error) {
+	finalExchangeRates := make(map[string]*FinalExchangeRatesState)
+
+	allFinalExchangeRatesState := stateDB.getAllFinalExchangeRatesState()
+	for _, item  := range allFinalExchangeRatesState {
+		key := GenerateFinalExchangeRatesStateObjectKey(beaconHeight)
+		value := NewFinalExchangeRatesStateWithValue(item.Rates())
+		finalExchangeRates[key.String()] = value
+	}
+	return finalExchangeRates, nil
+}
+
+//Redeem
+
 //Withdraw
 
 

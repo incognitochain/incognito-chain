@@ -41,6 +41,10 @@ var (
 	burnPrefix                         = []byte("burn-")
 
 	// portal
+	//A
+	portalFinaExchangeRatesStatePrefix		  = []byte("portalfinalexchangeratesstate-")
+	portalExchangeRatesPrefix           	  = []byte("portalexchangeratesrequest-")
+	//B
 	portalCustodianStatePrefix                = []byte("portalcustodian-")
 	portalWaitingRedeemRequestsPrefix   = []byte("portalwaitingredeemrequest-")
 )
@@ -225,6 +229,13 @@ func GetPDEStatusKey(prefix []byte, suffix []byte) []byte {
 }
 
 // Portal
+//A
+func GetFinalExchangeRatesStatePrefix() []byte {
+	h := common.HashH(portalCustodianStatePrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
+//B
 func GetPortalCustodianStatePrefix() []byte {
 	h := common.HashH(portalCustodianStatePrefix)
 	return h[:][:prefixHashKeyLength]
