@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/privacy/key"
@@ -20,19 +19,16 @@ type PaymentProofV2 struct {
 	outputCoins          []*coin.OutputCoin
 }
 
-func (paymentProof PaymentProofV2) GetInputCoins() []*coin.InputCoin {
-	return paymentProof.inputCoins
-}
+func (proof PaymentProofV2) GetVersion() uint8 { return 2 }
+func (proof PaymentProofV2) GetInputCoins() []*coin.InputCoin { return proof.inputCoins }
+func (proof PaymentProofV2) GetOutputCoins() []*coin.OutputCoin { return proof.outputCoins }
 
-func (paymentProof PaymentProofV2) GetOutputCoins() []*coin.OutputCoin {
-	return paymentProof.outputCoins
-}
+func (proof *PaymentProofV2) SetVersion()      { proof.Version = 2 }
+func (proof *PaymentProofV2) SetInputCoins(v []*coin.InputCoin) { proof.inputCoins = v }
+func (proof *PaymentProofV2) SetOutputCoins(v []*coin.OutputCoin) { proof.outputCoins = v }
 
-func (paymentProof PaymentProofV2) GetVersion() uint8 { return 2 }
-func (paymentProof *PaymentProofV2) SetVersion()      { this.Version = 2 }
-
-func (paymentProof PaymentProofV2) GetAggregatedRangeProof() *agg_interface.AggregatedRangeProof {
-	var a agg_interface.AggregatedRangeProof = paymentProof.aggregatedRangeProof
+func (proof PaymentProofV2) GetAggregatedRangeProof() *agg_interface.AggregatedRangeProof {
+	var a agg_interface.AggregatedRangeProof = proof.aggregatedRangeProof
 	return &a
 }
 
@@ -41,8 +37,8 @@ func (proof *PaymentProofV2) Bytes() []byte {
 	bytes = append(bytes, proof.GetVersion())
 
 	comOutputMultiRangeProof := proof.aggregatedRangeProof.Bytes()
-	var rangeproofLength uint32 = len(comOutputMultiRangeProof)
-	bytes = append(bytes, common.Uint32ToBytes(rangeproofLength)...)
+	var rangeProofLength uint32 = uint32(len(comOutputMultiRangeProof))
+	bytes = append(bytes, common.Uint32ToBytes(rangeProofLength)...)
 	bytes = append(bytes, comOutputMultiRangeProof...)
 
 	// InputCoins
@@ -72,7 +68,7 @@ func (proof *PaymentProofV2) Bytes() []byte {
 	return bytes
 }
 
-func (proof *PaymentProof) SetBytes(proofbytes []byte) *errhandler.PrivacyError {
+func (proof *PaymentProofV2) SetBytes(proofbytes []byte) *errhandler.PrivacyError {
 	if len(proofbytes) == 0 {
 		return errhandler.NewPrivacyErr(errhandler.InvalidInputToSetBytesErr, nil)
 	}
@@ -87,7 +83,8 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *errhandler.PrivacyError 
 	if offset+common.Uint32Size >= len(proofbytes) {
 		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range aggregated range proof"))
 	}
-	lenComOutputMultiRangeProof := common.BytesToUint32(proofbytes[offset : offset+common.Uint32Size])
+	lenComOutputMultiRangeUint32, _ := common.BytesToUint32(proofbytes[offset : offset+common.Uint32Size])
+	lenComOutputMultiRangeProof := int(lenComOutputMultiRangeUint32)
 	offset += common.Uint32Size
 
 	if offset+lenComOutputMultiRangeProof >= len(proofbytes) {
@@ -189,9 +186,9 @@ func Prove(inp []*coin.InputCoin, out []*coin.OutputCoin, hasPrivacy bool) (*Pay
 	}
 
 	// Prepare range proofs
-	const n int = len(out)
+	n := len(out)
 	outputValues := make([]uint64, n)
-	outputRands := make([]uint64, operation.Scalar)
+	outputRands := make([]*operation.Scalar, n)
 	for i := 0; i < n; i += 1 {
 		outputValues[i] = out[i].CoinDetails.GetValue()
 		outputRands[i] = operation.RandomScalar()
@@ -199,26 +196,26 @@ func Prove(inp []*coin.InputCoin, out []*coin.OutputCoin, hasPrivacy bool) (*Pay
 
 	wit := new(bulletproofs.AggregatedRangeWitness)
 	wit.Set(outputValues, outputRands)
-	proof.aggregatedRangeProof, err = wit.aggregatedRangeWitness.Prove()
+	proof.aggregatedRangeProof, err = wit.Prove()
 	if err != nil {
 		return nil, err
 	}
 	return proof, nil
 }
 
-func (proof PaymentProof) verifyNoPrivacy(pubKey key.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
+func (proof PaymentProof) verifyNoPrivacy(pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash) (bool, error) {
 	return true, nil
 }
 
-func (proof PaymentProof) verifyHasPrivacy(pubKey key.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash, isBatch bool) (bool, error) {
+func (proof PaymentProof) verifyHasPrivacy(pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, isBatch bool) (bool, error) {
 	return true, nil
 }
 
-func (proof PaymentProof) Verify(hasPrivacy bool, pubKey key.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash, isBatch bool) (bool, error) {
+func (proof PaymentProof) Verify(hasPrivacy bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, isBatch bool, additionalData interface{}) (bool, error) {
 	// has no privacy
 	if !hasPrivacy {
-		return proof.verifyNoPrivacy(pubKey, fee, db, shardID, tokenID)
+		return proof.verifyNoPrivacy(pubKey, fee, shardID, tokenID)
 	}
 
-	return proof.verifyHasPrivacy(pubKey, fee, db, shardID, tokenID, isBatch)
+	return proof.verifyHasPrivacy(pubKey, fee, shardID, tokenID, isBatch)
 }

@@ -2,7 +2,7 @@ package transaction
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2"
 )
 
@@ -21,6 +21,6 @@ func (*TxVersion2) Prove(tx *Tx, params *TxPrivacyInitParams) error {
 	return nil
 }
 
-func (*TxVersion2) Verify(tx *Tx, hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
+func (*TxVersion2) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
 	return true, nil
 }

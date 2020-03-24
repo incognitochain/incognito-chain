@@ -15,7 +15,6 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/proof/agg_interface"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/aggregatedrange"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/oneoutofmany"
@@ -51,72 +50,72 @@ type PaymentProof struct {
 	commitmentIndices []uint64
 }
 
-func (paymentProof *PaymentProof) GetVersion() uint8 { return 1 }
+func (proof *PaymentProof) GetVersion() uint8 { return 1 }
 
 // GET/SET function
-func (paymentProof PaymentProof) GetOneOfManyProof() []*oneoutofmany.OneOutOfManyProof {
-	return paymentProof.oneOfManyProof
+func (proof PaymentProof) GetOneOfManyProof() []*oneoutofmany.OneOutOfManyProof {
+	return proof.oneOfManyProof
 }
 
-func (paymentProof PaymentProof) GetSerialNumberProof() []*serialnumberprivacy.SNPrivacyProof {
-	return paymentProof.serialNumberProof
+func (proof PaymentProof) GetSerialNumberProof() []*serialnumberprivacy.SNPrivacyProof {
+	return proof.serialNumberProof
 }
 
-func (paymentProof PaymentProof) GetSerialNumberNoPrivacyProof() []*serialnumbernoprivacy.SNNoPrivacyProof {
-	return paymentProof.serialNumberNoPrivacyProof
+func (proof PaymentProof) GetSerialNumberNoPrivacyProof() []*serialnumbernoprivacy.SNNoPrivacyProof {
+	return proof.serialNumberNoPrivacyProof
 }
 
-func (paymentProof PaymentProof) GetAggregatedRangeProof() *agg_interface.AggregatedRangeProof {
-	var a agg_interface.AggregatedRangeProof = paymentProof.aggregatedRangeProof
+func (proof PaymentProof) GetAggregatedRangeProof() *agg_interface.AggregatedRangeProof {
+	var a agg_interface.AggregatedRangeProof = proof.aggregatedRangeProof
 	return &a
 }
 
-func (paymentProof PaymentProof) GetCommitmentOutputValue() []*operation.Point {
-	return paymentProof.commitmentOutputValue
+func (proof PaymentProof) GetCommitmentOutputValue() []*operation.Point {
+	return proof.commitmentOutputValue
 }
 
-func (paymentProof PaymentProof) GetCommitmentOutputSND() []*operation.Point {
-	return paymentProof.commitmentOutputSND
+func (proof PaymentProof) GetCommitmentOutputSND() []*operation.Point {
+	return proof.commitmentOutputSND
 }
 
-func (paymentProof PaymentProof) GetCommitmentOutputShardID() []*operation.Point {
-	return paymentProof.commitmentOutputShardID
+func (proof PaymentProof) GetCommitmentOutputShardID() []*operation.Point {
+	return proof.commitmentOutputShardID
 }
 
-func (paymentProof PaymentProof) GetCommitmentInputSecretKey() *operation.Point {
-	return paymentProof.commitmentInputSecretKey
+func (proof PaymentProof) GetCommitmentInputSecretKey() *operation.Point {
+	return proof.commitmentInputSecretKey
 }
 
-func (paymentProof PaymentProof) GetCommitmentInputValue() []*operation.Point {
-	return paymentProof.commitmentInputValue
+func (proof PaymentProof) GetCommitmentInputValue() []*operation.Point {
+	return proof.commitmentInputValue
 }
 
-func (paymentProof PaymentProof) GetCommitmentInputSND() []*operation.Point {
-	return paymentProof.commitmentInputSND
+func (proof PaymentProof) GetCommitmentInputSND() []*operation.Point {
+	return proof.commitmentInputSND
 }
 
-func (paymentProof PaymentProof) GetCommitmentInputShardID() *operation.Point {
-	return paymentProof.commitmentInputShardID
+func (proof PaymentProof) GetCommitmentInputShardID() *operation.Point {
+	return proof.commitmentInputShardID
 }
 
-func (paymentProof PaymentProof) GetCommitmentIndices() []uint64 {
-	return paymentProof.commitmentIndices
+func (proof PaymentProof) GetCommitmentIndices() []uint64 {
+	return proof.commitmentIndices
 }
 
-func (paymentProof PaymentProof) GetInputCoins() []*coin.InputCoin {
-	return paymentProof.inputCoins
+func (proof PaymentProof) GetInputCoins() []*coin.InputCoin {
+	return proof.inputCoins
 }
 
-func (paymentProof PaymentProof) GetOutputCoins() []*coin.OutputCoin {
-	return paymentProof.outputCoins
+func (proof PaymentProof) GetOutputCoins() []*coin.OutputCoin {
+	return proof.outputCoins
 }
 
-func (paymentProof *PaymentProof) SetInputCoins(v []*coin.InputCoin) {
-	paymentProof.inputCoins = v
+func (proof *PaymentProof) SetInputCoins(v []*coin.InputCoin) {
+	proof.inputCoins = v
 }
 
-func (paymentProof *PaymentProof) SetOutputCoins(v []*coin.OutputCoin) {
-	paymentProof.outputCoins = v
+func (proof *PaymentProof) SetOutputCoins(v []*coin.OutputCoin) {
+	proof.outputCoins = v
 }
 
 // End GET/SET function
@@ -637,7 +636,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *errhandler.PrivacyError 
 	return nil
 }
 
-func (proof PaymentProof) verifyNoPrivacy(pubKey key.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
+func (proof PaymentProof) verifyNoPrivacy(pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash) (bool, error) {
 	var sumInputValue, sumOutputValue uint64
 	sumInputValue = 0
 	sumOutputValue = 0
@@ -726,49 +725,18 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey key.PublicKey, fee uint64, db d
 	return true, nil
 }
 
-func (proof PaymentProof) verifyHasPrivacy(pubKey key.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash, isBatch bool) (bool, error) {
+func (proof PaymentProof) verifyHasPrivacy(pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, isBatch bool, additionalData interface{}) (bool, error) {
 	// verify for input coins
-	cmInputSum := make([]*operation.Point, len(proof.oneOfManyProof))
+	commitmentsPtr := additionalData.(*[][privacy_util.CommitmentRingSize]*operation.Point)
+	commitments := *commitmentsPtr
+
 	for i := 0; i < len(proof.oneOfManyProof); i++ {
 		Logger.Log.Debugf("[TEST] input coins %v\n ShardID %v fee %v", i, shardID, fee)
 		Logger.Log.Debugf("[TEST] commitments indices %v\n", proof.commitmentIndices[i*privacy_util.CommitmentRingSize:i*privacy_util.CommitmentRingSize+8])
 		// Verify for the proof one-out-of-N commitments is a commitment to the coins being spent
 		// Calculate cm input sum
-		cmInputSum[i] = new(operation.Point).Add(proof.commitmentInputSecretKey, proof.commitmentInputValue[i])
-		cmInputSum[i].Add(cmInputSum[i], proof.commitmentInputSND[i])
-		cmInputSum[i].Add(cmInputSum[i], proof.commitmentInputShardID)
 
-		// get commitments list from CommitmentIndices
-		commitments := make([]*operation.Point, privacy_util.CommitmentRingSize)
-		for j := 0; j < privacy_util.CommitmentRingSize; j++ {
-			index := proof.commitmentIndices[i*privacy_util.CommitmentRingSize+j]
-			commitmentBytes, err := db.GetCommitmentByIndex(*tokenID, index, shardID)
-			Logger.Log.Debugf("[TEST] commitment at index %v: %v\n", index, commitmentBytes)
-			if err != nil {
-				Logger.Log.Errorf("VERIFICATION PAYMENT PROOF 1: Error when get commitment by index from database", index, err)
-				return false, errhandler.NewPrivacyErr(errhandler.VerifyOneOutOfManyProofFailedErr, err)
-			}
-			recheckIndex, err := db.GetCommitmentIndex(*tokenID, commitmentBytes, shardID)
-			if err != nil || recheckIndex.Uint64() != index {
-				Logger.Log.Errorf("VERIFICATION PAYMENT PROOF 2: Error when get commitment by index from database", index, err)
-				return false, errhandler.NewPrivacyErr(errhandler.VerifyOneOutOfManyProofFailedErr, err)
-			}
-
-			commitments[j], err = new(operation.Point).FromBytesS(commitmentBytes)
-
-			if err != nil {
-				Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Cannot decompress commitment from database", index, err)
-				return false, errhandler.NewPrivacyErr(errhandler.VerifyOneOutOfManyProofFailedErr, err)
-			}
-
-			commitments[j].Sub(commitments[j], cmInputSum[i])
-			if err != nil {
-				Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Cannot sub commitment to sum of commitment inputs", index, err)
-				return false, errhandler.NewPrivacyErr(errhandler.VerifyOneOutOfManyProofFailedErr, err)
-			}
-		}
-
-		proof.oneOfManyProof[i].Statement.Commitments = commitments
+		proof.oneOfManyProof[i].Statement.Commitments = commitments[i][:]
 
 		valid, err := proof.oneOfManyProof[i].Verify()
 		if !valid {
@@ -832,11 +800,11 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey key.PublicKey, fee uint64, db 
 	return true, nil
 }
 
-func (proof PaymentProof) Verify(hasPrivacy bool, pubKey key.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash, isBatch bool) (bool, error) {
+func (proof PaymentProof) Verify(hasPrivacy bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, isBatch bool, additionalData interface{}) (bool, error) {
 	// has no privacy
 	if !hasPrivacy {
-		return proof.verifyNoPrivacy(pubKey, fee, db, shardID, tokenID)
+		return proof.verifyNoPrivacy(pubKey, fee, shardID, tokenID)
 	}
 
-	return proof.verifyHasPrivacy(pubKey, fee, db, shardID, tokenID, isBatch)
+	return proof.verifyHasPrivacy(pubKey, fee, shardID, tokenID, isBatch, additionalData)
 }

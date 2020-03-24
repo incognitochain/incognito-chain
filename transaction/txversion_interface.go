@@ -21,7 +21,6 @@ package transaction
 import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/database"
 )
 
 type TxVersionSwitcher interface {
@@ -29,7 +28,7 @@ type TxVersionSwitcher interface {
 	Prove(tx *Tx, params *TxPrivacyInitParams) error
 
 	// It should verify based on
-	Verify(tx *Tx, hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error)
+	Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error)
 }
 
 // Used in Tx.Init

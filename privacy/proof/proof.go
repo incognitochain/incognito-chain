@@ -2,7 +2,6 @@ package proof
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
@@ -26,8 +25,8 @@ type Proof interface {
 	MarshalJSON() ([]byte, error)
 	UnmarshalJSON([]byte) error
 
-	Verify(hasPrivacy bool, pubKey key.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash, isBatch bool) (bool, error)
+	Verify(hasPrivacy bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, isBatch bool, additionalData interface{}) (bool, error)
 }
 
 type ProofV1 = zkp.PaymentProof
-type ProofV2 = privacy_v2.PaymentProof
+type ProofV2 = privacy_v2.PaymentProofV2

@@ -10,6 +10,9 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
+	"github.com/incognitochain/incognito-chain/privacy/key"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
 )
 
@@ -54,7 +57,7 @@ func parseCommitmentProving(params *TxPrivacyInitParams, shardID byte, commitmen
 	return &commitmentProving, nil
 }
 
-func parseSndOut(params *TxPrivacyInitParams) *[]*privacy.Scalar {
+func generateSndOut(params *TxPrivacyInitParams) *[]*privacy.Scalar {
 	ok := true
 	sndOuts := make([]*privacy.Scalar, 0)
 	for ok {
@@ -85,7 +88,7 @@ func parseSndOut(params *TxPrivacyInitParams) *[]*privacy.Scalar {
 }
 
 func parseOutputCoins(params *TxPrivacyInitParams) (*[]*privacy.OutputCoin, error) {
-	sndOuts := *parseSndOut(params)
+	sndOuts := *generateSndOut(params)
 	outputCoins := make([]*privacy.OutputCoin, len(params.paymentInfo))
 	for i, pInfo := range params.paymentInfo {
 		outputCoins[i] = new(privacy.OutputCoin)
@@ -216,6 +219,75 @@ func signTx(tx *Tx) error {
 	return nil
 }
 
+func parseTokenID(tokenID *common.Hash) (*common.Hash, error) {
+	if tokenID == nil {
+		result := new(common.Hash)
+		err := result.SetBytes(common.PRVCoinID[:])
+		if err != nil {
+			Logger.log.Error(err)
+			return false, NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
+		}
+		return result, nil
+	}
+	return tokenID, nil
+}
+
+func parseSndFromOutputCoin(outputCoins []*privacy.OutputCoin) ([]*privacy.Scalar, error) {
+	sndOutputs := make([]*privacy.Scalar, len(outputCoins))
+	for i := 0; i < len(outputCoins); i++ {
+		sndOutputs[i] = outputCoins[i].CoinDetails.GetSNDerivator()
+	}
+	if privacy.CheckDuplicateScalarArray(sndOutputs) {
+		Logger.log.Errorf("Duplicate output coins' snd\n")
+		return []*privacy.Scalar{}, NewTransactionErr(DuplicatedOutputSndError, errors.New("Duplicate output coins' snd\n"))
+	}
+	return sndOutputs, nil
+}
+
+func getCommitmentsInDatabase(
+	proof *privacy.ProofV1, hasPrivacy bool,
+	pubKey key.PublicKey, fee uint64, transactionStateDB *statedb.StateDB,
+	shardID byte, tokenID *common.Hash, isBatch bool) (*[][privacy_util.CommitmentRingSize]*operation.Point, error) {
+
+	// verify for input coins
+	oneOfManyProof := proof.GetOneOfManyProof()
+	commitmentIndices := proof.GetCommitmentIndices()
+	commitmentInputSND := proof.GetCommitmentInputSND()
+	commitmentInputValue := proof.GetCommitmentInputValue()
+	commitmentInputShardID := proof.GetCommitmentInputShardID()
+	commitmentInputSecretKey := proof.GetCommitmentInputSecretKey()
+
+	sz := privacy_util.CommitmentRingSize
+	commitments := make([][sz]*operation.Point, len(oneOfManyProof))
+	for i := 0; i < len(oneOfManyProof); i++ {
+		cmInputSum := new(operation.Point).Add(commitmentInputSecretKey, commitmentInputValue[i])
+		cmInputSum.Add(cmInputSum, commitmentInputSND[i])
+		cmInputSum.Add(cmInputSum, commitmentInputShardID)
+
+		for j := 0; j < sz; j++ {
+			index := proof.commitmentIndices[i*privacy_util.CommitmentRingSize+j]
+			commitmentBytes, err := statedb.GetCommitmentByIndex(transactionStateDB, *tokenID, index, shardID)
+			if err != nil {
+				Logger.Log.Errorf("VERIFICATION PAYMENT PROOF 1: Error when get commitment by index from database", index, err)
+				return nil, NewPrivacyErr(VerifyOneOutOfManyProofFailedErr, err)
+			}
+			recheckIndex, err := statedb.GetCommitmentIndex(*tokenID, commitmentBytes, shardID)
+			if err != nil || recheckIndex.Uint64() != index {
+				Logger.Log.Errorf("VERIFICATION PAYMENT PROOF 2: Error when get commitment by index from database", index, err)
+				return nil, NewPrivacyErr(VerifyOneOutOfManyProofFailedErr, err)
+			}
+
+			commitments[i][j], err = new(operation.Point).FromBytesS(commitmentBytes)
+			if err != nil {
+				Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Cannot decompress commitment from database", index, err)
+				return nil, errhandler.NewPrivacyErr(VerifyOneOutOfManyProofFailedErr, err)
+			}
+			commitments[i][j].Sub(commitments[i][j], cmInputSum)
+		}
+	}
+	return commitments, nil
+}
+
 // ValidateTransaction returns true if transaction is valid:
 // - Verify tx signature
 // - Verify the payment proof
@@ -233,83 +305,72 @@ func (*TxVersion1) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.S
 		return false, NewTransactionErr(VerifyTxSigFailError, fmt.Errorf("FAILED VERIFICATION SIGNATURE with tx hash %s", tx.Hash().String()))
 	}
 
-	if tx.Proof != nil {
-		if tokenID == nil {
-			tokenID = &common.Hash{}
-			err := tokenID.SetBytes(common.PRVCoinID[:])
-			if err != nil {
-				Logger.log.Error(err)
-				return false, NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
-			}
-		}
+	if tx.Proof == nil {
+		return true, nil
+	}
 
-		sndOutputs := make([]*privacy.Scalar, len(tx.Proof.GetOutputCoins()))
+	tokenId = parseTokenID(tokenId)
+	sndOutputs, err := parseSndFromOutputCoin(tx.Proof.GetOutputCoins())
+	if err != nil {
+		return false, err
+	}
+
+	if isNewTransaction {
 		for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
-			sndOutputs[i] = tx.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator()
-		}
-
-		if privacy.CheckDuplicateScalarArray(sndOutputs) {
-			Logger.log.Errorf("Duplicate output coins' snd\n")
-			return false, NewTransactionErr(DuplicatedOutputSndError, errors.New("Duplicate output coins' snd\n"))
-		}
-
-		if isNewTransaction {
-			for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
-				// Check output coins' SND is not exists in SND list (Database)
-				if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator(), transactionStateDB); ok || err != nil {
-					if err != nil {
-						Logger.log.Error(err)
-					}
-					Logger.log.Errorf("snd existed: %d\n", i)
-					return false, NewTransactionErr(SndExistedError, err, fmt.Sprintf("snd existed: %d\n", i))
+			// Check output coins' SND is not exists in SND list (Database)
+			if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator(), transactionStateDB); ok || err != nil {
+				if err != nil {
+					Logger.log.Error(err)
 				}
+				Logger.log.Errorf("snd existed: %d\n", i)
+				return false, NewTransactionErr(SndExistedError, err, fmt.Sprintf("snd existed: %d\n", i))
 			}
-		}
-
-		if !hasPrivacy {
-			// Check input coins' commitment is exists in cm list (Database)
-			for i := 0; i < len(tx.Proof.GetInputCoins()); i++ {
-				ok, err := tx.CheckCMExistence(tx.Proof.GetInputCoins()[i].CoinDetails.GetCoinCommitment().ToBytesS(), transactionStateDB, shardID, tokenID)
-				if !ok || err != nil {
-					if err != nil {
-						Logger.log.Error(err)
-					}
-					return false, NewTransactionErr(InputCommitmentIsNotExistedError, err)
-				}
-			}
-		}
-		// Verify the payment proof
-		valid, err = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, transactionStateDB, shardID, tokenID, isBatch)
-		if !valid {
-			if err != nil {
-				Logger.log.Error(err)
-			}
-			Logger.log.Error("FAILED VERIFICATION PAYMENT PROOF")
-			err1, ok := err.(*privacy.PrivacyError)
-			if ok {
-				// parse error detail
-				if err1.Code == privacy.ErrCodeMessage[privacy.VerifyOneOutOfManyProofFailedErr].Code {
-					if isNewTransaction {
-						return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
-					} else {
-						// for old txs which be get from sync block or validate new block
-						if tx.LockTime <= ValidateTimeForOneoutOfManyProof {
-							// only verify by sign on block because of issue #504(that mean we should pass old tx, which happen before this issue)
-							return true, nil
-						} else {
-							return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
-						}
-					}
-				}
-			}
-			return false, NewTransactionErr(TxProofVerifyFailError, err, tx.Hash().String())
-		} else {
-			Logger.log.Debugf("SUCCESSED VERIFICATION PAYMENT PROOF ")
 		}
 	}
-	//@UNCOMMENT: metrics time
-	//elapsed := time.Since(start)
-	//Logger.log.Debugf("Validation normal tx %+v in %s time \n", *tx.Hash(), elapsed)
 
+	if !hasPrivacy {
+		// Check input coins' commitment is exists in cm list (Database)
+		for i := 0; i < len(tx.Proof.GetInputCoins()); i++ {
+			ok, err := tx.CheckCMExistence(tx.Proof.GetInputCoins()[i].CoinDetails.GetCoinCommitment().ToBytesS(), transactionStateDB, shardID, tokenID)
+			if !ok || err != nil {
+				if err != nil {
+					Logger.log.Error(err)
+				}
+				return false, NewTransactionErr(InputCommitmentIsNotExistedError, err)
+			}
+		}
+	}
+	// Verify the payment proof
+	commitments, err := getCommitmentsInDatabase(tx.Proof, hasPrivacy, tx.SigPubKey, tx.Fee, transactionStateDB, shardID, tokenID, isBatch)
+	if err != nil {
+		return false, err
+	}
+
+	valid, err = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, transactionStateDB, shardID, tokenID, isBatch, commitments)
+	if !valid {
+		if err != nil {
+			Logger.log.Error(err)
+		}
+		Logger.log.Error("FAILED VERIFICATION PAYMENT PROOF")
+		err1, ok := err.(*privacy.PrivacyError)
+		if ok {
+			// parse error detail
+			if err1.Code == privacy.ErrCodeMessage[privacy.VerifyOneOutOfManyProofFailedErr].Code {
+				if isNewTransaction {
+					return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
+				} else {
+					// for old txs which be get from sync block or validate new block
+					if tx.LockTime <= ValidateTimeForOneoutOfManyProof {
+						// only verify by sign on block because of issue #504(that mean we should pass old tx, which happen before this issue)
+						return true, nil
+					} else {
+						return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
+					}
+				}
+			}
+		}
+		return false, NewTransactionErr(TxProofVerifyFailError, err, tx.Hash().String())
+	}
+	Logger.log.Debugf("SUCCESSED VERIFICATION PAYMENT PROOF ")
 	return true, nil
 }
