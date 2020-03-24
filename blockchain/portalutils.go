@@ -23,9 +23,9 @@ type CurrentPortalState struct {
 	CustodianPoolState     map[string]*statedb.CustodianState         // key : hash(beaconHeight || custodian_address)
 	WaitingPortingRequests map[string]*statedb.PortingRequest         // key : hash(beaconHeight || UniquePortingID)
 	WaitingRedeemRequests  map[string]*statedb.WaitingRedeemRequest          // key : hash(beaconHeight || UniqueRedeemID)
-	FinalExchangeRates     map[string]*statedb.FinalExchangeRates     // key : hash(beaconHeight || TxID)
+	FinalExchangeRatesState map[string]*statedb.FinalExchangeRatesState     // key : hash(beaconHeight || TxID)
 	LiquidateExchangeRates map[string]*statedb.LiquidateExchangeRates // key : hash(beaconHeight || TxID)
-	// todo: comment
+	//Store temporary exchange rates requests
 	ExchangeRatesRequests map[string]*statedb.ExchangeRatesRequest // key : hash(beaconHeight | TxID)
 
 	DeletedWaitingRedeemRequests map[string]*statedb.WaitingRedeemRequest // key : hash(beaconHeight || UniqueRedeemID)
@@ -100,7 +100,7 @@ func storePortalStateToDB(
 		return err
 	}
 
-	err = statedb.StoreFinalExchangeRates(stateDB, beaconHeight, currentPortalState.FinalExchangeRates)
+	err = statedb.StoreFinalExchangeRatesState(stateDB, beaconHeight, currentPortalState.FinalExchangeRates)
 	if err != nil {
 		return err
 	}

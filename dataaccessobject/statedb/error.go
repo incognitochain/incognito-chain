@@ -30,6 +30,10 @@ const (
 	ErrInvalidBridgeStatusStateType           = "invalid bridge status state type"
 	ErrInvalidBurningConfirmStateType         = "invalid burning confirm state type"
 	ErrInvalidTokenTransactionStateType       = "invalid token transaction state type"
+	//A
+	ErrInvalidFinalExchangeRatesStateType     = "invalid final exchange rates state type"
+	ErrInvalidFinalExchangeRatesRequestType     = "invalid final exchange rates request type"
+	//B
 	ErrInvalidPortalCustodianStateType        = "invalid portal custodian state type"
 	ErrInvalidPortalWaitingRedeemRequestType  = "invalid portal waiting redeem request type"
 )

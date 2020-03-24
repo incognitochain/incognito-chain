@@ -1,7 +1,9 @@
 package statedb
 
 import (
+	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/pkg/errors"
 )
 
 //======================  Redeem  ======================
@@ -103,6 +105,32 @@ func GetFinalExchangeRatesState(
 		finalExchangeRates[key.String()] = value
 	}
 	return finalExchangeRates, nil
+}
+
+func StoreFinalExchangeRatesState(
+	stateDB *StateDB,
+	beaconHeight uint64,
+	finalExchangeRatesState map[string]*FinalExchangeRatesState) error {
+	for _, exchangeRates := range finalExchangeRatesState {
+		key := GenerateFinalExchangeRatesStateObjectKey(beaconHeight)
+		value := NewFinalExchangeRatesStateWithValue(exchangeRates.Rates())
+
+		err := stateDB.SetStateObject(FinalExchangeRatesStateObjectType, key, value)
+		if err != nil {
+			return NewStatedbError(StoreFinalExchangeRatesStateError, err)
+		}
+	}
+	return nil
+}
+
+func TrackExchangeRatesRequestStatus(stateDB *StateDB, statusType []byte, statusSuffix []byte, statusContent []byte) error {
+	key := GeneratePDEStatusObjectKey(statusType, statusSuffix)
+	value := NewPDEStatusStateWithValue(statusType, statusSuffix, statusContent)
+	err := stateDB.SetStateObject(PDEStatusObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(TrackPDEStatusError, err)
+	}
+	return nil
 }
 
 //======================  Liquidation  ======================
