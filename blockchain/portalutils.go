@@ -845,10 +845,9 @@ func updateFreeCollateralCustodian(custodianState *statedb.CustodianState, redee
 	return unlockedAmount, nil
 }
 
-// TODO: need to move stateDB
 // updateRedeemRequestStatusByRedeemId updates status of redeem request into db
-func updateRedeemRequestStatusByRedeemId(redeemID string, newStatus int, db database.DatabaseInterface) error {
-	redeemRequestBytes, err := db.GetRedeemRequestByRedeemID(redeemID)
+func updateRedeemRequestStatusByRedeemId(redeemID string, newStatus int, db *statedb.StateDB) error {
+	redeemRequestBytes, err := statedb.GetPortalRedeemRequestStatus(db, redeemID)
 	if err != nil {
 		return err
 	}
@@ -867,8 +866,7 @@ func updateRedeemRequestStatusByRedeemId(redeemID string, newStatus int, db data
 	if err != nil {
 		return err
 	}
-	redeemRequestKey := lvdb.NewRedeemReqKey(redeemID)
-	err = db.StoreRedeemRequest([]byte(redeemRequestKey), newRedeemRequest)
+	err = statedb.StorePortalRedeemRequestStatus(db, redeemID, newRedeemRequest)
 	if err != nil {
 		return err
 	}
@@ -944,3 +942,9 @@ func deleteWaitingRedeemRequest(state *CurrentPortalState, waitingRedeemRequestK
 	delete(state.WaitingRedeemRequests, waitingRedeemRequestKey)
 	state.DeletedWaitingRedeemRequests[waitingRedeemRequestKey] = waitingRedeemRequest
 }
+
+//func deleteWaitingRedeemRequest(state *CurrentPortalState, waitingRedeemRequestKey string) {
+//	waitingRedeemRequest := state.WaitingRedeemRequests[waitingRedeemRequestKey]
+//	delete(state.WaitingRedeemRequests, waitingRedeemRequestKey)
+//	state.DeletedWaitingRedeemRequests[waitingRedeemRequestKey] = waitingRedeemRequest
+//}

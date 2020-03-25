@@ -59,6 +59,7 @@ var (
 
 	// liquidation for portal
 	portalLiquidateCustodianRunAwayPrefix                  = []byte("portalliquidaterunaway-")
+	portalExpiredPortingReqPrefix = []byte("portalexpiredportingreq-")
 
 	// reward for portal
 	portalRewardInfoStatePrefix  = []byte("portalreward-")
@@ -299,6 +300,14 @@ func PortalRequestUnlockCollateralStatusPrefix() []byte {
 
 func PortalRequestWithdrawRewardStatusPrefix() []byte {
 	return portalRequestWithdrawRewardStatusPrefix
+}
+
+func PortalLiquidateCustodianRunAwayPrefix() []byte {
+	return portalLiquidateCustodianRunAwayPrefix
+}
+
+func PortalExpiredPortingReqPrefix() []byte{
+	return portalExpiredPortingReqPrefix
 }
 
 var _ = func() (_ struct{}) {
