@@ -31,13 +31,13 @@ const (
 	ErrInvalidBurningConfirmStateType         = "invalid burning confirm state type"
 	ErrInvalidTokenTransactionStateType       = "invalid token transaction state type"
 	//A
-	ErrInvalidFinalExchangeRatesStateType     = "invalid final exchange rates state type"
-	ErrInvalidExchangeRatesRequestType     	  = "invalid exchange rates request type"
+	ErrInvalidFinalExchangeRatesStateType = "invalid final exchange rates state type"
+	ErrInvalidExchangeRatesRequestType    = "invalid exchange rates request type"
 	//B
 	ErrInvalidPortalStatusStateType          = "invalid portal status state type"
 	ErrInvalidPortalCustodianStateType       = "invalid portal custodian state type"
 	ErrInvalidPortalWaitingRedeemRequestType = "invalid portal waiting redeem request type"
-	ErrInvalidPortalRewardInfoStateType       = "invalid portal reward info state type"
+	ErrInvalidPortalRewardInfoStateType      = "invalid portal reward info state type"
 )
 const (
 	InvalidByteArrayTypeError = iota
@@ -157,6 +157,18 @@ const (
 	GetPortalStatusError
 	GetPortalRedeemRequestStatusError
 	StorePortalRedeemRequestStatusError
+	StorePortalCustodianDepositStatusError
+	GetPortalCustodianDepositStatusError
+	StorePortalRequestPTokenStatusError
+	GetPortalRequestPTokenStatusError
+	GetPortalRedeemRequestByTxIDStatusError
+	StorePortalRedeemRequestByTxIDStatusError
+	GetPortalRequestUnlockCollateralStatusError
+	StorePortalRequestUnlockCollateralStatusError
+	GetPortalLiquidationCustodianRunAwayStatusError
+	StorePortalLiquidationCustodianRunAwayStatusError
+	GetPortalExpiredPortingReqStatusError
+	StorePortalExpiredPortingReqStatusError
 
 )
 
@@ -262,13 +274,26 @@ var ErrCodeMessage = map[int]struct {
 	StoreLiquidationCustodianDepositError:         {-14024, "Store liquidation custodian deposit error"},
 	StoreCustodianStateError:                      {-14025, "Store custodian state error"},
 
+
 	//A
 
 	//B
-	StorePortalStatusError :  {-14026, "Store portal status error"},
-	GetPortalStatusError:  {-14027, "Get portal status error"},
-	GetPortalRedeemRequestStatusError : {-14028, "Get portal redeem request status error"},
-	StorePortalRedeemRequestStatusError: {-14029, "Store portal redeem request status error"},
+	StorePortalStatusError:                            {-14026, "Store portal status error"},
+	GetPortalStatusError:                              {-14027, "Get portal status error"},
+	GetPortalRedeemRequestStatusError:                 {-14028, "Get portal redeem request status error"},
+	StorePortalRedeemRequestStatusError:               {-14029, "Store portal redeem request status error"},
+	GetPortalCustodianDepositStatusError:              {-14030, "Get portal custodian deposit status error"},
+	StorePortalCustodianDepositStatusError:            {-14031, "Store portal custodian deposit status error"},
+	StorePortalRequestPTokenStatusError:               {-14032, "Store portal request ptoken status error"},
+	GetPortalRequestPTokenStatusError:                 {-14033, "Get portal request ptoken status error"},
+	GetPortalRedeemRequestByTxIDStatusError:           {-14034, "Get portal redeem request by txid status error"},
+	StorePortalRedeemRequestByTxIDStatusError:         {-14035, "Store portal redeem request by txid status error"},
+	GetPortalRequestUnlockCollateralStatusError:       {-14036, "Get portal request unlock collateral status error"},
+	StorePortalRequestUnlockCollateralStatusError:     {-14037, "Store portal request unlock collateral status error"},
+	GetPortalLiquidationCustodianRunAwayStatusError:   {-14036, "Get portal liquidation custodian run away status error"},
+	StorePortalLiquidationCustodianRunAwayStatusError: {-14036, "Store portal liquidation custodian run away status error"},
+	GetPortalExpiredPortingReqStatusError:             {-14036, "Get portal expired porting request status error"},
+	StorePortalExpiredPortingReqStatusError:           {-14036, "Store portal expired porting request status error"},
 
 }
 
