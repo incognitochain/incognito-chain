@@ -3,7 +3,6 @@ package blockchain
 import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"sort"
@@ -243,16 +242,17 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		//verify custodian
 		isCustodianAccepted := true
 		for _, itemCustodian := range custodiansDetail {
-			keyPortingRequestNewState := lvdb.NewCustodianStateKey(beaconHeight, itemCustodian.IncAddress)
-			custodian, ok := currentPortalState.CustodianPoolState[keyPortingRequestNewState]
+			keyPortingRequestNewState := statedb.GenerateCustodianStateObjectKey(beaconHeight, itemCustodian.IncAddress)
+			keyPortingRequestNewStateStr := string(keyPortingRequestNewState[:])
+			custodian, ok := currentPortalState.CustodianPoolState[keyPortingRequestNewStateStr]
 			if !ok {
 				Logger.log.Errorf("ERROR: Custodian not found")
 				isCustodianAccepted	= false
 				break
 			}
 
-			if custodian.FreeCollateral < itemCustodian.LockedAmountCollateral {
-				Logger.log.Errorf("ERROR: Custodian is not enough PRV, free collateral %v < lock amount %v", custodian.FreeCollateral, itemCustodian.LockedAmountCollateral)
+			if custodian.GetFreeCollateral() < itemCustodian.LockedAmountCollateral {
+				Logger.log.Errorf("ERROR: Custodian is not enough PRV, free collateral %v < lock amount %v", custodian.GetFreeCollateral(), itemCustodian.LockedAmountCollateral)
 				isCustodianAccepted	= false
 				break
 			}
@@ -332,8 +332,9 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		//save custodian state
 		for _, itemCustodian := range custodiansDetail {
 			//update custodian state
-			custodianKey := lvdb.NewCustodianStateKey(beaconHeight, itemCustodian.IncAddress)
-			_ = UpdateCustodianWithNewAmount(currentPortalState, custodianKey, tokenID, itemCustodian.Amount, itemCustodian.LockedAmountCollateral)
+			custodianKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, itemCustodian.IncAddress)
+			custodianKeyStr := string(custodianKey[:])
+			_ = UpdateCustodianWithNewAmount(currentPortalState, custodianKeyStr, tokenID, itemCustodian.Amount, itemCustodian.LockedAmountCollateral)
 		}
 
 		//save waiting request porting state
@@ -852,8 +853,9 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(portalStateD
 			freeCollateral,
 		)
 
-		custodianKey := lvdb.NewCustodianStateKey(beaconHeight, paymentAddress)
-		custodian, ok := currentPortalState.CustodianPoolState[custodianKey]
+		custodianKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, paymentAddress)
+		custodianKeyStr := string(custodianKey[:])
+		custodian, ok := currentPortalState.CustodianPoolState[custodianKeyStr]
 
 		if !ok {
 			Logger.log.Errorf("ERROR: Custodian not found ")
@@ -861,7 +863,7 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(portalStateD
 		}
 
 		//check free collateral
-		if amount > custodian.FreeCollateral {
+		if amount > custodian.GetFreeCollateral() {
 			Logger.log.Errorf("ERROR: Free collateral is not enough to refund")
 			return nil
 		}
@@ -880,10 +882,10 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(portalStateD
 		}
 
 		//update custodian
-		custodian.FreeCollateral = custodian.FreeCollateral - amount
-		custodian.TotalCollateral = custodian.TotalCollateral - amount
+		custodian.SetFreeCollateral(custodian.GetFreeCollateral() - amount)
+		custodian.SetTotalCollateral(custodian.GetTotalCollateral() - amount)
 
-		currentPortalState.CustodianPoolState[custodianKey] = custodian
+		currentPortalState.CustodianPoolState[custodianKeyStr] = custodian
 
 	case common.PortalCustodianWithdrawRequestRejectedStatus:
 		newCustodianWithdrawRequest := metadata.NewCustodianWithdrawRequestStatus(
