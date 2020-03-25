@@ -42,8 +42,13 @@ var (
 
 	// portal
 	//A
-	portalFinaExchangeRatesStatePrefix		  = []byte("portalfinalexchangeratesstate-")
-	portalExchangeRatesRequestPrefix          = []byte("portalexchangeratesrequest-")
+	portalFinaExchangeRatesStatePrefix              = []byte("portalfinalexchangeratesstate-")
+	portalExchangeRatesRequestStatusPrefix          = []byte("portalexchangeratesrequeststatus-")
+	portalPortingRequestStatusPrefix                = []byte("portalportingrequeststatus-")
+	portalPortingRequestTxStatusPrefix              = []byte("portalportingrequesttxstatus-")
+	portalCustodianWithdrawStatusPrefix             = []byte("portalcustodianwithdrawstatus-")
+	portalLiquidationTpExchangeRatesStatusPrefix    = []byte("portalliquidationtpexchangeratesstatus-")
+
 	//B
 	portalCustodianStatePrefix        = []byte("portalcustodian-")
 	portalWaitingRedeemRequestsPrefix = []byte("portalwaitingredeemrequest-")
@@ -63,7 +68,6 @@ var (
 
 	// reward for portal
 	portalRewardInfoStatePrefix  = []byte("portalreward-")
-
 )
 
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
@@ -248,15 +252,29 @@ func GetPDEStatusKey(prefix []byte, suffix []byte) []byte {
 // Portal
 //A
 func GetFinalExchangeRatesStatePrefix() []byte {
-	h := common.HashH(portalCustodianStatePrefix)
+	h := common.HashH(portalFinaExchangeRatesStatePrefix)
 	return h[:][:prefixHashKeyLength]
 }
 
-func GetExchangeRatesRequestPrefix() []byte {
-	h := common.HashH(portalExchangeRatesRequestPrefix)
-	return h[:][:prefixHashKeyLength]
+func PortalPortingRequestStatusPrefix() []byte {
+	return portalPortingRequestStatusPrefix
 }
 
+func PortalPortingRequestTxStatusPrefix() []byte {
+	return portalPortingRequestTxStatusPrefix
+}
+
+func PortalExchangeRatesRequestStatusPrefix() []byte {
+	return portalExchangeRatesRequestStatusPrefix
+}
+
+func PortalCustodianWithdrawStatusPrefix() []byte  {
+	return portalCustodianWithdrawStatusPrefix
+}
+
+func PortalLiquidationTpExchangeRatesStatusPrefix() []byte {
+	return portalLiquidationTpExchangeRatesStatusPrefix
+}
 //B
 func GetPortalCustodianStatePrefix() []byte {
 	h := common.HashH(portalCustodianStatePrefix)

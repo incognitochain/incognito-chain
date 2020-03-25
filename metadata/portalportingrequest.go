@@ -39,6 +39,22 @@ type PortalPortingRequestContent struct {
 	TxReqID          common.Hash
 }
 
+type PortingRequestStatus struct {
+	UniquePortingID string
+	TxReqID         common.Hash
+	TokenID         string
+	PorterAddress   string
+	Amount          uint64
+	Custodians      []*MatchingPortingCustodianDetail
+	PortingFee      uint64
+	Status          int
+	BeaconHeight    uint64
+}
+
+func NewPortingRequestStatus(uniquePortingID string, txReqID common.Hash, tokenID string, porterAddress string, amount uint64, custodians []*MatchingPortingCustodianDetail, portingFee uint64, status int, beaconHeight uint64) *PortingRequestStatus {
+	return &PortingRequestStatus{UniquePortingID: uniquePortingID, TxReqID: txReqID, TokenID: tokenID, PorterAddress: porterAddress, Amount: amount, Custodians: custodians, PortingFee: portingFee, Status: status, BeaconHeight: beaconHeight}
+}
+
 func NewPortalUserRegister(uniqueRegisterId string, incogAddressStr string, pTokenId string, registerAmount uint64, portingFee uint64, metaType int) (*PortalUserRegister, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,

@@ -32,6 +32,17 @@ type PortalCustodianWithdrawRequestContent struct {
 	ShardID              byte
 }
 
+type CustodianWithdrawRequestStatus struct {
+	PaymentAddress                string
+	Amount                        uint64
+	Status                        int
+	RemainCustodianFreeCollateral uint64
+}
+
+func NewCustodianWithdrawRequestStatus(paymentAddress string, amount uint64, status int, remainCustodianFreeCollateral uint64) *CustodianWithdrawRequestStatus {
+	return &CustodianWithdrawRequestStatus{PaymentAddress: paymentAddress, Amount: amount, Status: status, RemainCustodianFreeCollateral: remainCustodianFreeCollateral}
+}
+
 func NewPortalCustodianWithdrawRequest(metaType int, paymentAddress string, amount uint64) (*PortalCustodianWithdrawRequest, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,

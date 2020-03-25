@@ -229,9 +229,10 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		return [][]string{}, nil
 	}
 
-	keyPortingRequest := statedb.GeneratePortingRequestObjectKey(actionData.Meta.UniqueRegisterId)
+	stateDB := blockchain.BestState.Beacon.GetCopiedFeatureStateDB()
 	//check unique id from record from db
-	portingRequestKeyExist, err := statedb.GetItemPortalByKey([]byte(keyPortingRequest.String()))
+	portingRequestKey := actionData.Meta.UniqueRegisterId
+	portingRequestKeyExist, err := statedb.GetPortalStatusByKey(stateDB, statedb.PortalPortingRequestStatusPrefix(), []byte(portingRequestKey))
 
 	if err != nil {
 		Logger.log.Errorf("Porting request: Get item portal by prefix error: %+v", err)
@@ -252,8 +253,8 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		return [][]string{inst}, nil
 	}
 
-	if portingRequestKeyExist != nil {
-		Logger.log.Errorf("Porting request: Porting request exist, key %v", keyPortingRequest)
+	if portingRequestKeyExist != 0 {
+		Logger.log.Errorf("Porting request: Porting request exist, key %v", portingRequestKey)
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,
 			shardID,
@@ -290,8 +291,9 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 	}
 
 	//get exchange rates
-	exchangeRatesKey := statedb.GenerateFinalExchangeRatesStateObjectKey(beaconHeight)
-	exchangeRatesState, ok := currentPortalState.FinalExchangeRates[exchangeRatesKey.String()]
+	exchangeRatesKey := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
+	exchangeRatesState, ok := currentPortalState.FinalExchangeRatesState[exchangeRatesKey.String()]
+
 	if !ok {
 		Logger.log.Errorf("Porting request, exchange rates not found")
 		inst := buildRequestPortingInst(
@@ -838,7 +840,7 @@ func (blockchain *BlockChain) buildInstructionsForExchangeRates(
 		inst := []string{
 			strconv.Itoa(metaType),
 			strconv.Itoa(int(shardID)),
-			common.PortalExchangeRatesRejectedStatus,
+			common.PortalExchangeRatesRejectedChainStatus,
 			string(portalExchangeRatesContentBytes),
 		}
 
@@ -858,12 +860,12 @@ func (blockchain *BlockChain) buildInstructionsForExchangeRates(
 	inst := []string{
 		strconv.Itoa(metaType),
 		strconv.Itoa(int(shardID)),
-		common.PortalExchangeRatesSuccessStatus,
+		common.PortalExchangeRatesAcceptedChainStatus,
 		string(portalExchangeRatesContentBytes),
 	}
 
 	//update E-R request
-	currentPortalState.ExchangeRatesRequests[actionData.TxReqID.String()] = statedb.NewExchangeRatesRequestWithValue(actionData.Meta.SenderAddress, actionData.Meta.Rates)
+	currentPortalState.ExchangeRatesRequests[actionData.TxReqID.String()] = metadata.NewExchangeRatesRequestStatus(actionData.Meta.SenderAddress, actionData.Meta.Rates)
 
 	return [][]string{inst}, nil
 }
@@ -1170,42 +1172,6 @@ func (blockchain *BlockChain) buildInstructionsForCustodianWithdraw(
 	if currentPortalState == nil {
 		Logger.log.Warn("Current Portal state is null")
 		return [][]string{}, nil
-	}
-
-	//check custodian withdraw request
-	custodianWithdrawRequestKey := statedb.GenerateCustodianWithdrawObjectKey(actionData.TxReqID.String())
-	custodianWithdrawRequestKeyExist, err := statedb.GetItemPortalByKey([]byte(custodianWithdrawRequestKey.String()))
-
-	if err != nil {
-		Logger.log.Errorf("Custodian withdraw is exist %+v", err)
-
-		inst := buildCustodianWithdrawInst(
-			actionData.Meta.Type,
-			shardID,
-			common.PortalCustodianWithdrawRequestRejectedStatus,
-			actionData.Meta.PaymentAddress,
-			actionData.Meta.Amount,
-			0,
-			actionData.TxReqID,
-		)
-
-		return [][]string{inst}, nil
-	}
-
-	if custodianWithdrawRequestKeyExist != nil {
-		Logger.log.Errorf("Custodian withdraw key is duplicated")
-
-		inst := buildCustodianWithdrawInst(
-			actionData.Meta.Type,
-			shardID,
-			common.PortalCustodianWithdrawRequestRejectedStatus,
-			actionData.Meta.PaymentAddress,
-			actionData.Meta.Amount,
-			0,
-			actionData.TxReqID,
-		)
-
-		return [][]string{inst}, nil
 	}
 
 	if len(currentPortalState.CustodianPoolState) <= 0 {

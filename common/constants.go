@@ -119,6 +119,7 @@ const (
 	MinTxFeesOnTokenRequirement                             = 10000000000000 // 10000 prv, this requirement is applied from beacon height 87301 mainnet
 	BeaconBlockHeighMilestoneForMinTxFeesOnTokenRequirement = 87301          // milestone of beacon height, when apply min fee on token requirement
 
+	//portal
 	PortalCustodianDepositAcceptedStatus = 1
 	PortalCustodianDepositRefundStatus   = 2
 
@@ -166,6 +167,9 @@ const (
 
 	PortalExpiredPortingReqSuccessStatus = 1
 	PortalExpiredPortingReqFailedStatus  = 2
+
+	PortalExchangeRatesAcceptedStatus   = 1
+	PortalExchangeRatesRejectedStatus   = 2
 )
 
 // PDE statuses for chain
@@ -193,8 +197,8 @@ const (
 	PortalPortingRequestAcceptedChainStatus = "accepted"
 	PortalPortingRequestRejectedChainStatus = "rejected"
 
-	PortalExchangeRatesSuccessStatus  = "accepted"
-	PortalExchangeRatesRejectedStatus = "rejected"
+	PortalExchangeRatesAcceptedChainStatus  = "accepted"
+	PortalExchangeRatesRejectedChainStatus = "rejected"
 
 	PortalRedeemRequestAcceptedChainStatus = "accepted"
 	PortalRedeemRequestRejectedChainStatus = "rejected"

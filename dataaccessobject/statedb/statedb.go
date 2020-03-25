@@ -1210,18 +1210,16 @@ func (stateDB *StateDB) getAllFinalExchangeRatesState() []*FinalExchangeRatesSta
 	return finalExchangeRatesStates
 }
 
-func (stateDB *StateDB) StoreExchangeRatesRequestItem(keyId []byte, content interface{}) error {
-	/*contributionBytes, err := json.Marshal(content)
+func (stateDB *StateDB) GetPortalStatusByKey(key common.Hash) (*PortalStatusState, bool, error) {
+/*	pdeStatusState, err := stateDB.getStateObject(PDEStatusObjectType, key)
 	if err != nil {
-		return err
+		return nil, false, err
 	}
-
-	err = db.Put(keyId, contributionBytes)
-	if err != nil {
-		return database.NewDatabaseError(database.StoreExchangeRatesRequestStateError, errors.Wrap(err, "db.lvdb.put"))
-	}*/
-
-	return nil
+	if pdeStatusState != nil {
+		return pdeStatusState.GetValue().(*PDEStatusState), true, nil
+	}
+	return NewPDEStatusState(), false, nil*/
+	return nil, false, nil
 }
 
 //B
