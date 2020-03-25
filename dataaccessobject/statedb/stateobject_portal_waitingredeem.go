@@ -185,7 +185,7 @@ func (mc MatchingRedeemCustodianDetail) MarshalJSON() ([]byte, error) {
 	}{
 		IncAddress:    mc.incAddress,
 		RemoteAddress: mc.remoteAddress,
-		Amount     :   mc.amount,
+		Amount:        mc.amount,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -207,6 +207,18 @@ func (mc *MatchingRedeemCustodianDetail) UnmarshalJSON(data []byte) error {
 	mc.remoteAddress = temp.RemoteAddress
 	mc.amount = temp.Amount
 	return nil
+}
+
+func NewMatchingRedeemCustodianDetailWithValue(
+	incAddress string,
+	remoteAddress string,
+	amount uint64) *MatchingRedeemCustodianDetail {
+
+	return &MatchingRedeemCustodianDetail{
+		incAddress:    incAddress,
+		remoteAddress: remoteAddress,
+		amount:        amount,
+	}
 }
 
 func NewWaitingRedeemRequest() *WaitingRedeemRequest {
