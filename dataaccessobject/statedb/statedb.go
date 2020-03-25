@@ -1209,21 +1209,6 @@ func (stateDB *StateDB) getAllFinalExchangeRatesState() []*FinalExchangeRatesSta
 	}
 	return finalExchangeRatesStates
 }
-
-func (stateDB *StateDB) StoreExchangeRatesRequestItem(keyId []byte, content interface{}) error {
-	/*contributionBytes, err := json.Marshal(content)
-	if err != nil {
-		return err
-	}
-
-	err = db.Put(keyId, contributionBytes)
-	if err != nil {
-		return database.NewDatabaseError(database.StoreExchangeRatesRequestStateError, errors.Wrap(err, "db.lvdb.put"))
-	}*/
-
-	return nil
-}
-
 //B
 func (stateDB *StateDB) getAllWaitingRedeemRequest() map[string]*WaitingRedeemRequest {
 	waitingRedeemRequests := map[string]*WaitingRedeemRequest{}

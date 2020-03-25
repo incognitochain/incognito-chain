@@ -23,10 +23,10 @@ type CurrentPortalState struct {
 	CustodianPoolState     map[string]*statedb.CustodianState          // key : hash(beaconHeight || custodian_address)
 	WaitingPortingRequests map[string]*statedb.PortingRequest          // key : hash(beaconHeight || UniquePortingID)
 	WaitingRedeemRequests  map[string]*statedb.WaitingRedeemRequest    // key : hash(beaconHeight || UniqueRedeemID)
-	FinalExchangeRates     map[string]*statedb.FinalExchangeRatesState // key : hash(beaconHeight || TxID)
-	LiquidateExchangeRates map[string]*statedb.LiquidateExchangeRates  // key : hash(beaconHeight || TxID)
+	FinalExchangeRatesState	map[string]*statedb.FinalExchangeRatesState // key : hash(beaconHeight || TxID)
+	LiquidateExchangeRates 	map[string]*statedb.LiquidateExchangeRates  // key : hash(beaconHeight || TxID)
 	//Store temporary exchange rates requests
-	ExchangeRatesRequests map[string]*statedb.ExchangeRatesRequest // key : hash(beaconHeight | TxID)
+	ExchangeRatesRequests 	map[string]*statedb.ExchangeRatesRequest // key : hash(beaconHeight | TxID)
 
 	DeletedWaitingRedeemRequests map[string]*statedb.WaitingRedeemRequest // key : hash(beaconHeight || UniqueRedeemID)
 }

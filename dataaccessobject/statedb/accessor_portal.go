@@ -1,7 +1,9 @@
 package statedb
 
 import (
+	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/pkg/errors"
 )
 
 //======================  Redeem  ======================
@@ -145,6 +147,37 @@ func GetItemPortalByKey(key []byte) ([]byte, error) {
 	return  nil, nil
 }
 
+func StoreExchangeRatesRequestItem(keyId []byte, content interface{}) error {
+	/*contributionBytes, err := json.Marshal(content)
+	if err != nil {
+		return err
+	}
+
+	err = db.Put(keyId, contributionBytes)
+	if err != nil {
+		return database.NewDatabaseError(database.StoreExchangeRatesRequestStateError, errors.Wrap(err, "db.lvdb.put"))
+	}*/
+
+	return nil
+}
+
+
+//======================  Custodian Withdraw  ======================
+func StoreCustodianWithdrawRequest(key []byte, content interface{}) error {
+	/*contributionBytes, err := json.Marshal(content)
+	if err != nil {
+		return err
+	}
+
+	err = db.Put(key, contributionBytes)
+	if err != nil {
+		return database.NewDatabaseError(database.StorePortalCustodianWithdrawRequestStateError, errors.Wrap(err, "db.lvdb.put"))
+	}
+*/
+	return nil
+}
+
+
 //======================  Liquidation  ======================
 
 
@@ -169,3 +202,19 @@ func StoreWaitingPortingRequests(
 }
 
 
+// StorePortingRequestItem store status of porting request by portingID
+func StorePortingRequestItem(keyId []byte, content interface{}) error {
+	/*contributionBytes, err := json.Marshal(content)
+	if err != nil {
+		return err
+	}
+
+	err = db.Put(keyId, contributionBytes)
+	if err != nil {
+		return database.NewDatabaseError(database.StorePortingRequestStateError, errors.Wrap(err, "db.lvdb.put"))
+	}
+	*/
+	return nil
+}
+
+//====================== End Porting  ======================

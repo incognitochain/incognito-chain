@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/database"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"sort"
 	"strconv"
@@ -15,7 +13,7 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 	beaconHeight := block.Header.Height - 1
 	db := blockchain.GetDatabase()
 
-	currentPortalState, err := InitCurrentPortalStateFromDB(db, beaconHeight)
+	currentPortalState, err := InitCurrentPortalStateFromDB(portalStateDB, beaconHeight)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil
@@ -41,7 +39,7 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 			//custodian withdraw
 			case strconv.Itoa(metadata.PortalCustodianWithdrawRequestMeta):
 				err = blockchain.processPortalCustodianWithdrawRequest(portalStateDB, beaconHeight, inst, currentPortalState)
-				//liquidation exchange rates
+			//liquidation exchange rates
 			case strconv.Itoa(metadata.PortalLiquidateTPExchangeRatesMeta):
 				err = blockchain.processLiquidationTopPercentileExchangeRates(portalStateDB, beaconHeight, inst, currentPortalState)
 			//liquidation custodian deposit
@@ -240,18 +238,19 @@ func (blockchain *BlockChain) processPortalUserRegister(
 
 	reqStatus := instructions[2]
 
+	uniquePortingID := portingRequestContent.UniqueRegisterId
+	txReqID := portingRequestContent.TxReqID
+	tokenID := portingRequestContent.PTokenId
+
+	porterAddress := portingRequestContent.IncogAddressStr
+	amount := portingRequestContent.RegisterAmount
+
+	custodiansDetail := portingRequestContent.Custodian
+	portingFee := portingRequestContent.PortingFee
+
+
 	switch reqStatus {
 	case common.PortalPortingRequestAcceptedChainStatus:
-		uniquePortingID := portingRequestContent.UniqueRegisterId
-		txReqID := portingRequestContent.TxReqID
-		tokenID := portingRequestContent.PTokenId
-
-		porterAddress := portingRequestContent.IncogAddressStr
-		amount := portingRequestContent.RegisterAmount
-
-		custodiansDetail := portingRequestContent.Custodian
-		portingFee := portingRequestContent.PortingFee
-
 		//verify custodian
 		isCustodianAccepted := true
 		for _, itemCustodian := range custodiansDetail {
@@ -278,7 +277,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		}
 
 		// new request
-		newPortingRequestStateWaiting, err := NewPortingRequestState(
+		newPortingRequestStateWaiting := statedb.NewPortingRequest(
 			uniquePortingID,
 			txReqID,
 			tokenID,
@@ -294,7 +293,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			return err
 		}
 
-		newPortingRequestStateAccept, err := NewPortingRequestState(
+		newPortingRequestStateAccept := statedb.NewPortingRequest(
 			uniquePortingID,
 			txReqID,
 			tokenID,
@@ -310,7 +309,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			return err
 		}
 
-		newPortingTxRequestStateAccept, err := NewPortingRequestState(
+		newPortingTxRequestStateAccept := statedb.NewPortingRequest(
 			uniquePortingID,
 			txReqID,
 			tokenID,
@@ -327,17 +326,17 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		}
 
 		//save transaction
-		keyPortingRequestNewTxState := lvdb.NewPortingRequestTxKey(txReqID.String())
-		err = db.StorePortingRequestItem([]byte(keyPortingRequestNewTxState), newPortingTxRequestStateAccept)
+		keyPortingRequestNewTxState := statedb.GeneratePortingRequestObjectKey(txReqID.String())
+		err = statedb.StorePortingRequestItem([]byte(keyPortingRequestNewTxState.String()), newPortingTxRequestStateAccept)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store porting tx request item: %+v", err)
 			return nil
 		}
 
 		//save success porting request
-		keyPortingRequestNewState := lvdb.NewPortingRequestKey(portingRequestContent.UniqueRegisterId)
+		keyPortingRequestNewState := statedb.GeneratePortingRequestObjectKey(portingRequestContent.UniqueRegisterId)
 		Logger.log.Infof("Porting request, save porting request with key %v", keyPortingRequestNewState)
-		err = db.StorePortingRequestItem([]byte(keyPortingRequestNewState), newPortingRequestStateAccept)
+		err = statedb.StorePortingRequestItem([]byte(keyPortingRequestNewState.String()), newPortingRequestStateAccept)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store porting request item: %+v", err)
 			return nil
@@ -358,19 +357,22 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		break
 	case common.PortalPortingRequestRejectedChainStatus:
 		txReqID := portingRequestContent.TxReqID
-		newPortingRequest := lvdb.PortingRequest{
-			UniquePortingID: portingRequestContent.UniqueRegisterId,
-			Amount:          portingRequestContent.RegisterAmount,
-			TokenID:         portingRequestContent.PTokenId,
-			PorterAddress:   portingRequestContent.IncogAddressStr,
-			TxReqID:         txReqID,
-			Status:          common.PortalPortingTxRequestRejectedStatus,
-			BeaconHeight:    beaconHeight + 1,
-		}
+
+		newPortingRequest := statedb.NewPortingRequest(
+			uniquePortingID,
+			txReqID,
+			tokenID,
+			porterAddress,
+			amount,
+			custodiansDetail,
+			portingFee,
+			common.PortalPortingTxRequestRejectedStatus,
+			beaconHeight+1,
+		)
 
 		//save porting request
-		keyPortingRequestNewState := lvdb.NewPortingRequestTxKey(txReqID.String())
-		err = db.StorePortingRequestItem([]byte(keyPortingRequestNewState), newPortingRequest)
+		keyPortingRequestNewState := statedb.GeneratePortingRequestObjectKey(txReqID.String())
+		err = statedb.StorePortingRequestItem([]byte(keyPortingRequestNewState.String()), newPortingRequest)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store porting request item: %+v", err)
 			return nil
@@ -801,7 +803,6 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 }
 
 func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(portalStateDB *statedb.StateDB, beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
-	db := blockchain.GetDatabase()
 	if currentPortalState == nil {
 		Logger.log.Errorf("current portal state is nil")
 		return nil
@@ -827,7 +828,7 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(portalStateD
 	switch reqStatus {
 	case common.PortalCustodianWithdrawRequestAcceptedStatus:
 		//save transaction
-		newCustodianWithdrawRequest, _ := NewCustodianWithdrawRequest(
+		newCustodianWithdrawRequest := statedb.NewCustodianWithdrawRequestWithKey(
 			paymentAddress,
 			amount,
 			common.PortalCustodianWithdrawReqAcceptedStatus,
@@ -848,8 +849,8 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(portalStateD
 			return nil
 		}
 
-		keyCustodianState := lvdb.NewCustodianWithdrawRequestKey(txHash)
-		err = db.StoreCustodianWithdrawRequest([]byte(keyCustodianState), newCustodianWithdrawRequest)
+		keyCustodianState := statedb.GenerateCustodianWithdrawObjectKey(txHash)
+		err = statedb.StoreCustodianWithdrawRequest([]byte(keyCustodianState.String()), newCustodianWithdrawRequest)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw item: %+v", err)
 			return nil
@@ -862,15 +863,15 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(portalStateD
 		currentPortalState.CustodianPoolState[custodianKey] = custodian
 
 	case common.PortalCustodianWithdrawRequestRejectedStatus:
-		newCustodianWithdrawRequest, _ := NewCustodianWithdrawRequest(
+		newCustodianWithdrawRequest := statedb.NewCustodianWithdrawRequestWithKey(
 			paymentAddress,
 			amount,
 			common.PortalCustodianWithdrawReqRejectStatus,
 			freeCollateral,
 		)
 
-		keyCustodianState := lvdb.NewCustodianWithdrawRequestKey(txHash)
-		err = db.StoreCustodianWithdrawRequest([]byte(keyCustodianState), newCustodianWithdrawRequest)
+		keyCustodianState := statedb.GenerateCustodianWithdrawObjectKey(txHash)
+		err = statedb.StoreCustodianWithdrawRequest([]byte(keyCustodianState.String()), newCustodianWithdrawRequest)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw item: %+v", err)
 			return nil
