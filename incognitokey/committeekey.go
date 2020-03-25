@@ -112,6 +112,7 @@ func (pubKey *CommitteePublicKey) GetMiningKey(schemeName string) ([]byte, error
 }
 
 var GetMiningKeyBase58Cache, _ = lru.New(2000)
+var ToBase58Cache, _ = lru.New(2000)
 
 func (pubKey *CommitteePublicKey) GetMiningKeyBase58(schemeName string) string {
 	b, _ := pubKey.RawBytes()
@@ -134,11 +135,27 @@ func (pubKey *CommitteePublicKey) GetIncKeyBase58() string {
 }
 
 func (pubKey *CommitteePublicKey) ToBase58() (string, error) {
+	if pubKey == nil {
+		result, err := json.Marshal(pubKey)
+		if err != nil {
+			return "", err
+		}
+		return base58.Base58Check{}.Encode(result, common.Base58Version), nil
+	}
+
+	b, _ := pubKey.RawBytes()
+	key := string(b)
+	value, exist := ToBase58Cache.Get(key)
+	if exist {
+		return value.(string), nil
+	}
 	result, err := json.Marshal(pubKey)
 	if err != nil {
 		return "", err
 	}
-	return base58.Base58Check{}.Encode(result, common.Base58Version), nil
+	encodeData := base58.Base58Check{}.Encode(result, common.Base58Version)
+	ToBase58Cache.Add(key, encodeData)
+	return encodeData, nil
 }
 
 func (pubKey *CommitteePublicKey) FromBase58(keyString string) error {
