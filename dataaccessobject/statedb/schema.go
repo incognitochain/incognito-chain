@@ -42,12 +42,22 @@ var (
 
 	// portal
 	//A
-	portalFinaExchangeRatesStatePrefix		  = []byte("portalfinalexchangeratesstate-")
-	portalExchangeRatesPrefix           	  = []byte("portalexchangeratesrequest-")
+	portalFinaExchangeRatesStatePrefix = []byte("portalfinalexchangeratesstate-")
+	portalExchangeRatesPrefix          = []byte("portalexchangeratesrequest-")
 	//B
-	portalStatusPrefix                    = []byte("portalstatus-")
-	portalCustodianStatePrefix                = []byte("portalcustodian-")
-	portalWaitingRedeemRequestsPrefix   = []byte("portalwaitingredeemrequest-")
+	portalCustodianStatePrefix        = []byte("portalcustodian-")
+	portalWaitingRedeemRequestsPrefix = []byte("portalwaitingredeemrequest-")
+
+	portalStatusPrefix                        = []byte("portalstatus-")
+	portalCustodianDepositStatusPrefix        = []byte("custodiandeposit-")
+	portalRequestPTokenStatusPrefix           = []byte("requestptoken-")
+	portalRedeemRequestStatusPrefix           = []byte("redeemrequest-")
+	portalRedeemRequestStatusByTxReqIDPrefix  = []byte("redeemrequestbytxid-")
+	portalRequestUnlockCollateralStatusPrefix = []byte("requestunlockcollateral-")
+
+
+	// liquidation for portal
+	portalLiquidateCustodianRunAwayPrefix                  = []byte("portalliquidaterunaway-")
 )
 
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
@@ -250,6 +260,26 @@ func GetWaitingRedeemRequestPrefix() []byte {
 func GetPortalStatusPrefix() []byte {
 	h := common.HashH(portalStatusPrefix)
 	return h[:][:prefixHashKeyLength]
+}
+
+func PortalCustodianDepositStatusPrefix() []byte {
+	return portalCustodianDepositStatusPrefix
+}
+
+func PortalRequestPTokenStatusPrefix() []byte {
+	return portalRequestPTokenStatusPrefix
+}
+
+func PortalRedeemRequestStatusPrefix() []byte {
+	return portalRedeemRequestStatusPrefix
+}
+
+func PortalRedeemRequestStatusByTxReqIDPrefix() []byte {
+	return portalRedeemRequestStatusByTxReqIDPrefix
+}
+
+func PortalRequestUnlockCollateralStatusPrefix() []byte {
+	return portalRequestUnlockCollateralStatusPrefix
 }
 
 var _ = func() (_ struct{}) {

@@ -31,12 +31,12 @@ const (
 	ErrInvalidBurningConfirmStateType         = "invalid burning confirm state type"
 	ErrInvalidTokenTransactionStateType       = "invalid token transaction state type"
 	//A
-	ErrInvalidFinalExchangeRatesStateType     = "invalid final exchange rates state type"
-	ErrInvalidFinalExchangeRatesRequestType     = "invalid final exchange rates request type"
+	ErrInvalidFinalExchangeRatesStateType   = "invalid final exchange rates state type"
+	ErrInvalidFinalExchangeRatesRequestType = "invalid final exchange rates request type"
 	//B
-	ErrInvalidPortalStatusStateType              = "invalid portal status state type"
-	ErrInvalidPortalCustodianStateType        = "invalid portal custodian state type"
-	ErrInvalidPortalWaitingRedeemRequestType  = "invalid portal waiting redeem request type"
+	ErrInvalidPortalStatusStateType          = "invalid portal status state type"
+	ErrInvalidPortalCustodianStateType       = "invalid portal custodian state type"
+	ErrInvalidPortalWaitingRedeemRequestType = "invalid portal waiting redeem request type"
 )
 const (
 	InvalidByteArrayTypeError = iota
