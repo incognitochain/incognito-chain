@@ -115,7 +115,6 @@ func (blockchain *BlockChain) processPortalLiquidateCustodian(
 
 func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(portalStateDB *statedb.StateDB, beaconHeight uint64, instructions []string,
 	currentPortalState *CurrentPortalState) error {
-	db := blockchain.GetDatabase()
 
 	// unmarshal instructions content
 	var actionData metadata.PortalLiquidateTopPercentileExchangeRatesContent
@@ -125,8 +124,8 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(porta
 		return nil
 	}
 
-	keyExchangeRate := lvdb.NewFinalExchangeRatesKey(beaconHeight)
-	exchangeRate, ok := currentPortalState.FinalExchangeRates[keyExchangeRate]
+	keyExchangeRate := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
+	exchangeRate, ok := currentPortalState.FinalExchangeRatesState[keyExchangeRate.String()]
 	if !ok {
 		Logger.log.Errorf("Exchange rate not found", err)
 		return nil
@@ -200,29 +199,52 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(porta
 				currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey] = liquidateExchangeRates
 			}
 
-			newTPKey := lvdb.NewPortalLiquidateTPExchangeRatesKey(beaconHeight, custodianState.IncognitoAddress)
-			newTPExchangeRates, _ := NewLiquidateTopPercentileExchangeRates(
-				custodianState.IncognitoAddress,
-				detectTp,
-				common.PortalLiquidationTPExchangeRatesSuccessStatus,
-			)
+
+
+			beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+			newTPKey := beaconHeightBytes
+			newTPKey = append(newTPKey, []byte( custodianState.IncognitoAddress)...)
 
 			Logger.log.Infof("update liquidateTPExchangeRatesKey key %v", newTPKey)
-			err := db.StoreLiquidateTopPercentileExchangeRates([]byte(newTPKey), newTPExchangeRates)
+
+			newTPExchangeRates := metadata.NewLiquidateTopPercentileExchangeRatesStatus(
+				custodianState.IncognitoAddress,
+				common.PortalLiquidationTPExchangeRatesSuccessStatus,
+				detectTp,
+			)
+
+			contentStatusBytes, _ := json.Marshal(newTPExchangeRates)
+			err = statedb.TrackPortalStateStatus(
+				portalStateDB,
+				statedb.PortalLiquidationTpExchangeRatesStatusPrefix(),
+				newTPKey,
+				contentStatusBytes,
+			)
+
 			if err != nil {
 				Logger.log.Errorf("ERROR: an error occurred while store liquidation TP exchange rates %v", err)
 				return nil
 			}
 		}
 	} else if reqStatus == common.PortalLiquidateTPExchangeRatesFailedChainStatus {
-		newTPKey := lvdb.NewPortalLiquidateTPExchangeRatesKey(beaconHeight, custodianState.IncognitoAddress)
-		newTPExchangeRates, _ := NewLiquidateTopPercentileExchangeRates(
+		beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+		newTPKey := beaconHeightBytes
+		newTPKey = append(newTPKey, []byte( custodianState.IncognitoAddress)...)
+
+		newTPExchangeRates := metadata.NewLiquidateTopPercentileExchangeRatesStatus(
 			custodianState.IncognitoAddress,
-			nil,
 			common.PortalLiquidationTPExchangeRatesFailedStatus,
+			nil,
 		)
 
-		err := db.StoreLiquidateTopPercentileExchangeRates([]byte(newTPKey), newTPExchangeRates)
+		contentStatusBytes, _ := json.Marshal(newTPExchangeRates)
+		err = statedb.TrackPortalStateStatus(
+			portalStateDB,
+			statedb.PortalLiquidationTpExchangeRatesStatusPrefix(),
+			newTPKey,
+			contentStatusBytes,
+		)
+
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store liquidation TP exchange rates %v", err)
 			return nil

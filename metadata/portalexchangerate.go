@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"github.com/mailru/easyjson/benchmark"
 	"reflect"
 	"strconv"
 )
@@ -15,7 +16,7 @@ import (
 type PortalExchangeRates struct {
 	MetadataBase
 	SenderAddress string
-	Rates         []*statedb.ExchangeRateInfo //amount * 10^6 (USDT)
+	Rates         []*ExchangeRateInfo //amount * 10^6 (USDT)
 }
 
 type PortalExchangeRatesAction struct {
@@ -23,6 +24,21 @@ type PortalExchangeRatesAction struct {
 	TxReqID  common.Hash
 	LockTime int64
 	ShardID  byte
+}
+
+type ExchangeRateInfo struct {
+	PTokenID string
+	Rate     uint64
+}
+
+type ExchangeRatesRequestStatus struct {
+	Status byte
+	SenderAddress string
+	Rates         []*ExchangeRateInfo
+}
+
+func NewExchangeRatesRequestStatus(status byte, senderAddress string, rates []*ExchangeRateInfo) *ExchangeRatesRequestStatus {
+	return &ExchangeRatesRequestStatus{Status: status, SenderAddress: senderAddress, Rates: rates}
 }
 
 func NewPortalExchangeRates(metaType int, senderAddress string, currency []*statedb.ExchangeRateInfo) (*PortalExchangeRates, error) {
@@ -40,10 +56,9 @@ func NewPortalExchangeRates(metaType int, senderAddress string, currency []*stat
 
 type PortalExchangeRatesContent struct {
 	SenderAddress   string
-	Rates           []*statedb.ExchangeRateInfo
+	Rates           []*ExchangeRateInfo
 	TxReqID         common.Hash
 	LockTime        int64
-	UniqueRequestId string
 }
 
 func (portalExchangeRates PortalExchangeRates) ValidateTxWithBlockChain(

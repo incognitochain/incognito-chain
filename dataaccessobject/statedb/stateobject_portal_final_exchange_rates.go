@@ -180,7 +180,7 @@ func NewFinalExchangeRatesStateObject(db *StateDB, finalExchangeRatesStateHash c
 	}
 }
 
-func GenerateFinalExchangeRatesStateObjectKey(beaconHeight uint64) common.Hash {
+func GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight uint64) common.Hash {
 	beaconHeightBytes := fmt.Sprintf("%d-", beaconHeight)
 	suffix := "portal"
 	prefixHash := GetFinalExchangeRatesStatePrefix()

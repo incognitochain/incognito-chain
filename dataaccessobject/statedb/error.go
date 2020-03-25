@@ -148,6 +148,9 @@ const (
 	StoreLiquidationCustodianDepositError
 
 	StorePortalRewardError
+	//A
+	TrackPortalStatusError
+	//B
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -251,6 +254,9 @@ var ErrCodeMessage = map[int]struct {
 	StoreRedeemLiquidationExchangeRatesError:      {-14023, "Store redeem liquidation exchange rates error"},
 	StoreLiquidationCustodianDepositError:         {-14024, "Store liquidation custodian deposit error"},
 	StoreCustodianStateError:                      {-14025, "Store custodian state error"},
+	//A
+	TrackPortalStatusError:						   {-14026, "Track portal status error"},
+	//B
 }
 
 type StatedbError struct {

@@ -26,7 +26,7 @@ type CurrentPortalState struct {
 	FinalExchangeRatesState	map[string]*statedb.FinalExchangeRatesState // key : hash(beaconHeight || TxID)
 	LiquidateExchangeRates 	map[string]*statedb.LiquidateExchangeRates  // key : hash(beaconHeight || TxID)
 	//Store temporary exchange rates requests
-	ExchangeRatesRequests 	map[string]*statedb.ExchangeRatesRequest // key : hash(beaconHeight | TxID)
+	ExchangeRatesRequests 	map[string]*metadata.ExchangeRatesRequestStatus // key : hash(beaconHeight | TxID)
 
 	DeletedWaitingRedeemRequests map[string]*statedb.WaitingRedeemRequest // key : hash(beaconHeight || UniqueRedeemID)
 }

@@ -2,6 +2,7 @@ package statedb
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/pkg/errors"
 )
@@ -100,7 +101,7 @@ func GetFinalExchangeRatesState(
 
 	allFinalExchangeRatesState := stateDB.getAllFinalExchangeRatesState()
 	for _, item  := range allFinalExchangeRatesState {
-		key := GenerateFinalExchangeRatesStateObjectKey(beaconHeight)
+		key := GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
 		value := NewFinalExchangeRatesStateWithValue(item.Rates())
 		finalExchangeRates[key.String()] = value
 	}
@@ -112,7 +113,7 @@ func StoreFinalExchangeRatesState(
 	beaconHeight uint64,
 	finalExchangeRatesState map[string]*FinalExchangeRatesState) error {
 	for _, exchangeRates := range finalExchangeRatesState {
-		key := GenerateFinalExchangeRatesStateObjectKey(beaconHeight)
+		key := GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
 		value := NewFinalExchangeRatesStateWithValue(exchangeRates.Rates())
 
 		err := stateDB.SetStateObject(FinalExchangeRatesStateObjectType, key, value)
@@ -131,20 +132,6 @@ func TrackExchangeRatesRequestStatus(stateDB *StateDB, statusType []byte, status
 		return NewStatedbError(TrackPDEStatusError, err)
 	}
 	return nil
-}
-
-func GetItemPortalByKey(key []byte) ([]byte, error) {
-	/*itemRecord, dbErr := db.lvdb.Get(key, nil)
-	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
-		return nil, database.NewDatabaseError(database.GetItemPortalByKeyError, dbErr)
-	}
-
-	if itemRecord == nil {
-		return nil, nil
-	}
-
-	return itemRecord, nil*/
-	return  nil, nil
 }
 
 func StoreExchangeRatesRequestItem(keyId []byte, content interface{}) error {
@@ -182,6 +169,33 @@ func StoreCustodianWithdrawRequest(key []byte, content interface{}) error {
 
 
 //======================  Porting  ======================
+func TrackPortalStateStatus(stateDB *StateDB, statusType []byte, statusSuffix []byte, statusContent []byte) error {
+	key := GeneratePortalStatusObjectKey(statusType, statusSuffix)
+	value := NewPortalStatusStateWithValue(statusType, statusSuffix, statusContent)
+	err := stateDB.SetStateObject(PortalStatusObjectType, key, value)
+
+	switch statusType {
+		case []byte("abic"):
+			if err != nil {
+				return NewStatedbError(TrackPortalStatusError, err)
+			}
+	}
+
+	return nil
+}
+
+func GetPortalStatusByKey(stateDB *StateDB, statusType []byte, statusSuffix []byte) (byte, error) {
+	/*key := GeneratePortalStatusObjectKey(statusType, statusSuffix)
+	s, has, err := stateDB.GetPortalStatusByKey(key)
+	if err != nil {
+		return 0, NewStatedbError(GetPDEStatusError, err)
+	}
+	if !has {
+		return 0, NewStatedbError(GetPDEStatusError, fmt.Errorf("status %+v with prefix %+v not found", string(statusType), string(statusSuffix)))
+	}
+	return s.statusContent[0], nil*/
+	return 0, nil
+}
 
 // getCustodianPoolState gets custodian pool state at beaconHeight
 func GetWaitingPortingRequests(

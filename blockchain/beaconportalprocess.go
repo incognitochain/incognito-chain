@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"sort"
@@ -217,7 +218,6 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 func (blockchain *BlockChain) processPortalUserRegister(
 	portalStateDB *statedb.StateDB,
 	beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
-	db := blockchain.GetDatabase()
 
 	if currentPortalState == nil {
 		Logger.log.Errorf("current portal state is nil")
@@ -277,7 +277,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		}
 
 		// new request
-		newPortingRequestStateWaiting := statedb.NewPortingRequest(
+		newPortingRequestStateWaiting := metadata.NewPortingRequestStatus(
 			uniquePortingID,
 			txReqID,
 			tokenID,
@@ -289,11 +289,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			beaconHeight+1,
 		)
 
-		if err != nil {
-			return err
-		}
-
-		newPortingRequestStateAccept := statedb.NewPortingRequest(
+		newPortingRequestStateAccept := metadata.NewPortingRequestStatus(
 			uniquePortingID,
 			txReqID,
 			tokenID,
@@ -305,11 +301,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			beaconHeight+1,
 		)
 
-		if err != nil {
-			return err
-		}
-
-		newPortingTxRequestStateAccept := statedb.NewPortingRequest(
+		newPortingTxRequestStateAccept := metadata.NewPortingRequestStatus(
 			uniquePortingID,
 			txReqID,
 			tokenID,
@@ -321,22 +313,28 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			beaconHeight+1,
 		)
 
-		if err != nil {
-			return err
-		}
-
 		//save transaction
-		keyPortingRequestNewTxState := statedb.GeneratePortingRequestObjectKey(txReqID.String())
-		err = statedb.StorePortingRequestItem([]byte(keyPortingRequestNewTxState.String()), newPortingTxRequestStateAccept)
+		newPortingTxRequestStatusBytes, _ := json.Marshal(newPortingTxRequestStateAccept)
+		err = statedb.TrackPortalStateStatus(
+			portalStateDB,
+			statedb.PortalPortingRequestStatusPrefix(),
+			[]byte(txReqID.String()),
+			newPortingTxRequestStatusBytes,
+		)
+
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store porting tx request item: %+v", err)
 			return nil
 		}
 
 		//save success porting request
-		keyPortingRequestNewState := statedb.GeneratePortingRequestObjectKey(portingRequestContent.UniqueRegisterId)
-		Logger.log.Infof("Porting request, save porting request with key %v", keyPortingRequestNewState)
-		err = statedb.StorePortingRequestItem([]byte(keyPortingRequestNewState.String()), newPortingRequestStateAccept)
+		newPortingRequestStatusBytes, _ := json.Marshal(newPortingRequestStateAccept)
+		err = statedb.TrackPortalStateStatus(
+			portalStateDB,
+			statedb.PortalPortingRequestTxStatusPrefix(),
+			[]byte(uniquePortingID),
+			newPortingRequestStatusBytes,
+		)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store porting request item: %+v", err)
 			return nil
@@ -370,9 +368,15 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			beaconHeight+1,
 		)
 
-		//save porting request
-		keyPortingRequestNewState := statedb.GeneratePortingRequestObjectKey(txReqID.String())
-		err = statedb.StorePortingRequestItem([]byte(keyPortingRequestNewState.String()), newPortingRequest)
+		//save transaction
+		newPortingTxRequestStatusBytes, _ := json.Marshal(newPortingRequest)
+		err = statedb.TrackPortalStateStatus(
+			portalStateDB,
+			statedb.PortalPortingRequestTxStatusPrefix(),
+			[]byte(txReqID.String()),
+			newPortingTxRequestStatusBytes,
+		)
+
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store porting request item: %+v", err)
 			return nil
@@ -503,32 +507,46 @@ func (blockchain *BlockChain) processPortalExchangeRates(portalStateDB *statedb.
 	reqStatus := instructions[2]
 
 	switch reqStatus {
-	case common.PortalExchangeRatesSuccessStatus:
+	case common.PortalExchangeRatesAcceptedChainStatus:
 		//save db
-		newExchangeRates := statedb.NewExchangeRatesRequestWithValue(
+		newExchangeRates := metadata.NewExchangeRatesRequestStatus(
+			common.PortalExchangeRatesAcceptedStatus,
 			portingExchangeRatesContent.SenderAddress,
 			portingExchangeRatesContent.Rates,
 		)
 
-		err = portalStateDB.StoreExchangeRatesRequestItem([]byte(portingExchangeRatesContent.UniqueRequestId), newExchangeRates)
+		newExchangeRatesStatusBytes, _ := json.Marshal(newExchangeRates)
+		err = statedb.TrackPortalStateStatus(
+			portalStateDB,
+			statedb.PortalExchangeRatesRequestStatusPrefix(),
+			[]byte(portingExchangeRatesContent.TxReqID.String()),
+			newExchangeRatesStatusBytes,
+		)
 
 		if err != nil {
 			Logger.log.Errorf("ERROR: Save exchange rates error: %+v", err)
 			return err
 		}
 
-		currentPortalState.ExchangeRatesRequests[portingExchangeRatesContent.UniqueRequestId] = newExchangeRates
+		currentPortalState.ExchangeRatesRequests[portingExchangeRatesContent.TxReqID.String()] = newExchangeRates
 
 		Logger.log.Infof("Portal exchange rates, exchange rates request: count final exchange rate %v , exchange rate request %v", len(currentPortalState.FinalExchangeRatesState), len(currentPortalState.ExchangeRatesRequests))
 
-	case common.PortalExchangeRatesRejectedStatus:
+	case common.PortalExchangeRatesRejectedChainStatus:
 		//save db
-		newExchangeRates := statedb.NewExchangeRatesRequestWithValue(
+		newExchangeRates := metadata.NewExchangeRatesRequestStatus(
+			common.PortalExchangeRatesRejectedStatus,
 			portingExchangeRatesContent.SenderAddress,
 			nil,
 		)
 
-		err = portalStateDB.StoreExchangeRatesRequestItem([]byte(portingExchangeRatesContent.UniqueRequestId), newExchangeRates)
+		newExchangeRatesStatusBytes, _ := json.Marshal(newExchangeRates)
+		err = statedb.TrackPortalStateStatus(
+			portalStateDB,
+			statedb.PortalExchangeRatesRequestStatusPrefix(),
+			[]byte(portingExchangeRatesContent.TxReqID.String()),
+			newExchangeRatesStatusBytes,
+		)
 
 		if err != nil {
 			Logger.log.Errorf("ERROR: Save exchange rates error: %+v", err)
@@ -828,7 +846,7 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(portalStateD
 	switch reqStatus {
 	case common.PortalCustodianWithdrawRequestAcceptedStatus:
 		//save transaction
-		newCustodianWithdrawRequest := statedb.NewCustodianWithdrawRequestWithKey(
+		newCustodianWithdrawRequest := metadata.NewCustodianWithdrawRequestStatus(
 			paymentAddress,
 			amount,
 			common.PortalCustodianWithdrawReqAcceptedStatus,
@@ -849,8 +867,14 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(portalStateD
 			return nil
 		}
 
-		keyCustodianState := statedb.GenerateCustodianWithdrawObjectKey(txHash)
-		err = statedb.StoreCustodianWithdrawRequest([]byte(keyCustodianState.String()), newCustodianWithdrawRequest)
+		contentStatusBytes, _ := json.Marshal(newCustodianWithdrawRequest)
+		err = statedb.TrackPortalStateStatus(
+			portalStateDB,
+			statedb.PortalCustodianWithdrawStatusPrefix(),
+			[]byte(txHash),
+			contentStatusBytes,
+		)
+
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw item: %+v", err)
 			return nil
@@ -863,15 +887,21 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(portalStateD
 		currentPortalState.CustodianPoolState[custodianKey] = custodian
 
 	case common.PortalCustodianWithdrawRequestRejectedStatus:
-		newCustodianWithdrawRequest := statedb.NewCustodianWithdrawRequestWithKey(
+		newCustodianWithdrawRequest := metadata.NewCustodianWithdrawRequestStatus(
 			paymentAddress,
 			amount,
 			common.PortalCustodianWithdrawReqRejectStatus,
 			freeCollateral,
 		)
 
-		keyCustodianState := statedb.GenerateCustodianWithdrawObjectKey(txHash)
-		err = statedb.StoreCustodianWithdrawRequest([]byte(keyCustodianState.String()), newCustodianWithdrawRequest)
+		contentStatusBytes, _ := json.Marshal(newCustodianWithdrawRequest)
+		err = statedb.TrackPortalStateStatus(
+			portalStateDB,
+			statedb.PortalCustodianWithdrawStatusPrefix(),
+			[]byte(txHash),
+			contentStatusBytes,
+		)
+
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw item: %+v", err)
 			return nil

@@ -1209,6 +1209,19 @@ func (stateDB *StateDB) getAllFinalExchangeRatesState() []*FinalExchangeRatesSta
 	}
 	return finalExchangeRatesStates
 }
+
+func (stateDB *StateDB) GetPortalStatusByKey(key common.Hash) (*PortalStatusState, bool, error) {
+/*	pdeStatusState, err := stateDB.getStateObject(PDEStatusObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if pdeStatusState != nil {
+		return pdeStatusState.GetValue().(*PDEStatusState), true, nil
+	}
+	return NewPDEStatusState(), false, nil*/
+	return nil, false, nil
+}
+
 //B
 func (stateDB *StateDB) getAllWaitingRedeemRequest() map[string]*WaitingRedeemRequest {
 	waitingRedeemRequests := map[string]*WaitingRedeemRequest{}
