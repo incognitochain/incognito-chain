@@ -1,7 +1,6 @@
 package statedb
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 )
@@ -264,7 +263,7 @@ func StorePortalExpiredPortingRequestStatus(stateDB *StateDB, waitingPortingID s
 	return nil
 }
 
-func GetPortalExpiredPortingRequestStatus(stateDB *StateDB, redeemID string, custodianIncognitoAddress string,) ([]byte, error) {
+func GetPortalExpiredPortingRequestStatus(stateDB *StateDB, waitingPortingID string) ([]byte, error) {
 	statusType := PortalExpiredPortingReqPrefix()
 	statusSuffix := []byte(waitingPortingID)
 	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
@@ -454,4 +453,54 @@ func GetPortalRequestUnlockCollateralStatus(stateDB *StateDB, txID string) ([]by
 	return data, nil
 }
 
+//======================  Portal reward  ======================
+// getCustodianPoolState gets custodian pool state at beaconHeight
+func GetPortalRewardsByBeaconHeight(
+	stateDB *StateDB,
+	beaconHeight uint64,
+) ([]*PortalRewardInfo, error) {
+	portalRewards := stateDB.getPortalRewards(beaconHeight)
+	return portalRewards, nil
+}
 
+// StoreWaitingRedeemRequests stores waiting redeem requests at beaconHeight
+func StorePortalRewards(
+	stateDB *StateDB,
+	beaconHeight uint64,
+	portalRewardInfos []*PortalRewardInfo) error {
+	for _, info := range portalRewardInfos {
+		key := GeneratePortalRewardInfoObjectKey(beaconHeight, info.custodianIncAddr)
+		value := NewPortalRewardInfoWithValue(
+			info.custodianIncAddr,
+			info.amount,
+		)
+		err := stateDB.SetStateObject(PortalRewardInfoObjectType, key, value)
+		if err != nil {
+			return NewStatedbError(StorePortalRewardError, err)
+		}
+	}
+
+	return nil
+}
+
+func StorePortalRequestWithdrawRewardStatus(stateDB *StateDB, txID string, statusContent []byte) error {
+	statusType := PortalRequestWithdrawRewardStatusPrefix()
+	statusSuffix := []byte(txID)
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StorePortalRequestWithdrawRewardStatusError, err)
+	}
+
+	return nil
+}
+
+func GetPortalRequestWithdrawRewardStatus(stateDB *StateDB, txID string) ([]byte, error) {
+	statusType := PortalRequestWithdrawRewardStatusPrefix()
+	statusSuffix := []byte(txID)
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetPortalRequestWithdrawRewardStatusError, err)
+	}
+
+	return data, nil
+}

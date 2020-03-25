@@ -3,15 +3,14 @@ package blockchain
 import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
 func (blockchain *BlockChain) processPortalReward(
+	stateDB *statedb.StateDB,
 	beaconHeight uint64, instructions []string,
 	currentPortalState *CurrentPortalState) error {
-
-	db := blockchain.GetDatabase()
 
 	// unmarshal instructions content
 	var actionData metadata.PortalRewardContent
@@ -25,27 +24,27 @@ func (blockchain *BlockChain) processPortalReward(
 	if reqStatus == "portalRewardInst" {
 		// update reward amount for each custodian
 		for _, receiver := range actionData.Rewards {
-			cusStateKey := lvdb.NewCustodianStateKey(beaconHeight, receiver.CustodianIncAddr)
-			custodianState := currentPortalState.CustodianPoolState[cusStateKey]
+			cusStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, receiver.GetCustodianIncAddr())
+			cusStateKeyStr := string(cusStateKey[:])
+			custodianState := currentPortalState.CustodianPoolState[cusStateKeyStr]
 			if custodianState == nil {
 				Logger.log.Errorf("[processPortalReward] Can not get custodian state with key %v", cusStateKey)
 				continue
 			}
 
-			custodianState.RewardAmount += receiver.Amount
+			custodianState.SetRewardAmount(custodianState.GetRewardAmount() + receiver.GetAmount())
 		}
 
 		// store reward at beacon height into db
-		portalRewardKey := lvdb.NewPortalRewardKey(beaconHeight + 1)
-		err = db.StorePortalRewardByBeaconHeight(
-			[]byte(portalRewardKey),
-			[]byte(instructions[3]),
+		err = statedb.StorePortalRewards(
+			stateDB,
+			beaconHeight + 1,
+			actionData.Rewards,
 		)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while tracking liquidation custodian: %+v", err)
 			return nil
 		}
-
 	} else {
 		Logger.log.Errorf("ERROR: Invalid status of instruction: %+v", reqStatus)
 		return nil
@@ -55,10 +54,9 @@ func (blockchain *BlockChain) processPortalReward(
 }
 
 func (blockchain *BlockChain) processPortalWithdrawReward(
+	stateDB *statedb.StateDB,
 	beaconHeight uint64, instructions []string,
 	currentPortalState *CurrentPortalState) error {
-
-	db := blockchain.GetDatabase()
 
 	// unmarshal instructions content
 	var actionData metadata.PortalRequestWithdrawRewardContent
@@ -71,26 +69,26 @@ func (blockchain *BlockChain) processPortalWithdrawReward(
 	reqStatus := instructions[2]
 	if reqStatus == common.PortalReqWithdrawRewardAcceptedChainStatus {
 		// update reward amount of custodian
-		cusStateKey := lvdb.NewCustodianStateKey(beaconHeight, actionData.CustodianAddressStr)
-		custodianState := currentPortalState.CustodianPoolState[cusStateKey]
+		cusStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, actionData.CustodianAddressStr)
+		cusStateKeyStr := string(cusStateKey[:])
+		custodianState := currentPortalState.CustodianPoolState[cusStateKeyStr]
 		if custodianState == nil {
 			Logger.log.Errorf("[processPortalWithdrawReward] Can not get custodian state with key %v", cusStateKey)
 			return nil
 		}
-		custodianState.RewardAmount = 0
+		custodianState.SetRewardAmount( 0)
 
 		// track request withdraw portal reward
-		portalRewardKey := lvdb.NewPortalReqWithdrawRewardKey(beaconHeight + 1, actionData.CustodianAddressStr)
 		portalReqRewardStatus := metadata.PortalRequestWithdrawRewardStatus{
 			Status: common.PortalReqWithdrawRewardAcceptedStatus,
 			CustodianAddressStr: actionData.CustodianAddressStr,
 			RewardAmount: actionData.RewardAmount,
 			TxReqID: actionData.TxReqID,
-
 		}
 		portalReqRewardStatusBytes, _ := json.Marshal(portalReqRewardStatus)
-		err = db.TrackPortalReqWithdrawReward(
-			[]byte(portalRewardKey),
+		err = statedb.StorePortalRequestWithdrawRewardStatus(
+			stateDB,
+			actionData.TxReqID.String(),
 			portalReqRewardStatusBytes,
 		)
 		if err != nil {
@@ -100,15 +98,16 @@ func (blockchain *BlockChain) processPortalWithdrawReward(
 
 	} else if reqStatus == common.PortalReqUnlockCollateralRejectedChainStatus {
 		// track request withdraw portal reward
-		portalRewardKey := lvdb.NewPortalReqWithdrawRewardKey(beaconHeight + 1, actionData.CustodianAddressStr)
 		portalReqRewardStatus := metadata.PortalRequestWithdrawRewardStatus{
 			Status: common.PortalReqWithdrawRewardRejectedStatus,
 			CustodianAddressStr: actionData.CustodianAddressStr,
+			RewardAmount: actionData.RewardAmount,
 			TxReqID: actionData.TxReqID,
 		}
 		portalReqRewardStatusBytes, _ := json.Marshal(portalReqRewardStatus)
-		err = db.TrackPortalReqWithdrawReward(
-			[]byte(portalRewardKey),
+		err = statedb.StorePortalRequestWithdrawRewardStatus(
+			stateDB,
+			actionData.TxReqID.String(),
 			portalReqRewardStatusBytes,
 		)
 		if err != nil {
