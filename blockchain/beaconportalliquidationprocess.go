@@ -219,7 +219,7 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(porta
 
 			beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 			newTPKey := beaconHeightBytes
-			newTPKey = append(newTPKey, []byte( custodianState.IncognitoAddress)...)
+			newTPKey = append(newTPKey, []byte(custodianState.IncognitoAddress)...)
 
 			Logger.log.Infof("update liquidateTPExchangeRatesKey key %v", newTPKey)
 

@@ -1,15 +1,19 @@
 package jsonresult
 
+import (
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/metadata"
+)
 
 type GetLiquidateTpExchangeRates struct {
 	TokenId string `json:"TokenId"`
 	TopPercentile string `json:"TopPercentile"`
-	Data lvdb.LiquidateTopPercentileExchangeRatesDetail `json:"Data"`
+	Data metadata.LiquidateTopPercentileExchangeRatesDetail `json:"Data"`
 }
 
 type GetLiquidateExchangeRates struct {
 	TokenId string `json:"TokenId"`
-	Liquidation lvdb.LiquidateExchangeRatesDetail `json:"Liquidation"`
+	Liquidation statedb.LiquidateExchangeRatesDetail `json:"Liquidation"`
 }
 
 type GetLiquidateAmountNeededCustodianDeposit struct {

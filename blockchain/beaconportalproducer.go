@@ -232,7 +232,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 	stateDB := blockchain.BestState.Beacon.GetCopiedFeatureStateDB()
 	//check unique id from record from db
 	portingRequestKey := actionData.Meta.UniqueRegisterId
-	portingRequestKeyExist, err := statedb.GetPortalStatusByKey(stateDB, statedb.PortalPortingRequestStatusPrefix(), []byte(portingRequestKey))
+	portingRequestKeyExist, err := statedb.GetPortalStateStatusMultiple(stateDB, statedb.PortalPortingRequestStatusPrefix(), []byte(portingRequestKey))
 
 	if err != nil {
 		Logger.log.Errorf("Porting request: Get item portal by prefix error: %+v", err)
@@ -253,7 +253,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		return [][]string{inst}, nil
 	}
 
-	if portingRequestKeyExist != 0 {
+	if portingRequestKeyExist != nil {
 		Logger.log.Errorf("Porting request: Porting request exist, key %v", portingRequestKey)
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,
@@ -271,8 +271,8 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		return [][]string{inst}, nil
 	}
 
-	waitingPortingRequestKey := lvdb.NewWaitingPortingReqKey(beaconHeight, actionData.Meta.UniqueRegisterId)
-	if _, ok := currentPortalState.WaitingPortingRequests[waitingPortingRequestKey]; ok {
+	waitingPortingRequestKey := statedb.GeneratePortalWaitingPortingRequestObjectKey(beaconHeight, actionData.Meta.UniqueRegisterId)
+	if _, ok := currentPortalState.WaitingPortingRequests[waitingPortingRequestKey.String()]; ok {
 		Logger.log.Errorf("Porting request: Waiting porting request exist, key %v", waitingPortingRequestKey)
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,
@@ -411,7 +411,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 	//verify total amount
 	var totalPToken uint64 = 0
 	for _, eachCustodian := range pickCustodianResult {
-		totalPToken = totalPToken + eachCustodian.GetAmount
+		totalPToken = totalPToken + eachCustodian.Amount
 	}
 
 	if totalPToken != actionData.Meta.RegisterAmount {
@@ -447,7 +447,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		actionData.TxReqID,
 	) //return  metadata.PortalPortingRequestContent at instruct[3]
 
-	newPortingRequestStateWaiting := statedb.NewPortingRequest(
+	newPortingRequestStateWaiting := statedb.NewWaitingPortingRequestWithValue(
 		actionData.Meta.UniqueRegisterId,
 		actionData.TxReqID,
 		actionData.Meta.PTokenId,
@@ -459,8 +459,8 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		beaconHeight+1,
 	)
 
-	keyWaitingPortingRequest := lvdb.NewWaitingPortingReqKey(beaconHeight, actionData.Meta.UniqueRegisterId)
-	currentPortalState.WaitingPortingRequests[keyWaitingPortingRequest] = newPortingRequestStateWaiting
+	keyWaitingPortingRequest := statedb.GeneratePortalWaitingPortingRequestObjectKey(beaconHeight, actionData.Meta.UniqueRegisterId)
+	currentPortalState.WaitingPortingRequests[keyWaitingPortingRequest.String()] = newPortingRequestStateWaiting
 
 	return [][]string{inst}, nil
 }
@@ -865,7 +865,11 @@ func (blockchain *BlockChain) buildInstructionsForExchangeRates(
 	}
 
 	//update E-R request
-	currentPortalState.ExchangeRatesRequests[actionData.TxReqID.String()] = metadata.NewExchangeRatesRequestStatus(actionData.Meta.SenderAddress, actionData.Meta.Rates)
+	currentPortalState.ExchangeRatesRequests[actionData.TxReqID.String()] = metadata.NewExchangeRatesRequestStatus(
+		common.PortalExchangeRatesAcceptedStatus,
+		actionData.Meta.SenderAddress,
+		actionData.Meta.Rates,
+	)
 
 	return [][]string{inst}, nil
 }
@@ -1011,7 +1015,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 
 	// check redeem fee
 	exchangeRateKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
-	if currentPortalState.FinalExchangeRates[exchangeRateKey] == nil {
+	if currentPortalState.FinalExchangeRatesState[exchangeRateKey] == nil {
 		Logger.log.Errorf("Can not get exchange rate at beaconHeight %v\n", beaconHeight)
 		inst := buildRedeemRequestInst(
 			meta.UniqueRedeemID,
@@ -1028,7 +1032,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 		)
 		return [][]string{inst}, nil
 	}
-	minRedeemFee, err := calMinRedeemFee(meta.RedeemAmount, tokenID, currentPortalState.FinalExchangeRates[exchangeRateKey])
+	minRedeemFee, err := calMinRedeemFee(meta.RedeemAmount, tokenID, currentPortalState.FinalExchangeRatesState[exchangeRateKey])
 	if err != nil {
 		Logger.log.Errorf("Error when calculating minimum redeem fee %v\n", err)
 		inst := buildRedeemRequestInst(
@@ -1649,7 +1653,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		unlockAmount, err2 := updateFreeCollateralCustodian(
 			currentPortalState.CustodianPoolState[custodianStateKeyStr],
 			meta.RedeemAmount, tokenID,
-			currentPortalState.FinalExchangeRates[finalExchangeRateKey])
+			currentPortalState.FinalExchangeRatesState[finalExchangeRateKey])
 		if err2 != nil {
 			Logger.log.Errorf("Error when update free collateral amount for custodian", err2)
 			inst := buildReqUnlockCollateralInst(

@@ -398,7 +398,7 @@ func (httpServer *HttpServer) handleCustodianWithdrawRequest(params interface{},
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
 
-	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta, *httpServer.config.Database)
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
 	if err1 != nil {
 		Logger.log.Error(err1)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
@@ -538,10 +538,10 @@ func (httpServer *HttpServer) handleGetCustodianWithdrawByTxId(params interface{
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata txId is invalid"))
 	}
 
-	result, err := httpServer.portal.GetCustodianWithdrawByTxId(txId, *httpServer.config.Database)
+	result, err := httpServer.portal.GetCustodianWithdrawByTxId(txId)
 
 	if err != nil {
-		return nil, err
+		return nil, rpcservice.NewRPCError(rpcservice.GetCustodianWithdrawError, err)
 	}
 
 	return result, nil

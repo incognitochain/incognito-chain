@@ -337,15 +337,15 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		}
 
 		//save waiting request porting state
-		keyWaitingPortingRequest := lvdb.NewWaitingPortingReqKey(beaconHeight, portingRequestContent.UniqueRegisterId)
+		keyWaitingPortingRequest := statedb.GeneratePortalWaitingPortingRequestObjectKey(beaconHeight, portingRequestContent.UniqueRegisterId)
 		Logger.log.Infof("Porting request, save waiting porting request with key %v", keyWaitingPortingRequest)
-		currentPortalState.WaitingPortingRequests[keyWaitingPortingRequest] = newPortingRequestStateWaiting
+		currentPortalState.WaitingPortingRequests[keyWaitingPortingRequest.String()] = newPortingRequestStateWaiting
 
 		break
 	case common.PortalPortingRequestRejectedChainStatus:
 		txReqID := portingRequestContent.TxReqID
 
-		newPortingRequest := statedb.NewPortingRequest(
+		newPortingRequest := metadata.NewPortingRequestStatus(
 			uniquePortingID,
 			txReqID,
 			tokenID,
@@ -553,7 +553,7 @@ func (blockchain *BlockChain) processPortalExchangeRates(portalStateDB *statedb.
 }
 
 func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, currentPortalState *CurrentPortalState) error {
-	exchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
+	exchangeRatesKey := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
 
 	//convert to slice
 	var btcExchangeRatesSlice []uint64
@@ -588,7 +588,7 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 		return prvExchangeRatesSlice[i] < prvExchangeRatesSlice[j]
 	})
 
-	exchangeRatesList := make(map[string]lvdb.FinalExchangeRatesDetail)
+	exchangeRatesList := make(map[string]statedb.FinalExchangeRatesDetail)
 
 	var btcAmount uint64
 	var bnbAmount uint64
@@ -613,21 +613,21 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 	//todo: need refactor code, not need write this code
 	//update value when has exchange
 
-	if exchangeRatesState, ok := currentPortalState.FinalExchangeRates[exchangeRatesKey]; ok {
+	if exchangeRatesState, ok := currentPortalState.FinalExchangeRatesState[exchangeRatesKey.String()]; ok {
 		Logger.log.Infof("Portal final exchange rates, exits  key %v", exchangeRatesKey)
 
 		var btcAmountPreState uint64
 		var bnbAmountPreState uint64
 		var prvAmountPreState uint64
-		if value, ok := exchangeRatesState.Rates[common.PortalBTCIDStr]; ok {
+		if value, ok := exchangeRatesState.Rates()[common.PortalBTCIDStr]; ok {
 			btcAmountPreState = value.Amount
 		}
 
-		if value, ok := exchangeRatesState.Rates[common.PortalBNBIDStr]; ok {
+		if value, ok := exchangeRatesState.Rates()[common.PortalBNBIDStr]; ok {
 			bnbAmountPreState = value.Amount
 		}
 
-		if value, ok := exchangeRatesState.Rates[common.PRVIDStr]; ok {
+		if value, ok := exchangeRatesState.Rates()[common.PRVIDStr]; ok {
 			prvAmountPreState = value.Amount
 		}
 
@@ -639,27 +639,25 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 
 	//select
 	if btcAmount > 0 {
-		exchangeRatesList[common.PortalBTCIDStr] = lvdb.FinalExchangeRatesDetail{
+		exchangeRatesList[common.PortalBTCIDStr] = statedb.FinalExchangeRatesDetail{
 			Amount: btcAmount,
 		}
 	}
 
 	if bnbAmount > 0 {
-		exchangeRatesList[common.PortalBNBIDStr] = lvdb.FinalExchangeRatesDetail{
+		exchangeRatesList[common.PortalBNBIDStr] = statedb.FinalExchangeRatesDetail{
 			Amount: bnbAmount,
 		}
 	}
 
 	if prvAmount > 0 {
-		exchangeRatesList[common.PRVIDStr] = lvdb.FinalExchangeRatesDetail{
+		exchangeRatesList[common.PRVIDStr] = statedb.FinalExchangeRatesDetail{
 			Amount: prvAmount,
 		}
 	}
 
 	if len(exchangeRatesList) > 0 {
-		currentPortalState.FinalExchangeRates[exchangeRatesKey] = &lvdb.FinalExchangeRates{
-			Rates: exchangeRatesList,
-		}
+		currentPortalState.FinalExchangeRatesState[exchangeRatesKey.String()] = statedb.NewFinalExchangeRatesStateWithValue(exchangeRatesList)
 
 		Logger.log.Infof("Portal final exchange rates, picked key %v", exchangeRatesKey)
 	}
@@ -935,7 +933,7 @@ func (blockchain *BlockChain) processPortalUnlockCollateral(
 		_, err2 := updateFreeCollateralCustodian(
 			currentPortalState.CustodianPoolState[custodianStateKeyStr],
 			actionData.RedeemAmount, tokenID,
-			currentPortalState.FinalExchangeRates[finalExchangeRateKey])
+			currentPortalState.FinalExchangeRatesState[finalExchangeRateKey])
 		if err2 != nil {
 			Logger.log.Errorf("Error when update free collateral amount for custodian", err2)
 

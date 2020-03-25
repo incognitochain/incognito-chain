@@ -66,7 +66,7 @@ func InitCurrentPortalStateFromDB(
 		return nil, err
 	}
 
-	liquidateExchangeRates, err := statedb.GetLiquidateExchangeRates(stateDB, beaconHeight)
+	liquidateExchangeRates, err := statedb.GetAllLiquidateExchangeRates(stateDB, beaconHeight)
 	if err != nil {
 		return nil, err
 	}

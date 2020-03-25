@@ -1,9 +1,8 @@
 package rpcserver
 
 import (
-	"errors"
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/blockchain"
+	"errors"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -51,25 +50,7 @@ func (httpServer *HttpServer) handleRegisterPortingPublicTokens(params interface
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PortingFee is invalid"))
 	}
 
-
 	//check exchange rates
-	beaconBlock, err := httpServer.blockService.GetBeaconBestBlock()
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Get Beacon best block fail"))
-	}
-
-	//check exchange rates exist
-	finalExchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconBlock.GetHeight())
-	finalExchangeRates, err := blockchain.GetFinalExchangeRatesByKey(*httpServer.config.Database, []byte(finalExchangeRatesKey))
-
-	if err != nil {
-		return jsonresult.ExchangeRatesResult{}, rpcservice.NewRPCError(rpcservice.GetExchangeRatesError, errors.New("Get exchange rates error"))
-	}
-
-	if err := blockchain.ValidationExchangeRates(finalExchangeRates) ; err != nil {
-		return jsonresult.ExchangeRatesResult{}, rpcservice.NewRPCError(rpcservice.GetExchangeRatesError, err)
-	}
-
 	uniqueRegisterId = strings.Replace(uniqueRegisterId, "-", "", -1)
 	meta, _ := metadata.NewPortalUserRegister(
 		uniqueRegisterId,
@@ -86,7 +67,7 @@ func (httpServer *HttpServer) handleRegisterPortingPublicTokens(params interface
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
 
-	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta, *httpServer.config.Database)
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
 	if err1 != nil {
 		Logger.log.Error(err1)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
@@ -136,10 +117,10 @@ func (httpServer *HttpServer) handleGetPortingRequestByKey(params interface{}, c
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PortingRequestId is invalid"))
 	}
 
-	result, err := httpServer.portal.GetPortingRequestByByKey(txHash, *httpServer.config.Database)
+	result, err := httpServer.portal.GetPortingRequestByByKey(txHash)
 
 	if err != nil {
-		return nil, err
+		return nil, rpcservice.NewRPCError(rpcservice.GetPortingRequestError, err)
 	}
 
 	return result, nil
@@ -159,10 +140,10 @@ func (httpServer *HttpServer) handleGetPortingRequestByPortingId(params interfac
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata Porting Id is invalid"))
 	}
 
-	result, err := httpServer.portal.GetPortingRequestByByPortingId(portingId, *httpServer.config.Database)
+	result, err := httpServer.portal.GetPortingRequestByByPortingId(portingId)
 
 	if err != nil {
-		return nil, err
+		return nil, rpcservice.NewRPCError(rpcservice.GetPortingRequestError, err)
 	}
 
 	return result, nil

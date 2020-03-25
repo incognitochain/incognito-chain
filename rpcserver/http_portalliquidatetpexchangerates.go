@@ -36,7 +36,7 @@ func (httpServer *HttpServer) handleGetLiquidationTpExchangeRates(params interfa
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata CustodianAddress is invalid"))
 	}
 
-	result, err := httpServer.portal.GetLiquidateTpExchangeRates(uint64(beaconHeight), custodianAddress, httpServer.blockService, *httpServer.config.Database)
+	result, err := httpServer.portal.GetLiquidateTpExchangeRates(uint64(beaconHeight), custodianAddress)
 
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetTpExchangeRatesLiquidationError, err)
@@ -78,7 +78,7 @@ func (httpServer *HttpServer) handleGetLiquidationTpExchangeRatesByTokenId(param
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is not support"))
 	}
 
-	result, err := httpServer.portal.GetLiquidateTpExchangeRatesByToken(uint64(beaconHeight), custodianAddress, pTokenID, httpServer.blockService, *httpServer.config.Database)
+	result, err := httpServer.portal.GetLiquidateTpExchangeRatesByToken(uint64(beaconHeight), custodianAddress, pTokenID)
 
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetTpExchangeRatesLiquidationByTokenIdError, err)
@@ -115,7 +115,7 @@ func (httpServer *HttpServer) handleGetLiquidationExchangeRatesPool(params inter
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is not support"))
 	}
 
-	result, err := httpServer.portal.GetLiquidateExchangeRatesPool(uint64(beaconHeight), pTokenID, *httpServer.config.Database)
+	result, err := httpServer.portal.GetLiquidateExchangeRatesPool(uint64(beaconHeight), pTokenID)
 
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetExchangeRatesLiquidationPoolError, err)
@@ -162,7 +162,7 @@ func (httpServer *HttpServer) handleGetAmountNeededForCustodianDepositLiquidatio
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is not support"))
 	}
 
-	result, err := httpServer.portal.CalculateAmountNeededCustodianDepositLiquidation(uint64(beaconHeight), custodianAddress, pTokenID, isFreeCollateralSelected, httpServer.blockService, *httpServer.config.Database)
+	result, err := httpServer.portal.CalculateAmountNeededCustodianDepositLiquidation(uint64(beaconHeight), custodianAddress, pTokenID, isFreeCollateralSelected)
 
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetAmountNeededForCustodianDepositLiquidationError, err)
@@ -219,7 +219,7 @@ func (httpServer *HttpServer) createRawRedeemLiquidationExchangeRates(params int
 
 	meta, _ := metadata.NewPortalRedeemLiquidateExchangeRates(metadata.PortalRedeemLiquidateExchangeRatesMeta, redeemTokenID, redeemAmount, redeemerIncAddressStr, remoteAddress, redeemFee)
 
-	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta, *httpServer.config.Database)
+	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
 	if rpcErr != nil {
 		Logger.log.Error(rpcErr)
 		return nil, rpcErr
@@ -308,7 +308,7 @@ func (httpServer *HttpServer) createLiquidationCustodianDeposit(params interface
 	// HasPrivacyCoin param is always false
 	createRawTxParam.HasPrivacyCoin = false
 
-	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta, *httpServer.config.Database)
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
 	if err1 != nil {
 		Logger.log.Error(err1)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)

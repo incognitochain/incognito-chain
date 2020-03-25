@@ -172,6 +172,25 @@ func GetFinalExchangeRatesState(
 	return finalExchangeRates, nil
 }
 
+func GetFinalExchangeRates(stateDB *StateDB, beaconHeight uint64) (*FinalExchangeRatesState, error)  {
+	/*tokenIDs := []string{tokenIDToBuy, tokenIDToSell}
+	sort.Strings(tokenIDs)
+	key := GeneratePDEPoolPairObjectKey(tokenIDs[0], tokenIDs[1])
+	ppState, has, err := stateDB.getPDEPoolPairState(key)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetPDEPoolForPairError, err)
+	}
+	if !has {
+		return []byte{}, NewStatedbError(GetPDEPoolForPairError, fmt.Errorf("key with beacon height %+v, token1ID %+v, token2ID %+v not found", beaconHeight, tokenIDToBuy, tokenIDToSell))
+	}
+	res, err := json.Marshal(rawdbv2.NewPDEPoolForPair(ppState.Token1ID(), ppState.Token1PoolValue(), ppState.Token2ID(), ppState.Token2PoolValue()))
+	if err != nil {
+		return []byte{}, NewStatedbError(GetPDEPoolForPairError, err)
+	}
+	return res, nil*/
+	return nil, nil
+}
+
 func StoreFinalExchangeRatesState(
 	stateDB *StateDB,
 	beaconHeight uint64,
@@ -187,31 +206,6 @@ func StoreFinalExchangeRatesState(
 	}
 	return nil
 }
-
-func TrackExchangeRatesRequestStatus(stateDB *StateDB, statusType []byte, statusSuffix []byte, statusContent []byte) error {
-	key := GeneratePDEStatusObjectKey(statusType, statusSuffix)
-	value := NewPDEStatusStateWithValue(statusType, statusSuffix, statusContent)
-	err := stateDB.SetStateObject(PDEStatusObjectType, key, value)
-	if err != nil {
-		return NewStatedbError(TrackPDEStatusError, err)
-	}
-	return nil
-}
-
-func StoreExchangeRatesRequestItem(keyId []byte, content interface{}) error {
-	/*contributionBytes, err := json.Marshal(content)
-	if err != nil {
-		return err
-	}
-
-	err = db.Put(keyId, contributionBytes)
-	if err != nil {
-		return database.NewDatabaseError(database.StoreExchangeRatesRequestStateError, errors.Wrap(err, "db.lvdb.put"))
-	}*/
-
-	return nil
-}
-
 
 //======================  Custodian Withdraw  ======================
 func StoreCustodianWithdrawRequest(key []byte, content interface{}) error {
@@ -274,7 +268,7 @@ func GetPortalExpiredPortingRequestStatus(stateDB *StateDB, waitingPortingID str
 	return data, nil
 }
 
-func GetLiquidateExchangeRates(
+func GetAllLiquidateExchangeRates(
 	stateDB *StateDB,
 	beaconHeight uint64,
 ) (map[string]*LiquidateExchangeRates, error) {
@@ -290,6 +284,26 @@ func StoreLiquidateExchangeRates(
 	//todo
 	return nil
 }
+
+func GetLiquidateExchangeRates(stateDB *StateDB, beaconHeight uint64) (*LiquidateExchangeRates, error)  {
+	/*tokenIDs := []string{tokenIDToBuy, tokenIDToSell}
+	sort.Strings(tokenIDs)
+	key := GeneratePDEPoolPairObjectKey(tokenIDs[0], tokenIDs[1])
+	ppState, has, err := stateDB.getPDEPoolPairState(key)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetPDEPoolForPairError, err)
+	}
+	if !has {
+		return []byte{}, NewStatedbError(GetPDEPoolForPairError, fmt.Errorf("key with beacon height %+v, token1ID %+v, token2ID %+v not found", beaconHeight, tokenIDToBuy, tokenIDToSell))
+	}
+	res, err := json.Marshal(rawdbv2.NewPDEPoolForPair(ppState.Token1ID(), ppState.Token1PoolValue(), ppState.Token2ID(), ppState.Token2PoolValue()))
+	if err != nil {
+		return []byte{}, NewStatedbError(GetPDEPoolForPairError, err)
+	}
+	return res, nil*/
+	return nil, nil
+}
+
 //======================  Porting  ======================
 func TrackPortalStateStatus(stateDB *StateDB, statusType []byte, statusSuffix []byte, statusContent []byte) error {
 	/*key := GeneratePortalStatusObjectKey(statusType, statusSuffix)
@@ -306,7 +320,7 @@ func TrackPortalStateStatus(stateDB *StateDB, statusType []byte, statusSuffix []
 	return nil
 }
 
-func GetPortalStatusByKey(stateDB *StateDB, statusType []byte, statusSuffix []byte) (byte, error) {
+func GetPortalStateStatusMultiple(stateDB *StateDB, statusType []byte, statusSuffix []byte) (interface{}, error) {
 	/*key := GeneratePortalStatusObjectKey(statusType, statusSuffix)
 	s, has, err := stateDB.GetPortalStatusByKey(key)
 	if err != nil {
@@ -316,7 +330,7 @@ func GetPortalStatusByKey(stateDB *StateDB, statusType []byte, statusSuffix []by
 		return 0, NewStatedbError(GetPDEStatusError, fmt.Errorf("status %+v with prefix %+v not found", string(statusType), string(statusSuffix)))
 	}
 	return s.statusContent[0], nil*/
-	return 0, nil
+	return nil, nil
 }
 
 // getCustodianPoolState gets custodian pool state at beaconHeight

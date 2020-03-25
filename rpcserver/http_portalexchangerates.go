@@ -29,7 +29,7 @@ func (httpServer *HttpServer) handlePortalExchangeRate(params interface{}, close
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata SenderAddress is invalid"))
 	}
 
-	var exchangeRate = make([]*lvdb.ExchangeRateInfo, 0)
+	var exchangeRate = make([]*metadata.ExchangeRateInfo, 0)
 
 	exchangeRateMap, ok := data["Rates"].(map[string]interface{})
 	if !ok {
@@ -56,7 +56,7 @@ func (httpServer *HttpServer) handlePortalExchangeRate(params interface{}, close
 
 		exchangeRate = append(
 			exchangeRate,
-			&lvdb.ExchangeRateInfo{
+			&metadata.ExchangeRateInfo{
 				PTokenID: pTokenID,
 				Rate:     uint64(amount),
 			})
@@ -74,7 +74,7 @@ func (httpServer *HttpServer) handlePortalExchangeRate(params interface{}, close
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
 
-	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta, *httpServer.config.Database)
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
 	if err1 != nil {
 		Logger.log.Error(err1)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
@@ -110,10 +110,23 @@ func (httpServer *HttpServer) handleCreateAndSendPortalExchangeRates(params inte
 }
 
 func (httpServer *HttpServer) handleGetPortalFinalExchangeRates(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	result, err := httpServer.portal.GetFinalExchangeRates(httpServer.blockService, *httpServer.config.Database)
+	arrayParams := common.InterfaceSlice(params)
+
+	// get meta data from params
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
+	}
+
+	beaconHeight, ok := data["BeaconHeight"].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata BeaconHeight is invalid"))
+	}
+
+	result, err := httpServer.portal.GetFinalExchangeRates(uint64(beaconHeight))
 
 	if err != nil {
-		return nil, err
+		return nil, rpcservice.NewRPCError(rpcservice.GetExchangeRatesError, err)
 	}
 
 	return result, nil
@@ -138,14 +151,19 @@ func (httpServer *HttpServer) handleConvertExchangeRates(params interface{}, clo
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
 	}
 
+	beaconHeight, ok := data["BeaconHeight"].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata BeaconHeight is invalid"))
+	}
+
 	if !common.IsPortalToken(tokenID) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is not support"))
 	}
 
-	result, err := httpServer.portal.ConvertExchangeRates(tokenID, uint64(valuePToken), httpServer.blockService, *httpServer.config.Database)
+	result, err := httpServer.portal.ConvertExchangeRates(tokenID, uint64(valuePToken), uint64(beaconHeight))
 
 	if err != nil {
-		return nil, err
+		return nil, rpcservice.NewRPCError(rpcservice.GetExchangeRatesError, err)
 	}
 
 	return result, nil
@@ -170,14 +188,19 @@ func (httpServer *HttpServer) handleGetPortingFees(params interface{}, closeChan
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
 	}
 
+	beaconHeight, ok := data["BeaconHeight"].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata BeaconHeight is invalid"))
+	}
+
 	if !common.IsPortalToken(tokenID) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is not support"))
 	}
 
-	result, err := httpServer.portal.GetPortingFees(tokenID, uint64(valuePToken), httpServer.blockService, *httpServer.config.Database)
+	result, err := httpServer.portal.GetPortingFees(tokenID, uint64(valuePToken), uint64(beaconHeight))
 
 	if err != nil {
-		return nil, err
+		return nil, rpcservice.NewRPCError(rpcservice.GetExchangeRatesError, err)
 	}
 
 	return result, nil

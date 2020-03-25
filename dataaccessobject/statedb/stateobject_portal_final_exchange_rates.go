@@ -144,7 +144,7 @@ func (f FinalExchangeRatesStateObject) IsEmpty() bool {
 	return reflect.DeepEqual(temp, f.finalExchangeRatesState) || f.finalExchangeRatesState == nil
 }
 
-func NewFinalExchangeRatesStateObjectWithValue(db *StateDB, finalExchangeRatesStateHash common.Hash, data interface{}) (*FinalExchangeRatesStateObject, error) {
+func newFinalExchangeRatesStateObjectWithValue(db *StateDB, finalExchangeRatesStateHash common.Hash, data interface{}) (*FinalExchangeRatesStateObject, error) {
 	var newFinalExchangeRatesState = NewFinalExchangeRatesState()
 	var ok bool
 	var dataBytes []byte
@@ -169,7 +169,7 @@ func NewFinalExchangeRatesStateObjectWithValue(db *StateDB, finalExchangeRatesSt
 	}, nil
 }
 
-func NewFinalExchangeRatesStateObject(db *StateDB, finalExchangeRatesStateHash common.Hash) *FinalExchangeRatesStateObject {
+func newFinalExchangeRatesStateObject(db *StateDB, finalExchangeRatesStateHash common.Hash) *FinalExchangeRatesStateObject {
 	return &FinalExchangeRatesStateObject{
 		db:                          db,
 		version:                     defaultVersion,

@@ -446,7 +446,7 @@ func checkAndBuildInstForTPExchangeRateRedeemRequest(
 func checkAndBuildInstForTPExchangeRatePortingRequest(
 	beaconHeight uint64,
 	currentPortalState *CurrentPortalState,
-	exchangeRate *statedb.FinalExchangeRates,
+	exchangeRate *statedb.FinalExchangeRatesState,
 	liquidatedCustodianState *statedb.CustodianState,
 	tokenID string,
 )([][]string, error) {
@@ -484,7 +484,7 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 	insts := [][]string{}
 
 	keyExchangeRate := statedb.NewFinalExchangeRatesKey(beaconHeight)
-	exchangeRate, ok := currentPortalState.FinalExchangeRates[keyExchangeRate]
+	exchangeRate, ok := currentPortalState.FinalExchangeRatesState[keyExchangeRate]
 	if !ok {
 		Logger.log.Errorf("Exchange rate not found")
 		return [][]string{}, nil
@@ -648,7 +648,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
 
 	//get exchange rates
 	exchangeRatesKey := statedb.NewFinalExchangeRatesKey(beaconHeight)
-	exchangeRatesState, ok := currentPortalState.FinalExchangeRates[exchangeRatesKey]
+	exchangeRatesState, ok := currentPortalState.FinalExchangeRatesState[exchangeRatesKey]
 	if !ok {
 		Logger.log.Errorf("exchange rates not found")
 		inst := buildRedeemLiquidateExchangeRatesInst(
@@ -840,9 +840,9 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 
 	meta := actionData.Meta
 
-	keyCustodianState := statedb.NewCustodianStateKey(beaconHeight, meta.IncogAddressStr)
+	keyCustodianState := statedb.GenerateCustodianStateObjectKey(beaconHeight, meta.IncogAddressStr)
 
-	custodian, ok := currentPortalState.CustodianPoolState[keyCustodianState]
+	custodian, ok := currentPortalState.CustodianPoolState[keyCustodianState.String()]
 
 	if !ok {
 		Logger.log.Errorf("Custodian not found")
@@ -880,7 +880,7 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 	}
 
 	keyExchangeRate := statedb.NewFinalExchangeRatesKey(beaconHeight)
-	exchangeRate, ok := currentPortalState.FinalExchangeRates[keyExchangeRate]
+	exchangeRate, ok := currentPortalState.FinalExchangeRatesState[keyExchangeRate]
 	if !ok {
 		Logger.log.Errorf("Exchange rate not found", err)
 		inst := buildLiquidationCustodianDepositInst(
