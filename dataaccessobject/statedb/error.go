@@ -34,6 +34,7 @@ const (
 	ErrInvalidFinalExchangeRatesStateType     = "invalid final exchange rates state type"
 	ErrInvalidExchangeRatesRequestType     	  = "invalid exchange rates request type"
 	//B
+	ErrInvalidPortalStatusStateType              = "invalid portal status state type"
 	ErrInvalidPortalCustodianStateType        = "invalid portal custodian state type"
 	ErrInvalidPortalWaitingRedeemRequestType  = "invalid portal waiting redeem request type"
 )

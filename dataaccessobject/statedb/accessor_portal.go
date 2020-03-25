@@ -1,9 +1,7 @@
 package statedb
 
 import (
-	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/pkg/errors"
 )
 
 //======================  Redeem  ======================

@@ -2,6 +2,7 @@ package statedb
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"reflect"
@@ -18,8 +19,8 @@ type CustodianState struct {
 }
 
 type RemoteAddress struct {
-	PTokenID string
-	Address  string
+	pTokenID string
+	address  string
 }
 
 func (cs CustodianState) GetIncognitoAddress() string {
@@ -124,6 +125,61 @@ func (cs *CustodianState) UnmarshalJSON(data []byte) error {
 	cs.remoteAddresses = temp.RemoteAddresses
 	cs.rewardAmount = temp.RewardAmount
 	return nil
+}
+
+func (r RemoteAddress) GetPTokenID() string {
+	return r.pTokenID
+}
+
+func (r *RemoteAddress) SetPTokenID(pTokenID string) {
+	r.pTokenID = pTokenID
+}
+
+func (r RemoteAddress) GetAddress() string {
+	return r.address
+}
+
+func (r *RemoteAddress) SetAddress(address string) {
+	r.address = address
+}
+
+func (r RemoteAddress) MarshalJSON() ([]byte, error) {
+	data, err := json.Marshal(struct {
+		PTokenID string
+		Address  string
+	}{
+		PTokenID: r.pTokenID,
+		Address : r.address,
+	})
+	if err != nil {
+		return []byte{}, err
+	}
+	return data, nil
+}
+
+func (r *RemoteAddress) UnmarshalJSON(data []byte) error {
+	temp := struct {
+		PTokenID string
+		Address  string
+	}{}
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
+		return err
+	}
+	r.pTokenID = temp.PTokenID
+	r.address = temp.Address
+	return nil
+}
+
+// GetRemoteAddressByTokenID returns remote address for tokenID
+func GetRemoteAddressByTokenID(addresses []RemoteAddress, tokenID string) (string, error) {
+	for _, addr := range addresses {
+		if addr.GetPTokenID() == tokenID {
+			return addr.GetAddress(), nil
+		}
+	}
+
+	return "", errors.New("Can not found address with tokenID")
 }
 
 func NewCustodianState() *CustodianState {

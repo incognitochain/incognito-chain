@@ -34,6 +34,7 @@ const (
 	FinalExchangeRatesStateObjectType
 	ExchangeRatesStateObjectType
 	//B
+	PortalStatusObjectType
 	CustodianStateObjectType
 	WaitingRedeemRequestObjectType
 )
