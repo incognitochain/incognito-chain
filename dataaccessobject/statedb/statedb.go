@@ -1264,3 +1264,14 @@ func (stateDB *StateDB) getAllCustodianStatePool() map[string]*CustodianState {
 	}
 	return custodians
 }
+
+func (stateDB *StateDB) getPortalStatusByKey(key common.Hash) (*PortalStatusState, bool, error) {
+	portalStatusState, err := stateDB.getStateObject(PortalStatusObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if portalStatusState != nil {
+		return portalStatusState.GetValue().(*PortalStatusState), true, nil
+	}
+	return NewPortalStatusState(), false, nil
+}

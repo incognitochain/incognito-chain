@@ -1,6 +1,7 @@
 package statedb
 
 import (
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 )
 
@@ -44,6 +45,30 @@ func DeleteWaitingRedeemRequest(stateDB *StateDB, deletedWaitingRedeemRequests m
 		stateDB.MarkDeleteStateObject(WaitingRedeemRequestObjectType, keyHash)
 	}
 }
+
+func StorePortalRedeemRequestStatus(stateDB *StateDB, redeemID string, statusContent []byte) error {
+	statusType := PortalRedeemRequestStatusPrefix()
+	statusSuffix := []byte(redeemID)
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StorePortalRedeemRequestStatusError, err)
+	}
+
+	return nil
+}
+
+func GetPortalRedeemRequestStatus(stateDB *StateDB, redeemID string) ([]byte, error) {
+	statusType := PortalRedeemRequestStatusPrefix()
+	statusSuffix := []byte(redeemID)
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetPortalRedeemRequestStatusError, err)
+	}
+
+	return data, nil
+}
+
+
 
 
 //======================  Custodian pool  ======================
@@ -168,4 +193,26 @@ func StoreWaitingPortingRequests(
 	return nil
 }
 
+//======================  Portal status  ======================
 
+func StorePortalStatus(stateDB *StateDB, statusType []byte, statusSuffix []byte, statusContent []byte) error {
+	key := GeneratePortalStatusObjectKey(statusType, statusSuffix)
+	value := NewPortalStatusStateWithValue(statusType, statusSuffix, statusContent)
+	err := stateDB.SetStateObject(PortalStatusObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(StorePortalStatusError, err)
+	}
+	return nil
+}
+
+func GetPortalStatus(stateDB *StateDB, statusType []byte, statusSuffix []byte) ([]byte, error) {
+	key := GeneratePortalStatusObjectKey(statusType, statusSuffix)
+	s, has, err := stateDB.getPortalStatusByKey(key)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetPortalStatusError, err)
+	}
+	if !has {
+		return []byte{}, NewStatedbError(GetPortalStatusError, fmt.Errorf("status %+v with prefix %+v not found", string(statusType), string(statusSuffix)))
+	}
+	return s.statusContent, nil
+}

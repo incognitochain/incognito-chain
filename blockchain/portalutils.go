@@ -938,3 +938,9 @@ func removeCustodianFromMatchingRedeemCustodians(
 
 	return matchingCustodians, false
 }
+
+func deleteWaitingRedeemRequest(state *CurrentPortalState, waitingRedeemRequestKey string) {
+	waitingRedeemRequest := state.WaitingRedeemRequests[waitingRedeemRequestKey]
+	delete(state.WaitingRedeemRequests, waitingRedeemRequestKey)
+	state.DeletedWaitingRedeemRequests[waitingRedeemRequestKey] = waitingRedeemRequest
+}

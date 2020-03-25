@@ -85,6 +85,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(stateDB *statedb.StateDB
 	}
 
 	pm := NewPortalManager()
+	db := blockchain.GetDatabase()
 	relayingHeaderState, err := InitRelayingHeaderChainStateFromDB(db, beaconHeight-1)
 	if err != nil {
 		Logger.log.Error(err)
@@ -249,6 +250,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(stateDB *statedb.StateDB
 
 	// handle portal instructions
 	portalInsts, err := blockchain.handlePortalInsts(
+		stateDB,
 		beaconHeight-1,
 		currentPortalState,
 		portalCustodianDepositActionsByShardID,
@@ -475,6 +477,7 @@ func groupPortalActionsByShardID(
 }
 
 func (blockchain *BlockChain) handlePortalInsts(
+	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	currentPortalState *CurrentPortalState,
 	portalCustodianDepositActionsByShardID map[byte][][]string,
@@ -593,6 +596,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 		for _, action := range actions {
 			contentStr := action[1]
 			newInst, err := blockchain.buildInstructionsForRedeemRequest(
+				stateDB,
 				contentStr,
 				shardID,
 				metadata.PortalRedeemRequestMeta,
@@ -684,6 +688,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 		for _, action := range actions {
 			contentStr := action[1]
 			newInst, err := blockchain.buildInstructionsForReqUnlockCollateral(
+				stateDB,
 				contentStr,
 				shardID,
 				metadata.PortalRequestUnlockCollateralMeta,

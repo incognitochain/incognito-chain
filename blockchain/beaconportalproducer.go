@@ -6,7 +6,6 @@ import (
 	"github.com/binance-chain/go-sdk/types/msg"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/relaying/bnb"
 	"strconv"
@@ -16,7 +15,7 @@ import (
 func buildCustodianDepositInst(
 	custodianAddressStr string,
 	depositedAmount uint64,
-	remoteAddresses []lvdb.RemoteAddress,
+	remoteAddresses []statedb.RemoteAddress,
 	metaType int,
 	shardID byte,
 	txReqID common.Hash,
@@ -99,7 +98,6 @@ func buildReqPTokensInst(
 	}
 }
 
-
 func buildCustodianWithdrawInst(
 	metaType int,
 	shardID byte,
@@ -110,11 +108,11 @@ func buildCustodianWithdrawInst(
 	txReqID common.Hash,
 ) []string {
 	content := metadata.PortalCustodianWithdrawRequestContent{
-		PaymentAddress: paymentAddress,
-		Amount: amount,
+		PaymentAddress:       paymentAddress,
+		Amount:               amount,
 		RemainFreeCollateral: remainFreeCollateral,
-		TxReqID:          txReqID,
-		ShardID: shardID,
+		TxReqID:              txReqID,
+		ShardID:              shardID,
 	}
 
 	contentBytes, _ := json.Marshal(content)
@@ -163,34 +161,35 @@ func (blockchain *BlockChain) buildInstructionsForCustodianDeposit(
 	}
 	meta := actionData.Meta
 
-	keyCustodianState := lvdb.NewCustodianStateKey(beaconHeight, meta.IncogAddressStr)
+	keyCustodianState := statedb.GenerateCustodianStateObjectKey(beaconHeight, meta.IncogAddressStr)
+	keyCustodianStateStr := string(keyCustodianState[:])
 
-	if currentPortalState.CustodianPoolState[keyCustodianState] == nil {
+	if currentPortalState.CustodianPoolState[keyCustodianStateStr] == nil {
 		// new custodian
-		newCustodian, _ := NewCustodianState(
+		newCustodian := statedb.NewCustodianStateWithValue(
 			meta.IncogAddressStr, meta.DepositedAmount, meta.DepositedAmount,
 			nil, nil,
 			meta.RemoteAddresses, 0)
-		currentPortalState.CustodianPoolState[keyCustodianState] = newCustodian
+		currentPortalState.CustodianPoolState[keyCustodianStateStr] = newCustodian
 	} else {
 		// custodian deposited before
 		// update state of the custodian
-		custodian := currentPortalState.CustodianPoolState[keyCustodianState]
-		totalCollateral := custodian.TotalCollateral + meta.DepositedAmount
-		freeCollateral := custodian.FreeCollateral + meta.DepositedAmount
-		holdingPubTokens := custodian.HoldingPubTokens
-		lockedAmountCollateral := custodian.LockedAmountCollateral
-		rewardAmount := custodian.RewardAmount
-		remoteAddresses := custodian.RemoteAddresses
+		custodian := currentPortalState.CustodianPoolState[keyCustodianStateStr]
+		totalCollateral := custodian.GetTotalCollateral() + meta.DepositedAmount
+		freeCollateral := custodian.GetFreeCollateral() + meta.DepositedAmount
+		holdingPubTokens := custodian.GetHoldingPublicTokens()
+		lockedAmountCollateral := custodian.GetLockedAmountCollateral()
+		rewardAmount := custodian.GetRewardAmount()
+		remoteAddresses := custodian.GetRemoteAddresses()
 		for _, address := range meta.RemoteAddresses {
-			if existedAddr, _ := lvdb.GetRemoteAddressByTokenID(remoteAddresses, address.PTokenID); existedAddr == "" {
+			if existedAddr, _ := statedb.GetRemoteAddressByTokenID(remoteAddresses, address.GetPTokenID()); existedAddr == "" {
 				remoteAddresses = append(remoteAddresses, address)
 			}
 		}
 
-		newCustodian, _ := NewCustodianState(meta.IncogAddressStr, totalCollateral, freeCollateral,
+		newCustodian := statedb.NewCustodianStateWithValue(meta.IncogAddressStr, totalCollateral, freeCollateral,
 			holdingPubTokens, lockedAmountCollateral, remoteAddresses, rewardAmount)
-		currentPortalState.CustodianPoolState[keyCustodianState] = newCustodian
+		currentPortalState.CustodianPoolState[keyCustodianStateStr] = newCustodian
 	}
 
 	inst := buildCustodianDepositInst(
@@ -292,7 +291,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 
 	//get exchange rates
 	exchangeRatesKey := statedb.GenerateFinalExchangeRatesStateObjectKey(beaconHeight)
-	exchangeRatesState, ok := currentPortalState.FinalExchangeRatesState[exchangeRatesKey.String()]
+	exchangeRatesState, ok := currentPortalState.FinalExchangeRates[exchangeRatesKey.String()]
 	if !ok {
 		Logger.log.Errorf("Porting request, exchange rates not found")
 		inst := buildRequestPortingInst(
@@ -432,7 +431,6 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 
 		return [][]string{inst}, nil
 	}
-
 
 	inst := buildRequestPortingInst(
 		actionData.Meta.Type,
@@ -829,10 +827,10 @@ func (blockchain *BlockChain) buildInstructionsForExchangeRates(
 		Logger.log.Errorf("ERROR: exchange rates key is duplicated")
 
 		portalExchangeRatesContent := metadata.PortalExchangeRatesContent{
-			SenderAddress:   actionData.Meta.SenderAddress,
-			Rates:           actionData.Meta.Rates,
-			TxReqID:         actionData.TxReqID,
-			LockTime:        actionData.LockTime,
+			SenderAddress: actionData.Meta.SenderAddress,
+			Rates:         actionData.Meta.Rates,
+			TxReqID:       actionData.TxReqID,
+			LockTime:      actionData.LockTime,
 		}
 
 		portalExchangeRatesContentBytes, _ := json.Marshal(portalExchangeRatesContent)
@@ -849,10 +847,10 @@ func (blockchain *BlockChain) buildInstructionsForExchangeRates(
 
 	//success
 	portalExchangeRatesContent := metadata.PortalExchangeRatesContent{
-		SenderAddress:   actionData.Meta.SenderAddress,
-		Rates:           actionData.Meta.Rates,
-		TxReqID:         actionData.TxReqID,
-		LockTime:        actionData.LockTime,
+		SenderAddress: actionData.Meta.SenderAddress,
+		Rates:         actionData.Meta.Rates,
+		TxReqID:       actionData.TxReqID,
+		LockTime:      actionData.LockTime,
 	}
 
 	portalExchangeRatesContentBytes, _ := json.Marshal(portalExchangeRatesContent)
@@ -878,7 +876,7 @@ func buildRedeemRequestInst(
 	incAddressStr string,
 	remoteAddress string,
 	redeemFee uint64,
-	matchingCustodianDetail []*lvdb.MatchingRedeemCustodianDetail,
+	matchingCustodianDetail []*statedb.MatchingRedeemCustodianDetail,
 	metaType int,
 	shardID byte,
 	txReqID common.Hash,
@@ -906,6 +904,7 @@ func buildRedeemRequestInst(
 
 // buildInstructionsForRedeemRequest builds instruction for redeem request action
 func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
+	stateDB *statedb.StateDB,
 	contentStr string,
 	shardID byte,
 	metaType int,
@@ -948,8 +947,9 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 	redeemID := meta.UniqueRedeemID
 
 	// check uniqueRedeemID is existed waitingRedeem list or not
-	keyWaitingRedeemRequest := lvdb.NewWaitingRedeemReqKey(beaconHeight, redeemID)
-	waitingRedeemRequest := currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest]
+	keyWaitingRedeemRequest := statedb.GenerateWaitingRedeemRequestObjectKey(beaconHeight, redeemID)
+	keyWaitingRedeemRequestStr := string(keyWaitingRedeemRequest[:])
+	waitingRedeemRequest := currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr]
 	if waitingRedeemRequest != nil {
 		Logger.log.Errorf("RedeemID is existed in waiting redeem requests list %v\n", redeemID)
 		inst := buildRedeemRequestInst(
@@ -968,10 +968,8 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 		return [][]string{inst}, nil
 	}
 
-	db := blockchain.GetDatabase()
-
 	// check uniqueRedeemID is existed in db or not
-	redeemRequestBytes, err := db.GetRedeemRequestByRedeemID(meta.UniqueRedeemID)
+	redeemRequestBytes, err := statedb.GetPortalRedeemRequestStatus(stateDB, meta.UniqueRedeemID)
 	if err != nil {
 		Logger.log.Errorf("Can not get redeem req status for redeemID %v, %v\n", meta.UniqueRedeemID, err)
 		inst := buildRedeemRequestInst(
@@ -1087,8 +1085,9 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 
 	// update custodian state (holding public tokens)
 	for _, cus := range matchingCustodiansDetail {
-		custodianStateKey := lvdb.NewCustodianStateKey(beaconHeight, cus.IncAddress)
-		if currentPortalState.CustodianPoolState[custodianStateKey].HoldingPubTokens[tokenID] < cus.Amount {
+		custodianStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, cus.GetIncognitoAddress())
+		custodianStateKeyStr := string(custodianStateKey[:])
+		if currentPortalState.CustodianPoolState[custodianStateKeyStr].GetHoldingPublicTokens()[tokenID] < cus.GetAmount() {
 			Logger.log.Errorf("Amount holding public tokens is less than matching redeem amount")
 			inst := buildRedeemRequestInst(
 				meta.UniqueRedeemID,
@@ -1105,22 +1104,25 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 			)
 			return [][]string{inst}, nil
 		}
-		currentPortalState.CustodianPoolState[custodianStateKey].HoldingPubTokens[tokenID] -= cus.Amount
+
+		holdingPubTokenTmp := currentPortalState.CustodianPoolState[custodianStateKeyStr].GetHoldingPublicTokens()
+		holdingPubTokenTmp[tokenID] -= cus.GetAmount()
+		currentPortalState.CustodianPoolState[custodianStateKeyStr].SetHoldingPublicTokens(holdingPubTokenTmp)
 	}
 
 	// add to waiting Redeem list
-	redeemRequest, _ := NewRedeemRequestState(
+	redeemRequest := statedb.NewWaitingRedeemRequestWithValue(
 		meta.UniqueRedeemID,
-		actionData.TxReqID,
 		meta.TokenID,
 		meta.RedeemerIncAddressStr,
 		meta.RemoteAddress,
 		meta.RedeemAmount,
 		matchingCustodiansDetail,
 		meta.RedeemFee,
-		beaconHeight + 1,
+		beaconHeight+1,
+		actionData.TxReqID,
 	)
-	currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest] = redeemRequest
+	currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr] = redeemRequest
 
 	Logger.log.Infof("[Portal] Build accepted instruction for redeem request")
 	inst := buildRedeemRequestInst(
@@ -1139,13 +1141,12 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 	return [][]string{inst}, nil
 }
 
-
 /**
-	Validation:
-		- verify each instruct belong shard
-		- check amount < fee collateral
-		- build PortalCustodianWithdrawRequestContent to send beacon
- */
+Validation:
+	- verify each instruct belong shard
+	- check amount < fee collateral
+	- build PortalCustodianWithdrawRequestContent to send beacon
+*/
 func (blockchain *BlockChain) buildInstructionsForCustodianWithdraw(
 	contentStr string,
 	shardID byte,
@@ -1222,8 +1223,9 @@ func (blockchain *BlockChain) buildInstructionsForCustodianWithdraw(
 		return [][]string{inst}, nil
 	}
 
-	custodianKey := lvdb.NewCustodianStateKey(beaconHeight, actionData.Meta.PaymentAddress)
-	custodian, ok := currentPortalState.CustodianPoolState[custodianKey]
+	custodianKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, actionData.Meta.PaymentAddress)
+	custodianKeyStr := string(custodianKey[:])
+	custodian, ok := currentPortalState.CustodianPoolState[custodianKeyStr]
 
 	if !ok {
 		Logger.log.Errorf("Custodian not found")
@@ -1240,7 +1242,7 @@ func (blockchain *BlockChain) buildInstructionsForCustodianWithdraw(
 		return [][]string{inst}, nil
 	}
 
-	if actionData.Meta.Amount > custodian.FreeCollateral {
+	if actionData.Meta.Amount > custodian.GetFreeCollateral() {
 		Logger.log.Errorf("Free Collateral is not enough PRV")
 
 		inst := buildCustodianWithdrawInst(
@@ -1255,8 +1257,8 @@ func (blockchain *BlockChain) buildInstructionsForCustodianWithdraw(
 		return [][]string{inst}, nil
 	}
 	//withdraw
-	remainFreeCollateral := custodian.FreeCollateral - actionData.Meta.Amount
-	totalFreeCollateral := custodian.TotalCollateral - actionData.Meta.Amount
+	remainFreeCollateral := custodian.GetFreeCollateral() - actionData.Meta.Amount
+	totalFreeCollateral := custodian.GetTotalCollateral() - actionData.Meta.Amount
 
 	inst := buildCustodianWithdrawInst(
 		actionData.Meta.Type,
@@ -1269,11 +1271,12 @@ func (blockchain *BlockChain) buildInstructionsForCustodianWithdraw(
 	)
 
 	//update free collateral custodian
-	custodian.FreeCollateral = remainFreeCollateral
-	custodian.TotalCollateral = totalFreeCollateral
-	currentPortalState.CustodianPoolState[custodianKey] = custodian
+	custodian.SetFreeCollateral(remainFreeCollateral)
+	custodian.SetTotalCollateral(totalFreeCollateral)
+	currentPortalState.CustodianPoolState[custodianKeyStr] = custodian
 	return [][]string{inst}, nil
 }
+
 // beacon build new instruction from instruction received from ShardToBeaconBlock
 func buildReqUnlockCollateralInst(
 	uniqueRedeemID string,
@@ -1292,7 +1295,7 @@ func buildReqUnlockCollateralInst(
 		TokenID:             tokenID,
 		CustodianAddressStr: custodianAddressStr,
 		RedeemAmount:        redeemAmount,
-		UnlockAmount: unlockAmount,
+		UnlockAmount:        unlockAmount,
 		RedeemProof:         redeemProof,
 		TxReqID:             txReqID,
 		ShardID:             shardID,
@@ -1308,6 +1311,7 @@ func buildReqUnlockCollateralInst(
 
 // buildInstructionsForReqUnlockCollateral builds instruction for custodian deposit action
 func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
+	stateDB *statedb.StateDB,
 	contentStr string,
 	shardID byte,
 	metaType int,
@@ -1348,8 +1352,9 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 
 	// check meta.UniqueRedeemID is in waiting RedeemRequests list in portal state or not
 	redeemID := meta.UniqueRedeemID
-	keyWaitingRedeemRequest := lvdb.NewWaitingRedeemReqKey(beaconHeight, redeemID)
-	waitingRedeemRequest := currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest]
+	keyWaitingRedeemRequest := statedb.GenerateWaitingRedeemRequestObjectKey(beaconHeight, redeemID)
+	keyWaitingRedeemRequestStr := string(keyWaitingRedeemRequest[:])
+	waitingRedeemRequest := currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr]
 	if waitingRedeemRequest == nil {
 		Logger.log.Errorf("redeemID is not existed in waiting redeem requests list")
 		inst := buildReqUnlockCollateralInst(
@@ -1369,7 +1374,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 	db := blockchain.GetDatabase()
 
 	// check status of request unlock collateral by redeemID
-	redeemReqStatusBytes, err := db.GetRedeemRequestByRedeemID(redeemID)
+	redeemReqStatusBytes, err := statedb.GetPortalRedeemRequestStatus(stateDB, redeemID)
 	if err != nil {
 		Logger.log.Errorf("Can not get redeem request by redeemID from db %v\n", err)
 		inst := buildReqUnlockCollateralInst(
@@ -1423,7 +1428,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 	}
 
 	// check tokenID
-	if meta.TokenID != waitingRedeemRequest.TokenID {
+	if meta.TokenID != waitingRedeemRequest.GetTokenID() {
 		Logger.log.Errorf("TokenID is not correct in redeemID req")
 		inst := buildReqUnlockCollateralInst(
 			meta.UniqueRedeemID,
@@ -1440,12 +1445,11 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		return [][]string{inst}, nil
 	}
 
-
 	// check redeem amount of matching custodian
 	amountMatchingCustodian := uint64(0)
-	for _, cus := range waitingRedeemRequest.Custodians {
-		if cus.IncAddress == meta.CustodianAddressStr {
-			amountMatchingCustodian = cus.Amount
+	for _, cus := range waitingRedeemRequest.GetCustodians() {
+		if cus.GetIncognitoAddress() == meta.CustodianAddressStr {
+			amountMatchingCustodian = cus.GetAmount()
 			break
 		}
 	}
@@ -1467,7 +1471,6 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		)
 		return [][]string{inst}, nil
 	}
-
 
 	// validate proof and memo in tx
 	if meta.TokenID == common.PortalBTCIDStr {
@@ -1609,7 +1612,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 
 		outputs := txBNB.Msgs[0].(msg.SendMsg).Outputs
 
-		remoteAddressNeedToBeTransfer := waitingRedeemRequest.RedeemerRemoteAddress
+		remoteAddressNeedToBeTransfer := waitingRedeemRequest.GetRedeemerRemoteAddress()
 		amountNeedToBeTransfer := meta.RedeemAmount
 		amountNeedToBeTransferInBNB := convertIncPBNBAmountToExternalBNBAmount(int64(amountNeedToBeTransfer))
 
@@ -1652,7 +1655,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 			}
 		}
 
-		if !isChecked{
+		if !isChecked {
 			Logger.log.Errorf("TxProof-BNB is invalid - Receiver address is invalid, expected %v",
 				remoteAddressNeedToBeTransfer)
 			inst := buildReqUnlockCollateralInst(
@@ -1674,10 +1677,11 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		tokenID := meta.TokenID
 
 		// update custodian state (FreeCollateral, LockedAmountCollateral)
-		custodianStateKey := lvdb.NewCustodianStateKey(beaconHeight, meta.CustodianAddressStr)
+		custodianStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, meta.CustodianAddressStr)
+		custodianStateKeyStr := string(custodianStateKey[:])
 		finalExchangeRateKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
 		unlockAmount, err2 := updateFreeCollateralCustodian(
-			currentPortalState.CustodianPoolState[custodianStateKey],
+			currentPortalState.CustodianPoolState[custodianStateKeyStr],
 			meta.RedeemAmount, tokenID,
 			currentPortalState.FinalExchangeRates[finalExchangeRateKey])
 		if err2 != nil {
@@ -1698,13 +1702,14 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		}
 
 		// update redeem request state in WaitingRedeemRequest (remove custodian from matchingCustodianDetail)
-		currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest].Custodians, _ = removeCustodianFromMatchingRedeemCustodians(
-			currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest].Custodians, meta.CustodianAddressStr)
+		updatedCustodians, _ := removeCustodianFromMatchingRedeemCustodians(
+			currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr].GetCustodians(), meta.CustodianAddressStr)
+		currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr].SetCustodians(updatedCustodians)
 
 		// remove redeem request from WaitingRedeemRequest list when all matching custodians return public token to user
 		// when list matchingCustodianDetail is empty
-		if len(currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest].Custodians) == 0 {
-			delete(currentPortalState.WaitingRedeemRequests, keyWaitingRedeemRequest)
+		if len(currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr].GetCustodians()) == 0 {
+			deleteWaitingRedeemRequest(currentPortalState, keyWaitingRedeemRequestStr)
 		}
 
 		inst := buildReqUnlockCollateralInst(
