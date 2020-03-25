@@ -11,6 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/bulletproofs"
 	"github.com/incognitochain/incognito-chain/privacy/proof/agg_interface"
+	"strconv"
 )
 
 type PaymentProofV2 struct {
@@ -20,7 +21,7 @@ type PaymentProofV2 struct {
 	outputCoins          []*coin.OutputCoin
 }
 
-func (proof PaymentProofV2) GetVersion() uint8 { return 2 }
+func (proof *PaymentProofV2) GetVersion() uint8 { return 2 }
 func (proof PaymentProofV2) GetInputCoins() []*coin.InputCoin { return proof.inputCoins }
 func (proof PaymentProofV2) GetOutputCoins() []*coin.OutputCoin { return proof.outputCoins }
 
@@ -206,6 +207,44 @@ func (proof *PaymentProofV2) SetBytes(proofbytes []byte) *errhandler.PrivacyErro
 	//fmt.Printf("SETBYTES ------------------ %v\n", proof.Bytes())
 
 	return nil
+}
+
+func (proof *PaymentProofV2) IsPrivacy() bool {
+	return true
+}
+
+func (proof PaymentProofV2) ValidateSanity() (bool, error) {
+	if len(proof.GetInputCoins()) > 255 {
+		return false, errors.New("Input coins in tx are very large:" + strconv.Itoa(len(proof.GetInputCoins())))
+	}
+
+	if len(proof.GetOutputCoins()) > 255 {
+		return false, errors.New("Output coins in tx are very large:" + strconv.Itoa(len(proof.GetOutputCoins())))
+	}
+
+	if !proof.aggregatedRangeProof.ValidateSanity() {
+		return false, errors.New("validate sanity Aggregated range proof failed")
+	}
+
+	// check input coins with privacy
+	for i := 0; i < len(proof.GetInputCoins()); i++ {
+		if !proof.GetInputCoins()[i].CoinDetails.GetSerialNumber().PointValid() {
+			return false, errors.New("validate sanity Serial number of input coin failed")
+		}
+	}
+	// check output coins with privacy
+	for i := 0; i < len(proof.GetOutputCoins()); i++ {
+		if !proof.GetOutputCoins()[i].CoinDetails.GetPublicKey().PointValid() {
+			return false, errors.New("validate sanity Public key of output coin failed")
+		}
+		if !proof.GetOutputCoins()[i].CoinDetails.GetCoinCommitment().PointValid() {
+			return false, errors.New("validate sanity Coin commitment of output coin failed")
+		}
+		if !proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator().ScalarValid() {
+			return false, errors.New("validate sanity SNDerivator of output coin failed")
+		}
+	}
+	return true, nil
 }
 
 // Privacy TODO: update version 2 remember to fix this

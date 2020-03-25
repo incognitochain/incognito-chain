@@ -16,7 +16,6 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -311,7 +310,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.S
 		return tx.ValidateTxReturnStaking(transactionStateDB), nil
 	}
 
-	return verifierVersionSwitcher(tx, hasPrivacy, db, shardID, tokenID, isBatch, isNewTransaction)
+	return verifierVersionSwitcher(tx, hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tokenID, isBatch, isNewTransaction)
 }
 
 func (tx Tx) String() string {
@@ -565,8 +564,13 @@ func (tx Tx) ValidateDoubleSpendWithBlockchain(
 			return err
 		}
 	}
-	for i := 0; tx.Proof != nil && i < len(tx.Proof.GetInputCoins()); i++ {
-		serialNumber := tx.Proof.GetInputCoins()[i].CoinDetails.GetSerialNumber().ToBytesS()
+	if tx.Proof == nil {
+		return nil
+	}
+	proof := *tx.Proof
+	inputCoins := proof.GetInputCoins()
+	for i := 0; i < len(inputCoins); i++ {
+		serialNumber := inputCoins[i].CoinDetails.GetSerialNumber().ToBytesS()
 		ok, err := statedb.HasSerialNumber(stateDB, *prvCoinID, serialNumber, shardID)
 		if ok || err != nil {
 			return errors.New("double spend")
@@ -646,153 +650,7 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 	if txN.Proof == nil {
 		return true, nil
 	}
-	var txProofVersion privacy.Proof
-	if (*txN.Proof).GetVersion() == 1 {
-		txProofVersion = new(privacy.ProofV1)
-	} else {
-		txProofVersion = new(privacy.ProofV2)
-	}
-
-	if txN.Proof != nil {
-		txProof := *txN.Proof
-		if len(txProof.GetInputCoins()) > 255 {
-			return false, errors.New("Input coins in tx are very large:" + strconv.Itoa(len(txProof.GetInputCoins())))
-		}
-
-		if len(txProof.GetOutputCoins()) > 255 {
-			return false, errors.New("Output coins in tx are very large:" + strconv.Itoa(len(txProof.GetOutputCoins())))
-		}
-
-		isPrivacy := true
-		// check Privacy or not
-
-		if txProof.GetAggregatedRangeProof() == nil || len(txProof.GetOneOfManyProof()) == 0 || len(txN.Proof.GetSerialNumberProof()) == 0 {
-			isPrivacy = false
-		}
-
-		if isPrivacy {
-			if !txN.Proof.GetAggregatedRangeProof().ValidateSanity() {
-				return false, errors.New("validate sanity Aggregated range proof failed")
-			}
-
-			for i := 0; i < len(txN.Proof.GetOneOfManyProof()); i++ {
-				if !txN.Proof.GetOneOfManyProof()[i].ValidateSanity() {
-					return false, errors.New("validate sanity One out of many proof failed")
-				}
-			}
-			for i := 0; i < len(txN.Proof.GetSerialNumberProof()); i++ {
-				if !txN.Proof.GetSerialNumberProof()[i].ValidateSanity() {
-					return false, errors.New("validate sanity Serial number proof failed")
-				}
-			}
-
-			// check input coins with privacy
-			for i := 0; i < len(txN.Proof.GetInputCoins()); i++ {
-				if !txN.Proof.GetInputCoins()[i].CoinDetails.GetSerialNumber().PointValid() {
-					return false, errors.New("validate sanity Serial number of input coin failed")
-				}
-			}
-			// check output coins with privacy
-			for i := 0; i < len(txN.Proof.GetOutputCoins()); i++ {
-				if !txN.Proof.GetOutputCoins()[i].CoinDetails.GetPublicKey().PointValid() {
-					return false, errors.New("validate sanity Public key of output coin failed")
-				}
-				if !txN.Proof.GetOutputCoins()[i].CoinDetails.GetCoinCommitment().PointValid() {
-					return false, errors.New("validate sanity Coin commitment of output coin failed")
-				}
-				if !txN.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator().ScalarValid() {
-					return false, errors.New("validate sanity SNDerivator of output coin failed")
-				}
-			}
-			// check ComInputSK
-			if !txN.Proof.GetCommitmentInputSecretKey().PointValid() {
-				return false, errors.New("validate sanity ComInputSK of proof failed")
-			}
-			// check ComInputValue
-			for i := 0; i < len(txN.Proof.GetCommitmentInputValue()); i++ {
-				if !txN.Proof.GetCommitmentInputValue()[i].PointValid() {
-					return false, errors.New("validate sanity ComInputValue of proof failed")
-				}
-			}
-			//check ComInputSND
-			for i := 0; i < len(txN.Proof.GetCommitmentInputSND()); i++ {
-				if !txN.Proof.GetCommitmentInputSND()[i].PointValid() {
-					return false, errors.New("validate sanity ComInputSND of proof failed")
-				}
-			}
-			//check ComInputShardID
-			if !txN.Proof.GetCommitmentInputShardID().PointValid() {
-				return false, errors.New("validate sanity ComInputShardID of proof failed")
-			}
-
-			// check ComOutputShardID
-			for i := 0; i < len(txN.Proof.GetCommitmentOutputShardID()); i++ {
-				if !txN.Proof.GetCommitmentOutputShardID()[i].PointValid() {
-					return false, errors.New("validate sanity ComOutputShardID of proof failed")
-				}
-			}
-			//check ComOutputSND
-			for i := 0; i < len(txN.Proof.GetCommitmentOutputShardID()); i++ {
-				if !txN.Proof.GetCommitmentOutputShardID()[i].PointValid() {
-					return false, errors.New("validate sanity ComOutputSND of proof failed")
-				}
-			}
-			//check ComOutputValue
-			for i := 0; i < len(txN.Proof.GetCommitmentOutputValue()); i++ {
-				if !txN.Proof.GetCommitmentOutputValue()[i].PointValid() {
-					return false, errors.New("validate sanity ComOutputValue of proof failed")
-				}
-			}
-			if len(txN.Proof.GetCommitmentIndices()) != len(txN.Proof.GetInputCoins())*privacy.CommitmentRingSize {
-				return false, errors.New("validate sanity CommitmentIndices of proof failed")
-
-			}
-		}
-
-		if !isPrivacy {
-			for i := 0; i < len(txN.Proof.GetSerialNumberNoPrivacyProof()); i++ {
-				if !txN.Proof.GetSerialNumberNoPrivacyProof()[i].ValidateSanity() {
-					return false, errors.New("validate sanity Serial number no privacy proof failed")
-				}
-			}
-			// check input coins without privacy
-			for i := 0; i < len(txN.Proof.GetInputCoins()); i++ {
-				if !txN.Proof.GetInputCoins()[i].CoinDetails.GetCoinCommitment().PointValid() {
-					return false, errors.New("validate sanity CoinCommitment of input coin failed")
-				}
-				if !txN.Proof.GetInputCoins()[i].CoinDetails.GetPublicKey().PointValid() {
-					return false, errors.New("validate sanity PublicKey of input coin failed")
-				}
-				if !txN.Proof.GetInputCoins()[i].CoinDetails.GetSerialNumber().PointValid() {
-					return false, errors.New("validate sanity Serial number of input coin failed")
-				}
-				if !txN.Proof.GetInputCoins()[i].CoinDetails.GetRandomness().ScalarValid() {
-					return false, errors.New("validate sanity Randomness of input coin failed")
-				}
-				if !txN.Proof.GetInputCoins()[i].CoinDetails.GetSNDerivator().ScalarValid() {
-					return false, errors.New("validate sanity SNDerivator of input coin failed")
-				}
-
-			}
-
-			// check output coins without privacy
-			for i := 0; i < len(txN.Proof.GetOutputCoins()); i++ {
-				if !txN.Proof.GetOutputCoins()[i].CoinDetails.GetCoinCommitment().PointValid() {
-					return false, errors.New("validate sanity CoinCommitment of output coin failed")
-				}
-				if !txN.Proof.GetOutputCoins()[i].CoinDetails.GetPublicKey().PointValid() {
-					return false, errors.New("validate sanity PublicKey of output coin failed")
-				}
-				if !txN.Proof.GetOutputCoins()[i].CoinDetails.GetRandomness().ScalarValid() {
-					return false, errors.New("validate sanity Randomness of output coin failed")
-				}
-				if !txN.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator().ScalarValid() {
-					return false, errors.New("validate sanity SNDerivator of output coin failed")
-				}
-			}
-		}
-	}
-	return true, nil
+	return (*txN.Proof).ValidateSanity()
 }
 
 func (tx Tx) ValidateSanityData(bcr metadata.BlockchainRetriever, beaconHeight uint64) (bool, error) {
@@ -876,10 +734,7 @@ func (tx Tx) GetProof() *privacy.Proof {
 }
 
 func (tx Tx) IsPrivacy() bool {
-	if tx.Proof == nil || len(tx.Proof.GetOneOfManyProof()) == 0 {
-		return false
-	}
-	return true
+	return (*tx.Proof).IsPrivacy()
 }
 
 func (tx Tx) ValidateType() bool {
@@ -887,12 +742,15 @@ func (tx Tx) ValidateType() bool {
 }
 
 func (tx Tx) IsCoinsBurning(bcr metadata.BlockchainRetriever, beaconHeight uint64) bool {
-	if tx.Proof == nil || len(tx.Proof.GetOutputCoins()) == 0 {
+	if tx.Proof == nil || len((*tx.Proof).GetOutputCoins()) == 0 {
 		return false
 	}
 	senderPKBytes := []byte{}
-	if len(tx.Proof.GetInputCoins()) > 0 {
-		senderPKBytes = tx.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().ToBytesS()
+	outputCoins := (*tx.Proof).GetOutputCoins()
+	inputCoins := (*tx.Proof).GetInputCoins()
+
+	if len(inputCoins) > 0 {
+		senderPKBytes = inputCoins[0].CoinDetails.GetPublicKey().ToBytesS()
 	}
 	//get burning address
 	burningAddress := bcr.GetBurningAddress(beaconHeight)
@@ -902,7 +760,7 @@ func (tx Tx) IsCoinsBurning(bcr metadata.BlockchainRetriever, beaconHeight uint6
 	}
 	keysetBurningAccount := keyWalletBurningAccount.KeySet
 	paymentAddressBurningAccount := keysetBurningAccount.PaymentAddress
-	for _, outCoin := range tx.Proof.GetOutputCoins() {
+	for _, outCoin := range outputCoins {
 		outPKBytes := outCoin.CoinDetails.GetPublicKey().ToBytesS()
 		if !bytes.Equal(senderPKBytes, outPKBytes) && !bytes.Equal(outPKBytes, paymentAddressBurningAccount.Pk[:]) {
 			return false
@@ -915,20 +773,23 @@ func (tx Tx) CalculateTxValue() uint64 {
 	if tx.Proof == nil {
 		return 0
 	}
-	if tx.Proof.GetOutputCoins() == nil || len(tx.Proof.GetOutputCoins()) == 0 {
+
+	outputCoins := (*tx.Proof).GetOutputCoins()
+	inputCoins := (*tx.Proof).GetInputCoins()
+	if outputCoins == nil || len(outputCoins) == 0 {
 		return 0
 	}
-	if tx.Proof.GetInputCoins() == nil || len(tx.Proof.GetInputCoins()) == 0 { // coinbase tx
+	if inputCoins == nil || len(inputCoins) == 0 { // coinbase tx
 		txValue := uint64(0)
-		for _, outCoin := range tx.Proof.GetOutputCoins() {
+		for _, outCoin := range outputCoins {
 			txValue += outCoin.CoinDetails.GetValue()
 		}
 		return txValue
 	}
 
-	senderPKBytes := tx.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().ToBytesS()
+	senderPKBytes := inputCoins[0].CoinDetails.GetPublicKey().ToBytesS()
 	txValue := uint64(0)
-	for _, outCoin := range tx.Proof.GetOutputCoins() {
+	for _, outCoin := range outputCoins {
 		outPKBytes := outCoin.CoinDetails.GetPublicKey().ToBytesS()
 		if bytes.Equal(senderPKBytes, outPKBytes) {
 			continue
@@ -953,7 +814,7 @@ func (tx *Tx) InitTxSalary(salary uint64, receiverAddr *privacy.PaymentAddress, 
 		tx.LockTime = time.Now().Unix()
 	}
 	// create new output coins with info: Pk, value, input, randomness, last byte pk, coin commitment
-	tx.Proof = new(zkp.PaymentProof)
+	tx.Proof = privacy.NewProofWithVersion(tx.Version)
 	tempOutputCoin := make([]*privacy.OutputCoin, 1)
 	tempOutputCoin[0] = new(privacy.OutputCoin).Init()
 	publicKey, err := new(privacy.Point).FromBytesS(receiverAddr.Pk)
@@ -985,14 +846,14 @@ func (tx *Tx) InitTxSalary(salary uint64, receiverAddr *privacy.PaymentAddress, 
 	if err != nil {
 		return NewTransactionErr(CommitOutputCoinError, err)
 	}
-	tx.Proof.SetOutputCoins(tempOutputCoin)
+	(*tx.Proof).SetOutputCoins(tempOutputCoin)
 	// get last byte
 	tx.PubKeyLastByteSender = receiverAddr.Pk[len(receiverAddr.Pk)-1]
 	// sign Tx
 	tx.SigPubKey = receiverAddr.Pk
 	tx.sigPrivKey = *privateKey
 	tx.SetMetadata(metaData)
-	err = tx.signTx()
+	err = signTx(tx)
 	if err != nil {
 		return NewTransactionErr(SignTxError, err)
 	}
@@ -1019,11 +880,13 @@ func (tx Tx) ValidateTxSalary(stateDB *statedb.StateDB) (bool, error) {
 	if err != nil {
 		return false, NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
 	}
-	if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[0].CoinDetails.GetSNDerivator(), stateDB); ok || err != nil {
+
+	outputCoins := (*tx.Proof).GetOutputCoins()
+	if ok, err := CheckSNDerivatorExistence(tokenID, outputCoins[0].CoinDetails.GetSNDerivator(), stateDB); ok || err != nil {
 		return false, err
 	}
 	// check output coin's coin commitment is calculated correctly
-	coin := tx.Proof.GetOutputCoins()[0].CoinDetails
+	coin := outputCoins[0].CoinDetails
 	shardID2 := common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())
 	cmTmp2 := new(privacy.Point)
 	cmTmp2.Add(coin.GetPublicKey(), new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenValueIndex], new(privacy.Scalar).FromUint64(uint64(coin.GetValue()))))
@@ -1031,7 +894,7 @@ func (tx Tx) ValidateTxSalary(stateDB *statedb.StateDB) (bool, error) {
 	cmTmp2.Add(cmTmp2, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenShardIDIndex], new(privacy.Scalar).FromUint64(uint64(shardID2))))
 	cmTmp2.Add(cmTmp2, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenRandomnessIndex], coin.GetRandomness()))
 
-	ok := privacy.IsPointEqual(cmTmp2, tx.Proof.GetOutputCoins()[0].CoinDetails.GetCoinCommitment())
+	ok := privacy.IsPointEqual(cmTmp2, outputCoins[0].CoinDetails.GetCoinCommitment())
 	if !ok {
 		return ok, NewTransactionErr(UnexpectedError, errors.New("check output coin's coin commitment isn't calculated correctly"))
 	}
@@ -1060,7 +923,11 @@ func (tx Tx) VerifyMinerCreatedTxBeforeGettingInBlock(
 		return true, nil
 	}
 	meta := tx.Metadata
-	if tx.Proof != nil && len(tx.Proof.GetInputCoins()) == 0 && len(tx.Proof.GetOutputCoins()) > 0 { // coinbase tx
+
+	inputCoins := (*tx.Proof).GetInputCoins()
+	outputCoins := (*tx.Proof).GetOutputCoins()
+
+	if tx.Proof != nil && len(inputCoins) == 0 && len(outputCoins) > 0 { // coinbase tx
 		if meta == nil {
 			return false, nil
 		}

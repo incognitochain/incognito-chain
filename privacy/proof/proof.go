@@ -25,6 +25,9 @@ type Proof interface {
 	MarshalJSON() ([]byte, error)
 	UnmarshalJSON([]byte) error
 
+	IsPrivacy() bool
+	ValidateSanity() (bool, error)
+
 	Verify(hasPrivacy bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, isBatch bool, additionalData interface{}) (bool, error)
 }
 

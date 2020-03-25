@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"strconv"
 
 	"github.com/pkg/errors"
 
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/privacy/key"
@@ -806,4 +808,147 @@ func (proof PaymentProof) Verify(hasPrivacy bool, pubKey key.PublicKey, fee uint
 	}
 
 	return proof.verifyHasPrivacy(pubKey, fee, shardID, tokenID, isBatch, additionalData)
+}
+
+func (proof *PaymentProof) IsPrivacy() bool {
+	if proof == nil || len(proof.GetOneOfManyProof()) == 0 {
+		return false
+	}
+	return true
+}
+
+func (proof PaymentProof) ValidateSanity() (bool, error) {
+	if len(proof.GetInputCoins()) > 255 {
+		return false, errors.New("Input coins in tx are very large:" + strconv.Itoa(len(proof.GetInputCoins())))
+	}
+
+	if len(proof.GetOutputCoins()) > 255 {
+		return false, errors.New("Output coins in tx are very large:" + strconv.Itoa(len(proof.GetOutputCoins())))
+	}
+
+	isPrivacy := proof.IsPrivacy()
+
+	if isPrivacy {
+
+		if !proof.aggregatedRangeProof.ValidateSanity() {
+			return false, errors.New("validate sanity Aggregated range proof failed")
+		}
+
+		for i := 0; i < len(proof.GetOneOfManyProof()); i++ {
+			if !proof.GetOneOfManyProof()[i].ValidateSanity() {
+				return false, errors.New("validate sanity One out of many proof failed")
+			}
+		}
+		for i := 0; i < len(proof.GetSerialNumberProof()); i++ {
+			if !proof.GetSerialNumberProof()[i].ValidateSanity() {
+				return false, errors.New("validate sanity Serial number proof failed")
+			}
+		}
+
+		// check input coins with privacy
+		for i := 0; i < len(proof.GetInputCoins()); i++ {
+			if !proof.GetInputCoins()[i].CoinDetails.GetSerialNumber().PointValid() {
+				return false, errors.New("validate sanity Serial number of input coin failed")
+			}
+		}
+		// check output coins with privacy
+		for i := 0; i < len(proof.GetOutputCoins()); i++ {
+			if !proof.GetOutputCoins()[i].CoinDetails.GetPublicKey().PointValid() {
+				return false, errors.New("validate sanity Public key of output coin failed")
+			}
+			if !proof.GetOutputCoins()[i].CoinDetails.GetCoinCommitment().PointValid() {
+				return false, errors.New("validate sanity Coin commitment of output coin failed")
+			}
+			if !proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator().ScalarValid() {
+				return false, errors.New("validate sanity SNDerivator of output coin failed")
+			}
+		}
+		// check ComInputSK
+		if !proof.GetCommitmentInputSecretKey().PointValid() {
+			return false, errors.New("validate sanity ComInputSK of proof failed")
+		}
+		// check ComInputValue
+		for i := 0; i < len(proof.GetCommitmentInputValue()); i++ {
+			if !proof.GetCommitmentInputValue()[i].PointValid() {
+				return false, errors.New("validate sanity ComInputValue of proof failed")
+			}
+		}
+		//check ComInputSND
+		for i := 0; i < len(proof.GetCommitmentInputSND()); i++ {
+			if !proof.GetCommitmentInputSND()[i].PointValid() {
+				return false, errors.New("validate sanity ComInputSND of proof failed")
+			}
+		}
+		//check ComInputShardID
+		if !proof.GetCommitmentInputShardID().PointValid() {
+			return false, errors.New("validate sanity ComInputShardID of proof failed")
+		}
+
+		// check ComOutputShardID
+		for i := 0; i < len(proof.GetCommitmentOutputShardID()); i++ {
+			if !proof.GetCommitmentOutputShardID()[i].PointValid() {
+				return false, errors.New("validate sanity ComOutputShardID of proof failed")
+			}
+		}
+		//check ComOutputSND
+		for i := 0; i < len(proof.GetCommitmentOutputShardID()); i++ {
+			if !proof.GetCommitmentOutputShardID()[i].PointValid() {
+				return false, errors.New("validate sanity ComOutputSND of proof failed")
+			}
+		}
+		//check ComOutputValue
+		for i := 0; i < len(proof.GetCommitmentOutputValue()); i++ {
+			if !proof.GetCommitmentOutputValue()[i].PointValid() {
+				return false, errors.New("validate sanity ComOutputValue of proof failed")
+			}
+		}
+		if len(proof.GetCommitmentIndices()) != len(proof.GetInputCoins())*privacy.CommitmentRingSize {
+			return false, errors.New("validate sanity CommitmentIndices of proof failed")
+
+		}
+	}
+
+	if !isPrivacy {
+		for i := 0; i < len(proof.GetSerialNumberNoPrivacyProof()); i++ {
+			if !proof.GetSerialNumberNoPrivacyProof()[i].ValidateSanity() {
+				return false, errors.New("validate sanity Serial number no privacy proof failed")
+			}
+		}
+		// check input coins without privacy
+		for i := 0; i < len(proof.GetInputCoins()); i++ {
+			if !proof.GetInputCoins()[i].CoinDetails.GetCoinCommitment().PointValid() {
+				return false, errors.New("validate sanity CoinCommitment of input coin failed")
+			}
+			if !proof.GetInputCoins()[i].CoinDetails.GetPublicKey().PointValid() {
+				return false, errors.New("validate sanity PublicKey of input coin failed")
+			}
+			if !proof.GetInputCoins()[i].CoinDetails.GetSerialNumber().PointValid() {
+				return false, errors.New("validate sanity Serial number of input coin failed")
+			}
+			if !proof.GetInputCoins()[i].CoinDetails.GetRandomness().ScalarValid() {
+				return false, errors.New("validate sanity Randomness of input coin failed")
+			}
+			if !proof.GetInputCoins()[i].CoinDetails.GetSNDerivator().ScalarValid() {
+				return false, errors.New("validate sanity SNDerivator of input coin failed")
+			}
+
+		}
+
+		// check output coins without privacy
+		for i := 0; i < len(proof.GetOutputCoins()); i++ {
+			if !proof.GetOutputCoins()[i].CoinDetails.GetCoinCommitment().PointValid() {
+				return false, errors.New("validate sanity CoinCommitment of output coin failed")
+			}
+			if !proof.GetOutputCoins()[i].CoinDetails.GetPublicKey().PointValid() {
+				return false, errors.New("validate sanity PublicKey of output coin failed")
+			}
+			if !proof.GetOutputCoins()[i].CoinDetails.GetRandomness().ScalarValid() {
+				return false, errors.New("validate sanity Randomness of output coin failed")
+			}
+			if !proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator().ScalarValid() {
+				return false, errors.New("validate sanity SNDerivator of output coin failed")
+			}
+		}
+	}
+	return true, nil
 }
