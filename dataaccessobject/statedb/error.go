@@ -34,9 +34,10 @@ const (
 	ErrInvalidFinalExchangeRatesStateType     = "invalid final exchange rates state type"
 	ErrInvalidExchangeRatesRequestType     	  = "invalid exchange rates request type"
 	//B
-	ErrInvalidPortalStatusStateType              = "invalid portal status state type"
-	ErrInvalidPortalCustodianStateType        = "invalid portal custodian state type"
-	ErrInvalidPortalWaitingRedeemRequestType  = "invalid portal waiting redeem request type"
+	ErrInvalidPortalStatusStateType          = "invalid portal status state type"
+	ErrInvalidPortalCustodianStateType       = "invalid portal custodian state type"
+	ErrInvalidPortalWaitingRedeemRequestType = "invalid portal waiting redeem request type"
+	ErrInvalidPortalRewardInfoStateType       = "invalid portal reward info state type"
 )
 const (
 	InvalidByteArrayTypeError = iota
@@ -148,9 +149,15 @@ const (
 	StoreLiquidationCustodianDepositError
 
 	StorePortalRewardError
+
 	//A
-	TrackPortalStatusError
+
 	//B
+	StorePortalStatusError
+	GetPortalStatusError
+	GetPortalRedeemRequestStatusError
+	StorePortalRedeemRequestStatusError
+
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -254,9 +261,15 @@ var ErrCodeMessage = map[int]struct {
 	StoreRedeemLiquidationExchangeRatesError:      {-14023, "Store redeem liquidation exchange rates error"},
 	StoreLiquidationCustodianDepositError:         {-14024, "Store liquidation custodian deposit error"},
 	StoreCustodianStateError:                      {-14025, "Store custodian state error"},
+
 	//A
-	TrackPortalStatusError:						   {-14026, "Track portal status error"},
+
 	//B
+	StorePortalStatusError :  {-14026, "Store portal status error"},
+	GetPortalStatusError:  {-14027, "Get portal status error"},
+	GetPortalRedeemRequestStatusError : {-14028, "Get portal redeem request status error"},
+	StorePortalRedeemRequestStatusError: {-14029, "Store portal redeem request status error"},
+
 }
 
 type StatedbError struct {

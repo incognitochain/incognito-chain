@@ -50,9 +50,23 @@ var (
 	portalLiquidationTpExchangeRatesStatusPrefix    = []byte("portalliquidationtpexchangeratesstatus-")
 
 	//B
-	portalStatusPrefix                  = []byte("portalstatus-")
-	portalCustodianStatePrefix          = []byte("portalcustodian-")
-	portalWaitingRedeemRequestsPrefix   = []byte("portalwaitingredeemrequest-")
+	portalCustodianStatePrefix        = []byte("portalcustodian-")
+	portalWaitingRedeemRequestsPrefix = []byte("portalwaitingredeemrequest-")
+
+	portalStatusPrefix                        = []byte("portalstatus-")
+	portalCustodianDepositStatusPrefix        = []byte("custodiandeposit-")
+	portalRequestPTokenStatusPrefix           = []byte("requestptoken-")
+	portalRedeemRequestStatusPrefix           = []byte("redeemrequest-")
+	portalRedeemRequestStatusByTxReqIDPrefix  = []byte("redeemrequestbytxid-")
+	portalRequestUnlockCollateralStatusPrefix = []byte("requestunlockcollateral-")
+	portalRequestWithdrawRewardStatusPrefix = []byte("requestwithdrawportalreward-")
+
+
+	// liquidation for portal
+	portalLiquidateCustodianRunAwayPrefix                  = []byte("portalliquidaterunaway-")
+
+	// reward for portal
+	portalRewardInfoStatePrefix  = []byte("portalreward-")
 )
 
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
@@ -271,9 +285,38 @@ func GetWaitingRedeemRequestPrefix() []byte {
 	return h[:][:prefixHashKeyLength]
 }
 
+func GetPortalRewardInfoStatePrefix() []byte {
+	h := common.HashH(portalRewardInfoStatePrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
 func GetPortalStatusPrefix() []byte {
 	h := common.HashH(portalStatusPrefix)
 	return h[:][:prefixHashKeyLength]
+}
+
+func PortalCustodianDepositStatusPrefix() []byte {
+	return portalCustodianDepositStatusPrefix
+}
+
+func PortalRequestPTokenStatusPrefix() []byte {
+	return portalRequestPTokenStatusPrefix
+}
+
+func PortalRedeemRequestStatusPrefix() []byte {
+	return portalRedeemRequestStatusPrefix
+}
+
+func PortalRedeemRequestStatusByTxReqIDPrefix() []byte {
+	return portalRedeemRequestStatusByTxReqIDPrefix
+}
+
+func PortalRequestUnlockCollateralStatusPrefix() []byte {
+	return portalRequestUnlockCollateralStatusPrefix
+}
+
+func PortalRequestWithdrawRewardStatusPrefix() []byte {
+	return portalRequestWithdrawRewardStatusPrefix
 }
 
 var _ = func() (_ struct{}) {

@@ -6,8 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"strconv"
 )
@@ -17,7 +16,7 @@ import (
 type PortalCustodianDeposit struct {
 	MetadataBase
 	IncogAddressStr string
-	RemoteAddresses []lvdb.RemoteAddress // token symbol: remote address
+	RemoteAddresses []statedb.RemoteAddress // token symbol: remote address
 	DepositedAmount uint64
 }
 
@@ -34,7 +33,7 @@ type PortalCustodianDepositAction struct {
 // both accepted and refund status
 type PortalCustodianDepositContent struct {
 	IncogAddressStr string
-	RemoteAddresses []lvdb.RemoteAddress
+	RemoteAddresses []statedb.RemoteAddress
 	DepositedAmount uint64
 	TxReqID         common.Hash
 	ShardID         byte
@@ -44,11 +43,11 @@ type PortalCustodianDepositContent struct {
 type PortalCustodianDepositStatus struct {
 	Status          byte
 	IncogAddressStr string
-	RemoteAddresses []lvdb.RemoteAddress
+	RemoteAddresses []statedb.RemoteAddress
 	DepositedAmount uint64
 }
 
-func NewPortalCustodianDeposit(metaType int, incognitoAddrStr string, remoteAddrs []lvdb.RemoteAddress, amount uint64) (*PortalCustodianDeposit, error) {
+func NewPortalCustodianDeposit(metaType int, incognitoAddrStr string, remoteAddrs []statedb.RemoteAddress, amount uint64) (*PortalCustodianDeposit, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
@@ -65,7 +64,7 @@ func (custodianDeposit PortalCustodianDeposit) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,
-	db database.DatabaseInterface,
+	db *statedb.StateDB,
 ) (bool, error) {
 	return true, nil
 }
@@ -112,7 +111,7 @@ func (custodianDeposit PortalCustodianDeposit) ValidateSanityData(bcr Blockchain
 		return false, false, errors.New("remote addresses should be at least one")
 	}
 	for _, remoteAddr := range custodianDeposit.RemoteAddresses {
-		if !common.IsPortalToken(remoteAddr.PTokenID) {
+		if !common.IsPortalToken(remoteAddr.GetPTokenID()) {
 			return false, false, errors.New("TokenID in remote address is invalid")
 		}
 	}
@@ -128,8 +127,8 @@ func (custodianDeposit PortalCustodianDeposit) Hash() *common.Hash {
 	record := custodianDeposit.MetadataBase.Hash().String()
 	record += custodianDeposit.IncogAddressStr
 	for _, remoteAddr := range custodianDeposit.RemoteAddresses {
-		record += remoteAddr.PTokenID
-		record += remoteAddr.Address
+		record += remoteAddr.GetPTokenID()
+		record += remoteAddr.GetAddress()
 	}
 	record += strconv.FormatUint(custodianDeposit.DepositedAmount, 10)
 	// final hash

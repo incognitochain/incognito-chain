@@ -10,6 +10,41 @@ import (
 	"math"
 )
 
+//// prefix key for portal
+//var (
+//	CustodianStatePrefix                = []byte("custodianstate-")
+//	PortalPortingRequestsPrefix         = []byte("portalportingrequest-")
+//	PortalPortingRequestsTxPrefix       = []byte("portalportingrequesttx-")
+//	PortalExchangeRatesPrefix           = []byte("portalexchangeratesrequest-")
+//	PortalFinalExchangeRatesPrefix      = []byte("portalfinalexchangerates-")
+//	PortalCustodianStatePrefix          = []byte("portalcustodianstate-")
+//	PortalCustodianDepositPrefix        = []byte("portalcustodiandeposit-")
+//	PortalWaitingPortingRequestsPrefix  = []byte("portalwaitingportingrequest-")
+//	PortalRequestPTokensPrefix          = []byte("portalrequestptokens-")
+//	PortalWaitingRedeemRequestsPrefix   = []byte("portalwaitingredeemrequest-")
+//	PortalRedeemRequestsPrefix          = []byte("portalredeemrequest-")
+//	PortalRedeemRequestsByTxReqIDPrefix = []byte("portalredeemrequestbytxid-")
+//	PortalRequestUnlockCollateralPrefix = []byte("portalrequestunlockcollateral-")
+//	PortalCustodianWithdrawPrefix       = []byte("portalcustodianwithdraw-")
+//
+//	// liquidation in portal
+//	PortalLiquidateCustodianPrefix                  = []byte("portalliquidatecustodian-")
+//	PortalLiquidateTopPercentileExchangeRatesPrefix = []byte("portalliquidatetoppercentileexchangerates-")
+//	PortalLiquidateExchangeRatesPrefix              = []byte("portalliquidateexchangerates-")
+//	PortalLiquidationCustodianDepositPrefix         = []byte("portalliquidationcustodiandepsit-")
+//
+//	PortalExpiredPortingReqPrefix = []byte("portalexpiredportingreq-")
+//
+//	// reward in portal
+//	PortalRewardByBeaconHeightPrefix  = []byte("portalreward-")
+//	PortalRequestWithdrawRewardPrefix = []byte("portalrequestwithdrawreward-")
+//
+//	// Relaying
+//	RelayingBNBHeaderStatePrefix = []byte("relayingbnbheaderstate-")
+//	RelayingBNBHeaderChainPrefix = []byte("relayingbnbheaderchain-")
+//)
+
+
 //type RemoteAddress struct {
 //	PTokenID string
 //	Address  string
