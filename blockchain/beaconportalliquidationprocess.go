@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
@@ -112,7 +113,7 @@ func (blockchain *BlockChain) processPortalLiquidateCustodian(
 	return nil
 }
 
-func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(beaconHeight uint64, instructions []string,
+func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(portalStateDB *statedb.StateDB, beaconHeight uint64, instructions []string,
 	currentPortalState *CurrentPortalState) error {
 	db := blockchain.GetDatabase()
 
@@ -231,7 +232,7 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(beaco
 	return nil
 }
 
-func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState, updatingInfoByTokenID map[common.Hash]UpdatingInfo) error {
+func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(portalStateDB *statedb.StateDB, beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState, updatingInfoByTokenID map[common.Hash]UpdatingInfo) error {
 	if currentPortalState == nil {
 		Logger.log.Errorf("current portal state is nil")
 		return nil
@@ -345,7 +346,7 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(beaconHe
 	return nil
 }
 
-func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
+func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(portalStateDB *statedb.StateDB, beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
 	if currentPortalState == nil {
 		Logger.log.Errorf("current portal state is nil")
 		return nil
