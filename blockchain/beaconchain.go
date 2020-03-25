@@ -174,7 +174,7 @@ func (chain *BeaconChain) GetLastProposerIndex() int {
 }
 
 func (chain *BeaconChain) CreateNewBlock(version int, proposer string, round int, startTime int64) (common.BlockInterface, error) {
-	newBlock, err := chain.Blockchain.NewBlockBeacon_V2(chain.GetBestView().(*BeaconBestState), version, proposer, round, startTime)
+	newBlock, err := chain.Blockchain.NewBlockBeacon(chain.GetBestView().(*BeaconBestState), version, proposer, round, startTime)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +199,7 @@ func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterf
 func (chain *BeaconChain) InsertBlk(block common.BlockInterface) error {
 	chain.insertLock.Lock()
 	defer chain.insertLock.Unlock()
-	if err := chain.Blockchain.InsertBeaconBlock_V2(block.(*BeaconBlock), true); err != nil {
+	if err := chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true); err != nil {
 		Logger.log.Info(err)
 		return err
 	}
@@ -210,7 +210,7 @@ func (chain *BeaconChain) InsertAndBroadcastBlock(block common.BlockInterface) e
 	chain.insertLock.Lock()
 	defer chain.insertLock.Unlock()
 	go chain.Blockchain.config.Server.PushBlockToAll(block, true)
-	if err := chain.Blockchain.InsertBeaconBlock_V2(block.(*BeaconBlock), true); err != nil {
+	if err := chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true); err != nil {
 		Logger.log.Info(err)
 		return err
 	}
@@ -231,7 +231,7 @@ func (chain *BeaconChain) GetPubkeyRole(pubkey string, round int) (string, byte)
 }
 
 func (chain *BeaconChain) ValidatePreSignBlock(block common.BlockInterface) error {
-	return chain.Blockchain.ValidateProposedBeaconBlock_V2(block.(*BeaconBlock))
+	return chain.Blockchain.VerifyPreSignBeaconBlock(block.(*BeaconBlock), true)
 }
 
 // func (chain *BeaconChain) ValidateAndInsertBlock(block common.BlockInterface) error {

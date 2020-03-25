@@ -50,8 +50,7 @@ import (
 //	e. ShardStateHash: shard states from blocks of all shard
 //	f. InstructionHash: from instructions in beacon block body
 //	g. InstructionMerkleRoot
-func (blockchain *BlockChain) NewBlockBeacon(version int, proposer string, round int, shardsToBeaconLimit map[byte]uint64) (*BeaconBlock, error) {
-	curView := blockchain.GetBeaconBestState()
+func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version int, proposer string, round int, startTime int64) (*BeaconBlock, error) {
 	Logger.log.Infof("⛏ Creating Beacon Block %+v", curView.BeaconHeight+1)
 	//============Init Variable============
 	var err error
@@ -105,7 +104,7 @@ func (blockchain *BlockChain) NewBlockBeacon(version int, proposer string, round
 			return nil, NewBlockChainError(BuildRewardInstructionError, err)
 		}
 	}
-	tempShardState, stakeInstructions, swapInstructions, bridgeInstructions, acceptedRewardInstructions, stopAutoStakingInstructions := blockchain.GetShardState(beaconBestState, shardsToBeaconLimit)
+	tempShardState, stakeInstructions, swapInstructions, bridgeInstructions, acceptedRewardInstructions, stopAutoStakingInstructions := blockchain.GetShardState(beaconBestState)
 	Logger.log.Infof("In NewBlockBeacon tempShardState: %+v", tempShardState)
 	tempInstruction, err := beaconBestState.GenerateInstruction(
 		beaconBlock.Header.Height, stakeInstructions, swapInstructions, stopAutoStakingInstructions,
@@ -229,7 +228,7 @@ func (blockchain *BlockChain) NewBlockBeacon(version int, proposer string, round
 	beaconBlock.Header.InstructionHash = tempInstructionHash
 	beaconBlock.Header.AutoStakingRoot = tempAutoStakingRoot
 	copy(beaconBlock.Header.InstructionMerkleRoot[:], GetKeccak256MerkleRoot(flattenInsts))
-	beaconBlock.Header.Timestamp = time.Now().Unix()
+	beaconBlock.Header.Timestamp = startTime
 	//============END Build Header Hash=========
 	return beaconBlock, nil
 }
@@ -252,14 +251,13 @@ func (blockchain *BlockChain) NewBlockBeacon(version int, proposer string, round
 // 4. bridge instructions
 // 5. accepted reward instructions
 // 6. stop auto staking instructions
-func (blockchain *BlockChain) GetShardState(beaconBestState *BeaconBestState, shardsToBeacon map[byte]uint64) (map[byte][]ShardState, [][]string, map[byte][][]string, [][]string, [][]string, [][]string) {
+func (blockchain *BlockChain) GetShardState(beaconBestState *BeaconBestState) (map[byte][]ShardState, [][]string, map[byte][][]string, [][]string, [][]string, [][]string) {
 	shardStates := make(map[byte][]ShardState)
 	validStakeInstructions := [][]string{}
 	validStakePublicKeys := []string{}
 	validStopAutoStakingInstructions := [][]string{}
 	validSwapInstructions := make(map[byte][][]string)
 	//Get shard to beacon block from pool
-	Logger.log.Infof("In GetShardState shardsToBeacon limit: %+v", shardsToBeacon)
 	var allShardBlocks = make([][]*ShardToBeaconBlock, blockchain.config.ChainParams.ActiveShards)
 	for sid, v := range blockchain.config.Syncker.GetS2BBlocksForBeaconProducer(beaconBestState.BestShardHash) {
 		for _, b := range v {

@@ -53,17 +53,18 @@ import (
 //	3. Build Shard Block Essential Data for Header
 //	4. Update Cloned ShardBestState with New Shard Block
 //	5. Create Root Hash from New Shard Block and updated Clone Shard Beststate Data
-func (blockGenerator *BlockGenerator) NewBlockShard(version int, proposer string, shardID byte, round int, crossShards map[byte]uint64, beaconHeight uint64, start time.Time) (*ShardBlock, error) {
+func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int, proposer string, round int, start time.Time) (*ShardBlock, error) {
 	var (
 		transactionsForNewBlock = make([]metadata.Transaction, 0)
 		totalTxsFee             = make(map[common.Hash]uint64)
 		newShardBlock           = NewShardBlock()
 		instructions            = [][]string{}
 		isOldBeaconHeight       = false
-		tempPrivateKey          = blockGenerator.createTempKeyset()
+		tempPrivateKey          = blockchain.config.BlockGen.createTempKeyset()
 		shardBestState          = NewShardBestState()
+		beaconHeight            = blockchain.BeaconChain.GetFinalView().GetHeight()
+		shardID                 = curView.ShardID
 	)
-	curView := blockGenerator.chain.GetBestStateShard(byte(shardID))
 	Logger.log.Criticalf("⛏ Creating Shard Block %+v", curView.ShardHeight+1)
 	// startTime := time.Now()
 	shardPendingValidator, err := incognitokey.CommitteeKeyListToString(curView.ShardPendingValidator)
@@ -87,12 +88,12 @@ func (blockGenerator *BlockGenerator) NewBlockShard(version int, proposer string
 	if beaconHeight-shardBestState.BeaconHeight > MAX_BEACON_BLOCK {
 		beaconHeight = shardBestState.BeaconHeight + MAX_BEACON_BLOCK
 	}
-	beaconHashes, err := rawdbv2.GetBeaconBlockHashByIndex(blockGenerator.chain.GetDatabase(), beaconHeight)
+	beaconHashes, err := rawdbv2.GetBeaconBlockHashByIndex(blockchain.GetDatabase(), beaconHeight)
 	if err != nil {
 		return nil, err
 	}
 	beaconHash := beaconHashes[0]
-	beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(blockGenerator.chain.GetDatabase(), beaconHash)
+	beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(blockchain.GetDatabase(), beaconHash)
 	if err != nil {
 		return nil, err
 	}
@@ -103,8 +104,8 @@ func (blockGenerator *BlockGenerator) NewBlockShard(version int, proposer string
 	}
 	epoch := beaconBlock.Header.Epoch
 	if epoch-shardBestState.Epoch >= 1 {
-		beaconHeight = shardBestState.Epoch * blockGenerator.chain.config.ChainParams.Epoch
-		newBeaconHashes, err := rawdbv2.GetBeaconBlockHashByIndex(blockGenerator.chain.GetDatabase(), beaconHeight)
+		beaconHeight = shardBestState.Epoch * blockchain.config.ChainParams.Epoch
+		newBeaconHashes, err := rawdbv2.GetBeaconBlockHashByIndex(blockchain.GetDatabase(), beaconHeight)
 		if err != nil {
 			return nil, err
 		}
@@ -114,7 +115,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(version int, proposer string
 	}
 	Logger.log.Infof("Get Beacon Block With Height %+v, Shard BestState %+v", beaconHeight, shardBestState.BeaconHeight)
 	//Fetch beacon block from height
-	beaconBlocks, err := FetchBeaconBlockFromHeight(blockGenerator.chain.GetDatabase(), shardBestState.BeaconHeight+1, beaconHeight)
+	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain.GetDatabase(), shardBestState.BeaconHeight+1, beaconHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -125,22 +126,22 @@ func (blockGenerator *BlockGenerator) NewBlockShard(version int, proposer string
 	//==========Build block body============
 	// Get Transaction For new Block
 	// Get Cross output coin from other shard && produce cross shard transaction
-	crossTransactions := blockGenerator.getCrossShardData(shardID, shardBestState.BeaconHeight, beaconHeight, crossShards)
+	crossTransactions := blockchain.config.BlockGen.getCrossShardData(shardID, shardBestState.BeaconHeight, beaconHeight)
 	Logger.log.Critical("Cross Transaction: ", crossTransactions)
 	// Get Transaction for new block
 	// // startStep = time.Now()
 	blockCreationLeftOver := curView.BlockMaxCreateTime.Nanoseconds() - time.Since(start).Nanoseconds()
-	txsToAddFromBlock, err := blockGenerator.getTransactionForNewBlock(curView, &tempPrivateKey, shardID, blockGenerator.chain.config.DataBase, beaconBlocks, blockCreationLeftOver, beaconHeight)
+	txsToAddFromBlock, err := blockchain.config.BlockGen.getTransactionForNewBlock(curView, &tempPrivateKey, shardID, blockchain.config.DataBase, beaconBlocks, blockCreationLeftOver, beaconHeight)
 	if err != nil {
 		return nil, err
 	}
 	transactionsForNewBlock = append(transactionsForNewBlock, txsToAddFromBlock...)
 	// build txs with metadata
-	transactionsForNewBlock, err = blockGenerator.chain.BuildResponseTransactionFromTxsWithMetadata(curView, transactionsForNewBlock, &tempPrivateKey, shardID)
+	transactionsForNewBlock, err = blockchain.BuildResponseTransactionFromTxsWithMetadata(curView, transactionsForNewBlock, &tempPrivateKey, shardID)
 	// process instruction from beacon block
-	shardPendingValidator, _, _ = blockGenerator.chain.processInstructionFromBeacon(curView, beaconBlocks, shardID, newCommitteeChange())
+	shardPendingValidator, _, _ = blockchain.processInstructionFromBeacon(curView, beaconBlocks, shardID, newCommitteeChange())
 	// Create Instruction
-	instructions, _, _, err = blockGenerator.chain.generateInstruction(curView, shardID, beaconHeight, isOldBeaconHeight, beaconBlocks, shardPendingValidator, currentCommitteePubKeys)
+	instructions, _, _, err = blockchain.generateInstruction(curView, shardID, beaconHeight, isOldBeaconHeight, beaconBlocks, shardPendingValidator, currentCommitteePubKeys)
 	if err != nil {
 		return nil, NewBlockChainError(GenerateInstructionError, err)
 	}
@@ -189,7 +190,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(version int, proposer string
 	}
 	//============Update Shard BestState=============
 	// startStep = time.Now()
-	newShardBestState, err := shardBestState.updateShardBestState(blockGenerator.chain, newShardBlock, beaconBlocks, newCommitteeChange())
+	newShardBestState, err := shardBestState.updateShardBestState(blockchain, newShardBlock, beaconBlocks, newCommitteeChange())
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +205,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(version int, proposer string
 	if err != nil {
 		return nil, err
 	}
-	txInstructions, err := CreateShardInstructionsFromTransactionAndInstruction(newShardBlock.Body.Transactions, blockGenerator.chain, shardID)
+	txInstructions, err := CreateShardInstructionsFromTransactionAndInstruction(newShardBlock.Body.Transactions, blockchain, shardID)
 	if err != nil {
 		return nil, err
 	}
@@ -587,7 +588,7 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState, shardID 
 //	  - Process valid block to extract:
 //	   + Cross output coin
 //	   + Cross Normal Token
-func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeaconHeight uint64, currentBeaconHeight uint64, crossShards map[byte]uint64) map[byte][]CrossTransaction {
+func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeaconHeight uint64, currentBeaconHeight uint64) map[byte][]CrossTransaction {
 	crossTransactions := make(map[byte][]CrossTransaction)
 	// get cross shard block
 	var allCrossShardBlock = make([][]*CrossShardBlock, blockGenerator.chain.config.ChainParams.ActiveShards)

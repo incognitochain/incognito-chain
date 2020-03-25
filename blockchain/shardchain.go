@@ -123,7 +123,7 @@ func (chain *ShardChain) GetLastProposerIndex() int {
 
 func (chain *ShardChain) CreateNewBlock(version int, proposer string, round int, startTime int64) (common.BlockInterface, error) {
 	Logger.log.Infof("Begin Start New Block Shard %+v", time.Now())
-	newBlock, err := chain.Blockchain.NewBlockShard_V2(chain.GetBestState(), version, proposer, round, startTime)
+	newBlock, err := chain.Blockchain.NewBlockShard(chain.GetBestState(), version, proposer, round, time.Unix(startTime, 0))
 	Logger.log.Infof("Finish New Block Shard %+v", time.Now())
 	if err != nil {
 		Logger.log.Error(err)
@@ -189,14 +189,14 @@ func (chain *ShardChain) ValidateProducerPosition(block common.BlockInterface, c
 func (chain *ShardChain) InsertBlk(block common.BlockInterface) error {
 	chain.insertLock.Lock()
 	defer chain.insertLock.Unlock()
-	return chain.Blockchain.InsertShardBlock_V2(block.(*ShardBlock), false)
+	return chain.Blockchain.InsertShardBlock(block.(*ShardBlock), false)
 }
 
 func (chain *ShardChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
 	chain.insertLock.Lock()
 	defer chain.insertLock.Unlock()
 	go chain.Blockchain.config.Server.PushBlockToAll(block, false)
-	err := chain.Blockchain.InsertShardBlock_V2(block.(*ShardBlock), true)
+	err := chain.Blockchain.InsertShardBlock(block.(*ShardBlock), true)
 	if err != nil {
 		return err
 	}
@@ -233,5 +233,5 @@ func (chain *ShardChain) UnmarshalBlock(blockString []byte) (common.BlockInterfa
 }
 
 func (chain *ShardChain) ValidatePreSignBlock(block common.BlockInterface) error {
-	return chain.Blockchain.ValidateProposedShardBlock_V2(block.(*ShardBlock))
+	return chain.Blockchain.VerifyPreSignShardBlock(block.(*ShardBlock), byte(block.(*ShardBlock).GetShardID()))
 }
