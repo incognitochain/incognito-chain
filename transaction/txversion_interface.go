@@ -28,7 +28,7 @@ type TxVersionSwitcher interface {
 	Prove(tx *Tx, params *TxPrivacyInitParams) error
 
 	// It should verify based on
-	Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error)
+	Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error)
 }
 
 // Used in Tx.Init

@@ -1,8 +1,9 @@
 package privacy_v2
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"errors"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
@@ -30,6 +31,42 @@ func (proof *PaymentProofV2) SetOutputCoins(v []*coin.OutputCoin) { proof.output
 func (proof PaymentProofV2) GetAggregatedRangeProof() *agg_interface.AggregatedRangeProof {
 	var a agg_interface.AggregatedRangeProof = proof.aggregatedRangeProof
 	return &a
+}
+
+func (proof *PaymentProofV2) Init() {
+	aggregatedRangeProof := &bulletproofs.AggregatedRangeProof{}
+	aggregatedRangeProof.Init()
+	proof.aggregatedRangeProof = aggregatedRangeProof
+	proof.inputCoins = []*coin.InputCoin{}
+	proof.outputCoins = []*coin.OutputCoin{}
+}
+
+// MarshalJSON - override function
+func (proof PaymentProofV2) MarshalJSON() ([]byte, error) {
+	data := proof.Bytes()
+	//temp := base58.Base58Check{}.Encode(data, common.ZeroByte)
+	temp := base64.StdEncoding.EncodeToString(data)
+	return json.Marshal(temp)
+}
+
+// UnmarshalJSON - override function
+func (proof *PaymentProofV2) UnmarshalJSON(data []byte) error {
+	dataStr := common.EmptyString
+	errJson := json.Unmarshal(data, &dataStr)
+	if errJson != nil {
+		return errJson
+	}
+	//temp, _, err := base58.Base58Check{}.Decode(dataStr)
+	temp, err := base64.StdEncoding.DecodeString(dataStr)
+	if err != nil {
+		return err
+	}
+
+	err = proof.SetBytes(temp)
+	if err.(*errhandler.PrivacyError) != nil {
+		return err
+	}
+	return nil
 }
 
 func (proof *PaymentProofV2) Bytes() []byte {
@@ -196,6 +233,7 @@ func Prove(inp []*coin.InputCoin, out []*coin.OutputCoin, hasPrivacy bool) (*Pay
 
 	wit := new(bulletproofs.AggregatedRangeWitness)
 	wit.Set(outputValues, outputRands)
+	var err error
 	proof.aggregatedRangeProof, err = wit.Prove()
 	if err != nil {
 		return nil, err
@@ -203,15 +241,15 @@ func Prove(inp []*coin.InputCoin, out []*coin.OutputCoin, hasPrivacy bool) (*Pay
 	return proof, nil
 }
 
-func (proof PaymentProof) verifyNoPrivacy(pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash) (bool, error) {
+func (proof PaymentProofV2) verifyNoPrivacy(pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash) (bool, error) {
 	return true, nil
 }
 
-func (proof PaymentProof) verifyHasPrivacy(pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, isBatch bool) (bool, error) {
+func (proof PaymentProofV2) verifyHasPrivacy(pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, isBatch bool) (bool, error) {
 	return true, nil
 }
 
-func (proof PaymentProof) Verify(hasPrivacy bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, isBatch bool, additionalData interface{}) (bool, error) {
+func (proof PaymentProofV2) Verify(hasPrivacy bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, isBatch bool, additionalData interface{}) (bool, error) {
 	// has no privacy
 	if !hasPrivacy {
 		return proof.verifyNoPrivacy(pubKey, fee, shardID, tokenID)

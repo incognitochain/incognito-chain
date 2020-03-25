@@ -138,7 +138,6 @@ func (proof *PaymentProof) Init() {
 	proof.commitmentInputValue = []*operation.Point{}
 	proof.commitmentInputSND = []*operation.Point{}
 	proof.commitmentInputShardID = new(operation.Point)
-
 }
 
 // MarshalJSON - override function

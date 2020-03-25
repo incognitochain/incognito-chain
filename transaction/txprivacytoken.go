@@ -151,13 +151,8 @@ func NewTxPrivacyTokenInitParams(senderKey *privacy.PrivateKey,
 	hasPrivacyCoin bool,
 	hasPrivacyToken bool,
 	shardID byte,
-<<<<<<< HEAD
-	info []byte) *TxPrivacyTokenInitParams {
-
-=======
 	info []byte,
 	bridgeStateDB *statedb.StateDB) *TxPrivacyTokenInitParams {
->>>>>>> dev/master-db-v2
 	params := &TxPrivacyTokenInitParams{
 		shardID:            shardID,
 		paymentInfo:        paymentInfo,
@@ -223,7 +218,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 			// issue token with data of privacy
 			temp := Tx{}
 			temp.Type = common.TxNormalType
-			temp.Proof = new(privacy.Proof)
+			temp.Proof = privacy.NewPrivacyProofWithVersion(txCustomTokenPrivacy.Version)
 			tempOutputCoin := make([]*privacy.OutputCoin, 1)
 			tempOutputCoin[0] = new(privacy.OutputCoin)
 			tempOutputCoin[0].CoinDetails = new(privacy.CoinV1)

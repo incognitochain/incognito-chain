@@ -126,3 +126,13 @@ type AggregatedRangeProof = agg_interface.AggregatedRangeProof
 
 // type AggregatedRangeProofV1 = proof.AggregatedRangeProofV1
 // type AggregatedRangeProofV2 = proof.AggregatedRangeProofV2
+
+func NewPrivacyProofWithVersion(version int8) *Proof {
+	var p Proof
+	if version == 1 {
+		p = &ProofV1{}
+	} else {
+		p = &ProofV2{}
+	}
+	return &p
+}
