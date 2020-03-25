@@ -271,7 +271,7 @@ func GetPortalExpiredPortingRequestStatus(stateDB *StateDB, waitingPortingID str
 func GetAllLiquidateExchangeRates(
 	stateDB *StateDB,
 	beaconHeight uint64,
-) (map[string]*LiquidateExchangeRates, error) {
+) (map[string]*LiquidateExchangeRatesPool, error) {
 	//todo:
 	return nil, nil
 }
@@ -279,13 +279,13 @@ func GetAllLiquidateExchangeRates(
 func StoreLiquidateExchangeRates(
 	stateDB *StateDB,
 	beaconHeight uint64,
-	liquidateExchangeRates map[string]*LiquidateExchangeRates,
+	liquidateExchangeRates map[string]*LiquidateExchangeRatesPool,
 	) error {
 	//todo
 	return nil
 }
 
-func GetLiquidateExchangeRates(stateDB *StateDB, beaconHeight uint64) (*LiquidateExchangeRates, error)  {
+func GetLiquidateExchangeRates(stateDB *StateDB, beaconHeight uint64) (*LiquidateExchangeRatesPool, error)  {
 	/*tokenIDs := []string{tokenIDToBuy, tokenIDToSell}
 	sort.Strings(tokenIDs)
 	key := GeneratePDEPoolPairObjectKey(tokenIDs[0], tokenIDs[1])

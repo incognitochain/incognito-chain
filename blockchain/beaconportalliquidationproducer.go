@@ -567,8 +567,8 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 			currentPortalState.CustodianPoolState[custodianKey] = custodianState
 
 			//update LiquidateExchangeRates
-			liquidateExchangeRatesKey := statedb.NewPortalLiquidateExchangeRatesKey(beaconHeight)
-			liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey]
+			liquidateExchangeRatesKey := statedb.GeneratePortalLiquidateExchangeRatesPoolObjectKey(beaconHeight)
+			liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()]
 
 			Logger.log.Infof("update liquidateExchangeRatesKey key %v", liquidateExchangeRatesKey)
 			if !ok {
@@ -580,23 +580,23 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 						HoldAmountPubToken: liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
 					}
 				}
-				currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey], _ = NewLiquidateExchangeRates(item)
+				currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()] = statedb.NewLiquidateExchangeRatesPoolWithValue(item)
 			} else {
 				for ptoken, liquidateTopPercentileExchangeRatesDetail := range detectTp {
-					if _, ok := liquidateExchangeRates.Rates[ptoken]; !ok {
-						liquidateExchangeRates.Rates[ptoken] = statedb.LiquidateExchangeRatesDetail{
+					if _, ok := liquidateExchangeRates.Rates()[ptoken]; !ok {
+						liquidateExchangeRates.Rates()[ptoken] = statedb.LiquidateExchangeRatesDetail{
 							HoldAmountFreeCollateral: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
 							HoldAmountPubToken: liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
 						}
 					} else {
-						liquidateExchangeRates.Rates[ptoken] = statedb.LiquidateExchangeRatesDetail{
-							HoldAmountFreeCollateral: liquidateExchangeRates.Rates[ptoken].HoldAmountFreeCollateral +  liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
-							HoldAmountPubToken: liquidateExchangeRates.Rates[ptoken].HoldAmountPubToken +  liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
+						liquidateExchangeRates.Rates()[ptoken] = statedb.LiquidateExchangeRatesDetail{
+							HoldAmountFreeCollateral: liquidateExchangeRates.Rates()[ptoken].HoldAmountFreeCollateral +  liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
+							HoldAmountPubToken: liquidateExchangeRates.Rates()[ptoken].HoldAmountPubToken +  liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
 						}
 					}
 				}
 
-				currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey] = liquidateExchangeRates
+				currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()] = liquidateExchangeRates
 			}
 
 
@@ -703,7 +703,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
 
 	//check redeem amount
 	liquidateExchangeRatesKey := statedb.NewPortalLiquidateExchangeRatesKey(beaconHeight)
-	liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey]
+	liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey]
 
 	if !ok {
 		Logger.log.Errorf("Liquidate exchange rates not found")
@@ -784,7 +784,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
 		HoldAmountPubToken: liquidateByTokenID.HoldAmountPubToken - meta.RedeemAmount,
 	}
 
-	currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey] = liquidateExchangeRates
+	currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey] = liquidateExchangeRates
 
 	inst := buildRedeemLiquidateExchangeRatesInst(
 		meta.TokenID,

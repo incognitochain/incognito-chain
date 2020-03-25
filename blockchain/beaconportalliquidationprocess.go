@@ -184,7 +184,7 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(porta
 
 			//update LiquidateExchangeRates
 			liquidateExchangeRatesKey := statedb.GeneratePortalLiquidateExchangeRatesObjectKey(beaconHeight)
-			liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey.String()]
+			liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()]
 
 			Logger.log.Infof("update liquidateExchangeRatesKey key %v", liquidateExchangeRatesKey)
 			if !ok {
@@ -196,7 +196,7 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(porta
 						HoldAmountPubToken:       liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
 					}
 				}
-				currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey.String()] = statedb.NewLiquidateExchangeRatesWithValue(item)
+				currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()] = statedb.NewLiquidateExchangeRatesWithValue(item)
 			} else {
 				for ptoken, liquidateTopPercentileExchangeRatesDetail := range detectTp {
 					if _, ok := liquidateExchangeRates.Rates()[ptoken]; !ok {
@@ -212,7 +212,7 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(porta
 					}
 				}
 
-				currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey.String()] = liquidateExchangeRates
+				currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()] = liquidateExchangeRates
 			}
 
 
@@ -300,7 +300,7 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(portalSt
 		}
 
 		liquidateExchangeRatesKey := statedb.GeneratePortalLiquidateExchangeRatesObjectKey(beaconHeight)
-		liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey.String()]
+		liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()]
 
 		if !ok {
 			Logger.log.Errorf("Liquidate exchange rates not found")
@@ -320,7 +320,7 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(portalSt
 			HoldAmountPubToken:       liquidateByTokenID.HoldAmountPubToken - actionData.RedeemAmount,
 		}
 
-		currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey.String()] = liquidateExchangeRates
+		currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()] = liquidateExchangeRates
 
 		Logger.log.Infof("Redeem Liquidation: Amount refund to user amount ptoken %v, amount prv %v", actionData.RedeemAmount, totalPrv)
 
