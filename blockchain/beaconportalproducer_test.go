@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	mocks "github.com/incognitochain/incognito-chain/mocks"
 	"github.com/stretchr/testify/assert"

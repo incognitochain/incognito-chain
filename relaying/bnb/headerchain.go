@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/tendermint/tendermint/types"
 	"strings"
 )

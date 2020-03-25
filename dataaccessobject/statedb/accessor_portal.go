@@ -292,16 +292,16 @@ func StoreLiquidateExchangeRates(
 }
 //======================  Porting  ======================
 func TrackPortalStateStatus(stateDB *StateDB, statusType []byte, statusSuffix []byte, statusContent []byte) error {
-	key := GeneratePortalStatusObjectKey(statusType, statusSuffix)
+	/*key := GeneratePortalStatusObjectKey(statusType, statusSuffix)
 	value := NewPortalStatusStateWithValue(statusType, statusSuffix, statusContent)
-	err := stateDB.SetStateObject(PortalStatusObjectType, key, value)
+	_ := stateDB.SetStateObject(PortalStatusObjectType, key, value)*/
 
-	switch statusType {
-		case []byte("abic"):
+	/*switch statusType {
+		case byte("abic"):
 			if err != nil {
 				return NewStatedbError(StorePortalStatusError, err)
 			}
-	}
+	}*/
 
 	return nil
 }
@@ -323,7 +323,7 @@ func GetPortalStatusByKey(stateDB *StateDB, statusType []byte, statusSuffix []by
 func GetWaitingPortingRequests(
 	stateDB *StateDB,
 	beaconHeight uint64,
-) (map[string]*WaitingPortingRequest, error) {
+) (map[string]*PortingRequest, error) {
 	//todo:
 	return nil, nil
 }
@@ -332,7 +332,7 @@ func GetWaitingPortingRequests(
 func StoreWaitingPortingRequests(
 	stateDB *StateDB,
 	beaconHeight uint64,
-	portingReqs map[string]*WaitingPortingRequest) error {
+	portingReqs map[string]*PortingRequest) error {
 	//todo:
 	return nil
 }

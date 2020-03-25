@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/binance-chain/go-sdk/client/rpc"
 	bnbtx "github.com/binance-chain/go-sdk/types/tx"
-	"github.com/incognitochain/incognito-chain/database"
 	"github.com/tendermint/tendermint/rpc/client"
 	"github.com/tendermint/tendermint/types"
 )

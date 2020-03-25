@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"math"
@@ -128,8 +129,8 @@ func checkAndBuildInstForCustodianLiquidation(
 	insts := [][]string{}
 
 	// get exchange rate
-	exchangeRateKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
-	exchangeRate := currentPortalState.FinalExchangeRates[exchangeRateKey]
+	exchangeRateKey := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
+	exchangeRate := currentPortalState.FinalExchangeRatesState[exchangeRateKey.String()]
 	if exchangeRate == nil {
 		Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when get exchange rate")
 	}
@@ -175,7 +176,7 @@ func checkAndBuildInstForCustodianLiquidation(
 
 				// update custodian state (total collateral, holding public tokens, locked amount, free collateral)
 				Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] cusIncAddr: %v\n", matchCusDetail.IncAddress)
-				cusStateKey := lvdb.NewCustodianStateKey(beaconHeight, matchCusDetail.IncAddress)
+				cusStateKey := statedb.NewCustodianStateKey(beaconHeight, matchCusDetail.IncAddress)
 				custodianState := currentPortalState.CustodianPoolState[cusStateKey]
 				if custodianState == nil {
 					Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when get custodian state with key %v\n: ", cusStateKey)
@@ -291,7 +292,7 @@ func buildInstForExpiredPortingReqByPortingID(
 	beaconHeight uint64,
 	currentPortalState *CurrentPortalState,
 	portingReqKey string,
-	portingReq *lvdb.PortingRequest,
+	portingReq *statedb.PortingRequest,
 	expiredByLiquidation bool)([][]string, error){
 	insts := [][]string{}
 
@@ -309,7 +310,7 @@ func buildInstForExpiredPortingReqByPortingID(
 
 	// update custodian state in matching custodians list (holding public tokens, locked amount)
 	for _, matchCusDetail := range portingReq.Custodians {
-		cusStateKey := lvdb.NewCustodianStateKey(beaconHeight, matchCusDetail.IncAddress)
+		cusStateKey := statedb.NewCustodianStateKey(beaconHeight, matchCusDetail.IncAddress)
 		custodianState := currentPortalState.CustodianPoolState[cusStateKey]
 		if custodianState == nil {
 			Logger.log.Errorf("[checkAndBuildInstForExpiredWaitingPortingRequest] Error when get custodian state with key %v\n: ", cusStateKey)
@@ -359,8 +360,8 @@ func checkAndBuildInstForExpiredWaitingPortingRequest(
 func checkAndBuildInstForTPExchangeRateRedeemRequest(
 	beaconHeight uint64,
 	currentPortalState *CurrentPortalState,
-	exchangeRate *lvdb.FinalExchangeRates,
-	liquidatedCustodianState *lvdb.CustodianState,
+	exchangeRate *statedb.FinalExchangeRatesState,
+	liquidatedCustodianState *statedb.CustodianState,
 	tokenID string,
 )([][]string, error) {
 	insts := [][]string{}
@@ -435,7 +436,7 @@ func checkAndBuildInstForTPExchangeRateRedeemRequest(
 		}
 	}
 	// update custodian state (update locked amount, holding public token amount)
-	custodianStateKey := lvdb.NewCustodianStateKey(beaconHeight, liquidatedCustodianState.IncognitoAddress)
+	custodianStateKey := statedb.NewCustodianStateKey(beaconHeight, liquidatedCustodianState.IncognitoAddress)
 	currentPortalState.CustodianPoolState[custodianStateKey].HoldingPubTokens[tokenID] -= totalMatchingRedeemAmountPubToken
 	currentPortalState.CustodianPoolState[custodianStateKey].LockedAmountCollateral[tokenID] -= totalMintedAmountPRV
 
@@ -445,8 +446,8 @@ func checkAndBuildInstForTPExchangeRateRedeemRequest(
 func checkAndBuildInstForTPExchangeRatePortingRequest(
 	beaconHeight uint64,
 	currentPortalState *CurrentPortalState,
-	exchangeRate *lvdb.FinalExchangeRates,
-	liquidatedCustodianState *lvdb.CustodianState,
+	exchangeRate *statedb.FinalExchangeRates,
+	liquidatedCustodianState *statedb.CustodianState,
 	tokenID string,
 )([][]string, error) {
 	insts := [][]string{}
@@ -482,7 +483,7 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 
 	insts := [][]string{}
 
-	keyExchangeRate := lvdb.NewFinalExchangeRatesKey(beaconHeight)
+	keyExchangeRate := statedb.NewFinalExchangeRatesKey(beaconHeight)
 	exchangeRate, ok := currentPortalState.FinalExchangeRates[keyExchangeRate]
 	if !ok {
 		Logger.log.Errorf("Exchange rate not found")
@@ -566,15 +567,15 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 			currentPortalState.CustodianPoolState[custodianKey] = custodianState
 
 			//update LiquidateExchangeRates
-			liquidateExchangeRatesKey := lvdb.NewPortalLiquidateExchangeRatesKey(beaconHeight)
+			liquidateExchangeRatesKey := statedb.NewPortalLiquidateExchangeRatesKey(beaconHeight)
 			liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey]
 
 			Logger.log.Infof("update liquidateExchangeRatesKey key %v", liquidateExchangeRatesKey)
 			if !ok {
-				item := make(map[string]lvdb.LiquidateExchangeRatesDetail)
+				item := make(map[string]statedb.LiquidateExchangeRatesDetail)
 
 				for ptoken, liquidateTopPercentileExchangeRatesDetail := range detectTp {
-					item[ptoken] = lvdb.LiquidateExchangeRatesDetail{
+					item[ptoken] = statedb.LiquidateExchangeRatesDetail{
 						HoldAmountFreeCollateral: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
 						HoldAmountPubToken: liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
 					}
@@ -583,12 +584,12 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 			} else {
 				for ptoken, liquidateTopPercentileExchangeRatesDetail := range detectTp {
 					if _, ok := liquidateExchangeRates.Rates[ptoken]; !ok {
-						liquidateExchangeRates.Rates[ptoken] = lvdb.LiquidateExchangeRatesDetail{
+						liquidateExchangeRates.Rates[ptoken] = statedb.LiquidateExchangeRatesDetail{
 							HoldAmountFreeCollateral: liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
 							HoldAmountPubToken: liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
 						}
 					} else {
-						liquidateExchangeRates.Rates[ptoken] = lvdb.LiquidateExchangeRatesDetail{
+						liquidateExchangeRates.Rates[ptoken] = statedb.LiquidateExchangeRatesDetail{
 							HoldAmountFreeCollateral: liquidateExchangeRates.Rates[ptoken].HoldAmountFreeCollateral +  liquidateTopPercentileExchangeRatesDetail.HoldAmountFreeCollateral,
 							HoldAmountPubToken: liquidateExchangeRates.Rates[ptoken].HoldAmountPubToken +  liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
 						}
@@ -646,7 +647,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
 	}
 
 	//get exchange rates
-	exchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
+	exchangeRatesKey := statedb.NewFinalExchangeRatesKey(beaconHeight)
 	exchangeRatesState, ok := currentPortalState.FinalExchangeRates[exchangeRatesKey]
 	if !ok {
 		Logger.log.Errorf("exchange rates not found")
@@ -701,7 +702,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
 	}
 
 	//check redeem amount
-	liquidateExchangeRatesKey := lvdb.NewPortalLiquidateExchangeRatesKey(beaconHeight)
+	liquidateExchangeRatesKey := statedb.NewPortalLiquidateExchangeRatesKey(beaconHeight)
 	liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRates[liquidateExchangeRatesKey]
 
 	if !ok {
@@ -778,7 +779,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
 	}
 
 	Logger.log.Infof("Redeem Liquidation: Amount refund to user amount ptoken %v, amount prv %v", meta.RedeemAmount, totalPrv)
-	liquidateExchangeRates.Rates[meta.TokenID] = lvdb.LiquidateExchangeRatesDetail{
+	liquidateExchangeRates.Rates[meta.TokenID] = statedb.LiquidateExchangeRatesDetail{
 		HoldAmountFreeCollateral: liquidateByTokenID.HoldAmountFreeCollateral - totalPrv,
 		HoldAmountPubToken: liquidateByTokenID.HoldAmountPubToken - meta.RedeemAmount,
 	}
@@ -839,7 +840,7 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 
 	meta := actionData.Meta
 
-	keyCustodianState := lvdb.NewCustodianStateKey(beaconHeight, meta.IncogAddressStr)
+	keyCustodianState := statedb.NewCustodianStateKey(beaconHeight, meta.IncogAddressStr)
 
 	custodian, ok := currentPortalState.CustodianPoolState[keyCustodianState]
 
@@ -878,7 +879,7 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 		return [][]string{inst}, nil
 	}
 
-	keyExchangeRate := lvdb.NewFinalExchangeRatesKey(beaconHeight)
+	keyExchangeRate := statedb.NewFinalExchangeRatesKey(beaconHeight)
 	exchangeRate, ok := currentPortalState.FinalExchangeRates[keyExchangeRate]
 	if !ok {
 		Logger.log.Errorf("Exchange rate not found", err)

@@ -1,6 +1,5 @@
 package jsonresult
 
-import "github.com/incognitochain/incognito-chain/database/lvdb"
 
 type GetLiquidateTpExchangeRates struct {
 	TokenId string `json:"TokenId"`

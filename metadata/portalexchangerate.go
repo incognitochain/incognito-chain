@@ -8,7 +8,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"github.com/mailru/easyjson/benchmark"
 	"reflect"
 	"strconv"
 )
@@ -41,7 +40,7 @@ func NewExchangeRatesRequestStatus(status byte, senderAddress string, rates []*E
 	return &ExchangeRatesRequestStatus{Status: status, SenderAddress: senderAddress, Rates: rates}
 }
 
-func NewPortalExchangeRates(metaType int, senderAddress string, currency []*statedb.ExchangeRateInfo) (*PortalExchangeRates, error) {
+func NewPortalExchangeRates(metaType int, senderAddress string, currency []*ExchangeRateInfo) (*PortalExchangeRates, error) {
 	metadataBase := MetadataBase{Type: metaType}
 
 	portalExchangeRates := &PortalExchangeRates{
