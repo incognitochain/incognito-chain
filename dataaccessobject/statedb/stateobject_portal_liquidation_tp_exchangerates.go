@@ -8,9 +8,25 @@ type LiquidateExchangeRatesDetail struct {
 }
 
 type LiquidateExchangeRates struct {
-	Rates map[string]LiquidateExchangeRatesDetail //ptoken | detail
+	rates map[string]LiquidateExchangeRatesDetail //ptoken | detail
 }
 
-func GenerateLiquidateExchangeRatesObjectKey(portingRequestId string) common.Hash {
+func (l *LiquidateExchangeRates) Rates() map[string]LiquidateExchangeRatesDetail {
+	return l.rates
+}
+
+func (l *LiquidateExchangeRates) SetRates(rates map[string]LiquidateExchangeRatesDetail) {
+	l.rates = rates
+}
+
+func NewLiquidateExchangeRates() *LiquidateExchangeRates {
+	return &LiquidateExchangeRates{}
+}
+
+func NewLiquidateExchangeRatesWithValue(rates map[string]LiquidateExchangeRatesDetail) *LiquidateExchangeRates {
+	return &LiquidateExchangeRates{rates: rates}
+}
+
+func GeneratePortalLiquidateExchangeRatesObjectKey(beaconHeight uint64) common.Hash {
 	return common.Hash{}
 }

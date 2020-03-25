@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"math"

@@ -2,7 +2,6 @@ package rpcservice
 
 import (
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"strconv"

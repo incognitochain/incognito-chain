@@ -1,13 +1,7 @@
 package lvdb
 
 import (
-	"encoding/json"
-	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/pkg/errors"
-	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
-	"github.com/syndtr/goleveldb/leveldb/util"
-	"math"
 )
 
 //// prefix key for portal
@@ -235,59 +229,6 @@ import (
 //	Rate     uint64
 //}
 
-func (db *db) GetAllRecordsPortalByPrefix(beaconHeight uint64, prefix []byte) ([][]byte, [][]byte, error) {
-	keys := [][]byte{}
-	values := [][]byte{}
-
-	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
-	prefixByBeaconHeight := append(prefix, beaconHeightBytes...)
-
-	//prefixByBeaconHeight:  prefix-beaconHeight-
-
-	iter := db.lvdb.NewIterator(util.BytesPrefix(prefixByBeaconHeight), nil)
-	for iter.Next() {
-		key := iter.Key()
-		value := iter.Value()
-		keyBytes := make([]byte, len(key))
-		valueBytes := make([]byte, len(value))
-		copy(keyBytes, key)
-		copy(valueBytes, value)
-		keys = append(keys, keyBytes)
-		values = append(values, valueBytes)
-	}
-	iter.Release()
-	err := iter.Error()
-	if err != nil && err != lvdberr.ErrNotFound {
-		return keys, values, database.NewDatabaseError(database.GetAllRecordsByPrefixError, err)
-	}
-	return keys, values, nil
-}
-
-func (db *db) GetAllRecordsPortalByPrefixWithoutBeaconHeight(key []byte) ([][]byte, [][]byte, error) {
-	keys := [][]byte{}
-	values := [][]byte{}
-
-	iter := db.lvdb.NewIterator(util.BytesPrefix(key), nil)
-	for iter.Next() {
-		key := iter.Key()
-		value := iter.Value()
-		keyBytes := make([]byte, len(key))
-		valueBytes := make([]byte, len(value))
-		copy(keyBytes, key)
-		copy(valueBytes, value)
-		keys = append(keys, keyBytes)
-		values = append(values, valueBytes)
-	}
-	iter.Release()
-	err := iter.Error()
-
-	if err != nil && err != lvdberr.ErrNotFound {
-		return keys, values, database.NewDatabaseError(database.GetAllRecordsByPrefixError, err)
-	}
-
-	return keys, values, nil
-}
-
 // TrackCustodianDepositCollateral stores custodian deposit collateral into db with deposit TxID
 func (db *db) TrackCustodianDepositCollateral(key []byte, content []byte) error {
 	err := db.Put(key, content)
@@ -327,215 +268,6 @@ func (db *db) GetReqPTokenStatusByTxReqID(txReqID string) ([]byte, error) {
 	}
 
 	return reqPTokenStatusBytes, err
-}
-
-// StorePortingRequestItem store status of porting request by portingID
-func (db *db) StorePortingRequestItem(keyId []byte, content interface{}) error {
-	contributionBytes, err := json.Marshal(content)
-	if err != nil {
-		return err
-	}
-
-	err = db.Put(keyId, contributionBytes)
-	if err != nil {
-		return database.NewDatabaseError(database.StorePortingRequestStateError, errors.Wrap(err, "db.lvdb.put"))
-	}
-
-	return nil
-}
-
-func (db *db) StoreExchangeRatesRequestItem(keyId []byte, content interface{}) error {
-	contributionBytes, err := json.Marshal(content)
-	if err != nil {
-		return err
-	}
-
-	err = db.Put(keyId, contributionBytes)
-	if err != nil {
-		return database.NewDatabaseError(database.StoreExchangeRatesRequestStateError, errors.Wrap(err, "db.lvdb.put"))
-	}
-
-	return nil
-}
-
-func (db *db) StoreFinalExchangeRatesItem(keyId []byte, content interface{}) error {
-	contributionBytes, err := json.Marshal(content)
-	if err != nil {
-		return err
-	}
-
-	err = db.Put(keyId, contributionBytes)
-	if err != nil {
-		return database.NewDatabaseError(database.StoreFinalExchangeRatesStateError, errors.Wrap(err, "db.lvdb.put"))
-	}
-
-	return nil
-}
-
-func (db *db) GetItemPortalByKey(key []byte) ([]byte, error) {
-	itemRecord, dbErr := db.lvdb.Get(key, nil)
-	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
-		return nil, database.NewDatabaseError(database.GetItemPortalByKeyError, dbErr)
-	}
-
-	if itemRecord == nil {
-		return nil, nil
-	}
-
-	return itemRecord, nil
-}
-
-// GetPortingRequestStatusByPortingID returns status of porting request by portingID
-func (db *db) GetPortingRequestStatusByPortingID(portingID string) (int, error) {
-	key := NewPortingRequestKey(portingID)
-	portingRequest, err := db.GetItemPortalByKey([]byte(key))
-
-	if err != nil {
-		return 0, err
-	}
-
-	var portingRequestResult PortingRequest
-
-	if portingRequest == nil {
-		return 0, nil
-	}
-
-	//get value via idx
-	err = json.Unmarshal(portingRequest, &portingRequestResult)
-	if err != nil {
-		return 0, err
-	}
-
-	return portingRequestResult.Status, nil
-}
-
-// UpdatePortingRequestStatus updates status of porting request by portingID
-func (db *db) UpdatePortingRequestStatus(portingID string, newStatus int) error {
-	key := NewPortingRequestKey(portingID)
-	portingRequest, err := db.GetItemPortalByKey([]byte(key))
-
-	if err != nil {
-		return err
-	}
-
-	var portingRequestResult PortingRequest
-
-	if portingRequest == nil {
-		return nil
-	}
-
-	//get value via idx
-	err = json.Unmarshal(portingRequest, &portingRequestResult)
-	if err != nil {
-		return err
-	}
-
-	portingRequestResult.Status = newStatus
-
-	//save porting request
-	err = db.StorePortingRequestItem([]byte(key), portingRequestResult)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (finalExchangeRates FinalExchangeRates) ExchangePToken2PRVByTokenId(pTokenId string, value uint64) (uint64, error) {
-	switch pTokenId {
-	case common.PortalBTCIDStr:
-		return finalExchangeRates.ExchangeBTC2PRV(value)
-	case common.PortalBNBIDStr:
-		return finalExchangeRates.ExchangeBNB2PRV(value)
-	}
-
-	return 0, errors.New("Ptoken is not support")
-}
-
-func (finalExchangeRates *FinalExchangeRates) ExchangePRV2PTokenByTokenId(pTokenId string, value uint64) (uint64, error) {
-	switch pTokenId {
-	case common.PortalBTCIDStr:
-		return finalExchangeRates.ExchangePRV2BTC(value)
-	case common.PortalBNBIDStr:
-		return finalExchangeRates.ExchangePRV2BNB(value)
-	}
-
-	return 0, errors.New("Ptoken is not support")
-}
-
-func (finalExchangeRates *FinalExchangeRates) convert(value uint64, ratesFrom uint64, RatesTo uint64) (uint64, error) {
-	//convert to pusdt
-	total := (value * ratesFrom) / uint64(math.Pow10(9)) //value of nanno
-
-	if RatesTo <= 0 {
-		return 0, errors.New("Can not divide zero")
-	}
-
-	//pusdt -> new coin
-	result := (total * uint64(math.Pow10(9))) / RatesTo
-	roundNumber := math.Round(float64(result))
-	return uint64(roundNumber), nil
-
-}
-
-func (finalExchangeRates *FinalExchangeRates) ExchangeBTC2PRV(value uint64) (uint64, error) {
-	//input : nano
-	//todo: check rates exist
-	BTCRates := finalExchangeRates.Rates[common.PortalBTCIDStr].Amount //return nano pUSDT
-	PRVRates := finalExchangeRates.Rates[common.PRVIDStr].Amount       //return nano pUSDT
-	valueExchange, err := finalExchangeRates.convert(value, BTCRates, PRVRates)
-
-	if err != nil {
-		return 0, err
-	}
-
-	database.Logger.Log.Infof("================ Convert, BTC %d 2 PRV with BTCRates %d PRVRates %d , result %d", value, BTCRates, PRVRates, valueExchange)
-
-	//nano
-	return valueExchange, nil
-}
-
-func (finalExchangeRates *FinalExchangeRates) ExchangeBNB2PRV(value uint64) (uint64, error) {
-	BNBRates := finalExchangeRates.Rates[common.PortalBNBIDStr].Amount
-	PRVRates := finalExchangeRates.Rates[common.PRVIDStr].Amount
-
-	valueExchange, err := finalExchangeRates.convert(value, BNBRates, PRVRates)
-
-	if err != nil {
-		return 0, err
-	}
-
-	database.Logger.Log.Infof("================ Convert, BNB %v 2 PRV with BNBRates %v PRVRates %v, result %v", value, BNBRates, PRVRates, valueExchange)
-
-	return valueExchange, nil
-}
-
-func (finalExchangeRates *FinalExchangeRates) ExchangePRV2BTC(value uint64) (uint64, error) {
-	//input nano
-	BTCRates := finalExchangeRates.Rates[common.PortalBTCIDStr].Amount //return nano pUSDT
-	PRVRates := finalExchangeRates.Rates[common.PRVIDStr].Amount       //return nano pUSDT
-
-	valueExchange, err := finalExchangeRates.convert(value, PRVRates, BTCRates)
-
-	if err != nil {
-		return 0, err
-	}
-
-	database.Logger.Log.Infof("================ Convert, PRV %v 2 BTC with BTCRates %v PRVRates %v, result %v", value, BTCRates, PRVRates, valueExchange)
-
-	return valueExchange, nil
-}
-
-func (finalExchangeRates *FinalExchangeRates) ExchangePRV2BNB(value uint64) (uint64, error) {
-	BNBRates := finalExchangeRates.Rates[common.PortalBNBIDStr].Amount
-	PRVRates := finalExchangeRates.Rates[common.PRVIDStr].Amount
-
-	valueExchange, err := finalExchangeRates.convert(value, PRVRates, BNBRates)
-	if err != nil {
-		return 0, err
-	}
-	database.Logger.Log.Infof("================ Convert, PRV %v 2 BNB with BNBRates %v PRVRates %v, result %v", value, BNBRates, PRVRates, valueExchange)
-	return valueExchange, nil
 }
 
 // ======= REDEEM =======
@@ -583,19 +315,6 @@ func (db *db) TrackRedeemRequestByTxReqID(key []byte, value []byte) error {
 	return nil
 }
 
-func (db *db) StoreCustodianWithdrawRequest(key []byte, content interface{}) error {
-	contributionBytes, err := json.Marshal(content)
-	if err != nil {
-		return err
-	}
-
-	err = db.Put(key, contributionBytes)
-	if err != nil {
-		return database.NewDatabaseError(database.StorePortalCustodianWithdrawRequestStateError, errors.Wrap(err, "db.lvdb.put"))
-	}
-
-	return nil
-}
 
 // NewPortalReqUnlockCollateralKey creates key for tracking request unlock collateral in portal
 //func NewPortalReqUnlockCollateralKey(txReqStr string) string {
@@ -675,18 +394,6 @@ func (db *db) TrackExpiredPortingReq(key []byte, value []byte) error {
 //	return string(key)
 //}
 
-func (db *db) StoreLiquidateTopPercentileExchangeRates(keyId []byte, content interface{}) error {
-	contributionBytes, err := json.Marshal(content)
-	if err != nil {
-		return err
-	}
-
-	err = db.Put(keyId, contributionBytes)
-	if err != nil {
-		return database.NewDatabaseError(database.StoreLiquidateTopPercentileExchangeRatesError, errors.Wrap(err, "db.lvdb.put"))
-	}
-	return nil
-}
 
 // NewPortalRewardKey creates key for storing portal reward by beacon height
 //func NewPortalRewardKey(beaconHeight uint64) string {
@@ -726,35 +433,9 @@ func (db *db) TrackPortalReqWithdrawReward(key []byte, value []byte) error {
 //	return string(key)
 //}
 
-func (db *db) StoreRedeemLiquidationExchangeRates(key []byte, content interface{}) error {
-	contributionBytes, err := json.Marshal(content)
-	if err != nil {
-		return err
-	}
-
-	err = db.Put(key, contributionBytes)
-	if err != nil {
-		return database.NewDatabaseError(database.StoreRedeemLiquidationExchangeRatesError, errors.Wrap(err, "db.lvdb.put"))
-	}
-
-	return nil
-}
 
 //func NewLiquidationCustodianDepositKey(txID string) string  {
 //	key := append(PortalCustodianDepositPrefix, []byte(txID)...)
 //	return string(key)
 //}
 
-func (db *db) StoredLiquidationCustodianDeposit(key []byte, content interface{}) error {
-	contributionBytes, err := json.Marshal(content)
-	if err != nil {
-		return err
-	}
-
-	err = db.Put(key, contributionBytes)
-	if err != nil {
-		return database.NewDatabaseError(database.StoreLiquidationCustodianDepositError, errors.Wrap(err, "db.lvdb.put"))
-	}
-
-	return nil
-}

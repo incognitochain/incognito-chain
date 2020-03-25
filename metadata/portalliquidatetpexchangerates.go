@@ -22,3 +22,4 @@ type LiquidateTopPercentileExchangeRatesStatus struct {
 func NewLiquidateTopPercentileExchangeRatesStatus(custodianAddress string, status byte, rates map[string]LiquidateTopPercentileExchangeRatesDetail) *LiquidateTopPercentileExchangeRatesStatus {
 	return &LiquidateTopPercentileExchangeRatesStatus{CustodianAddress: custodianAddress, Status: status, Rates: rates}
 }
+

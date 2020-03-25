@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/pkg/errors"
 )
 
 //======================  Redeem  ======================
@@ -276,6 +275,22 @@ func GetPortalExpiredPortingRequestStatus(stateDB *StateDB, redeemID string, cus
 	return data, nil
 }
 
+func GetLiquidateExchangeRates(
+	stateDB *StateDB,
+	beaconHeight uint64,
+) (map[string]*LiquidateExchangeRates, error) {
+	//todo:
+	return nil, nil
+}
+
+func StoreLiquidateExchangeRates(
+	stateDB *StateDB,
+	beaconHeight uint64,
+	liquidateExchangeRates map[string]*LiquidateExchangeRates,
+	) error {
+	//todo
+	return nil
+}
 //======================  Porting  ======================
 func TrackPortalStateStatus(stateDB *StateDB, statusType []byte, statusSuffix []byte, statusContent []byte) error {
 	key := GeneratePortalStatusObjectKey(statusType, statusSuffix)
@@ -285,7 +300,7 @@ func TrackPortalStateStatus(stateDB *StateDB, statusType []byte, statusSuffix []
 	switch statusType {
 		case []byte("abic"):
 			if err != nil {
-				return NewStatedbError(TrackPortalStatusError, err)
+				return NewStatedbError(StorePortalStatusError, err)
 			}
 	}
 
@@ -335,6 +350,38 @@ func StorePortingRequestItem(keyId []byte, content interface{}) error {
 		return database.NewDatabaseError(database.StorePortingRequestStateError, errors.Wrap(err, "db.lvdb.put"))
 	}
 	*/
+	return nil
+}
+
+// UpdatePortingRequestStatus updates status of porting request by portingID
+func UpdatePortingRequestStatus(portingID string, newStatus int) error {
+	/*key := NewPortingRequestKey(portingID)
+	portingRequest, err := db.GetItemPortalByKey([]byte(key))
+
+	if err != nil {
+		return err
+	}
+
+	var portingRequestResult PortingRequest
+
+	if portingRequest == nil {
+		return nil
+	}
+
+	//get value via idx
+	err = json.Unmarshal(portingRequest, &portingRequestResult)
+	if err != nil {
+		return err
+	}
+
+	portingRequestResult.Status = newStatus
+
+	//save porting request
+	err = db.StorePortingRequestItem([]byte(key), portingRequestResult)
+	if err != nil {
+		return err
+	}
+*/
 	return nil
 }
 

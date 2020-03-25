@@ -6,8 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"reflect"
 	"strconv"
@@ -35,7 +34,7 @@ type PortalPortingRequestContent struct {
 	PTokenId         string
 	RegisterAmount   uint64
 	PortingFee       uint64
-	Custodian        []*lvdb.MatchingPortingCustodianDetail
+	Custodian        []*statedb.MatchingPortingCustodianDetail
 	TxReqID          common.Hash
 }
 
@@ -45,13 +44,13 @@ type PortingRequestStatus struct {
 	TokenID         string
 	PorterAddress   string
 	Amount          uint64
-	Custodians      []*MatchingPortingCustodianDetail
+	Custodians      []*statedb.MatchingPortingCustodianDetail
 	PortingFee      uint64
 	Status          int
 	BeaconHeight    uint64
 }
 
-func NewPortingRequestStatus(uniquePortingID string, txReqID common.Hash, tokenID string, porterAddress string, amount uint64, custodians []*MatchingPortingCustodianDetail, portingFee uint64, status int, beaconHeight uint64) *PortingRequestStatus {
+func NewPortingRequestStatus(uniquePortingID string, txReqID common.Hash, tokenID string, porterAddress string, amount uint64, custodians []*statedb.MatchingPortingCustodianDetail, portingFee uint64, status int, beaconHeight uint64) *PortingRequestStatus {
 	return &PortingRequestStatus{UniquePortingID: uniquePortingID, TxReqID: txReqID, TokenID: tokenID, PorterAddress: porterAddress, Amount: amount, Custodians: custodians, PortingFee: portingFee, Status: status, BeaconHeight: beaconHeight}
 }
 
@@ -77,7 +76,7 @@ func (portalUserRegister PortalUserRegister) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,
-	db database.DatabaseInterface,
+	db *statedb.StateDB,
 ) (bool, error) {
 	// NOTE: verify supported tokens pair as needed
 	return true, nil

@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"reflect"
 	"strconv"
@@ -35,6 +35,19 @@ type PortalLiquidationCustodianDepositContent struct {
 	ShardID         byte
 }
 
+type LiquidationCustodianDepositStatus struct {
+	TxReqID common.Hash
+	IncogAddressStr string
+	PTokenId string
+	DepositAmount uint64
+	FreeCollateralSelected bool
+	Status byte
+}
+
+func NewLiquidationCustodianDepositStatus(txReqID common.Hash, incogAddressStr string, PTokenId string, depositAmount uint64, freeCollateralSelected bool, status byte) *LiquidationCustodianDepositStatus {
+	return &LiquidationCustodianDepositStatus{TxReqID: txReqID, IncogAddressStr: incogAddressStr, PTokenId: PTokenId, DepositAmount: depositAmount, FreeCollateralSelected: freeCollateralSelected, Status: status}
+}
+
 func NewPortalLiquidationCustodianDeposit(metaType int, incognitoAddrStr string, pToken string, amount uint64, freeCollateralSelected bool) (*PortalLiquidationCustodianDeposit , error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
@@ -53,7 +66,7 @@ func (custodianDeposit PortalLiquidationCustodianDeposit) ValidateTxWithBlockCha
 	txr Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,
-	db database.DatabaseInterface,
+	db *statedb.StateDB,
 ) (bool, error) {
 	return true, nil
 }

@@ -2,6 +2,15 @@ package statedb
 
 import "github.com/incognitochain/incognito-chain/common"
 
+
+type MatchingPortingCustodianDetail struct {
+	IncAddress             string
+	RemoteAddress          string
+	Amount                 uint64
+	LockedAmountCollateral uint64
+	RemainCollateral       uint64
+}
+
 type PortingRequest struct {
 	uniquePortingID string
 	txReqID         common.Hash

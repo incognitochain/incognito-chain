@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"reflect"
 	"strconv"
@@ -62,7 +62,7 @@ func (Withdraw PortalCustodianWithdrawRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,
-	db database.DatabaseInterface,
+	db *statedb.StateDB,
 ) (bool, error) {
 	// NOTE: verify supported tokens pair as needed
 	return true, nil

@@ -3,7 +3,6 @@ package blockchain
 import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"sort"
@@ -12,8 +11,6 @@ import (
 
 func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.StateDB, block *BeaconBlock) error {
 	beaconHeight := block.Header.Height - 1
-	db := blockchain.GetDatabase()
-
 	currentPortalState, err := InitCurrentPortalStateFromDB(portalStateDB, beaconHeight)
 	if err != nil {
 		Logger.log.Error(err)
@@ -412,7 +409,7 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 
 		// make sure user can not re-use proof for other portingID
 		// update status of porting request with portingID
-		err = db.UpdatePortingRequestStatus(actionData.UniquePortingID, common.PortalPortingReqSuccessStatus)
+		err = statedb.UpdatePortingRequestStatus(actionData.UniquePortingID, common.PortalPortingReqSuccessStatus)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store porting request item status: %+v", err)
 			return nil
