@@ -307,26 +307,6 @@ func (shardBestState *ShardBestState) SetMinShardCommitteeSize(minShardCommittee
 	return false
 }
 
-func (shardBestState *ShardBestState) GetPubkeyRole(pubkey string, round int) string {
-	keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(shardBestState.ShardCommittee, shardBestState.ConsensusAlgorithm)
-	found := common.IndexOfStr(pubkey, keyList)
-	if found > -1 {
-		tmpID := (shardBestState.ShardProposerIdx + round) % len(keyList)
-		if found == tmpID {
-			return common.ProposerRole
-		} else {
-			return common.ValidatorRole
-		}
-	}
-
-	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(shardBestState.ShardPendingValidator, shardBestState.ConsensusAlgorithm)
-	found = common.IndexOfStr(pubkey, keyList)
-	if found > -1 {
-		return common.PendingRole
-	}
-	return common.EmptyString
-}
-
 //MarshalJSON - remember to use lock
 func (shardBestState *ShardBestState) MarshalJSON() ([]byte, error) {
 	type Alias ShardBestState

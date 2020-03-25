@@ -15,6 +15,11 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
+func GetProposerIndexByRound(lastId, round, committeeSize int) int {
+	//return (lastId + round) % committeeSize
+	return 0
+}
+
 func (e *BLSBFT) getTimeSinceLastBlock() time.Duration {
 	return time.Since(time.Unix(int64(e.Chain.GetLastBlockTimeStamp()), 0))
 }

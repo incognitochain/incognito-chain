@@ -72,25 +72,8 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 		epoch = beaconBestState.Epoch
 	}
 	beaconBlock.Header.ConsensusType = beaconBestState.ConsensusAlgorithm
-
-	if version == 1 {
-		committee := curView.GetBeaconCommittee()
-		producerPosition := (curView.BeaconProposerIndex + round) % len(beaconBestState.BeaconCommittee)
-		beaconBlock.Header.Producer, err = committee[producerPosition].ToBase58() // .GetMiningKeyBase58(common.BridgeConsensus)
-		if err != nil {
-			return nil, err
-		}
-		beaconBlock.Header.ProducerPubKeyStr, err = committee[producerPosition].ToBase58()
-		if err != nil {
-			Logger.log.Error(err)
-			return nil, NewBlockChainError(ConvertCommitteePubKeyToBase58Error, err)
-		}
-	} else {
-
-		beaconBlock.Header.Producer = proposer
-		beaconBlock.Header.ProducerPubKeyStr = proposer
-	}
-
+	beaconBlock.Header.Producer = proposer
+	beaconBlock.Header.ProducerPubKeyStr = proposer
 	beaconBlock.Header.Height = beaconBestState.BeaconHeight + 1
 	beaconBlock.Header.Epoch = epoch
 	beaconBlock.Header.Round = round

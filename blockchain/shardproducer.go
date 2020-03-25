@@ -153,17 +153,6 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	// producer key
 	producerKey := proposer
 	producerPubKeyStr := proposer
-	if version == 1 {
-		producerPosition := (curView.ShardProposerIdx + round) % len(currentCommitteePubKeys)
-		producerKey, err = curView.ShardCommittee[producerPosition].ToBase58()
-		if err != nil {
-			return nil, NewBlockChainError(UnExpectedError, err)
-		}
-		producerPubKeyStr, err = curView.ShardCommittee[producerPosition].ToBase58()
-		if err != nil {
-			return nil, NewBlockChainError(ConvertCommitteePubKeyToBase58Error, fmt.Errorf("Failed to convert pub key of producer to base58 string in shard block %+v of shardID %+v", newShardBlock.Header.Height, newShardBlock.Header.ShardID))
-		}
-	}
 
 	for _, tx := range newShardBlock.Body.Transactions {
 		totalTxsFee[*tx.GetTokenID()] += tx.GetTxFee()

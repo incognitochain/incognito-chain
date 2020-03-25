@@ -535,46 +535,6 @@ func (beaconBestState *BeaconBestState) Hash() common.Hash {
 	return common.HashH(beaconBestState.GetBytes())
 }
 
-// Get role of a public key base on best state beacond
-// return node-role, <shardID>
-func (beaconBestState *BeaconBestState) GetPubkeyRole(pubkey string, round int) (string, byte) {
-
-	for shardID, pubkeyArr := range beaconBestState.ShardPendingValidator {
-		keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(pubkeyArr, beaconBestState.ShardConsensusAlgorithm[shardID])
-		found := common.IndexOfStr(pubkey, keyList)
-		if found > -1 {
-			return common.ShardRole, shardID
-		}
-	}
-
-	for shardID, pubkeyArr := range beaconBestState.ShardCommittee {
-		keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(pubkeyArr, beaconBestState.ShardConsensusAlgorithm[shardID])
-		found := common.IndexOfStr(pubkey, keyList)
-		if found > -1 {
-			return common.ShardRole, shardID
-		}
-	}
-
-	keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.BeaconCommittee, beaconBestState.ConsensusAlgorithm)
-	// Logger.log.Infof("GetPubkeyRole BeaconCommittee && keylist && pubkey: %+v %+v %+v", beaconBestState.BeaconCommittee, keyList, pubkey)
-	found := common.IndexOfStr(pubkey, keyList)
-	if found > -1 {
-		tmpID := (beaconBestState.BeaconProposerIndex + round) % len(beaconBestState.BeaconCommittee)
-		if found == tmpID {
-			return common.ProposerRole, 0
-		}
-		return common.ValidatorRole, 0
-	}
-
-	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.BeaconPendingValidator, beaconBestState.ConsensusAlgorithm)
-	found = common.IndexOfStr(pubkey, keyList)
-	if found > -1 {
-		return common.PendingRole, 0
-	}
-
-	return common.EmptyString, 0
-}
-
 func (beaconBestState *BeaconBestState) GetShardCandidate() []incognitokey.CommitteePublicKey {
 
 	return append(beaconBestState.CandidateShardWaitingForCurrentRandom, beaconBestState.CandidateShardWaitingForNextRandom...)

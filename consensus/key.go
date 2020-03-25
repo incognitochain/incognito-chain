@@ -126,7 +126,7 @@ func (engine *Engine) VerifyData(data []byte, sig string, publicKey string, cons
 func (engine *Engine) ValidateProducerPosition(blk common.BlockInterface, lastProposerIdx int, committee []incognitokey.CommitteePublicKey) error {
 
 	//check producer,proposer,agg sig with this version
-	producerPosition := (lastProposerIdx + blk.GetRound()) % len(committee)
+	producerPosition := blsbft.GetProposerIndexByRound(lastProposerIdx, blk.GetRound(), len(committee))
 	if blk.GetVersion() == 1 {
 		tempProducer, err := committee[producerPosition].ToBase58()
 		if err != nil {
@@ -135,17 +135,7 @@ func (engine *Engine) ValidateProducerPosition(blk common.BlockInterface, lastPr
 		if strings.Compare(tempProducer, blk.GetProducer()) != 0 {
 			return fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, blk.GetProducer())
 		}
-
-		//mainnet
-		//producerPosition := 0
-		////validate producer
-		//producer := blk.GetProducer()
-		//tmpProducer, _ := committee[producerPosition].ToBase58()
-		//if tmpProducer != producer {
-		//	return fmt.Errorf("Producer should be %+v but get %v index %v", tmpProducer, producer, producerPosition)
-		//}
 	} else {
-
 		//validate producer
 		producer := blk.GetProducer()
 		produceTime := blk.GetProduceTime()
@@ -178,7 +168,7 @@ func (engine *Engine) ValidateProducerSig(block common.BlockInterface, consensus
 }
 
 func (engine *Engine) ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
-	fmt.Println("Xxx ValidateBlockCommitteSig",len(committee))
+	fmt.Println("Xxx ValidateBlockCommitteSig", len(committee))
 	if block.GetVersion() == 1 {
 		return blsbft.ValidateCommitteeSig(block, committee)
 	} else if block.GetVersion() == 2 {

@@ -226,10 +226,6 @@ func (chain *BeaconChain) GetChainName() string {
 	return chain.ChainName
 }
 
-func (chain *BeaconChain) GetPubkeyRole(pubkey string, round int) (string, byte) {
-	return chain.multiView.GetBestView().(*BeaconBestState).GetPubkeyRole(pubkey, round)
-}
-
 func (chain *BeaconChain) ValidatePreSignBlock(block common.BlockInterface) error {
 	return chain.Blockchain.VerifyPreSignBeaconBlock(block.(*BeaconBlock), true)
 }

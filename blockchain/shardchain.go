@@ -180,7 +180,11 @@ func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, co
 func (chain *ShardChain) InsertBlk(block common.BlockInterface) error {
 	chain.insertLock.Lock()
 	defer chain.insertLock.Unlock()
-	return chain.Blockchain.InsertShardBlock(block.(*ShardBlock), false)
+	err := chain.Blockchain.InsertShardBlock(block.(*ShardBlock), false)
+	if err != nil {
+		Logger.log.Error(err)
+	}
+	return err
 }
 
 func (chain *ShardChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
@@ -208,10 +212,6 @@ func (chain *ShardChain) GetConsensusType() string {
 
 func (chain *ShardChain) GetShardID() int {
 	return int(chain.GetBestState().ShardID)
-}
-
-func (chain *ShardChain) GetPubkeyRole(pubkey string, round int) (string, byte) {
-	return chain.GetBestState().GetPubkeyRole(pubkey, round), chain.GetBestState().ShardID
 }
 
 func (chain *ShardChain) UnmarshalBlock(blockString []byte) (common.BlockInterface, error) {

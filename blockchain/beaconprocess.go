@@ -379,7 +379,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 	}
 	sort.Ints(keys)
 
-	var allShardBlocks = make(map[byte][]*ShardToBeaconBlock)
+	var allShardBlocks = make([][]*ShardToBeaconBlock, blockchain.config.ChainParams.ActiveShards)
 	s2bBlocksFromPool, err := blockchain.config.Syncker.GetS2BBlocksForBeaconValidator(curView.BestShardHash, s2bRequired)
 	if err != nil {
 		return NewBlockChainError(GetShardToBeaconBlocksError, fmt.Errorf("Unable to get required s2bBlocks from pool in time"))
@@ -390,36 +390,13 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 		}
 	}
 
-	for _, value := range keys {
-		shardID := byte(value)
-		shardBlocks, ok := allShardBlocks[shardID]
+	for chainID, shardBlocks := range allShardBlocks {
+		shardID := byte(chainID)
 		shardStates := beaconBlock.Body.ShardState[shardID]
-		if !ok && len(shardStates) > 0 {
-			return NewBlockChainError(GetShardToBeaconBlocksError, fmt.Errorf("Expect to get from pool ShardToBeacon Block from Shard %+v but failed", shardID))
-		}
 		// repeatly compare each shard to beacon block and shard state in new beacon block body
 		if len(shardBlocks) >= len(shardStates) {
 			shardBlocks = shardBlocks[:len(beaconBlock.Body.ShardState[shardID])]
-			for index, shardState := range shardStates {
-				if shardBlocks[index].Header.Height != shardState.Height {
-					return NewBlockChainError(ShardStateHeightError, fmt.Errorf("Expect shard state height to be %+v but get %+v from pool", shardState.Height, shardBlocks[index].Header.Height))
-				}
-				blockHash := shardBlocks[index].Header.Hash()
-				if !blockHash.IsEqual(&shardState.Hash) {
-					return NewBlockChainError(ShardStateHashError, fmt.Errorf("Expect shard state height %+v has hash %+v but get %+v from pool", shardState.Height, shardState.Hash, shardBlocks[index].Header.Hash()))
-				}
-				if !reflect.DeepEqual(shardBlocks[index].Header.CrossShardBitMap, shardState.CrossShard) {
-					return NewBlockChainError(ShardStateCrossShardBitMapError, fmt.Errorf("Expect shard state height %+v has bitmap %+v but get %+v from pool", shardState.Height, shardState.CrossShard, shardBlocks[index].Header.CrossShardBitMap))
-				}
-			}
-			// Only accept block in one epoch
-			for _, shardBlock := range shardBlocks {
-				currentCommittee := curView.GetAShardCommittee(shardID)
-				errValidation := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, currentCommittee)
-				if errValidation != nil {
-					return NewBlockChainError(ShardStateError, fmt.Errorf("Fail to verify with Shard To Beacon Block %+v, error %+v", shardBlock.Header.Height, err))
-				}
-			}
+
 			for _, shardBlock := range shardBlocks {
 				tempShardState, stakeInstruction, tempValidStakePublicKeys, swapInstruction, bridgeInstruction, acceptedBlockRewardInstruction, stopAutoStakingInstruction, statefulActions := blockchain.GetShardStateFromBlock(beaconBlock.Header.Height, shardBlock, shardID, false, validStakePublicKeys)
 				tempShardStates[shardID] = append(tempShardStates[shardID], tempShardState[shardID])
@@ -674,7 +651,13 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *BeaconBl
 	if beaconBlock.Header.Height == 1 {
 		beaconBestState.BeaconProposerIndex = 0
 	} else {
-		beaconBestState.BeaconProposerIndex = (beaconBestState.BeaconProposerIndex + beaconBlock.Header.Round) % len(beaconBestState.BeaconCommittee)
+		for i, v := range oldBestState.BeaconCommittee {
+			b58Str, _ := v.ToBase58()
+			if b58Str == beaconBlock.Header.Producer {
+				beaconBestState.BeaconProposerIndex = i
+				break
+			}
+		}
 	}
 	if beaconBestState.BestShardHash == nil {
 		beaconBestState.BestShardHash = make(map[byte]common.Hash)

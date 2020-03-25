@@ -617,8 +617,15 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	if shardBlock.Header.Height == 1 {
 		shardBestState.ShardProposerIdx = 0
 	} else {
-		shardBestState.ShardProposerIdx = (shardBestState.ShardProposerIdx + shardBlock.Header.Round) % len(shardBestState.ShardCommittee)
+		for i, v := range oldBestState.ShardCommittee {
+			b58Str, _ := v.ToBase58()
+			if b58Str == shardBlock.Header.Producer {
+				shardBestState.ShardProposerIdx = i
+				break
+			}
+		}
 	}
+
 	//shardBestState.processBeaconBlocks(shardBlock, beaconBlocks)
 	shardPendingValidator, newShardPendingValidator, stakingTx := blockchain.processInstructionFromBeacon(oldBestState, beaconBlocks, shardBlock.Header.ShardID, committeeChange)
 	shardBestState.ShardPendingValidator, err = incognitokey.CommitteeBase58KeyListToStruct(shardPendingValidator)

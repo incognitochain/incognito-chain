@@ -25,7 +25,6 @@ type ChainInterface interface {
 	IsReady() bool
 	SetReady(bool)
 	GetActiveShardNumber() int
-	GetPubkeyRole(pubkey string, round int) (string, byte)
 	CurrentHeight() uint64
 	GetCommitteeSize() int
 	GetCommittee() []incognitokey.CommitteePublicKey
