@@ -25,79 +25,79 @@ type MatchingRedeemCustodianDetail struct {
 	amount        uint64
 }
 
-func (rq WaitingRedeemRequest) GetUniqueRedeemID() string {
-	return rq.uniqueRedeemID
+func (wrq WaitingRedeemRequest) GetUniqueRedeemID() string {
+	return wrq.uniqueRedeemID
 }
 
-func (rq *WaitingRedeemRequest) SetUniqueRedeemID(uniqueRedeemID string) {
-	rq.uniqueRedeemID = uniqueRedeemID
+func (wrq *WaitingRedeemRequest) SetUniqueRedeemID(uniqueRedeemID string) {
+	wrq.uniqueRedeemID = uniqueRedeemID
 }
 
-func (rq WaitingRedeemRequest) GetTokenID() string {
-	return rq.tokenID
+func (wrq WaitingRedeemRequest) GetTokenID() string {
+	return wrq.tokenID
 }
 
-func (rq *WaitingRedeemRequest) SetTokenID(tokenID string) {
-	rq.tokenID = tokenID
+func (wrq *WaitingRedeemRequest) SetTokenID(tokenID string) {
+	wrq.tokenID = tokenID
 }
 
-func (rq WaitingRedeemRequest) GetRedeemerAddress() string {
-	return rq.redeemerAddress
+func (wrq WaitingRedeemRequest) GetRedeemerAddress() string {
+	return wrq.redeemerAddress
 }
 
-func (rq *WaitingRedeemRequest) SetRedeemerAddress(redeemerAddress string) {
-	rq.redeemerAddress = redeemerAddress
+func (wrq *WaitingRedeemRequest) SetRedeemerAddress(redeemerAddress string) {
+	wrq.redeemerAddress = redeemerAddress
 }
 
-func (rq WaitingRedeemRequest) GetRedeemerRemoteAddress() string {
-	return rq.redeemerRemoteAddress
+func (wrq WaitingRedeemRequest) GetRedeemerRemoteAddress() string {
+	return wrq.redeemerRemoteAddress
 }
 
-func (rq *WaitingRedeemRequest) SetRedeemerRemoteAddress(redeemerRemoteAddress string) {
-	rq.redeemerRemoteAddress = redeemerRemoteAddress
+func (wrq *WaitingRedeemRequest) SetRedeemerRemoteAddress(redeemerRemoteAddress string) {
+	wrq.redeemerRemoteAddress = redeemerRemoteAddress
 }
 
-func (rq WaitingRedeemRequest) GetRedeemAmount() uint64 {
-	return rq.redeemAmount
+func (wrq WaitingRedeemRequest) GetRedeemAmount() uint64 {
+	return wrq.redeemAmount
 }
 
-func (rq *WaitingRedeemRequest) SetRedeemAmount(redeemAmount uint64) {
-	rq.redeemAmount = redeemAmount
+func (wrq *WaitingRedeemRequest) SetRedeemAmount(redeemAmount uint64) {
+	wrq.redeemAmount = redeemAmount
 }
 
-func (rq WaitingRedeemRequest) GetCustodians() []*MatchingRedeemCustodianDetail {
-	return rq.custodians
+func (wrq WaitingRedeemRequest) GetCustodians() []*MatchingRedeemCustodianDetail {
+	return wrq.custodians
 }
 
-func (rq *WaitingRedeemRequest) SetCustodians(custodians []*MatchingRedeemCustodianDetail) {
-	rq.custodians = custodians
+func (wrq *WaitingRedeemRequest) SetCustodians(custodians []*MatchingRedeemCustodianDetail) {
+	wrq.custodians = custodians
 }
 
-func (rq WaitingRedeemRequest) GetRedeemFee() uint64 {
-	return rq.redeemFee
+func (wrq WaitingRedeemRequest) GetRedeemFee() uint64 {
+	return wrq.redeemFee
 }
 
-func (rq *WaitingRedeemRequest) SetRedeemFee(redeemFee uint64) {
-	rq.redeemFee = redeemFee
+func (wrq *WaitingRedeemRequest) SetRedeemFee(redeemFee uint64) {
+	wrq.redeemFee = redeemFee
 }
 
-func (rq WaitingRedeemRequest) GetBeaconHeight() uint64 {
-	return rq.beaconHeight
+func (wrq WaitingRedeemRequest) GetBeaconHeight() uint64 {
+	return wrq.beaconHeight
 }
 
-func (rq *WaitingRedeemRequest) SetBeaconHeight(beaconHeight uint64) {
-	rq.beaconHeight = beaconHeight
+func (wrq *WaitingRedeemRequest) SetBeaconHeight(beaconHeight uint64) {
+	wrq.beaconHeight = beaconHeight
 }
 
-func (rq WaitingRedeemRequest) GetTxReqID() common.Hash {
-	return rq.txReqID
+func (wrq WaitingRedeemRequest) GetTxReqID() common.Hash {
+	return wrq.txReqID
 }
 
-func (rq *WaitingRedeemRequest) SetTxReqID(txReqID common.Hash) {
-	rq.txReqID = txReqID
+func (wrq *WaitingRedeemRequest) SetTxReqID(txReqID common.Hash) {
+	wrq.txReqID = txReqID
 }
 
-func (rq WaitingRedeemRequest) MarshalJSON() ([]byte, error) {
+func (wrq WaitingRedeemRequest) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		UniqueRedeemID        string
 		TokenID               string
@@ -109,15 +109,15 @@ func (rq WaitingRedeemRequest) MarshalJSON() ([]byte, error) {
 		BeaconHeight          uint64
 		TxReqID               common.Hash
 	}{
-		UniqueRedeemID:        rq.uniqueRedeemID,
-		TokenID:               rq.tokenID,
-		RedeemerAddress:       rq.redeemerAddress,
-		RedeemerRemoteAddress: rq.redeemerRemoteAddress,
-		RedeemAmount:          rq.redeemAmount,
-		Custodians:            rq.custodians,
-		RedeemFee:             rq.redeemFee,
-		BeaconHeight:          rq.beaconHeight,
-		TxReqID:               rq.txReqID,
+		UniqueRedeemID:        wrq.uniqueRedeemID,
+		TokenID:               wrq.tokenID,
+		RedeemerAddress:       wrq.redeemerAddress,
+		RedeemerRemoteAddress: wrq.redeemerRemoteAddress,
+		RedeemAmount:          wrq.redeemAmount,
+		Custodians:            wrq.custodians,
+		RedeemFee:             wrq.redeemFee,
+		BeaconHeight:          wrq.beaconHeight,
+		TxReqID:               wrq.txReqID,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -125,7 +125,7 @@ func (rq WaitingRedeemRequest) MarshalJSON() ([]byte, error) {
 	return data, nil
 }
 
-func (rq *WaitingRedeemRequest) UnmarshalJSON(data []byte) error {
+func (wrq *WaitingRedeemRequest) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		UniqueRedeemID        string
 		TokenID               string
@@ -141,40 +141,72 @@ func (rq *WaitingRedeemRequest) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	rq.uniqueRedeemID = temp.UniqueRedeemID
-	rq.tokenID = temp.TokenID
-	rq.redeemerAddress = temp.RedeemerAddress
-	rq.redeemerRemoteAddress = temp.RedeemerRemoteAddress
-	rq.redeemAmount = temp.RedeemAmount
-	rq.custodians = temp.Custodians
-	rq.redeemFee = temp.RedeemFee
-	rq.beaconHeight = temp.BeaconHeight
-	rq.txReqID = temp.TxReqID
+	wrq.uniqueRedeemID = temp.UniqueRedeemID
+	wrq.tokenID = temp.TokenID
+	wrq.redeemerAddress = temp.RedeemerAddress
+	wrq.redeemerRemoteAddress = temp.RedeemerRemoteAddress
+	wrq.redeemAmount = temp.RedeemAmount
+	wrq.custodians = temp.Custodians
+	wrq.redeemFee = temp.RedeemFee
+	wrq.beaconHeight = temp.BeaconHeight
+	wrq.txReqID = temp.TxReqID
 	return nil
 }
 
-func (rq MatchingRedeemCustodianDetail) GetIncognitoAddress() string {
-	return rq.incAddress
+func (mc MatchingRedeemCustodianDetail) GetIncognitoAddress() string {
+	return mc.incAddress
 }
 
-func (rq *MatchingRedeemCustodianDetail) SetIncognitoAddress(incognitoAddress string) {
-	rq.incAddress = incognitoAddress
+func (mc *MatchingRedeemCustodianDetail) SetIncognitoAddress(incognitoAddress string) {
+	mc.incAddress = incognitoAddress
 }
 
-func (rq MatchingRedeemCustodianDetail) GetRemoteAddress() string {
-	return rq.remoteAddress
+func (mc MatchingRedeemCustodianDetail) GetRemoteAddress() string {
+	return mc.remoteAddress
 }
 
-func (rq *MatchingRedeemCustodianDetail) SetRemoteAddress(remoteAddress string) {
-	rq.remoteAddress = remoteAddress
+func (mc *MatchingRedeemCustodianDetail) SetRemoteAddress(remoteAddress string) {
+	mc.remoteAddress = remoteAddress
 }
 
-func (rq MatchingRedeemCustodianDetail) GetAmount() uint64 {
-	return rq.amount
+func (mc MatchingRedeemCustodianDetail) GetAmount() uint64 {
+	return mc.amount
 }
 
-func (rq *MatchingRedeemCustodianDetail) SetAmount(amount uint64) {
-	rq.amount = amount
+func (mc *MatchingRedeemCustodianDetail) SetAmount(amount uint64) {
+	mc.amount = amount
+}
+
+func (mc MatchingRedeemCustodianDetail) MarshalJSON() ([]byte, error) {
+	data, err := json.Marshal(struct {
+		IncAddress    string
+		RemoteAddress string
+		Amount        uint64
+	}{
+		IncAddress:    mc.incAddress,
+		RemoteAddress: mc.remoteAddress,
+		Amount     :   mc.amount,
+	})
+	if err != nil {
+		return []byte{}, err
+	}
+	return data, nil
+}
+
+func (mc *MatchingRedeemCustodianDetail) UnmarshalJSON(data []byte) error {
+	temp := struct {
+		IncAddress    string
+		RemoteAddress string
+		Amount        uint64
+	}{}
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
+		return err
+	}
+	mc.incAddress = temp.IncAddress
+	mc.remoteAddress = temp.RemoteAddress
+	mc.amount = temp.Amount
+	return nil
 }
 
 func NewWaitingRedeemRequest() *WaitingRedeemRequest {
