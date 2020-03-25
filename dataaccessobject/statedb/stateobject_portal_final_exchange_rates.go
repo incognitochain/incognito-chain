@@ -9,7 +9,7 @@ import (
 
 //todo: remove this line
 type FinalExchangeRatesDetail struct {
-	amount uint64
+	Amount uint64
 }
 
 type FinalExchangeRatesState struct {
@@ -93,7 +93,7 @@ func (f FinalExchangeRatesStateObject) GetTrie(db DatabaseAccessWarper) Trie {
 func (f *FinalExchangeRatesStateObject) SetValue(data interface{}) error {
 	finalExchangeRatesState, ok := data.(*FinalExchangeRatesState)
 	if !ok {
-		return fmt.Errorf("%+v, got type %+v", ErrInvalidPDEStatusStateType, reflect.TypeOf(data))
+		return fmt.Errorf("%+v, got type %+v", ErrInvalidFinalExchangeRatesStateType, reflect.TypeOf(data))
 	}
 	f.finalExchangeRatesState = finalExchangeRatesState
 	return nil
@@ -156,7 +156,7 @@ func NewFinalExchangeRatesStateObjectWithValue(db *StateDB, finalExchangeRatesSt
 	} else {
 		newFinalExchangeRatesState, ok = data.(*FinalExchangeRatesState)
 		if !ok {
-			return nil, fmt.Errorf("%+v, got type %+v", ErrInvalidPDEStatusStateType, reflect.TypeOf(data))
+			return nil, fmt.Errorf("%+v, got type %+v", ErrInvalidFinalExchangeRatesStateType, reflect.TypeOf(data))
 		}
 	}
 	return &FinalExchangeRatesStateObject{
@@ -187,9 +187,6 @@ func GenerateFinalExchangeRatesStateObjectKey(beaconHeight uint64) common.Hash {
 	valueHash := common.HashH([]byte(beaconHeightBytes + suffix))
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
-
-
-
 
 
 

@@ -25,7 +25,7 @@ type CurrentPortalState struct {
 	WaitingRedeemRequests  map[string]*statedb.WaitingRedeemRequest          // key : hash(beaconHeight || UniqueRedeemID)
 	FinalExchangeRates     map[string]*statedb.FinalExchangeRatesState     // key : hash(beaconHeight || TxID)
 	LiquidateExchangeRates map[string]*statedb.LiquidateExchangeRates // key : hash(beaconHeight || TxID)
-	// todo: comment
+	//Store temporary exchange rates requests
 	ExchangeRatesRequests map[string]*statedb.ExchangeRatesRequest // key : hash(beaconHeight | TxID)
 
 	DeletedWaitingRedeemRequests map[string]*statedb.WaitingRedeemRequest // key : hash(beaconHeight || UniqueRedeemID)
@@ -61,7 +61,8 @@ func InitCurrentPortalStateFromDB(
 	if err != nil {
 		return nil, err
 	}
-	finalExchangeRates, err := statedb.GetFinalExchangeRates(stateDB, beaconHeight)
+
+	finalExchangeRates, err := statedb.GetFinalExchangeRatesState(stateDB, beaconHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +100,7 @@ func storePortalStateToDB(
 		return err
 	}
 
-	err = statedb.StoreFinalExchangeRates(stateDB, beaconHeight, currentPortalState.FinalExchangeRates)
+	err = statedb.StoreFinalExchangeRatesState(stateDB, beaconHeight, currentPortalState.FinalExchangeRates)
 	if err != nil {
 		return err
 	}

@@ -6,8 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"reflect"
 	"strconv"
@@ -16,7 +15,7 @@ import (
 type PortalExchangeRates struct {
 	MetadataBase
 	SenderAddress string
-	Rates         []*lvdb.ExchangeRateInfo //amount * 10^6 (USDT)
+	Rates         []*statedb.ExchangeRateInfo //amount * 10^6 (USDT)
 }
 
 type PortalExchangeRatesAction struct {
@@ -26,7 +25,7 @@ type PortalExchangeRatesAction struct {
 	ShardID  byte
 }
 
-func NewPortalExchangeRates(metaType int, senderAddress string, currency []*lvdb.ExchangeRateInfo) (*PortalExchangeRates, error) {
+func NewPortalExchangeRates(metaType int, senderAddress string, currency []*statedb.ExchangeRateInfo) (*PortalExchangeRates, error) {
 	metadataBase := MetadataBase{Type: metaType}
 
 	portalExchangeRates := &PortalExchangeRates{
@@ -41,7 +40,7 @@ func NewPortalExchangeRates(metaType int, senderAddress string, currency []*lvdb
 
 type PortalExchangeRatesContent struct {
 	SenderAddress   string
-	Rates           []*lvdb.ExchangeRateInfo
+	Rates           []*statedb.ExchangeRateInfo
 	TxReqID         common.Hash
 	LockTime        int64
 	UniqueRequestId string
@@ -51,7 +50,7 @@ func (portalExchangeRates PortalExchangeRates) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,
-	db database.DatabaseInterface,
+	db *statedb.StateDB,
 ) (bool, error) {
 	// NOTE: verify supported tokens pair as needed
 	return true, nil

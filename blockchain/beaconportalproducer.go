@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/binance-chain/go-sdk/types/msg"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/relaying/bnb"
@@ -824,39 +825,10 @@ func (blockchain *BlockChain) buildInstructionsForExchangeRates(
 		return [][]string{}, nil
 	}
 
-	exchangeRatesKey := lvdb.NewExchangeRatesRequestKey(
-		beaconHeight+1,
-		actionData.TxReqID.String(),
-	)
-
-	db := blockchain.GetDatabase()
 	//check key from db
-	exchangeRatesKeyExist, err := db.GetItemPortalByKey([]byte(exchangeRatesKey))
+	_, ok := currentPortalState.ExchangeRatesRequests[actionData.TxReqID.String()]
 
-	if err != nil {
-		Logger.log.Errorf("ERROR: Get exchange rates error: %+v", err)
-
-		portalExchangeRatesContent := metadata.PortalExchangeRatesContent{
-			SenderAddress:   actionData.Meta.SenderAddress,
-			Rates:           actionData.Meta.Rates,
-			TxReqID:         actionData.TxReqID,
-			LockTime:        actionData.LockTime,
-			UniqueRequestId: exchangeRatesKey,
-		}
-
-		portalExchangeRatesContentBytes, _ := json.Marshal(portalExchangeRatesContent)
-
-		inst := []string{
-			strconv.Itoa(metaType),
-			strconv.Itoa(int(shardID)),
-			common.PortalExchangeRatesRejectedStatus,
-			string(portalExchangeRatesContentBytes),
-		}
-
-		return [][]string{inst}, nil
-	}
-
-	if exchangeRatesKeyExist != nil {
+	if !ok {
 		Logger.log.Errorf("ERROR: exchange rates key is duplicated")
 
 		portalExchangeRatesContent := metadata.PortalExchangeRatesContent{
@@ -864,7 +836,6 @@ func (blockchain *BlockChain) buildInstructionsForExchangeRates(
 			Rates:           actionData.Meta.Rates,
 			TxReqID:         actionData.TxReqID,
 			LockTime:        actionData.LockTime,
-			UniqueRequestId: exchangeRatesKey,
 		}
 
 		portalExchangeRatesContentBytes, _ := json.Marshal(portalExchangeRatesContent)
@@ -885,7 +856,6 @@ func (blockchain *BlockChain) buildInstructionsForExchangeRates(
 		Rates:           actionData.Meta.Rates,
 		TxReqID:         actionData.TxReqID,
 		LockTime:        actionData.LockTime,
-		UniqueRequestId: exchangeRatesKey,
 	}
 
 	portalExchangeRatesContentBytes, _ := json.Marshal(portalExchangeRatesContent)
@@ -895,6 +865,12 @@ func (blockchain *BlockChain) buildInstructionsForExchangeRates(
 		strconv.Itoa(int(shardID)),
 		common.PortalExchangeRatesSuccessStatus,
 		string(portalExchangeRatesContentBytes),
+	}
+
+	//update E-R request
+	currentPortalState.ExchangeRatesRequests[actionData.TxReqID.String()] = &statedb.ExchangeRatesRequest{
+		SenderAddress: actionData.Meta.SenderAddress,
+		Rates:         actionData.Meta.Rates,
 	}
 
 	return [][]string{inst}, nil

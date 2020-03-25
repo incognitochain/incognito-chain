@@ -79,7 +79,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(stateDB *statedb.StateDB
 		Logger.log.Error(err)
 	}
 
-	currentPortalState, err := InitCurrentPortalStateFromDB(db, beaconHeight-1)
+	currentPortalState, err := InitCurrentPortalStateFromDB(stateDB, beaconHeight-1)
 	if err != nil {
 		Logger.log.Error(err)
 	}
