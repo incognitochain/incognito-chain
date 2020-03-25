@@ -137,6 +137,9 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	}
 	Logger.log.Infof("SHARD %+v | Update ShardBestState, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
 	if err := tempShardBestState.updateShardBestState(blockchain, shardBlock, beaconBlocks, committeeChange); err != nil {
+		if errRevert := blockchain.revertShardBestState(shardID); errRevert != nil {
+			return errRevert
+		}
 		return err
 	}
 
@@ -145,6 +148,9 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	tempShardBestState.updateNumOfBlocksByProducers(shardBlock)
 	newCommittee, err := incognitokey.CommitteeKeyListToString(tempShardBestState.ShardCommittee)
 	if err != nil {
+		if errRevert := blockchain.revertShardBestState(shardID); errRevert != nil {
+			return errRevert
+		}
 		return err
 	}
 	if !common.CompareStringArray(oldCommittee, newCommittee) {
@@ -154,6 +160,9 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	if !isValidated {
 		Logger.log.Infof("SHARD %+v | Verify Post Processing, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
 		if err := tempShardBestState.verifyPostProcessingShardBlock(shardBlock, shardID); err != nil {
+			if errRevert := blockchain.revertShardBestState(shardID); errRevert != nil {
+				return errRevert
+			}
 			return err
 		}
 	} else {
@@ -163,6 +172,9 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	Logger.log.Infof("SHARD %+v | Update Beacon Instruction, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
 	err = blockchain.processSalaryInstructions(tempShardBestState.rewardStateDB, beaconBlocks, shardID)
 	if err != nil {
+		if errRevert := blockchain.revertShardBestState(shardID); errRevert != nil {
+			return errRevert
+		}
 		return err
 	}
 	Logger.log.Infof("SHARD %+v | Store New Shard Block And Update Data, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
@@ -173,6 +185,9 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	} else {
 		confirmBeaconBlock, _, err = blockchain.GetBeaconBlockByHash(shardBlock.Header.BeaconHash)
 		if err != nil {
+			if errRevert := blockchain.revertShardBestState(shardID); errRevert != nil {
+				return errRevert
+			}
 			return err
 		}
 	}
