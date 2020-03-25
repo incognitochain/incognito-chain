@@ -32,6 +32,7 @@ const (
 	// portal
 	//A
 	FinalExchangeRatesStateObjectType
+	ExchangeRatesStateObjectType
 	//B
 	PortalStatusObjectType
 	CustodianStateObjectType

@@ -106,11 +106,11 @@ func (e ExchangeRatesRequestObject) GetTrie(db DatabaseAccessWarper) Trie {
 }
 
 func (e *ExchangeRatesRequestObject) SetValue(data interface{}) error {
-	finalExchangeRatesState, ok := data.(*ExchangeRatesRequest)
+	exchangeRatesRequests, ok := data.(*ExchangeRatesRequest)
 	if !ok {
-		return fmt.Errorf("%+v, got type %+v", ErrInvalidFinalExchangeRatesRequestType, reflect.TypeOf(data))
+		return fmt.Errorf("%+v, got type %+v", ErrInvalidExchangeRatesRequestType, reflect.TypeOf(data))
 	}
-	e.exchangeRatesRequest = finalExchangeRatesState
+	e.exchangeRatesRequest = exchangeRatesRequests
 	return nil
 }
 
@@ -119,11 +119,11 @@ func (e ExchangeRatesRequestObject) GetValue() interface{} {
 }
 
 func (e ExchangeRatesRequestObject) GetValueBytes() []byte {
-	finalExchangeRatesState, ok := e.GetValue().(*ExchangeRatesRequest)
+	exchangeRatesRequests, ok := e.GetValue().(*ExchangeRatesRequest)
 	if !ok {
 		panic("wrong expected value type")
 	}
-	value, err := json.Marshal(finalExchangeRatesState)
+	value, err := json.Marshal(exchangeRatesRequests)
 	if err != nil {
 		panic("failed to marshal ExchangeRatesRequest")
 	}
@@ -159,47 +159,45 @@ func (e ExchangeRatesRequestObject) IsEmpty() bool {
 	return reflect.DeepEqual(temp, e.exchangeRatesRequest) || e.exchangeRatesRequest == nil
 }
 
-func NewFinalExchangeRatesStateObjectWithValue(db *StateDB, finalExchangeRatesStateHash common.Hash, data interface{}) (*ExchangeRatesRequestObject, error) {
-	var newFinalExchangeRatesState = NewFinalExchangeRatesState()
+func NewExchangeRatesRequestObjectWithValue(db *StateDB, exchangeRatesRequestsHash common.Hash, data interface{}) (*ExchangeRatesRequestObject, error) {
+	var exchangeRatesRequests = NewExchangeRatesRequest()
 	var ok bool
 	var dataBytes []byte
 	if dataBytes, ok = data.([]byte); ok {
-		err := json.Unmarshal(dataBytes, newFinalExchangeRatesState)
+		err := json.Unmarshal(dataBytes, exchangeRatesRequests)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		newFinalExchangeRatesState, ok = data.(*FinalExchangeRatesState)
+		exchangeRatesRequests, ok = data.(*ExchangeRatesRequest)
 		if !ok {
-			return nil, fmt.Errorf("%+v, got type %+v", ErrInvalidFinalExchangeRatesRequestType, reflect.TypeOf(data))
+			return nil, fmt.Errorf("%+v, got type %+v", ErrInvalidExchangeRatesRequestType, reflect.TypeOf(data))
 		}
 	}
 	return &ExchangeRatesRequestObject{
-		db:                          db,
-		version:                     defaultVersion,
-		finalExchangeRatesStateHash: finalExchangeRatesStateHash,
-		finalExchangeRatesState:     newFinalExchangeRatesState,
-		objectType:                  FinalExchangeRatesStateObjectType,
-		deleted:                     false,
+		db:                         db,
+		version:                    defaultVersion,
+		exchangeRatesRequestHash: 	exchangeRatesRequestsHash,
+		exchangeRatesRequest:     	exchangeRatesRequests,
+		objectType:                 ExchangeRatesStateObjectType,
+		deleted:                    false,
 	}, nil
 }
 
-func NewFinalExchangeRatesStateObject(db *StateDB, finalExchangeRatesStateHash common.Hash) *ExchangeRatesRequestObject {
+func NewExchangeRatesRequestObject(db *StateDB, exchangeRatesRequestsHash common.Hash) *ExchangeRatesRequestObject {
 	return &ExchangeRatesRequestObject{
-		db:                          db,
-		version:                     defaultVersion,
-		finalExchangeRatesStateHash: finalExchangeRatesStateHash,
-		finalExchangeRatesState:     NewFinalExchangeRatesState(),
-		objectType:                  FinalExchangeRatesStateObjectType,
-		deleted:                     false,
+		db:                         db,
+		version:                    defaultVersion,
+		exchangeRatesRequestHash: 	exchangeRatesRequestsHash,
+		exchangeRatesRequest:     	NewExchangeRatesRequest(),
+		objectType:                 ExchangeRatesStateObjectType,
+		deleted:                    false,
 	}
 }
 
-func GenerateFinalExchangeRatesStateObjectKey(beaconHeight uint64) common.Hash {
-	beaconHeightBytes := fmt.Sprintf("%d-", beaconHeight)
-	suffix := "portal"
-	prefixHash := GetFinalExchangeRatesStatePrefix()
-	valueHash := common.HashH([]byte(beaconHeightBytes + suffix))
+func GenerateExchangeRatesRequestObjectKey(txId string) common.Hash {
+	prefixHash := GetExchangeRatesRequestPrefix()
+	valueHash := common.HashH([]byte(txId))
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 

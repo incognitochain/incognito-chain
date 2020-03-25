@@ -131,6 +131,20 @@ func TrackExchangeRatesRequestStatus(stateDB *StateDB, statusType []byte, status
 	return nil
 }
 
+func GetItemPortalByKey(key []byte) ([]byte, error) {
+	/*itemRecord, dbErr := db.lvdb.Get(key, nil)
+	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
+		return nil, database.NewDatabaseError(database.GetItemPortalByKeyError, dbErr)
+	}
+
+	if itemRecord == nil {
+		return nil, nil
+	}
+
+	return itemRecord, nil*/
+	return  nil, nil
+}
+
 //======================  Liquidation  ======================
 
 

@@ -47,7 +47,7 @@ func buildRequestPortingInst(
 	pTokenId string,
 	registerAmount uint64,
 	portingFee uint64,
-	custodian []*lvdb.MatchingPortingCustodianDetail,
+	custodian []*statedb.MatchingPortingCustodianDetail,
 	txReqID common.Hash,
 ) []string {
 	portingRequestContent := metadata.PortalPortingRequestContent{
@@ -230,12 +230,9 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		return [][]string{}, nil
 	}
 
-	db := blockchain.GetDatabase()
-
-
-	keyPortingRequest := lvdb.NewPortingRequestKey(actionData.Meta.UniqueRegisterId)
+	keyPortingRequest := statedb.GeneratePortingRequestObjectKey(actionData.Meta.UniqueRegisterId)
 	//check unique id from record from db
-	portingRequestKeyExist, err := db.GetItemPortalByKey([]byte(keyPortingRequest))
+	portingRequestKeyExist, err := statedb.GetItemPortalByKey([]byte(keyPortingRequest.String()))
 
 	if err != nil {
 		Logger.log.Errorf("Porting request: Get item portal by prefix error: %+v", err)
@@ -294,8 +291,8 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 	}
 
 	//get exchange rates
-	exchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
-	exchangeRatesState, ok := currentPortalState.FinalExchangeRates[exchangeRatesKey]
+	exchangeRatesKey := statedb.GenerateFinalExchangeRatesStateObjectKey(beaconHeight)
+	exchangeRatesState, ok := currentPortalState.FinalExchangeRatesState[exchangeRatesKey.String()]
 	if !ok {
 		Logger.log.Errorf("Porting request, exchange rates not found")
 		inst := buildRequestPortingInst(
@@ -413,7 +410,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 	//verify total amount
 	var totalPToken uint64 = 0
 	for _, eachCustodian := range pickCustodianResult {
-		totalPToken = totalPToken + eachCustodian.Amount
+		totalPToken = totalPToken + eachCustodian.GetAmount
 	}
 
 	if totalPToken != actionData.Meta.RegisterAmount {
@@ -450,7 +447,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		actionData.TxReqID,
 	) //return  metadata.PortalPortingRequestContent at instruct[3]
 
-	newPortingRequestStateWaiting, err := NewPortingRequestState(
+	newPortingRequestStateWaiting := statedb.NewPortingRequest(
 		actionData.Meta.UniqueRegisterId,
 		actionData.TxReqID,
 		actionData.Meta.PTokenId,
@@ -868,10 +865,7 @@ func (blockchain *BlockChain) buildInstructionsForExchangeRates(
 	}
 
 	//update E-R request
-	currentPortalState.ExchangeRatesRequests[actionData.TxReqID.String()] = &statedb.ExchangeRatesRequest{
-		SenderAddress: actionData.Meta.SenderAddress,
-		Rates:         actionData.Meta.Rates,
-	}
+	currentPortalState.ExchangeRatesRequests[actionData.TxReqID.String()] = statedb.NewExchangeRatesRequestWithValue(actionData.Meta.SenderAddress, actionData.Meta.Rates)
 
 	return [][]string{inst}, nil
 }
@@ -1177,11 +1171,9 @@ func (blockchain *BlockChain) buildInstructionsForCustodianWithdraw(
 		return [][]string{}, nil
 	}
 
-	db := blockchain.GetDatabase()
-
 	//check custodian withdraw request
-	custodianWithdrawRequestKey := lvdb.NewCustodianWithdrawRequestKey(actionData.TxReqID.String())
-	custodianWithdrawRequestKeyExist, err := db.GetItemPortalByKey([]byte(custodianWithdrawRequestKey))
+	custodianWithdrawRequestKey := statedb.GenerateCustodianWithdrawObjectKey(actionData.TxReqID.String())
+	custodianWithdrawRequestKeyExist, err := statedb.GetItemPortalByKey([]byte(custodianWithdrawRequestKey.String()))
 
 	if err != nil {
 		Logger.log.Errorf("Custodian withdraw is exist %+v", err)

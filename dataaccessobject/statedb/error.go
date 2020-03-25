@@ -31,8 +31,8 @@ const (
 	ErrInvalidBurningConfirmStateType         = "invalid burning confirm state type"
 	ErrInvalidTokenTransactionStateType       = "invalid token transaction state type"
 	//A
-	ErrInvalidFinalExchangeRatesStateType   = "invalid final exchange rates state type"
-	ErrInvalidFinalExchangeRatesRequestType = "invalid final exchange rates request type"
+	ErrInvalidFinalExchangeRatesStateType     = "invalid final exchange rates state type"
+	ErrInvalidExchangeRatesRequestType     	  = "invalid exchange rates request type"
 	//B
 	ErrInvalidPortalStatusStateType          = "invalid portal status state type"
 	ErrInvalidPortalCustodianStateType       = "invalid portal custodian state type"
