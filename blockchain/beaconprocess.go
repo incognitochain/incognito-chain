@@ -41,7 +41,7 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(beaconBlock *BeaconBlock,
 	curView := blockchain.GetBeaconBestState()
 	// Verify block with previous best state
 	// not verify agg signature in this function
-	if err := curView.verifyBestStateWithBeaconBlock(beaconBlock, false, blockchain.config.ChainParams.Epoch); err != nil {
+	if err := curView.verifyBestStateWithBeaconBlock(blockchain, beaconBlock, false, blockchain.config.ChainParams.Epoch); err != nil {
 		return err
 	}
 	// Update best state with new block
@@ -83,7 +83,10 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	if !isValidated {
 		Logger.log.Debugf("BEACON | Verify Best State With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 		// Verify beaconBlock with previous best state
-		if err := curView.verifyBestStateWithBeaconBlock(beaconBlock, true, blockchain.config.ChainParams.Epoch); err != nil {
+		if err := curView.verifyBestStateWithBeaconBlock(blockchain, beaconBlock, true, blockchain.config.ChainParams.Epoch); err != nil {
+			return err
+		}
+		if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(beaconBlock, curView.BeaconCommittee); err != nil {
 			return err
 		}
 	} else {
@@ -479,31 +482,10 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 //  - Beacon Best State has epoch compatible with new beacon block
 //  - Beacon Best State has best shard height compatible with shard state of new beacon block
 //  - New Stake public key must not found in beacon best state (candidate, pending validator, committee)
-func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(beaconBlock *BeaconBlock, isVerifySig bool, chainParamEpoch uint64) error {
+func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(blockchain *BlockChain, beaconBlock *BeaconBlock, isVerifySig bool, chainParamEpoch uint64) error {
 	//verify producer via index
-	producerPublicKey := beaconBlock.Header.Producer
-	if beaconBlock.Header.Version == 1 {
-		producerPosition := (beaconBestState.BeaconProposerIndex + beaconBlock.Header.Round) % len(beaconBestState.BeaconCommittee)
-		tempProducer, err := beaconBestState.BeaconCommittee[producerPosition].ToBase58() //.GetMiningKeyBase58(common.BridgeConsensus)
-		if err != nil {
-			return NewBlockChainError(UnExpectedError, err)
-		}
-		if strings.Compare(string(tempProducer), producerPublicKey) != 0 {
-			return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
-		}
-	} else {
-		tempProducer := beaconBestState.GetProposerByTimeSlot(common.CalculateTimeSlot(beaconBlock.GetProduceTime()))
-		b58Str, _ := tempProducer.ToBase58()
-		if strings.Compare(b58Str, producerPublicKey) != 0 {
-			return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", b58Str, producerPublicKey))
-		}
-
-		tempProducer = beaconBestState.GetProposerByTimeSlot(common.CalculateTimeSlot(beaconBlock.GetProposeTime()))
-		b58Str, _ = tempProducer.ToBase58()
-		if strings.Compare(b58Str, beaconBlock.GetProposer()) != 0 {
-			return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Proposer Public Key to be equal but get %+v From Index, %+v From Header", b58Str, beaconBlock.GetProposer()))
-		}
-
+	if err := blockchain.config.ConsensusEngine.ValidateProducerPosition(beaconBlock, beaconBestState.BeaconProposerIndex, beaconBestState.BeaconCommittee); err != nil {
+		return err
 	}
 
 	//=============End Verify Aggegrate signature

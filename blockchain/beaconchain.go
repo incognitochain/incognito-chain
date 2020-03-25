@@ -262,13 +262,6 @@ func (chain *BeaconChain) ValidateBlockSignatures(block common.BlockInterface, c
 	return nil
 }
 
-func (chain *BeaconChain) ValidateProducerPosition(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
-	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerPosition(block, committee); err != nil {
-		return err
-	}
-	return nil
-}
-
 func (chain *BeaconChain) GetConsensusType() string {
 	return chain.multiView.GetBestView().(*BeaconBestState).ConsensusAlgorithm
 }

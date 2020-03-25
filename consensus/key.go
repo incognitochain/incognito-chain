@@ -123,17 +123,27 @@ func (engine *Engine) VerifyData(data []byte, sig string, publicKey string, cons
 	return engine.currentMiningProcess.ValidateData(data, sig, string(mapPublicKey[common.BridgeConsensus]))
 }
 
-func (engine *Engine) ValidateProducerPosition(blk common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+func (engine *Engine) ValidateProducerPosition(blk common.BlockInterface, lastProposerIdx int, committee []incognitokey.CommitteePublicKey) error {
 
 	//check producer,proposer,agg sig with this version
+	producerPosition := (lastProposerIdx + blk.GetRound()) % len(committee)
 	if blk.GetVersion() == 1 {
-		producerPosition := 0
-		//validate producer
-		producer := blk.GetProducer()
-		tmpProducer, _ := committee[producerPosition].ToBase58()
-		if tmpProducer != producer {
-			return fmt.Errorf("Producer should be %+v but get %v index %v", tmpProducer, producer, producerPosition)
+		tempProducer, err := committee[producerPosition].ToBase58()
+		if err != nil {
+			return fmt.Errorf("Cannot base58 a committee")
 		}
+		if strings.Compare(tempProducer, blk.GetProducer()) != 0 {
+			return fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, blk.GetProducer())
+		}
+
+		//mainnet
+		//producerPosition := 0
+		////validate producer
+		//producer := blk.GetProducer()
+		//tmpProducer, _ := committee[producerPosition].ToBase58()
+		//if tmpProducer != producer {
+		//	return fmt.Errorf("Producer should be %+v but get %v index %v", tmpProducer, producer, producerPosition)
+		//}
 	} else {
 
 		//validate producer
@@ -168,6 +178,7 @@ func (engine *Engine) ValidateProducerSig(block common.BlockInterface, consensus
 }
 
 func (engine *Engine) ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+	fmt.Println("Xxx ValidateBlockCommitteSig",len(committee))
 	if block.GetVersion() == 1 {
 		return blsbft.ValidateCommitteeSig(block, committee)
 	} else if block.GetVersion() == 2 {

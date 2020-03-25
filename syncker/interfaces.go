@@ -52,7 +52,7 @@ type Chain interface {
 	GetFinalViewHash() string
 	GetEpoch() uint64
 	ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
-	ValidateProducerPosition(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
+	//ValidateProducerPosition(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 	GetCommittee() []incognitokey.CommitteePublicKey
 	CurrentHeight() uint64
 	InsertBlk(block common.BlockInterface) error

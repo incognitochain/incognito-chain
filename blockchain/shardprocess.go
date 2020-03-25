@@ -53,7 +53,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 
 	// Verify shardBlock with previous best state
 	// DO NOT verify agg signature in this function
-	if err := curView.verifyBestStateWithShardBlock(shardBlock, false, shardID); err != nil {
+	if err := curView.verifyBestStateWithShardBlock(blockchain, shardBlock, false, shardID); err != nil {
 		return err
 	}
 	//========updateShardBestState best state with new shardBlock
@@ -110,7 +110,10 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	}
 	// Verify block with previous best state
 	Logger.log.Debugf("SHARD %+v | Verify BestState With Shard Block, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-	if err := curView.verifyBestStateWithShardBlock(shardBlock, true, shardID); err != nil {
+	if err := curView.verifyBestStateWithShardBlock(blockchain, shardBlock, true, shardID); err != nil {
+		return err
+	}
+	if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, curView.ShardCommittee); err != nil {
 		return err
 	}
 	Logger.log.Debugf("SHARD %+v | BackupCurrentShardState, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
@@ -243,8 +246,6 @@ func (shardBestState *ShardBestState) updateNumOfBlocksByProducers(shardBlock *S
 //	- Validate Response Transaction From Transaction with Metadata
 //	- ALL Transaction in block: see in verifyTransactionFromNewBlock
 func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlock, beaconBlocks []*BeaconBlock, shardID byte, isPreSign bool) error {
-	//verify producer sig
-	//TODO:??? missing
 
 	Logger.log.Debugf("SHARD %+v | Begin verifyPreProcessingShardBlock Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash())
 	if shardBlock.Header.ShardID != shardID {
@@ -561,10 +562,12 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock
 //	- New Shard Block has parent (previous) hash is current shard state best block hash (compatible with current beststate)
 //	- New Shard Block Height must be compatible with best shard state
 //	- New Shard Block has beacon must higher or equal to beacon height of shard best state
-func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(shardBlock *ShardBlock, isVerifySig bool, shardID byte) error {
+func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(blockchain *BlockChain, shardBlock *ShardBlock, isVerifySig bool, shardID byte) error {
 	Logger.log.Debugf("SHARD %+v | Begin VerifyBestStateWithShardBlock Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash())
-	//TODO: we will validate proposer index + agg in pre processing
-
+	//verify producer via index
+	if err := blockchain.config.ConsensusEngine.ValidateProducerPosition(shardBlock, shardBestState.ShardProposerIdx, shardBestState.ShardCommittee); err != nil {
+		return err
+	}
 	// check with current final best state
 	// shardBlock can only be insert if it match the current best state
 	if !shardBestState.BestBlockHash.IsEqual(&shardBlock.Header.PreviousBlockHash) {
