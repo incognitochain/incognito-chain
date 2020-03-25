@@ -1265,6 +1265,25 @@ func (stateDB *StateDB) getAllCustodianStatePool() map[string]*CustodianState {
 	return custodians
 }
 
+func (stateDB *StateDB) getPortalRewards(beaconHeight uint64) []*PortalRewardInfo {
+	//TODO: how to get data by prefix + suffix
+	portalRewards := make([]*PortalRewardInfo, 0)
+	temp := stateDB.trie.NodeIterator(GetPortalRewardInfoStatePrefix())
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		rewardInfo := NewPortalRewardInfo()
+		err := json.Unmarshal(newValue, rewardInfo)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		portalRewards = append(portalRewards, rewardInfo)
+	}
+	return portalRewards
+}
+
 func (stateDB *StateDB) getPortalStatusByKey(key common.Hash) (*PortalStatusState, bool, error) {
 	portalStatusState, err := stateDB.getStateObject(PortalStatusObjectType, key)
 	if err != nil {

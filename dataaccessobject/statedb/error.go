@@ -166,6 +166,8 @@ const (
 	StorePortalLiquidationCustodianRunAwayStatusError
 	GetPortalExpiredPortingReqStatusError
 	StorePortalExpiredPortingReqStatusError
+	GetPortalRequestWithdrawRewardStatusError
+	StorePortalRequestWithdrawRewardStatusError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -286,6 +288,8 @@ var ErrCodeMessage = map[int]struct {
 	StorePortalLiquidationCustodianRunAwayStatusError: {-14036, "Store portal liquidation custodian run away status error"},
 	GetPortalExpiredPortingReqStatusError:             {-14036, "Get portal expired porting request status error"},
 	StorePortalExpiredPortingReqStatusError:           {-14036, "Store portal expired porting request status error"},
+	GetPortalRequestWithdrawRewardStatusError: {-14036, "Get portal request withdraw reward status error"},
+	StorePortalRequestWithdrawRewardStatusError: {-14036, "Store portal request withdraw reward status error"},
 }
 
 type StatedbError struct {

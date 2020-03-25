@@ -11,7 +11,6 @@ import (
 
 func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.StateDB, block *BeaconBlock) error {
 	beaconHeight := block.Header.Height - 1
-	db := blockchain.GetDatabase()
 
 	currentPortalState, err := InitCurrentPortalStateFromDB(portalStateDB, beaconHeight)
 	if err != nil {
