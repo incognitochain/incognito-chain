@@ -39,7 +39,7 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 		case strconv.Itoa(metadata.PortalUserRequestPTokenMeta):
 			err = blockchain.processPortalUserReqPToken(beaconHeight, inst, currentPortalState, updatingInfoByTokenID)
 		case strconv.Itoa(metadata.PortalExchangeRatesMeta):
-			err = blockchain.processPortalExchangeRates(beaconHeight, inst, currentPortalState)
+			err = blockchain.processPortalExchangeRates(portalStateDB, beaconHeight, inst, currentPortalState)
 		case strconv.Itoa(metadata.PortalRedeemRequestMeta):
 			err = blockchain.processPortalRedeemRequest(beaconHeight, inst, currentPortalState, updatingInfoByTokenID)
 		case strconv.Itoa(metadata.PortalCustodianWithdrawRequestMeta):
@@ -473,13 +473,11 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 	return nil
 }
 
-func (blockchain *BlockChain) processPortalExchangeRates(beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
+func (blockchain *BlockChain) processPortalExchangeRates(portalStateDB *statedb.StateDB, beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
 	if currentPortalState == nil {
 		Logger.log.Errorf("current portal state is nil")
 		return nil
 	}
-
-	db := blockchain.GetDatabase()
 
 	// parse instruction
 	var portingExchangeRatesContent metadata.PortalExchangeRatesContent
@@ -496,12 +494,12 @@ func (blockchain *BlockChain) processPortalExchangeRates(beaconHeight uint64, in
 	switch reqStatus {
 	case common.PortalExchangeRatesSuccessStatus:
 		//save db
-		newExchangeRates, _ := NewExchangeRatesState(
+		newExchangeRates := statedb.NewExchangeRatesRequestWithValue(
 			portingExchangeRatesContent.SenderAddress,
 			portingExchangeRatesContent.Rates,
 		)
 
-		err = db.StoreExchangeRatesRequestItem([]byte(portingExchangeRatesContent.UniqueRequestId), newExchangeRates)
+		err = portalStateDB.StoreExchangeRatesRequestItem([]byte(portingExchangeRatesContent.UniqueRequestId), newExchangeRates)
 
 		if err != nil {
 			Logger.log.Errorf("ERROR: Save exchange rates error: %+v", err)
@@ -510,15 +508,16 @@ func (blockchain *BlockChain) processPortalExchangeRates(beaconHeight uint64, in
 
 		currentPortalState.ExchangeRatesRequests[portingExchangeRatesContent.UniqueRequestId] = newExchangeRates
 
-		Logger.log.Infof("Portal exchange rates, exchange rates request: count final exchange rate %v , exchange rate request %v", len(currentPortalState.FinalExchangeRates), len(currentPortalState.ExchangeRatesRequests))
+		Logger.log.Infof("Portal exchange rates, exchange rates request: count final exchange rate %v , exchange rate request %v", len(currentPortalState.FinalExchangeRatesState), len(currentPortalState.ExchangeRatesRequests))
 
 	case common.PortalExchangeRatesRejectedStatus:
 		//save db
-		newExchangeRates := lvdb.ExchangeRatesRequest{
-			SenderAddress: portingExchangeRatesContent.SenderAddress,
-		}
+		newExchangeRates := statedb.NewExchangeRatesRequestWithValue(
+			portingExchangeRatesContent.SenderAddress,
+			nil,
+		)
 
-		err = db.StoreExchangeRatesRequestItem([]byte(portingExchangeRatesContent.UniqueRequestId), newExchangeRates)
+		err = portalStateDB.StoreExchangeRatesRequestItem([]byte(portingExchangeRatesContent.UniqueRequestId), newExchangeRates)
 
 		if err != nil {
 			Logger.log.Errorf("ERROR: Save exchange rates error: %+v", err)
