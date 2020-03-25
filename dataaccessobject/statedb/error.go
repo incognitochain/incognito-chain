@@ -37,6 +37,7 @@ const (
 	ErrInvalidPortalStatusStateType          = "invalid portal status state type"
 	ErrInvalidPortalCustodianStateType       = "invalid portal custodian state type"
 	ErrInvalidPortalWaitingRedeemRequestType = "invalid portal waiting redeem request type"
+	ErrInvalidPortalRewardInfoStateType       = "invalid portal reward info state type"
 )
 const (
 	InvalidByteArrayTypeError = iota

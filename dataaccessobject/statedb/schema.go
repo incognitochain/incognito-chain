@@ -54,10 +54,15 @@ var (
 	portalRedeemRequestStatusPrefix           = []byte("redeemrequest-")
 	portalRedeemRequestStatusByTxReqIDPrefix  = []byte("redeemrequestbytxid-")
 	portalRequestUnlockCollateralStatusPrefix = []byte("requestunlockcollateral-")
+	portalRequestWithdrawRewardStatusPrefix = []byte("requestwithdrawportalreward-")
 
 
 	// liquidation for portal
 	portalLiquidateCustodianRunAwayPrefix                  = []byte("portalliquidaterunaway-")
+
+	// reward for portal
+	portalRewardInfoStatePrefix  = []byte("portalreward-")
+
 )
 
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
@@ -262,6 +267,11 @@ func GetWaitingRedeemRequestPrefix() []byte {
 	return h[:][:prefixHashKeyLength]
 }
 
+func GetPortalRewardInfoStatePrefix() []byte {
+	h := common.HashH(portalRewardInfoStatePrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
 func GetPortalStatusPrefix() []byte {
 	h := common.HashH(portalStatusPrefix)
 	return h[:][:prefixHashKeyLength]
@@ -285,6 +295,10 @@ func PortalRedeemRequestStatusByTxReqIDPrefix() []byte {
 
 func PortalRequestUnlockCollateralStatusPrefix() []byte {
 	return portalRequestUnlockCollateralStatusPrefix
+}
+
+func PortalRequestWithdrawRewardStatusPrefix() []byte {
+	return portalRequestWithdrawRewardStatusPrefix
 }
 
 var _ = func() (_ struct{}) {
