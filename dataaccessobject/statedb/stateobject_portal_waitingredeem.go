@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"reflect"
 )
 
@@ -154,19 +153,28 @@ func (rq *WaitingRedeemRequest) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func NewMatchingRedeemCustodianDetails(
-	custodians []*rawdbv2.MatchingRedeemCustodianDetail,
-) []*MatchingRedeemCustodianDetail {
-	newCus := make([]*MatchingRedeemCustodianDetail, len(custodians))
-	for i, cus := range custodians {
-		newCus[i] = &MatchingRedeemCustodianDetail{
-			incAddress:    cus.IncAddress,
-			remoteAddress: cus.RemoteAddress,
-			amount:        cus.Amount,
-		}
-	}
+func (rq MatchingRedeemCustodianDetail) GetIncognitoAddress() string {
+	return rq.incAddress
+}
 
-	return newCus
+func (rq *MatchingRedeemCustodianDetail) SetIncognitoAddress(incognitoAddress string) {
+	rq.incAddress = incognitoAddress
+}
+
+func (rq MatchingRedeemCustodianDetail) GetRemoteAddress() string {
+	return rq.remoteAddress
+}
+
+func (rq *MatchingRedeemCustodianDetail) SetRemoteAddress(remoteAddress string) {
+	rq.remoteAddress = remoteAddress
+}
+
+func (rq MatchingRedeemCustodianDetail) GetAmount() uint64 {
+	return rq.amount
+}
+
+func (rq *MatchingRedeemCustodianDetail) SetAmount(amount uint64) {
+	rq.amount = amount
 }
 
 func NewWaitingRedeemRequest() *WaitingRedeemRequest {

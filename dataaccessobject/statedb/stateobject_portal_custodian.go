@@ -2,6 +2,7 @@ package statedb
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"reflect"
@@ -76,6 +77,17 @@ func (cs CustodianState) GetRewardAmount() uint64 {
 
 func (cs *CustodianState) SetRewardAmount(amount uint64) {
 	cs.rewardAmount = amount
+}
+
+// GetRemoteAddressByTokenID returns remote address for tokenID
+func GetRemoteAddressByTokenID(addresses []RemoteAddress, tokenID string) (string, error) {
+	for _, addr := range addresses {
+		if addr.PTokenID == tokenID {
+			return addr.Address, nil
+		}
+	}
+
+	return "", errors.New("Can not found address with tokenID")
 }
 
 func (cs CustodianState) MarshalJSON() ([]byte, error) {
