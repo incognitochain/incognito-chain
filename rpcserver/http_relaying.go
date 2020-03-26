@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -54,7 +55,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithRelayingBNBHeader(params inte
 	// HasPrivacyCoin param is always false
 	createRawTxParam.HasPrivacyCoin = false
 
-	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta, *httpServer.config.Database)
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
 	if err1 != nil {
 		Logger.log.Error(err1)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
@@ -107,7 +108,7 @@ func (httpServer *HttpServer) handleGetRelayingBNBHeaderState(params interface{}
 		return nil, rpcservice.NewRPCError(rpcservice.GetRelayingBNBHeaderError, err)
 	}
 	bnbRelayingHeader := relayingState.BNBHeaderChain
-	beaconBlock, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
+	beaconBlocks, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetRelayingBNBHeaderError, err)
 	}
@@ -116,6 +117,7 @@ func (httpServer *HttpServer) handleGetRelayingBNBHeaderState(params interface{}
 		UnconfirmedHeaders []*types.Header `json:"UnconfirmedHeaders"`
 		BeaconTimeStamp    int64           `json:"BeaconTimeStamp"`
 	}
+	beaconBlock := beaconBlocks[0]
 	result := RelayingBNBHeader{
 		BeaconTimeStamp:    beaconBlock.Header.Timestamp,
 		LatestHeader:       bnbRelayingHeader.LatestHeader,
@@ -137,7 +139,7 @@ func (httpServer *HttpServer) handleGetRelayingBNBHeaderByBlockHeight(params int
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Beacon height is invalid"))
 	}
-	bnbHeaderBytes, err := httpServer.databaseService.GetRelayingBNBHeaderByBlockHeight(uint64(blockHeight))
+	bnbHeaderBytes, err := rawdbv2.GetRelayingBNBHeaderChain(httpServer.GetBlockchain().GetDatabase(), uint64(blockHeight))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetRelayingBNBHeaderByBlockHeightError, err)
 	}
