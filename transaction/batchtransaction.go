@@ -3,6 +3,7 @@ package transaction
 import (
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -32,7 +33,7 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 	if err != nil {
 		return false, err, -1
 	}
-	bulletProofList := make([]*aggregatedrange.AggregatedRangeProof, 0)
+	bulletProofList := make([]*privacy.AggregatedRangeProof, 0)
 	for i, tx := range txList {
 		shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		hasPrivacy := tx.IsPrivacy()
@@ -51,7 +52,7 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 		}
 
 		if hasPrivacy {
-			if bulletProof := tx.GetProof().GetAggregatedRangeProof(); bulletProof != nil {
+			if bulletProof := (*tx.GetProof()).GetAggregatedRangeProof(); bulletProof != nil {
 				bulletProofList = append(bulletProofList, bulletProof)
 			}
 		}

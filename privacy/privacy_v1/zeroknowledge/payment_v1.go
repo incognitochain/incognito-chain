@@ -9,7 +9,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/privacy/key"
@@ -902,7 +901,7 @@ func (proof PaymentProof) ValidateSanity() (bool, error) {
 				return false, errors.New("validate sanity ComOutputValue of proof failed")
 			}
 		}
-		if len(proof.GetCommitmentIndices()) != len(proof.GetInputCoins())*privacy.CommitmentRingSize {
+		if len(proof.GetCommitmentIndices()) != len(proof.GetInputCoins())*privacy_util.CommitmentRingSize {
 			return false, errors.New("validate sanity CommitmentIndices of proof failed")
 
 		}

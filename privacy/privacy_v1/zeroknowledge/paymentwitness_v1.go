@@ -2,6 +2,7 @@ package zkp
 
 import (
 	"errors"
+
 	"github.com/incognitochain/incognito-chain/privacy/key"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -200,7 +201,7 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *errhan
 	cmOutputSumAll := new(operation.Point).Identity()
 	cmOutputValueAll := new(operation.Point).Identity()
 	randOutputValueAll := new(operation.Scalar).FromUint64(0)
-	
+
 	cmOutputShardID := make([]*operation.Point, numOutputCoin)
 	randOutputShardID := make([]*operation.Scalar, numOutputCoin)
 
