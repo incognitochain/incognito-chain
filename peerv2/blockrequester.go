@@ -225,6 +225,28 @@ func (c *BlockRequester) StreamBlockByHeight(
 	return stream, nil
 }
 
+func (c *BlockRequester) StreamBlockByHash(
+	ctx context.Context,
+	req *proto.BlockByHashRequest,
+) (proto.HighwayService_StreamBlockByHashClient, error) {
+
+	uuid := genUUID()
+	Logger.Infof("[stream] Requesting stream block type %v, hashes [%v..%v] len %v, from %v to %v, uuid = %s", req.Type, req.Hashes[0], req.Hashes[len(req.Hashes)-1], len(req.Hashes), req.From, req.To, uuid)
+	c.RLock()
+	defer c.RUnlock()
+	if !c.ready() {
+		return nil, errors.New("requester not ready")
+	}
+	req.UUID = uuid
+	client := proto.NewHighwayServiceClient(c.conn)
+	stream, err := client.StreamBlockByHash(ctx, req, grpc.MaxCallRecvMsgSize(MaxCallRecvMsgSize))
+	if err != nil {
+		Logger.Infof("[stream] This client not return stream for this request %v, got error %v ", req, err)
+		return nil, err
+	}
+	return stream, nil
+}
+
 func (c *BlockRequester) GetBlockBeaconByHash(
 	hashes []common.Hash,
 ) ([][]byte, error) {

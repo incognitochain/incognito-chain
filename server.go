@@ -2119,7 +2119,7 @@ func (serverObj *Server) RequestCrossShardBlocksViaStream(ctx context.Context, p
 
 func (serverObj *Server) requestBlocksViaStream(ctx context.Context, peerID string, req *proto.BlockByHeightRequest) (blockCh chan common.BlockInterface, err error) {
 	//fmt.Println("SYNCKER Request Block", peerID, fromSID, fromBlockHeight, toBlockheight)
-	blockCh = make(chan common.BlockInterface, 350)
+	blockCh = make(chan common.BlockInterface, blockchain.DefaultMaxBlkReqPerPeer)
 	stream, err := serverObj.highway.Requester.StreamBlockByHeight(ctx, req)
 	if err != nil {
 		return nil, err
@@ -2133,6 +2133,63 @@ func (serverObj *Server) requestBlocksViaStream(ctx context.Context, peerID stri
 	}
 
 	go func(stream proto.HighwayService_StreamBlockByHeightClient, ctx context.Context) {
+		for {
+			blkData, err := stream.Recv()
+			//fmt.Println("SYNCKER: Receive  block...")
+			if err != nil || err == io.EOF {
+				closeChannel()
+				return
+			}
+
+			if len(blkData.Data) < 2 {
+				closeChannel()
+				return
+			}
+
+			var newBlk common.BlockInterface = new(blockchain.BeaconBlock)
+			if req.Type == proto.BlkType_BlkShard {
+				newBlk = new(blockchain.ShardBlock)
+			} else if req.Type == proto.BlkType_BlkS2B {
+				newBlk = new(blockchain.ShardToBeaconBlock)
+			} else if req.Type == proto.BlkType_BlkXShard {
+				newBlk = new(blockchain.CrossShardBlock)
+			}
+
+			err = wrapper.DeCom(blkData.Data[1:], newBlk)
+			if err != nil {
+				closeChannel()
+				return
+			}
+			//fmt.Println("SYNCKER: Receive beacon block ...", newBlk.GetHeight())
+			select {
+			case <-ctx.Done():
+				closeChannel()
+				return
+			case blockCh <- newBlk:
+			}
+		}
+
+	}(stream, ctx)
+
+	return blockCh, nil
+}
+
+func (serverObj *Server) requestBlocksByHashViaStream(ctx context.Context, peerID string, req *proto.BlockByHashRequest) (blockCh chan common.BlockInterface, err error) {
+	Logger.log.Infof("SYNCKER Request Block by hash from peerID %v, from CID %v, from block %v to %v", peerID, req.From, req.Hashes[0], req.Hashes[len(req.Hashes)-1])
+	blockCh = make(chan common.BlockInterface, blockchain.DefaultMaxBlkReqPerPeer)
+	stream, err := serverObj.highway.Requester.StreamBlockByHash(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var closeChannel = func() {
+		if blockCh != nil {
+			close(blockCh)
+			blockCh = nil
+		}
+	}
+
+	go func(stream proto.HighwayService_StreamBlockByHashClient, ctx context.Context) {
 		for {
 			blkData, err := stream.Recv()
 			//fmt.Println("SYNCKER: Receive  block...")

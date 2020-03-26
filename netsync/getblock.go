@@ -43,6 +43,46 @@ func (netSync *NetSync) GetBlockByHeight(
 	}
 }
 
+func (netSync *NetSync) GetBlockByHash(
+	blkType proto.BlkType,
+	hash *common.Hash,
+	fromcID byte,
+	tocID byte,
+) (
+	interface{},
+	error,
+) {
+	bc := netSync.config.BlockChain
+	switch blkType {
+	case proto.BlkType_BlkBc:
+		blk, _, err := bc.GetBeaconBlockByHash(*hash)
+		if err != nil {
+			return nil, err
+		}
+		return blk, nil
+	case proto.BlkType_BlkShard:
+		blk, _, err := bc.GetShardBlockByHash(*hash)
+		if err != nil {
+			return nil, err
+		}
+		return blk, nil
+	case proto.BlkType_BlkXShard:
+		blk, _, err := bc.GetShardBlockByHash(*hash)
+		if err != nil {
+			return nil, err
+		}
+		return blk.CreateCrossShardBlock(tocID)
+	case proto.BlkType_BlkS2B:
+		blk, _, err := bc.GetShardBlockByHash(*hash)
+		if err != nil {
+			return nil, err
+		}
+		return blk.CreateShardToBeaconBlock(bc), nil
+	default:
+		return nil, errors.Errorf("Invalid block type")
+	}
+}
+
 func (netSync *NetSync) GetBlockShardByHash(blkHashes []common.Hash) []wire.Message {
 	blkMsgs := []wire.Message{}
 	for _, blkHash := range blkHashes {
@@ -340,6 +380,35 @@ func (netSync *NetSync) streamBlkByHeight(
 			continue
 		}
 		blk, err := netSync.GetBlockByHeight(req.Type, blkHeight, byte(req.From), byte(req.To))
+		if err != nil {
+			Logger.log.Errorf("[stream] Netsync cannot get block, return error %+v", err)
+			break
+		}
+		blkCh <- blk
+		Logger.log.Infof("[stream] Netsync push block to channel")
+	}
+	close(blkCh)
+	return
+}
+
+func (netSync *NetSync) StreamBlockByHash(
+	fromPool bool,
+	req *proto.BlockByHashRequest,
+) chan interface{} {
+	Logger.log.Infof("[stream] Netsync received request stream block type %v, hashes [%v..%v] len %v, from %v to %v", req.Type, req.Hashes[0], req.Hashes[len(req.Hashes)-1], len(req.Hashes), req.From, req.To)
+	blkCh := make(chan interface{})
+	go netSync.streamBlkByHash(req, blkCh)
+	return blkCh
+}
+
+func (netSync *NetSync) streamBlkByHash(
+	req *proto.BlockByHashRequest,
+	blkCh chan interface{},
+) {
+	for _, blkHashByte := range req.GetHashes() {
+		blkHash := &common.Hash{}
+		blkHash.SetBytes(blkHashByte)
+		blk, err := netSync.GetBlockByHash(req.Type, blkHash, byte(req.From), byte(req.To))
 		if err != nil {
 			Logger.log.Errorf("[stream] Netsync cannot get block, return error %+v", err)
 			break
