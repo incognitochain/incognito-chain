@@ -48,8 +48,9 @@ var (
 	portalPortingRequestTxStatusPrefix              = []byte("portalportingrequesttxstatus-")
 	portalCustodianWithdrawStatusPrefix             = []byte("portalcustodianwithdrawstatus-")
 	portalLiquidationTpExchangeRatesStatusPrefix    = []byte("portalliquidationtpexchangeratesstatus-")
-	portalLiquidationCustodianDepositStatusPrefix    = []byte("portalliquidationcustodiandepositstatus-")
-	portalLiquidationRedeemRequestStatusPrefix    = []byte("portalliquidationredeemrequeststatus-")
+	portalLiquidationCustodianDepositStatusPrefix   = []byte("portalliquidationcustodiandepositstatus-")
+	portalLiquidationRedeemRequestStatusPrefix      = []byte("portalliquidationredeemrequeststatus-")
+	portalWaitingPortingRequestPrefix               = []byte("portalwaitingportingrequest-")
 
 	//B
 	portalCustodianStatePrefix        = []byte("portalcustodian-")
@@ -285,6 +286,12 @@ func PortalLiquidationCustodianDepositStatusPrefix() []byte {
 func PortalLiquidationRedeemRequestStatusPrefix() []byte  {
 	return portalLiquidationRedeemRequestStatusPrefix
 }
+
+func GetPortalWaitingPortingRequestPrefix() []byte {
+	h := common.HashH(portalWaitingPortingRequestPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
 //B
 func GetPortalCustodianStatePrefix() []byte {
 	h := common.HashH(portalCustodianStatePrefix)

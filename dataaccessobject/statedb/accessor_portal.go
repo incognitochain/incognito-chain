@@ -156,22 +156,20 @@ func GetCustodianDepositStatus(stateDB *StateDB, txID string) ([]byte, error) {
 	return data, nil
 }
 
+//todo: get one custodian
+func GetOneCustodian(stateDB *StateDB,beaconHeight uint64, custodianAddress string) (*CustodianState, error) {
+	return nil, nil
+}
 //======================  Exchange rate  ======================
-func GetFinalExchangeRatesState(
+func GetAllFinalExchangeRatesState(
 	stateDB *StateDB,
 	beaconHeight uint64,
 ) (map[string]*FinalExchangeRatesState, error) {
-	finalExchangeRates := make(map[string]*FinalExchangeRatesState)
-
 	allFinalExchangeRatesState := stateDB.getAllFinalExchangeRatesState()
-	for _, item  := range allFinalExchangeRatesState {
-		key := GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
-		value := NewFinalExchangeRatesStateWithValue(item.Rates())
-		finalExchangeRates[key.String()] = value
-	}
-	return finalExchangeRates, nil
+	return allFinalExchangeRatesState, nil
 }
 
+//todo:
 func GetFinalExchangeRates(stateDB *StateDB, beaconHeight uint64) (*FinalExchangeRatesState, error)  {
 	/*tokenIDs := []string{tokenIDToBuy, tokenIDToSell}
 	sort.Strings(tokenIDs)
@@ -191,15 +189,13 @@ func GetFinalExchangeRates(stateDB *StateDB, beaconHeight uint64) (*FinalExchang
 	return nil, nil
 }
 
-func StoreFinalExchangeRatesState(
+func StoreBulkFinalExchangeRatesState(
 	stateDB *StateDB,
 	beaconHeight uint64,
 	finalExchangeRatesState map[string]*FinalExchangeRatesState) error {
 	for _, exchangeRates := range finalExchangeRatesState {
 		key := GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
-		value := NewFinalExchangeRatesStateWithValue(exchangeRates.Rates())
-
-		err := stateDB.SetStateObject(FinalExchangeRatesStateObjectType, key, value)
+		err := stateDB.SetStateObject(PortalFinalExchangeRatesStateObjectType, key, exchangeRates)
 		if err != nil {
 			return NewStatedbError(StoreFinalExchangeRatesStateError, err)
 		}
@@ -208,20 +204,6 @@ func StoreFinalExchangeRatesState(
 }
 
 //======================  Custodian Withdraw  ======================
-func StoreCustodianWithdrawRequest(key []byte, content interface{}) error {
-	/*contributionBytes, err := json.Marshal(content)
-	if err != nil {
-		return err
-	}
-
-	err = db.Put(key, contributionBytes)
-	if err != nil {
-		return database.NewDatabaseError(database.StorePortalCustodianWithdrawRequestStateError, errors.Wrap(err, "db.lvdb.put"))
-	}
-*/
-	return nil
-}
-
 
 //======================  Liquidation  ======================
 func StorePortalLiquidationCustodianRunAwayStatus(stateDB *StateDB, redeemID string, custodianIncognitoAddress string, statusContent []byte) error {
@@ -272,19 +254,26 @@ func GetAllLiquidateExchangeRates(
 	stateDB *StateDB,
 	beaconHeight uint64,
 ) (map[string]*LiquidateExchangeRatesPool, error) {
-	//todo:
-	return nil, nil
+	liquidateExchangeRatesPool := stateDB.GetAllLiquidateExchangeRates()
+	return liquidateExchangeRatesPool, nil
 }
 
-func StoreLiquidateExchangeRates(
+func StoreBulkLiquidateExchangeRates(
 	stateDB *StateDB,
 	beaconHeight uint64,
 	liquidateExchangeRates map[string]*LiquidateExchangeRatesPool,
-	) error {
-	//todo
+) error {
+	for _, value := range liquidateExchangeRates {
+		key := GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
+		err := stateDB.SetStateObject(PortalFinalExchangeRatesStateObjectType, key, value)
+		if err != nil {
+			return NewStatedbError(StoreFinalExchangeRatesStateError, err)
+		}
+	}
 	return nil
 }
 
+//todo:
 func GetLiquidateExchangeRates(stateDB *StateDB, beaconHeight uint64) (*LiquidateExchangeRatesPool, error)  {
 	/*tokenIDs := []string{tokenIDToBuy, tokenIDToSell}
 	sort.Strings(tokenIDs)
@@ -305,6 +294,7 @@ func GetLiquidateExchangeRates(stateDB *StateDB, beaconHeight uint64) (*Liquidat
 }
 
 //======================  Porting  ======================
+//todo:
 func TrackPortalStateStatus(stateDB *StateDB, statusType []byte, statusSuffix []byte, statusContent []byte) error {
 	/*key := GeneratePortalStatusObjectKey(statusType, statusSuffix)
 	value := NewPortalStatusStateWithValue(statusType, statusSuffix, statusContent)
@@ -320,6 +310,7 @@ func TrackPortalStateStatus(stateDB *StateDB, statusType []byte, statusSuffix []
 	return nil
 }
 
+//todo:
 func GetPortalStateStatusMultiple(stateDB *StateDB, statusType []byte, statusSuffix []byte) (interface{}, error) {
 	/*key := GeneratePortalStatusObjectKey(statusType, statusSuffix)
 	s, has, err := stateDB.GetPortalStatusByKey(key)
@@ -331,39 +322,6 @@ func GetPortalStateStatusMultiple(stateDB *StateDB, statusType []byte, statusSuf
 	}
 	return s.statusContent[0], nil*/
 	return nil, nil
-}
-
-// getCustodianPoolState gets custodian pool state at beaconHeight
-func GetWaitingPortingRequests(
-	stateDB *StateDB,
-	beaconHeight uint64,
-) (map[string]*PortingRequest, error) {
-	//todo:
-	return nil, nil
-}
-
-// StoreWaitingRedeemRequests stores waiting redeem requests at beaconHeight
-func StoreWaitingPortingRequests(
-	stateDB *StateDB,
-	beaconHeight uint64,
-	portingReqs map[string]*PortingRequest) error {
-	//todo:
-	return nil
-}
-
-// StorePortingRequestItem store status of porting request by portingID
-func StorePortingRequestItem(keyId []byte, content interface{}) error {
-	/*contributionBytes, err := json.Marshal(content)
-	if err != nil {
-		return err
-	}
-
-	err = db.Put(keyId, contributionBytes)
-	if err != nil {
-		return database.NewDatabaseError(database.StorePortingRequestStateError, errors.Wrap(err, "db.lvdb.put"))
-	}
-	*/
-	return nil
 }
 
 // UpdatePortingRequestStatus updates status of porting request by portingID
@@ -397,6 +355,34 @@ func UpdatePortingRequestStatus(portingID string, newStatus int) error {
 */
 	return nil
 }
+//====================== Waiting Porting  ======================
+// getCustodianPoolState gets custodian pool state at beaconHeight
+func GetAllWaitingPortingRequests(
+	stateDB *StateDB,
+	beaconHeight uint64,
+) (map[string]*WaitingPortingRequest, error) {
+	waitingPortingRequestList := stateDB.GetAllWaitingPortingRequests()
+	return waitingPortingRequestList, nil
+}
+
+// StoreWaitingRedeemRequests stores waiting redeem requests at beaconHeight
+func StoreBulkWaitingPortingRequests(
+	stateDB *StateDB,
+	beaconHeight uint64,
+	waitingPortingRequest map[string]*WaitingPortingRequest) error {
+	for _, items := range waitingPortingRequest {
+		key := GeneratePortalWaitingPortingRequestObjectKey(beaconHeight, items.UniquePortingID())
+		err := stateDB.SetStateObject(PortalWaitingPortingRequestObjectType, key, items)
+		if err != nil {
+			return NewStatedbError(StoreWaitingPortingRequestError, err)
+		}
+	}
+	return nil
+}
+
+func StoreWaitingPortingRequests(stateDB *StateDB, portingRequestId string, statusContent []byte) error {
+	return nil
+}
 
 //======================  Portal status  ======================
 func StorePortalStatus(stateDB *StateDB, statusType []byte, statusSuffix []byte, statusContent []byte) error {
@@ -420,7 +406,6 @@ func GetPortalStatus(stateDB *StateDB, statusType []byte, statusSuffix []byte) (
 	}
 	return s.statusContent, nil
 }
-
 
 func StoreRequestPTokenStatus(stateDB *StateDB, txID string, statusContent []byte) error {
 	statusType := PortalRequestPTokenStatusPrefix()

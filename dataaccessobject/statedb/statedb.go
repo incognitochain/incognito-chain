@@ -1192,24 +1192,27 @@ func (stateDB *StateDB) getBurningConfirmState(key common.Hash) (*BurningConfirm
 
 // ================================= Portal OBJECT =======================================
 //A
-func (stateDB *StateDB) getAllFinalExchangeRatesState() []*FinalExchangeRatesState {
-	finalExchangeRatesStates := []*FinalExchangeRatesState{}
+func (stateDB *StateDB) getAllFinalExchangeRatesState() map[string]*FinalExchangeRatesState {
+	finalExchangeRatesStates := map[string]*FinalExchangeRatesState{}
 	temp := stateDB.trie.NodeIterator(GetFinalExchangeRatesStatePrefix())
 	it := trie.NewIterator(temp)
 	for it.Next() {
+		key := it.Key
+		keyStr := string(key)
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
-		pp := NewFinalExchangeRatesState()
-		err := json.Unmarshal(newValue, pp)
+		object := NewFinalExchangeRatesState()
+		err := json.Unmarshal(newValue, object)
 		if err != nil {
 			panic("wrong expect type")
 		}
-		finalExchangeRatesStates = append(finalExchangeRatesStates, pp)
+		finalExchangeRatesStates[keyStr] = object
 	}
 	return finalExchangeRatesStates
 }
 
+//todo:
 func (stateDB *StateDB) GetPortalStatusByKey(key common.Hash) (*PortalStatusState, bool, error) {
 /*	pdeStatusState, err := stateDB.getStateObject(PDEStatusObjectType, key)
 	if err != nil {
@@ -1220,6 +1223,48 @@ func (stateDB *StateDB) GetPortalStatusByKey(key common.Hash) (*PortalStatusStat
 	}
 	return NewPDEStatusState(), false, nil*/
 	return nil, false, nil
+}
+
+func (stateDB *StateDB) GetAllWaitingPortingRequests() map[string]*WaitingPortingRequest {
+	waitingPortingRequest := map[string]*WaitingPortingRequest{}
+	temp := stateDB.trie.NodeIterator(GetPortalWaitingPortingRequestPrefix())
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		key := it.Key
+		keyStr := string(key)
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		object := NewWaitingPortingRequest()
+		err := json.Unmarshal(newValue, object)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		waitingPortingRequest[keyStr] = object
+	}
+
+	return waitingPortingRequest
+}
+
+func (stateDB *StateDB) GetAllLiquidateExchangeRates() map[string]*LiquidateExchangeRatesPool {
+	 liquidateExchangeRates := map[string]*LiquidateExchangeRatesPool{}
+	temp := stateDB.trie.NodeIterator(GetPortalWaitingPortingRequestPrefix())
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		key := it.Key
+		keyStr := string(key)
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		object := NewLiquidateExchangeRatesPool()
+		err := json.Unmarshal(newValue, object)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		liquidateExchangeRates[keyStr] = object
+	}
+
+	return liquidateExchangeRates
 }
 
 //B

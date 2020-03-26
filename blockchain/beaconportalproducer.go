@@ -271,7 +271,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		return [][]string{inst}, nil
 	}
 
-	waitingPortingRequestKey := statedb.GeneratePortalWaitingPortingRequestObjectKey(beaconHeight, actionData.Meta.UniqueRegisterId)
+	waitingPortingRequestKey := statedb.GeneratePortalWaitingPortingRequestObjectKey(actionData.Meta.UniqueRegisterId)
 	if _, ok := currentPortalState.WaitingPortingRequests[waitingPortingRequestKey.String()]; ok {
 		Logger.log.Errorf("Porting request: Waiting porting request exist, key %v", waitingPortingRequestKey)
 		inst := buildRequestPortingInst(
@@ -459,7 +459,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		beaconHeight+1,
 	)
 
-	keyWaitingPortingRequest := statedb.GeneratePortalWaitingPortingRequestObjectKey(beaconHeight, actionData.Meta.UniqueRegisterId)
+	keyWaitingPortingRequest := statedb.GeneratePortalWaitingPortingRequestObjectKey(actionData.Meta.UniqueRegisterId)
 	currentPortalState.WaitingPortingRequests[keyWaitingPortingRequest.String()] = newPortingRequestStateWaiting
 
 	return [][]string{inst}, nil

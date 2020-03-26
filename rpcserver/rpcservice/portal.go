@@ -143,8 +143,8 @@ func (portal *Portal) getFinalExchangeRates(beaconHeight uint64) (*statedb.Final
 }
 
 func (portal *Portal) CalculateAmountNeededCustodianDepositLiquidation(beaconHeight uint64, custodianAddress string, pTokenId string, isFreeCollateralSelected bool) (jsonresult.GetLiquidateAmountNeededCustodianDeposit, error) {
-	key := lvdb.NewCustodianStateKey(beaconHeight, custodianAddress)
-	custodian, err := blockchain.GetCustodianByKey(db, []byte(key))
+	portalStateDB := portal.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	custodian, err := statedb.GetOneCustodian(portalStateDB, beaconHeight, custodianAddress)
 
 	if err != nil {
 		return jsonresult.GetLiquidateAmountNeededCustodianDeposit{}, err
@@ -161,7 +161,7 @@ func (portal *Portal) CalculateAmountNeededCustodianDepositLiquidation(beaconHei
 		IsFreeCollateralSelected: isFreeCollateralSelected,
 		Amount: amountNeeded,
 		TokenId: pTokenId,
-		FreeCollateral: custodian.FreeCollateral,
+		FreeCollateral: custodian.GetFreeCollateral(),
 	}
 
 	return result, nil

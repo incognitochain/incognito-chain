@@ -540,10 +540,10 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(
 		}
 
 		// get tokenID from redeemTokenID
-		tokenID := waitingPortingReq.TokenID
+		tokenID := waitingPortingReq.TokenID()
 
 		// update custodian state in matching custodians list (holding public tokens, locked amount)
-		for _, matchCusDetail := range waitingPortingReq.Custodians {
+		for _, matchCusDetail := range waitingPortingReq.Custodians() {
 			cusStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, matchCusDetail.IncAddress)
 			cusStateKeyStr := string(cusStateKey[:])
 			custodianState := currentPortalState.CustodianPoolState[cusStateKeyStr]
@@ -563,19 +563,21 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(
 		if actionData.ExpiredByLiquidation {
 			portingReqStatus = common.PortalPortingReqLiquidatedStatus
 		}
-		portingReqKey := lvdb.NewPortingRequestKey(waitingPortingReq.UniquePortingID)
-		newPortingRequestStatus, err := NewPortingRequestState(
-			waitingPortingReq.UniquePortingID,
-			waitingPortingReq.TxReqID,
+
+		newPortingRequestStatus := statedb.NewWaitingPortingRequestWithValue(
+			waitingPortingReq.UniquePortingID(),
+			waitingPortingReq.TxReqID(),
 			tokenID,
-			waitingPortingReq.PorterAddress,
-			waitingPortingReq.Amount,
-			waitingPortingReq.Custodians,
-			waitingPortingReq.PortingFee,
+			waitingPortingReq.PorterAddress(),
+			waitingPortingReq.Amount(),
+			waitingPortingReq.Custodians(),
+			waitingPortingReq.PortingFee(),
 			portingReqStatus,
-			waitingPortingReq.BeaconHeight,
+			waitingPortingReq.BeaconHeight(),
 		)
-		err = db.StorePortingRequestItem([]byte(portingReqKey), newPortingRequestStatus)
+
+		newPortingRequestStatusBytes, _ := json.Marshal(newPortingRequestStatus)
+		err = statedb.StoreWaitingPortingRequests(stateDB, waitingPortingReq.UniquePortingID(), newPortingRequestStatusBytes)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store porting request item: %+v", err)
 			return nil
