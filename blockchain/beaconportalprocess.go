@@ -265,7 +265,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		}
 
 		// new request
-		newPortingRequestStateWaiting := metadata.NewPortingRequestStatus(
+		newPortingRequestStateWaiting := statedb.NewWaitingPortingRequestWithValue(
 			uniquePortingID,
 			txReqID,
 			tokenID,

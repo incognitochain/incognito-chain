@@ -369,9 +369,9 @@ func checkAndBuildInstForTPExchangeRateRedeemRequest(
 	// calculate total amount of matching redeem amount with the liquidated custodian
 	totalMatchingRedeemAmountPubToken := uint64(0)
 	for _, redeemReq := range currentPortalState.WaitingRedeemRequests {
-		if redeemReq.TokenID == tokenID {
-			for _, cus := range redeemReq.Custodians {
-				if cus.IncAddress == liquidatedCustodianState.IncognitoAddress {
+		if redeemReq.GetTokenID() == tokenID {
+			for _, cus := range redeemReq.GetCustodians() {
+				if cus.GetIncognitoAddress() == liquidatedCustodianState.IncognitoAddress {
 					totalMatchingRedeemAmountPubToken += cus.Amount
 				}
 			}
@@ -647,8 +647,8 @@ func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
 	}
 
 	//get exchange rates
-	exchangeRatesKey := statedb.NewFinalExchangeRatesKey(beaconHeight)
-	exchangeRatesState, ok := currentPortalState.FinalExchangeRatesState[exchangeRatesKey]
+	exchangeRatesKey := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
+	exchangeRatesState, ok := currentPortalState.FinalExchangeRatesState[exchangeRatesKey.String()]
 	if !ok {
 		Logger.log.Errorf("exchange rates not found")
 		inst := buildRedeemLiquidateExchangeRatesInst(
@@ -702,8 +702,8 @@ func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
 	}
 
 	//check redeem amount
-	liquidateExchangeRatesKey := statedb.NewPortalLiquidateExchangeRatesKey(beaconHeight)
-	liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey]
+	liquidateExchangeRatesKey := statedb.GeneratePortalLiquidateExchangeRatesPoolObjectKey(beaconHeight)
+	liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()]
 
 	if !ok {
 		Logger.log.Errorf("Liquidate exchange rates not found")
@@ -722,7 +722,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
 		return [][]string{inst}, nil
 	}
 
-	liquidateByTokenID, ok := liquidateExchangeRates.Rates[meta.TokenID]
+	liquidateByTokenID, ok := liquidateExchangeRates.Rates()[meta.TokenID]
 
 	if !ok {
 		Logger.log.Errorf("Liquidate exchange rates not found")
@@ -779,12 +779,12 @@ func (blockchain *BlockChain) buildInstructionsForRedeemLiquidateExchangeRates(
 	}
 
 	Logger.log.Infof("Redeem Liquidation: Amount refund to user amount ptoken %v, amount prv %v", meta.RedeemAmount, totalPrv)
-	liquidateExchangeRates.Rates[meta.TokenID] = statedb.LiquidateExchangeRatesDetail{
+	liquidateExchangeRates.Rates()[meta.TokenID] = statedb.LiquidateExchangeRatesDetail{
 		HoldAmountFreeCollateral: liquidateByTokenID.HoldAmountFreeCollateral - totalPrv,
 		HoldAmountPubToken: liquidateByTokenID.HoldAmountPubToken - meta.RedeemAmount,
 	}
 
-	currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey] = liquidateExchangeRates
+	currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()] = liquidateExchangeRates
 
 	inst := buildRedeemLiquidateExchangeRatesInst(
 		meta.TokenID,
@@ -841,7 +841,6 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 	meta := actionData.Meta
 
 	keyCustodianState := statedb.GenerateCustodianStateObjectKey(beaconHeight, meta.IncogAddressStr)
-
 	custodian, ok := currentPortalState.CustodianPoolState[keyCustodianState.String()]
 
 	if !ok {
@@ -862,7 +861,7 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 	}
 
 	//check exit ptoken
-	if _, ok := custodian.LockedAmountCollateral[actionData.Meta.PTokenId]; !ok {
+	if _, ok := custodian.GetLockedAmountCollateral()[actionData.Meta.PTokenId]; !ok {
 		Logger.log.Errorf("PToken not found")
 		// need to refund collateral to custodian
 		inst := buildLiquidationCustodianDepositInst(
@@ -879,8 +878,8 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 		return [][]string{inst}, nil
 	}
 
-	keyExchangeRate := statedb.NewFinalExchangeRatesKey(beaconHeight)
-	exchangeRate, ok := currentPortalState.FinalExchangeRatesState[keyExchangeRate]
+	keyExchangeRate := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
+	exchangeRate, ok := currentPortalState.FinalExchangeRatesState[keyExchangeRate.String()]
 	if !ok {
 		Logger.log.Errorf("Exchange rate not found", err)
 		inst := buildLiquidationCustodianDepositInst(
@@ -898,7 +897,7 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 	}
 
 
-	calTPRatio, err := calculateTPRatio(custodian.HoldingPubTokens, custodian.LockedAmountCollateral, exchangeRate)
+	calTPRatio, err := calculateTPRatio(custodian.GetHoldingPublicTokens(), custodian.GetLockedAmountCollateral(), exchangeRate)
 	if err != nil {
 		Logger.log.Errorf("Custodian deposit: cal tp ratio error %v", err)
 		inst := buildLiquidationCustodianDepositInst(
@@ -991,21 +990,24 @@ func (blockchain *BlockChain) buildInstructionsForLiquidationCustodianDeposit(
 	Logger.log.Infof("Deposited amount: expect %v, data sent %v", amountNeeded, actionData.Meta.DepositedAmount)
 
 	remainDepositAmount := actionData.Meta.DepositedAmount - amountNeeded
-	custodian.TotalCollateral = custodian.TotalCollateral + actionData.Meta.DepositedAmount
+	custodian.SetTotalCollateral(custodian.GetTotalCollateral() + actionData.Meta.DepositedAmount)
 
 	if actionData.Meta.FreeCollateralSelected == false {
-		custodian.LockedAmountCollateral[actionData.Meta.PTokenId] = custodian.LockedAmountCollateral[actionData.Meta.PTokenId] + amountNeeded
+		lockedAmountCollateral := custodian.GetLockedAmountCollateral()
+		lockedAmountCollateral[actionData.Meta.PTokenId] = lockedAmountCollateral[actionData.Meta.PTokenId] + amountNeeded
 
+		custodian.SetLockedAmountCollateral(lockedAmountCollateral)
 		//update remain
-		custodian.FreeCollateral = custodian.FreeCollateral + remainDepositAmount
+		custodian.SetFreeCollateral(custodian.GetFreeCollateral() + remainDepositAmount)
 	} else {
+		lockedAmountCollateral := custodian.GetLockedAmountCollateral()
+		lockedAmountCollateral[actionData.Meta.PTokenId] = lockedAmountCollateral[actionData.Meta.PTokenId] + amountNeeded + totalFreeCollateralNeeded
 		//deposit from free collateral DepositedAmount
-		custodian.LockedAmountCollateral[actionData.Meta.PTokenId] = custodian.LockedAmountCollateral[actionData.Meta.PTokenId] + amountNeeded + totalFreeCollateralNeeded
-
-		custodian.FreeCollateral = remainFreeCollateral + remainDepositAmount
+		custodian.SetLockedAmountCollateral(lockedAmountCollateral)
+		custodian.SetFreeCollateral(remainFreeCollateral + remainDepositAmount)
 	}
 
-	currentPortalState.CustodianPoolState[keyCustodianState] = custodian
+	currentPortalState.CustodianPoolState[keyCustodianState.String()] = custodian
 
 	inst := buildLiquidationCustodianDepositInst(
 		actionData.Meta.PTokenId,

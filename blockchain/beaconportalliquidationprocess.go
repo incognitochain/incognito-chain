@@ -183,7 +183,7 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(porta
 			currentPortalState.CustodianPoolState[cusStateKeyStr] = custodianState
 
 			//update LiquidateExchangeRates
-			liquidateExchangeRatesKey := statedb.GeneratePortalLiquidateExchangeRatesObjectKey(beaconHeight)
+			liquidateExchangeRatesKey := statedb.GeneratePortalLiquidateExchangeRatesPoolObjectKey(beaconHeight)
 			liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()]
 
 			Logger.log.Infof("update liquidateExchangeRatesKey key %v", liquidateExchangeRatesKey)
@@ -196,7 +196,7 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(porta
 						HoldAmountPubToken:       liquidateTopPercentileExchangeRatesDetail.HoldAmountPubToken,
 					}
 				}
-				currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()] = statedb.NewLiquidateExchangeRatesWithValue(item)
+				currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()] = statedb.NewLiquidateExchangeRatesPoolWithValue(item)
 			} else {
 				for ptoken, liquidateTopPercentileExchangeRatesDetail := range detectTp {
 					if _, ok := liquidateExchangeRates.Rates()[ptoken]; !ok {
@@ -219,12 +219,12 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(porta
 
 			beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 			newTPKey := beaconHeightBytes
-			newTPKey = append(newTPKey, []byte(custodianState.IncognitoAddress)...)
+			newTPKey = append(newTPKey, []byte(custodianState.GetIncognitoAddress())...)
 
 			Logger.log.Infof("update liquidateTPExchangeRatesKey key %v", newTPKey)
 
 			newTPExchangeRates := metadata.NewLiquidateTopPercentileExchangeRatesStatus(
-				custodianState.IncognitoAddress,
+				custodianState.GetIncognitoAddress(),
 				common.PortalLiquidationTPExchangeRatesSuccessStatus,
 				detectTp,
 			)
@@ -245,10 +245,10 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(porta
 	} else if reqStatus == common.PortalLiquidateTPExchangeRatesFailedChainStatus {
 		beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 		newTPKey := beaconHeightBytes
-		newTPKey = append(newTPKey, []byte( custodianState.IncognitoAddress)...)
+		newTPKey = append(newTPKey, []byte(custodianState.GetIncognitoAddress())...)
 
 		newTPExchangeRates := metadata.NewLiquidateTopPercentileExchangeRatesStatus(
-			custodianState.IncognitoAddress,
+			custodianState.GetIncognitoAddress(),
 			common.PortalLiquidationTPExchangeRatesFailedStatus,
 			nil,
 		)
@@ -299,7 +299,7 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(portalSt
 			return nil
 		}
 
-		liquidateExchangeRatesKey := statedb.GeneratePortalLiquidateExchangeRatesObjectKey(beaconHeight)
+		liquidateExchangeRatesKey := statedb.GeneratePortalLiquidateExchangeRatesPoolObjectKey(beaconHeight)
 		liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()]
 
 		if !ok {
