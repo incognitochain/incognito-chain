@@ -221,7 +221,7 @@ func (tp *TxPool) MonitorPool() {
 // #1: tx
 // #2: default nil, contain input coins hash, which are used for creating this tx
 func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight int64) (*common.Hash, *TxDesc, error) {
-	//tp.config.BlockChain.GetBeaconBestState().BeaconHeight
+	//beaconView.BeaconHeight
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
 	if tp.IsTest {
@@ -230,12 +230,14 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 	go func(txHash common.Hash) {
 		tp.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.TransactionHashEnterNodeTopic, txHash))
 	}(*tx.Hash())
+	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	if !tp.checkRelayShard(tx) && !tp.checkPublicKeyRole(tx) {
-		senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		err := NewMempoolTxError(UnexpectedTransactionError, errors.New("Unexpected Transaction From Shard "+fmt.Sprintf("%d", senderShardID)))
 		Logger.log.Error(err)
 		return &common.Hash{}, &TxDesc{}, err
 	}
+	beaconView := tp.config.BlockChain.BeaconChain.GetFinalView().(*blockchain.BeaconBestState)
+	shardView := tp.config.BlockChain.ShardChain[senderShardID].GetFinalView().(*blockchain.ShardBestState)
 	txType := tx.GetType()
 	if txType == common.TxNormalType {
 		if tx.IsPrivacy() {
@@ -256,7 +258,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 		return nil, nil, NewMempoolTxError(MaxPoolSizeError, errors.New("Pool reach max number of transaction"))
 	}
 	startAdd := time.Now()
-	hash, txDesc, err := tp.maybeAcceptTransaction(tx, tp.config.PersistMempool, true, beaconHeight)
+	hash, txDesc, err := tp.maybeAcceptTransaction(shardView, beaconView, tx, tp.config.PersistMempool, true, beaconHeight)
 	elapsed := float64(time.Since(startAdd).Seconds())
 	//==========
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
@@ -305,10 +307,11 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 }
 
 // This function is safe for concurrent access.
-func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transaction, beaconHeight int64) (*metadata.TxDesc, error) {
+func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transaction, beaconHeight int64, shardView *blockchain.ShardBestState) (*metadata.TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
-	_, txDesc, err := tp.maybeAcceptTransaction(tx, false, false, beaconHeight)
+	beaconView := tp.config.BlockChain.BeaconChain.GetFinalView().(*blockchain.BeaconBestState)
+	_, txDesc, err := tp.maybeAcceptTransaction(shardView, beaconView, tx, false, false, beaconHeight)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
@@ -316,18 +319,19 @@ func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transactio
 	tempTxDesc := &txDesc.Desc
 	return tempTxDesc, err
 }
-func (tp *TxPool) MaybeAcceptBatchTransactionForBlockProducing(shardID byte, txs []metadata.Transaction, beaconHeight int64) ([]*metadata.TxDesc, error) {
+func (tp *TxPool) MaybeAcceptBatchTransactionForBlockProducing(shardID byte, txs []metadata.Transaction, beaconHeight int64, shardView *blockchain.ShardBestState) ([]*metadata.TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
-	_, txDesc, err := tp.maybeAcceptBatchTransaction(shardID, txs, beaconHeight)
+	beaconView := tp.config.BlockChain.BeaconChain.GetFinalView().(*blockchain.BeaconBestState)
+	_, txDesc, err := tp.maybeAcceptBatchTransaction(shardView, beaconView, shardID, txs, beaconHeight)
 	return txDesc, err
 }
 
-func (tp *TxPool) maybeAcceptBatchTransaction(shardID byte, txs []metadata.Transaction, beaconHeight int64) ([]common.Hash, []*metadata.TxDesc, error) {
+func (tp *TxPool) maybeAcceptBatchTransaction(shardView *blockchain.ShardBestState, beaconView *blockchain.BeaconBestState, shardID byte, txs []metadata.Transaction, beaconHeight int64) ([]common.Hash, []*metadata.TxDesc, error) {
 	txDescs := []*metadata.TxDesc{}
 	txHashes := []common.Hash{}
 	batch := transaction.NewBatchTransaction(txs)
-	ok, err, _ := batch.Validate(tp.config.BlockChain.GetBestStateShard(shardID).GetShardTransactionStateDB(), tp.config.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB())
+	ok, err, _ := batch.Validate(shardView.GetShardTransactionStateDB(), beaconView.GetBeaconFeatureStateDB())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -336,7 +340,7 @@ func (tp *TxPool) maybeAcceptBatchTransaction(shardID byte, txs []metadata.Trans
 	}
 	for _, tx := range txs {
 		// validate tx
-		err := tp.validateTransaction(tx, beaconHeight, true, false)
+		err := tp.validateTransaction(shardView, beaconView, tx, beaconHeight, true, false)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -361,7 +365,7 @@ func (tp *TxPool) maybeAcceptBatchTransaction(shardID byte, txs []metadata.Trans
 // #2: store into db
 // #3: default nil, contain input coins hash, which are used for creating this tx
 */
-func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, isNewTransaction bool, beaconHeight int64) (*common.Hash, *TxDesc, error) {
+func (tp *TxPool) maybeAcceptTransaction(shardView *blockchain.ShardBestState, beaconView *blockchain.BeaconBestState, tx metadata.Transaction, isStore bool, isNewTransaction bool, beaconHeight int64) (*common.Hash, *TxDesc, error) {
 	txType := tx.GetType()
 	if txType == common.TxNormalType {
 		if tx.IsPrivacy() {
@@ -373,7 +377,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 	txSize := fmt.Sprintf("%d", tx.GetTxActualSize())
 	startValidate := time.Now()
 	// validate tx
-	err := tp.validateTransaction(tx, beaconHeight, false, isNewTransaction)
+	err := tp.validateTransaction(shardView, beaconView, tx, beaconHeight, false, isNewTransaction)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -390,7 +394,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 		metrics.Tag:              metrics.TxSizeTag,
 		metrics.TagValue:         txSize})
 	shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-	bestHeight := tp.config.BlockChain.GetBestStateShard(shardID).BestBlock.Header.Height
+	bestHeight := shardView.BestBlock.Header.Height
 	txFee := tx.GetTxFee()
 	txFeeToken := tx.GetTxFeeToken()
 	txD := createTxDescMempool(tx, bestHeight, txFee, txFeeToken)
@@ -426,6 +430,7 @@ func createTxDescMempool(tx metadata.Transaction, height uint64, fee uint64, fee
 }
 
 func (tp *TxPool) checkFees(
+	beaconView *blockchain.BeaconBestState,
 	tx metadata.Transaction,
 	shardID byte,
 	beaconHeight int64,
@@ -439,7 +444,7 @@ func (tp *TxPool) checkFees(
 		meta := tx.GetMetadata()
 		// verify at metadata level
 		if meta != nil {
-			ok := meta.CheckTransactionFee(tx, limitFee, beaconHeight, tp.config.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB())
+			ok := meta.CheckTransactionFee(tx, limitFee, beaconHeight, beaconView.GetBeaconFeatureStateDB())
 			if !ok {
 				Logger.log.Errorf("Error: %+v", NewMempoolTxError(RejectInvalidFee,
 					fmt.Errorf("transaction %+v: Invalid fee metadata",
@@ -453,7 +458,7 @@ func (tp *TxPool) checkFees(
 		feePToken := tx.GetTxFeeToken()
 		//convert fee in Ptoken to fee in native token (if feePToken > 0)
 		if feePToken > 0 {
-			feePTokenToNativeTokenTmp, err := metadata.ConvertPrivacyTokenToNativeToken(feePToken, tokenID, beaconHeight, tp.config.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB())
+			feePTokenToNativeTokenTmp, err := metadata.ConvertPrivacyTokenToNativeToken(feePToken, tokenID, beaconHeight, beaconView.GetBeaconFeatureStateDB())
 			if err != nil {
 				Logger.log.Errorf("ERROR: %+v", NewMempoolTxError(RejectInvalidFee,
 					fmt.Errorf("transaction %+v: %+v %v can not convert to native token %+v",
@@ -482,7 +487,7 @@ func (tp *TxPool) checkFees(
 		if limitFee > 0 {
 			meta := tx.GetMetadata()
 			if meta != nil {
-				ok := tx.GetMetadata().CheckTransactionFee(tx, limitFee, beaconHeight, tp.config.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB())
+				ok := tx.GetMetadata().CheckTransactionFee(tx, limitFee, beaconHeight, beaconView.GetBeaconFeatureStateDB())
 				if !ok {
 					Logger.log.Errorf("ERROR: %+v", NewMempoolTxError(RejectInvalidFee,
 						fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
@@ -519,7 +524,7 @@ In Param#2: isStore: store transaction to persistence storage only work for tran
 9. Staking Transaction: Check Duplicate stake public key in pool ONLY with staking transaction
 10. RequestStopAutoStaking
 */
-func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int64, isBatch bool, isNewTransaction bool) error {
+func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beaconView *blockchain.BeaconBestState, tx metadata.Transaction, beaconHeight int64, isBatch bool, isNewTransaction bool) error {
 	var err error
 	var now time.Time
 	txHash := tx.Hash()
@@ -538,9 +543,9 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int6
 	validated := false
 	if !isNewTransaction {
 		// need to use beacon height from
-		validated, err = tx.ValidateSanityData(tp.config.BlockChain, nil, nil, uint64(beaconHeight))
+		validated, err = tx.ValidateSanityData(tp.config.BlockChain, shardView, beaconView, uint64(beaconHeight))
 	} else {
-		validated, err = tx.ValidateSanityData(tp.config.BlockChain, nil, nil, 0)
+		validated, err = tx.ValidateSanityData(tp.config.BlockChain, shardView, beaconView, 0)
 	}
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
@@ -600,7 +605,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int6
 	}
 	// Condition 4: check fee PRV of tx
 	now = time.Now()
-	validFee := tp.checkFees(tx, shardID, beaconHeight)
+	validFee := tp.checkFees(beaconView, tx, shardID, beaconHeight)
 	if !validFee {
 		return NewMempoolTxError(RejectInvalidFee,
 			fmt.Errorf("Transaction %+v has invalid fees.",
@@ -644,7 +649,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int6
 	// Condition 6: ValidateTransaction tx by it self
 	if !isBatch {
 		now = time.Now()
-		validated, errValidateTxByItself := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetBestStateShard(shardID).GetShardTransactionStateDB(), tp.config.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB(), tp.config.BlockChain, shardID, isNewTransaction, nil, nil)
+		validated, errValidateTxByItself := tx.ValidateTxByItself(tx.IsPrivacy(), shardView.GetShardTransactionStateDB(), beaconView.GetBeaconFeatureStateDB(), tp.config.BlockChain, shardID, isNewTransaction, nil, nil)
 		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 			metrics.Measurement:      metrics.TxPoolValidationDetails,
 			metrics.MeasurementValue: float64(time.Since(now).Seconds()),
@@ -657,7 +662,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction, beaconHeight int6
 	}
 	// Condition 7: validate tx with data of blockchain
 	now = time.Now()
-	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, nil, nil, shardID, tp.config.BlockChain.GetBestStateShard(shardID).GetShardTransactionStateDB())
+	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, shardView, beaconView, shardID, shardView.GetShardTransactionStateDB())
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),

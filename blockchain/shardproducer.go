@@ -261,8 +261,8 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 // 3. Build response Transaction For Shard
 // 4. Build response Transaction For Beacon
 // 5. Return valid transaction from pending, response transactions from shard and beacon
-func (blockGenerator *BlockGenerator) getTransactionForNewBlock(view *ShardBestState, privatekey *privacy.PrivateKey, shardID byte, db incdb.Database, beaconBlocks []*BeaconBlock, blockCreation int64, beaconHeight uint64) ([]metadata.Transaction, error) {
-	txsToAdd, txToRemove, _ := blockGenerator.getPendingTransaction(shardID, beaconBlocks, blockCreation, beaconHeight)
+func (blockGenerator *BlockGenerator) getTransactionForNewBlock(curView *ShardBestState, privatekey *privacy.PrivateKey, shardID byte, db incdb.Database, beaconBlocks []*BeaconBlock, blockCreation int64, beaconHeight uint64) ([]metadata.Transaction, error) {
+	txsToAdd, txToRemove, _ := blockGenerator.getPendingTransaction(shardID, beaconBlocks, blockCreation, beaconHeight, curView)
 	if len(txsToAdd) == 0 {
 		Logger.log.Info("Creating empty block...")
 	}
@@ -273,7 +273,7 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(view *ShardBestS
 	cError = make(chan error)
 	go func() {
 		var err error
-		responseTxsBeacon, errInstructions, err = blockGenerator.buildResponseTxsFromBeaconInstructions(view, beaconBlocks, privatekey, shardID)
+		responseTxsBeacon, errInstructions, err = blockGenerator.buildResponseTxsFromBeaconInstructions(curView, beaconBlocks, privatekey, shardID)
 		cError <- err
 	}()
 	nilCount := 0
@@ -658,6 +658,7 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	beaconBlocks []*BeaconBlock,
 	blockCreationTimeLeftOver int64,
 	beaconHeight uint64,
+	curView *ShardBestState,
 ) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
 	//TODO: 0xmerman dynamic calculate spare time
 	spareTime := SpareTime * time.Millisecond
@@ -693,7 +694,7 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 		}
 		listBatchTxs = append(listBatchTxs, tx)
 		if ((index+1)%TransactionBatchSize == 0) || (index == len(preparedTxForNewBlock)-1) {
-			tempTxDesc, err := blockGenerator.chain.config.TempTxPool.MaybeAcceptBatchTransactionForBlockProducing(shardID, listBatchTxs, int64(beaconHeight))
+			tempTxDesc, err := blockGenerator.chain.config.TempTxPool.MaybeAcceptBatchTransactionForBlockProducing(shardID, listBatchTxs, int64(beaconHeight), curView)
 			if err != nil {
 				Logger.log.Errorf("SHARD %+v | Verify Batch Transaction for new block error %+v", shardID, err)
 				for _, tx2 := range listBatchTxs {
@@ -704,7 +705,7 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 					if txShardID != shardID {
 						continue
 					}
-					tempTxDesc, err := blockGenerator.chain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx2, int64(beaconHeight))
+					tempTxDesc, err := blockGenerator.chain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx2, int64(beaconHeight), curView)
 					if err != nil {
 						txToRemove = append(txToRemove, tx2)
 						continue
