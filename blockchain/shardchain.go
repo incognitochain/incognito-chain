@@ -178,8 +178,6 @@ func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, co
 }
 
 func (chain *ShardChain) InsertBlk(block common.BlockInterface) error {
-	chain.insertLock.Lock()
-	defer chain.insertLock.Unlock()
 	err := chain.Blockchain.InsertShardBlock(block.(*ShardBlock), false)
 	if err != nil {
 		Logger.log.Error(err)
@@ -188,8 +186,6 @@ func (chain *ShardChain) InsertBlk(block common.BlockInterface) error {
 }
 
 func (chain *ShardChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
-	chain.insertLock.Lock()
-	defer chain.insertLock.Unlock()
 	go chain.Blockchain.config.Server.PushBlockToAll(block, false)
 	err := chain.Blockchain.InsertShardBlock(block.(*ShardBlock), true)
 	if err != nil {

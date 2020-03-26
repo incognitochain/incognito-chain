@@ -32,13 +32,20 @@ import (
 //	- No error: valid and can be sign
 //	- Error: invalid new block
 func (blockchain *BlockChain) VerifyPreSignBeaconBlock(beaconBlock *BeaconBlock, isPreSign bool) error {
+	//get view that block link to
+	preHash := beaconBlock.Header.PreviousBlockHash
+	view := blockchain.BeaconChain.GetViewByHash(preHash)
+	if view == nil {
+		return errors.New(fmt.Sprintf("BeaconBlock %v link to wrong view (%s)", beaconBlock.GetHeight(), preHash.String()))
+	}
+	curView := view.(*BeaconBestState)
+
 	// Verify block only
 	Logger.log.Infof("BEACON | Verify block for signing process %d, with hash %+v", beaconBlock.Header.Height, *beaconBlock.Hash())
 	committeeChange := newCommitteeChange()
 	if err := blockchain.verifyPreProcessingBeaconBlock(beaconBlock, isPreSign); err != nil {
 		return err
 	}
-	curView := blockchain.GetBeaconBestState()
 	// Verify block with previous best state
 	// not verify agg signature in this function
 	if err := curView.verifyBestStateWithBeaconBlock(blockchain, beaconBlock, false, blockchain.config.ChainParams.Epoch); err != nil {
@@ -58,8 +65,18 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(beaconBlock *BeaconBlock,
 }
 
 func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isValidated bool) error {
-	curView := blockchain.GetBeaconBestState()
+	blockchain.BeaconChain.insertLock.Lock()
+	defer blockchain.BeaconChain.insertLock.Unlock()
+
 	committeeChange := newCommitteeChange()
+	//get view that block link to
+	preHash := beaconBlock.Header.PreviousBlockHash
+	view := blockchain.BeaconChain.GetViewByHash(preHash)
+	if view == nil {
+		return errors.New(fmt.Sprintf("BeaconBlock %v link to wrong view (%s)", beaconBlock.GetHeight(), preHash.String()))
+	}
+	curView := view.(*BeaconBestState)
+
 	if beaconBlock.Header.Height != curView.BeaconHeight+1 {
 		return errors.New("Not expected height")
 	}

@@ -197,8 +197,6 @@ func (chain *BeaconChain) CreateNewBlockFromOldBlock(oldBlock common.BlockInterf
 }
 
 func (chain *BeaconChain) InsertBlk(block common.BlockInterface) error {
-	chain.insertLock.Lock()
-	defer chain.insertLock.Unlock()
 	if err := chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true); err != nil {
 		Logger.log.Info(err)
 		return err
@@ -207,8 +205,6 @@ func (chain *BeaconChain) InsertBlk(block common.BlockInterface) error {
 }
 
 func (chain *BeaconChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
-	chain.insertLock.Lock()
-	defer chain.insertLock.Unlock()
 	go chain.Blockchain.config.Server.PushBlockToAll(block, true)
 	if err := chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true); err != nil {
 		Logger.log.Info(err)

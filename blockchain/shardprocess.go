@@ -25,9 +25,15 @@ import (
 // Used for PBFT consensus
 // this block doesn't have full information (incomplete block)
 func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, shardID byte) error {
+	//get view that block link to
+	preHash := shardBlock.Header.PreviousBlockHash
+	view := blockchain.ShardChain[int(shardID)].GetViewByHash(preHash)
+	if view == nil {
+		return errors.New(fmt.Sprintf("ShardBlock %v link to wrong view (%s)", shardBlock.GetHeight(), preHash.String()))
+	}
+	curView := view.(*ShardBestState)
 
 	Logger.log.Infof("SHARD %+v | Verify ShardBlock for signing process %d, with hash %+v", shardID, shardBlock.Header.Height, *shardBlock.Hash())
-	curView := blockchain.GetBestStateShard(shardID)
 	// fetch beacon blocks
 	previousBeaconHeight := curView.BeaconHeight
 	if shardBlock.Header.BeaconHeight > blockchain.GetBeaconBestState().BeaconHeight {
@@ -72,13 +78,21 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 // InsertShardBlock Insert Shard Block into blockchain
 // this block must have full information (complete block)
 func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidated bool) error {
-
 	shardID := shardBlock.Header.ShardID
+	blockchain.ShardChain[int(shardID)].insertLock.Lock()
+	defer blockchain.ShardChain[int(shardID)].insertLock.Unlock()
+
 	blockHash := shardBlock.Header.Hash()
 	blockHeight := shardBlock.Header.Height
-
 	committeeChange := newCommitteeChange()
-	curView := blockchain.GetBestStateShard(shardID)
+
+	//get view that block link to
+	preHash := shardBlock.Header.PreviousBlockHash
+	view := blockchain.ShardChain[int(shardID)].GetViewByHash(preHash)
+	if view == nil {
+		return errors.New(fmt.Sprintf("ShardBlock %v link to wrong view (%s)", blockHeight, preHash.String()))
+	}
+	curView := view.(*ShardBestState)
 
 	if blockHeight != curView.ShardHeight+1 {
 		return errors.New("Not expected height")
