@@ -317,7 +317,7 @@ func getBTCHeaderChain() (*btcrelaying.BlockChain, error) {
 	// TODO: update param to correct env (mainnet vs testnet)
 	if btcHeaderChainInstance == nil {
 		// btcrelaying.Get
-		instance, err := btcrelaying.GetChain("haveblock", &chaincfg.MainNetParams)
+		instance, err := btcrelaying.GetChain("btc-blocks", &chaincfg.MainNetParams)
 		if err != nil {
 			return nil, err
 		}
