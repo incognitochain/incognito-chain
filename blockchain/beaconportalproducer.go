@@ -506,8 +506,9 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 
 	// check meta.UniquePortingID is in waiting PortingRequests list in portal state or not
 	portingID := meta.UniquePortingID
-	keyWaitingPortingRequest := lvdb.NewWaitingPortingReqKey(beaconHeight, portingID)
-	waitingPortingRequest := currentPortalState.WaitingPortingRequests[keyWaitingPortingRequest]
+	keyWaitingPortingRequest := statedb.GeneratePortalWaitingPortingRequestObjectKey(beaconHeight, portingID)
+	keyWaitingPortingRequestStr := string(keyWaitingPortingRequest[:])
+	waitingPortingRequest := currentPortalState.WaitingPortingRequests[keyWaitingPortingRequestStr]
 	if waitingPortingRequest == nil {
 		Logger.log.Errorf("PortingID is not existed in waiting porting requests list")
 		inst := buildReqPTokensInst(
@@ -560,7 +561,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 	}
 
 	// check tokenID
-	if meta.TokenID != waitingPortingRequest.TokenID {
+	if meta.TokenID != waitingPortingRequest.TokenID() {
 		Logger.log.Errorf("TokenID is not correct in portingID req")
 		inst := buildReqPTokensInst(
 			meta.UniquePortingID,
@@ -577,7 +578,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 	}
 
 	// check porting amount
-	if meta.PortingAmount != waitingPortingRequest.Amount {
+	if meta.PortingAmount != waitingPortingRequest.Amount() {
 		Logger.log.Errorf("PortingAmount is not correct in portingID req")
 		inst := buildReqPTokensInst(
 			meta.UniquePortingID,
@@ -705,7 +706,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		// check whether amount transfer in txBNB is equal porting amount or not
 		// check receiver and amount in tx
 		// get list matching custodians in waitingPortingRequest
-		custodians := waitingPortingRequest.Custodians
+		custodians := waitingPortingRequest.Custodians()
 		outputs := txBNB.Msgs[0].(msg.SendMsg).Outputs
 		for _, cusDetail := range custodians {
 			remoteAddressNeedToBeTransfer := cusDetail.RemoteAddress
@@ -781,7 +782,8 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		)
 
 		// remove waiting porting request from currentPortalState
-		removeWaitingPortingReqByKey(keyWaitingPortingRequest, currentPortalState)
+		// TODO: need to replaced by adding to deleted request list
+		removeWaitingPortingReqByKey(keyWaitingPortingRequestStr, currentPortalState)
 		return [][]string{inst}, nil
 	} else {
 		Logger.log.Errorf("TokenID is not supported currently on Portal")
@@ -1014,8 +1016,9 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 	tokenID := meta.TokenID
 
 	// check redeem fee
-	exchangeRateKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
-	if currentPortalState.FinalExchangeRatesState[exchangeRateKey] == nil {
+	exchangeRateKey := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
+	exchangeRateKeyStr := string(exchangeRateKey[:])
+	if currentPortalState.FinalExchangeRatesState[exchangeRateKeyStr] == nil {
 		Logger.log.Errorf("Can not get exchange rate at beaconHeight %v\n", beaconHeight)
 		inst := buildRedeemRequestInst(
 			meta.UniqueRedeemID,
@@ -1032,7 +1035,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 		)
 		return [][]string{inst}, nil
 	}
-	minRedeemFee, err := calMinRedeemFee(meta.RedeemAmount, tokenID, currentPortalState.FinalExchangeRatesState[exchangeRateKey])
+	minRedeemFee, err := calMinRedeemFee(meta.RedeemAmount, tokenID, currentPortalState.FinalExchangeRatesState[exchangeRateKeyStr])
 	if err != nil {
 		Logger.log.Errorf("Error when calculating minimum redeem fee %v\n", err)
 		inst := buildRedeemRequestInst(
@@ -1649,11 +1652,12 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		// update custodian state (FreeCollateral, LockedAmountCollateral)
 		custodianStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, meta.CustodianAddressStr)
 		custodianStateKeyStr := string(custodianStateKey[:])
-		finalExchangeRateKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
+		finalExchangeRateKey := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
+		finalExchangeRateKeyStr := string(finalExchangeRateKey[:])
 		unlockAmount, err2 := updateFreeCollateralCustodian(
 			currentPortalState.CustodianPoolState[custodianStateKeyStr],
 			meta.RedeemAmount, tokenID,
-			currentPortalState.FinalExchangeRatesState[finalExchangeRateKey])
+			currentPortalState.FinalExchangeRatesState[finalExchangeRateKeyStr])
 		if err2 != nil {
 			Logger.log.Errorf("Error when update free collateral amount for custodian", err2)
 			inst := buildReqUnlockCollateralInst(

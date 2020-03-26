@@ -1320,7 +1320,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(beaconBlock *BeaconBlock, 
 		return NewBlockChainError(ProcessPortalInstructionError, err)
 	}
 	// execute, store
-	err = blockchain.processRelayingInstructions(tempBeaconBestState.featureStateDB, beaconBlock)
+	err = blockchain.processRelayingInstructions(beaconBlock)
 	if err != nil {
 		return NewBlockChainError(ProcessPortalRelayingError, err)
 	}
