@@ -2117,11 +2117,57 @@ func (serverObj *Server) RequestCrossShardBlocksViaStream(ctx context.Context, p
 	return serverObj.requestBlocksViaStream(ctx, peerID, req)
 }
 
+func (serverObj *Server) RequestCrossShardBlocksByHashViaStream(ctx context.Context, peerID string, fromSID int, toSID int, hashes [][]byte) (blockCh chan common.BlockInterface, err error) {
+	req := &proto.BlockByHashRequest{
+		Type:         proto.BlkType_BlkXShard,
+		Hashes:       hashes,
+		From:         int32(fromSID),
+		To:           int32(toSID),
+		SyncFromPeer: peerID,
+	}
+	return serverObj.requestBlocksByHashViaStream(ctx, peerID, req)
+}
+
+func (serverObj *Server) RequestBeaconBlocksByHashViaStream(ctx context.Context, peerID string, hashes [][]byte) (blockCh chan common.BlockInterface, err error) {
+	req := &proto.BlockByHashRequest{
+		Type:         proto.BlkType_BlkBc,
+		Hashes:       hashes,
+		From:         int32(peerv2.HighwayBeaconID),
+		To:           int32(peerv2.HighwayBeaconID),
+		SyncFromPeer: peerID,
+	}
+	return serverObj.requestBlocksByHashViaStream(ctx, peerID, req)
+}
+
+func (serverObj *Server) RequestShardBlocksByHashViaStream(ctx context.Context, peerID string, fromSID int, hashes [][]byte) (blockCh chan common.BlockInterface, err error) {
+	req := &proto.BlockByHashRequest{
+		Type:         proto.BlkType_BlkShard,
+		Hashes:       hashes,
+		From:         int32(fromSID),
+		To:           int32(fromSID),
+		SyncFromPeer: peerID,
+	}
+	return serverObj.requestBlocksByHashViaStream(ctx, peerID, req)
+}
+
+func (serverObj *Server) RequestShardToBeaconBlocksByHashViaStream(ctx context.Context, peerID string, fromSID int, hashes [][]byte) (blockCh chan common.BlockInterface, err error) {
+	req := &proto.BlockByHashRequest{
+		Type:         proto.BlkType_BlkS2B,
+		Hashes:       hashes,
+		From:         int32(fromSID),
+		To:           int32(peerv2.HighwayBeaconID),
+		SyncFromPeer: peerID,
+	}
+
+	return serverObj.requestBlocksByHashViaStream(ctx, peerID, req)
+}
+
 func (serverObj *Server) requestBlocksViaStream(ctx context.Context, peerID string, req *proto.BlockByHeightRequest) (blockCh chan common.BlockInterface, err error) {
-	//fmt.Println("SYNCKER Request Block", peerID, fromSID, fromBlockHeight, toBlockheight)
+	Logger.log.Infof("[stream] Request Block %v from cID %v, [%v %v] ", peerID, req.GetFrom(), req.Heights[0], req.Heights[len(req.Heights)-1])
 	blockCh = make(chan common.BlockInterface, blockchain.DefaultMaxBlkReqPerPeer)
 	stream, err := serverObj.highway.Requester.StreamBlockByHeight(ctx, req)
 	if err != nil {
+		Logger.log.Errorf("[stream] %v", err)
 		return nil, err
 	}
 
@@ -2135,13 +2181,14 @@ func (serverObj *Server) requestBlocksViaStream(ctx context.Context, peerID stri
 	go func(stream proto.HighwayService_StreamBlockByHeightClient, ctx context.Context) {
 		for {
 			blkData, err := stream.Recv()
-			//fmt.Println("SYNCKER: Receive  block...")
 			if err != nil || err == io.EOF {
+				Logger.log.Errorf("[stream] %v", err)
 				closeChannel()
 				return
 			}
 
 			if len(blkData.Data) < 2 {
+				Logger.log.Errorf("[stream] received empty blk")
 				closeChannel()
 				return
 			}
@@ -2157,10 +2204,11 @@ func (serverObj *Server) requestBlocksViaStream(ctx context.Context, peerID stri
 
 			err = wrapper.DeCom(blkData.Data[1:], newBlk)
 			if err != nil {
+				Logger.log.Errorf("[stream] %v", err)
 				closeChannel()
 				return
 			}
-			//fmt.Println("SYNCKER: Receive beacon block ...", newBlk.GetHeight())
+			fmt.Printf("[stream]: Receive %v block %v \n", req.GetType(), newBlk.GetHeight())
 			select {
 			case <-ctx.Done():
 				closeChannel()
