@@ -167,7 +167,8 @@ func (blockGenerator *BlockGenerator) buildPortalAcceptedRequestPTokensTx(
 		Mintable:    true,
 	}
 	resTx := &transaction.TxCustomTokenPrivacy{}
-	db := blockGenerator.chain.config.DataBase
+	txStateDB := blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB()
+	featureStateDB := blockGenerator.chain.BestState.Beacon.GetCopiedFeatureStateDB()
 	initErr := resTx.Init(
 		transaction.NewTxPrivacyTokenInitParams(
 			producerPrivateKey,
@@ -175,12 +176,13 @@ func (blockGenerator *BlockGenerator) buildPortalAcceptedRequestPTokensTx(
 			nil,
 			0,
 			tokenParams,
-			db,
+			txStateDB,
 			meta,
 			false,
 			false,
 			shardID,
 			nil,
+			featureStateDB,
 		),
 	)
 	if initErr != nil {
@@ -354,7 +356,8 @@ func (blockGenerator *BlockGenerator) buildPortalRejectedRedeemRequestTx(
 		Mintable:    true,
 	}
 	resTx := &transaction.TxCustomTokenPrivacy{}
-	db := blockGenerator.chain.config.DataBase
+	txStateDB := blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB()
+	featureStateDB := blockGenerator.chain.BestState.Beacon.GetCopiedFeatureStateDB()
 	initErr := resTx.Init(
 		transaction.NewTxPrivacyTokenInitParams(
 			producerPrivateKey,
@@ -362,12 +365,13 @@ func (blockGenerator *BlockGenerator) buildPortalRejectedRedeemRequestTx(
 			nil,
 			0,
 			tokenParams,
-			db,
+			txStateDB,
 			meta,
 			false,
 			false,
 			shardID,
 			nil,
+			featureStateDB,
 		),
 	)
 	if initErr != nil {
