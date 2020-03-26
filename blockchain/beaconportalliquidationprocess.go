@@ -517,8 +517,6 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(
 		return nil // skip the instruction
 	}
 
-	db := blockchain.GetDatabase()
-
 	// unmarshal instructions content
 	var actionData metadata.PortalExpiredWaitingPortingReqContent
 	err := json.Unmarshal([]byte(instructions[3]), &actionData)

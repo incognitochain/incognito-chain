@@ -373,7 +373,7 @@ func StoreBulkWaitingPortingRequests(
 	beaconHeight uint64,
 	waitingPortingRequest map[string]*WaitingPortingRequest) error {
 	for _, items := range waitingPortingRequest {
-		key := GeneratePortalWaitingPortingRequestObjectKey(items.UniquePortingID())
+		key := GeneratePortalWaitingPortingRequestObjectKey(beaconHeight, items.UniquePortingID())
 		err := stateDB.SetStateObject(PortalWaitingPortingRequestObjectType, key, items)
 		if err != nil {
 			return NewStatedbError(StoreWaitingPortingRequestError, err)

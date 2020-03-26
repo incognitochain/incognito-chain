@@ -344,7 +344,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		}
 
 		//save waiting request porting state
-		keyWaitingPortingRequest := statedb.GeneratePortalWaitingPortingRequestObjectKey(portingRequestContent.UniqueRegisterId)
+		keyWaitingPortingRequest := statedb.GeneratePortalWaitingPortingRequestObjectKey(beaconHeight, portingRequestContent.UniqueRegisterId)
 		Logger.log.Infof("Porting request, save waiting porting request with key %v", keyWaitingPortingRequest)
 		currentPortalState.WaitingPortingRequests[keyWaitingPortingRequest.String()] = newPortingRequestStateWaiting
 
