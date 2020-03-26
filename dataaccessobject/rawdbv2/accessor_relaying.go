@@ -68,15 +68,3 @@ func GetBNBDataHashByBlockHeight(db incdb.Database, blockHeight uint64) ([]byte,
 
 	return bnbHeader.DataHash, nil
 }
-
-//func GetItemByKey(db incdb.Database, key []byte) ([]byte, error){
-//	valueBytes, err := db.Get([]byte(key))
-//	if err != nil {
-//		return nil, NewRawdbError(GetItemByKeyError, err)
-//	}
-//
-//	return valueBytes, nil
-//}
-//
-
-

@@ -82,6 +82,8 @@ const (
 	GetPortalStateError
 	GetReqUnlockCollateralStatusError
 	GetReqRedeemStatusError
+	GetRequestWithdrawRewardStatusError
+	GetPortalRewardError
 
 	GetCustodianLiquidationStatusError
 	GetTpExchangeRatesLiquidationError
@@ -189,7 +191,8 @@ var ErrCodeMessage = map[int]struct {
 	GetTpExchangeRatesLiquidationByTokenIdError: {-9012, "Get top percentile exchange rates by token id error"},
 	GetExchangeRatesLiquidationPoolError: {-9013, "Get exchange rates liquidation pool error"},
 	GetCustodianWithdrawError:          {-9014, "Get custodian withdraw error"},
-
+	GetPortalRewardError:  {-9014, "Get portal reward error"},
+	GetRequestWithdrawRewardStatusError:  {-9014, "Get request withdraw portal reward error"},
 
 
 	// relaying
