@@ -517,8 +517,6 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(
 		return nil // skip the instruction
 	}
 
-	db := blockchain.GetDatabase()
-
 	// unmarshal instructions content
 	var actionData metadata.PortalExpiredWaitingPortingReqContent
 	err := json.Unmarshal([]byte(instructions[3]), &actionData)
@@ -563,20 +561,21 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(
 		if actionData.ExpiredByLiquidation {
 			portingReqStatus = common.PortalPortingReqLiquidatedStatus
 		}
-		//TODO:
-		portingReqKey := lvdb.NewPortingRequestKey(waitingPortingReq.UniquePortingID)
-		newPortingRequestStatus, err := NewPortingRequestState(
-			waitingPortingReq.UniquePortingID,
-			waitingPortingReq.TxReqID,
+
+		newPortingRequestStatus := statedb.NewWaitingPortingRequestWithValue(
+			waitingPortingReq.UniquePortingID(),
+			waitingPortingReq.TxReqID(),
 			tokenID,
-			waitingPortingReq.PorterAddress,
-			waitingPortingReq.Amount,
-			waitingPortingReq.Custodians,
-			waitingPortingReq.PortingFee,
+			waitingPortingReq.PorterAddress(),
+			waitingPortingReq.Amount(),
+			waitingPortingReq.Custodians(),
+			waitingPortingReq.PortingFee(),
 			portingReqStatus,
-			waitingPortingReq.BeaconHeight,
+			waitingPortingReq.BeaconHeight(),
 		)
-		err = db.StorePortingRequestItem([]byte(portingReqKey), newPortingRequestStatus)
+
+		newPortingRequestStatusBytes, _ := json.Marshal(newPortingRequestStatus)
+		err = statedb.StoreWaitingPortingRequests(stateDB, waitingPortingReq.UniquePortingID(), newPortingRequestStatusBytes)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store porting request item: %+v", err)
 			return nil

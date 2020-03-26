@@ -164,7 +164,7 @@ func newFinalExchangeRatesStateObjectWithValue(db *StateDB, finalExchangeRatesSt
 		version:                     defaultVersion,
 		finalExchangeRatesStateHash: finalExchangeRatesStateHash,
 		finalExchangeRatesState:     newFinalExchangeRatesState,
-		objectType:                  FinalExchangeRatesStateObjectType,
+		objectType:                  PortalFinalExchangeRatesStateObjectType,
 		deleted:                     false,
 	}, nil
 }
@@ -175,7 +175,7 @@ func newFinalExchangeRatesStateObject(db *StateDB, finalExchangeRatesStateHash c
 		version:                     defaultVersion,
 		finalExchangeRatesStateHash: finalExchangeRatesStateHash,
 		finalExchangeRatesState:     NewFinalExchangeRatesState(),
-		objectType:                  FinalExchangeRatesStateObjectType,
+		objectType:                  PortalFinalExchangeRatesStateObjectType,
 		deleted:                     false,
 	}
 }

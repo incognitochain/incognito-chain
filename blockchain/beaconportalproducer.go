@@ -526,8 +526,10 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 	}
 	db := blockchain.GetDatabase()
 
-	// check porting request status of portingID from db
-	portingReqStatus, err := db.GetPortingRequestStatusByPortingID(meta.UniquePortingID)
+	//check unique id from record from db
+	stateDB := blockchain.BestState.Beacon.GetCopiedFeatureStateDB()
+	portingRequest, err := statedb.GetPortalStateStatusMultiple(stateDB, statedb.PortalPortingRequestStatusPrefix(), []byte(meta.UniquePortingID))
+
 	if err != nil {
 		Logger.log.Errorf("Can not get porting req status for portingID %v, %v\n", meta.UniquePortingID, err)
 		inst := buildReqPTokensInst(
@@ -544,7 +546,8 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		return [][]string{inst}, nil
 	}
 
-	if portingReqStatus != common.PortalPortingReqWaitingStatus {
+	portingRequestStatus := *portingRequest.(*metadata.PortingRequestStatus)
+	if portingRequestStatus.Status != common.PortalPortingReqWaitingStatus {
 		Logger.log.Errorf("PortingID status invalid")
 		inst := buildReqPTokensInst(
 			meta.UniquePortingID,

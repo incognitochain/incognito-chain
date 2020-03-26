@@ -53,7 +53,7 @@ func InitCurrentPortalStateFromDB(
 	if err != nil {
 		return nil, err
 	}
-	waitingPortingReqs, err := statedb.GetWaitingPortingRequests(stateDB, beaconHeight)
+	waitingPortingReqs, err := statedb.GetAllWaitingPortingRequests(stateDB, beaconHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func InitCurrentPortalStateFromDB(
 		return nil, err
 	}
 
-	finalExchangeRates, err := statedb.GetFinalExchangeRatesState(stateDB, beaconHeight)
+	finalExchangeRates, err := statedb.GetAllFinalExchangeRatesState(stateDB, beaconHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func storePortalStateToDB(
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreWaitingPortingRequests(stateDB, beaconHeight, currentPortalState.WaitingPortingRequests)
+	err = statedb.StoreBulkWaitingPortingRequests(stateDB, beaconHeight, currentPortalState.WaitingPortingRequests)
 	if err != nil {
 		return err
 	}
@@ -100,12 +100,12 @@ func storePortalStateToDB(
 		return err
 	}
 
-	err = statedb.StoreFinalExchangeRatesState(stateDB, beaconHeight, currentPortalState.FinalExchangeRatesState)
+	err = statedb.StoreBulkFinalExchangeRatesState(stateDB, beaconHeight, currentPortalState.FinalExchangeRatesState)
 	if err != nil {
 		return err
 	}
 
-	err = statedb.StoreLiquidateExchangeRates(stateDB, beaconHeight, currentPortalState.LiquidateExchangeRatesPool)
+	err = statedb.StoreBulkLiquidateExchangeRates(stateDB, beaconHeight, currentPortalState.LiquidateExchangeRatesPool)
 	if err != nil {
 		return err
 	}
