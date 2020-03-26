@@ -43,7 +43,7 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(beaconBlock *BeaconBlock,
 	// Verify block only
 	Logger.log.Infof("BEACON | Verify block for signing process %d, with hash %+v", beaconBlock.Header.Height, *beaconBlock.Hash())
 	committeeChange := newCommitteeChange()
-	if err := blockchain.verifyPreProcessingBeaconBlock(beaconBlock, isPreSign); err != nil {
+	if err := blockchain.verifyPreProcessingBeaconBlock(curView, beaconBlock, isPreSign); err != nil {
 		return err
 	}
 	// Verify block with previous best state
@@ -90,7 +90,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	Logger.log.Debugf("BEACON | Begin Insert new Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	if !isValidated {
 		Logger.log.Debugf("BEACON | Verify Pre Processing, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-		if err := blockchain.verifyPreProcessingBeaconBlock(beaconBlock, false); err != nil {
+		if err := blockchain.verifyPreProcessingBeaconBlock(curView, beaconBlock, false); err != nil {
 			return err
 		}
 	} else {
@@ -281,7 +281,7 @@ func (beaconBestState *BeaconBestState) updateNumOfBlocksByProducers(beaconBlock
 	- InstructionMerkleRoot: rebuild instruction merkle root from instruction body and compare with instruction merkle root in block header
 	- If verify block for signing then verifyPreProcessingBeaconBlockForSigning
 */
-func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *BeaconBlock, isPreSign bool) error {
+func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(curView *BeaconBestState, beaconBlock *BeaconBlock, isPreSign bool) error {
 	// if len(beaconBlock.Header.Producer) == 0 {
 	// 	return NewBlockChainError(ProducerError, fmt.Errorf("Expect has length 66 but get %+v", len(beaconBlock.Header.Producer)))
 	// }
@@ -340,7 +340,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *Beacon
 	}
 	// if pool does not have one of needed block, fail to verify
 	if isPreSign {
-		if err := blockchain.verifyPreProcessingBeaconBlockForSigning(beaconBlock); err != nil {
+		if err := blockchain.verifyPreProcessingBeaconBlockForSigning(curView, beaconBlock); err != nil {
 			return err
 		}
 	}
@@ -365,7 +365,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *Beacon
 //		* Block Reward Instruction
 //	+ Generate Instruction Hash from all recently got instructions
 //	+ Compare just created Instruction Hash with Instruction Hash In Beacon Header
-func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlock *BeaconBlock) error {
+func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *BeaconBestState, beaconBlock *BeaconBlock) error {
 	var err error
 	rewardByEpochInstruction := [][]string{}
 	tempShardStates := make(map[byte][]ShardState)
@@ -376,7 +376,6 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 	acceptedBlockRewardInstructions := [][]string{}
 	stopAutoStakingInstructions := [][]string{}
 	statefulActionsByShardID := map[byte][][]string{}
-	curView := blockchain.GetBeaconBestState()
 
 	// Get Reward Instruction By Epoch
 	if beaconBlock.Header.Height%blockchain.config.ChainParams.Epoch == 1 {

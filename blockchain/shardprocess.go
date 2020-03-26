@@ -2,23 +2,23 @@ package blockchain
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"reflect"
-	"sort"
-	"strconv"
-	"strings"
-	"time"
-
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/pkg/errors"
+	"reflect"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
 )
 
 // VerifyPreSignShardBlock Verify Shard Block Before Signing
@@ -34,25 +34,36 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 	curView := view.(*ShardBestState)
 
 	Logger.log.Infof("SHARD %+v | Verify ShardBlock for signing process %d, with hash %+v", shardID, shardBlock.Header.Height, *shardBlock.Hash())
+
 	// fetch beacon blocks
 	previousBeaconHeight := curView.BeaconHeight
-	if shardBlock.Header.BeaconHeight > blockchain.GetBeaconBestState().BeaconHeight {
-		err := blockchain.config.Server.PushMessageGetBlockBeaconByHeight(blockchain.GetBeaconBestState().BeaconHeight, shardBlock.Header.BeaconHeight)
-		if err != nil {
-			return errors.New(fmt.Sprintf("Beacon %d not ready, latest is %d", shardBlock.Header.BeaconHeight, blockchain.GetBeaconBestState().BeaconHeight))
+	var checkUntilTimeout = func(ctx context.Context) error {
+		ticker := time.NewTicker(time.Second)
+		for {
+			select {
+			case <-ticker.C:
+				if shardBlock.Header.BeaconHeight > blockchain.BeaconChain.GetFinalView().GetHeight() {
+					time.Sleep(1)
+				}
+				if shardBlock.Header.BeaconHeight <= blockchain.BeaconChain.GetFinalView().GetHeight() {
+					return nil
+				}
+			case <-ctx.Done():
+				return errors.New("Wait for beacon timeout")
+			}
 		}
-		ticker := time.NewTicker(5 * time.Second)
-		<-ticker.C
-		if shardBlock.Header.BeaconHeight > blockchain.GetBeaconBestState().BeaconHeight {
-			return errors.New(fmt.Sprintf("Beacon %d not ready, latest is %d", shardBlock.Header.BeaconHeight, blockchain.GetBeaconBestState().BeaconHeight))
-		}
+	}
+	ctx, _ := context.WithTimeout(context.Background(), time.Second*5)
+	if checkUntilTimeout(ctx) != nil {
+		return errors.New(fmt.Sprintf("Beacon %d not ready, latest is %d", shardBlock.Header.BeaconHeight, blockchain.GetBeaconBestState().BeaconHeight))
 	}
 	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain.GetDatabase(), previousBeaconHeight+1, shardBlock.Header.BeaconHeight)
 	if err != nil {
 		return err
 	}
+
 	//========Verify shardBlock only
-	if err := blockchain.verifyPreProcessingShardBlock(shardBlock, beaconBlocks, shardID, true); err != nil {
+	if err := blockchain.verifyPreProcessingShardBlock(curView, shardBlock, beaconBlocks, shardID, true); err != nil {
 		return err
 	}
 	//========Verify shardBlock with previous best state
@@ -116,7 +127,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	}
 	if !isValidated {
 		Logger.log.Infof("SHARD %+v | Verify Pre Processing, block height %+v with hash %+vt \n", shardID, blockHeight, blockHash)
-		if err := blockchain.verifyPreProcessingShardBlock(shardBlock, beaconBlocks, shardID, false); err != nil {
+		if err := blockchain.verifyPreProcessingShardBlock(curView, shardBlock, beaconBlocks, shardID, false); err != nil {
 			return err
 		}
 	} else {
@@ -259,15 +270,15 @@ func (shardBestState *ShardBestState) updateNumOfBlocksByProducers(shardBlock *S
 //	- Validate transaction created from miner via instruction
 //	- Validate Response Transaction From Transaction with Metadata
 //	- ALL Transaction in block: see in verifyTransactionFromNewBlock
-func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlock, beaconBlocks []*BeaconBlock, shardID byte, isPreSign bool) error {
+func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestState, shardBlock *ShardBlock, beaconBlocks []*BeaconBlock, shardID byte, isPreSign bool) error {
 
 	Logger.log.Debugf("SHARD %+v | Begin verifyPreProcessingShardBlock Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash())
 	if shardBlock.Header.ShardID != shardID {
 		return NewBlockChainError(WrongShardIDError, fmt.Errorf("Expect receive shardBlock from Shard ID %+v but get %+v", shardID, shardBlock.Header.ShardID))
 	}
 
-	if shardBlock.Header.Height > blockchain.GetBestStateShard(shardID).ShardHeight+1 {
-		return NewBlockChainError(WrongBlockHeightError, fmt.Errorf("Expect shardBlock height %+v but get %+v", blockchain.GetBestStateShard(shardID).ShardHeight+1, shardBlock.Header.Height))
+	if shardBlock.Header.Height > curView.ShardHeight+1 {
+		return NewBlockChainError(WrongBlockHeightError, fmt.Errorf("Expect shardBlock height %+v but get %+v", curView.ShardHeight+1, shardBlock.Header.Height))
 	}
 	// Verify parent hash exist or not
 	previousBlockHash := shardBlock.Header.PreviousBlockHash
@@ -428,7 +439,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 	}
 	// Get cross shard shardBlock from pool
 	if isPreSign {
-		err := blockchain.verifyPreProcessingShardBlockForSigning(shardBlock, beaconBlocks, txInstructions, shardID)
+		err := blockchain.verifyPreProcessingShardBlockForSigning(curView, shardBlock, beaconBlocks, txInstructions, shardID)
 		if err != nil {
 			return err
 		}
@@ -443,10 +454,9 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 //	- Get Cross Output Data from cross shard block (shard pool) and verify cross transaction hash
 //	- Get Cross Tx Custom Token from cross shard block (shard pool) then verify
 //
-func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock *ShardBlock, beaconBlocks []*BeaconBlock, txInstructions [][]string, shardID byte) error {
+func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *ShardBestState, shardBlock *ShardBlock, beaconBlocks []*BeaconBlock, txInstructions [][]string, shardID byte) error {
 	var err error
 	var isOldBeaconHeight = false
-	curView := blockchain.GetBestStateShard(shardID)
 	// Verify Transaction
 	//get beacon height from shard block
 	beaconHeight := shardBlock.Header.BeaconHeight
