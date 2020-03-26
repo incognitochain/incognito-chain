@@ -39,12 +39,10 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 	previousBeaconHeight := curView.BeaconHeight
 	var checkUntilTimeout = func(ctx context.Context) error {
 		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
 		for {
 			select {
 			case <-ticker.C:
-				if shardBlock.Header.BeaconHeight > blockchain.BeaconChain.GetFinalView().GetHeight() {
-					time.Sleep(1)
-				}
 				if shardBlock.Header.BeaconHeight <= blockchain.BeaconChain.GetFinalView().GetHeight() {
 					return nil
 				}
