@@ -19,15 +19,16 @@ const (
 )
 
 type CurrentPortalState struct {
-	CustodianPoolState     map[string]*statedb.CustodianState          // key : hash(beaconHeight || custodian_address)
-	WaitingPortingRequests map[string]*statedb.WaitingPortingRequest   // key : hash(beaconHeight || UniquePortingID)
-	WaitingRedeemRequests  map[string]*statedb.WaitingRedeemRequest    // key : hash(beaconHeight || UniqueRedeemID)
-	FinalExchangeRatesState	map[string]*statedb.FinalExchangeRatesState // key : hash(beaconHeight || TxID)
-	LiquidateExchangeRatesPool map[string]*statedb.LiquidateExchangeRatesPool  // key : hash(beaconHeight || TxID)
+	CustodianPoolState         map[string]*statedb.CustodianState             // key : hash(beaconHeight || custodian_address)
+	WaitingPortingRequests     map[string]*statedb.WaitingPortingRequest      // key : hash(beaconHeight || UniquePortingID)
+	WaitingRedeemRequests      map[string]*statedb.WaitingRedeemRequest       // key : hash(beaconHeight || UniqueRedeemID)
+	FinalExchangeRatesState    map[string]*statedb.FinalExchangeRatesState    // key : hash(beaconHeight || TxID)
+	LiquidateExchangeRatesPool map[string]*statedb.LiquidateExchangeRatesPool // key : hash(beaconHeight || TxID)
 	//Store temporary exchange rates requests
-	ExchangeRatesRequests 	map[string]*metadata.ExchangeRatesRequestStatus // key : hash(beaconHeight | TxID)
+	ExchangeRatesRequests map[string]*metadata.ExchangeRatesRequestStatus // key : hash(beaconHeight | TxID)
 
 	DeletedWaitingRedeemRequests map[string]*statedb.WaitingRedeemRequest // key : hash(beaconHeight || UniqueRedeemID)
+	//TODO: add deleted waiting porting requests list
 }
 
 type CustodianStateSlice struct {
@@ -108,6 +109,9 @@ func storePortalStateToDB(
 	if err != nil {
 		return err
 	}
+
+	// delete waiting redeem request in deleted waiting requests list
+	statedb.DeleteWaitingRedeemRequest(stateDB, currentPortalState.DeletedWaitingRedeemRequests)
 
 	return nil
 }

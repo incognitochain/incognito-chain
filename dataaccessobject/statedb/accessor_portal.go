@@ -337,7 +337,7 @@ func GetPortalStateStatusMultiple(stateDB *StateDB, statusType []byte, statusSuf
 func GetWaitingPortingRequests(
 	stateDB *StateDB,
 	beaconHeight uint64,
-) (map[string]*PortingRequest, error) {
+) (map[string]*WaitingPortingRequest, error) {
 	//todo:
 	return nil, nil
 }
@@ -346,7 +346,7 @@ func GetWaitingPortingRequests(
 func StoreWaitingPortingRequests(
 	stateDB *StateDB,
 	beaconHeight uint64,
-	portingReqs map[string]*PortingRequest) error {
+	portingReqs map[string]*WaitingPortingRequest) error {
 	//todo:
 	return nil
 }
