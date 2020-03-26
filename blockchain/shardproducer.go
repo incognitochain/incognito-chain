@@ -295,11 +295,12 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(curView *ShardBe
 }
 
 // buildResponseTxsFromBeaconInstructions builds response txs from beacon instructions
-func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(view *ShardBestState, beaconBlocks []*BeaconBlock, producerPrivateKey *privacy.PrivateKey, shardID byte) ([]metadata.Transaction, [][]string, error) {
+func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(curView *ShardBestState, beaconBlocks []*BeaconBlock, producerPrivateKey *privacy.PrivateKey, shardID byte) ([]metadata.Transaction, [][]string, error) {
 	responsedTxs := []metadata.Transaction{}
 	responsedHashTxs := []common.Hash{} // capture hash of responsed tx
 	errorInstructions := [][]string{}   // capture error instruction -> which instruction can not create tx
 	tempAutoStakingM := make(map[uint64]map[string]bool)
+	beaconView := blockGenerator.chain.BeaconChain.GetFinalView().(*BeaconBestState)
 	for _, beaconBlock := range beaconBlocks {
 		autoStaking, ok := tempAutoStakingM[beaconBlock.Header.Height]
 		if !ok {
@@ -322,7 +323,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(vie
 					if _, ok := autoStaking[outPublicKeys]; ok {
 						continue
 					}
-					tx, err := blockGenerator.buildReturnStakingAmountTx(view, outPublicKeys, producerPrivateKey, shardID)
+					tx, err := blockGenerator.buildReturnStakingAmountTx(curView, outPublicKeys, producerPrivateKey, shardID)
 					if err != nil {
 						if strings.Index(err.Error(), "No staking tx in best state") == -1 {
 							Logger.log.Error(err)
@@ -355,26 +356,26 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(vie
 			switch metaType {
 			case metadata.IssuingETHRequestMeta:
 				if len(l) >= 4 && l[2] == "accepted" {
-					newTx, err = blockGenerator.buildETHIssuanceTx(l[3], producerPrivateKey, shardID)
+					newTx, err = blockGenerator.buildETHIssuanceTx(l[3], producerPrivateKey, shardID, curView, beaconView)
 				}
 			case metadata.IssuingRequestMeta:
 				if len(l) >= 4 && l[2] == "accepted" {
-					newTx, err = blockGenerator.buildIssuanceTx(l[3], producerPrivateKey, shardID)
+					newTx, err = blockGenerator.buildIssuanceTx(l[3], producerPrivateKey, shardID, curView, beaconView)
 				}
 			case metadata.PDETradeRequestMeta:
 				if len(l) >= 4 {
-					newTx, err = blockGenerator.buildPDETradeIssuanceTx(l[2], l[3], producerPrivateKey, shardID)
+					newTx, err = blockGenerator.buildPDETradeIssuanceTx(l[2], l[3], producerPrivateKey, shardID, curView, beaconView)
 				}
 			case metadata.PDEWithdrawalRequestMeta:
 				if len(l) >= 4 && l[2] == common.PDEWithdrawalAcceptedChainStatus {
-					newTx, err = blockGenerator.buildPDEWithdrawalTx(l[3], producerPrivateKey, shardID)
+					newTx, err = blockGenerator.buildPDEWithdrawalTx(l[3], producerPrivateKey, shardID, curView, beaconView)
 				}
 			case metadata.PDEContributionMeta:
 				if len(l) >= 4 {
 					if l[2] == common.PDEContributionRefundChainStatus {
-						newTx, err = blockGenerator.buildPDERefundContributionTx(l[3], producerPrivateKey, shardID)
+						newTx, err = blockGenerator.buildPDERefundContributionTx(l[3], producerPrivateKey, shardID, curView, beaconView)
 					} else if l[2] == common.PDEContributionMatchedNReturnedChainStatus {
-						newTx, err = blockGenerator.buildPDEMatchedNReturnedContributionTx(l[3], producerPrivateKey, shardID)
+						newTx, err = blockGenerator.buildPDEMatchedNReturnedContributionTx(l[3], producerPrivateKey, shardID, curView, beaconView)
 					}
 				}
 
