@@ -324,6 +324,7 @@ func GetPortalStateStatusMultiple(stateDB *StateDB, statusType []byte, statusSuf
 	return nil, nil
 }
 
+//todo:
 // UpdatePortingRequestStatus updates status of porting request by portingID
 func UpdatePortingRequestStatus(portingID string, newStatus int) error {
 	/*key := NewPortingRequestKey(portingID)
@@ -355,6 +356,7 @@ func UpdatePortingRequestStatus(portingID string, newStatus int) error {
 */
 	return nil
 }
+
 //====================== Waiting Porting  ======================
 // getCustodianPoolState gets custodian pool state at beaconHeight
 func GetAllWaitingPortingRequests(
@@ -371,7 +373,7 @@ func StoreBulkWaitingPortingRequests(
 	beaconHeight uint64,
 	waitingPortingRequest map[string]*WaitingPortingRequest) error {
 	for _, items := range waitingPortingRequest {
-		key := GeneratePortalWaitingPortingRequestObjectKey(beaconHeight, items.UniquePortingID())
+		key := GeneratePortalWaitingPortingRequestObjectKey(items.UniquePortingID())
 		err := stateDB.SetStateObject(PortalWaitingPortingRequestObjectType, key, items)
 		if err != nil {
 			return NewStatedbError(StoreWaitingPortingRequestError, err)

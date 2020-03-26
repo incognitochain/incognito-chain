@@ -28,7 +28,7 @@ func (blockchain *BlockChain) buildInstForPortalReward(beaconHeight uint64, rewa
 func splitPortingFeeForMatchingCustodians(
 	feeAmount uint64,
 	portingAmount uint64,
-	matchingCustodianAddresses []*lvdb.MatchingPortingCustodianDetail,
+	matchingCustodianAddresses []*statedb.MatchingPortingCustodianDetail,
 	rewardInfos map[string]uint64) {
 	for _, matchCustodianDetail := range matchingCustodianAddresses {
 		splitedFee := float64(matchCustodianDetail.Amount) / float64(portingAmount) * float64(feeAmount)
@@ -70,11 +70,11 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 	// get porting fee from waiting porting request at beaconHeight + 1 (new waiting porting requests)
 	// and split fees for matching custodians
 	for _, waitingPortingReq := range currentPortalState.WaitingPortingRequests {
-		if waitingPortingReq.BeaconHeight == beaconHeight+1 {
+		if waitingPortingReq.BeaconHeight() == beaconHeight+1 {
 			splitPortingFeeForMatchingCustodians(
-				waitingPortingReq.PortingFee,
-				waitingPortingReq.Amount,
-				waitingPortingReq.Custodians,
+				waitingPortingReq.PortingFee(),
+				waitingPortingReq.Amount(),
+				waitingPortingReq.Custodians(),
 				rewardInfos,
 			)
 		}

@@ -49,18 +49,25 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 			//custodian deposit
 			case strconv.Itoa(metadata.PortalCustodianDepositMeta):
 				err = blockchain.processPortalCustodianDeposit(portalStateDB, beaconHeight, inst, currentPortalState)
+			// request ptoken
 			case strconv.Itoa(metadata.PortalUserRequestPTokenMeta):
 				err = blockchain.processPortalUserReqPToken(portalStateDB, beaconHeight, inst, currentPortalState, updatingInfoByTokenID)
+			// redeem request
 			case strconv.Itoa(metadata.PortalRedeemRequestMeta):
 				err = blockchain.processPortalRedeemRequest(portalStateDB, beaconHeight, inst, currentPortalState, updatingInfoByTokenID)
+			// request unlock collateral
 			case strconv.Itoa(metadata.PortalRequestUnlockCollateralMeta):
 				err = blockchain.processPortalUnlockCollateral(portalStateDB, beaconHeight, inst, currentPortalState)
+			// liquidation custodian run away
 			case strconv.Itoa(metadata.PortalLiquidateCustodianMeta):
 				err = blockchain.processPortalLiquidateCustodian(portalStateDB, beaconHeight, inst, currentPortalState)
+			// portal reward
 			case strconv.Itoa(metadata.PortalRewardMeta):
 				err = blockchain.processPortalReward(portalStateDB, beaconHeight, inst, currentPortalState)
+			// request withdraw reward
 			case strconv.Itoa(metadata.PortalRequestWithdrawRewardMeta):
 				err = blockchain.processPortalWithdrawReward(portalStateDB, beaconHeight, inst, currentPortalState)
+			// expired waiting porting request
 			case strconv.Itoa(metadata.PortalExpiredWaitingPortingReqMeta):
 				err = blockchain.processPortalExpiredPortingRequest(portalStateDB, beaconHeight, inst, currentPortalState)
 		}
@@ -389,7 +396,6 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 	if len(instructions) != 4 {
 		return nil // skip the instruction
 	}
-	db := blockchain.GetDatabase()
 
 	// unmarshal instructions content
 	var actionData metadata.PortalRequestPTokensContent
@@ -402,8 +408,9 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 	reqStatus := instructions[2]
 	if reqStatus == common.PortalReqPTokensAcceptedChainStatus {
 		// remove portingRequest from waitingPortingRequests
-		waitingPortingReqKey := lvdb.NewWaitingPortingReqKey(beaconHeight, actionData.UniquePortingID)
-		isRemoved := removeWaitingPortingReqByKey(waitingPortingReqKey, currentPortalState)
+		waitingPortingReqKey := statedb.GeneratePortalWaitingPortingRequestObjectKey(beaconHeight, actionData.UniquePortingID)
+		waitingPortingReqKeyStr := string(waitingPortingReqKey[:])
+		isRemoved := removeWaitingPortingReqByKey(waitingPortingReqKeyStr, currentPortalState)
 		if !isRemoved {
 			Logger.log.Errorf("Can not remove waiting porting request from portal state")
 			return nil
@@ -929,11 +936,12 @@ func (blockchain *BlockChain) processPortalUnlockCollateral(
 		// update custodian state (FreeCollateral, LockedAmountCollateral)
 		custodianStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, actionData.CustodianAddressStr)
 		custodianStateKeyStr := string(custodianStateKey[:])
-		finalExchangeRateKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
+		finalExchangeRateKey := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
+		finalExchangeRateKeyStr := string(finalExchangeRateKey[:])
 		_, err2 := updateFreeCollateralCustodian(
 			currentPortalState.CustodianPoolState[custodianStateKeyStr],
 			actionData.RedeemAmount, tokenID,
-			currentPortalState.FinalExchangeRatesState[finalExchangeRateKey])
+			currentPortalState.FinalExchangeRatesState[finalExchangeRateKeyStr])
 		if err2 != nil {
 			Logger.log.Errorf("Error when update free collateral amount for custodian", err2)
 

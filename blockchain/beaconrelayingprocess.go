@@ -7,7 +7,7 @@ import (
 	"errors"
 	"github.com/btcsuite/btcutil"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
@@ -15,7 +15,7 @@ import (
 	"strconv"
 )
 
-func (blockchain *BlockChain) processRelayingInstructions(relayingStateDB *statedb.StateDB, block *BeaconBlock) error {
+func (blockchain *BlockChain) processRelayingInstructions(block *BeaconBlock) error {
 	beaconHeight := block.Header.Height - 1
 	db := blockchain.GetDatabase()
 
@@ -108,7 +108,7 @@ func (blockchain *BlockChain) processRelayingBNBHeaderInst(
 		return err
 	}
 
-	var header lvdb.BNBHeader
+	var header rawdbv2.BNBHeader
 	headerBytes, err := base64.StdEncoding.DecodeString(actionData.Header)
 	if err != nil {
 		return err
@@ -139,7 +139,7 @@ func (blockchain *BlockChain) processRelayingBNBHeaderInst(
 			newConfirmedheader := relayingState.BNBHeaderChain.LatestHeader
 			newConfirmedheaderBytes, _ := json.Marshal(newConfirmedheader)
 
-			err := db.StoreRelayingBNBHeaderChain(uint64(newConfirmedheader.Height), newConfirmedheaderBytes)
+			err := rawdbv2.StoreRelayingBNBHeaderChain(db, uint64(newConfirmedheader.Height), newConfirmedheaderBytes)
 			if err != nil {
 				Logger.log.Errorf("ERROR: an error occured while storing new confirmed header: %+v", err)
 				return err
@@ -163,7 +163,7 @@ func (blockchain *BlockChain) processRelayingBNBHeaderInst(
 		newConfirmedheader := relayingState.BNBHeaderChain.LatestHeader
 		newConfirmedheaderBytes, _ := json.Marshal(newConfirmedheader)
 
-		err := db.StoreRelayingBNBHeaderChain(uint64(newConfirmedheader.Height), newConfirmedheaderBytes)
+		err := rawdbv2.StoreRelayingBNBHeaderChain(db, uint64(newConfirmedheader.Height), newConfirmedheaderBytes)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while storing new confirmed header: %+v", err)
 			return err

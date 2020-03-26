@@ -288,8 +288,6 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(portalSt
 		return nil
 	}
 
-	db := blockchain.GetDatabase()
-
 	reqStatus := instructions[2]
 	if reqStatus == common.PortalRedeemLiquidateExchangeRatesSuccessChainStatus {
 		keyExchangeRate := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
@@ -532,8 +530,9 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(
 	waitingPortingID := actionData.UniquePortingID
 
 	if status == common.PortalExpiredWaitingPortingReqSuccessChainStatus {
-		waitingPortingKey := lvdb.NewWaitingPortingReqKey(beaconHeight, waitingPortingID)
-		waitingPortingReq := currentPortalState.WaitingPortingRequests[waitingPortingKey]
+		waitingPortingKey := statedb.GeneratePortalWaitingPortingRequestObjectKey(beaconHeight, waitingPortingID)
+		waitingPortingKeyStr := string(waitingPortingKey[:])
+		waitingPortingReq := currentPortalState.WaitingPortingRequests[waitingPortingKeyStr]
 		if waitingPortingReq == nil {
 			Logger.log.Errorf("[processPortalExpiredPortingRequest] waiting porting req nil with key : %v", waitingPortingKey)
 			return nil
@@ -556,7 +555,8 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(
 		}
 
 		// remove waiting porting request from waiting list
-		delete(currentPortalState.WaitingPortingRequests, waitingPortingKey)
+		// TODO:
+		delete(currentPortalState.WaitingPortingRequests, waitingPortingKeyStr)
 
 		// update status of porting ID  => expired/liquidated
 		portingReqStatus := common.PortalPortingReqExpiredStatus

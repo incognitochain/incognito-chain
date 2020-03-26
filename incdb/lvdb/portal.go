@@ -1,9 +1,5 @@
 package lvdb
 
-import (
-	"github.com/pkg/errors"
-)
-
 //// prefix key for portal
 //var (
 //	CustodianStatePrefix                = []byte("custodianstate-")
@@ -229,213 +225,213 @@ import (
 //	Rate     uint64
 //}
 
-// TrackCustodianDepositCollateral stores custodian deposit collateral into db with deposit TxID
-func (db *db) TrackCustodianDepositCollateral(key []byte, content []byte) error {
-	err := db.Put(key, content)
-	if err != nil {
-		return database.NewDatabaseError(database.TrackCustodianDepositError, errors.Wrap(err, "db.lvdb.put"))
-	}
-	return nil
-}
-
-// GetCustodianDepositCollateralStatus returns custodian deposit status with deposit TxID
-func (db *db) GetCustodianDepositCollateralStatus(txIDStr string) ([]byte, error) {
-	key := NewCustodianDepositKey(txIDStr)
-	custodianDepositStatusBytes, err := db.lvdb.Get([]byte(key), nil)
-	if err != nil && err != lvdberr.ErrNotFound {
-		return nil, database.NewDatabaseError(database.GetCustodianDepositStatusError, err)
-	}
-
-	return custodianDepositStatusBytes, err
-}
-
-// TrackReqPTokens stores request ptokens into db with req TxID
-func (db *db) TrackReqPTokens(key []byte, content []byte) error {
-	err := db.Put(key, content)
-	if err != nil {
-		return database.NewDatabaseError(database.TrackCustodianDepositError, errors.Wrap(err, "db.lvdb.put"))
-	}
-	return nil
-}
-
-// GetReqPTokenStatusByTxReqID returns request ptoken status with txReqID
-func (db *db) GetReqPTokenStatusByTxReqID(txReqID string) ([]byte, error) {
-	key := append(PortalRequestPTokensPrefix, []byte(txReqID)...)
-
-	reqPTokenStatusBytes, err := db.lvdb.Get(key, nil)
-	if err != nil && err != lvdberr.ErrNotFound {
-		return nil, database.NewDatabaseError(database.GetReqPTokenStatusError, err)
-	}
-
-	return reqPTokenStatusBytes, err
-}
-
-// ======= REDEEM =======
-// NewWaitingRedeemReqKey creates key for storing waiting redeems list in portal
-//func NewWaitingRedeemReqKey(beaconHeight uint64, redeemID string) string {
-//	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
-//	key := append(PortalWaitingRedeemRequestsPrefix, beaconHeightBytes...)
-//	key = append(key, []byte(redeemID)...)
-//	return string(key)
+//// TrackCustodianDepositCollateral stores custodian deposit collateral into db with deposit TxID
+//func (db *db) TrackCustodianDepositCollateral(key []byte, content []byte) error {
+//	err := db.Put(key, content)
+//	if err != nil {
+//		return database.NewDatabaseError(database.TrackCustodianDepositError, errors.Wrap(err, "db.lvdb.put"))
+//	}
+//	return nil
 //}
 //
-//// NewRedeemReqKey creates key for tracking redeems status in portal
-//func NewRedeemReqKey(redeemID string) string {
-//	key := append(PortalRedeemRequestsPrefix, []byte(redeemID)...)
-//	return string(key)
+//// GetCustodianDepositCollateralStatus returns custodian deposit status with deposit TxID
+//func (db *db) GetCustodianDepositCollateralStatus(txIDStr string) ([]byte, error) {
+//	key := NewCustodianDepositKey(txIDStr)
+//	custodianDepositStatusBytes, err := db.lvdb.Get([]byte(key), nil)
+//	if err != nil && err != lvdberr.ErrNotFound {
+//		return nil, database.NewDatabaseError(database.GetCustodianDepositStatusError, err)
+//	}
+//
+//	return custodianDepositStatusBytes, err
 //}
 //
-//// NewRedeemReqKey creates key for tracking redeems status in portal
-//func NewTrackRedeemReqByTxReqIDKey(txID string) string {
-//	key := append(PortalRedeemRequestsByTxReqIDPrefix, []byte(txID)...)
-//	return string(key)
+//// TrackReqPTokens stores request ptokens into db with req TxID
+//func (db *db) TrackReqPTokens(key []byte, content []byte) error {
+//	err := db.Put(key, content)
+//	if err != nil {
+//		return database.NewDatabaseError(database.TrackCustodianDepositError, errors.Wrap(err, "db.lvdb.put"))
+//	}
+//	return nil
 //}
-
-// StoreRedeemRequest stores status of redeem request by redeemID
-func (db *db) StoreRedeemRequest(key []byte, value []byte) error {
-	err := db.Put(key, value)
-	if err != nil {
-		return database.NewDatabaseError(database.StoreRedeemRequestError, errors.Wrap(err, "db.lvdb.put"))
-	}
-	return nil
-}
-
-// GetRedeemRequestByRedeemID returns status of redeem request by redeemID
-func (db *db) GetRedeemRequestByRedeemID(redeemID string) ([]byte, error) {
-	key := NewRedeemReqKey(redeemID)
-	return db.GetItemPortalByKey([]byte(key))
-}
-
-// TrackRedeemRequestByTxReqID tracks status of redeem request by txReqID
-func (db *db) TrackRedeemRequestByTxReqID(key []byte, value []byte) error {
-	err := db.Put(key, value)
-	if err != nil {
-		return database.NewDatabaseError(database.TrackRedeemReqByTxReqIDError, errors.Wrap(err, "db.lvdb.put"))
-	}
-	return nil
-}
-
-
-// NewPortalReqUnlockCollateralKey creates key for tracking request unlock collateral in portal
-//func NewPortalReqUnlockCollateralKey(txReqStr string) string {
-//	key := append(PortalRequestUnlockCollateralPrefix, []byte(txReqStr)...)
-//	return string(key)
+//
+//// GetReqPTokenStatusByTxReqID returns request ptoken status with txReqID
+//func (db *db) GetReqPTokenStatusByTxReqID(txReqID string) ([]byte, error) {
+//	key := append(PortalRequestPTokensPrefix, []byte(txReqID)...)
+//
+//	reqPTokenStatusBytes, err := db.lvdb.Get(key, nil)
+//	if err != nil && err != lvdberr.ErrNotFound {
+//		return nil, database.NewDatabaseError(database.GetReqPTokenStatusError, err)
+//	}
+//
+//	return reqPTokenStatusBytes, err
 //}
-
-// TrackRequestUnlockCollateralByTxReqID tracks status of request unlock collateral by txReqID
-func (db *db) TrackRequestUnlockCollateralByTxReqID(key []byte, value []byte) error {
-	err := db.Put(key, value)
-	if err != nil {
-		return database.NewDatabaseError(database.TrackRedeemReqByTxReqIDError, errors.Wrap(err, "db.lvdb.put"))
-	}
-	return nil
-}
-
-// GetReqUnlockCollateralStatusByTxReqID returns request unlock collateral status with txReqID
-func (db *db) GetReqUnlockCollateralStatusByTxReqID(txReqID string) ([]byte, error) {
-	key := NewPortalReqUnlockCollateralKey(txReqID)
-
-	reqUnlockCollateralStatusBytes, err := db.lvdb.Get([]byte(key), nil)
-	if err != nil && err != lvdberr.ErrNotFound {
-		return nil, database.NewDatabaseError(database.GetReqUnlockCollateralStatusError, err)
-	}
-
-	return reqUnlockCollateralStatusBytes, err
-}
-
-// NewPortalLiquidationCustodianKey creates key for tracking custodian liquidation in portal
-//func NewPortalLiquidationCustodianKey(redeemID string, custodianIncAddrStr string) string {
-//	key := append(PortalLiquidateCustodianPrefix, []byte(redeemID)...)
-//	key = append(key, []byte(custodianIncAddrStr)...)
-//	return string(key)
+//
+//// ======= REDEEM =======
+//// NewWaitingRedeemReqKey creates key for storing waiting redeems list in portal
+////func NewWaitingRedeemReqKey(beaconHeight uint64, redeemID string) string {
+////	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+////	key := append(PortalWaitingRedeemRequestsPrefix, beaconHeightBytes...)
+////	key = append(key, []byte(redeemID)...)
+////	return string(key)
+////}
+////
+////// NewRedeemReqKey creates key for tracking redeems status in portal
+////func NewRedeemReqKey(redeemID string) string {
+////	key := append(PortalRedeemRequestsPrefix, []byte(redeemID)...)
+////	return string(key)
+////}
+////
+////// NewRedeemReqKey creates key for tracking redeems status in portal
+////func NewTrackRedeemReqByTxReqIDKey(txID string) string {
+////	key := append(PortalRedeemRequestsByTxReqIDPrefix, []byte(txID)...)
+////	return string(key)
+////}
+//
+//// StoreRedeemRequest stores status of redeem request by redeemID
+//func (db *db) StoreRedeemRequest(key []byte, value []byte) error {
+//	err := db.Put(key, value)
+//	if err != nil {
+//		return database.NewDatabaseError(database.StoreRedeemRequestError, errors.Wrap(err, "db.lvdb.put"))
+//	}
+//	return nil
+//}
+//
+//// GetRedeemRequestByRedeemID returns status of redeem request by redeemID
+//func (db *db) GetRedeemRequestByRedeemID(redeemID string) ([]byte, error) {
+//	key := NewRedeemReqKey(redeemID)
+//	return db.GetItemPortalByKey([]byte(key))
+//}
+//
+//// TrackRedeemRequestByTxReqID tracks status of redeem request by txReqID
+//func (db *db) TrackRedeemRequestByTxReqID(key []byte, value []byte) error {
+//	err := db.Put(key, value)
+//	if err != nil {
+//		return database.NewDatabaseError(database.TrackRedeemReqByTxReqIDError, errors.Wrap(err, "db.lvdb.put"))
+//	}
+//	return nil
+//}
+//
+//
+//// NewPortalReqUnlockCollateralKey creates key for tracking request unlock collateral in portal
+////func NewPortalReqUnlockCollateralKey(txReqStr string) string {
+////	key := append(PortalRequestUnlockCollateralPrefix, []byte(txReqStr)...)
+////	return string(key)
+////}
+//
+//// TrackRequestUnlockCollateralByTxReqID tracks status of request unlock collateral by txReqID
+//func (db *db) TrackRequestUnlockCollateralByTxReqID(key []byte, value []byte) error {
+//	err := db.Put(key, value)
+//	if err != nil {
+//		return database.NewDatabaseError(database.TrackRedeemReqByTxReqIDError, errors.Wrap(err, "db.lvdb.put"))
+//	}
+//	return nil
+//}
+//
+//// GetReqUnlockCollateralStatusByTxReqID returns request unlock collateral status with txReqID
+//func (db *db) GetReqUnlockCollateralStatusByTxReqID(txReqID string) ([]byte, error) {
+//	key := NewPortalReqUnlockCollateralKey(txReqID)
+//
+//	reqUnlockCollateralStatusBytes, err := db.lvdb.Get([]byte(key), nil)
+//	if err != nil && err != lvdberr.ErrNotFound {
+//		return nil, database.NewDatabaseError(database.GetReqUnlockCollateralStatusError, err)
+//	}
+//
+//	return reqUnlockCollateralStatusBytes, err
 //}
 //
 //// NewPortalLiquidationCustodianKey creates key for tracking custodian liquidation in portal
-//func NewPortalExpiredPortingReqKey(portingID string) string {
-//	key := append(PortalExpiredPortingReqPrefix, []byte(portingID)...)
-//	return string(key)
+////func NewPortalLiquidationCustodianKey(redeemID string, custodianIncAddrStr string) string {
+////	key := append(PortalLiquidateCustodianPrefix, []byte(redeemID)...)
+////	key = append(key, []byte(custodianIncAddrStr)...)
+////	return string(key)
+////}
+////
+////// NewPortalLiquidationCustodianKey creates key for tracking custodian liquidation in portal
+////func NewPortalExpiredPortingReqKey(portingID string) string {
+////	key := append(PortalExpiredPortingReqPrefix, []byte(portingID)...)
+////	return string(key)
+////}
+//
+//// TrackLiquidateCustodian tracks status of liquidation custodian by txReqID
+//func (db *db) TrackLiquidateCustodian(key []byte, value []byte) error {
+//	err := db.Put(key, value)
+//	if err != nil {
+//		return database.NewDatabaseError(database.TrackLiquidateCustodianError, errors.Wrap(err, "db.lvdb.put"))
+//	}
+//	return nil
 //}
-
-// TrackLiquidateCustodian tracks status of liquidation custodian by txReqID
-func (db *db) TrackLiquidateCustodian(key []byte, value []byte) error {
-	err := db.Put(key, value)
-	if err != nil {
-		return database.NewDatabaseError(database.TrackLiquidateCustodianError, errors.Wrap(err, "db.lvdb.put"))
-	}
-	return nil
-}
-
-// TrackRequestUnlockCollateralByTxReqID tracks status of request unlock collateral by txReqID
-func (db *db) GetLiquidateCustodian(redeemID string, custodianIncAddrStr string) ([]byte, error) {
-	key := NewPortalLiquidationCustodianKey(redeemID, custodianIncAddrStr)
-	return db.GetItemPortalByKey([]byte(key))
-}
-
-//func NewPortalLiquidateTPExchangeRatesKey(beaconHeight uint64, custodianIncAddrStr string) string {
-//	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
-//	key := append(PortalLiquidateTopPercentileExchangeRatesPrefix, beaconHeightBytes...)
-//	key = append(key, []byte(custodianIncAddrStr)...)
-//	return string(key)
+//
+//// TrackRequestUnlockCollateralByTxReqID tracks status of request unlock collateral by txReqID
+//func (db *db) GetLiquidateCustodian(redeemID string, custodianIncAddrStr string) ([]byte, error) {
+//	key := NewPortalLiquidationCustodianKey(redeemID, custodianIncAddrStr)
+//	return db.GetItemPortalByKey([]byte(key))
 //}
-
-// TrackExpiredPortingReq tracks status of expired waiting porting request by PortingID
-func (db *db) TrackExpiredPortingReq(key []byte, value []byte) error {
-	err := db.Put(key, value)
-	if err != nil {
-		return database.NewDatabaseError(database.TrackLiquidateCustodianError, errors.Wrap(err, "db.lvdb.put"))
-	}
-	return nil
-}
-
-//func NewPortalLiquidateExchangeRatesKey(beaconHeight uint64) string {
-//	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
-//	key := append(PortalLiquidateExchangeRatesPrefix, beaconHeightBytes...)
-//	key = append(key, []byte("liquidation")...)
-//	return string(key)
+//
+////func NewPortalLiquidateTPExchangeRatesKey(beaconHeight uint64, custodianIncAddrStr string) string {
+////	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+////	key := append(PortalLiquidateTopPercentileExchangeRatesPrefix, beaconHeightBytes...)
+////	key = append(key, []byte(custodianIncAddrStr)...)
+////	return string(key)
+////}
+//
+//// TrackExpiredPortingReq tracks status of expired waiting porting request by PortingID
+//func (db *db) TrackExpiredPortingReq(key []byte, value []byte) error {
+//	err := db.Put(key, value)
+//	if err != nil {
+//		return database.NewDatabaseError(database.TrackLiquidateCustodianError, errors.Wrap(err, "db.lvdb.put"))
+//	}
+//	return nil
 //}
-
-
-// NewPortalRewardKey creates key for storing portal reward by beacon height
-//func NewPortalRewardKey(beaconHeight uint64) string {
-//	beaconHeightBytes := []byte(fmt.Sprintf("%d", beaconHeight))
-//	key := append(PortalRewardByBeaconHeightPrefix, beaconHeightBytes...)
-//	return string(key)
+//
+////func NewPortalLiquidateExchangeRatesKey(beaconHeight uint64) string {
+////	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+////	key := append(PortalLiquidateExchangeRatesPrefix, beaconHeightBytes...)
+////	key = append(key, []byte("liquidation")...)
+////	return string(key)
+////}
+//
+//
+//// NewPortalRewardKey creates key for storing portal reward by beacon height
+////func NewPortalRewardKey(beaconHeight uint64) string {
+////	beaconHeightBytes := []byte(fmt.Sprintf("%d", beaconHeight))
+////	key := append(PortalRewardByBeaconHeightPrefix, beaconHeightBytes...)
+////	return string(key)
+////}
+//
+//// StorePortalRewardByBeaconHeight stores portal reward by beacon height
+//func (db *db) StorePortalRewardByBeaconHeight(key []byte, value []byte) error {
+//	err := db.Put(key, value)
+//	if err != nil {
+//		return database.NewDatabaseError(database.StorePortalRewardError, errors.Wrap(err, "db.lvdb.put"))
+//	}
+//	return nil
 //}
-
-// StorePortalRewardByBeaconHeight stores portal reward by beacon height
-func (db *db) StorePortalRewardByBeaconHeight(key []byte, value []byte) error {
-	err := db.Put(key, value)
-	if err != nil {
-		return database.NewDatabaseError(database.StorePortalRewardError, errors.Wrap(err, "db.lvdb.put"))
-	}
-	return nil
-}
-
-// NewPortalReqWithdrawRewardKey creates key for storing request withdraw portal reward
-//func NewPortalReqWithdrawRewardKey(beaconHeight uint64, custodianAddr string) string {
-//	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
-//	key := append(PortalRequestWithdrawRewardPrefix, beaconHeightBytes...)
-//	key = append(key, []byte(custodianAddr)...)
-//	return string(key)
+//
+//// NewPortalReqWithdrawRewardKey creates key for storing request withdraw portal reward
+////func NewPortalReqWithdrawRewardKey(beaconHeight uint64, custodianAddr string) string {
+////	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+////	key := append(PortalRequestWithdrawRewardPrefix, beaconHeightBytes...)
+////	key = append(key, []byte(custodianAddr)...)
+////	return string(key)
+////}
+//
+//// TrackPortalReqWithdrawReward stores portal request withdraw portal reward
+//func (db *db) TrackPortalReqWithdrawReward(key []byte, value []byte) error {
+//	err := db.Put(key, value)
+//	if err != nil {
+//		return database.NewDatabaseError(database.StorePortalRewardError, errors.Wrap(err, "db.lvdb.put"))
+//	}
+//	return nil
 //}
-
-// TrackPortalReqWithdrawReward stores portal request withdraw portal reward
-func (db *db) TrackPortalReqWithdrawReward(key []byte, value []byte) error {
-	err := db.Put(key, value)
-	if err != nil {
-		return database.NewDatabaseError(database.StorePortalRewardError, errors.Wrap(err, "db.lvdb.put"))
-	}
-	return nil
-}
-
-//func NewRedeemLiquidateExchangeRatesKey(txId string) string {
-//	key := append(PortalWaitingRedeemRequestsPrefix, []byte(txId)...)
-//	return string(key)
-//}
-
-
-//func NewLiquidationCustodianDepositKey(txID string) string  {
-//	key := append(PortalCustodianDepositPrefix, []byte(txID)...)
-//	return string(key)
-//}
-
+//
+////func NewRedeemLiquidateExchangeRatesKey(txId string) string {
+////	key := append(PortalWaitingRedeemRequestsPrefix, []byte(txId)...)
+////	return string(key)
+////}
+//
+//
+////func NewLiquidationCustodianDepositKey(txID string) string  {
+////	key := append(PortalCustodianDepositPrefix, []byte(txID)...)
+////	return string(key)
+////}
+//

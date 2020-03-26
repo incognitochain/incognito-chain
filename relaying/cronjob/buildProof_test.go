@@ -27,7 +27,8 @@ func TestB64EncodeMemo(t *testing.T) {
 	//  eyJQb3J0aW5nSUQiOiIxIn0=
 
 	redeemID := "11"
-	memoRedeem := RedeemMemoBNB{RedeemID: redeemID}
+	custodianIncAddr := "12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ"
+	memoRedeem := RedeemMemoBNB{ RedeemID: redeemID, CustodianIncognitoAddress: custodianIncAddr}
 	memoRedeemBytes, err := json.Marshal(memoRedeem)
 	fmt.Printf("err: %v\n", err)
 	memoRedeemStr := base64.StdEncoding.EncodeToString(memoRedeemBytes)

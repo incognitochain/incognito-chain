@@ -206,6 +206,10 @@ func NewCustodianStateWithValue(
 	}
 }
 
+func NewRemoteAddressWithValue(pToken string, address string) *RemoteAddress {
+	return &RemoteAddress{pTokenID:pToken, address: address}
+}
+
 type CustodianStateObject struct {
 	db *StateDB
 	// Write caches.
