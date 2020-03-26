@@ -66,7 +66,7 @@ const (
 	RejectTxInfoSize
 	RejectTxMedataWithBlockChain
 
-	ValidateWithDBFail
+	GetCommitmentsInDatabaseError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -134,7 +134,7 @@ var ErrCodeMessage = map[int]struct {
 	NormalTokenPRVJsonError: {-4000, "Json data error"},
 	NormalTokenJsonError:    {-4001, "Json data error"},
 
-	VerifyOneOutOfManyProofFailedErr: {-5000, "Verify one out of many proof failed"},
+	GetCommitmentsInDatabaseError: {-5000, ""},
 }
 
 type TransactionError struct {

@@ -36,7 +36,7 @@ type RandomCommitmentsProcessParam struct {
 }
 
 func NewRandomCommitmentsProcessParam(usableInputCoins []*privacy.InputCoin, randNum int, stateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) *RandomCommitmentsProcessParam {
-	result := &RandomCommitmentsProcessParam{
+	return &RandomCommitmentsProcessParam{
 		tokenID:          tokenID,
 		shardID:          shardID,
 		stateDB:          stateDB,
@@ -69,7 +69,7 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 		listUsableCommitmentsIndices[i] = commitmentInHash
 		index, err := statedb.GetCommitmentIndex(param.stateDB, *param.tokenID, usableCommitment, param.shardID)
 		if err != nil {
-			Logger.log.Error(err)
+			Logger.Log.Error(err)
 			return
 		}
 		commitmentInBase58Check := base58.Base58Check{}.Encode(usableCommitment, common.ZeroByte)
@@ -80,11 +80,11 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 	//fmt.Printf("cpRandNum: %d\n", cpRandNum)
 	lenCommitment, err1 := statedb.GetCommitmentLength(param.stateDB, *param.tokenID, param.shardID)
 	if err1 != nil {
-		Logger.log.Error(err1)
+		Logger.Log.Error(err1)
 		return
 	}
 	if lenCommitment == nil {
-		Logger.log.Error(errors.New("Commitments is empty"))
+		Logger.Log.Error(errors.New("Commitments is empty"))
 		return
 	}
 	if lenCommitment.Uint64() == 1 && len(param.usableInputCoins) == 1 {

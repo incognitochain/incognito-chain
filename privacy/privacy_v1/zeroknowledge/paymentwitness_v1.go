@@ -3,11 +3,10 @@ package zkp
 import (
 	"errors"
 
-	"github.com/incognitochain/incognito-chain/privacy/key"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/aggregatedrange"
@@ -267,7 +266,7 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *errhan
 }
 
 // Prove creates big proof
-func (wit *PaymentWitness) Prove(hasPrivacy bool, publicKeyCoin key.TransmissionKey) (*PaymentProof, *errhandler.PrivacyError) {
+func (wit *PaymentWitness) Prove(hasPrivacy bool, paymentInfo []*key.PaymentInfo) (*PaymentProof, *errhandler.PrivacyError) {
 	proof := new(PaymentProof)
 	proof.Init()
 
@@ -342,7 +341,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool, publicKeyCoin key.Transmission
 	// encrypt coin details (Randomness)
 	// hide information of output coins except coin commitments, public key, snDerivators
 	for i := 0; i < len(proof.GetOutputCoins()); i++ {
-		err = proof.GetOutputCoins()[i].Encrypt(publicKeyCoin)
+		err = proof.GetOutputCoins()[i].Encrypt(paymentInfo[i].PaymentAddress.Tk)
 		if err.(*errhandler.PrivacyError) != nil {
 			return nil, err.(*errhandler.PrivacyError)
 		}

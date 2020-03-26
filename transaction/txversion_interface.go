@@ -26,6 +26,7 @@ import (
 type TxVersionSwitcher interface {
 	// It should store to tx the tx.sig and tx.proof
 	Prove(tx *Tx, params *TxPrivacyInitParams) error
+	ProveASM(tx *Tx, params *TxPrivacyInitParamsForASM) error
 
 	// It should verify based on
 	Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error)
@@ -56,4 +57,16 @@ func verifierVersionSwitcher(tx *Tx, hasPrivacy bool, transactionStateDB *stated
 
 	// Start proving and verifying
 	return versionSwitcher.Verify(tx, hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tokenID, isBatch, isNewTransaction)
+}
+
+func proveAndSignVersionSwitcherASM(tx *Tx, params *TxPrivacyInitParamsForASM) error {
+	// Init interface
+	var versionSwitcher TxVersionSwitcher
+	if tx.Version == 1 {
+		versionSwitcher = new(TxVersion1)
+	} else if tx.Version == 2 {
+		versionSwitcher = new(TxVersion2)
+	}
+	// Start proving and verifying
+	return versionSwitcher.ProveASM(tx, params)
 }

@@ -28,9 +28,9 @@ type Mlsag struct {
 	privateKeys []*operation.Scalar
 }
 
-func NewMlsag(privateKeys []*operation.Scalar, K *Ring, pi int) *Mlsag {
+func NewMlsag(privateKeys []*operation.Scalar, R *Ring, pi int) *Mlsag {
 	return &Mlsag{
-		K,
+		R,
 		pi,
 		parseKeyImages(privateKeys),
 		privateKeys,

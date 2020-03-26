@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/privacy"
-	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,14 +14,14 @@ func TestTxTokenPrivacyData(t *testing.T) {
 	coin2 := &privacy.CoinV1{}
 	coin2.SetPublicKey(new(privacy.Point).Identity())
 	coin2.SetValue(10)
-	proof := &zkp.PaymentProof{}
+	var proof privacy.Proof
 	proof.SetOutputCoins([]*privacy.OutputCoin{{
 		CoinDetails: coin1,
 	}})
 	proof.SetInputCoins([]*privacy.InputCoin{{
 		CoinDetails: coin2,
 	}})
-	txNormal := Tx{Proof: proof}
+	txNormal := Tx{Proof: &proof}
 	data := TxPrivacyTokenData{
 		TxNormal: txNormal,
 	}

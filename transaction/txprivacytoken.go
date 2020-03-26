@@ -33,7 +33,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) UnmarshalJSON(data []byte) err
 	tx := Tx{}
 	err := json.Unmarshal(data, &tx)
 	if err != nil {
-		Logger.log.Error(err)
+		Logger.Log.Error(err)
 		return NewTransactionErr(PrivacyTokenPRVJsonError, err)
 	}
 	temp := &struct {
@@ -41,17 +41,17 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) UnmarshalJSON(data []byte) err
 	}{}
 	err = json.Unmarshal(data, &temp)
 	if err != nil {
-		Logger.log.Error(err)
+		Logger.Log.Error(err)
 		return NewTransactionErr(PrivacyTokenJsonError, err)
 	}
 	TxTokenPrivacyDataJson, err := json.MarshalIndent(temp.TxTokenPrivacyData, "", "\t")
 	if err != nil {
-		Logger.log.Error(err)
+		Logger.Log.Error(err)
 		return NewTransactionErr(UnexpectedError, err)
 	}
 	err = json.Unmarshal(TxTokenPrivacyDataJson, &txCustomTokenPrivacy.TxPrivacyTokenData)
 	if err != nil {
-		Logger.log.Error(err)
+		Logger.Log.Error(err)
 		return NewTransactionErr(PrivacyTokenJsonError, err)
 	}
 	txCustomTokenPrivacy.Tx = tx
@@ -73,7 +73,7 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) String() string {
 func (txCustomTokenPrivacy TxCustomTokenPrivacy) JSONString() string {
 	data, err := json.MarshalIndent(txCustomTokenPrivacy, "", "\t")
 	if err != nil {
-		Logger.log.Error(err)
+		Logger.Log.Error(err)
 		return ""
 	}
 	return string(data)
@@ -255,14 +255,14 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 			temp.sigPrivKey = *params.senderKey
 			err = signTx(&temp)
 			if err != nil {
-				Logger.log.Error(errors.New("can't sign this tx"))
+				Logger.Log.Error(errors.New("can't sign this tx"))
 				return NewTransactionErr(SignTxError, err)
 			}
 
 			txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal = temp
 			hashInitToken, err := txCustomTokenPrivacy.TxPrivacyTokenData.Hash()
 			if err != nil {
-				Logger.log.Error(errors.New("can't hash this token data"))
+				Logger.Log.Error(errors.New("can't hash this token data"))
 				return NewTransactionErr(UnexpectedError, err)
 			}
 
@@ -276,14 +276,14 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 			} else {
 				//NOTICE: @merman update PropertyID calculated from hash of tokendata and shardID
 				newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), params.shardID))
-				Logger.log.Debug("New Privacy Token %+v ", newHashInitToken)
+				Logger.Log.Debug("New Privacy Token %+v ", newHashInitToken)
 				existed := statedb.PrivacyTokenIDExisted(params.transactionStateDB, newHashInitToken)
 				if existed {
-					Logger.log.Error("INIT Tx Custom Token Privacy is Existed", newHashInitToken)
+					Logger.Log.Error("INIT Tx Custom Token Privacy is Existed", newHashInitToken)
 					return NewTransactionErr(TokenIDExistedError, errors.New("this token is existed in network"))
 				}
 				txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID = newHashInitToken
-				Logger.log.Debugf("A new token privacy wil be issued with ID: %+v", txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID.String())
+				Logger.Log.Debugf("A new token privacy wil be issued with ID: %+v", txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID.String())
 			}
 		}
 	case CustomTokenTransfer:
@@ -317,7 +317,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 					return NewTransactionErr(TokenIDExistedError, errors.New("invalid Token ID"))
 				}
 			}
-			Logger.log.Debugf("Token %+v wil be transfered with", propertyID)
+			Logger.Log.Debugf("Token %+v wil be transfered with", propertyID)
 			txCustomTokenPrivacy.TxPrivacyTokenData = TxPrivacyTokenData{
 				Type:           params.tokenParams.TokenTxType,
 				PropertyName:   params.tokenParams.PropertyName,
@@ -356,7 +356,7 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxWithCurrentMempool(mr
 	poolSerialNumbersHashH := mr.GetSerialNumbersHashH()
 	err := txCustomTokenPrivacy.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH)
 	if err != nil {
-		Logger.log.Error(err)
+		Logger.Log.Error(err)
 		return NewTransactionErr(DoubleSpendError, err)
 	}
 	// TODO: will move this to mempool process
@@ -536,7 +536,7 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) VerifyMinerCreatedTxBeforeGetti
 	}
 	meta := txCustomTokenPrivacy.Metadata
 	if meta == nil {
-		Logger.log.Error("Mintable custom token must contain metadata")
+		Logger.Log.Error("Mintable custom token must contain metadata")
 		return false, nil
 	}
 	if !meta.IsMinerCreatedMetaType() {
@@ -621,7 +621,7 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) IsCoinsBurning(bcr metadata.Blo
 	burningAddress := bcr.GetBurningAddress(beaconHeight)
 	keyWalletBurningAccount, err := wallet.Base58CheckDeserialize(burningAddress)
 	if err != nil {
-		Logger.log.Errorf("Can not deserialize burn address: %v\n", burningAddress)
+		Logger.Log.Errorf("Can not deserialize burn address: %v\n", burningAddress)
 		return false
 	}
 

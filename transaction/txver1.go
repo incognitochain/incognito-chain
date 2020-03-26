@@ -44,13 +44,13 @@ func parseCommitmentProving(params *TxPrivacyInitParams, shardID byte, commitmen
 	for i, cmIndex := range commitmentIndexs {
 		temp, err := statedb.GetCommitmentByIndex(params.stateDB, *params.tokenID, cmIndex, shardID)
 		if err != nil {
-			Logger.log.Error(errors.New(fmt.Sprintf("can not get commitment from index=%d shardID=%+v", cmIndex, shardID)))
+			Logger.Log.Error(errors.New(fmt.Sprintf("can not get commitment from index=%d shardID=%+v", cmIndex, shardID)))
 			return nil, NewTransactionErr(CanNotGetCommitmentFromIndexError, err, cmIndex, shardID)
 		}
 		commitmentProving[i] = new(privacy.Point)
 		commitmentProving[i], err = commitmentProving[i].FromBytesS(temp)
 		if err != nil {
-			Logger.log.Error(errors.New(fmt.Sprintf("can not get commitment from index=%d shardID=%+v value=%+v", cmIndex, shardID, temp)))
+			Logger.Log.Error(errors.New(fmt.Sprintf("can not get commitment from index=%d shardID=%+v value=%+v", cmIndex, shardID, temp)))
 			return nil, NewTransactionErr(CanNotDecompressCommitmentFromIndexError, err, cmIndex, shardID, temp)
 		}
 	}
@@ -66,7 +66,7 @@ func generateSndOut(params *TxPrivacyInitParams) *[]*privacy.Scalar {
 			for {
 				ok1, err := CheckSNDerivatorExistence(params.tokenID, sndOut, params.stateDB)
 				if err != nil {
-					Logger.log.Error(err)
+					Logger.Log.Error(err)
 				}
 				// if sndOut existed, then re-random it
 				if ok1 {
@@ -103,7 +103,7 @@ func parseOutputCoins(params *TxPrivacyInitParams) (*[]*privacy.OutputCoin, erro
 
 		PK, err := new(privacy.Point).FromBytesS(pInfo.PaymentAddress.Pk)
 		if err != nil {
-			Logger.log.Error(errors.New(fmt.Sprintf("can not decompress public key from %+v", pInfo.PaymentAddress)))
+			Logger.Log.Error(errors.New(fmt.Sprintf("can not decompress public key from %+v", pInfo.PaymentAddress)))
 			return nil, NewTransactionErr(DecompressPaymentAddressError, err, pInfo.PaymentAddress)
 		}
 		outputCoins[i].CoinDetails.SetPublicKey(PK)
@@ -144,28 +144,24 @@ func initializePaymentWitnessParam(tx *Tx, params *TxPrivacyInitParams) (*zkp.Pa
 	return &paymentWitnessParam, nil
 }
 
-func (*TxVersion1) Prove(tx *Tx, params *TxPrivacyInitParams) error {
-	// Prepare paymentWitness params
-	paymentWitnessParamPtr, err := initializePaymentWitnessParam(tx, params)
-	if err != nil {
-		return err
-	}
+func proveAndSignCore(tx *Tx, params *TxPrivacyInitParams, paymentWitnessParamPtr *zkp.PaymentWitnessParam) error {
 	paymentWitnessParam := *paymentWitnessParamPtr
-
 	witness := new(zkp.PaymentWitness)
-	err = witness.Init(paymentWitnessParam)
-	if err.(*errhandler.PrivacyError) != nil {
-		Logger.log.Error(err)
+	err := witness.Init(paymentWitnessParam)
+	if err != nil {
+		Logger.Log.Error(err)
 		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, common.EmptyString, "  ")
 		return NewTransactionErr(InitWithnessError, err, string(jsonParam))
 	}
 
-	tx.Proof, err = witness.Prove(params.hasPrivacy, params.paymentInfo[i].PaymentAddress.Tk)
-	if err.(*errhandler.PrivacyError) != nil {
-		Logger.log.Error(err)
+	paymentProof, err := witness.Prove(params.hasPrivacy, params.paymentInfo)
+	if err != nil {
+		Logger.Log.Error(err)
 		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, common.EmptyString, "  ")
 		return NewTransactionErr(WithnessProveError, err, params.hasPrivacy, string(jsonParam))
 	}
+	var p privacy.Proof = paymentProof
+	tx.Proof = &p
 
 	// set private key for signing tx
 	if params.hasPrivacy {
@@ -178,12 +174,63 @@ func (*TxVersion1) Prove(tx *Tx, params *TxPrivacyInitParams) error {
 	}
 
 	// sign tx
-	err = signTx(tx)
-	if err != nil {
-		Logger.log.Error(err)
+	signErr := signTx(tx)
+	if signErr != nil {
+		Logger.Log.Error(err)
 		return NewTransactionErr(SignTxError, err)
 	}
 	return nil
+}
+
+func (*TxVersion1) Prove(tx *Tx, params *TxPrivacyInitParams) error {
+	// Prepare paymentWitness params
+	paymentWitnessParamPtr, err := initializePaymentWitnessParam(tx, params)
+	if err != nil {
+		return err
+	}
+	return proveAndSignCore(tx, params, paymentWitnessParamPtr)
+}
+
+func initializePaymentWitnessParamASM(tx *Tx, params *TxPrivacyInitParamsForASM) (*zkp.PaymentWitnessParam, error) {
+	// create SNDs for output coins
+	txParams := &params.txParam
+	outputCoins, err := parseOutputCoins(txParams)
+	if err != nil {
+		return nil, err
+	}
+	// get list of commitments for proving one-out-of-many from commitmentIndexs
+	shardID := common.GetShardIDFromLastByte(tx.PubKeyLastByteSender)
+	commitmentProving := make([]*privacy.Point, len(params.commitmentBytes))
+	for i, cmBytes := range params.commitmentBytes {
+		commitmentProving[i] = new(privacy.Point)
+		commitmentProving[i], err = commitmentProving[i].FromBytesS(cmBytes)
+		if err != nil {
+			Logger.Log.Error(errors.New(fmt.Sprintf("ASM: Can not get commitment from index=%d shardID=%+v value=%+v", params.commitmentIndices[i], shardID, cmBytes)))
+			return nil, NewTransactionErr(CanNotDecompressCommitmentFromIndexError, err, params.commitmentIndices[i], shardID, cmBytes)
+		}
+	}
+
+	// prepare witness for proving
+	paymentWitnessParam := zkp.PaymentWitnessParam{
+		HasPrivacy:              params.txParam.hasPrivacy,
+		PrivateKey:              new(privacy.Scalar).FromBytesS(*params.txParam.senderSK),
+		InputCoins:              params.txParam.inputCoins,
+		OutputCoins:             *outputCoins,
+		PublicKeyLastByteSender: tx.PubKeyLastByteSender,
+		Commitments:             commitmentProving,
+		CommitmentIndices:       params.commitmentIndices,
+		MyCommitmentIndices:     params.myCommitmentIndices,
+		Fee:                     params.txParam.fee,
+	}
+	return &paymentWitnessParam, nil
+}
+
+func (*TxVersion1) ProveForASM(tx *Tx, params *TxPrivacyInitParamsForASM) error {
+	paymentWitnessParamPtr, err := initializePaymentWitnessParamASM(tx, params)
+	if err != nil {
+		return err
+	}
+	return proveAndSignCore(tx, &params.txParam, paymentWitnessParamPtr)
 }
 
 // signTx - signs tx
@@ -205,8 +252,8 @@ func signTx(tx *Tx) error {
 	tx.SigPubKey = sigKey.GetPublicKey().GetPublicKey().ToBytesS()
 
 	// signing
-	if Logger.log != nil {
-		Logger.log.Debugf(tx.Hash().String())
+	if Logger.Log != nil {
+		Logger.Log.Debugf(tx.Hash().String())
 	}
 	signature, err := sigKey.Sign(tx.Hash()[:])
 	if err != nil {
@@ -224,24 +271,24 @@ func parseTokenID(tokenID *common.Hash) (*common.Hash, error) {
 		result := new(common.Hash)
 		err := result.SetBytes(common.PRVCoinID[:])
 		if err != nil {
-			Logger.log.Error(err)
-			return false, NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
+			Logger.Log.Error(err)
+			return nil, NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
 		}
 		return result, nil
 	}
 	return tokenID, nil
 }
 
-func parseSndFromOutputCoin(outputCoins []*privacy.OutputCoin) ([]*privacy.Scalar, error) {
+func validateSndFromOutputCoin(outputCoins []*privacy.OutputCoin) error {
 	sndOutputs := make([]*privacy.Scalar, len(outputCoins))
 	for i := 0; i < len(outputCoins); i++ {
 		sndOutputs[i] = outputCoins[i].CoinDetails.GetSNDerivator()
 	}
 	if privacy.CheckDuplicateScalarArray(sndOutputs) {
-		Logger.log.Errorf("Duplicate output coins' snd\n")
-		return []*privacy.Scalar{}, NewTransactionErr(DuplicatedOutputSndError, errors.New("Duplicate output coins' snd\n"))
+		Logger.Log.Errorf("Duplicate output coins' snd\n")
+		return NewTransactionErr(DuplicatedOutputSndError, errors.New("Duplicate output coins' snd\n"))
 	}
-	return sndOutputs, nil
+	return nil
 }
 
 func getCommitmentsInDatabase(
@@ -257,7 +304,7 @@ func getCommitmentsInDatabase(
 	commitmentInputShardID := proof.GetCommitmentInputShardID()
 	commitmentInputSecretKey := proof.GetCommitmentInputSecretKey()
 
-	sz := privacy_util.CommitmentRingSize
+	const sz int = privacy_util.CommitmentRingSize
 	commitments := make([][sz]*operation.Point, len(oneOfManyProof))
 	for i := 0; i < len(oneOfManyProof); i++ {
 		cmInputSum := new(operation.Point).Add(commitmentInputSecretKey, commitmentInputValue[i])
@@ -265,16 +312,16 @@ func getCommitmentsInDatabase(
 		cmInputSum.Add(cmInputSum, commitmentInputShardID)
 
 		for j := 0; j < sz; j++ {
-			index := proof.commitmentIndices[i*privacy_util.CommitmentRingSize+j]
+			index := commitmentIndices[i*privacy_util.CommitmentRingSize+j]
 			commitmentBytes, err := statedb.GetCommitmentByIndex(transactionStateDB, *tokenID, index, shardID)
 			if err != nil {
-				Logger.Log.Errorf("VERIFICATION PAYMENT PROOF 1: Error when get commitment by index from database", index, err)
-				return nil, NewPrivacyErr(VerifyOneOutOfManyProofFailedErr, err)
+				Logger.Log.Errorf("GetCommitmentInDatabase: Error when getCommitmentByIndex from database", index, err)
+				return nil, NewTransactionErr(GetCommitmentsInDatabaseError, err)
 			}
-			recheckIndex, err := statedb.GetCommitmentIndex(*tokenID, commitmentBytes, shardID)
+			recheckIndex, err := statedb.GetCommitmentIndex(transactionStateDB, *tokenID, commitmentBytes, shardID)
 			if err != nil || recheckIndex.Uint64() != index {
-				Logger.Log.Errorf("VERIFICATION PAYMENT PROOF 2: Error when get commitment by index from database", index, err)
-				return nil, NewPrivacyErr(VerifyOneOutOfManyProofFailedErr, err)
+				Logger.Log.Errorf("VERIFICATION PAYMENT PROOF 2: Error when getCommitmentIndex from database", index, err)
+				return nil, NewTransactionErr(GetCommitmentsInDatabaseError, err)
 			}
 
 			commitments[i][j], err = new(operation.Point).FromBytesS(commitmentBytes)
@@ -285,7 +332,7 @@ func getCommitmentsInDatabase(
 			commitments[i][j].Sub(commitments[i][j], cmInputSum)
 		}
 	}
-	return commitments, nil
+	return &commitments, nil
 }
 
 // ValidateTransaction returns true if transaction is valid:
@@ -295,13 +342,12 @@ func (*TxVersion1) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.S
 	var valid bool
 	var err error
 
-	valid, err = tx.verifySigTx()
-	if !valid {
+	if valid, err := tx.verifySigTx(); !valid {
 		if err != nil {
-			Logger.log.Errorf("Error verifying signature with tx hash %s: %+v \n", tx.Hash().String(), err)
+			Logger.Log.Errorf("Error verifying signature with tx hash %s: %+v \n", tx.Hash().String(), err)
 			return false, NewTransactionErr(VerifyTxSigFailError, err)
 		}
-		Logger.log.Errorf("FAILED VERIFICATION SIGNATURE with tx hash %s", tx.Hash().String())
+		Logger.Log.Errorf("FAILED VERIFICATION SIGNATURE with tx hash %s", tx.Hash().String())
 		return false, NewTransactionErr(VerifyTxSigFailError, fmt.Errorf("FAILED VERIFICATION SIGNATURE with tx hash %s", tx.Hash().String()))
 	}
 
@@ -309,20 +355,25 @@ func (*TxVersion1) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.S
 		return true, nil
 	}
 
-	tokenId = parseTokenID(tokenId)
-	sndOutputs, err := parseSndFromOutputCoin(tx.Proof.GetOutputCoins())
+	tokenID, err = parseTokenID(tokenID)
 	if err != nil {
+		return false, err
+	}
+	txProof := *tx.Proof
+	inputCoins := txProof.GetInputCoins()
+	outputCoins := txProof.GetOutputCoins()
+	if err := validateSndFromOutputCoin(outputCoins); err != nil {
 		return false, err
 	}
 
 	if isNewTransaction {
-		for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
+		for i := 0; i < len(outputCoins); i++ {
 			// Check output coins' SND is not exists in SND list (Database)
-			if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator(), transactionStateDB); ok || err != nil {
+			if ok, err := CheckSNDerivatorExistence(tokenID, outputCoins[i].CoinDetails.GetSNDerivator(), transactionStateDB); ok || err != nil {
 				if err != nil {
-					Logger.log.Error(err)
+					Logger.Log.Error(err)
 				}
-				Logger.log.Errorf("snd existed: %d\n", i)
+				Logger.Log.Errorf("snd existed: %d\n", i)
 				return false, NewTransactionErr(SndExistedError, err, fmt.Sprintf("snd existed: %d\n", i))
 			}
 		}
@@ -330,32 +381,35 @@ func (*TxVersion1) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.S
 
 	if !hasPrivacy {
 		// Check input coins' commitment is exists in cm list (Database)
-		for i := 0; i < len(tx.Proof.GetInputCoins()); i++ {
-			ok, err := tx.CheckCMExistence(tx.Proof.GetInputCoins()[i].CoinDetails.GetCoinCommitment().ToBytesS(), transactionStateDB, shardID, tokenID)
+		for i := 0; i < len(inputCoins); i++ {
+			ok, err := tx.CheckCMExistence(inputCoins[i].CoinDetails.GetCoinCommitment().ToBytesS(), transactionStateDB, shardID, tokenID)
 			if !ok || err != nil {
 				if err != nil {
-					Logger.log.Error(err)
+					Logger.Log.Error(err)
 				}
 				return false, NewTransactionErr(InputCommitmentIsNotExistedError, err)
 			}
 		}
 	}
 	// Verify the payment proof
-	commitments, err := getCommitmentsInDatabase(tx.Proof, hasPrivacy, tx.SigPubKey, tx.Fee, transactionStateDB, shardID, tokenID, isBatch)
+	var p interface{} = txProof
+	var txProofV1 privacy.ProofV1 = p.(privacy.ProofV1)
+	commitments, err := getCommitmentsInDatabase(&txProofV1, hasPrivacy, tx.SigPubKey, tx.Fee, transactionStateDB, shardID, tokenID, isBatch)
 	if err != nil {
 		return false, err
 	}
 
-	valid, err = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, transactionStateDB, shardID, tokenID, isBatch, commitments)
+	valid, err = (*tx.Proof).Verify(hasPrivacy, tx.SigPubKey, tx.Fee, shardID, tokenID, isBatch, commitments)
+
 	if !valid {
 		if err != nil {
-			Logger.log.Error(err)
+			Logger.Log.Error(err)
 		}
-		Logger.log.Error("FAILED VERIFICATION PAYMENT PROOF")
+		Logger.Log.Error("FAILED VERIFICATION PAYMENT PROOF")
 		err1, ok := err.(*privacy.PrivacyError)
 		if ok {
 			// parse error detail
-			if err1.Code == privacy.ErrCodeMessage[privacy.VerifyOneOutOfManyProofFailedErr].Code {
+			if err1.Code == privacy.ErrCodeMessage[errhandler.VerifyOneOutOfManyProofFailedErr].Code {
 				if isNewTransaction {
 					return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
 				} else {
@@ -371,6 +425,6 @@ func (*TxVersion1) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.S
 		}
 		return false, NewTransactionErr(TxProofVerifyFailError, err, tx.Hash().String())
 	}
-	Logger.log.Debugf("SUCCESSED VERIFICATION PAYMENT PROOF ")
+	Logger.Log.Debugf("SUCCESSED VERIFICATION PAYMENT PROOF ")
 	return true, nil
 }

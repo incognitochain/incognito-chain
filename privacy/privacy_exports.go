@@ -2,15 +2,22 @@ package privacy
 
 import (
 	"github.com/incognitochain/incognito-chain/privacy/coin"
+	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	C25519 "github.com/incognitochain/incognito-chain/privacy/operation/curve25519"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/hybridencryption"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/schnorr"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/aggregatedrange"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/bulletproofs"
 	"github.com/incognitochain/incognito-chain/privacy/proof"
 	"github.com/incognitochain/incognito-chain/privacy/proof/agg_interface"
 )
+
+type PrivacyError = errhandler.PrivacyError
+
+const ErrCodeMessage = errhandler.ErrCodeMessage
 
 // Public Constants
 const (
@@ -25,6 +32,8 @@ const (
 	PedersenShardIDIndex    = operation.PedersenShardIDIndex
 	PedersenPrivateKeyIndex = operation.PedersenPrivateKeyIndex
 	PedersenRandomnessIndex = operation.PedersenRandomnessIndex
+
+	RingSize = privacy_util.RingSize
 )
 
 var PedCom = operation.PedCom
@@ -123,6 +132,8 @@ type Proof = proof.Proof
 type ProofV1 = proof.ProofV1
 type ProofV2 = proof.ProofV2
 type AggregatedRangeProof = agg_interface.AggregatedRangeProof
+type AggregatedRangeProofV1 = aggregatedrange.AggregatedRangeProof
+type AggregatedRangeProofV2 = bulletproofs.AggregatedRangeProof
 
 func NewProofWithVersion(version int8) *Proof {
 	var result Proof
@@ -133,6 +144,3 @@ func NewProofWithVersion(version int8) *Proof {
 	}
 	return &result
 }
-
-// type AggregatedRangeProofV1 = proof.AggregatedRangeProofV1
-// type AggregatedRangeProofV2 = proof.AggregatedRangeProofV2

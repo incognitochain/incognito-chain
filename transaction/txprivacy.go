@@ -49,12 +49,12 @@ func (tx *Tx) UnmarshalJSON(data []byte) error {
 	}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
-		Logger.log.Error("UnmarshalJSON tx", string(data))
+		Logger.Log.Error("UnmarshalJSON tx", string(data))
 		return NewTransactionErr(UnexpectedError, err)
 	}
 	meta, parseErr := metadata.ParseMetadata(temp.Metadata)
 	if parseErr != nil {
-		Logger.log.Error(parseErr)
+		Logger.Log.Error(parseErr)
 		return parseErr
 	}
 	tx.SetMetadata(meta)
@@ -130,13 +130,13 @@ func getTxInfo(paramInfo []byte) ([]byte, error) {
 }
 
 func (tx *Tx) isNonPrivacyNonInput(params *TxPrivacyInitParams) (bool, error) {
-	Logger.log.Debugf("len(inputCoins), fee, hasPrivacy: %d, %d, %v\n", len(params.inputCoins), params.fee, params.hasPrivacy)
+	Logger.Log.Debugf("len(inputCoins), fee, hasPrivacy: %d, %d, %v\n", len(params.inputCoins), params.fee, params.hasPrivacy)
 	if len(params.inputCoins) == 0 && params.fee == 0 && !params.hasPrivacy {
-		Logger.log.Debugf("len(inputCoins) == 0 && fee == 0 && !hasPrivacy\n")
+		Logger.Log.Debugf("len(inputCoins) == 0 && fee == 0 && !hasPrivacy\n")
 		tx.sigPrivKey = *params.senderSK
 		err := signTx(tx)
 		if err != nil {
-			Logger.log.Error(errors.New(fmt.Sprintf("Cannot sign tx %v\n", err)))
+			Logger.Log.Error(errors.New(fmt.Sprintf("Cannot sign tx %v\n", err)))
 			return true, NewTransactionErr(SignTxError, err)
 		}
 		return true, nil
@@ -156,7 +156,7 @@ func updateParamsWhenOverBalance(params *TxPrivacyInitParams) error {
 	for _, coin := range params.inputCoins {
 		sumInputValue += coin.CoinDetails.GetValue()
 	}
-	Logger.log.Debugf("sumInputValue: %d\n", sumInputValue)
+	Logger.Log.Debugf("sumInputValue: %d\n", sumInputValue)
 
 	overBalance := int64(sumInputValue - sumOutputValue - params.fee)
 	// Check if sum of input coins' value is at least sum of output coins' value and tx fee
@@ -188,7 +188,7 @@ func parseSenderFullKey(params *TxPrivacyInitParams) (*incognitokey.KeySet, erro
 	senderFullKey := incognitokey.KeySet{}
 	err := senderFullKey.InitFromPrivateKey(params.senderSK)
 	if err != nil {
-		Logger.log.Error(errors.New(fmt.Sprintf("Can not import Private key for sender keyset from %+v", params.senderSK)))
+		Logger.Log.Error(errors.New(fmt.Sprintf("Can not import Private key for sender keyset from %+v", params.senderSK)))
 		return nil, NewTransactionErr(PrivateKeySenderInvalidError, err)
 	}
 	return &senderFullKey, nil
@@ -230,7 +230,7 @@ func initializeTxAndParams(tx *Tx, params *TxPrivacyInitParams) error {
 // if not want to create a privacy tx proof, set hashPrivacy = false
 // database is used like an interface which use to query info from db in building tx
 func (tx *Tx) Init(params *TxPrivacyInitParams) error {
-	Logger.log.Debugf("CREATING TX........\n")
+	Logger.Log.Debugf("CREATING TX........\n")
 	if err := validateTxInit(params); err != nil {
 		return err
 	}
@@ -252,8 +252,8 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 
 	elapsedPrivacy := time.Since(startPrivacy)
 	elapsed := time.Since(start)
-	Logger.log.Debugf("Creating payment proof time %s", elapsedPrivacy)
-	Logger.log.Debugf("Successfully Creating normal tx %+v in %s time", *tx.Hash(), elapsed)
+	Logger.Log.Debugf("Creating payment proof time %s", elapsedPrivacy)
+	Logger.Log.Debugf("Successfully Creating normal tx %+v in %s time", *tx.Hash(), elapsed)
 	return nil
 }
 
@@ -273,7 +273,7 @@ func (tx *Tx) verifySigTx() (bool, error) {
 	sigPublicKey, err := new(privacy.Point).FromBytesS(tx.SigPubKey)
 
 	if err != nil {
-		Logger.log.Error(err)
+		Logger.Log.Error(err)
 		return false, NewTransactionErr(DecompressSigPubKeyError, err)
 	}
 	verifyKey.Set(sigPublicKey)
@@ -282,7 +282,7 @@ func (tx *Tx) verifySigTx() (bool, error) {
 	signature := new(privacy.SchnSignature)
 	err = signature.SetBytes(tx.Sig)
 	if err != nil {
-		Logger.log.Error(err)
+		Logger.Log.Error(err)
 		return false, NewTransactionErr(InitTxSignatureFromBytesError, err)
 	}
 
@@ -302,7 +302,7 @@ func (tx *Tx) verifySigTx() (bool, error) {
 // - Verify the payment proof
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
 	//hasPrivacy = false
-	Logger.log.Debugf("VALIDATING TX........\n")
+	Logger.Log.Debugf("VALIDATING TX........\n")
 	if tx.GetType() == common.TxRewardType {
 		return tx.ValidateTxSalary(transactionStateDB)
 	}
@@ -591,7 +591,7 @@ func (tx Tx) ValidateTxWithBlockChain(
 		isContinued, err := tx.Metadata.ValidateTxWithBlockChain(&tx, bcr, shardID, stateDB)
 		fmt.Printf("[transactionStateDB] validate metadata with blockchain: %d %h %t %v\n", tx.GetMetadataType(), tx.Hash(), isContinued, err)
 		if err != nil {
-			Logger.log.Errorf("[db] validate metadata with blockchain: %d %s %t %v\n", tx.GetMetadataType(), tx.Hash().String(), isContinued, err)
+			Logger.Log.Errorf("[db] validate metadata with blockchain: %d %s %t %v\n", tx.GetMetadataType(), tx.Hash().String(), isContinued, err)
 			return NewTransactionErr(RejectTxMedataWithBlockChain, fmt.Errorf("validate metadata of tx %s with blockchain error %+v", tx.Hash().String(), err))
 		}
 		if !isContinued {
@@ -654,16 +654,16 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 }
 
 func (tx Tx) ValidateSanityData(bcr metadata.BlockchainRetriever, beaconHeight uint64) (bool, error) {
-	Logger.log.Debugf("\n\n\n START Validating sanity data of metadata %+v\n\n\n", tx.Metadata)
+	Logger.Log.Debugf("\n\n\n START Validating sanity data of metadata %+v\n\n\n", tx.Metadata)
 	if tx.Metadata != nil {
-		Logger.log.Debug("tx.Metadata.ValidateSanityData")
+		Logger.Log.Debug("tx.Metadata.ValidateSanityData")
 		isContinued, ok, err := tx.Metadata.ValidateSanityData(bcr, &tx, beaconHeight)
-		Logger.log.Debug("END tx.Metadata.ValidateSanityData")
+		Logger.Log.Debug("END tx.Metadata.ValidateSanityData")
 		if err != nil || !ok || !isContinued {
 			return ok, err
 		}
 	}
-	Logger.log.Debugf("\n\n\n END sanity data of metadata%+v\n\n\n")
+	Logger.Log.Debugf("\n\n\n END sanity data of metadata%+v\n\n\n")
 	return tx.validateNormalTxSanityData()
 }
 
@@ -869,7 +869,7 @@ func (tx Tx) ValidateTxSalary(stateDB *statedb.StateDB) (bool, error) {
 	valid, err := tx.verifySigTx()
 	if !valid {
 		if err != nil {
-			Logger.log.Debugf("Error verifying signature of tx: %+v", err)
+			Logger.Log.Debugf("Error verifying signature of tx: %+v", err)
 			return false, NewTransactionErr(VerifyTxSigFailError, err)
 		}
 		return false, nil
@@ -938,7 +938,7 @@ func (tx Tx) VerifyMinerCreatedTxBeforeGettingInBlock(
 	if meta != nil {
 		ok, err := meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, &tx, bcr, accumulatedValues)
 		if err != nil {
-			Logger.log.Error(err)
+			Logger.Log.Error(err)
 			return false, NewTransactionErr(VerifyMinerCreatedTxBeforeGettingInBlockError, err)
 		}
 		return ok, nil

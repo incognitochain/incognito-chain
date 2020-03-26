@@ -27,11 +27,13 @@ func (txTokenPrivacyData TxPrivacyTokenData) String() string {
 	record += txTokenPrivacyData.PropertySymbol
 	record += fmt.Sprintf("%d", txTokenPrivacyData.Amount)
 	if txTokenPrivacyData.TxNormal.Proof != nil {
-		for _, out := range txTokenPrivacyData.TxNormal.Proof.GetOutputCoins() {
+		inputCoins := (*txTokenPrivacyData.TxNormal.Proof).GetInputCoins()
+		outputCoins := (*txTokenPrivacyData.TxNormal.Proof).GetOutputCoins()
+		for _, out := range outputCoins {
 			record += string(out.CoinDetails.GetPublicKey().ToBytesS())
 			record += strconv.FormatUint(out.CoinDetails.GetValue(), 10)
 		}
-		for _, in := range txTokenPrivacyData.TxNormal.Proof.GetInputCoins() {
+		for _, in := range inputCoins {
 			if in.CoinDetails.GetPublicKey() != nil {
 				record += string(in.CoinDetails.GetPublicKey().ToBytesS())
 			}
@@ -46,7 +48,7 @@ func (txTokenPrivacyData TxPrivacyTokenData) String() string {
 func (txTokenPrivacyData TxPrivacyTokenData) JSONString() string {
 	data, err := json.MarshalIndent(txTokenPrivacyData, "", "\t")
 	if err != nil {
-		Logger.log.Error(err)
+		Logger.Log.Error(err)
 		return ""
 	}
 	return string(data)
@@ -91,7 +93,7 @@ func CreateCustomTokenPrivacyReceiverArray(dataReceiver interface{}) ([]*privacy
 	for key, value := range receivers {
 		keyWallet, err := wallet.Base58CheckDeserialize(key)
 		if err != nil {
-			Logger.log.Errorf("Invalid key in CreateCustomTokenPrivacyReceiverArray %+v", key)
+			Logger.Log.Errorf("Invalid key in CreateCustomTokenPrivacyReceiverArray %+v", key)
 			return nil, 0, err
 		}
 		keySet := keyWallet.KeySet

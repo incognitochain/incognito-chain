@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
@@ -11,7 +13,6 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/bulletproofs"
 	"github.com/incognitochain/incognito-chain/privacy/proof/agg_interface"
-	"strconv"
 )
 
 type PaymentProofV2 struct {
@@ -21,12 +22,12 @@ type PaymentProofV2 struct {
 	outputCoins          []*coin.OutputCoin
 }
 
-func (proof *PaymentProofV2) GetVersion() uint8 { return 2 }
-func (proof PaymentProofV2) GetInputCoins() []*coin.InputCoin { return proof.inputCoins }
+func (proof *PaymentProofV2) GetVersion() uint8                 { return 2 }
+func (proof PaymentProofV2) GetInputCoins() []*coin.InputCoin   { return proof.inputCoins }
 func (proof PaymentProofV2) GetOutputCoins() []*coin.OutputCoin { return proof.outputCoins }
 
-func (proof *PaymentProofV2) SetVersion()      { proof.Version = 2 }
-func (proof *PaymentProofV2) SetInputCoins(v []*coin.InputCoin) { proof.inputCoins = v }
+func (proof *PaymentProofV2) SetVersion()                         { proof.Version = 2 }
+func (proof *PaymentProofV2) SetInputCoins(v []*coin.InputCoin)   { proof.inputCoins = v }
 func (proof *PaymentProofV2) SetOutputCoins(v []*coin.OutputCoin) { proof.outputCoins = v }
 
 func (proof PaymentProofV2) GetAggregatedRangeProof() *agg_interface.AggregatedRangeProof {
@@ -248,13 +249,15 @@ func (proof PaymentProofV2) ValidateSanity() (bool, error) {
 }
 
 // Privacy TODO: update version 2 remember to fix this
-func Prove(inp []*coin.InputCoin, out []*coin.OutputCoin, hasPrivacy bool) (*PaymentProofV2, error) {
+func Prove(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, hasPrivacy bool) (*PaymentProofV2, error) {
+	inputCoins := *inp
+	outputCoins := *out
 	// Init proof
 	proof := new(PaymentProofV2)
 	proof.SetVersion()
 	proof.aggregatedRangeProof.Init()
-	proof.SetInputCoins(inp)
-	proof.SetOutputCoins(out)
+	proof.SetInputCoins(inputCoins)
+	proof.SetOutputCoins(outputCoins)
 
 	// If not have privacy then don't need to prove range
 	if !hasPrivacy {

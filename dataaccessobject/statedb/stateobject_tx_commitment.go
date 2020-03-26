@@ -13,6 +13,7 @@ type CommitmentState struct {
 	tokenID    common.Hash
 	shardID    byte
 	commitment []byte
+	publicKey  []byte
 	index      *big.Int
 }
 
@@ -22,6 +23,14 @@ func (c CommitmentState) Index() *big.Int {
 
 func (c *CommitmentState) SetIndex(index *big.Int) {
 	c.index = index
+}
+
+func (c CommitmentState) PublicKey() []byte {
+	return c.publicKey
+}
+
+func (c *CommitmentState) SetPublicKey(b []byte]) {
+	c.publicKey = b
 }
 
 func (c CommitmentState) Commitment() []byte {
@@ -52,8 +61,14 @@ func NewCommitmentState() *CommitmentState {
 	return &CommitmentState{}
 }
 
-func NewCommitmentStateWithValue(tokenID common.Hash, shardID byte, commitment []byte, index *big.Int) *CommitmentState {
-	return &CommitmentState{tokenID: tokenID, shardID: shardID, commitment: commitment, index: index}
+func NewCommitmentStateWithValue(tokenID common.Hash, shardID byte, commitment []byte, publicKey []byte, index *big.Int) *CommitmentState {
+	return &CommitmentState{
+		tokenID: tokenID,
+		shardID: shardID,
+		commitment: commitment,
+		publicKey: publicKey,
+		index: index,
+	}
 }
 
 func (c CommitmentState) MarshalJSON() ([]byte, error) {
@@ -146,7 +161,7 @@ func newCommitmentObjectWithValue(db *StateDB, key common.Hash, data interface{}
 	}, nil
 }
 
-func GenerateCommitmentObjectKey(tokenID common.Hash, shardID byte, commitment []byte) common.Hash {
+func GenerateCommitmentObjectKey(tokenID common.Hash, shardID byte, commitment []byte, publicKey []byte) common.Hash {
 	prefixHash := GetCommitmentPrefix(tokenID, shardID)
 	valueHash := common.HashH(commitment)
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))

@@ -80,7 +80,7 @@ func (this *RingCTFull) CreateRingCTFull(decoyMembers [][]*Member) (*mlsag.Mlsag
 	return mlsagObj, nil
 }
 
-func RingCTFullProve(mlsagObj mlsag.Mlsag,  message []byte) (*mlsag.MlsagSig, error) {
+func RingCTFullProve(mlsagObj mlsag.Mlsag, message []byte) (*mlsag.MlsagSig, error) {
 	mlsagSig, err := mlsagObj.Sign(message)
 	if err != nil {
 		return nil, errors.New("Cannot create Mlsag Signature")

@@ -3,11 +3,11 @@ package transaction
 import "github.com/incognitochain/incognito-chain/common"
 
 type TransactionLogger struct {
-	log common.Logger
+	Log common.Logger
 }
 
 func (transactionLogger *TransactionLogger) Init(inst common.Logger) {
-	transactionLogger.log = inst
+	transactionLogger.Log = inst
 }
 
 // Global instant to use
