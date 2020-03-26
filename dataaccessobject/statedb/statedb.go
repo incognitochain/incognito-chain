@@ -1267,6 +1267,39 @@ func (stateDB *StateDB) GetAllLiquidateExchangeRates() map[string]*LiquidateExch
 	return liquidateExchangeRates
 }
 
+func (stateDB *StateDB) getCustodianByKey(key common.Hash) (*CustodianState, bool, error) {
+	custodianState, err := stateDB.getStateObject(CustodianStateObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if custodianState != nil {
+		return custodianState.GetValue().(*CustodianState), true, nil
+	}
+	return NewCustodianState(), false, nil
+}
+
+func (stateDB *StateDB) getFinalExchangeRatesByKey(key common.Hash) (*FinalExchangeRatesState, bool, error) {
+	finalExchangeRates, err := stateDB.getStateObject(PortalFinalExchangeRatesStateObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if finalExchangeRates != nil {
+		return finalExchangeRates.GetValue().(*FinalExchangeRatesState), true, nil
+	}
+	return NewFinalExchangeRatesState(), false, nil
+}
+
+func (stateDB *StateDB) getLiquidateExchangeRatesByKey(key common.Hash) (*LiquidateExchangeRatesPool, bool, error) {
+	liquidateExchangeRates, err := stateDB.getStateObject(PortalLiquidationExchangeRatesPoolObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if liquidateExchangeRates != nil {
+		return liquidateExchangeRates.GetValue().(*LiquidateExchangeRatesPool), true, nil
+	}
+	return NewLiquidateExchangeRatesPool(), false, nil
+}
+
 //B
 func (stateDB *StateDB) getAllWaitingRedeemRequest() map[string]*WaitingRedeemRequest {
 	waitingRedeemRequests := map[string]*WaitingRedeemRequest{}

@@ -32,6 +32,7 @@ const (
 	// portal
 	//A
 	PortalFinalExchangeRatesStateObjectType
+	PortalLiquidationExchangeRatesPoolObjectType
 	PortalWaitingPortingRequestObjectType
 	//B
 	PortalStatusObjectType

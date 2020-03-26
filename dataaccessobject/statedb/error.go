@@ -151,7 +151,8 @@ const (
 	StorePortalRewardError
 
 	//A
-
+	GetPortalFinalExchangeRatesStatusError
+	GetPortalLiquidationExchangeRatesError
 	//B
 	StorePortalStatusError
 	GetPortalStatusError
@@ -275,9 +276,6 @@ var ErrCodeMessage = map[int]struct {
 	StoreLiquidationCustodianDepositError:         {-14024, "Store liquidation custodian deposit error"},
 	StoreCustodianStateError:                      {-14025, "Store custodian state error"},
 
-
-	//A
-
 	//B
 	StorePortalStatusError:                            {-14026, "Store portal status error"},
 	GetPortalStatusError:                              {-14027, "Get portal status error"},
@@ -297,6 +295,7 @@ var ErrCodeMessage = map[int]struct {
 	StorePortalExpiredPortingReqStatusError:           {-14036, "Store portal expired porting request status error"},
 	GetPortalRequestWithdrawRewardStatusError: {-14036, "Get portal request withdraw reward status error"},
 	StorePortalRequestWithdrawRewardStatusError: {-14036, "Store portal request withdraw reward status error"},
+	GetPortalFinalExchangeRatesStatusError: {-14037, "Get portal final exchange rates error"},
 }
 
 type StatedbError struct {

@@ -65,7 +65,7 @@ func (portal *Portal) GetCustodianWithdrawByTxId(txId string) (jsonresult.Portal
 
 func (portal *Portal) GetFinalExchangeRates(beaconHeight uint64) (jsonresult.FinalExchangeRatesResult, error) {
 	portalStateDB := portal.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
-	finalExchangeRates, err := statedb.GetFinalExchangeRates(portalStateDB, beaconHeight)
+	finalExchangeRates, err := statedb.GetFinalExchangeRatesByKey(portalStateDB, beaconHeight)
 
 	if err != nil {
 		return jsonresult.FinalExchangeRatesResult{}, err
@@ -125,7 +125,7 @@ func (portal *Portal) GetPortingFees(tokenSymbol string, valuePToken uint64, bea
 
 func (portal *Portal) getFinalExchangeRates(beaconHeight uint64) (*statedb.FinalExchangeRatesState, error) {
 	portalStateDB := portal.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
-	finalExchangeRates, err := statedb.GetFinalExchangeRates(portalStateDB, beaconHeight)
+	finalExchangeRates, err := statedb.GetFinalExchangeRatesByKey(portalStateDB, beaconHeight)
 
 	if err != nil {
 		return statedb.NewFinalExchangeRatesState(), err
@@ -217,7 +217,7 @@ func (portal *Portal) GetLiquidateExchangeRatesPool(
 	tokenSymbol string,
 ) (jsonresult.GetLiquidateExchangeRates, error) {
 	portalStateDB := portal.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
-	liquidateExchangeRates, err := statedb.GetLiquidateExchangeRates(portalStateDB, beaconHeight)
+	liquidateExchangeRates, err := statedb.GetLiquidateExchangeRatesByKey(portalStateDB, beaconHeight)
 
 	if err != nil {
 		return jsonresult.GetLiquidateExchangeRates{}, err

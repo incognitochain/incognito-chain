@@ -156,10 +156,19 @@ func GetCustodianDepositStatus(stateDB *StateDB, txID string) ([]byte, error) {
 	return data, nil
 }
 
-//todo: get one custodian
 func GetOneCustodian(stateDB *StateDB,beaconHeight uint64, custodianAddress string) (*CustodianState, error) {
-	return nil, nil
+	key := GenerateCustodianStateObjectKey(beaconHeight, custodianAddress)
+	custodianState, has, err := stateDB.getCustodianByKey(key)
+	if err != nil {
+		return nil, NewStatedbError(GetPortalStatusError, err)
+	}
+	if !has {
+		return nil, NewStatedbError(GetPortalStatusError, fmt.Errorf("key with beacon height %+v, custodian address %+v not found", beaconHeight, custodianAddress))
+	}
+
+	return custodianState, nil
 }
+
 //======================  Exchange rate  ======================
 func GetAllFinalExchangeRatesState(
 	stateDB *StateDB,
@@ -169,24 +178,17 @@ func GetAllFinalExchangeRatesState(
 	return allFinalExchangeRatesState, nil
 }
 
-//todo:
-func GetFinalExchangeRates(stateDB *StateDB, beaconHeight uint64) (*FinalExchangeRatesState, error)  {
-	/*tokenIDs := []string{tokenIDToBuy, tokenIDToSell}
-	sort.Strings(tokenIDs)
-	key := GeneratePDEPoolPairObjectKey(tokenIDs[0], tokenIDs[1])
-	ppState, has, err := stateDB.getPDEPoolPairState(key)
+func GetFinalExchangeRatesByKey(stateDB *StateDB, beaconHeight uint64) (*FinalExchangeRatesState, error)  {
+	key := GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
+	finalExchangeRates, has, err := stateDB.getFinalExchangeRatesByKey(key)
 	if err != nil {
-		return []byte{}, NewStatedbError(GetPDEPoolForPairError, err)
+		return nil, NewStatedbError(GetPortalFinalExchangeRatesStatusError, err)
 	}
 	if !has {
-		return []byte{}, NewStatedbError(GetPDEPoolForPairError, fmt.Errorf("key with beacon height %+v, token1ID %+v, token2ID %+v not found", beaconHeight, tokenIDToBuy, tokenIDToSell))
+		return nil, NewStatedbError(GetPortalFinalExchangeRatesStatusError, fmt.Errorf("key with beacon height %+v not found", beaconHeight))
 	}
-	res, err := json.Marshal(rawdbv2.NewPDEPoolForPair(ppState.Token1ID(), ppState.Token1PoolValue(), ppState.Token2ID(), ppState.Token2PoolValue()))
-	if err != nil {
-		return []byte{}, NewStatedbError(GetPDEPoolForPairError, err)
-	}
-	return res, nil*/
-	return nil, nil
+
+	return finalExchangeRates, nil
 }
 
 func StoreBulkFinalExchangeRatesState(
@@ -202,8 +204,6 @@ func StoreBulkFinalExchangeRatesState(
 	}
 	return nil
 }
-
-//======================  Custodian Withdraw  ======================
 
 //======================  Liquidation  ======================
 func StorePortalLiquidationCustodianRunAwayStatus(stateDB *StateDB, redeemID string, custodianIncognitoAddress string, statusContent []byte) error {
@@ -273,24 +273,17 @@ func StoreBulkLiquidateExchangeRates(
 	return nil
 }
 
-//todo:
-func GetLiquidateExchangeRates(stateDB *StateDB, beaconHeight uint64) (*LiquidateExchangeRatesPool, error)  {
-	/*tokenIDs := []string{tokenIDToBuy, tokenIDToSell}
-	sort.Strings(tokenIDs)
-	key := GeneratePDEPoolPairObjectKey(tokenIDs[0], tokenIDs[1])
-	ppState, has, err := stateDB.getPDEPoolPairState(key)
+func GetLiquidateExchangeRatesByKey(stateDB *StateDB, beaconHeight uint64) (*LiquidateExchangeRatesPool, error)  {
+	key := GeneratePortalLiquidateExchangeRatesPoolObjectKey(beaconHeight)
+	liquidateExchangeRates, has, err := stateDB.getLiquidateExchangeRatesByKey(key)
 	if err != nil {
-		return []byte{}, NewStatedbError(GetPDEPoolForPairError, err)
+		return nil, NewStatedbError(GetPortalLiquidationExchangeRatesError, err)
 	}
 	if !has {
-		return []byte{}, NewStatedbError(GetPDEPoolForPairError, fmt.Errorf("key with beacon height %+v, token1ID %+v, token2ID %+v not found", beaconHeight, tokenIDToBuy, tokenIDToSell))
+		return nil, NewStatedbError(GetPortalLiquidationExchangeRatesError, fmt.Errorf("key with beacon height %+v not found", beaconHeight))
 	}
-	res, err := json.Marshal(rawdbv2.NewPDEPoolForPair(ppState.Token1ID(), ppState.Token1PoolValue(), ppState.Token2ID(), ppState.Token2PoolValue()))
-	if err != nil {
-		return []byte{}, NewStatedbError(GetPDEPoolForPairError, err)
-	}
-	return res, nil*/
-	return nil, nil
+
+	return liquidateExchangeRates, nil
 }
 
 //======================  Porting  ======================
@@ -382,7 +375,13 @@ func StoreBulkWaitingPortingRequests(
 	return nil
 }
 
-func StoreWaitingPortingRequests(stateDB *StateDB, portingRequestId string, statusContent []byte) error {
+func StoreWaitingPortingRequests(stateDB *StateDB, beaconHeight uint64, portingRequestId string, statusContent *WaitingPortingRequest) error {
+	key := GeneratePortalWaitingPortingRequestObjectKey(beaconHeight, portingRequestId)
+	err := stateDB.SetStateObject(PortalWaitingPortingRequestObjectType, key, statusContent)
+	if err != nil {
+		return NewStatedbError(StoreWaitingPortingRequestError, err)
+	}
+
 	return nil
 }
 
