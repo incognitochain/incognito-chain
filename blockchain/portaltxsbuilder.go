@@ -48,7 +48,7 @@ func (blockGenerator *BlockGenerator) buildPortalRefundCustodianDepositTx(
 		refundDeposit.DepositedAmount,
 		&receiverAddr,
 		producerPrivateKey,
-		blockGenerator.chain.config.DataBase,
+		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
 		meta,
 	)
 	if err != nil {
@@ -98,7 +98,7 @@ func (blockGenerator *BlockGenerator) buildPortalLiquidationCustodianDepositReje
 		refundDeposit.DepositedAmount,
 		&receiverAddr,
 		producerPrivateKey,
-		blockGenerator.chain.config.DataBase,
+		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
 		meta,
 	)
 	if err != nil {
@@ -233,7 +233,7 @@ func (blockGenerator *BlockGenerator) buildPortalCustodianWithdrawRequest(
 		receiveAmt,
 		&receiverAddr,
 		producerPrivateKey,
-		blockGenerator.chain.config.DataBase,
+		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
 		meta,
 	)
 	if err != nil {
@@ -287,7 +287,7 @@ func (blockGenerator *BlockGenerator) buildPortalRedeemLiquidateExchangeRatesReq
 		receiveAmt,
 		&receiverAddr,
 		producerPrivateKey,
-		blockGenerator.chain.config.DataBase,
+		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
 		meta,
 	)
 	if err != nil {
@@ -419,7 +419,7 @@ func (blockGenerator *BlockGenerator) buildPortalLiquidateCustodianResponseTx(
 		liqCustodian.MintedCollateralAmount,
 		&receiverAddr,
 		producerPrivateKey,
-		blockGenerator.chain.config.DataBase,
+		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
 		meta,
 	)
 	if err != nil {
@@ -468,7 +468,7 @@ func (blockGenerator *BlockGenerator) buildPortalAcceptedWithdrawRewardTx(
 		withdrawRewardContent.RewardAmount,
 		&receiverAddr,
 		producerPrivateKey,
-		blockGenerator.chain.config.DataBase,
+		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
 		meta,
 	)
 	if err != nil {
