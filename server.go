@@ -6,10 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/peerv2/proto"
-	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
-	"github.com/incognitochain/incognito-chain/syncker"
 	"io"
 	"io/ioutil"
 	"log"
@@ -21,6 +17,11 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/peerv2/proto"
+	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
+	"github.com/incognitochain/incognito-chain/syncker"
 
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/peerv2"
@@ -2069,33 +2070,36 @@ func (serverObj *Server) GetMinerIncognitoPublickey(publicKey string, keyType st
 
 func (serverObj *Server) RequestBeaconBlocksViaStream(ctx context.Context, peerID string, from uint64, to uint64) (blockCh chan common.BlockInterface, err error) {
 	req := &proto.BlockByHeightRequest{
-		Type:     proto.BlkType_BlkBc,
-		Specific: false,
-		Heights:  []uint64{from, to},
-		From:     int32(peerv2.HighwayBeaconID),
-		To:       int32(peerv2.HighwayBeaconID),
+		Type:         proto.BlkType_BlkBc,
+		Specific:     false,
+		Heights:      []uint64{from, to},
+		From:         int32(peerv2.HighwayBeaconID),
+		To:           int32(peerv2.HighwayBeaconID),
+		SyncFromPeer: peerID,
 	}
 	return serverObj.requestBlocksViaStream(ctx, peerID, req)
 }
 
 func (serverObj *Server) RequestShardBlocksViaStream(ctx context.Context, peerID string, fromSID int, from uint64, to uint64) (blockCh chan common.BlockInterface, err error) {
 	req := &proto.BlockByHeightRequest{
-		Type:     proto.BlkType_BlkShard,
-		Specific: false,
-		Heights:  []uint64{from, to},
-		From:     int32(fromSID),
-		To:       int32(fromSID),
+		Type:         proto.BlkType_BlkShard,
+		Specific:     false,
+		Heights:      []uint64{from, to},
+		From:         int32(fromSID),
+		To:           int32(fromSID),
+		SyncFromPeer: peerID,
 	}
 	return serverObj.requestBlocksViaStream(ctx, peerID, req)
 }
 
 func (serverObj *Server) RequestShardToBeaconBlocksViaStream(ctx context.Context, peerID string, fromSID int, from uint64, to uint64) (blockCh chan common.BlockInterface, err error) {
 	req := &proto.BlockByHeightRequest{
-		Type:     proto.BlkType_BlkS2B,
-		Specific: false,
-		Heights:  []uint64{from, to},
-		From:     int32(fromSID),
-		To:       int32(peerv2.HighwayBeaconID),
+		Type:         proto.BlkType_BlkS2B,
+		Specific:     false,
+		Heights:      []uint64{from, to},
+		From:         int32(fromSID),
+		To:           int32(peerv2.HighwayBeaconID),
+		SyncFromPeer: peerID,
 	}
 
 	return serverObj.requestBlocksViaStream(ctx, peerID, req)
@@ -2103,11 +2107,12 @@ func (serverObj *Server) RequestShardToBeaconBlocksViaStream(ctx context.Context
 
 func (serverObj *Server) RequestCrossShardBlocksViaStream(ctx context.Context, peerID string, fromSID int, toSID int, heights []uint64) (blockCh chan common.BlockInterface, err error) {
 	req := &proto.BlockByHeightRequest{
-		Type:     proto.BlkType_BlkXShard,
-		Specific: true,
-		Heights:  heights,
-		From:     int32(fromSID),
-		To:       int32(toSID),
+		Type:         proto.BlkType_BlkXShard,
+		Specific:     true,
+		Heights:      heights,
+		From:         int32(fromSID),
+		To:           int32(toSID),
+		SyncFromPeer: peerID,
 	}
 	return serverObj.requestBlocksViaStream(ctx, peerID, req)
 }
