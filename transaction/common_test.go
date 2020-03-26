@@ -66,7 +66,7 @@ func TestEstimateTxSize(t *testing.T) {
 			PaymentAddress: paymentAddress, Amount: 5,
 		}},
 	}
-	size2 := EstimateTxSize(NewEstimateTxSizeParam(len(tx.Proof.GetOutputCoins()), len(payments), true,  nil, &privacyCustomTokenParams, 1))
+	size2 := EstimateTxSize(NewEstimateTxSizeParam(len(tx.Proof.GetOutputCoins()), len(payments), true, nil, &privacyCustomTokenParams, 1))
 	fmt.Println(size2)
 	assert.Greater(t, size2, uint64(0))
 }
@@ -114,7 +114,6 @@ func TestRandomCommitmentsProcess(t *testing.T) {
 }
 
 var db incdb.Database
-var bc *metadata.BlockchainRetriever
 var _ = func() (_ struct{}) {
 	dbPath, err := ioutil.TempDir(os.TempDir(), "test_")
 	if err != nil {

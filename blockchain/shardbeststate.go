@@ -66,15 +66,15 @@ type ShardBestState struct {
 	lock                       sync.RWMutex
 }
 
-func (shardBestState *ShardBestState) GetCopiedTransactionStateDB() *statedb.StateDB {
+func (shardBestState *ShardBestState) GetShardTransactionStateDB() *statedb.StateDB {
 	return shardBestState.transactionStateDB.Copy()
 }
 
-func (shardBestState *ShardBestState) GetFeatureCopiedStateDB() *statedb.StateDB {
+func (shardBestState *ShardBestState) GetShardFeatureStateDB() *statedb.StateDB {
 	return shardBestState.featureStateDB.Copy()
 }
 
-func (shardBestState *ShardBestState) GetCopiedRewardStateDB() *statedb.StateDB {
+func (shardBestState *ShardBestState) GetShardRewardStateDB() *statedb.StateDB {
 	return shardBestState.rewardStateDB.Copy()
 }
 
@@ -386,6 +386,15 @@ func (shardBestState *ShardBestState) GetShardPendingValidator() []incognitokey.
 	shardBestState.lock.RLock()
 	defer shardBestState.lock.RUnlock()
 	return shardBestState.ShardPendingValidator
+}
+
+func (shardBestState *ShardBestState) ListShardPrivacyTokenAndPRV() []common.Hash {
+	tokenIDs := []common.Hash{}
+	tokenStates := statedb.ListPrivacyToken(shardBestState.GetShardTransactionStateDB())
+	for k, _ := range tokenStates {
+		tokenIDs = append(tokenIDs, k)
+	}
+	return tokenIDs
 }
 
 func (blockchain *BlockChain) GetShardConsensusRootHash(db incdb.Database, shardID byte, height uint64) (common.Hash, error) {

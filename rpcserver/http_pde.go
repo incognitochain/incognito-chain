@@ -531,7 +531,7 @@ func (httpServer *HttpServer) handleConvertNativeTokenToPrivacyToken(params inte
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload is invalid"))
 	}
-	beaconPdexStateDB, err := httpServer.config.BlockChain.GetBeaconFeatureStateDBByHeight(uint64(beaconHeight), httpServer.config.BlockChain.GetDatabase())
+	beaconPdexStateDB, err := httpServer.config.BlockChain.GetBestStateBeaconFeatureStateDBByHeight(uint64(beaconHeight), httpServer.config.BlockChain.GetDatabase())
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
@@ -566,7 +566,7 @@ func (httpServer *HttpServer) handleConvertPrivacyTokenToNativeToken(params inte
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload is invalid"))
 	}
-	beaconPdexStateDB, err := httpServer.config.BlockChain.GetBeaconFeatureStateDBByHeight(uint64(beaconHeight), httpServer.config.BlockChain.GetDatabase())
+	beaconPdexStateDB, err := httpServer.config.BlockChain.GetBestStateBeaconFeatureStateDBByHeight(uint64(beaconHeight), httpServer.config.BlockChain.GetDatabase())
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}

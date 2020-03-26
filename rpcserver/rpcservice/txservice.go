@@ -36,12 +36,12 @@ type TxService struct {
 }
 
 func (txService TxService) ListSerialNumbers(tokenID common.Hash, shardID byte) (map[string]struct{}, error) {
-	transactionStateDB := txService.BlockChain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
+	transactionStateDB := txService.BlockChain.GetBestStateShard(shardID).GetShardTransactionStateDB()
 	return statedb.ListSerialNumber(transactionStateDB, tokenID, shardID)
 }
 
 func (txService TxService) ListSNDerivator(tokenID common.Hash, shardID byte) ([]big.Int, error) {
-	transactionStateDB := txService.BlockChain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
+	transactionStateDB := txService.BlockChain.GetBestStateShard(shardID).GetShardTransactionStateDB()
 	resultInBytes, err := statedb.ListSNDerivator(transactionStateDB, tokenID)
 	if err != nil {
 		return nil, err
@@ -54,12 +54,12 @@ func (txService TxService) ListSNDerivator(tokenID common.Hash, shardID byte) ([
 }
 
 func (txService TxService) ListCommitments(tokenID common.Hash, shardID byte) (map[string]uint64, error) {
-	transactionStateDB := txService.BlockChain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
+	transactionStateDB := txService.BlockChain.GetBestStateShard(shardID).GetShardTransactionStateDB()
 	return statedb.ListCommitment(transactionStateDB, tokenID, shardID)
 }
 
 func (txService TxService) ListCommitmentIndices(tokenID common.Hash, shardID byte) (map[uint64]string, error) {
-	transactionStateDB := txService.BlockChain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
+	transactionStateDB := txService.BlockChain.GetBestStateShard(shardID).GetShardTransactionStateDB()
 	return statedb.ListCommitmentIndices(transactionStateDB, tokenID, shardID)
 }
 
@@ -78,7 +78,7 @@ func (txService TxService) HasSerialNumbers(paymentAddressStr string, serialNumb
 		if err != nil {
 			return nil, fmt.Errorf("Decode serial number failed, %+v", itemStr)
 		}
-		transactionStateDB := txService.BlockChain.GetBestStateShard(shardIDSender).GetCopiedTransactionStateDB()
+		transactionStateDB := txService.BlockChain.GetBestStateShard(shardIDSender).GetShardTransactionStateDB()
 		ok, err := statedb.HasSerialNumber(transactionStateDB, tokenID, serialNumber, shardIDSender)
 		if ok && err == nil {
 			// serial number in db
@@ -107,7 +107,7 @@ func (txService TxService) HasSnDerivators(paymentAddressStr string, snDerivator
 		if err != nil {
 			return nil, errors.New("Invalid serial number derivator param")
 		}
-		transactionStateDB := txService.BlockChain.GetBestStateShard(shardIDSender).GetCopiedTransactionStateDB()
+		transactionStateDB := txService.BlockChain.GetBestStateShard(shardIDSender).GetShardTransactionStateDB()
 		ok, err := statedb.HasSNDerivator(transactionStateDB, tokenID, common.AddPaddingBigInt(new(big.Int).SetBytes(snderivator), common.BigIntSize))
 		if ok && err == nil {
 			// SnD in db
@@ -343,7 +343,7 @@ func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID by
 		return unitFee, nil
 	} else {
 		// convert limit fee native token to limit fee ptoken
-		limitFeePTokenTmp, err := metadata.ConvertNativeTokenToPrivacyToken(limitFee, tokenId, beaconHeight, txService.BlockChain.GetBeaconBestState().GetCopiedFeatureStateDB())
+		limitFeePTokenTmp, err := metadata.ConvertNativeTokenToPrivacyToken(limitFee, tokenId, beaconHeight, txService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB())
 		limitFeePToken := uint64(math.Ceil(limitFeePTokenTmp))
 		if err != nil {
 			return uint64(0), err
@@ -378,7 +378,7 @@ func (txService TxService) BuildRawTransaction(params *bean.CreateRawTxParam, me
 			inputCoins,
 			realFee,
 			params.HasPrivacyCoin,
-			txService.BlockChain.GetBestStateShard(params.ShardIDSender).GetCopiedTransactionStateDB(),
+			txService.BlockChain.GetBestStateShard(params.ShardIDSender).GetShardTransactionStateDB(),
 			nil, // use for prv coin -> nil is valid
 			meta,
 			params.Info,
@@ -561,7 +561,7 @@ func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 			if err != nil {
 				return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
 			}
-			isExisted := statedb.PrivacyTokenIDExisted(txService.BlockChain.GetBestStateShard(shardIDSender).GetCopiedTransactionStateDB(), *tokenID)
+			isExisted := statedb.PrivacyTokenIDExisted(txService.BlockChain.GetBestStateShard(shardIDSender).GetShardTransactionStateDB(), *tokenID)
 			if !isExisted {
 				var isBridgeToken bool
 				_, allBridgeTokens, err := txService.BlockChain.GetAllBridgeTokens()
@@ -653,12 +653,12 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransaction(params interfac
 			inputCoins,
 			realFeePRV,
 			tokenParams,
-			txService.BlockChain.GetBestStateShard(txParam.ShardIDSender).GetCopiedTransactionStateDB(),
+			txService.BlockChain.GetBestStateShard(txParam.ShardIDSender).GetShardTransactionStateDB(),
 			metaData,
 			txParam.HasPrivacyCoin,
 			txParam.HasPrivacyToken,
 			txParam.ShardIDSender, txParam.Info,
-			txService.BlockChain.GetBeaconBestState().GetCopiedFeatureStateDB()))
+			txService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()))
 	if err != nil {
 		return nil, NewRPCError(CreateTxDataError, err)
 	}
@@ -855,7 +855,7 @@ func (txService TxService) GetBalancePrivacyCustomToken(privateKey string, token
 	}
 	if totalValue == 0 {
 		// bridge token
-		allBridgeTokensBytes, err := statedb.GetAllBridgeTokens(txService.BlockChain.GetBeaconBestState().GetCopiedFeatureStateDB())
+		allBridgeTokensBytes, err := statedb.GetAllBridgeTokens(txService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB())
 		if err != nil {
 			return 0, NewRPCError(UnexpectedError, err)
 		}
@@ -1136,7 +1136,7 @@ func (txService TxService) BuildRawDefragmentAccountTransaction(params interface
 			inputCoins,
 			realFee,
 			hasPrivacyCoin,
-			txService.BlockChain.GetBestStateShard(shardIDSender).GetCopiedTransactionStateDB(),
+			txService.BlockChain.GetBestStateShard(shardIDSender).GetShardTransactionStateDB(),
 			nil, // use for prv coin -> nil is valid
 			meta, nil))
 	// END create tx

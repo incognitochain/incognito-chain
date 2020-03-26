@@ -60,7 +60,7 @@ func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(view *ShardBest
 		txData.CalculateTxValue(),
 		&keyWallet.KeySet.PaymentAddress,
 		blkProducerPrivateKey,
-		view.GetCopiedTransactionStateDB(),
+		view.GetShardTransactionStateDB(),
 		returnStakingMeta,
 	)
 	//modify the type of the salary transaction
@@ -336,7 +336,7 @@ func (blockchain *BlockChain) buildWithDrawTransactionResponse(view *ShardBestSt
 	}
 	requestDetail := (*txRequest).GetMetadata().(*metadata.WithDrawRewardRequest)
 	tempPublicKey := base58.Base58Check{}.Encode(requestDetail.PaymentAddress.Pk, common.Base58Version)
-	amount, err := statedb.GetCommitteeReward(blockchain.GetShardRewardStateDB(shardID), tempPublicKey, requestDetail.TokenID)
+	amount, err := statedb.GetCommitteeReward(blockchain.GetBestStateShardRewardStateDB(shardID), tempPublicKey, requestDetail.TokenID)
 	if (amount == 0) || (err != nil) {
 		return nil, errors.New("Not enough reward")
 	}
@@ -348,8 +348,8 @@ func (blockchain *BlockChain) buildWithDrawTransactionResponse(view *ShardBestSt
 		&requestDetail.PaymentAddress,
 		amount,
 		blkProducerPrivateKey,
-		view.GetCopiedTransactionStateDB(),
-		blockchain.GetBeaconBestState().GetCopiedFeatureStateDB(),
+		view.GetShardTransactionStateDB(),
+		blockchain.GetBeaconBestState().GetBeaconFeatureStateDB(),
 		responseMeta,
 		requestDetail.TokenID,
 		common.GetShardIDFromLastByte(requestDetail.PaymentAddress.Pk[common.PublicKeySize-1]))

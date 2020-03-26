@@ -34,7 +34,7 @@ func (blockchain *BlockChain) ListAllPrivacyCustomTokenAndPRV() (map[common.Hash
 
 // ListCustomToken - return all custom token which existed in network
 func (blockchain *BlockChain) ListPrivacyCustomTokenAndPRVByShardID(shardID byte) (map[common.Hash]*statedb.TokenState, error) {
-	tokenStates := statedb.ListPrivacyToken(blockchain.GetBestStateShard(shardID).GetCopiedTransactionStateDB())
+	tokenStates := statedb.ListPrivacyToken(blockchain.GetBestStateShard(shardID).GetShardTransactionStateDB())
 	return tokenStates, nil
 }
 
@@ -61,13 +61,13 @@ func (blockchain *BlockChain) ListPrivacyTokenAndBridgeTokenAndPRVByShardID(shar
 
 // Check Privacy Custom token ID is existed
 func (blockchain *BlockChain) PrivacyCustomTokenIDExistedV2(tokenID *common.Hash, shardID byte) bool {
-	return statedb.PrivacyTokenIDExisted(blockchain.GetBestStateShard(shardID).GetCopiedTransactionStateDB(), *tokenID)
+	return statedb.PrivacyTokenIDExisted(blockchain.GetBestStateShard(shardID).GetShardTransactionStateDB(), *tokenID)
 }
 
 func (blockchain *BlockChain) GetAllBridgeTokens() ([]common.Hash, []*rawdbv2.BridgeTokenInfo, error) {
 	bridgeTokenIDs := []common.Hash{}
 	allBridgeTokens := []*rawdbv2.BridgeTokenInfo{}
-	bridgeStateDB := blockchain.GetBeaconBestState().GetCopiedFeatureStateDB()
+	bridgeStateDB := blockchain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	allBridgeTokensBytes, err := statedb.GetAllBridgeTokens(bridgeStateDB)
 	if err != nil {
 		return bridgeTokenIDs, allBridgeTokens, err

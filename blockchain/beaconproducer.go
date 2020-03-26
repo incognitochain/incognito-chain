@@ -82,7 +82,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	//=====END Build Header Essential Data=====
 	//============Build body===================
 	if (beaconBestState.BeaconHeight+1)%blockchain.config.ChainParams.Epoch == 1 {
-		rewardByEpochInstruction, err = blockchain.buildRewardInstructionByEpoch(curView, beaconBlock.Header.Height, beaconBestState.Epoch, curView.GetCopiedRewardStateDB())
+		rewardByEpochInstruction, err = blockchain.buildRewardInstructionByEpoch(curView, beaconBlock.Header.Height, beaconBestState.Epoch, curView.GetBeaconRewardStateDB())
 		if err != nil {
 			return nil, NewBlockChainError(BuildRewardInstructionError, err)
 		}
@@ -525,7 +525,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 		BLogger.log.Debugf("Included shardID %d, block %d, insts: %s", shardID, shardBlock.Header.Height, shardBlock.Instructions)
 	}
 	bridgeInstructionForBlock, err := blockchain.buildBridgeInstructions(
-		curView.GetCopiedFeatureStateDB(),
+		curView.GetBeaconFeatureStateDB(),
 		shardID,
 		shardBlock.Instructions,
 		newBeaconHeight,

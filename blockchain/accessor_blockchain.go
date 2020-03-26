@@ -240,23 +240,23 @@ func (blockchain *BlockChain) GetShardBlockByHash(hash common.Hash) (*ShardBlock
 	return shardBlock, shardBlock.Header.Height, nil
 }
 
-func (blockchain *BlockChain) GetShardRewardStateDB(shardID byte) *statedb.StateDB {
-	return blockchain.GetBestStateShard(shardID).GetCopiedRewardStateDB()
+func (blockchain *BlockChain) GetBestStateShardRewardStateDB(shardID byte) *statedb.StateDB {
+	return blockchain.GetBestStateShard(shardID).GetShardRewardStateDB()
 }
 
-func (blockchain *BlockChain) GetTransactionStateDB(shardID byte) *statedb.StateDB {
-	return blockchain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
+func (blockchain *BlockChain) GetBestStateTransactionStateDB(shardID byte) *statedb.StateDB {
+	return blockchain.GetBestStateShard(shardID).GetShardTransactionStateDB()
 }
 
-func (blockchain *BlockChain) GetShardFeatureStateDB(shardID byte) *statedb.StateDB {
-	return blockchain.GetBestStateShard(shardID).GetFeatureCopiedStateDB()
+func (blockchain *BlockChain) GetBestStateShardFeatureStateDB(shardID byte) *statedb.StateDB {
+	return blockchain.GetBestStateShard(shardID).GetShardFeatureStateDB()
 }
 
-func (blockchain *BlockChain) GetBeaconFeatureStateDB() *statedb.StateDB {
-	return blockchain.GetBeaconBestState().GetCopiedFeatureStateDB()
+func (blockchain *BlockChain) GetBestStateBeaconFeatureStateDB() *statedb.StateDB {
+	return blockchain.GetBeaconBestState().GetBeaconFeatureStateDB()
 }
 
-func (blockchain *BlockChain) GetBeaconFeatureStateDBByHeight(height uint64, db incdb.Database) (*statedb.StateDB, error) {
+func (blockchain *BlockChain) GetBestStateBeaconFeatureStateDBByHeight(height uint64, db incdb.Database) (*statedb.StateDB, error) {
 	rootHash, err := blockchain.GetBeaconFeatureRootHash(blockchain.GetDatabase(), height)
 	if err != nil {
 		return nil, fmt.Errorf("Beacon Feature State DB not found, height %+v, error %+v", height, err)
@@ -264,10 +264,10 @@ func (blockchain *BlockChain) GetBeaconFeatureStateDBByHeight(height uint64, db 
 	return statedb.NewWithPrefixTrie(rootHash, statedb.NewDatabaseAccessWarper(db))
 }
 
-func (blockchain *BlockChain) GetBeaconSlashStateDB() *statedb.StateDB {
+func (blockchain *BlockChain) GetBestBeaconSlashStateDB() *statedb.StateDB {
 	return blockchain.GetBeaconBestState().slashStateDB
 }
 
-func (blockchain *BlockChain) GetBeaconRewardStateDB() *statedb.StateDB {
+func (blockchain *BlockChain) GetBestBeaconRewardStateDB() *statedb.StateDB {
 	return blockchain.GetBeaconBestState().rewardStateDB
 }

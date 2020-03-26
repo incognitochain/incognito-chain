@@ -58,17 +58,12 @@ func NewPDEWithdrawalRequest(
 	return pdeWithdrawalRequest, nil
 }
 
-func (pc PDEWithdrawalRequest) ValidateTxWithBlockChain(
-	txr Transaction,
-	bcr BlockchainRetriever,
-	shardID byte,
-	db *statedb.StateDB,
-) (bool, error) {
+func (pc PDEWithdrawalRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	// NOTE: verify supported tokens pair as needed
 	return true, nil
 }
 
-func (pc PDEWithdrawalRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction, beaconHeight uint64) (bool, bool, error) {
+func (pc PDEWithdrawalRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	keyWallet, err := wallet.Base58CheckDeserialize(pc.WithdrawerAddressStr)
 	if err != nil {
 		return false, false, NewMetadataTxError(PDEWithdrawalRequestFromMapError, errors.New("WithdrawerAddressStr incorrect"))
@@ -77,7 +72,7 @@ func (pc PDEWithdrawalRequest) ValidateSanityData(bcr BlockchainRetriever, txr T
 	if len(withdrawerAddr.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's withdrawer address")
 	}
-	if !bytes.Equal(txr.GetSigPubKey()[:], withdrawerAddr.Pk[:]) {
+	if !bytes.Equal(tx.GetSigPubKey()[:], withdrawerAddr.Pk[:]) {
 		return false, false, errors.New("WithdrawerAddr incorrect")
 	}
 	_, err = common.Hash{}.NewHashFromStr(pc.WithdrawalToken1IDStr)
@@ -109,7 +104,7 @@ func (pc PDEWithdrawalRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (pc *PDEWithdrawalRequest) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
+func (pc *PDEWithdrawalRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
 	actionContent := PDEWithdrawalRequestAction{
 		Meta:    *pc,
 		TxReqID: *tx.Hash(),

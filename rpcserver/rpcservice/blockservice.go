@@ -657,7 +657,7 @@ func (blockService BlockService) GetMinerRewardFromMiningKey(incPublicKey []byte
 		return nil, err
 	}
 	rewardAmountResult := make(map[string]uint64)
-	rewardStateDB := blockService.BlockChain.GetBestStateShard(shardID).GetCopiedRewardStateDB()
+	rewardStateDB := blockService.BlockChain.GetBestStateShard(shardID).GetShardRewardStateDB()
 	tempIncPublicKey := base58.Base58Check{}.Encode(incPublicKey, common.Base58Version)
 	for _, coinID := range allCoinIDs {
 		amount, err := statedb.GetCommitteeReward(rewardStateDB, tempIncPublicKey, coinID)
@@ -688,7 +688,7 @@ func (blockService BlockService) ListRewardAmount() (map[string]map[common.Hash]
 	}
 	for i := 0; i < beaconBestState.ActiveShards; i++ {
 		shardID := byte(i)
-		committeeRewardStateDB := blockService.BlockChain.GetBestStateShard(shardID).GetCopiedRewardStateDB()
+		committeeRewardStateDB := blockService.BlockChain.GetBestStateShard(shardID).GetShardRewardStateDB()
 		committeeReward := statedb.ListCommitteeReward(committeeRewardStateDB)
 		for k, v := range committeeReward {
 			m[k] = v
@@ -713,7 +713,7 @@ func (blockService BlockService) GetRewardAmount(paymentAddress string) (map[str
 		return nil, err
 	}
 	for _, coinID := range allCoinIDs {
-		committeeRewardStateDB := blockService.BlockChain.GetBestStateShard(shardID).GetCopiedRewardStateDB()
+		committeeRewardStateDB := blockService.BlockChain.GetBestStateShard(shardID).GetShardRewardStateDB()
 		tempPK := base58.Base58Check{}.Encode(publicKey, common.Base58Version)
 		amount, err := statedb.GetCommitteeReward(committeeRewardStateDB, tempPK, coinID)
 		if err != nil {
@@ -742,7 +742,7 @@ func (blockService BlockService) GetRewardAmountByPublicKey(publicKey string) (m
 		return nil, err
 	}
 	for _, coinID := range allCoinIDs {
-		committeeRewardStateDB := blockService.BlockChain.GetBestStateShard(shardID).GetCopiedRewardStateDB()
+		committeeRewardStateDB := blockService.BlockChain.GetBestStateShard(shardID).GetShardRewardStateDB()
 		amount, err := statedb.GetCommitteeReward(committeeRewardStateDB, publicKey, coinID)
 		if err != nil {
 			return nil, err
@@ -862,7 +862,7 @@ func (blockService BlockService) GetBridgeReqWithStatus(txID string) (byte, erro
 	if err != nil {
 		return byte(0), err
 	}
-	bridgeStateDB := blockService.BlockChain.GetBeaconBestState().GetCopiedFeatureStateDB()
+	bridgeStateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	status, err := statedb.GetBridgeReqWithStatus(bridgeStateDB, *txIDHash)
 	return status, err
 }
@@ -885,7 +885,7 @@ func (blockService BlockService) CheckETHHashIssued(data map[string]interface{})
 	}
 	txIdx := uint(txIdxParam)
 	uniqETHTx := append(blockHash[:], []byte(strconv.Itoa(int(txIdx)))...)
-	bridgeStateDB := blockService.BlockChain.GetBeaconBestState().GetCopiedFeatureStateDB()
+	bridgeStateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	issued, err := statedb.IsETHTxHashIssued(bridgeStateDB, uniqETHTx)
 	return issued, err
 }
@@ -893,7 +893,7 @@ func (blockService BlockService) CheckETHHashIssued(data map[string]interface{})
 func (blockService BlockService) GetBurningConfirm(txID common.Hash) (uint64, error) {
 	for i := 0; i < blockService.BlockChain.GetBeaconBestState().ActiveShards; i++ {
 		shardID := byte(i)
-		burningConfirmStateDB := blockService.BlockChain.GetBestStateShard(shardID).GetFeatureCopiedStateDB()
+		burningConfirmStateDB := blockService.BlockChain.GetBestStateShard(shardID).GetShardFeatureStateDB()
 		res, err := statedb.GetBurningConfirm(burningConfirmStateDB, txID)
 		if err == nil {
 			return res, nil
@@ -903,7 +903,7 @@ func (blockService BlockService) GetBurningConfirm(txID common.Hash) (uint64, er
 }
 
 func (blockService BlockService) GetPDEContributionStatus(pdePrefix []byte, pdeSuffix []byte) (*metadata.PDEContributionStatus, error) {
-	pdexStateDB := blockService.BlockChain.GetBeaconBestState().GetCopiedFeatureStateDB()
+	pdexStateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	pdeStatusContentBytes, err := statedb.GetPDEContributionStatus(pdexStateDB, pdePrefix, pdeSuffix)
 	if err != nil {
 		return nil, err
@@ -920,7 +920,7 @@ func (blockService BlockService) GetPDEContributionStatus(pdePrefix []byte, pdeS
 }
 
 func (blockService BlockService) GetPDEStatus(pdePrefix []byte, pdeSuffix []byte) (byte, error) {
-	pdexStateDB := blockService.BlockChain.GetBeaconBestState().GetCopiedFeatureStateDB()
+	pdexStateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	return statedb.GetPDEStatus(pdexStateDB, pdePrefix, pdeSuffix)
 }
 

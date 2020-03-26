@@ -79,19 +79,19 @@ type BeaconBestState struct {
 	SlashStateDBRootHash     common.Hash
 }
 
-func (beaconBestState *BeaconBestState) GetCopiedSlashStateDB() *statedb.StateDB {
+func (beaconBestState *BeaconBestState) GetBeaconSlashStateDB() *statedb.StateDB {
 	return beaconBestState.slashStateDB.Copy()
 }
 
-func (beaconBestState *BeaconBestState) GetCopiedFeatureStateDB() *statedb.StateDB {
+func (beaconBestState *BeaconBestState) GetBeaconFeatureStateDB() *statedb.StateDB {
 	return beaconBestState.featureStateDB.Copy()
 }
 
-func (beaconBestState *BeaconBestState) GetCopiedRewardStateDB() *statedb.StateDB {
+func (beaconBestState *BeaconBestState) GetBeaconRewardStateDB() *statedb.StateDB {
 	return beaconBestState.rewardStateDB.Copy()
 }
 
-func (beaconBestState *BeaconBestState) GetCopiedConsensusStateDB() *statedb.StateDB {
+func (beaconBestState *BeaconBestState) GetBeaconConsensusStateDB() *statedb.StateDB {
 	return beaconBestState.consensusStateDB.Copy()
 }
 
@@ -706,6 +706,96 @@ func (beaconBestState *BeaconBestState) GetHeight() uint64 {
 
 func (beaconBestState *BeaconBestState) GetBlockTime() int64 {
 	return beaconBestState.BestBlock.Header.Timestamp
+}
+
+func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
+	SC := make(map[byte][]incognitokey.CommitteePublicKey)
+	SPV := make(map[byte][]incognitokey.CommitteePublicKey)
+	for shardID, committee := range beaconBestState.GetShardCommittee() {
+		SC[shardID] = append([]incognitokey.CommitteePublicKey{}, committee...)
+	}
+	for shardID, pendingValidator := range beaconBestState.GetShardPendingValidator() {
+		SPV[shardID] = append([]incognitokey.CommitteePublicKey{}, pendingValidator...)
+	}
+	BC := beaconBestState.BeaconCommittee
+	BPV := beaconBestState.BeaconPendingValidator
+	CBWFCR := beaconBestState.CandidateBeaconWaitingForCurrentRandom
+	CBWFNR := beaconBestState.CandidateBeaconWaitingForNextRandom
+	CSWFCR := beaconBestState.CandidateShardWaitingForCurrentRandom
+	CSWFNR := beaconBestState.CandidateShardWaitingForNextRandom
+	return SC, SPV, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR, nil
+}
+
+func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidateFlattenListFromDatabase() ([]string, error) {
+	res := []string{}
+	for _, committee := range beaconBestState.GetShardCommittee() {
+		committeeStr, err := incognitokey.CommitteeKeyListToString(committee)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, committeeStr...)
+	}
+	for _, pendingValidator := range beaconBestState.GetShardPendingValidator() {
+		pendingValidatorStr, err := incognitokey.CommitteeKeyListToString(pendingValidator)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, pendingValidatorStr...)
+	}
+	beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.BeaconCommittee)
+	if err != nil {
+		return nil, err
+	}
+	res = append(res, beaconCommitteeStr...)
+
+	beaconPendingValidatorStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.BeaconPendingValidator)
+	if err != nil {
+		return nil, err
+	}
+	res = append(res, beaconPendingValidatorStr...)
+
+	candidateBeaconWaitingForCurrentRandomStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForCurrentRandom)
+	if err != nil {
+		return nil, err
+	}
+	res = append(res, candidateBeaconWaitingForCurrentRandomStr...)
+
+	candidateBeaconWaitingForNextRandomStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForNextRandom)
+	if err != nil {
+		return nil, err
+	}
+	res = append(res, candidateBeaconWaitingForNextRandomStr...)
+
+	candidateShardWaitingForCurrentRandomStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForCurrentRandom)
+	if err != nil {
+		return nil, err
+	}
+	res = append(res, candidateShardWaitingForCurrentRandomStr...)
+
+	candidateShardWaitingForNextRandomStr, err := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForNextRandom)
+	if err != nil {
+		return nil, err
+	}
+	res = append(res, candidateShardWaitingForNextRandomStr...)
+	return res, nil
+}
+
+func (beaconBestState *BeaconBestState) GetAllBridgeTokens() ([]common.Hash, error) {
+	bridgeTokenIDs := []common.Hash{}
+	allBridgeTokens := []*rawdbv2.BridgeTokenInfo{}
+	bridgeStateDB := beaconBestState.GetBeaconFeatureStateDB()
+	allBridgeTokensBytes, err := statedb.GetAllBridgeTokens(bridgeStateDB)
+	if err != nil {
+		return bridgeTokenIDs, err
+	}
+	err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
+	if err != nil {
+		return bridgeTokenIDs, err
+	}
+	for _, bridgeTokenInfo := range allBridgeTokens {
+		bridgeTokenIDs = append(bridgeTokenIDs, *bridgeTokenInfo.TokenID)
+	}
+	return bridgeTokenIDs, nil
 }
 
 func (blockchain *BlockChain) GetBeaconConsensusRootHash(db incdb.Database, height uint64) (common.Hash, error) {
