@@ -131,7 +131,7 @@ func checkAndBuildInstForCustodianLiquidation(
 	exchangeRateKey := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
 	exchangeRate := currentPortalState.FinalExchangeRatesState[exchangeRateKey.String()]
 	if exchangeRate == nil {
-		Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when get exchange rate")
+		//Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when get exchange rate")
 	}
 	convertExchangeRatesObj := NewConvertExchangeRatesObject(exchangeRate)
 	liquidatedByExchangeRate := false

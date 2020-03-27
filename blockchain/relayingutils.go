@@ -11,6 +11,7 @@ import (
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/pkg/errors"
+	lvdbErrors "github.com/syndtr/goleveldb/leveldb/errors"
 	"strconv"
 )
 
@@ -298,7 +299,7 @@ func getBNBHeaderChainState(
 	relayingStateKey := rawdbv2.NewBNBHeaderRelayingStateKey(beaconHeight)
 
 	relayingStateValueBytes, err := db.Get([]byte(relayingStateKey))
-	if err != nil {
+	if err != nil && err != lvdbErrors.ErrNotFound {
 		Logger.log.Errorf("getBNBHeaderChainState - Can not get relaying bnb header state from db %v\n", err)
 		return nil, err
 	}

@@ -308,6 +308,10 @@ func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestS
 			validStopAutoStakingInstructions = append(validStopAutoStakingInstructions, stopAutoStakingInstruction...)
 			validStakePublicKeys = append(validStakePublicKeys, tempValidStakePublicKeys...)
 
+			if len(statefulActions) > 0 {
+				Logger.log.Errorf("GetShardState statefulActions : %v\n", statefulActions)
+			}
+
 			// group stateful actions by shardID
 			_, found := statefulActionsByShardID[shardID]
 			if !found {
@@ -429,6 +433,10 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 	shardState.Height = shardBlock.Header.Height
 	shardStates[shardID] = shardState
 	instructions := shardBlock.Instructions
+	if len(instructions) > 0 {
+		Logger.log.Errorf("=======================================================")
+		Logger.log.Errorf("Receive instructions in shardToBeaconBlock %v\n", instructions)
+	}
 	Logger.log.Info(instructions)
 	// extract instructions
 	for _, instruction := range instructions {
@@ -561,8 +569,11 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 
 	// Collect stateful actions
 	statefulActions := blockchain.collectStatefulActions(shardBlock.Instructions)
+	if len(statefulActions) > 0 {
+		Logger.log.Errorf("Collect stateful actions: %v\n", statefulActions)
+	}
 
-	Logger.log.Infof("Becon Produce: Got Shard Block %+v Shard %+v \n", shardBlock.Header.Height, shardID)
+		Logger.log.Infof("Becon Produce: Got Shard Block %+v Shard %+v \n", shardBlock.Header.Height, shardID)
 	return shardStates, stakeInstructions, tempValidStakePublicKeys, swapInstructions, bridgeInstructions, acceptedRewardInstructions, stopAutoStakingInstructions, statefulActions
 }
 
