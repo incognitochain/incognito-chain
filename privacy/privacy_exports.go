@@ -18,6 +18,7 @@ import (
 )
 
 type PrivacyError = errhandler.PrivacyError
+
 var ErrCodeMessage = errhandler.ErrCodeMessage
 
 // Public Constants

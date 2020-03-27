@@ -2,7 +2,10 @@ package transaction
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
+
+	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 
 	"github.com/incognitochain/incognito-chain/common/base58"
 
@@ -173,6 +176,116 @@ func (*TxVersion2) Prove(tx *Tx, params *TxPrivacyInitParams) error {
 	return err
 }
 
+// verifySigTx - verify signature on tx
+func verifySigTxVer2(tx *Tx) (bool, error) {
+	// check input transaction
+	if tx.Sig == nil || tx.SigPubKey == nil {
+		return false, NewTransactionErr(UnexpectedError, errors.New("input transaction must be an signed one"))
+	}
+	var err error
+
+	ring, err := new(mlsag.Ring).FromBytes(tx.SigPubKey)
+	if err != nil {
+		return false, err
+	}
+
+	txSig, err := new(mlsag.MlsagSig).FromBytes(tx.Sig)
+	if err != nil {
+		return false, err
+	}
+
+	message := (*tx.Proof).Bytes()
+	return mlsag.Verify(txSig, ring, message)
+}
+
+// TODO privacy
 func (*TxVersion2) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
+	var valid bool
+	var err error
+
+	if valid, err := verifySigTxVer2(tx); !valid {
+		if err != nil {
+			Logger.Log.Errorf("Error verifying signature ver2 with tx hash %s: %+v \n", tx.Hash().String(), err)
+			return false, NewTransactionErr(VerifyTxSigFailError, err)
+		}
+		Logger.Log.Errorf("FAILED VERIFICATION SIGNATURE ver2 with tx hash %s", tx.Hash().String())
+		return false, NewTransactionErr(VerifyTxSigFailError, fmt.Errorf("FAILED VERIFICATION SIGNATURE ver2 with tx hash %s", tx.Hash().String()))
+	}
+
+	if tx.Proof == nil {
+		return true, nil
+	}
+
+	tokenID, err = parseTokenID(tokenID)
+	if err != nil {
+		return false, err
+	}
+	txProof := *tx.Proof
+	inputCoins := txProof.GetInputCoins()
+	outputCoins := txProof.GetOutputCoins()
+	if err := validateSndFromOutputCoin(outputCoins); err != nil {
+		return false, err
+	}
+
+	if isNewTransaction {
+		for i := 0; i < len(outputCoins); i++ {
+			// Check output coins' SND is not exists in SND list (Database)
+			if ok, err := CheckSNDerivatorExistence(tokenID, outputCoins[i].CoinDetails.GetSNDerivator(), transactionStateDB); ok || err != nil {
+				if err != nil {
+					Logger.Log.Error(err)
+				}
+				Logger.Log.Errorf("snd existed: %d\n", i)
+				return false, NewTransactionErr(SndExistedError, err, fmt.Sprintf("snd existed: %d\n", i))
+			}
+		}
+	}
+
+	if !hasPrivacy {
+		// Check input coins' commitment is exists in cm list (Database)
+		for i := 0; i < len(inputCoins); i++ {
+			ok, err := tx.CheckCMExistence(inputCoins[i].CoinDetails.GetCoinCommitment().ToBytesS(), transactionStateDB, shardID, tokenID)
+			if !ok || err != nil {
+				if err != nil {
+					Logger.Log.Error(err)
+				}
+				return false, NewTransactionErr(InputCommitmentIsNotExistedError, err)
+			}
+		}
+	}
+	// Verify the payment proof
+	var p interface{} = txProof
+	var txProofV1 privacy.ProofV1 = p.(privacy.ProofV1)
+	commitments, err := getCommitmentsInDatabase(&txProofV1, hasPrivacy, tx.SigPubKey, tx.Fee, transactionStateDB, shardID, tokenID, isBatch)
+	if err != nil {
+		return false, err
+	}
+
+	valid, err = (*tx.Proof).Verify(hasPrivacy, tx.SigPubKey, tx.Fee, shardID, tokenID, isBatch, commitments)
+
+	if !valid {
+		if err != nil {
+			Logger.Log.Error(err)
+		}
+		Logger.Log.Error("FAILED VERIFICATION PAYMENT PROOF")
+		err1, ok := err.(*privacy.PrivacyError)
+		if ok {
+			// parse error detail
+			if err1.Code == privacy.ErrCodeMessage[errhandler.VerifyOneOutOfManyProofFailedErr].Code {
+				if isNewTransaction {
+					return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
+				} else {
+					// for old txs which be get from sync block or validate new block
+					if tx.LockTime <= ValidateTimeForOneoutOfManyProof {
+						// only verify by sign on block because of issue #504(that mean we should pass old tx, which happen before this issue)
+						return true, nil
+					} else {
+						return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
+					}
+				}
+			}
+		}
+		return false, NewTransactionErr(TxProofVerifyFailError, err, tx.Hash().String())
+	}
+	Logger.Log.Debugf("SUCCESSED VERIFICATION PAYMENT PROOF ")
 	return true, nil
 }

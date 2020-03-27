@@ -257,46 +257,6 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 	return nil
 }
 
-// verifySigTx - verify signature on tx
-func (tx *Tx) verifySigTx() (bool, error) {
-	// check input transaction
-	if tx.Sig == nil || tx.SigPubKey == nil {
-		return false, NewTransactionErr(UnexpectedError, errors.New("input transaction must be an signed one"))
-	}
-
-	var err error
-	res := false
-
-	/****** verify Schnorr signature *****/
-	// prepare Public key for verification
-	verifyKey := new(privacy.SchnorrPublicKey)
-	sigPublicKey, err := new(privacy.Point).FromBytesS(tx.SigPubKey)
-
-	if err != nil {
-		Logger.Log.Error(err)
-		return false, NewTransactionErr(DecompressSigPubKeyError, err)
-	}
-	verifyKey.Set(sigPublicKey)
-
-	// convert signature from byte array to SchnorrSign
-	signature := new(privacy.SchnSignature)
-	err = signature.SetBytes(tx.Sig)
-	if err != nil {
-		Logger.Log.Error(err)
-		return false, NewTransactionErr(InitTxSignatureFromBytesError, err)
-	}
-
-	// verify signature
-	/*Logger.log.Debugf(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash()[:])
-	if tx.Proof != nil {
-		Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX Proof bytes before verifing the signature: %v\n", tx.Proof.Bytes())
-	}
-	Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX meta: %v\n", tx.Metadata)*/
-	res = verifyKey.Verify(signature, tx.Hash()[:])
-
-	return res, nil
-}
-
 // ValidateTransaction returns true if transaction is valid:
 // - Verify tx signature
 // - Verify the payment proof

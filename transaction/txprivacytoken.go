@@ -783,6 +783,20 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 	var err error
 	// init data for tx PRV for fee
 	normalTx := Tx{}
+	//err = normalTx.InitForASM(NewTxPrivacyInitParamsForASM(
+	//	params.txParam.senderKey,
+	//	params.txParam.paymentInfo,
+	//	params.txParam.inputCoin,
+	//	params.txParam.feeNativeCoin,
+	//	params.txParam.hasPrivacyCoin,
+	//	nil,
+	//	params.txParam.metaData,
+	//	params.txParam.info,
+	//	params.commitmentIndicesForNativeToken,
+	//	params.commitmentBytesForNativeToken,
+	//	params.myCommitmentIndicesForNativeToken,
+	//	params.sndOutputsForNativeToken,
+	//), serverTime)
 	err = normalTx.InitForASM(NewTxPrivacyInitParamsForASM(
 		params.txParam.senderKey,
 		params.txParam.paymentInfo,
@@ -796,7 +810,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 		params.commitmentBytesForNativeToken,
 		params.myCommitmentIndicesForNativeToken,
 		params.sndOutputsForNativeToken,
-	), serverTime)
+	))
 	if err != nil {
 		return NewTransactionErr(PrivacyTokenInitPRVError, err)
 	}
@@ -861,14 +875,14 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 			temp.sigPrivKey = *params.txParam.senderKey
 			err = signTx(&temp)
 			if err != nil {
-				Logger.log.Error(errors.New("can't sign this tx"))
+				Logger.Log.Error(errors.New("can't sign this tx"))
 				return NewTransactionErr(SignTxError, err)
 			}
 
 			txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal = temp
 			hashInitToken, err := txCustomTokenPrivacy.TxPrivacyTokenData.Hash()
 			if err != nil {
-				Logger.log.Error(errors.New("can't hash this token data"))
+				Logger.Log.Error(errors.New("can't hash this token data"))
 				return NewTransactionErr(UnexpectedError, err)
 			}
 
@@ -899,6 +913,20 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 				PropertyID:     *propertyID,
 				Mintable:       params.txParam.tokenParams.Mintable,
 			}
+			//err := temp.InitForASM(NewTxPrivacyInitParamsForASM(
+			//	params.txParam.senderKey,
+			//	params.txParam.tokenParams.Receiver,
+			//	params.txParam.tokenParams.TokenInput,
+			//	params.txParam.tokenParams.Fee,
+			//	params.txParam.hasPrivacyToken,
+			//	propertyID,
+			//	nil,
+			//	params.txParam.info,
+			//	params.commitmentIndicesForPToken,
+			//	params.commitmentBytesForPToken,
+			//	params.myCommitmentIndicesForPToken,
+			//	params.sndOutputsForPToken,
+			//), serverTime)
 			err := temp.InitForASM(NewTxPrivacyInitParamsForASM(
 				params.txParam.senderKey,
 				params.txParam.tokenParams.Receiver,
@@ -912,7 +940,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 				params.commitmentBytesForPToken,
 				params.myCommitmentIndicesForPToken,
 				params.sndOutputsForPToken,
-			), serverTime)
+			))
 			if err != nil {
 				return NewTransactionErr(PrivacyTokenInitTokenDataError, err)
 			}

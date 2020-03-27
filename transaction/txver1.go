@@ -335,6 +335,46 @@ func getCommitmentsInDatabase(
 	return &commitments, nil
 }
 
+// verifySigTx - verify signature on tx
+func verifySigTx(tx *Tx) (bool, error) {
+	// check input transaction
+	if tx.Sig == nil || tx.SigPubKey == nil {
+		return false, NewTransactionErr(UnexpectedError, errors.New("input transaction must be an signed one"))
+	}
+
+	var err error
+	res := false
+
+	/****** verify Schnorr signature *****/
+	// prepare Public key for verification
+	verifyKey := new(privacy.SchnorrPublicKey)
+	sigPublicKey, err := new(privacy.Point).FromBytesS(tx.SigPubKey)
+
+	if err != nil {
+		Logger.Log.Error(err)
+		return false, NewTransactionErr(DecompressSigPubKeyError, err)
+	}
+	verifyKey.Set(sigPublicKey)
+
+	// convert signature from byte array to SchnorrSign
+	signature := new(privacy.SchnSignature)
+	err = signature.SetBytes(tx.Sig)
+	if err != nil {
+		Logger.Log.Error(err)
+		return false, NewTransactionErr(InitTxSignatureFromBytesError, err)
+	}
+
+	// verify signature
+	/*Logger.log.Debugf(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash()[:])
+	if tx.Proof != nil {
+		Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX Proof bytes before verifing the signature: %v\n", tx.Proof.Bytes())
+	}
+	Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX meta: %v\n", tx.Metadata)*/
+	res = verifyKey.Verify(signature, tx.Hash()[:])
+
+	return res, nil
+}
+
 // ValidateTransaction returns true if transaction is valid:
 // - Verify tx signature
 // - Verify the payment proof
@@ -342,13 +382,13 @@ func (*TxVersion1) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.S
 	var valid bool
 	var err error
 
-	if valid, err := tx.verifySigTx(); !valid {
+	if valid, err := verifySigTx(tx); !valid {
 		if err != nil {
-			Logger.Log.Errorf("Error verifying signature with tx hash %s: %+v \n", tx.Hash().String(), err)
+			Logger.Log.Errorf("Error verifying signature ver1 with tx hash %s: %+v \n", tx.Hash().String(), err)
 			return false, NewTransactionErr(VerifyTxSigFailError, err)
 		}
-		Logger.Log.Errorf("FAILED VERIFICATION SIGNATURE with tx hash %s", tx.Hash().String())
-		return false, NewTransactionErr(VerifyTxSigFailError, fmt.Errorf("FAILED VERIFICATION SIGNATURE with tx hash %s", tx.Hash().String()))
+		Logger.Log.Errorf("FAILED VERIFICATION SIGNATURE ver1 with tx hash %s", tx.Hash().String())
+		return false, NewTransactionErr(VerifyTxSigFailError, fmt.Errorf("FAILED VERIFICATION SIGNATURE ver1 with tx hash %s", tx.Hash().String()))
 	}
 
 	if tx.Proof == nil {

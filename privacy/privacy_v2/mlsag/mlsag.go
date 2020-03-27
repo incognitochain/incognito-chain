@@ -48,8 +48,31 @@ func (ring Ring) ToBytes() ([]byte, error) {
 	return b, nil
 }
 
-func (ring *Ring) FromBytes([]byte) error {
-	if b[]
+func (ring *Ring) FromBytes(b []byte) error {
+	if len(b) < 2 {
+		return errors.New("RingFromBytes: byte length is too short")
+	}
+	n := int(b[0])
+	m := int(b[1])
+	if len(b) != operation.Ed25519KeySize*n*m+2 {
+		return errors.New("RingFromBytes: byte length is not correct")
+	}
+	offset := 2
+	key := make([][]*operation.Point, 0)
+	for i := 0; i < n; i += 1 {
+		curRow := make([]*operation.Point, m)
+		for j := 0; j < m; j += 1 {
+			currentByte := b[offset : offset+operation.Ed25519KeySize]
+			currentPoint, err := new(operation.Point).FromBytesS(currentByte)
+			if err != nil {
+				return errors.New("RingFromBytes: byte contains incorrect point")
+			}
+			curRow = append(curRow, currentPoint)
+		}
+		key = append(key, curRow)
+	}
+	ring = NewRing(key)
+	return nil
 }
 
 type Mlsag struct {
