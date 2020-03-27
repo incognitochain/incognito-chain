@@ -1474,7 +1474,7 @@ func (txService TxService) DecryptOutputCoinByKey(outCoints []*privacy.OutputCoi
 	keyset.PrivateKey = nil // always nil
 	results := make([]*privacy.OutputCoin, 0)
 	for _, out := range outCoints {
-		decryptedOut := blockchain.DecryptOutputCoinByKey(txService.BlockChain.GetTransactionStateDB(0), out, keyset, nil, 0)
+		decryptedOut := blockchain.DecryptOutputCoinByKey(txService.BlockChain.GetBestStateTransactionStateDB(0), out, keyset, nil, 0)
 		if decryptedOut == nil {
 			continue
 		} else {

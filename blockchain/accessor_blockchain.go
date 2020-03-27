@@ -271,7 +271,3 @@ func (blockchain *BlockChain) GetBestBeaconSlashStateDB() *statedb.StateDB {
 func (blockchain *BlockChain) GetBestBeaconRewardStateDB() *statedb.StateDB {
 	return blockchain.GetBeaconBestState().rewardStateDB
 }
-
-func (blockchain *BlockChain) GetTransactionStateDB(shardID byte) *statedb.StateDB {
-	return blockchain.ShardChain[shardID].GetBestState().GetShardTransactionStateDB()
-}
