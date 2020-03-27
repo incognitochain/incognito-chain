@@ -3,7 +3,6 @@ package statedb
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/metadata"
 )
 
 //======================  Redeem  ======================
@@ -345,32 +344,6 @@ func GetPortalStateStatusMultiple(stateDB *StateDB, statusType []byte, statusSuf
 	}
 
 	return interface{}(s.statusContent), nil
-}
-
-// UpdatePortingRequestStatus updates status of porting request by portingID
-func UpdatePortingRequestStatus(stateDB *StateDB, portingID string, newStatus int) error {
-	key := GeneratePortalStatusObjectKey(PortalPortingRequestStatusPrefix(), []byte(portingID))
-	s, has, err := stateDB.getPortalStatusByKey(key)
-
-	if err != nil {
-		return NewStatedbError(GetPortingRequestStatusError, err)
-	}
-
-	if !has {
-		return NewStatedbError(GetPortingRequestStatusError, fmt.Errorf("status %+v with prefix %+v not found", PortalPortingRequestStatusPrefix(), portingID))
-	}
-
-	portingRequestInterface := interface{}(s.statusContent)
-	portingRequest := portingRequestInterface.(*metadata.PortingRequestStatus)
-
-	portingRequest.Status = newStatus
-
-	err = stateDB.SetStateObject(PortalStatusObjectType, key, portingRequest)
-	if err != nil {
-		return NewStatedbError(StorePortalStatusError, err)
-	}
-
-	return nil
 }
 
 //====================== Waiting Porting  ======================

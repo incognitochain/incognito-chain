@@ -411,14 +411,31 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 		waitingPortingReqKey := statedb.GeneratePortalWaitingPortingRequestObjectKey(beaconHeight, actionData.UniquePortingID)
 		waitingPortingReqKeyStr := string(waitingPortingReqKey[:])
 		deleteWaitingPortingRequest(currentPortalState, waitingPortingReqKeyStr)
-
 		// make sure user can not re-use proof for other portingID
 		// update status of porting request with portingID
-		err = statedb.UpdatePortingRequestStatus(stateDB, actionData.UniquePortingID, common.PortalPortingReqSuccessStatus)
+
+		//update new status of porting request
+		portingRequestState, err := statedb.GetPortalStateStatusMultiple(stateDB, statedb.PortalPortingRequestStatusPrefix(), []byte(actionData.UniquePortingID))
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occurred while get porting request status: %+v", err)
+			return nil
+		}
+
+		newPortingRequestStatus := *portingRequestState.(*metadata.PortingRequestStatus)
+		newPortingRequestStatus.Status = common.PortalPortingReqSuccessStatus
+
+		newPortingRequestStatusBytes, _ := json.Marshal(newPortingRequestStatus)
+		err = statedb.TrackPortalStateStatusMultiple(
+			stateDB,
+			statedb.PortalPortingRequestStatusPrefix(),
+			[]byte(actionData.UniquePortingID),
+			newPortingRequestStatusBytes,
+		)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store porting request item status: %+v", err)
 			return nil
 		}
+		//end
 
 		// track reqPToken status by txID into DB
 		reqPTokenTrackData := metadata.PortalRequestPTokensStatus{
