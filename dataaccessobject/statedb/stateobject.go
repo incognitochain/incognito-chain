@@ -71,6 +71,12 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newWaitingPortingRequestObjectWithValue(db, hash, value)
 	case PortalStatusObjectType:
 		return newPortalStatusObjectWithValue(db, hash, value)
+	case PortalRewardInfoObjectType:
+		return newPortalRewardInfoObjectWithValue(db, hash, value)
+	case WaitingRedeemRequestObjectType:
+		return newWaitingRedeemRequestObjectWithValue(db, hash, value)
+	case CustodianStateObjectType:
+		return newCustodianStateObjectWithValue(db, hash, value)
 	default:
 		panic("state object type not exist")
 	}
@@ -122,6 +128,12 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newWaitingPortingRequestObject(db, hash)
 	case PortalStatusObjectType:
 		return newPortalStatusObject(db, hash)
+	case PortalRewardInfoObjectType:
+		return newPortalRewardInfoObject(db, hash)
+	case WaitingRedeemRequestObjectType:
+		return newWaitingRedeemRequestObject(db, hash)
+	case CustodianStateObjectType:
+		return newCustodianStateObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}

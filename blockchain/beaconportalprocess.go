@@ -121,6 +121,7 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 
 func (blockchain *BlockChain) processPortalCustodianDeposit(
 	stateDB *statedb.StateDB, beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
+	Logger.log.Errorf("processPortalCustodianDeposit - starting... !!!!")
 	if currentPortalState == nil {
 		Logger.log.Errorf("current portal state is nil")
 		return nil
@@ -138,6 +139,7 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 
 	depositStatus := instructions[2]
 	if depositStatus == common.PortalCustodianDepositAcceptedChainStatus {
+		Logger.log.Errorf("processPortalCustodianDeposit - status success !!!!")
 		keyCustodianState := statedb.GenerateCustodianStateObjectKey(beaconHeight, actionData.IncogAddressStr)
 		keyCustodianStateStr := string(keyCustodianState[:])
 
@@ -169,6 +171,8 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 			currentPortalState.CustodianPoolState[keyCustodianStateStr] = newCustodian
 		}
 
+		Logger.log.Errorf("processPortalCustodianDeposit - currentPortalState.CustodianPoolState %v]n !!!!", currentPortalState.CustodianPoolState)
+
 		// store custodian deposit status into DB
 		custodianDepositTrackData := metadata.PortalCustodianDepositStatus{
 			Status:          common.PortalCustodianDepositAcceptedStatus,
@@ -187,6 +191,7 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 			return nil
 		}
 	} else if depositStatus == common.PortalCustodianDepositRefundChainStatus {
+		Logger.log.Errorf("processPortalCustodianDeposit - status failed !!!!")
 		// store custodian deposit status into DB
 		custodianDepositTrackData := metadata.PortalCustodianDepositStatus{
 			Status:          common.PortalCustodianDepositRefundStatus,
