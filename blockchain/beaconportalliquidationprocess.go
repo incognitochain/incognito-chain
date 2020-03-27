@@ -574,7 +574,7 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(
 			waitingPortingReq.BeaconHeight(),
 		)
 
-		err = statedb.StoreWaitingPortingRequests(stateDB, beaconHeight, waitingPortingReq.UniquePortingID(), newPortingRequestStatusBytes)
+		err = statedb.StoreWaitingPortingRequests(stateDB, beaconHeight, waitingPortingReq.UniquePortingID(), newPortingRequestStatus)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store porting request item: %+v", err)
 			return nil
