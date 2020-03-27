@@ -21,6 +21,37 @@ func NewRing(keys [][]*operation.Point) *Ring {
 	return &Ring{keys}
 }
 
+func (ring Ring) ToBytes() ([]byte, error) {
+	k := ring.keys
+	if len(k) == 0 {
+		return nil, errors.New("RingToBytes: Ring is empty")
+	}
+	// Make sure that the ring size is a rectangle row*column
+	for i := 1; i < len(k); i += 1 {
+		if len(k[i]) != len(k[0]) {
+			return nil, errors.New("RingToBytes: Ring is not a proper rectangle row*column")
+		}
+	}
+	n := len(k)
+	m := len(k[0])
+	b := make([]byte, 2)
+	if n > 255 || m > 255 {
+		return nil, errors.New("RingToBytes: Ring size is too large")
+	}
+	b[0] = byte(n)
+	b[1] = byte(m)
+	for i := 0; i < n; i += 1 {
+		for j := 0; j < m; j += 1 {
+			b = append(b, k[i][j].ToBytesS()...)
+		}
+	}
+	return b, nil
+}
+
+func (ring *Ring) FromBytes([]byte) error {
+	if b[]
+}
+
 type Mlsag struct {
 	R           *Ring
 	pi          int

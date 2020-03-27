@@ -1,6 +1,8 @@
 package privacy
 
 import (
+	"errors"
+
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/privacy/key"
@@ -16,8 +18,7 @@ import (
 )
 
 type PrivacyError = errhandler.PrivacyError
-
-const ErrCodeMessage = errhandler.ErrCodeMessage
+var ErrCodeMessage = errhandler.ErrCodeMessage
 
 // Public Constants
 const (
@@ -143,4 +144,38 @@ func NewProofWithVersion(version int8) *Proof {
 		result = &ProofV2{}
 	}
 	return &result
+}
+
+func ArrayScalarToBytes(arr *[]*operation.Scalar) ([]byte, error) {
+	scalarArr := *arr
+
+	n := len(scalarArr)
+	if n > 255 {
+		return nil, errors.New("ArrayScalarToBytes: length of scalar array is too big")
+	}
+	b := make([]byte, 1)
+	b[0] = byte(n)
+
+	for _, sc := range scalarArr {
+		b = append(b, sc.ToBytesS()...)
+	}
+	return b, nil
+}
+
+func ArrayScalarFromBytes(b []byte) (*[]*operation.Scalar, error) {
+	if len(b) == 0 {
+		return nil, errors.New("ArrayScalarFromBytes error: length of byte is 0")
+	}
+	n := int(b[0])
+	if n*Ed25519KeySize+1 != len(b) {
+		return nil, errors.New("ArrayScalarFromBytes error: length of byte is not correct")
+	}
+	scalarArr := make([]*operation.Scalar, n)
+	offset := 1
+	for i := 0; i < n; i += 1 {
+		curByte := b[offset : offset+Ed25519KeySize]
+		scalarArr[i] = new(operation.Scalar).FromBytesS(curByte)
+		offset += Ed25519KeySize
+	}
+	return &scalarArr, nil
 }

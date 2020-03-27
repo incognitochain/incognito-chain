@@ -2,10 +2,11 @@ package statedb
 
 import (
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/dataaccessobject"
 	"math/big"
 	"strconv"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject"
 
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/incognitochain/incognito-chain/common"

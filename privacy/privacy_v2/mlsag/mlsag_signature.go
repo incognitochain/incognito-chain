@@ -8,7 +8,7 @@ import (
 )
 
 type MlsagSig struct {
-	c         operation.Scalar     // 32 bytes
+	c         operation.Scalar      // 32 bytes
 	keyImages []*operation.Point    // 32 * size bytes
 	r         [][]*operation.Scalar // 32 * size_1 * size_2 bytes
 }
