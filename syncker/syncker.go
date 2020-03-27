@@ -126,7 +126,7 @@ func (synckerManager *SynckerManager) ReceiveBlock(blk interface{}, peerID strin
 				BlockHash: *beaconBlk.Hash(),
 				Height:    beaconBlk.GetHeight(),
 			},
-			SenderID:  time.Now().String(),
+			SenderID:  peerID,
 			Timestamp: time.Now().Unix(),
 		}
 
@@ -142,7 +142,7 @@ func (synckerManager *SynckerManager) ReceiveBlock(blk interface{}, peerID strin
 		//fmt.Println("syncker AddBlock S2B", s2bBlk.Header.ShardID, s2bBlk.Header.Height)
 		//create fake s2b pool peerstate
 		synckerManager.S2BSyncProcess.s2bPeerStateCh <- &wire.MessagePeerState{
-			SenderID:          time.Now().String(),
+			SenderID:          peerID,
 			ShardToBeaconPool: map[byte][]uint64{s2bBlk.Header.ShardID: []uint64{1, s2bBlk.GetHeight()}},
 			Timestamp:         time.Now().Unix(),
 		}

@@ -976,7 +976,7 @@ func (serverObj *Server) OnBlockShard(p *peer.PeerConn,
 	////<-txProcessed
 	//
 	//Logger.log.Debug("Receive a new blockshard END")
-	go serverObj.syncker.ReceiveBlock(msg.Block, "")
+	go serverObj.syncker.ReceiveBlock(msg.Block, p.GetRemotePeerID().String())
 }
 
 func (serverObj *Server) OnBlockBeacon(p *peer.PeerConn,
@@ -989,7 +989,7 @@ func (serverObj *Server) OnBlockBeacon(p *peer.PeerConn,
 	////<-txProcessed
 	//
 	//Logger.log.Debug("Receive a new blockbeacon END")
-	go serverObj.syncker.ReceiveBlock(msg.Block, "")
+	go serverObj.syncker.ReceiveBlock(msg.Block, p.GetRemotePeerID().String())
 }
 
 func (serverObj *Server) OnCrossShard(p *peer.PeerConn,
@@ -1001,7 +1001,7 @@ func (serverObj *Server) OnCrossShard(p *peer.PeerConn,
 	////<-txProcessed
 	//
 	//Logger.log.Debug("Receive a new crossshard END")
-	go serverObj.syncker.ReceiveBlock(msg.Block, "")
+	go serverObj.syncker.ReceiveBlock(msg.Block, p.GetRemotePeerID().String())
 }
 
 func (serverObj *Server) OnShardToBeacon(p *peer.PeerConn,
@@ -1013,7 +1013,7 @@ func (serverObj *Server) OnShardToBeacon(p *peer.PeerConn,
 	////<-txProcessed
 	//
 	//Logger.log.Debug("Receive a new shardToBeacon END")
-	go serverObj.syncker.ReceiveBlock(msg.Block, "")
+	go serverObj.syncker.ReceiveBlock(msg.Block, p.GetRemotePeerID().String())
 }
 
 func (serverObj *Server) OnGetBlockBeacon(_ *peer.PeerConn, msg *wire.MessageGetBlockBeacon) {
@@ -1498,6 +1498,7 @@ func (serverObj *Server) putResponseMsgs(msgs [][]byte) {
 		// Create dummy msg wrapping grpc response
 		psMsg := &p2ppubsub.Message{
 			Message: &pb.Message{
+				// From: ,
 				Data: msg,
 			},
 		}
@@ -2163,7 +2164,7 @@ func (serverObj *Server) RequestShardToBeaconBlocksByHashViaStream(ctx context.C
 }
 
 func (serverObj *Server) requestBlocksViaStream(ctx context.Context, peerID string, req *proto.BlockByHeightRequest) (blockCh chan common.BlockInterface, err error) {
-	Logger.log.Infof("[stream] Request Block %v from cID %v, [%v %v] ", peerID, req.GetFrom(), req.Heights[0], req.Heights[len(req.Heights)-1])
+	Logger.log.Infof("[stream] Request Block type %v from peer %v from cID %v, [%v %v] ", req.Type, peerID, req.GetFrom(), req.Heights[0], req.Heights[len(req.Heights)-1])
 	blockCh = make(chan common.BlockInterface, blockchain.DefaultMaxBlkReqPerPeer)
 	stream, err := serverObj.highway.Requester.StreamBlockByHeight(ctx, req)
 	if err != nil {

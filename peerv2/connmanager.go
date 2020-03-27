@@ -6,8 +6,9 @@ import (
 	"math/rand"
 	"reflect"
 	"sort"
-	"stathat.com/c/consistent"
 	"time"
+
+	"stathat.com/c/consistent"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -259,10 +260,11 @@ func (cm *ConnManager) keepHighwayConnection() {
 			if cm.checkConnection(currentHighway) {
 				currentHighway = nil // Failed retries, connect to new highway next iteration
 			}
-
+			if currentHighway != nil {
+				cm.disp.CurrentHWPeerID = currentHighway.ID
+			}
 		case <-refreshTimestep.C:
 			currentHighway, hwAddrs, _ = refreshHighway()
-
 		case <-cm.stop:
 			Logger.Info("Stop keeping connection to highway")
 			break
