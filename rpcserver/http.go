@@ -88,7 +88,9 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 	}
 	httpServer.poolStateService = &rpcservice.PoolStateService{}
 
-	httpServer.portal = &rpcservice.Portal{}
+	httpServer.portal = &rpcservice.Portal{
+		BlockChain: httpServer.config.BlockChain,
+	}
 }
 
 // Start is used by rpcserver.go to start the rpc listener.

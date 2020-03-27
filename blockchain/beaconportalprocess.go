@@ -520,9 +520,8 @@ func (blockchain *BlockChain) processPortalExchangeRates(portalStateDB *statedb.
 		return nil
 	}
 
-	Logger.log.Infof("Portal exchange rates, data input %v", portingExchangeRatesContent)
-
 	reqStatus := instructions[2]
+	Logger.log.Infof("Portal exchange rates, data input: %+v, status: %+v", portingExchangeRatesContent, reqStatus)
 
 	switch reqStatus {
 	case common.PortalExchangeRatesAcceptedChainStatus:
@@ -570,8 +569,6 @@ func (blockchain *BlockChain) processPortalExchangeRates(portalStateDB *statedb.
 			Logger.log.Errorf("ERROR: Save exchange rates error: %+v", err)
 			return err
 		}
-
-		break
 	}
 
 	return nil
