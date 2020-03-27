@@ -69,6 +69,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newLiquidateExchangeRatesPoolObjectWithValue(db, hash, value)
 	case PortalWaitingPortingRequestObjectType:
 		return newWaitingPortingRequestObjectWithValue(db, hash, value)
+	case PortalStatusObjectType:
+		return newPortalStatusObjectWithValue(db, hash, value)
 	default:
 		panic("state object type not exist")
 	}
@@ -118,6 +120,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newLiquidateExchangeRatesPoolObject(db, hash)
 	case PortalWaitingPortingRequestObjectType:
 		return newWaitingPortingRequestObject(db, hash)
+	case PortalStatusObjectType:
+		return newPortalStatusObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}

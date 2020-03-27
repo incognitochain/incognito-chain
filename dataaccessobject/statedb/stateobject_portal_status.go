@@ -126,7 +126,7 @@ func newPortalStatusObjectWithValue(db *StateDB, key common.Hash, data interface
 		portalStatusHash: key,
 		portalStatus:     newPortalStatus,
 		db:               db,
-		objectType:       PDEStatusObjectType,
+		objectType:       PortalStatusObjectType,
 		deleted:          false,
 	}, nil
 }
@@ -202,6 +202,6 @@ func (t PortalStatusObject) IsDeleted() bool {
 
 // value is either default or nil
 func (t PortalStatusObject) IsEmpty() bool {
-	temp := NewPDEStatusState()
+	temp := NewPortalStatusState()
 	return reflect.DeepEqual(temp, t.portalStatus) || t.portalStatus == nil
 }

@@ -3,6 +3,7 @@ package statedb
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject"
 )
 
 //======================  Redeem  ======================
@@ -290,6 +291,9 @@ func GetLiquidateExchangeRatesByKey(stateDB *StateDB, beaconHeight uint64) (*Liq
 func TrackPortalStateStatusMultiple(stateDB *StateDB, statusType []byte, statusSuffix []byte, statusContent []byte) error {
 	key := GeneratePortalStatusObjectKey(statusType, statusSuffix)
 	value := NewPortalStatusStateWithValue(statusType, statusSuffix, statusContent)
+
+	dataaccessobject.Logger.Log.Infof("TrackPortalStateStatusMultiple key: %+v value: %+v", key, value)
+
 	err := stateDB.SetStateObject(PortalStatusObjectType, key, value)
 
 	var errType int

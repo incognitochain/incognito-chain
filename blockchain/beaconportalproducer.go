@@ -830,7 +830,7 @@ func (blockchain *BlockChain) buildInstructionsForExchangeRates(
 	//check key from db
 	_, ok := currentPortalState.ExchangeRatesRequests[actionData.TxReqID.String()]
 
-	if !ok {
+	if ok {
 		Logger.log.Errorf("ERROR: exchange rates key is duplicated")
 
 		portalExchangeRatesContent := metadata.PortalExchangeRatesContent{
