@@ -126,8 +126,8 @@ func newPortalRewardInfoObjectWithValue(db *StateDB, key common.Hash, data inter
 }
 
 func GeneratePortalRewardInfoObjectKey(beaconHeight uint64, custodianIncognitoAddress string) common.Hash {
-	prefixHash := GetPortalRewardInfoStatePrefix()
-	valueHash := common.HashH(append([]byte(fmt.Sprintf("%d-", beaconHeight)), []byte(custodianIncognitoAddress)...))
+	prefixHash := GetPortalRewardInfoStatePrefix(beaconHeight)
+	valueHash := common.HashH([]byte(custodianIncognitoAddress))
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 

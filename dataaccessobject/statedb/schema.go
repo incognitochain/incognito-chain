@@ -303,8 +303,8 @@ func GetWaitingRedeemRequestPrefix() []byte {
 	return h[:][:prefixHashKeyLength]
 }
 
-func GetPortalRewardInfoStatePrefix() []byte {
-	h := common.HashH(portalRewardInfoStatePrefix)
+func GetPortalRewardInfoStatePrefix(beaconHeight uint64) []byte {
+	h := common.HashH(append(portalRewardInfoStatePrefix, []byte(fmt.Sprintf("%d-", beaconHeight))...))
 	return h[:][:prefixHashKeyLength]
 }
 
