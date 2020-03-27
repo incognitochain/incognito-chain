@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"github.com/binance-chain/go-sdk/types/msg"
@@ -785,8 +786,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		)
 
 		// remove waiting porting request from currentPortalState
-		// TODO: need to replaced by adding to deleted request list
-		removeWaitingPortingReqByKey(keyWaitingPortingRequestStr, currentPortalState)
+		deleteWaitingPortingRequest(currentPortalState, keyWaitingPortingRequestStr)
 		return [][]string{inst}, nil
 	} else {
 		Logger.log.Errorf("TokenID is not supported currently on Portal")
@@ -1508,10 +1508,9 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 			return [][]string{inst}, nil
 		}
 
-		// check memo attach redeemID req:
+		// check memo attach redeemID req (compare hash memo)
 		memo := txBNB.Memo
-		Logger.log.Infof("[buildInstructionsForReqUnlockCollateral] memo: %v\n", memo)
-		memoBytes, err2 := base64.StdEncoding.DecodeString(memo)
+		memoHashBytes, err2 := base64.StdEncoding.DecodeString(memo)
 		if err2 != nil {
 			Logger.log.Errorf("Can not decode memo in tx bnb proof", err2)
 			inst := buildReqUnlockCollateralInst(
@@ -1528,45 +1527,15 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 			)
 			return [][]string{inst}, nil
 		}
-		Logger.log.Infof("[buildInstructionsForReqUnlockCollateral] memoBytes: %v\n", memoBytes)
 
-		var redeemMemo RedeemMemoBNB
-		err2 = json.Unmarshal(memoBytes, &redeemMemo)
-		if err2 != nil {
-			Logger.log.Errorf("Can not unmarshal memo in tx bnb proof", err2)
-			inst := buildReqUnlockCollateralInst(
-				meta.UniqueRedeemID,
-				meta.TokenID,
-				meta.CustodianAddressStr,
-				meta.RedeemAmount,
-				0,
-				meta.RedeemProof,
-				meta.Type,
-				shardID,
-				actionData.TxReqID,
-				common.PortalReqUnlockCollateralRejectedChainStatus,
-			)
-			return [][]string{inst}, nil
-		}
+		expectedRedeemMemo := RedeemMemoBNB {
+			RedeemID:                  redeemID,
+			CustodianIncognitoAddress: meta.CustodianAddressStr}
+		expectedRedeemMemoBytes, _ := json.Marshal(expectedRedeemMemo)
+		expectedRedeemMemoHashBytes := common.HashB(expectedRedeemMemoBytes)
 
-		if redeemMemo.RedeemID != meta.UniqueRedeemID {
-			Logger.log.Errorf("PortingId in memoTx is not matched with redeemID in metadata", err2)
-			inst := buildReqUnlockCollateralInst(
-				meta.UniqueRedeemID,
-				meta.TokenID,
-				meta.CustodianAddressStr,
-				meta.RedeemAmount,
-				0,
-				meta.RedeemProof,
-				meta.Type,
-				shardID,
-				actionData.TxReqID,
-				common.PortalReqUnlockCollateralRejectedChainStatus,
-			)
-			return [][]string{inst}, nil
-		}
-		if redeemMemo.CustodianIncognitoAddress != meta.CustodianAddressStr {
-			Logger.log.Errorf("CustodianIncognitoAddress in memoTx is not matched with CustodianIncognitoAddress in metadata", err2)
+		if !bytes.Equal(memoHashBytes, expectedRedeemMemoHashBytes) {
+			Logger.log.Errorf("Memo redeem is invalid")
 			inst := buildReqUnlockCollateralInst(
 				meta.UniqueRedeemID,
 				meta.TokenID,

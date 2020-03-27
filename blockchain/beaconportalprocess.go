@@ -410,11 +410,7 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 		// remove portingRequest from waitingPortingRequests
 		waitingPortingReqKey := statedb.GeneratePortalWaitingPortingRequestObjectKey(beaconHeight, actionData.UniquePortingID)
 		waitingPortingReqKeyStr := string(waitingPortingReqKey[:])
-		isRemoved := removeWaitingPortingReqByKey(waitingPortingReqKeyStr, currentPortalState)
-		if !isRemoved {
-			Logger.log.Errorf("Can not remove waiting porting request from portal state")
-			return nil
-		}
+		deleteWaitingPortingRequest(currentPortalState, waitingPortingReqKeyStr)
 
 		// make sure user can not re-use proof for other portingID
 		// update status of porting request with portingID

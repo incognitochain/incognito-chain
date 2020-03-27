@@ -385,6 +385,14 @@ func StoreWaitingPortingRequests(stateDB *StateDB, beaconHeight uint64, portingR
 	return nil
 }
 
+func DeleteWaitingPortingRequest(stateDB *StateDB, deletedWaitingPortingRequests map[string]*WaitingPortingRequest) {
+	for key, _ := range deletedWaitingPortingRequests {
+		keyHash := common.Hash{}
+		copy(keyHash[:], key)
+		stateDB.MarkDeleteStateObject(PortalWaitingPortingRequestObjectType, keyHash)
+	}
+}
+
 //======================  Portal status  ======================
 func StorePortalStatus(stateDB *StateDB, statusType []byte, statusSuffix []byte, statusContent []byte) error {
 	key := GeneratePortalStatusObjectKey(statusType, statusSuffix)

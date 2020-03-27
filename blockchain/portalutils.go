@@ -27,8 +27,10 @@ type CurrentPortalState struct {
 	//Store temporary exchange rates requests
 	ExchangeRatesRequests map[string]*metadata.ExchangeRatesRequestStatus // key : hash(beaconHeight | TxID)
 
-	DeletedWaitingRedeemRequests map[string]*statedb.WaitingRedeemRequest // key : hash(beaconHeight || UniqueRedeemID)
-	//TODO: add deleted waiting porting requests list
+	// deleted list
+	DeletedWaitingRedeemRequests  map[string]*statedb.WaitingRedeemRequest  // key : hash(beaconHeight || UniqueRedeemID)
+	DeletedWaitingPortingRequests map[string]*statedb.WaitingPortingRequest // key : hash(beaconHeight || UniqueRedeemID)
+	DeletedCustodianStates        map[string]*statedb.CustodianState        // key : hash(beaconHeight || UniqueRedeemID)
 }
 
 type CustodianStateSlice struct {
@@ -112,18 +114,10 @@ func storePortalStateToDB(
 
 	// delete waiting redeem request in deleted waiting requests list
 	statedb.DeleteWaitingRedeemRequest(stateDB, currentPortalState.DeletedWaitingRedeemRequests)
+	statedb.DeleteWaitingPortingRequest(stateDB, currentPortalState.DeletedWaitingPortingRequests)
+	statedb.DeleteCustodianState(stateDB, currentPortalState.DeletedCustodianStates)
 
 	return nil
-}
-
-// TODO: need to replace by adding waiting porting req to deleted
-func removeWaitingPortingReqByKey(key string, state *CurrentPortalState) bool {
-	if state.WaitingPortingRequests[key] != nil {
-		delete(state.WaitingPortingRequests, key)
-		return true
-	}
-
-	return false
 }
 
 func sortCustodianByAmountAscent(
@@ -778,11 +772,17 @@ func deleteWaitingRedeemRequest(state *CurrentPortalState, waitingRedeemRequestK
 	state.DeletedWaitingRedeemRequests[waitingRedeemRequestKey] = waitingRedeemRequest
 }
 
-//func deleteWaitingRedeemRequest(state *CurrentPortalState, waitingRedeemRequestKey string) {
-//	waitingRedeemRequest := state.WaitingRedeemRequests[waitingRedeemRequestKey]
-//	delete(state.WaitingRedeemRequests, waitingRedeemRequestKey)
-//	state.DeletedWaitingRedeemRequests[waitingRedeemRequestKey] = waitingRedeemRequest
-//}
+func deleteWaitingPortingRequest(state *CurrentPortalState, waitingPortingRequestKey string) {
+	waitingPortingRequest := state.WaitingPortingRequests[waitingPortingRequestKey]
+	delete(state.WaitingPortingRequests, waitingPortingRequestKey)
+	state.DeletedWaitingPortingRequests[waitingPortingRequestKey] = waitingPortingRequest
+}
+
+func deleteCustodianState(state *CurrentPortalState, custodianStateKey string) {
+	custodianState := state.CustodianPoolState[custodianStateKey]
+	delete(state.CustodianPoolState, custodianStateKey)
+	state.DeletedCustodianStates[custodianStateKey] = custodianState
+}
 
 type ConvertExchangeRatesObject struct {
 	finalExchangeRates *statedb.FinalExchangeRatesState

@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
 	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"testing"
 )
@@ -28,10 +29,11 @@ func TestB64EncodeMemo(t *testing.T) {
 
 	redeemID := "11"
 	custodianIncAddr := "12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ"
-	memoRedeem := RedeemMemoBNB{ RedeemID: redeemID, CustodianIncognitoAddress: custodianIncAddr}
+	memoRedeem := RedeemMemoBNB{RedeemID: redeemID, CustodianIncognitoAddress: custodianIncAddr}
 	memoRedeemBytes, err := json.Marshal(memoRedeem)
 	fmt.Printf("err: %v\n", err)
-	memoRedeemStr := base64.StdEncoding.EncodeToString(memoRedeemBytes)
+	memoRedeemHash := common.HashB(memoRedeemBytes)
+	memoRedeemStr := base64.StdEncoding.EncodeToString(memoRedeemHash)
 	fmt.Printf("memoRedeemStr: %v\n", memoRedeemStr)
 	// eyJSZWRlZW1JRCI6IjIifQ==   // 2
 
