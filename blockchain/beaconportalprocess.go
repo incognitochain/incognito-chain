@@ -418,7 +418,7 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 
 		// make sure user can not re-use proof for other portingID
 		// update status of porting request with portingID
-		err = statedb.UpdatePortingRequestStatus(actionData.UniquePortingID, common.PortalPortingReqSuccessStatus)
+		err = statedb.UpdatePortingRequestStatus(stateDB, actionData.UniquePortingID, common.PortalPortingReqSuccessStatus)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store porting request item status: %+v", err)
 			return nil
