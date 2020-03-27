@@ -179,10 +179,11 @@ func GetFinalExchangeRatesState(
 	key := GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
 	finalExchangeRates, has, err := stateDB.getFinalExchangeRatesByKey(key)
 	if err != nil {
-		return nil, NewStatedbError(GetPortalFinalExchangeRatesStateError, err)
+		//todo: review
+		panic("wrong get final exchange rates")
 	}
 	if !has {
-		return nil, NewStatedbError(GetPortalFinalExchangeRatesStateError, fmt.Errorf("key with beacon height %+v not found", beaconHeight))
+		return result, nil
 	}
 
 	result[key.String()] = finalExchangeRates
@@ -270,10 +271,11 @@ func GetLiquidateExchangeRatesPool(
 	key := GeneratePortalLiquidateExchangeRatesPoolObjectKey(beaconHeight)
 	liquidateExchangeRates, has, err := stateDB.getLiquidateExchangeRatesPoolByKey(key)
 	if err != nil {
-		return nil, NewStatedbError(GetPortalLiquidationExchangeRatesPoolError, err)
+		//todo: review
+		panic("wrong get liquidate exchange rates")
 	}
 	if !has {
-		return nil, NewStatedbError(GetPortalLiquidationExchangeRatesPoolError, fmt.Errorf("key with beacon height %+v not found", beaconHeight))
+		return result, nil
 	}
 	result[key.String()] = liquidateExchangeRates
 

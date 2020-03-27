@@ -1192,7 +1192,7 @@ func (stateDB *StateDB) getBurningConfirmState(key common.Hash) (*BurningConfirm
 
 // ================================= Portal OBJECT =======================================
 func (stateDB *StateDB) getAllWaitingPortingRequests() map[string]*WaitingPortingRequest {
-	waitingPortingRequest := map[string]*WaitingPortingRequest{}
+	waitingPortingRequest := make(map[string]*WaitingPortingRequest)
 	temp := stateDB.trie.NodeIterator(GetPortalWaitingPortingRequestPrefix())
 	it := trie.NewIterator(temp)
 	for it.Next() {
@@ -1247,7 +1247,7 @@ func (stateDB *StateDB) getLiquidateExchangeRatesPoolByKey(key common.Hash) (*Li
 
 //B
 func (stateDB *StateDB) getAllWaitingRedeemRequest() map[string]*WaitingRedeemRequest {
-	waitingRedeemRequests := map[string]*WaitingRedeemRequest{}
+	waitingRedeemRequests := make(map[string]*WaitingRedeemRequest)
 	temp := stateDB.trie.NodeIterator(GetWaitingRedeemRequestPrefix())
 	it := trie.NewIterator(temp)
 	for it.Next() {
@@ -1267,7 +1267,7 @@ func (stateDB *StateDB) getAllWaitingRedeemRequest() map[string]*WaitingRedeemRe
 }
 
 func (stateDB *StateDB) getAllCustodianStatePool() map[string]*CustodianState {
-	custodians := map[string]*CustodianState{}
+	custodians := make(map[string]*CustodianState)
 	temp := stateDB.trie.NodeIterator(GetPortalCustodianStatePrefix())
 	it := trie.NewIterator(temp)
 	for it.Next() {

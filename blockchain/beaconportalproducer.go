@@ -833,28 +833,29 @@ func (blockchain *BlockChain) buildInstructionsForExchangeRates(
 	}
 
 	//check key from db
-	_, ok := currentPortalState.ExchangeRatesRequests[actionData.TxReqID.String()]
+	if currentPortalState.ExchangeRatesRequests != nil {
+		_, ok := currentPortalState.ExchangeRatesRequests[actionData.TxReqID.String()]
+		if ok {
+			Logger.log.Errorf("ERROR: exchange rates key is duplicated")
 
-	if ok {
-		Logger.log.Errorf("ERROR: exchange rates key is duplicated")
+			portalExchangeRatesContent := metadata.PortalExchangeRatesContent{
+				SenderAddress: actionData.Meta.SenderAddress,
+				Rates:         actionData.Meta.Rates,
+				TxReqID:       actionData.TxReqID,
+				LockTime:      actionData.LockTime,
+			}
 
-		portalExchangeRatesContent := metadata.PortalExchangeRatesContent{
-			SenderAddress: actionData.Meta.SenderAddress,
-			Rates:         actionData.Meta.Rates,
-			TxReqID:       actionData.TxReqID,
-			LockTime:      actionData.LockTime,
+			portalExchangeRatesContentBytes, _ := json.Marshal(portalExchangeRatesContent)
+
+			inst := []string{
+				strconv.Itoa(metaType),
+				strconv.Itoa(int(shardID)),
+				common.PortalExchangeRatesRejectedChainStatus,
+				string(portalExchangeRatesContentBytes),
+			}
+
+			return [][]string{inst}, nil
 		}
-
-		portalExchangeRatesContentBytes, _ := json.Marshal(portalExchangeRatesContent)
-
-		inst := []string{
-			strconv.Itoa(metaType),
-			strconv.Itoa(int(shardID)),
-			common.PortalExchangeRatesRejectedChainStatus,
-			string(portalExchangeRatesContentBytes),
-		}
-
-		return [][]string{inst}, nil
 	}
 
 	//success
@@ -875,11 +876,23 @@ func (blockchain *BlockChain) buildInstructionsForExchangeRates(
 	}
 
 	//update E-R request
-	currentPortalState.ExchangeRatesRequests[actionData.TxReqID.String()] = metadata.NewExchangeRatesRequestStatus(
-		common.PortalExchangeRatesAcceptedStatus,
-		actionData.Meta.SenderAddress,
-		actionData.Meta.Rates,
-	)
+	if currentPortalState.ExchangeRatesRequests != nil {
+		currentPortalState.ExchangeRatesRequests[actionData.TxReqID.String()] = metadata.NewExchangeRatesRequestStatus(
+			common.PortalExchangeRatesAcceptedStatus,
+			actionData.Meta.SenderAddress,
+			actionData.Meta.Rates,
+		)
+	} else {
+		//new object
+		newExchangeRatesRequest := make(map[string]*metadata.ExchangeRatesRequestStatus)
+		newExchangeRatesRequest[actionData.TxReqID.String()] = metadata.NewExchangeRatesRequestStatus(
+			common.PortalExchangeRatesAcceptedStatus,
+			actionData.Meta.SenderAddress,
+			actionData.Meta.Rates,
+		)
+
+		currentPortalState.ExchangeRatesRequests = newExchangeRatesRequest
+	}
 
 	return [][]string{inst}, nil
 }
