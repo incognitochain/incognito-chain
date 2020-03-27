@@ -63,6 +63,12 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newBurningConfirmObjectWithValue(db, hash, value)
 	case TokenTransactionObjectType:
 		return newTokenTransactionObjectWithValue(db, hash, value)
+	case PortalFinalExchangeRatesStateObjectType:
+		return newFinalExchangeRatesStateObjectWithValue(db, hash, value)
+	case PortalLiquidationExchangeRatesPoolObjectType:
+		return newLiquidateExchangeRatesPoolObjectWithValue(db, hash, value)
+	case PortalWaitingPortingRequestObjectType:
+		return newWaitingPortingRequestObjectWithValue(db, hash, value)
 	default:
 		panic("state object type not exist")
 	}
@@ -106,6 +112,12 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newBridgeStatusObject(db, hash)
 	case BurningConfirmObjectType:
 		return newBurningConfirmObject(db, hash)
+	case PortalFinalExchangeRatesStateObjectType:
+		return newFinalExchangeRatesStateObject(db, hash)
+	case PortalLiquidationExchangeRatesPoolObjectType:
+		return newLiquidateExchangeRatesPoolObject(db, hash)
+	case PortalWaitingPortingRequestObjectType:
+		return newWaitingPortingRequestObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}
