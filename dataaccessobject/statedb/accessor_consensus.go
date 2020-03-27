@@ -27,7 +27,17 @@ func storeCommittee(stateDB *StateDB, shardID int, role int, committees []incogn
 		if !ok {
 			return fmt.Errorf("auto staking of %+v not found", committeeString)
 		}
-		value := NewCommitteeStateWithValueAndTime(shardID, role, committee, rewardReceiverPaymentAddress, autoStakingValue, enterTime)
+		value := NewCommitteeState()
+		has := false
+		value, has, err = stateDB.getCommitteeState(key)
+		if err != nil {
+			return err
+		}
+		if has {
+			value.SetAutoStaking(autoStakingValue)
+		} else {
+			value = NewCommitteeStateWithValueAndTime(shardID, role, committee, rewardReceiverPaymentAddress, autoStakingValue, enterTime)
+		}
 		err = stateDB.SetStateObject(CommitteeObjectType, key, value)
 		if err != nil {
 			return err
@@ -107,7 +117,7 @@ func StoreAllShardSubstitutesValidator(stateDB *StateDB, allShardSubstitutes map
 func StoreOneShardSubstitutesValidator(stateDB *StateDB, shardID byte, shardSubstitutes []incognitokey.CommitteePublicKey, rewardReceiver map[string]string, autoStaking map[string]bool) error {
 	err := storeCommittee(stateDB, int(shardID), SubstituteValidator, shardSubstitutes, rewardReceiver, autoStaking)
 	if err != nil {
-		return NewStatedbError(StoreNextEpochCandidateError, err)
+		return NewStatedbError(StoreOneShardSubstitutesValidatorError, err)
 	}
 	return nil
 }
@@ -115,7 +125,7 @@ func StoreOneShardSubstitutesValidator(stateDB *StateDB, shardID byte, shardSubs
 func StoreBeaconSubstituteValidator(stateDB *StateDB, beaconSubstitute []incognitokey.CommitteePublicKey, rewardReceiver map[string]string, autoStaking map[string]bool) error {
 	err := storeCommittee(stateDB, BeaconShardID, SubstituteValidator, beaconSubstitute, rewardReceiver, autoStaking)
 	if err != nil {
-		return NewStatedbError(StoreCurrentEpochCandidateError, err)
+		return NewStatedbError(StoreBeaconSubstitutesValidatorError, err)
 	}
 	return nil
 }
@@ -253,7 +263,7 @@ func deleteCommittee(stateDB *StateDB, shardID int, role int, committees []incog
 		if err != nil {
 			return err
 		}
-		stateDB.MarkDeleteStateObject(CommitmentObjectType, key)
+		stateDB.MarkDeleteStateObject(CommitteeObjectType, key)
 	}
 	return nil
 }

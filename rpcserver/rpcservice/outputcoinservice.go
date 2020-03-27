@@ -31,17 +31,17 @@ func (coinService CoinService) ListUnspentOutputCoinsByKey(listKeyParams []inter
 	for _, keyParam := range listKeyParams {
 		keys, ok := keyParam.(map[string]interface{})
 		if !ok {
-			return nil, NewRPCError(ListUnspentOutputCoinsByKeyError, fmt.Errorf("Invalid Params %+v", keyParam))
+			return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Params %+v", keyParam))
 		}
 		// get keyset only contain private key by deserializing
 		privateKeyStr, ok := keys["PrivateKey"].(string)
 		if !ok {
-			return nil, NewRPCError(ListUnspentOutputCoinsByKeyError, errors.New("private key is invalid"))
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("private key is invalid"))
 		}
 		keyWallet, err := wallet.Base58CheckDeserialize(privateKeyStr)
 		if err != nil || keyWallet.KeySet.PrivateKey == nil {
 			Logger.log.Error("Check Deserialize err", err)
-			return nil, NewRPCError(ListUnspentOutputCoinsByKeyError, fmt.Errorf("Private key is invalid, error %+v", err))
+			return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Private key is invalid, error %+v", err))
 		}
 		keySetTmp, shardID, err := GetKeySetFromPrivateKey(keyWallet.KeySet.PrivateKey)
 		if err != nil {
@@ -71,7 +71,7 @@ func (coinService CoinService) ListOutputCoinsByKey(listKeyParams []interface{},
 	for _, keyParam := range listKeyParams {
 		keys, ok := keyParam.(map[string]interface{})
 		if !ok {
-			return nil, NewRPCError(ListOutputCoinsByKeyError, fmt.Errorf("Invalid params: %+v", keyParam))
+			return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid params: %+v", keyParam))
 		}
 		// get keyset only contain read only key by deserializing (optional)
 		var readonlyKey *wallet.KeyWallet
@@ -89,7 +89,7 @@ func (coinService CoinService) ListOutputCoinsByKey(listKeyParams []interface{},
 		// get keyset only contain public key by deserializing (required)
 		paymentAddressStr, ok := keys["PaymentAddress"].(string)
 		if !ok {
-			return nil, NewRPCError(ListOutputCoinsByKeyError, errors.New("invalid payment address"))
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid payment address"))
 		}
 		paymentAddressKey, err := wallet.Base58CheckDeserialize(paymentAddressStr)
 		if err != nil {

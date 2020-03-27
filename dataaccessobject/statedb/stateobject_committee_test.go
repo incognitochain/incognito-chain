@@ -3,10 +3,49 @@ package statedb
 import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"log"
 	"reflect"
 	"strings"
 	"testing"
 )
+
+func TestStateDB_TestChangeAutoStaking(t *testing.T) {
+	tempCommitteePublicKey, err := incognitokey.CommitteeBase58KeyListToStruct(committeePublicKeys)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tempCommitteePublicKey = tempCommitteePublicKey[:1]
+	key, _ := GenerateCommitteeObjectKeyWithRole(CurrentValidator, 0, tempCommitteePublicKey[0])
+	committeeState := NewCommitteeStateWithValue(0, CurrentValidator, tempCommitteePublicKey[0], receiverPaymentAddress[0], true)
+	sDB, err := NewWithPrefixTrie(emptyRoot, wrarperDB)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = sDB.SetStateObject(CommitteeObjectType, key, committeeState)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rootHash, err := sDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = sDB.Database().TrieDB().Commit(rootHash, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	committeeState1 := NewCommitteeStateWithValue(0, CurrentValidator, tempCommitteePublicKey[0], receiverPaymentAddress[0], false)
+	err = sDB.SetStateObject(CommitteeObjectType, key, committeeState1)
+	rootHash2, err := sDB.Commit(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = sDB.Database().TrieDB().Commit(rootHash2, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, newAutoStaking := GetRewardReceiverAndAutoStaking(sDB, []int{0})
+	log.Println(newAutoStaking)
+}
 
 func TestStateDB_GetMixCommitteePublicKey(t *testing.T) {
 	from, to := 0, 32
