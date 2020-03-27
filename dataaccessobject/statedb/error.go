@@ -152,9 +152,14 @@ const (
 
 	//A
 	GetPortalFinalExchangeRatesStatusError
+	StorePortalExchangeRatesStatusError
 	GetPortalLiquidationExchangeRatesError
+	GetPortingRequestStatusError
+	GetPortingRequestTxStatusError
+	GetLiquidationTopPercentileExchangeRatesStatusError
 	//B
 	StorePortalStatusError
+	StorePortalTxStatusError
 	GetPortalStatusError
 	GetPortalRedeemRequestStatusError
 	StorePortalRedeemRequestStatusError
@@ -293,9 +298,15 @@ var ErrCodeMessage = map[int]struct {
 	StorePortalLiquidationCustodianRunAwayStatusError: {-14036, "Store portal liquidation custodian run away status error"},
 	GetPortalExpiredPortingReqStatusError:             {-14036, "Get portal expired porting request status error"},
 	StorePortalExpiredPortingReqStatusError:           {-14036, "Store portal expired porting request status error"},
-	GetPortalRequestWithdrawRewardStatusError: {-14036, "Get portal request withdraw reward status error"},
-	StorePortalRequestWithdrawRewardStatusError: {-14036, "Store portal request withdraw reward status error"},
-	GetPortalFinalExchangeRatesStatusError: {-14037, "Get portal final exchange rates error"},
+	GetPortalRequestWithdrawRewardStatusError:          {-14036, "Get portal request withdraw reward status error"},
+	StorePortalRequestWithdrawRewardStatusError:        {-14036, "Store portal request withdraw reward status error"},
+	GetPortalFinalExchangeRatesStatusError:             {-14037, "Get portal final exchange rates error"},
+	StorePortalTxStatusError:                           {-14038, "Store portal Tx status error"},
+	StorePortalExchangeRatesStatusError:                {-14039, "Store portal exchange rates status error"},
+	GetPortalLiquidationExchangeRatesError:             {-14040, "Get portal liquidation exchange rates error"},
+	GetPortingRequestStatusError:                       {-14041, "Get portal porting request status error"},
+	GetPortingRequestTxStatusError:                     {-14042, "Get portal porting request tx status error"},
+	GetLiquidationTopPercentileExchangeRatesStatusError:  {-14043, "Get liquidation tp ex change rates status error"},
 }
 
 type StatedbError struct {
