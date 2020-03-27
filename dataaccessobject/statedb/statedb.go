@@ -1342,9 +1342,8 @@ func (stateDB *StateDB) getAllCustodianStatePool() map[string]*CustodianState {
 }
 
 func (stateDB *StateDB) getPortalRewards(beaconHeight uint64) []*PortalRewardInfo {
-	//TODO: how to get data by prefix + suffix
 	portalRewards := make([]*PortalRewardInfo, 0)
-	temp := stateDB.trie.NodeIterator(GetPortalRewardInfoStatePrefix())
+	temp := stateDB.trie.NodeIterator(GetPortalRewardInfoStatePrefix(beaconHeight))
 	it := trie.NewIterator(temp)
 	for it.Next() {
 		value := it.Value
