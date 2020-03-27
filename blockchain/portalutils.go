@@ -64,12 +64,12 @@ func InitCurrentPortalStateFromDB(
 		return nil, err
 	}
 
-	finalExchangeRates, err := statedb.GetAllFinalExchangeRatesState(stateDB, beaconHeight)
+	finalExchangeRates, err := statedb.GetFinalExchangeRatesState(stateDB, beaconHeight)
 	if err != nil {
 		return nil, err
 	}
 
-	liquidateExchangeRates, err := statedb.GetAllLiquidateExchangeRates(stateDB, beaconHeight)
+	liquidateExchangeRatesPool, err := statedb.GetLiquidateExchangeRatesPool(stateDB, beaconHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func InitCurrentPortalStateFromDB(
 		WaitingRedeemRequests:      waitingRedeemReqs,
 		FinalExchangeRatesState:    finalExchangeRates,
 		ExchangeRatesRequests:      make(map[string]*metadata.ExchangeRatesRequestStatus),
-		LiquidateExchangeRatesPool: liquidateExchangeRates,
+		LiquidateExchangeRatesPool: liquidateExchangeRatesPool,
 	}, nil
 }
 

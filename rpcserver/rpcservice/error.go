@@ -71,7 +71,9 @@ const (
 	RejectInvalidFeeError
 
 	//portal
-	GetExchangeRatesError
+	GetFinalExchangeRatesError
+	ConvertExchangeRatesError
+	GetPortingRequestFeesError
 	GetExchangeRatesIsEmpty
 	GetPortingRequestError
 	GetPortingRequestIsEmpty
@@ -176,7 +178,7 @@ var ErrCodeMessage = map[int]struct {
 	GetPDEStateError: {-8000, "Get pde state error"},
 
 	//portal
-	GetExchangeRatesError:                              {-9000, "Get get exchange rates error"},
+	GetFinalExchangeRatesError:                         {-9000, "Get get final exchange rates error"},
 	GetExchangeRatesIsEmpty:                            {-9001, "Exchange rates is empty"},
 	GetReqPTokenStatusError:                            {-9002, "Get request ptoken status error"},
 	GetCustodianDepositError:                           {-9003, "Get custodian deposit status error"},
@@ -193,7 +195,8 @@ var ErrCodeMessage = map[int]struct {
 	GetCustodianWithdrawError:                          {-9014, "Get custodian withdraw error"},
 	GetPortalRewardError:                               {-9015, "Get portal reward error"},
 	GetRequestWithdrawRewardStatusError:                {-9016, "Get request withdraw portal reward error"},
-
+	ConvertExchangeRatesError:                          {-9017, "Converting exchange rates error"},
+	GetPortingRequestFeesError:                         {-9018, "Get porting request fees error"},
 
 	// relaying
 	GetRelayingBNBHeaderByBlockHeightError: {-10001, "Get relaying bnb header by block height error"},

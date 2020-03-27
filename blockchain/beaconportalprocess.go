@@ -542,7 +542,7 @@ func (blockchain *BlockChain) processPortalExchangeRates(portalStateDB *statedb.
 
 		currentPortalState.ExchangeRatesRequests[portingExchangeRatesContent.TxReqID.String()] = newExchangeRates
 
-		Logger.log.Infof("Portal exchange rates, exchange rates request: count final exchange rate %v , exchange rate request %v", len(currentPortalState.FinalExchangeRatesState), len(currentPortalState.ExchangeRatesRequests))
+		Logger.log.Infof("Portal exchange rates, exchange rates request: total final exchange rate %v , total exchange rate request %v", len(currentPortalState.FinalExchangeRatesState), len(currentPortalState.ExchangeRatesRequests))
 
 	case common.PortalExchangeRatesRejectedChainStatus:
 		//save db
@@ -625,11 +625,8 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 		prvAmount = calcMedian(prvExchangeRatesSlice)
 	}
 
-	//if pre state exist
-
 	//todo: need refactor code, not need write this code
 	//update value when has exchange
-
 	if exchangeRatesState, ok := currentPortalState.FinalExchangeRatesState[exchangeRatesKey.String()]; ok {
 		Logger.log.Infof("Portal final exchange rates, exits  key %v", exchangeRatesKey)
 

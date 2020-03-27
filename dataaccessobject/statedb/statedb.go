@@ -1191,28 +1191,7 @@ func (stateDB *StateDB) getBurningConfirmState(key common.Hash) (*BurningConfirm
 }
 
 // ================================= Portal OBJECT =======================================
-//A
-func (stateDB *StateDB) getAllFinalExchangeRatesState() map[string]*FinalExchangeRatesState {
-	finalExchangeRatesStates := map[string]*FinalExchangeRatesState{}
-	temp := stateDB.trie.NodeIterator(GetFinalExchangeRatesStatePrefix())
-	it := trie.NewIterator(temp)
-	for it.Next() {
-		key := it.Key
-		keyStr := string(key)
-		value := it.Value
-		newValue := make([]byte, len(value))
-		copy(newValue, value)
-		object := NewFinalExchangeRatesState()
-		err := json.Unmarshal(newValue, object)
-		if err != nil {
-			panic("wrong expect type")
-		}
-		finalExchangeRatesStates[keyStr] = object
-	}
-	return finalExchangeRatesStates
-}
-
-func (stateDB *StateDB) GetAllWaitingPortingRequests() map[string]*WaitingPortingRequest {
+func (stateDB *StateDB) getAllWaitingPortingRequests() map[string]*WaitingPortingRequest {
 	waitingPortingRequest := map[string]*WaitingPortingRequest{}
 	temp := stateDB.trie.NodeIterator(GetPortalWaitingPortingRequestPrefix())
 	it := trie.NewIterator(temp)
@@ -1231,27 +1210,6 @@ func (stateDB *StateDB) GetAllWaitingPortingRequests() map[string]*WaitingPortin
 	}
 
 	return waitingPortingRequest
-}
-
-func (stateDB *StateDB) GetAllLiquidateExchangeRates() map[string]*LiquidateExchangeRatesPool {
-	 liquidateExchangeRates := map[string]*LiquidateExchangeRatesPool{}
-	temp := stateDB.trie.NodeIterator(GetPortalLiquidationExchangeRatesPoolPrefix())
-	it := trie.NewIterator(temp)
-	for it.Next() {
-		key := it.Key
-		keyStr := string(key)
-		value := it.Value
-		newValue := make([]byte, len(value))
-		copy(newValue, value)
-		object := NewLiquidateExchangeRatesPool()
-		err := json.Unmarshal(newValue, object)
-		if err != nil {
-			panic("wrong expect type")
-		}
-		liquidateExchangeRates[keyStr] = object
-	}
-
-	return liquidateExchangeRates
 }
 
 func (stateDB *StateDB) getCustodianByKey(key common.Hash) (*CustodianState, bool, error) {
@@ -1276,7 +1234,7 @@ func (stateDB *StateDB) getFinalExchangeRatesByKey(key common.Hash) (*FinalExcha
 	return NewFinalExchangeRatesState(), false, nil
 }
 
-func (stateDB *StateDB) getLiquidateExchangeRatesByKey(key common.Hash) (*LiquidateExchangeRatesPool, bool, error) {
+func (stateDB *StateDB) getLiquidateExchangeRatesPoolByKey(key common.Hash) (*LiquidateExchangeRatesPool, bool, error) {
 	liquidateExchangeRates, err := stateDB.getStateObject(PortalLiquidationExchangeRatesPoolObjectType, key)
 	if err != nil {
 		return nil, false, err

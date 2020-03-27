@@ -200,7 +200,7 @@ const (
 	getPortalPortingRequestByPortingId            = "getportalportingrequestbyportingid"
 	convertExchangeRates                          = "convertexchangerates"
 	getPortalReqPTokenStatus                      = "getportalreqptokenstatus"
-	getPortingFees                                = "getportingfees"
+	getPortingRequestFees                         = "getportingrequestfees"
 	createAndSendTxWithRedeemReq                  = "createandsendtxwithredeemreq"
 	createAndSendTxWithReqUnlockCollateral        = "createandsendtxwithrequnlockcollateral"
 	getPortalReqUnlockCollateralStatus            = "getportalrequnlockcollateralstatus"

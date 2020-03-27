@@ -171,22 +171,33 @@ func GetOneCustodian(stateDB *StateDB,beaconHeight uint64, custodianAddress stri
 }
 
 //======================  Exchange rate  ======================
-func GetAllFinalExchangeRatesState(
+func GetFinalExchangeRatesState(
 	stateDB *StateDB,
 	beaconHeight uint64,
 ) (map[string]*FinalExchangeRatesState, error) {
-	allFinalExchangeRatesState := stateDB.getAllFinalExchangeRatesState()
-	return allFinalExchangeRatesState, nil
+	result := map[string]*FinalExchangeRatesState{}
+	key := GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
+	finalExchangeRates, has, err := stateDB.getFinalExchangeRatesByKey(key)
+	if err != nil {
+		return nil, NewStatedbError(GetPortalFinalExchangeRatesStateError, err)
+	}
+	if !has {
+		return nil, NewStatedbError(GetPortalFinalExchangeRatesStateError, fmt.Errorf("key with beacon height %+v not found", beaconHeight))
+	}
+
+	result[key.String()] = finalExchangeRates
+
+	return result, nil
 }
 
 func GetFinalExchangeRatesByKey(stateDB *StateDB, beaconHeight uint64) (*FinalExchangeRatesState, error)  {
 	key := GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
 	finalExchangeRates, has, err := stateDB.getFinalExchangeRatesByKey(key)
 	if err != nil {
-		return nil, NewStatedbError(GetPortalFinalExchangeRatesStatusError, err)
+		return nil, NewStatedbError(GetPortalFinalExchangeRatesStateError, err)
 	}
 	if !has {
-		return nil, NewStatedbError(GetPortalFinalExchangeRatesStatusError, fmt.Errorf("key with beacon height %+v not found", beaconHeight))
+		return nil, NewStatedbError(GetPortalFinalExchangeRatesStateError, fmt.Errorf("key with beacon height %+v not found", beaconHeight))
 	}
 
 	return finalExchangeRates, nil
@@ -251,12 +262,22 @@ func GetPortalExpiredPortingRequestStatus(stateDB *StateDB, waitingPortingID str
 	return data, nil
 }
 
-func GetAllLiquidateExchangeRates(
+func GetLiquidateExchangeRatesPool(
 	stateDB *StateDB,
 	beaconHeight uint64,
 ) (map[string]*LiquidateExchangeRatesPool, error) {
-	liquidateExchangeRatesPool := stateDB.GetAllLiquidateExchangeRates()
-	return liquidateExchangeRatesPool, nil
+	result := map[string]*LiquidateExchangeRatesPool{}
+	key := GeneratePortalLiquidateExchangeRatesPoolObjectKey(beaconHeight)
+	liquidateExchangeRates, has, err := stateDB.getLiquidateExchangeRatesPoolByKey(key)
+	if err != nil {
+		return nil, NewStatedbError(GetPortalLiquidationExchangeRatesPoolError, err)
+	}
+	if !has {
+		return nil, NewStatedbError(GetPortalLiquidationExchangeRatesPoolError, fmt.Errorf("key with beacon height %+v not found", beaconHeight))
+	}
+	result[key.String()] = liquidateExchangeRates
+
+	return result, nil
 }
 
 func StoreBulkLiquidateExchangeRates(
@@ -276,12 +297,12 @@ func StoreBulkLiquidateExchangeRates(
 
 func GetLiquidateExchangeRatesByKey(stateDB *StateDB, beaconHeight uint64) (*LiquidateExchangeRatesPool, error)  {
 	key := GeneratePortalLiquidateExchangeRatesPoolObjectKey(beaconHeight)
-	liquidateExchangeRates, has, err := stateDB.getLiquidateExchangeRatesByKey(key)
+	liquidateExchangeRates, has, err := stateDB.getLiquidateExchangeRatesPoolByKey(key)
 	if err != nil {
-		return nil, NewStatedbError(GetPortalLiquidationExchangeRatesError, err)
+		return nil, NewStatedbError(GetPortalLiquidationExchangeRatesPoolError, err)
 	}
 	if !has {
-		return nil, NewStatedbError(GetPortalLiquidationExchangeRatesError, fmt.Errorf("key with beacon height %+v not found", beaconHeight))
+		return nil, NewStatedbError(GetPortalLiquidationExchangeRatesPoolError, fmt.Errorf("key with beacon height %+v not found", beaconHeight))
 	}
 
 	return liquidateExchangeRates, nil
@@ -356,7 +377,7 @@ func GetAllWaitingPortingRequests(
 	stateDB *StateDB,
 	beaconHeight uint64,
 ) (map[string]*WaitingPortingRequest, error) {
-	waitingPortingRequestList := stateDB.GetAllWaitingPortingRequests()
+	waitingPortingRequestList := stateDB.getAllWaitingPortingRequests()
 	return waitingPortingRequestList, nil
 }
 
