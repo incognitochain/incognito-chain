@@ -1212,19 +1212,6 @@ func (stateDB *StateDB) getAllFinalExchangeRatesState() map[string]*FinalExchang
 	return finalExchangeRatesStates
 }
 
-//todo:
-func (stateDB *StateDB) GetPortalStatusByKey(key common.Hash) (*PortalStatusState, bool, error) {
-/*	pdeStatusState, err := stateDB.getStateObject(PDEStatusObjectType, key)
-	if err != nil {
-		return nil, false, err
-	}
-	if pdeStatusState != nil {
-		return pdeStatusState.GetValue().(*PDEStatusState), true, nil
-	}
-	return NewPDEStatusState(), false, nil*/
-	return nil, false, nil
-}
-
 func (stateDB *StateDB) GetAllWaitingPortingRequests() map[string]*WaitingPortingRequest {
 	waitingPortingRequest := map[string]*WaitingPortingRequest{}
 	temp := stateDB.trie.NodeIterator(GetPortalWaitingPortingRequestPrefix())
@@ -1248,7 +1235,7 @@ func (stateDB *StateDB) GetAllWaitingPortingRequests() map[string]*WaitingPortin
 
 func (stateDB *StateDB) GetAllLiquidateExchangeRates() map[string]*LiquidateExchangeRatesPool {
 	 liquidateExchangeRates := map[string]*LiquidateExchangeRatesPool{}
-	temp := stateDB.trie.NodeIterator(GetPortalWaitingPortingRequestPrefix())
+	temp := stateDB.trie.NodeIterator(GetPortalLiquidationExchangeRatesPoolPrefix())
 	it := trie.NewIterator(temp)
 	for it.Next() {
 		key := it.Key

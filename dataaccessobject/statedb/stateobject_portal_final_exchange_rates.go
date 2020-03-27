@@ -7,7 +7,6 @@ import (
 	"reflect"
 )
 
-//todo: remove this line
 type FinalExchangeRatesDetail struct {
 	Amount uint64
 }
@@ -30,6 +29,14 @@ func NewFinalExchangeRatesState() *FinalExchangeRatesState {
 
 func NewFinalExchangeRatesStateWithValue(rates map[string]FinalExchangeRatesDetail) *FinalExchangeRatesState {
 	return &FinalExchangeRatesState{rates: rates}
+}
+
+func GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight uint64) common.Hash {
+	beaconHeightBytes := fmt.Sprintf("%d-", beaconHeight)
+	suffix := "portal"
+	prefixHash := GetFinalExchangeRatesStatePrefix()
+	valueHash := common.HashH([]byte(beaconHeightBytes + suffix))
+	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 
 func (f *FinalExchangeRatesState) MarshalJSON() ([]byte, error) {
@@ -75,74 +82,6 @@ type FinalExchangeRatesStateObject struct {
 	// by StateDB.Commit.
 	dbErr error
 }
-func (f FinalExchangeRatesStateObject) GetVersion() int {
-	return f.version
-}
-
-// setError remembers the first non-nil error it is called with.
-func (f *FinalExchangeRatesStateObject) SetError(err error) {
-	if f.dbErr == nil {
-		f.dbErr = err
-	}
-}
-
-func (f FinalExchangeRatesStateObject) GetTrie(db DatabaseAccessWarper) Trie {
-	return f.trie
-}
-
-func (f *FinalExchangeRatesStateObject) SetValue(data interface{}) error {
-	finalExchangeRatesState, ok := data.(*FinalExchangeRatesState)
-	if !ok {
-		return fmt.Errorf("%+v, got type %+v", ErrInvalidFinalExchangeRatesStateType, reflect.TypeOf(data))
-	}
-	f.finalExchangeRatesState = finalExchangeRatesState
-	return nil
-}
-
-func (f FinalExchangeRatesStateObject) GetValue() interface{} {
-	return f.finalExchangeRatesState
-}
-
-func (f FinalExchangeRatesStateObject) GetValueBytes() []byte {
-	finalExchangeRatesState, ok := f.GetValue().(*FinalExchangeRatesState)
-	if !ok {
-		panic("wrong expected value type")
-	}
-	value, err := json.Marshal(finalExchangeRatesState)
-	if err != nil {
-		panic("failed to marshal finalExchangeRatesState")
-	}
-	return value
-}
-
-func (f FinalExchangeRatesStateObject) GetHash() common.Hash {
-	return f.finalExchangeRatesStateHash
-}
-
-func (f FinalExchangeRatesStateObject) GetType() int {
-	return f.objectType
-}
-
-// MarkDelete will delete an object in trie
-func (f *FinalExchangeRatesStateObject) MarkDelete() {
-	f.deleted = true
-}
-
-// reset all shard committee value into default value
-func (f *FinalExchangeRatesStateObject) Reset() bool {
-	f.finalExchangeRatesState = NewFinalExchangeRatesState()
-	return true
-}
-
-func (f FinalExchangeRatesStateObject) IsDeleted() bool {
-	return f.deleted
-}
-
-// value is either default or nil
-func (f FinalExchangeRatesStateObject) IsEmpty() bool {
-	temp := NewPDEStatusState()
-	return reflect.DeepEqual(temp, f.finalExchangeRatesState) || f.finalExchangeRatesState == nil
-}
 
 func newFinalExchangeRatesStateObjectWithValue(db *StateDB, finalExchangeRatesStateHash common.Hash, data interface{}) (*FinalExchangeRatesStateObject, error) {
 	var newFinalExchangeRatesState = NewFinalExchangeRatesState()
@@ -180,12 +119,73 @@ func newFinalExchangeRatesStateObject(db *StateDB, finalExchangeRatesStateHash c
 	}
 }
 
-func GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight uint64) common.Hash {
-	beaconHeightBytes := fmt.Sprintf("%d-", beaconHeight)
-	suffix := "portal"
-	prefixHash := GetFinalExchangeRatesStatePrefix()
-	valueHash := common.HashH([]byte(beaconHeightBytes + suffix))
-	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
+func (f FinalExchangeRatesStateObject) GetVersion() int {
+	return f.version
+}
+
+// setError remembers the first non-nil error it is called with.
+func (f *FinalExchangeRatesStateObject) SetError(err error) {
+	if f.dbErr == nil {
+		f.dbErr = err
+	}
+}
+
+func (f FinalExchangeRatesStateObject) GetTrie(db DatabaseAccessWarper) Trie {
+	return f.trie
+}
+
+func (f *FinalExchangeRatesStateObject) SetValue(data interface{}) error {
+	finalExchangeRatesState, ok := data.(*FinalExchangeRatesState)
+	if !ok {
+		return fmt.Errorf("%+v, got type %+v", ErrInvalidFinalExchangeRatesStateType, reflect.TypeOf(data))
+	}
+	f.finalExchangeRatesState = finalExchangeRatesState
+	return nil
+}
+
+func (f FinalExchangeRatesStateObject) GetValue() interface{} {
+	return f.finalExchangeRatesState
+}
+
+func (f FinalExchangeRatesStateObject) GetValueBytes() []byte {
+	finalExchangeRatesState, ok := f.GetValue().(*FinalExchangeRatesState)
+	if !ok {
+		panic("wrong expected value type")
+	}
+	value, err := json.Marshal(finalExchangeRatesState)
+	if err != nil {
+		panic("failed to marshal FinalExchangeRatesState")
+	}
+	return value
+}
+
+func (f FinalExchangeRatesStateObject) GetHash() common.Hash {
+	return f.finalExchangeRatesStateHash
+}
+
+func (f FinalExchangeRatesStateObject) GetType() int {
+	return f.objectType
+}
+
+// MarkDelete will delete an object in trie
+func (f *FinalExchangeRatesStateObject) MarkDelete() {
+	f.deleted = true
+}
+
+// reset all shard committee value into default value
+func (f *FinalExchangeRatesStateObject) Reset() bool {
+	f.finalExchangeRatesState = NewFinalExchangeRatesState()
+	return true
+}
+
+func (f FinalExchangeRatesStateObject) IsDeleted() bool {
+	return f.deleted
+}
+
+// value is either default or nil
+func (f FinalExchangeRatesStateObject) IsEmpty() bool {
+	temp := NewPDEStatusState()
+	return reflect.DeepEqual(temp, f.finalExchangeRatesState) || f.finalExchangeRatesState == nil
 }
 
 
