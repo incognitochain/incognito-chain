@@ -230,7 +230,7 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(porta
 			)
 
 			contentStatusBytes, _ := json.Marshal(newTPExchangeRates)
-			err = statedb.TrackPortalStateStatus(
+			err = statedb.TrackPortalStateStatusMultiple(
 				portalStateDB,
 				statedb.PortalLiquidationTpExchangeRatesStatusPrefix(),
 				newTPKey,
@@ -254,7 +254,7 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(porta
 		)
 
 		contentStatusBytes, _ := json.Marshal(newTPExchangeRates)
-		err = statedb.TrackPortalStateStatus(
+		err = statedb.TrackPortalStateStatusMultiple(
 			portalStateDB,
 			statedb.PortalLiquidationTpExchangeRatesStatusPrefix(),
 			newTPKey,
@@ -334,7 +334,7 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(portalSt
 		)
 
 		contentStatusBytes, _ := json.Marshal(redeem)
-		err = statedb.TrackPortalStateStatus(
+		err = statedb.TrackPortalStateStatusMultiple(
 			portalStateDB,
 			statedb.PortalLiquidationRedeemRequestStatusPrefix(),
 			[]byte(actionData.TxReqID.String()),
@@ -378,7 +378,7 @@ func (blockchain *BlockChain) processPortalRedeemLiquidateExchangeRates(portalSt
 		)
 
 		contentStatusBytes, _ := json.Marshal(redeem)
-		err = statedb.TrackPortalStateStatus(
+		err = statedb.TrackPortalStateStatusMultiple(
 			portalStateDB,
 			statedb.PortalLiquidationRedeemRequestStatusPrefix(),
 			[]byte(actionData.TxReqID.String()),
@@ -469,7 +469,7 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(portalSta
 		)
 
 		contentStatusBytes, _ := json.Marshal(newLiquidationCustodianDeposit)
-		err = statedb.TrackPortalStateStatus(
+		err = statedb.TrackPortalStateStatusMultiple(
 			portalStateDB,
 			statedb.PortalLiquidationCustodianDepositStatusPrefix(),
 			[]byte(actionData.TxReqID.String()),
@@ -491,7 +491,7 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(portalSta
 		)
 
 		contentStatusBytes, _ := json.Marshal(newLiquidationCustodianDeposit)
-		err = statedb.TrackPortalStateStatus(
+		err = statedb.TrackPortalStateStatusMultiple(
 			portalStateDB,
 			statedb.PortalLiquidationCustodianDepositStatusPrefix(),
 			[]byte(actionData.TxReqID.String()),

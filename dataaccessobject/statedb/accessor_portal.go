@@ -3,6 +3,7 @@ package statedb
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/metadata"
 )
 
 //======================  Redeem  ======================
@@ -287,66 +288,88 @@ func GetLiquidateExchangeRatesByKey(stateDB *StateDB, beaconHeight uint64) (*Liq
 }
 
 //======================  Porting  ======================
-//todo:
-func TrackPortalStateStatus(stateDB *StateDB, statusType []byte, statusSuffix []byte, statusContent []byte) error {
-	/*key := GeneratePortalStatusObjectKey(statusType, statusSuffix)
+func TrackPortalStateStatusMultiple(stateDB *StateDB, statusType []byte, statusSuffix []byte, statusContent []byte) error {
+	key := GeneratePortalStatusObjectKey(statusType, statusSuffix)
 	value := NewPortalStatusStateWithValue(statusType, statusSuffix, statusContent)
-	_ := stateDB.SetStateObject(PortalStatusObjectType, key, value)*/
+	err := stateDB.SetStateObject(PortalStatusObjectType, key, value)
 
-	/*switch statusType {
-		case byte("abic"):
-			if err != nil {
-				return NewStatedbError(StorePortalStatusError, err)
-			}
-	}*/
+	var errType int
+	switch string(statusType) {
+		case string(PortalLiquidationTpExchangeRatesStatusPrefix()):
+			errType = StoreLiquidateTopPercentileExchangeRatesError
+		case string(PortalLiquidationRedeemRequestStatusPrefix()):
+			errType = StoreRedeemLiquidationExchangeRatesError
+		case string(PortalLiquidationCustodianDepositStatusPrefix()):
+			errType = StoreLiquidationCustodianDepositError
+		case string(PortalPortingRequestStatusPrefix()):
+			errType = StorePortalStatusError
+		case string(PortalPortingRequestTxStatusPrefix()):
+			errType = StorePortalTxStatusError
+		case string(PortalExchangeRatesRequestStatusPrefix()):
+			errType = StorePortalExchangeRatesStatusError
+		case string(PortalCustodianWithdrawStatusPrefix()):
+			errType = StorePortalCustodianWithdrawRequestStateError
+		default:
+			errType = StorePortalStatusError
+	}
+
+	if err != nil {
+		return NewStatedbError(errType, err)
+	}
 
 	return nil
 }
 
-//todo:
 func GetPortalStateStatusMultiple(stateDB *StateDB, statusType []byte, statusSuffix []byte) (interface{}, error) {
-	/*key := GeneratePortalStatusObjectKey(statusType, statusSuffix)
-	s, has, err := stateDB.GetPortalStatusByKey(key)
+	key := GeneratePortalStatusObjectKey(statusType, statusSuffix)
+	s, has, err := stateDB.getPortalStatusByKey(key)
+
+	var errType int
+	switch string(statusType) {
+		case string(PortalPortingRequestStatusPrefix()):
+			errType = GetPortingRequestStatusError
+		case string(PortalPortingRequestTxStatusPrefix()):
+			errType = GetPortingRequestTxStatusError
+		case string(PortalLiquidationTpExchangeRatesStatusPrefix()):
+			errType = GetLiquidationTopPercentileExchangeRatesStatusError
+		default:
+			errType = StorePortalStatusError
+	}
+
 	if err != nil {
-		return 0, NewStatedbError(GetPDEStatusError, err)
+		return []byte{}, NewStatedbError(errType, err)
 	}
+
 	if !has {
-		return 0, NewStatedbError(GetPDEStatusError, fmt.Errorf("status %+v with prefix %+v not found", string(statusType), string(statusSuffix)))
+		return []byte{}, NewStatedbError(errType, fmt.Errorf("status %+v with prefix %+v not found", string(statusType), string(statusSuffix)))
 	}
-	return s.statusContent[0], nil*/
-	return nil, nil
+
+	return interface{}(s.statusContent), nil
 }
 
-//todo:
 // UpdatePortingRequestStatus updates status of porting request by portingID
-func UpdatePortingRequestStatus(portingID string, newStatus int) error {
-	/*key := NewPortingRequestKey(portingID)
-	portingRequest, err := db.GetItemPortalByKey([]byte(key))
+func UpdatePortingRequestStatus(stateDB *StateDB, portingID string, newStatus int) error {
+	key := GeneratePortalStatusObjectKey(PortalPortingRequestStatusPrefix(), []byte(portingID))
+	s, has, err := stateDB.getPortalStatusByKey(key)
 
 	if err != nil {
-		return err
+		return NewStatedbError(GetPortingRequestStatusError, err)
 	}
 
-	var portingRequestResult PortingRequest
-
-	if portingRequest == nil {
-		return nil
+	if !has {
+		return NewStatedbError(GetPortingRequestStatusError, fmt.Errorf("status %+v with prefix %+v not found", PortalPortingRequestStatusPrefix(), portingID))
 	}
 
-	//get value via idx
-	err = json.Unmarshal(portingRequest, &portingRequestResult)
+	portingRequestInterface := interface{}(s.statusContent)
+	portingRequest := portingRequestInterface.(*metadata.PortingRequestStatus)
+
+	portingRequest.Status = newStatus
+
+	err = stateDB.SetStateObject(PortalStatusObjectType, key, portingRequest)
 	if err != nil {
-		return err
+		return NewStatedbError(StorePortalStatusError, err)
 	}
 
-	portingRequestResult.Status = newStatus
-
-	//save porting request
-	err = db.StorePortingRequestItem([]byte(key), portingRequestResult)
-	if err != nil {
-		return err
-	}
-*/
 	return nil
 }
 

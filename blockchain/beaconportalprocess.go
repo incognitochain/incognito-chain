@@ -310,7 +310,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 
 		//save transaction
 		newPortingTxRequestStatusBytes, _ := json.Marshal(newPortingTxRequestStateAccept)
-		err = statedb.TrackPortalStateStatus(
+		err = statedb.TrackPortalStateStatusMultiple(
 			portalStateDB,
 			statedb.PortalPortingRequestStatusPrefix(),
 			[]byte(txReqID.String()),
@@ -324,7 +324,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 
 		//save success porting request
 		newPortingRequestStatusBytes, _ := json.Marshal(newPortingRequestStateAccept)
-		err = statedb.TrackPortalStateStatus(
+		err = statedb.TrackPortalStateStatusMultiple(
 			portalStateDB,
 			statedb.PortalPortingRequestTxStatusPrefix(),
 			[]byte(uniquePortingID),
@@ -366,7 +366,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 
 		//save transaction
 		newPortingTxRequestStatusBytes, _ := json.Marshal(newPortingRequest)
-		err = statedb.TrackPortalStateStatus(
+		err = statedb.TrackPortalStateStatusMultiple(
 			portalStateDB,
 			statedb.PortalPortingRequestTxStatusPrefix(),
 			[]byte(txReqID.String()),
@@ -516,7 +516,7 @@ func (blockchain *BlockChain) processPortalExchangeRates(portalStateDB *statedb.
 		)
 
 		newExchangeRatesStatusBytes, _ := json.Marshal(newExchangeRates)
-		err = statedb.TrackPortalStateStatus(
+		err = statedb.TrackPortalStateStatusMultiple(
 			portalStateDB,
 			statedb.PortalExchangeRatesRequestStatusPrefix(),
 			[]byte(portingExchangeRatesContent.TxReqID.String()),
@@ -541,7 +541,7 @@ func (blockchain *BlockChain) processPortalExchangeRates(portalStateDB *statedb.
 		)
 
 		newExchangeRatesStatusBytes, _ := json.Marshal(newExchangeRates)
-		err = statedb.TrackPortalStateStatus(
+		err = statedb.TrackPortalStateStatusMultiple(
 			portalStateDB,
 			statedb.PortalExchangeRatesRequestStatusPrefix(),
 			[]byte(portingExchangeRatesContent.TxReqID.String()),
@@ -873,7 +873,7 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(portalStateD
 		}
 
 		contentStatusBytes, _ := json.Marshal(newCustodianWithdrawRequest)
-		err = statedb.TrackPortalStateStatus(
+		err = statedb.TrackPortalStateStatusMultiple(
 			portalStateDB,
 			statedb.PortalCustodianWithdrawStatusPrefix(),
 			[]byte(txHash),
@@ -900,7 +900,7 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(portalStateD
 		)
 
 		contentStatusBytes, _ := json.Marshal(newCustodianWithdrawRequest)
-		err = statedb.TrackPortalStateStatus(
+		err = statedb.TrackPortalStateStatusMultiple(
 			portalStateDB,
 			statedb.PortalCustodianWithdrawStatusPrefix(),
 			[]byte(txHash),
