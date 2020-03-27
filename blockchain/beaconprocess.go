@@ -414,7 +414,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 			shardBlocks = shardBlocks[:len(beaconBlock.Body.ShardState[shardID])]
 
 			for _, shardBlock := range shardBlocks {
-				tempShardState, stakeInstruction, tempValidStakePublicKeys, swapInstruction, bridgeInstruction, acceptedBlockRewardInstruction, stopAutoStakingInstruction, statefulActions := blockchain.GetShardStateFromBlock(beaconBlock.Header.Height, shardBlock, shardID, false, validStakePublicKeys)
+				tempShardState, stakeInstruction, tempValidStakePublicKeys, swapInstruction, bridgeInstruction, acceptedBlockRewardInstruction, stopAutoStakingInstruction, statefulActions := blockchain.GetShardStateFromBlock(curView, beaconBlock.Header.Height, shardBlock, shardID, false, validStakePublicKeys)
 				tempShardStates[shardID] = append(tempShardStates[shardID], tempShardState[shardID])
 				stakeInstructions = append(stakeInstructions, stakeInstruction...)
 				swapInstructions[shardID] = append(swapInstructions[shardID], swapInstruction[shardID]...)
@@ -1106,137 +1106,137 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	Logger.log.Debugf("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, beaconBlock.Header.Hash())
 	blockHash := beaconBlock.Header.Hash()
 	blockHeight := beaconBlock.Header.Height
-	curView := blockchain.GetBeaconBestState()
+
 	var err error
 	//statedb===========================START
 	// Added
-	err = statedb.StoreCurrentEpochShardCandidate(curView.consensusStateDB, committeeChange.currentEpochShardCandidateAdded, curView.RewardReceiver, curView.AutoStaking)
+	err = statedb.StoreCurrentEpochShardCandidate(newBestState.consensusStateDB, committeeChange.currentEpochShardCandidateAdded, newBestState.RewardReceiver, newBestState.AutoStaking)
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreNextEpochShardCandidate(curView.consensusStateDB, committeeChange.nextEpochShardCandidateAdded, curView.RewardReceiver, curView.AutoStaking)
+	err = statedb.StoreNextEpochShardCandidate(newBestState.consensusStateDB, committeeChange.nextEpochShardCandidateAdded, newBestState.RewardReceiver, newBestState.AutoStaking)
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreCurrentEpochBeaconCandidate(curView.consensusStateDB, committeeChange.currentEpochBeaconCandidateAdded, curView.RewardReceiver, curView.AutoStaking)
+	err = statedb.StoreCurrentEpochBeaconCandidate(newBestState.consensusStateDB, committeeChange.currentEpochBeaconCandidateAdded, newBestState.RewardReceiver, newBestState.AutoStaking)
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreNextEpochBeaconCandidate(curView.consensusStateDB, committeeChange.nextEpochBeaconCandidateAdded, curView.RewardReceiver, curView.AutoStaking)
+	err = statedb.StoreNextEpochBeaconCandidate(newBestState.consensusStateDB, committeeChange.nextEpochBeaconCandidateAdded, newBestState.RewardReceiver, newBestState.AutoStaking)
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreAllShardSubstitutesValidator(curView.consensusStateDB, committeeChange.shardSubstituteAdded, curView.RewardReceiver, curView.AutoStaking)
+	err = statedb.StoreAllShardSubstitutesValidator(newBestState.consensusStateDB, committeeChange.shardSubstituteAdded, newBestState.RewardReceiver, newBestState.AutoStaking)
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreAllShardCommittee(curView.consensusStateDB, committeeChange.shardCommitteeAdded, curView.RewardReceiver, curView.AutoStaking)
+	err = statedb.StoreAllShardCommittee(newBestState.consensusStateDB, committeeChange.shardCommitteeAdded, newBestState.RewardReceiver, newBestState.AutoStaking)
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreBeaconSubstituteValidator(curView.consensusStateDB, committeeChange.beaconSubstituteAdded, curView.RewardReceiver, curView.AutoStaking)
+	err = statedb.StoreBeaconSubstituteValidator(newBestState.consensusStateDB, committeeChange.beaconSubstituteAdded, newBestState.RewardReceiver, newBestState.AutoStaking)
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreBeaconCommittee(curView.consensusStateDB, committeeChange.beaconCommitteeAdded, curView.RewardReceiver, curView.AutoStaking)
+	err = statedb.StoreBeaconCommittee(newBestState.consensusStateDB, committeeChange.beaconCommitteeAdded, newBestState.RewardReceiver, newBestState.AutoStaking)
 	if err != nil {
 		return err
 	}
 	// Deleted
-	err = statedb.DeleteCurrentEpochShardCandidate(curView.consensusStateDB, committeeChange.currentEpochShardCandidateRemoved)
+	err = statedb.DeleteCurrentEpochShardCandidate(newBestState.consensusStateDB, committeeChange.currentEpochShardCandidateRemoved)
 	if err != nil {
 		return err
 	}
-	err = statedb.DeleteNextEpochShardCandidate(curView.consensusStateDB, committeeChange.nextEpochShardCandidateRemoved)
+	err = statedb.DeleteNextEpochShardCandidate(newBestState.consensusStateDB, committeeChange.nextEpochShardCandidateRemoved)
 	if err != nil {
 		return err
 	}
-	err = statedb.DeleteCurrentEpochBeaconCandidate(curView.consensusStateDB, committeeChange.currentEpochBeaconCandidateRemoved)
+	err = statedb.DeleteCurrentEpochBeaconCandidate(newBestState.consensusStateDB, committeeChange.currentEpochBeaconCandidateRemoved)
 	if err != nil {
 		return err
 	}
-	err = statedb.DeleteNextEpochBeaconCandidate(curView.consensusStateDB, committeeChange.nextEpochBeaconCandidateRemoved)
+	err = statedb.DeleteNextEpochBeaconCandidate(newBestState.consensusStateDB, committeeChange.nextEpochBeaconCandidateRemoved)
 	if err != nil {
 		return err
 	}
-	err = statedb.DeleteAllShardSubstitutesValidator(curView.consensusStateDB, committeeChange.shardSubstituteRemoved)
+	err = statedb.DeleteAllShardSubstitutesValidator(newBestState.consensusStateDB, committeeChange.shardSubstituteRemoved)
 	if err != nil {
 		return err
 	}
-	err = statedb.DeleteAllShardCommittee(curView.consensusStateDB, committeeChange.shardCommitteeRemoved)
+	err = statedb.DeleteAllShardCommittee(newBestState.consensusStateDB, committeeChange.shardCommitteeRemoved)
 	if err != nil {
 		return err
 	}
-	err = statedb.DeleteBeaconSubstituteValidator(curView.consensusStateDB, committeeChange.beaconSubstituteRemoved)
+	err = statedb.DeleteBeaconSubstituteValidator(newBestState.consensusStateDB, committeeChange.beaconSubstituteRemoved)
 	if err != nil {
 		return err
 	}
-	err = statedb.DeleteBeaconCommittee(curView.consensusStateDB, committeeChange.beaconCommitteeRemoved)
+	err = statedb.DeleteBeaconCommittee(newBestState.consensusStateDB, committeeChange.beaconCommitteeRemoved)
 	if err != nil {
 		return err
 	}
 
-	blockchain.processForSlashing(curView.slashStateDB, beaconBlock)
+	blockchain.processForSlashing(newBestState.slashStateDB, beaconBlock)
 
 	// Remove shard reward request of old epoch
 	// this value is no longer needed because, old epoch reward has been split and send to shard
 	if beaconBlock.Header.Height%blockchain.config.ChainParams.Epoch == 2 {
-		statedb.RemoveRewardOfShardByEpoch(curView.rewardStateDB, beaconBlock.Header.Epoch-1)
+		statedb.RemoveRewardOfShardByEpoch(newBestState.rewardStateDB, beaconBlock.Header.Epoch-1)
 	}
-	err = blockchain.addShardRewardRequestToBeacon(beaconBlock, curView.rewardStateDB)
+	err = blockchain.addShardRewardRequestToBeacon(beaconBlock, newBestState.rewardStateDB)
 	if err != nil {
 		return NewBlockChainError(UpdateDatabaseWithBlockRewardInfoError, err)
 	}
 	// execute, store
-	err = blockchain.processBridgeInstructions(curView.featureStateDB, beaconBlock)
+	err = blockchain.processBridgeInstructions(newBestState.featureStateDB, beaconBlock)
 	if err != nil {
 		return NewBlockChainError(ProcessBridgeInstructionError, err)
 	}
 	// execute, store
-	err = blockchain.processPDEInstructions(curView.featureStateDB, beaconBlock)
+	err = blockchain.processPDEInstructions(newBestState.featureStateDB, beaconBlock)
 	if err != nil {
 		return NewBlockChainError(ProcessPDEInstructionError, err)
 	}
-	consensusRootHash, err := curView.consensusStateDB.Commit(true)
+	consensusRootHash, err := newBestState.consensusStateDB.Commit(true)
 	if err != nil {
 		return err
 	}
-	err = curView.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false)
+	err = newBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false)
 	if err != nil {
 		return err
 	}
-	curView.ConsensusStateDBRootHash = consensusRootHash
-	featureRootHash, err := curView.featureStateDB.Commit(true)
+	newBestState.ConsensusStateDBRootHash = consensusRootHash
+	featureRootHash, err := newBestState.featureStateDB.Commit(true)
 	if err != nil {
 		return err
 	}
-	err = curView.featureStateDB.Database().TrieDB().Commit(featureRootHash, false)
+	err = newBestState.featureStateDB.Database().TrieDB().Commit(featureRootHash, false)
 	if err != nil {
 		return err
 	}
-	curView.FeatureStateDBRootHash = featureRootHash
-	rewardRootHash, err := curView.rewardStateDB.Commit(true)
+	newBestState.FeatureStateDBRootHash = featureRootHash
+	rewardRootHash, err := newBestState.rewardStateDB.Commit(true)
 	if err != nil {
 		return err
 	}
-	err = curView.rewardStateDB.Database().TrieDB().Commit(rewardRootHash, false)
+	err = newBestState.rewardStateDB.Database().TrieDB().Commit(rewardRootHash, false)
 	if err != nil {
 		return err
 	}
-	curView.RewardStateDBRootHash = rewardRootHash
-	slashRootHash, err := curView.slashStateDB.Commit(true)
+	newBestState.RewardStateDBRootHash = rewardRootHash
+	slashRootHash, err := newBestState.slashStateDB.Commit(true)
 	if err != nil {
 		return err
 	}
-	err = curView.slashStateDB.Database().TrieDB().Commit(slashRootHash, false)
+	err = newBestState.slashStateDB.Database().TrieDB().Commit(slashRootHash, false)
 	if err != nil {
 		return err
 	}
-	curView.SlashStateDBRootHash = slashRootHash
-	curView.consensusStateDB.ClearObjects()
-	curView.rewardStateDB.ClearObjects()
-	curView.featureStateDB.ClearObjects()
-	curView.slashStateDB.ClearObjects()
+	newBestState.SlashStateDBRootHash = slashRootHash
+	newBestState.consensusStateDB.ClearObjects()
+	newBestState.rewardStateDB.ClearObjects()
+	newBestState.featureStateDB.ClearObjects()
+	newBestState.slashStateDB.ClearObjects()
 	//statedb===========================END
 
 	if err := rawdbv2.StoreBeaconBlockIndex(blockchain.GetDatabase(), blockHeight, blockHash); err != nil {

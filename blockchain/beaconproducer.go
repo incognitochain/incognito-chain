@@ -281,7 +281,7 @@ func (blockchain *BlockChain) GetShardState(beaconBestState *BeaconBestState) (m
 		//}
 		//Logger.log.Infof("Beacon Producer/ AFTER FILTER, Shard %+v ONLY GET %+v block", shardID, totalBlock+1)
 		for _, shardBlock := range shardBlocks {
-			shardState, validStakeInstruction, tempValidStakePublicKeys, validSwapInstruction, bridgeInstruction, acceptedRewardInstruction, stopAutoStakingInstruction, statefulActions := blockchain.GetShardStateFromBlock(beaconBestState.BeaconHeight+1, shardBlock, shardID, true, validStakePublicKeys)
+			shardState, validStakeInstruction, tempValidStakePublicKeys, validSwapInstruction, bridgeInstruction, acceptedRewardInstruction, stopAutoStakingInstruction, statefulActions := blockchain.GetShardStateFromBlock(beaconBestState, beaconBestState.BeaconHeight+1, shardBlock, shardID, true, validStakePublicKeys)
 			shardStates[shardID] = append(shardStates[shardID], shardState[shardID])
 			validStakeInstructions = append(validStakeInstructions, validStakeInstruction...)
 			validSwapInstructions[shardID] = append(validSwapInstructions[shardID], validSwapInstruction[shardID]...)
@@ -376,7 +376,7 @@ func (beaconBestState *BeaconBestState) GetValidStakers(stakers []string) []stri
 //	4. Bridge Instruction
 //	5. Accepted BlockReward Instruction
 //	6. StopAutoStakingInstruction
-func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, shardBlock *ShardToBeaconBlock, shardID byte, isProducer bool, validStakePublicKeys []string) (map[byte]ShardState, [][]string, []string, map[byte][][]string, [][]string, []string, [][]string, [][]string) {
+func (blockchain *BlockChain) GetShardStateFromBlock(curView *BeaconBestState, newBeaconHeight uint64, shardBlock *ShardToBeaconBlock, shardID byte, isProducer bool, validStakePublicKeys []string) (map[byte]ShardState, [][]string, []string, map[byte][][]string, [][]string, []string, [][]string, [][]string) {
 	//Variable Declaration
 	shardStates := make(map[byte]ShardState)
 	stakeInstructions := [][]string{}
@@ -410,7 +410,6 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 	shardState.Height = shardBlock.Header.Height
 	shardStates[shardID] = shardState
 	instructions := shardBlock.Instructions
-	curView := blockchain.GetBeaconBestState()
 
 	// extract instructions
 	for _, instruction := range instructions {
