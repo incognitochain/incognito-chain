@@ -249,7 +249,8 @@ func (proof PaymentProofV2) ValidateSanity() (bool, error) {
 }
 
 // Privacy TODO: update version 2 remember to fix this
-func Prove(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, hasPrivacy bool) (*PaymentProofV2, error) {
+func Prove(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, hasPrivacy bool, paymentInfoPtr *[]*key.PaymentInfo) (*PaymentProofV2, error) {
+	paymentInfo := *paymentInfoPtr
 	inputCoins := *inp
 	outputCoins := *out
 	// Init proof
@@ -265,11 +266,11 @@ func Prove(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, hasPrivacy bool) (*P
 	}
 
 	// Prepare range proofs
-	n := len(out)
+	n := len(outputCoins)
 	outputValues := make([]uint64, n)
 	outputRands := make([]*operation.Scalar, n)
 	for i := 0; i < n; i += 1 {
-		outputValues[i] = out[i].CoinDetails.GetValue()
+		outputValues[i] = outputCoins[i].CoinDetails.GetValue()
 		outputRands[i] = operation.RandomScalar()
 	}
 
@@ -280,6 +281,29 @@ func Prove(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, hasPrivacy bool) (*P
 	if err != nil {
 		return nil, err
 	}
+
+	// After Prove, we should hide all information in coin details.
+	// encrypt coin details (Randomness)
+	// hide information of output coins except coin commitments, public key, snDerivators
+	for i := 0; i < len(proof.GetOutputCoins()); i++ {
+		err = proof.GetOutputCoins()[i].Encrypt(paymentInfo[i].PaymentAddress.Tk)
+		if err.(*errhandler.PrivacyError) != nil {
+			return nil, err.(*errhandler.PrivacyError)
+		}
+		proof.GetOutputCoins()[i].CoinDetails.SetSerialNumber(nil)
+		proof.GetOutputCoins()[i].CoinDetails.SetValue(0)
+		proof.GetOutputCoins()[i].CoinDetails.SetRandomness(nil)
+	}
+
+	// hide information of input coins except serial number of input coins
+	for i := 0; i < len(proof.GetInputCoins()); i++ {
+		proof.GetInputCoins()[i].CoinDetails.SetCoinCommitment(nil)
+		proof.GetInputCoins()[i].CoinDetails.SetValue(0)
+		proof.GetInputCoins()[i].CoinDetails.SetSNDerivator(nil)
+		proof.GetInputCoins()[i].CoinDetails.SetPublicKey(nil)
+		proof.GetInputCoins()[i].CoinDetails.SetRandomness(nil)
+	}
+
 	return proof, nil
 }
 

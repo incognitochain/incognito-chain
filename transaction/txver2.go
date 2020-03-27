@@ -163,7 +163,7 @@ func (*TxVersion2) Prove(tx *Tx, params *TxPrivacyInitParams) error {
 	inputCoins := &params.inputCoins
 
 	var conversion privacy.Proof
-	conversion, err = privacy_v2.Prove(inputCoins, outputCoins, params.hasPrivacy)
+	conversion, err = privacy_v2.Prove(inputCoins, outputCoins, params.hasPrivacy, &params.paymentInfo)
 	if err != nil {
 		return err
 	}
