@@ -283,6 +283,26 @@ func (blockchain *BlockChain) updateDatabaseWithBlockRewardInfo(beaconBlock *Bea
 	return nil
 }
 
+func (blockchain *BlockChain) updateDatabaseWithBlockRewardInfoV2(beaconBlock *BeaconBlock, bd *[]database.BatchData) error {
+	for _, inst := range beaconBlock.Body.Instructions {
+		if len(inst) <= 2 {
+			continue
+		}
+		if inst[0] == SetAction || inst[0] == StakeAction || inst[0] == RandomAction || inst[0] == SwapAction || inst[0] == AssignAction {
+			continue
+		}
+		metaType, err := strconv.Atoi(inst[0])
+		if err != nil {
+			continue
+		}
+		switch metaType {
+		case metadata.AcceptedBlockRewardInfoMeta:
+			//TODO: add shard reward request to db
+		}
+	}
+	return nil
+}
+
 func (blockchain *BlockChain) buildWithDrawTransactionResponse(
 	txRequest *metadata.Transaction,
 	blkProducerPrivateKey *privacy.PrivateKey,
