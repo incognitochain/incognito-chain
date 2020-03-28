@@ -30,10 +30,13 @@ const (
 	TokenTransactionObjectType
 
 	// portal
-	//A
+	//final exchange rates
 	PortalFinalExchangeRatesStateObjectType
-	PortalLiquidationExchangeRatesPoolObjectType
+	//waiting porting request
 	PortalWaitingPortingRequestObjectType
+	//liquidation
+	PortalLiquidationExchangeRatesPoolObjectType
+
 	//B
 	PortalStatusObjectType
 	CustodianStateObjectType

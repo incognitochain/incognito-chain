@@ -241,7 +241,7 @@ func (portal *Portal) GetLiquidateExchangeRatesPool(
 	tokenSymbol string,
 ) (jsonresult.GetLiquidateExchangeRates, error) {
 	portalStateDB := portal.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
-	liquidateExchangeRates, err := statedb.GetLiquidateExchangeRatesByKey(portalStateDB, beaconHeight)
+	liquidateExchangeRates, err := statedb.GetLiquidateExchangeRatesPoolByKey(portalStateDB, beaconHeight)
 
 	if err != nil {
 		return jsonresult.GetLiquidateExchangeRates{}, err

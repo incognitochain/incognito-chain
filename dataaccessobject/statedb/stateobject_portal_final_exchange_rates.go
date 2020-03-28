@@ -32,10 +32,9 @@ func NewFinalExchangeRatesStateWithValue(rates map[string]FinalExchangeRatesDeta
 }
 
 func GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight uint64) common.Hash {
-	beaconHeightBytes := fmt.Sprintf("%d-", beaconHeight)
-	suffix := "portal"
-	prefixHash := GetFinalExchangeRatesStatePrefix()
-	valueHash := common.HashH([]byte(beaconHeightBytes + suffix))
+	suffix := "exchangerates"
+	prefixHash := GetFinalExchangeRatesStatePrefix(beaconHeight)
+	valueHash := common.HashH([]byte(suffix))
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 

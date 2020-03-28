@@ -126,10 +126,6 @@ const (
 	PortalReqPTokenAcceptedStatus = 1
 	PortalReqPTokenRejectedStatus = 2
 
-	// TODO: to be removed
-	//PortalPortingRequestAcceptedStatus = 1
-	//PortalPortingRequestRejectedStatus = 2
-
 	PortalPortingTxRequestAcceptedStatus = 1
 	PortalPortingTxRequestRejectedStatus = 2
 

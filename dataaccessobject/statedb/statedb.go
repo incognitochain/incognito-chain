@@ -1191,7 +1191,7 @@ func (stateDB *StateDB) getBurningConfirmState(key common.Hash) (*BurningConfirm
 }
 
 // ================================= Portal OBJECT =======================================
-func (stateDB *StateDB) getAllWaitingPortingRequests(beaconHeight uint64) map[string]*WaitingPortingRequest {
+func (stateDB *StateDB) getWaitingPortingRequests(beaconHeight uint64) map[string]*WaitingPortingRequest {
 	waitingPortingRequest := make(map[string]*WaitingPortingRequest)
 	temp := stateDB.trie.NodeIterator(GetPortalWaitingPortingRequestPrefix(beaconHeight))
 	it := trie.NewIterator(temp)
@@ -1243,6 +1243,48 @@ func (stateDB *StateDB) getLiquidateExchangeRatesPoolByKey(key common.Hash) (*Li
 		return liquidateExchangeRates.GetValue().(*LiquidateExchangeRatesPool), true, nil
 	}
 	return NewLiquidateExchangeRatesPool(), false, nil
+}
+
+func (stateDB *StateDB) getLiquidateExchangeRatesPool(beaconHeight uint64) map[string]*LiquidateExchangeRatesPool {
+	liquidateExchangeRatesPoolList := make(map[string]*LiquidateExchangeRatesPool)
+	temp := stateDB.trie.NodeIterator(GetPortalLiquidationExchangeRatesPoolPrefix(beaconHeight))
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		key := it.Key
+		keyHash, _ := common.Hash{}.NewHash(key)
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		object := NewLiquidateExchangeRatesPool()
+		err := json.Unmarshal(newValue, object)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		liquidateExchangeRatesPoolList[keyHash.String()] = object
+	}
+
+	return liquidateExchangeRatesPoolList
+}
+
+func (stateDB *StateDB) getFinalExchangeRatesState(beaconHeight uint64) map[string]*FinalExchangeRatesState {
+	finalExchangeRatesState := make(map[string]*FinalExchangeRatesState)
+	temp := stateDB.trie.NodeIterator(GetFinalExchangeRatesStatePrefix(beaconHeight))
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		key := it.Key
+		keyHash, _ := common.Hash{}.NewHash(key)
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		object := NewFinalExchangeRatesState()
+		err := json.Unmarshal(newValue, object)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		finalExchangeRatesState[keyHash.String()] = object
+	}
+
+	return finalExchangeRatesState
 }
 
 //B

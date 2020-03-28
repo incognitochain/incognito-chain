@@ -33,10 +33,9 @@ func NewLiquidateExchangeRatesPoolWithValue(rates map[string]LiquidateExchangeRa
 }
 
 func GeneratePortalLiquidateExchangeRatesPoolObjectKey(beaconHeight uint64) common.Hash {
-	beaconHeightBytes := fmt.Sprintf("%d-", beaconHeight)
 	suffix := "liquidation"
-	prefixHash := GetPortalLiquidationExchangeRatesPoolPrefix()
-	valueHash := common.HashH([]byte(beaconHeightBytes + suffix))
+	prefixHash := GetPortalLiquidationExchangeRatesPoolPrefix(beaconHeight)
+	valueHash := common.HashH([]byte(suffix))
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 

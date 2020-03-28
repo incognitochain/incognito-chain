@@ -175,20 +175,8 @@ func GetFinalExchangeRatesState(
 	stateDB *StateDB,
 	beaconHeight uint64,
 ) (map[string]*FinalExchangeRatesState, error) {
-	result := map[string]*FinalExchangeRatesState{}
-	key := GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
-	finalExchangeRates, has, err := stateDB.getFinalExchangeRatesByKey(key)
-	if err != nil {
-		//todo: review
-		panic("wrong get final exchange rates")
-	}
-	if !has {
-		return result, nil
-	}
-
-	result[key.String()] = finalExchangeRates
-
-	return result, nil
+	finalExchangeRates := stateDB.getFinalExchangeRatesState(beaconHeight)
+	return finalExchangeRates, nil
 }
 
 func GetFinalExchangeRatesByKey(stateDB *StateDB, beaconHeight uint64) (*FinalExchangeRatesState, error)  {
@@ -267,37 +255,26 @@ func GetLiquidateExchangeRatesPool(
 	stateDB *StateDB,
 	beaconHeight uint64,
 ) (map[string]*LiquidateExchangeRatesPool, error) {
-	result := map[string]*LiquidateExchangeRatesPool{}
-	key := GeneratePortalLiquidateExchangeRatesPoolObjectKey(beaconHeight)
-	liquidateExchangeRates, has, err := stateDB.getLiquidateExchangeRatesPoolByKey(key)
-	if err != nil {
-		//todo: review
-		panic("wrong get liquidate exchange rates")
-	}
-	if !has {
-		return result, nil
-	}
-	result[key.String()] = liquidateExchangeRates
-
-	return result, nil
+	liquidateExchangeRates := stateDB.getLiquidateExchangeRatesPool(beaconHeight)
+	return liquidateExchangeRates, nil
 }
 
-func StoreBulkLiquidateExchangeRates(
+func StoreBulkLiquidateExchangeRatesPool(
 	stateDB *StateDB,
 	beaconHeight uint64,
 	liquidateExchangeRates map[string]*LiquidateExchangeRatesPool,
 ) error {
 	for _, value := range liquidateExchangeRates {
-		key := GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
-		err := stateDB.SetStateObject(PortalFinalExchangeRatesStateObjectType, key, value)
+		key := GeneratePortalLiquidateExchangeRatesPoolObjectKey(beaconHeight)
+		err := stateDB.SetStateObject(PortalLiquidationExchangeRatesPoolObjectType, key, value)
 		if err != nil {
-			return NewStatedbError(StoreFinalExchangeRatesStateError, err)
+			return NewStatedbError(StoreLiquidateExchangeRatesPoolError, err)
 		}
 	}
 	return nil
 }
 
-func GetLiquidateExchangeRatesByKey(stateDB *StateDB, beaconHeight uint64) (*LiquidateExchangeRatesPool, error)  {
+func GetLiquidateExchangeRatesPoolByKey(stateDB *StateDB, beaconHeight uint64) (*LiquidateExchangeRatesPool, error)  {
 	key := GeneratePortalLiquidateExchangeRatesPoolObjectKey(beaconHeight)
 	liquidateExchangeRates, has, err := stateDB.getLiquidateExchangeRatesPoolByKey(key)
 	if err != nil {
@@ -390,11 +367,11 @@ func IsPortingRequestIdExist(stateDB *StateDB, statusSuffix []byte) (bool, error
 
 //====================== Waiting Porting  ======================
 // getCustodianPoolState gets custodian pool state at beaconHeight
-func GetAllWaitingPortingRequests(
+func GetWaitingPortingRequests(
 	stateDB *StateDB,
 	beaconHeight uint64,
 ) (map[string]*WaitingPortingRequest, error) {
-	waitingPortingRequestList := stateDB.getAllWaitingPortingRequests(beaconHeight)
+	waitingPortingRequestList := stateDB.getWaitingPortingRequests(beaconHeight)
 	return waitingPortingRequestList, nil
 }
 

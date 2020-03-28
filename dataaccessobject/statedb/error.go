@@ -125,12 +125,8 @@ const (
 	//portal
 	StoreCustodianDepositStateError
 	StoreCustodianStateError
-	StoreWaitingPortingRequestError
 	StoreWaitingRedeemRequestError
-	StorePortingRequestStateError
 	StoreRedeemRequestStateError
-	StoreExchangeRatesRequestStateError
-	StoreFinalExchangeRatesStateError
 	TrackCustodianDepositError
 	TrackReqPTokenError
 	GetItemPortalByKeyError
@@ -141,23 +137,34 @@ const (
 	TrackRedeemReqByTxReqIDError
 	TrackReqUnlockCollateralByTxReqIDError
 	GetReqUnlockCollateralStatusError
-
-	StorePortalCustodianWithdrawRequestStateError
 	TrackLiquidateCustodianError
-	StoreLiquidateTopPercentileExchangeRatesError
-	StoreLiquidateExchangeRatesError
-	StoreRedeemLiquidationExchangeRatesError
-	StoreLiquidationCustodianDepositError
 
 	StorePortalRewardError
 
-	//A
+	//porting request
+	GetPortingRequestTxStatusError
+	GetPortingRequestStatusError
+	StorePortingRequestStateError
+	StoreWaitingPortingRequestError
+	//exchange rates
 	GetPortalFinalExchangeRatesStateError
 	StorePortalExchangeRatesStatusError
+	StoreExchangeRatesRequestStateError
+	StoreFinalExchangeRatesStateError
+
+	//liquidation exchange rates
 	GetPortalLiquidationExchangeRatesPoolError
-	GetPortingRequestStatusError
-	GetPortingRequestTxStatusError
 	GetLiquidationTopPercentileExchangeRatesStatusError
+	StoreLiquidateTopPercentileExchangeRatesError
+	StoreLiquidateExchangeRatesPoolError
+	//liquidation custodian deposit
+	StoreLiquidationCustodianDepositError
+	//liquidation user redeem
+	StoreRedeemLiquidationExchangeRatesError
+
+	//custodian withdraw
+	StorePortalCustodianWithdrawRequestStateError
+
 	//B
 	StorePortalStatusError
 	StorePortalTxStatusError
@@ -278,7 +285,7 @@ var ErrCodeMessage = map[int]struct {
 	TrackLiquidateCustodianError:                  {-14019, "Track liquidation custodian error"},
 	StorePortalRewardError:                        {-14020, "Store portal reward error"},
 	StoreLiquidateTopPercentileExchangeRatesError: {-14021, "Store liquidate top percentile exchange rates error"},
-	StoreLiquidateExchangeRatesError:              {-14022, "Store liquidate exchange rates error"},
+	StoreLiquidateExchangeRatesPoolError:              {-14022, "Store liquidate exchange rates pool error"},
 	StoreRedeemLiquidationExchangeRatesError:      {-14023, "Store redeem liquidation exchange rates error"},
 	StoreLiquidationCustodianDepositError:         {-14024, "Store liquidation custodian deposit error"},
 	StoreCustodianStateError:                      {-14025, "Store custodian state error"},

@@ -255,8 +255,8 @@ func GetPDEStatusKey(prefix []byte, suffix []byte) []byte {
 
 // Portal
 //A
-func GetFinalExchangeRatesStatePrefix() []byte {
-	h := common.HashH(portalFinaExchangeRatesStatePrefix)
+func GetFinalExchangeRatesStatePrefix(beaconHeight uint64) []byte {
+	h := common.HashH(append(portalFinaExchangeRatesStatePrefix, []byte(fmt.Sprintf("%d", beaconHeight))...))
 	return h[:][:prefixHashKeyLength]
 }
 
@@ -293,8 +293,8 @@ func GetPortalWaitingPortingRequestPrefix(beaconHeight uint64) []byte {
 	return h[:][:prefixHashKeyLength]
 }
 
-func GetPortalLiquidationExchangeRatesPoolPrefix() []byte {
-	h := common.HashH(portalLiquidationExchangeRatesPoolPrefix)
+func GetPortalLiquidationExchangeRatesPoolPrefix(beaconHeight uint64) []byte {
+	h := common.HashH(append(portalLiquidationExchangeRatesPoolPrefix, []byte(fmt.Sprintf("%d", beaconHeight))...))
 	return h[:][:prefixHashKeyLength]
 }
 
