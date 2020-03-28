@@ -297,7 +297,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			amount,
 			custodiansDetail,
 			portingFee,
-			common.PortalPortingRequestAcceptedStatus,
+			common.PortalPortingReqWaitingStatus,
 			beaconHeight+1,
 		)
 
@@ -344,7 +344,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		for _, itemCustodian := range custodiansDetail {
 			//update custodian state
 			custodianKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, itemCustodian.IncAddress)
-			custodianKeyStr := string(custodianKey[:])
+			custodianKeyStr := custodianKey.String()
 			_ = UpdateCustodianWithNewAmount(currentPortalState, custodianKeyStr, tokenID, itemCustodian.Amount, itemCustodian.LockedAmountCollateral)
 		}
 
@@ -414,7 +414,7 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 	if reqStatus == common.PortalReqPTokensAcceptedChainStatus {
 		// remove portingRequest from waitingPortingRequests
 		waitingPortingReqKey := statedb.GeneratePortalWaitingPortingRequestObjectKey(beaconHeight, actionData.UniquePortingID)
-		waitingPortingReqKeyStr := string(waitingPortingReqKey[:])
+		waitingPortingReqKeyStr := waitingPortingReqKey.String()
 		deleteWaitingPortingRequest(currentPortalState, waitingPortingReqKeyStr)
 		// make sure user can not re-use proof for other portingID
 		// update status of porting request with portingID

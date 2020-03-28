@@ -472,6 +472,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 
 // buildInstructionsForCustodianDeposit builds instruction for custodian deposit action
 func (blockchain *BlockChain) buildInstructionsForReqPTokens(
+	stateDB *statedb.StateDB,
 	contentStr string,
 	shardID byte,
 	metaType int,
@@ -532,7 +533,6 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 	db := blockchain.GetDatabase()
 
 	//check unique id from record from db
-	stateDB := blockchain.BestState.Beacon.GetCopiedFeatureStateDB()
 	portingRequest, err := statedb.GetPortalStateStatusMultiple(stateDB, statedb.PortalPortingRequestStatusPrefix(), []byte(meta.UniquePortingID))
 
 	if err != nil {
@@ -570,7 +570,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 	}
 
 	if portingRequestStatus.Status != common.PortalPortingReqWaitingStatus {
-		Logger.log.Errorf("PortingID status invalid")
+		Logger.log.Errorf("PortingID status invalid, expected %v , but got %v\n", common.PortalPortingReqWaitingStatus, portingRequestStatus.Status)
 		inst := buildReqPTokensInst(
 			meta.UniquePortingID,
 			meta.TokenID,

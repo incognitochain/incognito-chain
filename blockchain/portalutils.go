@@ -635,6 +635,7 @@ func updateFreeCollateralCustodian(custodianState *statedb.CustodianState, redee
 	convertExchangeRatesObj := NewConvertExchangeRatesObject(exchangeRate)
 
 	unlockedAmount := uint64(0)
+	var err error
 	if custodianState.GetHoldingPublicTokens()[tokenID] == 0 {
 		unlockedAmount = custodianState.GetLockedAmountCollateral()[tokenID]
 		lockedAmountTmp := custodianState.GetLockedAmountCollateral()
@@ -643,7 +644,7 @@ func updateFreeCollateralCustodian(custodianState *statedb.CustodianState, redee
 		custodianState.SetFreeCollateral(custodianState.GetFreeCollateral() + unlockedAmount)
 	} else {
 		unlockedAmountInPToken := uint64(math.Floor(float64(redeemAmount) * 1.2))
-		unlockedAmount, err := convertExchangeRatesObj.ExchangePToken2PRVByTokenId(tokenID, unlockedAmountInPToken)
+		unlockedAmount, err = convertExchangeRatesObj.ExchangePToken2PRVByTokenId(tokenID, unlockedAmountInPToken)
 
 		if err != nil {
 			Logger.log.Errorf("Convert PToken is error %v", err)
