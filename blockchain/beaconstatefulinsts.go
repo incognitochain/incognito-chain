@@ -582,6 +582,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 		for _, action := range actions {
 			contentStr := action[1]
 			newInst, err := blockchain.buildInstructionsForReqPTokens(
+				stateDB,
 				contentStr,
 				shardID,
 				metadata.PortalUserRequestPTokenMeta,

@@ -999,12 +999,15 @@ func (blockService BlockService) GetPortalRedeemReqStatus(redeemID string) (*met
 	}
 
 	var status metadata.PortalRedeemRequestStatus
-	err = json.Unmarshal(data, &status)
-	if err != nil {
-		return nil, err
+	if len(data) > 0 {
+		err = json.Unmarshal(data, &status)
+		if err != nil {
+			return nil, err
+		}
+		return &status, nil
 	}
 
-	return &status, nil
+	return nil, nil
 }
 
 func (blockService BlockService) GetPortalLiquidationCustodianStatus(redeemID string, custodianIncAddress string) (*metadata.PortalLiquidateCustodianStatus, error) {

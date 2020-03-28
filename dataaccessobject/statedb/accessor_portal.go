@@ -62,7 +62,7 @@ func GetPortalRedeemRequestStatus(stateDB *StateDB, redeemID string) ([]byte, er
 	statusType := PortalRedeemRequestStatusPrefix()
 	statusSuffix := []byte(redeemID)
 	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
-	if err != nil {
+	if err != nil && err.(*StatedbError).GetErrorCode() != ErrCodeMessage[GetPortalStatusNotFoundError].Code {
 		return []byte{}, NewStatedbError(GetPortalRedeemRequestStatusError, err)
 	}
 
@@ -449,7 +449,7 @@ func GetPortalStatus(stateDB *StateDB, statusType []byte, statusSuffix []byte) (
 		return []byte{}, NewStatedbError(GetPortalStatusError, err)
 	}
 	if !has {
-		return []byte{}, NewStatedbError(GetPortalStatusError, fmt.Errorf("status %+v with prefix %+v not found", string(statusType), string(statusSuffix)))
+		return []byte{}, NewStatedbError(GetPortalStatusNotFoundError, fmt.Errorf("status %+v with prefix %+v not found", string(statusType), string(statusSuffix)))
 	}
 	return s.statusContent, nil
 }

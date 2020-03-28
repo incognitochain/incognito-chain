@@ -162,6 +162,7 @@ const (
 	StorePortalStatusError
 	StorePortalTxStatusError
 	GetPortalStatusError
+	GetPortalStatusNotFoundError
 	GetPortalRedeemRequestStatusError
 	StorePortalRedeemRequestStatusError
 	StorePortalCustodianDepositStatusError
@@ -308,6 +309,7 @@ var ErrCodeMessage = map[int]struct {
 	GetPortingRequestStatusError:                        {-14041, "Get portal porting request status error"},
 	GetPortingRequestTxStatusError:                      {-14042, "Get portal porting request tx status error"},
 	GetLiquidationTopPercentileExchangeRatesStatusError: {-14043, "Get liquidation tp ex change rates status error"},
+	GetPortalStatusNotFoundError:                                {-14044, "Get portal status not found error"},
 }
 
 type StatedbError struct {
