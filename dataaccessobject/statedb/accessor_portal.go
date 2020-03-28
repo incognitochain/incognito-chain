@@ -98,7 +98,7 @@ func GetCustodianPoolState(
 	stateDB *StateDB,
 	beaconHeight uint64,
 ) (map[string]*CustodianState, error) {
-	waitingRedeemRequests := stateDB.getAllCustodianStatePool()
+	waitingRedeemRequests := stateDB.getAllCustodianStatePool(beaconHeight)
 	return waitingRedeemRequests, nil
 }
 

@@ -1266,9 +1266,9 @@ func (stateDB *StateDB) getAllWaitingRedeemRequest() map[string]*WaitingRedeemRe
 	return waitingRedeemRequests
 }
 
-func (stateDB *StateDB) getAllCustodianStatePool() map[string]*CustodianState {
+func (stateDB *StateDB) getAllCustodianStatePool(beaconHeight uint64) map[string]*CustodianState {
 	custodians := make(map[string]*CustodianState)
-	temp := stateDB.trie.NodeIterator(GetPortalCustodianStatePrefix())
+	temp := stateDB.trie.NodeIterator(GetPortalCustodianStatePrefix(beaconHeight))
 	it := trie.NewIterator(temp)
 	for it.Next() {
 		key := it.Key

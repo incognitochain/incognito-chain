@@ -266,8 +266,8 @@ func newCustodianStateObjectWithValue(db *StateDB, key common.Hash, data interfa
 }
 
 func GenerateCustodianStateObjectKey(beaconHeight uint64, custodianIncognitoAddress string) common.Hash {
-	prefixHash := GetPortalCustodianStatePrefix()
-	valueHash := common.HashH(append([]byte(fmt.Sprintf("%d-", beaconHeight)), []byte(custodianIncognitoAddress)...))
+	prefixHash := GetPortalCustodianStatePrefix(beaconHeight)
+	valueHash := common.HashH([]byte(custodianIncognitoAddress))
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 
