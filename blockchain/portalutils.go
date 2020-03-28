@@ -298,18 +298,19 @@ func UpdateCustodianWithNewAmount(currentPortalState *CurrentPortalState, custod
 	holdingPubTokens := holdingPubTokensMapping
 
 	//update collateral holded
-	totalLockedAmountCollateral := make(map[string]uint64)
+
 	if custodian.GetLockedAmountCollateral() == nil {
+		totalLockedAmountCollateral := make(map[string]uint64)
 		totalLockedAmountCollateral[PTokenId] = lockedAmountCollateral
+		custodian.SetLockedAmountCollateral(totalLockedAmountCollateral)
 	} else {
-		for ptokenId, value := range custodian.GetLockedAmountCollateral() {
-			totalLockedAmountCollateral[ptokenId] = value + lockedAmountCollateral
-		}
+		lockedAmount := custodian.GetLockedAmountCollateral()
+		lockedAmount[PTokenId] = lockedAmount[PTokenId] + lockedAmountCollateral
+		custodian.SetLockedAmountCollateral(lockedAmount)
 	}
 
 	custodian.SetFreeCollateral(freeCollateral)
 	custodian.SetHoldingPublicTokens(holdingPubTokens)
-	custodian.SetLockedAmountCollateral(totalLockedAmountCollateral)
 
 	currentPortalState.CustodianPoolState[custodianKey] = custodian
 
