@@ -314,7 +314,7 @@ func (blockchain *BlockChain) updateDatabaseWithBlockRewardInfoV2(beaconBlock *B
 			}
 			for key, value := range acceptedBlkRewardInfo.TxsFee {
 				if value != 0 {
-					err = addShardRewardRequest(beaconBlock.Header.Epoch, acceptedBlkRewardInfo.ShardID, value, key, rewardMap)
+					err = addShardRewardRequest(beaconBlock.Header.Epoch, acceptedBlkRewardInfo.ShardID, value, key, rewardMap, blockchain.GetDatabase())
 					if err != nil {
 						return err
 					}
@@ -355,19 +355,26 @@ func addShardRewardRequest(
 	rewardAmount uint64,
 	tokenID common.Hash,
 	rewardMap map[string][]byte,
+	db database.DatabaseInterface,
 ) error {
 	key := newKeyAddShardRewardRequest(epoch, shardID, tokenID)
 	oldValue, ok := rewardMap[string(key)]
 	if !ok {
-		rewardMap[string(key)] = common.Uint64ToBytes(rewardAmount)
-	} else {
-		newValue, err := common.BytesToUint64(oldValue)
+		oldValueFromDB, err := db.Get(key)
 		if err != nil {
-			return NewBlockChainError(BuildRewardInstructionError, err)
+			oldValue = common.Uint64ToBytes(uint64(0))
+			// rewardMap[string(key)] = common.Uint64ToBytes(rewardAmount)
+		} else {
+			oldValue = oldValueFromDB
 		}
-		newValue += rewardAmount
-		rewardMap[string(key)] = common.Uint64ToBytes(newValue)
 	}
+	newValue, err := common.BytesToUint64(oldValue)
+	if err != nil {
+		return NewBlockChainError(BuildRewardInstructionError, err)
+	}
+	newValue += rewardAmount
+	rewardMap[string(key)] = common.Uint64ToBytes(newValue)
+
 	return nil
 }
 
