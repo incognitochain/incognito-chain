@@ -299,8 +299,8 @@ func GetPortalLiquidationExchangeRatesPoolPrefix() []byte {
 }
 
 //B
-func GetPortalCustodianStatePrefix() []byte {
-	h := common.HashH(portalCustodianStatePrefix)
+func GetPortalCustodianStatePrefix(beaconHeight uint64) []byte {
+	h := common.HashH(append(portalCustodianStatePrefix, []byte(fmt.Sprintf("%d", beaconHeight))...))
 	return h[:][:prefixHashKeyLength]
 }
 
