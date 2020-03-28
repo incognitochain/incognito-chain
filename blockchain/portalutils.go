@@ -112,6 +112,14 @@ func storePortalStateToDB(
 		return err
 	}
 
+	// remove waiting requests of the previous block
+	//for key, req := range currentPortalState.WaitingPortingRequests {
+	//	currentPortalState.DeletedWaitingPortingRequests[key] = req
+	//}
+	//for key, req := range currentPortalState.WaitingRedeemRequests {
+	//	currentPortalState.DeletedWaitingRedeemRequests[key] = req
+	//}
+
 	// delete waiting redeem request in deleted waiting requests list
 	statedb.DeleteWaitingRedeemRequest(stateDB, currentPortalState.DeletedWaitingRedeemRequests)
 	statedb.DeleteWaitingPortingRequest(stateDB, currentPortalState.DeletedWaitingPortingRequests)

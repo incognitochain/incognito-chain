@@ -305,8 +305,8 @@ func newWaitingRedeemRequestObjectWithValue(db *StateDB, key common.Hash, data i
 }
 
 func GenerateWaitingRedeemRequestObjectKey(beaconHeight uint64, redeemID string) common.Hash {
-	prefixHash := GetWaitingRedeemRequestPrefix()
-	valueHash := common.HashH(append([]byte(fmt.Sprintf("%d-", beaconHeight)), []byte(redeemID)...))
+	prefixHash := GetWaitingRedeemRequestPrefix(beaconHeight)
+	valueHash := common.HashH([]byte(redeemID))
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 

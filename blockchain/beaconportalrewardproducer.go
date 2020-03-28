@@ -194,7 +194,7 @@ func (blockchain *BlockChain) buildInstructionsForReqWithdrawPortalReward(
 	meta := actionData.Meta
 
 	keyCustodianState := statedb.GenerateCustodianStateObjectKey(beaconHeight, meta.CustodianAddressStr)
-	keyCustodianStateStr := string(keyCustodianState[:])
+	keyCustodianStateStr := keyCustodianState.String()
 	custodian := currentPortalState.CustodianPoolState[keyCustodianStateStr]
 	if custodian == nil {
 		Logger.log.Warn("WARN - [buildInstructionsForReqWithdrawPortalReward]: Not found custodian address in custodian pool.")

@@ -1246,13 +1246,13 @@ func (stateDB *StateDB) getLiquidateExchangeRatesPoolByKey(key common.Hash) (*Li
 }
 
 //B
-func (stateDB *StateDB) getAllWaitingRedeemRequest() map[string]*WaitingRedeemRequest {
+func (stateDB *StateDB) getAllWaitingRedeemRequest(beaconHeight uint64) map[string]*WaitingRedeemRequest {
 	waitingRedeemRequests := make(map[string]*WaitingRedeemRequest)
-	temp := stateDB.trie.NodeIterator(GetWaitingRedeemRequestPrefix())
+	temp := stateDB.trie.NodeIterator(GetWaitingRedeemRequestPrefix(beaconHeight))
 	it := trie.NewIterator(temp)
 	for it.Next() {
 		key := it.Key
-		keyStr := string(key)
+		keyHash, _ := common.Hash{}.NewHash(key)
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -1261,7 +1261,7 @@ func (stateDB *StateDB) getAllWaitingRedeemRequest() map[string]*WaitingRedeemRe
 		if err != nil {
 			panic("wrong expect type")
 		}
-		waitingRedeemRequests[keyStr] = wr
+		waitingRedeemRequests[keyHash.String()] = wr
 	}
 	return waitingRedeemRequests
 }
@@ -1272,7 +1272,7 @@ func (stateDB *StateDB) getAllCustodianStatePool(beaconHeight uint64) map[string
 	it := trie.NewIterator(temp)
 	for it.Next() {
 		key := it.Key
-		keyStr := string(key)
+		keyHash, _ := common.Hash{}.NewHash(key)
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -1281,7 +1281,7 @@ func (stateDB *StateDB) getAllCustodianStatePool(beaconHeight uint64) map[string
 		if err != nil {
 			panic("wrong expect type")
 		}
-		custodians[keyStr] = cus
+		custodians[keyHash.String()] = cus
 	}
 	return custodians
 }

@@ -304,8 +304,8 @@ func GetPortalCustodianStatePrefix(beaconHeight uint64) []byte {
 	return h[:][:prefixHashKeyLength]
 }
 
-func GetWaitingRedeemRequestPrefix() []byte {
-	h := common.HashH(portalWaitingRedeemRequestsPrefix)
+func GetWaitingRedeemRequestPrefix(beaconHeight uint64) []byte {
+	h := common.HashH(append(portalWaitingRedeemRequestsPrefix, []byte(fmt.Sprintf("%d", beaconHeight))...))
 	return h[:][:prefixHashKeyLength]
 }
 

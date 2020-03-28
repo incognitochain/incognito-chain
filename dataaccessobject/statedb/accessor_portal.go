@@ -8,7 +8,7 @@ import (
 
 //======================  Redeem  ======================
 func GetWaitingRedeemRequests(stateDB *StateDB, beaconHeight uint64) (map[string]*WaitingRedeemRequest, error) {
-	waitingRedeemRequests := stateDB.getAllWaitingRedeemRequest()
+	waitingRedeemRequests := stateDB.getAllWaitingRedeemRequest(beaconHeight)
 	return waitingRedeemRequests, nil
 }
 

@@ -176,7 +176,7 @@ func checkAndBuildInstForCustodianLiquidation(
 
 				// update custodian state (total collateral, holding public tokens, locked amount, free collateral)
 				cusStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, matchCusDetail.GetIncognitoAddress())
-				cusStateKeyStr := string(cusStateKey[:])
+				cusStateKeyStr := cusStateKey.String()
 				custodianState := currentPortalState.CustodianPoolState[cusStateKeyStr]
 				if custodianState == nil {
 					Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when get custodian state with key %v\n: ", cusStateKey)
@@ -312,7 +312,7 @@ func buildInstForExpiredPortingReqByPortingID(
 	// update custodian state in matching custodians list (holding public tokens, locked amount)
 	for _, matchCusDetail := range portingReq.Custodians() {
 		cusStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, matchCusDetail.IncAddress)
-		cusStateKeyStr := string(cusStateKey[:])
+		cusStateKeyStr := cusStateKey.String()
 		custodianState := currentPortalState.CustodianPoolState[cusStateKeyStr]
 		if custodianState == nil {
 			Logger.log.Errorf("[checkAndBuildInstForExpiredWaitingPortingRequest] Error when get custodian state with key %v\n: ", cusStateKey)
@@ -441,7 +441,7 @@ func checkAndBuildInstForTPExchangeRateRedeemRequest(
 	}
 	// update custodian state (update locked amount, holding public token amount)
 	custodianStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, liquidatedCustodianState.GetIncognitoAddress())
-	custodianStateKeyStr := string(custodianStateKey[:])
+	custodianStateKeyStr := custodianStateKey.String()
 	holdingPubTokenTmp := currentPortalState.CustodianPoolState[custodianStateKeyStr].GetHoldingPublicTokens()
 	holdingPubTokenTmp[tokenID] -= totalMatchingRedeemAmountPubToken
 	currentPortalState.CustodianPoolState[custodianStateKeyStr].SetHoldingPublicTokens(holdingPubTokenTmp)

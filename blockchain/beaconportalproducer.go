@@ -164,7 +164,7 @@ func (blockchain *BlockChain) buildInstructionsForCustodianDeposit(
 	meta := actionData.Meta
 
 	keyCustodianState := statedb.GenerateCustodianStateObjectKey(beaconHeight, meta.IncogAddressStr)
-	keyCustodianStateStr := string(keyCustodianState[:])
+	keyCustodianStateStr := keyCustodianState.String()
 
 	if currentPortalState.CustodianPoolState[keyCustodianStateStr] == nil {
 		Logger.log.Errorf("buildInstructionsForCustodianDeposit - 11111 !!!!!")
@@ -993,7 +993,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 
 	// check uniqueRedeemID is existed waitingRedeem list or not
 	keyWaitingRedeemRequest := statedb.GenerateWaitingRedeemRequestObjectKey(beaconHeight, redeemID)
-	keyWaitingRedeemRequestStr := string(keyWaitingRedeemRequest[:])
+	keyWaitingRedeemRequestStr := keyWaitingRedeemRequest.String()
 	waitingRedeemRequest := currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr]
 	if waitingRedeemRequest != nil {
 		Logger.log.Errorf("RedeemID is existed in waiting redeem requests list %v\n", redeemID)
@@ -1132,7 +1132,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 	// update custodian state (holding public tokens)
 	for _, cus := range matchingCustodiansDetail {
 		custodianStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, cus.GetIncognitoAddress())
-		custodianStateKeyStr := string(custodianStateKey[:])
+		custodianStateKeyStr := custodianStateKey.String()
 		if currentPortalState.CustodianPoolState[custodianStateKeyStr].GetHoldingPublicTokens()[tokenID] < cus.GetAmount() {
 			Logger.log.Errorf("Amount holding public tokens is less than matching redeem amount")
 			inst := buildRedeemRequestInst(
@@ -1234,7 +1234,7 @@ func (blockchain *BlockChain) buildInstructionsForCustodianWithdraw(
 	}
 
 	custodianKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, actionData.Meta.PaymentAddress)
-	custodianKeyStr := string(custodianKey[:])
+	custodianKeyStr := custodianKey.String()
 	custodian, ok := currentPortalState.CustodianPoolState[custodianKeyStr]
 
 	if !ok {
@@ -1363,7 +1363,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 	// check meta.UniqueRedeemID is in waiting RedeemRequests list in portal state or not
 	redeemID := meta.UniqueRedeemID
 	keyWaitingRedeemRequest := statedb.GenerateWaitingRedeemRequestObjectKey(beaconHeight, redeemID)
-	keyWaitingRedeemRequestStr := string(keyWaitingRedeemRequest[:])
+	keyWaitingRedeemRequestStr := keyWaitingRedeemRequest.String()
 	waitingRedeemRequest := currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr]
 	if waitingRedeemRequest == nil {
 		Logger.log.Errorf("redeemID is not existed in waiting redeem requests list")
@@ -1657,9 +1657,9 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 
 		// update custodian state (FreeCollateral, LockedAmountCollateral)
 		custodianStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, meta.CustodianAddressStr)
-		custodianStateKeyStr := string(custodianStateKey[:])
+		custodianStateKeyStr := custodianStateKey.String()
 		finalExchangeRateKey := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
-		finalExchangeRateKeyStr := string(finalExchangeRateKey[:])
+		finalExchangeRateKeyStr := finalExchangeRateKey.String()
 		unlockAmount, err2 := updateFreeCollateralCustodian(
 			currentPortalState.CustodianPoolState[custodianStateKeyStr],
 			meta.RedeemAmount, tokenID,

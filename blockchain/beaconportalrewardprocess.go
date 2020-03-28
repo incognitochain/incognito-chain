@@ -25,7 +25,7 @@ func (blockchain *BlockChain) processPortalReward(
 		// update reward amount for each custodian
 		for _, receiver := range actionData.Rewards {
 			cusStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, receiver.GetCustodianIncAddr())
-			cusStateKeyStr := string(cusStateKey[:])
+			cusStateKeyStr := cusStateKey.String()
 			custodianState := currentPortalState.CustodianPoolState[cusStateKeyStr]
 			if custodianState == nil {
 				Logger.log.Errorf("[processPortalReward] Can not get custodian state with key %v", cusStateKey)
@@ -70,7 +70,7 @@ func (blockchain *BlockChain) processPortalWithdrawReward(
 	if reqStatus == common.PortalReqWithdrawRewardAcceptedChainStatus {
 		// update reward amount of custodian
 		cusStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, actionData.CustodianAddressStr)
-		cusStateKeyStr := string(cusStateKey[:])
+		cusStateKeyStr := cusStateKey.String()
 		custodianState := currentPortalState.CustodianPoolState[cusStateKeyStr]
 		if custodianState == nil {
 			Logger.log.Errorf("[processPortalWithdrawReward] Can not get custodian state with key %v", cusStateKey)

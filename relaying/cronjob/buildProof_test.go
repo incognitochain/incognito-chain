@@ -19,7 +19,7 @@ type RedeemMemoBNB struct {
 }
 
 func TestB64EncodeMemo(t *testing.T) {
-	portingID := "7"
+	portingID := "1"
 	memoPorting := PortingMemoBNB{PortingID: portingID}
 	memoPortingBytes, err := json.Marshal(memoPorting)
 	fmt.Printf("err: %v\n", err)

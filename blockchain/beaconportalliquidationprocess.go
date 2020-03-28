@@ -28,7 +28,7 @@ func (blockchain *BlockChain) processPortalLiquidateCustodian(
 	if reqStatus == common.PortalLiquidateCustodianSuccessChainStatus {
 		// update custodian state (total collateral, holding public tokens, locked amount, free collateral)
 		cusStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, actionData.CustodianIncAddressStr)
-		cusStateKeyStr := string(cusStateKey[:])
+		cusStateKeyStr := cusStateKey.String()
 		custodianState := currentPortalState.CustodianPoolState[cusStateKeyStr]
 
 		if custodianState.GetTotalCollateral() < actionData.MintedCollateralAmount ||
@@ -49,7 +49,7 @@ func (blockchain *BlockChain) processPortalLiquidateCustodian(
 
 		// remove matching custodian from matching custodians list in waiting redeem request
 		waitingRedeemReqKey := statedb.GenerateWaitingRedeemRequestObjectKey(beaconHeight, actionData.UniqueRedeemID)
-		waitingRedeemReqKeyStr := string(waitingRedeemReqKey[:])
+		waitingRedeemReqKeyStr := waitingRedeemReqKey.String()
 
 		updatedCustodians, _ := removeCustodianFromMatchingRedeemCustodians(
 			currentPortalState.WaitingRedeemRequests[waitingRedeemReqKeyStr].GetCustodians(), actionData.CustodianIncAddressStr)
@@ -141,7 +141,7 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(porta
 	}
 
 	cusStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, actionData.CustodianAddress)
-	cusStateKeyStr := string(cusStateKey[:])
+	cusStateKeyStr := cusStateKey.String()
 	custodianState, ok := currentPortalState.CustodianPoolState[cusStateKeyStr]
 	//todo: check custodian exist on db
 	if !ok {
@@ -416,7 +416,7 @@ func (blockchain *BlockChain) processPortalLiquidationCustodianDeposit(portalSta
 		exchangeRate := currentPortalState.FinalExchangeRatesState[keyExchangeRate.String()]
 
 		keyCustodianState := statedb.GenerateCustodianStateObjectKey(beaconHeight, actionData.IncogAddressStr)
-		keyCustodianStateStr := string(keyCustodianState[:])
+		keyCustodianStateStr := keyCustodianState.String()
 
 		custodian, ok := currentPortalState.CustodianPoolState[keyCustodianStateStr]
 		if !ok {
@@ -542,7 +542,7 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(
 		// update custodian state in matching custodians list (holding public tokens, locked amount)
 		for _, matchCusDetail := range waitingPortingReq.Custodians() {
 			cusStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, matchCusDetail.IncAddress)
-			cusStateKeyStr := string(cusStateKey[:])
+			cusStateKeyStr := cusStateKey.String()
 			custodianState := currentPortalState.CustodianPoolState[cusStateKeyStr]
 			if custodianState == nil {
 				Logger.log.Errorf("[checkAndBuildInstForExpiredWaitingPortingRequest] Error when get custodian state with key %v\n: ", cusStateKey)
