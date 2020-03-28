@@ -360,11 +360,18 @@ func addShardRewardRequest(
 	key := newKeyAddShardRewardRequest(epoch, shardID, tokenID)
 	oldValue, ok := rewardMap[string(key)]
 	if !ok {
-		oldValueFromDB, err := db.Get(key)
+		exist, err := db.HasValue(key)
 		if err != nil {
+			return err
+		}
+		if !exist {
 			oldValue = common.Uint64ToBytes(uint64(0))
 			// rewardMap[string(key)] = common.Uint64ToBytes(rewardAmount)
 		} else {
+			oldValueFromDB, err := db.Get(key)
+			if err != nil {
+				return err
+			}
 			oldValue = oldValueFromDB
 		}
 	}
