@@ -954,7 +954,7 @@ func (blockchain *BlockChain) processPortalUnlockCollateral(
 		custodianStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, actionData.CustodianAddressStr)
 		custodianStateKeyStr := custodianStateKey.String()
 		finalExchangeRateKey := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
-		finalExchangeRateKeyStr := string(finalExchangeRateKey[:])
+		finalExchangeRateKeyStr := finalExchangeRateKey.String()
 		_, err2 := updateFreeCollateralCustodian(
 			currentPortalState.CustodianPoolState[custodianStateKeyStr],
 			actionData.RedeemAmount, tokenID,

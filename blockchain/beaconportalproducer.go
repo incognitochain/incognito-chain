@@ -1054,7 +1054,7 @@ func (blockchain *BlockChain) buildInstructionsForRedeemRequest(
 
 	// check redeem fee
 	exchangeRateKey := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
-	exchangeRateKeyStr := string(exchangeRateKey[:])
+	exchangeRateKeyStr := exchangeRateKey.String()
 	if currentPortalState.FinalExchangeRatesState[exchangeRateKeyStr] == nil {
 		Logger.log.Errorf("Can not get exchange rate at beaconHeight %v\n", beaconHeight)
 		inst := buildRedeemRequestInst(
