@@ -1,6 +1,7 @@
 package rpcservice
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -21,8 +22,14 @@ func (portal *Portal) GetPortingRequestByByKey(txId string) (jsonresult.PortalPo
 		return jsonresult.PortalPortingRequest{}, err
 	}
 
+	var portingRequestStatus metadata.PortingRequestStatus
+	err = json.Unmarshal(portingRequestItem, &portingRequestStatus)
+	if err != nil {
+		return jsonresult.PortalPortingRequest{}, err
+	}
+
 	result := jsonresult.PortalPortingRequest{
-		PortingRequest: *portingRequestItem.(*metadata.PortingRequestStatus),
+		PortingRequest: portingRequestStatus,
 	}
 
 	return result, nil
@@ -30,14 +37,20 @@ func (portal *Portal) GetPortingRequestByByKey(txId string) (jsonresult.PortalPo
 
 func (portal *Portal) GetPortingRequestByByPortingId(portingId string) (jsonresult.PortalPortingRequest, error) {
 	portalStateDB := portal.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
-	portingRequestItem, err := statedb.GetPortalStateStatusMultiple(portalStateDB, statedb.PortalPortingRequestTxStatusPrefix(), []byte(portingId))
+	portingRequestItem, err := statedb.GetPortalStateStatusMultiple(portalStateDB, statedb.PortalPortingRequestStatusPrefix(), []byte(portingId))
 
 	if err != nil {
 		return jsonresult.PortalPortingRequest{}, err
 	}
 
+	var portingRequestStatus metadata.PortingRequestStatus
+	err = json.Unmarshal(portingRequestItem, &portingRequestStatus)
+	if err != nil {
+		return jsonresult.PortalPortingRequest{}, err
+	}
+
 	result := jsonresult.PortalPortingRequest{
-		PortingRequest: *portingRequestItem.(*metadata.PortingRequestStatus),
+		PortingRequest: portingRequestStatus,
 	}
 
 	return result, nil
@@ -55,8 +68,14 @@ func (portal *Portal) GetCustodianWithdrawByTxId(txId string) (jsonresult.Portal
 		return jsonresult.PortalCustodianWithdrawRequest{}, NewRPCError(GetPortingRequestIsEmpty, err)
 	}
 
+	var custodianWithdrawRequestStatus metadata.CustodianWithdrawRequestStatus
+	err = json.Unmarshal(custodianWithdraw, &custodianWithdrawRequestStatus)
+	if err != nil {
+		return jsonresult.PortalCustodianWithdrawRequest{}, err
+	}
+
 	result := jsonresult.PortalCustodianWithdrawRequest{
-		CustodianWithdrawRequest: *custodianWithdraw.(*metadata.CustodianWithdrawRequestStatus),
+		CustodianWithdrawRequest: custodianWithdrawRequestStatus,
 	}
 
 	return result, nil
@@ -194,9 +213,14 @@ func (portal *Portal) GetLiquidateTpExchangeRatesByToken(beaconHeight uint64, cu
 	if err != nil {
 		return jsonresult.GetLiquidateTpExchangeRates{}, err
 	}
-	tpExchangeRates := *liquidateTpExchangeRates.(*metadata.LiquidateTopPercentileExchangeRatesStatus)
 
-	topPercentile, ok := tpExchangeRates.Rates[tokenSymbol]
+	var liquidateTopPercentileExchangeRatesStatus metadata.LiquidateTopPercentileExchangeRatesStatus
+	err = json.Unmarshal(liquidateTpExchangeRates, &liquidateTopPercentileExchangeRatesStatus)
+	if err != nil {
+		return jsonresult.GetLiquidateTpExchangeRates{}, err
+	}
+
+	topPercentile, ok := liquidateTopPercentileExchangeRatesStatus.Rates[tokenSymbol]
 
 	if !ok {
 		return jsonresult.GetLiquidateTpExchangeRates{}, nil

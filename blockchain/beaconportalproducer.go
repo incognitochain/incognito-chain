@@ -552,7 +552,24 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		return [][]string{inst}, nil
 	}
 
-	portingRequestStatus := *portingRequest.(*metadata.PortingRequestStatus)
+	var portingRequestStatus metadata.PortingRequestStatus
+	err = json.Unmarshal(portingRequest, &portingRequestStatus)
+	if err != nil {
+		Logger.log.Errorf("Has an error occurred while unmarshal PortingRequestStatus: %+v", err)
+		inst := buildReqPTokensInst(
+			meta.UniquePortingID,
+			meta.TokenID,
+			meta.IncogAddressStr,
+			meta.PortingAmount,
+			meta.PortingProof,
+			meta.Type,
+			shardID,
+			actionData.TxReqID,
+			common.PortalReqPTokensRejectedChainStatus,
+		)
+		return [][]string{inst}, nil
+	}
+
 	if portingRequestStatus.Status != common.PortalPortingReqWaitingStatus {
 		Logger.log.Errorf("PortingID status invalid")
 		inst := buildReqPTokensInst(

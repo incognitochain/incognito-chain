@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-func (httpServer *HttpServer) handleRegisterPortingPublicTokens(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) createRegisterPortingPublicTokens(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
 	// get meta data from params
@@ -87,7 +87,7 @@ func (httpServer *HttpServer) handleRegisterPortingPublicTokens(params interface
 }
 
 func (httpServer *HttpServer) handleCreateAndSendRegisterPortingPublicTokens(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	data, err := httpServer.handleRegisterPortingPublicTokens(params, closeChan)
+	data, err := httpServer.createRegisterPortingPublicTokens(params, closeChan)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}

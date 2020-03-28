@@ -315,7 +315,7 @@ func TrackPortalStateStatusMultiple(stateDB *StateDB, statusType []byte, statusS
 	key := GeneratePortalStatusObjectKey(statusType, statusSuffix)
 	value := NewPortalStatusStateWithValue(statusType, statusSuffix, statusContent)
 
-	dataaccessobject.Logger.Log.Infof("TrackPortalStateStatusMultiple key: %+v value: %+v", key, value)
+	dataaccessobject.Logger.Log.Infof("TrackPortalStateStatusMultiple type: %+v, key: %+v value: %+v", string(statusType), key, value)
 
 	err := stateDB.SetStateObject(PortalStatusObjectType, key, value)
 
@@ -346,7 +346,7 @@ func TrackPortalStateStatusMultiple(stateDB *StateDB, statusType []byte, statusS
 	return nil
 }
 
-func GetPortalStateStatusMultiple(stateDB *StateDB, statusType []byte, statusSuffix []byte) (interface{}, error) {
+func GetPortalStateStatusMultiple(stateDB *StateDB, statusType []byte, statusSuffix []byte) ([]byte, error) {
 	key := GeneratePortalStatusObjectKey(statusType, statusSuffix)
 	s, has, err := stateDB.getPortalStatusByKey(key)
 
@@ -370,7 +370,7 @@ func GetPortalStateStatusMultiple(stateDB *StateDB, statusType []byte, statusSuf
 		return []byte{}, NewStatedbError(errType, fmt.Errorf("status %+v with prefix %+v not found", string(statusType), string(statusSuffix)))
 	}
 
-	return interface{}(s.statusContent), nil
+	return s.statusContent, nil
 }
 
 //====================== Waiting Porting  ======================

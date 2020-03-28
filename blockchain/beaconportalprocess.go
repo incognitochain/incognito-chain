@@ -317,7 +317,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		newPortingTxRequestStatusBytes, _ := json.Marshal(newPortingTxRequestStateAccept)
 		err = statedb.TrackPortalStateStatusMultiple(
 			portalStateDB,
-			statedb.PortalPortingRequestStatusPrefix(),
+			statedb.PortalPortingRequestTxStatusPrefix(),
 			[]byte(txReqID.String()),
 			newPortingTxRequestStatusBytes,
 		)
@@ -331,7 +331,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		newPortingRequestStatusBytes, _ := json.Marshal(newPortingRequestStateAccept)
 		err = statedb.TrackPortalStateStatusMultiple(
 			portalStateDB,
-			statedb.PortalPortingRequestTxStatusPrefix(),
+			statedb.PortalPortingRequestStatusPrefix(),
 			[]byte(uniquePortingID),
 			newPortingRequestStatusBytes,
 		)
@@ -422,14 +422,19 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 		//update new status of porting request
 		portingRequestState, err := statedb.GetPortalStateStatusMultiple(stateDB, statedb.PortalPortingRequestStatusPrefix(), []byte(actionData.UniquePortingID))
 		if err != nil {
-			Logger.log.Errorf("ERROR: an error occurred while get porting request status: %+v", err)
+			Logger.log.Errorf("Has an error occurred while get porting request status: %+v", err)
 			return nil
 		}
 
-		newPortingRequestStatus := *portingRequestState.(*metadata.PortingRequestStatus)
-		newPortingRequestStatus.Status = common.PortalPortingReqSuccessStatus
+		var portingRequestStatus metadata.PortingRequestStatus
+		err = json.Unmarshal(portingRequestState, &portingRequestStatus)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occurred while unmarshal PortingRequestStatus: %+v", err)
+			return nil
+		}
 
-		newPortingRequestStatusBytes, _ := json.Marshal(newPortingRequestStatus)
+		portingRequestStatus.Status = common.PortalPortingReqSuccessStatus
+		newPortingRequestStatusBytes, _ := json.Marshal(portingRequestStatus)
 		err = statedb.TrackPortalStateStatusMultiple(
 			stateDB,
 			statedb.PortalPortingRequestStatusPrefix(),

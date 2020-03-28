@@ -491,12 +491,11 @@ func checkTopPercentileExchangeRatesLiquidationInst(beaconHeight uint64, current
 	}
 
 	insts := [][]string{}
-
 	keyExchangeRate := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
-	keyExchangeRateStr := string(keyExchangeRate[:])
+	keyExchangeRateStr := keyExchangeRate.String()
 	exchangeRate, ok := currentPortalState.FinalExchangeRatesState[keyExchangeRateStr]
 	if !ok {
-		Logger.log.Errorf("Exchange rate not found")
+		Logger.log.Errorf("Exchange key %+v rate not found", keyExchangeRateStr)
 		return [][]string{}, nil
 	}
 
