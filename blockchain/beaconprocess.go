@@ -1220,7 +1220,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		}
 	}
 	// execute, store
-	err = blockchain.processBridgeInstructions(beaconBlock, &batchPutData)
+	err := blockchain.processBridgeInstructions(beaconBlock, &batchPutData)
 	if err != nil {
 		return NewBlockChainError(ProcessBridgeInstructionError, err)
 	}
