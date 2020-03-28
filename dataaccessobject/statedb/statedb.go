@@ -1191,13 +1191,13 @@ func (stateDB *StateDB) getBurningConfirmState(key common.Hash) (*BurningConfirm
 }
 
 // ================================= Portal OBJECT =======================================
-func (stateDB *StateDB) getAllWaitingPortingRequests() map[string]*WaitingPortingRequest {
+func (stateDB *StateDB) getAllWaitingPortingRequests(beaconHeight uint64) map[string]*WaitingPortingRequest {
 	waitingPortingRequest := make(map[string]*WaitingPortingRequest)
-	temp := stateDB.trie.NodeIterator(GetPortalWaitingPortingRequestPrefix())
+	temp := stateDB.trie.NodeIterator(GetPortalWaitingPortingRequestPrefix(beaconHeight))
 	it := trie.NewIterator(temp)
 	for it.Next() {
 		key := it.Key
-		keyStr := string(key)
+		keyHash, _ := common.Hash{}.NewHash(key)
 		value := it.Value
 		newValue := make([]byte, len(value))
 		copy(newValue, value)
@@ -1206,7 +1206,7 @@ func (stateDB *StateDB) getAllWaitingPortingRequests() map[string]*WaitingPortin
 		if err != nil {
 			panic("wrong expect type")
 		}
-		waitingPortingRequest[keyStr] = object
+		waitingPortingRequest[keyHash.String()] = object
 	}
 
 	return waitingPortingRequest

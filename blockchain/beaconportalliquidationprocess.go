@@ -529,7 +529,7 @@ func (blockchain *BlockChain) processPortalExpiredPortingRequest(
 
 	if status == common.PortalExpiredWaitingPortingReqSuccessChainStatus {
 		waitingPortingKey := statedb.GeneratePortalWaitingPortingRequestObjectKey(beaconHeight, waitingPortingID)
-		waitingPortingKeyStr := string(waitingPortingKey[:])
+		waitingPortingKeyStr := waitingPortingKey.String()
 		waitingPortingReq := currentPortalState.WaitingPortingRequests[waitingPortingKeyStr]
 		if waitingPortingReq == nil {
 			Logger.log.Errorf("[processPortalExpiredPortingRequest] waiting porting req nil with key : %v", waitingPortingKey)

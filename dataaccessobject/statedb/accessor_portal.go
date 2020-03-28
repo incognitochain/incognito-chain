@@ -394,7 +394,7 @@ func GetAllWaitingPortingRequests(
 	stateDB *StateDB,
 	beaconHeight uint64,
 ) (map[string]*WaitingPortingRequest, error) {
-	waitingPortingRequestList := stateDB.getAllWaitingPortingRequests()
+	waitingPortingRequestList := stateDB.getAllWaitingPortingRequests(beaconHeight)
 	return waitingPortingRequestList, nil
 }
 

@@ -512,7 +512,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 	// check meta.UniquePortingID is in waiting PortingRequests list in portal state or not
 	portingID := meta.UniquePortingID
 	keyWaitingPortingRequest := statedb.GeneratePortalWaitingPortingRequestObjectKey(beaconHeight, portingID)
-	keyWaitingPortingRequestStr := string(keyWaitingPortingRequest[:])
+	keyWaitingPortingRequestStr := keyWaitingPortingRequest.String()
 	waitingPortingRequest := currentPortalState.WaitingPortingRequests[keyWaitingPortingRequestStr]
 	if waitingPortingRequest == nil {
 		Logger.log.Errorf("PortingID is not existed in waiting porting requests list")

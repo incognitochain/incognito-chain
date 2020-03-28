@@ -288,8 +288,8 @@ func PortalLiquidationRedeemRequestStatusPrefix() []byte  {
 	return portalLiquidationRedeemRequestStatusPrefix
 }
 
-func GetPortalWaitingPortingRequestPrefix() []byte {
-	h := common.HashH(portalWaitingPortingRequestPrefix)
+func GetPortalWaitingPortingRequestPrefix(beaconHeight uint64) []byte {
+	h := common.HashH(append(portalWaitingPortingRequestPrefix, []byte(fmt.Sprintf("%d", beaconHeight))...))
 	return h[:][:prefixHashKeyLength]
 }
 
