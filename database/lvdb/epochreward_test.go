@@ -255,7 +255,7 @@ func TestNewKeyAddShardRewardRequest(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := newKeyAddShardRewardRequest(tt.args.epoch, tt.args.shardID, tt.args.tokenID)
+			got := NewKeyAddShardRewardRequest(tt.args.epoch, tt.args.shardID, tt.args.tokenID)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewKeyAddShardRewardRequest() = %v, want %v", got, tt.want)
 			}

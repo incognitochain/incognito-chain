@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/database"
@@ -329,26 +330,6 @@ func (blockchain *BlockChain) updateDatabaseWithBlockRewardInfoV2(beaconBlock *B
 	return nil
 }
 
-/**
- * NewKeyAddShardRewardRequest create a key for store reward of a shard X at epoch T in db.
- * @param epoch: epoch T
- * @param shardID: shard X
- * @param tokenID: currency unit
- * @return ([]byte, error): Key, error of this process
- */
-func newKeyAddShardRewardRequest(
-	epoch uint64,
-	shardID byte,
-	tokenID common.Hash,
-) []byte {
-	res := []byte{}
-	res = append(res, shardRequestRewardPrefix...)
-	res = append(res, common.Uint64ToBytes(epoch)...)
-	res = append(res, shardID)
-	res = append(res, tokenID.GetBytes()...)
-	return res
-}
-
 func addShardRewardRequest(
 	epoch uint64,
 	shardID byte,
@@ -357,7 +338,7 @@ func addShardRewardRequest(
 	rewardMap map[string][]byte,
 	db database.DatabaseInterface,
 ) error {
-	key := newKeyAddShardRewardRequest(epoch, shardID, tokenID)
+	key := lvdb.NewKeyAddShardRewardRequest(epoch, shardID, tokenID)
 	oldValue, ok := rewardMap[string(key)]
 	if !ok {
 		exist, err := db.HasValue(key)
