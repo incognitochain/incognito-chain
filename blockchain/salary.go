@@ -17,6 +17,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+var shardRequestRewardPrefix = []byte("shardrequestreward-")
+
 func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(
 	swapPublicKey string,
 	blkProducerPrivateKey *privacy.PrivateKey,
@@ -284,6 +286,7 @@ func (blockchain *BlockChain) updateDatabaseWithBlockRewardInfo(beaconBlock *Bea
 }
 
 func (blockchain *BlockChain) updateDatabaseWithBlockRewardInfoV2(beaconBlock *BeaconBlock, bd *[]database.BatchData) error {
+	rewardMap := map[string][]byte{}
 	for _, inst := range beaconBlock.Body.Instructions {
 		if len(inst) <= 2 {
 			continue
@@ -297,8 +300,73 @@ func (blockchain *BlockChain) updateDatabaseWithBlockRewardInfoV2(beaconBlock *B
 		}
 		switch metaType {
 		case metadata.AcceptedBlockRewardInfoMeta:
-			//TODO: add shard reward request to db
+			acceptedBlkRewardInfo, err := metadata.NewAcceptedBlockRewardInfoFromStr(inst[2])
+			if err != nil {
+				return err
+			}
+			if val, ok := acceptedBlkRewardInfo.TxsFee[common.PRVCoinID]; ok {
+				acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] = val + blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
+			} else {
+				if acceptedBlkRewardInfo.TxsFee == nil {
+					acceptedBlkRewardInfo.TxsFee = map[common.Hash]uint64{}
+				}
+				acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] = blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
+			}
+			for key, value := range acceptedBlkRewardInfo.TxsFee {
+				if value != 0 {
+					err = addShardRewardRequest(beaconBlock.Header.Epoch, acceptedBlkRewardInfo.ShardID, value, key, rewardMap)
+					if err != nil {
+						return err
+					}
+				}
+			}
+			continue
 		}
+	}
+	for k, v := range rewardMap {
+		*bd = append(*bd, database.BatchData{[]byte(k), v})
+	}
+	return nil
+}
+
+/**
+ * NewKeyAddShardRewardRequest create a key for store reward of a shard X at epoch T in db.
+ * @param epoch: epoch T
+ * @param shardID: shard X
+ * @param tokenID: currency unit
+ * @return ([]byte, error): Key, error of this process
+ */
+func newKeyAddShardRewardRequest(
+	epoch uint64,
+	shardID byte,
+	tokenID common.Hash,
+) []byte {
+	res := []byte{}
+	res = append(res, shardRequestRewardPrefix...)
+	res = append(res, common.Uint64ToBytes(epoch)...)
+	res = append(res, shardID)
+	res = append(res, tokenID.GetBytes()...)
+	return res
+}
+
+func addShardRewardRequest(
+	epoch uint64,
+	shardID byte,
+	rewardAmount uint64,
+	tokenID common.Hash,
+	rewardMap map[string][]byte,
+) error {
+	key := newKeyAddShardRewardRequest(epoch, shardID, tokenID)
+	oldValue, ok := rewardMap[string(key)]
+	if !ok {
+		rewardMap[string(key)] = common.Uint64ToBytes(rewardAmount)
+	} else {
+		newValue, err := common.BytesToUint64(oldValue)
+		if err != nil {
+			return NewBlockChainError(BuildRewardInstructionError, err)
+		}
+		newValue += rewardAmount
+		rewardMap[string(key)] = common.Uint64ToBytes(newValue)
 	}
 	return nil
 }
