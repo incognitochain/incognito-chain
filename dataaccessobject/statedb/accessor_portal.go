@@ -373,6 +373,21 @@ func GetPortalStateStatusMultiple(stateDB *StateDB, statusType []byte, statusSuf
 	return s.statusContent, nil
 }
 
+func IsPortingRequestIdExist(stateDB *StateDB, statusSuffix []byte) (bool, error) {
+	key := GeneratePortalStatusObjectKey(PortalPortingRequestStatusPrefix(), statusSuffix)
+	_, has, err := stateDB.getPortalStatusByKey(key)
+
+	if err != nil {
+		return false, NewStatedbError(GetPortingRequestStatusError, err)
+	}
+
+	if !has {
+		return false, nil
+	}
+
+	return true, nil
+}
+
 //====================== Waiting Porting  ======================
 // getCustodianPoolState gets custodian pool state at beaconHeight
 func GetAllWaitingPortingRequests(

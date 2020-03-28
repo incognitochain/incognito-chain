@@ -237,8 +237,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 
 	stateDB := blockchain.BestState.Beacon.GetCopiedFeatureStateDB()
 	//check unique id from record from db
-	portingRequestKey := actionData.Meta.UniqueRegisterId
-	portingRequestKeyExist, err := statedb.GetPortalStateStatusMultiple(stateDB, statedb.PortalPortingRequestStatusPrefix(), []byte(portingRequestKey))
+	portingRequestKeyExist, err := statedb.IsPortingRequestIdExist(stateDB, []byte(actionData.Meta.UniqueRegisterId))
 
 	if err != nil {
 		Logger.log.Errorf("Porting request: Get item portal by prefix error: %+v", err)
@@ -259,8 +258,8 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		return [][]string{inst}, nil
 	}
 
-	if portingRequestKeyExist != nil {
-		Logger.log.Errorf("Porting request: Porting request exist, key %v", portingRequestKey)
+	if portingRequestKeyExist {
+		Logger.log.Errorf("Porting request: Porting request id exist, key %v", actionData.Meta.UniqueRegisterId)
 		inst := buildRequestPortingInst(
 			actionData.Meta.Type,
 			shardID,
