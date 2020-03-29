@@ -1264,19 +1264,10 @@ func (b *BlockChain) initChainState() error {
 			// very good chance the previous header processed is the parent.
 			var parent *blockNode
 			if lastNode == nil {
-				fmt.Println("first header prev hash: ", header.PrevBlock.String())
-				fmt.Println("first header merkle root: ", header.MerkleRoot.String())
-				// fmt.Println("first header merkle root: ", header.MerkleRoot.String())
-				fmt.Println("genesis bits: ", header.Bits)
-				fmt.Println("genesis nonce: ", header.Nonce)
-
-				// prevHash, _ := chainhash.NewHashFromStr("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f")
-				// header.PrevBlock = *prevHash
+				// NOTE: since the stored genesis header's PrevBlock is empty hash, so we need to set it manually to chainparams's genesis block value
+				header.PrevBlock = b.chainParams.GenesisBlock.Header.PrevBlock
 				blockHash := header.BlockHash()
-				fmt.Println("fuck: ", blockHash.String(), b.chainParams.GenesisHash.String())
 
-
-				// blockHash := header.BlockHash()
 				if !blockHash.IsEqual(b.chainParams.GenesisHash) {
 					return AssertError(fmt.Sprintf("initChainState: Expected "+
 						"first entry in block index to be genesis block, "+

@@ -3,13 +3,14 @@ package btcrelaying
 import (
 	"bytes"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
-	"github.com/btcsuite/btcutil"
+	"github.com/btcsuite/btcd/wire"
 )
+
+const BTCBlockConfirmations = 6
 
 type MerkleProof struct {
 	ProofHash *chainhash.Hash
@@ -18,7 +19,7 @@ type MerkleProof struct {
 
 type BTCProof struct {
 	MerkleProofs []*MerkleProof
-	BTCTx        *btcutil.Tx
+	BTCTx        *wire.MsgTx
 	BlockHash    *chainhash.Hash
 }
 
@@ -164,16 +165,15 @@ func (btcChain *BlockChain) VerifyTxWithMerkleProofs(
 	if bestState == nil || btcBlock == nil {
 		return false, nil
 	}
-	if bestState.Height < btcBlock.Height()+6 {
+	if bestState.Height < btcBlock.Height()+BTCBlockConfirmations {
 		return false, nil
 	}
 	merkleRoot := btcBlock.MsgBlock().Header.MerkleRoot
-	txHash := btcProof.BTCTx.MsgTx().TxHash()
+	txHash := btcProof.BTCTx.TxHash()
 	return verify(&merkleRoot, btcProof.MerkleProofs, &txHash), nil
 }
 
-func ExtractAttachedMsgFromTx(btcTx *btcutil.Tx) (string, error) {
-	msgTx := btcTx.MsgTx()
+func ExtractAttachedMsgFromTx(msgTx *wire.MsgTx) (string, error) {
 	opReturnPrefix := []byte{
 		txscript.OP_RETURN,
 	}
@@ -188,12 +188,7 @@ func ExtractAttachedMsgFromTx(btcTx *btcutil.Tx) (string, error) {
 		return "", nil
 	}
 	// the first byte is for opcode type (OP_RETURN) and the second byte is for message length
-	decodedMsg := make([]byte, hex.DecodedLen(len(opReturnPkScript[2:])))
-	_, err := hex.Decode(decodedMsg, opReturnPkScript[2:])
-	if err != nil {
-		return "", err
-	}
-	return string(decodedMsg), nil
+	return string(opReturnPkScript[2:]), nil
 }
 
 // ExtractPaymentAddrStrFromPkScript extracts payment address string from pkscript

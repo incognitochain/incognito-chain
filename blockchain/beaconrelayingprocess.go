@@ -20,7 +20,7 @@ func (blockchain *BlockChain) processRelayingInstructions(block *BeaconBlock, bd
 	beaconHeight := block.Header.Height - 1
 	db := blockchain.GetDatabase()
 
-	relayingState, err := InitRelayingHeaderChainStateFromDB(db, beaconHeight)
+	relayingState, err := blockchain.InitRelayingHeaderChainStateFromDB(db, beaconHeight)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil
@@ -85,7 +85,7 @@ func (blockchain *BlockChain) processRelayingBTCHeaderInst(
 		Logger.log.Errorf("ProcessBlock fail with error: %v", err)
 		return err
 	}
-	Logger.log.Infof("ProcessBlock success with result: isMainChain: %v, isOrphan: %v", isMainChain, isOrphan)
+	Logger.log.Infof("ProcessBlock (%s) success with result: isMainChain: %v, isOrphan: %v", block.Hash(), isMainChain, isOrphan)
 	return nil
 }
 

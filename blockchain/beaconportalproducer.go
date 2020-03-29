@@ -598,7 +598,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 	}
 
 	if meta.TokenID == common.PortalBTCIDStr {
-		btcChain, err := getBTCHeaderChain()
+		btcChain, err := blockchain.getBTCHeaderChain()
 		if err != nil {
 			Logger.log.Errorf("GetBTCHeaderChain err: %v\n", err)
 			inst := buildReqPTokensInst(
@@ -667,7 +667,8 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 			return [][]string{inst}, nil
 		}
 
-		if btcAttachedMsg != meta.UniquePortingID {
+		encodedMsg := btcrelaying.HashAndEncodeBase58(meta.UniquePortingID)
+		if btcAttachedMsg != encodedMsg {
 			Logger.log.Errorf("PortingId in the btc attached message is not matched with portingID in metadata")
 			inst := buildReqPTokensInst(
 				meta.UniquePortingID,
@@ -687,7 +688,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		// check receiver and amount in tx
 		// get list matching custodians in waitingPortingRequest
 		custodians := waitingPortingRequest.Custodians
-		outputs := btcTxProof.BTCTx.MsgTx().TxOut
+		outputs := btcTxProof.BTCTx.TxOut
 		for _, cusDetail := range custodians {
 			remoteAddressNeedToBeTransfer := cusDetail.RemoteAddress
 			amountNeedToBeTransfer := cusDetail.Amount
@@ -1661,7 +1662,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 
 	// validate proof and memo in tx
 	if meta.TokenID == common.PortalBTCIDStr {
-		btcChain, err := getBTCHeaderChain()
+		btcChain, err := blockchain.getBTCHeaderChain()
 		if err != nil {
 			Logger.log.Errorf("GetBTCHeaderChain err: %v\n", err)
 			inst := buildReqUnlockCollateralInst(
@@ -1757,7 +1758,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		// check receiver and amount in tx
 		// get list matching custodians in waitingRedeemRequest
 
-		outputs := btcTxProof.BTCTx.MsgTx().TxOut
+		outputs := btcTxProof.BTCTx.TxOut
 		remoteAddressNeedToBeTransfer := waitingRedeemRequest.RedeemerRemoteAddress
 		amountNeedToBeTransfer := meta.RedeemAmount
 		amountNeedToBeTransferInBTC := btcrelaying.ConvertIncPBTCAmountToExternalBTCAmount(int64(amountNeedToBeTransfer))

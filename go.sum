@@ -91,6 +91,8 @@ github.com/binance-chain/go-sdk v1.2.2 h1:dAxoiLErP2yrjj9A/mNVXP/N6CIHiGbhAT5rE+
 github.com/binance-chain/go-sdk v1.2.2/go.mod h1:M41XCy5ZnKuJwYpUdoz22b4ltULq8aXl7J75wEebLIw=
 github.com/binance-chain/ledger-cosmos-go v0.9.9-binance.1 h1:8mAtw1Tp/BhhTrsXmXM60H1fihcvcKLfo2ZSxShaXKw=
 github.com/binance-chain/ledger-cosmos-go v0.9.9-binance.1/go.mod h1:FI6WAujuiBpoSavYreux2zTKyrUkngXDlRJczxsDK5M=
+github.com/blockcypher/gobcy v1.3.1 h1:zouRrNabyhrAHsRd9GGSxiPoVkS3ayBRhb6d2ANWAsw=
+github.com/blockcypher/gobcy v1.3.1/go.mod h1:ZTXnnNN7aLqUWa8jTP65eEapWReeAIruKyorLxDRCBQ=
 github.com/btcsuite/btcd v0.0.0-20171128150713-2e60448ffcc6/go.mod h1:Dmm/EzmjnCiweXmzRIAiUWCInVmPgjkzgv5k4tVyXiQ=
 github.com/btcsuite/btcd v0.0.0-20190115013929-ed77733ec07d/go.mod h1:d3C0AkH6BRcvO8T0UEPu53cnw4IbV63x1bEjildYhO0=
 github.com/btcsuite/btcd v0.0.0-20190213025234-306aecffea32/go.mod h1:DrZx5ec/dmnfpw9KyYoQyYo7d0KEvTkk/5M/vbZjAr8=

@@ -24,7 +24,7 @@ const (
 	testDbType = "ffldb"
 
 	// testDbRoot is the root directory used to create all test databases.
-	testDbRoot = "testdbs"
+	testDbRoot = "btcdbs"
 
 	// blockDataNet is the expected network in the test block data.
 	blockDataNet = wire.MainNet
