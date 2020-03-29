@@ -638,8 +638,6 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 	//todo: need refactor code, not need write this code
 	//update value when has exchange
 	if exchangeRatesState, ok := currentPortalState.FinalExchangeRatesState[exchangeRatesKey.String()]; ok {
-		Logger.log.Infof("Portal final exchange rates, exits  key %v", exchangeRatesKey)
-
 		var btcAmountPreState uint64
 		var bnbAmountPreState uint64
 		var prvAmountPreState uint64
@@ -682,8 +680,6 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 
 	if len(exchangeRatesList) > 0 {
 		currentPortalState.FinalExchangeRatesState[exchangeRatesKey.String()] = statedb.NewFinalExchangeRatesStateWithValue(exchangeRatesList)
-
-		Logger.log.Infof("Portal final exchange rates, picked key %v", exchangeRatesKey)
 	}
 
 	return nil

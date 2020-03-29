@@ -28,7 +28,7 @@ func (httpServer *HttpServer) handleGetLiquidationTpExchangeRates(params interfa
 
 	_, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetTpExchangeRatesLiquidationByTokenIdError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.GetTpExchangeRatesLiquidationError, err)
 	}
 
 	custodianAddress, ok := data["CustodianAddress"].(string)

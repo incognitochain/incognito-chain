@@ -186,7 +186,6 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(porta
 			liquidateExchangeRatesKey := statedb.GeneratePortalLiquidateExchangeRatesPoolObjectKey(beaconHeight)
 			liquidateExchangeRates, ok := currentPortalState.LiquidateExchangeRatesPool[liquidateExchangeRatesKey.String()]
 
-			Logger.log.Infof("update liquidateExchangeRatesKey key %v", liquidateExchangeRatesKey)
 			if !ok {
 				item := make(map[string]statedb.LiquidateExchangeRatesDetail)
 
@@ -220,8 +219,6 @@ func (blockchain *BlockChain) processLiquidationTopPercentileExchangeRates(porta
 			beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 			newTPKey := beaconHeightBytes
 			newTPKey = append(newTPKey, []byte(custodianState.GetIncognitoAddress())...)
-
-			Logger.log.Infof("update liquidateTPExchangeRatesKey key %v", newTPKey)
 
 			newTPExchangeRates := metadata.NewLiquidateTopPercentileExchangeRatesStatus(
 				custodianState.GetIncognitoAddress(),

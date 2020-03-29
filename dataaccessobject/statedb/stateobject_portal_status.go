@@ -68,6 +68,14 @@ func (s *PortalStatusState) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (s *PortalStatusState) ToString() string {
+	return "{" +
+		" \"StatusType\": " + string(s.statusType) +
+		" \"StatusSuffix\": " + string(s.statusSuffix) +
+		" \"StatusContent\": " + string(s.statusContent) +
+		"}"
+}
+
 func NewPortalStatusState() *PortalStatusState {
 	return &PortalStatusState{}
 }

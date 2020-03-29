@@ -292,7 +292,7 @@ func TrackPortalStateStatusMultiple(stateDB *StateDB, statusType []byte, statusS
 	key := GeneratePortalStatusObjectKey(statusType, statusSuffix)
 	value := NewPortalStatusStateWithValue(statusType, statusSuffix, statusContent)
 
-	dataaccessobject.Logger.Log.Infof("TrackPortalStateStatusMultiple type: %+v, key: %+v value: %+v", string(statusType), key, value)
+	dataaccessobject.Logger.Log.Infof("TrackPortalStateStatusMultiple statusType: %+v, statusSuffix: %+v, value: %+v", string(statusType), string(statusSuffix), value.ToString())
 
 	err := stateDB.SetStateObject(PortalStatusObjectType, key, value)
 

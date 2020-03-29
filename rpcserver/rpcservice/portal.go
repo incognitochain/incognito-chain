@@ -198,7 +198,14 @@ func (portal *Portal) GetLiquidateTpExchangeRates(beaconHeight uint64 , custodia
 		return nil, err
 	}
 
-	return liquidateTpExchangeRates, nil
+	var liquidateTopPercentileExchangeRatesStatus metadata.LiquidateTopPercentileExchangeRatesStatus
+	err = json.Unmarshal(liquidateTpExchangeRates, &liquidateTopPercentileExchangeRatesStatus)
+	if err != nil {
+		return  nil, err
+	}
+
+
+	return liquidateTopPercentileExchangeRatesStatus, nil
 }
 
 
