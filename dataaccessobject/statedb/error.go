@@ -138,8 +138,27 @@ const (
 	TrackReqUnlockCollateralByTxReqIDError
 	GetReqUnlockCollateralStatusError
 	TrackLiquidateCustodianError
-
 	StorePortalRewardError
+	StorePortalStatusError
+	StorePortalTxStatusError
+	GetPortalStatusError
+	GetPortalStatusNotFoundError
+	GetPortalRedeemRequestStatusError
+	StorePortalRedeemRequestStatusError
+	StorePortalCustodianDepositStatusError
+	GetPortalCustodianDepositStatusError
+	StorePortalRequestPTokenStatusError
+	GetPortalRequestPTokenStatusError
+	GetPortalRedeemRequestByTxIDStatusError
+	StorePortalRedeemRequestByTxIDStatusError
+	GetPortalRequestUnlockCollateralStatusError
+	StorePortalRequestUnlockCollateralStatusError
+	GetPortalLiquidationCustodianRunAwayStatusError
+	StorePortalLiquidationCustodianRunAwayStatusError
+	GetPortalExpiredPortingReqStatusError
+	StorePortalExpiredPortingReqStatusError
+	GetPortalRequestWithdrawRewardStatusError
+	StorePortalRequestWithdrawRewardStatusError
 
 	//porting request
 	GetPortingRequestTxStatusError
@@ -163,29 +182,8 @@ const (
 	StoreRedeemLiquidationExchangeRatesError
 
 	//custodian withdraw
-	StorePortalCustodianWithdrawRequestStateError
-
-	//B
-	StorePortalStatusError
-	StorePortalTxStatusError
-	GetPortalStatusError
-	GetPortalStatusNotFoundError
-	GetPortalRedeemRequestStatusError
-	StorePortalRedeemRequestStatusError
-	StorePortalCustodianDepositStatusError
-	GetPortalCustodianDepositStatusError
-	StorePortalRequestPTokenStatusError
-	GetPortalRequestPTokenStatusError
-	GetPortalRedeemRequestByTxIDStatusError
-	StorePortalRedeemRequestByTxIDStatusError
-	GetPortalRequestUnlockCollateralStatusError
-	StorePortalRequestUnlockCollateralStatusError
-	GetPortalLiquidationCustodianRunAwayStatusError
-	StorePortalLiquidationCustodianRunAwayStatusError
-	GetPortalExpiredPortingReqStatusError
-	StorePortalExpiredPortingReqStatusError
-	GetPortalRequestWithdrawRewardStatusError
-	StorePortalRequestWithdrawRewardStatusError
+	StorePortalCustodianWithdrawRequestStatusError
+	GetPortalCustodianWithdrawStatusError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -281,11 +279,11 @@ var ErrCodeMessage = map[int]struct {
 	TrackRedeemReqByTxReqIDError:                  {-14015, "Track redeem request by txReqID error"},
 	TrackReqUnlockCollateralByTxReqIDError:        {-14016, "Track request unlock collateral by txReqID error"},
 	GetReqUnlockCollateralStatusError:             {-14017, "Get status of request unlock collateral by txReqID error"},
-	StorePortalCustodianWithdrawRequestStateError: {-14018, "Store portal custodian withdraw request error"},
+	StorePortalCustodianWithdrawRequestStatusError: {-14018, "Store portal custodian withdraw request status error"},
 	TrackLiquidateCustodianError:                  {-14019, "Track liquidation custodian error"},
 	StorePortalRewardError:                        {-14020, "Store portal reward error"},
 	StoreLiquidateTopPercentileExchangeRatesError: {-14021, "Store liquidate top percentile exchange rates error"},
-	StoreLiquidateExchangeRatesPoolError:              {-14022, "Store liquidate exchange rates pool error"},
+	StoreLiquidateExchangeRatesPoolError:          {-14022, "Store liquidate exchange rates pool error"},
 	StoreRedeemLiquidationExchangeRatesError:      {-14023, "Store redeem liquidation exchange rates error"},
 	StoreLiquidationCustodianDepositError:         {-14024, "Store liquidation custodian deposit error"},
 	StoreCustodianStateError:                      {-14025, "Store custodian state error"},
@@ -312,11 +310,12 @@ var ErrCodeMessage = map[int]struct {
 	GetPortalFinalExchangeRatesStateError:               {-14037, "Get portal final exchange rates state error"},
 	StorePortalTxStatusError:                            {-14038, "Store portal Tx status error"},
 	StorePortalExchangeRatesStatusError:                 {-14039, "Store portal exchange rates status error"},
-	GetPortalLiquidationExchangeRatesPoolError:              {-14040, "Get portal liquidation exchange rates pool error"},
+	GetPortalLiquidationExchangeRatesPoolError:          {-14040, "Get portal liquidation exchange rates pool error"},
 	GetPortingRequestStatusError:                        {-14041, "Get portal porting request status error"},
 	GetPortingRequestTxStatusError:                      {-14042, "Get portal porting request tx status error"},
 	GetLiquidationTopPercentileExchangeRatesStatusError: {-14043, "Get liquidation tp ex change rates status error"},
-	GetPortalStatusNotFoundError:                                {-14044, "Get portal status not found error"},
+	GetPortalStatusNotFoundError:                        {-14044, "Get portal status not found error"},
+	GetPortalCustodianWithdrawStatusError:               {-14045, "Get portal custodian withdraw status error"},
 }
 
 type StatedbError struct {

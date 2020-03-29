@@ -311,7 +311,7 @@ func TrackPortalStateStatusMultiple(stateDB *StateDB, statusType []byte, statusS
 		case string(PortalExchangeRatesRequestStatusPrefix()):
 			errType = StorePortalExchangeRatesStatusError
 		case string(PortalCustodianWithdrawStatusPrefix()):
-			errType = StorePortalCustodianWithdrawRequestStateError
+			errType = StorePortalCustodianWithdrawRequestStatusError
 		default:
 			errType = StorePortalStatusError
 	}
@@ -335,6 +335,8 @@ func GetPortalStateStatusMultiple(stateDB *StateDB, statusType []byte, statusSuf
 			errType = GetPortingRequestTxStatusError
 		case string(PortalLiquidationTpExchangeRatesStatusPrefix()):
 			errType = GetLiquidationTopPercentileExchangeRatesStatusError
+		case string(PortalCustodianWithdrawStatusPrefix()):
+			errType = GetPortalCustodianWithdrawStatusError
 		default:
 			errType = StorePortalStatusError
 	}

@@ -58,14 +58,14 @@ func (portal *Portal) GetPortingRequestByByPortingId(portingId string) (jsonresu
 
 func (portal *Portal) GetCustodianWithdrawByTxId(txId string) (jsonresult.PortalCustodianWithdrawRequest, error) {
 	portalStateDB := portal.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
-	custodianWithdraw, err := statedb.GetPortalStateStatusMultiple(portalStateDB, statedb.PortalPortingRequestTxStatusPrefix(), []byte(txId))
+	custodianWithdraw, err := statedb.GetPortalStateStatusMultiple(portalStateDB, statedb.PortalCustodianWithdrawStatusPrefix(), []byte(txId))
 
 	if err != nil {
-		return jsonresult.PortalCustodianWithdrawRequest{}, NewRPCError(GetPortingRequestError, err)
+		return jsonresult.PortalCustodianWithdrawRequest{}, NewRPCError(GetCustodianWithdrawError, err)
 	}
 
 	if  custodianWithdraw == nil {
-		return jsonresult.PortalCustodianWithdrawRequest{}, NewRPCError(GetPortingRequestIsEmpty, err)
+		return jsonresult.PortalCustodianWithdrawRequest{}, NewRPCError(GetCustodianWithdrawError, err)
 	}
 
 	var custodianWithdrawRequestStatus metadata.CustodianWithdrawRequestStatus
