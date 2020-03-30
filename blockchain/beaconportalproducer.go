@@ -711,7 +711,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		// check whether amount transfer in txBNB is equal porting amount or not
 		// check receiver and amount in tx
 		// get list matching custodians in waitingPortingRequest
-		custodians := waitingPortingRequest.Custodians
+		custodians := waitingPortingRequest.Custodians()
 		outputs := btcTxProof.BTCTx.TxOut
 		for _, cusDetail := range custodians {
 			remoteAddressNeedToBeTransfer := cusDetail.RemoteAddress
@@ -777,7 +777,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 		)
 
 		// remove waiting porting request from currentPortalState
-		removeWaitingPortingReqByKey(keyWaitingPortingRequest, currentPortalState)
+		deleteWaitingPortingRequest(currentPortalState, keyWaitingPortingRequestStr)
 		return [][]string{inst}, nil
 
 	} else if meta.TokenID == common.PortalBNBIDStr {
@@ -1740,7 +1740,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		// get list matching custodians in waitingRedeemRequest
 
 		outputs := btcTxProof.BTCTx.TxOut
-		remoteAddressNeedToBeTransfer := waitingRedeemRequest.RedeemerRemoteAddress
+		remoteAddressNeedToBeTransfer := waitingRedeemRequest.GetRedeemerRemoteAddress()
 		amountNeedToBeTransfer := meta.RedeemAmount
 		amountNeedToBeTransferInBTC := btcrelaying.ConvertIncPBTCAmountToExternalBTCAmount(int64(amountNeedToBeTransfer))
 
@@ -1796,12 +1796,14 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		tokenID := meta.TokenID
 
 		// update custodian state (FreeCollateral, LockedAmountCollateral)
-		custodianStateKey := lvdb.NewCustodianStateKey(beaconHeight, meta.CustodianAddressStr)
-		finalExchangeRateKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
+		custodianStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, meta.CustodianAddressStr)
+		custodianStateKeyStr := custodianStateKey.String()
+		finalExchangeRateKey := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
+		finalExchangeRateKeyStr := finalExchangeRateKey.String()
 		unlockAmount, err2 := updateFreeCollateralCustodian(
-			currentPortalState.CustodianPoolState[custodianStateKey],
+			currentPortalState.CustodianPoolState[custodianStateKeyStr],
 			meta.RedeemAmount, tokenID,
-			currentPortalState.FinalExchangeRates[finalExchangeRateKey])
+			currentPortalState.FinalExchangeRatesState[finalExchangeRateKeyStr])
 		if err2 != nil {
 			Logger.log.Errorf("Error when update free collateral amount for custodian", err2)
 			inst := buildReqUnlockCollateralInst(
@@ -1820,13 +1822,14 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 		}
 
 		// update redeem request state in WaitingRedeemRequest (remove custodian from matchingCustodianDetail)
-		currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest].Custodians, _ = removeCustodianFromMatchingRedeemCustodians(
-			currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest].Custodians, meta.CustodianAddressStr)
+		updatedCustodians, _ := removeCustodianFromMatchingRedeemCustodians(
+			currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr].GetCustodians(), meta.CustodianAddressStr)
+		currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr].SetCustodians(updatedCustodians)
 
 		// remove redeem request from WaitingRedeemRequest list when all matching custodians return public token to user
 		// when list matchingCustodianDetail is empty
-		if len(currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest].Custodians) == 0 {
-			delete(currentPortalState.WaitingRedeemRequests, keyWaitingRedeemRequest)
+		if len(currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr].GetCustodians()) == 0 {
+			deleteWaitingRedeemRequest(currentPortalState, keyWaitingRedeemRequestStr)
 		}
 
 		inst := buildReqUnlockCollateralInst(
