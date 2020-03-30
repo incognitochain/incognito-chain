@@ -1208,13 +1208,19 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err := blockchain.config.DataBase.StoreBeaconBlock(beaconBlock, blockHash, &batchPutData); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
-
-	err := blockchain.updateDatabaseWithBlockRewardInfo(beaconBlock, &batchPutData)
-	if err != nil {
-		return NewBlockChainError(UpdateDatabaseWithBlockRewardInfoError, err)
+	if beaconBlock.Header.Epoch < 1000 {
+		err := blockchain.updateDatabaseWithBlockRewardInfo(beaconBlock, &batchPutData)
+		if err != nil {
+			return NewBlockChainError(UpdateDatabaseWithBlockRewardInfoError, err)
+		}
+	} else {
+		err := blockchain.updateDatabaseWithBlockRewardInfoV2(beaconBlock, &batchPutData)
+		if err != nil {
+			return NewBlockChainError(UpdateDatabaseWithBlockRewardInfoError, err)
+		}
 	}
 	// execute, store
-	err = blockchain.processBridgeInstructions(beaconBlock, &batchPutData)
+	err := blockchain.processBridgeInstructions(beaconBlock, &batchPutData)
 	if err != nil {
 		return NewBlockChainError(ProcessBridgeInstructionError, err)
 	}

@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/database"
@@ -16,6 +17,8 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
 )
+
+var shardRequestRewardPrefix = []byte("shardrequestreward-")
 
 func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(
 	swapPublicKey string,
@@ -280,6 +283,86 @@ func (blockchain *BlockChain) updateDatabaseWithBlockRewardInfo(beaconBlock *Bea
 			continue
 		}
 	}
+	return nil
+}
+
+func (blockchain *BlockChain) updateDatabaseWithBlockRewardInfoV2(beaconBlock *BeaconBlock, bd *[]database.BatchData) error {
+	rewardMap := map[string][]byte{}
+	for _, inst := range beaconBlock.Body.Instructions {
+		if len(inst) <= 2 {
+			continue
+		}
+		if inst[0] == SetAction || inst[0] == StakeAction || inst[0] == RandomAction || inst[0] == SwapAction || inst[0] == AssignAction {
+			continue
+		}
+		metaType, err := strconv.Atoi(inst[0])
+		if err != nil {
+			continue
+		}
+		switch metaType {
+		case metadata.AcceptedBlockRewardInfoMeta:
+			acceptedBlkRewardInfo, err := metadata.NewAcceptedBlockRewardInfoFromStr(inst[2])
+			if err != nil {
+				return err
+			}
+			if val, ok := acceptedBlkRewardInfo.TxsFee[common.PRVCoinID]; ok {
+				acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] = val + blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
+			} else {
+				if acceptedBlkRewardInfo.TxsFee == nil {
+					acceptedBlkRewardInfo.TxsFee = map[common.Hash]uint64{}
+				}
+				acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] = blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
+			}
+			for key, value := range acceptedBlkRewardInfo.TxsFee {
+				if value != 0 {
+					err = addShardRewardRequest(beaconBlock.Header.Epoch, acceptedBlkRewardInfo.ShardID, value, key, rewardMap, blockchain.GetDatabase())
+					if err != nil {
+						return err
+					}
+				}
+			}
+			continue
+		}
+	}
+	for k, v := range rewardMap {
+		*bd = append(*bd, database.BatchData{[]byte(k), v})
+	}
+	return nil
+}
+
+func addShardRewardRequest(
+	epoch uint64,
+	shardID byte,
+	rewardAmount uint64,
+	tokenID common.Hash,
+	rewardMap map[string][]byte,
+	db database.DatabaseInterface,
+) error {
+	key := lvdb.NewKeyAddShardRewardRequest(epoch, shardID, tokenID)
+	oldValue, ok := rewardMap[string(key)]
+	if !ok {
+		exist, err := db.HasValue(key)
+		if err != nil {
+			return err
+		}
+		if !exist {
+			oldValue = common.Uint64ToBytes(uint64(0))
+			// rewardMap[string(key)] = common.Uint64ToBytes(rewardAmount)
+		} else {
+			oldValueFromDB, err := db.Get(key)
+			if err != nil {
+				return err
+			}
+			oldValue = oldValueFromDB
+		}
+	}
+	newValue, err := common.BytesToUint64(oldValue)
+	if err != nil {
+		return NewBlockChainError(BuildRewardInstructionError, err)
+	}
+	newValue += rewardAmount
+	rewardMap[string(key)] = common.Uint64ToBytes(newValue)
+
 	return nil
 }
 

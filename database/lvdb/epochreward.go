@@ -14,7 +14,7 @@ import (
  * @param tokenID: currency unit
  * @return ([]byte, error): Key, error of this process
  */
-func newKeyAddShardRewardRequest(
+func NewKeyAddShardRewardRequest(
 	epoch uint64,
 	shardID byte,
 	tokenID common.Hash,
@@ -59,7 +59,7 @@ func (db *db) AddShardRewardRequest(
 	tokenID common.Hash,
 	bd *[]database.BatchData,
 ) error {
-	key := newKeyAddShardRewardRequest(epoch, shardID, tokenID)
+	key := NewKeyAddShardRewardRequest(epoch, shardID, tokenID)
 	oldValue, err := db.Get(key)
 	if err != nil {
 		if bd != nil {
@@ -101,7 +101,7 @@ func (db *db) GetRewardOfShardByEpoch(
 	shardID byte,
 	tokenID common.Hash,
 ) (uint64, error) {
-	key := newKeyAddShardRewardRequest(epoch, shardID, tokenID)
+	key := NewKeyAddShardRewardRequest(epoch, shardID, tokenID)
 	rewardAmount, err := db.Get(key)
 	if err != nil {
 		return 0, nil

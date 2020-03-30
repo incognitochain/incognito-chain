@@ -365,7 +365,7 @@ func (db *db) RestoreBridgedTokenByTokenID(tokenID common.Hash) error {
 
 func (db *db) BackupShardRewardRequest(epoch uint64, shardID byte, tokenID common.Hash) error {
 	backupKey := getPrevPrefix(true, 0)
-	key := newKeyAddShardRewardRequest(epoch, shardID, tokenID)
+	key := NewKeyAddShardRewardRequest(epoch, shardID, tokenID)
 	backupKey = append(backupKey, key...)
 	curValue, err := db.lvdb.Get(key, nil)
 	if err != nil {
@@ -403,7 +403,7 @@ func (db *db) BackupCommitteeReward(committeeAddress []byte, tokenID common.Hash
 }
 func (db *db) RestoreShardRewardRequest(epoch uint64, shardID byte, tokenID common.Hash) error {
 	backupKey := getPrevPrefix(true, 0)
-	key := newKeyAddShardRewardRequest(epoch, shardID, tokenID)
+	key := NewKeyAddShardRewardRequest(epoch, shardID, tokenID)
 	backupKey = append(backupKey, key...)
 	bakValue, err := db.lvdb.Get(backupKey, nil)
 	if err != nil {
