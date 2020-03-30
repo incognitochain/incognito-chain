@@ -6,8 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"math"
 	"reflect"
@@ -44,7 +43,7 @@ type PortalRedeemRequestContent struct {
 	RedeemerIncAddressStr   string
 	RemoteAddress           string // btc/bnb/etc address
 	RedeemFee               uint64 // redeem fee in PRV, 0.01% redeemAmount in PRV
-	MatchingCustodianDetail []*lvdb.MatchingRedeemCustodianDetail   // key: incAddressCustodian
+	MatchingCustodianDetail []*statedb.MatchingRedeemCustodianDetail   // key: incAddressCustodian
 	TxReqID                 common.Hash
 	ShardID                 byte
 }
@@ -58,7 +57,7 @@ type PortalRedeemRequestStatus struct {
 	RedeemerIncAddressStr   string
 	RemoteAddress           string // btc/bnb/etc address
 	RedeemFee               uint64 // redeem fee in PRV, 0.01% redeemAmount in PRV
-	MatchingCustodianDetail []*lvdb.MatchingRedeemCustodianDetail   // key: incAddressCustodian
+	MatchingCustodianDetail []*statedb.MatchingRedeemCustodianDetail   // key: incAddressCustodian
 	TxReqID                 common.Hash
 }
 
@@ -98,7 +97,7 @@ func (redeemReq PortalRedeemRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,
-	db database.DatabaseInterface,
+	db *statedb.StateDB,
 ) (bool, error) {
 	return true, nil
 }

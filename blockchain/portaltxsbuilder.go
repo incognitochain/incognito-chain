@@ -48,7 +48,7 @@ func (blockGenerator *BlockGenerator) buildPortalRefundCustodianDepositTx(
 		refundDeposit.DepositedAmount,
 		&receiverAddr,
 		producerPrivateKey,
-		blockGenerator.chain.config.DataBase,
+		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
 		meta,
 	)
 	if err != nil {
@@ -98,7 +98,7 @@ func (blockGenerator *BlockGenerator) buildPortalLiquidationCustodianDepositReje
 		refundDeposit.DepositedAmount,
 		&receiverAddr,
 		producerPrivateKey,
-		blockGenerator.chain.config.DataBase,
+		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
 		meta,
 	)
 	if err != nil {
@@ -167,7 +167,8 @@ func (blockGenerator *BlockGenerator) buildPortalAcceptedRequestPTokensTx(
 		Mintable:    true,
 	}
 	resTx := &transaction.TxCustomTokenPrivacy{}
-	db := blockGenerator.chain.config.DataBase
+	txStateDB := blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB()
+	featureStateDB := blockGenerator.chain.BestState.Beacon.GetCopiedFeatureStateDB()
 	initErr := resTx.Init(
 		transaction.NewTxPrivacyTokenInitParams(
 			producerPrivateKey,
@@ -175,12 +176,13 @@ func (blockGenerator *BlockGenerator) buildPortalAcceptedRequestPTokensTx(
 			nil,
 			0,
 			tokenParams,
-			db,
+			txStateDB,
 			meta,
 			false,
 			false,
 			shardID,
 			nil,
+			featureStateDB,
 		),
 	)
 	if initErr != nil {
@@ -233,7 +235,7 @@ func (blockGenerator *BlockGenerator) buildPortalCustodianWithdrawRequest(
 		receiveAmt,
 		&receiverAddr,
 		producerPrivateKey,
-		blockGenerator.chain.config.DataBase,
+		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
 		meta,
 	)
 	if err != nil {
@@ -287,7 +289,7 @@ func (blockGenerator *BlockGenerator) buildPortalRedeemLiquidateExchangeRatesReq
 		receiveAmt,
 		&receiverAddr,
 		producerPrivateKey,
-		blockGenerator.chain.config.DataBase,
+		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
 		meta,
 	)
 	if err != nil {
@@ -354,7 +356,8 @@ func (blockGenerator *BlockGenerator) buildPortalRejectedRedeemRequestTx(
 		Mintable:    true,
 	}
 	resTx := &transaction.TxCustomTokenPrivacy{}
-	db := blockGenerator.chain.config.DataBase
+	txStateDB := blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB()
+	featureStateDB := blockGenerator.chain.BestState.Beacon.GetCopiedFeatureStateDB()
 	initErr := resTx.Init(
 		transaction.NewTxPrivacyTokenInitParams(
 			producerPrivateKey,
@@ -362,12 +365,13 @@ func (blockGenerator *BlockGenerator) buildPortalRejectedRedeemRequestTx(
 			nil,
 			0,
 			tokenParams,
-			db,
+			txStateDB,
 			meta,
 			false,
 			false,
 			shardID,
 			nil,
+			featureStateDB,
 		),
 	)
 	if initErr != nil {
@@ -419,7 +423,7 @@ func (blockGenerator *BlockGenerator) buildPortalLiquidateCustodianResponseTx(
 		liqCustodian.MintedCollateralAmount,
 		&receiverAddr,
 		producerPrivateKey,
-		blockGenerator.chain.config.DataBase,
+		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
 		meta,
 	)
 	if err != nil {
@@ -468,7 +472,7 @@ func (blockGenerator *BlockGenerator) buildPortalAcceptedWithdrawRewardTx(
 		withdrawRewardContent.RewardAmount,
 		&receiverAddr,
 		producerPrivateKey,
-		blockGenerator.chain.config.DataBase,
+		blockGenerator.chain.BestState.Shard[shardID].GetCopiedTransactionStateDB(),
 		meta,
 	)
 	if err != nil {

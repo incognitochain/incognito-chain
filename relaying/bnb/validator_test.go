@@ -13,7 +13,7 @@ import (
 
 
 func TestDecodePubKeyValidator(t *testing.T){
-	b64EncodePubKey := "3bWVA8EcEN9ZfvcWL6kV29Sfa50O58jHInmg4AkfkxU="
+	b64EncodePubKey := "uND4Li1FIzpmjmEe9RZGZlKr53zLP8ZHUP8DSQCZpN4="
 
 	pubKeyBytes, _ := base64.StdEncoding.DecodeString(b64EncodePubKey)
 	fmt.Printf("pubKeyBytes: %#v\n", pubKeyBytes)

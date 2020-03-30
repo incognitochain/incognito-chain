@@ -159,7 +159,7 @@ func (httpServer *HttpServer) handleRetrieveBeaconBlockByHeight(params interface
 		if !ok {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("hashString is invalid"))
 		}
-		result, err := httpServer.blockService.RetrieveBeaconBlockByHeigh(uint64(beaconHeight))
+		result, err := httpServer.blockService.RetrieveBeaconBlockByHeight(uint64(beaconHeight))
 		Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", result, err)
 		if err != nil {
 			return result, err
@@ -236,7 +236,6 @@ func (httpServer *HttpServer) handleGetBlockCount(params interface{}, closeChan 
 		Logger.log.Debugf("handleGetBlockChainInfo result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("component empty"))
 	}
-
 	paramNumberFloat, ok := arrayParams[0].(float64)
 	if !ok {
 		Logger.log.Debugf("handleGetBlockChainInfo result: %+v", nil)
@@ -244,7 +243,6 @@ func (httpServer *HttpServer) handleGetBlockCount(params interface{}, closeChan 
 	}
 	shardID := byte(int(paramNumberFloat))
 	isGetBeacon := int(paramNumberFloat) == -1
-
 	if isGetBeacon {
 		beacon, err := httpServer.blockService.GetBeaconBestState()
 		if err != nil {
@@ -255,7 +253,6 @@ func (httpServer *HttpServer) handleGetBlockCount(params interface{}, closeChan 
 		Logger.log.Debugf("handleGetBlockChainInfo result: %+v", result)
 		return result, nil
 	}
-
 	shardById, err := httpServer.blockService.GetShardBestStateByShardID(shardID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetClonedShardBestStateError, err)
@@ -277,7 +274,6 @@ func (httpServer *HttpServer) handleGetBlockHash(params interface{}, closeChan <
 			1.0,
 		}
 	}
-
 	shardIDParam, ok := arrayParams[0].(float64)
 	if !ok {
 		Logger.log.Debugf("handleGetBlockHash result: %+v", nil)
@@ -292,7 +288,7 @@ func (httpServer *HttpServer) handleGetBlockHash(params interface{}, closeChan <
 	}
 	height := uint64(heightParam)
 
-	result, err := httpServer.blockService.GetBlockHashByHeight(shardID, height)
+	result, err := httpServer.blockService.GetBlockHashByHeightV2(shardID, height)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetShardBlockByHeightError, err)
 	}
@@ -322,11 +318,15 @@ func (httpServer *HttpServer) handleGetBlockHeader(params interface{}, closeChan
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("shardID is invalid"))
 	}
 
-	blockHeader, blockNum, blockHashStr, err := httpServer.blockService.GetBlockHeader(getBy, block, shardID)
+	blockHeaders, blockNumber, blockHashes, err := httpServer.blockService.GetShardBlockHeader(getBy, block, shardID)
 	if err != nil {
 		return nil, err
 	}
-	result := jsonresult.NewHeaderResult(*blockHeader, blockNum, blockHashStr, byte(shardID))
+	result := []jsonresult.GetHeaderResult{}
+	for i, blockHeader := range blockHeaders {
+		res := jsonresult.NewHeaderResult(*blockHeader, blockNumber, blockHashes[i], byte(shardID))
+		result = append(result, res)
+	}
 	Logger.log.Debugf("handleGetBlockHeader result: %+v", result)
 	return result, nil
 }
@@ -355,59 +355,61 @@ func (httpServer *HttpServer) handleGetCrossShardBlock(params interface{}, close
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("blockHeight is invalid"))
 	}
 	blockHeight := uint64(blockHeightParam)
-
-	shardBlock, err := httpServer.config.BlockChain.GetShardBlockByHeight(blockHeight, byte(shardID))
+	shardBlocks, err := httpServer.config.BlockChain.GetShardBlockByHeight(blockHeight, byte(shardID))
 	if err != nil {
 		Logger.log.Debugf("handleGetCrossShardBlock result: %+v", nil)
 		return nil, rpcservice.NewRPCError(rpcservice.GetShardBlockByHeightError, err)
 	}
-
-	result := jsonresult.CrossShardDataResult{HasCrossShard: false}
+	result := make(map[common.Hash]jsonresult.CrossShardDataResult)
 	flag := false
-	for _, crossTransactions := range shardBlock.Body.CrossTransactions {
-		if !flag {
-			flag = true //has cross shard block
-		}
-		for _, crossTransaction := range crossTransactions {
-			for _, outputCoin := range crossTransaction.OutputCoin {
-				pubkey := outputCoin.CoinDetails.GetPublicKey().ToBytesS()
-				pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
-				if outputCoin.CoinDetailsEncrypted == nil {
-					crossShardPRVResult := jsonresult.CrossShardPRVResult{
-						PublicKey: pubkeyStr,
-						Value:     outputCoin.CoinDetails.GetValue(),
-					}
-					result.CrossShardPRVResultList = append(result.CrossShardPRVResultList, crossShardPRVResult)
-				} else {
-					crossShardPRVPrivacyResult := jsonresult.CrossShardPRVPrivacyResult{
-						PublicKey: pubkeyStr,
-					}
-					result.CrossShardPRVPrivacyResultList = append(result.CrossShardPRVPrivacyResultList, crossShardPRVPrivacyResult)
-				}
+	for _, shardBlock := range shardBlocks {
+		res := jsonresult.CrossShardDataResult{HasCrossShard: false}
+		for _, crossTransactions := range shardBlock.Body.CrossTransactions {
+			if !flag {
+				flag = true //has cross shard block
 			}
-			for _, tokenPrivacyData := range crossTransaction.TokenPrivacyData {
-				crossShardCSTokenResult := jsonresult.CrossShardCSTokenResult{
-					Name:                               tokenPrivacyData.PropertyName,
-					Symbol:                             tokenPrivacyData.PropertySymbol,
-					TokenID:                            tokenPrivacyData.PropertyID.String(),
-					Amount:                             tokenPrivacyData.Amount,
-					IsPrivacy:                          true,
-					CrossShardPrivacyCSTokenResultList: []jsonresult.CrossShardPrivacyCSTokenResult{},
-				}
-				for _, outputCoin := range tokenPrivacyData.OutputCoin {
+			for _, crossTransaction := range crossTransactions {
+				for _, outputCoin := range crossTransaction.OutputCoin {
 					pubkey := outputCoin.CoinDetails.GetPublicKey().ToBytesS()
 					pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
-					crossShardPrivacyCSTokenResult := jsonresult.CrossShardPrivacyCSTokenResult{
-						PublicKey: pubkeyStr,
+					if outputCoin.CoinDetailsEncrypted == nil {
+						crossShardPRVResult := jsonresult.CrossShardPRVResult{
+							PublicKey: pubkeyStr,
+							Value:     outputCoin.CoinDetails.GetValue(),
+						}
+						res.CrossShardPRVResultList = append(res.CrossShardPRVResultList, crossShardPRVResult)
+					} else {
+						crossShardPRVPrivacyResult := jsonresult.CrossShardPRVPrivacyResult{
+							PublicKey: pubkeyStr,
+						}
+						res.CrossShardPRVPrivacyResultList = append(res.CrossShardPRVPrivacyResultList, crossShardPRVPrivacyResult)
 					}
-					crossShardCSTokenResult.CrossShardPrivacyCSTokenResultList = append(crossShardCSTokenResult.CrossShardPrivacyCSTokenResultList, crossShardPrivacyCSTokenResult)
 				}
-				result.CrossShardCSTokenResultList = append(result.CrossShardCSTokenResultList, crossShardCSTokenResult)
+				for _, tokenPrivacyData := range crossTransaction.TokenPrivacyData {
+					crossShardCSTokenResult := jsonresult.CrossShardCSTokenResult{
+						Name:                               tokenPrivacyData.PropertyName,
+						Symbol:                             tokenPrivacyData.PropertySymbol,
+						TokenID:                            tokenPrivacyData.PropertyID.String(),
+						Amount:                             tokenPrivacyData.Amount,
+						IsPrivacy:                          true,
+						CrossShardPrivacyCSTokenResultList: []jsonresult.CrossShardPrivacyCSTokenResult{},
+					}
+					for _, outputCoin := range tokenPrivacyData.OutputCoin {
+						pubkey := outputCoin.CoinDetails.GetPublicKey().ToBytesS()
+						pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
+						crossShardPrivacyCSTokenResult := jsonresult.CrossShardPrivacyCSTokenResult{
+							PublicKey: pubkeyStr,
+						}
+						crossShardCSTokenResult.CrossShardPrivacyCSTokenResultList = append(crossShardCSTokenResult.CrossShardPrivacyCSTokenResultList, crossShardPrivacyCSTokenResult)
+					}
+					res.CrossShardCSTokenResultList = append(res.CrossShardCSTokenResultList, crossShardCSTokenResult)
+				}
 			}
 		}
-	}
-	if flag {
-		result.HasCrossShard = flag
+		if flag {
+			res.HasCrossShard = flag
+		}
+		result[shardBlock.Header.Hash()] = res
 	}
 	Logger.log.Debugf("handleGetCrossShardBlock result: %+v", result)
 	return result, nil

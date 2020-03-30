@@ -7,7 +7,8 @@ import (
 	"fmt"
 	"github.com/binance-chain/go-sdk/client/rpc"
 	bnbtx "github.com/binance-chain/go-sdk/types/tx"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/tendermint/tendermint/rpc/client"
 	"github.com/tendermint/tendermint/types"
 )
@@ -74,19 +75,13 @@ func (p *BNBProof) Build(indexTx int, blockHeight int64, url string) *BNBRelayin
 	return nil
 }
 
-func (p *BNBProof) Verify(db database.DatabaseInterface) (bool, *BNBRelayingError) {
-	//dataHash, err := db.GetBNBDataHashByBlockHeight(uint64(p.BlockHeight))
-	//if err != nil {
-	//	return false, NewBNBRelayingError(GetBNBDataHashErr, err)
-	//}
-
-	//@@note@@: hard code to test
-	dataHash := []byte{}
-	if p.BlockHeight == 446 {
-		dataHash, _ = hex.DecodeString("4FF38A492977EF2880F5F6C0BA5B6E40B78599B53D5F3174A62888DD9EF7875D")
+func (p *BNBProof) Verify(db incdb.Database) (bool, *BNBRelayingError) {
+	dataHash, err := rawdbv2.GetBNBDataHashByBlockHeight(db, uint64(p.BlockHeight))
+	if err != nil {
+		return false, NewBNBRelayingError(GetBNBDataHashErr, err)
 	}
 
-	err := p.Proof.Validate(dataHash)
+	err = p.Proof.Validate(dataHash)
 	if err != nil {
 		return false, NewBNBRelayingError(InvalidTxProofErr, err)
 	}

@@ -3,10 +3,11 @@ package rpcserver
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -35,7 +36,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithCustodianDeposit(params inter
 	if len(remoteAddressesMap) < 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata RemoteAddresses must be at least one"))
 	}
-	remoteAddresses := make([]lvdb.RemoteAddress, 0)
+	remoteAddresses := make([]statedb.RemoteAddress, 0)
 	for pTokenID, remoteAddress := range remoteAddressesMap {
 		if !common.IsPortalToken(pTokenID) {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
@@ -46,7 +47,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithCustodianDeposit(params inter
 		}
 		remoteAddresses = append(
 			remoteAddresses,
-			lvdb.RemoteAddress{ PTokenID:pTokenID, Address: addr },
+			*statedb.NewRemoteAddressWithValue(pTokenID, addr),
 		)
 	}
 	depositedAmountData, ok := data["DepositedAmount"].(float64)
@@ -70,7 +71,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithCustodianDeposit(params inter
 	// HasPrivacyCoin param is always false
 	createRawTxParam.HasPrivacyCoin = false
 
-	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta, *httpServer.config.Database)
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
 	if err1 != nil {
 		Logger.log.Error(err1)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
@@ -160,7 +161,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithReqPToken(params interface{},
 	// HasPrivacyCoin param is always false
 	createRawTxParam.HasPrivacyCoin = false
 
-	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta, *httpServer.config.Database)
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
 	if err1 != nil {
 		Logger.log.Error(err1)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
@@ -209,32 +210,40 @@ func (httpServer *HttpServer) handleGetPortalState(params interface{}, closeChan
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Beacon height is invalid"))
 	}
 
-	portalState, err := blockchain.InitCurrentPortalStateFromDB(httpServer.config.BlockChain.GetDatabase(), uint64(beaconHeight))
+	//stateDB := httpServer.config.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	featureStateRootHash, err := httpServer.config.BlockChain.GetBeaconFeatureRootHash(httpServer.config.BlockChain.GetDatabase(), uint64(beaconHeight))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPortalStateError, fmt.Errorf("Can't found FeatureStateRootHash of beacon height %+v, error %+v", beaconHeight, err))
+	}
+	stateDB, err := statedb.NewWithPrefixTrie(featureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetDatabase()))
+
+	portalState, err := blockchain.InitCurrentPortalStateFromDB(stateDB, uint64(beaconHeight))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPortalStateError, err)
 	}
 
-	beaconBlock, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
+	beaconBlocks, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPortalStateError, err)
 	}
+	beaconBlock := beaconBlocks[0]
 
 	type CurrentPortalState struct {
-		WaitingPortingRequests map[string]*lvdb.PortingRequest     `json:"WaitingPortingRequests"`
-		WaitingRedeemRequests  map[string]*lvdb.RedeemRequest      `json:"WaitingRedeemRequests"`
-		CustodianPool          map[string]*lvdb.CustodianState     `json:"CustodianPool"`
-		FinalExchangeRates     map[string]*lvdb.FinalExchangeRates `json:"FinalExchangeRates"`
-		LiquidateExchangeRates map[string]*lvdb.LiquidateExchangeRates `json:"LiquidateExchangeRates"`
-		BeaconTimeStamp        int64                               `json:"BeaconTimeStamp"`
+		WaitingPortingRequests     map[string]*statedb.WaitingPortingRequest      `json:"WaitingPortingRequests"`
+		WaitingRedeemRequests      map[string]*statedb.WaitingRedeemRequest       `json:"WaitingRedeemRequests"`
+		CustodianPool              map[string]*statedb.CustodianState             `json:"CustodianPool"`
+		FinalExchangeRatesState    map[string]*statedb.FinalExchangeRatesState    `json:"FinalExchangeRatesState"`
+		LiquidateExchangeRatesPool map[string]*statedb.LiquidateExchangeRatesPool `json:"LiquidateExchangeRatesPool"`
+		BeaconTimeStamp            int64                                          `json:"BeaconTimeStamp"`
 	}
 
 	result := CurrentPortalState{
-		BeaconTimeStamp:        beaconBlock.Header.Timestamp,
-		WaitingPortingRequests: portalState.WaitingPortingRequests,
-		WaitingRedeemRequests:  portalState.WaitingRedeemRequests,
-		CustodianPool:          portalState.CustodianPoolState,
-		FinalExchangeRates:     portalState.FinalExchangeRates,
-		LiquidateExchangeRates: portalState.LiquidateExchangeRates,
+		BeaconTimeStamp:            beaconBlock.Header.Timestamp,
+		WaitingPortingRequests:     portalState.WaitingPortingRequests,
+		WaitingRedeemRequests:      portalState.WaitingRedeemRequests,
+		CustodianPool:              portalState.CustodianPoolState,
+		FinalExchangeRatesState:    portalState.FinalExchangeRatesState,
+		LiquidateExchangeRatesPool: portalState.LiquidateExchangeRatesPool,
 	}
 	return result, nil
 }
@@ -252,7 +261,8 @@ func (httpServer *HttpServer) handleGetPortalCustodianDepositStatus(params inter
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param DepositTxID is invalid"))
 	}
-	status, err := httpServer.databaseService.GetPortalCustodianDepositStatus(depositTxID)
+
+	status, err := httpServer.blockService.GetCustodianDepositStatus(depositTxID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetCustodianDepositError, err)
 	}
@@ -272,7 +282,7 @@ func (httpServer *HttpServer) handleGetPortalReqPTokenStatus(params interface{},
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param ReqTxID is invalid"))
 	}
-	status, err := httpServer.databaseService.GetPortalReqPTokenStatus(reqTxID)
+	status, err := httpServer.blockService.GetPortalReqPTokenStatus(reqTxID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetReqPTokenStatusError, err)
 	}
@@ -332,7 +342,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithRedeemReq(params interface{},
 	meta, _ := metadata.NewPortalRedeemRequest(metadata.PortalRedeemRequestMeta, uniqueRedeemID,
 		redeemTokenID, redeemAmount, redeemerIncAddressStr, remoteAddress, redeemFee)
 
-	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta, *httpServer.config.Database)
+	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
 	if rpcErr != nil {
 		Logger.log.Error(rpcErr)
 		return nil, rpcErr
@@ -399,7 +409,7 @@ func (httpServer *HttpServer) handleCustodianWithdrawRequest(params interface{},
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
 
-	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta, *httpServer.config.Database)
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
 	if err1 != nil {
 		Logger.log.Error(err1)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
@@ -490,7 +500,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithReqUnlockCollateral(params in
 	// HasPrivacyCoin param is always false
 	createRawTxParam.HasPrivacyCoin = false
 
-	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta, *httpServer.config.Database)
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
 	if err1 != nil {
 		Logger.log.Error(err1)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
@@ -539,10 +549,10 @@ func (httpServer *HttpServer) handleGetCustodianWithdrawByTxId(params interface{
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata txId is invalid"))
 	}
 
-	result, err := httpServer.portal.GetCustodianWithdrawByTxId(txId, *httpServer.config.Database)
+	result, err := httpServer.portal.GetCustodianWithdrawByTxId(txId)
 
 	if err != nil {
-		return nil, err
+		return nil, rpcservice.NewRPCError(rpcservice.GetCustodianWithdrawError, err)
 	}
 
 	return result, nil
@@ -561,7 +571,7 @@ func (httpServer *HttpServer) handleGetPortalReqUnlockCollateralStatus(params in
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param ReqTxID is invalid"))
 	}
-	status, err := httpServer.databaseService.GetPortalReqUnlockCollateralStatus(reqTxID)
+	status, err := httpServer.blockService.GetPortalReqUnlockCollateralStatus(reqTxID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetReqUnlockCollateralStatusError, err)
 	}
@@ -581,7 +591,7 @@ func (httpServer *HttpServer) handleGetPortalReqRedeemStatus(params interface{},
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param RedeemID is invalid"))
 	}
-	status, err := httpServer.databaseService.GetPortalRedeemReqStatus(redeemID)
+	status, err := httpServer.blockService.GetPortalRedeemReqStatus(redeemID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetReqRedeemStatusError, err)
 	}
@@ -606,7 +616,7 @@ func (httpServer *HttpServer) handleGetCustodianLiquidationStatus(params interfa
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param CustodianIncAddress is invalid"))
 	}
-	status, err := httpServer.databaseService.GetPortalLiquidationCustodianStatus(redeemID, custodianAddress)
+	status, err := httpServer.blockService.GetPortalLiquidationCustodianStatus(redeemID, custodianAddress)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetReqRedeemStatusError, err)
 	}
@@ -642,7 +652,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithReqWithdrawRewardPortal(param
 	// HasPrivacyCoin param is always false
 	createRawTxParam.HasPrivacyCoin = false
 
-	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta, *httpServer.config.Database)
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
 	if err1 != nil {
 		Logger.log.Error(err1)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
@@ -675,4 +685,62 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithReqWithdrawRewardPortal(p
 	}
 	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
 	return result, nil
+}
+
+func (httpServer *HttpServer) handleGetPortalReward(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one"))
+	}
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	incognitoAddress, ok := data["IncognitoAddress"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("IncognitoAddress is invalid"))
+	}
+
+	latestBeaconHeight := httpServer.config.BlockChain.BestState.Beacon.BeaconHeight
+
+	//stateDB := httpServer.config.BlockChain.BestState.Beacon.GetCopiedFeatureStateDB()
+	featureStateRootHash, err := httpServer.config.BlockChain.GetBeaconFeatureRootHash(httpServer.config.BlockChain.GetDatabase(), latestBeaconHeight)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPortalRewardError, fmt.Errorf("Can't found FeatureStateRootHash of beacon height %+v, error %+v", incognitoAddress, err))
+	}
+	stateDB, err := statedb.NewWithPrefixTrie(featureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetDatabase()))
+
+	portalState, err := blockchain.InitCurrentPortalStateFromDB(stateDB, latestBeaconHeight)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPortalRewardError, err)
+	}
+
+	rewardAmount := uint64(0)
+	for _, cus := range portalState.CustodianPoolState {
+		if cus.GetIncognitoAddress() == incognitoAddress {
+			rewardAmount = cus.GetRewardAmount()
+		}
+	}
+	return rewardAmount, nil
+}
+
+func (httpServer *HttpServer) handleGetRequestWithdrawPortalRewardStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one"))
+	}
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	reqTxID, ok := data["ReqTxID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param ReqTxID is invalid"))
+	}
+
+	status, err := httpServer.blockService.GetPortalRequestWithdrawRewardStatus(reqTxID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetRequestWithdrawRewardStatusError, err)
+	}
+	return status, nil
 }

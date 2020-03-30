@@ -398,7 +398,7 @@ func (synker *Synker) UpdateState() {
 			if RCS.ClosestBeaconState.Height == beaconStateClone.BeaconHeight {
 				synker.SetChainState(false, 0, true)
 			} else {
-				Logger.log.Infof("beacon not ready %v %v\n", userRole, RCS.ClosestBeaconState.Height)
+				Logger.log.Debugf("beacon not ready %v %v", userRole, RCS.ClosestBeaconState.Height)
 				synker.SetChainState(false, 0, false)
 			}
 		}
@@ -408,7 +408,7 @@ func (synker *Synker) UpdateState() {
 				synker.SetChainState(false, 0, true)
 				synker.SetChainState(true, byte(userShardIDInt), true)
 			} else {
-				Logger.log.Infof("shard not ready", RCS.ClosestShardsState[byte(userShardIDInt)].Height)
+				Logger.log.Debugf("shard not ready", RCS.ClosestShardsState[byte(userShardIDInt)].Height)
 				synker.SetChainState(false, 0, false)
 				synker.SetChainState(true, byte(userShardIDInt), false)
 			}
@@ -931,7 +931,7 @@ func (synker *Synker) InsertBeaconBlockFromPool() {
 	defer currentInsert.Beacon.Unlock()
 	blocks := synker.blockchain.config.BeaconPool.GetValidBlock()
 	if len(blocks) > 0 {
-		fmt.Println("InsertBeaconBlockFromPool", len(blocks))
+		Logger.log.Debugf("InsertBeaconBlockFromPool %d", len(blocks))
 	}
 
 	chain := synker.blockchain.Chains[common.BeaconChainKey]

@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"reflect"
 	"strconv"
@@ -32,6 +32,17 @@ type PortalCustodianWithdrawRequestContent struct {
 	ShardID              byte
 }
 
+type CustodianWithdrawRequestStatus struct {
+	PaymentAddress                string
+	Amount                        uint64
+	Status                        int
+	RemainCustodianFreeCollateral uint64
+}
+
+func NewCustodianWithdrawRequestStatus(paymentAddress string, amount uint64, status int, remainCustodianFreeCollateral uint64) *CustodianWithdrawRequestStatus {
+	return &CustodianWithdrawRequestStatus{PaymentAddress: paymentAddress, Amount: amount, Status: status, RemainCustodianFreeCollateral: remainCustodianFreeCollateral}
+}
+
 func NewPortalCustodianWithdrawRequest(metaType int, paymentAddress string, amount uint64) (*PortalCustodianWithdrawRequest, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
@@ -51,7 +62,7 @@ func (Withdraw PortalCustodianWithdrawRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,
-	db database.DatabaseInterface,
+	db *statedb.StateDB,
 ) (bool, error) {
 	// NOTE: verify supported tokens pair as needed
 	return true, nil

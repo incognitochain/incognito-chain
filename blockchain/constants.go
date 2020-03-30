@@ -15,12 +15,12 @@ const (
 	RANDOM_NUMBER                 = 3
 	SHARD_BLOCK_VERSION           = 1
 	BEACON_BLOCK_VERSION          = 1
-	DefaultMaxBlkReqPerPeer       = 600
-	DefaultMaxBlkReqPerTime       = 1200
+	DefaultMaxBlkReqPerPeer       = 900
+	DefaultMaxBlkReqPerTime       = 900
 	MinCommitteeSize              = 3                // min size to run bft
 	DefaultBroadcastStateTime     = 6 * time.Second  // in second
 	DefaultStateUpdateTime        = 8 * time.Second  // in second
-	DefaultMaxBlockSyncTime       = 10 * time.Second // in second
+	DefaultMaxBlockSyncTime       = 30 * time.Second // in second
 	DefaultCacheCleanupTime       = 40 * time.Second // in second
 	WorkerNumber                  = 5
 	MAX_S2B_BLOCK                 = 30
@@ -111,8 +111,9 @@ const (
 	TestNetMaxShardBlkCreation  = 6 * time.Second  //second, timeout is 25
 
 	//board and proposal parameters
-	TestnetBasicReward                      = 400000000 //40 mili PRV
-	TestnetETHContractAddressStr            = "0x6e8CDB333ba1573Fffe195A545F3031Cff9Da008"
+	TestnetBasicReward = 400000000 //40 mili PRV
+	//TestnetETHContractAddressStr            = "0x6e8CDB333ba1573Fffe195A545F3031Cff9Da008"
+	TestnetETHContractAddressStr            = "0x87470Ad15A76DEdc5CFC6668F9aC023a89EA10e8"
 	TestnetIncognitoDAOAddress              = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" // community fund
 	TestnetCentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 

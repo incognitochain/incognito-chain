@@ -3,13 +3,13 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"math/big"
 	"sort"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
@@ -17,6 +17,9 @@ import (
 func (blockchain *BlockChain) collectStatefulActions(
 	shardBlockInstructions [][]string,
 ) [][]string {
+		if len(shardBlockInstructions) > 0 {
+			Logger.log.Errorf("collectStatefulActions starting !!!!!")
+		}
 	// stateful instructions are dependently processed with results of instructioins before them in shards2beacon blocks
 	statefulInsts := [][]string{}
 	for _, inst := range shardBlockInstructions {
@@ -28,6 +31,7 @@ func (blockchain *BlockChain) collectStatefulActions(
 		}
 
 		metaType, err := strconv.Atoi(inst[0])
+		Logger.log.Errorf("collectStatefulActions metaType %v\n", metaType)
 		if err != nil {
 			Logger.log.Error(err)
 			continue
@@ -51,7 +55,11 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.PortalRedeemLiquidateExchangeRatesMeta,
 			metadata.PortalLiquidationCustodianDepositMeta,
 			metadata.PortalLiquidationCustodianDepositResponseMeta:
-			statefulInsts = append(statefulInsts, inst)
+				{
+					Logger.log.Errorf("collectStatefulActions stateful instruction")
+					statefulInsts = append(statefulInsts, inst)
+				}
+
 		default:
 			continue
 		}
@@ -73,22 +81,23 @@ func groupPDEActionsByShardID(
 	return pdeActionsByShardID
 }
 
-func (blockchain *BlockChain) buildStatefulInstructions(
-	statefulActionsByShardID map[byte][][]string,
-	beaconHeight uint64,
-	db database.DatabaseInterface,
-) [][]string {
-	currentPDEState, err := InitCurrentPDEStateFromDB(db, beaconHeight-1)
+func (blockchain *BlockChain) buildStatefulInstructions(stateDB *statedb.StateDB, statefulActionsByShardID map[byte][][]string, beaconHeight uint64) [][]string {
+	if len(statefulActionsByShardID[0]) > 0 {
+		Logger.log.Errorf("buildStatefulInstructions starting....!!!!! - %v\n", len(statefulActionsByShardID[0]))
+	}
+
+	currentPDEState, err := InitCurrentPDEStateFromDB(stateDB, beaconHeight-1)
 	if err != nil {
 		Logger.log.Error(err)
 	}
 
-	currentPortalState, err := InitCurrentPortalStateFromDB(db, beaconHeight-1)
+	currentPortalState, err := InitCurrentPortalStateFromDB(stateDB, beaconHeight-1)
 	if err != nil {
 		Logger.log.Error(err)
 	}
 
 	pm := NewPortalManager()
+	db := blockchain.GetDatabase()
 	relayingHeaderState, err := blockchain.InitRelayingHeaderChainStateFromDB(db, beaconHeight-1)
 	if err != nil {
 		Logger.log.Error(err)
@@ -135,10 +144,10 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			newInst := [][]string{}
 			switch metaType {
 			case metadata.IssuingRequestMeta:
-				newInst, err = blockchain.buildInstructionsForIssuingReq(contentStr, shardID, metaType, accumulatedValues)
+				newInst, err = blockchain.buildInstructionsForIssuingReq(stateDB, contentStr, shardID, metaType, accumulatedValues)
 
 			case metadata.IssuingETHRequestMeta:
-				newInst, err = blockchain.buildInstructionsForIssuingETHReq(contentStr, shardID, metaType, accumulatedValues)
+				newInst, err = blockchain.buildInstructionsForIssuingETHReq(stateDB, contentStr, shardID, metaType, accumulatedValues)
 
 			case metadata.PDEContributionMeta:
 				pdeContributionActionsByShardID = groupPDEActionsByShardID(
@@ -159,11 +168,15 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 					shardID,
 				)
 			case metadata.PortalCustodianDepositMeta:
-				portalCustodianDepositActionsByShardID = groupPortalActionsByShardID(
-					portalCustodianDepositActionsByShardID,
-					action,
-					shardID,
-				)
+				{
+					Logger.log.Errorf("Receive instruction for custodian deposit !!!!!")
+					portalCustodianDepositActionsByShardID = groupPortalActionsByShardID(
+						portalCustodianDepositActionsByShardID,
+						action,
+						shardID,
+					)
+				}
+
 			case metadata.PortalUserRegisterMeta:
 				portalUserReqPortingActionsByShardID = groupPortalActionsByShardID(
 					portalUserReqPortingActionsByShardID,
@@ -253,6 +266,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 
 	// handle portal instructions
 	portalInsts, err := blockchain.handlePortalInsts(
+		stateDB,
 		beaconHeight-1,
 		currentPortalState,
 		portalCustodianDepositActionsByShardID,
@@ -341,7 +355,7 @@ func sortPDETradeInstsByFee(
 				continue
 			}
 			tradeMeta := pdeTradeReqAction.Meta
-			poolPairKey := string(lvdb.BuildPDEPoolForPairKey(beaconHeight, tradeMeta.TokenIDToBuyStr, tradeMeta.TokenIDToSellStr))
+			poolPairKey := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight, tradeMeta.TokenIDToBuyStr, tradeMeta.TokenIDToSellStr))
 			tradesByPair, found := tradesByPairs[poolPairKey]
 			if !found {
 				tradesByPairs[poolPairKey] = []metadata.PDETradeRequestAction{pdeTradeReqAction}
@@ -479,6 +493,7 @@ func groupPortalActionsByShardID(
 }
 
 func (blockchain *BlockChain) handlePortalInsts(
+	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	currentPortalState *CurrentPortalState,
 	portalCustodianDepositActionsByShardID map[byte][][]string,
@@ -567,6 +582,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 		for _, action := range actions {
 			contentStr := action[1]
 			newInst, err := blockchain.buildInstructionsForReqPTokens(
+				stateDB,
 				contentStr,
 				shardID,
 				metadata.PortalUserRequestPTokenMeta,
@@ -597,6 +613,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 		for _, action := range actions {
 			contentStr := action[1]
 			newInst, err := blockchain.buildInstructionsForRedeemRequest(
+				stateDB,
 				contentStr,
 				shardID,
 				metadata.PortalRedeemRequestMeta,
@@ -688,6 +705,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 		for _, action := range actions {
 			contentStr := action[1]
 			newInst, err := blockchain.buildInstructionsForReqUnlockCollateral(
+				stateDB,
 				contentStr,
 				shardID,
 				metadata.PortalRequestUnlockCollateralMeta,

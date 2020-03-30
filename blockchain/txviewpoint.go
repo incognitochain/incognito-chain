@@ -7,7 +7,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -36,6 +36,24 @@ type TxViewPoint struct {
 	txByPubKey map[string]interface{} // map[base58check.encode{pubkey}+"_"+base58check.encode{txid})
 }
 
+// NewTxViewPoint Create a TxNormal view point, which contains data about serialNumbers and commitments
+func NewTxViewPoint(shardID byte) *TxViewPoint {
+	result := &TxViewPoint{
+		shardID:                     shardID,
+		listSerialNumbers:           make([][]byte, 0),
+		mapCommitments:              make(map[string][][]byte),
+		mapOutputCoins:              make(map[string][]privacy.OutputCoin),
+		mapSnD:                      make(map[string][][]byte),
+		tokenID:                     &common.Hash{},
+		privacyCustomTokenViewPoint: make(map[int32]*TxViewPoint),
+		privacyCustomTokenTxs:       make(map[int32]*transaction.TxCustomTokenPrivacy),
+		privacyCustomTokenMetadata:  &CrossShardTokenPrivacyMetaData{},
+		txByPubKey:                  make(map[string]interface{}),
+	}
+	result.tokenID.SetBytes(common.PRVCoinID[:])
+	return result
+}
+
 /*
 ListSerialNumbers returns list serialNumber which is contained in TxViewPoint
 */
@@ -61,14 +79,12 @@ func (view *TxViewPoint) ListSerialNumnbersEclipsePoint() []*privacy.Point {
 	return result
 }
 
-// fetch from desc of tx to get serialNumber and commitments
+/*
+fetchTxViewPointFromBlock get list serialnumber and commitments, output coins from txs in block and check if they are not in Main chain db
+return a tx view point which contains list new serialNumbers and new commitments from block
 // (note: still storage full data of commitments, serialnumbers, snderivator to check double spend)
-func (view *TxViewPoint) processFetchTxViewPoint(
-	shardID byte,
-	db database.DatabaseInterface,
-	proof *zkp.PaymentProof,
-	tokenID *common.Hash,
-) ([][]byte, map[string][][]byte, map[string][]privacy.OutputCoin, map[string][]privacy.Scalar, error) {
+*/
+func (view *TxViewPoint) processFetchTxViewPoint(stateDB *statedb.StateDB, shardID byte, proof *zkp.PaymentProof, tokenID *common.Hash) ([][]byte, map[string][][]byte, map[string][]privacy.OutputCoin, map[string][]privacy.Scalar, error) {
 	acceptedSerialNumbers := make([][]byte, 0)
 	acceptedCommitments := make(map[string][][]byte)
 	acceptedOutputcoins := make(map[string][]privacy.OutputCoin)
@@ -82,7 +98,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 	// Append into accepttedSerialNumbers if this serial number haven't exist yet
 	for _, item := range proof.GetInputCoins() {
 		serialNum := item.CoinDetails.GetSerialNumber().ToBytesS()
-		ok, err := db.HasSerialNumber(*tokenID, serialNum, shardID)
+		ok, err := statedb.HasSerialNumber(stateDB, *tokenID, serialNum, shardID)
 		if err != nil {
 			return acceptedSerialNumbers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
 		}
@@ -99,7 +115,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 		commitment := item.CoinDetails.GetCoinCommitment().ToBytesS()
 		pubkey := item.CoinDetails.GetPublicKey().ToBytesS()
 		pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
-		ok, err := db.HasCommitment(*tokenID, commitment, shardID)
+		ok, err := statedb.HasCommitment(stateDB, *tokenID, commitment, shardID)
 		if err != nil {
 			return acceptedSerialNumbers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
 		}
@@ -120,7 +136,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 
 		// get data for Snderivators
 		snD := item.CoinDetails.GetSNDerivator()
-		ok, err = db.HasSNDerivator(*tokenID, snD.ToBytesS())
+		ok, err = statedb.HasSNDerivator(stateDB, *tokenID, snD.ToBytesS())
 		if !ok && err == nil {
 			acceptedSnD[pubkeyStr] = append(acceptedSnD[pubkeyStr], *snD)
 		}
@@ -128,13 +144,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 	return acceptedSerialNumbers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, nil
 }
 
-/*
-fetchTxViewPointFromBlock get list serialnumber and commitments, output coins from txs in block and check if they are not in Main chain db
-return a tx view point which contains list new serialNumbers and new commitments from block
-// (note: still storage full data of commitments, serialnumbers, snderivator to check double spend)
-*/
-
-func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface, block *ShardBlock) error {
+func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, block *ShardBlock) error {
 	transactions := block.Body.Transactions
 	// Loop through all of the transaction descs (except for the salary tx)
 	acceptedSerialNumbers := make([][]byte, 0)
@@ -148,7 +158,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 		case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
 			{
 				normalTx := tx.(*transaction.Tx)
-				serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(block.Header.ShardID, db, normalTx.Proof, prvCoinID)
+				serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(stateDB, block.Header.ShardID, normalTx.Proof, prvCoinID)
 				if err != nil {
 					return NewBlockChainError(UnExpectedError, err)
 				}
@@ -178,7 +188,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 		case common.TxCustomTokenPrivacyType:
 			{
 				tx := tx.(*transaction.TxCustomTokenPrivacy)
-				serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(block.Header.ShardID, db, tx.Proof, prvCoinID)
+				serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(stateDB, block.Header.ShardID, tx.Proof, prvCoinID)
 				if err != nil {
 					return NewBlockChainError(UnExpectedError, err)
 				}
@@ -210,7 +220,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 				// sub view for privacy custom token
 				subView := NewTxViewPoint(block.Header.ShardID)
 				subView.tokenID = &tx.TxPrivacyTokenData.PropertyID
-				serialNumbersP, commitmentsP, outCoinsP, snDsP, errP := subView.processFetchTxViewPoint(subView.shardID, db, tx.TxPrivacyTokenData.TxNormal.Proof, subView.tokenID)
+				serialNumbersP, commitmentsP, outCoinsP, snDsP, errP := subView.processFetchTxViewPoint(stateDB, subView.shardID, tx.TxPrivacyTokenData.TxNormal.Proof, subView.tokenID)
 				if errP != nil {
 					return NewBlockChainError(UnExpectedError, errP)
 				}
@@ -267,39 +277,11 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 	return nil
 }
 
-/*
-Create a TxNormal view point, which contains data about serialNumbers and commitments
-*/
-func NewTxViewPoint(shardID byte) *TxViewPoint {
-	result := &TxViewPoint{
-		shardID:                     shardID,
-		listSerialNumbers:           make([][]byte, 0),
-		mapCommitments:              make(map[string][][]byte),
-		mapOutputCoins:              make(map[string][]privacy.OutputCoin),
-		mapSnD:                      make(map[string][][]byte),
-		tokenID:                     &common.Hash{},
-		privacyCustomTokenViewPoint: make(map[int32]*TxViewPoint),
-		privacyCustomTokenTxs:       make(map[int32]*transaction.TxCustomTokenPrivacy),
-		privacyCustomTokenMetadata:  &CrossShardTokenPrivacyMetaData{},
-
-		txByPubKey: make(map[string]interface{}),
-	}
-	result.tokenID.SetBytes(common.PRVCoinID[:])
-	return result
-}
-
-/*
-	fetch information from cross output coin
-	- UTXO: outcoin
-	- Commitment
-	- snd
-*/
-func (view *TxViewPoint) processFetchCrossOutputViewPoint(
-	shardID byte,
-	db database.DatabaseInterface,
-	outputCoins []privacy.OutputCoin,
-	tokenID *common.Hash,
-) (map[string][][]byte, map[string][]privacy.OutputCoin, map[string][]privacy.Scalar, error) {
+//	processFetchCrossOutputViewPoint get information from cross output coin
+//	- UTXO: outcoin
+//	- Commitment
+//	- snd
+func (view *TxViewPoint) processFetchCrossOutputViewPoint(stateDB *statedb.StateDB, shardID byte, outputCoins []privacy.OutputCoin, tokenID *common.Hash) (map[string][][]byte, map[string][]privacy.OutputCoin, map[string][]privacy.Scalar, error) {
 	acceptedCommitments := make(map[string][][]byte)
 	acceptedOutputcoins := make(map[string][]privacy.OutputCoin)
 	acceptedSnD := make(map[string][]privacy.Scalar)
@@ -316,7 +298,7 @@ func (view *TxViewPoint) processFetchCrossOutputViewPoint(
 		commitment := item.CoinDetails.GetCoinCommitment().ToBytesS()
 		pubkey := item.CoinDetails.GetPublicKey().ToBytesS()
 		pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
-		ok, err := db.HasCommitment(*tokenID, commitment, shardID)
+		ok, err := statedb.HasCommitment(stateDB, *tokenID, commitment, shardID)
 		if err != nil {
 			return acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
 		}
@@ -337,7 +319,7 @@ func (view *TxViewPoint) processFetchCrossOutputViewPoint(
 
 		// get data for Snderivators
 		snD := item.CoinDetails.GetSNDerivator()
-		ok, err = db.HasSNDerivator(*tokenID, snD.ToBytesS())
+		ok, err = statedb.HasSNDerivator(stateDB, *tokenID, snD.ToBytesS())
 		if !ok && err == nil {
 			acceptedSnD[pubkeyStr] = append(acceptedSnD[pubkeyStr], *snD)
 		}
@@ -345,7 +327,7 @@ func (view *TxViewPoint) processFetchCrossOutputViewPoint(
 	return acceptedCommitments, acceptedOutputcoins, acceptedSnD, nil
 }
 
-func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.DatabaseInterface, block *ShardBlock) error {
+func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(stateDB *statedb.StateDB, block *ShardBlock) error {
 	allShardCrossTransactions := block.Body.CrossTransactions
 	// Loop through all of the transaction descs (except for the salary tx)
 	acceptedOutputcoins := make(map[string][]privacy.OutputCoin)
@@ -366,7 +348,7 @@ func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.Dat
 	for _, shardID := range shardIDs {
 		crossTransactions := allShardCrossTransactions[byte(shardID)]
 		for _, crossTransaction := range crossTransactions {
-			commitments, outCoins, snDs, err := view.processFetchCrossOutputViewPoint(block.Header.ShardID, db, crossTransaction.OutputCoin, prvCoinID)
+			commitments, outCoins, snDs, err := view.processFetchCrossOutputViewPoint(stateDB, block.Header.ShardID, crossTransaction.OutputCoin, prvCoinID)
 			if err != nil {
 				return NewBlockChainError(UnExpectedError, err)
 			}
@@ -403,7 +385,7 @@ func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.Dat
 					subView.privacyCustomTokenMetadata.PropertySymbol = tokenPrivacyData.PropertySymbol
 					subView.privacyCustomTokenMetadata.Amount = tokenPrivacyData.Amount
 					subView.privacyCustomTokenMetadata.Mintable = tokenPrivacyData.Mintable
-					commitmentsP, outCoinsP, snDsP, err := subView.processFetchCrossOutputViewPoint(block.Header.ShardID, db, tokenPrivacyData.OutputCoin, subView.tokenID)
+					commitmentsP, outCoinsP, snDsP, err := subView.processFetchCrossOutputViewPoint(stateDB, block.Header.ShardID, tokenPrivacyData.OutputCoin, subView.tokenID)
 					if err != nil {
 						return NewBlockChainError(UnExpectedError, err)
 					}

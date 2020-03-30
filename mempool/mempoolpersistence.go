@@ -46,7 +46,6 @@ func (tp *TxPool) addTransactionToDatabaseMempool(txHash *common.Hash, txDesc Tx
 				return err
 			}
 		}
-	//==================For PRV & TxNormalToken Transfer
 	case common.TxCustomTokenPrivacyType:
 		{
 			customTokenPrivacyTx := tx.(*transaction.TxCustomTokenPrivacy)

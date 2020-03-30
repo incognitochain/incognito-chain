@@ -3,18 +3,15 @@ package blockchain
 import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"sort"
 	"strconv"
 )
 
-func (blockchain *BlockChain) processPortalInstructions(block *BeaconBlock, bd *[]database.BatchData) error {
+func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.StateDB, block *BeaconBlock) error {
 	beaconHeight := block.Header.Height - 1
-	db := blockchain.GetDatabase()
-
-	currentPortalState, err := InitCurrentPortalStateFromDB(db, beaconHeight)
+	currentPortalState, err := InitCurrentPortalStateFromDB(portalStateDB, beaconHeight)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil
@@ -31,34 +28,48 @@ func (blockchain *BlockChain) processPortalInstructions(block *BeaconBlock, bd *
 		var err error
 
 		switch inst[0] {
-		case strconv.Itoa(metadata.PortalCustodianDepositMeta):
-			err = blockchain.processPortalCustodianDeposit(beaconHeight, inst, currentPortalState)
-		case strconv.Itoa(metadata.PortalUserRegisterMeta):
-			err = blockchain.processPortalUserRegister(beaconHeight, inst, currentPortalState)
-		case strconv.Itoa(metadata.PortalUserRequestPTokenMeta):
-			err = blockchain.processPortalUserReqPToken(beaconHeight, inst, currentPortalState, updatingInfoByTokenID)
-		case strconv.Itoa(metadata.PortalExchangeRatesMeta):
-			err = blockchain.processPortalExchangeRates(beaconHeight, inst, currentPortalState)
-		case strconv.Itoa(metadata.PortalRedeemRequestMeta):
-			err = blockchain.processPortalRedeemRequest(beaconHeight, inst, currentPortalState, updatingInfoByTokenID)
-		case strconv.Itoa(metadata.PortalCustodianWithdrawRequestMeta):
-			err = blockchain.processPortalCustodianWithdrawRequest(beaconHeight, inst, currentPortalState)
-		case strconv.Itoa(metadata.PortalRequestUnlockCollateralMeta):
-			err = blockchain.processPortalUnlockCollateral(beaconHeight, inst, currentPortalState)
-		case strconv.Itoa(metadata.PortalLiquidateCustodianMeta):
-			err = blockchain.processPortalLiquidateCustodian(beaconHeight, inst, currentPortalState)
-		case strconv.Itoa(metadata.PortalLiquidateTPExchangeRatesMeta):
-			err = blockchain.processLiquidationTopPercentileExchangeRates(beaconHeight, inst, currentPortalState)
-		case strconv.Itoa(metadata.PortalRewardMeta):
-			err = blockchain.processPortalReward(beaconHeight, inst, currentPortalState)
-		case strconv.Itoa(metadata.PortalRequestWithdrawRewardMeta):
-			err = blockchain.processPortalWithdrawReward(beaconHeight, inst, currentPortalState)
-		case strconv.Itoa(metadata.PortalRedeemLiquidateExchangeRatesMeta):
-			err = blockchain.processPortalRedeemLiquidateExchangeRates(beaconHeight, inst, currentPortalState, updatingInfoByTokenID)
-		case strconv.Itoa(metadata.PortalLiquidationCustodianDepositMeta):
-			err = blockchain.processPortalLiquidationCustodianDeposit(beaconHeight, inst, currentPortalState)
-		case strconv.Itoa(metadata.PortalExpiredWaitingPortingReqMeta):
-			err = blockchain.processPortalExpiredPortingRequest(beaconHeight, inst, currentPortalState)
+			//porting request
+			case strconv.Itoa(metadata.PortalUserRegisterMeta):
+				err = blockchain.processPortalUserRegister(portalStateDB, beaconHeight, inst, currentPortalState)
+			//exchange rates
+			case strconv.Itoa(metadata.PortalExchangeRatesMeta):
+				err = blockchain.processPortalExchangeRates(portalStateDB, beaconHeight, inst, currentPortalState)
+			//custodian withdraw
+			case strconv.Itoa(metadata.PortalCustodianWithdrawRequestMeta):
+				err = blockchain.processPortalCustodianWithdrawRequest(portalStateDB, beaconHeight, inst, currentPortalState)
+			//liquidation exchange rates
+			case strconv.Itoa(metadata.PortalLiquidateTPExchangeRatesMeta):
+				err = blockchain.processLiquidationTopPercentileExchangeRates(portalStateDB, beaconHeight, inst, currentPortalState)
+			//liquidation custodian deposit
+			case strconv.Itoa(metadata.PortalLiquidationCustodianDepositMeta):
+				err = blockchain.processPortalLiquidationCustodianDeposit(portalStateDB, beaconHeight, inst, currentPortalState)
+			//liquidation user redeem
+			case strconv.Itoa(metadata.PortalRedeemLiquidateExchangeRatesMeta):
+				err = blockchain.processPortalRedeemLiquidateExchangeRates(portalStateDB, beaconHeight, inst, currentPortalState, updatingInfoByTokenID)
+			//custodian deposit
+			case strconv.Itoa(metadata.PortalCustodianDepositMeta):
+				err = blockchain.processPortalCustodianDeposit(portalStateDB, beaconHeight, inst, currentPortalState)
+			// request ptoken
+			case strconv.Itoa(metadata.PortalUserRequestPTokenMeta):
+				err = blockchain.processPortalUserReqPToken(portalStateDB, beaconHeight, inst, currentPortalState, updatingInfoByTokenID)
+			// redeem request
+			case strconv.Itoa(metadata.PortalRedeemRequestMeta):
+				err = blockchain.processPortalRedeemRequest(portalStateDB, beaconHeight, inst, currentPortalState, updatingInfoByTokenID)
+			// request unlock collateral
+			case strconv.Itoa(metadata.PortalRequestUnlockCollateralMeta):
+				err = blockchain.processPortalUnlockCollateral(portalStateDB, beaconHeight, inst, currentPortalState)
+			// liquidation custodian run away
+			case strconv.Itoa(metadata.PortalLiquidateCustodianMeta):
+				err = blockchain.processPortalLiquidateCustodian(portalStateDB, beaconHeight, inst, currentPortalState)
+			// portal reward
+			case strconv.Itoa(metadata.PortalRewardMeta):
+				err = blockchain.processPortalReward(portalStateDB, beaconHeight, inst, currentPortalState)
+			// request withdraw reward
+			case strconv.Itoa(metadata.PortalRequestWithdrawRewardMeta):
+				err = blockchain.processPortalWithdrawReward(portalStateDB, beaconHeight, inst, currentPortalState)
+			// expired waiting porting request
+			case strconv.Itoa(metadata.PortalExpiredWaitingPortingReqMeta):
+				err = blockchain.processPortalExpiredPortingRequest(portalStateDB, beaconHeight, inst, currentPortalState)
 		}
 
 		if err != nil {
@@ -86,13 +97,13 @@ func (blockchain *BlockChain) processPortalInstructions(block *BeaconBlock, bd *
 			updatingAmt = updatingInfo.deductAmt - updatingInfo.countUpAmt
 			updatingType = "-"
 		}
-		err := db.UpdateBridgeTokenInfo(
+		err := statedb.UpdateBridgeTokenInfo(
+			portalStateDB,
 			updatingInfo.tokenID,
 			updatingInfo.externalTokenID,
 			updatingInfo.isCentralized,
 			updatingAmt,
 			updatingType,
-			bd,
 		)
 		if err != nil {
 			return err
@@ -100,7 +111,7 @@ func (blockchain *BlockChain) processPortalInstructions(block *BeaconBlock, bd *
 	}
 
 	// store updated currentPortalState to leveldb with new beacon height
-	err = storePortalStateToDB(db, beaconHeight + 1, currentPortalState)
+	err = storePortalStateToDB(portalStateDB, beaconHeight + 1, currentPortalState)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -109,7 +120,8 @@ func (blockchain *BlockChain) processPortalInstructions(block *BeaconBlock, bd *
 }
 
 func (blockchain *BlockChain) processPortalCustodianDeposit(
-	beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
+	stateDB *statedb.StateDB, beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
+	Logger.log.Errorf("processPortalCustodianDeposit - starting... !!!!")
 	if currentPortalState == nil {
 		Logger.log.Errorf("current portal state is nil")
 		return nil
@@ -117,7 +129,6 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 	if len(instructions) != 4 {
 		return nil // skip the instruction
 	}
-	db := blockchain.GetDatabase()
 
 	// unmarshal instructions content
 	var actionData metadata.PortalCustodianDepositContent
@@ -128,56 +139,51 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 
 	depositStatus := instructions[2]
 	if depositStatus == common.PortalCustodianDepositAcceptedChainStatus {
-		keyCustodianState := lvdb.NewCustodianStateKey(beaconHeight, actionData.IncogAddressStr)
-		// update custodian state
-		if currentPortalState.CustodianPoolState[keyCustodianState] == nil {
+		Logger.log.Errorf("processPortalCustodianDeposit - status success !!!!")
+		keyCustodianState := statedb.GenerateCustodianStateObjectKey(beaconHeight, actionData.IncogAddressStr)
+		keyCustodianStateStr := keyCustodianState.String()
+
+		if currentPortalState.CustodianPoolState[keyCustodianStateStr] == nil {
 			// new custodian
-			newCustodian, err := NewCustodianState(
-				actionData.IncogAddressStr, actionData.DepositedAmount,
-				actionData.DepositedAmount, nil, nil,
+			newCustodian := statedb.NewCustodianStateWithValue(
+				actionData.IncogAddressStr, actionData.DepositedAmount, actionData.DepositedAmount,
+				nil, nil,
 				actionData.RemoteAddresses, 0)
-			if err != nil {
-				return err
-			}
-			currentPortalState.CustodianPoolState[keyCustodianState] = newCustodian
+			currentPortalState.CustodianPoolState[keyCustodianStateStr] = newCustodian
 		} else {
 			// custodian deposited before
 			// update state of the custodian
-			custodian := currentPortalState.CustodianPoolState[keyCustodianState]
-			totalCollateral := custodian.TotalCollateral + actionData.DepositedAmount
-			freeCollateral := custodian.FreeCollateral + actionData.DepositedAmount
-			holdingPubTokens := custodian.HoldingPubTokens
-			lockedAmountCollateral := custodian.LockedAmountCollateral
-			rewardAmount := custodian.RewardAmount
-			remoteAddresses := custodian.RemoteAddresses
+			custodian := currentPortalState.CustodianPoolState[keyCustodianStateStr]
+			totalCollateral := custodian.GetTotalCollateral() + actionData.DepositedAmount
+			freeCollateral := custodian.GetFreeCollateral() + actionData.DepositedAmount
+			holdingPubTokens := custodian.GetHoldingPublicTokens()
+			lockedAmountCollateral := custodian.GetLockedAmountCollateral()
+			rewardAmount := custodian.GetRewardAmount()
+			remoteAddresses := custodian.GetRemoteAddresses()
 			for _, address := range actionData.RemoteAddresses {
-				if existedAddr, _ := lvdb.GetRemoteAddressByTokenID(remoteAddresses, address.PTokenID); existedAddr == "" {
+				if existedAddr, _ := statedb.GetRemoteAddressByTokenID(remoteAddresses, address.GetPTokenID()); existedAddr == "" {
 					remoteAddresses = append(remoteAddresses, address)
 				}
 			}
 
-			newCustodian, err := NewCustodianState(
-				actionData.IncogAddressStr,
-				totalCollateral, freeCollateral,
-				holdingPubTokens, lockedAmountCollateral,
-				remoteAddresses, rewardAmount)
-			if err != nil {
-				return err
-			}
-			currentPortalState.CustodianPoolState[keyCustodianState] = newCustodian
+			newCustodian := statedb.NewCustodianStateWithValue(actionData.IncogAddressStr, totalCollateral, freeCollateral,
+				holdingPubTokens, lockedAmountCollateral, remoteAddresses, rewardAmount)
+			currentPortalState.CustodianPoolState[keyCustodianStateStr] = newCustodian
 		}
 
-		// track custodian deposit into DB
-		custodianDepositTrackKey := lvdb.NewCustodianDepositKey(actionData.TxReqID.String())
+		Logger.log.Errorf("processPortalCustodianDeposit - currentPortalState.CustodianPoolState %v]n !!!!", currentPortalState.CustodianPoolState)
+
+		// store custodian deposit status into DB
 		custodianDepositTrackData := metadata.PortalCustodianDepositStatus{
 			Status:          common.PortalCustodianDepositAcceptedStatus,
 			IncogAddressStr: actionData.IncogAddressStr,
 			DepositedAmount: actionData.DepositedAmount,
 		}
-
 		custodianDepositDataBytes, _ := json.Marshal(custodianDepositTrackData)
-		err = db.TrackCustodianDepositCollateral(
-			[]byte(custodianDepositTrackKey),
+
+		err = statedb.StoreCustodianDepositStatus(
+			stateDB,
+			actionData.TxReqID.String(),
 			custodianDepositDataBytes,
 		)
 		if err != nil {
@@ -185,17 +191,18 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 			return nil
 		}
 	} else if depositStatus == common.PortalCustodianDepositRefundChainStatus {
-		// track custodian deposit into DB
-		custodianDepositTrackKey := lvdb.NewCustodianDepositKey(actionData.TxReqID.String())
+		Logger.log.Errorf("processPortalCustodianDeposit - status failed !!!!")
+		// store custodian deposit status into DB
 		custodianDepositTrackData := metadata.PortalCustodianDepositStatus{
 			Status:          common.PortalCustodianDepositRefundStatus,
 			IncogAddressStr: actionData.IncogAddressStr,
 			DepositedAmount: actionData.DepositedAmount,
 		}
-
 		custodianDepositDataBytes, _ := json.Marshal(custodianDepositTrackData)
-		err = db.TrackCustodianDepositCollateral(
-			[]byte(custodianDepositTrackKey),
+
+		err = statedb.StoreCustodianDepositStatus(
+			stateDB,
+			actionData.TxReqID.String(),
 			custodianDepositDataBytes,
 		)
 		if err != nil {
@@ -208,8 +215,8 @@ func (blockchain *BlockChain) processPortalCustodianDeposit(
 }
 
 func (blockchain *BlockChain) processPortalUserRegister(
+	portalStateDB *statedb.StateDB,
 	beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
-	db := blockchain.GetDatabase()
 
 	if currentPortalState == nil {
 		Logger.log.Errorf("current portal state is nil")
@@ -230,31 +237,33 @@ func (blockchain *BlockChain) processPortalUserRegister(
 
 	reqStatus := instructions[2]
 
+	uniquePortingID := portingRequestContent.UniqueRegisterId
+	txReqID := portingRequestContent.TxReqID
+	tokenID := portingRequestContent.PTokenId
+
+	porterAddress := portingRequestContent.IncogAddressStr
+	amount := portingRequestContent.RegisterAmount
+
+	custodiansDetail := portingRequestContent.Custodian
+	portingFee := portingRequestContent.PortingFee
+
+
 	switch reqStatus {
 	case common.PortalPortingRequestAcceptedChainStatus:
-		uniquePortingID := portingRequestContent.UniqueRegisterId
-		txReqID := portingRequestContent.TxReqID
-		tokenID := portingRequestContent.PTokenId
-
-		porterAddress := portingRequestContent.IncogAddressStr
-		amount := portingRequestContent.RegisterAmount
-
-		custodiansDetail := portingRequestContent.Custodian
-		portingFee := portingRequestContent.PortingFee
-
 		//verify custodian
 		isCustodianAccepted := true
 		for _, itemCustodian := range custodiansDetail {
-			keyPortingRequestNewState := lvdb.NewCustodianStateKey(beaconHeight, itemCustodian.IncAddress)
-			custodian, ok := currentPortalState.CustodianPoolState[keyPortingRequestNewState]
+			keyPortingRequestNewState := statedb.GenerateCustodianStateObjectKey(beaconHeight, itemCustodian.IncAddress)
+			keyPortingRequestNewStateStr := keyPortingRequestNewState.String()
+			custodian, ok := currentPortalState.CustodianPoolState[keyPortingRequestNewStateStr]
 			if !ok {
 				Logger.log.Errorf("ERROR: Custodian not found")
 				isCustodianAccepted	= false
 				break
 			}
 
-			if custodian.FreeCollateral < itemCustodian.LockedAmountCollateral {
-				Logger.log.Errorf("ERROR: Custodian is not enough PRV, free collateral %v < lock amount %v", custodian.FreeCollateral, itemCustodian.LockedAmountCollateral)
+			if custodian.GetFreeCollateral() < itemCustodian.LockedAmountCollateral {
+				Logger.log.Errorf("ERROR: Custodian is not enough PRV, free collateral %v < lock amount %v", custodian.GetFreeCollateral(), itemCustodian.LockedAmountCollateral)
 				isCustodianAccepted	= false
 				break
 			}
@@ -268,7 +277,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		}
 
 		// new request
-		newPortingRequestStateWaiting, err := NewPortingRequestState(
+		newPortingRequestStateWaiting := statedb.NewWaitingPortingRequestWithValue(
 			uniquePortingID,
 			txReqID,
 			tokenID,
@@ -280,11 +289,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			beaconHeight+1,
 		)
 
-		if err != nil {
-			return err
-		}
-
-		newPortingRequestStateAccept, err := NewPortingRequestState(
+		newPortingRequestStateAccept := metadata.NewPortingRequestStatus(
 			uniquePortingID,
 			txReqID,
 			tokenID,
@@ -292,15 +297,11 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			amount,
 			custodiansDetail,
 			portingFee,
-			common.PortalPortingRequestAcceptedStatus,
+			common.PortalPortingReqWaitingStatus,
 			beaconHeight+1,
 		)
 
-		if err != nil {
-			return err
-		}
-
-		newPortingTxRequestStateAccept, err := NewPortingRequestState(
+		newPortingTxRequestStateAccept := metadata.NewPortingRequestStatus(
 			uniquePortingID,
 			txReqID,
 			tokenID,
@@ -312,22 +313,28 @@ func (blockchain *BlockChain) processPortalUserRegister(
 			beaconHeight+1,
 		)
 
-		if err != nil {
-			return err
-		}
-
 		//save transaction
-		keyPortingRequestNewTxState := lvdb.NewPortingRequestTxKey(txReqID.String())
-		err = db.StorePortingRequestItem([]byte(keyPortingRequestNewTxState), newPortingTxRequestStateAccept)
+		newPortingTxRequestStatusBytes, _ := json.Marshal(newPortingTxRequestStateAccept)
+		err = statedb.TrackPortalStateStatusMultiple(
+			portalStateDB,
+			statedb.PortalPortingRequestTxStatusPrefix(),
+			[]byte(txReqID.String()),
+			newPortingTxRequestStatusBytes,
+		)
+
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store porting tx request item: %+v", err)
 			return nil
 		}
 
 		//save success porting request
-		keyPortingRequestNewState := lvdb.NewPortingRequestKey(portingRequestContent.UniqueRegisterId)
-		Logger.log.Infof("Porting request, save porting request with key %v", keyPortingRequestNewState)
-		err = db.StorePortingRequestItem([]byte(keyPortingRequestNewState), newPortingRequestStateAccept)
+		newPortingRequestStatusBytes, _ := json.Marshal(newPortingRequestStateAccept)
+		err = statedb.TrackPortalStateStatusMultiple(
+			portalStateDB,
+			statedb.PortalPortingRequestStatusPrefix(),
+			[]byte(uniquePortingID),
+			newPortingRequestStatusBytes,
+		)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store porting request item: %+v", err)
 			return nil
@@ -336,31 +343,41 @@ func (blockchain *BlockChain) processPortalUserRegister(
 		//save custodian state
 		for _, itemCustodian := range custodiansDetail {
 			//update custodian state
-			custodianKey := lvdb.NewCustodianStateKey(beaconHeight, itemCustodian.IncAddress)
-			_ = UpdateCustodianWithNewAmount(currentPortalState, custodianKey, tokenID, itemCustodian.Amount, itemCustodian.LockedAmountCollateral)
+			custodianKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, itemCustodian.IncAddress)
+			custodianKeyStr := custodianKey.String()
+			_ = UpdateCustodianWithNewAmount(currentPortalState, custodianKeyStr, tokenID, itemCustodian.Amount, itemCustodian.LockedAmountCollateral)
 		}
 
 		//save waiting request porting state
-		keyWaitingPortingRequest := lvdb.NewWaitingPortingReqKey(beaconHeight, portingRequestContent.UniqueRegisterId)
+		keyWaitingPortingRequest := statedb.GeneratePortalWaitingPortingRequestObjectKey(beaconHeight, portingRequestContent.UniqueRegisterId)
 		Logger.log.Infof("Porting request, save waiting porting request with key %v", keyWaitingPortingRequest)
-		currentPortalState.WaitingPortingRequests[keyWaitingPortingRequest] = newPortingRequestStateWaiting
+		currentPortalState.WaitingPortingRequests[keyWaitingPortingRequest.String()] = newPortingRequestStateWaiting
 
 		break
 	case common.PortalPortingRequestRejectedChainStatus:
 		txReqID := portingRequestContent.TxReqID
-		newPortingRequest := lvdb.PortingRequest{
-			UniquePortingID: portingRequestContent.UniqueRegisterId,
-			Amount:          portingRequestContent.RegisterAmount,
-			TokenID:         portingRequestContent.PTokenId,
-			PorterAddress:   portingRequestContent.IncogAddressStr,
-			TxReqID:         txReqID,
-			Status:          common.PortalPortingTxRequestRejectedStatus,
-			BeaconHeight:    beaconHeight + 1,
-		}
 
-		//save porting request
-		keyPortingRequestNewState := lvdb.NewPortingRequestTxKey(txReqID.String())
-		err = db.StorePortingRequestItem([]byte(keyPortingRequestNewState), newPortingRequest)
+		newPortingRequest := metadata.NewPortingRequestStatus(
+			uniquePortingID,
+			txReqID,
+			tokenID,
+			porterAddress,
+			amount,
+			custodiansDetail,
+			portingFee,
+			common.PortalPortingTxRequestRejectedStatus,
+			beaconHeight+1,
+		)
+
+		//save transaction
+		newPortingTxRequestStatusBytes, _ := json.Marshal(newPortingRequest)
+		err = statedb.TrackPortalStateStatusMultiple(
+			portalStateDB,
+			statedb.PortalPortingRequestTxStatusPrefix(),
+			[]byte(txReqID.String()),
+			newPortingTxRequestStatusBytes,
+		)
+
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store porting request item: %+v", err)
 			return nil
@@ -372,6 +389,7 @@ func (blockchain *BlockChain) processPortalUserRegister(
 }
 
 func (blockchain *BlockChain) processPortalUserReqPToken(
+	stateDB *statedb.StateDB,
 	beaconHeight uint64, instructions []string,
 	currentPortalState *CurrentPortalState,
 	updatingInfoByTokenID map[common.Hash]UpdatingInfo) error {
@@ -383,7 +401,6 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 	if len(instructions) != 4 {
 		return nil // skip the instruction
 	}
-	db := blockchain.GetDatabase()
 
 	// unmarshal instructions content
 	var actionData metadata.PortalRequestPTokensContent
@@ -396,23 +413,41 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 	reqStatus := instructions[2]
 	if reqStatus == common.PortalReqPTokensAcceptedChainStatus {
 		// remove portingRequest from waitingPortingRequests
-		waitingPortingReqKey := lvdb.NewWaitingPortingReqKey(beaconHeight, actionData.UniquePortingID)
-		isRemoved := removeWaitingPortingReqByKey(waitingPortingReqKey, currentPortalState)
-		if !isRemoved {
-			Logger.log.Errorf("Can not remove waiting porting request from portal state")
+		waitingPortingReqKey := statedb.GeneratePortalWaitingPortingRequestObjectKey(beaconHeight, actionData.UniquePortingID)
+		waitingPortingReqKeyStr := waitingPortingReqKey.String()
+		deleteWaitingPortingRequest(currentPortalState, waitingPortingReqKeyStr)
+		// make sure user can not re-use proof for other portingID
+		// update status of porting request with portingID
+
+		//update new status of porting request
+		portingRequestState, err := statedb.GetPortalStateStatusMultiple(stateDB, statedb.PortalPortingRequestStatusPrefix(), []byte(actionData.UniquePortingID))
+		if err != nil {
+			Logger.log.Errorf("Has an error occurred while get porting request status: %+v", err)
 			return nil
 		}
 
-		// make sure user can not re-use proof for other portingID
-		// update status of porting request with portingID
-		err = db.UpdatePortingRequestStatus(actionData.UniquePortingID, common.PortalPortingReqSuccessStatus)
+		var portingRequestStatus metadata.PortingRequestStatus
+		err = json.Unmarshal(portingRequestState, &portingRequestStatus)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occurred while unmarshal PortingRequestStatus: %+v", err)
+			return nil
+		}
+
+		portingRequestStatus.Status = common.PortalPortingReqSuccessStatus
+		newPortingRequestStatusBytes, _ := json.Marshal(portingRequestStatus)
+		err = statedb.TrackPortalStateStatusMultiple(
+			stateDB,
+			statedb.PortalPortingRequestStatusPrefix(),
+			[]byte(actionData.UniquePortingID),
+			newPortingRequestStatusBytes,
+		)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store porting request item status: %+v", err)
 			return nil
 		}
+		//end
 
 		// track reqPToken status by txID into DB
-		reqPTokenTrackKey := lvdb.NewPortalReqPTokenKey(actionData.TxReqID.String())
 		reqPTokenTrackData := metadata.PortalRequestPTokensStatus{
 			Status:          common.PortalReqPTokenAcceptedStatus,
 			UniquePortingID: actionData.UniquePortingID,
@@ -422,8 +457,9 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 			PortingProof:    actionData.PortingProof,
 		}
 		reqPTokenTrackDataBytes, _ := json.Marshal(reqPTokenTrackData)
-		err = db.TrackReqPTokens(
-			[]byte(reqPTokenTrackKey),
+		err = statedb.StoreRequestPTokenStatus(
+			stateDB,
+			actionData.TxReqID.String(),
 			reqPTokenTrackDataBytes,
 		)
 		if err != nil {
@@ -452,19 +488,22 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 		updatingInfoByTokenID[*incTokenID] = updatingInfo
 
 	} else if reqStatus == common.PortalReqPTokensRejectedChainStatus {
-		// track reqPToken and deposit proof into DB
-		reqPTokenTrackKey := lvdb.NewPortalReqPTokenKey(actionData.TxReqID.String())
 		reqPTokenTrackData := metadata.PortalRequestPTokensStatus{
 			Status:          common.PortalReqPTokenRejectedStatus,
 			UniquePortingID: actionData.UniquePortingID,
+			TokenID:         actionData.TokenID,
+			IncogAddressStr: actionData.IncogAddressStr,
+			PortingAmount:   actionData.PortingAmount,
+			PortingProof:    actionData.PortingProof,
 		}
 		reqPTokenTrackDataBytes, _ := json.Marshal(reqPTokenTrackData)
-		err = db.TrackReqPTokens(
-			[]byte(reqPTokenTrackKey),
+		err = statedb.StoreRequestPTokenStatus(
+			stateDB,
+			actionData.TxReqID.String(),
 			reqPTokenTrackDataBytes,
 		)
 		if err != nil {
-			Logger.log.Errorf("ERROR: an error occured while tracking custodian deposit collateral: %+v", err)
+			Logger.log.Errorf("ERROR: an error occured while tracking request ptoken tx: %+v", err)
 			return nil
 		}
 	}
@@ -472,13 +511,11 @@ func (blockchain *BlockChain) processPortalUserReqPToken(
 	return nil
 }
 
-func (blockchain *BlockChain) processPortalExchangeRates(beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
+func (blockchain *BlockChain) processPortalExchangeRates(portalStateDB *statedb.StateDB, beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
 	if currentPortalState == nil {
 		Logger.log.Errorf("current portal state is nil")
 		return nil
 	}
-
-	db := blockchain.GetDatabase()
 
 	// parse instruction
 	var portingExchangeRatesContent metadata.PortalExchangeRatesContent
@@ -488,50 +525,62 @@ func (blockchain *BlockChain) processPortalExchangeRates(beaconHeight uint64, in
 		return nil
 	}
 
-	Logger.log.Infof("Portal exchange rates, data input %v", portingExchangeRatesContent)
-
 	reqStatus := instructions[2]
+	Logger.log.Infof("Portal exchange rates, data input: %+v, status: %+v", portingExchangeRatesContent, reqStatus)
 
 	switch reqStatus {
-	case common.PortalExchangeRatesSuccessStatus:
+	case common.PortalExchangeRatesAcceptedChainStatus:
 		//save db
-		newExchangeRates, _ := NewExchangeRatesState(
+		newExchangeRates := metadata.NewExchangeRatesRequestStatus(
+			common.PortalExchangeRatesAcceptedStatus,
 			portingExchangeRatesContent.SenderAddress,
 			portingExchangeRatesContent.Rates,
 		)
 
-		err = db.StoreExchangeRatesRequestItem([]byte(portingExchangeRatesContent.UniqueRequestId), newExchangeRates)
+		newExchangeRatesStatusBytes, _ := json.Marshal(newExchangeRates)
+		err = statedb.TrackPortalStateStatusMultiple(
+			portalStateDB,
+			statedb.PortalExchangeRatesRequestStatusPrefix(),
+			[]byte(portingExchangeRatesContent.TxReqID.String()),
+			newExchangeRatesStatusBytes,
+		)
 
 		if err != nil {
 			Logger.log.Errorf("ERROR: Save exchange rates error: %+v", err)
 			return err
 		}
 
-		currentPortalState.ExchangeRatesRequests[portingExchangeRatesContent.UniqueRequestId] = newExchangeRates
+		currentPortalState.ExchangeRatesRequests[portingExchangeRatesContent.TxReqID.String()] = newExchangeRates
 
-		Logger.log.Infof("Portal exchange rates, exchange rates request: count final exchange rate %v , exchange rate request %v", len(currentPortalState.FinalExchangeRates), len(currentPortalState.ExchangeRatesRequests))
+		Logger.log.Infof("Portal exchange rates, exchange rates request: total final exchange rate %v , total exchange rate request %v", len(currentPortalState.FinalExchangeRatesState), len(currentPortalState.ExchangeRatesRequests))
 
-	case common.PortalExchangeRatesRejectedStatus:
+	case common.PortalExchangeRatesRejectedChainStatus:
 		//save db
-		newExchangeRates := lvdb.ExchangeRatesRequest{
-			SenderAddress: portingExchangeRatesContent.SenderAddress,
-		}
+		newExchangeRates := metadata.NewExchangeRatesRequestStatus(
+			common.PortalExchangeRatesRejectedStatus,
+			portingExchangeRatesContent.SenderAddress,
+			nil,
+		)
 
-		err = db.StoreExchangeRatesRequestItem([]byte(portingExchangeRatesContent.UniqueRequestId), newExchangeRates)
+		newExchangeRatesStatusBytes, _ := json.Marshal(newExchangeRates)
+		err = statedb.TrackPortalStateStatusMultiple(
+			portalStateDB,
+			statedb.PortalExchangeRatesRequestStatusPrefix(),
+			[]byte(portingExchangeRatesContent.TxReqID.String()),
+			newExchangeRatesStatusBytes,
+		)
 
 		if err != nil {
 			Logger.log.Errorf("ERROR: Save exchange rates error: %+v", err)
 			return err
 		}
-
-		break
 	}
 
 	return nil
 }
 
 func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, currentPortalState *CurrentPortalState) error {
-	exchangeRatesKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
+	exchangeRatesKey := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
 
 	//convert to slice
 	var btcExchangeRatesSlice []uint64
@@ -566,7 +615,7 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 		return prvExchangeRatesSlice[i] < prvExchangeRatesSlice[j]
 	})
 
-	exchangeRatesList := make(map[string]lvdb.FinalExchangeRatesDetail)
+	exchangeRatesList := make(map[string]statedb.FinalExchangeRatesDetail)
 
 	var btcAmount uint64
 	var bnbAmount uint64
@@ -586,26 +635,21 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 		prvAmount = calcMedian(prvExchangeRatesSlice)
 	}
 
-	//if pre state exist
-
 	//todo: need refactor code, not need write this code
 	//update value when has exchange
-
-	if exchangeRatesState, ok := currentPortalState.FinalExchangeRates[exchangeRatesKey]; ok {
-		Logger.log.Infof("Portal final exchange rates, exits  key %v", exchangeRatesKey)
-
+	if exchangeRatesState, ok := currentPortalState.FinalExchangeRatesState[exchangeRatesKey.String()]; ok {
 		var btcAmountPreState uint64
 		var bnbAmountPreState uint64
 		var prvAmountPreState uint64
-		if value, ok := exchangeRatesState.Rates[common.PortalBTCIDStr]; ok {
+		if value, ok := exchangeRatesState.Rates()[common.PortalBTCIDStr]; ok {
 			btcAmountPreState = value.Amount
 		}
 
-		if value, ok := exchangeRatesState.Rates[common.PortalBNBIDStr]; ok {
+		if value, ok := exchangeRatesState.Rates()[common.PortalBNBIDStr]; ok {
 			bnbAmountPreState = value.Amount
 		}
 
-		if value, ok := exchangeRatesState.Rates[common.PRVIDStr]; ok {
+		if value, ok := exchangeRatesState.Rates()[common.PRVIDStr]; ok {
 			prvAmountPreState = value.Amount
 		}
 
@@ -617,29 +661,25 @@ func (blockchain *BlockChain) pickExchangesRatesFinal(beaconHeight uint64, curre
 
 	//select
 	if btcAmount > 0 {
-		exchangeRatesList[common.PortalBTCIDStr] = lvdb.FinalExchangeRatesDetail{
+		exchangeRatesList[common.PortalBTCIDStr] = statedb.FinalExchangeRatesDetail{
 			Amount: btcAmount,
 		}
 	}
 
 	if bnbAmount > 0 {
-		exchangeRatesList[common.PortalBNBIDStr] = lvdb.FinalExchangeRatesDetail{
+		exchangeRatesList[common.PortalBNBIDStr] = statedb.FinalExchangeRatesDetail{
 			Amount: bnbAmount,
 		}
 	}
 
 	if prvAmount > 0 {
-		exchangeRatesList[common.PRVIDStr] = lvdb.FinalExchangeRatesDetail{
+		exchangeRatesList[common.PRVIDStr] = statedb.FinalExchangeRatesDetail{
 			Amount: prvAmount,
 		}
 	}
 
 	if len(exchangeRatesList) > 0 {
-		currentPortalState.FinalExchangeRates[exchangeRatesKey] = &lvdb.FinalExchangeRates{
-			Rates: exchangeRatesList,
-		}
-
-		Logger.log.Infof("Portal final exchange rates, picked key %v", exchangeRatesKey)
+		currentPortalState.FinalExchangeRatesState[exchangeRatesKey.String()] = statedb.NewFinalExchangeRatesStateWithValue(exchangeRatesList)
 	}
 
 	return nil
@@ -668,6 +708,7 @@ func choicePrice(currentPrice uint64, prePrice uint64) uint64 {
 }
 
 func (blockchain *BlockChain) processPortalRedeemRequest(
+	stateDB *statedb.StateDB,
 	beaconHeight uint64, instructions []string,
 	currentPortalState *CurrentPortalState,
 	updatingInfoByTokenID map[common.Hash]UpdatingInfo) error {
@@ -679,7 +720,6 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 	if len(instructions) != 4 {
 		return nil // skip the instruction
 	}
-	db := blockchain.GetDatabase()
 
 	// unmarshal instructions content
 	var actionData metadata.PortalRedeemRequestContent
@@ -696,10 +736,10 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 
 	if reqStatus == common.PortalRedeemRequestAcceptedChainStatus {
 		// add waiting redeem request into waiting redeems list
-		keyWaitingRedeemRequest := lvdb.NewWaitingRedeemReqKey(beaconHeight, actionData.UniqueRedeemID)
-		redeemRequest, _ := NewRedeemRequestState(
+		keyWaitingRedeemRequest := statedb.GenerateWaitingRedeemRequestObjectKey(beaconHeight, actionData.UniqueRedeemID)
+		keyWaitingRedeemRequestStr := keyWaitingRedeemRequest.String()
+		redeemRequest := statedb.NewWaitingRedeemRequestWithValue(
 			actionData.UniqueRedeemID,
-			actionData.TxReqID,
 			actionData.TokenID,
 			actionData.RedeemerIncAddressStr,
 			actionData.RemoteAddress,
@@ -707,22 +747,25 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 			actionData.MatchingCustodianDetail,
 			actionData.RedeemFee,
 			beaconHeight + 1,
+			actionData.TxReqID,
 		)
-		currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest] = redeemRequest
+		currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr] = redeemRequest
 
 		// update custodian state
 		for _, cus := range actionData.MatchingCustodianDetail {
-			custodianStateKey := lvdb.NewCustodianStateKey(beaconHeight, cus.IncAddress)
-			if currentPortalState.CustodianPoolState[custodianStateKey].HoldingPubTokens[tokenID] < cus.Amount {
+			custodianStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, cus.GetIncognitoAddress())
+			custodianStateKeyStr := custodianStateKey.String()
+			holdingPubTokenTmp := currentPortalState.CustodianPoolState[custodianStateKeyStr].GetHoldingPublicTokens()
+			if holdingPubTokenTmp[tokenID] < cus.GetAmount() {
 				Logger.log.Errorf("[processPortalRedeemRequest] Amount holding public tokens is less than matching redeem amount")
 				return nil
 			}
-			currentPortalState.CustodianPoolState[custodianStateKey].HoldingPubTokens[tokenID] -= cus.Amount
+			holdingPubTokenTmp[tokenID] -= cus.GetAmount()
+			currentPortalState.CustodianPoolState[custodianStateKeyStr].SetHoldingPublicTokens(holdingPubTokenTmp)
 		}
 
 		// track status of redeem request by redeemID
-		trackStatusByRedeemIDKey := lvdb.NewRedeemReqKey(actionData.UniqueRedeemID)
-		trackStatusByRedeemIDValue := metadata.PortalRedeemRequestStatus{
+		redeemRequestStatus := metadata.PortalRedeemRequestStatus{
 			Status:                  common.PortalRedeemReqWaitingStatus,
 			UniqueRedeemID:          actionData.UniqueRedeemID,
 			TokenID:                 actionData.TokenID,
@@ -733,21 +776,24 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 			MatchingCustodianDetail: actionData.MatchingCustodianDetail,
 			TxReqID:                 actionData.TxReqID,
 		}
-		trackStatusByRedeemIDValueBytes, _ := json.Marshal(trackStatusByRedeemIDValue)
-		err := db.StoreRedeemRequest([]byte(trackStatusByRedeemIDKey), trackStatusByRedeemIDValueBytes)
+		redeemRequestStatusBytes, _ := json.Marshal(redeemRequestStatus)
+		err := statedb.StorePortalRedeemRequestStatus(
+			stateDB,
+			actionData.UniqueRedeemID,
+			redeemRequestStatusBytes)
 		if err != nil {
 			Logger.log.Errorf("[processPortalRedeemRequest] Error when storing status of redeem request by redeemID: %v\n", err)
 			return nil
 		}
 
 		// track status of redeem request by txReqID
-		trackStatusByTxReqIDKey := lvdb.NewTrackRedeemReqByTxReqIDKey(actionData.TxReqID.String())
-		trackStatusByTxReqIDValue := metadata.PortalRedeemRequestStatus{
+		redeemRequestByTxIDStatus := metadata.PortalRedeemRequestStatus{
 			Status:         common.PortalRedeemReqWaitingStatus,
 			UniqueRedeemID: actionData.UniqueRedeemID,
 		}
-		trackStatusByTxReqIDValueBytes, _ := json.Marshal(trackStatusByTxReqIDValue)
-		err = db.TrackRedeemRequestByTxReqID([]byte(trackStatusByTxReqIDKey), trackStatusByTxReqIDValueBytes)
+		redeemRequestByTxIDStatusBytes, _ := json.Marshal(redeemRequestByTxIDStatus)
+		err = statedb.StorePortalRedeemRequestByTxIDStatus(
+			stateDB, actionData.TxReqID.String(), redeemRequestByTxIDStatusBytes)
 		if err != nil {
 			Logger.log.Errorf("[processPortalRedeemRequest] Error when tracking status of redeem request by txReqID: %v\n", err)
 			return nil
@@ -775,13 +821,13 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 
 	} else if reqStatus == common.PortalRedeemRequestRejectedChainStatus {
 		// track status of redeem request by txReqID
-		trackStatusByTxReqIDKey := lvdb.NewTrackRedeemReqByTxReqIDKey(actionData.TxReqID.String())
-		trackStatusByTxReqIDValue := metadata.PortalRedeemRequestStatus{
-			Status:         common.PortalRedeemReqRejectedStatus,
+		redeemRequestByTxIDStatus := metadata.PortalRedeemRequestStatus{
+			Status:         common.PortalRedeemReqWaitingStatus,
 			UniqueRedeemID: actionData.UniqueRedeemID,
 		}
-		trackStatusByTxReqIDValueBytes, _ := json.Marshal(trackStatusByTxReqIDValue)
-		err = db.TrackRedeemRequestByTxReqID([]byte(trackStatusByTxReqIDKey), trackStatusByTxReqIDValueBytes)
+		redeemRequestByTxIDStatusBytes, _ := json.Marshal(redeemRequestByTxIDStatus)
+		err = statedb.StorePortalRedeemRequestByTxIDStatus(
+			stateDB, actionData.TxReqID.String(), redeemRequestByTxIDStatusBytes)
 		if err != nil {
 			Logger.log.Errorf("[processPortalRedeemRequest] Error when tracking status of redeem request by txReqID: %v\n", err)
 			return nil
@@ -791,8 +837,7 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 	return nil
 }
 
-func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
-	db := blockchain.GetDatabase()
+func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(portalStateDB *statedb.StateDB, beaconHeight uint64, instructions []string, currentPortalState *CurrentPortalState) error {
 	if currentPortalState == nil {
 		Logger.log.Errorf("current portal state is nil")
 		return nil
@@ -818,15 +863,16 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(beaconHeight
 	switch reqStatus {
 	case common.PortalCustodianWithdrawRequestAcceptedStatus:
 		//save transaction
-		newCustodianWithdrawRequest, _ := NewCustodianWithdrawRequest(
+		newCustodianWithdrawRequest := metadata.NewCustodianWithdrawRequestStatus(
 			paymentAddress,
 			amount,
 			common.PortalCustodianWithdrawReqAcceptedStatus,
 			freeCollateral,
 		)
 
-		custodianKey := lvdb.NewCustodianStateKey(beaconHeight, paymentAddress)
-		custodian, ok := currentPortalState.CustodianPoolState[custodianKey]
+		custodianKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, paymentAddress)
+		custodianKeyStr := custodianKey.String()
+		custodian, ok := currentPortalState.CustodianPoolState[custodianKeyStr]
 
 		if !ok {
 			Logger.log.Errorf("ERROR: Custodian not found ")
@@ -834,34 +880,46 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(beaconHeight
 		}
 
 		//check free collateral
-		if amount > custodian.FreeCollateral {
+		if amount > custodian.GetFreeCollateral() {
 			Logger.log.Errorf("ERROR: Free collateral is not enough to refund")
 			return nil
 		}
 
-		keyCustodianState := lvdb.NewCustodianWithdrawRequest(txHash)
-		err = db.StoreCustodianWithdrawRequest([]byte(keyCustodianState), newCustodianWithdrawRequest)
+		contentStatusBytes, _ := json.Marshal(newCustodianWithdrawRequest)
+		err = statedb.TrackPortalStateStatusMultiple(
+			portalStateDB,
+			statedb.PortalCustodianWithdrawStatusPrefix(),
+			[]byte(txHash),
+			contentStatusBytes,
+		)
+
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw item: %+v", err)
 			return nil
 		}
 
 		//update custodian
-		custodian.FreeCollateral = custodian.FreeCollateral - amount
-		custodian.TotalCollateral = custodian.TotalCollateral - amount
+		custodian.SetFreeCollateral(custodian.GetFreeCollateral() - amount)
+		custodian.SetTotalCollateral(custodian.GetTotalCollateral() - amount)
 
-		currentPortalState.CustodianPoolState[custodianKey] = custodian
+		currentPortalState.CustodianPoolState[custodianKeyStr] = custodian
 
 	case common.PortalCustodianWithdrawRequestRejectedStatus:
-		newCustodianWithdrawRequest, _ := NewCustodianWithdrawRequest(
+		newCustodianWithdrawRequest := metadata.NewCustodianWithdrawRequestStatus(
 			paymentAddress,
 			amount,
 			common.PortalCustodianWithdrawReqRejectStatus,
 			freeCollateral,
 		)
 
-		keyCustodianState := lvdb.NewCustodianWithdrawRequest(txHash)
-		err = db.StoreCustodianWithdrawRequest([]byte(keyCustodianState), newCustodianWithdrawRequest)
+		contentStatusBytes, _ := json.Marshal(newCustodianWithdrawRequest)
+		err = statedb.TrackPortalStateStatusMultiple(
+			portalStateDB,
+			statedb.PortalCustodianWithdrawStatusPrefix(),
+			[]byte(txHash),
+			contentStatusBytes,
+		)
+
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw item: %+v", err)
 			return nil
@@ -872,10 +930,9 @@ func (blockchain *BlockChain) processPortalCustodianWithdrawRequest(beaconHeight
 }
 
 func (blockchain *BlockChain) processPortalUnlockCollateral(
+	stateDB *statedb.StateDB,
 	beaconHeight uint64, instructions []string,
 	currentPortalState *CurrentPortalState) error {
-
-	db := blockchain.GetDatabase()
 
 	// unmarshal instructions content
 	var actionData metadata.PortalRequestUnlockCollateralContent
@@ -890,12 +947,14 @@ func (blockchain *BlockChain) processPortalUnlockCollateral(
 	reqStatus := instructions[2]
 	if reqStatus == common.PortalReqUnlockCollateralAcceptedChainStatus {
 		// update custodian state (FreeCollateral, LockedAmountCollateral)
-		custodianStateKey := lvdb.NewCustodianStateKey(beaconHeight, actionData.CustodianAddressStr)
-		finalExchangeRateKey := lvdb.NewFinalExchangeRatesKey(beaconHeight)
+		custodianStateKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, actionData.CustodianAddressStr)
+		custodianStateKeyStr := custodianStateKey.String()
+		finalExchangeRateKey := statedb.GeneratePortalFinalExchangeRatesStateObjectKey(beaconHeight)
+		finalExchangeRateKeyStr := finalExchangeRateKey.String()
 		_, err2 := updateFreeCollateralCustodian(
-			currentPortalState.CustodianPoolState[custodianStateKey],
+			currentPortalState.CustodianPoolState[custodianStateKeyStr],
 			actionData.RedeemAmount, tokenID,
-			currentPortalState.FinalExchangeRates[finalExchangeRateKey])
+			currentPortalState.FinalExchangeRatesState[finalExchangeRateKeyStr])
 		if err2 != nil {
 			Logger.log.Errorf("Error when update free collateral amount for custodian", err2)
 
@@ -903,19 +962,21 @@ func (blockchain *BlockChain) processPortalUnlockCollateral(
 		}
 
 		redeemID := actionData.UniqueRedeemID
-		keyWaitingRedeemRequest := lvdb.NewWaitingRedeemReqKey(beaconHeight, redeemID)
+		keyWaitingRedeemRequest := statedb.GenerateWaitingRedeemRequestObjectKey(beaconHeight, redeemID)
+		keyWaitingRedeemRequestStr := keyWaitingRedeemRequest.String()
 
 		// update redeem request state in WaitingRedeemRequest (remove custodian from matchingCustodianDetail)
-		currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest].Custodians, _ = removeCustodianFromMatchingRedeemCustodians(
-			currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest].Custodians, actionData.CustodianAddressStr)
+		newCustodians, _ := removeCustodianFromMatchingRedeemCustodians(
+			currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr].GetCustodians(), actionData.CustodianAddressStr)
+		currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr].SetCustodians(newCustodians)
 
 		// remove redeem request from WaitingRedeemRequest list when all matching custodians return public token to user
 		// when list matchingCustodianDetail is empty
-		if len(currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequest].Custodians) == 0 {
-			delete(currentPortalState.WaitingRedeemRequests, keyWaitingRedeemRequest)
+		if len(currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr].GetCustodians()) == 0 {
+			deleteWaitingRedeemRequest(currentPortalState, keyWaitingRedeemRequestStr)
 
 			// update status of redeem request with redeemID
-			err = updateRedeemRequestStatusByRedeemId(redeemID, common.PortalRedeemReqSuccessStatus, db)
+			err = updateRedeemRequestStatusByRedeemId(redeemID, common.PortalRedeemReqSuccessStatus, stateDB)
 			if err != nil {
 				Logger.log.Errorf("ERROR: an error occurred while updating redeem request status by redeemID: %+v", err)
 				return nil
@@ -923,7 +984,6 @@ func (blockchain *BlockChain) processPortalUnlockCollateral(
 		}
 
 		// track reqUnlockCollateral status by txID into DB
-		reqUnlockCollateralTrackKey := lvdb.NewPortalReqUnlockCollateralKey(actionData.TxReqID.String())
 		reqUnlockCollateralTrackData := metadata.PortalRequestUnlockCollateralStatus{
 			Status:              common.PortalReqUnlockCollateralAcceptedStatus,
 			UniqueRedeemID:      actionData.UniqueRedeemID,
@@ -934,8 +994,9 @@ func (blockchain *BlockChain) processPortalUnlockCollateral(
 			RedeemProof:         actionData.RedeemProof,
 		}
 		reqUnlockCollateralTrackDataBytes, _ := json.Marshal(reqUnlockCollateralTrackData)
-		err = db.TrackRequestUnlockCollateralByTxReqID(
-			[]byte(reqUnlockCollateralTrackKey),
+		err = statedb.StorePortalRequestUnlockCollateralStatus(
+			stateDB,
+			actionData.TxReqID.String(),
 			reqUnlockCollateralTrackDataBytes,
 		)
 		if err != nil {
@@ -945,9 +1006,8 @@ func (blockchain *BlockChain) processPortalUnlockCollateral(
 
 	} else if reqStatus == common.PortalReqUnlockCollateralRejectedChainStatus {
 		// track reqUnlockCollateral status by txID into DB
-		reqUnlockCollateralTrackKey := lvdb.NewPortalReqUnlockCollateralKey(actionData.TxReqID.String())
 		reqUnlockCollateralTrackData := metadata.PortalRequestUnlockCollateralStatus{
-			Status:              common.PortalReqUnlockCollateralRejectedStatus,
+			Status:              common.PortalReqUnlockCollateralAcceptedStatus,
 			UniqueRedeemID:      actionData.UniqueRedeemID,
 			TokenID:             actionData.TokenID,
 			CustodianAddressStr: actionData.CustodianAddressStr,
@@ -956,8 +1016,9 @@ func (blockchain *BlockChain) processPortalUnlockCollateral(
 			RedeemProof:         actionData.RedeemProof,
 		}
 		reqUnlockCollateralTrackDataBytes, _ := json.Marshal(reqUnlockCollateralTrackData)
-		err = db.TrackRequestUnlockCollateralByTxReqID(
-			[]byte(reqUnlockCollateralTrackKey),
+		err = statedb.StorePortalRequestUnlockCollateralStatus(
+			stateDB,
+			actionData.TxReqID.String(),
 			reqUnlockCollateralTrackDataBytes,
 		)
 		if err != nil {

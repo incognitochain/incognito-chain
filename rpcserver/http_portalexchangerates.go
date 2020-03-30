@@ -5,14 +5,13 @@ import (
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
 
-func (httpServer *HttpServer) handlePortalExchangeRate(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) createPortalExchangeRate(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
 	if len(arrayParams) == 0 {
@@ -30,7 +29,7 @@ func (httpServer *HttpServer) handlePortalExchangeRate(params interface{}, close
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata SenderAddress is invalid"))
 	}
 
-	var exchangeRate = make([]*lvdb.ExchangeRateInfo, 0)
+	var exchangeRate = make([]*metadata.ExchangeRateInfo, 0)
 
 	exchangeRateMap, ok := data["Rates"].(map[string]interface{})
 	if !ok {
@@ -57,7 +56,7 @@ func (httpServer *HttpServer) handlePortalExchangeRate(params interface{}, close
 
 		exchangeRate = append(
 			exchangeRate,
-			&lvdb.ExchangeRateInfo{
+			&metadata.ExchangeRateInfo{
 				PTokenID: pTokenID,
 				Rate:     uint64(amount),
 			})
@@ -75,7 +74,7 @@ func (httpServer *HttpServer) handlePortalExchangeRate(params interface{}, close
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
 
-	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta, *httpServer.config.Database)
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
 	if err1 != nil {
 		Logger.log.Error(err1)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
@@ -94,7 +93,7 @@ func (httpServer *HttpServer) handlePortalExchangeRate(params interface{}, close
 }
 
 func (httpServer *HttpServer) handleCreateAndSendPortalExchangeRates(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	data, err := httpServer.handlePortalExchangeRate(params, closeChan)
+	data, err := httpServer.createPortalExchangeRate(params, closeChan)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -111,10 +110,28 @@ func (httpServer *HttpServer) handleCreateAndSendPortalExchangeRates(params inte
 }
 
 func (httpServer *HttpServer) handleGetPortalFinalExchangeRates(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	result, err := httpServer.portal.GetFinalExchangeRates(httpServer.blockService, *httpServer.config.Database)
+	arrayParams := common.InterfaceSlice(params)
+
+	// get meta data from params
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
+	}
+
+	beaconHeight, ok := data["BeaconHeight"].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata BeaconHeight is invalid"))
+	}
+
+	_, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetFinalExchangeRatesError, err)
+	}
+
+	result, err := httpServer.portal.GetFinalExchangeRates(uint64(beaconHeight))
 
 	if err != nil {
-		return nil, err
+		return nil, rpcservice.NewRPCError(rpcservice.GetFinalExchangeRatesError, err)
 	}
 
 	return result, nil
@@ -139,20 +156,30 @@ func (httpServer *HttpServer) handleConvertExchangeRates(params interface{}, clo
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
 	}
 
+	beaconHeight, ok := data["BeaconHeight"].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata BeaconHeight is invalid"))
+	}
+
+	_, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.ConvertExchangeRatesError, err)
+	}
+
 	if !common.IsPortalToken(tokenID) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is not support"))
 	}
 
-	result, err := httpServer.portal.ConvertExchangeRates(tokenID, uint64(valuePToken), httpServer.blockService, *httpServer.config.Database)
+	result, err := httpServer.portal.ConvertExchangeRates(tokenID, uint64(valuePToken), uint64(beaconHeight))
 
 	if err != nil {
-		return nil, err
+		return nil, rpcservice.NewRPCError(rpcservice.ConvertExchangeRatesError, err)
 	}
 
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleGetPortingFees(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleGetPortingRequestFees(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
 	// get meta data from params
@@ -171,14 +198,24 @@ func (httpServer *HttpServer) handleGetPortingFees(params interface{}, closeChan
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
 	}
 
+	beaconHeight, ok := data["BeaconHeight"].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata BeaconHeight is invalid"))
+	}
+
+	_, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPortingRequestFeesError, err)
+	}
+
 	if !common.IsPortalToken(tokenID) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is not support"))
 	}
 
-	result, err := httpServer.portal.GetPortingFees(tokenID, uint64(valuePToken), httpServer.blockService, *httpServer.config.Database)
+	result, err := httpServer.portal.GetPortingFees(tokenID, uint64(valuePToken), uint64(beaconHeight))
 
 	if err != nil {
-		return nil, err
+		return nil, rpcservice.NewRPCError(rpcservice.GetPortingRequestFeesError, err)
 	}
 
 	return result, nil

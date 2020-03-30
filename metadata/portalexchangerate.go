@@ -6,8 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"reflect"
 	"strconv"
@@ -16,7 +15,7 @@ import (
 type PortalExchangeRates struct {
 	MetadataBase
 	SenderAddress string
-	Rates         []*lvdb.ExchangeRateInfo //amount * 10^6 (USDT)
+	Rates         []*ExchangeRateInfo //amount * 10^6 (USDT)
 }
 
 type PortalExchangeRatesAction struct {
@@ -26,7 +25,22 @@ type PortalExchangeRatesAction struct {
 	ShardID  byte
 }
 
-func NewPortalExchangeRates(metaType int, senderAddress string, currency []*lvdb.ExchangeRateInfo) (*PortalExchangeRates, error) {
+type ExchangeRateInfo struct {
+	PTokenID string
+	Rate     uint64
+}
+
+type ExchangeRatesRequestStatus struct {
+	Status byte
+	SenderAddress string
+	Rates         []*ExchangeRateInfo
+}
+
+func NewExchangeRatesRequestStatus(status byte, senderAddress string, rates []*ExchangeRateInfo) *ExchangeRatesRequestStatus {
+	return &ExchangeRatesRequestStatus{Status: status, SenderAddress: senderAddress, Rates: rates}
+}
+
+func NewPortalExchangeRates(metaType int, senderAddress string, currency []*ExchangeRateInfo) (*PortalExchangeRates, error) {
 	metadataBase := MetadataBase{Type: metaType}
 
 	portalExchangeRates := &PortalExchangeRates{
@@ -41,17 +55,16 @@ func NewPortalExchangeRates(metaType int, senderAddress string, currency []*lvdb
 
 type PortalExchangeRatesContent struct {
 	SenderAddress   string
-	Rates           []*lvdb.ExchangeRateInfo
+	Rates           []*ExchangeRateInfo
 	TxReqID         common.Hash
 	LockTime        int64
-	UniqueRequestId string
 }
 
 func (portalExchangeRates PortalExchangeRates) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,
-	db database.DatabaseInterface,
+	db *statedb.StateDB,
 ) (bool, error) {
 	// NOTE: verify supported tokens pair as needed
 	return true, nil

@@ -3,15 +3,16 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
-	"strconv"
-	"github.com/incognitochain/incognito-chain/database"
-	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/metadata"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/pkg/errors"
-	"github.com/btcsuite/btcd/chaincfg"
+	lvdbErrors "github.com/syndtr/goleveldb/leveldb/errors"
+	"strconv"
 )
 
 var btcHeaderChainInstance *btcrelaying.BlockChain = nil
@@ -113,7 +114,7 @@ func (rbnbChain *relayingBNBChain) buildRelayingInst(
 		return [][]string{inst}
 	}
 
-	var newHeader lvdb.BNBHeader
+	var newHeader rawdbv2.BNBHeader
 	err = json.Unmarshal(headerBytes, &newHeader)
 	if err != nil {
 		Logger.log.Errorf("Error - [buildInstructionsForBNBHeaderRelaying]: Cannot unmarshal header.%v\n", err)
@@ -269,7 +270,7 @@ type RelayingHeaderChainState struct{
 }
 
 func (bc *BlockChain) InitRelayingHeaderChainStateFromDB(
-	db database.DatabaseInterface,
+	db incdb.Database,
 	beaconHeight uint64,
 ) (*RelayingHeaderChainState, error) {
 	bnbHeaderChainState, err := getBNBHeaderChainState(db, beaconHeight)
@@ -292,15 +293,17 @@ func (bc *BlockChain) InitRelayingHeaderChainStateFromDB(
 
 // getBNBHeaderChainState gets bnb header chain state at beaconHeight
 func getBNBHeaderChainState(
-	db database.DatabaseInterface,
+	db incdb.Database,
 	beaconHeight uint64,
 ) (*bnbrelaying.LatestHeaderChain, error) {
-	relayingStateKey := lvdb.NewBNBHeaderRelayingStateKey(beaconHeight)
-	relayingStateValueBytes, err := db.GetItemByKey([]byte(relayingStateKey))
-	if err != nil {
+	relayingStateKey := rawdbv2.NewBNBHeaderRelayingStateKey(beaconHeight)
+
+	relayingStateValueBytes, err := db.Get([]byte(relayingStateKey))
+	if err != nil && err != lvdbErrors.ErrNotFound {
 		Logger.log.Errorf("getBNBHeaderChainState - Can not get relaying bnb header state from db %v\n", err)
 		return nil, err
 	}
+
 	var hc bnbrelaying.LatestHeaderChain
 	if len(relayingStateValueBytes) > 0 {
 		err = json.Unmarshal(relayingStateValueBytes, &hc)
@@ -330,26 +333,24 @@ func (bc *BlockChain) getBTCHeaderChain() (*btcrelaying.BlockChain, error) {
 	return btcHeaderChainInstance, nil
 }
 
-
 // storeBNBHeaderChainState stores bnb header chain state at beaconHeight
-func storeBNBHeaderChainState(db database.DatabaseInterface,
+func storeBNBHeaderChainState(db incdb.Database,
 	beaconHeight uint64,
 	bnbHeaderRelaying *bnbrelaying.LatestHeaderChain) error {
-	key := lvdb.NewBNBHeaderRelayingStateKey(beaconHeight)
+	key := rawdbv2.NewBNBHeaderRelayingStateKey(beaconHeight)
 	value, err := json.Marshal(bnbHeaderRelaying)
 	if err != nil {
 		return err
 	}
 	err = db.Put([]byte(key), value)
 	if err != nil {
-		return database.NewDatabaseError(database.StoreCustodianDepositStateError, errors.Wrap(err, "db.lvdb.put"))
+		return rawdbv2.NewRawdbError(rawdbv2.StoreRelayingBNBHeaderError, errors.Wrap(err, "db.lvdb.put"))
 	}
 	return nil
 }
 
-//todo
 func storeRelayingHeaderStateToDB(
-	db database.DatabaseInterface,
+	db incdb.Database,
 	beaconHeight uint64,
 	relayingHeaderState *RelayingHeaderChainState,
 ) error {
@@ -359,5 +360,3 @@ func storeRelayingHeaderStateToDB(
 	}
 	return nil
 }
-
-

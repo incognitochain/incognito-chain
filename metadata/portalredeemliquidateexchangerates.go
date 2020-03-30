@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"reflect"
 	"strconv"
@@ -38,6 +38,21 @@ type PortalRedeemLiquidateExchangeRatesContent struct {
 	TotalPTokenReceived		uint64
 }
 
+type RedeemLiquidateExchangeRatesStatus struct {
+	TxReqID               common.Hash
+	TokenID               string
+	RedeemerAddress       string
+	RedeemerRemoteAddress string
+	RedeemAmount          uint64
+	RedeemFee             uint64
+	Status                byte
+	TotalPTokenReceived	  uint64
+}
+
+func NewRedeemLiquidateExchangeRatesStatus(txReqID common.Hash, tokenID string, redeemerAddress string, redeemerRemoteAddress string, redeemAmount uint64, redeemFee uint64, status byte, totalPTokenReceived uint64) *RedeemLiquidateExchangeRatesStatus {
+	return &RedeemLiquidateExchangeRatesStatus{TxReqID: txReqID, TokenID: tokenID, RedeemerAddress: redeemerAddress, RedeemerRemoteAddress: redeemerRemoteAddress, RedeemAmount: redeemAmount, RedeemFee: redeemFee, Status: status, TotalPTokenReceived: totalPTokenReceived}
+}
+
 func NewPortalRedeemLiquidateExchangeRates(
 	metaType int,
 	tokenID string,
@@ -65,7 +80,7 @@ func (redeemReq PortalRedeemLiquidateExchangeRates) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,
-	db database.DatabaseInterface,
+	db *statedb.StateDB,
 ) (bool, error) {
 	return true, nil
 }

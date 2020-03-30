@@ -61,6 +61,7 @@ config
 mempool/testdatabase
 cmd/incognito
 blockchain/testparams/*
+tmp/*
 
 # vim
 *.swp   

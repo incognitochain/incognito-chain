@@ -1,6 +1,7 @@
 package incognitokey
 
 import (
+	"bytes"
 	"encoding/json"
 
 	lru "github.com/hashicorp/golang-lru"
@@ -140,16 +141,38 @@ type CommitteeKeyString struct {
 	MiningPubKey map[string]string
 }
 
-func CommitteeKeyListToMapString(keyList []CommitteePublicKey) []CommitteeKeyString {
-	result := []CommitteeKeyString{}
-	for _, key := range keyList {
-		var keyMap CommitteeKeyString
-		keyMap.IncPubKey = key.GetIncKeyBase58()
-		keyMap.MiningPubKey = make(map[string]string)
-		for keyType := range key.MiningPubKey {
-			keyMap.MiningPubKey[keyType] = key.GetMiningKeyBase58(keyType)
-		}
-		result = append(result, keyMap)
+func (committeePublicKey *CommitteePublicKey) IsValid(target CommitteePublicKey) bool {
+	if bytes.Compare(committeePublicKey.IncPubKey[:], target.IncPubKey[:]) == 0 {
+		return false
 	}
-	return result
+	if committeePublicKey.MiningPubKey == nil || target.MiningPubKey == nil {
+		return false
+	}
+	for key, value := range committeePublicKey.MiningPubKey {
+		if targetValue, ok := target.MiningPubKey[key]; ok {
+			if bytes.Compare(targetValue, value) == 0 {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func (committeePublicKey *CommitteePublicKey) IsEqual(target CommitteePublicKey) bool {
+	if bytes.Compare(committeePublicKey.IncPubKey[:], target.IncPubKey[:]) != 0 {
+		return false
+	}
+	if committeePublicKey.MiningPubKey == nil && target.MiningPubKey != nil {
+		return false
+	}
+	for key, value := range committeePublicKey.MiningPubKey {
+		if targetValue, ok := target.MiningPubKey[key]; !ok {
+			return false
+		} else {
+			if bytes.Compare(targetValue, value) != 0 {
+				return false
+			}
+		}
+	}
+	return true
 }

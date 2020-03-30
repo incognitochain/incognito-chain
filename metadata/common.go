@@ -2,7 +2,6 @@ package metadata
 
 import (
 	"encoding/json"
-	"sort"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -112,6 +111,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalLiquidationCustodianDeposit{}
 	case PortalLiquidationCustodianDepositResponseMeta:
 		md = &PortalLiquidationCustodianDepositResponse{}
+	case BurningForDepositToSCRequestMeta:
+		md = &BurningRequest{}
 	default:
 		Logger.log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", int(mtTemp["Type"].(float64)))
@@ -128,6 +129,7 @@ var bridgeMetas = []string{
 	strconv.Itoa(BeaconSwapConfirmMeta),
 	strconv.Itoa(BridgeSwapConfirmMeta),
 	strconv.Itoa(BurningConfirmMeta),
+	strconv.Itoa(BurningConfirmForDepositToSCMeta),
 }
 
 func HasBridgeInstructions(instructions [][]string) bool {
@@ -139,38 +141,4 @@ func HasBridgeInstructions(instructions [][]string) bool {
 		}
 	}
 	return false
-}
-
-func ConvertMapStringToStringWithSortKey(m map[string]string) string {
-	// sort m before appending to string
-	keys := []string{}
-	for key, _ := range m {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-
-	str := ""
-	for _, key := range keys {
-		str += key
-		str += m[key]
-	}
-
-	return str
-}
-
-func ConvertMapIntToStringWithSortKey(m map[string]uint64) string {
-	// sort m before appending to string
-	keys := []string{}
-	for key, _ := range m {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-
-	str := ""
-	for _, key := range keys {
-		str += key
-		str += strconv.FormatUint(m[key], 10)
-	}
-
-	return str
 }

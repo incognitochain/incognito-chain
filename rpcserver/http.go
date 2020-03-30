@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"io"
 	"io/ioutil"
 	"net"
@@ -37,7 +39,6 @@ type HttpServer struct {
 	blockService      *rpcservice.BlockService
 	outputCoinService *rpcservice.CoinService
 	txMemPoolService  *rpcservice.TxMemPoolService
-	databaseService   *rpcservice.DatabaseService
 	networkService    *rpcservice.NetworkService
 	poolStateService  *rpcservice.PoolStateService
 	txService         *rpcservice.TxService
@@ -71,9 +72,6 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 	httpServer.txMemPoolService = &rpcservice.TxMemPoolService{
 		TxMemPool: httpServer.config.TxMemPool,
 	}
-	httpServer.databaseService = &rpcservice.DatabaseService{
-		DB: httpServer.config.Database,
-	}
 	httpServer.networkService = &rpcservice.NetworkService{
 		ConnMgr: httpServer.config.ConnMgr,
 	}
@@ -90,7 +88,9 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 	}
 	httpServer.poolStateService = &rpcservice.PoolStateService{}
 
-	httpServer.portal = &rpcservice.Portal{}
+	httpServer.portal = &rpcservice.Portal{
+		BlockChain: httpServer.config.BlockChain,
+	}
 }
 
 // Start is used by rpcserver.go to start the rpc listener.
@@ -613,4 +613,10 @@ func (httpServer *HttpServer) DecrementClients() {
 // This function is safe for concurrent access.
 func (httpServer *HttpServer) IncrementClients() {
 	atomic.AddInt32(&httpServer.numClients, 1)
+}
+func (httpServer *HttpServer) GetDatabase() incdb.Database {
+	return httpServer.config.Database
+}
+func (httpServer *HttpServer) GetBlockchain() *blockchain.BlockChain {
+	return httpServer.config.BlockChain
 }
