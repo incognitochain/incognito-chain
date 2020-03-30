@@ -108,7 +108,7 @@ func (blockchain *BlockChain) processRelayingBNBHeaderInst(
 		return err
 	}
 
-	var header rawdbv2.BNBHeader
+	var header types.Block
 	headerBytes, err := base64.StdEncoding.DecodeString(actionData.Header)
 	if err != nil {
 		return err
@@ -121,7 +121,7 @@ func (blockchain *BlockChain) processRelayingBNBHeaderInst(
 	reqStatus := instructions[2]
 	if reqStatus == common.RelayingHeaderUnconfirmedAcceptedChainStatus {
 		//update relaying state
-		relayingState.BNBHeaderChain.UnconfirmedHeaders = append(relayingState.BNBHeaderChain.UnconfirmedHeaders, header.Header)
+		relayingState.BNBHeaderChain.UnconfirmedHeaders = append(relayingState.BNBHeaderChain.UnconfirmedHeaders, &header.Header)
 
 	} else if reqStatus == common.RelayingHeaderConfirmedAcceptedChainStatus {
 		// check newLatestBNBHeader is genesis header or not
@@ -133,7 +133,7 @@ func (blockchain *BlockChain) processRelayingBNBHeaderInst(
 		}
 
 		if header.Header.Height == genesisHeaderHeight {
-			relayingState.BNBHeaderChain.LatestHeader = header.Header
+			relayingState.BNBHeaderChain.LatestHeader = &header.Header
 
 			// store new confirmed header into db
 			newConfirmedheader := relayingState.BNBHeaderChain.LatestHeader
@@ -157,7 +157,7 @@ func (blockchain *BlockChain) processRelayingBNBHeaderInst(
 		}
 
 		//update relaying state
-		relayingState.BNBHeaderChain.UnconfirmedHeaders = []*types.Header{header.Header}
+		relayingState.BNBHeaderChain.UnconfirmedHeaders = []*types.Header{&header.Header}
 
 		// store new confirmed header into db
 		newConfirmedheader := relayingState.BNBHeaderChain.LatestHeader

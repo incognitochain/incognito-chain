@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/tendermint/tendermint/types"
 	"strings"
 )
@@ -15,7 +14,7 @@ import (
 var TestnetGenesisHeaderStr = "eyJIZWFkZXIiOnsidmVyc2lvbiI6eyJibG9jayI6MTAsImFwcCI6MH0sImNoYWluX2lkIjoiQmluYW5jZS1EZXYiLCJoZWlnaHQiOjEwMDAsInRpbWUiOiIyMDIwLTAzLTIwVDEwOjE5OjE4LjE2MDYxWiIsIm51bV90eHMiOjAsInRvdGFsX3R4cyI6MiwibGFzdF9ibG9ja19pZCI6eyJoYXNoIjoiRjVBNjNFOEJBODg5NjNGRTU0RDQwRjVEMzRBRkM5Q0JENUUzNTI3NEY0QTNCNTZBMTZBOEY2ODg2RUU4MENCQyIsInBhcnRzIjp7InRvdGFsIjoxLCJoYXNoIjoiMTUzRDM4MzBEMkE2MzkzODM4QTFBOTBBMjhENTQ2QzEyRTc4QjZGNTAzMjQ1RDlERjIxRkFCNkUwRUMyNDlDNSJ9fSwibGFzdF9jb21taXRfaGFzaCI6IkZFRUQzMzRDRTA2RjZGODNFMzgxQTUzQUUxRkZDNDk5NDY2RDZBMzVCN0NDQjAwQjgyNDgxMURBMDBDMTU5MjMiLCJkYXRhX2hhc2giOiIiLCJ2YWxpZGF0b3JzX2hhc2giOiI0NUVENUJFQTlCRTY1Q0M4NjUwQUNCRTlDQ0I0NzhDNENERDMwMkJEMjY1OEFBQjE4RUM3MzE5NDE3ODI4MEU1IiwibmV4dF92YWxpZGF0b3JzX2hhc2giOiI0NUVENUJFQTlCRTY1Q0M4NjUwQUNCRTlDQ0I0NzhDNENERDMwMkJEMjY1OEFBQjE4RUM3MzE5NDE3ODI4MEU1IiwiY29uc2Vuc3VzX2hhc2giOiIyOTREOEZCRDBCOTRCNzY3QTdFQkE5ODQwRjI5OUEzNTg2REE3RkU2QjVERUFEM0I3RUVDQkExOTNDNDAwRjkzIiwiYXBwX2hhc2giOiJENkU4QTAyRUFCQzQ3NDQ1RTJEMUI1MUU3NDYwOTc2N0MxNTBBMDBFMDM2QkVGNEI0QzA4RkJDODhGQzA3QzIwIiwibGFzdF9yZXN1bHRzX2hhc2giOiIiLCJldmlkZW5jZV9oYXNoIjoiIiwicHJvcG9zZXJfYWRkcmVzcyI6IjYxNDkzN0E4NUFFMUQyQjRBQzkwNTkzODA5NzYyQTc0MkVFOTEyRUEifSwiTGFzdENvbW1pdCI6eyJibG9ja19pZCI6eyJoYXNoIjoiRjVBNjNFOEJBODg5NjNGRTU0RDQwRjVEMzRBRkM5Q0JENUUzNTI3NEY0QTNCNTZBMTZBOEY2ODg2RUU4MENCQyIsInBhcnRzIjp7InRvdGFsIjoxLCJoYXNoIjoiMTUzRDM4MzBEMkE2MzkzODM4QTFBOTBBMjhENTQ2QzEyRTc4QjZGNTAzMjQ1RDlERjIxRkFCNkUwRUMyNDlDNSJ9fSwicHJlY29tbWl0cyI6W3sidHlwZSI6MiwiaGVpZ2h0Ijo5OTksInJvdW5kIjowLCJibG9ja19pZCI6eyJoYXNoIjoiRjVBNjNFOEJBODg5NjNGRTU0RDQwRjVEMzRBRkM5Q0JENUUzNTI3NEY0QTNCNTZBMTZBOEY2ODg2RUU4MENCQyIsInBhcnRzIjp7InRvdGFsIjoxLCJoYXNoIjoiMTUzRDM4MzBEMkE2MzkzODM4QTFBOTBBMjhENTQ2QzEyRTc4QjZGNTAzMjQ1RDlERjIxRkFCNkUwRUMyNDlDNSJ9fSwidGltZXN0YW1wIjoiMjAyMC0wMy0yMFQxMDoxOToxOC4xNjA2MVoiLCJ2YWxpZGF0b3JfYWRkcmVzcyI6IjYxNDkzN0E4NUFFMUQyQjRBQzkwNTkzODA5NzYyQTc0MkVFOTEyRUEiLCJ2YWxpZGF0b3JfaW5kZXgiOjAsInNpZ25hdHVyZSI6ImRTYVNhcllsRVpUS3pEeWIvRFZPRWV1cUpialplYVZhU3JWZFgzeE93RUFQRVdJd0ROa1Z5eWNEU0FMdGJoNmhUMm1Xd0xFTmNDUUV0RSs3aFRjakNnPT0ifV19fQ=="
 var MainnetGenesisHeaderStr = ""
 
-func createGenesisHeaderChain(chainID string) (*rawdbv2.BNBHeader, error) {
+func createGenesisHeaderChain(chainID string) (*types.Block, error) {
 	genesisHeaderStr := ""
 	if chainID == MainnetBNBChainID {
 		genesisHeaderStr = MainnetGenesisHeaderStr
@@ -29,7 +28,7 @@ func createGenesisHeaderChain(chainID string) (*rawdbv2.BNBHeader, error) {
 	if err != nil {
 		return nil, errors.New("Can not decode genesis header string")
 	}
-	var bnbHHeader rawdbv2.BNBHeader
+	var bnbHHeader types.Block
 	err = json.Unmarshal(genesisHeaderBytes, &bnbHHeader)
 	if err != nil {
 		return nil, errors.New("Can not unmarshal genesis header bytes")
@@ -159,7 +158,7 @@ func (hc *LatestHeaderChain) ReceiveNewHeader(h *types.Header, lastCommit *types
 	if hc.LatestHeader == nil && len(hc.UnconfirmedHeaders) == 0 {
 		genesisHeader, _ := createGenesisHeaderChain(chainID)
 		Logger.log.Errorf("genesisHeader.Header %v\n", genesisHeader.Header)
-		hc.LatestHeader = genesisHeader.Header
+		hc.LatestHeader = &genesisHeader.Header
 		Logger.log.Errorf("hc.LatestHeader %v\n", hc.LatestHeader)
 	}
 

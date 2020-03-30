@@ -14,7 +14,6 @@ import (
 	"time"
 )
 
-
 func GetBNBHeaderFromBinanceNetwork(blockHeight int64, url string) (string, error) {
 	block, err := relaying.GetBlock(blockHeight, url)
 	if err != nil {
