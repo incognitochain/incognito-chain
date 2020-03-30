@@ -1208,7 +1208,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err := blockchain.config.DataBase.StoreBeaconBlock(beaconBlock, blockHash, &batchPutData); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
-	if beaconBlock.Header.Epoch < 1000 {
+	if beaconBlock.Header.Epoch < 931 {
 		err := blockchain.updateDatabaseWithBlockRewardInfo(beaconBlock, &batchPutData)
 		if err != nil {
 			return NewBlockChainError(UpdateDatabaseWithBlockRewardInfoError, err)
