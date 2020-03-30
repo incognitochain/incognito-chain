@@ -331,8 +331,6 @@ func (b *Backend) print(lvl, tag string, args ...interface{}) {
 		}
 	}
 
-	PutMessageToGraylog(lvl, *bytebuf)
-
 	recycleBuffer(bytebuf)
 }
 
@@ -364,8 +362,6 @@ func (b *Backend) printf(lvl, tag string, format string, args ...interface{}) {
 			HandleCaptureMessage(string(mes[1]), lvl)
 		}
 	}
-
-	PutMessageToGraylog(lvl, *bytebuf)
 
 	recycleBuffer(bytebuf)
 }
