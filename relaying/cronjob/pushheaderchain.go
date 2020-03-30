@@ -14,10 +14,6 @@ import (
 	"time"
 )
 
-type BNBHeader struct {
-	Header     *types.Header `json:"Header"`
-	LastCommit *types.Commit `json:"LastCommit"`
-}
 
 func GetBNBHeaderFromBinanceNetwork(blockHeight int64, url string) (string, error) {
 	block, err := relaying.GetBlock(blockHeight, url)
@@ -28,11 +24,13 @@ func GetBNBHeaderFromBinanceNetwork(blockHeight int64, url string) (string, erro
 		return "", errors.New("Can not get block from bnb chain")
 	}
 
-	bnbHeader := new(BNBHeader)
-	bnbHeader.Header = &block.Header
-	bnbHeader.LastCommit = block.LastCommit
-
-	bnbHeaderBytes, err2 := json.Marshal(bnbHeader)
+	blockHeader := types.Block{
+		Header:     block.Header,
+		Data:       nil,
+		Evidence:   nil,
+		LastCommit: block.LastCommit,
+	}
+	bnbHeaderBytes, err2 := json.Marshal(blockHeader)
 	if err2 != nil {
 		return "", err2
 	}

@@ -27,4 +27,17 @@ func GetAccAddressString(accAddress *types.AccAddress, chainID string) (string, 
 	}
 }
 
+func GetGenesisBNBHeaderBlockHeight(chainID string) (int64, error) {
+	switch chainID {
+	case TestnetBNBChainID: {
+		return TestnetGenesisBlockHeight, nil
+	}
+	case MainnetBNBChainID: {
+		return MainnetGenesisBlockHeight, nil
+	}
+	default:
+		return int64(0), errors.New("Invalid network chainID")
+	}
+}
+
 

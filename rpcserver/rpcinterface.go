@@ -206,6 +206,7 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendTxWithRelayingBNBHeader: (*HttpServer).handleCreateAndSendTxWithRelayingBNBHeader,
 	getRelayingBNBHeaderState:            (*HttpServer).handleGetRelayingBNBHeaderState,
 	getRelayingBNBHeaderByBlockHeight:    (*HttpServer).handleGetRelayingBNBHeaderByBlockHeight,
+	getLatestBNBHeaderBlockHeight:        (*HttpServer).handleGetLatestBNBHeaderBlockHeight,
 
 	// incognnito mode for sc
 	getBurnProofForDepositToSC:                (*HttpServer).handleGetBurnProofForDepositToSC,

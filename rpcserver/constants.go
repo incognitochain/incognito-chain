@@ -222,6 +222,7 @@ const (
 	createAndSendTxWithRelayingBNBHeader = "createandsendtxwithrelayingbnbheader"
 	getRelayingBNBHeaderState            = "getrelayingbnbheaderstate"
 	getRelayingBNBHeaderByBlockHeight    = "getrelayingbnbheaderbyblockheight"
+	getLatestBNBHeaderBlockHeight        = "getlatestbnbheaderblockheight"
 
 	// incognito mode for sc
 	getBurnProofForDepositToSC                = "getburnprooffordeposittosc"

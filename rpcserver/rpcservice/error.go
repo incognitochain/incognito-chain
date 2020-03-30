@@ -97,6 +97,7 @@ const (
 	// relaying
 	GetRelayingBNBHeaderByBlockHeightError
 	GetRelayingBNBHeaderError
+	GetLatestBNBHeaderBlockHeightError
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -201,6 +202,7 @@ var ErrCodeMessage = map[int]struct {
 	// relaying
 	GetRelayingBNBHeaderByBlockHeightError: {-10001, "Get relaying bnb header by block height error"},
 	GetRelayingBNBHeaderError:              {-10002, "Get relaying bnb header error"},
+	GetLatestBNBHeaderBlockHeightError:     {-10003, "Get latest bnb header block height error"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse
