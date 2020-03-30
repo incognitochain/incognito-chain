@@ -33,6 +33,16 @@ func (httpServer *HttpServer) handleUnlockMempool(params interface{}, closeChan 
 	httpServer.config.TxMemPool.SendTransactionToBlockGen()
 	return nil, nil
 }
+
+func (httpServer *HttpServer) handleGetRewardAmountByEpoch(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	shardID := byte(arrayParams[0].(float64))
+	epoch := uint64(arrayParams[1].(float64))
+
+	amount, err := (*httpServer.config.Database).GetRewardOfShardByEpoch(epoch, shardID, common.PRVCoinID)
+	return amount, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+}
+
 func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	Logger.log.Critical(arrayParams)
