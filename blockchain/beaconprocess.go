@@ -1222,12 +1222,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(beaconBlock *BeaconBlock, 
 	blockHash := beaconBlock.Header.Hash()
 	blockHeight := beaconBlock.Header.Height
 	tempBeaconBestState := blockchain.BestState.Beacon
-	beaconBestStateBytes, err := json.Marshal(tempBeaconBestState)
-	if err != nil {
-		return NewBlockChainError(StoreBeaconBestStateError, err)
-	}
-	blockchain.BestState.Beacon.lock.Lock()
-	defer blockchain.BestState.Beacon.lock.Unlock()
 	//statedb===========================START
 	// Added
 	err = statedb.StoreCurrentEpochShardCandidate(tempBeaconBestState.consensusStateDB, committeeChange.currentEpochShardCandidateAdded, tempBeaconBestState.RewardReceiver, tempBeaconBestState.AutoStaking)
@@ -1404,6 +1398,10 @@ func (blockchain *BlockChain) processStoreBeaconBlock(beaconBlock *BeaconBlock, 
 		return NewBlockChainError(StoreBeaconBlockIndexError, err)
 	}
 	Logger.log.Debugf("Store Beacon BestState Height %+v", blockHeight)
+	beaconBestStateBytes, err := json.Marshal(tempBeaconBestState)
+	if err != nil {
+		return NewBlockChainError(StoreBeaconBestStateError, err)
+	}
 	if err := rawdbv2.StoreBeaconBestState(blockchain.GetDatabase(), beaconBestStateBytes); err != nil {
 		return NewBlockChainError(StoreBeaconBestStateError, err)
 	}
