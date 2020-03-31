@@ -317,10 +317,10 @@ func getBNBHeaderChainState(
 
 // getBTCHeaderChain gets btc header chain as a singleton
 func (bc *BlockChain) getBTCHeaderChain() (*btcrelaying.BlockChain, error) {
-	btcChainID := bc.config.ChainParams.BNBRelayingHeaderChainID
+	btcChainID := bc.config.ChainParams.BTCRelayingHeaderChainID
 	relayingChainParams := map[string]*chaincfg.Params{
-		TestnetBTCChainID: &chaincfg.TestNet3Params,
-		MainnetBTCChainID: &chaincfg.MainNetParams,
+		TestnetBTCChainID: btcrelaying.GetTestNet3Params(),
+		MainnetBTCChainID: btcrelaying.GetMainNetParams(),
 	}
 
 	if btcHeaderChainInstance == nil {

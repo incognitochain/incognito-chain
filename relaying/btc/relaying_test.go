@@ -13,8 +13,8 @@ import (
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 )
 
-func setGenesisBlockToChainParams(genesisBlkHeight int) (*chaincfg.Params, error) {
-	blk, err := buildBTCBlockFromCypher(genesisBlkHeight)
+func setGenesisBlockToChainParams(networkName string, genesisBlkHeight int) (*chaincfg.Params, error) {
+	blk, err := buildBTCBlockFromCypher(networkName, genesisBlkHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -61,8 +61,10 @@ func getAllTxsFromCypherBlock(blockHeight int) (string, []string, error) {
 }
 
 func TestRelayBTCHeaders(t *testing.T) {
+	networkName := "main"
 	genesisBlockHeight := int(308568)
-	chainParams, err := setGenesisBlockToChainParams(genesisBlockHeight)
+
+	chainParams, err := setGenesisBlockToChainParams(networkName, genesisBlockHeight)
 	if err != nil {
 		t.Errorf("Could not set genesis block to chain params with err: %v", err)
 		return
@@ -76,7 +78,7 @@ func TestRelayBTCHeaders(t *testing.T) {
 	}
 
 	for i := genesisBlockHeight + 1; i <= genesisBlockHeight+10; i++ {
-		blk, err := buildBTCBlockFromCypher(i)
+		blk, err := buildBTCBlockFromCypher(networkName, i)
 		if err != nil {
 			t.Errorf("buildBTCBlockFromCypher fail on block %v: %v\n", i, err)
 			return
@@ -168,5 +170,23 @@ func TestRelayBTCHeaders(t *testing.T) {
 	if addrStr != "1HnhWpkMHMjgt167kvgcPyurMmsCQ2WPgg" {
 		t.Errorf("Expect payment address is %s but got %s", "1HnhWpkMHMjgt167kvgcPyurMmsCQ2WPgg", addrStr)
 		return
+	}
+}
+
+func TestBuildBTCBlockFromCypher(t *testing.T) {
+	blk, err := buildBTCBlockFromCypher("main", 623600)
+	// blk, err := buildBTCBlockFromCypher("test3", 1692037)
+	if err != nil {
+		t.Errorf("Could not build btc block from cypher - with err: %v", err)
+		return
+	}
+	unixTs := blk.MsgBlock().Header.Timestamp.Unix()
+	if unixTs != 1585564707 {
+		t.Errorf("Wrong timestamp: expected %d, got %d", 1585564707, unixTs)
+		return
+	}
+	ts := time.Unix(unixTs, 0)
+	if ts.UnixNano() != blk.MsgBlock().Header.Timestamp.UnixNano() {
+		t.Error("Convertion from unix timestamp to Time is not correct")
 	}
 }

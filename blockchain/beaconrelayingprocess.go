@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/btcsuite/btcutil"
+	"github.com/btcsuite/btcd/wire"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -73,12 +74,12 @@ func (blockchain *BlockChain) processRelayingBTCHeaderInst(
 	if err != nil {
 		return err
 	}
-	var block *btcutil.Block
-	err = json.Unmarshal(headerBytes, &block)
+	var msgBlk *wire.MsgBlock
+	err = json.Unmarshal(headerBytes, &msgBlk)
 	if err != nil {
 		return err
 	}
-
+	block := btcutil.NewBlock(msgBlk)
 	isMainChain, isOrphan, err := btcHeaderChain.ProcessBlockV2(block, btcrelaying.BFNone)
 	if err != nil {
 		Logger.log.Errorf("ProcessBlock fail with error: %v", err)
