@@ -12,6 +12,7 @@ import (
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/pkg/errors"
 	lvdbErrors "github.com/syndtr/goleveldb/leveldb/errors"
+	"github.com/tendermint/tendermint/types"
 	"strconv"
 )
 
@@ -114,7 +115,7 @@ func (rbnbChain *relayingBNBChain) buildRelayingInst(
 		return [][]string{inst}
 	}
 
-	var newHeader rawdbv2.BNBHeader
+	var newHeader types.Block
 	err = json.Unmarshal(headerBytes, &newHeader)
 	if err != nil {
 		Logger.log.Errorf("Error - [buildInstructionsForBNBHeaderRelaying]: Cannot unmarshal header.%v\n", err)
@@ -150,7 +151,7 @@ func (rbnbChain *relayingBNBChain) buildRelayingInst(
 	var isValid bool
 	var err2 error
 	relayingHeaderChain.BNBHeaderChain, isValid, err2 = relayingHeaderChain.BNBHeaderChain.ReceiveNewHeader(
-		newHeader.Header, newHeader.LastCommit, blockchain.config.ChainParams.BNBRelayingHeaderChainID)
+		&newHeader.Header, newHeader.LastCommit, blockchain.config.ChainParams.BNBRelayingHeaderChainID)
 	if err2.(*bnbrelaying.BNBRelayingError) != nil || !isValid {
 		Logger.log.Errorf("Error - [buildInstructionsForBNBHeaderRelaying]: Verify new header failed. %v\n", err2)
 		inst := rbnbChain.buildHeaderRelayingInst(

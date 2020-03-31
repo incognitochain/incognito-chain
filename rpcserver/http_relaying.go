@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/metadata"
+	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -201,4 +202,37 @@ func (httpServer *HttpServer) handleGetBTCRelayingBestState(params interface{}, 
 	}
 	bestState := btcChain.BestSnapshot()
 	return bestState, nil
+}
+
+func (httpServer *HttpServer) handleGetLatestBNBHeaderBlockHeight(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	genesisBNBHeaderBlockHeight, _ := relaying.GetGenesisBNBHeaderBlockHeight(httpServer.config.ChainParams.BNBRelayingHeaderChainID)
+	latestBNBHeaderBlockHeight := genesisBNBHeaderBlockHeight
+
+	bc := httpServer.config.BlockChain
+	latestBeaconHeight := httpServer.config.BlockChain.BestState.Beacon.BeaconHeight
+	relayingState, err := bc.InitRelayingHeaderChainStateFromDB(httpServer.config.BlockChain.GetDatabase(), uint64(latestBeaconHeight))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetLatestBNBHeaderBlockHeightError, err)
+	}
+	bnbLatestHeader := relayingState.BNBHeaderChain.LatestHeader
+	if bnbLatestHeader != nil {
+		latestBNBHeaderBlockHeight = bnbLatestHeader.Height
+	}
+
+	beaconBlocks, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(latestBeaconHeight)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetLatestBNBHeaderBlockHeightError, err)
+	}
+	beaconBlock := beaconBlocks[0]
+
+	type LatestBNBHeaderBlockHeight struct {
+		LatestBNBHeaderBlockHeight int64 `json:"LatestBNBHeaderBlockHeight"`
+		BeaconTimeStamp            int64 `json:"BeaconTimeStamp"`
+	}
+	result := LatestBNBHeaderBlockHeight {
+		LatestBNBHeaderBlockHeight: latestBNBHeaderBlockHeight,
+		BeaconTimeStamp:            beaconBlock.Header.Timestamp,
+	}
+
+	return result, nil
 }

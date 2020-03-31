@@ -224,6 +224,7 @@ const (
 	getRelayingBNBHeaderState            = "getrelayingbnbheaderstate"
 	getRelayingBNBHeaderByBlockHeight    = "getrelayingbnbheaderbyblockheight"
 	getBTCRelayingBestState              = "getbtcrelayingbeststate"
+	getLatestBNBHeaderBlockHeight        = "getlatestbnbheaderblockheight"
 
 	// incognito mode for sc
 	getBurnProofForDepositToSC                = "getburnprooffordeposittosc"
