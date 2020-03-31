@@ -20,7 +20,7 @@ import (
 	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/peerv2"
 	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
-	"github.com/incognitochain/incognito-chain/privacy"
+	//privacy "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -89,7 +89,7 @@ func init() {
 	mempool.Logger.Init(mempoolLogger)
 	main2.Logger.Init(randomLogger)
 	transaction.Logger.Init(transactionLogger)
-	privacy.Logger.Init(privacyLogger)
+	//privacy.Logger.Init(privacyLogger)
 	databasemp.Logger.Init(dbmpLogger)
 	blockchain.BLogger.Init(bridgeLogger)
 	rpcserver.BLogger.Init(bridgeLogger)

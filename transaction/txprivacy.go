@@ -767,7 +767,6 @@ func (tx Tx) CalculateTxValue() uint64 {
 // #4 - snDerivators:
 func (tx *Tx) InitTxSalary(salary uint64, receiverAddr *privacy.PaymentAddress, privateKey *privacy.PrivateKey, stateDB *statedb.StateDB, metaData metadata.Metadata) error {
 	var err error
-	sndOut := privacy.RandomScalar()
 	tx.Version = txVersion
 	tx.Type = common.TxRewardType
 	if tx.LockTime == 0 {
@@ -784,6 +783,8 @@ func (tx *Tx) InitTxSalary(salary uint64, receiverAddr *privacy.PaymentAddress, 
 	tempOutputCoin[0].CoinDetails.SetPublicKey(publicKey)
 	tempOutputCoin[0].CoinDetails.SetValue(salary)
 	tempOutputCoin[0].CoinDetails.SetRandomness(privacy.RandomScalar())
+
+	sndOut := privacy.RandomScalar()
 	for {
 		tokenID := &common.Hash{}
 		err := tokenID.SetBytes(common.PRVCoinID[:])
@@ -826,7 +827,7 @@ func (tx Tx) ValidateTxReturnStaking(stateDB *statedb.StateDB) bool {
 
 func (tx Tx) ValidateTxSalary(stateDB *statedb.StateDB) (bool, error) {
 	// verify signature
-	valid, err := tx.verifySigTx()
+	valid, err := verifySigTx(&tx)
 	if !valid {
 		if err != nil {
 			Logger.Log.Debugf("Error verifying signature of tx: %+v", err)

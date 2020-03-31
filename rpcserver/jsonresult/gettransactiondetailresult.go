@@ -75,8 +75,9 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 				Sig:         base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
 				Info:        string(tempTx.Info),
 			}
-			if result.Proof != nil && len(result.Proof.GetInputCoins()) > 0 && result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey() != nil {
-				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte)
+			inputCoins := (*result.Proof).GetInputCoins()
+			if result.Proof != nil && len(inputCoins) > 0 && inputCoins[0].CoinDetails.GetPublicKey() != nil {
+				result.InputCoinPubKey = base58.Base58Check{}.Encode(inputCoins[0].CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte)
 			}
 			if tempTx.Metadata != nil {
 				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
@@ -110,8 +111,9 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 				PrivacyCustomTokenID:     tempTx.TxPrivacyTokenData.PropertyID.String(),
 				PrivacyCustomTokenFee:    tempTx.TxPrivacyTokenData.TxNormal.Fee,
 			}
-			if result.Proof != nil && len(result.Proof.GetInputCoins()) > 0 && result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey() != nil {
-				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte)
+			inputCoins := (*result.Proof).GetInputCoins()
+			if result.Proof != nil && len(inputCoins) > 0 && inputCoins[0].CoinDetails.GetPublicKey() != nil {
+				result.InputCoinPubKey = base58.Base58Check{}.Encode(inputCoins[0].CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte)
 			}
 			tokenData, _ := json.MarshalIndent(tempTx.TxPrivacyTokenData, "", "\t")
 			result.PrivacyCustomTokenData = string(tokenData)
@@ -142,7 +144,7 @@ type ProofDetail struct {
 
 func (proofDetail *ProofDetail) ConvertFromProof(proof *privacy.Proof) {
 	proofDetail.InputCoins = make([]*CoinDetail, 0)
-	for _, input := range proof.GetInputCoins() {
+	for _, input := range (*proof).GetInputCoins() {
 		in := CoinDetail{
 			CoinDetails: Coin{},
 		}
@@ -168,7 +170,7 @@ func (proofDetail *ProofDetail) ConvertFromProof(proof *privacy.Proof) {
 		proofDetail.InputCoins = append(proofDetail.InputCoins, &in)
 	}
 
-	for _, output := range proof.GetOutputCoins() {
+	for _, output := range (*proof).GetOutputCoins() {
 		out := CoinDetail{
 			CoinDetails: Coin{},
 		}

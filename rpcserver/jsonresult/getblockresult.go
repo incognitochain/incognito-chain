@@ -105,10 +105,11 @@ func NewGetBlockResult(block *blockchain.ShardBlock, size uint64, nextBlockHash 
 	getBlockResult.Epoch = block.Header.Epoch
 	if len(block.Body.Transactions) > 0 {
 		for _, tx := range block.Body.Transactions {
+			txProof := *tx.GetProof()
 			if tx.GetMetadataType() == metadata.ShardBlockReward {
-				getBlockResult.Reward += tx.GetProof().GetOutputCoins()[0].CoinDetails.GetValue()
+				getBlockResult.Reward += txProof.GetOutputCoins()[0].CoinDetails.GetValue()
 			} else if tx.GetMetadataType() == metadata.BeaconSalaryResponseMeta {
-				getBlockResult.RewardBeacon += tx.GetProof().GetOutputCoins()[0].CoinDetails.GetValue()
+				getBlockResult.RewardBeacon += txProof.GetOutputCoins()[0].CoinDetails.GetValue()
 			}
 		}
 	}

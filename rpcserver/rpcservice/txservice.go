@@ -10,8 +10,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/database/lvdb"
-
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -1286,7 +1284,7 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 
 						proof := normalTx.GetProof()
 						if proof != nil {
-							outputs := proof.GetOutputCoins()
+							outputs := (*proof).GetOutputCoins()
 							for _, output := range outputs {
 								if bytes.Equal(output.CoinDetails.GetPublicKey().ToBytesS(), keySet.PaymentAddress.Pk) {
 									temp := &privacy.OutputCoin{
@@ -1331,7 +1329,7 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 						// prv proof
 						proof := privacyTokenTx.GetProof()
 						if proof != nil {
-							outputs := proof.GetOutputCoins()
+							outputs := (*proof).GetOutputCoins()
 							for _, output := range outputs {
 								if bytes.Equal(output.CoinDetails.GetPublicKey().ToBytesS(), keySet.PaymentAddress.Pk) {
 									temp := &privacy.OutputCoin{
@@ -1364,7 +1362,7 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 						// token proof
 						proof = privacyTokenTx.TxPrivacyTokenData.TxNormal.GetProof()
 						if proof != nil {
-							outputs := proof.GetOutputCoins()
+							outputs := (*proof).GetOutputCoins()
 							for _, output := range outputs {
 								if bytes.Equal(output.CoinDetails.GetPublicKey().ToBytesS(), keySet.PaymentAddress.Pk) {
 									temp := &privacy.OutputCoin{
@@ -1431,7 +1429,8 @@ func (txService TxService) DecryptOutputCoinByKeyByTransaction(keyParam *incogni
 	case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
 		{
 			tempTx := tx.(*transaction.Tx)
-			prvOutputs, _ := txService.DecryptOutputCoinByKey(tempTx.Proof.GetOutputCoins(), keyParam)
+			txProof := *tempTx.GetProof()
+			prvOutputs, _ := txService.DecryptOutputCoinByKey(txProof.GetOutputCoins(), keyParam)
 			if len(prvOutputs) > 0 {
 				totalPrvValue := uint64(0)
 				for _, output := range prvOutputs {
@@ -1443,7 +1442,7 @@ func (txService TxService) DecryptOutputCoinByKeyByTransaction(keyParam *incogni
 	case common.TxCustomTokenPrivacyType:
 		{
 			tempTx := tx.(*transaction.TxCustomTokenPrivacy)
-			outputOfPrv := tempTx.Proof.GetOutputCoins()
+			outputOfPrv := (*tempTx.GetProof()).GetOutputCoins()
 			if len(outputOfPrv) > 0 {
 				prvOutputs, _ := txService.DecryptOutputCoinByKey(outputOfPrv, keyParam)
 				if len(prvOutputs) > 0 {
@@ -1456,7 +1455,8 @@ func (txService TxService) DecryptOutputCoinByKeyByTransaction(keyParam *incogni
 			}
 
 			results[tempTx.TxPrivacyTokenData.PropertyID.String()] = 0
-			outputOfTokens := tempTx.TxPrivacyTokenData.TxNormal.Proof.GetOutputCoins()
+			txProof := *tempTx.TxPrivacyTokenData.TxNormal.GetProof()
+			outputOfTokens := txProof.GetOutputCoins()
 			if len(outputOfTokens) > 0 {
 				tokenOutput, _ := txService.DecryptOutputCoinByKey(outputOfTokens, keyParam)
 				if len(tokenOutput) > 0 {
@@ -1475,10 +1475,10 @@ func (txService TxService) DecryptOutputCoinByKeyByTransaction(keyParam *incogni
 	}
 	return results, nil
 }
-func (txService TxService) DecryptOutputCoinByKey(outCoints []*privacy.OutputCoin, keyset *incognitokey.KeySet) ([]*privacy.OutputCoin, *RPCError) {
+func (txService TxService) DecryptOutputCoinByKey(outCoins []*privacy.OutputCoin, keyset *incognitokey.KeySet) ([]*privacy.OutputCoin, *RPCError) {
 	keyset.PrivateKey = nil // always nil
 	results := make([]*privacy.OutputCoin, 0)
-	for _, out := range outCoints {
+	for _, out := range outCoins {
 		decryptedOut := blockchain.DecryptOutputCoinByKey(txService.BlockChain.GetTransactionStateDB(0), out, keyset, nil, 0)
 		if decryptedOut == nil {
 			continue

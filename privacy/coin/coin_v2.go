@@ -12,7 +12,7 @@ type CoinV2 struct {
 	// Version should be described here as a reminder
 	// SetBytes and FromBytes of CoinV1 and CoinV2 will use this first byte as version
 	version    uint8
-	shardId    uint16
+	shardId    uint8
 	mask       *operation.Scalar
 	amount     *operation.Scalar
 	txRandom   *operation.Point
@@ -23,7 +23,7 @@ type CoinV2 struct {
 }
 
 func (this CoinV2) GetVersion() uint8               { return 2 }
-func (this CoinV2) GetShardId() uint16              { return this.shardId }
+func (this CoinV2) GetShardId() uint8             { return this.shardId }
 func (this CoinV2) GetMask() *operation.Scalar      { return this.mask }
 func (this CoinV2) GetAmount() *operation.Scalar    { return this.amount }
 func (this CoinV2) GetTxRandom() *operation.Point   { return this.txRandom }
@@ -34,7 +34,7 @@ func (this CoinV2) GetInfo() []byte                 { return this.info }
 
 func (this *CoinV2) SetVersion()                               { this.version = 2 }
 func (this *CoinV2) SetMask(mask *operation.Scalar)            { this.mask.Set(mask) }
-func (this *CoinV2) SetShardId(shardId uint16)                 { this.shardId = shardId }
+func (this *CoinV2) SetShardId(shardId uint8)                 { this.shardId = shardId }
 func (this *CoinV2) SetAmount(amount *operation.Scalar)        { this.amount.Set(amount) }
 func (this *CoinV2) SetTxRandom(txRandom *operation.Point)     { this.txRandom.Set(txRandom) }
 func (this *CoinV2) SetPublicKey(publicKey *operation.Point)   { this.publicKey.Set(publicKey) }
@@ -50,9 +50,10 @@ func (this *CoinV2) SetInfo(b []byte) error {
 	return nil
 }
 
-func NewCoinv2(mask *operation.Scalar, amount *operation.Scalar, txRandom *operation.Point, publicKey *operation.Point, commitment *operation.Point, index uint8, info []byte) *CoinV2 {
+func NewCoinv2(shardId uint8, mask *operation.Scalar, amount *operation.Scalar, txRandom *operation.Point, publicKey *operation.Point, commitment *operation.Point, index uint8, info []byte) *CoinV2 {
 	return &CoinV2{
 		2,
+		shardId,
 		mask,
 		amount,
 		txRandom,
@@ -84,8 +85,8 @@ func (this *CoinV2) Init() *CoinV2 {
 func (this *CoinV2) Bytes() []byte {
 	var coinBytes []byte
 	coinBytes = append(coinBytes, this.GetVersion())
-	shardId := common.Uint16ToBytes(this.GetShardId())
-	coinBytes = append(coinBytes, shardId[:]...)
+	shardId := byte(this.GetShardId())
+	coinBytes = append(coinBytes, shardId)
 
 	if this.mask != nil {
 		coinBytes = append(coinBytes, byte(operation.Ed25519KeySize))
@@ -144,14 +145,11 @@ func (this *CoinV2) SetBytes(coinBytes []byte) error {
 	var err error
 
 	this.SetVersion()
-	shardId, err := common.BytesSToUint16(coinBytes[1:3])
-	if err != nil {
-		return err
-	}
+	shardId := coinBytes[1]
 	this.SetShardId(shardId)
 
-	// The first 3 bytes are: 1 byte for version, 2 bytes for shard id
-	offset := 3
+	// The first 2 bytes are: 1 byte for version, 1 byte for shard id
+	offset := 2
 	this.mask, err = parseScalarForSetBytes(&coinBytes, &offset)
 	if err != nil {
 		return errors.New("SetBytes CoinV2 mask error: " + err.Error())

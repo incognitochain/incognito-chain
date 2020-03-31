@@ -115,14 +115,14 @@ func GetCommitmentAndPublicKeyByIndex(stateDB *StateDB, tokenID common.Hash, com
 	key := GenerateCommitmentIndexObjectKey(tokenID, shardID, commitmentIndexTemp)
 	c, has, err := stateDB.getCommitmentIndexState(key)
 	if err != nil {
-		return []byte{}, NewStatedbError(GetCommitmentIndexError, err)
+		return []byte{}, []byte{}, NewStatedbError(GetCommitmentIndexError, err)
 	}
 	if !has {
-		return []byte{}, NewStatedbError(GetCommitmentIndexError, errors.New("no value exist"))
+		return []byte{}, []byte{}, NewStatedbError(GetCommitmentIndexError, errors.New("no value exist"))
 	}
 	if c.Index().Uint64() != commitmentIndex {
 		panic("same key wrong value")
-		return []byte{}, nil
+		return []byte{}, []byte{}, nil
 	}
 
 	return c.Commitment(), c.PublicKey(), nil

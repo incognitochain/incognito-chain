@@ -225,7 +225,7 @@ func initializePaymentWitnessParamASM(tx *Tx, params *TxPrivacyInitParamsForASM)
 	return &paymentWitnessParam, nil
 }
 
-func (*TxVersion1) ProveForASM(tx *Tx, params *TxPrivacyInitParamsForASM) error {
+func (*TxVersion1) ProveASM(tx *Tx, params *TxPrivacyInitParamsForASM) error {
 	paymentWitnessParamPtr, err := initializePaymentWitnessParamASM(tx, params)
 	if err != nil {
 		return err

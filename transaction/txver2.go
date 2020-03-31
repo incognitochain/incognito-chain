@@ -176,6 +176,10 @@ func (*TxVersion2) Prove(tx *Tx, params *TxPrivacyInitParams) error {
 	return err
 }
 
+func (txVer2 *TxVersion2) ProveASM(tx *Tx, params *TxPrivacyInitParamsForASM) error {
+	return txVer2.Prove(tx, &params.txParam)
+}
+
 // verifySigTx - verify signature on tx
 func verifySigTxVer2(tx *Tx) (bool, error) {
 	// check input transaction
@@ -199,7 +203,7 @@ func verifySigTxVer2(tx *Tx) (bool, error) {
 }
 
 // TODO privacy
-func (*TxVersion2) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
+func (*TxVersion2) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
 	var valid bool
 	var err error
 
@@ -220,53 +224,30 @@ func (*TxVersion2) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.S
 	if err != nil {
 		return false, err
 	}
-	txProof := *tx.Proof
-	inputCoins := txProof.GetInputCoins()
-	outputCoins := txProof.GetOutputCoins()
-	if err := validateSndFromOutputCoin(outputCoins); err != nil {
-		return false, err
-	}
 
-	if isNewTransaction {
-		for i := 0; i < len(outputCoins); i++ {
-			// Check output coins' SND is not exists in SND list (Database)
-			if ok, err := CheckSNDerivatorExistence(tokenID, outputCoins[i].CoinDetails.GetSNDerivator(), transactionStateDB); ok || err != nil {
-				if err != nil {
-					Logger.Log.Error(err)
-				}
-				Logger.Log.Errorf("snd existed: %d\n", i)
-				return false, NewTransactionErr(SndExistedError, err, fmt.Sprintf("snd existed: %d\n", i))
-			}
-		}
-	}
+	//if isNewTransaction {
+	//	for i := 0; i < len(outputCoins); i++ {
+	//		// Check output coins' SND is not exists in SND list (Database)
+	//		if ok, err := CheckSNDerivatorExistence(tokenID, outputCoins[i].CoinDetails.GetSNDerivator(), transactionStateDB); ok || err != nil {
+	//			if err != nil {
+	//				Logger.Log.Error(err)
+	//			}
+	//			Logger.Log.Errorf("snd existed: %d\n", i)
+	//			return false, NewTransactionErr(SndExistedError, err, fmt.Sprintf("snd existed: %d\n", i))
+	//		}
+	//	}
+	//}
 
-	if !hasPrivacy {
-		// Check input coins' commitment is exists in cm list (Database)
-		for i := 0; i < len(inputCoins); i++ {
-			ok, err := tx.CheckCMExistence(inputCoins[i].CoinDetails.GetCoinCommitment().ToBytesS(), transactionStateDB, shardID, tokenID)
-			if !ok || err != nil {
-				if err != nil {
-					Logger.Log.Error(err)
-				}
-				return false, NewTransactionErr(InputCommitmentIsNotExistedError, err)
-			}
-		}
-	}
 	// Verify the payment proof
-	var p interface{} = txProof
-	var txProofV1 privacy.ProofV1 = p.(privacy.ProofV1)
-	commitments, err := getCommitmentsInDatabase(&txProofV1, hasPrivacy, tx.SigPubKey, tx.Fee, transactionStateDB, shardID, tokenID, isBatch)
-	if err != nil {
-		return false, err
-	}
-
-	valid, err = (*tx.Proof).Verify(hasPrivacy, tx.SigPubKey, tx.Fee, shardID, tokenID, isBatch, commitments)
+	var p interface{} = *tx.Proof
+	var txProofV2 privacy.ProofV2 = p.(privacy.ProofV2)
+	valid, err = txProofV2.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, shardID, tokenID, isBatch, nil)
 
 	if !valid {
 		if err != nil {
 			Logger.Log.Error(err)
 		}
-		Logger.Log.Error("FAILED VERIFICATION PAYMENT PROOF")
+		Logger.Log.Error("FAILED VERIFICATION PAYMENT PROOF VER 2")
 		err1, ok := err.(*privacy.PrivacyError)
 		if ok {
 			// parse error detail

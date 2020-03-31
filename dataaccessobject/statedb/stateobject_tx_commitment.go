@@ -29,7 +29,7 @@ func (c CommitmentState) PublicKey() []byte {
 	return c.publicKey
 }
 
-func (c *CommitmentState) SetPublicKey(b []byte]) {
+func (c *CommitmentState) SetPublicKey(b []byte) {
 	c.publicKey = b
 }
 
@@ -63,11 +63,11 @@ func NewCommitmentState() *CommitmentState {
 
 func NewCommitmentStateWithValue(tokenID common.Hash, shardID byte, commitment []byte, publicKey []byte, index *big.Int) *CommitmentState {
 	return &CommitmentState{
-		tokenID: tokenID,
-		shardID: shardID,
+		tokenID:    tokenID,
+		shardID:    shardID,
 		commitment: commitment,
-		publicKey: publicKey,
-		index: index,
+		publicKey:  publicKey,
+		index:      index,
 	}
 }
 
@@ -161,7 +161,7 @@ func newCommitmentObjectWithValue(db *StateDB, key common.Hash, data interface{}
 	}, nil
 }
 
-func GenerateCommitmentObjectKey(tokenID common.Hash, shardID byte, commitment []byte, publicKey []byte) common.Hash {
+func GenerateCommitmentObjectKey(tokenID common.Hash, shardID byte, commitment []byte) common.Hash {
 	prefixHash := GetCommitmentPrefix(tokenID, shardID)
 	valueHash := common.HashH(commitment)
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
