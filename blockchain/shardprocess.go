@@ -518,6 +518,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock
 						Logger.log.Errorf("%+v", err)
 						break
 					}
+					beaconHeight = beaconHeight - 1
 					consensusRootHash, err := blockchain.GetBeaconConsensusRootHash(blockchain.GetDatabase(), beaconHeight)
 					if err != nil {
 						Logger.log.Errorf("Can't found ConsensusStateRootHash of beacon height %+v, error %+v", beaconHeight, err)
