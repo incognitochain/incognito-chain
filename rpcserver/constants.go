@@ -220,8 +220,10 @@ const (
 
 	// relaying
 	createAndSendTxWithRelayingBNBHeader = "createandsendtxwithrelayingbnbheader"
+	createAndSendTxWithRelayingBTCHeader = "createandsendtxwithrelayingbtcheader"
 	getRelayingBNBHeaderState            = "getrelayingbnbheaderstate"
 	getRelayingBNBHeaderByBlockHeight    = "getrelayingbnbheaderbyblockheight"
+	getBTCRelayingBestState              = "getbtcrelayingbeststate"
 
 	// incognito mode for sc
 	getBurnProofForDepositToSC                = "getburnprooffordeposittosc"

@@ -124,23 +124,3 @@ func buildMsgTxFromCypher(txID string) *wire.MsgTx {
 	}
 	return &msgTx
 }
-
-// getBTCHeaderChain gets btc header chain as a singleton
-// func (bc *BlockChain) getBTCHeaderChain(
-// 	relayingNetName string,
-
-// ) (*btcrelaying.BlockChain, error) {
-// 	relayingChainParams := map[string]*chaincfg.Params{
-// 		TestnetBTCChainID: &chaincfg.TestNet3Params,
-// 		MainnetBTCChainID: &chaincfg.MainNetParams,
-// 	}
-
-// 	if btcHeaderChainInstance == nil {
-// 		instance, err := btcrelaying.GetChain("btc-blocks", relayingChainParams[btcChainID])
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		btcHeaderChainInstance = instance
-// 	}
-// 	return btcHeaderChainInstance, nil
-// }

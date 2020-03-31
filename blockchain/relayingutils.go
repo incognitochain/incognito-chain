@@ -278,7 +278,7 @@ func (bc *BlockChain) InitRelayingHeaderChainStateFromDB(
 		return nil, err
 	}
 
-	btcHeaderChain, err := bc.getBTCHeaderChain()
+	btcHeaderChain, err := bc.GetBTCHeaderChain()
 	if err != nil {
 		Logger.log.Errorf("Could not get BTC chain instance with error: %v", err)
 		return nil, err
@@ -315,8 +315,8 @@ func getBNBHeaderChainState(
 	return &hc, nil
 }
 
-// getBTCHeaderChain gets btc header chain as a singleton
-func (bc *BlockChain) getBTCHeaderChain() (*btcrelaying.BlockChain, error) {
+// GetBTCHeaderChain gets btc header chain as a singleton
+func (bc *BlockChain) GetBTCHeaderChain() (*btcrelaying.BlockChain, error) {
 	btcChainID := bc.config.ChainParams.BTCRelayingHeaderChainID
 	relayingChainParams := map[string]*chaincfg.Params{
 		TestnetBTCChainID: btcrelaying.GetTestNet3Params(),

@@ -13,7 +13,27 @@ import (
 	"github.com/tendermint/tendermint/types"
 )
 
+func (httpServer *HttpServer) handleCreateRawTxWithRelayingBTCHeader(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return httpServer.handleCreateRawTxWithRelayingHeader(
+		metadata.RelayingBTCHeaderMeta,
+		params,
+		closeChan,
+	)
+}
+
 func (httpServer *HttpServer) handleCreateRawTxWithRelayingBNBHeader(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return httpServer.handleCreateRawTxWithRelayingHeader(
+		metadata.RelayingBNBHeaderMeta,
+		params,
+		closeChan,
+	)
+}
+
+func (httpServer *HttpServer) handleCreateRawTxWithRelayingHeader(
+	metaType int,
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 5 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least 5"))
@@ -40,7 +60,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithRelayingBNBHeader(params inte
 	}
 
 	meta, _ := metadata.NewRelayingHeader(
-		metadata.RelayingBNBHeaderMeta,
+		metaType,
 		senderAddress,
 		header,
 		uint64(blockHeight),
@@ -74,6 +94,23 @@ func (httpServer *HttpServer) handleCreateRawTxWithRelayingBNBHeader(params inte
 
 func (httpServer *HttpServer) handleCreateAndSendTxWithRelayingBNBHeader(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	data, err := httpServer.handleCreateRawTxWithRelayingBNBHeader(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateAndSendTxWithRelayingBTCHeader(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithRelayingBTCHeader(params, closeChan)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -154,4 +191,14 @@ func (httpServer *HttpServer) handleGetRelayingBNBHeaderByBlockHeight(params int
 		return bnbHeader, nil
 	}
 	return nil, nil
+}
+
+func (httpServer *HttpServer) handleGetBTCRelayingBestState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	bc := httpServer.config.BlockChain
+	btcChain, err := bc.GetBTCHeaderChain()
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetBTCRelayingBestState, err)
+	}
+	bestState := btcChain.BestSnapshot()
+	return bestState, nil
 }

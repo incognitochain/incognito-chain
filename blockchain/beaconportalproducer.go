@@ -622,7 +622,7 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 	}
 
 	if meta.TokenID == common.PortalBTCIDStr {
-		btcChain, err := blockchain.getBTCHeaderChain()
+		btcChain, err := blockchain.GetBTCHeaderChain()
 		if err != nil {
 			Logger.log.Errorf("GetBTCHeaderChain err: %v\n", err)
 			inst := buildReqPTokensInst(
@@ -1643,7 +1643,7 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 
 	// validate proof and memo in tx
 	if meta.TokenID == common.PortalBTCIDStr {
-		btcChain, err := blockchain.getBTCHeaderChain()
+		btcChain, err := blockchain.GetBTCHeaderChain()
 		if err != nil {
 			Logger.log.Errorf("GetBTCHeaderChain err: %v\n", err)
 			inst := buildReqUnlockCollateralInst(
