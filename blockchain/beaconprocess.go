@@ -1221,8 +1221,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(beaconBlock *BeaconBlock, 
 	var err error
 	blockHash := beaconBlock.Header.Hash()
 	blockHeight := beaconBlock.Header.Height
-	tempBeaconBestState := NewBeaconBestState()
-	tempBeaconBestState.cloneBeaconBestStateFrom(blockchain.BestState.Beacon)
+	tempBeaconBestState := blockchain.BestState.Beacon
 	//statedb===========================START
 	// Added
 	err = statedb.StoreCurrentEpochShardCandidate(tempBeaconBestState.consensusStateDB, committeeChange.currentEpochShardCandidateAdded, tempBeaconBestState.RewardReceiver, tempBeaconBestState.AutoStaking)
