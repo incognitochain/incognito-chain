@@ -137,14 +137,14 @@ type AggregatedRangeProof = agg_interface.AggregatedRangeProof
 type AggregatedRangeProofV1 = aggregatedrange.AggregatedRangeProof
 type AggregatedRangeProofV2 = bulletproofs.AggregatedRangeProof
 
-func NewProofWithVersion(version int8) *Proof {
+func NewProofWithVersion(version int8) Proof {
 	var result Proof
 	if version == 1 {
 		result = &ProofV1{}
 	} else {
 		result = &ProofV2{}
 	}
-	return &result
+	return result
 }
 
 func ArrayScalarToBytes(arr *[]*operation.Scalar) ([]byte, error) {

@@ -160,8 +160,7 @@ func proveAndSignCore(tx *Tx, params *TxPrivacyInitParams, paymentWitnessParamPt
 		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, common.EmptyString, "  ")
 		return NewTransactionErr(WithnessProveError, err, params.hasPrivacy, string(jsonParam))
 	}
-	var p privacy.Proof = paymentProof
-	tx.Proof = &p
+	tx.Proof = paymentProof
 
 	// set private key for signing tx
 	if params.hasPrivacy {
@@ -399,9 +398,8 @@ func (*TxVersion1) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.S
 	if err != nil {
 		return false, err
 	}
-	txProof := *tx.Proof
-	inputCoins := txProof.GetInputCoins()
-	outputCoins := txProof.GetOutputCoins()
+	inputCoins := tx.Proof.GetInputCoins()
+	outputCoins := tx.Proof.GetOutputCoins()
 	if err := validateSndFromOutputCoin(outputCoins); err != nil {
 		return false, err
 	}
@@ -432,14 +430,14 @@ func (*TxVersion1) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.S
 		}
 	}
 	// Verify the payment proof
-	var p interface{} = txProof
+	var p interface{} = tx.Proof
 	var txProofV1 privacy.ProofV1 = p.(privacy.ProofV1)
 	commitments, err := getCommitmentsInDatabase(&txProofV1, hasPrivacy, tx.SigPubKey, tx.Fee, transactionStateDB, shardID, tokenID, isBatch)
 	if err != nil {
 		return false, err
 	}
 
-	valid, err = (*tx.Proof).Verify(hasPrivacy, tx.SigPubKey, tx.Fee, shardID, tokenID, isBatch, commitments)
+	valid, err = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, shardID, tokenID, isBatch, commitments)
 
 	if !valid {
 		if err != nil {

@@ -55,16 +55,15 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 		}
 
 		if hasPrivacy {
-			proof := *tx.GetProof()
-			bulletproof := proof.GetAggregatedRangeProof()
+			bulletproof := tx.GetProof().GetAggregatedRangeProof()
 			if bulletproof == nil {
 				continue
 			}
-			if proof.GetVersion() == 1 {
+			if tx.GetProof().GetVersion() == 1 {
 				var p interface{} = bulletproof
 				bulletproofV1 := p.(privacy.AggregatedRangeProofV1)
 				bulletProofListVer1 = append(bulletProofListVer1, &bulletproofV1)
-			} else if proof.GetVersion() == 2 {
+			} else if tx.GetProof().GetVersion() == 2 {
 				var p interface{} = bulletproof
 				bulletproofV2 := p.(privacy.AggregatedRangeProofV2)
 				bulletProofListVer2 = append(bulletProofListVer2, &bulletproofV2)

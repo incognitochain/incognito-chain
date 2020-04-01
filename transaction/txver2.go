@@ -148,7 +148,7 @@ func signTxVer2(tx *Tx, params *TxPrivacyInitParams) error {
 		return err
 	}
 
-	message := (*tx.Proof).Bytes()
+	message := tx.Proof.Bytes()
 	mlsagSignature, err := sag.Sign(message)
 	if err != nil {
 		return err
@@ -165,12 +165,10 @@ func (*TxVersion2) Prove(tx *Tx, params *TxPrivacyInitParams) error {
 	}
 	inputCoins := &params.inputCoins
 
-	var conversion privacy.Proof
-	conversion, err = privacy_v2.Prove(inputCoins, outputCoins, params.hasPrivacy, &params.paymentInfo)
+	tx.Proof, err = privacy_v2.Prove(inputCoins, outputCoins, params.hasPrivacy, &params.paymentInfo)
 	if err != nil {
 		return err
 	}
-	tx.Proof = &conversion
 
 	err = signTxVer2(tx, params)
 	return err
@@ -198,7 +196,7 @@ func verifySigTxVer2(tx *Tx) (bool, error) {
 		return false, err
 	}
 
-	message := (*tx.Proof).Bytes()
+	message := tx.Proof.Bytes()
 	return mlsag.Verify(txSig, ring, message)
 }
 
@@ -239,8 +237,9 @@ func (*TxVersion2) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.S
 	//}
 
 	// Verify the payment proof
-	var p interface{} = *tx.Proof
+	var p interface{} = tx.Proof
 	var txProofV2 privacy.ProofV2 = p.(privacy.ProofV2)
+
 	valid, err = txProofV2.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, shardID, tokenID, isBatch, nil)
 
 	if !valid {

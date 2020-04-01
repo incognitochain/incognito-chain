@@ -218,7 +218,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 			temp := Tx{}
 			temp.Type = common.TxNormalType
 			temp.Proof = privacy.NewProofWithVersion(txCustomTokenPrivacy.Version)
-			(*temp.Proof).Init()
+			temp.Proof.Init()
 			tempOutputCoin := make([]*privacy.OutputCoin, 1)
 			tempOutputCoin[0] = new(privacy.OutputCoin)
 			tempOutputCoin[0].CoinDetails = new(privacy.CoinV1)
@@ -240,10 +240,10 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 
 			sndOut := privacy.RandomScalar()
 			tempOutputCoin[0].CoinDetails.SetSNDerivator(sndOut)
-			(*temp.Proof).SetOutputCoins(tempOutputCoin)
+			temp.Proof.SetOutputCoins(tempOutputCoin)
 
 			// create coin commitment
-			err = (*temp.Proof).GetOutputCoins()[0].CoinDetails.CommitAll()
+			err = temp.Proof.GetOutputCoins()[0].CoinDetails.CommitAll()
 			if err != nil {
 				return NewTransactionErr(CommitOutputCoinError, err)
 			}
@@ -391,16 +391,14 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) validateDoubleSpendTxWithCurren
 	// collect serial number for PRV
 	temp := make(map[common.Hash]interface{})
 	if txCustomTokenPrivacy.Proof != nil {
-		proof := *txCustomTokenPrivacy.Proof
-		for _, desc := range proof.GetInputCoins() {
+		for _, desc := range txCustomTokenPrivacy.Proof.GetInputCoins() {
 			hash := common.HashH(desc.CoinDetails.GetSerialNumber().ToBytesS())
 			temp[hash] = nil
 		}
 	}
 	// collect serial number for pToken
 	if txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.Proof != nil {
-		proof := *txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.Proof
-		for _, desc := range proof.GetInputCoins() {
+		for _, desc := range txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.Proof.GetInputCoins() {
 			hash := common.HashH(desc.CoinDetails.GetSerialNumber().ToBytesS())
 			temp[hash] = nil
 		}
@@ -517,7 +515,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacy
 }
 
 // GetProof - return proof PRV of tx
-func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetProof() *privacy.Proof {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetProof() privacy.Proof {
 	return txCustomTokenPrivacy.Proof
 }
 
@@ -553,9 +551,8 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetTokenReceivers() ([][]byte, 
 	if txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.Proof == nil {
 		return pubkeys, amounts
 	}
-	proof := *txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.Proof
 	// fetch payment info
-	for _, coin := range proof.GetOutputCoins() {
+	for _, coin := range txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.Proof.GetOutputCoins() {
 		coinPubKey := coin.CoinDetails.GetPublicKey().ToBytesS()
 		added := false
 		// coinPubKey := vout.PaymentAddress.Pk
@@ -580,7 +577,7 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetTokenUniqueReceiver() (bool,
 	if txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.Proof == nil {
 		return false, []byte{}, 0
 	}
-	proof := *txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.Proof
+	proof := txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.Proof
 	if len(proof.GetInputCoins()) > 0 && proof.GetInputCoins()[0].CoinDetails != nil {
 		sender = proof.GetInputCoins()[0].CoinDetails.GetPublicKey().ToBytesS()
 	}
@@ -607,7 +604,7 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetTransferData() (bool, []byte
 // IsCoinsBurning - checking this is a burning pToken
 func (txCustomTokenPrivacy TxCustomTokenPrivacy) IsCoinsBurning(bcr metadata.BlockchainRetriever, beaconHeight uint64) bool {
 	// get proof of pToken
-	proof := *txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.Proof
+	proof := txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.Proof
 	if proof == nil || len(proof.GetOutputCoins()) == 0 {
 		return false
 	}
@@ -641,7 +638,7 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) CalculateTxValue() uint64 {
 	if txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.Proof == nil {
 		return 0
 	}
-	proof := *txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.Proof
+	proof := txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.Proof
 	if proof.GetOutputCoins() == nil || len(proof.GetOutputCoins()) == 0 {
 		return 0
 	}
@@ -673,16 +670,14 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ListSerialNumbersHashH() []comm
 	tx := txCustomTokenPrivacy.Tx
 	result := []common.Hash{}
 	if tx.Proof != nil {
-		proof := *tx.Proof
-		for _, d := range proof.GetInputCoins() {
+		for _, d := range tx.Proof.GetInputCoins() {
 			hash := common.HashH(d.CoinDetails.GetSerialNumber().ToBytesS())
 			result = append(result, hash)
 		}
 	}
 	customTokenPrivacy := txCustomTokenPrivacy.TxPrivacyTokenData
 	if customTokenPrivacy.TxNormal.Proof != nil {
-		proof := *customTokenPrivacy.TxNormal.Proof
-		for _, d := range proof.GetInputCoins() {
+		for _, d := range customTokenPrivacy.TxNormal.Proof.GetInputCoins() {
 			hash := common.HashH(d.CoinDetails.GetSerialNumber().ToBytesS())
 			result = append(result, hash)
 		}
@@ -838,7 +833,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 			temp := Tx{}
 			temp.Type = common.TxNormalType
 			temp.Proof = privacy.NewProofWithVersion(txCustomTokenPrivacy.Version)
-			(*temp.Proof).Init()
+			temp.Proof.Init()
 			tempOutputCoin := make([]*privacy.OutputCoin, 1)
 			tempOutputCoin[0] = new(privacy.OutputCoin)
 			tempOutputCoin[0].CoinDetails = new(privacy.CoinV1)
@@ -860,10 +855,10 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 
 			sndOut := privacy.RandomScalar()
 			tempOutputCoin[0].CoinDetails.SetSNDerivator(sndOut)
-			(*temp.Proof).SetOutputCoins(tempOutputCoin)
+			temp.Proof.SetOutputCoins(tempOutputCoin)
 
 			// create coin commitment
-			err = (*temp.Proof).GetOutputCoins()[0].CoinDetails.CommitAll()
+			err = temp.Proof.GetOutputCoins()[0].CoinDetails.CommitAll()
 			if err != nil {
 				return NewTransactionErr(CommitOutputCoinError, err)
 			}

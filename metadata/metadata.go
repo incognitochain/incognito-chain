@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -92,7 +93,7 @@ type Transaction interface {
 	GetInfo() []byte
 	GetSender() []byte
 	GetSigPubKey() []byte
-	GetProof() *privacy.Proof
+	GetProof() privacy.Proof
 	// Get receivers' data for tx
 	GetReceivers() ([][]byte, []uint64)
 	GetUniqueReceiver() (bool, []byte, uint64)

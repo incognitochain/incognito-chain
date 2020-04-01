@@ -25,12 +25,12 @@ type TransactionDetail struct {
 	Fee         uint64 `json:"Fee"` // Fee applies: always consant
 	Image       string `json:"Image"`
 
-	IsPrivacy       bool           `json:"IsPrivacy"`
-	Proof           *privacy.Proof `json:"Proof"`
-	ProofDetail     ProofDetail    `json:"ProofDetail"`
-	InputCoinPubKey string         `json:"InputCoinPubKey"`
-	SigPubKey       string         `json:"SigPubKey,omitempty"` // 64 bytes
-	Sig             string         `json:"Sig,omitempty"`       // 64 bytes
+	IsPrivacy       bool          `json:"IsPrivacy"`
+	Proof           privacy.Proof `json:"Proof"`
+	ProofDetail     ProofDetail   `json:"ProofDetail"`
+	InputCoinPubKey string        `json:"InputCoinPubKey"`
+	SigPubKey       string        `json:"SigPubKey,omitempty"` // 64 bytes
+	Sig             string        `json:"Sig,omitempty"`       // 64 bytes
 
 	Metadata                      string      `json:"Metadata"`
 	CustomTokenData               string      `json:"CustomTokenData"`
@@ -75,7 +75,7 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 				Sig:         base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
 				Info:        string(tempTx.Info),
 			}
-			inputCoins := (*result.Proof).GetInputCoins()
+			inputCoins := result.Proof.GetInputCoins()
 			if result.Proof != nil && len(inputCoins) > 0 && inputCoins[0].CoinDetails.GetPublicKey() != nil {
 				result.InputCoinPubKey = base58.Base58Check{}.Encode(inputCoins[0].CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte)
 			}
@@ -111,7 +111,7 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 				PrivacyCustomTokenID:     tempTx.TxPrivacyTokenData.PropertyID.String(),
 				PrivacyCustomTokenFee:    tempTx.TxPrivacyTokenData.TxNormal.Fee,
 			}
-			inputCoins := (*result.Proof).GetInputCoins()
+			inputCoins := result.Proof.GetInputCoins()
 			if result.Proof != nil && len(inputCoins) > 0 && inputCoins[0].CoinDetails.GetPublicKey() != nil {
 				result.InputCoinPubKey = base58.Base58Check{}.Encode(inputCoins[0].CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte)
 			}
@@ -142,9 +142,9 @@ type ProofDetail struct {
 	OutputCoins []*CoinDetail
 }
 
-func (proofDetail *ProofDetail) ConvertFromProof(proof *privacy.Proof) {
+func (proofDetail *ProofDetail) ConvertFromProof(proof privacy.Proof) {
 	proofDetail.InputCoins = make([]*CoinDetail, 0)
-	for _, input := range (*proof).GetInputCoins() {
+	for _, input := range proof.GetInputCoins() {
 		in := CoinDetail{
 			CoinDetails: Coin{},
 		}
@@ -170,7 +170,7 @@ func (proofDetail *ProofDetail) ConvertFromProof(proof *privacy.Proof) {
 		proofDetail.InputCoins = append(proofDetail.InputCoins, &in)
 	}
 
-	for _, output := range (*proof).GetOutputCoins() {
+	for _, output := range proof.GetOutputCoins() {
 		out := CoinDetail{
 			CoinDetails: Coin{},
 		}

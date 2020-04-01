@@ -3,12 +3,13 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/incdb"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -60,8 +61,7 @@ func CreateCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) 
 	byteMap := make([]byte, common.MaxShardNumber)
 	for _, tx := range txList {
 		if tx.GetProof() != nil {
-			txProof := *tx.GetProof()
-			for _, outCoin := range txProof.GetOutputCoins() {
+			for _, outCoin := range tx.GetProof().GetOutputCoins() {
 				lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
 				shardID := common.GetShardIDFromLastByte(lastByte)
 				byteMap[common.GetShardIDFromLastByte(shardID)] = 1
@@ -73,8 +73,7 @@ func CreateCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) 
 			{
 				customTokenTx := tx.(*transaction.TxCustomTokenPrivacy)
 				if customTokenTx.TxPrivacyTokenData.TxNormal.GetProof() != nil {
-					txProof := *customTokenTx.TxPrivacyTokenData.TxNormal.GetProof()
-					for _, outCoin := range txProof.GetOutputCoins() {
+					for _, outCoin := range tx.GetProof().GetOutputCoins() {
 						lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
 						shardID := common.GetShardIDFromLastByte(lastByte)
 						byteMap[common.GetShardIDFromLastByte(shardID)] = 1
@@ -387,8 +386,8 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 			{
 				// Proof Process
 				if tx.GetProof() != nil {
-					txProof := *tx.GetProof()
-					for _, outCoin := range txProof.GetOutputCoins() {
+
+					for _, outCoin := range tx.GetProof().GetOutputCoins() {
 						lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
 						shardID := common.GetShardIDFromLastByte(lastByte)
 						outCoinEachShard[shardID] = append(outCoinEachShard[shardID], *outCoin)
@@ -400,8 +399,7 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 				customTokenPrivacyTx := tx.(*transaction.TxCustomTokenPrivacy)
 				//==================Proof Process
 				if customTokenPrivacyTx.GetProof() != nil {
-					txProof := *customTokenPrivacyTx.GetProof()
-					for _, outCoin := range txProof.GetOutputCoins() {
+					for _, outCoin := range tx.GetProof().GetOutputCoins() {
 						lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
 						shardID := common.GetShardIDFromLastByte(lastByte)
 						outCoinEachShard[shardID] = append(outCoinEachShard[shardID], *outCoin)
@@ -409,8 +407,7 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 				}
 				//==================Tx Token Privacy Data Process
 				if customTokenPrivacyTx.TxPrivacyTokenData.TxNormal.GetProof() != nil {
-					txProof := *customTokenPrivacyTx.TxPrivacyTokenData.TxNormal.GetProof()
-					for _, outCoin := range txProof.GetOutputCoins() {
+					for _, outCoin := range tx.GetProof().GetOutputCoins() {
 						lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
 						shardID := common.GetShardIDFromLastByte(lastByte)
 						if txTokenPrivacyDataMap[shardID] == nil {
@@ -452,8 +449,8 @@ func getCrossShardData(txList []metadata.Transaction, shardID byte) ([]privacy.O
 	var txTokenPrivacyDataList []ContentCrossShardTokenPrivacyData
 	for _, tx := range txList {
 		if tx.GetProof() != nil {
-			txProof := *tx.GetProof()
-			for _, outCoin := range txProof.GetOutputCoins() {
+
+			for _, outCoin := range tx.GetProof().GetOutputCoins() {
 				lastByte := common.GetShardIDFromLastByte(outCoin.CoinDetails.GetPubKeyLastByte())
 				if lastByte == shardID {
 					coinList = append(coinList, *outCoin)
@@ -463,8 +460,7 @@ func getCrossShardData(txList []metadata.Transaction, shardID byte) ([]privacy.O
 		if tx.GetType() == common.TxCustomTokenPrivacyType {
 			customTokenPrivacyTx := tx.(*transaction.TxCustomTokenPrivacy)
 			if customTokenPrivacyTx.TxPrivacyTokenData.TxNormal.GetProof() != nil {
-				txProof := *customTokenPrivacyTx.TxPrivacyTokenData.TxNormal.GetProof()
-				for _, outCoin := range txProof.GetOutputCoins() {
+				for _, outCoin := range tx.GetProof().GetOutputCoins() {
 					lastByte := common.GetShardIDFromLastByte(outCoin.CoinDetails.GetPubKeyLastByte())
 					if lastByte == shardID {
 						if _, ok := txTokenPrivacyDataMap[customTokenPrivacyTx.TxPrivacyTokenData.PropertyID]; !ok {
