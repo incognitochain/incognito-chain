@@ -163,13 +163,15 @@ func (s *S2BSyncProcess) streamFromPeer(peerID string, pState S2BPeerState) (req
 		if reqFromHeight+blockchain.DefaultMaxBlkReqPerPeer <= toHeight {
 			toHeight = reqFromHeight + blockchain.DefaultMaxBlkReqPerPeer
 		}
-
+		if reqFromHeight > toHeight {
+			continue
+		}
 		//start request
 		requestCnt++
 		ch, err := s.Server.RequestShardToBeaconBlocksViaStream(ctx, peerID, int(sID), reqFromHeight, toHeight)
 		if err != nil {
 			fmt.Println("Syncker: create channel fail")
-			return
+			continue
 		}
 
 		//start receive
