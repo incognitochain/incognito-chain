@@ -3,11 +3,12 @@ package syncker
 import (
 	"context"
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/wire"
-	"sync"
-	"time"
 )
 
 type ShardPeerState struct {
@@ -159,7 +160,7 @@ func (s *ShardSyncProcess) syncShardProcess() {
 
 		if requestCnt > 0 {
 			s.isCatchUp = false
-			s.syncShardProcess()
+			// s.syncShardProcess()
 		} else {
 			if len(s.shardPeerState) > 0 {
 				s.isCatchUp = true
@@ -214,7 +215,7 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 				}
 			}
 
-			if len(blockBuffer) >= 350 || (len(blockBuffer) > 0 && (isNil(blk) || time.Since(insertTime) > time.Millisecond*1000)) {
+			if uint64(len(blockBuffer)) >= s.Server.GetChainParam().Epoch || (len(blockBuffer) > 0 && (isNil(blk) || time.Since(insertTime) > time.Millisecond*1000)) {
 				insertBlkCnt := 0
 				for {
 					time1 := time.Now()
