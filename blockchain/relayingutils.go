@@ -115,8 +115,8 @@ func (rbnbChain *relayingBNBChain) buildRelayingInst(
 		return [][]string{inst}
 	}
 
-	var newHeader types.Block
-	err = json.Unmarshal(headerBytes, &newHeader)
+	var newBlock types.Block
+	err = json.Unmarshal(headerBytes, &newBlock)
 	if err != nil {
 		Logger.log.Errorf("Error - [buildInstructionsForBNBHeaderRelaying]: Cannot unmarshal header.%v\n", err)
 		inst := rbnbChain.buildHeaderRelayingInst(
@@ -131,7 +131,7 @@ func (rbnbChain *relayingBNBChain) buildRelayingInst(
 		return [][]string{inst}
 	}
 
-	if newHeader.Header.Height != int64(relayingHeaderAction.Meta.BlockHeight) {
+	if newBlock.Header.Height != int64(relayingHeaderAction.Meta.BlockHeight) {
 		Logger.log.Errorf("Error - [buildInstructionsForBNBHeaderRelaying]: Block height in metadata is unmatched with block height in new header.")
 		inst := rbnbChain.buildHeaderRelayingInst(
 			relayingHeaderAction.Meta.IncogAddressStr,
@@ -147,11 +147,11 @@ func (rbnbChain *relayingBNBChain) buildRelayingInst(
 
 	// if valid, create instruction with status accepted
 	// if not, create instruction with status rejected
-	latestBNBHeader := relayingHeaderChain.BNBHeaderChain.LatestHeader
+	latestBNBBlockHeader := relayingHeaderChain.BNBHeaderChain.LatestBlock
 	var isValid bool
 	var err2 error
-	relayingHeaderChain.BNBHeaderChain, isValid, err2 = relayingHeaderChain.BNBHeaderChain.ReceiveNewHeader(
-		&newHeader.Header, newHeader.LastCommit, blockchain.config.ChainParams.BNBRelayingHeaderChainID)
+	relayingHeaderChain.BNBHeaderChain, isValid, err2 = relayingHeaderChain.BNBHeaderChain.AppendBlock(
+		&newBlock, blockchain.config.ChainParams.BNBRelayingHeaderChainID)
 	if err2.(*bnbrelaying.BNBRelayingError) != nil || !isValid {
 		Logger.log.Errorf("Error - [buildInstructionsForBNBHeaderRelaying]: Verify new header failed. %v\n", err2)
 		inst := rbnbChain.buildHeaderRelayingInst(
@@ -166,7 +166,7 @@ func (rbnbChain *relayingBNBChain) buildRelayingInst(
 		return [][]string{inst}
 	}
 
-	// check newHeader is a header contain last commit for one of the header in unconfirmed header list or not\
+	// check newBlock is a header contain last commit for one of the header in unconfirmed header list or not\
 	// check newLatestBNBHeader is genesis header or not
 	genesisHeaderHeight := int64(0)
 	genesisHeaderStr := ""
@@ -177,8 +177,8 @@ func (rbnbChain *relayingBNBChain) buildRelayingInst(
 		genesisHeaderHeight = bnbrelaying.MainnetGenesisBlockHeight
 		genesisHeaderStr = bnbrelaying.MainnetGenesisHeaderStr
 	}
-	newLatestBNBHeader := relayingHeaderChain.BNBHeaderChain.LatestHeader
-	if newLatestBNBHeader != nil && newLatestBNBHeader.Height == genesisHeaderHeight && latestBNBHeader == nil {
+	newLatestBNBHeader := relayingHeaderChain.BNBHeaderChain.LatestBlock
+	if newLatestBNBHeader != nil && newLatestBNBHeader.Height == genesisHeaderHeight && latestBNBBlockHeader == nil {
 		inst1 := rbnbChain.buildHeaderRelayingInst(
 			relayingHeaderAction.Meta.IncogAddressStr,
 			genesisHeaderStr,
@@ -201,8 +201,8 @@ func (rbnbChain *relayingBNBChain) buildRelayingInst(
 		return [][]string{inst1, inst2}
 	}
 
-	if newLatestBNBHeader != nil && latestBNBHeader != nil {
-		if newLatestBNBHeader.Height == latestBNBHeader.Height + 1 {
+	if newLatestBNBHeader != nil && latestBNBBlockHeader != nil {
+		if newLatestBNBHeader.Height == latestBNBBlockHeader.Height + 1 {
 			inst := rbnbChain.buildHeaderRelayingInst(
 				relayingHeaderAction.Meta.IncogAddressStr,
 				relayingHeaderAction.Meta.Header,

@@ -119,8 +119,8 @@ const (
 	TestnetCentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 
 	// relaying header chain
-	//TestnetBNBChainID = "Binance-Chain-Nile"
-	TestnetBNBChainID = "Binance-Dev"
+	TestnetBNBChainID = "Binance-Chain-Nile"
+	//TestnetBNBChainID = "Binance-Dev"
 	TestnetBTCChainID = "Bitcoin-Testnet"
 )
 
