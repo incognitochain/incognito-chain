@@ -184,7 +184,8 @@ func processBeaconForConfirmmingCrossShard(database incdb.Database, beaconBlock 
 	return nil
 }
 
-//periodically check pool and insert into pool
+//periodically check pool and insert into pool (in case some fork block)
+//TODO: loop all pool and insert all block that connect to our MultiView
 func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 	defer func() {
 		if s.isCatchUp {

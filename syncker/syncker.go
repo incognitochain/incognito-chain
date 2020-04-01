@@ -351,6 +351,9 @@ func (synckerManager *SynckerManager) SyncMissingBeaconBlock(ctx context.Context
 		}
 		blk := <-ch
 		if !isNil(blk) {
+			if blk.(*blockchain.BeaconBlock).GetHeight() <= synckerManager.config.Blockchain.BeaconChain.GetFinalViewHeight() {
+				return
+			}
 			synckerManager.beaconPool.AddBlock(blk.(common.BlockPoolInterface))
 			prevHash := blk.(*blockchain.BeaconBlock).GetPrevHash()
 			if v := synckerManager.config.Blockchain.BeaconChain.GetViewByHash(prevHash); v == nil {
@@ -373,6 +376,9 @@ func (synckerManager *SynckerManager) SyncMissingShardBlock(ctx context.Context,
 		}
 		blk := <-ch
 		if !isNil(blk) {
+			if blk.(*blockchain.ShardBlock).GetHeight() <= synckerManager.config.Blockchain.ShardChain[sid].GetFinalViewHeight() {
+				return
+			}
 			synckerManager.shardPool[int(sid)].AddBlock(blk.(common.BlockPoolInterface))
 			prevHash := blk.(*blockchain.ShardBlock).GetPrevHash()
 			if v := synckerManager.config.Blockchain.ShardChain[sid].GetViewByHash(prevHash); v == nil {
