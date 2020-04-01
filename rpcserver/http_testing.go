@@ -49,6 +49,16 @@ func (httpServer *HttpServer) handleGetAutoStakingByHeight(params interface{}, c
 	_, newAutoStaking := statedb.GetRewardReceiverAndAutoStaking(consensusStateDB, httpServer.blockService.BlockChain.GetShardIDs())
 	return []interface{}{consensusStateRootHash, newAutoStaking}, nil
 }
+
+func (httpServer *HttpServer) handleGetRewardAmountByEpoch(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	shardID := byte(arrayParams[0].(float64))
+	epoch := uint64(arrayParams[1].(float64))
+	rewardStateDB := httpServer.config.BlockChain.BestState.Beacon.GetCopiedRewardStateDB()
+	amount, err := statedb.GetRewardOfShardByEpoch(rewardStateDB, epoch, shardID, common.PRVCoinID)
+	return amount, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+}
+
 func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	shardIDParam := int(arrayParams[0].(float64))
