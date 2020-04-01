@@ -331,7 +331,7 @@ func (synckerManager *SynckerManager) StreamMissingCrossShardBlock(ctx context.C
 					if !isNil(blk) {
 						synckerManager.crossShardPool[int(toShard)].AddBlock(blk.(common.CrossShardBlkPoolInterface))
 					} else {
-						break
+						return
 					}
 				}
 			}
