@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"context"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"time"
 
@@ -131,4 +132,6 @@ type Syncker interface {
 	GetCrossShardBlocksForShardProducer(toShard byte) map[byte][]interface{}
 	GetS2BBlocksForBeaconValidator(bestViewShardHash map[byte]common.Hash, list map[byte][]common.Hash) (map[byte][]interface{}, error)
 	GetCrossShardBlocksForShardValidator(toShard byte, list map[byte][]common.Hash) (map[byte][]interface{}, error)
+	SyncMissingBeaconBlock(ctx context.Context, peerID string, fromHash common.Hash)
+	SyncMissingShardBlock(ctx context.Context, peerID string, sid byte, fromHash common.Hash)
 }

@@ -28,33 +28,50 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 	//get view that block link to
 	preHash := shardBlock.Header.PreviousBlockHash
 	view := blockchain.ShardChain[int(shardID)].GetViewByHash(preHash)
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	if view == nil {
-		return errors.New(fmt.Sprintf("ShardBlock %v link to wrong view (%s)", shardBlock.GetHeight(), preHash.String()))
+		blockchain.config.Syncker.SyncMissingShardBlock(ctx, "", shardID, preHash)
 	}
-	curView := view.(*ShardBestState)
+	var checkShardUntilTimeout = func(ctx context.Context) error {
+		for {
+			select {
+			case <-ctx.Done():
+				return errors.New(fmt.Sprintf("ShardBlock %v link to wrong view (%s)", shardBlock.GetHeight(), preHash.String()))
+			default:
+				if blockchain.ShardChain[shardID].GetViewByHash(preHash) != nil {
+					return nil
+				}
+				time.Sleep(time.Second)
+			}
+		}
+	}
+	if err := checkShardUntilTimeout(ctx); err != nil {
+		return err
+	}
 
+	curView := view.(*ShardBestState)
 	Logger.log.Infof("SHARD %+v | Verify ShardBlock for signing process %d, with hash %+v", shardID, shardBlock.Header.Height, *shardBlock.Hash())
 
 	// fetch beacon blocks
 	previousBeaconHeight := curView.BeaconHeight
-	var checkUntilTimeout = func(ctx context.Context) error {
-		ticker := time.NewTicker(time.Second)
-		defer ticker.Stop()
+	var checkBeaconUntilTimeout = func(ctx context.Context) error {
 		for {
 			select {
-			case <-ticker.C:
+			case <-ctx.Done():
+				return errors.New("Wait for beacon timeout")
+			default:
 				if shardBlock.Header.BeaconHeight <= blockchain.BeaconChain.GetFinalView().GetHeight() {
 					return nil
 				}
-			case <-ctx.Done():
-				return errors.New("Wait for beacon timeout")
+				time.Sleep(time.Second)
 			}
 		}
 	}
-	ctx, _ := context.WithTimeout(context.Background(), time.Second*5)
-	if checkUntilTimeout(ctx) != nil {
+	ctx, _ = context.WithTimeout(context.Background(), time.Second*5)
+	if checkBeaconUntilTimeout(ctx) != nil {
 		return errors.New(fmt.Sprintf("Beacon %d not ready, latest is %d", shardBlock.Header.BeaconHeight, blockchain.GetBeaconBestState().BeaconHeight))
 	}
+
 	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain.GetDatabase(), previousBeaconHeight+1, shardBlock.Header.BeaconHeight)
 	if err != nil {
 		return err

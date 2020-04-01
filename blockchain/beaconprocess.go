@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -35,11 +36,26 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(beaconBlock *BeaconBlock,
 	//get view that block link to
 	preHash := beaconBlock.Header.PreviousBlockHash
 	view := blockchain.BeaconChain.GetViewByHash(preHash)
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	if view == nil {
-		return errors.New(fmt.Sprintf("BeaconBlock %v link to wrong view (%s)", beaconBlock.GetHeight(), preHash.String()))
+		blockchain.config.Syncker.SyncMissingBeaconBlock(ctx, "", preHash)
 	}
-	curView := view.(*BeaconBestState)
 
+	for {
+		select {
+		case <-ctx.Done():
+			return errors.New(fmt.Sprintf("BeaconBlock %v link to wrong view (%s)", beaconBlock.GetHeight(), preHash.String()))
+		default:
+			view = blockchain.BeaconChain.GetViewByHash(preHash)
+			if view != nil {
+				goto CONTINUE_VERIFY
+			}
+			time.Sleep(time.Second)
+		}
+	}
+CONTINUE_VERIFY:
+
+	curView := view.(*BeaconBestState)
 	// Verify block only
 	Logger.log.Infof("BEACON | Verify block for signing process %d, with hash %+v", beaconBlock.Header.Height, *beaconBlock.Hash())
 	committeeChange := newCommitteeChange()

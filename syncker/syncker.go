@@ -309,7 +309,7 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardValidator(toSha
 
 //Stream Missing CrossShard Block
 func (synckerManager *SynckerManager) StreamMissingCrossShardBlock(ctx context.Context, toShard byte, missingBlock map[byte][]common.Hash) {
-	fmt.Println("debug stream missing s2b block", missingBlock)
+	fmt.Println("debug stream missing crossshard block", missingBlock)
 	wg := sync.WaitGroup{}
 	for i, v := range missingBlock {
 		wg.Add(1)
@@ -338,6 +338,51 @@ func (synckerManager *SynckerManager) StreamMissingCrossShardBlock(ctx context.C
 		}(i, v)
 	}
 	wg.Wait()
+}
+
+//Sync missing beacon block  from a hash to our final view (skip if we already have)
+func (synckerManager *SynckerManager) SyncMissingBeaconBlock(ctx context.Context, peerID string, fromHash common.Hash) {
+	requestHash := fromHash
+	for {
+		ch, err := synckerManager.config.Node.RequestBeaconBlocksByHashViaStream(ctx, peerID, [][]byte{requestHash.Bytes()})
+		if err != nil {
+			fmt.Println("Syncker: create channel fail")
+			return
+		}
+		blk := <-ch
+		if !isNil(blk) {
+			synckerManager.beaconPool.AddBlock(blk.(common.BlockPoolInterface))
+			prevHash := blk.(*blockchain.BeaconBlock).GetPrevHash()
+			if v := synckerManager.config.Blockchain.BeaconChain.GetViewByHash(prevHash); v == nil {
+				requestHash = prevHash
+				continue
+			}
+		}
+		return
+	}
+}
+
+//Sync back missing shard block from a hash to our final views (skip if we already have)
+func (synckerManager *SynckerManager) SyncMissingShardBlock(ctx context.Context, peerID string, sid byte, fromHash common.Hash) {
+	requestHash := fromHash
+	for {
+		ch, err := synckerManager.config.Node.RequestShardBlocksByHashViaStream(ctx, peerID, int(sid), [][]byte{requestHash.Bytes()})
+		if err != nil {
+			fmt.Println("Syncker: create channel fail")
+			return
+		}
+		blk := <-ch
+		if !isNil(blk) {
+			synckerManager.shardPool[int(sid)].AddBlock(blk.(common.BlockPoolInterface))
+			prevHash := blk.(*blockchain.ShardBlock).GetPrevHash()
+			if v := synckerManager.config.Blockchain.ShardChain[sid].GetViewByHash(prevHash); v == nil {
+				requestHash = prevHash
+				continue
+			}
+		}
+		return
+
+	}
 }
 
 //Get Status Function

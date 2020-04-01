@@ -87,7 +87,7 @@ func (s *CrossShardSyncProcess) syncCrossShard() {
 
 				missingCrossShardBlock[byte(i)] = append(missingCrossShardBlock[byte(i)], blkHash.Bytes())
 			}
-			fmt.Println("debug syncCrossShard", i, len(missingCrossShardBlock[byte(i)]))
+			//fmt.Println("debug syncCrossShard", i, len(missingCrossShardBlock[byte(i)]))
 			if len(missingCrossShardBlock[byte(i)]) > 0 {
 				s.streamMissingCrossShardBlock(i, missingCrossShardBlock[byte(i)])
 			}
