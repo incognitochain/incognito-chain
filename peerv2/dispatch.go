@@ -10,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/wire"
+	libp2p "github.com/libp2p/go-libp2p-core/peer"
 	"github.com/pkg/errors"
 )
 
@@ -17,6 +18,7 @@ type Dispatcher struct {
 	MessageListeners   *MessageListeners
 	PublishableMessage []string
 	BC                 *blockchain.BlockChain
+	CurrentHWPeerID    libp2p.ID
 }
 
 // Just for consensus v1
@@ -174,7 +176,9 @@ func (d *Dispatcher) processInMessageString(msgStr string) error {
 func (d *Dispatcher) processMessageForEachType(messageType reflect.Type, message wire.Message) error {
 	// NOTE: copy from peerConn.processInMessageString
 	Logger.Debugf("Processing msgType %s", message.MessageType())
-	var peerConn *peer.PeerConn
+	peerConn := &peer.PeerConn{}
+	peerConn.SetRemotePeerID(d.CurrentHWPeerID)
+	//fmt.Printf("[stream2] %v\n", peerConn.GetRemotePeerID())
 	switch messageType {
 	case reflect.TypeOf(&wire.MessageTx{}):
 		if d.MessageListeners.OnTx != nil {

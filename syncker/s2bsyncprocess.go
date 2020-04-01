@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/wire"
 )
@@ -159,8 +160,8 @@ func (s *S2BSyncProcess) streamFromPeer(peerID string, pState S2BPeerState) (req
 				reqFromHeight = validS2BBlock[len(validS2BBlock)-1].GetHeight() + 1
 			}
 		}
-		if reqFromHeight+100 <= toHeight {
-			toHeight = reqFromHeight + 100
+		if reqFromHeight+blockchain.DefaultMaxBlkReqPerPeer <= toHeight {
+			toHeight = reqFromHeight + blockchain.DefaultMaxBlkReqPerPeer
 		}
 
 		//start request
@@ -184,7 +185,7 @@ func (s *S2BSyncProcess) streamFromPeer(peerID string, pState S2BPeerState) (req
 					break
 				}
 			}
-			if blkCnt > 100 {
+			if blkCnt > blockchain.DefaultMaxBlkReqPerPeer {
 				break
 			}
 		}
