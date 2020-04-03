@@ -66,9 +66,8 @@ func (proof PaymentProof) GetSerialNumberNoPrivacyProof() []*serialnumbernopriva
 	return proof.serialNumberNoPrivacyProof
 }
 
-func (proof PaymentProof) GetAggregatedRangeProof() *agg_interface.AggregatedRangeProof {
-	var a agg_interface.AggregatedRangeProof = proof.aggregatedRangeProof
-	return &a
+func (proof PaymentProof) GetAggregatedRangeProof() agg_interface.AggregatedRangeProof {
+	return proof.aggregatedRangeProof
 }
 
 func (proof PaymentProof) GetCommitmentOutputValue() []*operation.Point {
@@ -111,12 +110,34 @@ func (proof PaymentProof) GetOutputCoins() []*coin.OutputCoin {
 	return proof.outputCoins
 }
 
-func (proof *PaymentProof) SetInputCoins(v []*coin.InputCoin) {
-	proof.inputCoins = v
+func (proof *PaymentProof) SetInputCoins(v []*coin.InputCoin) error {
+	n := len(v)
+	inputCoins := make([]*coin.InputCoin, n)
+	for i := 0; i < n; i += 1 {
+		b := v[i].Bytes()
+		inputCoins[i] = new(coin.InputCoin)
+		err := inputCoins[i].SetBytes(b)
+		if err != nil {
+			return err
+		}
+	}
+	proof.inputCoins = inputCoins
+	return nil
 }
 
-func (proof *PaymentProof) SetOutputCoins(v []*coin.OutputCoin) {
-	proof.outputCoins = v
+func (proof *PaymentProof) SetOutputCoins(v []*coin.OutputCoin) error {
+	n := len(v)
+	outputCoins := make([]*coin.OutputCoin, n)
+	for i := 0; i < n; i += 1 {
+		b := v[i].Bytes()
+		outputCoins[i] = new(coin.OutputCoin)
+		err := outputCoins[i].SetBytes(b)
+		if err != nil {
+			return err
+		}
+	}
+	proof.outputCoins = outputCoins
+	return nil
 }
 
 // End GET/SET function
@@ -169,7 +190,7 @@ func (proof *PaymentProof) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (proof *PaymentProof) Bytes() []byte {
+func (proof PaymentProof) Bytes() []byte {
 	var bytes []byte
 	hasPrivacy := len(proof.oneOfManyProof) > 0
 
@@ -787,8 +808,8 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey key.PublicKey, fee uint64, sha
 		comOutputValueSum.Add(comOutputValueSum, new(operation.Point).ScalarMult(operation.PedCom.G[operation.PedersenValueIndex], new(operation.Scalar).FromUint64(uint64(fee))))
 	}
 
-	Logger.Log.Infof("comInputValueSum: %v\n", comInputValueSum.ToBytesS())
-	Logger.Log.Infof("comOutputValueSum: %v\n", comOutputValueSum.ToBytesS())
+	// Logger.Log.Infof("comInputValueSum: %v\n", comInputValueSum.ToBytesS())
+	// Logger.Log.Infof("comOutputValueSum: %v\n", comOutputValueSum.ToBytesS())
 
 	if !operation.IsPointEqual(comInputValueSum, comOutputValueSum) {
 		Logger.Log.Debugf("comInputValueSum: ", comInputValueSum)

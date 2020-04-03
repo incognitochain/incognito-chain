@@ -1,6 +1,8 @@
 package transaction
 
-import "github.com/incognitochain/incognito-chain/common"
+import (
+	"github.com/incognitochain/incognito-chain/common"
+)
 
 type TransactionLogger struct {
 	Log common.Logger

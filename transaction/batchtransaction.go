@@ -60,9 +60,9 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 				continue
 			}
 			if tx.GetProof().GetVersion() == 1 {
-				var p interface{} = bulletproof
-				bulletproofV1 := p.(privacy.AggregatedRangeProofV1)
-				bulletProofListVer1 = append(bulletProofListVer1, &bulletproofV1)
+				var bulletproofV1 *privacy.AggregatedRangeProofV1 = new(privacy.AggregatedRangeProofV1)
+				bulletproofV1 = bulletproof.(*privacy.AggregatedRangeProofV1)
+				bulletProofListVer1 = append(bulletProofListVer1, bulletproofV1)
 			} else if tx.GetProof().GetVersion() == 2 {
 				var p interface{} = bulletproof
 				bulletproofV2 := p.(privacy.AggregatedRangeProofV2)

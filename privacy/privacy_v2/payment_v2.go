@@ -26,13 +26,39 @@ func (proof *PaymentProofV2) GetVersion() uint8                 { return 2 }
 func (proof PaymentProofV2) GetInputCoins() []*coin.InputCoin   { return proof.inputCoins }
 func (proof PaymentProofV2) GetOutputCoins() []*coin.OutputCoin { return proof.outputCoins }
 
-func (proof *PaymentProofV2) SetVersion()                         { proof.Version = 2 }
-func (proof *PaymentProofV2) SetInputCoins(v []*coin.InputCoin)   { proof.inputCoins = v }
-func (proof *PaymentProofV2) SetOutputCoins(v []*coin.OutputCoin) { proof.outputCoins = v }
+func (proof *PaymentProofV2) SetVersion() { proof.Version = 2 }
 
-func (proof PaymentProofV2) GetAggregatedRangeProof() *agg_interface.AggregatedRangeProof {
-	var a agg_interface.AggregatedRangeProof = proof.aggregatedRangeProof
-	return &a
+func (proof *PaymentProofV2) SetInputCoins(v []*coin.InputCoin) error {
+	n := len(v)
+	inputCoins := make([]*coin.InputCoin, n)
+	for i := 0; i < n; i += 1 {
+		b := v[i].Bytes()
+		inputCoins[i] = new(coin.InputCoin)
+		err := inputCoins[i].SetBytes(b)
+		if err != nil {
+			return err
+		}
+	}
+	proof.inputCoins = inputCoins
+	return nil
+}
+func (proof *PaymentProofV2) SetOutputCoins(v []*coin.OutputCoin) error {
+	n := len(v)
+	outputCoins := make([]*coin.OutputCoin, n)
+	for i := 0; i < n; i += 1 {
+		b := v[i].Bytes()
+		outputCoins[i] = new(coin.OutputCoin)
+		err := outputCoins[i].SetBytes(b)
+		if err != nil {
+			return err
+		}
+	}
+	proof.outputCoins = outputCoins
+	return nil
+}
+
+func (proof PaymentProofV2) GetAggregatedRangeProof() agg_interface.AggregatedRangeProof {
+	return proof.aggregatedRangeProof
 }
 
 func (proof *PaymentProofV2) Init() {
@@ -71,7 +97,7 @@ func (proof *PaymentProofV2) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (proof *PaymentProofV2) Bytes() []byte {
+func (proof PaymentProofV2) Bytes() []byte {
 	var bytes []byte
 	bytes = append(bytes, proof.GetVersion())
 
@@ -256,7 +282,10 @@ func Prove(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, hasPrivacy bool, pay
 	// Init proof
 	proof := new(PaymentProofV2)
 	proof.SetVersion()
-	proof.aggregatedRangeProof.Init()
+
+	aggregateproof := new(bulletproofs.AggregatedRangeProof)
+	aggregateproof.Init()
+	proof.aggregatedRangeProof = aggregateproof
 	proof.SetInputCoins(inputCoins)
 	proof.SetOutputCoins(outputCoins)
 
@@ -271,7 +300,7 @@ func Prove(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, hasPrivacy bool, pay
 	outputRands := make([]*operation.Scalar, n)
 	for i := 0; i < n; i += 1 {
 		outputValues[i] = outputCoins[i].CoinDetails.GetValue()
-		outputRands[i] = operation.RandomScalar()
+		outputRands[i] = outputCoins[i].CoinDetails.GetRandomness()
 	}
 
 	wit := new(bulletproofs.AggregatedRangeWitness)

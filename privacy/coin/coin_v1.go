@@ -107,6 +107,23 @@ func (coin *CoinV1) CommitAll() error {
 	return nil
 }
 
+func (coin *CoinV1) CommitValueRandomness() error {
+	shardID := common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())
+	values := []*operation.Scalar{
+		new(operation.Scalar).FromUint64(0),
+		new(operation.Scalar).FromUint64(coin.value),
+		new(operation.Scalar).FromUint64(0),
+		new(operation.Scalar).FromUint64(uint64(shardID)),
+		coin.randomness,
+	}
+	commitment, err := operation.PedCom.CommitAll(values)
+	if err != nil {
+		return err
+	}
+	coin.coinCommitment = commitment
+	return nil
+}
+
 // Bytes converts a coin's details to a bytes array
 // Each fields in coin is saved in len - body format
 func (coin *CoinV1) Bytes() []byte {

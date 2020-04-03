@@ -83,9 +83,9 @@ func TestRandomCommitmentsProcess(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	statedb.StoreCommitments(db, common.Hash{}, paymentAddress.Pk, [][]byte{(*tx1.Proof).GetOutputCoins()[0].CoinDetails.GetCoinCommitment().ToBytesS()}, 0)
+	statedb.StoreCommitments(db, common.Hash{}, paymentAddress.Pk, [][]byte{tx1.Proof.GetOutputCoins()[0].CoinDetails.GetCoinCommitment().ToBytesS()}, 0)
 
-	in1 := ConvertOutputCoinToInputCoin((*tx1.Proof).GetOutputCoins())
+	in1 := ConvertOutputCoinToInputCoin(tx1.Proof.GetOutputCoins())
 
 	cmmIndexs, myIndexs, cmm := RandomCommitmentsProcess(NewRandomCommitmentsProcessParam(in1, 0, db, 0, &common.Hash{}))
 	assert.Equal(t, 8, len(cmmIndexs))
@@ -97,11 +97,11 @@ func TestRandomCommitmentsProcess(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	statedb.StoreCommitments(db, common.Hash{}, paymentAddress.Pk, [][]byte{(*tx2.Proof).GetOutputCoins()[0].CoinDetails.GetCoinCommitment().ToBytesS()}, 0)
+	statedb.StoreCommitments(db, common.Hash{}, paymentAddress.Pk, [][]byte{tx2.Proof.GetOutputCoins()[0].CoinDetails.GetCoinCommitment().ToBytesS()}, 0)
 	tx3 := &Tx{}
 	err = tx3.InitTxSalary(5, &paymentAddress, &key.KeySet.PrivateKey, db, nil)
-	statedb.StoreCommitments(db, common.Hash{}, paymentAddress.Pk, [][]byte{(*tx3.Proof).GetOutputCoins()[0].CoinDetails.GetCoinCommitment().ToBytesS()}, 0)
-	in2 := ConvertOutputCoinToInputCoin((*tx2.Proof).GetOutputCoins())
+	statedb.StoreCommitments(db, common.Hash{}, paymentAddress.Pk, [][]byte{tx3.Proof.GetOutputCoins()[0].CoinDetails.GetCoinCommitment().ToBytesS()}, 0)
+	in2 := ConvertOutputCoinToInputCoin(tx2.Proof.GetOutputCoins())
 	in := append(in1, in2...)
 
 	cmmIndexs, myIndexs, cmm = RandomCommitmentsProcess(NewRandomCommitmentsProcessParam(in, 0, db, 0, &common.Hash{}))
@@ -143,7 +143,18 @@ func TestBuildCoinbaseTxByCoinID(t *testing.T) {
 	assert.Equal(t, nil, err)
 	paymentAddress := key.KeySet.PaymentAddress
 
-	tx, err := BuildCoinBaseTxByCoinID(NewBuildCoinBaseTxByCoinIDParams(&paymentAddress, 10, &key.KeySet.PrivateKey, db, nil, common.Hash{}, NormalCoinType, "PRV", 0))
+	txBuild := NewBuildCoinBaseTxByCoinIDParams(
+		&paymentAddress,
+		10,
+		&key.KeySet.PrivateKey,
+		db,
+		nil,
+		common.Hash{},
+		NormalCoinType,
+		"PRV",
+		0,
+	)
+	tx, err := BuildCoinBaseTxByCoinID(txBuild)
 	assert.Equal(t, nil, err)
 	assert.NotEqual(t, nil, tx)
 	//assert.Equal(t, uint64(10), tx.(*Tx).Proof.GetOutputCoins()[0].CoinDetails.GetValue())

@@ -40,6 +40,12 @@ func (ring Ring) ToBytes() ([]byte, error) {
 	}
 	b[0] = byte(n)
 	b[1] = byte(m)
+
+	// fmt.Println("Printing ring")
+	// for i := 0; i < n; i += 1 {
+	// 	fmt.Println(k[i])
+	// }
+
 	for i := 0; i < n; i += 1 {
 		for j := 0; j < m; j += 1 {
 			b = append(b, k[i][j].ToBytesS()...)

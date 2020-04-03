@@ -430,9 +430,8 @@ func (*TxVersion1) Verify(tx *Tx, hasPrivacy bool, transactionStateDB *statedb.S
 		}
 	}
 	// Verify the payment proof
-	var p interface{} = tx.Proof
-	var txProofV1 privacy.ProofV1 = p.(privacy.ProofV1)
-	commitments, err := getCommitmentsInDatabase(&txProofV1, hasPrivacy, tx.SigPubKey, tx.Fee, transactionStateDB, shardID, tokenID, isBatch)
+	var txProofV1 *privacy.ProofV1 = tx.Proof.(*privacy.ProofV1)
+	commitments, err := getCommitmentsInDatabase(txProofV1, hasPrivacy, tx.SigPubKey, tx.Fee, transactionStateDB, shardID, tokenID, isBatch)
 	if err != nil {
 		return false, err
 	}

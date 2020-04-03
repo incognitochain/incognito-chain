@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 
 	"github.com/incognitochain/incognito-chain/common/base58"
 
@@ -19,13 +21,9 @@ import (
 
 type TxVersion2 struct{}
 
-func generateMlsagRing(params *TxPrivacyInitParams, pi int, shardID byte) (*mlsag.Ring, error) {
-	outputCoinsPtr, err := parseOutputCoins(params)
-	if err != nil {
-		return nil, err
-	}
-	outputCoins := *outputCoinsPtr
-	inputCoins := params.inputCoins
+func generateMlsagRing(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, params *TxPrivacyInitParams, pi int, shardID byte) (*mlsag.Ring, error) {
+	inputCoins := *inp
+	outputCoins := *out
 
 	// loop to create list usable commitments from usableInputCoins
 	listUsableCommitments := make(map[common.Hash][]byte)
@@ -73,11 +71,19 @@ func generateMlsagRing(params *TxPrivacyInitParams, pi int, shardID byte) (*mlsa
 			}
 		} else {
 			for j := 0; j < len(inputCoins); j += 1 {
-				index, _ := common.RandBigIntMaxRange(lenCommitment)
-				ok, err := statedb.HasCommitmentIndex(params.stateDB, *params.tokenID, index.Uint64(), shardID)
-				if ok && err == nil {
-					commitment, publicKey, _ := statedb.GetCommitmentAndPublicKeyByIndex(params.stateDB, *params.tokenID, index.Uint64(), shardID)
-					if _, found := listUsableCommitments[common.HashH(commitment)]; !found {
+				for {
+					index, _ := common.RandBigIntMaxRange(lenCommitment)
+					ok, err := statedb.HasCommitmentIndex(params.stateDB, *params.tokenID, index.Uint64(), shardID)
+					if ok && err == nil {
+						commitment, publicKey, _ := statedb.GetCommitmentAndPublicKeyByIndex(params.stateDB, *params.tokenID, index.Uint64(), shardID)
+						if _, found := listUsableCommitments[common.HashH(commitment)]; found {
+							if lenCommitment.Uint64() == 1 && len(inputCoins) == 1 {
+								commitment = privacy.RandomPoint().ToBytesS()
+								publicKey = privacy.RandomPoint().ToBytesS()
+							} else {
+								continue
+							}
+						}
 						row[j], err = new(operation.Point).FromBytesS(publicKey)
 						if err != nil {
 							return nil, err
@@ -89,21 +95,23 @@ func generateMlsagRing(params *TxPrivacyInitParams, pi int, shardID byte) (*mlsa
 						}
 
 						sumInputs.Add(sumInputs, temp)
+						break
+					} else {
+						return nil, err
 					}
 				}
 			}
 		}
 		row = append(row, sumInputs.Sub(sumInputs, outputCommitments))
-		ring = append(ring, row)
+		ring[i] = row
 	}
 	mlsagring := mlsag.NewRing(ring)
 	return mlsagring, nil
 }
 
-func createPrivKeyMlsag(params *TxPrivacyInitParams) *[]*operation.Scalar {
-	outputCoinsPtr, _ := parseOutputCoins(params)
-	outputCoins := *outputCoinsPtr
-	inputCoins := params.inputCoins
+func createPrivKeyMlsag(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, senderSK *key.PrivateKey) *[]*operation.Scalar {
+	inputCoins := *inp
+	outputCoins := *out
 
 	sumRand := new(operation.Scalar).FromUint64(0)
 	for _, in := range inputCoins {
@@ -113,7 +121,7 @@ func createPrivKeyMlsag(params *TxPrivacyInitParams) *[]*operation.Scalar {
 		sumRand.Add(sumRand, out.CoinDetails.GetRandomness())
 	}
 
-	sk := new(operation.Scalar).FromBytesS(*params.senderSK)
+	sk := new(operation.Scalar).FromBytesS(*senderSK)
 	privKeyMlsag := make([]*operation.Scalar, len(inputCoins)+1)
 	for i := 0; i < len(inputCoins); i += 1 {
 		privKeyMlsag[i] = sk
@@ -123,18 +131,18 @@ func createPrivKeyMlsag(params *TxPrivacyInitParams) *[]*operation.Scalar {
 }
 
 // signTx - signs tx
-func signTxVer2(tx *Tx, params *TxPrivacyInitParams) error {
+func signTxVer2(inp *[]*coin.InputCoin, out *[]*coin.OutputCoin, tx *Tx, params *TxPrivacyInitParams) error {
 	if tx.Sig != nil {
 		return NewTransactionErr(UnexpectedError, errors.New("input transaction must be an unsigned one"))
 	}
 
 	var pi int = common.RandIntInterval(0, privacy.RingSize-1)
 	shardID := common.GetShardIDFromLastByte(tx.PubKeyLastByteSender)
-	ring, err := generateMlsagRing(params, pi, shardID)
+	ring, err := generateMlsagRing(inp, out, params, pi, shardID)
 	if err != nil {
 		return err
 	}
-	privKeysMlsag := *createPrivKeyMlsag(params)
+	privKeysMlsag := *createPrivKeyMlsag(inp, out, params.senderSK)
 
 	sag := mlsag.NewMlsag(privKeysMlsag, ring, pi)
 
@@ -155,6 +163,13 @@ func signTxVer2(tx *Tx, params *TxPrivacyInitParams) error {
 	}
 
 	tx.Sig, err = mlsagSignature.ToBytes()
+
+	fmt.Println("Done mlsag")
+	fmt.Println("Done mlsag")
+	fmt.Println("Done mlsag")
+	fmt.Println("Done mlsag")
+	fmt.Println("Done mlsag")
+	fmt.Println("Done mlsag")
 	return err
 }
 
@@ -163,6 +178,13 @@ func (*TxVersion2) Prove(tx *Tx, params *TxPrivacyInitParams) error {
 	if err != nil {
 		return err
 	}
+	for i := 0; i < len(*outputCoins); i += 1 {
+		(*outputCoins)[i].CoinDetails.SetRandomness(operation.RandomScalar())
+		err := (*outputCoins)[i].CoinDetails.CommitValueRandomness()
+		if err != nil {
+			return err
+		}
+	}
 	inputCoins := &params.inputCoins
 
 	tx.Proof, err = privacy_v2.Prove(inputCoins, outputCoins, params.hasPrivacy, &params.paymentInfo)
@@ -170,7 +192,7 @@ func (*TxVersion2) Prove(tx *Tx, params *TxPrivacyInitParams) error {
 		return err
 	}
 
-	err = signTxVer2(tx, params)
+	err = signTxVer2(inputCoins, outputCoins, tx, params)
 	return err
 }
 

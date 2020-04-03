@@ -3,6 +3,7 @@ package transaction
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"testing"
 	"time"
 
@@ -37,6 +38,13 @@ func TestUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, nil, err)
 	assert.Equal(t, uint64(10), tx1.Proof.GetOutputCoins()[0].CoinDetails.GetValue())
 	assert.Equal(t, common.PRVCoinID.String(), tx1.GetTokenID().String())
+}
+
+func TestUnmarshalJSON2(t *testing.T) {
+	dat, err := ioutil.ReadFile("../tests/testsdata/transaction/txver2.json")
+	assert.Equal(t, nil, err)
+	fmt.Print(string(dat))
+	assert.Equal(t, true, false)
 }
 
 func TestInitTx(t *testing.T) {
