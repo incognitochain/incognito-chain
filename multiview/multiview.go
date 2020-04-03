@@ -67,7 +67,11 @@ func (multiView *MultiView) GetViewByHash(hash common.Hash) View {
 	res := make(chan View)
 	multiView.actionCh <- func() {
 		view, _ := multiView.viewByHash[hash]
-		res <- view
+		if view.GetHeight() < multiView.finalView.GetHeight() {
+			res <- nil
+		} else {
+			res <- view
+		}
 	}
 	return <-res
 }
