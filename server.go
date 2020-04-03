@@ -2241,7 +2241,6 @@ func (serverObj *Server) requestBlocksByHashViaStream(ctx context.Context, peerI
 	go func(stream proto.HighwayService_StreamBlockByHashClient, ctx context.Context) {
 		for {
 			blkData, err := stream.Recv()
-			fmt.Println("SYNCKER: 1 Receive  block...")
 			if err != nil || err == io.EOF {
 				closeChannel()
 				return
@@ -2270,10 +2269,8 @@ func (serverObj *Server) requestBlocksByHashViaStream(ctx context.Context, peerI
 			select {
 			case <-ctx.Done():
 				closeChannel()
-				fmt.Println("SYNCKER: 2 Receive  block...")
 				return
 			case blockCh <- newBlk:
-				fmt.Println("SYNCKER:  3 Receive  block...")
 			}
 		}
 

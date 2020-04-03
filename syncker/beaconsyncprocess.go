@@ -201,9 +201,8 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 
 	//loop all current views, if there is any block connect to the view
 	for _, viewHash := range s.chain.GetAllViewHash() {
-		var blk common.BlockPoolInterface
-		blk, ok := s.beaconPool.blkPoolByHash[viewHash.String()]
-		if !ok {
+		blk := s.beaconPool.GetBlock(viewHash)
+		if blk == nil {
 			continue
 		}
 
@@ -291,13 +290,15 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 				blockBuffer = append(blockBuffer, blk)
 			}
 
-			if len(blockBuffer) >= 350 || (len(blockBuffer) > 0 && (isNil(blk) || time.Since(insertTime) > time.Millisecond*1000)) {
+			if uint64(len(blockBuffer)) >= s.server.GetChainParam().Epoch || (len(blockBuffer) > 0 && (isNil(blk) || time.Since(insertTime) > time.Millisecond*1000)) {
 				insertBlkCnt := 0
 				for {
+					time1 := time.Now()
 					if successBlk, err := InsertBatchBlock(s.chain, blockBuffer); err != nil {
 						return
 					} else {
 						insertBlkCnt += successBlk
+						fmt.Printf("Syncker Insert %d beacon block (from %d to %d) elaspse %f \n", successBlk, blockBuffer[0].GetHeight(), blockBuffer[len(blockBuffer)-1].GetHeight(), time.Since(time1).Seconds())
 						if successBlk >= len(blockBuffer) {
 							break
 						}

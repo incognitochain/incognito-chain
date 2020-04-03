@@ -130,12 +130,10 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 
 	//loop all current views, if there is any block connect to the view
 	for _, viewHash := range s.Chain.GetAllViewHash() {
-		var blk common.BlockPoolInterface
-		blk, ok := s.shardPool.blkPoolByHash[viewHash.String()]
-		if !ok {
+		blk := s.shardPool.GetBlock(viewHash)
+		if blk == nil {
 			continue
 		}
-
 		//if already insert and error, last time insert is < 10s then we skip
 		insertTime, ok := insertShardTimeCache.Get(viewHash.String())
 		if ok && time.Since(insertTime.(time.Time)).Seconds() < 10 {
@@ -232,7 +230,7 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 						return
 					} else {
 						insertBlkCnt += successBlk
-						fmt.Printf("Syncker Insert %d shard (from %d to %d) elaspse %f \n", successBlk, blockBuffer[0].GetHeight(), blockBuffer[len(blockBuffer)-1].GetHeight(), time.Since(time1).Seconds())
+						fmt.Printf("Syncker Insert %d shard block(from %d to %d) elaspse %f \n", successBlk, blockBuffer[0].GetHeight(), blockBuffer[len(blockBuffer)-1].GetHeight(), time.Since(time1).Seconds())
 						if successBlk >= len(blockBuffer) {
 							break
 						}

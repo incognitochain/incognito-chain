@@ -56,11 +56,19 @@ func (pool *BlkPool) AddBlock(blk common.BlockPoolInterface) {
 	}
 }
 
-func (pool *BlkPool) HasBlock(blk common.BlockPoolInterface) bool {
+func (pool *BlkPool) GetBlock(hash common.Hash) common.BlockPoolInterface {
+	res := make(chan common.BlockPoolInterface)
+	pool.action <- func() {
+		blk, _ := pool.blkPoolByHash[hash.String()]
+		res <- blk
+	}
+	return <-res
+}
+
+func (pool *BlkPool) HasHash(hash common.Hash) bool {
 	res := make(chan bool)
 	pool.action <- func() {
-		hash := blk.Hash().String()
-		_, ok := pool.blkPoolByHash[hash]
+		_, ok := pool.blkPoolByHash[hash.String()]
 		res <- ok
 	}
 	return <-res
@@ -72,26 +80,6 @@ func (pool *BlkPool) RemoveBlock(hash string) {
 			delete(pool.blkPoolByHash, hash)
 		}
 	}
-}
-
-func (pool *BlkPool) GetNextBlock(prevhash string) common.BlockPoolInterface {
-	//For multichain, we need to Get a Map
-	res := make(chan common.BlockPoolInterface)
-	pool.action <- func() {
-		hashes := pool.blkPoolByPrevHash[prevhash][:]
-		for _, h := range hashes {
-			blk, ok := pool.blkPoolByHash[h]
-			if !ok {
-				continue
-			}
-			if _, ok := pool.blkPoolByPrevHash[blk.Hash().String()]; ok {
-				res <- pool.blkPoolByHash[h]
-				return
-			}
-		}
-		res <- nil
-	}
-	return (<-res)
 }
 
 func (pool *BlkPool) GetFinalBlockFromBlockHash(currentHash string) []common.BlockPoolInterface {
