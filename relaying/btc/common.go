@@ -184,63 +184,43 @@ func chainSetup(dbName string, params *chaincfg.Params) (*BlockChain, func(), er
 	return chain, teardown, nil
 }
 
-func getChainV2(dbName string, params *chaincfg.Params, genBlk *wire.MsgBlock) (*BlockChain, error) {
+// GetChainV2 returns btcrelaying chain
+func GetChainV2(dbPath string, params *chaincfg.Params) (*BlockChain, error) {
 	if !isSupportedDbType(testDbType) {
 		return nil, fmt.Errorf("unsupported db type %v", testDbType)
 	}
 
-	// Handle memory database specially since it doesn't need the disk
-	// specific handling.
 	var db database.DB
-	if testDbType == "memdb" {
-		ndb, err := database.Create(testDbType)
+	// dbPath := filepath.Join(testDbRoot, dbName)
+	ndb, err := database.Open(testDbType, dbPath, blockDataNet)
+	if err != nil {
+		// Return the error if it's not because the database doesn't
+		// exist.
+		if dbErr, ok := err.(database.Error); !ok || dbErr.ErrorCode !=
+			database.ErrDbDoesNotExist {
+			return nil, err
+		}
+
+		// Create the db if it does not exist.
+		ndb, err = database.Create(testDbType, dbPath, blockDataNet)
 		if err != nil {
 			return nil, fmt.Errorf("error creating db: %v", err)
 		}
-		db = ndb
-	} else {
-		dbPath := filepath.Join(testDbRoot, dbName)
-		ndb, err := database.Open(testDbType, dbPath, blockDataNet)
-		fmt.Println(testDbType, dbPath)
-		if err != nil {
-			fmt.Println("============== deo oopen db thanh cong ===========")
-			// Return the error if it's not because the database doesn't
-			// exist.
-			if dbErr, ok := err.(database.Error); !ok || dbErr.ErrorCode !=
-				database.ErrDbDoesNotExist {
-				fmt.Println("li do ko open db: ", err)
-				return nil, err
-			}
-
-			// Create the db if it does not exist.
-			err = os.MkdirAll(testDbRoot, 0700)
-			if err != nil {
-				err := fmt.Errorf("unable to create test db "+
-					"root: %v", err)
-				return nil, err
-			}
-			ndb, err = database.Create(testDbType, dbPath, blockDataNet)
-			if err != nil {
-				fmt.Println("--------- come here -----------")
-				return nil, fmt.Errorf("error creating db: %v", err)
-			}
-		}
-		fmt.Println("============== duowng nao cung toi la ma ===========")
-		db = ndb
 	}
+	db = ndb
 
 	// Copy the chain params to ensure any modifications the tests do to
 	// the chain parameters do not affect the global instance.
 	paramsCopy := *params
 
 	// Create the main chain instance.
-	chain, err := NewV2(&Config{
+	chain, err := New(&Config{
 		DB:          db,
 		ChainParams: &paramsCopy,
 		Checkpoints: nil,
 		TimeSource:  NewMedianTime(),
 		SigCache:    txscript.NewSigCache(1000),
-	}, genBlk)
+	})
 	if err != nil {
 		err := fmt.Errorf("failed to create chain instance: %v", err)
 		return nil, err

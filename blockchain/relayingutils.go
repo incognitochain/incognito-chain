@@ -3,7 +3,6 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
-	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -16,8 +15,6 @@ import (
 	"strconv"
 )
 
-var btcHeaderChainInstance *btcrelaying.BlockChain = nil
-
 type relayingChain struct {
 	actions [][]string
 }
@@ -27,7 +24,7 @@ type relayingBNBChain struct {
 type relayingBTCChain struct {
 	*relayingChain
 }
-type relayingProcessor interface{
+type relayingProcessor interface {
 	getActions() [][]string
 	putAction(action []string)
 	buildRelayingInst(
@@ -233,6 +230,7 @@ func (rbtcChain *relayingBTCChain) buildRelayingInst(
 	relayingHeaderAction metadata.RelayingHeaderAction,
 	relayingState *RelayingHeaderChainState,
 ) [][]string {
+	Logger.log.Info("[BTC Relaying] - Processing buildRelayingInst...")
 	inst := rbtcChain.buildHeaderRelayingInst(
 		relayingHeaderAction.Meta.IncogAddressStr,
 		relayingHeaderAction.Meta.Header,
@@ -279,15 +277,10 @@ func (bc *BlockChain) InitRelayingHeaderChainStateFromDB(
 		return nil, err
 	}
 
-	btcHeaderChain, err := bc.GetBTCHeaderChain()
-	if err != nil {
-		Logger.log.Errorf("Could not get BTC chain instance with error: %v", err)
-		return nil, err
-	}
-
+	btcChain := bc.config.BTCChain
 	return &RelayingHeaderChainState{
 		BNBHeaderChain: bnbHeaderChainState,
-		BTCHeaderChain: btcHeaderChain,
+		BTCHeaderChain: btcChain,
 	}, nil
 }
 
@@ -314,24 +307,6 @@ func getBNBHeaderChainState(
 		}
 	}
 	return &hc, nil
-}
-
-// GetBTCHeaderChain gets btc header chain as a singleton
-func (bc *BlockChain) GetBTCHeaderChain() (*btcrelaying.BlockChain, error) {
-	btcChainID := bc.config.ChainParams.BTCRelayingHeaderChainID
-	relayingChainParams := map[string]*chaincfg.Params{
-		TestnetBTCChainID: btcrelaying.GetTestNet3Params(),
-		MainnetBTCChainID: btcrelaying.GetMainNetParams(),
-	}
-
-	if btcHeaderChainInstance == nil {
-		instance, err := btcrelaying.GetChain("btc-blocks", relayingChainParams[btcChainID])
-		if err != nil {
-			return nil, err
-		}
-		btcHeaderChainInstance = instance
-	}
-	return btcHeaderChainInstance, nil
 }
 
 // storeBNBHeaderChainState stores bnb header chain state at beaconHeight

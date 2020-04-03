@@ -47,6 +47,7 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.PortalUserRequestPTokenMeta,
 			metadata.PortalExchangeRatesMeta,
 			metadata.RelayingBNBHeaderMeta,
+			metadata.RelayingBTCHeaderMeta,
 			metadata.PortalCustodianWithdrawRequestMeta,
 			metadata.PortalRedeemRequestMeta,
 			metadata.PortalRequestUnlockCollateralMeta,

@@ -622,9 +622,9 @@ func (blockchain *BlockChain) buildInstructionsForReqPTokens(
 	}
 
 	if meta.TokenID == common.PortalBTCIDStr {
-		btcChain, err := blockchain.GetBTCHeaderChain()
-		if err != nil {
-			Logger.log.Errorf("GetBTCHeaderChain err: %v\n", err)
+		btcChain := blockchain.config.BTCChain
+		if btcChain == nil {
+			Logger.log.Error("BTC relaying chain should not be null")
 			inst := buildReqPTokensInst(
 				meta.UniquePortingID,
 				meta.TokenID,
@@ -1643,9 +1643,9 @@ func (blockchain *BlockChain) buildInstructionsForReqUnlockCollateral(
 
 	// validate proof and memo in tx
 	if meta.TokenID == common.PortalBTCIDStr {
-		btcChain, err := blockchain.GetBTCHeaderChain()
-		if err != nil {
-			Logger.log.Errorf("GetBTCHeaderChain err: %v\n", err)
+		btcChain := blockchain.config.BTCChain
+		if btcChain == nil {
+			Logger.log.Error("BTC relaying chain should not be null")
 			inst := buildReqUnlockCollateralInst(
 				meta.UniqueRedeemID,
 				meta.TokenID,

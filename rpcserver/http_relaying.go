@@ -196,9 +196,9 @@ func (httpServer *HttpServer) handleGetRelayingBNBHeaderByBlockHeight(params int
 
 func (httpServer *HttpServer) handleGetBTCRelayingBestState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	bc := httpServer.config.BlockChain
-	btcChain, err := bc.GetBTCHeaderChain()
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetBTCRelayingBestState, err)
+	btcChain := bc.GetConfig().BTCChain
+	if btcChain == nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetBTCRelayingBestState, errors.New("BTC relaying chain should not be null"))
 	}
 	bestState := btcChain.BestSnapshot()
 	return bestState, nil

@@ -55,6 +55,7 @@ func (blockchain *BlockChain) processRelayingBTCHeaderInst(
 	instruction []string,
 	relayingState *RelayingHeaderChainState,
 ) error {
+	Logger.log.Info("[BTC Relaying] - Processing processRelayingBTCHeaderInst...")
 	btcHeaderChain := relayingState.BTCHeaderChain
 	if btcHeaderChain == nil {
 		return errors.New("[processRelayingBTCHeaderInst] BTC Header chain instance should not be nil")

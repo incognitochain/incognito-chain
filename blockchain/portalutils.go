@@ -491,7 +491,7 @@ func CalAmountNeededDepositLiquidate(custodian *statedb.CustodianState, exchange
 }
 
 func ValidationExchangeRates(exchangeRates *statedb.FinalExchangeRatesState) error {
-	if exchangeRates == nil || exchangeRates.Rates == nil {
+	if exchangeRates == nil || exchangeRates.Rates() == nil {
 		return errors.New("Exchange rates not found")
 	}
 
