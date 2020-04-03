@@ -112,28 +112,30 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	blockHeight := shardBlock.Header.Height
 	committeeChange := newCommitteeChange()
 
+	//check if view is committed
+	checkView := blockchain.ShardChain[int(shardID)].GetViewByHash(blockHash)
+	if checkView != nil {
+		return nil
+	}
+
 	//get view that block link to
 	preHash := shardBlock.Header.PreviousBlockHash
-	view := blockchain.ShardChain[int(shardID)].GetViewByHash(preHash)
-	if view == nil {
+	preView := blockchain.ShardChain[int(shardID)].GetViewByHash(preHash)
+	if preView == nil {
 		return errors.New(fmt.Sprintf("ShardBlock %v link to wrong view (%s)", blockHeight, preHash.String()))
 	}
-	curView := view.(*ShardBestState)
+	curView := preView.(*ShardBestState)
 
 	if blockHeight != curView.ShardHeight+1 {
 		return errors.New("Not expected height")
 	}
 
 	Logger.log.Criticalf("SHARD %+v | Begin insert new block height %+v with hash %+v", shardID, shardBlock.Header.Height, blockHash)
-	Logger.log.Debugf("SHARD %+v | Check block existence for insert height %+v with hash %+v", shardID, shardBlock.Header.Height, blockHash)
 
 	if shardBlock.Header.Height != curView.ShardHeight+1 {
 		return errors.New("Not expected height")
 	}
-	isExist, _ := rawdbv2.HasShardBlock(blockchain.GetDatabase(), blockHash)
-	if isExist {
-		return NewBlockChainError(DuplicateShardBlockError, fmt.Errorf("SHARD %+v, block height %+v wit hash %+v has been stored already", shardID, blockHeight, blockHash))
-	}
+
 	// fetch beacon blocks
 	previousBeaconHeight := curView.BeaconHeight
 	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain.config.DataBase, previousBeaconHeight+1, shardBlock.Header.BeaconHeight)

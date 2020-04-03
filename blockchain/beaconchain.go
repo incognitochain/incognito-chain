@@ -24,6 +24,13 @@ type BeaconChain struct {
 	insertLock sync.Mutex
 }
 
+func (chain *BeaconChain) GetAllViewHash() (res []common.Hash) {
+	for _, v := range chain.multiView.GetAllViewsWithBFS() {
+		res = append(res, *v.GetHash())
+	}
+	return
+}
+
 func (chain *BeaconChain) GetBestView() multiview.View {
 	return chain.multiView.GetBestView()
 }

@@ -85,26 +85,26 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	defer blockchain.BeaconChain.insertLock.Unlock()
 
 	committeeChange := newCommitteeChange()
+
+	//check view if exited
+	checkView := blockchain.BeaconChain.GetViewByHash(*beaconBlock.Hash())
+	if checkView != nil {
+		return nil
+	}
+
 	//get view that block link to
 	preHash := beaconBlock.Header.PreviousBlockHash
-	view := blockchain.BeaconChain.GetViewByHash(preHash)
-	if view == nil {
+	preView := blockchain.BeaconChain.GetViewByHash(preHash)
+	if preView == nil {
 		return errors.New(fmt.Sprintf("BeaconBlock %v link to wrong view (%s)", beaconBlock.GetHeight(), preHash.String()))
 	}
-	curView := view.(*BeaconBestState)
+	curView := preView.(*BeaconBestState)
 
 	if beaconBlock.Header.Height != curView.BeaconHeight+1 {
 		return errors.New("Not expected height")
 	}
 	blockHash := beaconBlock.Hash()
 	Logger.log.Infof("BEACON | Begin insert new Beacon Block height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-
-	//Must comment: store beacon but view is not committed yet. Then node crash. We cannot insert beacon anymore
-	//Logger.log.Infof("BEACON | Check Beacon Block existence before insert block height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-	//isExist, _ := rawdbv2.HasBeaconBlock(blockchain.GetDatabase(), beaconBlock.Header.Hash())
-	//if isExist {
-	//	return NewBlockChainError(DuplicateShardBlockError, errors.New("This beaconBlock has been stored already"))
-	//}
 
 	Logger.log.Debugf("BEACON | Begin Insert new Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	if !isValidated {

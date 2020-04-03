@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -184,38 +185,46 @@ func processBeaconForConfirmmingCrossShard(database incdb.Database, beaconBlock 
 	return nil
 }
 
-//periodically check pool and insert into pool (in case some fork block)
-//TODO: loop all pool and insert all block that connect to our MultiView
+//periodically check pool and insert into pool (in case some fork block or block come early)
+var insertBeaconTimeCache, _ = lru.New(1000)
+
 func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
+
+	insertCnt := 0
 	defer func() {
-		if s.isCatchUp {
-			time.AfterFunc(time.Millisecond*100, s.insertBeaconBlockFromPool)
+		if insertCnt > 0 {
+			s.insertBeaconBlockFromPool()
 		} else {
-			time.AfterFunc(time.Second*1, s.insertBeaconBlockFromPool)
+			time.AfterFunc(time.Second*2, s.insertBeaconBlockFromPool)
 		}
 	}()
 
-	if !s.isCatchUp {
-		return
-	}
-	var blk common.BlockPoolInterface
-	blk = s.beaconPool.GetNextBlock(s.chain.GetBestViewHash())
+	//loop all current views, if there is any block connect to the view
+	for _, viewHash := range s.chain.GetAllViewHash() {
+		var blk common.BlockPoolInterface
+		blk, ok := s.beaconPool.blkPoolByHash[viewHash.String()]
+		if !ok {
+			continue
+		}
 
-	if isNil(blk) {
-		return
-	}
+		//if already insert and error, last time insert is < 10s then we skip
+		insertTime, ok := insertBeaconTimeCache.Get(viewHash.String())
+		if ok && time.Since(insertTime.(time.Time)).Seconds() < 10 {
+			continue
+		}
 
-	fmt.Println("Syncker: Insert beacon from pool", blk.(common.BlockInterface).GetHeight())
-
-	if err := s.chain.ValidateBlockSignatures(blk.(common.BlockInterface), s.chain.GetCommittee()); err != nil {
-		return
-	}
-
-	if err := s.chain.InsertBlk(blk.(common.BlockInterface)); err != nil {
+		fmt.Println("Syncker: Insert beacon from pool", blk.(common.BlockInterface).GetHeight())
+		if err := s.chain.ValidateBlockSignatures(blk.(common.BlockInterface), s.chain.GetCommittee()); err != nil {
+			return
+		}
+		insertBeaconTimeCache.Add(viewHash.String(), time.Now())
+		insertCnt++
+		if err := s.chain.InsertBlk(blk.(common.BlockInterface)); err != nil {
+			return
+		}
 		s.beaconPool.RemoveBlock(blk.Hash().String())
-		return
 	}
-	s.beaconPool.RemoveBlock(blk.Hash().String())
+
 }
 
 //sync beacon

@@ -55,6 +55,13 @@ func (s *ShardChain) GetCrossShardState() map[byte]uint64 {
 	return res
 }
 
+func (s *ShardChain) GetAllViewHash() (res []common.Hash) {
+	for _, v := range s.multiView.GetAllViewsWithBFS() {
+		res = append(res, *v.GetHash())
+	}
+	return
+}
+
 func (s *ShardChain) GetBestViewHeight() uint64 {
 	return s.CurrentHeight()
 }

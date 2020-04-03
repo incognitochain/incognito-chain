@@ -46,6 +46,7 @@ type ShardChainInterface interface {
 }
 
 type Chain interface {
+	GetAllViewHash() []common.Hash
 	GetBestViewHeight() uint64
 	GetFinalViewHeight() uint64
 	SetReady(bool)

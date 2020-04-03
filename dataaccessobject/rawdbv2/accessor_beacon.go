@@ -44,13 +44,13 @@ func GetFinalizedBeaconBlock(db incdb.Database) (common.Hash, error) {
 // record2: prefix-hash => block value
 func StoreBeaconBlock(db incdb.Database, index uint64, hash common.Hash, v interface{}) error {
 	keyHash := GetBeaconHashToBlockKey(hash)
-	//if ok, _ := db.Has(keyHash); ok {
-	//	return NewRawdbError(StoreBeaconBlockError, fmt.Errorf("key %+v already exists", keyHash))
-	//}
+	if ok, _ := db.Has(keyHash); ok {
+		return NewRawdbError(StoreBeaconBlockError, fmt.Errorf("key %+v already exists", keyHash))
+	}
 	keyIndex := GetBeaconIndexToBlockHashKey(index, hash)
-	//if ok, _ := db.Has(keyIndex); ok {
-	//	return NewRawdbError(StoreBeaconBlockError, fmt.Errorf("key %+v already exists", keyIndex))
-	//}
+	if ok, _ := db.Has(keyIndex); ok {
+		return NewRawdbError(StoreBeaconBlockError, fmt.Errorf("key %+v already exists", keyIndex))
+	}
 	val, err := json.Marshal(v)
 	if err != nil {
 		return NewRawdbError(StoreBeaconBlockError, err)

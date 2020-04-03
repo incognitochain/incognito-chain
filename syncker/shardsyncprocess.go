@@ -3,6 +3,7 @@ package syncker
 import (
 	"context"
 	"fmt"
+	lru "github.com/hashicorp/golang-lru"
 	"sync"
 	"time"
 
@@ -114,40 +115,45 @@ func (s *ShardSyncProcess) getShardPeerStates() map[string]ShardPeerState {
 }
 
 //periodically check pool and insert shard block to chain
+var insertShardTimeCache, _ = lru.New(10000)
+
 func (s *ShardSyncProcess) insertShardBlockFromPool() {
+
+	insertCnt := 0
 	defer func() {
-		if s.isCatchUp {
-			time.AfterFunc(time.Millisecond*100, s.insertShardBlockFromPool)
+		if insertCnt > 0 {
+			s.insertShardBlockFromPool()
 		} else {
-			time.AfterFunc(time.Second*1, s.insertShardBlockFromPool)
+			time.AfterFunc(time.Second*2, s.insertShardBlockFromPool)
 		}
 	}()
 
-	if !s.isCatchUp {
-		return
-	}
-	var blk common.BlockPoolInterface
-	blk = s.shardPool.GetNextBlock(s.Chain.GetBestViewHash())
+	//loop all current views, if there is any block connect to the view
+	for _, viewHash := range s.Chain.GetAllViewHash() {
+		var blk common.BlockPoolInterface
+		blk, ok := s.shardPool.blkPoolByHash[viewHash.String()]
+		if !ok {
+			continue
+		}
 
-	if isNil(blk) {
-		return
-	}
+		//if already insert and error, last time insert is < 10s then we skip
+		insertTime, ok := insertShardTimeCache.Get(viewHash.String())
+		if ok && time.Since(insertTime.(time.Time)).Seconds() < 10 {
+			continue
+		}
 
-	fmt.Println("Syncker: Insert shard from pool", blk.(common.BlockInterface).GetHeight())
-
-	if err := s.Chain.ValidateBlockSignatures(blk.(common.BlockInterface), s.Chain.GetCommittee()); err != nil {
+		fmt.Println("Syncker: Insert shard from pool", blk.(common.BlockInterface).GetHeight())
+		if err := s.Chain.ValidateBlockSignatures(blk.(common.BlockInterface), s.Chain.GetCommittee()); err != nil {
+			return
+		}
+		insertShardTimeCache.Add(viewHash.String(), time.Now())
+		insertCnt++
+		if err := s.Chain.InsertBlk(blk.(common.BlockInterface)); err != nil {
+			return
+		}
 		s.shardPool.RemoveBlock(blk.Hash().String())
-		return
 	}
-
-	if err := s.Chain.InsertBlk(blk.(common.BlockInterface)); err != nil {
-		//TODO: only some error will be remove
-		s.shardPool.RemoveBlock(blk.Hash().String())
-		return
-	}
-	s.shardPool.RemoveBlock(blk.Hash().String())
 }
-
 func (s *ShardSyncProcess) syncShardProcess() {
 	for {
 		requestCnt := 0
