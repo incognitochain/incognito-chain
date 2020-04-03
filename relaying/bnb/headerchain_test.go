@@ -1,9 +1,7 @@
 package bnb
 
 import (
-	"bytes"
-	"encoding/base64"
-	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/stretchr/testify/assert"
@@ -27,36 +25,54 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
+func parseHeaderFromJson(object string) (*types.Header, *BNBRelayingError) {
+	header := types.Header{}
+	err := json.Unmarshal([]byte(object), &header)
+	if err != nil {
+		fmt.Printf("err unmarshal: %+v\n", err)
+	}
+	return &header, nil
+}
+
+func parseCommitFromJson(object string) (*types.Commit, *BNBRelayingError) {
+	commit := types.Commit{}
+	err := json.Unmarshal([]byte(object), &commit)
+	if err != nil {
+		fmt.Printf("err unmarshal: %+v\n", err)
+	}
+	return &commit, nil
+}
+
 func TestHeaderChain_ReceiveNewHeader(t *testing.T) {
-	header1Json := `
-		{
-			"version": {
-			  "block": 10,
-			  "app": 0
-			},
-			"chain_id": "Binance-Chain-Tigris",
-			"height": 1,
-			"time": "2019-04-18T05:59:26.228734998Z",
-			"num_txs": 0,
-			"total_txs": 0,
-			"last_block_id": {
-			  "hash": "",
-			  "parts": {
-				"total": 0,
-				"hash": ""
-			  }
-			},
-			"last_commit_hash": "",
-			"data_hash": "",
-			"validators_hash": "43C53A50D8653EF8CF1E5716DA68120FB51B636DC6D111EC3277B098ECD42D49",
-			"next_validators_hash": "43C53A50D8653EF8CF1E5716DA68120FB51B636DC6D111EC3277B098ECD42D49",
-			"consensus_hash": "294D8FBD0B94B767A7EBA9840F299A3586DA7FE6B5DEAD3B7EECBA193C400F93",
-			"app_hash": "",
-			"last_results_hash": "",
-			"evidence_hash": "",
-			"proposer_address": "14CFCE69B645F3F88BAF08EA5B77FA521E4480F9"
-		}
-	`
+	//header1Json := `
+	//	{
+	//		"version": {
+	//		  "block": 10,
+	//		  "app": 0
+	//		},
+	//		"chain_id": "Binance-Chain-Tigris",
+	//		"height": 1,
+	//		"time": "2019-04-18T05:59:26.228734998Z",
+	//		"num_txs": 0,
+	//		"total_txs": 0,
+	//		"last_block_id": {
+	//		  "hash": "",
+	//		  "parts": {
+	//			"total": 0,
+	//			"hash": ""
+	//		  }
+	//		},
+	//		"last_commit_hash": "",
+	//		"data_hash": "",
+	//		"validators_hash": "43C53A50D8653EF8CF1E5716DA68120FB51B636DC6D111EC3277B098ECD42D49",
+	//		"next_validators_hash": "43C53A50D8653EF8CF1E5716DA68120FB51B636DC6D111EC3277B098ECD42D49",
+	//		"consensus_hash": "294D8FBD0B94B767A7EBA9840F299A3586DA7FE6B5DEAD3B7EECBA193C400F93",
+	//		"app_hash": "",
+	//		"last_results_hash": "",
+	//		"evidence_hash": "",
+	//		"proposer_address": "14CFCE69B645F3F88BAF08EA5B77FA521E4480F9"
+	//	}
+	//`
 
 	header2Json := `
 		{
@@ -406,57 +422,46 @@ func TestHeaderChain_ReceiveNewHeader(t *testing.T) {
 		  }
 		`
 
-	header1, err := ParseHeaderFromJson(header1Json)
+	//header1, err := parseHeaderFromJson(header1Json)
+	//assert.Nil(t, err)
+	header2, err := parseHeaderFromJson(header2Json)
 	assert.Nil(t, err)
-	header2, err := ParseHeaderFromJson(header2Json)
-	assert.Nil(t, err)
-	lastCommit1, err := ParseCommitFromJson(lastCommitJson1)
+	lastCommit1, err := parseCommitFromJson(lastCommitJson1)
 	assert.Nil(t, err)
 
-	header3, err := ParseHeaderFromJson(headerJson3)
+	header3, err := parseHeaderFromJson(headerJson3)
 	assert.Nil(t, err)
-	lastCommit2, err := ParseCommitFromJson(lastCommitJson2)
+	lastCommit2, err := parseCommitFromJson(lastCommitJson2)
 	assert.Nil(t, err)
 
 	testcases := []struct {
 		header                          *types.Header
 		lastCommit                      *types.Commit
-		expectedBlockHeight             int
+		expectedBlockHeight             int64
 		expectedUnconfirmedHeaderNumber int
 	}{
-		{header1, nil, 0, 1},
+		//{header1, nil, 0, 1},
 		{header2, lastCommit1, 1, 1},
 		{header3, lastCommit2, 2, 1},
 	}
 
 	// header chain
-	headerChain := new(HeaderChain)
-	headerChain.HeaderChain = []*types.Header{}
-	headerChain.UnconfirmedHeaders = []*types.Header{}
+	headerChain := new(LatestHeaderChain)
+	headerChain.LatestBlock = nil
+	headerChain.UnconfirmedBlocks = []*types.Block{}
 
 	var isResult bool
 
 	for _, tc := range testcases {
 		fmt.Printf("Receive header with height %v\n", tc.header.Height)
-		headerChain, isResult, err = headerChain.ReceiveNewHeader(tc.header, tc.lastCommit, MainnetBNBChainID)
+		newBlock := &types.Block{
+			Header: *tc.header,
+			LastCommit: tc.lastCommit,
+		}
+		headerChain, isResult, err = headerChain.AppendBlock(newBlock, MainnetBNBChainID)
 		assert.Nil(t, err)
 		assert.Equal(t, true, isResult)
-		assert.Equal(t, tc.expectedUnconfirmedHeaderNumber, len(headerChain.UnconfirmedHeaders))
-		assert.Equal(t, tc.expectedBlockHeight, len(headerChain.HeaderChain))
+		assert.Equal(t, tc.expectedUnconfirmedHeaderNumber, len(headerChain.UnconfirmedBlocks))
+		assert.Equal(t, tc.expectedBlockHeight, headerChain.LatestBlock.Height)
 	}
-}
-
-// block height 66038977
-func TestDataHash(t *testing.T) {
-	dataHash, _ := hex.DecodeString("E9BDA8FD942F6908A7398B7D5FA1C46553240BC919B0836083878F2C7BA91709")
-
-	data, _ := base64.StdEncoding.DecodeString("5AHwYl3uCmjObcBDChSx/h0kYscxmvL5L8/H9OBFRG7rJxIuQjFGRTFEMjQ2MkM3MzE5QUYyRjkyRkNGQzdGNEUwNDU0NDZFRUIyNy0zNzU4NRoLUFlOLUMzN19CTkIgAigCMKewATiAqJXprU1AARJyCibrWumHIQOg/PhFdQ/yHskF8lUWm2lrY1DCXPaiJgiPQ7T6BMlJSBJAaMkWNjobugia6AVueclUOBJvcWGGfNS0TthGsd9onZhhBcPN42gsUbtUniqB6Rg7DhHcTTktwmu2tAm8tiHgUxigqRIg0KUCIAE=")
-
-	fmt.Printf("Data tx: %v\n", data)
-	txs := types.Txs{data}
-	//txs[0] = data
-	root := txs.Hash()
-	isEqual := bytes.Equal(dataHash, root)
-	fmt.Println(isEqual)
-
 }

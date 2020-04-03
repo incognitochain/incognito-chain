@@ -151,15 +151,15 @@ func (httpServer *HttpServer) handleGetRelayingBNBHeaderState(params interface{}
 		return nil, rpcservice.NewRPCError(rpcservice.GetRelayingBNBHeaderError, err)
 	}
 	type RelayingBNBHeader struct {
-		LatestHeader       *types.Header   `json:"LatestHeader"`
-		UnconfirmedHeaders []*types.Header `json:"UnconfirmedHeaders"`
-		BeaconTimeStamp    int64           `json:"BeaconTimeStamp"`
+		LatestBlock       *types.Block   `json:"LatestBlock"`
+		UnconfirmedBlocks []*types.Block `json:"UnconfirmedBlocks"`
+		BeaconTimeStamp   int64          `json:"BeaconTimeStamp"`
 	}
 	beaconBlock := beaconBlocks[0]
 	result := RelayingBNBHeader{
-		BeaconTimeStamp:    beaconBlock.Header.Timestamp,
-		LatestHeader:       bnbRelayingHeader.LatestHeader,
-		UnconfirmedHeaders: bnbRelayingHeader.UnconfirmedHeaders,
+		BeaconTimeStamp:   beaconBlock.Header.Timestamp,
+		LatestBlock:       bnbRelayingHeader.LatestBlock,
+		UnconfirmedBlocks: bnbRelayingHeader.UnconfirmedBlocks,
 	}
 	return result, nil
 }
@@ -183,7 +183,7 @@ func (httpServer *HttpServer) handleGetRelayingBNBHeaderByBlockHeight(params int
 	}
 
 	if len(bnbHeaderBytes) > 0 {
-		var bnbHeader types.Header
+		var bnbHeader types.Block
 		err = json.Unmarshal(bnbHeaderBytes, &bnbHeader)
 		if err != nil {
 			return nil, rpcservice.NewRPCError(rpcservice.GetRelayingBNBHeaderByBlockHeightError, err)
@@ -214,7 +214,7 @@ func (httpServer *HttpServer) handleGetLatestBNBHeaderBlockHeight(params interfa
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetLatestBNBHeaderBlockHeightError, err)
 	}
-	bnbLatestHeader := relayingState.BNBHeaderChain.LatestHeader
+	bnbLatestHeader := relayingState.BNBHeaderChain.LatestBlock
 	if bnbLatestHeader != nil {
 		latestBNBHeaderBlockHeight = bnbLatestHeader.Height
 	}
