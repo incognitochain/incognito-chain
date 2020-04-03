@@ -3,7 +3,6 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
-	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -12,10 +11,9 @@ import (
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/pkg/errors"
 	lvdbErrors "github.com/syndtr/goleveldb/leveldb/errors"
+	"github.com/tendermint/tendermint/types"
 	"strconv"
 )
-
-var btcHeaderChainInstance *btcrelaying.BlockChain = nil
 
 type relayingChain struct {
 	actions [][]string
@@ -26,7 +24,7 @@ type relayingBNBChain struct {
 type relayingBTCChain struct {
 	*relayingChain
 }
-type relayingProcessor interface{
+type relayingProcessor interface {
 	getActions() [][]string
 	putAction(action []string)
 	buildRelayingInst(
@@ -114,8 +112,8 @@ func (rbnbChain *relayingBNBChain) buildRelayingInst(
 		return [][]string{inst}
 	}
 
-	var newHeader rawdbv2.BNBHeader
-	err = json.Unmarshal(headerBytes, &newHeader)
+	var newBlock types.Block
+	err = json.Unmarshal(headerBytes, &newBlock)
 	if err != nil {
 		Logger.log.Errorf("Error - [buildInstructionsForBNBHeaderRelaying]: Cannot unmarshal header.%v\n", err)
 		inst := rbnbChain.buildHeaderRelayingInst(
@@ -130,7 +128,7 @@ func (rbnbChain *relayingBNBChain) buildRelayingInst(
 		return [][]string{inst}
 	}
 
-	if newHeader.Header.Height != int64(relayingHeaderAction.Meta.BlockHeight) {
+	if newBlock.Header.Height != int64(relayingHeaderAction.Meta.BlockHeight) {
 		Logger.log.Errorf("Error - [buildInstructionsForBNBHeaderRelaying]: Block height in metadata is unmatched with block height in new header.")
 		inst := rbnbChain.buildHeaderRelayingInst(
 			relayingHeaderAction.Meta.IncogAddressStr,
@@ -146,11 +144,11 @@ func (rbnbChain *relayingBNBChain) buildRelayingInst(
 
 	// if valid, create instruction with status accepted
 	// if not, create instruction with status rejected
-	latestBNBHeader := relayingHeaderChain.BNBHeaderChain.LatestHeader
+	latestBNBBlockHeader := relayingHeaderChain.BNBHeaderChain.LatestBlock
 	var isValid bool
 	var err2 error
-	relayingHeaderChain.BNBHeaderChain, isValid, err2 = relayingHeaderChain.BNBHeaderChain.ReceiveNewHeader(
-		newHeader.Header, newHeader.LastCommit, blockchain.config.ChainParams.BNBRelayingHeaderChainID)
+	relayingHeaderChain.BNBHeaderChain, isValid, err2 = relayingHeaderChain.BNBHeaderChain.AppendBlock(
+		&newBlock, blockchain.config.ChainParams.BNBRelayingHeaderChainID)
 	if err2.(*bnbrelaying.BNBRelayingError) != nil || !isValid {
 		Logger.log.Errorf("Error - [buildInstructionsForBNBHeaderRelaying]: Verify new header failed. %v\n", err2)
 		inst := rbnbChain.buildHeaderRelayingInst(
@@ -165,7 +163,7 @@ func (rbnbChain *relayingBNBChain) buildRelayingInst(
 		return [][]string{inst}
 	}
 
-	// check newHeader is a header contain last commit for one of the header in unconfirmed header list or not\
+	// check newBlock is a header contain last commit for one of the header in unconfirmed header list or not\
 	// check newLatestBNBHeader is genesis header or not
 	genesisHeaderHeight := int64(0)
 	genesisHeaderStr := ""
@@ -176,8 +174,8 @@ func (rbnbChain *relayingBNBChain) buildRelayingInst(
 		genesisHeaderHeight = bnbrelaying.MainnetGenesisBlockHeight
 		genesisHeaderStr = bnbrelaying.MainnetGenesisHeaderStr
 	}
-	newLatestBNBHeader := relayingHeaderChain.BNBHeaderChain.LatestHeader
-	if newLatestBNBHeader != nil && newLatestBNBHeader.Height == genesisHeaderHeight && latestBNBHeader == nil {
+	newLatestBNBHeader := relayingHeaderChain.BNBHeaderChain.LatestBlock
+	if newLatestBNBHeader != nil && newLatestBNBHeader.Height == genesisHeaderHeight && latestBNBBlockHeader == nil {
 		inst1 := rbnbChain.buildHeaderRelayingInst(
 			relayingHeaderAction.Meta.IncogAddressStr,
 			genesisHeaderStr,
@@ -200,8 +198,8 @@ func (rbnbChain *relayingBNBChain) buildRelayingInst(
 		return [][]string{inst1, inst2}
 	}
 
-	if newLatestBNBHeader != nil && latestBNBHeader != nil {
-		if newLatestBNBHeader.Height == latestBNBHeader.Height + 1 {
+	if newLatestBNBHeader != nil && latestBNBBlockHeader != nil {
+		if newLatestBNBHeader.Height == latestBNBBlockHeader.Height + 1 {
 			inst := rbnbChain.buildHeaderRelayingInst(
 				relayingHeaderAction.Meta.IncogAddressStr,
 				relayingHeaderAction.Meta.Header,
@@ -232,6 +230,7 @@ func (rbtcChain *relayingBTCChain) buildRelayingInst(
 	relayingHeaderAction metadata.RelayingHeaderAction,
 	relayingState *RelayingHeaderChainState,
 ) [][]string {
+	Logger.log.Info("[BTC Relaying] - Processing buildRelayingInst...")
 	inst := rbtcChain.buildHeaderRelayingInst(
 		relayingHeaderAction.Meta.IncogAddressStr,
 		relayingHeaderAction.Meta.Header,
@@ -269,7 +268,7 @@ type RelayingHeaderChainState struct{
 	BTCHeaderChain *btcrelaying.BlockChain
 }
 
-func InitRelayingHeaderChainStateFromDB(
+func (bc *BlockChain) InitRelayingHeaderChainStateFromDB(
 	db incdb.Database,
 	beaconHeight uint64,
 ) (*RelayingHeaderChainState, error) {
@@ -278,15 +277,10 @@ func InitRelayingHeaderChainStateFromDB(
 		return nil, err
 	}
 
-	btcHeaderChain, err := getBTCHeaderChain()
-	if err != nil {
-		Logger.log.Errorf("Could not get BTC chain instance with error: %v", err)
-		return nil, err
-	}
-
+	btcChain := bc.config.BTCChain
 	return &RelayingHeaderChainState{
 		BNBHeaderChain: bnbHeaderChainState,
-		BTCHeaderChain: btcHeaderChain,
+		BTCHeaderChain: btcChain,
 	}, nil
 }
 
@@ -313,20 +307,6 @@ func getBNBHeaderChainState(
 		}
 	}
 	return &hc, nil
-}
-
-// getBTCHeaderChain gets btc header chain as a singleton
-func getBTCHeaderChain() (*btcrelaying.BlockChain, error) {
-	// TODO: update param to correct env (mainnet vs testnet)
-	if btcHeaderChainInstance == nil {
-		// btcrelaying.Get
-		instance, err := btcrelaying.GetChain("haveblock", &chaincfg.MainNetParams)
-		if err != nil {
-			return nil, err
-		}
-		btcHeaderChainInstance = instance
-	}
-	return btcHeaderChainInstance, nil
 }
 
 // storeBNBHeaderChainState stores bnb header chain state at beaconHeight

@@ -83,6 +83,7 @@ var HttpHandler = map[string]httpHandler{
 	getAndSendTxsFromFileV2: (*HttpServer).handleGetAndSendTxsFromFileV2,
 	unlockMempool:           (*HttpServer).handleUnlockMempool,
 	getAutoStakingByHeight:  (*HttpServer).handleGetAutoStakingByHeight,
+	getRewardAmountByEpoch:  (*HttpServer).handleGetRewardAmountByEpoch,
 	//=================================
 
 	// Beststate
@@ -204,8 +205,11 @@ var HttpHandler = map[string]httpHandler{
 
 	// relaying
 	createAndSendTxWithRelayingBNBHeader: (*HttpServer).handleCreateAndSendTxWithRelayingBNBHeader,
+	createAndSendTxWithRelayingBTCHeader: (*HttpServer).handleCreateAndSendTxWithRelayingBTCHeader,
 	getRelayingBNBHeaderState:            (*HttpServer).handleGetRelayingBNBHeaderState,
 	getRelayingBNBHeaderByBlockHeight:    (*HttpServer).handleGetRelayingBNBHeaderByBlockHeight,
+	getBTCRelayingBestState:              (*HttpServer).handleGetBTCRelayingBestState,
+	getLatestBNBHeaderBlockHeight:        (*HttpServer).handleGetLatestBNBHeaderBlockHeight,
 
 	// incognnito mode for sc
 	getBurnProofForDepositToSC:                (*HttpServer).handleGetBurnProofForDepositToSC,

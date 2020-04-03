@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/btcsuite/btcutil"
+	"github.com/btcsuite/btcd/wire"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -19,7 +20,7 @@ func (blockchain *BlockChain) processRelayingInstructions(block *BeaconBlock) er
 	beaconHeight := block.Header.Height - 1
 	db := blockchain.GetDatabase()
 
-	relayingState, err := InitRelayingHeaderChainStateFromDB(db, beaconHeight)
+	relayingState, err := blockchain.InitRelayingHeaderChainStateFromDB(db, beaconHeight)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil
@@ -54,6 +55,7 @@ func (blockchain *BlockChain) processRelayingBTCHeaderInst(
 	instruction []string,
 	relayingState *RelayingHeaderChainState,
 ) error {
+	Logger.log.Info("[BTC Relaying] - Processing processRelayingBTCHeaderInst...")
 	btcHeaderChain := relayingState.BTCHeaderChain
 	if btcHeaderChain == nil {
 		return errors.New("[processRelayingBTCHeaderInst] BTC Header chain instance should not be nil")
@@ -73,18 +75,18 @@ func (blockchain *BlockChain) processRelayingBTCHeaderInst(
 	if err != nil {
 		return err
 	}
-	var block *btcutil.Block
-	err = json.Unmarshal(headerBytes, &block)
+	var msgBlk *wire.MsgBlock
+	err = json.Unmarshal(headerBytes, &msgBlk)
 	if err != nil {
 		return err
 	}
-
+	block := btcutil.NewBlock(msgBlk)
 	isMainChain, isOrphan, err := btcHeaderChain.ProcessBlockV2(block, btcrelaying.BFNone)
 	if err != nil {
 		Logger.log.Errorf("ProcessBlock fail with error: %v", err)
 		return err
 	}
-	Logger.log.Infof("ProcessBlock success with result: isMainChain: %v, isOrphan: %v", isMainChain, isOrphan)
+	Logger.log.Infof("ProcessBlock (%s) success with result: isMainChain: %v, isOrphan: %v", block.Hash(), isMainChain, isOrphan)
 	return nil
 }
 
@@ -108,7 +110,7 @@ func (blockchain *BlockChain) processRelayingBNBHeaderInst(
 		return err
 	}
 
-	var header rawdbv2.BNBHeader
+	var header types.Block
 	headerBytes, err := base64.StdEncoding.DecodeString(actionData.Header)
 	if err != nil {
 		return err
@@ -121,22 +123,20 @@ func (blockchain *BlockChain) processRelayingBNBHeaderInst(
 	reqStatus := instructions[2]
 	if reqStatus == common.RelayingHeaderUnconfirmedAcceptedChainStatus {
 		//update relaying state
-		relayingState.BNBHeaderChain.UnconfirmedHeaders = append(relayingState.BNBHeaderChain.UnconfirmedHeaders, header.Header)
+		relayingState.BNBHeaderChain.UnconfirmedBlocks = append(relayingState.BNBHeaderChain.UnconfirmedBlocks, &header)
 
 	} else if reqStatus == common.RelayingHeaderConfirmedAcceptedChainStatus {
 		// check newLatestBNBHeader is genesis header or not
-		genesisHeaderHeight := int64(0)
-		if blockchain.config.ChainParams.BNBRelayingHeaderChainID == TestnetBNBChainID {
-			genesisHeaderHeight = bnb.TestnetGenesisBlockHeight
-		} else if blockchain.config.ChainParams.BNBRelayingHeaderChainID == MainnetBNBChainID {
-			genesisHeaderHeight = bnb.MainnetGenesisBlockHeight
-		}
+		genesisHeaderHeight, _ := bnb.GetGenesisBNBHeaderBlockHeight(blockchain.config.ChainParams.BNBRelayingHeaderChainID)
 
 		if header.Header.Height == genesisHeaderHeight {
-			relayingState.BNBHeaderChain.LatestHeader = header.Header
+			relayingState.BNBHeaderChain.LatestBlock = &header
 
 			// store new confirmed header into db
-			newConfirmedheader := relayingState.BNBHeaderChain.LatestHeader
+			newConfirmedheader := relayingState.BNBHeaderChain.LatestBlock
+			// don't need to store Data and Evidence into db
+			newConfirmedheader.Data = types.Data{}
+			newConfirmedheader.Evidence = types.EvidenceData{}
 			newConfirmedheaderBytes, _ := json.Marshal(newConfirmedheader)
 
 			err := rawdbv2.StoreRelayingBNBHeaderChain(db, uint64(newConfirmedheader.Height), newConfirmedheaderBytes)
@@ -149,18 +149,20 @@ func (blockchain *BlockChain) processRelayingBNBHeaderInst(
 
 		// get new latest header
 		blockIDNewLatestHeader := header.Header.LastBlockID
-		for _, header := range relayingState.BNBHeaderChain.UnconfirmedHeaders {
+		for _, header := range relayingState.BNBHeaderChain.UnconfirmedBlocks {
 			if bytes.Equal(header.Hash().Bytes(), blockIDNewLatestHeader.Hash) {
-				relayingState.BNBHeaderChain.LatestHeader = header
+				relayingState.BNBHeaderChain.LatestBlock = header
 				break
 			}
 		}
 
 		//update relaying state
-		relayingState.BNBHeaderChain.UnconfirmedHeaders = []*types.Header{header.Header}
+		relayingState.BNBHeaderChain.UnconfirmedBlocks = []*types.Block{&header}
 
 		// store new confirmed header into db
-		newConfirmedheader := relayingState.BNBHeaderChain.LatestHeader
+		newConfirmedheader := relayingState.BNBHeaderChain.LatestBlock
+		newConfirmedheader.Data = types.Data{}
+		newConfirmedheader.Evidence = types.EvidenceData{}
 		newConfirmedheaderBytes, _ := json.Marshal(newConfirmedheader)
 
 		err := rawdbv2.StoreRelayingBNBHeaderChain(db, uint64(newConfirmedheader.Height), newConfirmedheaderBytes)

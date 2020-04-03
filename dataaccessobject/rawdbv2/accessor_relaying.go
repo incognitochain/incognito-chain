@@ -13,11 +13,6 @@ var (
 	RelayingBNBHeaderChainPrefix = []byte("relayingbnbheaderchain-")
 )
 
-type BNBHeader struct {
-	Header *types.Header   		`json:"Header"`
-	LastCommit *types.Commit	`json:"LastCommit"`
-}
-
 func NewBNBHeaderRelayingStateKey(beaconHeight uint64) string {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d", beaconHeight))
 	key := append(RelayingBNBHeaderStatePrefix, beaconHeightBytes...)

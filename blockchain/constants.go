@@ -72,8 +72,9 @@ const (
 	MainnetIncognitoDAOAddress              = "12S32fSyF4h8VxFHt4HfHvU1m9KHvBQsab5zp4TpQctmMdWuveXFH9KYWNemo7DRKvaBEvMgqm4XAuq1a1R4cNk2kfUfvXR3DdxCho3" // community fund
 	MainnetCentralizedWebsitePaymentAddress = "12Rvjw6J3FWY3YZ1eDZ5uTy6DTPjFeLhCK7SXgppjivg9ShX2RRq3s8pdoapnH8AMoqvUSqZm1Gqzw7rrKsNzRJwSK2kWbWf1ogy885"
 
-	// bnb relaying header chain
+	// relaying header chain
 	MainnetBNBChainID = "Binance-Chain-Tigris"
+	MainnetBTCChainID = "Bitcoin-Mainnet"
 	// ------------- end Mainnet --------------------------------------
 )
 
@@ -101,7 +102,7 @@ const (
 	TestNetMinShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize    = 4
 	TestNetMinBeaconCommitteeSize = 4
-	TestNetActiveShards           = 8           //
+	TestNetActiveShards           = 8             //
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	TestNetMinBeaconBlkInterval = 10 * time.Second //second
@@ -112,13 +113,15 @@ const (
 	//board and proposal parameters
 	TestnetBasicReward = 400000000 //40 mili PRV
 	//TestnetETHContractAddressStr            = "0x6e8CDB333ba1573Fffe195A545F3031Cff9Da008"
-	TestnetETHContractAddressStr            = "0x87470Ad15A76DEdc5CFC6668F9aC023a89EA10e8"
+	//TestnetETHContractAddressStr            = "0x87470Ad15A76DEdc5CFC6668F9aC023a89EA10e8"
+	TestnetETHContractAddressStr            = "0xe77aBF10cC0c30Ab3Ac2d877add39553cA7a8654"
 	TestnetIncognitoDAOAddress              = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" // community fund
 	TestnetCentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 
-	// bnb relaying header chain
-	//TestnetBNBChainID = "Binance-Chain-Nile"
-	TestnetBNBChainID = "Binance-Dev"
+	// relaying header chain
+	TestnetBNBChainID = "Binance-Chain-Nile"
+	//TestnetBNBChainID = "Binance-Dev"
+	TestnetBTCChainID = "Bitcoin-Testnet"
 )
 
 // VARIABLE for testnet

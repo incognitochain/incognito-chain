@@ -47,6 +47,7 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.PortalUserRequestPTokenMeta,
 			metadata.PortalExchangeRatesMeta,
 			metadata.RelayingBNBHeaderMeta,
+			metadata.RelayingBTCHeaderMeta,
 			metadata.PortalCustodianWithdrawRequestMeta,
 			metadata.PortalRedeemRequestMeta,
 			metadata.PortalRequestUnlockCollateralMeta,
@@ -98,7 +99,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(stateDB *statedb.StateDB
 
 	pm := NewPortalManager()
 	db := blockchain.GetDatabase()
-	relayingHeaderState, err := InitRelayingHeaderChainStateFromDB(db, beaconHeight-1)
+	relayingHeaderState, err := blockchain.InitRelayingHeaderChainStateFromDB(db, beaconHeight-1)
 	if err != nil {
 		Logger.log.Error(err)
 	}

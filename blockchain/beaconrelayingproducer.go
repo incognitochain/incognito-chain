@@ -15,6 +15,7 @@ func buildRelayingInstsFromActions(
 	blockchain *BlockChain,
 ) [][]string {
 	actions := rc.getActions()
+	Logger.log.Infof("[Blocks Relaying] - Processing buildRelayingInstsFromActions for %d actions", len(actions))
 	// sort push header relaying inst
 	actionsGroupByBlockHeight := make(map[uint64][]metadata.RelayingHeaderAction)
 
@@ -69,6 +70,7 @@ func (blockchain *BlockChain) handleRelayingInsts(
 	relayingState *RelayingHeaderChainState,
 	pm *portalManager,
 ) [][]string {
+	Logger.log.Info("[Blocks Relaying] - Processing handleRelayingInsts...")
 	newInsts := [][]string{}
 	// sort relayingChains map to make it consistent for every run
 	var metaTypes []int

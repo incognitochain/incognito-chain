@@ -11,13 +11,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 )
-
-type BNBHeader struct {
-	Header     *types.Header `json:"Header"`
-	LastCommit *types.Commit `json:"LastCommit"`
-}
 
 func GetBNBHeaderFromBinanceNetwork(blockHeight int64, url string) (string, error) {
 	block, err := relaying.GetBlock(blockHeight, url)
@@ -28,11 +22,11 @@ func GetBNBHeaderFromBinanceNetwork(blockHeight int64, url string) (string, erro
 		return "", errors.New("Can not get block from bnb chain")
 	}
 
-	bnbHeader := new(BNBHeader)
-	bnbHeader.Header = &block.Header
-	bnbHeader.LastCommit = block.LastCommit
-
-	bnbHeaderBytes, err2 := json.Marshal(bnbHeader)
+	blockHeader := types.Block{
+		Header:     block.Header,
+		LastCommit: block.LastCommit,
+	}
+	bnbHeaderBytes, err2 := json.Marshal(blockHeader)
 	if err2 != nil {
 		return "", err2
 	}
@@ -90,9 +84,9 @@ func PushBNBHeaderIntoIncognito(bnbHeaderStr string, blockHeight int64, urlIncog
 
 func GetAndPushBNBHeader() {
 	url := relaying.TestnetURLRemote
-	urlIncognitoNode := "http://localhost:9334"
-	blockHeight := 1010
-	for i := 1001; i <= blockHeight; i++ {
+	//urlIncognitoNode := "http://localhost:9334"
+	blockHeight := relaying.TestnetGenesisBlockHeight
+	for i := blockHeight; i <= blockHeight; i++ {
 		bnbHeaderStr, err := GetBNBHeaderFromBinanceNetwork(int64(i), url)
 		if err != nil {
 			fmt.Printf("Error GetBNBHeaderFromBinanceNetwork: %v\n", err)
@@ -105,15 +99,15 @@ func GetAndPushBNBHeader() {
 
 		fmt.Printf("bnbHeaderStr: %v\n", bnbHeaderStr)
 
-		result, err2 := PushBNBHeaderIntoIncognito(bnbHeaderStr, int64(i), urlIncognitoNode)
-		if err2 != nil {
-			fmt.Printf("Error PushBNBHeaderIntoIncognito: %v\n", err2)
-			panic(nil)
-		}
-
-		fmt.Printf("Result PushBNBHeaderIntoIncognito: %v\n", result)
-		fmt.Printf("====== Push successfully %v\n\n\n", i)
-
-		time.Sleep(15*1000 * time.Millisecond)
+		//result, err2 := PushBNBHeaderIntoIncognito(bnbHeaderStr, int64(i), urlIncognitoNode)
+		//if err2 != nil {
+		//	fmt.Printf("Error PushBNBHeaderIntoIncognito: %v\n", err2)
+		//	panic(nil)
+		//}
+		//
+		//fmt.Printf("Result PushBNBHeaderIntoIncognito: %v\n", result)
+		//fmt.Printf("====== Push successfully %v\n\n\n", i)
+		//
+		//time.Sleep(15*1000 * time.Millisecond)
 	}
 }

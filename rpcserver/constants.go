@@ -98,6 +98,7 @@ const (
 	getAndSendTxsFromFileV2 = "getandsendtxsfromfilev2"
 	unlockMempool           = "unlockmempool"
 	getAutoStakingByHeight  = "getautostakingbyheight"
+	getRewardAmountByEpoch  = "getrewardamountbyepoch"
 	//==================================================
 
 	getShardBestState        = "getshardbeststate"
@@ -220,8 +221,11 @@ const (
 
 	// relaying
 	createAndSendTxWithRelayingBNBHeader = "createandsendtxwithrelayingbnbheader"
+	createAndSendTxWithRelayingBTCHeader = "createandsendtxwithrelayingbtcheader"
 	getRelayingBNBHeaderState            = "getrelayingbnbheaderstate"
 	getRelayingBNBHeaderByBlockHeight    = "getrelayingbnbheaderbyblockheight"
+	getBTCRelayingBestState              = "getbtcrelayingbeststate"
+	getLatestBNBHeaderBlockHeight        = "getlatestbnbheaderblockheight"
 
 	// incognito mode for sc
 	getBurnProofForDepositToSC                = "getburnprooffordeposittosc"
