@@ -95,8 +95,12 @@ func (s *S2BSyncProcess) getS2BPeerState() map[string]map[byte]S2BPeerState {
 	res := make(chan map[string]map[byte]S2BPeerState)
 	s.actionCh <- func() {
 		ps := make(map[string]map[byte]S2BPeerState)
+		psState := make(map[byte]S2BPeerState)
 		for k, v := range s.s2bPeerState {
-			ps[k] = v
+			for i, j := range v {
+				psState[i] = j
+			}
+			ps[k] = psState
 		}
 		res <- ps
 	}

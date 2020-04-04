@@ -222,7 +222,7 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 				}
 			}
 
-			if uint64(len(blockBuffer)) >= s.Server.GetChainParam().Epoch || (len(blockBuffer) > 0 && (isNil(blk) || time.Since(insertTime) > time.Millisecond*1000)) {
+			if uint64(len(blockBuffer)) >= 500 || (len(blockBuffer) > 0 && (isNil(blk) || time.Since(insertTime) > time.Millisecond*2000)) {
 				insertBlkCnt := 0
 				for {
 					time1 := time.Now()
