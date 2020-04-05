@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -12,6 +13,18 @@ import (
 	"strconv"
 	"testing"
 )
+
+
+type PortingRequestExcepted struct {
+	Metadata string
+	ChainStatus string
+}
+
+type PortingRequestTestCase struct {
+	TestCaseName string
+	Input func() metadata.PortalUserRegisterAction
+	Output func() PortingRequestExcepted
+}
 
 // Define the suite, and absorb the built-in basic suite
 // functionality from testify - including a T() method which
@@ -142,23 +155,12 @@ func buildPortalCustodianDepositAction(
 //}
 
 func (suite *PortalProducerSuite) TestBuildInstructionsForPortingRequest() {
-	trieMock := new(mocks.Trie)
-
-	keyPortingRequest := "123456789"
-	key := statedb.GeneratePortalStatusObjectKey(statedb.PortalPortingRequestStatusPrefix(), []byte(keyPortingRequest))
-	trieMock.On("TryGet", key[:]).Return(nil, nil)
-
-	blockChain := suite.SetupMockBlockChain(trieMock)
-
-	var testCases = []struct {
-		TestCaseName string
-		Input        func() metadata.PortalUserRegisterAction
-	}{
+	happyCases := []PortingRequestTestCase{
 		{
 			"happy_case",
 			func() metadata.PortalUserRegisterAction {
 				meta, _ := metadata.NewPortalUserRegister(
-					keyPortingRequest,
+					"1",
 					"12S5pBBRDf1GqfRHouvCV86sWaHzNfvakAWpVMvNnWu2k299xWCgQzLLc9wqPYUHfMYGDprPvQ794dbi6UU1hfRN4tPiU61txWWenhC",
 					"b2655152784e8639fa19521a7035f331eea1f1e911b2f3200a507ebb4554387b",
 					1000,
@@ -171,18 +173,34 @@ func (suite *PortalProducerSuite) TestBuildInstructionsForPortingRequest() {
 					TxReqID: *meta.Hash(),
 					ShardID: 1,
 				}
-
 				return actionContent
+			},
+			func() PortingRequestExcepted {
+				return PortingRequestExcepted{
+					Metadata: strconv.Itoa(metadata.PortalUserRegisterMeta),
+					ChainStatus: common.PortalPortingRequestAcceptedChainStatus,
+				}
 			},
 		},
 	}
+
+	suite.verifyPortingRequest(happyCases)
+}
+
+func (suite *PortalProducerSuite) verifyPortingRequest(testCases []PortingRequestTestCase)  {
+	trieMock := new(mocks.Trie)
+	beaconHeight := uint64(1)
+	suite.SetupPortingRequest(beaconHeight)
 
 	for _, testCase := range testCases {
 		actionContentBytes, _ := json.Marshal(testCase.Input())
 		actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
 
-		beaconHeight := uint64(1)
-		suite.SetupPortingRequest(beaconHeight)
+		key := statedb.GeneratePortalStatusObjectKey(statedb.PortalPortingRequestStatusPrefix(), []byte(testCase.Input().Meta.UniqueRegisterId))
+		trieMock.On("TryGet", key[:]).Return(nil, nil)
+
+		blockChain := suite.SetupMockBlockChain(trieMock)
+
 		value, err := blockChain.buildInstructionsForPortingRequest(
 			actionContentBase64Str,
 			testCase.Input().ShardID,
@@ -191,11 +209,27 @@ func (suite *PortalProducerSuite) TestBuildInstructionsForPortingRequest() {
 			beaconHeight,
 		)
 
+		fmt.Printf("Testcase %v, instruction %+v",testCase.TestCaseName, value)
+
 		assert.Equal(suite.T(), err, nil)
-		assert.Equal(suite.T(),  strconv.Itoa(metadata.PortalUserRegisterMeta), value[0][0])
+
+		if len(testCase.Output().Metadata) > 0 {
+			assert.Equal(suite.T(),  testCase.Output().Metadata, value[0][0])
+		}
+
 		assert.Equal(suite.T(),  strconv.Itoa(1), value[0][1])
-		assert.Equal(suite.T(), common.PortalPortingRequestAcceptedChainStatus, value[0][2])
+
+		if len(testCase.Output().ChainStatus) > 0 {
+			assert.Equal(suite.T(), testCase.Output().ChainStatus, value[0][2])
+		}
+
 		assert.NotNil(suite.T(), value[0][3])
+
+		//custodianKey := statedb.GenerateCustodianStateObjectKey(beaconHeight, "12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ")
+		//custodian := suite.currentPortalState.CustodianPoolState[custodianKey.String()]
+
+		//holdPublicToken := custodian.GetHoldingPublicTokens()
+		//assert.Equal(suite.T(), "1", holdPublicToken["a"])
 	}
 }
 

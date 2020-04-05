@@ -157,7 +157,7 @@ func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBefor
 		PRVIDStr := common.PRVCoinID.String()
 		_, pk, paidAmount, assetID := tx.GetTransferData()
 		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
-			redeemAmountFromInst != paidAmount ||
+			totalPTokenReceived != paidAmount ||
 			PRVIDStr != assetID.String() {
 			continue
 		}
