@@ -1007,7 +1007,7 @@ func (blockchain *BlockChain) processPortalUnlockCollateral(
 	} else if reqStatus == common.PortalReqUnlockCollateralRejectedChainStatus {
 		// track reqUnlockCollateral status by txID into DB
 		reqUnlockCollateralTrackData := metadata.PortalRequestUnlockCollateralStatus{
-			Status:              common.PortalReqUnlockCollateralAcceptedStatus,
+			Status:              common.PortalReqUnlockCollateralRejectedStatus,
 			UniqueRedeemID:      actionData.UniqueRedeemID,
 			TokenID:             actionData.TokenID,
 			CustodianAddressStr: actionData.CustodianAddressStr,
