@@ -9,7 +9,6 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
-	"strings"
 )
 
 func (httpServer *HttpServer) createRegisterPortingPublicTokens(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -51,7 +50,6 @@ func (httpServer *HttpServer) createRegisterPortingPublicTokens(params interface
 	}
 
 	//check exchange rates
-	uniqueRegisterId = strings.Replace(uniqueRegisterId, "-", "", -1)
 	meta, _ := metadata.NewPortalUserRegister(
 		uniqueRegisterId,
 		incogAddressStr,
