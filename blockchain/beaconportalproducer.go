@@ -452,7 +452,7 @@ func (blockchain *BlockChain) buildInstructionsForPortingRequest(
 		actionData.Meta.PortingFee,
 		pickCustodianResult,
 		actionData.TxReqID,
-	) //return  metadata.PortalPortingRequestContent at instruct[3]
+	)
 
 	newPortingRequestStateWaiting := statedb.NewWaitingPortingRequestWithValue(
 		actionData.Meta.UniqueRegisterId,
